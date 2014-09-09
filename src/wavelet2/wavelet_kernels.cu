@@ -633,7 +633,7 @@ __global__ void cu_iwt2_row(_data_t *out, _data_t *Ly, _data_t *Hy, int dx, int 
     _data_t y = rows[0]-rows[0];
     int f;
 #pragma unroll
-    for (f = (j-(filterLen-1)) & 1; f < filterLen; f+=2){
+    for (f = (j-(filterLen-1)) % 2; f < filterLen; f+=2){
       ind = (j-(filterLen-1)+f)>>1;
       if ((ind >= 0) and (ind < dy)) {
 	y += rows[ti + ind*K] * lod[filterLen-1-f];
@@ -670,7 +670,7 @@ __global__ void cu_iwt2_col(_data_t *out, _data_t *Lx, _data_t *Hx, int dx, int 
     _data_t y = cols[0]-cols[0];
     int f;
 #pragma unroll
-    for (f = (i-(filterLen-1)) & 1; f < filterLen; f+=2){
+    for (f = (i-(filterLen-1)) % 2; f < filterLen; f+=2){
       ind = (i-(filterLen-1)+f)>>1;
       if (ind >= 0 and ind < dx) {
 	y += cols[ind + tj*dx2] * lod[filterLen-1-f];
@@ -824,7 +824,7 @@ __global__ void cu_iwt3_dep(_data_t *out, _data_t *Lz, _data_t *Hz, int dx, int 
 	
     _data_t y = deps[0]-deps[0];
 #pragma unroll
-    for (int f = (k-(filterLen-1)) & 1; f < filterLen; f+=2){
+    for (int f = (k-(filterLen-1)) % 2; f < filterLen; f+=2){
       ind = (k-(filterLen-1)+f)>>1;
       if ((ind >= 0) and (ind < dz)) {
 	y += deps[ti + ind*K] * lod[filterLen-1-f];
@@ -860,7 +860,7 @@ __global__ void cu_iwt3_row(_data_t *out, _data_t *Ly, _data_t *Hy, int dx, int 
 	
     _data_t y = rows[0]-rows[0];
 #pragma unroll
-    for (int f = (j-(filterLen-1)) & 1; f < filterLen; f+=2){
+    for (int f = (j-(filterLen-1)) % 2; f < filterLen; f+=2){
       ind = (j-(filterLen-1)+f)>>1;
       if ((ind >= 0) and (ind < dy)) {
 	y += rows[ti + ind*K] * lod[filterLen-1-f];
@@ -896,7 +896,7 @@ __global__ void cu_iwt3_col(_data_t *out, _data_t *Lx, _data_t *Hx, int dx, int 
   for (int i = ti+xOffset; i < dxNext+xOffset; i += blockDim.x){
     _data_t y = cols[0]-cols[0];
 #pragma unroll
-    for (int f = (i-(filterLen-1)) & 1; f < filterLen; f+=2){
+    for (int f = (i-(filterLen-1)) % 2; f < filterLen; f+=2){
       ind = (i-(filterLen-1)+f)>>1;
       if (ind >= 0 and ind < dx) {
 	y += cols[ind + tj*dx2] * lod[filterLen-1-f];

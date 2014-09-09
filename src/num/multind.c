@@ -29,6 +29,7 @@
 #include <strings.h>
 
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "num/optimize.h"
 #ifdef USE_CUDA
@@ -88,7 +89,7 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 	long dimc[D];
 	md_select_dims(D, ~(1 << b), dimc, dim);
 
-//	debug_printf(DP_DEBUG3, "Parallelize: %d\n", dim[b]);
+	debug_printf(DP_DEBUG4, "Parallelize: %d\n", dim[b]);
 
 	// FIXME: this probably doesn't nest
 	// (maybe collect all parallelizable dims into one giant loop?)
@@ -316,6 +317,25 @@ bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], co
 }
 
 
+/**
+ * Set the output's flagged dimensions to the minimum of the two input dimensions
+ *
+ * odims = [ MIN(idims1[0],idims2[0] ... MIN(idims1[D-1],idims2[D-1]) ]
+ *
+ * @param D number of dimensions
+ * @param flags bitmask specifying which dimensions to minimize
+ * @param odims output dimensions
+ * @param idims1 input 1 dimensions
+ * @param idims2 input 2 dimensions
+ */
+extern void md_min_dims(unsigned int D, unsigned long flags, long odims[D], const long idims1[D], const long idims2[D])
+{
+	for (unsigned int i = 0; i < D; i++)
+		if ((flags & (1 << i)))
+			odims[i] = MIN( idims1[i], idims2[i] );
+}
+
+
 
 struct data_s {
 
@@ -439,6 +459,16 @@ static void nary_copy(void* _data, void* ptr[])
  */
 void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
 {
+#if 0
+	// this is for a fun comparison between our copy engine and FFTW
+
+	extern void fft2(unsigned int D, const long dim[D], unsigned int flags, 
+			const long ostr[D], void* optr, const long istr[D], const void* iptr);
+
+	if (sizeof(_Complex float) == size)
+		fft2(D, dim, 0, ostr, optr, istr, iptr);
+#endif
+
 	long tostr[D];
 	long tistr[D];
 	long tdims[D];
@@ -495,6 +525,16 @@ void md_copy(unsigned int D, const long dim[D], void* optr, const void* iptr, si
 
 
 
+#ifdef USE_CUDA
+// copied from flpmath.c
+static void* gpu_constant(const void* vp, size_t size)
+{
+        long dims1[1] = { 1 };
+        return md_gpu_move(1, dims1, vp, size);
+}
+#endif
+
+
 /**
  * Fill array with value pointed by pointer (with strides)
  *
@@ -502,6 +542,15 @@ void md_copy(unsigned int D, const long dim[D], void* optr, const void* iptr, si
  */
 void md_fill2(unsigned int D, const long dim[D], const long str[D], void* ptr, const void* iptr, size_t size)
 {
+#ifdef USE_CUDA
+	if (cuda_ondevice(ptr) && (!cuda_ondevice(iptr))) {
+
+		void* giptr = gpu_constant(iptr, size);
+		md_fill2(D, dim, str, ptr, giptr, size);
+		md_free(giptr);
+		return;
+	}
+#endif
 	long istr[D];
 	md_singleton_strides(D, istr);
 	md_copy2(D, dim, str, ptr, istr, iptr, size);

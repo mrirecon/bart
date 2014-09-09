@@ -15,6 +15,10 @@
 
 #include "resize.h"
 
+#ifndef CFL_SIZE
+#define CFL_SIZE sizeof(complex float)
+#endif
+
 
 static void fft_zeropad_r(unsigned int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
@@ -25,7 +29,7 @@ static void fft_zeropad_r(unsigned int N, const long odims[N], complex float* ds
 		if (0 == i) {
 
 			if (dst != src)
-				md_copy(N, odims, dst, src, sizeof(complex float));
+				md_copy(N, odims, dst, src, CFL_SIZE);
 
 			return;
 		}
@@ -40,9 +44,9 @@ static void fft_zeropad_r(unsigned int N, const long odims[N], complex float* ds
 	md_select_dims(N, ~0u, tdims, idims);
 	tdims[i] = odims[i];
 
-	complex float* tmp = md_alloc(N, tdims, sizeof(complex float));
+	complex float* tmp = md_alloc_sameplace(N, tdims, CFL_SIZE, src);
 
-	md_resizec(N, tdims, tmp, idims, src, sizeof(complex float));
+	md_resizec(N, tdims, tmp, idims, src, CFL_SIZE);
 
 	fftc(N, tdims, (1u << i), tmp, tmp);
 
@@ -88,7 +92,7 @@ static void fft_zeropadH_r(unsigned int N, const long odims[N], complex float* d
 		if (0 == i) {
 
 			if (dst != src)
-				md_copy(N, odims, dst, src, sizeof(complex float));
+				md_copy(N, odims, dst, src, CFL_SIZE);
 
 			return;
 		}
@@ -99,17 +103,14 @@ static void fft_zeropadH_r(unsigned int N, const long odims[N], complex float* d
 	assert (idims[i] > odims[i]);
 
 	long tdims[N];
-	md_select_dims(N, ~0u, tdims, odims);
+	md_copy_dims(N, tdims, odims);
 	tdims[i] = idims[i];
 
-	complex float* tmp = md_alloc(N, tdims, sizeof(complex float));
+	complex float* tmp = md_alloc_sameplace(N, tdims, CFL_SIZE, src);
 
 	fft_zeropadH_r(N, tdims, tmp, idims, src);
-
 	ifftc(N, tdims, (1u << i), tmp, tmp);
-
-	md_resizec(N, odims, dst, tdims, tmp, sizeof(complex float));
-
+	md_resizec(N, odims, dst, tdims, tmp, CFL_SIZE);
 
 	md_free(tmp);
 }
@@ -148,7 +149,7 @@ void fft_zeropadH(unsigned int N, unsigned int flags, const long odims[N], compl
 
 void sinc_resize(unsigned int D, const long out_dims[D], complex float* out, const long in_dims[D], const complex float* in)
 {
-	complex float* tmp = md_alloc(D, in_dims, sizeof(complex float));
+	complex float* tmp = md_alloc_sameplace(D, in_dims, CFL_SIZE, in);
 
 	unsigned int flags = 0;
 
@@ -160,7 +161,7 @@ void sinc_resize(unsigned int D, const long out_dims[D], complex float* out, con
 	fft(D, in_dims, flags, tmp, tmp);
 
 	// Use md_resizec crop or zero pad, depending on whether we are sizing down or up
-	md_resizec(D, out_dims, out, in_dims, tmp, sizeof(complex float));
+	md_resizec(D, out_dims, out, in_dims, tmp, CFL_SIZE);
 
 	md_free(tmp);
 
@@ -187,7 +188,7 @@ void sinc_zeropad(unsigned int D, const long out_dims[D], complex float* out, co
 		if (0 == i) {
 
 			if (out != in)
-				md_copy(D, out_dims, out, in, sizeof(complex float));
+				md_copy(D, out_dims, out, in, CFL_SIZE);
 
 			return;
 		}

@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/loop.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -25,23 +26,52 @@
 
 
 
-void data_consistency(const long dims[KSPACE_DIMS], complex float* dst, const complex float* pattern, const complex float* kspace1, const complex float* kspace2)
+void linear_phase(unsigned int N, const long dims[N], const float pos[N], complex float* out)
+{
+	complex float grad[N];
+
+	for (unsigned int n = 0; n < N; n++)
+		grad[n] = 2.i * M_PI * (float)(pos[n]) / ((float)dims[n]);
+
+	md_zgradient(N, dims, out, grad); // (x * p - x0 * p
+
+	long dims0[N];
+	md_singleton_dims(N, dims0);
+
+	long strs0[N];
+	md_calc_strides(N, strs0, dims0, CFL_SIZE);
+
+	complex float cn = 0.;
+
+	for (unsigned int n = 0; n < N; n++)
+		 cn -= grad[n] * (float)dims[n] / 2.;
+
+	long strs[N];
+	md_calc_strides(N, strs, dims, CFL_SIZE);
+
+	md_zadd2(N, dims, strs, out, strs, out, strs0, &cn);
+	md_zmap(N, dims, out, out, cexpf);
+}
+
+
+
+void data_consistency(const long dims[DIMS], complex float* dst, const complex float* pattern, const complex float* kspace1, const complex float* kspace2)
 {
 	assert(1 == dims[MAPS_DIM]);
 
-	long strs[KSPACE_DIMS];
-	long dims1[KSPACE_DIMS];
-	long strs1[KSPACE_DIMS];
+	long strs[DIMS];
+	long dims1[DIMS];
+	long strs1[DIMS];
 
-	md_select_dims(KSPACE_DIMS, ~COIL_FLAG, dims1, dims);
-	md_calc_strides(KSPACE_DIMS, strs1, dims1, sizeof(complex float));
-	md_calc_strides(KSPACE_DIMS, strs, dims, sizeof(complex float));
+	md_select_dims(DIMS, ~COIL_FLAG, dims1, dims);
+	md_calc_strides(DIMS, strs1, dims1, CFL_SIZE);
+	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
 
-	complex float* tmp = md_alloc_sameplace(KSPACE_DIMS, dims, sizeof(complex float), dst);
-	md_zmul2(KSPACE_DIMS, dims, strs, tmp, strs, kspace2, strs1, pattern);
-	md_zsub(KSPACE_DIMS, dims, tmp, kspace2, tmp);
-	md_zfmac2(KSPACE_DIMS, dims, strs, tmp, strs, kspace1, strs1, pattern);
-	md_copy(KSPACE_DIMS, dims, dst, tmp, sizeof(complex float));
+	complex float* tmp = md_alloc_sameplace(DIMS, dims, CFL_SIZE, dst);
+	md_zmul2(DIMS, dims, strs, tmp, strs, kspace2, strs1, pattern);
+	md_zsub(DIMS, dims, tmp, kspace2, tmp);
+	md_zfmac2(DIMS, dims, strs, tmp, strs, kspace1, strs1, pattern);
+	md_copy(DIMS, dims, dst, tmp, CFL_SIZE);
 	md_free(tmp);
 }
 
@@ -72,9 +102,6 @@ void transfer_function(void* _data, const complex float* pattern, complex float*
 
 
 
-
-
-
 void estimate_pattern(unsigned int D, const long dims[D], unsigned int dim, complex float* pattern, const complex float* kspace_data)
 {
 	md_rss(D, dims, (1u << dim), pattern, kspace_data);
@@ -83,36 +110,33 @@ void estimate_pattern(unsigned int D, const long dims[D], unsigned int dim, comp
 	long strs2[D];
 	assert(dim < D);
 	md_select_dims(D, ~(1u << dim), dims2, dims);
-	md_calc_strides(D, strs2, dims2, sizeof(complex float));
+	md_calc_strides(D, strs2, dims2, CFL_SIZE);
 
 	long strs1[D];
 	md_singleton_strides(D, strs1);
-	complex float val = 0.;
 
-	md_zcmp2(D, dims2, strs2, pattern, strs2, pattern, strs1, &val);
-
-	val = 1.;
-	md_zsub2(D, dims2, strs2, pattern, strs1, &val, strs2, pattern);
+	md_zcmp2(D, dims2, strs2, pattern, strs2, pattern, strs1, &(complex float){ 0. });
+	md_zsub2(D, dims2, strs2, pattern, strs1, &(complex float){ 1. }, strs2, pattern);
 }
 
 
 
 
-void calib_geom(long caldims[KSPACE_DIMS], long calpos[KSPACE_DIMS], const long calsize[3], const long in_dims[KSPACE_DIMS], const complex float* in_data)
+void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], const long in_dims[DIMS], const complex float* in_data)
 {
-	long pat_dims[KSPACE_DIMS];
+	long pat_dims[DIMS];
 
 	assert(1 == in_dims[MAPS_DIM]);
 
-	md_select_dims(KSPACE_DIMS, ~COIL_FLAG, pat_dims, in_dims);
+	md_select_dims(DIMS, ~COIL_FLAG, pat_dims, in_dims);
 	
-	complex float* pattern = md_alloc(KSPACE_DIMS, pat_dims, sizeof(complex float));
-	estimate_pattern(KSPACE_DIMS, in_dims, COIL_DIM, pattern, in_data);
+	complex float* pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
+	estimate_pattern(DIMS, in_dims, COIL_DIM, pattern, in_data);
 
-	for (unsigned int i = 0; i < KSPACE_DIMS; i++)
+	for (unsigned int i = 0; i < DIMS; i++)
 		caldims[i] = 1;
 
-	for (unsigned int i = 0; i < KSPACE_DIMS; i++)
+	for (unsigned int i = 0; i < DIMS; i++)
 		calpos[i] = 0;
 
 	calpos[0] = (in_dims[0] - caldims[0]) / 2;
@@ -121,8 +145,8 @@ void calib_geom(long caldims[KSPACE_DIMS], long calpos[KSPACE_DIMS], const long 
 
 
 
-	long pat_strs[KSPACE_DIMS];
-	md_calc_strides(KSPACE_DIMS, pat_strs, pat_dims, sizeof(complex float));
+	long pat_strs[DIMS];
+	md_calc_strides(DIMS, pat_strs, pat_dims, CFL_SIZE);
 
 	bool stop[3] = { false, false, false };
 
@@ -146,10 +170,10 @@ void calib_geom(long caldims[KSPACE_DIMS], long calpos[KSPACE_DIMS], const long 
 
 		//	printf("Try: %ld %ld %ld %ld\n", caldims[1], caldims[2], calpos[1], calpos[2]);
 
-			long offset = md_calc_offset(KSPACE_DIMS, calpos, pat_strs);
+			long offset = md_calc_offset(DIMS, calpos, pat_strs);
 			float si = sqrtf((float)caldims[0] * (float)caldims[1] * (float)caldims[2]);
 		
-			if (si != md_znorm2(KSPACE_DIMS, caldims, pat_strs, pattern + offset / sizeof(complex float))) {
+			if (si != md_znorm2(DIMS, caldims, pat_strs, pattern + offset / CFL_SIZE)) {
 		
 				caldims[i]--;
 				calpos[i] = (in_dims[i] - caldims[i]) / 2;
@@ -164,8 +188,8 @@ void calib_geom(long caldims[KSPACE_DIMS], long calpos[KSPACE_DIMS], const long 
 #if 1
 	// now move along readout to find maximum energy
 
-	long in_strs[KSPACE_DIMS];
-	md_calc_strides(KSPACE_DIMS, in_strs, in_dims, sizeof(complex float));
+	long in_strs[DIMS];
+	md_calc_strides(DIMS, in_strs, in_dims, CFL_SIZE);
 
 	int maxind = 0;
 	float maxeng = 0.;
@@ -174,8 +198,8 @@ void calib_geom(long caldims[KSPACE_DIMS], long calpos[KSPACE_DIMS], const long 
 
 		calpos[READ_DIM] = r;
 
-		long offset = md_calc_offset(KSPACE_DIMS, calpos, in_strs);
-		float energy = md_znorm2(KSPACE_DIMS, caldims, in_strs, in_data + offset / sizeof(complex float));
+		long offset = md_calc_offset(DIMS, calpos, in_strs);
+		float energy = md_znorm2(DIMS, caldims, in_strs, in_data + offset / CFL_SIZE);
 
 		if (energy > maxeng) {
 
@@ -190,16 +214,16 @@ void calib_geom(long caldims[KSPACE_DIMS], long calpos[KSPACE_DIMS], const long 
 
 
 
-complex float* extract_calib2(long caldims[KSPACE_DIMS], const long calsize[3], const long in_dims[KSPACE_DIMS], const long in_strs[KSPACE_DIMS], const complex float* in_data, bool fixed)
+complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const long in_strs[DIMS], const complex float* in_data, bool fixed)
 {
 	// first extract center of size in_dims[0], calsize[1], calsize[2], and then process further to save time
 
-	long tmp_dims[KSPACE_DIMS];
-	long tmp_pos[KSPACE_DIMS];
-	long tmp_strs[KSPACE_DIMS];
+	long tmp_dims[DIMS];
+	long tmp_pos[DIMS];
+	long tmp_strs[DIMS];
 
-	md_copy_dims(KSPACE_DIMS, tmp_dims, in_dims);
-	md_set_dims(KSPACE_DIMS, tmp_pos, 0);
+	md_copy_dims(DIMS, tmp_dims, in_dims);
+	md_set_dims(DIMS, tmp_pos, 0);
 
 	for (unsigned int i = 0; i < 3; i++) {
 
@@ -208,13 +232,13 @@ complex float* extract_calib2(long caldims[KSPACE_DIMS], const long calsize[3], 
 		tmp_pos[i] = (in_dims[i] - tmp_dims[i]) / 2.; // what about odd sizes?
 	}
 
-	complex float* tmp_data = md_alloc(KSPACE_DIMS, tmp_dims, sizeof(complex float));
+	complex float* tmp_data = md_alloc(DIMS, tmp_dims, CFL_SIZE);
 
-	md_calc_strides(KSPACE_DIMS, tmp_strs, tmp_dims, sizeof(complex float));
+	md_calc_strides(DIMS, tmp_strs, tmp_dims, CFL_SIZE);
 
-	md_copy_block2(KSPACE_DIMS, tmp_pos, tmp_dims, tmp_strs, tmp_data, in_dims, in_strs, in_data, sizeof(complex float));
+	md_copy_block2(DIMS, tmp_pos, tmp_dims, tmp_strs, tmp_data, in_dims, in_strs, in_data, CFL_SIZE);
 
-	long calpos[KSPACE_DIMS];
+	long calpos[DIMS];
 	calib_geom(caldims, calpos, calsize, tmp_dims, tmp_data);
 
 	if (fixed) { // we should probably change calib_geom instead
@@ -231,37 +255,36 @@ complex float* extract_calib2(long caldims[KSPACE_DIMS], const long calsize[3], 
 	debug_printf(DP_DEBUG1, "Calibration region...  (size: %ldx%ldx%ld, pos: %ldx%ldx%ld)\n", 
 				caldims[0], caldims[1], caldims[2], calpos[0] + tmp_pos[0], calpos[1] + tmp_pos[1], calpos[2] + tmp_pos[2]);
 
-	complex float* cal_data = md_alloc(KSPACE_DIMS, caldims, sizeof(complex float));
+	complex float* cal_data = md_alloc(DIMS, caldims, CFL_SIZE);
 
-	md_copy_block(KSPACE_DIMS, calpos, caldims, cal_data, tmp_dims, tmp_data, sizeof(complex float));
+	md_copy_block(DIMS, calpos, caldims, cal_data, tmp_dims, tmp_data, CFL_SIZE);
 	md_free(tmp_data);
 
 	return cal_data;
 }
 
 
-complex float* extract_calib(long caldims[KSPACE_DIMS], const long calsize[3], const long in_dims[KSPACE_DIMS], const complex float* in_data, bool fixed)
+complex float* extract_calib(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const complex float* in_data, bool fixed)
 {
-	long in_strs[KSPACE_DIMS];
-	md_calc_strides(KSPACE_DIMS, in_strs, in_dims, sizeof(complex float));
+	long in_strs[DIMS];
+	md_calc_strides(DIMS, in_strs, in_dims, CFL_SIZE);
 	return extract_calib2(caldims, calsize, in_dims, in_strs, in_data, fixed);
 }
 
 
 complex float* compute_mask(unsigned int N, const long msk_dims[N], float restrict_fov)
 {
-	complex float* mask = md_alloc(KSPACE_DIMS, msk_dims, sizeof(complex float));
+	complex float* mask = md_alloc(DIMS, msk_dims, CFL_SIZE);
 
-	long small_dims[KSPACE_DIMS] = { [0 ... KSPACE_DIMS - 1] = 1 };
+	long small_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	small_dims[0] = (1 == msk_dims[0]) ? 1 : (msk_dims[0] * restrict_fov);
 	small_dims[1] = (1 == msk_dims[1]) ? 1 : (msk_dims[1] * restrict_fov);
 	small_dims[2] = (1 == msk_dims[2]) ? 1 : (msk_dims[2] * restrict_fov);
 
-	complex float* small_mask = md_alloc(KSPACE_DIMS, small_dims, sizeof(complex float));
-	complex float one = 1.;
+	complex float* small_mask = md_alloc(DIMS, small_dims, CFL_SIZE);
 
-	md_fill(KSPACE_DIMS, small_dims, small_mask, &one, sizeof(complex float));
-	md_resizec(KSPACE_DIMS, msk_dims, mask, small_dims, small_mask, sizeof(complex float));
+	md_fill(DIMS, small_dims, small_mask, &(complex float){ 1. }, CFL_SIZE);
+	md_resizec(DIMS, msk_dims, mask, small_dims, small_mask, CFL_SIZE);
 
 	md_free(small_mask);
 

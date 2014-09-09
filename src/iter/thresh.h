@@ -19,10 +19,6 @@ extern "C" {
 #endif
 
 
-extern void md_zsoftthresh_core2(unsigned int D, const long dims[__VLA(D)], float lambda, unsigned int flags, _Complex float* tmp_norm, const long ostrs[__VLA(D)], _Complex float* optr, const long istrs[__VLA(D)], const _Complex float* iptr);
-
-extern void md_zsoftthresh2(unsigned int D, const long dim[__VLA(D)], float lambda, unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
-extern void md_zsoftthresh(unsigned int D, const long dim[__VLA(D)], float lambda, unsigned int flags, _Complex float* optr, const _Complex float* iptr);
 
 struct operator_p_s;
 extern const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[__VLA(D)], const float lambda, const unsigned long flags, _Bool gpu);
@@ -30,6 +26,8 @@ extern const struct operator_p_s* prox_thresh_create(unsigned int D, const long 
 extern void thresh_free(const struct operator_p_s* data);
 	
 extern void set_thresh_lambda(const struct operator_p_s* o, const float lambda);
+
+extern float get_thresh_lambda(const struct operator_p_s* o);
 
 extern void softthresh(const struct operator_p_s* o, _Complex float* optr, const _Complex float* iptr);
 

@@ -13,7 +13,8 @@
 
 #include "num/flpmath.h"
 #include "num/multind.h"
-#include "num/linop.h"
+
+#include "linops/linop.h"
 
 #include "sampling.h"
 
@@ -50,7 +51,7 @@ struct linop_s* sampling_create(const long dims[DIMS], const long pat_dims[DIMS]
 
 	data->pattern = pattern;
 
-	return linop_create(DIMS, data->dims, data->dims, data, sampling_apply, sampling_apply, sampling_apply, NULL, sampling_free);
+	return linop_create(DIMS, data->dims, DIMS, data->dims, data, sampling_apply, sampling_apply, sampling_apply, NULL, sampling_free);
 }
 
 

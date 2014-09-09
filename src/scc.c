@@ -117,15 +117,15 @@ int main(int argc, char* argv[])
 
 	complex float* in_data = load_cfl(argv[optind + 0], DIMS, in_dims);
 
-	assert(1 == in_dims[4]);
-	long channels = in_dims[3];
+	assert(1 == in_dims[MAPS_DIM]);
+	long channels = in_dims[COIL_DIM];
 
 	if (0 == P)
 		P = channels;
 
-	long out_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
-	out_dims[3] = channels;
-	out_dims[4] = channels;
+	long out_dims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
+	out_dims[COIL_DIM] = channels;
+	out_dims[MAPS_DIM] = channels;
 
 	complex float* out_data = NULL;
 	
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
 
 	float vals[channels];
 	eigendecomp(channels, vals, (complex float (*)[])tmp);
-	md_flip(DIMS, out_dims, (1 << 4), out_data, tmp, CFL_SIZE);
+	md_flip(DIMS, out_dims, MAPS_FLAG, out_data, tmp, CFL_SIZE);
 
 	free(tmp);
 
@@ -177,31 +177,17 @@ int main(int argc, char* argv[])
 		if (verbose)
 			printf("Compressing to %ld virtual coils...\n", P);
 
-		long max_dims[DIMS];
-		md_select_dims(DIMS, ~0, max_dims, in_dims);
-		max_dims[4] = P;
-
 		long trans_dims[DIMS];
-		md_select_dims(DIMS, ~0, trans_dims, in_dims);
-		trans_dims[3] = P;
+		md_copy_dims(DIMS, trans_dims, in_dims);
+		trans_dims[COIL_DIM] = P;
 
 		complex float* trans_data = create_cfl(argv[optind + 1], DIMS, trans_dims);
 
-		long trans_strs[DIMS];
-		long in_strs[DIMS];
-		long out_strs[DIMS];
+		long fake_trans_dims[DIMS];
+		md_select_dims(DIMS, ~COIL_FLAG, fake_trans_dims, in_dims);
+		fake_trans_dims[MAPS_DIM] = P;
 
-		md_calc_strides(DIMS, in_strs, in_dims, CFL_SIZE);
-		md_calc_strides(DIMS, trans_strs, trans_dims, CFL_SIZE);
-		md_calc_strides(DIMS, out_strs, out_dims, CFL_SIZE);
-
-		// swap strides
-		long tmp = trans_strs[4];
-		trans_strs[4] = trans_strs[3];
-		trans_strs[3] = tmp;
-
-		md_clear(DIMS, trans_dims, trans_data, CFL_SIZE);
-		md_zfmacc2(DIMS, max_dims, trans_strs, trans_data, in_strs, in_data, out_strs, out_data);
+		md_zmatmulc(DIMS, fake_trans_dims, trans_data, out_dims, out_data, in_dims, in_data);
 
 		unmap_cfl(DIMS, trans_dims, trans_data);
 	}

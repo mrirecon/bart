@@ -12,7 +12,8 @@
 
 #include "num/flpmath.h"
 #include "num/multind.h"
-#include "num/linop.h"
+
+#include "linops/linop.h"
 
 #include "rvc.h"
 
@@ -47,7 +48,7 @@ struct linop_s* rvc_create(unsigned int N, const long dims[N])
 	data->N = N;
 	data->dims = dims2;
 
-	return linop_create(N, dims, dims, (void*)data, rvc_apply, rvc_apply, rvc_apply, NULL, rvc_free);
+	return linop_create(N, dims, N, dims, (void*)data, rvc_apply, rvc_apply, rvc_apply, NULL, rvc_free);
 }
 
 

@@ -79,8 +79,8 @@ static double dot(long N, const float* vec1, const float* vec2)
 	double res = 0.;
 
 	for (long i = 0; i < N; i++)
-		//res += vec1[i] * vec2[i];
-		res = fma((double)vec1[i], (double)vec2[i], res);
+		res += vec1[i] * vec2[i];
+	//res = fma((double)vec1[i], (double)vec2[i], res);
 
 	return res;
 }
@@ -96,8 +96,8 @@ static double norm(long N, const float* vec)
 	double res = 0.;
 
 	for (long i = 0; i < N; i++)
-		//res += vec[i] * vec[i];
-		res = fma((double)vec[i], (double)vec[i], res);
+		res += vec[i] * vec[i];
+	//res = fma((double)vec[i], (double)vec[i], res);
 
 	return sqrt(res);
 }
@@ -140,22 +140,22 @@ static void axpy(long N, float* dst, float alpha, const float* src)
 {
 	if (0. != alpha)
 	for (long i = 0; i < N; i++)
-//		dst[i] += alpha * src[i];
-		dst[i] = fmaf(alpha, src[i], dst[i]);
+		dst[i] += alpha * src[i];
+//		dst[i] = fmaf(alpha, src[i], dst[i]);
 }
 
 static void xpay(long N, float beta, float* dst, const float* src)
 {
 	for (long i = 0; i < N; i++)
-//		dst[i] = dst[i] * beta + src[i];
-		dst[i] = fmaf(beta, dst[i], src[i]);
+		dst[i] = dst[i] * beta + src[i];
+//		dst[i] = fmaf(beta, dst[i], src[i]);
 }
 
 static void smul(long N, float alpha, float* dst, const float* src)
 {
 	for (long i = 0; i < N; i++)
-		//dst[i] = alpha * src[i];
-		dst[i] = fmaf(alpha, src[i], 0.f);
+		dst[i] = alpha * src[i];
+	//dst[i] = fmaf(alpha, src[i], 0.f);
 }
 
 static void add(long N, float* dst, const float* src1, const float* src2)
@@ -186,8 +186,8 @@ static void vec_div(long N, float* dst, const float* src1, const float* src2)
 static void fmac(long N, float* dst, const float* src1, const float* src2)
 {
 	for (long i = 0; i < N; i++)
-	//	dst[i] += src1[i] * src2[i];
-		dst[i] = fmaf(src1[i], src2[i], dst[i]);
+		dst[i] += src1[i] * src2[i];
+	//dst[i] = fmaf(src1[i], src2[i], dst[i]);
 		
 }
 
@@ -323,6 +323,30 @@ static void zsoftthresh_half(long N, float lambda, complex float* d, const compl
 }
 
 
+static void zsoftthresh(long N, float lambda, complex float* d, const complex float* x)
+{
+	for (long i = 0; i < N; i++) {
+
+		float norm = cabsf(x[i]);
+		float red = norm - lambda;
+		d[i] = (red > 0.) ? (red / norm) * x[i]: 0.;
+	}
+}
+
+
+
+static void softthresh_half(long N, float lambda, float* d, const float* x)
+{
+	for (long i = 0; i < N; i++) {
+
+		float norm = fabsf(x[i]);
+		float red = norm - lambda;
+		d[i] = (red > 0.) ? (red / norm) : 0.;
+	}
+}
+
+
+
 static void softthresh(long N, float lambda, float* d, const float* x)
 {
 	for (long i = 0; i < N; i++) {
@@ -388,8 +412,50 @@ const struct vec_ops cpu_ops = {
 	.zcmp = zcmp,
 	.zdiv_reg = zdiv_reg,
 
+	.zsoftthresh = zsoftthresh,
 	.zsoftthresh_half = zsoftthresh_half,
 	.softthresh = softthresh,
+	.softthresh_half = softthresh_half,
+	.swap = swap,
+};
+
+
+
+// defined in iter/vec.h
+struct vec_iter_s {
+
+	float* (*allocate)(long N);
+	void (*del)(float* x);
+	void (*clear)(long N, float* x);
+	void (*copy)(long N, float* a, const float* x);
+	void (*swap)(long N, float* a, float* x);
+
+	double (*norm)(long N, const float* x);
+	double (*dot)(long N, const float* x, const float* y);
+
+	void (*sub)(long N, float* a, const float* x, const float* y);
+	void (*add)(long N, float* a, const float* x, const float* y);
+
+	void (*smul)(long N, float alpha, float* a, const float* x);
+	void (*xpay)(long N, float alpha, float* a, const float* x);
+	void (*axpy)(long N, float* a, float alpha, const float* x);
+};
+
+
+extern const struct vec_iter_s cpu_iter_ops;
+const struct vec_iter_s cpu_iter_ops = {
+
+	.allocate = allocate,
+	.del = del,
+	.clear = clear,
+	.copy = copy,
+	.dot = dot,
+	.norm = norm,
+	.axpy = axpy,
+	.xpay = xpay,
+	.smul = smul,
+	.add = add,
+	.sub = sub,
 	.swap = swap,
 };
 

@@ -283,22 +283,25 @@ unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*
 		ND = 1;
 	}
 
-//	print_dims(ND, dims);
+	debug_print_dims(DP_DEBUG4, ND, dims);
 
 	float blocking[N];
 #ifdef BERKELEY_SVN
-//	demmel_factors(D, ND, blocking, strs);
+	// actually those are not the blocking factors
+	// as used below but relative to fast memory
+	//demmel_factors(D, ND, blocking, strs);
 	UNUSED(demmel_factors);
 #endif
 #if 0
-	printf("DB: ");
+	debug_printf(DP_DEBUG4, "DB: ");
 	for (unsigned int i = 0; i < ND; i++)
-		printf("%f\t", blocking[i]);
-	printf("\n");
+		debug_printf(DP_DEBUG4, "%f\t", blocking[i]);
+	debug_printf(DP_DEBUG4, "\n");
 #endif
 #if 1
 	for (unsigned int i = 0; i < ND; i++)
 		blocking[i] = 0.5;
+	//	blocking[i] = 1.;
 #endif
 
 	// try to split dimensions according to blocking factors

@@ -21,8 +21,6 @@
 #define NUM_INTERNAL
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/gpuops.h"
-#include "num/vecops.h"
 #include "num/ops.h"
 
 #include "misc/debug.h"
@@ -30,6 +28,7 @@
 
 #include "iter/italgos.h"
 #include "iter/iter.h"
+#include "iter/vec.h"
 
 #include "admm.h"
 
@@ -88,7 +87,7 @@ static void admm_normaleq(void* _data, float* _dst, const float* _src)
 void admm(struct admm_history_s* history, const struct admm_plan_s* plan, 
 	  unsigned int D, const long z_dims[D],
 	  long N, float* x, const float* x_adj,
-	  const struct vec_ops* vops,
+	  const struct vec_iter_s* vops,
 	  void (*Aop)(void* _data, float* _dst, const float* _src),
 	  void* Aop_data,
 	  void* obj_eval_data,
@@ -136,8 +135,8 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	float* r = vops->allocate(M);
 	float* s = vops->allocate(N);
 	float* Gjx_plus_uj = vops->allocate(Mjmax);
-	float* GH_usum;
-	float* zj_old;
+	float* GH_usum = NULL;
+	float* zj_old = NULL;
 
 
 	if (!fast)
@@ -147,15 +146,9 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	}
 
 
-	if (plan->do_warmstart)
-		debug_printf(DP_WARN, "Warning: ADMM warmstart not implemented\n"); // FIXME
-
 	float* x_err = NULL;
 	if (NULL != plan->image_truth)
 		x_err = vops->allocate(N);
-
-	vops->clear(M, z);
-	vops->clear(M, u);
 
 	if (!fast)
 	{
@@ -181,6 +174,30 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 
 	unsigned int grad_iter = 0; // keep track of number of gradient evaluations
+
+	if (plan->do_warmstart) {
+
+		for (unsigned int j = 0; j < num_funs; j++) {
+	
+			// initialize for j'th function update
+			pos = md_calc_offset(j, fake_strs, z_dims);
+			long Mj = z_dims[j];
+
+			plan->ops[j].forward(plan->ops[j].data, Gjx_plus_uj, x); // Gj(x)
+
+			if (0 == rho)
+				vops->copy(Mj, z + pos, Gjx_plus_uj);
+			else
+				plan->prox_ops[j].prox_fun(plan->prox_ops[j].data, 1. / rho, z + pos, Gjx_plus_uj);
+
+			vops->sub(Mj, u + pos, Gjx_plus_uj, z + pos);
+		}
+	}
+	else {
+		vops->clear(M, z);
+		vops->clear(M, u);
+	}
+
 
 	for (unsigned int i = 0; i < plan->maxiter; i++) {
 
@@ -323,7 +340,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 				}
 			}
 		} else {
-			debug_printf(DP_DEBUG1, "### ITER: %d\n", i);
+			debug_printf(DP_DEBUG1, "### ITER: %d (%d)\n", i, grad_iter);
 			if (grad_iter > plan->maxiter)
 				break;
 		}
@@ -370,53 +387,3 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 
 }
-
-
-
-#if 0
-
-/**
- * Normal equations for the x update if using conjugate gradients:
- * if Aop != NULL:
- *   (ATA + rho GTG) x = AT y + rho GT (z - u)
- * if Aop == NULL:
- *   GTG x = GT (z - u)
- */
-static void admm_normaleq(void* _data, float* _dst, const float* _src)
-{
-	struct admm_cgxupdate_data* data = _data;
-	long dims[1] = { data->size };
-
-	float* tmp = md_alloc_sameplace(1, dims, FL_SIZE, _src );
-	md_clear(1, dims, _dst, FL_SIZE);
-
-	for (unsigned int i = 0; i < data->num_funs; i++)
-	{
-		data->ops[i].normal(data->ops[i].data, tmp, _src);
-		if (NULL != data->Aop)
-			md_axpy(1, dims, _dst, data->rho, tmp);
-		else
-			md_add(1, dims, _dst, _dst, tmp);
-	}
-
-	if (NULL != data->Aop)
-	{
-		data->Aop(data->Aop_data, tmp, _src);
-		md_add(1, dims, _dst, _dst, tmp);
-	}
-
-	md_free( tmp );
-
-}
-
-
-void admm_cgxupdate(void* _data, float rho, float* _dst, const float* _src)
-{
-	struct admm_cgxupdate_data* data = _data;
-	data->rho = rho;
-
-	iter_conjgrad( data->cgconf, admm_normaleq, NULL, data, data->size, _dst, _src, NULL, NULL);
-	
-}
-#endif
-

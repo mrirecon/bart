@@ -73,6 +73,7 @@ void md_gaussian_rand(unsigned int D, const long dims[D], complex float* dst)
 		return;
 	}
 #endif
+//#pragma omp parallel for
 	for (long i = 0; i < md_calc_size(D, dims); i++)
 		dst[i] = (float)gaussian_rand();
 }

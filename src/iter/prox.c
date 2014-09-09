@@ -17,8 +17,9 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
-#include "num/linop.h"
 #include "num/iovec.h"
+
+#include "linops/linop.h"
 
 #include "iter/iter.h"
 
@@ -111,11 +112,13 @@ const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const 
 	pdata->cgconf = cgconf;
 	pdata->op = op;
 
-	pdata->size = 2 * md_calc_size(linop_codomain(op)->N, linop_codomain(op)->dims);
+	pdata->size = 2 * md_calc_size(linop_domain(op)->N, linop_domain(op)->dims);
 	pdata->adj = md_alloc_sameplace( 1, &(pdata->size), FL_SIZE, y );
 	linop_adjoint_unchecked( op, (complex float*) pdata->adj, (complex float*) y );
 
-	return operator_p_create(linop_codomain(op)->N, linop_codomain(op)->dims, linop_codomain(op)->dims, pdata, prox_normaleq_apply, prox_normaleq_del);
+	return operator_p_create(linop_domain(op)->N, linop_domain(op)->dims, 
+			linop_domain(op)->N, linop_domain(op)->dims, 
+			pdata, prox_normaleq_apply, prox_normaleq_del);
 }
 
 
@@ -176,7 +179,7 @@ const struct operator_p_s* prox_leastsquares_create(unsigned int N, const long d
 	pdata->lambda = lambda;
 	pdata->size = md_calc_size(N, dims) * 2;
 
-	return operator_p_create(N, dims, dims, pdata, prox_leastsquares_apply, prox_leastsquares_del);
+	return operator_p_create(N, dims, N, dims, pdata, prox_leastsquares_apply, prox_leastsquares_del);
 }
 
 
@@ -241,7 +244,7 @@ const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N]
 	pdata->eps = eps;
 	pdata->size = md_calc_size(N, dims) * 2;
 
-	return operator_p_create(N, dims, dims, pdata, prox_l2ball_apply, prox_l2ball_del);
+	return operator_p_create(N, dims, N, dims, pdata, prox_l2ball_apply, prox_l2ball_del);
 }
 
 
@@ -343,5 +346,5 @@ const struct operator_p_s* prox_zero_create(unsigned int N, const long dims[N])
 
 	pdata->size = md_calc_size(N, dims) * 2;
 
-	return operator_p_create(N, dims, dims, pdata, prox_zero_apply, prox_zero_del);
+	return operator_p_create(N, dims, N, dims, pdata, prox_zero_apply, prox_zero_del);
 }

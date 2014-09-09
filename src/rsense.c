@@ -61,8 +61,9 @@ int main(int argc, char* argv[])
 	int ctrsh = 0.;
 	bool sec = false;
 
-	struct sense_conf conf;
-	memcpy(&conf, &sense_defaults, sizeof(struct sense_conf));
+	struct sense_conf sconf;
+	memcpy(&sconf, &sense_defaults, sizeof(struct sense_conf));
+	struct grecon_conf conf = { SENSE, NULL, &sconf, false, false, false, true, 30, 0.95, 0. };
 
 	int c;
 	while (-1 != (c = getopt(argc, argv, "l:r:s:i:q:cgh"))) {
@@ -78,8 +79,7 @@ int main(int argc, char* argv[])
 			break;
 
 		case 'q':
-		        conf.ccrobust = true;
-		        conf.cclambda = atof(optarg);
+		        conf.sense_conf->cclambda = atof(optarg);
 		        break;
 
 		case 'i':
@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 			exit(0);
 
 		case 'c':
-			conf.rvc = true;
+			conf.sense_conf->rvc = true;
 			break;
 
 		case 'g':
@@ -185,19 +185,18 @@ int main(int argc, char* argv[])
 
 	debug_printf(DP_INFO, "Reconstruction...\n");
 
-	if (!sec) {
+	struct ecalib_conf calib;
 
-		msense(&conf, dims, image, sens_maps, kspace_data, usegpu);
+	if (sec) {
 	
-	} else {
-
-		struct ecalib_conf calib;
 		memcpy(&calib, &ecalib_defaults, sizeof(struct ecalib_conf));
-
 		calib.crop = ctrsh;
-
-		msense3(&conf, &calib, dims, image, sens_dims, sens_maps, kspace_data, usegpu);
+		conf.calib = &calib;
 	}
+
+	rgrecon(&conf, dims, image, sens_dims, sens_maps, NULL, NULL, kspace_data, usegpu);
+
+
 
 	debug_printf(DP_INFO, "Done.\n");
 

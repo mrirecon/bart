@@ -193,7 +193,6 @@ void svd_econ(long M, long N,
 
 #ifdef USE_ACML
 	cgesvd('S', 'S', M, N, A, M, S, U, M, VT, minMN, &info);
-	//cgesdd('S', M, N, A, M, S, U, M, VT, minMN, &info);
 #else
 	long lwork = -1;
 	complex float work1[1];

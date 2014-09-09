@@ -33,15 +33,16 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/linop.h"
-
 #include "num/gpuops.h"
+
+#include "linops/linop.h"
+#include "linops/sampling.h"
+#include "linops/rvc.h"
 
 #include "iter/iter.h"
 #include "iter/lsqr.h"
 
 #ifdef BERKELEY_SVN
-#include "sense/sampling.h"
 #include "iter/lad.h"
 #endif
 
@@ -50,24 +51,15 @@
 #include "misc/mri.h"
 
 #include "sense/model.h"
-#include "sense/rvc.h"
 
 #include "recon.h"
 
 const struct sense_conf sense_defaults = {
 
-	.l1wav = false,		// unnecessary
-	.randshift = true,	// not used here
 	.rvc = false,
 	.rwiter = 1,
 	.gamma = -1.,
-	.maxiter = 50,		// not used here
-	.step = 0.95,		// not used here
-	.ccrobust = false,	// unnecessary
 	.cclambda = 0.,
-#if 1
-	.lambda = 0.,
-#endif
 };
 
 
@@ -98,31 +90,18 @@ struct data {
 	long img_dims[DIMS];
 	long ksp_dims[DIMS];
 	long pat_dims[DIMS];
-
-	void* thresh_data;
-//	thresh_fun_t thresh;
 };
-
 
 
 void debug_print_sense_conf(int level, const struct sense_conf* conf)
 {
 	debug_printf(level, "sense conf:\n");
-	debug_printf(level, "\tl1wav:        %s\n", conf->l1wav ? "on" : "off");
-	debug_printf(level, "\trandshift:    %s\n", conf->randshift ? "on" : "off");
 	debug_printf(level, "\trvc:          %s\n", conf->rvc ? "on" : "off");
 	debug_printf(level, "\trwiter:       %d\n", conf->rwiter);
 	debug_printf(level, "\tgamma:        %f\n", conf->gamma);
-	debug_printf(level, "\tmaxiter:        %d\n", conf->maxiter);
-	debug_printf(level, "\tstep:         %f\n", conf->step);
-	debug_printf(level, "\tccrobust:     %s\n", conf->ccrobust ? "on" : "off");
 	debug_printf(level, "\tcclambda:     %f\n", conf->cclambda);
-#if 1
-	debug_printf(level, "\tlambda:       %f\n", conf->lambda);
-#endif
 	debug_printf(level, "\n\n");
 }
-
 
 
 #if 0
@@ -167,7 +146,6 @@ void sense_recon(struct sense_conf* conf, const long dims[DIMS], complex float* 
 		 const long pat_dims[DIMS], const complex float* pattern, 
 		 italgo_fun_t italgo, void* iconf,
 		 const struct operator_p_s* thresh_op,
-		 //thresh_fun_t thresh, void* thresh_data, 
 		 const long ksp_dims[DIMS], const complex float* kspace, const complex float* image_truth)
 {
 	UNUSED(image_truth);
@@ -176,10 +154,8 @@ void sense_recon(struct sense_conf* conf, const long dims[DIMS], complex float* 
 #else
 	bool use_gpu = false;
 #endif
-	if (!conf->l1wav)
-		assert(NULL == thresh_op);
 
-	struct lsqr_conf lsqr_conf = { conf->ccrobust ? conf->cclambda : 0. };
+	struct lsqr_conf lsqr_conf = { conf->cclambda };
 
 	// initialize data as struct to hold all sense data and operators
 
@@ -269,7 +245,6 @@ void sense_recon_gpu(struct sense_conf* conf, const long dims[DIMS], complex flo
 		const long dims_pat[DIMS], const complex float* pattern,
 		italgo_fun_t italgo, void* iter_conf,
 		const struct operator_p_s* thresh_op,
-		//		     thresh_fun_t thresh, void* thresh_data, 
 		const long ksp_dims[DIMS], const complex float* kspace, const complex float* image_truth)
 {
 	long dims_ksp[DIMS];
@@ -284,7 +259,6 @@ void sense_recon_gpu(struct sense_conf* conf, const long dims[DIMS], complex flo
 	complex float* gpu_img = md_gpu_move(DIMS, dims_img, image, CFL_SIZE);
 	complex float* gpu_img_truth = md_gpu_move(DIMS, dims_img, image_truth, CFL_SIZE);
 
-	//sense_recon(conf, dims, gpu_img, gpu_maps, dims_pat, gpu_pat, italgo, iter_conf, thresh, thresh_data, ksp_dims, gpu_ksp, gpu_img_truth);
 	sense_recon(conf, dims, gpu_img, gpu_maps, dims_pat, gpu_pat, italgo, iter_conf, thresh_op, ksp_dims, gpu_ksp, gpu_img_truth);
 
 	md_copy(DIMS, dims_img, image, gpu_img, CFL_SIZE);

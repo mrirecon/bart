@@ -23,7 +23,9 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/linop.h"
+#include "num/init.h"
+
+#include "linops/linop.h"
 
 #include "iter/iter.h"
 
@@ -66,11 +68,11 @@ int main(int argc, char* argv[])
 	md_singleton_dims(DIMS, coilim_dims);
 
 	int maxiter = 50;
-	float lambda = 0.00001;
+	float lambda = 0.001;
 
 	const char* pat_str = NULL;
 
-	while (-1 != (c = getopt(argc, argv, "d:m:l:p:aihct"))) {
+	while (-1 != (c = getopt(argc, argv, "d:m:l:p:aihcto:w:"))) {
 
 		switch (c) {
 
@@ -89,7 +91,6 @@ int main(int argc, char* argv[])
 		case 'd':
 			sscanf(optarg, "%ld:%ld:%ld", &coilim_dims[0], &coilim_dims[1], &coilim_dims[2]);
 			break;
-
 
 		case 'm':
 			maxiter = atoi(optarg);
@@ -128,6 +129,7 @@ int main(int argc, char* argv[])
 	complex float* traj = load_cfl(argv[optind + 0], 2, traj_dims);
 
 	assert(3 == traj_dims[0]);
+	num_init();
 
 	// Load pattern / density compensation (if any)
 	complex float* pat = NULL;
@@ -135,7 +137,7 @@ int main(int argc, char* argv[])
 	if (pat_str)
 	{
 		pat = load_cfl( pat_str, 2, pat_dims );
-		assert( pat_dims[0] == 0 );
+		assert( pat_dims[0] == 1 );
 		assert( pat_dims[1] == traj_dims[1] );
 	}
 
@@ -162,7 +164,7 @@ int main(int argc, char* argv[])
 		nufft_op = nufft_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, NULL, use_gpu);
 
 		// nufftH
-		linop_adjoint (nufft_op, DIMS, coilim_dims, dst, ksp_dims, src);
+		linop_adjoint (nufft_op, DIMS, coilim_dims, dst, DIMS, ksp_dims, src);
 
 		linop_free(nufft_op);
 		unmap_cfl(DIMS, ksp_dims, src);
@@ -181,13 +183,17 @@ int main(int argc, char* argv[])
 		dst = create_cfl(argv[optind + 2], DIMS, coilim_dims);
 		md_clear( DIMS, coilim_dims, dst, CFL_SIZE );
 
-		struct iter_conjgrad_conf cgconf = {.maxiter = maxiter, .l2lambda = 0 };
+		struct iter_conjgrad_conf cgconf;
+		memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf) );
+		cgconf.maxiter = maxiter;
+		cgconf.l2lambda = 0.;
+		cgconf.tol = 1e-5;
 
 		// Get nufft_op
 		nufft_op = nufft_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, &cgconf, use_gpu);
 
 		complex float* adj = md_alloc( DIMS, coilim_dims, CFL_SIZE );
-		linop_adjoint( nufft_op, DIMS, coilim_dims, adj, ksp_dims, src );
+		linop_adjoint( nufft_op, DIMS, coilim_dims, adj, DIMS, ksp_dims, src );
 
 		// nuifft
 		linop_pinverse_unchecked ( nufft_op, lambda, dst, adj );
@@ -212,7 +218,7 @@ int main(int argc, char* argv[])
 		nufft_op = nufft_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, NULL, use_gpu);
 
 		// nufft
-		linop_forward(nufft_op, DIMS, ksp_dims, dst, coilim_dims, src);
+		linop_forward(nufft_op, DIMS, ksp_dims, dst, DIMS, coilim_dims, src);
 
 		linop_free(nufft_op);
 

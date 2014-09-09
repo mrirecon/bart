@@ -68,11 +68,12 @@ typedef void (*transfer_fun_t)(void* data, const _Complex float* pattern, _Compl
 
 extern void transfer_function(void* _data, const _Complex float* pattern, _Complex float* dst, const _Complex float* src);
 extern void estimate_pattern(unsigned int D, const long dims[__VLA(D)], unsigned int dim, _Complex float* pattern, const _Complex float* kspace_data);
-extern _Complex float* extract_calib(long caldims[KSPACE_DIMS], const long calsize[3], const long in_dims[KSPACE_DIMS], const _Complex float* in_data, _Bool fixed);
-extern _Complex float* extract_calib2(long caldims[KSPACE_DIMS], const long calsize[3], const long in_dims[KSPACE_DIMS], const long in_strs[KSPACE_DIMS], const _Complex float* in_data, _Bool fixed);
-extern void data_consistency(const long dims[KSPACE_DIMS], _Complex float* dst, const _Complex float* pattern, const _Complex float* kspace1, const _Complex float* kspace2);
-extern void calib_geom(long caldims[KSPACE_DIMS], long calpos[KSPACE_DIMS], const long calsize[3], const long in_dims[KSPACE_DIMS], const _Complex float* in_data);
+extern _Complex float* extract_calib(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const _Complex float* in_data, _Bool fixed);
+extern _Complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const long in_strs[DIMS], const _Complex float* in_data, _Bool fixed);
+extern void data_consistency(const long dims[DIMS], _Complex float* dst, const _Complex float* pattern, const _Complex float* kspace1, const _Complex float* kspace2);
+extern void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], const long in_dims[DIMS], const _Complex float* in_data);
 extern _Complex float* compute_mask(unsigned int N, const long msk_dims[__VLA(N)], float restrict_fov);
+extern void linear_phase(unsigned int N, const long dims[__VLA(N)], const float pos[__VLA(N)], _Complex float* out);
 
 
 #ifdef __cplusplus

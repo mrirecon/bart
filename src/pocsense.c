@@ -21,12 +21,13 @@
 #include "num/init.h"
 #include "num/ops.h"
 #include "num/iovec.h"
-#include "num/someops.h"
-#include "num/linop.h"
-#include "num/thresh.h"
+
+#include "linops/someops.h"
+#include "linops/linop.h"
 
 #include "iter/iter.h"
 #include "iter/prox.h"
+#include "iter/thresh.h"
 
 #include "sense/pocs.h"
 #include "sense/optcom.h"

@@ -6,8 +6,8 @@
 #include <complex.h>
 
 
-typedef void (*op_fun_t)(const void* _data, complex float* dst, const complex float* src);
-typedef void (*op_p_fun_t)(const void* _data, float lambda, complex float* dst, const complex float* src);
+typedef void (*lop_fun_t)(const void* _data, complex float* dst, const complex float* src);
+typedef void (*lop_p_fun_t)(const void* _data, float lambda, complex float* dst, const complex float* src);
 typedef void (*del_fun_t)(const void* _data);
 
 struct operator_s;
@@ -23,12 +23,12 @@ struct linop_s {
 
 
 
-extern struct linop_s* linop_create(unsigned int N, const long odims[N], const long idims[N], void* data,
-				op_fun_t forward, op_fun_t adjoint, op_fun_t normal, op_p_fun_t pinverse, del_fun_t);
+extern struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], void* data,
+				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t pinverse, del_fun_t);
 
-extern struct linop_s* linop_create2(unsigned int N, const long odims[N], const long ostr[N], 
-				const long idims[N], const long istrs[N], void* data,
-				op_fun_t forward, op_fun_t adjoint, op_fun_t normal, op_p_fun_t pinverse, del_fun_t);
+extern struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long ostr[ON],
+				unsigned int IN, const long idims[IN], const long istrs[IN], void* data,
+				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t pinverse, del_fun_t);
 
 extern const void* linop_get_data(const struct linop_s* ptr);
 
@@ -39,14 +39,13 @@ extern struct operator_s* linop2operator_compat(struct linop_s* x);
 extern void linop_free(const struct linop_s* op);
 
 
-extern void linop_forward(const struct linop_s* op, unsigned int N, const long ddims[N], complex float* dst, 
-			const long sdims[N], const complex float* src);
+extern void linop_forward(const struct linop_s* op, unsigned int DN, const long ddims[DN], complex float* dst, 
+			unsigned int SN, const long sdims[SN], const complex float* src);
 
-extern void linop_adjoint(const struct linop_s* op, unsigned int N, const long ddims[N], complex float* dst, 
-			const long sdims[N], const complex float* src);
+extern void linop_adjoint(const struct linop_s* op, unsigned int DN, const long ddims[DN], complex float* dst, 
+			unsigned int SN, const long sdims[SN], const complex float* src);
 
-extern void linop_normal(const struct linop_s* op, unsigned int N, const long ddims[N], complex float* dst, 
-			const long sdims[N], const complex float* src);
+extern void linop_normal(const struct linop_s* op, unsigned int N, const long dims[N], complex float* dst, const complex float* src);
 
 extern void linop_forward_unchecked(const struct linop_s* op, complex float* dst, const complex float* src);
 extern void linop_adjoint_unchecked(const struct linop_s* op, complex float* dst, const complex float* src);

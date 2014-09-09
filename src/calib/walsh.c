@@ -21,7 +21,7 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 
-#include "calib/calib.h"
+#include "calib/calmat.h"
 
 #include "walsh.h"
 

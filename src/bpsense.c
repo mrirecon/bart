@@ -20,12 +20,13 @@
 #include "num/fft.h"
 #include "num/init.h"
 #include "num/ops.h"
-#include "num/someops.h"
-#include "num/linop.h"
 #include "num/iovec.h"
-#include "num/thresh.h"
-#include "num/tv.h"
 
+#include "linops/someops.h"
+#include "linops/linop.h"
+#include "linops/tv.h"
+
+#include "iter/thresh.h"
 #include "iter/iter.h"
 
 #include "sense/bprecon.h"
@@ -79,7 +80,6 @@ int main(int argc, char* argv[])
 	_Bool use_tvnorm = false;
 
 	double start_time = timestamp();
-	debug_printf(DP_DEBUG3, "Start Time: %f\n", start_time);
 
 	int c;
 	while (-1 != (c = getopt(argc, argv, "F:r:e:i:u:p:tcgh"))) {
@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
 
 	if (use_tvnorm) {
 		l1op = tv_init(DIMS, img_dims, FFT_FLAGS);
-		l1prox = prox_thresh_create(DIMS, linop_codomain(l1op)->dims, 1., 0u, usegpu);
+		l1prox = prox_thresh_create(DIMS + 1, linop_codomain(l1op)->dims, 1., 0u, usegpu);
 		conf.l1op_obj = l1op;
 	}
 	else {

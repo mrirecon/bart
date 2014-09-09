@@ -38,6 +38,7 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 
+#include "iter/vec.h"
 #include "italgos.h"
 
 
@@ -46,7 +47,7 @@
  * ravine step
  * (Nesterov 1983)
  */
-static void ravine(const struct vec_ops* vops, long N, float* ftp, float* xa, float* xb)
+static void ravine(const struct vec_iter_s* vops, long N, float* ftp, float* xa, float* xb)
 {
 	float ft = *ftp;
 	float tfo = ft;
@@ -68,7 +69,7 @@ static void ravine(const struct vec_ops* vops, long N, float* ftp, float* xa, fl
 
 
 void landweber_sym(unsigned int maxiter, float epsilon, float alpha, long N, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	float* x, const float* b)
 {
@@ -157,7 +158,7 @@ static float ist_continuation(struct iter_data* itrdata, const float delta)
  */
 void ist(unsigned int maxiter, float epsilon, float tau, 
 		float continuation, _Bool hogwild, long N, void* data,
-		const struct vec_ops* vops,
+		const struct vec_iter_s* vops,
 		void (*op)(void* data, float* dst, const float* src), 
 		void (*thresh)(void* data, float lambda, float* dst, const float* src),
 		void* tdata,
@@ -228,8 +229,8 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 	if (hogwild)
 		hogwild_k++;
 		
-	if (hogwild_k == hogwild_K)
-	{
+	if (hogwild_k == hogwild_K) {
+
 		hogwild_K *= 2;
 		hogwild_k = 0;
 		tau /= 2;
@@ -265,7 +266,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 void fista(unsigned int maxiter, float epsilon, float tau, 
 	   float continuation, _Bool hogwild, 
 	   long N, void* data,
-	   const struct vec_ops* vops,
+	   const struct vec_iter_s* vops,
 	   void (*op)(void* data, float* dst, const float* src), 
 	   void (*thresh)(void* data, float lambda, float* dst, const float* src),
 	   void* tdata,
@@ -340,13 +341,12 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 		if (hogwild)
 			hogwild_k++;
 		
-		if (hogwild_k == hogwild_K)
-		{
+		if (hogwild_k == hogwild_K) {
+
 			hogwild_K *= 2;
 			hogwild_k = 0;
 			tau /= 2;
 		}
-
 	}
 
 	debug_printf(DP_DEBUG3, "\n");
@@ -365,7 +365,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
  *  first kind. Amer. J. Math. 1951; 73, 615-624.
  */
 void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	void (*adj)(void* data, float* dst, const float* src), 
 	float* x, const float* b,
@@ -415,7 +415,7 @@ void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
  */
 float conjgrad(unsigned int maxiter, float l2lambda, float epsilon, 
 	long N, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*linop)(void* data, float* dst, const float* src), 
 	float* x, const float* b, const float* x_truth,
 	void* obj_eval_data,
@@ -454,7 +454,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 			debug_printf(DP_DEBUG2, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
 		}
 
-		if (NULL != obj_eval && NULL != obj_eval_data) {
+		if ((NULL != obj_eval) && (NULL != obj_eval_data)) {
 
 			float objval = obj_eval(obj_eval_data, x);
 			debug_printf(DP_DEBUG2, "#CG%d OBJVAL= %f\n", i, objval);
@@ -502,7 +502,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
  */
 float conjgrad_hist(struct iter_history_s* history, unsigned int maxiter, float l2lambda, float epsilon, 
 	long N, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*linop)(void* data, float* dst, const float* src), 
 	float* x, const float* b, const float* x_truth,
 	void* obj_eval_data,
@@ -575,7 +575,6 @@ float conjgrad_hist(struct iter_history_s* history, unsigned int maxiter, float 
 		vops->xpay(N, beta, p, r);	// p = beta * p + r
 
 		history->resid[i] = sqrtf(rsnew);
-
 	}
 
 
@@ -602,7 +601,7 @@ float conjgrad_hist(struct iter_history_s* history, unsigned int maxiter, float 
  *        DF^H ((y - F x_0)) - alpha (xn - x0) = ( DF^H DF + alpha) dx
  */
 void irgnm(unsigned int iter, float alpha, float redu, void* data, long N, long M,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	void (*adj)(void* data, float* dst, const float* src), 
 	void (*inv)(void* data, float alpha, float* dst, const float* src), 
@@ -647,7 +646,7 @@ void irgnm(unsigned int iter, float alpha, float redu, void* data, long N, long 
  */
 void pocs(unsigned int maxiter,
 	unsigned int D, const struct pocs_proj_op* proj_ops, 
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	long N, float* x, const float* x_truth,
 	void* obj_eval_data,
 	float (*obj_eval)(const void*, const float*))
@@ -666,20 +665,19 @@ void pocs(unsigned int maxiter,
 			debug_printf(DP_DEBUG1, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
 		}
 
-
-		for (unsigned int j = 0; j < D; j++) {
-
+		for (unsigned int j = 0; j < D; j++)
 			proj_ops[j].proj_fun(proj_ops[j].data, 1., x, x); // use temporary memory here?
-		}
+
 
 		if (NULL != obj_eval) {
 
 			float objval = obj_eval(obj_eval_data, x);
 			debug_printf(DP_DEBUG1, "#%d OBJVAL= %f\n", i, objval);
-		}
-		else
-			debug_printf(DP_DEBUG1, "#Iter %d\n", i);
 
+		} else {
+
+			debug_printf(DP_DEBUG1, "#Iter %d\n", i);
+		}
 	}
 
 	if (NULL != x_truth)

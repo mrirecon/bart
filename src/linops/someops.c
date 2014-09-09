@@ -19,10 +19,11 @@
 #include "num/fft.h"
 #include "num/wavelet.h"
 #include "num/conv.h"
-#include "num/linop.h"
 #include "num/ops.h"
 #include "num/iovec.h"
 #include "num/lapack.h"
+
+#include "linops/linop.h"
 
 #include "someops.h"
 
@@ -94,7 +95,7 @@ struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned 
 	data->dstrs = dstrs;
 	data->diag = diag;	// make a copy?
 
-	return linop_create(N, dims, dims, data, cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
+	return linop_create(N, dims, N, dims, data, cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
 }
 
 
@@ -118,9 +119,9 @@ static void identity_free(const void* data)
  */
 struct linop_s* linop_identity_create(unsigned int N, const long dims[N])
 {
-	const struct iovec_s* domain = iovec_create(N, dims);
+	const struct iovec_s* domain = iovec_create(N, dims, CFL_SIZE);
 
-	return linop_create(N, dims, dims, (void*)domain, identity_apply, identity_apply, identity_apply, NULL, identity_free);
+	return linop_create(N, dims, N, dims, (void*)domain, identity_apply, identity_apply, identity_apply, NULL, identity_free);
 }
 
 
@@ -181,7 +182,7 @@ struct linop_s* linop_resize_create(unsigned int N, const long out_dims[N], cons
 	md_copy_dims(N, (long*)data->out_dims, out_dims);
 	md_copy_dims(N, (long*)data->in_dims, in_dims);
 
-	return linop_create(N, out_dims, in_dims, data, resize_forward, resize_adjoint, resize_normal, NULL, resize_free);
+	return linop_create(N, out_dims, N, in_dims, data, resize_forward, resize_adjoint, resize_normal, NULL, resize_free);
 }
 
 
@@ -211,7 +212,7 @@ struct operator_matrix_s {
  * case 1: all singleton dimensions between T_dim and K_dim, all singleton dimensions after K_dim.
  *         then just apply standard matrix multiply
  */
-static int cgemm_forward_standard(const struct operator_matrix_s* data)
+static bool cgemm_forward_standard(const struct operator_matrix_s* data)
 {
 	long N = data->mat_iovec->N;
 	long K_dim = data->K_dim;
@@ -240,15 +241,12 @@ static int cgemm_forward_standard(const struct operator_matrix_s* data)
 
 	//debug_printf(DP_DEBUG1, "use_cgemm = %d, dsum = %d, csum = %d\n", use_cgemm, dsum, csum);
 
-	if (use_cgemm)
-		return 0;
-	else
-		return -1;
+	return use_cgemm;
 
 }
 
 
-static void matrix_op_apply(const void* _data, complex float* dst, const complex float* src)
+static void linop_matrix_apply(const void* _data, complex float* dst, const complex float* src)
 {
 	const struct operator_matrix_s* data = _data;
 
@@ -259,15 +257,15 @@ static void matrix_op_apply(const void* _data, complex float* dst, const complex
 
 	// FIXME check all the cases where computation can be done with blas
 	
-	if ( cgemm_forward_standard(data) )
-		md_zfmac2(N, data->max_dims, data->codomain_iovec->strs, dst, data->domain_iovec->strs, src, data->mat_iovec->strs, data->mat);
-	else {
+	if ( cgemm_forward_standard(data) ) {
 		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
 		cgemm_sameplace('N', 'T', L, data->T, data->K, &(complex float){1.}, (const complex float (*) [])src, L, (const complex float (*) [])data->mat, data->T, &(complex float){0.}, (complex float (*) [])dst, L);
 	}
+	else
+		md_zfmac2(N, data->max_dims, data->codomain_iovec->strs, dst, data->domain_iovec->strs, src, data->mat_iovec->strs, data->mat);
 }
 
-static void matrix_op_apply_adjoint(const void* _data, complex float* dst, const complex float* src)
+static void linop_matrix_apply_adjoint(const void* _data, complex float* dst, const complex float* src)
 {
 	const struct operator_matrix_s* data = _data;
 
@@ -278,15 +276,15 @@ static void matrix_op_apply_adjoint(const void* _data, complex float* dst, const
 
 	// FIXME check all the cases where computation can be done with blas
 	
-	if ( cgemm_forward_standard(data) )
-		md_zfmacc2(N, data->max_dims, data->domain_iovec->strs, dst, data->codomain_iovec->strs, src, data->mat_iovec->strs, data->mat);
-	else {
+	if ( cgemm_forward_standard(data) ) {
 		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
 		cgemm_sameplace('N', 'N', L, data->K, data->T, &(complex float){1.}, (const complex float (*) [])src, L, (const complex float (*) [])data->mat_conj, data->T, &(complex float){0.}, (complex float (*) [])dst, L);
 	}
+	else
+		md_zfmacc2(N, data->max_dims, data->domain_iovec->strs, dst, data->codomain_iovec->strs, src, data->mat_iovec->strs, data->mat);
 }
 
-static void matrix_op_apply_normal(const void* _data, complex float* dst, const complex float* src)
+static void linop_matrix_apply_normal(const void* _data, complex float* dst, const complex float* src)
 {
 	const struct operator_matrix_s* data = _data;
 
@@ -320,7 +318,7 @@ static void matrix_op_apply_normal(const void* _data, complex float* dst, const 
 
 }
 
-static void matrix_op_del(const void* _data)
+static void linop_matrix_del(const void* _data)
 {
 	const struct operator_matrix_s* data = _data;
 
@@ -415,7 +413,7 @@ const struct iovec_s* compute_gram_matrix(unsigned int N, unsigned int T_dim, un
 	md_transpose(N + 1, T_dim, N, fake_gram_dims, *gram, A_dims, tmpA, CFL_SIZE); 
 
 
-	const struct iovec_s* s =  iovec_create(N, fake_gram_dims);
+	const struct iovec_s* s =  iovec_create(N, fake_gram_dims, CFL_SIZE);
 
 	free(A_dims);
 	free(B_dims);
@@ -487,7 +485,7 @@ struct linop_s* linop_matrix_altcreate(unsigned int N, const long out_dims[N], c
 
 	struct operator_matrix_s* data = xmalloc(sizeof(struct operator_matrix_s));
 
-	data->mat_iovec = iovec_create(N, matrix_dims);
+	data->mat_iovec = iovec_create(N, matrix_dims, CFL_SIZE);
 	data->mat_gram_iovec = gram_iovec;
 
 	data->max_dims = max_dims;
@@ -501,10 +499,10 @@ struct linop_s* linop_matrix_altcreate(unsigned int N, const long out_dims[N], c
 	data->K = K;
 	data->T = T;
 
-	data->domain_iovec = iovec_create(N, in_dims);
-	data->codomain_iovec = iovec_create(N, out_dims);
+	data->domain_iovec = iovec_create(N, in_dims, CFL_SIZE);
+	data->codomain_iovec = iovec_create(N, out_dims, CFL_SIZE);
 
-	return linop_create(N, out_dims, in_dims, data, matrix_op_apply, matrix_op_apply_adjoint, matrix_op_apply_normal, NULL, matrix_op_del);
+	return linop_create(N, out_dims, N, in_dims, data, linop_matrix_apply, linop_matrix_apply_adjoint, linop_matrix_apply_normal, NULL, linop_matrix_del);
 }
 
 
@@ -571,7 +569,7 @@ struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s
 	// check compatibility
 	assert(linop_codomain(a)->N == linop_domain(b)->N);
 	assert(md_calc_size(linop_codomain(a)->N, linop_codomain(a)->dims) == md_calc_size(linop_domain(b)->N, linop_domain(b)->dims));
-	assert(a_data->K_dim != b_data->T_dim); // error for now -- need to deal with this specially.
+	assert(a_data->K_dim != b_data->T_dim); // FIXME error for now -- need to deal with this specially.
 	assert(a_data->T_dim == b_data->K_dim && a_data->T == b_data->K);
 
 	unsigned int N = linop_domain(a)->N;
@@ -589,21 +587,11 @@ struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s
 	md_select_dims(N, ~(1 << a_data->T_dim), matrix_dims, max_dims);
 	md_calc_strides(N, matrix_strs, matrix_dims, CFL_SIZE);
 
-	debug_print_dims(DP_DEBUG1, N, max_dims);
-	debug_print_dims(DP_DEBUG1, N, a_data->mat_iovec->dims);
-	debug_print_dims(DP_DEBUG1, N, b_data->mat_iovec->dims);
-	debug_print_dims(DP_DEBUG1, N, matrix_dims);
-
 	complex float* matrix = md_alloc_sameplace(N, matrix_dims, CFL_SIZE, a_data->mat);
+	md_clear(N, matrix_dims, matrix, CFL_SIZE);
 	md_zfmac2(N, max_dims, matrix_strs, matrix, a_data->mat_iovec->strs, a_data->mat, b_data->mat_iovec->strs, b_data->mat);
 
 	struct linop_s* c = linop_matrix_create(N, linop_codomain(b)->dims, linop_domain(a)->dims, matrix_dims, matrix);
-
-	const struct operator_matrix_s* c_data = linop_get_data(c);
-	dump_cfl("mat3", N, matrix_dims, matrix);
-	dump_cfl("c", N, c_data->mat_iovec->dims, c_data->mat);
-	dump_cfl("cc", N, c_data->mat_iovec->dims, c_data->mat_conj);
-	dump_cfl("cg", N, c_data->mat_gram_iovec->dims, c_data->mat_gram);
 
 	free(max_dims);
 	md_free(matrix);
@@ -622,6 +610,7 @@ struct fft_linop_s {
 	const struct operator_s* adj;
 
 	complex float* fftmod_mat;
+	complex float* fftmodk_mat;
 
 	bool center;
 	
@@ -634,32 +623,34 @@ static void fft_linop_apply(const void* _data, complex float* out, const complex
 {
 	const struct fft_linop_s* data = _data;
 
-	complex float* ptr = out;
+	const complex float* ptr = in;
 
 	// fftmod + fftscale
-	if (data->center)
+	if (data->center) {
+
 		md_zmul2(data->N, data->dims, data->strs, out, data->strs, data->fftmod_mat, data->strs, in);
-	else
-		ptr = (complex float*)in;
+		ptr = out;
+	}
 
 	operator_apply_unchecked(data->frw, out, ptr);
 
-	// fftmod + fftscale
+	// fftmodk
 	if (data->center)
-		md_zmul2(data->N, data->dims, data->strs, out, data->strs, data->fftmod_mat, data->strs, out);
+		md_zmul2(data->N, data->dims, data->strs, out, data->strs, data->fftmodk_mat, data->strs, out);
 }
 
 static void fft_linop_adjoint(const void* _data, complex float* out, const complex float* in)
 {
 	const struct fft_linop_s* data = _data;
 
-	complex float* ptr = out;
+	const complex float* ptr = in;
 
-	// fftmod + fftscale
-	if (data->center)
-		md_zmul2(data->N, data->dims, data->strs, out, data->strs, data->fftmod_mat, data->strs, in);
-	else
-		ptr = (complex float*)in;
+	// fftmodk
+	if (data->center) {
+
+		md_zmul2(data->N, data->dims, data->strs, out, data->strs, data->fftmodk_mat, data->strs, in);
+		ptr = out;
+	}
 
 	operator_apply_unchecked(data->adj, out, ptr);
 
@@ -671,11 +662,16 @@ static void fft_linop_adjoint(const void* _data, complex float* out, const compl
 static void fft_linop_free(const void* _data)
 {
 	const struct fft_linop_s* data = _data;
+
 	fft_free(data->frw);
 	fft_free(data->adj);
+
 	free(data->dims);
 	free(data->strs);
+
 	md_free(data->fftmod_mat);
+	md_free(data->fftmodk_mat);
+
 	free((void*)data);
 }
 
@@ -688,19 +684,16 @@ static void fft_linop_normal(const void* _data, complex float* out, const comple
 
 static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool gpu, bool forward, bool center)
 {
-	// FIXME: allocating tmp just to init fft?
-
-	// tmp is size of kspace to be used for temporary storage
 #ifdef USE_CUDA
-	complex float* tmp = (gpu ? md_alloc_gpu : md_alloc)(N, dims, CFL_SIZE);
+	md_alloc_fun_t alloc = (gpu ? md_alloc_gpu : md_alloc);
 #else
-	assert(!gpu);
-	complex float* tmp = md_alloc(N, dims, CFL_SIZE);
+	UNUSED(gpu);
+	md_alloc_fun_t alloc = md_alloc;
 #endif
 
+	complex float* tmp = alloc(N, dims, CFL_SIZE);
 	const struct operator_s* plan = fft_create(N, dims, flags, tmp, tmp, false);
 	const struct operator_s* iplan = fft_create(N, dims, flags, tmp, tmp, true);
-
 	md_free(tmp);
 
 	struct fft_linop_s* data = xmalloc(sizeof(struct fft_linop_s));
@@ -710,31 +703,51 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 
 	data->center = center;
 
-	data->dims = xmalloc( N * sizeof(long) );
+	data->dims = xmalloc(N * sizeof(long));
 	md_copy_dims(N, data->dims, dims);
 
-	data->strs = xmalloc( N * sizeof(long) );
+	data->strs = xmalloc(N * sizeof(long));
 	md_calc_strides(N, data->strs, data->dims, CFL_SIZE);
 
 
 	if (center) {
-#ifdef USE_CUDA
-	data->fftmod_mat = (gpu ? md_alloc_gpu : md_alloc)(N, dims, CFL_SIZE);
-#else
-	data->fftmod_mat = md_alloc(N, dims, CFL_SIZE);
-#endif
-		complex float one[1] = {1.};
-		md_fill(N, dims, data->fftmod_mat, one, CFL_SIZE);
-		fftscale(N, dims, flags, data->fftmod_mat, data->fftmod_mat);
-		fftmod(N, dims, flags, data->fftmod_mat, data->fftmod_mat);
-	}
-	else
-		data->fftmod_mat = NULL;
 
-	if (forward)
-		return linop_create(N, dims, dims, data, fft_linop_apply, fft_linop_adjoint, fft_linop_normal, NULL, fft_linop_free);
-	else
-		return linop_create(N, dims, dims, data, fft_linop_adjoint, fft_linop_apply, fft_linop_normal, NULL, fft_linop_free);
+		complex float* fftmod_mat = md_alloc(N, dims, CFL_SIZE);
+
+		complex float one[1] = { 1. };
+		md_fill(N, dims, fftmod_mat, one, CFL_SIZE);
+		fftscale(N, dims, flags, fftmod_mat, fftmod_mat);
+		fftmod(N, dims, flags, fftmod_mat, fftmod_mat);
+
+		complex float* fftmodk_mat = md_alloc(N, dims, CFL_SIZE);
+
+		md_fill(N, dims, fftmodk_mat, one, CFL_SIZE);
+		fftmod(N, dims, flags, fftmodk_mat, fftmodk_mat);
+
+		data->fftmod_mat = fftmod_mat;
+		data->fftmodk_mat = fftmodk_mat;
+		
+#ifdef USE_CUDA
+		if (gpu) {
+
+			data->fftmod_mat = md_gpu_move(N, dims, fftmod_mat, CFL_SIZE);
+			data->fftmodk_mat = md_gpu_move(N, dims, fftmodk_mat, CFL_SIZE);
+
+			md_free(fftmod_mat);
+			md_free(fftmodk_mat);
+		
+		}
+#endif
+	} else {
+
+		data->fftmod_mat = NULL;
+		data->fftmodk_mat = NULL;
+	}
+
+	lop_fun_t apply = forward ? fft_linop_apply : fft_linop_adjoint;
+	lop_fun_t adjoint = forward ? fft_linop_adjoint : fft_linop_apply;
+
+	return linop_create(N, dims, N, dims, data, apply, adjoint, fft_linop_normal, NULL, fft_linop_free);
 }
 
 
@@ -853,7 +866,7 @@ struct linop_s* linop_cdf97_create(int N, const long dims[N], unsigned int flags
 	data->dims = ndims;
 	data->flags = flags;
 
-	return linop_create(N, dims, dims, data, linop_cdf97_apply, linop_cdf97_adjoint, linop_cdf97_normal, NULL, linop_cdf97_free);
+	return linop_create(N, dims, N, dims, data, linop_cdf97_apply, linop_cdf97_adjoint, linop_cdf97_normal, NULL, linop_cdf97_free);
 }
 
 
@@ -893,7 +906,7 @@ struct linop_s* linop_conv_create(int N, unsigned int flags, enum conv_type ctyp
 {
 	struct conv_plan* plan = conv_plan(N, flags, ctype, cmode, odims, idims, kdims, krn);
 
-	return linop_create(N, odims, idims, plan, linop_conv_forward, linop_conv_adjoint, NULL, NULL, linop_conv_free);
+	return linop_create(N, odims, N, idims, plan, linop_conv_forward, linop_conv_adjoint, NULL, NULL, linop_conv_free);
 }
 
 

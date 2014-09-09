@@ -15,7 +15,7 @@
 #define __OPS_H
 
 
-typedef void (*operator_fun_t)(const void* _data, _Complex float* _dst, const _Complex float* _src);
+typedef void (*operator_fun_t)(const void* _data, unsigned int N, void* args[N]);
 typedef void (*operator_p_fun_t)(const void* _data, float mu, _Complex float* _dst, const _Complex float* _src);
 typedef void (*operator_del_t)(const void* op);
 
@@ -27,21 +27,31 @@ struct operator_p_s;
 
 // create functions
 
-extern const struct operator_s* operator_create(unsigned int N, const long out_dims[N], const long in_dims[N],
+extern const struct operator_s* operator_create(unsigned int ON, const long out_dims[ON],
+		unsigned int IN, const long in_dims[IN],
 		void* data, operator_fun_t apply, operator_del_t del);
 
-extern const struct operator_s* operator_create2(unsigned int N, const long out_dims[N], const long out_strs[N],
-		const long in_dims[N], const long in_strs[N], void* data, operator_fun_t apply, operator_del_t del);
+extern const struct operator_s* operator_create2(unsigned int ON, const long out_dims[ON], const long out_strs[ON],
+		unsigned int IN, const long in_dims[IN], const long in_strs[IN], 
+		void* data, operator_fun_t apply, operator_del_t del);
 
-extern const struct operator_p_s* operator_p_create(unsigned int N, const long out_dims[N], const long in_dims[N], void* data, operator_p_fun_t apply, operator_del_t del);
+extern const struct operator_p_s* operator_p_create(unsigned int ON, const long out_dims[ON], 
+			unsigned int IN, const long in_dims[IN], void* data,
+			operator_p_fun_t apply, operator_del_t del);
 
-extern const struct operator_p_s* operator_p_create2(unsigned int N, const long out_dims[N], const long out_strs[N], const long in_dims[N], const long in_strs[N], void* data, operator_p_fun_t apply, operator_del_t del);
+extern const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_dims[ON], const long out_strs[ON],
+		unsigned int IN, const long in_dims[IN], const long in_strs[IN], 
+		void* data, operator_p_fun_t apply, operator_del_t del);
 
+
+extern const struct operator_s* operator_identity_create(unsigned int N, const long dims[N]);
 
 extern const struct operator_s* operator_chain(const struct operator_s* a, const struct operator_s* b);
-extern const struct operator_s* operator_mul(const struct operator_s* a, const struct operator_s* b);
-extern const struct operator_s* operator_sum(const struct operator_s* a, const struct operator_s* b);
-extern const struct operator_s* operator_join(unsigned int D, const struct operator_s* a, const struct operator_s* b);
+extern const struct operator_s* operator_chainN(unsigned int N, const struct operator_s* ops[N]);
+
+//extern const struct operator_s* operator_mul(const struct operator_s* a, const struct operator_s* b);
+//extern const struct operator_s* operator_sum(const struct operator_s* a, const struct operator_s* b);
+extern const struct operator_s* operator_stack(unsigned int D, unsigned int E, const struct operator_s* a, const struct operator_s* b);
 
 // del functions
 extern void operator_free(const struct operator_s* x);

@@ -28,9 +28,12 @@
 #include "num/rand.h"
 
 #include "misc/misc.h"
+#include "misc/mri.h"
 #include "misc/resize.h"
 #include "misc/debug.h"
-#include "misc/mmio.h"
+
+#include "calib/calmat.h"
+
 #include "calib.h"
 
 #ifdef USE_CUDA
@@ -68,21 +71,21 @@ void fixphase(unsigned int N, const long dims[N], unsigned int dim, complex floa
 	long dims2[N];
 	md_select_dims(N, ~(1 << dim), dims2, dims);
 
-	complex float* tmp = md_alloc(N, dims2, sizeof(complex float));
+	complex float* tmp = md_alloc_sameplace(N, dims2, CFL_SIZE, in);
 
 	long pos[N];
 	for (unsigned int i = 0; i < N; i++)
 		pos[i] = 0;
 	
-	md_slice(N, (1 << dim), pos, dims, tmp, in, sizeof(complex float));
+	md_slice(N, (1 << dim), pos, dims, tmp, in, CFL_SIZE);
 
 	md_zphsr(N, dims2, tmp, tmp);
 
 	long strs[N];
 	long strs2[N];
 
-	md_calc_strides(N, strs, dims, sizeof(complex float));
-	md_calc_strides(N, strs2, dims2, sizeof(complex float));
+	md_calc_strides(N, strs, dims, CFL_SIZE);
+	md_calc_strides(N, strs2, dims2, CFL_SIZE);
 
 	md_zmulc2(N, dims, strs, out, strs, in, strs2, tmp);
 	
@@ -110,7 +113,7 @@ static float crop_weight_function(float crth, float val)
 }
 
 
-static void crop_weight_sens(const long dims[KSPACE_DIMS], complex float* ptr, float crth, const complex float* map)
+static void crop_weight_sens(const long dims[DIMS], complex float* ptr, float crth, const complex float* map)
 {
 	long xx = dims[0];
 	long yy = dims[1];
@@ -118,8 +121,8 @@ static void crop_weight_sens(const long dims[KSPACE_DIMS], complex float* ptr, f
 	long cc = dims[3];
 	long mm = dims[4];
 
-	assert(KSPACE_DIMS >= 5);
-	assert(1 == md_calc_size(KSPACE_DIMS - 5, dims + 5));
+	assert(DIMS >= 5);
+	assert(1 == md_calc_size(DIMS - 5, dims + 5));
 
 
 
@@ -142,7 +145,7 @@ static void crop_weight_sens(const long dims[KSPACE_DIMS], complex float* ptr, f
 
 
 
-void crop_sens(const long dims[KSPACE_DIMS], complex float* ptr, float crth, const complex float* map)
+void crop_sens(const long dims[DIMS], complex float* ptr, float crth, const complex float* map)
 {
 	long xx = dims[0];
 	long yy = dims[1];
@@ -150,8 +153,8 @@ void crop_sens(const long dims[KSPACE_DIMS], complex float* ptr, float crth, con
 	long cc = dims[3];
 	long mm = dims[4];
 
-	assert(KSPACE_DIMS >= 5);
-	assert(1 == md_calc_size(KSPACE_DIMS - 5, dims + 5));
+	assert(DIMS >= 5);
+	assert(1 == md_calc_size(DIMS - 5, dims + 5));
 
 	for (long m = 0; m < mm; m++) {
 #pragma omp parallel for
@@ -175,76 +178,14 @@ void crop_sens(const long dims[KSPACE_DIMS], complex float* ptr, float crth, con
 
 
 
-complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], const long calreg_dims[4], const complex float* data)
+void calone(const struct ecalib_conf* conf, const long cov_dims[4], complex float* imgcov, unsigned int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data)
 {
-	long x = calreg_dims[0];
-	long y = calreg_dims[1];
-	long z = calreg_dims[2];
-	long channels = calreg_dims[3];
-
-	long kx = kdims[0];
-	long ky = kdims[1];
-	long kz = kdims[2];
-
-	long kernel_dims[4] = { kx, ky, kz, channels };
-	
-	calmat_dims[0] = (x - kx + 1) * (y - ky + 1) * (z - kz + 1);
-	calmat_dims[1] = md_calc_size(4, kernel_dims);
-
-	complex float* cm = md_alloc(2, calmat_dims, CFL_SIZE);
-
-	long calreg_strs[4];
-	md_calc_strides(4, calreg_strs, calreg_dims, CFL_SIZE);
-
-	casorati_matrix(4, kernel_dims, calmat_dims, cm, calreg_dims, calreg_strs, data);
-
-	return cm;
-}
-
-
-
-
-static void covariance_function(const long kdims[3], complex float* cov, const long calreg_dims[4], const complex float* data)
-{
-	long calmat_dims[2];
-	complex float* cm = calibration_matrix(calmat_dims, kdims, calreg_dims, data);
-
-	int L = calmat_dims[0];
-	int N = calmat_dims[1];
-
-	gram_matrix(N, (complex float (*)[N])cov, L, (const complex float (*)[L])cm);
-
-	md_free(cm);
-}
-
-
-
-#ifdef CALMAT_SVD
-static void calmat_svd(const long kdims[3], complex float* cov, float* S, const long calreg_dims[4], const complex float* data)
-{
-	long calmat_dims[2];
-	complex float* cm = calibration_matrix(calmat_dims, kdims, calreg_dims, data);
-
-	int L = calmat_dims[0];
-	int N = calmat_dims[1];
-
-	complex float* U = xmalloc(L * L * CFL_SIZE);	
-
-	svd(L, N, (complex float (*)[L])U, (complex float (*)[N])cov, S, (complex float (*)[])cm); // why not const last arg
-
-	free(U);
-	md_free(cm);
-}
-#endif
-
-void calone(const struct ecalib_conf* conf, const long cov_dims[4], complex float* imgcov, unsigned int SN, float svals[SN], const long calreg_dims[KSPACE_DIMS], const complex float* data)
-{
-	assert(1 == md_calc_size(KSPACE_DIMS - 5, calreg_dims + 5));
+	assert(1 == md_calc_size(DIMS - 5, calreg_dims + 5));
 
 #if 1
 	long nskerns_dims[5];
 	complex float* nskerns;
-	compute_nskerns(conf, nskerns_dims, &nskerns, SN, svals, calreg_dims, data);
+	compute_kernels(conf, nskerns_dims, &nskerns, SN, svals, calreg_dims, data);
 #else
 	long channels = calreg_dims[3];
 
@@ -258,7 +199,7 @@ void calone(const struct ecalib_conf* conf, const long cov_dims[4], complex floa
 	assert(N > 0);
 	nskerns_dims[4] = N;
 
-	complex float* nskerns = md_alloc(5, nskerns_dims, sizeof(complex float));
+	complex float* nskerns = md_alloc(5, nskerns_dims, CFL_SIZE);
 
 	long nr_kernels = channels;
 	nskerns_dims[4] = channels;
@@ -280,9 +221,7 @@ void calone(const struct ecalib_conf* conf, const long cov_dims[4], complex floa
 /* calculate point-wise maps 
  *
  */
-
-
-void eigenmaps(const long out_dims[KSPACE_DIMS], complex float* optr, complex float* eptr, const complex float* imgcov2, const long msk_dims[3], const bool* msk, bool orthiter, bool ecal_usegpu)
+void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* eptr, const complex float* imgcov2, const long msk_dims[3], const bool* msk, bool orthiter, bool ecal_usegpu)
 {
 #ifdef USE_CUDA
 	if (ecal_usegpu) {
@@ -299,8 +238,8 @@ void eigenmaps(const long out_dims[KSPACE_DIMS], complex float* optr, complex fl
 	long channels = out_dims[3];
 	long maps = out_dims[4];
 
-	assert(KSPACE_DIMS >= 5);
-	assert(1 == md_calc_size(KSPACE_DIMS - 5, out_dims + 5));
+	assert(DIMS >= 5);
+	assert(1 == md_calc_size(DIMS - 5, out_dims + 5));
 	assert(maps <= channels);
 
 	long xx = out_dims[0];
@@ -316,18 +255,17 @@ void eigenmaps(const long out_dims[KSPACE_DIMS], complex float* optr, complex fl
 		assert(msk_dims[2] == zz);
 	}
 
-	md_clear(5, out_dims, optr, sizeof(complex float));
+	md_clear(5, out_dims, optr, CFL_SIZE);
 
 #pragma omp parallel for
 	for (long k = 0; k < zz; k++) {
-
-		float val[channels];
-		complex float cov[channels][channels];
-
 		for (long j = 0; j < yy; j++) {
 			for (long i = 0; i < xx; i++) {
 
 				if (!msk || msk[i + xx * (j + yy * k)])	{
+
+					float val[channels];
+					complex float cov[channels][channels];
 
 					complex float tmp[channels * (channels + 1) / 2];
 
@@ -367,7 +305,7 @@ void eigenmaps(const long out_dims[KSPACE_DIMS], complex float* optr, complex fl
 
 
 
-void caltwo(const struct ecalib_conf* conf, const long out_dims[KSPACE_DIMS], complex float* out_data, complex float* emaps, const long in_dims[4], complex float* in_data, const long msk_dims[3], const bool* msk)
+void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex float* out_data, complex float* emaps, const long in_dims[4], complex float* in_data, const long msk_dims[3], const bool* msk)
 {
 
 	long xx = out_dims[0];
@@ -381,8 +319,8 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[KSPACE_DIMS], co
 	long channels = out_dims[3];
 	long cosize = channels * (channels + 1) / 2;
 	
-	assert(KSPACE_DIMS >= 5);
-	assert(1 == md_calc_size(KSPACE_DIMS - 5, out_dims + 5));
+	assert(DIMS >= 5);
+	assert(1 == md_calc_size(DIMS - 5, out_dims + 5));
 	assert(in_dims[3] == cosize);
 
 	long cov_dims[4] = { xh, yh, zh, cosize };
@@ -399,7 +337,7 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[KSPACE_DIMS], co
 	assert((1 == yh) || (0 == yh % 2));
 	assert((1 == zh) || (0 == zh % 2));
 	
-	complex float* imgcov2 = (complex float*)md_alloc(4, covbig_dims, sizeof(complex float));
+	complex float* imgcov2 = md_alloc(4, covbig_dims, CFL_SIZE);
 
 	debug_printf(DP_DEBUG1, "Resize...\n");
 
@@ -415,7 +353,7 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[KSPACE_DIMS], co
 
 	debug_printf(DP_DEBUG1, "Fix phase...\n");
 
-	fixphase(KSPACE_DIMS, out_dims, COIL_DIM, out_data, out_data);
+	fixphase(DIMS, out_dims, COIL_DIM, out_data, out_data);
 
 	debug_printf(DP_DEBUG1, "Crop maps... (%.2f)\n", conf->crop);
 
@@ -449,7 +387,7 @@ const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false,
 
 
 
-void calib2(const struct ecalib_conf* conf, const long out_dims[KSPACE_DIMS], complex float* out_data, complex float* eptr, unsigned int SN, float svals[SN], const long calreg_dims[KSPACE_DIMS], const complex float* data, const long msk_dims[3], const bool* msk)
+void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex float* out_data, complex float* eptr, unsigned int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data, const long msk_dims[3], const bool* msk)
 {
 	long channels = calreg_dims[3];
 	long maps = out_dims[4];
@@ -457,14 +395,14 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[KSPACE_DIMS], co
 	assert(calreg_dims[3] == out_dims[3]);
 	assert(maps <= channels);
 
-	assert(1 == md_calc_size(KSPACE_DIMS - 5, out_dims + 5));
-	assert(1 == md_calc_size(KSPACE_DIMS - 5, calreg_dims + 5));
+	assert(1 == md_calc_size(DIMS - 5, out_dims + 5));
+	assert(1 == md_calc_size(DIMS - 5, calreg_dims + 5));
 
 	long cov_dims[4];
 
 	calone_dims(conf, cov_dims, channels);
 
-	complex float* imgcov = md_alloc(4, cov_dims, sizeof(complex float));
+	complex float* imgcov = md_alloc(4, cov_dims, CFL_SIZE);
 
 	calone(conf, cov_dims, imgcov, SN, svals, calreg_dims, data);
 
@@ -475,7 +413,7 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[KSPACE_DIMS], co
 
 
 
-void calib(const struct ecalib_conf* conf, const long out_dims[KSPACE_DIMS], complex float* out_data, complex float* eptr, unsigned int SN, float svals[SN], const long calreg_dims[KSPACE_DIMS], const complex float* data)
+void calib(const struct ecalib_conf* conf, const long out_dims[DIMS], complex float* out_data, complex float* eptr, unsigned int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data)
 {
 	calib2(conf, out_dims, out_data, eptr, SN, svals, calreg_dims, data, NULL, NULL);
 }
@@ -485,7 +423,7 @@ void calib(const struct ecalib_conf* conf, const long out_dims[KSPACE_DIMS], com
 
 static void perturb(const long dims[2], complex float* vecs, float amt)
 {
-	complex float* noise = md_alloc(2, dims, sizeof(complex float));
+	complex float* noise = md_alloc(2, dims, CFL_SIZE);
 
 	md_gaussian_rand(2, dims, noise);
 
@@ -511,9 +449,9 @@ static void perturb(const long dims[2], complex float* vecs, float amt)
 
 
 
-void compute_nskerns(const struct ecalib_conf* conf, long nskerns_dims[5], complex float** nskerns_ptr, unsigned int SN, float svals[SN], const long caldims[KSPACE_DIMS], const complex float* caldata)
+void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], complex float** nskerns_ptr, unsigned int SN, float svals[SN], const long caldims[DIMS], const complex float* caldata)
 {
-	assert(1 == md_calc_size(KSPACE_DIMS - 5, caldims + 5));
+	assert(1 == md_calc_size(DIMS - 5, caldims + 5));
 
 	nskerns_dims[0] = conf->kdims[0];
 	nskerns_dims[1] = conf->kdims[1];
@@ -525,13 +463,13 @@ void compute_nskerns(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	assert(N > 0);
 	nskerns_dims[4] = N;
 
-	complex float* nskerns = md_alloc(5, nskerns_dims, sizeof(complex float));
+	complex float* nskerns = md_alloc(5, nskerns_dims, CFL_SIZE);
 	*nskerns_ptr = nskerns;
 
-	complex float* vec = xmalloc(N * N * sizeof(complex float));
+	complex float* vec = xmalloc(N * N * CFL_SIZE);
 
 	assert((NULL == svals) || (SN == N));
-	float* val = (NULL != svals) ? svals : xmalloc(N * sizeof(float));
+	float* val = (NULL != svals) ? svals : xmalloc(N * FL_SIZE);
 
 	debug_printf(DP_DEBUG1, "Build calibration matrix and SVD...\n");
 
@@ -638,10 +576,10 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 
 	long imgkern_dims[5] = { xh, yh, zh, channels, nr_kernels };
 
-	complex float* imgkern1 = md_alloc(5, imgkern_dims, sizeof(complex float));
-	complex float* imgkern2 = md_alloc(5, imgkern_dims, sizeof(complex float));
+	complex float* imgkern1 = md_alloc(5, imgkern_dims, CFL_SIZE);
+	complex float* imgkern2 = md_alloc(5, imgkern_dims, CFL_SIZE);
 
-	md_resizec(5, imgkern_dims, imgkern1, nskerns_dims, nskerns, sizeof(complex float));
+	md_resizec(5, imgkern_dims, imgkern1, nskerns_dims, nskerns, CFL_SIZE);
 
 	// resort array
 
@@ -653,8 +591,8 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 	long idim[5] = { xh, yh, zh, channels, nr_kernels };
 	long mdim[5] = { nr_kernels, channels, xh, yh, zh };
 
-	md_calc_strides(5, istr, idim, sizeof(complex float));
-	md_calc_strides(5, mstr, mdim, sizeof(complex float));
+	md_calc_strides(5, istr, idim, CFL_SIZE);
+	md_calc_strides(5, mstr, mdim, CFL_SIZE);
 
 	long m2str[5] = { mstr[2], mstr[3], mstr[4], mstr[1], mstr[0] };
 
@@ -671,22 +609,18 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 
 	assert(cov_dims[3] == cosize);
 
-#pragma omp parallel for
+#pragma omp parallel for collapse(3)
 	for (int k = 0; k < zh; k++) {
-
-		complex float* gram = (complex float*)xmalloc(cosize * sizeof(complex float));
-
 		for (int j = 0; j < yh; j++) {
 			for (int i = 0; i < xh; i++) {
 
+				complex float gram[cosize];
 				gram_matrix2(channels, gram, nr_kernels, (const complex float (*)[nr_kernels])(imgkern2 + ((k * yh + j) * xh + i) * (channels * nr_kernels)));
 
 				for (int l = 0; l < cosize; l++)
 					imgcov[(((l * zh) + k) * yh + j) * xh + i] = gram[l] / scalesq;
 			}
 		}
-
-		free(gram);
 	}
 
 	md_free(imgkern2);

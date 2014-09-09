@@ -18,16 +18,19 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/vecops.h"
-#include "num/gpuops.h"
-#include "num/linop.h"
 #include "num/ops.h"
-#include "num/someops.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
+
+#include "linops/linop.h"
+#include "linops/someops.h"
 
 #include "iter/italgos.h"
 #include "iter/prox.h"
 #include "iter/admm.h"
 #include "iter/iter2.h"
+#include "iter/vec.h"
 
 #include "misc/debug.h"
 #include "misc/misc.h"
@@ -38,7 +41,7 @@
 const struct iter_conjgrad_conf iter_conjgrad_defaults = {
 	.maxiter = 50,
 	.l2lambda = 0.,
-	.tol = 1e-3,
+	.tol = 0.,
 };
 
 
@@ -95,13 +98,13 @@ const struct iter_pocs_conf iter_pocs_defaults = {
 typedef void (*thresh_fun_t)(void* data, float lambda, float* dst, const float* src);
 
 
-static const struct vec_ops* select_vecops(const float* x)
+static const struct vec_iter_s* select_vecops(const float* x)
 {
 #ifdef USE_CUDA
-	return cuda_ondevice(x) ? &gpu_ops : &cpu_ops;
+	return cuda_ondevice(x) ? &gpu_iter_ops : &cpu_iter_ops;
 #else
 	UNUSED(x);
-	return &cpu_ops;
+	return &cpu_iter_ops;
 #endif
 }
 
@@ -207,3 +210,19 @@ void iter_admm(void* _conf,
 
 	linop_free(eye[0]);
 }
+
+
+void iter_call_iter2(void* _conf,
+		const struct operator_s* normaleq_op,
+		const struct operator_p_s* thresh_prox,
+		long size, float* image, const float* image_adj,
+		const float* image_truth,
+		void* objval_data,
+		float (*obj_eval)(const void*, const float*))
+{
+	struct iter2_call_s* it = _conf;
+	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL,
+		size, image, image_adj, image_truth, objval_data, obj_eval);
+}
+
+

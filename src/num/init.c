@@ -50,9 +50,12 @@ void num_init(void)
 #endif
 }
 
-void num_init_gpu(void) {
-  num_init_gpu_device(0);
+
+void num_init_gpu(void)
+{
+	num_init_gpu_device(0);
 }
+
 
 void num_init_gpu_device(int device) 
 {
@@ -61,6 +64,7 @@ void num_init_gpu_device(int device)
 #ifdef USE_CUDA
 	cuda_init(device);
 #else
+	(void)device;
 	assert(0);
 #endif
 
@@ -69,6 +73,7 @@ void num_init_gpu_device(int device)
 #endif
 
 }
+
 
 void num_init_gpu_memopt(void)
 {

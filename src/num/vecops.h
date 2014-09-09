@@ -54,6 +54,8 @@ struct vec_ops {
 
 
 	void (*zsoftthresh_half)(long N, float lambda,  _Complex float* dst, const _Complex float* src);
+	void (*zsoftthresh)(long N, float lambda,  _Complex float* dst, const _Complex float* src);
+	void (*softthresh_half)(long N, float lambda,  float* dst, const float* src);
 	void (*softthresh)(long N, float lambda,  float* dst, const float* src);
 	void (*swap)(long N, float* a, float* b);
 

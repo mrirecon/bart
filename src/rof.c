@@ -21,17 +21,18 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/thresh.h"
 #include "num/iovec.h"
-#include "num/linop.h"
-#include "num/someops.h"
 #include "num/ops.h"
-#include "num/tv.h"
+
+#include "linops/linop.h"
+#include "linops/someops.h"
+#include "linops/tv.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
 
 #include "iter/prox.h"
+#include "iter/thresh.h"
 #include "iter/iter2.h"
 #include "iter/iter.h"
 
@@ -68,8 +69,8 @@ int main(int argc, char* argv[])
 	conf.maxiter = 50;
 	conf.rho = .1;
 
-	const struct operator_p_s* thresh_prox = prox_thresh_create(DIMS, linop_codomain(tv_op)->dims, 
-								lambda, (1 << (DIMS - 1)), false);
+	const struct operator_p_s* thresh_prox = prox_thresh_create(DIMS + 1, linop_codomain(tv_op)->dims, 
+								lambda, (1 << DIMS), false);
 
 	const struct operator_p_s* p_ops[1] = { thresh_prox };
 

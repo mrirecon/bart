@@ -19,7 +19,6 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/linop.h"
 #include "num/ops.h"
 #include "misc/misc.h"
 
@@ -60,6 +59,9 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 	 * of bits set in flags. One could optimize this to two calls for
 	 * certain cases by combining dimensions. */
 
+	/* this will also currently be slow on the GPU because we do not
+	 * support strides there on the lowest level */
+
 	unsigned int i = 0;
 	while (!(flags & (1 << i)))
 		i++;
@@ -77,11 +79,24 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 	md_copy_dims(N, tistrs, istrs);
 	tistrs[i] *= 2;
 
-	tdims[i] = (dims[i] + 1) / 2;
-	fftmod2_r(N, tdims, flags & ~(1 << i), tostrs, (void*)dst + 0 * ostrs[i], tistrs, (void*)src + 0 * istrs[i], !evenodd);
+//#pragma omp parallel sections
+	{
+//#pragma omp section
+		{
+			long tdims1[N];
+			md_copy_dims(N, tdims1, tdims );
+			tdims1[i] = (dims[i] + 1) / 2;
+			fftmod2_r(N, tdims1, flags & ~(1 << i), tostrs, (void*)dst + 0 * ostrs[i], tistrs, (void*)src + 0 * istrs[i], !evenodd);
+		}
 
-	tdims[i] = (dims[i] + 0) / 2;
-	fftmod2_r(N, tdims, flags & ~(1 << i), tostrs, (void*)dst + 1 * ostrs[i], tistrs, (void*)src + 1 * istrs[i], evenodd);
+//#pragma omp section
+		{
+			long tdims2[N];
+			md_copy_dims(N, tdims2, tdims );
+			tdims2[i] = (dims[i] + 0) / 2;
+			fftmod2_r(N, tdims2, flags & ~(1 << i), tostrs, (void*)dst + 1 * ostrs[i], tistrs, (void*)src + 1 * istrs[i], evenodd);
+		}
+	}
 }
 
 void fftmod2(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
@@ -163,7 +178,8 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 	unsigned int k = 0;
 	unsigned int l = 0;
 
-	assert(0 != flags);
+	//FFTW seems to be fine with this
+	//assert(0 != flags); 
 
 	for (unsigned int i = 0; i < N; i++) {
 
@@ -192,9 +208,13 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 }
 
 
-static void fft_apply(const void* _plan, complex float* dst, const complex float* src)
+static void fft_apply(const void* _plan, unsigned int N, void* args[N])
 {
+	complex float* dst = args[0];
+	const complex float* src = args[1];
 	const struct fft_plan_s* plan = _plan;
+
+	assert(2 == N);
 
 #ifdef  USE_CUDA
 	if (cuda_ondevice(src)) {
@@ -233,7 +253,7 @@ const struct operator_s* fft_create2(unsigned int D, const long dimensions[D], u
 		plan->cuplan = fft_cuda_plan(D, dimensions, flags, ostrides, istrides, backwards);
 #endif
 
-	return operator_create2(D, dimensions, ostrides, dimensions, istrides, plan, fft_apply, fft_free_plan);
+	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, plan, fft_apply, fft_free_plan);
 }
 
 const struct operator_s* fft_create(unsigned int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src, bool backwards)

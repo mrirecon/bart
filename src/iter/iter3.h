@@ -4,6 +4,15 @@
  */
  
 
+typedef void iter3_fun_f(void* _conf,
+		void (*frw)(void* _data, float* dst, const float* src),
+		void (*der)(void* _data, float* dst, const float* src),
+		void (*adj)(void* _data, float* dst, const float* src),
+		void* data2,
+		long N, float* dst, long M, const float* src);
+
+
+
 struct iter3_irgnm_conf {
 
 	int iter;
@@ -11,13 +20,8 @@ struct iter3_irgnm_conf {
 	float redu;
 };
 
+iter3_fun_f iter3_irgnm;
 
-extern void iter3_irgnm(void* _conf,
-		void (*frw)(void* _data, float* dst, const float* src),
-		void (*der)(void* _data, float* dst, const float* src),
-		void (*adj)(void* _data, float* dst, const float* src),
-		void* data2,
-		long N, float* dst, long M, const float* src);
 
 
 struct iter3_landweber_conf {
@@ -27,12 +31,7 @@ struct iter3_landweber_conf {
 	float epsilon;
 };
 
-extern void iter3_landweber(void* _conf,
-		void (*frw)(void* _data, float* dst, const float* src),
-		void (*der)(void* _data, float* dst, const float* src),
-		void (*adj)(void* _data, float* dst, const float* src),
-		void* data2,
-		long N, float* dst, long M, const float* src);
+iter3_fun_f iter3_landweber;
 
 
 

@@ -32,9 +32,10 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
-#include "num/someops.h"
-#include "num/linop.h"
 #include "num/ops.h"
+
+#include "linops/linop.h"
+#include "linops/someops.h"
 
 #include "misc/misc.h"
 #include "misc/mri.h"
@@ -49,10 +50,10 @@
 /**
  * data structure for holding the sense data.
  *
- * @param dims_max maximal dimensions 
+ * @param max_dims maximal dimensions 
  * @param dims_mps maps dimensions
  * @param dims_ksp kspace dimensions
- * @param dims_img final image dimensions
+ * @param img_dims final image dimensions
  * @param strs_mps strides for maps
  * @param strs_ksp strides for kspace
  * @param strs_img strides for image
@@ -60,17 +61,18 @@
   */
 struct maps_data {
 
-	long dims_max[DIMS];
+	long max_dims[DIMS];
 
-	long dims_mps[DIMS];
-	long dims_ksp[DIMS];
-	long dims_img[DIMS];
+	long mps_dims[DIMS];
+	long ksp_dims[DIMS];
+	long img_dims[DIMS];
 
 	long strs_mps[DIMS];
 	long strs_ksp[DIMS];
 	long strs_img[DIMS];
 
-	const complex float* sens;
+	/*const*/ complex float* sens;
+	complex float* norm;
 };
 
 
@@ -79,10 +81,9 @@ static void maps_apply(const void* _data, complex float* dst, const complex floa
 {
 	const struct maps_data* data = _data;
 
-	md_clear(DIMS, data->dims_ksp, dst, CFL_SIZE);
-	md_zfmac2(DIMS, data->dims_max, data->strs_ksp, dst, data->strs_img, src, data->strs_mps, data->sens);
+	md_clear(DIMS, data->ksp_dims, dst, CFL_SIZE);
+	md_zfmac2(DIMS, data->max_dims, data->strs_ksp, dst, data->strs_img, src, data->strs_mps, data->sens);
 }
-
 
 
 static void maps_apply_adjoint(const void* _data, complex float* dst, const complex float* src)
@@ -90,19 +91,91 @@ static void maps_apply_adjoint(const void* _data, complex float* dst, const comp
  	const struct maps_data* data = _data;
 
 	// dst = sum( conj(sens) .* tmp )
-	md_clear(DIMS, data->dims_img, dst, CFL_SIZE);
-	md_zfmacc2(DIMS, data->dims_max, data->strs_img, dst, data->strs_ksp, src, data->strs_mps, data->sens);
+	md_clear(DIMS, data->img_dims, dst, CFL_SIZE);
+	md_zfmacc2(DIMS, data->max_dims, data->strs_img, dst, data->strs_ksp, src, data->strs_mps, data->sens);
 }
 
 
+static void maps_init_normal(struct maps_data* data)
+{
+	if (NULL != data->norm)
+		return;
+
+	data->norm = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, data->sens);
+	md_rss(DIMS, data->mps_dims, COIL_FLAG, data->norm, data->sens);
+	md_zmul(DIMS, data->img_dims, data->norm, data->norm, data->norm);
+}
 
 
-static void maps_free(const void* _data)
+static void maps_apply_normal(const void* _data, complex float* dst, const complex float* src)
+{
+	struct maps_data* data = (struct maps_data*)_data;
+
+	maps_init_normal(data);
+
+	md_zmul(DIMS, data->img_dims, dst, src, data->norm);
+}
+
+
+/*
+ * ( AT A + lambda I) x = b
+ */
+static void maps_apply_pinverse(const void* _data, float lambda, complex float* dst, const complex float* src)
+{
+	struct maps_data* data = (struct maps_data*)_data;
+
+	maps_init_normal(data);
+
+	md_zsadd(DIMS, data->img_dims, data->norm, data->norm, lambda);
+	md_zdiv(DIMS, data->img_dims, dst, src, data->norm );
+	md_zsadd(DIMS, data->img_dims, data->norm, data->norm, -lambda);
+}
+
+
+static void maps_free_data(const void* _data)
 {
 	const struct maps_data* data = _data;
 	md_free((void*)data->sens);
 	free((void*)data);
 }
+
+
+static struct maps_data* maps_create_data(const long max_dims[DIMS], 
+			unsigned int sens_flags, const complex float* sens, bool gpu)
+{
+	struct maps_data* data = xmalloc(sizeof(struct maps_data));
+
+	// maximal dimensions
+	md_copy_dims(DIMS, data->max_dims, max_dims);
+
+	// sensitivity dimensions
+	md_select_dims(DIMS, sens_flags, data->mps_dims, max_dims);
+	md_calc_strides(DIMS, data->strs_mps, data->mps_dims, CFL_SIZE);
+
+	md_select_dims(DIMS, ~MAPS_FLAG, data->ksp_dims, max_dims);
+	md_calc_strides(DIMS, data->strs_ksp, data->ksp_dims, CFL_SIZE);
+
+	md_select_dims(DIMS, ~COIL_FLAG, data->img_dims, max_dims);
+	md_calc_strides(DIMS, data->strs_img, data->img_dims, CFL_SIZE);
+
+	
+	// scale the sensitivity maps by the FFT scale factor
+#ifdef USE_CUDA
+	complex float* nsens = (gpu ? md_alloc_gpu : md_alloc)(DIMS, data->mps_dims, CFL_SIZE);
+#else
+	assert(!gpu);
+	complex float* nsens = md_alloc(DIMS, data->mps_dims, CFL_SIZE);
+#endif
+	md_copy(DIMS, data->mps_dims, nsens, sens, CFL_SIZE);
+	data->sens = nsens;
+
+	data->norm = NULL;
+
+	return data;
+}
+
+
+
 
 /**
  * Create maps operator, m = S x
@@ -115,37 +188,39 @@ static void maps_free(const void* _data)
 struct linop_s* maps_create(const long max_dims[DIMS], 
 			unsigned int sens_flags, const complex float* sens, bool gpu)
 {
-	struct maps_data* data = xmalloc(sizeof(struct maps_data));
+	struct maps_data* data = maps_create_data(max_dims, sens_flags, sens, gpu);
 
-	// maximal dimensions
-	md_copy_dims(DIMS, data->dims_max, max_dims);
+	fftscale(DIMS, data->mps_dims, FFT_FLAGS, data->sens, data->sens);
 
-	// sensitivity dimensions
-	md_select_dims(DIMS, sens_flags, data->dims_mps, max_dims);
-	md_calc_strides(DIMS, data->strs_mps, data->dims_mps, CFL_SIZE);
-
-	// kspace dimensions include TE_DIM
-	md_select_dims(DIMS, ~MAPS_FLAG, data->dims_ksp, max_dims);
-	md_calc_strides(DIMS, data->strs_ksp, data->dims_ksp, CFL_SIZE);
-
-	// image dimensions include TE_DIM
-	md_select_dims(DIMS, ~COIL_FLAG, data->dims_img, max_dims);
-	md_calc_strides(DIMS, data->strs_img, data->dims_img, CFL_SIZE);
-
-	
-	// scale the sensitivity maps by the FFT scale factor
-#ifdef USE_CUDA
-	complex float* nsens = (gpu ? md_alloc_gpu : md_alloc)(DIMS, data->dims_mps, CFL_SIZE);
-#else
-	assert(!gpu);
-	complex float* nsens = md_alloc(DIMS, data->dims_mps, CFL_SIZE);
-#endif
-	fftscale(DIMS, data->dims_mps, FFT_FLAGS, nsens, sens);
-	data->sens = nsens;
-
-	return linop_create(DIMS, data->dims_ksp, data->dims_img, data, maps_apply, maps_apply_adjoint, NULL, NULL, maps_free);
+	return linop_create(DIMS, data->ksp_dims, DIMS, data->img_dims, data, 
+			maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
 }
 
+
+
+struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const complex float* maps, bool use_gpu)
+{
+	long max_dims[DIMS];
+
+	unsigned int sens_flags = 0;
+
+	for (unsigned int i = 0; i < DIMS; i++)
+		if (1 != maps_dims[i])
+			sens_flags |= (1 << i);
+
+	assert(1 == coilim_dims[MAPS_DIM]);
+	assert(1 == img_dims[COIL_DIM]);
+	assert(maps_dims[COIL_DIM] == coilim_dims[COIL_DIM]);
+	assert(maps_dims[MAPS_DIM] == img_dims[MAPS_DIM]);
+
+	for (unsigned int i = 0; i < DIMS; i++)
+		max_dims[i] = MAX(coilim_dims[i], MAX(maps_dims[i], img_dims[i]));
+
+	struct maps_data* data = maps_create_data(max_dims, sens_flags, maps, use_gpu);
+
+	return linop_create(DIMS, coilim_dims, DIMS, img_dims, data,
+		maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
+}
 
 
 
@@ -162,10 +237,10 @@ struct linop_s* maps_create(const long max_dims[DIMS],
 struct linop_s* sense_init(const long max_dims[DIMS], 
 			unsigned int sens_flags, const complex float* sens, bool gpu)
 {
-	long dims_ksp[DIMS];
-	md_select_dims(DIMS, ~MAPS_FLAG, dims_ksp, max_dims);
+	long ksp_dims[DIMS];
+	md_select_dims(DIMS, ~MAPS_FLAG, ksp_dims, max_dims);
 
-	struct linop_s* fft = linop_fft_create(DIMS, dims_ksp, FFT_FLAGS, gpu);
+	struct linop_s* fft = linop_fft_create(DIMS, ksp_dims, FFT_FLAGS, gpu);
 	struct linop_s* maps = maps_create(max_dims, sens_flags, sens, gpu);
 
 	struct linop_s* sense_op = linop_chain(maps, fft);

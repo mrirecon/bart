@@ -103,6 +103,9 @@ __global__ void kern_xpay(int N, float beta, float* dst, const float* src)
 		dst[i] = dst[i] * beta + src[i];
 }
 
+
+
+
 extern "C" void cuda_xpay(long N, float beta, float* dst, const float* src)
 {
 	kern_xpay<<<gridsize(N), blocksize(N)>>>(N, beta, dst, src);
@@ -123,6 +126,14 @@ extern "C" void cuda_smul(long N, float alpha, float* dst, const float* src)
 	kern_smul<<<gridsize(N), blocksize(N)>>>(N, alpha, dst, src);
 }
 
+
+typedef void (*cuda_3op_f)(int N, float* dst, const float* src1, const float* src2);
+
+extern "C" void cuda_3op(cuda_3op_f krn, int N, float* dst, const float* src1, const float* src2)
+{
+	krn<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+}
+
 __global__ void kern_add(int N, float* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
@@ -134,7 +145,7 @@ __global__ void kern_add(int N, float* dst, const float* src1, const float* src2
 
 extern "C" void cuda_add(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_add<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	cuda_3op(kern_add, N, dst, src1, src2);
 }
 
 __global__ void kern_sub(int N, float* dst, const float* src1, const float* src2)
@@ -148,7 +159,7 @@ __global__ void kern_sub(int N, float* dst, const float* src1, const float* src2
 
 extern "C" void cuda_sub(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_sub<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	cuda_3op(kern_sub, N, dst, src1, src2);
 }
 
 
@@ -163,7 +174,7 @@ __global__ void kern_mul(int N, float* dst, const float* src1, const float* src2
 
 extern "C" void cuda_mul(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_mul<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	cuda_3op(kern_mul, N, dst, src1, src2);
 }
 
 __global__ void kern_div(int N, float* dst, const float* src1, const float* src2)
@@ -177,7 +188,7 @@ __global__ void kern_div(int N, float* dst, const float* src1, const float* src2
 
 extern "C" void cuda_div(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_div<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	cuda_3op(kern_div, N, dst, src1, src2);
 }
 
 
@@ -192,7 +203,7 @@ __global__ void kern_fmac(int N, float* dst, const float* src1, const float* src
 
 extern "C" void cuda_fmac(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_fmac<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	cuda_3op(kern_fmac, N, dst, src1, src2);
 }
 
 
@@ -328,7 +339,7 @@ __global__ void kern_pow(int N, float* dst, const float* src1, const float* src2
 
 extern "C" void cuda_pow(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_pow<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	cuda_3op(kern_pow, N, dst, src1, src2);
 }
 
 
@@ -477,6 +488,47 @@ extern "C" void cuda_zsoftthresh_half(long N, float lambda, _Complex float* d, c
 {
 	kern_zsoftthresh_half<<<gridsize(N), blocksize(N)>>>(N, lambda, (cuFloatComplex*)d, (const cuFloatComplex*)x);
 }
+
+
+__global__ void kern_zsoftthresh(int N, float lambda, cuFloatComplex* d, const cuFloatComplex* x)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride) {
+
+		float norm = cuCabsf(x[i]);
+		float red = norm - lambda;
+		d[i] = (red > 0.) ? (cuCmulf(make_cuFloatComplex(red / norm, 0.), x[i])) : make_cuFloatComplex(0., 0.);
+	}
+}
+
+
+extern "C" void cuda_zsoftthresh(long N, float lambda, _Complex float* d, const _Complex float* x)
+{
+	kern_zsoftthresh<<<gridsize(N), blocksize(N)>>>(N, lambda, (cuFloatComplex*)d, (const cuFloatComplex*)x);
+}
+
+
+__global__ void kern_softthresh_half(int N, float lambda, float* d, const float* x)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride) {
+
+		float norm = fabsf(x[i]);
+		float red = norm - lambda;
+
+		d[i] = (red > 0.) ? (red / norm) : 0.;
+	}
+}
+
+extern "C" void cuda_softthresh_half(long N, float lambda, float* d, const float* x)
+{
+	kern_softthresh_half<<<gridsize(N), blocksize(N)>>>(N, lambda, d, x);
+}
+
 
 __global__ void kern_softthresh(int N, float lambda, float* d, const float* x)
 {

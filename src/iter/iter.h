@@ -9,13 +9,15 @@
 struct operator_s;
 struct operator_p_s;
 
-typedef void (*italgo_fun_t)(void* conf,
+typedef void italgo_fun_f(void* conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
 		void* objval_data,
 		float (*obj_eval)(const void*, const float*));
+
+typedef italgo_fun_f* italgo_fun_t;
 
 
 
@@ -90,46 +92,21 @@ extern const struct iter_admm_conf iter_admm_defaults;
 extern const struct iter_pocs_conf iter_pocs_defaults;
 
 
+italgo_fun_f iter_conjgrad;
+italgo_fun_f iter_landweber;
+italgo_fun_f iter_ist;
+italgo_fun_f iter_fista;
+italgo_fun_f iter_admm;
 
-extern void iter_conjgrad(void* conf,
-		const struct operator_s* normaleq_op,
-		const struct operator_p_s* thresh_prox,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*));
+// use with iter2_call_s from iter2.h as _conf
+italgo_fun_f iter_call_iter2;
 
-extern void iter_landweber(void* conf,
-		const struct operator_s* normaleq_op,
-		const struct operator_p_s* thresh_prox,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*));
 
-extern void iter_ist(void* conf,
-		const struct operator_s* normaleq_op,
-		const struct operator_p_s* thresh_prox,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*));
+struct iter_call_s {
 
-extern void iter_fista(void* conf,
-		const struct operator_s* normaleq_op,
-		const struct operator_p_s* thresh_prox,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*));
-
-extern void iter_admm(void* conf,
-		const struct operator_s* normaleq_op,
-		const struct operator_p_s* thresh_prox,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*));
+	italgo_fun_t fun;
+	void* _conf;
+};
 
 
 #endif

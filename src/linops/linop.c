@@ -34,8 +34,8 @@ struct shared_data_s {
 
 	union {
 
-		operator_fun_t apply;
-		operator_p_fun_t apply_p;
+		lop_fun_t apply;
+		lop_p_fun_t apply_p;
 	} u;
 };
 
@@ -62,11 +62,12 @@ static void shared_del(const void* _data)
 	free(data);
 }
 
-static void shared_apply(const void* _data, complex float* dst, const complex float* src)
+static void shared_apply(const void* _data, unsigned int N, void* args[N])
 {
 	struct shared_data_s* data = (struct shared_data_s*)_data;
 
-	data->u.apply(data->data, dst, src);
+	assert(2 == N);
+	data->u.apply(data->data, args[0], args[1]);
 }
 
 static void shared_apply_p(const void* _data, float lambda, complex float* dst, const complex float* src)
@@ -80,9 +81,10 @@ static void shared_apply_p(const void* _data, float lambda, complex float* dst, 
 /**
  * Create a linear operator (with strides)
  */
-struct linop_s* linop_create2(unsigned int N, const long odims[N], const long ostrs[N], 
-				const long idims[N], const long istrs[N], void* data,
-				op_fun_t forward, op_fun_t adjoint, op_fun_t normal, op_p_fun_t pinverse, del_fun_t del)
+struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long ostrs[ON],
+				unsigned int IN, const long idims[IN], const long istrs[IN],
+				void* data, lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal,
+				lop_p_fun_t pinverse, del_fun_t del)
 {
 	struct linop_s* lo = xmalloc(sizeof(struct linop_s));
 
@@ -109,12 +111,12 @@ struct linop_s* linop_create2(unsigned int N, const long odims[N], const long os
 	assert((NULL != forward));
 	assert((NULL != adjoint));
 
-	lo->forward = operator_create2(N, odims, ostrs, idims, istrs, shared_data[0], shared_apply, shared_del);
-	lo->adjoint = operator_create2(N, idims, istrs, odims, ostrs, shared_data[1], shared_apply, shared_del);
+	lo->forward = operator_create2(ON, odims, ostrs, IN, idims, istrs, shared_data[0], shared_apply, shared_del);
+	lo->adjoint = operator_create2(IN, idims, istrs, ON, odims, ostrs, shared_data[1], shared_apply, shared_del);
 
 	if (NULL != normal) {
 
-		lo->normal = operator_create2(N, idims, istrs, idims, istrs, shared_data[2], shared_apply, shared_del);
+		lo->normal = operator_create2(IN, idims, istrs, IN, idims, istrs, shared_data[2], shared_apply, shared_del);
 
 	} else {
 
@@ -125,7 +127,7 @@ struct linop_s* linop_create2(unsigned int N, const long odims[N], const long os
 
 	if (NULL != pinverse) {
 
-		lo->pinverse = operator_p_create2(N, idims, istrs, odims, ostrs, shared_data[3], shared_apply_p, shared_del);
+		lo->pinverse = operator_p_create2(IN, idims, istrs, ON, odims, ostrs, shared_data[3], shared_apply_p, shared_del);
 	
 	} else {
 
@@ -151,15 +153,15 @@ struct linop_s* linop_create2(unsigned int N, const long odims[N], const long os
  * @param pinverse function for applying the pseudo-inverse operation, (A^H A + mu I)^-1
  * @param del function for freeing the data
  */
-struct linop_s* linop_create(unsigned int N, const long odims[N], const long idims[N], void* data,
-				op_fun_t forward, op_fun_t adjoint, op_fun_t normal, op_p_fun_t pinverse, del_fun_t del)
+struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], void* data,
+				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t pinverse, del_fun_t del)
 {
-	long ostrs[N];
-	long istrs[N];
-	md_calc_strides(N, ostrs, odims, CFL_SIZE);
-	md_calc_strides(N, istrs, idims, CFL_SIZE);
+	long ostrs[ON];
+	long istrs[IN];
+	md_calc_strides(ON, ostrs, odims, CFL_SIZE);
+	md_calc_strides(IN, istrs, idims, CFL_SIZE);
 
-	return linop_create2(N, odims, ostrs, idims, istrs, data, forward, adjoint, normal, pinverse, del);
+	return linop_create2(ON, odims, ostrs, IN, idims, istrs, data, forward, adjoint, normal, pinverse, del);
 }
 
 /**
@@ -169,7 +171,7 @@ struct linop_s* linop_create(unsigned int N, const long odims[N], const long idi
  */
 const void* linop_get_data(const struct linop_s* ptr)
 {
-	return ((struct shared_data_s*) operator_get_data(ptr->forward))->data;
+	return ((struct shared_data_s*)operator_get_data(ptr->forward))->data;
 }
 
 
@@ -189,22 +191,24 @@ extern const struct linop_s* linop_clone(const struct linop_s* x)
 	return lo;
 }
 
+
 /**
  * Apply the forward operation of a linear operator: y = A x
  * Checks that dimensions are consistent for the linear operator
  *
  * @param op linear operator
- * @param N number of dimensions
+ * @param DN number of destination dimensions
  * @param ddims dimensions of the output (codomain)
  * @param dst output data
+ * @param SN number of source dimensions
  * @param sdims dimensions of the input (domain)
  * @param src input data
  */
-void linop_forward(const struct linop_s* op, unsigned int N, const long ddims[N], complex float* dst, 
-			const long sdims[N], const complex float* src)
+void linop_forward(const struct linop_s* op, unsigned int DN, const long ddims[DN], complex float* dst, 
+			unsigned int SN, const long sdims[SN], const complex float* src)
 {
-	UNUSED(ddims); UNUSED(sdims); UNUSED(N);
-	linop_forward_unchecked(op, dst, src);
+	assert(op->forward);
+	operator_apply(op->forward, DN, ddims, dst, SN, sdims, src);
 }
 
 
@@ -213,17 +217,18 @@ void linop_forward(const struct linop_s* op, unsigned int N, const long ddims[N]
  * Checks that dimensions are consistent for the linear operator
  *
  * @param op linear operator
- * @param N number of dimensions
+ * @param DN number of destination dimensions
  * @param ddims dimensions of the output (domain)
  * @param dst output data
+ * @param SN number of source dimensions
  * @param sdims dimensions of the input (codomain)
  * @param src input data
  */
-void linop_adjoint(const struct linop_s* op, unsigned int N, const long ddims[N], complex float* dst,
-			const long sdims[N], const complex float* src)
+void linop_adjoint(const struct linop_s* op, unsigned int DN, const long ddims[DN], complex float* dst,
+			unsigned int SN, const long sdims[SN], const complex float* src)
 {
-	UNUSED(ddims); UNUSED(sdims); UNUSED(N);
-	linop_adjoint_unchecked(op, dst, src);
+	assert(op->adjoint);
+	operator_apply(op->adjoint, DN, ddims, dst, SN, sdims, src);
 }
 
 
@@ -233,16 +238,14 @@ void linop_adjoint(const struct linop_s* op, unsigned int N, const long ddims[N]
  *
  * @param op linear operator
  * @param N number of dimensions
- * @param ddims dimensions of the output (domain)
+ * @param dims dimensions
  * @param dst output data
- * @param sdims dimensions of the input (domain)
  * @param src input data
  */
-void linop_normal(const struct linop_s* op, unsigned int N, const long ddims[N], complex float* dst,
-			const long sdims[N], const complex float* src)
+void linop_normal(const struct linop_s* op, unsigned int N, const long dims[N], complex float* dst, const complex float* src)
 {
-	UNUSED(ddims); UNUSED(sdims); UNUSED(N);
-	linop_normal_unchecked(op, dst, src);
+	assert(op->normal);
+	operator_apply(op->normal, N, dims, dst, N, dims, src);
 }
 
 
@@ -256,6 +259,7 @@ void linop_normal(const struct linop_s* op, unsigned int N, const long ddims[N],
  */
 void linop_forward_unchecked(const struct linop_s* op, complex float* dst, const complex float* src)
 {
+	assert(op->forward);
 	operator_apply_unchecked(op->forward, dst, src);
 }
 

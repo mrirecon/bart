@@ -23,29 +23,30 @@
 #include "num/vecops.h"
 #include "num/gpuops.h"
 #include "num/iovec.h"
-#include "num/linop.h"
 #include "num/ops.h"
+
+#include "linops/linop.h"
 
 #include "iter/italgos.h"
 #include "iter/iter.h"
 #include "iter/prox.h"
 #include "iter/admm.h"
+#include "iter/vec.h"
 
 #include "iter2.h"
 
 
 
 
-typedef void (*thresh_fun_t)(void* normaeq_data, float lambda, float* dst, const float* src);
 
 
-static const struct vec_ops* select_vecops(const float* x)
+static const struct vec_iter_s* select_vecops(const float* x)
 {
 #ifdef USE_CUDA
-	return cuda_ondevice(x) ? &gpu_ops : &cpu_ops;
+	return cuda_ondevice(x) ? &gpu_iter_ops : &cpu_iter_ops;
 #else
 	UNUSED(x);
-	return &cpu_ops;
+	return &cpu_iter_ops;
 #endif
 }
 
@@ -73,7 +74,7 @@ void iter2_conjgrad(void* _conf,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
 		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
+		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
 		void* obj_eval_data,
@@ -104,7 +105,7 @@ void iter2_ist(void* _conf,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
 		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
+		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
 		void* obj_eval_data,
@@ -126,7 +127,7 @@ void iter2_ist(void* _conf,
 	if (checkeps(eps))
 		goto cleanup;
 
-	assert(conf->continuation >= 0. && conf->continuation <= 1.);
+	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
 	ist(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, operator_p_iter, (void*)prox_ops[0], image, image_adj, image_truth, obj_eval_data, obj_eval);
 
@@ -141,7 +142,7 @@ void iter2_fista(void* _conf,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
 		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
+		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
 		void* obj_eval_data,
@@ -163,7 +164,7 @@ void iter2_fista(void* _conf,
 	if (checkeps(eps))
 		goto cleanup;
 
-	assert(conf->continuation >= 0. && conf->continuation <= 1.);
+	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
 	fista(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, operator_p_iter, (void*)prox_ops[0], image, image_adj, image_truth, obj_eval_data, obj_eval);
 
@@ -178,7 +179,7 @@ void iter2_admm(void* _conf,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
 		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
+		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
 		void* obj_eval_data,
@@ -233,8 +234,8 @@ void iter2_admm(void* _conf,
 	for (unsigned int i = 0; i < D; i++)
 		z_dims[i] = 2 * md_calc_size(linop_codomain(ops[i])->N, linop_codomain(ops[i])->dims);
 
-	if (NULL != image_adj)
-	{
+	if (NULL != image_adj) {
+
 		float eps = md_norm(1, MD_DIMS(size), image_adj);
 
 		if (checkeps(eps))
@@ -254,7 +255,7 @@ void iter2_pocs(void* _conf,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
 		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
+		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
 		void* obj_eval_data,
@@ -280,4 +281,29 @@ void iter2_pocs(void* _conf,
 
 	pocs(conf->maxiter, D, proj_ops, select_vecops(image), size, image, image_truth, obj_eval_data, obj_eval);
 }
+
+
+void iter2_call_iter(void* _conf,
+		const struct operator_s* normaleq_op,
+		unsigned int D,
+		const struct operator_p_s** prox_ops,
+		const struct linop_s** ops,
+		const struct operator_p_s* xupdate_op,
+		long size, float* image, const float* image_adj,
+		const float* image_truth,
+		void* obj_eval_data,
+		float (*obj_eval)(const void*, const float*))
+{
+	assert(D <= 1);
+	assert(NULL == ops);
+
+	UNUSED(xupdate_op);
+
+	struct iter_call_s* it = _conf;
+	it->fun(it->_conf, normaleq_op, (1 == D) ? prox_ops[0] : NULL,
+		size, image, image_adj,
+		image_truth, obj_eval_data, obj_eval);
+}
+
+
 

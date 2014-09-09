@@ -13,8 +13,7 @@
 #include <stdio.h>
 #include <getopt.h>
 
-
-#include "num/thresh.h"
+#include "num/flpmath.h"
 
 #include "misc/mmio.h"
 

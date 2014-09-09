@@ -7,18 +7,19 @@
  */
 
 #include <stdbool.h>
-
+#include <stdlib.h>
 
 struct iovec_s {
 	
 	unsigned int N;
 	const long* dims;
 	const long* strs;
+	size_t size;
 };
 
 
-extern const struct iovec_s* iovec_create(unsigned int N, const long dims[N]);
-extern const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const long strs[N]);
+extern const struct iovec_s* iovec_create(unsigned int N, const long dims[N], size_t size);
+extern const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const long strs[N], size_t size);
 extern void iovec_free(const struct iovec_s* x);
 extern bool iovec_check(const struct iovec_s* iov, unsigned int N, const long dims[N], const long strs[N]);
 

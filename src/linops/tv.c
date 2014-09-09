@@ -12,7 +12,8 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/linop.h"
+
+#include "linops/linop.h"
 
 #include "misc/misc.h"
 
@@ -36,7 +37,7 @@ void tv_op(unsigned int D, const long dims[D], unsigned int flags, complex float
 {
 	unsigned int N = bitcount(flags);
 
-	assert(1 == dims[D - 1]);	// we use the highest dim to store our different partial derivatives
+	assert(N == dims[D - 1]);	// we use the highest dim to store our different partial derivatives
 
 	unsigned int flags2 = flags;
 
@@ -56,14 +57,14 @@ void tv_adjoint(unsigned int D, const long dims[D], unsigned int flags, complex 
 {
 	unsigned int N = bitcount(flags);
 
-	assert(1 == dims[D - 1]);	// we use the highest dim to store our different partial derivatives
+	assert(N == dims[D - 1]);	// we use the highest dim to store our different partial derivatives
 
 	unsigned int flags2 = flags;
 
-	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, out);
+	complex float* tmp = md_alloc_sameplace(D - 1, dims, CFL_SIZE, out);
 
-	md_clear(D, dims, out, CFL_SIZE);
-	md_clear(D, dims, tmp, CFL_SIZE);
+	md_clear(D - 1, dims, out, CFL_SIZE);
+	md_clear(D - 1, dims, tmp, CFL_SIZE);
 
 	for (unsigned int i = 0; i < N; i++) {
 
@@ -72,7 +73,7 @@ void tv_adjoint(unsigned int D, const long dims[D], unsigned int flags, complex 
 
 		md_zfdiff_backwards(D - 1, dims, lsb, tmp, in + i * md_calc_size(D - 1, dims));
 	
-		md_zadd(D, dims, out, out, tmp);
+		md_zadd(D - 1, dims, out, out, tmp);
 	}
 
 	md_free(tmp);
@@ -92,11 +93,9 @@ void tv(unsigned int D, const long dims[D], unsigned int flags, complex float* o
 
 	complex float* tmp = md_alloc_sameplace(D + 1, dims2, CFL_SIZE, out);
 
-	dims2[D] = 1;
 	tv_op(D + 1, dims2, flags, tmp, in);
-	dims2[D] = N;
 
-// rss should be moved
+	// rss should be moved elsewhere
 	md_rss(D + 1, dims2, flags, out, tmp);
 	md_free(tmp);
 }
@@ -129,11 +128,7 @@ static void tv_op_normal(const void* _data, complex float* dst, const complex fl
 {
 	const struct tv_s* data = _data;
 
-	long dims[data->N];
-	md_copy_dims(data->N, dims, data->dims);
-	dims[data->N - 1] = bitcount(data->flags);
-
-	complex float* tmp = md_alloc_sameplace(data->N, dims, CFL_SIZE, dst);
+	complex float* tmp = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, dst);
 
 	// this could be implemented more efficiently
 	tv_op(data->N, data->dims, data->flags, tmp, src);
@@ -155,17 +150,13 @@ struct linop_s* tv_init(long N, const long dims[N], unsigned int flags)
 {
 	struct tv_s* data = xmalloc(sizeof(struct tv_s));
 	
-	data->N = N;
-	data->dims = xmalloc(N * sizeof(long));
+	data->N = N + 1;
+	data->dims = xmalloc((N + 1) * sizeof(long));
 	data->flags = flags;
 
 	md_copy_dims(N, data->dims, dims);
-
-	assert(1 == dims[N - 1]);
-	long tv_dims[N];
-	md_copy_dims(N, tv_dims, dims);
-	tv_dims[N - 1] = bitcount(flags);
+	data->dims[N] = bitcount(flags);
 	
-	return linop_create(N, tv_dims, dims, data, tv_op_apply, tv_op_adjoint, tv_op_normal, NULL, tv_op_free);
+	return linop_create(N + 1, data->dims, N, dims, data, tv_op_apply, tv_op_adjoint, tv_op_normal, NULL, tv_op_free);
 }
 

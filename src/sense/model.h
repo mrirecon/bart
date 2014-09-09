@@ -16,6 +16,7 @@ struct vec_ops;
 extern struct linop_s* sense_init(const long max_dims[DIMS], unsigned int sens_flags, const complex float* sens, _Bool gpu);
 extern struct linop_s* maps_create(const long max_dims[DIMS], 
 			unsigned int sens_flags, const complex float* sens, bool gpu);
+extern struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const complex float* maps, bool use_gpu);
 
 extern void sense_free(const struct linop_s*);
 

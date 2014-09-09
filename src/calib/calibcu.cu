@@ -11,13 +11,14 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <math.h>
+#include <stdio.h>
+
 #include <cuda.h>
 #include <cufft.h>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include <cuComplex.h>
-#include <math.h>
-#include <sys/time.h>
 
 #include "misc/mri.h"
 

@@ -27,7 +27,12 @@
 #include "sense/recon.h"
 #include "sense/optcom.h"
 
+// #define W3
+#ifndef W3
 #include "wavelet2/wavelet.h"
+#else
+#include "wavelet3/wavthresh.h"
+#endif
 
 #include "misc/debug.h"
 #include "misc/mri.h"
@@ -38,7 +43,7 @@
 
 static void usage(const char* name, FILE* fd)
 {
-	fprintf(fd, "Usage: %s [-l1/-l2] [-r lambda] [-c] <kspace> <sensitivities> <output>\n", name);
+	fprintf(fd, "Usage: %s [-l1/-l2] [-r lambda]  <kspace> <sensitivities> <output>\n", name);
 }
 
 static void help(void)
@@ -82,10 +87,16 @@ int main(int argc, char* argv[])
 
 	bool admm = false;
 	bool ist = false;
-	bool usegpu = false;
+	bool use_gpu = false;
+	bool l1wav = false;
+	bool randshift = true;
+	int maxiter = 30;
+	float step = 0.95;
+	float lambda = 0.;
 
 	float restrict_fov = -1.;
-	const char* psf = NULL;
+	const char* pat_file = NULL;
+	const char* traj_file = NULL;
 	char image_truth_fname[100];
 	bool im_truth = false;
 	bool scale_im = false;
@@ -119,9 +130,8 @@ int main(int argc, char* argv[])
 			debug_level = atoi(optarg);
 			break;
 
-
 		case 'r':
-			conf.lambda = atof(optarg);
+			lambda = atof(optarg);
 			break;
 
 		case 'O':
@@ -133,21 +143,22 @@ int main(int argc, char* argv[])
 			break;
 
 		case 's':
-			conf.step = atof(optarg);
+			step = atof(optarg);
 			break;
 
 		case 'i':
-			conf.maxiter = atoi(optarg);
+			maxiter = atoi(optarg);
 			break;
 
 		case 'l':
 			if (1 == atoi(optarg)) {
 
-				conf.l1wav = true;
+				l1wav = true;
 
-			} else if (2 == atoi(optarg)) {
+			} else
+			if (2 == atoi(optarg)) {
 
-				conf.l1wav = false;
+				l1wav = false;
 
 			} else {
 
@@ -157,7 +168,6 @@ int main(int argc, char* argv[])
 			break;
 
 		case 'q':
-			conf.ccrobust = true;
 			conf.cclambda = atof(optarg);
 			break;
 
@@ -170,7 +180,7 @@ int main(int argc, char* argv[])
 			break;
 
 		case 'm':
-			admm = 1;
+			admm = true;
 			break;
 
 		case 'u':
@@ -178,11 +188,11 @@ int main(int argc, char* argv[])
 			break;
 
 		case 'g':
-			usegpu = true;
+			use_gpu = true;
 			break;
 
 		case 'p':
-			psf = strdup(optarg);
+			pat_file = strdup(optarg);
 			break;
 
 		case 't':
@@ -210,19 +220,22 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	int N = DIMS;
+	long map_dims[DIMS];
+	long pat_dims[DIMS];
+	long img_dims[DIMS];
+	long ksp_dims[DIMS];
 
-	long dims[N];
-	long pat_dims[N];
-	long img_dims[N];
-	long ksp_dims[N];
 
-	complex float* kspace_data = load_cfl(argv[optind + 0], N, ksp_dims);
-	complex float* sens_maps = load_cfl(argv[optind + 1], N, dims);
+	// load kspace and maps and get dimensions
 
+	complex float* kspace = load_cfl(argv[optind + 0], DIMS, ksp_dims);
+	complex float* maps = load_cfl(argv[optind + 1], DIMS, map_dims);
+
+	md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, map_dims);
 
 	for (int i = 0; i < 4; i++) {	// sizes2[4] may be > 1
-		if (ksp_dims[i] != dims[i]) {
+		if (ksp_dims[i] != map_dims[i]) {
 		
 			fprintf(stderr, "Dimensions of kspace and sensitivities do not match!\n");
 			exit(1);
@@ -231,13 +244,17 @@ int main(int argc, char* argv[])
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
+	(use_gpu ? num_init_gpu : num_init)();
 
-	(usegpu ? num_init_gpu : num_init)();
+	// print options
 
-	if (dims[MAPS_DIM] > 1) 
-		debug_printf(DP_INFO, "%ld maps.\nESPIRiT reconstruction.\n", dims[4]);
+	if (use_gpu)
+		debug_printf(DP_INFO, "GPU reconstruction\n");
 
-	if (conf.l1wav)
+	if (map_dims[MAPS_DIM] > 1) 
+		debug_printf(DP_INFO, "%ld maps.\nESPIRiT reconstruction.\n", map_dims[MAPS_DIM]);
+
+	if (l1wav)
 		debug_printf(DP_INFO, "l1-wavelet regularization\n");
 
 	if (ist)
@@ -247,71 +264,83 @@ int main(int argc, char* argv[])
 		debug_printf(DP_INFO, "Compare to truth\n");
 
 
-	md_select_dims(N, ~(COIL_FLAG | MAPS_FLAG), pat_dims, ksp_dims);
-	md_select_dims(N, ~COIL_FLAG, img_dims, dims);
 
 
 
 	// initialize sampling pattern
 
 	complex float* pattern = NULL;
-	long pat_dims2[N];
+	long pat_dims2[DIMS];
 
-	if (NULL != psf) {
+	if (NULL != pat_file) {
 
-		pattern = load_cfl(psf, N, pat_dims2);
+		pattern = load_cfl(pat_file, DIMS, pat_dims2);
 
 		// FIXME: check compatibility
 	} else {
 
-		pattern = md_alloc(N, pat_dims, CFL_SIZE);
-		estimate_pattern(N, ksp_dims, COIL_DIM, pattern, kspace_data);
+		pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
+		estimate_pattern(DIMS, ksp_dims, COIL_DIM, pattern, kspace);
 	}
 
 
 	
 	// print some statistics
 
-	size_t T = md_calc_size(N, pat_dims);
-	long samples = (long)pow(md_znorm(N, pat_dims, pattern), 2.);
+	size_t T = md_calc_size(DIMS, pat_dims);
+	long samples = (long)pow(md_znorm(DIMS, pat_dims, pattern), 2.);
 	debug_printf(DP_INFO, "Size: %ld Samples: %ld Acc: %.2f\n", T, samples, (float)T / (float)samples); 
 
-	fftmod(N, ksp_dims, FFT_FLAGS, kspace_data, kspace_data);
-	fftmod(N, dims, FFT_FLAGS, sens_maps, sens_maps);
+	fftmod(DIMS, ksp_dims, FFT_FLAGS, kspace, kspace);
+	fftmod(DIMS, map_dims, FFT_FLAGS, maps, maps);
 
 
 	// apply scaling
 
-	float scaling = estimate_scaling(ksp_dims, NULL, kspace_data);
+	float scaling = 1.;
 
-	if (scaling != 0.)
-		md_zsmul(N, ksp_dims, kspace_data, kspace_data, 1. / scaling);
+	if (NULL == traj_file) {
+
+		scaling = estimate_scaling(ksp_dims, NULL, kspace);
+
+		if (scaling != 0.)
+			md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
+	}
 
 
 	// apply fov mask to sensitivities
 
 	if (-1. != restrict_fov)
-		apply_mask(dims, sens_maps, restrict_fov);
+		apply_mask(map_dims, maps, restrict_fov);
 
 
 	const struct operator_p_s* thresh_op = NULL;
 
-	if (conf.l1wav) {
+	if (l1wav) {
 
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
 		minsize[0] = MIN(img_dims[0], 16);
 		minsize[1] = MIN(img_dims[1], 16);
 		minsize[2] = MIN(img_dims[2], 16);
+#ifndef W3
+		thresh_op = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, lambda, randshift, use_gpu);
+#else
+		unsigned int wflags = 0;
+		for (unsigned int i = 0; i < 3; i++)
+			if (1 < img_dims[i])
+				wflags |= (1 << i);
 
-		thresh_op = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, conf.lambda, conf.randshift, usegpu);
+		thresh_op = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, lambda, randshift);
+#endif
 	}
 
 
 
 
 
-	complex float* image = create_cfl(argv[optind + 2], N, img_dims);
-	md_clear(N, img_dims, image, CFL_SIZE);
+	complex float* image = create_cfl(argv[optind + 2], DIMS, img_dims);
+	md_clear(DIMS, img_dims, image, CFL_SIZE);
+
 
 	long img_truth_dims[DIMS];
 	complex float* image_truth = NULL;
@@ -328,73 +357,73 @@ int main(int argc, char* argv[])
 
 	// FIXME: change named initializers to traditional?
 	struct iter_conjgrad_conf cgconf;
-	memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf) );
-	cgconf.maxiter = conf.maxiter;
-	cgconf.l2lambda = conf.lambda;
-
 	struct iter_fista_conf fsconf;
-	memcpy(&fsconf, &iter_fista_defaults, sizeof(struct iter_fista_conf) );
-	fsconf.maxiter = conf.maxiter;
-	fsconf.step = conf.step;
-	fsconf.hogwild = hogwild;
-
 	struct iter_ist_conf isconf;
-	memcpy(&isconf, &iter_ist_defaults, sizeof(struct iter_ist_conf) );
-	isconf.maxiter = conf.maxiter;
-	isconf.step = conf.step;
-	isconf.hogwild = hogwild;
-
-
 	struct iter_admm_conf mmconf;
-	memcpy(&mmconf, &iter_admm_defaults, sizeof(struct iter_admm_conf));
-	mmconf.maxiter = conf.maxiter;
-	mmconf.rho = admm_rho;
-	mmconf.hogwild = hogwild;
-	mmconf.fast = fast;
 
-	if (!conf.l1wav) {
+	if (!l1wav) {
+
+		memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
+		cgconf.maxiter = maxiter;
+		cgconf.l2lambda = lambda;
 
 		italgo = iter_conjgrad;
 		iconf = &cgconf;
 
 	} else if (admm) {
 
+		memcpy(&mmconf, &iter_admm_defaults, sizeof(struct iter_admm_conf));
+		mmconf.maxiter = maxiter;
+		mmconf.rho = admm_rho;
+		mmconf.hogwild = hogwild;
+		mmconf.fast = fast;
+
 		italgo = iter_admm;
 		iconf = &mmconf;
 
 	} else if (ist) {
+
+		memcpy(&isconf, &iter_ist_defaults, sizeof(struct iter_ist_conf));
+		isconf.maxiter = maxiter;
+		isconf.step = step;
+		isconf.hogwild = hogwild;
 
 		italgo = iter_ist;
 		iconf = &isconf;
 
 	} else {
 
+		memcpy(&fsconf, &iter_fista_defaults, sizeof(struct iter_fista_conf));
+		fsconf.maxiter = maxiter;
+		fsconf.step = step;
+		fsconf.hogwild = hogwild;
+
 		italgo = iter_fista;
 		iconf = &fsconf;
 	}
 
 
-	if (usegpu) 
+	if (use_gpu) 
 #ifdef USE_CUDA
-		sense_recon_gpu(&conf, dims, image, sens_maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace_data, image_truth);
+		sense_recon_gpu(&conf, map_dims, image, maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace, image_truth);
 #else
 		assert(0);
 #endif
 	else
-		sense_recon(&conf, dims, image, sens_maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace_data, image_truth);
+		sense_recon(&conf, map_dims, image, maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace, image_truth);
 
 	if (scale_im)
-		md_zsmul(N, img_dims, image, image, scaling);
+		md_zsmul(DIMS, img_dims, image, image, scaling);
 
-	if (NULL != psf)
-		unmap_cfl(N, pat_dims2, pattern);
+	if (NULL != pat_file)
+		unmap_cfl(DIMS, pat_dims2, pattern);
 	else
 		md_free(pattern);
 
 
-	unmap_cfl(N, dims, sens_maps);
-	unmap_cfl(N, ksp_dims, kspace_data);
-	unmap_cfl(N, img_dims, image);
+	unmap_cfl(DIMS, map_dims, maps);
+	unmap_cfl(DIMS, ksp_dims, kspace);
+	unmap_cfl(DIMS, img_dims, image);
 
 	double end_time = timestamp();
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);

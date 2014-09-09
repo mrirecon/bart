@@ -6,81 +6,38 @@
 #ifndef __ITER2_H
 #define __ITER2_H
 
-// for prox_fun_t
-#include "iter/admm.h"
-
 struct linop_s;
 struct operator_s;
 struct operator_p_s;
 
-typedef void (*italgo_fun2_t)(void* conf,
+typedef void (italgo_fun2_f)(void* conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
 		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
+		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
 		void* obj_eval_data,
 		float (*obj_eval)(const void*, const float*));
 
+typedef italgo_fun2_f* italgo_fun2_t;
+
+italgo_fun2_f iter2_conjgrad;
+italgo_fun2_f iter2_ist;
+italgo_fun2_f iter2_fista;
+italgo_fun2_f iter2_admm;
+italgo_fun2_f iter2_pocs;
 
 
-extern void iter2_conjgrad(void* conf,
-		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*));
+// use with iter_call_s from iter.h as _conf
+italgo_fun2_f iter2_call_iter;
 
-extern void iter2_ist(void* conf,
-		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*));
+struct iter2_call_s {
 
-extern void iter2_fista(void* conf,
-		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*));
-
-extern void iter2_admm(void* conf,
-		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*));
-
-
-void iter2_pocs(void* _conf,
-		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
-		const struct operator_s* xupdate_op,
-		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*));
+	italgo_fun2_t fun;
+	void* _conf;
+};
 
 
 #endif

@@ -25,7 +25,12 @@
 #include "num/fft.h"
 #include "num/gpuops.h"
 
+// #define W3
+#ifndef W3
 #include "wavelet2/wavelet.h"
+#else
+#include "wavelet3/wavthresh.h"
+#endif
 
 #include "iter/iter.h"
 
@@ -45,23 +50,14 @@
 omp_lock_t gpulock[MAX_CUDA_DEVICES];
 #endif
 
-enum algo { SENSE, POCS, NOIR };
 
-struct grecon_s {
 
-	enum algo algo;
-	const struct ecalib_conf* calib;
-	struct sense_conf* conf;
-	bool rplksp;
-	bool ksp;
-};
-
-static void grecon(void* _param,  const long dims1[DIMS], complex float* out1, 
-	const long sens1_dims[DIMS], complex float* cov1, const long w1_dims[DIMS], const complex float* weights,
+void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* out1, 
+	const long sens1_dims[DIMS], complex float* cov1, 
+	const long w1_dims[DIMS], const complex float* weights,
 	complex float* kspace1, bool usegpu)
 {
-	struct grecon_s* param = _param;
-	struct sense_conf* conf = param->conf;
+	struct sense_conf* conf = param->sense_conf;
 
 	long ksp1_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, ksp1_dims, dims1);
@@ -144,14 +140,22 @@ static void grecon(void* _param,  const long dims1[DIMS], complex float* out1,
 
 	const struct operator_p_s* thresh_op = NULL;
 
-	if (conf->l1wav) {
+	if (param->l1wav) {
 
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
 		minsize[0] = MIN(img1_dims[0], 16);
 		minsize[1] = MIN(img1_dims[1], 16);
 		minsize[2] = MIN(img1_dims[2], 16);
+#ifndef W3
+		thresh_op = prox_wavethresh_create(DIMS, img1_dims, FFT_FLAGS, minsize, param->lambda, param->randshift, usegpu);
+#else
+		unsigned int wflags = 0;
+		for (unsigned int i = 0; i < 3; i++)
+			if (1 < img1_dims[i])
+				wflags |= (1 << i);
 
-		thresh_op = prox_wavethresh_create(DIMS, img1_dims, FFT_FLAGS, minsize, conf->lambda, conf->randshift, usegpu);
+		thresh_op = prox_wavelet3_thresh_create(DIMS, img1_dims, wflags, minsize, param->lambda, param->randshift);
+#endif
 	}
 
 	italgo_fun_t italgo = NULL;
@@ -159,15 +163,15 @@ static void grecon(void* _param,  const long dims1[DIMS], complex float* out1,
 
 	struct iter_conjgrad_conf cgconf;
 	memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
-	cgconf.maxiter = conf->maxiter;
-	cgconf.l2lambda = conf->lambda;
+	cgconf.maxiter = param->maxiter;
+	cgconf.l2lambda = param->lambda;
 
 	struct iter_fista_conf fsconf;
 	memcpy(&fsconf, &iter_fista_defaults, sizeof(struct iter_fista_conf));
-	fsconf.maxiter = conf->maxiter;
-	fsconf.step = conf->step;
+	fsconf.maxiter = param->maxiter;
+	fsconf.step = param->step;
 
-	if (!conf->l1wav) {
+	if (!param->l1wav) {
 
 		italgo = iter_conjgrad;
 		iconf = &cgconf;
@@ -188,7 +192,7 @@ static void grecon(void* _param,  const long dims1[DIMS], complex float* out1,
 			sense_recon_gpu(conf, dims1, image1, sens1, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
 			break;
 		case POCS:
-			pocs_recon_gpu(dims1, thresh_op, conf->maxiter, conf->lambda, -1., image1, sens1, pattern, kspace1);
+			pocs_recon_gpu(dims1, thresh_op, param->maxiter, param->lambda, -1., image1, sens1, pattern, kspace1);
 			break;
 		default:
 			assert(0);
@@ -205,11 +209,11 @@ static void grecon(void* _param,  const long dims1[DIMS], complex float* out1,
 			sense_recon(conf, dims1, image1, sens1, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
 			break;
 		case POCS:
-			pocs_recon(dims1, thresh_op, conf->maxiter, conf->lambda, -1., image1, sens1, pattern, kspace1);
+			pocs_recon(dims1, thresh_op, param->maxiter, param->lambda, -1., image1, sens1, pattern, kspace1);
 			break;
 		case NOIR:
 #ifndef STANFORD_OFFLINERECON
-			noir_recon(dims1, conf->maxiter, conf->l1wav ? conf->lambda : -1., image1, sens1, pattern, NULL, kspace1, false);
+			noir_recon(dims1, param->maxiter, param->l1wav ? param->lambda : -1., image1, sens1, pattern, NULL, kspace1, false);
 #else
 			assert(0);
 #endif
@@ -243,48 +247,38 @@ static void grecon(void* _param,  const long dims1[DIMS], complex float* out1,
 
 
 
-void w1sense(struct sense_conf* conf, const struct ecalib_conf* calib, bool rplksp, const long dims[DIMS], const long ostr[DIMS], complex float* image, const long sens_dims[DIMS], const complex float* sens_maps, const long pat1_dims[DIMS], const complex float* weights, const long istr[DIMS], const complex float* kspace_data, bool usegpu)
+static void grecon_delegate(void* _param, const long dims1[DIMS], complex float* out1, 
+	const long sens1_dims[DIMS], complex float* cov1, 
+	const long w1_dims[DIMS], const complex float* weights,
+	complex float* kspace1, bool usegpu)
 {
-	struct grecon_s param = { .algo = SENSE, .calib = calib, .conf = conf, .ksp = true, .rplksp = rplksp };
-	parslices2(grecon, &param, dims, ostr, image, sens_dims, sens_maps, pat1_dims, weights, istr, kspace_data, true, usegpu);
+	struct grecon_conf* param = _param;
+	grecon(param, dims1, out1, sens1_dims, cov1, w1_dims, weights, kspace1, usegpu);
 }
 
-
-void msense(struct sense_conf* conf, const long dims[DIMS], complex float* image, const complex float* sens_maps, const complex float* kspace_data, bool usegpu)
+void rgrecon(struct grecon_conf* conf, const long dims[DIMS], complex float* image,
+			const long sens_dims[DIMS], const complex float* sens_maps,
+			const long pat1_dims[DIMS], const complex float* weights, 
+			const complex float* kspace_data, bool usegpu)
 {
-	struct grecon_s param = { .algo = SENSE, .calib = NULL, .conf = conf, .ksp = false };
-	parslices(grecon, &param, dims, image, dims, sens_maps, NULL, NULL, kspace_data, false, usegpu);
+	parslices(grecon_delegate, conf, 
+			dims, image, 
+			sens_dims, sens_maps, 
+			pat1_dims, weights,
+			kspace_data, conf->ksp, usegpu);
 }
 
-void mnoir(struct sense_conf* conf, const long dims[DIMS], complex float* image, const complex float* kspace_data, bool usegpu)
+void rgrecon2(struct grecon_conf* conf, const long dims[DIMS], 
+			const long img_strs[DIMS], complex float* image,
+			const long sens_dims[DIMS], const complex float* sens_maps,
+			const long pat1_dims[DIMS], const complex float* weights, 
+			const long ksp_strs[DIMS], const complex float* kspace_data,
+			bool usegpu)
 {
-	long sens_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
-	complex float sens = 1.;
-	struct grecon_s param = { .algo = NOIR, .calib = NULL, .conf = conf, .ksp = false };
-	parslices(grecon, &param, dims, image, sens_dims, &sens, NULL, NULL, kspace_data, false, usegpu);
+	parslices2(grecon_delegate, conf, 
+			dims, img_strs, image, 
+			sens_dims, sens_maps, 
+			pat1_dims, weights,
+			ksp_strs, kspace_data,
+			conf->ksp, usegpu);
 }
-
-void msense2(struct sense_conf* conf, const struct ecalib_conf* calib, bool rplksp, const long dims[DIMS], const long ostr[DIMS], complex float* image, const long sens_dims[DIMS], const complex float* sens_maps, const long istr[DIMS], const complex float* kspace_data, bool usegpu)
-{
-	assert(dims[READ_DIM] == sens_dims[READ_DIM]);
-
-	struct grecon_s param = { .algo = SENSE, .calib = calib, .conf = conf, .ksp = true, .rplksp = rplksp };
-	parslices2(grecon, &param, dims, ostr, image, sens_dims, sens_maps, NULL, NULL, istr, kspace_data, true, usegpu);
-}
-
-void msense3(struct sense_conf* conf, const struct ecalib_conf* calib, const long dims[DIMS], complex float* image, const long sens_dims[DIMS], const complex float* sens_maps, const complex float* kspace_data, bool usegpu)
-{
-	assert(dims[READ_DIM] == sens_dims[READ_DIM]);
-
-	struct grecon_s param = { .algo = SENSE, .calib = calib, .conf = conf, .ksp = false };
-	parslices(grecon, &param, dims, image, sens_dims, sens_maps, NULL, NULL, kspace_data, false, usegpu);
-}
-
-void msense2pocs(struct sense_conf* conf, const struct ecalib_conf* calib, const long dims[DIMS], complex float* image, const long sens_dims[DIMS], const complex float* sens_maps, const complex float* kspace_data, bool usegpu)
-{
-	assert(dims[READ_DIM] == sens_dims[READ_DIM]);
-	struct grecon_s param = { .algo = POCS, .calib = calib, .conf = conf, .ksp = true };
-	parslices(grecon, &param, dims, image, sens_dims, sens_maps, NULL, NULL, kspace_data, true, usegpu);
-}
-
-

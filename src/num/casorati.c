@@ -28,6 +28,21 @@ static void calc_casorati_geom(unsigned int N, long dimc[2 * N], long str2[2 * N
 }
 
 
+void casorati_dims(unsigned int N, long odim[2], const long dimk[N], const long dim[N])
+{
+	long dimc[2 * N];
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		dimc[i + 0] = dim[i] - dimk[i] + 1;	// number of shifted blocks
+		dimc[i + N] = dimk[i];			// size of blocks
+	}
+
+	odim[0] = md_calc_size(N, dimc + 0);
+	odim[1] = md_calc_size(N, dimc + N);
+}
+
+
 void casorati_matrix(unsigned int N, const long dimk[N], const long odim[2], complex float* optr, const long dim[N], const long str[N], const complex float* iptr)
 {
 	long str2[2 * N];
@@ -36,7 +51,7 @@ void casorati_matrix(unsigned int N, const long dimk[N], const long odim[2], com
 
 	calc_casorati_geom(N, dimc, str2, dimk, dim, str);
 
-	assert(odim[0] == md_calc_size(N, dimc));	// all shifts are collapsed
+	assert(odim[0] == md_calc_size(N, dimc + 0));	// all shifts are collapsed
 	assert(odim[1] == md_calc_size(N, dimc + N));	// linearized size of a block
 
 	md_calc_strides(2 * N, strc, dimc, CFL_SIZE);

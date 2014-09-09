@@ -15,18 +15,39 @@ extern "C" {
 #include "misc/mri.h"
 
 
-struct sense_conf;
 struct ecalib_conf;
 
+enum algo { SENSE, POCS, NOIR };
 
-extern void w1sense(struct sense_conf* conf, const struct ecalib_conf* calib, _Bool rplksp, const long dims[5], const long ostr[DIMS], complex float* image, const long sens_dims[DIMS], const complex float* sens_maps, const long pat1_dims[5], const complex float* weights, const long istr[DIMS], const complex float* kspace_data, _Bool usegpu);
+struct grecon_conf {
 
-extern void msense(struct sense_conf* conf, const long dims[DIMS], _Complex float* image, const _Complex float* sens_maps, const _Complex float* kspace_data, _Bool usegpu);
-extern void msense2(struct sense_conf* conf, const struct ecalib_conf* calib, _Bool rplksp, const long dims[DIMS], const long ostr[DIMS],  _Complex float* image, const long sens_dims[DIMS], const _Complex float* sens_maps, const long istr[DIMS], const _Complex float* kspace_data, _Bool usegpu);
-extern void msense3(struct sense_conf* conf, const struct ecalib_conf* calib, const long dims[DIMS], _Complex float* image, const long sens_dims[DIMS], const _Complex float* sens_maps, const _Complex float* kspace_data, _Bool usegpu);
-extern void msense2pocs(struct sense_conf* conf, const struct ecalib_conf* calib, const long dims[DIMS], _Complex float* image, const long sens_dims[DIMS], const _Complex float* sens_maps, const _Complex float* kspace_data, _Bool usegpu);
+	enum algo algo;
+	const struct ecalib_conf* calib;
+	struct sense_conf* sense_conf;
+	bool rplksp;
+	bool ksp;
+	bool l1wav;
+	bool randshift;
+	int maxiter;
+	float step;
+	float lambda;
+};
 
-extern void mnoir(struct sense_conf* conf, const long dims[DIMS], _Complex float* image, const _Complex float* kspace_data, _Bool usegpu);
+extern void grecon(struct grecon_conf* param,  const long dims1[DIMS], _Complex float* out1, 
+	const long sens1_dims[DIMS], _Complex float* cov1, 
+	const long w1_dims[DIMS], const _Complex float* weights,
+	_Complex float* kspace1, bool usegpu);
+
+extern void rgrecon(struct grecon_conf* conf, const long dims[DIMS], _Complex float* image,
+			const long sens_dims[DIMS], const _Complex float* sens_maps,
+			const long pat1_dims[DIMS], const _Complex float* weights, 
+			const _Complex float* kspace_data, bool usegpu);
+
+extern void rgrecon2(struct grecon_conf* conf, const long dims[DIMS], 
+			const long img_strs[DIMS], _Complex float* image,
+			const long sens_dims[DIMS], const _Complex float* sens_maps,
+			const long pat1_dims[DIMS], const _Complex float* weights, 
+			const long ksp_strs[DIMS], const _Complex float* kspace, bool usegpu);
 
 
 

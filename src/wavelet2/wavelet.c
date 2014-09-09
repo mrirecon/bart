@@ -17,7 +17,8 @@
 
 #include "num/multind.h"
 #include "num/ops.h"
-#include "num/linop.h"
+
+#include "linops/linop.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -169,12 +170,12 @@ const struct linop_s* wavelet_create(int numdims, const long imSize[numdims], un
 	data->randshift = randshift;
 
 	long coeff_dims[numdims];
-	md_select_dims( numdims, ~7, coeff_dims, imSize );
-	coeff_dims[0] = data->numCoeff;
+	md_select_dims( numdims, ~wave_flags, coeff_dims, imSize );
+	coeff_dims[0] = data->numCoeff_tr;
 	coeff_dims[1] = 1;
 	coeff_dims[2] = 1;
 
-	return linop_create(numdims, coeff_dims, imSize, data, wavelet_forward,  wavelet_inverse, wavelet_normal, NULL, wavelet_del);
+	return linop_create(numdims, coeff_dims, numdims, imSize, data, wavelet_forward,  wavelet_inverse, wavelet_normal, NULL, wavelet_del);
 
 }
 
@@ -197,7 +198,7 @@ const struct operator_p_s* prox_wavethresh_create(int numdims, const long imSize
 	data->randshift = randshift;
 	data->lambda = lambda;
 
-	return operator_p_create(numdims, imSize, imSize, data, wavelet_thresh, wavelet_del);
+	return operator_p_create(numdims, imSize, numdims, imSize, data, wavelet_thresh, wavelet_del);
 
 }
 
@@ -214,6 +215,7 @@ void wavelet_forward(const void* _data, data_t* out, const data_t* _in)
 	int numPixel_tr = plan->numPixel_tr;
 	int numCoeff_tr = plan->numCoeff_tr;
 	int b;
+
 
 	for (b=0; b<plan->batchSize; b++)
 	{
@@ -327,15 +329,6 @@ void wavelet_thresh(const void* _data, scalar_t thresh,  data_t* out, const data
 
 }
 
-#if 0
-void wavelet_thresh_randshift(const void* _data, scalar_t thresh,  data_t* out, const data_t* _in)
-{
-	struct wavelet_plan_s* plan = (struct wavelet_plan_s*) _data;
-
-	wavelet_new_randshift(plan);
-	wavelet_thresh(_data, thresh, out, _in);
-}
-#endif
 
 static int rand_lim(unsigned int* state, int limit) {
 

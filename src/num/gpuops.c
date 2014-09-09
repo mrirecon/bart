@@ -30,6 +30,9 @@
 
 #include "gpuops.h"
 
+#if 1
+#define CUDA_MEMCACHE
+#endif
 
 #if 1
 #define ACCOUNTING
@@ -51,33 +54,47 @@ int cuda_devices(void)
 	return count;
 }
 
+#ifdef CUDA_MEMCACHE
+static __thread int last_init = -1;
+#endif
+
 void cuda_init(int device)
 {
+#ifdef CUDA_MEMCACHE
+	last_init = device;
+#endif
 	CUDA_ERROR(cudaSetDevice(device));
 }
 
 int cuda_init_memopt(void) 
 {
-  int num_devices = cuda_devices();
-  int device;
-  int max_device = 0;
-  if (num_devices > 1) {
-    size_t mem_max = 0;
-    size_t mem_free;
-    size_t mem_total;
-    for (device = 0; device < num_devices; device++) {
-      cuda_init(device);
-      CUDA_ERROR(cudaMemGetInfo(&mem_free,&mem_total));
-      //printf(" device (%d): %d\n", device, mem_available);
-      if (mem_max < mem_free) {
-	mem_max = mem_free;
-	max_device = device;
-      }
-    }
-    //printf(" max device: %d\n", max_device);
-    CUDA_ERROR(cudaSetDevice(max_device));
-  }
-  return max_device;
+	int num_devices = cuda_devices();
+	int device;
+	int max_device = 0;
+
+	if (num_devices > 1) {
+
+		size_t mem_max = 0;
+		size_t mem_free;
+		size_t mem_total;
+
+		for (device = 0; device < num_devices; device++) {
+
+			cuda_init(device);
+			CUDA_ERROR(cudaMemGetInfo(&mem_free,&mem_total));
+			//printf(" device (%d): %d\n", device, mem_available);
+
+			if (mem_max < mem_free) {
+
+				mem_max = mem_free;
+				max_device = device;
+			}
+		}
+		//printf(" max device: %d\n", max_device);
+		CUDA_ERROR(cudaSetDevice(max_device));
+	}
+
+	return max_device;
 }
 
 void cuda_exit(void)
@@ -120,6 +137,10 @@ struct cuda_mem_s {
 	const void* ptr;
 	size_t len;
 	bool device;
+#ifdef CUDA_MEMCACHE
+	bool free;
+	int device_id;
+#endif
 	struct cuda_mem_s* next;
 };
 
@@ -156,6 +177,36 @@ static struct cuda_mem_s* search(const void* ptr, bool remove)
 	return rptr;
 }
 
+#ifdef CUDA_MEMCACHE
+static struct cuda_mem_s* find_free(size_t size)
+{
+	struct cuda_mem_s* rptr = NULL;
+
+	#pragma omp critical
+	{
+	struct cuda_mem_s** nptr = &cuda_mem_list;
+
+	while (true) {
+
+		rptr = *nptr;
+
+		if (NULL == rptr)
+			break;
+
+		if (rptr->free && (rptr->device_id == last_init) && (rptr->len >= size)) {
+
+			rptr->free = false;
+			break;
+		}
+
+		nptr = &(rptr->next);
+	}
+	}
+
+	return rptr;
+}
+#endif
+
 static void insert(const void* ptr, size_t len, bool device)
 {
 	#pragma omp critical
@@ -165,6 +216,10 @@ static void insert(const void* ptr, size_t len, bool device)
 	nptr->len = len;
 	nptr->device = device;
 	nptr->next = cuda_mem_list;
+#ifdef CUDA_MEMCACHE
+	nptr->device_id = last_init;
+	nptr->free = false;
+#endif
 	cuda_mem_list = nptr;
 	}
 }
@@ -229,6 +284,14 @@ bool cuda_accessible(const void* ptr)
 
 void cuda_free(void* ptr)
 {
+#ifdef CUDA_MEMCACHE
+	struct cuda_mem_s* nptr = search(ptr, false);
+	assert(NULL != nptr);
+	assert(nptr->ptr == ptr);
+	assert(nptr->device);
+	assert(!nptr->free);
+	nptr->free = true;
+#else
 #ifdef ACCOUNTING
 	struct cuda_mem_s* nptr = search(ptr, true);
 	assert(NULL != nptr);
@@ -237,10 +300,21 @@ void cuda_free(void* ptr)
 	free(nptr);
 #endif
 	cudaFree(ptr);
+#endif
 }
 
 void* cuda_malloc(long size)
 {
+#ifdef CUDA_MEMCACHE
+	struct cuda_mem_s* nptr = find_free(size);
+
+	if (NULL != nptr) {
+
+		assert(nptr->device);
+		assert(!nptr->free);
+		return nptr->ptr;
+	}
+#endif
 	void* ptr;
         CUDA_ERROR(cudaMalloc(&ptr, size));
 
@@ -369,8 +443,49 @@ const struct vec_ops gpu_ops = {
 	.zcmp = cuda_zcmp,
 	.zdiv_reg = cuda_zdiv_reg,
 
-	.softthresh = cuda_softthresh,
+	.zsoftthresh = cuda_zsoftthresh,
 	.zsoftthresh_half = cuda_zsoftthresh_half,
+	.softthresh = cuda_softthresh,
+	.softthresh_half = cuda_softthresh_half,
+
+	.swap = cuda_swap,
+};
+
+
+// defined in iter/vec.h
+struct vec_iter_s {
+
+	float* (*allocate)(long N);
+	void (*del)(float* x);
+	void (*clear)(long N, float* x);
+	void (*copy)(long N, float* a, const float* x);
+	void (*swap)(long N, float* a, float* x);
+
+	double (*norm)(long N, const float* x);
+	double (*dot)(long N, const float* x, const float* y);
+
+	void (*sub)(long N, float* a, const float* x, const float* y);
+	void (*add)(long N, float* a, const float* x, const float* y);
+
+	void (*smul)(long N, float alpha, float* a, const float* x);
+	void (*xpay)(long N, float alpha, float* a, const float* x);
+	void (*axpy)(long N, float* a, float alpha, const float* x);
+};
+
+extern const struct vec_iter_s gpu_iter_ops;
+const struct vec_iter_s gpu_iter_ops = {
+
+	.allocate = cuda_float_malloc,
+	.del = cuda_float_free,
+	.clear = cuda_float_clear,
+	.copy = cuda_float_copy,
+	.dot = cuda_sdot,
+	.norm = cuda_norm,
+	.axpy = cuda_saxpy,
+	.xpay = cuda_xpay,
+	.smul = cuda_smul,
+	.add = cuda_add,
+	.sub = cuda_sub,
 	.swap = cuda_swap,
 };
 

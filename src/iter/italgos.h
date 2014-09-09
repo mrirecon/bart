@@ -10,7 +10,8 @@
 // #warning "Use of private interfaces"
 #endif
 
-struct vec_ops;
+
+struct vec_iter_s;
 
 #ifndef __PROX_FUN_T
 #define __PROX_FUN_T
@@ -39,7 +40,7 @@ struct pocs_proj_op {
 
 float conjgrad(unsigned int maxiter, float l2lambda, float epsilon, 
 	long N, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*linop)(void* data, float* dst, const float* src), 
 	float* x, const float* b, const float* x_truth,
 	void* obj_eval_data,
@@ -47,7 +48,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 
 float conjgrad_hist(struct iter_history_s* iter_history, unsigned int maxiter, float l2lambda, float epsilon, 
 	long N, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*linop)(void* data, float* dst, const float* src), 
 	float* x, const float* b, const float* x_truth,
 	void* obj_eval_data,
@@ -55,7 +56,7 @@ float conjgrad_hist(struct iter_history_s* iter_history, unsigned int maxiter, f
 
 void landweber(unsigned int maxiter, float epsilon, float alpha,
 	long N, long M, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	void (*adj)(void* data, float* dst, const float* src), 
 	float* x, const float* b,
@@ -63,14 +64,14 @@ void landweber(unsigned int maxiter, float epsilon, float alpha,
 
 void landweber_sym(unsigned int maxiter, float epsilon, float alpha,	
 	long N, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	float* x, const float* b);
 
 void ist(unsigned int maxiter, float epsilon, float tau, 
 	 float continuation, _Bool hogwild, 
 	 long N, void* data,
-	 const struct vec_ops* vops,
+	 const struct vec_iter_s* vops,
 	 void (*op)(void* data, float* dst, const float* src), 
 	 void (*thresh)(void* data, float lambda, float* dst, const float* src),
 	 void* tdata,
@@ -81,7 +82,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 void fista(unsigned int maxiter, float epsilon, float tau, 
 	   float continuation, _Bool hogwild, 
 	   long N, void* data,
-	   const struct vec_ops* vops,
+	   const struct vec_iter_s* vops,
 	   void (*op)(void* data, float* dst, const float* src), 
 	   void (*thresh)(void* data, float lambda, float* dst, const float* src),
 	   void* tdata,
@@ -92,7 +93,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 
 void irgnm(unsigned int iter, float alpha, float redu, void* data, 
 	long N, long M,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	void (*adj)(void* data, float* dst, const float* src), 
 	void (*inv)(void* data, float alpha, float* dst, const float* src), 
@@ -100,7 +101,7 @@ void irgnm(unsigned int iter, float alpha, float redu, void* data,
 
 void irgnm2(unsigned int iter, float alpha, float redu, void* data, 
 	long N, long M,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	void (*adj)(void* data, float* dst, const float* src), 
 	void (*inv2)(void* data, float alpha, float* res, float* dst, const float* src), 
@@ -108,14 +109,14 @@ void irgnm2(unsigned int iter, float alpha, float redu, void* data,
 
 void split(unsigned int maxiter, float epsilon, float mu, float lambda, 
 	long N, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	void (*thresh)(void* data, float lambda, float* dst, const float* src),
 	float* x, const float* b);
 
 void splitbreg(unsigned int maxiter, float epsilon, float mu, float lambda,
 	long N, void* data,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	void (*thresh)(void* data, float lambda, float* dst, const float* src),
 	float* x, const float* b,
@@ -123,7 +124,7 @@ void splitbreg(unsigned int maxiter, float epsilon, float mu, float lambda,
 
 void irgnm_t(unsigned int iter, float alpha, float lambda, float redu, void* data,
 	long N, long M,
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	void (*op)(void* data, float* dst, const float* src), 
 	void (*adj)(void* data, float* dst, const float* src), 
 	void (*inv)(void* data, float alpha, float* dst, const float* src), 
@@ -133,7 +134,7 @@ void irgnm_t(unsigned int iter, float alpha, float lambda, float redu, void* dat
 
 void pocs(unsigned int maxiter,
 	unsigned int D, const struct pocs_proj_op* proj_ops, 
-	const struct vec_ops* vops,
+	const struct vec_iter_s* vops,
 	long N, float* x, const float* x_truth,
 	void* obj_eval_data,
 	float (*obj_eval)(const void*, const float*));

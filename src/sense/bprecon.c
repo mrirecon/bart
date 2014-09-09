@@ -36,26 +36,24 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/linop.h"
 #include "num/ops.h"
-#include "num/someops.h"
 #include "num/iovec.h"
-
 #include "num/gpuops.h"
+
+#include "linops/linop.h"
+#include "linops/someops.h"
+#include "linops/rvc.h"
+#include "linops/sampling.h"
 
 #include "iter/iter2.h"
 #include "iter/prox.h"
 
-#ifdef BERKELEY_SVN
-#include "sense/sampling.h"
-#endif
 
 #include "misc/debug.h"
 #include "misc/misc.h"
 #include "misc/mri.h"
 
 #include "sense/model.h"
-#include "sense/rvc.h"
 
 #include "bprecon.h"
 
@@ -105,10 +103,12 @@ static float bpsense_objective(const void* _data, const float* _x)
 
 	const struct linop_s* Aop = data->linops[0];
 
-	complex float* tmp = md_alloc_sameplace(DIMS, linop_codomain(data->conf->l1op_obj)->dims, CFL_SIZE, x);
+	complex float* tmp = md_alloc_sameplace(linop_codomain(data->conf->l1op_obj)->N, 
+				linop_codomain(data->conf->l1op_obj)->dims, CFL_SIZE, x);
+
 	linop_forward_unchecked(data->conf->l1op_obj, tmp, x);
 
-	float t1 = md_z1norm(DIMS, linop_codomain(data->conf->l1op_obj)->dims, tmp);
+	float t1 = md_z1norm(linop_codomain(data->conf->l1op_obj)->N, linop_codomain(data->conf->l1op_obj)->dims, tmp);
 
 	float t2 = 0.;
 	if (data->conf->lambda > 0.)

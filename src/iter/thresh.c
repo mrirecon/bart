@@ -14,9 +14,10 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/linop.h"
 #include "num/ops.h"
 #include "num/iovec.h"
+
+#include "linops/linop.h"
 
 #include "misc/misc.h"
 
@@ -79,11 +80,11 @@ static void unisoftthresh_apply(const void* _data, float mu, complex float* dst,
 
 		complex float* tmp = md_alloc_sameplace(data->D, transform_dims, CFL_SIZE, dst);
 
-		linop_forward(data->unitary_op, data->D, transform_dims, tmp, data->dim, src);
+		linop_forward(data->unitary_op, data->D, transform_dims, tmp, data->D, data->dim, src);
 
 		md_zsoftthresh_core2(data->D, transform_dims, data->lambda * mu, data->flags, data->tmp_norm, transform_strs, tmp, transform_strs, tmp);
 
-		linop_adjoint(data->unitary_op, data->D, data->dim, dst, transform_dims, tmp);
+		linop_adjoint(data->unitary_op, data->D, data->dim, dst, data->D, transform_dims, tmp);
 
 		md_free(tmp);
 	}
@@ -137,7 +138,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D],
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, data->dim, data->dim, data, softthresh_apply, thresh_del);
+	return operator_p_create(D, data->dim, D, data->dim, data, softthresh_apply, thresh_del);
 
 }
 
@@ -167,7 +168,7 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	data->str = xmalloc(D * sizeof(long));
 	md_calc_strides(D, data->str, data->dim, CFL_SIZE);
 
-	// norm dimensions are the flagged transform dimensions
+	// norm dimensions are the flagged transform dimensions //FIXME should yse linop_codomain(unitary_op)->N 
 	long norm_dim[D];
 	md_select_dims(D, ~flags, norm_dim, linop_codomain(unitary_op)->dims);
 
@@ -178,7 +179,7 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, data->dim, data->dim, data, unisoftthresh_apply, thresh_del);
+	return operator_p_create(D, data->dim, D, data->dim, data, unisoftthresh_apply, thresh_del);
 }
 
 
@@ -206,72 +207,6 @@ void softthresh(const struct operator_p_s* o, complex float* optr, const complex
 
 
 
-void md_zsoftthresh_core2(unsigned int D, const long dims[D], float lambda, unsigned int flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
-{
-	long norm_dims[D];
-	long norm_strs[D];
-
-	md_select_dims(D, ~flags, norm_dims, dims);
-	md_calc_strides(D, norm_strs, norm_dims, sizeof(complex float));
-
-	md_rss(D, dims, flags, tmp_norm, iptr);
-	md_zsoftthresh_half2(D, norm_dims, lambda, norm_strs, tmp_norm, norm_strs, tmp_norm);
-	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
-}
-
-
-
-/**
- * Soft thresholding using norm along arbitrary dimension (with strides)
- *
- * y = ST(x, lambda)
- * 1) computes resid = MAX( (norm(x) - lambda)/norm(x), 0 )
- * 2) multiplies y = resid * x
- *
- * @param D number of dimensions
- * @param dims dimensions of input/output
- * @param lambda threshold parameter
- * @param flags jointly thresholded dimensions
- * @param optr destination -- soft thresholded values
- * @param iptr source -- values to be soft thresholded
- */
-void md_zsoftthresh2(unsigned int D, const long dims[D], float lambda, unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
-{
-	long norm_dims[D];
-	md_select_dims(D, ~flags, norm_dims, dims);
-
-	complex float* tmp_norm = md_alloc_sameplace(D, norm_dims, sizeof(complex float), iptr);
-
-	md_zsoftthresh_core2(D, dims, lambda, flags, tmp_norm, ostrs, optr, istrs, iptr);
-
-	md_free(tmp_norm);
-}
-
-
-
-/**
- * Soft thresholding using norm along arbitrary dimension (without strides)
- *
- * y = ST(x, lambda)
- * 1) computes resid = MAX( (norm(x) - lambda)/norm(x), 0 )
- * 2) multiplies y = resid * x
- *
- * @param D number of dimensions
- * @param dims dimensions of input/output
- * @param lambda threshold parameter
- * @param flags jointly thresholded dimensions
- * @param optr destination -- soft thresholded values
- * @param iptr source -- values to be soft thresholded
- */
-void md_zsoftthresh(unsigned int D, const long dims[D], float lambda, unsigned int flags, complex float* optr, const complex float* iptr)
-{
-	long strs[D];
-	md_calc_strides(D, strs, dims, sizeof(complex float));
-	md_zsoftthresh2(D, dims, lambda, flags, strs, optr, strs, iptr);
-}
-
-
-
 /**
  * Change the threshold parameter of the soft threshold function
  *
@@ -284,4 +219,14 @@ void set_thresh_lambda(const struct operator_p_s* o, const float lambda)
 	data->lambda = lambda;
 }
 
+/**
+ * Returns the regularization parameter of the soft threshold function
+ *
+ * @param o soft threshold prox operator
+ */
+float get_thresh_lambda(const struct operator_p_s* o)
+{
+	struct thresh_s* data = operator_p_get_data(o);
+	return data->lambda;
+}
 

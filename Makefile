@@ -110,18 +110,18 @@ TARGETS = $(TBASE) $(TFLP) $(TNUM) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TIO)
 
 MODULES = -lnum -lmisc -lnum -lmisc
 
-MODULES_sense = -lsense -lwavelet2 -liter
-MODULES_pocsense = -lsense -lwavelet2 -liter
+MODULES_sense = -lsense -lwavelet2 -liter -llinops
+MODULES_pocsense = -lsense -lwavelet2 -liter -llinops
 MODULES_nlinv = -lnoir -liter
-MODULES_rsense = -lgrecon -lsense -lnoir -lwavelet2 -lcalib -liter
-MODULES_bpsense = -lsense -lwavelet2 -lnoncart -liter
-MODULES_itsense = -liter
+MODULES_rsense = -lgrecon -lsense -lnoir -lwavelet2 -lcalib -liter -llinops
+MODULES_bpsense = -lsense -lwavelet2 -lnoncart -liter -llinops
+MODULES_itsense = -liter -llinops
 MODULES_ecalib = -lcalib
 MODULES_caldir = -lcalib
 MODULES_walsh = -lcalib
-MODULES_nufft = -lnoncart -liter
-MODULES_rof = -liter
-MODULES_bench = -lwavelet2
+MODULES_nufft = -lnoncart -liter -llinops
+MODULES_rof = -liter -llinops
+MODULES_bench = -lwavelet2 -llinops
 MODULES_phantom = -lsimu
 
 

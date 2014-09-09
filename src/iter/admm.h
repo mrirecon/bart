@@ -8,7 +8,7 @@
 
 #include <stdbool.h>
 
-struct vec_ops;
+struct vec_iter_s;
 
 #ifndef __PROX_FUN_T
 #define __PROX_FUN_T
@@ -117,7 +117,7 @@ struct admm_history_s {
 void admm(struct admm_history_s* history, const struct admm_plan_s* plan, 
 	  unsigned int D, const long z_dims[D],
 	  long N, float* x, const float* x_adj,
-	  const struct vec_ops* vops,
+	  const struct vec_iter_s* vops,
 	  void (*Aop)(void* _data, float* _dst, const float* _src),
 	  void* Aop_data,
 	  void* obj_eval_data, 

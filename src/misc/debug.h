@@ -25,7 +25,7 @@ extern double timestamp(void);
 
 extern int debug_level;
 
-	enum debug_levels { DP_ERROR, DP_WARN, DP_INFO, DP_DEBUG1, DP_DEBUG2, DP_DEBUG3, DP_ALL };
+enum debug_levels { DP_ERROR, DP_WARN, DP_INFO, DP_DEBUG1, DP_DEBUG2, DP_DEBUG3, DP_DEBUG4, DP_ALL };
 extern void debug_printf(int level, const char* fmt, ...);
 extern void debug_vprintf(int level, const char* fmt, va_list ap);
 

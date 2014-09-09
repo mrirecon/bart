@@ -20,9 +20,9 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/init.h"
-#include "num/ops.h"
 
-#include "iter/iter.h"
+#include "iter/italgos.h"
+#include "iter/vec.h"
 
 #include "misc/misc.h"
 #include "misc/mmio.h"
@@ -80,15 +80,12 @@ static void sense_adjoint(const void* _data, complex float* imgs, const complex 
 }
 
 
-static void sense_normal_reg(const void* _data, complex float* out, const complex float* in)
+static void sense_normal(void* _data, float* out, const float* in)
 {
 	const struct sense_data* data = _data;
 
-	sense_forward(data, data->tmp, in);
-	sense_adjoint(data, out, data->tmp);
-
-	// add alpha * x to achieve l2 regularization
-	md_zaxpy(DIMS, data->imgs_dims, out, data->alpha, in);
+	sense_forward(data, data->tmp, (const complex float*)in);
+	sense_adjoint(data, (complex float*)out, data->tmp);
 }
 
 
@@ -105,15 +102,10 @@ static void sense_reco(struct sense_data* data, complex float* imgs, const compl
 
 	long size = md_calc_size(DIMS, data->imgs_dims);
 
-	const struct operator_s* cg_op = operator_create(DIMS, data->imgs_dims, data->imgs_dims, data, sense_normal_reg, NULL);
-	struct iter_conjgrad_conf conf;
-	memcpy(&conf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
-	conf.maxiter = 100;
-
-	iter_conjgrad(&conf, cg_op, NULL, 2 * size, (float*)imgs, (const float*)adj, NULL, NULL, NULL);
+	conjgrad(100, data->alpha, 1.E-3, 2 * size, data, &cpu_iter_ops, sense_normal,
+	(float*)imgs, (const float*)adj, NULL, NULL, NULL);
 
 	md_free(adj);
-	operator_free(cg_op);
 }
 
 

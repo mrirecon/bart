@@ -75,6 +75,23 @@ static int compare_cmpl_magn(const void* a, const void* b)
 }
 
 
+float estimate_scaling_norm(float rescale, long imsize, complex float* tmpnorm, bool compat)
+{
+	qsort(tmpnorm, (size_t)imsize, sizeof(complex float), compare_cmpl_magn);
+
+	float median = cabsf(tmpnorm[imsize / 2]) / rescale; //median
+	float p90 = cabsf(tmpnorm[(int)trunc(imsize * 0.9)]) / rescale;
+	float max = cabsf(tmpnorm[imsize - 1]) / rescale;
+
+	float scale = ((max - p90) < 2 * (p90 - median)) ? p90 : max;
+
+	if (compat)
+		scale = median;
+
+	debug_printf(DP_DEBUG1, "Scaling: %f%c (max = %f/p90 = %f/median = %f)\n", scale, (scale == max) ? '!' : ' ', max, p90, median);
+
+	return scale;
+}
 
 
 static float estimate_scaling_internal(const long dims[DIMS], const complex float* sens, const long strs[DIMS], const complex float* data, bool compat)
@@ -105,21 +122,9 @@ static float estimate_scaling_internal(const long dims[DIMS], const complex floa
 		optimal_combine(small_dims, 0., tmp1, sens, tmp);
 	}
 
+	float scale = estimate_scaling_norm(rescale, imsize, tmp1, compat);
+
 	free(tmp);
-
-	qsort(tmp1, (size_t)imsize, sizeof(complex float), compare_cmpl_magn);
-
-	float median = cabsf(tmp1[imsize / 2]) / rescale; //median
-	float p90 = cabsf(tmp1[(int)trunc(imsize * 0.9)]) / rescale;
-	float max = cabsf(tmp1[imsize - 1]) / rescale;
-
-	float scale = ((max - p90) < 2 * (p90 - median)) ? p90 : max;
-
-	if (compat)
-		scale = median;
-
-	debug_printf(DP_DEBUG1, "Scaling: %f%c (max = %f/p90 = %f/median = %f)\n", scale, (scale == max) ? '!' : ' ', max, p90, median);
-
 	free(tmp1);
 
 	return scale;

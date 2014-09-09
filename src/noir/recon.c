@@ -21,6 +21,7 @@
 #include "num/fft.h"
 
 #include "iter/iter3.h"
+#include "iter/thresh.h"
 
 #include "misc/misc.h"
 #include "misc/mri.h"
@@ -33,7 +34,6 @@
 #ifdef WAVELET
 #include "sense/wavelet.h"
 #endif
-#include "num/thresh.h"
 
 
 struct data {

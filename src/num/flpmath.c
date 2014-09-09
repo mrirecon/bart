@@ -160,16 +160,15 @@ static void optimized_twoop(unsigned int D, const long dim[D], const long ostr[D
 		unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0);
 		flags = dims_parallel(2, io, ND, tdims, nstr2, sizes);
 
-//		debug_printf(DP_DEBUG3, "Skip: %d %d\n", skip, ffs(flags));
+		debug_printf(DP_DEBUG4, "Skip: %d %d\n", skip, ffs(flags));
 
 		while ((0 != flags) && (ffs(flags) <= skip))
 			skip--;
 
-#if 0
-		debug_print_dims(DP_DEBUG3, D, dim);
-		debug_print_dims(DP_DEBUG3, ND, tdims);
-		debug_printf(DP_DEBUG3, "Io: %d, Parallel: %d, Skip: %d\n", io, flags, skip);
-#endif
+		debug_print_dims(DP_DEBUG4, D, dim);
+		debug_print_dims(DP_DEBUG4, ND, tdims);
+		debug_printf(DP_DEBUG4, "Io: %d, Parallel: %d, Skip: %d\n", io, flags, skip);
+
 		flags = flags >> skip;
 	}
 
@@ -248,16 +247,15 @@ static void optimized_threeop(unsigned int D, const long dim[D], const long ostr
 		unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
 		flags = dims_parallel(3, io, ND, tdims, nstr2, sizes);
 
-//		debug_printf(DP_DEBUG3, "Skip: %d %d\n", skip, ffs(flags));
+		debug_printf(DP_DEBUG4, "Skip: %d %d\n", skip, ffs(flags));
 
 		while ((0 != flags) && (ffs(flags) <= skip))
 			skip--;
 
-#if 0
-		debug_print_dims(DP_DEBUG3, D, dim);
-		debug_print_dims(DP_DEBUG3, ND, tdims);
-		debug_printf(DP_DEBUG3, "Io: %d, Parallel: %d, Skip: %d\n", io, flags, skip);
-#endif
+		debug_print_dims(DP_DEBUG4, D, dim);
+		debug_print_dims(DP_DEBUG4, ND, tdims);
+		debug_printf(DP_DEBUG4, "Io: %d, Parallel: %d, Skip: %d\n", io, flags, skip);
+
 		flags = flags >> skip;
 	}
 
@@ -1114,6 +1112,97 @@ void md_zfloat2double(unsigned int D, const long dims[D], complex double* dst, c
 
 
 
+/**
+ * Store max dimensions of dims1 and dims2 and check for basic consistency
+ * FIXME move to some other place?
+ */
+static void md_mmdims(unsigned int D, long max_dims[D], const long dims1[D], const long dims2[D])
+{
+	for (unsigned int i = 0; i < D; i++) {
+
+		if ((dims1[i] > 1) && (dims2[i] == 1)) {
+
+			max_dims[i] = dims1[i];
+
+		} else
+		if ((dims1[i] == 1) && (dims2[i] > 1)) {
+
+			max_dims[i] = dims2[i];
+
+		} else {
+
+			assert(dims1[i] == dims2[i]);
+			max_dims[i] = dims1[i];
+		}
+	}
+}
+
+static void md_zmatmul2_priv(unsigned int D, const long out_dims[D], const long out_strs[D], complex float* dst, const long mat_dims[D], const long mat_strs[D], const complex float* mat, const long in_dims[D], const long in_strs[D], const complex float* src, bool conj)
+{
+	UNUSED(mat_dims);
+
+	long max_dims[D];
+	md_mmdims(D, max_dims, in_dims, out_dims);
+
+	md_clear2(D, out_dims, out_strs, dst, CFL_SIZE);
+	(conj ? md_zfmacc2 : md_zfmac2)(D, max_dims, out_strs, dst, in_strs, src, mat_strs, mat);
+}
+
+/**
+ * Matrix conjugate multiplication (with strides)
+ * FIXME simplify interface? use macros?
+ */
+void md_zmatmulc2(unsigned int D, const long out_dims[D], const long out_strs[D], complex float* dst, const long mat_dims[D], const long mat_strs[D], const complex float* mat, const long in_dims[D], const long in_strs[D], const complex float* src)
+{
+	md_zmatmul2_priv(D, out_dims, out_strs, dst, mat_dims, mat_strs, mat, in_dims, in_strs, src, true);
+}
+
+
+
+/**
+ * Matrix conjugate multiplication (without strides)
+ */
+void md_zmatmulc(unsigned int D, const long out_dims[D], complex float* dst, const long mat_dims[D], const complex float* mat, const long in_dims[D], const complex float* src)
+{
+	long out_strs[D];
+	long mat_strs[D];
+	long in_strs[D];
+
+	md_calc_strides(D, out_strs, out_dims, CFL_SIZE);
+	md_calc_strides(D, mat_strs, mat_dims, CFL_SIZE);
+	md_calc_strides(D, in_strs, in_dims, CFL_SIZE);
+
+	md_zmatmulc2(D, out_dims, out_strs, dst, mat_dims, mat_strs, mat, in_dims, in_strs, src);
+}
+
+
+
+/**
+ * Matrix multiplication (with strides)
+ * FIXME simplify interface?
+ */
+void md_zmatmul2(unsigned int D, const long out_dims[D], const long out_strs[D], complex float* dst, const long mat_dims[D], const long mat_strs[D], const complex float* mat, const long in_dims[D], const long in_strs[D], const complex float* src)
+{
+	md_zmatmul2_priv(D, out_dims, out_strs, dst, mat_dims, mat_strs, mat, in_dims, in_strs, src, false);
+}
+
+
+
+/**
+ * Matrix multiplication (without strides)
+ */
+void md_zmatmul(unsigned int D, const long out_dims[D], complex float* dst, const long mat_dims[D], const complex float* mat, const long in_dims[D], const complex float* src)
+{
+	long out_strs[D];
+	long mat_strs[D];
+	long in_strs[D];
+
+	md_calc_strides(D, out_strs, out_dims, CFL_SIZE);
+	md_calc_strides(D, mat_strs, mat_dims, CFL_SIZE);
+	md_calc_strides(D, in_strs, in_dims, CFL_SIZE);
+
+	md_zmatmul2(D, out_dims, out_strs, dst, mat_dims, mat_strs, mat, in_dims, in_strs, src);
+}
 
 
 
@@ -2112,6 +2201,29 @@ float md_z1norm(unsigned int D, const long dim[D], const complex float* ptr)
 	return md_z1norm2(D, dim, str, ptr);
 }
 
+/**
+ * Root of sum of squares along selected dimensions
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for applying the root of sum of squares, ie the dimensions that will not stay
+ */
+void md_rrss(unsigned int D, const long dims[D], unsigned int flags, float* dst, const float* src)
+{
+	long str1[D];
+	long str2[D];
+	long dims2[D];
+
+	md_select_dims(D, ~flags, dims2, dims);
+
+	md_calc_strides(D, str1, dims, sizeof(float));
+	md_calc_strides(D, str2, dims2, sizeof(float));
+
+	md_clear(D, dims2, dst, sizeof(float));
+	md_fmac2(D, dims, str2, dst, str1, src, str1, src);
+
+	md_sqrt(D, dims2, dst, dst);
+}
+
 
 
 /**
@@ -2122,6 +2234,7 @@ float md_z1norm(unsigned int D, const long dim[D], const complex float* ptr)
  */
 void md_rss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
 {
+#if 1
 	long str1[D];
 	long str2[D];
 	long dims2[D];
@@ -2141,6 +2254,11 @@ void md_rss(unsigned int D, const long dims[D], unsigned int flags, complex floa
 	md_sqrt(D + 1, dims2R, (float*)dst, (const float*)dst);
 #else
 	md_zsqrt(D, dims2, dst, dst);
+#endif
+#else
+	long dimsR[D + 1];
+	real_from_complex_dims(D, dimsR, dims);
+	md_rrss(D + 1, dimsR, (flags << 1), (float*)dst, (const float*)src);
 #endif
 }
 
@@ -2198,6 +2316,36 @@ void md_zsoftthresh_half2(unsigned int D, const long dim[D], float lambda, const
 }
 
 
+/**
+ * Soft Thresholding array
+ * 
+ * return SoftThresh ( ptr )
+ */
+static void nary_softthresh_half(void* _data, void* ptr[])
+{
+	struct data_s* data = (struct data_s*)_data;
+	data->ops->softthresh_half(data->size, *(float*)data->data_ptr, ptr[0], ptr[1]);
+}
+
+
+/**
+ * Step (2) of Soft Thresholding multi-dimensional arrays, y = ST(x, lambda)
+ * 2) computes resid = MAX( (abs(x) - lambda)/abs(x), 0 ) (with strides)
+ * 
+ * @param D number of dimensions
+ * @param dim dimensions of input/output
+ * @param lambda threshold parameter
+ * @param ostr output strides
+ * @param optr pointer to output, y
+ * @param istr input strides
+ * @param iptr pointer to input, abs(x)
+ */
+void md_softthresh_half2(unsigned int D, const long dim[D], float lambda, const long ostr[D], float* optr, const long istr[D], const float* iptr)
+{
+	size_t sizes[2] = { sizeof(float), sizeof(float) };
+	optimized_twoop_oi(D, dim, ostr, optr, istr, iptr, sizes, nary_softthresh_half, &lambda);
+}
+
 
 /**
  * Step (1) of Soft Thresholding multi-dimensional arrays, y = ST(x, lambda)
@@ -2218,6 +2366,21 @@ void md_zsoftthresh_half(unsigned int D, const long dim[D], float lambda, comple
 
 
 
+void md_softthresh_core2(unsigned int D, const long dims[D], float lambda, unsigned int flags, float* tmp_norm, const long ostrs[D], float* optr, const long istrs[D], const float* iptr)
+{
+	long norm_dims[D];
+	long norm_strs[D];
+
+	md_select_dims(D, ~flags, norm_dims, dims);
+	md_calc_strides(D, norm_strs, norm_dims, sizeof(float));
+
+	md_rrss(D, dims, flags, tmp_norm, iptr);
+	md_softthresh_half2(D, norm_dims, lambda, norm_strs, tmp_norm, norm_strs, tmp_norm);
+	md_mul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
+}
+
+
+
 /**
  * Soft Thresholding complex array
  * 
@@ -2234,11 +2397,20 @@ static void nary_softthresh(void* _data, void* ptr[])
  * 
  * optr = ST( iptr,lambda )
  */
-void md_softthresh2(unsigned int D, const long dims[D], float lambda, const long ostr[D], float* optr, const long istr[D], const float* iptr)
+void md_softthresh2(unsigned int D, const long dims[D], float lambda, unsigned int flags, const long ostrs[D], float* optr, const long istrs[D], const float* iptr)
 {
-	size_t sizes[2] = { sizeof(float), sizeof(float) };
-	optimized_twoop_oi(D, dims, ostr, optr, istr, iptr, sizes, nary_softthresh, &lambda);
+	if (0 == flags) {
 
+		size_t sizes[2] = { sizeof(float), sizeof(float) };
+		optimized_twoop_oi(D, dims, ostrs, optr, istrs, iptr, sizes, nary_softthresh, &lambda);
+		return;
+	}
+
+	long norm_dims[D];
+	md_select_dims(D, ~flags, norm_dims, dims);
+	float* tmp_norm = md_alloc_sameplace(D, norm_dims, sizeof(float), iptr);
+	md_softthresh_core2(D, dims, lambda, flags, tmp_norm, ostrs, optr, istrs, iptr);
+	md_free(tmp_norm);
 }
 
 
@@ -2248,11 +2420,87 @@ void md_softthresh2(unsigned int D, const long dims[D], float lambda, const long
  * 
  * optr = ST( iptr,lambda )
  */
-void md_softthresh(unsigned int D, const long dims[D], float lambda, float* optr, const float* iptr)
+void md_softthresh(unsigned int D, const long dims[D], float lambda, unsigned int flags, float* optr, const float* iptr)
 {
 	long str[D];
 	md_calc_strides(D, str, dims, sizeof(float));
-	md_softthresh2(D, dims, lambda, str, optr, str, iptr);
+	md_softthresh2(D, dims, lambda, flags, str, optr, str, iptr);
+}
+
+
+
+
+void md_zsoftthresh_core2(unsigned int D, const long dims[D], float lambda, unsigned int flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+{
+	long norm_dims[D];
+	long norm_strs[D];
+
+	md_select_dims(D, ~flags, norm_dims, dims);
+	md_calc_strides(D, norm_strs, norm_dims, sizeof(complex float));
+
+	md_rss(D, dims, flags, tmp_norm, iptr);
+	md_zsoftthresh_half2(D, norm_dims, lambda, norm_strs, tmp_norm, norm_strs, tmp_norm);
+	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
+}
+
+
+static void nary_zsoftthresh(void* _data, void* ptr[])
+{
+	struct data_s* data = (struct data_s*)_data;
+	data->ops->zsoftthresh(data->size, *(float*)data->data_ptr, ptr[0], ptr[1]);
+}
+
+/**
+ * Soft thresholding using norm along arbitrary dimension (with strides)
+ *
+ * y = ST(x, lambda)
+ * 1) computes resid = MAX( (norm(x) - lambda)/norm(x), 0 )
+ * 2) multiplies y = resid * x
+ *
+ * @param D number of dimensions
+ * @param dims dimensions of input/output
+ * @param lambda threshold parameter
+ * @param flags jointly thresholded dimensions
+ * @param optr destination -- soft thresholded values
+ * @param iptr source -- values to be soft thresholded
+ */
+void md_zsoftthresh2(unsigned int D, const long dims[D], float lambda, unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+{
+	if (0 == flags) {
+
+		size_t sizes[2] = { sizeof(complex float), sizeof(complex float) };
+		optimized_twoop_oi(D, dims, ostrs, optr, istrs, iptr, sizes, nary_zsoftthresh, &lambda);
+		return;
+	}
+
+	long norm_dims[D];
+	md_select_dims(D, ~flags, norm_dims, dims);
+	complex float* tmp_norm = md_alloc_sameplace(D, norm_dims, sizeof(complex float), iptr);
+	md_zsoftthresh_core2(D, dims, lambda, flags, tmp_norm, ostrs, optr, istrs, iptr);
+	md_free(tmp_norm);
+}
+
+
+
+/**
+ * Soft thresholding using norm along arbitrary dimension (without strides)
+ *
+ * y = ST(x, lambda)
+ * 1) computes resid = MAX( (norm(x) - lambda)/norm(x), 0 )
+ * 2) multiplies y = resid * x
+ *
+ * @param D number of dimensions
+ * @param dims dimensions of input/output
+ * @param lambda threshold parameter
+ * @param flags jointly thresholded dimensions
+ * @param optr destination -- soft thresholded values
+ * @param iptr source -- values to be soft thresholded
+ */
+void md_zsoftthresh(unsigned int D, const long dims[D], float lambda, unsigned int flags, complex float* optr, const complex float* iptr)
+{
+	long strs[D];
+	md_calc_strides(D, strs, dims, sizeof(complex float));
+	md_zsoftthresh2(D, dims, lambda, flags, strs, optr, strs, iptr);
 }
 
 

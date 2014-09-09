@@ -30,7 +30,7 @@ void debug_print_iovec(int level, const struct iovec_s* vec)
 #endif
 
 
-const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const long strs[N])
+const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const long strs[N], size_t size)
 {
 	struct iovec_s* n = xmalloc(sizeof(struct iovec_s));
 
@@ -44,14 +44,16 @@ const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const lo
 	memcpy(nstrs, strs, N * sizeof(long));
 	n->strs = nstrs;
 
+	n->size = size;
+
 	return n;
 }
 
-const struct iovec_s* iovec_create(unsigned int N, const long dims[N])
+const struct iovec_s* iovec_create(unsigned int N, const long dims[N], size_t size)
 {
 	long strs[N];
-	md_calc_strides(N, strs, dims, CFL_SIZE);
-	return iovec_create2(N, dims, strs);
+	md_calc_strides(N, strs, dims, size);
+	return iovec_create2(N, dims, strs, size);
 }
 
 

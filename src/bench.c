@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <complex.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -20,6 +21,9 @@
 #include "num/ops.h"
 
 #include "wavelet2/wavelet.h"
+#ifdef BERKELEY_SVN
+#include "wavelet3/wavthresh.h"
+#endif
 
 #include "misc/debug.h"
 #include "misc/misc.h"
@@ -35,7 +39,6 @@ const char* help_str = "Run micro-benchmarks.\n";
 
 static double bench_generic_copy(long dims[DIMS])
 {
-
 	long strs[DIMS];
 
 	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
@@ -134,6 +137,20 @@ static double bench_batch_matmul1(void)
 static double bench_batch_matmul2(void)
 {
 	long dims[DIMS] = { 1, 8, 8, 8, 30000, 1, 1, 1 };
+	return bench_generic_matrix_multiply(dims);
+}
+
+
+static double bench_tall_matmul1(void)
+{
+	long dims[DIMS] = { 1, 8, 8, 100000, 1, 1, 1, 1 };
+	return bench_generic_matrix_multiply(dims);
+}
+
+
+static double bench_tall_matmul2(void)
+{
+	long dims[DIMS] = { 1, 100000, 8, 8, 1, 1, 1, 1 };
 	return bench_generic_matrix_multiply(dims);
 }
 
@@ -246,7 +263,7 @@ static double bench_zl1norm(void)
 }
 
 
-static double bench_wavelet_thresh(void)
+static double bench_wavelet_thresh(int version)
 {
 	long dims[DIMS] = { 1, 256, 256, 1, 16, 1, 1, 1 };
 	long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -254,7 +271,20 @@ static double bench_wavelet_thresh(void)
 	minsize[1] = MIN(dims[1], 16);
 	minsize[2] = MIN(dims[2], 16);
 
-	const struct operator_p_s* p = prox_wavethresh_create(DIMS, dims, 7, minsize, 1.1, 1, 0);
+	const struct operator_p_s* p;
+
+	switch (version) {
+	case 2:
+		p = prox_wavethresh_create(DIMS, dims, 7, minsize, 1.1, true, false);
+		break;
+	case 3:
+#ifdef BERKELEY_SVN
+		p = prox_wavelet3_thresh_create(DIMS, dims, 6, minsize, 1.1, true);
+		break;
+#endif
+	default:
+		assert(0);
+	}
 
 	complex float* x = md_alloc(DIMS, dims, CFL_SIZE);
 	md_gaussian_rand(DIMS, dims, x);
@@ -271,23 +301,39 @@ static double bench_wavelet_thresh(void)
 	return toc - tic;
 }
 
+static double bench_wavelet2_thresh(void)
+{
+	return bench_wavelet_thresh(2);
+}
+
+#ifdef BERKELEY_SVN
+static double bench_wavelet3_thresh(void)
+{
+	return bench_wavelet_thresh(3);
+}
+#endif
 
 static void do_test(double (*fun)(void), const char* str)
 {
-	printf("%20.20s ", str);
+	printf("%30.30s |", str);
 	
 	int N = 5;
 	double sum = 0.;
+	double min = 1.E10;
+	double max = 0.;
+
 	for (int i = 0; i < N; i++) {
 
 		double dt = fun();
 		sum += dt;
+		min = MIN(dt, min);
+		max = MAX(dt, max);
 
 		printf(" %3.4f", (float)dt);
 		fflush(stdout);
 	}
 
-	printf(" Avg: %3.4f\n", (float)(sum / N)); 
+	printf(" | Avg: %3.4f Max: %3.4f Min: %3.4f\n", (float)(sum / N), max, min); 
 }
 
 
@@ -303,14 +349,19 @@ int main(int argc, char* argv[])
 	do_test(bench_matrix_multiply,	"complex matrix multiply");
 	do_test(bench_batch_matmul1,	"batch matrix multiply 1");
 	do_test(bench_batch_matmul2,	"batch matrix multiply 2");
+	do_test(bench_tall_matmul1,	"tall matrix multiply 1");
+	do_test(bench_tall_matmul2,	"tall matrix multiply 2");
 	do_test(bench_zscalar,		"complex dot product");
 	do_test(bench_zscalar,		"complex dot product");
 	do_test(bench_zscalar_real,	"real complex dot product");
 	do_test(bench_znorm,		"l2 norm");
 	do_test(bench_zl1norm,		"l1 norm");
-	do_test(bench_copy1,	"copy 1");
-	do_test(bench_copy2,	"copy 2");
-	do_test(bench_wavelet_thresh,		"wavelet soft thresh");
+	do_test(bench_copy1,		"copy 1");
+	do_test(bench_copy2,		"copy 2");
+	do_test(bench_wavelet2_thresh,	"wavelet soft thresh");
+#ifdef BERKELEY_SVN
+	do_test(bench_wavelet3_thresh,	"wavelet soft thresh");
+#endif
 
 	exit(0);
 }
