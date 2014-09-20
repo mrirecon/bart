@@ -96,7 +96,7 @@ void tv(unsigned int D, const long dims[D], unsigned int flags, complex float* o
 	tv_op(D + 1, dims2, flags, tmp, in);
 
 	// rss should be moved elsewhere
-	md_rss(D + 1, dims2, flags, out, tmp);
+	md_zrss(D + 1, dims2, flags, out, tmp);
 	md_free(tmp);
 }
 

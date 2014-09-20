@@ -50,12 +50,21 @@ const struct ellipsis_s phantom_disc[1] = {
 	{	1., { 1., 1. }, { 0., 0. }, 0. }
 };
 
-#if 0
+
+// old: imaginary ring outside from 0.5 to 0.49
+const struct ellipsis_s phantom_ring[4] = {
+	{	1., { 0.75, 0.75 }, { 0., 0. }, 0. },
+	{	-1. + 1.i, { 0.5, 0.5 }, { 0., 0. }, 0. },
+	{	-1.i, { 0.48, 0.48 }, { 0., 0. }, 0. },
+	{	1., { 0.48, 0.48 }, { 0., 0. }, 0. },
+//	{	1., { 0.48, 0.48 }, { 0., 0. }, 0. },
+};
+
+
 static double sinc(double x)
 {
 	return (0. == x) ? 1. : (sin(x) / x);
 }
-#endif
 
 static double jinc(double x)
 {
@@ -108,7 +117,36 @@ complex double kellipsis(const double center[2], const double axis[2], double an
 	return res * cexp(2.i * M_PI * (p90[0] * center[0] + p90[1] * center[1]));
 }
 
+complex double xrectangle(const double center[2], const double axis[2], double angle, const double p[2])
+{
+	double p90[2];
+	p90[0] = -p[1];
+	p90[1] = p[0];
 
+	double pshift[2];
+	pshift[0] = p90[0] + center[0];
+	pshift[1] = p90[1] + center[1];
+	double prot[2];
+	rot2d(prot, pshift, 2. * M_PI * angle / 360.);
+
+	double radius = fabs(prot[0] / axis[0]) + fabs(prot[1] / axis[1]);
+
+	return (radius <= 1.) ? 1. : 0.;
+}
+
+complex double krectangle(const double center[2], const double axis[2], double angle, const double p[2])
+{
+	double p90[2];
+	p90[0] = -p[1];
+	p90[1] = p[0];
+
+	double prot[2];
+	rot2d(prot, p90, 2. * M_PI * angle / 360.);
+
+	complex double res = sinc(2. * M_PI * prot[0] * axis[0]) * sinc(2. * M_PI * prot[1] * axis[1]) * (axis[0] * axis[1]);
+
+	return res * cexp(2.i * M_PI * (p90[0] * center[0] + p90[1] * center[1]));
+}
 
 
 complex double phantom(unsigned int N, const struct ellipsis_s arr[N], const double pos[2], _Bool ksp)
@@ -121,5 +159,13 @@ complex double phantom(unsigned int N, const struct ellipsis_s arr[N], const dou
 	return res;
 }
 
+complex double phantomX(unsigned int N, const struct ellipsis_s arr[N], const double pos[2], _Bool ksp)
+{
+	complex double res = 0.;
 
+	for (unsigned int i = 0; i < N; i++)
+		res += arr[i].intensity * (ksp ? krectangle : xrectangle)(arr[i].center, arr[i].axis, arr[i].angle, pos);
+
+	return res;
+}
 

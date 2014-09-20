@@ -32,6 +32,7 @@ extern "C" {
 #define TIME2_DIM	10u
 #define LEVEL_DIM	11u
 #define COEFF2_DIM	12u
+#define SLICE_DIM	13u
 #define KSPACE_DIMS	16u
 
 #ifndef DIMS
@@ -72,8 +73,6 @@ extern _Complex float* extract_calib(long caldims[DIMS], const long calsize[3], 
 extern _Complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const long in_strs[DIMS], const _Complex float* in_data, _Bool fixed);
 extern void data_consistency(const long dims[DIMS], _Complex float* dst, const _Complex float* pattern, const _Complex float* kspace1, const _Complex float* kspace2);
 extern void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], const long in_dims[DIMS], const _Complex float* in_data);
-extern _Complex float* compute_mask(unsigned int N, const long msk_dims[__VLA(N)], float restrict_fov);
-extern void linear_phase(unsigned int N, const long dims[__VLA(N)], const float pos[__VLA(N)], _Complex float* out);
 
 
 #ifdef __cplusplus

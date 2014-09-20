@@ -253,7 +253,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		}
 
 
-		// z_i prox
+		// z_j prox
 		for (unsigned int j = 0; j < num_funs; j++) {
 	
 			// initialize for j'th function update
@@ -290,8 +290,8 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 				// add next term to s: s = s + Gj^H (zj - zj_old)
 				vops->sub(Mj, zj_old, z + pos, zj_old);
-				plan->ops[j].adjoint(plan->ops[j].data, Gjx_plus_uj, zj_old);
-				vops->add(N, s, s, Gjx_plus_uj);
+				plan->ops[j].adjoint(plan->ops[j].data, rhs, zj_old);
+				vops->add(N, s, s, rhs);
 
 				// GH_usum += G_j^H uj (for updating eps_dual)
 				plan->ops[j].adjoint(plan->ops[j].data, rhs, u + pos);

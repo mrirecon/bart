@@ -348,3 +348,59 @@ const struct operator_p_s* prox_zero_create(unsigned int N, const long dims[N])
 
 	return operator_p_create(N, dims, N, dims, pdata, prox_zero_apply, prox_zero_del);
 }
+
+
+
+
+/**
+ * Data for computing prox_lineq_fun: 
+ * Proximal function for f(z) = 1{ A z = y }
+ * Assumes AA^T = I
+ * Solution is z = x - A^T A x + A^T y
+ *
+ * @param op linop A
+ * @param adj A^H y
+ * @param tmp tmp
+ */
+struct prox_lineq_data {
+	
+	const struct linop_s* op;
+	complex float* adj;
+	complex float* tmp;
+};
+
+static void prox_lineq_apply(const void* _data, float mu, complex float* dst, const complex float* src)
+{
+	UNUSED( mu );
+	struct prox_lineq_data* pdata = (struct prox_lineq_data*)_data;
+
+	const struct linop_s* op = pdata->op;
+	linop_normal_unchecked( op, pdata->tmp, src );
+
+	md_zsub( linop_domain(op)->N, linop_domain(op)->dims, dst, src, pdata->tmp );
+	md_zadd( linop_domain(op)->N, linop_domain(op)->dims, dst, dst, pdata->adj );
+}
+
+static void prox_lineq_del(const void* _data)
+{
+	struct prox_lineq_data* pdata = (struct prox_lineq_data* )_data;
+	md_free( pdata->adj );
+	md_free( pdata->tmp );
+	free( pdata );
+}
+
+const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const complex float* y)
+{
+	struct prox_lineq_data* pdata = xmalloc( sizeof(struct prox_lineq_data) );
+
+	pdata->op = op;
+
+	pdata->adj = md_alloc_sameplace( linop_domain(op)->N, linop_domain(op)->dims, CFL_SIZE, y );
+	linop_adjoint_unchecked( op, pdata->adj, y );
+
+	pdata->tmp = md_alloc_sameplace( linop_domain(op)->N, linop_domain(op)->dims, CFL_SIZE, y );
+
+	return operator_p_create(linop_domain(op)->N, linop_domain(op)->dims, 
+			linop_domain(op)->N, linop_domain(op)->dims, 
+			pdata, prox_lineq_apply, prox_lineq_del);
+}

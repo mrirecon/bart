@@ -81,7 +81,7 @@ void direct_calib(const long dims[5], complex float* sens, const long caldims[5]
 
 	complex float* img = md_alloc(5, dims1, CFL_SIZE);
 
-	md_rss(5, dims, COIL_FLAG, img, sens);
+	md_zrss(5, dims, COIL_FLAG, img, sens);
 #if 1
 	long T = md_calc_size(5, dims1);
 	for (int i = 0; i < T; i++)

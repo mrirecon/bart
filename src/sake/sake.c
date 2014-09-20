@@ -177,7 +177,7 @@ static void lowrank(float alpha, const long dims[5], complex float* matrix)
 		free(S);
 	}
 
-	md_clear(5, dims, matrix, sizeof(complex float));
+	//md_clear(5, dims, matrix, sizeof(complex float));
 	casorati_matrixH(4, kernel_dims, calreg_dims, str, matrix, calmat_dims, calmat);
 	md_zsmul(5, dims, matrix, matrix, 1. / (double)(kx * ky * kz)); // FIXME: not right at the border
 

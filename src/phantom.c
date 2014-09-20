@@ -127,10 +127,10 @@ int main(int argc, char* argv[])
 	} else
 	if (circ) {
 
-		assert(1 == dims[COIL_DIM]);
 		assert(NULL == traj);
 
 		calc_circ(dims, out, kspace);
+//		calc_ring(dims, out, kspace);
 
 	} else {
 

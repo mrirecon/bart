@@ -46,7 +46,7 @@ void optimal_combine(const long dims[DIMS], float alpha, complex float* image, c
 	sense_free(sense_data);	
 
 	complex float* norm = md_alloc(DIMS, dims_img, CFL_SIZE);
-	md_rss(DIMS, dims, COIL_FLAG, norm, sens);
+	md_zrss(DIMS, dims, COIL_FLAG, norm, sens);
 	
 	long imsize = md_calc_size(DIMS, dims_img);
 	for (unsigned int i = 0; i < imsize; i++)
@@ -62,7 +62,7 @@ void rss_combine(const long dims[DIMS], complex float* image, const complex floa
 
 	ifft(DIMS, dims, FFT_FLAGS, tmp, data);
 	fftscale(DIMS, dims, FFT_FLAGS, tmp, tmp);
-	md_rss(DIMS, dims, COIL_FLAG, image, tmp);
+	md_zrss(DIMS, dims, COIL_FLAG, image, tmp);
 
 	md_free(tmp);
 }

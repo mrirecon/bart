@@ -10,7 +10,23 @@ Some references can be found at the end of this file. The source code might
 provide more detailed references, e.g. for specific iterative algorithms.
 
 
-Direct questions and feedback to: Martin Uecker <uecker@eecs.berkeley.edu>
+Please direct all questions or comments to the public mailing list:
+
+	mrirecon@lists.eecs.berkeley.edu
+
+	https://lists.eecs.berkeley.edu/sympa/info/mrirecon
+
+
+Note: This list has a public archive! Please do not send
+any confidential information.
+
+
+
+Updates and further information can be found here:
+
+http://www.eecs.berkeley.edu/~uecker/toolbox.html
+
+
 
 
 
@@ -297,14 +313,19 @@ ones dims dim1 ... dimn name
 	size {dim1} to {dimn}.
 
 
+normalize bitmask <input> <output>
+
+	Normalize along selected dimensions.
+
+
 
 -- MRI calibration and reconstruction ---
 
 
 
-rss dim <input> <output>
+rss bitmask <input> <output>
 
-	Calculates root of sum of squares along {dim}.
+	Calculates root of sum of squares along selected dimensions.
 
 
 homodyne dim fraction <input> <output>
@@ -341,7 +362,8 @@ ecalib [-t threshold] [-c crop_value] [-k kernel_size] [-r cal_size] [-m maps] <
 	Optionally outputs the eigenvalue maps.
 
 	-t threshold	This determined the size of the null-space.
-	-c crop_value	Crop the sensitivities if the eigenvalue is smaller than {crop_value}.
+	-c crop_value	Crop the sensitivities if the eigenvalue is
+                        smaller than {crop_value}.
 	-k ksize	kernel size
 	-r cal_size	Limits the size of the calibration region.
 	-m maps		Number of maps to compute.
@@ -353,7 +375,8 @@ ecaltwo [-c crop] [-m maps] x y z <input> <sensitivities> [<ev_maps>]
 	Second part of ESPIRiT calibration.
 	Optionally outputs the eigenvalue maps.
 
-	-c crop_value	Crop the sensitivities if the eigenvalue is smaller than {crop_value}.
+	-c crop_value	Crop the sensitivities if the eigenvalue is
+                        smaller than {crop_value}.
 	-m maps		Number of maps to compute.
 
 	
@@ -441,7 +464,7 @@ nufft <traj> <input> <output>
 	-h		help
 
 
-rof <lambda> <flags> <input> <output>
+rof lambda bitmask <input> <output>
 
 	Perform total variation denoising along dims <flags>.
 
@@ -491,6 +514,13 @@ ismrmrd <ismrm-file> <output>
 References:
 
 
+Uecker M, Virtue P, Ong F, Murphy MJ, Alley MT, Vasanawala SS, Lustig M,
+Software Toolbox and Programming Library for Compressed Sensing and
+Parallel Imaging, ISMRM Workshop on Data Sampling and Image
+Reconstruction, Sedona 2013
+
+
+
 SENSE:
 
 Pruessmann KP, Weiger M, Scheidegger MB, Boesiger P. SENSE: Sensitivity
@@ -499,6 +529,20 @@ encoding for fast MRI. Magn Reson Med 1999; 42:952-962.
 Pruessmann KP, Weiger M, Boernert P, Boesiger P. Advances in sensitivity
 encoding with arbitrary k-space trajectories. 
 Magn Reson Med 2001; 46:638-651.
+
+
+
+compressed sensing:
+
+Lustig M, Donoho D and Pauly JM, Sparse MRI: The application of
+compressed sensing for rapid MR imaging. Magn Reson Med 2007,
+58: 1182–1195.
+
+Block KT, Uecker M, and Frahm J. Undersampled radial MRI with
+multiple coils. Iterative image reconstruction using a total
+variation constraint. Magn Reson Med 2007, 57: 1086-1098.
+
+
 
 
 direct calibration:

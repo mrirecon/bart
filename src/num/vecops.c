@@ -283,6 +283,20 @@ static void zphsr(long N, complex float* dst, const complex float* src)
 }
 
 
+static void maxxy(long N, float* dst, const float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = MAX(dst[i], src[i]);
+}
+
+
+static void minxy(long N, float* dst, const float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = MIN(dst[i], src[i]);
+}
+
+
 static void vec_pow(long N, float* dst, const float* src1, const float* src2)
 {
 	for (long i = 0; i < N; i++)
@@ -411,6 +425,9 @@ const struct vec_ops cpu_ops = {
 
 	.zcmp = zcmp,
 	.zdiv_reg = zdiv_reg,
+
+	.maxxy = maxxy,
+	.minxy = minxy,
 
 	.zsoftthresh = zsoftthresh,
 	.zsoftthresh_half = zsoftthresh_half,

@@ -71,6 +71,8 @@ void casorati_matrixH(unsigned int N, const long dimk[N], const long dim[N], con
 	assert(odim[0] == md_calc_size(N, dimc));
 	assert(odim[1] == md_calc_size(N, dimc + N));
 
+	md_clear(N, dim, optr, CFL_SIZE);
+
 	md_calc_strides(2 * N, strc, dimc, CFL_SIZE);
 	md_zadd2(2 * N, dimc, str2, optr, str2, optr, strc, iptr);
 }

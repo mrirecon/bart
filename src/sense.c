@@ -36,6 +36,7 @@
 
 #include "misc/debug.h"
 #include "misc/mri.h"
+#include "misc/utils.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
 
@@ -58,21 +59,6 @@ static void help(void)
 
 
 
-static void apply_mask(const long dims[DIMS], complex float* sens_maps, float restrict_fov)
-{
-	long msk_dims[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS, msk_dims, dims);
-
-	long msk_strs[DIMS];
-	md_calc_strides(DIMS, msk_strs, msk_dims, CFL_SIZE);
-
-	complex float* mask = compute_mask(DIMS, msk_dims, restrict_fov);
-
-	long strs[DIMS];
-	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
-	md_zmul2(DIMS, dims, strs, sens_maps, strs, sens_maps, msk_strs, mask);
-	md_free(mask);
-}
 
 
 
@@ -83,7 +69,6 @@ int main(int argc, char* argv[])
 	memcpy(&conf, &sense_defaults, sizeof(struct sense_conf));
 
 	double start_time = timestamp();
-	debug_printf(DP_DEBUG3, "Start Time: %f\n", start_time);
 
 	bool admm = false;
 	bool ist = false;
@@ -224,6 +209,7 @@ int main(int argc, char* argv[])
 	long pat_dims[DIMS];
 	long img_dims[DIMS];
 	long ksp_dims[DIMS];
+	long max_dims[DIMS];
 
 
 	// load kspace and maps and get dimensions
@@ -231,8 +217,11 @@ int main(int argc, char* argv[])
 	complex float* kspace = load_cfl(argv[optind + 0], DIMS, ksp_dims);
 	complex float* maps = load_cfl(argv[optind + 1], DIMS, map_dims);
 
+	for (unsigned int i = 0; i < DIMS; i++)
+		max_dims[i] = MAX(ksp_dims[i], map_dims[i]);
+
 	md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
-	md_select_dims(DIMS, ~COIL_FLAG, img_dims, map_dims);
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
 
 	for (int i = 0; i < 4; i++) {	// sizes2[4] may be > 1
 		if (ksp_dims[i] != map_dims[i]) {
@@ -241,6 +230,7 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 	}
+
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
@@ -262,8 +252,6 @@ int main(int argc, char* argv[])
 
 	if (im_truth)
 		debug_printf(DP_INFO, "Compare to truth\n");
-
-
 
 
 
@@ -295,6 +283,19 @@ int main(int argc, char* argv[])
 	fftmod(DIMS, map_dims, FFT_FLAGS, maps, maps);
 
 
+	// apply fov mask to sensitivities
+
+	if (-1. != restrict_fov) {
+
+		float restrict_dims[DIMS] = { [0 ... DIMS - 1] = 1. };
+		restrict_dims[0] = restrict_fov;
+		restrict_dims[1] = restrict_fov;
+		restrict_dims[2] = restrict_fov;
+
+		apply_mask(DIMS, map_dims, maps, restrict_dims);
+	}
+
+
 	// apply scaling
 
 	float scaling = 1.;
@@ -306,12 +307,6 @@ int main(int argc, char* argv[])
 		if (scaling != 0.)
 			md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
 	}
-
-
-	// apply fov mask to sensitivities
-
-	if (-1. != restrict_fov)
-		apply_mask(map_dims, maps, restrict_fov);
 
 
 	const struct operator_p_s* thresh_op = NULL;
@@ -333,8 +328,6 @@ int main(int argc, char* argv[])
 		thresh_op = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, lambda, randshift);
 #endif
 	}
-
-
 
 
 
@@ -405,12 +398,12 @@ int main(int argc, char* argv[])
 
 	if (use_gpu) 
 #ifdef USE_CUDA
-		sense_recon_gpu(&conf, map_dims, image, maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace, image_truth);
+		sense_recon_gpu(&conf, max_dims, image, maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace, image_truth);
 #else
 		assert(0);
 #endif
 	else
-		sense_recon(&conf, map_dims, image, maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace, image_truth);
+		sense_recon(&conf, max_dims, image, maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace, image_truth);
 
 	if (scale_im)
 		md_zsmul(DIMS, img_dims, image, image, scaling);

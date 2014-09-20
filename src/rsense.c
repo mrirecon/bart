@@ -133,6 +133,7 @@ int main(int argc, char* argv[])
 	complex float* kspace_data = load_cfl(argv[optind + 0], N, ksp_dims);
 	complex float* sens_maps = load_cfl(argv[optind + 1], N, sens_dims);
 
+
 	assert(1 == ksp_dims[MAPS_DIM]);
 //!
 	if (!sec) {
@@ -150,6 +151,12 @@ int main(int argc, char* argv[])
 		dims[MAPS_DIM] = maps;
 	}
 
+#if 1
+	for (int i = 0; i < N; i++)
+		dims[i] = MAX(ksp_dims[i], sens_dims[i]);
+#endif
+
+
 	// FIXME: higher dimensions?
 	for (int i = 0; i < 4; i++) {	// sizes2[4] may be > 1
 		if (ksp_dims[i] != dims[i]) {
@@ -160,7 +167,7 @@ int main(int argc, char* argv[])
 	}
 
 
-	debug_printf(DP_INFO, "%ld map(s)\n", dims[4]);
+	debug_printf(DP_INFO, "%ld map(s)\n", dims[MAPS_DIM]);
 	
 	if (conf.l1wav)
 		debug_printf(DP_INFO, "l1-wavelet regularization\n");

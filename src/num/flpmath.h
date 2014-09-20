@@ -122,6 +122,11 @@ extern void md_zabs(unsigned int D, const long dim[__VLA(D)], _Complex float* op
 extern void md_zabs2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
 
+extern void md_maxxy(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr1);
+extern void md_maxxy2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1);
+
+extern void md_minxy(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr1);
+extern void md_minxy2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1);
 
 extern void md_zsoftthresh_half2(unsigned int D, const long dim[__VLA(D)], float lambda, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 extern void md_zsoftthresh_half(unsigned int D, const long dim[__VLA(D)], float lambda, _Complex float* optr, const _Complex float* iptr);
@@ -191,8 +196,8 @@ extern float md_norm(unsigned int D, const long dim[__VLA(D)], const float* ptr)
 extern float md_scalar2(unsigned int D, const long dim[__VLA(D)], const long str1[__VLA(D)], const float* ptr1, const long str2[__VLA(D)], const float* ptr2);
 extern float md_scalar(unsigned int D, const long dim[__VLA(D)], const float* ptr1, const float* ptr2);
 
-extern void md_rrss(unsigned int D, const long dims[__VLA(D)], unsigned int flags, float* dst, const float* src);
-extern void md_rss(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* dst, const _Complex float* src);
+extern void md_rss(unsigned int D, const long dims[__VLA(D)], unsigned int flags, float* dst, const float* src);
+extern void md_zrss(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* dst, const _Complex float* src);
 
 extern float md_zrms(unsigned int D, const long dim[__VLA(D)], const _Complex float* in);
 extern float md_zrmse(unsigned int D, const long dim[__VLA(D)], const _Complex float* in1, const _Complex float* in2);

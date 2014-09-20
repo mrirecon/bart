@@ -97,10 +97,7 @@ int cuda_init_memopt(void)
 	return max_device;
 }
 
-void cuda_exit(void)
-{
-	CUDA_ERROR(cudaThreadExit());
-}
+
 
 void cuda_clear(long size, void* dst)
 {
@@ -225,6 +222,21 @@ static void insert(const void* ptr, size_t len, bool device)
 }
 #endif
 
+void cuda_exit(void)
+{
+#ifdef CUDA_MEMCACHE
+	struct cuda_mem_s* nptr;
+
+	while (NULL != (nptr = find_free(0))) {
+
+		assert(nptr->device);
+		assert(!nptr->free);
+		cudaFree((void*)nptr->ptr);
+		free(nptr);
+	}
+#endif
+	CUDA_ERROR(cudaThreadExit());
+}
 
 bool cuda_ondevice(const void* ptr)
 {
@@ -312,7 +324,7 @@ void* cuda_malloc(long size)
 
 		assert(nptr->device);
 		assert(!nptr->free);
-		return nptr->ptr;
+		return (void*)(nptr->ptr);
 	}
 #endif
 	void* ptr;
@@ -324,6 +336,9 @@ void* cuda_malloc(long size)
 #endif
 	return ptr;
 }
+
+
+
 
 void* cuda_hostalloc(long N)
 {

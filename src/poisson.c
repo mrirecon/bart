@@ -263,7 +263,7 @@ int main(int argc, char* argv[])
 					int xx = (int)floorf(points[i][0] * dims[0]);
 					int yy = (int)floorf(points[i][1] * dims[1]);
 
-					if ((xx < 0) || (xx >= dims[0]) || (yy < 0) || (yy >= dims[0]))
+					if ((xx < 0) || (xx >= dims[0]) || (yy < 0) || (yy >= dims[1]))
 						continue;
 
 					if (1 == T)

@@ -26,32 +26,6 @@
 
 
 
-void linear_phase(unsigned int N, const long dims[N], const float pos[N], complex float* out)
-{
-	complex float grad[N];
-
-	for (unsigned int n = 0; n < N; n++)
-		grad[n] = 2.i * M_PI * (float)(pos[n]) / ((float)dims[n]);
-
-	md_zgradient(N, dims, out, grad); // (x * p - x0 * p
-
-	long dims0[N];
-	md_singleton_dims(N, dims0);
-
-	long strs0[N];
-	md_calc_strides(N, strs0, dims0, CFL_SIZE);
-
-	complex float cn = 0.;
-
-	for (unsigned int n = 0; n < N; n++)
-		 cn -= grad[n] * (float)dims[n] / 2.;
-
-	long strs[N];
-	md_calc_strides(N, strs, dims, CFL_SIZE);
-
-	md_zadd2(N, dims, strs, out, strs, out, strs0, &cn);
-	md_zmap(N, dims, out, out, cexpf);
-}
 
 
 
@@ -104,7 +78,7 @@ void transfer_function(void* _data, const complex float* pattern, complex float*
 
 void estimate_pattern(unsigned int D, const long dims[D], unsigned int dim, complex float* pattern, const complex float* kspace_data)
 {
-	md_rss(D, dims, (1u << dim), pattern, kspace_data);
+	md_zrss(D, dims, (1u << dim), pattern, kspace_data);
 
 	long dims2[D];
 	long strs2[D];
@@ -120,6 +94,33 @@ void estimate_pattern(unsigned int D, const long dims[D], unsigned int dim, comp
 }
 
 
+
+static void calib_readout_pos(const long caldims[DIMS], long calpos[DIMS], const long in_dims[DIMS], const complex float* in_data)
+{
+	// now move along readout to find maximum energy
+
+	long in_strs[DIMS];
+	md_calc_strides(DIMS, in_strs, in_dims, CFL_SIZE);
+
+	int maxind = 0;
+	float maxeng = 0.;
+
+	for (int r = 0; r < in_dims[READ_DIM] - caldims[READ_DIM] + 1; r++) {
+
+		calpos[READ_DIM] = r;
+
+		long offset = md_calc_offset(DIMS, calpos, in_strs);
+		float energy = md_znorm2(DIMS, caldims, in_strs, in_data + offset / CFL_SIZE);
+
+		if (energy > maxeng) {
+
+			maxind = r;
+			maxeng = energy;
+		}
+	}
+
+	calpos[READ_DIM] = maxind;
+}
 
 
 void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], const long in_dims[DIMS], const complex float* in_data)
@@ -186,29 +187,7 @@ void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], co
 	md_free(pattern);
 
 #if 1
-	// now move along readout to find maximum energy
-
-	long in_strs[DIMS];
-	md_calc_strides(DIMS, in_strs, in_dims, CFL_SIZE);
-
-	int maxind = 0;
-	float maxeng = 0.;
-
-	for (int r = 0; r < in_dims[READ_DIM] - caldims[READ_DIM] + 1; r++) {
-
-		calpos[READ_DIM] = r;
-
-		long offset = md_calc_offset(DIMS, calpos, in_strs);
-		float energy = md_znorm2(DIMS, caldims, in_strs, in_data + offset / CFL_SIZE);
-
-		if (energy > maxeng) {
-
-			maxind = r;
-			maxeng = energy;
-		}
-	}
-
-	calpos[READ_DIM] = maxind;
+	calib_readout_pos(caldims, calpos, in_dims, in_data);
 #endif
 }
 
@@ -272,24 +251,6 @@ complex float* extract_calib(long caldims[DIMS], const long calsize[3], const lo
 }
 
 
-complex float* compute_mask(unsigned int N, const long msk_dims[N], float restrict_fov)
-{
-	complex float* mask = md_alloc(DIMS, msk_dims, CFL_SIZE);
-
-	long small_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
-	small_dims[0] = (1 == msk_dims[0]) ? 1 : (msk_dims[0] * restrict_fov);
-	small_dims[1] = (1 == msk_dims[1]) ? 1 : (msk_dims[1] * restrict_fov);
-	small_dims[2] = (1 == msk_dims[2]) ? 1 : (msk_dims[2] * restrict_fov);
-
-	complex float* small_mask = md_alloc(DIMS, small_dims, CFL_SIZE);
-
-	md_fill(DIMS, small_dims, small_mask, &(complex float){ 1. }, CFL_SIZE);
-	md_resizec(DIMS, msk_dims, mask, small_dims, small_mask, CFL_SIZE);
-
-	md_free(small_mask);
-
-	return mask;
-}
 
 
 

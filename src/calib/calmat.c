@@ -31,6 +31,9 @@ static complex float* calibration_matrix_priv(long calmat_dims[2], const long kd
 
 complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], const long calreg_dims[4], const complex float* data)
 {
+#if 1
+	return calibration_matrix_priv(calmat_dims, kdims, calreg_dims, data);
+#else
 	// estimate pattern
 	long pat_dims[4];
 	md_select_dims(4, ~(1 << COIL_DIM), pat_dims, calreg_dims);
@@ -69,6 +72,7 @@ complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], cons
 	md_zmul2(2, calmat_dims, calmat_strs, tmp, calmat_strs, tmp, msk_strs, msk);
 
 	return tmp;
+#endif
 }
 
 

@@ -1376,6 +1376,52 @@ void md_zaxpy2(unsigned int D, const long dims[D], const long ostr[D], complex f
 
 
 /**
+ * Running max of input and output (without strides)
+ * optr = max(optr, iptr)
+ */
+void md_maxxy(unsigned int D, const long dims[D], float* optr, const float* iptr)
+{
+	long strs[D];
+	md_calc_strides(D, strs, dims, FL_SIZE);
+	md_maxxy2(D, dims, strs, optr, strs, iptr);
+}
+
+
+/**
+ * Running max of input and output (with strides)
+ * optr = max(optr, iptr)
+ */
+void md_maxxy2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr)
+{
+	MAKE_2OP(maxxy, D, dims, ostr, optr, istr, iptr);
+}
+
+
+
+/**
+ * Running min of input and output (without strides)
+ * optr = min(optr, iptr)
+ */
+void md_minxy(unsigned int D, const long dims[D], float* optr, const float* iptr)
+{
+	long strs[D];
+	md_calc_strides(D, strs, dims, FL_SIZE);
+	md_minxy2(D, dims, strs, optr, strs, iptr);
+}
+
+
+/**
+ * Running min of input and output (with strides)
+ * optr = min(optr, iptr)
+ */
+void md_minxy2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr)
+{
+	MAKE_2OP(minxy, D, dims, ostr, optr, istr, iptr);
+}
+
+
+
+/**
  * Multiply complex array with a scalar and add to output (without strides)
  * 
  * optr = optr + iptr * val
@@ -2207,7 +2253,7 @@ float md_z1norm(unsigned int D, const long dim[D], const complex float* ptr)
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the root of sum of squares, ie the dimensions that will not stay
  */
-void md_rrss(unsigned int D, const long dims[D], unsigned int flags, float* dst, const float* src)
+void md_rss(unsigned int D, const long dims[D], unsigned int flags, float* dst, const float* src)
 {
 	long str1[D];
 	long str2[D];
@@ -2232,7 +2278,7 @@ void md_rrss(unsigned int D, const long dims[D], unsigned int flags, float* dst,
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the root of sum of squares, ie the dimensions that will not stay
  */
-void md_rss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
+void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
 {
 #if 1
 	long str1[D];
@@ -2374,7 +2420,7 @@ void md_softthresh_core2(unsigned int D, const long dims[D], float lambda, unsig
 	md_select_dims(D, ~flags, norm_dims, dims);
 	md_calc_strides(D, norm_strs, norm_dims, sizeof(float));
 
-	md_rrss(D, dims, flags, tmp_norm, iptr);
+	md_rss(D, dims, flags, tmp_norm, iptr);
 	md_softthresh_half2(D, norm_dims, lambda, norm_strs, tmp_norm, norm_strs, tmp_norm);
 	md_mul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
 }
@@ -2438,7 +2484,7 @@ void md_zsoftthresh_core2(unsigned int D, const long dims[D], float lambda, unsi
 	md_select_dims(D, ~flags, norm_dims, dims);
 	md_calc_strides(D, norm_strs, norm_dims, sizeof(complex float));
 
-	md_rss(D, dims, flags, tmp_norm, iptr);
+	md_zrss(D, dims, flags, tmp_norm, iptr);
 	md_zsoftthresh_half2(D, norm_dims, lambda, norm_strs, tmp_norm, norm_strs, tmp_norm);
 	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
 }

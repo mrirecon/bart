@@ -42,7 +42,7 @@ void fftscale2(unsigned int N, const long dimensions[N], unsigned long flags, co
 void fftscale(unsigned int N, const long dims[N], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long strs[N];
-	md_calc_strides(N, strs, dims, sizeof(complex float));
+	md_calc_strides(N, strs, dims, CFL_SIZE);
 	fftscale2(N, dims, flags, strs, dst, strs, src);
 }
 
@@ -125,14 +125,14 @@ void fftmodk2(unsigned int N, const long dims[N], unsigned long flags, const lon
 void fftmod(unsigned int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long strs[N];
-	md_calc_strides(N, strs, dimensions, sizeof(complex float));
+	md_calc_strides(N, strs, dimensions, CFL_SIZE);
 	fftmod2(N, dimensions, flags, strs, dst, strs, src);
 }
 
 void fftmodk(unsigned int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long strs[N];
-	md_calc_strides(N, strs, dimensions, sizeof(complex float));
+	md_calc_strides(N, strs, dimensions, CFL_SIZE);
 	fftmodk2(N, dimensions, flags, strs, dst, strs, src);
 }
 
@@ -147,13 +147,13 @@ void fftshift2(unsigned int N, const long dims[N], unsigned long flags, const lo
 		if (flags & (1u << i))
 			pos[i] = dims[i] / 2;
 
-	md_circ_shift2(N, dims, pos, ostrs, dst, istrs, src, sizeof(complex float));
+	md_circ_shift2(N, dims, pos, ostrs, dst, istrs, src, CFL_SIZE);
 }
 
 void fftshift(unsigned int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long strs[N];
-	md_calc_strides(N, strs, dimensions, sizeof(complex float));
+	md_calc_strides(N, strs, dimensions, CFL_SIZE);
 	fftshift2(N, dimensions, flags, strs, dst, strs, src);
 }
 
@@ -186,15 +186,15 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 		if (flags & (1 << i)) {
 
 			dims[k].n = dimensions[i];
-			dims[k].is = istrides[i] / sizeof(complex float);
-			dims[k].os = ostrides[i] / sizeof(complex float);
+			dims[k].is = istrides[i] / CFL_SIZE;
+			dims[k].os = ostrides[i] / CFL_SIZE;
 			k++;
 
 		} else  {
 
 			hmdims[l].n = dimensions[i];
-			hmdims[l].is = istrides[i] / sizeof(complex float);
-			hmdims[l].os = ostrides[i] / sizeof(complex float);
+			hmdims[l].is = istrides[i] / CFL_SIZE;
+			hmdims[l].os = ostrides[i] / CFL_SIZE;
 			l++;
 		}
 	}
@@ -259,7 +259,7 @@ const struct operator_s* fft_create2(unsigned int D, const long dimensions[D], u
 const struct operator_s* fft_create(unsigned int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src, bool backwards)
 {
 	long strides[D];
-	md_calc_strides(D, strides, dimensions, sizeof(complex float));
+	md_calc_strides(D, strides, dimensions, CFL_SIZE);
 	return fft_create2(D, dimensions, flags, strides, dst, strides, src, backwards);
 }
 

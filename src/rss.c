@@ -25,8 +25,8 @@
 
 
 
-const char* usage_str = "dim <input> <output>";
-const char* help_str = "Calculates root of sum of squares along dimension dim.\n";
+const char* usage_str = "bitmask <input> <output>";
+const char* help_str = "Calculates root of sum of squares along selected dimensions.\n";
 
 
 int main(int argc, char* argv[argc])
@@ -36,17 +36,16 @@ int main(int argc, char* argv[argc])
 	long dims[DIMS];
 	complex float* data = load_cfl(argv[2], DIMS, dims);
 
-	unsigned int dim = atoi(argv[1]);
+	int flags = atoi(argv[1]);
 
-	assert(dim < DIMS);
+	assert(0 <= flags);
 
 	long odims[DIMS];
-	memcpy(odims, dims, DIMS * sizeof(long));
-	odims[dim] = 1;
+	md_select_dims(DIMS, ~flags, odims, dims);
 
 	complex float* out = create_cfl(argv[3], DIMS, odims);
 
-	md_rss(DIMS, dims, (1 << dim), out, data);
+	md_zrss(DIMS, dims, flags, out, data);
 
 	unmap_cfl(DIMS, dims, data);
 	unmap_cfl(DIMS, odims, out);

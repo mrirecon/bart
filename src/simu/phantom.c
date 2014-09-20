@@ -32,18 +32,13 @@
 #define MAX_COILS 8
 #define COIL_COEFF 5
 
+typedef complex float (*krn_t)(void* _data, const double mpos[2]);
 
-static complex float xsens(void* _data, const long pos[])
+static complex float xsens(unsigned int c, double mpos[2], void* data, krn_t fun)
 {
-	const long* dims = _data;
-
-	long c = pos[COIL_DIM];
 	assert(c < MAX_COILS);
 
 	complex float val = 0.;
-
-	double mpos[2] = { (double)(2 * pos[1] - dims[1]) / (1. * (double)dims[1]), 
-                           (double)(2 * pos[2] - dims[2]) / (1. * (double)dims[2]) };
 
 	long sh = (COIL_COEFF - 1) / 2;
 
@@ -51,84 +46,8 @@ static complex float xsens(void* _data, const long pos[])
 		for (int j = 0; j < COIL_COEFF; j++)
 			val += sens_coeff[c][i][j] * cexpf(2.i * M_PI * ((i - sh) * mpos[0] + (j - sh) * mpos[1]) / 4.);
 
-	return val;
+	return val * fun(data, mpos);
 }
-
-
-static complex float xkernel(void* _data, const long pos[])
-{
-	const long* dims = _data;
-
-	double mpos[2] = { (double)(2 * pos[1] - dims[1]) / (1. * (double)dims[1]),
-                           (double)(2 * pos[2] - dims[2]) / (1. * (double)dims[2]) };
-
-	return phantom(10, shepplogan_mod, mpos, false);
-}
-
-static complex float xkernel2(void* _data, const long pos[])
-{
-	return xkernel(_data, pos) * xsens(_data, pos);
-}
-
-
-static complex float kkernel(void* _data, const long pos[])
-{
-	const long* dims = _data;
-
-	double mpos[2] = { (double)(2 * pos[1] - dims[1]) / 4., 
-			   (double)(2 * pos[2] - dims[2]) / 4. };
-
-	return phantom(10, shepplogan_mod, mpos, true);
-}
-
-static complex float kkernel2(void* _data, const long pos[])
-{
-	const long* dims = _data;
-	complex float val = 0.;
-
-	long c = pos[COIL_DIM];
-
-	for (int i = 0; i < COIL_COEFF; i++) {
-		for (int j = 0; j < COIL_COEFF; j++) {
-
-			long sh = (COIL_COEFF - 1) / 2;
-
-			double mpos[2] = { (double)(2 * pos[1] + (i - sh) - dims[1]) / 4.,
-					   (double)(2 * pos[2] + (j - sh) - dims[2]) / 4. };
-
-			val += sens_coeff[c][i][j] * phantom(10, shepplogan_mod, mpos, true);
-		}
-	}
-
-	return val;
-}
-
-
-void calc_phantom(const long dims[DIMS], complex float* out, _Bool kspace)
-{
-	md_zsample(DIMS, dims, out, (void*)dims, (1 == dims[COIL_DIM]) ? (kspace ? kkernel : xkernel)
-								       : (kspace ? kkernel2 : xkernel2));
-}
-
-
-
-struct data2 {
-
-	const complex float* traj;
-	long istrs[DIMS];
-};
-
-static complex float kkernel_nc(void* _data, const long pos[])
-{
-	struct data2* data = _data;
-	double mpos[3];
-	mpos[0] = data->traj[md_calc_offset(3, data->istrs, pos) + 0] / 2.;
-	mpos[1] = data->traj[md_calc_offset(3, data->istrs, pos) + 1] / 2.;
-//	mpos[2] = data->traj[md_calc_offset(3, data->istrs, pos) + 2];
-
-	return phantom(10, shepplogan_mod, mpos, true);
-}
-
 
 /*
  * To simulate channels, we simply convovle with a few Fourier coefficients
@@ -138,35 +57,124 @@ static complex float kkernel_nc(void* _data, const long pos[])
  * Realistic Analytical Phantoms for Parallel Magnetic Resonance Imaging
  * IEEE TMI 31:626-636 (2012)
  */
-static complex float kkernel_nc2(void* _data, const long pos[])
+static complex float ksens(unsigned int c, double mpos[2], void* data, krn_t fun)
 {
-	struct data2* data = _data;
+	assert(c < MAX_COILS);
 
 	complex float val = 0.;
-
-	long c = pos[COIL_DIM];
 
 	for (int i = 0; i < COIL_COEFF; i++) {
 		for (int j = 0; j < COIL_COEFF; j++) {
 
 			long sh = (COIL_COEFF - 1) / 2;
 
-			double mpos[3];
-			mpos[0] = ((i - sh) + data->traj[md_calc_offset(DIMS, data->istrs, pos) + 0]) / 2.;
-			mpos[1] = ((j - sh) + data->traj[md_calc_offset(DIMS, data->istrs, pos) + 1]) / 2.;
+			double mpos2[2] = { mpos[0] + (double)(i - sh) / 4.,
+					    mpos[1] + (double)(j - sh) / 4. };
 
-			val += sens_coeff[c][i][j] * phantom(10, shepplogan_mod, mpos, true);
+			val += sens_coeff[c][i][j] * fun(data, mpos2);
 		}
 	}
 
 	return val;
 }
 
-
-void calc_phantom_noncart(const long dims[DIMS], complex float* out, const complex float* traj)
+static complex float nosens(unsigned int c, double mpos[2], void* data, krn_t fun)
 {
-	struct data2 data;
-	data.traj = traj;
+	UNUSED(c);
+	return fun(data, mpos);
+}
+
+struct data1 {
+
+	bool sens;
+	const long dims[3];
+	void* data;
+	krn_t fun;
+};
+
+static complex float xkernel(void* _data, const long pos[])
+{
+	struct data1* data = _data;
+
+	double mpos[2] = { (double)(2 * pos[1] - data->dims[1]) / (1. * (double)data->dims[1]),
+                           (double)(2 * pos[2] - data->dims[2]) / (1. * (double)data->dims[2]) };
+
+	return (data->sens ? xsens : nosens)(pos[COIL_DIM], mpos, data->data, data->fun);
+}
+
+static complex float kkernel(void* _data, const long pos[])
+{
+	struct data1* data = _data;
+
+	double mpos[2] = { (double)(2 * pos[1] - data->dims[1]) / 4., 
+			   (double)(2 * pos[2] - data->dims[2]) / 4. };
+
+	return (data->sens ? ksens : nosens)(pos[COIL_DIM], mpos, data->data, data->fun);
+}
+
+struct data2 {
+
+	const complex float* traj;
+	long istrs[DIMS];
+	bool sens;
+	void* data;
+	krn_t fun;
+};
+
+static complex float nkernel(void* _data, const long pos[])
+{
+	struct data2* data = _data;
+	double mpos[3];
+	mpos[0] = data->traj[md_calc_offset(3, data->istrs, pos) + 0] / 2.;
+	mpos[1] = data->traj[md_calc_offset(3, data->istrs, pos) + 1] / 2.;
+//	mpos[2] = data->traj[md_calc_offset(3, data->istrs, pos) + 2];
+
+	return (data->sens ? ksens : nosens)(pos[COIL_DIM], mpos, data->data, data->fun);
+}
+
+struct krn_data {
+
+	bool kspace;
+	unsigned int N;
+	const struct ellipsis_s* el;
+};
+
+static complex float krn(void* _data, const double mpos[2])
+{
+	struct krn_data* data = _data;
+	return phantom(data->N, data->el, mpos, data->kspace);
+}
+
+static void sample(unsigned int N, const long dims[N], complex float* out, unsigned int D, const struct ellipsis_s* el, bool kspace)
+{
+	struct data1 data = {
+		.sens = (dims[COIL_DIM] > 1),
+		.dims = { dims[0], dims[1], dims[2] },
+		.data = &(struct krn_data){ kspace, D, el },
+		.fun = krn,
+	};
+
+	md_zsample(N, dims, out, &data, kspace ? kkernel : xkernel);
+}
+
+
+void calc_phantom(const long dims[DIMS], complex float* out, bool kspace)
+{
+	sample(DIMS, dims, out, 10, shepplogan_mod, kspace);
+}
+
+
+
+
+
+static void sample_noncart(const long dims[DIMS], complex float* out, const complex float* traj, unsigned int D, const struct ellipsis_s* el)
+{
+	struct data2 data = {
+		.traj = traj,
+		.sens = (dims[COIL_DIM] > 1),
+		.data = &(struct krn_data){ true, D, el },
+		.fun = krn,
+	};
 
 	assert(3 == dims[0]);
 
@@ -177,44 +185,46 @@ void calc_phantom_noncart(const long dims[DIMS], complex float* out, const compl
 	md_select_dims(DIMS, 1 + 2, sdims, dims);
 	md_calc_strides(DIMS, data.istrs, sdims, 1);
 
-	md_zsample(DIMS, odims, out, &data, (dims[COIL_DIM] == 1) ? kkernel_nc : kkernel_nc2);
+	md_zsample(DIMS, odims, out, &data, nkernel);
 }
 
 
+void calc_phantom_noncart(const long dims[DIMS], complex float* out, const complex float* traj)
+{
+	sample_noncart(dims, out, traj, 10, shepplogan_mod);
+}
+
+
+static complex float cnst_one(void* _data, const double mpos[2])
+{
+	UNUSED(_data);
+	UNUSED(mpos);
+	return 1.;
+}
 
 void calc_sens(const long dims[DIMS], complex float* sens)
 {
-	md_zsample(DIMS, dims, sens, (void*)dims, xsens);
+	struct data1 data = {
+		.sens = true,
+		.dims = { dims[0], dims[1], dims[2] },
+		.data = NULL,
+		.fun = cnst_one,
+	};
+
+	md_zsample(DIMS, dims, sens, &data, xkernel);
 }
 
 
 
-static complex float xdisc(void* _data, const long pos[])
+
+void calc_circ(const long dims[DIMS], complex float* out, bool kspace)
 {
-	const long* dims = _data;
-
-	double mpos[2] = { (double)(2 * pos[1] - dims[1]) / (1. * (double)dims[1]),
-                           (double)(2 * pos[2] - dims[2]) / (1. * (double)dims[2]) };
-
-	return phantom(1, phantom_disc, mpos, false);
+	sample(DIMS, dims, out, 1, phantom_disc, kspace);
 }
 
-
-static complex float kdisc(void* _data, const long pos[])
+void calc_ring(const long dims[DIMS], complex float* out, bool kspace)
 {
-	const long* dims = _data;
-
-	double mpos[2] = { (double)(2 * pos[1] - dims[1]) / 4.,
-			   (double)(2 * pos[2] - dims[2]) / 4. };
-
-	return phantom(1, phantom_disc, mpos, true);
-}
-
-
-
-void calc_circ(const long dims[DIMS], complex float* out, _Bool kspace)
-{
-	md_zsample(DIMS, dims, out, (void*)dims, (kspace ? kdisc : xdisc));
+	sample(DIMS, dims, out, 4, phantom_ring, kspace);
 }
 
 

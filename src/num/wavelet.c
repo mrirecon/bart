@@ -203,6 +203,7 @@ void md_wavtrafo2(int D, const long dims[D], unsigned int flags, const long strs
 
 	if (!inv)
 		md_septrafo2(D, dims, flags, strs, ptr, fun, NULL);
+		//md_parallel_septrafo2(D, dims, flags, strs, ptr, fun, NULL);
 
 	if (rec) {
 
@@ -225,6 +226,7 @@ void md_wavtrafo2(int D, const long dims[D], unsigned int flags, const long strs
 
 	if (inv)
 		md_septrafo2(D, dims, flags, strs, ptr, fun, NULL);
+		//md_parallel_septrafo2(D, dims, flags, strs, ptr, fun, NULL);
 }
 
 

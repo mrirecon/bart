@@ -17,4 +17,6 @@ extern const struct operator_p_s* prox_leastsquares_create(unsigned int N, const
 extern const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N], float eps, const _Complex float* center);
 extern const struct operator_p_s* prox_zero_create(unsigned int N, const long dims[N]);
 
+extern const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const _Complex float* y);
+
 #endif

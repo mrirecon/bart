@@ -31,6 +31,10 @@
 
 #include "noncart/nufft.h"
 
+#ifdef BERKELEY_SVN
+#include "noncart/nufft2.h"
+#endif
+
 
 
 static void usage(const char* name, FILE* fd)
@@ -63,6 +67,7 @@ int main(int argc, char* argv[])
 	_Bool toeplitz = false;
 	_Bool precond = false;
 	_Bool use_gpu = false;
+	_Bool two = false;
 
 	long coilim_dims[DIMS];
 	md_singleton_dims(DIMS, coilim_dims);
@@ -72,9 +77,13 @@ int main(int argc, char* argv[])
 
 	const char* pat_str = NULL;
 
-	while (-1 != (c = getopt(argc, argv, "d:m:l:p:aihcto:w:"))) {
+	while (-1 != (c = getopt(argc, argv, "d:m:l:p:aihcto:w:2"))) {
 
 		switch (c) {
+
+		case '2':
+			two = true;
+			break;
 
 		case 'i':
 			inverse = true;
@@ -159,9 +168,16 @@ int main(int argc, char* argv[])
 		coilim_dims[COIL_DIM] = ksp_dims[COIL_DIM];
 
 		dst = create_cfl(argv[optind + 2], DIMS, coilim_dims);
-		
+	
 		// Get nufft_op
-		nufft_op = nufft_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, NULL, use_gpu);
+#ifdef BERKELEY_SVN
+		if (two)
+			nufft_op = nufft2_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, NULL, use_gpu);
+		else
+#else
+		assert(!two);
+#endif
+			nufft_op = nufft_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, NULL, use_gpu);
 
 		// nufftH
 		linop_adjoint (nufft_op, DIMS, coilim_dims, dst, DIMS, ksp_dims, src);
@@ -187,10 +203,17 @@ int main(int argc, char* argv[])
 		memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf) );
 		cgconf.maxiter = maxiter;
 		cgconf.l2lambda = 0.;
-		cgconf.tol = 1e-5;
+		cgconf.tol = 0;
 
 		// Get nufft_op
-		nufft_op = nufft_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, &cgconf, use_gpu);
+#ifdef BERKELEY_SVN
+		if (two)
+			nufft_op = nufft2_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, &cgconf, use_gpu);
+		else
+#else
+		assert(!two);
+#endif
+			nufft_op = nufft_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, &cgconf, use_gpu);
 
 		complex float* adj = md_alloc( DIMS, coilim_dims, CFL_SIZE );
 		linop_adjoint( nufft_op, DIMS, coilim_dims, adj, DIMS, ksp_dims, src );
@@ -215,7 +238,14 @@ int main(int argc, char* argv[])
 		dst = create_cfl(argv[optind + 2], DIMS, ksp_dims);
 
 		// Get nufft_op
-		nufft_op = nufft_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, NULL, use_gpu);
+#ifdef BERKELEY_SVN
+		if (two)
+			nufft_op = nufft2_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, NULL, use_gpu);
+		else
+#else
+		assert(!two);
+#endif
+			nufft_op = nufft_create( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, NULL, use_gpu);
 
 		// nufft
 		linop_forward(nufft_op, DIMS, ksp_dims, dst, DIMS, coilim_dims, src);

@@ -23,6 +23,7 @@
 #include "misc/mri.h"
 #include "misc/misc.h"
 #include "misc/mmio.h"
+#include "misc/utils.h"
 
 #include "noir/recon.h"
 
@@ -214,7 +215,11 @@ int main(int argc, char* const argv[])
 
 	} else {
 
-		mask = compute_mask(DIMS, msk_dims, restrict_fov);
+		float restrict_dims[DIMS] = { [0 ... DIMS - 1] = 1. };
+		restrict_dims[0] = restrict_fov;
+		restrict_dims[1] = restrict_fov;
+		restrict_dims[2] = restrict_fov;
+		mask = compute_mask(DIMS, msk_dims, restrict_dims);
 	}
 
 #ifdef  USE_CUDA
@@ -233,7 +238,7 @@ int main(int argc, char* const argv[])
 
 	if (normalize) {
 
-		md_rss(DIMS, ksp_dims, COIL_FLAG, norm, sens);
+		md_zrss(DIMS, ksp_dims, COIL_FLAG, norm, sens);
 		md_zmul2(DIMS, img_dims, img_strs, image, img_strs, image, msk_strs, norm);
 	}
 

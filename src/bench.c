@@ -105,6 +105,108 @@ static double bench_generic_matrix_multiply(long dims[DIMS])
 }
 
 
+static double bench_generic_add(long dims[DIMS], unsigned int flags, bool forloop)
+{
+	long dimsX[DIMS];
+	long dimsY[DIMS];
+
+	long dimsC[DIMS];
+
+	md_select_dims(DIMS, flags, dimsX, dims);
+	md_select_dims(DIMS, ~flags, dimsC, dims);
+	md_select_dims(DIMS, ~0u, dimsY, dims);
+
+	long strsX[DIMS];
+	long strsY[DIMS];
+
+	md_calc_strides(DIMS, strsX, dimsX, CFL_SIZE);
+	md_calc_strides(DIMS, strsY, dimsY, CFL_SIZE);
+
+	complex float* x = md_alloc(DIMS, dimsX, CFL_SIZE);
+	complex float* y = md_alloc(DIMS, dimsY, CFL_SIZE);
+
+	md_gaussian_rand(DIMS, dimsX, x);
+	md_gaussian_rand(DIMS, dimsY, y);
+
+	long L = md_calc_size(DIMS, dimsC);
+	long T = md_calc_size(DIMS, dimsX);
+
+	double tic = timestamp();
+
+	if (forloop) {
+
+		for (long i = 0; i < L; i++) {
+
+			for (long j = 0; j < T; j++) {
+
+				y[i + j*L] += x[j];
+			}
+		}
+
+	} else {
+
+		md_zaxpy2(DIMS, dims, strsY, y, 1., strsX, x);
+	}
+
+	double toc = timestamp();
+
+
+	md_free(x);
+	md_free(y);
+
+	return toc - tic;
+}
+
+
+static double bench_generic_sum(long dims[DIMS], unsigned int flags, bool forloop)
+{
+	long dimsX[DIMS];
+	long dimsY[DIMS];
+	long dimsC[DIMS];
+
+	md_select_dims(DIMS, ~0u, dimsX, dims);
+	md_select_dims(DIMS, flags, dimsY, dims);
+	md_select_dims(DIMS, ~flags, dimsC, dims);
+
+	long strsX[DIMS];
+	long strsY[DIMS];
+
+	md_calc_strides(DIMS, strsX, dimsX, CFL_SIZE);
+	md_calc_strides(DIMS, strsY, dimsY, CFL_SIZE);
+
+	complex float* x = md_alloc(DIMS, dimsX, CFL_SIZE);
+	complex float* y = md_alloc(DIMS, dimsY, CFL_SIZE);
+
+	md_gaussian_rand(DIMS, dimsX, x);
+	md_clear(DIMS, dimsY, y, CFL_SIZE);
+
+	long L = md_calc_size(DIMS, dimsC);
+	long T = md_calc_size(DIMS, dimsY);
+
+	double tic = timestamp();
+
+	if (forloop) {
+		for (long i = 0; i < L; i++) {
+
+			for (long j = 0; j < T; j++) {
+
+				y[j] = y[j] + x[i + j*L];
+			}
+		}
+
+	}
+	else
+		md_zaxpy2(DIMS, dims, strsY, y, 1., strsX, x);
+
+	double toc = timestamp();
+
+
+	md_free(x);
+	md_free(y);
+
+	return toc - tic;
+}
+
 static double bench_copy1(void)
 {
 	long dims[DIMS] = { 1, 128, 128, 1, 1, 16, 1, 16 };
@@ -152,6 +254,43 @@ static double bench_tall_matmul2(void)
 {
 	long dims[DIMS] = { 1, 100000, 8, 8, 1, 1, 1, 1 };
 	return bench_generic_matrix_multiply(dims);
+}
+
+
+static double bench_add(void)
+{
+	long dims[DIMS] = { 65536, 1, 50, 1, 1, 1, 1, 1 };
+	return bench_generic_add(dims, (1 << 2), false);
+}
+
+static double bench_addf(void)
+{
+	long dims[DIMS] = { 65536, 1, 50, 1, 1, 1, 1, 1 };
+	return bench_generic_add(dims, (1 << 2), true);
+}
+
+static double bench_add2(void)
+{
+	long dims[DIMS] = { 50, 1, 65536, 1, 1, 1, 1, 1 };
+	return bench_generic_add(dims, (1 << 0), false);
+}
+
+static double bench_sum2(void)
+{
+	long dims[DIMS] = { 50, 1, 65536, 1, 1, 1, 1, 1 };
+	return bench_generic_sum(dims, (1 << 0), false);
+}
+
+static double bench_sum(void)
+{
+	long dims[DIMS] = { 65536, 1, 50, 1, 1, 1, 1, 1 };
+	return bench_generic_sum(dims, (1 << 2), false);
+}
+
+static double bench_sumf(void)
+{
+	long dims[DIMS] = { 65536, 1, 50, 1, 1, 1, 1, 1 };
+	return bench_generic_sum(dims, (1 << 2), true);
 }
 
 
@@ -344,6 +483,12 @@ int main(int argc, char* argv[])
 	mini_cmdline(argc, argv, 0, usage_str, help_str);
 	num_init();
 
+	do_test(bench_add,		"add (md_zaxpy)");
+	do_test(bench_add2,		"add (md_zaxpy), contiguous");
+	do_test(bench_addf,		"add (for loop)");
+	do_test(bench_sum,   		"sum (md_zaxpy)");
+	do_test(bench_sum2,   		"sum (md_zaxpy), contiguous");
+	do_test(bench_sumf,   		"sum (for loop)");
 	do_test(bench_transpose,	"complex transpose");
 	do_test(bench_resize,   	"complex resize");
 	do_test(bench_matrix_multiply,	"complex matrix multiply");

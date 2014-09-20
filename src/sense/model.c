@@ -102,7 +102,7 @@ static void maps_init_normal(struct maps_data* data)
 		return;
 
 	data->norm = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, data->sens);
-	md_rss(DIMS, data->mps_dims, COIL_FLAG, data->norm, data->sens);
+	md_zrss(DIMS, data->mps_dims, COIL_FLAG, data->norm, data->sens);
 	md_zmul(DIMS, data->img_dims, data->norm, data->norm, data->norm);
 }
 
