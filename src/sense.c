@@ -62,8 +62,7 @@ static void help(void)
 
 
 
-
-int main(int argc, char* argv[])
+int main_sense(int argc, char* argv[])
 {
 	struct sense_conf conf;
 	memcpy(&conf, &sense_defaults, sizeof(struct sense_conf));

@@ -28,12 +28,12 @@
 
 
 
-const char* usage_str = "flags <input> <output>";
-const char* help_str = "Normalize along selected dimensions.\n";
+static const char* usage_str = "flags <input> <output>";
+static const char* help_str = "Normalize along selected dimensions.\n";
 
 
 
-int main(int argc, char* argv[])
+int main_normalize(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 3, usage_str, help_str);
 

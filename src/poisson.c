@@ -76,7 +76,7 @@ static void help(void)
 
 
 
-int main(int argc, char* argv[])
+int main_poisson(int argc, char* argv[])
 {
 	int xx = 128;
 	int yy = 128;

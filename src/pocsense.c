@@ -58,7 +58,7 @@ static void help(void)
 
 	
 
-int main(int argc, char* argv[])
+int main_pocsense(int argc, char* argv[])
 {
 	int c;
 	float alpha = 0.;

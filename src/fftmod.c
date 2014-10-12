@@ -22,13 +22,13 @@
 #define DIMS 16
 #endif
 
-const char* usage_str = "bitmask <input> <output>";
-const char* help_str =	"Apply 1 -1 modulation along dimensions selected by the {bitmask}.\n";
+static const char* usage_str = "bitmask <input> <output>";
+static const char* help_str =	"Apply 1 -1 modulation along dimensions selected by the {bitmask}.\n";
 
 
 
 
-int main(int argc, char* argv[])
+int main_fftmod(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 3, usage_str, help_str);
 

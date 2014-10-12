@@ -632,7 +632,7 @@ static void fft_linop_apply(const void* _data, complex float* out, const complex
 		ptr = out;
 	}
 
-	operator_apply_unchecked(data->frw, out, ptr);
+	operator_apply(data->frw, data->N, data->dims, out, data->N, data->dims, ptr);
 
 	// fftmodk
 	if (data->center)
@@ -652,7 +652,7 @@ static void fft_linop_adjoint(const void* _data, complex float* out, const compl
 		ptr = out;
 	}
 
-	operator_apply_unchecked(data->adj, out, ptr);
+	operator_apply(data->adj, data->N, data->dims, out, data->N, data->dims, ptr);
 
 	// fftmod + fftscale
 	if (data->center)

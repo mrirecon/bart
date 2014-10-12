@@ -20,15 +20,15 @@
 
 
 
-const char* usage_str = "<kspace> <pattern>";
-const char* help_str = 	"Compute sampling pattern from kspace\n";
+static const char* usage_str = "<kspace> <pattern>";
+static const char* help_str = 	"Compute sampling pattern from kspace\n";
 
 
-int main(int argc, char* argv[])
+int main_pattern(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 2, usage_str, help_str);
 
-	unsigned int N = KSPACE_DIMS;
+	unsigned int N = DIMS;
 	long in_dims[N];
 	long out_dims[N];
 	
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 	
 	complex float* pattern = create_cfl(argv[2], N, out_dims);
 
-	estimate_pattern(N, out_dims, dim, pattern, kspace);
+	estimate_pattern(N, in_dims, dim, pattern, kspace);
 
 	unmap_cfl(N, in_dims, kspace);
 	unmap_cfl(N, out_dims, pattern);

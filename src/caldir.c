@@ -23,15 +23,16 @@
 #include "calib/direct.h"
 
 
-const char* usage_str = "cal_size <input> <output>";
-const char* help_str =
+static const char* usage_str = "cal_size <input> <output>";
+static const char* help_str =
 	"Estimates coil sensitivities from the k-space center using\n"
 	"a direct method (McKenzie et al.). The size of the fully-sampled\n"
 	"calibration region is automatically determined but limited by\n"
 	"{cal_size} (e.g. in the readout direction).\n";
 
 
-int main(int argc, char* argv[])
+
+int main_caldir(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 3, usage_str, help_str);
 

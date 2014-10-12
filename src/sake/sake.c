@@ -168,7 +168,8 @@ static void lowrank(float alpha, const long dims[5], complex float* matrix)
 				V2[i * MIN(N, M) + j] *= (j < alpha * (float)MIN(N, M)) ? S[j] : 0.; //  thresh(alpha, S[j]);
 		}
 
-		mat_mul(M, MIN(M, N), N, (complex float (*)[N])calmat, (const complex float (*)[])V2, (const complex float (*)[])U2);
+		mat_mul(M, MIN(M, N), N, (complex float (*)[N])calmat,
+				(const complex float (*)[MIN(M, N)])V2, (const complex float (*)[N])U2);
 
 		md_free(U);
 		md_free(U2);

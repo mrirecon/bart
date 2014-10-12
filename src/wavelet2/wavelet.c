@@ -136,7 +136,7 @@ struct wavelet_plan_s* prepare_wavelet_plan_filters(int numdims, const long imSi
 
 		plan->tmp_mem_tr = (data_t*)xmalloc(sizeof(data_t)*plan->numCoeff_tr*4);
 	}
-	plan->lambda = 0.;
+	plan->lambda = 1.;
 
 	return plan;
 }

@@ -50,7 +50,7 @@ static void help(void)
 
 
 
-int main(int argc, char* argv[])
+int main_ecalib(int argc, char* argv[])
 {
 	long calsize[3] = { 24, 24, 24 }; 
 	int maps = 2;
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	int N = KSPACE_DIMS;
+	int N = DIMS;
 	long ksp_dims[N];
 
 	complex float* in_data = load_cfl(argv[optind + 0], N, ksp_dims);

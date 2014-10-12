@@ -24,11 +24,11 @@
 #endif
 
 
-const char* usage_str = "dimension position <input> <output>";
-const char* help_str = "Extracts a slice from {position} along {dimension}.\n";
+static const char* usage_str = "dimension position <input> <output>";
+static const char* help_str = "Extracts a slice from {position} along {dimension}.\n";
 
 
-int main(int argc, char* argv[])
+int main_slice(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
 

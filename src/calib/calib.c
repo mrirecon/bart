@@ -54,7 +54,7 @@ static void eigen_herm3(int M, int N, float val[M], complex float matrix[N][N]) 
 			matrix[lj][li] = conj(matrix[li][lj]);
 
 	//mat_identity(M, N, mout);
-	orthiter(M, N, 30, val, mout, (const complex float (*)[N])matrix);
+	orthiter(M, N, 30, val, mout, matrix);
 
 	for (int i = 0; i < M; i++)
 		for (int j = 0; j < N; j++)
@@ -277,7 +277,7 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 					if (orthiter) 
 						eigen_herm3(maps, channels, val, cov);
 					else 
-						eigendecomp(channels, val, (complex float (*)[])cov);
+						eigendecomp(channels, val, cov);
 
 					for (long u = 0; u < maps; u++) {
 

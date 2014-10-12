@@ -16,18 +16,21 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
-#include "misc/mri.h"
+
+#ifndef DIMS
+#define DIMS 16
+#endif
 
 
-const char* usage_str = "dimension size <input> <output>";
-const char* help_str = "Extracts a sub-array corresponding to the central part of {size} along {dimension}\n";
+static const char* usage_str = "dimension size <input> <output>";
+static const char* help_str = "Extracts a sub-array corresponding to the central part of {size} along {dimension}\n";
 
 
-int main(int argc, char* argv[])
+int main_crop(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
 
-	int N = KSPACE_DIMS;
+	int N = DIMS;
 	long in_dims[N];
 	long out_dims[N];
 	

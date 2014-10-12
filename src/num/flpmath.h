@@ -19,8 +19,10 @@ extern "C" {
 #endif
 
 
-#define CFL_SIZE sizeof(_Complex float)
-#define FL_SIZE sizeof(float)
+#define CFL_SIZE	sizeof(_Complex float)
+#define  FL_SIZE	sizeof(float)
+#define CDL_SIZE	sizeof(_Complex double)
+#define  DL_SIZE	sizeof(double)
 
 
 extern void md_mul2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
@@ -61,6 +63,9 @@ extern void md_sqrt(unsigned int D, const long dim[__VLA(D)],  float* optr, cons
 
 extern void md_zsqrt2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr1[__VLA(D)], const _Complex float* iptr1);
 extern void md_zsqrt(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr1);
+
+extern void md_zspow2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr, _Complex float val);
+extern void md_zspow(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr, _Complex float val);
 
 extern void md_zaxpy2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, _Complex float val, const long istr1[__VLA(D)], const _Complex float* iptr1);
 extern void md_zaxpy(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, _Complex float val, const _Complex float* iptr1);

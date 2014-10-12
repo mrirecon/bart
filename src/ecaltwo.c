@@ -41,7 +41,7 @@ static void help(void)
 
 
 
-int main(int argc, char* argv[])
+int main_ecaltwo(int argc, char* argv[])
 {
 	long maps = 2; // channels;
 	struct ecalib_conf conf;

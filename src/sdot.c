@@ -30,7 +30,7 @@ static void usage(const char* name, FILE* fd)
 }
 
 
-int main(int argc, char* argv[])
+int main_sdot(int argc, char* argv[])
 {
 
 	int c;

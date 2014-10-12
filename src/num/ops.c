@@ -214,7 +214,6 @@ void operator_p_free(const struct operator_p_s* x)
 
 struct op_p_data_s {
 
-
 	void* data;
 	operator_p_fun_t apply;
 	operator_del_t del;
@@ -377,6 +376,7 @@ const struct operator_s* operator_chain(const struct operator_s* a, const struct
 	struct operator_chain_s* c = xmalloc(sizeof(struct operator_chain_s));
 	
 	// check compatibility
+
 	assert((2 == a->N) && (2 == b->N));
 	assert(a->domain[0]->N == b->domain[1]->N);
 	assert(md_calc_size(a->domain[0]->N, a->domain[0]->dims) == md_calc_size(b->domain[1]->N, b->domain[1]->dims));
@@ -501,8 +501,7 @@ const struct operator_s* operator_stack(unsigned int D, unsigned int E, const st
 
 extern void operator_apply_unchecked(const struct operator_s* op, complex float* dst, const complex float* src)
 {
-	void* args[2] = { (void*)dst, (void*)src };
-	op->apply((void*)op->data, 2, args);
+	op->apply((void*)op->data, 2, (void*[2]){ (void*)dst, (void*)src });
 }
 
 extern void operator_apply2(const struct operator_s* op, unsigned int IN, const long idims[IN], const long istrs[IN], complex float* dst, const long ON, const long odims[ON], const long ostrs[ON], const complex float* src)
@@ -547,8 +546,7 @@ extern void operator_p_apply(const struct operator_p_s* op, float mu, unsigned i
 
 extern void operator_p_apply_unchecked(const struct operator_p_s* op, float mu, complex float* dst, const complex float* src)
 {
-	void* args[3] = { &mu, (void*)dst, (void*)src };
-	op->op.apply(op->op.data, 3, args);
+	op->op.apply(op->op.data, 3, (void*[3]){ &mu, (void*)dst, (void*)src });
 }
 
 

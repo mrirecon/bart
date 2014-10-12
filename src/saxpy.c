@@ -21,11 +21,11 @@
 #define DIMS 16
 #endif
 
-const char* usage_str = "scale <input1> <input2> <output>";
-const char* help_str = "Multiply input1 with scale factor and add input2.\n";
+static const char* usage_str = "scale <input1> <input2> <output>";
+static const char* help_str = "Multiply input1 with scale factor and add input2.\n";
 
 
-int main(int argc, char* argv[])
+int main_saxpy(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
 

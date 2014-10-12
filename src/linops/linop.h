@@ -18,23 +18,21 @@ struct linop_s {
 	const struct operator_s* forward;
 	const struct operator_s* adjoint;
 	const struct operator_s* normal;
-	const struct operator_p_s* pinverse;
+	const struct operator_p_s* norm_inv;
 };
 
 
 
 extern struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], void* data,
-				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t pinverse, del_fun_t);
+				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t);
 
 extern struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long ostr[ON],
 				unsigned int IN, const long idims[IN], const long istrs[IN], void* data,
-				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t pinverse, del_fun_t);
+				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t);
 
 extern const void* linop_get_data(const struct linop_s* ptr);
 
 
-// FIXME: will go away, use this to
-extern struct operator_s* linop2operator_compat(struct linop_s* x);
 
 extern void linop_free(const struct linop_s* op);
 
@@ -47,10 +45,19 @@ extern void linop_adjoint(const struct linop_s* op, unsigned int DN, const long 
 
 extern void linop_normal(const struct linop_s* op, unsigned int N, const long dims[N], complex float* dst, const complex float* src);
 
+extern void linop_pseudo_inv(const struct linop_s* op, float lambda, unsigned int DN, const long ddims[DN], complex float* dst, 
+			unsigned int SN, const long sdims[SN], const complex float* src);
+
+
+#ifdef BERKELEY_SVN
+// FIXME: will go away, use this to
+extern struct operator_s* linop2operator_compat(struct linop_s* x);
+#endif
+
 extern void linop_forward_unchecked(const struct linop_s* op, complex float* dst, const complex float* src);
 extern void linop_adjoint_unchecked(const struct linop_s* op, complex float* dst, const complex float* src);
 extern void linop_normal_unchecked(const struct linop_s* op, complex float* dst, const complex float* src);
-extern void linop_pinverse_unchecked(const struct linop_s* op, float lambda, complex float* dst, const complex float* src);
+extern void linop_norm_inv_unchecked(const struct linop_s* op, float lambda, complex float* dst, const complex float* src);
 
 extern struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b);
 
@@ -68,9 +75,9 @@ extern const struct linop_s* linop_clone(const struct linop_s* x);
 extern const struct linop_s* linop_join(unsigned int D, const struct linop_s* a, const struct linop_s* b);
 
 
-extern void linop_forward_iter( void* _o, float* _dst, const float* _src );
-extern void linop_adjoint_iter( void* _o, float* _dst, const float* _src );
-extern void linop_normal_iter( void* _o, float* _dst, const float* _src );
-extern void linop_pinverse_iter( void* _o, float lambda, float* _dst, const float* _src );
+extern void linop_forward_iter(void* _o, float* _dst, const float* _src);
+extern void linop_adjoint_iter(void* _o, float* _dst, const float* _src);
+extern void linop_normal_iter(void* _o, float* _dst, const float* _src);
+extern void linop_norm_inv_iter(void* _o, float lambda, float* _dst, const float* _src);
 
 

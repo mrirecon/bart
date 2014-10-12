@@ -94,12 +94,12 @@ ismrm.top := /usr/local/ismrmrd/
 
 # Main build targets
 
-TBASE=slice crop resize join transpose zeros ones flip circshift extract repmat conv bitmask
-TFLP=scale conj fmac saxpy sdot
+TBASE=slice crop resize join transpose zeros ones flip circshift extract repmat bitmask
+TFLP=scale conj fmac saxpy sdot conv
 TNUM=fft fftmod noise bench threshold creal
-TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof
+TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof nusense
 TCALIB=ecalib caldir walsh
-TMRI=rss homodyne pattern scc poisson
+TMRI=rss homodyne pattern scc poisson twixread
 TSIM=phantom traj
 TARGETS = $(TBASE) $(TFLP) $(TNUM) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TIO)
 
@@ -110,7 +110,8 @@ TARGETS = $(TBASE) $(TFLP) $(TNUM) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TIO)
 
 MODULES = -lnum -lmisc -lnum -lmisc
 
-MODULES_sense = -lsense -lwavelet2 -liter -llinops
+MODULES_sense = -lsense -lwavelet2 -liter -llinops -lwavelet3
+MODULES_nusense = -lsense -lwavelet2 -lnoncart -liter -llinops
 MODULES_pocsense = -lsense -lwavelet2 -liter -llinops
 MODULES_nlinv = -lnoir -liter
 MODULES_rsense = -lgrecon -lsense -lnoir -lwavelet2 -lcalib -liter -llinops
@@ -273,8 +274,8 @@ ismrmrd: $(srcdir)/ismrmrd.c -lismrm -lnum -lmisc
 
 
 .SECONDEXPANSION:
-$(TARGETS): % : $(srcdir)/%.o $$(MODULES_%) $(MODULES) 
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $+ $(FFTW_L) $(CUDA_L) $(CULA_L) $(BLAS_L) $(GSL_L) -lm
+$(TARGETS): % : $(srcdir)/%.c $$(MODULES_%) $(MODULES)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Dmain_$@=main -o $@ $+ $(FFTW_L) $(CUDA_L) $(CULA_L) $(BLAS_L) $(GSL_L) -lm -lstdc++ -lpng
 #	rm $(srcdir)/$@.o
 
 

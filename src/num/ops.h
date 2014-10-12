@@ -66,6 +66,7 @@ extern void operator_apply2(const struct operator_s* op, unsigned int IN, const 
 extern void operator_p_apply(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[IN], _Complex float* dst, const long ON, const long odims[ON], const _Complex float* src);
 extern void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[IN], const long istrs[IN], _Complex float* dst, const long ON, const long odims[ON], const long ostrs[ON], const _Complex float* src);
 
+
 extern void operator_apply_unchecked(const struct operator_s* op, _Complex float* dst, const _Complex float* src);
 extern void operator_p_apply_unchecked(const struct operator_p_s* op, float mu,  _Complex float* dst, const _Complex float* src);
 

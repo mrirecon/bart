@@ -25,11 +25,11 @@
 
 
 
-const char* usage_str = "bitmask <input> <output>";
-const char* help_str = "Calculates root of sum of squares along selected dimensions.\n";
+static const char* usage_str = "bitmask <input> <output>";
+static const char* help_str = "Calculates root of sum of squares along selected dimensions.\n";
 
 
-int main(int argc, char* argv[argc])
+int main_rss(int argc, char* argv[argc])
 {
 	mini_cmdline(argc, argv, 3, usage_str, help_str);
 

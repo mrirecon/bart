@@ -84,7 +84,7 @@ static void shared_apply_p(const void* _data, float lambda, complex float* dst, 
 struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long ostrs[ON],
 				unsigned int IN, const long idims[IN], const long istrs[IN],
 				void* data, lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal,
-				lop_p_fun_t pinverse, del_fun_t del)
+				lop_p_fun_t norm_inv, del_fun_t del)
 {
 	struct linop_s* lo = xmalloc(sizeof(struct linop_s));
 
@@ -106,7 +106,7 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 	shared_data[0]->u.apply = forward;
 	shared_data[1]->u.apply = adjoint;
 	shared_data[2]->u.apply = normal;
-	shared_data[3]->u.apply_p = pinverse;
+	shared_data[3]->u.apply_p = norm_inv;
 
 	assert((NULL != forward));
 	assert((NULL != adjoint));
@@ -125,15 +125,15 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 		lo->normal = NULL;
 	}
 
-	if (NULL != pinverse) {
+	if (NULL != norm_inv) {
 
-		lo->pinverse = operator_p_create2(IN, idims, istrs, ON, odims, ostrs, shared_data[3], shared_apply_p, shared_del);
+		lo->norm_inv = operator_p_create2(IN, idims, istrs, IN, idims, istrs, shared_data[3], shared_apply_p, shared_del);
 	
 	} else {
 
 		shared_unlink(shared_data[3]);
 		free(shared_data[3]);
-		lo->pinverse = NULL;
+		lo->norm_inv = NULL;
 	}
 
 	return lo;
@@ -150,18 +150,18 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
  * @param forward function for applying the forward operation, A
  * @param adjoint function for applying the adjoint operation, A^H
  * @param normal function for applying the normal equations operation, A^H A
- * @param pinverse function for applying the pseudo-inverse operation, (A^H A + mu I)^-1
+ * @param norm_inv function for applying the pseudo-inverse operation, (A^H A + mu I)^-1
  * @param del function for freeing the data
  */
 struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], void* data,
-				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t pinverse, del_fun_t del)
+				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t del)
 {
 	long ostrs[ON];
 	long istrs[IN];
 	md_calc_strides(ON, ostrs, odims, CFL_SIZE);
 	md_calc_strides(IN, istrs, idims, CFL_SIZE);
 
-	return linop_create2(ON, odims, ostrs, IN, idims, istrs, data, forward, adjoint, normal, pinverse, del);
+	return linop_create2(ON, odims, ostrs, IN, idims, istrs, data, forward, adjoint, normal, norm_inv, del);
 }
 
 /**
@@ -186,7 +186,7 @@ extern const struct linop_s* linop_clone(const struct linop_s* x)
 	lo->forward = operator_ref(x->forward);
 	lo->adjoint = operator_ref(x->adjoint);
 	lo->normal = operator_ref(x->normal);
-	lo->pinverse = operator_p_ref(x->pinverse);
+	lo->norm_inv = operator_p_ref(x->norm_inv);
 
 	return lo;
 }
@@ -229,6 +229,32 @@ void linop_adjoint(const struct linop_s* op, unsigned int DN, const long ddims[D
 {
 	assert(op->adjoint);
 	operator_apply(op->adjoint, DN, ddims, dst, SN, sdims, src);
+}
+
+
+/**
+ * Apply the pseudo-inverse operation of a linear operator: x = (A^H A + lambda I)^-1 A^H y
+ * Checks that dimensions are consistent for the linear operator
+ *
+ * @param op linear operator
+ * @param lambda regularization parameter
+ * @param DN number of destination dimensions
+ * @param ddims dimensions of the output (domain)
+ * @param dst output data
+ * @param SN number of source dimensions
+ * @param sdims dimensions of the input (codomain)
+ * @param src input data
+ */
+void linop_pseudo_inv(const struct linop_s* op, float lambda,
+			unsigned int DN, const long ddims[DN], complex float* dst,
+			unsigned int SN, const long sdims[SN], const complex float* src)
+{
+	complex float* adj = md_alloc_sameplace(DN, ddims, CFL_SIZE, dst);
+	linop_adjoint(op, DN, ddims, adj, SN, sdims, src);
+
+	assert(op->norm_inv);
+	operator_p_apply(op->norm_inv, lambda, DN, ddims, dst, DN, ddims, adj);
+	md_free(adj);
 }
 
 
@@ -299,12 +325,13 @@ void linop_normal_unchecked(const struct linop_s* op, complex float* dst, const 
  * Does not check that the dimensions are consistent for the linear operator
  *
  * @param op linear operator
+ * @param lambda regularization parameter
  * @param dst output data
  * @param src input data
  */
-void linop_pinverse_unchecked(const struct linop_s* op, float lambda, complex float* dst, const complex float* src)
+void linop_norm_inv_unchecked(const struct linop_s* op, float lambda, complex float* dst, const complex float* src)
 {
-	operator_p_apply_unchecked(op->pinverse, lambda, dst, src);
+	operator_p_apply_unchecked(op->norm_inv, lambda, dst, src);
 }
 
 
@@ -354,7 +381,7 @@ struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b)
 		operator_free(top);
 	}
 
-	c->pinverse = NULL;
+	c->norm_inv = NULL;
 
 	return c;
 }
@@ -371,7 +398,7 @@ void linop_free(const struct linop_s* op)
 	operator_free(op->forward);
 	operator_free(op->adjoint);
 	operator_free(op->normal);
-	operator_p_free(op->pinverse);
+	operator_p_free(op->norm_inv);
 	free((void*)op);
 }
 
@@ -415,11 +442,11 @@ extern void linop_normal_iter(void* _o, float* _dst, const float* _src)
 /**
  * Wrapper for calling pseudo-inverse operation using italgos.
  */
-extern void linop_pinverse_iter( void* _o, float lambda, float* _dst, const float* _src )
+extern void linop_norm_inv_iter(void* _o, float lambda, float* _dst, const float* _src)
 {
 	struct linop_s* o = _o;
 	complex float* dst = (complex float*)_dst;
 	const complex float* src = (complex float*)_src;
 
-	linop_pinverse_unchecked(o, lambda, dst, src);
+	linop_norm_inv_unchecked(o, lambda, dst, src);
 }

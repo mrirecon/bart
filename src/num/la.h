@@ -1,4 +1,4 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2014. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  */ 
@@ -27,5 +27,43 @@ extern void cholesky_solve_double(int N, complex double x[N], const complex doub
 extern complex float vec_mean(long D, const complex float src[D]);
 extern void vec_axpy(long N, complex float x[N], complex float alpha, const complex float y[N]);
 extern void vec_sadd(long D, complex float alpha, complex float dst[D], const complex float src[D]);
+
+#if 1
+/* Macro wrappers for functions to work around a limitation of
+ * the C language standard: A pointer to an array cannot passed
+ * as a pointer to a constant array without adding an explicit cast.
+ * We hide this cast in the macro definitions. For GCC we can define
+ * a type-safe version of the macro.
+ *
+ * A similar idea is used in Jens Gustedt's P99 preprocessor macros 
+ * and functions package available at: http://p99.gforge.inria.fr/
+ */
+#ifndef __GNUC__
+#define AR2D_CAST(t, n, m, x) (const t(*)[m])(x)
+//#define AR2D_CAST(t, n, m, x) ((const t(*)[m])(0 ? (t(*)[m])0 : (x)))
+//#define AR2D_CAST(t, n, m, x) ((const t(*)[m])(t(*)[m]){ &(x[0]) })
+#else
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+#define AR2D_CAST(t, n, m, x) (BUILD_BUG_ON(!(__builtin_types_compatible_p(const t[m], __typeof__((x)[0])) \
+				|| __builtin_types_compatible_p(t[m], __typeof__((x)[0])))), (const t(*)[m])(x))
+#endif
+#define mat_mul(A, B, C, x, y, z) \
+	mat_mul(A, B, C, x, AR2D_CAST(complex float, A, B, y), AR2D_CAST(complex float, B, C, z))
+
+#define mat_copy(A, B, x, y) \
+	mat_copy(A, B, x, AR2D_CAST(complex float, A, B, y))
+
+#define mat_transpose(A, B, x, y) \
+	mat_transpose(A, B, x, AR2D_CAST(complex float, A, B, y))
+
+#define mat_adjoint(A, B, x, y) \
+	mat_adjoint(A, B, x, AR2D_CAST(complex float, A, B, y))
+
+#define pack_tri_matrix(N, cov, m) \
+	pack_tri_matrix(N, cov, AR2D_CAST(complex float, N, N, m))
+
+#define orthiter(M, N, iter, vals, out, matrix) \
+	orthiter(M, N, iter, vals, out, AR2D_CAST(complex float, N, N, matrix))
+#endif
 
 

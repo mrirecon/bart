@@ -20,11 +20,11 @@
 
 #define DIMS 16
 
-const char* usage_str = "dimension start end <input> <output>";
-const char* help_str = "Extracts a sub-array along {dim} from index {start} to {end}.\n";
+static const char* usage_str = "dimension start end <input> <output>";
+static const char* help_str = "Extracts a sub-array along {dim} from index {start} to {end}.\n";
 
 
-int main(int argc, char* argv[])
+int main_extract(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 5, usage_str, help_str);
 

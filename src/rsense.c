@@ -54,7 +54,7 @@ static void help(void)
 }
 
 
-int main(int argc, char* argv[])
+int main_rsense(int argc, char* argv[])
 {
 	bool usegpu = false;
 	int maps = 2;

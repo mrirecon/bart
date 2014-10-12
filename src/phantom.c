@@ -41,7 +41,7 @@ static void help(void)
 
 
 
-int main(int argc, char* argv[])
+int main_phantom(int argc, char* argv[])
 {
 	int c;
 	_Bool kspace = false;

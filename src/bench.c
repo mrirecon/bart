@@ -31,8 +31,8 @@
 #define DIMS 8
 
 
-const char* usage_str = "";
-const char* help_str = "Run micro-benchmarks.\n";
+static const char* usage_str = "";
+static const char* help_str = "Run micro-benchmarks.\n";
 
 
 
@@ -430,7 +430,7 @@ static double bench_wavelet_thresh(int version)
 
 	double tic = timestamp();
 
-	operator_p_apply_unchecked(p, 0.98, x, x);
+	operator_p_apply(p, 0.98, DIMS, dims, x, DIMS, dims, x);
 
 	double toc = timestamp();
 

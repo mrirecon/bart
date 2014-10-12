@@ -45,12 +45,15 @@ void vec_sadd(long D, complex float alpha, complex float dst[D], const complex f
 complex float vec_mean(long D, const complex float src[D])
 {
 	complex double val = 0;
+
 	for (long i = 0; i < D; i++)
 		val += src[i];
-	return val/D;
+
+	return val / D;
 }
 
-void mat_mul(int A, int B, int C, complex float x[A][C], const complex float y[A][B], const complex float z[B][C])
+
+void (mat_mul)(int A, int B, int C, complex float x[A][C], const complex float y[A][B], const complex float z[B][C])
 {
 	for (int i = 0; i < A; i++) {
 		for (int j = 0; j < C; j++) {
@@ -95,7 +98,7 @@ void vec_saxpy(int N, complex float x[N], complex float alpha, const complex flo
 		x[k] += alpha * y[k];
 }
 
-void gram_matrix(int N, complex float cov[N][N], int L, const complex float data[N][L])
+void (gram_matrix)(int N, complex float cov[N][N], int L, const complex float data[N][L])
 {
 #pragma omp parallel for
 	for (int i = 0; i < N; i++) {
@@ -109,7 +112,7 @@ void gram_matrix(int N, complex float cov[N][N], int L, const complex float data
 	}
 }
 
-void pack_tri_matrix(int N, complex float cov[N * (N + 1) / 2], const complex float m[N][N])
+void (pack_tri_matrix)(int N, complex float cov[N * (N + 1) / 2], const complex float m[N][N])
 {
 	int l = 0;
 
@@ -118,7 +121,7 @@ void pack_tri_matrix(int N, complex float cov[N * (N + 1) / 2], const complex fl
 			cov[l++] = m[i][j];
 }
 
-void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])
+void (unpack_tri_matrix)(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])
 {
 	int l = 0;
 
@@ -143,7 +146,7 @@ void gram_matrix2(int N, complex float cov[N * (N + 1) / 2], int L, const comple
 #else
 	complex float c[N][N];
 	gram_matrix(N, c, L, data);
-	pack_tri_matrix(N, cov, (const complex float (*)[N])c);
+	pack_tri_matrix(N, cov, c);
 #endif
 }
 
@@ -169,21 +172,21 @@ void gram_schmidt(int M, int N, float vals[M], complex float vecs[M][N])
 		vecs[0][k] /= vals[0];
 }
 
-void mat_transpose(int A, int B, complex float dst[B][A], const complex float src[A][B])
+void (mat_transpose)(int A, int B, complex float dst[B][A], const complex float src[A][B])
 {
 	for (int i = 0; i < B; i++)
 		for (int j = 0; j < A; j++)
 			dst[i][j] = src[j][i];	// swap
 }
 
-void mat_adjoint(int A, int B, complex float dst[B][A], const complex float src[A][B])
+void (mat_adjoint)(int A, int B, complex float dst[B][A], const complex float src[A][B])
 {
 	for (int i = 0; i < B; i++)
 		for (int j = 0; j < A; j++)
 			dst[i][j] = conjf(src[j][i]);	// swap
 }
 
-void mat_copy(int A, int B, complex float dst[A][B], const complex float src[A][B])
+void (mat_copy)(int A, int B, complex float dst[A][B], const complex float src[A][B])
 {
 	for (int i = 0; i < A; i++)
 		for (int j = 0; j < B; j++)
@@ -191,7 +194,7 @@ void mat_copy(int A, int B, complex float dst[A][B], const complex float src[A][
 }
 
 
-void orthiter(int M, int N, int iter, float val[M], complex float out[M][N], const complex float matrix[N][N])
+void (orthiter)(int M, int N, int iter, float val[M], complex float out[M][N], const complex float matrix[N][N])
 {
 	complex float tmp[M][N];
 
@@ -199,8 +202,8 @@ void orthiter(int M, int N, int iter, float val[M], complex float out[M][N], con
 
 	for (int n = 0; n < iter; n++) {
 
-		mat_copy(M, N, (complex float (*)[N])tmp, (const complex float (*)[N])out);
-		mat_mul(M, N, N, out, (const complex float (*)[N])tmp, matrix);
+		mat_copy(M, N, tmp, out);
+		mat_mul(M, N, N, out, tmp, matrix);
 		gram_schmidt(M, N, val, out); 
 	}
 }

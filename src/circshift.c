@@ -23,12 +23,12 @@
 #define DIMS 16
 #endif
 
-const char* usage_str = "dim shift <input> <output>";
-const char* help_str = "Perform circular shift along {dim} by {shift} elements.\n";
+static const char* usage_str = "dim shift <input> <output>";
+static const char* help_str = "Perform circular shift along {dim} by {shift} elements.\n";
 
 
 
-int main(int argc, char* argv[])
+int main_circshift(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
 

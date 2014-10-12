@@ -46,7 +46,7 @@ static void help(void)
 
 
 
-int main(int argc, char* const argv[])
+int main_nlinv(int argc, char* const argv[])
 {
 	int iter = 8;
 	int c;

@@ -54,6 +54,19 @@ float conjgrad_hist(struct iter_history_s* iter_history, unsigned int maxiter, f
 	void* obj_eval_data,
 	float (*obj_eval)(const void*, const float*));
 
+
+extern const struct cg_data_s* cg_data_init(long N, const struct vec_iter_s* vops);
+extern void cg_data_free(const struct cg_data_s* cgdata, const struct vec_iter_s* vops);
+float conjgrad_hist_prealloc(struct iter_history_s* iter_history, 
+			     unsigned int maxiter, float l2lambda, float epsilon, 
+			     long N, void* data, struct cg_data_s* cgdata,
+			     const struct vec_iter_s* vops,
+			     void (*linop)(void* data, float* dst, const float* src), 
+			     float* x, const float* b, const float* x_truth,
+			     void* obj_eval_data,
+			     float (*obj_eval)(const void*, const float*));
+
+
 void landweber(unsigned int maxiter, float epsilon, float alpha,
 	long N, long M, void* data,
 	const struct vec_iter_s* vops,

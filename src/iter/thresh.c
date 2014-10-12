@@ -190,7 +190,7 @@ void thresh_free(const struct operator_p_s* o)
 
 
 
-
+#ifdef BERKELEY_SVN
 /**
  * Convenience function for applying soft thresholding
  *
@@ -203,7 +203,7 @@ void softthresh(const struct operator_p_s* o, complex float* optr, const complex
 	debug_printf(DP_WARN, "Warning: This function should not be used with italgos. Use operator_p_apply instead\n");
 	operator_p_apply_unchecked(o, 1., optr, iptr);
 }
-
+#endif
 
 
 

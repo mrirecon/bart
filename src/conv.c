@@ -38,7 +38,7 @@ static void help(void)
 
 
 
-int main(int argc, char* argv[])
+int main_conv(int argc, char* argv[])
 {
 	int c;
 

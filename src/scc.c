@@ -58,7 +58,7 @@ static void help(void)
 
 
 
-int main(int argc, char* argv[])
+int main_scc(int argc, char* argv[])
 {
 	long calsize[3] = { 24, 24, 24 }; 
 	bool proj = false;

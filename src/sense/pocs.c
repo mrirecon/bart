@@ -105,7 +105,7 @@ static void sparsity_proj_apply(const void* _data, float mu, complex float* dst,
 	md_zmul2(DIMS, dims, data->strs_ksp, dst, data->strs_pat, data->fftmod_mat, data->strs_ksp, dst);
 #endif
 
-	operator_p_apply_unchecked(data->thresh, mu, dst, dst);
+	operator_p_apply(data->thresh, mu, DIMS, dims, dst, DIMS, dims, dst);
 
 #if 0
 	fftmod(DIMS, dims, FFT_FLAGS, dst, dst);

@@ -25,8 +25,8 @@
 
 
 
-const char* usage_str = "dim fraction <input> <output>";
-const char* help_str = "Perform homodyne reconstruction along dimension dim.\n";
+static const char* usage_str = "dim fraction <input> <output>";
+static const char* help_str = "Perform homodyne reconstruction along dimension dim.\n";
 
 
 
@@ -56,7 +56,7 @@ static void comp_weights(void* _data, const long pos[])
 
 
 
-int main(int argc, char* argv[])
+int main_homodyne(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
 

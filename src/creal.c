@@ -25,11 +25,11 @@
 #endif
 
 
-const char* usage_str = "<input> <output>";
-const char* help_str = "Real value.\n";
+static const char* usage_str = "<input> <output>";
+static const char* help_str = "Real value.\n";
 
 
-int main(int argc, char* argv[])
+int main_creal(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 2, usage_str, help_str);
 

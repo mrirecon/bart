@@ -39,7 +39,7 @@ static void help(const char* name, FILE *fd)
 		"\t-h\thelp\n");
 }
 
-int main(int argc, char* argv[])
+int main_noise(int argc, char* argv[])
 {
 
 	int com;

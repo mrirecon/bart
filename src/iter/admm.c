@@ -43,6 +43,7 @@ struct admm_normaleq_data {
 	void (*Aop)(void* _data, float* _dst, const float* _src);
 	void* Aop_data;
 
+        float* tmp;
 };
 
 
@@ -52,25 +53,26 @@ static void admm_normaleq(void* _data, float* _dst, const float* _src)
 	struct admm_normaleq_data* data = _data;
 	long dims[1] = { data->N };
 
-	float* tmp = md_alloc_sameplace(1, dims, FL_SIZE, _src );
+	//float* tmp = md_alloc_sameplace(1, dims, FL_SIZE, _src );
+
 	md_clear(1, dims, _dst, sizeof(float));
 
 	for (unsigned int i = 0; i < data->num_funs; i++)
 	{
-		data->ops[i].normal(data->ops[i].data, tmp, _src);
+	        data->ops[i].normal(data->ops[i].data, data->tmp, _src);
 		if (NULL != data->Aop && NULL != data->Aop_data)
-			md_axpy(1, dims, _dst, data->rho, tmp);
+			md_axpy(1, dims, _dst, data->rho, data->tmp);
 		else
-			md_add(1, dims, _dst, _dst, tmp);
+			md_add(1, dims, _dst, _dst, data->tmp);
 	}
 
 	if (NULL != data->Aop && NULL != data->Aop_data)
 	{
-		data->Aop(data->Aop_data, tmp, _src);
-		md_add(1, dims, _dst, _dst, tmp);
+		data->Aop(data->Aop_data, data->tmp, _src);
+		md_add(1, dims, _dst, _dst, data->tmp);
 	}
 
-	md_free( tmp );
+	//md_free( tmp );
 
 }
 
@@ -167,6 +169,9 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	ndata.Aop = Aop;
 	ndata.Aop_data = Aop_data;
 	ndata.rho = 1.;
+	ndata.tmp = vops->allocate(N);
+
+	struct cg_data_s* cgdata = (struct cg_data_s*) cg_data_init(N, vops);
 
 	// hogwild
 	int hw_K = 1;
@@ -218,7 +223,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		}
 
 		// x update: use plan->xupdate_fun if specified. use conjgrad otherwise
-		if (NULL != plan->xupdate_fun && NULL != plan->xupdate_data) {
+		if ( (NULL != plan->xupdate_fun) && (NULL != plan->xupdate_data)) {
 			plan->xupdate_fun( plan->xupdate_data, rho, x, rhs );
 			grad_iter++;
 		}
@@ -226,7 +231,8 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			float eps = vops->norm(N, rhs);
 			if (eps > 0.)
 			{
-				conjgrad_hist(&cghistory, plan->maxitercg, 0., 1.E-3 * eps, N, &ndata, vops, admm_normaleq, x, rhs, plan->image_truth, obj_eval_data, obj_eval);
+			  conjgrad_hist_prealloc(&cghistory, plan->maxitercg, 0., 1.E-3 * eps, N, &ndata, cgdata, vops, admm_normaleq, x, rhs, plan->image_truth, obj_eval_data, obj_eval);
+			  //conjgrad_hist(&cghistory, plan->maxitercg, 0., 1.E-3 * eps, N, &ndata, vops, admm_normaleq, x, rhs, plan->image_truth, obj_eval_data, obj_eval);
 			}
 			else {
 				cghistory.numiter = 0;
@@ -358,6 +364,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 	}
 
+
 	// cleanup
 	vops->del(z);
 	vops->del(u);
@@ -374,6 +381,9 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	if (NULL != plan->image_truth)
 		vops->del( x_err);
 
+	vops->del(ndata.tmp);	
+	cg_data_free(cgdata, vops);
+
 	free(cghistory.resid);
 	free(cghistory.objective);
 	free(cghistory.relMSE);
@@ -385,5 +395,5 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	free(history->objective);
 	free(history->rho);
 
-
+	
 }

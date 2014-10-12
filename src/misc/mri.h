@@ -19,20 +19,23 @@ extern "C" {
 #endif
 #endif
 
-#define READ_DIM	0u
-#define PHS1_DIM	1u
-#define PHS2_DIM	2u
-#define COIL_DIM	3u
-#define MAPS_DIM	4u
-#define TE_DIM		5u
-#define COEFF_DIM	6u
-#define ITER_DIM	7u
-#define CSHIFT_DIM	8u
-#define TIME_DIM	9u
-#define TIME2_DIM	10u
-#define LEVEL_DIM	11u
-#define COEFF2_DIM	12u
-#define SLICE_DIM	13u
+enum mri_dims {
+	READ_DIM,
+	PHS1_DIM,
+	PHS2_DIM,
+	COIL_DIM,
+	MAPS_DIM,
+	TE_DIM,
+	COEFF_DIM,
+	ITER_DIM,
+	CSHIFT_DIM,
+	TIME_DIM,
+	TIME2_DIM,
+	LEVEL_DIM,
+	COEFF2_DIM,
+	SLICE_DIM,
+};
+
 #define KSPACE_DIMS	16u
 
 #ifndef DIMS
@@ -73,7 +76,6 @@ extern _Complex float* extract_calib(long caldims[DIMS], const long calsize[3], 
 extern _Complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const long in_strs[DIMS], const _Complex float* in_data, _Bool fixed);
 extern void data_consistency(const long dims[DIMS], _Complex float* dst, const _Complex float* pattern, const _Complex float* kspace1, const _Complex float* kspace2);
 extern void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], const long in_dims[DIMS], const _Complex float* in_data);
-
 
 #ifdef __cplusplus
 }

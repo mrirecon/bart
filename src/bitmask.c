@@ -25,7 +25,7 @@ static void help(void)
 }
 
 
-int main(int argc, char* argv[])
+int main_bitmask(int argc, char* argv[])
 {
 	bool inverse = false;
 	unsigned int flags = 0;

@@ -22,12 +22,12 @@
 #endif
 
 
-const char* usage_str = "bitmask <input> <output>";
-const char* help_str = "Flip (reverse) dimensions specified by the {bitmask}.\n";
+static const char* usage_str = "bitmask <input> <output>";
+static const char* help_str = "Flip (reverse) dimensions specified by the {bitmask}.\n";
 
 
 
-int main(int argc, char* argv[])
+int main_flip(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 3, usage_str, help_str);
 

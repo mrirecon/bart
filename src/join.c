@@ -33,7 +33,7 @@ static void help(void)
 }
 
 
-int main(int argc, char* argv[])
+int main_join(int argc, char* argv[])
 {
 	int c;
 	while (-1 != (c = getopt(argc, argv, "h"))) {

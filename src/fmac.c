@@ -39,7 +39,7 @@ static void help(void)
 }
 
 
-int main(int argc, char* argv[])
+int main_fmac(int argc, char* argv[])
 {
 	bool clear = true;
 	bool conj = false;

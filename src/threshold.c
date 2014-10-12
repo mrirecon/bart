@@ -28,7 +28,7 @@ static void usage(const char* name, FILE* fd)
 
 
 
-int main(int argc, char* argv[])
+int main_threshold(int argc, char* argv[])
 {
 	unsigned int flags = 0;
 
