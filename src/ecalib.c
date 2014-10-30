@@ -26,6 +26,10 @@
 
 #include "calib/calib.h"
 
+#ifndef CFL_SIZE
+#define CFL_SIZE sizeof(complex float)
+#endif
+
 
 
 static void usage(const char* name, FILE* fd)
@@ -190,8 +194,8 @@ int main_ecalib(int argc, char* argv[])
 		for (int i = 3; i < N; i++)
 			cal_dims[i] = ksp_dims[i];
 
-		cal_data = md_alloc(5, cal_dims, sizeof(complex float));
-		md_resizec(5, cal_dims, cal_data, ksp_dims, in_data, sizeof(complex float));
+		cal_data = md_alloc(5, cal_dims, CFL_SIZE);
+		md_resizec(5, cal_dims, cal_data, ksp_dims, in_data, CFL_SIZE);
 	 }
 
 
@@ -233,13 +237,13 @@ int main_ecalib(int argc, char* argv[])
 		long cov_dims[4];
 
 		calone_dims(&conf, cov_dims, channels);
-		complex float* imgcov = md_alloc(4, cov_dims, sizeof(complex float));
+		complex float* imgcov = md_alloc(4, cov_dims, CFL_SIZE);
 
 
 		calone(&conf, cov_dims, imgcov, K, svals, cal_dims, cal_data);
 
 		complex float* out = create_cfl(argv[optind + 1], 4, cov_dims);
-		md_copy(4, cov_dims, out, imgcov, sizeof(complex float));
+		md_copy(4, cov_dims, out, imgcov, CFL_SIZE);
 		unmap_cfl(4, cov_dims, out);
 
 //		caltwo(crthr, out_dims, out_data, emaps, cov_dims, imgcov, NULL, NULL);
@@ -272,25 +276,18 @@ int main_ecalib(int argc, char* argv[])
 		map_dims[COIL_DIM] = 1;
 		map_dims[MAPS_DIM] = maps;
 
+		const char* emaps_file = NULL;
+
+		if (3 == argc - optind)
+			emaps_file = argv[optind + 2];
 
 		complex float* out_data = create_cfl(argv[optind + 1], N, out_dims);
-		complex float* emaps;
-
-		if (argc - optind == 3) 
-			emaps = create_cfl(argv[optind + 2], N, map_dims);
-		else
-			emaps = md_alloc(N, map_dims, sizeof(complex float));
-
-
+		complex float* emaps = (emaps_file ? create_cfl : anon_cfl)(emaps_file, N, map_dims);
 
 		calib(&conf, out_dims, out_data, emaps, K, svals, cal_dims, cal_data); 
 
 		unmap_cfl(N, out_dims, out_data);
-
-		if (argc - optind == 3) 
-			unmap_cfl(N, map_dims, emaps);
-		else
-			md_free(emaps);
+		unmap_cfl(N, map_dims, emaps);
 	}
 
 

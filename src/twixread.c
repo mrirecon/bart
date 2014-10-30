@@ -104,7 +104,7 @@ struct mdh2 {	// second part of mdh
 
 
 
-static void siemens_adc_read(bool vd, int fd, const long dims[DIMS], long pos[DIMS], complex float* buf)
+static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const long dims[DIMS], long pos[DIMS], complex float* buf)
 {
 	char scan_hdr[vd ? 192 : 0];
 	xread(fd, scan_hdr, sizeof(scan_hdr));
@@ -120,9 +120,9 @@ static void siemens_adc_read(bool vd, int fd, const long dims[DIMS], long pos[DI
 		if (0 == pos[COIL_DIM]) {
 
 			// TODO: rethink this
-			pos[PHS1_DIM] = mdh.sLC[0]; // - mdh.linectr;
+			pos[PHS1_DIM] = mdh.sLC[0] + (linectr ? mdh.linectr : 0);
 			pos[SLICE_DIM] = mdh.sLC[2];
-			pos[PHS2_DIM] = mdh.sLC[3]; // - mdh.partctr;
+			pos[PHS2_DIM] = mdh.sLC[3] + (partctr ? mdh.partctr : 0);
 			pos[TE_DIM] = mdh.sLC[4];
 			pos[TIME_DIM] = mdh.sLC[6];
 			pos[TIME2_DIM] = mdh.sLC[7];
@@ -130,15 +130,17 @@ static void siemens_adc_read(bool vd, int fd, const long dims[DIMS], long pos[DI
 
 		debug_print_dims(DP_DEBUG1, DIMS, pos);
 
-		if (dims[READ_DIM] != mdh.samples)
-			error("wrong number of samples");
+		if (dims[READ_DIM] != mdh.samples) {
 
-		assert(md_is_index(DIMS, pos, dims));
+			debug_printf(DP_WARN, "Wrong number of samples.\n");
+			return -1;
+		}
 
 		xread(fd, buf + pos[COIL_DIM] * dims[READ_DIM], dims[READ_DIM] * CFL_SIZE);
 	}
 
 	pos[COIL_DIM] = 0;
+	return 0;
 }
 
 
@@ -161,6 +163,8 @@ static void help(void)
 		"-s S\tnumber of slices\n"
 		"-c C\tnumber of channels\n"
 		"-a A\ttotal number of ADCs\n"
+		"-L\tuse linectr offset\n"
+		"-P\tuse partctr offset\n"
 		"-h\thelp\n");
 }
 
@@ -171,10 +175,13 @@ int main(int argc, char* argv[argc])
 	int c;
 	long adcs = 0;
 
+	bool linectr = false;
+	bool partctr = false;
+
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
 
-	while (-1 != (c = getopt(argc, argv, "x:y:z:s:c:a:h"))) {
+	while (-1 != (c = getopt(argc, argv, "x:y:z:s:c:a:PLh"))) {
 		switch (c) {
 
 		case 'x':
@@ -199,6 +206,14 @@ int main(int argc, char* argv[argc])
 
 		case 'c':
 			dims[COIL_DIM] = atoi(optarg);
+			break;
+
+		case 'P':
+			partctr = true;
+			break;
+
+		case 'L':
+			linectr = true;
 			break;
 
 		case 'h':
@@ -231,6 +246,7 @@ int main(int argc, char* argv[argc])
 	bool vd = siemens_meas_setup(ifd, &hdr);
 
 	complex float* out = create_cfl(argv[optind + 1], DIMS, dims);
+	md_clear(DIMS, dims, out, CFL_SIZE);
 
 	long adc_dims[DIMS];
 	md_select_dims(DIMS, READ_FLAG|COIL_FLAG, adc_dims, dims);
@@ -240,12 +256,23 @@ int main(int argc, char* argv[argc])
 	while (adcs--) {
 
 		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
-		siemens_adc_read(vd, ifd, dims, pos, buf);
+
+		if (-1 == siemens_adc_read(vd, ifd, linectr, partctr, dims, pos, buf)) {
+
+			debug_printf(DP_WARN, "Stopping.\n");
+			break;
+		}
 
 		debug_print_dims(DP_DEBUG1, DIMS, pos);
+
+		if (!md_is_index(DIMS, pos, dims)) {
+
+			debug_printf(DP_WARN, "Index out of bounds.\n");
+			continue;
+		}
+
 		md_copy_block(DIMS, pos, dims, out, adc_dims, buf, CFL_SIZE); 
 	}
-
 
 	md_free(buf);
 	unmap_cfl(DIMS, dims, out);

@@ -28,7 +28,7 @@
 
 	
 
-void walsh(const long bsize[3], const long dims[KSPACE_DIMS], complex float* sens, const long caldims[KSPACE_DIMS], const complex float* data)
+void walsh(const long bsize[3], const long dims[DIMS], complex float* sens, const long caldims[DIMS], const complex float* data)
 {
 	assert(1 == caldims[MAPS_DIM]);
 	assert(1 == dims[MAPS_DIM]);
@@ -37,8 +37,8 @@ void walsh(const long bsize[3], const long dims[KSPACE_DIMS], complex float* sen
 	int cosize = channels * (channels + 1) / 2;
 	assert(dims[COIL_DIM] == cosize);
 
-	long dims1[KSPACE_DIMS];
-	md_copy_dims(KSPACE_DIMS, dims1, dims);
+	long dims1[DIMS];
+	md_copy_dims(DIMS, dims1, dims);
 	dims1[COIL_DIM] = channels;
 	
 	long kdims[4];
@@ -46,17 +46,17 @@ void walsh(const long bsize[3], const long dims[KSPACE_DIMS], complex float* sen
 	kdims[1] = MIN(bsize[1], dims[1]);
 	kdims[2] = MIN(bsize[2], dims[2]);
 
-	md_resizec(KSPACE_DIMS, dims1, sens, caldims, data, sizeof(complex float));
-	ifftc(KSPACE_DIMS, dims1, FFT_FLAGS, sens, sens);
+	md_resizec(DIMS, dims1, sens, caldims, data, CFL_SIZE);
+	ifftc(DIMS, dims1, FFT_FLAGS, sens, sens);
 
-	long odims[KSPACE_DIMS];
-	md_copy_dims(KSPACE_DIMS, odims, dims1);
+	long odims[DIMS];
+	md_copy_dims(DIMS, odims, dims1);
 
 	for (int i = 0; i < 3; i++)
 		odims[i] = dims[i] + kdims[i] - 1;
 
-	complex float* tmp = md_alloc(KSPACE_DIMS, odims, sizeof(complex float));
-	md_resizec(KSPACE_DIMS, odims, tmp, dims1, sens, sizeof(complex float));
+	complex float* tmp = md_alloc(DIMS, odims, CFL_SIZE);
+	md_resizec(DIMS, odims, tmp, dims1, sens, CFL_SIZE);
 
 	// FIXME: we should have the option to compute this from a periodic 
 	// extension 

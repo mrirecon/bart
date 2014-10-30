@@ -36,7 +36,8 @@
  * data structure for holding the undersampled fft data.
  */
 struct ufft_data {
-	_Bool use_gpu;
+
+	bool use_gpu;
 	unsigned int flags;
 
 	long ksp_dims[DIMS];
@@ -50,7 +51,7 @@ struct ufft_data {
         complex float* pat;
 };
 
-static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, _Bool use_gpu);
+static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu);
 static void ufft_free_data(const void* _data );
 static void ufft_apply(const void* _data, complex float* dst, const complex float* src);
 static void ufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src);
@@ -60,7 +61,7 @@ static void ufft_apply_pinverse(const void* _data, float rho, complex float* dst
 /**
  * Create undersampled/weighted fft operator
  */
-const struct linop_s* ufft_create(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, _Bool use_gpu)
+const struct linop_s* ufft_create(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu)
 {
 	struct ufft_data* data = ufft_create_data( ksp_dims, pat_dims, pat, flags, use_gpu );
 
@@ -70,7 +71,7 @@ const struct linop_s* ufft_create(const long ksp_dims[DIMS], const long pat_dims
 }
 
 
-static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, _Bool use_gpu)
+static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu)
 {
 	struct ufft_data* data = xmalloc(sizeof(struct ufft_data));
 

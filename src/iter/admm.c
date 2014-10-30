@@ -95,7 +95,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	  void* obj_eval_data,
 	  float (*obj_eval)(const void*, const float*))
 {
-	_Bool fast = plan->fast;
+	bool fast = plan->fast;
 	double ABSTOL = plan->ABSTOL;
 	double RELTOL = plan->RELTOL;
 	float tau = plan->tau;
@@ -209,7 +209,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		// update x
 		vops->clear(N, rhs);
 		vops->sub(M, r, z, u);
-
 		for (unsigned int j = 0; j < num_funs; j++) {
 			pos = md_calc_offset(j, fake_strs, z_dims);
 			plan->ops[j].adjoint(plan->ops[j].data, s, r + pos);

@@ -88,30 +88,30 @@ int main_walsh(int argc, char* argv[])
 	}
 
 
-	long dims[KSPACE_DIMS];
+	long dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[optind + 0], KSPACE_DIMS, dims);
+	complex float* in_data = load_cfl(argv[optind + 0], DIMS, dims);
 
 	assert((dims[0] == 1) || (calsize[0] < dims[0]));
 	assert((dims[1] == 1) || (calsize[1] < dims[1]));
 	assert((dims[2] == 1) || (calsize[2] < dims[2]));
-	assert(1 == dims[4]);
+	assert(1 == dims[MAPS_DIM]);
 
-	long caldims[KSPACE_DIMS];
+	long caldims[DIMS];
 	complex float* cal_data = extract_calib(caldims, calsize, dims, in_data, false);
-	unmap_cfl(KSPACE_DIMS, dims, in_data);
+	unmap_cfl(DIMS, dims, in_data);
 
 	printf("Calibration region %ldx%ldx%ld\n", caldims[0], caldims[1], caldims[2]);
 
-	dims[3] = dims[3] * (dims[3] + 1) / 2;
-	complex float* out_data = create_cfl(argv[optind + 1], KSPACE_DIMS, dims);
+	dims[COIL_DIM] = dims[COIL_DIM] * (dims[COIL_DIM] + 1) / 2;
+	complex float* out_data = create_cfl(argv[optind + 1], DIMS, dims);
 
 	walsh(bsize, dims, out_data, caldims, cal_data);
 
 	printf("Done.\n");
 
 	md_free(cal_data);
-	unmap_cfl(KSPACE_DIMS, dims, out_data);
+	unmap_cfl(DIMS, dims, out_data);
 	exit(0);
 }
 

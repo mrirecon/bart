@@ -408,7 +408,7 @@ const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const com
 	pdata->op = op;
 
 	pdata->adj = md_alloc_sameplace(N, dims, CFL_SIZE, y);
-	linop_adjoint(op, N, dims, pdata->adj, N, dims, y);
+	linop_adjoint(op, N, dims, pdata->adj, N, linop_codomain(op)->dims, y);
 
 	pdata->tmp = md_alloc_sameplace(N, dims, CFL_SIZE, y);
 

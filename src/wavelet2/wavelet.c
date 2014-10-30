@@ -683,8 +683,8 @@ void softthresh_cpu(struct wavelet_plan_s* plan, data_t* coeff, scalar_t thresh)
 	int numMax = plan->numCoeff_tr;
 	int i;
 #pragma omp parallel for
-	for(i = plan->numCoarse_tr; i < numMax; i++)
-		//for(i = 0; i < numMax; i++)
+//	for(i = plan->numCoarse_tr; i < numMax; i++)
+	for(i = 0; i < numMax; i++)
 	{
 		scalar_t norm = cabsf(coeff[i]);
 		scalar_t red = norm - thresh;
@@ -944,7 +944,7 @@ const float wavelet2_cdf44[4][10] = {
 
 void circshift(struct wavelet_plan_s* plan, data_t* data) 
 {
-	_Bool shift = false;
+	bool shift = false;
 	int N = plan->numdims_tr;
 
 	for (int i = 0; i < N; i++)
@@ -962,7 +962,7 @@ void circshift(struct wavelet_plan_s* plan, data_t* data)
 
 void circunshift(struct wavelet_plan_s* plan, data_t* data) 
 {
-	_Bool shift = false;
+	bool shift = false;
 	int N = plan->numdims_tr;
 	long rand_shifts[N];
 

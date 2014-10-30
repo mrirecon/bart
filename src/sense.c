@@ -81,7 +81,7 @@ int main_sense(int argc, char* argv[])
 	float restrict_fov = -1.;
 	const char* pat_file = NULL;
 	const char* traj_file = NULL;
-	char image_truth_fname[100];
+	const char* image_truth_file = NULL;
 	bool im_truth = false;
 	bool scale_im = false;
 
@@ -90,7 +90,7 @@ int main_sense(int argc, char* argv[])
 	float admm_rho = iter_admm_defaults.rho;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cTImghp:Sd:H"))) {
+	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imghp:Sd:H"))) {
 		switch(c) {
 
 		case 'H':
@@ -107,7 +107,8 @@ int main_sense(int argc, char* argv[])
 
 		case 'T':
 			im_truth = true;
-			sprintf(image_truth_fname, "%s", optarg);
+			image_truth_file = strdup(optarg);
+			assert(NULL != image_truth_file);
 			break;
 
 		case 'd':
@@ -216,8 +217,8 @@ int main_sense(int argc, char* argv[])
 	complex float* kspace = load_cfl(argv[optind + 0], DIMS, ksp_dims);
 	complex float* maps = load_cfl(argv[optind + 1], DIMS, map_dims);
 
-	for (unsigned int i = 0; i < DIMS; i++)
-		max_dims[i] = MAX(ksp_dims[i], map_dims[i]);
+	md_copy_dims(DIMS, max_dims, ksp_dims);
+	max_dims[MAPS_DIM] = map_dims[MAPS_DIM];
 
 	md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
@@ -339,7 +340,7 @@ int main_sense(int argc, char* argv[])
 
 	if (im_truth) {
 
-		image_truth = load_cfl(image_truth_fname, DIMS, img_truth_dims);
+		image_truth = load_cfl(image_truth_file, DIMS, img_truth_dims);
 		//md_zsmul(DIMS, img_dims, image_truth, image_truth, 1. / scaling);
 	}
 
@@ -416,6 +417,13 @@ int main_sense(int argc, char* argv[])
 	unmap_cfl(DIMS, map_dims, maps);
 	unmap_cfl(DIMS, ksp_dims, kspace);
 	unmap_cfl(DIMS, img_dims, image);
+
+	if (im_truth) {
+
+		free((void*)image_truth_file);
+		unmap_cfl(DIMS, img_dims, image_truth);
+	}
+
 
 	double end_time = timestamp();
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);

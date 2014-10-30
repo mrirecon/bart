@@ -251,10 +251,10 @@ int main_nusense(int argc, char* argv[])
 	if (l1wav) {
 
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-		minsize[0] = MIN(img_dims[0], 16);
-		minsize[1] = MIN(img_dims[1], 16);
-		minsize[2] = MIN(img_dims[2], 16);
-		thresh_op = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, lambda, randshift, use_gpu);
+		minsize[0] = MIN(img_dims[0], 8);
+		minsize[1] = MIN(img_dims[1], 8);
+		minsize[2] = MIN(img_dims[2], 8);
+		thresh_op = prox_wavethresh_create(DIMS, img_dims, 3, minsize, lambda, randshift, use_gpu);
 	}
 
 	// apply scaling

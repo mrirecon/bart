@@ -156,8 +156,8 @@ static float ist_continuation(struct iter_data* itrdata, const float delta)
  * @param x initial estimate
  * @param b observations
  */
-void ist(unsigned int maxiter, float epsilon, float tau, 
-		float continuation, _Bool hogwild, long N, void* data,
+void ist(unsigned int maxiter, float epsilon, float tau,
+		float continuation, bool hogwild, long N, void* data,
 		const struct vec_iter_s* vops,
 		void (*op)(void* data, float* dst, const float* src), 
 		void (*thresh)(void* data, float lambda, float* dst, const float* src),
@@ -264,7 +264,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
  * @param b observations
  */
 void fista(unsigned int maxiter, float epsilon, float tau, 
-	   float continuation, _Bool hogwild, 
+	   float continuation, bool hogwild,
 	   long N, void* data,
 	   const struct vec_iter_s* vops,
 	   void (*op)(void* data, float* dst, const float* src), 

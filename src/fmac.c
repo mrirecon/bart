@@ -104,16 +104,16 @@ int main_fmac(int argc, char* argv[])
 
 	if (clear) {
 
-		md_clear(N, dimso, out, sizeof(complex float));
+		md_clear(N, dimso, out, CFL_SIZE);
 	}
 
 	long str1[N];
 	long str2[N];
 	long stro[N];
 
-	md_calc_strides(N, str1, dims1, sizeof(complex float));
-	md_calc_strides(N, str2, dims2, sizeof(complex float));
-	md_calc_strides(N, stro, dimso, sizeof(complex float));
+	md_calc_strides(N, str1, dims1, CFL_SIZE);
+	md_calc_strides(N, str2, dims2, CFL_SIZE);
+	md_calc_strides(N, stro, dimso, CFL_SIZE);
 
 	(conj ? md_zfmacc2 : md_zfmac2)(N, dims, stro, out, str1, data1, str2, data2);
 

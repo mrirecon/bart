@@ -95,11 +95,11 @@ ismrm.top := /usr/local/ismrmrd/
 # Main build targets
 
 TBASE=slice crop resize join transpose zeros ones flip circshift extract repmat bitmask
-TFLP=scale conj fmac saxpy sdot conv
-TNUM=fft fftmod noise bench threshold creal
+TFLP=scale conj fmac saxpy sdot spow cpyphs creal
+TNUM=fft fftmod noise bench threshold conv
 TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof nusense
-TCALIB=ecalib caldir walsh
-TMRI=rss homodyne pattern scc poisson twixread
+TCALIB=ecalib caldir walsh cc
+TMRI=rss homodyne pattern poisson twixread
 TSIM=phantom traj
 TARGETS = $(TBASE) $(TFLP) $(TNUM) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TIO)
 
@@ -120,6 +120,7 @@ MODULES_itsense = -liter -llinops
 MODULES_ecalib = -lcalib
 MODULES_caldir = -lcalib
 MODULES_walsh = -lcalib
+MODULES_cc = -lcalib
 MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
 MODULES_bench = -lwavelet2 -llinops

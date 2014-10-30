@@ -43,7 +43,7 @@
 
 static void usage(const char* name, FILE* fd)
 {
-	fprintf(fd, "Usage: %s [-g] [-r l2lambda] [-c] [-e eps] [-u rho] <kspace> <sensitivities> <output>\n", name);
+	fprintf(fd, "Usage: %s [-r l2lambda] [-c] [-e eps] [-u rho] <kspace> <sensitivities> <output>\n", name);
 }
 
 static void help(void)
@@ -57,7 +57,7 @@ static void help(void)
 		"-u rho\tADMM penalty parameter\n"
 		"-c\treal-value constraint\n"
 		"-t\tuse TV norm\n"
-		"-F\ttruth image\n");
+		"-T\ttruth image\n");
 }
 
 
@@ -75,18 +75,20 @@ int main(int argc, char* argv[])
 
 	bool usegpu = false;
 	const char* psf = NULL;
-	char image_truth_fname[100];
-	_Bool im_truth = false;
-	_Bool use_tvnorm = false;
+	const char* image_truth_fname = NULL;
+	bool im_truth = false;
+	bool use_tvnorm = false;
 
 	double start_time = timestamp();
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "F:r:e:i:u:p:tcgh"))) {
+	while (-1 != (c = getopt(argc, argv, "T:r:e:i:u:p:tcgh"))) {
 		switch(c) {
-		case 'F':
+
+		case 'T':
 			im_truth = true;
-			sprintf(image_truth_fname, "%s", optarg);
+			image_truth_fname = strdup(optarg);
+			assert(NULL != image_truth_fname);
 			break;
 
 		case 'r':
@@ -291,6 +293,12 @@ int main(int argc, char* argv[])
 	unmap_cfl(N, dims, sens_maps);
 	unmap_cfl(N, ksp_dims, kspace_data);
 	unmap_cfl(N, img_dims, image);
+
+	if (im_truth) {
+
+		free((void*)image_truth_fname);
+		unmap_cfl(DIMS, img_dims, image_truth);
+	}
 
 	double end_time = timestamp();
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);

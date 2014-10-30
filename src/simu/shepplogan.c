@@ -8,6 +8,7 @@
 #include <complex.h>
 #include <math.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #ifdef USE_GSL
 #include <gsl/gsl_specfunc.h>
@@ -149,7 +150,7 @@ complex double krectangle(const double center[2], const double axis[2], double a
 }
 
 
-complex double phantom(unsigned int N, const struct ellipsis_s arr[N], const double pos[2], _Bool ksp)
+complex double phantom(unsigned int N, const struct ellipsis_s arr[N], const double pos[2], bool ksp)
 {
 	complex double res = 0.;
 
@@ -159,7 +160,7 @@ complex double phantom(unsigned int N, const struct ellipsis_s arr[N], const dou
 	return res;
 }
 
-complex double phantomX(unsigned int N, const struct ellipsis_s arr[N], const double pos[2], _Bool ksp)
+complex double phantomX(unsigned int N, const struct ellipsis_s arr[N], const double pos[2], bool ksp)
 {
 	complex double res = 0.;
 

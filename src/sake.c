@@ -34,7 +34,7 @@
 #include "sake/sake.h"
 
 #undef DIMS // FIXME
-#define DIMS 5
+#define DIMS 16
 
 // 8 channels: alpha 0.2, 50 iter
 

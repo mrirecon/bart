@@ -45,16 +45,16 @@
  *
  */
 struct nufft_data {
+
 	void* cgconf;
 
-	_Bool use_gpu;
+	bool use_gpu;
 
 	float scale;
 
 	int nshifts;
 	float* shifts;
 	complex float* linphase;
-	
 
 	const complex float* traj;
 	const complex float* pat;
@@ -87,8 +87,8 @@ struct nufft_data {
 	long img_size;
 	long coilim_size;
 
-	_Bool toeplitz;
-	_Bool precond;
+	bool toeplitz;
+	bool precond;
 
 
 	float rho;
@@ -96,7 +96,7 @@ struct nufft_data {
 
 
 // Forward: from image to kspace
-static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, _Bool toeplitz, _Bool precond, void* cgconf, _Bool use_gpu);
+static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, bool toeplitz, bool precond, void* cgconf, bool use_gpu);
 static void nufft_free_data( const void* data );
 static void nufft_apply(const void* _data, complex float* dst, const complex float* src);
 static void nufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src);
@@ -126,7 +126,7 @@ static void fill_linphases( struct nufft_data* data );
  * @param use_gpu       -     use gpu boolean
  *
  */
-struct linop_s* nufft_create( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, _Bool toeplitz, _Bool precond, void* cgconf, _Bool use_gpu)
+struct linop_s* nufft_create( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, bool toeplitz, bool precond, void* cgconf, bool use_gpu)
 {
 	struct nufft_data* data = nufft_create_data( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, cgconf, use_gpu);
 
@@ -138,7 +138,7 @@ struct linop_s* nufft_create( const long ksp_dims[DIMS], const long coilim_dims[
 
 
 
-static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, _Bool toeplitz, _Bool precond, void* cgconf, _Bool use_gpu)
+static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, bool toeplitz, bool precond, void* cgconf, bool use_gpu)
 {
 	
 	struct nufft_data* data = (struct nufft_data*) xmalloc( sizeof( struct nufft_data ) );
@@ -212,11 +212,13 @@ static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const lo
 	data->toeplitz = toeplitz;
 	data->precond = precond && toeplitz;
 
+	data->psf = md_alloc( DIMS, linphase_dims, CFL_SIZE );
+
 	if (toeplitz)
 	{
-		data->psf = md_alloc( DIMS, linphase_dims, CFL_SIZE );
 		fill_psf( data );
 	}
+	dump_cfl("psf", DIMS, linphase_dims, data->psf );
 
 
 	return data;

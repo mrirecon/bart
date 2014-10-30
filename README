@@ -278,6 +278,11 @@ saxpy scale <input1> <input2> <output>
 	Multiply input1 with scale factor and add input2.
 
 
+spow exponent <input> <output>
+
+	Raise array to the power of {exponent}. The exponent can be a complex number.
+
+
 fmac [-A] [-C] [-s bitmask] <input1> <input2> <output>
 
 	Multiply and accumulate.
@@ -290,6 +295,11 @@ fmac [-A] [-C] [-s bitmask] <input1> <input2> <output>
 conj <input> <output>
 
 	Compute complex conjugate.
+
+
+cpyphs <input> <output
+
+	Copy phase from <input> to <output>.
 
 
 fft [-u] [-i] bitmask <input> <output>
@@ -380,14 +390,14 @@ ecaltwo [-c crop] [-m maps] x y z <input> <sensitivities> [<ev_maps>]
 	-m maps		Number of maps to compute.
 
 	
-scc [-v] [-A] [-r cal_size] [-P num_coeffs] <kspace> <coeff>|<proj_kspace>
+cc [-A] [-r cal_size] [-P num_coeffs] <kspace> <coeff>|<proj_kspace>
 
 	Performs simple coil compression.
 
 	-P N	perform compression to N virtual channels
 	-r S	size of calibration region
 	-A	use all data to compute coefficients
-	-v	verbose
+	-S|G|E	type: SVD, Geometric, ESPIRiT
 	-h	help
 
 
@@ -419,7 +429,7 @@ nusense [-l1/-l2] [-r lambda] <traj> <kspace> <sensitivities> <output>
 	-r lambda	regularization parameter
 
 
-bpsense [-g] [-r l2lambda] [-c] [-e eps] [-u rho] <kspace> <sensitivities> <output>
+bpsense [-r l2lambda] [-c] [-e eps] [-u rho] <kspace> <sensitivities> <output>
 
 	Perform basis pursuit denoising for SENSE/ESPIRiT reconstruction:
 	min_x ||T x||_1 + lambda/2 ||x||_2^2 subject to: ||y - Ax||_2 <= eps
@@ -429,7 +439,7 @@ bpsense [-g] [-r l2lambda] [-c] [-e eps] [-u rho] <kspace> <sensitivities> <outp
 	-u rho	ADMM penalty parameter
 	-c	real-value constraint
 	-t	use TV norm
-	-F	truth image
+	-T	truth image
 
 
 nlinv [-i iterations] <kspace> <output> [<sens>]
@@ -479,7 +489,7 @@ rof lambda bitmask <input> <output>
 
 poisson <outfile>
 
-Computes Poisson-disc sampling pattern.
+	Computes Poisson-disc sampling pattern.
 
 	-X	size dimension 0 (readout)
 	-Y	size dimension 1 (phase)
@@ -526,6 +536,8 @@ twixread [...] [-a A] <dat file> <output>
 	-s S	number of slices
 	-c C	number of channels
 	-a A	total number of ADCs
+	-L	use linectr offset
+	-P	use partctr offset
 	-h	help
 
 

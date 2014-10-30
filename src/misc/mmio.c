@@ -20,6 +20,8 @@
 #include <sys/mman.h>
 
 #include "num/multind.h"
+
+#include "misc/misc.h"
 #include "misc/io.h"
 
 #include "mmio.h"
@@ -68,6 +70,8 @@ float* create_coo(const char* name, unsigned int D, const long dims[D])
 
 
 
+
+
 complex float* create_zcoo(const char* name, unsigned int D, const long dimensions[D])
 {
 	long dims[D + 1];
@@ -108,6 +112,7 @@ complex float* create_cfl(const char* name, unsigned int D, const long dimension
 
 	return shared_cfl(D, dimensions, name_bdy);
 }
+
 
 
 
@@ -215,6 +220,20 @@ complex float* shared_cfl(unsigned int D, const long dims[D], const char* name)
 
 	return (complex float*)addr;
 }
+
+
+complex float* anon_cfl(const char* name, unsigned int D, const long dims[D])
+{
+	UNUSED(name);
+	void* addr;
+	long T = md_calc_size(D, dims) * sizeof(complex float);
+
+	if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0)))
+		abort();
+
+	return (complex float*)addr;
+}
+
 
 
 #if 0

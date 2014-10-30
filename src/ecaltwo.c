@@ -21,6 +21,10 @@
 #include "misc/mmio.h"
 #include "misc/mri.h"
 
+#ifndef CFL_SIZE
+#define CFL_SIZE sizeof(complex float)
+#endif
+
 
 
 static void usage(const char* name, FILE* fp)
@@ -89,9 +93,9 @@ int main_ecaltwo(int argc, char* argv[])
 		exit(1);
 	}
 
-	long in_dims[KSPACE_DIMS];
+	long in_dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[optind + 3], KSPACE_DIMS, in_dims);
+	complex float* in_data = load_cfl(argv[optind + 3], DIMS, in_dims);
 
 	int channels = 0;
 
@@ -103,8 +107,8 @@ int main_ecaltwo(int argc, char* argv[])
 	assert(maps <= channels);
 
 
-	long out_dims[KSPACE_DIMS] = { [0 ... KSPACE_DIMS - 1] = 1 };
-	long map_dims[KSPACE_DIMS] = { [0 ... KSPACE_DIMS - 1] = 1 };
+	long out_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
+	long map_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	
 	out_dims[0] = atoi(argv[optind + 0]);
 	out_dims[1] = atoi(argv[optind + 1]);
@@ -124,23 +128,23 @@ int main_ecaltwo(int argc, char* argv[])
 	map_dims[4] = maps;
 
 
-	complex float* out_data = create_cfl(argv[optind + 4], KSPACE_DIMS, out_dims);
+	complex float* out_data = create_cfl(argv[optind + 4], DIMS, out_dims);
 	complex float* emaps;
 
 	if (6 == argc - optind)
-		emaps = create_cfl(argv[optind + 5], KSPACE_DIMS, map_dims);
+		emaps = create_cfl(argv[optind + 5], DIMS, map_dims);
 	else
-		emaps = md_alloc(KSPACE_DIMS, map_dims, sizeof(complex float));
+		emaps = md_alloc(KSPACE_DIMS, map_dims, CFL_SIZE);
 
 	caltwo(&conf, out_dims, out_data, emaps, in_dims, in_data, NULL, NULL);
 
 	printf("Done.\n");
 
-	unmap_cfl(KSPACE_DIMS, in_dims, in_data);
-	unmap_cfl(KSPACE_DIMS, out_dims, out_data);
+	unmap_cfl(DIMS, in_dims, in_data);
+	unmap_cfl(DIMS, out_dims, out_data);
 
 	if (6 == argc - optind)
-		unmap_cfl(KSPACE_DIMS, map_dims, emaps);
+		unmap_cfl(DIMS, map_dims, emaps);
 	else
 		md_free(emaps);
 

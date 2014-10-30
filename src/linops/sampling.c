@@ -10,6 +10,7 @@
 
 #include "misc/mri.h"
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "num/flpmath.h"
 #include "num/multind.h"
@@ -46,7 +47,7 @@ struct linop_s* sampling_create(const long dims[DIMS], const long pat_dims[DIMS]
 	struct sampling_data_s* data = xmalloc(sizeof(struct sampling_data_s));
 
 	md_select_dims(DIMS, ~MAPS_FLAG, data->dims, dims); // dimensions of kspace
-	md_calc_strides(DIMS, data->strs, dims, CFL_SIZE);
+	md_calc_strides(DIMS, data->strs, data->dims, CFL_SIZE);
 	md_calc_strides(DIMS, data->pat_strs, pat_dims, CFL_SIZE);
 
 	data->pattern = pattern;

@@ -78,7 +78,7 @@ int main_nufft(int argc, char* argv[])
 	md_singleton_dims(DIMS, coilim_dims);
 
 	int maxiter = 50;
-	float lambda = 0.001;
+	float lambda = 0.00;
 
 	const char* pat_str = NULL;
 

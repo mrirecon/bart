@@ -35,12 +35,19 @@
 #include "num/lapack.h"
 
 
+/* ATTENTION: blas and lapack use column-major matrices
+ * while native C uses row-major. All matrices are
+ * transposed to what one would expect.
+  **/
+
+
 #ifdef USE_ACML
 #if 1
+// FIXME: check indices
 extern void cheev(char jobz, char uplo, long N, complex float a[N][N], long lda, float w[N], long* info);
 extern void zheev(char jobz, char uplo, long N, complex double a[N][N], long lda, double w[N], long* info);
-extern void cgesdd(const char jobz, long M, long N, complex float A[M][N], long lda, float* S, complex float U[M][N], long ldu, complex float VT[M][N], long ldvt, const long* info);
-extern void zgesdd(const char jobz, long M, long N, complex double A[M][N], long lda, double* S, complex double U[M][N], long ldu, complex double VT[M][N], long ldvt, const long* info);
+extern void cgesdd(const char jobz, long M, long N, complex float A[M][N], long lda, float* S, complex float U[M][N], long ldu, complex float VH[M][N], long ldvt, const long* info);
+extern void zgesdd(const char jobz, long M, long N, complex double A[M][N], long lda, double* S, complex double U[M][N], long ldu, complex double VH[M][N], long ldvt, const long* info);
 extern void cgesvd(char jobu, char jobvt, long M, long N, complex float a[M][N], long lda, float* S, complex float u[M][N], long ldu, complex float vt[M][N], long ldvt, long *info);
 extern void cgemm(const char transa, const char transb, long M, long N,  long K, const complex float* alpha, const complex float A[M][K], const long lda, const complex float B[K][N], const long ldb, const complex float* beta, complex float C[M][N], const long ldc );
 #else
@@ -52,9 +59,9 @@ extern void cgemm(const char transa, const char transb, long M, long N,  long K,
 #else
 extern void cheev_(const char jobz[1], const char uplo[1], const long* N, complex float a[*N][*N], const long* lda, float w[*N], complex float* work, const long* lwork, float* rwork, long* info);
 extern void zheev_(const char jobz[1], const char uplo[1], const long* N, complex double a[*N][*N], const long* lda, double w[*N], complex double* work, const long* lwork, double* rwork, long* info);
-extern void cgesdd_(const char jobz[1], const long* M, const long* N, complex float A[*M][*N], const long lda[1], float* S, complex float U[*M][*N], const long* ldu, complex float VT[*M][*N], const long* ldvt, complex float* work, const long* lwork, float* rwork, const long* iwork, const long* info);
-extern void zgesdd_(const char jobz[1], const long* M, const long* N, complex double A[*M][*N], const long lda[1], double* S, complex double U[*M][*N], const long* ldu, complex double VT[*M][*N], const long* ldvt, complex double* work, const long* lwork, double* rwork, const long* iwork, const long* info);
-extern void cgesvd_(const char jobu[1], const char jobvt[1], const long* M, const long* N, complex float A[*M][*N], const long* lda, float* s, complex float U[*M][*N], long* ldu, complex float VT[*M][*N], long* ldvt, complex float* work, long* lwork, float* rwork, const long* iwork, long* info);
+extern void cgesdd_(const char jobz[1], const long* M, const long* N, complex float A[*M][*N], const long lda[1], float* S, complex float U[*M][*N], const long* ldu, complex float VH[*M][*N], const long* ldvt, complex float* work, const long* lwork, float* rwork, const long* iwork, const long* info);
+extern void zgesdd_(const char jobz[1], const long* M, const long* N, complex double A[*M][*N], const long lda[1], double* S, complex double U[*M][*N], const long* ldu, complex double VH[*M][*N], const long* ldvt, complex double* work, const long* lwork, double* rwork, const long* iwork, const long* info);
+extern void cgesvd_(const char jobu[1], const char jobvt[1], const long* M, const long* N, complex float A[*M][*N], const long* lda, float* s, complex float U[*M][*N], long* ldu, complex float VH[*M][*N], long* ldvt, complex float* work, long* lwork, float* rwork, const long* iwork, long* info);
 extern void cgemm_(const char transa[1], const char transb[1], const long* M, const long* N, const long* K, const complex float* alpha, const complex float A[*M][*K], const long* lda, const complex float B[*K][*N], const long* ldb, const complex float* beta, complex float C[*M][*N], const long* ldc );
 #endif
 
@@ -127,7 +134,7 @@ err:
 
 
 
-void svd(long M, long N, complex float U[M][M], complex float VT[N][N], float S[(N > M) ? M : N], complex float A[M][N])
+void svd(long M, long N, complex float U[M][M], complex float VH[N][N], float S[(N > M) ? M : N], complex float A[M][N])
 {
         long info = 0;
 	//assert(M >= N);
@@ -135,27 +142,27 @@ void svd(long M, long N, complex float U[M][M], complex float VT[N][N], float S[
 #ifdef USE_CUDA
 #ifdef USE_CULA
 	if (cuda_ondevice( A )) {
-		culaDeviceCgesvd( 'A', 'A', M, N, (culaDeviceFloatComplex *)A, M, (culaDeviceFloat *)S, (culaDeviceFloatComplex *)U, M, (culaDeviceFloatComplex *)VT, N );
+		culaDeviceCgesvd( 'A', 'A', M, N, (culaDeviceFloatComplex *)A, M, (culaDeviceFloat *)S, (culaDeviceFloatComplex *)U, M, (culaDeviceFloatComplex *)VH, N );
 	} else
 #endif 
 #endif 
 	{
 #ifdef USE_ACML
-	cgesdd('A', M, N, A, M, S, U, M, VT, N, &info);
+	cgesdd('A', M, N, A, M, S, U, M, VH, N, &info);
 #else
 	long lwork = -1;
 	complex float work1[1];
 	float* rwork = xmalloc(MIN(M, N) * MAX(5 * MIN(M, N) + 7, 2 * MAX(M, N) + 2 * MIN(M, N) + 1) * sizeof(float));
 	long* iwork = xmalloc(8 * MIN(M, N) * sizeof(long));
 
-	cgesdd_("A", &M, &N, A, &M, S, U, &M, VT, &N, work1, &lwork, rwork, iwork, &info);
+	cgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work1, &lwork, rwork, iwork, &info);
 
 	if (0 != info)
 		goto err;
 
 	lwork = (int)work1[0];
 	complex float* work = xmalloc(MAX(1, lwork) * sizeof(complex float));
-	cgesdd_("A", &M, &N, A, &M, S, U, &M, VT, &N, work, &lwork, rwork, iwork, &info);
+	cgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work, &lwork, rwork, iwork, &info);
 	free(rwork);
 	free(iwork);
 	free(work);
@@ -174,7 +181,7 @@ err:
 
 void svd_econ(long M, long N, 
 	      complex float U[M][(N > M) ? M : N], 
-	      complex float VT[(N > M) ? M : N][N], 
+	      complex float VH[(N > M) ? M : N][N],
 	      float S[(N > M) ? M : N], complex float A[M][N])
 {
 	long info = 0;
@@ -184,7 +191,7 @@ void svd_econ(long M, long N,
 #ifdef USE_CUDA
 #ifdef USE_CULA
 	if (cuda_ondevice( A )) {
-		culaDeviceCgesvd( 'S', 'S', M, N, (culaDeviceFloatComplex *)A, M, (culaDeviceFloat *)S, (culaDeviceFloatComplex *)U, M, (culaDeviceFloatComplex *)VT, minMN );
+		culaDeviceCgesvd( 'S', 'S', M, N, (culaDeviceFloatComplex *)A, M, (culaDeviceFloat *)S, (culaDeviceFloatComplex *)U, M, (culaDeviceFloatComplex *)VH, minMN );
 	} else
 #endif 
 #endif 
@@ -192,21 +199,21 @@ void svd_econ(long M, long N,
 	{
 
 #ifdef USE_ACML
-	cgesvd('S', 'S', M, N, A, M, S, U, M, VT, minMN, &info);
+	cgesvd('S', 'S', M, N, A, M, S, U, M, VH, minMN, &info);
 #else
 	long lwork = -1;
 	complex float work1[1];
 	float* rwork = xmalloc(5 * N * sizeof(float));
 	long* iwork = xmalloc(8 * minMN * sizeof(long));
 
-	cgesvd_("S", "S", &M, &N, A, &M, S, U, &M, VT, &minMN, work1, &lwork, rwork, iwork, &info);
+	cgesvd_("S", "S", &M, &N, A, &M, S, U, &M, VH, &minMN, work1, &lwork, rwork, iwork, &info);
 
 	if(0 != info)
 		goto err;
 
 	lwork = (int)work1[0];
 	complex float* work = xmalloc(lwork * sizeof(complex float));
-	cgesvd_("S", "S", &M, &N, A, &M, S, U, &M, VT, &minMN, work, &lwork, rwork, iwork, &info);
+	cgesvd_("S", "S", &M, &N, A, &M, S, U, &M, VH, &minMN, work, &lwork, rwork, iwork, &info);
 
 	free(work);
 	free(iwork);
@@ -224,27 +231,27 @@ err:
 }
 
 
-void svd_double(long M, long N, complex double U[M][M], complex double VT[N][N], double S[(N > M) ? M : N], complex double A[M][N])
+void svd_double(long M, long N, complex double U[M][M], complex double VH[N][N], double S[(N > M) ? M : N], complex double A[M][N])
 {
         long info = 0;
 	//assert(M >= N);
 	
 #ifdef USE_ACML
-	zgesdd('A', M, N, A, M, S, U, M, VT, N, &info);
+	zgesdd('A', M, N, A, M, S, U, M, VH, N, &info);
 #else
 	long lwork = -1;
 	complex double work1[1];
 	double* rwork = xmalloc(MIN(M, N) * MAX(5 * MIN(M, N) + 7, 2 * MAX(M, N) + 2 * MIN(M, N) + 1) * sizeof(double));
 	long* iwork = xmalloc(8 * MIN(M, N) * sizeof(long));
 
-	zgesdd_("A", &M, &N, A, &M, S, U, &M, VT, &N, work1, &lwork, rwork, iwork, &info);
+	zgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work1, &lwork, rwork, iwork, &info);
 
 	if (0 != info)
 		goto err;
 
 	lwork = (int)work1[0];
 	complex double* work = xmalloc(MAX(1, lwork) * sizeof(complex double));
-	zgesdd_("A", &M, &N, A, &M, S, U, &M, VT, &N, work, &lwork, rwork, iwork, &info);
+	zgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work, &lwork, rwork, iwork, &info);
 	free(rwork);
 	free(iwork);
 	free(work);

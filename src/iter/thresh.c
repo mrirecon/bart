@@ -153,7 +153,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D],
  * @param flags bitmask for joint soft-thresholding
  * @param gpu true if using gpu, false if using cpu
  */
-extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags, _Bool gpu)
+extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags, bool gpu)
 {
 	struct thresh_s* data = xmalloc(sizeof(struct thresh_s));
 

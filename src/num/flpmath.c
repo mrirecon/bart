@@ -1167,6 +1167,10 @@ static void md_zmatmul2_priv(unsigned int D, const long out_dims[D], const long 
 	long max_dims[D];
 	md_mmdims(D, max_dims, in_dims, out_dims);
 
+	long max2_dims[D];
+	md_mmdims(D, max2_dims, mat_dims, out_dims);
+	assert(md_check_compat(D, 0, max_dims, max2_dims));
+
 	md_clear2(D, out_dims, out_strs, dst, CFL_SIZE);
 	(conj ? md_zfmacc2 : md_zfmac2)(D, max_dims, out_strs, dst, in_strs, src, mat_strs, mat);
 }

@@ -212,7 +212,7 @@ unsigned int md_calc_blockdim(unsigned int D, const long dim[D], const long str[
  * @param odims output dimensions
  * @param idims input dimensions
  */
-extern void md_select_dims(unsigned int D, unsigned long flags, long odims[D], const long idims[D])
+void md_select_dims(unsigned int D, unsigned long flags, long odims[D], const long idims[D])
 {
 	md_copy_dims(D, odims, idims);
 	
@@ -228,7 +228,7 @@ extern void md_select_dims(unsigned int D, unsigned long flags, long odims[D], c
  *
  * odims[i] = idims[i]
  */
-extern void md_copy_dims(unsigned int D, long odims[D], const long idims[D])
+void md_copy_dims(unsigned int D, long odims[D], const long idims[D])
 {
 	memcpy(odims, idims, D  * sizeof(long));
 }
@@ -240,7 +240,7 @@ extern void md_copy_dims(unsigned int D, long odims[D], const long idims[D])
  *
  * ostrs[i] = istrs[i]
  */
-extern void md_copy_strides(unsigned int D, long ostrs[D], const long istrs[D])
+void md_copy_strides(unsigned int D, long ostrs[D], const long istrs[D])
 {
 	memcpy(ostrs, istrs, D  * sizeof(long));
 }
@@ -252,7 +252,7 @@ extern void md_copy_strides(unsigned int D, long ostrs[D], const long istrs[D])
  *
  * dims[i] = val
  */
-extern void md_set_dims(unsigned int D, long dims[D], long val)
+void md_set_dims(unsigned int D, long dims[D], long val)
 {
 	for (unsigned int i = 0; i < D; i++)
 		dims[i] = val;
@@ -263,7 +263,7 @@ extern void md_set_dims(unsigned int D, long dims[D], long val)
 /**
  * returns whether or not @param pos is a valid index of an array of dimension @param dims
  */
-extern bool md_is_index(unsigned int D, const long pos[D], const long dims[D])
+bool md_is_index(unsigned int D, const long pos[D], const long dims[D])
 {
 	if (D == 0)
 		return true;
@@ -274,11 +274,23 @@ extern bool md_is_index(unsigned int D, const long pos[D], const long dims[D])
 
 
 /**
+ * return whether some other dimensions are >1
+ */
+bool md_check_dimensions(unsigned int N, const long dims[N], unsigned int flags)
+{
+	long d[N];
+	md_select_dims(N, ~flags, d, dims);
+	return (1 != md_calc_size(N, d));
+}
+
+
+
+/**
  * Set all dimensions to one
  *
  * dims[i] = 1
  */
-extern void md_singleton_dims(unsigned int D, long dims[D])
+void md_singleton_dims(unsigned int D, long dims[D])
 {
 	for (unsigned int i = 0; i < D; i++)
 		dims[i] = 1;
@@ -291,7 +303,7 @@ extern void md_singleton_dims(unsigned int D, long dims[D])
  *
  * dims[i] = 1
  */
-extern void md_singleton_strides(unsigned int D, long strs[D])
+void md_singleton_strides(unsigned int D, long strs[D])
 {
 	for (unsigned int i = 0; i < D; i++)
 		strs[i] = 0;
@@ -328,7 +340,7 @@ bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], co
  * @param idims1 input 1 dimensions
  * @param idims2 input 2 dimensions
  */
-extern void md_min_dims(unsigned int D, unsigned long flags, long odims[D], const long idims1[D], const long idims2[D])
+void md_min_dims(unsigned int D, unsigned long flags, long odims[D], const long idims1[D], const long idims2[D])
 {
 	for (unsigned int i = 0; i < D; i++)
 		if ((flags & (1 << i)))
@@ -671,6 +683,42 @@ void md_swap(unsigned int D, const long dim[D], void* optr, void* iptr, size_t s
 
 
 /**
+ * Move a block from an array to another array (with strides)
+ *
+ */
+void md_move_block2(unsigned int D, const long dim[D], const long opos[D], const long odim[D], const long ostr[D], void* optr, const long ipos[D], const long idim[D], const long istr[D], const void* iptr, size_t size)
+{
+	for (unsigned int i = 0; i < D; i++) {
+
+		assert(dim[i] <= odim[i]);
+		assert(dim[i] <= idim[i]);
+		assert((0 <= opos[i]) && (opos[i] <= odim[i] - dim[i]));
+		assert((0 <= ipos[i]) && (ipos[i] <= idim[i] - dim[i]));
+	}
+
+	long ioff = md_calc_offset(D, istr, ipos);
+	long ooff = md_calc_offset(D, ostr, opos);
+
+	md_copy2(D, dim, ostr, optr + ooff, istr, iptr + ioff, size);
+}
+
+
+/**
+ * Move a block from an array to another array (without strides)
+ *
+ */
+void md_move_block(unsigned int D, const long dim[D], const long opos[D], const long odim[D], void* optr, const long ipos[D], const long idim[D], const void* iptr, size_t size)
+{
+	long istr[D];
+	long ostr[D];
+	md_calc_strides(D, istr, idim, size);
+	md_calc_strides(D, ostr, odim, size);
+
+	md_move_block2(D, dim, opos, odim, ostr, optr, ipos, idim, istr, iptr, size);
+}
+
+
+/**
  * Copy a block from an array to another array (with strides)
  *
  * Block dimensions are min( idim , odim )
@@ -688,31 +736,20 @@ void md_copy_block2(unsigned int D, const long pos[D], const long odim[D], const
 
 	for (unsigned int i = 0; i < D; i++) {
 
+		assert((idim[i] != odim[i]) || (0 == pos[i]));
+
 		dim[i] = MIN(odim[i], idim[i]);
 		ipos[i] = 0;
 		opos[i] = 0;
 
-		if (idim[i] != dim[i]) {
-
-			assert((0 <= pos[i]) && (pos[i] <= idim[i] - dim[i]));
+		if (idim[i] != dim[i])
 			ipos[i] = pos[i];
 
-		} else
-		if (odim[i] != dim[i]) {
-
-			assert((0 <= pos[i]) && (pos[i] <= odim[i] - dim[i]));
+		if (odim[i] != dim[i])
 			opos[i] = pos[i];
-
-		} else {
-
-			assert(0 == pos[i]);
-		}
 	}
-		
-	long ioff = md_calc_offset(D, istr, ipos);
-	long ooff = md_calc_offset(D, ostr, opos);
 
-	md_copy2(D, dim, ostr, optr + ooff, istr, iptr + ioff, size);
+	md_move_block2(D, dim, opos, odim, ostr, optr, ipos, idim, istr, iptr, size);
 }
 
 

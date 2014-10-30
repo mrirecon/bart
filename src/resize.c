@@ -4,6 +4,7 @@
  * 
  * Author; 
  * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
 #define _GNU_SOURCE
@@ -26,13 +27,13 @@
 
 static void usage(const char* name, FILE* fp)
 {
-	fprintf(fp, "Usage: %s [-c] dimension size <input> <output>\n", name);
+	fprintf(fp, "Usage: %s [-c] dim1 size1 ... dimn sizen <input> <output>\n", name);
 }
 
 static void help(void)
 {
 	printf(	"\n"
-		"Resizes an array along dimension to size by truncating or zero-padding.\n"
+		"Resizes an array along dimensions to sizes by truncating or zero-padding.\n"
 		"\n"
 		"-c\tcenter\n");
 }
@@ -62,7 +63,7 @@ int main_resize(int argc, char* argv[])
 		}
 	}
 
-	if (argc - optind != 4) {
+	if (argc - optind < 4) {
 
 		usage(argv[0], stderr);
 		exit(1);
@@ -70,23 +71,27 @@ int main_resize(int argc, char* argv[])
 
 	unsigned int N = DIMS;
 
-	unsigned int dim = atoi(argv[optind + 0]);
-	unsigned int count = atoi(argv[optind + 1]);
-
-	assert(dim < N);
-	assert(count >= 1);
+	int count = argc - optind - 2;
+	assert((count > 0) && (count % 2 == 0));
 
 	long in_dims[N];
 	long out_dims[N];
 
-	void* in_data = load_cfl(argv[optind + 2], N, in_dims);
+	void* in_data = load_cfl(argv[argc - 2], N, in_dims);
+	md_copy_dims(N, out_dims, in_dims);
 	
-	for (unsigned int i = 0; i < N; i++)
-		out_dims[i] = in_dims[i];
+	for (int i = 0; i < count; i += 2) {
 
-	out_dims[dim] = count;
+		unsigned int dim = atoi(argv[optind + i]);
+		unsigned int size = atoi(argv[optind + i + 1]);
 
-	void* out_data = create_cfl(argv[optind + 3], N, out_dims);
+		assert(dim < N);
+		assert(size >= 1);
+
+		out_dims[dim] = size;
+	}
+
+	void* out_data = create_cfl(argv[argc - 1], N, out_dims);
 
 	(center ? md_resizec : md_resize)(N, out_dims, out_data, in_dims, in_data, sizeof(complex float));
 

@@ -64,6 +64,10 @@ static void eigen_herm3(int M, int N, float val[M], complex float matrix[N][N]) 
 
 
 
+/*
+ * rotate phase jointly along dim so that the 0-th slice along dim has phase = 0
+ *
+ */
 void fixphase(unsigned int N, const long dims[N], unsigned int dim, complex float* out, const complex float* in)
 {
 	assert(dim < N);

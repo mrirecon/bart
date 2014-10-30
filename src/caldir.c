@@ -36,9 +36,9 @@ int main_caldir(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 3, usage_str, help_str);
 
-	long dims[KSPACE_DIMS];
+	long dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[2], KSPACE_DIMS, dims);
+	complex float* in_data = load_cfl(argv[2], DIMS, dims);
 
 	int calsize_ro = atoi(argv[1]);
 	long calsize[3] = { calsize_ro, calsize_ro, calsize_ro };
@@ -46,10 +46,10 @@ int main_caldir(int argc, char* argv[])
 	assert((dims[0] == 1) || (calsize_ro < dims[0]));
 	assert(1 == dims[4]);
 	
-	complex float* out_data = create_cfl(argv[3], KSPACE_DIMS, dims);
+	complex float* out_data = create_cfl(argv[3], DIMS, dims);
 
 
-	long caldims[KSPACE_DIMS];
+	long caldims[DIMS];
 	complex float* cal_data = extract_calib(caldims, calsize, dims, in_data, false);
 
 	printf("Calibration region %ldx%ldx%ld\n", caldims[0], caldims[1], caldims[2]);
@@ -60,8 +60,8 @@ int main_caldir(int argc, char* argv[])
 
 	md_free(cal_data);
 
-	unmap_cfl(KSPACE_DIMS, dims, (void*)out_data);
-	unmap_cfl(KSPACE_DIMS, dims, (void*)in_data);
+	unmap_cfl(DIMS, dims, (void*)out_data);
+	unmap_cfl(DIMS, dims, (void*)in_data);
 
 	exit(0);
 }

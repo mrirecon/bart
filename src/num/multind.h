@@ -50,6 +50,9 @@ extern void md_copy2(unsigned int D, const long dim[__VLA(D)], const long ostr[_
 extern void md_copy(unsigned int D, const long dim[__VLA(D)],  void* optr, const void* iptr, size_t size);
 extern void md_copy_block2(unsigned int D, const long pos[__VLA(D)], const long odim[__VLA(D)], const long ostr[__VLA(D)], void* optr, const long idim[__VLA(D)], const long istr[__VLA(D)], const void* iptr, size_t size);
 extern void md_copy_block(unsigned int D, const long pos[__VLA(D)], const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
+extern void md_move_block2(unsigned int D, const long dim[__VLA(D)], const long opos[__VLA(D)], const long odim[__VLA(D)], const long ostr[__VLA(D)], void* optr, const long ipos[__VLA(D)], const long idim[__VLA(D)], const long istr[__VLA(D)], const void* iptr, size_t size);
+extern void md_move_block(unsigned int D, const long dim[__VLA(D)], const long opos[__VLA(D)], const long odim[__VLA(D)], void* optr, const long ipos[__VLA(D)], const long idim[__VLA(D)], const void* iptr, size_t size);
+
 extern void md_resize(unsigned int D, const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
 extern void md_resizec(unsigned int D, const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
 extern void md_fill2(unsigned int D, const long dim[__VLA(D)], const long str[__VLA(D)], void* ptr, const void* iptr, size_t size);
@@ -102,12 +105,23 @@ extern void md_singleton_strides(unsigned int D, long strs[__VLA(D)]);
 extern void md_set_dims(unsigned int D, long dims[__VLA(D)], long val);
 extern void md_min_dims(unsigned int D, unsigned long flags, long odims[__VLA(D)], const long idims1[__VLA(D)], const long idims2[__VLA(D)]);
 extern _Bool md_is_index(unsigned int D, const long pos[__VLA(D)], const long dims[__VLA(D)]);
+extern _Bool md_check_dimensions(unsigned int N, const long dims[__VLA(N)], unsigned int flags);
 extern void md_permute_dims(unsigned int D, const unsigned int order[__VLA(D)], long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
 
 #define MD_INIT_ARRAY(x, y) { [ 0 ... ((x) - 1) ] = (y) } 
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
 #define MD_DIMS(...) MD_MAKE_ARRAY(long, __VA_ARGS__)
+
+
+#define MD_CAST_ARRAY2(T, N, dims, x, a, b) \
+	(assert(((a) < (b)) && !md_check_dimensions((N), (dims), (1 << (a)) | (1 << (b)))), \
+					*(T (*)[(dims)[b]][(dims)[a]])(x))
+#define MD_CAST_ARRAY3(T, N, dims, x, a, b, c) \
+	(assert(((a) < (b)) && ((b) < (c)) && !md_check_dimensions((N), (dims), (1 << (a)) | (1 << (b) | (1 << (c)))), \
+					*(T (*)[(dims)[c]][(dims)[b]][(dims)[a]])(x))
+
+
 
 
 #ifdef __cplusplus

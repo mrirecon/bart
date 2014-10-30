@@ -36,7 +36,9 @@ enum mri_dims {
 	SLICE_DIM,
 };
 
+#ifdef BERKELEY_SVN
 #define KSPACE_DIMS	16u
+#endif
 
 #ifndef DIMS
 #define DIMS		16u

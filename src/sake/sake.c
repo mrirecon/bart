@@ -4,6 +4,7 @@
  *
  * Authors:
  * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  *
  * Peter J. Shin, Peder E.Z. Larson, Michael A. Ohliger, Michael Elad,
@@ -36,7 +37,7 @@
 #include "sake.h"
 
 #undef DIMS // FIXME
-#define DIMS 5
+#define DIMS 16
 
 #if 0
 static float thresh(float lambda, float x)
@@ -79,15 +80,16 @@ static void ravine(unsigned int N, const long dims[N], float* ftp, complex float
         ft = (1.f + sqrtf(1.f + 4.f * ft * ft)) / 2.f;
         *ftp = ft;
 
-	md_swap(N, dims, xa, xb, sizeof(complex float));
+	md_swap(N, dims, xa, xb, CFL_SIZE);
 	complex float val = (1.f - tfo) / ft - 1.f;
+
 	long dims1[N];
-	for (unsigned int i = 0; i < N; i++)
-		dims1[i] = 1.;
+	md_singleton_dims(N, dims1);
+
 	long strs1[N];
 	long strs[N];
-	md_calc_strides(N, strs1, dims1, sizeof(complex float));
-	md_calc_strides(N, strs, dims, sizeof(complex float));
+	md_calc_strides(N, strs1, dims1, CFL_SIZE);
+	md_calc_strides(N, strs, dims, CFL_SIZE);
 
 	md_zfmac2(N, dims, strs, xa, strs1, &val, strs, xa);
 	val *= -1.;
@@ -99,8 +101,9 @@ static void ravine(unsigned int N, const long dims[N], float* ftp, complex float
 
 
 
-static void lowrank(float alpha, const long dims[5], complex float* matrix)
+static void lowrank(float alpha, int D, const long dims[D], complex float* matrix)
 {
+#if 0
 	long x = dims[0];
 	long y = dims[1];
 	long z = dims[2];
@@ -113,19 +116,48 @@ static void lowrank(float alpha, const long dims[5], complex float* matrix)
 	int kz = MIN(6, z);
 	
 	long calreg_dims[4] = { x, y, z, channels };
-	long kernel_dims[4] = { kx, ky, kz, channels };
+	long kern_dims[4] = { kx, ky, kz, channels };
 
 	debug_printf(DP_INFO, "%ld %ld %ld %ld\n", x, y, z, channels);
 
-	long calmat_dims[2] = { (x - kx + 1) * (y - ky + 1) * (z - kz + 1), md_calc_size(4, kernel_dims) };
+	long calmat_dims[2] = { (x - kx + 1) * (y - ky + 1) * (z - kz + 1), md_calc_size(4, kern_dims) };
 
-	complex float* calmat = md_alloc(2, calmat_dims, sizeof(complex float));
+	complex float* calmat = md_alloc(2, calmat_dims, CFL_SIZE);
 //	complex float* calmat = create_cfl("calmat", 2, calmat_dims);
 
 	long str[4];
-	md_calc_strides(4, str, calreg_dims, sizeof(complex float));
+	md_calc_strides(4, str, calreg_dims, CFL_SIZE);
 
-	casorati_matrix(4, kernel_dims, calmat_dims, calmat, calreg_dims, str, matrix);
+	casorati_matrix(4, kern_dims, calmat_dims, calmat, calreg_dims, str, matrix);
+#else
+	assert(1 == dims[MAPS_DIM]);
+
+	debug_printf(DP_INFO, "mat_dims = \t");
+	debug_print_dims(DP_INFO, D, dims);
+
+	long kern_min[4] = { 6, 6, 6, dims[COIL_DIM] };
+	long kern_dims[D];
+
+	md_set_dims(D, kern_dims, 1);
+	md_min_dims(4, ~0u, kern_dims, kern_min, dims);
+
+	debug_printf(DP_INFO, "kern_dims = \t");
+	debug_print_dims(DP_INFO, D, kern_dims);
+
+	long calmat_dims[2];
+	casorati_dims(D, calmat_dims, kern_dims, dims);
+
+	debug_printf(DP_INFO, "calmat_dims = \t");
+	debug_print_dims(DP_INFO, 2, calmat_dims);
+
+	complex float* calmat = md_alloc(2, calmat_dims, CFL_SIZE);
+
+	long str[D];
+	md_calc_strides(D, str, dims, CFL_SIZE);
+
+	casorati_matrix(D, kern_dims, calmat_dims, calmat, dims, str, matrix);
+
+#endif
 
 	int N = calmat_dims[0];
 	int M = calmat_dims[1];
@@ -138,8 +170,8 @@ static void lowrank(float alpha, const long dims[5], complex float* matrix)
 		long dimsU[2] = { N, N };
 		long dimsV[2] = { M, M };
 
-		complex float* U = md_alloc(2, dimsU, sizeof(complex float));
-		complex float* VT = md_alloc(2, dimsV, sizeof(complex float));
+		complex float* U = md_alloc(2, dimsU, CFL_SIZE);
+		complex float* VT = md_alloc(2, dimsV, CFL_SIZE);
 		//	complex float* U = create_cfl("U", 2, dimsU);
 		//	complex float* VT = create_cfl("VT", 2, dimsV);
 		float* S = xmalloc(MIN(N, M) * sizeof(float));
@@ -154,10 +186,10 @@ static void lowrank(float alpha, const long dims[5], complex float* matrix)
 		// put it back together
 		long dimU2[2] = { N, MIN(N, M) };
 		long dimV2[2] = { MIN(N, M), M };
-		complex float* U2 = md_alloc(2, dimU2, sizeof(complex float));
-		complex float* V2 = md_alloc(2, dimV2, sizeof(complex float));
-		md_resize(2, dimU2, U2, dimsU, U, sizeof(complex float));
-		md_resize(2, dimV2, V2, dimsV, VT, sizeof(complex float));
+		complex float* U2 = md_alloc(2, dimU2, CFL_SIZE);
+		complex float* V2 = md_alloc(2, dimV2, CFL_SIZE);
+		md_resize(2, dimU2, U2, dimsU, U, CFL_SIZE);
+		md_resize(2, dimV2, V2, dimsV, VT, CFL_SIZE);
 
 		for (int i = 0; i < M; i++) {
 
@@ -178,11 +210,17 @@ static void lowrank(float alpha, const long dims[5], complex float* matrix)
 		free(S);
 	}
 
+#if 0
 	//md_clear(5, dims, matrix, sizeof(complex float));
-	casorati_matrixH(4, kernel_dims, calreg_dims, str, matrix, calmat_dims, calmat);
+	casorati_matrixH(4, kern_dims, calreg_dims, str, matrix, calmat_dims, calmat);
 	md_zsmul(5, dims, matrix, matrix, 1. / (double)(kx * ky * kz)); // FIXME: not right at the border
 
 	//unmap_cfl(2, calmat_dims, calmat);
+#else
+	md_clear(D, dims, matrix, CFL_SIZE);
+	casorati_matrixH(D, kern_dims, dims, str, matrix, calmat_dims, calmat);
+	md_zsmul(D, dims, matrix, matrix, 1. / (double)md_calc_size(3, kern_dims)); // FIXME: not right at the border
+#endif
 	md_free(calmat);
 }
 
@@ -191,32 +229,31 @@ static void lowrank(float alpha, const long dims[5], complex float* matrix)
 void lrmc(float alpha, int iter, float lambda, int N, const long dims[N], complex float* out, const complex float* in)
 {
 	long dims1[N];
-	memcpy(dims1, dims, N * sizeof(long));
-	dims1[3] = 1;
+	md_select_dims(N, ~COIL_FLAG, dims1, dims);
 
-	md_copy(N, dims, out, in, sizeof(complex float));
+	md_copy(N, dims, out, in, CFL_SIZE);
 
-	complex float* pattern = md_alloc(N, dims1, sizeof(complex float));
+	complex float* pattern = md_alloc(N, dims1, CFL_SIZE);
 
-	assert(5 == N);
+	//assert(5 == N);
 	estimate_pattern(N, dims, COIL_DIM, pattern, in);
 
-	complex float* comp = md_alloc(N, dims1, sizeof(complex float));
+	complex float* comp = md_alloc(N, dims1, CFL_SIZE);
 	md_zfill(N, dims1, comp, 1.);
 
-	lowrank(-1., dims1, comp);
+	lowrank(-1., N, dims1, comp);
 
 #ifdef RAVINE
-	complex float* o = md_alloc(N, dims, sizeof(complex float));
-	md_clear(N, dims, o, sizeof(complex float));
+	complex float* o = md_alloc(N, dims, CFL_SIZE);
+	md_clear(N, dims, o, CFL_SIZE);
 	float fl = 1.;
 #endif
 
 	long strs1[N];
-	md_calc_strides(N, strs1, dims1, sizeof(complex float));
+	md_calc_strides(N, strs1, dims1, CFL_SIZE);
 
 	long strs[N];
-	md_calc_strides(N, strs, dims, sizeof(complex float));
+	md_calc_strides(N, strs, dims, CFL_SIZE);
 	
 
 	for (int i = 0; i < iter; i++) {
@@ -228,7 +265,7 @@ void lrmc(float alpha, int iter, float lambda, int N, const long dims[N], comple
 		else
 			data_consistency(dims, out, pattern, in, out);
 
-		lowrank(alpha, dims, out);
+		lowrank(alpha, N, dims, out);
 		md_zdiv2(N, dims, strs, out, strs, out, strs1, comp);
 #ifdef RAVINE
 		ravine(N, dims, &fl, out, o);

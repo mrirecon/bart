@@ -20,6 +20,7 @@ extern _Complex float* shared_cfl(unsigned int D, const long dims[__VLA(D)], con
 extern _Complex float* private_cfl(unsigned int D, const long dims[__VLA(D)], const char* name);
 extern void unmap_cfl(unsigned int D, const long dims[__VLA(D)], const _Complex float* x);
 
+extern _Complex float* anon_cfl(const char* name, unsigned int D, const long dims[__VLA(D)]);
 extern _Complex float* create_cfl(const char* name, unsigned int D, const long dimensions[__VLA(D)]);
 extern _Complex float* load_cfl(const char* name, unsigned int D, long dimensions[__VLA(D)]);
 

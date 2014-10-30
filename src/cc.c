@@ -1,19 +1,10 @@
-/* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+/* Copyright 2013-2014. The Regents of the University of California.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
- * 2012-2013	Martin Uecker <uecker@eecs.berkeley.edu>
+ * Authors:
+ * 2012-2014	Martin Uecker <uecker@eecs.berkeley.edu>
  * 2013		Jonathan Tamir <jtamir@eecs.berkeley.edu>
- * 
- *
- * Huang F, Vijayakumar S, Li Y, Hertel S, Duensing GR. A software channel
- * compression technique for faster reconstruction with many channels.
- * Magn Reson Imaging 2008; 26:133-141.
- *
- * Buehrer M, Pruessmann KP, Boesiger P, Kozerke S. Array compression for MRI
- * with large coil arrays. Magn Reson Med 2007, 57: 1131–1139. 
- * 
  */
 
 #define _GNU_SOURCE
@@ -24,22 +15,23 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "misc/io.h"
 #include "misc/mmio.h"
 #include "misc/mri.h"
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/lapack.h"
-#include "num/la.h"
+#include "num/fft.h"
+
+#include "calib/cc.h"
 
 
 
 
 static void usage(const char* name, FILE* fd)
 {
-	fprintf(fd, 	"Usage: %s [-v] [-A] [-r cal_size] [-P num_coeffs]"
+	fprintf(fd, 	"Usage: %s [-A] [-r cal_size] [-P num_coeffs]"
 			" <kspace> <coeff>|<proj_kspace>\n", name);
 }
 
@@ -51,23 +43,23 @@ static void help(void)
 		"-P N\tperform compression to N virtual channels\n"
 		"-r S\tsize of calibration region\n"
 		"-A\tuse all data to compute coefficients\n"
-		"-v\tverbose\n"
+		"-S|G|E\ttype: SVD, Geometric, ESPIRiT\n"
 		"-h\thelp\n");
 }
 
 
 
 
-int main_scc(int argc, char* argv[])
+int main_cc(int argc, char* argv[])
 {
-	long calsize[3] = { 24, 24, 24 }; 
+	long calsize[3] = { 24, 24, 24 };
 	bool proj = false;
-	bool verbose = false;
 	long P = 0;
 	bool all = false;
+	enum cc_type { SCC, GCC, ECC } cc_type = SCC;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "r:R:p:P:vAh"))) {
+	while (-1 != (c = getopt(argc, argv, "r:R:SGEP:Ah"))) {
 
 		switch (c) {
 
@@ -90,8 +82,16 @@ int main_scc(int argc, char* argv[])
 			P = atoi(optarg);
 			break;
 
-		case 'v':
-			verbose = true;
+		case 'S':
+			cc_type = SCC;
+			break;
+
+		case 'G':
+			cc_type = GCC;
+			break;
+
+		case 'E':
+			cc_type = ECC;
 			break;
 
 		case 'h':
@@ -111,7 +111,7 @@ int main_scc(int argc, char* argv[])
 		usage(argv[0], stderr);
 		exit(1);
 	}
-		
+
 
 	long in_dims[DIMS];
 
@@ -126,13 +126,9 @@ int main_scc(int argc, char* argv[])
 	long out_dims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
 	out_dims[COIL_DIM] = channels;
 	out_dims[MAPS_DIM] = channels;
+	out_dims[READ_DIM] = (SCC == cc_type) ? 1 : in_dims[READ_DIM];
 
-	complex float* out_data = NULL;
-	
-	if (proj)
-		out_data = md_alloc(DIMS, out_dims, CFL_SIZE);
-	else
-		out_data = create_cfl(argv[optind + 1], DIMS, out_dims);
+	complex float* out_data = (proj ? anon_cfl : create_cfl)(argv[optind + 1], DIMS, out_dims);
 
 
 	long caldims[DIMS];
@@ -148,34 +144,23 @@ int main_scc(int argc, char* argv[])
 		cal_data = extract_calib(caldims, calsize, in_dims, in_data, false);
 	}
 
-	
+	if (ECC == cc_type)
+		debug_printf(DP_WARN, "Warning: ECC depends on a parameter choice rule for optimal results which is not implemented.\n");
 
-	complex float* tmp = xmalloc(channels * channels * CFL_SIZE);
-	size_t csize = md_calc_size(3, caldims);
-	gram_matrix(channels, (complex float (*)[channels])tmp, csize, (const complex float (*)[csize])cal_data);
 
-	float vals[channels];
-	eigendecomp(channels, vals, (complex float (*)[])tmp);
-	md_flip(DIMS, out_dims, MAPS_FLAG, out_data, tmp, CFL_SIZE);
-
-	free(tmp);
-
-	if (verbose) {
-
-		printf("Coefficients:");
-
-		for (int i = 0; i < channels; i++)
-			printf(" %.3f", vals[channels - 1 - i] / vals[channels - 1]);
-
-		printf("\n");
+	switch (cc_type) {
+	case SCC: scc(out_dims, out_data, caldims, cal_data); break;
+	case GCC: gcc(out_dims, out_data, caldims, cal_data); break;
+	case ECC: ecc(out_dims, out_data, caldims, cal_data); break;
 	}
 
+	if (!all)
+		md_free(cal_data);
 
 
 	if (proj) {
-	
-		if (verbose)
-			printf("Compressing to %ld virtual coils...\n", P);
+
+		debug_printf(DP_DEBUG1, "Compressing to %ld virtual coils...\n", P);
 
 		long trans_dims[DIMS];
 		md_copy_dims(DIMS, trans_dims, in_dims);
@@ -187,23 +172,50 @@ int main_scc(int argc, char* argv[])
 		md_select_dims(DIMS, ~COIL_FLAG, fake_trans_dims, in_dims);
 		fake_trans_dims[MAPS_DIM] = P;
 
-		md_zmatmulc(DIMS, fake_trans_dims, trans_data, out_dims, out_data, in_dims, in_data);
+		long out2_dims[DIMS];
+		md_copy_dims(DIMS, out2_dims, out_dims);
+		out2_dims[MAPS_DIM] = P;
+
+		if (SCC != cc_type) {
+
+			complex float* in2_data = anon_cfl(NULL, DIMS, in_dims);
+
+			ifftuc(DIMS, in_dims, READ_FLAG, in2_data, in_data);
+
+			unmap_cfl(DIMS, in_dims, in_data);
+			in_data = in2_data;
+
+
+			complex float* out2 = anon_cfl(NULL, DIMS, out2_dims);
+			align_ro(out2_dims, out2, out_data);
+
+			unmap_cfl(DIMS, out_dims, out_data);
+			out_data = out2;
+		}
+
+		md_zmatmulc(DIMS, fake_trans_dims, trans_data, out2_dims, out_data, in_dims, in_data);
+
+		if (SCC != cc_type) {
+
+			fftuc(DIMS, trans_dims, READ_FLAG, trans_data, trans_data);
+
+			unmap_cfl(DIMS, out2_dims, out_data);
+
+		} else {
+
+			unmap_cfl(DIMS, out_dims, out_data);
+		}
 
 		unmap_cfl(DIMS, trans_dims, trans_data);
+		unmap_cfl(DIMS, in_dims, in_data);
+
+	} else {
+
+		unmap_cfl(DIMS, in_dims, in_data);
+		unmap_cfl(DIMS, out_dims, out_data);
 	}
 
 	printf("Done.\n");
-
-	if (!all)
-		md_free(cal_data);
-
-	unmap_cfl(DIMS, in_dims, in_data);
-
-	if (proj)
-		md_free(out_data);
-	else
-		unmap_cfl(DIMS, out_dims, out_data);
-
 	exit(0);
 }
 
