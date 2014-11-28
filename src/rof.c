@@ -72,12 +72,8 @@ int main(int argc, char* argv[])
 	const struct operator_p_s* thresh_prox = prox_thresh_create(DIMS + 1, linop_codomain(tv_op)->dims, 
 								lambda, (1 << DIMS), false);
 
-	const struct operator_p_s* p_ops[1] = { thresh_prox };
-
-	const struct linop_s* ops[1] = { tv_op };
-	
 	iter2_admm(&conf, linop_identity_create(DIMS, dims)->forward,
-		   1, p_ops, ops, NULL, 
+		   1, (const struct operator_p_s* []){ thresh_prox }, (const struct linop_s* []){ tv_op }, NULL, 
 		   2 * md_calc_size(DIMS, dims), (float*)out_data, (const float*)in_data,
 		   NULL, NULL, NULL);
 

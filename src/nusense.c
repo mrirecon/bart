@@ -84,12 +84,20 @@ int main_nusense(int argc, char* argv[])
 	bool use_gpu = false;
 	bool precond = false;
 	const char* pat_file = NULL;
+	const char* dcf_file = NULL;
 	bool hogwild = false;
 	bool toeplitz = true;
+	bool stoch = false;
+	bool ist = false;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "r:i:l:u:t:p:nhHs:"))) {
+	while (-1 != (c = getopt(argc, argv, "Ir:i:l:u:t:p:nhHs:Sd:c"))) {
 		switch(c) {
+
+		case 'I':
+			ist = true;
+			break;
+
 
 		case 'H':
 			hogwild = true;
@@ -97,6 +105,15 @@ int main_nusense(int argc, char* argv[])
 
 		case 's':
 			step = atof(optarg);
+			break;
+
+		case 'S':
+			stoch = true;
+			break;
+
+
+		case 'c':
+			precond = true;
 			break;
 
 		case 'r':
@@ -121,6 +138,10 @@ int main_nusense(int argc, char* argv[])
 
 		case 'p':
 			pat_file = strdup(optarg);
+			break;
+
+		case 'd':
+			dcf_file = strdup(optarg);
 			break;
 
 		case 'n':
@@ -177,6 +198,12 @@ int main_nusense(int argc, char* argv[])
 	if (l1wav)
 		debug_printf(DP_INFO, "l1-wavelet regularization\n");
 
+	if (hogwild)
+		debug_printf(DP_INFO, "Hogwild stepsize\n");
+
+	if (precond)
+		debug_printf(DP_INFO, "Circular Preconditioned\n");
+
 
 
 	// initialize sampling pattern
@@ -213,6 +240,7 @@ int main_nusense(int argc, char* argv[])
 
 	struct iter_conjgrad_conf cgconf;
 	struct iter_fista_conf fsconf;
+	struct iter_ist_conf isconf;
 
 	if (!l1wav) {
 
@@ -223,6 +251,15 @@ int main_nusense(int argc, char* argv[])
 		italgo = iter_conjgrad;
 		iconf = &cgconf;
 
+	} else if (ist) {
+
+		memcpy(&isconf, &iter_ist_defaults, sizeof(struct iter_ist_conf));
+		isconf.maxiter = maxiter;
+		isconf.step = step;
+		isconf.hogwild = hogwild;
+
+		italgo = iter_ist;
+		iconf = &isconf;
 	} else {
 
 		memcpy(&fsconf, &iter_fista_defaults, sizeof(struct iter_fista_conf));
@@ -236,7 +273,7 @@ int main_nusense(int argc, char* argv[])
 
 	// initialize fft_op
 	const struct linop_s* fft_op
-		= nufft_create(ksp_dims, coilim_dims, traj, pattern, toeplitz, precond, NULL, use_gpu);
+		= nufft_create(ksp_dims, coilim_dims, traj, pattern, toeplitz, precond, stoch, NULL, use_gpu);
 	
 	// initialize maps_op
 	const struct linop_s* maps_op
@@ -251,9 +288,9 @@ int main_nusense(int argc, char* argv[])
 	if (l1wav) {
 
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-		minsize[0] = MIN(img_dims[0], 8);
-		minsize[1] = MIN(img_dims[1], 8);
-		minsize[2] = MIN(img_dims[2], 8);
+		minsize[0] = MIN(img_dims[0], 16);
+		minsize[1] = MIN(img_dims[1], 16);
+		minsize[2] = MIN(img_dims[2], 16);
 		thresh_op = prox_wavethresh_create(DIMS, img_dims, 3, minsize, lambda, randshift, use_gpu);
 	}
 
@@ -267,6 +304,35 @@ int main_nusense(int argc, char* argv[])
 	float scaling = estimate_scaling(coilim_dims, NULL, adj);
 
 	md_free(adj);
+
+	// initialize image with dcf
+
+	if (NULL != dcf_file)
+	{
+		long dcf_dims[DIMS];
+		long dcf_strs[DIMS];
+		complex float* dcf = load_cfl(dcf_file, DIMS, dcf_dims);
+		md_calc_strides( DIMS, dcf_strs, dcf_dims, CFL_SIZE );
+
+
+		long ksp_strs[DIMS];
+		md_calc_strides( DIMS, ksp_strs, ksp_dims, CFL_SIZE );
+		complex float* ksp_dcf = md_alloc(DIMS, ksp_dims, CFL_SIZE );
+
+		md_zmul2( DIMS, ksp_dims, ksp_strs, ksp_dcf, ksp_strs, kspace, dcf_strs, dcf );
+
+		linop_adjoint( forward_op, DIMS, img_dims, image, DIMS, ksp_dims, ksp_dcf );
+
+		float s = md_znorm(DIMS, ksp_dims, kspace) / md_znorm(DIMS, ksp_dims, ksp_dcf);
+
+		md_zsmul( DIMS, img_dims, image, image, s );
+
+		debug_printf(DP_INFO, "Scaling2: %.2f\n", s); 
+
+
+		md_free( ksp_dcf );
+		unmap_cfl(DIMS, dcf_dims, dcf);
+	}
 
 	if (scaling != 0.)
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);

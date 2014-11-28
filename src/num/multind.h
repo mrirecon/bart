@@ -7,6 +7,7 @@
 #define __MULTIND_H	1
 
 #include <string.h>
+#include <assert.h>
 
 #ifdef __cplusplus
 
@@ -108,6 +109,7 @@ extern _Bool md_is_index(unsigned int D, const long pos[__VLA(D)], const long di
 extern _Bool md_check_dimensions(unsigned int N, const long dims[__VLA(N)], unsigned int flags);
 extern void md_permute_dims(unsigned int D, const unsigned int order[__VLA(D)], long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
+extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned int flags, long pos[__VLA(D)]);
 
 #define MD_INIT_ARRAY(x, y) { [ 0 ... ((x) - 1) ] = (y) } 
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
@@ -121,8 +123,7 @@ extern void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int di
 	(assert(((a) < (b)) && ((b) < (c)) && !md_check_dimensions((N), (dims), (1 << (a)) | (1 << (b) | (1 << (c)))), \
 					*(T (*)[(dims)[c]][(dims)[b]][(dims)[a]])(x))
 
-
-
+#define MD_ACCESS(N, strs, pos, x)	((x)[md_calc_offset((N), (strs), (pos)) / sizeof((x)[0])])
 
 #ifdef __cplusplus
 }

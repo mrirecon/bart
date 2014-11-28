@@ -1,12 +1,23 @@
+/* Copyright 2013. The Regents of the University of California.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ *
+ * Authors:
+ * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ */
 
 #include <complex.h>
+#include <math.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/casorati.h"
+#include "num/lapack.h"
 #include "num/la.h"
 
+#include "misc/misc.h"
 #include "misc/mri.h"
+#include "misc/debug.h"
 
 #include "calmat.h"
 
@@ -29,11 +40,8 @@ static complex float* calibration_matrix_priv(long calmat_dims[2], const long kd
 }
 
 
-complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], const long calreg_dims[4], const complex float* data)
+static complex float* pattern_matrix(long pcm_dims[2], const long kdims[3], const long calreg_dims[4], const complex float* data)
 {
-#if 1
-	return calibration_matrix_priv(calmat_dims, kdims, calreg_dims, data);
-#else
 	// estimate pattern
 	long pat_dims[4];
 	md_select_dims(4, ~(1 << COIL_DIM), pat_dims, calreg_dims);
@@ -41,14 +49,29 @@ complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], cons
 	estimate_pattern(4, calreg_dims, COIL_DIM, pattern, data);
 
 	// compute calibration matrix of pattern
-	long pcm_dims[2];
 	complex float* pm = calibration_matrix_priv(pcm_dims, kdims, pat_dims, pattern);
 	md_free(pattern);
 
-	// number of samples for each patch
+	return pm;
+}
+
+complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], const long calreg_dims[4], const complex float* data)
+{
+	return calibration_matrix_priv(calmat_dims, kdims, calreg_dims, data);
+}
+
+
+complex float* calibration_matrix2(long calmat_dims[2], const long kdims[3], const complex float* mask, const long calreg_dims[4], const complex float* data)
+{
+	assert(NULL == mask);
+
+	long pcm_dims[2];
+	complex float* pm = pattern_matrix(pcm_dims, kdims, calreg_dims, data);
+
 	long pcm_strs[2];
 	md_calc_strides(2, pcm_strs, pcm_dims, CFL_SIZE);
 
+	// number of samples for each patch
 	long msk_dims[2];
 	md_select_dims(2, ~(1 << 1), msk_dims, pcm_dims);
 
@@ -61,8 +84,11 @@ complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], cons
 	md_free(pm);
 
 	// fully sampled?
-	long strs1[2] = { 0, 0 };
-	md_zcmp2(2, msk_dims, msk_strs, msk, msk_strs, msk, strs1, &(complex float){ pcm_dims[1] });
+	md_zcmp2(2, msk_dims, msk_strs, msk, msk_strs, msk,
+			(long[2]){ 0, 0 }, &(complex float){ pcm_dims[1] });
+
+	debug_printf(DP_DEBUG1, "%ld/%ld fully-sampled patches.\n",
+				(long)pow(md_znorm(2, msk_dims, msk), 2.), pcm_dims[0]);
 
 	complex float* tmp = calibration_matrix_priv(calmat_dims, kdims, calreg_dims, data);
 
@@ -72,39 +98,38 @@ complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], cons
 	md_zmul2(2, calmat_dims, calmat_strs, tmp, calmat_strs, tmp, msk_strs, msk);
 
 	return tmp;
-#endif
 }
 
 
-extern void covariance_function(const long kdims[3], complex float* cov, const long calreg_dims[4], const complex float* data)
+
+void covariance_function(const long kdims[3], unsigned int N, complex float cov[N][N], const long calreg_dims[4], const complex float* data)
 {
 	long calmat_dims[2];
 	complex float* cm = calibration_matrix(calmat_dims, kdims, calreg_dims, data);
 
-	int L = calmat_dims[0];
-	int N = calmat_dims[1];
+	unsigned int L = calmat_dims[0];
+	assert(N == calmat_dims[1]);
 
-	gram_matrix(N, (complex float (*)[N])cov, L, (const complex float (*)[L])cm);
+	gram_matrix(N, cov, L, MD_CAST_ARRAY2(const complex float, 2, calmat_dims, cm, 0, 1));
 
 	md_free(cm);
 }
 
 
 
-#ifdef CALMAT_SVD
-static void calmat_svd(const long kdims[3], complex float* cov, float* S, const long calreg_dims[4], const complex float* data)
+void calmat_svd(const long kdims[3], unsigned int N, complex float cov[N][N], float* S, const long calreg_dims[4], const complex float* data)
 {
 	long calmat_dims[2];
 	complex float* cm = calibration_matrix(calmat_dims, kdims, calreg_dims, data);
 
-	int L = calmat_dims[0];
-	int N = calmat_dims[1];
+	unsigned int L = calmat_dims[0];
+	assert(N == calmat_dims[1]);
 
-	complex float* U = xmalloc(L * L * CFL_SIZE);	
+	complex float (*U)[L] = xmalloc(L * L * CFL_SIZE);
 
-	svd(L, N, (complex float (*)[L])U, (complex float (*)[N])cov, S, (complex float (*)[])cm); // why not const last arg
+	svd_econ(L, N, U, cov, S, MD_CAST_ARRAY2(const complex float, 2, calmat_dims, cm, 0, 1));
 
 	free(U);
 	md_free(cm);
 }
-#endif
+

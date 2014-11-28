@@ -53,7 +53,7 @@ omp_lock_t gpulock[MAX_CUDA_DEVICES];
 
 
 void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* out1, 
-	const long sens1_dims[DIMS], complex float* cov1, 
+	const long cov1_dims[DIMS], complex float* cov1,
 	const long w1_dims[DIMS], const complex float* weights,
 	complex float* kspace1, bool usegpu)
 {
@@ -74,7 +74,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 	} else {
 
-		memcpy(pat1_dims, w1_dims, DIMS * sizeof(long));
+		md_copy_dims(DIMS, pat1_dims, w1_dims);
 		pattern = weights;
 	}
 
@@ -89,7 +89,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 		sens1 = md_alloc(DIMS, dims1, CFL_SIZE);
 	
-		caltwo(param->calib, dims1, sens1, maps1, sens1_dims, cov1, NULL, NULL);
+		caltwo(param->calib, dims1, sens1, maps1, cov1_dims, cov1, NULL, NULL);
 
 		md_free(maps1);
 
@@ -108,7 +108,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		fftmod(DIMS, ksp1_dims, FFT_FLAGS, kspace1, kspace1);
 	}
 
-	fftmod(DIMS, sens1_dims, FFT_FLAGS, sens1, sens1);
+	fftmod(DIMS, dims1, FFT_FLAGS, sens1, sens1);
 	fftmod(DIMS, ksp1_dims, FFT_FLAGS, kspace1, kspace1);
 
 	complex float* image1 = NULL;
@@ -162,21 +162,23 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 	void* iconf = NULL;
 
 	struct iter_conjgrad_conf cgconf;
-	memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
-	cgconf.maxiter = param->maxiter;
-	cgconf.l2lambda = param->lambda;
-
 	struct iter_fista_conf fsconf;
-	memcpy(&fsconf, &iter_fista_defaults, sizeof(struct iter_fista_conf));
-	fsconf.maxiter = param->maxiter;
-	fsconf.step = param->step;
 
 	if (!param->l1wav) {
+
+		memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
+		cgconf.maxiter = param->maxiter;
+		cgconf.l2lambda = param->lambda;
+		cgconf.tol = 1.E-3;
 
 		italgo = iter_conjgrad;
 		iconf = &cgconf;
 
 	} else {
+
+		memcpy(&fsconf, &iter_fista_defaults, sizeof(struct iter_fista_conf));
+		fsconf.maxiter = param->maxiter;
+		fsconf.step = param->step;
 
 		italgo = iter_fista;
 		iconf = &fsconf;

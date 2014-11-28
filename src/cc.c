@@ -38,7 +38,7 @@ static void usage(const char* name, FILE* fd)
 static void help(void)
 {
 	printf( "\n"
-		"Performs simple coil compression.\n"
+		"Performs coil compression.\n"
 		"\n"
 		"-P N\tperform compression to N virtual channels\n"
 		"-r S\tsize of calibration region\n"

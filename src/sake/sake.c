@@ -103,33 +103,6 @@ static void ravine(unsigned int N, const long dims[N], float* ftp, complex float
 
 static void lowrank(float alpha, int D, const long dims[D], complex float* matrix)
 {
-#if 0
-	long x = dims[0];
-	long y = dims[1];
-	long z = dims[2];
-	long channels = dims[3];
-
-	assert(1 == dims[4]);
-
-	int kx = MIN(6, x);
-	int ky = MIN(6, y);
-	int kz = MIN(6, z);
-	
-	long calreg_dims[4] = { x, y, z, channels };
-	long kern_dims[4] = { kx, ky, kz, channels };
-
-	debug_printf(DP_INFO, "%ld %ld %ld %ld\n", x, y, z, channels);
-
-	long calmat_dims[2] = { (x - kx + 1) * (y - ky + 1) * (z - kz + 1), md_calc_size(4, kern_dims) };
-
-	complex float* calmat = md_alloc(2, calmat_dims, CFL_SIZE);
-//	complex float* calmat = create_cfl("calmat", 2, calmat_dims);
-
-	long str[4];
-	md_calc_strides(4, str, calreg_dims, CFL_SIZE);
-
-	casorati_matrix(4, kern_dims, calmat_dims, calmat, calreg_dims, str, matrix);
-#else
 	assert(1 == dims[MAPS_DIM]);
 
 	debug_printf(DP_INFO, "mat_dims = \t");
@@ -156,8 +129,6 @@ static void lowrank(float alpha, int D, const long dims[D], complex float* matri
 	md_calc_strides(D, str, dims, CFL_SIZE);
 
 	casorati_matrix(D, kern_dims, calmat_dims, calmat, dims, str, matrix);
-
-#endif
 
 	int N = calmat_dims[0];
 	int M = calmat_dims[1];
@@ -210,17 +181,10 @@ static void lowrank(float alpha, int D, const long dims[D], complex float* matri
 		free(S);
 	}
 
-#if 0
-	//md_clear(5, dims, matrix, sizeof(complex float));
-	casorati_matrixH(4, kern_dims, calreg_dims, str, matrix, calmat_dims, calmat);
-	md_zsmul(5, dims, matrix, matrix, 1. / (double)(kx * ky * kz)); // FIXME: not right at the border
-
-	//unmap_cfl(2, calmat_dims, calmat);
-#else
 	md_clear(D, dims, matrix, CFL_SIZE);
 	casorati_matrixH(D, kern_dims, dims, str, matrix, calmat_dims, calmat);
 	md_zsmul(D, dims, matrix, matrix, 1. / (double)md_calc_size(3, kern_dims)); // FIXME: not right at the border
-#endif
+
 	md_free(calmat);
 }
 

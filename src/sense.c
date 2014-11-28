@@ -359,6 +359,7 @@ int main_sense(int argc, char* argv[])
 		memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
 		cgconf.maxiter = maxiter;
 		cgconf.l2lambda = lambda;
+		cgconf.tol = 1.E-3;
 
 		italgo = iter_conjgrad;
 		iconf = &cgconf;

@@ -1,0 +1,80 @@
+
+
+SENSE:
+
+Pruessmann KP, Weiger M, Scheidegger MB, Boesiger P. SENSE: Sensitivity
+encoding for fast MRI. Magn Reson Med 1999; 42:952-962.
+
+Pruessmann KP, Weiger M, Boernert P, Boesiger P. Advances in sensitivity
+encoding with arbitrary k-space trajectories. 
+Magn Reson Med 2001; 46:638-651.
+
+
+
+compressed sensing:
+
+Lustig M, Donoho D and Pauly JM, Sparse MRI: The application of
+compressed sensing for rapid MR imaging. Magn Reson Med 2007,
+58: 1182–1195.
+
+Block KT, Uecker M, and Frahm J. Undersampled radial MRI with
+multiple coils. Iterative image reconstruction using a total
+variation constraint. Magn Reson Med 2007, 57: 1086-1098.
+
+
+
+
+direct calibration:
+
+McKenzie CA, Yeh EN, Ohliger MA, Price MD, Sodickson DK.
+Self-calibrating parallel imaging with automatic coil sensitivity
+extraction. Magn Reson Med 2002; 47:529-538.
+
+
+ESPIRiT:
+
+Uecker M, Lai P, Murphy MJ, Virtue P, Elad M, Pauly JM, Vasanawala SS,
+Lustig M. ESPIRiT - An Eigenvalue Approach to  Autocalibrating Parallel
+MRI: Where SENSE meets GRAPPA. Magn Reson Med 2014; 71: 990-1001.
+
+
+nonlinear inversion:
+
+Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction by
+regularized nonlinear inversion—joint estimation of coil sensitivities
+and image content. Magn Reson Med 2008; 60:674-682.
+
+
+SAKE:
+
+Shin PJ, Larson PEZ, Ohliger MA, Elad M, Pauly JM, Vigneron DB,
+Lustig M. Calibrationless Parallel Imaging Reconstruction Based on
+Structured Low-Rank Matrix Completion. Magn Reson Med 2014; Epub
+
+Bi Z, Uecker M, Jiang D, Lustig M, Ying K. Robust Low-rank Matrix
+Completion for sparse motion correction in auto calibration PI.
+Annual Meeting ISMRM, Salt Lake City 2013,
+In: Proc Intl Soc Mag Reson Med 21;2584
+
+
+coil compression:
+
+Huang F, Vijayakumar S, Li Y, Hertel S, Duensing GR. A software channel
+compression technique for faster reconstruction with many channels.
+Magn Reson Imaging 2008; 26:133-141.
+
+Buehrer M, Pruessmann KP, Boesiger P, Kozerke S. Array compression for
+MRI with large coil arrays. Magn Reson Med 2007, 57: 1131-1139.
+
+Zhang T, Pauly JM, Vasanawala SS, Lustig M. Coil compression for
+accelerated imaging with cartesian sampling. Magn Reson Med 2013;
+69:571-582.
+
+Bahri D, Uecker M, Lustig M. ESPIRiT-Based Coil Compression for
+Cartesian Sampling,  Annual Meeting ISMRM, Salt Lake City 2013,
+In: Proc Intl Soc Mag Reson Med 21:2657
+
+
+
+
+

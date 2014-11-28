@@ -7,6 +7,7 @@
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
  *
+ * operator expressions working on multi-dimensional arrays 
  */
 
 #include <complex.h>

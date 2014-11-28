@@ -1,0 +1,368 @@
+
+
+- Basic tools -
+
+
+bitmask -b <bitmask> | <dim1> ... <dimN>
+
+	Compute bitmask for specified dimensions.
+
+
+conv bitmask <input> <kernel> <output>
+
+	Performs a convolution along selected dimensions.
+
+	-i	inverse
+	-h	help
+
+
+creal <input> <output>
+
+	Real value.
+
+
+crop dimension size <input> <output>
+
+	Extracts a sub-array corresponding to the central part of
+	{size} along {dimension}.
+
+
+resize [-c] dimension size <input> <output>
+
+	Resizes an array along {dimension} to {size} by truncation or
+	zero padding.
+
+
+slice dimension position <input> <output>
+
+	Extracts a slice from {position} along {dimension}.
+
+
+extract dimension start end <input> <output>
+
+	Extracts a sub-array along {dim} from index {start} to {end}.
+
+
+flip bitmask <input> <output>
+
+	Flip (reverse) dimensions specified by the {bitmask}.
+
+
+threshold [-j bitmask] lambda <input> <output>
+
+	Perform softthresholding with parameter lambda.
+
+	-j bitmask	joint thresholding
+	-h	help
+
+
+transpose dim1 dim2 <input> <output>
+
+	Transpose dimensions {dim1} and {dim2}.
+
+
+join dimension <input1> ... <inputn> <output>
+
+	Join input files along {dimenions}. All other dimensions
+	must have the same size.
+
+
+repmat dimension repetitions <input> <output>
+
+	Repeat input array multiple times.
+
+
+sdot [-h] <input1> <input2>
+
+	Compute dot product along selected dimensions.
+
+	-h	help
+
+
+circshift dim shift <input> <output>
+
+	Perform circular shift along {dim} by {shift} elements.
+
+
+zeros dims dim1 ... dimn name
+
+	Create a zero-filled array with {dims} dimensions of
+	size {dim1} to {dimn}.
+
+
+scale factor <input> <output>
+
+	Scale array by {factor}. The scale factor can be a complex 
+	number.
+
+
+saxpy scale <input1> <input2> <output>
+
+	Multiply input1 with scale factor and add input2.
+
+
+spow exponent <input> <output>
+
+	Raise array to the power of {exponent}. The exponent can be a complex number.
+
+
+fmac [-A] [-C] [-s bitmask] <input1> <input2> <output>
+
+	Multiply and accumulate.
+
+	-C	conjugate second argument
+	-A	add to output
+	-s	squash selected dimensions
+
+
+conj <input> <output>
+
+	Compute complex conjugate.
+
+
+cpyphs <input> <output
+
+	Copy phase from <input> to <output>.
+
+
+fft [-u] [-i] bitmask <input> <output>
+
+	Performs a fast Fourier transform (FFT) along dimensions
+	selected by the {bitmask}. There are two options:
+
+	-u	unitary
+	-i	inverse
+
+
+fftmod bitmask <input> <output>
+
+	Apply 1 -1 modulation along dimensions selected by the
+	{bitmask}.
+
+
+ones dims dim1 ... dimn name
+
+	Create a array filled with ones with {dims} dimensions of
+	size {dim1} to {dimn}.
+
+
+normalize bitmask <input> <output>
+
+	Normalize along selected dimensions.
+
+
+
+-- MRI calibration and reconstruction ---
+
+
+
+rss bitmask <input> <output>
+
+	Calculates root of sum of squares along selected dimensions.
+
+
+homodyne dim fraction <input> <output>
+
+	Performs homodyne reconstruction along {dim}. Where {fraction}
+	describes how much of k-space has been acquired along this 
+	dimension.
+
+
+pattern <kspace> <pattern>
+
+	Compute sampling pattern from kspace
+
+
+caldir cal_size <input> <output>
+
+	Estimates coil sensitivities from the k-space center using
+	a direct method (McKenzie et al.). The size of the fully-sampled
+	calibration region is automatically determined but limited by 
+	{cal_size} (e.g. in the readout direction).
+
+
+walsh [-r cal. size] [-b block size] <input> <output>
+
+	Estimate coil sensitivities using walsh method (use with ecaltwo).
+
+	-r cal_size	Limits the size of the calibration region.
+	-b block_size	Block size.
+
+
+ecalib [-t threshold] [-c crop_value] [-k kernel_size] [-r cal_size] [-m maps] <kspace> <sensitivites> [<ev-maps>]
+
+	Estimate coil sensitivities using ESPIRiT calibration.
+	Optionally outputs the eigenvalue maps.
+
+	-t threshold	This determined the size of the null-space.
+	-c crop_value	Crop the sensitivities if the eigenvalue is
+                        smaller than {crop_value}.
+	-k ksize	kernel size
+	-r cal_size	Limits the size of the calibration region.
+	-m maps		Number of maps to compute.
+	-1 perform only first part of the calibration
+
+
+ecaltwo [-c crop] [-m maps] x y z <input> <sensitivities> [<ev_maps>]
+
+	Second part of ESPIRiT calibration.
+	Optionally outputs the eigenvalue maps.
+
+	-c crop_value	Crop the sensitivities if the eigenvalue is
+                        smaller than {crop_value}.
+	-m maps		Number of maps to compute.
+
+	
+cc [-A] [-r cal_size] [-P num_coeffs] <kspace> <coeff>|<proj_kspace>
+
+	Performs coil compression.
+
+	-P N	perform compression to N virtual channels
+	-r S	size of calibration region
+	-A	use all data to compute coefficients
+	-S|G|E	type: SVD, Geometric, ESPIRiT
+	-h	help
+
+
+sense [-l1/-l2] [-r lambda] [-c] <kspace> <sensitivities> <output>
+
+	Perform iterative SENSE/ESPIRiT reconstruction.
+
+	-l1/-l2		toggle l1-wavelet or l2 regularization.
+	-r lambda	regularization parameter
+	-c		real-value constraint
+
+
+rsense [-l1/-l2] [-r lambda] [-c] <kspace> <sensitivities> <output>
+
+	Perform iterative SENSE/ESPIRiT reconstruction. The read
+	(0th) dimension is Fourier transformed and each section
+	perpendicular to this dimension is reconstructed separately.
+
+	-l1/-l2		toggle l1-wavelet or l2 regularization.
+	-r lambda	regularization parameter
+	-c		real-value constraint
+
+
+nusense [-l1/-l2] [-r lambda] <traj> <kspace> <sensitivities> <output>
+
+	Perform non-Cartesian iterative SENSE/ESPIRiT reconstruction.
+
+	-l1/-l2		toggle l1-wavelet or l2 regularization.
+	-r lambda	regularization parameter
+
+
+bpsense [-r l2lambda] [-c] [-e eps] [-u rho] <kspace> <sensitivities> <output>
+
+	Perform basis pursuit denoising for SENSE/ESPIRiT reconstruction:
+	min_x ||T x||_1 + lambda/2 ||x||_2^2 subject to: ||y - Ax||_2 <= eps
+
+	-e eps	data consistency error
+	-r lambda	l2 regularization parameter
+	-u rho	ADMM penalty parameter
+	-c	real-value constraint
+	-t	use TV norm
+	-T	truth image
+
+
+nlinv [-i iterations] <kspace> <output> [<sens>]
+
+	Jointly estimate image and sensitivities with nonlinear
+	inversion using {iter} iteration steps. Optionally outputs 
+	the sensitivities.
+
+
+pocsense alpha iter <kspace> <sens> <output>
+
+	Perform POCSENSE reconstruction using {iter} iterations
+	and regularization parameter {alpha}.
+
+
+itsense alpha <sensitivities> <kspace> <pattern> <image>
+
+	A simplified implementation of iterative sense reconstruction
+	with l2-regularization.
+	
+
+sake [-i iterations] [-s rel. subspace] <kspace> <output>
+
+	Use SAKE algorithm to recover a full k-space from undersampled
+	data using low-rank matrix completion.
+
+	-i		number of iterations
+	-s		rel. size of the signal subspace
+
+
+nufft <traj> <input> <output>
+
+	Performs non-uniform Fast Fourier Transform. 
+
+	-a		adjoint
+	-i		iterative gridding
+	-t		toeplitz
+	-d x:y:z	dimensions
+	-l lambda 	l2 regularization
+	-h		help
+
+
+rof lambda bitmask <input> <output>
+
+	Perform total variation denoising along dims <flags>.
+
+
+poisson [-Y/X dim] [-y/z acc] [-v] [-e] [-C center] <outfile>
+
+	Computes Poisson-disc sampling pattern.
+
+	-Y	size dimension 1 (phase 1)
+	-Z	size dimension 2 (phase 2)
+	-y	acceleration (dim 1)
+	-z	acceleration (dim 2)
+	-C	size of calibration region
+	-v	variable density
+	-e	elliptical scanning
+	-h	help
+
+
+phantom [-k | -s nc] [-t trajectory] <output>
+
+	Simulate various stuff.
+
+	-s nc	nc sensitivities
+	-k	k-space
+	-h	help
+
+
+traj <output>
+
+	Computes k-space trajectories.
+
+	-x x	readout samples
+	-y y	phase encoding lines
+	-a a	acceleration
+	-r	radial
+	-h	help
+
+
+ismrmrd <ismrm-file> <output>
+
+	Import ISMRM raw data files.
+
+
+twixread [...] [-a A] <dat file> <output>
+
+	Read data from Siemens twix (.dat) files.
+
+	-x X	number of samples (read-out)
+	-y Y	phase encoding steps
+	-z Z	partition encoding steps
+	-s S	number of slices
+	-v V	number of averages
+	-c C	number of channels
+	-a A	total number of ADCs
+	-L	use linectr offset
+	-P	use partctr offset
+	-h	help
+
+
+

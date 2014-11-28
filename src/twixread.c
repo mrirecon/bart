@@ -103,6 +103,60 @@ struct mdh2 {	// second part of mdh
 };
 
 
+static int siemens_bounds(bool vd, int fd, long min[DIMS], long max[DIMS])
+{
+	char scan_hdr[vd ? 192 : 0];
+	size_t size = sizeof(scan_hdr);
+	if (size != (size_t)read(fd, scan_hdr, size))
+		return -1;
+
+	long pos[DIMS] = { 0 };
+
+	for (pos[COIL_DIM] = 0; pos[COIL_DIM] < max[COIL_DIM]; pos[COIL_DIM]++) {
+
+		char chan_hdr[vd ? 32 : 128];
+		size_t size = sizeof(chan_hdr);
+		if (size != (size_t)read(fd, chan_hdr, size))
+			return -1;
+
+		struct mdh2 mdh;
+		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
+
+		if (0 == max[READ_DIM]) {
+
+			max[READ_DIM] = mdh.samples;
+			max[COIL_DIM] = mdh.channels;
+		}
+
+		if (max[READ_DIM] != mdh.samples)
+			return -1;
+
+		if (max[COIL_DIM] != mdh.channels)
+			return -1;
+
+		pos[PHS1_DIM]	= mdh.sLC[0];
+		pos[AVG_DIM]	= mdh.sLC[1];
+		pos[SLICE_DIM]	= mdh.sLC[2];
+		pos[PHS2_DIM]	= mdh.sLC[3];
+		pos[TE_DIM]	= mdh.sLC[4];
+		pos[TIME_DIM]	= mdh.sLC[6];
+		pos[TIME2_DIM]	= mdh.sLC[7];
+
+		for (unsigned int i = 0; i < DIMS; i++) {
+
+			max[i] = MAX(max[i], pos[i] + 1);
+			min[i] = MIN(min[i], pos[i] + 0);
+		}
+
+		size = max[READ_DIM] * CFL_SIZE;
+		char buf[size];
+		if (size != (size_t)read(fd, buf, size))
+			return -1;
+	}
+
+	return 0;
+}
+
 
 static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const long dims[DIMS], long pos[DIMS], complex float* buf)
 {
@@ -120,12 +174,13 @@ static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const l
 		if (0 == pos[COIL_DIM]) {
 
 			// TODO: rethink this
-			pos[PHS1_DIM] = mdh.sLC[0] + (linectr ? mdh.linectr : 0);
-			pos[SLICE_DIM] = mdh.sLC[2];
-			pos[PHS2_DIM] = mdh.sLC[3] + (partctr ? mdh.partctr : 0);
-			pos[TE_DIM] = mdh.sLC[4];
-			pos[TIME_DIM] = mdh.sLC[6];
-			pos[TIME2_DIM] = mdh.sLC[7];
+			pos[PHS1_DIM]	= mdh.sLC[0] + (linectr ? mdh.linectr : 0);
+			pos[AVG_DIM]	= mdh.sLC[1];
+			pos[SLICE_DIM]	= mdh.sLC[2];
+			pos[PHS2_DIM]	= mdh.sLC[3] + (partctr ? mdh.partctr : 0);
+			pos[TE_DIM]	= mdh.sLC[4];
+			pos[TIME_DIM]	= mdh.sLC[6];
+			pos[TIME2_DIM]	= mdh.sLC[7];
 		}
 
 		debug_print_dims(DP_DEBUG1, DIMS, pos);
@@ -133,6 +188,12 @@ static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const l
 		if (dims[READ_DIM] != mdh.samples) {
 
 			debug_printf(DP_WARN, "Wrong number of samples.\n");
+			return -1;
+		}
+
+		if (dims[COIL_DIM] != mdh.channels) {
+
+			debug_printf(DP_WARN, "Wrong number of channels.\n");
 			return -1;
 		}
 
@@ -161,8 +222,10 @@ static void help(void)
 		"-y Y\tphase encoding steps\n"
 		"-z Z\tpartition encoding steps\n"
 		"-s S\tnumber of slices\n"
+		"-v V\tnumber of averages\n"
 		"-c C\tnumber of channels\n"
 		"-a A\ttotal number of ADCs\n"
+		"-A\tautomatic (guess dimensions)\n"
 		"-L\tuse linectr offset\n"
 		"-P\tuse partctr offset\n"
 		"-h\thelp\n");
@@ -175,13 +238,14 @@ int main(int argc, char* argv[argc])
 	int c;
 	long adcs = 0;
 
+	bool autoc = false;
 	bool linectr = false;
 	bool partctr = false;
 
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
 
-	while (-1 != (c = getopt(argc, argv, "x:y:z:s:c:a:PLh"))) {
+	while (-1 != (c = getopt(argc, argv, "x:y:z:s:c:a:PLAh"))) {
 		switch (c) {
 
 		case 'x':
@@ -200,8 +264,16 @@ int main(int argc, char* argv[argc])
 			dims[SLICE_DIM] = atoi(optarg);
 			break;
 
+		case 'v':
+			dims[AVG_DIM] = atoi(optarg);
+			break;
+
 		case 'a':
 			adcs = atoi(optarg);
+			break;
+
+		case 'A':
+			autoc = true;
 			break;
 
 		case 'c':
@@ -245,8 +317,43 @@ int main(int argc, char* argv[argc])
 	struct hdr_s hdr;
 	bool vd = siemens_meas_setup(ifd, &hdr);
 
+	long off[DIMS];
+
+	if (autoc) {
+
+		long max[DIMS] = { [COIL_DIM] = 1000 };
+		long min[DIMS] = { 0 }; // min is always 0
+
+		adcs = 0;
+
+		while (true) {
+
+			if (-1 == siemens_bounds(vd, ifd, min, max))
+				break;
+
+			debug_print_dims(DP_DEBUG3, DIMS, max);
+
+			adcs++;
+		}
+
+		for (unsigned int i = 0; i < DIMS; i++) {
+
+			off[i] = -min[i];
+			dims[i] = max[i] + off[i];
+		}
+
+		debug_printf(DP_INFO, "Dimensions: ");
+		debug_print_dims(DP_INFO, DIMS, dims);
+		debug_printf(DP_INFO, "Offset: ");
+		debug_print_dims(DP_INFO, DIMS, off);
+
+		siemens_meas_setup(ifd, &hdr); // reset
+	}
+
+
 	complex float* out = create_cfl(argv[optind + 1], DIMS, dims);
 	md_clear(DIMS, dims, out, CFL_SIZE);
+
 
 	long adc_dims[DIMS];
 	md_select_dims(DIMS, READ_FLAG|COIL_FLAG, adc_dims, dims);
@@ -262,6 +369,9 @@ int main(int argc, char* argv[argc])
 			debug_printf(DP_WARN, "Stopping.\n");
 			break;
 		}
+
+		for (unsigned int i = 0; i < DIMS; i++)
+			pos[i] += off[i];
 
 		debug_print_dims(DP_DEBUG1, DIMS, pos);
 

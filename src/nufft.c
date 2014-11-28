@@ -73,6 +73,7 @@ int main_nufft(int argc, char* argv[])
 	bool two = false;
 	bool calib = false;
 	bool sizeinit = false;
+	bool stoch = false;
 
 	long coilim_dims[DIMS];
 	md_singleton_dims(DIMS, coilim_dims);
@@ -82,7 +83,7 @@ int main_nufft(int argc, char* argv[])
 
 	const char* pat_str = NULL;
 
-	while (-1 != (c = getopt(argc, argv, "d:m:l:p:aihCto:w:2:c:"))) {
+	while (-1 != (c = getopt(argc, argv, "d:m:l:p:aihCto:w:2:c:S"))) {
 
 		switch (c) {
 
@@ -100,6 +101,10 @@ int main_nufft(int argc, char* argv[])
 
 		case 'C':
 			precond = true;
+			break;
+
+		case 'S':
+			stoch = true;
 			break;
 
 		case 'c':
@@ -209,7 +214,7 @@ int main_nufft(int argc, char* argv[])
 			assert(!two);
 #endif
 		else
-			nufft_op = nufft_create(ksp_dims, coilim_dims, traj, pat, toeplitz, precond, &cgconf, use_gpu);
+			nufft_op = nufft_create(ksp_dims, coilim_dims, traj, pat, toeplitz, precond, stoch, &cgconf, use_gpu);
 
 		if (inverse) {
 
@@ -252,7 +257,7 @@ int main_nufft(int argc, char* argv[])
 			assert(!two);
 #endif
 		else
-			nufft_op = nufft_create(ksp_dims, coilim_dims, traj, pat, toeplitz, precond, NULL, use_gpu);
+			nufft_op = nufft_create(ksp_dims, coilim_dims, traj, pat, toeplitz, precond, stoch, NULL, use_gpu);
 
 		// nufft
 		linop_forward(nufft_op, DIMS, ksp_dims, ksp, DIMS, coilim_dims, img);

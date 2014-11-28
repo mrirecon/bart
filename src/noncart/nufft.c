@@ -72,6 +72,7 @@ struct nufft_data {
 	double beta;
 
 	const struct linop_s* fft_op;
+	const struct linop_s* img_fft_op;
 
 	long ksp_dims[DIMS];
 	long coilim_dims[DIMS];
@@ -89,6 +90,7 @@ struct nufft_data {
 
 	bool toeplitz;
 	bool precond;
+	bool stoch;
 
 
 	float rho;
@@ -96,7 +98,7 @@ struct nufft_data {
 
 
 // Forward: from image to kspace
-static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, bool toeplitz, bool precond, void* cgconf, bool use_gpu);
+static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, bool toeplitz, bool precond, bool stoch, void* cgconf, bool use_gpu);
 static void nufft_free_data( const void* data );
 static void nufft_apply(const void* _data, complex float* dst, const complex float* src);
 static void nufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src);
@@ -105,6 +107,7 @@ static void nufft_apply_pinverse(const void* _data, float lambda, complex float*
 
 
 static void toeplitz_mult( const struct nufft_data* data, complex float* dst, const complex float* src );
+static void toeplitz_stoch_mult( const struct nufft_data* data, complex float* dst, const complex float* src );
 static void precondition( const struct nufft_data* data, complex float* dst, const complex float* src );
 static void linear_phaseX( const long dims[DIMS], const float shifts[3], complex float* linphase );
 static void triangular_window( const long dims[DIMS], complex float* triang );
@@ -126,9 +129,9 @@ static void fill_linphases( struct nufft_data* data );
  * @param use_gpu       -     use gpu boolean
  *
  */
-struct linop_s* nufft_create( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, bool toeplitz, bool precond, void* cgconf, bool use_gpu)
+struct linop_s* nufft_create( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, bool toeplitz, bool precond, bool stoch, void* cgconf, bool use_gpu)
 {
-	struct nufft_data* data = nufft_create_data( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, cgconf, use_gpu);
+	struct nufft_data* data = nufft_create_data( ksp_dims, coilim_dims, traj, pat, toeplitz, precond, stoch, cgconf, use_gpu);
 
 	return linop_create(DIMS, data->ksp_dims, DIMS, data->coilim_dims,
 		data, nufft_apply, nufft_apply_adjoint, nufft_apply_normal, nufft_apply_pinverse, nufft_free_data);
@@ -138,7 +141,7 @@ struct linop_s* nufft_create( const long ksp_dims[DIMS], const long coilim_dims[
 
 
 
-static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, bool toeplitz, bool precond, void* cgconf, bool use_gpu)
+static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, bool toeplitz, bool precond, bool stoch, void* cgconf, bool use_gpu)
 {
 	
 	struct nufft_data* data = (struct nufft_data*) xmalloc( sizeof( struct nufft_data ) );
@@ -209,17 +212,23 @@ static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const lo
 	data->roll = md_alloc(DIMS, data->img_dims, sizeof(complex float));
 	rolloff_correction(data->os, data->width, data->img_dims, data->roll);
 
+	// initialize stochastic
+	data->stoch = stoch;
+	if (stoch)
+		data->img_fft_op = linop_fftc_create( DIMS, data->img_dims, FFT_FLAGS, use_gpu );
+
+
+
+	// initialize toeplitz
 	data->toeplitz = toeplitz;
 	data->precond = precond && toeplitz;
 
-	data->psf = md_alloc( DIMS, linphase_dims, CFL_SIZE );
 
 	if (toeplitz)
 	{
+		data->psf = md_alloc( DIMS, linphase_dims, CFL_SIZE );
 		fill_psf( data );
 	}
-	dump_cfl("psf", DIMS, linphase_dims, data->psf );
-
 
 	return data;
 }
@@ -291,7 +300,7 @@ static void fill_psf(struct nufft_data* data)
 	long ksp_dims1[DIMS];
 	md_select_dims( DIMS, 1 | 2, ksp_dims1, data->ksp_dims );
 
-	// get img2_dims, scale2
+	// get img2_dims
 	long img2_dims[DIMS];
 	long img2_strs[DIMS];
 	md_copy_dims( DIMS, img2_dims, data->img_dims );
@@ -304,7 +313,7 @@ static void fill_psf(struct nufft_data* data)
 
 
 	// set tmp data for psf
-	struct nufft_data* data2 = nufft_create_data( ksp_dims1, img2_dims, traj2, data->pat, false, false, NULL, data->use_gpu);
+	struct nufft_data* data2 = nufft_create_data( ksp_dims1, img2_dims, traj2, data->pat, false, false, false, NULL, data->use_gpu);
 
 
 	// get ones
@@ -348,13 +357,11 @@ static void fill_psf(struct nufft_data* data)
 
 		// go to kspace
 		fftuc( DIMS, img2_dims, FFT_FLAGS, triang, triang );
-
 		data->pre = md_alloc_sameplace( DIMS, data->img_dims, CFL_SIZE, data->traj );
 			
 		// subsample
 		md_copy2(DIMS, data->img_dims, data->img_strs, data->pre, sub2_strs, triang, CFL_SIZE);
 		md_free( triang );
-
 	}
 
 
@@ -365,12 +372,19 @@ static void fill_psf(struct nufft_data* data)
 	for( int i = 0; i < md_calc_size( DIMS, img2_dims ); i++)
 		max = MAX( max, cabsf( psf[i] ) );
 
+
+
 	md_zsmul( DIMS, img2_dims, psf, psf, 1. / max );
 	data->scale = data->scale / sqrtf( max );
+	if (data->stoch)
+	{
+		md_zsmul( DIMS, img2_dims, psf, psf, data->nshifts );
+	}
 
 	if (data->precond)
+	{
 		md_zsmul( DIMS, data->img_dims, data->pre, data->pre, 1. / max );
-
+	}
 
 	for ( int s = 0; s < data->nshifts; s++ )
 	{
@@ -410,6 +424,9 @@ static void nufft_free_data( const void* _data )
 	if (data->precond)
 		md_free(data->pre);
 
+	if (data->stoch)
+		linop_free( data->img_fft_op );
+
 	free(data);
 }
 
@@ -430,7 +447,7 @@ static void nufft_apply(const void* _data, complex float* dst, const complex flo
 
 	for (int s = 0; s < data->nshifts; s++)
 	{
-		complex float* grid_s = data->grid;
+		complex float* grid_s = data->grid + s * data->img_size;
 		complex float* linphase_s = data->linphase + s * data->img_size;
 		float* shifts_s = data->shifts + 3 * s;
 		
@@ -454,13 +471,14 @@ static void nufft_apply_adjoint(const void* _data, complex float* dst, const com
 
 	// clear output
 	md_clear( DIMS, data->coilim_dims, dst, CFL_SIZE);
+	md_clear( DIMS, data->coiliml_dims, data->grid, CFL_SIZE );
 
+#pragma omp parallel for
 	for ( int s = 0; s < data->nshifts; s++)
 	{
-		complex float* grid_s = data->grid;
+		complex float* grid_s = data->grid + s * data->coilim_size;
 		complex float* linphase_s = data->linphase + s * data->img_size;
 		float* shifts_s = data->shifts + 3 * s;
-		md_clear( DIMS, data->coilim_dims, grid_s, CFL_SIZE );
 
 		// grid
 		grid(  1., data->width / 2., data->beta, data->scale, shifts_s, data->traj,  data->pat, data->coilim_dims, grid_s, data->ksp_dims, src );
@@ -469,8 +487,9 @@ static void nufft_apply_adjoint(const void* _data, complex float* dst, const com
 		linop_adjoint( data->fft_op, DIMS, data->coilim_dims, grid_s, DIMS, data->coilim_dims, grid_s );
 
 		// linphase unshift
-		md_zfmacc2(DIMS, data->coilim_dims, data->coilim_strs, dst, data->coilim_strs, grid_s, data->img_strs, linphase_s);
+		md_zmulc2(DIMS, data->coilim_dims, data->coilim_strs, grid_s, data->coilim_strs, grid_s, data->img_strs, linphase_s);
 	}
+	md_zadd2(DIMS, data->coiliml_dims, data->coilim_strs, dst, data->coilim_strs, dst, data->coiliml_strs, data->grid);
 
 	// rolloff compensation
 	md_zmul2(DIMS, data->coilim_dims, data->coilim_strs, dst, data->coilim_strs, dst, data->img_strs, data->roll);
@@ -485,17 +504,24 @@ static void nufft_apply_normal(const void* _data, complex float* dst, const comp
 {
 	const struct nufft_data* data = _data;
 
-	md_copy( DIMS, data->coilim_dims, data->tmp_img, src, CFL_SIZE );
+	if (data->rho)
+		md_copy( DIMS, data->coilim_dims, data->tmp_img, src, CFL_SIZE );
 
 	if (!data->toeplitz)
 	{
 		nufft_apply ( (const void*) data, data->tmp_ksp, src);
 		nufft_apply_adjoint ( (const void*) data, dst, data->tmp_ksp);
 	} else
-		toeplitz_mult( data, dst, src );
+	{
+		if( data->stoch )
+			toeplitz_stoch_mult( data, dst, src );
+		else
+			toeplitz_mult( data, dst, src );
+	}
 
 	// l2 add
-	md_zaxpy( DIMS, data->coilim_dims, dst, data->rho, data->tmp_img );
+	if (data->rho)
+		md_zaxpy( DIMS, data->coilim_dims, dst, data->rho, data->tmp_img );
 
 	// precond
 	if (data->precond)
@@ -526,7 +552,6 @@ static void toeplitz_mult( const struct nufft_data* data, complex float* dst, co
 		// multiply psf
 		md_zmul2( DIMS, data->coilim_dims, data->coilim_strs, grid_s, data->coilim_strs, grid_s, data->img_strs, psf_s );
 		
-
 		// ifft
 		linop_adjoint( data->fft_op, DIMS, data->coilim_dims, grid_s, DIMS, data->coilim_dims, grid_s );
 
@@ -535,6 +560,61 @@ static void toeplitz_mult( const struct nufft_data* data, complex float* dst, co
 	}
 
 	md_zadd2(DIMS, data->coiliml_dims, data->coilim_strs, dst, data->coilim_strs, dst, data->coiliml_strs, data->grid);
+}
+
+
+static int rand_lim( int limit) {
+
+	int divisor = RAND_MAX/(limit+1);
+	int retval;
+
+	do { 
+		retval = rand() / divisor;
+	} while (retval >= limit);
+
+	return retval;
+}
+
+
+static void toeplitz_stoch_mult( const struct nufft_data* data, complex float* dst, const complex float* src )
+{
+	md_clear( DIMS, data->coilim_dims, dst, CFL_SIZE ); 
+	md_clear( DIMS, data->coilim_dims, data->grid, CFL_SIZE ); 
+
+	long C = data->ksp_dims[COIL_DIM];
+	int randshift[C];
+	for( int i = 0; i < C; i++ )
+	{
+		randshift[i] = rand_lim( data->nshifts );
+	}
+
+#pragma omp parallel for
+	for (int c = 0; c < C; c++)
+	{
+		int s = randshift[c];
+		complex float* src_c = (complex float*) src + c * data->img_size;
+		complex float* dst_c = dst + c * data->img_size;
+		complex float* grid_c = data->grid + c * data->img_size;
+		complex float* linphase_s = data->linphase + s * data->img_size;
+		complex float* psf_s = data->psf + s * data->img_size;
+
+		// linphase shift
+		md_zmul(DIMS, data->img_dims, grid_c, src_c, linphase_s);
+
+		// fft
+		linop_forward( data->img_fft_op, DIMS, data->img_dims, grid_c, DIMS, data->img_dims, grid_c );
+
+		// multiply psf
+		md_zmul( DIMS, data->img_dims, grid_c,  grid_c, psf_s );
+		
+
+		// ifft
+		linop_adjoint( data->img_fft_op, DIMS, data->img_dims, grid_c, DIMS, data->img_dims, grid_c );
+
+		// linphase unshift
+		md_zmulc(DIMS, data->img_dims, dst_c, grid_c, linphase_s);
+	}
+
 }
 
 
@@ -577,7 +657,6 @@ static void nufft_apply_pinverse(const void* _data, float rho, complex float* ds
 	if (data->precond)
 	{
 		md_zsadd( DIMS, data->img_dims, data->pre, data->pre, rho);
-
 		// precond
 		precondition( data, rhs, src );
 	}
@@ -640,6 +719,11 @@ static void precondition( const struct nufft_data* data, complex float* dst, con
 static void triangular_window( const long dims[DIMS], complex float* triang )
 {
 
+	float scale = 1.0;
+	for (unsigned int i = 0; i < DIMS; i++)
+		if (dims[i] != 1)
+			scale *=2.;
+
 #pragma omp parallel for
 	for( int k = 0; k < dims[2]; k++)
 		for( int j = 0; j < dims[1]; j++)
@@ -647,6 +731,6 @@ static void triangular_window( const long dims[DIMS], complex float* triang )
 				triang[i + j*dims[0] + k*dims[0]*dims[1]] = 
 					(1. - abs((float)i - (float)dims[0]/2.)/((float)dims[0] / 2.)) *
 					(1. - abs((float)j - (float)dims[1]/2.)/((float)dims[1] / 2.)) *
-					(1. - abs((float)k - (float)dims[2]/2.)/((float)dims[2] / 2.));
+					(1. - abs((float)k - (float)dims[2]/2.)/((float)dims[2] / 2.)) * scale;
 
 }

@@ -6,7 +6,7 @@
  * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2013      Frank Ong <frankong@berkeley.edu> 
  *
- * Generic operation on multi-dimensional arrays. Most functions
+ * Generic operations on multi-dimensional arrays. Most functions
  * come in two flavours: 
  *
  * 1. A basic version which takes the number of dimensions, an array 
@@ -132,6 +132,32 @@ void md_loop(unsigned int D, const long dim[D], void* data, md_loop_fun_t fun)
 {
 	long pos[D];
 	md_loop_r(D, dim, pos, data, fun);
+}
+
+
+
+/**
+ * Computes the next position. Returns true until last index.
+ */
+bool md_next(unsigned int D, const long dims[D], unsigned int flags, long pos[D])
+{
+	if (0 == D--)
+		return false;
+
+	if (md_next(D, dims, flags, pos))
+		return true;
+
+	if (flags & (1 << D)) {
+
+		assert((0 <= pos[D]) && (pos[D] < dims[D]));
+
+		if (++pos[D] < dims[D])
+			return true;
+
+		pos[D] = 0;
+	}
+
+	return false;
 }
 
 

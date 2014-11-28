@@ -128,14 +128,18 @@ struct iter_data {
  */
 static float ist_continuation(struct iter_data* itrdata, const float delta)
 {
+/*
 	// for now, just divide into evenly spaced bins
-	const float num_steps = 10.;
+	const float num_steps = itrdata->maxiter - 1;
 
 	int step = (int)(itrdata->iter * num_steps / (itrdata->maxiter - 1));
 
 	float scale = 1. - (1. - delta) * step / num_steps;
 
 	return scale;
+*/
+	float a = logf( delta ) / (float) itrdata->maxiter;
+	return expf( a * itrdata->iter );
 }
 
 
@@ -187,7 +191,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 	float lambda_scale = 1.;
 
 	int hogwild_k = 0;
-	int hogwild_K = 1;
+	int hogwild_K = 10;
 
 
 	for (itrdata.iter = 0; itrdata.iter < maxiter; itrdata.iter++) {
@@ -215,7 +219,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 
 		itrdata.rsnew = vops->norm(N, r);
 
-		debug_printf(DP_DEBUG1, "#It %03d: %f   \n", itrdata.iter, itrdata.rsnew / itrdata.rsnot);
+		debug_printf(DP_DEBUG1, "#It %03d: %f \n", itrdata.iter, itrdata.rsnew / itrdata.rsnot);
 
 		if (itrdata.rsnew < epsilon)
 			break;
@@ -223,19 +227,19 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 		vops->axpy(N, x, tau * lambda_scale, r);
 
 		thresh(tdata,  tau, x, x);
-	}
 
 
-	if (hogwild)
-		hogwild_k++;
+		if (hogwild)
+			hogwild_k++;
 		
-	if (hogwild_k == hogwild_K) {
+		if (hogwild_k == hogwild_K) {
 
-		hogwild_K *= 2;
-		hogwild_k = 0;
-		tau /= 2;
+			hogwild_K *= 2;
+			hogwild_k = 0;
+			tau /= 2;
+		}
+
 	}
-
 
 	debug_printf(DP_DEBUG2, "\n");
 
@@ -300,7 +304,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 	float lambda_scale = 1.;
 
 	int hogwild_k = 0;
-	int hogwild_K = 1;
+	int hogwild_K = 10;
 
 	for (itrdata.iter = 0; itrdata.iter < maxiter; itrdata.iter++) {
 
@@ -445,6 +449,9 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 
 	float eps_squared = pow(epsilon, 2.);
 
+	if (0. == rsold)
+		return 0.;
+
 
 	for (unsigned int i = 0; i < maxiter; i++) {
 		
@@ -465,7 +472,12 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 		linop(data, Ap, p);	// Ap = A p
 		vops->axpy(N, Ap, l2lambda, p);
 
-		float alpha = rsold / (float)vops->dot(N, p, Ap);
+		float pAp = (float)vops->dot(N, p, Ap);
+
+		if (0. == pAp)
+			break;
+
+		float alpha = rsold / pAp;
 
 		vops->axpy(N, x, +alpha, p);
 		vops->axpy(N, r, -alpha, Ap);

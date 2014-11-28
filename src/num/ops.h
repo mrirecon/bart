@@ -1,14 +1,6 @@
 /* Copyright 2014. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
- *
- *
- * linear operator expressions working on multi-dimensional arrays 
- * of complex floats (so far)
- *
  */
 
 #ifndef __OPS_H
@@ -90,8 +82,8 @@ extern void* operator_p_get_data(const struct operator_p_s* x);
 
 
 // iter helper functions
-extern void operator_iter(void* _o, float* _dst, const float* _src );
-extern void operator_p_iter( void* _o, float lambda, float* _dst, const float* _src );
+extern void operator_iter(void* _o, float* _dst, const float* _src);
+extern void operator_p_iter(void* _o, float lambda, float* _dst, const float* _src);
 
 
 #endif

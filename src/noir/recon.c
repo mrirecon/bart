@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2011-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2011-2014 Martin Uecker <uecker@eecs.berkeley.edu>
  *
  *
  * Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction by regularized
@@ -25,10 +25,12 @@
 
 #include "misc/misc.h"
 #include "misc/mri.h"
+#include "misc/debug.h"
 
 #include "noir/model.h"
 
 #include "recon.h"
+
 
 
 #ifdef WAVELET

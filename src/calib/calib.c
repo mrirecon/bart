@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2013, Dara Bahri <dbahri123@gmail.com>
  *
  *
@@ -113,11 +113,18 @@ static float scurve(float x)
 
 static float crop_weight_function(float crth, float val)
 {
-	return scurve((val - crth) / (1. - crth));
+	return scurve((sqrtf(val) - crth) / (1. - crth));
+}
+
+static float crop_thresh_function(float crth, float val)
+{
+	return (val <= crth) ? 0. : 1.;
 }
 
 
-static void crop_weight_sens(const long dims[DIMS], complex float* ptr, float crth, const complex float* map)
+typedef float (*weight_function)(float crth, float val);
+
+static void crop_weight(const long dims[DIMS], complex float* ptr, weight_function fun, float crth, const complex float* map)
 {
 	long xx = dims[0];
 	long yy = dims[1];
@@ -139,35 +146,7 @@ static void crop_weight_sens(const long dims[DIMS], complex float* ptr, float cr
 					float val = cabsf(map[((m * zz + k) * yy + i) * xx + j]);
 
 					for (long c = 0; c < cc; c++)
-						ptr[(((m * cc + c) * zz + k) * yy + i) * xx + j] *= crop_weight_function(crth, sqrtf(val));
-				}
-			}
-		}
-	}
-}
-
-
-
-
-void crop_sens(const long dims[DIMS], complex float* ptr, float crth, const complex float* map)
-{
-	long xx = dims[0];
-	long yy = dims[1];
-	long zz = dims[2];
-	long cc = dims[3];
-	long mm = dims[4];
-
-	assert(DIMS >= 5);
-	assert(1 == md_calc_size(DIMS - 5, dims + 5));
-
-	for (long m = 0; m < mm; m++) {
-#pragma omp parallel for
-		for (long k = 0; k < zz; k++) {
-			for (long i = 0; i < yy; i++) {
-				for (long j = 0; j < xx; j++) {
-
-					for (long c = 0; c < cc; c++)
-						ptr[(((m * cc + c) * zz + k) * yy + i) * xx + j] *= (cabsf(map[((m * zz + k) * yy + i) * xx + j]) <= crth) ? 0. : 1.;
+						ptr[(((m * cc + c) * zz + k) * yy + i) * xx + j] *= fun(crth, val);
 				}
 			}
 		}
@@ -261,7 +240,7 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 
 	md_clear(5, out_dims, optr, CFL_SIZE);
 
-#pragma omp parallel for
+#pragma omp parallel for collapse(3)
 	for (long k = 0; k < zz; k++) {
 		for (long j = 0; j < yy; j++) {
 			for (long i = 0; i < xx; i++) {
@@ -361,10 +340,8 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 	debug_printf(DP_DEBUG1, "Crop maps... (%.2f)\n", conf->crop);
 
-	if (conf->softcrop)
-		crop_weight_sens(out_dims, out_data, conf->crop, emaps);
-	else
-		crop_sens(out_dims, out_data, conf->crop, emaps);
+	crop_weight(out_dims, out_data,
+		    conf->softcrop ? crop_weight_function : crop_thresh_function, conf->crop, emaps);
 }
 
 
@@ -442,7 +419,7 @@ static void perturb(const long dims[2], complex float* vecs, float amt)
 
 	for (long j = 0; j < dims[1]; j++) {
 
-		float nrm = md_znorm(1, dims, vecs + j*dims[0]);
+		float nrm = md_znorm(1, dims, vecs + j * dims[0]);
 		complex float val = 1 / nrm;
 		md_zsmul(1, dims, vecs + j * dims[0], vecs + j * dims[0], val);
 	}
@@ -451,6 +428,50 @@ static void perturb(const long dims[2], complex float* vecs, float amt)
 }
 
 
+static int number_of_kernels(const struct ecalib_conf* conf, unsigned int N, const float val[N])
+{
+	unsigned int n = 0;
+	if (-1 != conf->numsv) {
+
+		n = conf->numsv;
+		assert(-1. == conf->percentsv);
+		assert(-1. == conf->threshold);
+
+	} else if (conf->percentsv != -1.) {
+
+		n = (unsigned int)(N * conf->percentsv / 100.);
+		assert(-1 == conf->numsv);
+		assert(-1. == conf->threshold);
+
+	} else {
+
+		assert(-1 == conf->numsv);
+		assert(-1. == conf->percentsv);
+
+		for (unsigned int i = 0; i < N; i++) {
+
+			if (val[i] / val[0] > sqrtf(conf->threshold))
+				n++;
+		}
+	}
+
+	if (val[0] <= 0.)
+		error("No signal.\n");
+
+	debug_printf(DP_DEBUG1, "Using %d/%ld kernels (%.2f%%, last SV: %f%s).\n", n, N, (float)n / (float)N * 100., (n > 0) ? (val[n - 1] / val[0]) : 1., conf->weighting ? ", weighted" : "");
+
+	float tr = 0.;
+	for (unsigned int i = 0; i < N; i++) {
+
+		tr += powf(val[i], 2.);
+		debug_printf(DP_DEBUG3, "SVALS %f (%f)\n", val[i], val[i] / val[0]);
+	}
+
+	debug_printf(DP_DEBUG3, "\nTRACE: %f (%f)\n", tr, tr / (float)N);
+
+	assert(n <= N);
+	return n;
+}
 
 
 void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], complex float** nskerns_ptr, unsigned int SN, float svals[SN], const long caldims[DIMS], const complex float* caldata)
@@ -470,7 +491,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	complex float* nskerns = md_alloc(5, nskerns_dims, CFL_SIZE);
 	*nskerns_ptr = nskerns;
 
-	complex float* vec = xmalloc(N * N * CFL_SIZE);
+	complex float (*vec)[N] = xmalloc(N * N * sizeof(complex float));
 
 	assert((NULL == svals) || (SN == N));
 	float* val = (NULL != svals) ? svals : xmalloc(N * FL_SIZE);
@@ -478,28 +499,28 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	debug_printf(DP_DEBUG1, "Build calibration matrix and SVD...\n");
 
 #ifdef CALMAT_SVD
-	calmat_svd(conf->kdims, vec, val, caldims, caldata);
+	calmat_svd(conf->kdims, N, vec, val, caldims, caldata);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
-			nskerns[i * N + j] = (vec[j * N + i]) * (conf->weighting ? val[i] : 1.);	
+			nskerns[i * N + j] = (vec[j][i]) * (conf->weighting ? val[i] : 1.);
 
 #else
-	covariance_function(conf->kdims, vec, caldims, caldata);
+	covariance_function(conf->kdims, N, vec, caldims, caldata);
 
 	debug_printf(DP_DEBUG1, "Eigen decomposition... (size: %ld)\n", N);
 
 	// we could apply Nystroem method here to speed it up
 
 	float tmp_val[N];
-	eigendecomp(N, tmp_val, (complex float (*)[N])vec);
+	eigendecomp(N, tmp_val, vec);
 
 	for (int i = 0; i < N; i++)
 		val[i] = sqrtf(tmp_val[N - 1 - i]);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
-			nskerns[i * N + j] = vec[(N - 1 - i) * N + j] * (conf->weighting ? val[i] : 1.);	// flip
+			nskerns[i * N + j] = vec[N - 1 - i][j] * (conf->weighting ? val[i] : 1.);	// flip
 #endif
 
 	if (conf->perturb > 0.) {
@@ -508,55 +529,12 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 		perturb(dims, nskerns, conf->perturb);
 	}
 
-	free(vec);
-
-
-	int n = 0;
-	if (-1 != conf->numsv) {
-
-		n = conf->numsv;
-		assert(-1. == conf->percentsv);
-		assert(-1. == conf->threshold);
-
-	} else if (conf->percentsv != -1.) {
-
-		n = (int)(N * conf->percentsv / 100.);
-		assert(-1 == conf->numsv);
-		assert(-1. == conf->threshold);
-
-	} else { 
-
-		assert(-1 == conf->numsv);
-		assert(-1. == conf->percentsv);
-
-		for (int i = 0; i < N; i++) {
-
-			if (val[i] / val[0] > sqrtf(conf->threshold))
-				n++;
-		}
-	}
-
-	if (val[0] <= 0.)
-		error("No signal.\n");
-
-	debug_printf(DP_DEBUG1, "Using %d/%ld kernels (%.2f%%, last SV: %f%s).\n", n, N, (float)n / (float)N * 100., (n > 0) ? (val[n - 1] / val[0]) : 1., conf->weighting ? ", weighted" : "");
-
-	float tr = 0.;
-	for (int i = 0; i < N; i++) {
-
-		tr += powf(val[i], 2.);
-		debug_printf(DP_DEBUG3, "SVALS %f (%f)\n", val[i], val[i] / val[0]);
-	}
-
-	debug_printf(DP_DEBUG3, "\nTRACE: %f (%f)\n", tr, tr / (float)N);
+	nskerns_dims[4] = number_of_kernels(conf, N, val);
 
 	if (NULL == svals)
 		free(val);
 
-	long nr_kernels = n;
-	assert(nr_kernels <= N);
-
-	nskerns_dims[4] = nr_kernels;	
+	free(vec);
 }
 
 

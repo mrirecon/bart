@@ -60,13 +60,14 @@ int main_rsense(int argc, char* argv[])
 	int maps = 2;
 	int ctrsh = 0.;
 	bool sec = false;
+	bool scale_im = false;
 
 	struct sense_conf sconf;
 	memcpy(&sconf, &sense_defaults, sizeof(struct sense_conf));
 	struct grecon_conf conf = { SENSE, NULL, &sconf, false, false, false, true, 30, 0.95, 0. };
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "l:r:s:i:q:cgh"))) {
+	while (-1 != (c = getopt(argc, argv, "l:r:s:i:q:cSgh"))) {
 
 		switch(c) {
 
@@ -96,6 +97,10 @@ int main_rsense(int argc, char* argv[])
 				usage(argv[0], stderr);
 				exit(1);
 			}
+			break;
+
+		case 'S':
+			scale_im = true;
 			break;
 
 		case 'h':
@@ -135,29 +140,20 @@ int main_rsense(int argc, char* argv[])
 
 
 	assert(1 == ksp_dims[MAPS_DIM]);
-//!
+
+	md_copy_dims(N, dims, ksp_dims);
+
 	if (!sec) {
 
-		for (int i = 0; i < N; i++)
-			dims[i] = sens_dims[i];
+		dims[MAPS_DIM] = sens_dims[MAPS_DIM];
 	
 	} else {
 
 		assert(maps <= ksp_dims[COIL_DIM]);
-
-		for (int i = 0; i < N; i++)
-			dims[i] = ksp_dims[i];
-
 		dims[MAPS_DIM] = maps;
 	}
 
-#if 1
-	for (int i = 0; i < N; i++)
-		dims[i] = MAX(ksp_dims[i], sens_dims[i]);
-#endif
 
-
-	// FIXME: higher dimensions?
 	for (int i = 0; i < 4; i++) {	// sizes2[4] may be > 1
 		if (ksp_dims[i] != dims[i]) {
 		
@@ -184,8 +180,7 @@ int main_rsense(int argc, char* argv[])
 
 
 	debug_printf(DP_INFO, "Readout FFT..\n");
-	fftscale(N, ksp_dims, READ_FLAG, kspace_data, kspace_data);
-	ifftc(N, ksp_dims, READ_FLAG, kspace_data, kspace_data);
+	ifftuc(N, ksp_dims, READ_FLAG, kspace_data, kspace_data);
 	debug_printf(DP_INFO, "Done.\n");
 
 	complex float* image = create_cfl(argv[optind + 2], N, img_dims);
@@ -203,7 +198,8 @@ int main_rsense(int argc, char* argv[])
 
 	rgrecon(&conf, dims, image, sens_dims, sens_maps, NULL, NULL, kspace_data, usegpu);
 
-
+	if (scale_im)
+		md_zsmul(DIMS, img_dims, image, image, scaling);
 
 	debug_printf(DP_INFO, "Done.\n");
 

@@ -27,7 +27,7 @@ extern "C" {
 
 extern void* xmalloc(size_t s);
 
-#define XMALLOC(x, n) x* n = xmalloc(sizeof(x))
+#define XMALLOC(x) (x = xmalloc(sizeof(*x)))
 
 extern int parse_cfl(_Complex float res[1], const char* str);
 extern void error(const char* str, ...);

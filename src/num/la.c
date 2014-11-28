@@ -130,7 +130,7 @@ void (unpack_tri_matrix)(int N, complex float m[N][N], const complex float cov[N
 			m[i][j] = cov[l++];
 }
 
-void gram_matrix2(int N, complex float cov[N * (N + 1) / 2], int L, const complex float data[N][L])
+void (gram_matrix2)(int N, complex float cov[N * (N + 1) / 2], int L, const complex float data[N][L])
 {
 #if 0
 	int l = 0;

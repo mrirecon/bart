@@ -26,6 +26,12 @@
 
 #include "mmio.h"
 
+// for BSD compatibility
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
+
 
 static void io_error(const char* str)
 {

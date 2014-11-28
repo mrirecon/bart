@@ -405,7 +405,7 @@ long wavelet_coeffs(unsigned int N, unsigned int flags, const long dims[N], cons
 
 
 
-void fwt(unsigned int N, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const long istr[N], const complex float* in, const const long minsize[N], long flen, const float filter[2][2][flen])
+void fwt(unsigned int N, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
 	unsigned int levels = wavelet_num_levels(N, flags, dims, minsize, flen);
 
@@ -479,7 +479,7 @@ void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long di
 }
 
 
-void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const const long minsize[N], long flen, const float filter[2][2][flen])
+void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
 	unsigned int levels = wavelet_num_levels(N, flags, dims, minsize, flen);
 

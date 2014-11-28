@@ -84,7 +84,7 @@ void walsh(const long bsize[3], const long dims[DIMS], complex float* sens, cons
 					for (int p = 0; p < pixels; p++)
 						in[c][p] = cm[((((c * pixels + p) * zh) + k) * yh + j) * xh + i];
 
-				gram_matrix2(channels, cov, pixels, (const complex float (*)[])in);
+				gram_matrix2(channels, cov, pixels, in);
 
 				for (int l = 0; l < cosize; l++)
 					sens[(((l * zh) + k) * yh + j) * xh + i] = cov[l];

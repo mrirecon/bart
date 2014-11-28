@@ -95,9 +95,9 @@ static void align1(int M, int N, complex float out[M][N], const complex float in
 
 
 
-void align_ro(const long dims[DIMS], complex float* odata, const complex float* idata)
+static void align_ro2(const long dims[DIMS], int start, int end, complex float* odata, const complex float* idata)
 {
-	int ro = dims[READ_DIM];
+	int dir = (start < end) ? 1 : -1;
 
 	long tmp_dims[DIMS];
 	md_select_dims(DIMS, ~READ_FLAG, tmp_dims, dims);
@@ -106,11 +106,14 @@ void align_ro(const long dims[DIMS], complex float* odata, const complex float* 
 	complex float* tmp2 = md_alloc(DIMS, tmp_dims, CFL_SIZE);
 	complex float* tmp3 = md_alloc(DIMS, tmp_dims, CFL_SIZE);
 
-	md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = 0 }, tmp_dims, tmp1, dims, idata, CFL_SIZE);
+	md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = start }, tmp_dims, tmp1, dims, idata, CFL_SIZE);
 
-	for (int i = 0; i < ro - 1; i++) {
+	if (dir)
+	md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = start }, dims, odata, tmp_dims, tmp1, CFL_SIZE);
 
-		md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = i + 1 }, tmp_dims, tmp2, dims, idata, CFL_SIZE);
+	for (int i = start; i != end - dir; i += dir) {
+
+		md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = i + dir }, tmp_dims, tmp2, dims, idata, CFL_SIZE);
 
 		align1(tmp_dims[MAPS_DIM], tmp_dims[COIL_DIM],
 				MD_CAST_ARRAY2(      complex float, DIMS, tmp_dims, tmp3, COIL_DIM, MAPS_DIM),
@@ -119,12 +122,29 @@ void align_ro(const long dims[DIMS], complex float* odata, const complex float* 
 
 		md_copy(DIMS, tmp_dims, tmp1, tmp3, CFL_SIZE);
 
-		md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = i + 1 }, dims, odata, tmp_dims, tmp3, CFL_SIZE);
+		md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = i + dir }, dims, odata, tmp_dims, tmp3, CFL_SIZE);
 	}
 
 	md_free(tmp1);
 	md_free(tmp2);
 	md_free(tmp3);
+}
+
+void align_ro(const long dims[DIMS], complex float* odata, const complex float* idata)
+{
+	int ro = dims[READ_DIM];
+	assert(ro > 1);
+#if 1
+	align_ro2(dims, 0, ro, odata, idata);
+#else
+#pragma omp parallel sections
+	{
+#pragma omp section
+	align_ro2(dims, ro / 2, ro, odata, idata);
+#pragma omp section
+	align_ro2(dims, ro / 2, -1, odata, idata);
+	}
+#endif
 }
 
 
@@ -152,6 +172,7 @@ void gcc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 	md_select_dims(DIMS, ~READ_FLAG, out2_dims, out_dims);
 	complex float* out2 = md_alloc(DIMS, out2_dims, CFL_SIZE);
 
+#pragma omp parallel for
 	for (int i = 0; i < ro; i++) {
 
 		long pos[DIMS] = { [READ_DIM] = i };

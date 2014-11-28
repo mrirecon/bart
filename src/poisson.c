@@ -56,7 +56,7 @@ static float maxn(int D, const float a[D], const float b[D])
 
 static void usage(const char* name, FILE* fp)
 {
-	fprintf(fp, "Usage: %s [-X/Y dim] [-x/y acc] [-v] [-e] [-C center] <outfile>\n", name);
+	fprintf(fp, "Usage: %s [-Y/Z dim] [-y/z acc] [-v] [-e] [-C center] <outfile>\n", name);
 }
 
 static void help(void)
@@ -64,10 +64,10 @@ static void help(void)
 	printf( "\n"
 		"Computes Poisson-disc sampling pattern.\n"
 		"\n"
-		"-X\tsize dimension 0 (readout)\n"
-		"-Y\tsize dimension 1 (phase)\n"
-		"-x\tacceleration (dim 0)\n"
+		"-Y\tsize dimension 1 (phase 1)\n"
+		"-Z\tsize dimension 2 (phase 2)\n"
 		"-y\tacceleration (dim 1)\n"
+		"-z\tacceleration (dim 2)\n"
 		"-C\tsize of calibration region\n"
 		"-v\tvariable density\n"
 		"-e\telliptical scanning\n"
@@ -78,8 +78,8 @@ static void help(void)
 
 int main_poisson(int argc, char* argv[])
 {
-	int xx = 128;
 	int yy = 128;
+	int zz = 128;
 	bool cutcorners = false;
 	float vardensity = 0.;
 	int T = 1;
@@ -87,20 +87,20 @@ int main_poisson(int argc, char* argv[])
 	bool msk = true;
 	int points = -1;
 	float mindist = 1. / 1.275;
-	float xscale = 1.;
 	float yscale = 1.;
+	float zscale = 1.;
 	unsigned int calreg = 0;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "X:Y:hvV:eR:D:my:x:T:C:"))) {
+	while (-1 != (c = getopt(argc, argv, "Y:Z:hvV:eR:D:my:y:z:T:C:"))) {
 
 		switch (c) {
-		case 'X':
-			xx = atoi(optarg);
-			break;
-
 		case 'Y':
 			yy = atoi(optarg);
+			break;
+
+		case 'Z':
+			zz = atoi(optarg);
 			break;
 
 		case 'h':
@@ -124,12 +124,12 @@ int main_poisson(int argc, char* argv[])
 #endif
 			break;	
 
-		case 'y':
-			yscale = atof(optarg);
+		case 'z':
+			zscale = atof(optarg);
 			break;
 
-		case 'x':
-			xscale = atof(optarg);
+		case 'y':
+			yscale = atof(optarg);
 			break;
 
 		case 'e':
@@ -165,17 +165,17 @@ int main_poisson(int argc, char* argv[])
 		exit(1);
 	}
 
-	assert((xscale >= 1.) && (yscale >= 1.));
+	assert((yscale >= 1.) && (zscale >= 1.));
 
 	// compute mindest and scaling
 
-	float kspext = MAX(xx, yy);
+	float kspext = MAX(yy, zz);
 
-	int Pest = T * (int)(1.2 * powf(kspext, 2.) / (xscale * yscale));
+	int Pest = T * (int)(1.2 * powf(kspext, 2.) / (yscale * zscale));
 
 	mindist /= kspext;
-	xscale *= (float)kspext / (float)xx;
 	yscale *= (float)kspext / (float)yy;
+	zscale *= (float)kspext / (float)zz;
 
 	if (vardensity != 0.) {
 
@@ -183,7 +183,7 @@ int main_poisson(int argc, char* argv[])
 	}
 
 
-	long dims[5] = { xx, yy, 1, T, 1 };
+	long dims[5] = { 1, yy, zz, T, 1 };
 	complex float* mask = NULL;
 
 	if (msk) {
@@ -233,8 +233,8 @@ int main_poisson(int argc, char* argv[])
 
 			for (int i = 0; i < P; i++) {
 
-				points[i][0] = (points[i][0] - 0.5) * xscale + 0.5;
-				points[i][1] = (points[i][1] - 0.5) * yscale + 0.5;
+				points[i][0] = (points[i][0] - 0.5) * yscale + 0.5;
+				points[i][1] = (points[i][1] - 0.5) * zscale + 0.5;
 			}
 
 			// throw away points outside 
@@ -260,16 +260,16 @@ int main_poisson(int argc, char* argv[])
 				// rethink module here
 				for (int i = 0; i < P; i++) {
 
-					int xx = (int)floorf(points[i][0] * dims[0]);
-					int yy = (int)floorf(points[i][1] * dims[1]);
+					int yy = (int)floorf(points[i][0] * dims[1]);
+					int zz = (int)floorf(points[i][1] * dims[2]);
 
-					if ((xx < 0) || (xx >= dims[0]) || (yy < 0) || (yy >= dims[1]))
+					if ((yy < 0) || (yy >= dims[1]) || (zz < 0) || (zz >= dims[2]))
 						continue;
 
 					if (1 == T)
-					mask[yy * dims[0] + xx] = 1.;//cexpf(2.i * M_PI * (float)kind[i] / (float)T);
+					mask[zz * dims[1] + yy] = 1.;//cexpf(2.i * M_PI * (float)kind[i] / (float)T);
 					else
-					mask[(kind[i] * dims[2] * dims[1] + yy) * dims[0] + xx] = 1.;//cexpf(2.i * M_PI * (float)kind[i] / (float)T);
+					mask[(kind[i] * dims[2] + zz) * dims[1] + yy] = 1.;//cexpf(2.i * M_PI * (float)kind[i] / (float)T);
 				}
 
 			} else {
@@ -279,9 +279,9 @@ int main_poisson(int argc, char* argv[])
 				complex float* samples = create_cfl(argv[optind], 2, sdims);
 				for (int i = 0; i < P; i++) {
 
-					samples[3 * i + 0] = (points[i][0] - 0.5) * dims[0];
-					samples[3 * i + 1] = (points[i][1] - 0.5) * dims[1];
-					samples[3 * i + 2] = 0.;
+					samples[3 * i + 0] = 0.;
+					samples[3 * i + 1] = (points[i][0] - 0.5) * dims[1];
+					samples[3 * i + 2] = (points[i][1] - 0.5) * dims[2];
 					//	printf("%f %f\n", creal(samples[3 * i + 0]), creal(samples[3 * i + 1]));
 				}
 				unmap_cfl(2, sdims, (void*)samples);
@@ -300,19 +300,19 @@ int main_poisson(int argc, char* argv[])
 	// calibration region
 
 	assert((mask != NULL) || (0 == calreg));
-	assert((calreg <= dims[0]) && (calreg <= dims[1]));
+	assert((calreg <= dims[1]) && (calreg <= dims[2]));
 
 	for (unsigned int i = 0; i < calreg; i++) {
 		for (unsigned int j = 0; j < calreg; j++) {
 
-			int x = (dims[0] - calreg) / 2 + i;
-			int y = (dims[1] - calreg) / 2 + j;
+			int y = (dims[1] - calreg) / 2 + i;
+			int z = (dims[2] - calreg) / 2 + j;
 
 			for (int k = 0; k < T; k++) {
 
-				if (0. == mask[(k * dims[2] * dims[1] + y) * dims[0] + x]) {
+				if (0. == mask[(k * dims[2] + z) * dims[1] + y]) {
 
-					mask[(k * dims[2] * dims[1] + y) * dims[0] + x] = 1.;
+					mask[(k * dims[2] + z) * dims[1] + y] = 1.;
 					P++;
 				}
 			}
@@ -328,8 +328,8 @@ int main_poisson(int argc, char* argv[])
 	if (NULL != mask) {
 
 		float f = cutcorners ? (M_PI / 4.) : 1.;
-		printf(", grid size: %ldx%ld%s = %ld (R = %f)", dims[0], dims[1], cutcorners ? "x(pi/4)" : "", 
-				(long)(f * dims[0] * dims[1]), f * T * dims[0] * dims[1] / (float)P);
+		printf(", grid size: %ldx%ld%s = %ld (R = %f)", dims[1], dims[2], cutcorners ? "x(pi/4)" : "",
+				(long)(f * dims[1] * dims[2]), f * T * dims[1] * dims[2] / (float)P);
 
 		unmap_cfl(5, dims, (void*)mask);
 	}

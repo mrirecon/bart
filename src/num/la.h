@@ -38,15 +38,20 @@ extern void vec_sadd(long D, complex float alpha, complex float dst[D], const co
  * A similar idea is used in Jens Gustedt's P99 preprocessor macros 
  * and functions package available at: http://p99.gforge.inria.fr/
  */
+#ifndef AR2D_CAST
 #ifndef __GNUC__
 #define AR2D_CAST(t, n, m, x) (const t(*)[m])(x)
 //#define AR2D_CAST(t, n, m, x) ((const t(*)[m])(0 ? (t(*)[m])0 : (x)))
 //#define AR2D_CAST(t, n, m, x) ((const t(*)[m])(t(*)[m]){ &(x[0]) })
 #else
+#ifndef BUILD_BUG_ON
 #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+#endif
 #define AR2D_CAST(t, n, m, x) (BUILD_BUG_ON(!(__builtin_types_compatible_p(const t[m], __typeof__((x)[0])) \
 				|| __builtin_types_compatible_p(t[m], __typeof__((x)[0])))), (const t(*)[m])(x))
 #endif
+#endif
+
 #define mat_mul(A, B, C, x, y, z) \
 	mat_mul(A, B, C, x, AR2D_CAST(complex float, A, B, y), AR2D_CAST(complex float, B, C, z))
 
@@ -64,6 +69,9 @@ extern void vec_sadd(long D, complex float alpha, complex float dst[D], const co
 
 #define orthiter(M, N, iter, vals, out, matrix) \
 	orthiter(M, N, iter, vals, out, AR2D_CAST(complex float, N, N, matrix))
+
+#define gram_matrix2(N, cov, L, data) \
+	gram_matrix2(N, cov, L, AR2D_CAST(complex float, N, L, data))
 #endif
 
 

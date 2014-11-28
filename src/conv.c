@@ -73,7 +73,7 @@ int main_conv(int argc, char* argv[])
 	const complex float* krn = load_cfl(argv[optind + 2], N, krn_dims);
 	complex float* out = create_cfl(argv[optind + 3], N, dims);
 
-	struct conv_plan* plan = conv_plan(N, flags, CONV_SYMMETRIC, CONV_CYCLIC, dims, dims, krn_dims, krn);
+	struct conv_plan* plan = conv_plan(N, flags, CONV_CYCLIC, CONV_SYMMETRIC, dims, dims, krn_dims, krn);
 	conv_exec(plan, out, in);
 	conv_free(plan);
 

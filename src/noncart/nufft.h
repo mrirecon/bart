@@ -12,7 +12,7 @@ struct linop_s;
 struct operator_p_s;
 
 // Nufft operator
-extern struct linop_s* nufft_create( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, _Bool toeplitz, _Bool precond, void* cgconf, _Bool use_gpu);
+extern struct linop_s* nufft_create( const long ksp_dims[DIMS], const long coilim_dims[DIMS], const complex float* traj, const complex float* pat, _Bool toeplitz, _Bool precond, _Bool stoch, void* cgconf, _Bool use_gpu);
 
 
 
