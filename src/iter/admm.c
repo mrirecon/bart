@@ -8,10 +8,12 @@
  *
  *
  * Afonso MA, Bioucas-Dias JM, Figueiredo M. An Augmented Lagrangian Approach to
- * the Constrained Optimization Formulation of Imaging Inverse Problems
+ * the Constrained Optimization Formulation of Imaging Inverse Problems,
+ * IEEE Trans Image Process, 20:681-695 (2011)
  *
  * Boyd S, Parikh N, Chu E, Peleato B, Eckstein J. Distributed Optimization and
- * Statistical Learning via the Alternating Direction Method of Multipliers
+ * Statistical Learning via the Alternating Direction Method of Multipliers,
+ * Foundations and Trends in Machine Learning, 3:1-122 (2011)
  *
  */
 #include <math.h>
@@ -78,13 +80,13 @@ static void admm_normaleq(void* _data, float* _dst, const float* _src)
 
 
 /*
- * ADMM
+ * ADMM (ADMM-2 from Afonso et al.)
  *
- * Solves min_x 0.5 || y - Ax ||_2^2 + sum_i f_i(G_i x), where the f_i are arbitrary convex functions.
- * If Aop is NULL, solves min_x sum_i f_i(G_i x)
+ * Solves min_x 0.5 || y - Ax ||_2^2 + sum_i f_i(G_i x), where the f_i are
+ * arbitrary convex functions. If Aop is NULL, solves min_x sum_i f_i(G_i x)
  *
- * Each iteration requires solving the proximal of f_i, as well as applying G_i, G_i^H, and G_i^H G_i,
- * all which must be provided in admm_plan_s.
+ * Each iteration requires solving the proximal of f_i, as well as applying
+ * G_i, G_i^H, and G_i^H G_i, all which must be provided in admm_plan_s.
  */
 void admm(struct admm_history_s* history, const struct admm_plan_s* plan, 
 	  unsigned int D, const long z_dims[D],

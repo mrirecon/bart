@@ -29,6 +29,10 @@ italgo_fun2_f iter2_fista;
 italgo_fun2_f iter2_admm;
 italgo_fun2_f iter2_pocs;
 
+double iter2_power( unsigned int maxiter,
+		 const struct operator_s* normaleq_op,
+		    long size, float* u);
+
 
 // use with iter_call_s from iter.h as _conf
 italgo_fun2_f iter2_call_iter;

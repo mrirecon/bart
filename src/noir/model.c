@@ -25,6 +25,7 @@
 #include "num/fft.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/filter.h"
 
 #include "model.h"
 
@@ -64,37 +65,28 @@ struct noir_data {
 	complex float* xn;
 
 	complex float* tmp;
+
+	bool rvc;
 };
 
 
 
-
-static void noir_calc_weights(const long dim[3], complex float* dst)
+static void noir_calc_weights(const long dims[3], complex float* dst)
 {
-	double sc = 220.;
-	for (int k = 0; k < dim[2]; k++) {
-		for (int i = 0; i < dim[1]; i++) {
-			for (int j = 0; j < dim[0]; j++) {
+	unsigned int flags = 0;
 
-				double dist = 0.;
+	for (int i = 0; i < 3; i++)
+		if (1 != dims[i])
+			flags = MD_SET(flags, i);
 
-				if (1 != dim[0])
-					dist += pow((float)j / (float)dim[0] - 0.5, 2.);
-
-				if (1 != dim[1])
-					dist += pow((float)i / (float)dim[1] - 0.5, 2.);
-
-				if (1 != dim[2])
-					dist += pow((float)k / (float)dim[2] - 0.5, 2.);
-
-				dst[j + dim[0] * (i + dim[1] * k)] = 1. / pow((1. + sc * dist), 16.);
-			}
-		}
-	}
+	klaplace(3, dims, flags, dst);
+	md_zsmul(3, dims, dst, dst, 220.);
+	md_zsadd(3, dims, dst, dst, 1.);
+	md_zspow(3, dims, dst, dst, -16.);	// 1 + 222. \Laplace^16
 }
 
 
-struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, const complex float* psf, bool use_gpu)
+struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, const complex float* psf, bool rvc, bool use_gpu)
 {
 #ifdef USE_CUDA
 	md_alloc_fun_t my_alloc = use_gpu ? md_alloc_gpu : md_alloc;
@@ -104,6 +96,8 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 #endif
 
 	struct noir_data* data = (struct noir_data*)xmalloc(sizeof(struct noir_data));
+
+	data->rvc = rvc;
 
 	md_copy_dims(DIMS, data->dims, dims);
 
@@ -265,6 +259,9 @@ void noir_adj(struct noir_data* data, complex float* dst, const complex float* s
 
 	md_clear(DIMS, data->imgs_dims, dst, CFL_SIZE);
 	md_zfmacc2(DIMS, data->sign_dims, data->imgs_strs, dst, data->sign_strs, data->tmp, data->coil_strs, data->sens);
+
+	if (data->rvc)
+		md_zreal(DIMS, data->imgs_dims, dst, dst);
 }
 
 

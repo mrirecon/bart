@@ -64,8 +64,7 @@ static void help(void)
 
 int main_sense(int argc, char* argv[])
 {
-	struct sense_conf conf;
-	memcpy(&conf, &sense_defaults, sizeof(struct sense_conf));
+	struct sense_conf conf = sense_defaults;
 
 	double start_time = timestamp();
 
@@ -323,7 +322,7 @@ int main_sense(int argc, char* argv[])
 		unsigned int wflags = 0;
 		for (unsigned int i = 0; i < 3; i++)
 			if (1 < img_dims[i])
-				wflags |= (1 << i);
+				wflags = MD_SET(wflags, i);
 
 		thresh_op = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, lambda, randshift);
 #endif
@@ -356,17 +355,17 @@ int main_sense(int argc, char* argv[])
 
 	if (!l1wav) {
 
-		memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
+		cgconf = iter_conjgrad_defaults;
 		cgconf.maxiter = maxiter;
 		cgconf.l2lambda = lambda;
-		cgconf.tol = 1.E-3;
+		cgconf.tol = 1.E-9;
 
 		italgo = iter_conjgrad;
 		iconf = &cgconf;
 
 	} else if (admm) {
 
-		memcpy(&mmconf, &iter_admm_defaults, sizeof(struct iter_admm_conf));
+		mmconf = iter_admm_defaults;
 		mmconf.maxiter = maxiter;
 		mmconf.rho = admm_rho;
 		mmconf.hogwild = hogwild;
@@ -377,7 +376,7 @@ int main_sense(int argc, char* argv[])
 
 	} else if (ist) {
 
-		memcpy(&isconf, &iter_ist_defaults, sizeof(struct iter_ist_conf));
+		isconf = iter_ist_defaults;
 		isconf.maxiter = maxiter;
 		isconf.step = step;
 		isconf.hogwild = hogwild;
@@ -387,7 +386,7 @@ int main_sense(int argc, char* argv[])
 
 	} else {
 
-		memcpy(&fsconf, &iter_fista_defaults, sizeof(struct iter_fista_conf));
+		fsconf = iter_fista_defaults;
 		fsconf.maxiter = maxiter;
 		fsconf.step = step;
 		fsconf.hogwild = hogwild;

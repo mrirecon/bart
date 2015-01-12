@@ -18,12 +18,6 @@ extern struct linop_s* maps_create(const long max_dims[DIMS],
 			unsigned int sens_flags, const complex float* sens, bool gpu);
 extern struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const complex float* maps, bool use_gpu);
 
-extern void sense_free(const struct linop_s*);
-
-extern void sense_forward(const struct linop_s* o, _Complex float* dst, const complex float* src);
-extern void sense_adjoint(const struct linop_s* o, _Complex float* dst, const complex float* src);
-extern void sense_normal(const struct linop_s* o, complex float* dst, const complex float* src);
-
 
 #ifdef __cplusplus
 }

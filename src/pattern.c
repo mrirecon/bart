@@ -37,7 +37,7 @@ int main_pattern(int argc, char* argv[])
 
 	complex float* kspace = load_cfl(argv[1], N, in_dims);
 
-	md_select_dims(N, ~(1 << dim), out_dims, in_dims);
+	md_select_dims(N, ~MD_BIT(dim), out_dims, in_dims);
 	
 	complex float* pattern = create_cfl(argv[2], N, out_dims);
 

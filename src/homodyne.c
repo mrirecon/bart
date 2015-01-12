@@ -105,7 +105,7 @@ int main_homodyne(int argc, char* argv[])
 	struct wdata wdata;
 	wdata.frac = frac;
 	wdata.pfdim = pfdim;
-	md_select_dims(N, (1 << pfdim), wdata.wdims, dims);
+	md_select_dims(N, MD_BIT(pfdim), wdata.wdims, dims);
 	md_calc_strides(N, wdata.wstrs, wdata.wdims, CFL_SIZE);
 	wdata.weights = md_alloc(N, wdata.wdims, CFL_SIZE);
 
@@ -119,10 +119,10 @@ int main_homodyne(int argc, char* argv[])
 
 		unsigned int pardim = PHS2_DIM;
 
-		ifftuc(N, dims, FFT_FLAGS & ~(1 << pfdim), data, idata);
+		ifftuc(N, dims, MD_CLEAR(FFT_FLAGS, pfdim), data, idata);
 
 		long rdims[N];
-		md_select_dims(N, ~(1 << pardim), rdims, dims);
+		md_select_dims(N, ~MD_BIT(pardim), rdims, dims);
 		long rstrs[N];
 		md_calc_strides(N, rstrs, rdims, CFL_SIZE);
 
@@ -135,7 +135,7 @@ int main_homodyne(int argc, char* argv[])
 			pos[pardim] = i;
 
 			md_copy_block(N, pos, rdims, tmp, dims, data, CFL_SIZE);
-			homodyne(wdata, (1 << pfdim), N, rdims, rstrs, tmp, tmp);
+			homodyne(wdata, MD_BIT(pfdim), N, rdims, rstrs, tmp, tmp);
 			md_copy_block(N, pos, dims, data, rdims, tmp, CFL_SIZE);
 			md_free(tmp);
 		}

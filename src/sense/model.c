@@ -127,7 +127,7 @@ static void maps_apply_pinverse(const void* _data, float lambda, complex float* 
 	maps_init_normal(data);
 
 	md_zsadd(DIMS, data->img_dims, data->norm, data->norm, lambda);
-	md_zdiv(DIMS, data->img_dims, dst, src, data->norm );
+	md_zdiv(DIMS, data->img_dims, dst, src, data->norm);
 	md_zsadd(DIMS, data->img_dims, data->norm, data->norm, -lambda);
 }
 
@@ -159,7 +159,6 @@ static struct maps_data* maps_create_data(const long max_dims[DIMS],
 	md_calc_strides(DIMS, data->strs_img, data->img_dims, CFL_SIZE);
 
 	
-	// scale the sensitivity maps by the FFT scale factor
 #ifdef USE_CUDA
 	complex float* nsens = (gpu ? md_alloc_gpu : md_alloc)(DIMS, data->mps_dims, CFL_SIZE);
 #else
@@ -190,6 +189,7 @@ struct linop_s* maps_create(const long max_dims[DIMS],
 {
 	struct maps_data* data = maps_create_data(max_dims, sens_flags, sens, gpu);
 
+	// scale the sensitivity maps by the FFT scale factor
 	fftscale(DIMS, data->mps_dims, FFT_FLAGS, data->sens, data->sens);
 
 	return linop_create(DIMS, data->ksp_dims, DIMS, data->img_dims, data, 
@@ -206,7 +206,7 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
 
 	for (unsigned int i = 0; i < DIMS; i++)
 		if (1 != maps_dims[i])
-			sens_flags |= (1 << i);
+			sens_flags = MD_SET(sens_flags, i);
 
 	assert(1 == coilim_dims[MAPS_DIM]);
 	assert(1 == img_dims[COIL_DIM]);
@@ -250,36 +250,6 @@ struct linop_s* sense_init(const long max_dims[DIMS],
 
 	return sense_op;
 }
-
-
-
-
-
-// FIXME get rid of wrappers?
-
-void sense_free(const struct linop_s* o)
-{
-	linop_free(o);
-}
-
-
-
-
-/**
- * Wrapper for sense_apply
- */
-void sense_forward(const struct linop_s* o, complex float* dst, const complex float* src)
-{
-	linop_forward_unchecked(o, dst, src);
-}
-
-
-
-void sense_adjoint(const struct linop_s* o, complex float* dst, const complex float* src)
-{
-	linop_adjoint_unchecked(o, dst, src);
-}
-
 
 
 

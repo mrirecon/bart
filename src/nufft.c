@@ -198,8 +198,7 @@ int main_nufft(int argc, char* argv[])
 
 		md_clear(DIMS, coilim_dims, img, CFL_SIZE);
 
-		struct iter_conjgrad_conf cgconf;
-		memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
+		struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 		cgconf.maxiter = maxiter;
 		cgconf.l2lambda = 0.;
 		cgconf.tol = 0;

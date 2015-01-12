@@ -63,14 +63,13 @@ int main(int argc, char* argv[])
 	const struct linop_s* tv_op = tv_init(DIMS, dims, flags);
 //	const struct linop_s* tv_op = linop_identity_create(DIMS, dims);
 
-	struct iter_admm_conf conf;
-	memcpy(&conf, &iter_admm_defaults, sizeof(struct iter_admm_conf));
+	struct iter_admm_conf conf = iter_admm_defaults;
 
 	conf.maxiter = 50;
 	conf.rho = .1;
 
 	const struct operator_p_s* thresh_prox = prox_thresh_create(DIMS + 1, linop_codomain(tv_op)->dims, 
-								lambda, (1 << DIMS), false);
+								lambda, MD_BIT(DIMS), false);
 
 	iter2_admm(&conf, linop_identity_create(DIMS, dims)->forward,
 		   1, (const struct operator_p_s* []){ thresh_prox }, (const struct linop_s* []){ tv_op }, NULL, 

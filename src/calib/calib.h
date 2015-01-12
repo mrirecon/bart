@@ -32,6 +32,7 @@ struct ecalib_conf {
 	_Bool orthiter;
 	_Bool usegpu;
 	float perturb;
+	_Bool intensity;
 };
 
 extern const struct ecalib_conf ecalib_defaults;
@@ -43,8 +44,8 @@ extern void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], _C
 
 extern void eigenmaps(const long out_dims[DIMS], _Complex float* out_data, _Complex float* eptr, const _Complex float* imgcov, const long msk_dims[3], const _Bool* msk, _Bool orthiter, _Bool usegpu);
 
-extern void fixphase(unsigned int D, const long dims[__VLA(D)], unsigned int dim, _Complex float* out, const _Complex float* in);
-extern void crop_sens(const long dims[DIMS], _Complex float* ptr, float crth, const _Complex float* map);
+
+extern void crop_sens(const long dims[DIMS], _Complex float* ptr, bool soft, float crth, const _Complex float* map);
 
 extern void calone_dims(const struct ecalib_conf* conf, long cov_dims[4], long channels);
 extern void calone(const struct ecalib_conf* conf, const long cov_dims[4], _Complex float* cov, unsigned int SN, float svals[SN], const long calreg_dims[DIMS], const _Complex float* cal_data);

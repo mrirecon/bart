@@ -418,7 +418,7 @@ static unsigned int parallelizable(unsigned int D, unsigned int io, unsigned int
 
 	for (unsigned int d = 0; d < D; d++) {
 
-		if (io & (1 << d)) {
+		if (MD_IS_SET(io, d)) {
 
 			bool m[N][N];
 			compute_enclosures(N, m, dims, *strs[d]);
@@ -437,7 +437,7 @@ static unsigned int parallelizable(unsigned int D, unsigned int io, unsigned int
 	//			printf("%d %d %d\n", d, i, a);
 
 				if ((a != N - 1) || (labs((*strs[d])[i]) < size[d]))
-					flags = flags & ~(1 << i);
+					flags = MD_CLEAR(flags, i);
 			}
 		}
 	}
@@ -467,14 +467,14 @@ unsigned int dims_parallel(unsigned int D, unsigned int io, unsigned int N, cons
 
 	while ((count < CORES) && (i-- > 0)) {
 
-		if (flags & (1 << i)) {
+		if (MD_IS_SET(flags, i)) {
 
 			reps /= dims[i];
 
 			if (reps < CHUNK)
 				break;
 
-			oflags = oflags | (1 << i);
+			oflags = MD_SET(oflags, i);
 
 			//break; // only 1
 		}

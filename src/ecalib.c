@@ -49,7 +49,8 @@ static void help(void)
 		"-k ksize\tkernel size\n"
 		"-r cal_size\tLimits the size of the calibration region.\n"
 		"-m maps\t\tNumber of maps to compute.\n"
-		"-1 perform only first part of the calibration\n");
+		"-I\t\tintensity correction\n"
+		"-1\t\tperform only first part of the calibration\n");
 }
 
 
@@ -63,13 +64,16 @@ int main_ecalib(int argc, char* argv[])
 	bool print_svals = false;
 	debug_level = 4;
 
-	struct ecalib_conf conf;
-	memcpy(&conf, &ecalib_defaults, sizeof(struct ecalib_conf));
+	struct ecalib_conf conf = ecalib_defaults;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "OWS1CVt:p:n:c:k:K:r:R:m:b:h"))) {
+	while (-1 != (c = getopt(argc, argv, "OWS1CVIt:p:n:c:k:K:r:R:m:b:h"))) {
 
 		switch (c) {
+
+		case 'I':
+			conf.intensity = true;
+			break;
 
 		case '1':
 			one = true;

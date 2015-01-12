@@ -8,6 +8,7 @@
 
 #include <complex.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include <cuda.h>
 #include <cuComplex.h>

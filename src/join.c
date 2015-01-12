@@ -29,7 +29,7 @@ static void usage(const char* name, FILE* fp)
 
 static void help(void)
 {
-	printf(	"\nJoin input files along {dimenions}. All other dimensions must have the same size.\n");
+	printf(	"\nJoin input files along {dimensions}. All other dimensions must have the same size.\n");
 }
 
 

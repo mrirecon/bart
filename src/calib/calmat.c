@@ -44,7 +44,7 @@ static complex float* pattern_matrix(long pcm_dims[2], const long kdims[3], cons
 {
 	// estimate pattern
 	long pat_dims[4];
-	md_select_dims(4, ~(1 << COIL_DIM), pat_dims, calreg_dims);
+	md_select_dims(4, ~MD_BIT(COIL_DIM), pat_dims, calreg_dims);
 	complex float* pattern = md_alloc_sameplace(4, pat_dims, CFL_SIZE, data);
 	estimate_pattern(4, calreg_dims, COIL_DIM, pattern, data);
 
@@ -73,7 +73,7 @@ complex float* calibration_matrix2(long calmat_dims[2], const long kdims[3], con
 
 	// number of samples for each patch
 	long msk_dims[2];
-	md_select_dims(2, ~(1 << 1), msk_dims, pcm_dims);
+	md_select_dims(2, ~MD_BIT(1), msk_dims, pcm_dims);
 
 	long msk_strs[2];
 	md_calc_strides(2, msk_strs, msk_dims, CFL_SIZE);

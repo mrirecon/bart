@@ -200,7 +200,8 @@ ecalib [-t threshold] [-c crop_value] [-k kernel_size] [-r cal_size] [-m maps] <
 	-k ksize	kernel size
 	-r cal_size	Limits the size of the calibration region.
 	-m maps		Number of maps to compute.
-	-1 perform only first part of the calibration
+	-I		intensity correction
+	-1		perform only first part of the calibration
 
 
 ecaltwo [-c crop] [-m maps] x y z <input> <sensitivities> [<ev_maps>]

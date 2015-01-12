@@ -140,10 +140,21 @@ void quicksort(unsigned int N, unsigned int ord[N], const void* data, quicksort_
 
 void mini_cmdline(int argc, char* argv[], int expected_args, const char* usage_str, const char* help_str)
 {
+	mini_cmdline_bool(argc, argv, expected_args, usage_str, help_str);
+}
+
+
+bool mini_cmdline_bool(int argc, char* argv[], int expected_args, const char* usage_str, const char* help_str)
+{
+	bool b = false;
 	int c;
-	while (-1 != (c = getopt(argc, argv, "h"))) {
+	while (-1 != (c = getopt(argc, argv, "hb"))) {
 
 		switch (c) {
+
+		case 'b':
+			b = true;
+			break;
 
 		case 'h':
 			printf("Usage: %s %s\n\n%s", argv[0], usage_str, help_str);
@@ -167,6 +178,8 @@ void mini_cmdline(int argc, char* argv[], int expected_args, const char* usage_s
 		argv[i - optind + 1] = argv[i];
 
 	argv[i] = NULL;
+
+	return b;
 }
 
 

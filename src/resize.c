@@ -1,9 +1,9 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2014. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  * 
- * Author; 
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * Authors:
+ * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -25,6 +25,11 @@
 #define DIMS 16
 #endif
 
+#ifndef CFL_SIZE
+#define CFL_SIZE sizeof(complex float)
+#endif
+
+
 static void usage(const char* name, FILE* fp)
 {
 	fprintf(fp, "Usage: %s [-c] dim1 size1 ... dimn sizen <input> <output>\n", name);
@@ -44,7 +49,7 @@ int main_resize(int argc, char* argv[])
 	bool center = false;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "csh"))) {
+	while (-1 != (c = getopt(argc, argv, "ch"))) {
 
 		switch (c) {
 
@@ -93,7 +98,7 @@ int main_resize(int argc, char* argv[])
 
 	void* out_data = create_cfl(argv[argc - 1], N, out_dims);
 
-	(center ? md_resizec : md_resize)(N, out_dims, out_data, in_dims, in_data, sizeof(complex float));
+	(center ? md_resizec : md_resize)(N, out_dims, out_data, in_dims, in_data, CFL_SIZE);
 
 	unmap_cfl(N, in_dims, in_data);
 	unmap_cfl(N, out_dims, out_data);

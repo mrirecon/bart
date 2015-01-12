@@ -66,10 +66,8 @@ int main(int argc, char* argv[])
 	// -----------------------------------------------------------
 	// set up conf and option parser
 	
-	struct bpsense_conf conf;
-	struct iter_admm_conf iconf;
-	memcpy(&conf, &bpsense_defaults, sizeof(struct bpsense_conf));
-	memcpy(&iconf, &iter_admm_defaults, sizeof(struct iter_admm_conf));
+	struct bpsense_conf conf = bpsense_defaults;
+	struct iter_admm_conf iconf = iter_admm_defaults;
 	conf.iconf = &iconf;
 	conf.iconf->rho = 10; // more sensibile default
 

@@ -13,15 +13,11 @@
 #include "num/fft.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/vecops.h"
 
 #include "misc/misc.h"
 
 #include "conv.h"
 
-#ifdef USE_CUDA
-#include "num/gpuops.h"
-#endif
 
 
 
@@ -33,7 +29,6 @@ struct conv_plan {
 	int N;
 	unsigned int flags;
 
-	const struct vec_ops* ops;
 	struct fft_plan_s* fft_plan;
 
 	long* idims;
@@ -48,7 +43,6 @@ struct conv_plan {
 	long* kdims;
 	long* kstr;
 
-	long T;
 	complex float* kernel;
 };
 
@@ -60,11 +54,7 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 		const long idims1[N], const long idims2[N], const complex float* src2)
 {
 	struct conv_plan* plan = (struct conv_plan*)xmalloc(sizeof(struct conv_plan));
-#ifdef  USE_CUDA
-	plan->ops = cuda_ondevice(src2) ? &gpu_ops : &cpu_ops;
-#else
-	plan->ops = &cpu_ops;
-#endif
+
 	plan->N = N;
 	plan->flags = flags;
 	plan->cmode = cmode;
@@ -85,7 +75,7 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 		plan->idims[i] = idims1[i];
 		plan->odims[i] = odims[i];
 	
-		if (flags & (1 << i)) {
+		if (MD_IS_SET(flags, i)) {
 
 			assert((cmode != CONV_SYMMETRIC) || ((0 == idims1[i] % 2) && (1 == idims2[i] % 2)));
 			assert(idims2[i] <= idims1[i]);
@@ -148,34 +138,30 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 	plan->str2 = xmalloc(N * sizeof(long));
 	plan->kstr = xmalloc(N * sizeof(long));
 
-	md_calc_strides(N, plan->str1, plan->dims1, sizeof(complex float));
-	md_calc_strides(N, plan->str2, plan->dims2, sizeof(complex float));
-	md_calc_strides(N, plan->kstr, plan->kdims, sizeof(complex float));
+	md_calc_strides(N, plan->str1, plan->dims1, CFL_SIZE);
+	md_calc_strides(N, plan->str2, plan->dims2, CFL_SIZE);
+	md_calc_strides(N, plan->kstr, plan->kdims, CFL_SIZE);
 
-	plan->T = md_calc_size(N, plan->dims);
-
-        long S = md_calc_size(N, plan->kdims);
-
-        plan->kernel = (complex float*)plan->ops->allocate(2 * S);
+        plan->kernel = md_alloc_sameplace(N, plan->kdims, CFL_SIZE, src2);
 
 	switch (cmode) {
 
 	case CONV_SYMMETRIC:
 
-	        md_resizec(N, plan->kdims, plan->kernel, idims2, src2, sizeof(complex float));
+	        md_resizec(N, plan->kdims, plan->kernel, idims2, src2, CFL_SIZE);
        		ifft(N, plan->kdims, flags, plan->kernel, plan->kernel);
 	        fftmod(N, plan->kdims, flags, plan->kernel, plan->kernel);
 		break;
 
 	case CONV_CAUSAL:
 
-	        md_resize(N, plan->kdims, plan->kernel, idims2, src2, sizeof(complex float));
+	        md_resize(N, plan->kdims, plan->kernel, idims2, src2, CFL_SIZE);
        		ifft(N, plan->kdims, flags, plan->kernel, plan->kernel);
 		break;
 
 	case CONV_ANTICAUSAL:
 
-	        md_resize(N, plan->kdims, plan->kernel, idims2, src2, sizeof(complex float));
+	        md_resize(N, plan->kdims, plan->kernel, idims2, src2, CFL_SIZE);
        		fft(N, plan->kdims, flags, plan->kernel, plan->kernel);
 		break;
 
@@ -196,7 +182,7 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 
 void conv_free(struct conv_plan* plan)
 {
-	plan->ops->del((void*)plan->kernel);
+	md_free(plan->kernel);
 
 	// fft_free_plan
 
@@ -218,22 +204,22 @@ void conv_free(struct conv_plan* plan)
 static void conv_cyclic(struct conv_plan* plan, complex float* dst, const complex float* src1)
 {
 	// FIXME: optimize tmp away when possible
-	complex float* tmp = (complex float*)plan->ops->allocate(2 * plan->T);
+	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims1, CFL_SIZE, plan->kernel);
         ifft(plan->N, plan->dims1, plan->flags, tmp, src1);
         md_zmul2(plan->N, plan->dims, plan->str2, dst, plan->str1, tmp, plan->kstr, plan->kernel);
         fft(plan->N, plan->dims2, plan->flags, dst, dst);
-	plan->ops->del((void*)tmp);
+	md_free(tmp);
 }
 
 static void conv_cyclicH(struct conv_plan* plan, complex float* dst, const complex float* src1)
 {
-	complex float* tmp = (complex float*)plan->ops->allocate(2 * plan->T);
+	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims1, CFL_SIZE, plan->kernel);
         ifft(plan->N, plan->dims2, plan->flags, tmp, src1);
-	md_clear(plan->N, plan->dims1, dst, sizeof(complex float));
+	md_clear(plan->N, plan->dims1, dst, CFL_SIZE);
         md_zfmacc2(plan->N, plan->dims, plan->str1, dst, plan->str2, tmp, plan->kstr, plan->kernel);
         //md_zmulc2(plan->N, plan->dims1, plan->str1, dst, plan->str2, tmp, plan->kstr, plan->kernel);
         fft(plan->N, plan->dims1, plan->flags, dst, dst);
-	plan->ops->del((void*)tmp);
+	md_free(tmp);
 }
 
 
@@ -248,19 +234,19 @@ void conv_exec(struct conv_plan* plan, complex float* dst, const complex float* 
 
 	if (pre || post) {
 
-		tmp = (complex float*)plan->ops->allocate(2 * plan->T);
+		tmp = md_alloc_sameplace(plan->N, plan->dims1, CFL_SIZE, plan->kernel);
 	}
 
 	if (pre)
-		(crop ? md_resizec : md_resize)(plan->N, plan->dims1, tmp, plan->idims, src1, sizeof(complex float));
+		(crop ? md_resizec : md_resize)(plan->N, plan->dims1, tmp, plan->idims, src1, CFL_SIZE);
 
 	conv_cyclic(plan, post ? tmp : dst, pre ? tmp : src1);
 
 	if (post)
-		(crop ? md_resizec : md_resize)(plan->N, plan->odims, dst, plan->dims2, tmp, sizeof(complex float));
+		(crop ? md_resizec : md_resize)(plan->N, plan->odims, dst, plan->dims2, tmp, CFL_SIZE);
 
 	if (pre || post)
-		plan->ops->del((void*)tmp);
+		md_free(tmp);
 }
 
 
@@ -275,19 +261,19 @@ void conv_adjoint(struct conv_plan* plan, complex float* dst, const complex floa
 
 	if (pre || post) {
 
-		tmp = (complex float*)plan->ops->allocate(2 * plan->T);
+		tmp = md_alloc_sameplace(plan->N, plan->dims1, CFL_SIZE, plan->kernel);
 	}
 
 	if (pre)
-		(crop ? md_resizec : md_resize)(plan->N, plan->dims2, tmp, plan->odims, src1, sizeof(complex float));
+		(crop ? md_resizec : md_resize)(plan->N, plan->dims2, tmp, plan->odims, src1, CFL_SIZE);
 
 	conv_cyclicH(plan, post ? tmp : dst, pre ? tmp : src1);
 
 	if (post)
-		(crop ? md_resizec : md_resize)(plan->N, plan->idims, dst, plan->dims1, tmp, sizeof(complex float));	
+		(crop ? md_resizec : md_resize)(plan->N, plan->idims, dst, plan->dims1, tmp, CFL_SIZE);
 
 	if (pre || post)
-		plan->ops->del((void*)tmp);
+		md_free(tmp);
 }
 
 

@@ -79,6 +79,10 @@ extern void md_fill_diag(unsigned int D, const long dims[__VLA(D)], unsigned lon
 extern void md_circ_shift2(unsigned int D, const long dim[__VLA(D)], const long center[__VLA(D)], const long str1[__VLA(D)], void* dst, const long str2[__VLA(D)], const void* src, size_t size);
 extern void md_circ_shift(unsigned int D, const long dim[__VLA(D)], const long center[__VLA(D)], void* dst, const void* src, size_t size);
 
+extern void md_circ_ext2(unsigned int D, const long dims1[__VLA(D)], const long strs1[__VLA(D)], void* dst, const long dims2[__VLA(D)], const long strs2[__VLA(D)], const void* src, size_t size);
+extern void md_circ_ext(unsigned int D, const long dims1[__VLA(D)], void* dst, const long dims2[__VLA(D)], const void* src, size_t size);
+
+
 extern void md_periodic2(unsigned int D, const long dims1[__VLA(D)], const long strs1[__VLA(D)], void* dst, const long dims2[__VLA(D)], const long strs2[__VLA(D)], const void* src, size_t size);
 extern void md_periodic(unsigned int D, const long dims1[__VLA(D)], void* dst, const long dims2[__VLA(D)], const void* src, size_t size);
 
@@ -115,6 +119,10 @@ extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned int fla
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
 #define MD_DIMS(...) MD_MAKE_ARRAY(long, __VA_ARGS__)
 
+#define MD_BIT(x) (1u << (x))
+#define MD_IS_SET(x, y)	((x) & MD_BIT(y))
+#define MD_CLEAR(x, y) ((x) & ~MD_BIT(y))
+#define MD_SET(x, y)	((x) | MD_BIT(y))
 
 #define MD_CAST_ARRAY2(T, N, dims, x, a, b) \
 	(assert(((a) < (b)) && !md_check_dimensions((N), (dims), (1 << (a)) | (1 << (b)))), \
@@ -124,6 +132,7 @@ extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned int fla
 					*(T (*)[(dims)[c]][(dims)[b]][(dims)[a]])(x))
 
 #define MD_ACCESS(N, strs, pos, x)	((x)[md_calc_offset((N), (strs), (pos)) / sizeof((x)[0])])
+
 
 #ifdef __cplusplus
 }

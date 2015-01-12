@@ -1541,7 +1541,7 @@ void md_zadd(unsigned int D, const long dims[D], complex float* optr, const comp
  * 
  * optr = iptr + val
  */
-void md_zsadd2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, float val)
+void md_zsadd2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
 {
 	make_z3op_scalar(md_zadd2, D, dims, ostr, optr, istr, iptr, val);
 }
@@ -1553,7 +1553,7 @@ void md_zsadd2(unsigned int D, const long dims[D], const long ostr[D], complex f
  * 
  * optr = iptr + val
  */
-void md_zsadd(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr, float val)
+void md_zsadd(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr, complex float val)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
@@ -1837,6 +1837,51 @@ void md_zphsr(unsigned int D, const long dims[D], complex float* optr, const com
 	make_z2op_simple(md_zphsr2, D, dims, optr, iptr);
 }
 
+
+/**
+ * Get complex exponential with phase = complex arrays (with strides)
+ * 
+ * optr = zexp( j * iptr )
+ */
+void md_zexpj2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zexpj, D, dims, ostr, optr, istr, iptr);
+}
+
+
+
+/**
+ * Get complex exponential with phase = complex arrays (without strides)
+ * 
+ * optr = zexp( j * iptr )
+ */
+void md_zexpj(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zexpj2, D, dims, optr, iptr);
+}
+
+
+/**
+ * Get argument of complex arrays (with strides)
+ * 
+ * optr = zarg(  iptr )
+ */
+void md_zarg2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zarg, D, dims, ostr, optr, istr, iptr);
+}
+
+
+
+/**
+ * Get argument of complex arrays (without strides)
+ * 
+ * optr = zarg( iptr )
+ */
+void md_zarg(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zarg2, D, dims, optr, iptr);
+}
 
 
 /**
@@ -2301,7 +2346,7 @@ void md_rss(unsigned int D, const long dims[D], unsigned int flags, float* dst, 
  * Root of sum of squares along selected dimensions
  *
  * @param dims -- full dimensions of src image
- * @param flags -- bitmask for applying the root of sum of squares, ie the dimensions that will not stay
+ * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
  */
 void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
 {
@@ -2331,6 +2376,89 @@ void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex flo
 	real_from_complex_dims(D, dimsR, dims);
 	md_rrss(D + 1, dimsR, (flags << 1), (float*)dst, (const float*)src);
 #endif
+}
+
+
+
+/**
+ * Weighted average along flagged dimensions (without strides)
+ *
+ * @param dims -- full dimensions of iptr
+ * @param flags -- bitmask for applying the weighted average, i.e. the dimensions that will not stay
+ */
+void md_zwavg(unsigned int D, const long dims[D], unsigned int flags, complex float* optr, const complex float* iptr)
+{
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+
+	long istr[D];
+	md_calc_strides(D, istr, dims, CFL_SIZE);
+
+	long ostr[D];
+	md_calc_strides(D, ostr, odims, CFL_SIZE);
+
+	md_zwavg2(D, dims, flags, ostr, optr, istr, iptr);
+}
+
+/**
+ * Weighted average along flagged dimensions (with strides)
+ *
+ * @param dims -- full dimensions of iptr
+ * @param flags -- bitmask for applying the weighted average, i.e. the dimensions that will not stay
+ */
+void md_zwavg2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* optr, const long istr[D], const complex float* iptr)
+{
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+
+	complex float* weights = md_alloc_sameplace(D, odims, CFL_SIZE, iptr);
+
+	md_zwavg2_core1(D, dims, flags, ostr, weights, istr, iptr);
+	md_zwavg2_core2(D, dims, flags, ostr, optr, weights, istr, iptr);
+
+	md_free(weights);
+
+}
+
+
+/**
+ * Compute weights for weighted average
+ * @param iptr input array to be averaged
+ * @param weights output weights
+ */
+void md_zwavg2_core1(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* weights, const long istr[D], const complex float* iptr)
+{
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+
+	complex float* pattern = md_alloc_sameplace(D, dims, CFL_SIZE, iptr);
+
+	long onestrs[D];
+	md_singleton_strides(D, onestrs);
+
+	md_zcmp2(D, dims, istr, pattern, istr, iptr, onestrs, &(complex float){0.});
+	md_zsub2(D, dims, istr, pattern, onestrs, &(complex float){1.}, istr, pattern);
+
+	md_clear2(D, odims, ostr, weights, CFL_SIZE);
+	md_zaxpy2(D, dims, ostr, weights, 1., istr, pattern);
+
+	md_free(pattern);
+}
+
+/**
+ * Weighted average along flagged dimensions with given weights
+ * @param weights precomputed weights for averaging
+ * @param optr output array after averaging
+ */
+void md_zwavg2_core2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* optr, const complex float* weights, const long istr[D], const complex float* iptr)
+{
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+
+	md_clear2(D, odims, ostr, optr, CFL_SIZE);
+	md_zaxpy2(D, dims, ostr, optr, 1., istr, iptr);
+
+	md_zdiv(D, odims, optr, optr, weights);
 }
 
 
@@ -2715,4 +2843,38 @@ void md_zfdiff_backwards(unsigned int D, const long dims[D], unsigned int d, com
 	md_zfdiff_backwards2(D, dims, d, strs, out, strs, in);
 }
 
+
+
+static void nary_zfftmod(void* _data, void* ptr[])
+{
+	struct data_s* data = (struct data_s*)_data;
+	data->ops->zfftmod(data->size, ptr[0], ptr[1], *(bool*)data->data_ptr);
+}
+
+// DO NOT USE DIRECTLY - this is used internally by fftmod from fft.[ch]
+void md_zfftmod2(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, bool evenodd)
+{
+	assert(0 == dims[0] % 2);
+	assert((CFL_SIZE == ostrs[0]) && (CFL_SIZE == istrs[0]));
+
+	long tdims[D];
+	long tostrs[D];
+	long tistrs[D];
+	md_copy_dims(D, tdims, dims);
+	md_copy_strides(D, tostrs, ostrs);
+	md_copy_strides(D, tistrs, istrs);
+
+	tdims[0] /= 2;
+	tostrs[0] *= 2;
+	tistrs[0] *= 2;
+
+	optimized_twoop_oi(D, tdims, tostrs, optr, tistrs, iptr, (size_t[2]){ 2 * CFL_SIZE, 2 * CFL_SIZE }, nary_zfftmod, &evenodd);
+}
+
+void md_zfftmod(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr, bool evenodd)
+{
+	long strs[D];
+	md_calc_strides(D, strs, dims, CFL_SIZE);
+	md_zfftmod2(D, dims, strs, optr, strs, iptr, evenodd);
+}
 

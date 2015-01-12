@@ -14,12 +14,15 @@
 #include <getopt.h>
 
 #include "num/multind.h"
-#include "calib/calib.h"
 #include "num/fft.h"
+
+#include "calib/calib.h"
 
 #include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/mri.h"
+#include "misc/utils.h"
+#include "misc/debug.h"
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
@@ -48,8 +51,7 @@ static void help(void)
 int main_ecaltwo(int argc, char* argv[])
 {
 	long maps = 2; // channels;
-	struct ecalib_conf conf;
-	memcpy(&conf, &ecalib_defaults, sizeof(struct ecalib_conf));
+	struct ecalib_conf conf = ecalib_defaults;
 
 	int c;
 	while (-1 != (c = getopt(argc, argv, "OSc:m:gh"))) {
@@ -137,6 +139,21 @@ int main_ecaltwo(int argc, char* argv[])
 		emaps = md_alloc(KSPACE_DIMS, map_dims, CFL_SIZE);
 
 	caltwo(&conf, out_dims, out_data, emaps, in_dims, in_data, NULL, NULL);
+
+	if (conf.intensity) {
+
+		debug_printf(DP_DEBUG1, "Normalize...\n");
+
+		normalizel1(DIMS, COIL_FLAG, out_dims, out_data);
+	}
+
+	debug_printf(DP_DEBUG1, "Crop maps... (%.2f)\n", conf.crop);
+
+	crop_sens(out_dims, out_data, conf.softcrop, conf.crop, emaps);
+
+	debug_printf(DP_DEBUG1, "Fix phase...\n");
+
+	fixphase(DIMS, out_dims, COIL_DIM, out_data, out_data);
 
 	printf("Done.\n");
 

@@ -61,7 +61,7 @@ static void wavelet3_thresh_apply(const void* _data, float mu, complex float* ou
 		int levels = wavelet_num_levels(data->N, data->flags, data->dims, data->minsize, 4);
 
 		for (unsigned int i = 0; i < data->N; i++)
-			if (data->flags & (1 << i))
+			if (MD_IS_SET(data->flags, i))
 				shift[i] = rand_lim((unsigned int*)&data->rand_state, 1 << levels);
 	}
 

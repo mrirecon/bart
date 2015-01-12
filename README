@@ -84,20 +84,24 @@ install the ISMRM Raw Data format library (http://ismrmrd.sourceforge.net/).
 
 Organization:
 
-recon/			main directory / built software tools
-recon/Makefile		Makefile
-recon/matlab 		Matlab helper scripts 
-recon/src/		source code
-recon/src/calib 	source code for sensitivity calibration
-recon/src/sense		source code for SENSE or ESPIRiT reconstruction
-recon/src/noir		source code for nonlinear inversion
-recon/src/sake		source code for SAKE reconstruction
-recon/src/wavelet2	source code for wavelets
-recon/src/num		base library with numerical functions
-recon/src/iter		iterative algorithms
-recon/src/misc		miscellaneous (e.g. I/O)
-recon/src/ismrm		support for ISMRM raw data format
-recon/lib/		built software libraries
+.		main directory / built software tools
+Makefile	Makefile
+matlab/		Matlab helper scripts
+python/		Python helper functions
+doc/		documentation
+src/		source code
+src/calib 	source code for sensitivity calibration
+src/sense	source code for SENSE or ESPIRiT reconstruction
+src/noir	source code for nonlinear inversion
+src/sake	source code for SAKE reconstruction
+src/wavelet2	source code for wavelets
+src/wavelet3	source code for new wavelets (experimental)
+src/num		base library with numerical functions
+src/iter	iterative algorithms
+src/linops	library of linear operators
+src/misc	miscellaneous (e.g. I/O)
+src/ismrm	support for ISMRM raw data format
+lib/		built software libraries
 
 
 
@@ -175,7 +179,7 @@ dimensions run from 0 to N-1. Sometimes a set of dimensions is given
 as a bitmask where the lowest bit corresponds to the 0st dimension.
 
 
-For example, a Fourier transform of first three dimemensions can
+For example, an inverse Fourier transform of first three dimensions can
 be performed with the following command:
 
 

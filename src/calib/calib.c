@@ -31,8 +31,10 @@
 #include "misc/mri.h"
 #include "misc/resize.h"
 #include "misc/debug.h"
+#include "misc/utils.h"
 
 #include "calib/calmat.h"
+#include "calib/cc.h"
 
 #include "calib.h"
 
@@ -64,39 +66,6 @@ static void eigen_herm3(int M, int N, float val[M], complex float matrix[N][N]) 
 
 
 
-/*
- * rotate phase jointly along dim so that the 0-th slice along dim has phase = 0
- *
- */
-void fixphase(unsigned int N, const long dims[N], unsigned int dim, complex float* out, const complex float* in)
-{
-	assert(dim < N);
-
-	long dims2[N];
-	md_select_dims(N, ~(1 << dim), dims2, dims);
-
-	complex float* tmp = md_alloc_sameplace(N, dims2, CFL_SIZE, in);
-
-	long pos[N];
-	for (unsigned int i = 0; i < N; i++)
-		pos[i] = 0;
-	
-	md_slice(N, (1 << dim), pos, dims, tmp, in, CFL_SIZE);
-
-	md_zphsr(N, dims2, tmp, tmp);
-
-	long strs[N];
-	long strs2[N];
-
-	md_calc_strides(N, strs, dims, CFL_SIZE);
-	md_calc_strides(N, strs2, dims2, CFL_SIZE);
-
-	md_zmulc2(N, dims, strs, out, strs, in, strs2, tmp);
-	
-	md_free(tmp);
-}
-
-
 
 
 
@@ -120,7 +89,6 @@ static float crop_thresh_function(float crth, float val)
 {
 	return (val <= crth) ? 0. : 1.;
 }
-
 
 typedef float (*weight_function)(float crth, float val);
 
@@ -154,6 +122,10 @@ static void crop_weight(const long dims[DIMS], complex float* ptr, weight_functi
 }
 
 
+void crop_sens(const long dims[DIMS], complex float* ptr, bool soft, float crth, const complex float* map)
+{
+	crop_weight(dims, ptr, soft ? crop_weight_function : crop_thresh_function, crth, map);
+}
 
 
 
@@ -331,17 +303,6 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 	eigenmaps(out_dims, out_data, emaps, imgcov2, msk_dims, msk, conf->orthiter, conf->usegpu);
 
 	md_free(imgcov2);
-
-	// set phase to phase of first channel
-
-	debug_printf(DP_DEBUG1, "Fix phase...\n");
-
-	fixphase(DIMS, out_dims, COIL_DIM, out_data, out_data);
-
-	debug_printf(DP_DEBUG1, "Crop maps... (%.2f)\n", conf->crop);
-
-	crop_weight(out_dims, out_data,
-		    conf->softcrop ? crop_weight_function : crop_thresh_function, conf->crop, emaps);
 }
 
 
@@ -361,7 +322,7 @@ void calone_dims(const struct ecalib_conf* conf, long cov_dims[4], long channels
 
 
 
-const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1. };
+const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1., false };
 
 
 
@@ -379,6 +340,13 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 	assert(1 == md_calc_size(DIMS - 5, out_dims + 5));
 	assert(1 == md_calc_size(DIMS - 5, calreg_dims + 5));
 
+	complex float rot[channels][channels];
+
+	long scc_dims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
+	scc_dims[COIL_DIM] = channels;
+	scc_dims[MAPS_DIM] = channels;
+	scc(scc_dims, &rot[0][0], calreg_dims, data);
+
 	long cov_dims[4];
 
 	calone_dims(conf, cov_dims, channels);
@@ -388,6 +356,35 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 	calone(conf, cov_dims, imgcov, SN, svals, calreg_dims, data);
 
 	caltwo(conf, out_dims, out_data, eptr, cov_dims, imgcov, msk_dims, msk);
+
+	/* Intensity and phase normalization similar as proposed
+	 * for adaptive combine (Walsh's method) in
+	 * Griswold et al., ISMRM 10:2410 (2002)
+	 */
+
+	if (conf->intensity) {
+
+		debug_printf(DP_DEBUG1, "Normalize...\n");
+
+		/* I think the reason this works is because inhomogeneity usually
+		 * comes from only a few coil elements which are close. The l1-norm
+		 * is more resilient against such outliers. -- Martin
+		 */
+
+		normalizel1(DIMS, COIL_FLAG, out_dims, out_data);
+		md_zsmul(DIMS, out_dims, out_data, out_data, sqrtf((float)channels));
+	}
+
+	debug_printf(DP_DEBUG1, "Crop maps... (%.2f)\n", conf->crop);
+
+	crop_sens(out_dims, out_data, conf->softcrop, conf->crop, eptr);
+
+	debug_printf(DP_DEBUG1, "Fix phase...\n");
+
+	fixphase(DIMS, out_dims, COIL_DIM, out_data, out_data);
+
+	// rotate the the phase with respect to the first principle component
+//	fixphase2(DIMS, out_dims, COIL_DIM, rot[0], out_data, out_data);
 
 	md_free(imgcov);
 }

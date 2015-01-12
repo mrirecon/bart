@@ -23,6 +23,10 @@
 #define DIMS 16
 #endif
 
+#ifndef CFL_SIZE
+#define CFL_SIZE sizeof(complex float)
+#endif
+
 
 static const char* usage_str = "dimension position <input> <output>";
 static const char* help_str = "Extracts a slice from {position} along {dimension}.\n";
@@ -53,7 +57,7 @@ int main_slice(int argc, char* argv[])
 
 	long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
 	pos2[dim] = pos;
-	md_slice(DIMS, (1 << dim), pos2, in_dims, out_data, in_data, sizeof(complex float));
+	md_slice(DIMS, MD_BIT(dim), pos2, in_dims, out_data, in_data, CFL_SIZE);
 
 	unmap_cfl(DIMS, out_dims, out_data);
 	unmap_cfl(DIMS, in_dims, in_data);

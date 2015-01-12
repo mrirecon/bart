@@ -56,10 +56,20 @@ void walsh(const long bsize[3], const long dims[DIMS], complex float* sens, cons
 		odims[i] = dims[i] + kdims[i] - 1;
 
 	complex float* tmp = md_alloc(DIMS, odims, CFL_SIZE);
+#if 0
 	md_resizec(DIMS, odims, tmp, dims1, sens, CFL_SIZE);
+#else
+	long cen[DIMS] = { 0 };
 
-	// FIXME: we should have the option to compute this from a periodic 
-	// extension 
+	for (int i = 0; i < 3; i++)
+		cen[i] = (odims[i] - dims[i] + 1) / 2;
+
+	complex float* tmp1 = md_alloc(DIMS, odims, CFL_SIZE);
+	md_circ_ext(DIMS, odims, tmp1, dims1, sens, CFL_SIZE);
+//	md_resize(DIMS, odims, tmp1, dims1, sens, CFL_SIZE);
+	md_circ_shift(DIMS, odims, cen, tmp, tmp1, CFL_SIZE);
+	md_free(tmp1);
+#endif
 
 	long calmat_dims[2];
 	complex float* cm = calibration_matrix(calmat_dims, kdims, odims, tmp);

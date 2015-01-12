@@ -307,3 +307,9 @@ void iter2_call_iter(void* _conf,
 
 
 
+double iter2_power( unsigned int maxiter,
+		 const struct operator_s* normaleq_op,
+		   long size, float* u)
+{
+	return power( maxiter, size, (void*) normaleq_op, select_vecops(u), operator_iter, u );
+}

@@ -27,13 +27,12 @@
 
 #define KB_WIDTH	3
 
+#ifdef USE_GSL
 #include <gsl/gsl_specfunc.h>
+#endif
 
 
-static double kb(double beta, double x);
-static void kb_precompute(double beta, int n, float table[n+1] );
-static double I0_beta(double beta);
-
+#ifdef USE_GSL
 static double kb(double beta, double x)
 {
 	if (fabs(x) >= 0.5)
@@ -47,14 +46,21 @@ static void kb_precompute(double beta, int n, float table[n + 1])
 	for (int i = 0; i < n + 1; i++)
 		table[i] = kb(beta, (double)(i) / (double)(n - 1) / 2.);
 }
+#endif
+
 
 
 static double I0_beta(double beta)
 {
+#ifdef USE_GSL
 	return gsl_sf_bessel_I0(beta);
+#else
+	assert(KB_BETA == beta);
+	return 118509.158946;
+#endif
 }
 
-float kb_table128[129] = {
+const float kb_table128[129] = {
 
 	1.0000000000000000, 0.9995847139398653, 0.9983398161018390, 0.9962681840754728, 
 	0.9933746024007669, 0.9896657454602714, 0.9851501536396374, 0.9798382028675283, 
@@ -119,19 +125,17 @@ static float intlookup(int n, const float table[n + 1], float x)
 
 	int index = (int)(x * (n - 1));
 	fpart = x * (n - 1) - (float)index;
-
+#if 1
 	assert(index >= 0);
 	assert(index <= n);
 	assert(fpart >= 0.);
 	assert(fpart <= 1.);
-
+#endif
 	float l = lerp(table[index], table[index + 1], fpart);
-
-
+#if 1
 	assert(l <= 1.);
 	assert(0 >= 0.);
-
-
+#endif
 	return l;
 }
 
@@ -140,11 +144,16 @@ static float intlookup(int n, const float table[n + 1], float x)
 void gridH(float os, float width, double beta, float scale, const float shifts[3], const complex float* traj, const complex float* weights, const long ksp_dims[DIMS], complex float* dst, const long grid_dims[DIMS], const complex float* grid)
 {
 	long C = ksp_dims[COIL_DIM];
-
+#ifdef USE_GSL
 	// precompute kaiser bessel table
 	int kb_size = 500;
 	float kb_table[kb_size];
 	kb_precompute(beta, kb_size, kb_table);
+#else
+	assert(KB_BETA == beta);
+	int kb_size = 128;
+	const float* kb_table = kb_table128;
+#endif
 
 #pragma omp parallel for
 	for(int i = 0; i < ksp_dims[1]; i++)
@@ -168,8 +177,8 @@ void gridH(float os, float width, double beta, float scale, const float shifts[3
 		
 		grid_pointH(C, grid_dims, pos, val, grid, width, kb_size, kb_table);
 
-		for (int j = 0; j < C; j++)
-		{
+		for (int j = 0; j < C; j++) {
+
 			if (NULL == weights)
 				dst[j * ksp_dims[1] + i] += scale * val[j];
 			else 
@@ -179,14 +188,20 @@ void gridH(float os, float width, double beta, float scale, const float shifts[3
 }
 
 
-void grid( float os, float width, double beta, float scale, const float shifts[3], const complex float* traj, const complex float* weights, const long grid_dims[DIMS], complex float* grid, const long ksp_dims[DIMS], const complex float* src)
+void grid(float os, float width, double beta, float scale, const float shifts[3], const complex float* traj, const complex float* weights, const long grid_dims[DIMS], complex float* grid, const long ksp_dims[DIMS], const complex float* src)
 {
 	long C = ksp_dims[COIL_DIM];
 
+#ifdef USE_GSL
 	// precompute kaiser bessel table
 	int kb_size = 500;
 	float kb_table[kb_size];
 	kb_precompute(beta, kb_size, kb_table);
+#else
+	assert(KB_BETA == beta);
+	int kb_size = 128;
+	const float* kb_table = kb_table128;
+#endif
 
 	// grid
 #pragma omp parallel for
@@ -207,13 +222,12 @@ void grid( float os, float width, double beta, float scale, const float shifts[3
 
 		complex float val[C];
 		
-		for (int j = 0; j < C; j++)
-		{
+		for (int j = 0; j < C; j++) {
+
 			if (NULL == weights)
 				val[j] = src[j * ksp_dims[1] + i] * scale;
 			else
 				val[j] = src[j * ksp_dims[1] + i] * scale * weights[i];
-
 		}
 
 		grid_point(C, grid_dims, pos, grid, val, width, kb_size, kb_table);
@@ -223,7 +237,7 @@ void grid( float os, float width, double beta, float scale, const float shifts[3
 
 
 
-void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex float* dst, const complex float val[ch], float width, int kb_size, float kb_table[kb_size+1])
+void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex float* dst, const complex float val[ch], float width, int kb_size, const float kb_table[kb_size + 1])
 {
 	int sti[3];
 	int eni[3];
@@ -270,7 +284,7 @@ void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex
 
 
 
-void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], complex float val[ch], const complex float* src, float width, int kb_size, float kb_table[kb_size])
+void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], complex float val[ch], const complex float* src, float width, int kb_size, const float kb_table[kb_size + 1])
 {
 	int sti[3];
 	int eni[3];
@@ -316,7 +330,7 @@ void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], comple
 }
 
 
-void grid_line3d(unsigned int n, unsigned int ch, const long dims[3], const float start[3], const float end[3], complex float* dst, const complex float* src, float width, int kb_size, float kb_table[kb_size+1])
+void grid_line3d(unsigned int n, unsigned int ch, const long dims[3], const float start[3], const float end[3], complex float* dst, const complex float* src, float width, int kb_size, const float kb_table[kb_size + 1])
 {
 	#pragma omp parallel for
 	for (unsigned int i = 0; i < n; i++) {
@@ -361,16 +375,23 @@ void density_comp3d(const long dim[3], complex float* kspace)
 }
 
 
+
+double calc_beta(float os, float width)
+{
+	return M_PI * sqrt(pow((width * 2. / os) * (os - 0.5), 2.) - 0.8);
+}
+
+
 static float pos(int d, int i)
 {
 	return (1 == d) ? 0. : (((float)i - (float)d / 2.) / (float)d);
 }
 
-void rolloff_correction(float os, float width, const long dimensions[3], complex float* dst)
+void rolloff_correction(float os, float width, float beta, const long dimensions[3], complex float* dst)
 {
-	double beta = M_PI * sqrt( pow( (width * 2. / os ) * (os - 0.5 ), 2. ) - 0.8 );
+	UNUSED(os);
 
-#pragma omp parallel for
+#pragma omp parallel for collapse(3)
 	for (int z = 0; z < dimensions[2]; z++) 
 		for (int y = 0; y < dimensions[1]; y++) 
 			for (int x = 0; x < dimensions[0]; x++)

@@ -584,7 +584,7 @@ struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s
 	long* matrix_dims = xmalloc( N * sizeof(long) );
 	long* matrix_strs = xmalloc( N * sizeof(long) );
 
-	md_select_dims(N, ~(1 << a_data->T_dim), matrix_dims, max_dims);
+	md_select_dims(N, ~MD_BIT(a_data->T_dim), matrix_dims, max_dims);
 	md_calc_strides(N, matrix_strs, matrix_dims, CFL_SIZE);
 
 	complex float* matrix = md_alloc_sameplace(N, matrix_dims, CFL_SIZE, a_data->mat);

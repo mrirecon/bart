@@ -72,7 +72,7 @@ int main_nusense(int argc, char* argv[])
 	bool randshift = true;
 	float lambda = 0.;
 	unsigned int maxiter = 50;
-	float step = 0.9;
+	float step = 0.95;
 
 	// Start time count
 
@@ -84,20 +84,23 @@ int main_nusense(int argc, char* argv[])
 	bool use_gpu = false;
 	bool precond = false;
 	const char* pat_file = NULL;
-	const char* dcf_file = NULL;
 	bool hogwild = false;
 	bool toeplitz = true;
 	bool stoch = false;
 	bool ist = false;
+	bool eigen = false;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "Ir:i:l:u:t:p:nhHs:Sd:c"))) {
+	while (-1 != (c = getopt(argc, argv, "Ir:i:l:u:t:p:nhHs:eSc"))) {
 		switch(c) {
 
 		case 'I':
 			ist = true;
 			break;
 
+		case 'e':
+			eigen = true;
+			break;
 
 		case 'H':
 			hogwild = true;
@@ -138,10 +141,6 @@ int main_nusense(int argc, char* argv[])
 
 		case 'p':
 			pat_file = strdup(optarg);
-			break;
-
-		case 'd':
-			dcf_file = strdup(optarg);
 			break;
 
 		case 'n':
@@ -233,43 +232,6 @@ int main_nusense(int argc, char* argv[])
 	complex float* image = create_cfl(argv[optind + 3], DIMS, img_dims);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
-	// initialize algorithm
-
-	italgo_fun_t italgo = NULL;
-	void* iconf = NULL;
-
-	struct iter_conjgrad_conf cgconf;
-	struct iter_fista_conf fsconf;
-	struct iter_ist_conf isconf;
-
-	if (!l1wav) {
-
-		memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
-		cgconf.maxiter = maxiter;
-		cgconf.l2lambda = lambda;
-
-		italgo = iter_conjgrad;
-		iconf = &cgconf;
-
-	} else if (ist) {
-
-		memcpy(&isconf, &iter_ist_defaults, sizeof(struct iter_ist_conf));
-		isconf.maxiter = maxiter;
-		isconf.step = step;
-		isconf.hogwild = hogwild;
-
-		italgo = iter_ist;
-		iconf = &isconf;
-	} else {
-
-		memcpy(&fsconf, &iter_fista_defaults, sizeof(struct iter_fista_conf));
-		fsconf.maxiter = maxiter;
-		fsconf.step = step;
-		fsconf.hogwild = hogwild;
-
-		italgo = iter_fista;
-		iconf = &fsconf;
-	}
 
 	// initialize fft_op
 	const struct linop_s* fft_op
@@ -305,38 +267,60 @@ int main_nusense(int argc, char* argv[])
 
 	md_free(adj);
 
-	// initialize image with dcf
 
-	if (NULL != dcf_file)
+	if (eigen)
 	{
-		long dcf_dims[DIMS];
-		long dcf_strs[DIMS];
-		complex float* dcf = load_cfl(dcf_file, DIMS, dcf_dims);
-		md_calc_strides( DIMS, dcf_strs, dcf_dims, CFL_SIZE );
-
-
-		long ksp_strs[DIMS];
-		md_calc_strides( DIMS, ksp_strs, ksp_dims, CFL_SIZE );
-		complex float* ksp_dcf = md_alloc(DIMS, ksp_dims, CFL_SIZE );
-
-		md_zmul2( DIMS, ksp_dims, ksp_strs, ksp_dcf, ksp_strs, kspace, dcf_strs, dcf );
-
-		linop_adjoint( forward_op, DIMS, img_dims, image, DIMS, ksp_dims, ksp_dcf );
-
-		float s = md_znorm(DIMS, ksp_dims, kspace) / md_znorm(DIMS, ksp_dims, ksp_dcf);
-
-		md_zsmul( DIMS, img_dims, image, image, s );
-
-		debug_printf(DP_INFO, "Scaling2: %.2f\n", s); 
-
-
-		md_free( ksp_dcf );
-		unmap_cfl(DIMS, dcf_dims, dcf);
+		// get maximum eigenvalue
+		for ( long i = 0; i < md_calc_size( DIMS, img_dims ); i++ )
+			image[i] = rand();
+		double maxeigen = iter2_power( 30, forward_op->normal, 2 * md_calc_size( DIMS, img_dims ), (float*) image );
+		step /= maxeigen;
+		debug_printf(DP_INFO, "Maximum eigenvalue: %.2lf\n", maxeigen); 
 	}
+
+
 
 	if (scaling != 0.)
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
 
+
+	// initialize algorithm
+
+	italgo_fun_t italgo = NULL;
+	void* iconf = NULL;
+
+	struct iter_conjgrad_conf cgconf;
+	struct iter_fista_conf fsconf;
+	struct iter_ist_conf isconf;
+
+	if (!l1wav) {
+
+		cgconf = iter_conjgrad_defaults;
+		cgconf.maxiter = maxiter;
+		cgconf.l2lambda = lambda;
+
+		italgo = iter_conjgrad;
+		iconf = &cgconf;
+
+	} else if (ist) {
+
+		isconf = iter_ist_defaults;
+		isconf.maxiter = maxiter;
+		isconf.step = step;
+		isconf.hogwild = hogwild;
+
+		italgo = iter_ist;
+		iconf = &isconf;
+	} else {
+
+		fsconf = iter_fista_defaults;
+		fsconf.maxiter = maxiter;
+		fsconf.step = step;
+		fsconf.hogwild = hogwild;
+
+		italgo = iter_fista;
+		iconf = &fsconf;
+	}
 
 	struct lsqr_conf lsqr_conf = { 0. };
 

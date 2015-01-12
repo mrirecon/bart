@@ -82,12 +82,12 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 	}
 
 	int b = ffs(flags & -flags) - 1;
-	assert(flags & (1 << b));
+	assert(MD_IS_SET(flags, b));
 
-	flags = flags & ~(1 << b);
+	flags = MD_CLEAR(flags, b);
 
 	long dimc[D];
-	md_select_dims(D, ~(1 << b), dimc, dim);
+	md_select_dims(D, ~MD_BIT(b), dimc, dim);
 
 	debug_printf(DP_DEBUG4, "Parallelize: %d\n", dim[b]);
 
@@ -147,7 +147,7 @@ bool md_next(unsigned int D, const long dims[D], unsigned int flags, long pos[D]
 	if (md_next(D, dims, flags, pos))
 		return true;
 
-	if (flags & (1 << D)) {
+	if (MD_IS_SET(flags, D)) {
 
 		assert((0 <= pos[D]) && (pos[D] < dims[D]));
 
@@ -243,7 +243,7 @@ void md_select_dims(unsigned int D, unsigned long flags, long odims[D], const lo
 	md_copy_dims(D, odims, idims);
 	
 	for (unsigned int i = 0; i < D; i++)
-		if (!(flags & (1 << i)))
+		if (!MD_IS_SET(flags, i))
 			odims[i] = 1;
 }
 
@@ -348,7 +348,7 @@ bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], co
 
 	D--;
 
-	if ((dim1[D] == dim2[D]) || ((flags & (1 << D) && ((1 == dim1[D]) || (1 == dim2[D])))))
+	if ((dim1[D] == dim2[D]) || (MD_IS_SET(flags, D) && ((1 == dim1[D]) || (1 == dim2[D]))))
 		return md_check_compat(D, flags, dim1, dim2);
 		
 	return false;
@@ -369,8 +369,8 @@ bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], co
 void md_min_dims(unsigned int D, unsigned long flags, long odims[D], const long idims1[D], const long idims2[D])
 {
 	for (unsigned int i = 0; i < D; i++)
-		if ((flags & (1 << i)))
-			odims[i] = MIN( idims1[i], idims2[i] );
+		if (MD_IS_SET(flags, i))
+			odims[i] = MIN(idims1[i], idims2[i]);
 }
 
 
@@ -405,14 +405,12 @@ void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, 
 {
 	int skip = md_calc_blockdim(D, dim, str, size);
 //	printf("CLEAR skip %d\n", skip);
-	const long* nstr[1] = { str + skip };
-	void* nptr[1] = { ptr };
 #ifdef  USE_CUDA
 	struct data_s data = { md_calc_size(skip, dim) * size, cuda_ondevice(ptr) };
 #else
 	struct data_s data = { md_calc_size(skip, dim) * size };
 #endif
-	md_nary(1, D - skip, dim + skip, nstr, nptr, (void*)&data, &nary_clear);
+	md_nary(1, D - skip, dim + skip, (const long*[1]){ str + skip }, (void*[1]){ ptr }, (void*)&data, &nary_clear);
 }
 
 
@@ -511,9 +509,9 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	long tistr[D];
 	long tdims[D];
 
-	memcpy(tostr, ostr, D * sizeof(long));
-	memcpy(tistr, istr, D * sizeof(long));
-	memcpy(tdims, dim, D * sizeof(long));
+	md_copy_strides(D, tostr, ostr);
+	md_copy_strides(D, tistr, istr);
+	md_copy_dims(D, tdims, dim);
 
 	long (*nstr2[2])[D] = { &tostr, &tistr };
 	int ND = optimize_dims(2, D, tdims, nstr2);
@@ -567,8 +565,7 @@ void md_copy(unsigned int D, const long dim[D], void* optr, const void* iptr, si
 // copied from flpmath.c
 static void* gpu_constant(const void* vp, size_t size)
 {
-        long dims1[1] = { 1 };
-        return md_gpu_move(1, dims1, vp, size);
+        return md_gpu_move(1, (long[1]){ 1 }, vp, size);
 }
 #endif
 
@@ -687,9 +684,7 @@ void md_circular_swap(unsigned M, unsigned int D, const long dims[D], void* ptr[
  */
 void md_swap2(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr[D], void* iptr, size_t size)
 {
-	const long* nstr[2] = { ostr , istr };
-	void* nptr[2] = { optr, iptr };
-	md_circular_swap2(2, D, dim, nstr, nptr, size);
+	md_circular_swap2(2, D, dim, (const long*[2]){ ostr, istr }, (void*[2]){ optr, iptr }, size);
 }
 
 
@@ -888,12 +883,12 @@ void md_permute2(unsigned int D, const unsigned int order[D], const long odims[D
 
 		assert(order[i] < D);
 		assert(odims[i] == idims[order[i]]);
-		flags |= (1 << order[i]);
+		flags = MD_SET(flags, order[i]);
 
 		ostr2[order[i]] = ostr[i];
 	}
 
-	assert((1u << D) == flags + 1);
+	assert(MD_BIT(D) == flags + 1);
 
 	md_copy2(D, idims, ostr2, optr, istr, iptr, size);
 }
@@ -1014,7 +1009,7 @@ void md_swap_flip2(unsigned int D, const long dims[D], unsigned long flags, cons
 #if 1
 	int i;
 	for (i = D - 1; i >= 0; i--)
-		if ((1 != dims[i]) && (flags & (1 << i)))
+		if ((1 != dims[i]) && MD_IS_SET(flags, i))
 			break;
 
 	if (-1 == i) {
@@ -1072,7 +1067,7 @@ static void md_flip_inpl2(unsigned int D, const long dims[D], unsigned long flag
 {
 	int i;
 	for (i = D - 1; i >= 0; i--)
-		if ((1 != dims[i]) && (flags & (1 << i)))
+		if ((1 != dims[i]) && MD_IS_SET(flags, i))
 			break;
 
 	if (-1 == i)
@@ -1111,7 +1106,7 @@ void md_flip2(unsigned int D, const long dims[D], unsigned long flags, const lon
 
 		ostr2[i] = ostr[i];
 
-		if (flags & (1 << i)) {
+		if (MD_IS_SET(flags, i)) {
 
 			ostr2[i] = -ostr[i];
 			off += (dims[i] - 1) * ostr[i];
@@ -1160,7 +1155,7 @@ static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], un
 
 	md_septrafo_r(D, R, dimensions, flags, strides, ptr, fun, _data);
                 
-        if (flags & (1 << R)) {
+        if (MD_IS_SET(flags, R)) {
 
         	struct septrafo_s data = { dimensions[R], strides[R], _data, fun };
                 void* nptr[1] = { ptr };
@@ -1214,7 +1209,7 @@ void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, cons
 
 	for (unsigned int i = 0; i < D; i++) {
 	
-		if (flags & (1 << i)) {
+		if (MD_IS_SET(flags, i)) {
 
 			if (count < 0)
 				count = dims[i];
@@ -1230,7 +1225,7 @@ void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, cons
 	md_select_dims(D, ~flags, xdims, dims);
 
 	for (long i = 0; i < count; i++) 
-		md_copy2(5, xdims, str1, dst + i * stride1, str2, src + i * stride2, size);
+		md_copy2(D, xdims, str1, dst + i * stride1, str2, src + i * stride2, size);
 }
 
 
@@ -1294,9 +1289,9 @@ static void md_circ_shift_inpl2(unsigned int D, const long dims[D], const long c
 
 	// cool but slow, instead we want to have a chain of swaps
 
-	md_flip2(D, dims, (1 << i), strs, dst, strs, dst, size);
-	md_flip2(D, dims1, (1 << i), strs, dst, strs, dst, size);
-	md_flip2(D, dims2, (1 << i), strs, dst + off, strs, dst + off, size);
+	md_flip2(D, dims, MD_BIT(i), strs, dst, strs, dst, size);
+	md_flip2(D, dims1, MD_BIT(i), strs, dst, strs, dst, size);
+	md_flip2(D, dims2, MD_BIT(i), strs, dst + off, strs, dst + off, size);
 
 	// also not efficient, we want to merge the chain of swaps
 
@@ -1364,6 +1359,7 @@ void md_circ_shift2(unsigned int D, const long dimensions[D], const long center[
 
 
 
+
 /**
  * Circularly shift array (without strides)
  *
@@ -1376,6 +1372,71 @@ void md_circ_shift(unsigned int D, const long dimensions[D], const long center[D
 	md_calc_strides(D, strides, dimensions, size);
 	md_circ_shift2(D, dimensions, center, strides, dst, strides, src, size);
 }
+
+
+
+/**
+ * Circularly extend array (with strides)
+ *
+ */
+void md_circ_ext2(unsigned int D, const long dims1[D], const long strs1[D], void* dst, const long dims2[D], const long strs2[D], const void* src, size_t size)
+{
+	long ext[D];
+
+	for (unsigned int i = 0; i < D; i++) {
+
+		ext[i] = dims1[i] - dims2[i];
+
+		assert(ext[i] >= 0);
+		assert(ext[i] <= dims2[i]);
+	}
+
+	unsigned int i = 0;		// FIXME :maybe we shoud search the other way?
+	while ((i < D) && (0 == ext[i]))
+		i++;
+
+	if (D == i) {
+
+		md_copy2(D, dims1, strs1, dst, strs2, src, size);
+		return;
+	}
+
+	long dims1_crop[D];
+	long dims2_crop[D];
+	long ext_dims[D];
+
+	md_copy_dims(D, dims1_crop, dims1);
+	md_copy_dims(D, dims2_crop, dims2);
+	md_copy_dims(D, ext_dims, dims1);
+
+	dims1_crop[i] = dims2[i];
+	dims2_crop[i] = ext[i];
+	ext_dims[i] = ext[i];
+
+	ext[i] = 0;
+
+	//printf("%d: %ld %ld %d\n", i, dim1[i], dim2[i], sizeof(dimensions));
+	md_circ_ext2(D, dims1_crop, strs1, dst, dims2, strs2, src, size);
+	md_circ_ext2(D, ext_dims, strs1, dst + dims2[i] * strs1[i], dims2_crop, strs2, src, size);
+}
+
+
+
+
+/**
+ * Circularly extend array (without strides)
+ *
+ */
+void md_circ_ext(unsigned int D, const long dims1[D],  void* dst, const long dims2[D], const void* src, size_t size)
+{
+	long strs1[D];
+	long strs2[D];
+	md_calc_strides(D, strs1, dims1, size);
+	md_calc_strides(D, strs2, dims2, size);
+	md_circ_ext2(D, dims1, strs1, dst, dims2, strs2, src, size);
+}
+
+
 
 
 

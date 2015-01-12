@@ -35,7 +35,9 @@ static const char* help_str = "Normalize along selected dimensions.\n";
 
 int main_normalize(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 3, usage_str, help_str);
+	bool l1 = false;
+
+	l1 = mini_cmdline_bool(argc, argv, 3, usage_str, help_str);
 
 	int N = DIMS;
 	long dims[N];
@@ -47,7 +49,8 @@ int main_normalize(int argc, char* argv[])
 
 	complex float* out = create_cfl(argv[3], N, dims);
 	md_copy(N, dims, out, data, CFL_SIZE);
-	normalize(N, flags, dims, out);
+
+	(l1 ? normalizel1 : normalize)(N, flags, dims, out);
 
 	unmap_cfl(N, dims, out);
 	exit(0);

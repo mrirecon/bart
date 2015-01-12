@@ -214,6 +214,10 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 		if (lambda_scale != ls_old) 
 			debug_printf(DP_DEBUG2, "##lambda_scale = %f\n", lambda_scale);
 
+
+		thresh(tdata,  tau, x, x);
+
+
 		op(data, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
 
@@ -225,8 +229,6 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 			break;
 
 		vops->axpy(N, x, tau * lambda_scale, r);
-
-		thresh(tdata,  tau, x, x);
 
 
 		if (hogwild)
@@ -326,6 +328,10 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 		if (lambda_scale != ls_old) 
 			debug_printf(DP_DEBUG2, "##lambda_scale = %f\n", lambda_scale);
 
+
+		thresh(tdata, lambda_scale * tau, x, x);
+
+		ravine(vops, N, &ra, x, o);	// FISTA
 		op(data, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
 
@@ -338,9 +344,6 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 
 		vops->axpy(N, x, tau, r);
 
-		thresh(tdata, lambda_scale * tau, x, x);
-
-		ravine(vops, N, &ra, x, o);	// FISTA
 
 		if (hogwild)
 			hogwild_k++;
@@ -813,3 +816,26 @@ void pocs(unsigned int maxiter,
 	if (NULL != x_truth)
 		vops->del(x_err);
 }
+
+
+/**
+ *  Power iteration
+ */
+double power(unsigned int maxiter,
+	   long N, void* data,
+	   const struct vec_iter_s* vops,
+	   void (*op)(void* data, float* dst, const float* src), 
+	   float* u)
+{
+	double s = vops->norm(N, u);
+	vops->smul(N, 1. / s, u, u);
+
+	for (unsigned int i = 0; i < maxiter; i++) {
+
+		op(data, u, u);		// r = A x
+		s = vops->norm(N, u);
+		vops->smul(N, 1. / s, u, u);
+	}
+	return s;
+}
+

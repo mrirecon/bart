@@ -7,3 +7,8 @@ extern void casorati_dims(unsigned int N, long odim[2], const long dimk[N], cons
 extern void casorati_matrix(unsigned int N, const long dimk[N], const long odim[2], _Complex float* optr, const long dim[N], const long str[N], const _Complex float* iptr);
 extern void casorati_matrixH(unsigned int N, const long dimk[N], const long dim[N], const long str[N], _Complex float* optr, const long odim[2], const _Complex float* iptr);
 
+
+extern void basorati_dims(unsigned int N, long odim[2], const long dimk[N], const long dims[N]);
+extern void basorati_matrix(unsigned int N, const long dimk[N], const long odim[2], _Complex float* optr, const long dim[N], const long str[N], const _Complex float* iptr);
+extern void basorati_matrixH(unsigned int N, const long dimk[N], const long dim[N], const long str[N], _Complex float* optr, const long odim[2], const _Complex float* iptr);
+

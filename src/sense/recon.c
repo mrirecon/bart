@@ -209,7 +209,7 @@ void sense_recon(struct sense_conf* conf, const long dims[DIMS], complex float* 
 		unsigned int flags = 0;
 		for (unsigned int i = 0; i < DIMS; i++)
 			if (pat_dims[i] > 1)
-				flags |= (1 << i);
+				flags = MD_SET(flags, i);
 
 		const struct lad_conf lad_conf = { conf->rwiter, conf->gamma, flags, &lsqr_conf };
 

@@ -8,7 +8,6 @@
 
 #include <complex.h>
 #include <stdbool.h>
-#include <string.h>
 #include <assert.h>
 #include <math.h>
 
@@ -112,7 +111,7 @@ const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const 
 
 	struct iter_conjgrad_conf* cgconf = xmalloc(sizeof(struct iter_conjgrad_conf));
 
-	memcpy(cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
+	*cgconf = iter_conjgrad_defaults;
 	cgconf->maxiter = 10;
 	cgconf->l2lambda = 0;
 

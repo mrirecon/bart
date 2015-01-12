@@ -20,7 +20,9 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
+
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "fft.h"
 #undef fft_plan_s
@@ -62,11 +64,21 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 	/* this will also currently be slow on the GPU because we do not
 	 * support strides there on the lowest level */
 
-	unsigned int i = 0;
-	while (!(flags & (1 << i)))
-		i++;
+	unsigned int i = N - 1;
+	while (!MD_IS_SET(flags, i))
+		i--;
 
-	assert(i < N);
+#if 1
+	// If there is only one dimensions left and it is the innermost
+	// which is contiguous optimize using md_zfftmod2
+
+	if ((0u == MD_CLEAR(flags, i)) && (0 == i)
+		&& (0 == dims[0] % 2) && (CFL_SIZE == ostrs[0]) && (CFL_SIZE == istrs[0])) {
+
+		md_zfftmod2(N, dims, ostrs, dst, istrs, src, evenodd);
+		return;
+	}
+#endif
 
 	long tdims[N];
 	md_copy_dims(N, tdims, dims);
@@ -86,7 +98,7 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 			long tdims1[N];
 			md_copy_dims(N, tdims1, tdims );
 			tdims1[i] = (dims[i] + 1) / 2;
-			fftmod2_r(N, tdims1, flags & ~(1 << i), tostrs, (void*)dst + 0 * ostrs[i], tistrs, (void*)src + 0 * istrs[i], !evenodd);
+			fftmod2_r(N, tdims1, MD_CLEAR(flags, i), tostrs, (void*)dst + 0 * ostrs[i], tistrs, (void*)src + 0 * istrs[i], !evenodd);
 		}
 
 //#pragma omp section
@@ -94,7 +106,7 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 			long tdims2[N];
 			md_copy_dims(N, tdims2, tdims );
 			tdims2[i] = (dims[i] + 0) / 2;
-			fftmod2_r(N, tdims2, flags & ~(1 << i), tostrs, (void*)dst + 1 * ostrs[i], tistrs, (void*)src + 1 * istrs[i], evenodd);
+			fftmod2_r(N, tdims2, MD_CLEAR(flags, i), tostrs, (void*)dst + 1 * ostrs[i], tistrs, (void*)src + 1 * istrs[i], evenodd);
 		}
 	}
 }
@@ -114,7 +126,7 @@ void fftmodk2(unsigned int N, const long dims[N], unsigned long flags, const lon
 {
 	long dimsum = 0;
 	for(unsigned int i = 0; i < N; i++)
-		if (flags & (1 << i))
+		if (MD_IS_SET(flags, i))
 			dimsum += dims[i] / 2;
 
 	bool evenodd = ((dimsum % 2) == 0);
@@ -144,7 +156,7 @@ void fftshift2(unsigned int N, const long dims[N], unsigned long flags, const lo
 	long pos[N];
 	md_set_dims(N, pos, 0);
 	for (unsigned int i = 0; i < N; i++)
-		if (flags & (1u << i))
+		if (MD_IS_SET(flags, i))
 			pos[i] = dims[i] / 2;
 
 	md_circ_shift2(N, dims, pos, ostrs, dst, istrs, src, CFL_SIZE);
@@ -183,7 +195,7 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 
 	for (unsigned int i = 0; i < N; i++) {
 
-		if (flags & (1 << i)) {
+		if (MD_IS_SET(flags, i)) {
 
 			dims[k].n = dimensions[i];
 			dims[k].is = istrides[i] / CFL_SIZE;

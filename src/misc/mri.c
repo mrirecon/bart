@@ -78,12 +78,12 @@ void transfer_function(void* _data, const complex float* pattern, complex float*
 
 void estimate_pattern(unsigned int D, const long dims[D], unsigned int dim, complex float* pattern, const complex float* kspace_data)
 {
-	md_zrss(D, dims, (1u << dim), pattern, kspace_data);
+	md_zrss(D, dims, MD_BIT(dim), pattern, kspace_data);
 
 	long dims2[D];
 	long strs2[D];
 	assert(dim < D);
-	md_select_dims(D, ~(1u << dim), dims2, dims);
+	md_select_dims(D, ~MD_BIT(dim), dims2, dims);
 	md_calc_strides(D, strs2, dims2, CFL_SIZE);
 
 	long strs1[D];

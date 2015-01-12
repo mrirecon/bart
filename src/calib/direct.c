@@ -77,7 +77,7 @@ void direct_calib(const long dims[5], complex float* sens, const long caldims[5]
 	ifftc(5, dims, 7, sens, sens);
 
 	long dims1[5];
-	md_select_dims(5, ~(1 << COIL_DIM), dims1, dims);
+	md_select_dims(5, ~MD_BIT(COIL_DIM), dims1, dims);
 
 	complex float* img = md_alloc(5, dims1, CFL_SIZE);
 

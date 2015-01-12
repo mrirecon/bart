@@ -290,7 +290,7 @@ static void compute_rmatrix(int D, int T, float rmatrix[T][T], const float delta
 		for (int i = 0; i < nc[k]; i++) {
 
 			int ind = mc[k][i];
-			processed |= (1 << ind);
+			processed = MD_SET(processed, ind);
 			density += 1. / powf(delta[ind], (float)D);
 		//	printf("%d (%f)\t", ind, density);
 		}
@@ -298,7 +298,7 @@ static void compute_rmatrix(int D, int T, float rmatrix[T][T], const float delta
 
 		for (int i = 0; i < nc[k]; i++)
 			for (int j = 0; j < T; j++)
-				if ((processed & (1 << j)) && (i != j))
+				if (MD_IS_SET(processed, j) && (i != j))
 					rmatrix[i][j] = rmatrix[j][i] = powf(density, -1. / (float)D);
 	}
 }

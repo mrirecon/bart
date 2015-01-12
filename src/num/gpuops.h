@@ -21,6 +21,8 @@ extern void cuda_init(int device);
 extern int cuda_init_memopt(void);
 extern void cuda_exit(void);
 extern int cuda_devices(void);
+extern void cuda_memcache_off(void);
+extern void cuda_memcache_clear(void);
 
 #ifdef __cplusplus
 }

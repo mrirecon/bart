@@ -16,7 +16,6 @@
 
 #include <stdbool.h>
 #include <complex.h>
-#include <string.h>
 #include <assert.h>
 
 #include "num/multind.h"
@@ -195,9 +194,9 @@ void md_wavtrafo2(int D, const long dims[D], unsigned int flags, const long strs
 	for (int i = 0; i < D; i++) {
 
 		if (1 == dims[i])
-			flags &= ~(1 << i);
+			flags = MD_CLEAR(flags, i);
 
-		if (flags & (1 << i))
+		if (MD_IS_SET(flags, i))
 			rec &= (dims[i] > 32);
 	}
 
@@ -211,14 +210,14 @@ void md_wavtrafo2(int D, const long dims[D], unsigned int flags, const long strs
 		md_select_dims(D, ~0, dims2, dims);
 		
 		for (int i = 0; i < D; i++)
-			if (flags & (1 << i)) 
+			if (MD_IS_SET(flags, i))
 				dims2[i] = num_scale(dims[i]);	
 
 		long strs2[D];
-		memcpy(strs2, strs, D * sizeof(long));
+		md_copy_strides(D, strs2, strs);
 
 		for (int i = 0; i < D; i++)
-			if (nosort && (flags & (1 << i)))
+			if (nosort && (MD_IS_SET(flags, i)))
 				strs2[i] *= 2;
 
 		md_wavtrafo2(D, dims2, flags, strs2, ptr, fun, inv, nosort);
@@ -242,11 +241,11 @@ void md_wavtrafoz2(int D, const long dims[D], unsigned int flags, const long str
 {
 	long dims2[D + 1];
 	dims2[0] = 2; // complex float
-	memcpy(dims2 + 1, dims, D * sizeof(long));
+	md_copy_dims(D, dims2 + 1, dims);
 
 	long strs2[D + 1];
 	strs2[0] = sizeof(float);
-	memcpy(strs2 + 1, strs, D * sizeof(long));
+	md_copy_strides(D, strs2 + 1, strs);
 
 	md_wavtrafo2(D + 1, dims2, flags << 1, strs2, (void*)x, fun, inv, nosort);
 }

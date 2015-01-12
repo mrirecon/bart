@@ -255,37 +255,37 @@ static double bench_tall_matmul2(long scale)
 static double bench_add(long scale)
 {
 	long dims[DIMS] = { 65536 * scale, 1, 50 * scale, 1, 1, 1, 1, 1 };
-	return bench_generic_add(dims, (1 << 2), false);
+	return bench_generic_add(dims, MD_BIT(2), false);
 }
 
 static double bench_addf(long scale)
 {
 	long dims[DIMS] = { 65536 * scale, 1, 50 * scale, 1, 1, 1, 1, 1 };
-	return bench_generic_add(dims, (1 << 2), true);
+	return bench_generic_add(dims, MD_BIT(2), true);
 }
 
 static double bench_add2(long scale)
 {
 	long dims[DIMS] = { 50 * scale, 1, 65536 * scale, 1, 1, 1, 1, 1 };
-	return bench_generic_add(dims, (1 << 0), false);
+	return bench_generic_add(dims, MD_BIT(0), false);
 }
 
 static double bench_sum2(long scale)
 {
 	long dims[DIMS] = { 50 * scale, 1, 65536 * scale, 1, 1, 1, 1, 1 };
-	return bench_generic_sum(dims, (1 << 0), false);
+	return bench_generic_sum(dims, MD_BIT(0), false);
 }
 
 static double bench_sum(long scale)
 {
 	long dims[DIMS] = { 65536 * scale, 1, 50 * scale, 1, 1, 1, 1, 1 };
-	return bench_generic_sum(dims, (1 << 2), false);
+	return bench_generic_sum(dims, MD_BIT(2), false);
 }
 
 static double bench_sumf(long scale)
 {
 	long dims[DIMS] = { 65536 * scale, 1, 50 * scale, 1, 1, 1, 1, 1 };
-	return bench_generic_sum(dims, (1 << 2), true);
+	return bench_generic_sum(dims, MD_BIT(2), true);
 }
 
 
@@ -587,7 +587,7 @@ int main_bench(int argc, char* argv[])
 		do_test(dims, &MD_ACCESS(BENCH_DIMS, strs, pos, out), pos[SCALE_IND] + 1,
 			benchmarks[pos[TESTS_IND]].fun, benchmarks[pos[TESTS_IND]].str);
 
-	} while (md_next(BENCH_DIMS, dims, ~(1 << REPETITION_IND), pos));
+	} while (md_next(BENCH_DIMS, dims, ~MD_BIT(REPETITION_IND), pos));
 
 	unmap_cfl(BENCH_DIMS, dims, out);
 

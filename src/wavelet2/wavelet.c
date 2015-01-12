@@ -77,14 +77,14 @@ struct wavelet_plan_s* prepare_wavelet_plan_filters(int numdims, const long imSi
 		if (1 != imSize[i]) {
 			plan->imSize[d] = imSize[i];
 			plan->numPixel *= imSize[i];
-			if (flags & ( 1 << i)) {
+			if (MD_IS_SET(flags, i)) {
 				plan->numdims_tr++;
 				plan->numPixel_tr*=imSize[i];
 			} else
 				plan->batchSize*=imSize[i];
 
-			if (flags & (1 << i))
-				plan->flags |= (1 << d); 
+			if (MD_IS_SET(flags, i))
+				plan->flags = MD_SET(plan->flags, d);
 			d++;
 		}
 	}
@@ -96,7 +96,7 @@ struct wavelet_plan_s* prepare_wavelet_plan_filters(int numdims, const long imSi
 	i_tr = 0;
 	for (i = 0; i < numdims; i++)
 	{
-		if ((flags & ( 1 << i)) && (1 != imSize[i])) {
+		if (MD_IS_SET(flags, i) && (1 != imSize[i])) {
 			plan->imSize_tr[i_tr] = imSize[i];
 			plan->trDims[i_tr] = i;
 			assert(minSize[i_tr] > 0);
@@ -905,7 +905,7 @@ void create_wavelet_sizes(struct wavelet_plan_s* plan)
 	plan->numCoeff = plan->numCoeff_tr;
 	for (d = 0; d<plan->numdims; d++)
 	{
-		if (!(plan->flags & ( 1 << d)))
+		if (!MD_IS_SET(plan->flags, d))
 			plan->numCoeff *= plan->imSize[d];
 	}
 }

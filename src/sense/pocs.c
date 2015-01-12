@@ -160,8 +160,7 @@ static float compute_norm(const void* _data, const float* ksp)
 
 void pocs_recon(const long dims[DIMS], const struct operator_p_s* thresh, int maxiter, float alpha, float lambda, complex float* result, const complex float* maps, const complex float* pattern, const complex float* kspace)
 {
-	struct iter_pocs_conf pconf;
-	memcpy(&pconf, &iter_pocs_defaults, sizeof(struct iter_pocs_conf));
+	struct iter_pocs_conf pconf = iter_pocs_defaults;
 	pconf.maxiter = maxiter;
 
 	pocs_recon2(iter2_pocs, &pconf, NULL, dims, thresh, alpha, lambda, result, maps, pattern, kspace);
@@ -246,7 +245,7 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 	md_free(data.tmp);
 	md_free(fftmod_mat);
 
-	sense_free(data.sense_op);
+	linop_free(data.sense_op);
 	operator_p_free(sense_proj);
 	operator_p_free(data_consistency_proj);
 	operator_p_free(sparsity_proj);
@@ -257,8 +256,7 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 #ifdef USE_CUDA
 void pocs_recon_gpu(const long dims[DIMS], const struct operator_p_s* thresh, int maxiter, float alpha, float lambda, complex float* result, const complex float* maps, const complex float* pattern, const complex float* kspace)
 {
-	struct iter_pocs_conf pconf;
-	memcpy(&pconf, &iter_pocs_defaults, sizeof(struct iter_pocs_conf));
+	struct iter_pocs_conf pconf = iter_pocs_defaults;
 	pconf.maxiter = maxiter;
 
 	pocs_recon_gpu2(iter2_pocs, &pconf, NULL, dims, thresh, alpha, lambda, result, maps, pattern, kspace);

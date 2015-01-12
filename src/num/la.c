@@ -193,12 +193,9 @@ void (mat_copy)(int A, int B, complex float dst[A][B], const complex float src[A
 			dst[i][j] = src[i][j];
 }
 
-
-void (orthiter)(int M, int N, int iter, float val[M], complex float out[M][N], const complex float matrix[N][N])
+void (orthiter_noinit)(int M, int N, int iter, float val[M], complex float out[M][N], const complex float matrix[N][N])
 {
 	complex float tmp[M][N];
-
-	mat_identity(M, N, out);
 
 	for (int n = 0; n < iter; n++) {
 
@@ -207,6 +204,14 @@ void (orthiter)(int M, int N, int iter, float val[M], complex float out[M][N], c
 		gram_schmidt(M, N, val, out); 
 	}
 }
+
+
+void (orthiter)(int M, int N, int iter, float val[M], complex float out[M][N], const complex float matrix[N][N])
+{
+	mat_identity(M, N, out);
+	orthiter_noinit(M, N, iter, val, out, matrix);
+}
+
 
 void cholesky_double(int N, complex double A[N][N])
 {

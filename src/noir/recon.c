@@ -31,6 +31,10 @@
 
 #include "recon.h"
 
+#ifdef	BERKELEY_SVN
+#include "misc/phsing.h"
+#define PHSING
+#endif
 
 
 #ifdef WAVELET
@@ -86,7 +90,7 @@ static void thresh(void* ptr, float lambda, float* _dst, const float* _src)
 }
 #endif
 
-void noir_recon(const long dims[DIMS], unsigned int iter, float th, complex float* outbuf, complex float* sensout, const complex float* psf, const complex float* mask, const complex float* kspace, bool usegpu)
+void noir_recon(const long dims[DIMS], unsigned int iter, float th, complex float* outbuf, complex float* sensout, const complex float* psf, const complex float* mask, const complex float* kspace, bool rvc, bool usegpu)
 {
 	long imgs_dims[DIMS];
 	long coil_dims[DIMS];
@@ -117,15 +121,34 @@ void noir_recon(const long dims[DIMS], unsigned int iter, float th, complex floa
 	md_clear(DIMS, imgs_dims, imgH, CFL_SIZE);
 	md_clear(DIMS, coil_dims, imgH + skip, CFL_SIZE);
 
-	struct noir_data* ndata = noir_init(dims, mask, psf, usegpu);
+	struct noir_data* ndata = noir_init(dims, mask, psf, rvc, usegpu);
 
 	struct data data = { ndata, NULL, NULL };
 
 	if (-1. == th) {
 
 		struct iter3_irgnm_conf conf = { .iter = iter, .alpha = 1., .redu = 2. };
+		bool repeat = false;
 
-		iter3_irgnm(&conf, frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
+		do {
+			iter3_irgnm(&conf, frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
+#ifdef PHSING
+			{
+//			if (repeat) {
+
+			assert(!usegpu);
+			complex float* coils = md_alloc(DIMS, coil_dims, CFL_SIZE);
+			noir_forw_coils(ndata, coils, img + skip);
+			fftmod(DIMS, coil_dims, FFT_FLAGS, coils, coils);
+//			dump_cfl("coils", DIMS, coil_dims, coils);
+
+			repeat = fixphsing(imgs_dims, img, coil_dims, coils);
+
+			if (repeat)
+				md_free(coils);
+			}
+#endif
+		} while (repeat);
 
 	} else {
 #ifdef WAVELET

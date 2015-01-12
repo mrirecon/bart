@@ -195,12 +195,10 @@ int main_pocsense(int argc, char* argv[])
 	italgo_fun2_t italgo = NULL;
 	void* iconf = NULL;
 
-	struct iter_pocs_conf pconf;
-	memcpy(&pconf, &iter_pocs_defaults, sizeof(struct iter_pocs_conf));
+	struct iter_pocs_conf pconf = iter_pocs_defaults;
 	pconf.maxiter = maxiter;
 
-	struct iter_admm_conf mmconf;
-	memcpy(&mmconf, &iter_admm_defaults, sizeof(struct iter_admm_conf));
+	struct iter_admm_conf mmconf = iter_admm_defaults;
 	mmconf.maxiter = maxiter;
 	mmconf.rho = admm_rho;
 

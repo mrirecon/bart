@@ -461,6 +461,41 @@ extern "C" void cuda_zphsr(long N, _Complex float* dst, const _Complex float* sr
 }
 
 
+
+__global__ void kern_zexpj(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride) {
+
+		float abs = cuCabsf(src[i]); // moved out, otherwise it triggers a compiler error in nvcc
+		dst[i] = zexp(make_cuFloatComplex(0., abs));
+	}
+}
+
+extern "C" void cuda_zexpj(long N, _Complex float* dst, const _Complex float* src)
+{
+	kern_zexpj<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+}
+
+
+
+__global__ void kern_zarg(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = make_cuFloatComplex(zarg(src[i]), 0.);
+}
+
+extern "C" void cuda_zarg(long N, _Complex float* dst, const _Complex float* src)
+{
+	kern_zarg<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+}
+
+
 /**
  * (GPU) Step (1) of soft thesholding, y = ST(x, lambda).
  * Only computes the residual, resid = MAX( (abs(x) - lambda)/abs(x)), 0 )
@@ -571,11 +606,35 @@ __global__ void kern_le(int N, float* dst, const float* src1, const float* src2)
 	int stride = blockDim.x * gridDim.x;
 
 	for (int i = start; i < N; i += stride)
-		dst[i] = src1[i] <= src2[i];
+		dst[i] = (src1[i] <= src2[i]);
 }
 
 extern "C" void cuda_le(long N, float* dst, const float* src1, const float* src2)
 {
 	kern_zcmp<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
+
+
+__global__ void kern_zfftmod(int N, cuFloatComplex* dst, const cuFloatComplex* src, _Bool evenodd)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	cuFloatComplex even = make_cuFloatComplex(evenodd ? +1. : -1., 0.);
+	cuFloatComplex odd = make_cuFloatComplex(evenodd ? -1. : +1., 0.);
+
+	for (int i = start; i < N; i += stride) {
+
+		dst[2 * i + 0] = cuCmulf(even, src[2 * i + 0]);
+		dst[2 * i + 1] = cuCmulf(odd, src[2 * i + 1]);
+	}
+}
+
+extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, _Bool evenodd)
+{
+	kern_zfftmod<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src, evenodd);
+}
+
+
+
 

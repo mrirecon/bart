@@ -282,6 +282,18 @@ static void zphsr(long N, complex float* dst, const complex float* src)
 	}
 }
 
+static void zexpj(long N, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = cexpf( I * src[i] );
+}
+
+static void zarg(long N, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = cargf( src[i] );
+}
+
 
 static void maxxy(long N, float* dst, const float* src)
 {
@@ -382,6 +394,15 @@ static void swap(long N, float* a, float* b)
 	}
 }
 
+static void zfftmod(long N, complex float* dst, const complex float* src, _Bool evenodd)
+{
+	for (long i = 0; i < N; i++) {
+
+		dst[2 * i + 0] = (evenodd ? +1. : -1.) * src[2 * i + 0];
+		dst[2 * i + 1] = (evenodd ? -1. : +1.) * src[2 * i + 1];
+	}
+}
+
 
 const struct vec_ops cpu_ops = {
 
@@ -422,9 +443,12 @@ const struct vec_ops cpu_ops = {
 	.zpow = zpow,
 	.zphsr = zphsr,
 	.zconj = zconj,
+	.zexpj = zexpj,
+	.zarg = zarg,
 
 	.zcmp = zcmp,
 	.zdiv_reg = zdiv_reg,
+	.zfftmod = zfftmod,
 
 	.maxxy = maxxy,
 	.minxy = minxy,

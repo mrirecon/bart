@@ -12,6 +12,7 @@
 #include <math.h>
 
 #include "sense/model.h"
+#include "linops/linop.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -37,18 +38,21 @@ void optimal_combine(const long dims[DIMS], float alpha, complex float* image, c
 {
 	long dims_one[DIMS];
 	long dims_img[DIMS];
+	long dims_cim[DIMS];
 
 	md_select_dims(DIMS, ~(COIL_FLAG|MAPS_FLAG), dims_one, dims);
 	md_select_dims(DIMS, ~(COIL_FLAG), dims_img, dims);
+	md_select_dims(DIMS, ~(MAPS_FLAG), dims_cim, dims);
 
 	const struct linop_s* sense_data = sense_init(dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens, false);
-	sense_adjoint(sense_data, image, data);		
-	sense_free(sense_data);	
+	linop_adjoint(sense_data, DIMS, dims_img, image, DIMS, dims_cim, data);
+	linop_free(sense_data);
 
 	complex float* norm = md_alloc(DIMS, dims_img, CFL_SIZE);
 	md_zrss(DIMS, dims, COIL_FLAG, norm, sens);
 	
 	long imsize = md_calc_size(DIMS, dims_img);
+
 	for (unsigned int i = 0; i < imsize; i++)
 		image[i] /= (powf(cabsf(norm[i]), 2.) + alpha);
 
@@ -58,7 +62,7 @@ void optimal_combine(const long dims[DIMS], float alpha, complex float* image, c
 
 void rss_combine(const long dims[DIMS], complex float* image, const complex float* data)
 {
-	complex float* tmp = md_alloc(DIMS, dims, CFL_SIZE);
+	complex float* tmp = md_alloc_sameplace(DIMS, dims, CFL_SIZE, data);
 
 	ifft(DIMS, dims, FFT_FLAGS, tmp, data);
 	fftscale(DIMS, dims, FFT_FLAGS, tmp, tmp);
@@ -165,8 +169,8 @@ void fake_kspace(const long dims[DIMS], complex float* kspace, const complex flo
 	md_select_dims(DIMS, ~MAPS_FLAG, dims_ksp, dims);
 
 	const struct linop_s* sense_data = sense_init(dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens, false);
-	sense_forward(sense_data, kspace, image);
-	sense_free(sense_data);
+	linop_forward(sense_data, DIMS, dims_ksp, kspace, DIMS, dims_img, image);
+	linop_free(sense_data);
 }
 
 

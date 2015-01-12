@@ -44,7 +44,7 @@ void tv_op(unsigned int D, const long dims[D], unsigned int flags, complex float
 	for (unsigned int i = 0; i < N; i++) {
 
 		unsigned int lsb = ffs(flags2) - 1;
-		flags2 ^= (1 << lsb);
+		flags2 = MD_CLEAR(flags2, lsb);
 
 		md_zfdiff(D - 1, dims, lsb, out + i * md_calc_size(D - 1, dims), in);
 	}
@@ -69,7 +69,7 @@ void tv_adjoint(unsigned int D, const long dims[D], unsigned int flags, complex 
 	for (unsigned int i = 0; i < N; i++) {
 
 		unsigned int lsb = ffs(flags2) - 1;
-		flags2 ^= (1 << lsb);
+		flags2 = MD_CLEAR(flags2, lsb);
 
 		md_zfdiff_backwards(D - 1, dims, lsb, tmp, in + i * md_calc_size(D - 1, dims));
 	

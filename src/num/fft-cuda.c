@@ -74,7 +74,7 @@ struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], 
 		if (1 == dimensions[i])
 			continue;
 
-		if (flags & (1 << i)) {
+		if (MD_IS_SET(flags, i)) {
 
 			dims[k].n = dimensions[i];
 			dims[k].is = istrides[i] / CFL_SIZE; 

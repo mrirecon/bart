@@ -60,10 +60,14 @@ void scc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 	md_flip(DIMS, out_dims, MAPS_FLAG, out_data, tmp, CFL_SIZE);
 
 
-	debug_printf(DP_DEBUG1, "Coefficients:");
+	debug_printf(DP_DEBUG1, "Energy:");
+
+	float sum = 0.;
+	for (int i = 0; i < channels; i++)
+		sum += vals[i];
 
 	for (int i = 0; i < channels; i++)
-		debug_printf(DP_DEBUG1, " %.3f", vals[channels - 1 - i] / vals[channels - 1]);
+		debug_printf(DP_DEBUG1, " %.3f", vals[channels - 1 - i] / sum);
 
 	debug_printf(DP_DEBUG1, "\n");
 }

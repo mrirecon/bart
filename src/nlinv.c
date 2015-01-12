@@ -118,9 +118,6 @@ int main_nlinv(int argc, char* const argv[])
 	assert(iter > 0);
 
 
-	assert(!rvc); // to be implemented
-
-
 	long ksp_dims[DIMS];
 	complex float* kspace_data = load_cfl(argv[optind + 0], DIMS, ksp_dims);
 
@@ -227,14 +224,14 @@ int main_nlinv(int argc, char* const argv[])
 
 		complex float* kspace_gpu = md_alloc_gpu(DIMS, ksp_dims, CFL_SIZE);
 		md_copy(DIMS, ksp_dims, kspace_gpu, kspace_data, CFL_SIZE);
-		noir_recon(dims, iter, l1, image, NULL, pattern, mask, kspace_gpu, usegpu);
+		noir_recon(dims, iter, l1, image, NULL, pattern, mask, kspace_gpu, rvc, usegpu);
 		md_free(kspace_gpu);
 
 		md_zfill(DIMS, ksp_dims, sens, 1.);
 
 	} else
 #endif
-	noir_recon(dims, iter, l1, image, sens, pattern, mask, kspace_data, usegpu);
+	noir_recon(dims, iter, l1, image, sens, pattern, mask, kspace_data, rvc, usegpu);
 
 	if (normalize) {
 

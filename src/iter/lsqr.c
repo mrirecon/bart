@@ -137,7 +137,7 @@ void wlsqr(	unsigned int N, const struct lsqr_conf* conf,
 	unsigned int flags = 0;
 	for (unsigned int i = 0; i < N; i++)
 		if (1 < w_dims[i])
-			flags |= (1 << i);
+			flags = MD_SET(flags, i);
 
 	struct linop_s* weights = linop_cdiag_create(N, y_dims, flags, w);
 	struct linop_s* op = linop_chain(model_op, weights);

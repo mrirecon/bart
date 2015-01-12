@@ -152,6 +152,13 @@ void pocs(unsigned int maxiter,
 	void* obj_eval_data,
 	float (*obj_eval)(const void*, const float*));
 
+double power(unsigned int maxiter,
+	   long N, void* data,
+	   const struct vec_iter_s* vops,
+	   void (*op)(void* data, float* dst, const float* src), 
+	   float* u);
+	   
+
 #endif // __ITALGOS_H
 
 

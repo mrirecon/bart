@@ -23,6 +23,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
+#include "num/ops.h"
 #include "num/gpuops.h"
 
 // #define W3
@@ -39,6 +40,7 @@
 #include "misc/misc.h"
 #include "misc/mri.h"
 #include "misc/debug.h"
+#include "misc/utils.h"
 
 #include "grecon/parslices.h"
 #include "grecon.h"
@@ -90,6 +92,10 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		sens1 = md_alloc(DIMS, dims1, CFL_SIZE);
 	
 		caltwo(param->calib, dims1, sens1, maps1, cov1_dims, cov1, NULL, NULL);
+
+		crop_sens(dims1, sens1, param->calib->softcrop, param->calib->crop, maps1);
+
+		fixphase(DIMS, dims1, COIL_DIM, sens1, sens1);
 
 		md_free(maps1);
 
@@ -152,7 +158,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		unsigned int wflags = 0;
 		for (unsigned int i = 0; i < 3; i++)
 			if (1 < img1_dims[i])
-				wflags |= (1 << i);
+				wflags = MD_SET(wflags, i);
 
 		thresh_op = prox_wavelet3_thresh_create(DIMS, img1_dims, wflags, minsize, param->lambda, param->randshift);
 #endif
@@ -166,7 +172,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 	if (!param->l1wav) {
 
-		memcpy(&cgconf, &iter_conjgrad_defaults, sizeof(struct iter_conjgrad_conf));
+		cgconf = iter_conjgrad_defaults;
 		cgconf.maxiter = param->maxiter;
 		cgconf.l2lambda = param->lambda;
 		cgconf.tol = 1.E-3;
@@ -176,7 +182,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 	} else {
 
-		memcpy(&fsconf, &iter_fista_defaults, sizeof(struct iter_fista_conf));
+		fsconf = iter_fista_defaults;
 		fsconf.maxiter = param->maxiter;
 		fsconf.step = param->step;
 
@@ -215,7 +221,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 			break;
 		case NOIR:
 #ifndef STANFORD_OFFLINERECON
-			noir_recon(dims1, param->maxiter, param->l1wav ? param->lambda : -1., image1, sens1, pattern, NULL, kspace1, false);
+			noir_recon(dims1, param->maxiter, param->l1wav ? param->lambda : -1., image1, sens1, pattern, NULL, kspace1, false, false);
 #else
 			assert(0);
 #endif
@@ -245,6 +251,15 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 	if ((NULL != param->calib) || (NOIR == param->algo))
 		md_free(sens1);
+
+	if (param->l1wav)
+		operator_p_free(thresh_op);
+
+#ifdef  USE_CUDA
+//	if (usegpu)
+//		cuda_memcache_clear();
+		//cuda_exit();
+#endif
 }
 
 

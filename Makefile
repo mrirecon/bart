@@ -13,14 +13,18 @@ CUDA=0
 ACML=0
 CULA=0
 GSL=1
+OMP=1
 
 BUILDTYPE = Linux
 UNAME = $(shell uname -s)
 NNAME = $(shell uname -n)
 
+MYLINK=ln
+
 ifeq ($(UNAME),Darwin)
 	BUILDTYPE = MacOSX
 	ACML = 0
+	MYLINK = ln -s
 endif
 
 ARFLAGS = r
@@ -49,11 +53,10 @@ ALLDEPS = $(shell find $(srcdir) -name ".*.d")
 
 OPT = -O3 -ffast-math 
 CPPFLAGS = $(DEPFLAG) -Wall -Wextra -I$(srcdir)/ 
-CFLAGS = -g $(OPT) -std=c99 -Wmissing-prototypes -fopenmp -I$(srcdir)/
-CXXFLAGS = -g $(OPT) -fopenmp -I$(srcdir)/
+CFLAGS = $(OPT) -std=c99 -Wmissing-prototypes -I$(srcdir)/
+CXXFLAGS = $(OPT) -I$(srcdir)/
 CC = gcc
 CXX = g++
-
 
 
 #ifeq ($(BUILDTYPE), MacOSX)
@@ -85,9 +88,14 @@ acml.top := /usr/local/acml/acml4.4.0/gfortran64_mp/
 
 fftw.top := /usr/
 
+# Matlab
+
+matlab.top := /usr/local/matlab/
+
 # ISMRM
 
 ismrm.top := /usr/local/ismrmrd/
+
 
 
 
@@ -101,8 +109,9 @@ TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof nusense
 TCALIB=ecalib caldir walsh cc
 TMRI=rss homodyne pattern poisson twixread
 TSIM=phantom traj
-TARGETS = $(TBASE) $(TFLP) $(TNUM) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TIO)
-
+BTARGETS = $(TBASE) $(TFLP) $(TNUM)
+XTARGETS = bart $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
+TARGETS = $(BTARGETS) $(XTARGETS)
 
 
 
@@ -125,14 +134,12 @@ MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
 MODULES_bench = -lwavelet2 -lwavelet3 -llinops
 MODULES_phantom = -lsimu
+MODULES_bart += -lbox -lwavelet2 -lwavelet3 -llinops
 
 
 -include Makefile.$(NNAME)
 -include Makefile.local
 
-ifeq ($(ACML),1)
-TARGETS += $(TLOWRANK)
-endif
 
 
 
@@ -162,7 +169,7 @@ ifeq ($(CUDA),1)
 CUDA_H := -I$(cuda.top)/include
 CPPFLAGS += -DUSE_CUDA $(CUDA_H)
 ifeq ($(BUILDTYPE), MacOSX)
-CUDA_L := -L$(cuda.top)/lib -lcufft -lcudart -lcublas -lcuda -m64
+CUDA_L := -L$(cuda.top)/lib -lcufft -lcudart -lcublas -lcuda -m64 -lstdc++
 else
 CUDA_L := -L$(cuda.top)/lib64 -lcufft -lcudart -lcublas -lcuda -lstdc++
 endif 
@@ -171,13 +178,23 @@ CUDA_H :=
 CUDA_L :=  
 endif
 
-NVCCFLAGS = -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 -arch=sm_20 -I$(srcdir)/ -m64
+NVCCFLAGS = -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 -arch=sm_20 -I$(srcdir)/ -m64 -ccbin $(CC)
 #NVCCFLAGS = -Xcompiler -fPIC -Xcompiler -fopenmp -O3  -I$(srcdir)/
 
 
 %.o: %.cu
 	$(NVCC) $(NVCCFLAGS) -c $^ -o $@
 	$(NVCC) $(NVCCFLAGS) -M $^ -o $(DEPFILE)
+
+
+
+ifeq ($(OMP),1)
+CFLAGS += -fopenmp
+CXXFLAGS += -fopenmp
+else
+CFLAGS += -Wno-unknown-pragmas
+CXXFLAGS += -Wno-unknown-pragmas
+endif
 
 
 
@@ -217,11 +234,11 @@ BLAS_L :=
 
 ifeq ($(ACML),1)
 BLAS_H := -I$(acml.top)/include
-BLAS_L := $(wildcard $(acml.top)/lib/*.a) -lgfortran
+BLAS_L := -L$(acml.top)/lib -lgfortran -lacml_mp -Wl,-rpath $(acml.top)/lib
 CPPFLAGS += -DUSE_ACML
 else
 ifeq ($(BUILDTYPE), MacOSX)
-BLAS_L := -lblas -framework vecLib 
+BLAS_L := -lblas -framework Accelerate
 else
 BLAS_L := -llapack -lblas
 endif
@@ -238,8 +255,7 @@ FFTW_L := -L$(fftw.top)/lib -lfftw3f_threads -lfftw3f
 # Matlab
 
 MATLAB_H := -I$(matlab.top)/extern/include
-MATLAB_L := -Wl,-rpath-link,$(matlab.top)/bin/glnxa64 -L$(matlab.top)/bin/glnxa64 -lmat -lmx -lm -lstdc++
-
+MATLAB_L := -Wl,-rpath $(matlab.top)/bin/glnxa64 -L$(matlab.top)/bin/glnxa64 -lmat -lmx -lm -lstdc++
 
 # ISMRM
 
@@ -267,16 +283,26 @@ all: $(TARGETS)
 
 
 
-# special ismrmrd target
+# special targets
+
+
+bart: CPPFLAGS += -DMAIN_LIST="$(BTARGETS:%=%,) ()"
+
 
 ismrmrd: $(srcdir)/ismrmrd.c -lismrm -lnum -lmisc
 	$(CC) $(CXXFLAGS) -o ismrmrd $+ $(CUDA_L) $(ISMRM_L) -lstdc++ -lm
 
+mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
+	$(CC) $(CFLAGS) $(MATLAB_H) -omat2cfl  $+ $(MATLAB_L) $(CUDA_L)
+
+
+$(BTARGETS): bart
+	rm -f $@ && $(MYLINK) bart $@
 
 
 .SECONDEXPANSION:
-$(TARGETS): % : $(srcdir)/%.c $$(MODULES_%) $(MODULES)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -Dmain_$@=main -o $@ $+ $(FFTW_L) $(CUDA_L) $(CULA_L) $(BLAS_L) $(GSL_L) -lm -lstdc++ -lpng
+$(XTARGETS): % : $(srcdir)/%.c $$(MODULES_%) $(MODULES)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Dmain_$@=main -o $@ $+ $(FFTW_L) $(CUDA_L) $(CULA_L) $(BLAS_L) $(GSL_L) -lm #-lpng
 #	rm $(srcdir)/$@.o
 
 

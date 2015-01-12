@@ -1,9 +1,9 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2014. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013-2014 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
 #include <complex.h>
@@ -11,7 +11,9 @@
 #include <stdio.h>
 
 #include "num/multind.h"
+#include "num/flpmath.h"
 #include "num/fft.h"
+#include "num/filter.h"
 
 #include "resize.h"
 
@@ -19,6 +21,81 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
+// FIXME: implement inverse, adjoint, etc..
+
+static void fft_xzeropad2(unsigned int N, const long dims[N], unsigned int d, unsigned int x, const long ostr[N], complex float* dst, const long istr[N], const complex float* src)
+{
+	assert(d < N);
+
+	long tdims[N + 1];
+	md_copy_dims(N, tdims, dims);
+	tdims[N] = x;
+
+	long tostr[N + 1];
+	md_copy_strides(N, tostr, ostr);
+	tostr[d] = x * ostr[d];
+	tostr[N] = ostr[d];
+
+	long pdims[N + 1];
+	md_select_dims(N + 1, MD_BIT(d) | MD_BIT(N), pdims, tdims);
+
+	long pstr[N + 1];
+	md_calc_strides(N + 1, pstr, pdims, CFL_SIZE);
+
+	complex float* shift = md_alloc_sameplace(N + 1, pdims, CFL_SIZE, src);
+
+	float pos[N];
+	for (unsigned int i = 0; i < N; i++)
+		pos[i] = 0.;
+
+	for (unsigned int i = 0; i < x; i++) {
+
+		pos[d] = -(1. / (float)x) * i;
+		linear_phase(N, pdims, pos, (void*)shift + i * pstr[N]);
+	}
+
+	long tistr[N + 1];
+	md_copy_strides(N, tistr, istr);
+	tistr[N] = 0;
+
+	md_zmul2(N + 1, tdims, tostr, dst, tistr, src, pstr, shift);
+
+	md_free(shift);
+
+	fftc2(N + 1, tdims, MD_BIT(d), tostr, dst, tostr, dst);
+}
+
+static void fft_xzeropad(unsigned int N, const long dims[N], unsigned int d, unsigned int x, complex float* dst, const complex float* src)
+{
+	long odims[N];
+	long ostrs[N];
+	long istrs[N];
+
+	md_copy_dims(N, odims, dims);
+	odims[d] = x * dims[d];
+
+	md_calc_strides(N, ostrs, odims, CFL_SIZE);
+	md_calc_strides(N, istrs, dims, CFL_SIZE);
+
+	fft_xzeropad2(N, dims, d, x, ostrs, dst, istrs, src);
+}
+
+
+static void fft_zeropad_simple(unsigned int N, unsigned int flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+{
+	md_resizec(N, odims, dst, idims, src, CFL_SIZE);
+	fftc(N, odims, flags, dst, dst);
+}
+
+#if 0
+static void fft_zeropad_simpleH(unsigned int N, unsigned int flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+{
+	complex float* tmp = md_alloc_sameplace(N, idims, CFL_SIZE, src);
+	ifftc(N, idims, flags, tmp, src);
+	md_resizec(N, odims, dst, idims, tmp, CFL_SIZE);
+	md_free(tmp);
+}
+#endif
 
 static void fft_zeropad_r(unsigned int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
@@ -41,14 +118,23 @@ static void fft_zeropad_r(unsigned int N, const long odims[N], complex float* ds
 	assert(odims[i] > idims[i]);
 
 	long tdims[N];
-	md_select_dims(N, ~0u, tdims, idims);
+	md_copy_dims(N, tdims, idims);
 	tdims[i] = odims[i];
 
 	complex float* tmp = md_alloc_sameplace(N, tdims, CFL_SIZE, src);
 
-	md_resizec(N, tdims, tmp, idims, src, CFL_SIZE);
+#if 1
+	if (0 == tdims[i] % idims[i]) {
 
-	fftc(N, tdims, (1u << i), tmp, tmp);
+		fft_xzeropad(N, idims, i, tdims[i] / idims[i], tmp, src);
+
+	} else {
+#else
+	{
+#endif
+
+		fft_zeropad_simple(N, MD_BIT(i), tdims, tmp, idims, src);
+	}
 
 	fft_zeropad_r(N, odims, dst, tdims, tmp);
 
@@ -66,7 +152,7 @@ void fft_zeropad(unsigned int N, unsigned int flags, const long odims[N], comple
 
 	for (unsigned int i = 0; i < N; i++)
 		if (odims[i] > idims[i])
-			lflags |= (1 << i);
+			lflags = MD_SET(lflags, i);
 
 	assert(flags == lflags);
 
@@ -74,7 +160,7 @@ void fft_zeropad(unsigned int N, unsigned int flags, const long odims[N], comple
 
 	for (unsigned int i = 0; i < N; i++)
 		if (odims[i] < idims[i])
-			sflags |= (1 << i);
+			sflags = MD_SET(sflags, i);
 
 	assert(0 == sflags);
 
@@ -109,7 +195,7 @@ static void fft_zeropadH_r(unsigned int N, const long odims[N], complex float* d
 	complex float* tmp = md_alloc_sameplace(N, tdims, CFL_SIZE, src);
 
 	fft_zeropadH_r(N, tdims, tmp, idims, src);
-	ifftc(N, tdims, (1u << i), tmp, tmp);
+	ifftc(N, tdims, MD_BIT(i), tmp, tmp);
 	md_resizec(N, odims, dst, tdims, tmp, CFL_SIZE);
 
 	md_free(tmp);
@@ -126,7 +212,7 @@ void fft_zeropadH(unsigned int N, unsigned int flags, const long odims[N], compl
 
 	for (unsigned int i = 0; i < N; i++)
 		if (odims[i] > idims[i])
-			lflags |= (1 << i);
+			lflags = MD_SET(lflags, i);
 
 	assert(0 == lflags);
 
@@ -134,7 +220,7 @@ void fft_zeropadH(unsigned int N, unsigned int flags, const long odims[N], compl
 
 	for (unsigned int i = 0; i < N; i++)
 		if (odims[i] < idims[i])
-			sflags |= (1 << i);
+			sflags = MD_SET(sflags, i);
 
 	assert(flags == sflags);
 
@@ -155,7 +241,7 @@ void sinc_resize(unsigned int D, const long out_dims[D], complex float* out, con
 
 	for (unsigned int i = 0; i < D; i++)
 		if (out_dims[i] != in_dims[i])
-			flags |= (1u << i);
+			flags = MD_SET(flags, i);
 
 	fftmod(D, in_dims, flags, tmp, in);
 	fft(D, in_dims, flags, tmp, tmp);

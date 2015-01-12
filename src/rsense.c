@@ -62,8 +62,7 @@ int main_rsense(int argc, char* argv[])
 	bool sec = false;
 	bool scale_im = false;
 
-	struct sense_conf sconf;
-	memcpy(&sconf, &sense_defaults, sizeof(struct sense_conf));
+	struct sense_conf sconf = sense_defaults;
 	struct grecon_conf conf = { SENSE, NULL, &sconf, false, false, false, true, 30, 0.95, 0. };
 
 	int c;
@@ -191,7 +190,7 @@ int main_rsense(int argc, char* argv[])
 
 	if (sec) {
 	
-		memcpy(&calib, &ecalib_defaults, sizeof(struct ecalib_conf));
+		calib = ecalib_defaults;
 		calib.crop = ctrsh;
 		conf.calib = &calib;
 	}

@@ -153,7 +153,7 @@ static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const lo
 
 	data->os = 2;
 	data->width = 3.;
-	data->beta = M_PI * sqrt( pow( (data->width * 2. / data->os ) * (data->os - 0.5 ), 2. ) - 0.8 );
+	data->beta = calc_beta(data->os, data->width);
 
 	// get dims
 
@@ -210,7 +210,7 @@ static struct nufft_data* nufft_create_data( const long ksp_dims[DIMS], const lo
 	// initialize roll-off
 
 	data->roll = md_alloc(DIMS, data->img_dims, sizeof(complex float));
-	rolloff_correction(data->os, data->width, data->img_dims, data->roll);
+	rolloff_correction(data->os, data->width, data->beta, data->img_dims, data->roll);
 
 	// initialize stochastic
 	data->stoch = stoch;

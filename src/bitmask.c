@@ -12,6 +12,7 @@
 #include <getopt.h>
 #include <stdbool.h>
 
+#include "num/multind.h"
 
 
 static void usage(const char* name, FILE* fp)
@@ -65,7 +66,7 @@ int main_bitmask(int argc, char* argv[])
 			int d = atoi(argv[i]);
 			assert(d >= 0);
 
-			flags |= (1 << d);
+			flags = MD_SET(flags, d);
 		}
 
 		printf("%d\n", flags);

@@ -229,7 +229,7 @@ void iwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N]
 
 static void wavelet_dims_r(unsigned int N, unsigned int n, unsigned int flags, long odims[2 * N], const long dims[N], const long flen)
 {
-	if (flags & (1 << n)) {
+	if (MD_IS_SET(flags, n)) {
 
 		odims[0 + n] = bandsize(dims[n], flen);
 		odims[N + n] = 2;
@@ -279,7 +279,7 @@ void fwtN(unsigned int N, unsigned int flags, const long shifts[N], const long d
 
 	for (unsigned int i = 0; i < N; i++) {
 
-		if (flags & (1 << i)) {
+		if (MD_IS_SET(flags, i)) {
 
 			todims[0 + i] = odims[0 + i];
 			todims[N + i] = odims[N + i];
@@ -333,7 +333,7 @@ void iwtN(unsigned int N, unsigned int flags, const long shifts[N], const long d
 
 	for (int i = N - 1; i >= 0; i--) {	// run backwards to maintain contigous blocks
 
-		if (flags & (1 << i)) {
+		if (MD_IS_SET(flags, i)) {
 
 			todims[0 + i] = dims[0 + i];
 			todims[N + i] = 1;
@@ -374,7 +374,7 @@ long wavelet_num_levels(unsigned int N, unsigned int flags, const long dims[N], 
 	unsigned int levels = UINT_MAX;
 
 	for (unsigned int i = 0; i < N; i++)
-		if (flags & (1 << i))
+		if (MD_IS_SET(flags, i))
 			levels = MIN(levels, num_levels(dims[i], min[i], flen));
 
 	return levels;
