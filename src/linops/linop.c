@@ -387,6 +387,19 @@ struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b)
 }
 
 
+struct linop_s* linop_chainN(unsigned int N, struct linop_s* a[N])
+{
+	assert(N > 0);
+
+	if (1 == N)
+		return a[0];
+
+	return linop_chain(a[0], linop_chainN(N - 1, a + 1));
+}
+
+
+
+
 /**
  * Free the linear operator and associated data,
  * Note: only frees the data if its reference count is zero

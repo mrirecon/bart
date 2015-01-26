@@ -64,6 +64,7 @@ extern void linop_normal_unchecked(const struct linop_s* op, complex float* dst,
 extern void linop_norm_inv_unchecked(const struct linop_s* op, float lambda, complex float* dst, const complex float* src);
 
 extern struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b);
+extern struct linop_s* linop_chainN(unsigned int N, struct linop_s* x[N]);
 
 struct iovec_s;
 extern const struct iovec_s* linop_domain(const struct linop_s* x);
