@@ -105,7 +105,7 @@ ismrm.top := /usr/local/ismrmrd/
 TBASE=slice crop resize join transpose zeros ones flip circshift extract repmat bitmask
 TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize
 TNUM=fft fftmod noise bench threshold conv
-TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof nusense
+TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof nusense sake
 TCALIB=ecalib caldir walsh cc
 TMRI=rss homodyne pattern poisson twixread
 TSIM=phantom traj
@@ -135,6 +135,7 @@ MODULES_rof = -liter -llinops
 MODULES_bench = -lwavelet2 -lwavelet3 -llinops
 MODULES_phantom = -lsimu
 MODULES_bart += -lbox -lwavelet2 -lwavelet3 -llinops
+MODULES_sake += -lsake
 
 
 -include Makefile.$(NNAME)
