@@ -10,6 +10,10 @@ Some references can be found at the end of this file. The source code might
 provide more detailed references, e.g. for specific iterative algorithms.
 
 
+
+1. Help
+
+
 Please direct all questions or comments to the public mailing list:
 
 	mrirecon@lists.eecs.berkeley.edu
@@ -24,16 +28,14 @@ any confidential information.
 
 Updates and further information can be found here:
 
-http://www.eecs.berkeley.edu/~uecker/toolbox.html
+	http://www.eecs.berkeley.edu/~uecker/toolbox.html
 
 
 
 
+2. Installation
 
-
-
-
-Prerequesites:
+2.1. Prerequesites
 
 GCC compiler, the FFTW, GSL (or ACML) libraries and optionally 
 a CUDA Implementation (see recon/Makefile to turn these
@@ -42,38 +44,42 @@ options on or off)
 The software can be used in combination with Matlab or octave.
 
 
+Note: In the following, the symbol '$' indicates a shell prompt.
+Do not type '$' when entering commands.
 
-Linux:
+
+
+2.1.1. Linux
 
 The software tools in recon should run on any recent Linux distribution.
 
 To install the required libraries on Debian and Ubuntu run:
 
-sudo apt-get install libfftw3-dev
-sudo apt-get install libgsl0-dev
-sudo apt-get install liblapack-dev
+$ sudo apt-get install libfftw3-dev
+$ sudo apt-get install libgsl0-dev
+$ sudo apt-get install liblapack-dev
 
 (optional)
-sudo apt-get install octave
+$ sudo apt-get install octave
 
 (optional)
 install the ISMRM Raw Data format library (http://ismrmrd.sourceforge.net/).
 
 
 
-Mac OS X: 
+2.1.2. Mac OS X
 
 Xcode is required and it is recommended to install a newer version 
 of gcc (4.7 seems to work) from MacPorts (http://www.macports.org/).
 
 
-sudo port install fftw-3-single
-sudo port install gsl
-sudo port install gcc47
-sudo port select --set gcc mp-gcc47
+$ sudo port install fftw-3-single
+$ sudo port install gsl
+$ sudo port install gcc47
+$ sudo port select --set gcc mp-gcc47
 
 (optional)
-sudo apt-get install octave
+$ sudo apt-get install octave
 
 (optional)
 install the ISMRM Raw Data format library (http://ismrmrd.sourceforge.net/).
@@ -81,8 +87,46 @@ install the ISMRM Raw Data format library (http://ismrmrd.sourceforge.net/).
 
 
 
+2.2. Downloading and Compilation
 
-Organization:
+
+If you are a git user, you can simply clone our public repository:
+
+$ git clone https://github.com/mikgroup/bart
+
+
+Otherwise, please download the latest version as a zip file
+from Github:
+
+	http://github.com/mikgroup/bart/releases/latest
+
+and unpack it somewhere on your computer.
+
+
+Open a terminal window and enter the bart directory (the top-level
+directory with the Makefile in it). To build the reconstruction
+tools type:
+
+$ make
+
+
+
+If you have installed the ismrmrd library, you can also
+build the ISMRM raw data import tool:
+
+$ make ismrmrd
+
+
+
+
+
+
+
+
+2.3. Getting Started
+
+2.3.1. Organization
+
 
 .		main directory / built software tools
 Makefile	Makefile
@@ -106,57 +150,63 @@ lib/		built software libraries
 
 
 
+2.3.2. Terminal
 
+When using the toolbox commands from a UNIX shell, it is recommended
+to set the TOOLBOX_PATH to the base directoy and to add it to
+the PATH variable. You can do this by running the following command:
 
-
-Getting started:
-
-
-
-# Build the reconstruction tools
-
-make
-
-# Optionally build ISMRM raw data import tool
-make ismrmrd
-
-
-# Set the TOOLBOX_PATH and to the base directoy 
-# and add it to the PATH variable.
-
-. vars.sh
-
-
-
-% Examples
-
-% Download and unpack the examples which demonstrate
-% interoperability with Matlab.
-
-% In Matlab run:
-% (you need to start Matlab with TOOLBOX_PATH set, e.g. from a
-% terminal after typing '. vars.sh' to setup the paths)
-
-examples
-
-
-% Use Matlab to read and visualize/process files.
-
-% Setup the path in Matlab:
-
-addpath(strcat(getenv('TOOLBOX_PATH'), '/matlab'));
-
-% Read data file xyz (see below):
-
-A = readcfl('xyz');	% use name 'xyz' without file extension
+$ . vars.sh
 
 
 
 
+2.3.3. Matlab
+
+You can set the TOOLBOX_PATH to the base directoy and to add it
+to the Matlab path by running the following command in the
+bart directory:
+
+>> vars
+
+(Note: The '>>' indicates the shell prompt. Do not type '>>'
+when entering commands.)
 
 
 
-Data format:
+You can use Matlab to read and visualize/process files. To write
+a data file 'xyz' from Matlab you can run:
+
+>> writecfl('xyz', A);
+
+
+Note, that the name 'xyz' is used without filename extension.
+See below for more information about the file format used in BART.
+
+To read the data file 'xyz' back into Matlab use:
+
+>> A = readcfl('xyz');
+
+
+To call a BART tool (e.g. ecalib) from Matlab, you can use the
+'bart' command:
+
+>> sensitivities = bart('ecalib', kspace);
+
+
+
+Download and unpack the examples which demonstrate interoperability 
+with Matlab. Go to the examples directory and run:
+
+>> examples
+
+
+
+
+
+
+
+3. Data Format
 
 The input and output datasets are each stored in a pair of files: one
 header (*.hdr) and one raw data (*.cfl). The header is a simple text
@@ -172,7 +222,7 @@ be found in recon/matlab (readcfl.m and writecfl.m).
 
 
 
-Command-line tools:
+4.. Command-line Tools
 
 All tools operate on the simple file format given above. Indices and
 dimensions run from 0 to N-1. Sometimes a set of dimensions is given
@@ -192,7 +242,12 @@ More information about each command can be found in 'doc/commands.txt'.
 
 
 
-Reference:
+5. References
+
+
+Uecker M, Ong F, Tamir JI, Bahri D, Virtue P, Cheng JY, Zhang T, Lustig m,
+Berkeley Advanced Reconstruction Toolbox, Annual Meeting ISMRM, Toronto 2015
+In: Proc Intl Soc Mag Reson Med 23 (accepted)
 
 
 Uecker M, Virtue P, Ong F, Murphy MJ, Alley MT, Vasanawala SS, Lustig M,
@@ -201,6 +256,7 @@ Parallel Imaging, ISMRM Workshop on Data Sampling and Image
 Reconstruction, Sedona 2013
 
 
-
+References related to implemented methods and algorithms can be
+found in the file 'doc/references.txt'.
 
 
