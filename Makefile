@@ -52,8 +52,8 @@ ALLDEPS = $(shell find $(srcdir) -name ".*.d")
 
 # Compilation flags
 
-OPT = -O3 -ffast-math 
-CPPFLAGS = $(DEPFLAG) -Wall -Wextra -I$(srcdir)/ 
+OPT = -O3 -ffast-math
+CPPFLAGS = $(DEPFLAG) -Wall -Wextra -I$(srcdir)/
 CFLAGS = $(OPT) -std=c99 -Wmissing-prototypes -I$(srcdir)/
 CXXFLAGS = $(OPT) -I$(srcdir)/
 CC = gcc
@@ -107,7 +107,7 @@ TBASE=slice crop resize join transpose zeros ones flip circshift extract repmat 
 TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize
 TNUM=fft fftmod noise bench threshold conv
 TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof nusense sake
-TCALIB=ecalib caldir walsh cc
+TCALIB=ecalib caldir walsh cc calmat svd
 TMRI=rss homodyne pattern poisson twixread
 TSIM=phantom traj
 BTARGETS = $(TBASE) $(TFLP) $(TNUM)
@@ -130,6 +130,7 @@ MODULES_itsense = -liter -llinops
 MODULES_ecalib = -lcalib
 MODULES_caldir = -lcalib
 MODULES_walsh = -lcalib
+MODULES_calmat = -lcalib
 MODULES_cc = -lcalib
 MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
