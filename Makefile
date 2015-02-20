@@ -14,6 +14,7 @@ ACML=0
 CULA=0
 GSL=1
 OMP=1
+SLINK=0
 
 BUILDTYPE = Linux
 UNAME = $(shell uname -s)
@@ -160,6 +161,12 @@ default: all
 
 
 
+ifeq ($(SLINK),1)
+# work around fortran problems with static linking
+LDFLAGS += -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -Wl,--allow-multiple-definition
+endif
+
+
 
 # cuda
 
@@ -241,10 +248,14 @@ else
 ifeq ($(BUILDTYPE), MacOSX)
 BLAS_L := -lblas -framework Accelerate
 else
-BLAS_L := -llapack -lblas
+BLAS_L := -llapack -lblas -lgfortran
 endif
 endif
 
+
+
+# png
+PNG_L := #-lpng -lz
 
 
 # fftw
@@ -303,7 +314,7 @@ $(BTARGETS): bart
 
 .SECONDEXPANSION:
 $(XTARGETS): % : $(srcdir)/%.c $$(MODULES_%) $(MODULES)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -Dmain_$@=main -o $@ $+ $(FFTW_L) $(CUDA_L) $(CULA_L) $(BLAS_L) $(GSL_L) -lm #-lpng
+	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -Dmain_$@=main -o $@ $+ $(FFTW_L) $(CUDA_L) $(CULA_L) $(BLAS_L) $(GSL_L) $(PNG_L) -lm
 #	rm $(srcdir)/$@.o
 
 
