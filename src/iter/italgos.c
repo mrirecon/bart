@@ -547,11 +547,12 @@ float conjgrad_hist(struct iter_history_s* history, unsigned int maxiter, float 
 
 	float eps_squared = pow(epsilon, 2.);
 
+	history->numiter = 0;
 
 	for (unsigned int i = 0; i < maxiter; i++) {
 
 		history->numiter = i + 1;
-		
+
 		if (NULL != x_truth) {
 
 			vops->sub(N, x_err, x, x_truth);
