@@ -195,7 +195,7 @@ To call a BART tool (e.g. ecalib) from Matlab, you can use the
 
 
 
-Download and unpack the examples which demonstrate interoperability 
+Download and unpack the examples which demonstrate interoperability
 with Matlab. Go to the examples directory and run:
 
 >> examples

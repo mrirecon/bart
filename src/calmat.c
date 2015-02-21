@@ -1,6 +1,6 @@
-/* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
- * a educational/research license which can be found in the 
+/* Copyright 2015. The Regents of the University of California.
+ * All rights reserved. Use of this source code is governed by
+ * a educational/research license which can be found in the
  * LICENSE file.
  *
  * Authors:
@@ -46,7 +46,7 @@ static void help(void)
 
 int main_calmat(int argc, char* argv[])
 {
-	long calsize[3] = { 24, 24, 24 }; 
+	long calsize[3] = { 24, 24, 24 };
 	long kdims[3] = { 5, 5, 5 };
 	bool calcen = false;
 
@@ -79,7 +79,7 @@ int main_calmat(int argc, char* argv[])
 		case 'C':
 			calcen = true;
 			break;
-			
+
 		case 'h':
 			usage(argv[0], stdout);
 			help();
@@ -102,7 +102,7 @@ int main_calmat(int argc, char* argv[])
 
 	complex float* in_data = load_cfl(argv[optind + 0], N, ksp_dims);
 
-	
+
 	assert(1 == ksp_dims[MAPS_DIM]);
 
 
@@ -110,12 +110,12 @@ int main_calmat(int argc, char* argv[])
 	long cal_dims[N];
 	complex float* cal_data = NULL;
 
-	 if (!calcen) {
+	if (!calcen) {
 
 		cal_data = extract_calib(cal_dims, calsize, ksp_dims, in_data, false);
 
 	} else {
-	
+
 		for (int i = 0; i < 3; i++)
 			cal_dims[i] = (calsize[i] < ksp_dims[i]) ? calsize[i] : ksp_dims[i];
 
@@ -144,7 +144,7 @@ int main_calmat(int argc, char* argv[])
 
 	unmap_cfl(N, ksp_dims, in_data);
 
-	
+
 	long calmat_dims[N];
 	md_singleton_dims(N, calmat_dims);
 	complex float* cm = calibration_matrix(calmat_dims, kdims, cal_dims, cal_data);
