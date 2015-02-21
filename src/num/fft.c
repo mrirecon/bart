@@ -236,7 +236,10 @@ static void fft_apply(const void* _plan, unsigned int N, void* args[N])
 
 	} else 
 #endif
-	fftwf_execute_dft(plan->fftw, (complex float*)src, dst);
+	{
+		assert(NULL != plan->fftw);
+		fftwf_execute_dft(plan->fftw, (complex float*)src, dst);
+	}
 }
 
 
