@@ -30,7 +30,7 @@ complex float* compute_mask(unsigned int N, const long msk_dims[N], const float 
 	complex float* small_mask = md_alloc(N, small_dims, CFL_SIZE);
 
 	md_fill(N, small_dims, small_mask, &(complex float){ 1. }, CFL_SIZE);
-	md_resizec(N, msk_dims, mask, small_dims, small_mask, CFL_SIZE);
+	md_resize_center(N, msk_dims, mask, small_dims, small_mask, CFL_SIZE);
 
 	md_free(small_mask);
 

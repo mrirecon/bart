@@ -38,7 +38,9 @@
 /* ATTENTION: blas and lapack use column-major matrices
  * while native C uses row-major. All matrices are
  * transposed to what one would expect.
-  **/
+ *
+ * LAPACK svd destroys its input matrix
+ **/
 
 
 #ifdef USE_ACML
@@ -59,14 +61,14 @@ extern void cgemm(const char transa, const char transb, long M, long N,  long K,
 #else
 extern void cheev_(const char jobz[1], const char uplo[1], const long* N, complex float a[*N][*N], const long* lda, float w[*N], complex float* work, const long* lwork, float* rwork, long* info);
 extern void zheev_(const char jobz[1], const char uplo[1], const long* N, complex double a[*N][*N], const long* lda, double w[*N], complex double* work, const long* lwork, double* rwork, long* info);
-extern void cgesdd_(const char jobz[1], const long* M, const long* N, const complex float A[*M][*N], const long lda[1], float* S, complex float U[*M][*N], const long* ldu, complex float VH[*M][*N], const long* ldvt, complex float* work, const long* lwork, float* rwork, const long* iwork, const long* info);
+extern void cgesdd_(const char jobz[1], const long* M, const long* N, complex float A[*M][*N], const long lda[1], float* S, complex float U[*M][*N], const long* ldu, complex float VH[*M][*N], const long* ldvt, complex float* work, const long* lwork, float* rwork, const long* iwork, const long* info);
 extern void zgesdd_(const char jobz[1], const long* M, const long* N, complex double A[*M][*N], const long lda[1], double* S, complex double U[*M][*N], const long* ldu, complex double VH[*M][*N], const long* ldvt, complex double* work, const long* lwork, double* rwork, const long* iwork, const long* info);
-extern void cgesvd_(const char jobu[1], const char jobvt[1], const long* M, const long* N, const complex float A[*M][*N], const long* lda, float* s, complex float U[*M][*N], long* ldu, complex float VH[*M][*N], long* ldvt, complex float* work, long* lwork, float* rwork, const long* iwork, long* info);
+extern void cgesvd_(const char jobu[1], const char jobvt[1], const long* M, const long* N, complex float A[*M][*N], const long* lda, float* s, complex float U[*M][*N], long* ldu, complex float VH[*M][*N], long* ldvt, complex float* work, long* lwork, float* rwork, const long* iwork, long* info);
 extern void cgemm_(const char transa[1], const char transb[1], const long* M, const long* N, const long* K, const complex float* alpha, const complex float A[*M][*K], const long* lda, const complex float B[*K][*N], const long* ldb, const complex float* beta, complex float C[*M][*N], const long* ldc );
 #endif
 
 
-void eigendecomp_double(long N, double eigenval[N], complex double matrix[N][N])
+void lapack_eig_double(long N, double eigenval[N], complex double matrix[N][N])
 {
         long info = 0;
 
@@ -99,7 +101,7 @@ err:
 }
 
 
-void eigendecomp(long N, float eigenval[N], complex float matrix[N][N])
+void lapack_eig(long N, float eigenval[N], complex float matrix[N][N])
 {
         long info = 0;
 
@@ -134,15 +136,17 @@ err:
 
 
 
-void (svd)(long M, long N, complex float U[M][M], complex float VH[N][N], float S[(N > M) ? M : N], const complex float A[N][M])
+void lapack_svd(long M, long N, complex float U[M][M], complex float VH[N][N], float S[(N > M) ? M : N], complex float A[N][M])
 {
         long info = 0;
 	//assert(M >= N);
 
 #ifdef USE_CUDA
 #ifdef USE_CULA
-	if (cuda_ondevice( A )) {
-		culaDeviceCgesvd( 'A', 'A', M, N, (culaDeviceFloatComplex *)A, M, (culaDeviceFloat *)S, (culaDeviceFloatComplex *)U, M, (culaDeviceFloatComplex *)VH, N );
+	if (cuda_ondevice(A)) {
+
+		culaDeviceCgesvd('A', 'A', M, N, (culaDeviceFloatComplex*)A, M, (culaDeviceFloat*)S, (culaDeviceFloatComplex*)U, M, (culaDeviceFloatComplex*)VH, N);
+
 	} else
 #endif 
 #endif 
@@ -179,10 +183,10 @@ err:
 }
 
 
-void (svd_econ)(long M, long N,
+void lapack_svd_econ(long M, long N,
 	      complex float U[M][(N > M) ? M : N],
 	      complex float VH[(N > M) ? M : N][N],
-	      float S[(N > M) ? M : N], const complex float A[M][N])
+	      float S[(N > M) ? M : N], complex float A[M][N])
 {
 	long info = 0;
 
@@ -190,8 +194,10 @@ void (svd_econ)(long M, long N,
 
 #ifdef USE_CUDA
 #ifdef USE_CULA
-	if (cuda_ondevice( A )) {
-		culaDeviceCgesvd( 'S', 'S', M, N, (culaDeviceFloatComplex *)A, M, (culaDeviceFloat *)S, (culaDeviceFloatComplex *)U, M, (culaDeviceFloatComplex *)VH, minMN );
+	if (cuda_ondevice(A)) {
+
+		culaDeviceCgesvd('S', 'S', M, N, (culaDeviceFloatComplex*)A, M, (culaDeviceFloat*)S, (culaDeviceFloatComplex*)U, M, (culaDeviceFloatComplex*)VH, minMN);
+
 	} else
 #endif 
 #endif 
@@ -231,7 +237,7 @@ err:
 }
 
 
-void svd_double(long M, long N, complex double U[M][M], complex double VH[N][N], double S[(N > M) ? M : N], complex double A[M][N])
+void lapack_svd_double(long M, long N, complex double U[M][M], complex double VH[N][N], double S[(N > M) ? M : N], complex double A[M][N])
 {
         long info = 0;
 	//assert(M >= N);
@@ -292,12 +298,12 @@ void matrix_multiply(long M, long N, long K, complex float C[M][N], complex floa
 
 #else
 
-void matrix_multiply(long M, long N, long K, complex float C[M][N], const complex float A[M][K], const complex float B[K][N])
+void lapack_matrix_multiply(long M, long N, long K, complex float C[M][N], const complex float A[M][K], const complex float B[K][N])
 {
 	cgemm_sameplace('N', 'N', M, N, K, &(complex float){1.}, A, M, B, K, &(complex float){0.}, C, M);
 }
 
-void cgemm_sameplace(const char transa, const char transb, long M, long N,  long K, const complex float* alpha, const complex float A[M][K], const long lda, const complex float B[K][N], const long ldb, const complex float* beta, complex float C[M][N], const long ldc )
+void cgemm_sameplace(const char transa, const char transb, long M, long N,  long K, const complex float* alpha, const complex float A[M][K], const long lda, const complex float B[K][N], const long ldb, const complex float* beta, complex float C[M][N], const long ldc)
 {
 #ifdef USE_CUDA
 	if (cuda_ondevice( A )) {

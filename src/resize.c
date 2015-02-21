@@ -98,7 +98,7 @@ int main_resize(int argc, char* argv[])
 
 	void* out_data = create_cfl(argv[argc - 1], N, out_dims);
 
-	(center ? md_resizec : md_resize)(N, out_dims, out_data, in_dims, in_data, CFL_SIZE);
+	(center ? md_resize_center : md_resize)(N, out_dims, out_data, in_dims, in_data, CFL_SIZE);
 
 	unmap_cfl(N, in_dims, in_data);
 	unmap_cfl(N, out_dims, out_data);

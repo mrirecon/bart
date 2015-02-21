@@ -72,7 +72,7 @@ void direct_calib(const long dims[5], complex float* sens, const long caldims[5]
 						* kaiser(4., caldims[1], y)
 						* kaiser(4., caldims[0], x);
 
-	md_resizec(5, dims, sens, caldims, tmp, CFL_SIZE);
+	md_resize_center(5, dims, sens, caldims, tmp, CFL_SIZE);
 
 	ifftc(5, dims, 7, sens, sens);
 

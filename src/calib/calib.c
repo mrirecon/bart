@@ -1,10 +1,10 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2015. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2013, Dara Bahri <dbahri123@gmail.com>
+ * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013 Dara Bahri <dbahri123@gmail.com>
  *
  *
  * Uecker M, Lai P, Murphy MJ, Virtue P, Elad M, Pauly JM, Vasanawala SS, Lustig M.
@@ -44,6 +44,10 @@
 
 #if 0
 #define CALMAT_SVD
+#endif
+
+#if 0
+#define FLIP
 #endif
 
 
@@ -232,7 +236,7 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 					if (orthiter) 
 						eigen_herm3(maps, channels, val, cov);
 					else 
-						eigendecomp(channels, val, cov);
+						lapack_eig(channels, val, cov);
 
 					for (long u = 0; u < maps; u++) {
 
@@ -500,8 +504,11 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
+#ifndef FLIP
 			nskerns[i * N + j] = (vec[j][i]) * (conf->weighting ? val[i] : 1.);
-
+#else
+			nskerns[i * N + j] = (vec[j][N - 1 - i]) * (conf->weighting ? val[N - 1 - i] : 1.);
+#endif
 #else
 	covariance_function(conf->kdims, N, vec, caldims, caldata);
 
@@ -510,14 +517,18 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	// we could apply Nystroem method here to speed it up
 
 	float tmp_val[N];
-	eigendecomp(N, tmp_val, vec);
+	lapack_eig(N, tmp_val, vec);
 
 	for (int i = 0; i < N; i++)
 		val[i] = sqrtf(tmp_val[N - 1 - i]);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
+#ifndef FLIP
 			nskerns[i * N + j] = vec[N - 1 - i][j] * (conf->weighting ? val[i] : 1.);	// flip
+#else
+			nskerns[i * N + j] = vec[i][j] * (conf->weighting ? val[N - 1 - i] : 1.);	// flip
+#endif
 #endif
 
 	if (conf->perturb > 0.) {
@@ -526,7 +537,11 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 		perturb(dims, nskerns, conf->perturb);
 	}
 
+#ifndef FLIP
 	nskerns_dims[4] = number_of_kernels(conf, N, val);
+#else
+	nskerns_dims[4] = N - number_of_kernels(conf, N, val);
+#endif
 
 	if (NULL == svals)
 		free(val);
@@ -558,7 +573,7 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 	complex float* imgkern1 = md_alloc(5, imgkern_dims, CFL_SIZE);
 	complex float* imgkern2 = md_alloc(5, imgkern_dims, CFL_SIZE);
 
-	md_resizec(5, imgkern_dims, imgkern1, nskerns_dims, nskerns, CFL_SIZE);
+	md_resize_center(5, imgkern_dims, imgkern1, nskerns_dims, nskerns, CFL_SIZE);
 
 	// resort array
 
@@ -596,6 +611,12 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 				complex float gram[cosize];
 				gram_matrix2(channels, gram, nr_kernels, (const complex float (*)[nr_kernels])(imgkern2 + ((k * yh + j) * xh + i) * (channels * nr_kernels)));
 
+#ifdef FLIP
+				// add (scaled) identity matrix
+				for (int i = 0, l = 0; i < channels; i++)
+					for (int j = 0; j <= i; j++, l++)
+						gram[l] = ((i == j) ? (kx * ky * kz) : 0.) - gram[l];
+#endif
 				for (int l = 0; l < cosize; l++)
 					imgcov[(((l * zh) + k) * yh + j) * xh + i] = gram[l] / scalesq;
 			}

@@ -49,7 +49,7 @@ int main_crop(int argc, char* argv[])
 
 	complex float* out_data = create_cfl(argv[4], N, out_dims);
 
-	md_resizec(N, out_dims, out_data, in_dims, in_data, sizeof(complex float));
+	md_resize_center(N, out_dims, out_data, in_dims, in_data, sizeof(complex float));
 
 	unmap_cfl(N, in_dims, in_data);
 	unmap_cfl(N, out_dims, out_data);

@@ -227,7 +227,7 @@ int main_nufft(int argc, char* argv[])
 		if (calib) {
 
 			fftc(DIMS, coilim_dims, FFT_FLAGS, img, img);
-			md_resizec(DIMS, out_dims, out, coilim_dims, img, CFL_SIZE);
+			md_resize_center(DIMS, out_dims, out, coilim_dims, img, CFL_SIZE);
 			md_free(img);
 		}
 

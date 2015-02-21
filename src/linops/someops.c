@@ -135,13 +135,13 @@ struct resize_op_s {
 static void resize_forward(const void* _data, complex float* dst, const complex float* src)
 {
 	const struct resize_op_s* data = _data;
-	md_resizec(data->N, data->out_dims, dst, data->in_dims, src, CFL_SIZE);
+	md_resize_center(data->N, data->out_dims, dst, data->in_dims, src, CFL_SIZE);
 }
 
 static void resize_adjoint(const void* _data, complex float* dst, const complex float* src)
 {
 	const struct resize_op_s* data = _data;
-	md_resizec(data->N, data->in_dims, dst, data->out_dims, src, CFL_SIZE);
+	md_resize_center(data->N, data->in_dims, dst, data->out_dims, src, CFL_SIZE);
 }
 
 static void resize_normal(const void* _data, complex float* dst, const complex float* src)

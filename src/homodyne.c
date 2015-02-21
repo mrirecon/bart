@@ -64,8 +64,8 @@ static void homodyne(struct wdata wdata, unsigned int flags, unsigned int N, con
 	complex float* center = md_alloc(N, cdims, CFL_SIZE);
 	complex float* phase = md_alloc(N, dims, CFL_SIZE);
 
-	md_resizec(N, cdims, center, dims, idata, CFL_SIZE);
-	md_resizec(N, dims, phase, cdims, center, CFL_SIZE);
+	md_resize_center(N, cdims, center, dims, idata, CFL_SIZE);
+	md_resize_center(N, dims, phase, cdims, center, CFL_SIZE);
 	md_free(center);
 
 	ifftuc(N, dims, flags, phase, phase);

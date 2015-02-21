@@ -1,9 +1,9 @@
-/* Copyright 2013-2014 The Regents of the University of California.
+/* Copyright 2013-2015 The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2013      Frank Ong <frankong@berkeley.edu> 
  *
  * Generic operations on multi-dimensional arrays. Most functions
@@ -819,7 +819,7 @@ void md_resize(unsigned int D, const long odim[D], void* optr, const long idim[D
  * optr = [0 0 iptr 0 0]
  *
  */
-void md_resizec(unsigned int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+void md_resize_center(unsigned int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
 	long pos[D];
 	for (unsigned int i = 0; i < D; i++)
@@ -1495,6 +1495,20 @@ void md_periodic(unsigned int D, const long dims1[D], void* dst, const long dims
 void* md_alloc(unsigned int D, const long dimensions[D], size_t size)
 {
 	return xmalloc(md_calc_size(D, dimensions) * size);
+}
+
+
+
+/**
+ * Allocate CPU memory and clear
+ *
+ * return pointer to CPU memory
+ */
+void* md_calloc(unsigned int D, const long dimensions[D], size_t size)
+{
+	void* ptr = md_alloc(D, dimensions, size);
+	md_clear(D, dimensions, ptr, size);
+	return ptr;
 }
 
 

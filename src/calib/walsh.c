@@ -46,7 +46,7 @@ void walsh(const long bsize[3], const long dims[DIMS], complex float* sens, cons
 	kdims[1] = MIN(bsize[1], dims[1]);
 	kdims[2] = MIN(bsize[2], dims[2]);
 
-	md_resizec(DIMS, dims1, sens, caldims, data, CFL_SIZE);
+	md_resize_center(DIMS, dims1, sens, caldims, data, CFL_SIZE);
 	ifftc(DIMS, dims1, FFT_FLAGS, sens, sens);
 
 	long odims[DIMS];

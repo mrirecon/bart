@@ -199,7 +199,7 @@ int main_ecalib(int argc, char* argv[])
 			cal_dims[i] = ksp_dims[i];
 
 		cal_data = md_alloc(5, cal_dims, CFL_SIZE);
-		md_resizec(5, cal_dims, cal_data, ksp_dims, in_data, CFL_SIZE);
+		md_resize_center(5, cal_dims, cal_data, ksp_dims, in_data, CFL_SIZE);
 	 }
 
 

@@ -148,7 +148,7 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 
 	case CONV_SYMMETRIC:
 
-	        md_resizec(N, plan->kdims, plan->kernel, idims2, src2, CFL_SIZE);
+	        md_resize_center(N, plan->kdims, plan->kernel, idims2, src2, CFL_SIZE);
        		ifft(N, plan->kdims, flags, plan->kernel, plan->kernel);
 	        fftmod(N, plan->kdims, flags, plan->kernel, plan->kernel);
 		break;
@@ -238,12 +238,12 @@ void conv_exec(struct conv_plan* plan, complex float* dst, const complex float* 
 	}
 
 	if (pre)
-		(crop ? md_resizec : md_resize)(plan->N, plan->dims1, tmp, plan->idims, src1, CFL_SIZE);
+		(crop ? md_resize_center : md_resize)(plan->N, plan->dims1, tmp, plan->idims, src1, CFL_SIZE);
 
 	conv_cyclic(plan, post ? tmp : dst, pre ? tmp : src1);
 
 	if (post)
-		(crop ? md_resizec : md_resize)(plan->N, plan->odims, dst, plan->dims2, tmp, CFL_SIZE);
+		(crop ? md_resize_center : md_resize)(plan->N, plan->odims, dst, plan->dims2, tmp, CFL_SIZE);
 
 	if (pre || post)
 		md_free(tmp);
@@ -265,12 +265,12 @@ void conv_adjoint(struct conv_plan* plan, complex float* dst, const complex floa
 	}
 
 	if (pre)
-		(crop ? md_resizec : md_resize)(plan->N, plan->dims2, tmp, plan->odims, src1, CFL_SIZE);
+		(crop ? md_resize_center : md_resize)(plan->N, plan->dims2, tmp, plan->odims, src1, CFL_SIZE);
 
 	conv_cyclicH(plan, post ? tmp : dst, pre ? tmp : src1);
 
 	if (post)
-		(crop ? md_resizec : md_resize)(plan->N, plan->idims, dst, plan->dims1, tmp, CFL_SIZE);
+		(crop ? md_resize_center : md_resize)(plan->N, plan->idims, dst, plan->dims1, tmp, CFL_SIZE);
 
 	if (pre || post)
 		md_free(tmp);

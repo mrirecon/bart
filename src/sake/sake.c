@@ -149,8 +149,8 @@ static void lowrank(float alpha, int D, const long dims[D], complex float* matri
 
 		debug_printf(DP_INFO, "SVD..\n");
 
-		//svd(N, M, (complex float (*)[M])U, (complex float (*)[N])VT, S, (complex float (*)[N])calmat);
-		svd_econ(N, M, (complex float (*)[M])U, (complex float (*)[N])VT, S, (complex float (*)[N])calmat); // CHECK
+		//lapack_svd(N, M, (complex float (*)[M])U, (complex float (*)[N])VT, S, (complex float (*)[N])calmat);
+		lapack_svd_econ(N, M, (complex float (*)[M])U, (complex float (*)[N])VT, S, (complex float (*)[N])calmat); // CHECK
 
 		debug_printf(DP_INFO, "done.\n");
 

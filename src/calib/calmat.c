@@ -127,7 +127,7 @@ void calmat_svd(const long kdims[3], unsigned int N, complex float cov[N][N], fl
 
 	complex float (*U)[L] = xmalloc(L * L * CFL_SIZE);
 
-	svd_econ(L, N, U, cov, S, MD_CAST_ARRAY2(const complex float, 2, calmat_dims, cm, 0, 1));
+	lapack_svd_econ(L, N, U, cov, S, MD_CAST_ARRAY2(complex float, 2, calmat_dims, cm, 0, 1));
 
 	free(U);
 	md_free(cm);

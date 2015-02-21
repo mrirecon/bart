@@ -55,7 +55,7 @@ void scc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 	gram_matrix(channels, tmp, csize, (const complex float (*)[csize])cal_data);
 
 	float vals[channels];
-	eigendecomp(channels, vals, tmp);
+	lapack_eig(channels, vals, tmp);
 
 	md_flip(DIMS, out_dims, MAPS_FLAG, out_data, tmp, CFL_SIZE);
 
@@ -88,7 +88,7 @@ static void align1(int M, int N, complex float out[M][N], const complex float in
 	mat_adjoint(M, N, in1T, in1);	// A_{x-1}^H
 	mat_mul(M, N, M, C, in2, in1T);	// C = A_{x} A_{x-1}^H
 	// VH and U are switched here because SVD uses column-major arrays
-	svd(M, M, VH, U, S, C);		// U S V^H = C
+	lapack_svd(M, M, VH, U, S, C);		// U S V^H = C
 	mat_mul(M, M, M, C, U, VH);	// U V^H
 	mat_adjoint(M, M, P, C);	// P_x = V U^H
 	mat_mul(M, M, N, out, P, in2);	// A_{x} <- P_x A_{x}
@@ -163,7 +163,7 @@ void gcc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 	tmp_dims[READ_DIM] = ro;
 	complex float* tmp = md_alloc(DIMS, tmp_dims, CFL_SIZE);
 
-	md_resizec(DIMS, tmp_dims, tmp, caldims, cal_data, CFL_SIZE);
+	md_resize_center(DIMS, tmp_dims, tmp, caldims, cal_data, CFL_SIZE);
 	ifftuc(DIMS, tmp_dims, READ_FLAG, tmp, tmp);
 
 	// apply scc at each readout location

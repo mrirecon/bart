@@ -55,7 +55,7 @@ extern void md_move_block2(unsigned int D, const long dim[__VLA(D)], const long 
 extern void md_move_block(unsigned int D, const long dim[__VLA(D)], const long opos[__VLA(D)], const long odim[__VLA(D)], void* optr, const long ipos[__VLA(D)], const long idim[__VLA(D)], const void* iptr, size_t size);
 
 extern void md_resize(unsigned int D, const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
-extern void md_resizec(unsigned int D, const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
+extern void md_resize_center(unsigned int D, const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
 extern void md_fill2(unsigned int D, const long dim[__VLA(D)], const long str[__VLA(D)], void* ptr, const void* iptr, size_t size);
 extern void md_fill(unsigned int D, const long dim[__VLA(D)], void* ptr, const void* iptr, size_t size);
 extern void md_slice2(unsigned int D, unsigned long flags, const long pos[__VLA(D)], const long dim[__VLA(D)], const long ostr[__VLA(D)], void* optr, const long istr[__VLA(D)], const void* iptr, size_t size);
@@ -89,6 +89,7 @@ extern void md_periodic(unsigned int D, const long dims1[__VLA(D)], void* dst, c
 typedef void* (*md_alloc_fun_t)(unsigned int D, const long dimensions[__VLA(D)], size_t size);
 
 extern void* md_alloc(unsigned int D, const long dimensions[__VLA(D)], size_t size);
+extern void* md_calloc(unsigned int D, const long dimensions[__VLA(D)], size_t size);
 #ifdef USE_CUDA
 extern void* md_alloc_gpu(unsigned int D, const long dimensions[__VLA(D)], size_t size);
 extern void* md_gpu_move(unsigned int D, const long dims[__VLA(D)], const void* ptr, size_t size);
