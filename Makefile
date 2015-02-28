@@ -162,12 +162,6 @@ default: all
 
 
 
-ifeq ($(SLINK),1)
-# work around fortran problems with static linking
-LDFLAGS += -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -Wl,--allow-multiple-definition
-endif
-
-
 
 # cuda
 
@@ -249,7 +243,7 @@ else
 ifeq ($(BUILDTYPE), MacOSX)
 BLAS_L := -lblas -framework Accelerate
 else
-BLAS_L := -llapack -lblas -lgfortran
+BLAS_L := -llapack -lblas #-lgfortran
 endif
 endif
 
@@ -275,6 +269,18 @@ MATLAB_L := -Wl,-rpath $(matlab.top)/bin/glnxa64 -L$(matlab.top)/bin/glnxa64 -lm
 ISMRM_H := -I$(ismrm.top)/include -I$(ismrm.top)/schema #-DISMRMRD_OLD
 ISMRM_L := /usr/local/ismrmrd/schema/ismrmrd.cxx -Wl,-R$(ismrm.top)/lib -L$(ismrm.top)/lib -lismrmrd -Lhd5 -lxerces-c -lboost_system
 #ISMRM_L := -Wl,-R$(ismrm.top)/lib -L$(ismrm.top)/lib -lismrmrd -lismrmrd_xsd -Lhd5 
+
+
+
+# change for static linking
+
+ifeq ($(SLINK),1)
+# work around fortran problems with static linking
+LDFLAGS += -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -Wl,--allow-multiple-definition
+ifneq ($(BUILDTYPE), MacOSX)
+BLAS_L += -lgfortran
+endif
+endif
 
 
 
