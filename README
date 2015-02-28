@@ -76,7 +76,6 @@ of gcc (4.7 seems to work) from MacPorts (http://www.macports.org/).
 $ sudo port install fftw-3-single
 $ sudo port install gsl
 $ sudo port install gcc47
-$ sudo port select --set gcc mp-gcc47
 
 (optional)
 $ sudo apt-get install octave

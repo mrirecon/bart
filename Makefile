@@ -60,9 +60,9 @@ CC = gcc
 CXX = g++
 
 
-#ifeq ($(BUILDTYPE), MacOSX)
-#	CC = gcc-mp-4.7
-#endif
+ifeq ($(BUILDTYPE), MacOSX)
+	CC = gcc-mp-4.7
+endif
 
 
 # cuda
