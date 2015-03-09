@@ -8,7 +8,20 @@
         BODY {
 		background: #292638;
         }
-	
+
+	h1, h2 {
+		font-family: 'PT Serif', serif;
+		border-bottom: 1px solid grey;
+		padding-bottom: 5px;
+	}
+
+	h1 {
+		font-size: 30px;
+	}
+
+	h2 {
+		font-size: 24px;
+	}	
 
         div#index {
                 position: fixed;
@@ -22,6 +35,13 @@
 	        padding: 10px 15px 10px;
 		background: #DDDDDD;
         }
+
+	.github {
+		background: #33f;
+		padding: 3px;
+		color: white;
+		border-radius: 5px;
+	}
 
         div A {
         }
@@ -50,32 +70,36 @@
     <center>
     <p>
     <div id="body" align="left">
-      <h2><a id="ESPIRIT">Berkeley Advanced Reconstruction Toolbox</a></h2>
+      <h1><a>Berkeley Advanced Reconstruction Toolbox</a></h1>
 	<p>
 	<div>The Berkeley Advanced Reconstruction Toolbox (BART) is an image reconstruction framework 
 for Magnetic Resonance Imaging (MRI). It consists of a
 programming library and a toolbox of command-line programs. The library provides common operations on multi-dimensional
 arrays, Fourier and wavelet transforms, as well as generic implementations of iterative optimization algorithms.
 The command-line tools provide direct access to basic operations on multi-dimensional arrays as well as efficient
-implementations of many calibration and reconstruction algorithms for MRI.
+implementations of many calibration and reconstruction algorithms for parallel imaging and compressed sensing.
 	</div>
 	<small>
 	<p>
-	<img src="./knee.png" width=50%><p>
-	<div><strong>Figure:</strong> Sagittal section of a human knee acquired
-with an 3D-FSE sequence and reconstructed with L1-ESPIRiT.</div>
+	<div id="fig">
+	<img src="./abdomen.png" width=30%><p>
+	<strong>Figure:</strong> l1-ESPIRiT reconstruction of a human abdomen (variable-density Poisson-disc
+sampling, R=7, RF-spoiled 3D-FLASH, B0 = 3T TR/TE = 4.3/1.0ms, partial echo .6, matrix: 320x256x184, 32 channels)<br>
+Total reconstruction time: 51s including compression (14s), calibration (9s), iterative reconstruction (12s),
+and other processing steps (16s) on a multi-GPU system.
+	</div>
+	</small>
+	<small>
 	<p>
-	<h4>Mailing List</h4>
+	<h2 class="header">Mailing List</h2>
 	<p>
 	Please direct all questions or comments to the public mailing list:
 	<p>
 	<a href="https://lists.eecs.berkeley.edu/sympa/info/mrirecon">mrirecon list (public)</a>
 	<p>
-	<h4>Download</h4>
+	<h2>Download</h2>
 	<p>
-	C/C++ source code (for Linux and MacOS X):
-	<p>
-	<a href="https://github.com/mikgroup/bart">GitHub repository</a>
+	C/C++ source code (for Linux and MacOS X): <a class="github" href="https://github.com/mikgroup/bart">GitHub repository</a>
 	<p>
 	Releases:
 	<ul>
@@ -85,21 +109,24 @@ with an 3D-FSE sequence and reconstructed with L1-ESPIRiT.</div>
 	</ul>
 	(the latest release can always be found <a href="http://github.com/mikgroup/bart/releases/latest">here</a>)
 	<p>
-	<h4>Installation</h4>
-	<p>Installation of the required libraries and compilation on Linux is usually as simple as:
+	<h2>Installation</h2>
+	<p>Installation of the required libraries, downloading and unpacking of the archive, and
+	compilation on Linux is usually as simple as typing the following commands:
 	<div class="code">
 	<code>
 	<p>
-	&nbsp;$ sudo apt-get install libfftw3-dev libgsl0-dev liblapack-dev</br>
-	&nbsp;$ cd bart_X.YY.ZZ</br>
+	&nbsp;$ sudo apt-get install build-essential libfftw3-dev libgsl0-dev liblapack-dev</br>
+	&nbsp;$ wget https://github.com/mikgroup/bart/archive/vX.Y.ZZ.tar.gz</br>
+	&nbsp;$ tar xzvf vX.YY.ZZ.tar.gz</br>
+	&nbsp;$ cd bart-X.YY.ZZ</br>
 	&nbsp;$ make
 	</p>
 	</code>
 	</div>
 	<p>
-	See the README file included with the source code for further instructions.
+	See the README file included with the source code for further instructions and for Mac OS X.
 	</p>
-	<h4>Usage Examples</h4>
+	<h2>Usage Examples</h2>
 	<p>
 	Perform ESPIRiT calibration and image reconstruction with
 	L1-wavelet regularization:
@@ -124,17 +151,14 @@ with an 3D-FSE sequence and reconstructed with L1-ESPIRiT.</div>
 	</div>
 	<p>
 	More examples where the tools are called
-	directly from Matlab can be found here:
+	directly from Matlab can be found <a href="./examples.html">here</a>
+	(<a class="github" href="https://github.com/mikgroup/espirit-matlab-examples">GitHub repository</a>).
 	<p>
-	<a href="./examples.html">Matlab examples</a>
-	<p>
-	<a href="https://github.com/mikgroup/espirit-matlab-examples">GitHub repository</a>
-	<p>
-	<a href="https://github.com/mikgroup/espirit-matlab-examples/archive/master.zip">zip file</a> (4.5 MB)
-	<p>
-	<h4>References</h4>
+	<h2>References</h2>
 	<p>
 	<ul>
+	<li>Martin Uecker, Frank Ong, Jonathan I Tamir, Dara Bahri, Patrick Virtue, Joseph Y Cheng, Tao Zhang, and Michael Lustig,
+Berkeley Advanced Reconstruction Toolbox, Annual Meeting ISMRM, Toronto 2015, In Proc. Intl. Soc. Mag. Reson. Med. 23:2486 (accepted)
 	<li>Martin Uecker, Patrick Virtue, Frank Ong, Mark J. Murphy, Marcus T. Alley, Shreyas S. Vasanawala, Michael Lustig, <a href="https://www.eecs.berkeley.edu/~uecker/toolbox.pdf">Software Toolbox and Programming Library for Compressed Sensing and Parallel Imaging</a>, <a href="https://www.ismrm.org/workshops/Data13/">ISMRM Workshop on Data Sampling and Image Reconstruction</a>, Sedona 2013
 	<li>Martin Uecker, Peng Lai, Mark J. Murphy, Patrick Virtue, Michael Elad, John M. Pauly, Shreyas S. Vasanawala, and Michael Lustig. <a href="http://onlinelibrary.wiley.com/doi/10.1002/mrm.24751/abstract">ESPIRiT - An Eigenvalue Approach to Autocalibrating Parallel MRI: Where SENSE meets GRAPPA<a>. Magnetic Resonance in Medicine, 71:990-1001 (2014)
 	</ul>
