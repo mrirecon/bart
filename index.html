@@ -50,9 +50,10 @@
     <center>
     <p>
     <div id="body" align="left">
-      <h2><a id="ESPIRIT">Berkeley Advanced Reconstruction Toolbox (BART)</a></h2>
+      <h2><a id="ESPIRIT">Berkeley Advanced Reconstruction Toolbox</a></h2>
 	<p>
-	<div>BART is a framework for image reconstruction which consists of a
+	<div>The Berkeley Advanced Reconstruction Toolbox (BART) is an image reconstruction framework 
+for Magnetic Resonance Imaging (MRI). It consists of a
 programming library and a toolbox of command-line programs. The library provides common operations on multi-dimensional
 arrays, Fourier and wavelet transforms, as well as generic implementations of iterative optimization algorithms.
 The command-line tools provide direct access to basic operations on multi-dimensional arrays as well as efficient
@@ -96,7 +97,7 @@ with an 3D-FSE sequence and reconstructed with L1-ESPIRiT.</div>
 	</code>
 	</div>
 	<p>
-	See the README file included with source for further instructions.
+	See the README file included with the source code for further instructions.
 	</p>
 	<h4>Usage Examples</h4>
 	<p>
@@ -106,8 +107,8 @@ with an 3D-FSE sequence and reconstructed with L1-ESPIRiT.</div>
 	<div class="code">
 	<code>
 	<p>
-	&nbsp;# ecalib data/kspace sensitivities<br>
-	&nbsp;# sense -l1 -r0.001 data/kspace sensitivities image_out
+	&nbsp;$ ecalib kspace sensitivities<br>
+	&nbsp;$ sense -l1 -r0.001 kspace sensitivities image_out
 	</p>
 	</code>
 	</div>
@@ -125,15 +126,18 @@ with an 3D-FSE sequence and reconstructed with L1-ESPIRiT.</div>
 	More examples where the tools are called
 	directly from Matlab can be found here:
 	<p>
-	<a href="./examples.html">html examples</a>
+	<a href="./examples.html">Matlab examples</a>
 	<p>
 	<a href="https://github.com/mikgroup/espirit-matlab-examples">GitHub repository</a>
 	<p>
 	<a href="https://github.com/mikgroup/espirit-matlab-examples/archive/master.zip">zip file</a> (4.5 MB)
 	<p>
 	<h4>References</h4>
-	<p>Martin Uecker, Patrick Virtue, Frank Ong, Mark J. Murphy, Marcus T. Alley, Shreyas S. Vasanawala, Michael Lustig, <a href="https://www.eecs.berkeley.edu/~uecker/toolbox.pdf">Software Toolbox and Programming Library for Compressed Sensing and Parallel Imaging</a>, <a href="https://www.ismrm.org/workshops/Data13/">ISMRM Workshop on Data Sampling and Image Reconstruction</a>, Sedona 2013</p>
-	<p>Martin Uecker, Peng Lai, Mark J. Murphy, Patrick Virtue, Michael Elad, John M. Pauly, Shreyas S. Vasanawala, and Michael Lustig. <a href="http://onlinelibrary.wiley.com/doi/10.1002/mrm.24751/abstract">ESPIRiT - An Eigenvalue Approach to Autocalibrating Parallel MRI: Where SENSE meets GRAPPA<a>. Magnetic Resonance in Medicine, 71:990-1001 (2014)</p>
+	<p>
+	<ul>
+	<li>Martin Uecker, Patrick Virtue, Frank Ong, Mark J. Murphy, Marcus T. Alley, Shreyas S. Vasanawala, Michael Lustig, <a href="https://www.eecs.berkeley.edu/~uecker/toolbox.pdf">Software Toolbox and Programming Library for Compressed Sensing and Parallel Imaging</a>, <a href="https://www.ismrm.org/workshops/Data13/">ISMRM Workshop on Data Sampling and Image Reconstruction</a>, Sedona 2013
+	<li>Martin Uecker, Peng Lai, Mark J. Murphy, Patrick Virtue, Michael Elad, John M. Pauly, Shreyas S. Vasanawala, and Michael Lustig. <a href="http://onlinelibrary.wiley.com/doi/10.1002/mrm.24751/abstract">ESPIRiT - An Eigenvalue Approach to Autocalibrating Parallel MRI: Where SENSE meets GRAPPA<a>. Magnetic Resonance in Medicine, 71:990-1001 (2014)
+	</ul>
     </center>
   </body>
 </html>
