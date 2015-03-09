@@ -2,7 +2,7 @@
 <html lang="de">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-    <title>Martin Uecker</title>
+    <title>Berkeley Advanced Reconstruction Toolbox</title>
     <style type="text/css">
 
         BODY {
@@ -14,11 +14,11 @@
                 position: fixed;
 	        padding: 10px 15px 10px;
 		background: #DDDDDD;
-                width: 20%;
+                width: 10%;
         }
 
         div#body {
-	        width: 50%; 
+	        width: 60%; 
 	        padding: 10px 15px 10px;
 		background: #DDDDDD;
         }
@@ -31,6 +31,14 @@
 
         div A:hover {
         }
+
+	.code {
+		border: 1px solid black;
+		background: white;
+	}
+
+	code {
+	}
 
 	img, object {
         	max-width: 100%;
@@ -58,6 +66,8 @@ with an 3D-FSE sequence and reconstructed with L1-ESPIRiT.</div>
 	<p>
 	<h4>Mailing List</h4>
 	<p>
+	Please direct all questions or comments to the public mailing list:
+	<p>
 	<a href="https://lists.eecs.berkeley.edu/sympa/info/mrirecon">mrirecon list (public)</a>
 	<p>
 	<h4>Download</h4>
@@ -74,10 +84,46 @@ with an 3D-FSE sequence and reconstructed with L1-ESPIRiT.</div>
 	</ul>
 	(the latest release can always be found <a href="http://github.com/mikgroup/bart/releases/latest">here</a>)
 	<p>
+	<h4>Installation</h4>
+	<p>Installation of the required libraries and compilation on Linux is usually as simple as:
+	<div class="code">
+	<code>
+	<p>
+	&nbsp;$ sudo apt-get install libfftw3-dev libgsl0-dev liblapack-dev</br>
+	&nbsp;$ cd bart_X.YY.ZZ</br>
+	&nbsp;$ make
+	</p>
+	</code>
+	</div>
+	<p>
+	See the README file included with source for further instructions.
+	</p>
 	<h4>Usage Examples</h4>
-	The toolbox can be used in combination with Matlab/Octave.
-	In our examples the tools are called
-	directly from Matlab which is used for image display.
+	<p>
+	Perform ESPIRiT calibration and image reconstruction with
+	L1-wavelet regularization:
+	</p>
+	<div class="code">
+	<code>
+	<p>
+	&nbsp;# ecalib data/kspace sensitivities<br>
+	&nbsp;# sense -l1 -r0.001 data/kspace sensitivities image_out
+	</p>
+	</code>
+	</div>
+	<p>
+	The toolbox can also be used in combination with Matlab/Octave.
+	</p>
+	<div class="code">
+	<code>
+	<p>
+	&nbsp;&gt;&gt;&nbsp;sensitivities = bart('ecalib', kspace);<br>
+	&nbsp;&gt;&gt;&nbsp;image_out = bart('sense -l1 -r0.001', kspace, sensitivities);
+	</code>
+	</div>
+	<p>
+	More examples where the tools are called
+	directly from Matlab can be found here:
 	<p>
 	<a href="./examples.html">html examples</a>
 	<p>
