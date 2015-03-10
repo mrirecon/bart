@@ -84,14 +84,12 @@ implementations of many calibration and reconstruction algorithms for parallel i
 	<small>
 	<p>
 	<div id="fig">
-	<img src="./abdomen.png" width=30%><p>
+	<img src="./abdomen.png" alt="mri scan of human abdomen" width="30%"><p>
 	<strong>Figure:</strong> l1-ESPIRiT reconstruction of a human abdomen (variable-density Poisson-disc
 sampling, R=7, RF-spoiled 3D-FLASH, B0 = 3T TR/TE = 4.3/1.0ms, partial echo .6, matrix: 320x256x184, 32 channels)<br>
 Total reconstruction time: 51s including compression (14s), calibration (9s), iterative reconstruction (12s),
 and other processing steps (16s) on a multi-GPU system.
 	</div>
-	</small>
-	<small>
 	<p>
 	<h2 class="header">Mailing List</h2>
 	<p>
@@ -117,10 +115,10 @@ and other processing steps (16s) on a multi-GPU system.
 	<div class="code">
 	<code>
 	<p>
-	&nbsp;$ sudo apt-get install build-essential libfftw3-dev libgsl0-dev liblapack-dev</br>
-	&nbsp;$ wget https://github.com/mikgroup/bart/archive/vX.Y.ZZ.tar.gz</br>
-	&nbsp;$ tar xzvf vX.YY.ZZ.tar.gz</br>
-	&nbsp;$ cd bart-X.YY.ZZ</br>
+	&nbsp;$ sudo apt-get install build-essential libfftw3-dev libgsl0-dev liblapack-dev<br>
+	&nbsp;$ wget https://github.com/mikgroup/bart/archive/vX.Y.ZZ.tar.gz<br>
+	&nbsp;$ tar xzvf vX.YY.ZZ.tar.gz<br>
+	&nbsp;$ cd bart-X.YY.ZZ<br>
 	&nbsp;$ make
 	</p>
 	</code>
@@ -162,8 +160,10 @@ and other processing steps (16s) on a multi-GPU system.
 	<li>Martin Uecker, Frank Ong, Jonathan I Tamir, Dara Bahri, Patrick Virtue, Joseph Y Cheng, Tao Zhang, and Michael Lustig,
 Berkeley Advanced Reconstruction Toolbox, Annual Meeting ISMRM, Toronto 2015, In Proc. Intl. Soc. Mag. Reson. Med. 23:2486 (accepted)
 	<li>Martin Uecker, Patrick Virtue, Frank Ong, Mark J. Murphy, Marcus T. Alley, Shreyas S. Vasanawala, Michael Lustig, <a href="https://www.eecs.berkeley.edu/~uecker/toolbox.pdf">Software Toolbox and Programming Library for Compressed Sensing and Parallel Imaging</a>, <a href="https://www.ismrm.org/workshops/Data13/">ISMRM Workshop on Data Sampling and Image Reconstruction</a>, Sedona 2013
-	<li>Martin Uecker, Peng Lai, Mark J. Murphy, Patrick Virtue, Michael Elad, John M. Pauly, Shreyas S. Vasanawala, and Michael Lustig. <a href="http://onlinelibrary.wiley.com/doi/10.1002/mrm.24751/abstract">ESPIRiT - An Eigenvalue Approach to Autocalibrating Parallel MRI: Where SENSE meets GRAPPA<a>. Magnetic Resonance in Medicine, 71:990-1001 (2014)
+	<li>Martin Uecker, Peng Lai, Mark J. Murphy, Patrick Virtue, Michael Elad, John M. Pauly, Shreyas S. Vasanawala, and Michael Lustig. <a href="http://onlinelibrary.wiley.com/doi/10.1002/mrm.24751/abstract">ESPIRiT - An Eigenvalue Approach to Autocalibrating Parallel MRI: Where SENSE meets GRAPPA</a>. Magnetic Resonance in Medicine, 71:990-1001 (2014)
 	</ul>
+	</small>
+      </div>
     </center>
   </body>
 </html>
