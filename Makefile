@@ -11,7 +11,6 @@
 
 CUDA=0
 ACML=0
-CULA=0
 GSL=1
 OMP=1
 SLINK=0
@@ -68,10 +67,6 @@ endif
 # cuda
 
 cuda.top := /usr/
-
-# cula
-
-cula.top := /usr/
 
 # GSL
 
@@ -190,6 +185,7 @@ NVCCFLAGS = -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 -arch=sm_20 -I$(
 	$(NVCC) $(NVCCFLAGS) -M $^ -o $(DEPFILE)
 
 
+# OpenMP
 
 ifeq ($(OMP),1)
 CFLAGS += -fopenmp
@@ -198,20 +194,6 @@ else
 CFLAGS += -Wno-unknown-pragmas
 CXXFLAGS += -Wno-unknown-pragmas
 endif
-
-
-
-# cula
-
-ifeq ($(CULA),1)
-CULA_H := -I$(cula.top)/include
-CPPFLAGS += -DUSE_CULA $(CULA_H)
-CULA_L := -L$(cula.top)/lib64 -lcula_lapack -lcula_core
-else
-CULA_H :=
-CULA_L :=  
-endif
-
 
 
 
@@ -321,7 +303,7 @@ $(BTARGETS): bart
 
 .SECONDEXPANSION:
 $(XTARGETS): % : $(srcdir)/%.c $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -Dmain_$@=main -o $@ $+ $(FFTW_L) $(CUDA_L) $(CULA_L) $(BLAS_L) $(GSL_L) $(PNG_L) -lm
+	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -Dmain_$@=main -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(GSL_L) $(PNG_L) -lm
 #	rm $(srcdir)/$@.o
 
 

@@ -20,12 +20,6 @@
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 
-#ifdef USE_CULA
-#include <cula_lapack_device.h>
-#include <cula_types.h>
-#include <cula_lapack.h>
-#endif
-
 #include <cublas.h>
 #endif
 
@@ -142,13 +136,11 @@ void lapack_svd(long M, long N, complex float U[M][M], complex float VH[N][N], f
 	//assert(M >= N);
 
 #ifdef USE_CUDA
-#ifdef USE_CULA
 	if (cuda_ondevice(A)) {
 
-		culaDeviceCgesvd('A', 'A', M, N, (culaDeviceFloatComplex*)A, M, (culaDeviceFloat*)S, (culaDeviceFloatComplex*)U, M, (culaDeviceFloatComplex*)VH, N);
+		assert(0);
 
 	} else
-#endif 
 #endif 
 	{
 #ifdef USE_ACML
@@ -193,15 +185,12 @@ void lapack_svd_econ(long M, long N,
 	long minMN = MIN(M, N);
 
 #ifdef USE_CUDA
-#ifdef USE_CULA
 	if (cuda_ondevice(A)) {
 
-		culaDeviceCgesvd('S', 'S', M, N, (culaDeviceFloatComplex*)A, M, (culaDeviceFloat*)S, (culaDeviceFloatComplex*)U, M, (culaDeviceFloatComplex*)VH, minMN);
+		assert(0);
 
 	} else
 #endif 
-#endif 
-
 	{
 
 #ifdef USE_ACML
@@ -276,18 +265,16 @@ err:
 #if 0
 void matrix_multiply(long M, long N, long K, complex float C[M][N], complex float A[M][K], complex float B[K][N])
 {
-
 #ifdef USE_CUDA
 	if (cuda_ondevice( A )) {
+
 		cublasCgemm('N', 'N', M, N, K, make_cuFloatComplex(1.,0.), 
 			    (const cuComplex *) A, M, 
 			    (const cuComplex *) B, K, make_cuFloatComplex(0.,0.), 
 			    (cuComplex *)  C, M);
 	} else
 #endif 
-
 	{
-
 #ifdef USE_ACML
 		cgemm( 'N', 'N', M, N, K, &(complex float){1.} , A, M, B, K, &(complex float){0.}, C, M );
 #else
@@ -307,15 +294,15 @@ void cgemm_sameplace(const char transa, const char transb, long M, long N,  long
 {
 #ifdef USE_CUDA
 	if (cuda_ondevice( A )) {
+
 		cublasCgemm(transa, transb, M, N, K, *(cuComplex*)alpha,
 				(const cuComplex *) A, lda, 
 				(const cuComplex *) B, ldb, *(cuComplex*)beta, 
 				(cuComplex *)  C, ldc);
+
 	} else
 #endif 
-
 	{
-
 #ifdef USE_ACML
 		cgemm(transa, transb, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc );
 #else
