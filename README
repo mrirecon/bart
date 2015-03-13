@@ -12,7 +12,7 @@ provide more detailed references, e.g. for specific iterative algorithms.
 
 
 1. Help
-
+=======
 
 Please direct all questions or comments to the public mailing list:
 
@@ -34,6 +34,7 @@ Updates and further information can be found here:
 
 
 2. Installation
+===============
 
 2.1. Prerequesites
 
@@ -224,6 +225,7 @@ with Matlab. Go to the examples directory and run:
 
 
 3. Data Format
+==============
 
 The input and output datasets are each stored in a pair of files: one
 header (*.hdr) and one raw data (*.cfl). The header is a simple text
@@ -240,6 +242,7 @@ be found in recon/matlab (readcfl.m and writecfl.m).
 
 
 4.. Command-line Tools
+======================
 
 All tools operate on the simple file format given above. Indices and
 dimensions run from 0 to N-1. Sometimes a set of dimensions is given
@@ -260,6 +263,7 @@ More information about each command can be found in 'doc/commands.txt'.
 
 
 5. References
+=============
 
 
 Uecker M, Ong F, Tamir JI, Bahri D, Virtue P, Cheng JY, Zhang T, Lustig m,
