@@ -115,7 +115,7 @@ TARGETS = $(BTARGETS) $(XTARGETS)
 
 MODULES = -lnum -lmisc -lnum -lmisc
 
-MODULES_sense = -lsense -lwavelet2 -liter -llinops -lwavelet3
+MODULES_sense = -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank
 MODULES_nusense = -lsense -lwavelet2 -lnoncart -liter -llinops
 MODULES_pocsense = -lsense -lwavelet2 -liter -llinops
 MODULES_nlinv = -lnoir -liter

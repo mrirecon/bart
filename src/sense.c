@@ -34,6 +34,8 @@
 #include "wavelet3/wavthresh.h"
 #endif
 
+#include "lowrank/lrthresh.h"
+
 #include "misc/debug.h"
 #include "misc/mri.h"
 #include "misc/utils.h"
@@ -72,6 +74,7 @@ int main_sense(int argc, char* argv[])
 	bool ist = false;
 	bool use_gpu = false;
 	bool l1wav = false;
+	bool lowrank = false;
 	bool randshift = true;
 	int maxiter = 30;
 	float step = 0.95;
@@ -138,10 +141,18 @@ int main_sense(int argc, char* argv[])
 			if (1 == atoi(optarg)) {
 
 				l1wav = true;
+				lowrank = false;
 
 			} else
 			if (2 == atoi(optarg)) {
 
+				l1wav = false;
+				lowrank = false;
+
+			} else
+			if (3 == atoi(optarg)) {
+
+				lowrank = true;
 				l1wav = false;
 
 			} else {
@@ -328,6 +339,25 @@ int main_sense(int argc, char* argv[])
 #endif
 	}
 
+	if (lowrank) {
+
+		long blkdims[1][DIMS];
+
+		// add a very basic lowrank penalty
+		int levels = llr_blkdims(blkdims, MD_BIT(TIME_DIM), img_dims, img_dims[TIME_DIM]);
+
+		assert(1 == levels);
+		img_dims[LEVEL_DIM] = levels;
+
+		for(int l = 0; l < levels; l++)
+			blkdims[l][MAPS_DIM] = img_dims[MAPS_DIM];
+
+		unsigned int mflags = 6;
+		int remove_mean = 0;
+
+		thresh_op = lrthresh_create(img_dims, randshift, mflags, (const long (*)[DIMS])blkdims, lambda, false, remove_mean, use_gpu);
+	}
+
 
 
 	complex float* image = create_cfl(argv[optind + 2], DIMS, img_dims);
@@ -353,7 +383,7 @@ int main_sense(int argc, char* argv[])
 	struct iter_ist_conf isconf;
 	struct iter_admm_conf mmconf;
 
-	if (!l1wav) {
+	if (!(l1wav || lowrank)) {
 
 		cgconf = iter_conjgrad_defaults;
 		cgconf.maxiter = maxiter;
