@@ -36,7 +36,7 @@ Updates and further information can be found here:
 2. Installation
 ===============
 
-2.1. Prerequesites
+2.1. Prerequisites
 
 GCC compiler, the FFTW, GSL (or ACML) libraries and optionally 
 a CUDA Implementation (see recon/Makefile to turn these
@@ -171,17 +171,18 @@ lib/		built software libraries
 2.3.2. Terminal
 
 When using the toolbox commands from a UNIX shell, it is recommended
-to set the TOOLBOX_PATH to the base directoy and to add it to
+to set the TOOLBOX_PATH to the base directory and to add it to
 the PATH variable. You can do this by running the following command:
 
 $ . vars.sh
 
-
+Note: The dot or 'source' command is needed so that the variables
+are imported into the current shell.
 
 
 2.3.3. Matlab
 
-You can set the TOOLBOX_PATH to the base directoy and to add it
+You can set the TOOLBOX_PATH to the base directory and to add it
 to the Matlab path by running the following command in the
 bart directory:
 
@@ -227,6 +228,8 @@ with Matlab. Go to the examples directory and run:
 3. Data Format
 ==============
 
+3.1. Generic
+
 The input and output datasets are each stored in a pair of files: one
 header (*.hdr) and one raw data (*.cfl). The header is a simple text
 readable file that describes the dimensions of the data. The raw data
@@ -237,6 +240,41 @@ data of dimensions described in the header stored in column-major order
 
 Convenience methods to read and write our data files using Matlab may
 be found in recon/matlab (readcfl.m and writecfl.m).
+
+
+
+3.2. Magnetic Resonance Imaging Data
+
+For MRI data and images, the dimensions are usually assigned in
+the following order:
+
+0 readout
+1 phase-encoding dimension 1
+2 phase-encoding dimension 2
+3 receive channels
+4 ESPIRiT maps
+...
+...
+
+(more dimensions are defined in src/misc/mri.h)
+
+
+Undersampled data is stored with with zeros in the unsampled
+positions.
+
+
+
+3.3. Non-Cartesian Trajectories and Samples
+
+The k-space coordinates for each sample are stored along dimension 0
+which must have size equal to three. The unit of measurement is 1/FOV.
+Dimension 1 stores the samples along a single readout windows while
+dimension 2 may be used to differentiate between different lines
+(e.g. radial spokes). Channel (3) and map (4) dimensions must not
+be used (i.e. have size one), while other dimensions can be used
+as for Cartesian data. Non-Cartesian samples are stored in a similar
+way as trajectories except that dimension 0 is not used. The channel
+dimension can be used for different receiver coils as usual.
 
 
 
