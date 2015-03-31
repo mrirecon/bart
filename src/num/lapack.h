@@ -24,3 +24,5 @@ extern void cgemm_sameplace(const char transa, const char transb, long M, long N
 
 extern void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float* dst, const complex float* src);
 
+extern void lapack_cholesky(long N, complex float A[N][N]);
+

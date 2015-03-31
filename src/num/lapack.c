@@ -47,6 +47,7 @@ extern void zgesdd(const char jobz, long M, long N, complex double A[M][N], long
 extern void cgesvd(char jobu, char jobvt, long M, long N, complex float a[M][N], long lda, float* S, complex float u[M][N], long ldu, complex float vt[M][N], long ldvt, long *info);
 extern void cgemm(const char transa, const char transb, long M, long N,  long K, const complex float* alpha, const complex float A[M][K], const long lda, const complex float B[K][N], const long ldb, const complex float* beta, complex float C[M][N], const long ldc );
 extern void csyrk(char uplo, char transa, long N, long K, const complex float *alpha, const complex float A[K][N], const long lda, const complex float *beta, const complex float C[N][N], const long ldc);
+extern void cpotrf_(char uplo, const long N, complex float A[N][N], long lda, long* info);
 #else
 // FIXME: this strategy would work but needs explicit casts below
 #include <acml.h>
@@ -61,6 +62,7 @@ extern void zgesdd_(const char jobz[1], const long* M, const long* N, complex do
 extern void cgesvd_(const char jobu[1], const char jobvt[1], const long* M, const long* N, complex float A[*M][*N], const long* lda, float* s, complex float U[*M][*N], long* ldu, complex float VH[*M][*N], long* ldvt, complex float* work, long* lwork, float* rwork, const long* iwork, long* info);
 extern void cgemm_(const char transa[1], const char transb[1], const long* M, const long* N, const long* K, const complex float* alpha, const complex float A[*M][*K], const long* lda, const complex float B[*K][*N], const long* ldb, const complex float* beta, complex float C[*M][*N], const long* ldc );
 extern void csyrk_(const char uplo[1], const char trans[1], const long* N, const long* K, const complex float* alpha, const complex float A[*N][*K], const long* lda, const complex float* beta, const complex float C[*N][*N], const long* ldc);
+extern void cpotrf_(const char uplo[1], const long* N, complex float A[*N][*N], const long* lda, long* info);
 #endif
 
 void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float* dst, const complex float* src)
@@ -430,3 +432,17 @@ void cgemm_sameplace(const char transa, const char transb, long M, long N,  long
 	}
 }
 #endif
+
+
+void lapack_cholesky(long N, complex float A[N][N])
+{
+	long info = 0;
+#ifdef USE_ACML
+	cpotrf('U', N, A, N, &info);
+#else
+	cpotrf_("U", &N, A, &N, &info);
+#endif
+}
+
+
+
