@@ -99,7 +99,7 @@ ismrm.top := /usr/local/ismrmrd/
 # Main build targets
 
 TBASE=slice crop resize join transpose zeros ones flip circshift extract repmat bitmask
-TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize
+TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize cdf97
 TNUM=fft fftmod noise bench threshold conv
 TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof nusense sake
 TCALIB=ecalib caldir walsh cc calmat svd

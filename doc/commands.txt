@@ -151,9 +151,17 @@ normalize bitmask <input> <output>
 	Normalize along selected dimensions.
 
 
-svd: [-e] <input> <U> <S> <VH>
+svd [-e] <input> <U> <S> <VH>
 
 	Compute singular-value-decomposition (SVD).
+
+
+cdf97 [-i] bitmask <input> <output>
+
+	Perform a wavelet (cdf97) transform.
+
+	-i	inverse
+	-h	help
 
 
 
