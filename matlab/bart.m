@@ -30,9 +30,20 @@ function [varargout] = bart(cmd, varargin);
 
 	for i=1:nargout,
 		out{i} = strcat(name, 'out', num2str(i));
-	end
+    end
 
-	ERR = system([getenv('TOOLBOX_PATH'), '/', cmd, ' ', strjoin(in, ' '), ' ', strjoin(out, ' ')]);
+
+            
+    if ispc
+            
+        ERR = system(['bash.exe --login -c ', ...
+                strrep(getenv('TOOLBOX_PATH'), filesep, '/'), ...
+                '"', '/', strrep(cmd, filesep, '/'), ' ', ...
+                strrep(strjoin(in, ' '), filesep, '/'), ...
+                ' ', strrep(strjoin(out, ' '), filesep, '/'), '"']);
+    else
+        ERR = system([getenv('TOOLBOX_PATH'), '/', cmd, ' ', strjoin(in, ' '), ' ', strjoin(out, ' ')]);
+    end
 
 	if ERR~=0
 		error('command exited with an error');
@@ -49,6 +60,3 @@ function [varargout] = bart(cmd, varargin);
 		delete(strcat(out{i}, '.hdr'));
 	end
 end
-
-
-
