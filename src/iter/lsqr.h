@@ -58,6 +58,8 @@ extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			void* obj_eval_data,
 			float (*obj_eval)(const void*, const float*));
 
+
+
 #endif
 
 extern void lsqr(	unsigned int N, const struct lsqr_conf* conf,
@@ -87,6 +89,15 @@ extern void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
 			void* obj_eval_data,
 			float (*obj_eval)(const void*, const float*));
 
+extern void wlsqr2(	unsigned int N, const struct lsqr_conf* conf,
+			italgo_fun2_t italgo, void* iconf,
+			const struct linop_s* model_op,
+			unsigned int num_funs,
+			const struct operator_p_s** prox_funs,
+			const struct linop_s** prox_linops,
+			const long x_dims[N], complex float* x,
+			const long y_dims[N], const complex float* y,
+			const long w_dims[N], const complex float* w);
 
 
 #ifdef __cplusplus
