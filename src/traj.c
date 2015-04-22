@@ -1,9 +1,9 @@
-/* Copyright 2014. The Regents of the University of California.
+/* Copyright 2014-2015. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2015 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
 #include <stdlib.h>
@@ -23,7 +23,7 @@
 
 static void usage(const char* name, FILE* fd)
 {
-	fprintf(fd, "Usage: %s <output>\n", name);
+	fprintf(fd, "Usage: %s [-h] [-r] <output>\n", name);
 }
 
 
@@ -36,6 +36,7 @@ static void help(void)
 		"-y y\tphase encoding lines\n"
 		"-a a\tacceleration\n"
 		"-r\tradial\n"
+		"-G\tgolden angle\n"
 		"-h\thelp\n");
 }
 
@@ -46,9 +47,10 @@ int main(int argc, char* argv[])
 	int Y = 128;
 	int accel = 1;
 	bool radial = false;
+	bool golden = false;
 	int c;
 
-	while (-1 != (c = getopt(argc, argv, "x:y:a:rh"))) {
+	while (-1 != (c = getopt(argc, argv, "x:y:a:rGh"))) {
 
 		switch (c) {
 
@@ -62,6 +64,11 @@ int main(int argc, char* argv[])
 
 		case 'a':
 			accel = atoi(optarg);
+			break;
+
+		case 'G':
+			golden = true;
+			radial = true;
 			break;
 
 		case 'r':
@@ -86,19 +93,22 @@ int main(int argc, char* argv[])
 	}
 
 	int N = X * Y / accel;
-	//long dims[3] = { 3, X, Y / accel }; 
-	long dims[3] = { 3, X * Y / accel, 1 };
+	long dims[3] = { 3, X, Y / accel };
 	complex float* samples = create_cfl(argv[optind + 0], 3, dims);
 
 
 	int p = 0;
-	for (int i = 0; i < X; i++) {
-		for (int j = 0; j < Y; j += accel) {
+	for (int j = 0; j < Y; j += accel) {
+		for (int i = 0; i < X; i++) {
 
 			if (radial) {
 
-				samples[p * 3 + 0] = ((float)i + 0.5 - (float)X / 2.) * sin(1. * M_PI * (float)j / (float)Y);
-				samples[p * 3 + 1] = ((float)i + 0.5 - (float)X / 2.) * cos(1. * M_PI * (float)j / (float)Y);
+				double golden_angle = 3. - sqrtf(5.);
+				double base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
+				double angle = M_PI * (float)j * base;
+
+				samples[p * 3 + 0] = ((float)i + 0.5 - (float)X / 2.) * sin(angle);
+				samples[p * 3 + 1] = ((float)i + 0.5 - (float)X / 2.) * cos(angle);
 				samples[p * 3 + 2] = 0.;
 
 			} else {
