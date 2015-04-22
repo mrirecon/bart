@@ -103,7 +103,7 @@ static void sense_reco(struct sense_data* data, complex float* imgs, const compl
 	long size = md_calc_size(DIMS, data->imgs_dims);
 
 	conjgrad(100, data->alpha, 1.E-3, 2 * size, data, &cpu_iter_ops, sense_normal,
-	(float*)imgs, (const float*)adj, NULL, NULL, NULL);
+		 (float*)imgs, (const float*)adj, NULL, NULL, NULL);
 
 	md_free(adj);
 }
