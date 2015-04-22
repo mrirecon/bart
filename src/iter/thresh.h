@@ -30,11 +30,6 @@ extern void set_thresh_lambda(const struct operator_p_s* o, const float lambda);
 extern float get_thresh_lambda(const struct operator_p_s* o);
 
 
-#ifdef BERKELEY_SVN
-extern void softthresh(const struct operator_p_s* o, _Complex float* optr, const _Complex float* iptr);
-#endif
-
-
 struct linop_s;
 
 extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags, _Bool gpu);
