@@ -7,3 +7,5 @@ extern void calc_sens(const long dims[DIMS], complex float* sens);
 extern void calc_circ(const long dims[DIMS], complex float* img, _Bool ksp);
 extern void calc_ring(const long dims[DIMS], complex float* img, _Bool ksp);
 
+extern void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace);
+

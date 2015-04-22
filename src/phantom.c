@@ -44,10 +44,10 @@ static void help(void)
 int main_phantom(int argc, char* argv[])
 {
 	int c;
-	_Bool kspace = false;
+	bool kspace = false;
 	int sens = 0;
-	_Bool out_sens = false;
-	_Bool circ = false;
+	bool out_sens = false;
+	bool circ = false;
 	char* traj = NULL;
 
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -55,7 +55,7 @@ int main_phantom(int argc, char* argv[])
 	dims[1] = 128;
 	dims[2] = 128;
 
-	while (-1 != (c = getopt(argc, argv, "x:kcS:s:t:h"))) {
+	while (-1 != (c = getopt(argc, argv, "x:kcmS:s:t:h"))) {
 
 		switch (c) {
 
@@ -75,6 +75,11 @@ int main_phantom(int argc, char* argv[])
 
 		case 'c':
 			circ = true;
+			break;
+
+		case 'm':
+			circ = true;
+			dims[TE_DIM] = 32;
 			break;
 
 		case 't':
@@ -129,7 +134,10 @@ int main_phantom(int argc, char* argv[])
 
 		assert(NULL == traj);
 
-		calc_circ(dims, out, kspace);
+		if (1 < dims[TE_DIM])
+			calc_moving_circ(dims, out, kspace);
+		else
+			calc_circ(dims, out, kspace);
 //		calc_ring(dims, out, kspace);
 
 	} else {

@@ -50,8 +50,8 @@ static complex float xsens(unsigned int c, double mpos[2], void* data, krn_t fun
 }
 
 /*
- * To simulate channels, we simply convovle with a few Fourier coefficients
- * for sensitivities. See:
+ * To simulate channels, we simply convolve with a few Fourier coefficients
+ * of the sensitivities. See:
  *
  * M Guerquin-Kern, L Lejeune, KP Pruessmann, and M Unser, 
  * Realistic Analytical Phantoms for Parallel Magnetic Resonance Imaging
@@ -182,7 +182,7 @@ static void sample_noncart(const long dims[DIMS], complex float* out, const comp
 	md_select_dims(DIMS, 2 + 4 + 8, odims, dims);
 
 	long sdims[DIMS];
-	md_select_dims(DIMS, 1 + 2, sdims, dims);
+	md_select_dims(DIMS, 1 + 2 + 4, sdims, dims);
 	md_calc_strides(DIMS, data.istrs, sdims, 1);
 
 	md_zsample(DIMS, odims, out, &data, nkernel);
@@ -226,5 +226,27 @@ void calc_ring(const long dims[DIMS], complex float* out, bool kspace)
 {
 	sample(DIMS, dims, out, 4, phantom_ring, kspace);
 }
+
+void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace)
+{
+	struct ellipsis_s disc[1] = { phantom_disc[0] };
+	disc[0].axis[0] /= 3;
+	disc[0].axis[1] /= 3;
+
+	long strs[DIMS];
+	md_calc_strides(DIMS, strs, dims, sizeof(complex float));
+
+	long dims1[DIMS];
+	md_select_dims(DIMS, ~MD_BIT(TE_DIM), dims1, dims);
+
+	for (int i = 0; i < dims[TE_DIM]; i++) {
+
+		disc[0].center[0] = 0.5 * sin(2. * M_PI * (float)i / (float)dims[TE_DIM]);
+		disc[0].center[1] = 0.5 * cos(2. * M_PI * (float)i / (float)dims[TE_DIM]);
+		sample(DIMS, dims1, (void*)out + strs[TE_DIM] * i, 1, disc, kspace);
+	}
+}
+
+
 
 
