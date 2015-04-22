@@ -339,7 +339,8 @@ void md_singleton_strides(unsigned int D, long strs[D])
 
 /**
  * Check dimensions for compatibility. Dimensions must be equal or
- * where indicated by a set bit in flags one must be equal to one.
+ * where indicated by a set bit in flags one must be equal to one
+ * in atleast one of the arguments.
  */
 bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], const long dim2[D])
 {
@@ -351,6 +352,22 @@ bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], co
 	if ((dim1[D] == dim2[D]) || (MD_IS_SET(flags, D) && ((1 == dim1[D]) || (1 == dim2[D]))))
 		return md_check_compat(D, flags, dim1, dim2);
 		
+	return false;
+}
+
+
+
+/**
+ * dim1 must be bounded by dim2 where a bit is set
+ */
+bool md_check_bounds(unsigned int D, unsigned long flags, const long dim1[D], const long dim2[D])
+{
+	if (0 == D--)
+		return true;
+
+	if (!MD_IS_SET(flags, D) || (dim1[D] <= dim2[D]))
+		return md_check_bounds(D, flags, dim1, dim2);
+
 	return false;
 }
 

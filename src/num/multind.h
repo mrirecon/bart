@@ -106,6 +106,7 @@ extern void md_select_dims(unsigned int D, unsigned long flags, long odims[__VLA
 extern void md_copy_dims(unsigned int D, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_copy_strides(unsigned int D, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern _Bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
+extern _Bool md_check_bounds(unsigned int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
 extern void md_singleton_dims(unsigned int D, long dims[__VLA(D)]);
 extern void md_singleton_strides(unsigned int D, long strs[__VLA(D)]);
 extern void md_set_dims(unsigned int D, long dims[__VLA(D)], long val);
