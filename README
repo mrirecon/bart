@@ -279,7 +279,7 @@ dimension can be used for different receiver coils as usual.
 
 
 
-4.. Command-line Tools
+4. Command-line Tools
 ======================
 
 All tools operate on the simple file format given above. Indices and

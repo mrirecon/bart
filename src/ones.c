@@ -21,7 +21,7 @@
 
 
 static const char* usage_str = "dims dim1 ... dimn name";
-static const char* help_str = "Create a array filled with ones with {dims} dimensions of size {dim1} to {dimn}.\n";
+static const char* help_str = "Create an array filled with ones with {dims} dimensions of size {dim1} to {dimn}.\n";
 
 
 
