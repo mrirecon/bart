@@ -68,8 +68,8 @@ bool iovec_check(const struct iovec_s* iov, unsigned int N, const long dims[N], 
 {
 	bool ok = true;
 	
-	debug_print_dims(DP_DEBUG3, N, dims);
-	debug_print_dims(DP_DEBUG3, iov->N, iov->dims);
+	debug_print_dims(DP_DEBUG4, N, dims);
+	debug_print_dims(DP_DEBUG4, iov->N, iov->dims);
 
 	if (N != iov->N)
 		return false;

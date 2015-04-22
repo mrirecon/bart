@@ -202,8 +202,7 @@ void ecc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 	assert(out_dims[COIL_DIM] == channels);
 	assert(out_dims[MAPS_DIM] == channels);
 
-	struct ecalib_conf conf;
-	memcpy(&conf, &ecalib_defaults, sizeof(struct ecalib_conf));
+	struct ecalib_conf conf = ecalib_defaults;
 
 	conf.threshold = 0.001;
 	conf.crop = 0.;

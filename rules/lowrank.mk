@@ -5,6 +5,7 @@
 
 
 lowranksrcs := $(wildcard $(srcdir)/lowrank/*.c)
+#lowranksrcs := $(wildcard $(srcdir)/lowrank/lr*.c)
 lowrankobjs := $(lowranksrcs:.c=.o)
 
 .INTERMEDIATE: $(lowrankobjs)

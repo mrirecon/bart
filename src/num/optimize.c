@@ -436,7 +436,7 @@ static unsigned int parallelizable(unsigned int D, unsigned int io, unsigned int
 
 	//			printf("%d %d %d\n", d, i, a);
 
-				if ((a != N - 1) || (labs((*strs[d])[i]) < size[d]))
+				if ((a != N - 1) || ((size_t)labs((*strs[d])[i]) < size[d]))
 					flags = MD_CLEAR(flags, i);
 			}
 		}
