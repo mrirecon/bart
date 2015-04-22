@@ -23,6 +23,7 @@
 #include "num/ops.h"
 
 #include "iter/lsqr.h"
+#include "iter/misc.h"
 
 #include "linops/linop.h"
 
@@ -273,7 +274,7 @@ int main_nusense(int argc, char* argv[])
 		// get maximum eigenvalue
 		for ( long i = 0; i < md_calc_size( DIMS, img_dims ); i++ )
 			image[i] = rand();
-		double maxeigen = iter2_power( 30, forward_op->normal, 2 * md_calc_size( DIMS, img_dims ), (float*) image );
+		double maxeigen = iter_power( 30, forward_op->normal, 2 * md_calc_size( DIMS, img_dims ), (float*) image );
 		step /= maxeigen;
 		debug_printf(DP_INFO, "Maximum eigenvalue: %.2lf\n", maxeigen); 
 	}

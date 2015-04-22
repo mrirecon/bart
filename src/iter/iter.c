@@ -98,16 +98,6 @@ const struct iter_pocs_conf iter_pocs_defaults = {
 typedef void (*thresh_fun_t)(void* data, float lambda, float* dst, const float* src);
 
 
-static const struct vec_iter_s* select_vecops(const float* x)
-{
-#ifdef USE_CUDA
-	return cuda_ondevice(x) ? &gpu_iter_ops : &cpu_iter_ops;
-#else
-	UNUSED(x);
-	return &cpu_iter_ops;
-#endif
-}
-
 
 static bool checkeps(float eps)
 {

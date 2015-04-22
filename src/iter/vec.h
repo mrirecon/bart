@@ -1,4 +1,7 @@
 
+#ifndef __ITER_VEC_H
+#define __ITER_VEC_H
+
 struct vec_iter_s {
 
 	float* (*allocate)(long N);
@@ -23,6 +26,8 @@ extern const struct vec_iter_s gpu_iter_ops;
 #endif
 extern const struct vec_iter_s cpu_iter_ops;
 
-//const struct vec_iter_s* select_v
+extern const struct vec_iter_s* select_vecops(const float* x);
 
+
+#endif
 

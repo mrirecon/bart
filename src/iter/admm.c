@@ -51,7 +51,6 @@ struct admm_normaleq_data {
 
 static void admm_normaleq(void* _data, float* _dst, const float* _src)
 {
-
 	struct admm_normaleq_data* data = _data;
 	long dims[1] = { data->N };
 
@@ -59,10 +58,11 @@ static void admm_normaleq(void* _data, float* _dst, const float* _src)
 
 	md_clear(1, dims, _dst, sizeof(float));
 
-	for (unsigned int i = 0; i < data->num_funs; i++)
-	{
+	for (unsigned int i = 0; i < data->num_funs; i++) {
+
 	        data->ops[i].normal(data->ops[i].data, data->tmp, _src);
-		if (NULL != data->Aop && NULL != data->Aop_data)
+
+		if ((NULL != data->Aop) && (NULL != data->Aop_data))
 			md_axpy(1, dims, _dst, data->rho, data->tmp);
 		else
 			md_add(1, dims, _dst, _dst, data->tmp);
@@ -75,7 +75,6 @@ static void admm_normaleq(void* _data, float* _dst, const float* _src)
 	}
 
 	//md_free( tmp );
-
 }
 
 

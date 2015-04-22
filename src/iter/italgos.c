@@ -313,20 +313,20 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 		if (NULL != x_truth) {
 
 			vops->sub(N, x_err, x, x_truth);
-			debug_printf(DP_DEBUG1, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
+			debug_printf(DP_DEBUG3, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
 		}
 
 		if (NULL != obj_eval) {
 
 			float objval = obj_eval(obj_eval_data, x);
-			debug_printf(DP_DEBUG1, "#%d OBJVAL= %f\n", itrdata.iter, objval);
+			debug_printf(DP_DEBUG3, "#%d OBJVAL= %f\n", itrdata.iter, objval);
 		}
 
 		ls_old = lambda_scale;
 		lambda_scale = ist_continuation(&itrdata, continuation);
 		
 		if (lambda_scale != ls_old) 
-			debug_printf(DP_DEBUG2, "##lambda_scale = %f\n", lambda_scale);
+			debug_printf(DP_DEBUG3, "##lambda_scale = %f\n", lambda_scale);
 
 
 		thresh(tdata, lambda_scale * tau, x, x);
@@ -337,7 +337,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 
 		itrdata.rsnew = vops->norm(N, r);
 
-		debug_printf(DP_DEBUG1, "#It %03d: %f   \n", itrdata.iter, itrdata.rsnew / itrdata.rsnot);
+		debug_printf(DP_DEBUG3, "#It %03d: %f   \n", itrdata.iter, itrdata.rsnew / itrdata.rsnot);
 
 		if (itrdata.rsnew < epsilon)
 			break;
@@ -452,9 +452,11 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 
 	float eps_squared = pow(epsilon, 2.);
 
-	if (0. == rsold)
-		return 0.;
+	if (0. == rsold) {
 
+		debug_printf(DP_DEBUG2, "CG: early out\n");
+		return 0.;
+	}
 
 	for (unsigned int i = 0; i < maxiter; i++) {
 		

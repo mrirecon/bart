@@ -10,29 +10,13 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#ifdef USE_CUDA
-#include "num/gpuops.h"
-#endif
 
 #include "misc/misc.h"
 
 #include "iter/italgos.h"
+#include "iter/vec.h"
 
 #include "iter3.h"
-
-
-extern struct vec_iter_s gpu_iter_ops;
-extern struct vec_iter_s cpu_iter_ops;
-
-static const struct vec_iter_s* select_vecops(const float* x)
-{
-#ifdef USE_CUDA
-	return cuda_ondevice(x) ? &gpu_iter_ops : &cpu_iter_ops;
-#else
-	UNUSED(x);
-	return &cpu_iter_ops;
-#endif
-}
 
 
 

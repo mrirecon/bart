@@ -40,16 +40,6 @@
 
 
 
-static const struct vec_iter_s* select_vecops(const float* x)
-{
-#ifdef USE_CUDA
-	return cuda_ondevice(x) ? &gpu_iter_ops : &cpu_iter_ops;
-#else
-	UNUSED(x);
-	return &cpu_iter_ops;
-#endif
-}
-
 
 static bool checkeps(float eps)
 {
@@ -307,9 +297,3 @@ void iter2_call_iter(void* _conf,
 
 
 
-double iter2_power( unsigned int maxiter,
-		 const struct operator_s* normaleq_op,
-		   long size, float* u)
-{
-	return power( maxiter, size, (void*) normaleq_op, select_vecops(u), operator_iter, u );
-}
