@@ -24,7 +24,7 @@
 
 #include "linops/someops.h"
 #include "linops/linop.h"
-#include "linops/tv.h"
+#include "linops/grad.h"
 
 #include "iter/thresh.h"
 #include "iter/iter.h"
@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
 	const struct operator_p_s* l1prox = NULL;
 
 	if (use_tvnorm) {
-		l1op = tv_init(DIMS, img_dims, FFT_FLAGS);
+		l1op = grad_init(DIMS, img_dims, FFT_FLAGS);
 		l1prox = prox_thresh_create(DIMS + 1, linop_codomain(l1op)->dims, 1., 0u, usegpu);
 		conf.l1op_obj = l1op;
 	}

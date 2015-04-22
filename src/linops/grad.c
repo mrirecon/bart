@@ -17,7 +17,7 @@
 
 #include "misc/misc.h"
 
-#include "tv.h"
+#include "grad.h"
 
 
 
@@ -33,7 +33,7 @@ static unsigned int bitcount(unsigned int flags)
 }
 
 
-void tv_op(unsigned int D, const long dims[D], unsigned int flags, complex float* out, const complex float* in)
+void grad_op(unsigned int D, const long dims[D], unsigned int flags, complex float* out, const complex float* in)
 {
 	unsigned int N = bitcount(flags);
 
@@ -53,7 +53,7 @@ void tv_op(unsigned int D, const long dims[D], unsigned int flags, complex float
 }
 
 
-void tv_adjoint(unsigned int D, const long dims[D], unsigned int flags, complex float* out, const complex float* in)
+void grad_adjoint(unsigned int D, const long dims[D], unsigned int flags, complex float* out, const complex float* in)
 {
 	unsigned int N = bitcount(flags);
 
@@ -83,7 +83,7 @@ void tv_adjoint(unsigned int D, const long dims[D], unsigned int flags, complex 
 
 
 
-void tv(unsigned int D, const long dims[D], unsigned int flags, complex float* out, const complex float* in)
+void grad(unsigned int D, const long dims[D], unsigned int flags, complex float* out, const complex float* in)
 {
 	unsigned int N = bitcount(flags);
 
@@ -93,7 +93,7 @@ void tv(unsigned int D, const long dims[D], unsigned int flags, complex float* o
 
 	complex float* tmp = md_alloc_sameplace(D + 1, dims2, CFL_SIZE, out);
 
-	tv_op(D + 1, dims2, flags, tmp, in);
+	grad_op(D + 1, dims2, flags, tmp, in);
 
 	// rss should be moved elsewhere
 	md_zrss(D + 1, dims2, flags, out, tmp);
@@ -103,52 +103,52 @@ void tv(unsigned int D, const long dims[D], unsigned int flags, complex float* o
 
 
 
-struct tv_s {
+struct grad_s {
 
 	unsigned int N;
 	long* dims;
 	unsigned long flags;
 };
 
-static void tv_op_apply(const void* _data, complex float* dst, const complex float* src)
+static void grad_op_apply(const void* _data, complex float* dst, const complex float* src)
 {
-	const struct tv_s* data = _data;
+	const struct grad_s* data = _data;
 
-	tv_op(data->N, data->dims, data->flags, dst, src);
+	grad_op(data->N, data->dims, data->flags, dst, src);
 }
 	
-static void tv_op_adjoint(const void* _data, complex float* dst, const complex float* src)
+static void grad_op_adjoint(const void* _data, complex float* dst, const complex float* src)
 {
-	const struct tv_s* data = _data;
+	const struct grad_s* data = _data;
 
-	tv_adjoint(data->N, data->dims, data->flags, dst, src);
+	grad_adjoint(data->N, data->dims, data->flags, dst, src);
 }
 
-static void tv_op_normal(const void* _data, complex float* dst, const complex float* src)
+static void grad_op_normal(const void* _data, complex float* dst, const complex float* src)
 {
-	const struct tv_s* data = _data;
+	const struct grad_s* data = _data;
 
 	complex float* tmp = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, dst);
 
 	// this could be implemented more efficiently
-	tv_op(data->N, data->dims, data->flags, tmp, src);
-	tv_adjoint(data->N, data->dims, data->flags, dst, tmp);
+	grad_op(data->N, data->dims, data->flags, tmp, src);
+	grad_adjoint(data->N, data->dims, data->flags, dst, tmp);
 
 	md_free(tmp);
 }
 
 
-static void tv_op_free(const void* _data)
+static void grad_op_free(const void* _data)
 {
-	const struct tv_s* data = _data;
+	const struct grad_s* data = _data;
 	free(data->dims);
 	free((void*)data);
 }
 
 
-struct linop_s* tv_init(long N, const long dims[N], unsigned int flags)
+struct linop_s* grad_init(long N, const long dims[N], unsigned int flags)
 {
-	struct tv_s* data = xmalloc(sizeof(struct tv_s));
+	struct grad_s* data = xmalloc(sizeof(struct grad_s));
 	
 	data->N = N + 1;
 	data->dims = xmalloc((N + 1) * sizeof(long));
@@ -157,6 +157,6 @@ struct linop_s* tv_init(long N, const long dims[N], unsigned int flags)
 	md_copy_dims(N, data->dims, dims);
 	data->dims[N] = bitcount(flags);
 	
-	return linop_create(N + 1, data->dims, N, dims, data, tv_op_apply, tv_op_adjoint, tv_op_normal, NULL, tv_op_free);
+	return linop_create(N + 1, data->dims, N, dims, data, grad_op_apply, grad_op_adjoint, grad_op_normal, NULL, grad_op_free);
 }
 
