@@ -2,7 +2,7 @@ function [varargout] = bart(cmd, varargin);
 % BART	Call BART command from Matlab.
 %   [A B] = bart('command', X Y) call command with inputs X Y and outputs A B
 %
-% 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+% 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
 
 	if isempty(getenv('TOOLBOX_PATH'))
 		error('Environment variable TOOLBOX_PATH is not set.');
@@ -26,24 +26,26 @@ function [varargout] = bart(cmd, varargin);
 		writecfl(in{i}, varargin{i});
 	end
 
+	in_str = sprintf(' %s', in{:});
+
 	out = cell(1, nargout);
 
 	for i=1:nargout,
 		out{i} = strcat(name, 'out', num2str(i));
-    end
+	end
 
+	out_str = sprintf(' %s', out{:});
 
-            
-    if ispc
-            
-        ERR = system(['bash.exe --login -c ', ...
-                strrep(getenv('TOOLBOX_PATH'), filesep, '/'), ...
-                '"', '/', strrep(cmd, filesep, '/'), ' ', ...
-                strrep(strjoin(in, ' '), filesep, '/'), ...
-                ' ', strrep(strjoin(out, ' '), filesep, '/'), '"']);
-    else
-        ERR = system([getenv('TOOLBOX_PATH'), '/', cmd, ' ', strjoin(in, ' '), ' ', strjoin(out, ' ')]);
-    end
+	if ispc
+		% For cygwin use bash and modify paths
+		ERR = system(['bash.exe --login -c ', ...
+                	strrep(getenv('TOOLBOX_PATH'), filesep, '/'), ...
+	                '"', '/', strrep(cmd, filesep, '/'), ' ', ...
+        	        strrep(in_sttr, filesep, '/'), ...
+                	' ', strrep(out_str, filesep, '/'), '"']);
+	else
+		ERR = system([getenv('TOOLBOX_PATH'), '/', cmd, ' ', in_str, ' ', out_str]);
+	end
 
 	if ERR~=0
 		error('command exited with an error');
