@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, RadioButtons
 from functools import partial
 import time
+import threading
 import os.path
 
 class DiscreteSlider(Slider):
@@ -61,6 +62,7 @@ class BartView(object):
         self.Ndims = len( self.im.shape )
         self.order = np.r_[:self.Ndims]
         self.im_ordered = self.im
+        self.order3 = np.array([0,1,1])
         
         # Slice image
         self.slice_num = np.zeros( self.Ndims, dtype = 'int' );
@@ -148,7 +150,6 @@ class BartView(object):
 
         # Create dynamic refresh radio button
         #self.drefresh = threading.Event()
-        #self.lock = False
         #drefresh_ax = plt.axes( [0.4, 1 - 0.18, 0.1, 0.09] )
         #drefresh_button = Button( drefresh_ax, 'Dynamic\nRefresh', color='gainsboro' )
         #drefresh_button.on_clicked(self.update_drefresh);
@@ -203,6 +204,7 @@ class BartView(object):
             slice_ax.text( (self.im_shape[d]-1)/2,1.5,  'Dim %d Slice' % self.im_unsqueeze_shape[d], horizontalalignment = 'center' )
             sliders.append(slice_slider);
             slice_slider.on_changed( partial( self.update_slice, d ) )
+            
 
         plt.show()
 
@@ -213,10 +215,6 @@ class BartView(object):
             dims = [int(i) for i in l.split( )]
             n = reduce(operator.mul, dims, 1)
             h.close()
-            #d = open(name + ".cfl", "r")
-            #a = np.fromfile(d, dtype=np.complex64, count=n);
-            #d.close()
-            #return a.reshape(dims, order='F');
             return np.memmap( name + ".cfl", dtype = np.complex64, mode='r', shape=tuple(dims), order='F' )
 
     def save( self, event ):
@@ -240,6 +238,18 @@ class BartView(object):
 
     def update_refresh( self, event ):
         self.update_image()
+
+    def dynamic_refresh( self ):
+        while( self.drefresh.is_set() ):
+            self.update_image()
+
+    def update_drefresh( self, event ):
+        if ( self.drefresh.is_set() ):
+            self.drefresh.clear()
+        else:
+            self.drefresh.set()
+            th = threading.Thread( target = self.dynamic_refresh )
+            th.start()
             
     def update_aspect( self, aspect ):
         self.aspect = aspect
@@ -263,18 +273,21 @@ class BartView(object):
             
     def update_orderx( self, l ):
         l = int(l[4:])
-        self.order[0] = np.where( self.im_unsqueeze_shape == l )[0]
+        self.order3[0] = np.where( self.im_unsqueeze_shape == l )[0]
         self.update_ordered_image()
 
     def update_ordery( self, l ):
         l = int(l[4:])
-        self.order[1] = np.where( self.im_unsqueeze_shape == l )[0]
+        self.order3[1] = np.where( self.im_unsqueeze_shape == l )[0]
         self.update_ordered_image()
 
         
     def update_ordered_image(self):
-        self.mosaic_valid = len( self.order[:3] ) == len( set( self.order[:3] ) )
+        self.mosaic_valid = len( self.order3[:3] ) == len( set( self.order3[:3] ) )
+        self.order_valid = len( self.order3[:2] ) == len( set( self.order3[:2] ) );
+        
         if ( self.mosaic_valid ):
+            self.order[:3] = self.order3[:3]
             order_remain = np.r_[:self.Ndims]
             for t in np.r_[:3]:
                 order_remain = order_remain[  (order_remain != self.order[t] ) ]
@@ -282,7 +295,8 @@ class BartView(object):
             self.im_ordered = np.transpose( self.im, self.order )
             self.ax.set_aspect( self.asp * self.im_ordered.shape[0] / self.im_ordered.shape[1] * self.aspect )
             self.update_image()
-        elif (len( self.order[:2] ) == len( set( self.order[:2] ) ) ):
+        elif ( self.order_valid ):
+            self.order[:2] = self.order3[:2]
             order_remain = np.r_[:self.Ndims]
             for t in np.r_[:2]:
                 order_remain = order_remain[  (order_remain != self.order[t] ) ]
@@ -293,6 +307,8 @@ class BartView(object):
 
 
     def update_image( self ):
+        self.immax = np.max(abs(self.im))
+        self.l.set_clim( vmin = self.vmin * self.immax ,  vmax = self.vmax * self.immax );
         if ( self.mosaic_valid ):
             im_slice = self.im_ordered[ (slice(None,None,self.flipx), slice(None,None,self.flipy), slice(None)) + tuple(self.slice_num[self.order[3:]])]
             im_slice = self.mosaic( im_slice )
@@ -303,7 +319,9 @@ class BartView(object):
             self.l.set_data( abs(im_slice) )
         else:
             self.l.set_data( (np.angle(im_slice) + np.pi) / (2 * np.pi) )
-                
+
+
+        
         self.fig.canvas.draw()
 
     def update_slice( self, d, s ):
@@ -327,7 +345,7 @@ class BartView(object):
 
     def update_mosaic( self, l ):
         l = int(l[4:])
-        self.order[2] = np.where( self.im_unsqueeze_shape == l )[0]
+        self.order3[2] = np.where( self.im_unsqueeze_shape == l )[0]
         self.update_ordered_image()
 
 if __name__ == "__main__":
