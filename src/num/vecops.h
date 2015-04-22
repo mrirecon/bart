@@ -52,7 +52,7 @@ struct vec_ops {
 
 	void (*zcmp)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zdiv_reg)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2, _Complex float lambda);
-	void (*zfftmod)(long N, _Complex float* dst, const _Complex float* src, _Bool evenodd);
+	void (*zfftmod)(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Complex float phase);
 
 	void (*maxxy)(long N, float* dst, const float* src);
 	void (*minxy)(long N, float* dst, const float* src);

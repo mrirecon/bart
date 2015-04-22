@@ -615,24 +615,22 @@ extern "C" void cuda_le(long N, float* dst, const float* src1, const float* src2
 }
 
 
-__global__ void kern_zfftmod(int N, cuFloatComplex* dst, const cuFloatComplex* src, _Bool evenodd)
+__global__ void kern_zfftmod(int N, cuFloatComplex* dst, const cuFloatComplex* src, unsigned int n, cuFloatComplex phase)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	cuFloatComplex even = make_cuFloatComplex(evenodd ? +1. : -1., 0.);
-	cuFloatComplex odd = make_cuFloatComplex(evenodd ? -1. : +1., 0.);
-
-	for (int i = start; i < N; i += stride) {
-
-		dst[2 * i + 0] = cuCmulf(even, src[2 * i + 0]);
-		dst[2 * i + 1] = cuCmulf(odd, src[2 * i + 1]);
-	}
+	for (int i = start; i < N; i += stride)
+		for (int j = 0; j < n; j++)
+			dst[i * n + j] = cuCmulf(phase,
+				cuCmulf(zexp(make_cuFloatComplex(0.,
+						M_PI * ((float)j - ((0 == n % 2) ? 0. : (float)j / (float)n)))),
+					src[i * n + j]));
 }
 
-extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, _Bool evenodd)
+extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Complex float phase)
 {
-	kern_zfftmod<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src, evenodd);
+	kern_zfftmod<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src, n, *(cuFloatComplex*)&phase);
 }
 
 

@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <math.h>
 #include <complex.h>
+#include <stdbool.h>
 
 #include "misc/misc.h"
 
@@ -285,13 +286,13 @@ static void zphsr(long N, complex float* dst, const complex float* src)
 static void zexpj(long N, complex float* dst, const complex float* src)
 {
 	for (long i = 0; i < N; i++)
-		dst[i] = cexpf( I * src[i] );
+		dst[i] = cexpf(1.I * src[i]);
 }
 
 static void zarg(long N, complex float* dst, const complex float* src)
 {
 	for (long i = 0; i < N; i++)
-		dst[i] = cargf( src[i] );
+		dst[i] = cargf(src[i]);
 }
 
 
@@ -394,13 +395,12 @@ static void swap(long N, float* a, float* b)
 	}
 }
 
-static void zfftmod(long N, complex float* dst, const complex float* src, _Bool evenodd)
+static void zfftmod(long N, complex float* dst, const complex float* src, unsigned int n, complex float phase)
 {
-	for (long i = 0; i < N; i++) {
-
-		dst[2 * i + 0] = (evenodd ? +1. : -1.) * src[2 * i + 0];
-		dst[2 * i + 1] = (evenodd ? -1. : +1.) * src[2 * i + 1];
-	}
+	for (long i = 0; i < N; i++)
+		for (unsigned int j = 0; j < n; j++)
+			dst[i * n + j] = src[i * n + j] * phase * cexpf(M_PI * 1.i * ((float)j
+						+ ((0 == n % 2) ? 0. : -(float)j / (float)n)));
 }
 
 
