@@ -289,13 +289,10 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 	assert(((yy == 1) && (yh == 1)) || (yy >= yh));
 	assert(((zz == 1) && (zh == 1)) || (zz >= zh));
 
-	assert((1 == xx) || (0 == xx % 2));
-	assert((1 == yy) || (0 == yy % 2));
-	assert((1 == zz) || (0 == zz % 2));
 	assert((1 == xh) || (0 == xh % 2));
 	assert((1 == yh) || (0 == yh % 2));
 	assert((1 == zh) || (0 == zh % 2));
-	
+
 	complex float* imgcov2 = md_alloc(4, covbig_dims, CFL_SIZE);
 
 	debug_printf(DP_DEBUG1, "Resize...\n");
