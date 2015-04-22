@@ -1,11 +1,9 @@
-/* Copyright 2014 The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+/* Copyright 2014-2015 The Regents of the University of California.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Martin Uecker, 2011-12-10
- * uecker@eecs.berkeley.edu
- * Frank Ong, 2014
- * frankong@berkeley.edu
+ * 2011, 2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014 Frank Ong <frankong@berkeley.edu>
  */
 
 #include <math.h>
@@ -61,7 +59,6 @@ static double I0_beta(double beta)
 }
 
 const float kb_table128[129] = {
-
 	1.0000000000000000, 0.9995847139398653, 0.9983398161018390, 0.9962681840754728, 
 	0.9933746024007669, 0.9896657454602714, 0.9851501536396374, 0.9798382028675283, 
 	0.9737420676763386, 0.9668756779551011, 0.9592546695947362, 0.9508963292536357, 
@@ -141,35 +138,33 @@ static float intlookup(int n, const float table[n + 1], float x)
 
 
 
-void gridH(float os, float width, double beta, float scale, const float shifts[3], const complex float* traj, const complex float* weights, const long ksp_dims[DIMS], complex float* dst, const long grid_dims[DIMS], const complex float* grid)
+void gridH(float os, float width, double beta, const complex float* traj, const long ksp_dims[4], complex float* dst, const long grid_dims[4], const complex float* grid)
 {
-	long C = ksp_dims[COIL_DIM];
+	long C = ksp_dims[3];
 #ifdef USE_GSL
 	// precompute kaiser bessel table
 	int kb_size = 500;
-	float kb_table[kb_size];
+	float kb_table[kb_size + 1];
 	kb_precompute(beta, kb_size, kb_table);
 #else
 	assert(KB_BETA == beta);
 	int kb_size = 128;
 	const float* kb_table = kb_table128;
 #endif
+	assert(1 == ksp_dims[0]);
+	long samples = ksp_dims[1] * ksp_dims[2];
 
 #pragma omp parallel for
-	for(int i = 0; i < ksp_dims[1]; i++)
-	{
+	for(int i = 0; i < samples; i++) {
+
 		float pos[3];
 		pos[0] = os * (creal(traj[i * 3 + 0]));
 		pos[1] = os * (creal(traj[i * 3 + 1]));
 		pos[2] = os * (creal(traj[i * 3 + 2]));
 
-		pos[0] += (grid_dims[0] > 1) ? ((float) grid_dims[0] / 2.) : 0.;
-		pos[1] += (grid_dims[1] > 1) ? ((float) grid_dims[1] / 2.) : 0.;
-		pos[2] += (grid_dims[2] > 1) ? ((float) grid_dims[2] / 2.) : 0.;
-
-		pos[0] += shifts[0];
-		pos[1] += shifts[1];
-		pos[2] += shifts[2];
+		pos[0] += (grid_dims[0] > 1) ? ((float)grid_dims[0] / 2.) : 0.;
+		pos[1] += (grid_dims[1] > 1) ? ((float)grid_dims[1] / 2.) : 0.;
+		pos[2] += (grid_dims[2] > 1) ? ((float)grid_dims[2] / 2.) : 0.;
 
 		complex float val[C];
 		for (int j = 0; j < C; j++)
@@ -177,36 +172,33 @@ void gridH(float os, float width, double beta, float scale, const float shifts[3
 		
 		grid_pointH(C, grid_dims, pos, val, grid, width, kb_size, kb_table);
 
-		for (int j = 0; j < C; j++) {
-
-			if (NULL == weights)
-				dst[j * ksp_dims[1] + i] += scale * val[j];
-			else 
-				dst[j * ksp_dims[1] + i] += scale * val[j] * weights[i];
-		}
+		for (int j = 0; j < C; j++)
+			dst[j * samples + i] += val[j];
 	}
 }
 
 
-void grid(float os, float width, double beta, float scale, const float shifts[3], const complex float* traj, const complex float* weights, const long grid_dims[DIMS], complex float* grid, const long ksp_dims[DIMS], const complex float* src)
+void grid(float os, float width, double beta, const complex float* traj, const long grid_dims[4], complex float* grid, const long ksp_dims[4], const complex float* src)
 {
-	long C = ksp_dims[COIL_DIM];
+	long C = ksp_dims[3];
 
 #ifdef USE_GSL
 	// precompute kaiser bessel table
 	int kb_size = 500;
-	float kb_table[kb_size];
+	float kb_table[kb_size + 1];
 	kb_precompute(beta, kb_size, kb_table);
 #else
 	assert(KB_BETA == beta);
 	int kb_size = 128;
 	const float* kb_table = kb_table128;
 #endif
+	assert(1 == ksp_dims[0]);
+	long samples = ksp_dims[1] * ksp_dims[2];
 
 	// grid
 #pragma omp parallel for
-	for(int i = 0; i < ksp_dims[1]; i++)
-	{
+	for(int i = 0; i < samples; i++) {
+
 		float pos[3];
 		pos[0] = os * (creal(traj[i * 3 + 0]));
 		pos[1] = os * (creal(traj[i * 3 + 1]));
@@ -216,24 +208,81 @@ void grid(float os, float width, double beta, float scale, const float shifts[3]
 		pos[1] += (grid_dims[1] > 1) ? ((float) grid_dims[1] / 2.) : 0.;
 		pos[2] += (grid_dims[2] > 1) ? ((float) grid_dims[2] / 2.) : 0.;
 
-		pos[0] += shifts[0];
-		pos[1] += shifts[1];
-		pos[2] += shifts[2];
-
 		complex float val[C];
 		
-		for (int j = 0; j < C; j++) {
-
-			if (NULL == weights)
-				val[j] = src[j * ksp_dims[1] + i] * scale;
-			else
-				val[j] = src[j * ksp_dims[1] + i] * scale * weights[i];
-		}
+		for (int j = 0; j < C; j++)
+			val[j] = src[j * samples + i];
 
 		grid_point(C, grid_dims, pos, grid, val, width, kb_size, kb_table);
 	}
 }
 
+
+static void grid2_dims(unsigned int D, const long trj_dims[D], const long ksp_dims[D], const long grid_dims[D])
+{
+	assert(D >= 4);
+	assert(md_check_compat(D - 3, ~0, grid_dims + 3, ksp_dims + 3));
+	assert(md_check_compat(D - 3, ~(MD_BIT(1) | MD_BIT(2)), trj_dims + 3, ksp_dims + 3));
+	assert(md_check_bounds(D - 3, ~0, trj_dims + 3, ksp_dims + 3));
+
+	assert(3 == trj_dims[0]);
+	assert(1 == trj_dims[3]);
+	assert(1 == ksp_dims[0]);
+}
+
+
+void grid2(float os, float width, double beta, unsigned int D, const long trj_dims[D], const complex float* traj, const long grid_dims[D], complex float* dst, const long ksp_dims[D], const complex float* src)
+{
+	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
+
+	long ksp_strs[D];
+	md_calc_strides(D, ksp_strs, ksp_dims, CFL_SIZE);
+
+	long trj_strs[D];
+	md_calc_strides(D, trj_strs, trj_dims, CFL_SIZE);
+
+	long grid_strs[D];
+	md_calc_strides(D, grid_strs, grid_dims, CFL_SIZE);
+
+
+	long pos[D];
+	for (unsigned int i = 0; i < D; i++)
+		pos[i] = 0;
+
+	do {
+
+		grid(os, width, beta, &MD_ACCESS(D, trj_strs, pos, traj),
+			grid_dims, &MD_ACCESS(D, grid_strs, pos, dst),
+			ksp_dims, &MD_ACCESS(D, ksp_strs, pos, src));
+
+	} while(md_next(D, ksp_dims, (~0 ^ 15), pos));
+}
+
+
+void grid2H(float os, float width, double beta, unsigned int D, const long trj_dims[D], const complex float* traj, const long ksp_dims[D], complex float* dst, const long grid_dims[D], const complex float* src)
+{
+	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
+
+	long ksp_strs[D];
+	md_calc_strides(D, ksp_strs, ksp_dims, CFL_SIZE);
+
+	long trj_strs[D];
+	md_calc_strides(D, trj_strs, trj_dims, CFL_SIZE);
+
+	long grid_strs[D];
+	md_calc_strides(D, grid_strs, grid_dims, CFL_SIZE);
+
+	long pos[D];
+	for (unsigned int i = 0; i < D; i++)
+		pos[i] = 0;
+
+	do {
+		gridH(os, width, beta, &MD_ACCESS(D, trj_strs, pos, traj),
+			ksp_dims, &MD_ACCESS(D, ksp_strs, pos, dst),
+			grid_dims, &MD_ACCESS(D, grid_strs, pos, src));
+
+	} while(md_next(D, ksp_dims, (~0 ^ 15), pos));
+}
 
 
 
@@ -330,51 +379,6 @@ void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], comple
 }
 
 
-void grid_line3d(unsigned int n, unsigned int ch, const long dims[3], const float start[3], const float end[3], complex float* dst, const complex float* src, float width, int kb_size, const float kb_table[kb_size + 1])
-{
-	#pragma omp parallel for
-	for (unsigned int i = 0; i < n; i++) {
-		
-		float pos[3];
-
-		for (int j = 0; j < 3; j++)
-			pos[j] = lerp(start[j], end[j], (float)i / (float)(n - 1));
-		
-		complex float val[ch];
-
-		for (unsigned int c = 0; c < ch; c++)
-			 val[c] = src[i + c * n];
-		
-//		printf("%f %f %f: %d %d %d -- %d %d %d\n", pos[0], pos[1], pos[2], sti[0], sti[1], sti[2], eni[0], eni[1], eni[2]);
-
-		grid_point(ch, dims, pos, dst, val, width, kb_size, kb_table);
-	}		
-}
-
-
-
-
-void density_compensation(unsigned int samples, unsigned int channels, unsigned int spokes, complex float* dst, const complex float* src)
-{
-	for (unsigned int i = 0; i < spokes; i++)
-		for (unsigned int k = 0; k < channels; k++)
-			for (unsigned int j = 0; j < samples; j++)
-					dst[j + (i * channels + k) * samples] = src[j + (i * channels + k) * samples] * (0. + fabs((double)(j - samples / 2 + 0.5)));
-}
-
-void density_comp3d(const long dim[3], complex float* kspace)
-{
-	for (int c = 0; c < dim[3]; c++) 
-	for (int i = 0; i < dim[2]; i++)
-		for (int j = 0; j < dim[1]; j++)
-			for (int k = 0; k < dim[0]; k++) {
-
-				float dist = sqrtf(powf((float)(k - dim[0] / 2), 2.) + powf((float)(j - dim[1] / 2), 2.) + powf((float)(i - dim[2] / 2), 2.));
-				kspace[k + dim[0] * (j + dim[1] * (i + c * dim[2]))] *= powf(dist + 0.5, 2.);
-			}
-}
-
-
 
 double calc_beta(float os, float width)
 {
@@ -403,77 +407,4 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 
 
 
-
-void grid_radial(const long dimensions[3], unsigned int samples, unsigned int channels, unsigned int spokes, unsigned int sp, complex float* dst, const complex float* src)
-{
-
-	float st[3];
-	float en[3];
-
-	float center[3] = { dimensions[0] / 2., dimensions[1] / 2., dimensions[2] / 2. };
-
-	if (1 == dimensions[2])
-		center[2] = 0.;
-
-
-	double x = cos(2. * M_PI * (double)sp / (double)spokes);
-	double y = sin(2. * M_PI * (double)sp / (double)spokes);
-
-	int span = MIN(dimensions[0], dimensions[1]);
-
-	st[0] = center[0] - (span - 1) / 2. * x;
-	st[1] = center[1] - (span - 1) / 2. * y;
-	st[2] = center[2];
-
-	en[0] = center[0] + (span - 1) / 2. * x;
-	en[1] = center[1] + (span - 1) / 2. * y;
-	en[2] = center[2];
-
-#if 0
-		double halfpixelx = (en[0] - st[0]) / (samples - 1) / 2.;
-		double halfpixely = (en[1] - st[1]) / (samples - 1) / 2.;
-
-		st[0] += halfpixelx;
-		st[1] += halfpixely;
-
-		en[0] += halfpixelx;
-		en[1] += halfpixely;
-#endif
-
-		grid_line3d(samples, channels, dimensions, st, en, dst, src, KB_WIDTH, 128, kb_table128); 
-}
-
-
-
-
-
-	
-void grid_line(const long dimensions[3], unsigned int samples, unsigned int channels, unsigned int phencs, unsigned int pe, complex float* dst, const complex float* src)
-{
-
-	float st[3];
-	float en[3];
-
-	st[0] = 0.;
-	st[1] = (float)pe  / (float)phencs * (float)dimensions[1] ;
-	st[2] = dimensions[2] / 2.;
-
-	en[0] = ((float)samples - 1.) / (float)samples * (float)dimensions[0];
-	en[1] = (float)pe / (float)phencs * (float)dimensions[1] ;
-	en[2] = dimensions[2] / 2.;
-
-#if 0
-		double halfpixelx = (en[0] - st[0]) / (samples - 1) / 2.;
-		double halfpixely = (en[1] - st[1]) / (samples - 1) / 2.;
-
-		st[0] += halfpixelx;
-		st[1] += halfpixely;
-
-		en[0] += halfpixelx;
-		en[1] += halfpixely;
-#endif
-
-		grid_line3d(samples, channels, dimensions, st, en, dst, src, KB_WIDTH, 128, kb_table128); 
-//	grid_line3d(samples, channels, dimensions, st, en, dst, src, 1.); 
-}
 

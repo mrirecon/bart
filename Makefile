@@ -101,7 +101,7 @@ ismrm.top := /usr/local/ismrmrd/
 TBASE=slice crop resize join transpose zeros ones flip circshift extract repmat bitmask
 TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize cdf97
 TNUM=fft fftmod noise bench threshold conv
-TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof nusense sake
+TRECO=sense pocsense rsense bpsense itsense nlinv nufft rof sake
 TCALIB=ecalib caldir walsh cc calmat svd
 TMRI=rss homodyne pattern poisson twixread
 TSIM=phantom traj
@@ -115,8 +115,7 @@ TARGETS = $(BTARGETS) $(XTARGETS)
 
 MODULES = -lnum -lmisc -lnum -lmisc
 
-MODULES_sense = -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank
-MODULES_nusense = -lsense -lwavelet2 -lnoncart -liter -llinops
+MODULES_sense = -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
 MODULES_pocsense = -lsense -lwavelet2 -liter -llinops
 MODULES_nlinv = -lnoir -liter
 MODULES_rsense = -lgrecon -lsense -lnoir -lwavelet2 -lcalib -liter -llinops

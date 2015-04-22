@@ -1,11 +1,12 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2015. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
- * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * Authors:
+ * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ *
  */
 
 #define _GNU_SOURCE
@@ -21,18 +22,29 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/init.h"
+#include "num/ops.h"
+#include "num/iovec.h"
+
+#include "iter/lsqr.h"
+#include "iter/prox.h"
+#include "iter/thresh.h"
+#include "iter/misc.h"
+
+#include "linops/linop.h"
+#include "linops/someops.h"
+#include "linops/grad.h"
 
 #include "iter/iter.h"
+#include "iter/iter2.h"
+
+#include "noncart/nufft.h"
 
 #include "sense/recon.h"
+#include "sense/model.h"
 #include "sense/optcom.h"
 
-// #define W3
-#ifndef W3
 #include "wavelet2/wavelet.h"
-#else
 #include "wavelet3/wavthresh.h"
-#endif
 
 #include "lowrank/lrthresh.h"
 
@@ -46,7 +58,7 @@
 
 static void usage(const char* name, FILE* fd)
 {
-	fprintf(fd, "Usage: %s [-l1/-l2] [-r lambda]  <kspace> <sensitivities> <output>\n", name);
+	fprintf(fd, "Usage: %s [-l1/-l2] [-r lambda] [-t <trajectory>] <kspace> <sensitivities> <output>\n", name);
 }
 
 static void help(void)
@@ -56,29 +68,64 @@ static void help(void)
 		"\n"
 		"-l1/-l2\ttoggle l1-wavelet or l2 regularization.\n"
 		"-r lambda\tregularization parameter\n"
-		"-c\treal-value constraint\n");
+		"-c\treal-value constraint\n"
+		"-s step\t\titeration stepsize\n"
+		"-i maxiter\tnumber of iterations\n"
+		"-t trajectory\tk-space trajectory\n"
+#ifdef BERKELEY_SVN
+		"-n \t\tdisable random wavelet cycle spinning\n"
+		"-g \t\tuse GPU\n"
+		"-p pat\t\tpattern or weights\n"
+#endif
+	);
 }
 
 
+static
+const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, _Bool use_gpu)
+{
+	long coilim_dims[DIMS];
+	long img_dims[DIMS];
+	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
 
+	const struct linop_s* fft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
+	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps, use_gpu);
 
+	const struct linop_s* lop = linop_chain(maps_op, fft_op);
+
+	linop_free(maps_op);
+	linop_free(fft_op);
+
+	return lop;
+}
 
 
 int main_sense(int argc, char* argv[])
 {
-	struct sense_conf conf = sense_defaults;
+	// Initialize default parameters
 
-	double start_time = timestamp();
+	struct sense_conf conf = sense_defaults;
 
 	bool admm = false;
 	bool ist = false;
 	bool use_gpu = false;
 	bool l1wav = false;
+	bool tvreg = false;
 	bool lowrank = false;
 	bool randshift = true;
-	int maxiter = 30;
+	unsigned int maxiter = 30;
 	float step = 0.95;
 	float lambda = 0.;
+	unsigned int rflags = 7;
+
+	// Start time count
+
+	double start_time = timestamp();
+
+	// Read input options
+	struct nufft_conf_s nuconf = nufft_conf_defaults;
+	nuconf.toeplitz = false;
 
 	float restrict_fov = -1.;
 	const char* pat_file = NULL;
@@ -86,14 +133,23 @@ int main_sense(int argc, char* argv[])
 	const char* image_truth_file = NULL;
 	bool im_truth = false;
 	bool scale_im = false;
+	bool eigen = false;
 
 	bool hogwild = false;
 	bool fast = false;
 	float admm_rho = iter_admm_defaults.rho;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imghp:Sd:H"))) {
+	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:Sd:R:H"))) {
 		switch(c) {
+
+		case 'I':
+			ist = true;
+			break;
+
+		case 'e':
+			eigen = true;
+			break;
 
 		case 'H':
 			hogwild = true;
@@ -101,10 +157,6 @@ int main_sense(int argc, char* argv[])
 
 		case 'F':
 			fast = true;
-			break;
-
-		case 'I':
-			ist = true;
 			break;
 
 		case 'T':
@@ -119,6 +171,10 @@ int main_sense(int argc, char* argv[])
 
 		case 'r':
 			lambda = atof(optarg);
+			break;
+
+		case 'R':
+			rflags = atoi(optarg);
 			break;
 
 		case 'O':
@@ -137,20 +193,29 @@ int main_sense(int argc, char* argv[])
 			maxiter = atoi(optarg);
 			break;
 
+		case 'u':
+			admm_rho = atof(optarg);
+			break;
+
 		case 'l':
-			if (1 == atoi(optarg)) {
+			if (0 == strcmp("1", optarg)) {
 
 				l1wav = true;
-				lowrank = false;
 
 			} else
-			if (2 == atoi(optarg)) {
+			if (0 == strcmp("2", optarg)) {
 
 				l1wav = false;
-				lowrank = false;
 
 			} else
-			if (3 == atoi(optarg)) {
+			if (0 == strcmp("v", optarg)) {
+
+				l1wav = false;
+				tvreg = true;
+				admm = true;
+
+			} else
+			if (0 == strcmp("r", optarg)) {
 
 				lowrank = true;
 				l1wav = false;
@@ -178,10 +243,6 @@ int main_sense(int argc, char* argv[])
 			admm = true;
 			break;
 
-		case 'u':
-			admm_rho = atof(optarg);
-			break;
-
 		case 'g':
 			use_gpu = true;
 			break;
@@ -191,11 +252,15 @@ int main_sense(int argc, char* argv[])
 			break;
 
 		case 't':
-			assert(0);
+			traj_file = strdup(optarg);
 			break;
 
 		case 'S':
 			scale_im = true;
+			break;
+
+		case 'n':
+			randshift = false;
 			break;
 
 		case 'h':
@@ -215,11 +280,13 @@ int main_sense(int argc, char* argv[])
 		exit(1);
 	}
 
+	long max_dims[DIMS];
 	long map_dims[DIMS];
 	long pat_dims[DIMS];
 	long img_dims[DIMS];
+	long coilim_dims[DIMS];
 	long ksp_dims[DIMS];
-	long max_dims[DIMS];
+	long traj_dims[DIMS];
 
 
 	// load kspace and maps and get dimensions
@@ -227,22 +294,25 @@ int main_sense(int argc, char* argv[])
 	complex float* kspace = load_cfl(argv[optind + 0], DIMS, ksp_dims);
 	complex float* maps = load_cfl(argv[optind + 1], DIMS, map_dims);
 
-	md_copy_dims(DIMS, max_dims, ksp_dims);
-	max_dims[MAPS_DIM] = map_dims[MAPS_DIM];
+
+	complex float* traj = NULL;
+
+	if (NULL != traj_file)
+		traj = load_cfl(traj_file, DIMS, traj_dims);
 
 	md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
+
+	md_copy_dims(DIMS, max_dims, ksp_dims);
+	md_copy_dims(5, max_dims, map_dims);
+
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
+	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
 
-	for (int i = 0; i < 4; i++) {	// sizes2[4] may be > 1
-		if (ksp_dims[i] != map_dims[i]) {
-		
-			fprintf(stderr, "Dimensions of kspace and sensitivities do not match!\n");
-			exit(1);
-		}
-	}
-
+	if (!md_check_compat(DIMS, ~(MD_BIT(MAPS_DIM)|FFT_FLAGS), img_dims, map_dims))
+		error("Dimensions of image and sensitivities do not match!\n");
 
 	assert(1 == ksp_dims[MAPS_DIM]);
+
 
 	(use_gpu ? num_init_gpu : num_init)();
 
@@ -257,6 +327,9 @@ int main_sense(int argc, char* argv[])
 	if (l1wav)
 		debug_printf(DP_INFO, "l1-wavelet regularization\n");
 
+	if (hogwild)
+		debug_printf(DP_INFO, "Hogwild stepsize\n");
+
 	if (ist)
 		debug_printf(DP_INFO, "Use IST\n");
 
@@ -268,13 +341,14 @@ int main_sense(int argc, char* argv[])
 	// initialize sampling pattern
 
 	complex float* pattern = NULL;
-	long pat_dims2[DIMS];
 
 	if (NULL != pat_file) {
 
+		long pat_dims2[DIMS];
 		pattern = load_cfl(pat_file, DIMS, pat_dims2);
 
-		// FIXME: check compatibility
+		assert(md_check_compat(DIMS, 0, pat_dims, pat_dims2));
+
 	} else {
 
 		pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
@@ -282,16 +356,26 @@ int main_sense(int argc, char* argv[])
 	}
 
 
-	
+
 	// print some statistics
 
-	size_t T = md_calc_size(DIMS, pat_dims);
+	long T = md_calc_size(DIMS, pat_dims);
 	long samples = (long)pow(md_znorm(DIMS, pat_dims, pattern), 2.);
+
 	debug_printf(DP_INFO, "Size: %ld Samples: %ld Acc: %.2f\n", T, samples, (float)T / (float)samples); 
 
-	fftmod(DIMS, ksp_dims, FFT_FLAGS, kspace, kspace);
-	fftmod(DIMS, map_dims, FFT_FLAGS, maps, maps);
+	if (T == samples) {
 
+		md_free(pattern);
+		pattern = NULL;
+		nuconf.toeplitz = true;
+	}
+
+	if (NULL == traj_file) {
+
+		fftmod(DIMS, ksp_dims, FFT_FLAGS, kspace, kspace);
+		fftmod(DIMS, map_dims, FFT_FLAGS, maps, maps);
+	}
 
 	// apply fov mask to sensitivities
 
@@ -306,19 +390,47 @@ int main_sense(int argc, char* argv[])
 	}
 
 
+	// initialize forward_op
+
+	const struct linop_s* forward_op = NULL;
+
+	if (NULL == traj_file)
+		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps, use_gpu);
+	else
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, use_gpu);
+
 	// apply scaling
 
-	float scaling = 1.;
+	float scaling = 0.;
 
 	if (NULL == traj_file) {
 
 		scaling = estimate_scaling(ksp_dims, NULL, kspace);
 
-		if (scaling != 0.)
-			md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
+	} else {
+
+		complex float* adj = md_alloc(DIMS, img_dims, CFL_SIZE);
+
+		linop_adjoint(forward_op, DIMS, img_dims, adj, DIMS, ksp_dims, kspace);
+		scaling = estimate_scaling_norm(1., md_calc_size(DIMS, img_dims), adj, false);
+
+		md_free(adj);
+	}
+
+	if (scaling != 0.)
+		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
+
+	if (eigen) {
+
+		double maxeigen = estimate_maxeigenval(forward_op->normal);
+
+		debug_printf(DP_INFO, "Maximum eigenvalue: %.2lf\n", maxeigen);
+
+		step /= maxeigen;
 	}
 
 
+	// initialize thresh_op
 	const struct operator_p_s* thresh_op = NULL;
 
 	if (l1wav) {
@@ -327,16 +439,25 @@ int main_sense(int argc, char* argv[])
 		minsize[0] = MIN(img_dims[0], 16);
 		minsize[1] = MIN(img_dims[1], 16);
 		minsize[2] = MIN(img_dims[2], 16);
-#ifndef W3
-		thresh_op = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, lambda, randshift, use_gpu);
-#else
-		unsigned int wflags = 0;
-		for (unsigned int i = 0; i < 3; i++)
-			if (1 < img_dims[i])
-				wflags = MD_SET(wflags, i);
 
-		thresh_op = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, lambda, randshift);
-#endif
+		if (7 == rflags) {
+
+			thresh_op = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, lambda, randshift, use_gpu);
+
+		} else {
+
+			unsigned int wflags = 0;
+			for (unsigned int i = 0; i < DIMS; i++) {
+
+				if ((1 < img_dims[i]) && MD_IS_SET(rflags, i)) {
+
+					wflags = MD_SET(wflags, i);
+					minsize[i] = MIN(img_dims[i], 16);
+				}
+			}
+
+			thresh_op = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, lambda, randshift);
+		}
 	}
 
 	if (lowrank) {
@@ -374,35 +495,26 @@ int main_sense(int argc, char* argv[])
 	}
 
 
-	italgo_fun_t italgo = NULL;
-	void* iconf = NULL;
+	// initialize algorithm
 
-	// FIXME: change named initializers to traditional?
+	italgo_fun2_t italgo = iter2_call_iter;
+	struct iter_call_s iter2_data;
+
+	void* iconf = &iter2_data;
+
 	struct iter_conjgrad_conf cgconf;
 	struct iter_fista_conf fsconf;
 	struct iter_ist_conf isconf;
 	struct iter_admm_conf mmconf;
 
-	if (!(l1wav || lowrank)) {
+	if (!(l1wav || tvreg || lowrank)) {
 
 		cgconf = iter_conjgrad_defaults;
 		cgconf.maxiter = maxiter;
 		cgconf.l2lambda = lambda;
-		cgconf.tol = 1.E-9;
 
-		italgo = iter_conjgrad;
-		iconf = &cgconf;
-
-	} else if (admm) {
-
-		mmconf = iter_admm_defaults;
-		mmconf.maxiter = maxiter;
-		mmconf.rho = admm_rho;
-		mmconf.hogwild = hogwild;
-		mmconf.fast = fast;
-
-		italgo = iter_admm;
-		iconf = &mmconf;
+		iter2_data.fun = iter_conjgrad;
+		iter2_data._conf = &cgconf;
 
 	} else if (ist) {
 
@@ -411,8 +523,21 @@ int main_sense(int argc, char* argv[])
 		isconf.step = step;
 		isconf.hogwild = hogwild;
 
-		italgo = iter_ist;
-		iconf = &isconf;
+		iter2_data.fun = iter_ist;
+		iter2_data._conf = &isconf;
+
+	} else if (admm) {
+
+		debug_printf(DP_INFO, "ADMM\n");
+
+		mmconf = iter_admm_defaults;
+		mmconf.maxiter = maxiter;
+		mmconf.rho = admm_rho;
+		mmconf.hogwild = hogwild;
+		mmconf.fast = fast;
+
+		italgo = iter2_admm;
+		iconf = &mmconf;
 
 	} else {
 
@@ -421,25 +546,44 @@ int main_sense(int argc, char* argv[])
 		fsconf.step = step;
 		fsconf.hogwild = hogwild;
 
-		italgo = iter_fista;
-		iconf = &fsconf;
+		iter2_data.fun = iter_fista;
+		iter2_data._conf = &fsconf;
 	}
+
+	// TV operator
+
+	const struct linop_s* tv_op = tvreg ? grad_init(DIMS, img_dims, rflags)
+					: linop_identity_create(DIMS, img_dims);
+
+	if (tvreg) {
+
+		thresh_op = prox_thresh_create(DIMS + 1,
+					linop_codomain(tv_op)->dims,
+					lambda, MD_BIT(DIMS), use_gpu);
+	}
+
 
 
 	if (use_gpu) 
 #ifdef USE_CUDA
-		sense_recon_gpu(&conf, max_dims, image, maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace, image_truth);
+		sense_recon2_gpu(&conf, max_dims, image, forward_op, pat_dims, pattern,
+				italgo, iconf, 1, MAKE_ARRAY(thresh_op), admm ? MAKE_ARRAY(tv_op) : NULL,
+				ksp_dims, kspace, image_truth);
 #else
 		assert(0);
 #endif
 	else
-		sense_recon(&conf, max_dims, image, maps, pat_dims, pattern, italgo, iconf, thresh_op, ksp_dims, kspace, image_truth);
+		sense_recon2(&conf, max_dims, image, forward_op, pat_dims, pattern,
+				italgo, iconf, 1, MAKE_ARRAY(thresh_op), admm ? MAKE_ARRAY(tv_op) : NULL,
+				ksp_dims, kspace, image_truth);
 
 	if (scale_im)
 		md_zsmul(DIMS, img_dims, image, image, scaling);
 
+	// clean up
+
 	if (NULL != pat_file)
-		unmap_cfl(DIMS, pat_dims2, pattern);
+		unmap_cfl(DIMS, pat_dims, pattern);
 	else
 		md_free(pattern);
 
@@ -447,6 +591,9 @@ int main_sense(int argc, char* argv[])
 	unmap_cfl(DIMS, map_dims, maps);
 	unmap_cfl(DIMS, ksp_dims, kspace);
 	unmap_cfl(DIMS, img_dims, image);
+
+	if (NULL != traj)
+		unmap_cfl(DIMS, traj_dims, traj);
 
 	if (im_truth) {
 
@@ -456,6 +603,7 @@ int main_sense(int argc, char* argv[])
 
 
 	double end_time = timestamp();
+
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);
 	exit(0);
 }

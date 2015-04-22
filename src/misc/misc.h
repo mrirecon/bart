@@ -14,6 +14,8 @@
 
 #define UNUSED(x) (void)(x)
 
+#define MAKE_ARRAY(x, ...) ((__typeof__(x)[]){ x, __VA_ARGS__ })
+
 #ifdef __cplusplus
 extern "C" {
 #ifndef __VLA

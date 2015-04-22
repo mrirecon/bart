@@ -13,8 +13,11 @@
 #include <math.h>
 
 #include "sense/recon.h"
+#include "sense/model.h"
 #include "sense/pocs.h"
 #include "sense/optcom.h"
+
+#include "linops/linop.h"
 
 #ifndef STANFORD_OFFLINERECON
 #include "noir/recon.h"
@@ -190,6 +193,8 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		iconf = &fsconf;
 	}
 
+	const struct linop_s* sop = NULL;
+
 #ifdef  USE_CUDA
 	if (usegpu) {
 
@@ -197,7 +202,9 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 		switch (param->algo) {
 		case SENSE:
+			sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, true);
 			sense_recon_gpu(conf, dims1, image1, sens1, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
+			//linop_free(sop);
 			break;
 		case POCS:
 			pocs_recon_gpu(dims1, thresh_op, param->maxiter, param->lambda, -1., image1, sens1, pattern, kspace1);
@@ -214,7 +221,9 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 	{
 		switch (param->algo) {
 		case SENSE:
-			sense_recon(conf, dims1, image1, sens1, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
+			sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, false);
+			sense_recon(conf, dims1, image1, sop, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
+			//linop_free(sop);
 			break;
 		case POCS:
 			pocs_recon(dims1, thresh_op, param->maxiter, param->lambda, -1., image1, sens1, pattern, kspace1);

@@ -107,11 +107,12 @@ static float estimate_scaling_internal(const long dims[DIMS], const complex floa
 	// maybe we should just extract a fixed-sized block here?
 	complex float* tmp = extract_calib2(small_dims, cal_size, dims, strs, data, false);
 
+	long img_dims[DIMS];
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, small_dims);
 
-	long size = md_calc_size(DIMS, small_dims);
-	long imsize = size / dims[COIL_DIM];
+	long imsize = md_calc_size(DIMS, img_dims);
 
-	complex float* tmp1 = xmalloc((size_t)imsize * sizeof(complex float));
+	complex float* tmp1 = md_alloc(DIMS, img_dims, CFL_SIZE);
 
 	float rescale = sqrtf((float)dims[0] / (float)small_dims[0])
 			* sqrtf((float)dims[1] / (float)small_dims[1])
@@ -128,8 +129,8 @@ static float estimate_scaling_internal(const long dims[DIMS], const complex floa
 
 	float scale = estimate_scaling_norm(rescale, imsize, tmp1, compat);
 
-	free(tmp);
-	free(tmp1);
+	md_free(tmp);
+	md_free(tmp1);
 
 	return scale;
 }
