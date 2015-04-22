@@ -64,7 +64,7 @@ compression technique for faster reconstruction with many channels.
 Magn Reson Imaging 2008; 26:133-141.
 
 Buehrer M, Pruessmann KP, Boesiger P, Kozerke S. Array compression for
-MRI with large coil arrays. Magn Reson Med 2007, 57: 1131-1139.
+MRI with large coil arrays. Magn Reson Med 2007, 57:1131-1139.
 
 Zhang T, Pauly JM, Vasanawala SS, Lustig M. Coil compression for
 accelerated imaging with cartesian sampling. Magn Reson Med 2013;
@@ -75,6 +75,10 @@ Cartesian Sampling,  Annual Meeting ISMRM, Salt Lake City 2013,
 In: Proc Intl Soc Mag Reson Med 21:2657
 
 
+divergence-free wavelets:
 
+Ong F, Uecker M, Tariq U, Hsiao A, Alley MT, Vasanawala SS, Lustig M.
+Robust 4D Flow Denoising using Divergence-free Wavelet Transform, 
+Magn Reson Med 2015; 73: 828-842.
 
 
