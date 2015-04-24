@@ -535,6 +535,9 @@ int main_sense(int argc, char* argv[])
 		mmconf.rho = admm_rho;
 		mmconf.hogwild = hogwild;
 		mmconf.fast = fast;
+//		mmconf.dynamic_rho = true;
+		mmconf.ABSTOL = 0.;
+		mmconf.RELTOL = 0.;
 
 		italgo = iter2_admm;
 		iconf = &mmconf;
