@@ -22,15 +22,6 @@
 
 
 
-static unsigned int bitcount(unsigned int flags)
-{
-	unsigned int N = 0;
-
-	for (; flags > 0; N++)
-		flags &= (flags - 1);
-		
-	return N;
-}
 
 
 void grad_op(unsigned int D, const long dims[D], unsigned int flags, complex float* out, const complex float* in)

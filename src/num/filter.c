@@ -13,15 +13,7 @@
 
 
 
-static unsigned int bitcount(unsigned int flags)
-{
-	unsigned int N = 0;
 
-	for (; flags > 0; N++)
-		flags &= (flags - 1);
-		
-	return N;
-}
 
 void centered_gradient(unsigned int N, const long dims[N], const complex float grad[N], complex float* out)
 {

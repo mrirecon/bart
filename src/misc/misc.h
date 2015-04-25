@@ -49,6 +49,7 @@ extern void print_float(unsigned int D, const float arr[__VLA(D)]);
 extern void print_int(unsigned int D, const int arr[__VLA(D)]);
 extern void print_complex(unsigned int D, const _Complex float arr[__VLA(D)]);
 
+extern unsigned int bitcount(unsigned int flags);
 
 #ifdef __cplusplus
 }
