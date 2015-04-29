@@ -613,6 +613,7 @@ struct fft_linop_s {
 	complex float* fftmodk_mat;
 
 	bool center;
+	float nscale;
 	
 	int N;
 	long* dims;
@@ -678,7 +679,11 @@ static void fft_linop_free(const void* _data)
 static void fft_linop_normal(const void* _data, complex float* out, const complex float* in)
 {
 	const struct fft_linop_s* data = _data;
-	md_copy(data->N, data->dims, out, in, CFL_SIZE);
+
+	if (data->center)
+		md_copy(data->N, data->dims, out, in, CFL_SIZE);
+	else
+		md_zsmul(data->N, data->dims, out, in, data->nscale);
 }
 
 
@@ -726,7 +731,7 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 
 		data->fftmod_mat = fftmod_mat;
 		data->fftmodk_mat = fftmodk_mat;
-		
+
 #ifdef USE_CUDA
 		if (gpu) {
 
@@ -742,6 +747,10 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 
 		data->fftmod_mat = NULL;
 		data->fftmodk_mat = NULL;
+
+		long fft_dims[N];
+		md_select_dims(N, flags, fft_dims, dims);
+		data->nscale = (float)md_calc_size(N, fft_dims);
 	}
 
 	lop_fun_t apply = forward ? fft_linop_apply : fft_linop_adjoint;
