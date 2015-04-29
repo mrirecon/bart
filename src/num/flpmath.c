@@ -1403,47 +1403,47 @@ void md_zaxpy2(unsigned int D, const long dims[D], const long ostr[D], complex f
 
 
 /**
- * Running max of input and output (without strides)
- * optr = max(optr, iptr)
+ * Max of inputs (without strides)
+ * optr = max(iptr1, iptr2)
  */
-void md_maxxy(unsigned int D, const long dims[D], float* optr, const float* iptr)
+void md_max(unsigned int D, const long dims[D], float* optr, const float* iptr1, const float* iptr2)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, FL_SIZE);
-	md_maxxy2(D, dims, strs, optr, strs, iptr);
+	md_max2(D, dims, strs, optr, strs, iptr1, strs, iptr2);
 }
 
 
 /**
- * Running max of input and output (with strides)
- * optr = max(optr, iptr)
+ * Max of inputs (with strides)
+ * optr = max(iptr1, iptr2)
  */
-void md_maxxy2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr)
+void md_max2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	MAKE_2OP(maxxy, D, dims, ostr, optr, istr, iptr);
+	MAKE_3OP(max, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
 
 
 /**
- * Running min of input and output (without strides)
- * optr = min(optr, iptr)
+ * Min of inputs (without strides)
+ * optr = min(iptr1, iptr2)
  */
-void md_minxy(unsigned int D, const long dims[D], float* optr, const float* iptr)
+void md_min(unsigned int D, const long dims[D], float* optr, const float* iptr1, const float* iptr2)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, FL_SIZE);
-	md_minxy2(D, dims, strs, optr, strs, iptr);
+	md_min2(D, dims, strs, optr, strs, iptr1, strs, iptr2);
 }
 
 
 /**
- * Running min of input and output (with strides)
- * optr = min(optr, iptr)
+ * Min of inputs (with strides)
+ * optr = min(iptr1, iptr2)
  */
-void md_minxy2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr)
+void md_min2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	MAKE_2OP(minxy, D, dims, ostr, optr, istr, iptr);
+	MAKE_3OP(min, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
 

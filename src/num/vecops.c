@@ -296,17 +296,17 @@ static void zarg(long N, complex float* dst, const complex float* src)
 }
 
 
-static void maxxy(long N, float* dst, const float* src)
+static void max(long N, float* dst, const float* src1, const float* src2)
 {
 	for (long i = 0; i < N; i++)
-		dst[i] = MAX(dst[i], src[i]);
+		dst[i] = MAX(src1[i], src2[i]);
 }
 
 
-static void minxy(long N, float* dst, const float* src)
+static void min(long N, float* dst, const float* src1, const float* src2)
 {
 	for (long i = 0; i < N; i++)
-		dst[i] = MIN(dst[i], src[i]);
+		dst[i] = MIN(src1[i], src2[i]);
 }
 
 
@@ -404,6 +404,10 @@ static void zfftmod(long N, complex float* dst, const complex float* src, unsign
 }
 
 
+
+/*
+ * If you add functions here, please also add to gpuops.c/gpukrnls.cu
+ */
 const struct vec_ops cpu_ops = {
 
 	.allocate = allocate,
@@ -450,8 +454,8 @@ const struct vec_ops cpu_ops = {
 	.zdiv_reg = zdiv_reg,
 	.zfftmod = zfftmod,
 
-	.maxxy = maxxy,
-	.minxy = minxy,
+	.max = max,
+	.min = min,
 
 	.zsoftthresh = zsoftthresh,
 	.zsoftthresh_half = zsoftthresh_half,

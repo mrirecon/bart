@@ -473,6 +473,9 @@ const struct vec_ops gpu_ops = {
 	.zdiv_reg = cuda_zdiv_reg,
 	.zfftmod = cuda_zfftmod,
 
+	.max = cuda_max,
+	.min = cuda_min,
+
 	.zsoftthresh = cuda_zsoftthresh,
 	.zsoftthresh_half = cuda_zsoftthresh_half,
 	.softthresh = cuda_softthresh,

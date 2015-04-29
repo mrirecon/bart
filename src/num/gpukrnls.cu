@@ -634,5 +634,39 @@ extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* 
 }
 
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+
+__global__ void kern_max(int N, float* dst, const float* src1, const float* src2)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = MAX(src1[i], src2[i]);
+}
+
+
+extern "C" void cuda_max(long N, float* dst, const float* src1, const float* src2)
+{
+	kern_max<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+}
+
+
+__global__ void kern_min(int N, float* dst, const float* src1, const float* src2)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = MIN(src1[i], src2[i]);
+}
+
+
+extern "C" void cuda_min(long N, float* dst, const float* src1, const float* src2)
+{
+	kern_min<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+}
 
 

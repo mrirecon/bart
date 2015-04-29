@@ -127,11 +127,11 @@ extern void md_zabs(unsigned int D, const long dim[__VLA(D)], _Complex float* op
 extern void md_zabs2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
 
-extern void md_maxxy(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr1);
-extern void md_maxxy2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1);
+extern void md_max(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr1, const float* iptr2);
+extern void md_max2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
 
-extern void md_minxy(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr1);
-extern void md_minxy2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1);
+extern void md_min(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr1, const float* iptr2);
+extern void md_min2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr);
 
 extern void md_zsoftthresh_half2(unsigned int D, const long dim[__VLA(D)], float lambda, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 extern void md_zsoftthresh_half(unsigned int D, const long dim[__VLA(D)], float lambda, _Complex float* optr, const _Complex float* iptr);
