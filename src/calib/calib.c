@@ -323,7 +323,7 @@ void calone_dims(const struct ecalib_conf* conf, long cov_dims[4], long channels
 
 
 
-const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1., false };
+const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1., false, true };
 
 
 
@@ -343,10 +343,20 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 	complex float rot[channels][channels];
 
-	long scc_dims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
-	scc_dims[COIL_DIM] = channels;
-	scc_dims[MAPS_DIM] = channels;
-	scc(scc_dims, &rot[0][0], calreg_dims, data);
+	if (conf->rotphase) {
+
+		long scc_dims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
+		scc_dims[COIL_DIM] = channels;
+		scc_dims[MAPS_DIM] = channels;
+		scc(scc_dims, &rot[0][0], calreg_dims, data);
+
+	} else {
+
+		for (unsigned int i = 0; i < channels; i++)
+			for (unsigned int j = 0; j < channels; j++)
+				rot[i][j] = (i == j) ? 1. : 0.;
+	}
+
 
 	long cov_dims[4];
 
@@ -382,10 +392,9 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 	debug_printf(DP_DEBUG1, "Fix phase...\n");
 
-	fixphase(DIMS, out_dims, COIL_DIM, out_data, out_data);
 
 	// rotate the the phase with respect to the first principle component
-//	fixphase2(DIMS, out_dims, COIL_DIM, rot[0], out_data, out_data);
+	fixphase2(DIMS, out_dims, COIL_DIM, rot[0], out_data, out_data);
 
 	md_free(imgcov);
 }

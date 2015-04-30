@@ -214,14 +214,18 @@ int main_ecalib(int argc, char* argv[])
 	 float svals[K];
 
 
-	 for (unsigned int i = 0; i < 3; i++)
+	 for (unsigned int i = 0; i < 3; i++) {
+
 		if ((1 == cal_dims[i]) && (1 != ksp_dims[i])) {
 
 			fprintf(stderr, "Calibration region not found!\n");
 			exit(1);
 		}
+	}
 
 
+	// To reproduce old results turn off rotation of phase.
+	// conf.rotphase = false;
 
 
 	// FIXME: we should scale the data

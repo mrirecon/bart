@@ -33,6 +33,7 @@ struct ecalib_conf {
 	_Bool usegpu;
 	float perturb;
 	_Bool intensity;
+	_Bool rotphase;
 };
 
 extern const struct ecalib_conf ecalib_defaults;
