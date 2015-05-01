@@ -246,13 +246,16 @@ cc [-A] [-r cal_size] [-P num_coeffs] <kspace> <coeff>|<proj_kspace>
 	-h	help
 
 
-sense [-l1/-l2] [-r lambda] [-c] <kspace> <sensitivities> <output>
+pics [-l1/-l2] [-r lambda] [-t <trajectory>] <kspace> <sensitivities> <output>
 
-	Perform iterative SENSE/ESPIRiT reconstruction.
+	Parallel-imaging compressed-sensing reconstruction.
 
 	-l1/-l2		toggle l1-wavelet or l2 regularization.
 	-r lambda	regularization parameter
 	-c		real-value constraint
+	-s step		iteration stepsize
+	-i maxiter	number of iterations
+	-t trajectory	k-space trajectory
 
 
 rsense [-l1/-l2] [-r lambda] [-c] <kspace> <sensitivities> <output>

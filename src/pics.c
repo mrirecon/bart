@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -64,11 +65,11 @@ static void usage(const char* name, FILE* fd)
 static void help(void)
 {
 	printf( "\n"
-		"Perform iterative SENSE/ESPIRiT reconstruction.\n"
+		"Parallel-imaging compressed-sensing reconstruction.\n"
 		"\n"
-		"-l1/-l2\ttoggle l1-wavelet or l2 regularization.\n"
+		"-l1/-l2\t\ttoggle l1-wavelet or l2 regularization.\n"
 		"-r lambda\tregularization parameter\n"
-		"-c\treal-value constraint\n"
+		"-c\t\treal-value constraint\n"
 		"-s step\t\titeration stepsize\n"
 		"-i maxiter\tnumber of iterations\n"
 		"-t trajectory\tk-space trajectory\n"
@@ -101,7 +102,7 @@ const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_di
 }
 
 
-int main_sense(int argc, char* argv[])
+int main_pics(int argc, char* argv[])
 {
 	// Initialize default parameters
 
@@ -138,6 +139,9 @@ int main_sense(int argc, char* argv[])
 	bool hogwild = false;
 	bool fast = false;
 	float admm_rho = iter_admm_defaults.rho;
+
+	if (0 == strcmp(basename(argv[0]), "sense"))
+		debug_printf(DP_WARN, "The \'sense\' command is deprecated. Use \'pics\' instead.\n");
 
 	int c;
 	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:Sd:R:H"))) {
