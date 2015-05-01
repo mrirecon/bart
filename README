@@ -45,7 +45,13 @@ options on or off)
 The software can be used in combination with Matlab or octave.
 
 
-Note: In the following, the symbol '$' indicates a shell prompt.
+There is limited support for reading Cartesian data encoded with
+the ISMRM Raw Data format when linking with the ISMRMRD library
+(http://ismrmrd.sourceforge.net/). Currently, BART only supports
+version 0.5.2 of this library. Later versions do not work.
+
+
+In the following, the symbol '$' indicates a shell prompt.
 Do not type '$' when entering commands.
 
 
@@ -62,7 +68,7 @@ $ sudo apt-get install build-essential libfftw3-dev libgsl0-dev liblapack-dev
 $ sudo apt-get install octave
 
 (optional)
-install the ISMRM Raw Data format library (http://ismrmrd.sourceforge.net/).
+install version 0.5.2 of the ISMRMRD library
 
 
 
@@ -80,7 +86,7 @@ $ sudo port install gcc47
 $ sudo apt-get install octave
 
 (optional)
-install the ISMRM Raw Data format library (http://ismrmrd.sourceforge.net/).
+install version 0.5.2 of the ISMRMRD library
 
 
 
@@ -129,7 +135,7 @@ $ make
 
 
 
-If you have installed the ismrmrd library, you can also
+If you have installed the ISMRMRD library version 0.5.2, you can also
 build the ISMRM raw data import tool:
 
 $ make ismrmrd
