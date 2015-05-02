@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>examples</title><meta name="generator" content="MATLAB 8.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2015-02-20"><meta name="DC.source" content="examples.m"><style type="text/css">
+      --><title>examples</title><meta name="generator" content="MATLAB 8.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2015-05-01"><meta name="DC.source" content="examples.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -65,13 +65,16 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">ESPIRiT examples (based on work by Sana Vaziri)</a></li><li><a href="#5">Example 1: ESPIRiT reconstruction (R = 2x2)</a></li><li><a href="#15">Example 2: Reconstruction of undersampled data with small FOV.</a></li><li><a href="#18">Example 3: Compressed Sensing and Parallel Imaging</a></li><li><a href="#21">Example 4: Basic Tools</a></li></ul></div><pre class="codeinput"><span class="keyword">function</span> examples
-</pre><h2>ESPIRiT examples (based on work by Sana Vaziri)<a name="2"></a></h2><p>To begin, add '$(TOOLBOX_PATH)/matlab' to the library path. The environment variable TOOLBOX_PATH needs to be set to the base directory of the reconstruction tools package.</p><pre class="codeinput"><span class="keyword">if</span> isempty(getenv(<span class="string">'TOOLBOX_PATH'</span>))
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">ESPIRiT examples (based on work by Sana Vaziri)</a></li><li><a href="#5">Example 1: ESPIRiT reconstruction (R = 2x2)</a></li><li><a href="#15">Example 2: Reconstruction of undersampled data with small FOV.</a></li><li><a href="#18">Example 3: Compressed Sensing and Parallel Imaging</a></li><li><a href="#21">Example 4: Basic Tools</a></li><li><a href="#23">non-Cartesian MRI using BART</a></li></ul></div><pre class="codeinput"><span class="comment">% To begin, add '$(TOOLBOX_PATH)/matlab' to the library path. The</span>
+<span class="comment">% environment variable TOOLBOX_PATH needs to be set to the base</span>
+<span class="comment">% directory of the reconstruction tools package.</span>
+
+<span class="keyword">if</span> isempty(getenv(<span class="string">'TOOLBOX_PATH'</span>))
 	error(<span class="string">'Environment variable TOOLBOX_PATH is not set.'</span>);
 <span class="keyword">end</span>
 
 addpath(strcat(getenv(<span class="string">'TOOLBOX_PATH'</span>), <span class="string">'/matlab'</span>));
-</pre><p>The input and output datasets are each stored in a pair of files: one header (.hdr) and one raw data (.cfl). All the data files used in this demo are in the data folder. The readcfl and writecfl Matlab methods can be found in $(TOOLBOX_PATH)/matlab and can be used to view and process the data and reconstructed images in Matlab.</p><h2>Example 1: ESPIRiT reconstruction (R = 2x2)<a name="5"></a></h2><p>The example uses ESPIRiT to obtain the image from 2x2 undersampled data.</p><p>A visualization of k-space data and sampling and zero-filled reconstruction</p><pre class="codeinput"><span class="comment">% sqrt sum-of-squares of k-space</span>
+</pre><h2>ESPIRiT examples (based on work by Sana Vaziri)<a name="2"></a></h2><p>The input and output datasets are each stored in a pair of files: one header (.hdr) and one raw data (.cfl). All the data files used in this demo are in the data folder. The readcfl and writecfl Matlab methods can be found in $(TOOLBOX_PATH)/matlab and can be used to view and process the data and reconstructed images in Matlab.</p><h2>Example 1: ESPIRiT reconstruction (R = 2x2)<a name="5"></a></h2><p>The example uses ESPIRiT to obtain the image from 2x2 undersampled data.</p><p>A visualization of k-space data and sampling and zero-filled reconstruction</p><pre class="codeinput"><span class="comment">% sqrt sum-of-squares of k-space</span>
 und2x2 = readcfl(<span class="string">'data/und2x2'</span>);
 ksp_rss = bart(<span class="string">'rss 8'</span>, und2x2);
 
@@ -127,8 +130,9 @@ title(<span class="string">'First Two Eigenvalue Maps'</span>)
 
 sense_recon = squeeze(reco);
 figure, imshow(abs(sense_recon), []); title(<span class="string">'ESPIRiT Reconstruction'</span>)
-</pre><pre class="codeoutput">Size: 41400 Samples: 10650 Acc: 3.89
-Total Time: 0.594283
+</pre><pre class="codeoutput">The 'sense' command is deprecated. Use 'pics' instead.
+Size: 41400 Samples: 10650 Acc: 3.89
+Total Time: 2.135550
 </pre><img vspace="5" hspace="5" src="examples_06.png" alt=""> <p>Evaluation of the coil sensitivities.</p><pre class="codeinput"><span class="comment">%</span>
 <span class="comment">% Computing error from projecting fully sampled error</span>
 <span class="comment">% onto the sensitivities. This can be done with one</span>
@@ -188,8 +192,9 @@ figure, imshow3(abs(espirit_maps), [],[2,8])
 title(<span class="string">'The two sets of ESPIRiT maps'</span>)
 </pre><pre class="codeoutput">Calibration region 1x20x20
 Done.
+The 'sense' command is deprecated. Use 'pics' instead.
 Size: 80640 Samples: 27167 Acc: 2.97
-Total Time: 0.581754
+Total Time: 2.611137
 Calibration region...  (size: 1x20x20, pos: 0x150x116)
 Energy: 0.515 0.306 0.115 0.045 0.013 0.004 0.002 0.001
 Build calibration matrix and SVD...
@@ -203,10 +208,11 @@ Point-wise eigen-decomposition...
 Crop maps... (0.80)
 Fix phase...
 Done.
+The 'sense' command is deprecated. Use 'pics' instead.
 2 maps.
 ESPIRiT reconstruction.
 Size: 80640 Samples: 27167 Acc: 2.97
-Total Time: 0.791920
+Total Time: 2.855823
 Warning: Image is too big to fit on screen; displaying at 50% 
 </pre><img vspace="5" hspace="5" src="examples_08.png" alt=""> <pre class="codeinput"><span class="comment">% SENSE image:</span>
 
@@ -244,7 +250,7 @@ knee_maps = bart(<span class="string">'ecalib -c0. -m1'</span>, knee);
 
 <span class="comment">% l1-regularized reconstruction (wavelet basis)</span>
 
-knee_l1 = bart(<span class="string">'sense -l1 -r0.005'</span>, knee, knee_maps);
+knee_l1 = bart(<span class="string">'sense -l1 -r0.01'</span>, knee, knee_maps);
 
 
 
@@ -268,10 +274,13 @@ Point-wise eigen-decomposition...
 Crop maps... (0.00)
 Fix phase...
 Done.
+The 'sense' command is deprecated. Use 'pics' instead.
 l1-wavelet regularization
 Size: 67968 Samples: 8082 Acc: 8.41
-Total Time: 4.134167
-</pre><img vspace="5" hspace="5" src="examples_10.png" alt=""> <img vspace="5" hspace="5" src="examples_11.png" alt=""> <h2>Example 4: Basic Tools<a name="21"></a></h2><p>Various tools are demonstrated by manipulating an image.</p><pre class="codeinput"><span class="comment">% Zero pad</span>
+Total Time: 29.449478
+</pre><img vspace="5" hspace="5" src="examples_10.png" alt=""> <img vspace="5" hspace="5" src="examples_11.png" alt=""> <h2>Example 4: Basic Tools<a name="21"></a></h2><p>Various tools are demonstrated by manipulating an image.</p><pre class="codeinput">knee_l1 = readcfl(<span class="string">'data/knee_l1'</span>);
+
+<span class="comment">% Zero pad</span>
 
 knee2 = bart(<span class="string">'resize -c 1 300 2 300'</span>, knee_l1);
 
@@ -308,27 +317,78 @@ shift = bart(<span class="string">'circshift 2 150'</span>, tmp);
 <span class="comment">% Show the final result.</span>
 
 figure, imshow(abs(squeeze(shift)), []);
+</pre><img vspace="5" hspace="5" src="examples_12.png" alt=""> <h2>non-Cartesian MRI using BART<a name="23"></a></h2><p>Reconstruction from simulated non-Cartesian data</p><pre class="codeinput"><span class="comment">% Generate k-space trajectory with 64 radial spokes</span>
+traj_rad = bart(<span class="string">'traj -r -x512 -y64'</span>);
 
-<span class="comment">% end global function</span>
-</pre><img vspace="5" hspace="5" src="examples_12.png" alt=""> <pre class="codeinput"><span class="keyword">end</span>
-</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013b</a><br></p></div><!--
+<span class="comment">% 2x oversampling</span>
+traj_rad2 = bart(<span class="string">'scale 0.5'</span>, traj_rad);
+
+<span class="comment">% simulate eight-channel k-space data</span>
+ksp_sim = bart(<span class="string">'phantom -k -s8 -t'</span>, traj_rad2);
+
+<span class="comment">% increase the reconstructed FOV a bit</span>
+traj_rad2 = bart(<span class="string">'scale 0.6'</span>, traj_rad);
+
+
+<span class="comment">% inverse gridding</span>
+igrid = bart(<span class="string">'nufft -i -t'</span>, traj_rad2, ksp_sim);
+
+<span class="comment">% channel combination</span>
+reco1 = bart(<span class="string">'rss 8'</span>, igrid);
+
+
+<span class="comment">% reconstruct low-resolution image and transform back to k-space</span>
+lowres_img = bart(<span class="string">'nufft -i -d24:24:1 -t'</span>, traj_rad2, ksp_sim);
+lowres_ksp = bart(<span class="string">'fft -u 7'</span>, lowres_img);
+
+<span class="comment">% zeropad to full size</span>
+ksp_zerop = bart(<span class="string">'resize -c 0 308 1 308'</span>, lowres_ksp);
+
+<span class="comment">% ESPIRiT calibration</span>
+sens = bart(<span class="string">'ecalib -m1'</span>, ksp_zerop);
+
+<span class="comment">% non-Cartesian parallel imging</span>
+reco2 = bart(<span class="string">'pics -S -r0.001 -t'</span>, traj_rad2, ksp_sim, sens);
+
+
+
+figure, imshow(abs(squeeze([reco1, reco2 * 5])), []);
+title(<span class="string">'Inverse Gridding vs Parallel Imaging'</span>)
+</pre><pre class="codeoutput">Est. image size: 308 308 1
+Done.
+Done.
+Calibration region...  (size: 24x24x1, pos: 142x142x0)
+Energy: 0.591 0.287 0.102 0.015 0.004 0.001 0.000 0.000
+Build calibration matrix and SVD...
+Eigen decomposition... (size: 288)
+Using 38/288 kernels (13.19%, last SV: 0.037886).
+Zeropad...
+FFT (juggling)...
+Calculate Gram matrix...
+Resize...
+Point-wise eigen-decomposition...
+Crop maps... (0.80)
+Fix phase...
+Done.
+Size: 32768 Samples: 32767 Acc: 1.00
+Total Time: 11.371318
+</pre><img vspace="5" hspace="5" src="examples_13.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
-function examples
-
-%%
-%% ESPIRiT examples (based on work by Sana Vaziri)
-%%
 % To begin, add '$(TOOLBOX_PATH)/matlab' to the library path. The
 % environment variable TOOLBOX_PATH needs to be set to the base
 % directory of the reconstruction tools package.
 
 if isempty(getenv('TOOLBOX_PATH'))
-	error('Environment variable TOOLBOX_PATH is not set.');	
+	error('Environment variable TOOLBOX_PATH is not set.');
 end
 
 addpath(strcat(getenv('TOOLBOX_PATH'), '/matlab'));
 
 
+
+%%
+%% ESPIRiT examples (based on work by Sana Vaziri)
+%%
 
 %%
 % The input and output datasets are each stored in a pair of files: one 
@@ -446,7 +506,7 @@ errimgs = bart('fft -i 6', (full - proj));
 errsos_espirit = bart('rss 8', errimgs);
 
 %
-% For comparison: compute sensitivities directly from the center. 
+% For comparison: compute sensitivities directly from the center.
 sens_direct = bart('caldir 20', und2x2);
 
 % Compute error map.
@@ -458,7 +518,7 @@ errsos_direct = bart('rss 8', errimgs);
 errsos_espirit = squeeze(errsos_espirit);
 errsos_direct = squeeze(errsos_direct);
 
-figure, 
+figure,
 imshow(abs([errsos_direct errsos_espirit]), []); title('Projection Error (direct calibration vs ESPIRiT)');
  
 
@@ -466,9 +526,9 @@ imshow(abs([errsos_direct errsos_espirit]), []); title('Projection Error (direct
 
 
 %% Example 2: Reconstruction of undersampled data with small FOV.
-% 
+%
 % This example uses a undersampled data set with a small FOV. The image
-% reconstructed using ESPIRiT is compared to an image reconstructed 
+% reconstructed using ESPIRiT is compared to an image reconstructed
 % with SENSE. By using two sets of maps, ESPIRiT can avoid the central
 % artifact which appears in the SENSE reconstruction.
 %
@@ -547,7 +607,7 @@ knee_maps = bart('ecalib -c0. -m1', knee);
 
 % l1-regularized reconstruction (wavelet basis)
 
-knee_l1 = bart('sense -l1 -r0.005', knee, knee_maps);
+knee_l1 = bart('sense -l1 -r0.01', knee, knee_maps);
 
 
 
@@ -562,12 +622,13 @@ title('Zero-filled and Compressed Sensing/Parallel Imaging')
 
 
 
-
 %% Example 4: Basic Tools
 %
 % Various tools are demonstrated by manipulating an image.
 %
 %%
+
+knee_l1 = readcfl('data/knee_l1');
 
 % Zero pad
 
@@ -607,8 +668,52 @@ shift = bart('circshift 2 150', tmp);
 
 figure, imshow(abs(squeeze(shift)), []);
 
-% end global function
-end
+
+%% non-Cartesian MRI using BART
+%
+% Reconstruction from simulated non-Cartesian data
+%
+%%
+
+
+% Generate k-space trajectory with 64 radial spokes
+traj_rad = bart('traj -r -x512 -y64');
+
+% 2x oversampling
+traj_rad2 = bart('scale 0.5', traj_rad);
+
+% simulate eight-channel k-space data
+ksp_sim = bart('phantom -k -s8 -t', traj_rad2);
+
+% increase the reconstructed FOV a bit
+traj_rad2 = bart('scale 0.6', traj_rad);
+
+
+% inverse gridding
+igrid = bart('nufft -i -t', traj_rad2, ksp_sim);
+
+% channel combination
+reco1 = bart('rss 8', igrid);
+
+
+% reconstruct low-resolution image and transform back to k-space
+lowres_img = bart('nufft -i -d24:24:1 -t', traj_rad2, ksp_sim);
+lowres_ksp = bart('fft -u 7', lowres_img);
+
+% zeropad to full size
+ksp_zerop = bart('resize -c 0 308 1 308', lowres_ksp);
+
+% ESPIRiT calibration
+sens = bart('ecalib -m1', ksp_zerop);
+
+% non-Cartesian parallel imging
+reco2 = bart('pics -S -r0.001 -t', traj_rad2, ksp_sim, sens);
+
+
+
+figure, imshow(abs(squeeze([reco1, reco2 * 5])), []);
+title('Inverse Gridding vs Parallel Imaging')
+
 
 
 ##### SOURCE END #####
