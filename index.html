@@ -75,7 +75,7 @@
       <h1><a>Berkeley Advanced Reconstruction Toolbox</a></h1>
 	<p>
 	<div>The Berkeley Advanced Reconstruction Toolbox (BART) is a free and open-source image-reconstruction
-framework for Magnetic Resonance Imaging (MRI). It consists of a
+framework for Magnetic Resonance Imaging. It consists of a
 programming library and a toolbox of command-line programs. The library provides common operations on multi-dimensional
 arrays, Fourier and wavelet transforms, as well as generic implementations of iterative optimization algorithms.
 The command-line tools provide direct access to basic operations on multi-dimensional arrays as well as efficient
@@ -91,6 +91,20 @@ Total reconstruction time: 51s including compression (14s), calibration (9s), it
 and other processing steps (16s) on a multi-GPU system.
 	</div>
 	<p>
+	<h2>Example</h2>
+	<p>
+	Perform ESPIRiT calibration and image reconstruction with
+	L1-wavelet regularization:
+	</p>
+	<div class="code">
+	<code>
+	<p>
+	&nbsp;$ ecalib kspace sensitivities<br>
+	&nbsp;$ sense -l1 -r0.001 kspace sensitivities image_out
+	</p>
+	</code>
+	</div>
+	</p>
 	<h2 class="header">Mailing List</h2>
 	<p>
 	Please direct all questions or comments to the public mailing list:
@@ -127,19 +141,7 @@ and other processing steps (16s) on a multi-GPU system.
 	<p>
 	See the README file included with the source code for further instructions and for Mac OS X and Windows.
 	</p>
-	<h2>Usage Examples</h2>
-	<p>
-	Perform ESPIRiT calibration and image reconstruction with
-	L1-wavelet regularization:
-	</p>
-	<div class="code">
-	<code>
-	<p>
-	&nbsp;$ ecalib kspace sensitivities<br>
-	&nbsp;$ sense -l1 -r0.001 kspace sensitivities image_out
-	</p>
-	</code>
-	</div>
+	<h2>Matlab Examples</h2>
 	<p>
 	The toolbox can also be used in combination with Matlab/Octave.
 	</p>
