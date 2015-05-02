@@ -75,11 +75,11 @@
       <h1><a>Berkeley Advanced Reconstruction Toolbox</a></h1>
 	<p>
 	<div>The Berkeley Advanced Reconstruction Toolbox (BART) is a free and open-source image-reconstruction
-framework for Magnetic Resonance Imaging. It consists of a
+framework for <strong>Computational Magnetic Resonance Imaging</strong>. It consists of a
 programming library and a toolbox of command-line programs. The library provides common operations on multi-dimensional
 arrays, Fourier and wavelet transforms, as well as generic implementations of iterative optimization algorithms.
-The command-line tools provide direct access to basic operations on multi-dimensional arrays as well as efficient
-implementations of many calibration and reconstruction algorithms for parallel imaging and compressed sensing.
+The command-line tools provide direct access to basic operations on multi-dimensional arrays as well
+as efficient implementations of many calibration and reconstruction algorithms for <strong>parallel imaging and compressed sensing</strong>.
 	</div>
 	<small>
 	<p>
@@ -90,11 +90,56 @@ sampling, R=7, RF-spoiled 3D-FLASH, B0 = 3T TR/TE = 4.3/1.0ms, partial echo .6, 
 Total reconstruction time: 51s including compression (14s), calibration (9s), iterative reconstruction (12s),
 and other processing steps (16s) on a multi-GPU system.
 	</div>
+	</p>
+	<h2>List of Features</h2>
 	<p>
+	<ul>
+	<li>basic features:
+		<ul>
+		<li>support for Linux, Mac OS X, and Windows (with Cygwin)</li>
+		<li>multi-dimensional operations on arrays</li>
+		<li>fast non-uniform Fourier Transform (nuFFT)</br>
+		<li>multi-dimensional (divergence-free) wavelet transform</br>
+		<li>parallel computation on multiple cores and with <strong>Graphical Processing Units (GPU)</strong></li>
+		</ul>
+	</li>
+	<li>iterative methods:
+		<ul>
+		<li>Conjugate Gradients (CG)</li>
+		<li>(Fast) Iterative Soft-Thresholding Algorithm (ISTA and FISTA)</li>
+		<li><strong>Alternating Direction Method of Multipliers (ADMM)</strong></li>
+		<li>Iteratively Regularized Gauss-Newton Method (IRGNM)</li>
+		</ul>
+	</li>
+	<li>calibration methods for parallel MRI:
+		<ul>
+		<li>direct calibration from k-space center</li>
+		<li>Walsh's method</li>
+		<li><strong>ESPIRiT</strong></li>
+		</ul>
+	</li>
+	<li>reconstruction methods for MRI:
+		<ul>
+		<li>iterative parallel imaging reconstruction: POCSENSE, SENSE</li>
+		<li><strong>compressed sensing and parallel imaging</strong></li>
+		<li>non-linear inverse reconstruction: NLINV (blind multi-channel deconvolution)</li>
+		<li>calibration-less parallel imaging: SAKE (structured low-rank matrix completion)</li>
+		</ul>
+	</li>
+	<li>regularization (in arbitrary dimensions):
+		<ul>
+		<li>Tikhonov</li>
+		<li>total variation</li>
+		<li>l1-wavelet</li>
+		<li>low-rank</li>
+		</ul>
+	</li>
+	</ul>
+	</p>
 	<h2>Example</h2>
 	<p>
 	Perform ESPIRiT calibration and image reconstruction with
-	L1-wavelet regularization:
+	l1-wavelet regularization:
 	</p>
 	<div class="code">
 	<code>
@@ -141,7 +186,7 @@ and other processing steps (16s) on a multi-GPU system.
 	<p>
 	See the README file included with the source code for further instructions and for Mac OS X and Windows.
 	</p>
-	<h2>Matlab Examples</h2>
+	<h2>Matlab Interface</h2>
 	<p>
 	The toolbox can also be used in combination with Matlab/Octave.
 	</p>
