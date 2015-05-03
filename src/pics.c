@@ -360,19 +360,20 @@ int main_pics(int argc, char* argv[])
 	}
 
 
-
-	// print some statistics
-
-	long T = md_calc_size(DIMS, pat_dims);
-	long samples = (long)pow(md_znorm(DIMS, pat_dims, pattern), 2.);
-
-	debug_printf(DP_INFO, "Size: %ld Samples: %ld Acc: %.2f\n", T, samples, (float)T / (float)samples); 
-
-	if (T == samples) {
+	if ((NULL != traj_file) && (NULL == pat_file)) {
 
 		md_free(pattern);
 		pattern = NULL;
 		nuconf.toeplitz = true;
+
+	} else {
+
+		// print some statistics
+
+		long T = md_calc_size(DIMS, pat_dims);
+		long samples = (long)pow(md_znorm(DIMS, pat_dims, pattern), 2.);
+
+		debug_printf(DP_INFO, "Size: %ld Samples: %ld Acc: %.2f\n", T, samples, (float)T / (float)samples);
 	}
 
 	if (NULL == traj_file) {
