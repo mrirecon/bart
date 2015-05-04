@@ -107,7 +107,7 @@ TMRI=rss homodyne pattern poisson twixread
 TSIM=phantom traj
 BTARGETS = $(TBASE) $(TFLP) $(TNUM)
 XTARGETS = bart $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
-TARGETS = $(BTARGETS) $(XTARGETS)
+TARGETS = sense $(BTARGETS) $(XTARGETS)
 
 
 
