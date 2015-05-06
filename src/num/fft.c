@@ -54,7 +54,7 @@ void fftscale(unsigned int N, const long dims[N], unsigned long flags, complex f
 }
 
 
-static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src, complex float phase)
+static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src, complex double phase)
 {
 	if (0 == flags) {
 
@@ -115,7 +115,7 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 
 	for (unsigned int j = 0; j < dims[i]; j++)
 		fftmod2_r(N, tdims, MD_CLEAR(flags, i), ostrs, (void*)dst + j * ostrs[i], istrs, (void*)src + j * istrs[i],
-				phase * -cexpf(M_PI * 1.i * ((float)j - ((0 == dims[i] % 2) ? 0. : (float)j / (float)dims[i]))));
+				phase * -cexp(M_PI * 1.i * ((double)j - ((0 == dims[i] % 2) ? 0. : (double)j / (double)dims[i]))));
 
 }
 

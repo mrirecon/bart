@@ -399,8 +399,10 @@ static void zfftmod(long N, complex float* dst, const complex float* src, unsign
 {
 	for (long i = 0; i < N; i++)
 		for (unsigned int j = 0; j < n; j++)
-			dst[i * n + j] = src[i * n + j] * phase * cexpf(M_PI * 1.i * ((float)j
-						+ ((0 == n % 2) ? 0. : -(float)j / (float)n)));
+			dst[i * n + j] = src[i * n + j] * phase * cexp(M_PI * 1.i * ((double)j
+                                               + ((0 == n % 2) ? 0. : -(double)j / (double)n)));
+//			dst[i * n + j] = src[i * n + j] * phase * ((0 == j % 2) ? 1. : -1.) *
+//					((0 == n % 2) ? 1. : cexp(M_PI * -1.i * (double)j / (double)n));
 }
 
 

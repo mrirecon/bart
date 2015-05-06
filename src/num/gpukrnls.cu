@@ -342,6 +342,14 @@ extern "C" void cuda_pow(long N, float* dst, const float* src1, const float* src
 	cuda_3op(kern_pow, N, dst, src1, src2);
 }
 
+__device__ cuDoubleComplex zexpD(cuDoubleComplex x)
+{
+	double sc = exp(cuCreal(x));
+	double si;
+	double co;
+	sincos(cuCimag(x), &si, &co);
+	return make_cuDoubleComplex(sc * co, sc * si);
+}
 
 __device__ cuFloatComplex zexp(cuFloatComplex x)
 {
@@ -614,6 +622,15 @@ extern "C" void cuda_le(long N, float* dst, const float* src1, const float* src2
 	kern_zcmp<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
+__device__ cuFloatComplex cuDouble2Float(cuDoubleComplex x)
+{
+	return make_cuFloatComplex(cuCreal(x), cuCimag(x));
+}
+
+__device__ cuDoubleComplex cuFloat2Double(cuFloatComplex x)
+{
+	return make_cuDoubleComplex(cuCrealf(x), cuCimagf(x));
+}
 
 __global__ void kern_zfftmod(int N, cuFloatComplex* dst, const cuFloatComplex* src, unsigned int n, cuFloatComplex phase)
 {
@@ -622,10 +639,17 @@ __global__ void kern_zfftmod(int N, cuFloatComplex* dst, const cuFloatComplex* s
 
 	for (int i = start; i < N; i += stride)
 		for (int j = 0; j < n; j++)
+#if 0
 			dst[i * n + j] = cuCmulf(phase,
 				cuCmulf(zexp(make_cuFloatComplex(0.,
 						M_PI * ((float)j - ((0 == n % 2) ? 0. : (float)j / (float)n)))),
 					src[i * n + j]));
+#else
+			dst[i * n + j] = cuDouble2Float(cuCmul(cuFloat2Double(phase),
+				cuCmul(zexpD(make_cuDoubleComplex(0.,
+						M_PI * ((double)j - ((0 == n % 2) ? 0. : (double)j / (double)n)))),
+					cuFloat2Double(src[i * n + j]))));
+#endif
 }
 
 extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Complex float phase)
