@@ -105,7 +105,8 @@ TRECO=pics pocsense rsense bpsense itsense nlinv nufft rof sake
 TCALIB=ecalib caldir walsh cc calmat svd
 TMRI=rss homodyne pattern poisson twixread
 TSIM=phantom traj
-BTARGETS = $(TBASE) $(TFLP) $(TNUM)
+TIO=toimg
+BTARGETS = $(TBASE) $(TFLP) $(TNUM) $(TIO)
 XTARGETS = bart $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
 TARGETS = sense $(BTARGETS) $(XTARGETS)
 
@@ -231,7 +232,7 @@ endif
 
 
 # png
-PNG_L := #-lpng -lz
+PNG_L := -lpng -lz
 
 
 # fftw
