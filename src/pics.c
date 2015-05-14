@@ -429,7 +429,7 @@ int main_pics(int argc, char* argv[])
 
 		double maxeigen = estimate_maxeigenval(forward_op->normal);
 
-		debug_printf(DP_INFO, "Maximum eigenvalue: %.2lf\n", maxeigen);
+		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
 
 		step /= maxeigen;
 	}

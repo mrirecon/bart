@@ -17,7 +17,6 @@ extern "C" {
 #include "iter/iter2.h"
 
 
-//typedef void (*thresh_fun_t)(void* data, float lambda, _Complex float* dst, const _Complex float* src);
 
 /**
  * configuration parameters for sense reconstruction

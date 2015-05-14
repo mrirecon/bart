@@ -39,6 +39,7 @@
 
 
 const struct iter_conjgrad_conf iter_conjgrad_defaults = {
+
 	.maxiter = 50,
 	.l2lambda = 0.,
 	.tol = 0.,
@@ -46,12 +47,14 @@ const struct iter_conjgrad_conf iter_conjgrad_defaults = {
 
 
 const struct iter_landweber_conf iter_landweber_defaults = {
+
 	.maxiter = 50,
 	.step = 0.95,
 	.tol = 0.,
 };
 
 const struct iter_ist_conf iter_ist_defaults = {
+
 	.maxiter = 50,
 	.step = 0.95,
 	.continuation = 1.,
@@ -61,6 +64,7 @@ const struct iter_ist_conf iter_ist_defaults = {
 
 
 const struct iter_fista_conf iter_fista_defaults = {
+
 	.maxiter = 50,
 	.step = 0.95,
 	.continuation = 1.,

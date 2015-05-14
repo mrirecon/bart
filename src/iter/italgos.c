@@ -215,7 +215,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 			debug_printf(DP_DEBUG2, "##lambda_scale = %f\n", lambda_scale);
 
 
-		thresh(tdata,  tau, x, x);
+		thresh(tdata, tau, x, x);
 
 
 		op(data, r, x);		// r = A x
@@ -839,6 +839,7 @@ double power(unsigned int maxiter,
 		s = vops->norm(N, u);
 		vops->smul(N, 1. / s, u, u);
 	}
+
 	return s;
 }
 

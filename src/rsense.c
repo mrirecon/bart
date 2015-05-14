@@ -1,9 +1,9 @@
-/* Copyright 2015. The Regents of the University of California.
+/* Copyright 2013. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
 #define _GNU_SOURCE

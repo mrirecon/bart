@@ -105,8 +105,8 @@ static void lowrank(float alpha, int D, const long dims[D], complex float* matri
 {
 	assert(1 == dims[MAPS_DIM]);
 
-	debug_printf(DP_INFO, "mat_dims = \t");
-	debug_print_dims(DP_INFO, D, dims);
+	debug_printf(DP_DEBUG3, "mat_dims = \t");
+	debug_print_dims(DP_DEBUG3, D, dims);
 
 	long kern_min[4] = { 6, 6, 6, dims[COIL_DIM] };
 	long kern_dims[D];
@@ -114,14 +114,14 @@ static void lowrank(float alpha, int D, const long dims[D], complex float* matri
 	md_set_dims(D, kern_dims, 1);
 	md_min_dims(4, ~0u, kern_dims, kern_min, dims);
 
-	debug_printf(DP_INFO, "kern_dims = \t");
-	debug_print_dims(DP_INFO, D, kern_dims);
+	debug_printf(DP_DEBUG3, "kern_dims = \t");
+	debug_print_dims(DP_DEBUG3, D, kern_dims);
 
 	long calmat_dims[2];
 	casorati_dims(D, calmat_dims, kern_dims, dims);
 
-	debug_printf(DP_INFO, "calmat_dims = \t");
-	debug_print_dims(DP_INFO, 2, calmat_dims);
+	debug_printf(DP_DEBUG3, "calmat_dims = \t");
+	debug_print_dims(DP_DEBUG3, 2, calmat_dims);
 
 	complex float* calmat = md_alloc(2, calmat_dims, CFL_SIZE);
 

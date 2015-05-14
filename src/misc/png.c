@@ -1,4 +1,4 @@
-/* Copyright 2015. The Regents of the University of California.
+/* Copyright 2013. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -44,7 +44,7 @@ int png_write_rgb24(const char* name, unsigned int w, unsigned int h, const unsi
 	row_ptrs = xmalloc(sizeof(png_bytep) * h);
 	int row_size = png_get_rowbytes(structp, infop);
 
-	for (int i = 0; i < h; i++)
+	for (unsigned int i = 0; i < h; i++)
 		row_ptrs[i] = (png_bytep)(buf + row_size * i);
 
 	png_write_image(structp, row_ptrs);
