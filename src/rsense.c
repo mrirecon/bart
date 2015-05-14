@@ -1,9 +1,9 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2015. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
 #define _GNU_SOURCE
@@ -63,10 +63,10 @@ int main_rsense(int argc, char* argv[])
 	bool scale_im = false;
 
 	struct sense_conf sconf = sense_defaults;
-	struct grecon_conf conf = { SENSE, NULL, &sconf, false, false, false, true, 30, 0.95, 0. };
+	struct grecon_conf conf = { NULL, &sconf, false, false, false, true, 30, 0.95, 0. };
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "l:r:s:i:q:cSgh"))) {
+	while (-1 != (c = getopt(argc, argv, "l:r:s:i:Sgh"))) {
 
 		switch(c) {
 
@@ -77,10 +77,6 @@ int main_rsense(int argc, char* argv[])
 		case 's':
 			conf.step = atof(optarg);
 			break;
-
-		case 'q':
-		        conf.sense_conf->cclambda = atof(optarg);
-		        break;
 
 		case 'i':
 			conf.maxiter = atoi(optarg);
@@ -106,10 +102,6 @@ int main_rsense(int argc, char* argv[])
 			usage(argv[0], stdout);
 			help();
 			exit(0);
-
-		case 'c':
-			conf.sense_conf->rvc = true;
-			break;
 
 		case 'g':
 			usegpu = true;

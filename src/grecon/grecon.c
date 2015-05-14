@@ -19,10 +19,6 @@
 
 #include "linops/linop.h"
 
-#ifndef STANFORD_OFFLINERECON
-#include "noir/recon.h"
-#endif
-
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
@@ -62,7 +58,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 	const long w1_dims[DIMS], const complex float* weights,
 	complex float* kspace1, bool usegpu)
 {
-	struct sense_conf* conf = param->sense_conf;
+	const struct sense_conf* conf = param->sense_conf;
 
 	long ksp1_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, ksp1_dims, dims1);
@@ -107,16 +103,6 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		sens1 = cov1;
 	}
 
-	if (NOIR == param->algo) {
-
-		assert(NULL == param->calib);
-		assert(1 == dims1[MAPS_DIM]);
-
-		sens1 = md_alloc(DIMS, dims1, CFL_SIZE);
-		md_clear(DIMS, dims1, sens1, CFL_SIZE);
-		fftmod(DIMS, ksp1_dims, FFT_FLAGS, kspace1, kspace1);
-	}
-
 	fftmod(DIMS, dims1, FFT_FLAGS, sens1, sens1);
 	fftmod(DIMS, ksp1_dims, FFT_FLAGS, kspace1, kspace1);
 
@@ -125,7 +111,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 	long img1_dims[DIMS];
 	md_select_dims(DIMS, ~COIL_FLAG, img1_dims, dims1);
 
-	if (param->ksp && (POCS != param->algo)) {
+	if (param->ksp) {
 
 		image1 = md_alloc(DIMS, img1_dims, CFL_SIZE);
 		md_clear(DIMS, img1_dims, image1, CFL_SIZE);
@@ -150,6 +136,8 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 	const struct operator_p_s* thresh_op = NULL;
 
 	if (param->l1wav) {
+
+		debug_printf(DP_DEBUG3, "Lambda: %f\n", param->lambda);
 
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
 		minsize[0] = MIN(img1_dims[0], 16);
@@ -200,50 +188,22 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 		omp_set_lock(&gpulock[gpun]);
 
-		switch (param->algo) {
-		case SENSE:
-			sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, true);
-			sense_recon_gpu(conf, dims1, image1, sens1, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
-			//linop_free(sop);
-			break;
-		case POCS:
-			pocs_recon_gpu(dims1, thresh_op, param->maxiter, param->lambda, -1., image1, sens1, pattern, kspace1);
-			break;
-		default:
-			assert(0);
-			break;
-		}
-
+		sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, true);
+		sense_recon_gpu(conf, dims1, image1, sop, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
+		//linop_free(sop);
 		omp_unset_lock(&gpulock[gpun]);
 
 	} else 
 #endif
 	{
-		switch (param->algo) {
-		case SENSE:
-			sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, false);
-			sense_recon(conf, dims1, image1, sop, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
-			//linop_free(sop);
-			break;
-		case POCS:
-			pocs_recon(dims1, thresh_op, param->maxiter, param->lambda, -1., image1, sens1, pattern, kspace1);
-			break;
-		case NOIR:
-#ifndef STANFORD_OFFLINERECON
-			noir_recon(dims1, param->maxiter, param->l1wav ? param->lambda : -1., image1, sens1, pattern, NULL, kspace1, false, false);
-#else
-			assert(0);
-#endif
-			break;
-		default:
-			assert(0);
-			break;
-		}
+		sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, false);
+		sense_recon(conf, dims1, image1, sop, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
+		//linop_free(sop);
 	}
 
 	// FIXME: free thresh_op
 
-	if (param->ksp && (POCS != param->algo)) {
+	if (param->ksp) {
 
 		if (param->rplksp)
 			replace_kspace(dims1, out1, kspace1, sens1, image1);
@@ -258,7 +218,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 	if (NULL == weights)
 		md_free((void*)pattern);
 
-	if ((NULL != param->calib) || (NOIR == param->algo))
+	if (NULL != param->calib)
 		md_free(sens1);
 
 	if (param->l1wav)

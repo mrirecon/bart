@@ -17,13 +17,11 @@ extern "C" {
 
 struct ecalib_conf;
 
-enum algo { SENSE, POCS, NOIR };
 
 struct grecon_conf {
 
-	enum algo algo;
 	const struct ecalib_conf* calib;
-	struct sense_conf* sense_conf;
+	const struct sense_conf* sense_conf;
 	bool rplksp;
 	bool ksp;
 	bool l1wav;
