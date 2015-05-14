@@ -6,15 +6,12 @@
 #ifndef __SENSE_H
 #define __SENSE_H 1
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 #include "misc/mri.h"
 #include "iter/iter.h"
 #include "iter/iter2.h"
+
+#include "misc/cppwrap.h"
+
 
 
 
@@ -42,8 +39,8 @@ extern void sense_recon2_gpu(const struct sense_conf* conf, const long dims[DIMS
 			const long pat_dims[DIMS], const _Complex float* pattern,
 			italgo_fun2_t italgo, void* italgo_conf,
 			unsigned int num_funs,
-			const struct operator_p_s* thresh_op[num_funs],
-			const struct linop_s* thresh_funs[num_funs],
+			const struct operator_p_s* thresh_op[__VLA2(num_funs)],
+			const struct linop_s* thresh_funs[__VLA2(num_funs)],
 			const long ksp_dims[DIMS], const _Complex float* kspace, const _Complex float* image_truth);
 
 extern void sense_recon_gpu(const struct sense_conf* conf, const long dims[DIMS], _Complex float* image,
@@ -65,17 +62,15 @@ extern void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], _
 			const long pat_dims[DIMS], const _Complex float* pattern,
 			italgo_fun2_t italgo, void* italgo_conf,
 			unsigned int num_funs,
-			const struct operator_p_s* thresh_op[num_funs],
-			const struct linop_s* thresh_funs[num_funs],
+			const struct operator_p_s* thresh_op[__VLA2(num_funs)],
+			const struct linop_s* thresh_funs[__VLA2(num_funs)],
 			const long ksp_dims[DIMS], const _Complex float* kspace, const _Complex float* image_truth);
 
 extern void debug_print_sense_conf(int debug_level, const struct sense_conf* conf);
 
 
 
-#ifdef __cplusplus
-}
-#endif
+#include "misc/cppwrap.h"
 
 #endif
 
