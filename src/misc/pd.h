@@ -3,6 +3,10 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
+#ifdef __cplusplus
+#error This file does not support C++
+#endif
+
 extern int poissondisc(int D, int N, int II, float vardens, float delta, float points[N][D]);
 extern int poissondisc_mc(int D, int T, int N, int II, float vardens, const float delta[T][T], float points[N][D], int kind[N]);
 

@@ -3,6 +3,9 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
+#ifdef __cplusplus
+#error This file does not support C++
+#endif
 
 #include <stdlib.h>
 

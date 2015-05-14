@@ -1,6 +1,7 @@
 
+#include "misc/cppwrap.h"
 
+extern struct linop_s* rvc_create(unsigned int N, const long dims[__VLA(N)]);
 
-extern struct linop_s* rvc_create(unsigned int N, const long dims[N]);
-
+#include "misc/cppwrap.h"
 

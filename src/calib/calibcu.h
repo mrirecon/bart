@@ -4,13 +4,5 @@
  */
  
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr, const _Complex float* imgcov2);
-
-#ifdef __cplusplus
-}
-#endif 
 

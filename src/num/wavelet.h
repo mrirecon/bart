@@ -3,19 +3,9 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
+#include "num/multind.h"
 
-#ifdef __cplusplus
-extern "C" {
-#ifndef __VLA
-#define __VLA(x)
-#endif
-#else
-#ifndef __VLA
-#define __VLA(x) static x
-#endif
-#endif
-
-
+#include "misc/cppwrap.h"
 
 extern void md_wavtrafo2(int D, const long dims[__VLA(D)], unsigned int flags, const long strs[__VLA(D)], void* ptr, md_trafo_fun_t fun, _Bool inv, _Bool nosort);
 extern void md_wavtrafo(int D, const long dims[__VLA(D)], unsigned int flags, void* ptr, size_t size, md_trafo_fun_t fun, _Bool inv, _Bool nosort);
@@ -29,10 +19,6 @@ extern void md_resortz(int D, const long dims[__VLA(D)], unsigned int flags, _Co
 extern void md_iresortz(int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* data);
 
 
-
-
-#ifdef __cplusplus
-}
-#endif
+#include "misc/cppwrap.h"
 
 

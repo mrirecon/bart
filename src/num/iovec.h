@@ -9,6 +9,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "misc/cppwrap.h"
+
 struct iovec_s {
 	
 	unsigned int N;
@@ -18,12 +20,12 @@ struct iovec_s {
 };
 
 
-extern const struct iovec_s* iovec_create(unsigned int N, const long dims[N], size_t size);
-extern const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const long strs[N], size_t size);
+extern const struct iovec_s* iovec_create(unsigned int N, const long dims[__VLA(N)], size_t size);
+extern const struct iovec_s* iovec_create2(unsigned int N, const long dims[__VLA(N)], const long strs[__VLA(N)], size_t size);
 extern void iovec_free(const struct iovec_s* x);
-extern bool iovec_check(const struct iovec_s* iov, unsigned int N, const long dims[N], const long strs[N]);
+extern bool iovec_check(const struct iovec_s* iov, unsigned int N, const long dims[__VLA(N)], const long strs[__VLA(N)]);
 
 extern void debug_print_iovec(int level, const struct iovec_s* vec);
 
-
+#include "misc/cppwrap.h"
 

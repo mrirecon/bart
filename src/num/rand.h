@@ -3,17 +3,13 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "misc/cppwrap.h"
 
 extern double uniform_rand(void);
 extern _Complex double gaussian_rand(void);
-extern void md_gaussian_rand(unsigned int D, const long dims[D], _Complex float* dst);
+extern void md_gaussian_rand(unsigned int D, const long dims[__VLA(D)], _Complex float* dst);
 
 extern void num_rand_init(unsigned int seed);
 
-#ifdef __cplusplus
-}
-#endif
+#include "misc/cppwrap.h"
 

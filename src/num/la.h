@@ -6,6 +6,10 @@
 #include <complex.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+#error This file does not support C++
+#endif
+
 extern void mat_identity(int A, int B, complex float x[A][B]);
 extern void mat_zero(int A, int B, complex float x[A][B]);
 extern void mat_gaussian(int A, int B, complex float x[A][B]);

@@ -6,14 +6,10 @@
 #ifndef __LSQR_H
 #define __LSQR_H 1
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 #include "iter/iter.h"
 #include "iter/iter2.h"
+
+#include "misc/cppwrap.h"
 
 struct operator_s;
 struct operator_p_s;
@@ -35,16 +31,16 @@ extern void lsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun_t italgo, void* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
-			const long x_dims[N], _Complex float* x, 
-			const long y_dims[N], const _Complex float* y);
+			const long x_dims[__VLA(N)], _Complex float* x,
+			const long y_dims[__VLA(N)], const _Complex float* y);
 
 extern void wlsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun_t italgo, void* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
-			const long x_dims[N], _Complex float* x,
-			const long y_dims[N], const _Complex float* y,
-			const long w_dims[N], const _Complex float* w);
+			const long x_dims[__VLA(N)], _Complex float* x,
+			const long y_dims[__VLA(N)], const _Complex float* y,
+			const long w_dims[__VLA(N)], const _Complex float* w);
 
 extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun2_t italgo, void* iconf,
@@ -52,8 +48,8 @@ extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			unsigned int num_funs,
 			const struct operator_p_s** prox_funs,
 			const struct linop_s** prox_linops,
-			const long x_dims[N], _Complex float* x,
-			const long y_dims[N], const _Complex float* y,
+			const long x_dims[__VLA(N)], _Complex float* x,
+			const long y_dims[__VLA(N)], const _Complex float* y,
 			const _Complex float* x_truth,
 			void* obj_eval_data,
 			float (*obj_eval)(const void*, const float*));
@@ -66,16 +62,16 @@ extern void lsqr(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun_t italgo, void* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
-			const long x_dims[N], _Complex float* x, 
-			const long y_dims[N], const _Complex float* y);
+			const long x_dims[__VLA(N)], _Complex float* x,
+			const long y_dims[__VLA(N)], const _Complex float* y);
 
 extern void wlsqr(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun_t italgo, void* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
-			const long x_dims[N], _Complex float* x,
-			const long y_dims[N], const _Complex float* y,
-			const long w_dims[N], const _Complex float* w);
+			const long x_dims[__VLA(N)], _Complex float* x,
+			const long y_dims[__VLA(N)], const _Complex float* y,
+			const long w_dims[__VLA(N)], const _Complex float* w);
 
 extern void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun2_t italgo, void* iconf,
@@ -83,8 +79,8 @@ extern void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
 			unsigned int num_funs,
 			const struct operator_p_s** prox_funs,
 			const struct linop_s** prox_linops,
-			const long x_dims[N], _Complex float* x,
-			const long y_dims[N], const _Complex float* y,
+			const long x_dims[__VLA(N)], _Complex float* x,
+			const long y_dims[__VLA(N)], const _Complex float* y,
 			const _Complex float* x_truth,
 			void* obj_eval_data,
 			float (*obj_eval)(const void*, const float*));
@@ -95,14 +91,12 @@ extern void wlsqr2(	unsigned int N, const struct lsqr_conf* conf,
 			unsigned int num_funs,
 			const struct operator_p_s** prox_funs,
 			const struct linop_s** prox_linops,
-			const long x_dims[N], complex float* x,
-			const long y_dims[N], const complex float* y,
-			const long w_dims[N], const complex float* w);
+			const long x_dims[__VLA(N)], complex float* x,
+			const long y_dims[__VLA(N)], const complex float* y,
+			const long w_dims[__VLA(N)], const complex float* w);
 
 
-#ifdef __cplusplus
-}
-#endif
+#include "misc/cppwrap.h"
 
 #endif
 
