@@ -18,6 +18,7 @@
 #include <math.h>
 #include <unistd.h>
 #include <string.h>
+#include <libgen.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
