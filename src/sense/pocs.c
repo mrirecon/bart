@@ -100,9 +100,9 @@ static void sparsity_proj_apply(const void* _data, float mu, complex float* dst,
 	// FIXME fftmod is slow
 #if 0
 	fftscale(DIMS, dims, FFT_FLAGS, dst, dst);
-	fftmod(DIMS, dims, FFT_FLAGS, dst, dst);
+	ifftmod(DIMS, dims, FFT_FLAGS, dst, dst);
 #else
-	md_zmul2(DIMS, dims, data->strs_ksp, dst, data->strs_pat, data->fftmod_mat, data->strs_ksp, dst);
+	md_zmulc2(DIMS, dims, data->strs_ksp, dst, data->strs_ksp, dst, data->strs_pat, data->fftmod_mat);
 #endif
 
 	operator_p_apply(data->thresh, mu, DIMS, dims, dst, DIMS, dims, dst);
@@ -111,7 +111,7 @@ static void sparsity_proj_apply(const void* _data, float mu, complex float* dst,
 	fftmod(DIMS, dims, FFT_FLAGS, dst, dst);
 	fftscale(DIMS, dims, FFT_FLAGS, dst, dst);
 #else
-	md_zmul2(DIMS, dims, data->strs_ksp, dst, data->strs_pat, data->fftmod_mat, data->strs_ksp, dst);
+	md_zmul2(DIMS, dims, data->strs_ksp, dst, data->strs_ksp, dst, data->strs_pat, data->fftmod_mat);
 #endif
 	fft(DIMS, dims, FFT_FLAGS, dst, dst);
 }

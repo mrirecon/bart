@@ -632,29 +632,49 @@ __device__ cuDoubleComplex cuFloat2Double(cuFloatComplex x)
 	return make_cuDoubleComplex(cuCrealf(x), cuCimagf(x));
 }
 
-__global__ void kern_zfftmod(int N, cuFloatComplex* dst, const cuFloatComplex* src, unsigned int n, cuFloatComplex phase)
+// identical copy in num/fft.c
+__device__ double fftmod_phase(long length, int j)
+{
+	long center1 = length / 2;
+	double shift = (double)center1 / (double)length;
+	return ((double)j - (double)center1 / 2.) * shift;
+}
+
+__device__ cuDoubleComplex fftmod_phase2(long n, int j, bool inv, double phase)
+{
+	phase += fftmod_phase(n, j);
+	double rem = phase - floor(phase);
+	double sgn = inv ? -1. : 1.;
+#if 1
+	if (rem == 0.)
+		return make_cuDoubleComplex(1., 0.);
+
+	if (rem == 0.5)
+		return make_cuDoubleComplex(-1., 0.);
+
+	if (rem == 0.25)
+		return make_cuDoubleComplex(0., sgn);
+
+	if (rem == 0.75)
+		return make_cuDoubleComplex(0., -sgn);
+#endif
+	return zexpD(make_cuDoubleComplex(0., M_PI * 2. * sgn * rem));
+}
+
+__global__ void kern_zfftmod(int N, cuFloatComplex* dst, const cuFloatComplex* src, unsigned int n, _Bool inv, double phase)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
 	for (int i = start; i < N; i += stride)
 		for (int j = 0; j < n; j++)
-#if 0
-			dst[i * n + j] = cuCmulf(phase,
-				cuCmulf(zexp(make_cuFloatComplex(0.,
-						M_PI * ((float)j - ((0 == n % 2) ? 0. : (float)j / (float)n)))),
-					src[i * n + j]));
-#else
-			dst[i * n + j] = cuDouble2Float(cuCmul(cuFloat2Double(phase),
-				cuCmul(zexpD(make_cuDoubleComplex(0.,
-						M_PI * ((double)j - ((0 == n % 2) ? 0. : (double)j / (double)n)))),
-					cuFloat2Double(src[i * n + j]))));
-#endif
+			dst[i * n + j] = cuDouble2Float(cuCmul(fftmod_phase2(n, j, inv, phase),
+						 cuFloat2Double(src[i * n + j])));
 }
 
-extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Complex float phase)
+extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Bool inv, double phase)
 {
-	kern_zfftmod<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src, n, *(cuFloatComplex*)&phase);
+	kern_zfftmod<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src, n, inv, phase);
 }
 
 

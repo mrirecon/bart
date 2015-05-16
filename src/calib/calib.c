@@ -252,8 +252,6 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 			}
 		}
 	}
-
-	//printf("Done.\n");
 }
 
 
@@ -596,7 +594,7 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 
 	long m2str[5] = { mstr[2], mstr[3], mstr[4], mstr[1], mstr[0] };
 
-	fftmod(5, imgkern_dims, FFT_FLAGS, imgkern1, imgkern1);
+	ifftmod(5, imgkern_dims, FFT_FLAGS, imgkern1, imgkern1);
 	ifft2(5, imgkern_dims, FFT_FLAGS, m2str, imgkern2, istr, imgkern1);
 
 	float scalesq = (kx * ky * kz) * (xh * yh * zh); // second part for FFT scaling

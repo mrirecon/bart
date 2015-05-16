@@ -29,9 +29,13 @@ extern "C" {
 extern void fftmod(unsigned int N, const long dims[__VLA(N)], unsigned long flags, _Complex float* dst, const _Complex float* src);
 extern void fftmod2(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, const long ostrides[__VLA(D)], _Complex float* dst, const long istrides[__VLA(D)], const _Complex float* src);
 
-// fftmod for kspace
+// fftmod for kspace (deprecated)
 extern void fftmodk(unsigned int N, const long dims[__VLA(N)], unsigned long flags, _Complex float* dst, const _Complex float* src);
 extern void fftmodk2(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, const long ostrides[__VLA(D)], _Complex float* dst, const long istrides[__VLA(D)], const _Complex float* src);
+
+// fftmod for ifft
+extern void ifftmod(unsigned int N, const long dims[__VLA(N)], unsigned long flags, _Complex float* dst, const _Complex float* src);
+extern void ifftmod2(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, const long ostrides[__VLA(D)], _Complex float* dst, const long istrides[__VLA(D)], const _Complex float* src);
 
 // apply scaling necessary for unitarity
 extern void fftscale(unsigned int N, const long dims[__VLA(N)], unsigned long flags, _Complex float* dst, const _Complex float* src);
@@ -40,6 +44,11 @@ extern void fftscale2(unsigned int D, const long dimensions[__VLA(D)], unsigned 
 // fftshift
 extern void fftshift(unsigned int N, const long dims[__VLA(N)], unsigned long flags, _Complex float* dst, const _Complex float* src);
 extern void fftshift2(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, const long ostrides[__VLA(D)], _Complex float* dst, const long istrides[__VLA(D)], const _Complex float* src);
+
+// ifftshift
+extern void ifftshift(unsigned int N, const long dims[__VLA(N)], unsigned long flags, _Complex float* dst, const _Complex float* src);
+extern void ifftshift2(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, const long ostrides[__VLA(D)], _Complex float* dst, const long istrides[__VLA(D)], const _Complex float* src);
+
 
 
 // FFT

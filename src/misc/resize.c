@@ -245,14 +245,18 @@ void sinc_resize(unsigned int D, const long out_dims[D], complex float* out, con
 
 	fftmod(D, in_dims, flags, tmp, in);
 	fft(D, in_dims, flags, tmp, tmp);
+	fftmod(D, in_dims, flags, tmp, tmp);
+	// NOTE: the inner fftmod/ifftmod should cancel for N % 4 == 0
+	// and could be replaced by a sign change for N % 4 == 1
 
-	// Use md_resizec crop or zero pad, depending on whether we are sizing down or up
+	// md_resize_center can size up or down
 	md_resize_center(D, out_dims, out, in_dims, tmp, CFL_SIZE);
 
 	md_free(tmp);
 
+	ifftmod(D, out_dims, flags, out, out);	// see above
 	ifft(D, out_dims, flags, out, out);
-	fftmod(D, out_dims, flags, out, out);
+	ifftmod(D, out_dims, flags, out, out);
 }
 
 
@@ -264,7 +268,6 @@ void sinc_resize(unsigned int D, const long out_dims[D], complex float* out, con
 /* scale using zero-padding in the Fourier domain - scale each dimensions in sequence (faster)
  *
  */
-
 void sinc_zeropad(unsigned int D, const long out_dims[D], complex float* out, const long in_dims[D], const complex float* in)
 {
 	unsigned int i = D - 1;

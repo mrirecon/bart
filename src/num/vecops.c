@@ -1,9 +1,9 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2015. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011, 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2011, 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -395,14 +395,41 @@ static void swap(long N, float* a, float* b)
 	}
 }
 
-static void zfftmod(long N, complex float* dst, const complex float* src, unsigned int n, complex float phase)
+
+// identical copy in num/fft.c
+static double fftmod_phase(long length, int j)
+{
+	long center1 = length / 2;
+	double shift = (double)center1 / (double)length;
+	return ((double)j - (double)center1 / 2.) * shift;
+}
+
+static complex double fftmod_phase2(long n, int j, bool inv, double phase)
+{
+	phase += fftmod_phase(n, j);
+	double rem = phase - floor(phase);
+	double sgn = inv ? -1. : 1.;
+#if 1
+	if (rem == 0.)
+		return 1.;
+
+	if (rem == 0.5)
+		return -1.;
+
+	if (rem == 0.25)
+		return 1.i * sgn;
+
+	if (rem == 0.75)
+		return -1.i * sgn;
+#endif
+	return cexp(M_PI * 2.i * sgn * rem);
+}
+
+static void zfftmod(long N, complex float* dst, const complex float* src, unsigned int n, bool inv, double phase)
 {
 	for (long i = 0; i < N; i++)
 		for (unsigned int j = 0; j < n; j++)
-			dst[i * n + j] = src[i * n + j] * phase * cexp(M_PI * 1.i * ((double)j
-                                               + ((0 == n % 2) ? 0. : -(double)j / (double)n)));
-//			dst[i * n + j] = src[i * n + j] * phase * ((0 == j % 2) ? 1. : -1.) *
-//					((0 == n % 2) ? 1. : cexp(M_PI * -1.i * (double)j / (double)n));
+			dst[i * n + j] = src[i * n + j] * fftmod_phase2(n, j, inv, phase);
 }
 
 

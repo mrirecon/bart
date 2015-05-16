@@ -2846,7 +2846,8 @@ void md_zfdiff_backwards(unsigned int D, const long dims[D], unsigned int d, com
 
 struct zfftmod_s {
 
-	complex float phase;
+	double phase;
+	bool inv;
 	unsigned int N;
 };
 
@@ -2855,11 +2856,11 @@ static void nary_zfftmod(void* _data, void* ptr[])
 	struct data_s* data = (struct data_s*)_data;
 	struct zfftmod_s* mdata = (struct zfftmod_s*)data->data_ptr;
 
-	data->ops->zfftmod(data->size, ptr[0], ptr[1], mdata->N, mdata->phase);
+	data->ops->zfftmod(data->size, ptr[0], ptr[1], mdata->N, mdata->inv, mdata->phase);
 }
 
 // DO NOT USE DIRECTLY - this is used internally by fftmod from fft.[ch]
-void md_zfftmod2(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, complex float phase)
+void md_zfftmod2(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, bool inv, double phase)
 {
 	assert(D > 0);
 	assert((CFL_SIZE == ostrs[0]) && (CFL_SIZE == istrs[0]));
@@ -2867,13 +2868,13 @@ void md_zfftmod2(unsigned int D, const long dims[D], const long ostrs[D], comple
 	unsigned int N = dims[0];
 
 	optimized_twoop_oi(D - 1, dims + 1, ostrs + 1, optr, istrs + 1, iptr,
-		(size_t[2]){ N * CFL_SIZE, N * CFL_SIZE }, nary_zfftmod, &(struct zfftmod_s){ phase, N });
+		(size_t[2]){ N * CFL_SIZE, N * CFL_SIZE }, nary_zfftmod, &(struct zfftmod_s){ phase, inv, N });
 }
 
-void md_zfftmod(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr,  complex float phase)
+void md_zfftmod(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr, bool inv, double phase)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
-	md_zfftmod2(D, dims, strs, optr, strs, iptr, phase);
+	md_zfftmod2(D, dims, strs, optr, strs, iptr, inv, phase);
 }
 

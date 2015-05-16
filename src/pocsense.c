@@ -235,7 +235,7 @@ int main_pocsense(int argc, char* argv[])
 	else
 		pocs_recon2(italgo, iconf, (const struct linop_s**)ops2, dims, thresh_op, alpha, lambda, result, sens_maps, pattern, kspace_data);
 
-	fftmod(N, ksp_dims, FFT_FLAGS, result, result);
+	ifftmod(N, ksp_dims, FFT_FLAGS, result, result);
 
 
 	debug_printf(DP_INFO, "Done.\n");

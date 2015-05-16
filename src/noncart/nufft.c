@@ -53,7 +53,7 @@ struct nufft_data {
 	const complex float* traj;
 	const complex float* roll;
 	const complex float* psf;
-	const complex float* fftmodk;
+	const complex float* fftmod;
 	const complex float* weights;
 
 	complex float* grid;
@@ -204,10 +204,10 @@ struct linop_s* nufft_create(unsigned int N, const long ksp_dims[N], const long 
 	fftscale(ND, data->lph_dims, FFT_FLAGS, linphase, linphase);
 //	md_zsmul(ND, data->lph_dims, linphase, linphase, 1. / (float)(data->trj_dims[1] * data->trj_dims[2]));
 
-	complex float* fftmk = md_alloc(ND, data->img_dims, CFL_SIZE);
-	md_zfill(ND, data->img_dims, fftmk, 1.);
-	fftmodk(ND, data->img_dims, FFT_FLAGS, fftmk, fftmk);
-	data->fftmodk = fftmk;
+	complex float* fftm = md_alloc(ND, data->img_dims, CFL_SIZE);
+	md_zfill(ND, data->img_dims, fftm, 1.);
+	fftmod(ND, data->img_dims, FFT_FLAGS, fftm, fftm);
+	data->fftmod = fftm;
 
 
 
@@ -413,7 +413,7 @@ static void nufft_free_data(const void* _data)
 	md_free(data->grid);
 	md_free((void*)data->linphase);
 	md_free((void*)data->psf);
-	md_free((void*)data->fftmodk);
+	md_free((void*)data->fftmod);
 	md_free((void*)data->weights);
 
 	linop_free(data->fft_op);
@@ -435,7 +435,7 @@ static void nufft_apply(const void* _data, complex float* dst, const complex flo
 
 	md_zmul2(ND, data->cml_dims, data->cml_strs, data->grid, data->cim_strs, src, data->lph_strs, data->linphase);
 	linop_forward(data->fft_op, ND, data->cml_dims, data->grid, ND, data->cml_dims, data->grid);
-	md_zmul2(ND, data->cml_dims, data->cml_strs, data->grid, data->cml_strs, data->grid, data->img_strs, data->fftmodk);
+	md_zmul2(ND, data->cml_dims, data->cml_strs, data->grid, data->cml_strs, data->grid, data->img_strs, data->fftmod);
 
 	md_clear(ND, data->ksp_dims, dst, CFL_SIZE);
 
@@ -487,7 +487,7 @@ static void nufft_apply_adjoint(const void* _data, complex float* dst, const com
 
 	md_decompose(data->N, factors, data->cml_dims, data->grid, data->cm2_dims, gridX, CFL_SIZE);
 	md_free(gridX);
-	md_zmul2(ND, data->cml_dims, data->cml_strs, data->grid, data->cml_strs, data->grid, data->img_strs, data->fftmodk);
+	md_zmulc2(ND, data->cml_dims, data->cml_strs, data->grid, data->cml_strs, data->grid, data->img_strs, data->fftmod);
 	linop_adjoint(data->fft_op, ND, data->cml_dims, data->grid, ND, data->cml_dims, data->grid);
 
 	md_clear(ND, data->cim_dims, dst, CFL_SIZE);

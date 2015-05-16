@@ -629,7 +629,7 @@ static void fft_linop_apply(const void* _data, complex float* out, const complex
 	// fftmod + fftscale
 	if (data->center) {
 
-		md_zmul2(data->N, data->dims, data->strs, out, data->strs, data->fftmod_mat, data->strs, in);
+		md_zmul2(data->N, data->dims, data->strs, out, data->strs, in, data->strs, data->fftmod_mat);
 		ptr = out;
 	}
 
@@ -637,7 +637,7 @@ static void fft_linop_apply(const void* _data, complex float* out, const complex
 
 	// fftmodk
 	if (data->center)
-		md_zmul2(data->N, data->dims, data->strs, out, data->strs, data->fftmodk_mat, data->strs, out);
+		md_zmul2(data->N, data->dims, data->strs, out, data->strs, out, data->strs, data->fftmodk_mat);
 }
 
 static void fft_linop_adjoint(const void* _data, complex float* out, const complex float* in)
@@ -649,7 +649,7 @@ static void fft_linop_adjoint(const void* _data, complex float* out, const compl
 	// fftmodk
 	if (data->center) {
 
-		md_zmul2(data->N, data->dims, data->strs, out, data->strs, data->fftmodk_mat, data->strs, in);
+		md_zmulc2(data->N, data->dims, data->strs, out, data->strs, in, data->strs, data->fftmodk_mat);
 		ptr = out;
 	}
 
@@ -657,7 +657,7 @@ static void fft_linop_adjoint(const void* _data, complex float* out, const compl
 
 	// fftmod + fftscale
 	if (data->center)
-		md_zmul2(data->N, data->dims, data->strs, out, data->strs, data->fftmod_mat, data->strs, out);
+		md_zmulc2(data->N, data->dims, data->strs, out, data->strs, out, data->strs, data->fftmod_mat);
 }
 
 static void fft_linop_free(const void* _data)
