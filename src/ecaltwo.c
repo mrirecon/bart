@@ -136,7 +136,7 @@ int main_ecaltwo(int argc, char* argv[])
 	if (6 == argc - optind)
 		emaps = create_cfl(argv[optind + 5], DIMS, map_dims);
 	else
-		emaps = md_alloc(KSPACE_DIMS, map_dims, CFL_SIZE);
+		emaps = md_alloc(DIMS, map_dims, CFL_SIZE);
 
 	caltwo(&conf, out_dims, out_data, emaps, in_dims, in_data, NULL, NULL);
 

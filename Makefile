@@ -102,7 +102,7 @@ TBASE=slice crop resize join transpose zeros ones flip circshift extract repmat 
 TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize cdf97
 TNUM=fft fftmod fftshift noise bench threshold conv
 TRECO=pics pocsense rsense bpsense itsense nlinv nufft rof sake
-TCALIB=ecalib caldir walsh cc calmat svd
+TCALIB=ecalib ecaltwo caldir walsh cc calmat svd
 TMRI=rss homodyne pattern poisson twixread
 TSIM=phantom traj
 TIO=toimg
@@ -123,6 +123,7 @@ MODULES_rsense = -lgrecon -lsense -lnoir -lwavelet2 -lcalib -liter -llinops
 MODULES_bpsense = -lsense -lwavelet2 -lnoncart -liter -llinops
 MODULES_itsense = -liter -llinops
 MODULES_ecalib = -lcalib
+MODULES_ecaltwo = -lcalib
 MODULES_caldir = -lcalib
 MODULES_walsh = -lcalib
 MODULES_calmat = -lcalib
@@ -169,7 +170,7 @@ CPPFLAGS += -DUSE_CUDA $(CUDA_H)
 ifeq ($(BUILDTYPE), MacOSX)
 CUDA_L := -L$(cuda.top)/lib -lcufft -lcudart -lcublas -lcuda -m64 -lstdc++
 else
-CUDA_L := -L$(cuda.top)/lib64 -lcufft -lcudart -lcublas -lcuda -lstdc++
+CUDA_L := -L$(cuda.top)/lib64 -lcufft -lcudart -lcublas -lcuda -lstdc++ -Wl,-rpath $(cuda.top)/lib64
 endif 
 else
 CUDA_H :=

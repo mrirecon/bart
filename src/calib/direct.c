@@ -88,7 +88,7 @@ void direct_calib(const long dims[5], complex float* sens, const long caldims[5]
 		for (int j = 0; j < dims[COIL_DIM]; j++)
 			sens[j * T + i] *= (cabs(img[i]) == 0.) ? 0. : (1. / cabs(img[i]));
 #endif
-	free(img);
+	md_free(img);
 }
 
 

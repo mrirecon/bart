@@ -287,7 +287,7 @@ dimension can be used for different receiver coils as usual.
 
 
 4. Command-line Tools
-======================
+=====================
 
 All tools operate on the simple file format given above. Indices and
 dimensions run from 0 to N-1. Sometimes a set of dimensions is given
