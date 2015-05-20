@@ -1,0 +1,91 @@
+
+Centered FFT
+------------
+
+The center is N / 2 for even N and (N - 1) / 2 for odd N when
+counting from zero.
+
+
+Instead of using fftshift/ifftshift we usually use fftmod/ifftmod.
+While fftshift/ifftshift involves a cyclic copy of memory, fftmod
+applies a linear phase which has a similar effect. We prefer fftmod
+because we can usually merge this phase with other operations to
+reduce computation time.
+
+Though similar, there are some subtle differences which one has to 
+keep in mind.
+
+The correct use of fftshift/ifftshift for a centered forward/inverse
+FFT is the following:
+
+forward:
+
+1. ifftshift
+2.  fft
+3.  fftshift
+
+inverse:
+
+1. ifftshift
+2. ifft
+3.  fftshift
+
+
+In contrast, the correct use of fftmod/ifftmod for a centered
+forward/inverse FFT is this:
+
+forward:
+
+1.  fftmod
+2.  fft
+3.  fftmod
+
+inverse:
+
+1. ifftmod
+2. ifft
+3. ifftmod
+
+
+
+
+
+If \xi_N is the N-th root of unity with smallest positive complex
+argument, the uncentered forward DFT of length N is:
+
+\hat f(k) = \sum_{x=0}^{N-1} \xi_N^{-xk} f(x)
+
+
+Shifting the center from index 0 to new index c yields the 
+formula for the centered forward DFT of length N:
+
+\hat f_c(k) = \sum_{x=0}^{N-1} \xi_N^{-(x-c)(k-c)} f_c(x)
+
+Note that this corresponds to shifts in different directions
+for input and output. Expanding the exponent yields:
+
+(x-c)(k-c) = xk - xc - ck + c^2
+
+
+Thus, the centered FFT can be implemented by multiplication 
+with a linear phase before and after calling the uncentered 
+FFT:
+
+\hat f(k) = \xi_N^{(k-c/2)c} \sum_{x=0}^{N-1} \xi_N^{-xk} \x_N^{(x-c/2)c} f(x)
+
+Observe that this is the same linear phase applied to the input
+and output. Note that we distributed the additional phase \xi^{-c^2}
+evenly to both terms.
+
+If N is a multiple of four, then c^2 = N (N/4) and the additional
+phase term vanishes. Then \xi_N^{kc} and \xi_N^{xc} are simply the
+alternating sequence of 1, -1, 1, -1, ...  Because ifftmod applies 
+the conjugate phase this implies that it is the same as fftmod in
+this special case.
+
+If N is a multiple of two, the additional phase is -pi/2. Evenly
+distributed this yields a factor of '-i' (i the imaginary number),
+i.e. fftmod applies -i, +i, -i, +i, ...
+
+For N odd the phase is more complicated.
+

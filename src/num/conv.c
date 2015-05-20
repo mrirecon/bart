@@ -68,7 +68,7 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 	plan->idims = xmalloc(N * sizeof(long));
 	plan->odims = xmalloc(N * sizeof(long));
 
-	long U = 1;
+	complex float U = 1.;
 
         for (int i = 0; i < N; i++) {
 
@@ -77,8 +77,15 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 	
 		if (MD_IS_SET(flags, i)) {
 
-			assert((cmode != CONV_SYMMETRIC) || ((0 == idims1[i] % 2) && (1 == idims2[i] % 2)));
 			assert(idims2[i] <= idims1[i]);
+
+			if (cmode == CONV_SYMMETRIC) {
+
+				assert((0 == idims1[i] % 2) && (1 == idims2[i] % 2));
+
+				if (1 == (idims1[i] / 2) % 2)
+					U *= -1.i;
+			}
 
 			switch (ctype) {
 			case CONV_CYCLIC:
@@ -111,7 +118,7 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 
                 	plan->kdims[i] = (1 == idims2[i]) ? 1 : plan->dims1[i];
 
-			U *= plan->dims1[i];
+			U *= (float)plan->dims1[i];
 
 		} else {
 
@@ -170,7 +177,7 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 	}
 
 	
-        md_zsmul(N, plan->kdims, plan->kernel, plan->kernel, 1. / (float)U);
+        md_zsmul(N, plan->kdims, plan->kernel, plan->kernel, 1. / U);
 
 //	plan->fftplan = fft_plan(N, plan->dims, plan->flags);
 

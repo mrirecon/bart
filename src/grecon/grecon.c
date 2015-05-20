@@ -210,7 +210,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		else
 			fake_kspace(dims1, out1, sens1, image1);
 
-		fftmod(DIMS, ksp1_dims, FFT_FLAGS, out1, out1);
+		ifftmod(DIMS, ksp1_dims, FFT_FLAGS, out1, out1);
 
 		md_free(image1);
 	}
