@@ -170,14 +170,16 @@ void gcc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 
 	long tmp2_dims[DIMS];
 	md_select_dims(DIMS, ~READ_FLAG, tmp2_dims, tmp_dims);
-	complex float* tmp2 = md_alloc(DIMS, tmp2_dims, CFL_SIZE);
 
 	long out2_dims[DIMS];
 	md_select_dims(DIMS, ~READ_FLAG, out2_dims, out_dims);
-	complex float* out2 = md_alloc(DIMS, out2_dims, CFL_SIZE);
+
 
 #pragma omp parallel for
 	for (int i = 0; i < ro; i++) {
+
+		complex float* tmp2 = md_alloc(DIMS, tmp2_dims, CFL_SIZE);
+		complex float* out2 = md_alloc(DIMS, out2_dims, CFL_SIZE);
 
 		long pos[DIMS] = { [READ_DIM] = i };
 		md_copy_block(DIMS, pos, tmp2_dims, tmp2, tmp_dims, tmp, CFL_SIZE);
@@ -185,10 +187,10 @@ void gcc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 		scc(out2_dims, out2, tmp2_dims, tmp2);
 
 		md_copy_block(DIMS, pos, out_dims, out_data, out2_dims, out2, CFL_SIZE);
-	}
 
-	md_free(out2);
-	md_free(tmp2);
+		md_free(out2);
+		md_free(tmp2);
+	}
 }
 
 
