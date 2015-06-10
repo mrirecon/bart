@@ -305,7 +305,6 @@ int main_pics(int argc, char* argv[])
 	if (NULL != traj_file)
 		traj = load_cfl(traj_file, DIMS, traj_dims);
 
-	md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 
 	md_copy_dims(DIMS, max_dims, ksp_dims);
 	md_copy_dims(5, max_dims, map_dims);
@@ -349,13 +348,13 @@ int main_pics(int argc, char* argv[])
 
 	if (NULL != pat_file) {
 
-		long pat_dims2[DIMS];
-		pattern = load_cfl(pat_file, DIMS, pat_dims2);
+		pattern = load_cfl(pat_file, DIMS, pat_dims);
 
-		assert(md_check_compat(DIMS, 0, pat_dims, pat_dims2));
+		assert(md_check_compat(DIMS, COIL_FLAG, ksp_dims, pat_dims));
 
 	} else {
 
+		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 		pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
 		estimate_pattern(DIMS, ksp_dims, COIL_DIM, pattern, kspace);
 	}

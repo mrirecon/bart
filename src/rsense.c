@@ -61,12 +61,13 @@ int main_rsense(int argc, char* argv[])
 	int ctrsh = 0.;
 	bool sec = false;
 	bool scale_im = false;
+	const char* pat_file = NULL;
 
 	struct sense_conf sconf = sense_defaults;
 	struct grecon_conf conf = { NULL, &sconf, false, false, false, true, 30, 0.95, 0. };
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "l:r:s:i:Sgh"))) {
+	while (-1 != (c = getopt(argc, argv, "l:r:s:i:p:Sgh"))) {
 
 		switch(c) {
 
@@ -105,6 +106,10 @@ int main_rsense(int argc, char* argv[])
 
 		case 'g':
 			usegpu = true;
+			break;
+
+		case 'p':
+			pat_file = strdup(optarg);
 			break;
 
 		default:
@@ -154,6 +159,17 @@ int main_rsense(int argc, char* argv[])
 	}
 
 
+	complex float* pattern = NULL;
+	long pat_dims[DIMS];
+
+	if (NULL != pat_file) {
+
+		pattern = load_cfl(pat_file, DIMS, pat_dims);
+
+		assert(md_check_compat(DIMS, COIL_FLAG, ksp_dims, pat_dims));
+	}
+
+
 	debug_printf(DP_INFO, "%ld map(s)\n", dims[MAPS_DIM]);
 	
 	if (conf.l1wav)
@@ -167,7 +183,9 @@ int main_rsense(int argc, char* argv[])
 //	float scaling = estimate_scaling(ksp_dims, sens_maps, kspace_data);
 	float scaling = estimate_scaling(ksp_dims, NULL, kspace_data);
 	debug_printf(DP_INFO, "Scaling: %f\n", scaling);
-	md_zsmul(N, ksp_dims, kspace_data, kspace_data, 1. / scaling);
+
+	if (0. != scaling)
+		md_zsmul(N, ksp_dims, kspace_data, kspace_data, 1. / scaling);
 
 
 	debug_printf(DP_INFO, "Readout FFT..\n");
@@ -187,7 +205,7 @@ int main_rsense(int argc, char* argv[])
 		conf.calib = &calib;
 	}
 
-	rgrecon(&conf, dims, image, sens_dims, sens_maps, NULL, NULL, kspace_data, usegpu);
+	rgrecon(&conf, dims, image, sens_dims, sens_maps, pat_dims, pattern, kspace_data, usegpu);
 
 	if (scale_im)
 		md_zsmul(DIMS, img_dims, image, image, scaling);
