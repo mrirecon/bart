@@ -57,7 +57,7 @@ static void help(void)
 		"-u rho\tADMM penalty parameter\n"
 		"-c\treal-value constraint\n"
 		"-t\tuse TV norm\n"
-		"-T\ttruth image\n");
+		"-T\tcompare to truth image\n");
 }
 
 
