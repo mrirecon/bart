@@ -829,7 +829,6 @@ void md_resize(unsigned int D, const long odim[D], void* optr, const long idim[D
 }
 
 
-
 /**
  * Resize an array by zero-padding or by truncation at both ends symmetrically.
  *
@@ -838,9 +837,12 @@ void md_resize(unsigned int D, const long odim[D], void* optr, const long idim[D
  */
 void md_resize_center(unsigned int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
+	// the definition of the center position corresponds
+	// to the one used in the FFT.
+
 	long pos[D];
 	for (unsigned int i = 0; i < D; i++)
-		pos[i] = (labs(odim[i] - idim[i]) + 1) / 2;
+		pos[i] = labs((odim[i] / 2) - (idim[i] / 2));
 
 	md_clear(D, odim, optr, size);
 	md_copy_block(D, pos, odim, optr, idim, iptr, size);
