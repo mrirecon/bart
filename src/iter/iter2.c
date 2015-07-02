@@ -110,7 +110,7 @@ void iter2_ist(void* _conf,
 #endif
 	UNUSED(xupdate_op);
 
-	struct iter_fista_conf* conf = _conf;
+	struct iter_ist_conf* conf = _conf;
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
