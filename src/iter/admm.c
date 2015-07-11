@@ -245,9 +245,9 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			} else {
 
 				cghistory.numiter = 0;
-				cghistory.relMSE[i] = 0.;
-				cghistory.objective[i] = 0.;
-				cghistory.resid[i] = 0.;
+				cghistory.relMSE[0] = 0.;
+				cghistory.objective[0] = 0.;
+				cghistory.resid[0] = 0.;
 			}
 
 			grad_iter += cghistory.numiter;
