@@ -1,9 +1,9 @@
-/* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+/* Copyright 2013-2015. The Regents of the University of California.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012, 2014	Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2015	Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014 	Joseph Y Cheng <jycheng@stanford.edu>
  *
  * 
@@ -52,6 +52,32 @@ int cuda_devices(void)
 
 static __thread int last_init = -1;
 
+void cuda_p2p_table(int n, bool table[n][n])
+{
+	assert(n == cuda_devices());
+
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+
+
+			int r;
+			CUDA_ERROR(cudaDeviceCanAccessPeer(&r, i, j));
+
+			table[i][j] = (1 == r);
+		}
+	}
+}
+
+void cuda_p2p(int a, int b)
+{
+	int dev;
+	CUDA_ERROR(cudaGetDevice(&dev));
+	CUDA_ERROR(cudaSetDevice(a));
+	CUDA_ERROR(cudaDeviceEnablePeerAccess(b, 0));
+	CUDA_ERROR(cudaSetDevice(dev));
+}
+
+
 void cuda_init(int device)
 {
 	last_init = device;
@@ -73,7 +99,7 @@ int cuda_init_memopt(void)
 		for (device = 0; device < num_devices; device++) {
 
 			cuda_init(device);
-			CUDA_ERROR(cudaMemGetInfo(&mem_free,&mem_total));
+			CUDA_ERROR(cudaMemGetInfo(&mem_free, &mem_total));
 			//printf(" device (%d): %d\n", device, mem_available);
 
 			if (mem_max < mem_free) {
@@ -84,6 +110,7 @@ int cuda_init_memopt(void)
 		}
 		//printf(" max device: %d\n", max_device);
 		CUDA_ERROR(cudaSetDevice(max_device));
+		// FIXME: we should set last_init
 	}
 
 	return max_device;
@@ -273,21 +300,40 @@ void cuda_exit(void)
 	CUDA_ERROR(cudaThreadExit());
 }
 
+#if 0
+// We still don use this because it is slow. Why? Nivida, why?
+
+static bool cuda_cuda_ondevice(const void* ptr)
+{
+	if (NULL == ptr)
+		return false;
+
+	struct cudaPointerAttributes attr;
+	if (cudaSuccess != (cudaPointerGetAttributes(&attr, ptr)))
+	{
+	/* The secret trick to make this work for arbitrary pointers
+	   is to clear the error using cudaGetLastError. See end of:
+	   http://www.alexstjohn.com/WP/2014/04/28/cuda-6-0-first-look/
+	 */
+		cudaGetLastError();
+		return false;
+	}
+
+	return (cudaMemoryTypeDevice == attr.memoryType);
+}
+#endif
+
 bool cuda_ondevice(const void* ptr)
 {
 	if (NULL == ptr)
 		return false;
-#if 1
-	struct cuda_mem_s* p = search(ptr, false);	
-	return ((NULL != p) && p->device);
-#else
-	struct cudaPointerAttributes attr;
-	//CUDA_ERROR(cudaPointerGetAttributes(&attr, ptr));
-	if (cudaSuccess != (cudaPointerGetAttributes(&attr, ptr)))
-		return false;
 
-	return (cudaMemoryTypeDevice == attr.memoryType);
-#endif
+	struct cuda_mem_s* p = search(ptr, false);
+	bool r = ((NULL != p) && p->device);
+
+//	assert(r == cuda_cuda_ondevice(ptr));
+
+	return r;
 }
 
 bool cuda_accessible(const void* ptr)
