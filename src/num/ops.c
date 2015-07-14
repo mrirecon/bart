@@ -1,9 +1,9 @@
-/* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+/* Copyright 2015. The Regents of the University of California.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
  *
@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <alloca.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -42,18 +43,18 @@ struct operator_s {
 /**
  * Create an operator (with strides)
  */
-const struct operator_s* operator_create2(unsigned int ON, const long out_dims[ON], const long out_strs[ON],
-			unsigned int IN, const long in_dims[IN], const long in_strs[IN],
+const struct operator_s* operator_generic_create2(unsigned int N, const unsigned int D[N],
+			const long* dims[N], const long* strs[N],
 			void* data, operator_fun_t apply, operator_del_t del)
 {
 	struct operator_s* op = xmalloc(sizeof(struct operator_s));
 
-	const struct iovec_s** dom = xmalloc(2 * sizeof(struct iovec_s*));
+	const struct iovec_s** dom = xmalloc(N * sizeof(struct iovec_s*));
 
-	dom[1] = iovec_create2(IN, in_dims, in_strs, CFL_SIZE);
-	dom[0] = iovec_create2(ON, out_dims, out_strs, CFL_SIZE);
+	for (unsigned int i = 0; i < N; i++)
+		dom[i] = iovec_create2(D[i], dims[i], strs[i], CFL_SIZE);
 
-	op->N = 2;
+	op->N = N;
 	op->domain = dom;
 	op->data = data;
 	op->apply = apply;
@@ -62,6 +63,39 @@ const struct operator_s* operator_create2(unsigned int ON, const long out_dims[O
 	op->del = del;
 
 	return op;
+}
+
+
+
+/**
+ * Create an operator (without strides)
+ */
+const struct operator_s* operator_generic_create(unsigned int N, const unsigned int D[N],
+			const long* dims[N], void* data, operator_fun_t apply, operator_del_t del)
+{
+	const long* strs[N];
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		long* ptr = alloca(D[i] * sizeof(long));
+		md_calc_strides(D[i], ptr, dims[i], CFL_SIZE);
+		strs[i] = ptr;
+	}
+
+	return operator_generic_create2(N, D, dims, strs, data, apply, del);
+}
+
+
+
+/**
+ * Create an operator (with strides)
+ */
+const struct operator_s* operator_create2(unsigned int ON, const long out_dims[ON], const long out_strs[ON],
+			unsigned int IN, const long in_dims[IN], const long in_strs[IN],
+			void* data, operator_fun_t apply, operator_del_t del)
+{
+	return operator_generic_create2(2, (unsigned int[2]){ ON, IN }, (const long* [2]){ out_dims, in_dims },
+			(const long* [2]){ out_strs, in_strs }, data, apply, del);
 }
 
 /**
@@ -140,9 +174,28 @@ void operator_free(const struct operator_s* x)
 }
 
 
+/**
+ * Return the number of args
+ *
+ * @param op operator
+ */
+unsigned int operator_nr_args(const struct operator_s* op)
+{
+	return op->N;
+}
+ 
 
-
-
+/**
+ * Return the iovec of arg n
+ *
+ * @param op operator
+ * @param n  arg number
+ */
+const struct iovec_s* operator_arg_domain(const struct operator_s* op, unsigned int n)
+{
+	assert(n < op->N);
+	return op->domain[n];
+}
 
 
 /**
@@ -152,8 +205,7 @@ void operator_free(const struct operator_s* x)
  */
 const struct iovec_s* operator_domain(const struct operator_s* op)
 {
-	assert(2 == op->N);
-	return op->domain[1];
+	return operator_arg_domain(op, 1);
 }
 
 
@@ -164,8 +216,7 @@ const struct iovec_s* operator_domain(const struct operator_s* op)
  */
 const struct iovec_s* operator_codomain(const struct operator_s* op)
 {
-	assert(2 == op->N);
-	return op->domain[0];
+	return operator_arg_domain(op, 0);
 }
 
 
@@ -299,20 +350,38 @@ const struct operator_p_s* operator_p_create(unsigned int ON, const long out_dim
 }
 
 
+struct identity_s {
+
+	const struct iovec_s* domain;
+	const struct iovec_s* codomain;
+};
 
 static void identity_apply(const void* _data, unsigned int N, void* args[N])
 {
-        const struct iovec_s* domain = _data;
+        const struct identity_s* d = _data;
 	assert(2 == N);
-        md_copy2(domain->N, domain->dims, domain->strs, args[0], domain->strs, args[1], domain->size);
+        md_copy2(d->domain->N, d->domain->dims, d->codomain->strs, args[0], d->domain->strs, args[1], d->domain->size);
 }
 
 
-static void identity_free(const void* data)
+static void identity_free(const void* _data)
 {
-        iovec_free((const struct iovec_s*)data);
+        const struct identity_s* d = _data;
+        iovec_free(d->domain);
+        iovec_free(d->codomain);
+	free((void*)d);
 }
 
+
+const struct operator_s* operator_identity_create2(unsigned int N, const long dims[N],
+					const long ostrs[N], const long istrs[N])
+{
+	struct identity_s* data = xmalloc(sizeof(struct identity_s));
+        data->domain = iovec_create2(N, dims, istrs, CFL_SIZE);
+        data->codomain = iovec_create2(N, dims, ostrs, CFL_SIZE);
+
+        return operator_create2(N, dims, ostrs, N, dims, istrs, data, identity_apply, identity_free);
+}
 
 /**
  * Create an Identity operator: I x
@@ -321,12 +390,10 @@ static void identity_free(const void* data)
  */
 const struct operator_s* operator_identity_create(unsigned int N, const long dims[N])
 {
-        const struct iovec_s* domain = iovec_create(N, dims, CFL_SIZE);
-
-        return operator_create(N, dims, N, dims, (void*)domain, identity_apply, identity_free);
+	long strs[N];
+	md_calc_strides(N, strs, dims, CFL_SIZE);
+        return operator_identity_create2(N, dims, strs, strs);
 }
-
-
 
 
 struct operator_chain_s {
@@ -500,12 +567,19 @@ const struct operator_s* operator_stack(unsigned int D, unsigned int E, const st
 }
 
 
-extern void operator_apply_unchecked(const struct operator_s* op, complex float* dst, const complex float* src)
+
+void operator_generic_apply_unchecked(const struct operator_s* op, unsigned int N, void* args[N])
 {
-	op->apply((void*)op->data, 2, (void*[2]){ (void*)dst, (void*)src });
+	op->apply((void*)op->data, N, args);
 }
 
-extern void operator_apply2(const struct operator_s* op, unsigned int IN, const long idims[IN], const long istrs[IN], complex float* dst, const long ON, const long odims[ON], const long ostrs[ON], const complex float* src)
+
+void operator_apply_unchecked(const struct operator_s* op, complex float* dst, const complex float* src)
+{
+	operator_generic_apply_unchecked(op, 2, (void*[2]){ (void*)dst, (void*)src });
+}
+
+void operator_apply2(const struct operator_s* op, unsigned int IN, const long idims[IN], const long istrs[IN], complex float* dst, const long ON, const long odims[ON], const long ostrs[ON], const complex float* src)
 {
 	assert(2 == op->N);
 	assert(iovec_check(op->domain[1], IN, idims, istrs));
@@ -514,8 +588,7 @@ extern void operator_apply2(const struct operator_s* op, unsigned int IN, const 
 	operator_apply_unchecked(op, dst, src);
 }
 
-
-extern void operator_apply(const struct operator_s* op, unsigned int IN, const long idims[IN], complex float* dst, const long ON, const long odims[ON], const complex float* src)
+void operator_apply(const struct operator_s* op, unsigned int IN, const long idims[IN], complex float* dst, const long ON, const long odims[ON], const complex float* src)
 {
 	long ostrs[ON];
 	long istrs[IN];
@@ -525,7 +598,7 @@ extern void operator_apply(const struct operator_s* op, unsigned int IN, const l
 }
 
 
-extern void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[IN], const long istrs[IN], complex float* dst, const long ON, const long odims[ON], const long ostrs[ON], const complex float* src)
+void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[IN], const long istrs[IN], complex float* dst, const long ON, const long odims[ON], const long ostrs[ON], const complex float* src)
 {
 	assert(3 == op->op.N);
 	assert(iovec_check(op->op.domain[2], IN, idims, istrs));
@@ -535,7 +608,7 @@ extern void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned 
 }
 
 
-extern void operator_p_apply(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[IN], complex float* dst, const long ON, const long odims[ON], const complex float* src)
+void operator_p_apply(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[IN], complex float* dst, const long ON, const long odims[ON], const complex float* src)
 {
 	long ostrs[ON];
 	long istrs[IN];
@@ -545,13 +618,13 @@ extern void operator_p_apply(const struct operator_p_s* op, float mu, unsigned i
 }
 
 
-extern void operator_p_apply_unchecked(const struct operator_p_s* op, float mu, complex float* dst, const complex float* src)
+void operator_p_apply_unchecked(const struct operator_p_s* op, float mu, complex float* dst, const complex float* src)
 {
 	op->op.apply(op->op.data, 3, (void*[3]){ &mu, (void*)dst, (void*)src });
 }
 
 
-extern void operator_iter(void* o, float* _dst, const float* _src)
+void operator_iter(void* o, float* _dst, const float* _src)
 {
 	complex float* dst = (complex float*)_dst;
 	const complex float* src = (complex float*)_src;
@@ -559,11 +632,65 @@ extern void operator_iter(void* o, float* _dst, const float* _src)
 	operator_apply_unchecked(o, dst, src);
 }
 
-extern void operator_p_iter(void* o, float lambda, float* _dst, const float* _src)
+void operator_p_iter(void* o, float lambda, float* _dst, const float* _src)
 {
 	complex float* dst = (complex float*)_dst;
 	const complex float* src = (complex float*)_src;
 
 	operator_p_apply_unchecked(o, lambda, dst, src);
 }
+
+
+#ifdef USE_CUDA
+static void gpuwrp_fun(const void* _data, unsigned int N, void* args[N])
+{
+	const struct operator_s* op = _data;
+	void* gpu_ptr[N];
+
+	assert(N == operator_nr_args(op));
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		const struct iovec_s* io = operator_arg_domain(op, i);
+		gpu_ptr[i] = md_gpu_move(io->N, io->dims, args[i], io->size);
+	}
+
+	operator_generic_apply_unchecked(op, N, gpu_ptr);
+	
+	for (unsigned int i = 0; i < N; i++) {
+
+		const struct iovec_s* io = operator_arg_domain(op, i);
+		md_copy(io->N, io->dims, args[i], gpu_ptr[i], io->size);
+		md_free(gpu_ptr[i]);
+	}
+}
+
+static void gpuwrp_del(const void* _data)
+{
+	const struct operator_s* op = _data;
+	operator_free(op);
+}
+
+const struct operator_s* operator_gpu_wrapper(const struct operator_s* op)
+{
+	unsigned int N = operator_nr_args(op);
+
+	unsigned int D[N];
+	const long* dims[N];
+	const long* strs[N];
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		const struct iovec_s* io = operator_arg_domain(op, i);
+
+		D[i] = io->N;
+		dims[i] = io->dims;
+		strs[i] = io->strs;
+	}
+
+	// op = operator_ref(op);
+
+	return operator_generic_create2(N, D, dims, strs, (void*)op, gpuwrp_fun, gpuwrp_del);
+}
+#endif
 
