@@ -1,9 +1,9 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2015 The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
 #include <complex.h>
@@ -22,7 +22,10 @@
 #include "calmat.h"
 
 
-static complex float* calibration_matrix_priv(long calmat_dims[2], const long kdims[3], const long calreg_dims[4], const complex float* data)
+/**
+ *	Compute basic calibration matrix
+ */
+complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], const long calreg_dims[4], const complex float* data)
 {
 	long kernel_dims[4];
 	md_copy_dims(3, kernel_dims, kdims);
@@ -40,7 +43,38 @@ static complex float* calibration_matrix_priv(long calmat_dims[2], const long kd
 }
 
 
-static complex float* pattern_matrix(long pcm_dims[2], const long kdims[3], const long calreg_dims[4], const complex float* data)
+
+/**
+ *	Compute calibration matrix - but mask out a specified patch shape
+ */
+complex float* calibration_matrix_mask(long calmat_dims[2], const long kdims[3], const complex float* msk, const long calreg_dims[4], const complex float* data)
+{
+	complex float* tmp = calibration_matrix(calmat_dims, kdims, calreg_dims, data);
+
+	if (NULL == msk)
+		return tmp;
+
+	long msk_dims[2];
+	md_select_dims(2, ~MD_BIT(0), msk_dims, calmat_dims);
+
+	assert(md_calc_size(3, kdims) * calreg_dims[3] == md_calc_size(2, msk_dims));
+
+	long msk_strs[2];
+	md_calc_strides(2, msk_strs, msk_dims, CFL_SIZE);
+
+	// mask out un-sampled samples...
+	long calmat_strs[2];
+	md_calc_strides(2, calmat_strs, calmat_dims, CFL_SIZE);
+	md_zmul2(2, calmat_dims, calmat_strs, tmp, calmat_strs, tmp, msk_strs, msk);
+
+	return tmp;
+}
+
+
+/**
+ *	Compute pattern matrix - mask out a specified patch shape
+ */
+static complex float* pattern_matrix(long pcm_dims[2], const long kdims[3], const complex float* mask, const long calreg_dims[4], const complex float* data)
 {
 	// estimate pattern
 	long pat_dims[4];
@@ -49,24 +83,19 @@ static complex float* pattern_matrix(long pcm_dims[2], const long kdims[3], cons
 	estimate_pattern(4, calreg_dims, COIL_DIM, pattern, data);
 
 	// compute calibration matrix of pattern
-	complex float* pm = calibration_matrix_priv(pcm_dims, kdims, pat_dims, pattern);
+	complex float* pm = calibration_matrix_mask(pcm_dims, kdims, mask, pat_dims, pattern);
 	md_free(pattern);
 
 	return pm;
 }
 
-complex float* calibration_matrix(long calmat_dims[2], const long kdims[3], const long calreg_dims[4], const complex float* data)
+
+
+
+complex float* calibration_matrix_mask2(long calmat_dims[2], const long kdims[3], const complex float* mask, const long calreg_dims[4], const complex float* data)
 {
-	return calibration_matrix_priv(calmat_dims, kdims, calreg_dims, data);
-}
-
-
-complex float* calibration_matrix2(long calmat_dims[2], const long kdims[3], const complex float* mask, const long calreg_dims[4], const complex float* data)
-{
-	assert(NULL == mask);
-
 	long pcm_dims[2];
-	complex float* pm = pattern_matrix(pcm_dims, kdims, calreg_dims, data);
+	complex float* pm = pattern_matrix(pcm_dims, kdims, mask, calreg_dims, data);
 
 	long pcm_strs[2];
 	md_calc_strides(2, pcm_strs, pcm_dims, CFL_SIZE);
@@ -85,12 +114,12 @@ complex float* calibration_matrix2(long calmat_dims[2], const long kdims[3], con
 
 	// fully sampled?
 	md_zcmp2(2, msk_dims, msk_strs, msk, msk_strs, msk,
-			(long[2]){ 0, 0 }, &(complex float){ pcm_dims[1] });
+			(long[2]){ 0, 0 }, &(complex float){ /* pcm_dims[1] */ 15 }); // FIXME
 
 	debug_printf(DP_DEBUG1, "%ld/%ld fully-sampled patches.\n",
 				(long)pow(md_znorm(2, msk_dims, msk), 2.), pcm_dims[0]);
 
-	complex float* tmp = calibration_matrix_priv(calmat_dims, kdims, calreg_dims, data);
+	complex float* tmp = calibration_matrix_mask(calmat_dims, kdims, mask, calreg_dims, data);
 
 	// mask out incompletely sampled patches...
 	long calmat_strs[2];
@@ -102,11 +131,40 @@ complex float* calibration_matrix2(long calmat_dims[2], const long kdims[3], con
 
 
 
+
+
+static void circular_patch_mask(const long kdims[3], unsigned int channels, complex float mask[channels * md_calc_size(3, kdims)])
+{
+	long kpos[3] = { 0 };
+	long kcen[3];
+
+	for (unsigned int i = 0; i < 3; i++)
+		kcen[i] = (1 == kdims[i]) ? 0 : (kdims[i] - 1) / 2;
+
+	do {
+		float dist = 0.;
+
+		for (unsigned int i = 0; i < 3; i++)
+			dist += (float)labs(kpos[i] - kcen[i]) / (float)kdims[i];
+
+		for (unsigned int c = 0; c < channels; c++)
+			mask[((c * kdims[2] + kpos[2]) * kdims[1] + kpos[1]) * kdims[0] + kpos[0]] = (dist <= 0.5) ? 1 : 0;
+
+	} while (md_next(3, kdims, 1 | 2 | 4, kpos));
+
+}
+
 void covariance_function(const long kdims[3], unsigned int N, complex float cov[N][N], const long calreg_dims[4], const complex float* data)
 {
 	long calmat_dims[2];
+#if 1
 	complex float* cm = calibration_matrix(calmat_dims, kdims, calreg_dims, data);
-
+#else
+	long channels = calreg_dims[3];
+	complex float msk[channels * md_calc_size(3, kdims)];
+	circular_patch_mask(kdims, channels, msk);
+	complex float* cm = calibration_matrix_mask2(calmat_dims, kdims, msk, calreg_dims, data);
+#endif
 	unsigned int L = calmat_dims[0];
 	assert(N == calmat_dims[1]);
 
