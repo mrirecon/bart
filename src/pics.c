@@ -109,16 +109,17 @@ int main_pics(int argc, char* argv[])
 
 	struct sense_conf conf = sense_defaults;
 
-	bool admm = false;
-	bool ist = false;
+	enum { CG, IST, FISTA, ADMM } algo = CG;
 	bool use_gpu = false;
-	bool l1wav = false;
-	bool tvreg = false;
-	bool lowrank = false;
+
 	bool randshift = true;
 	unsigned int maxiter = 30;
 	float step = 0.95;
-	float lambda = 0.;
+	float lambda = -1.;
+	float l2_lambda = 0.;
+	float l1_lambda = 0.;
+	float tv_lambda = 0.;
+	float lr_lambda = 0.;
 	unsigned int rflags = 7;
 
 	// Start time count
@@ -149,7 +150,7 @@ int main_pics(int argc, char* argv[])
 		switch(c) {
 
 		case 'I':
-			ist = true;
+			algo = IST;
 			break;
 
 		case 'e':
@@ -205,25 +206,26 @@ int main_pics(int argc, char* argv[])
 		case 'l':
 			if (0 == strcmp("1", optarg)) {
 
-				l1wav = true;
+				l1_lambda = lambda;
+				lambda = -1.;
 
 			} else
 			if (0 == strcmp("2", optarg)) {
 
-				l1wav = false;
+				l2_lambda = lambda;
+				lambda = -1.;
 
 			} else
 			if (0 == strcmp("v", optarg)) {
 
-				l1wav = false;
-				tvreg = true;
-				admm = true;
+				tv_lambda = lambda;
+				lambda = -1.;
 
 			} else
 			if (0 == strcmp("r", optarg)) {
 
-				lowrank = true;
-				l1wav = false;
+				lr_lambda = lambda;
+				lambda = -1.;
 
 			} else {
 
@@ -245,7 +247,7 @@ int main_pics(int argc, char* argv[])
 			break;
 
 		case 'm':
-			admm = true;
+			algo = ADMM;
 			break;
 
 		case 'g':
@@ -294,6 +296,7 @@ int main_pics(int argc, char* argv[])
 	long traj_dims[DIMS];
 
 
+
 	// load kspace and maps and get dimensions
 
 	complex float* kspace = load_cfl(argv[optind + 0], DIMS, ksp_dims);
@@ -328,14 +331,8 @@ int main_pics(int argc, char* argv[])
 	if (map_dims[MAPS_DIM] > 1) 
 		debug_printf(DP_INFO, "%ld maps.\nESPIRiT reconstruction.\n", map_dims[MAPS_DIM]);
 
-	if (l1wav)
-		debug_printf(DP_INFO, "l1-wavelet regularization\n");
-
 	if (hogwild)
 		debug_printf(DP_INFO, "Hogwild stepsize\n");
-
-	if (ist)
-		debug_printf(DP_INFO, "Use IST\n");
 
 	if (im_truth)
 		debug_printf(DP_INFO, "Compare to truth\n");
@@ -435,10 +432,40 @@ int main_pics(int argc, char* argv[])
 	}
 
 
-	// initialize thresh_op
-	const struct operator_p_s* thresh_op = NULL;
+	// fix up regularization parameters
 
-	if (l1wav) {
+	if (-1. == lambda)
+		lambda = 0.;
+
+	if (-1. == l2_lambda)
+		l2_lambda = lambda;
+
+	if (-1. == l1_lambda)
+		l1_lambda = lambda;
+
+	if (-1. == lr_lambda)
+		lr_lambda = lambda;
+
+	if (-1. == tv_lambda)
+		tv_lambda = lambda;
+
+	// initialize thresh_op
+	const struct operator_p_s* thresh_ops[4] = { NULL };
+	const struct linop_s* trafos[4] = { NULL };
+	int nr_penalties = 0;
+
+	if (0. != l2_lambda) {
+
+		debug_printf(DP_INFO, "l2 regularization: %f\n", l2_lambda);
+
+		trafos[nr_penalties] = linop_identity_create(DIMS, img_dims);
+		thresh_ops[nr_penalties] = prox_leastsquares_create(DIMS, img_dims, l2_lambda, NULL);
+		nr_penalties++;
+	}
+
+	if (0. != l1_lambda) {
+
+		debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", l1_lambda);
 
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
 		minsize[0] = MIN(img_dims[0], 16);
@@ -447,7 +474,9 @@ int main_pics(int argc, char* argv[])
 
 		if (7 == rflags) {
 
-			thresh_op = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, lambda, randshift, use_gpu);
+			trafos[nr_penalties] = linop_identity_create(DIMS, img_dims);
+			thresh_ops[nr_penalties] = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, l1_lambda, randshift, use_gpu);
+			nr_penalties++;
 
 		} else {
 
@@ -461,11 +490,15 @@ int main_pics(int argc, char* argv[])
 				}
 			}
 
-			thresh_op = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, lambda, randshift);
+			trafos[nr_penalties] = linop_identity_create(DIMS, img_dims);
+			thresh_ops[nr_penalties] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, l1_lambda, randshift);
+			nr_penalties++;
 		}
 	}
 
-	if (lowrank) {
+	if (0. != lr_lambda) {
+
+		debug_printf(DP_INFO, "lowrank regularization: %f\n", lr_lambda);
 
 		long blkdims[1][DIMS];
 
@@ -481,8 +514,24 @@ int main_pics(int argc, char* argv[])
 		unsigned int mflags = 6;
 		int remove_mean = 0;
 
-		thresh_op = lrthresh_create(img_dims, randshift, mflags, (const long (*)[DIMS])blkdims, lambda, false, remove_mean, use_gpu);
+		trafos[nr_penalties] = linop_identity_create(DIMS, img_dims);
+		thresh_ops[nr_penalties] = lrthresh_create(img_dims, randshift, mflags, (const long (*)[DIMS])blkdims, lr_lambda, false, remove_mean, use_gpu);
+
+		nr_penalties++;
 	}
+
+	if (0. != tv_lambda) {
+
+		debug_printf(DP_INFO, "TV regularization: %f\n", tv_lambda);
+
+		trafos[nr_penalties] = grad_init(DIMS, img_dims, rflags);
+		thresh_ops[nr_penalties] = prox_thresh_create(DIMS + 1,
+							linop_codomain(trafos[nr_penalties])->dims,
+							tv_lambda, MD_BIT(DIMS), use_gpu);
+
+		nr_penalties++;
+	}
+
 
 
 
@@ -512,16 +561,36 @@ int main_pics(int argc, char* argv[])
 	struct iter_ist_conf isconf;
 	struct iter_admm_conf mmconf;
 
-	if (!(l1wav || tvreg || lowrank)) {
+	if ((CG == algo) && (0. == l2_lambda) && (1. == nr_penalties))
+		algo = FISTA;
+
+	if ((nr_penalties > 1) || (0. != tv_lambda))
+		algo = ADMM;
+
+	switch (algo) {
+
+	case CG:
+
+		debug_printf(DP_INFO, "conjugate gradients\n");
+
+		assert((0 == nr_penalties) || ((0. != l2_lambda) && (1 == nr_penalties)));
 
 		cgconf = iter_conjgrad_defaults;
 		cgconf.maxiter = maxiter;
-		cgconf.l2lambda = lambda;
+		cgconf.l2lambda = (0 == nr_penalties) ? lambda : l2_lambda;
 
 		iter2_data.fun = iter_conjgrad;
 		iter2_data._conf = &cgconf;
 
-	} else if (ist) {
+		nr_penalties = 0;
+
+		break;
+
+	case IST:
+
+		debug_printf(DP_INFO, "IST\n");
+
+		assert(1 == nr_penalties);
 
 		isconf = iter_ist_defaults;
 		isconf.maxiter = maxiter;
@@ -531,7 +600,9 @@ int main_pics(int argc, char* argv[])
 		iter2_data.fun = iter_ist;
 		iter2_data._conf = &isconf;
 
-	} else if (admm) {
+		break;
+
+	case ADMM:
 
 		debug_printf(DP_INFO, "ADMM\n");
 
@@ -547,7 +618,13 @@ int main_pics(int argc, char* argv[])
 		italgo = iter2_admm;
 		iconf = &mmconf;
 
-	} else {
+		break;
+
+	case FISTA:
+
+		debug_printf(DP_INFO, "FISTA\n");
+
+		assert(1 == nr_penalties);
 
 		fsconf = iter_fista_defaults;
 		fsconf.maxiter = maxiter;
@@ -556,34 +633,27 @@ int main_pics(int argc, char* argv[])
 
 		iter2_data.fun = iter_fista;
 		iter2_data._conf = &fsconf;
+
+		break;
+
+	default:
+
+		assert(0);
 	}
-
-	// TV operator
-
-	const struct linop_s* tv_op = tvreg ? grad_init(DIMS, img_dims, rflags)
-					: linop_identity_create(DIMS, img_dims);
-
-	if (tvreg) {
-
-		thresh_op = prox_thresh_create(DIMS + 1,
-					linop_codomain(tv_op)->dims,
-					lambda, MD_BIT(DIMS), use_gpu);
-	}
-
 
 
 	if (use_gpu) 
 #ifdef USE_CUDA
 		sense_recon2_gpu(&conf, max_dims, image, forward_op, pat_dims, pattern,
-				italgo, iconf, 1, MAKE_ARRAY(thresh_op), admm ? MAKE_ARRAY(tv_op) : NULL,
-				ksp_dims, kspace, image_truth);
+				italgo, iconf, nr_penalties, thresh_ops,
+				(ADMM == algo) ? trafos : NULL, ksp_dims, kspace, image_truth);
 #else
 		assert(0);
 #endif
 	else
 		sense_recon2(&conf, max_dims, image, forward_op, pat_dims, pattern,
-				italgo, iconf, 1, MAKE_ARRAY(thresh_op), admm ? MAKE_ARRAY(tv_op) : NULL,
-				ksp_dims, kspace, image_truth);
+				italgo, iconf, nr_penalties, thresh_ops,
+				(ADMM == algo) ? trafos : NULL, ksp_dims, kspace, image_truth);
 
 	if (scale_im)
 		md_zsmul(DIMS, img_dims, image, image, scaling);
