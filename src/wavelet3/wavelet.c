@@ -360,24 +360,24 @@ void iwtN(unsigned int N, unsigned int flags, const long shifts[N], const long d
 
 // layer 3 - hierarchical multi-dimensional wavelet transform
 
-static long num_levels(long dim, long min, long flen)
+static long wavelet_filter_flags(unsigned int N, long flags, const long dims[N], const long min[N])
 {
-	if (dim <= min)
-		return 0;
+	for (unsigned int i = 0; i < N; i++)
+		if (dims[i] < min[i])	// CHECK
+			flags = MD_CLEAR(flags, i);
 
-	return 1 + num_levels(bandsize(dim, flen), min, flen);
+	return flags;
 }
-
 
 long wavelet_num_levels(unsigned int N, unsigned int flags, const long dims[N], const long min[N], const long flen)
 {
-	unsigned int levels = UINT_MAX;
+	if (0 == flags)
+		return 1;
 
-	for (unsigned int i = 0; i < N; i++)
-		if (MD_IS_SET(flags, i))
-			levels = MIN(levels, num_levels(dims[i], min[i], flen));
+	long wdims[2 * N];
+	wavelet_dims(N, flags, wdims, dims, flen);
 
-	return levels;
+	return 1 + wavelet_num_levels(N, wavelet_filter_flags(N, flags, wdims, min), wdims, min, flen);
 }
 
 static long wavelet_coeffs_r(unsigned int levels, unsigned int N, unsigned int flags, const long dims[N], const long min[N], const long flen)
@@ -388,10 +388,12 @@ static long wavelet_coeffs_r(unsigned int levels, unsigned int N, unsigned int f
 	long coeffs = md_calc_size(N, wdims);
 	long bands = md_calc_size(N, wdims + N);
 
-	if (0 == levels)
+	assert((0 == flags) == (0 == levels));
+
+	if (0 == flags)
 		return bands * coeffs;
 	
-	return coeffs * (bands - 1) + wavelet_coeffs_r(levels - 1, N, flags, wdims, min, flen);
+	return coeffs * (bands - 1) + wavelet_coeffs_r(levels - 1, N, wavelet_filter_flags(N, flags, wdims, min), wdims, min, flen);
 }
 
 long wavelet_coeffs(unsigned int N, unsigned int flags, const long dims[N], const long min[N], const long flen)
@@ -407,9 +409,7 @@ long wavelet_coeffs(unsigned int N, unsigned int flags, const long dims[N], cons
 
 void fwt(unsigned int N, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
-	unsigned int levels = wavelet_num_levels(N, flags, dims, minsize, flen);
-
-	if (0 == levels) {
+	if (0 == flags) {
 
 		if (out != in)
 			md_copy2(N, dims, istr, out, istr, in, CFL_SIZE);
@@ -427,26 +427,24 @@ void fwt(unsigned int N, unsigned int flags, const long shifts[N], const long di
 
 	long offset = coeffs - md_calc_size(2 * N, wdims);
 
-	debug_printf(DP_DEBUG4, "%d %ld %ld\n", levels, coeffs, offset);
-	assert((levels > 1) || (0 == offset));
+	debug_printf(DP_DEBUG4, "%d %ld %ld\n", flags, coeffs, offset);
 
 	long shifts0[N];
 	for (unsigned int i = 0; i < N; i++)
 		shifts0[i] = 0;
 
 	fwtN(N, flags, shifts, dims, ostr, out + offset, istr, in, flen, filter);
-	fwt(N, flags, shifts0, wdims, out, ostr, out + offset, minsize, flen, filter);
+	fwt(N, wavelet_filter_flags(N, flags, wdims, minsize), shifts0, wdims, out, ostr, out + offset, minsize, flen, filter);
 }
 
 
 void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long dims[N], const long ostr[N], complex float* out, const complex float* in, const long minsize[N], const long flen, const float filter[2][2][flen])
 {
-	unsigned int levels = wavelet_num_levels(N, flags, dims, minsize, flen);
-
-	if (0 == levels) {
+	if (0 == flags) {
 
 		if (out != in)
 			md_copy2(N, dims, ostr, out, ostr, in, CFL_SIZE);
+
 		return;
 	}
 
@@ -460,8 +458,7 @@ void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long di
 
 	long offset = coeffs - md_calc_size(2 * N, wdims);
 
-	debug_printf(DP_DEBUG4, "%d %ld %ld\n", levels, coeffs, offset);
-	assert((levels > 1) || (0 == offset));
+	debug_printf(DP_DEBUG4, "%d %ld %ld\n", flags, coeffs, offset);
 
 	complex float* tmp = md_alloc_sameplace(2 * N, wdims, CFL_SIZE, out);
 
@@ -472,7 +469,7 @@ void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long di
 		shifts0[i] = 0;
 
 	// fix me we need temp storage
-	iwt(N, flags, shifts0, wdims, istr, tmp, in, minsize, flen, filter);
+	iwt(N, wavelet_filter_flags(N, flags, wdims, minsize), shifts0, wdims, istr, tmp, in, minsize, flen, filter);
 	iwtN(N, flags, shifts, dims, ostr, out, istr, tmp, flen, filter);
 
 	md_free(tmp);
@@ -481,26 +478,10 @@ void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long di
 
 void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
-	unsigned int levels = wavelet_num_levels(N, flags, dims, minsize, flen);
-
-	if (0 == levels) {
-
-		if (out != in)
-			md_copy(N, dims, out, in, CFL_SIZE);
-
-		return;
-	}
-
 	unsigned long coeffs = wavelet_coeffs(N, flags, dims, minsize, flen);
 
 	long istr[N];
 	md_calc_strides(N, istr, dims, CFL_SIZE);
-
-	long wdims[2 * N];
-	wavelet_dims(N, flags, wdims, dims, flen);
-
-	long ostr[2 * N];
-	md_calc_strides(2 * N, ostr, wdims, CFL_SIZE);
 
 	complex float* tmp = md_alloc_sameplace(1, MD_DIMS(coeffs), CFL_SIZE, out);
 
