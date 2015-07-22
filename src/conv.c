@@ -32,7 +32,6 @@ static void help(void)
 	printf( "\n"
 		"Performs a convolution along selected dimensions.\n"
 		"\n"
-		"-i\tinverse\n"
 		"-h\thelp\n");
 }
 

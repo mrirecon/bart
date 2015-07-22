@@ -12,7 +12,6 @@ conv bitmask <input> <kernel> <output>
 
 	Performs a convolution along selected dimensions.
 
-	-i	inverse
 	-h	help
 
 
