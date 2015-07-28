@@ -193,7 +193,7 @@ export -f calib_slice
 export -f recon_slice
 
 # loop over slices
-seq -w 0 $(($SLICES - 1)) | xargs -i --max-procs=$MAXPROC bash -c "calib_slice {}"
+seq -w 0 $(($SLICES - 1)) | xargs -I {} -P $MAXPROC bash -c "calib_slice {}"
 
 # transform back to k-space and compute sensitivities
 join 2 img-*.coo img
@@ -208,7 +208,7 @@ ecalib -S -c0.8 -m1 -r20 ksp2 sens2
 transpose 0 2 sens2 sens
 
 # loop over slices
-seq -w 0 $(($SLICES - 1)) | xargs -i --max-procs=$MAXPROC bash -c "recon_slice {}"
+seq -w 0 $(($SLICES - 1)) | xargs -I {} -P $MAXPROC bash -c "recon_slice {}"
 #echo 20 | xargs -i --max-procs=$MAXPROC bash -c "recon_slice {}"
 
 # join slices back together
