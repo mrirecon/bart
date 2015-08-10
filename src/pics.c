@@ -141,12 +141,13 @@ int main_pics(int argc, char* argv[])
 	bool hogwild = false;
 	bool fast = false;
 	float admm_rho = iter_admm_defaults.rho;
+	unsigned int admm_maxitercg = iter_admm_defaults.maxitercg;
 
 	if (0 == strcmp(basename(argv[0]), "sense"))
 		debug_printf(DP_WARN, "The \'sense\' command is deprecated. Use \'pics\' instead.\n");
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:Sd:R:H"))) {
+	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:Sd:R:HC:"))) {
 		switch(c) {
 
 		case 'I':
@@ -201,6 +202,10 @@ int main_pics(int argc, char* argv[])
 
 		case 'u':
 			admm_rho = atof(optarg);
+			break;
+
+		case 'C':
+			admm_maxitercg = atoi(optarg);
 			break;
 
 		case 'l':
@@ -608,6 +613,7 @@ int main_pics(int argc, char* argv[])
 
 		mmconf = iter_admm_defaults;
 		mmconf.maxiter = maxiter;
+		mmconf.maxitercg = admm_maxitercg;
 		mmconf.rho = admm_rho;
 		mmconf.hogwild = hogwild;
 		mmconf.fast = fast;
