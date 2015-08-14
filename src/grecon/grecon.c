@@ -79,22 +79,25 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		pattern = weights;
 	}
 
-	complex float* sens1;
+	complex float* sens1 = NULL;
+
+	long sens_dims[DIMS];
+	md_copy_dims(DIMS, sens_dims, dims1);
+	md_min_dims(DIMS, ~(FFT_FLAGS | SENS_FLAGS), sens_dims, dims1, cov1_dims);
 
 	if (NULL != param->calib) {
 
-		long img1_dims[DIMS];
-		md_select_dims(DIMS, ~COIL_FLAG, img1_dims, dims1);
-
-		complex float* maps1 = md_alloc(DIMS, img1_dims, CFL_SIZE);
-
-		sens1 = md_alloc(DIMS, dims1, CFL_SIZE);
+		long maps_dims[DIMS];
+		md_select_dims(DIMS, ~COIL_FLAG, maps_dims, sens_dims);
 	
-		caltwo(param->calib, dims1, sens1, maps1, cov1_dims, cov1, NULL, NULL);
+		sens1 = md_alloc(DIMS, sens_dims, CFL_SIZE);
+		complex float* maps1 = md_alloc(DIMS, maps_dims, CFL_SIZE);
 
-		crop_sens(dims1, sens1, param->calib->softcrop, param->calib->crop, maps1);
+		caltwo(param->calib, sens_dims, sens1, maps1, cov1_dims, cov1, NULL, NULL);
 
-		fixphase(DIMS, dims1, COIL_DIM, sens1, sens1);
+		crop_sens(sens_dims, sens1, param->calib->softcrop, param->calib->crop, maps1);
+
+		fixphase(DIMS, sens_dims, COIL_DIM, sens1, sens1);
 
 		md_free(maps1);
 
@@ -103,7 +106,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		sens1 = cov1;
 	}
 
-	fftmod(DIMS, cov1_dims, FFT_FLAGS, sens1, sens1);
+	fftmod(DIMS, sens_dims, FFT_FLAGS, sens1, sens1);
 	fftmod(DIMS, ksp1_dims, FFT_FLAGS, kspace1, kspace1);
 
 	complex float* image1 = NULL;
