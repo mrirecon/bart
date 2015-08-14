@@ -103,7 +103,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		sens1 = cov1;
 	}
 
-	fftmod(DIMS, dims1, FFT_FLAGS, sens1, sens1);
+	fftmod(DIMS, cov1_dims, FFT_FLAGS, sens1, sens1);
 	fftmod(DIMS, ksp1_dims, FFT_FLAGS, kspace1, kspace1);
 
 	complex float* image1 = NULL;

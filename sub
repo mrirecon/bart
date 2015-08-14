@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+if [ ! -f ${TOOLBOX_PATH}/$(basename $0) ] ; then
+
+	echo "\$TOOLBOX_PATH is not set correctly!"
+	exit 1
+fi
+
+if [ $# -lt 3 ] ; then
+
+	echo "Usage: $0 <input1> <input2> <output>"
+	exit 1
+fi
+
+${TOOLBOX_PATH}/saxpy -- -1. $1 $2 $3
+
