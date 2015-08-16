@@ -113,7 +113,7 @@ static void align_ro2(const long dims[DIMS], int start, int end, complex float* 
 	md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = start }, tmp_dims, tmp1, dims, idata, CFL_SIZE);
 
 	if (dir)
-	md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = start }, dims, odata, tmp_dims, tmp1, CFL_SIZE);
+		md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = start }, dims, odata, tmp_dims, tmp1, CFL_SIZE);
 
 	for (int i = start; i != end - dir; i += dir) {
 

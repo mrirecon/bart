@@ -11,7 +11,7 @@
 
 typedef void (*operator_fun_t)(const void* _data, unsigned int N, void* args[__VLA(N)]);
 typedef void (*operator_p_fun_t)(const void* _data, float mu, _Complex float* _dst, const _Complex float* _src);
-typedef void (*operator_del_t)(const void* op);
+typedef void (*operator_del_t)(const void* _data);
 
 
 

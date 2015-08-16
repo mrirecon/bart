@@ -21,10 +21,10 @@
 #include "num/multind.h"
 //#include "num/parallel.h"
 
-#ifdef BERKELEY_SVN
 #ifdef USE_CUDA
-#include "num/wlcuda.h"
 #include "num/gpuops.h"
+#ifdef BERKELEY_SVN
+#include "num/wlcuda.h"
 #endif
 #endif
 

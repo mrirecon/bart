@@ -98,6 +98,36 @@ float estimate_scaling_norm(float rescale, long imsize, complex float* tmpnorm, 
 }
 
 
+extern float estimate_scaling_cal(const long dims[DIMS], const complex float* sens, const long cal_dims[DIMS], const complex float* cal_data, bool compat)
+{
+	long img_dims[DIMS];
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, cal_dims);
+
+	long imsize = md_calc_size(DIMS, img_dims);
+
+	complex float* tmp1 = md_alloc(DIMS, img_dims, CFL_SIZE);
+
+	float rescale = sqrtf((float)dims[0] / (float)cal_dims[0])
+			* sqrtf((float)dims[1] / (float)cal_dims[1])
+			* sqrtf((float)dims[2] / (float)cal_dims[2]);
+
+	if (NULL == sens) {
+
+		rss_combine(cal_dims, tmp1, cal_data);
+
+	 } else {
+
+		optimal_combine(cal_dims, 0., tmp1, sens, cal_data);
+	}
+
+	float scale = estimate_scaling_norm(rescale, imsize, tmp1, compat);
+
+	md_free(tmp1);
+
+	return scale;
+}
+
+
 static float estimate_scaling_internal(const long dims[DIMS], const complex float* sens, const long strs[DIMS], const complex float* data, bool compat)
 {
 	assert(1 == dims[MAPS_DIM]);
@@ -107,32 +137,10 @@ static float estimate_scaling_internal(const long dims[DIMS], const complex floa
 	// maybe we should just extract a fixed-sized block here?
 	complex float* tmp = extract_calib2(small_dims, cal_size, dims, strs, data, false);
 
-	long img_dims[DIMS];
-	md_select_dims(DIMS, ~COIL_FLAG, img_dims, small_dims);
-
-	long imsize = md_calc_size(DIMS, img_dims);
-
-	complex float* tmp1 = md_alloc(DIMS, img_dims, CFL_SIZE);
-
-	float rescale = sqrtf((float)dims[0] / (float)small_dims[0])
-			* sqrtf((float)dims[1] / (float)small_dims[1])
-			* sqrtf((float)dims[2] / (float)small_dims[2]);
-
-	if (NULL == sens) {
-
-		rss_combine(small_dims, tmp1, tmp);
-
-	 } else {
-
-		optimal_combine(small_dims, 0., tmp1, sens, tmp);
-	}
-
-	float scale = estimate_scaling_norm(rescale, imsize, tmp1, compat);
+	return estimate_scaling_cal(dims, sens, small_dims, tmp, compat);
 
 	md_free(tmp);
-	md_free(tmp1);
 
-	return scale;
 }
 
 
