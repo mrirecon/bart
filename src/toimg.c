@@ -27,7 +27,7 @@
 #endif
 
 #ifndef CFL_SIZE
-#define CFL_SIZE sizeof(_Complex float)
+#define CFL_SIZE sizeof(complex float)
 #endif
 
 
@@ -39,23 +39,21 @@ struct image_data_s {
 	float max_val;
 	long h;
 	long w;
-
 };
 
 
 const char* usage_str = "[-b] <input> <output_prefix>";
-const char* help_str = "-b\toutput dicom\n\n"
-								"Create png or prototype dicom images.\n"
-								"The first two non-singleton dimensions will\n"
-								"be used for the image, and the other dimensions\n"
-								"will be looped over.\n"
-								"\nIssues:\n1. Magnitude only images.\n"
-								"\n2. There must be at least 2 non-singleton dimensions.\n\n";
+const char* help_str =	"-b\toutput dicom\n\n"
+			"Create png or prototype dicom images.\n"
+			"The first two non-singleton dimensions will\n"
+			"be used for the image, and the other dimensions\n"
+			"will be looped over.\n"
+			"\nIssues:\n1. Magnitude only images.\n"
+			"\n2. There must be at least 2 non-singleton dimensions.\n\n";
 
 
 static void toimg(const struct image_data_s* img_data, const char* name, unsigned char* buf, const complex float* data)
 {
-	
 	int len = strlen(name);
 	assert(len >= 1);
 
@@ -99,26 +97,28 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 	int l = 0;
 
 	for (int i = 0; i < DIMS; i++) {
+
 		if (1 != dims[i]) {
+
 			switch (l++) {
 
-				case 0:
-					h = dims[i];
-					h_dim = i;
-					break;
+			case 0:
+				h = dims[i];
+				h_dim = i;
+				break;
 
-				case 1:
-					w = dims[i];
-					w_dim = i;
-					break;
+			case 1:
+				w = dims[i];
+				w_dim = i;
+				break;
 
-				default:
-					break;
+			default:
+				break;
 			}
 		}
 	}
 
-	assert(h_dim >=0 && w_dim > 0 && h_dim != w_dim);
+	assert((h_dim >= 0) && (w_dim > 0) && (h_dim != w_dim));
 
 	int nr_bytes = dicom ? 2 : 3;
 	float max_val = dicom ? 65535. : 255.;
@@ -132,6 +132,7 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 
 
 	struct image_data_s img_data = {
+
 		.dicom = dicom,
 		.max_val = max_val,
 		.max = max,
@@ -165,10 +166,8 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 		free(buf);
 		free(dat);
 	}
+
 	debug_printf(DP_INFO, "...Done\n", num_imgs);
-
-
-
 }
 
 
@@ -177,7 +176,7 @@ int main_toimg(int argc, char* argv[])
 	bool dicom = mini_cmdline_bool(argc, argv, 2, usage_str, help_str);
 
 	long dims[DIMS];
-	
+
 	complex float* data = load_cfl(argv[1], DIMS, dims);
 
 	toimg_stack(argv[2], dicom, dims, data);
