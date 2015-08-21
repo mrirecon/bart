@@ -199,20 +199,20 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 		if (NULL != x_truth) {
 
 			vops->sub(N, x_err, x, x_truth);
-			debug_printf(DP_DEBUG1, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
+			debug_printf(DP_DEBUG3, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
 		}
 
 		if (NULL != obj_eval) {
 
 			float objval = obj_eval(obj_eval_data, x);
-			debug_printf(DP_DEBUG1, "#%d OBJVAL= %f\n", itrdata.iter, objval);
+			debug_printf(DP_DEBUG3, "#%d OBJVAL= %f\n", itrdata.iter, objval);
 		}
 
 		ls_old = lambda_scale;
 		lambda_scale = ist_continuation(&itrdata, continuation);
 		
 		if (lambda_scale != ls_old) 
-			debug_printf(DP_DEBUG2, "##lambda_scale = %f\n", lambda_scale);
+			debug_printf(DP_DEBUG3, "##lambda_scale = %f\n", lambda_scale);
 
 
 		thresh(tdata, tau, x, x);
@@ -223,7 +223,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 
 		itrdata.rsnew = vops->norm(N, r);
 
-		debug_printf(DP_DEBUG1, "#It %03d: %f \n", itrdata.iter, itrdata.rsnew / itrdata.rsnot);
+		debug_printf(DP_DEBUG3, "#It %03d: %f \n", itrdata.iter, itrdata.rsnew / itrdata.rsnot);
 
 		if (itrdata.rsnew < epsilon)
 			break;
@@ -243,7 +243,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 
 	}
 
-	debug_printf(DP_DEBUG2, "\n");
+	debug_printf(DP_DEBUG3, "\n");
 
 	if (NULL != x_truth)
 		vops->del(x_err);
@@ -454,7 +454,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 
 	if (0. == rsold) {
 
-		debug_printf(DP_DEBUG2, "CG: early out\n");
+		debug_printf(DP_DEBUG3, "CG: early out\n");
 		return 0.;
 	}
 
@@ -472,7 +472,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 			debug_printf(DP_DEBUG2, "#CG%d OBJVAL= %f\n", i, objval);
 		}
 
-		debug_printf(DP_DEBUG2, "#%d: %f\n", i, (double)sqrtf(rsnew));
+		debug_printf(DP_DEBUG3, "#%d: %f\n", i, (double)sqrtf(rsnew));
 
 		linop(data, Ap, p);	// Ap = A p
 		vops->axpy(N, Ap, l2lambda, p);
@@ -493,7 +493,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 		rsold = rsnew;
 
 		if (rsnew <= eps_squared) {
-			//debug_printf(DP_DEBUG2, "%d ", i);
+			//debug_printf(DP_DEBUG3, "%d ", i);
 			break;
 		}
 
@@ -560,14 +560,14 @@ float conjgrad_hist(struct iter_history_s* history, unsigned int maxiter, float 
 			vops->sub(N, x_err, x, x_truth);
 			float relMSE = vops->norm(N, x_err) / vops->norm(N, x_truth);
 			history->relMSE[i] = relMSE;
-			debug_printf(DP_DEBUG1, "relMSE = %f\n", relMSE);
+			debug_printf(DP_DEBUG3, "relMSE = %f\n", relMSE);
 		}
 
 		if ((NULL != obj_eval) && (NULL != obj_eval_data)) {
 
 			float objval = obj_eval(obj_eval_data, x);
 			history->objective[i] = objval;
-			debug_printf(DP_DEBUG1, "#CG%d OBJVAL= %f\n", i, objval);
+			debug_printf(DP_DEBUG3, "#CG%d OBJVAL= %f\n", i, objval);
 		}
 
 		//debug_printf(DP_DEBUG3, "#%d: %f\n", i, (double)sqrtf(rsnew));
@@ -586,7 +586,7 @@ float conjgrad_hist(struct iter_history_s* history, unsigned int maxiter, float 
 		rsold = rsnew;
 
 		if (rsnew <= eps_squared) {
-			//debug_printf(DP_DEBUG2, "%d ", i);
+			//debug_printf(DP_DEBUG3, "%d ", i);
 			break;
 		}
 
@@ -683,14 +683,14 @@ float conjgrad_hist_prealloc(struct iter_history_s* history, unsigned int maxite
 			vops->sub(N, x_err, x, x_truth);
 			float relMSE = vops->norm(N, x_err) / vops->norm(N, x_truth);
 			history->relMSE[i] = relMSE;
-			debug_printf(DP_DEBUG1, "relMSE = %f\n", relMSE);
+			debug_printf(DP_DEBUG3, "relMSE = %f\n", relMSE);
 		}
 
 		if ((NULL != obj_eval) && (NULL != obj_eval_data)) {
 
 			float objval = obj_eval(obj_eval_data, x);
 			history->objective[i] = objval;
-			debug_printf(DP_DEBUG1, "#CG%d OBJVAL= %f\n", i, objval);
+			debug_printf(DP_DEBUG3, "#CG%d OBJVAL= %f\n", i, objval);
 		}
 
 		//debug_printf(DP_DEBUG3, "#%d: %f\n", i, (double)sqrtf(rsnew));
@@ -709,7 +709,7 @@ float conjgrad_hist_prealloc(struct iter_history_s* history, unsigned int maxite
 		rsold = rsnew;
 
 		if (rsnew <= eps_squared) {
-			//debug_printf(DP_DEBUG2, "%d ", i);
+			//debug_printf(DP_DEBUG3, "%d ", i);
 			break;
 		}
 
@@ -798,7 +798,7 @@ void pocs(unsigned int maxiter,
 		if (NULL != x_truth) {
 
 			vops->sub(N, x_err, x, x_truth);
-			debug_printf(DP_DEBUG1, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
+			debug_printf(DP_DEBUG3, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
 		}
 
 		for (unsigned int j = 0; j < D; j++)
@@ -808,11 +808,11 @@ void pocs(unsigned int maxiter,
 		if (NULL != obj_eval) {
 
 			float objval = obj_eval(obj_eval_data, x);
-			debug_printf(DP_DEBUG1, "#%d OBJVAL= %f\n", i, objval);
+			debug_printf(DP_DEBUG3, "#%d OBJVAL= %f\n", i, objval);
 
 		} else {
 
-			debug_printf(DP_DEBUG1, "#Iter %d\n", i);
+			debug_printf(DP_DEBUG3, "#Iter %d\n", i);
 		}
 	}
 
