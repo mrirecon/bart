@@ -53,24 +53,6 @@ void dump_cfl(const char* name, int D, const long dimensions[D], const complex f
 int debug_level = -1;
 bool debug_logging = false;
 
-
-void debug_vprintf(int level, const char* fmt, va_list ap)
-{
-	if (-1 == debug_level) {
-
-		char* str = getenv("DEBUG_LEVEL");
-		debug_level = (NULL != str) ? atoi(str) : DP_INFO;
-	}
-
-	if (level <= debug_level) {
-
-		FILE* ofp = (level < DP_INFO) ? stderr : stdout;
-
-		vfprintf(ofp, fmt, ap);
-		fflush(ofp);
-	}
-}
-
 static char* get_level_str(int level, char* level_str)
 {
 	assert(level >= 0);
@@ -114,7 +96,6 @@ static char* get_level_str(int level, char* level_str)
 	return level_str;
 }
 
-// FIXME: this function is very slow. Can it be sped up? Maybe with system call...
 static char* get_datetime_str(char* datetime_str)
 {
 
@@ -126,23 +107,34 @@ static char* get_datetime_str(char* datetime_str)
 	return datetime_str;
 }
 
-void debug_printf(int level, const char* fmt, ...)
+void debug_vprintf(int level, const char* fmt, va_list ap)
 {
+	if (-1 == debug_level) {
 
-	if (true == debug_logging) {
-
-		char level_str[STRSIZE];
-		char dt_str[STRSIZE];
-
-		debug_logging = false;
-#if 0
-		debug_printf(level, "[%s] [%s] - ", get_datetime_str(dt_str), get_level_str(level, level_str));
-#else
-		debug_printf(level, "[%s] - ", get_level_str(level, level_str));
-#endif
-		debug_logging = true;
+		char* str = getenv("DEBUG_LEVEL");
+		debug_level = (NULL != str) ? atoi(str) : DP_INFO;
 	}
 
+	if (level <= debug_level) {
+
+		FILE* ofp = (level < DP_INFO) ? stderr : stdout;
+
+		if (true == debug_logging) {
+
+			char level_str[STRSIZE];
+			char dt_str[STRSIZE];
+
+			fprintf(ofp, "[%s] [%s] - ", get_datetime_str(dt_str), get_level_str(level, level_str));
+		}
+
+		vfprintf(ofp, fmt, ap);
+		fflush(ofp);
+	}
+}
+
+
+void debug_printf(int level, const char* fmt, ...)
+{
 	va_list ap;
 	va_start(ap, fmt);
 	debug_vprintf(level, fmt, ap);	
