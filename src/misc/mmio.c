@@ -176,23 +176,26 @@ static complex float* load_cfl_internal(const char* name, unsigned int D, long d
 		return load_zcoo(name, D, dimensions);
 
 
+	char err_str[1024];
+	sprintf(err_str, "Loading cfl file %s", name);
+
 	char name_bdy[1024];
 	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
-		io_error("Loading cfl file");
+		io_error(err_str);
 
 	char name_hdr[1024];
 	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
-		io_error("Loading cfl file");
+		io_error(err_str);
 
 	int ofd;
 	if (-1 == (ofd = open(name_hdr, O_RDONLY)))
-		io_error("Loading cfl file");
+		io_error(err_str);
 
 	if (-1 == read_cfl_header(ofd, D, dimensions))
-		io_error("Loading cfl file");
+		io_error(err_str);
 
 	if (-1 == close(ofd))
-		io_error("Loading cfl file");
+		io_error(err_str);
 
 	return (priv ? private_cfl : shared_cfl)(D, dimensions, name_bdy);
 }

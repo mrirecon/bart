@@ -214,7 +214,7 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 	}
 
 	// clean up
-	linop_free(sense_op);
+	//linop_free(sense_op);
 }
 
 
