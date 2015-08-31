@@ -114,6 +114,7 @@ static char* get_level_str(int level, char* level_str)
 	return level_str;
 }
 
+// FIXME: this function is very slow. Can it be sped up? Maybe with system call...
 static char* get_datetime_str(char* datetime_str)
 {
 
