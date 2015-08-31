@@ -135,7 +135,11 @@ void debug_printf(int level, const char* fmt, ...)
 		char dt_str[STRSIZE];
 
 		debug_logging = false;
-		debug_printf(level, "[%s] [%s] - ", get_level_str(level, level_str), get_datetime_str(dt_str));
+#if 0
+		debug_printf(level, "[%s] [%s] - ", get_datetime_str(dt_str), get_level_str(level, level_str));
+#else
+		debug_printf(level, "[%s] - ", get_level_str(level, level_str));
+#endif
 		debug_logging = true;
 	}
 
