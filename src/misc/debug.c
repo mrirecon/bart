@@ -1,10 +1,10 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2015. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013	Martin Uecker <uecker@eecs.berkeley.edu>
- * 2013	Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2013,2015	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2013 Dara Bahri <dbahri123@gmail.com
  */
 
@@ -12,6 +12,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <fcntl.h>
 #include <complex.h>
 #include <stdlib.h>
@@ -20,6 +21,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/mman.h>
+#include <time.h>
 
 #include "num/multind.h"
 #include "misc/io.h"
@@ -28,12 +30,11 @@
 #include "debug.h"
 
 
-
 // Patrick Virtue's timing code
 double timestamp(void) 
 {
 	struct timeval tv;
-	gettimeofday(&tv, 0);
+	gettimeofday(&tv, 0); // more accurate than <time.h>
 
 	return tv.tv_sec + 1e-6 * tv.tv_usec;
 }
@@ -48,6 +49,7 @@ void dump_cfl(const char* name, int D, const long dimensions[D], const complex f
 
 
 int debug_level = -1;
+bool debug_logging = false;
 
 
 void debug_vprintf(int level, const char* fmt, va_list ap)
@@ -67,10 +69,74 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 	}
 }
 
+static char* get_level_str(int level, char* level_str)
+{
+	assert(level >= 0);
 
+	switch (level) {
+
+		case DP_ERROR:
+			strcpy(level_str, "ERROR");
+			break;
+
+		case DP_WARN:
+			strcpy(level_str, "WARN");
+			break;
+
+		case DP_INFO:
+			strcpy(level_str, "INFO");
+			break;
+
+		case DP_DEBUG1:
+			strcpy(level_str, "DEBUG1");
+			break;
+
+		case DP_DEBUG2:
+			strcpy(level_str, "DEBUG2");
+			break;
+
+		case DP_DEBUG3:
+			strcpy(level_str, "DEBUG3");
+			break;
+
+		case DP_DEBUG4:
+			strcpy(level_str, "DEBUG4");
+			break;
+
+		default:
+			strcpy(level_str, "ALL");
+			break;
+
+	}
+
+	return level_str;
+}
+
+static char* get_datetime_str(char* datetime_str)
+{
+
+	time_t tv = time(NULL);
+	struct tm dt = *gmtime(&tv);
+
+
+	sprintf(datetime_str, "%04d-%02d-%02d %02d:%02d:%02d", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+
+	return datetime_str;
+}
 
 void debug_printf(int level, const char* fmt, ...)
 {
+
+	if (true == debug_logging) {
+
+		char level_str[64];
+		char dt_str[64];
+
+		debug_logging = false;
+		debug_printf(level, "[%s] [%s] - ", get_level_str(level, level_str), get_datetime_str(dt_str));
+		debug_logging = true;
+	}
+
 	va_list ap;
 	va_start(ap, fmt);
 	debug_vprintf(level, fmt, ap);	
