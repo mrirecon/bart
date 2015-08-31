@@ -29,6 +29,8 @@
 
 #include "debug.h"
 
+#define STRSIZE 64
+
 
 // Patrick Virtue's timing code
 double timestamp(void) 
@@ -116,10 +118,9 @@ static char* get_datetime_str(char* datetime_str)
 {
 
 	time_t tv = time(NULL);
-	struct tm dt = *gmtime(&tv);
+	struct tm* dt = gmtime(&tv);
 
-
-	sprintf(datetime_str, "%04d-%02d-%02d %02d:%02d:%02d", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+	strftime(datetime_str, STRSIZE, "%F %T", dt);
 
 	return datetime_str;
 }
@@ -129,8 +130,8 @@ void debug_printf(int level, const char* fmt, ...)
 
 	if (true == debug_logging) {
 
-		char level_str[64];
-		char dt_str[64];
+		char level_str[STRSIZE];
+		char dt_str[STRSIZE];
 
 		debug_logging = false;
 		debug_printf(level, "[%s] [%s] - ", get_level_str(level, level_str), get_datetime_str(dt_str));
