@@ -35,9 +35,9 @@ void error(const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	if (false == debug_logging)
+	if (!debug_logging)
 		debug_printf(DP_ERROR, "Error: ");
-	debug_printf(DP_ERROR, fmt, ap);
+	debug_vprintf(DP_ERROR, fmt, ap);
 	va_end(ap);
 	abort();
 }
