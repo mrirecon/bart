@@ -18,13 +18,19 @@
 #include <alloca.h>
 
 #include "num/multind.h"
-#include "num/flpmath.h"
 #include "num/iovec.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
 
 #include "ops.h"
+
+#ifndef CFL_SIZE
+#define CFL_SIZE sizeof(complex float)
+#endif
+#ifndef FL_SIZE
+#define FL_SIZE sizeof(float)
+#endif
 
 struct operator_s {
 
