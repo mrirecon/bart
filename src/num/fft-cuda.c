@@ -6,7 +6,7 @@
  * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
  *
  *
- * Internal interfact to the CUFFT library used in fft.c.
+ * Internal interface to the CUFFT library used in fft.c.
  */
 
 #include <stdbool.h>
