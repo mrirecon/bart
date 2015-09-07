@@ -4,18 +4,18 @@
  *
  * Authors:
  * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2013      Frank Ong <frankong@berkeley.edu> 
+ * 2013      Frank Ong <frankong@berkeley.edu>
  *
  * Generic operations on multi-dimensional arrays. Most functions
- * come in two flavours: 
+ * come in two flavours:
  *
- * 1. A basic version which takes the number of dimensions, an array 
- * of long integers specifing the size of each dimension, the pointers 
+ * 1. A basic version which takes the number of dimensions, an array
+ * of long integers specifing the size of each dimension, the pointers
  * to the data, and the size of each element and other required parameters.
  * The data is assumed to be stored in column-major format.
  *
- * 2. An extended version which takes an array of long integers which 
- * specifies the strides for each argument. 
+ * 2. An extended version which takes an array of long integers which
+ * specifies the strides for each argument.
  *
  * All functions should work on CPU and GPU and md_copy can be used
  * to copy between CPU and GPU.
