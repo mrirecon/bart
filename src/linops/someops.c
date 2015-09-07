@@ -740,7 +740,6 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 
 			md_free(fftmod_mat);
 			md_free(fftmodk_mat);
-		
 		}
 #endif
 	} else {
