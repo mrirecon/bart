@@ -7,7 +7,7 @@
 #MAKEFLAGS += --silent
 
 # use for parallel make
-#AR=./ar_lock.sh
+AR=./ar_lock.sh
 
 CUDA?=0
 ACML?=0
