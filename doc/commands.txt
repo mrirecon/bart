@@ -163,6 +163,11 @@ cdf97 [-i] bitmask <input> <output>
 	-h	help
 
 
+nrmse <reference> <input>
+
+	Output Normalized Root Mean Square Error (NRMSE).
+
+
 
 -- MRI calibration and reconstruction ---
 
