@@ -42,7 +42,7 @@ typedef int (*quicksort_cmp_t)(const void* data, unsigned int a, unsigned int b)
 extern void quicksort(unsigned int N, unsigned int ord[__VLA(N)], const void* data, quicksort_cmp_t cmp);
 
 extern void mini_cmdline(int argc, char* argv[], int expected_args, const char* usage_str, const char* help_str);
-extern _Bool mini_cmdline_bool(int argc, char* argv[], int expected_args, const char* usage_str, const char* help_str);
+extern _Bool mini_cmdline_bool(int argc, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str);
 
 extern void print_long(unsigned int D, const long arr[__VLA(D)]);
 extern void print_float(unsigned int D, const float arr[__VLA(D)]);

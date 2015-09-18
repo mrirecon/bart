@@ -37,7 +37,7 @@ int main_normalize(int argc, char* argv[])
 {
 	bool l1 = false;
 
-	l1 = mini_cmdline_bool(argc, argv, 3, usage_str, help_str);
+	l1 = mini_cmdline_bool(argc, argv, 'b', 3, usage_str, help_str);
 
 	int N = DIMS;
 	long dims[N];

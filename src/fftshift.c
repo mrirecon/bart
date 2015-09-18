@@ -30,7 +30,7 @@ static const char* help_str =	"Apply fftshift along dimensions selected by the {
 
 int main_fftshift(int argc, char* argv[])
 {
-	bool b = mini_cmdline_bool(argc, argv, 3, usage_str, help_str);
+	bool b = mini_cmdline_bool(argc, argv, 'b', 3, usage_str, help_str);
 
 	unsigned long flags = labs(atol(argv[1]));
 
