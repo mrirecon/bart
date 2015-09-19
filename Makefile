@@ -1,10 +1,14 @@
-# Copyright 2013. The Regents of the University of California.
-# All rights reserved. Use of this source code is governed by 
+# Copyright 2013-2015. The Regents of the University of California.
+# Copyright 2015. Martin Uecker.
+# All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 
 
 # silent make
 #MAKEFLAGS += --silent
+
+# clear out all implicit rules and variables
+MAKEFLAGS += -R
 
 # use for parallel make
 AR=./ar_lock.sh
@@ -276,7 +280,7 @@ endif
 
 # Modules
 
-#.LIBPATTERNS := lib/lib%.a
+.LIBPATTERNS := lib%.a
 
 
 vpath %.a lib
@@ -317,6 +321,16 @@ sense: pics
 
 $(BTARGETS): bart
 	rm -f $@ && $(MYLINK) bart $@
+
+
+# implicit rules
+
+%.o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+(%): %
+	$(AR) r $@ $%
+
 
 
 .SECONDEXPANSION:
