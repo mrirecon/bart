@@ -11,12 +11,14 @@
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
-
+#include <string.h>
+#include <libgen.h>
 #include <complex.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "misc/mmio.h"
+#include "misc/debug.h"
 
 
 #ifndef DIMS
@@ -32,6 +34,9 @@ static void usage(const char* name, FILE* fd)
 
 int main_relnorm(int argc, char* argv[])
 {
+
+	if (0 == strcmp(basename(argv[0]), "relnorm"))
+		debug_printf(DP_WARN, "The \'relnorm\' command is deprecated. Use \'nrmse\' instead.\n");
 
 	int c;
 	while (-1 != (c = getopt(argc, argv, "h"))) {
