@@ -9,7 +9,7 @@
  * with only image related tags. Other mandatory DICOM tags are
  * missing. We only support 16 bit little endian gray scale images.
  *
- * FOR RESEARCH USE ONLY
+ * FOR RESEARCH USE ONLY - NOT FOR DIAGNOSTIC USE
  */
 
 #define _GNU_SOURCE
@@ -52,6 +52,8 @@
 #define DTAG_TRANSFER_SYNTAX		0x0010
 #define LITTLE_ENDIAN_EXPLICIT		"1.2.840.10008.1.2.1"
 
+#define DGRP_IMAGE2			0x0020
+#define DTAG_COMMENT			0x4000
 
 
 struct element {
@@ -69,6 +71,7 @@ struct element dicom_elements[] = {
 
 	{ DGRP_FILE, DTAG_META_SIZE, "UL", 4, &(uint32_t){ 28 } },
 	{ DGRP_FILE, DTAG_TRANSFER_SYNTAX, "UI", sizeof(LITTLE_ENDIAN_EXPLICIT), LITTLE_ENDIAN_EXPLICIT },
+	{ DGRP_IMAGE2, DTAG_COMMENT, "LT", 22, "NOT FOR DIAGNOSTIC USE\0\0" },
 	{ DGRP_IMAGE, DTAG_IMAGE_SAMPLES_PER_PIXEL, "US", 2, &(uint16_t){ 1 } },		// gray scale 
 	{ DGRP_IMAGE, DTAG_IMAGE_PHOTOM_INTER, "CS", sizeof(MONOCHROME2), MONOCHROME2 },	// 0 is black
 	{ DGRP_IMAGE, DTAG_IMAGE_ROWS, "US", 2, &(uint16_t){ 0 } },
@@ -149,15 +152,15 @@ int dicom_write(const char* name, unsigned int cols, unsigned int rows, const un
 
 	int entries = sizeof(dicom_elements) / sizeof(dicom_elements[0]);
 
-	assert(DGRP_IMAGE == dicom_elements[4].group);
-	assert(DTAG_IMAGE_ROWS == dicom_elements[4].element);
-
-	dicom_elements[4].data = &(uint16_t){ rows };
-
 	assert(DGRP_IMAGE == dicom_elements[5].group);
-	assert(DTAG_IMAGE_COLS == dicom_elements[5].element);
+	assert(DTAG_IMAGE_ROWS == dicom_elements[5].element);
 
-	dicom_elements[5].data = &(uint16_t){ cols };
+	dicom_elements[5].data = &(uint16_t){ rows };
+
+	assert(DGRP_IMAGE == dicom_elements[6].group);
+	assert(DTAG_IMAGE_COLS == dicom_elements[6].element);
+
+	dicom_elements[6].data = &(uint16_t){ cols };
 
 	assert(DGRP_PIXEL == dicom_elements[entries - 1].group);
 	assert(DTAG_PIXEL_DATA == dicom_elements[entries - 1].element);

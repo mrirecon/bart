@@ -4,8 +4,12 @@ See LICENSE file for licensing information.
 -------------------------------------------------------------------------------
 
 
-The tools in this software implement various reconstruction algorithms. 
-Please cite the corresponding articles when using these tools for research.
+The tools in this software implement various reconstruction algorithms for
+Magnetic Resonance Imaging. The software is intended for research use only
+and NOT FOR DIAGNOSTIC USE. It comes without any warranty (see LICENSE for
+details).
+
+Please cite the corresponding articles when using these tools.
 Some references can be found at the end of this file. The source code might
 provide more detailed references, e.g. for specific iterative algorithms.
 
