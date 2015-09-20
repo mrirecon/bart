@@ -1,9 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
 #include <string.h>
@@ -11,6 +12,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <complex.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -53,37 +55,67 @@ int read_cfl_header(int fd, int n, long dimensions[n])
 
 	int pos = 0;
 	int delta;
+	bool ok = false;
 
-	if (0 != sscanf(header + pos, "# Dimensions\n%n", &delta))
-		return -1;
+	char* keyword;
 
-	pos += delta;
+	while (true) {
 
-	for (int i = 0; i < n; i++)
-		dimensions[i] = 1;
+		// skip lines not starting with '#'
 
-	long val;
-	int i = 0;
+		while ('#' != header[pos]) {
 
-	while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
+			if ('\0' == header[pos])
+				goto out;
 
-		pos += delta;
+			if (0 != sscanf(header + pos, "%*s\n%n", &delta))
+				return -1;
 
-		if (i < n)
-			dimensions[i] = val;
-		else
-		if (1 != val)
-			return -1;
+			pos += delta;
+		}
 
-		i++;
+		if (1 == sscanf(header + pos, "# %ms\n%n", &keyword, &delta)) {
+
+			pos += delta;
+
+			if (0 == strcmp(keyword, "Dimensions")) {
+
+				for (int i = 0; i < n; i++)
+					dimensions[i] = 1;
+
+				long val;
+				int i = 0;
+
+				while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
+
+					pos += delta;
+
+					if (i < n)
+						dimensions[i] = val;
+					else
+					if (1 != val)
+						return -1;
+
+					i++;
+				}
+
+				if (0 != sscanf(header + pos, "\n%n", &delta))
+					return -1;
+
+				pos += delta;
+
+				if (ok)
+					return -1;
+
+				ok = true;
+			}
+
+			free(keyword);
+		}
 	}
 
-	if (0 != sscanf(header + pos, "\n%n", &delta))
-		return -1;
-
-	pos += delta;
-
-	return 0;
+out:
+	return ok ? 0 : -1;
 }
 
 
