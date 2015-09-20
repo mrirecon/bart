@@ -52,6 +52,9 @@ extern void print_complex(unsigned int D, const _Complex float arr[__VLA(D)]);
 
 extern unsigned int bitcount(unsigned int flags);
 
+extern const char* command_line;
+extern void save_command_line(int argc, char* argv[argc]);
+
 #ifdef __cplusplus
 }
 #endif
