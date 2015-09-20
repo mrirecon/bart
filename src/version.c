@@ -15,7 +15,12 @@
 
 static const char* usage_str = "[-h]";
 static const char* help_str = 
-	"Print BART version string\n\n"
+	"Print BART version. The version string is of the form\n"
+	"TAG or TAG-COMMITS-SHA as produced by 'git describe'. It\n"
+	"specifies the last release (TAG), and (if git is used)\n"
+	"the number of commits (COMMITS) since this release and\n"
+	"the abbreviated hash of the last commit (SHA). If there\n"
+	"are local changes '-dirty' is added at the end.\n\n"
 	"-h\thelp\n";
 			
 
