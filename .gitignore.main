@@ -19,6 +19,9 @@ python/.ipynb_checkpoints/
 # local Makefile
 Makefile.local
 
+# version string
+src/misc/version.inc
+
 # ctags
 tags
 
