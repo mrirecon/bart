@@ -18,6 +18,8 @@
 #include <unistd.h>
 
 #include "num/multind.h"
+
+#include "misc/version.h"
 #include "misc/misc.h"
 
 #include "io.h"
@@ -36,6 +38,15 @@ int write_cfl_header(int fd, unsigned int n, const long dimensions[n])
 		pos += snprintf(header + pos, 4096 - pos, "%ld ", dimensions[i]);
 
 	pos += snprintf(header + pos, 4096 - pos, "\n");
+
+	if (NULL != command_line) {
+
+		pos += snprintf(header + pos, 4096 - pos, "# Command\n");
+		pos += snprintf(header + pos, 4096 - pos, "%s\n", command_line);
+	}
+
+	pos += snprintf(header + pos, 4096 - pos, "# Creator\n");
+	pos += snprintf(header + pos, 4096 - pos, "BART %s\n", bart_version);
 
 	if (pos != write(fd, header, pos))
 		return -1;
