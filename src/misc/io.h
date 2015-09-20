@@ -16,7 +16,7 @@ extern int write_coo(int fd, int n, const long dimensions[__VLA(n)]);
 extern int read_coo(int fd, int n, long dimensions[__VLA(n)]);
 
 extern int write_cfl_header(int fd, int n, const long dimensions[__VLA(n)]);
-extern int read_cfl_header(int fd, int D, long dimensions[__VLA(D)]);
+extern int read_cfl_header(const char* tag, int fd, int D, long dimensions[__VLA(D)]);
 
 
 

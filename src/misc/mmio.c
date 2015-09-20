@@ -195,7 +195,7 @@ static complex float* load_cfl_internal(const char* name, unsigned int D, long d
 	if (-1 == (ofd = open(name_hdr, O_RDONLY)))
 		io_error("Loading cfl file %s", name);
 
-	if (-1 == read_cfl_header(ofd, D, dimensions))
+	if (-1 == read_cfl_header(name, ofd, D, dimensions))
 		io_error("Loading cfl file %s", name);
 
 	if (-1 == close(ofd))

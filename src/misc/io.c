@@ -7,6 +7,7 @@
  * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
+#define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -23,6 +24,15 @@
 
 #include "io.h"
 
+
+struct history_s {
+
+	const char* tag;
+	const char* cmd;
+	struct history_s* prev;
+};
+
+static struct history_s* history = NULL;
 
 
 int write_cfl_header(int fd, int n, const long dimensions[n])
@@ -48,6 +58,19 @@ int write_cfl_header(int fd, int n, const long dimensions[n])
 	pos += snprintf(header + pos, 4096 - pos, "# Creator\n");
 	pos += snprintf(header + pos, 4096 - pos, "BART %s\n", bart_version);
 
+	if (history) {
+
+		struct history_s* h = history;
+
+		pos += snprintf(header + pos, 4096 - pos, "# History\n");
+
+		while (h) {
+
+			pos += snprintf(header + pos, 4096 - pos, "%s: %s\n", h->tag, h->cmd);
+			h = h->prev;
+		}
+	}
+
 	if (pos != write(fd, header, pos))
 		return -1;
 
@@ -56,7 +79,7 @@ int write_cfl_header(int fd, int n, const long dimensions[n])
 
 
 
-int read_cfl_header(int fd, int n, long dimensions[n])
+int read_cfl_header(const char* tag, int fd, int n, long dimensions[n])
 {
 	char header[4097];
 	memset(header, 0, 4097);
@@ -120,6 +143,38 @@ int read_cfl_header(int fd, int n, long dimensions[n])
 					return -1;
 
 				ok = true;
+
+			} else
+			if (   (0 == strcmp(keyword, "History"))
+			    || (0 == strcmp(keyword, "Command"))) {
+
+				int c = 0;
+
+				while ('#' != header[pos]) {
+
+					if ('\0' == header[pos])
+						goto out;
+
+					char* cmd;
+
+					if (1 != sscanf(header + pos, "%m[^\n]\n%n", &cmd, &delta))
+						return -1;
+
+					if (c++ < 5) {
+
+						struct history_s* h = xmalloc(sizeof(struct history_s));
+						h->tag = strdup(tag);
+						h->cmd = cmd;
+						h->prev = history;
+						history = h;
+
+					} else {
+
+						free(cmd);
+					}
+
+					pos += delta;
+				}
 			}
 		}
 	}
