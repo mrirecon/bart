@@ -68,7 +68,7 @@ int read_cfl_header(int fd, int n, long dimensions[n])
 			if ('\0' == header[pos])
 				goto out;
 
-			if (0 != sscanf(header + pos, "%*s\n%n", &delta))
+			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
 				return -1;
 
 			pos += delta;
