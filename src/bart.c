@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 			return dispatch_table[i].main_fun(argc, argv);
 	}
 
-	fprintf(stderr, "Unknown command.\n");
+	error("Unknwon bart command: \"%s\".\n", bn);
 	exit(1);
 }
 
