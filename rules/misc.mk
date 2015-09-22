@@ -13,14 +13,7 @@ miscobjs := $(miscsrcs:.c=.o)
 lib/libmisc.a: libmisc.a($(miscobjs))
 
 
-version.new:
-	@echo 'VERSION($(shell $(root)/git-version.sh))' > $@
-
-.PHONY: version.new
-
-$(srcdir)/misc/version.inc: version.new
-	cmp -s version.new $(srcdir)/misc/version.inc || mv version.new $(srcdir)/misc/version.inc
-	rm -f version.new
+DOTHIS := $(shell $(root)/update-version.sh)
 
 
 $(srcdir)/misc/version.o: $(srcdir)/misc/version.inc
