@@ -24,6 +24,13 @@
 
 #include "io.h"
 
+struct input_s {
+
+	const char* name;
+	struct input_s* prev;
+};
+
+static struct input_s* input = NULL;
 
 struct history_s {
 
@@ -55,10 +62,25 @@ int write_cfl_header(int fd, int n, const long dimensions[n])
 		pos += snprintf(header + pos, 4096 - pos, "%s\n", command_line);
 	}
 
+	if (NULL != input) {
+
+		struct input_s* in = input;
+
+		pos += snprintf(header + pos, 4096 - pos, "# Inputs\n");
+
+		while (in) {
+
+			pos += snprintf(header + pos, 4096 - pos, " %s", in->name);
+			in = in->prev;
+		}
+
+		pos += snprintf(header + pos, 4096 - pos, "\n");
+	}
+
 	pos += snprintf(header + pos, 4096 - pos, "# Creator\n");
 	pos += snprintf(header + pos, 4096 - pos, "BART %s\n", bart_version);
 
-	if (history) {
+	if (NULL != history) {
 
 		struct history_s* h = history;
 
@@ -81,6 +103,12 @@ int write_cfl_header(int fd, int n, const long dimensions[n])
 
 int read_cfl_header(const char* tag, int fd, int n, long dimensions[n])
 {
+	struct input_s* inp = xmalloc(sizeof(struct input_s));
+	inp->name = strdup(tag);
+	inp->prev = input;
+	input = inp;
+
+
 	char header[4097];
 	memset(header, 0, 4097);
 
