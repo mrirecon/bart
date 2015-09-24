@@ -57,8 +57,6 @@ int read_cfl_header(int fd, int n, long dimensions[n])
 	int delta;
 	bool ok = false;
 
-	char* keyword;
-
 	while (true) {
 
 		// skip lines not starting with '#'
@@ -74,7 +72,9 @@ int read_cfl_header(int fd, int n, long dimensions[n])
 			pos += delta;
 		}
 
-		if (1 == sscanf(header + pos, "# %ms\n%n", &keyword, &delta)) {
+		char keyword[32];
+
+		if (1 == sscanf(header + pos, "# %31s\n%n", keyword, &delta)) {
 
 			pos += delta;
 
@@ -109,8 +109,6 @@ int read_cfl_header(int fd, int n, long dimensions[n])
 
 				ok = true;
 			}
-
-			free(keyword);
 		}
 	}
 
