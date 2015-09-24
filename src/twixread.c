@@ -187,13 +187,13 @@ static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const l
 
 		if (dims[READ_DIM] != mdh.samples) {
 
-			debug_printf(DP_WARN, "Wrong number of samples.\n");
+			debug_printf(DP_WARN, "Wrong number of samples: %d != %d.\n", dims[READ_DIM], mdh.samples);
 			return -1;
 		}
 
-		if (dims[COIL_DIM] != mdh.channels) {
+		if ((0 != mdh.channels) && (dims[COIL_DIM] != mdh.channels)) {
 
-			debug_printf(DP_WARN, "Wrong number of channels.\n");
+			debug_printf(DP_WARN, "Wrong number of channels: %d != %d.\n", dims[COIL_DIM], mdh.channels);
 			return -1;
 		}
 
@@ -224,6 +224,7 @@ static void help(void)
 		"-s S\tnumber of slices\n"
 		"-v V\tnumber of averages\n"
 		"-c C\tnumber of channels\n"
+		"-n N\tnumber of repetitions\n"
 		"-a A\ttotal number of ADCs\n"
 		"-A\tautomatic (guess dimensions)\n"
 		"-L\tuse linectr offset\n"
@@ -245,7 +246,8 @@ int main(int argc, char* argv[argc])
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
 
-	while (-1 != (c = getopt(argc, argv, "x:y:z:s:c:a:PLAh"))) {
+	while (-1 != (c = getopt(argc, argv, "x:y:z:s:c:a:n:PLAh"))) {
+
 		switch (c) {
 
 		case 'x':
@@ -266,6 +268,10 @@ int main(int argc, char* argv[argc])
 
 		case 'v':
 			dims[AVG_DIM] = atoi(optarg);
+			break;
+
+		case 'n':
+			dims[TIME_DIM] = atoi(optarg);
 			break;
 
 		case 'a':
@@ -306,7 +312,7 @@ int main(int argc, char* argv[argc])
 	}
 
 	if (0 == adcs)
-		adcs = dims[PHS1_DIM] * dims[PHS2_DIM] * dims[SLICE_DIM];
+		adcs = dims[PHS1_DIM] * dims[PHS2_DIM] * dims[SLICE_DIM] * dims[TIME_DIM];
 
 	debug_print_dims(DP_DEBUG1, DIMS, dims);
 
@@ -317,7 +323,7 @@ int main(int argc, char* argv[argc])
 	struct hdr_s hdr;
 	bool vd = siemens_meas_setup(ifd, &hdr);
 
-	long off[DIMS];
+	long off[DIMS] = { 0 };
 
 	if (autoc) {
 
