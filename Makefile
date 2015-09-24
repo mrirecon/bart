@@ -52,6 +52,7 @@ export TOOLBOX_PATH=$(root)
 DEPFILE = $(*D)/.$(*F).d
 DEPFLAG = -MMD -MF $(DEPFILE)
 ALLDEPS = $(shell find $(srcdir) -name ".*.d")
+#ALLDEPS = $(shell find $(root) -name ".*.d")
 
 
 # Compilation flags
@@ -334,7 +335,10 @@ $(BTARGETS): bart
 
 (%): %
 	$(AR) r $@ $%
+	rm $%
 
+# we add the rm because intermediate files are not deleted
+# automatically for some reason
 
 
 .SECONDEXPANSION:
