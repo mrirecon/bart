@@ -39,11 +39,12 @@ struct image_data_s {
 	float max_val;
 	long h;
 	long w;
+	long inum;
 };
 
 
-const char* usage_str = "[-b] <input> <output_prefix>";
-const char* help_str =	"-b\toutput dicom\n\n"
+const char* usage_str = "[-d] <input> <output_prefix>";
+const char* help_str =	"-d\toutput dicom\n\n"
 			"Create png or prototype dicom images.\n"
 			"The first two non-singleton dimensions will\n"
 			"be used for the image, and the other dimensions\n"
@@ -59,6 +60,7 @@ static void toimg(const struct image_data_s* img_data, const char* name, unsigne
 
 	long h = img_data->h;
 	long w = img_data->w;
+	long inum = img_data->inum;
 
 	for (int i = 0; i < h; i++) {
 
@@ -80,7 +82,7 @@ static void toimg(const struct image_data_s* img_data, const char* name, unsigne
 		}
 	}
 
-	(img_data->dicom  ? dicom_write : png_write_rgb24)(name, w, h, buf);
+	(img_data->dicom  ? dicom_write : png_write_rgb24)(name, w, h, inum, buf);
 }
 
 
@@ -131,15 +133,6 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 		max = 1.;
 
 
-	struct image_data_s img_data = {
-
-		.dicom = dicom,
-		.max_val = max_val,
-		.max = max,
-		.h = h,
-		.w = w
-	};
-
 	int len = strlen(name);
 	assert(len >= 1);
 
@@ -149,6 +142,17 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 
 #pragma omp parallel for
 	for (long i = 0; i < num_imgs; i++) {
+
+		// make a copy for each omp thread
+		struct image_data_s img_data = {
+
+			.dicom = dicom,
+			.max_val = max_val,
+			.max = max,
+			.h = h,
+			.w = w,
+			.inum = i,
+		};
 
 		char* name_i = xmalloc( (len + 10) * sizeof(char)); // extra space for ".0000.png"
 		if (num_imgs > 1)
@@ -173,7 +177,7 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 
 int main_toimg(int argc, char* argv[])
 {
-	bool dicom = mini_cmdline_bool(argc, argv, 'b', 2, usage_str, help_str);
+	bool dicom = mini_cmdline_bool(argc, argv, 'd', 2, usage_str, help_str);
 
 	long dims[DIMS];
 

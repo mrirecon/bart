@@ -16,8 +16,10 @@
 #include "png.h"
 
 
-int png_write_rgb24(const char* name, unsigned int w, unsigned int h, const unsigned char* buf)
+int png_write_rgb24(const char* name, unsigned int w, unsigned int h, long inum, const unsigned char* buf)
 {
+	UNUSED(inum);
+
 	FILE* fp;
 	png_structp structp = NULL;
 	png_infop infop = NULL;
