@@ -8,6 +8,9 @@
 # object files
 *.o
 
+# mac debug files
+*.dSYM
+
 # python compiled files
 *.pyc
 python/.ipynb_checkpoints/
