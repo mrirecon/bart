@@ -1,9 +1,9 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011, 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2011-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  *
  * 
@@ -11,7 +11,7 @@
  *
  *
  * Gauss, Carl F. 1805. "Nachlass: Theoria Interpolationis Methodo Nova
- * Tractata." Werke 3, pp. 265–327, Königliche Gesellschaft der
+ * Tractata." Werke 3, pp. 265-327, Königliche Gesellschaft der
  * Wissenschaften, Göttingen, 1866
  */
 
@@ -98,9 +98,16 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 			inv, phase + fftmod_phase(dims[i], j));
 }
 
+
+static unsigned long clear_singletons(unsigned int N, const long dims[N], unsigned long flags)
+{
+       return (0 == N) ? flags : clear_singletons(N - 1, dims, (1 == dims[N - 1]) ? MD_CLEAR(flags, N - 1) : flags);
+}
+
+
 void fftmod2(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
 {
-	fftmod2_r(N, dims, flags, ostrs, dst, istrs, src, false, 0.);
+	fftmod2_r(N, dims, clear_singletons(N, dims, flags), ostrs, dst, istrs, src, false, 0.);
 }
 
 
@@ -111,7 +118,7 @@ void fftmod2(unsigned int N, const long dims[N], unsigned long flags, const long
  */
 void ifftmod2(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
 {
-	fftmod2_r(N, dims, flags, ostrs, dst, istrs, src, true, 0.);
+	fftmod2_r(N, dims, clear_singletons(N, dims, flags), ostrs, dst, istrs, src, true, 0.);
 }
 
 void fftmod(unsigned int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
