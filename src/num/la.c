@@ -248,7 +248,7 @@ void vec_saxpy(int N, complex float x[N], complex float alpha, const complex flo
 
 void (gram_matrix)(int N, complex float cov[N][N], int L, const complex float data[N][L])
 {
-// #pragma omp parallel for
+#pragma omp parallel for
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j <= i; j++) {	
 
