@@ -35,11 +35,19 @@ static void help(void)
 		"-x x\treadout samples\n"
 		"-y y\tphase encoding lines\n"
 		"-a a\tacceleration\n"
+		"-t t\tturns\n"
 		"-r\tradial\n"
-		"-G\tgolden angle\n"
+		"-G\tgolden-ratio sampling\n"
+		"-D\tdouble base angle\n"
 		"-h\thelp\n");
 }
 
+
+static int remap(int all, int turns, int n)
+{
+	int spt = all / turns;
+	return (n % spt) * turns + n / spt;
+}
 
 int main(int argc, char* argv[])
 {
@@ -48,9 +56,11 @@ int main(int argc, char* argv[])
 	int accel = 1;
 	bool radial = false;
 	bool golden = false;
+	bool dbl = false;
 	int c;
+	int turns = 1;
 
-	while (-1 != (c = getopt(argc, argv, "x:y:a:rGh"))) {
+	while (-1 != (c = getopt(argc, argv, "x:y:a:t:rDGh"))) {
 
 		switch (c) {
 
@@ -71,8 +81,14 @@ int main(int argc, char* argv[])
 			radial = true;
 			break;
 
+		case 'D':
+			dbl = true;
 		case 'r':
 			radial = true;
+			break;
+
+		case 't':
+			turns = atoi(optarg);
 			break;
 
 		case 'h':
@@ -103,9 +119,16 @@ int main(int argc, char* argv[])
 
 			if (radial) {
 
+				/* golden-ratio sampling
+				 *
+				 * Winkelmann S, Schaeffter T, Koehler T, Eggers H, Doessel O.
+				 * An optimal radial profile order based on the Golden Ratio
+				 * for time-resolved MRI. IEEE TMI 26:68--76 (2007)
+				 */
+
 				double golden_angle = 3. - sqrtf(5.);
 				double base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
-				double angle = M_PI * (float)j * base;
+				double angle = M_PI * (float)remap(Y, turns, j) * (dbl ? 2. : 1.) * base;
 
 				samples[p * 3 + 0] = ((float)i + 0.5 - (float)X / 2.) * sin(angle);
 				samples[p * 3 + 1] = ((float)i + 0.5 - (float)X / 2.) * cos(angle);
