@@ -108,7 +108,7 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 		char name_i[len + 10]; // extra space for ".0000.png"
 
 		if (num_imgs > 1)
-			sprintf(name_i, "%s.%04ld.%s", name, i, dicom ? "dcm" : "png");
+			sprintf(name_i, "%s-%04ld.%s", name, i, dicom ? "dcm" : "png");
 		else
 			sprintf(name_i, "%s.%s", name, dicom ? "dcm" : "png");
 
