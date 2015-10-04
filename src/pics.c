@@ -5,7 +5,7 @@
  * Authors:
  * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  */
 
@@ -57,6 +57,7 @@
 #include "misc/misc.h"
 
 
+#define NUM_REGS 10
 
 static void usage(const char* name, FILE* fd)
 {
@@ -70,6 +71,7 @@ static void help(void)
 		"\n"
 		"-l1/-l2\t\ttoggle l1-wavelet or l2 regularization.\n"
 		"-r lambda\tregularization parameter\n"
+		"-R <T>:A:B:C\tgeneralized regularization options (-Rh for help)\n"
 		"-c\t\treal-value constraint\n"
 		"-s step\t\titeration stepsize\n"
 		"-i maxiter\tnumber of iterations\n"
@@ -79,6 +81,22 @@ static void help(void)
 		"-g \t\tuse GPU\n"
 		"-p pat\t\tpattern or weights\n"
 #endif
+	);
+}
+
+static void help_reg(void)
+{
+	printf( "-R <T>:A:B:C\t<T> is regularization type (single letter),\n"
+		"\t\tA is transform flags, B is joint threshold flags,\n"
+		"\t\tand C is regularization value. Specify any number\n"
+		"\t\tof regularization terms.\n"
+		"-R L:A:B:C\tLLR with rows from A and cols from B\n"
+		"-R W:A:B:C\tl1-wavelet\n"
+		"-R T:A:B:C\tTotal variation\n"
+		"-R I:B:C  \tl1-norm in image domain\n"
+		"-R Q:C    \tl2-norm in image domain\n"
+		"Example:\n"
+		"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
 	);
 }
 
@@ -102,6 +120,16 @@ const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_di
 	return lop;
 }
 
+struct reg_s {
+
+	enum { L1WAV, TV, LLR, L1IMG, L2IMG } xform;
+
+	unsigned int xflags;
+	unsigned int jflags;
+
+	float lambda;
+};
+
 
 int main_pics(int argc, char* argv[])
 {
@@ -109,18 +137,15 @@ int main_pics(int argc, char* argv[])
 
 	struct sense_conf conf = sense_defaults;
 
+
 	enum { CG, IST, FISTA, ADMM } algo = CG;
+
 	bool use_gpu = false;
 
 	bool randshift = true;
 	unsigned int maxiter = 30;
 	float step = 0.95;
 	float lambda = -1.;
-	float l2_lambda = 0.;
-	float l1_lambda = 0.;
-	float tv_lambda = 0.;
-	float lr_lambda = 0.;
-	unsigned int rflags = 7;
 
 	// Start time count
 
@@ -143,15 +168,76 @@ int main_pics(int argc, char* argv[])
 	float admm_rho = iter_admm_defaults.rho;
 	unsigned int admm_maxitercg = iter_admm_defaults.maxitercg;
 
+	struct reg_s regs[NUM_REGS];
+	unsigned int r = 0;
+
 	if (0 == strcmp(basename(argv[0]), "sense"))
 		debug_printf(DP_WARN, "The \'sense\' command is deprecated. Use \'pics\' instead.\n");
 
 	int c;
 	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:Sd:R:HC:"))) {
+
+		char rt[5];
+
 		switch(c) {
 
 		case 'I':
 			algo = IST;
+			break;
+
+		case 'R':
+			assert(r < NUM_REGS);
+
+			// first get transform type
+			int ret = sscanf(optarg, "%4[^:]", rt);
+			assert(1 == ret);
+
+			// next switch based on transform type
+			if (strcmp(rt, "W") == 0) {
+
+				regs[r].xform = L1WAV;
+				int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+				assert(3 == ret);
+			}
+			else if (strcmp(rt, "L") == 0) {
+
+				regs[r].xform = LLR;
+				int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+				assert(3 == ret);
+			}
+			else if (strcmp(rt, "T") == 0) {
+
+				regs[r].xform = TV;
+				int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+				assert(3 == ret);
+				algo = ADMM;
+			}
+			else if (strcmp(rt, "I") == 0) {
+
+				regs[r].xform = L1IMG;
+				int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+				assert(2 == ret);
+				regs[r].xflags = 0u;
+			}
+			else if (strcmp(rt, "Q") == 0) {
+
+				regs[r].xform = L2IMG;
+				int ret = sscanf(optarg, "%*[^:]:%f", &regs[r].lambda);
+				assert(1 == ret);
+				regs[r].xflags = 0u;
+				regs[r].jflags = 0u;
+			}
+			else if (strcmp(rt, "h") == 0) {
+
+				help_reg();
+				exit(0);
+			}
+			else {
+
+				error("Unrecognized regularization type: \"%s\" (-Rh for help).\n", rt);
+			}
+
+			r++;
 			break;
 
 		case 'e':
@@ -180,10 +266,6 @@ int main_pics(int argc, char* argv[])
 			lambda = atof(optarg);
 			break;
 
-		case 'R':
-			rflags = atoi(optarg);
-			break;
-
 		case 'O':
 			conf.rwiter = atoi(optarg);
 			break;
@@ -209,34 +291,29 @@ int main_pics(int argc, char* argv[])
 			break;
 
 		case 'l':
+			assert(r < NUM_REGS);
+			regs[r].lambda = lambda;
+			regs[r].xflags = 0u;
+			regs[r].jflags = 0u;
+
 			if (0 == strcmp("1", optarg)) {
 
-				l1_lambda = lambda;
-				lambda = -1.;
+				regs[r].xform = L1WAV;
+				regs[r].xflags = 7u;
 
 			} else
 			if (0 == strcmp("2", optarg)) {
 
-				l2_lambda = lambda;
-				lambda = -1.;
-
-			} else
-			if (0 == strcmp("v", optarg)) {
-
-				tv_lambda = lambda;
-				lambda = -1.;
-
-			} else
-			if (0 == strcmp("r", optarg)) {
-
-				lr_lambda = lambda;
-				lambda = -1.;
+				regs[r].xform = L2IMG;
 
 			} else {
 
 				usage(argv[0], stderr);
 				exit(1);
 			}
+
+			lambda = -1.;
+			r++;
 			break;
 
 		case 'q':
@@ -437,106 +514,108 @@ int main_pics(int argc, char* argv[])
 	}
 
 
-	// fix up regularization parameters
-
 	if (-1. == lambda)
 		lambda = 0.;
 
-	if (-1. == l2_lambda)
-		l2_lambda = lambda;
-
-	if (-1. == l1_lambda)
-		l1_lambda = lambda;
-
-	if (-1. == lr_lambda)
-		lr_lambda = lambda;
-
-	if (-1. == tv_lambda)
-		tv_lambda = lambda;
 
 	// initialize thresh_op
-	const struct operator_p_s* thresh_ops[4] = { NULL };
-	const struct linop_s* trafos[4] = { NULL };
-	int nr_penalties = 0;
+	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
+	const struct linop_s* trafos[NUM_REGS] = { NULL };
+	int nr_penalties = r;
 
-	if (0. != l2_lambda) {
+	for (int nr = 0; nr < nr_penalties; nr++) {
 
-		debug_printf(DP_INFO, "l2 regularization: %f\n", l2_lambda);
+		// fix up regularization parameter
+		if (-1. == regs[nr].lambda)
+			regs[nr].lambda = lambda;
 
-		trafos[nr_penalties] = linop_identity_create(DIMS, img_dims);
-		thresh_ops[nr_penalties] = prox_leastsquares_create(DIMS, img_dims, l2_lambda, NULL);
-		nr_penalties++;
-	}
+		switch (regs[nr].xform) {
 
-	if (0. != l1_lambda) {
+		case L1WAV:
+			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
 
-		debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", l1_lambda);
+			if (0 != regs[nr].jflags)
+				debug_printf(DP_WARN, "joint l1-wavelet thresholding not currently supported.\n");
 
-		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-		minsize[0] = MIN(img_dims[0], 16);
-		minsize[1] = MIN(img_dims[1], 16);
-		minsize[2] = MIN(img_dims[2], 16);
+			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
+			minsize[0] = MIN(img_dims[0], 16);
+			minsize[1] = MIN(img_dims[1], 16);
+			minsize[2] = MIN(img_dims[2], 16);
 
-		if (7 == rflags) {
+			if (7 == regs[nr].xflags) {
 
-			trafos[nr_penalties] = linop_identity_create(DIMS, img_dims);
-			thresh_ops[nr_penalties] = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, l1_lambda, randshift, use_gpu);
-			nr_penalties++;
+				trafos[nr] = linop_identity_create(DIMS, img_dims);
+				thresh_ops[nr] = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, regs[nr].lambda, randshift, use_gpu);
 
-		} else {
+			} else {
 
-			unsigned int wflags = 0;
-			for (unsigned int i = 0; i < DIMS; i++) {
+				unsigned int wflags = 0;
+				for (unsigned int i = 0; i < DIMS; i++) {
 
-				if ((1 < img_dims[i]) && MD_IS_SET(rflags, i)) {
+					if ((1 < img_dims[i]) && MD_IS_SET(regs[nr].xflags, i)) {
 
-					wflags = MD_SET(wflags, i);
-					minsize[i] = MIN(img_dims[i], 16);
+						wflags = MD_SET(wflags, i);
+						minsize[i] = MIN(img_dims[i], 16);
+					}
 				}
+
+				trafos[nr] = linop_identity_create(DIMS, img_dims);
+				thresh_ops[nr] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, regs[nr].lambda, randshift);
 			}
+			break;
 
-			trafos[nr_penalties] = linop_identity_create(DIMS, img_dims);
-			thresh_ops[nr_penalties] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, l1_lambda, randshift);
-			nr_penalties++;
+		case TV:
+			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
+
+			trafos[nr] = grad_init(DIMS, img_dims, regs[nr].xflags);
+			thresh_ops[nr] = prox_thresh_create(DIMS + 1,
+					linop_codomain(trafos[nr])->dims,
+					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS), use_gpu);
+			break;
+
+		case LLR:
+			debug_printf(DP_INFO, "lowrank regularization: %f\n", regs[nr].lambda);
+
+			if (0 != regs[nr].jflags)
+				debug_printf(DP_WARN, "specifying col dims not currently supported.\n");
+
+			long blkdims[1][DIMS];
+
+			// add a very basic lowrank penalty
+			int levels = llr_blkdims(blkdims, regs[nr].xflags, img_dims, 6);
+
+			assert(1 == levels);
+			img_dims[LEVEL_DIM] = levels;
+
+			for(int l = 0; l < levels; l++)
+#if 0
+				blkdims[l][MAPS_DIM] = img_dims[MAPS_DIM];
+#else
+				blkdims[l][MAPS_DIM] = 1;
+#endif
+
+			int remove_mean = 0;
+
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			thresh_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, use_gpu);
+			break;
+
+		case L1IMG:
+			debug_printf(DP_INFO, "l1 regularization: %f\n", regs[nr].lambda);
+
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			thresh_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
+			break;
+
+		case L2IMG:
+			debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
+
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			thresh_ops[nr] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
+			break;
 		}
+
 	}
-
-	if (0. != lr_lambda) {
-
-		debug_printf(DP_INFO, "lowrank regularization: %f\n", lr_lambda);
-
-		long blkdims[1][DIMS];
-
-		// add a very basic lowrank penalty
-		int levels = llr_blkdims(blkdims, MD_BIT(TIME_DIM), img_dims, img_dims[TIME_DIM]);
-
-		assert(1 == levels);
-		img_dims[LEVEL_DIM] = levels;
-
-		for(int l = 0; l < levels; l++)
-			blkdims[l][MAPS_DIM] = img_dims[MAPS_DIM];
-
-		unsigned int mflags = 6;
-		int remove_mean = 0;
-
-		trafos[nr_penalties] = linop_identity_create(DIMS, img_dims);
-		thresh_ops[nr_penalties] = lrthresh_create(img_dims, randshift, mflags, (const long (*)[DIMS])blkdims, lr_lambda, false, remove_mean, use_gpu);
-
-		nr_penalties++;
-	}
-
-	if (0. != tv_lambda) {
-
-		debug_printf(DP_INFO, "TV regularization: %f\n", tv_lambda);
-
-		trafos[nr_penalties] = grad_init(DIMS, img_dims, rflags);
-		thresh_ops[nr_penalties] = prox_thresh_create(DIMS + 1,
-							linop_codomain(trafos[nr_penalties])->dims,
-							tv_lambda, MD_BIT(DIMS), use_gpu);
-
-		nr_penalties++;
-	}
-
 
 
 
@@ -566,10 +645,10 @@ int main_pics(int argc, char* argv[])
 	struct iter_ist_conf isconf;
 	struct iter_admm_conf mmconf;
 
-	if ((CG == algo) && (0. == l2_lambda) && (1. == nr_penalties))
+	if ((CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
 		algo = FISTA;
 
-	if ((nr_penalties > 1) || (0. != tv_lambda))
+	if (nr_penalties > 1)
 		algo = ADMM;
 
 	switch (algo) {
@@ -578,11 +657,11 @@ int main_pics(int argc, char* argv[])
 
 		debug_printf(DP_INFO, "conjugate gradients\n");
 
-		assert((0 == nr_penalties) || ((0. != l2_lambda) && (1 == nr_penalties)));
+		assert((0 == nr_penalties) || ((1 == nr_penalties) && (L2IMG == regs[0].xform)));
 
 		cgconf = iter_conjgrad_defaults;
 		cgconf.maxiter = maxiter;
-		cgconf.l2lambda = (0 == nr_penalties) ? lambda : l2_lambda;
+		cgconf.l2lambda = (0 == nr_penalties) ? 0. : regs[0].lambda;
 
 		iter2_data.fun = iter_conjgrad;
 		iter2_data._conf = &cgconf;
