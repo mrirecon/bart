@@ -24,7 +24,7 @@ MAXPROC=4
 MAXTHREADS=4
 
 title=$(cat <<- EOF
-	(BART-)GRASP v0.2 (Berkeley Advanced Reconstruction Toolbox)
+	(BART-)GRASP v0.3 (Berkeley Advanced Reconstruction Toolbox)
 	      --- EXPERIMENTAL --- FOR RESEARCH USE ONLY ---
 EOF
 )
@@ -34,7 +34,7 @@ Compressed sensing parallel imaging reconstruction with temporal
 total-variation regularization for Siemens radial VIBE sequence
 with golden-angle sampling (GRASP).
 This script requires the Berkeley Advanced Reconstruction Toolbox
-version 0.2.08. Later versions may work.
+version 0.2.09. (later versions may also work).
 
 -s spokes	number of spokes per frame
 -r lambda	regularization parameter
@@ -183,7 +183,10 @@ recon_slice()
 	rm grasp2-$1.cfl grasp2-$1.hdr
 
 	# reconstruction with tv penality along dimension 10
-	pics -S -d5 -lv -u10. -r$REG -R$(bitmask 10) -i$ITER -t rfull grasp1-$1 sens-$1 i-$1.coo
+	# old (v0.2.08):
+	# pics -S -d5 -lv -u10. -r$REG -R$(bitmask 10) -i$ITER -t rfull grasp1-$1 sens-$1 i-$1.coo
+	# new (v0.2.09):
+	pics -S -d5 -u10. -RT:$(bitmask 10):0:$REG -i$ITER -t rfull grasp1-$1 sens-$1 i-$1.coo
 
 	# clean up temp files
 	rm *-$1.cfl *-$1.hdr
