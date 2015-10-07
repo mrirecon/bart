@@ -86,16 +86,17 @@ static void help(void)
 
 static void help_reg(void)
 {
-	printf( "-R <T>:A:B:C\t<T> is regularization type (single letter),\n"
+	printf( "Generalized regularization options (experimental)\n\n"
+		"-R <T>:A:B:C\t<T> is regularization type (single letter),\n"
 		"\t\tA is transform flags, B is joint threshold flags,\n"
 		"\t\tand C is regularization value. Specify any number\n"
-		"\t\tof regularization terms.\n"
-		"-R L:A:B:C\tLLR with rows from A and cols from B\n"
-		"-R W:A:B:C\tl1-wavelet\n"
-		"-R T:A:B:C\tTotal variation\n"
-		"-R I:B:C  \tl1-norm in image domain\n"
+		"\t\tof regularization terms.\n\n"
 		"-R Q:C    \tl2-norm in image domain\n"
-		"Example:\n"
+		"-R I:B:C  \tl1-norm in image domain\n"
+		"-R W:A:B:C\tl1-wavelet\n"
+		"-R T:A:B:C\ttotal variation\n"
+//		"-R L:A:B:C\tLLR with rows from A and cols from B\n"
+		"\nExample:\n"
 		"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
 	);
 }
