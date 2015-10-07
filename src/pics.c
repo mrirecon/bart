@@ -517,6 +517,18 @@ int main_pics(int argc, char* argv[])
 	if (-1. == lambda)
 		lambda = 0.;
 
+	// if no penalities specified but regularization
+	// parameter is given, add a l2 penalty
+
+	if ((0 == r) && (lambda >= 0.)) {
+
+		regs[0].xform = L2IMG;
+		regs[0].xflags = 0u;
+		regs[0].jflags = 0u;
+		regs[0].lambda = lambda;
+		r = 1;
+	}
+
 
 	// initialize thresh_op
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
