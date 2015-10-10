@@ -163,6 +163,8 @@ int main_pics(int argc, char* argv[])
 	bool im_truth = false;
 	bool scale_im = false;
 	bool eigen = false;
+	float scaling = 0.;
+
 
 	bool hogwild = false;
 	bool fast = false;
@@ -176,7 +178,7 @@ int main_pics(int argc, char* argv[])
 		debug_printf(DP_WARN, "The \'sense\' command is deprecated. Use \'pics\' instead.\n");
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:Sd:R:HC:"))) {
+	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:w:Sd:R:HC:"))) {
 
 		char rt[5];
 
@@ -341,6 +343,10 @@ int main_pics(int argc, char* argv[])
 			pat_file = strdup(optarg);
 			break;
 
+		case 'w':
+			scaling = atof(optarg);
+			break;
+
 		case 't':
 			traj_file = strdup(optarg);
 			break;
@@ -486,21 +492,24 @@ int main_pics(int argc, char* argv[])
 
 	// apply scaling
 
-	float scaling = 0.;
+	if (scaling == 0.) {
 
-	if (NULL == traj_file) {
+		if (NULL == traj_file) {
 
-		scaling = estimate_scaling(ksp_dims, NULL, kspace);
+			scaling = estimate_scaling(ksp_dims, NULL, kspace);
 
-	} else {
+		} else {
 
-		complex float* adj = md_alloc(DIMS, img_dims, CFL_SIZE);
+			complex float* adj = md_alloc(DIMS, img_dims, CFL_SIZE);
 
-		linop_adjoint(forward_op, DIMS, img_dims, adj, DIMS, ksp_dims, kspace);
-		scaling = estimate_scaling_norm(1., md_calc_size(DIMS, img_dims), adj, false);
+			linop_adjoint(forward_op, DIMS, img_dims, adj, DIMS, ksp_dims, kspace);
+			scaling = estimate_scaling_norm(1., md_calc_size(DIMS, img_dims), adj, false);
 
-		md_free(adj);
+			md_free(adj);
+		}
 	}
+	else
+		debug_printf(DP_DEBUG1, "Scaling: %f\n", scaling);
 
 	if (scaling != 0.)
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
