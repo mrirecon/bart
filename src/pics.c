@@ -159,12 +159,16 @@ int main_pics(int argc, char* argv[])
 	float restrict_fov = -1.;
 	const char* pat_file = NULL;
 	const char* traj_file = NULL;
-	const char* image_truth_file = NULL;
-	bool im_truth = false;
 	bool scale_im = false;
 	bool eigen = false;
 	float scaling = 0.;
 
+
+	const char* image_truth_file = NULL;
+	bool im_truth = false;
+
+	const char* image_start_file = NULL;
+	bool warm_start = false;
 
 	bool hogwild = false;
 	bool fast = false;
@@ -178,7 +182,7 @@ int main_pics(int argc, char* argv[])
 		debug_printf(DP_WARN, "The \'sense\' command is deprecated. Use \'pics\' instead.\n");
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:w:Sd:R:HC:"))) {
+	while (-1 != (c = getopt(argc, argv, "W:Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:w:Sd:R:HC:"))) {
 
 		char rt[5];
 
@@ -259,6 +263,12 @@ int main_pics(int argc, char* argv[])
 			im_truth = true;
 			image_truth_file = strdup(optarg);
 			assert(NULL != image_truth_file);
+			break;
+
+		case 'W':
+			warm_start = true;
+			image_start_file = strdup(optarg);
+			assert(NULL != image_start_file);
 			break;
 
 		case 'd':
@@ -652,6 +662,24 @@ int main_pics(int argc, char* argv[])
 
 		image_truth = load_cfl(image_truth_file, DIMS, img_truth_dims);
 		//md_zsmul(DIMS, img_dims, image_truth, image_truth, 1. / scaling);
+	}
+
+	long img_start_dims[DIMS];
+	complex float* image_start = NULL;
+
+	if (warm_start) { 
+
+		debug_printf(DP_DEBUG1, "Warm start: %s\n", image_start_file);
+		image_start = load_cfl(image_start_file, DIMS, img_start_dims);
+		assert(md_check_compat(DIMS, 0u, img_start_dims, img_dims));
+		md_copy(DIMS, img_dims, image, image_start, CFL_SIZE);
+
+		free((void*)image_start_file);
+		unmap_cfl(DIMS, img_dims, image_start);
+
+		// if rescaling at the end, assume the input has also been rescaled
+		if (scale_im && scaling != 0.)
+			md_zsmul(DIMS, img_dims, image, image, 1. /  scaling);
 	}
 
 
