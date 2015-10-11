@@ -113,8 +113,10 @@ TMRI=homodyne poisson twixread fakeksp
 TSIM=phantom traj
 TIO=toimg
 BTARGETS = $(TBASE) $(TFLP) $(TNUM) $(TIO)
-XTARGETS = bart $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
-TARGETS = sense $(BTARGETS) $(XTARGETS)
+XTARGETS = $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
+YTARGETS = $(BTARGETS) $(XTARGETS)
+ZTARGETS = bbox bart $(XTARGETS)
+TARGETS = sense bart $(BTARGETS) $(XTARGETS)
 
 
 
@@ -138,7 +140,8 @@ MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
 MODULES_bench = -lwavelet2 -lwavelet3 -llinops
 MODULES_phantom = -lsimu
-MODULES_bart += -lbox -lwavelet2 -lwavelet3 -llinops
+MODULES_bbox += -lbox -lwavelet2 -lwavelet3 -llinops
+MODULES_bart += -lbox -lbox2 -lgrecon -lsense -lnoir -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart -lcalib -lsimu -lsake
 MODULES_sake += -lsake
 MODULES_wave += -liter -lwavelet2 -llinops -lsense
 MODULES_fakeksp += -lsense -llinops
@@ -292,6 +295,7 @@ include $(DIRS)
 
 # sort BTARGETS after everything is included
 BTARGETS:=$(sort $(BTARGETS))
+YTARGETS:=$(sort $(YTARGETS))
 
 
 
@@ -309,7 +313,11 @@ all: .gitignore $(TARGETS)
 # special targets
 
 
-bart: CPPFLAGS += -DMAIN_LIST="$(BTARGETS:%=%,) ()"
+bbox: CPPFLAGS += -DMAIN_LIST="$(BTARGETS:%=%,) ()"
+
+bbox: src/bart.c $(MODULES_bbox) $(MODULES)
+
+bart: CPPFLAGS += -DMAIN_LIST="$(YTARGETS:%=%,) ()"
 
 
 ismrmrd: $(srcdir)/ismrmrd.c -lismrm -lnum -lmisc
@@ -324,8 +332,8 @@ sense: pics
 	rm -f $@ && $(MYLINK) pics $@
 
 
-$(BTARGETS): bart
-	rm -f $@ && $(MYLINK) bart $@
+$(BTARGETS): bbox
+	rm -f $@ && $(MYLINK) bbox $@
 
 
 # implicit rules
@@ -342,7 +350,7 @@ $(BTARGETS): bart
 
 
 .SECONDEXPANSION:
-$(XTARGETS): % : $(srcdir)/%.c $$(MODULES_%) $(MODULES)
+$(ZTARGETS): % : $(srcdir)/%.c $$(MODULES_%) $(MODULES)
 	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -Dmain_$@=main -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(GSL_L) $(PNG_L) -lm
 #	rm $(srcdir)/$@.o
 
