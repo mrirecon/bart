@@ -145,7 +145,7 @@ int main_pics(int argc, char* argv[])
 
 	bool randshift = true;
 	unsigned int maxiter = 30;
-	float step = 0.95;
+	float step = -1.;
 	float lambda = -1.;
 
 	// Start time count
@@ -524,14 +524,6 @@ int main_pics(int argc, char* argv[])
 	if (scaling != 0.)
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
 
-	if (eigen) {
-
-		double maxeigen = estimate_maxeigenval(forward_op->normal);
-
-		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
-
-		step /= maxeigen;
-	}
 
 
 	if (-1. == lambda)
@@ -700,6 +692,33 @@ int main_pics(int argc, char* argv[])
 
 	if (nr_penalties > 1)
 		algo = ADMM;
+
+	if ((IST == algo) || (FISTA == algo)) {
+
+		// For non-Cartesian trajectories, the default
+		// will usually not work. TODO: The same is true
+		// for sensitivities which are not normalized, but
+		// we do not detect this case.
+
+		if ((NULL != traj_file) && (-1. == step) && !eigen)
+			debug_printf(DP_WARN, "No step size specified.\n");
+
+		if (-1. == step)
+			step = 0.95;
+	}
+
+	if ((CG == algo) || (ADMM == algo))
+		if (-1. != step)
+			debug_printf(DP_INFO, "Stepsize ignored.\n");
+
+	if (eigen) {
+
+		double maxeigen = estimate_maxeigenval(forward_op->normal);
+
+		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
+
+		step /= maxeigen;
+	}
 
 	switch (algo) {
 
