@@ -49,7 +49,7 @@ static int remap(int all, int turns, int n)
 	return (n % spt) * turns + n / spt;
 }
 
-int main(int argc, char* argv[])
+int main_traj(int argc, char* argv[])
 {
 	int X = 128;
 	int Y = 128;

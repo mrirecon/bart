@@ -234,7 +234,7 @@ static void help(void)
 
 
 
-int main(int argc, char* argv[argc])
+int main_twixread(int argc, char* argv[argc])
 {
 	int c;
 	long adcs = 0;

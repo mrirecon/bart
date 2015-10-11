@@ -32,12 +32,12 @@
 #endif
 
 
-const char* usage_str = "[-h] <input> <output_prefix>";
-const char* help_str =	"-h\thelp\n\n"
-			"Create magnitude images as png or proto-dicom.\n"
-			"The first two non-singleton dimensions will\n"
-			"be used for the image, and the other dimensions\n"
-			"will be looped over.\n";
+static const char* usage_str =	"[-h] <input> <output_prefix>";
+static const char* help_str =	"-h\thelp\n\n"
+				"Create magnitude images as png or proto-dicom.\n"
+				"The first two non-singleton dimensions will\n"
+				"be used for the image, and the other dimensions\n"
+				"will be looped over.\n";
 
 
 static void toimg(bool dicom, const char* name, long inum, float max, long h, long w, const complex float* data)
