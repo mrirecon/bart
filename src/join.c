@@ -32,10 +32,9 @@
 
 static void usage(const char* name, FILE* fp)
 {
-	fprintf(fp, "Usage 1: %s dimension <input1> ... <inputn> <output>\n", name);
-	fprintf(fp, "\t Example: %s 0 slice_001 slice_002 slice_003 full_data\n\n", name);
-	fprintf(fp, "Usage 2: %s -p dimension <n> <input_format> <output>\n", name);
-	fprintf(fp, "\t Example: %s -p 0 256 slice_%%03d full_data\n", name);
+	fprintf(fp, "Usage: %s dimension <input1> ... <inputn> <output>\n", name);
+	fprintf(fp, "\t Example 1: %s 0 slice_001 slice_002 slice_003 full_data\n\n", name);
+	fprintf(fp, "\t Example 2: %s 0 `seq -f \"slice_%%03g\" 0 255` full_data\n\n", name);
 }
 
 static void help(void)
@@ -47,9 +46,8 @@ static void help(void)
 int main_join(int argc, char* argv[])
 {
 	int c;
-	bool parfile = false;
 
-	while (-1 != (c = getopt(argc, argv, "hp"))) {
+	while (-1 != (c = getopt(argc, argv, "h"))) {
 
 		switch (c) {
 
@@ -58,17 +56,13 @@ int main_join(int argc, char* argv[])
 			help();
 			exit(0);
 
-		case 'p':
-			parfile = true;
-			break;
-
 		default:
 			usage(argv[0], stderr);
 			exit(1);
 		}
 	}
 
-	if ((parfile && argc - optind != 4) || (!parfile && argc - optind < 3)) {
+	if (argc - optind < 3) {
 		usage(argv[0], stderr);
 		exit(1);
 	}
@@ -78,7 +72,7 @@ int main_join(int argc, char* argv[])
 	int dim = atoi(argv[optind + 0]);
 	assert(dim < N);
 
-	int count = parfile ? atoi(argv[optind + 1]) : argc - optind - 2;
+	int count = argc - optind - 2;
 
 	long in_dims[count][N];
 	long offsets[count];
@@ -86,18 +80,10 @@ int main_join(int argc, char* argv[])
 	long sum = 0;
 
 	// figure out size of output
-	// FIXME: this approach requires loading all the data at once, effectively requiring 2X the output memory
 	for (int i = 0; i < count; i++) {
 
-		char fname[256];
-
-		if (parfile)
-			sprintf(fname, argv[optind + 2], i);
-		else
-			strcpy(fname, argv[optind + 1 + i]);
-
-		debug_printf(DP_DEBUG1, "loading %s\n", fname);
-		idata[i] = load_cfl(fname, N, in_dims[i]);
+		debug_printf(DP_DEBUG1, "loading %s\n", argv[optind + 1 + i]);
+		idata[i] = load_cfl(argv[optind + 1 + i], N, in_dims[i]);
 		offsets[i] = sum;
 
 		sum += in_dims[i][dim];
@@ -118,9 +104,7 @@ int main_join(int argc, char* argv[])
 	long ostr[N];
 	md_calc_strides(N, ostr, out_dims, CFL_SIZE);
 
-#ifdef _OPENMP
 #pragma omp parallel for
-#endif
 	for (int i = 0; i < count; i++) {
 
 		long pos[N];
