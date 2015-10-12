@@ -179,7 +179,7 @@ static complex float* load_cfl_internal(const char* name, unsigned int D, long d
 {
 	const char *p = strrchr(name, '.');
 
-	if ( (true == priv) && (NULL != p) && (p != name) && (0 == strcmp(p, ".coo")))
+	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".coo")))
 		return load_zcoo(name, D, dimensions);
 
 
