@@ -315,8 +315,6 @@ all: .gitignore $(TARGETS)
 
 bbox: CPPFLAGS += -DMAIN_LIST="$(BTARGETS:%=%,) ()"
 
-bbox: src/bart.c $(MODULES_bbox) $(MODULES)
-
 bart: CPPFLAGS += -DMAIN_LIST="$(YTARGETS:%=%,) ()"
 
 
