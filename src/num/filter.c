@@ -1,4 +1,13 @@
+/* Copyright 2015. The Regents of the University of California.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ *
+ * Authors:
+ * 2012 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ */
 
+#include <assert.h>
+#include <stdlib.h>
 #include <complex.h>
 #include <math.h>
 #include <strings.h>
@@ -11,6 +20,97 @@
 
 #include "filter.h"
 
+
+static int cmp_float(const void* a, const void* b)
+{
+	return (*(float*)a - *(float*)b > 0.) ? 1. : -1.;
+}
+
+static int cmp_complex_float(const void* a, const void* b) // gives sign for 0. (not 0)
+{
+	return (cabsf(*(complex float*)a) - cabsf(*(complex float*)b) > 0.) ? 1. : -1.;
+}
+
+static void sort_floats(int N, float ar[N])
+{
+	qsort((void*)ar, N, sizeof(float), cmp_float);
+}
+
+static void sort_complex_floats(int N, complex float ar[N])
+{
+	qsort((void*)ar, N, sizeof(complex float), cmp_complex_float);
+}
+
+float median_float(int N, float ar[N])
+{
+	float tmp[N];
+	memcpy(tmp, ar, N * sizeof(float));
+	sort_floats(N, tmp);
+	return (1 == N % 2) ? tmp[(N - 1) / 2] : ((tmp[(N - 1) / 2 + 0] + tmp[(N - 1) / 2 + 1]) / 2.);
+}
+
+complex float median_complex_float(int N, complex float ar[N])
+{
+	complex float tmp[N];
+	memcpy(tmp, ar, N * sizeof(complex float));
+	sort_complex_floats(N, tmp);
+	return (1 == N % 2) ? tmp[(N - 1) / 2] : ((tmp[(N - 1) / 2 + 0] + tmp[(N - 1) / 2 + 1]) / 2.);
+}
+
+
+struct median_s {
+
+	long length;
+	long stride;
+};
+
+static void nary_medianz(void* _data, void* ptr[])
+{
+	struct median_s* data = (struct median_s*)_data;
+
+	complex float tmp[data->length];
+
+	for (long i = 0; i < data->length; i++)
+		tmp[i] = *((complex float*)(ptr[1] + i * data->stride));
+
+	*(complex float*)ptr[0] = median_complex_float(data->length, tmp);
+}
+
+void md_medianz2(int D, int M, long dim[D], long ostr[D], complex float* optr, long istr[D], complex float* iptr)
+{
+	assert(M < D);
+	const long* nstr[2] = { ostr, istr };
+	void* nptr[2] = { optr, iptr };
+
+	struct median_s data = { dim[M], istr[M] };
+
+	long dim2[D];
+	for (int i = 0; i < D; i++)
+		dim2[i] = dim[i];
+
+	dim2[M] = 1;
+
+	md_nary(2, D, dim2, nstr, nptr, (void*)&data, &nary_medianz);
+}
+
+void md_medianz(int D, int M, long dim[D], complex float* optr, complex float* iptr)
+{
+	assert(M < D);
+
+	long dim2[D];
+	for (int i = 0; i < D; i++)
+		dim2[i] = dim[i];
+
+	dim2[M] = 1;
+
+	long istr[D];
+	long ostr[D];
+
+	md_calc_strides(D, istr, dim, 8);
+	md_calc_strides(D, ostr, dim2, 8);
+
+	md_medianz2(D, M, dim, ostr, optr, istr, iptr);
+}
 
 
 
