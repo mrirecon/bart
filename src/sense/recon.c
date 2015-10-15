@@ -268,7 +268,7 @@ void sense_recon2_gpu(const struct sense_conf* conf, const long dims[DIMS], comp
 	complex float* gpu_img_truth = md_gpu_move(DIMS, dims_img, image_truth, CFL_SIZE);
 
 	sense_recon2(conf, dims, gpu_img, sense_op, dims_pat, gpu_pat, italgo, iter_conf,
-				1, thresh_op, thresh_funs, ksp_dims, gpu_ksp, gpu_img_truth);
+				num_funs, thresh_op, thresh_funs, ksp_dims, gpu_ksp, gpu_img_truth);
 
 	md_copy(DIMS, dims_img, image, gpu_img, CFL_SIZE);
 
