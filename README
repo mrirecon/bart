@@ -32,7 +32,7 @@ any confidential information.
 
 Updates and further information can be found here:
 
-	http://mikgroup.github.io/bart/
+	http://mrirecon.github.io/bart/
 
 
 
@@ -121,13 +121,13 @@ Then use the cygwin shell to compile BART as described below.
 
 If you are a git user, you can simply clone our public repository:
 
-$ git clone https://github.com/mikgroup/bart
+$ git clone https://github.com/mrirecon/bart
 
 
 Otherwise, please download the latest version as a zip file
 from Github:
 
-	http://github.com/mikgroup/bart/releases/latest
+	http://github.com/mrirecon/bart/releases/latest
 
 and unpack it somewhere on your computer.
 
