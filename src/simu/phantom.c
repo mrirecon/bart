@@ -1,8 +1,9 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2013,2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * Simple numerical phantom which simulates image-domain or
  * k-space data with multiple channels.
@@ -96,8 +97,8 @@ static complex float xkernel(void* _data, const long pos[])
 {
 	struct data1* data = _data;
 
-	double mpos[2] = { (double)(2 * pos[1] - data->dims[1]) / (1. * (double)data->dims[1]),
-                           (double)(2 * pos[2] - data->dims[2]) / (1. * (double)data->dims[2]) };
+	double mpos[2] = { (double)(pos[1] - data->dims[1] / 2) / (0.5 * (double)data->dims[1]),
+                           (double)(pos[2] - data->dims[2] / 2) / (0.5 * (double)data->dims[2]) };
 
 	return (data->sens ? xsens : nosens)(pos[COIL_DIM], mpos, data->data, data->fun);
 }
@@ -106,8 +107,8 @@ static complex float kkernel(void* _data, const long pos[])
 {
 	struct data1* data = _data;
 
-	double mpos[2] = { (double)(2 * pos[1] - data->dims[1]) / 4., 
-			   (double)(2 * pos[2] - data->dims[2]) / 4. };
+	double mpos[2] = { (double)(pos[1] - data->dims[1] / 2) / 2.,
+			   (double)(pos[2] - data->dims[2] / 2) / 2. };
 
 	return (data->sens ? ksens : nosens)(pos[COIL_DIM], mpos, data->data, data->fun);
 }
