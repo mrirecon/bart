@@ -1,9 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -624,16 +625,18 @@ static void fft_linop_apply(const void* _data, complex float* out, const complex
 {
 	const struct fft_linop_s* data = _data;
 
-	const complex float* ptr = in;
-
 	// fftmod + fftscale
 	if (data->center) {
 
 		md_zmul2(data->N, data->dims, data->strs, out, data->strs, in, data->strs, data->fftmod_mat);
-		ptr = out;
+
+	} else {
+
+		if (in != out)
+			md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
 	}
 
-	operator_apply(data->frw, data->N, data->dims, out, data->N, data->dims, ptr);
+	operator_apply(data->frw, data->N, data->dims, out, data->N, data->dims, out);
 
 	// fftmodk
 	if (data->center)
@@ -644,16 +647,18 @@ static void fft_linop_adjoint(const void* _data, complex float* out, const compl
 {
 	const struct fft_linop_s* data = _data;
 
-	const complex float* ptr = in;
-
-	// fftmodk
+	// fftmod
 	if (data->center) {
 
 		md_zmulc2(data->N, data->dims, data->strs, out, data->strs, in, data->strs, data->fftmodk_mat);
-		ptr = out;
+
+	} else {
+
+		if (in != out)
+			md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
 	}
 
-	operator_apply(data->adj, data->N, data->dims, out, data->N, data->dims, ptr);
+	operator_apply(data->adj, data->N, data->dims, out, data->N, data->dims, out);
 
 	// fftmod + fftscale
 	if (data->center)
@@ -696,6 +701,8 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 	md_alloc_fun_t alloc = md_alloc;
 #endif
 
+	// FIXME: we allocate only to communicate the gpu flag
+	// and that need in-place plans
 	complex float* tmp = alloc(N, dims, CFL_SIZE);
 	const struct operator_s* plan = fft_create(N, dims, flags, tmp, tmp, false);
 	const struct operator_s* iplan = fft_create(N, dims, flags, tmp, tmp, true);
@@ -717,12 +724,16 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 
 	if (center) {
 
+		// FIXME: should only allocate flagged dims
+
 		complex float* fftmod_mat = md_alloc(N, dims, CFL_SIZE);
 
 		complex float one[1] = { 1. };
 		md_fill(N, dims, fftmod_mat, one, CFL_SIZE);
 		fftscale(N, dims, flags, fftmod_mat, fftmod_mat);
 		fftmod(N, dims, flags, fftmod_mat, fftmod_mat);
+
+		// we need it only because we want to apply scaling only once
 
 		complex float* fftmodk_mat = md_alloc(N, dims, CFL_SIZE);
 
