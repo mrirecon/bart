@@ -349,6 +349,9 @@ $(BTARGETS): bbox
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
+%.o: %.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
 (%): %
 	$(AR) r $@ $%
 	rm $%
