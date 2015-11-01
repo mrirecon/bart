@@ -23,6 +23,8 @@
  *
  */
 
+#define _GNU_SOURCE
+
 #include <string.h>
 #include <assert.h>
 #include <stdbool.h>
@@ -74,7 +76,7 @@ void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[
  * This functions tries to parallelize over the dimensions indicated
  * with flags.
  */
-void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigned int flags, const long* str[C], void* ptr[C], void* data, md_nary_fun_t fun)
+void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigned long flags, const long* str[C], void* ptr[C], void* data, md_nary_fun_t fun)
 {
 	if (0 == flags) {
 
@@ -82,7 +84,7 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 		return;
 	}
 
-	int b = ffs(flags & -flags) - 1;
+	int b = ffsl(flags & -flags) - 1;
 	assert(MD_IS_SET(flags, b));
 
 	flags = MD_CLEAR(flags, b);
@@ -140,7 +142,7 @@ static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[st
  * Runs fun(data, position) for all position in dim
  *
  */
-void md_parallel_loop(unsigned int D, const long dim[static D], unsigned int flags, void* data, md_loop_fun_t fun)
+void md_parallel_loop(unsigned int D, const long dim[static D], unsigned long flags, void* data, md_loop_fun_t fun)
 {
 	long pos[D];
 	md_parallel_loop_r(D, D, dim, flags, pos, data, fun);
@@ -180,7 +182,7 @@ void md_loop(unsigned int D, const long dim[D], void* data, md_loop_fun_t fun)
 /**
  * Computes the next position. Returns true until last index.
  */
-bool md_next(unsigned int D, const long dims[D], unsigned int flags, long pos[D])
+bool md_next(unsigned int D, const long dims[D], unsigned long flags, long pos[D])
 {
 	if (0 == D--)
 		return false;

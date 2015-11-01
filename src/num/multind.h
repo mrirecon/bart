@@ -34,8 +34,8 @@ typedef void (*md_loop_fun_t)(void* data, const long* pos);
 
 extern void md_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], void* data, md_nary_fun_t fun);
 
-extern void md_parallel_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], unsigned int flags, const long* str[__VLA(C)], void* ptr[__VLA(C)], void* data, md_nary_fun_t fun);
-extern void md_parallel_loop(unsigned int D, const long dim[__VLA(D)], unsigned int flags, void* data, md_loop_fun_t fun);
+extern void md_parallel_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], unsigned long flags, const long* str[__VLA(C)], void* ptr[__VLA(C)], void* data, md_nary_fun_t fun);
+extern void md_parallel_loop(unsigned int D, const long dim[__VLA(D)], unsigned long flags, void* data, md_loop_fun_t fun);
 
 extern void md_loop(unsigned int D, const long dim[__VLA(D)], void* data, md_loop_fun_t fun);
 
@@ -118,13 +118,13 @@ extern _Bool md_is_index(unsigned int D, const long pos[__VLA(D)], const long di
 extern _Bool md_check_dimensions(unsigned int N, const long dims[__VLA(N)], unsigned int flags);
 extern void md_permute_dims(unsigned int D, const unsigned int order[__VLA(D)], long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
-extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned int flags, long pos[__VLA(D)]);
+extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
 
 #define MD_INIT_ARRAY(x, y) { [ 0 ... ((x) - 1) ] = (y) } 
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
 #define MD_DIMS(...) MD_MAKE_ARRAY(long, __VA_ARGS__)
 
-#define MD_BIT(x) (1u << (x))
+#define MD_BIT(x) (1ul << (x))
 #define MD_IS_SET(x, y)	((x) & MD_BIT(y))
 #define MD_CLEAR(x, y) ((x) & ~MD_BIT(y))
 #define MD_SET(x, y)	((x) | MD_BIT(y))

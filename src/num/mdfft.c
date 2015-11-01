@@ -6,6 +6,7 @@
  *	2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
+#define _GNU_SOURCE
 #include <stdbool.h>
 #include <assert.h>
 #include <complex.h>
@@ -48,9 +49,9 @@ static void rot45z2(unsigned int D, unsigned int M,
 
 
 
-static unsigned int find_bit(unsigned int N)
+static unsigned int find_bit(unsigned long N)
 {
-	return ffs(N) - 1;
+	return ffsl(N) - 1;
 }
 
 static unsigned int next_powerof2(unsigned int x)
@@ -83,7 +84,7 @@ static void compute_chirp(unsigned int L, bool dir, unsigned int M, complex floa
 }
 
 static void bluestein(unsigned int N, const long dims[N],
-	unsigned int flags, unsigned int dirs,
+	unsigned long flags, unsigned long dirs,
 	const long ostrs[N], complex float* dst,
 	const long istrs[N], const complex float* in)
 {
@@ -109,11 +110,12 @@ static void bluestein(unsigned int N, const long dims[N],
 	long kstrs[N];
 	md_calc_strides(N, kstrs, kdims, CFL_SIZE);
 
-	complex float xkrn[M];
+	complex float* xkrn = md_alloc(N, kdims, CFL_SIZE);
 	compute_chirp(dims[D], MD_IS_SET(dirs, D), M, xkrn);
 
 	complex float* krn = md_alloc_sameplace(N, kdims, CFL_SIZE, dst);
 	md_copy(N, kdims, krn, xkrn, CFL_SIZE);
+	md_free(xkrn);
 
 	complex float* fkrn = md_alloc_sameplace(N, kdims, CFL_SIZE, dst);
 	md_fft(N, kdims, MD_BIT(D), MD_FFT_FORWARD, fkrn, krn);
@@ -157,11 +159,9 @@ static void compute_twiddle(unsigned int n, unsigned int m, complex float t[n][m
 
 static void cooley_tukey(unsigned int N, const long dims[N],
 		unsigned int D, unsigned int a, unsigned int b,
-		unsigned int flags, unsigned int dirs,  
+		unsigned long flags, unsigned long dirs,
 		const long ostr[N], complex float* dst,
 		const long istr[N], const complex float* in)
-
-
 {
 	/* Cooley-Tukey
 	 *
@@ -188,19 +188,20 @@ static void cooley_tukey(unsigned int N, const long dims[N],
 	bstr[D] = ostr[D] * b;
 	bstr[N] = ostr[D] * 1;
 
-	unsigned int flags1 = 0;
-	unsigned int flags2 = MD_CLEAR(flags, D);
+	unsigned long flags1 = 0;
+	unsigned long flags2 = MD_CLEAR(flags, D);
 
 	long tdims[N + 1];
 	long tstrs[N + 1];
 	md_select_dims(N + 1, MD_BIT(D) | MD_BIT(N), tdims, xdims);
 	md_calc_strides(N + 1, tstrs, tdims, CFL_SIZE);
 
-	complex float xtw[b][a];
-	compute_twiddle(b, a, xtw);
+	complex float (*xtw)[b][a] = xmalloc(a * b * CFL_SIZE);
+	compute_twiddle(b, a, *xtw);
 
 	complex float* tw = md_alloc_sameplace(N + 1, tdims, CFL_SIZE, dst);
-	md_copy(N + 1, tdims, tw, &xtw[0][0], CFL_SIZE);	
+	md_copy(N + 1, tdims, tw, &(*xtw)[0][0], CFL_SIZE);
+	free(xtw);
 
 	md_fft2(N + 1, xdims, MD_SET(flags1, N), dirs, bstr, dst, astr, in);
 	(MD_IS_SET(dirs, D) ?  md_zmulc2 : md_zmul2)(N + 1, xdims, bstr, dst, bstr, dst, tstrs, tw);
@@ -229,7 +230,7 @@ static unsigned int find_factor(unsigned int N)
 }
 
 void md_fft2(unsigned int N, const long dims[N],
-		unsigned int flags, unsigned int dirs,  
+		unsigned long flags, unsigned long dirs,
 		const long ostr[N], complex float* dst,
 		const long istr[N], const complex float* in)
 {
@@ -260,7 +261,7 @@ void md_fft2(unsigned int N, const long dims[N],
 	unsigned int D = find_bit(flags);
 
 	if (1 == dims[D]) {
-		
+
 		md_fft2(N, dims, MD_CLEAR(flags, D), dirs, ostr, dst, istr, in);
 		return;
 	}
@@ -280,9 +281,11 @@ void md_fft2(unsigned int N, const long dims[N],
 		} else {
 
 			// the nufft may do the transpose
-			md_fft2(N, dims, MD_CLEAR(flags, D), dirs, ostr, dst, istr, in);
-			rot45z2(N, D, dims, ostr, dst, ostr, dst);
+			rot45z2(N, D, dims, ostr, dst, istr, in);
+			md_fft2(N, dims, MD_CLEAR(flags, D), dirs, ostr, dst, ostr, dst);
 		}
+
+		return;
 	}
 
 	unsigned int a = find_factor(dims[D]);
@@ -304,7 +307,7 @@ void md_fft2(unsigned int N, const long dims[N],
 
 
 void md_fft(unsigned int N, const long dims[N],
-		unsigned int flags, unsigned int dirs,
+		unsigned long flags, unsigned long dirs,
 		complex float* dst, const complex float* in)
 {
 	long strs[N];
