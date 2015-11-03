@@ -619,7 +619,7 @@ __global__ void kern_le(int N, float* dst, const float* src1, const float* src2)
 
 extern "C" void cuda_le(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_zcmp<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_le<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
 }
 
 __device__ cuFloatComplex cuDouble2Float(cuDoubleComplex x)
