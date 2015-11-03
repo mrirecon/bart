@@ -464,11 +464,19 @@ static const struct operator_p_s* prox_ineq_create(unsigned int N, const long di
 }
 
 
+/*
+ * Proximal function for less than or equal to:
+ * f(z) = 1{z <= b}
+ */
 const struct operator_p_s* prox_lesseq_create(unsigned int N, const long dims[N], const complex float* b)
 {
 	return prox_ineq_create(N, dims, b, false);
 }
 
+/*
+ * Proximal function for greater than or equal to:
+ * f(z) = 1{z >= b}
+ */
 const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[N], const complex float* b)
 {
 	return prox_ineq_create(N, dims, b, true);
@@ -490,6 +498,9 @@ static void prox_rvc_del(const void* _data)
 	free((void*)_data);
 }
 
+/*
+ * Proximal function for real-value constraint
+ */
 const struct operator_p_s* prox_rvc_create(unsigned int N, const long dims[N])
 {
 	struct prox_rvc_data* pdata = xmalloc(sizeof(struct prox_rvc_data));
