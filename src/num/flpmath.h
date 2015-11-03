@@ -177,6 +177,11 @@ extern void md_lessequal2(unsigned int D, const long dim[__VLA(D)], const long o
 extern void md_slessequal(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr, float val);
 extern void md_slessequal2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr, float val);
 
+extern void md_greatequal(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr1, const float* iptr2);
+extern void md_greatequal2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
+extern void md_sgreatequal(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr, float val);
+extern void md_sgreatequal2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr, float val);
+
 extern float md_znorm2(unsigned int D, const long dim[__VLA(D)], const long str[__VLA(D)], const _Complex float* ptr);
 extern float md_znorm(unsigned int D, const long dim[__VLA(D)], const _Complex float* ptr);
 extern _Complex float md_zscalar2(unsigned int D, const long dim[__VLA(D)], const long str1[__VLA(D)], const _Complex float* ptr1, const long str2[__VLA(D)], const _Complex float* ptr2);
@@ -238,7 +243,8 @@ extern void md_zfill(unsigned int D, const long dim[__VLA(D)], _Complex float* p
 
 extern void md_smin2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr, float val);
 extern void md_smin(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr, float val);
-
+extern void md_smax2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr, float val);
+extern void md_smax(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr, float val);
 
 extern void md_fdiff2(unsigned int D, const long dims[__VLA(D)], unsigned int d, const long ostr[__VLA(D)], float* out, const long istr[__VLA(D)], const float* in);
 extern void md_fdiff(unsigned int D, const long dims[__VLA(D)], unsigned int d, float* out, const float* in);
