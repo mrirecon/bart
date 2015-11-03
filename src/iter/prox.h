@@ -19,6 +19,7 @@ extern const struct operator_p_s* prox_zero_create(unsigned int N, const long di
 extern const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const _Complex float* y);
 extern const struct operator_p_s* prox_lesseq_create(unsigned int N, const long dims[__VLA(N)], const _Complex float* b);
 extern const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[__VLA(N)], const _Complex float* b);
+extern const struct operator_p_s* prox_rvc_create(unsigned int N, const long dims[__VLA(N)]);
 
 #include "misc/cppwrap.h"
 #endif

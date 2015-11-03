@@ -473,3 +473,26 @@ const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[N], 
 {
 	return prox_ineq_create(N, dims, b, true);
 }
+
+struct prox_rvc_data {
+	long size;
+};
+
+static void prox_rvc_apply(const void* _data, float mu, complex float* dst, const complex float* src)
+{
+	UNUSED(mu);
+	struct prox_rvc_data* pdata = (struct prox_rvc_data*)_data;
+	md_zreal(1, MD_DIMS(pdata->size), dst, src);
+}
+
+static void prox_rvc_del(const void* _data)
+{
+	free((void*)_data);
+}
+
+const struct operator_p_s* prox_rvc_create(unsigned int N, const long dims[N])
+{
+	struct prox_rvc_data* pdata = xmalloc(sizeof(struct prox_rvc_data));
+	pdata->size = md_calc_size(N, dims);
+	return operator_p_create(N, dims, N, dims, pdata, prox_rvc_apply, prox_rvc_del);
+}
