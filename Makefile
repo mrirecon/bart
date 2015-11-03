@@ -183,9 +183,9 @@ ifeq ($(CUDA),1)
 CUDA_H := -I$(cuda.top)/include
 CPPFLAGS += -DUSE_CUDA $(CUDA_H)
 ifeq ($(BUILDTYPE), MacOSX)
-CUDA_L := -L$(cuda.top)/lib -lcufft -lcudart -lcublas -lcuda -m64 -lstdc++
+CUDA_L := -L$(cuda.top)/lib -lcufft -lcudart -lcublas -m64 -lstdc++
 else
-CUDA_L := -L$(cuda.top)/lib64 -lcufft -lcudart -lcublas -lcuda -lstdc++ -Wl,-rpath $(cuda.top)/lib64
+CUDA_L := -L$(cuda.top)/lib64 -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(cuda.top)/lib64
 endif 
 else
 CUDA_H :=
