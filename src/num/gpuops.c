@@ -5,6 +5,7 @@
  * Authors: 
  * 2012-2015	Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014 	Joseph Y Cheng <jycheng@stanford.edu>
+ * 2015	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  * 
  * CUDA support functions. The file exports gpu_ops of type struct vec_ops

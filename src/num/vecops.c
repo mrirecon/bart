@@ -5,7 +5,7 @@
  * Authors:
  * 2011, 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  *
  * This file defines basic operations on vectors of floats/complex floats

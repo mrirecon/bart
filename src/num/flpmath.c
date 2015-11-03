@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 The Regents of the University of California.
+/* Copyright 2013-2015 The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -6,7 +6,7 @@
  * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  *
  * Operations on arrays of complex single-precision floating
