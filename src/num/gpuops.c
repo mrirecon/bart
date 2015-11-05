@@ -5,6 +5,7 @@
  * Authors: 
  * 2012-2015	Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014 	Joseph Y Cheng <jycheng@stanford.edu>
+ * 2015	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  * 
  * CUDA support functions. The file exports gpu_ops of type struct vec_ops
@@ -500,6 +501,7 @@ const struct vec_ops gpu_ops = {
 	.sqrt = cuda_sqrt,
 
 	.le = cuda_le,
+	.ge = cuda_ge,
 
 	.zmul = cuda_zmul,
 	.zdiv = cuda_zdiv,

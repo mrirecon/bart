@@ -1,9 +1,10 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2015. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2012-03-24 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  * 
  * This file defines basic operations on vectors of floats/complex floats
@@ -620,6 +621,20 @@ __global__ void kern_le(int N, float* dst, const float* src1, const float* src2)
 extern "C" void cuda_le(long N, float* dst, const float* src1, const float* src2)
 {
 	kern_le<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+}
+
+__global__ void kern_ge(int N, float* dst, const float* src1, const float* src2)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = (src1[i] >= src2[i]);
+}
+
+extern "C" void cuda_ge(long N, float* dst, const float* src1, const float* src2)
+{
+	kern_ge<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
 }
 
 __device__ cuFloatComplex cuDouble2Float(cuDoubleComplex x)

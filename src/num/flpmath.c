@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 The Regents of the University of California.
+/* Copyright 2013-2015 The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -6,7 +6,7 @@
  * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  *
  * Operations on arrays of complex single-precision floating
@@ -1816,6 +1816,56 @@ void md_slessequal(unsigned int D, const long dims[D], float* optr, const float*
 
 
 /**
+ * Elementwise greater than or equal to (with strides)
+ * 
+ * optr = (iptr1 => iptr2)
+ */
+void md_greatequal2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
+{
+	MAKE_3OP(ge, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+}
+
+
+
+/**
+ * Elementwise greater than or equal to (without strides)
+ * 
+ * optr = (iptr1 >= iptr2)
+ */
+void md_greatequal(unsigned int D, const long dims[D], float* optr, const float* iptr1, const float* iptr2)
+{
+	make_3op_simple(md_greatequal2, D, dims, optr, iptr1, iptr2);
+}
+
+
+
+/**
+ * Elementwise greater than or equal to scalar (with strides)
+ * 
+ * optr = (iptr >= val)
+ */
+void md_sgreatequal2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
+{
+	make_3op_scalar(md_greatequal2, D, dims, ostr, optr, istr, iptr, val);
+}
+
+
+
+/**
+ * Elementwise greater than or equal to scalar (without strides)
+ * 
+ * optr = (iptr >= val)
+ */
+void md_sgreatequal(unsigned int D, const long dims[D], float* optr, const float* iptr, float val)
+{
+	long strs[D];
+	md_calc_strides(D, strs, dims, FL_SIZE);
+	md_sgreatequal2(D, dims, strs, optr, strs, iptr, val);
+}
+
+
+
+/**
  * Extract unit-norm complex exponentials from complex arrays (with strides)
  * 
  * optr = iptr / abs(iptr)
@@ -2725,6 +2775,39 @@ void md_smin(unsigned int D, const long dim[D], float* optr, const float* iptr, 
 	long str[D];
  	md_calc_strides(D, str, dim, FL_SIZE);
 	md_smin2(D, dim, str, optr, str, iptr, val);
+}
+
+
+
+/**
+ *  Elementwise maximum of input and scalar (with strides)
+ *
+ *  optr = max(val, iptr)
+ */
+void md_smax2(unsigned int D, const long dim[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
+{
+#if 0
+	float* tmp = md_alloc_sameplace(D, dim, FL_SIZE, iptr);
+	md_sgreatequal2(D, dim, ostr, tmp, istr, iptr, val);
+	md_mul2(D, dim, ostr, optr, istr, iptr, istr, tmp);
+	md_free(tmp);
+#else
+	make_3op_scalar(md_max2, D, dim, ostr, optr, istr, iptr, val);
+#endif
+}
+
+
+
+/**
+ *  Elementwise minimum of input and scalar (without strides)
+ *
+ *  optr = max(val, iptr)
+ */
+void md_smax(unsigned int D, const long dim[D], float* optr, const float* iptr, float val)
+{
+	long str[D];
+ 	md_calc_strides(D, str, dim, FL_SIZE);
+	md_smax2(D, dim, str, optr, str, iptr, val);
 }
 
 
