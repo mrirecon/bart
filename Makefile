@@ -223,10 +223,6 @@ GSL_H :=
 GSL_L := -lgsl -lgslcblas
 endif
 
-ifeq ($(GSL),1)
-CPPFLAGS += -DUSE_GSL $(GSL_H) $(BLAS_H)
-endif
-
 
 # BLAS/LAPACK
 
@@ -244,6 +240,14 @@ else
 BLAS_L := -llapack -lblas #-lgfortran
 endif
 endif
+
+
+
+ifeq ($(GSL),1)
+CPPFLAGS += -DUSE_GSL $(GSL_H) $(BLAS_H)
+endif
+
+CPPFLAGS += $(FFTW_H)
 
 
 
