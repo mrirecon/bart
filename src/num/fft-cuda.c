@@ -100,24 +100,23 @@ struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], 
 	long batchistr[l];
 	long batchostr[l];
 
-	int lis = 1;
-	int los = 1;
+	int lis = dims[0].is;
+	int los = dims[0].os;
 
 	if (k > 3)
 		goto errout;
 
 	for (unsigned int i = 0; i < k; i++) {
 
-		assert(0 == dims[i].is % lis);
-		assert(0 == dims[i].os % los);
+		assert(dims[i].is == lis);
+		assert(dims[i].os == los);
 
 		cudims[k - 1 - i] = dims[i].n;
-
-		cuiemb[k - 1 - i] = dims[i].n * dims[i].is;
-		cuoemb[k - 1 - i] = dims[i].n * dims[i].os;
+		cuiemb[k - 1 - i] = dims[i].n;
+		cuoemb[k - 1 - i] = dims[i].n;
 	
-		lis = dims[i].is;
-		los = dims[i].os;
+		lis = dims[i].n * dims[i].is;
+		los = dims[i].n * dims[i].os;
 	}
 
 	for (unsigned int i = 0; i < l; i++) {
@@ -128,10 +127,10 @@ struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], 
 		batchostr[i] = hmdims[i].os;
 	}
 
-	int idist = cuiemb[0];
-	int odist = cuoemb[0];
-	int istride = cuiemb[k - 1] / cudims[k - 1];
-	int ostride = cuoemb[k - 1] / cudims[k - 1];
+	int istride = dims[0].is;
+	int ostride = dims[0].os;
+	int idist = lis;
+	int odist = los;
 	int cubs = 1;
 
 
@@ -165,7 +164,7 @@ struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], 
 		plan->batch = md_calc_size(l - bi, batchdims + bi);
 	}
 
-//	assert((2 == k) && (1 == istride) && (1 == ostride));
+	assert(k <= 3);
 
 	int err;
 
