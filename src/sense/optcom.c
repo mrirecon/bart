@@ -137,9 +137,9 @@ static float estimate_scaling_internal(const long dims[DIMS], const complex floa
 	// maybe we should just extract a fixed-sized block here?
 	complex float* tmp = extract_calib2(small_dims, cal_size, dims, strs, data, false);
 
-	return estimate_scaling_cal(dims, sens, small_dims, tmp, compat);
-
 	md_free(tmp);
+
+	return estimate_scaling_cal(dims, sens, small_dims, tmp, compat);
 
 }
 
