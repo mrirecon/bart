@@ -132,11 +132,11 @@ static int load_noise_sv(long kernel_dims[3], long calreg_dims[4], long L, float
  *
  * Parameters:
  *  kernel_dims[3] - kernel dimensions
- *  calreg_dims[3] - calibration region dimensions
+ *  calreg_dims[4] - calibration region dimensions
  *  L              - Number of elements in E.
  *  E              - Load simulated noise singular values to.
  */
-static void save_noise_sv(long kernel_dims[3], long calreg_dims[3], long L, float* E) {
+static void save_noise_sv(long kernel_dims[3], long calreg_dims[4], long L, float* E) {
 
     char* name = file_name(kernel_dims, calreg_dims);
     FILE* fp   = fopen(name, "wb");
@@ -148,8 +148,8 @@ static void save_noise_sv(long kernel_dims[3], long calreg_dims[3], long L, floa
 
     fwrite(E, sizeof(float), L, fp);
 
-    fclose(fp);
     free(name);
+    fclose(fp);
 
 }
 

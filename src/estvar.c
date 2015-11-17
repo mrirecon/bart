@@ -24,7 +24,7 @@
 
 #include "misc/debug.h"
 
-#include "estvar/estvar.h"
+#include "calib/estvar.h"
 
 
 static void usage(const char* name, FILE* fd)
