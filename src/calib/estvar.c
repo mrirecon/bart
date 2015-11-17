@@ -112,14 +112,15 @@ static int load_noise_sv(long kernel_dims[3], long calreg_dims[4], long L, float
     FILE* fp   = fopen(name, "rb");
 
     if (NULL == fp) {
+        free(name);
         return 0;
     }
 
     int c = fread(E, sizeof(float), L, fp);
     assert(c == L);
     
-    fclose(fp);
     free(name);
+    fclose(fp);
 
     return 1;
 
@@ -143,6 +144,7 @@ static void save_noise_sv(long kernel_dims[3], long calreg_dims[4], long L, floa
 
     if (!fp) {
         perror("fopen");
+        free(name);
         exit(1);
     }
 
