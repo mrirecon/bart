@@ -36,7 +36,7 @@ static void usage(const char* name, FILE* fd)
 static void help(void)
 {
     printf( "\n"
-        "Estimate the noise standard deviation assuming white Gaussian noise."
+        "Estimate the noise variance assuming white Gaussian noise."
         "\n"
         "-k ksize\tkernel size\n"
         "-r cal_size\tLimits the size of the calibration region.\n");
