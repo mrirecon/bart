@@ -35,6 +35,7 @@
 
 #include "calib/calmat.h"
 #include "calib/cc.h"
+#include "calib/softweight.h"
 
 #include "calib.h"
 
@@ -42,7 +43,7 @@
 #include "calib/calibcu.h"
 #endif
 
-#if 0
+#if 1
 #define CALMAT_SVD
 #endif
 
@@ -506,6 +507,9 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 #ifdef CALMAT_SVD
 	calmat_svd(conf->kdims, N, vec, val, caldims, caldata);
 
+        if (conf->weighting)
+            soft_weight_singular_vectors(N, conf->kdims, caldims, val);
+
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
 #ifndef FLIP
@@ -524,7 +528,10 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	lapack_eig(N, tmp_val, vec);
 
 	for (int i = 0; i < N; i++)
-		val[i] = sqrtf(tmp_val[N - 1 - i]);
+		val[i] = sqrtf(tmp_val[N - 1 - i]); // val holds the singular values (Or square roots of the evals)
+
+        if (conf->weighting)
+            soft_weight_singular_vectors(N, conf->kdims, caldims, val);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
