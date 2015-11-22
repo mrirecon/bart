@@ -510,6 +510,13 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
         if (conf->weighting)
             soft_weight_singular_vectors(N, conf->kdims, caldims, val);
 
+        //TODO: REMOVE.
+        printf("VAL\n");
+        for (int idx = 0; idx < N; idx++) {
+            val[idx] = val[idx] * val[idx];
+            printf("S[%d]: %f\n", idx, val[idx]);
+        }
+
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
 #ifndef FLIP
