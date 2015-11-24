@@ -64,8 +64,6 @@ extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calre
     float Y = calmat_dims[0] * calmat_dims[1] * variance;
     float G = 0;
     for (jdx = 0; jdx < N; jdx++) {
-        //TODO: Delete print
-        printf("S[%d]: %f\n", jdx, S[jdx]);
         G += S[jdx] * S[jdx];
     }
 
@@ -73,9 +71,6 @@ extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calre
     float testMSE = 0;
     float testLambda = 0;
     float MSE = -Y + G + variance * divergence(N, S, calmat_dims, lambda);
-
-    //TODO: REmove
-    printf("MSE[%d]: %f\n", idx, MSE);
 
     for (idx = 1; idx < N; idx++) {
 
@@ -88,8 +83,6 @@ extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calre
 
         testMSE = -Y + G + variance * divergence(N, S, calmat_dims, testLambda);
 
-        //TODO: Remove
-        printf("MSE[%d]: %f\n", idx, testMSE);
         if (testMSE < MSE) {
             MSE    = testMSE;
             lambda = testLambda;
@@ -102,10 +95,8 @@ extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calre
 
     for (int idx = 0; idx < N; idx++) {
         t = (S[idx] - lambda)/S[idx];
+        t = sqrtf(2 * t - t * t);
         S[idx] = ((!isnan(t) && t > 0)? t: 0);
-
-        //TODO: remove
-        printf("WE[%d]: %f\n", idx, S[idx]);
     }
 
 }
