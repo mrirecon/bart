@@ -5,6 +5,7 @@
  * Authors:
  * 2012-2013, Martin Uecker <uecker@eecs.berkeley.edu>
  * 2013 Dara Bahri <dbahri123@gmail.com>
+ * 2015 Siddharth Iyer <sid8795@gmail.com>
  */
 
 #define _GNU_SOURCE
@@ -34,7 +35,7 @@
 
 static void usage(const char* name, FILE* fd)
 {
-	fprintf(fd, 	"Usage: %s [-n num. s.values] [-t eigenv. threshold] [-c crop_value] [-k kernel_size] [-r cal_size] [-m maps]"
+	fprintf(fd, 	"Usage: %s [-n num. s.values] [-t eigenv. threshold] [-W soft-weight] [-c crop_value] [-k kernel_size] [-r cal_size] [-m maps]"
 			" <kspace> <sensitivites> [<ev-maps>]\n", name);
 }
 
@@ -49,6 +50,8 @@ static void help(void)
 		"-k ksize\tkernel size\n"
 		"-r cal_size\tLimits the size of the calibration region.\n"
 		"-m maps\t\tNumber of maps to compute.\n"
+                "-W weight\tThis soft-weights the singular vectors for better map estimates. Needs high second threshold"
+                    "(around 0.999).\n"
 		"-I\t\tintensity correction\n"
 		"-1\t\tperform only first part of the calibration\n");
 }
@@ -80,7 +83,10 @@ int main_ecalib(int argc, char* argv[])
 			break;
 
 		case 'W':
-			conf.weighting = true;
+			conf.numsv      = -1;
+			conf.threshold  = 0;
+			conf.orthiter   = false;
+			conf.weighting  = true;
 			break;
 
 		case 'S':
