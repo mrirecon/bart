@@ -4,6 +4,10 @@
  *
  * Authors: 
  * 2015 Siddharth Iyer <sid8795@gmail.com>
+ *
+ * Iyer S, Ong F, Lustig M.
+ * Towards a Parameter­Free ESPIRiT: Soft­Weighting for Robust Coil Sensitivity Estimation
+ * Submitted to ISMRM 2016.
  */
 
 #ifndef _SOFT_WEIGHT_H_
