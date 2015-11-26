@@ -619,10 +619,7 @@ int main_pics(int argc, char* argv[])
 		case LLR:
 			debug_printf(DP_INFO, "lowrank regularization: %f\n", regs[nr].lambda);
 
-			if (0 != regs[nr].jflags)
-				debug_printf(DP_WARN, "specifying col dims not currently supported.\n");
-
-			// add a very basic lowrank penalty
+			// add locally lowrank penalty
 			levels = llr_blkdims(blkdims, regs[nr].jflags, img_dims, llr_blk);
 
 			assert(1 == levels);
