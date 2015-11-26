@@ -4,7 +4,7 @@
  *
  * Authors:
  * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2014-2015 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  */
@@ -35,6 +35,7 @@
 #include "linops/linop.h"
 #include "linops/someops.h"
 #include "linops/grad.h"
+#include "linops/sum.h"
 
 #include "iter/iter.h"
 #include "iter/iter2.h"
@@ -95,9 +96,9 @@ static void help_reg(void)
 		"-R I:B:C  \tl1-norm in image domain\n"
 		"-R W:A:B:C\tl1-wavelet\n"
 		"-R T:A:B:C\ttotal variation\n"
-//		"-R L:A:B:C\tLLR with rows from A and cols from B\n"
-		"\nExample:\n"
 		"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
+		"-R L:7:7:.02\tLocally low rank with spatial decimation and 0.02 regularization.\n"
+		"-R M:7:7:.03\tMulti-scale low rank with spatial decimation and 0.03 regularization.\n"
 	);
 }
 
@@ -123,7 +124,7 @@ const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_di
 
 struct reg_s {
 
-	enum { L1WAV, TV, LLR, L1IMG, L2IMG } xform;
+	enum { L1WAV, TV, LLR, MLR, L1IMG, L2IMG } xform;
 
 	unsigned int xflags;
 	unsigned int jflags;
@@ -163,6 +164,7 @@ int main_pics(int argc, char* argv[])
 	bool eigen = false;
 	float scaling = 0.;
 
+	int llr_blk = 8;
 
 	const char* image_truth_file = NULL;
 	bool im_truth = false;
@@ -182,7 +184,7 @@ int main_pics(int argc, char* argv[])
 		debug_printf(DP_WARN, "The \'sense\' command is deprecated. Use \'pics\' instead.\n");
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "W:Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:w:Sd:R:HC:"))) {
+	while (-1 != (c = getopt(argc, argv, "W:Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:w:Sd:R:HC:b:"))) {
 
 		char rt[5];
 
@@ -210,6 +212,17 @@ int main_pics(int argc, char* argv[])
 
 				regs[r].xform = LLR;
 				int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+				assert(3 == ret);
+			}
+			else if (strcmp(rt, "M") == 0) {
+
+				regs[r].xform = regs[0].xform;
+                                regs[r].xflags = regs[0].xflags;
+                                regs[r].jflags = regs[0].jflags;
+                                regs[r].lambda = regs[0].lambda;
+                                
+				regs[0].xform = MLR;
+				int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
 				assert(3 == ret);
 			}
 			else if (strcmp(rt, "T") == 0) {
@@ -245,6 +258,10 @@ int main_pics(int argc, char* argv[])
 			}
 
 			r++;
+			break;
+
+		case 'b':
+			llr_blk = atoi(optarg);
 			break;
 
 		case 'e':
@@ -546,6 +563,8 @@ int main_pics(int argc, char* argv[])
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 	int nr_penalties = r;
+        long blkdims[MAX_LEV][DIMS];
+        int levels;
 
 	for (int nr = 0; nr < nr_penalties; nr++) {
 
@@ -603,10 +622,8 @@ int main_pics(int argc, char* argv[])
 			if (0 != regs[nr].jflags)
 				debug_printf(DP_WARN, "specifying col dims not currently supported.\n");
 
-			long blkdims[1][DIMS];
-
 			// add a very basic lowrank penalty
-			int levels = llr_blkdims(blkdims, regs[nr].xflags, img_dims, 6);
+			levels = llr_blkdims(blkdims, regs[nr].jflags, img_dims, llr_blk);
 
 			assert(1 == levels);
 			img_dims[LEVEL_DIM] = levels;
@@ -622,6 +639,29 @@ int main_pics(int argc, char* argv[])
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			thresh_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, use_gpu);
+			break;
+       
+		case MLR:
+			debug_printf(DP_INFO, "multi-scale lowrank regularization: %f\n", regs[nr].lambda);
+
+                        levels = multilr_blkdims(blkdims, regs[nr].jflags, img_dims, 8, 1);
+
+			img_dims[LEVEL_DIM] = levels;
+                        max_dims[LEVEL_DIM] = levels;
+
+			for(int l = 0; l < levels; l++)
+				blkdims[l][MAPS_DIM] = 1;
+
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			thresh_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, 0, use_gpu);
+
+                        const struct linop_s* decom_op = sum_create( img_dims, use_gpu );
+                        const struct linop_s* tmp_op = forward_op;
+                        forward_op = linop_chain(decom_op, forward_op);
+                        
+                        linop_free(decom_op);
+                        linop_free(tmp_op);
+
 			break;
 
 		case L1IMG:
