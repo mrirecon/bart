@@ -1,3 +1,4 @@
+
 /* 
  * Copyright 2013-2015 The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by
@@ -22,7 +23,6 @@
 
 #include "num/multind.h"
 #include "misc/misc.h"
-#include "linops/linop.h"
 
 #include "dfwavelet.h"
 #include "dfwavelet_impl.h"
@@ -56,40 +56,6 @@ static void create_wavelet_sizes(struct dfwavelet_plan_s* plan);
 static void create_wavelet_filters(struct dfwavelet_plan_s* plan);
 static void get_noise_amp (struct dfwavelet_plan_s* plan);
 
-
-
-static void dfwavelet_del(const void* data)
-{
-	dfwavelet_free((void*)data);
-}
-
-
-
-/**
- * Wavelet linear operator
- *
- * @param numdims number of dimensions
- * @param imSize dimensions of x
- * @param wave_flags bitmask for Wavelet transform
- * @param minSize minimium size of coarse Wavelet scale
- * @param randshift apply random shift before Wavelet transforming
- * @param use_gpu true if using gpu
- */
-const struct linop_s* dfwavelet_create(int numdims, const long imSize[numdims], const long minSize[numdims], const float res[numdims], _Bool randshift, _Bool use_gpu)
-{
-	struct dfwavelet_plan_s* data = prepare_dfwavelet_plan(numdims, (long*) imSize, (long*) minSize, (data_t*) res, use_gpu);
-
-	data->randshift = randshift;
-
-	long coeff_dims[numdims];
-	md_select_dims( numdims, ~7, coeff_dims, imSize );
-	coeff_dims[0] = data->numCoeff;
-	coeff_dims[1] = 1;
-	coeff_dims[2] = 1;
-
-	return linop_create(numdims, coeff_dims, numdims, imSize, data, NULL, NULL, NULL, NULL, dfwavelet_del);
-
-}
 
 
 struct dfwavelet_plan_s* prepare_dfwavelet_plan(int numdims, long* imSize, long* minSize, data_t* res,int use_gpu)
