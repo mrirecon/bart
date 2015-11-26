@@ -141,10 +141,11 @@ MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
 MODULES_bench = -lwavelet2 -lwavelet3 -llinops
 MODULES_phantom = -lsimu
-MODULES_bbox += -lbox -lwavelet2 -lwavelet3 -llinops
-MODULES_bart += -lbox -lbox2 -lgrecon -lsense -lnoir -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart -lcalib -lsimu -lsake
+MODULES_bbox += -lbox -lwavelet2 -lwavelet3 -llinops -liter -llinops -llowrank -ldfwavelet
+MODULES_bart += -lbox -lbox2 -lgrecon -lsense -lnoir -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet
 MODULES_sake += -lsake
 MODULES_wave += -liter -lwavelet2 -llinops -lsense
+MODULES_threshold += -llowrank -llinops -lwavelet2 -liter -ldfwavelet
 MODULES_fakeksp += -lsense -llinops
 
 -include Makefile.$(NNAME)
