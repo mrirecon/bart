@@ -8,6 +8,11 @@
  * Iyer S, Ong F, Lustig M.
  * Towards a Parameter­Free ESPIRiT: Soft­Weighting for Robust Coil Sensitivity Estimation
  * Submitted to ISMRM 2016.
+ * 
+ * Candès E, Long C, Trzasko J. 
+ * Unbiased Risk Estimates for Singular Value Thresholding and Spectral Estimators.
+ * IEEE Transactions on Signal Processing 61, no. 19 (2013): 4643­657.
+ *
  */
 
 #include <assert.h>
@@ -28,6 +33,16 @@
 
 #include "softweight.h"
 
+/*
+ * divergence - Calculates the divergence of the spectral estimator for use in SURE as
+ *              proposed by Candès et al.
+ *
+ * Parameters:
+ *  N            - Number of singular values.
+ *  S            - Array of singular values.
+ *  calmat_dims  - Dimension of the calibration matrix.
+ *  lambda       - Soft-threshold to test.
+ */
 static float divergence(long N, float S[N], long calmat_dims[2], float lambda) {
 
     int idx, jdx;
@@ -54,7 +69,7 @@ static float divergence(long N, float S[N], long calmat_dims[2], float lambda) {
 
 }
 
-extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calreg_dims[4], float S[N]) {
+extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calreg_dims[4], float S[N], float W[N]) {
 
     int idx = 0, jdx = 0;
 
@@ -94,13 +109,12 @@ extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calre
 
     }
 
-    //TODO : DEBUG
-    printf("Lambda: %f\n", lambda);
+    debug_printf(DP_DEBUG1, "Soft threshold (Lambda): %f\n", lambda);
 
     for (int idx = 0; idx < N; idx++) {
         t = (S[idx] - lambda)/S[idx];
         t = sqrtf(2 * t - t * t);
-        S[idx] = ((!isnan(t) && t > 0)? t: 0);
+        W[idx] = ((!isnan(t) && t > 0)? t: 0);
     }
 
 }

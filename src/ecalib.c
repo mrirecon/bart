@@ -50,7 +50,7 @@ static void help(void)
 		"-k ksize\tkernel size\n"
 		"-r cal_size\tLimits the size of the calibration region.\n"
 		"-m maps\t\tNumber of maps to compute.\n"
-                "-W weight\tThis soft-weights the singular vectors for better map estimates. Needs high second threshold"
+                "-W weight\tThis soft-weights the singular vectors for better map estimates. Needs high second threshold."
                     "(around 0.999).\n"
 		"-I\t\tintensity correction\n"
 		"-1\t\tperform only first part of the calibration\n");

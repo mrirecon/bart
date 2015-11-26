@@ -44,7 +44,7 @@
 #include "calib/calibcu.h"
 #endif
 
-#if 1
+#if 0
 #define CALMAT_SVD
 #endif
 
@@ -509,7 +509,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	calmat_svd(conf->kdims, N, vec, val, caldims, caldata);
 
         if (conf->weighting)
-            soft_weight_singular_vectors(N, conf->kdims, caldims, val);
+            soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
@@ -532,7 +532,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 		val[i] = sqrtf(tmp_val[N - 1 - i]); // val holds the singular values (Or square roots of the evals)
 
         if (conf->weighting)
-            soft_weight_singular_vectors(N, conf->kdims, caldims, val);
+            soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 

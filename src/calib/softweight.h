@@ -6,14 +6,31 @@
  * 2015 Siddharth Iyer <sid8795@gmail.com>
  *
  * Iyer S, Ong F, Lustig M.
- * Towards a Parameter­Free ESPIRiT: Soft­Weighting for Robust Coil Sensitivity Estimation
+ * Towards a Parameter­Free ESPIRiT: Soft­Weighting for Robust Coil Sensitivity Estimation.
  * Submitted to ISMRM 2016.
+ *
+ * Candès E, Long C, Trzasko J. 
+ * Unbiased Risk Estimates for Singular Value Thresholding and Spectral Estimators.
+ * IEEE Transactions on Signal Processing 61, no. 19 (2013): 4643­657.
+ *
  */
 
 #ifndef _SOFT_WEIGHT_H_
 #define  _SOFT_WEIGHT_H_
  
-//TODO: Document
-extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calreg_dims[4], float S[N]);
+/**
+ * soft_weight_singular_vectors - This returns weights for the singular vectors derived from the 
+ *                                soft-thresholding operator proposed by Candès et al., as seen
+ *                                in "Towards a Parameter­Free ESPIRiT: Soft­Weighting for 
+ *                                Robust Coil Sensitivity Estimation."
+ * 
+ * Parameters:
+ *  N           - Number of singular values.
+ *  kernel_dims - Dimension of kernel.
+ *  calreg_dims - Calibration region dimensions.
+ *  S           - Array of singular values. 
+ *  W           - Array to store weights to.
+ */
+extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calreg_dims[4], float S[N], float W[N]);
 
 #endif
