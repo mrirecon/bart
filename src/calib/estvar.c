@@ -238,7 +238,7 @@ static float estimate_noise_variance(long L, float* S, float* E)
         t += ((float)S[idx])/((float)E[idx]);
     }
 
-    return ((float)(s * s) * (t * t)/(L * L))/1.1; //Scaling down since it works well in practice.
+    return ((float)(s * s) * (t * t)/(L * L))/1.21; //Scaling down since it works well in practice.
 
 }
 

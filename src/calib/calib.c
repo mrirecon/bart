@@ -5,6 +5,7 @@
  * Authors:
  * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2013 Dara Bahri <dbahri123@gmail.com>
+ * 2015 Siddharth Iyer <sid8795@gmail.com>
  *
  *
  * Uecker M, Lai P, Murphy MJ, Virtue P, Elad M, Pauly JM, Vasanawala SS, Lustig M.
@@ -35,6 +36,7 @@
 
 #include "calib/calmat.h"
 #include "calib/cc.h"
+#include "calib/softweight.h"
 
 #include "calib.h"
 
@@ -506,6 +508,9 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 #ifdef CALMAT_SVD
 	calmat_svd(conf->kdims, N, vec, val, caldims, caldata);
 
+        if (conf->weighting)
+            soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
+
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
 #ifndef FLIP
@@ -524,7 +529,10 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	lapack_eig(N, tmp_val, vec);
 
 	for (int i = 0; i < N; i++)
-		val[i] = sqrtf(tmp_val[N - 1 - i]);
+		val[i] = sqrtf(tmp_val[N - 1 - i]); // val holds the singular values (Or square roots of the evals)
+
+        if (conf->weighting)
+            soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
