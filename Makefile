@@ -106,7 +106,7 @@ ismrm.top ?= /usr/local/ismrmrd/
 
 TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version
 TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize cdf97 relnorm pattern nrmse
-TNUM=fft fftmod fftshift noise bench threshold conv rss
+TNUM=fft fftmod fftshift noise bench threshold conv rss filter
 TRECO=pics pocsense rsense bpsense itsense nlinv nufft rof sake wave
 TCALIB=ecalib ecaltwo caldir walsh cc calmat svd estvar
 TMRI=homodyne poisson twixread fakeksp
