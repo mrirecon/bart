@@ -1,4 +1,7 @@
 
+0. License
+==========
+
 See LICENSE file for licensing information.
 
 -------------------------------------------------------------------------------
@@ -61,7 +64,7 @@ Do not type '$' when entering commands.
 
 
 
-2.1.1. Linux
+### 2.1.1. Linux
 
 The software tools in recon should run on any recent Linux distribution.
 
@@ -77,7 +80,7 @@ To install the required libraries on Debian and Ubuntu run:
 
 
 
-2.1.2. Mac OS X
+### 2.1.2. Mac OS X
 
 Xcode is required and it is recommended to install a newer version 
 of gcc (4.7 seems to work) from MacPorts (http://www.macports.org/).
@@ -96,7 +99,7 @@ of gcc (4.7 seems to work) from MacPorts (http://www.macports.org/).
 
 
 
-2.1.3. Windows
+### 2.1.3. Windows
 
 You can use BART on Windows using Cygwin:
 
@@ -156,7 +159,7 @@ build the ISMRM raw data import tool:
 2.3. Getting Started
 --------------------
 
-2.3.1. Organization
+### 2.3.1. Organization
 
 
     .           main directory / built software tools
@@ -181,7 +184,7 @@ build the ISMRM raw data import tool:
 
 
 
-2.3.2. Terminal
+### 2.3.2. Terminal
 
 When using the toolbox commands from a UNIX shell, it is recommended
 to set the TOOLBOX_PATH to the base directory and to add it to
@@ -193,7 +196,7 @@ Note: The dot or 'source' command is needed so that the variables
 are imported into the current shell.
 
 
-2.3.3. Matlab
+### 2.3.3. Matlab
 
 You can set the TOOLBOX_PATH to the base directory and to add it
 to the Matlab path by running the following command in the
