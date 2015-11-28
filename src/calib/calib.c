@@ -509,7 +509,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	calmat_svd(conf->kdims, N, vec, val, caldims, caldata);
 
         if (conf->weighting)
-            soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
+		soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
@@ -533,7 +533,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 		val[i] = (tmp_val[N - 1 - i] < 0.) ? 0. : sqrtf(tmp_val[N - 1 - i]);
 
         if (conf->weighting)
-            soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
+		soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
