@@ -65,7 +65,6 @@ int main_ecalib(int argc, char* argv[])
 	bool one = false;
 	bool calcen = false;
 	bool print_svals = false;
-	debug_level = 4;
 
 	struct ecalib_conf conf = ecalib_defaults;
 

@@ -528,8 +528,9 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	float tmp_val[N];
 	lapack_eig(N, tmp_val, vec);
 
+	// reverse and square root, test for smaller null to avoid NaNs
 	for (int i = 0; i < N; i++)
-		val[i] = sqrtf(tmp_val[N - 1 - i]); // val holds the singular values (Or square roots of the evals)
+		val[i] = (tmp_val[N - 1 - i] < 0.) ? 0. : sqrtf(tmp_val[N - 1 - i]);
 
         if (conf->weighting)
             soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
