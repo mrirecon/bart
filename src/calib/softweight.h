@@ -31,6 +31,6 @@
  *  S           - Array of singular values. 
  *  W           - Array to store weights to.
  */
-extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calreg_dims[4], float S[N], float W[N]);
+extern void soft_weight_singular_vectors(long N, const long kernel_dims[3], const long calreg_dims[4], const float S[N], float W[N]);
 
 #endif

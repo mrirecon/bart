@@ -43,7 +43,7 @@
  *  calmat_dims  - Dimension of the calibration matrix.
  *  lambda       - Soft-threshold to test.
  */
-static float divergence(long N, float S[N], long calmat_dims[2], float lambda) {
+static float divergence(long N, const float S[N], const long calmat_dims[2], float lambda) {
 
     int idx, jdx;
 
@@ -69,7 +69,7 @@ static float divergence(long N, float S[N], long calmat_dims[2], float lambda) {
 
 }
 
-extern void soft_weight_singular_vectors(long N, long kernel_dims[3], long calreg_dims[4], float S[N], float W[N]) {
+extern void soft_weight_singular_vectors(long N, const long kernel_dims[3], const long calreg_dims[4], const float S[N], float W[N]) {
 
     int idx = 0, jdx = 0;
 
