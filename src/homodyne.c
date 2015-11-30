@@ -57,7 +57,7 @@ struct wdata {
 // FIXME: should we clear the side we do not use? 
 static float homodyne_filter(long N, float frac, long p)
 {
-	return (abs(2 * p - N) < 2. * (frac - 0.5) * N) ? 1. : 2.;
+	return (labs(2 * p - N) < 2. * (frac - 0.5) * N) ? 1. : 2.;
 }
 
 static void comp_weights(void* _data, const long pos[])
