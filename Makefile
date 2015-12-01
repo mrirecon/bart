@@ -20,6 +20,8 @@ OMP?=1
 SLINK?=0
 DEBUG?=0
 
+DESTDIR ?= /
+
 BUILDTYPE = Linux
 UNAME = $(shell uname -s)
 NNAME = $(shell uname -n)
@@ -169,7 +171,7 @@ all $(MAKECMDGOALS):
 else
 
 
-default: all
+default: bart doc/commands.txt
 
 
 -include $(ALLDEPS)
@@ -382,6 +384,11 @@ allclean: clean
 	rm -f $(patsubst %, %, $(TARGETS))
 	rm -f $(srcdir)/misc/version.inc
 
+
+install: bart doc/commands.txt
+	install -D bart $(DESTDIR)/usr/bin/bart
+	install -d doc/ $(DESTDIR)/usr/share/doc/bart/
+	install doc/*.txt README $(DESTDIR)/usr/share/doc/bart/
 
 
 endif	#PARALLEL

@@ -58,7 +58,7 @@ static void noise_calreg(long T, complex float* ncalreg)
  *  kernel_dims - kernel dimensions.
  *  calreg_dims - calibration region dimensions.
  */
-static char* file_name(long kernel_dims[3], long calreg_dims[4]) {
+static char* file_name(const long kernel_dims[3], const long calreg_dims[4]) {
 
     char PATH[]     = "/save/nsv/";
     char KERNEL[]   = "KERNEL_";
@@ -106,7 +106,7 @@ static char* file_name(long kernel_dims[3], long calreg_dims[4]) {
  *  L              - Number of elements in E.
  *  E              - Load simulated noise singular values to.
  */
-static int load_noise_sv(long kernel_dims[3], long calreg_dims[4], long L, float* E) {
+static int load_noise_sv(const long kernel_dims[3], const long calreg_dims[4], long L, float* E) {
 
     char* name = file_name(kernel_dims, calreg_dims);
     FILE* fp   = fopen(name, "rb");
@@ -137,7 +137,7 @@ static int load_noise_sv(long kernel_dims[3], long calreg_dims[4], long L, float
  *  L              - Number of elements in E.
  *  E              - Load simulated noise singular values to.
  */
-static void save_noise_sv(long kernel_dims[3], long calreg_dims[4], long L, float* E) {
+static void save_noise_sv(const long kernel_dims[3], const long calreg_dims[4], long L, float* E) {
 
     char* name = file_name(kernel_dims, calreg_dims);
     FILE* fp   = fopen(name, "wb");
@@ -172,7 +172,7 @@ static void save_noise_sv(long kernel_dims[3], long calreg_dims[4], long L, floa
  *  num_iters   - The number of iterations in order to get a better 
  *                estimate of the noise singular values.
  */
-static void nsv(long kernel_dims[3], long calreg_dims[4], long L, float* E, long num_iters)
+static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, float* E, long num_iters)
 {
     
     if (1 == load_noise_sv(kernel_dims, calreg_dims, L, E)) {
@@ -228,7 +228,7 @@ static void nsv(long kernel_dims[3], long calreg_dims[4], long L, float* E, long
  *  E - This is the noise singular values as constructed by
  *      function: standard_normal_noise_sv
  */
-static float estimate_noise_variance(long L, float* S, float* E)
+static float estimate_noise_variance(long L, const float* S, const float* E)
 {
 
     float t = 0.f;
@@ -242,7 +242,7 @@ static float estimate_noise_variance(long L, float* S, float* E)
 
 }
 
-extern float estvar_sv(long L, float S[L], long kernel_dims[3], long calreg_dims[4]) {
+extern float estvar_sv(long L, const float S[L], const long kernel_dims[3], const long calreg_dims[4]) {
 
     float E[L];
     nsv(kernel_dims, calreg_dims, L, E, 10); // Number of iterations set to 5.
@@ -250,7 +250,7 @@ extern float estvar_sv(long L, float S[L], long kernel_dims[3], long calreg_dims
 
 }
 
-extern float estvar_calreg(long kernel_dims[3], long calreg_dims[4], complex float* calreg) {
+extern float estvar_calreg(const long kernel_dims[3], const long calreg_dims[4], const complex float* calreg) {
 
     // Calibration/Hankel matrix dimension.
     long calmat_dims[2] = {(calreg_dims[0] - kernel_dims[0] + 1) *
@@ -273,7 +273,7 @@ extern float estvar_calreg(long kernel_dims[3], long calreg_dims[4], complex flo
 
 }
 
-extern float estvar_kspace(long N, long kernel_dims[3], long calib_size[3], long kspace_dims[N], complex float* kspace) {
+extern float estvar_kspace(long N, const long kernel_dims[3], const long calib_size[3], const long kspace_dims[N], const complex float* kspace) {
 
     long calreg_dims[N];
     complex float* calreg = NULL;
