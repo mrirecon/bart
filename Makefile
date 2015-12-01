@@ -170,7 +170,7 @@ all $(MAKECMDGOALS):
 else
 
 
-default: bart doc/commands.txt
+default: bart doc/commands.txt .gitignore
 
 
 -include $(ALLDEPS)
