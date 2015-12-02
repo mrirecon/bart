@@ -30,6 +30,7 @@
 
 #include "lowrank/lrthresh.h"
 #include "linops/sum.h"
+#include "linops/sampling.h"
 #include "iter/prox.h"
 #include "linops/someops.h"
 
@@ -69,21 +70,22 @@ static void usage(const char* name, FILE* fd)
 static void help(void)
 {
 	printf( "\n"
-		"Perform multi-scale low rank decomposition.\n"
+		"Perform (multi-scale) low rank matrix completion\n"
+                "-d\t\tperform decomposition instead, ie fully sampled\n"
                 "-i\t\tmaximum iterations.\n"
                 "-m\t\tflags to specify which dimensions are reshaped to matrix columns.\n"
                 "-f\t\tflags to specify which dimensions to perform multi-scale partition.\n"
                 "-j scale\tblock size scaling from one scale to the next one.\n"
                 "-k block-size\tsmallest block size\n"
                 "-N\t\tadd noise scale to account for Gaussian noise.\n"
-                "-s\t\tperform low rank + sparse decomposition.\n"
+                "-s\t\tperform low rank + sparse matrix completion.\n"
                 "-l block-size\tperform locally low rank soft thresholding with specified block size.\n"
                 "-o <output2>\tsummed over all non-noise scales to create a denoised output.\n"
 		"\n");
 }
 
 
-int main_lrdecom(int argc, char* argv[])
+int main_lrmatrix(int argc, char* argv[])
 {
 	double start_time = timestamp();
 
@@ -97,6 +99,7 @@ int main_lrdecom(int argc, char* argv[])
 	unsigned long flags = ~0;
 	const char* sum_str = NULL;
 	_Bool noise = false;
+        _Bool decom = false;
 
 	_Bool llr = false;
 	long llrblk = 8;
@@ -107,8 +110,11 @@ int main_lrdecom(int argc, char* argv[])
 	int remove_mean = 0;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "uvNi:p:m:j:k:o:hnl:sf:gHF"))) {
+	while (-1 != (c = getopt(argc, argv, "uvNi:p:m:j:k:o:hnl:sf:gHFd"))) {
 		switch(c) {
+
+                case 'd':
+                        decom = true;
                         
 		case 'u':
                         remove_mean = 1;
@@ -216,6 +222,13 @@ int main_lrdecom(int argc, char* argv[])
 	complex float* odata = create_cfl(argv[optind + 1], DIMS, odims);
 	md_clear( DIMS, odims, odata, sizeof(complex float) );
 
+	// Get pattern
+	complex float* pattern = NULL;
+
+        if (!decom) {
+                pattern = md_alloc(DIMS, idims, CFL_SIZE);
+                estimate_pattern(DIMS, idims, TIME_DIM, pattern, idata);
+        }
 
 	// Initialize algorithm
 	void* iconf;
@@ -233,6 +246,13 @@ int main_lrdecom(int argc, char* argv[])
 	// Initialize operators
 
 	const struct linop_s* sum_op = sum_create( odims, use_gpu );
+	const struct linop_s* sampling_op = NULL;
+        if (!decom) {
+                sampling_op = sampling_create(idims, idims, pattern);
+                sum_op = linop_chain(sum_op, sampling_op);
+                linop_free(sampling_op);
+        }
+	
 	const struct operator_p_s* sum_prox = prox_lineq_create( sum_op, idata );
 	const struct operator_p_s* lr_prox = lrthresh_create(odims, randshift, mflags, (const long (*)[])blkdims, 1., noise, remove_mean, use_gpu);
 
