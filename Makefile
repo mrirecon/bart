@@ -386,8 +386,9 @@ allclean: clean
 
 
 install: bart doc/commands.txt
-	install -D bart $(DESTDIR)/usr/bin/bart
-	install -d doc/ $(DESTDIR)/usr/share/doc/bart/
+	install -d $(DESTDIR)/usr/bin/
+	install bart $(DESTDIR)/usr/bin/
+	install -d $(DESTDIR)/usr/share/doc/bart/
 	install doc/*.txt README $(DESTDIR)/usr/share/doc/bart/
 
 
