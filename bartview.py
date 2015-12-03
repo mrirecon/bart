@@ -73,6 +73,7 @@ class BartView(object):
         self.fig = plt.figure(facecolor='black', figsize=(9,6))
         #self.fig = plt.figure(facecolor='black', figsize=(6,4))
         self.fig.subplots_adjust( left=0.0 , bottom=0.0 , right=1.0 , top=1 - 0.25)
+        self.fig.canvas.set_window_title(self.cflname)
         
         # Show image
         self.immax = np.max(abs(self.im))
