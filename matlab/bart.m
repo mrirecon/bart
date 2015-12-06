@@ -2,10 +2,18 @@ function [varargout] = bart(cmd, varargin);
 % BART	Call BART command from Matlab.
 %   [A B] = bart('command', X Y) call command with inputs X Y and outputs A B
 %
-% 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+% 2014-2015 Martin Uecker <uecker@med.uni-goettingen.de>
 
-	if isempty(getenv('TOOLBOX_PATH'))
-		error('Environment variable TOOLBOX_PATH is not set.');
+	bart_path = getenv('TOOLBOX_PATH');
+
+	if isempty(bart_path)
+		if exist('/usr/local/bin/bart', 'file')
+			bart_path = '/usr/local/bin';
+		elseif exist('/usr/bin/bart', 'file')
+			bart_path = '/usr/bin';
+		else
+			error('Environment variable TOOLBOX_PATH is not set.');
+		end
 	end
 
 	% clear the LD_LIBRARY_PATH environment variable (to work around
@@ -39,12 +47,12 @@ function [varargout] = bart(cmd, varargin);
 	if ispc
 		% For cygwin use bash and modify paths
 		ERR = system(['bash.exe --login -c ', ...
-                	strrep(getenv('TOOLBOX_PATH'), filesep, '/'), ...
+			strrep(bart_path, filesep, '/'), ...
 	                '"', '/bart ', strrep(cmd, filesep, '/'), ' ', ...
 			strrep(in_str, filesep, '/'), ...
                 	' ', strrep(out_str, filesep, '/'), '"']);
 	else
-		ERR = system([getenv('TOOLBOX_PATH'), '/bart ', cmd, ' ', in_str, ' ', out_str]);
+		ERR = system([bart_path, '/bart ', cmd, ' ', in_str, ' ', out_str]);
 	end
 
 	if ERR~=0
