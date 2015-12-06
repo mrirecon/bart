@@ -53,8 +53,8 @@ export TOOLBOX_PATH=$(root)
 
 DEPFILE = $(*D)/.$(*F).d
 DEPFLAG = -MMD -MF $(DEPFILE)
-ALLDEPS = $(shell find $(srcdir) -name ".*.d")
-#ALLDEPS = $(shell find $(root) -name ".*.d")
+#ALLDEPS = $(shell find $(srcdir) -name ".*.d")
+ALLDEPS = $(shell find $(root) -name ".*.d")
 
 
 # Compilation flags
@@ -375,21 +375,24 @@ $(ZTARGETS): % : $(srcdir)/%.c $$(MODULES_%) $(MODULES)
 #	rm $(srcdir)/$@.o
 
 
-.PHONY: clean allclean
+.PHONY: clean allclean distclean
 clean:
 	rm -f `find $(srcdir) -name "*.o"`
+	rm -f $(root)/lib/.*.lock
 
 allclean: clean
 	rm -f $(libdir)/*.a ismrmrd $(ALLDEPS)
-	rm -f $(patsubst %, %, $(TARGETS))
+	rm -f bbox $(patsubst %, %, $(TARGETS))
 	rm -f $(srcdir)/misc/version.inc
 
+distclean: allclean
 
-install: bart doc/commands.txt
+
+install: bart $(root)/doc/commands.txt
 	install -d $(DESTDIR)/usr/bin/
 	install bart $(DESTDIR)/usr/bin/
 	install -d $(DESTDIR)/usr/share/doc/bart/
-	install doc/*.txt README $(DESTDIR)/usr/share/doc/bart/
+	install $(root)/doc/*.txt $(root)/README $(DESTDIR)/usr/share/doc/bart/
 
 
 endif	#PARALLEL
