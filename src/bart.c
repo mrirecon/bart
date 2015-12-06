@@ -15,11 +15,7 @@
 #include "misc/misc.h"
 #include "misc/cppmap.h"
 
-
-#define DECLMAIN(x) \
-extern int main_ ## x(int argc, char* argv[]);
-MAP(DECLMAIN, MAIN_LIST)
-#undef	DECLMAIN
+#include "main.h"
 
 struct {
 
@@ -49,7 +45,7 @@ static void usage(void)
 	printf("\n");
 }
 
-int main(int argc, char* argv[])
+int main_bart(int argc, char* argv[])
 {
 	char* bn = basename(argv[0]);
 
@@ -61,7 +57,7 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 
-		return main(argc - 1, argv + 1);
+		return main_bart(argc - 1, argv + 1);
 	}
 
 	for (int i = 0; NULL != dispatch_table[i].name; i++) {

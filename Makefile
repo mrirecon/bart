@@ -53,8 +53,7 @@ export TOOLBOX_PATH=$(root)
 
 DEPFILE = $(*D)/.$(*F).d
 DEPFLAG = -MMD -MF $(DEPFILE)
-#ALLDEPS = $(shell find $(srcdir) -name ".*.d")
-ALLDEPS = $(shell find $(root) -name ".*.d")
+ALLDEPS = $(shell find $(srcdir) -name ".*.d")
 
 
 # Compilation flags
@@ -332,9 +331,12 @@ all: .gitignore $(TARGETS)
 # special targets
 
 
-bbox: CPPFLAGS += -DMAIN_LIST="$(BTARGETS:%=%,) ()"
+$(XTARGETS): CPPFLAGS += -DMAIN_LIST="$(XTARGETS:%=%,) ()" -include src/main.h
 
-bart: CPPFLAGS += -DMAIN_LIST="$(YTARGETS:%=%,) ()"
+
+bbox: CPPFLAGS += -DMAIN_LIST="$(BTARGETS:%=%,) ()" -include src/main.h
+
+bart: CPPFLAGS += -DMAIN_LIST="$(YTARGETS:%=%,) ()" -include src/main.h
 
 
 ismrmrd: $(srcdir)/ismrmrd.c -lismrm -lnum -lmisc
@@ -370,8 +372,8 @@ $(BTARGETS): bbox
 
 
 .SECONDEXPANSION:
-$(ZTARGETS): % : $(srcdir)/%.c $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -Dmain_$@=main -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(GSL_L) $(PNG_L) -lm
+$(ZTARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
+	$(CC) $(LDFLAGS) $(CFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(GSL_L) $(PNG_L) -lm
 #	rm $(srcdir)/$@.o
 
 
