@@ -397,6 +397,11 @@ install: bart $(root)/doc/commands.txt
 	install $(root)/doc/*.txt $(root)/README $(DESTDIR)/usr/share/doc/bart/
 
 
+# generate release tar balls (identical to github)
+%.tar.gz:
+	git archive --prefix=bart-$(patsubst bart-%.tar.gz,%,$@)/ -o $@ v$(patsubst bart-%.tar.gz,%,$@)
+
+
 endif	#PARALLEL
 
 
