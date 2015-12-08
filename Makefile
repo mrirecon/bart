@@ -105,7 +105,7 @@ ismrm.top ?= /usr/local/ismrmrd/
 
 # Main build targets
 
-TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version
+TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version estdims
 TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize cdf97 relnorm pattern nrmse
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter
 TRECO=pics pocsense rsense bpsense itsense nlinv nufft rof sake wave lrmatrix
@@ -142,7 +142,7 @@ MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
 MODULES_bench = -lwavelet2 -lwavelet3 -llinops
 MODULES_phantom = -lsimu
-MODULES_bbox += -lbox -lwavelet2 -lwavelet3 -llinops -liter -llinops -llowrank -ldfwavelet
+MODULES_bbox += -lbox -lnoncart -lwavelet2 -lwavelet3 -llinops -liter -llinops -llowrank -ldfwavelet
 MODULES_bart += -lbox -lbox2 -lgrecon -lsense -lnoir -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet
 MODULES_sake += -lsake
 MODULES_wave += -liter -lwavelet2 -llinops -lsense
