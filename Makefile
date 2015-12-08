@@ -149,7 +149,7 @@ MODULES_wave += -liter -lwavelet2 -llinops -lsense
 MODULES_threshold += -llowrank -llinops -lwavelet2 -liter -ldfwavelet
 MODULES_fakeksp += -lsense -llinops
 MODULES_lrmatrix = -llowrank -liter -llinops
-MODULES_estdims = -lnoncart
+MODULES_estdims = -lnoncart -llinops
 
 -include Makefile.$(NNAME)
 -include Makefile.local
