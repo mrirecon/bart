@@ -30,7 +30,7 @@
 
 static void usage(const char* name, FILE* fd)
 {
-	fprintf(fd, "Usage: %s [-C] [-P phase_ref] dim fraction <input> <output>\n", name);
+	fprintf(fd, "Usage: %s [-I] [-C] [-P phase_ref] dim fraction <input> <output>\n", name);
 }
 
 static void help(const char* name, FILE *fd)
@@ -38,6 +38,7 @@ static void help(const char* name, FILE *fd)
 	usage(name, fd);
 	fprintf(fd, "\nPerform homodyne reconstruction along dimension dim.\n"
 		"\t-C\tClear unacquired portion of kspace\n"
+		"\t-I\tInput is in image domain\n"
 		"\t-P <phase_ref>\tUse <phase_ref> as phase reference\n"
 		"\t-h\thelp\n");
 }
@@ -105,12 +106,17 @@ static void homodyne(struct wdata wdata, unsigned int flags, unsigned int N, con
 int main_homodyne(int argc, char* argv[])
 {
 	bool clear = false;
+	bool image = false;
 	const char* phase_ref = NULL;
 
 	int com;
-	while (-1 != (com = getopt(argc, argv, "hCP:"))) {
+	while (-1 != (com = getopt(argc, argv, "hICP:"))) {
 
 		switch (com) {
+
+		case 'I':
+			image = true;
+			break;
 
 		case 'C':
 			clear = true;
@@ -145,6 +151,13 @@ int main_homodyne(int argc, char* argv[])
 
 	assert((0 <= pfdim) && (pfdim < N));
 	assert(frac > 0.);
+
+	if (image) {
+		complex float* ksp_in = md_alloc(N, dims, CFL_SIZE);
+		fftuc(N, dims, FFT_FLAGS, ksp_in, idata);
+		md_copy(N, dims, idata, ksp_in, CFL_SIZE);
+		md_free(ksp_in);
+	}
 
 
 	long strs[N];
@@ -226,6 +239,7 @@ int main_homodyne(int argc, char* argv[])
 	}
 
 	md_free(wdata.weights);
+
 	if (NULL == phase_ref)
 		md_free(phase);
 	else {
