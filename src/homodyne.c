@@ -55,10 +55,26 @@ struct wdata {
 };
 
 
-// FIXME: should we clear the side we do not use? 
 static float homodyne_filter(long N, float frac, long p)
 {
+#if 0
 	return (labs(2 * p - N) < 2. * (frac - 0.5) * N) ? 1. : 2.;
+#else
+	if (frac <= 0.5)
+		return 1.;
+
+	float start = N * (1 - frac);
+	float end = N * frac;
+
+	float ret = 1.; // don't clear "unacquired" k-space (use -C instead)
+
+	if (p < start)
+		ret = 2.;
+	else if (p >= start && p < end)
+		ret =  2. / (start - end) * (p - end);
+
+	return ret;
+#endif
 }
 
 static void comp_weights(void* _data, const long pos[])
