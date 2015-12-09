@@ -208,35 +208,7 @@ int main_homodyne(int argc, char* argv[])
 	}
 
 
-	if ((1 == dims[PHS2_DIM]) || (PHS2_DIM == pfdim)) {
-
-		homodyne(wdata, FFT_FLAGS, N, dims, strs, data, idata, pstrs, phase);
-
-	} else {
-
-		unsigned int pardim = PHS2_DIM;
-
-		ifftuc(N, dims, MD_CLEAR(FFT_FLAGS, pfdim), data, idata);
-
-		long rdims[N];
-		md_select_dims(N, ~MD_BIT(pardim), rdims, dims);
-		long rstrs[N];
-		md_calc_strides(N, rstrs, rdims, CFL_SIZE);
-
-#pragma 	omp parallel for
-		for (unsigned int i = 0; i < dims[pardim]; i++) {
-
-			complex float* tmp = md_alloc(N, rdims, CFL_SIZE);
-			long pos[N];
-			md_set_dims(N, pos, 0);
-			pos[pardim] = i;
-
-			md_copy_block(N, pos, rdims, tmp, dims, data, CFL_SIZE);
-			homodyne(wdata, MD_BIT(pfdim), N, rdims, rstrs, tmp, tmp, pstrs, phase);
-			md_copy_block(N, pos, dims, data, rdims, tmp, CFL_SIZE);
-			md_free(tmp);
-		}
-	}
+	homodyne(wdata, FFT_FLAGS, N, dims, strs, data, idata, pstrs, phase);
 
 	md_free(wdata.weights);
 
