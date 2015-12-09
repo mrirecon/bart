@@ -55,18 +55,29 @@ function [varargout] = bart(cmd, varargin);
 		ERR = system([bart_path, '/bart ', cmd, ' ', in_str, ' ', out_str]);
 	end
 
-	if ERR~=0
-		error('command exited with an error');
-	end
-
 	for i=1:nargin - 1,
-		delete(strcat(in{i}, '.cfl'));
-		delete(strcat(in{i}, '.hdr'));
+        if (exist(strcat(in{i}, '.cfl'),'file'))
+            delete(strcat(in{i}, '.cfl'));
+        end
+        if (exist(strcat(in{i}, '.hdr'),'file'))
+            delete(strcat(in{i}, '.hdr'));
+        end
 	end
 
 	for i=1:nargout,
-		varargout{i} = readcfl(out{i});
-		delete(strcat(out{i}, '.cfl'));
-		delete(strcat(out{i}, '.hdr'));
+        if (ERR  == 0)
+            varargout{i} = readcfl(out{i});
+        end
+        if (exist(strcat(out{i}, '.cfl'),'file'))
+            delete(strcat(out{i}, '.cfl'));
+        end
+        if (exist(strcat(out{i}, '.hdr'),'file'))
+            delete(strcat(out{i}, '.hdr'));
+        end
+    end
+    
+
+	if ERR~=0
+		error('command exited with an error');
 	end
 end
