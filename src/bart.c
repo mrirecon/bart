@@ -1,9 +1,10 @@
 /* Copyright 2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdlib.h>
@@ -11,6 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <libgen.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include "misc/misc.h"
 #include "misc/cppmap.h"
@@ -55,6 +58,33 @@ int main_bart(int argc, char* argv[])
 
 			usage();
 			exit(1);
+		}
+
+		char* tpath = getenv("TOOLBOX_PATH");
+
+		if (NULL != tpath) {
+
+			size_t len = strlen(tpath) + strlen(argv[1]) + 2;
+			char* cmd = malloc(len);
+			size_t r = snprintf(cmd, len, "%s/%s", tpath, argv[1]);
+			assert(r < len);
+
+			if (-1 == execv(cmd, argv + 1)) {
+
+				// only if it doesn't exist - try builtin
+
+				if (ENOENT != errno) {
+
+					perror("Executing bart command failed");
+					exit(1);
+				}
+
+			} else {
+
+				assert(0);
+			}
+
+			free(cmd);
 		}
 
 		return main_bart(argc - 1, argv + 1);
