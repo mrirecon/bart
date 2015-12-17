@@ -1,8 +1,13 @@
 function [varargout] = bart(cmd, varargin);
 % BART	Call BART command from Matlab.
-%   [A B] = bart('command', X Y) call command with inputs X Y and outputs A B
+%   [A, B] = bart('command', X, Y) call command with inputs X Y and outputs A B
 %
 % 2014-2015 Martin Uecker <uecker@med.uni-goettingen.de>
+
+	if nargin==0
+		disp('Usage: bart <command> <arguments...>');
+		return
+	end
 
 	bart_path = getenv('TOOLBOX_PATH');
 
