@@ -69,7 +69,7 @@ int main_ecalib(int argc, char* argv[])
 	struct ecalib_conf conf = ecalib_defaults;
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, "OWS1CVIt:p:n:c:k:K:r:R:m:b:h"))) {
+	while (-1 != (c = getopt(argc, argv, "OWS1CVIt:p:n:c:k:K:r:R:m:b:hg"))) {
 
 		switch (c) {
 
