@@ -257,7 +257,12 @@ CPPFLAGS += $(FFTW_H)
 
 
 # png
-PNG_L := -lpng -lz
+PNG_L := -lpng
+
+ifeq ($(SLINK),1)
+	PNG_L += -lz
+endif
+
 
 
 # fftw
