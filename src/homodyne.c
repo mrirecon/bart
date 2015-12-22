@@ -48,40 +48,51 @@ static void help(const char* name, FILE *fd)
 struct wdata {
 
 	float frac;
+	float alpha;
 	int pfdim;
 	long wdims[DIMS];
 	long wstrs[DIMS];
 	complex float* weights;
+
+	bool clear;
 };
 
 
-static float homodyne_filter(long N, float frac, long p)
+/**
+ * Applies the Homodyne filter.
+ * @param N k-space dimension
+ * @param p k-space position
+ * @param frac is the fraction of acquired k-space
+ * @param alpha is the offset of the ramp, between 0 and 1
+ * @param clear clear acquired k-space
+ *
+ * The ramp portion is given by 2*(alpha - 1) / (end - start) * (p - end) + alpha
+ * alpha = 0 is a full ramp, alpha = 1 is a horizontal line
+ */
+static float homodyne_filter(long N, float frac, float alpha, bool clear, long p)
 {
-#if 0
-	return (labs(2 * p - N) < 2. * (frac - 0.5) * N) ? 1. : 2.;
-#else
 	if (frac <= 0.5)
 		return 1.;
 
 	float start = N * (1 - frac);
 	float end = N * frac;
 
-	float ret = 1.; // don't clear "unacquired" k-space (use -C instead)
+	float ret = clear ? 0. : 1.;
+
 
 	if (p < start)
 		ret = 2.;
 	else if (p >= start && p < end)
-		ret =  2. / (start - end) * (p - end);
+		ret = 2 * (alpha - 1) / (end - start) * (p - end) + alpha;
 
 	return ret;
-#endif
 }
 
 static void comp_weights(void* _data, const long pos[])
 {
 	struct wdata* data = _data;
 	data->weights[md_calc_offset(DIMS, data->wstrs, pos) / CFL_SIZE] 
-		= homodyne_filter(data->wdims[data->pfdim], data->frac, pos[data->pfdim]);
+		= homodyne_filter(data->wdims[data->pfdim], data->frac, data->alpha, data->clear, pos[data->pfdim]);
 }
 
 static complex float* estimate_phase(struct wdata wdata, unsigned int flags,
@@ -125,10 +136,15 @@ int main_homodyne(int argc, char* argv[])
 	bool image = false;
 	const char* phase_ref = NULL;
 
+	float alpha = 0.;
 	int com;
-	while (-1 != (com = getopt(argc, argv, "hICP:"))) {
+	while (-1 != (com = getopt(argc, argv, "r:ICP:h"))) {
 
 		switch (com) {
+
+		case 'r':
+			alpha = atof(optarg);
+			break;
 
 		case 'I':
 			image = true;
@@ -185,6 +201,8 @@ int main_homodyne(int argc, char* argv[])
 	md_select_dims(N, MD_BIT(pfdim), wdata.wdims, dims);
 	md_calc_strides(N, wdata.wstrs, wdata.wdims, CFL_SIZE);
 	wdata.weights = md_alloc(N, wdata.wdims, CFL_SIZE);
+	wdata.alpha = alpha;
+	wdata.clear = clear;
 
 	md_loop(N, wdata.wdims, &wdata, comp_weights);
 
@@ -201,28 +219,6 @@ int main_homodyne(int argc, char* argv[])
 		phase = load_cfl(phase_ref, N, pdims);
 
 	md_calc_strides(N, pstrs, pdims, CFL_SIZE);
-
-	complex float* cdata = NULL;
-	complex float* idata2 = NULL;
-
-	if (clear) {
-
-		long cdims[N];
-		md_select_dims(N, ~MD_BIT(pfdim), cdims, dims);
-		cdims[pfdim] = (int)(dims[pfdim] * frac);
-
-		cdata = md_alloc(N, cdims, CFL_SIZE);
-		idata2 = anon_cfl(NULL, N, dims);
-
-		md_resize(N, cdims, cdata, dims, idata, CFL_SIZE);
-		md_resize(N, dims, idata2, cdims, cdata, CFL_SIZE);
-
-		md_free(cdata);
-		unmap_cfl(N, dims, idata);
-		idata = idata2;
-
-	}
-
 
 	homodyne(wdata, FFT_FLAGS, N, dims, strs, data, idata, pstrs, phase);
 
