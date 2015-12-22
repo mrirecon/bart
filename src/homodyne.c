@@ -19,6 +19,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
+#include "num/init.h"
 
 #include "misc/mri.h"
 #include "misc/mmio.h"
@@ -137,6 +138,9 @@ int main_homodyne(int argc, char* argv[])
 	const char* phase_ref = NULL;
 
 	float alpha = 0.;
+
+	num_init();
+
 	int com;
 	while (-1 != (com = getopt(argc, argv, "r:ICP:h"))) {
 
