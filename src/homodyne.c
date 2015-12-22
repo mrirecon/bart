@@ -31,7 +31,7 @@
 
 static void usage(const char* name, FILE* fd)
 {
-	fprintf(fd, "Usage: %s [-I] [-C] [-P phase_ref] dim fraction <input> <output>\n", name);
+	fprintf(fd, "Usage: %s [-I] [-C] [-P phase_ref] [-r alpha] dim fraction <input> <output>\n", name);
 }
 
 static void help(const char* name, FILE *fd)
@@ -41,6 +41,7 @@ static void help(const char* name, FILE *fd)
 		"\t-C\tClear unacquired portion of kspace\n"
 		"\t-I\tInput is in image domain\n"
 		"\t-P <phase_ref>\tUse <phase_ref> as phase reference\n"
+		"\t-r <alpha>\tOffset of ramp filter, between 0 and 1\n"
 		"\t-h\thelp\n");
 }
 
