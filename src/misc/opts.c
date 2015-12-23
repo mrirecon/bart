@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "misc/misc.h"
 
 #include "opts.h"
 
@@ -96,30 +97,35 @@ void cmdline(int argc, char* argv[], int expected_args, const char* usage_str, c
 
 extern bool opt_set(void* ptr, char c, const char* optarg)
 {
+	UNUSED(c); UNUSED(optarg);
 	*(bool*)ptr = true;
 	return false;
 }
 
 extern bool opt_clear(void* ptr, char c, const char* optarg)
 {
+	UNUSED(c); UNUSED(optarg);
 	*(bool*)ptr = false;
 	return false;
 }
 
 extern bool opt_int(void* ptr, char c, const char* optarg)
 {
+	UNUSED(c); UNUSED(optarg);
 	*(int*)ptr = atoi(optarg);
 	return false;
 }
 
 extern bool opt_float(void* ptr, char c, const char* optarg)
 {
+	UNUSED(c); UNUSED(optarg);
 	*(float*)ptr = atof(optarg);
 	return false;
 }
 
 extern bool opt_string(void* ptr, char c, const char* optarg)
 {
+	UNUSED(c); UNUSED(optarg);
 	*(char**)ptr = strdup(optarg);
 	return false;
 }
