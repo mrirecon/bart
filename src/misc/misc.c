@@ -160,7 +160,16 @@ bool mini_cmdline_bool(int argc, char* argv[], char flag_char, int expected_args
 	if ((hlen > 1) && ('\n' == help[hlen - 1]))
 		help[hlen - 1] = '\0';
 
-	cmdline(argc, argv, expected_args, usage_str, help, 1, opts);
+	int min_args = expected_args;
+	int max_args = expected_args;
+
+	if (expected_args < 0) {
+
+		min_args = -expected_args;
+		max_args = 1000;
+	}
+
+	cmdline(&argc, argv, min_args, max_args, usage_str, help, 1, opts);
 
 	free(help);
 

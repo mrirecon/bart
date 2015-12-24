@@ -16,15 +16,15 @@
 
 #include "misc/mmio.h"
 #include "misc/opts.h"
+#include "misc/misc.h"
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
 
-static const char* usage_str = "[-u] [-i] bitmask <input> <output>";
-static const char* help_str =
-		"Performs a fast Fourier transform (FFT) along selected dimensions.\n";
+static const char* usage_str = "bitmask <input> <output>";
+static const char* help_str = "Performs a fast Fourier transform (FFT) along selected dimensions.";
 
 
 
@@ -34,10 +34,13 @@ int main_fft(int argc, char* argv[])
 	bool unitary = false;
 	bool inv = false;
 
-	cmdline(argc, argv, 3, usage_str, help_str, 2,
-		(struct opt_s[2]){	{ 'u', false, opt_set, &unitary, "unitary" },
-					{ 'i', false, opt_set, &inv, "inverse" },	});
+	const struct opt_s opts[] = {
 
+		{ 'u', false, opt_set, &unitary, "\tunitary" },
+		{ 'i', false, opt_set, &inv, "\tinverse" },
+	};
+
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	long dims[DIMS];
 	complex float* idata = load_cfl(argv[2], DIMS, dims);

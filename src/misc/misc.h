@@ -15,6 +15,7 @@
 #define UNUSED(x) (void)(x)
 
 #define MAKE_ARRAY(x, ...) ((__typeof__(x)[]){ x, __VA_ARGS__ })
+#define ARRAY_SIZE(x)	(sizeof(x) / sizeof(x[0]))
 
 #ifdef __cplusplus
 extern "C" {

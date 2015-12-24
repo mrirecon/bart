@@ -15,9 +15,10 @@ struct opt_s {
 extern opt_conv_f opt_set;
 extern opt_conv_f opt_clear;
 extern opt_conv_f opt_int;
+extern opt_conv_f opt_long;
 extern opt_conv_f opt_float;
 extern opt_conv_f opt_string;
 
-extern void cmdline(int argc, char* argv[], int expected_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n]);
+extern void cmdline(int* argc, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n]);
 
 
