@@ -164,8 +164,8 @@ endif
 
 
 ifeq ($(PARALLEL),1)
-.PHONY: all $(MAKECMDGOALS)
-all $(MAKECMDGOALS):
+.PHONY: default $(MAKECMDGOALS)
+default $(MAKECMDGOALS):
 	echo Parallel build.
 	make PARALLEL=2 -j $(MAKECMDGOALS)
 else
