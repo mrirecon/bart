@@ -21,7 +21,8 @@
 
 
 static const char* usage_str = "<traj>";
-static const char* help_str = "Estimate image dimesion from non-Cartesian trajectory. Assume trajectory scaled to -DIM/2 to DIM/2 (ie dk=1/FOV=1)\n";
+static const char* help_str = "Estimate image dimension from non-Cartesian trajectory.\n"
+			"Assume trajectory scaled to -DIM/2 to DIM/2 (ie dk=1/FOV=1)\n";
 
 
 
