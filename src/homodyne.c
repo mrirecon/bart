@@ -1,20 +1,15 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <complex.h>
-#include <unistd.h>
-
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -24,26 +19,15 @@
 #include "misc/mri.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
 
 
+static const char* usage_str = "dim fraction <input> <output>";
+static const char* help_str = "Perform homodyne reconstruction along dimension dim.";
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-I] [-C] [-P phase_ref] [-r alpha] dim fraction <input> <output>\n", name);
-}
 
-static void help(const char* name, FILE *fd)
-{
-	usage(name, fd);
-	fprintf(fd, "\nPerform homodyne reconstruction along dimension dim.\n"
-		"\t-C\tClear unacquired portion of kspace\n"
-		"\t-I\tInput is in image domain\n"
-		"\t-P <phase_ref>\tUse <phase_ref> as phase reference\n"
-		"\t-r <alpha>\tOffset of ramp filter, between 0 and 1\n"
-		"\t-h\thelp\n");
-}
 
 
 
@@ -142,49 +126,24 @@ int main_homodyne(int argc, char* argv[])
 
 	num_init();
 
-	int com;
-	while (-1 != (com = getopt(argc, argv, "r:ICP:h"))) {
+	const struct opt_s opts[] = {
 
-		switch (com) {
+		{ 'r', true, opt_float, &alpha, " <alpha>\tOffset of ramp filter, between 0 and 1" },
+		{ 'I', false, opt_set, &image, "\tInput is in image domain" },
+		{ 'C', false, opt_set, &clear, "\tClear unacquired portion of kspace" },
+		{ 'P', true, opt_string, &phase_ref, " <phase_ref>\tUse <phase_ref> as phase reference" },
+	};
 
-		case 'r':
-			alpha = atof(optarg);
-			break;
+	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'I':
-			image = true;
-			break;
-
-		case 'C':
-			clear = true;
-			break;
-
-		case 'P':
-			phase_ref = strdup(optarg);
-			break;
-
-		case 'h':
-			help(argv[0], stdout);
-			exit(0);
-
-		default:
-			help(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 4) {
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	const int N = DIMS;
 	long dims[N];
-	complex float* idata = load_cfl(argv[optind + 2], N, dims);
-	complex float* data = create_cfl(argv[optind + 3], N, dims);
+	complex float* idata = load_cfl(argv[3], N, dims);
+	complex float* data = create_cfl(argv[4], N, dims);
 
-	int pfdim = atoi(argv[optind + 0]);
-	float frac = atof(argv[optind + 1]);
+	int pfdim = atoi(argv[1]);
+	float frac = atof(argv[2]);
 
 	assert((0 <= pfdim) && (pfdim < N));
 	assert(frac > 0.);

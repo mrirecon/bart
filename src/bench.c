@@ -1,20 +1,18 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
-#define _GNU_SOURCE
 #include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
 #include <complex.h>
 #include <string.h>
 #include <stdbool.h>
-#include <unistd.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -28,6 +26,7 @@
 #include "misc/debug.h"
 #include "misc/misc.h"
 #include "misc/mmio.h"
+#include "misc/opts.h"
 
 #define DIMS 8
 
@@ -506,58 +505,22 @@ const struct benchmark_s {
 };
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-t] [-s] [<output>]\n", name);
-}
-
-
-static void help(void)
-{
-	printf( "\n"
-		"Performs a series of micro-benchmarks.\n"
-		"\n"
-		"-T\tbenchmark with varying number of threads\n"
-		"-S\tbenchmark with varying problem size\n"
-		"-h\thelp\n");
-}
+static const char* usage_str = "[<output>]";
+static const char* help_str = "Performs a series of micro-benchmarks.";
 
 
 
 int main_bench(int argc, char* argv[])
 {
-	int c;
 	bool threads = false;
 	bool scaling = false;
 
-	while (-1 != (c = getopt(argc, argv, "TSh"))) {
+	const struct opt_s opts[] = {
+		{ 'T', false, opt_set, &threads, "\tvarying number of threads" },
+		{ 'S', false, opt_set, &scaling, "\tvarying problem size" },
+	};
 
-		switch (c) {
-
-		case 'T':
-			threads = true;
-			break;
-
-		case 'S':
-			scaling = true;
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind > 1) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	cmdline(&argc, argv, 0, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	long dims[BENCH_DIMS] = MD_INIT_ARRAY(BENCH_DIMS, 1);
 	long strs[BENCH_DIMS];
@@ -570,8 +533,8 @@ int main_bench(int argc, char* argv[])
 
 	md_calc_strides(BENCH_DIMS, strs, dims, CFL_SIZE);
 
-	bool outp = (1 == argc - optind);
-	complex float* out = (outp ? create_cfl : anon_cfl)(outp ? argv[optind] : "", BENCH_DIMS, dims);
+	bool outp = (2 == argc);
+	complex float* out = (outp ? create_cfl : anon_cfl)(outp ? argv[1] : "", BENCH_DIMS, dims);
 
 	num_init();
 

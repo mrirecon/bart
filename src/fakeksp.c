@@ -1,18 +1,14 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
-#include <unistd.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -24,73 +20,44 @@
 
 #include "misc/mri.h"
 #include "misc/mmio.h"
+#include "misc/misc.h"
+#include "misc/opts.h"
+#include "misc/debug.h"
 
 
 
 
-static void usage(const char* name, FILE* fp)
-{
-	fprintf(fp, "Usage: %s [-h] [-r] <image> <kspace> <sens> <output>\n", name);
-}
+static const char* usage_str = "<image> <kspace> <sens> <output>";
+static const char* help_str = "Recreate k-space from image and sensitivities.";
 
 
-static void help(void)
-{
-	printf( "\n"
-		"Recreate k-space from image and sensitivities.\n"
-		"\n"
-		"-r replace measured samples with original values\n");
-}
 
 
 int main_fakeksp(int argc, char* argv[])
 {
 	bool rplksp = false;
-	int c;
 
-	while (-1 != (c = getopt(argc, argv, "hr"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'r', false, opt_set, &rplksp, "\treplace measured samples with original values" },
+	};
 
-		case 'r':
-			rplksp = true;
-			break;
+	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 4) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	const int N = DIMS;
 	long ksp_dims[N];
 	long dims[N];
 	long img_dims[N];
 
-	complex float* kspace_data = load_cfl(argv[optind + 1], N, ksp_dims);
-	complex float* sens_maps = load_cfl(argv[optind + 2], N, dims);
-	complex float* image = load_cfl(argv[optind + 0], N, img_dims);
+	complex float* kspace_data = load_cfl(argv[2], N, ksp_dims);
+	complex float* sens_maps = load_cfl(argv[3], N, dims);
+	complex float* image = load_cfl(argv[1], N, img_dims);
 	
 
-	for (int i = 0; i < 4; i++) {
-
-		if (ksp_dims[i] != dims[i]) {
-		
-			fprintf(stderr, "Dimensions of kspace and sensitivities do not match!\n");
-			exit(1);
-		}
-	}
+	for (int i = 0; i < 4; i++)
+		if (ksp_dims[i] != dims[i])
+			error("Dimensions of kspace and sensitivities do not match!\n");
 
 
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -116,19 +83,19 @@ int main_fakeksp(int argc, char* argv[])
 	md_zsmul(N, ksp_dims, kspace_data, kspace_data, 1. / scaling);
 #endif
 
-	complex float* out = create_cfl(argv[optind + 3], N, ksp_dims);
+	complex float* out = create_cfl(argv[4], N, ksp_dims);
 	
 	fftmod(N, ksp_dims, FFT_FLAGS, kspace_data, kspace_data);
 	fftmod(N, dims, FFT_FLAGS, sens_maps, sens_maps);
 
 	if (rplksp) {
 
-		printf("Replace kspace\n");
+		debug_printf(DP_INFO, "Replace kspace\n");
 		replace_kspace(dims2, out, kspace_data, sens_maps, image); // this overwrites kspace_data (FIXME: think not!)
 
 	} else {
 
-		printf("Simulate kspace\n");
+		debug_printf(DP_INFO, "Simulate kspace\n");
 		fake_kspace(dims2, out, sens_maps, image);
 	}
 

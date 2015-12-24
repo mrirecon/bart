@@ -1,36 +1,29 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#include <getopt.h>
 #include <stdbool.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <unistd.h>
-
 #include <complex.h>
+#include <stdio.h>
 
 #include "num/multind.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
-
-static void usage(const char* name, FILE* fd)
-{	// FIXME
-	fprintf(fd, "Usage: %s <input>\n", name);
-}
-
+static const char* usage_str = "<input>";
+static const char* help_str = "";
 
 static void print_cfl(unsigned int N, const long dims[N], const complex float* data)
 {
@@ -50,43 +43,22 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 
 int main_show(int argc, char* argv[])
 {
-	int c;
-	_Bool meta = false;
+	bool meta = false;
 	int showdim = -1;
 
-	while (-1 != (c = getopt(argc, argv, "hmd:"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'm', false, opt_set, &meta, NULL },
+		{ 'd', true, opt_int, &showdim, NULL },
+	};
 
-		case 'm':
-			meta = true;
-			break;
-
-		case 'd':
-			showdim = atoi(optarg);
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 1) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 
 	unsigned int N = DIMS;
 
 	long dims[N];
-	complex float* data = load_cfl(argv[optind + 0], N, dims);
+	complex float* data = load_cfl(argv[1], N, dims);
 
 	if (-1 != showdim) {
 

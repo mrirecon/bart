@@ -1,16 +1,14 @@
 /* Copyright 2015. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013, Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#include <getopt.h>
-#include <stdio.h>
 #include <complex.h>
 #include <stdbool.h>
-#include <assert.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -18,65 +16,38 @@
 
 #include "misc/misc.h"
 #include "misc/mmio.h"
+#include "misc/opts.h"
 
 
 
-static const char* usage_str = "[-e] <input> <U> <S> <VH>";
-static const char* help_str = 	"Compute singular-value-decomposition (SVD).\n";
-
-static void usage(FILE* fp, const char* name)
-{
-	fprintf(fp, "Usage %s: %s\n", name, usage_str);
-}
-
-static void help(void)
-{
-	printf("\n%s", help_str);
-}
+static const char* usage_str = "<input> <U> <S> <VH>";
+static const char* help_str = "Compute singular-value-decomposition (SVD).\n";
 
 
 int main_svd(int argc, char* argv[])
 {
 	bool econ = false;
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "eh"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'e', false, opt_set, &econ, "econ" },
+	};
 
-		case 'e':
-			econ = true;
-			break;
+	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'h':
-			usage(stdout, argv[0]);
-			help();
-			exit(0);
-
-		default:
-			usage(stderr, argv[0]);
-			exit(1);
-		}
-	}
-
-	if (4 != argc - optind) {
-
-		usage(stderr, argv[0]);
-		exit(1);
-	}
 
 	int N = 2;
 	long dims[N];
 
-	complex float* in = load_cfl(argv[optind + 0], N, dims);
+	complex float* in = load_cfl(argv[1], N, dims);
 
 	long dimsU[2] = { dims[0], econ ? MIN(dims[0], dims[1]) : dims[0] };
 	long dimsS[2] = { MIN(dims[0], dims[1]), 1 };
 	long dimsVH[2] = { econ ? MIN(dims[0], dims[1]) : dims[1], dims[1] };
 
-	complex float* U = create_cfl(argv[optind + 1], N, dimsU);
-	complex float* S = create_cfl(argv[optind + 2], N, dimsS);
-	complex float* VH = create_cfl(argv[optind + 3], N, dimsVH);
+	complex float* U = create_cfl(argv[2], N, dimsU);
+	complex float* S = create_cfl(argv[3], N, dimsS);
+	complex float* VH = create_cfl(argv[4], N, dimsVH);
 
 	float* SF = md_alloc(2, dimsS, FL_SIZE);
 

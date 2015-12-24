@@ -1,46 +1,27 @@
 /* Copyright 2014-2015. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012, 2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
 #include <math.h>
-#include <getopt.h>
 
 #include "num/multind.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/mri.h"
+#include "misc/opts.h"
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-h] [-r] <output>\n", name);
-}
+static const char* usage_str = "<output>";
+static const char* help_str = "Computes k-space trajectories.";
 
-
-static void help(void)
-{
-	printf( "\n"
-		"Computes k-space trajectories.\n"
-		"\n"
-		"-x x\treadout samples\n"
-		"-y y\tphase encoding lines\n"
-		"-a a\tacceleration\n"
-		"-t t\tturns\n"
-		"-r\tradial\n"
-		"-G\tgolden-ratio sampling\n"
-		"-D\tdouble base angle\n"
-		"-h\thelp\n");
-}
 
 
 static int remap(int all, int turns, int n)
@@ -57,60 +38,28 @@ int main_traj(int argc, char* argv[])
 	bool radial = false;
 	bool golden = false;
 	bool dbl = false;
-	int c;
 	int turns = 1;
 
-	while (-1 != (c = getopt(argc, argv, "x:y:a:t:rDGh"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'x', true, opt_int, &X, " x\treadout samples" },
+		{ 'y', true, opt_int, &Y, " y\tphase encoding lines" },
+		{ 'a', true, opt_int, &accel, " a\tacceleration" },
+		{ 't', true, opt_int, &turns, " t\tturns" },
+		{ 'r', false, opt_set, &radial, "\tradial" },
+		{ 'G', false, opt_set, &golden, "\tgolden-ratio sampling" },
+		{ 'D', false, opt_set, &dbl, "\tdouble base angle" },
+	};
 
-		case 'x':
-			X = atoi(optarg);
-			break;
+	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'y':
-			Y = atoi(optarg);
-			break;
+	if (golden || dbl)
+		radial = true;
 
-		case 'a':
-			accel = atoi(optarg);
-			break;
-
-		case 'G':
-			golden = true;
-			radial = true;
-			break;
-
-		case 'D':
-			dbl = true;
-		case 'r':
-			radial = true;
-			break;
-
-		case 't':
-			turns = atoi(optarg);
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 1) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	int N = X * Y / accel;
 	long dims[3] = { 3, X, Y / accel };
-	complex float* samples = create_cfl(argv[optind + 0], 3, dims);
+	complex float* samples = create_cfl(argv[1], 3, dims);
 
 
 	int p = 0;

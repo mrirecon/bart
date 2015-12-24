@@ -6,12 +6,7 @@
  * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <unistd.h>
-
+#include <stdbool.h>
 #include <complex.h>
 
 #include "num/multind.h"
@@ -20,6 +15,7 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
 
@@ -32,61 +28,27 @@
 #endif
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-m] [-l] <input> <output>\n", name);
-}
+static const char* usage_str = "<input> <output>";
+static const char* help_str = "Apply filter.\n";
 
-
-static void help(void)
-{
-	printf( "\n"
-		"Apply filter.\n"
-		"\n"
-		"-m d\tmedian filter along dimension d\n"
-		"-l l\tlength of filter\n"
-		"-h\thelp\n");
-}
 
 int main_filter(int argc, char* argv[])
 {
-	int c;
 	int len = -1;
 	int dim = -1;
 
-	while (-1 != (c = getopt(argc, argv, "m:l:h"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'm', true, opt_int, &dim, "d\tmedian filter along dimension d" },
+		{ 'l', true, opt_int, &len, "l\tlength of filter" },
+	};
 
-		case 'l':
-			len = atoi(optarg);	
-			break;
-
-		case 'm':
-			dim = atoi(optarg);
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if ((0 > dim) || (0 > len) || (argc - optind != 2)) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 
 	long in_dims[DIMS];
 	
-	complex float* in_data = load_cfl(argv[optind + 0], DIMS, in_dims);
+	complex float* in_data = load_cfl(argv[1], DIMS, in_dims);
 
 	assert(dim >= 0);
 	assert(dim < DIMS);
@@ -110,7 +72,7 @@ int main_filter(int argc, char* argv[])
 	long out_dims[DIMS];
 	md_copy_dims(DIMS, out_dims, tmp_dims);
 
-	complex float* out_data = create_cfl(argv[optind + 1], DIMS, out_dims);
+	complex float* out_data = create_cfl(argv[2], DIMS, out_dims);
 
 	md_medianz2(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
 

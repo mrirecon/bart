@@ -1,25 +1,23 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
-
-#include <stdlib.h>
 #include <stdbool.h>
-#include <assert.h>
-#include <stdio.h>
 #include <complex.h>
 #include <string.h>
-#include <getopt.h>
 
 #include "num/multind.h"
 
 #include "misc/mmio.h"
 #include "misc/debug.h"
+#include "misc/misc.h"
+#include "misc/opts.h"
 
 
 #ifndef DIMS
@@ -30,49 +28,24 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static void usage(const char* name, FILE* fp)
-{
-	fprintf(fp, "Usage: %s dimension <input1> ... <inputn> <output>\n", name);
-	fprintf(fp, "\t Example 1: %s 0 slice_001 slice_002 slice_003 full_data\n\n", name);
-	fprintf(fp, "\t Example 2: %s 0 `seq -f \"slice_%%03g\" 0 255` full_data\n\n", name);
-}
+static const char* usage_str = "dimension <input1> ... <inputn> <output>";
+static const char* help_str =
+	"Join input files along {dimensions}. All other dimensions must have the same size.\n"
+	"\t Example 1: join 0 slice_001 slice_002 slice_003 full_data\n"
+	"\t Example 2: join 0 `seq -f \"slice_%%03g\" 0 255` full_data\n";
 
-static void help(void)
-{
-	printf(	"\nJoin input files along {dimensions}. All other dimensions must have the same size.\n");
-}
 
 
 int main_join(int argc, char* argv[])
 {
-	int c;
-
-	while (-1 != (c = getopt(argc, argv, "h"))) {
-
-		switch (c) {
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind < 3) {
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	cmdline(&argc, argv, 3, 1000, usage_str, help_str, 0, NULL);
 
 	int N = DIMS;
 
-	int dim = atoi(argv[optind + 0]);
+	int dim = atoi(argv[1]);
 	assert(dim < N);
 
-	int count = argc - optind - 2;
+	int count = argc - 3;
 
 	long in_dims[count][N];
 	long offsets[count];
@@ -82,8 +55,8 @@ int main_join(int argc, char* argv[])
 	// figure out size of output
 	for (int i = 0; i < count; i++) {
 
-		debug_printf(DP_DEBUG1, "loading %s\n", argv[optind + 1 + i]);
-		idata[i] = load_cfl(argv[optind + 1 + i], N, in_dims[i]);
+		debug_printf(DP_DEBUG1, "loading %s\n", argv[2 + i]);
+		idata[i] = load_cfl(argv[2 + i], N, in_dims[i]);
 		offsets[i] = sum;
 
 		sum += in_dims[i][dim];
