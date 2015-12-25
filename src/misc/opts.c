@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #include "misc/misc.h"
 
@@ -133,47 +134,77 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 }
 
 
-extern bool opt_set(void* ptr, char c, const char* optarg)
+bool opt_set(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c); UNUSED(optarg);
 	*(bool*)ptr = true;
 	return false;
 }
 
-extern bool opt_clear(void* ptr, char c, const char* optarg)
+bool opt_clear(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c); UNUSED(optarg);
 	*(bool*)ptr = false;
 	return false;
 }
 
-extern bool opt_int(void* ptr, char c, const char* optarg)
+bool opt_int(void* ptr, char c, const char* optarg)
 {
-	UNUSED(c); UNUSED(optarg);
+	UNUSED(c);
 	*(int*)ptr = atoi(optarg);
 	return false;
 }
 
-extern bool opt_long(void* ptr, char c, const char* optarg)
+bool opt_long(void* ptr, char c, const char* optarg)
 {
-	UNUSED(c); UNUSED(optarg);
+	UNUSED(c);
 	*(long*)ptr = atoi(optarg);
 	return false;
 }
 
-extern bool opt_float(void* ptr, char c, const char* optarg)
+bool opt_float(void* ptr, char c, const char* optarg)
 {
-	UNUSED(c); UNUSED(optarg);
+	UNUSED(c);
 	*(float*)ptr = atof(optarg);
 	return false;
 }
 
-extern bool opt_string(void* ptr, char c, const char* optarg)
+bool opt_string(void* ptr, char c, const char* optarg)
 {
-	UNUSED(c); UNUSED(optarg);
+	UNUSED(c);
 	*(char**)ptr = strdup(optarg);
 	assert(NULL != ptr);
 	return false;
 }
+
+bool opt_vec3(void* ptr, char c, const char* optarg)
+{
+	if (islower(c)) {
+
+		(*(long(*)[3])ptr)[0] = atol(optarg);
+		(*(long(*)[3])ptr)[1] = atol(optarg);
+		(*(long(*)[3])ptr)[2] = atol(optarg);
+
+	} else {
+
+		int r = sscanf(optarg, "%ld:%ld:%ld", &(*(long(*)[3])ptr)[0], &(*(long(*)[3])ptr)[1], &(*(long(*)[3])ptr)[2]);
+		assert(3 == r);
+	}
+
+	return false;
+}
+
+bool opt_select(void* ptr, char c, const char* optarg)
+{
+	UNUSED(c); UNUSED(optarg);
+	struct opt_select_s* sel = ptr;
+
+	if (0 != memcmp(sel->ptr, sel->default_value, sel->size))
+		return true;
+
+	memcpy(sel->ptr, sel->value, sel->size);
+	return false;
+}
+
 
 
