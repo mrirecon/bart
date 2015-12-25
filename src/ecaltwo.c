@@ -1,17 +1,14 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <getopt.h>
 
 #include "num/multind.h"
 #include "num/fft.h"
@@ -23,6 +20,7 @@
 #include "misc/mri.h"
 #include "misc/utils.h"
 #include "misc/debug.h"
+#include "misc/opts.h"
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
@@ -30,21 +28,12 @@
 
 
 
-static void usage(const char* name, FILE* fp)
-{
-	fprintf(fp, "Usage: %s [-c crop] [-m maps] x y z <input> <sensitivities> [<ev_maps>]\n", name);
-}
-
-
-static void help(void)
-{
-	printf( "\n"
+static const char* usage_str = "x y z <input> <sensitivities> [<ev_maps>]";
+static const char* help_str =
 		"Second part of ESPIRiT calibration.\n"
-		"Optionally outputs the eigenvalue maps.\n"
-		"\n"
-		"-c crop_value\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}.\n"
-		"-m maps\t\tNumber of maps to compute.\n");
-}
+		"Optionally outputs the eigenvalue maps.";
+
+
 
 
 
@@ -53,58 +42,29 @@ int main_ecaltwo(int argc, char* argv[])
 	long maps = 2; // channels;
 	struct ecalib_conf conf = ecalib_defaults;
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "OSc:m:gh"))) {
 
-		switch (c) {
+	const struct opt_s opts[] = {
 
-		case 'S':
-			conf.softcrop = true;
-			break;
+		{ 'c', true, opt_float, &conf.crop, " crop_value\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}." },
+		{ 'm', true, opt_long, &maps, " maps\t\tNumber of maps to compute." },
+		{ 'S', false, opt_set, &conf.softcrop, NULL },
+		{ 'O', false, opt_clear, &conf.orthiter, NULL },
+		{ 'g', false, opt_set, &conf.usegpu, NULL },
+	};
 
-		case 'O':
-			conf.orthiter = false;
-			break;
+	cmdline(&argc, argv, 5, 6, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'c':
-			conf.crop = atof(optarg);
-			break;
-
-		case 'm':
-			maps = atoi(optarg);
-			break;
-
-		case 'g':
-			conf.usegpu = true;
-			break;
-			
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if ((argc - optind != 5) && (argc - optind != 6)) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	long in_dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[optind + 3], DIMS, in_dims);
+	complex float* in_data = load_cfl(argv[4], DIMS, in_dims);
 
 	int channels = 0;
 
 	while (in_dims[3] != (channels * (channels + 1) / 2))
 		channels++;
 
-	printf("Channels: %d\n", channels);
+	debug_printf(DP_INFO, "Channels: %d\n", channels);
 
 	assert(maps <= channels);
 
@@ -112,9 +72,9 @@ int main_ecaltwo(int argc, char* argv[])
 	long out_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	long map_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	
-	out_dims[0] = atoi(argv[optind + 0]);
-	out_dims[1] = atoi(argv[optind + 1]);
-	out_dims[2] = atoi(argv[optind + 2]);
+	out_dims[0] = atoi(argv[1]);
+	out_dims[1] = atoi(argv[2]);
+	out_dims[2] = atoi(argv[3]);
 	out_dims[3] = channels;
 	out_dims[4] = maps;
 
@@ -130,11 +90,11 @@ int main_ecaltwo(int argc, char* argv[])
 	map_dims[4] = maps;
 
 
-	complex float* out_data = create_cfl(argv[optind + 4], DIMS, out_dims);
+	complex float* out_data = create_cfl(argv[5], DIMS, out_dims);
 	complex float* emaps;
 
-	if (6 == argc - optind)
-		emaps = create_cfl(argv[optind + 5], DIMS, map_dims);
+	if (7 == argc)
+		emaps = create_cfl(argv[6], DIMS, map_dims);
 	else
 		emaps = md_alloc(DIMS, map_dims, CFL_SIZE);
 
@@ -155,12 +115,12 @@ int main_ecaltwo(int argc, char* argv[])
 
 	fixphase(DIMS, out_dims, COIL_DIM, out_data, out_data);
 
-	printf("Done.\n");
+	debug_printf(DP_INFO, "Done.\n");
 
 	unmap_cfl(DIMS, in_dims, in_data);
 	unmap_cfl(DIMS, out_dims, out_data);
 
-	if (6 == argc - optind)
+	if (7 == argc)
 		unmap_cfl(DIMS, map_dims, emaps);
 	else
 		md_free(emaps);

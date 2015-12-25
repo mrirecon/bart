@@ -1,19 +1,16 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
 #include <math.h>
-#include <unistd.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -38,27 +35,14 @@
 #include "misc/mri.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-r l2lambda] [-c] [-e eps] [-u rho] <kspace> <sensitivities> <output>\n", name);
-}
-
-static void help(void)
-{
-	printf( "\n"
+static const char* usage_str = "<kspace> <sensitivities> <output>";
+static const char* help_str =
 		"Perform basis pursuit denoising for SENSE/ESPIRiT reconstruction:\n"
-		"min_x ||T x||_1 + lambda/2 ||x||_2^2 subject to: ||y - Ax||_2 <= eps\n"
-		"\n"
-		"-e eps\tdata consistency error\n"
-		"-r lambda\tl2 regularization parameter\n"
-		"-u rho\tADMM penalty parameter\n"
-		"-c\treal-value constraint\n"
-		"-t\tuse TV norm\n"
-		"-T\tcompare to truth image\n");
-}
+		"min_x ||T x||_1 + lambda/2 ||x||_2^2 subject to: ||y - Ax||_2 <= eps";
 
 
 int main_bpsense(int argc, char* argv[])
@@ -79,63 +63,25 @@ int main_bpsense(int argc, char* argv[])
 
 	double start_time = timestamp();
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "T:r:e:i:u:p:tcgh"))) {
-		switch(c) {
 
-		case 'T':
-			im_truth = true;
-			image_truth_fname = strdup(optarg);
-			assert(NULL != image_truth_fname);
-			break;
+	const struct opt_s opts[] = {
 
-		case 'r':
-			conf.lambda = atof(optarg);
-			break;
+		{ 'e', true, opt_float, &conf.eps, " eps\tdata consistency error" },
+		{ 'r', true, opt_float, &conf.lambda, " lambda\tl2 regularization parameter" },
+		{ 'u', true, opt_float, &conf.iconf->rho, " rho\tADMM penalty parameter" },
+		{ 'c', false, opt_set, &conf.rvc, "\treal-value constraint" },
+		{ 't', false, opt_set, &use_tvnorm, "\tuse TV norm" },
+		{ 'T', true, opt_string, &image_truth_fname, "\tcompare to truth image" },
+		{ 'i', true, opt_int, &conf.iconf->maxiter, NULL },
+		{ 'g', false, opt_set, &usegpu, NULL },
+		{ 'p', true, opt_string, &psf, NULL },
+	};
 
-		case 'e':
-			conf.eps = atof(optarg);
-			break;
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'i':
-			conf.iconf->maxiter = atoi(optarg);
-			break;
+	if (NULL != image_truth_fname)
+		im_truth = true;
 
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		case 'c':
-			conf.rvc = true;
-			break;
-
-		case 'u':
-			conf.iconf->rho = atof(optarg);
-			break;
-
-		case 'g':
-			usegpu = true;
-			break;
-
-		case 'p':
-			psf = strdup(optarg);
-			break;
-
-		case 't':
-			use_tvnorm = true;
-			break;
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-	if (argc - optind != 3) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	// -----------------------------------------------------------
 	// load data and print some info about the recon
@@ -147,16 +93,12 @@ int main_bpsense(int argc, char* argv[])
 	long img_dims[N];
 	long ksp_dims[N];
 
-	complex float* kspace_data = load_cfl(argv[optind + 0], N, ksp_dims);
-	complex float* sens_maps = load_cfl(argv[optind + 1], N, dims);
+	complex float* kspace_data = load_cfl(argv[1], N, ksp_dims);
+	complex float* sens_maps = load_cfl(argv[2], N, dims);
 
-	for (int i = 0; i < 4; i++) {	// sizes2[4] may be > 1
-		if (ksp_dims[i] != dims[i]) {
-		
-			fprintf(stderr, "Dimensions of kspace and sensitivities do not match!\n");
-			exit(1);
-		}
-	}
+	for (int i = 0; i < 4; i++)	// sizes2[4] may be > 1
+		if (ksp_dims[i] != dims[i])
+			error("Dimensions of kspace and sensitivities do not match!\n");
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
@@ -237,11 +179,13 @@ int main_bpsense(int argc, char* argv[])
 	const struct operator_p_s* l1prox = NULL;
 
 	if (use_tvnorm) {
+
 		l1op = grad_init(DIMS, img_dims, FFT_FLAGS);
 		l1prox = prox_thresh_create(DIMS + 1, linop_codomain(l1op)->dims, 1., 0u, usegpu);
 		conf.l1op_obj = l1op;
-	}
-	else {
+
+	} else {
+
 		bool randshift = true;
 		l1op = linop_identity_create(DIMS, img_dims);
 		conf.l1op_obj = wavelet_create(DIMS, img_dims, FFT_FLAGS, minsize, false, usegpu);
@@ -252,7 +196,7 @@ int main_bpsense(int argc, char* argv[])
 	// -----------------------------------------------------------
 	// create image and load truth image
 	
-	complex float* image = create_cfl(argv[optind + 2], N, img_dims);
+	complex float* image = create_cfl(argv[3], N, img_dims);
 	
 	md_clear(N, img_dims, image, CFL_SIZE);
 

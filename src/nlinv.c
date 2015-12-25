@@ -1,19 +1,14 @@
 /* Copyright 2013. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
-#include <getopt.h>
-#include <string.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -24,6 +19,8 @@
 #include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/utils.h"
+#include "misc/opts.h"
+#include "misc/debug.h"
 
 #include "noir/recon.h"
 
@@ -31,25 +28,17 @@
 
 
 
-static void usage(const char* name, FILE* fd)
-{
-        fprintf(fd, "Usage: %s [-l1/-l2] [-i iterations] <kspace> <output> [<sensitivities>]\n", name);
-}
-
-static void help(void)
-{
-	printf( "\n"
+static const char* usage_str = "<kspace> <output> [<sensitivities>]";
+static const char* help_str =
 		"Jointly estimate image and sensitivities with nonlinear\n"
 		"inversion using {iter} iteration steps. Optionally outputs\n"
-		"the sensitivities.\n");
-}
+		"the sensitivities.";
 
 
 
 int main_nlinv(int argc, char* argv[])
 {
 	int iter = 8;
-	int c;
 	float l1 = -1.;
 	bool waterfat = false;
 	bool rvc = false;
@@ -59,59 +48,18 @@ int main_nlinv(int argc, char* argv[])
 	bool usegpu = false;
 	const char* psf = NULL;
 
-	while (-1 != (c = getopt(argc, argv, "i:hl:S:f:cgp:N"))) {
+	const struct opt_s opts[] = {
 
-		switch(c) {
+		{ 'l', true, opt_float, &l1, NULL },
+		{ 'i', true, opt_int, &iter, NULL },
+		{ 'c', false, opt_set, &rvc, NULL },
+		{ 'N', false, opt_clear, &normalize, NULL },
+		{ 'f', true, opt_float, &restrict_fov, NULL },
+		{ 'p', true, opt_string, &psf, NULL },
+		{ 'g', false, opt_set, &usegpu, NULL },
+	};
 
-		case 'i':
-			iter = atoi(optarg);
-			break;
-
-		case 'l':
-			l1 = atof(optarg);
-			break;
-
-		case 'S':
-			waterfat = true;
-			sscanf(optarg, "%f:%f:%f", &csh[0], &csh[1], &csh[2]);
-			break;
-
-		case 'c':
-			rvc = true;
-			break;
-
-		case 'N':
-			normalize = false;
-			break;
-
-		case 'f':
-			restrict_fov = atof(optarg);
-			break;
-
-		case 'p':
-			psf = strdup(optarg);
-			break;
-
-		case 'g':
-			usegpu = true;
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (!((argc - optind == 3) || (argc - optind == 2))) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -119,7 +67,7 @@ int main_nlinv(int argc, char* argv[])
 
 
 	long ksp_dims[DIMS];
-	complex float* kspace_data = load_cfl(argv[optind + 0], DIMS, ksp_dims);
+	complex float* kspace_data = load_cfl(argv[1], DIMS, ksp_dims);
 
 	long dims[DIMS];
 	md_copy_dims(DIMS, dims, ksp_dims);
@@ -134,7 +82,7 @@ int main_nlinv(int argc, char* argv[])
 	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);
 
 
-	complex float* image = create_cfl(argv[optind + 1], DIMS, img_dims);
+	complex float* image = create_cfl(argv[2], DIMS, img_dims);
 
 	long msk_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, msk_dims, dims);
@@ -146,9 +94,9 @@ int main_nlinv(int argc, char* argv[])
 	complex float* norm = md_alloc(DIMS, msk_dims, CFL_SIZE);
 	complex float* sens;
 	
-	if (argc - optind == 3) {
+	if (4 == argc) {
 
-		sens = create_cfl(argv[optind + 2], DIMS, ksp_dims);
+		sens = create_cfl(argv[3], DIMS, ksp_dims);
 
 	} else {
 
@@ -202,7 +150,7 @@ int main_nlinv(int argc, char* argv[])
 #else
 	float scaling = 100. / md_znorm(DIMS, ksp_dims, kspace_data);
 #endif
-	printf("Scaling: %f\n", scaling);
+	debug_printf(DP_INFO, "Scaling: %f\n", scaling);
 	md_zsmul(DIMS, ksp_dims, kspace_data, kspace_data, scaling);
 
 	if (-1. == restrict_fov) {
@@ -239,7 +187,7 @@ int main_nlinv(int argc, char* argv[])
 		md_zmul2(DIMS, img_dims, img_strs, image, img_strs, image, msk_strs, norm);
 	}
 
-	if (3 == argc - optind) {
+	if (4 == argc) {
 
 		long strs[DIMS];
 

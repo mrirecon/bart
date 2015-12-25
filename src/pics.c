@@ -1,24 +1,20 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2015 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
 #include <stdio.h>
 #include <math.h>
-#include <unistd.h>
-#include <string.h>
-#include <libgen.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -56,34 +52,13 @@
 #include "misc/utils.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
 #define NUM_REGS 10
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-l1/-l2] [-r lambda] [-t <trajectory>] <kspace> <sensitivities> <output>\n", name);
-}
-
-static void help(void)
-{
-	printf( "\n"
-		"Parallel-imaging compressed-sensing reconstruction.\n"
-		"\n"
-		"-l1/-l2\t\ttoggle l1-wavelet or l2 regularization.\n"
-		"-r lambda\tregularization parameter\n"
-		"-R <T>:A:B:C\tgeneralized regularization options (-Rh for help)\n"
-		"-c\t\treal-value constraint\n"
-		"-s step\t\titeration stepsize\n"
-		"-i maxiter\tnumber of iterations\n"
-		"-t trajectory\tk-space trajectory\n"
-#ifdef BERKELEY_SVN
-		"-n \t\tdisable random wavelet cycle spinning\n"
-		"-g \t\tuse GPU\n"
-		"-p pat\t\tpattern or weights\n"
-#endif
-	);
-}
+static const char* usage_str = "<kspace> <sensitivities> <output>";
+static const char* help_str = "Parallel-imaging compressed-sensing reconstruction.";
 
 static void help_reg(void)
 {
@@ -132,6 +107,123 @@ struct reg_s {
 	float lambda;
 };
 
+enum algo_t { CG, IST, FISTA, ADMM };
+
+struct opt_reg_s {
+
+	float lambda;
+	enum algo_t algo;
+	struct reg_s regs[NUM_REGS];
+	unsigned int r;
+};
+
+static bool opt_reg(void* ptr, char c, const char* optarg)
+{
+	struct opt_reg_s* p = ptr;
+	struct reg_s* regs = p->regs;
+	const int r = p->r;
+	const float lambda = p->lambda;
+
+	assert(r < NUM_REGS);
+
+	char rt[5];
+
+	switch (c) {
+
+	case 'R': {
+
+		// first get transform type
+		int ret = sscanf(optarg, "%4[^:]", rt);
+		assert(1 == ret);
+
+		// next switch based on transform type
+		if (strcmp(rt, "W") == 0) {
+
+			regs[r].xform = L1WAV;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "L") == 0) {
+
+			regs[r].xform = LLR;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "M") == 0) {
+
+			regs[r].xform = regs[0].xform;
+			regs[r].xflags = regs[0].xflags;
+			regs[r].jflags = regs[0].jflags;
+			regs[r].lambda = regs[0].lambda;
+
+			regs[0].xform = MLR;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "T") == 0) {
+
+			regs[r].xform = TV;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+			p->algo = ADMM;
+		}
+		else if (strcmp(rt, "I") == 0) {
+
+			regs[r].xform = L1IMG;
+			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			assert(2 == ret);
+			regs[r].xflags = 0u;
+		}
+		else if (strcmp(rt, "Q") == 0) {
+
+			regs[r].xform = L2IMG;
+			int ret = sscanf(optarg, "%*[^:]:%f", &regs[r].lambda);
+			assert(1 == ret);
+			regs[r].xflags = 0u;
+			regs[r].jflags = 0u;
+		}
+		else if (strcmp(rt, "h") == 0) {
+
+			help_reg();
+			exit(0);
+		}
+		else {
+
+			error("Unrecognized regularization type: \"%s\" (-Rh for help).\n", rt);
+		}
+
+		p->r++;
+		break;
+	}
+
+	case 'l':
+		assert(r < NUM_REGS);
+		regs[r].lambda = lambda;
+		regs[r].xflags = 0u;
+		regs[r].jflags = 0u;
+
+		if (0 == strcmp("1", optarg)) {
+
+			regs[r].xform = L1WAV;
+			regs[r].xflags = 7u;
+
+		} else
+		if (0 == strcmp("2", optarg)) {
+
+			regs[r].xform = L2IMG;
+
+		} else {
+
+			error("Unknown regularization type.\n");
+		}
+
+		p->lambda = -1.;
+		p->r++;
+		break;
+	}
+
+	return false;
+}
 
 int main_pics(int argc, char* argv[])
 {
@@ -140,14 +232,12 @@ int main_pics(int argc, char* argv[])
 	struct sense_conf conf = sense_defaults;
 
 
-	enum { CG, IST, FISTA, ADMM } algo = CG;
 
 	bool use_gpu = false;
 
 	bool randshift = true;
 	unsigned int maxiter = 30;
 	float step = -1.;
-	float lambda = -1.;
 
 	// Start time count
 
@@ -177,231 +267,51 @@ int main_pics(int argc, char* argv[])
 	float admm_rho = iter_admm_defaults.rho;
 	unsigned int admm_maxitercg = iter_admm_defaults.maxitercg;
 
-	struct reg_s regs[NUM_REGS];
-	unsigned int r = 0;
+	struct opt_reg_s ropts;
+	ropts.r = 0;
+	ropts.algo = CG;
+	ropts.lambda = -1.;
 
-	if (0 == strcmp(basename(argv[0]), "sense"))
-		debug_printf(DP_WARN, "The \'sense\' command is deprecated. Use \'pics\' instead.\n");
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "W:Fq:l:r:s:i:u:o:O:f:t:cT:Imngehp:w:Sd:R:HC:b:"))) {
+	const struct opt_s opts[] = {
 
-		char rt[5];
+		{ 'l', true, opt_reg, &ropts, "1/-l2\t\ttoggle l1-wavelet or l2 regularization." },
+		{ 'r', true, opt_float, &ropts.lambda, "\tregularization parameter" },
+		{ 'R', true, opt_reg, &ropts, " <T>:A:B:C\tgeneralized regularization options (-Rh for help)" },
+		{ 'c', false, opt_set, &conf.rvc, "\t\treal-value constraint" },
+		{ 's', true, opt_float, &step, " step\t\titeration stepsize" },
+		{ 'i', true, opt_int, &maxiter, " maxiter\tnumber of iterations" },
+		{ 't', true, opt_string, &traj_file, " trajectory\tk-space trajectory" },
+		{ 'n', false, opt_clear, &randshift, "\t\tdisable random wavelet cycle spinning" },
+		{ 'g', false, opt_set, &use_gpu, "\t\tuse GPU" },
+		{ 'p', true, opt_string, &pat_file, "\t\tpattern or weights" },
+		{ 'I', false, opt_select, OPT_SEL(enum algo_t, &ropts.algo, IST), NULL },
+		{ 'b', true, opt_int, &llr_blk, NULL },
+		{ 'e', false, opt_set, &eigen, NULL },
+		{ 'H', false, opt_set, &hogwild, NULL },
+		{ 'F', false, opt_set, &fast, NULL },
+		{ 'T', true, opt_string, &image_truth_file, NULL },
+		{ 'W', true, opt_string, &image_start_file, NULL },
+		{ 'd', true, opt_int, &debug_level, NULL },
+		{ 'O', true, opt_int, &conf.rwiter, NULL },
+		{ 'o', true, opt_float, &conf.gamma, NULL },
+		{ 'u', true, opt_float, &admm_rho, NULL },
+		{ 'C', true, opt_int, &admm_maxitercg, NULL },
+		{ 'q', true, opt_float, &conf.cclambda, NULL },
+		{ 'f', true, opt_float, &restrict_fov, NULL },
+		{ 'm', false, opt_select, OPT_SEL(enum algo_t, &ropts.algo, ADMM), NULL },
+		{ 'w', true, opt_float, &scaling, NULL },
+		{ 'S', false, opt_set, &scale_im, NULL },
+	};
 
-		switch(c) {
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'I':
-			algo = IST;
-			break;
+	if (NULL != image_truth_file)
+		im_truth = true;
 
-		case 'R':
-			assert(r < NUM_REGS);
+	if (NULL != image_start_file)
+		warm_start = true;
 
-			// first get transform type
-			int ret = sscanf(optarg, "%4[^:]", rt);
-			assert(1 == ret);
-
-			// next switch based on transform type
-			if (strcmp(rt, "W") == 0) {
-
-				regs[r].xform = L1WAV;
-				int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
-				assert(3 == ret);
-			}
-			else if (strcmp(rt, "L") == 0) {
-
-				regs[r].xform = LLR;
-				int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
-				assert(3 == ret);
-			}
-			else if (strcmp(rt, "M") == 0) {
-
-				regs[r].xform = regs[0].xform;
-                                regs[r].xflags = regs[0].xflags;
-                                regs[r].jflags = regs[0].jflags;
-                                regs[r].lambda = regs[0].lambda;
-                                
-				regs[0].xform = MLR;
-				int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
-				assert(3 == ret);
-			}
-			else if (strcmp(rt, "T") == 0) {
-
-				regs[r].xform = TV;
-				int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
-				assert(3 == ret);
-				algo = ADMM;
-			}
-			else if (strcmp(rt, "I") == 0) {
-
-				regs[r].xform = L1IMG;
-				int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
-				assert(2 == ret);
-				regs[r].xflags = 0u;
-			}
-			else if (strcmp(rt, "Q") == 0) {
-
-				regs[r].xform = L2IMG;
-				int ret = sscanf(optarg, "%*[^:]:%f", &regs[r].lambda);
-				assert(1 == ret);
-				regs[r].xflags = 0u;
-				regs[r].jflags = 0u;
-			}
-			else if (strcmp(rt, "h") == 0) {
-
-				help_reg();
-				exit(0);
-			}
-			else {
-
-				error("Unrecognized regularization type: \"%s\" (-Rh for help).\n", rt);
-			}
-
-			r++;
-			break;
-
-		case 'b':
-			llr_blk = atoi(optarg);
-			break;
-
-		case 'e':
-			eigen = true;
-			break;
-
-		case 'H':
-			hogwild = true;
-			break;
-
-		case 'F':
-			fast = true;
-			break;
-
-		case 'T':
-			im_truth = true;
-			image_truth_file = strdup(optarg);
-			assert(NULL != image_truth_file);
-			break;
-
-		case 'W':
-			warm_start = true;
-			image_start_file = strdup(optarg);
-			assert(NULL != image_start_file);
-			break;
-
-		case 'd':
-			debug_level = atoi(optarg);
-			break;
-
-		case 'r':
-			lambda = atof(optarg);
-			break;
-
-		case 'O':
-			conf.rwiter = atoi(optarg);
-			break;
-
-		case 'o':
-			conf.gamma = atof(optarg);
-			break;
-
-		case 's':
-			step = atof(optarg);
-			break;
-
-		case 'i':
-			maxiter = atoi(optarg);
-			break;
-
-		case 'u':
-			admm_rho = atof(optarg);
-			break;
-
-		case 'C':
-			admm_maxitercg = atoi(optarg);
-			break;
-
-		case 'l':
-			assert(r < NUM_REGS);
-			regs[r].lambda = lambda;
-			regs[r].xflags = 0u;
-			regs[r].jflags = 0u;
-
-			if (0 == strcmp("1", optarg)) {
-
-				regs[r].xform = L1WAV;
-				regs[r].xflags = 7u;
-
-			} else
-			if (0 == strcmp("2", optarg)) {
-
-				regs[r].xform = L2IMG;
-
-			} else {
-
-				usage(argv[0], stderr);
-				exit(1);
-			}
-
-			lambda = -1.;
-			r++;
-			break;
-
-		case 'q':
-			conf.cclambda = atof(optarg);
-			break;
-
-		case 'c':
-			conf.rvc = true;
-			break;
-
-		case 'f':
-			restrict_fov = atof(optarg);
-			break;
-
-		case 'm':
-			algo = ADMM;
-			break;
-
-		case 'g':
-			use_gpu = true;
-			break;
-
-		case 'p':
-			pat_file = strdup(optarg);
-			break;
-
-		case 'w':
-			scaling = atof(optarg);
-			break;
-
-		case 't':
-			traj_file = strdup(optarg);
-			break;
-
-		case 'S':
-			scale_im = true;
-			break;
-
-		case 'n':
-			randshift = false;
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 3) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	long max_dims[DIMS];
 	long map_dims[DIMS];
@@ -415,8 +325,8 @@ int main_pics(int argc, char* argv[])
 
 	// load kspace and maps and get dimensions
 
-	complex float* kspace = load_cfl(argv[optind + 0], DIMS, ksp_dims);
-	complex float* maps = load_cfl(argv[optind + 1], DIMS, map_dims);
+	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
+	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
 
 
 	complex float* traj = NULL;
@@ -541,7 +451,7 @@ int main_pics(int argc, char* argv[])
 	if (scaling != 0.)
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
 
-
+	float lambda = ropts.lambda;
 
 	if (-1. == lambda)
 		lambda = 0.;
@@ -549,22 +459,27 @@ int main_pics(int argc, char* argv[])
 	// if no penalities specified but regularization
 	// parameter is given, add a l2 penalty
 
-	if ((0 == r) && (lambda >= 0.)) {
+	struct reg_s* regs = ropts.regs;
+	enum algo_t algo = ropts.algo;
+
+	if ((0 == ropts.r) && (lambda >= 0.)) {
 
 		regs[0].xform = L2IMG;
 		regs[0].xflags = 0u;
 		regs[0].jflags = 0u;
 		regs[0].lambda = lambda;
-		r = 1;
+		ropts.r = 1;
 	}
+
 
 
 	// initialize thresh_op
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
-	int nr_penalties = r;
+	int nr_penalties = ropts.r;
         long blkdims[MAX_LEV][DIMS];
         int levels;
+
 
 	for (int nr = 0; nr < nr_penalties; nr++) {
 
@@ -680,7 +595,7 @@ int main_pics(int argc, char* argv[])
 
 
 
-	complex float* image = create_cfl(argv[optind + 2], DIMS, img_dims);
+	complex float* image = create_cfl(argv[3], DIMS, img_dims);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
 

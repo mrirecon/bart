@@ -1,21 +1,17 @@
-/* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+/* Copyright 2015. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a educational/research license which can be found in the 
  * LICENSE file.
  *
  * Authors: 
  * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
 #include <math.h>
-#include <unistd.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -38,51 +34,36 @@
 #include "misc/mri.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
-struct s_data{
+struct s_data {
+
 	long size;
 };
 
 // x = (z1 + z2)/2
 
-static void sum_xupdate( const void* _data, float rho, complex float* dst, const complex float* src )
+static void sum_xupdate(const void* _data, float rho, complex float* dst, const complex float* src)
 {
 	UNUSED(rho);
 
-	const struct s_data* data = (const struct s_data*) _data;
+	const struct s_data* data = (const struct s_data*)_data;
 
-	for( int i = 0; i < data->size; i++)
+	for(int i = 0; i < data->size; i++)
 		dst[i] = src[i] / 2.;
 }
 
-static void sum_xupdate_free( const void* data )
+static void sum_xupdate_free(const void* data)
 {
-	free( (void*) data);
+	free((void*)data);
 }
 
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-options] <input> <output>\n", name);
-}
+static const char* usage_str = "<input> <output>";
+static const char* help_str =
+		"Perform (multi-scale) low rank matrix completion";
 
-static void help(void)
-{
-	printf( "\n"
-		"Perform (multi-scale) low rank matrix completion\n"
-                "-d\t\tperform decomposition instead, ie fully sampled\n"
-                "-i\t\tmaximum iterations.\n"
-                "-m\t\tflags to specify which dimensions are reshaped to matrix columns.\n"
-                "-f\t\tflags to specify which dimensions to perform multi-scale partition.\n"
-                "-j scale\tblock size scaling from one scale to the next one.\n"
-                "-k block-size\tsmallest block size\n"
-                "-N\t\tadd noise scale to account for Gaussian noise.\n"
-                "-s\t\tperform low rank + sparse matrix completion.\n"
-                "-l block-size\tperform locally low rank soft thresholding with specified block size.\n"
-                "-o <output2>\tsummed over all non-noise scales to create a denoised output.\n"
-		"\n");
-}
 
 
 int main_lrmatrix(int argc, char* argv[])
@@ -94,117 +75,60 @@ int main_lrmatrix(int argc, char* argv[])
 	int maxiter = 100;
 	float rho = 0.25;
 	int blkskip = 2;
-	_Bool randshift = true;
+	bool randshift = true;
 	unsigned long mflags = 1;
 	unsigned long flags = ~0;
 	const char* sum_str = NULL;
-	_Bool noise = false;
-        _Bool decom = false;
+	bool noise = false;
+        bool decom = false;
 
-	_Bool llr = false;
-	long llrblk = 8;
-	_Bool ls = false;
-	_Bool hogwild = false;
-	_Bool fast = true;
+	bool llr = false;
+	long llrblk = -1;
+	bool ls = false;
+	bool hogwild = false;
+	bool fast = true;
 	long initblk = 1;
 	int remove_mean = 0;
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "uvNi:p:m:j:k:o:hnl:sf:gHFd"))) {
-		switch(c) {
 
-                case 'd':
-                        decom = true;
-                        
-		case 'u':
-                        remove_mean = 1;
-			break;
+	const struct opt_s opts[] = {
 
-		case 'v':
-			remove_mean = 2;
-			break;
+		{ 'd', true, opt_set, &decom, "\t\tperform decomposition instead, ie fully sampled" },
+		// FIXME: 'd' fell through to u in original version ??!?
+		{ 'i', true, opt_int, &maxiter, "\t\tmaximum iterations." },
+		{ 'm', true, opt_long, &mflags, "\t\tflags to specify which dimensions are reshaped to matrix columns." },
+		{ 'f', true, opt_long, &flags, "\t\tflags to specify which dimensions to perform multi-scale partition." },
+                { 'j', true, opt_int, &blkskip, " scale\tblock size scaling from one scale to the next one." },
+                { 'k', true, opt_long, &initblk, " block-size\tsmallest block size" },
+                { 'N', false, opt_set, &noise, "\t\tadd noise scale to account for Gaussian noise." },
+                { 's', false, opt_set, &ls, "\t\tperform low rank + sparse matrix completion." },
+                { 'l', true, opt_long, &llrblk, " block-size\tperform locally low rank soft thresholding with specified block size." },
+                { 'o', true, opt_string, &sum_str, " <output2>\tsummed over all non-noise scales to create a denoised output." },
+		{ 'u', false, opt_select, OPT_SEL(int, &remove_mean, 1), NULL },
+		{ 'v', false, opt_select, OPT_SEL(int, &remove_mean, 2), NULL },
+		{ 'H', false, opt_set, &hogwild, NULL },
+		{ 'k', true, opt_long, &initblk, NULL },
+		{ 'p', true, opt_float, &rho, NULL },
+		{ 'n', false, opt_clear, &randshift, NULL },
+		{ 'g', false, opt_set, &use_gpu, NULL },
+	};
 
-		case 'H':
-			hogwild = true;
-			break;
+	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'k':
-			initblk = atoi(optarg);
-			break;
-
-		case 'o':
-			sum_str = strdup(optarg);
-			break;
-
-
-		case 'i':
-			maxiter = atoi(optarg);
-			break;
-
-		case 'j':
-			blkskip = atoi(optarg);
-			break;
-
-		case 'p':
-			rho = atof(optarg);
-			break;
-
-		case 'N':
-			noise = true;
-			break;
-
-		case 'n':
-			randshift = false;
-			break;
-
-		case 'l':
-			llr = true;
-			llrblk = atoi(optarg);
-			break;
-
-		case 's':
-			ls = true;
-			break;
-
-		case 'f':
-			flags = labs(atol(optarg));
-			break;
-
-		case 'm':
-			mflags = labs(atol(optarg));
-			break;
-
-		case 'g':
-			use_gpu = true;
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 2) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	if (-1 != llrblk)
+		llr = true;
 
 
 	long idims[DIMS];
 	long odims[DIMS];
 
 	// Load input
-	complex float* idata = load_cfl(argv[optind + 0], DIMS, idims);
+	complex float* idata = load_cfl(argv[1], DIMS, idims);
 
 	// Get levels and block dimensions
 	long blkdims[MAX_LEV][DIMS];
 	long levels;
+
 	if (llr)
 		levels = llr_blkdims(blkdims, flags, idims, llrblk);
 	else if (ls)
@@ -213,19 +137,21 @@ int main_lrmatrix(int argc, char* argv[])
 		levels = multilr_blkdims(blkdims, flags, idims, blkskip, initblk);
 
 	if (noise)
-		add_lrnoiseblk( &levels, blkdims, idims );
+		add_lrnoiseblk(&levels, blkdims, idims);
+
 	debug_printf(DP_INFO, "Number of levels: %ld\n", levels);
 
 	// Get outdims
 	md_copy_dims(DIMS, odims, idims);
 	odims[LEVEL_DIM] = levels;
-	complex float* odata = create_cfl(argv[optind + 1], DIMS, odims);
-	md_clear( DIMS, odims, odata, sizeof(complex float) );
+	complex float* odata = create_cfl(argv[22], DIMS, odims);
+	md_clear(DIMS, odims, odata, sizeof(complex float));
 
 	// Get pattern
 	complex float* pattern = NULL;
 
         if (!decom) {
+
                 pattern = md_alloc(DIMS, idims, CFL_SIZE);
                 estimate_pattern(DIMS, idims, TIME_DIM, pattern, idata);
         }
@@ -245,9 +171,11 @@ int main_lrmatrix(int argc, char* argv[])
 
 	// Initialize operators
 
-	const struct linop_s* sum_op = sum_create( odims, use_gpu );
+	const struct linop_s* sum_op = sum_create(odims, use_gpu);
 	const struct linop_s* sampling_op = NULL;
+
         if (!decom) {
+
                 sampling_op = sampling_create(idims, idims, pattern);
                 sum_op = linop_chain(sum_op, sampling_op);
                 linop_free(sampling_op);
@@ -271,7 +199,7 @@ int main_lrmatrix(int argc, char* argv[])
 	long size = 2 * md_calc_size(DIMS, odims);
 	struct s_data s_data = { size / 2 };
 
-	const struct operator_p_s* sum_xupdate_op = operator_p_create( DIMS, odims, DIMS, odims, (void*) &s_data, sum_xupdate, sum_xupdate_free );
+	const struct operator_p_s* sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims, (void*)&s_data, sum_xupdate, sum_xupdate_free);
 
 
 	// do recon
@@ -283,13 +211,13 @@ int main_lrmatrix(int argc, char* argv[])
 		    ops,
 		    sum_xupdate_op,
 		    size, (float*) odata, NULL,
-		    NULL, NULL, NULL );
+		    NULL, NULL, NULL);
 	
 
 
 	// Sum
-	if (sum_str)
-	{
+	if (sum_str) {
+
 		complex float* sdata = create_cfl(sum_str, DIMS, idims);
 		long istrs[DIMS];
 		long ostrs[DIMS];
@@ -299,7 +227,7 @@ int main_lrmatrix(int argc, char* argv[])
 
 		md_clear(DIMS, idims, sdata, sizeof(complex float));
 		odims[LEVEL_DIM]--;
-		md_zaxpy2(DIMS, odims, istrs, sdata, 1./sqrt(levels), ostrs, odata);
+		md_zaxpy2(DIMS, odims, istrs, sdata, 1. / sqrt(levels), ostrs, odata);
 		odims[LEVEL_DIM]++;
 		unmap_cfl(DIMS, idims, sdata);
 	}
@@ -308,9 +236,9 @@ int main_lrmatrix(int argc, char* argv[])
 	// Clean up
 	unmap_cfl(DIMS, idims, idata);
 	unmap_cfl(DIMS, odims, odata);
-	linop_free( sum_op );
-	operator_p_free( sum_prox );
-	operator_p_free( lr_prox );
+	linop_free(sum_op);
+	operator_p_free(sum_prox);
+	operator_p_free(lr_prox);
 
 
 	double end_time = timestamp();

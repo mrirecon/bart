@@ -1,24 +1,22 @@
 /* Copyright 2013-2014. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2014	Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2015	Martin Uecker <martin.uecker@med.uni-goettingen.de.
  * 2013		Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <unistd.h>
 
 #include "misc/mmio.h"
 #include "misc/mri.h"
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/opts.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -29,23 +27,10 @@
 
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, 	"Usage: %s [-A] [-r cal_size] [-P num_coeffs]"
-			" <kspace> <coeff>|<proj_kspace>\n", name);
-}
+static const char* usage_str = "<kspace> <coeff>|<proj_kspace>";
+static const char* help_str = "Performs coil compression.";
 
-static void help(void)
-{
-	printf( "\n"
-		"Performs coil compression.\n"
-		"\n"
-		"-P N\tperform compression to N virtual channels\n"
-		"-r S\tsize of calibration region\n"
-		"-A\tuse all data to compute coefficients\n"
-		"-S|G|E\ttype: SVD, Geometric, ESPIRiT\n"
-		"-h\thelp\n");
-}
+
 
 
 
@@ -54,68 +39,30 @@ int main_cc(int argc, char* argv[])
 {
 	long calsize[3] = { 24, 24, 24 };
 	bool proj = false;
-	long P = 0;
+	long P = -1;
 	bool all = false;
 	enum cc_type { SCC, GCC, ECC } cc_type = SCC;
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "r:R:SGEP:Ah"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'P', true, opt_long, &P, " N\tperform compression to N virtual channels" },
+		{ 'r', true, opt_vec3, &calsize, " S\tsize of calibration region" },
+		{ 'R', true, opt_vec3, &calsize, NULL },
+		{ 'A', false, opt_set, &all, "\tuse all data to compute coefficients" },
+		{ 'S', false, opt_select, OPT_SEL(enum cc_type, &cc_type, SCC), "|G|E\ttype: SVD, Geometric, ESPIRiT" },
+		{ 'G', false, opt_select, OPT_SEL(enum cc_type, &cc_type, GCC), NULL },
+		{ 'E', false, opt_select, OPT_SEL(enum cc_type, &cc_type, ECC), NULL },
+	};
 
-		case 'A':
-			all = true;
-			break;
+	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'r':
-			calsize[0] = atoi(optarg);
-			calsize[1] = atoi(optarg);
-			calsize[2] = atoi(optarg);
-			break;
-
-		case 'R':
-			sscanf(optarg, "%ld:%ld:%ld", &calsize[0], &calsize[1], &calsize[2]);
-			break;
-
-		case 'P':
-			proj = true;
-			P = atoi(optarg);
-			break;
-
-		case 'S':
-			cc_type = SCC;
-			break;
-
-		case 'G':
-			cc_type = GCC;
-			break;
-
-		case 'E':
-			cc_type = ECC;
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 2) {
-
-		fprintf(stderr,"Input arguments do not match expected format.\n");
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	if (-1 != P)
+		proj = true;
 
 
 	long in_dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[optind + 0], DIMS, in_dims);
+	complex float* in_data = load_cfl(argv[1], DIMS, in_dims);
 
 	assert(1 == in_dims[MAPS_DIM]);
 	long channels = in_dims[COIL_DIM];
@@ -128,7 +75,7 @@ int main_cc(int argc, char* argv[])
 	out_dims[MAPS_DIM] = channels;
 	out_dims[READ_DIM] = (SCC == cc_type) ? 1 : in_dims[READ_DIM];
 
-	complex float* out_data = (proj ? anon_cfl : create_cfl)(argv[optind + 1], DIMS, out_dims);
+	complex float* out_data = (proj ? anon_cfl : create_cfl)(argv[2], DIMS, out_dims);
 
 
 	long caldims[DIMS];
@@ -166,7 +113,7 @@ int main_cc(int argc, char* argv[])
 		md_copy_dims(DIMS, trans_dims, in_dims);
 		trans_dims[COIL_DIM] = P;
 
-		complex float* trans_data = create_cfl(argv[optind + 1], DIMS, trans_dims);
+		complex float* trans_data = create_cfl(argv[2], DIMS, trans_dims);
 
 		long fake_trans_dims[DIMS];
 		md_select_dims(DIMS, ~COIL_FLAG, fake_trans_dims, in_dims);
