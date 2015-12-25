@@ -1,19 +1,17 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#include <getopt.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <stdint.h>
 #include <complex.h>
 #include <fcntl.h>
-#include <assert.h>
-#include <stdio.h>
+#include <unistd.h>
 
 #include "num/multind.h"
 
@@ -21,6 +19,7 @@
 #include "misc/mri.h"
 #include "misc/mmio.h"
 #include "misc/debug.h"
+#include "misc/opts.h"
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
@@ -207,36 +206,14 @@ static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const l
 
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [...] [-a A] <dat file> <output>\n", name);
-}
+static const char* usage_str = "<dat file> <output>";
+//	fprintf(fd, "Usage: %s [...] [-a A] <dat file> <output>\n", name);
 
-
-static void help(void)
-{
-	printf( "\n"
-		"Read data from Siemens twix (.dat) files.\n"
-		"\n"
-		"-x X\tnumber of samples (read-out)\n"
-		"-y Y\tphase encoding steps\n"
-		"-z Z\tpartition encoding steps\n"
-		"-s S\tnumber of slices\n"
-		"-v V\tnumber of averages\n"
-		"-c C\tnumber of channels\n"
-		"-n N\tnumber of repetitions\n"
-		"-a A\ttotal number of ADCs\n"
-		"-A\tautomatic (guess dimensions)\n"
-		"-L\tuse linectr offset\n"
-		"-P\tuse partctr offset\n"
-		"-h\thelp\n");
-}
-
+static const char* help_str = "Read data from Siemens twix (.dat) files.";
 
 
 int main_twixread(int argc, char* argv[argc])
 {
-	int c;
 	long adcs = 0;
 
 	bool autoc = false;
@@ -246,70 +223,23 @@ int main_twixread(int argc, char* argv[argc])
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
 
-	while (-1 != (c = getopt(argc, argv, "x:y:z:s:c:a:n:PLAh"))) {
+	struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'x', true, opt_long, &(dims[READ_DIM]), " X\tnumber of samples (read-out)" },
+		{ 'y', true, opt_long, &(dims[PHS1_DIM]), " Y\tphase encoding steps" },
+		{ 'z', true, opt_long, &(dims[PHS2_DIM]), " Z\tpartition encoding steps" },
+		{ 's', true, opt_long, &(dims[SLICE_DIM]), " S\tnumber of slices" },
+		{ 'v', true, opt_long, &(dims[AVG_DIM]), " V\tnumber of averages" },
+		{ 'c', true, opt_long, &(dims[COIL_DIM]), " C\tnumber of channels" },
+		{ 'n', true, opt_long, &(dims[TIME_DIM]), " N\tnumber of repetitions" },
+		{ 'a', true, opt_long, &adcs,  " A\ttotal number of ADCs" },
+		{ 'A', false, opt_set, &autoc, "\tautomatic (guess dimensions)" },
+		{ 'L', false, opt_set, &linectr, "\tuse linectr offset" },
+		{ 'P', false, opt_set, &partctr, "\tuse partctr offset" },
+	};
 
-		case 'x':
-			dims[READ_DIM] = atoi(optarg);
-			break;
+	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'y':
-			dims[PHS1_DIM] = atoi(optarg);
-			break;
-
-		case 'z':
-			dims[PHS2_DIM] = atoi(optarg);
-			break;
-
-		case 's':
-			dims[SLICE_DIM] = atoi(optarg);
-			break;
-
-		case 'v':
-			dims[AVG_DIM] = atoi(optarg);
-			break;
-
-		case 'n':
-			dims[TIME_DIM] = atoi(optarg);
-			break;
-
-		case 'a':
-			adcs = atoi(optarg);
-			break;
-
-		case 'A':
-			autoc = true;
-			break;
-
-		case 'c':
-			dims[COIL_DIM] = atoi(optarg);
-			break;
-
-		case 'P':
-			partctr = true;
-			break;
-
-		case 'L':
-			linectr = true;
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-        if (argc - optind != 2) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	if (0 == adcs)
 		adcs = dims[PHS1_DIM] * dims[PHS2_DIM] * dims[SLICE_DIM] * dims[TIME_DIM];
@@ -317,7 +247,7 @@ int main_twixread(int argc, char* argv[argc])
 	debug_print_dims(DP_DEBUG1, DIMS, dims);
 
         int ifd;
-        if (-1 == (ifd = open(argv[optind + 0], O_RDONLY)))
+        if (-1 == (ifd = open(argv[1], O_RDONLY)))
                 error("error opening file.");
 
 	struct hdr_s hdr;
@@ -357,7 +287,7 @@ int main_twixread(int argc, char* argv[argc])
 	}
 
 
-	complex float* out = create_cfl(argv[optind + 1], DIMS, dims);
+	complex float* out = create_cfl(argv[2], DIMS, dims);
 	md_clear(DIMS, dims, out, CFL_SIZE);
 
 
