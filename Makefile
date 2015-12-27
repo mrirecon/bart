@@ -105,7 +105,7 @@ ismrm.top ?= /usr/local/ismrmrd/
 
 # Main build targets
 
-TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version
+TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version imageconvert dataconvert
 TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize cdf97 relnorm pattern nrmse
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter
 TRECO=pics pocsense rsense bpsense itsense nlinv nufft rof sake wave lrmatrix estdims
