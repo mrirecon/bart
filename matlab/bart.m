@@ -4,7 +4,8 @@ function [varargout] = bart(cmd, varargin);
 %
 % 2014-2015 Martin Uecker <uecker@med.uni-goettingen.de>
 
-	if nargin==0
+
+	if nargin==0 || cmd==0
 		disp('Usage: bart <command> <arguments...>');
 		return
 	end
@@ -61,26 +62,26 @@ function [varargout] = bart(cmd, varargin);
 	end
 
 	for i=1:nargin - 1,
-        if (exist(strcat(in{i}, '.cfl'),'file'))
-            delete(strcat(in{i}, '.cfl'));
-        end
-        if (exist(strcat(in{i}, '.hdr'),'file'))
-            delete(strcat(in{i}, '.hdr'));
-        end
+		if (exist(strcat(in{i}, '.cfl'),'file'))
+			delete(strcat(in{i}, '.cfl'));
+		end
+
+		if (exist(strcat(in{i}, '.hdr'),'file'))
+			delete(strcat(in{i}, '.hdr'));
+		end
 	end
 
 	for i=1:nargout,
-        if (ERR  == 0)
-            varargout{i} = readcfl(out{i});
-        end
-        if (exist(strcat(out{i}, '.cfl'),'file'))
-            delete(strcat(out{i}, '.cfl'));
-        end
-        if (exist(strcat(out{i}, '.hdr'),'file'))
-            delete(strcat(out{i}, '.hdr'));
-        end
-    end
-    
+		if ERR==0
+			varargout{i} = readcfl(out{i});
+		end
+		if (exist(strcat(out{i}, '.cfl'),'file'))
+			delete(strcat(out{i}, '.cfl'));
+		end
+		if (exist(strcat(out{i}, '.hdr'),'file'))
+			delete(strcat(out{i}, '.hdr'));
+		end
+	end
 
 	if ERR~=0
 		error('command exited with an error');
