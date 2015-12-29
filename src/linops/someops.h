@@ -11,6 +11,7 @@
 #include "misc/cppwrap.h"
 
 extern struct linop_s* linop_cdiag_create(unsigned int N, const long dims[__VLA(N)], unsigned int flags, const _Complex float* diag);
+extern struct linop_s* linop_rdiag_create(unsigned int N, const long dims[__VLA(N)], unsigned int flags, const _Complex float* diag);
 
 extern struct linop_s* linop_identity_create(unsigned int N, const long dims[__VLA(N)]);
 

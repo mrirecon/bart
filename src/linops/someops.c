@@ -35,25 +35,25 @@ struct cdiag_s {
 	const long* strs;
 	const long* dstrs;
 	const complex float* diag;
+	bool rmul;
 };
 
 static void cdiag_apply(const void* _data, complex float* dst, const complex float* src)
 {
 	const struct cdiag_s* data = _data;
-	md_zmul2(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, data->diag);
+	(data->rmul ? md_zrmul2 : md_zmul2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, data->diag);
 }
 
 static void cdiag_adjoint(const void* _data, complex float* dst, const complex float* src)
 {
 	const struct cdiag_s* data = _data;
-	md_zmulc2(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, data->diag);
+	(data->rmul ? md_zrmul2 : md_zmulc2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, data->diag);
 }
 
 static void cdiag_normal(const void* _data, complex float* dst, const complex float* src)
 {
-	const struct cdiag_s* data = _data;
-	md_zmul2(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, data->diag);
-	md_zmulc2(data->N, data->dims, data->strs, dst, data->strs, dst, data->dstrs, data->diag);
+	cdiag_apply(_data, dst, src);
+	cdiag_adjoint(_data, dst, dst);
 }
 
 static void cdiag_free(const void* _data)
@@ -67,18 +67,11 @@ static void cdiag_free(const void* _data)
 
 
 
-
-/**
- * Create a operator y = D x where D is a diagonal matrix
- *
- * @param N number of dimensions
- * @param dims input and output dimensions
- * @param flags bitmask specifiying the dimensions present in diag
- * @param diag diagonal matrix
- */
-struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag)
+static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag, bool rdiag)
 {
 	struct cdiag_s* data = xmalloc(sizeof(struct cdiag_s));
+
+	data->rmul = rdiag;
 
 	data->N = N;
 	long* dims2 = xmalloc(N * sizeof(long));
@@ -97,6 +90,35 @@ struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned 
 	data->diag = diag;	// make a copy?
 
 	return linop_create(N, dims, N, dims, data, cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
+}
+
+
+
+/**
+ * Create a operator y = D x where D is a diagonal matrix
+ *
+ * @param N number of dimensions
+ * @param dims input and output dimensions
+ * @param flags bitmask specifiying the dimensions present in diag
+ * @param diag diagonal matrix
+ */
+struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag)
+{
+	return linop_gdiag_create(N, dims, flags, diag, false);
+}
+
+
+/**
+ * Create a operator y = D x where D is a diagonal matrix
+ *
+ * @param N number of dimensions
+ * @param dims input and output dimensions
+ * @param flags bitmask specifiying the dimensions present in diag
+ * @param diag diagonal matrix
+ */
+struct linop_s* linop_rdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag)
+{
+	return linop_gdiag_create(N, dims, flags, diag, true);
 }
 
 
