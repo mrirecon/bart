@@ -1,52 +1,40 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
-#include <getopt.h>
 
 #include "num/multind.h"
 
 #include "misc/mri.h"
 #include "misc/mmio.h"
+#include "misc/misc.h"
+#include "misc/opts.h"
 
 #include "simu/phantom.h"
 
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-k | -s nc] [-t trajectory] <output>\n", name);
-}
+static const char* usage_str = "<output>";
+static const char* help_str = "Image and k-space domain phantoms.";
 
-
-static void help(void)
-{
-	printf( "\n"
-		"Image and k-space domain phantoms.\n"
-		"\n"
-		"-s nc\tnc sensitivities\n"
-		"-k\tk-space\n"
-		"-h\thelp\n");
-}
 
 
 
 int main_phantom(int argc, char* argv[])
 {
-	int c;
 	bool kspace = false;
 	int sens = 0;
+	int osens = -1;
+	int xdim = -1;
 	bool out_sens = false;
+	bool tecirc = false;
 	bool circ = false;
 	char* traj = NULL;
 
@@ -55,53 +43,34 @@ int main_phantom(int argc, char* argv[])
 	dims[1] = 128;
 	dims[2] = 128;
 
-	while (-1 != (c = getopt(argc, argv, "x:kcmS:s:t:h"))) {
 
-		switch (c) {
+	const struct opt_s opts[] = {
 
-		case 'x':
-			dims[1] = dims[2] = atoi(optarg);
-			break;
+		{ 's', true, opt_int, &sens, " nc\tnc sensitivities" },
+		{ 'S', true, opt_int, &osens, NULL },
+		{ 'k', false, opt_set, &kspace, "\tk-space" },
+		{ 't', true, opt_string, &traj, NULL },
+		{ 'c', false, opt_set, &circ, NULL },
+		{ 'm', false, opt_set, &tecirc, NULL },
+		{ 'x', true, opt_int, &xdim, NULL },
+	};
 
-		case 'k':
-			kspace = true;
-			break;
+	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'S':
-			out_sens = true;
-		case 's':
-			sens = atoi(optarg);
-			break;
+	if (tecirc) {
 
-		case 'c':
-			circ = true;
-			break;
-
-		case 'm':
-			circ = true;
-			dims[TE_DIM] = 32;
-			break;
-
-		case 't':
-			traj = strdup(optarg);
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
+		circ = true;
+		dims[TE_DIM] = 32;
 	}
 
-	if (argc - optind != 1) {
-		
-		usage(argv[0], stderr);
-		exit(1);
+	if (-1 != osens) {
+
+		out_sens = true;
+		sens = osens;
 	}
+
+	if (-1 != xdim)
+		dims[1] = dims[2] = xdim;
 
 
 	long sdims[DIMS];
@@ -120,7 +89,7 @@ int main_phantom(int argc, char* argv[])
 	if (sens)
 		dims[3] = sens;
 
-	complex float* out = create_cfl(argv[optind + 0], DIMS, dims);
+	complex float* out = create_cfl(argv[1], DIMS, dims);
 
 	if (out_sens) {
 

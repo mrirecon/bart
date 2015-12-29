@@ -1,4 +1,5 @@
 /* Copyright 2015. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -6,19 +7,17 @@
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
- * 2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <stdio.h>
 #include <complex.h>
 #include <stdbool.h>
 #include <assert.h>
-#include <unistd.h>
+#include <stdio.h>
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #include "num/flpmath.h"
 
@@ -27,57 +26,28 @@
 #endif
 
 
-static const char* usage_str = "[-h] <reference> <input>";
+static const char* usage_str = "<reference> <input>";
 static const char* help_str = 
 	"Output normalized root mean square error (NRMSE),\n"
-	"i.e. norm(input - ref) / norm(ref) \n\n"
-	"-t\ttest\n"
-	"-h\thelp\n";
+	"i.e. norm(input - ref) / norm(ref)";
 			
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s %s\n", name, usage_str);
-}
 
-static void help(void)
-{
-	printf("\n%s", help_str);
-}
 
 int main_nrmse(int argc, char* argv[])
 {
-	int c;
 	float test = -1.;
 
-	while (-1 != (c = getopt(argc, argv, "t:h"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 't', true, opt_float, &test, NULL },
+	};
 
-		case 't':
-			test = atof(optarg);
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 2) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	long ref_dims[DIMS];
 	long in_dims[DIMS];
-	complex float* ref = load_cfl(argv[optind + 0], DIMS, ref_dims);
-	complex float* in = load_cfl(argv[optind + 1], DIMS, in_dims);
+	complex float* ref = load_cfl(argv[1], DIMS, ref_dims);
+	complex float* in = load_cfl(argv[2], DIMS, in_dims);
 
 	for (int i = 0; i < DIMS; i++)
 		assert(in_dims[i] == ref_dims[i]);

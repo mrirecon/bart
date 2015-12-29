@@ -1,20 +1,16 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- 
- * 2013 Martin Uecker 
- * uecker@eecs.berkeley.edu
+ *
+ * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <getopt.h>
 #include <math.h>
 #include <complex.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -23,6 +19,7 @@
 #include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/pd.h"
+#include "misc/opts.h"
 
 
 static void random_point(int D, float p[D])
@@ -54,26 +51,8 @@ static float maxn(int D, const float a[D], const float b[D])
 
 
 
-static void usage(const char* name, FILE* fp)
-{
-	fprintf(fp, "Usage: %s [-Y/Z dim] [-y/z acc] [-v] [-e] [-C center] <outfile>\n", name);
-}
-
-static void help(void)
-{
-	printf( "\n"
-		"Computes Poisson-disc sampling pattern.\n"
-		"\n"
-		"-Y\tsize dimension 1 (phase 1)\n"
-		"-Z\tsize dimension 2 (phase 2)\n"
-		"-y\tacceleration (dim 1)\n"
-		"-z\tacceleration (dim 2)\n"
-		"-C\tsize of calibration region\n"
-		"-v\tvariable density\n"
-		"-e\telliptical scanning\n"
-		"-h\thelp\n");
-}
-
+static const char* usage_str = "<outfile>";
+static const char* help_str = "Computes Poisson-disc sampling pattern.";
 
 
 int main_poisson(int argc, char* argv[])
@@ -82,6 +61,7 @@ int main_poisson(int argc, char* argv[])
 	int zz = 128;
 	bool cutcorners = false;
 	float vardensity = 0.;
+	bool vd_def = false;
 	int T = 1;
 	int rnd = 0;
 	bool msk = true;
@@ -91,79 +71,30 @@ int main_poisson(int argc, char* argv[])
 	float zscale = 1.;
 	unsigned int calreg = 0;
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "Y:Z:hvV:eR:D:my:y:z:T:C:"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
-		case 'Y':
-			yy = atoi(optarg);
-			break;
+		{ 'Y', true, opt_int, &yy, "\tsize dimension 1 (phase 1)" },
+		{ 'Z', true, opt_int, &zz, "\tsize dimension 2 (phase 2)" },
+		{ 'y', true, opt_float, &yscale, "\tacceleration (dim 1)" },
+		{ 'z', true, opt_float, &zscale, "\tacceleration (dim 2)" },
+		{ 'C', true, opt_int, &calreg, "\tsize of calibration region" },
+		{ 'v', false, opt_set, &vd_def, "\tvariable density" },
+		{ 'V', true, opt_float, &vardensity, NULL },
+		{ 'e', false, opt_set, &cutcorners, "\telliptical scanning" },
+		{ 'D', true, opt_float, &mindist, NULL },
+		{ 'T', true, opt_int, &T, NULL },
+		{ 'm', false, opt_clear, &msk, NULL },
+		{ 'R', true, opt_int, &points, NULL },
+	};
 
-		case 'Z':
-			zz = atoi(optarg);
-			break;
+	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
+	if (vd_def && (0. == vardensity))
+		vardensity = 20.;
 
-		case 'v':
-			vardensity = 20;
-			break;
+	if (-1 != points)
+		rnd = 1;
 
-		case 'V':
-			vardensity = atof(optarg);
-			break;
-
-		case 'T':
-#ifdef BERKELEY_SVN
-			T = atoi(optarg);
-#else
-			assert(0);
-#endif
-			break;	
-
-		case 'z':
-			zscale = atof(optarg);
-			break;
-
-		case 'y':
-			yscale = atof(optarg);
-			break;
-
-		case 'e':
-			cutcorners = true;
-			break;
-
-		case 'D':
-			mindist = atof(optarg);
-			break;
-
-		case 'C':
-			calreg = atoi(optarg);
-			break;
-
-		case 'R':
-			rnd = 1;
-			points = atoi(optarg);	
-			break;
-
-		case 'm':
-			msk = false;
-			break;
-
-		default:
-			exit(1);
-		}
-	}
-
-
-	if (argc - optind != 1) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	assert((yscale >= 1.) && (zscale >= 1.));
 
@@ -188,7 +119,7 @@ int main_poisson(int argc, char* argv[])
 
 	if (msk) {
 		
-		mask = create_cfl(argv[optind], 5, dims);
+		mask = create_cfl(argv[1], 5, dims);
 		md_clear(5, dims, mask, sizeof(complex float));
 	}
 
@@ -276,7 +207,7 @@ int main_poisson(int argc, char* argv[])
 
 #if 1
 				long sdims[2] = { 3, P };
-				complex float* samples = create_cfl(argv[optind], 2, sdims);
+				complex float* samples = create_cfl(argv[1], 2, sdims);
 				for (int i = 0; i < P; i++) {
 
 					samples[3 * i + 0] = 0.;

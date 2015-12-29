@@ -1,92 +1,52 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <complex.h>
-#include <unistd.h>
-
+#include <stdlib.h>
 
 #include "num/multind.h"
 #include "num/fft.h"
 
 #include "misc/mmio.h"
+#include "misc/opts.h"
+#include "misc/misc.h"
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-u] [-i] bitmask <input> <output>\n", name);
-}
+static const char* usage_str = "bitmask <input> <output>";
+static const char* help_str = "Performs a fast Fourier transform (FFT) along selected dimensions.";
 
-
-static void help(void)
-{
-	printf( "\n"
-		"Performs a fast Fourier transform (FFT) along selected dimensions.\n"
-		"\n"
-		"-u\tunitary\n"
-		"-i\tinverse\n"
-		"-h\thelp\n");
-}
 
 
 
 int main_fft(int argc, char* argv[])
 {
-	int c;
 	bool unitary = false;
 	bool inv = false;
 
-	while (-1 != (c = getopt(argc, argv, "uih"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'u', false, opt_set, &unitary, "\tunitary" },
+		{ 'i', false, opt_set, &inv, "\tinverse" },
+	};
 
-		case 'u':
-			unitary = true;	
-			break;
-
-		case 'i':
-			inv = true;
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 3) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
-
-
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	long dims[DIMS];
-	complex float* idata = load_cfl(argv[optind + 1], DIMS, dims);
-	complex float* data = create_cfl(argv[optind + 2], DIMS, dims);
+	complex float* idata = load_cfl(argv[2], DIMS, dims);
+	complex float* data = create_cfl(argv[3], DIMS, dims);
 
-	unsigned long flags = labs(atol(argv[optind + 0]));
-
+	unsigned long flags = labs(atol(argv[1]));
 
 
 	md_copy(DIMS, dims, data, idata, sizeof(complex float));

@@ -1,67 +1,47 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
-#include <getopt.h>
 #include <stdbool.h>
 
 #include "num/multind.h"
 
+#include "misc/misc.h"
+#include "misc/opts.h"
 
-static void usage(const char* name, FILE* fp)
-{
-	fprintf(fp, "Usage: %s -b <bitmask> | <dim1> ... <dimN>\n", name);
-}
 
-static void help(void)
-{
-	printf(	"\nCompute bitmask for specified dimensions.\n");
-}
+static const char* usage_str = "-b <bitmask> | <dim1> ... <dimN>";
+static const char* help_str = "Convert between a bitmask and set of dimensions.";
+
+
 
 
 int main_bitmask(int argc, char* argv[])
 {
 	bool inverse = false;
-	unsigned int flags = 0;
+	long flags = 0;
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "hb:"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'b', false, opt_set, &inverse, "\tdimensions from bitmask" },
+	};
 
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
+	cmdline(&argc, argv, 0, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'b':
-			flags = atoi(optarg);
-			inverse = true;
-			break;
+	if ((2 != argc) && inverse)
+		error("exactly one argument needed.\n");
 
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if ((argc - optind < 1) && !inverse) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	if (!inverse) {
 
-
-		for (int i = optind; i < argc; i++) {
+		for (int i = 1; i < argc; i++) {
 
 			int d = atoi(argv[i]);
 			assert(d >= 0);
@@ -69,11 +49,12 @@ int main_bitmask(int argc, char* argv[])
 			flags = MD_SET(flags, d);
 		}
 
-		printf("%d\n", flags);
+		printf("%ld\n", flags);
 
 	} else {
 
 		int i = 0;
+		flags = atoi(argv[1]);
 
 		while (flags) {
 

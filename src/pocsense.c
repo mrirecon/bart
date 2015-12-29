@@ -1,19 +1,17 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012, 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2014, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
-#include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
 #include <math.h>
-#include <getopt.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -38,106 +36,61 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/opts.h"
 
 
 
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-l1/-l2] [-r lambda] <kspace> <sensitivities> <output>\n", name);
-}
-
-static void help(void)
-{
-	printf( "\n"
-		"Perform POCSENSE reconstruction.\n"
-		"-l1/-l2\ttoggle l1-wavelet or l2 regularization.\n"
-		"-r alpha\tregularization parameter\n");
-}
+static const char* usage_str = "<kspace> <sensitivities> <output>";
+static const char* help_str = "Perform POCSENSE reconstruction.";
 
 	
 
 int main_pocsense(int argc, char* argv[])
 {
-	int c;
 	float alpha = 0.;
 	int maxiter = 50;
 	bool l1wav = false;
 	float lambda = -1.;
 	bool use_gpu = false;
 	bool use_admm = false;
-	float admm_rho = 0.1;
+	float admm_rho = -1.;
+	int l1type = 2;
 
-	while (-1 != (c = getopt(argc, argv, "m:ghi:r:o:l:"))) {
-		switch (c) {
+	const struct opt_s opts[] = {
 
-		case 'i':
-			maxiter = atoi(optarg);
-			break;
+		{ 'i', true, opt_int, &maxiter, NULL },
+		{ 'r', true, opt_float, &alpha, " alpha\tregularization parameter" },
+		{ 'l', true, opt_int, &l1type, "1/-l2\ttoggle l1-wavelet or l2 regularization" },
+		{ 'g', false, opt_set, &use_gpu, NULL },
+		{ 'o', true, opt_float, &lambda, NULL },
+		{ 'm', true, opt_float, &admm_rho, NULL },
+	};
 
-		case 'r':
-			alpha = atof(optarg);
-			break;
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'l':
-			if (1 == atoi(optarg))
-				l1wav = true;
-			else
-			if (2 == atoi(optarg))
-				l1wav = false;
-			else {
-				usage(argv[0], stderr);
-				exit(1);
-			}
-			break;
+	if (1 == l1type)
+		l1wav = true;
+	else
+	if (2 == l1type)
+		l1wav = false;
+	else
+		error("Unknown regularization type.");
 
-		case 'g':
-			use_gpu = true;
-			break;
-
-		case 'o':
-			lambda = atof(optarg);
-			break;
-
-		case 'm':
-			use_admm = true;
-			admm_rho = atof(optarg);
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 3) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 	
 	unsigned int N = DIMS;
 
 	long dims[N];
 	long ksp_dims[N];
 
-	complex float* kspace_data = load_cfl(argv[optind + 0], N, ksp_dims);
-	complex float* sens_maps = load_cfl(argv[optind + 1], N, dims);
+	complex float* kspace_data = load_cfl(argv[1], N, ksp_dims);
+	complex float* sens_maps = load_cfl(argv[2], N, dims);
 
 
-	for (int i = 0; i < 4; i++) {	// sizes2[4] may be > 1
-		if (ksp_dims[i] != dims[i]) {
-		
-			fprintf(stderr, "Dimensions of kspace and sensitivities do not match!\n");
-			exit(1);
-		}
-	}
+	for (int i = 0; i < 4; i++)	// sizes2[4] may be > 1
+		if (ksp_dims[i] != dims[i])
+			error("Dimensions of kspace and sensitivities do not match!\n");
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
@@ -153,7 +106,7 @@ int main_pocsense(int argc, char* argv[])
 	// -----------------------------------------------------------
 	// memory allocation
 	
-	complex float* result = create_cfl(argv[optind + 2], N, ksp_dims);
+	complex float* result = create_cfl(argv[3], N, ksp_dims);
 	complex float* pattern = md_alloc(N, dims1, CFL_SIZE);
 
 

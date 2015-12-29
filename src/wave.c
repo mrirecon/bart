@@ -1,24 +1,21 @@
 /* Copyright 2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2015 Berkin Bilgic <berkin@nmr.mgh.harvard.edu>
- * 2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * B Bilgic, BA Gagoski, SF Cauley, AP Fan, JR Polimeni, PE Grant,
  * LL Wald, and K Setsompop, Wave-CAIPI for highly accelerated 3D
  * imaging. Magn Reson Med (2014) doi: 10.1002/mrm.25347
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
 #include <math.h>
-#include <unistd.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -37,6 +34,7 @@
 #include "misc/utils.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #include "sense/model.h"
 #include "sense/optcom.h"
@@ -76,24 +74,8 @@ static struct linop_s* wavecaipi_create(const long dims[DIMS], long img_read, co
 
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-r lambda]  <kspace> <sensitivities> <wave> <output>\n", name);
-}
-
-static void help(void)
-{
-	printf( "\n"
-		"Perform iterative wavecaipi reconstruction.\n"
-		"\n"
-		"-a adjoint\n"
-		"-i max. iterations\n"
-		"-r lambda\tregularization parameter\n"
-		"-l use L1 penalty\n");
-}
-
-
-
+static const char* usage_str = "<kspace> <sensitivities> <wave> <output>";
+static const char* help_str = "Perform iterative wavecaipi reconstruction.";
 
 
 
@@ -108,43 +90,16 @@ int main_wave(int argc, char* argv[])
 	bool adjoint = false;
 	int maxiter = 50;
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "lar:i:h"))) {
-		switch(c) {
+	const struct opt_s opts[] = {
 
-		case 'l':
-			l1wav = true;
-			break;
+		{ 'l', false, opt_set, &l1wav, "\tuse L1 penalty" },
+		{ 'a', false, opt_set, &adjoint, "\tadjoint" },
+		{ 'i', true, opt_int, &maxiter, "\tmax. iterations" },
+		{ 'r', true, opt_float, &lambda, " lambda\tregularization parameter" },
+	};
 
-		case 'a':
-			adjoint = true;
-			break;
+	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'i':
-			maxiter = atoi(optarg);
-			break;
-            
-		case 'r':
-			lambda = atof(optarg);
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 4) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
-    
 
 	long map_dims[DIMS];
 	long pat_dims[DIMS];
@@ -155,9 +110,9 @@ int main_wave(int argc, char* argv[])
 
 	// load kspace and maps and get dimensions
 
-	complex float* kspace = load_cfl(argv[optind + 0], DIMS, ksp_dims);
-	complex float* maps = load_cfl(argv[optind + 1], DIMS, map_dims);
-	complex float* wave = load_cfl(argv[optind + 2], DIMS, wav_dims);
+	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
+	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
+	complex float* wave = load_cfl(argv[3], DIMS, wav_dims);
 
 
 	md_copy_dims(DIMS, max_dims, ksp_dims);
@@ -168,13 +123,9 @@ int main_wave(int argc, char* argv[])
 	img_dims[READ_DIM] = map_dims[READ_DIM];
 
 
-	for (int i = 1; i < 4; i++) {	// sizes2[4] may be > 1
-		if (ksp_dims[i] != map_dims[i]) {
-		
-			fprintf(stderr, "Dimensions of kspace and sensitivities do not match!\n");
-			exit(1);
-		}
-	}
+	for (int i = 1; i < 4; i++)	// sizes2[4] may be > 1
+		if (ksp_dims[i] != map_dims[i])
+			error("Dimensions of kspace and sensitivities do not match!\n");
 
 	// FIXME: add more sanity checking of dimensions
 
@@ -216,7 +167,7 @@ int main_wave(int argc, char* argv[])
 	}
     
 
-	complex float* image = create_cfl(argv[optind + 3], DIMS, img_dims);
+	complex float* image = create_cfl(argv[4], DIMS, img_dims);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
 

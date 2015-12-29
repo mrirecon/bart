@@ -1,24 +1,21 @@
 /* Copyright 2015. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a educational/research license which can be found in the
  * LICENSE file.
  *
  * Authors:
- * 2012-2014, Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <unistd.h>
 
 #include "misc/mmio.h"
 #include "misc/mri.h"
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/opts.h"
 
 #include "num/flpmath.h"
 #include "num/multind.h"
@@ -26,20 +23,9 @@
 #include "calib/calmat.h"
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, 	"Usage: %s [-k kernel_size] [-r cal_size]"
-			" <kspace> <calibration matrix>\n", name);
-}
+static const char* usage_str = "<kspace> <calibration matrix>";
+static const char* help_str = "Compute calibration matrix.";
 
-static void help(void)
-{
-	printf( "\n"
-		"Compute calibration matrix.\n"
-		"\n"
-		"-k ksize\tkernel size\n"
-		"-r cal_size\tLimits the size of the calibration region.\n");
-}
 
 
 
@@ -50,57 +36,22 @@ int main_calmat(int argc, char* argv[])
 	long kdims[3] = { 5, 5, 5 };
 	bool calcen = false;
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "Ck:K:r:R:h"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 'k', true, opt_vec3, &kdims, " ksize\tkernel size" },
+		{ 'K', true, opt_vec3, &kdims, NULL },
+		{ 'r', true, opt_vec3, &calsize, " cal_size\tLimits the size of the calibration region." },
+		{ 'R', true, opt_vec3, &calsize, NULL },
+		{ 'C', calcen, opt_set, &calcen, NULL },
+	};
 
-		case 'k':
+	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-			kdims[0] = atoi(optarg);
-			kdims[1] = atoi(optarg);
-			kdims[2] = atoi(optarg);
-			break;
-
-		case 'K':
-			sscanf(optarg, "%ld:%ld:%ld", &kdims[0], &kdims[1], &kdims[2]);
-			break;
-
-		case 'r':
-			calsize[0] = atoi(optarg);
-			calsize[1] = atoi(optarg);
-			calsize[2] = atoi(optarg);
-			break;
-
-		case 'R':
-			sscanf(optarg, "%ld:%ld:%ld", &calsize[0], &calsize[1], &calsize[2]);
-			break;
-
-		case 'C':
-			calcen = true;
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 2) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	int N = DIMS;
 	long ksp_dims[N];
 
-	complex float* in_data = load_cfl(argv[optind + 0], N, ksp_dims);
+	complex float* in_data = load_cfl(argv[1], N, ksp_dims);
 
 
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -133,11 +84,8 @@ int main_calmat(int argc, char* argv[])
 
 
 	 for (unsigned int i = 0; i < 3; i++)
-		 if ((1 == cal_dims[i]) && (1 != ksp_dims[i])) {
-
-			fprintf(stderr, "Calibration region not found!\n");
-			exit(1);
-		}
+		 if ((1 == cal_dims[i]) && (1 != ksp_dims[i]))
+			error("Calibration region not found!\n");
 
 
 	// FIXME: we should scale the data
@@ -150,7 +98,7 @@ int main_calmat(int argc, char* argv[])
 	complex float* cm = calibration_matrix(calmat_dims, kdims, cal_dims, cal_data);
 	md_free(cal_data);
 
-	complex float* out_data = create_cfl(argv[optind + 1], N, calmat_dims);
+	complex float* out_data = create_cfl(argv[2], N, calmat_dims);
 	md_copy(N, calmat_dims, out_data, cm, CFL_SIZE);
 	md_free(cm);
 

@@ -1,19 +1,15 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
 #include <math.h>
-#include <unistd.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -31,27 +27,16 @@
 #include "misc/mri.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
 
-
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-l1/-l2] [-r lambda] [-c] <kspace> <sensitivities> <output>\n", name);
-}
-
-
-static void help(void)
-{
-	printf( "\n"
+static const char* usage_str = "<kspace> <sensitivities> <output>";
+static const char* help_str =
 		"Perform iterative SENSE/ESPIRiT reconstruction. The read\n"
 		"(0th) dimension is Fourier transformed and each section\n"
-		"perpendicular to this dimension is reconstructed separately.\n"
-		"\n"
-		"-l1/-l2\ttoggle l1-wavelet or l2 regularization.\n"
-		"-r lambda\tregularization parameter\n"
-		"-c\treal-value constraint\n");
-}
+		"perpendicular to this dimension is reconstructed separately.";
+
 
 
 int main_rsense(int argc, char* argv[])
@@ -61,68 +46,33 @@ int main_rsense(int argc, char* argv[])
 	int ctrsh = 0.;
 	bool sec = false;
 	bool scale_im = false;
+	int lreg = -1;
 	const char* pat_file = NULL;
 
 	struct sense_conf sconf = sense_defaults;
 	struct grecon_conf conf = { NULL, &sconf, false, false, false, true, 30, 0.95, 0. };
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "l:r:s:i:p:Sgh"))) {
+	const struct opt_s opts[] = {
 
-		switch(c) {
+		{ 'l', true, opt_int, &lreg, "1/-l2\ttoggle l1-wavelet or l2 regularization." },
+		{ 'r', true, opt_float, &conf.lambda, " lambda\tregularization parameter" },
+		{ 's', true, opt_float, &conf.step, NULL },
+		{ 'i', true, opt_int, &conf.maxiter, NULL },
+		{ 'S', false, opt_set, &scale_im, NULL },
+		{ 'g', false, opt_set, &usegpu, NULL },
+		{ 'p', true, opt_string, &pat_file, NULL },
+	};
 
-		case 'r':
-			conf.lambda = atof(optarg);
-			break;
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 's':
-			conf.step = atof(optarg);
-			break;
 
-		case 'i':
-			conf.maxiter = atoi(optarg);
-			break;
-
-		case 'l':
-			if (1 == atoi(optarg))
-				conf.l1wav = true;
-			else
-			if (2 == atoi(optarg))
-				conf.l1wav = false;
-			else {
-				usage(argv[0], stderr);
-				exit(1);
-			}
-			break;
-
-		case 'S':
-			scale_im = true;
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		case 'g':
-			usegpu = true;
-			break;
-
-		case 'p':
-			pat_file = strdup(optarg);
-			break;
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 3) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	if (1 == lreg)
+		conf.l1wav = true;
+	else
+	if (2 == lreg)
+		conf.l1wav = false;
+	else
+		error("Unknown regularization type.");
 
 
 	int N = DIMS;
@@ -131,8 +81,8 @@ int main_rsense(int argc, char* argv[])
 	long ksp_dims[N];
 	long sens_dims[N];
 
-	complex float* kspace_data = load_cfl(argv[optind + 0], N, ksp_dims);
-	complex float* sens_maps = load_cfl(argv[optind + 1], N, sens_dims);
+	complex float* kspace_data = load_cfl(argv[1], N, ksp_dims);
+	complex float* sens_maps = load_cfl(argv[2], N, sens_dims);
 
 
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -150,14 +100,10 @@ int main_rsense(int argc, char* argv[])
 	}
 
 
-	for (int i = 0; i < 4; i++) {	// sizes2[4] may be > 1
-		if (ksp_dims[i] != dims[i]) {
+	for (int i = 0; i < 4; i++)	// sizes2[4] may be > 1
+		if (ksp_dims[i] != dims[i])
+			error("Dimensions of kspace and sensitivities do not match!\n");
 		
-			fprintf(stderr, "Dimensions of kspace and sensitivities do not match!\n");
-			exit(1);
-		}
-	}
-
 
 	complex float* pattern = NULL;
 	long pat_dims[DIMS];
@@ -192,7 +138,7 @@ int main_rsense(int argc, char* argv[])
 	ifftuc(N, ksp_dims, READ_FLAG, kspace_data, kspace_data);
 	debug_printf(DP_INFO, "Done.\n");
 
-	complex float* image = create_cfl(argv[optind + 2], N, img_dims);
+	complex float* image = create_cfl(argv[3], N, img_dims);
 
 	debug_printf(DP_INFO, "Reconstruction...\n");
 

@@ -1,96 +1,62 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <complex.h>
-#include <unistd.h>
 #include <math.h>
 
 #include "num/multind.h"
 #include "num/rand.h"
 
 #include "misc/mmio.h"
+#include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-n var] [-r] <input> <output>\n", name);
-}
 
-static void help(const char* name, FILE *fd)
-{
-	usage(name, fd);
-	fprintf(fd, "\nAdd noise with selected variance to input.\n"
-		"\t-n\tvariance\tDEFAULT: 1.0\n"
-		"\t-r\treal-valued input\n"
-		"\t-h\thelp\n");
-}
+
+static const char* usage_str = "<input> <output>";
+static const char* help_str = "Add noise with selected variance to input.";
+
+
 
 int main_noise(int argc, char* argv[])
 {
-
-	int com;
 	float var = 1.;
 	float spike = 1.;
 	bool rvc = false;
+	int rinit = -1;
 
-	while (-1 != (com = getopt(argc, argv, "hrn:s:S:"))) {
+	const struct opt_s opts[] = {
 
-		switch (com) {
+		{ 's', true, opt_int, &rinit, NULL },
+		{ 'S', true, opt_float, &spike, NULL },
+		{ 'r', false, opt_set, &rvc, "\treal-valued input" },
+		{ 'n', true, opt_float, &var, "\tvariance\tDEFAULT: 1.0" },
+	};
 
-		case 's':
-			num_rand_init(atoi(optarg));
-			break;
+	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'S':
-			spike = atof(optarg);
-			break;
-
-		case 'r':
-			rvc = true;
-			break;
-
-		case 'n':
-			var = (float)atof(optarg);	
-			break;
-
-		case 'h':
-			help(argv[0], stdout);
-			exit(0);
-
-		default:
-			help(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 2) {
-
-//		fprintf(stderr, "Input arguments do not match expected format.\n");
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	if (-1 != rinit)
+		num_rand_init(rinit);
 
 
 	unsigned int N = DIMS;
 	long dims[N];
 
-	complex float* y = load_cfl(argv[optind + 0], N, dims);
+	complex float* y = load_cfl(argv[1], N, dims);
 
-	complex float* x = create_cfl(argv[optind + 1], N, dims);
+	complex float* x = create_cfl(argv[2], N, dims);
 
 	long T = md_calc_size(N, dims);
 

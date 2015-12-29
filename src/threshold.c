@@ -1,19 +1,16 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2015 Frank Ong <frankong@berkeley.edu>
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
-#include <getopt.h>
 
 #include "num/flpmath.h"
 #include "num/multind.h"
@@ -23,6 +20,7 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #include "wavelet2/wavelet.h"
 
@@ -36,11 +34,6 @@
 #endif
 
 
-
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-W|L|D] [-b LLR_blksize] [-j bitmask] lambda <input> <output>\n", name);
-}
 
 // FIXME: consider moving this to a more accessible location?
 static void wthresh(unsigned int D, const long dims[D], float lambda, unsigned int flags, complex float* out, const complex float* in)
@@ -97,6 +90,12 @@ static void dfthresh(unsigned int D, const long dims[D], float lambda, complex f
 }
 
 
+
+static const char* usage_str = "lambda <input> <output>";
+static const char* help_str = "Perform soft-thresholding with parameter lambda.";
+
+
+
 int main_threshold(int argc, char* argv[])
 {
 	unsigned int flags = 0;
@@ -104,59 +103,25 @@ int main_threshold(int argc, char* argv[])
 	enum th_type { NONE, WAV, LLR, DFW, MPDFW } th_type = NONE;
 	int llrblk = 8;
 
-	char c;
-	while (-1 != (c = getopt(argc, argv, "WLDb:j:h"))) {
 
-		switch (c) {
+	const struct opt_s opts[] = {
 
-		case 'j':
-			flags = atoi(optarg);
-			break;
+		{ 'W', false, opt_select, OPT_SEL(enum th_type, &th_type, WAV), "\t\tdaubechies wavelet soft-thresholding" },
+		{ 'L', false, opt_select, OPT_SEL(enum th_type, &th_type, LLR), "\t\tlocally low rank soft-thresholding" },
+		{ 'D', false, opt_select, OPT_SEL(enum th_type, &th_type, DFW), "\t\tdivergence-free wavelet soft-thresholding" },
+		{ 'j', true, opt_int, &flags, " bitmask\tjoint soft-thresholding" },
+		{ 'b', true, opt_int, &llrblk, NULL },
+	};
 
-		case 'W':
-			th_type = WAV;
-			break;
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case 'L':
-			th_type = LLR;
-			break;
-                        
-		case 'D':
-			th_type = DFW;
-			break;
-                        
-		case 'b':
-			llrblk = atoi(optarg);
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			printf(	"\nPerform soft-thresholding with parameter lambda.\n\n"
-                                "-W\t\tdaubechies wavelet soft-thresholding\n"
-                                "-L\t\tlocally low rank soft-thresholding\n"
-                                "-D\t\tdivergence-free wavelet soft-thresholding\n"
-				"-j bitmask\tjoint soft-thresholding\n"
-				"-h\t\thelp\n"		);
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 3) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
 
 	const int N = DIMS;
 	long dims[N];
-	complex float* idata = load_cfl(argv[optind + 1], N, dims);
-	complex float* odata = create_cfl(argv[optind + 2], N, dims);
+	complex float* idata = load_cfl(argv[2], N, dims);
+	complex float* odata = create_cfl(argv[3], N, dims);
 
-	float lambda = atof(argv[optind + 0]);
+	float lambda = atof(argv[1]);
 
 	switch (th_type) {
 

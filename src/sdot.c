@@ -1,22 +1,21 @@
 /* Copyright 2013. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2012 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#include <getopt.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <unistd.h>
 #include <complex.h>
+#include <stdio.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
 
 #include "misc/mmio.h"
+#include "misc/misc.h"
+#include "misc/opts.h"
 
 
 #ifndef DIMS
@@ -24,45 +23,19 @@
 #endif
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, "Usage: %s [-h] <input1> <input2>\n", name);
-}
-
+static const char* usage_str = "<input1> <input2>";
+static const char* help_str = "Compute dot product along selected dimensions.";
 
 int main_sdot(int argc, char* argv[])
 {
-
-	int c;
-	while (-1 != (c = getopt(argc, argv, "h"))) {
-
-		switch (c) {
-
-		case 'h':
-			usage(argv[0], stdout);
-			printf( "\nCompute dot product along selected dimensions.\n\n"
-				"-h\thelp\n"		);
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (argc - optind != 2) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
-
+	cmdline(&argc, argv, 2, 2, usage_str, help_str, 0, NULL);
 
 	int N = DIMS;
 	long in1_dims[N];
 	long in2_dims[N];
 
-	complex float* in1_data = load_cfl(argv[optind + 0], N, in1_dims);
-	complex float* in2_data = load_cfl(argv[optind + 1], N, in2_dims);
+	complex float* in1_data = load_cfl(argv[1], N, in1_dims);
+	complex float* in2_data = load_cfl(argv[2], N, in2_dims);
 
 
 	for (int i = 0; i < N; i++)

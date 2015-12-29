@@ -1,25 +1,24 @@
-/* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+/* Copyright 2013-2015. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2013, Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2015 Siddharth Iyer <sid8795@gmail.com>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
 #include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <unistd.h>
 
 #include "misc/mmio.h"
 #include "misc/mri.h"
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/opts.h"
 
 #include "num/multind.h"
 #include "num/fft.h"
@@ -33,28 +32,12 @@
 
 
 
-static void usage(const char* name, FILE* fd)
-{
-	fprintf(fd, 	"Usage: %s [-n num. s.values] [-t eigenv. threshold] [-W soft-weight] [-c crop_value] [-k kernel_size] [-r cal_size] [-m maps]"
-			" <kspace> <sensitivites> [<ev-maps>]\n", name);
-}
-
-static void help(void)
-{
-	printf( "\n"
+static const char* usage_str = "<kspace> <sensitivites> [<ev-maps>]";
+static const char* help_str =
 		"Estimate coil sensitivities using ESPIRiT calibration.\n"
-		"Optionally outputs the eigenvalue maps.\n"
-		"\n"
-		"-t threshold\tThis determined the size of the null-space.\n"
-		"-c crop_value\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}.\n"
-		"-k ksize\tkernel size\n"
-		"-r cal_size\tLimits the size of the calibration region.\n"
-		"-m maps\t\tNumber of maps to compute.\n"
-		"-S\t\tcreate maps with smooth transitions (Soft-SENSE).\n"
-                "-W\t\tsoft-weighting of the singular vectors.\n"
-		"-I\t\tintensity correction\n"
-		"-1\t\tperform only first part of the calibration\n");
-}
+		"Optionally outputs the eigenvalue maps.";
+
+
 
 
 
@@ -68,114 +51,50 @@ int main_ecalib(int argc, char* argv[])
 
 	struct ecalib_conf conf = ecalib_defaults;
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, "OWS1CVIt:p:n:c:k:K:r:R:m:b:hg"))) {
+	const struct opt_s opts[] = {
 
-		switch (c) {
+		{ 't', true, opt_float, &conf.threshold, "-t threshold\tThis determined the size of the null-space." },
+		{ 'c', true, opt_float, &conf.crop, "\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}." },
+		{ 'k', true, opt_vec3, &conf.kdims, " ksize\tkernel size" },
+		{ 'K', true, opt_vec3, &conf.kdims, NULL },
+		{ 'r', true, opt_vec3, &calsize, " cal_size\tLimits the size of the calibration region." },
+		{ 'R', true, opt_vec3, &calsize, NULL },
+		{ 'm', true, opt_int, &maps, " maps\t\tNumber of maps to compute." },
+		{ 'S', false, opt_set, &conf.softcrop, "\t\tcreate maps with smooth transitions (Soft-SENSE)." },
+		{ 'W', false, opt_set, &conf.weighting, "t\tsoft-weighting of the singular vectors." },
+		{ 'I', false, opt_set, &conf.intensity, "\t\tintensity correction" },
+		{ '1', false, opt_set, &one, "\t\tperform only first part of the calibration" },
+		{ 'O', false, opt_clear, &conf.orthiter, NULL },
+		{ 'b', true, opt_float, &conf.perturb, NULL },
+		{ 'V', false, opt_set, &print_svals, NULL },
+		{ 'C', false, opt_set, &calcen, NULL },
+		{ 'm', true, opt_int, &maps, NULL },
+		{ 'g', false, opt_set, &conf.usegpu, NULL },
+		{ 'p', true, opt_float, &conf.percentsv, NULL },
+		{ 'n', true, opt_int, &conf.numsv, NULL },
+	};
 
-		case 'I':
-			conf.intensity = true;
-			break;
+	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-		case '1':
-			one = true;
-			break;
+	if (conf.weighting) {
 
-		case 'W':
-			conf.numsv      = -1;
-			conf.threshold  = 0;
-			conf.orthiter   = false;
-			conf.weighting  = true;
-			break;
-
-		case 'S':
-			conf.softcrop = true;
-			break;
-
-		case 'O':
-			conf.orthiter = false;
-			break;
-
-		case 't':
-			conf.threshold = atof(optarg);
-			break;
-
-		case 'c':
-			conf.crop = atof(optarg);
-			break;
-
-		case 'p':
-			conf.percentsv = atof(optarg);
-			conf.threshold = -1.;
-			break;
-
-		case 'b':
-			conf.perturb = atof(optarg);
-			break;
-
-		case 'n':
-			conf.numsv = atoi(optarg);
-			conf.threshold = -1.;
-			break;
-
-		case 'V':
-			print_svals = true;
-			break;
-
-		case 'k':
-
-			conf.kdims[0] = atoi(optarg);
-			conf.kdims[1] = atoi(optarg);
-			conf.kdims[2] = atoi(optarg);
-			break;
-
-		case 'K':
-			sscanf(optarg, "%ld:%ld:%ld", &conf.kdims[0], &conf.kdims[1], &conf.kdims[2]);
-			break;
-
-		case 'r':
-			calsize[0] = atoi(optarg);
-			calsize[1] = atoi(optarg);
-			calsize[2] = atoi(optarg);
-			break;
-
-		case 'R':
-			sscanf(optarg, "%ld:%ld:%ld", &calsize[0], &calsize[1], &calsize[2]);
-			break;
-
-		case 'C':
-			calcen = true;
-			break;
-
-		case 'm':
-			maps = atoi(optarg);
-			break;
-
-		case 'g':
-			conf.usegpu = true;
-			break;
-			
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
+		conf.numsv      = -1;
+		conf.threshold  = 0;
+		conf.orthiter   = false;
 	}
 
-	if ((argc - optind != 3) && (argc - optind != 2)) {
+	if (-1. != conf.percentsv)
+		conf.threshold = -1.;
 
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	if (-1 != conf.numsv)
+		conf.threshold = -1.;
+
+
 
 	int N = DIMS;
 	long ksp_dims[N];
 
-	complex float* in_data = load_cfl(argv[optind + 0], N, ksp_dims);
+	complex float* in_data = load_cfl(argv[1], N, ksp_dims);
 
 	
 	// assert((kdims[0] < calsize_ro) && (kdims[1] < calsize_ro) && (kdims[2] < calsize_ro));
@@ -219,14 +138,9 @@ int main_ecalib(int argc, char* argv[])
 	 float svals[K];
 
 
-	 for (unsigned int i = 0; i < 3; i++) {
-
-		if ((1 == cal_dims[i]) && (1 != ksp_dims[i])) {
-
-			fprintf(stderr, "Calibration region not found!\n");
-			exit(1);
-		}
-	}
+	 for (unsigned int i = 0; i < 3; i++)
+		if ((1 == cal_dims[i]) && (1 != ksp_dims[i]))
+			error("Calibration region not found!\n");
 
 
 	// To reproduce old results turn off rotation of phase.
@@ -255,7 +169,7 @@ int main_ecalib(int argc, char* argv[])
 
 		calone(&conf, cov_dims, imgcov, K, svals, cal_dims, cal_data);
 
-		complex float* out = create_cfl(argv[optind + 1], 4, cov_dims);
+		complex float* out = create_cfl(argv[2], 4, cov_dims);
 		md_copy(4, cov_dims, out, imgcov, CFL_SIZE);
 		unmap_cfl(4, cov_dims, out);
 
@@ -291,10 +205,10 @@ int main_ecalib(int argc, char* argv[])
 
 		const char* emaps_file = NULL;
 
-		if (3 == argc - optind)
-			emaps_file = argv[optind + 2];
+		if (4 == argc)
+			emaps_file = argv[3];
 
-		complex float* out_data = create_cfl(argv[optind + 1], N, out_dims);
+		complex float* out_data = create_cfl(argv[2], N, out_dims);
 		complex float* emaps = (emaps_file ? create_cfl : anon_cfl)(emaps_file, N, map_dims);
 
 		calib(&conf, out_dims, out_data, emaps, K, svals, cal_dims, cal_data); 

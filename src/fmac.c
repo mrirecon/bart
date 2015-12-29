@@ -1,84 +1,44 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
-#include <unistd.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
 
 #include "misc/mmio.h"
+#include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
-static void usage(const char* name, FILE* fp)
-{
-	fprintf(fp, "Usage: %s [-A] [-C] [-s bitmask] <input1> <input2> <output>\n", name);
-}
-
-static void help(void)
-{
-	printf( "\n"
-		"Multiply and accumulate.\n"
-		"\n"
-		"-A\tadd to existing output (instead of overwriting)\n"
-		"-C\tconjugate input2\n"
-		"-s\tsquash selected dimensions\n");
-}
+static const char* usage_str = "<input1> <input2> <output>";
+static const char* help_str = "Multiply and accumulate.";
 
 
 int main_fmac(int argc, char* argv[])
 {
 	bool clear = true;
 	bool conj = false;
-	unsigned int squash = 0;
+	long squash = 0;
 
-	int c;
+	const struct opt_s opts[] = {
 
-	while (-1 != (c = getopt(argc, argv, "hACs:"))) {
+		{ 'A', false, opt_clear, &clear, "\tadd to existing output (instead of overwriting)" },
+		{ 'C', false, opt_set, &conj, "\tconjugate input2" },
+		{ 's', true, opt_long, &squash, " b\tsquash dimensions selected by bitmask b" },
+	};
 
-		switch (c) {
-
-		case 'A':
-			clear = false;
-			break;
-
-		case 'C':
-			conj = true;
-			break;
-	
-		case 's':
-			squash = atoi(optarg);
-			break;
-
-		case 'h':
-			usage(argv[0], stdout);
-			help();
-			exit(0);
-			
-		default:
-			usage(argv[0], stderr);
-			exit(1);
-		}
-	}
-
-	if (3 != argc - optind) {
-
-		usage(argv[0], stderr);
-		exit(1);
-	}
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 
 	int N = DIMS;
@@ -86,8 +46,8 @@ int main_fmac(int argc, char* argv[])
 	long dims1[N];
 	long dims2[N];
 
-	complex float* data1 = load_cfl(argv[optind + 0], N, dims1);
-	complex float* data2 = load_cfl(argv[optind + 1], N, dims2);
+	complex float* data1 = load_cfl(argv[1], N, dims1);
+	complex float* data2 = load_cfl(argv[2], N, dims2);
 
 	long dims[N];
 
@@ -100,7 +60,7 @@ int main_fmac(int argc, char* argv[])
 
 	long dimso[N];
 	md_select_dims(N, ~squash, dimso, dims);
-	complex float* out = create_cfl(argv[optind + 2], N, dimso);
+	complex float* out = create_cfl(argv[3], N, dimso);
 
 	if (clear) {
 

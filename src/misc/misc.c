@@ -1,20 +1,22 @@
-/* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+/* Copyright 2013-2015. The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
- * 2011-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * Authors:
+ * 2011-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdarg.h>
-#include <getopt.h>
+#include <string.h>
 
 #include "misc/debug.h"
+#include "misc/opts.h"
 #include "misc.h"
 
 
@@ -139,6 +141,7 @@ void quicksort(unsigned int N, unsigned int ord[N], const void* data, quicksort_
 
 
 
+
 void mini_cmdline(int argc, char* argv[], int expected_args, const char* usage_str, const char* help_str)
 {
 	mini_cmdline_bool(argc, argv, '\0', expected_args, usage_str, help_str);
@@ -148,40 +151,27 @@ void mini_cmdline(int argc, char* argv[], int expected_args, const char* usage_s
 bool mini_cmdline_bool(int argc, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str)
 {
 	bool flag = false;
-	char opts[3] = { 'h', flag_char, '\0' };
+	struct opt_s opts[1] = { { flag_char, false, opt_set, &flag, NULL } };
 
-	int c;
-	while (-1 != (c = getopt(argc, argv, opts))) {
+	char* help = strdup(help_str);
 
-		if (c == flag_char) {
+	int hlen = strlen(help);
 
-			flag = true;
+	if ((hlen > 1) && ('\n' == help[hlen - 1]))
+		help[hlen - 1] = '\0';
 
-		}  else
-		switch (c) {
+	int min_args = expected_args;
+	int max_args = expected_args;
 
-		case 'h':
-			printf("Usage: %s %s\n\n%s", argv[0], usage_str, help_str);
-			exit(0);
+	if (expected_args < 0) {
 
-		default:
-			fprintf(stderr, "Usage: %s %s\n", argv[0], usage_str);
-			exit(1);
-		}
+		min_args = -expected_args;
+		max_args = 1000;
 	}
 
-	if (!(     ((expected_args >= 0) && (argc - optind == expected_args))
-		|| ((expected_args <  0) && (argc - optind >= -expected_args)))) {
+	cmdline(&argc, argv, min_args, max_args, usage_str, help, 1, opts);
 
-		fprintf(stderr, "Usage %s: %s\n", argv[0], usage_str);
-		exit(1);
-	}
-
-	int i;
-	for (i = optind; i < argc; i++)
-		argv[i - optind + 1] = argv[i];
-
-	argv[i] = NULL;
+	free(help);
 
 	return flag;
 }
