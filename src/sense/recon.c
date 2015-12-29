@@ -40,10 +40,7 @@
 
 #include "iter/iter.h"
 #include "iter/lsqr.h"
-
-#ifdef BERKELEY_SVN
 #include "iter/lad.h"
-#endif
 
 #include "misc/debug.h"
 #include "misc/misc.h"
@@ -191,7 +188,6 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 		}
 
 	} else {
-#ifdef BERKELEY_SVN
 		struct linop_s* sampling = sampling_create(dims, pat_dims, pattern);
 		struct linop_s* tmp_op = linop_chain(sense_op, sampling);
 
@@ -208,9 +204,6 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 
 		lad2(DIMS, &lad_conf, italgo, iconf, sense_op, num_funs, thresh_op, thresh_funs,
 				img_dims, image, ksp_dims, kspace);
-#else
-		assert(0);
-#endif
 	}
 
 	// clean up

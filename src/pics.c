@@ -77,11 +77,9 @@ static void help(void)
 		"-s step\t\titeration stepsize\n"
 		"-i maxiter\tnumber of iterations\n"
 		"-t trajectory\tk-space trajectory\n"
-#ifdef BERKELEY_SVN
 		"-n \t\tdisable random wavelet cycle spinning\n"
 		"-g \t\tuse GPU\n"
 		"-p pat\t\tpattern or weights\n"
-#endif
 	);
 }
 
