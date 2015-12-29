@@ -75,6 +75,8 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 	int argc = *argcp;
 	char optstr[2 * n + 2];
 
+	save_command_line(argc, argv);
+
 	int l = 0;
 	optstr[l++] = 'h';
 

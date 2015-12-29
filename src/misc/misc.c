@@ -175,8 +175,6 @@ void mini_cmdline(int argc, char* argv[], int expected_args, const char* usage_s
 
 bool mini_cmdline_bool(int argc, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str)
 {
-	save_command_line(argc, argv);
-
 	bool flag = false;
 	struct opt_s opts[1] = { { flag_char, false, opt_set, &flag, NULL } };
 
