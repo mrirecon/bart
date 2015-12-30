@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "misc/debug.h"
 #include "misc/opts.h"
@@ -140,14 +141,71 @@ void quicksort(unsigned int N, unsigned int ord[N], const void* data, quicksort_
 }
 
 
+static const char* quote(const char* str)
+{
+	int i = 0;
+	int j = 0;
+	int c;
+	bool flag = false;
+
+	while ('\0' != (c = str[i++])) {
+
+		if (isspace(c))
+			flag = true;
+
+		switch (c) {
+		case '\\':
+		case '\'':
+		case '"':
+		case '$':
+			j++;
+		default:
+			break;
+		}
+	}
+
+	if ((!flag) && (0 == j))
+		return strdup(str);
+
+	int len = strlen(str);
+	char* qstr = xmalloc(len + j + 3);
+
+	i = 0;
+	j = 0;
+
+	qstr[j++] = '\"';
+
+	while ('\0' != (c = str[i++])) {
+
+		switch (c) {
+		case '\\':
+		case '\'':
+		case '"':
+		case '$':
+			qstr[j++] = '\'';
+		default:
+			qstr[j++] = c;
+		}
+	}
+
+	qstr[j++] = '\"';
+	qstr[j++] = '\0';
+
+	return qstr;
+}
+
 const char* command_line = NULL;
 
 void save_command_line(int argc, char* argv[])
 {
 	size_t len = 0;
+	const char* qargv[argc];
 
-	for (int i = 0; i < argc; i++)
-		len += strlen(argv[i]) + 1;
+	for (int i = 0; i < argc; i++) {
+
+		qargv[i] = quote(argv[i]);
+		len += strlen(qargv[i]) + 1;
+	}
 
 	char* buf = xmalloc(len);
 
@@ -155,8 +213,9 @@ void save_command_line(int argc, char* argv[])
 
 	for (int i = 0; i < argc; i++) {
 
-		strcpy(buf + pos, argv[i]);
-		pos += strlen(argv[i]);
+		strcpy(buf + pos, qargv[i]);
+		pos += strlen(qargv[i]);
+		free((void*)qargv[i]);
 		buf[pos++] = ' ';
 	}
 
