@@ -19,7 +19,7 @@ export CALIB=400
 export ITER=30
 export REG=0.05
 SCALE=0.6
-LOGFILE=/dev/null
+LOGFILE=/dev/stdout
 MAXPROC=4
 MAXTHREADS=4
 
@@ -101,7 +101,7 @@ if [ ! -e $input ] ; then
 	exit 1
 fi
 
-if [ ! -e $TOOLBOX_PATH/fft ] ; then
+if [ ! -e $TOOLBOX_PATH/bart ] ; then
         echo "\$TOOLBOX_PATH is not set correctly!" >&2
 	exit 1
 fi
@@ -117,7 +117,7 @@ cd $WORKDIR
 {
 
 # read TWIX file
-twixread -A $input grasp
+bart twixread -A $input grasp
 
 export READ=$(tail -n1 grasp.hdr | cut -f1 -d" ")
 export COILS=$(tail -n1 grasp.hdr | cut -f4 -d" ")
@@ -133,22 +133,22 @@ export OMP_NUM_THREADS=$((MAXPROC * $MAXTHREADS))
 #rm grasp.* grasp2.*
 
 # inverse FFT along 3rd dimension
-fft -i -u $(bitmask 2) grasp grasp_hybrid
+bart fft -i -u $(bart bitmask 2) grasp grasp_hybrid
 rm grasp.cfl grasp.hdr
 
 SLICES=$(tail -n1 grasp_hybrid.hdr | cut -f3 -d" ")
 
 
 # create trajectory with 400 spokes and 2x oversampling
-traj -G -x$READ -y$CALIB r
-scale $SCALE r rcalib
+bart traj -G -x$READ -y$CALIB r
+bart scale $SCALE r rcalib
 
 # create trajectory with 2064 spokes and 2x oversampling
-traj -G -x$READ -y$(($SPOKES * $PHASES)) r
-scale $SCALE r r2
+bart traj -G -x$READ -y$(($SPOKES * $PHASES)) r
+bart scale $SCALE r r2
 
 # split off time dimension into index 10
-reshape $(bitmask 2 10) $SPOKES $PHASES r2 rfull
+bart reshape $(bart bitmask 2 10) $SPOKES $PHASES r2 rfull
 
 # number of threads per slice
 export OMP_NUM_THREADS=$MAXTHREADS
@@ -156,37 +156,37 @@ export OMP_NUM_THREADS=$MAXTHREADS
 calib_slice()
 {
 	# extract slice
-	slice 2 $1 grasp_hybrid grasp1-$1
+	bart slice 2 $1 grasp_hybrid grasp1-$1
 
 	# extract first $CALIB spokes
-	extract 1 $(($SKIP + 0)) $(($SKIP + $CALIB - 1)) grasp1-$1 grasp2-$1
+	bart extract 1 $(($SKIP + 0)) $(($SKIP + $CALIB - 1)) grasp1-$1 grasp2-$1
 
 	# reshape dimensions
-	reshape $(bitmask 0 1 2 3) 1 $READ $CALIB $COILS grasp2-$1 grasp3-$1
+	bart reshape $(bart bitmask 0 1 2 3) 1 $READ $CALIB $COILS grasp2-$1 grasp3-$1
 
 	# apply inverse nufft to first $CALIB spokes
-	nufft -i -t rcalib grasp3-$1 img-$1.coo
+	bart nufft -i -t rcalib grasp3-$1 img-$1.coo
 }
 
 recon_slice()
 {
 	# extract sensitivities for slice
-	slice 2 $1 sens sens-$1
+	bart slice 2 $1 sens sens-$1
 
 	# extract spokes and split-off time dim
-	extract 1 $(($SKIP + 0)) $(($SKIP + $SPOKES * $PHASES - 1)) grasp1-$1 grasp2-$1
-	reshape $(bitmask 1 2) $SPOKES $PHASES grasp2-$1 grasp1-$1
+	bart extract 1 $(($SKIP + 0)) $(($SKIP + $SPOKES * $PHASES - 1)) grasp1-$1 grasp2-$1
+	bart reshape $(bart bitmask 1 2) $SPOKES $PHASES grasp2-$1 grasp1-$1
 
 	# move time dimensions to dim 10 and reshape
-	transpose 2 10 grasp1-$1 grasp2-$1
-	reshape $(bitmask 0 1 2) 1 $READ $SPOKES grasp2-$1 grasp1-$1
+	bart transpose 2 10 grasp1-$1 grasp2-$1
+	bart reshape $(bart bitmask 0 1 2) 1 $READ $SPOKES grasp2-$1 grasp1-$1
 	rm grasp2-$1.cfl grasp2-$1.hdr
 
 	# reconstruction with tv penality along dimension 10
 	# old (v0.2.08):
 	# pics -S -d5 -lv -u10. -r$REG -R$(bitmask 10) -i$ITER -t rfull grasp1-$1 sens-$1 i-$1.coo
 	# new (v0.2.09):
-	pics -S -d5 -u10. -RT:$(bitmask 10):0:$REG -i$ITER -t rfull grasp1-$1 sens-$1 i-$1.coo
+	bart pics -S -d5 -u10. -RT:$(bart bitmask 10):0:$REG -i$ITER -t rfull grasp1-$1 sens-$1 i-$1.coo
 
 	# clean up temp files
 	rm *-$1.cfl *-$1.hdr
@@ -199,35 +199,32 @@ export -f recon_slice
 seq -w 0 $(($SLICES - 1)) | xargs -I {} -P $MAXPROC bash -c "calib_slice {}"
 
 # transform back to k-space and compute sensitivities
-join 2 img-*.coo img
-fft -u $(bitmask 0 1 2) img ksp
+bart join 2 img-*.coo img
+bart fft -u $(bart bitmask 0 1 2) img ksp
 
 #ecalib -S -c0.8 -m1 -r20 ksp sens
 
 # transpose because we already support off-center calibration region
 # in dim 0 but here we might have it in 2
-transpose 0 2 ksp ksp2
-ecalib -S -c0.8 -m1 -r20 ksp2 sens2
-transpose 0 2 sens2 sens
+bart transpose 0 2 ksp ksp2
+bart ecalib -S -c0.8 -m1 -r20 ksp2 sens2
+bart transpose 0 2 sens2 sens
 
 # loop over slices
 seq -w 0 $(($SLICES - 1)) | xargs -I {} -P $MAXPROC bash -c "recon_slice {}"
 #echo 20 | xargs -i --max-procs=$MAXPROC bash -c "recon_slice {}"
 
 # join slices back together
-join 2 i-*.coo $output
+bart join 2 i-*.coo $output
 
 # generate dicoms
 #for s in $(seq -w 0 $(($SLICES - 1))) ; do
 #	for p in $(seq -w 0 $(($PHASES - 1))) ; do
-#
-#		slice 10 $p i-$s.coo i-$p-$s.coo
-#		toimg i-$p-$s.coo $output-$p$-$s.dcm
+#		bart slice 10 $p i-$s.coo i-$p-$s.coo
+#		bart toimg i-$p-$s.coo $output.series$p.slice$s.dcm
 #	done
 #done
 
 } > $LOGFILE
 
 exit 0
-
-
