@@ -1,4 +1,5 @@
 /* Copyright 2014-2015 The Regents of the University of California.
+ * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -11,13 +12,14 @@
 #include <assert.h>
 #include <string.h>
 
-
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/sf.h"
 
 #include "misc/misc.h"
 
 #include "grid.h"
+
 
 #define KB_BETA		13.9086
 // 13.8551
@@ -25,18 +27,15 @@
 
 #define KB_WIDTH	3
 
-#ifdef USE_GSL
-#include <gsl/gsl_specfunc.h>
-#endif
 
 
-#ifdef USE_GSL
+#ifndef KB128
 static double kb(double beta, double x)
 {
 	if (fabs(x) >= 0.5)
 		return 0.;
 
-        return gsl_sf_bessel_I0(beta * sqrt(1. - pow(2. * x, 2.))) / gsl_sf_bessel_I0(beta);
+        return bessel_i0(beta * sqrt(1. - pow(2. * x, 2.))) / bessel_i0(beta);
 }
 
 static void kb_precompute(double beta, int n, float table[n + 1])
@@ -50,8 +49,8 @@ static void kb_precompute(double beta, int n, float table[n + 1])
 
 static double I0_beta(double beta)
 {
-#ifdef USE_GSL
-	return gsl_sf_bessel_I0(beta);
+#ifndef KB128
+	return bessel_i0(beta);
 #else
 	assert(KB_BETA == beta);
 	return 118509.158946;
@@ -141,7 +140,7 @@ static float intlookup(int n, const float table[n + 1], float x)
 void gridH(float os, float width, double beta, const complex float* traj, const long ksp_dims[4], complex float* dst, const long grid_dims[4], const complex float* grid)
 {
 	long C = ksp_dims[3];
-#ifdef USE_GSL
+#ifndef KB128
 	// precompute kaiser bessel table
 	int kb_size = 500;
 	float kb_table[kb_size + 1];
@@ -182,7 +181,7 @@ void grid(float os, float width, double beta, const complex float* traj, const l
 {
 	long C = ksp_dims[3];
 
-#ifdef USE_GSL
+#ifndef	KB128
 	// precompute kaiser bessel table
 	int kb_size = 500;
 	float kb_table[kb_size + 1];
