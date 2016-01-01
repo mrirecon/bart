@@ -70,7 +70,7 @@ The software tools in recon should run on any recent Linux distribution.
 
 To install the required libraries on Debian and Ubuntu run:
 
-    $ sudo apt-get install gcc make libfftw3-dev libgsl0-dev liblapack-dev libpng-dev
+    $ sudo apt-get install gcc make libfftw3-dev liblapack-dev libpng-dev
 
     (optional)
     $ sudo apt-get install octave
@@ -87,7 +87,6 @@ of gcc (4.7 seems to work) from MacPorts (http://www.macports.org/).
 
 
     $ sudo port install fftw-3-single
-    $ sudo port install gsl
     $ sudo port install gcc47
     $ sudo port install libpng
 
@@ -110,7 +109,7 @@ Install Cygwin and select the following packages:
     Devel: gcc, make
     Math: fftw3, fftw3-doc, libfftw3-devel, libfftw3_3
     Math: liblapack-devel, liblapack-doc, liblapack0
-    Libs: gsl, gsl-apps, gsl-devel, gsl-doc, libpng, libpng-devel
+    Libs: libpng, libpng-devel
 
 
 Then use the cygwin shell to compile BART as described below.
