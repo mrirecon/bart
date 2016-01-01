@@ -98,7 +98,7 @@ ismrm.top ?= /usr/local/ismrmrd/
 # Main build targets
 
 TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version
-TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize cdf97 relnorm pattern nrmse
+TFLP=scale conj fmac saxpy sdot spow cpyphs creal normalize cdf97 pattern nrmse
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter
 TRECO=pics pocsense rsense bpsense itsense nlinv nufft rof sake wave lrmatrix estdims
 TCALIB=ecalib ecaltwo caldir walsh cc calmat svd estvar
@@ -109,7 +109,7 @@ BTARGETS = $(TBASE) $(TFLP) $(TNUM) $(TIO)
 XTARGETS = $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
 YTARGETS = $(BTARGETS) $(XTARGETS)
 ZTARGETS = bbox bart $(XTARGETS)
-TARGETS = sense bart $(BTARGETS) $(XTARGETS)
+TARGETS = bart $(BTARGETS) $(XTARGETS)
 
 
 
@@ -338,9 +338,6 @@ mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
 	$(CC) $(CFLAGS) $(MATLAB_H) -omat2cfl  $+ $(MATLAB_L) $(CUDA_L)
 
 
-
-sense: pics
-	rm -f $@ && $(MYLINK) pics $@
 
 
 $(BTARGETS): bbox
