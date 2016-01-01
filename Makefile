@@ -15,7 +15,6 @@ AR=./ar_lock.sh
 
 CUDA?=0
 ACML?=0
-GSL?=1
 OMP?=1
 SLINK?=0
 DEBUG?=0
@@ -75,13 +74,6 @@ endif
 
 cuda.top ?= /usr/
 
-# GSL
-
-gsl.top ?= /usr/
-
-ifeq ($(BUILDTYPE), MacOSX)
-gsl.top = /opt/local
-endif
 
 # BLAS/LAPACK
 
@@ -226,17 +218,6 @@ endif
 
 
 
-# GSL
-
-ifeq ($(BUILDTYPE), MacOSX)
-GSL_H := -I$(gsl.top)/include
-GSL_L := -L$(gsl.top)/lib -lgsl -lgslcblas
-else
-GSL_H := 
-GSL_L := -lgsl -lgslcblas
-endif
-
-
 # BLAS/LAPACK
 
 BLAS_H :=
@@ -256,9 +237,6 @@ endif
 
 
 
-ifeq ($(GSL),1)
-CPPFLAGS += -DUSE_GSL $(GSL_H) $(BLAS_H)
-endif
 
 CPPFLAGS += $(FFTW_H)
 
@@ -393,7 +371,7 @@ endif
 
 .SECONDEXPANSION:
 $(ZTARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(GSL_L) $(PNG_L) -lm
+	$(CC) $(LDFLAGS) $(CFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) -lm
 #	rm $(srcdir)/$@.o
 
 
