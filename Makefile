@@ -59,11 +59,11 @@ ALLDEPS = $(shell find $(srcdir) -name ".*.d")
 # Compilation flags
 
 OPT = -O3 -ffast-math
-CPPFLAGS = $(DEPFLAG) -Wall -Wextra -I$(srcdir)/
-CFLAGS = $(OPT) -std=c99 -Wmissing-prototypes -I$(srcdir)/
-CXXFLAGS = $(OPT) -I$(srcdir)/
-CC = gcc
-CXX = g++
+CPPFLAGS ?= -Wall -Wextra
+CFLAGS ?= $(OPT) -Wmissing-prototypes
+CXXFLAGS ?= $(OPT)
+CC ?= gcc
+CXX ?= g++
 
 
 ifeq ($(BUILDTYPE), MacOSX)
@@ -169,6 +169,14 @@ default $(MAKECMDGOALS):
 	echo Parallel build.
 	make PARALLEL=2 -j $(MAKECMDGOALS)
 else
+
+
+
+CPPFLAGS += $(DEPFLAG) -I$(srcdir)/
+CFLAGS += -std=c99 -I$(srcdir)/
+CXXFLAGS += -I$(srcdir)/
+
+
 
 
 default: bart doc/commands.txt .gitignore
@@ -369,12 +377,18 @@ $(BTARGETS): bbox
 %.o: %.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
+ifeq ($(PARALLEL),2)
+(%): %
+	$(AR) r $@ $%
+else
 (%): %
 	$(AR) r $@ $%
 	rm $%
+endif
 
 # we add the rm because intermediate files are not deleted
 # automatically for some reason
+# (but it produces errors for parallel builds for make all)
 
 
 .SECONDEXPANSION:
