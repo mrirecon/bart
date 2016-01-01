@@ -1,18 +1,16 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettinge.de>
  */
- 
+
+#define _GNU_SOURCE
 #include <complex.h>
 #include <math.h>
 #include <assert.h>
 #include <stdbool.h>
-
-#ifdef USE_GSL
-#include <gsl/gsl_specfunc.h>
-#endif
 
 #include "simu/shepplogan.h"
 
@@ -69,12 +67,7 @@ static double sinc(double x)
 
 static double jinc(double x)
 {
-#ifdef USE_GSL
-	return (0. == x) ? 1. : (2. * gsl_sf_bessel_J1(x) / x);
-#else
-	UNUSED(x);
-	assert(0);
-#endif
+	return (0. == x) ? 1. : (2. * j1(x) / x);
 }
 
 

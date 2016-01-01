@@ -15,14 +15,10 @@
 #include <math.h>
 #include <assert.h>
 
-#ifdef USE_GSL
-#include <gsl/gsl_specfunc.h>
-#endif
-
-
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
+#include "num/sf.h"
 
 #include "misc/mri.h"
 #include "misc/misc.h"
@@ -32,14 +28,6 @@
 
 
 
-static double bessel_I0(double x)
-{
-#ifdef USE_GSL
-	return gsl_sf_bessel_I0(x);
-#else
-	assert(0);
-#endif
-}
 
 static double kaiser(double beta, int M, int n)
 {
@@ -49,8 +37,8 @@ static double kaiser(double beta, int M, int n)
 	if (fabs((double)n / (double)M - 0.5) >= 0.5)
 		return 0.;
 
-	return bessel_I0(beta * sqrt(1. - pow(2. * (double)n / (double)M - 1., 2.)))
-		/ bessel_I0(beta);
+	return bessel_i0(beta * sqrt(1. - pow(2. * (double)n / (double)M - 1., 2.)))
+		/ bessel_i0(beta);
 }	
 
 void direct_calib(const long dims[5], complex float* sens, const long caldims[5], const complex float* data)
