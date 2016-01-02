@@ -46,9 +46,8 @@ Updates and further information can be found here:
 2.1. Prerequisites
 ------------------
 
-GCC compiler, the FFTW, GSL (or ACML) libraries and optionally 
-a CUDA Implementation (see recon/Makefile to turn these
-options on or off)
+GCC compiler, the FFTW library, and optionally CUDA.
+(see recon/Makefile to turn options on or off)
 
 The software can be used in combination with Matlab or octave.
 
@@ -309,7 +308,7 @@ For example, an inverse Fourier transform of first three dimensions can
 be performed with the following command:
 
 
-    $ fft -i 7 kspace volume
+    $ bart fft -i 7 kspace volume
 
 
 More information about each command can be found in 'doc/commands.txt'.
