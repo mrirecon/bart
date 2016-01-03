@@ -393,6 +393,7 @@ install: bart $(root)/doc/commands.txt
 	install bart $(DESTDIR)/usr/bin/
 	install -d $(DESTDIR)/usr/share/doc/bart/
 	install $(root)/doc/*.txt $(root)/README $(DESTDIR)/usr/share/doc/bart/
+	install -d $(DESTDIR)/usr/lib/bart/commands/
 
 
 # generate release tar balls (identical to github)
