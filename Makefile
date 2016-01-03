@@ -311,7 +311,7 @@ doc/commands.txt: bart
 		printf "\n\n--%s--\n\n" $$cmd ;	\
 		 ./bart $$cmd -h ;		\
 	done >> doc/commands.new
-	./update-if-changed.sh doc/commands.new doc/commands.txt
+	$(root)/rules/update-if-changed.sh doc/commands.new doc/commands.txt
 
 
 all: .gitignore $(TARGETS)

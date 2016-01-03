@@ -13,7 +13,7 @@ miscobjs := $(miscsrcs:.c=.o)
 lib/libmisc.a: libmisc.a($(miscobjs))
 
 
-DOTHIS := $(shell $(root)/update-version.sh)
+DOTHIS := $(shell $(root)/rules/update-version.sh)
 
 
 $(srcdir)/misc/version.o: $(srcdir)/misc/version.inc
