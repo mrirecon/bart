@@ -1,4 +1,5 @@
 /* Copyright 2015. The Regents of the University of California.
+ * Copyright 2015. Tao Zhang and Joseph Cheng.
  * All rights reserved. Use of this source code is governed by
  * a educational/research license which can be found in the
  * LICENSE file.

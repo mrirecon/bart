@@ -1,4 +1,5 @@
 /* Copyright 2013-2015. The Regents of the University of California.
+ * Copyright 2014. Joseph Y Cheng.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
