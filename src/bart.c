@@ -65,7 +65,7 @@ int main_bart(int argc, char* argv[])
 		if (NULL != tpath) {
 
 			size_t len = strlen(tpath) + strlen(argv[1]) + 2;
-			char* cmd = malloc(len);
+			char* cmd = xmalloc(len);
 			size_t r = snprintf(cmd, len, "%s/%s", tpath, argv[1]);
 			assert(r < len);
 
