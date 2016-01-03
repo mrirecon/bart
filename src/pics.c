@@ -301,7 +301,7 @@ int main_pics(int argc, char* argv[])
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
 		OPT_SELECT('m', enum algo_t, &ropts.algo, ADMM, "(select ADMM)"),
 		OPT_FLOAT('w', &scaling, "val", "scaling"),
-		OPT_SET('S', &scale_im, "correct scaling"),
+		OPT_SET('S', &scale_im, "Re-scale the image after reconstruction"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

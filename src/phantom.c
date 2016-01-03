@@ -47,12 +47,12 @@ int main_phantom(int argc, char* argv[])
 	const struct opt_s opts[] = {
 
 		OPT_INT('s', &sens, "nc", "nc sensitivities"),
-		OPT_INT('S', &osens, "", "(output sensitivities)"),
+		OPT_INT('S', &osens, "", "Output nc sensitivities"),
 		OPT_SET('k', &kspace, "k-space"),
 		OPT_STRING('t', &traj, "file", "trajectory"),
 		OPT_SET('c', &circ, "()"),
 		OPT_SET('m', &tecirc, "()"),
-		OPT_INT('x', &xdim, "", "()"),
+		OPT_INT('x', &xdim, "n", "dimensions in y and z"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
