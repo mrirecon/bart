@@ -58,7 +58,7 @@ int main_nufft(int argc, char* argv[])
 
 		{ 'a', false, opt_set, &adjoint, "\tadjoint" },
 		{ 'i', false, opt_set, &inverse, "\tinverse" },
-		{ 'd', true, opt_vec3, &coilim_dims, " x:y:z \tdimensions" },
+		{ 'D', true, opt_vec3, &coilim_dims, " x:y:z \tdimensions" },
 		{ 't', false, opt_set, &conf.toeplitz, "\ttoeplitz" },
 		{ 'l', true, opt_float, &lambda, " lambda\tl2 regularization" },
 		{ 'm', true, opt_int, &cgconf.maxiter, NULL },
@@ -66,6 +66,11 @@ int main_nufft(int argc, char* argv[])
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
+	for (int i = 0; i < ARRAY_SIZE(opts); i++) {
+		if (opts[i].c == 'D') {
+			sizeinit = true;
+		}
+	}
 
 	// Read trajectory
 	long traj_dims[DIMS];
