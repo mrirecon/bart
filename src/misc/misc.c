@@ -207,7 +207,7 @@ void save_command_line(int argc, char* argv[])
 		len += strlen(qargv[i]) + 1;
 	}
 
-	char* buf = xmalloc(len);
+	char* buf = xmalloc(len + 1);
 
 	size_t pos = 0;
 
