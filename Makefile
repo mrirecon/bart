@@ -161,8 +161,8 @@ endif
 
 
 ifeq ($(MAKESTAGE),1)
-.PHONY: default $(MAKECMDGOALS)
-default $(MAKECMDGOALS):
+.PHONY: default all
+default all clean allclean distclean doc/commands.txt $(TARGETS) ismrmrd:
 	make MAKESTAGE=2 $(MAKECMDGOALS)
 else
 
@@ -355,7 +355,7 @@ $(BTARGETS): bbox
 %.o: %.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-ifeq ($(PARALLEL),2)
+ifeq ($(PARALLEL),1)
 (%): %
 	$(AR) r $@ $%
 else
@@ -364,9 +364,11 @@ else
 	rm $%
 endif
 
+
 # we add the rm because intermediate files are not deleted
 # automatically for some reason
 # (but it produces errors for parallel builds for make all)
+
 
 
 .SECONDEXPANSION:
@@ -388,6 +390,9 @@ allclean: clean
 distclean: allclean
 
 
+endif	# MAKESTAGE
+
+
 install: bart $(root)/doc/commands.txt
 	install -d $(DESTDIR)/usr/bin/
 	install bart $(DESTDIR)/usr/bin/
@@ -400,6 +405,4 @@ install: bart $(root)/doc/commands.txt
 %.tar.gz:
 	git archive --prefix=bart-$(patsubst bart-%.tar.gz,%,$@)/ -o $@ v$(patsubst bart-%.tar.gz,%,$@)
 
-
-endif	# MAKESTAGE
 
