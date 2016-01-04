@@ -3,6 +3,8 @@
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 
+# we have a two stage Makefile
+MAKESTAGE ?= 1
 
 # silent make
 #MAKEFLAGS += --silent
@@ -153,15 +155,16 @@ CFLAGS += -g
 endif
 
 
-
-
 ifeq ($(PARALLEL),1)
+MAKEFLAGS += -j
+endif
+
+
+ifeq ($(MAKESTAGE),1)
 .PHONY: default $(MAKECMDGOALS)
 default $(MAKECMDGOALS):
-	echo Parallel build.
-	make PARALLEL=2 -j $(MAKECMDGOALS)
+	make MAKESTAGE=2 $(MAKECMDGOALS)
 else
-
 
 
 CPPFLAGS += $(DEPFLAG) -I$(srcdir)/
@@ -397,6 +400,5 @@ install: bart $(root)/doc/commands.txt
 	git archive --prefix=bart-$(patsubst bart-%.tar.gz,%,$@)/ -o $@ v$(patsubst bart-%.tar.gz,%,$@)
 
 
-endif	#PARALLEL
-
+endif	# MAKESTAGE
 
