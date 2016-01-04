@@ -53,15 +53,16 @@ int main_ecalib(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 't', true, opt_float, &conf.threshold, "-t threshold\tThis determined the size of the null-space." },
-		{ 'c', true, opt_float, &conf.crop, "\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}." },
-		{ 'k', true, opt_vec3, &conf.kdims, " ksize\tkernel size" },
+		{ 't', true, opt_float, &conf.threshold, " threshold\tThis determined the size of the null-space." },
+		{ 'c', true, opt_float, &conf.crop, " crop_value\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}." },
+//		{ 'k', true, opt_vec3, &conf.kdims, " ksize\tkernel size" },
+		OPT_VEC3('k', &conf.kdims, "ksize", "kernel size"),
 		{ 'K', true, opt_vec3, &conf.kdims, NULL },
 		{ 'r', true, opt_vec3, &calsize, " cal_size\tLimits the size of the calibration region." },
 		{ 'R', true, opt_vec3, &calsize, NULL },
 		{ 'm', true, opt_int, &maps, " maps\t\tNumber of maps to compute." },
 		{ 'S', false, opt_set, &conf.softcrop, "\t\tcreate maps with smooth transitions (Soft-SENSE)." },
-		{ 'W', false, opt_set, &conf.weighting, "t\tsoft-weighting of the singular vectors." },
+		{ 'W', false, opt_set, &conf.weighting, "\t\tsoft-weighting of the singular vectors." },
 		{ 'I', false, opt_set, &conf.intensity, "\t\tintensity correction" },
 		{ '1', false, opt_set, &one, "\t\tperform only first part of the calibration" },
 		{ 'O', false, opt_clear, &conf.orthiter, NULL },

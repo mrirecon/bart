@@ -36,7 +36,7 @@ int main_cdf97(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'i', false, opt_set, &inv, "inverse" },
+		{ 'i', false, opt_set, &inv, "\tinverse" },
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

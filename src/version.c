@@ -20,8 +20,7 @@ static const char* help_str =
 	"specifies the last release (TAG), and (if git is used)\n"
 	"the number of commits (COMMITS) since this release and\n"
 	"the abbreviated hash of the last commit (SHA). If there\n"
-	"are local changes '-dirty' is added at the end.\n\n"
-	"-h\thelp\n";
+	"are local changes '-dirty' is added at the end.\n";
 			
 
 int main_version(int argc, char* argv[])

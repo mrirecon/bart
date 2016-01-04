@@ -19,9 +19,9 @@
 
 #include "opts.h"
 
-enum OPT_ARG_TYPE { OPT_SPECIAL, OPT_SET, OPT_CLEAR, OPT_INT, OPT_LONG, OPT_FLOAT, OPT_STRING };
+enum OPT_ARG_TYPE { OPT_SPECIAL, OPT_SET, OPT_CLEAR, OPT_INT, OPT_UINT, OPT_LONG, OPT_FLOAT, OPT_STRING };
 
-static const char* opt_arg_types[] = { " ...", "", "", " d", " d", " f", " <string>" };
+static const char* opt_arg_types[] = { " ...", "", "", " d", " d", " d", " f", " <string>" };
 
 static enum OPT_ARG_TYPE opt_arg_type(opt_conv_f fun)
 {
@@ -33,6 +33,9 @@ static enum OPT_ARG_TYPE opt_arg_type(opt_conv_f fun)
 
 	if (opt_int == fun)
 		return OPT_INT;
+
+	if (opt_uint == fun)
+		return OPT_UINT;
 
 	if (opt_long == fun)
 		return OPT_LONG;
@@ -46,29 +49,85 @@ static enum OPT_ARG_TYPE opt_arg_type(opt_conv_f fun)
 	return OPT_SPECIAL;
 }
 
+static const char* trim_space(const char* str)
+{
+	while (isspace(*str))
+		str++;
+
+	return str;
+}
+
+static bool show_option_p(const struct opt_s opt)
+{
+	return (NULL != opt.descr) && (')' != opt.descr[strlen(opt.descr) - 1]);
+}
 
 static void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n])
 {
 	fprintf(fp, "Usage: %s ", name);
 
 	for (int i = 0; i < n; i++)
-		if (NULL != opts[i].descr)
+		if (show_option_p(opts[i]))
 			fprintf(fp, "[-%c%s] ", opts[i].c, opt_arg_types[opt_arg_type(opts[i].conv)]);
 
 	fprintf(fp, "%s\n", usage_str);
 }
+
+
+static const char* add_space(bool has_arg, bool has_space)
+{
+	const char* space = "\t\t";
+
+	if (has_arg)
+		space = " ";
+
+	if (!has_space)
+		space = "";
+
+	return space;
+}
+
 
 static void print_help(const char* help_str, int n, const struct opt_s opts[n])
 {
 	printf("\n%s\n\n",  help_str);
 
 	for (int i = 0; i < n; i++)
-		if (NULL != opts[i].descr)
-			printf("-%c%s\n", opts[i].c, opts[i].descr);
+		if (show_option_p(opts[i]))
+			printf("-%c%s%s\n", opts[i].c,
+					add_space(opts[i].arg, isspace(opts[i].descr[0])),
+					trim_space(opts[i].descr));
 
-	printf("-h\thelp\n");
+	printf("-h\t\thelp\n");
 }
 
+
+static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n])
+{
+	if ('h' == c) {
+
+			print_usage(stdout, name, usage_str, n, opts);
+			print_help(help_str, n, opts);
+			exit(0);
+	}
+
+	for (int i = 0; i < n; i++) {
+
+		if (opts[i].c == c) {
+
+			if (opts[i].conv(opts[i].ptr, c, optarg)) {
+
+				print_usage(stderr, name, usage_str, n, opts);
+				exit(1);
+			}
+
+			return;
+		}
+	}
+
+	print_usage(stderr, name, usage_str, n, opts);
+	exit(1);
+}
 
 void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n])
 {
@@ -92,7 +151,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 	int c;
 	while (-1 != (c = getopt(argc, argv, optstr))) {
-
+#if 0
 		if ('h' == c) {
 
 			print_usage(stdout, argv[0], usage_str, n, opts);
@@ -118,6 +177,9 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 		exit(1);
 
 	out:	continue;
+#else
+		process_option(c, optarg, argv[0], usage_str, help_str, n, opts);
+#endif
 	}
 
 	if (	   (argc - optind < min_args)
@@ -154,6 +216,13 @@ bool opt_int(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	*(int*)ptr = atoi(optarg);
+	return false;
+}
+
+bool opt_uint(void* ptr, char c, const char* optarg)
+{
+	UNUSED(c);
+	*(unsigned int*)ptr = atoi(optarg);
 	return false;
 }
 
@@ -208,5 +277,12 @@ bool opt_select(void* ptr, char c, const char* optarg)
 	return false;
 }
 
+bool opt_subopt(void* _ptr, char c, const char* optarg)
+{
+	struct opt_subopt_s* ptr = _ptr;
+
+	process_option(c, optarg, "foo", "usage", "help", ptr->n, ptr->opts);
+	return false;
+}
 
 

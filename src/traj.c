@@ -42,13 +42,13 @@ int main_traj(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'x', true, opt_int, &X, " x\treadout samples" },
-		{ 'y', true, opt_int, &Y, " y\tphase encoding lines" },
-		{ 'a', true, opt_int, &accel, " a\tacceleration" },
-		{ 't', true, opt_int, &turns, " t\tturns" },
-		{ 'r', false, opt_set, &radial, "\tradial" },
-		{ 'G', false, opt_set, &golden, "\tgolden-ratio sampling" },
-		{ 'D', false, opt_set, &dbl, "\tdouble base angle" },
+		OPT_INT('x', &X, "x", "readout samples"),
+		OPT_INT('y', &Y, "y", "phase encoding lines"),
+		OPT_INT('a', &accel, "a", "acceleration"),
+		OPT_INT('t', &turns, "t", "turns"),
+		OPT_SET('r', &radial, "radial"),
+		OPT_SET('G', &golden, "golden-ratio sampling"),
+		OPT_SET('D', &dbl, "double base angle"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);

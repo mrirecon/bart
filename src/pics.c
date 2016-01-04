@@ -254,7 +254,7 @@ int main_pics(int argc, char* argv[])
 	bool eigen = false;
 	float scaling = 0.;
 
-	int llr_blk = 8;
+	unsigned int llr_blk = 8;
 
 	const char* image_truth_file = NULL;
 	bool im_truth = false;
@@ -276,32 +276,32 @@ int main_pics(int argc, char* argv[])
 	const struct opt_s opts[] = {
 
 		{ 'l', true, opt_reg, &ropts, "1/-l2\t\ttoggle l1-wavelet or l2 regularization." },
-		{ 'r', true, opt_float, &ropts.lambda, "\tregularization parameter" },
+		OPT_FLOAT('r', &ropts.lambda, "lambda", "regularization parameter"),
 		{ 'R', true, opt_reg, &ropts, " <T>:A:B:C\tgeneralized regularization options (-Rh for help)" },
-		{ 'c', false, opt_set, &conf.rvc, "\t\treal-value constraint" },
-		{ 's', true, opt_float, &step, " step\t\titeration stepsize" },
-		{ 'i', true, opt_int, &maxiter, " maxiter\tnumber of iterations" },
-		{ 't', true, opt_string, &traj_file, " trajectory\tk-space trajectory" },
-		{ 'n', false, opt_clear, &randshift, "\t\tdisable random wavelet cycle spinning" },
-		{ 'g', false, opt_set, &use_gpu, "\t\tuse GPU" },
-		{ 'p', true, opt_string, &pat_file, "\t\tpattern or weights" },
-		{ 'I', false, opt_select, OPT_SEL(enum algo_t, &ropts.algo, IST), NULL },
-		{ 'b', true, opt_int, &llr_blk, NULL },
-		{ 'e', false, opt_set, &eigen, NULL },
-		{ 'H', false, opt_set, &hogwild, NULL },
-		{ 'F', false, opt_set, &fast, NULL },
-		{ 'T', true, opt_string, &image_truth_file, NULL },
-		{ 'W', true, opt_string, &image_start_file, NULL },
-		{ 'd', true, opt_int, &debug_level, NULL },
-		{ 'O', true, opt_int, &conf.rwiter, NULL },
-		{ 'o', true, opt_float, &conf.gamma, NULL },
-		{ 'u', true, opt_float, &admm_rho, NULL },
-		{ 'C', true, opt_int, &admm_maxitercg, NULL },
-		{ 'q', true, opt_float, &conf.cclambda, NULL },
-		{ 'f', true, opt_float, &restrict_fov, NULL },
-		{ 'm', false, opt_select, OPT_SEL(enum algo_t, &ropts.algo, ADMM), NULL },
-		{ 'w', true, opt_float, &scaling, NULL },
-		{ 'S', false, opt_set, &scale_im, NULL },
+		OPT_SET('c', &conf.rvc, "real-value constraint"),
+		OPT_FLOAT('s', &step, "step", "iteration stepsize"),
+		OPT_UINT('i', &maxiter, "iter", "max. number of iterations"),
+		OPT_STRING('t', &traj_file, "file", "k-space trajectory"),
+		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
+		OPT_SET('g', &use_gpu, "use GPU"),
+		OPT_STRING('p', &pat_file, "file", "pattern or weights"),
+		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "(select IST)"),
+		OPT_UINT('b', &llr_blk, "blksize", "(lowrank)"),
+		OPT_SET('e', &eigen, "set stepsize based on max. eigenvalue"),
+		OPT_SET('H', &hogwild, "(hogwild)"),
+		OPT_SET('F', &fast, "(fast)"),
+		OPT_STRING('T', &image_truth_file, "file", "(truth file)"),
+		OPT_STRING('W', &image_start_file, "file", "(warm start)"),
+		OPT_INT('d', &debug_level, "level", "debug level"),
+		OPT_INT('O', &conf.rwiter, "rwiter", "(reweighting)"),
+		OPT_FLOAT('o', &conf.gamma, "gamma", "(reweighting)"),
+		OPT_FLOAT('u', &admm_rho, "rho", "ADMM rho"),
+		OPT_UINT('C', &admm_maxitercg, "iter", "ADMM max. CG iterations"),
+		OPT_FLOAT('q', &conf.cclambda, "cclambda", "(cclambda)"),
+		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
+		OPT_SELECT('m', enum algo_t, &ropts.algo, ADMM, "(select ADMM)"),
+		OPT_FLOAT('w', &scaling, "val", "scaling"),
+		OPT_SET('S', &scale_im, "correct scaling"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

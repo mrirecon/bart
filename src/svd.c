@@ -30,7 +30,7 @@ int main_svd(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'e', false, opt_set, &econ, "econ" },
+		OPT_SET('e', &econ, "econ"),
 	};
 
 	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);

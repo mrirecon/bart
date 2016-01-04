@@ -66,15 +66,15 @@ int main_bpsense(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'e', true, opt_float, &conf.eps, " eps\tdata consistency error" },
-		{ 'r', true, opt_float, &conf.lambda, " lambda\tl2 regularization parameter" },
-		{ 'u', true, opt_float, &conf.iconf->rho, " rho\tADMM penalty parameter" },
-		{ 'c', false, opt_set, &conf.rvc, "\treal-value constraint" },
-		{ 't', false, opt_set, &use_tvnorm, "\tuse TV norm" },
-		{ 'T', true, opt_string, &image_truth_fname, "\tcompare to truth image" },
-		{ 'i', true, opt_int, &conf.iconf->maxiter, NULL },
-		{ 'g', false, opt_set, &usegpu, NULL },
-		{ 'p', true, opt_string, &psf, NULL },
+		OPT_FLOAT('e', &conf.eps, "eps", "data consistency error"),
+		OPT_FLOAT('r', &conf.lambda, "lambda", "l2 regularization parameter"),
+		OPT_FLOAT('u', &conf.iconf->rho, "rho", "ADMM penalty parameter"),
+		OPT_SET('c', &conf.rvc, "real-value constraint"),
+		OPT_SET('t', &use_tvnorm, "use TV norm"),
+		OPT_STRING('T', &image_truth_fname, "file", "compare to truth image"),
+		OPT_UINT('i', &conf.iconf->maxiter, "iter", "max. iterations"),
+		OPT_SET('g', &usegpu, "(use gpu)"),
+		OPT_STRING('p', &psf, "file", "point-spread function"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

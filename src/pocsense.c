@@ -62,7 +62,7 @@ int main_pocsense(int argc, char* argv[])
 
 		{ 'i', true, opt_int, &maxiter, NULL },
 		{ 'r', true, opt_float, &alpha, " alpha\tregularization parameter" },
-		{ 'l', true, opt_int, &l1type, "1/-l2\ttoggle l1-wavelet or l2 regularization" },
+		{ 'l', true, opt_int, &l1type, "1/-l2\t\ttoggle l1-wavelet or l2 regularization" },
 		{ 'g', false, opt_set, &use_gpu, NULL },
 		{ 'o', true, opt_float, &lambda, NULL },
 		{ 'm', true, opt_float, &admm_rho, NULL },

@@ -45,13 +45,13 @@ int main_cc(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'P', true, opt_long, &P, " N\tperform compression to N virtual channels" },
-		{ 'r', true, opt_vec3, &calsize, " S\tsize of calibration region" },
-		{ 'R', true, opt_vec3, &calsize, NULL },
-		{ 'A', false, opt_set, &all, "\tuse all data to compute coefficients" },
-		{ 'S', false, opt_select, OPT_SEL(enum cc_type, &cc_type, SCC), "|G|E\ttype: SVD, Geometric, ESPIRiT" },
-		{ 'G', false, opt_select, OPT_SEL(enum cc_type, &cc_type, GCC), NULL },
-		{ 'E', false, opt_select, OPT_SEL(enum cc_type, &cc_type, ECC), NULL },
+		OPT_LONG('p', &P, "N", "perform compression to N virtual channels"),
+		OPT_VEC3('r', &calsize, "S", "size of calibration region"),
+		OPT_VEC3('R', &calsize, "", "(size of calibration region)"),
+		OPT_SET('A', &all, "use all data to compute coefficients"),
+		OPT_SELECT('S', enum cc_type, &cc_type, SCC, "|G|E\t\ttype: SVD, Geometric, ESPIRiT"),
+		OPT_SELECT('G', enum cc_type, &cc_type, GCC, "()"),
+		OPT_SELECT('E', enum cc_type, &cc_type, ECC, "()"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);

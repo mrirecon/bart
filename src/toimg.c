@@ -33,8 +33,7 @@
 
 
 static const char* usage_str =	"[-h] <input> <output_prefix>";
-static const char* help_str =	"-h\thelp\n\n"
-				"Create magnitude images as png or proto-dicom.\n"
+static const char* help_str =	"Create magnitude images as png or proto-dicom.\n"
 				"The first two non-singleton dimensions will\n"
 				"be used for the image, and the other dimensions\n"
 				"will be looped over.\n";

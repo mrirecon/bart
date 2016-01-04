@@ -81,7 +81,7 @@ static const char* help_str = "Perform iterative wavecaipi reconstruction.";
 
 int main_wave(int argc, char* argv[])
 {
-	double lambda = 0.;
+	float lambda = 0.;
 	float step = 0.95;
 
 	bool l1wav = false;
@@ -92,10 +92,10 @@ int main_wave(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'l', false, opt_set, &l1wav, "\tuse L1 penalty" },
-		{ 'a', false, opt_set, &adjoint, "\tadjoint" },
-		{ 'i', true, opt_int, &maxiter, "\tmax. iterations" },
-		{ 'r', true, opt_float, &lambda, " lambda\tregularization parameter" },
+		OPT_SET('l',  &l1wav, "use L1 penalty"),
+		OPT_SET('a', &adjoint, "adjoint"),
+		OPT_INT('i', &maxiter, "iter", "max. iterations"),
+		OPT_FLOAT('r', &lambda, "lambda", "regularization parameter"),
 	};
 
 	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);

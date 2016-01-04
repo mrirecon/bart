@@ -36,7 +36,7 @@ int main_phantom(int argc, char* argv[])
 	bool out_sens = false;
 	bool tecirc = false;
 	bool circ = false;
-	char* traj = NULL;
+	const char* traj = NULL;
 
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[0] = 1;
@@ -46,13 +46,13 @@ int main_phantom(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 's', true, opt_int, &sens, " nc\tnc sensitivities" },
-		{ 'S', true, opt_int, &osens, NULL },
-		{ 'k', false, opt_set, &kspace, "\tk-space" },
-		{ 't', true, opt_string, &traj, NULL },
-		{ 'c', false, opt_set, &circ, NULL },
-		{ 'm', false, opt_set, &tecirc, NULL },
-		{ 'x', true, opt_int, &xdim, NULL },
+		OPT_INT('s', &sens, "nc", "nc sensitivities"),
+		OPT_INT('S', &osens, "", "(output sensitivities)"),
+		OPT_SET('k', &kspace, "k-space"),
+		OPT_STRING('t', &traj, "file", "trajectory"),
+		OPT_SET('c', &circ, "()"),
+		OPT_SET('m', &tecirc, "()"),
+		OPT_INT('x', &xdim, "", "()"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -126,7 +126,7 @@ int main_phantom(int argc, char* argv[])
 	}
 
 	if (NULL != traj)
-		free(traj);
+		free((void*)traj);
 
 	if (NULL != samples)
 		unmap_cfl(3, sdims, samples);

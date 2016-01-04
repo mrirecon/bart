@@ -33,9 +33,9 @@ int main_fmac(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'A', false, opt_clear, &clear, "\tadd to existing output (instead of overwriting)" },
-		{ 'C', false, opt_set, &conj, "\tconjugate input2" },
-		{ 's', true, opt_long, &squash, " b\tsquash dimensions selected by bitmask b" },
+		OPT_CLEAR('A', &clear, "add to existing output (instead of overwriting)"),
+		OPT_SET('C', &conj, "conjugate input2"),
+		OPT_LONG('s', &squash, "b", "squash dimensions selected by bitmask b"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

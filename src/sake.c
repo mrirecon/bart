@@ -49,9 +49,9 @@ int main_sake(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'i', true, opt_int, &iter, "\tnumber of iterations" },
-		{ 's', true, opt_float, &alpha, "\trel. size of the signal subspace" },
-		{ 'o', true, opt_float, &lambda, NULL },
+		OPT_INT('i', &iter, "iter", "tnumber of iterations"),
+		OPT_FLOAT('s', &alpha, "size", "rel. size of the signal subspace"),
+		OPT_FLOAT('o', &lambda, "", "()"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);

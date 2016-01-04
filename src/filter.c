@@ -39,8 +39,8 @@ int main_filter(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'm', true, opt_int, &dim, "d\tmedian filter along dimension d" },
-		{ 'l', true, opt_int, &len, "l\tlength of filter" },
+		OPT_INT('m', &dim, "dim", "median filter along dimension dim"),
+		OPT_INT('l', &len, "len", "length of filter"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);

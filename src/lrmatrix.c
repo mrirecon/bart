@@ -76,8 +76,8 @@ int main_lrmatrix(int argc, char* argv[])
 	float rho = 0.25;
 	int blkskip = 2;
 	bool randshift = true;
-	unsigned long mflags = 1;
-	unsigned long flags = ~0;
+	long mflags = 1;
+	long flags = ~0;
 	const char* sum_str = NULL;
 	bool noise = false;
         bool decom = false;
@@ -93,24 +93,24 @@ int main_lrmatrix(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'd', true, opt_set, &decom, "\t\tperform decomposition instead, ie fully sampled" },
+		OPT_SET('d', &decom, "perform decomposition instead, ie fully sampled"),
 		// FIXME: 'd' fell through to u in original version ??!?
-		{ 'i', true, opt_int, &maxiter, "\t\tmaximum iterations." },
-		{ 'm', true, opt_long, &mflags, "\t\tflags to specify which dimensions are reshaped to matrix columns." },
-		{ 'f', true, opt_long, &flags, "\t\tflags to specify which dimensions to perform multi-scale partition." },
-                { 'j', true, opt_int, &blkskip, " scale\tblock size scaling from one scale to the next one." },
-                { 'k', true, opt_long, &initblk, " block-size\tsmallest block size" },
-                { 'N', false, opt_set, &noise, "\t\tadd noise scale to account for Gaussian noise." },
-                { 's', false, opt_set, &ls, "\t\tperform low rank + sparse matrix completion." },
-                { 'l', true, opt_long, &llrblk, " block-size\tperform locally low rank soft thresholding with specified block size." },
-                { 'o', true, opt_string, &sum_str, " <output2>\tsummed over all non-noise scales to create a denoised output." },
-		{ 'u', false, opt_select, OPT_SEL(int, &remove_mean, 1), NULL },
-		{ 'v', false, opt_select, OPT_SEL(int, &remove_mean, 2), NULL },
-		{ 'H', false, opt_set, &hogwild, NULL },
-		{ 'k', true, opt_long, &initblk, NULL },
-		{ 'p', true, opt_float, &rho, NULL },
-		{ 'n', false, opt_clear, &randshift, NULL },
-		{ 'g', false, opt_set, &use_gpu, NULL },
+		OPT_INT('i', &maxiter, "iter", "maximum iterations."),
+		OPT_LONG('m', &mflags, "flags", "which dimensions are reshaped to matrix columns."),
+		OPT_LONG('f', &flags, "flags", "which dimensions to perform multi-scale partition."),
+		OPT_INT('j', &blkskip, "scale", "block size scaling from one scale to the next one."),
+		OPT_LONG('k', &initblk, "size", "smallest block size"),
+		OPT_SET('N', &noise, "add noise scale to account for Gaussian noise."),
+		OPT_SET('s', &ls, "perform low rank + sparse matrix completion."),
+		OPT_LONG('l', &llrblk, "size", "perform locally low rank soft thresholding with specified block size."),
+		OPT_STRING('o', &sum_str, "out2", "summed over all non-noise scales to create a denoised output."),
+		OPT_SELECT('u', int, &remove_mean, 1, "()"),
+		OPT_SELECT('v', int, &remove_mean, 2, "()"),
+		OPT_SET('H', &hogwild, "(hogwild)"),
+		OPT_LONG('k', &initblk, "", "()"),
+		OPT_FLOAT('p', &rho, "", "(rho)"),
+		OPT_CLEAR('n', &randshift, "(no randshift)"),
+		OPT_SET('g', &use_gpu, "(use GPU)"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);

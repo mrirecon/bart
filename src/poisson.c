@@ -73,18 +73,18 @@ int main_poisson(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'Y', true, opt_int, &yy, "\tsize dimension 1 (phase 1)" },
-		{ 'Z', true, opt_int, &zz, "\tsize dimension 2 (phase 2)" },
-		{ 'y', true, opt_float, &yscale, "\tacceleration (dim 1)" },
-		{ 'z', true, opt_float, &zscale, "\tacceleration (dim 2)" },
-		{ 'C', true, opt_int, &calreg, "\tsize of calibration region" },
-		{ 'v', false, opt_set, &vd_def, "\tvariable density" },
-		{ 'V', true, opt_float, &vardensity, NULL },
-		{ 'e', false, opt_set, &cutcorners, "\telliptical scanning" },
-		{ 'D', true, opt_float, &mindist, NULL },
-		{ 'T', true, opt_int, &T, NULL },
-		{ 'm', false, opt_clear, &msk, NULL },
-		{ 'R', true, opt_int, &points, NULL },
+		OPT_INT('Y', &yy, "size", "size dimension 1"),
+		OPT_INT('Z', &zz, "size", "size dimension 2"),
+		OPT_FLOAT('y', &yscale, "acc", "acceleration dim 1"),
+		OPT_FLOAT('z', &zscale, "acc", "acceleration dim 2"),
+		OPT_UINT('C', &calreg, "size", "size of calibration region"),
+		OPT_SET('v', &vd_def, "variable density"),
+		OPT_FLOAT('V', &vardensity, "", "(variable density)"),
+		OPT_SET('e', &cutcorners, "elliptical scanning"),
+		OPT_FLOAT('D', &mindist, "", "()"),
+		OPT_INT('T', &T, "", "()"),
+		OPT_CLEAR('m', &msk, "()"),
+		OPT_INT('R', &points, "", "()"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);

@@ -225,14 +225,14 @@ int main_twixread(int argc, char* argv[argc])
 
 	struct opt_s opts[] = {
 
-		{ 'x', true, opt_long, &(dims[READ_DIM]), " X\tnumber of samples (read-out)" },
-		{ 'y', true, opt_long, &(dims[PHS1_DIM]), " Y\tphase encoding steps" },
-		{ 'z', true, opt_long, &(dims[PHS2_DIM]), " Z\tpartition encoding steps" },
-		{ 's', true, opt_long, &(dims[SLICE_DIM]), " S\tnumber of slices" },
-		{ 'v', true, opt_long, &(dims[AVG_DIM]), " V\tnumber of averages" },
-		{ 'c', true, opt_long, &(dims[COIL_DIM]), " C\tnumber of channels" },
-		{ 'n', true, opt_long, &(dims[TIME_DIM]), " N\tnumber of repetitions" },
-		{ 'a', true, opt_long, &adcs,  " A\ttotal number of ADCs" },
+		{ 'x', true, opt_long, &(dims[READ_DIM]), " X\t\tnumber of samples (read-out)" },
+		{ 'y', true, opt_long, &(dims[PHS1_DIM]), " Y\t\tphase encoding steps" },
+		{ 'z', true, opt_long, &(dims[PHS2_DIM]), " Z\t\tpartition encoding steps" },
+		{ 's', true, opt_long, &(dims[SLICE_DIM]), " S\t\tnumber of slices" },
+		{ 'v', true, opt_long, &(dims[AVG_DIM]), " V\t\tnumber of averages" },
+		{ 'c', true, opt_long, &(dims[COIL_DIM]), " C\t\tnumber of channels" },
+		{ 'n', true, opt_long, &(dims[TIME_DIM]), " N\t\tnumber of repetitions" },
+		{ 'a', true, opt_long, &adcs,  " A\t\ttotal number of ADCs" },
 		{ 'A', false, opt_set, &autoc, "\tautomatic (guess dimensions)" },
 		{ 'L', false, opt_set, &linectr, "\tuse linectr offset" },
 		{ 'P', false, opt_set, &partctr, "\tuse partctr offset" },

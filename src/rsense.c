@@ -54,7 +54,7 @@ int main_rsense(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'l', true, opt_int, &lreg, "1/-l2\ttoggle l1-wavelet or l2 regularization." },
+		{ 'l', true, opt_int, &lreg, "1/-l2\t\ttoggle l1-wavelet or l2 regularization." },
 		{ 'r', true, opt_float, &conf.lambda, " lambda\tregularization parameter" },
 		{ 's', true, opt_float, &conf.step, NULL },
 		{ 'i', true, opt_int, &conf.maxiter, NULL },
