@@ -161,7 +161,7 @@ endif
 
 
 ifeq ($(MAKESTAGE),1)
-.PHONY: default all
+.PHONY: doc/commands.txt $(TARGETS) ismrmrd
 default all clean allclean distclean doc/commands.txt $(TARGETS) ismrmrd:
 	make MAKESTAGE=2 $(MAKECMDGOALS)
 else
@@ -377,7 +377,6 @@ $(ZTARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
 #	rm $(srcdir)/$@.o
 
 
-.PHONY: clean allclean distclean
 clean:
 	rm -f `find $(srcdir) -name "*.o"`
 	rm -f $(root)/lib/.*.lock
