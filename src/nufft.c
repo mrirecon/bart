@@ -44,13 +44,11 @@ int main_nufft(int argc, char* argv[])
 	bool adjoint = false;
 	bool inverse = false;
 	bool use_gpu = false;
-	bool sizeinit = false;
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 
-	long coilim_dims[DIMS];
-	md_singleton_dims(DIMS, coilim_dims);
+	long coilim_dims[DIMS] = { 0 };
 
 	float lambda = 0.;
 
@@ -67,11 +65,6 @@ int main_nufft(int argc, char* argv[])
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-	for (int i = 0; i < ARRAY_SIZE(opts); i++) {
-		if (opts[i].c == 'D') {
-			sizeinit = true;
-		}
-	}
 
 	// Read trajectory
 	long traj_dims[DIMS];
@@ -92,7 +85,7 @@ int main_nufft(int argc, char* argv[])
 
 		md_copy_dims(DIMS - 3, coilim_dims + 3, ksp_dims + 3);
 
-		if (!sizeinit) {
+		if (0 == md_calc_size(DIMS, coilim_dims)) {
 
 			estimate_im_dims(DIMS, coilim_dims, traj_dims, traj);
 			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", coilim_dims[0], coilim_dims[1], coilim_dims[2]);
