@@ -3,8 +3,8 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
- * 2014 Frank Ong <frankong@berkeley.edu> 
+ * Authors:
+ * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
@@ -58,6 +58,7 @@ int main_nufft(int argc, char* argv[])
 
 		{ 'a', false, opt_set, &adjoint, "\tadjoint" },
 		{ 'i', false, opt_set, &inverse, "\tinverse" },
+		{ 'd', true, opt_vec3, &coilim_dims, " dimension\t dimension" },
 		{ 'D', true, opt_vec3, &coilim_dims, " x:y:z \tdimensions" },
 		{ 't', false, opt_set, &conf.toeplitz, "\ttoeplitz" },
 		{ 'l', true, opt_float, &lambda, " lambda\tl2 regularization" },
@@ -121,7 +122,7 @@ int main_nufft(int argc, char* argv[])
 
 		// Read image data
 		const complex float* img = load_cfl(argv[2], DIMS, coilim_dims);
- 
+
 		// Initialize kspace data
 		long ksp_dims[DIMS];
 		md_select_dims(DIMS, PHS1_FLAG|PHS2_FLAG, ksp_dims, traj_dims);
