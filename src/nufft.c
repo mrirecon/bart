@@ -3,8 +3,8 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
- * 2014 Frank Ong <frankong@berkeley.edu> 
+ * Authors:
+ * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
@@ -44,13 +44,11 @@ int main_nufft(int argc, char* argv[])
 	bool adjoint = false;
 	bool inverse = false;
 	bool use_gpu = false;
-	bool sizeinit = false;
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 
-	long coilim_dims[DIMS];
-	md_singleton_dims(DIMS, coilim_dims);
+	long coilim_dims[DIMS] = { 0 };
 
 	float lambda = 0.;
 
@@ -58,7 +56,8 @@ int main_nufft(int argc, char* argv[])
 
 		{ 'a', false, opt_set, &adjoint, "\tadjoint" },
 		{ 'i', false, opt_set, &inverse, "\tinverse" },
-		{ 'd', true, opt_vec3, &coilim_dims, " x:y:z \tdimensions" },
+		{ 'd', true, opt_vec3, &coilim_dims, " x:y:z\tdimensions" },
+		{ 'D', true, opt_vec3, &coilim_dims, NULL },
 		{ 't', false, opt_set, &conf.toeplitz, "\ttoeplitz" },
 		{ 'l', true, opt_float, &lambda, " lambda\tl2 regularization" },
 		{ 'm', true, opt_int, &cgconf.maxiter, NULL },
@@ -86,7 +85,7 @@ int main_nufft(int argc, char* argv[])
 
 		md_copy_dims(DIMS - 3, coilim_dims + 3, ksp_dims + 3);
 
-		if (!sizeinit) {
+		if (0 == md_calc_size(DIMS, coilim_dims)) {
 
 			estimate_im_dims(DIMS, coilim_dims, traj_dims, traj);
 			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", coilim_dims[0], coilim_dims[1], coilim_dims[2]);
@@ -116,7 +115,7 @@ int main_nufft(int argc, char* argv[])
 
 		// Read image data
 		const complex float* img = load_cfl(argv[2], DIMS, coilim_dims);
- 
+
 		// Initialize kspace data
 		long ksp_dims[DIMS];
 		md_select_dims(DIMS, PHS1_FLAG|PHS2_FLAG, ksp_dims, traj_dims);
