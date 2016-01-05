@@ -56,8 +56,8 @@ int main_nufft(int argc, char* argv[])
 
 		{ 'a', false, opt_set, &adjoint, "\tadjoint" },
 		{ 'i', false, opt_set, &inverse, "\tinverse" },
-		{ 'd', true, opt_vec3, &coilim_dims, " dimension\t dimension" },
-		{ 'D', true, opt_vec3, &coilim_dims, " x:y:z \tdimensions" },
+		{ 'd', true, opt_vec3, &coilim_dims, " x:y:z\tdimensions" },
+		{ 'D', true, opt_vec3, &coilim_dims, NULL },
 		{ 't', false, opt_set, &conf.toeplitz, "\ttoeplitz" },
 		{ 'l', true, opt_float, &lambda, " lambda\tl2 regularization" },
 		{ 'm', true, opt_int, &cgconf.maxiter, NULL },

@@ -1,9 +1,9 @@
-/* Copyright 2015. Martin Uecker.
+/* Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -16,6 +16,7 @@
 #include <ctype.h>
 
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "opts.h"
 
@@ -252,12 +253,16 @@ bool opt_vec3(void* ptr, char c, const char* optarg)
 {
 	if (islower(c)) {
 
-		(*(long(*)[3])ptr)[0] = atol(optarg);
-		(*(long(*)[3])ptr)[1] = atol(optarg);
-		(*(long(*)[3])ptr)[2] = atol(optarg);
+		if (3 != sscanf(optarg, "%ld:%ld:%ld", &(*(long(*)[3])ptr)[0], &(*(long(*)[3])ptr)[1], &(*(long(*)[3])ptr)[2])) {
+
+			(*(long(*)[3])ptr)[0] = atol(optarg);
+			(*(long(*)[3])ptr)[1] = atol(optarg);
+			(*(long(*)[3])ptr)[2] = atol(optarg);
+		}
 
 	} else {
 
+		debug_printf(DP_WARN, "the upper-case options for specifying dimensions are deprecated.\n");
 		int r = sscanf(optarg, "%ld:%ld:%ld", &(*(long(*)[3])ptr)[0], &(*(long(*)[3])ptr)[1], &(*(long(*)[3])ptr)[2]);
 		assert(3 == r);
 	}
