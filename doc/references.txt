@@ -230,17 +230,23 @@ IEEE Trans Med Imaging 2012; 31:1250-1262.
 
 
 Shepp LA, Logan BF.
-The Fourier reconstruction of a head section
+The Fourier reconstruction of a head section.
 IEEE T Nucl Sci 1974; 21:21-43.
 
+Koay CG, Sarlls JE, Özarslan E.
+Three-Dimensional Analytical Magnetic Resonance
+Imaging Phantom in the Fourier Domain.
+Magn Reson Med 2007; 58:430-436.
+
 Guerquin-Kern M, Lejeune L, Pruessmann KP, M Unser M,
-Realistic Analytical Phantoms for Parallel Magnetic Resonance Imaging
+Realistic Analytical Phantoms for Parallel Magnetic Resonance Imaging.
 IEEE Trans Med Imaging 2012; 31:626-636.
 
 
 
 
 - applications -
+
 
 Hollingsworth KG, Higgins DM, McCallum M, Ward L, Coombs A, Straub V.
 Investigating the quantitative fidelity of prospectively undersampled

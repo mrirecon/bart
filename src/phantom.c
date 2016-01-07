@@ -30,6 +30,7 @@ static const char* help_str = "Image and k-space domain phantoms.";
 int main_phantom(int argc, char* argv[])
 {
 	bool kspace = false;
+	bool d3 = false;
 	int sens = 0;
 	int osens = -1;
 	int xdim = -1;
@@ -44,6 +45,7 @@ int main_phantom(int argc, char* argv[])
 	dims[2] = 128;
 
 
+
 	const struct opt_s opts[] = {
 
 		OPT_INT('s', &sens, "nc", "nc sensitivities"),
@@ -53,9 +55,12 @@ int main_phantom(int argc, char* argv[])
 		OPT_SET('c', &circ, "()"),
 		OPT_SET('m', &tecirc, "()"),
 		OPT_INT('x', &xdim, "n", "dimensions in y and z"),
+		OPT_SET('3', &d3, "3D"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+
 
 	if (tecirc) {
 
@@ -71,6 +76,9 @@ int main_phantom(int argc, char* argv[])
 
 	if (-1 != xdim)
 		dims[1] = dims[2] = xdim;
+
+	if (d3)
+		dims[0] = dims[1];
 
 
 	long sdims[DIMS];
@@ -103,11 +111,16 @@ int main_phantom(int argc, char* argv[])
 
 		assert(NULL == traj);
 
-		if (1 < dims[TE_DIM])
+		if (1 < dims[TE_DIM]) {
+
+			assert(!d3);
 			calc_moving_circ(dims, out, kspace);
-		else
-			calc_circ(dims, out, kspace);
+
+		} else {
+
+			(d3 ? calc_circ3d : calc_circ)(dims, out, kspace);
 //		calc_ring(dims, out, kspace);
+		}
 
 	} else {
 
@@ -115,12 +128,12 @@ int main_phantom(int argc, char* argv[])
 
 		if (NULL == samples) {
 
-			calc_phantom(dims, out, kspace);
+			(d3 ? calc_phantom3d : calc_phantom)(dims, out, kspace);
 
 		} else {
 
 			dims[0] = 3;
-			calc_phantom_noncart(dims, out, samples);
+			(d3 ? calc_phantom3d_noncart : calc_phantom_noncart)(dims, out, samples);
 			dims[0] = 1;
 		}
 	}
