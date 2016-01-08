@@ -72,6 +72,8 @@ void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
 	// -----------------------------------------------------------
 	// normal equation right hand side
 
+	debug_printf(DP_DEBUG1, "lsqr: right hand side\n");
+
 	complex float* x_adj = md_alloc_sameplace(N, x_dims, CFL_SIZE, y);
 	linop_adjoint(model_op, N, x_dims, x_adj, N, y_dims, y);
 
@@ -93,6 +95,8 @@ void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
 
 	const struct operator_s* normaleq_op = operator_create(N, x_dims, N, x_dims, (void*)&data, normaleq_l2_apply, NULL);
 
+
+	debug_printf(DP_DEBUG1, "lsqr: solve normal equations\n");
 
 	italgo(iconf, normaleq_op, num_funs, prox_funs, prox_linops, NULL, 
 			data.size, (float*)x, (const float*)x_adj,
