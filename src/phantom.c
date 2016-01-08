@@ -40,9 +40,9 @@ int main_phantom(int argc, char* argv[])
 	const char* traj = NULL;
 
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
-	dims[0] = 1;
+	dims[0] = 128;
 	dims[1] = 128;
-	dims[2] = 128;
+	dims[2] = 1;
 
 
 
@@ -75,10 +75,10 @@ int main_phantom(int argc, char* argv[])
 	}
 
 	if (-1 != xdim)
-		dims[1] = dims[2] = xdim;
+		dims[0] = dims[1] = xdim;
 
 	if (d3)
-		dims[0] = dims[1];
+		dims[2] = dims[0];
 
 
 	long sdims[DIMS];
