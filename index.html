@@ -131,7 +131,7 @@ and other processing steps (16s) on a multi-GPU system.
 		<li>Tikhonov</li>
 		<li>total variation</li>
 		<li>l1-wavelet</li>
-		<li>low-rank</li>
+		<li>(multi-scale) low-rank</li>
 		</ul>
 	</li>
 	</ul>
@@ -149,6 +149,14 @@ and other processing steps (16s) on a multi-GPU system.
 	</p>
 	</code>
 	</div>
+	<p>
+	A python-based image viewer (bartview.py) which can read the
+	BART data format is included in the source repository.<br>
+	</p>
+	<p>
+	An image viewer for Linux and Mac OS X which is currently
+	in development can be found
+	<a href="https://github.com/mrirecon/view">here</a>.
 	</p>
 	<h2 class="header">Mailing List</h2>
 	<p>
@@ -162,6 +170,7 @@ and other processing steps (16s) on a multi-GPU system.
 	<p>
 	Releases:
 	<ul>
+	<li><a href="https://github.com/mrirecon/bart/releases/tag/v0.3.00">bart: version 0.3.00 (2016)</a> <a href="http://dx.doi.org/10.5281/zenodo.44511"><img src="./zenodo.44511.svg" alt="DOI: 10.5281/zenodo.44511"></a>
 	<li><a href="https://github.com/mrirecon/bart/releases/tag/v0.2.09">bart: version 0.2.09 (2015)</a> <a href="http://dx.doi.org/10.5281/zenodo.31907"><img src="./zenodo.31907.svg" alt="DOI: 10.5281/zenodo.31907"></a>
 	<li><a href="https://github.com/mrirecon/bart/releases/tag/v0.2.08">bart: version 0.2.08 (2015)</a> <a href="http://dx.doi.org/10.5281/zenodo.18041"><img src="./zenodo.18041.svg" alt="DOI: 10.5281/zenodo.18041"></a>
 	<li><a href="https://github.com/mrirecon/bart/releases/tag/v0.2.07">bart: version 0.2.07 (2015)</a> <a href="http://dx.doi.org/10.5281/zenodo.16040"><img src="./zenodo.16040.svg" alt="DOI: 10.5281/zenodo.16040"></a>
@@ -177,7 +186,7 @@ and other processing steps (16s) on a multi-GPU system.
 	<div class="code">
 	<code>
 	<p>
-	&nbsp;$ sudo apt-get install build-essential libfftw3-dev libgsl0-dev liblapack-dev<br>
+	&nbsp;$ sudo apt-get install build-essential libfftw3-dev liblapack-dev<br>
 	&nbsp;$ wget https://github.com/mrirecon/bart/archive/vX.Y.ZZ.tar.gz<br>
 	&nbsp;$ tar xzvf vX.YY.ZZ.tar.gz<br>
 	&nbsp;$ cd bart-X.YY.ZZ<br>
