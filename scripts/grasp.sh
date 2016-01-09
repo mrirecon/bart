@@ -119,9 +119,9 @@ cd $WORKDIR
 # read TWIX file
 bart twixread -A $input grasp
 
-export READ=$(tail -n1 grasp.hdr | cut -f1 -d" ")
-export COILS=$(tail -n1 grasp.hdr | cut -f4 -d" ")
-export PHASES=$(($(tail -n1 grasp.hdr | cut -f2 -d" ") / $SPOKES))
+export READ=$(bart show -d0 grasp)
+export COILS=$(bart show -d3 grasp)
+export PHASES=$(($(bart show -d1 grasp) / $SPOKES))
 
 export OMP_NUM_THREADS=$((MAXPROC * $MAXTHREADS))
 
@@ -136,7 +136,7 @@ export OMP_NUM_THREADS=$((MAXPROC * $MAXTHREADS))
 bart fft -i -u $(bart bitmask 2) grasp grasp_hybrid
 rm grasp.cfl grasp.hdr
 
-SLICES=$(tail -n1 grasp_hybrid.hdr | cut -f3 -d" ")
+SLICES=$(bart show -d2 grasp_hybrid)
 
 
 # create trajectory with 400 spokes and 2x oversampling
