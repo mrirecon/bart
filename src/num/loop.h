@@ -12,6 +12,7 @@ typedef complex float (*sample_fun_t)(void* _data, const long pos[]);
 
 
 extern void md_zsample(unsigned int N, const long dims[__VLA(N)], complex float* z, void* data, sample_fun_t fun);
+extern void md_parallel_zsample(unsigned int N, const long dims[__VLA(N)], complex float* z, void* data, sample_fun_t fun);
 
 extern void md_zgradient(unsigned int N, const long dims[__VLA(N)], complex float* out, const complex float grad[__VLA(N)]);
 

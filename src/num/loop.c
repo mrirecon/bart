@@ -41,7 +41,7 @@ void md_zsample(unsigned int N, const long dims[N], complex float* out, void* da
 	sdata.N = N;
 
 	long strs[N];
-	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here 
+	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
 	sdata.strs = strs;
 
 	sdata.out = out;
@@ -51,7 +51,22 @@ void md_zsample(unsigned int N, const long dims[N], complex float* out, void* da
 	md_loop(N, dims, &sdata, sample_kernel);
 }
 
+void md_parallel_zsample(unsigned int N, const long dims[N], complex float* out, void* data, sample_fun_t fun)
+{
+	struct sample_data sdata;
 
+	sdata.N = N;
+
+	long strs[N];
+	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
+	sdata.strs = strs;
+
+	sdata.out = out;
+	sdata.data = data;
+	sdata.fun = fun;
+
+	md_parallel_loop(N, dims, ~0u, &sdata, sample_kernel);
+}
 
 
 struct map_data {
