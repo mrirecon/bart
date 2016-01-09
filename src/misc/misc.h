@@ -3,6 +3,9 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
+#ifndef __MISC_H
+#define __MISC_H
+
 #include <stdlib.h>
 
 #ifndef M_PI
@@ -31,6 +34,11 @@ extern "C" {
 extern void* xmalloc(size_t s);
 
 #define XMALLOC(x) (x = xmalloc(sizeof(*x)))
+
+#define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
+
+#define ARRAY_ALLOC(T, N)	((T(*)[N])xmalloc(sizeof(T) * N))
+
 
 extern int parse_cfl(_Complex float res[1], const char* str);
 extern void error(const char* str, ...);
@@ -61,4 +69,5 @@ extern void save_command_line(int argc, char* argv[__VLA(argc)]);
 #undef __VLA
 
 
+#endif // __MISC_H
 

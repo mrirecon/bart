@@ -1,6 +1,8 @@
 
 #include <stdbool.h>
 
+#include "misc/misc.h"
+
 typedef bool opt_conv_f(void* ptr, char c, const char* optarg);
 
 struct opt_s {
@@ -40,8 +42,6 @@ struct opt_subopt_s {
 typedef long opt_vec3_t[3];
 #define OPT_SEL(T, x, v)	&(struct opt_select_s){ (x), &(T){ (v) }, &(T){ *(x) }, sizeof(T) }
 
-//#define TYPE_CHECK(T, x)	({ T _val = (x); _val; })
-#define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
 #define OPT_SET(c, ptr, descr)			{ (c), false, opt_set, TYPE_CHECK(bool*, (ptr)), "\t" descr }
 #define OPT_CLEAR(c, ptr, descr)		{ (c), false, opt_clear, TYPE_CHECK(bool*, (ptr)), "\t" descr }
 #define OPT_ARG(c, _fun, T, ptr, argname, descr) { (c), true, _fun, TYPE_CHECK(T*, (ptr)), " " argname "      \t" descr }
