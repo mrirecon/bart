@@ -172,7 +172,7 @@ static void sample(unsigned int N, const long dims[N], complex float* out, unsig
 		.fun = krn,
 	};
 
-	md_zsample(N, dims, out, &data, kspace ? kkernel : xkernel);
+	md_parallel_zsample(N, dims, out, &data, kspace ? kkernel : xkernel);
 }
 
 
@@ -192,7 +192,7 @@ static void sample3d(unsigned int N, const long dims[N], complex float* out, uns
 		.fun = krn3d,
 	};
 
-	md_zsample(N, dims, out, &data, kspace ? kkernel : xkernel);
+	md_parallel_zsample(N, dims, out, &data, kspace ? kkernel : xkernel);
 }
 
 
@@ -221,7 +221,7 @@ static void sample_noncart(const long dims[DIMS], complex float* out, const comp
 	md_select_dims(DIMS, 1 + 2 + 4, sdims, dims);
 	md_calc_strides(DIMS, data.istrs, sdims, 1);
 
-	md_zsample(DIMS, odims, out, &data, nkernel);
+	md_parallel_zsample(DIMS, odims, out, &data, nkernel);
 }
 
 
@@ -244,7 +244,7 @@ static void sample3d_noncart(const long dims[DIMS], complex float* out, const co
 	md_select_dims(DIMS, 1 + 2 + 4, sdims, dims);
 	md_calc_strides(DIMS, data.istrs, sdims, 1);
 
-	md_zsample(DIMS, odims, out, &data, nkernel);
+	md_parallel_zsample(DIMS, odims, out, &data, nkernel);
 }
 
 
@@ -276,7 +276,7 @@ void calc_sens(const long dims[DIMS], complex float* sens)
 		.fun = cnst_one,
 	};
 
-	md_zsample(DIMS, dims, sens, &data, xkernel);
+	md_parallel_zsample(DIMS, dims, sens, &data, xkernel);
 }
 
 
