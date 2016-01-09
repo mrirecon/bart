@@ -1,9 +1,10 @@
 /* Copyright 2013-2015 The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013      Frank Ong <frankong@berkeley.edu>
  *
  * Generic operations on multi-dimensional arrays. Most functions
@@ -57,7 +58,7 @@ void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[
 	for (long i = 0; i < dim[D - 1]; i++) {
 
 		void* moving_ptr[C];
-	
+
 		for (unsigned int j = 0; j < C; j++)
 			moving_ptr[j] = ptr[j] + i * str[j][D - 1];
 
@@ -127,16 +128,16 @@ static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[st
 	for (int i = 0; i < dim[D]; i++) {
 
 		pos_copy[D] = i;
+
 		md_parallel_loop_r(D, N, dim, flags, pos_copy, data, fun);
 	}
 }
-
 
 /**
  * Generic function which loops over all dimensions and calls a given
  * function passing the current indices as argument.
  *
- * Runs fun( data, position ) for all position in dim
+ * Runs fun(data, position) for all position in dim
  *
  */
 void md_parallel_loop(unsigned int D, const long dim[static D], unsigned int flags, void* data, md_loop_fun_t fun)
@@ -144,6 +145,7 @@ void md_parallel_loop(unsigned int D, const long dim[static D], unsigned int fla
 	long pos[D];
 	md_parallel_loop_r(D, D, dim, flags, pos, data, fun);
 }
+
 
 
 static void md_loop_r(unsigned int D, const long dim[D], long pos[D], void* data, md_loop_fun_t fun)
@@ -263,7 +265,7 @@ unsigned int md_calc_blockdim(unsigned int D, const long dim[D], const long str[
 	}
 
 	return i;
-}	
+}
 
 
 
@@ -280,7 +282,7 @@ unsigned int md_calc_blockdim(unsigned int D, const long dim[D], const long str[
 void md_select_dims(unsigned int D, unsigned long flags, long odims[D], const long idims[D])
 {
 	md_copy_dims(D, odims, idims);
-	
+
 	for (unsigned int i = 0; i < D; i++)
 		if (!MD_IS_SET(flags, i))
 			odims[i] = 1;
@@ -345,6 +347,7 @@ bool md_check_dimensions(unsigned int N, const long dims[N], unsigned int flags)
 {
 	long d[N];
 	md_select_dims(N, ~flags, d, dims);
+
 	return (1 != md_calc_size(N, d));
 }
 
@@ -390,7 +393,7 @@ bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], co
 
 	if ((dim1[D] == dim2[D]) || (MD_IS_SET(flags, D) && ((1 == dim1[D]) || (1 == dim2[D]))))
 		return md_check_compat(D, flags, dim1, dim2);
-		
+
 	return false;
 }
 
@@ -442,6 +445,7 @@ struct data_s {
 static void nary_clear(void* _data, void* ptr[])
 {
 	struct data_s* data = (struct data_s*)_data;
+
 #ifdef  USE_CUDA
 	if (data->use_gpu) {
 
@@ -460,12 +464,14 @@ static void nary_clear(void* _data, void* ptr[])
 void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, size_t size)
 {
 	int skip = md_calc_blockdim(D, dim, str, size);
+
 //	printf("CLEAR skip %d\n", skip);
 #ifdef  USE_CUDA
 	struct data_s data = { md_calc_size(skip, dim) * size, cuda_ondevice(ptr) };
 #else
 	struct data_s data = { md_calc_size(skip, dim) * size };
 #endif
+
 	md_nary(1, D - skip, dim + skip, (const long*[1]){ str + skip }, (void*[1]){ ptr }, (void*)&data, &nary_clear);
 }
 
@@ -507,6 +513,7 @@ void md_clear(unsigned int D, const long dim[D], void* ptr, size_t size)
 {
 	long str[D];
 	md_calc_strides(D, str, dim, size);
+
 	md_clear2(D, dim, str, ptr, size);
 }
 
@@ -532,6 +539,7 @@ static void nary_strided_copy(void* _data, void* ptr[])
 static void nary_copy(void* _data, void* ptr[])
 {
 	struct data_s* data = (struct data_s*)_data;
+
 #ifdef  USE_CUDA
 	if (data->use_gpu) {
 
@@ -541,7 +549,8 @@ static void nary_copy(void* _data, void* ptr[])
 		return;
 	}
 #endif
-	memcpy(ptr[0], ptr[1], data->size);	
+
+	memcpy(ptr[0], ptr[1], data->size);
 }
 
 /**
@@ -577,6 +586,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	const long* nstr[2] = { *nstr2[0] + skip, *nstr2[1] + skip };
 
 	void* nptr[2] = { optr, (void*)iptr };
+
 #ifdef  USE_CUDA
 	struct data_s data = { md_calc_size(skip, tdims) * size, (cuda_ondevice(optr) || cuda_ondevice(iptr)) };
 
@@ -590,6 +600,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		struct strided_copy_s data = { { sizes[0], sizes[1] } , (*nstr2[0])[skip], (*nstr2[1])[skip] };
 
 		skip++;
+
 		md_nary(2, ND - skip, tdims + skip , nstr, nptr, (void*)&data, &nary_strided_copy);
 		return;
 	}
@@ -612,6 +623,7 @@ void md_copy(unsigned int D, const long dim[D], void* optr, const void* iptr, si
 {
 	long str[D];
 	md_calc_strides(D, str, dim, size);
+
 	md_copy2(D, dim, str, optr, str, iptr, size);
 }
 
@@ -625,7 +637,6 @@ static void* gpu_constant(const void* vp, size_t size)
 }
 #endif
 
-
 /**
  * Fill array with value pointed by pointer (with strides)
  *
@@ -637,13 +648,17 @@ void md_fill2(unsigned int D, const long dim[D], const long str[D], void* ptr, c
 	if (cuda_ondevice(ptr) && (!cuda_ondevice(iptr))) {
 
 		void* giptr = gpu_constant(iptr, size);
+
 		md_fill2(D, dim, str, ptr, giptr, size);
+
 		md_free(giptr);
 		return;
 	}
 #endif
+
 	long istr[D];
 	md_singleton_strides(D, istr);
+
 	md_copy2(D, dim, str, ptr, istr, iptr, size);
 }
 
@@ -658,6 +673,7 @@ void md_fill(unsigned int D, const long dim[D], void* ptr, const void* iptr, siz
 {
 	long str[D];
 	md_calc_strides(D, str, dim, size);
+
 	md_fill2(D, dim, str, ptr, iptr, size);
 }
 
@@ -675,6 +691,7 @@ static void nary_swap(void* _data, void* ptr[])
 	size_t size = data->size;
 	unsigned int M = data->M;
 	char* tmp = (size < 32) ? alloca(size) : xmalloc(size);
+
 #ifdef  USE_CUDA
 	assert(!cuda_ondevice(ptr[0]));
 	assert(!cuda_ondevice(ptr[1]));
@@ -706,6 +723,7 @@ void md_circular_swap2(unsigned M, unsigned int D, const long dims[D], const lon
 		nstr[i] = strs[i] + skip;
 
 	struct swap_s data = { M, md_calc_size(skip, dims) * size };
+
 	md_nary(M, D - skip, dims + skip, nstr, ptr, (void*)&data, &nary_swap);
 }
 
@@ -754,6 +772,7 @@ void md_swap(unsigned int D, const long dim[D], void* optr, void* iptr, size_t s
 {
 	long str[D];
 	md_calc_strides(D, str, dim, size);
+
 	md_swap2(D, dim, str, optr, str, iptr, size);
 }
 
@@ -788,6 +807,7 @@ void md_move_block(unsigned int D, const long dim[D], const long opos[D], const 
 {
 	long istr[D];
 	long ostr[D];
+
 	md_calc_strides(D, istr, idim, size);
 	md_calc_strides(D, ostr, odim, size);
 
@@ -798,7 +818,7 @@ void md_move_block(unsigned int D, const long dim[D], const long opos[D], const 
 /**
  * Copy a block from an array to another array (with strides)
  *
- * Block dimensions are min( idim , odim )
+ * Block dimensions are min(idim , odim)
  *
  * if idim[d] > odim[d], then optr[i] = iptr[pos + i] for 0 <= i < odim[d]
  *
@@ -834,7 +854,7 @@ void md_copy_block2(unsigned int D, const long pos[D], const long odim[D], const
 /**
  * Copy a block from an array to another array (without strides)
  *
- * Block dimensions are min( idim , odim )
+ * Block dimensions are min(idim , odim)
  *
  * if idim[d] > odim[d], then optr[i] = iptr[pos + i] for 0 <= i < odim[d]
  *
@@ -845,6 +865,7 @@ void md_copy_block(unsigned int D, const long pos[D], const long odim[D], void* 
 {
 	long istr[D];
 	long ostr[D];
+
 	md_calc_strides(D, istr, idim, size);
 	md_calc_strides(D, ostr, odim, size);
 
@@ -863,6 +884,7 @@ void md_resize(unsigned int D, const long odim[D], void* optr, const long idim[D
 {
 	long pos[D];
 	memset(pos, 0, D * sizeof(long));
+
 	md_clear(D, odim, optr, size);
 	md_copy_block(D, pos, odim, optr, idim, iptr, size);
 }
@@ -892,13 +914,14 @@ void md_resize_center(unsigned int D, const long odim[D], void* optr, const long
 /**
  * Extract slice from array specified by flags (with strides)
  *
- * optr = iptr( pos[0] , : , pos[2] , : , : )
+ * optr = iptr(pos[0], :, pos[2], :, :)
  *
  */
 void md_slice2(unsigned int D, unsigned long flags, const long pos[D], const long dim[D], const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
 {
 	long odim[D];
 	md_select_dims(D, ~flags, odim, dim);
+
 	md_copy_block2(D, pos, odim, ostr, optr, dim, istr, iptr, size);
 }
 
@@ -907,7 +930,7 @@ void md_slice2(unsigned int D, unsigned long flags, const long pos[D], const lon
 /**
  * Extract slice from array specified by flags (with strides)
  *
- * optr = iptr( pos[0] , : , pos[2] , : , : )
+ * optr = iptr(pos[0], :, pos[2], :, :)
  *
  */
 void md_slice(unsigned int D, unsigned long flags, const long pos[D], const long dim[D], void* optr, const void* iptr, size_t size)
@@ -929,7 +952,7 @@ void md_slice(unsigned int D, unsigned long flags, const long pos[D], const long
 /**
  * Permute array (with strides)
  *
- * optr[ order[i] ] = iptr[i]
+ * optr[order[i]] = iptr[i]
  *
  */
 void md_permute2(unsigned int D, const unsigned int order[D], const long odims[D], const long ostr[D], void* optr, const long idims[D], const long istr[D], const void* iptr, size_t size)
@@ -941,6 +964,7 @@ void md_permute2(unsigned int D, const unsigned int order[D], const long odims[D
 
 		assert(order[i] < D);
 		assert(odims[i] == idims[order[i]]);
+
 		flags = MD_SET(flags, order[i]);
 
 		ostr2[order[i]] = ostr[i];
@@ -956,7 +980,7 @@ void md_permute2(unsigned int D, const unsigned int order[D], const long odims[D
 /**
  * Permute array (without strides)
  *
- * optr[ order[i] ] = iptr[i]
+ * optr[order[i]] = iptr[i]
  *
  */
 void md_permute(unsigned int D, const unsigned int order[D], const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
@@ -1006,6 +1030,7 @@ void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int dim2, lon
 {
 	unsigned int order[D];
 	md_transpose_order(D, order, dim1, dim2);
+
 	md_permute_dims(D, order, odims, idims);
 }
 
@@ -1014,9 +1039,9 @@ void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int dim2, lon
 /**
  * Tranpose array (with strides)
  *
- * optr[ dim2 ] = iptr[ dim1]
+ * optr[dim2] = iptr[dim1]
  *
- * optr[ dim1 ] = iptr[ dim2]
+ * optr[dim1] = iptr[dim2]
  *
  */
 void md_transpose2(unsigned int D, unsigned int dim1, unsigned int dim2, const long odims[D], const long ostr[D], void* optr, const long idims[D], const long istr[D], const void* iptr, size_t size)
@@ -1030,7 +1055,8 @@ void md_transpose2(unsigned int D, unsigned int dim1, unsigned int dim2, const l
 
 	unsigned int order[D];
 	md_transpose_order(D, order, dim1, dim2);
-	md_permute2(D, order, odims, ostr, optr, idims, istr, iptr, size);	
+
+	md_permute2(D, order, odims, ostr, optr, idims, istr, iptr, size);
 }
 
 
@@ -1038,9 +1064,9 @@ void md_transpose2(unsigned int D, unsigned int dim1, unsigned int dim2, const l
 /**
  * Tranpose array (without strides)
  *
- * optr[ dim2 ] = iptr[ dim1]
+ * optr[dim2] = iptr[dim1]
  *
- * optr[ dim1 ] = iptr[ dim2]
+ * optr[dim1] = iptr[dim2]
  *
  */
 void md_transpose(unsigned int D, unsigned int dim1, unsigned int dim2, const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
@@ -1116,6 +1142,7 @@ void md_swap_flip(unsigned int D, const long dims[D], unsigned long flags, void*
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, size);
+
 	md_swap_flip2(D, dims, flags, strs, optr, strs, iptr, size);
 }
 
@@ -1139,13 +1166,14 @@ static void md_flip_inpl2(unsigned int D, const long dims[D], unsigned long flag
 	dims2[i] = dims[i] / 2;
 
 	long off = str[i] * (0 + (dims[i] + 1) / 2);
+
 	md_swap_flip2(D, dims2, flags, str, ptr, str, ptr + off, size);
 }
 
 /**
  * Flip array (with strides)
  *
- * optr[ dims[D] - 1 - i ] = iptr[ i ]
+ * optr[dims[D] - 1 - i] = iptr[i]
  *
  */
 void md_flip2(unsigned int D, const long dims[D], unsigned long flags, const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
@@ -1153,6 +1181,7 @@ void md_flip2(unsigned int D, const long dims[D], unsigned long flags, const lon
 	if (optr == iptr) {
 
 		assert(ostr == istr);
+
 		md_flip_inpl2(D, dims, flags, ostr, optr, size);
 		return;
 	}
@@ -1168,7 +1197,7 @@ void md_flip2(unsigned int D, const long dims[D], unsigned long flags, const lon
 
 			ostr2[i] = -ostr[i];
 			off += (dims[i] - 1) * ostr[i];
-		} 
+		}
 	}
 
 	md_copy2(D, dims, ostr2, optr + off, istr, iptr, size);
@@ -1179,13 +1208,14 @@ void md_flip2(unsigned int D, const long dims[D], unsigned long flags, const lon
 /**
  * Flip array (without strides)
  *
- * optr[ dims[D] - 1 - i ] = iptr[ i ]
+ * optr[dims[D] - 1 - i] = iptr[i]
  *
  */
 void md_flip(unsigned int D, const long dims[D], unsigned long flags, void* optr, const void* iptr, size_t size)
 {
 	long str[D];
 	md_calc_strides(D, str, dims, size);
+
 	md_flip2(D, dims, flags, str, optr, str, iptr, size);
 }
 
@@ -1212,18 +1242,18 @@ static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], un
 		return;
 
 	md_septrafo_r(D, R, dimensions, flags, strides, ptr, fun, _data);
-                
+
         if (MD_IS_SET(flags, R)) {
 
         	struct septrafo_s data = { dimensions[R], strides[R], _data, fun };
                 void* nptr[1] = { ptr };
                 const long* nstrides[1] = { strides };
-        
+
                 dimensions[R] = 1;      // we made a copy in md_septrafo2
                 //md_nary_parallel(1, D, dimensions, nstrides, nptr, &data, nary_septrafo);
                 md_nary(1, D, dimensions, nstrides, nptr, &data, nary_septrafo);
                 dimensions[R] = data.N;
-        }       
+        }
 }
 
 /**
@@ -1231,7 +1261,7 @@ static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], un
  * 
  */
 void md_septrafo2(unsigned int D, const long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun, void* _data)
-{               
+{
         long dimcopy[D];
 	md_copy_dims(D, dimcopy, dimensions);
 
@@ -1242,13 +1272,13 @@ void md_septrafo2(unsigned int D, const long dimensions[D], unsigned long flags,
 
 /**
  * Apply a separable transformation along selected dimensions.
- * 
+ *
  */
 void md_septrafo(unsigned int D, const long dimensions[D], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun, void* _data)
 {
         long strides[D];
         md_calc_strides(D, strides, dimensions, size);
-        md_septrafo2(D, dimensions, flags, strides, ptr, fun, _data);    
+        md_septrafo2(D, dimensions, flags, strides, ptr, fun, _data);
 }
 
 
@@ -1256,7 +1286,7 @@ void md_septrafo(unsigned int D, const long dimensions[D], unsigned long flags, 
 /**
  * Copy diagonals from array specified by flags (with strides)
  *
- * dst( i , i , : , i , : ) = src( i , i , : , i , : )
+ * dst(i, i, :, i, :) = src(i, i, :, i, :)
  *
  */
 void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, const long str1[D], void* dst, const long str2[D], const void* src, size_t size)
@@ -1266,7 +1296,7 @@ void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, cons
 	long count = -1;
 
 	for (unsigned int i = 0; i < D; i++) {
-	
+
 		if (MD_IS_SET(flags, i)) {
 
 			if (count < 0)
@@ -1274,7 +1304,7 @@ void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, cons
 
 			assert(dims[i] == count);
 
-			stride1 += str1[i];	
+			stride1 += str1[i];
 			stride2 += str2[i];
 		}
 	}
@@ -1291,13 +1321,14 @@ void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, cons
 /**
  * Copy diagonals from array specified by flags (without strides)
  *
- * dst( i , i , : , i , : ) = src( i , i , : , i , : )
+ * dst(i ,i ,: ,i , :) = src(i ,i ,: ,i ,:)
  *
  */
 void md_copy_diag(unsigned int D, const long dims[D], unsigned long flags, void* dst, const void* src, size_t size)
 {	
 	long str[D];
 	md_calc_strides(D, str, dims, size);
+
 	md_copy_diag2(D, dims, flags, str, dst, str, src, size);
 }
 
@@ -1306,7 +1337,7 @@ void md_copy_diag(unsigned int D, const long dims[D], unsigned long flags, void*
 /**
  * Fill diagonals specified by flags with value (without strides)
  *
- * dst( i , i , : , i , : ) = src[0]
+ * dst(i, i, :, i, :) = src[0]
  *
  */
 void md_fill_diag(unsigned int D, const long dims[D], unsigned long flags, void* dst, const void* src, size_t size)
@@ -1316,8 +1347,9 @@ void md_fill_diag(unsigned int D, const long dims[D], unsigned long flags, void*
 
 	md_calc_strides(D, str1, dims, size);
 	md_singleton_strides(D, str2);
+
 	md_copy_diag2(D, dims, flags, str1, dst, str2, src, size);
-}	
+}
 
 
 
@@ -1363,7 +1395,7 @@ static void md_circ_shift_inpl2(unsigned int D, const long dims[D], const long c
 /**
  * Circularly shift array (with strides)
  *
- * dst[ mod( i + center )  ] = src[i]
+ * dst[mod(i + center)] = src[i]
  *
  */
 void md_circ_shift2(unsigned int D, const long dimensions[D], const long center[D], const long str1[D], void* dst, const long str2[D], const void* src, size_t size)
@@ -1391,6 +1423,7 @@ void md_circ_shift2(unsigned int D, const long dimensions[D], const long center[
 	if (dst == src) {
 
 		assert(str1 == str2);
+
 		md_circ_shift_inpl2(D, dimensions, pos, str1, dst, size);
 		return;
 	}
@@ -1421,13 +1454,14 @@ void md_circ_shift2(unsigned int D, const long dimensions[D], const long center[
 /**
  * Circularly shift array (without strides)
  *
- * dst[ mod( i + center )  ] = src[i]
+ * dst[mod(i + center)] = src[i]
  *
  */
 void md_circ_shift(unsigned int D, const long dimensions[D], const long center[D], void* dst, const void* src, size_t size)
 {
 	long strides[D];
 	md_calc_strides(D, strides, dimensions, size);
+
 	md_circ_shift2(D, dimensions, center, strides, dst, strides, src, size);
 }
 
@@ -1489,12 +1523,12 @@ void md_circ_ext(unsigned int D, const long dims1[D],  void* dst, const long dim
 {
 	long strs1[D];
 	long strs2[D];
+
 	md_calc_strides(D, strs1, dims1, size);
 	md_calc_strides(D, strs2, dims2, size);
+
 	md_circ_ext2(D, dims1, strs1, dst, dims2, strs2, src, size);
 }
-
-
 
 
 
@@ -1512,7 +1546,7 @@ void md_periodic2(unsigned int D, const long dims1[D], const long strs1[D], void
 
 		assert(0 == dims1[i] % dims2[i]);
 
-		// blocks	
+		// blocks
 		dims1B[2 * i + 0] = dims2[i];
 		strs1B[2 * i + 0] = strs1[i];
 
@@ -1538,8 +1572,10 @@ void md_periodic(unsigned int D, const long dims1[D], void* dst, const long dims
 {
 	long strs1[D];
 	long strs2[D];
+
 	md_calc_strides(D, strs1, dims1, size);
 	md_calc_strides(D, strs2, dims2, size);
+
 	md_periodic2(D, dims1, strs1, dst, dims2, strs2, src, size);
 }
 
@@ -1565,7 +1601,9 @@ void* md_alloc(unsigned int D, const long dimensions[D], size_t size)
 void* md_calloc(unsigned int D, const long dimensions[D], size_t size)
 {
 	void* ptr = md_alloc(D, dimensions, size);
+
 	md_clear(D, dimensions, ptr, size);
+
 	return ptr;
 }
 
@@ -1584,7 +1622,6 @@ void* md_alloc_gpu(unsigned int D, const long dimensions[D], size_t size)
 
 
 
-
 /**
  * Allocate GPU memory and copy from CPU pointer
  *
@@ -1596,7 +1633,9 @@ void* md_gpu_move(unsigned int D, const long dims[D], const void* ptr, size_t si
 		return NULL;
 
 	void* gpu_ptr = md_alloc_gpu(D, dims, size);
+
 	md_copy(D, dims, gpu_ptr, ptr, size);
+
 	return gpu_ptr;
 }
 #endif
@@ -1633,5 +1672,3 @@ void md_free(void* ptr)
 #endif
 	free(ptr);
 }
-
-
