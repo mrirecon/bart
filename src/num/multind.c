@@ -107,6 +107,45 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 
 
 
+static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[static N], unsigned int flags, const long pos[static N], void* data, md_loop_fun_t fun)
+{
+	if (0 == D) {
+
+		fun(data, pos);
+		return;
+	}
+
+	D--;
+
+	// we need to make a copy because firstprivate needs to see
+	// an array instead of a pointer
+	long pos_copy[N];
+	for (unsigned int i = 0; i < N; i++)
+		pos_copy[i] = pos[i];
+
+	#pragma omp parallel for firstprivate(pos_copy) if ((1 < dim[D]) && (flags & (1 << D)))
+	for (int i = 0; i < dim[D]; i++) {
+
+		pos_copy[D] = i;
+		md_parallel_loop_r(D, N, dim, flags, pos_copy, data, fun);
+	}
+}
+
+
+/**
+ * Generic function which loops over all dimensions and calls a given
+ * function passing the current indices as argument.
+ *
+ * Runs fun( data, position ) for all position in dim
+ *
+ */
+void md_parallel_loop(unsigned int D, const long dim[static D], unsigned int flags, void* data, md_loop_fun_t fun)
+{
+	long pos[D];
+	md_parallel_loop_r(D, D, dim, flags, pos, data, fun);
+}
+
+
 static void md_loop_r(unsigned int D, const long dim[D], long pos[D], void* data, md_loop_fun_t fun)
 {
 	if (0 == D) {
@@ -117,7 +156,7 @@ static void md_loop_r(unsigned int D, const long dim[D], long pos[D], void* data
 
 	D--;
 
-	for (pos[D] = 0; pos[D] < dim[D]; pos[D]++) 
+	for (pos[D] = 0; pos[D] < dim[D]; pos[D]++)
 		md_loop_r(D, dim, pos, data, fun);
 }
 

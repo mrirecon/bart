@@ -34,6 +34,8 @@ typedef void (*md_loop_fun_t)(void* data, const long* pos);
 extern void md_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], void* data, md_nary_fun_t fun);
 
 extern void md_parallel_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], unsigned int flags, const long* str[__VLA(C)], void* ptr[__VLA(C)], void* data, md_nary_fun_t fun);
+extern void md_parallel_loop(unsigned int D, const long dim[static D], unsigned int flags, void* data, md_loop_fun_t fun);
+
 extern void md_loop(unsigned int D, const long dim[__VLA(D)], void* data, md_loop_fun_t fun);
 
 extern void md_septrafo2(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, const long strides[__VLA(D)], void* ptr, md_trafo_fun_t fun, void* _data);
