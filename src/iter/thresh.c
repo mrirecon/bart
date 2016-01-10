@@ -114,21 +114,21 @@ static void thresh_del(const void* _data)
  */
 const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D], const float lambda, const unsigned long flags, bool gpu)
 {
-	struct thresh_s* data = xmalloc(sizeof(struct thresh_s));
+	PTR_ALLOC(struct thresh_s, data);
 
 	data->lambda = lambda;
 	data->D = D;
 	data->flags = flags;
 	data->unitary_op = NULL;
 
-	data->dim = xmalloc(D * sizeof(long));
+	data->dim = *TYPE_ALLOC(long[D]);
 	md_copy_dims(D, data->dim, dim);
 
 	// norm dimensions are the flagged input dimensions
 	long norm_dim[D];
 	md_select_dims(D, ~flags, norm_dim, data->dim);
 
-	data->str = xmalloc(D * sizeof(long));
+	data->str = *TYPE_ALLOC(long[D]);
 	md_calc_strides(D, data->str, data->dim, CFL_SIZE);
 
 #ifdef USE_CUDA
@@ -155,17 +155,17 @@ const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D],
  */
 extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags, bool gpu)
 {
-	struct thresh_s* data = xmalloc(sizeof(struct thresh_s));
+	PTR_ALLOC(struct thresh_s, data);
 
 	data->lambda = lambda;
 	data->D = D;
 	data->flags = flags;
 	data->unitary_op = unitary_op;
 
-	data->dim = xmalloc(D * sizeof(long));
+	data->dim = *TYPE_ALLOC(long[D]);
 	md_copy_dims(D, data->dim, linop_domain(unitary_op)->dims);
 
-	data->str = xmalloc(D * sizeof(long));
+	data->str = *TYPE_ALLOC(long[D]);
 	md_calc_strides(D, data->str, data->dim, CFL_SIZE);
 
 	// norm dimensions are the flagged transform dimensions //FIXME should yse linop_codomain(unitary_op)->N 

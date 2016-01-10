@@ -611,27 +611,28 @@ float conjgrad_hist(struct iter_history_s* history, unsigned int maxiter, float 
  * Internal variable used by conjgrad_hist_prealloc
  */
 struct cg_data_s {
-  float* r;
-  float* p;
-  float* Ap;
+
+	float* r;
+	float* p;
+	float* Ap;
 };
 
 const struct cg_data_s* cg_data_init(long N, const struct vec_iter_s* vops) 
 {
-  struct cg_data_s* cgdata = xmalloc(sizeof(struct cg_data_s));
+	PTR_ALLOC(struct cg_data_s, cgdata);
   
-  cgdata->r = vops->allocate(N);
-  cgdata->p = vops->allocate(N);
-  cgdata->Ap = vops->allocate(N);
+	cgdata->r = vops->allocate(N);
+	cgdata->p = vops->allocate(N);
+	cgdata->Ap = vops->allocate(N);
 
-  return cgdata;
+	return cgdata;
 }
 
 void cg_data_free(const struct cg_data_s* cgdata, const struct vec_iter_s* vops) 
 {
-  vops->del(cgdata->r);
-  vops->del(cgdata->p);
-  vops->del(cgdata->Ap);
+	vops->del(cgdata->r);
+	vops->del(cgdata->p);
+	vops->del(cgdata->Ap);
 }
 
 /**
@@ -649,9 +650,9 @@ float conjgrad_hist_prealloc(struct iter_history_s* history, unsigned int maxite
 			     void* obj_eval_data,
 			     float (*obj_eval)(const void*, const float*))
 {
-  float* r = cgdata->r;
-  float* p = cgdata->p;
-  float* Ap = cgdata->Ap;
+	float* r = cgdata->r;
+	float* p = cgdata->p;
+	float* Ap = cgdata->Ap;
 
 	float* x_err = NULL;
 

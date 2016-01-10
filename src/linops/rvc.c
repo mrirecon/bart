@@ -40,13 +40,13 @@ static void rvc_free(const void* _data)
 
 struct linop_s* rvc_create(unsigned int N, const long dims[N])
 {
-	struct rvc_s* data = xmalloc(sizeof(struct rvc_s));
+	PTR_ALLOC(struct rvc_s, data);
 
-	long* dims2 = xmalloc(N * sizeof(long));
-	md_copy_dims(N, dims2, dims);
+	PTR_ALLOC(long[N], dims2);
+	md_copy_dims(N, *dims2, dims);
 
 	data->N = N;
-	data->dims = dims2;
+	data->dims = *dims2;
 
 	return linop_create(N, dims, N, dims, (void*)data, rvc_apply, rvc_apply, rvc_apply, NULL, rvc_free);
 }

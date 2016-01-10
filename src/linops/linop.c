@@ -86,12 +86,12 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 				void* data, lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal,
 				lop_p_fun_t norm_inv, del_fun_t del)
 {
-	struct linop_s* lo = xmalloc(sizeof(struct linop_s));
+	PTR_ALLOC(struct linop_s, lo);
 
 	struct shared_data_s* shared_data[4];
 
 	for (unsigned int i = 0; i < 4; i++) 
-		shared_data[i] = xmalloc(sizeof(struct shared_data_s));
+		shared_data[i] = TYPE_ALLOC(struct shared_data_s);
 
 	for (unsigned int i = 0; i < 4; i++) {
 
@@ -181,7 +181,7 @@ const void* linop_get_data(const struct linop_s* ptr)
  */
 extern const struct linop_s* linop_clone(const struct linop_s* x)
 {
-	struct linop_s* lo = xmalloc(sizeof(struct linop_s));
+	PTR_ALLOC(struct linop_s, lo);
 
 	lo->forward = operator_ref(x->forward);
 	lo->adjoint = operator_ref(x->adjoint);
@@ -365,7 +365,7 @@ const struct iovec_s* linop_codomain(const struct linop_s* op)
  */
 struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b)
 {
-	struct linop_s* c = xmalloc(sizeof(struct linop_s));
+	PTR_ALLOC(struct linop_s, c);
 
 	c->forward = operator_chain(a->forward, b->forward);
 	c->adjoint = operator_chain(b->adjoint, a->adjoint);

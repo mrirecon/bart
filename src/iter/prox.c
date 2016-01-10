@@ -107,9 +107,8 @@ static void prox_normaleq_del(const void* _data)
 
 const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const complex float* y)
 {
-	struct prox_normaleq_data* pdata = xmalloc(sizeof(struct prox_normaleq_data));
-
-	struct iter_conjgrad_conf* cgconf = xmalloc(sizeof(struct iter_conjgrad_conf));
+	PTR_ALLOC(struct prox_normaleq_data, pdata);
+	PTR_ALLOC(struct iter_conjgrad_conf, cgconf);
 
 	*cgconf = iter_conjgrad_defaults;
 	cgconf->maxiter = 10;
@@ -181,7 +180,7 @@ static void prox_leastsquares_del(const void* _data)
 const struct operator_p_s* prox_leastsquares_create(unsigned int N, const long dims[N], float lambda, const complex float* y)
 
 {
-	struct prox_leastsquares_data* pdata = xmalloc( sizeof(struct prox_leastsquares_data) );
+	PTR_ALLOC(struct prox_leastsquares_data, pdata);
 
 	pdata->y = (const float*)y;
 	pdata->lambda = lambda;
@@ -246,7 +245,7 @@ static void prox_l2ball_del(const void* _data)
 
 const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N], float eps, const complex float* center)
 {
-	struct prox_l2ball_data* pdata = xmalloc(sizeof(struct prox_l2ball_data));
+	PTR_ALLOC(struct prox_l2ball_data, pdata);
 
 	pdata->center = (const float*)center;
 	pdata->eps = eps;
@@ -300,7 +299,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int N, const long dims[N]
 		void (*thresh)(void* _data, float lambda, float* _dst, const float* _src),
 		void* data)
 {
-	struct prox_thresh_data* pdata = xmalloc( sizeof(struct prox_thresh_data) );
+	PTR_ALLOC(struct prox_thresh_data, pdata);
 
 	pdata->thresh = thresh;
 	pdata->lambda = lambda;
@@ -350,7 +349,7 @@ static void prox_zero_del(const void* _data)
 
 const struct operator_p_s* prox_zero_create(unsigned int N, const long dims[N])
 {
-	struct prox_zero_data* pdata = xmalloc(sizeof(struct prox_zero_data));
+	PTR_ALLOC(struct prox_zero_data, pdata);
 
 	pdata->size = md_calc_size(N, dims) * 2;
 
@@ -399,7 +398,7 @@ static void prox_lineq_del(const void* _data)
 
 const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const complex float* y)
 {
-	struct prox_lineq_data* pdata = xmalloc(sizeof(struct prox_lineq_data));
+	PTR_ALLOC(struct prox_lineq_data, pdata);
 
 	unsigned int N = linop_domain(op)->N;
 	const long* dims = linop_domain(op)->dims;
@@ -453,8 +452,7 @@ static void prox_ineq_del(const void* _data)
 
 static const struct operator_p_s* prox_ineq_create(unsigned int N, const long dims[N], const complex float* b, bool positive)
 {
-	struct prox_ineq_data* pdata = xmalloc(sizeof(struct prox_ineq_data));
-
+	PTR_ALLOC(struct prox_ineq_data, pdata);
 
 	pdata->size = md_calc_size(N, dims) * 2;
 	pdata->b = (const float*)b;
@@ -503,7 +501,7 @@ static void prox_rvc_del(const void* _data)
  */
 const struct operator_p_s* prox_rvc_create(unsigned int N, const long dims[N])
 {
-	struct prox_rvc_data* pdata = xmalloc(sizeof(struct prox_rvc_data));
+	PTR_ALLOC(struct prox_rvc_data, pdata);
 	pdata->size = md_calc_size(N, dims);
 	return operator_p_create(N, dims, N, dims, pdata, prox_rvc_apply, prox_rvc_del);
 }

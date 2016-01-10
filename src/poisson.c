@@ -22,13 +22,13 @@
 #include "misc/opts.h"
 
 
-static void random_point(int D, float p[D])
+static void random_point(int D, float p[static D])
 {
 	for (int i = 0; i < D; i++)
 		p[i] = uniform_rand();
 }
 
-static float dist(int D, const float a[D], const float b[D])
+static float dist(int D, const float a[static D], const float b[static D])
 {
 	float r = 0.;
 
@@ -39,7 +39,8 @@ static float dist(int D, const float a[D], const float b[D])
 }
 
 
-static float maxn(int D, const float a[D], const float b[D])
+
+static float maxn(int D, const float a[static D], const float b[static D])
 {
 	float r = 0.;
 
@@ -51,8 +52,8 @@ static float maxn(int D, const float a[D], const float b[D])
 
 
 
-static const char* usage_str = "<outfile>";
-static const char* help_str = "Computes Poisson-disc sampling pattern.";
+static const char usage_str[] = "<outfile>";
+static const char help_str[] = "Computes Poisson-disc sampling pattern.";
 
 
 int main_poisson(int argc, char* argv[])
@@ -115,12 +116,12 @@ int main_poisson(int argc, char* argv[])
 
 
 	long dims[5] = { 1, yy, zz, T, 1 };
-	complex float* mask = NULL;
+	complex float (*mask)[T][zz][yy] = NULL;
 
 	if (msk) {
 		
-		mask = create_cfl(argv[1], 5, dims);
-		md_clear(5, dims, mask, sizeof(complex float));
+		mask = MD_CAST_ARRAY3_PTR(complex float, 5, dims, create_cfl(argv[1], 5, dims), 1, 2, 3);
+		md_clear(5, dims, &(*mask)[0][0][0], sizeof(complex float));
 	}
 
 	int M = rnd ? (points + 1) : Pest;
@@ -128,44 +129,44 @@ int main_poisson(int argc, char* argv[])
 	
 	while (true) {
 
-		float (*points)[2] = xmalloc(M * sizeof(float[3]));
-
-		int* kind = xmalloc(M * sizeof(int));
-		kind[0] = 0;
+		PTR_ALLOC(float[M][2], points);
+		PTR_ALLOC(int[M], kind);
+//		int (*kind)[M] = TYPE_ALLOC(int[M]);
+		(*kind)[0] = 0;
 
 		if (!rnd) {
 
-			points[0][0] = 0.5;
-			points[0][1] = 0.5;
+			(*points)[0][0] = 0.5;
+			(*points)[0][1] = 0.5;
 
 			if (1 == T) {
 
-				P = poissondisc(2, M, 1, vardensity, mindist, points);
+				P = poissondisc(2, M, 1, vardensity, mindist, *points);
 
 			} else {
 
-				float (*delta)[T] = xmalloc(T * T * sizeof(complex float));
+				float (*delta)[T][T] = TYPE_ALLOC(float[T][T]);
 				float dd[T];
 				for (int i = 0; i < T; i++)
 					dd[i] = mindist;
 
-				mc_poisson_rmatrix(2, T, delta, dd);
-				P = poissondisc_mc(2, T, M, 1, vardensity, (const float (*)[T])delta, points, kind);
+				mc_poisson_rmatrix(2, T, *delta, dd);
+				P = poissondisc_mc(2, T, M, 1, vardensity, *delta, *points, *kind);
 			}
 
 		} else { // random pattern
 
 			P = M - 1;
 			for (int i = 0; i < P; i++)
-				random_point(2, points[i]);
+				random_point(2, (*points)[i]);
 		}
 
 		if (P < M) {
 
 			for (int i = 0; i < P; i++) {
 
-				points[i][0] = (points[i][0] - 0.5) * yscale + 0.5;
-				points[i][1] = (points[i][1] - 0.5) * zscale + 0.5;
+				(*points)[i][0] = ((*points)[i][0] - 0.5) * yscale + 0.5;
+				(*points)[i][1] = ((*points)[i][1] - 0.5) * zscale + 0.5;
 			}
 
 			// throw away points outside 
@@ -175,10 +176,10 @@ int main_poisson(int argc, char* argv[])
 			int j = 0;
 			for (int i = 0; i < P; i++) {
 
-				if ((cutcorners ? dist : maxn)(2, center, points[i]) <= 0.5) {
+				if ((cutcorners ? dist : maxn)(2, center, (*points)[i]) <= 0.5) {
 
-					points[j][0] = points[i][0];
-					points[j][1] = points[i][1];
+					(*points)[j][0] = (*points)[i][0];
+					(*points)[j][1] = (*points)[i][1];
 					j++;
 				}
 			}
@@ -191,31 +192,34 @@ int main_poisson(int argc, char* argv[])
 				// rethink module here
 				for (int i = 0; i < P; i++) {
 
-					int yy = (int)floorf(points[i][0] * dims[1]);
-					int zz = (int)floorf(points[i][1] * dims[2]);
+					int yy = (int)floorf((*points)[i][0] * dims[1]);
+					int zz = (int)floorf((*points)[i][1] * dims[2]);
 
 					if ((yy < 0) || (yy >= dims[1]) || (zz < 0) || (zz >= dims[2]))
 						continue;
 
 					if (1 == T)
-					mask[zz * dims[1] + yy] = 1.;//cexpf(2.i * M_PI * (float)kind[i] / (float)T);
+						(*mask)[0][zz][yy] = 1.;//cexpf(2.i * M_PI * (float)(*kind)[i] / (float)T);
 					else
-					mask[(kind[i] * dims[2] + zz) * dims[1] + yy] = 1.;//cexpf(2.i * M_PI * (float)kind[i] / (float)T);
+						(*mask)[(*kind)[i]][zz][yy] = 1.;//cexpf(2.i * M_PI * (float)(*kind)[i] / (float)T);
 				}
 
 			} else {
 
 #if 1
 				long sdims[2] = { 3, P };
-				complex float* samples = create_cfl(argv[1], 2, sdims);
+				//complex float (*samples)[P][3] = (void*)create_cfl(argv[1], 2, sdims);
+				complex float (*samples)[P][3] =
+					MD_CAST_ARRAY2_PTR(complex float, 2, sdims, create_cfl(argv[1], 2, sdims), 0, 1);
+
 				for (int i = 0; i < P; i++) {
 
-					samples[3 * i + 0] = 0.;
-					samples[3 * i + 1] = (points[i][0] - 0.5) * dims[1];
-					samples[3 * i + 2] = (points[i][1] - 0.5) * dims[2];
+					(*samples)[i][0] = 0.;
+					(*samples)[i][1] = ((*points)[i][0] - 0.5) * dims[1];
+					(*samples)[i][2] = ((*points)[i][1] - 0.5) * dims[2];
 					//	printf("%f %f\n", creal(samples[3 * i + 0]), creal(samples[3 * i + 1]));
 				}
-				unmap_cfl(2, sdims, (void*)samples);
+				unmap_cfl(2, sdims, &(*samples)[0][0]);
 #endif
 			}
 
@@ -241,9 +245,9 @@ int main_poisson(int argc, char* argv[])
 
 			for (int k = 0; k < T; k++) {
 
-				if (0. == mask[(k * dims[2] + z) * dims[1] + y]) {
+				if (0. == (*mask)[k][z][y]) {
 
-					mask[(k * dims[2] + z) * dims[1] + y] = 1.;
+					(*mask)[k][z][y] = 1.;
 					P++;
 				}
 			}
@@ -262,7 +266,7 @@ int main_poisson(int argc, char* argv[])
 		printf(", grid size: %ldx%ld%s = %ld (R = %f)", dims[1], dims[2], cutcorners ? "x(pi/4)" : "",
 				(long)(f * dims[1] * dims[2]), f * T * dims[1] * dims[2] / (float)P);
 
-		unmap_cfl(5, dims, (void*)mask);
+		unmap_cfl(5, dims, &(*mask)[0][0][0]);
 	}
 
 	printf("\n");

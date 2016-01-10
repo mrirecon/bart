@@ -62,7 +62,7 @@ static void wavelet_del(const void* _data)
 
 struct linop_s* wavelet3_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], const long minsize[N])
 {
-	struct wavelet_s* data = xmalloc(sizeof(struct wavelet_s));
+	PTR_ALLOC(struct wavelet_s, data);
 
 	// FIXME copy stuff;
 	data->N = N;

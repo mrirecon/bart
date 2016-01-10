@@ -225,7 +225,7 @@ struct svthresh_blockproc_data {
 
 struct svthresh_blockproc_data* svthresh_blockproc_create( unsigned long mflags, float lambda, int remove_mean )
 {
-	struct svthresh_blockproc_data* data = (struct svthresh_blockproc_data*) xmalloc( sizeof(struct svthresh_blockproc_data));
+	PTR_ALLOC(struct svthresh_blockproc_data, data);
 	data->mflags = mflags;
 	data->lambda = lambda;
 	data->remove_mean = remove_mean;
@@ -266,7 +266,6 @@ float svthresh_blockproc( const void* _data, const long blkdims[DIMS], complex f
 
 float nucnorm_blockproc( const void* _data, const long blkdims[DIMS], complex float* dst, const complex float* src )
 {
-
 	UNUSED(dst);
 
 	const struct svthresh_blockproc_data* data = (const struct svthresh_blockproc_data*) _data;

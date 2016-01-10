@@ -1,4 +1,4 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2014. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a educational/research license which can be found in the 
  * LICENSE file.
@@ -35,7 +35,8 @@
  * data structure
  */
 struct sum_data {
-	_Bool use_gpu;
+
+	bool use_gpu;
 
 	long imgd_dims[DIMS];
 	long img_dims[DIMS];
@@ -47,7 +48,7 @@ struct sum_data {
 	complex float* tmp;
 };
 
-static struct sum_data* sum_create_data( const long imgd_dims[DIMS], _Bool use_gpu);
+static struct sum_data* sum_create_data(const long imgd_dims[DIMS], bool use_gpu);
 static void sum_free_data(const void* _data );
 static void sum_apply(const void* _data, complex float* _dst, const complex float* _src);
 static void sum_apply_adjoint(const void* _data, complex float* _dst, const complex float* _src);
@@ -58,7 +59,7 @@ static void sum_apply_pinverse(const void* _data, float lambda, complex float* _
 /**
  * Create sum operator
  */
-const struct linop_s* sum_create(const long imgd_dims[DIMS], _Bool use_gpu)
+const struct linop_s* sum_create(const long imgd_dims[DIMS], bool use_gpu)
 {
 	struct sum_data* data = sum_create_data( imgd_dims, use_gpu );
 
@@ -69,9 +70,9 @@ const struct linop_s* sum_create(const long imgd_dims[DIMS], _Bool use_gpu)
 }
 
 
-static struct sum_data* sum_create_data( const long imgd_dims[DIMS], _Bool use_gpu )
+static struct sum_data* sum_create_data( const long imgd_dims[DIMS], bool use_gpu )
 {
-	struct sum_data* data = xmalloc(sizeof(struct sum_data));
+	PTR_ALLOC(struct sum_data, data);
 
 	// decom dimensions
 	md_copy_dims(DIMS, data->imgd_dims, imgd_dims);
@@ -106,7 +107,6 @@ void sum_free_data(const void* _data)
 
 void sum_apply(const void* _data, complex float* dst, const complex float* src)
 {
-
 	const struct sum_data* data = _data;
 
 	md_clear( DIMS, data->img_dims, dst, sizeof( complex float ) );
@@ -127,10 +127,10 @@ void sum_apply_adjoint(const void* _data, complex float* dst, const complex floa
 
 void sum_apply_normal(const void* _data, complex float* dst, const complex float* src)
 {
-	struct sum_data* data = (struct sum_data*) _data;
+	struct sum_data* data = (struct sum_data*)_data;
 
-	if (NULL == data->tmp)
-	{
+	if (NULL == data->tmp) {
+
 #ifdef USE_CUDA
 		data->tmp = (data->use_gpu ? md_alloc_gpu : md_alloc)(DIMS, data->img_dims, CFL_SIZE);
 #else
@@ -139,23 +139,23 @@ void sum_apply_normal(const void* _data, complex float* dst, const complex float
 	}
 
 
-	sum_apply( _data, data->tmp, src);
+	sum_apply(_data, data->tmp, src);
 	sum_apply_adjoint( _data, dst, data->tmp);
 }
 
 
-/* 
+
+/**
  * 
  * x = (ATA + uI)^-1 b
  * 
  */
-
 void sum_apply_pinverse(const void* _data, float rho, complex float* dst, const complex float* src)
 {
 	struct sum_data* data = (struct sum_data*) _data;
 
-	if (NULL == data->tmp)
-	{
+	if (NULL == data->tmp) {
+
 #ifdef USE_CUDA
 		data->tmp = (data->use_gpu ? md_alloc_gpu : md_alloc)(DIMS, data->img_dims, CFL_SIZE);
 #else
@@ -182,7 +182,5 @@ void sum_apply_pinverse(const void* _data, float rho, complex float* dst, const 
 
 	// dst = avg + nonavg
 	md_zadd2( DIMS, data->imgd_dims, data->imgd_strs, dst, data->imgd_strs, dst, data->img_strs, data->tmp );
-
-
 }
 

@@ -53,20 +53,20 @@ struct conv_plan {
 struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N],  
 		const long idims1[N], const long idims2[N], const complex float* src2)
 {
-	struct conv_plan* plan = (struct conv_plan*)xmalloc(sizeof(struct conv_plan));
+	PTR_ALLOC(struct conv_plan, plan);
 
 	plan->N = N;
 	plan->flags = flags;
 	plan->cmode = cmode;
 	plan->ctype = ctype;
 
-	plan->dims  = xmalloc(N * sizeof(long));
-	plan->dims1 = xmalloc(N * sizeof(long));
-	plan->dims2 = xmalloc(N * sizeof(long));
-	plan->kdims = xmalloc(N * sizeof(long));
+	plan->dims  = *TYPE_ALLOC(long[N]);
+	plan->dims1 = *TYPE_ALLOC(long[N]);
+	plan->dims2 = *TYPE_ALLOC(long[N]);
+	plan->kdims = *TYPE_ALLOC(long[N]);
 
-	plan->idims = xmalloc(N * sizeof(long));
-	plan->odims = xmalloc(N * sizeof(long));
+	plan->idims = *TYPE_ALLOC(long[N]);
+	plan->odims = *TYPE_ALLOC(long[N]);
 
 	complex float U = 1.;
 
@@ -141,9 +141,9 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 		plan->dims[i] = MAX(plan->dims1[i], plan->dims2[i]);
 	}
 
-	plan->str1 = xmalloc(N * sizeof(long));
-	plan->str2 = xmalloc(N * sizeof(long));
-	plan->kstr = xmalloc(N * sizeof(long));
+	plan->str1 = *TYPE_ALLOC(long[N]);
+	plan->str2 = *TYPE_ALLOC(long[N]);
+	plan->kstr = *TYPE_ALLOC(long[N]);
 
 	md_calc_strides(N, plan->str1, plan->dims1, CFL_SIZE);
 	md_calc_strides(N, plan->str2, plan->dims2, CFL_SIZE);

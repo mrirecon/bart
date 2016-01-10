@@ -143,7 +143,7 @@ static void maps_free_data(const void* _data)
 static struct maps_data* maps_create_data(const long max_dims[DIMS], 
 			unsigned int sens_flags, const complex float* sens, bool gpu)
 {
-	struct maps_data* data = xmalloc(sizeof(struct maps_data));
+	PTR_ALLOC(struct maps_data, data);
 
 	// maximal dimensions
 	md_copy_dims(DIMS, data->max_dims, max_dims);

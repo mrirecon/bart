@@ -168,12 +168,12 @@ static const char* quote(const char* str)
 		return strdup(str);
 
 	int len = strlen(str);
-	char* qstr = xmalloc(len + j + 3);
+	char (*qstr)[len + j + 3] = TYPE_ALLOC(char[len + j + 3]);
 
 	i = 0;
 	j = 0;
 
-	qstr[j++] = '\"';
+	(*qstr)[j++] = '\"';
 
 	while ('\0' != (c = str[i++])) {
 
@@ -182,16 +182,16 @@ static const char* quote(const char* str)
 		case '\'':
 		case '"':
 		case '$':
-			qstr[j++] = '\'';
+			(*qstr)[j++] = '\'';
 		default:
-			qstr[j++] = c;
+			(*qstr)[j++] = c;
 		}
 	}
 
-	qstr[j++] = '\"';
-	qstr[j++] = '\0';
+	(*qstr)[j++] = '\"';
+	(*qstr)[j++] = '\0';
 
-	return qstr;
+	return *qstr;
 }
 
 const char* command_line = NULL;
@@ -207,21 +207,21 @@ void save_command_line(int argc, char* argv[])
 		len += strlen(qargv[i]) + 1;
 	}
 
-	char* buf = xmalloc(len + 1);
+	char (*buf)[len + 1] = TYPE_ALLOC(char[len + 1]);
 
 	size_t pos = 0;
 
 	for (int i = 0; i < argc; i++) {
 
-		strcpy(buf + pos, qargv[i]);
+		strcpy((*buf) + pos, qargv[i]);
 		pos += strlen(qargv[i]);
 		free((void*)qargv[i]);
-		buf[pos++] = ' ';
+		(*buf)[pos++] = ' ';
 	}
 
-	buf[pos] = '\0';
+	(*buf)[pos] = '\0';
 
-	command_line = buf;
+	command_line = (*buf);
 }
 
 

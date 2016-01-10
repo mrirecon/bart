@@ -73,7 +73,8 @@ int main_bart(int argc, char* argv[])
 				continue;
 
 			size_t len = strlen(tpath[i]) + strlen(argv[1]) + 2;
-			char* cmd = xmalloc(len);
+
+			char cmd[len];
 			size_t r = snprintf(cmd, len, "%s/%s", tpath[i], argv[1]);
 			assert(r < len);
 
@@ -91,8 +92,6 @@ int main_bart(int argc, char* argv[])
 
 				assert(0);
 			}
-
-			free(cmd);
 		}
 
 		return main_bart(argc - 1, argv + 1);

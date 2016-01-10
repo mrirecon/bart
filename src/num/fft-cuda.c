@@ -52,7 +52,7 @@ struct iovec {
 
 struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], const long istrides[D], bool backwards)
 {
-	struct fft_cuda_plan_s* plan = xmalloc(sizeof(struct fft_cuda_plan_s));
+	PTR_ALLOC(struct fft_cuda_plan_s, plan);
 	unsigned int N = D;
 
 	plan->batch = 1;

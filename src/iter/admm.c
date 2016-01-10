@@ -114,23 +114,23 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	long M = md_calc_offset(num_funs, fake_strs, z_dims);
 
 	// allocate memory for history
-	history->r_norm = xmalloc(plan->maxiter * sizeof(double));
-	history->s_norm = xmalloc(plan->maxiter * sizeof(double));
-	history->eps_pri = xmalloc(plan->maxiter * sizeof(double));
-	history->eps_dual = xmalloc(plan->maxiter * sizeof(double));
-	history->objective = xmalloc(plan->maxiter * sizeof(double));
-	history->rho = xmalloc(plan->maxiter * FL_SIZE);
-	history->relMSE = xmalloc(plan->maxiter * sizeof(double));
+	history->r_norm = *TYPE_ALLOC(double[plan->maxiter]);
+	history->s_norm = *TYPE_ALLOC(double[plan->maxiter]);
+	history->eps_pri = *TYPE_ALLOC(double[plan->maxiter]);
+	history->eps_dual = *TYPE_ALLOC(double[plan->maxiter]);
+	history->objective = *TYPE_ALLOC(double[plan->maxiter]);
+	history->rho = *TYPE_ALLOC(float[plan->maxiter]);
+	history->relMSE = *TYPE_ALLOC(double[plan->maxiter]);
 
 	long Mjmax = 0;
-	for( unsigned int i = 0; i < num_funs; i++)
-		Mjmax = MAX( Mjmax, z_dims[i] );
+	for(unsigned int i = 0; i < num_funs; i++)
+		Mjmax = MAX(Mjmax, z_dims[i]);
 
 	struct iter_history_s cghistory;
 	cghistory.numiter = 0;
-	cghistory.relMSE = xmalloc(plan->maxitercg * sizeof(double));
-	cghistory.objective = xmalloc(plan->maxitercg * sizeof(double));
-	cghistory.resid = xmalloc(plan->maxitercg * sizeof(double));
+	cghistory.relMSE = *TYPE_ALLOC(double[plan->maxitercg]);
+	cghistory.objective = *TYPE_ALLOC(double[plan->maxitercg]);
+	cghistory.resid = *TYPE_ALLOC(double[plan->maxitercg]);
 
 	// allocate memory for all of our auxiliary variables
 	float* z = vops->allocate(M);

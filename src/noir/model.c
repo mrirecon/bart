@@ -95,7 +95,8 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 	md_alloc_fun_t my_alloc = md_alloc;
 #endif
 
-	struct noir_data* data = (struct noir_data*)xmalloc(sizeof(struct noir_data));
+	PTR_ALLOC(struct noir_data, data);
+
 
 	data->rvc = rvc;
 

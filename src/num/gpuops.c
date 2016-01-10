@@ -248,7 +248,7 @@ static struct cuda_mem_s* find_free(size_t size)
 
 static void insert(const void* ptr, size_t len, bool device)
 {
-	struct cuda_mem_s* nptr = xmalloc(sizeof(struct cuda_mem_s));
+	PTR_ALLOC(struct cuda_mem_s, nptr);
 	nptr->ptr = ptr;
 	nptr->len = len;
 	nptr->device = device;

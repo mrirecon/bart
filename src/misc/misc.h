@@ -35,10 +35,13 @@ extern void* xmalloc(size_t s);
 
 #define XMALLOC(x) (x = xmalloc(sizeof(*x)))
 
+
+#define _TYPE_ALLOC(T)		((T*)xmalloc(sizeof(T)))
+#define TYPE_ALLOC(T)		_TYPE_ALLOC(__typeof__(T))
 #define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
 
-#define ARRAY_ALLOC(T, N)	((T(*)[N])xmalloc(sizeof(T) * N))
-
+#define _PTR_ALLOC(T, x)	T* x = xmalloc(sizeof(T))
+#define PTR_ALLOC(T, x)		_PTR_ALLOC(__typeof__(T), x)
 
 extern int parse_cfl(_Complex float res[1], const char* str);
 extern void error(const char* str, ...);

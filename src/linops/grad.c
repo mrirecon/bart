@@ -139,10 +139,10 @@ static void grad_op_free(const void* _data)
 
 struct linop_s* grad_init(long N, const long dims[N], unsigned int flags)
 {
-	struct grad_s* data = xmalloc(sizeof(struct grad_s));
+	PTR_ALLOC(struct grad_s, data);
 	
 	data->N = N + 1;
-	data->dims = xmalloc((N + 1) * sizeof(long));
+	data->dims = *TYPE_ALLOC(long[N + 1]);
 	data->flags = flags;
 
 	md_copy_dims(N, data->dims, dims);

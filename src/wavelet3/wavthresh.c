@@ -90,17 +90,17 @@ static void wavelet3_thresh_del(const void* _data)
  */
 const struct operator_p_s* prox_wavelet3_thresh_create(unsigned int N, const long dims[N], unsigned int flags, const long minsize[N], float lambda, bool randshift)
 {
-	struct wavelet3_thresh_s* data = xmalloc(sizeof(struct wavelet3_thresh_s));
+	struct wavelet3_thresh_s* data = TYPE_ALLOC(struct wavelet3_thresh_s);
 
 	data->N = N;
 
-	long* ndims = xmalloc(N * sizeof(long));
-	md_copy_dims(N, ndims, dims);
-	data->dims = ndims;
+	long (*ndims)[N] = TYPE_ALLOC(long[N]);
+	md_copy_dims(N, (*ndims), dims);
+	data->dims = *ndims;
 
-	long* nminsize = xmalloc(N * sizeof(long));
-	md_copy_dims(N, nminsize, minsize);
-	data->minsize = nminsize;
+	long (*nminsize)[N] = TYPE_ALLOC(long[N]);
+	md_copy_dims(N, (*nminsize), minsize);
+	data->minsize = *nminsize;
 
 	data->flags = flags;
 	data->lambda = lambda;

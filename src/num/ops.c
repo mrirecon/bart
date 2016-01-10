@@ -53,15 +53,14 @@ const struct operator_s* operator_generic_create2(unsigned int N, const unsigned
 			const long* dims[N], const long* strs[N],
 			void* data, operator_fun_t apply, operator_del_t del)
 {
-	struct operator_s* op = xmalloc(sizeof(struct operator_s));
-
-	const struct iovec_s** dom = xmalloc(N * sizeof(struct iovec_s*));
+	PTR_ALLOC(struct operator_s, op);
+	PTR_ALLOC(const struct iovec_s*[N], dom);
 
 	for (unsigned int i = 0; i < N; i++)
-		dom[i] = iovec_create2(D[i], dims[i], strs[i], CFL_SIZE);
+		(*dom)[i] = iovec_create2(D[i], dims[i], strs[i], CFL_SIZE);
 
 	op->N = N;
-	op->domain = dom;
+	op->domain = *dom;
 	op->data = data;
 	op->apply = apply;
 
@@ -304,21 +303,21 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
 		unsigned int IN, const long in_dims[IN], const long in_strs[IN],
 		void* data, operator_p_fun_t apply, operator_del_t del)
 {
-	struct operator_p_s* o = xmalloc(sizeof(struct operator_p_s));
-	struct op_p_data_s* op = xmalloc(sizeof(struct op_p_data_s));
+	PTR_ALLOC(struct operator_p_s, o);
+	PTR_ALLOC(struct op_p_data_s, op);
 
 	op->data = data;
 	op->apply = apply;
 	op->del = del;
 
-	const struct iovec_s** dom = xmalloc(3 * sizeof(struct iovec_s*));
+	PTR_ALLOC(const struct iovec_s*[3], dom);
 
-	dom[0] = iovec_create2(1, MD_DIMS(1), MD_DIMS(0), FL_SIZE);
-	dom[1] = iovec_create2(ON, out_dims, out_strs, CFL_SIZE);
-	dom[2] = iovec_create2(IN, in_dims, in_strs, CFL_SIZE);
+	(*dom)[0] = iovec_create2(1, MD_DIMS(1), MD_DIMS(0), FL_SIZE);
+	(*dom)[1] = iovec_create2(ON, out_dims, out_strs, CFL_SIZE);
+	(*dom)[2] = iovec_create2(IN, in_dims, in_strs, CFL_SIZE);
 
 	o->op.N = 3;
-	o->op.domain = dom;
+	o->op.domain = *dom;
 	o->op.data = op;
 	o->op.apply = op_p_apply;
 
@@ -382,7 +381,8 @@ static void identity_free(const void* _data)
 const struct operator_s* operator_identity_create2(unsigned int N, const long dims[N],
 					const long ostrs[N], const long istrs[N])
 {
-	struct identity_s* data = xmalloc(sizeof(struct identity_s));
+	PTR_ALLOC(struct identity_s, data);
+
         data->domain = iovec_create2(N, dims, istrs, CFL_SIZE);
         data->codomain = iovec_create2(N, dims, ostrs, CFL_SIZE);
 
@@ -447,7 +447,7 @@ static void chain_free(const void* _data)
  */
 const struct operator_s* operator_chain(const struct operator_s* a, const struct operator_s* b)
 {
-	struct operator_chain_s* c = xmalloc(sizeof(struct operator_chain_s));
+	PTR_ALLOC(struct operator_chain_s, c);
 	
 	// check compatibility
 
@@ -546,7 +546,7 @@ static void stack_dims(unsigned int N, long dims[N], long strs[N], unsigned int 
  */
 const struct operator_s* operator_stack(unsigned int D, unsigned int E, const struct operator_s* a, const struct operator_s* b)
 {
-	struct operator_stack_s* c = xmalloc(sizeof(struct operator_stack_s));
+	PTR_ALLOC(struct operator_stack_s, c);
 
 	assert(stack_compatible(D, a->domain[0], b->domain[0]));
 	assert(stack_compatible(E, a->domain[1], b->domain[1]));

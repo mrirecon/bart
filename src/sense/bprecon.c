@@ -196,7 +196,7 @@ void bpsense_recon(struct bpsense_conf* conf, const long dims[DIMS], complex flo
 	// -----------------------------------------------------------
 	// data storage
 
-	struct data* data = xmalloc( sizeof(struct data) );
+	PTR_ALLOC(struct data, data);
 	data->kspace = kspace;
 	data->linops = linops;
 	data->prox_ops = prox_ops;

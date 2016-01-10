@@ -44,7 +44,7 @@ static void sampling_free(const void* _data)
 
 struct linop_s* sampling_create(const long dims[DIMS], const long pat_dims[DIMS], const complex float* pattern)
 {
-	struct sampling_data_s* data = xmalloc(sizeof(struct sampling_data_s));
+	PTR_ALLOC(struct sampling_data_s, data);
 
 	md_select_dims(DIMS, ~MAPS_FLAG, data->dims, dims); // dimensions of kspace
 	md_calc_strides(DIMS, data->strs, data->dims, CFL_SIZE);

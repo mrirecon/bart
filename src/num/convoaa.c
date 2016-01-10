@@ -44,8 +44,7 @@ void overlapandadd(int N, const long dims[N], const long blk[N], complex float* 
 		ndim3[i * 2 + 0] = blk[i];
 	}
 
-	long T = md_calc_size(2 * N, L);
-	complex float* tmp = xmalloc(T * 8);
+	complex float* tmp = md_alloc(2 * N, L, CFL_SIZE);
 
 //	conv_causal_extend(2 * N, L, tmp, ndims, src1, ndim2, src2);
 	conv(2 * N, ~0, CONV_EXTENDED, CONV_CAUSAL, L, tmp, ndims, src1, ndim2, src2);
@@ -62,7 +61,7 @@ void overlapandadd(int N, const long dims[N], const long blk[N], complex float* 
 	md_clear(2 * N, ndim3, dst, CFL_SIZE);
 	md_zadd2(2 * N, L, str3, dst, str3, dst, str2, tmp);
 	
-	free(tmp);	
+	md_free(tmp);
 }
 
 
@@ -95,8 +94,7 @@ void overlapandsave(int N, const long dims[N], const long blk[N], complex float*
 		ndim3[i * 2 + 0] = blk[i];
 	}
 
-	long T = md_calc_size(2 * N, L);
-	complex float* tmp = xmalloc(T * 8);
+	complex float* tmp = md_alloc(2 * N, L, CFL_SIZE);
 
 	long str1[2 * N];
 	long str2[2 * N];
@@ -110,7 +108,7 @@ void overlapandsave(int N, const long dims[N], const long blk[N], complex float*
 	md_copy2(2 * N, ndim3, str2, tmp, str1, src1, 8);
 	conv(2 * N, ~0, CONV_VALID, CONV_CAUSAL, ndims, dst, L, tmp, ndim2, src2);
 
-	free(tmp);	
+	md_free(tmp);
 }
 
 
@@ -437,13 +435,9 @@ void overlapandsave2NE(int N, unsigned int flags, const long blk[N], const long 
 		}
 	}
 
-	long R = md_calc_size(N, odims);
-	long T = md_calc_size(2 * N, tdims);
-	long S = md_calc_size(N, dims1B);
-
-	complex float* src1B = xmalloc(S * sizeof(complex float));
-	complex float* tmp = xmalloc(T * sizeof(complex float));
-	complex float* tmpX = xmalloc(R * sizeof(complex float));
+	complex float* src1B = md_alloc(N, dims1B, CFL_SIZE);
+	complex float* tmp = md_alloc(2 * N, tdims, CFL_SIZE);
+	complex float* tmpX = md_alloc(N, odims, CFL_SIZE);
 
 	long str1[2 * N];
 	long str2[2 * N];
@@ -478,9 +472,9 @@ void overlapandsave2NE(int N, unsigned int flags, const long blk[N], const long 
 
 	md_resize_center(N, dims1, dst, dims1B, src1B, sizeof(complex float));
 
-	free(src1B);
-	free(tmpX);
-	free(tmp);
+	md_free(src1B);
+	md_free(tmpX);
+	md_free(tmp);
 }
 
 
@@ -793,7 +787,7 @@ void overlapandsave2HB(const struct vec_ops* ops, int N, unsigned int flags, con
 	//complex float* src1C = xmalloc(S * sizeof(complex float));
 	complex float* src1C = dst;
 
-	md_clear(N, dims1B, src1C, sizeof(complex float));	// must be done here
+	md_clear(N, dims1B, src1C, CFL_SIZE);	// must be done here
 
 	#pragma omp parallel for collapse(3)
 	for (int k = 0; k < nodims[N + 2]; k++) {

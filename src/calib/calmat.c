@@ -183,13 +183,13 @@ void calmat_svd(const long kdims[3], unsigned int N, complex float cov[N][N], fl
 	unsigned int L = calmat_dims[0];
 	assert(N == calmat_dims[1]);
 
-	complex float (*U)[L] = xmalloc(L * L * CFL_SIZE);
+	PTR_ALLOC(complex float[L][L], U);
 
 	// initialize to zero in case L < N not all written to
 	for (unsigned int i = 0; i < N; i++)
 		S[i] = 0.;
 
-	lapack_svd_econ(L, N, U, cov, S, MD_CAST_ARRAY2(complex float, 2, calmat_dims, cm, 0, 1));
+	lapack_svd_econ(L, N, *U, cov, S, MD_CAST_ARRAY2(complex float, 2, calmat_dims, cm, 0, 1));
 
 	free(U);
 	md_free(cm);

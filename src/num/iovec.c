@@ -32,17 +32,16 @@ void debug_print_iovec(int level, const struct iovec_s* vec)
 
 const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const long strs[N], size_t size)
 {
-	struct iovec_s* n = xmalloc(sizeof(struct iovec_s));
-
+	PTR_ALLOC(struct iovec_s, n);
 	n->N = N;
 
-	long* ndims = xmalloc(N * sizeof(long));
-	memcpy(ndims, dims, N * sizeof(long));
-	n->dims = ndims;
+	PTR_ALLOC(long[N], ndims);
+	memcpy(*ndims, dims, N * sizeof(long));
+	n->dims = *ndims;
 
-	long* nstrs = xmalloc(N * sizeof(long));
-	memcpy(nstrs, strs, N * sizeof(long));
-	n->strs = nstrs;
+	PTR_ALLOC(long[N], nstrs);
+	memcpy(*nstrs, strs, N * sizeof(long));
+	n->strs = *nstrs;
 
 	n->size = size;
 

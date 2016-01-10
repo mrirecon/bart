@@ -288,17 +288,17 @@ static void finite_diff_del(const void* _data)
  */
 extern const struct linop_s* finite_diff_init(unsigned int D, const long dim[D], const unsigned long flags, bool snip, bool gpu)
 {
-	struct fdiff_s* data = xmalloc(sizeof(struct fdiff_s));
+	PTR_ALLOC(struct fdiff_s, data);
 
 	data->D = D;
 	data->flags = flags;
 	data->order = 1;
 	data->snip = snip;
 
-	data->dims = xmalloc(D * sizeof(long));
+	data->dims = *TYPE_ALLOC(long[D]);
 	memcpy(data->dims, dim, D * sizeof(long));
 
-	data->str = xmalloc(D * sizeof(long));
+	data->str = *TYPE_ALLOC(long[D]);
 	md_calc_strides(D, data->str, data->dims, sizeof(complex float));
 
 #ifdef USE_CUDA
@@ -612,20 +612,17 @@ static void zfinitediff_del(const void* _data)
 	free(data->strides_adj);
 }
 
-const struct linop_s* zfinitediff_init(unsigned int D,
-					  const long dims[D],
-					  const long diffdim,
-					  _Bool circular) {
-
-  struct zfinitediff_data* data = xmalloc(sizeof(struct zfinitediff_data));
+const struct linop_s* zfinitediff_init(unsigned int D, const long dims[D], long diffdim, bool circular)
+{
+  PTR_ALLOC(struct zfinitediff_data, data);
   data->D = D;
   data->dim_diff = diffdim;
   data->do_circdiff = circular;
 
-  data->dims_in = xmalloc(D * sizeof(long));
-  data->dims_adj = xmalloc(D * sizeof(long));
-  data->strides_in = xmalloc(D * sizeof(long));
-  data->strides_adj = xmalloc(D * sizeof(long));
+  data->dims_in = *TYPE_ALLOC(long[D]);
+  data->dims_adj = *TYPE_ALLOC(long[D]);
+  data->strides_in = *TYPE_ALLOC(long[D]);
+  data->strides_adj = *TYPE_ALLOC(long[D]);
 
   md_copy_dims(D, data->dims_in, dims);
   md_copy_dims(D, data->dims_adj, dims);

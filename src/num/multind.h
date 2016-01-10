@@ -128,12 +128,16 @@ extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned int fla
 #define MD_CLEAR(x, y) ((x) & ~MD_BIT(y))
 #define MD_SET(x, y)	((x) | MD_BIT(y))
 
-#define MD_CAST_ARRAY2(T, N, dims, x, a, b) \
+#define MD_CAST_ARRAY2_PTR(T, N, dims, x, a, b) \
 	(assert(((a) < (b)) && !md_check_dimensions((N), (dims), (1 << (a)) | (1 << (b)))), \
-					*(T (*)[(dims)[b]][(dims)[a]])(x))
-#define MD_CAST_ARRAY3(T, N, dims, x, a, b, c) \
+					(T (*)[(dims)[b]][(dims)[a]])(x))
+#define MD_CAST_ARRAY3_PTR(T, N, dims, x, a, b, c) \
 	(assert(((a) < (b)) && ((b) < (c)) && !md_check_dimensions((N), (dims), (1 << (a)) | (1 << (b) | (1 << (c))))), \
-					*(T (*)[(dims)[c]][(dims)[b]][(dims)[a]])(x))
+					(T (*)[(dims)[c]][(dims)[b]][(dims)[a]])(x))
+
+#define MD_CAST_ARRAY2(T, N, dims, x, a, b) (*MD_CAST_ARRAY2_PTR(T, N, dims, x, a, b))
+#define MD_CAST_ARRAY3(T, N, dims, x, a, b, c) (*MD_CAST_ARRAY3_PTR(T, N, dims, x, a, b, c))
+
 
 #define MD_ACCESS(N, strs, pos, x)	((x)[md_calc_offset((N), (strs), (pos)) / sizeof((x)[0])])
 

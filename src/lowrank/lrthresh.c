@@ -97,7 +97,7 @@ const struct operator_p_s* lrthresh_create(const long dims_lev[DIMS], bool rands
  */
 static struct lrthresh_data_s* lrthresh_create_data(const long dims_decom[DIMS], bool randshift, unsigned long mflags, const long blkdims[MAX_LEV][DIMS], float lambda, bool noise, int remove_mean, bool use_gpu)
 {
-	struct lrthresh_data_s* data = xmalloc(sizeof(struct lrthresh_data_s));
+	PTR_ALLOC(struct lrthresh_data_s, data);
 
 	data->randshift = randshift;
 	data->mflags = mflags;

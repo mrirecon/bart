@@ -191,16 +191,17 @@ void lapack_eig_double(long N, double eigenval[N], complex double matrix[N][N])
 	assert(N > 0);
 	long lwork = -1;
 	complex double work1[1];
-	double* rwork = xmalloc((3 * N - 2) * sizeof(double));
-        zheev_("V", "U", &N, matrix, &N, eigenval, work1, &lwork, rwork, &info);
+	PTR_ALLOC(double[3 * N - 2], rwork);
+        zheev_("V", "U", &N, matrix, &N, eigenval, work1, &lwork, *rwork, &info);
 
-	if (0 != info)
-		goto err;
+	if (0 == info) {
 
-	lwork = (int)work1[0];
-	complex double* work = xmalloc(lwork * sizeof(complex double));
-	zheev_("V", "U", &N, matrix, &N, eigenval, work, &lwork, rwork, &info);
-	free(work);
+		lwork = (int)work1[0];
+		PTR_ALLOC(complex double[lwork], work);
+		zheev_("V", "U", &N, matrix, &N, eigenval, *work, &lwork, *rwork, &info);
+		free(work);
+	}
+
 	free(rwork);
 #endif
 	if (0 != info) 
@@ -224,16 +225,17 @@ void lapack_eig(long N, float eigenval[N], complex float matrix[N][N])
 	assert(N > 0);
 	long lwork = -1;
 	complex float work1[1];
-	float* rwork = xmalloc((3 * N - 2) * sizeof(float));
-        cheev_("V", "U", &N, matrix, &N, eigenval, work1, &lwork, rwork, &info);
+	PTR_ALLOC(float[3 * N - 2], rwork);
+        cheev_("V", "U", &N, matrix, &N, eigenval, work1, &lwork, *rwork, &info);
 
-	if (0 != info)
-		goto err;
+	if (0 == info) {
 
-	lwork = (int)work1[0];
-	complex float* work = xmalloc(lwork * sizeof(complex float));
-	cheev_("V", "U", &N, matrix, &N, eigenval, work, &lwork, rwork, &info);
-	free(work);
+		lwork = (int)work1[0];
+		PTR_ALLOC(complex float[lwork], work);
+		cheev_("V", "U", &N, matrix, &N, eigenval, *work, &lwork, *rwork, &info);
+		free(work);
+	}
+
 	free(rwork);
 #endif
 
@@ -268,22 +270,24 @@ void lapack_svd(long M, long N, complex float U[M][M], complex float VH[N][N], f
 #else
 	long lwork = -1;
 	complex float work1[1];
-	float* rwork = xmalloc(MIN(M, N) * MAX(5 * MIN(M, N) + 7, 2 * MAX(M, N) + 2 * MIN(M, N) + 1) * sizeof(float));
-	long* iwork = xmalloc(8 * MIN(M, N) * sizeof(long));
+	PTR_ALLOC(float[MIN(M, N) * MAX(5 * MIN(M, N) + 7, 2 * MAX(M, N) + 2 * MIN(M, N) + 1)], rwork);
+	PTR_ALLOC(long[8 * MIN(M, N)], iwork);
 
-	cgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work1, &lwork, rwork, iwork, &info);
+	cgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work1, &lwork, *rwork, *iwork, &info);
 
-	if (0 != info)
-		goto err;
+	if (0 == info) {
 
-	lwork = (int)work1[0];
-	complex float* work = xmalloc(MAX(1, lwork) * sizeof(complex float));
-	cgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work, &lwork, rwork, iwork, &info);
+		lwork = (int)work1[0];
+		PTR_ALLOC(complex float[MAX(1, lwork)], work);
+		cgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, *work, &lwork, *rwork, *iwork, &info);
+		free(work);
+	}
+
 	free(rwork);
 	free(iwork);
-	free(work);
 #endif
 	}
+
 	if (0 != info) 
 		goto err;
 
@@ -313,32 +317,33 @@ void lapack_svd_econ(long M, long N,
 	} else
 #endif 
 	{
-
 #ifdef USE_ACML
 	cgesvd('S', 'S', M, N, A, M, S, U, M, VH, minMN, &info);
 #else
 	long lwork = -1;
 	complex float work1[1];
-	float* rwork = xmalloc(5 * N * sizeof(float));
-	long* iwork = xmalloc(8 * minMN * sizeof(long));
+	PTR_ALLOC(float[5 * N], rwork);
+	PTR_ALLOC(long[8 * minMN], iwork);
 
-	cgesvd_("S", "S", &M, &N, A, &M, S, U, &M, VH, &minMN, work1, &lwork, rwork, iwork, &info);
+	cgesvd_("S", "S", &M, &N, A, &M, S, U, &M, VH, &minMN, work1, &lwork, *rwork, *iwork, &info);
 
-	if(0 != info)
-		goto err;
+	if (0 == info) {
 
-	lwork = (int)work1[0];
-	complex float* work = xmalloc(lwork * sizeof(complex float));
-	cgesvd_("S", "S", &M, &N, A, &M, S, U, &M, VH, &minMN, work, &lwork, rwork, iwork, &info);
+		lwork = (int)work1[0];
+		PTR_ALLOC(complex float[lwork], work);
+		cgesvd_("S", "S", &M, &N, A, &M, S, U, &M, VH, &minMN, *work, &lwork, *rwork, *iwork, &info);
 
-	free(work);
+		free(work);
+	}
+
 	free(iwork);
 	free(rwork);
 #endif
 	}
 
-	if(0 != info)
+	if (0 != info)
 		goto err;
+
 	return;
 
 err:
@@ -357,21 +362,22 @@ void lapack_svd_double(long M, long N, complex double U[M][M], complex double VH
 #else
 	long lwork = -1;
 	complex double work1[1];
-	double* rwork = xmalloc(MIN(M, N) * MAX(5 * MIN(M, N) + 7, 2 * MAX(M, N) + 2 * MIN(M, N) + 1) * sizeof(double));
-	long* iwork = xmalloc(8 * MIN(M, N) * sizeof(long));
+	PTR_ALLOC(double[MIN(M, N) * MAX(5 * MIN(M, N) + 7, 2 * MAX(M, N) + 2 * MIN(M, N) + 1)], rwork);
+	PTR_ALLOC(long[8 * MIN(M, N)], iwork);
 
-	zgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work1, &lwork, rwork, iwork, &info);
+	zgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work1, &lwork, *rwork, *iwork, &info);
 
-	if (0 != info)
-		goto err;
+	if (0 == info) {
 
-	lwork = (int)work1[0];
-	complex double* work = xmalloc(MAX(1, lwork) * sizeof(complex double));
-	zgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, work, &lwork, rwork, iwork, &info);
+		lwork = (int)work1[0];
+		PTR_ALLOC(complex double[MAX(1, lwork)], work);
+		zgesdd_("A", &M, &N, A, &M, S, U, &M, VH, &N, *work, &lwork, *rwork, *iwork, &info);
+
+		free(work);
+	}
 
 	free(rwork);
 	free(iwork);
-	free(work);
 #endif
 
 	if (0 != info) 

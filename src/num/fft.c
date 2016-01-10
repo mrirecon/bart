@@ -279,7 +279,7 @@ static void fft_free_plan(const void* _data)
 
 const struct operator_s* fft_create2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards)
 {
-	struct fft_plan_s* plan = xmalloc(sizeof(struct fft_plan_s));
+	PTR_ALLOC(struct fft_plan_s, plan);
 
 	plan->fftw = fft_fftwf_plan(D, dimensions, flags, ostrides, dst, istrides, src, backwards);
 

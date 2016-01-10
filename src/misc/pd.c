@@ -63,15 +63,15 @@ static bool distance_check(int D, int T, int N, float vard, const float delta[T]
 }
 
 
-int poissondisc_mc(int D, int T, int N, int I, float vardens, const float delta[T][T], float points[N][D], int kind[N])
+int (poissondisc_mc)(int D, int T, int N, int I, float vardens, const float delta[T][T], float points[N][D], int kind[N])
 {
-	char* active = xmalloc(N * sizeof(char));
+	PTR_ALLOC(char[N], active);
 
 	assert((0 < I) && (I < N));
 	assert(vardens >= 0.); // otherwise grid granularity needs to be changed
 
-	memset(active, 0, N * sizeof(char));
-	memset(active, 1, I * sizeof(char));
+	memset(*active, 0, N * sizeof(char));
+	memset(*active, 1, I * sizeof(char));
 
 	int k = 30;
 	int p = I;
@@ -138,7 +138,7 @@ int poissondisc_mc(int D, int T, int N, int I, float vardens, const float delta[
 
 		while (true) {
 
-			while (!active[s2])
+			while (!(*active)[s2])
 				s2++;
 
 			if (0 == sel)
@@ -148,7 +148,7 @@ int poissondisc_mc(int D, int T, int N, int I, float vardens, const float delta[
 			s2++;
 		}
 
-		assert(active[s2]);
+		assert((*active)[s2]);
 
 		// try k times to place a new point near the selected point
 
@@ -232,7 +232,7 @@ int poissondisc_mc(int D, int T, int N, int I, float vardens, const float delta[
 				assert(-1 == grid[index]); // 0 is actually the first point
 				grid[index] = p;
 #endif
-				active[p] = 1;
+				(*active)[p] = 1;
 				a++;
 				p++;
 
@@ -248,7 +248,7 @@ int poissondisc_mc(int D, int T, int N, int I, float vardens, const float delta[
 
 		if (!found) {
 
-			active[s2] = 0;
+			(*active)[s2] = 0;
 			a--;
 		} 
 	}
@@ -267,10 +267,10 @@ out:
 
 extern int poissondisc(int D, int N, int I, float vardens, float delta, float points[N][D])
 {
-	int* kind = xmalloc(N * sizeof(int));
-	memset(kind, 0, I * sizeof(int));
+	PTR_ALLOC(int[N], kind);
+	memset(*kind, 0, I * sizeof(int));
 	const float dd[1][1] = { { delta } };
-	int P = poissondisc_mc(D, 1, N, I, vardens, dd, points, kind);
+	int P = poissondisc_mc(D, 1, N, I, vardens, dd, points, *kind);
 	free(kind);
 	return P;
 }

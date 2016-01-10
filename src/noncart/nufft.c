@@ -112,7 +112,7 @@ static complex float* compute_psf2(unsigned int N, const long psf_dims[N + 3], c
 struct linop_s* nufft_create(unsigned int N, const long ksp_dims[N], const long cim_dims[N], const long traj_dims[N], const complex float* traj, const complex float* weights, struct nufft_conf_s conf, bool use_gpu)
 
 {
-	struct nufft_data* data = (struct nufft_data*)xmalloc(sizeof(struct nufft_data));
+	PTR_ALLOC(struct nufft_data, data);
 
 	data->N = N;
 	data->use_gpu = use_gpu;
@@ -128,23 +128,23 @@ struct linop_s* nufft_create(unsigned int N, const long ksp_dims[N], const long 
 
 	unsigned int ND = N + 3;
 
-	data->ksp_dims = xmalloc(ND * sizeof(long));
-	data->cim_dims = xmalloc(ND * sizeof(long));
-	data->cml_dims = xmalloc(ND * sizeof(long));
-	data->img_dims = xmalloc(ND * sizeof(long));
-	data->trj_dims = xmalloc(ND * sizeof(long));
-	data->lph_dims = xmalloc(ND * sizeof(long));
-	data->psf_dims = xmalloc(ND * sizeof(long));
-	data->wgh_dims = xmalloc(ND * sizeof(long));
+	data->ksp_dims = *TYPE_ALLOC(long[ND]);
+	data->cim_dims = *TYPE_ALLOC(long[ND]);
+	data->cml_dims = *TYPE_ALLOC(long[ND]);
+	data->img_dims = *TYPE_ALLOC(long[ND]);
+	data->trj_dims = *TYPE_ALLOC(long[ND]);
+	data->lph_dims = *TYPE_ALLOC(long[ND]);
+	data->psf_dims = *TYPE_ALLOC(long[ND]);
+	data->wgh_dims = *TYPE_ALLOC(long[ND]);
 
-	data->ksp_strs = xmalloc(ND * sizeof(long));
-	data->cim_strs = xmalloc(ND * sizeof(long));
-	data->cml_strs = xmalloc(ND * sizeof(long));
-	data->img_strs = xmalloc(ND * sizeof(long));
-	data->trj_strs = xmalloc(ND * sizeof(long));
-	data->lph_strs = xmalloc(ND * sizeof(long));
-	data->psf_strs = xmalloc(ND * sizeof(long));
-	data->wgh_strs = xmalloc(ND * sizeof(long));
+	data->ksp_strs = *TYPE_ALLOC(long[ND]);
+	data->cim_strs = *TYPE_ALLOC(long[ND]);
+	data->cml_strs = *TYPE_ALLOC(long[ND]);
+	data->img_strs = *TYPE_ALLOC(long[ND]);
+	data->trj_strs = *TYPE_ALLOC(long[ND]);
+	data->lph_strs = *TYPE_ALLOC(long[ND]);
+	data->psf_strs = *TYPE_ALLOC(long[ND]);
+	data->wgh_strs = *TYPE_ALLOC(long[ND]);
 
 	md_singleton_dims(ND, data->cim_dims);
 	md_singleton_dims(ND, data->ksp_dims);
@@ -234,7 +234,7 @@ struct linop_s* nufft_create(unsigned int N, const long ksp_dims[N], const long 
 	md_calc_strides(ND, data->cml_strs, data->cml_dims, CFL_SIZE);
 
 
-	data->cm2_dims = xmalloc(ND * sizeof(long));
+	data->cm2_dims = *TYPE_ALLOC(long[ND]);
 	// !
 	md_copy_dims(ND, data->cm2_dims, data->cim_dims);
 	for (int i = 0; i < 3; i++)

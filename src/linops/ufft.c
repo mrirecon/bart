@@ -52,18 +52,20 @@ struct ufft_data {
 };
 
 static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu);
-static void ufft_free_data(const void* _data );
+static void ufft_free_data(const void* _data);
 static void ufft_apply(const void* _data, complex float* dst, const complex float* src);
 static void ufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src);
-static void ufft_apply_normal(const void* _data, complex float* dst, const complex float* src );
-static void ufft_apply_pinverse(const void* _data, float rho, complex float* dst, const complex float* src );
+static void ufft_apply_normal(const void* _data, complex float* dst, const complex float* src);
+static void ufft_apply_pinverse(const void* _data, float rho, complex float* dst, const complex float* src);
+
+
 
 /**
  * Create undersampled/weighted fft operator
  */
 const struct linop_s* ufft_create(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu)
 {
-	struct ufft_data* data = ufft_create_data( ksp_dims, pat_dims, pat, flags, use_gpu );
+	struct ufft_data* data = ufft_create_data(ksp_dims, pat_dims, pat, flags, use_gpu);
 
 	// Create operator interface
 	return linop_create(DIMS, data->ksp_dims, DIMS, data->ksp_dims, data,
@@ -73,29 +75,25 @@ const struct linop_s* ufft_create(const long ksp_dims[DIMS], const long pat_dims
 
 static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu)
 {
-	struct ufft_data* data = xmalloc(sizeof(struct ufft_data));
+	PTR_ALLOC(struct ufft_data, data);
 
 	data->flags = flags;
 	data->use_gpu = use_gpu;
 
-	// Copy dimensions
 	md_copy_dims(DIMS, data->pat_dims, pat_dims);
 	md_copy_dims(DIMS, data->ksp_dims, ksp_dims);
 
-	// Get strides
-	md_calc_strides( DIMS, data->pat_strs, pat_dims, CFL_SIZE );
-	md_calc_strides( DIMS, data->ksp_strs, ksp_dims, CFL_SIZE );
+	md_calc_strides(DIMS, data->pat_strs, pat_dims, CFL_SIZE);
+	md_calc_strides(DIMS, data->ksp_strs, ksp_dims, CFL_SIZE);
 
-	// Assign pat
 #ifdef USE_CUDA
 	data->pat = (use_gpu ? md_alloc_gpu : md_alloc)(DIMS, data->pat_dims, CFL_SIZE);
 #else
 	data->pat = md_alloc(DIMS, data->pat_dims, CFL_SIZE);
 #endif
-	md_copy( DIMS, data->pat_dims, data->pat, pat, CFL_SIZE );
+	md_copy(DIMS, data->pat_dims, data->pat, pat, CFL_SIZE);
 
-	// Initialize fft operator
-	data->fft_op = linop_fftc_create( DIMS, ksp_dims, flags, use_gpu );
+	data->fft_op = linop_fftc_create(DIMS, ksp_dims, flags, use_gpu);
 
 	return data;
 }
@@ -103,10 +101,10 @@ static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long 
 
 static void ufft_free_data(const void* _data)
 {
-        struct ufft_data* data = (struct ufft_data* ) _data;
+        struct ufft_data* data = (struct ufft_data* )_data;
 
-	md_free( data->pat );
-	linop_free( data->fft_op );
+	md_free(data->pat);
+	linop_free(data->fft_op);
 
 	free((void*)data);
 }
@@ -121,10 +119,11 @@ void ufft_apply(const void* _data, complex float* dst, const complex float* src)
 {
 	const struct ufft_data* data = _data;
 
-	linop_forward( data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src );
+	linop_forward(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src);
 
-	md_zmul2( DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, dst, data->pat_strs, data->pat);
+	md_zmul2(DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, dst, data->pat_strs, data->pat);
 }
+
 
 
 /**
@@ -134,11 +133,9 @@ void ufft_apply_adjoint(const void* _data, complex float* dst, const complex flo
 {
  	const struct ufft_data* data = _data;
 
-	md_zmul2( DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, src, data->pat_strs, data->pat);
+	md_zmul2(DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, src, data->pat_strs, data->pat);
 
-
-	linop_adjoint( data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, dst );
-
+	linop_adjoint(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, dst);
 }
 
 
@@ -151,38 +148,36 @@ void ufft_apply_normal(const void* _data, complex float* dst, const complex floa
 {
  	const struct ufft_data* data = _data;
 
-	linop_forward( data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src );
+	linop_forward(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src);
 
-	md_zmul2( DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, dst, data->pat_strs, data->pat);
+	md_zmul2(DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, dst, data->pat_strs, data->pat);
 
-	linop_adjoint( data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, dst );
+	linop_adjoint(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, dst);
 }
 
 
 
-/* 
+/**
  * 1/2 || Ax - b ||^2 + rho/2 || x - y ||^2
  * 
  * x = (ATA + lI)^-1 b
  *
- *  X  = 1/(pat^2+l)  B
+ * X = 1 / (pat^2 + l) B
  *
  */
 static void ufft_apply_pinverse(const void* _data, float rho, complex float* dst, const complex float* src )
 {
-        struct ufft_data* data = (struct ufft_data*) _data;
+        struct ufft_data* data = (struct ufft_data*)_data;
 
-	md_zsadd( DIMS, data->pat_dims, data->pat, data->pat, rho);
+	md_zsadd(DIMS, data->pat_dims, data->pat, data->pat, rho);
 
-	linop_forward( data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src );
+	linop_forward(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src);
 
-	md_zdiv2( DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, dst, data->pat_strs, data->pat );
+	md_zdiv2(DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, dst, data->pat_strs, data->pat);
 	
-	linop_adjoint( data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, dst );
+	linop_adjoint(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, dst);
 
-
-	md_zsadd( DIMS, data->pat_dims, data->pat, data->pat, -rho);
-
+	md_zsadd(DIMS, data->pat_dims, data->pat, data->pat, -rho);
 }
 
 
