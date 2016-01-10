@@ -22,6 +22,7 @@
 #include "misc/misc.h"
 
 #ifdef MAT_USE_LAPACK
+#include "num/blas.h"
 #include "num/lapack.h"
 #endif
 #include "num/rand.h"
@@ -120,7 +121,7 @@ void (mat_mul)(int A, int B, int C, complex float x[A][C], const complex float y
 #ifndef AR2D_CAST
 #define AR2D_CAST(a, b, c, d) d
 #endif
-	lapack_matrix_multiply(A, B, C, a, AR2D_CAST(complex float, A, B, b), AR2D_CAST(complex float, B, C, c));
+	blas_matrix_multiply(A, B, C, a, AR2D_CAST(complex float, A, B, b), AR2D_CAST(complex float, B, C, c));
 	mat_transpose(C, A, x, a);
 #else
 	for (int i = 0; i < A; i++) {
@@ -141,7 +142,7 @@ void (mat_mul)(int A, int B, int C, complex float x[A][C], const complex float y
 bool (mat_inverse)(unsigned int N, complex float out[N][N], const complex float in[N][N])
 {
 #ifdef MAT_USE_LAPACK
-//	return lapack_matrix_inverse(N, out, in);
+//	return blas_matrix_inverse(N, out, in);
 	UNUSED(in);
 	UNUSED(out);
 	assert(0);

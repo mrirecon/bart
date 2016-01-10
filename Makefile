@@ -251,7 +251,7 @@ else
 ifeq ($(BUILDTYPE), MacOSX)
 BLAS_L := -lblas -framework Accelerate
 else
-BLAS_L := -llapack -lblas #-lgfortran
+BLAS_L := -llapacke -lblas #-lgfortran
 endif
 endif
 

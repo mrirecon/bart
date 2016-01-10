@@ -21,6 +21,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/lapack.h"
+#include "num/blas.h"
 #include "num/la.h"
 #include "num/ops.h"
 #include "num/iovec.h"
@@ -146,7 +147,7 @@ float svthresh(long M, long N, float lambda, complex float* dst, const complex f
 	md_mul2( 3, dimsVT, strsVT, ((float*) VT)+1, strsVT, ((float*) VT)+1, strsS, S );
 
 	// dst = U * VT
-	lapack_matrix_multiply( M, N, minMN, (complex float (*) [])dst, (const complex float (*) [])U, (const complex float (*) [])VT );
+	blas_matrix_multiply( M, N, minMN, (complex float (*) [])dst, (const complex float (*) [])U, (const complex float (*) [])VT );
 
 	md_free(U);
 	md_free(VT);
