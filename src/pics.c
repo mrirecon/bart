@@ -102,7 +102,7 @@ const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_di
 
 struct reg_s {
 
-	enum { L1WAV, TV, LLR, MLR, L1IMG, L2IMG } xform;
+	enum { L1WAV, TV, LLR, MLR, IMAGL1, IMAGL2, L1IMG, L2IMG } xform;
 
 	unsigned int xflags;
 	unsigned int jflags;
@@ -168,6 +168,22 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].xform = TV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
+			p->algo = ADMM;
+		}
+		else if (strcmp(rt, "R1") == 0) {
+
+			regs[r].xform = IMAGL1;
+			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			assert(2 == ret);
+			regs[r].xflags = 0u;
+			p->algo = ADMM;
+		}
+		else if (strcmp(rt, "R2") == 0) {
+
+			regs[r].xform = IMAGL2;
+			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			assert(2 == ret);
+			regs[r].xflags = 0u;
 			p->algo = ADMM;
 		}
 		else if (strcmp(rt, "I") == 0) {
@@ -578,6 +594,20 @@ int main_pics(int argc, char* argv[])
                         linop_free(decom_op);
                         linop_free(tmp_op);
 
+			break;
+
+		case IMAGL1:
+			debug_printf(DP_INFO, "l1 regularization of imaginary part: %f\n", regs[nr].lambda);
+
+			trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
+			thresh_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
+			break;
+
+		case IMAGL2:
+			debug_printf(DP_INFO, "l2 regularization of imaginary part: %f\n", regs[nr].lambda);
+
+			trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
+			thresh_ops[nr] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
 			break;
 
 		case L1IMG:
