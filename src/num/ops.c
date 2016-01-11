@@ -1,9 +1,10 @@
 /* Copyright 2015. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
  *
@@ -644,6 +645,128 @@ void operator_p_iter(void* o, float lambda, float* _dst, const float* _src)
 	const complex float* src = (complex float*)_src;
 
 	operator_p_apply_unchecked(o, lambda, dst, src);
+}
+
+
+
+struct op_loop_s {
+
+	unsigned int N;
+	unsigned int D;
+	const long** strs;
+	const long** dims;
+	const long* dims0;
+	const struct operator_s* op;
+};
+
+static void op_loop_del(const void* _data)
+{
+	const struct op_loop_s* data = _data;
+	operator_free(data->op);
+
+	for (unsigned int i = 0; i < data->N; i++) {
+
+		free((void*)data->dims[i]);
+		free((void*)data->strs[i]);
+	}
+
+	free((void*)data->strs);
+	free((void*)data->dims);
+	free((void*)data->dims0);
+	free((void*)data);
+}
+
+static void op_loop_nary(void* _data, void* ptr[])
+{
+	const struct op_loop_s* data = _data;
+	operator_generic_apply_unchecked(data->op, data->N, ptr);
+}
+
+static void op_loop_fun(const void* _data, unsigned int N, void* args[N])
+{
+	const struct op_loop_s* data = _data;
+	assert(N == data->N);
+	md_nary(N, data->D, data->dims0, data->strs, args, (void*)data, op_loop_nary);
+}
+
+static void merge_dims(unsigned int D, long odims[D], const long idims1[D], const long idims2[D])
+{
+	md_copy_dims(D, odims, idims1);
+
+	for (unsigned int i = 0; i < D; i++) {
+
+		assert((1 == odims[i]) | (1 == idims2[i]));
+
+		if (1 == odims[i])
+			odims[i] = idims2[i];
+	}
+}
+
+const struct operator_s* operator_loop2(unsigned int N, const unsigned int D,
+				const long dims[D], const long (*strs)[D],
+				const struct operator_s* op)
+{
+	assert(N == operator_nr_args(op));
+
+	unsigned int D2[N];
+	PTR_ALLOC(long[D], dims0);
+	md_copy_dims(D, *dims0, dims);
+
+	PTR_ALLOC(const long*[N], dims2);
+	PTR_ALLOC(const long*[N], strs2);
+
+
+	// TODO: we should have a flag and ignore args with flag
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		const struct iovec_s* io = operator_arg_domain(op, i);
+
+		assert(D == io->N);
+
+		for (unsigned int j = 0; j < D; j++) {
+
+			assert((0 == io->strs[j]) || (io->strs[j] == strs[i][j]));
+			assert((1 == io->dims[j]) == (0 == io->strs[j]));
+		}
+
+		D2[i] = D;
+
+		PTR_ALLOC(long[D], tdims);
+		merge_dims(D, *tdims, dims, io->dims);
+
+		PTR_ALLOC(long[D], tstrs);
+		md_copy_strides(D, *tstrs, strs[i]);
+
+		(*dims2)[i] = *tdims;
+		(*strs2)[i] = *tstrs;
+	}
+
+	PTR_ALLOC(struct op_loop_s, data);
+	data->N = N;
+	data->D = D;
+	data->op = op;
+
+	data->dims0 = *dims0;
+	data->dims = *dims2;
+	data->strs = *strs2;
+
+	return operator_generic_create2(N, D2, *dims2, *strs2, data, op_loop_fun, op_loop_del);
+}
+
+const struct operator_s* operator_loop(unsigned int D, const long dims[D], const struct operator_s* op)
+{
+	unsigned int N = operator_nr_args(op);
+	long strs[N][D];
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		long tdims[D];
+		merge_dims(D, tdims, dims, operator_arg_domain(op, i)->dims);
+		md_calc_strides(D, strs[i], tdims, operator_arg_domain(op, i)->size);
+	}
+
+	return operator_loop2(N, D, dims, strs, op);
 }
 
 

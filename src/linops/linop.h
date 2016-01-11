@@ -73,6 +73,7 @@ extern const struct iovec_s* linop_codomain(const struct linop_s* x);
 
 extern const struct linop_s* linop_clone(const struct linop_s* x);
 
+extern struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* op);
 
 
 // extern const struct linop_s* linop_identity(unsigned int N, const long dims[N]);

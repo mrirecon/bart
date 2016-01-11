@@ -399,6 +399,16 @@ struct linop_s* linop_chainN(unsigned int N, struct linop_s* a[N])
 
 
 
+struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* op)
+{
+	PTR_ALLOC(struct linop_s, op2);
+	op2->forward = operator_loop(D, dims, op->forward);
+	op2->adjoint = operator_loop(D, dims, op->adjoint);
+	op2->normal = (NULL == op->normal) ? NULL : operator_loop(D, dims, op->normal);
+	op2->norm_inv = NULL; // FIXME
+	return op2;
+}
+
 
 /**
  * Free the linear operator and associated data,
