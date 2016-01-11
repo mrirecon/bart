@@ -85,6 +85,11 @@ acml.top ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
 
 fftw.top ?= /usr/
 
+ifeq ($(BUILDTYPE), MacOSX)
+fftw.top = /opt/local/
+endif
+
+
 # Matlab
 
 matlab.top ?= /usr/local/matlab/
