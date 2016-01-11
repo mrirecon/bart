@@ -41,8 +41,7 @@ extern const struct operator_p_s* operator_p_create2(unsigned int ON, const long
 extern const struct operator_s* operator_generic_create(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)],
 		void* data, operator_fun_t apply, operator_del_t del);
 
-extern const struct operator_s* operator_generic_create2(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)],
-		const long* out_strs[__VLA(N)], void* data, operator_fun_t apply, operator_del_t del);
+extern const struct operator_s* operator_generic_create2(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)], const long* out_strs[__VLA(N)], void* data, operator_fun_t apply, operator_del_t del);
 
 
 
@@ -96,6 +95,11 @@ extern void* operator_p_get_data(const struct operator_p_s* x);
 extern const struct operator_s* operator_gpu_wrapper(const struct operator_s* op);
 #endif
 
+extern const struct operator_s* operator_loop2(unsigned int N, const unsigned int D,
+				const long dims[D], const long (*strs)[D],
+				const struct operator_s* op);
+
+extern const struct operator_s* operator_loop(unsigned int D, const long dims[D], const struct operator_s* op);
 
 
 // iter helper functions
