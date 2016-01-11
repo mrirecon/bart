@@ -47,14 +47,36 @@ static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
 
-static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const complex float* weights, struct operator_s** precond_op)
+
+static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, bool low_mem, const complex float* weights, struct operator_s** precond_op)
 {
 	long coilim_dims[DIMS];
-	long img_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
+
+	struct linop_s* fft_op = NULL;
+
+	if (!low_mem) {
+
+		fft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, weights, conf);
+
+	} else {
+
+		long cim1_dims[DIMS];
+		md_select_dims(DIMS, FFT_FLAGS, cim1_dims, coilim_dims);
+
+		long ksp1_dims[DIMS];
+		md_select_dims(DIMS, FFT_FLAGS, ksp1_dims, ksp_dims);
+
+		long loop_dims[DIMS];
+		md_select_dims(DIMS, ~FFT_FLAGS, loop_dims, coilim_dims);
+
+		fft_op = nufft_create(DIMS, ksp1_dims, cim1_dims, traj_dims, traj, NULL, conf);
+		fft_op = linop_loop(DIMS, loop_dims, fft_op);
+	}
+
+	long img_dims[DIMS];
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
 
-	const struct linop_s* fft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, weights, conf);
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
 
 	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
@@ -88,6 +110,7 @@ int main_pics(int argc, char* argv[])
 	// Read input options
 	struct nufft_conf_s nuconf = nufft_conf_defaults;
 	nuconf.toeplitz = true;
+	bool low_mem = false;
 
 	float restrict_fov = -1.;
 	const char* pat_file = NULL;
@@ -141,7 +164,8 @@ int main_pics(int argc, char* argv[])
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
 		OPT_SELECT('m', enum algo_t, &ropts.algo, ADMM, "Select ADMM"),
 		OPT_FLOAT('w', &scaling, "val", "scaling"),
-		OPT_SET('S', &scale_im, "Re-scale the image after reconstruction"),
+		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
+		OPT_SET('L', &low_mem, "use low-memory mode"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -267,7 +291,7 @@ int main_pics(int argc, char* argv[])
 	if (NULL == traj_file)
 		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
 	else
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, (struct operator_s**) &precond_op);
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, low_mem, (struct operator_s**)&precond_op);
 
 	// apply scaling
 
