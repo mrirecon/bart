@@ -67,6 +67,10 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 		long ksp1_dims[DIMS];
 		md_select_dims(DIMS, FFT_FLAGS, ksp1_dims, ksp_dims);
 
+		long check_dims[DIMS];
+		md_select_dims(DIMS, ~FFT_FLAGS, check_dims, traj_dims);
+		assert(1 == md_calc_size(DIMS, check_dims));
+
 		long loop_dims[DIMS];
 		md_select_dims(DIMS, ~FFT_FLAGS, loop_dims, coilim_dims);
 
