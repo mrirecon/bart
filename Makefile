@@ -77,7 +77,7 @@ endif
 cuda.top ?= /usr/
 
 
-# BLAS/LAPACK
+# acml
 
 acml.top ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
 
