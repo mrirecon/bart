@@ -54,9 +54,11 @@ void num_init(void)
 		omp_set_num_threads(p);
 
 	p = omp_get_max_threads();
-	fft_set_num_threads(p);
 #else
-	fft_set_num_threads(2);
+	int p = 2;
+#endif
+#ifdef FFTWTHREADS
+	fft_set_num_threads(p);
 #endif
 }
 
@@ -106,7 +108,9 @@ void num_set_num_threads(int n)
 #ifdef _OPENMP
 	omp_set_num_threads(n);
 #endif
+#ifdef FFTWTHREADS
 	fft_set_num_threads(n);
+#endif
 }
 
 

@@ -20,6 +20,7 @@ ACML?=0
 OMP?=1
 SLINK?=0
 DEBUG?=0
+FFTWTHREADS?=1
 
 DESTDIR ?= /
 
@@ -261,8 +262,12 @@ endif
 # fftw
 
 FFTW_H := -I$(fftw.top)/include/
-FFTW_L := -L$(fftw.top)/lib -lfftw3f_threads -lfftw3f
+FFTW_L := -L$(fftw.top)/lib -lfftw3f
 
+ifeq ($(FFTWTHREADS),1)
+	FFTW_L += -lfftw3f_threads
+	CPPFLAGS += -DFFTWTHREADS
+endif
 
 # Matlab
 

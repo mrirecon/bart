@@ -426,6 +426,7 @@ bool fft_threads_init = false;
 
 void fft_set_num_threads(unsigned int n)
 {
+#ifdef FFTWTHREADS
 	#pragma omp critical
 	if (!fft_threads_init) {
 
@@ -435,6 +436,9 @@ void fft_set_num_threads(unsigned int n)
 
 	#pragma omp critical
         fftwf_plan_with_nthreads(n);
+#else
+	UNUSED(n);
+#endif
 }
 
 
