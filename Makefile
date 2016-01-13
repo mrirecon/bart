@@ -166,8 +166,8 @@ endif
 
 
 ifeq ($(MAKESTAGE),1)
-.PHONY: doc/commands.txt $(TARGETS) ismrmrd
-default all clean allclean distclean doc/commands.txt $(TARGETS) ismrmrd:
+.PHONY: doc/commands.txt $(TARGETS) ismrmrd 
+default all clean allclean distclean doc/commands.txt doxygen $(TARGETS) ismrmrd:
 	make MAKESTAGE=2 $(MAKECMDGOALS)
 else
 
@@ -325,6 +325,9 @@ doc/commands.txt: bart
 	done >> doc/commands.new
 	$(root)/rules/update-if-changed.sh doc/commands.new doc/commands.txt
 
+doxygen: makedoc.sh doxyconfig bart
+	 ./makedoc.sh
+
 
 all: .gitignore $(TARGETS)
 
@@ -394,6 +397,8 @@ allclean: clean
 	rm -f $(libdir)/*.a ismrmrd $(ALLDEPS)
 	rm -f bbox $(patsubst %, %, $(TARGETS))
 	rm -f $(srcdir)/misc/version.inc
+	rm -rf doc/dx
+	rm -f doc/commands.txt
 
 distclean: allclean
 
