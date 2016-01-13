@@ -31,7 +31,6 @@ MYLINK=ln
 
 ifeq ($(UNAME),Darwin)
 	BUILDTYPE = MacOSX
-	ACML = 0
 	MYLINK = ln -s
 endif
 
@@ -83,10 +82,10 @@ acml.top ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
 
 # fftw
 
+ifneq ($(BUILDTYPE), MacOSX)
 fftw.top ?= /usr/
-
-ifeq ($(BUILDTYPE), MacOSX)
-fftw.top = /opt/local/
+else
+fftw.top ?= /opt/local/
 endif
 
 
