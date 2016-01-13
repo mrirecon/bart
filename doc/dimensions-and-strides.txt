@@ -1,0 +1,42 @@
+
+
+BART is built around a library which defines many generic functions
+on multi-dimensional arrays. Most functions come in two flavours:
+A basic version (e.g. 'md_copy') which takes as input the dimensions
+for its arguments and an extended version (e.g. 'md_copy2') which also
+takes the strides for each argument. The basic versions assume strides
+for a column-major array which is contiguous in memory.
+
+
+A stride refers to the distance in memory between successive elements
+in an array. They are used to compute the position of an element in
+memory for a given multi-index by multiplying the index of each 
+dimension with the corresponding stride and summing the results. For 
+a regular array of complex floats continuously laid out in memory
+with dimensions 'dim[N]' the default strides are:
+
+str[0] = sizeof(complex float)
+str[1] = dim[0] * sizeof(complex float)
+str[2] = dim[0] * dim[1] * sizeof(complex float)
+...
+
+There is one exception: For a dimension with length one, the
+corresponding stride is set to zero. These default strides are what
+the function 'md_calc_strides' computes and which are also used
+automatically whenever strides are not explicitly specified.
+
+
+Dimensions and strides can be manipulated to obtain different
+views of the same array without having to make a copy. For example,
+swapping dimensions and strides for two indices yields a transposed
+view of the array, an increased stride yields a view of a sub-array,
+a negative stride a view where the corresponding dimension is
+reversed (flipped), and a zero stride yields a view in which one
+dimension is replicated. Many basic functions such as 'md_transpose',
+'md_flip', 'md_slice', 'md_copy_block' etc. are implemented in this 
+way by setting up dimensions and strides and calling into the 
+generic copy function 'md_copy2'. Even much more complicated
+operations can often be implemented in just a few lines of code.
+One example is building a Casorati matrix of overlapping blocks
+(see 'num/casorati.c').
+
