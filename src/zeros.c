@@ -19,8 +19,8 @@
 #include "misc/misc.h"
 
 
-static const char* usage_str = "dims dim1 ... dimn name";
-static const char* help_str = "Create a zero-filled array with {dims} dimensions of size {dim1} to {dimn}.\n";
+static const char usage_str[] = "dims dim1 ... dimn name";
+static const char help_str[] = "Create a zero-filled array with {dims} dimensions of size {dim1} to {dimn}.\n";
 
 
 

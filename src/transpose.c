@@ -20,8 +20,8 @@
 #include "misc/misc.h"
 
 
-static const char* usage_str = "dim1 dim2 <input> <output>";
-static const char* help_str = "Transpose dimensions {dim1} and {dim2}.\n";
+static const char usage_str[] = "dim1 dim2 <input> <output>";
+static const char help_str[] = "Transpose dimensions {dim1} and {dim2}.\n";
 
 int main_transpose(int argc, char* argv[])
 {

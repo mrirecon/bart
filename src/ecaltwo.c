@@ -28,8 +28,8 @@
 
 
 
-static const char* usage_str = "x y z <input> <sensitivities> [<ev_maps>]";
-static const char* help_str =
+static const char usage_str[] = "x y z <input> <sensitivities> [<ev_maps>]";
+static const char help_str[] =
 		"Second part of ESPIRiT calibration.\n"
 		"Optionally outputs the eigenvalue maps.";
 

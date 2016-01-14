@@ -22,8 +22,8 @@
 #define DIMS 16
 #endif
 
-static const char* usage_str = "<input>";
-static const char* help_str = "";
+static const char usage_str[] = "<input>";
+static const char help_str[] = "";
 
 static void print_cfl(unsigned int N, const long dims[N], const complex float* data)
 {

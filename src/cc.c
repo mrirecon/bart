@@ -27,8 +27,8 @@
 
 
 
-static const char* usage_str = "<kspace> <coeff>|<proj_kspace>";
-static const char* help_str = "Performs coil compression.";
+static const char usage_str[] = "<kspace> <coeff>|<proj_kspace>";
+static const char help_str[] = "Performs coil compression.";
 
 
 

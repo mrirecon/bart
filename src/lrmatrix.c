@@ -60,8 +60,8 @@ static void sum_xupdate_free(const void* data)
 
 
 
-static const char* usage_str = "<input> <output>";
-static const char* help_str =
+static const char usage_str[] = "<input> <output>";
+static const char help_str[] =
 		"Perform (multi-scale) low rank matrix completion";
 
 

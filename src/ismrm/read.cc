@@ -27,7 +27,7 @@
 
 // FIXME: does not deal correctly with repetitions (and others stuff)
 
-const char* ismrm_default_path = "/usr/local/ismrmrd";
+const char ismrm_default_path[] = "/usr/local/ismrmrd";
 
 
 int ismrm_read(const char* datafile, long dims[DIMS], _Complex float* buf)

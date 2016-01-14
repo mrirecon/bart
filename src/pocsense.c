@@ -42,8 +42,8 @@
 
 
 
-static const char* usage_str = "<kspace> <sensitivities> <output>";
-static const char* help_str = "Perform POCSENSE reconstruction.";
+static const char usage_str[] = "<kspace> <sensitivities> <output>";
+static const char help_str[] = "Perform POCSENSE reconstruction.";
 
 	
 

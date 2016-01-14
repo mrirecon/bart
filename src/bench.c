@@ -505,8 +505,8 @@ const struct benchmark_s {
 };
 
 
-static const char* usage_str = "[<output>]";
-static const char* help_str = "Performs a series of micro-benchmarks.";
+static const char usage_str[] = "[<output>]";
+static const char help_str[] = "Performs a series of micro-benchmarks.";
 
 
 

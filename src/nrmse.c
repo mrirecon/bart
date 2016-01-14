@@ -26,8 +26,8 @@
 #endif
 
 
-static const char* usage_str = "<reference> <input>";
-static const char* help_str = 
+static const char usage_str[] = "<reference> <input>";
+static const char help_str[] = 
 	"Output normalized root mean square error (NRMSE),\n"
 	"i.e. norm(input - ref) / norm(ref)";
 			

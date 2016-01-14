@@ -28,8 +28,8 @@
 #endif
 
 
-static const char* usage_str = "dimension position <input> <output>";
-static const char* help_str = "Extracts a slice from {position} along {dimension}.\n";
+static const char usage_str[] = "dimension position <input> <output>";
+static const char help_str[] = "Extracts a slice from {position} along {dimension}.\n";
 
 
 int main_slice(int argc, char* argv[])

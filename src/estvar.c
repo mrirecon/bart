@@ -26,8 +26,8 @@
 #include "calib/estvar.h"
 
 
-static const char* usage_str = "<kspace>";
-static const char* help_str = "Estimate the noise variance assuming white Gaussian noise.";
+static const char usage_str[] = "<kspace>";
+static const char help_str[] = "Estimate the noise variance assuming white Gaussian noise.";
 
 
 int main_estvar(int argc, char* argv[])

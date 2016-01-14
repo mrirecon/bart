@@ -20,8 +20,8 @@
 #include "ismrm/read.h"
 
 
-static const char* usage_str = "<ismrm-file> <output>";
-static const char* help_str = "Import ISMRM raw data files.\n";
+static const char usage_str[] = "<ismrm-file> <output>";
+static const char help_str[] = "Import ISMRM raw data files.\n";
 
 
 int main(int argc, char* argv[])

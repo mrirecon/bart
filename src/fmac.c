@@ -21,8 +21,8 @@
 #define DIMS 16
 #endif
 
-static const char* usage_str = "<input1> <input2> <output>";
-static const char* help_str = "Multiply and accumulate.";
+static const char usage_str[] = "<input1> <input2> <output>";
+static const char help_str[] = "Multiply and accumulate.";
 
 
 int main_fmac(int argc, char* argv[])

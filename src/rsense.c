@@ -31,8 +31,8 @@
 
 
 
-static const char* usage_str = "<kspace> <sensitivities> <output>";
-static const char* help_str =
+static const char usage_str[] = "<kspace> <sensitivities> <output>";
+static const char help_str[] =
 		"Perform iterative SENSE/ESPIRiT reconstruction. The read\n"
 		"(0th) dimension is Fourier transformed and each section\n"
 		"perpendicular to this dimension is reconstructed separately.";

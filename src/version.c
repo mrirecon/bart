@@ -13,8 +13,8 @@
 #include "misc/version.h"
 
 
-static const char* usage_str = "[-h]";
-static const char* help_str = 
+static const char usage_str[] = "[-h]";
+static const char help_str[] = 
 	"Print BART version. The version string is of the form\n"
 	"TAG or TAG-COMMITS-SHA as produced by 'git describe'. It\n"
 	"specifies the last release (TAG), and (if git is used)\n"

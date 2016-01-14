@@ -22,8 +22,8 @@
 #define DIMS 16
 #endif
 
-static const char* usage_str = "factor <input> <output>";
-static const char* help_str = 	"Scale array by {factor}. The scale factor can be a complex number.\n";
+static const char usage_str[] = "factor <input> <output>";
+static const char help_str[] = "Scale array by {factor}. The scale factor can be a complex number.\n";
 
 
 int main_scale(int argc, char* argv[])

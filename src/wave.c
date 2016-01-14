@@ -74,8 +74,8 @@ static struct linop_s* wavecaipi_create(const long dims[DIMS], long img_read, co
 
 
 
-static const char* usage_str = "<kspace> <sensitivities> <wave> <output>";
-static const char* help_str = "Perform iterative wavecaipi reconstruction.";
+static const char usage_str[] = "<kspace> <sensitivities> <wave> <output>";
+static const char help_str[] = "Perform iterative wavecaipi reconstruction.";
 
 
 

@@ -39,8 +39,8 @@
 
 
 
-static const char* usage_str = "<kspace> <sensitivities> <output>";
-static const char* help_str =
+static const char usage_str[] = "<kspace> <sensitivities> <output>";
+static const char help_str[] =
 		"Perform basis pursuit denoising for SENSE/ESPIRiT reconstruction:\n"
 		"min_x ||T x||_1 + lambda/2 ||x||_2^2 subject to: ||y - Ax||_2 <= eps";
 

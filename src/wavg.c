@@ -20,8 +20,8 @@
 #define DIMS 16
 #endif
 
-static const char* usage_str = "<bitmask> <input> <output>";
-static const char* help_str = "Calculates weighted average along dimensions specified by bitmask.\n";
+static const char usage_str[] = "<bitmask> <input> <output>";
+static const char help_str[] = "Calculates weighted average along dimensions specified by bitmask.\n";
 
 
 int main_wavg(int argc, char* argv[argc])

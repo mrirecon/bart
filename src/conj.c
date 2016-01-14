@@ -20,8 +20,8 @@
 #define DIMS 16
 #endif
 
-static const char* usage_str = "<input> <output>";
-static const char* help_str = "Compute complex conjugate.\n";
+static const char usage_str[] = "<input> <output>";
+static const char help_str[] = "Compute complex conjugate.\n";
 
 
 int main_conj(int argc, char* argv[])

@@ -42,8 +42,8 @@
 #endif
 
 
-static const char* usage_str = "<lambda> <flags> <input> <output>";
-static const char* help_str = "Perform total variation denoising along dims <flags>.\n";
+static const char usage_str[] = "<lambda> <flags> <input> <output>";
+static const char help_str[] = "Perform total variation denoising along dims <flags>.\n";
 
 	
 int main_rof(int argc, char* argv[])

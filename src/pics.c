@@ -57,8 +57,8 @@
 
 #define NUM_REGS 10
 
-static const char* usage_str = "<kspace> <sensitivities> <output>";
-static const char* help_str = "Parallel-imaging compressed-sensing reconstruction.";
+static const char usage_str[] = "<kspace> <sensitivities> <output>";
+static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
 static void help_reg(void)
 {

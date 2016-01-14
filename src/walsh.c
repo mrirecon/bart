@@ -22,8 +22,8 @@
 #include "calib/walsh.h"
 
 
-static const char* usage_str = "<input> <output>";
-static const char* help_str = "Estimate coil sensitivities using walsh method (use with ecaltwo).";
+static const char usage_str[] = "<input> <output>";
+static const char help_str[] = "Estimate coil sensitivities using walsh method (use with ecaltwo).";
 
 
 int main_walsh(int argc, char* argv[])

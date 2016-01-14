@@ -24,8 +24,8 @@
 
 
 
-static const char* usage_str = "dim fraction <input> <output>";
-static const char* help_str = "Perform homodyne reconstruction along dimension dim.";
+static const char usage_str[] = "dim fraction <input> <output>";
+static const char help_str[] = "Perform homodyne reconstruction along dimension dim.";
 
 
 

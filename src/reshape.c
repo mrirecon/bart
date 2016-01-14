@@ -22,8 +22,8 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char* usage_str = "flags dim1 ... dimN <input> <output>";
-static const char* help_str = "Reshape selected dimensions.\n";
+static const char usage_str[] = "flags dim1 ... dimN <input> <output>";
+static const char help_str[] = "Reshape selected dimensions.\n";
 
 
 int main_reshape(int argc, char* argv[])

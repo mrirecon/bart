@@ -28,8 +28,8 @@
 
 
 
-static const char* usage_str = "bitmask <input> <output>";
-static const char* help_str = "Maximum (minimum) intensity projection (MIP) along dimensions specified by bitmask.\n"; 
+static const char usage_str[] = "bitmask <input> <output>";
+static const char help_str[] = "Maximum (minimum) intensity projection (MIP) along dimensions specified by bitmask.\n"; 
 
 
 int main_mip(int argc, char* argv[argc])

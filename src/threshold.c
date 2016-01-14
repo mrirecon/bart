@@ -91,8 +91,8 @@ static void dfthresh(unsigned int D, const long dims[D], float lambda, complex f
 
 
 
-static const char* usage_str = "lambda <input> <output>";
-static const char* help_str = "Perform soft-thresholding with parameter lambda.";
+static const char usage_str[] = "lambda <input> <output>";
+static const char help_str[] = "Perform soft-thresholding with parameter lambda.";
 
 
 

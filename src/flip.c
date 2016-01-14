@@ -22,8 +22,8 @@
 #endif
 
 
-static const char* usage_str = "bitmask <input> <output>";
-static const char* help_str = "Flip (reverse) dimensions specified by the {bitmask}.\n";
+static const char usage_str[] = "bitmask <input> <output>";
+static const char help_str[] = "Flip (reverse) dimensions specified by the {bitmask}.\n";
 
 
 

@@ -28,8 +28,8 @@
 
 
 
-static const char* usage_str = "<kspace> <output> [<sensitivities>]";
-static const char* help_str =
+static const char usage_str[] = "<kspace> <output> [<sensitivities>]";
+static const char help_str[] =
 		"Jointly estimate image and sensitivities with nonlinear\n"
 		"inversion using {iter} iteration steps. Optionally outputs\n"
 		"the sensitivities.";

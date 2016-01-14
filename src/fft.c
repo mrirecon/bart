@@ -23,8 +23,8 @@
 #endif
 
 
-static const char* usage_str = "bitmask <input> <output>";
-static const char* help_str = "Performs a fast Fourier transform (FFT) along selected dimensions.";
+static const char usage_str[] = "bitmask <input> <output>";
+static const char help_str[] = "Performs a fast Fourier transform (FFT) along selected dimensions.";
 
 
 

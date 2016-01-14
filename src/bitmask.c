@@ -17,8 +17,8 @@
 #include "misc/opts.h"
 
 
-static const char* usage_str = "-b <bitmask> | <dim1> ... <dimN>";
-static const char* help_str = "Convert between a bitmask and set of dimensions.";
+static const char usage_str[] = "-b <bitmask> | <dim1> ... <dimN>";
+static const char help_str[] = "Convert between a bitmask and set of dimensions.";
 
 
 

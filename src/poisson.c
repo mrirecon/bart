@@ -52,8 +52,8 @@ static float maxn(int D, const float a[static D], const float b[static D])
 
 
 
-static const char* usage_str = "<outfile>";
-static const char* help_str = "Computes Poisson-disc sampling pattern.";
+static const char usage_str[] = "<outfile>";
+static const char help_str[] = "Computes Poisson-disc sampling pattern.";
 
 
 int main_poisson(int argc, char* argv[])

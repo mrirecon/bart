@@ -22,8 +22,8 @@
 #endif
 
 
-static const char* usage_str = "dimension size <input> <output>";
-static const char* help_str = "Extracts a sub-array corresponding to the central part of {size} along {dimension}\n";
+static const char usage_str[] = "dimension size <input> <output>";
+static const char help_str[] = "Extracts a sub-array corresponding to the central part of {size} along {dimension}\n";
 
 
 int main_crop(int argc, char* argv[])

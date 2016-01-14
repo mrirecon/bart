@@ -22,8 +22,8 @@
 #define DIMS 16
 #endif
 
-static const char* usage_str = "bitmask <input> <output>";
-static const char* help_str =	"Apply fftshift along dimensions selected by the {bitmask}.\n";
+static const char usage_str[] = "bitmask <input> <output>";
+static const char help_str[] =	"Apply fftshift along dimensions selected by the {bitmask}.\n";
 
 
 

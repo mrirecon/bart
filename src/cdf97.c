@@ -24,8 +24,8 @@
 #endif
 
 
-static const char* usage_str = "bitmask <input> <output>";
-static const char* help_str = "Perform a wavelet (cdf97) transform.\n";
+static const char usage_str[] = "bitmask <input> <output>";
+static const char help_str[] = "Perform a wavelet (cdf97) transform.\n";
 
 
 

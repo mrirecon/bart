@@ -36,8 +36,8 @@
 #endif
 
 
-static const char* usage_str = "<kspace> <output>";
-static const char* help_str =
+static const char usage_str[] = "<kspace> <output>";
+static const char help_str[] =
 		"Use SAKE algorithm to recover a full k-space from undersampled\n"
 		"data using low-rank matrix completion.";
 

@@ -21,8 +21,8 @@
 
 #define DIMS 16
 
-static const char*  usage_str = "dimension repetitions <input> <output>";
-static const char* help_str = "Repeat input array multiple times along a certain dimension.\n";
+static const char usage_str[] = "dimension repetitions <input> <output>";
+static const char help_str[] = "Repeat input array multiple times along a certain dimension.\n";
 
 
 int main_repmat(int argc, char* argv[])

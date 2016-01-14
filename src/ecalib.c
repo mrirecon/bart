@@ -32,8 +32,8 @@
 
 
 
-static const char* usage_str = "<kspace> <sensitivites> [<ev-maps>]";
-static const char* help_str =
+static const char usage_str[] = "<kspace> <sensitivites> [<ev-maps>]";
+static const char help_str[] =
 		"Estimate coil sensitivities using ESPIRiT calibration.\n"
 		"Optionally outputs the eigenvalue maps.";
 

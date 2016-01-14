@@ -32,8 +32,8 @@
 
 
 
-static const char* usage_str = "<traj> <input> <output>";
-static const char* help_str = "Perform non-uniform Fast Fourier Transform.";
+static const char usage_str[] = "<traj> <input> <output>";
+static const char help_str[] = "Perform non-uniform Fast Fourier Transform.";
 
 
 

@@ -19,8 +19,8 @@
 #include "misc/opts.h"
 
 
-static const char* usage_str = "<output>";
-static const char* help_str = "Computes k-space trajectories.";
+static const char usage_str[] = "<output>";
+static const char help_str[] = "Computes k-space trajectories.";
 
 
 

@@ -21,8 +21,8 @@
 
 
 
-static const char* usage_str = "<output>";
-static const char* help_str = "Image and k-space domain phantoms.";
+static const char usage_str[] = "<output>";
+static const char help_str[] = "Image and k-space domain phantoms.";
 
 
 

@@ -25,8 +25,8 @@
 
 
 
-static const char* usage_str = "<input> <output>";
-static const char* help_str = "Add noise with selected variance to input.";
+static const char usage_str[] = "<input> <output>";
+static const char help_str[] = "Add noise with selected variance to input.";
 
 
 

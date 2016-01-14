@@ -28,8 +28,8 @@
 
 
 
-static const char* usage_str = "flags <input> <output>";
-static const char* help_str = "Normalize along selected dimensions.\n";
+static const char usage_str[] = "flags <input> <output>";
+static const char help_str[] = "Normalize along selected dimensions.\n";
 
 
 

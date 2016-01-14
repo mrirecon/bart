@@ -206,10 +206,10 @@ static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const l
 
 
 
-static const char* usage_str = "<dat file> <output>";
+static const char usage_str[] = "<dat file> <output>";
 //	fprintf(fd, "Usage: %s [...] [-a A] <dat file> <output>\n", name);
 
-static const char* help_str = "Read data from Siemens twix (.dat) files.";
+static const char help_str[] = "Read data from Siemens twix (.dat) files.";
 
 
 int main_twixread(int argc, char* argv[argc])

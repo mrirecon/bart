@@ -23,8 +23,8 @@
 #include "calib/direct.h"
 
 
-static const char* usage_str = "cal_size <input> <output>";
-static const char* help_str =
+static const char usage_str[] = "cal_size <input> <output>";
+static const char help_str[] =
 	"Estimates coil sensitivities from the k-space center using\n"
 	"a direct method (McKenzie et al.). The size of the fully-sampled\n"
 	"calibration region is automatically determined but limited by\n"

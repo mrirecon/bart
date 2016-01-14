@@ -23,8 +23,8 @@
 #include "calib/calmat.h"
 
 
-static const char* usage_str = "<kspace> <calibration matrix>";
-static const char* help_str = "Compute calibration matrix.";
+static const char usage_str[] = "<kspace> <calibration matrix>";
+static const char help_str[] = "Compute calibration matrix.";
 
 
 

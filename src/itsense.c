@@ -134,8 +134,8 @@ static bool check_dimensions(struct sense_data* data)
 
 
 
-static const char* usage_str =	"alpha <sensitivities> <kspace> <pattern> <image>";
-static const char* help_str =	"A simplified implementation of iterative sense reconstruction\n"
+static const char usage_str[] = "alpha <sensitivities> <kspace> <pattern> <image>";
+static const char help_str[] = "A simplified implementation of iterative sense reconstruction\n"
 				"with l2-regularization.\n";
 
 

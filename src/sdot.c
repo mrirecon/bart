@@ -23,8 +23,8 @@
 #endif
 
 
-static const char* usage_str = "<input1> <input2>";
-static const char* help_str = "Compute dot product along selected dimensions.";
+static const char usage_str[] = "<input1> <input2>";
+static const char help_str[] = "Compute dot product along selected dimensions.";
 
 int main_sdot(int argc, char* argv[])
 {
