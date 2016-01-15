@@ -1,15 +1,19 @@
 /* Copyright 2015. Martin Uecker 
+ * Copyright 2016. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
  * 2015 Martin Uecker <uecker@med.uni-goettingen.de>
+ * 2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "misc/misc.h"
+#include "misc/opts.h"
 #include "misc/version.h"
 
 
@@ -25,9 +29,41 @@ static const char help_str[] =
 
 int main_version(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 0, usage_str, help_str);
+	bool verbose = false;
+
+	const struct opt_s opts[] = {
+
+		{ 'V', false, opt_set, &verbose, "\tOutput verbose info" },
+	};
+
+	cmdline(&argc, argv, 0, 0, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	printf("%s\n", bart_version);
+
+	if (verbose) {
+
+		printf("CUDA=");
+#ifdef USE_CUDA
+			printf("1\n");
+#else
+			printf("0\n");
+#endif
+
+		printf("ACML=");
+#ifdef USE_ACML
+			printf("1\n");
+#else
+			printf("0\n");
+#endif
+
+		printf("FFTWTHREADS=");
+#ifdef FFTWTHREADS
+			printf("1\n");
+#else
+			printf("0\n");
+#endif
+
+	}
 
 	exit(0);
 }
