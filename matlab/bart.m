@@ -2,10 +2,10 @@ function [varargout] = bart(cmd, varargin);
 % BART	Call BART command from Matlab.
 %   [A, B] = bart('command', X, Y) call command with inputs X Y and outputs A B
 %
-% 2014-2015 Martin Uecker <uecker@med.uni-goettingen.de>
+% 2014-2016 Martin Uecker <uecker@med.uni-goettingen.de>
 
 
-	if nargin==0 || cmd==0
+	if nargin==0 || all(cmd==0)
 		disp('Usage: bart <command> <arguments...>');
 		return
 	end
