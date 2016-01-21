@@ -1,10 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <string.h>
@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <complex.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -22,7 +23,7 @@
 #include "io.h"
 
 
-int write_cfl_header(int fd, int n, const long dimensions[n])
+int write_cfl_header(int fd, unsigned int n, const long dimensions[n])
 {
 	char header[4096];
 	memset(header, 0, 4096);
@@ -31,7 +32,7 @@ int write_cfl_header(int fd, int n, const long dimensions[n])
 
 	pos += snprintf(header + pos, 4096 - pos, "# Dimensions\n");
 
-	for (int i = 0; i < n; i++)
+	for (unsigned int i = 0; i < n; i++)
 		pos += snprintf(header + pos, 4096 - pos, "%ld ", dimensions[i]);
 
 	pos += snprintf(header + pos, 4096 - pos, "\n");
@@ -44,7 +45,7 @@ int write_cfl_header(int fd, int n, const long dimensions[n])
 
 
 
-int read_cfl_header(int fd, int n, long dimensions[n])
+int read_cfl_header(int fd, unsigned int n, long dimensions[n])
 {
 	char header[4097];
 	memset(header, 0, 4097);
@@ -80,11 +81,11 @@ int read_cfl_header(int fd, int n, long dimensions[n])
 
 			if (0 == strcmp(keyword, "Dimensions")) {
 
-				for (int i = 0; i < n; i++)
+				for (unsigned int i = 0; i < n; i++)
 					dimensions[i] = 1;
 
 				long val;
-				int i = 0;
+				unsigned int i = 0;
 
 				while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
 
@@ -119,7 +120,7 @@ out:
 
 
 
-int write_coo(int fd, int n, const long dimensions[n])
+int write_coo(int fd, unsigned int n, const long dimensions[n])
 {
 	char header[4096];
 	memset(header, 0, 4096);
@@ -131,7 +132,7 @@ int write_coo(int fd, int n, const long dimensions[n])
 	long start = 0;
 	long stride = 1;
 
-	for (int i = 0; i < n; i++) {
+	for (unsigned int i = 0; i < n; i++) {
 
 		long size = dimensions[i];
 
@@ -146,7 +147,7 @@ int write_coo(int fd, int n, const long dimensions[n])
 }
 
 
-int read_coo(int fd, int n, long dimensions[n])
+int read_coo(int fd, unsigned int n, long dimensions[n])
 {
 	char header[4096];
 
@@ -161,7 +162,7 @@ int read_coo(int fd, int n, long dimensions[n])
 
 	pos += delta;
 
-	int dim;
+	unsigned int dim;
 	
 	if (1 != sscanf(header + pos, "Dimensions: %d\n%n", &dim, &delta))
 		return -1;
@@ -171,10 +172,10 @@ int read_coo(int fd, int n, long dimensions[n])
 //	if (n != dim)
 //		return -1;
 	
-	for (int i = 0; i < n; i++)
+	for (unsigned int i = 0; i < n; i++)
 		dimensions[i] = 1;
 
-	for (int i = 0; i < dim; i++) {
+	for (unsigned int i = 0; i < dim; i++) {
 
 		long val;
 		
@@ -193,6 +194,89 @@ int read_coo(int fd, int n, long dimensions[n])
 	return 0;
 }
 
+
+
+
+
+struct ra_hdr_s {
+
+	uint64_t magic;
+	uint64_t flags;
+	uint64_t eltype;
+	uint64_t elbyte;
+	uint64_t size;
+	uint64_t ndims;
+};
+
+#define RA_MAGIC_NUMBER		0x7961727261776172ULL
+#define RA_FLAG_BIG_ENDIAN	(1ULL << 0)
+
+enum ra_types {
+
+	RA_TYPE_USER = 0,
+	RA_TYPE_INT,
+	RA_TYPE_UINT,
+	RA_TYPE_FLOAT,
+	RA_TYPE_COMPLEX,
+};
+
+
+
+int read_ra(int fd, unsigned int n, long dimensions[n])
+{
+	struct ra_hdr_s header;
+
+	if (sizeof(header) != read(fd, &header, sizeof(header)))
+		return -1;
+
+	assert(RA_MAGIC_NUMBER == header.magic);
+	assert(!(header.flags & RA_FLAG_BIG_ENDIAN));
+	assert(RA_TYPE_COMPLEX == header.eltype);
+	assert(sizeof(complex float) == header.elbyte);
+	assert(header.ndims <= n);
+
+	uint64_t dims[header.ndims];
+
+	if ((int)sizeof(dims) != read(fd, &dims, sizeof(dims)))
+		return -1;
+
+	md_singleton_dims(n, dimensions);
+
+	for (unsigned int i = 0; i < header.ndims; i++)
+		dimensions[i] = dims[i];
+
+	assert(header.size == (uint64_t)md_calc_size(n, dimensions) * sizeof(complex float));
+
+	return 0;
+}
+
+
+
+int write_ra(int fd, unsigned int n, const long dimensions[n])
+{
+	struct ra_hdr_s header = {
+
+		.magic = RA_MAGIC_NUMBER,
+		.flags = 0ULL,
+		.eltype = RA_TYPE_COMPLEX,
+		.elbyte = sizeof(complex float),
+		.size = md_calc_size(n, dimensions) * sizeof(complex float),
+		.ndims = n,
+	};
+
+	if (sizeof(header) != write(fd, &header, sizeof(header)))
+		return -1;
+
+	uint64_t dims[n];
+
+	for (unsigned int i = 0; i < n; i++)
+		dims[i] = dimensions[i];
+
+	if ((int)sizeof(dims) != write(fd, &dims, sizeof(dims)))
+		return -1;
+
+	return 0;
+}
 
 
 

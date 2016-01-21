@@ -29,6 +29,8 @@ extern float* create_coo(const char* name, unsigned int D, const long dimensions
 extern float* load_coo(const char* name, unsigned int D, long dimensions[__VLA(D)]);
 extern _Complex float* create_zcoo(const char* name, unsigned int D, const long dimensions[__VLA(D)]);
 extern _Complex float* load_zcoo(const char* name, unsigned int D, long dimensions[__VLA(D)]);
+extern _Complex float* create_zra(const char* name, unsigned int D, const long dims[__VLA(D)]);
+extern _Complex float* load_zra(const char* name, unsigned int D, long dims[__VLA(D)]);
 
 #ifdef __cplusplus
 }

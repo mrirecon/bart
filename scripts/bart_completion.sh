@@ -27,8 +27,9 @@ function _bart()
 			*)
 				local CFLS=$(compgen -o plusdirs -f -X '!*.hdr' -- ${cur})
 				local COOS=$(compgen -o plusdirs -f -X '!*.coo' -- ${cur});
+				local RAS=$(compgen -o plusdirs -f -X '!*.ra' -- ${cur});
 				local suffix=".hdr"
-				COMPREPLY=($(for i in ${CFLS} ${COOS}; do echo ${i%$suffix} ; done))
+				COMPREPLY=($(for i in ${CFLS} ${COOS} ${RAS}; do echo ${i%$suffix} ; done))
 				;;
 			esac
 
