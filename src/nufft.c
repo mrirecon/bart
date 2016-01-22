@@ -100,7 +100,7 @@ int main_nufft(int argc, char* argv[])
 		if (inverse) {
 
 			lsqr(DIMS, &(struct lsqr_conf){ lambda }, iter_conjgrad, &cgconf,
-				nufft_op, NULL, coilim_dims, img, ksp_dims, ksp);
+			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, NULL);
 
 		} else {
 

@@ -228,7 +228,7 @@ int main_wave(int argc, char* argv[])
 	if (adjoint)
 		linop_adjoint(forward, DIMS, img_dims, image, DIMS, ksp_dims, kspace);
 	else
-	        lsqr(DIMS, &lsqr_conf, italgo, iconf, forward, thresh_op, img_dims, image, ksp_dims, kspace);
+	        lsqr(DIMS, &lsqr_conf, italgo, iconf, forward, thresh_op, img_dims, image, ksp_dims, kspace, NULL);
         
 	unmap_cfl(DIMS, map_dims, maps);
 	unmap_cfl(DIMS, wav_dims, wave);
