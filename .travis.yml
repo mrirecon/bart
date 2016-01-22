@@ -1,0 +1,39 @@
+language: c
+
+addons:
+  apt:
+    packages: &default_packages
+      - libfftw3-dev
+      - liblapack-dev
+      - libpng-dev
+
+matrix:
+  include:
+    - env: PARALLEL=1
+      os: linux
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - *default_packages
+
+    - env: SLINK=1
+      os: linux
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - *default_packages
+            - gfortran
+
+    - env: OMP=0
+      os: linux
+      compiler: clang
+      addons:
+        apt:
+          packages:
+            - *default_packages
+
+script:
+  - make bart
+  - make all
