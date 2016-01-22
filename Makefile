@@ -63,13 +63,16 @@ OPT = -O3 -ffast-math
 CPPFLAGS ?= -Wall -Wextra
 CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
-CC ?= gcc
+
+ifeq ($(BUILDTYPE), MacOSX)
+	CC ?= gcc-mp-4.7
+else
+	CC ?= gcc
+endif
+
 CXX ?= g++
 
 
-ifeq ($(BUILDTYPE), MacOSX)
-	CC = gcc-mp-4.7
-endif
 
 
 # cuda
