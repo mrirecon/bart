@@ -5,6 +5,7 @@
 
 #include "misc/cppwrap.h"
 
+struct operator_s;
 struct linop_s;
 
 struct nufft_conf_s {
@@ -20,6 +21,7 @@ extern struct linop_s* nufft_create(unsigned int N, const long ksp_dims[__VLA(N)
 extern void estimate_im_dims(unsigned int N, long dims[3], const long tdims[__VLA(N)], const _Complex float* traj);
 extern _Complex float* compute_psf(unsigned int N, const long img2_dims[__VLA(N)], const long trj_dims[__VLA(N)], const complex float* traj, const complex float* weights);
 
+extern const struct operator_s* nufft_precond_create( const struct linop_s* nufft_op );
 
 #include "misc/cppwrap.h"
 

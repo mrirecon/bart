@@ -21,6 +21,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/init.h"
+#include "num/ops.h"
 
 #include "linops/linop.h"
 
@@ -99,9 +100,12 @@ int main_nufft(int argc, char* argv[])
 
 		if (inverse) {
 
-			lsqr(DIMS, &(struct lsqr_conf){ lambda }, iter_conjgrad, &cgconf,
-			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, NULL);
+			const struct operator_s* precond_op = nufft_precond_create( nufft_op );
 
+			lsqr(DIMS, &(struct lsqr_conf){ lambda }, iter_conjgrad, &cgconf,
+			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, precond_op);
+
+			operator_free( precond_op );
 		} else {
 
 			linop_adjoint(nufft_op, DIMS, coilim_dims, img, DIMS, ksp_dims, ksp);
