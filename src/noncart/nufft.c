@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2014-2016 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
