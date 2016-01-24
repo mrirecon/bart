@@ -89,7 +89,8 @@ const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_di
 	const struct linop_s* fft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps, use_gpu);
 
-	precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
+	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
+	precond_op[0] = NULL;
 
 	const struct linop_s* lop = linop_chain(maps_op, fft_op);
 
