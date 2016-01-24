@@ -5,6 +5,9 @@
  * Authors:
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ *
+ * Strang G. A proposal for Toeplitz matrix calculations. Journal Studies in Applied Math. 1986; 74(2):171-17
+ *
  */
 
 #include <math.h>
@@ -110,11 +113,11 @@ static void nufft_apply(const void* _data, complex float* dst, const complex flo
 static void nufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src);
 static void nufft_apply_normal(const void* _data, complex float* dst, const complex float* src);
 
-static void nufft_precond_apply( const void* _data, unsigned int N, void* args[N] );
+static void nufft_precond_apply(const void* _data, unsigned int N, void* args[N]);
 
-static void nufft_precond_del( const void* data );
+static void nufft_precond_del(const void* data);
 
-static complex float* compute_precond(  unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase );
+static complex float* compute_precond(unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase);
 
 
 static void toeplitz_mult(const struct nufft_data* data, complex float* dst, const complex float* src);
@@ -277,13 +280,13 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 
 
-const struct operator_s* nufft_precond_create( const struct linop_s* nufft_op )
+const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
 {
 	const struct nufft_data* data = (const struct nufft_data*) linop_get_data( nufft_op );
 
 	struct nufft_precond_data* pdata = (struct nufft_precond_data*) xmalloc( sizeof(struct nufft_precond_data) );
 
-	assert( data->conf.toeplitz );
+	assert(data->conf.toeplitz);
 
 	pdata->N = data->N;
 	unsigned int ND = pdata->N + 3;
@@ -293,69 +296,68 @@ const struct operator_s* nufft_precond_create( const struct linop_s* nufft_op )
 	pdata->cim_strs = xmalloc(ND * sizeof(long));
 	pdata->pre_strs = xmalloc(ND * sizeof(long));
 
-	md_copy_dims( ND, pdata->cim_dims, data->cim_dims );
-	md_select_dims( ND, FFT_FLAGS, pdata->pre_dims, pdata->cim_dims );
+	md_copy_dims(ND, pdata->cim_dims, data->cim_dims );
+	md_select_dims(ND, FFT_FLAGS, pdata->pre_dims, pdata->cim_dims);
 
-	md_calc_strides( ND, pdata->cim_strs, pdata->cim_dims, CFL_SIZE );
-	md_calc_strides( ND, pdata->pre_strs, pdata->pre_dims, CFL_SIZE );
+	md_calc_strides(ND, pdata->cim_strs, pdata->cim_dims, CFL_SIZE);
+	md_calc_strides(ND, pdata->pre_strs, pdata->pre_dims, CFL_SIZE);
 	
-	pdata->pre = compute_precond(  pdata->N, pdata->pre_dims, pdata->pre_strs, data->psf_dims, data->psf_strs, data->psf, data->linphase );
+	pdata->pre = compute_precond(pdata->N, pdata->pre_dims, pdata->pre_strs, data->psf_dims, data->psf_strs, data->psf, data->linphase);
 
 	// Initialize fft
-	pdata->fft_op = linop_fft_create( pdata->N, pdata->cim_dims, FFT_FLAGS, data->use_gpu);
+	pdata->fft_op = linop_fft_create(pdata->N, pdata->cim_dims, FFT_FLAGS, data->use_gpu);
 
 
-	return operator_create(pdata->N, pdata->cim_dims, pdata->N, pdata->cim_dims, pdata, nufft_precond_apply, nufft_precond_del );
+	return operator_create(pdata->N, pdata->cim_dims, pdata->N, pdata->cim_dims, pdata, nufft_precond_apply, nufft_precond_del);
 }
 
 
 /**
- * Initialize Strang's circulant preconditioner
+ * Compute Strang's circulant preconditioner
  *
  * Strang's reconditioner is simply the cropped psf in the image domain
+ *
+ * Ref: Strang G. A proposal for Toeplitz matrix calculations. Journal Studies in Applied Math. 1986; 74(2):171-17
  */
-static complex float* compute_precond(  unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase )
+static complex float* compute_precond(unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase)
 {
-	/* complex float* pre = md_alloc(N, pre_dims, CFL_SIZE); */
-	/* md_fill(N, pre_dims, pre, &(complex float){ 1. }, CFL_SIZE); */
-	
 	unsigned int ND = N + 3;
 
 	complex float* pre = md_alloc(ND, pre_dims, CFL_SIZE);
 	complex float* psft = md_alloc(ND, psf_dims, CFL_SIZE);
 
 	// Transform psf to image domain
-	ifftuc( ND, psf_dims, FFT_FLAGS, psft, psf );
+	ifftuc(ND, psf_dims, FFT_FLAGS, psft, psf);
 
 	// Compensate for linear phase to get cropped psf
 	md_clear(ND, pre_dims, pre, CFL_SIZE);
 	md_zfmacc2(ND, psf_dims, pre_strs, pre, psf_strs, psft, psf_strs, linphase);
 	
-        md_free( psft );
+        md_free(psft);
         
 	// Transform to Fourier domain
-	fftuc( N, pre_dims, FFT_FLAGS, pre, pre );
+	fftuc(N, pre_dims, FFT_FLAGS, pre, pre);
 
-	for( int i = 0; i < md_calc_size( N, pre_dims ); i++)
+	for(int i = 0; i < md_calc_size( N, pre_dims ); i++)
 		pre[i] = cabsf(pre[i]);
 	
-	md_zsadd( N, pre_dims, pre, pre, 1e-3 );
+	md_zsadd(N, pre_dims, pre, pre, 1e-3);
 	
 	return pre;
 }
 
 
-static void nufft_precond_del(const void* _data )
+static void nufft_precond_del(const void* _data)
 {
 	struct nufft_precond_data* data = (struct nufft_precond_data*) _data;
 
-	free( data->cim_dims );
-	free( data->pre_dims );
-	free( data->cim_strs );
-	free( data->pre_strs );
-	md_free( (void*) data->pre );
+	free(data->cim_dims);
+	free(data->pre_dims);
+	free(data->cim_strs);
+	free(data->pre_strs);
+	md_free((void*) data->pre);
 	
-	free( data );
+	free(data);
 }
 
 
