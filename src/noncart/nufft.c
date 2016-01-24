@@ -113,7 +113,8 @@ static void nufft_apply_normal(const void* _data, complex float* dst, const comp
 static void nufft_precond_apply( const void* _data, unsigned int N, void* args[N] );
 
 static void nufft_precond_del( const void* data );
-static void precond_init(  unsigned int N, const long* pre_dims, complex float* pre, const long* psf_dims, const complex float* psf );
+
+static complex float* compute_precond(  unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase );
 
 
 static void toeplitz_mult(const struct nufft_data* data, complex float* dst, const complex float* src);
@@ -282,26 +283,65 @@ const struct operator_s* nufft_precond_create( const struct linop_s* nufft_op )
 
 	struct nufft_precond_data* pdata = (struct nufft_precond_data*) xmalloc( sizeof(struct nufft_precond_data) );
 
+	assert( data->conf.toeplitz );
+
 	pdata->N = data->N;
-	pdata->cim_dims = xmalloc(data->N * sizeof(long));
-	pdata->pre_dims = xmalloc(data->N * sizeof(long));
-
-	md_copy_dims( pdata->N, pdata->cim_dims, data->cim_dims );
-	md_select_dims( pdata->N, FFT_FLAGS, pdata->pre_dims, pdata->cim_dims );
-
-	md_calc_strides( pdata->N, pdata->cim_strs, pdata->cim_dims, CFL_SIZE );
-	md_calc_strides( pdata->N, pdata->pre_strs, pdata->pre_dims, CFL_SIZE );
+	unsigned int ND = pdata->N + 3;
 	
-	pdata->fft_op = linop_fft_create(pdata->N, pdata->cim_dims, FFT_FLAGS, data->use_gpu);
+	pdata->cim_dims = xmalloc(ND * sizeof(long));
+	pdata->pre_dims = xmalloc(ND * sizeof(long));
+	pdata->cim_strs = xmalloc(ND * sizeof(long));
+	pdata->pre_strs = xmalloc(ND * sizeof(long));
 
-	precond_init(  pdata->N, pdata->pre_dims, (void*) pdata->pre, pdata->cim_dims, data->psf );
+	md_copy_dims( ND, pdata->cim_dims, data->cim_dims );
+	md_select_dims( ND, FFT_FLAGS, pdata->pre_dims, pdata->cim_dims );
+
+	md_calc_strides( ND, pdata->cim_strs, pdata->cim_dims, CFL_SIZE );
+	md_calc_strides( ND, pdata->pre_strs, pdata->pre_dims, CFL_SIZE );
+	
+	pdata->pre = compute_precond(  pdata->N, pdata->pre_dims, pdata->pre_strs, data->psf_dims, data->psf_strs, data->psf, data->linphase );
+
+	// Initialize fft
+	pdata->fft_op = linop_fft_create( pdata->N, pdata->cim_dims, FFT_FLAGS, data->use_gpu);
+
 
 	return operator_create(pdata->N, pdata->cim_dims, pdata->N, pdata->cim_dims, pdata, nufft_precond_apply, nufft_precond_del );
 }
 
-static void precond_init(  unsigned int N, const long* pre_dims, complex float* pre, const long* psf_dims, const complex float* psf )
+
+/**
+ * Initialize Strang's circulant preconditioner
+ *
+ * Strang's reconditioner is simply the cropped psf in the image domain
+ */
+static complex float* compute_precond(  unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase )
 {
-	md_fill(N, pre_dims, pre, &(complex float) { 1.0 }, CFL_SIZE );
+	/* complex float* pre = md_alloc(N, pre_dims, CFL_SIZE); */
+	/* md_fill(N, pre_dims, pre, &(complex float){ 1. }, CFL_SIZE); */
+	
+	unsigned int ND = N + 3;
+
+	complex float* pre = md_alloc(ND, pre_dims, CFL_SIZE);
+	complex float* psft = md_alloc(ND, psf_dims, CFL_SIZE);
+
+	// Transform psf to image domain
+	ifftuc( ND, psf_dims, FFT_FLAGS, psft, psf );
+
+	// Compensate for linear phase to get cropped psf
+	md_clear(ND, pre_dims, pre, CFL_SIZE);
+	md_zfmacc2(ND, psf_dims, pre_strs, pre, psf_strs, psft, psf_strs, linphase);
+	
+        md_free( psft );
+        
+	// Transform to Fourier domain
+	fftuc( N, pre_dims, FFT_FLAGS, pre, pre );
+
+	for( int i = 0; i < md_calc_size( N, pre_dims ); i++)
+		pre[i] = cabsf(pre[i]);
+	
+	md_zsadd( N, pre_dims, pre, pre, 1e-3 );
+	
+	return pre;
 }
 
 
@@ -320,18 +360,19 @@ static void nufft_precond_del(const void* _data )
 
 
 
-static void nufft_precond_apply( const void* _data, unsigned int N, void* args[N] )
+static void nufft_precond_apply( const void* _data, unsigned int M, void* args[M] )
 {
-	assert(2 == N);
+	assert(2 == M);
 
 	const struct nufft_precond_data* data = _data;
 
 	complex float* dst = args[0];
 	const complex float* src = args[1];
 
-	linop_forward(data->fft_op, N, data->cim_dims, dst, N, data->cim_dims, src);
-	md_zmul2(N, data->cim_dims, data->cim_strs, dst, data->cim_strs, dst, data->pre_strs, data->pre);
-	linop_adjoint(data->fft_op, N, data->cim_dims, dst, N, data->cim_dims, dst );
+	linop_forward(data->fft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, src);
+
+	md_zdiv2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, dst, data->pre_strs, data->pre);
+	linop_adjoint(data->fft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, dst );
 }
 
 static complex float* compute_linphases(unsigned int N, long lph_dims[N + 3], const long img_dims[N + 3])
@@ -441,12 +482,6 @@ static complex float* compute_psf2(unsigned int N, const long psf_dims[N + 3], c
 	fftuc(ND, img2_dims, FFT_FLAGS, psft, psft);
 
 	// reformat
-
-	long sub2_strs[ND];
-	md_copy_strides(ND, sub2_strs, img2_strs);
-
-	for(int i = 0; i < 3; i++)
-		sub2_strs[i] *= 2;;
 
 	complex float* psf = md_alloc(ND, psf_dims, CFL_SIZE);
 

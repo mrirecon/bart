@@ -102,7 +102,7 @@ void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
 	if (NULL != precond_op) {
 		const struct operator_s* tmp = normaleq_op;
 		
-		normaleq_op = operator_chain( precond_op, normaleq_op );
+		normaleq_op = operator_chain(  normaleq_op, precond_op );
 		operator_free( tmp );
 	}
 	
