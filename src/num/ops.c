@@ -702,7 +702,7 @@ static void merge_dims(unsigned int D, long odims[D], const long idims1[D], cons
 	}
 }
 
-const struct operator_s* operator_loop2(unsigned int N, const unsigned int D,
+const struct operator_s* (operator_loop2)(unsigned int N, const unsigned int D,
 				const long dims[D], const long (*strs)[D],
 				const struct operator_s* op)
 {
