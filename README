@@ -320,11 +320,14 @@ More information about each command can be found in 'doc/commands.txt'.
 5. References
 =============
 
+* Tamir JI, Ong F, Cheng JY, Uecker M, Lustig M,
+  Generalized Magnetic Resonance Image Reconstruction using
+  The Berkeley Advanced Reconstruction Toolbox, ISMRM Workshop
+  on Data Sampling and Image Reconstruction, Sedona 2016
 
-* Uecker M, Ong F, Tamir JI, Bahri D, Virtue P, Cheng JY, Zhang T, Lustig m,
+* Uecker M, Ong F, Tamir JI, Bahri D, Virtue P, Cheng JY, Zhang T, Lustig M,
   Berkeley Advanced Reconstruction Toolbox, Annual Meeting ISMRM, Toronto 2015
   In: Proc Intl Soc Mag Reson Med 23:2486
-
 
 * Uecker M, Virtue P, Ong F, Murphy MJ, Alley MT, Vasanawala SS, Lustig M,
   Software Toolbox and Programming Library for Compressed Sensing and
