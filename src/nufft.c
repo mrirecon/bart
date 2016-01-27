@@ -21,6 +21,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/init.h"
+#include "num/ops.h"
 
 #include "linops/linop.h"
 
@@ -44,6 +45,7 @@ int main_nufft(int argc, char* argv[])
 	bool adjoint = false;
 	bool inverse = false;
 	bool use_gpu = false;
+	bool precond = false;
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
@@ -58,7 +60,8 @@ int main_nufft(int argc, char* argv[])
 		{ 'i', false, opt_set, &inverse, "\tinverse" },
 		{ 'd', true, opt_vec3, &coilim_dims, " x:y:z\tdimensions" },
 		{ 'D', true, opt_vec3, &coilim_dims, NULL },
-		{ 't', false, opt_set, &conf.toeplitz, "\ttoeplitz" },
+		{ 't', false, opt_set, &conf.toeplitz, "\tToeplitz embedding for inverse NUFFT" },
+		{ 'c', false, opt_set, &precond, "\tPreconditioning for inverse NUFFT" },
 		{ 'l', true, opt_float, &lambda, " lambda\tl2 regularization" },
 		{ 'm', true, opt_int, &cgconf.maxiter, NULL },
 	};
@@ -99,9 +102,15 @@ int main_nufft(int argc, char* argv[])
 
 		if (inverse) {
 
-			lsqr(DIMS, &(struct lsqr_conf){ lambda }, iter_conjgrad, &cgconf,
-				nufft_op, NULL, coilim_dims, img, ksp_dims, ksp);
+			const struct operator_s* precond_op = NULL;
+			if (conf.toeplitz & precond)
+				precond_op = nufft_precond_create( nufft_op );
 
+			lsqr(DIMS, &(struct lsqr_conf){ lambda }, iter_conjgrad, &cgconf,
+			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, precond_op);
+
+			if (conf.toeplitz & precond)
+				operator_free( precond_op );
 		} else {
 
 			linop_adjoint(nufft_op, DIMS, coilim_dims, img, DIMS, ksp_dims, ksp);

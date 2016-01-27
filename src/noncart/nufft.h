@@ -5,21 +5,40 @@
 
 #include "misc/cppwrap.h"
 
+struct operator_s;
 struct linop_s;
 
 struct nufft_conf_s {
 
-	_Bool toeplitz;
+	_Bool toeplitz; ///< Toeplitz embedding boolean for A^T A
 };
 
 extern struct nufft_conf_s nufft_conf_defaults;
 
 
-extern struct linop_s* nufft_create(unsigned int N, const long ksp_dims[__VLA(N)], const long coilim_dims[__VLA(N)], const long traj_dims[__VLA(N)], const _Complex float* traj, const _Complex float* weights, struct nufft_conf_s conf, _Bool use_gpu);
+extern struct linop_s* nufft_create(unsigned int N,			///< Number of dimensions
+				    const long ksp_dims[__VLA(N)],	///< Kspace dimension
+				    const long coilim_dims[__VLA(N)],	///< Coil image dimension
+				    const long traj_dims[__VLA(N)],	///< Trajectory dimension
+				    const _Complex float* traj,		///< Trajectory
+				    const _Complex float* weights,	///< Weights, ex, density-compensation
+				    struct nufft_conf_s conf,		///< NUFFT configuration
+				    _Bool use_gpu);			///< Used GPU boolean
 
-extern void estimate_im_dims(unsigned int N, long dims[3], const long tdims[__VLA(N)], const _Complex float* traj);
-extern _Complex float* compute_psf(unsigned int N, const long img2_dims[__VLA(N)], const long trj_dims[__VLA(N)], const complex float* traj, const complex float* weights);
+extern void estimate_im_dims(unsigned int N,			///< Number of dimensions
+			     long dims[3],			///< Output estimated image dimensions
+			     const long tdims[__VLA(N)],	///< Trajectory dimesion
+			     const _Complex float* traj);	///< Trajectory
 
+
+extern _Complex float* compute_psf(unsigned int N,
+				   const long img2_dims[__VLA(N)],
+				   const long trj_dims[__VLA(N)],
+				   const complex float* traj,
+				   const complex float* weights);
+
+
+extern const struct operator_s* nufft_precond_create( const struct linop_s* nufft_op );
 
 #include "misc/cppwrap.h"
 

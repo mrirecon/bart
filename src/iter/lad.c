@@ -74,7 +74,7 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
 
 		wlsqr2(N, conf->lsqr_conf, italgo, iconf, model_op,
 				1, thresh_op, thresh_funs,
-				x_dims, x, y_dims, y, w_dims, weights);
+		       x_dims, x, y_dims, y, w_dims, weights, NULL);
 	}
 		
 	md_free(tmp2);

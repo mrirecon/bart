@@ -119,26 +119,35 @@ static void real_from_complex_dims(unsigned int D, long odims[D + 1], const long
  * @param pattern kspace sampling pattern mask
  * @param kspace kspace data
  */
-void sense_recon(const struct sense_conf* conf, const long dims[DIMS], complex float* image,
+void sense_recon(const struct sense_conf* conf,
+		 const long dims[DIMS],
+		 complex float* image,
 		 const struct linop_s* sense_op,
-		 const long pat_dims[DIMS], const complex float* pattern, 
-		 italgo_fun_t italgo, void* iconf,
+		 const long pat_dims[DIMS],
+		 const complex float* pattern, 
+		 italgo_fun_t italgo,
+		 void* iconf,
 		 const struct operator_p_s* thresh_op,
-		 const long ksp_dims[DIMS], const complex float* kspace, const complex float* image_truth)
+		 const long ksp_dims[DIMS],
+		 const complex float* kspace,
+		 const complex float* image_truth,
+		 const struct operator_s* precond_op)
 {
 	sense_recon2(conf, dims, image, sense_op, pat_dims, pattern,
 		iter2_call_iter, &(struct iter_call_s){ italgo, iconf },
-		1, MAKE_ARRAY(thresh_op), NULL, ksp_dims, kspace, image_truth);
+		     1, MAKE_ARRAY(thresh_op), NULL, ksp_dims, kspace, image_truth, precond_op);
 }
 
 void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex float* image,
-		const struct linop_s* sense_op,
-		const long pat_dims[DIMS], const complex float* pattern,
-		italgo_fun2_t italgo, void* iconf,
-		unsigned int num_funs,
-		const struct operator_p_s* thresh_op[num_funs],
-		const struct linop_s* thresh_funs[num_funs],
-		const long ksp_dims[DIMS], const complex float* kspace, const complex float* image_truth)
+		  const struct linop_s* sense_op,
+		  const long pat_dims[DIMS], const complex float* pattern,
+		  italgo_fun2_t italgo, void* iconf,
+		  unsigned int num_funs,
+		  const struct operator_p_s* thresh_op[num_funs],
+		  const struct linop_s* thresh_funs[num_funs],
+		  const long ksp_dims[DIMS], const complex float* kspace,
+		  const complex float* image_truth,
+		  const struct operator_s* precond_op)
 {
 	UNUSED(image_truth);
 
@@ -167,7 +176,7 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 		if (NULL == pattern) {
 
 			lsqr2(DIMS, &lsqr_conf, italgo, iconf, sense_op, num_funs, thresh_op, thresh_funs,
-				img_dims, image, ksp_dims, kspace, NULL, NULL, NULL);
+			      img_dims, image, ksp_dims, kspace, precond_op, NULL, NULL, NULL);
 
 		} else {
 
@@ -182,7 +191,7 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 #endif
 
 			wlsqr2(DIMS, &lsqr_conf, italgo, iconf, sense_op, num_funs, thresh_op, thresh_funs,
-				img_dims, image, ksp_dims, kspace, pat_dims, weights);
+			       img_dims, image, ksp_dims, kspace, pat_dims, weights, precond_op);
 
 			md_free(weights);
 		}
@@ -228,26 +237,40 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
  * @param kspace kspace data
  */
 #ifdef USE_CUDA
-void sense_recon_gpu(const struct sense_conf* conf, const long dims[DIMS], complex float* image,
-		 const struct linop_s* sense_op,
-		 const long pat_dims[DIMS], const complex float* pattern, 
-		 italgo_fun_t italgo, void* iconf,
-		 const struct operator_p_s* thresh_op,
-		 const long ksp_dims[DIMS], const complex float* kspace, const complex float* image_truth)
+void sense_recon_gpu(const struct sense_conf* conf,
+		     const long dims[DIMS],
+		     complex float* image,
+		     const struct linop_s* sense_op,
+		     const long pat_dims[DIMS],
+		     const complex float* pattern, 
+		     italgo_fun_t italgo,
+		     void* iconf,
+		     const struct operator_p_s* thresh_op,
+		     const long ksp_dims[DIMS],
+		     const complex float* kspace,
+		     const complex float* image_truth,
+		     const struct operator_s* precond_op)
 {
 	sense_recon2_gpu(conf, dims, image, sense_op, pat_dims, pattern,
 		iter2_call_iter, &(struct iter_call_s){ italgo, iconf },
-		1, MAKE_ARRAY(thresh_op), NULL, ksp_dims, kspace, image_truth);
+			 1, MAKE_ARRAY(thresh_op), NULL, ksp_dims, kspace, image_truth, precond_op);
 }
 
-void sense_recon2_gpu(const struct sense_conf* conf, const long dims[DIMS], complex float* image,
-		const struct linop_s* sense_op,
-		const long dims_pat[DIMS], const complex float* pattern,
-		italgo_fun2_t italgo, void* iter_conf,
-		unsigned int num_funs,
-		const struct operator_p_s* thresh_op[num_funs],
-		const struct linop_s* thresh_funs[num_funs],
-		const long ksp_dims[DIMS], const complex float* kspace, const complex float* image_truth)
+void sense_recon2_gpu(const struct sense_conf* conf,
+		      const long dims[DIMS],
+		      complex float* image,
+		      const struct linop_s* sense_op,
+		      const long dims_pat[DIMS],
+		      const complex float* pattern,
+		      italgo_fun2_t italgo,
+		      void* iter_conf,
+		      unsigned int num_funs,
+		      const struct operator_p_s* thresh_op[num_funs],
+		      const struct linop_s* thresh_funs[num_funs],
+		      const long ksp_dims[DIMS],
+		      const complex float* kspace,
+		      const complex float* image_truth,
+		      const struct operator_s* precond_op)
 {
 	long dims_ksp[DIMS];
 	long dims_img[DIMS];
@@ -261,7 +284,7 @@ void sense_recon2_gpu(const struct sense_conf* conf, const long dims[DIMS], comp
 	complex float* gpu_img_truth = md_gpu_move(DIMS, dims_img, image_truth, CFL_SIZE);
 
 	sense_recon2(conf, dims, gpu_img, sense_op, dims_pat, gpu_pat, italgo, iter_conf,
-				num_funs, thresh_op, thresh_funs, ksp_dims, gpu_ksp, gpu_img_truth);
+		     num_funs, thresh_op, thresh_funs, ksp_dims, gpu_ksp, gpu_img_truth, precond_op);
 
 	md_copy(DIMS, dims_img, image, gpu_img, CFL_SIZE);
 
