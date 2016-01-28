@@ -1,8 +1,8 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
  *
  */
@@ -53,7 +53,7 @@ omp_lock_t gpulock[MAX_CUDA_DEVICES];
 
 
 
-void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* out1, 
+void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* out1,
 	const long cov1_dims[DIMS], complex float* cov1,
 	const long w1_dims[DIMS], const complex float* weights,
 	complex float* kspace1, bool usegpu)
@@ -89,7 +89,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 		long maps_dims[DIMS];
 		md_select_dims(DIMS, ~COIL_FLAG, maps_dims, sens_dims);
-	
+
 		sens1 = md_alloc(DIMS, sens_dims, CFL_SIZE);
 		complex float* maps1 = md_alloc(DIMS, maps_dims, CFL_SIZE);
 
@@ -192,11 +192,11 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 		omp_set_lock(&gpulock[gpun]);
 
 		sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, true);
-		sense_recon_gpu(conf, dims1, image1, sop, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL);
+		sense_recon_gpu(conf, dims1, image1, sop, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL, NULL);
 		//linop_free(sop);
 		omp_unset_lock(&gpulock[gpun]);
 
-	} else 
+	} else
 #endif
 	{
 		sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, false);
@@ -236,8 +236,8 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 
 
-static void grecon_delegate(void* _param, const long dims1[DIMS], complex float* out1, 
-	const long sens1_dims[DIMS], complex float* cov1, 
+static void grecon_delegate(void* _param, const long dims1[DIMS], complex float* out1,
+	const long sens1_dims[DIMS], complex float* cov1,
 	const long w1_dims[DIMS], const complex float* weights,
 	complex float* kspace1, bool usegpu)
 {
@@ -247,26 +247,26 @@ static void grecon_delegate(void* _param, const long dims1[DIMS], complex float*
 
 void rgrecon(struct grecon_conf* conf, const long dims[DIMS], complex float* image,
 			const long sens_dims[DIMS], const complex float* sens_maps,
-			const long pat1_dims[DIMS], const complex float* weights, 
+			const long pat1_dims[DIMS], const complex float* weights,
 			const complex float* kspace_data, bool usegpu)
 {
-	parslices(grecon_delegate, conf, 
-			dims, image, 
-			sens_dims, sens_maps, 
+	parslices(grecon_delegate, conf,
+			dims, image,
+			sens_dims, sens_maps,
 			pat1_dims, weights,
 			kspace_data, conf->ksp, usegpu);
 }
 
-void rgrecon2(struct grecon_conf* conf, const long dims[DIMS], 
+void rgrecon2(struct grecon_conf* conf, const long dims[DIMS],
 			const long img_strs[DIMS], complex float* image,
 			const long sens_dims[DIMS], const complex float* sens_maps,
-			const long pat1_dims[DIMS], const complex float* weights, 
+			const long pat1_dims[DIMS], const complex float* weights,
 			const long ksp_strs[DIMS], const complex float* kspace_data,
 			bool usegpu)
 {
-	parslices2(grecon_delegate, conf, 
-			dims, img_strs, image, 
-			sens_dims, sens_maps, 
+	parslices2(grecon_delegate, conf,
+			dims, img_strs, image,
+			sens_dims, sens_maps,
 			pat1_dims, weights,
 			ksp_strs, kspace_data,
 			conf->ksp, usegpu);
