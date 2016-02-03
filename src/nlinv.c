@@ -1,10 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2015-2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -50,13 +50,13 @@ int main_nlinv(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'l', true, opt_float, &l1, NULL },
-		{ 'i', true, opt_int, &iter, NULL },
-		{ 'c', false, opt_set, &rvc, NULL },
-		{ 'N', false, opt_clear, &normalize, NULL },
-		{ 'f', true, opt_float, &restrict_fov, NULL },
-		{ 'p', true, opt_string, &psf, NULL },
-		{ 'g', false, opt_set, &usegpu, NULL },
+		OPT_FLOAT('l', &l1, "lambda", ""),
+		OPT_INT('i', &iter, "iter", ""),
+		OPT_SET('c', &rvc, ""),
+		OPT_CLEAR('N', &normalize, ""),
+		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
+		OPT_STRING('p', &psf, "PSF", ""),
+		OPT_SET('g', &usegpu, "use gpu"),
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -92,16 +92,7 @@ int main_nlinv(int argc, char* argv[])
 
 	complex float* mask; 
 	complex float* norm = md_alloc(DIMS, msk_dims, CFL_SIZE);
-	complex float* sens;
-	
-	if (4 == argc) {
-
-		sens = create_cfl(argv[3], DIMS, ksp_dims);
-
-	} else {
-
-		sens = md_alloc(DIMS, ksp_dims, CFL_SIZE);
-	}
+	complex float* sens = ((4 == argc) ? create_cfl : anon_cfl)((4 == argc) ? argv[3] : "", DIMS, ksp_dims);
 
 
 	complex float* pattern = NULL;
@@ -114,7 +105,8 @@ int main_nlinv(int argc, char* argv[])
 		// FIXME: check compatibility
 	} else {
 
-		pattern = md_alloc(DIMS, img_dims, CFL_SIZE);
+		md_copy_dims(DIMS, pat_dims, img_dims);
+		pattern = anon_cfl("", DIMS, pat_dims);
 		estimate_pattern(DIMS, ksp_dims, COIL_DIM, pattern, kspace_data);
 	}
 
@@ -197,26 +189,17 @@ int main_nlinv(int argc, char* argv[])
 			md_zdiv2(DIMS, ksp_dims, strs, sens, strs, sens, img_strs, norm);
 
 		fftmod(DIMS, ksp_dims, FFT_FLAGS, sens, sens);
-
-		unmap_cfl(DIMS, ksp_dims, sens);
-
-	} else {
-
-		md_free(sens);
 	}
+
 
 	md_free(norm);
 	md_free(mask);
 
-	if (NULL != psf)
-		unmap_cfl(DIMS, pat_dims, pattern);
-	else
-		md_free(pattern);
-
-
+	unmap_cfl(DIMS, ksp_dims, sens);
+	unmap_cfl(DIMS, pat_dims, pattern);
 	unmap_cfl(DIMS, img_dims, image);
 	unmap_cfl(DIMS, ksp_dims, kspace_data);
-	exit(0);	
+	exit(0);
 }
 
 
