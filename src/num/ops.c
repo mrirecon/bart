@@ -81,12 +81,8 @@ const struct operator_s* operator_generic_create(unsigned int N, const unsigned 
 {
 	const long* strs[N];
 
-	for (unsigned int i = 0; i < N; i++) {
-
-		long* ptr = alloca(D[i] * sizeof(long));
-		md_calc_strides(D[i], ptr, dims[i], CFL_SIZE);
-		strs[i] = ptr;
-	}
+	for (unsigned int i = 0; i < N; i++)
+		strs[i] = MD_STRIDES(D[i], dims[i], CFL_SIZE);
 
 	return operator_generic_create2(N, D, dims, strs, data, apply, del);
 }
