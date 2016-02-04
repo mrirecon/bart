@@ -101,7 +101,7 @@ extern void md_free(void* p);
 
 
 extern long md_calc_size(unsigned int D, const long dimensions[__VLA(D)]);
-extern void md_calc_strides(unsigned int D, long str[__VLA(D)], const long dim[__VLA(D)], size_t size);
+extern long* md_calc_strides(unsigned int D, long str[__VLA(D)], const long dim[__VLA(D)], size_t size);
 extern long md_calc_offset(unsigned int D, const long strides[__VLA(D)], const long position[__VLA(D)]);
 extern unsigned int md_calc_blockdim(unsigned int D, const long dim[__VLA(D)], const long str[__VLA(D)], size_t size);
 extern void md_select_dims(unsigned int D, unsigned long flags, long odims[__VLA(D)], const long idims[__VLA(D)]);
@@ -141,6 +141,7 @@ extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned int fla
 
 #define MD_ACCESS(N, strs, pos, x)	((x)[md_calc_offset((N), (strs), (pos)) / sizeof((x)[0])])
 
+#define MD_STRIDES(N, dims, elsize)	(md_calc_strides(N, alloca(N * sizeof(long)), dims, elsize))
 
 #ifdef __cplusplus
 }

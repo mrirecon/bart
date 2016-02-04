@@ -486,7 +486,7 @@ void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, 
  * @param dim array of dimensions
  * @param size of a single element
  */
-void md_calc_strides(unsigned int D, long str[D], const long dim[D], size_t size)
+long* md_calc_strides(unsigned int D, long str[D], const long dim[D], size_t size)
 {
 	long old = size;
 
@@ -495,6 +495,8 @@ void md_calc_strides(unsigned int D, long str[D], const long dim[D], size_t size
 		str[i] = (1 == dim[i]) ? 0 : old;
 		old *= dim[i];
 	}
+
+	return str;
 }
 
 
@@ -511,10 +513,7 @@ void md_calc_strides(unsigned int D, long str[D], const long dim[D], size_t size
  */
 void md_clear(unsigned int D, const long dim[D], void* ptr, size_t size)
 {
-	long str[D];
-	md_calc_strides(D, str, dim, size);
-
-	md_clear2(D, dim, str, ptr, size);
+	md_clear2(D, dim, MD_STRIDES(D, dim, size), ptr, size);
 }
 
 
