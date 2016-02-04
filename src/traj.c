@@ -1,10 +1,10 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -39,6 +39,7 @@ int main_traj(int argc, char* argv[])
 	bool golden = false;
 	bool dbl = false;
 	int turns = 1;
+	bool d3d = false;
 
 	const struct opt_s opts[] = {
 
@@ -49,6 +50,7 @@ int main_traj(int argc, char* argv[])
 		OPT_SET('r', &radial, "radial"),
 		OPT_SET('G', &golden, "golden-ratio sampling"),
 		OPT_SET('D', &dbl, "double base angle"),
+		OPT_SET('3', &d3d, "3D"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -78,10 +80,18 @@ int main_traj(int argc, char* argv[])
 				double golden_angle = 3. - sqrtf(5.);
 				double base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
 				double angle = M_PI * (float)remap(Y, turns, j) * (dbl ? 2. : 1.) * base;
+				double read = (float)i + 0.5 - (float)X / 2.;
+				double angle2 = 0.;
 
-				samples[p * 3 + 0] = ((float)i + 0.5 - (float)X / 2.) * sin(angle);
-				samples[p * 3 + 1] = ((float)i + 0.5 - (float)X / 2.) * cos(angle);
-				samples[p * 3 + 2] = 0.;
+				if (d3d) {
+
+					int split = sqrtf(Y);
+					angle2 = 2. * M_PI * j * split * base;
+				}
+
+				samples[p * 3 + 0] = read * sin(angle) * cos(angle2);
+				samples[p * 3 + 1] = read * cos(angle) * cos(angle2);
+				samples[p * 3 + 2] = read *              sin(angle2);
 
 			} else {
 
