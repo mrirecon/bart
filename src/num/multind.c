@@ -670,10 +670,7 @@ void md_fill2(unsigned int D, const long dim[D], const long str[D], void* ptr, c
  */
 void md_fill(unsigned int D, const long dim[D], void* ptr, const void* iptr, size_t size)
 {
-	long str[D];
-	md_calc_strides(D, str, dim, size);
-
-	md_fill2(D, dim, str, ptr, iptr, size);
+	md_fill2(D, dim, MD_STRIDES(D, dim, size), ptr, iptr, size);
 }
 
 
@@ -804,13 +801,9 @@ void md_move_block2(unsigned int D, const long dim[D], const long opos[D], const
  */
 void md_move_block(unsigned int D, const long dim[D], const long opos[D], const long odim[D], void* optr, const long ipos[D], const long idim[D], const void* iptr, size_t size)
 {
-	long istr[D];
-	long ostr[D];
-
-	md_calc_strides(D, istr, idim, size);
-	md_calc_strides(D, ostr, odim, size);
-
-	md_move_block2(D, dim, opos, odim, ostr, optr, ipos, idim, istr, iptr, size);
+	md_move_block2(D, dim,
+			opos, odim, MD_STRIDES(D, odim, size), optr,
+			ipos, idim, MD_STRIDES(D, idim, size), iptr, size);
 }
 
 
@@ -862,13 +855,9 @@ void md_copy_block2(unsigned int D, const long pos[D], const long odim[D], const
  */
 void md_copy_block(unsigned int D, const long pos[D], const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
-	long istr[D];
-	long ostr[D];
-
-	md_calc_strides(D, istr, idim, size);
-	md_calc_strides(D, ostr, odim, size);
-
-	md_copy_block2(D, pos, odim, ostr, optr, idim, istr, iptr, size);
+	md_copy_block2(D, pos,
+			odim, MD_STRIDES(D, odim, size), optr,
+			idim, MD_STRIDES(D, idim, size), iptr, size);
 }
 
 
@@ -934,16 +923,12 @@ void md_slice2(unsigned int D, unsigned long flags, const long pos[D], const lon
  */
 void md_slice(unsigned int D, unsigned long flags, const long pos[D], const long dim[D], void* optr, const void* iptr, size_t size)
 {
-	long ostr[D];
-	long istr[D];
-
 	long odim[D];
 	md_select_dims(D, ~flags, odim, dim);
 
-	md_calc_strides(D, istr, dim, size);
-	md_calc_strides(D, ostr, odim, size);
-
-	md_slice2(D, flags, pos, dim, ostr, optr, istr, iptr, size);
+	md_slice2(D, flags, pos, dim,
+			MD_STRIDES(D, odim, size), optr,
+			MD_STRIDES(D, dim, size), iptr, size);
 }
 
 
@@ -984,13 +969,9 @@ void md_permute2(unsigned int D, const unsigned int order[D], const long odims[D
  */
 void md_permute(unsigned int D, const unsigned int order[D], const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
 {
-	long ostr[D];
-	long istr[D];
-
-	md_calc_strides(D, istr, idims, size);
-	md_calc_strides(D, ostr, odims, size);
-
-	md_permute2(D, order, odims, ostr, optr, idims, istr, iptr, size);
+	md_permute2(D, order,
+			odims, MD_STRIDES(D, odims, size), optr,
+			idims, MD_STRIDES(D, idims, size), iptr, size);
 }
 
 
@@ -1070,13 +1051,9 @@ void md_transpose2(unsigned int D, unsigned int dim1, unsigned int dim2, const l
  */
 void md_transpose(unsigned int D, unsigned int dim1, unsigned int dim2, const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
 {
-	long ostr[D];
-	long istr[D];
-
-	md_calc_strides(D, istr, idims, size);
-	md_calc_strides(D, ostr, odims, size);
-
-	md_transpose2(D, dim1, dim2, odims, ostr, optr, idims, istr, iptr, size);
+	md_transpose2(D, dim1, dim2,
+			odims, MD_STRIDES(D, odims, size), optr,
+			idims, MD_STRIDES(D, odims, size), iptr, size);
 }
 
 
@@ -1273,11 +1250,9 @@ void md_septrafo2(unsigned int D, const long dimensions[D], unsigned long flags,
  * Apply a separable transformation along selected dimensions.
  *
  */
-void md_septrafo(unsigned int D, const long dimensions[D], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun, void* _data)
+void md_septrafo(unsigned int D, const long dims[D], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun, void* _data)
 {
-        long strides[D];
-        md_calc_strides(D, strides, dimensions, size);
-        md_septrafo2(D, dimensions, flags, strides, ptr, fun, _data);
+        md_septrafo2(D, dims, flags, MD_STRIDES(D, dims, size), ptr, fun, _data);
 }
 
 
@@ -1341,13 +1316,10 @@ void md_copy_diag(unsigned int D, const long dims[D], unsigned long flags, void*
  */
 void md_fill_diag(unsigned int D, const long dims[D], unsigned long flags, void* dst, const void* src, size_t size)
 {
-	long str1[D];
 	long str2[D];
-
-	md_calc_strides(D, str1, dims, size);
 	md_singleton_strides(D, str2);
 
-	md_copy_diag2(D, dims, flags, str1, dst, str2, src, size);
+	md_copy_diag2(D, dims, flags, MD_STRIDES(D, dims, size), dst, str2, src, size);
 }
 
 
@@ -1520,13 +1492,8 @@ void md_circ_ext2(unsigned int D, const long dims1[D], const long strs1[D], void
  */
 void md_circ_ext(unsigned int D, const long dims1[D],  void* dst, const long dims2[D], const void* src, size_t size)
 {
-	long strs1[D];
-	long strs2[D];
-
-	md_calc_strides(D, strs1, dims1, size);
-	md_calc_strides(D, strs2, dims2, size);
-
-	md_circ_ext2(D, dims1, strs1, dst, dims2, strs2, src, size);
+	md_circ_ext2(D, dims1, MD_STRIDES(D, dims1, size), dst,
+			dims2, MD_STRIDES(D, dims2, size), src, size);
 }
 
 
@@ -1569,13 +1536,8 @@ void md_periodic2(unsigned int D, const long dims1[D], const long strs1[D], void
  */
 void md_periodic(unsigned int D, const long dims1[D], void* dst, const long dims2[D], const void* src, size_t size)
 {
-	long strs1[D];
-	long strs2[D];
-
-	md_calc_strides(D, strs1, dims1, size);
-	md_calc_strides(D, strs2, dims2, size);
-
-	md_periodic2(D, dims1, strs1, dst, dims2, strs2, src, size);
+	md_periodic2(D, dims1, MD_STRIDES(D, dims1, size), dst,
+			dims2, MD_STRIDES(D, dims2, size), src, size);
 }
 
 

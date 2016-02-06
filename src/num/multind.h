@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <assert.h>
+#include <alloca.h>
 
 #ifdef __cplusplus
 
