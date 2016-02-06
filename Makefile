@@ -77,29 +77,29 @@ CXX ?= g++
 
 # cuda
 
-cuda.top ?= /usr/
+CUDA_BASE ?= /usr/local/
 
 
 # acml
 
-acml.top ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
+ACML_BASE ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
 
 # fftw
 
 ifneq ($(BUILDTYPE), MacOSX)
-fftw.top ?= /usr/
+FFTW_BASE ?= /usr/
 else
-fftw.top ?= /opt/local/
+FFTW_BASE ?= /opt/local/
 endif
 
 
 # Matlab
 
-matlab.top ?= /usr/local/matlab/
+MATLAB_BASE ?= /usr/local/matlab/
 
 # ISMRM
 
-ismrm.top ?= /usr/local/ismrmrd/
+ISMRM_BASE ?= /usr/local/ismrmrd/
 
 
 
@@ -188,16 +188,16 @@ default: bart doc/commands.txt .gitignore
 
 # cuda
 
-NVCC = $(cuda.top)/bin/nvcc
+NVCC = $(CUDA_BASE)/bin/nvcc
 
 
 ifeq ($(CUDA),1)
-CUDA_H := -I$(cuda.top)/include
+CUDA_H := -I$(CUDA_BASE)/include
 CPPFLAGS += -DUSE_CUDA $(CUDA_H)
 ifeq ($(BUILDTYPE), MacOSX)
-CUDA_L := -L$(cuda.top)/lib -lcufft -lcudart -lcublas -m64 -lstdc++
+CUDA_L := -L$(CUDA_BASE)/lib -lcufft -lcudart -lcublas -m64 -lstdc++
 else
-CUDA_L := -L$(cuda.top)/lib64 -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(cuda.top)/lib64
+CUDA_L := -L$(CUDA_BASE)/lib64 -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/lib64
 endif 
 else
 CUDA_H :=
@@ -231,8 +231,8 @@ BLAS_H :=
 BLAS_L :=
 
 ifeq ($(ACML),1)
-BLAS_H := -I$(acml.top)/include
-BLAS_L := -L$(acml.top)/lib -lgfortran -lacml_mp -Wl,-rpath $(acml.top)/lib
+BLAS_H := -I$(ACML_BASE)/include
+BLAS_L := -L$(ACML_BASE)/lib -lgfortran -lacml_mp -Wl,-rpath $(ACML_BASE)/lib
 CPPFLAGS += -DUSE_ACML
 else
 ifeq ($(BUILDTYPE), MacOSX)
@@ -260,8 +260,8 @@ endif
 
 # fftw
 
-FFTW_H := -I$(fftw.top)/include/
-FFTW_L := -L$(fftw.top)/lib -lfftw3f
+FFTW_H := -I$(FFTW_BASE)/include/
+FFTW_L := -L$(FFTW_BASE)/lib -lfftw3f
 
 ifeq ($(FFTWTHREADS),1)
 	FFTW_L += -lfftw3f_threads
@@ -270,14 +270,13 @@ endif
 
 # Matlab
 
-MATLAB_H := -I$(matlab.top)/extern/include
-MATLAB_L := -Wl,-rpath $(matlab.top)/bin/glnxa64 -L$(matlab.top)/bin/glnxa64 -lmat -lmx -lm -lstdc++
+MATLAB_H := -I$(MATLAB_BASE)/extern/include
+MATLAB_L := -Wl,-rpath $(MATLAB_BASE)/bin/glnxa64 -L$(MATLAB_BASE)/bin/glnxa64 -lmat -lmx -lm -lstdc++
 
 # ISMRM
 
-ISMRM_H := -I$(ismrm.top)/include -I$(ismrm.top)/schema #-DISMRMRD_OLD
-ISMRM_L := /usr/local/ismrmrd/schema/ismrmrd.cxx -Wl,-R$(ismrm.top)/lib -L$(ismrm.top)/lib -lismrmrd -Lhd5 -lxerces-c -lboost_system
-#ISMRM_L := -Wl,-R$(ismrm.top)/lib -L$(ismrm.top)/lib -lismrmrd -lismrmrd_xsd -Lhd5 
+ISMRM_H := -I$(ISMRM_BASE)/include -I$(ISMRM_BASE)/schema #-DISMRMRD_OLD
+ISMRM_L := /usr/local/ismrmrd/schema/ismrmrd.cxx -Wl,-R$(ISMRM_BASE)/lib -L$(ISMRM_BASE)/lib -lismrmrd -Lhd5 -lxerces-c -lboost_system
 
 
 
