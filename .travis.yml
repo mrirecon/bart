@@ -50,6 +50,12 @@ matrix:
         - sudo apt-get install -qq clang-3.5
         - sudo apt-get install -qq cuda-drivers cuda-core-7.5 cuda-cudart-dev-7.5 cuda-cufft-dev-7.5 cuda-cublas-dev-7.5
 
+    - os: osx
+      compiler: gcc-4.7
+      before_install:
+        - brew update
+        - brew install fftw gcc47
+
 script:
   - make bart
   - make all
