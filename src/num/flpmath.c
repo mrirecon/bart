@@ -1169,15 +1169,9 @@ void md_zmatmulc2(unsigned int D, const long out_dims[D], const long out_strs[D]
  */
 void md_zmatmulc(unsigned int D, const long out_dims[D], complex float* dst, const long mat_dims[D], const complex float* mat, const long in_dims[D], const complex float* src)
 {
-	long out_strs[D];
-	long mat_strs[D];
-	long in_strs[D];
-
-	md_calc_strides(D, out_strs, out_dims, CFL_SIZE);
-	md_calc_strides(D, mat_strs, mat_dims, CFL_SIZE);
-	md_calc_strides(D, in_strs, in_dims, CFL_SIZE);
-
-	md_zmatmulc2(D, out_dims, out_strs, dst, mat_dims, mat_strs, mat, in_dims, in_strs, src);
+	md_zmatmulc2(D, out_dims, MD_STRIDES(D, out_dims, CFL_SIZE), dst,
+			mat_dims, MD_STRIDES(D, mat_dims, CFL_SIZE), mat,
+			in_dims, MD_STRIDES(D, in_dims, CFL_SIZE), src);
 }
 
 
@@ -1198,15 +1192,9 @@ void md_zmatmul2(unsigned int D, const long out_dims[D], const long out_strs[D],
  */
 void md_zmatmul(unsigned int D, const long out_dims[D], complex float* dst, const long mat_dims[D], const complex float* mat, const long in_dims[D], const complex float* src)
 {
-	long out_strs[D];
-	long mat_strs[D];
-	long in_strs[D];
-
-	md_calc_strides(D, out_strs, out_dims, CFL_SIZE);
-	md_calc_strides(D, mat_strs, mat_dims, CFL_SIZE);
-	md_calc_strides(D, in_strs, in_dims, CFL_SIZE);
-
-	md_zmatmul2(D, out_dims, out_strs, dst, mat_dims, mat_strs, mat, in_dims, in_strs, src);
+	md_zmatmul2(D,	out_dims, MD_STRIDES(D, out_dims, CFL_SIZE), dst,
+			mat_dims, MD_STRIDES(D, mat_dims, CFL_SIZE), mat,
+			in_dims, MD_STRIDES(D, in_dims, CFL_SIZE), src);
 }
 
 
@@ -1495,6 +1483,7 @@ void md_axpy(unsigned int D, const long dims[D], float* optr, float val, const f
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, FL_SIZE);
+
 	md_axpy2(D, dims, strs, optr, val, strs, iptr);
 }
 
@@ -2300,12 +2289,9 @@ float md_asum2(unsigned int D, const long dims[D], const long strs[D], const flo
 		retp = gpu_constant(&ret, FL_SIZE);
 #endif
 	long dims0[D];
-	long strs0[D];
-
 	md_singleton_dims(D, dims0);
-	md_calc_strides(D, strs0, dims0, FL_SIZE);
 
-	md_axpy2(D, dims, strs0, retp, 1., strs1, tmp);
+	md_axpy2(D, dims, MD_STRIDES(D, dims0, FL_SIZE), retp, 1., strs1, tmp);
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr))
@@ -2325,10 +2311,7 @@ float md_asum2(unsigned int D, const long dims[D], const long strs[D], const flo
  */
 float md_asum(unsigned int D, const long dims[D], const float* ptr)
 {
-	long strs[D];
-	md_calc_strides(D, strs, dims, FL_SIZE);
-
-	return md_asum2(D, dims, strs, ptr);
+	return md_asum2(D, dims, MD_STRIDES(D, dims, FL_SIZE), ptr);
 }
 
 
@@ -2360,10 +2343,7 @@ float md_zasum2(unsigned int D, const long dims[D], const long strs[D], const co
  */
 float md_zasum(unsigned int D, const long dims[D], const complex float* ptr)
 {
-	long strs[D];
-	md_calc_strides(D, strs, dims, CFL_SIZE);
-
-	return md_zasum2(D, dims, strs, ptr);
+	return md_zasum2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), ptr);
 }
 
 
@@ -2375,10 +2355,7 @@ float md_z1norm2(unsigned int D, const long dims[D], const long strs[D], const c
 {
 	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, ptr);
 
-	long strs1[D];
-	md_calc_strides(D, strs1, dims, CFL_SIZE);
-
-	md_zabs2(D, dims, strs1, tmp, strs, ptr);
+	md_zabs2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), tmp, strs, ptr);
 
 	float val = md_zasum(D, dims, tmp);
 
@@ -2394,10 +2371,7 @@ float md_z1norm2(unsigned int D, const long dims[D], const long strs[D], const c
  */
 float md_z1norm(unsigned int D, const long dim[D], const complex float* ptr)
 {
-	long str[D];
-	md_calc_strides(D, str, dim, CFL_SIZE);
-
-	return md_z1norm2(D, dim, str, ptr);
+	return md_z1norm2(D, dim, MD_STRIDES(D, dim, CFL_SIZE), ptr);
 }
 
 
@@ -2476,13 +2450,9 @@ void md_zwavg(unsigned int D, const long dims[D], unsigned int flags, complex fl
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
 
-	long istr[D];
-	md_calc_strides(D, istr, dims, CFL_SIZE);
-
-	long ostr[D];
-	md_calc_strides(D, ostr, odims, CFL_SIZE);
-
-	md_zwavg2(D, dims, flags, ostr, optr, istr, iptr);
+	md_zwavg2(D, dims, flags,
+			MD_STRIDES(D, odims, CFL_SIZE), optr,
+			MD_STRIDES(D, odims, CFL_SIZE), iptr);
 }
 
 
@@ -2716,6 +2686,7 @@ void md_softthresh(unsigned int D, const long dims[D], float lambda, unsigned in
 {
 	long str[D];
 	md_calc_strides(D, str, dims, FL_SIZE);
+
 	md_softthresh2(D, dims, lambda, flags, str, optr, str, iptr);
 }
 

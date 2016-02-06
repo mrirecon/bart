@@ -115,12 +115,9 @@ const struct operator_s* operator_create(unsigned int ON, const long out_dims[ON
 		unsigned int IN, const long in_dims[IN],
 		void* data, operator_fun_t apply, operator_del_t del)
 {
-	long out_strs[ON];
-	long in_strs[IN];
-	md_calc_strides(ON, out_strs, out_dims, CFL_SIZE);
-	md_calc_strides(IN, in_strs, in_dims, CFL_SIZE);
-
-	return operator_create2(ON, out_dims, out_strs, IN, in_dims, in_strs, data, apply, del);
+	return operator_create2(ON, out_dims, MD_STRIDES(ON, out_dims, CFL_SIZE),
+				IN, in_dims, MD_STRIDES(IN, in_dims, CFL_SIZE),
+				data, apply, del);
 }
 
 
@@ -343,12 +340,9 @@ const struct operator_p_s* operator_p_create(unsigned int ON, const long out_dim
 		unsigned int IN, const long in_dims[IN], 
 		void* data, operator_p_fun_t apply, operator_del_t del)
 {
-	long out_strs[ON];
-	long in_strs[IN];
-	md_calc_strides(ON, out_strs, out_dims, CFL_SIZE);
-	md_calc_strides(IN, in_strs, in_dims, CFL_SIZE);
-
-	return operator_p_create2(ON, out_dims, out_strs, IN, in_dims, in_strs, data, apply, del);
+	return operator_p_create2(ON, out_dims, MD_STRIDES(ON, out_dims, CFL_SIZE),
+				IN, in_dims, MD_STRIDES(IN, in_dims, CFL_SIZE),
+				data, apply, del);
 }
 
 
@@ -532,7 +526,7 @@ static void stack_dims(unsigned int N, long dims[N], long strs[N], unsigned int 
 	md_copy_dims(N, dims, a->dims);
 	md_copy_strides(N, strs, a->strs);
 
-	UNUSED( b );
+	UNUSED(b);
 
 	strs[D] = md_calc_size(N, a->dims) * CFL_SIZE;	// FIXME
 	dims[D] = 2;
@@ -593,11 +587,8 @@ void operator_apply2(const struct operator_s* op, unsigned int IN, const long id
 
 void operator_apply(const struct operator_s* op, unsigned int IN, const long idims[IN], complex float* dst, const long ON, const long odims[ON], const complex float* src)
 {
-	long ostrs[ON];
-	long istrs[IN];
-	md_calc_strides(ON, ostrs, odims, CFL_SIZE);
-	md_calc_strides(IN, istrs, idims, CFL_SIZE);
-	operator_apply2(op, ON, odims, ostrs, dst, IN, idims, istrs, src);
+	operator_apply2(op, ON, odims, MD_STRIDES(ON, odims, CFL_SIZE), dst,
+			    IN, idims, MD_STRIDES(IN, idims, CFL_SIZE), src);
 }
 
 
@@ -613,11 +604,9 @@ void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned int IN,
 
 void operator_p_apply(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[IN], complex float* dst, const long ON, const long odims[ON], const complex float* src)
 {
-	long ostrs[ON];
-	long istrs[IN];
-	md_calc_strides(ON, ostrs, odims, CFL_SIZE);
-	md_calc_strides(IN, istrs, idims, CFL_SIZE);
-	operator_p_apply2(op, mu, ON, odims, ostrs, dst, IN, idims, istrs, src);
+	operator_p_apply2(op, mu,
+			ON, odims, MD_STRIDES(ON, odims, CFL_SIZE), dst,
+			IN, idims, MD_STRIDES(IN, idims, CFL_SIZE), src);
 }
 
 
