@@ -474,7 +474,7 @@ void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, 
 	struct data_s data = { md_calc_size(skip, dim) * size };
 #endif
 
-	md_nary(1, D - skip, dim + skip, (const long*[1]){ str + skip }, (void*[1]){ ptr }, (void*)&data, &nary_clear);
+	md_nary(1, D - skip, dim + skip, (const long*[1]){ str + skip }, (void*[1]){ ptr }, &data, &nary_clear);
 }
 
 
@@ -602,7 +602,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 
 		skip++;
 
-		md_nary(2, ND - skip, tdims + skip , nstr, nptr, (void*)&data, &nary_strided_copy);
+		md_nary(2, ND - skip, tdims + skip , nstr, nptr, &data, &nary_strided_copy);
 		return;
 	}
 #endif
@@ -610,7 +610,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	struct data_s data = { md_calc_size(skip, tdims) * size };
 #endif
 
-	md_nary(2, ND - skip, tdims + skip, nstr, nptr, (void*)&data, &nary_copy);
+	md_nary(2, ND - skip, tdims + skip, nstr, nptr, &data, &nary_copy);
 }
 
 
@@ -722,7 +722,7 @@ void md_circular_swap2(unsigned M, unsigned int D, const long dims[D], const lon
 
 	struct swap_s data = { M, md_calc_size(skip, dims) * size };
 
-	md_nary(M, D - skip, dims + skip, nstr, ptr, (void*)&data, &nary_swap);
+	md_nary(M, D - skip, dims + skip, nstr, ptr, &data, &nary_swap);
 }
 
 
