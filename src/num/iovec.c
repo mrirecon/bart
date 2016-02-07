@@ -37,15 +37,15 @@ const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const lo
 
 	PTR_ALLOC(long[N], ndims);
 	memcpy(*ndims, dims, N * sizeof(long));
-	n->dims = *ndims;
+	n->dims = *PTR_PASS(ndims);
 
 	PTR_ALLOC(long[N], nstrs);
 	memcpy(*nstrs, strs, N * sizeof(long));
-	n->strs = *nstrs;
+	n->strs = *PTR_PASS(nstrs);
 
 	n->size = size;
 
-	return n;
+	return PTR_PASS(n);
 }
 
 const struct iovec_s* iovec_create(unsigned int N, const long dims[N], size_t size)

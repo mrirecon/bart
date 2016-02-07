@@ -50,9 +50,9 @@ struct linop_s* rvc_create(unsigned int N, const long dims[N])
 	md_copy_dims(N, *dims2, dims);
 
 	data->N = N;
-	data->dims = *dims2;
+	data->dims = *PTR_PASS(dims2);
 
-	return linop_create(N, dims, N, dims, &data->base, rvc_apply, rvc_apply, rvc_apply, NULL, rvc_free);
+	return linop_create(N, dims, N, dims, &PTR_PASS(data)->base, rvc_apply, rvc_apply, rvc_apply, NULL, rvc_free);
 }
 
 

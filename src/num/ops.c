@@ -61,14 +61,14 @@ const struct operator_s* operator_generic_create2(unsigned int N, const unsigned
 		(*dom)[i] = iovec_create2(D[i], dims[i], strs[i], CFL_SIZE);
 
 	op->N = N;
-	op->domain = *dom;
+	op->domain = *PTR_PASS(dom);
 	op->data = data;
 	op->apply = apply;
 
 	op->refcount = 1;
 	op->del = del;
 
-	return op;
+	return PTR_PASS(op);
 }
 
 
@@ -313,8 +313,8 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
 	(*dom)[2] = iovec_create2(IN, in_dims, in_strs, CFL_SIZE);
 
 	o->op.N = 3;
-	o->op.domain = *dom;
-	o->op.data = op;
+	o->op.domain = *PTR_PASS(dom);
+	o->op.data = PTR_PASS(op);
 	o->op.apply = op_p_apply;
 
 	o->op.refcount = 1;
@@ -323,7 +323,7 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
 	if (NULL == del)
 		debug_printf(DP_WARN, "Warning: no delete function specified for operator_p_create! Possible memory leak.\n");
 
-	return o;
+	return PTR_PASS(o);
 }
 
 
@@ -462,7 +462,7 @@ const struct operator_s* operator_chain(const struct operator_s* a, const struct
 
 	const struct iovec_s* dom = a->domain[1];
 	const struct iovec_s* cod = b->domain[0];
-	return operator_create2(cod->N, cod->dims, cod->strs, dom->N, dom->dims, dom->strs, &c->base, chain_apply, chain_free);
+	return operator_create2(cod->N, cod->dims, cod->strs, dom->N, dom->dims, dom->strs, &PTR_PASS(c)->base, chain_apply, chain_free);
 }
 
 

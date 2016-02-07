@@ -87,12 +87,12 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
 	md_calc_strides(N, *strs, dims, CFL_SIZE);
 	md_calc_strides(N, *dstrs, ddims, CFL_SIZE);
 
-	data->dims = *dims2;
-	data->strs = *strs;
-	data->dstrs = *dstrs;
+	data->dims = *PTR_PASS(dims2);
+	data->strs = *PTR_PASS(strs);
+	data->dstrs = *PTR_PASS(dstrs);
 	data->diag = diag;	// make a copy?
 
-	return linop_create(N, dims, N, dims, &data->base, cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
+	return linop_create(N, dims, N, dims, &PTR_PASS(data)->base, cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
 }
 
 
@@ -830,7 +830,7 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 	lop_fun_t apply = forward ? fft_linop_apply : fft_linop_adjoint;
 	lop_fun_t adjoint = forward ? fft_linop_adjoint : fft_linop_apply;
 
-	return linop_create(N, dims, N, dims, &data->base, apply, adjoint, fft_linop_normal, NULL, fft_linop_free);
+	return linop_create(N, dims, N, dims, &PTR_PASS(data)->base, apply, adjoint, fft_linop_normal, NULL, fft_linop_free);
 }
 
 

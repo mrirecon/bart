@@ -43,7 +43,9 @@ void fftscale2(unsigned int N, const long dimensions[N], unsigned long flags, co
 {
 	long fft_dims[N];
 	md_select_dims(N, flags, fft_dims, dimensions);
+
 	float scale = 1. / sqrtf((float)md_calc_size(N, fft_dims));
+
 	md_zsmul2(N, dimensions, ostrides, dst, istrides, src, scale);
 }
 
@@ -51,6 +53,7 @@ void fftscale(unsigned int N, const long dims[N], unsigned long flags, complex f
 {
 	long strs[N];
 	md_calc_strides(N, strs, dims, CFL_SIZE);
+
 	fftscale2(N, dims, flags, strs, dst, strs, src);
 }
 
@@ -293,13 +296,14 @@ const struct operator_s* fft_create2(unsigned int D, const long dimensions[D], u
 		plan->cuplan = fft_cuda_plan(D, dimensions, flags, ostrides, istrides, backwards);
 #endif
 
-	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, &plan->base, fft_apply, fft_free_plan);
+	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, &PTR_PASS(plan)->base, fft_apply, fft_free_plan);
 }
 
 const struct operator_s* fft_create(unsigned int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src, bool backwards)
 {
 	long strides[D];
 	md_calc_strides(D, strides, dimensions, CFL_SIZE);
+
 	return fft_create2(D, dimensions, flags, strides, dst, strides, src, backwards);
 }
 

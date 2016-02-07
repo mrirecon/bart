@@ -188,7 +188,6 @@ static void prox_leastsquares_del(const operator_data_t* _data)
 }
 
 const struct operator_p_s* prox_leastsquares_create(unsigned int N, const long dims[N], float lambda, const complex float* y)
-
 {
 	PTR_ALLOC(struct prox_leastsquares_data, pdata);
 
@@ -196,7 +195,7 @@ const struct operator_p_s* prox_leastsquares_create(unsigned int N, const long d
 	pdata->lambda = lambda;
 	pdata->size = md_calc_size(N, dims) * 2;
 
-	return operator_p_create(N, dims, N, dims, &pdata->base, prox_leastsquares_apply, prox_leastsquares_del);
+	return operator_p_create(N, dims, N, dims, &PTR_PASS(pdata)->base, prox_leastsquares_apply, prox_leastsquares_del);
 }
 
 
@@ -258,7 +257,7 @@ const struct operator_p_s* prox_l2norm_create(unsigned int N, const long dims[N]
 	pdata->lambda = lambda;
 	pdata->size = md_calc_size(N, dims) * 2;
 
-	return operator_p_create(N, dims, N, dims, &pdata->base, prox_l2norm_apply, prox_l2norm_del);
+	return operator_p_create(N, dims, N, dims, &PTR_PASS(pdata)->base, prox_l2norm_apply, prox_l2norm_del);
 }
 
 

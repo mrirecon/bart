@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+#include "debug.h"
+
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
 #endif
@@ -20,6 +22,7 @@
 
 #define MAKE_ARRAY(x, ...) ((__typeof__(x)[]){ x, __VA_ARGS__ })
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof(x[0]))
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,17 +36,35 @@ extern "C" {
 #endif
 
 extern void* xmalloc(size_t s);
+extern void xfree(const void*);
 
-#define XMALLOC(x) (x = xmalloc(sizeof(*x)))
 
+#define XMALLOC(x)	(x = xmalloc(sizeof(*x)))
+#define XFREE(x)	(xfree(x), x = NULL)
 
 #define _TYPE_ALLOC(T)		((T*)xmalloc(sizeof(T)))
 #define TYPE_ALLOC(T)		_TYPE_ALLOC(__typeof__(T))
 // #define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
 #define TYPE_CHECK(T, x)	(1 ? (x) : (T)0)
 
-#define _PTR_ALLOC(T, x)	T* x = xmalloc(sizeof(T))
+#if defined __GNUC__ && !defined __clang__
+#define _CONCAT(x, y)	x ## y
+#define CONCAT(x, y)	_CONCAT(x, y)
+#define _PTR_ALLOC(T, x)										\
+	void CONCAT(__cleanup, __LINE__)(T** ptr)							\
+	{												\
+		if (NULL != *ptr) 									\
+			debug_printf(DP_WARN, "pointer not cleared: %s:%d\n", __FILE__, __LINE__);	\
+	}												\
+	T* x __attribute__((cleanup(CONCAT(__cleanup, __LINE__)))) = xmalloc(sizeof(T))
+#else
+#define _PTR_ALLOC(T, x)	T* x  = xmalloc(sizeof(T))
+#endif
+
+
 #define PTR_ALLOC(T, x)		_PTR_ALLOC(__typeof__(T), x)
+#define PTR_FREE(x)		XFREE(x)
+#define PTR_PASS(x)		({ __typeof__(x) __tmp = (x); (x) = NULL; __tmp; })
 
 #define CONTAINER_OF(x, T, member)	((T*)((char*)TYPE_CHECK(__typeof(&((T*)0)->member), x) - offsetof(T, member)))
 

@@ -557,7 +557,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	nskerns_dims[4] = N - number_of_kernels(conf, N, val);
 #endif
 
-	free(vec);
+	PTR_FREE(vec);
 }
 
 

@@ -40,9 +40,9 @@ void lapack_svd_econ(long M, long N,
 		     float S[(N > M) ? M : N],
 		     complex float A[N][M])
 {
-	float* superb = xmalloc((MIN(M, N) - 1) * sizeof(float));
-	LAPACKE(cgesvd, 'S', 'S', M, N, &A[0][0], M, S, &U[0][0], M, &VH[0][0], MIN(M, N), superb);
-	free(superb);
+	PTR_ALLOC(float[MIN(M, N) - 1], superb);
+	LAPACKE(cgesvd, 'S', 'S', M, N, &A[0][0], M, S, &U[0][0], M, &VH[0][0], MIN(M, N), *superb);
+	PTR_FREE(superb);
 }
 
 void lapack_eig_double(long N, double eigenval[N], complex double matrix[N][N])

@@ -33,17 +33,27 @@ void* xmalloc(size_t s)
 
 
 
+void xfree(const void* x)
+{
+	free((void*)x);
+}
+
+
 
 void error(const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
+
 	if (!debug_logging)
 		debug_printf(DP_ERROR, "Error: ");
+
 	debug_vprintf(DP_ERROR, fmt, ap);
+
 	va_end(ap);
 	abort();
 }
+
 
 
 void print_dims(int D, const long dims[D])

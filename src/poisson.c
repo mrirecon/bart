@@ -228,8 +228,8 @@ int main_poisson(int argc, char* argv[])
 
 		// repeat with more points
 		M *= 2;
-		free(points);
-		free(kind);
+		PTR_FREE(points);
+		PTR_FREE(kind);
 	}
 
 	// calibration region

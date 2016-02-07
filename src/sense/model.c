@@ -173,7 +173,7 @@ static struct maps_data* maps_create_data(const long max_dims[DIMS],
 
 	data->norm = NULL;
 
-	return data;
+	return PTR_PASS(data);
 }
 
 

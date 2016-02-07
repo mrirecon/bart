@@ -135,11 +135,11 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 	} else {
 
 		shared_unlink(shared_data[3]);
-		free(shared_data[3]);
+		xfree(shared_data[3]);
 		lo->norm_inv = NULL;
 	}
 
-	return lo;
+	return PTR_PASS(lo);
 }
 
 
@@ -386,7 +386,7 @@ struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b)
 
 	c->norm_inv = NULL;
 
-	return c;
+	return PTR_PASS(c);
 }
 
 
