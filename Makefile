@@ -64,6 +64,7 @@ OPT = -O3 -ffast-math
 CPPFLAGS ?= -Wall -Wextra
 CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
+LDFLAGS ?= -rdynamic
 
 ifeq ($(BUILDTYPE), MacOSX)
 	CC ?= gcc-mp-4.7

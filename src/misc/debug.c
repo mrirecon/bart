@@ -1,9 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013,2015	Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013-2016	Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013,2015	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2013 Dara Bahri <dbahri123@gmail.com
  */
@@ -22,6 +23,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <time.h>
+#include <execinfo.h>
 
 #include "num/multind.h"
 #include "misc/io.h"
@@ -46,7 +48,9 @@ double timestamp(void)
 void dump_cfl(const char* name, int D, const long dimensions[D], const complex float* src)
 {
 	complex float* out = create_cfl(name, D, dimensions);
+
 	md_copy(D, dimensions, out, src, sizeof(complex float));
+
 	unmap_cfl(D, dimensions, out);
 }
 
@@ -87,7 +91,7 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 
 		FILE* ofp = (level < DP_INFO) ? stderr : stdout;
 
-		if (true == debug_logging) {
+		if (debug_logging) {
 
 			char dt_str[STRSIZE];
 			get_datetime_str(STRSIZE, dt_str);
@@ -111,3 +115,14 @@ void debug_printf(int level, const char* fmt, ...)
 	debug_vprintf(level, fmt, ap);	
 	va_end(ap);
 }
+
+
+void debug_backtrace(size_t n)
+{
+	void* ptrs[n + 1];
+	size_t l = backtrace(ptrs, n + 1);
+
+	if (l > 1)
+		backtrace_symbols_fd(ptrs + 1, l - 1, STDERR_FILENO);
+}
+
