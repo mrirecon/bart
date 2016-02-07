@@ -39,6 +39,17 @@ void xfree(const void* x)
 }
 
 
+void warn_nonnull_ptr(void* p)
+{
+	void** p2 = p;
+
+	if (NULL != *p2) {
+
+		debug_printf(DP_WARN, "pointer not cleared: ");
+		debug_backtrace(1);
+	}
+}
+
 
 void error(const char* fmt, ...)
 {

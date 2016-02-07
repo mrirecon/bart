@@ -9,8 +9,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#include "debug.h"
-
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
 #endif
@@ -37,7 +35,7 @@ extern "C" {
 
 extern void* xmalloc(size_t s);
 extern void xfree(const void*);
-
+extern void warn_nonnull_ptr(void*);
 
 #define XMALLOC(x)	(x = xmalloc(sizeof(*x)))
 #define XFREE(x)	(xfree(x), x = NULL)
@@ -47,19 +45,8 @@ extern void xfree(const void*);
 // #define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
 #define TYPE_CHECK(T, x)	(1 ? (x) : (T)0)
 
-#if defined __GNUC__ && !defined __clang__
-#define _CONCAT(x, y)	x ## y
-#define CONCAT(x, y)	_CONCAT(x, y)
 #define _PTR_ALLOC(T, x)										\
-	void CONCAT(__cleanup, __LINE__)(T** ptr)							\
-	{												\
-		if (NULL != *ptr) 									\
-			debug_printf(DP_WARN, "pointer not cleared: %s:%d\n", __FILE__, __LINE__);	\
-	}												\
-	T* x __attribute__((cleanup(CONCAT(__cleanup, __LINE__)))) = xmalloc(sizeof(T))
-#else
-#define _PTR_ALLOC(T, x)	T* x  = xmalloc(sizeof(T))
-#endif
+	T* x __attribute__((cleanup(warn_nonnull_ptr))) = xmalloc(sizeof(T))
 
 
 #define PTR_ALLOC(T, x)		_PTR_ALLOC(__typeof__(T), x)
