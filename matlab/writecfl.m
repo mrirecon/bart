@@ -5,7 +5,7 @@ function writecfl(filenameBase,data)
 %
 %    Written to edit data for the Berkeley recon.
 %
-% Copyright 2013. Yoseph Y Cheng.
+% Copyright 2013. Joseph Y Cheng.
 % 2012 Joseph Y Cheng (jycheng@mrsrl.stanford.edu).
 
     dims = size(data);
