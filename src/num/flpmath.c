@@ -121,45 +121,48 @@ struct data_s {
 };
 
 
+
+
 /**
- * Optimized two-op.
+ * Optimized n-op.
  *
+ * @param N number of arguments
+ ' @param io bitmask indicating input/output
  * @param D number of dimensions
  * @param dim dimensions
- * @param ostr output strides
- * @param optr output
- * @param istr1 input 1 strides
- * @param iptr1 input 1
- * @param size size of data structures, e.g. complex float 
- * @param too two-op multiply function
+ * @param nstr strides for arguments and dimensions
+ * @param nptr argument pointers
+ * @param sizes size of data for each argument, e.g. complex float
+ * @param too n-op function
  * @param data_ptr pointer to additional data used by too
  */
-static void optimized_twoop(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], void* iptr1, size_t sizes[2], md_nary_fun_t too, void* data_ptr)
+static void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_fun_t too, void* data_ptr)
 {
-	long tostr[D];
-	long tistr[D];
 	long tdims[D];
-
 	md_copy_dims(D, tdims, dim);
-	md_copy_strides(D, tostr, ostr);
-	md_copy_strides(D, tistr, istr1);
 
-	long (*nstr2[2])[D] = { &tostr, &tistr };
-	void *nptr[2] = { optr, iptr1 };
+	long tstrs[N][D];
+	long (*nstr1[N])[D];
+	void* nptr1[N];
 
-	int ND = optimize_dims(2, D, tdims, nstr2);
+	for (unsigned int i = 0; i < N; i++) {
 
-	int skip = min_blockdim(2, ND, tdims, nstr2, sizes);
+		md_copy_strides(D, tstrs[i], *nstr[i]);
+		nstr1[i] = &tstrs[i];
+		nptr1[i] = nptr[i];
+	}
 
+	int ND = optimize_dims(N, D, tdims, nstr1);
+
+	int skip = min_blockdim(N, ND, tdims, nstr1, sizes);
 	unsigned int flags = 0;
 
 #ifdef USE_CUDA
-	if (num_auto_parallelize && !use_gpu(2, nptr)) {
+	if (num_auto_parallelize && !use_gpu(N, nptr1)) {
 #else
 	if (num_auto_parallelize) {
 #endif
-		unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0);
-		flags = dims_parallel(2, io, ND, tdims, nstr2, sizes);
+		flags = dims_parallel(N, io, ND, tdims, nstr1, sizes);
 
 		debug_printf(DP_DEBUG4, "Skip: %d %d\n", skip, ffs(flags));
 
@@ -173,16 +176,23 @@ static void optimized_twoop(unsigned int D, const long dim[D], const long ostr[D
 		flags = flags >> skip;
 	}
 
-	const long* nstr[2] = { *nstr2[0] + skip, *nstr2[1] + skip };
+	const long* nstr2[N];
+
+	for (unsigned int i = 0; i < N; i++)
+		nstr2[i] = *nstr1[i] + skip;
 
 #ifdef USE_CUDA
-	struct data_s data = { md_calc_size(skip, tdims), use_gpu(2, nptr) ? &gpu_ops : &cpu_ops, data_ptr };
+	struct data_s data = { md_calc_size(skip, tdims), use_gpu(N, nptr1) ? &gpu_ops : &cpu_ops, data_ptr };
 #else
 	struct data_s data = { md_calc_size(skip, tdims), &cpu_ops, data_ptr };
 #endif
 
-	md_parallel_nary(2, ND - skip, tdims + skip, flags, nstr, nptr, (void*)&data, too);
+	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, (void*)&data, too);
 }
+
+
+
+
 
 
 
@@ -201,75 +211,18 @@ static void optimized_twoop(unsigned int D, const long dim[D], const long ostr[D
  */
 static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, size_t sizes[2], md_nary_fun_t too, void* data_ptr)
 {
-	optimized_twoop(D, dim, ostr, optr, istr1, (void*)iptr1, sizes, too, data_ptr);
+	const long (*nstr[2])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr1 };
+	void *nptr[2] = { optr, (void*)iptr1 };
+
+	unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0);
+
+	optimized_nop(2, io, D, dim, nstr, nptr, sizes, too, data_ptr);
 }
 
 
-/**
- * Optimized threeop.
- *
- * @param D number of dimensions
- * @param dim dimensions
- * @param ostr output strides
- * @param optr output
- * @param istr1 input 1 strides
- * @param iptr1 input 1
- * @param istr2 input 2 strides
- * @param iptr2 input 2
- * @param size size of data structures, e.g. complex float 
- * @param too three-op multiply function
- * @param data_ptr pointer to additional data used by too
- */
-static void optimized_threeop(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], void* iptr1, const long istr2[D], void* iptr2, size_t sizes[3], md_nary_fun_t too, void* data_ptr)
-{
-	long tostr[D];
-	long tistr1[D];
-	long tistr2[D];
-	long tdims[D];
 
-	md_copy_dims(D, tdims, dim);
-	md_copy_strides(D, tostr, ostr);
-	md_copy_strides(D, tistr1, istr1);
-	md_copy_strides(D, tistr2, istr2);
 
-	long (*nstr2[3])[D] = { &tostr, &tistr1, &tistr2 };
-	void *nptr[3] = { optr, iptr1, iptr2 };
 
-	int ND = optimize_dims(3, D, tdims, nstr2);
-
-	int skip = min_blockdim(3, ND, tdims, nstr2, sizes);
-	unsigned int flags = 0;
-
-#ifdef USE_CUDA
-	if (num_auto_parallelize && !use_gpu(3, nptr)) {
-#else
-	if (num_auto_parallelize) {
-#endif
-		unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
-		flags = dims_parallel(3, io, ND, tdims, nstr2, sizes);
-
-		debug_printf(DP_DEBUG4, "Skip: %d %d\n", skip, ffs(flags));
-
-		while ((0 != flags) && (ffs(flags) <= skip))
-			skip--;
-
-		debug_print_dims(DP_DEBUG4, D, dim);
-		debug_print_dims(DP_DEBUG4, ND, tdims);
-		debug_printf(DP_DEBUG4, "Io: %d, Parallel: %d, Skip: %d\n", io, flags, skip);
-
-		flags = flags >> skip;
-	}
-
-	const long* nstr[3] = { *nstr2[0] + skip, *nstr2[1] + skip, *nstr2[2] + skip };
-
-#ifdef USE_CUDA
-	struct data_s data = { md_calc_size(skip, tdims), use_gpu(3, nptr) ? &gpu_ops : &cpu_ops, data_ptr };
-#else
-	struct data_s data = { md_calc_size(skip, tdims), &cpu_ops, data_ptr };
-#endif
-
-	md_parallel_nary(3, ND - skip, tdims + skip, flags, nstr, nptr, (void*)&data, too);
-}
 
 /**
  * Optimized threeop wrapper. Use when inputs are constants
@@ -288,7 +241,12 @@ static void optimized_threeop(unsigned int D, const long dim[D], const long ostr
  */
 static void optimized_threeop_oii(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_fun_t too, void* data_ptr)
 {
-	optimized_threeop(D, dim, ostr, optr, istr1, (void*)iptr1, istr2, (void*)iptr2, sizes, too, data_ptr);
+	const long (*nstr[3])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr1, (const long (*)[D])istr2 };
+	void *nptr[3] = { optr, (void*)iptr1, (void*)iptr2 };
+
+	unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
+
+	optimized_nop(3, io, D, dim, nstr, nptr, sizes, too, data_ptr);
 }
 
 
