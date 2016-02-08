@@ -187,7 +187,7 @@ static void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const
 	struct data_s data = { md_calc_size(skip, tdims), &cpu_ops, data_ptr };
 #endif
 
-	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, (void*)&data, too);
+	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, &data, too);
 }
 
 
