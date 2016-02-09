@@ -1,7 +1,6 @@
 /* Copyright 2015. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by
- * a educational/research license which can be found in the
- * LICENSE file.
+ * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2014 Frank Ong <frankong@berkeley.edu>
