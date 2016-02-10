@@ -91,7 +91,7 @@ static char* file_name(const long kernel_dims[3], const long calreg_dims[4]) {
         CALREG,
         calreg_dims[0], calreg_dims[1], calreg_dims[2], calreg_dims[3],
         DAT);
-
+    
     return name;
 
 }
@@ -232,13 +232,24 @@ static float estimate_noise_variance(long L, const float* S, const float* E)
 {
 
     float t = 0.f;
-    long  s = 8; // We fit the last s^th singular values.
+    float c = 0.f; // Counter to avoid zero singular values.
+    long  s = 4;   // We fit the last one s^th singular values.
 
-    for (long idx = L - L/s; idx < L; idx ++) {
-        t += ((float)S[idx])/((float)E[idx]);
+    int num   = L/s;
+    int start = L - num;
+
+    for (long idx = 0; idx < num; idx ++) {
+
+        if (isnan(S[start + idx]) || S[start + idx] <= 0 || isnan(E[start + idx]) || E[start + idx] <= 0) {
+            break;
+        }
+
+        t += ((float)S[start + idx])/((float)E[start + idx]);
+        c += 1.f;
+
     }
 
-    return ((float)(s * s) * (t * t)/(L * L))/1.21; //Scaling down since it works well in practice.
+    return ((t * t)/(c * c))/1.21; //Scaling down since it works well in practice.
 
 }
 
