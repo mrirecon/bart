@@ -19,12 +19,12 @@ void blas_cgemm(char transa, char transb, long M, long N,  long K, const complex
 #ifdef USE_CUDA
         if (cuda_ondevice(A)) {
 
-                cublasCgemm(transa, transb, M, N, K, &alpha,
+                cublasCgemm(transa, transb, M, N, K, *(cuComplex*)&alpha,
                                 (const cuComplex*)A, lda,
-                                (const cuComplex*)B, ldb, &beta,
+                                (const cuComplex*)B, ldb, *(cuComplex*)&beta,
                                 (cuComplex*)C, ldc);
         } else
-#endif 
+#endif
         cblas_cgemm(CblasColMajor, transa, transb, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
 }
 

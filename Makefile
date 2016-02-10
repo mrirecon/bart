@@ -75,6 +75,13 @@ CXX ?= g++
 
 
 
+# openblas
+
+ifneq ($(BUILDTYPE), MacOSX)
+BLAS_BASE ?= /usr/
+else
+BLAS_BASE ?= /usr/local/opt/openblas/
+endif
 
 # cuda
 
@@ -240,25 +247,23 @@ endif
 
 # BLAS/LAPACK
 
-BLAS_H :=
-BLAS_L :=
-
 ifeq ($(ACML),1)
 BLAS_H := -I$(ACML_BASE)/include
 BLAS_L := -L$(ACML_BASE)/lib -lgfortran -lacml_mp -Wl,-rpath $(ACML_BASE)/lib
 CPPFLAGS += -DUSE_ACML
 else
+BLAS_H := -I$(BLAS_BASE)/include
 ifeq ($(BUILDTYPE), MacOSX)
-BLAS_L := -lblas -framework Accelerate
+BLAS_L := -L$(BLAS_BASE)/lib -lopenblas
 else
-BLAS_L := -llapacke -lblas #-lgfortran
+BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lblas
 endif
 endif
 
 
 
 
-CPPFLAGS += $(FFTW_H)
+CPPFLAGS += $(FFTW_H) $(BLAS_H)
 
 
 
@@ -301,9 +306,7 @@ endif
 ifeq ($(SLINK),1)
 # work around fortran problems with static linking
 LDFLAGS += -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -Wl,--allow-multiple-definition
-ifneq ($(BUILDTYPE), MacOSX)
-BLAS_L += -lgfortran
-endif
+BLAS_L += -llapack -lblas -lgfortran -lquadmath
 endif
 
 
