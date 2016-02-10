@@ -48,7 +48,7 @@ matrix:
         - sudo dpkg -i cuda-repo-ubuntu1404_7.5-18_amd64.deb
         - sudo apt-get update -qq
         - sudo apt-get install -qq clang-3.5
-        - sudo apt-get install -qq cuda-drivers cuda-core-7.5 cuda-cudart-dev-7.5 cuda-cufft-dev-7.5 cuda-cublas-dev-7.5
+        - sudo apt-get install -qq --no-install-recommends cuda-drivers cuda-core-7.5 cuda-cudart-dev-7.5 cuda-cufft-dev-7.5 cuda-cublas-dev-7.5
 
     - os: osx
       compiler: gcc-4.7
