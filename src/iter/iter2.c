@@ -127,6 +127,40 @@ cleanup:
 }
 
 
+void iter2_istc(void* _conf,
+		const struct operator_s* normaleq_op,
+		unsigned int D,
+		const struct operator_p_s** prox_ops,
+		const struct linop_s** ops,
+		const struct operator_p_s* xupdate_op,
+		long size, float* image, const float* image_adj,
+		const float* image_truth,
+		void* obj_eval_data,
+		float (*obj_eval)(const void*, const float*))
+{
+
+	assert(D == 1);
+	
+	UNUSED(ops);
+	UNUSED(xupdate_op);
+	UNUSED(image_truth);
+	UNUSED(obj_eval_data);
+	UNUSED(obj_eval);
+
+	struct iter_istc_conf* conf = _conf;
+
+	float eps = md_norm(1, MD_DIMS(size), image_adj);
+
+	if (checkeps(eps))
+		goto cleanup;
+	
+	istc(conf->maxiter, eps * conf->tol, conf->hogwild, size, select_vecops(image_adj),  (void*)normaleq_op, operator_iter, (void*)prox_ops[0],  operator_p_iter, image, image_adj);
+
+
+cleanup:
+	;
+}
+
 void iter2_fista(void* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,

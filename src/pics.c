@@ -110,7 +110,7 @@ struct reg_s {
 	float lambda;
 };
 
-enum algo_t { CG, IST, FISTA, ADMM };
+enum algo_t { CG, IST, FISTA, ADMM, ISTC };
 
 struct opt_reg_s {
 
@@ -307,6 +307,7 @@ int main_pics(int argc, char* argv[])
 		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "(select IST)"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
+		OPT_SELECT('K', enum algo_t, &ropts.algo, ISTC, "(select IST with Cauchy's step)"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_SET('F', &fast, "(fast)"),
 		OPT_STRING('T', &image_truth_file, "file", "(truth file)"),
@@ -671,6 +672,7 @@ int main_pics(int argc, char* argv[])
 	struct iter_conjgrad_conf cgconf;
 	struct iter_fista_conf fsconf;
 	struct iter_ist_conf isconf;
+	struct iter_istc_conf icconf;
 	struct iter_admm_conf mmconf;
 
 	if ((CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
@@ -738,6 +740,22 @@ int main_pics(int argc, char* argv[])
 
 		iter2_data.fun = iter_ist;
 		iter2_data._conf = &isconf;
+
+		break;
+		
+	case ISTC:
+
+		debug_printf(DP_INFO, "IST with Cauchy's step\n");
+
+		assert(1 == nr_penalties);
+
+		icconf = iter_istc_defaults;
+		icconf.maxiter = maxiter;
+		icconf.step = step;
+		icconf.hogwild = hogwild;
+
+		iter2_data.fun = iter_istc;
+		iter2_data._conf = &icconf;
 
 		break;
 

@@ -46,6 +46,14 @@ struct iter_ist_conf {
 	float tol;
 };
 
+
+struct iter_istc_conf {
+	unsigned int maxiter;
+	float step;
+	_Bool hogwild;
+	float tol;
+};
+
 struct iter_fista_conf {
 
 	unsigned int maxiter;
@@ -87,6 +95,7 @@ struct iter_pocs_conf {
 extern const struct iter_conjgrad_conf iter_conjgrad_defaults;
 extern const struct iter_landweber_conf iter_landweber_defaults;
 extern const struct iter_ist_conf iter_ist_defaults;
+extern const struct iter_istc_conf iter_istc_defaults;
 extern const struct iter_fista_conf iter_fista_defaults;
 extern const struct iter_admm_conf iter_admm_defaults;
 extern const struct iter_pocs_conf iter_pocs_defaults;
@@ -95,6 +104,7 @@ extern const struct iter_pocs_conf iter_pocs_defaults;
 italgo_fun_f iter_conjgrad;
 italgo_fun_f iter_landweber;
 italgo_fun_f iter_ist;
+italgo_fun_f iter_istc;
 italgo_fun_f iter_fista;
 italgo_fun_f iter_admm;
 

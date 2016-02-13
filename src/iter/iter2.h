@@ -25,6 +25,7 @@ typedef italgo_fun2_f* italgo_fun2_t;
 
 italgo_fun2_f iter2_conjgrad;
 italgo_fun2_f iter2_ist;
+italgo_fun2_f iter2_istc;
 italgo_fun2_f iter2_fista;
 italgo_fun2_f iter2_admm;
 italgo_fun2_f iter2_pocs;
