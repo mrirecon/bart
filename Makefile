@@ -287,9 +287,13 @@ MATLAB_L := -Wl,-rpath $(MATLAB_BASE)/bin/glnxa64 -L$(MATLAB_BASE)/bin/glnxa64 -
 
 # ISMRM
 
+ifeq ($(ISMRMRD),1)
 ISMRM_H := -I$(ISMRM_BASE)/include
 ISMRM_L := -L$(ISMRM_BASE)/lib -lismrmrd
-
+else
+ISMRM_H :=
+ISMRM_L :=
+endif
 
 # change for static linking
 
