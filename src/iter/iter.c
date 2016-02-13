@@ -63,6 +63,15 @@ const struct iter_ist_conf iter_ist_defaults = {
 };
 
 
+const struct iter_istc_conf iter_istc_defaults = {
+
+	.maxiter = 50,
+	.step = 0.95,
+	.hogwild = false,
+	.tol = 0.,
+};
+
+
 const struct iter_fista_conf iter_fista_defaults = {
 
 	.maxiter = 50,
@@ -175,6 +184,18 @@ void iter_ist(void* _conf,
 		float (*obj_eval)(const void*, const float*))
 {
 	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+}
+
+
+void iter_istc(void* _conf,
+	      const struct operator_s* normaleq_op,
+	      const struct operator_p_s* thresh_prox,
+	      long size, float* image, const float* image_adj,
+	      const float* image_truth,
+	      void* objval_data,
+	      float (*obj_eval)(const void*, const float*))
+{
+	iter2_istc(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
 }
 
 void iter_fista(void* _conf,

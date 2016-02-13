@@ -844,3 +844,70 @@ double power(unsigned int maxiter,
 	return s;
 }
 
+
+void istc(unsigned int maxiter,					///< Maximum iteration
+	  float epsilon,					///< Terminating tolerance
+	  bool hogwild,                                         ///< Hogwild step-size boolean
+	  long N,						///< Length of x
+	  const struct vec_iter_s* vops,			///< Vector operators
+	  void* odata,						///< Operator data structure
+	  void (*op)(void*, float*, const float*),		///< Linear Operator
+	  void* pdata,						///< Proximal operator data
+	  void (*prox)(void*, float, float*, const float*),	///< Proximal operator
+	  float* x,						///< Optimization variable
+	  const float* b)					///< Observed data
+{
+	float* p = vops->allocate(N); // update
+	float* o = vops->allocate(N); // old
+	
+	float hog = 1.0;
+	unsigned int hog_k = 0;
+	unsigned int hog_K = 1;
+       
+	for (unsigned int it = 0; it < maxiter; it++) {
+
+		vops->copy(N, o, x);        // o = x;
+		
+		// p = prox(x + A^T(y - Ax)) - x
+		
+		op(odata, p, x);		    // p = A x
+		vops->xpay(N, -1., p, b);   // p = b - A x
+		
+		vops->axpy(N, x, 1.0, p);   // x = x + p
+		prox(pdata, 1.0, x, x);      // x = prox(x);
+		
+		vops->sub(N, p, x, o);      // p = x - o
+
+		vops->copy(N, x, o);
+		
+		// alpha = p^T p / p^T Ap
+		
+		float pp = (float) vops->dot(N, p, p);
+		op(odata, o, p);           
+		float pAp = (float) vops->dot(N, p, o); 
+		float alpha = pp / pAp * hog;
+
+		// x = x + alpha * p
+		
+		vops->axpy(N, x, alpha, p); 
+
+		debug_printf(DP_DEBUG3, "#It %03d: %f \n", it, pp);
+
+		if (pp < epsilon)
+			break;
+
+		if (hogwild)
+			hog_k++;
+		
+		if (hog_k == hog_K) {
+			hog_K *= 2;
+			hog_k = 0;
+			hog *= 0.5;
+		}
+	}
+
+	debug_printf(DP_DEBUG3, "\n");
+
+	vops->del(p);
+	vops->del(o);
+}

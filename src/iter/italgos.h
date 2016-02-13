@@ -144,7 +144,6 @@ void irgnm_t(unsigned int iter, float alpha, float lambda, float redu, void* dat
 	void (*thresh)(void* data, float lambda, float* dst, const float* src),
 	float* x, const float* x0, const float* y);
 
-
 void pocs(unsigned int maxiter,
 	unsigned int D, const struct pocs_proj_op* proj_ops, 
 	const struct vec_iter_s* vops,
@@ -157,7 +156,18 @@ double power(unsigned int maxiter,
 	   const struct vec_iter_s* vops,
 	   void (*op)(void* data, float* dst, const float* src), 
 	   float* u);
-	   
+
+void istc(unsigned int maxiter,					///< Maximum iteration
+	  float epsilon,					///< Terminating tolerance
+	  _Bool hogwild,                                        ///< Hogwild step-size boolean
+	  long N,						///< Length of x
+	  const struct vec_iter_s* vops,			///< Vector operators
+	  void* odata,						///< Operator data structure
+	  void (*op)(void*, float*, const float*),		///< Linear Operator
+	  void* pdata,						///< Proximal operator data
+	  void (*prox)(void*, float, float*, const float*),	///< Proximal operator
+	  float* x,						///< Optimization variable
+	  const float* b);					///< Observed data
 
 #endif // __ITALGOS_H
 
