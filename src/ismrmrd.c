@@ -24,7 +24,7 @@ static const char usage_str[] = "<ismrm-file> <output>";
 static const char help_str[] = "Import ISMRM raw data files.\n";
 
 
-int main(int argc, char* argv[])
+int main_ismrmrd(int argc, char* argv[])
 {
         mini_cmdline(argc, argv, 2, usage_str, help_str);
 

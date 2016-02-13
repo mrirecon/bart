@@ -1,5 +1,5 @@
 # Copyright 2013-2015. The Regents of the University of California.
-# Copyright 2015. Martin Uecker.
+# Copyright 2015-2016. Martin Uecker <martin.uecker@med.uni-goettingen.de>
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 
@@ -21,6 +21,7 @@ OMP?=1
 SLINK?=0
 DEBUG?=0
 FFTWTHREADS?=1
+ISMRMRD?=0
 
 DESTDIR ?= /
 
@@ -115,9 +116,6 @@ TCALIB=ecalib ecaltwo caldir walsh cc calmat svd estvar
 TMRI=homodyne poisson twixread fakeksp
 TSIM=phantom traj
 TIO=toimg
-XTARGETS = $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
-TARGETS = bart $(XTARGETS)
-
 
 
 
@@ -141,16 +139,30 @@ MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
 MODULES_bench = -lwavelet2 -lwavelet3 -llinops
 MODULES_phantom = -lsimu
-MODULES_bart += -lbox -lgrecon -lsense -lnoir -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet
-MODULES_sake += -lsake
-MODULES_wave += -liter -lwavelet2 -llinops -lsense
-MODULES_threshold += -llowrank -lwavelet2 -liter -ldfwavelet -llinops
-MODULES_fakeksp += -lsense -llinops
+MODULES_bart = -lbox -lgrecon -lsense -lnoir -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet
+MODULES_sake = -lsake
+MODULES_wave = -liter -lwavelet2 -llinops -lsense
+MODULES_threshold = -llowrank -lwavelet2 -liter -ldfwavelet -llinops
+MODULES_fakeksp = -lsense -llinops
 MODULES_lrmatrix = -llowrank -liter -llinops
 MODULES_estdims = -lnoncart -llinops
+MODULES_ismrmrd = -lismrm
+
 
 -include Makefile.$(NNAME)
 -include Makefile.local
+
+
+ifeq ($(ISMRMRD),1)
+TMRI += ismrmrd
+MODULES_bart += -lismrm
+endif
+
+
+XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
+TARGETS = bart $(XTARGETS)
+
+
 
 
 ifeq ($(DEBUG),1)
@@ -165,8 +177,8 @@ endif
 
 
 ifeq ($(MAKESTAGE),1)
-.PHONY: doc/commands.txt $(TARGETS) ismrmrd 
-default all clean allclean distclean doc/commands.txt doxygen $(TARGETS) ismrmrd:
+.PHONY: doc/commands.txt $(TARGETS)
+default all clean allclean distclean doc/commands.txt doxygen $(TARGETS):
 	make MAKESTAGE=2 $(MAKECMDGOALS)
 else
 
@@ -276,8 +288,7 @@ MATLAB_L := -Wl,-rpath $(MATLAB_BASE)/bin/glnxa64 -L$(MATLAB_BASE)/bin/glnxa64 -
 # ISMRM
 
 ISMRM_H := -I$(ISMRM_BASE)/include
-#ISMRM_L :=  -Wl,-R$(ISMRM_BASE)/lib -L$(ISMRM_BASE)/lib -lismrmrd
-ISMRM_L :=  -L$(ISMRM_BASE)/lib -lismrmrd
+ISMRM_L := -L$(ISMRM_BASE)/lib -lismrmrd
 
 
 # change for static linking
@@ -342,9 +353,6 @@ $(XTARGETS): CPPFLAGS += -DMAIN_LIST="$(XTARGETS:%=%,) ()" -include src/main.h
 bart: CPPFLAGS += -DMAIN_LIST="$(XTARGETS:%=%,) ()" -include src/main.h
 
 
-ismrmrd: $(srcdir)/ismrmrd.c -lismrm -lnum -lmisc
-	$(CC) $(CFLAGS) -o ismrmrd $+ $(CUDA_L) $(ISMRM_L) -lm
-
 mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
 	$(CC) $(CFLAGS) $(MATLAB_H) -omat2cfl  $+ $(MATLAB_L) $(CUDA_L)
 
@@ -378,7 +386,7 @@ endif
 
 .SECONDEXPANSION:
 $(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) -lm
+	$(CC) $(LDFLAGS) $(CFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) -lm
 #	rm $(srcdir)/$@.o
 
 
@@ -387,7 +395,7 @@ clean:
 	rm -f $(root)/lib/.*.lock
 
 allclean: clean
-	rm -f $(libdir)/*.a ismrmrd $(ALLDEPS)
+	rm -f $(libdir)/*.a $(ALLDEPS)
 	rm -f $(patsubst %, %, $(TARGETS))
 	rm -f $(srcdir)/misc/version.inc
 	rm -rf doc/dx
