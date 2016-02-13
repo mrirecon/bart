@@ -275,9 +275,9 @@ MATLAB_L := -Wl,-rpath $(MATLAB_BASE)/bin/glnxa64 -L$(MATLAB_BASE)/bin/glnxa64 -
 
 # ISMRM
 
-ISMRM_H := -I$(ISMRM_BASE)/include -I$(ISMRM_BASE)/schema #-DISMRMRD_OLD
-ISMRM_L := /usr/local/ismrmrd/schema/ismrmrd.cxx -Wl,-R$(ISMRM_BASE)/lib -L$(ISMRM_BASE)/lib -lismrmrd -Lhd5 -lxerces-c -lboost_system
-
+ISMRM_H := -I$(ISMRM_BASE)/include
+#ISMRM_L :=  -Wl,-R$(ISMRM_BASE)/lib -L$(ISMRM_BASE)/lib -lismrmrd
+ISMRM_L :=  -L$(ISMRM_BASE)/lib -lismrmrd
 
 
 # change for static linking
@@ -343,7 +343,7 @@ bart: CPPFLAGS += -DMAIN_LIST="$(XTARGETS:%=%,) ()" -include src/main.h
 
 
 ismrmrd: $(srcdir)/ismrmrd.c -lismrm -lnum -lmisc
-	$(CC) $(CXXFLAGS) -o ismrmrd $+ $(CUDA_L) $(ISMRM_L) -lstdc++ -lm
+	$(CC) $(CFLAGS) -o ismrmrd $+ $(CUDA_L) $(ISMRM_L) -lm
 
 mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
 	$(CC) $(CFLAGS) $(MATLAB_H) -omat2cfl  $+ $(MATLAB_L) $(CUDA_L)

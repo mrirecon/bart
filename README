@@ -54,8 +54,7 @@ The software can be used in combination with Matlab or octave.
 
 There is limited support for reading Cartesian data encoded with
 the ISMRM Raw Data format when linking with the ISMRMRD library
-(http://ismrmrd.sourceforge.net/). Currently, BART only supports
-version 0.5.2 of this library. Later versions do not work.
+(http://ismrmrd.sourceforge.net/).
 
 
 In the following, the symbol '$' indicates a shell prompt.
