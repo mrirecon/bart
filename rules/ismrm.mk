@@ -5,8 +5,8 @@
 
 
 
-ismrmsrcs := $(wildcard $(srcdir)/ismrm/*.cc)
-ismrmobjs := $(ismrmsrcs:.cc=.o)
+ismrmsrcs := $(wildcard $(srcdir)/ismrm/*.c)
+ismrmobjs := $(ismrmsrcs:.c=.o)
 
 .INTERMEDIATE: $(ismrmobjs)
 
