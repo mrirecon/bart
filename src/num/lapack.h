@@ -22,6 +22,4 @@ extern void lapack_svd_double(long M, long N, complex double U[M][M], complex do
 extern void lapack_matrix_multiply(long M, long N, long K, complex float C[M][N], const complex float A[M][K], const complex float B[K][N]);
 extern void lapack_cholesky(long N, complex float A[N][N]);
 
-extern void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float* dst, const complex float* src);
-
 

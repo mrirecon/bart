@@ -310,9 +310,9 @@ static void linop_matrix_apply(const linop_data_t* _data, complex float* dst, co
 		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
 
 		blas_cgemm('N', 'T', L, data->T, data->K, 1.,
-				(const complex float (*)[])src, L,
-				(const complex float (*)[])data->mat,
-				data->T, 0., (complex float (*)[])dst, L);
+				L, (const complex float (*)[])src,
+				data->T, (const complex float (*)[])data->mat,
+				0., L, (complex float (*)[])dst);
 
 	} else {
 
@@ -336,9 +336,9 @@ static void linop_matrix_apply_adjoint(const linop_data_t* _data, complex float*
 		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
 
 		blas_cgemm('N', 'N', L, data->K, data->T, 1.,
-				(const complex float (*)[])src, L,
-				(const complex float (*)[])data->mat_conj,
-				data->T, 0., (complex float (*)[])dst, L);
+				L, (const complex float (*)[])src,
+				data->T, (const complex float (*)[])data->mat_conj,
+				0., L, (complex float (*)[])dst);
 
 	} else {
 
@@ -379,9 +379,9 @@ static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* 
 		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
 
 		blas_cgemm('N', 'T', L, data->K, data->K, 1.,
-				(const complex float (*)[])src, L,
-				(const complex float (*)[])data->mat_gram,
-				data->K, 0., (complex float (*)[])dst, L);
+				L, (const complex float (*)[])src,
+				data->K, (const complex float (*)[])data->mat_gram,
+				0., L, (complex float (*)[])dst);
 	}
 
 }

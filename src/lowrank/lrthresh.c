@@ -30,6 +30,7 @@
 #include "num/iovec.h"
 #include "num/blockproc.h"
 #include "num/casorati.h"
+#include "num/batchsvd.h"
 
 #include "iter/thresh.h"
 
@@ -240,7 +241,7 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 
 		basorati_matrix(DIMS, blkdims, mat_dims, tmp_mat, zpad_dims, zpad_strs, tmp);
 
-		batch_svthresh(M, N, mat_dims[1], lambda * GWIDTH(M, N, B), tmp_mat, tmp_mat);
+		batch_svthresh(M, N, mat_dims[1], lambda * GWIDTH(M, N, B), *(complex float (*)[mat_dims[1]][M][N])tmp_mat);
 
 		//	for ( int b = 0; b < mat_dims[1]; b++ )
 		//	svthresh(M, N, lambda * GWIDTH(M, N, B), tmp_mat, tmp_mat);

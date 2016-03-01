@@ -147,7 +147,7 @@ float svthresh(long M, long N, float lambda, complex float* dst, const complex f
 	md_mul2( 3, dimsVT, strsVT, ((float*) VT)+1, strsVT, ((float*) VT)+1, strsS, S );
 
 	// dst = U * VT
-	blas_matrix_multiply( M, N, minMN, (complex float (*) [])dst, (const complex float (*) [])U, (const complex float (*) [])VT );
+	blas_matrix_multiply( M, N, minMN, (complex float (*) [N])dst, (const complex float (*) [minMN])U, (const complex float (*) [N])VT );
 
 	md_free(U);
 	md_free(VT);

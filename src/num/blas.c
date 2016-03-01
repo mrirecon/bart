@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <complex.h>
 
 #include "misc/misc.h"
@@ -14,7 +15,7 @@
 #include "blas.h"
 
 
-void blas_cgemm(char transa, char transb, long M, long N,  long K, const complex float alpha, const complex float A[M][K], const long lda, const complex float B[K][N], const long ldb, const complex float beta, complex float C[M][N], const long ldc)
+void blas_cgemm(char transa, char transb, long M, long N,  long K, const complex float alpha, long lda, const complex float A[K][lda], long ldb, const complex float B[N][ldb], const complex float beta, long ldc, complex float C[N][ldc])
 {
 #ifdef USE_CUDA
         if (cuda_ondevice(A)) {
@@ -29,9 +30,20 @@ void blas_cgemm(char transa, char transb, long M, long N,  long K, const complex
 }
 
 
-void blas_matrix_multiply(long M, long N, long K, complex float C[M][N], const complex float A[M][K], const complex float B[K][N])
+void (blas_matrix_multiply)(long M, long N, long K, complex float C[N][M], const complex float A[K][M], const complex float B[N][K])
 {
-	blas_cgemm('N', 'N', M, N, K, 1., A, M, B, K, 0., C, M);
+	blas_cgemm(CblasNoTrans, CblasNoTrans, M, N, K, 1., M, A, K, B, 0., M, C);
 }
+
+
+
+void (blas_csyrk)(char uplo, char trans, long N, long K, const complex float alpha, long lda, const complex float A[][lda], complex float beta, long ldc, complex float C[][ldc])
+{
+	assert('U' == uplo);
+	assert(('T' == trans) || ('N' == trans));
+
+	cblas_csyrk(CblasColMajor, CblasUpper, ('T' == trans) ? CblasTrans : CblasNoTrans, N, K, &alpha, A, lda, &beta, C, ldc);
+}
+
 
 

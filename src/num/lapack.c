@@ -60,9 +60,4 @@ void lapack_cholesky(long N, complex float A[N][N])
 	LAPACKE(cpotrf, 'U', N, &A[0][0], N);
 }
 
-void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float* dst, const complex float* src)
-{
-	UNUSED(M); UNUSED(N); UNUSED(num_blocks); UNUSED(lambda); UNUSED(dst); UNUSED(src);
-	error("NOT IMPLEMENTED\n");
-}
 
