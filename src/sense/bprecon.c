@@ -118,7 +118,7 @@ static float bpsense_objective(const void* _data, const float* _x)
 	linop_forward_unchecked(Aop, tmp2, x);
 	float t3 = md_znorme(DIMS, linop_codomain(Aop)->dims, tmp2, data->kspace);
 
-	debug_printf(DP_DEBUG1, "# || y - A x ||_2  = %f\n", t3);
+	debug_printf(DP_DEBUG4, "# || y - A x ||_2  = %f\n", t3);
 
 	md_free(tmp);
 	md_free(tmp2);
