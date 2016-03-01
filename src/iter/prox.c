@@ -191,6 +191,70 @@ const struct operator_p_s* prox_leastsquares_create(unsigned int N, const long d
 
 
 /**
+ * Data for computing prox_l2norm_fun:
+ * Proximal function for f(z) = lambda || z ||_2.
+ *
+ * @param lambda regularization
+ * @param size size of z
+ */
+struct prox_l2norm_data {
+	
+	float lambda;
+	long size;
+};
+
+/**
+ * Proximal function for f(z) = lambda  || z ||_2.
+ * Solution is z =  ( 1 - lambda / norm(z) )_+ * z,
+ * i.e. block soft thresholding
+ *
+ * @param prox_data should be of type prox_l2norm_data
+ * @param mu proximal penalty
+ * @param z output
+ * @param x_plus_u input
+ */
+static void prox_l2norm_fun(void* prox_data, float mu, float* z, const float* x_plus_u)
+{
+	struct prox_l2norm_data* pdata = (struct prox_l2norm_data*)prox_data;
+
+	md_clear(1, MD_DIMS(pdata->size), z, FL_SIZE);
+
+	if (0 != mu) {
+
+		double q1 = md_norm(1, MD_DIMS(pdata->size), x_plus_u);
+
+		if (q1 != 0) {
+			double q2 = 1 - pdata->lambda / (mu * q1);
+			
+			if (q2 > 0.)
+				md_smul(1, MD_DIMS(pdata->size), z, x_plus_u, q2);
+		}
+	}
+}
+
+static void prox_l2norm_apply(const void* _data, float mu, complex float* dst, const complex float* src)
+{
+	prox_l2norm_fun((void*)_data, mu, (float*)dst, (const float*)src);
+}
+
+static void prox_l2norm_del(const void* _data)
+{
+	free((void*)_data);
+}
+
+const struct operator_p_s* prox_l2norm_create(unsigned int N, const long dims[N], float lambda)
+
+{
+	PTR_ALLOC(struct prox_l2norm_data, pdata);
+
+	pdata->lambda = lambda;
+	pdata->size = md_calc_size(N, dims) * 2;
+
+	return operator_p_create(N, dims, N, dims, pdata, prox_l2norm_apply, prox_l2norm_del);
+}
+
+
+/**
  * Data for computing prox_l2ball_fun: 
  * Proximal function for f(z) = Ind{ || y - z ||_2 < eps }
  *
