@@ -63,7 +63,7 @@ static bool show_option_p(const struct opt_s opt)
 	return (NULL != opt.descr) && (')' != opt.descr[strlen(opt.descr) - 1]);
 }
 
-static void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n])
+static void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
 {
 	fprintf(fp, "Usage: %s ", name);
 
@@ -89,7 +89,7 @@ static const char* add_space(bool has_arg, bool has_space)
 }
 
 
-static void print_help(const char* help_str, int n, const struct opt_s opts[n])
+static void print_help(const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	printf("\n%s\n\n",  help_str);
 
@@ -103,13 +103,13 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n])
 }
 
 
-static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n])
+static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	if ('h' == c) {
 
-			print_usage(stdout, name, usage_str, n, opts);
-			print_help(help_str, n, opts);
-			exit(0);
+		print_usage(stdout, name, usage_str, n, opts);
+		print_help(help_str, n, opts);
+		exit(0);
 	}
 
 	for (int i = 0; i < n; i++) {
@@ -130,7 +130,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 	exit(1);
 }
 
-void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n])
+void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	int argc = *argcp;
 	char optstr[2 * n + 2];
