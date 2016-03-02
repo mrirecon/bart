@@ -1,10 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013, 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -23,7 +23,7 @@
 #endif
 
 static const char usage_str[] = "<input>";
-static const char help_str[] = "";
+static const char help_str[] = "Outputs values or meta data.";
 
 static void print_cfl(unsigned int N, const long dims[N], const complex float* data)
 {
@@ -48,8 +48,8 @@ int main_show(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'm', false, opt_set, &meta, NULL },
-		{ 'd', true, opt_int, &showdim, NULL },
+		OPT_SET('m', &meta, "show meta data"),
+		OPT_INT('d', &showdim, "dim", "show size of dimension"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
