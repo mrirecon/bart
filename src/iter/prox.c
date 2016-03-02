@@ -205,7 +205,7 @@ struct prox_l2norm_data {
 
 /**
  * Proximal function for f(z) = lambda  || z ||_2.
- * Solution is z =  ( 1 - lambda / norm(z) )_+ * z,
+ * Solution is z =  ( 1 - lambda * mu / norm(z) )_+ * z,
  * i.e. block soft thresholding
  *
  * @param prox_data should be of type prox_l2norm_data
@@ -219,16 +219,13 @@ static void prox_l2norm_fun(void* prox_data, float mu, float* z, const float* x_
 
 	md_clear(1, MD_DIMS(pdata->size), z, FL_SIZE);
 
-	if (0 != mu) {
+	double q1 = md_norm(1, MD_DIMS(pdata->size), x_plus_u);
 
-		double q1 = md_norm(1, MD_DIMS(pdata->size), x_plus_u);
+	if (q1 != 0) {
+		double q2 = 1 - pdata->lambda * mu / q1;
 
-		if (q1 != 0) {
-			double q2 = 1 - pdata->lambda / (mu * q1);
-			
-			if (q2 > 0.)
-				md_smul(1, MD_DIMS(pdata->size), z, x_plus_u, q2);
-		}
+		if (q2 > 0.)
+			md_smul(1, MD_DIMS(pdata->size), z, x_plus_u, q2);
 	}
 }
 
