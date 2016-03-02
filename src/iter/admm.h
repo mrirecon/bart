@@ -58,6 +58,8 @@ struct admm_prox_op {
  * @param admm_data array of data for the prox functions (size is num_funs)
  *
  * @param ops array of operators, G_i (size is num_funs)
+ * @param prox_ops array of proximal functions (size is num_funs)
+ * @param biases array of biases/offsets (size is num_funs)
  *
  * @param image_truth truth image for computing relMSE
  */
@@ -85,6 +87,7 @@ struct admm_plan_s {
 
 	struct admm_prox_op* prox_ops;
 	struct admm_op* ops;
+	float** biases;
 
 	void (*xupdate_fun)(void* _data, float rho, float* _dst, const float* _src);
 	void* xupdate_data;

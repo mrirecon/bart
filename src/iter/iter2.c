@@ -193,6 +193,7 @@ void iter2_admm(void* _conf,
 		.tau = conf->tau,
 		.mu = conf->mu,
 		.fast = conf->fast,
+		.biases = NULL,
 	};
 
 

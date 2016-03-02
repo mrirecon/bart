@@ -59,7 +59,7 @@ static bool checkeps(float eps)
 }
 
 
-void iter2_conjgrad(void* _conf,
+void iter2a_conjgrad(void* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -92,7 +92,7 @@ cleanup:
 }
 
 
-void iter2_ist(void* _conf,
+void iter2a_ist(void* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -131,7 +131,7 @@ cleanup:
 }
 
 
-void iter2_fista(void* _conf,
+void iter2a_fista(void* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -170,7 +170,7 @@ cleanup:
 
 
 
-void iter2_admm(void* _conf,
+void iter2a_admm(void* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -254,7 +254,7 @@ cleanup:
 }
 
 
-void iter2_pocs(void* _conf,
+void iter2a_pocs(void* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -289,7 +289,7 @@ void iter2_pocs(void* _conf,
 }
 
 
-void iter2_call_iter(void* _conf,
+void iter2a_call_iter(void* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,

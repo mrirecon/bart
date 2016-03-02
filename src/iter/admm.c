@@ -1,10 +1,10 @@
-/* Copyright 2014-2015. The Regents of the University of California.
+/* Copyright 2014-2016. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-12-13 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2014-03-18 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  *
  * Afonso MA, Bioucas-Dias JM, Figueiredo M. An Augmented Lagrangian Approach to
@@ -45,7 +45,7 @@ struct admm_normaleq_data {
 	void (*Aop)(void* _data, float* _dst, const float* _src);
 	void* Aop_data;
 
-        float* tmp;
+	float* tmp;
 };
 
 
@@ -81,11 +81,12 @@ static void admm_normaleq(void* _data, float* _dst, const float* _src)
 /*
  * ADMM (ADMM-2 from Afonso et al.)
  *
- * Solves min_x 0.5 || y - Ax ||_2^2 + sum_i f_i(G_i x), where the f_i are
- * arbitrary convex functions. If Aop is NULL, solves min_x sum_i f_i(G_i x)
+ * Solves min_x 0.5 || y - Ax ||_2^2 + sum_i f_i(G_i x - b_i), where the f_i are
+ * arbitrary convex functions. If Aop is NULL, solves min_x sum_i f_i(G_i x - b_i)
  *
  * Each iteration requires solving the proximal of f_i, as well as applying
  * G_i, G_i^H, and G_i^H G_i, all which must be provided in admm_plan_s.
+ * The b_i are offsets (biases) that should also be provided in admm_plan_s.
  */
 void admm(struct admm_history_s* history, const struct admm_plan_s* plan, 
 	  unsigned int D, const long z_dims[D],
@@ -180,6 +181,18 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	int hw_k = 0;
 
 
+	// compute norm of biases -- for eps_primal
+	double n3 = 0.;
+	if (!fast && (NULL != plan->biases)) {
+
+		for (unsigned int j = 0; j < num_funs; j++) {
+			long Mj = z_dims[j];
+			if (plan->biases[j] != NULL)
+				n3 = n3 + vops->dot(Mj, plan->biases[j], plan->biases[j]);
+		}
+		n3 = sqrt(n3);
+	}
+
 	unsigned int grad_iter = 0; // keep track of number of gradient evaluations
 
 	if (plan->do_warmstart) {
@@ -191,6 +204,9 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			long Mj = z_dims[j];
 
 			plan->ops[j].forward(plan->ops[j].data, Gjx_plus_uj, x); // Gj(x)
+
+			if (NULL != plan->biases && NULL != plan->biases[j])
+				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, plan->biases[j]);
 
 			if (0 == rho)
 				vops->copy(Mj, z + pos, Gjx_plus_uj);
@@ -216,6 +232,12 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		for (unsigned int j = 0; j < num_funs; j++) {
 
 			pos = md_calc_offset(j, fake_strs, z_dims);
+
+			if (NULL != plan->biases && NULL != plan->biases[j]) {
+				long Mj = z_dims[j];
+				vops->add(Mj, r + pos, r + pos, plan->biases[j]);
+			}
+
 			plan->ops[j].adjoint(plan->ops[j].data, s, r + pos);
 			vops->add(N, rhs, rhs, s);
 		}
@@ -280,7 +302,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			plan->ops[j].forward(plan->ops[j].data, Gjx_plus_uj, x); // Gj(x)
 
-			// over-relaxation: Gjx_hat = alpha * Gj(x) + (1 - alpha) * zj_old
+			// over-relaxation: Gjx_hat = alpha * Gj(x) + (1 - alpha) * (zj_old + bj)
 			if (!fast) {
 
 				vops->copy(Mj, zj_old, z + pos);
@@ -289,9 +311,14 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 				vops->smul(Mj, plan->alpha, Gjx_plus_uj, Gjx_plus_uj);
 				vops->axpy(Mj, Gjx_plus_uj, (1. - plan->alpha), z + pos);
+
+				if (NULL != plan->biases && NULL != plan->biases[j])
+					vops->axpy(Mj, Gjx_plus_uj, (1. - plan->alpha), plan->biases[j]);
 			}
 
 			vops->add(Mj, Gjx_plus_uj, Gjx_plus_uj, u + pos); // Gj(x) + uj
+			if (NULL != plan->biases && NULL != plan->biases[j])
+				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, plan->biases[j]); // Gj(x) - bj + uj
 
 			if (0 == rho)
 				vops->copy(Mj, z + pos, Gjx_plus_uj);
@@ -302,8 +329,10 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			if (!fast) {
 
-				// rj = rj - zj = Gj(x) - zj
+				// rj = rj - zj - bj = Gj(x) - zj - bj
 				vops->sub(Mj, r + pos, r + pos, z + pos);
+				if (NULL != plan->biases && NULL != plan->biases[j])
+					vops->sub(Mj, r + pos, r + pos, plan->biases[j]);
 
 				// add next term to s: s = s + Gj^H (zj - zj_old)
 				vops->sub(Mj, zj_old, z + pos, zj_old);
@@ -327,7 +356,9 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			n1 = sqrt(n1);
 			double n2 = vops->norm(M, z);
-			history->eps_pri[i] = ABSTOL * sqrt(M) + RELTOL * (n1 > n2 ? n1 : n2);
+			double n = n1 > n2 ? n1 : n2;
+			n = n > n3 ? n : n3;
+			history->eps_pri[i] = ABSTOL * sqrt(M) + RELTOL * n;
 
 			history->eps_dual[i] = ABSTOL * sqrt(N) + RELTOL * rho * vops->norm(N, GH_usum);
 

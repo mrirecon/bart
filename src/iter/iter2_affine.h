@@ -3,14 +3,14 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
  
-#ifndef __ITER2_H
-#define __ITER2_H
+#ifndef __ITER2A_H
+#define __ITER2A_H
 
 struct linop_s;
 struct operator_s;
 struct operator_p_s;
 
-typedef void (italgo_fun2_f)(void* conf,
+typedef void (italgo_fun2a_f)(void* conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -22,21 +22,21 @@ typedef void (italgo_fun2_f)(void* conf,
 		void* obj_eval_data,
 		float (*obj_eval)(const void*, const float*));
 
-typedef italgo_fun2_f* italgo_fun2_t;
+typedef italgo_fun2a_f* italgo_fun2a_t;
 
-italgo_fun2_f iter2_conjgrad;
-italgo_fun2_f iter2_ist;
-italgo_fun2_f iter2_fista;
-italgo_fun2_f iter2_admm;
-italgo_fun2_f iter2_pocs;
+italgo_fun2a_f iter2a_conjgrad;
+italgo_fun2a_f iter2a_ist;
+italgo_fun2a_f iter2a_fista;
+italgo_fun2a_f iter2a_admm;
+italgo_fun2a_f iter2a_pocs;
 
 
 // use with iter_call_s from iter.h as _conf
-italgo_fun2_f iter2_call_iter;
+italgo_fun2a_f iter2a_call_iter;
 
-struct iter2_call_s {
+struct iter2a_call_s {
 
-	italgo_fun2_t fun;
+	italgo_fun2a_t fun;
 	void* _conf;
 };
 
