@@ -615,22 +615,22 @@ static void make_z2opf_from_real(size_t offset, unsigned int D, const long dims[
 
 
 // type save
-#define MAKE_3OP(fun, ...)	(TYPE_CHECK(r3op_t, cpu_ops.fun), make_3op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
-#define MAKE_Z3OP(fun, ...)	(TYPE_CHECK(z3op_t, cpu_ops.fun), make_z3op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
-#define MAKE_2OP(fun, ...)	(TYPE_CHECK(r2op_t, cpu_ops.fun), make_2op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
-#define MAKE_Z2OP(fun, ...)	(TYPE_CHECK(z2op_t, cpu_ops.fun), make_z2op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
-#define MAKE_2OPD(fun, ...)	(TYPE_CHECK(r2opd_t, cpu_ops.fun), make_2opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
-#define MAKE_Z2OPD(fun, ...)	(TYPE_CHECK(z2opd_t, cpu_ops.fun), make_z2opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
-#define MAKE_2OPF(fun, ...)	(TYPE_CHECK(r2opf_t, cpu_ops.fun), make_2opf(offsetof(struct vec_ops, fun),  __VA_ARGS__))
-#define MAKE_Z2OPF(fun, ...)	(TYPE_CHECK(z2opf_t, cpu_ops.fun), make_z2opf(offsetof(struct vec_ops, fun),  __VA_ARGS__))
-#define MAKE_3OPD(fun, ...)	(TYPE_CHECK(r3opd_t, cpu_ops.fun), make_3opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
-#define MAKE_Z3OPD(fun, ...)	(TYPE_CHECK(z3opd_t, cpu_ops.fun), make_z3opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_3OP(fun, ...)	((void)TYPE_CHECK(r3op_t, cpu_ops.fun), make_3op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_Z3OP(fun, ...)	((void)TYPE_CHECK(z3op_t, cpu_ops.fun), make_z3op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_2OP(fun, ...)	((void)TYPE_CHECK(r2op_t, cpu_ops.fun), make_2op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_Z2OP(fun, ...)	((void)TYPE_CHECK(z2op_t, cpu_ops.fun), make_z2op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_2OPD(fun, ...)	((void)TYPE_CHECK(r2opd_t, cpu_ops.fun), make_2opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_Z2OPD(fun, ...)	((void)TYPE_CHECK(z2opd_t, cpu_ops.fun), make_z2opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_2OPF(fun, ...)	((void)TYPE_CHECK(r2opf_t, cpu_ops.fun), make_2opf(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_Z2OPF(fun, ...)	((void)TYPE_CHECK(z2opf_t, cpu_ops.fun), make_z2opf(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_3OPD(fun, ...)	((void)TYPE_CHECK(r3opd_t, cpu_ops.fun), make_3opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_Z3OPD(fun, ...)	((void)TYPE_CHECK(z3opd_t, cpu_ops.fun), make_z3opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
 #define MAKE_Z3OP_FROM_REAL(fun, ...) \
-				(TYPE_CHECK(r3op_t, cpu_ops.fun), make_z3op_from_real(offsetof(struct vec_ops, fun), __VA_ARGS__))
+				((void)TYPE_CHECK(r3op_t, cpu_ops.fun), make_z3op_from_real(offsetof(struct vec_ops, fun), __VA_ARGS__))
 #define MAKE_Z2OPD_FROM_REAL(fun, ...) \
-				(TYPE_CHECK(r2opd_t, cpu_ops.fun), make_z2opd_from_real(offsetof(struct vec_ops, fun), __VA_ARGS__))
+				((void)TYPE_CHECK(r2opd_t, cpu_ops.fun), make_z2opd_from_real(offsetof(struct vec_ops, fun), __VA_ARGS__))
 #define MAKE_Z2OPF_FROM_REAL(fun, ...) \
-				(TYPE_CHECK(r2opf_t, cpu_ops.fun), make_z2opf_from_real(offsetof(struct vec_ops, fun), __VA_ARGS__))
+				((void)TYPE_CHECK(r2opf_t, cpu_ops.fun), make_z2opf_from_real(offsetof(struct vec_ops, fun), __VA_ARGS__))
 
 
 

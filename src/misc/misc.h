@@ -38,7 +38,8 @@ extern void* xmalloc(size_t s);
 
 #define _TYPE_ALLOC(T)		((T*)xmalloc(sizeof(T)))
 #define TYPE_ALLOC(T)		_TYPE_ALLOC(__typeof__(T))
-#define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
+// #define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
+#define TYPE_CHECK(T, x)	(1 ? (x) : (T)0)
 
 #define _PTR_ALLOC(T, x)	T* x = xmalloc(sizeof(T))
 #define PTR_ALLOC(T, x)		_PTR_ALLOC(__typeof__(T), x)
