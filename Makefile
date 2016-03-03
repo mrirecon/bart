@@ -375,10 +375,10 @@ mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
 
 ifeq ($(PARALLEL),1)
 (%): %
-	$(AR) r $@ $%
+	$(AR) $(ARFLAGS) $@ $%
 else
 (%): %
-	$(AR) r $@ $%
+	$(AR) $(ARFLAGS) $@ $%
 	rm $%
 endif
 
