@@ -111,7 +111,7 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version
 TFLP=scale conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip wavg
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter
-TRECO=pics pocsense rsense bpsense itsense nlinv nufft rof sake wave lrmatrix estdims
+TRECO=pics pocsense rsense sqpics bpsense itsense nlinv nufft rof sake wave lrmatrix estdims
 TCALIB=ecalib ecaltwo caldir walsh cc calmat svd estvar
 TMRI=homodyne poisson twixread fakeksp
 TSIM=phantom traj
@@ -123,6 +123,7 @@ TIO=toimg
 MODULES = -lnum -lmisc -lnum -lmisc
 
 MODULES_pics = -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
+MODULES_sqpics = -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
 MODULES_pocsense = -lsense -lwavelet2 -liter -llinops
 MODULES_nlinv = -lnoir -liter
 MODULES_rsense = -lgrecon -lsense -lnoir -lwavelet2 -lcalib -liter -llinops
