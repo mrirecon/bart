@@ -157,9 +157,9 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	if (!fast) {
 
 		if (NULL != plan->image_truth)
-			debug_printf(DP_DEBUG3, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj", "relMSE");
+			debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj", "relMSE");
 		else
-			debug_printf(DP_DEBUG3, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj");
+			debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj");
 	}
 
 	float rho = plan->rho;
@@ -339,9 +339,9 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 
 			if (NULL != plan->image_truth)
-				debug_printf(DP_DEBUG3, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\n", i, grad_iter, history->rho[i], history->r_norm[i], history->eps_pri[i], history->s_norm[i], history->eps_dual[i], history->objective[i], history->relMSE[i]);
+				debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\n", i, grad_iter, history->rho[i], history->r_norm[i], history->eps_pri[i], history->s_norm[i], history->eps_dual[i], history->objective[i], history->relMSE[i]);
 			else
-				debug_printf(DP_DEBUG3, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.5f\t%10.4f\n", i, grad_iter, history->rho[i], history->r_norm[i], history->eps_pri[i], history->s_norm[i], history->eps_dual[i], history->objective[i]);
+				debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.5f\t%10.4f\n", i, grad_iter, history->rho[i], history->r_norm[i], history->eps_pri[i], history->s_norm[i], history->eps_dual[i], history->objective[i]);
 
 
 			if ((grad_iter > plan->maxiter)

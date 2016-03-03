@@ -463,13 +463,13 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 		if (NULL != x_truth) {
 
 			vops->sub(N, x_err, x, x_truth);
-			debug_printf(DP_DEBUG2, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
+			debug_printf(DP_DEBUG3, "relMSE = %f\n", vops->norm(N, x_err) / vops->norm(N, x_truth));
 		}
 
 		if ((NULL != obj_eval) && (NULL != obj_eval_data)) {
 
 			float objval = obj_eval(obj_eval_data, x);
-			debug_printf(DP_DEBUG2, "#CG%d OBJVAL= %f\n", i, objval);
+			debug_printf(DP_DEBUG3, "#CG%d OBJVAL= %f\n", i, objval);
 		}
 
 		debug_printf(DP_DEBUG3, "#%d: %f\n", i, (double)sqrtf(rsnew));
