@@ -33,7 +33,14 @@ italgo_fun2_f iter2_pocs;
 // use with iter_call_s from iter.h as _conf
 italgo_fun2_f iter2_call_iter;
 
+#ifndef ITER_CONF_S
+#define ITER_CONF_S
+typedef struct iter_conf_s { int:0; } iter_conf;
+#endif
+
 struct iter2_call_s {
+
+	iter_conf base;
 
 	italgo_fun2_t fun;
 	void* _conf;

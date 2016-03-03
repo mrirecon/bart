@@ -122,7 +122,7 @@ static bool checkeps(float eps)
 
 
 
-void iter_conjgrad(void* _conf,
+void iter_conjgrad(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
@@ -136,7 +136,7 @@ void iter_conjgrad(void* _conf,
 
 
 
-void iter_landweber(void* _conf,
+void iter_landweber(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
@@ -144,7 +144,7 @@ void iter_landweber(void* _conf,
 		void* objval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-	struct iter_landweber_conf* conf = _conf;
+	struct iter_landweber_conf* conf = CONTAINER_OF(_conf, struct iter_landweber_conf, base);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -166,7 +166,7 @@ cleanup:
 
 
 
-void iter_ist(void* _conf,
+void iter_ist(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
@@ -177,7 +177,7 @@ void iter_ist(void* _conf,
 	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
 }
 
-void iter_fista(void* _conf,
+void iter_fista(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
@@ -190,7 +190,7 @@ void iter_fista(void* _conf,
 
 
 
-void iter_admm(void* _conf,
+void iter_admm(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
@@ -206,7 +206,7 @@ void iter_admm(void* _conf,
 }
 
 
-void iter_call_iter2(void* _conf,
+void iter_call_iter2(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
@@ -214,7 +214,8 @@ void iter_call_iter2(void* _conf,
 		void* objval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-	struct iter2_call_s* it = _conf;
+	struct iter2_call_s* it = CONTAINER_OF(_conf, struct iter2_call_s, base);
+
 	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL,
 		size, image, image_adj, image_truth, objval_data, obj_eval);
 }

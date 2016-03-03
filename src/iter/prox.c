@@ -81,7 +81,7 @@ static void prox_normaleq_fun(void* prox_data, float mu, float* z, const float* 
 
 			struct iter_conjgrad_conf* cg_conf = pdata->cgconf;
 			cg_conf->l2lambda = rho;
-			iter_conjgrad(cg_conf, pdata->op->normal, NULL, pdata->size, z, (float*)b, NULL, NULL, NULL);
+			iter_conjgrad(&cg_conf->base, pdata->op->normal, NULL, pdata->size, z, (float*)b, NULL, NULL, NULL);
 
 		} else {
 
