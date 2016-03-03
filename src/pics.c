@@ -482,7 +482,7 @@ int main_pics(int argc, char* argv[])
 	struct reg_s* regs = ropts.regs;
 	enum algo_t algo = ropts.algo;
 
-	if ((0 == ropts.r) && (lambda >= 0.)) {
+	if ((0 == ropts.r) && (lambda > 0.)) {
 
 		regs[0].xform = L2IMG;
 		regs[0].xflags = 0u;
