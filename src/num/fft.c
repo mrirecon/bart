@@ -1,9 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2011-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  *
  * 
@@ -195,6 +196,8 @@ void fftshift(unsigned int N, const long dimensions[N], unsigned long flags, com
 
 struct fft_plan_s {
 
+	operator_data_t base;
+
 	fftwf_plan fftw;
 	
 #ifdef  USE_CUDA
@@ -242,11 +245,11 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 }
 
 
-static void fft_apply(const void* _plan, unsigned int N, void* args[N])
+static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N])
 {
 	complex float* dst = args[0];
 	const complex float* src = args[1];
-	const struct fft_plan_s* plan = _plan;
+	const struct fft_plan_s* plan = CONTAINER_OF(_plan, const struct fft_plan_s, base);
 
 	assert(2 == N);
 
@@ -265,9 +268,9 @@ static void fft_apply(const void* _plan, unsigned int N, void* args[N])
 }
 
 
-static void fft_free_plan(const void* _data)
+static void fft_free_plan(const operator_data_t* _data)
 {
-	const struct fft_plan_s* plan = _data;
+	const struct fft_plan_s* plan = CONTAINER_OF(_data, const struct fft_plan_s, base);
 
 	fftwf_destroy_plan(plan->fftw);
 #ifdef	USE_CUDA
@@ -290,7 +293,7 @@ const struct operator_s* fft_create2(unsigned int D, const long dimensions[D], u
 		plan->cuplan = fft_cuda_plan(D, dimensions, flags, ostrides, istrides, backwards);
 #endif
 
-	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, plan, fft_apply, fft_free_plan);
+	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, &plan->base, fft_apply, fft_free_plan);
 }
 
 const struct operator_s* fft_create(unsigned int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src, bool backwards)

@@ -1,5 +1,6 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2015. Tao Zhang and Joseph Cheng.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -8,7 +9,7 @@
  * 2014 Tao Zhang
  * 2014 Joseph Cheng 
  * 2014 Jon Tamir 
- * 2014 Martin Uecker 
+ * 2014,2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdlib.h>
@@ -39,6 +40,8 @@
 
 struct lrthresh_data_s {
 
+	operator_data_t base;
+
 	float lambda;
 	bool randshift;
 	bool use_gpu;
@@ -60,8 +63,8 @@ struct lrthresh_data_s {
 
 
 static struct lrthresh_data_s* lrthresh_create_data(const long dims_decom[DIMS], bool randshift, unsigned long mflags, const long blkdims[MAX_LEV][DIMS], float lambda, bool noise, int remove_mean, bool use_gpu);
-static void lrthresh_free_data(const void* data);
-static void lrthresh_apply(const void* _data, float lambda, complex float* dst, const complex float* src);
+static void lrthresh_free_data(const operator_data_t* data);
+static void lrthresh_apply(const operator_data_t* _data, float lambda, complex float* dst, const complex float* src);
 
 
 
@@ -79,7 +82,7 @@ const struct operator_p_s* lrthresh_create(const long dims_lev[DIMS], bool rands
 {
 	struct lrthresh_data_s* data = lrthresh_create_data(dims_lev, randshift, mflags, blkdims, lambda, noise, remove_mean, use_gpu);
 
-	return operator_p_create(DIMS, dims_lev, DIMS, dims_lev, data, lrthresh_apply, lrthresh_free_data);
+	return operator_p_create(DIMS, dims_lev, DIMS, dims_lev, &data->base, lrthresh_apply, lrthresh_free_data);
 }
 
 
@@ -130,9 +133,9 @@ static struct lrthresh_data_s* lrthresh_create_data(const long dims_decom[DIMS],
 /**
  * Free lrthresh operator
  */
-static void lrthresh_free_data(const void* _data)
+static void lrthresh_free_data(const operator_data_t* _data)
 {
-	free((void*)_data);
+	free(CONTAINER_OF(_data, struct lrthresh_data_s, base));
 }
 
 
@@ -158,9 +161,9 @@ static int rand_lim(int limit)
 /*
  * Low rank threhsolding for arbitrary block sizes
  */
-static void lrthresh_apply(const void* _data, float mu, complex float* dst, const complex float* src)
+static void lrthresh_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	struct lrthresh_data_s* data = (struct lrthresh_data_s*)_data;
+	struct lrthresh_data_s* data = CONTAINER_OF(_data, struct lrthresh_data_s, base);
 
 	float lambda = mu * data->lambda;
 

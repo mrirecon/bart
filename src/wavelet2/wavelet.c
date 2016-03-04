@@ -1,10 +1,12 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 20XX-2013 Frank Ong, Martin Uecker, Pat Virtue, and Mark Murphy
  * frankong@berkeley.edu
+ * 2016	     Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -180,27 +182,7 @@ const struct linop_s* wavelet_create(int numdims, const long imSize[numdims], un
 }
 
 
-/**
- * Proximal operator for l1-norm with Wavelet transform: f(x) = lambda || W x ||_1
- *
- * @param numdims number of dimensions
- * @param imSize dimensions of x
- * @param wave_flags bitmask for Wavelet transform
- * @param minSize minimium size of coarse Wavelet scale
- * @param lambda threshold parameter
- * @param randshift apply random shift before Wavelet transforming
- * @param use_gpu true if using gpu
- */
-const struct operator_p_s* prox_wavethresh_create(int numdims, const long imSize[numdims], unsigned int wave_flags, const long minSize[numdims], float lambda, bool randshift, bool use_gpu)
-{
-	struct wavelet_plan_s* data = prepare_wavelet_plan(numdims, imSize, wave_flags, minSize, use_gpu);
 
-	data->randshift = randshift;
-	data->lambda = lambda;
-
-	return operator_p_create(numdims, imSize, numdims, imSize, data, wavelet_thresh, wavelet_del);
-
-}
 
 void wavelet_forward(const void* _data, data_t* out, const data_t* _in)
 {
@@ -292,9 +274,17 @@ void soft_thresh(struct wavelet_plan_s* plan, data_t* in, scalar_t thresh)
 	}
 }
 
-void wavelet_thresh(const void* _data, scalar_t thresh,  data_t* out, const data_t* _in)
+
+struct wave_prox_s {
+
+	operator_data_t base;
+	struct wavelet_plan_s* plan;
+};
+
+
+static void wavelet_thresh(const operator_data_t* _data, scalar_t thresh,  data_t* out, const data_t* _in)
 {
-	struct wavelet_plan_s* plan = (struct wavelet_plan_s*) _data;
+	struct wavelet_plan_s* plan = CONTAINER_OF(_data, struct wave_prox_s, base)->plan;
 
 	if (plan->randshift)
 		wavelet_new_randshift(plan);
@@ -373,9 +363,45 @@ void wavelet_free(const struct wavelet_plan_s* plan)
 	}
 }
 
-static void wavelet_del(const void* data)
+void wavelet_del(const void* _data)
 {
-	wavelet_free(data);
+	free((void*)_data);
+}
+
+struct prox_data_s {
+
+	operator_data_t base;
+	struct wavelet_plan_s* plan;
+};
+
+static void wavelet_prox_del(const operator_data_t* _data)
+{
+	struct prox_data_s* data = CONTAINER_OF(_data, struct prox_data_s, base);
+	wavelet_free(data->plan);
+	free(data);
+}
+
+/**
+ * Proximal operator for l1-norm with Wavelet transform: f(x) = lambda || W x ||_1
+ *
+ * @param numdims number of dimensions
+ * @param imSize dimensions of x
+ * @param wave_flags bitmask for Wavelet transform
+ * @param minSize minimium size of coarse Wavelet scale
+ * @param lambda threshold parameter
+ * @param randshift apply random shift before Wavelet transforming
+ * @param use_gpu true if using gpu
+ */
+const struct operator_p_s* prox_wavethresh_create(int numdims, const long imSize[numdims], unsigned int wave_flags, const long minSize[numdims], float lambda, bool randshift, bool use_gpu)
+{
+	PTR_ALLOC(struct wave_prox_s, data);
+	data->plan = prepare_wavelet_plan(numdims, imSize, wave_flags, minSize, use_gpu);
+
+	data->plan->randshift = randshift;
+	data->plan->lambda = lambda;
+
+	return operator_p_create(numdims, imSize, numdims, imSize, &data->base, wavelet_thresh, wavelet_prox_del);
+
 }
 
 void fwt2_cpu(struct wavelet_plan_s* plan, data_t* coeff, data_t* inImage)

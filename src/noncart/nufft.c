@@ -1,10 +1,11 @@
 /* Copyright 2014-2015. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * Strang G. A proposal for Toeplitz matrix calculations. Journal Studies in Applied Math. 1986; 74(2):171-17
  *
@@ -89,35 +90,13 @@ struct nufft_data {
 	long* wgh_strs;
 };
 
-/**
- * NUFFT precondition internal data structure
- */
-struct nufft_precond_data {
 
-	unsigned int N;
-	const complex float* pre; ///< Preconditioner
-
-	long* cim_dims; ///< Coil image dimension
-	long* pre_dims; ///< Preconditioner dimension
-
-	long* cim_strs;
-	long* pre_strs;
-
-	const struct linop_s* fft_op; ///< FFT linear operator
-	
-};
 
 
 static void nufft_free_data(const void* data);
 static void nufft_apply(const void* _data, complex float* dst, const complex float* src);
 static void nufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src);
 static void nufft_apply_normal(const void* _data, complex float* dst, const complex float* src);
-
-static void nufft_precond_apply(const void* _data, unsigned int N, void* args[N]);
-
-static void nufft_precond_del(const void* data);
-
-static complex float* compute_precond(unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase);
 
 
 static void toeplitz_mult(const struct nufft_data* data, complex float* dst, const complex float* src);
@@ -280,38 +259,6 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 
 
-const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
-{
-	const struct nufft_data* data = (const struct nufft_data*) linop_get_data( nufft_op );
-
-	struct nufft_precond_data* pdata = (struct nufft_precond_data*) xmalloc( sizeof(struct nufft_precond_data) );
-
-	assert(data->conf.toeplitz);
-
-	pdata->N = data->N;
-	unsigned int ND = pdata->N + 3;
-	
-	pdata->cim_dims = xmalloc(ND * sizeof(long));
-	pdata->pre_dims = xmalloc(ND * sizeof(long));
-	pdata->cim_strs = xmalloc(ND * sizeof(long));
-	pdata->pre_strs = xmalloc(ND * sizeof(long));
-
-	md_copy_dims(ND, pdata->cim_dims, data->cim_dims );
-	md_select_dims(ND, FFT_FLAGS, pdata->pre_dims, pdata->cim_dims);
-
-	md_calc_strides(ND, pdata->cim_strs, pdata->cim_dims, CFL_SIZE);
-	md_calc_strides(ND, pdata->pre_strs, pdata->pre_dims, CFL_SIZE);
-	
-	pdata->pre = compute_precond(pdata->N, pdata->pre_dims, pdata->pre_strs, data->psf_dims, data->psf_strs, data->psf, data->linphase);
-
-	// Initialize fft
-	pdata->fft_op = linop_fft_create(pdata->N, pdata->cim_dims, FFT_FLAGS, data->use_gpu);
-
-
-	return operator_create(pdata->N, pdata->cim_dims, pdata->N, pdata->cim_dims, pdata, nufft_precond_apply, nufft_precond_del);
-}
-
-
 /**
  * Compute Strang's circulant preconditioner
  *
@@ -347,26 +294,32 @@ static complex float* compute_precond(unsigned int N, const long* pre_dims, cons
 }
 
 
-static void nufft_precond_del(const void* _data)
-{
-	struct nufft_precond_data* data = (struct nufft_precond_data*) _data;
 
-	free(data->cim_dims);
-	free(data->pre_dims);
-	free(data->cim_strs);
-	free(data->pre_strs);
-	md_free((void*) data->pre);
-	
-	free(data);
-}
+/**
+ * NUFFT precondition internal data structure
+ */
+struct nufft_precond_data {
+
+	operator_data_t base;
+
+	unsigned int N;
+	const complex float* pre; ///< Preconditioner
+
+	long* cim_dims; ///< Coil image dimension
+	long* pre_dims; ///< Preconditioner dimension
+
+	long* cim_strs;
+	long* pre_strs;
+
+	const struct linop_s* fft_op; ///< FFT linear operator
+};
 
 
-
-static void nufft_precond_apply( const void* _data, unsigned int M, void* args[M] )
+static void nufft_precond_apply(const operator_data_t* _data, unsigned int M, void* args[M])
 {
 	assert(2 == M);
 
-	const struct nufft_precond_data* data = _data;
+	const struct nufft_precond_data* data = CONTAINER_OF(_data, const struct nufft_precond_data, base);
 
 	complex float* dst = args[0];
 	const complex float* src = args[1];
@@ -374,8 +327,52 @@ static void nufft_precond_apply( const void* _data, unsigned int M, void* args[M
 	linop_forward(data->fft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, src);
 
 	md_zdiv2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, dst, data->pre_strs, data->pre);
-	linop_adjoint(data->fft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, dst );
+	linop_adjoint(data->fft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, dst);
 }
+
+static void nufft_precond_del(const operator_data_t* _data)
+{
+	const struct nufft_precond_data* data = CONTAINER_OF(_data, const struct nufft_precond_data, base);
+
+	free(data->cim_dims);
+	free(data->pre_dims);
+	free(data->cim_strs);
+	free(data->pre_strs);
+	md_free((void*) data->pre);
+
+	free((void*)data);
+}
+
+const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
+{
+	const struct nufft_data* data = linop_get_data(nufft_op);
+
+	PTR_ALLOC(struct nufft_precond_data, pdata);
+
+	assert(data->conf.toeplitz);
+
+	pdata->N = data->N;
+	unsigned int ND = pdata->N + 3;
+
+	pdata->cim_dims = *TYPE_ALLOC(long[ND]);
+	pdata->pre_dims = *TYPE_ALLOC(long[ND]);
+	pdata->cim_strs = *TYPE_ALLOC(long[ND]);
+	pdata->pre_strs = *TYPE_ALLOC(long[ND]);
+
+	md_copy_dims(ND, pdata->cim_dims, data->cim_dims);
+	md_select_dims(ND, FFT_FLAGS, pdata->pre_dims, pdata->cim_dims);
+
+	md_calc_strides(ND, pdata->cim_strs, pdata->cim_dims, CFL_SIZE);
+	md_calc_strides(ND, pdata->pre_strs, pdata->pre_dims, CFL_SIZE);
+
+	pdata->pre = compute_precond(pdata->N, pdata->pre_dims, pdata->pre_strs, data->psf_dims, data->psf_strs, data->psf, data->linphase);
+
+	pdata->fft_op = linop_fft_create(pdata->N, pdata->cim_dims, FFT_FLAGS, data->use_gpu);
+
+	return operator_create(pdata->N, pdata->cim_dims, pdata->N, pdata->cim_dims, pdata, nufft_precond_apply, nufft_precond_del);
+}
+
+
 
 static complex float* compute_linphases(unsigned int N, long lph_dims[N + 3], const long img_dims[N + 3])
 {

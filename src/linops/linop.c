@@ -1,9 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  */
 
@@ -25,12 +26,14 @@
 
 struct shared_data_s {
 
+	operator_data_t base;
+
 	void* data;
 
 	struct shared_data_s* next;
 	struct shared_data_s* prev;
 
-	operator_del_t del;
+	del_fun_t del;
 
 	union {
 
@@ -45,9 +48,9 @@ static void shared_unlink(struct shared_data_s* data)
 	data->prev->next = data->next;
 }
 
-static void shared_del(const void* _data)
+static void shared_del(const operator_data_t* _data)
 {
-	struct shared_data_s* data = (struct shared_data_s*)_data;
+	struct shared_data_s* data = CONTAINER_OF(_data, struct shared_data_s, base);
 
 	if (data->next == data) {
 
@@ -62,17 +65,17 @@ static void shared_del(const void* _data)
 	free(data);
 }
 
-static void shared_apply(const void* _data, unsigned int N, void* args[N])
+static void shared_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	struct shared_data_s* data = (struct shared_data_s*)_data;
+	struct shared_data_s* data = CONTAINER_OF(_data, struct shared_data_s, base);
 
 	assert(2 == N);
 	data->u.apply(data->data, args[0], args[1]);
 }
 
-static void shared_apply_p(const void* _data, float lambda, complex float* dst, const complex float* src)
+static void shared_apply_p(const operator_data_t* _data, float lambda, complex float* dst, const complex float* src)
 {
-	struct shared_data_s* data = (struct shared_data_s*)_data;
+	struct shared_data_s* data = CONTAINER_OF(_data, struct shared_data_s, base);
 
 	data->u.apply_p(data->data, lambda, dst, src);
 }
@@ -111,12 +114,12 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 	assert((NULL != forward));
 	assert((NULL != adjoint));
 
-	lo->forward = operator_create2(ON, odims, ostrs, IN, idims, istrs, shared_data[0], shared_apply, shared_del);
-	lo->adjoint = operator_create2(IN, idims, istrs, ON, odims, ostrs, shared_data[1], shared_apply, shared_del);
+	lo->forward = operator_create2(ON, odims, ostrs, IN, idims, istrs, &shared_data[0]->base, shared_apply, shared_del);
+	lo->adjoint = operator_create2(IN, idims, istrs, ON, odims, ostrs, &shared_data[1]->base, shared_apply, shared_del);
 
 	if (NULL != normal) {
 
-		lo->normal = operator_create2(IN, idims, istrs, IN, idims, istrs, shared_data[2], shared_apply, shared_del);
+		lo->normal = operator_create2(IN, idims, istrs, IN, idims, istrs, &shared_data[2]->base, shared_apply, shared_del);
 
 	} else {
 
@@ -127,7 +130,7 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 
 	if (NULL != norm_inv) {
 
-		lo->norm_inv = operator_p_create2(IN, idims, istrs, IN, idims, istrs, shared_data[3], shared_apply_p, shared_del);
+		lo->norm_inv = operator_p_create2(IN, idims, istrs, IN, idims, istrs, &shared_data[3]->base, shared_apply_p, shared_del);
 	
 	} else {
 

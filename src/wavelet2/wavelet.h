@@ -44,7 +44,7 @@ extern struct wavelet_plan_s* prepare_wavelet_plan_filters(int numdims, const lo
 extern void wavelet_forward(const void* _data, _Complex float* outCoeff, const _Complex float* inImage);
 extern void wavelet_inverse(const void* _data, _Complex float* outImage, const _Complex float* inCoeff);
 extern void soft_thresh(struct wavelet_plan_s* plan, _Complex float* coeff, float thresh);
-extern void wavelet_thresh(const void* _data, float thresh, _Complex float* outImage, const _Complex float* inImage);
+// extern void wavelet_thresh(const void* _data, float thresh, _Complex float* outImage, const _Complex float* inImage);
 extern void wavelet_new_randshift(struct wavelet_plan_s* plan);
 extern void wavelet_clear_randshift(struct wavelet_plan_s* plan);
 extern void wavelet_free(const struct wavelet_plan_s* plan);

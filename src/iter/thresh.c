@@ -1,10 +1,11 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013-2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
- * 2013      Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013,2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 
@@ -40,6 +41,8 @@
  */
 struct thresh_s {
 
+	operator_data_t base;
+
 	float lambda;
 
 	int D;
@@ -56,9 +59,9 @@ struct thresh_s {
 
 
 
-static void softthresh_apply(const void* _data, float mu, complex float* optr, const complex float* iptr)
+static void softthresh_apply(const operator_data_t* _data, float mu, complex float* optr, const complex float* iptr)
 {
-	const struct thresh_s* data = _data;
+	const struct thresh_s* data = CONTAINER_OF(_data, const struct thresh_s, base);
 
 	if (0. == mu)
 		md_copy(data->D, data->dim, optr, iptr, CFL_SIZE);
@@ -67,9 +70,9 @@ static void softthresh_apply(const void* _data, float mu, complex float* optr, c
 }
 
 
-static void unisoftthresh_apply(const void* _data, float mu, complex float* dst, const complex float* src)
+static void unisoftthresh_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	const struct thresh_s* data = _data;
+	const struct thresh_s* data = CONTAINER_OF(_data, const struct thresh_s, base);
 
 	if (0. == mu)
 		md_copy(data->D, data->dim, dst, src, CFL_SIZE);
@@ -90,9 +93,9 @@ static void unisoftthresh_apply(const void* _data, float mu, complex float* dst,
 	}
 }
 
-static void thresh_del(const void* _data)
+static void thresh_del(const operator_data_t* _data)
 {
-	const struct thresh_s* data = _data;
+	const struct thresh_s* data = CONTAINER_OF(_data, const struct thresh_s, base);
 	free(data->dim);
 	free(data->str);
 	md_free(data->tmp_norm);
@@ -138,7 +141,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D],
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, data->dim, D, data->dim, data, softthresh_apply, thresh_del);
+	return operator_p_create(D, data->dim, D, data->dim, &data->base, softthresh_apply, thresh_del);
 
 }
 
@@ -179,7 +182,7 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, data->dim, D, data->dim, data, unisoftthresh_apply, thresh_del);
+	return operator_p_create(D, data->dim, D, data->dim, &data->base, unisoftthresh_apply, thresh_del);
 }
 
 

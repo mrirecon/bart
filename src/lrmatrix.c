@@ -1,11 +1,11 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -37,24 +37,26 @@
 
 struct s_data {
 
+	operator_data_t base;
+
 	long size;
 };
 
 // x = (z1 + z2)/2
 
-static void sum_xupdate(const void* _data, float rho, complex float* dst, const complex float* src)
+static void sum_xupdate(const operator_data_t* _data, float rho, complex float* dst, const complex float* src)
 {
 	UNUSED(rho);
 
-	const struct s_data* data = (const struct s_data*)_data;
+	const struct s_data* data = CONTAINER_OF(_data, struct s_data, base);
 
 	for(int i = 0; i < data->size; i++)
 		dst[i] = src[i] / 2.;
 }
 
-static void sum_xupdate_free(const void* data)
+static void sum_xupdate_free(const operator_data_t* data)
 {
-	free((void*)data);
+	free(CONTAINER_OF(data, struct s_data, base));
 }
 
 
@@ -196,9 +198,9 @@ int main_lrmatrix(int argc, char* argv[])
 	const struct linop_s* ops[2] = { eye_op, eye_op };
 	const struct operator_p_s* prox_ops[2] = { sum_prox, lr_prox };
 	long size = 2 * md_calc_size(DIMS, odims);
-	struct s_data s_data = { size / 2 };
+	struct s_data s_data = { { }, size / 2 };
 
-	const struct operator_p_s* sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims, (void*)&s_data, sum_xupdate, sum_xupdate_free);
+	const struct operator_p_s* sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims, &s_data.base, sum_xupdate, sum_xupdate_free);
 
 
 	// do recon

@@ -1,9 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  *
@@ -42,6 +43,8 @@
 
 struct data {
 
+	operator_data_t base;
+
 	const struct linop_s* sense_op;
 	complex float* tmp;
 	float alpha; // l1 or l2 regularization
@@ -61,9 +64,10 @@ struct data {
 };
 
 
-static void xupdate_apply(const void* _data, float mu, complex float* dst, const complex float* src)
+static void xupdate_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	const struct data* data = _data;
+	const struct data* data = CONTAINER_OF(_data, struct data, base);
+
 	UNUSED(mu);
 	md_zsmul(DIMS, data->dims_ksp, dst, src, 1. / (data->alpha == 0 ? 2. : 3.));
 }
@@ -90,9 +94,9 @@ static void robust_consistency(float lambda, const long dims[DIMS], complex floa
 
 
 
-static void sparsity_proj_apply(const void* _data, float mu, complex float* dst, const complex float* src)
+static void sparsity_proj_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	const struct data* data = _data;
+	const struct data* data = CONTAINER_OF(_data, struct data, base);
 
 	const long* dims = data->dims_ksp;
 
@@ -117,10 +121,10 @@ static void sparsity_proj_apply(const void* _data, float mu, complex float* dst,
 }
 
 
-static void data_consistency_proj_apply(const void* _data, float mu, complex float* dst, const complex float* src)
+static void data_consistency_proj_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
 	UNUSED(mu);
-	const struct data* data = _data;
+	const struct data* data = CONTAINER_OF(_data, struct data, base);
 
 	if (-1. != data->lambda)
 		robust_consistency(data->lambda, data->dims_ksp, dst, data->pattern, data->kspace);
@@ -129,11 +133,11 @@ static void data_consistency_proj_apply(const void* _data, float mu, complex flo
 }
 
 
-static void sense_proj_apply(const void* _data, float mu, complex float* dst, const complex float* src)
+static void sense_proj_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
 	UNUSED(mu);
 
-	const struct data* data = _data;
+	const struct data* data = CONTAINER_OF(_data, const struct data, base);
 
 	// assumes normalized sensitivities
 
@@ -142,7 +146,7 @@ static void sense_proj_apply(const void* _data, float mu, complex float* dst, co
 }
 
 
-static void proj_del(const void* _data)
+static void proj_del(const operator_data_t* _data)
 {
 	UNUSED(_data);
 }
@@ -222,7 +226,7 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 
 
 
-	const struct operator_p_s* sense_proj = operator_p_create(DIMS, dims_ksp, DIMS, dims_ksp, (void*)&data, sense_proj_apply, proj_del);
+	const struct operator_p_s* sense_proj = operator_p_create(DIMS, dims_ksp, DIMS, dims_ksp, &data.base, sense_proj_apply, proj_del);
 
 	const struct operator_p_s* data_consistency_proj = operator_p_create(DIMS, dims_ksp, DIMS, dims_ksp, (void*)&data, data_consistency_proj_apply, proj_del);
 	
