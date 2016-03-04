@@ -52,8 +52,8 @@ int main_bpsense(int argc, char* argv[])
 	
 	struct bpsense_conf conf = bpsense_defaults;
 	struct iter_admm_conf iconf = iter_admm_defaults;
-	conf.iconf = &iconf;
-	conf.iconf->rho = 10; // more sensibile default
+	iconf.rho = 10; // more sensibile default
+	conf.iconf = &iconf.base;
 
 	bool usegpu = false;
 	const char* psf = NULL;
@@ -68,11 +68,11 @@ int main_bpsense(int argc, char* argv[])
 
 		OPT_FLOAT('e', &conf.eps, "eps", "data consistency error"),
 		OPT_FLOAT('r', &conf.lambda, "lambda", "l2 regularization parameter"),
-		OPT_FLOAT('u', &conf.iconf->rho, "rho", "ADMM penalty parameter"),
+		OPT_FLOAT('u', &iconf.rho, "rho", "ADMM penalty parameter"),
 		OPT_SET('c', &conf.rvc, "real-value constraint"),
 		OPT_SET('t', &use_tvnorm, "use TV norm"),
 		OPT_STRING('T', &image_truth_fname, "file", "compare to truth image"),
-		OPT_UINT('i', &conf.iconf->maxiter, "iter", "max. iterations"),
+		OPT_UINT('i', &iconf.maxiter, "iter", "max. iterations"),
 		OPT_SET('g', &usegpu, "(use gpu)"),
 		OPT_STRING('p', &psf, "file", "point-spread function"),
 	};

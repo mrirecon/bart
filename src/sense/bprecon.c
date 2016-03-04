@@ -85,7 +85,6 @@ struct data {
 	const complex float* kspace;
 
 	struct bpsense_conf* conf;
-
 };
 
 
@@ -252,7 +251,5 @@ void bpsense_recon_gpu(struct bpsense_conf* conf, const long dims[DIMS], complex
 	md_free(gpu_ksp);
 	md_free(gpu_maps);
 }
-
-
 #endif
 

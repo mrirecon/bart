@@ -10,7 +10,12 @@ struct linop_s;
 struct operator_s;
 struct operator_p_s;
 
-typedef void (italgo_fun2_f)(void* conf,
+#ifndef ITER_CONF_S
+#define ITER_CONF_S
+typedef struct iter_conf_s { int:0; } iter_conf;
+#endif
+
+typedef void (italgo_fun2_f)(iter_conf* conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -33,10 +38,6 @@ italgo_fun2_f iter2_pocs;
 // use with iter_call_s from iter.h as _conf
 italgo_fun2_f iter2_call_iter;
 
-#ifndef ITER_CONF_S
-#define ITER_CONF_S
-typedef struct iter_conf_s { int:0; } iter_conf;
-#endif
 
 struct iter2_call_s {
 

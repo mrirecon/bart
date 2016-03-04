@@ -14,7 +14,7 @@ extern "C" {
 
 #include "misc/mri.h"
 
-struct iter_admm_conf;
+struct iter_conf_s;
 struct operator_p_s;
 struct linop_s;
 
@@ -29,7 +29,7 @@ struct linop_s;
  */
 struct bpsense_conf {
 
-	struct iter_admm_conf* iconf;
+	struct iter_conf_s* iconf;
 	_Bool rvc;
 	float lambda;
 	float eps;
