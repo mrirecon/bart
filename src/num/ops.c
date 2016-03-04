@@ -766,9 +766,16 @@ const struct operator_s* operator_loop(unsigned int D, const long dims[D], const
 
 
 #ifdef USE_CUDA
-static void gpuwrp_fun(const void* _data, unsigned int N, void* args[N])
+struct gpu_data_s {
+
+	operator_data_t base;
+
+	const struct operator_s* op;
+};
+
+static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct operator_s* op = _data;
+	const struct operator_s* op = CONTAINER_OF(_data, struct gpu_data_s, base)->op;
 	void* gpu_ptr[N];
 
 	assert(N == operator_nr_args(op));
@@ -789,10 +796,13 @@ static void gpuwrp_fun(const void* _data, unsigned int N, void* args[N])
 	}
 }
 
-static void gpuwrp_del(const void* _data)
+static void gpuwrp_del(const operator_data_t* _data)
 {
-	const struct operator_s* op = _data;
-	operator_free(op);
+	const struct gpu_data_s* data = CONTAINER_OF(_data, struct gpu_data_s, base);
+
+	operator_free(data->op);
+
+	free((void*)data);
 }
 
 const struct operator_s* operator_gpu_wrapper(const struct operator_s* op)
@@ -813,8 +823,10 @@ const struct operator_s* operator_gpu_wrapper(const struct operator_s* op)
 	}
 
 	// op = operator_ref(op);
+	PTR_ALLOC(struct gpu_data_s, data);
+	data->op = op;
 
-	return operator_generic_create2(N, D, dims, strs, (void*)op, gpuwrp_fun, gpuwrp_del);
+	return operator_generic_create2(N, D, dims, strs, &data->base, gpuwrp_fun, gpuwrp_del);
 }
 #endif
 
