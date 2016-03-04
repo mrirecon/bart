@@ -86,7 +86,7 @@ static void shared_apply_p(const operator_data_t* _data, float lambda, complex f
  */
 struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long ostrs[ON],
 				unsigned int IN, const long idims[IN], const long istrs[IN],
-				void* data, lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal,
+				linop_data_t* data, lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal,
 				lop_p_fun_t norm_inv, del_fun_t del)
 {
 	PTR_ALLOC(struct linop_s, lo);
@@ -156,7 +156,7 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
  * @param norm_inv function for applying the pseudo-inverse operation, (A^H A + mu I)^-1
  * @param del function for freeing the data
  */
-struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], void* data,
+struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], linop_data_t* data,
 				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t del)
 {
 	long ostrs[ON];

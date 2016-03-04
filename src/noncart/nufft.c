@@ -48,6 +48,8 @@ struct nufft_conf_s nufft_conf_defaults = {
  */
 struct nufft_data {
 
+	linop_data_t base;
+
 	struct nufft_conf_s conf;	///< NUFFT configuration structure
 
 	bool use_gpu;			///< Use GPU boolean
@@ -93,10 +95,10 @@ struct nufft_data {
 
 
 
-static void nufft_free_data(const void* data);
-static void nufft_apply(const void* _data, complex float* dst, const complex float* src);
-static void nufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src);
-static void nufft_apply_normal(const void* _data, complex float* dst, const complex float* src);
+static void nufft_free_data(const linop_data_t* data);
+static void nufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src);
 
 
 static void toeplitz_mult(const struct nufft_data* data, complex float* dst, const complex float* src);
@@ -242,6 +244,7 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 	data->cm2_dims = *TYPE_ALLOC(long[ND]);
 	// !
 	md_copy_dims(ND, data->cm2_dims, data->cim_dims);
+
 	for (int i = 0; i < 3; i++)
 		data->cm2_dims[i] = (1 == cim_dims[i]) ? 1 : (2 * cim_dims[i]);
 
@@ -254,7 +257,7 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 
 	return linop_create(N, ksp_dims, N, cim_dims,
-		data, nufft_apply, nufft_apply_adjoint, nufft_apply_normal, NULL, nufft_free_data);
+			&data->base, nufft_apply, nufft_apply_adjoint, nufft_apply_normal, NULL, nufft_free_data);
 }
 
 
@@ -499,11 +502,9 @@ static complex float* compute_psf2(unsigned int N, const long psf_dims[N + 3], c
 
 
 
-// Free nufft operator
-
-static void nufft_free_data(const void* _data)
+static void nufft_free_data(const linop_data_t* _data)
 {
-	struct nufft_data* data = (struct nufft_data*)_data;
+	struct nufft_data* data = CONTAINER_OF(_data, struct nufft_data, base);
 
 	free(data->ksp_dims);
 	free(data->cim_dims);
@@ -538,9 +539,9 @@ static void nufft_free_data(const void* _data)
 
 
 // Forward: from image to kspace
-static void nufft_apply(const void* _data, complex float* dst, const complex float* src)
+static void nufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct nufft_data* data = (struct nufft_data*)_data;
+	struct nufft_data* data = CONTAINER_OF(_data, struct nufft_data, base);
 
 	assert(!data->conf.toeplitz); // if toeplitz linphase has no roll, so would need to be added
 
@@ -571,9 +572,9 @@ static void nufft_apply(const void* _data, complex float* dst, const complex flo
 
 
 // Adjoint: from kspace to image
-static void nufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src)
+static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct nufft_data* data = _data;
+	struct nufft_data* data = CONTAINER_OF(_data, struct nufft_data, base);
 
 	unsigned int ND = data->N + 3;
 
@@ -615,9 +616,9 @@ static void nufft_apply_adjoint(const void* _data, complex float* dst, const com
 /** 
  *
  */
-static void nufft_apply_normal(const void* _data, complex float* dst, const complex float* src)
+static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct nufft_data* data = _data;
+	struct nufft_data* data = CONTAINER_OF(_data, struct nufft_data, base);
 
 	if (data->conf.toeplitz) {
 
@@ -626,8 +627,10 @@ static void nufft_apply_normal(const void* _data, complex float* dst, const comp
 	} else {
 
 		complex float* tmp_ksp = md_alloc(data->N + 3, data->ksp_dims, CFL_SIZE);
-		nufft_apply((const void*)data, tmp_ksp, src);
-		nufft_apply_adjoint((const void*)data, dst, tmp_ksp);
+
+		nufft_apply(_data, tmp_ksp, src);
+		nufft_apply_adjoint(_data, dst, tmp_ksp);
+
 		md_free(tmp_ksp);
 	}
 }

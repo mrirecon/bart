@@ -1,4 +1,5 @@
 /* Copyright 2014-2015. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -10,9 +11,12 @@
 
 #include "misc/cppwrap.h"
 
-typedef void (*lop_fun_t)(const void* _data, complex float* dst, const complex float* src);
-typedef void (*lop_p_fun_t)(const void* _data, float lambda, complex float* dst, const complex float* src);
-typedef void (*del_fun_t)(const void* _data);
+typedef struct linop_data_s { int:0; } linop_data_t;
+
+
+typedef void (*lop_fun_t)(const linop_data_t* _data, complex float* dst, const complex float* src);
+typedef void (*lop_p_fun_t)(const linop_data_t* _data, float lambda, complex float* dst, const complex float* src);
+typedef void (*del_fun_t)(const linop_data_t* _data);
 
 struct operator_s;
 struct operator_p_s;
@@ -27,11 +31,11 @@ struct linop_s {
 
 
 
-extern struct linop_s* linop_create(unsigned int ON, const long odims[__VLA(ON)], unsigned int IN, const long idims[__VLA(IN)], void* data,
+extern struct linop_s* linop_create(unsigned int ON, const long odims[__VLA(ON)], unsigned int IN, const long idims[__VLA(IN)], linop_data_t* data,
 				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t);
 
 extern struct linop_s* linop_create2(unsigned int ON, const long odims[__VLA(ON)], const long ostr[__VLA(ON)],
-				unsigned int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], void* data,
+				unsigned int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], linop_data_t* data,
 				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t);
 
 extern const void* linop_get_data(const struct linop_s* ptr);

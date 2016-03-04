@@ -51,7 +51,7 @@ static void conv_up_3d(data_t *out, const data_t *in, int size1, int skip1, int 
 static void create_numLevels(struct wavelet_plan_s* plan);
 static void create_wavelet_sizes(struct wavelet_plan_s* plan);
 
-static void wavelet_del(const void* data);
+static void wavelet_del(const linop_data_t* data);
 
 
 struct wavelet_plan_s* prepare_wavelet_plan_filters(int numdims, const long imSize[numdims], unsigned int flags, const long minSize[numdims], int use_gpu, int filter_length, const float filter[4][filter_length])
@@ -148,45 +148,29 @@ struct wavelet_plan_s* prepare_wavelet_plan(int numdims, const long imSize[numdi
 	return prepare_wavelet_plan_filters(numdims, imSize, flags, minSize, use_gpu, 4, wavelet2_dau2);
 }
 
-static void wavelet_normal(const void* _data, data_t* out, const data_t* _in)
+
+
+
+
+struct wavelet_data_s {
+
+	linop_data_t base;
+
+	struct wavelet_plan_s* plan;
+};
+
+
+static void wavelet_normal(const linop_data_t* _data, data_t* out, const data_t* _in)
 {
-	struct wavelet_plan_s* plan = (struct wavelet_plan_s*) _data;
+	struct wavelet_plan_s* plan = CONTAINER_OF(_data, struct wavelet_data_s, base)->plan;
+
 	md_copy(plan->numdims, plan->imSize, out, _in, sizeof(data_t));
 }
 
 
-/**
- * Wavelet linear operator
- *
- * @param numdims number of dimensions
- * @param imSize dimensions of x
- * @param wave_flags bitmask for Wavelet transform
- * @param minSize minimium size of coarse Wavelet scale
- * @param randshift apply random shift before Wavelet transforming
- * @param use_gpu true if using gpu
- */
-const struct linop_s* wavelet_create(int numdims, const long imSize[numdims], unsigned int wave_flags, const long minSize[numdims], bool randshift, bool use_gpu)
+static void wavelet_forward(const linop_data_t* _data, data_t* out, const data_t* _in)
 {
-	struct wavelet_plan_s* data = prepare_wavelet_plan(numdims, imSize, wave_flags, minSize, use_gpu);
-
-	data->randshift = randshift;
-
-	long coeff_dims[numdims];
-	md_select_dims( numdims, ~wave_flags, coeff_dims, imSize );
-	coeff_dims[0] = data->numCoeff_tr;
-	coeff_dims[1] = 1;
-	coeff_dims[2] = 1;
-
-	return linop_create(numdims, coeff_dims, numdims, imSize, data, wavelet_forward,  wavelet_inverse, wavelet_normal, NULL, wavelet_del);
-
-}
-
-
-
-
-void wavelet_forward(const void* _data, data_t* out, const data_t* _in)
-{
-	struct wavelet_plan_s* plan = (struct wavelet_plan_s*) _data;
+	struct wavelet_plan_s* plan = CONTAINER_OF(_data, struct wavelet_data_s, base)->plan;
 
 	if (plan->randshift)
 		wavelet_new_randshift(plan);	
@@ -223,9 +207,9 @@ void wavelet_forward(const void* _data, data_t* out, const data_t* _in)
 }
 
 
-void wavelet_inverse(const void* _data, data_t* out, const data_t* _in)
+static void wavelet_inverse(const linop_data_t* _data, data_t* out, const data_t* _in)
 {
-	struct wavelet_plan_s* plan = (struct wavelet_plan_s*) _data;
+	struct wavelet_plan_s* plan = CONTAINER_OF(_data, struct wavelet_data_s, base)->plan;
 	data_t* in = (data_t*) _in;
 
 	int numdims_tr = plan->numdims_tr;
@@ -254,6 +238,44 @@ void wavelet_inverse(const void* _data, data_t* out, const data_t* _in)
 #endif
 		}
 	}
+}
+
+
+static void wavelet_del(const linop_data_t* _data)
+{
+	struct wavelet_data_s* data = CONTAINER_OF(_data, struct wavelet_data_s, base);
+
+	// FIXME: free plan
+
+	free(data);
+}
+
+
+/**
+ * Wavelet linear operator
+ *
+ * @param numdims number of dimensions
+ * @param imSize dimensions of x
+ * @param wave_flags bitmask for Wavelet transform
+ * @param minSize minimium size of coarse Wavelet scale
+ * @param randshift apply random shift before Wavelet transforming
+ * @param use_gpu true if using gpu
+ */
+const struct linop_s* wavelet_create(int numdims, const long imSize[numdims], unsigned int wave_flags, const long minSize[numdims], bool randshift, bool use_gpu)
+{
+	PTR_ALLOC(struct wavelet_data_s, data);
+
+	data->plan = prepare_wavelet_plan(numdims, imSize, wave_flags, minSize, use_gpu);
+
+	data->plan->randshift = randshift;
+
+	long coeff_dims[numdims];
+	md_select_dims(numdims, ~wave_flags, coeff_dims, imSize);
+	coeff_dims[0] = data->plan->numCoeff_tr;
+	coeff_dims[1] = 1;
+	coeff_dims[2] = 1;
+
+	return linop_create(numdims, coeff_dims, numdims, imSize, &data->base, wavelet_forward, wavelet_inverse, wavelet_normal, NULL, wavelet_del);
 }
 
 
@@ -361,11 +383,6 @@ void wavelet_free(const struct wavelet_plan_s* plan)
 	{
 		free(plan->tmp_mem_tr);
 	}
-}
-
-void wavelet_del(const void* _data)
-{
-	free((void*)_data);
 }
 
 struct prox_data_s {

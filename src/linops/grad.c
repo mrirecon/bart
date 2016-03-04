@@ -1,9 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
  
 #include <complex.h>
@@ -96,28 +97,30 @@ void grad(unsigned int D, const long dims[D], unsigned int flags, complex float*
 
 struct grad_s {
 
+	linop_data_t base;
+
 	unsigned int N;
 	long* dims;
 	unsigned long flags;
 };
 
-static void grad_op_apply(const void* _data, complex float* dst, const complex float* src)
+static void grad_op_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct grad_s* data = _data;
+	const struct grad_s* data = CONTAINER_OF(_data, const struct grad_s, base);
 
 	grad_op(data->N, data->dims, data->flags, dst, src);
 }
 	
-static void grad_op_adjoint(const void* _data, complex float* dst, const complex float* src)
+static void grad_op_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct grad_s* data = _data;
+	const struct grad_s* data = CONTAINER_OF(_data, const struct grad_s, base);
 
 	grad_adjoint(data->N, data->dims, data->flags, dst, src);
 }
 
-static void grad_op_normal(const void* _data, complex float* dst, const complex float* src)
+static void grad_op_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct grad_s* data = _data;
+	const struct grad_s* data = CONTAINER_OF(_data, const struct grad_s, base);
 
 	complex float* tmp = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, dst);
 
@@ -128,14 +131,13 @@ static void grad_op_normal(const void* _data, complex float* dst, const complex 
 	md_free(tmp);
 }
 
-
-static void grad_op_free(const void* _data)
+static void grad_op_free(const linop_data_t* _data)
 {
-	const struct grad_s* data = _data;
+	const struct grad_s* data = CONTAINER_OF(_data, const struct grad_s, base);
+
 	free(data->dims);
 	free((void*)data);
 }
-
 
 struct linop_s* grad_init(long N, const long dims[N], unsigned int flags)
 {
@@ -148,6 +150,6 @@ struct linop_s* grad_init(long N, const long dims[N], unsigned int flags)
 	md_copy_dims(N, data->dims, dims);
 	data->dims[N] = bitcount(flags);
 	
-	return linop_create(N + 1, data->dims, N, dims, data, grad_op_apply, grad_op_adjoint, grad_op_normal, NULL, grad_op_free);
+	return linop_create(N + 1, data->dims, N, dims, &data->base, grad_op_apply, grad_op_adjoint, grad_op_normal, NULL, grad_op_free);
 }
 
