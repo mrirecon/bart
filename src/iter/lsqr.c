@@ -103,6 +103,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	const struct operator_s* normaleq_op = operator_create(N, x_dims, N, x_dims, &data.base, normaleq_l2_apply, NULL);
 
 	if (NULL != precond_op) {
+
 		const struct operator_s* tmp = normaleq_op;
 		
 		normaleq_op = operator_chain(normaleq_op, precond_op);

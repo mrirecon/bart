@@ -15,9 +15,6 @@ struct operator_s;
 struct operator_p_s;
 
 
-/**
- * configuration parameters for sense reconstruction
- */
 struct lsqr_conf {
 
 	float lambda;

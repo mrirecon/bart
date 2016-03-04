@@ -197,6 +197,7 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 		}
 
 	} else {
+
 		struct linop_s* sampling = sampling_create(dims, pat_dims, pattern);
 		struct linop_s* tmp_op = linop_chain(sense_op, sampling);
 
@@ -215,7 +216,6 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 				img_dims, image, ksp_dims, kspace);
 	}
 
-	// clean up
 	linop_free(sense_op);
 }
 
