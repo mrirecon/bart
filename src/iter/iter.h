@@ -9,7 +9,12 @@
 struct operator_s;
 struct operator_p_s;
 
-typedef void italgo_fun_f(void* conf,
+#ifndef ITER_CONF_S
+#define ITER_CONF_S
+typedef struct iter_conf_s { int:0; } iter_conf;
+#endif
+
+typedef void italgo_fun_f(iter_conf* conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
@@ -23,6 +28,8 @@ typedef italgo_fun_f* italgo_fun_t;
 
 struct iter_conjgrad_conf {
 
+	iter_conf base;
+
 	unsigned int maxiter;
 	float l2lambda;
 	float tol;
@@ -31,6 +38,8 @@ struct iter_conjgrad_conf {
 
 struct iter_landweber_conf {
 
+	iter_conf base;
+
 	unsigned int maxiter;
 	float step;
 	float tol;
@@ -38,6 +47,8 @@ struct iter_landweber_conf {
 
 
 struct iter_ist_conf {
+
+	iter_conf base;
 
 	unsigned int maxiter;
 	float step;
@@ -48,6 +59,8 @@ struct iter_ist_conf {
 
 struct iter_fista_conf {
 
+	iter_conf base;
+
 	unsigned int maxiter;
 	float step;
 	float continuation;
@@ -57,6 +70,8 @@ struct iter_fista_conf {
 
 
 struct iter_admm_conf {
+
+	iter_conf base;
 
 	unsigned int maxiter;
 	unsigned int maxitercg;
@@ -79,6 +94,8 @@ struct iter_admm_conf {
 
 
 struct iter_pocs_conf {
+
+	iter_conf base;
 
 	unsigned int maxiter;
 };
@@ -104,8 +121,10 @@ italgo_fun_f iter_call_iter2;
 
 struct iter_call_s {
 
+	iter_conf base;
+
 	italgo_fun_t fun;
-	void* _conf;
+	iter_conf* _conf;
 };
 
 

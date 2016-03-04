@@ -1,11 +1,13 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2014. Joseph Y Cheng.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Joseph Y Cheng <jycheng@stanford.edu>
+ * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 
@@ -40,6 +42,8 @@
  * @param snip TRUE to zero out first dimension
  */
 struct fdiff_s {
+
+	linop_data_t base;
 
 	unsigned int D;
 
@@ -195,8 +199,8 @@ void md_zcumsum(unsigned int D, const long dims[D], unsigned int flags, complex 
  */
 void md_zcumsum2(unsigned int D, const long dims[D], unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
-	complex float* tmp = md_alloc_sameplace(D, dims, sizeof(complex float), optr);
-	complex float* tmp2 = md_alloc_sameplace(D, dims, sizeof(complex float), optr);
+	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
+	complex float* tmp2 = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
 
 	md_zcumsum_core2(D, dims, flags, tmp, tmp2, ostrs, optr, istrs, iptr);
 
@@ -211,9 +215,10 @@ void md_zcumsum2(unsigned int D, const long dims[D], unsigned int flags, const l
  *
  * optr = [iptr(1); diff(iptr)]
  */
-static void fdiff_apply(const void* _data, complex float* optr, const complex float* iptr)
+static void fdiff_apply(const linop_data_t* _data, complex float* optr, const complex float* iptr)
 {
-	const struct fdiff_s* data = _data;
+	const struct fdiff_s* data = CONTAINER_OF(_data, const struct fdiff_s, base);
+
 	md_zfinitediff_core2(data->D, data->dims, data->flags, data->snip, data->tmp, data->str, optr, data->str, iptr);
 }
 
@@ -228,20 +233,27 @@ static void fdiff_apply(const void* _data, complex float* optr, const complex fl
  *
  * optr = [-diff(iptr); iptr(end)] = flip(fdiff_apply(flip(iptr)))
  */
-static void fdiff_apply_adjoint(const void* _data, complex float* optr, const complex float* iptr)
+static void fdiff_apply_adjoint(const linop_data_t* _data, complex float* optr, const complex float* iptr)
 {
-	const struct fdiff_s* data = _data;
+	const struct fdiff_s* data = CONTAINER_OF(_data, const struct fdiff_s, base);
 
-	md_copy2(data->D, data->dims, data->str, optr, data->str, iptr, sizeof(complex float));
+	md_copy2(data->D, data->dims, data->str, optr, data->str, iptr, CFL_SIZE);
+
 	for (unsigned int i=0; i < data->D; i++) {
+
 		unsigned int single_flag = data->flags & MD_BIT(i);
+
 		if (single_flag) {
-			md_flip2(data->D, data->dims, single_flag, data->str, data->tmp2, data->str, optr, sizeof(complex float));
+
+			md_flip2(data->D, data->dims, single_flag, data->str, data->tmp2, data->str, optr, CFL_SIZE);
 			md_zfinitediff_core2(data->D, data->dims, single_flag, false, data->tmp, data->str, data->tmp2, data->str, data->tmp2);
-			md_flip2(data->D, data->dims, single_flag, data->str, optr, data->str, data->tmp2, sizeof(complex float));
+			md_flip2(data->D, data->dims, single_flag, data->str, optr, data->str, data->tmp2, CFL_SIZE);
+
 			if (data->snip) {
+
 				long zdims[data->D];
 				md_select_dims(data->D, ~0, zdims, data->dims);
+
 				zdims[i] = 1;
 				md_zsub2(data->D, zdims, data->str, optr, data->str, optr, data->str, iptr);
 			}
@@ -249,28 +261,28 @@ static void fdiff_apply_adjoint(const void* _data, complex float* optr, const co
 	}
 }
 
-
 /*
  * Cumulative sum - inverse of finite difference operator 
  *
  * optr = cumsum(iptr);
  */
-static void cumsum_apply(const void* _data, float lambda, complex float* optr, const complex float* iptr)
+static void cumsum_apply(const linop_data_t* _data, float lambda, complex float* optr, const complex float* iptr)
 {
-	const struct fdiff_s* data = _data;
+	const struct fdiff_s* data = CONTAINER_OF(_data, const struct fdiff_s, base);
+
 	assert(0. == lambda);
 	md_zcumsum_core2(data->D, data->dims, data->flags, data->tmp, data->tmp2, data->str, optr, data->str, iptr);
 }
 
-
-
-static void finite_diff_del(const void* _data)
+static void finite_diff_del(const linop_data_t* _data)
 {
-	const struct fdiff_s* data = _data;
+	const struct fdiff_s* data = CONTAINER_OF(_data, const struct fdiff_s, base);
+
 	free(data->dims);
 	free(data->str);
 	md_free(data->tmp);
 	md_free(data->tmp2);
+
 	free((void*)data);
 }
 
@@ -296,21 +308,21 @@ extern const struct linop_s* finite_diff_init(unsigned int D, const long dim[D],
 	data->snip = snip;
 
 	data->dims = *TYPE_ALLOC(long[D]);
-	memcpy(data->dims, dim, D * sizeof(long));
+	md_copy_dims(D, data->dims, dim);
 
 	data->str = *TYPE_ALLOC(long[D]);
-	md_calc_strides(D, data->str, data->dims, sizeof(complex float));
+	md_calc_strides(D, data->str, data->dims, CFL_SIZE);
 
 #ifdef USE_CUDA
-	data->tmp = (gpu ? md_alloc_gpu : md_alloc)(D, data->dims, sizeof(complex float));
-	data->tmp2 = (gpu ? md_alloc_gpu : md_alloc)(D, data->dims, sizeof(complex float));
+	data->tmp = (gpu ? md_alloc_gpu : md_alloc)(D, data->dims, CFL_SIZE);
+	data->tmp2 = (gpu ? md_alloc_gpu : md_alloc)(D, data->dims, CFL_SIZE);
 #else
 	assert(!gpu);
-	data->tmp = md_alloc(D, data->dims, sizeof(complex float));
-	data->tmp2 = md_alloc(D, data->dims, sizeof(complex float));
+	data->tmp = md_alloc(D, data->dims, CFL_SIZE);
+	data->tmp2 = md_alloc(D, data->dims, CFL_SIZE);
 #endif
 
-	return linop_create(D, dim, D, dim, (void*)data, fdiff_apply, fdiff_apply_adjoint, NULL, cumsum_apply, finite_diff_del);
+	return linop_create(D, dim, D, dim, &data->base, fdiff_apply, fdiff_apply_adjoint, NULL, cumsum_apply, finite_diff_del);
 }
 
 
@@ -361,16 +373,19 @@ void finite_diff_free(const struct linop_s* o)
  * Internal data structure used for zfinitediff operator
  */
 struct zfinitediff_data {
-  unsigned int D;
-  long dim_diff;
-  bool do_circdiff;
 
-  long* dims_in;
-  long* strides_in;
-  long* dims_adj;
-  long* strides_adj;
+	linop_data_t base;
 
-  size_t size;
+	unsigned int D;
+	long dim_diff;
+	bool do_circdiff;
+
+	long* dims_in;
+	long* strides_in;
+	long* dims_adj;
+	long* strides_adj;
+
+	size_t size;
 };
 
 
@@ -378,222 +393,234 @@ struct zfinitediff_data {
  * Originally used md_circshift, but couldn't get it right, so I just
  * wrote it out for now (also avoids extra memory)
  */
-static void zfinitediff_apply(const void* _data, 
-			complex float* optr, const complex float* iptr) {
-  // if (docircshift) 
-  //     out(..,1:(end-1),..) = in(..,1:(end-1),..) - in(..,2:end,..)
-  //     out(..,end,..) = in(..,end,..) - in(..,1,..)
-  // else
-  //     out = in(..,1:(end-1),..) - in(..,2:end,..)
+static void zfinitediff_apply(const linop_data_t* _data,
+		complex float* optr, const complex float* iptr)
+{
+	// if (docircshift)
+	//     out(..,1:(end-1),..) = in(..,1:(end-1),..) - in(..,2:end,..)
+	//     out(..,end,..) = in(..,end,..) - in(..,1,..)
+	// else
+	//     out = in(..,1:(end-1),..) - in(..,2:end,..)
 
-  //printf("zfinitediff_apply\n");
-  const struct zfinitediff_data* data = _data;  
+	//printf("zfinitediff_apply\n");
+	const struct zfinitediff_data* data = CONTAINER_OF(_data, const struct zfinitediff_data, base);
 
-  unsigned long d = data->dim_diff;
-  long nx = data->dims_in[d];
-  long dims_sub[data->D];
-  md_copy_dims(data->D, dims_sub, data->dims_in);
-  long off_in, off_adj;
 
-  if (data->do_circdiff) {
-    // out(..,1:(end-1),..) = in(..,1:(end-1),..) - in(..,2:end,..)
-    dims_sub[d] = nx - 1;
-    off_in = data->strides_in[d]/CFL_SIZE;
-    //off_adj = data->strides_in[d]/CFL_SIZE;  
-    md_zsub2(data->D, dims_sub, data->strides_adj, optr, 
-	     data->strides_in, iptr, data->strides_in, iptr+off_in);
+	unsigned long d = data->dim_diff;
+	long nx = data->dims_in[d];
 
-    // out(..,end,..) = in(..,end,..) - in(..,1,..)
-    dims_sub[d] = 1;
-    off_in = (nx - 1) * data->strides_in[d]/CFL_SIZE;
-    off_adj = (nx - 1) * data->strides_adj[d]/CFL_SIZE;
-    md_zsub2(data->D, dims_sub, data->strides_adj, optr+off_adj, 
-	     data->strides_in, iptr+off_in, data->strides_in, iptr);  
-  } else {
-    // out(..,1:(end-1),..) = in(..,1:(end-1),..) - in(..,2:end,..)
-    dims_sub[d] = nx - 1;
-    off_in = data->strides_in[d]/CFL_SIZE;
-    md_zsub2(data->D, dims_sub, data->strides_adj, optr, 
-	     data->strides_in, iptr, data->strides_in, iptr+off_in);
-  }
+	long dims_sub[data->D];
+	md_copy_dims(data->D, dims_sub, data->dims_in);
 
-  /*
-    long i_shift, i_adj, x_orig, x_new;
-    unsigned int d = data->dim_diff;
-    for (unsigned int i = 0; i < md_calc_size(data->D, data->dims_in); i++) {
-    i_shift = i;
-    i_adj = i;
+	long off_in, off_adj;
 
-    x_orig = (i/data->strs_in[d]) % data->dims_in[d];
-    x_new = x_orig + 1; // shift by 1
-    
-    while (x_new >= data->dims_in[d]) x_new -= data->dims_in[d];
+	if (data->do_circdiff) {
 
-    i_shift += (x_new - x_orig)*data->strs_in[d];
+		// out(..,1:(end-1),..) = in(..,1:(end-1),..) - in(..,2:end,..)
+		dims_sub[d] = nx - 1;
+		off_in = data->strides_in[d] / CFL_SIZE;
+		//off_adj = data->strides_in[d]/CFL_SIZE;
+		md_zsub2(data->D, dims_sub, data->strides_adj, optr,
+				data->strides_in, iptr, data->strides_in, iptr + off_in);
 
-    optr[i_adj] = iptr[i] - iptr[i_shift];
-  */
+		// out(..,end,..) = in(..,end,..) - in(..,1,..)
+		dims_sub[d] = 1;
+		off_in = (nx - 1) * data->strides_in[d] / CFL_SIZE;
+		off_adj = (nx - 1) * data->strides_adj[d] / CFL_SIZE;
+		md_zsub2(data->D, dims_sub, data->strides_adj, optr + off_adj,
+				data->strides_in, iptr + off_in, data->strides_in, iptr);
+
+	} else {
+		// out(..,1:(end-1),..) = in(..,1:(end-1),..) - in(..,2:end,..)
+		dims_sub[d] = nx - 1;
+		off_in = data->strides_in[d] / CFL_SIZE;
+		md_zsub2(data->D, dims_sub, data->strides_adj, optr,
+				data->strides_in, iptr, data->strides_in, iptr + off_in);
+	}
+
+	/*
+	   long i_shift, i_adj, x_orig, x_new;
+	   unsigned int d = data->dim_diff;
+	   for (unsigned int i = 0; i < md_calc_size(data->D, data->dims_in); i++) {
+	   i_shift = i;
+	   i_adj = i;
+
+	   x_orig = (i/data->strs_in[d]) % data->dims_in[d];
+	   x_new = x_orig + 1; // shift by 1
+
+	   while (x_new >= data->dims_in[d]) x_new -= data->dims_in[d];
+
+	   i_shift += (x_new - x_orig)*data->strs_in[d];
+
+	   optr[i_adj] = iptr[i] - iptr[i_shift];
+	 */
 }
 
-static void zfinitediff_adjoint(const void* _data,
-			  complex float* optr, const complex float* iptr) {
-  //printf("zfinitediff_adjoint\n");
-  const struct zfinitediff_data* data = _data; 
+static void zfinitediff_adjoint(const linop_data_t* _data,
+			  complex float* optr, const complex float* iptr)
+{
+	//printf("zfinitediff_adjoint\n");
+	const struct zfinitediff_data* data = CONTAINER_OF(_data, const struct zfinitediff_data, base);
 
-  // if (docircshift) 
-  //     out(..,2:end,..) = in(..,2:end,..) - in(..,1:(end-1),..)
-  //     out(..,1,..) = in(..,1,..) - in(..,end,..)
-  // else
-  //     out(..,1,..) = in(..,1,..)
-  //     out(..,2:(end-1),..) = in(..,2:end,..) - in(..,1:(end-1),..)
-  //     out(..,end,..) = -in(..,end,..);
+	// if (docircshift)
+	//     out(..,2:end,..) = in(..,2:end,..) - in(..,1:(end-1),..)
+	//     out(..,1,..) = in(..,1,..) - in(..,end,..)
+	// else
+	//     out(..,1,..) = in(..,1,..)
+	//     out(..,2:(end-1),..) = in(..,2:end,..) - in(..,1:(end-1),..)
+	//     out(..,end,..) = -in(..,end,..);
 
-  unsigned int d = data->dim_diff;
-  long nx = data->dims_adj[d];
-  long off_in, off_adj;
-  long dims_sub[data->D];
-  md_copy_dims(data->D, dims_sub, data->dims_adj);
+	unsigned int d = data->dim_diff;
+	long nx = data->dims_adj[d];
+	long off_in, off_adj;
 
-  if (data->do_circdiff) {
-    // out(..,2:end,..) = in(..,2:end,..) - in(..,1:(end-1),..)
-    dims_sub[d] = nx - 1;  
-    off_adj = data->strides_adj[d]/CFL_SIZE;
-    off_in = data->strides_in[d]/CFL_SIZE;
-    md_zsub2(data->D, dims_sub, data->strides_in, optr+off_in, 
-	     data->strides_in, iptr+off_adj, data->strides_adj, iptr);
-    
-    // out(..,1,..) = in(..,1,..) - in(..,end,..)
-    dims_sub[d] = 1;
-    off_adj = (nx - 1)*data->strides_adj[d]/CFL_SIZE;
-    off_in = (nx - 1)*data->strides_in[d]/CFL_SIZE;
-    md_zsub2(data->D, dims_sub, data->strides_in, optr, 
-	     data->strides_adj, iptr, data->strides_adj, iptr+off_adj);
-  } else {
+	long dims_sub[data->D];
+	md_copy_dims(data->D, dims_sub, data->dims_adj);
 
-    // out(..,end,..) = 0
-    //md_clear2(data->D, data->dims_in, data->strides_in, optr, CFL_SIZE);
-    dims_sub[d] = 1;  
-    off_in = nx * data->strides_in[d]/CFL_SIZE;
-    md_clear2(data->D, dims_sub, data->strides_in, optr+off_in, CFL_SIZE);
-    // out(..,1:end-1,:) = in_adj(..,1:end,:)
-    md_copy2(data->D, data->dims_adj, data->strides_in, optr,
-	     data->strides_adj, iptr, CFL_SIZE);
-    // out(..,2:end,:) -= in_adj(..,1:end,:)
-    off_in = data->strides_in[d]/CFL_SIZE;
-    md_zsub2(data->D, data->dims_adj, data->strides_in, optr+off_in, 
-	     data->strides_in, optr+off_in, data->strides_adj, iptr);
-    
-    /*
-    // out(..,1,..) = in_adj(..,1,..)
-    dims_sub[d] = 1;  
-    md_copy2(data->D, dims_sub, 
-	     data->strides_in, optr, data->strides_adj, iptr, CFL_SIZE);
-    
-    // out(..,2:(end-1),..) = in(..,2:end,..) - in(..,1:(end-1),..)
-    dims_sub[d] = nx - 1;
-    off_adj = data->strides_adj[d]/CFL_SIZE;
-    off_in = data->strides_in[d]/CFL_SIZE;
-    md_zsub2(data->D, dims_sub, data->strides_in, optr+off_in, 
-	     data->strides_adj, iptr+off_adj, data->strides_adj, iptr);
-    
-    // out(..,end,..) = -in(..,end,..);
-    dims_sub[d] = 1; 
-    off_adj = (nx - 1) * data->strides_adj[d]/CFL_SIZE;
-    off_in = nx * data->strides_in[d]/CFL_SIZE;
-    // !!!This one operation is really really slow!!!
-    md_zsmul2(data->D, dims_sub, data->strides_in, optr+off_in, 
-              data->strides_adj, iptr+off_adj, -1.);
-    */    
-  }
+	if (data->do_circdiff) {
+
+		// out(..,2:end,..) = in(..,2:end,..) - in(..,1:(end-1),..)
+		dims_sub[d] = nx - 1;
+		off_adj = data->strides_adj[d] / CFL_SIZE;
+		off_in = data->strides_in[d] / CFL_SIZE;
+		md_zsub2(data->D, dims_sub, data->strides_in, optr + off_in,
+				data->strides_in, iptr + off_adj, data->strides_adj, iptr);
+
+		// out(..,1,..) = in(..,1,..) - in(..,end,..)
+		dims_sub[d] = 1;
+		off_adj = (nx - 1) * data->strides_adj[d] / CFL_SIZE;
+		off_in = (nx - 1) * data->strides_in[d] / CFL_SIZE;
+		md_zsub2(data->D, dims_sub, data->strides_in, optr,
+				data->strides_adj, iptr, data->strides_adj, iptr + off_adj);
+
+	} else {
+
+		// out(..,end,..) = 0
+		//md_clear2(data->D, data->dims_in, data->strides_in, optr, CFL_SIZE);
+		dims_sub[d] = 1;
+		off_in = nx * data->strides_in[d] / CFL_SIZE;
+		md_clear2(data->D, dims_sub, data->strides_in, optr + off_in, CFL_SIZE);
+		// out(..,1:end-1,:) = in_adj(..,1:end,:)
+		md_copy2(data->D, data->dims_adj, data->strides_in, optr,
+				data->strides_adj, iptr, CFL_SIZE);
+		// out(..,2:end,:) -= in_adj(..,1:end,:)
+		off_in = data->strides_in[d] / CFL_SIZE;
+		md_zsub2(data->D, data->dims_adj, data->strides_in, optr + off_in,
+				data->strides_in, optr + off_in, data->strides_adj, iptr);
+
+		/*
+		// out(..,1,..) = in_adj(..,1,..)
+		dims_sub[d] = 1;
+		md_copy2(data->D, dims_sub,
+		data->strides_in, optr, data->strides_adj, iptr, CFL_SIZE);
+
+		// out(..,2:(end-1),..) = in(..,2:end,..) - in(..,1:(end-1),..)
+		dims_sub[d] = nx - 1;
+		off_adj = data->strides_adj[d]/CFL_SIZE;
+		off_in = data->strides_in[d]/CFL_SIZE;
+		md_zsub2(data->D, dims_sub, data->strides_in, optr+off_in,
+		data->strides_adj, iptr+off_adj, data->strides_adj, iptr);
+
+		// out(..,end,..) = -in(..,end,..);
+		dims_sub[d] = 1;
+		off_adj = (nx - 1) * data->strides_adj[d]/CFL_SIZE;
+		off_in = nx * data->strides_in[d]/CFL_SIZE;
+		// !!!This one operation is really really slow!!!
+		md_zsmul2(data->D, dims_sub, data->strides_in, optr+off_in,
+		data->strides_adj, iptr+off_adj, -1.);
+		 */
+	}
 }
 
 // y = 2*x - circshift(x,center_adj) - circshift(x,center)
-static void zfinitediff_normal(const void* _data,
-			complex float* optr, const complex float* iptr) {
-   
-  //printf("zfinitediff_normal\n");
-  const struct zfinitediff_data* data = _data;
-  
-  // Turns out that this is faster, but this requires extra memory. 
-  complex float* tmp = md_alloc_sameplace(data->D, data->dims_in, 
-					  CFL_SIZE, iptr);
-  zfinitediff_apply(data, tmp, iptr);
-  zfinitediff_adjoint(data, optr, tmp);
-  
-  md_free(tmp);
-  return;
-  
+static void zfinitediff_normal(const linop_data_t* _data,
+			complex float* optr, const complex float* iptr)
+{
+	const struct zfinitediff_data* data = CONTAINER_OF(_data, const struct zfinitediff_data, base);
 
-  unsigned long d = data->dim_diff;
-  long nx = data->dims_in[d];
-  long offset;
-  long dims_sub[data->D];  
-  md_copy_dims(data->D, dims_sub, data->dims_in);
+	// Turns out that this is faster, but this requires extra memory.
+	complex float* tmp = md_alloc_sameplace(data->D, data->dims_in, CFL_SIZE, iptr);
 
-  // optr and iptr same size regardless if do_circdiff true/false
-  // if (data->do_circdiff)
-  //    out = 2*in;
-  //    out(..,1:(end-1),..) = out(..,1:(end-1),..) - in(..,2:end,..)
-  //    out(..,2:end,..) = out(..,2:end,..) - in(..,1:(end-1),..)
-  //    out(..,end,..) = out(..,end,..) - in(..,1,..)
-  //    out(..,1,..) = out(..,1,..) - in(..,end,..)
-  //
-  // else
-  //    out(..,1,..) = in(..,1,..)
-  //    out(..,end,..) = in(..,end,..)
-  //    out(..,2:(end-1),..) = 2*in(..,2:(end-1),..)
-  //    out(..,1:(end-1),..) = out(..,1:(end-1),..) - in(..,2:end,..)
-  //    out(..,2:end,..) = out(..,2:end,..) - in(..,1:(end-1),..)
-  // 
+	zfinitediff_apply(_data, tmp, iptr);
+	zfinitediff_adjoint(_data, optr, tmp);
 
-  if (data->do_circdiff) {
-    md_zsmul2(data->D, data->dims_in, data->strides_in, optr, 
-	      data->strides_in, iptr, 2.);
-  
-    dims_sub[d] = (nx - 1);
-    offset = data->strides_in[d]/CFL_SIZE;  
-    // out(..,1:(end-1),..) = out(..,1:(end-1),..) - in(..,2:end,..)
-    md_zsub2(data->D, dims_sub, data->strides_in, optr, 
-	     data->strides_in, optr, data->strides_in, iptr+offset);
-    // out(..,2:end,..) = out(..,2:end,..) - in(..,1:(end-1),..)
-    md_zsub2(data->D, dims_sub, data->strides_in, optr+offset, 
-	     data->strides_in, optr+offset, data->strides_in, iptr);
-    
-    dims_sub[d] = 1;
-    offset = (nx - 1) * data->strides_in[d]/CFL_SIZE;  
-    // out(..,1,..) = out(..,1,..) - in(..,end,..)
-    md_zsub2(data->D, dims_sub, data->strides_in, optr, 
-	     data->strides_in, optr, data->strides_in, iptr+offset);
-    // out(..,end,..) = out(..,end,..) - in(..,1,..)
-    md_zsub2(data->D, dims_sub, data->strides_in, optr+offset, 
-	     data->strides_in, optr+offset, data->strides_in, iptr);
-  } else {
-    
-    dims_sub[d] = 1;
-    offset = (nx - 1) * data->strides_in[d]/CFL_SIZE;  
-    // out(..,1,..) = in(..,1,..)
-    md_copy2(data->D, dims_sub, 
-	     data->strides_in, optr, data->strides_in, iptr, CFL_SIZE);
-    // out(..,end,..) = in(..,end,..)
-    md_copy2(data->D, dims_sub, 
-	     data->strides_in, optr+offset, data->strides_in, iptr+offset, 
-	     CFL_SIZE);
-    
-    dims_sub[d] = nx - 2;
-    offset = data->strides_in[d]/CFL_SIZE;  
-    // out(..,2:(end-1),..) = 2*in(..,2:(end-1),..)
-    md_zsmul2(data->D, dims_sub, data->strides_in, optr+offset, 
-	      data->strides_in, iptr+offset, 2.);
+	md_free(tmp);
+	return;		// FIXME: WTF?
 
-    dims_sub[d] = nx - 1;
-    offset = data->strides_in[d]/CFL_SIZE;  
-    // out(..,1:(end-1),..) = out(..,1:(end-1),..) - in(..,2:end,..)
-    md_zsub2(data->D, dims_sub, data->strides_in, optr, 
-	     data->strides_in, optr, data->strides_in, iptr+offset);
-    // out(..,2:end,..) = out(..,2:end,..) - in(..,1:(end-1),..)
-    md_zsub2(data->D, dims_sub, data->strides_in, optr+offset, 
-	     data->strides_in, optr+offset, data->strides_in, iptr);
-  }
+
+	unsigned long d = data->dim_diff;
+	long nx = data->dims_in[d];
+	long offset;
+	long dims_sub[data->D];
+	md_copy_dims(data->D, dims_sub, data->dims_in);
+
+	// optr and iptr same size regardless if do_circdiff true/false
+	// if (data->do_circdiff)
+	//    out = 2*in;
+	//    out(..,1:(end-1),..) = out(..,1:(end-1),..) - in(..,2:end,..)
+	//    out(..,2:end,..) = out(..,2:end,..) - in(..,1:(end-1),..)
+	//    out(..,end,..) = out(..,end,..) - in(..,1,..)
+	//    out(..,1,..) = out(..,1,..) - in(..,end,..)
+	//
+	// else
+	//    out(..,1,..) = in(..,1,..)
+	//    out(..,end,..) = in(..,end,..)
+	//    out(..,2:(end-1),..) = 2*in(..,2:(end-1),..)
+	//    out(..,1:(end-1),..) = out(..,1:(end-1),..) - in(..,2:end,..)
+	//    out(..,2:end,..) = out(..,2:end,..) - in(..,1:(end-1),..)
+	//
+
+	if (data->do_circdiff) {
+
+		md_zsmul2(data->D, data->dims_in, data->strides_in, optr,
+				data->strides_in, iptr, 2.);
+
+		dims_sub[d] = (nx - 1);
+		offset = data->strides_in[d] / CFL_SIZE;
+		// out(..,1:(end-1),..) = out(..,1:(end-1),..) - in(..,2:end,..)
+		md_zsub2(data->D, dims_sub, data->strides_in, optr,
+				data->strides_in, optr, data->strides_in, iptr + offset);
+		// out(..,2:end,..) = out(..,2:end,..) - in(..,1:(end-1),..)
+		md_zsub2(data->D, dims_sub, data->strides_in, optr + offset,
+				data->strides_in, optr + offset, data->strides_in, iptr);
+
+		dims_sub[d] = 1;
+		offset = (nx - 1) * data->strides_in[d] / CFL_SIZE;
+		// out(..,1,..) = out(..,1,..) - in(..,end,..)
+		md_zsub2(data->D, dims_sub, data->strides_in, optr,
+				data->strides_in, optr, data->strides_in, iptr + offset);
+		// out(..,end,..) = out(..,end,..) - in(..,1,..)
+		md_zsub2(data->D, dims_sub, data->strides_in, optr+offset,
+				data->strides_in, optr+offset, data->strides_in, iptr);
+
+	} else {
+
+		dims_sub[d] = 1;
+		offset = (nx - 1) * data->strides_in[d] / CFL_SIZE;
+		// out(..,1,..) = in(..,1,..)
+		md_copy2(data->D, dims_sub,
+				data->strides_in, optr, data->strides_in, iptr, CFL_SIZE);
+		// out(..,end,..) = in(..,end,..)
+		md_copy2(data->D, dims_sub,
+				data->strides_in, optr + offset, data->strides_in, iptr + offset,
+				CFL_SIZE);
+
+		dims_sub[d] = nx - 2;
+		offset = data->strides_in[d] / CFL_SIZE;
+		// out(..,2:(end-1),..) = 2*in(..,2:(end-1),..)
+		md_zsmul2(data->D, dims_sub, data->strides_in, optr + offset,
+				data->strides_in, iptr + offset, 2.);
+
+		dims_sub[d] = nx - 1;
+		offset = data->strides_in[d] / CFL_SIZE;
+		// out(..,1:(end-1),..) = out(..,1:(end-1),..) - in(..,2:end,..)
+		md_zsub2(data->D, dims_sub, data->strides_in, optr,
+				data->strides_in, optr, data->strides_in, iptr + offset);
+		// out(..,2:end,..) = out(..,2:end,..) - in(..,1:(end-1),..)
+		md_zsub2(data->D, dims_sub, data->strides_in, optr + offset,
+				data->strides_in, optr + offset, data->strides_in, iptr);
+
+	}
 }
 
 void zfinitediff_free(const struct linop_s* op) 
@@ -601,42 +628,45 @@ void zfinitediff_free(const struct linop_s* op)
 	linop_free(op);
 }
 
-static void zfinitediff_del(const void* _data) 
+static void zfinitediff_del(const linop_data_t* _data)
 {
-	const struct zfinitediff_data* data = _data;
+	const struct zfinitediff_data* data = CONTAINER_OF(_data, const struct zfinitediff_data, base);
 
 	free(data->dims_in);
 	free(data->strides_in);
 
 	free(data->dims_adj);
 	free(data->strides_adj);
+
+	// FIXME free data
 }
 
 const struct linop_s* zfinitediff_init(unsigned int D, const long dims[D], long diffdim, bool circular)
 {
-  PTR_ALLOC(struct zfinitediff_data, data);
-  data->D = D;
-  data->dim_diff = diffdim;
-  data->do_circdiff = circular;
+	PTR_ALLOC(struct zfinitediff_data, data);
 
-  data->dims_in = *TYPE_ALLOC(long[D]);
-  data->dims_adj = *TYPE_ALLOC(long[D]);
-  data->strides_in = *TYPE_ALLOC(long[D]);
-  data->strides_adj = *TYPE_ALLOC(long[D]);
+	data->D = D;
+	data->dim_diff = diffdim;
+	data->do_circdiff = circular;
 
-  md_copy_dims(D, data->dims_in, dims);
-  md_copy_dims(D, data->dims_adj, dims);
-  
-  md_calc_strides(D, data->strides_in, data->dims_in, CFL_SIZE);
-  
-  if (!data->do_circdiff)
-    data->dims_adj[data->dim_diff] -= 1;
-  
-  md_calc_strides(D, data->strides_adj, data->dims_adj, CFL_SIZE);
-  
-  return linop_create(D, data->dims_adj, D, data->dims_in, data, 
-			 zfinitediff_apply, zfinitediff_adjoint,
-			 zfinitediff_normal, NULL, zfinitediff_del);
+	data->dims_in = *TYPE_ALLOC(long[D]);
+	data->dims_adj = *TYPE_ALLOC(long[D]);
+	data->strides_in = *TYPE_ALLOC(long[D]);
+	data->strides_adj = *TYPE_ALLOC(long[D]);
+
+	md_copy_dims(D, data->dims_in, dims);
+	md_copy_dims(D, data->dims_adj, dims);
+
+	md_calc_strides(D, data->strides_in, data->dims_in, CFL_SIZE);
+
+	if (!data->do_circdiff)
+		data->dims_adj[data->dim_diff] -= 1;
+
+	md_calc_strides(D, data->strides_adj, data->dims_adj, CFL_SIZE);
+
+	return linop_create(D, data->dims_adj, D, data->dims_in, &data->base,
+			zfinitediff_apply, zfinitediff_adjoint,
+			zfinitediff_normal, NULL, zfinitediff_del);
 }
 
 

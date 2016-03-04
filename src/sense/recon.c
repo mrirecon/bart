@@ -134,7 +134,7 @@ void sense_recon(const struct sense_conf* conf,
 		 const struct operator_s* precond_op)
 {
 	sense_recon2(conf, dims, image, sense_op, pat_dims, pattern,
-		iter2_call_iter, &(struct iter_call_s){ italgo, iconf },
+		iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
 		     1, MAKE_ARRAY(thresh_op), NULL, ksp_dims, kspace, image_truth, precond_op);
 }
 
@@ -252,7 +252,7 @@ void sense_recon_gpu(const struct sense_conf* conf,
 		     const struct operator_s* precond_op)
 {
 	sense_recon2_gpu(conf, dims, image, sense_op, pat_dims, pattern,
-		iter2_call_iter, &(struct iter_call_s){ italgo, iconf },
+		iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
 			 1, MAKE_ARRAY(thresh_op), NULL, ksp_dims, kspace, image_truth, precond_op);
 }
 

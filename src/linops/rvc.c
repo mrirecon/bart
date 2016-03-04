@@ -1,9 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -20,23 +21,26 @@
 
 struct rvc_s {
 
+	linop_data_t base;
+
 	unsigned int N;
 	const long* dims;
 };
 
-static void rvc_apply(const void* _data, complex float* dst, const complex float* src)
+static void rvc_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct rvc_s* data = _data;
+	const struct rvc_s* data = CONTAINER_OF(_data, const struct rvc_s, base);
+
 	md_zreal(data->N, data->dims, dst, src);
 }
 
-static void rvc_free(const void* _data)
+static void rvc_free(const linop_data_t* _data)
 {
-	const struct rvc_s* data = _data;
+	const struct rvc_s* data = CONTAINER_OF(_data, const struct rvc_s, base);
+
 	free((void*)data->dims);
 	free((void*)data);
 }
-
 
 struct linop_s* rvc_create(unsigned int N, const long dims[N])
 {
@@ -48,7 +52,7 @@ struct linop_s* rvc_create(unsigned int N, const long dims[N])
 	data->N = N;
 	data->dims = *dims2;
 
-	return linop_create(N, dims, N, dims, (void*)data, rvc_apply, rvc_apply, rvc_apply, NULL, rvc_free);
+	return linop_create(N, dims, N, dims, &data->base, rvc_apply, rvc_apply, rvc_apply, NULL, rvc_free);
 }
 
 

@@ -1,9 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012, 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <uecker@eecs.berkeley.edu>
  *
  *
@@ -61,6 +62,8 @@
   */
 struct maps_data {
 
+	linop_data_t base;
+
 	long max_dims[DIMS];
 
 	long mps_dims[DIMS];
@@ -77,18 +80,18 @@ struct maps_data {
 
 
 
-static void maps_apply(const void* _data, complex float* dst, const complex float* src)
+static void maps_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct maps_data* data = _data;
+	const struct maps_data* data = CONTAINER_OF(_data, const struct maps_data, base);
 
 	md_clear(DIMS, data->ksp_dims, dst, CFL_SIZE);
 	md_zfmac2(DIMS, data->max_dims, data->strs_ksp, dst, data->strs_img, src, data->strs_mps, data->sens);
 }
 
 
-static void maps_apply_adjoint(const void* _data, complex float* dst, const complex float* src)
+static void maps_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
- 	const struct maps_data* data = _data;
+	const struct maps_data* data = CONTAINER_OF(_data, const struct maps_data, base);
 
 	// dst = sum( conj(sens) .* tmp )
 	md_clear(DIMS, data->img_dims, dst, CFL_SIZE);
@@ -107,9 +110,9 @@ static void maps_init_normal(struct maps_data* data)
 }
 
 
-static void maps_apply_normal(const void* _data, complex float* dst, const complex float* src)
+static void maps_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct maps_data* data = (struct maps_data*)_data;
+	struct maps_data* data = CONTAINER_OF(_data, struct maps_data, base);
 
 	maps_init_normal(data);
 
@@ -120,9 +123,9 @@ static void maps_apply_normal(const void* _data, complex float* dst, const compl
 /*
  * ( AT A + lambda I) x = b
  */
-static void maps_apply_pinverse(const void* _data, float lambda, complex float* dst, const complex float* src)
+static void maps_apply_pinverse(const linop_data_t* _data, float lambda, complex float* dst, const complex float* src)
 {
-	struct maps_data* data = (struct maps_data*)_data;
+	struct maps_data* data = CONTAINER_OF(_data, struct maps_data, base);
 
 	maps_init_normal(data);
 
@@ -131,10 +134,10 @@ static void maps_apply_pinverse(const void* _data, float lambda, complex float* 
 	md_zsadd(DIMS, data->img_dims, data->norm, data->norm, -lambda);
 }
 
-
-static void maps_free_data(const void* _data)
+static void maps_free_data(const linop_data_t* _data)
 {
-	const struct maps_data* data = _data;
+	const struct maps_data* data = CONTAINER_OF(_data, const struct maps_data, base);
+
 	md_free((void*)data->sens);
 	free((void*)data);
 }
@@ -192,7 +195,7 @@ struct linop_s* maps_create(const long max_dims[DIMS],
 	// scale the sensitivity maps by the FFT scale factor
 	fftscale(DIMS, data->mps_dims, FFT_FLAGS, data->sens, data->sens);
 
-	return linop_create(DIMS, data->ksp_dims, DIMS, data->img_dims, data, 
+	return linop_create(DIMS, data->ksp_dims, DIMS, data->img_dims, &data->base,
 			maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
 }
 
@@ -218,7 +221,7 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
 
 	struct maps_data* data = maps_create_data(max_dims, sens_flags, maps, use_gpu);
 
-	return linop_create(DIMS, coilim_dims, DIMS, img_dims, data,
+	return linop_create(DIMS, coilim_dims, DIMS, img_dims, &data->base,
 		maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
 }
 

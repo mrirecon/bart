@@ -719,7 +719,7 @@ int main_pics(int argc, char* argv[])
 		cgconf.l2lambda = (0 == nr_penalties) ? 0. : regs[0].lambda;
 
 		iter2_data.fun = iter_conjgrad;
-		iter2_data._conf = &cgconf;
+		iter2_data._conf = &cgconf.base;
 
 		nr_penalties = 0;
 
@@ -737,7 +737,7 @@ int main_pics(int argc, char* argv[])
 		isconf.hogwild = hogwild;
 
 		iter2_data.fun = iter_ist;
-		iter2_data._conf = &isconf;
+		iter2_data._conf = &isconf.base;
 
 		break;
 
@@ -772,7 +772,7 @@ int main_pics(int argc, char* argv[])
 		fsconf.hogwild = hogwild;
 
 		iter2_data.fun = iter_fista;
-		iter2_data._conf = &fsconf;
+		iter2_data._conf = &fsconf.base;
 
 		break;
 

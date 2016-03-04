@@ -30,6 +30,8 @@
 
 struct cdiag_s {
 
+	linop_data_t base;
+
 	unsigned int N;
 	const long* dims;
 	const long* strs;
@@ -38,34 +40,35 @@ struct cdiag_s {
 	bool rmul;
 };
 
-static void cdiag_apply(const void* _data, complex float* dst, const complex float* src)
+static void cdiag_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct cdiag_s* data = _data;
+	const struct cdiag_s* data = CONTAINER_OF(_data, const struct cdiag_s, base);
+
 	(data->rmul ? md_zrmul2 : md_zmul2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, data->diag);
 }
 
-static void cdiag_adjoint(const void* _data, complex float* dst, const complex float* src)
+static void cdiag_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct cdiag_s* data = _data;
+	const struct cdiag_s* data = CONTAINER_OF(_data, const struct cdiag_s, base);
+
 	(data->rmul ? md_zrmul2 : md_zmulc2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, data->diag);
 }
 
-static void cdiag_normal(const void* _data, complex float* dst, const complex float* src)
+static void cdiag_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	cdiag_apply(_data, dst, src);
 	cdiag_adjoint(_data, dst, dst);
 }
 
-static void cdiag_free(const void* _data)
+static void cdiag_free(const linop_data_t* _data)
 {
-	const struct cdiag_s* data = _data;
+	const struct cdiag_s* data = CONTAINER_OF(_data, const struct cdiag_s, base);
+
 	free((void*)data->dims);
 	free((void*)data->dstrs);
 	free((void*)data->strs);
 	free((void*)data);
 }
-
-
 
 static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag, bool rdiag)
 {
@@ -89,7 +92,7 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
 	data->dstrs = *dstrs;
 	data->diag = diag;	// make a copy?
 
-	return linop_create(N, dims, N, dims, data, cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
+	return linop_create(N, dims, N, dims, &data->base, cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
 }
 
 
@@ -122,18 +125,29 @@ struct linop_s* linop_rdiag_create(unsigned int N, const long dims[N], unsigned 
 }
 
 
-static void identity_apply(const void* _data, complex float* dst, const complex float* src)
+
+struct identity_data_s {
+
+	linop_data_t base;
+
+	const struct iovec_s* domain;
+};
+
+static void identity_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct iovec_s* domain = _data;
+	const struct iovec_s* domain = CONTAINER_OF(_data, const struct identity_data_s, base)->domain;
+
 	md_copy2(domain->N, domain->dims, domain->strs, dst, domain->strs, src, CFL_SIZE);
 }
 
-
-static void identity_free(const void* data)
+static void identity_free(const linop_data_t* _data)
 {	
-	iovec_free((const struct iovec_s*)data);
-}
+	const struct identity_data_s* data = CONTAINER_OF(_data, const struct identity_data_s, base);
 
+	iovec_free(data->domain);
+
+	free((void*)data);
+}
 
 /**
  * Create an Identity linear operator: I x
@@ -142,45 +156,56 @@ static void identity_free(const void* data)
  */
 struct linop_s* linop_identity_create(unsigned int N, const long dims[N])
 {
-	const struct iovec_s* domain = iovec_create(N, dims, CFL_SIZE);
+	PTR_ALLOC(struct identity_data_s, data);
 
-	return linop_create(N, dims, N, dims, (void*)domain, identity_apply, identity_apply, identity_apply, NULL, identity_free);
+	data->domain = iovec_create(N, dims, CFL_SIZE);
+
+	return linop_create(N, dims, N, dims, &data->base, identity_apply, identity_apply, identity_apply, NULL, identity_free);
 }
 
 
 struct resize_op_s {
+
+	linop_data_t base;
 
 	unsigned int N;
 	const long* out_dims;
 	const long* in_dims;
 };
 
-static void resize_forward(const void* _data, complex float* dst, const complex float* src)
+static void resize_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct resize_op_s* data = _data;
+	const struct resize_op_s* data = CONTAINER_OF(_data, const struct resize_op_s, base);
+
 	md_resize_center(data->N, data->out_dims, dst, data->in_dims, src, CFL_SIZE);
 }
 
-static void resize_adjoint(const void* _data, complex float* dst, const complex float* src)
+static void resize_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct resize_op_s* data = _data;
+	const struct resize_op_s* data = CONTAINER_OF(_data, const struct resize_op_s, base);
+
 	md_resize_center(data->N, data->in_dims, dst, data->out_dims, src, CFL_SIZE);
 }
 
-static void resize_normal(const void* _data, complex float* dst, const complex float* src)
+static void resize_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct resize_op_s* data = _data;
+	const struct resize_op_s* data = CONTAINER_OF(_data, const struct resize_op_s, base);
+
 	complex float* tmp = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
+
 	resize_forward(_data, tmp, src);
-	resize_adjoint(_data, dst, (const complex float*)tmp);
+	resize_adjoint(_data, dst, tmp);
+
 	md_free(tmp);
 }
 
-static void resize_free(const void* _data)
+static void resize_free(const linop_data_t* _data)
 {
-	const struct resize_op_s* data = _data;
+	const struct resize_op_s* data = CONTAINER_OF(_data, const struct resize_op_s, base);
+
 	free((void*)data->out_dims);
 	free((void*)data->in_dims);
+
 	free((void*)data);
 }
 
@@ -205,11 +230,13 @@ struct linop_s* linop_resize_create(unsigned int N, const long out_dims[N], cons
 	md_copy_dims(N, (long*)data->out_dims, out_dims);
 	md_copy_dims(N, (long*)data->in_dims, in_dims);
 
-	return linop_create(N, out_dims, N, in_dims, data, resize_forward, resize_adjoint, resize_normal, NULL, resize_free);
+	return linop_create(N, out_dims, N, in_dims, &data->base, resize_forward, resize_adjoint, resize_normal, NULL, resize_free);
 }
 
 
 struct operator_matrix_s {
+
+	linop_data_t base;
 
 	const complex float* mat;
 	const complex float* mat_conj;
@@ -268,9 +295,9 @@ static bool cgemm_forward_standard(const struct operator_matrix_s* data)
 }
 
 
-static void linop_matrix_apply(const void* _data, complex float* dst, const complex float* src)
+static void linop_matrix_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct operator_matrix_s* data = _data;
+	const struct operator_matrix_s* data = CONTAINER_OF(_data, const struct operator_matrix_s, base);
 
 	long N = data->mat_iovec->N;
 	//debug_printf(DP_DEBUG1, "compute forward\n");
@@ -291,9 +318,9 @@ static void linop_matrix_apply(const void* _data, complex float* dst, const comp
 	}
 }
 
-static void linop_matrix_apply_adjoint(const void* _data, complex float* dst, const complex float* src)
+static void linop_matrix_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct operator_matrix_s* data = _data;
+	const struct operator_matrix_s* data = CONTAINER_OF(_data, const struct operator_matrix_s, base);
 
 	unsigned int N = data->mat_iovec->N;
 	//debug_printf(DP_DEBUG1, "compute adjoint\n");
@@ -314,9 +341,9 @@ static void linop_matrix_apply_adjoint(const void* _data, complex float* dst, co
 	}
 }
 
-static void linop_matrix_apply_normal(const void* _data, complex float* dst, const complex float* src)
+static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct operator_matrix_s* data = _data;
+	const struct operator_matrix_s* data = CONTAINER_OF(_data, const struct operator_matrix_s, base);
 
 	unsigned int N = data->mat_iovec->N;
 	// FIXME check all the cases where computation can be done with blas
@@ -352,9 +379,9 @@ static void linop_matrix_apply_normal(const void* _data, complex float* dst, con
 
 }
 
-static void linop_matrix_del(const void* _data)
+static void linop_matrix_del(const linop_data_t* _data)
 {
-	const struct operator_matrix_s* data = _data;
+	const struct operator_matrix_s* data = CONTAINER_OF(_data, const struct operator_matrix_s, base);
 
 	iovec_free(data->mat_iovec);
 	iovec_free(data->mat_gram_iovec);
@@ -533,7 +560,7 @@ struct linop_s* linop_matrix_altcreate(unsigned int N, const long out_dims[N], c
 	data->domain_iovec = iovec_create(N, in_dims, CFL_SIZE);
 	data->codomain_iovec = iovec_create(N, out_dims, CFL_SIZE);
 
-	return linop_create(N, out_dims, N, in_dims, data, linop_matrix_apply, linop_matrix_apply_adjoint, linop_matrix_apply_normal, NULL, linop_matrix_del);
+	return linop_create(N, out_dims, N, in_dims, &data->base, linop_matrix_apply, linop_matrix_apply_adjoint, linop_matrix_apply_normal, NULL, linop_matrix_del);
 }
 
 
@@ -634,6 +661,8 @@ struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s
 
 struct fft_linop_s {
 
+	linop_data_t base;
+
 	const struct operator_s* frw;
 	const struct operator_s* adj;
 
@@ -648,9 +677,9 @@ struct fft_linop_s {
 	long* strs;
 };
 
-static void fft_linop_apply(const void* _data, complex float* out, const complex float* in)
+static void fft_linop_apply(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct fft_linop_s* data = _data;
+	const struct fft_linop_s* data = CONTAINER_OF(_data, const struct fft_linop_s, base);
 
 	// fftmod + fftscale
 	if (data->center) {
@@ -670,9 +699,9 @@ static void fft_linop_apply(const void* _data, complex float* out, const complex
 		md_zmul2(data->N, data->dims, data->strs, out, data->strs, out, data->strs, data->fftmodk_mat);
 }
 
-static void fft_linop_adjoint(const void* _data, complex float* out, const complex float* in)
+static void fft_linop_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct fft_linop_s* data = _data;
+	const struct fft_linop_s* data = CONTAINER_OF(_data, const struct fft_linop_s, base);
 
 	// fftmod
 	if (data->center) {
@@ -692,9 +721,9 @@ static void fft_linop_adjoint(const void* _data, complex float* out, const compl
 		md_zmulc2(data->N, data->dims, data->strs, out, data->strs, out, data->strs, data->fftmod_mat);
 }
 
-static void fft_linop_free(const void* _data)
+static void fft_linop_free(const linop_data_t* _data)
 {
-	const struct fft_linop_s* data = _data;
+	const struct fft_linop_s* data = CONTAINER_OF(_data, const struct fft_linop_s, base);
 
 	fft_free(data->frw);
 	fft_free(data->adj);
@@ -708,9 +737,9 @@ static void fft_linop_free(const void* _data)
 	free((void*)data);
 }
 
-static void fft_linop_normal(const void* _data, complex float* out, const complex float* in)
+static void fft_linop_normal(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct fft_linop_s* data = _data;
+	const struct fft_linop_s* data = CONTAINER_OF(_data, const struct fft_linop_s, base);
 
 	if (data->center)
 		md_copy(data->N, data->dims, out, in, CFL_SIZE);
@@ -794,7 +823,7 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 	lop_fun_t apply = forward ? fft_linop_apply : fft_linop_adjoint;
 	lop_fun_t adjoint = forward ? fft_linop_adjoint : fft_linop_apply;
 
-	return linop_create(N, dims, N, dims, data, apply, adjoint, fft_linop_normal, NULL, fft_linop_free);
+	return linop_create(N, dims, N, dims, &data->base, apply, adjoint, fft_linop_normal, NULL, fft_linop_free);
 }
 
 
@@ -858,38 +887,42 @@ struct linop_s* linop_ifftc_create(int N, const long dims[N], unsigned int flags
 
 struct linop_cdf97_s {
 
+	linop_data_t base;
+
 	unsigned int N;
 	const long* dims;
 	unsigned int flags;
 };
 
-static void linop_cdf97_apply(const void* _data, complex float* out, const complex float* in)
+static void linop_cdf97_apply(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct linop_cdf97_s* data = _data;
+	const struct linop_cdf97_s* data = CONTAINER_OF(_data, struct linop_cdf97_s, base);
 
 	md_copy(data->N, data->dims, out, in, CFL_SIZE);
 	md_cdf97z(data->N, data->dims, data->flags, out);
 }
 
-static void linop_cdf97_adjoint(const void* _data, complex float* out, const complex float* in)
+static void linop_cdf97_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct linop_cdf97_s* data = _data;
+	const struct linop_cdf97_s* data = CONTAINER_OF(_data, struct linop_cdf97_s, base);
 
 	md_copy(data->N, data->dims, out, in, CFL_SIZE);
 	md_icdf97z(data->N, data->dims, data->flags, out);
 }
 
-static void linop_cdf97_normal(const void* _data, complex float* out, const complex float* in)
+static void linop_cdf97_normal(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct linop_cdf97_s* data = _data;
+	const struct linop_cdf97_s* data = CONTAINER_OF(_data, struct linop_cdf97_s, base);
 
 	md_copy(data->N, data->dims, out, in, CFL_SIZE);
 }
 
-static void linop_cdf97_free(const void* _data)
+static void linop_cdf97_free(const linop_data_t* _data)
 {
-	const struct linop_cdf97_s* data = _data;
+	const struct linop_cdf97_s* data = CONTAINER_OF(_data, struct linop_cdf97_s, base);
+
 	free((void*)data->dims);
+
 	free((void*)data);
 }
 
@@ -913,26 +946,39 @@ struct linop_s* linop_cdf97_create(int N, const long dims[N], unsigned int flags
 	data->dims = *ndims;
 	data->flags = flags;
 
-	return linop_create(N, dims, N, dims, data, linop_cdf97_apply, linop_cdf97_adjoint, linop_cdf97_normal, NULL, linop_cdf97_free);
+	return linop_create(N, dims, N, dims, &data->base, linop_cdf97_apply, linop_cdf97_adjoint, linop_cdf97_normal, NULL, linop_cdf97_free);
 }
 
 
-static void linop_conv_forward(const void* _data, complex float* out, const complex float* in)
+
+struct conv_data_s {
+
+	linop_data_t base;
+
+	struct conv_plan* plan;
+};
+
+static void linop_conv_forward(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	struct conv_plan* plan = (void*)_data;
-	conv_exec(plan, out, in);
+	struct conv_data_s* data = CONTAINER_OF(_data, struct conv_data_s, base);
+
+	conv_exec(data->plan, out, in);
 }
 
-static void linop_conv_adjoint(const void* _data, complex float* out, const complex float* in)
+static void linop_conv_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	struct conv_plan* plan = (void*)_data;
-	conv_adjoint(plan, out, in);
+	struct conv_data_s* data = CONTAINER_OF(_data, struct conv_data_s, base);
+
+	conv_adjoint(data->plan, out, in);
 }
 
-static void linop_conv_free(const void* _data)
+static void linop_conv_free(const linop_data_t* _data)
 {
-	struct conv_plan* plan = (void*)_data;
-	conv_free(plan);
+	struct conv_data_s* data = CONTAINER_OF(_data, struct conv_data_s, base);
+
+	conv_free(data->plan);
+
+	free(data);
 }
 
 
@@ -951,9 +997,11 @@ static void linop_conv_free(const void* _data)
 struct linop_s* linop_conv_create(int N, unsigned int flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N],
                 const long idims[N], const long kdims[N], const complex float* krn)
 {
-	struct conv_plan* plan = conv_plan(N, flags, ctype, cmode, odims, idims, kdims, krn);
+	PTR_ALLOC(struct conv_data_s, data);
 
-	return linop_create(N, odims, N, idims, plan, linop_conv_forward, linop_conv_adjoint, NULL, NULL, linop_conv_free);
+	data->plan = conv_plan(N, flags, ctype, cmode, odims, idims, kdims, krn);
+
+	return linop_create(N, odims, N, idims, &data->base, linop_conv_forward, linop_conv_adjoint, NULL, NULL, linop_conv_free);
 }
 
 

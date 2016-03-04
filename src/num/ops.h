@@ -8,10 +8,12 @@
 
 #include "misc/cppwrap.h"
 
+typedef struct operator_data_s { int:0; } operator_data_t;
 
-typedef void (*operator_fun_t)(const void* _data, unsigned int N, void* args[__VLA(N)]);
-typedef void (*operator_p_fun_t)(const void* _data, float mu, _Complex float* _dst, const _Complex float* _src);
-typedef void (*operator_del_t)(const void* _data);
+
+typedef void (*operator_fun_t)(const operator_data_t* _data, unsigned int N, void* args[__VLA(N)]);
+typedef void (*operator_p_fun_t)(const operator_data_t* _data, float mu, _Complex float* _dst, const _Complex float* _src);
+typedef void (*operator_del_t)(const operator_data_t* _data);
 
 
 
@@ -27,21 +29,21 @@ extern const struct operator_s* operator_create(unsigned int ON, const long out_
 
 extern const struct operator_s* operator_create2(unsigned int ON, const long out_dims[__VLA(ON)], const long out_strs[__VLA(ON)],
 		unsigned int IN, const long in_dims[__VLA(IN)], const long in_strs[__VLA(IN)],
-		void* data, operator_fun_t apply, operator_del_t del);
+		operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
 extern const struct operator_p_s* operator_p_create(unsigned int ON, const long out_dims[__VLA(ON)],
-			unsigned int IN, const long in_dims[__VLA(IN)], void* data,
+			unsigned int IN, const long in_dims[__VLA(IN)], operator_data_t* data,
 			operator_p_fun_t apply, operator_del_t del);
 
 extern const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_dims[__VLA(ON)], const long out_strs[__VLA(ON)],
 		unsigned int IN, const long in_dims[__VLA(IN)], const long in_strs[__VLA(IN)],
-		void* data, operator_p_fun_t apply, operator_del_t del);
+		operator_data_t* data, operator_p_fun_t apply, operator_del_t del);
 
 
 extern const struct operator_s* operator_generic_create(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)],
-		void* data, operator_fun_t apply, operator_del_t del);
+		operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
-extern const struct operator_s* operator_generic_create2(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)], const long* out_strs[__VLA(N)], void* data, operator_fun_t apply, operator_del_t del);
+extern const struct operator_s* operator_generic_create2(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)], const long* out_strs[__VLA(N)], operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
 
 

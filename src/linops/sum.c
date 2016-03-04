@@ -1,9 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  */
 
@@ -35,6 +37,8 @@
  */
 struct sum_data {
 
+	linop_data_t base;
+
 	bool use_gpu;
 
 	long imgd_dims[DIMS];
@@ -48,11 +52,11 @@ struct sum_data {
 };
 
 static struct sum_data* sum_create_data(const long imgd_dims[DIMS], bool use_gpu);
-static void sum_free_data(const void* _data );
-static void sum_apply(const void* _data, complex float* _dst, const complex float* _src);
-static void sum_apply_adjoint(const void* _data, complex float* _dst, const complex float* _src);
-static void sum_apply_normal(const void* _data, complex float* _dst, const complex float* _src);
-static void sum_apply_pinverse(const void* _data, float lambda, complex float* _dst, const complex float* _src);
+static void sum_free_data(const linop_data_t* _data);
+static void sum_apply(const linop_data_t* _data, complex float* _dst, const complex float* _src);
+static void sum_apply_adjoint(const linop_data_t* _data, complex float* _dst, const complex float* _src);
+static void sum_apply_normal(const linop_data_t* _data, complex float* _dst, const complex float* _src);
+static void sum_apply_pinverse(const linop_data_t* _data, float lambda, complex float* _dst, const complex float* _src);
 
 
 /**
@@ -64,7 +68,7 @@ const struct linop_s* sum_create(const long imgd_dims[DIMS], bool use_gpu)
 
 	// create operator interface
 	return linop_create(DIMS, data->img_dims, DIMS, data->imgd_dims,
-			data, sum_apply, sum_apply_adjoint, sum_apply_normal,
+			&data->base, sum_apply, sum_apply_adjoint, sum_apply_normal,
 			sum_apply_pinverse, sum_free_data);
 }
 
@@ -91,42 +95,40 @@ static struct sum_data* sum_create_data( const long imgd_dims[DIMS], bool use_gp
 
 
 
-void sum_free_data(const void* _data)
+void sum_free_data(const linop_data_t* _data)
 {
-        struct sum_data* data = (struct sum_data*) _data;
+        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
 
-	if(NULL != data->tmp)
-		md_free( data->tmp );
+	if (NULL != data->tmp)
+		md_free(data->tmp);
 
 	free((void*)data);
 }
 
 
-
-
-void sum_apply(const void* _data, complex float* dst, const complex float* src)
+void sum_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct sum_data* data = _data;
+        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
 
-	md_clear( DIMS, data->img_dims, dst, sizeof( complex float ) );
+	md_clear(DIMS, data->img_dims, dst, CFL_SIZE);
 
-	md_zaxpy2( DIMS, data->imgd_dims, data->img_strs, dst, 1. / sqrtf( data->levels ) , data->imgd_strs, src );
-
-}
-
-void sum_apply_adjoint(const void* _data, complex float* dst, const complex float* src)
-{
- 	const struct sum_data* data = _data;
-
-	md_clear( DIMS, data->imgd_dims, dst, sizeof( complex float ) );
-
-	md_zaxpy2( DIMS, data->imgd_dims, data->imgd_strs, dst, 1. / sqrtf( data->levels ) , data->img_strs, src );
+	md_zaxpy2(DIMS, data->imgd_dims, data->img_strs, dst, 1. / sqrtf(data->levels), data->imgd_strs, src);
 }
 
 
-void sum_apply_normal(const void* _data, complex float* dst, const complex float* src)
+void sum_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct sum_data* data = (struct sum_data*)_data;
+        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
+
+	md_clear(DIMS, data->imgd_dims, dst, CFL_SIZE);
+
+	md_zaxpy2(DIMS, data->imgd_dims, data->imgd_strs, dst, 1. / sqrtf(data->levels), data->img_strs, src);
+}
+
+
+void sum_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
 
 	if (NULL == data->tmp) {
 
@@ -137,9 +139,8 @@ void sum_apply_normal(const void* _data, complex float* dst, const complex float
 #endif
 	}
 
-
 	sum_apply(_data, data->tmp, src);
-	sum_apply_adjoint( _data, dst, data->tmp);
+	sum_apply_adjoint(_data, dst, data->tmp);
 }
 
 
@@ -149,9 +150,9 @@ void sum_apply_normal(const void* _data, complex float* dst, const complex float
  * x = (ATA + uI)^-1 b
  * 
  */
-void sum_apply_pinverse(const void* _data, float rho, complex float* dst, const complex float* src)
+void sum_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst, const complex float* src)
 {
-	struct sum_data* data = (struct sum_data*) _data;
+        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
 
 	if (NULL == data->tmp) {
 
@@ -164,22 +165,22 @@ void sum_apply_pinverse(const void* _data, float rho, complex float* dst, const 
 
 
 	// get average
-	md_clear( DIMS, data->img_dims, data->tmp, sizeof( complex float ) );
+	md_clear(DIMS, data->img_dims, data->tmp, CFL_SIZE);
 
-	md_zadd2( DIMS, data->imgd_dims, data->img_strs, data->tmp, data->img_strs, data->tmp , data->imgd_strs, src );
-	md_zsmul( DIMS, data->img_dims, data->tmp, data->tmp, 1. / data->levels );
+	md_zadd2(DIMS, data->imgd_dims, data->img_strs, data->tmp, data->img_strs, data->tmp , data->imgd_strs, src);
+	md_zsmul(DIMS, data->img_dims, data->tmp, data->tmp, 1. / data->levels);
 
 
 	// get non-average
-	md_zsub2( DIMS, data->imgd_dims, data->imgd_strs, dst, data->imgd_strs, src, data->img_strs, data->tmp );
+	md_zsub2(DIMS, data->imgd_dims, data->imgd_strs, dst, data->imgd_strs, src, data->img_strs, data->tmp);
 
 	// avg = avg / (1 + rho)
-	md_zsmul( DIMS, data->img_dims, data->tmp, data->tmp, 1. / (1. + rho) );
+	md_zsmul(DIMS, data->img_dims, data->tmp, data->tmp, 1. / (1. + rho));
 
 	// nonavg = nonavg / rho
-	md_zsmul( DIMS, data->imgd_dims, dst, dst, 1. / rho );
+	md_zsmul(DIMS, data->imgd_dims, dst, dst, 1. / rho);
 
 	// dst = avg + nonavg
-	md_zadd2( DIMS, data->imgd_dims, data->imgd_strs, dst, data->imgd_strs, dst, data->img_strs, data->tmp );
+	md_zadd2(DIMS, data->imgd_dims, data->imgd_strs, dst, data->imgd_strs, dst, data->img_strs, data->tmp);
 }
 

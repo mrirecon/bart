@@ -1,9 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  */
 
@@ -36,6 +38,8 @@
  */
 struct ufft_data {
 
+	linop_data_t base;
+
 	bool use_gpu;
 	unsigned int flags;
 
@@ -51,11 +55,11 @@ struct ufft_data {
 };
 
 static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu);
-static void ufft_free_data(const void* _data);
-static void ufft_apply(const void* _data, complex float* dst, const complex float* src);
-static void ufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src);
-static void ufft_apply_normal(const void* _data, complex float* dst, const complex float* src);
-static void ufft_apply_pinverse(const void* _data, float rho, complex float* dst, const complex float* src);
+static void ufft_free_data(const linop_data_t* _data);
+static void ufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void ufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void ufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void ufft_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst, const complex float* src);
 
 
 
@@ -67,7 +71,7 @@ const struct linop_s* ufft_create(const long ksp_dims[DIMS], const long pat_dims
 	struct ufft_data* data = ufft_create_data(ksp_dims, pat_dims, pat, flags, use_gpu);
 
 	// Create operator interface
-	return linop_create(DIMS, data->ksp_dims, DIMS, data->ksp_dims, data,
+	return linop_create(DIMS, data->ksp_dims, DIMS, data->ksp_dims, &data->base,
 		ufft_apply, ufft_apply_adjoint, ufft_apply_normal, ufft_apply_pinverse, ufft_free_data);
 }
 
@@ -98,9 +102,9 @@ static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long 
 }
 
 
-static void ufft_free_data(const void* _data)
+static void ufft_free_data(const linop_data_t* _data)
 {
-        struct ufft_data* data = (struct ufft_data* )_data;
+        struct ufft_data* data = CONTAINER_OF(_data, struct ufft_data, base);
 
 	md_free(data->pat);
 	linop_free(data->fft_op);
@@ -114,9 +118,9 @@ static void ufft_free_data(const void* _data)
 /**
  * Undersampled FFT forward operator
  */
-void ufft_apply(const void* _data, complex float* dst, const complex float* src)
+void ufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct ufft_data* data = _data;
+        const struct ufft_data* data = CONTAINER_OF(_data, const struct ufft_data, base);
 
 	linop_forward(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src);
 
@@ -124,13 +128,12 @@ void ufft_apply(const void* _data, complex float* dst, const complex float* src)
 }
 
 
-
 /**
  * Undersampled FFT adjoint operator
  */
-void ufft_apply_adjoint(const void* _data, complex float* dst, const complex float* src)
+void ufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
- 	const struct ufft_data* data = _data;
+        const struct ufft_data* data = CONTAINER_OF(_data, const struct ufft_data, base);
 
 	md_zmul2(DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, src, data->pat_strs, data->pat);
 
@@ -138,14 +141,13 @@ void ufft_apply_adjoint(const void* _data, complex float* dst, const complex flo
 }
 
 
-
 /**
  * Undersampled FFT normal operator
  * X = pat^2 B
  */
-void ufft_apply_normal(const void* _data, complex float* dst, const complex float* src)
+void ufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
- 	const struct ufft_data* data = _data;
+        const struct ufft_data* data = CONTAINER_OF(_data, const struct ufft_data, base);
 
 	linop_forward(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src);
 
@@ -153,7 +155,6 @@ void ufft_apply_normal(const void* _data, complex float* dst, const complex floa
 
 	linop_adjoint(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, dst);
 }
-
 
 
 /**
@@ -164,9 +165,9 @@ void ufft_apply_normal(const void* _data, complex float* dst, const complex floa
  * X = 1 / (pat^2 + l) B
  *
  */
-static void ufft_apply_pinverse(const void* _data, float rho, complex float* dst, const complex float* src )
+static void ufft_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst, const complex float* src)
 {
-        struct ufft_data* data = (struct ufft_data*)_data;
+        const struct ufft_data* data = CONTAINER_OF(_data, const struct ufft_data, base);
 
 	md_zsadd(DIMS, data->pat_dims, data->pat, data->pat, rho);
 

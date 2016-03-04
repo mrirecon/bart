@@ -1,8 +1,9 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014      Frank Ong <frankong@berkeley.edu>
  * 2014      Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
@@ -33,6 +34,8 @@ const struct lsqr_conf lsqr_defaults = { 0. };
 
 struct lsqr_data {
 
+	operator_data_t base;
+
 	float l2_lambda;
 	long size;
 
@@ -42,9 +45,9 @@ struct lsqr_data {
 };
 
 
-static void normaleq_l2_apply(const void* _data, unsigned int N, void* args[N])
+static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct lsqr_data* data = _data;
+	const struct lsqr_data* data = CONTAINER_OF(_data, struct lsqr_data, base);
 
 	assert(2 == N);
 
@@ -97,7 +100,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	// -----------------------------------------------------------
 	// run recon
 
-	const struct operator_s* normaleq_op = operator_create(N, x_dims, N, x_dims, (void*)&data, normaleq_l2_apply, NULL);
+	const struct operator_s* normaleq_op = operator_create(N, x_dims, N, x_dims, &data.base, normaleq_l2_apply, NULL);
 
 	if (NULL != precond_op) {
 		const struct operator_s* tmp = normaleq_op;
@@ -139,7 +142,7 @@ void lsqr(unsigned int N,
 	  const complex float* y,
 	  const struct operator_s* precond_op)
 {
-	lsqr2(N, conf, iter2_call_iter, &(struct iter_call_s){ italgo, iconf },
+	lsqr2(N, conf, iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
 		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 	      x_dims, x, y_dims, y, precond_op, NULL, NULL, NULL);
 }
@@ -187,7 +190,7 @@ void wlsqr(unsigned int N, const struct lsqr_conf* conf,
 	   const long w_dims[N], const complex float* w,
 	   const struct operator_s* precond_op)
 {
-	wlsqr2(N, conf, iter2_call_iter, &(struct iter_call_s){ italgo, iconf },
+	wlsqr2(N, conf, iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
 	       model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 	       x_dims, x, y_dims, y, w_dims, w, precond_op);
 }

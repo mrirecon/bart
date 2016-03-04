@@ -92,7 +92,7 @@ void lad(	unsigned int N, const struct lad_conf* conf,
 		const long x_dims[N], complex float* x,
 		const long y_dims[N], const complex float* y)
 {
-	lad2(N, conf, iter2_call_iter, &(struct iter_call_s){ italgo, iconf },
+	lad2(N, conf, iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
 		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 		x_dims, x, y_dims, y);
 }

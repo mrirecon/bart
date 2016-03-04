@@ -1,10 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013 Frank Ong <uecker@eecs.berkeley.edu>
- * 2013-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -24,6 +25,8 @@
 
 
 struct wavelet3_thresh_s {
+
+	operator_data_t base;
 
 	unsigned int N;
 	const long* dims;
@@ -49,9 +52,10 @@ static int rand_lim(unsigned int* state, int limit)
 }
 
 
-static void wavelet3_thresh_apply(const void* _data, float mu, complex float* out, const complex float* in)
+static void wavelet3_thresh_apply(const operator_data_t* _data, float mu, complex float* out, const complex float* in)
 {
-	const struct wavelet3_thresh_s* data = _data;
+	const struct wavelet3_thresh_s* data = CONTAINER_OF(_data, const struct wavelet3_thresh_s, base);
+
 	long shift[data->N];
 	for (unsigned int i = 0; i < data->N; i++)
 		shift[i] = 0;
@@ -69,9 +73,9 @@ static void wavelet3_thresh_apply(const void* _data, float mu, complex float* ou
 		out, in, data->minsize, 4, wavelet3_dau2);
 }
 
-static void wavelet3_thresh_del(const void* _data)
+static void wavelet3_thresh_del(const operator_data_t* _data)
 {
-	const struct wavelet3_thresh_s* data = _data;
+	const struct wavelet3_thresh_s* data = CONTAINER_OF(_data, const struct wavelet3_thresh_s, base);
 	free((void*)data->dims);
 	free((void*)data->minsize);
 	free((void*)data);
@@ -90,7 +94,7 @@ static void wavelet3_thresh_del(const void* _data)
  */
 const struct operator_p_s* prox_wavelet3_thresh_create(unsigned int N, const long dims[N], unsigned int flags, const long minsize[N], float lambda, bool randshift)
 {
-	struct wavelet3_thresh_s* data = TYPE_ALLOC(struct wavelet3_thresh_s);
+	PTR_ALLOC(struct wavelet3_thresh_s, data);
 
 	data->N = N;
 
@@ -107,7 +111,7 @@ const struct operator_p_s* prox_wavelet3_thresh_create(unsigned int N, const lon
 	data->randshift = randshift;
 	data->rand_state = 1;
 
-	return operator_p_create(N, dims, N, dims, data, wavelet3_thresh_apply, wavelet3_thresh_del);
+	return operator_p_create(N, dims, N, dims, &data->base, wavelet3_thresh_apply, wavelet3_thresh_del);
 }
 
 

@@ -1,9 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
- * 2012, 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * Authors:
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <assert.h>
@@ -67,14 +68,14 @@ static void adjoint(void* _data, float* dst, const float* src)
 
 
 
-void iter3_irgnm(void* _conf,
+void iter3_irgnm(iter_conf* _conf,
 		void (*frw)(void* _data, float* dst, const float* src),
 		void (*der)(void* _data, float* dst, const float* src),
 		void (*adj)(void* _data, float* dst, const float* src),
 		void* data2,
 		long N, float* dst, long M, const float* src)
 {
-	struct iter3_irgnm_conf* conf = _conf;
+	struct iter3_irgnm_conf* conf = CONTAINER_OF(_conf, struct iter3_irgnm_conf, base);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
 	struct irgnm_s data = { frw, der, adj, data2, tmp, N };
@@ -91,14 +92,14 @@ void iter3_irgnm(void* _conf,
 
 
 
-void iter3_landweber(void* _conf,
+void iter3_landweber(iter_conf* _conf,
 		void (*frw)(void* _data, float* dst, const float* src),
 		void (*der)(void* _data, float* dst, const float* src),
 		void (*adj)(void* _data, float* dst, const float* src),
 		void* data2,
 		long N, float* dst, long M, const float* src)
 {
-	struct iter3_landweber_conf* conf = _conf;
+	struct iter3_landweber_conf* conf = CONTAINER_OF(_conf, struct iter3_landweber_conf, base);
 
 	assert(NULL == der);
 

@@ -7,6 +7,7 @@
 #define __MISC_H
 
 #include <stdlib.h>
+#include <stddef.h>
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
@@ -38,10 +39,14 @@ extern void* xmalloc(size_t s);
 
 #define _TYPE_ALLOC(T)		((T*)xmalloc(sizeof(T)))
 #define TYPE_ALLOC(T)		_TYPE_ALLOC(__typeof__(T))
-#define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
+// #define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
+#define TYPE_CHECK(T, x)	(1 ? (x) : (T)0)
 
 #define _PTR_ALLOC(T, x)	T* x = xmalloc(sizeof(T))
 #define PTR_ALLOC(T, x)		_PTR_ALLOC(__typeof__(T), x)
+
+#define CONTAINER_OF(x, T, member)	((T*)((char*)TYPE_CHECK(__typeof(&((T*)0)->member), x) - offsetof(T, member)))
+
 
 extern int parse_cfl(_Complex float res[1], const char* str);
 extern void error(const char* str, ...);

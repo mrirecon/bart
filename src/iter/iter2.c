@@ -1,9 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012, 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -59,7 +60,7 @@ static bool checkeps(float eps)
 }
 
 
-void iter2_conjgrad(void* _conf,
+void iter2_conjgrad(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -76,7 +77,7 @@ void iter2_conjgrad(void* _conf,
 	assert(NULL == ops);
 	UNUSED(xupdate_op);
 
-	struct iter_conjgrad_conf* conf = _conf;
+	struct iter_conjgrad_conf* conf = CONTAINER_OF(_conf, struct iter_conjgrad_conf, base);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -90,7 +91,7 @@ cleanup:
 }
 
 
-void iter2_ist(void* _conf,
+void iter2_ist(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -110,7 +111,7 @@ void iter2_ist(void* _conf,
 #endif
 	UNUSED(xupdate_op);
 
-	struct iter_ist_conf* conf = _conf;
+	struct iter_ist_conf* conf = CONTAINER_OF(_conf, struct iter_ist_conf, base);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -127,7 +128,7 @@ cleanup:
 }
 
 
-void iter2_fista(void* _conf,
+void iter2_fista(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -147,7 +148,7 @@ void iter2_fista(void* _conf,
 #endif
 	UNUSED(xupdate_op);
 
-	struct iter_fista_conf* conf = _conf;
+	struct iter_fista_conf* conf = CONTAINER_OF(_conf, struct iter_fista_conf, base);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -164,7 +165,7 @@ cleanup:
 
 
 
-void iter2_admm(void* _conf,
+void iter2_admm(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -175,7 +176,7 @@ void iter2_admm(void* _conf,
 		void* obj_eval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-	struct iter_admm_conf* conf = _conf;
+	struct iter_admm_conf* conf = CONTAINER_OF(_conf, struct iter_admm_conf, base);
 
 	struct admm_plan_s admm_plan = {
 
@@ -241,7 +242,7 @@ cleanup:
 }
 
 
-void iter2_pocs(void* _conf,
+void iter2_pocs(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -252,8 +253,7 @@ void iter2_pocs(void* _conf,
 		void* obj_eval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-
-	const struct iter_pocs_conf* conf = _conf;
+	const struct iter_pocs_conf* conf = CONTAINER_OF(_conf, const struct iter_pocs_conf, base);
 
 	assert(NULL == normaleq_op);
 	assert(NULL == ops);
@@ -274,7 +274,7 @@ void iter2_pocs(void* _conf,
 }
 
 
-void iter2_call_iter(void* _conf,
+void iter2_call_iter(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s** prox_ops,
@@ -290,7 +290,8 @@ void iter2_call_iter(void* _conf,
 
 	UNUSED(xupdate_op);
 
-	struct iter_call_s* it = _conf;
+	struct iter_call_s* it = CONTAINER_OF(_conf, struct iter_call_s, base);
+
 	it->fun(it->_conf, normaleq_op, (1 == D) ? prox_ops[0] : NULL,
 		size, image, image_adj,
 		image_truth, obj_eval_data, obj_eval);

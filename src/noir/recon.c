@@ -131,7 +131,7 @@ void noir_recon(const long dims[DIMS], unsigned int iter, float th, complex floa
 		bool repeat = false;
 
 		do {
-			iter3_irgnm(&conf, frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
+			iter3_irgnm(&conf.base, frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
 #ifdef PHSING
 			{
 //			if (repeat) {
