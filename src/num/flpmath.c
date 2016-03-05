@@ -2452,7 +2452,7 @@ void md_zwavg(unsigned int D, const long dims[D], unsigned int flags, complex fl
 
 	md_zwavg2(D, dims, flags,
 			MD_STRIDES(D, odims, CFL_SIZE), optr,
-			MD_STRIDES(D, odims, CFL_SIZE), iptr);
+			MD_STRIDES(D, dims, CFL_SIZE), iptr);
 }
 
 
