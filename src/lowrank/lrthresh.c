@@ -9,7 +9,7 @@
  * 2014 Tao Zhang
  * 2014 Joseph Cheng 
  * 2014 Jon Tamir 
- * 2014,2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2016 Martin Uecker
  */
 
 #include <stdlib.h>
@@ -176,7 +176,6 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 		complex float* dstl = dst + l * strs1[LEVEL_DIM];
 		const complex float* srcl = src + l * strs1[LEVEL_DIM];
 
-		// Initialize
 		long blkdims[DIMS];
 		long shifts[DIMS];
 		long unshifts[DIMS];
@@ -203,8 +202,8 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 		long zpad_strs[DIMS];
 		md_calc_strides(DIMS, zpad_strs, zpad_dims, CFL_SIZE);
 
-		long blk_size = md_calc_size( DIMS, blkdims );
-		long img_size = md_calc_size( DIMS, zpad_dims );
+		long blk_size = md_calc_size(DIMS, blkdims);
+		long img_size = md_calc_size(DIMS, zpad_dims);
 		long N = blk_size / M;
 		long B = img_size / blk_size;
 
@@ -227,7 +226,7 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 
 		md_circ_shift(DIMS, zpad_dims, shifts, tmp, tmp, CFL_SIZE);
 
-		// Initialize tmp_mat
+
 		long mat_dims[2];
 		basorati_dims(DIMS, mat_dims, blkdims, zpad_dims);
 
@@ -252,7 +251,6 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 
 		md_resize(DIMS, data->dims, dstl, zpad_dims, tmp, CFL_SIZE);
 
-		// Free data
 		md_free(tmp);
 		md_free(tmp_mat);
 	}
@@ -276,7 +274,6 @@ float lrnucnorm(const struct operator_p_s* op, const complex float* src)
 
 		const complex float* srcl = src + l * strs1[LEVEL_DIM];
 
-		// Initialize
 		long blkdims[DIMS];
 		long blksize = 1;
 
@@ -286,8 +283,7 @@ float lrnucnorm(const struct operator_p_s* op, const complex float* src)
 			blksize *= blkdims[i];
 		}
 
-		// Special case if blocksize is 1
-		if (blksize == 1) {
+		if (1 == blksize) {
 
 			for (long j = 0; j < md_calc_size(DIMS, data->dims); j++)
 				nnorm += 2 * cabsf(srcl[j]);
@@ -295,10 +291,8 @@ float lrnucnorm(const struct operator_p_s* op, const complex float* src)
 			continue;
 		}
 
-		// Initialize data
 		struct svthresh_blockproc_data* svdata = svthresh_blockproc_create(data->mflags, 0., 0);
 
-		// Initialize tmp
 		complex float* tmp;
 #ifdef USE_CUDA
 		tmp = (data->use_gpu ? md_alloc_gpu : md_alloc)(DIMS, data->dims, CFL_SIZE);
@@ -306,14 +300,12 @@ float lrnucnorm(const struct operator_p_s* op, const complex float* src)
 		tmp = md_alloc(DIMS, data->dims, CFL_SIZE);
 #endif
 
-		// Copy to tmp
 		//debug_print_dims(DP_DEBUG1, DIMS, data->dims);
 		md_copy(DIMS, data->dims, tmp, srcl, CFL_SIZE);
 
 		// Block SVD Threshold
 		nnorm = blockproc(DIMS, data->dims, blkdims, (void*)svdata, nucnorm_blockproc, tmp, tmp);
 
-		// Free tmp
 		free(svdata);
 		md_free(tmp);
 	}
