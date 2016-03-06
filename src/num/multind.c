@@ -1328,6 +1328,7 @@ void md_fill_diag(unsigned int D, const long dims[D], unsigned long flags, void*
 
 static void md_circ_shift_inpl2(unsigned int D, const long dims[D], const long center[D], const long strs[D], void* dst, size_t size)
 {
+#if 0
 	long dims1[D];
 	long dims2[D];
 
@@ -1363,6 +1364,27 @@ static void md_circ_shift_inpl2(unsigned int D, const long dims[D], const long c
 	center2[i] = 0;
 
 	md_circ_shift_inpl2(D, dims, center2, strs, dst, size);
+#else
+	// use tmp for now
+	unsigned int i;
+
+	for (i = 0; i < D; i++)
+		if (0 != center[i])
+			break;
+
+	if (i == D)
+		return;
+
+	long tmp_strs[D];
+	md_calc_strides(D, tmp_strs, dims, size);
+
+	void* tmp = md_alloc_sameplace(D, dims, size, dst);
+
+	md_copy2(D, dims, tmp_strs, tmp, strs, dst, size);
+	md_circ_shift2(D, dims, center, strs, dst, tmp_strs, tmp, size);
+
+	md_free(tmp);
+#endif
 }
 
 /**
