@@ -128,7 +128,7 @@ int main_homodyne(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'r', true, opt_float, &alpha, " <alpha>\tOffset of ramp filter, between 0 and 1" },
+		{ 'r', true, opt_float, &alpha, " <alpha>\tOffset of ramp filter, between 0 and 1. alpha=0 is a full ramp, alpha=1 is a horizontal line" },
 		{ 'I', false, opt_set, &image, "\tInput is in image domain" },
 		{ 'C', false, opt_set, &clear, "\tClear unacquired portion of kspace" },
 		{ 'P', true, opt_string, &phase_ref, " <phase_ref>\tUse <phase_ref> as phase reference" },
