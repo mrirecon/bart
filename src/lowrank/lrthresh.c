@@ -215,14 +215,6 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 			B = 1;
 		}
 
-		
-		// Initialize tmp
-		complex float* tmp_ext;
-#ifdef USE_CUDA
-		tmp_ext = (data->use_gpu ? md_alloc_gpu : md_alloc)(DIMS, zpad_dims, CFL_SIZE);
-#else
-		tmp_ext = md_alloc(DIMS, zpad_dims, CFL_SIZE);
-#endif
 
 		complex float* tmp;
 #ifdef USE_CUDA
@@ -230,11 +222,10 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 #else
 		tmp = md_alloc(DIMS, zpad_dims, CFL_SIZE);
 #endif
-		// Copy to tmp
-		md_circ_ext(DIMS, zpad_dims, tmp_ext, data->dims, srcl, CFL_SIZE);
 
-		if (data->randshift)
-			md_circ_shift(DIMS, zpad_dims, shifts, tmp, tmp_ext, CFL_SIZE);
+		md_circ_ext(DIMS, zpad_dims, tmp, data->dims, srcl, CFL_SIZE);
+
+		md_circ_shift(DIMS, zpad_dims, shifts, tmp, tmp, CFL_SIZE);
 
 		// Initialize tmp_mat
 		long mat_dims[2];
@@ -257,17 +248,12 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 
 		basorati_matrixH(DIMS, blkdims, zpad_dims, zpad_strs, tmp, mat_dims, tmp_mat);
 
+		md_circ_shift(DIMS, zpad_dims, unshifts, tmp, tmp, CFL_SIZE);
 
-		// Copy to tmp
-
-		if (data->randshift)
-			md_circ_shift(DIMS, zpad_dims, unshifts, tmp_ext, tmp, CFL_SIZE);
-
-		md_resize(DIMS, data->dims, dstl, zpad_dims, tmp_ext, CFL_SIZE);
+		md_resize(DIMS, data->dims, dstl, zpad_dims, tmp, CFL_SIZE);
 
 		// Free data
 		md_free(tmp);
-		md_free(tmp_ext);
 		md_free(tmp_mat);
 	}
 }
