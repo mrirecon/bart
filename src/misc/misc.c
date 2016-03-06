@@ -60,12 +60,15 @@ void print_dims(int D, const long dims[D])
 
 void debug_print_dims(int dblevel, int D, const long dims[D])
 {
+	bool dbl = debug_logging;
+	debug_logging = false;
 	debug_printf(dblevel, "[");
 
 	for (int i = 0; i < D; i++)
 		debug_printf(dblevel, "%3ld ", dims[i]);
 
 	debug_printf(dblevel, "]\n");
+	debug_logging = dbl;
 }
 
 
