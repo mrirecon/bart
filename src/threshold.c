@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015. Martin Uecker
+ * Copyright 2015-2016. Martin Uecker
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
- * Authors: 
- * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * Authors:
+ * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2015 Frank Ong <frankong@berkeley.edu>
  */
@@ -40,6 +40,7 @@ static void wthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 {
 	long minsize[D];
 	md_singleton_dims(D, minsize);
+
 	long course_scale[3] = MD_INIT_ARRAY(3, 16);
 	md_min_dims(3, ~0u, minsize, dims, course_scale);
 
@@ -51,16 +52,15 @@ static void wthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 	operator_p_free(p);
 }
 
+
 static void lrthresh(unsigned int D, const long dims[D], int llrblk, float lambda, unsigned int flags, complex float* out, const complex float* in)
 {
-
 	long blkdims[MAX_LEV][D];
 
 	int levels = llr_blkdims(blkdims, ~flags, dims, llrblk);
 	UNUSED(levels);
 
-	// FIXME: problem with randshift = false?
-	const struct operator_p_s* p = lrthresh_create(dims, true, ~flags, (const long (*)[])blkdims, lambda, false, false, false);
+	const struct operator_p_s* p = lrthresh_create(dims, false, ~flags, (const long (*)[])blkdims, lambda, false, false, false);
 
 	operator_p_apply(p, 1., D, dims, out, D, dims, in);
 
@@ -70,19 +70,20 @@ static void lrthresh(unsigned int D, const long dims[D], int llrblk, float lambd
 
 static void dfthresh(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
-
 	long minsize[3];
 	md_singleton_dims(3, minsize);
+
 	long coarse_scale[3] = MD_INIT_ARRAY(3, 16);
 	md_min_dims(3, ~0u, minsize, dims, coarse_scale);
+
         complex float res[3];
         res[0] = 1.;
         res[1] = 1.;
         res[2] = 1.;
 
-        assert(dims[TE_DIM]==3);
+        assert(3 == dims[TE_DIM]);
 
-        const struct operator_p_s* p = prox_dfwavelet_create( dims, minsize, res, TE_DIM, lambda, false );
+        const struct operator_p_s* p = prox_dfwavelet_create(dims, minsize, res, TE_DIM, lambda, false);
 
 	operator_p_apply(p, 1., D, dims, out, D, dims, in);
 
