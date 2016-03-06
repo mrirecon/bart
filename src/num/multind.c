@@ -1055,7 +1055,7 @@ void md_transpose(unsigned int D, unsigned int dim1, unsigned int dim2, const lo
 {
 	md_transpose2(D, dim1, dim2,
 			odims, MD_STRIDES(D, odims, size), optr,
-			idims, MD_STRIDES(D, odims, size), iptr, size);
+			idims, MD_STRIDES(D, idims, size), iptr, size);
 }
 
 
