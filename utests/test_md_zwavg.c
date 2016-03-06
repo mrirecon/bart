@@ -33,8 +33,6 @@
 
 #define TOL 1E-6
 
-/* Pointer to the file used by the tests. */
-static FILE* temp_file = NULL;
 
 /* The suite initialization function.
  * Opens the temporary file used by the tests.
@@ -75,7 +73,7 @@ static void test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned in
 
 /*
  * Test of md_zwavg.
- * Manually tests based on previously generated data
+ * Manually tests based on previously generated data included in the header file
  */
 void test_md_zwavg(void)
 {
