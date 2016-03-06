@@ -25,7 +25,7 @@
 static const char usage_str[] = "<input>";
 static const char help_str[] = "Outputs values or meta data.";
 
-static void print_cfl(unsigned int N, const long dims[N], const complex float* data)
+static void print_cfl(unsigned int N, const long dims[N], const complex float* data, const char* sep)
 {
 	// find first non-trivial dimension
 	unsigned int l = 0;
@@ -37,7 +37,7 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 	for (long i = 0; i < T; i++) {
 
 		printf("%+e%+ei", crealf(data[i]), cimagf(data[i]));
-		printf((0 == (i + 1) % dims[l]) ? "\n" : "\t");
+		printf((0 == (i + 1) % dims[l]) ? "\n" : sep);
 	}
 }
 
@@ -45,11 +45,13 @@ int main_show(int argc, char* argv[])
 {
 	bool meta = false;
 	int showdim = -1;
+	const char* sep = NULL;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('m', &meta, "show meta data"),
 		OPT_INT('d', &showdim, "dim", "show size of dimension"),
+		OPT_STRING('s', &sep, "sep", "use <sep> as the separator"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -81,9 +83,12 @@ int main_show(int argc, char* argv[])
 		goto out;
 	}
 
-	print_cfl(N, dims, data);
+	print_cfl(N, dims, data, NULL == sep ? "\t" : sep);
 out:
 	unmap_cfl(N, dims, data);
+	if (NULL != sep)
+		free((void*)sep);
+
 	exit(0);
 }
 
