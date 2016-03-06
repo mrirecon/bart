@@ -30,10 +30,10 @@
 #include "num/iovec.h"
 #include "num/blockproc.h"
 #include "num/casorati.h"
-#include "num/batchsvd.h"
 
 #include "iter/thresh.h"
 
+#include "lowrank/batchsvd.h"
 #include "lowrank/svthresh.h"
 
 #include "lrthresh.h"
