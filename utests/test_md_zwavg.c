@@ -80,8 +80,20 @@ void test_md_zwavg(void)
 	long idims[4] = {3, 3, 3, 3};
 
 	test_md_zwavg_flags(4, idims, 0u, test_md_zwavg_in, test_md_zwavg_in);
+	test_md_zwavg_flags(4, idims, 1u, test_md_zwavg_in, test_md_zwavg_1_out);
+	test_md_zwavg_flags(4, idims, 2u, test_md_zwavg_in, test_md_zwavg_2_out);
+	test_md_zwavg_flags(4, idims, 3u, test_md_zwavg_in, test_md_zwavg_3_out);
+	test_md_zwavg_flags(4, idims, 4u, test_md_zwavg_in, test_md_zwavg_4_out);
+	test_md_zwavg_flags(4, idims, 5u, test_md_zwavg_in, test_md_zwavg_5_out);
+	test_md_zwavg_flags(4, idims, 6u, test_md_zwavg_in, test_md_zwavg_6_out);
+	test_md_zwavg_flags(4, idims, 7u, test_md_zwavg_in, test_md_zwavg_7_out);
 	test_md_zwavg_flags(4, idims, 8u, test_md_zwavg_in, test_md_zwavg_8_out);
+	test_md_zwavg_flags(4, idims, 9u, test_md_zwavg_in, test_md_zwavg_9_out);
 	test_md_zwavg_flags(4, idims, 10u, test_md_zwavg_in, test_md_zwavg_10_out);
+	test_md_zwavg_flags(4, idims, 11u, test_md_zwavg_in, test_md_zwavg_11_out);
+	test_md_zwavg_flags(4, idims, 12u, test_md_zwavg_in, test_md_zwavg_12_out);
+	test_md_zwavg_flags(4, idims, 13u, test_md_zwavg_in, test_md_zwavg_13_out);
+	test_md_zwavg_flags(4, idims, 14u, test_md_zwavg_in, test_md_zwavg_14_out);
 	test_md_zwavg_flags(4, idims, 15u, test_md_zwavg_in, test_md_zwavg_15_out);
 
 }
