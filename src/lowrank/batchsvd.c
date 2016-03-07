@@ -52,6 +52,10 @@ void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float
 			s_upperbound = MAX(s_upperbound, s);
 		}
 
+		/* avoid doing SVD-based thresholding if we know from
+		 * the upper bound that lambda_max <= lambda and the
+		 * result must be zero */
+
 		if (s_upperbound < lambda * lambda) {
 
 			mat_zero(N, M, dst[b]);
