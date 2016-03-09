@@ -45,7 +45,7 @@ static complex float xsens(unsigned int c, double mpos[3], void* data, krn_t fun
 
 	for (int i = 0; i < COIL_COEFF; i++)
 		for (int j = 0; j < COIL_COEFF; j++)
-			val += sens_coeff[c][i][j] * cexpf(2.i * M_PI * ((i - sh) * mpos[0] + (j - sh) * mpos[1]) / 4.);
+			val += sens_coeff[c][i][j] * cexpf(-2.i * M_PI * ((i - sh) * mpos[0] + (j - sh) * mpos[1]) / 4.);
 
 	return val * fun(data, mpos);
 }
