@@ -25,6 +25,9 @@ Makefile.local
 # version string
 src/misc/version.inc
 
+# noise simulations
+save/nsv/*.dat
+
 # ctags
 tags
 GTAGS
