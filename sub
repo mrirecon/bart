@@ -13,5 +13,5 @@ if [ $# -lt 3 ] ; then
 	exit 1
 fi
 
-${TOOLBOX_PATH}/saxpy -- -1. $1 $2 $3
+${TOOLBOX_PATH}/bart saxpy -- -1. $1 $2 $3
 
