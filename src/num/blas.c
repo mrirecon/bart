@@ -15,14 +15,16 @@
 #include "blas.h"
 
 
+
 void blas_cgemm(char transa, char transb, long M, long N,  long K, const complex float alpha, long lda, const complex float A[K][lda], long ldb, const complex float B[N][ldb], const complex float beta, long ldc, complex float C[N][ldc])
 {
 #ifdef USE_CUDA
+#define CUCOMPLEX(x) (((union { cuComplex cu; complex float std; }){ .std = (x) }).cu)
         if (cuda_ondevice(A)) {
 
-                cublasCgemm(transa, transb, M, N, K, *(cuComplex*)&alpha,
+                cublasCgemm(transa, transb, M, N, K,  CUCOMPLEX(alpha),
                                 (const cuComplex*)A, lda,
-                                (const cuComplex*)B, ldb, *(cuComplex*)&beta,
+                                (const cuComplex*)B, ldb, CUCOMPLEX(beta),
                                 (cuComplex*)C, ldc);
         } else
 #endif
