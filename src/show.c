@@ -22,8 +22,10 @@
 #define DIMS 16
 #endif
 
+
 static const char usage_str[] = "<input>";
 static const char help_str[] = "Outputs values or meta data.";
+
 
 static void print_cfl(unsigned int N, const long dims[N], const complex float* data, const char* sep)
 {
@@ -36,10 +38,12 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 
 	for (long i = 0; i < T; i++) {
 
-		printf("%+e%+ei", crealf(data[i]), cimagf(data[i]));
-		printf((0 == (i + 1) % dims[l]) ? "\n" : sep);
+		printf("%+e%+ei%s", crealf(data[i]), cimagf(data[i]),
+			(0 == (i + 1) % dims[l]) ? "\n" : sep);
 	}
 }
+
+
 
 int main_show(int argc, char* argv[])
 {
@@ -83,11 +87,10 @@ int main_show(int argc, char* argv[])
 		goto out;
 	}
 
-	print_cfl(N, dims, data, NULL == sep ? "\t" : sep);
+	print_cfl(N, dims, data, (NULL == sep) ? "\t" : sep);
 out:
 	unmap_cfl(N, dims, data);
-	if (NULL != sep)
-		free((void*)sep);
+	free((void*)sep);
 
 	exit(0);
 }
