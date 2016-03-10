@@ -131,7 +131,11 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 
 		shared_ptr_destroy(&shared_data[2]->sptr);
 		xfree(shared_data[2]);
+#if 0
 		lo->normal = NULL;
+#else
+		lo->normal = operator_chain(lo->forward, lo->adjoint);
+#endif
 	}
 
 	if (NULL != norm_inv) {
