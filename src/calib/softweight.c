@@ -113,7 +113,6 @@ extern void soft_weight_singular_vectors(long N, const long kernel_dims[3], cons
 
     for (int idx = 0; idx < N; idx++) {
         t = (S[idx] - lambda)/S[idx];
-        t = sqrtf(2 * t - t * t);
         W[idx] = ((!isnan(t) && t > 0)? t: 0);
     }
 
