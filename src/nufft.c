@@ -29,7 +29,7 @@
 #include "iter/lsqr.h"
 
 #include "noncart/nufft.h"
-
+#include "noncart/nudft.h"
 
 
 
@@ -46,6 +46,7 @@ int main_nufft(int argc, char* argv[])
 	bool inverse = false;
 	bool use_gpu = false;
 	bool precond = false;
+	bool dft = false;
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
@@ -64,6 +65,7 @@ int main_nufft(int argc, char* argv[])
 		OPT_SET('c', &precond, "Preconditioning for inverse NUFFT"),
 		OPT_FLOAT('l', &lambda, "lambda", "l2 regularization"),
 		OPT_UINT('m', &cgconf.maxiter, "", "()"),
+		OPT_SET('s', &dft, "DFT"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -100,7 +102,13 @@ int main_nufft(int argc, char* argv[])
 
 		md_clear(DIMS, coilim_dims, img, CFL_SIZE);
 
-		const struct linop_s* nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
+		const struct linop_s* nufft_op;
+
+		if (!dft)
+			nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
+		else
+			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
+
 
 		if (inverse) {
 
@@ -136,7 +144,12 @@ int main_nufft(int argc, char* argv[])
 
 		complex float* ksp = create_cfl(argv[3], DIMS, ksp_dims);
 
-		const struct linop_s* nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
+		const struct linop_s* nufft_op;
+
+		if (!dft)
+			nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
+		else
+			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
 
 		// nufft
 		linop_forward(nufft_op, DIMS, ksp_dims, ksp, DIMS, coilim_dims, img);
