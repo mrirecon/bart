@@ -130,7 +130,7 @@ complex double kellipsis(const double center[2], const double axis[2], double an
 
 	complex double res = jinc(2. * M_PI * radius) * (axis[0] * axis[1]);
 
-	return res * cexp(2.i * M_PI * (p90[0] * center[0] + p90[1] * center[1]));
+	return res * cexp(2.i * M_PI * (p90[0] * center[0] + p90[1] * center[1])) / sqrtf(2. * M_PI) * 2.;
 }
 
 complex double xrectangle(const double center[2], const double axis[2], double angle, const double p[2])
@@ -161,7 +161,7 @@ complex double krectangle(const double center[2], const double axis[2], double a
 
 	complex double res = sinc(2. * M_PI * prot[0] * axis[0]) * sinc(2. * M_PI * prot[1] * axis[1]) * (axis[0] * axis[1]);
 
-	return res * cexp(2.i * M_PI * (p90[0] * center[0] + p90[1] * center[1]));
+	return res * cexp(2.i * M_PI * (p90[0] * center[0] + p90[1] * center[1])) / sqrtf(2. * M_PI) * 2.;
 }
 
 
@@ -231,7 +231,7 @@ complex double kellipsis3d(const double center[3], const double axis[3], double 
 
 	complex double res = ksphere3(2. * M_PI * radius) * (axis[0] * axis[1] * axis[2]);
 
-	return res * cexp(2.i * M_PI * (p90[0] * center[0] + p90[1] * center[1] + p90[2] * center[2]));
+	return res * cexp(2.i * M_PI * (p90[0] * center[0] + p90[1] * center[1] + p90[2] * center[2])) / sqrtf(M_PI) * sqrtf(8.);
 }
 
 
