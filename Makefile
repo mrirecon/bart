@@ -429,8 +429,8 @@ install: bart $(root)/doc/commands.txt
 # automatic tests
 
 TOOLDIR=$(root)
-TMPDIR=$(root)/tests/tmp/
-OUTDIR=$(root)/tests/out/
+TESTS_TMP=$(root)/tests/tmp/
+TESTS_OUT=$(root)/tests/out/
 
 
 include $(root)/tests/*.mk
