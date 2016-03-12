@@ -425,3 +425,18 @@ install: bart $(root)/doc/commands.txt
 	git archive --prefix=bart-$(patsubst bart-%.tar.gz,%,$@)/ -o $@ v$(patsubst bart-%.tar.gz,%,$@)
 
 
+
+# automatic tests
+
+TOOLDIR=$(root)
+TMPDIR=$(root)/tests/tmp/
+OUTDIR=$(root)/tests/out/
+
+
+include $(root)/tests/*.mk
+
+test:
+	PARALLEL=0 make ${TESTS}
+
+
+
