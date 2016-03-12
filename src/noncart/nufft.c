@@ -209,7 +209,13 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 	fftmod(ND, data->lph_dims, FFT_FLAGS, linphase, linphase);
 	fftscale(ND, data->lph_dims, FFT_FLAGS, linphase, linphase);
-//	md_zsmul(ND, data->lph_dims, linphase, linphase, 1. / (float)(data->trj_dims[1] * data->trj_dims[2]));
+
+	float scale = 1.;
+	for (unsigned int i = 0; i < N; i++)
+		scale *= ((data->lph_dims[i] > 1) && (i < 3)) ? 0.5 : 1.;
+
+	md_zsmul(ND, data->lph_dims, linphase, linphase, scale);
+
 
 	complex float* fftm = md_alloc(ND, data->img_dims, CFL_SIZE);
 	md_zfill(ND, data->img_dims, fftm, 1.);
@@ -482,6 +488,12 @@ static complex float* compute_psf2(unsigned int N, const long psf_dims[N + 3], c
 	md_free(traj2);
 
 	fftuc(ND, img2_dims, FFT_FLAGS, psft, psft);
+
+	float scale = 1.;
+	for (unsigned int i = 0; i < N; i++)
+		scale *= ((img2_dims[i] > 1) && (i < 3)) ? 4. : 1.;
+
+	md_zsmul(ND, img2_dims, psft, psft, scale);
 
 	// reformat
 
