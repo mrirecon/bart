@@ -34,10 +34,10 @@ tests/test-nufft-adjoint: zeros noise reshape traj nufft fmac nrmse
 tests/test-nufft-inverse: traj scale phantom nufft nrmse
 	$(TOOLDIR)/traj -r -x256 -y201 $(TESTS_TMP)/traj.ra
 	$(TOOLDIR)/scale 0.5 $(TESTS_TMP)/traj.ra $(TESTS_TMP)/traj2.ra
-	$(TOOLDIR)/phantom $(TESTS_TMP)/x.ra
-	$(TOOLDIR)/nufft $(TESTS_TMP)/traj2.ra $(TESTS_TMP)/x.ra $(TESTS_TMP)/ksp.ra
+	$(TOOLDIR)/phantom -t $(TESTS_TMP)/traj2.ra $(TESTS_TMP)/ksp.ra
 	$(TOOLDIR)/nufft -i $(TESTS_TMP)/traj2.ra $(TESTS_TMP)/ksp.ra $(TESTS_TMP)/reco.ra
-	$(TOOLDIR)/nrmse -t 0.12 $(TESTS_TMP)/x.ra $(TESTS_TMP)/reco.ra
+	$(TOOLDIR)/nufft $(TESTS_TMP)/traj2.ra $(TESTS_TMP)/reco.ra $(TESTS_TMP)/k2.ra
+	$(TOOLDIR)/nrmse -t 0.001 $(TESTS_TMP)/ksp.ra $(TESTS_TMP)/k2.ra
 	rm $(TESTS_TMP)/*.ra
 	touch $@
 
