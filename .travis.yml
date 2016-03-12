@@ -17,6 +17,16 @@ matrix:
           packages:
             - *default_packages
 
+    - env:
+      os: linux
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - *default_packages
+      script:
+        - make test
+
     - env: SLINK=1
       os: linux
       compiler: gcc
