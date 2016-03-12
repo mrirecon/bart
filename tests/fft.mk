@@ -1,12 +1,6 @@
 
 
 
-# create phantom
-
-$(TESTS_OUT)/shepplogan.ra: phantom
-	$(TOOLDIR)/phantom $@
-
-
 # basic 2D FFT
 
 $(TESTS_OUT)/shepplogan_fft.ra: fft $(TESTS_OUT)/shepplogan.ra
