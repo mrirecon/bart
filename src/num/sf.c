@@ -10,6 +10,8 @@
 
 #include "misc/misc.h"
 
+#include "num/chebfun.h"
+
 #include "sf.h"
 
 
@@ -34,30 +36,6 @@ static float coeff_8toinf[] = {
 	0.399231, 0.399106, 0.399012, 0.398998, 0.399001
 };
 
-
-static float chebeval(float x, int N, const float pval[N])
-{
-	float norm = 0.;
-	float val = 0.;
-
-	for (int i = 0; i < N; i++) {
-
-		float dist = x - cosf(M_PI * (float)i / (float)(N - 1));
-	
-		if (0. == dist)
-			return pval[i];
-
-		float weight = ((0 == i % 2) ? 1. : -1.) / dist;
-
-		if ((0 == i) || (N - 1 == i))
-			weight /= 2.;
-
-		norm += weight;
-		val += weight * pval[i];
-	}
-
-	return val / norm;
-}
 
 
 /*
