@@ -41,5 +41,6 @@ doc/latex
 doc/dx
 doc/commands.txt
 
-# binaries (autogen)
-bbox
+
+# test files
+tests/test-*
