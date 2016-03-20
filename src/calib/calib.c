@@ -1,9 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2015 Siddharth Iyer <sid8795@gmail.com>
  *
@@ -481,7 +482,7 @@ static int number_of_kernels(const struct ecalib_conf* conf, unsigned int N, con
 }
 
 
-void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], complex float** nskerns_ptr, unsigned int SN, float svals[SN], const long caldims[DIMS], const complex float* caldata)
+void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], complex float** nskerns_ptr, unsigned int SN, float val[SN], const long caldims[DIMS], const complex float* caldata)
 {
 	assert(1 == md_calc_size(DIMS - 5, caldims + 5));
 
@@ -500,8 +501,8 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 
 	PTR_ALLOC(complex float[N][N], vec);
 
-	assert((NULL == svals) || (SN == N));
-	float* val = (NULL != svals) ? svals : xmalloc(N * FL_SIZE);
+	assert(NULL != val);
+	assert(SN == N);
 
 	debug_printf(DP_DEBUG1, "Build calibration matrix and SVD...\n");
 
@@ -555,9 +556,6 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 #else
 	nskerns_dims[4] = N - number_of_kernels(conf, N, val);
 #endif
-
-	if (NULL == svals)
-		free(val);
 
 	free(vec);
 }
