@@ -7,8 +7,8 @@
  */
 
 /*
- *  Unit test based on the CUnit sample code:
- *  http://cunit.sourceforge.net/example.html
+ *  Unit test based on the MinUnit sample code:
+ *  http://www.jera.com/techinfo/jtns/jtn002.html
  */
 
 
@@ -16,13 +16,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <complex.h>
-#include "CUnit/Basic.h"
 
 #include "num/flpmath.h"
 #include "num/multind.h"
 
+#include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/debug.h"
+
+#include "minunit.h"
 
 #include "test_md_zwavg.h"
 
@@ -31,106 +33,69 @@
 #define DIMS 16
 #endif
 
-#define TOL 1E-6
 
 
-/* The suite initialization function.
- * Opens the temporary file used by the tests.
- * Returns zero on success, non-zero otherwise.
- */
-int init_suite1(void)
+static char* test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in, const complex float* out_ref)
 {
-	return 0;
-}
+    long odims[D];
+    md_select_dims(D, ~flags, odims, idims);
 
-/* The suite cleanup function.
- * Closes the temporary file used by the tests.
- * Returns zero on success, non-zero otherwise.
- */
-int clean_suite1(void)
-{
-	return 0;
-}
+    complex float* out = md_alloc(D, odims, CFL_SIZE);
 
+    md_zwavg(D, idims, flags, out, in);
 
-static void test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in, const complex float* out_ref)
-{
-	long odims[D];
-	md_select_dims(D, ~flags, odims, idims);
+    float err = md_znrmse(D, odims, out_ref, out);
 
-	complex float* out = md_alloc(D, odims, CFL_SIZE);
+    md_free(out);
 
-	md_zwavg(D, idims, flags, out, in);
+    MU_ASSERT("Error: test_md_zwavg_flags failed!\n", err < TOL);
 
-	float err = md_znrmse(D, odims, out_ref, out);
-
-	md_free(out);
-
-	CU_TEST(err < TOL);
+    return NULL;
 
 }
 
 
 /*
  * Test of md_zwavg.
- * Manually tests based on previously generated data included in the header file
+ * Tests based on previously generated data included in the header file
  */
-void test_md_zwavg(void)
+static char* test_md_zwavg()
 {
-	long idims[4] = {3, 3, 3, 3};
+    long idims[4] = {3, 3, 3, 3};
 
-	test_md_zwavg_flags(4, idims, 0u, test_md_zwavg_in, test_md_zwavg_in);
-	test_md_zwavg_flags(4, idims, 1u, test_md_zwavg_in, test_md_zwavg_1_out);
-	test_md_zwavg_flags(4, idims, 2u, test_md_zwavg_in, test_md_zwavg_2_out);
-	test_md_zwavg_flags(4, idims, 3u, test_md_zwavg_in, test_md_zwavg_3_out);
-	test_md_zwavg_flags(4, idims, 4u, test_md_zwavg_in, test_md_zwavg_4_out);
-	test_md_zwavg_flags(4, idims, 5u, test_md_zwavg_in, test_md_zwavg_5_out);
-	test_md_zwavg_flags(4, idims, 6u, test_md_zwavg_in, test_md_zwavg_6_out);
-	test_md_zwavg_flags(4, idims, 7u, test_md_zwavg_in, test_md_zwavg_7_out);
-	test_md_zwavg_flags(4, idims, 8u, test_md_zwavg_in, test_md_zwavg_8_out);
-	test_md_zwavg_flags(4, idims, 9u, test_md_zwavg_in, test_md_zwavg_9_out);
-	test_md_zwavg_flags(4, idims, 10u, test_md_zwavg_in, test_md_zwavg_10_out);
-	test_md_zwavg_flags(4, idims, 11u, test_md_zwavg_in, test_md_zwavg_11_out);
-	test_md_zwavg_flags(4, idims, 12u, test_md_zwavg_in, test_md_zwavg_12_out);
-	test_md_zwavg_flags(4, idims, 13u, test_md_zwavg_in, test_md_zwavg_13_out);
-	test_md_zwavg_flags(4, idims, 14u, test_md_zwavg_in, test_md_zwavg_14_out);
-	test_md_zwavg_flags(4, idims, 15u, test_md_zwavg_in, test_md_zwavg_15_out);
+    char* msg = NULL;
 
+    for (unsigned int flags = 0u; flags < 16u; flags++) {
+
+        debug_printf(DP_DEBUG1, "Testing md_zwavg_flags with flags=%d\n", flags);
+
+        msg = test_md_zwavg_flags(4, idims, flags, test_md_zwavg_out[0], test_md_zwavg_out[flags]);
+
+        if (NULL != msg)
+            break;
+    }
+
+    return msg;
+}
+
+static char * run_all_tests()
+{
+    MU_RUN_TEST(test_md_zwavg);
+    return NULL;
 }
 
 
-/* The main() function for setting up and running the tests.
- * Returns a CUE_SUCCESS on successful running, another
- * CUnit error code on failure.
- */
 int main()
 {
-	CU_pSuite pSuite = NULL;
 
-	/* initialize the CUnit test registry */
-	if (CUE_SUCCESS != CU_initialize_registry())
-		return CU_get_error();
+    char* msg = run_all_tests();
 
-	/* add a suite to the registry */
-	pSuite = CU_add_suite("Suite_1", init_suite1, clean_suite1);
-	if (NULL == pSuite) {
-		CU_cleanup_registry();
-		return CU_get_error();
-	}
+    if (NULL != msg)
+        debug_printf(DP_ERROR, msg);
+    else
+        debug_printf(DP_DEBUG1, "ALL TESTS PASSED\n");
 
-	/* add the tests to the suite */
-	/* NOTE - ORDER IS IMPORTANT - MUST TEST fread() AFTER fprintf() */
-	if (NULL == CU_add_test(pSuite, "test of md_zwavg()", test_md_zwavg))
-	{
-		CU_cleanup_registry();
-		return CU_get_error();
-	}
-
-	/* Run all tests using the CUnit Basic interface */
-	CU_basic_set_mode(CU_BRM_VERBOSE);
-	CU_basic_run_tests();
-	CU_cleanup_registry();
-	return CU_get_error();
+    return NULL != msg;
 }
 
 
