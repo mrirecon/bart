@@ -113,7 +113,9 @@ extern void soft_weight_singular_vectors(long N, const long kernel_dims[3], cons
 
     for (int idx = 0; idx < N; idx++) {
         t = (S[idx] - lambda)/S[idx];
-        W[idx] = ((!isnan(t) && t > 0)? t: 0);
+        W[idx] = powf(((!isnan(t) && t > 0)? t: 0), 0.25); 
+        /* The exponent 0.25 is to make the crop threshold still *
+         * be the equivalent eigenvalue "=1" constraint.         */
     }
 
 }
