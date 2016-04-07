@@ -93,7 +93,7 @@ int main()
     if (NULL != msg)
         debug_printf(DP_ERROR, msg);
     else
-        debug_printf(DP_DEBUG1, "ALL TESTS PASSED\n");
+        debug_printf(DP_INFO, "ALL TESTS PASSED\n");
 
     return NULL != msg;
 }
