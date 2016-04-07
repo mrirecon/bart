@@ -26,6 +26,7 @@ matrix:
             - *default_packages
       script:
         - make test
+        - utests/build_run_utests.sh
 
     - env: SLINK=1
       os: linux
