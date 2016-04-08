@@ -26,13 +26,64 @@
 
 #include "minunit.h"
 
-#include "test_md_zwavg.h"
+#include "test_flpmath.h"
 
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
+
+
+static char* test_md_zfmac2_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in1, const complex float* in2, const complex float* out_ref)
+{
+    long odims[D];
+    md_select_dims(D, ~flags, odims, idims);
+
+    complex float* out = md_alloc(D, odims, CFL_SIZE);
+    md_clear(D, odims, out, CFL_SIZE);
+
+    long istr[D];
+    long ostr[D];
+
+    md_calc_strides(D, istr, idims, CFL_SIZE);
+    md_calc_strides(D, ostr, odims, CFL_SIZE);
+
+    md_zfmac2(D, idims, ostr, out, istr, in1, istr, in2);
+
+    float err = md_znrmse(D, odims, out_ref, out);
+
+    md_free(out);
+
+    MU_ASSERT("Error: test_md_zfmac2_flags failed!\n", err < TOL);
+
+    return NULL;
+
+}
+
+
+/*
+ * Test of md_zfmac2
+ * Tests based on previously generated data included in the header file
+ */
+static char* test_md_zfmac2()
+{
+    long idims[4] = {3, 3, 3, 3};
+
+    char* msg = NULL;
+
+    for (unsigned int flags = 0u; flags < 16u; flags++) {
+
+        debug_printf(DP_DEBUG1, "Testing md_zfmac2_flags with flags=%d\n", flags);
+
+        msg = test_md_zfmac2_flags(4, idims, flags, test_md_in0, test_md_in1, test_md_zfmac2_out[flags]);
+
+        if (NULL != msg)
+            break;
+    }
+
+    return msg;
+}
 
 
 static char* test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in, const complex float* out_ref)
@@ -69,7 +120,7 @@ static char* test_md_zwavg()
 
         debug_printf(DP_DEBUG1, "Testing md_zwavg_flags with flags=%d\n", flags);
 
-        msg = test_md_zwavg_flags(4, idims, flags, test_md_zwavg_out[0], test_md_zwavg_out[flags]);
+        msg = test_md_zwavg_flags(4, idims, flags, test_md_in0, test_md_zwavg_out[flags]);
 
         if (NULL != msg)
             break;
@@ -81,6 +132,7 @@ static char* test_md_zwavg()
 static char * run_all_tests()
 {
     MU_RUN_TEST(test_md_zwavg);
+    MU_RUN_TEST(test_md_zfmac2);
     return NULL;
 }
 
