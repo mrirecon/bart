@@ -590,8 +590,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 	unsigned int ND = data->N + 3;
 
-	complex float* gridX = md_alloc(data->N, data->cm2_dims, CFL_SIZE);
-	md_clear(data->N, data->cm2_dims, gridX, CFL_SIZE);
+	complex float* gridX = md_calloc(data->N, data->cm2_dims, CFL_SIZE);
 
 	complex float* wdat = NULL;
 
