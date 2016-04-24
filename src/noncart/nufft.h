@@ -1,4 +1,5 @@
 /* Copyright 2014-2015. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -11,6 +12,7 @@ struct linop_s;
 struct nufft_conf_s {
 
 	_Bool toeplitz; ///< Toeplitz embedding boolean for A^T A
+	_Bool low_mem;
 };
 
 extern struct nufft_conf_s nufft_conf_defaults;
