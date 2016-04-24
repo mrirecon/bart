@@ -60,6 +60,7 @@ int main_nufft(int argc, char* argv[])
 		OPT_VEC3('d', &coilim_vec, "x:y:z", "dimensions"),
 		OPT_VEC3('D', &coilim_vec, "", "()"),
 		OPT_SET('t', &conf.toeplitz, "Toeplitz embedding for inverse NUFFT"),
+		OPT_SET('L', &conf.low_mem, "Low-memory mode"),
 		OPT_SET('c', &precond, "Preconditioning for inverse NUFFT"),
 		OPT_FLOAT('l', &lambda, "lambda", "l2 regularization"),
 		OPT_UINT('m', &cgconf.maxiter, "", "()"),
