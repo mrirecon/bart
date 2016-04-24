@@ -257,6 +257,7 @@ int main_pics(int argc, char* argv[])
 
 		md_free(pattern);
 		pattern = NULL;
+		nuconf.low_mem = low_mem;
 
 	} else {
 
