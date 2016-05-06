@@ -782,13 +782,12 @@ void irgnm(unsigned int iter, float alpha, float redu, void* data, long N, long 
  * where the C_i are convex sets
  */
 void pocs(unsigned int maxiter,
-	unsigned int D, const struct pocs_proj_op* proj_ops, 
+	unsigned int D, const prox_fun_t proj_ops[static D], void* data[static D],
 	const struct vec_iter_s* vops,
 	long N, float* x, const float* x_truth,
 	void* obj_eval_data,
 	float (*obj_eval)(const void*, const float*))
 {
-
 	float* x_err = NULL;
 
 	if (NULL != x_truth)
@@ -803,7 +802,7 @@ void pocs(unsigned int maxiter,
 		}
 
 		for (unsigned int j = 0; j < D; j++)
-			proj_ops[j].proj_fun(proj_ops[j].data, 1., x, x); // use temporary memory here?
+			proj_ops[j](data[j], 1., x, x); // use temporary memory here?
 
 
 		if (NULL != obj_eval) {
