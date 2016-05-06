@@ -19,19 +19,14 @@
  */
 
 #include <math.h>
-#include <stdio.h>
 #include <stdbool.h>
 
-#define NUM_INTERNAL
-#include "num/multind.h"
-#include "num/flpmath.h"
 #include "num/ops.h"
 
 #include "misc/debug.h"
 #include "misc/misc.h"
 
 #include "iter/italgos.h"
-#include "iter/iter.h"
 #include "iter/vec.h"
 
 #include "admm.h"
@@ -46,6 +41,8 @@ struct admm_normaleq_data {
 
 	float rho;
 
+	const struct vec_iter_s* vops;
+
 	void (*Aop)(void* _data, float* _dst, const float* _src);
 	void* Aop_data;
 
@@ -56,29 +53,35 @@ struct admm_normaleq_data {
 static void admm_normaleq(void* _data, float* _dst, const float* _src)
 {
 	struct admm_normaleq_data* data = _data;
-	long dims[1] = { data->N };
 
-	//float* tmp = md_alloc_sameplace(1, dims, FL_SIZE, _src );
+	//float* tmp = alloc(data->N);
 
-	md_clear(1, dims, _dst, sizeof(float));
+	data->vops->clear(data->N, _dst);
 
 	for (unsigned int i = 0; i < data->num_funs; i++) {
 
 	        data->ops[i].normal(data->ops[i].data, data->tmp, _src);
 
 		if ((NULL != data->Aop) && (NULL != data->Aop_data))
-			md_axpy(1, dims, _dst, data->rho, data->tmp);
+			data->vops->axpy(data->N, _dst, data->rho, data->tmp);
 		else
-			md_add(1, dims, _dst, _dst, data->tmp);
+			data->vops->add(data->N, _dst, _dst, data->tmp);
 	}
 
 	if ((NULL != data->Aop) && (NULL != data->Aop_data)) {
 
 		data->Aop(data->Aop_data, data->tmp, _src);
-		md_add(1, dims, _dst, _dst, data->tmp);
+		data->vops->add(data->N, _dst, _dst, data->tmp);
 	}
 
-	//md_free( tmp );
+	// del(tmp);
+}
+
+
+
+static long sum_long_array(unsigned int N, const long a[N])
+{
+	return ((0 == N) ? 0 : (a[0] + sum_long_array(N - 1, a + 1)));
 }
 
 
@@ -111,12 +114,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	unsigned int num_funs = D;
 
 	long pos = 0;
-
-	long fake_strs[num_funs];
-
-	md_singleton_dims(num_funs, fake_strs);
-
-	long M = md_calc_offset(num_funs, fake_strs, z_dims);
+	long M = sum_long_array(num_funs, z_dims);
 
 	// allocate memory for history
 	history->r_norm = *TYPE_ALLOC(double[plan->maxiter]);
@@ -128,6 +126,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	history->relMSE = *TYPE_ALLOC(double[plan->maxiter]);
 
 	long Mjmax = 0;
+
 	for(unsigned int i = 0; i < num_funs; i++)
 		Mjmax = MAX(Mjmax, z_dims[i]);
 
@@ -170,14 +169,17 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 	float rho = plan->rho;
 
-	struct admm_normaleq_data ndata;
-	ndata.N = N;
-	ndata.num_funs = num_funs;
-	ndata.ops = plan->ops;
-	ndata.Aop = Aop;
-	ndata.Aop_data = Aop_data;
-	ndata.rho = 1.;
-	ndata.tmp = vops->allocate(N);
+	struct admm_normaleq_data ndata = {
+
+		.N = N,
+		.num_funs = num_funs,
+		.ops = plan->ops,
+		.Aop = Aop,
+		.Aop_data = Aop_data,
+		.rho = 1.,
+		.tmp = vops->allocate(N),
+		.vops = vops,
+	};
 
 	const struct cg_data_s* cgdata = cg_data_init(N, vops);
 
@@ -209,7 +211,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		for (unsigned int j = 0; j < num_funs; j++) {
 	
 			// initialize for j'th function update
-			pos = md_calc_offset(j, fake_strs, z_dims);
+			pos = sum_long_array(j, z_dims);
 
 			long Mj = z_dims[j];
 
@@ -241,7 +243,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 		for (unsigned int j = 0; j < num_funs; j++) {
 
-			pos = md_calc_offset(j, fake_strs, z_dims);
+			pos = sum_long_array(j, z_dims);
 
 			if (NULL != plan->biases && NULL != plan->biases[j]) {
 
@@ -307,7 +309,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		for (unsigned int j = 0; j < num_funs; j++) {
 	
 			// initialize for j'th function update
-			pos = md_calc_offset(j, fake_strs, z_dims);
+			pos = sum_long_array(j, z_dims);
 
 			long Mj = z_dims[j];
 
