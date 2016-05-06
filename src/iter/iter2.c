@@ -206,7 +206,7 @@ void iter2_admm(iter_conf* _conf,
 
 		a_ops[i].forward = linop_forward_iter;
 		a_ops[i].normal = linop_normal_iter;
-		a_ops[i].adjoint =  linop_adjoint_iter;
+		a_ops[i].adjoint = linop_adjoint_iter;
 		a_ops[i].data = (void*)ops[i];
 
 		a_prox_ops[i].prox_fun = operator_p_iter;
