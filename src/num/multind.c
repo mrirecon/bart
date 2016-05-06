@@ -567,7 +567,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	extern void fft2(unsigned int D, const long dim[D], unsigned int flags, 
 			const long ostr[D], void* optr, const long istr[D], const void* iptr);
 
-	if (sizeof(_Complex float) == size)
+	if (sizeof(complex float) == size)
 		fft2(D, dim, 0, ostr, optr, istr, iptr);
 #endif
 

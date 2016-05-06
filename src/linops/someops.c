@@ -70,7 +70,7 @@ static void cdiag_free(const linop_data_t* _data)
 	free((void*)data);
 }
 
-static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag, bool rdiag)
+static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag, bool rdiag)
 {
 	PTR_ALLOC(struct cdiag_s, data);
 
@@ -105,7 +105,7 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
  * @param flags bitmask specifiying the dimensions present in diag
  * @param diag diagonal matrix
  */
-struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag)
+struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag)
 {
 	return linop_gdiag_create(N, dims, flags, diag, false);
 }
@@ -119,7 +119,7 @@ struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned 
  * @param flags bitmask specifiying the dimensions present in diag
  * @param diag diagonal matrix
  */
-struct linop_s* linop_rdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag)
+struct linop_s* linop_rdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag)
 {
 	return linop_gdiag_create(N, dims, flags, diag, true);
 }
