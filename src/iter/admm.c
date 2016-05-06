@@ -1,9 +1,10 @@
 /* Copyright 2014-2016. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  *
@@ -16,6 +17,7 @@
  * Foundations and Trends in Machine Learning, 3:1-122 (2011)
  *
  */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -41,7 +43,9 @@ struct admm_normaleq_data {
 	long N;
 	unsigned int num_funs;
 	struct admm_op* ops;
+
 	float rho;
+
 	void (*Aop)(void* _data, float* _dst, const float* _src);
 	void* Aop_data;
 
@@ -88,7 +92,7 @@ static void admm_normaleq(void* _data, float* _dst, const float* _src)
  * G_i, G_i^H, and G_i^H G_i, all which must be provided in admm_plan_s.
  * The b_i are offsets (biases) that should also be provided in admm_plan_s.
  */
-void admm(struct admm_history_s* history, const struct admm_plan_s* plan, 
+void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	  unsigned int D, const long z_dims[D],
 	  long N, float* x, const float* x_adj,
 	  const struct vec_iter_s* vops,
@@ -152,6 +156,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 
 	float* x_err = NULL;
+
 	if (NULL != plan->image_truth)
 		x_err = vops->allocate(N);
 
@@ -174,7 +179,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	ndata.rho = 1.;
 	ndata.tmp = vops->allocate(N);
 
-	struct cg_data_s* cgdata = (struct cg_data_s*) cg_data_init(N, vops);
+	struct cg_data_s* cgdata = cg_data_init(N, vops);
 
 	// hogwild
 	int hw_K = 1;
@@ -183,13 +188,17 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 	// compute norm of biases -- for eps_primal
 	double n3 = 0.;
+
 	if (!fast && (NULL != plan->biases)) {
 
 		for (unsigned int j = 0; j < num_funs; j++) {
+
 			long Mj = z_dims[j];
+
 			if (plan->biases[j] != NULL)
 				n3 = n3 + vops->dot(Mj, plan->biases[j], plan->biases[j]);
 		}
+
 		n3 = sqrt(n3);
 	}
 
@@ -201,11 +210,12 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	
 			// initialize for j'th function update
 			pos = md_calc_offset(j, fake_strs, z_dims);
+
 			long Mj = z_dims[j];
 
 			plan->ops[j].forward(plan->ops[j].data, Gjx_plus_uj, x); // Gj(x)
 
-			if (NULL != plan->biases && NULL != plan->biases[j])
+			if ((NULL != plan->biases) && (NULL != plan->biases[j]))
 				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, plan->biases[j]);
 
 			if (0 == rho)
@@ -234,6 +244,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			pos = md_calc_offset(j, fake_strs, z_dims);
 
 			if (NULL != plan->biases && NULL != plan->biases[j]) {
+
 				long Mj = z_dims[j];
 				vops->add(Mj, r + pos, r + pos, plan->biases[j]);
 			}
@@ -297,6 +308,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	
 			// initialize for j'th function update
 			pos = md_calc_offset(j, fake_strs, z_dims);
+
 			long Mj = z_dims[j];
 
 
@@ -307,18 +319,21 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 				vops->copy(Mj, zj_old, z + pos);
 				vops->copy(Mj, r + pos, Gjx_plus_uj); // rj = Gj(x)
+
 				n1 = n1 + vops->dot(Mj, r + pos, r + pos);
 
 				vops->smul(Mj, plan->alpha, Gjx_plus_uj, Gjx_plus_uj);
 				vops->axpy(Mj, Gjx_plus_uj, (1. - plan->alpha), z + pos);
 
-				if (NULL != plan->biases && NULL != plan->biases[j])
+				if ((NULL != plan->biases) && (NULL != plan->biases[j]))
 					vops->axpy(Mj, Gjx_plus_uj, (1. - plan->alpha), plan->biases[j]);
 			}
 
 			vops->add(Mj, Gjx_plus_uj, Gjx_plus_uj, u + pos); // Gj(x) + uj
-			if (NULL != plan->biases && NULL != plan->biases[j])
+
+			if ((NULL != plan->biases) && (NULL != plan->biases[j]))
 				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, plan->biases[j]); // Gj(x) - bj + uj
+
 
 			if (0 == rho)
 				vops->copy(Mj, z + pos, Gjx_plus_uj);
@@ -331,8 +346,10 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 				// rj = rj - zj - bj = Gj(x) - zj - bj
 				vops->sub(Mj, r + pos, r + pos, z + pos);
-				if (NULL != plan->biases && NULL != plan->biases[j])
+
+				if ((NULL != plan->biases) && (NULL != plan->biases[j]))
 					vops->sub(Mj, r + pos, r + pos, plan->biases[j]);
+
 
 				// add next term to s: s = s + Gj^H (zj - zj_old)
 				vops->sub(Mj, zj_old, z + pos, zj_old);
@@ -355,9 +372,12 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			history->r_norm[i] = vops->norm(M, r);
 
 			n1 = sqrt(n1);
+
 			double n2 = vops->norm(M, z);
 			double n = n1 > n2 ? n1 : n2;
+
 			n = n > n3 ? n : n3;
+
 			history->eps_pri[i] = ABSTOL * sqrt(M) + RELTOL * n;
 
 			history->eps_dual[i] = ABSTOL * sqrt(N) + RELTOL * rho * vops->norm(N, GH_usum);
@@ -375,8 +395,8 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 				debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.5f\t%10.4f\n", i, grad_iter, history->rho[i], history->r_norm[i], history->eps_pri[i], history->s_norm[i], history->eps_dual[i], history->objective[i]);
 
 
-			if ((grad_iter > plan->maxiter)
-			    || ((history->r_norm[i] < history->eps_pri[i])
+			if (   (grad_iter > plan->maxiter)
+			    || (   (history->r_norm[i] < history->eps_pri[i])
 				&& (history->s_norm[i] < history->eps_dual[i]))) {
 
 				history->numiter = i;
@@ -390,7 +410,8 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 					rho = rho * tau;
 					vops->smul(M, 1. / tau, u, u);
 
-				} else if (history->s_norm[i] > mu * history->r_norm[i]) {
+				} else
+				if (history->s_norm[i] > mu * history->r_norm[i]) {
 
 					rho = rho / tau;
 					vops->smul(M, tau, u, u);
@@ -417,7 +438,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 				vops->smul(M, 0.5, u, u);
 			}
 		}
-
 	}
 
 
