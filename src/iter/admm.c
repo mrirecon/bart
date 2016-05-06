@@ -62,13 +62,13 @@ static void admm_normaleq(void* _data, float* _dst, const float* _src)
 
 	        data->ops[i].normal(data->ops[i].data, data->tmp, _src);
 
-		if ((NULL != data->Aop) && (NULL != data->Aop_data))
+		if (NULL != data->Aop)
 			data->vops->axpy(data->N, _dst, data->rho, data->tmp);
 		else
 			data->vops->add(data->N, _dst, _dst, data->tmp);
 	}
 
-	if ((NULL != data->Aop) && (NULL != data->Aop_data)) {
+	if (NULL != data->Aop) {
 
 		data->Aop(data->Aop_data, data->tmp, _src);
 		data->vops->add(data->N, _dst, _dst, data->tmp);
@@ -130,11 +130,13 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	for(unsigned int i = 0; i < num_funs; i++)
 		Mjmax = MAX(Mjmax, z_dims[i]);
 
-	struct iter_history_s cghistory;
-	cghistory.numiter = 0;
-	cghistory.relMSE = *TYPE_ALLOC(double[plan->maxitercg]);
-	cghistory.objective = *TYPE_ALLOC(double[plan->maxitercg]);
-	cghistory.resid = *TYPE_ALLOC(double[plan->maxitercg]);
+	struct iter_history_s cghistory = {
+
+		.numiter = 0,
+		.relMSE = *TYPE_ALLOC(double[plan->maxitercg]),
+		.objective = *TYPE_ALLOC(double[plan->maxitercg]),
+		.resid = *TYPE_ALLOC(double[plan->maxitercg]),
+	};
 
 	// allocate memory for all of our auxiliary variables
 	float* z = vops->allocate(M);
@@ -245,7 +247,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			pos = sum_long_array(j, z_dims);
 
-			if (NULL != plan->biases && NULL != plan->biases[j]) {
+			if ((NULL != plan->biases) && (NULL != plan->biases[j])) {
 
 				long Mj = z_dims[j];
 				vops->add(Mj, r + pos, r + pos, plan->biases[j]);
@@ -256,7 +258,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		}
 
 
-		if ((NULL != Aop) && (NULL != Aop_data)) {
+		if (NULL != Aop) {
 
 			vops->xpay(N, rho, rhs, x_adj);
 			ndata.rho = rho;
