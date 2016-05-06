@@ -189,18 +189,22 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	int hw_K = 1;
 	int hw_k = 0;
 
+	const float* biases[num_funs];
+
+	for (unsigned int j = 0; j < num_funs; j++)
+		biases[j] = (NULL != plan->biases) ? plan->biases[j] : NULL;
 
 	// compute norm of biases -- for eps_primal
 	double n3 = 0.;
 
-	if (!fast && (NULL != plan->biases)) {
+	if (!fast) {
 
 		for (unsigned int j = 0; j < num_funs; j++) {
 
 			long Mj = z_dims[j];
 
-			if (plan->biases[j] != NULL)
-				n3 = n3 + vops->dot(Mj, plan->biases[j], plan->biases[j]);
+			if (biases[j] != NULL)
+				n3 = n3 + vops->dot(Mj, biases[j], biases[j]);
 		}
 
 		n3 = sqrt(n3);
@@ -219,8 +223,8 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			plan->ops[j].forward(plan->ops[j].data, Gjx_plus_uj, x); // Gj(x)
 
-			if ((NULL != plan->biases) && (NULL != plan->biases[j]))
-				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, plan->biases[j]);
+			if (NULL != biases[j])
+				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, biases[j]);
 
 			if (0 == rho)
 				vops->copy(Mj, z + pos, Gjx_plus_uj);
@@ -247,10 +251,11 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			pos = sum_long_array(j, z_dims);
 
-			if ((NULL != plan->biases) && (NULL != plan->biases[j])) {
+			if (NULL != biases[j]) {
 
 				long Mj = z_dims[j];
-				vops->add(Mj, r + pos, r + pos, plan->biases[j]);
+
+				vops->add(Mj, r + pos, r + pos, biases[j]);
 			}
 
 			plan->ops[j].adjoint(plan->ops[j].data, s, r + pos);
@@ -329,14 +334,14 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 				vops->smul(Mj, plan->alpha, Gjx_plus_uj, Gjx_plus_uj);
 				vops->axpy(Mj, Gjx_plus_uj, (1. - plan->alpha), z + pos);
 
-				if ((NULL != plan->biases) && (NULL != plan->biases[j]))
-					vops->axpy(Mj, Gjx_plus_uj, (1. - plan->alpha), plan->biases[j]);
+				if (NULL != biases[j])
+					vops->axpy(Mj, Gjx_plus_uj, (1. - plan->alpha), biases[j]);
 			}
 
 			vops->add(Mj, Gjx_plus_uj, Gjx_plus_uj, u + pos); // Gj(x) + uj
 
-			if ((NULL != plan->biases) && (NULL != plan->biases[j]))
-				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, plan->biases[j]); // Gj(x) - bj + uj
+			if (NULL != biases[j])
+				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, biases[j]); // Gj(x) - bj + uj
 
 
 			if (0 == rho)
@@ -351,8 +356,8 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 				// rj = rj - zj - bj = Gj(x) - zj - bj
 				vops->sub(Mj, r + pos, r + pos, z + pos);
 
-				if ((NULL != plan->biases) && (NULL != plan->biases[j]))
-					vops->sub(Mj, r + pos, r + pos, plan->biases[j]);
+				if (NULL != biases[j])
+					vops->sub(Mj, r + pos, r + pos, biases[j]);
 
 
 				// add next term to s: s = s + Gj^H (zj - zj_old)
@@ -372,7 +377,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		if (!fast) {
 
 			history->s_norm[i] = rho * vops->norm(N, s); 
-
 			history->r_norm[i] = vops->norm(M, r);
 
 			n1 = sqrt(n1);
@@ -383,7 +387,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			n = n > n3 ? n : n3;
 
 			history->eps_pri[i] = ABSTOL * sqrt(M) + RELTOL * n;
-
 			history->eps_dual[i] = ABSTOL * sqrt(N) + RELTOL * rho * vops->norm(N, GH_usum);
 
 			if (NULL != plan->image_truth) {
@@ -459,7 +462,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		vops->del(zj_old);
 	}
 
-	if (NULL != plan->image_truth)
+	if (NULL != x_err)
 		vops->del(x_err);
 
 	vops->del(ndata.tmp);	

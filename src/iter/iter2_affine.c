@@ -206,13 +206,9 @@ void iter2a_admm(void* _conf,
 	struct admm_op a_ops[D];
 	struct admm_prox_op a_prox_ops[D];
 
-	if (NULL != biases)
-		admm_plan.biases = xmalloc(sizeof(float*) * D);
+	admm_plan.biases = biases;
 
 	for (unsigned int i = 0; i < D; i++) {
-
-		if (NULL != biases)
-			admm_plan.biases[i] = (float*)biases[i];
 
 		a_ops[i].forward = linop_forward_iter;
 		a_ops[i].normal = linop_normal_iter;
@@ -248,9 +244,7 @@ void iter2a_admm(void* _conf,
 	admm(&admm_history, &admm_plan, admm_plan.num_funs, z_dims, size, (float*)image, image_adj, select_vecops(image), operator_iter, (void*)normaleq_op, obj_eval_data, obj_eval);
 
 cleanup:
-	if (NULL != biases)
-		free(admm_plan.biases);
-
+	return;
 }
 
 

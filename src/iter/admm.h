@@ -87,7 +87,7 @@ struct admm_plan_s {
 
 	struct admm_prox_op* prox_ops;
 	struct admm_op* ops;
-	float** biases;
+	const float* const* biases;
 
 	void (*xupdate_fun)(void* _data, float rho, float* _dst, const float* _src);
 	void* xupdate_data;
