@@ -114,39 +114,6 @@ void irgnm(unsigned int iter, float alpha, float redu, void* data,
 	void (*inv)(void* data, float alpha, float* dst, const float* src), 
 	float* x, const float* x0, const float* y);
 
-void irgnm2(unsigned int iter, float alpha, float redu, void* data, 
-	long N, long M,
-	const struct vec_iter_s* vops,
-	void (*op)(void* data, float* dst, const float* src), 
-	void (*adj)(void* data, float* dst, const float* src), 
-	void (*inv2)(void* data, float alpha, float* res, float* dst, const float* src), 
-	float* x, const float* x0, const float* y);
-
-void split(unsigned int maxiter, float epsilon, float mu, float lambda, 
-	long N, void* data,
-	const struct vec_iter_s* vops,
-	void (*op)(void* data, float* dst, const float* src), 
-	void (*thresh)(void* data, float lambda, float* dst, const float* src),
-	float* x, const float* b);
-
-void splitbreg(unsigned int maxiter, float epsilon, float mu, float lambda,
-	long N, void* data,
-	const struct vec_iter_s* vops,
-	void (*op)(void* data, float* dst, const float* src), 
-	void (*thresh)(void* data, float lambda, float* dst, const float* src),
-	float* x, const float* b,
-	float (*obj_eval)(const void*, const float*));
-
-void irgnm_t(unsigned int iter, float alpha, float lambda, float redu, void* data,
-	long N, long M,
-	const struct vec_iter_s* vops,
-	void (*op)(void* data, float* dst, const float* src), 
-	void (*adj)(void* data, float* dst, const float* src), 
-	void (*inv)(void* data, float alpha, float* dst, const float* src), 
-	void (*thresh)(void* data, float lambda, float* dst, const float* src),
-	float* x, const float* x0, const float* y);
-
-
 void pocs(unsigned int maxiter,
 	unsigned int D, const struct pocs_proj_op* proj_ops, 
 	const struct vec_iter_s* vops,
