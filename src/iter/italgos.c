@@ -643,7 +643,7 @@ void cg_data_free(const struct cg_data_s* cgdata, const struct vec_iter_s* vops)
  * an iteration loop (i.e. admm).
  */
 float conjgrad_hist_prealloc(struct iter_history_s* history, unsigned int maxiter, float l2lambda, float epsilon, 
-			     long N, void* data, struct cg_data_s* cgdata,
+			     long N, void* data, const struct cg_data_s* cgdata,
 			     const struct vec_iter_s* vops,
 			     void (*linop)(void* data, float* dst, const float* src), 
 			     float* x, const float* b, const float* x_truth,

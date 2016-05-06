@@ -18,12 +18,14 @@ struct vec_iter_s;
 typedef void (*prox_fun_t)(void* prox_data, float rho, float* z, const float* x_plus_u);
 #endif
 
+
 /**
  * Store italg history
  *
  * @param numiter actual number of iterations run
  */
 struct iter_history_s {
+
 	unsigned int numiter;
 	double* objective;
 	double* relMSE;
@@ -59,7 +61,7 @@ extern const struct cg_data_s* cg_data_init(long N, const struct vec_iter_s* vop
 extern void cg_data_free(const struct cg_data_s* cgdata, const struct vec_iter_s* vops);
 float conjgrad_hist_prealloc(struct iter_history_s* iter_history, 
 			     unsigned int maxiter, float l2lambda, float epsilon, 
-			     long N, void* data, struct cg_data_s* cgdata,
+			     long N, void* data, const struct cg_data_s* cgdata,
 			     const struct vec_iter_s* vops,
 			     void (*linop)(void* data, float* dst, const float* src), 
 			     float* x, const float* b, const float* x_truth,

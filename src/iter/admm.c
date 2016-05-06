@@ -179,7 +179,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	ndata.rho = 1.;
 	ndata.tmp = vops->allocate(N);
 
-	struct cg_data_s* cgdata = cg_data_init(N, vops);
+	const struct cg_data_s* cgdata = cg_data_init(N, vops);
 
 	// hogwild
 	int hw_K = 1;
