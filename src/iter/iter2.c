@@ -104,6 +104,7 @@ void iter2_ist(iter_conf* _conf,
 {
 
 	assert(D == 1);
+	assert(NULL != prox_ops[0]);
 #if 0
 	assert(NULL == ops);
 #else
@@ -215,7 +216,7 @@ void iter2_admm(iter_conf* _conf,
 	admm_plan.ops = a_ops;
 	admm_plan.prox_ops = a_prox_ops;
 
-	admm_plan.xupdate_fun = operator_p_iter;
+	admm_plan.xupdate_fun = (NULL != xupdate_op) ? operator_p_iter : NULL;
 	admm_plan.xupdate_data = (void*)xupdate_op;
 
 
