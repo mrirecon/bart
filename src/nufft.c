@@ -1,11 +1,11 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -103,14 +103,16 @@ int main_nufft(int argc, char* argv[])
 		if (inverse) {
 
 			const struct operator_s* precond_op = NULL;
-			if (conf.toeplitz & precond)
-				precond_op = nufft_precond_create( nufft_op );
+
+			if (conf.toeplitz && precond)
+				precond_op = nufft_precond_create(nufft_op);
 
 			lsqr(DIMS, &(struct lsqr_conf){ lambda }, iter_conjgrad, &cgconf,
 			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, precond_op);
 
-			if (conf.toeplitz & precond)
-				operator_free( precond_op );
+			if (conf.toeplitz && precond)
+				operator_free(precond_op);
+
 		} else {
 
 			linop_adjoint(nufft_op, DIMS, coilim_dims, img, DIMS, ksp_dims, ksp);
