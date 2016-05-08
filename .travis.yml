@@ -25,6 +25,8 @@ matrix:
     - env:
       os: linux
       compiler: gcc
+      sudo: required
+      dist: trusty
       addons:
         apt:
           packages:
@@ -32,6 +34,9 @@ matrix:
       script:
         - make test
         - utests/build_run_utests.sh
+      before_install:
+        - sudo apt-get update -qq
+        - sudo apt-get install -qq liblapacke-dev
 
     - env: SLINK=1
       os: linux
