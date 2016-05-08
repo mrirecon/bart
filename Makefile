@@ -55,7 +55,7 @@ export TOOLBOX_PATH=$(root)
 
 DEPFILE = $(*D)/.$(*F).d
 DEPFLAG = -MMD -MF $(DEPFILE)
-ALLDEPS = $(shell find $(srcdir) -name ".*.d")
+ALLDEPS = $(shell find $(srcdir) utests -name ".*.d")
 
 
 # Compilation flags
