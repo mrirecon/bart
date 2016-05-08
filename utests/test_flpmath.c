@@ -15,8 +15,7 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
-
-#include "minunit.h"
+#include "misc/utest.h"
 
 #include "test_flpmath.h"
 
@@ -42,7 +41,7 @@ static bool test_md_zfmac2_flags(unsigned int D, const long idims[D], unsigned i
 
 	md_free(out);
 
-	MU_ASSERT(err < TOL);
+	UT_ASSERT(err < UT_TOL);
 
 	return true;
 }
@@ -81,7 +80,7 @@ static bool test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned in
 
 	md_free(out);
 
-	MU_ASSERT(err < TOL);
+	UT_ASSERT(err < UT_TOL);
 
 	return true;
 }
@@ -109,8 +108,8 @@ static bool test_md_zwavg(void)
 
 int main()
 {
-	MU_RUN_TEST(test_md_zwavg);
-	MU_RUN_TEST(test_md_zfmac2);
+	UT_RUN_TEST(test_md_zwavg);
+	UT_RUN_TEST(test_md_zfmac2);
 
 	debug_printf(DP_INFO, "%d/%d failed.\n", num_tests_failed, num_tests_run);
 

@@ -14,8 +14,7 @@
 
 #include "misc/debug.h"
 #include "misc/misc.h"
-
-#include "minunit.h"
+#include "misc/utest.h"
 
 
 
@@ -43,7 +42,7 @@ static bool test_batch_svthresh_tall()
 
 	long dims[3] = { 3, 5, 1 };
 
-	MU_ASSERT(md_znrmse(3, dims, &ref[0][0][0], &inout[0][0][0]) < TOL);
+	UT_ASSERT(md_znrmse(3, dims, &ref[0][0][0], &inout[0][0][0]) < UT_TOL);
 	
 	return true;
 }
@@ -68,7 +67,7 @@ static bool test_batch_svthresh_wide()
 
 	long dims[3] = { 5, 3, 1 };
 
-	MU_ASSERT(md_znrmse(3, dims, &ref[0][0][0], &inout[0][0][0]) < TOL);
+	UT_ASSERT(md_znrmse(3, dims, &ref[0][0][0], &inout[0][0][0]) < UT_TOL);
 	
 	return true;
 }
@@ -79,8 +78,8 @@ int main(int argc, char* argv[])
 {
 	UNUSED(argc); UNUSED(argv);
 
-	MU_RUN_TEST(test_batch_svthresh_tall);
-	MU_RUN_TEST(test_batch_svthresh_wide);
+	UT_RUN_TEST(test_batch_svthresh_tall);
+	UT_RUN_TEST(test_batch_svthresh_wide);
 
 	debug_printf(DP_INFO, "%d/%d failed.\n", num_tests_failed, num_tests_run);
 
