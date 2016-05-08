@@ -17,7 +17,9 @@
 #include "misc/debug.h"
 #include "misc/utest.h"
 
-#include "test_flpmath.h"
+
+// include test data
+#include "test_flpmath_data.h"
 
 
 
