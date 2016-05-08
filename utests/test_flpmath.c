@@ -108,16 +108,11 @@ static bool test_md_zwavg(void)
 }
 
 
-ut_test_f* tests[] = {
-
-	test_md_zwavg,
-	test_md_zfmac2,
-};
 
 
-int main()
-{
-	ut_run_tests(ARRAY_SIZE(tests), tests);
-}
+UT_TESTS(
+test_md_zwavg,
+test_md_zfmac2,
+)
 
 

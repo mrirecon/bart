@@ -18,7 +18,7 @@
 
 
 
-static bool test_batch_svthresh_tall()
+static bool test_batch_svthresh_tall(void)
 {
 	complex float inout[1][5][3] = { {
 
@@ -47,7 +47,7 @@ static bool test_batch_svthresh_tall()
 	return true;
 }
 
-static bool test_batch_svthresh_wide()
+static bool test_batch_svthresh_wide(void)
 {
 	complex float inout[1][3][5] = { {
 
@@ -72,17 +72,8 @@ static bool test_batch_svthresh_wide()
 	return true;
 }
 
-
-ut_test_f* tests[] = {
-
-	test_batch_svthresh_tall,
-	test_batch_svthresh_wide,
-};
-
-
-int main()
-{
-	ut_run_tests(ARRAY_SIZE(tests), tests);
-}
-
+UT_TESTS(
+test_batch_svthresh_tall,
+test_batch_svthresh_wide,
+)
 

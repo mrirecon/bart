@@ -440,7 +440,9 @@ define \n
 
 endef
 
-utest:	$(UTARGETS)
+utests-all: $(UTARGETS)
+
+utest:	utests-all
 	$(patsubst %,$(\n)./%,$(UTARGETS))
 
 endif	# MAKESTAGE
