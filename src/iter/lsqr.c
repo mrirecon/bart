@@ -9,7 +9,6 @@
  */
 
 #include <complex.h>
-#include <stdbool.h>
 #include <assert.h>
 #include <stdlib.h>
 
@@ -45,7 +44,7 @@ struct lsqr_data {
 };
 
 
-static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void* args[static N])
 {
 	const struct lsqr_data* data = CONTAINER_OF(_data, struct lsqr_data, base);
 
@@ -64,10 +63,10 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	   italgo_fun2_t italgo, void* iconf,
 	   const struct linop_s* model_op,
 	   unsigned int num_funs,
-	   const struct operator_p_s** prox_funs,
-	   const struct linop_s** prox_linops,
-	   const long x_dims[N], _Complex float* x, 
-	   const long y_dims[N], const _Complex float* y,
+	   const struct operator_p_s* prox_funs[static num_funs],
+	   const struct linop_s* prox_linops[static num_funs],
+	   const long x_dims[static N], complex float* x,
+	   const long y_dims[static N], const complex float* y,
 	   const struct operator_s* precond_op,
 	   const complex float* x_truth,
 	   void* obj_eval_data,
@@ -85,17 +84,14 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 		operator_apply(precond_op, N, x_dims, x_adj, N, x_dims, x_adj);
 
 
-	// -----------------------------------------------------------
-	// initialize data: struct to hold all data and operators
+	struct lsqr_data data = {
 
-	struct lsqr_data data;
-
-	data.l2_lambda = conf->lambda;
-	data.model_op = model_op;
-	data.G_ops = prox_linops;
-	data.prox_ops = prox_funs;
-	data.size = 2 * md_calc_size(N, x_dims);
-
+		.l2_lambda = conf->lambda,
+		.model_op = model_op,
+		.G_ops = prox_linops,
+		.prox_ops = prox_funs,
+		.size = 2 * md_calc_size(N, x_dims),
+	};
 
 	// -----------------------------------------------------------
 	// run recon
@@ -137,9 +133,9 @@ void lsqr(unsigned int N,
 	  void* iconf,
 	  const struct linop_s* model_op,
 	  const struct operator_p_s* thresh_op,
-	  const long x_dims[N],
-	  complex float* x, 
-	  const long y_dims[N],
+	  const long x_dims[static N],
+	  complex float* x,
+	  const long y_dims[static N],
 	  const complex float* y,
 	  const struct operator_s* precond_op)
 {
@@ -154,11 +150,11 @@ void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
 	    italgo_fun2_t italgo, void* iconf,
 	    const struct linop_s* model_op,
 	    unsigned int num_funs,
-	    const struct operator_p_s** prox_funs,
-	    const struct linop_s** prox_linops,
-	    const long x_dims[N], complex float* x,
-	    const long y_dims[N], const complex float* y,
-	    const long w_dims[N], const complex float* w,
+	    const struct operator_p_s* prox_funs[static num_funs],
+	    const struct linop_s* prox_linops[static num_funs],
+	    const long x_dims[static N], complex float* x,
+	    const long y_dims[static N], const complex float* y,
+	    const long w_dims[static N], const complex float* w,
 	    const struct operator_s* precond_op)
 {
 	unsigned int flags = 0;
@@ -186,9 +182,9 @@ void wlsqr(unsigned int N, const struct lsqr_conf* conf,
 	   italgo_fun_t italgo, void* iconf,
 	   const struct linop_s* model_op,
 	   const struct operator_p_s* thresh_op,
-	   const long x_dims[N], complex float* x,
-	   const long y_dims[N], const complex float* y,
-	   const long w_dims[N], const complex float* w,
+	   const long x_dims[static N], complex float* x,
+	   const long y_dims[static N], const complex float* y,
+	   const long w_dims[static N], const complex float* w,
 	   const struct operator_s* precond_op)
 {
 	wlsqr2(N, conf, iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
@@ -205,8 +201,8 @@ extern void lsqr_gpu(unsigned int N, const struct lsqr_conf* conf,
 		     italgo_fun_t italgo, void* iconf,
 		     const struct linop_s* model_op,
 		     const struct operator_p_s* thresh_op,
-		     const long x_dims[N], complex float* x, 
-		     const long y_dims[N], const complex float* y,
+		     const long x_dims[static N], complex float* x, 
+		     const long y_dims[static N], const complex float* y,
 		     const struct operator_s* precond_op)
 {
 
@@ -267,8 +263,8 @@ extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun2_t italgo, void* iconf,
 			const struct linop_s* model_op,
 			unsigned int num_funs,
-			const struct operator_p_s** prox_funs,
-			const struct linop_s** prox_linops,
+			const struct operator_p_s* prox_funs[static num_funs],
+			const struct linop_s* prox_linops[static num_funs],
 			const long x_dims[N], complex float* x,
 			const long y_dims[N], const complex float* y,
 			const struct operator_s* precond_op,

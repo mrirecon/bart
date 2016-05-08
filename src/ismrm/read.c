@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <complex.h>
 
 #include "ismrmrd/ismrmrd.h"
 #include "ismrmrd/dataset.h"
@@ -27,7 +28,7 @@
 
 
 
-int ismrm_read(const char* datafile, long dims[DIMS], _Complex float* buf)
+int ismrm_read(const char* datafile, long dims[DIMS], complex float* buf)
 {
 	ISMRMRD_Dataset d;
 	ismrmrd_init_dataset(&d, datafile, "/dataset");

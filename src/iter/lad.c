@@ -1,13 +1,13 @@
 /* Copyright 2015. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
- * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014      Frank Ong <frankong@berkeley.edu>
  */
 
 #include <complex.h>
-#include <stdbool.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <math.h>
@@ -43,10 +43,10 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
 		italgo_fun2_t italgo, void* iconf,
 		const struct linop_s* model_op,
 		unsigned int num_funs,
-		const struct operator_p_s* thresh_op[num_funs],
-		const struct linop_s* thresh_funs[num_funs],
-		const long x_dims[N], complex float* x, 
-		const long y_dims[N], const complex float* y)
+		const struct operator_p_s* thresh_op[static num_funs],
+		const struct linop_s* thresh_funs[static num_funs],
+		const long x_dims[static N], complex float* x,
+		const long y_dims[static N], const complex float* y)
 {
 	long w_dims[N];
 	md_select_dims(N, conf->wflags, w_dims, y_dims);
@@ -89,8 +89,8 @@ void lad(	unsigned int N, const struct lad_conf* conf,
 		italgo_fun_t italgo, void* iconf,
 		const struct linop_s* model_op,
 		const struct operator_p_s* thresh_op,
-		const long x_dims[N], complex float* x,
-		const long y_dims[N], const complex float* y)
+		const long x_dims[static N], complex float* x,
+		const long y_dims[static N], const complex float* y)
 {
 	lad2(N, conf, iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
 		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
@@ -106,8 +106,8 @@ extern void lad_gpu(	unsigned int N, const struct lad_conf* conf,
 			italgo_fun_t italgo, void* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
-			const long x_dims[N], complex float* x,
-			const long y_dims[N], const complex float* y)
+			const long x_dims[static N], complex float* x,
+			const long y_dims[static N], const complex float* y)
 {
 
 	complex float* gpu_y = md_gpu_move(N, y_dims, y, CFL_SIZE);

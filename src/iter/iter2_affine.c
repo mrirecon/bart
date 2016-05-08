@@ -271,15 +271,16 @@ void iter2a_pocs(void* _conf,
 	UNUSED(xupdate_op);
 	UNUSED(image_adj);
 	
-	struct pocs_proj_op proj_ops[D];
+	prox_fun_t proj_ops[D];
+	void* proj_data[D];
 
 	for (unsigned int i = 0; i < D; i++) {
 
-		proj_ops[i].proj_fun = operator_p_iter;
-		proj_ops[i].data = (void*)prox_ops[i];
+		proj_ops[i] = operator_p_iter;
+		proj_data[i] = (void*)prox_ops[i];
 	}
 
-	pocs(conf->maxiter, D, proj_ops, select_vecops(image), size, image, image_truth, obj_eval_data, obj_eval);
+	pocs(conf->maxiter, D, proj_ops, proj_data, select_vecops(image), size, image, image_truth, obj_eval_data, obj_eval);
 }
 
 

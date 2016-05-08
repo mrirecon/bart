@@ -6,8 +6,6 @@
 #ifndef __ADMM_H
 #define __ADMM_H
 
-#include <stdbool.h>
-
 #include "misc/cppwrap.h"
 
 struct vec_iter_s;
@@ -68,9 +66,9 @@ struct admm_plan_s {
 	unsigned int maxiter;
 	unsigned int maxitercg;
 
-	bool do_warmstart;
-	bool dynamic_rho;
-	bool hogwild;
+	_Bool do_warmstart;
+	_Bool dynamic_rho;
+	_Bool hogwild;
 	_Bool fast;
 
 	double ABSTOL;

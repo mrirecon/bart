@@ -22,7 +22,7 @@
 #include "num/conv.h"
 #include "num/ops.h"
 #include "num/iovec.h"
-#include "num/lapack.h"
+#include "num/blas.h"
 
 #include "linops/linop.h"
 
@@ -70,7 +70,7 @@ static void cdiag_free(const linop_data_t* _data)
 	free((void*)data);
 }
 
-static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag, bool rdiag)
+static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag, bool rdiag)
 {
 	PTR_ALLOC(struct cdiag_s, data);
 
@@ -105,7 +105,7 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
  * @param flags bitmask specifiying the dimensions present in diag
  * @param diag diagonal matrix
  */
-struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag)
+struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag)
 {
 	return linop_gdiag_create(N, dims, flags, diag, false);
 }
@@ -119,7 +119,7 @@ struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned 
  * @param flags bitmask specifiying the dimensions present in diag
  * @param diag diagonal matrix
  */
-struct linop_s* linop_rdiag_create(unsigned int N, const long dims[N], unsigned int flags, const _Complex float* diag)
+struct linop_s* linop_rdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag)
 {
 	return linop_gdiag_create(N, dims, flags, diag, true);
 }
@@ -291,7 +291,6 @@ static bool cgemm_forward_standard(const struct operator_matrix_s* data)
 	//debug_printf(DP_DEBUG1, "use_cgemm = %d, dsum = %d, csum = %d\n", use_cgemm, dsum, csum);
 
 	return use_cgemm;
-
 }
 
 
@@ -310,7 +309,10 @@ static void linop_matrix_apply(const linop_data_t* _data, complex float* dst, co
 
 		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
 
-		cgemm_sameplace('N', 'T', L, data->T, data->K, &(complex float){1.}, (const complex float (*) [])src, L, (const complex float (*) [])data->mat, data->T, &(complex float){0.}, (complex float (*) [])dst, L);
+		blas_cgemm('N', 'T', L, data->T, data->K, 1.,
+				L, (const complex float (*)[])src,
+				data->T, (const complex float (*)[])data->mat,
+				0., L, (complex float (*)[])dst);
 
 	} else {
 
@@ -333,7 +335,10 @@ static void linop_matrix_apply_adjoint(const linop_data_t* _data, complex float*
 
 		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
 
-		cgemm_sameplace('N', 'N', L, data->K, data->T, &(complex float){1.}, (const complex float (*) [])src, L, (const complex float (*) [])data->mat_conj, data->T, &(complex float){0.}, (complex float (*) [])dst, L);
+		blas_cgemm('N', 'N', L, data->K, data->T, 1.,
+				L, (const complex float (*)[])src,
+				data->T, (const complex float (*)[])data->mat_conj,
+				0., L, (complex float (*)[])dst);
 
 	} else {
 
@@ -373,8 +378,10 @@ static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* 
 
 		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
 
-		cgemm_sameplace('N', 'T', L, data->K, data->K, &(complex float){1.}, (const complex float (*) [])src, L, (const complex float (*) [])data->mat_gram, data->K, &(complex float){0.}, (complex float (*) [])dst, L);
-
+		blas_cgemm('N', 'T', L, data->K, data->K, 1.,
+				L, (const complex float (*)[])src,
+				data->K, (const complex float (*)[])data->mat_gram,
+				0., L, (complex float (*)[])dst);
 	}
 
 }

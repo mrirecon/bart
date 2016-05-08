@@ -63,8 +63,8 @@ static bool checkeps(float eps)
 void iter2_conjgrad(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
+		const struct operator_p_s* prox_ops[static D],
+		const struct linop_s* ops[static D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
@@ -94,8 +94,8 @@ cleanup:
 void iter2_ist(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
+		const struct operator_p_s* prox_ops[static D],
+		const struct linop_s* ops[static D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
@@ -104,6 +104,7 @@ void iter2_ist(iter_conf* _conf,
 {
 
 	assert(D == 1);
+	assert(NULL != prox_ops[0]);
 #if 0
 	assert(NULL == ops);
 #else
@@ -131,8 +132,8 @@ cleanup:
 void iter2_fista(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
+		const struct operator_p_s* prox_ops[static D],
+		const struct linop_s* ops[static D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
@@ -168,8 +169,8 @@ cleanup:
 void iter2_admm(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
+		const struct operator_p_s* prox_ops[static D],
+		const struct linop_s* ops[static D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
@@ -205,7 +206,7 @@ void iter2_admm(iter_conf* _conf,
 
 		a_ops[i].forward = linop_forward_iter;
 		a_ops[i].normal = linop_normal_iter;
-		a_ops[i].adjoint =  linop_adjoint_iter;
+		a_ops[i].adjoint = linop_adjoint_iter;
 		a_ops[i].data = (void*)ops[i];
 
 		a_prox_ops[i].prox_fun = operator_p_iter;
@@ -215,7 +216,7 @@ void iter2_admm(iter_conf* _conf,
 	admm_plan.ops = a_ops;
 	admm_plan.prox_ops = a_prox_ops;
 
-	admm_plan.xupdate_fun = operator_p_iter;
+	admm_plan.xupdate_fun = (NULL != xupdate_op) ? operator_p_iter : NULL;
 	admm_plan.xupdate_data = (void*)xupdate_op;
 
 
@@ -245,8 +246,8 @@ cleanup:
 void iter2_pocs(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
+		const struct operator_p_s* prox_ops[static D],
+		const struct linop_s* ops[static D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,
@@ -262,23 +263,24 @@ void iter2_pocs(iter_conf* _conf,
 	UNUSED(xupdate_op);
 	UNUSED(image_adj);
 	
-	struct pocs_proj_op proj_ops[D];
+	prox_fun_t proj_ops[D];
+	void* proj_data[D];
 
 	for (unsigned int i = 0; i < D; i++) {
 
-		proj_ops[i].proj_fun = operator_p_iter;
-		proj_ops[i].data = (void*)prox_ops[i];
+		proj_ops[i] = operator_p_iter;
+		proj_data[i] = (void*)prox_ops[i];
 	}
 
-	pocs(conf->maxiter, D, proj_ops, select_vecops(image), size, image, image_truth, obj_eval_data, obj_eval);
+	pocs(conf->maxiter, D, proj_ops, proj_data, select_vecops(image), size, image, image_truth, obj_eval_data, obj_eval);
 }
 
 
 void iter2_call_iter(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
-		const struct operator_p_s** prox_ops,
-		const struct linop_s** ops,
+		const struct operator_p_s* prox_ops[static D],
+		const struct linop_s* ops[static D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,

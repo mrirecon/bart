@@ -270,7 +270,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		}
 
 		// x update: use plan->xupdate_fun if specified. use conjgrad otherwise
-		if ((NULL != plan->xupdate_fun) && (NULL != plan->xupdate_data)) {
+		if (NULL != plan->xupdate_fun) {
 
 			plan->xupdate_fun(plan->xupdate_data, rho, x, rhs);
 			grad_iter++;
@@ -295,7 +295,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			grad_iter += cghistory.numiter;
 		}
 
-		if ((NULL != obj_eval) && (NULL != obj_eval_data))
+		if (NULL != obj_eval)
 			history->objective[i] = obj_eval(obj_eval_data, x);
 		else
 			history->objective[i] = 0.;
