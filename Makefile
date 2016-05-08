@@ -399,8 +399,8 @@ $(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
 #	rm $(srcdir)/$@.o
 
 .SECONDEXPANSION:
-$(UTARGETS): % : utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
+$(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
+	$(CC) $(LDFLAGS) -Wl,-Tutests/utests.ld $(CFLAGS) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
 #
 
 clean:

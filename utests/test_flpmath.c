@@ -15,7 +15,8 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
-#include "misc/utest.h"
+
+#include "utest.h"
 
 
 // include test data
@@ -108,11 +109,6 @@ static bool test_md_zwavg(void)
 }
 
 
-
-
-UT_TESTS(
-test_md_zwavg,
-test_md_zfmac2,
-)
-
+UT_REGISTER_TEST(test_md_zfmac2);
+UT_REGISTER_TEST(test_md_zwavg);
 

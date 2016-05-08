@@ -15,15 +15,8 @@
 
 
 typedef bool ut_test_f(void);
-extern void ut_run_tests(unsigned int N, ut_test_f* tests[static N]);
 
-
-#define UT_TESTS(x, ...) \
-	int main(int argc, char* argv[argc]) 						\
-	{ 										\
-		UNUSED(argc); UNUSED(argv);						\
-		ut_test_f* tests[] = { x, __VA_ARGS__ };				\
-		ut_run_tests(ARRAY_SIZE(tests), tests);					\
-	}
+#define UT_REGISTER_TEST(x) \
+	ut_test_f* ptr_ ## x __attribute__((section(".utest"))) = &x;
 
 #endif

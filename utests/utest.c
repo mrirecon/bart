@@ -6,14 +6,17 @@
 
 #include "utest.h"
 
+extern ut_test_f* _utests_begin;
+extern ut_test_f* _utests_end;
 
-void ut_run_tests(unsigned int N, ut_test_f* tests[static N])
+
+int main()
 {
 	int num_tests_run = 0;
 	int num_tests_failed = 0;
 
-	for (unsigned int i = 0; i < N; i++)
-		UNUSED((num_tests_run++, tests[i]()) || num_tests_failed++);
+	for (ut_test_f** ptr = &_utests_begin; ptr != &_utests_end; ptr++)
+		UNUSED((num_tests_run++, (**ptr)()) || num_tests_failed++);
 
 	debug_printf(DP_INFO, "%d/%d failed.\n", num_tests_failed, num_tests_run);
 

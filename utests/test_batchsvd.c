@@ -14,8 +14,8 @@
 
 #include "misc/debug.h"
 #include "misc/misc.h"
-#include "misc/utest.h"
 
+#include "utest.h"
 
 
 static bool test_batch_svthresh_tall(void)
@@ -72,8 +72,6 @@ static bool test_batch_svthresh_wide(void)
 	return true;
 }
 
-UT_TESTS(
-test_batch_svthresh_tall,
-test_batch_svthresh_wide,
-)
+UT_REGISTER_TEST(test_batch_svthresh_tall);
+UT_REGISTER_TEST(test_batch_svthresh_wide);
 
