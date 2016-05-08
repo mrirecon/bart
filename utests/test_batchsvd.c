@@ -73,19 +73,16 @@ static bool test_batch_svthresh_wide()
 }
 
 
+ut_test_f* tests[] = {
 
-int main(int argc, char* argv[])
+	test_batch_svthresh_tall,
+	test_batch_svthresh_wide,
+};
+
+
+int main()
 {
-	UNUSED(argc); UNUSED(argv);
-
-	UT_RUN_TEST(test_batch_svthresh_tall);
-	UT_RUN_TEST(test_batch_svthresh_wide);
-
-	debug_printf(DP_INFO, "%d/%d failed.\n", num_tests_failed, num_tests_run);
-
-	bool ret = (0 == num_tests_failed);
-
-	return ret ? 0 : 1;
+	ut_run_tests(ARRAY_SIZE(tests), tests);
 }
 
 

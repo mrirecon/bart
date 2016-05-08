@@ -106,16 +106,16 @@ static bool test_md_zwavg(void)
 }
 
 
+ut_test_f* tests[] = {
+
+	test_md_zwavg,
+	test_md_zfmac2,
+};
+
+
 int main()
 {
-	UT_RUN_TEST(test_md_zwavg);
-	UT_RUN_TEST(test_md_zfmac2);
-
-	debug_printf(DP_INFO, "%d/%d failed.\n", num_tests_failed, num_tests_run);
-
-	bool ret = (0 == num_tests_failed);
-
-	return ret ? 0 : 1;
+	ut_run_tests(ARRAY_SIZE(tests), tests);
 }
 
 

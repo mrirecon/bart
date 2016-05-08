@@ -10,12 +10,10 @@
 #define UT_ASSERT(test)	\
 	return ((test) || (debug_printf(DP_ERROR, "%s:%d assertion `%s` failed.\n", __func__, __LINE__, #test), false))
 
-#define UT_RUN_TEST(test) (num_tests_run++, (test()) || num_tests_failed++)
-
 #define UT_TOL 1E-6
 
-int num_tests_run = 0;
-int num_tests_failed = 0;
+typedef bool ut_test_f(void);
 
-#endif	// _UTEST_H
+extern void ut_run_tests(unsigned int N, ut_test_f* tests[static N]);
 
+#endif
