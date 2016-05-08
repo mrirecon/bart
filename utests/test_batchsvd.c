@@ -19,7 +19,7 @@
 
 
 
-static char* test_batch_svthresh_tall()
+static bool test_batch_svthresh_tall()
 {
 	complex float inout[1][5][3] = { {
 
@@ -42,14 +42,13 @@ static char* test_batch_svthresh_tall()
 	} };
 
 	long dims[3] = { 3, 5, 1 };
-	float err = md_znrmse(3, dims, &ref[0][0][0], &inout[0][0][0]);
 
-	MU_ASSERT("Error: test_batch_svthresh_tall failed.", err < TOL);
+	MU_ASSERT(md_znrmse(3, dims, &ref[0][0][0], &inout[0][0][0]) < TOL);
 	
-	return NULL;
+	return true;
 }
 
-static char* test_batch_svthresh_wide()
+static bool test_batch_svthresh_wide()
 {
 	complex float inout[1][3][5] = { {
 
@@ -68,34 +67,26 @@ static char* test_batch_svthresh_wide()
 	} };
 
 	long dims[3] = { 5, 3, 1 };
-	float err = md_znrmse(3, dims, &ref[0][0][0], &inout[0][0][0]);
 
-	MU_ASSERT("Error: test_batch_svthresh_tall failed.", err < TOL);
+	MU_ASSERT(md_znrmse(3, dims, &ref[0][0][0], &inout[0][0][0]) < TOL);
 	
-	return NULL;
+	return true;
 }
 
 
-static char* run_all_tests()
-{
-	MU_RUN_TEST(test_batch_svthresh_tall);
-	MU_RUN_TEST(test_batch_svthresh_wide);
-	return NULL;
-}
 
-
-//extern int main_test_batchsvd(int argc, char* argv[]);
 int main(int argc, char* argv[])
 {
 	UNUSED(argc); UNUSED(argv);
- 	char* msg = run_all_tests();
 
-	if (NULL != msg)
-    		debug_printf(DP_ERROR, msg);
-    	else
-        	debug_printf(DP_INFO, "ALL TESTS PASSED\n");
+	MU_RUN_TEST(test_batch_svthresh_tall);
+	MU_RUN_TEST(test_batch_svthresh_wide);
 
-	return (NULL != msg);
+	debug_printf(DP_INFO, "%d/%d failed.\n", num_tests_failed, num_tests_run);
+
+	bool ret = (0 == num_tests_failed);
+
+	return ret ? 0 : 1;
 }
 
 

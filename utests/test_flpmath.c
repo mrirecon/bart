@@ -6,22 +6,12 @@
  * 2016	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
-/*
- *  Unit test based on the MinUnit sample code:
- *  http://www.jera.com/techinfo/jtns/jtn002.html
- */
-
-
-
-#include <stdio.h>
-#include <string.h>
 #include <complex.h>
 
 #include "num/flpmath.h"
 #include "num/multind.h"
 
 #include "misc/misc.h"
-#include "misc/mmio.h"
 #include "misc/debug.h"
 
 #include "minunit.h"
@@ -29,13 +19,9 @@
 #include "test_flpmath.h"
 
 
-#ifndef DIMS
-#define DIMS 16
-#endif
 
 
-
-static char* test_md_zfmac2_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in1, const complex float* in2, const complex float* out_ref)
+static bool test_md_zfmac2_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in1, const complex float* in2, const complex float* out_ref)
 {
     long odims[D];
     md_select_dims(D, ~flags, odims, idims);
@@ -55,10 +41,9 @@ static char* test_md_zfmac2_flags(unsigned int D, const long idims[D], unsigned 
 
     md_free(out);
 
-    MU_ASSERT("Error: test_md_zfmac2_flags failed!\n", err < TOL);
+    MU_ASSERT(err < TOL);
 
-    return NULL;
-
+    return true;
 }
 
 
@@ -66,27 +51,24 @@ static char* test_md_zfmac2_flags(unsigned int D, const long idims[D], unsigned 
  * Test of md_zfmac2
  * Tests based on previously generated data included in the header file
  */
-static char* test_md_zfmac2()
+static bool test_md_zfmac2()
 {
     long idims[4] = {3, 3, 3, 3};
 
-    char* msg = NULL;
+    bool ret = true;
 
     for (unsigned int flags = 0u; flags < 16u; flags++) {
 
         debug_printf(DP_DEBUG1, "Testing md_zfmac2_flags with flags=%d\n", flags);
 
-        msg = test_md_zfmac2_flags(4, idims, flags, test_md_in0, test_md_in1, test_md_zfmac2_out[flags]);
-
-        if (NULL != msg)
-            break;
+        ret &= test_md_zfmac2_flags(4, idims, flags, test_md_in0, test_md_in1, test_md_zfmac2_out[flags]);
     }
 
-    return msg;
+    return ret;
 }
 
 
-static char* test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in, const complex float* out_ref)
+static bool test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in, const complex float* out_ref)
 {
     long odims[D];
     md_select_dims(D, ~flags, odims, idims);
@@ -99,10 +81,9 @@ static char* test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned i
 
     md_free(out);
 
-    MU_ASSERT("Error: test_md_zwavg_flags failed!\n", err < TOL);
+    MU_ASSERT(err < TOL);
 
-    return NULL;
-
+    return true;
 }
 
 
@@ -110,44 +91,33 @@ static char* test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned i
  * Test of md_zwavg.
  * Tests based on previously generated data included in the header file
  */
-static char* test_md_zwavg()
+static bool test_md_zwavg()
 {
     long idims[4] = {3, 3, 3, 3};
 
-    char* msg = NULL;
+    bool ret = true;
 
     for (unsigned int flags = 0u; flags < 16u; flags++) {
 
         debug_printf(DP_DEBUG1, "Testing md_zwavg_flags with flags=%d\n", flags);
 
-        msg = test_md_zwavg_flags(4, idims, flags, test_md_in0, test_md_zwavg_out[flags]);
-
-        if (NULL != msg)
-            break;
+        ret &= test_md_zwavg_flags(4, idims, flags, test_md_in0, test_md_zwavg_out[flags]);
     }
 
-    return msg;
-}
-
-static char * run_all_tests()
-{
-    MU_RUN_TEST(test_md_zwavg);
-    MU_RUN_TEST(test_md_zfmac2);
-    return NULL;
+    return ret;
 }
 
 
 int main()
 {
+	MU_RUN_TEST(test_md_zwavg);
+	MU_RUN_TEST(test_md_zfmac2);
 
-    char* msg = run_all_tests();
+	debug_printf(DP_INFO, "%d/%d failed.\n", num_tests_failed, num_tests_run);
 
-    if (NULL != msg)
-        debug_printf(DP_ERROR, msg);
-    else
-        debug_printf(DP_INFO, "ALL TESTS PASSED\n");
+	bool ret = (0 == num_tests_failed);
 
-    return NULL != msg;
+	return ret ? 0 : 1;
 }
 
 
