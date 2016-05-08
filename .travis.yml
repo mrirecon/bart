@@ -33,7 +33,7 @@ matrix:
             - *default_packages
       script:
         - make test
-        - utests/build_run_utests.sh
+        - make utest
       before_install:
         - sudo apt-get update -qq
         - sudo apt-get install -qq liblapacke-dev
