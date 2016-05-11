@@ -38,33 +38,26 @@ static const char help_str[] =
 
 int main_nlinv(int argc, char* argv[])
 {
-	int iter = 8;
-	float l1 = -1.;
 	bool waterfat = false;
-	bool rvc = false;
 	bool normalize = true;
 	float restrict_fov = -1.;
 	float csh[3] = { 0., 0., 0. };
-	bool usegpu = false;
 	const char* psf = NULL;
+	struct noir_conf_s conf = noir_defaults;
 
 	const struct opt_s opts[] = {
 
-		OPT_FLOAT('l', &l1, "lambda", ""),
-		OPT_INT('i', &iter, "iter", ""),
-		OPT_SET('c', &rvc, ""),
+		OPT_UINT('i', &conf.iter, "iter", ""),
+		OPT_SET('c', &conf.rvc, ""),
 		OPT_CLEAR('N', &normalize, ""),
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
 		OPT_STRING('p', &psf, "PSF", ""),
-		OPT_SET('g', &usegpu, "use gpu"),
+		OPT_SET('g', &conf.usegpu, "use gpu"),
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	assert(iter > 0);
-
 
 	long ksp_dims[DIMS];
 	complex float* kspace_data = load_cfl(argv[1], DIMS, ksp_dims);
@@ -160,18 +153,18 @@ int main_nlinv(int argc, char* argv[])
 	}
 
 #ifdef  USE_CUDA
-	if (usegpu) {
+	if (conf.usegpu) {
 
 		complex float* kspace_gpu = md_alloc_gpu(DIMS, ksp_dims, CFL_SIZE);
 		md_copy(DIMS, ksp_dims, kspace_gpu, kspace_data, CFL_SIZE);
-		noir_recon(dims, iter, image, NULL, pattern, mask, kspace_gpu, rvc, usegpu);
+		noir_recon(&conf, dims, image, NULL, pattern, mask, kspace_gpu);
 		md_free(kspace_gpu);
 
 		md_zfill(DIMS, ksp_dims, sens, 1.);
 
 	} else
 #endif
-	noir_recon(dims, iter, image, sens, pattern, mask, kspace_data, rvc, usegpu);
+	noir_recon(&conf, dims, image, sens, pattern, mask, kspace_data);
 
 	if (normalize) {
 

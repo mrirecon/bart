@@ -63,8 +63,17 @@ static void der(void* ptr, float* _dst, const float* _src)
 }
 
 
+const struct noir_conf_s noir_defaults = {
 
-void noir_recon(const long dims[DIMS], unsigned int iter, complex float* outbuf, complex float* sensout, const complex float* psf, const complex float* mask, const complex float* kspace, bool rvc, bool usegpu)
+	.iter = 8,
+	.rvc = false,
+	.usegpu = false,
+	.alpha = 1.,
+	.redu = 2.,
+};
+
+
+void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex float* outbuf, complex float* sensout, const complex float* psf, const complex float* mask, const complex float* kspace)
 {
 	long imgs_dims[DIMS];
 	long coil_dims[DIMS];
@@ -95,18 +104,18 @@ void noir_recon(const long dims[DIMS], unsigned int iter, complex float* outbuf,
 	md_clear(DIMS, imgs_dims, imgH, CFL_SIZE);
 	md_clear(DIMS, coil_dims, imgH + skip, CFL_SIZE);
 
-	struct noir_data* ndata = noir_init(dims, mask, psf, rvc, usegpu);
+	struct noir_data* ndata = noir_init(dims, mask, psf, conf->rvc, conf->usegpu);
 	struct data data = { ndata };
 
-	struct iter3_irgnm_conf conf = { .iter = iter, .alpha = 1., .redu = 2. };
-	iter3_irgnm(&conf.base, frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
+	struct iter3_irgnm_conf irgnm_conf = { .iter = conf->iter, .alpha = conf->alpha, .redu = conf->redu };
+	iter3_irgnm(&irgnm_conf.base, frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
 
 
 	md_copy(DIMS, imgs_dims, outbuf, img, CFL_SIZE);
 
 	if (NULL != sensout) {
 
-		assert(!usegpu);
+		assert(!conf->usegpu);
 		noir_forw_coils(ndata, sensout, img + skip);
 	}
 
