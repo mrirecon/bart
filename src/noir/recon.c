@@ -1,9 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2011-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2011-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  *
  * Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction by regularized
@@ -31,28 +32,10 @@
 
 #include "recon.h"
 
-#ifdef	BERKELEY_SVN
-#include "misc/phsing.h"
-#define PHSING
-#endif
-
-
-#ifdef WAVELET
-#include "sense/wavelet.h"
-#endif
-
 
 struct data {
 
 	struct noir_data* ndata;
-
-#ifdef WAVELET
-	struct wavelet_plan_s* wdata;
-	const struct operator_s* thresh_data;
-#else
-	void* dummy1;
-	void* dummy2;
-#endif
 };
 
 
@@ -80,17 +63,8 @@ static void der(void* ptr, float* _dst, const float* _src)
 }
 
 
-#ifdef WAVELET
-static void thresh(void* ptr, float lambda, float* _dst, const float* _src)
-{
-	struct data* data = (struct data*)ptr;
-	set_thresh_lambda(data->thresh_data, lambda);
 
-	wavelet_thresh_xx(data->wdata, data->thresh_data, (complex float*)_dst, (const complex float*)_src);	
-}
-#endif
-
-void noir_recon(const long dims[DIMS], unsigned int iter, float th, complex float* outbuf, complex float* sensout, const complex float* psf, const complex float* mask, const complex float* kspace, bool rvc, bool usegpu)
+void noir_recon(const long dims[DIMS], unsigned int iter, complex float* outbuf, complex float* sensout, const complex float* psf, const complex float* mask, const complex float* kspace, bool rvc, bool usegpu)
 {
 	long imgs_dims[DIMS];
 	long coil_dims[DIMS];
@@ -122,45 +96,11 @@ void noir_recon(const long dims[DIMS], unsigned int iter, float th, complex floa
 	md_clear(DIMS, coil_dims, imgH + skip, CFL_SIZE);
 
 	struct noir_data* ndata = noir_init(dims, mask, psf, rvc, usegpu);
+	struct data data = { ndata };
 
-	struct data data = { ndata, NULL, NULL };
+	struct iter3_irgnm_conf conf = { .iter = iter, .alpha = 1., .redu = 2. };
+	iter3_irgnm(&conf.base, frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
 
-	if (-1. == th) {
-
-		struct iter3_irgnm_conf conf = { .iter = iter, .alpha = 1., .redu = 2. };
-		bool repeat = false;
-
-		do {
-			iter3_irgnm(&conf.base, frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
-#ifdef PHSING
-			{
-//			if (repeat) {
-
-			assert(!usegpu);
-			complex float* coils = md_alloc(DIMS, coil_dims, CFL_SIZE);
-			noir_forw_coils(ndata, coils, img + skip);
-			fftmod(DIMS, coil_dims, FFT_FLAGS, coils, coils);
-//			dump_cfl("coils", DIMS, coil_dims, coils);
-
-			repeat = fixphsing(imgs_dims, img, coil_dims, coils);
-
-			if (repeat)
-				md_free(coils);
-			}
-#endif
-		} while (repeat);
-
-	} else {
-#ifdef WAVELET
-		data.thresh_data = thresh_init(DIMS, imgs_dims, th, 0, false);
-		data.wdata = wavelet_thresh_init(imgs_dims, true, false);
-
-	//	irgnm_t(iter, 1., th, 2., (void*)&data, size * 2, data_size * 2, ops, forw, adj, inv, thresh, (float*)img, (float*)imgH, (float*)kspace);
-		assert(0);
-#else
-		assert(0);
-#endif
-	}
 
 	md_copy(DIMS, imgs_dims, outbuf, img, CFL_SIZE);
 

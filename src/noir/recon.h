@@ -9,7 +9,7 @@ extern "C" {
 
 #include "misc/mri.h"
 
-extern void noir_recon(const long dims[DIMS], unsigned int iter, float l1, complex float* image, complex float* sens, const complex float* pattern, const complex float* mask, const complex float* kspace_data, bool rvc, bool usegpu);
+extern void noir_recon(const long dims[DIMS], unsigned int iter, complex float* image, complex float* sens, const complex float* pattern, const complex float* mask, const complex float* kspace_data, bool rvc, bool usegpu);
 
 #ifdef __cplusplus
 }
