@@ -73,9 +73,9 @@ void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float
 		blas_matrix_multiply(M, N, minMN, dst[b], *U, *VT);
 	}
 
-	free(U);
-	free(VT);
-	free(S);
-	free(AA);
+	PTR_FREE(U);
+	PTR_FREE(VT);
+	PTR_FREE(S);
+	PTR_FREE(AA);
 }
 
