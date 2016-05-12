@@ -64,12 +64,13 @@ OPT = -O3 -ffast-math
 CPPFLAGS ?= -Wall -Wextra
 CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
-LDFLAGS ?= -rdynamic
 
 ifeq ($(BUILDTYPE), MacOSX)
 	CC ?= gcc-mp-4.7
 else
 	CC ?= gcc
+	# for symbols in backtraces
+	LDFLAGS += -rdynamic
 endif
 
 CXX ?= g++
