@@ -160,7 +160,7 @@ struct linop_s* linop_identity_create(unsigned int N, const long dims[N])
 
 	data->domain = iovec_create(N, dims, CFL_SIZE);
 
-	return linop_create(N, dims, N, dims, &data->base, identity_apply, identity_apply, identity_apply, NULL, identity_free);
+	return linop_create(N, dims, N, dims, &PTR_PASS(data)->base, identity_apply, identity_apply, identity_apply, NULL, identity_free);
 }
 
 

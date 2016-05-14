@@ -141,7 +141,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D],
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, data->dim, D, data->dim, &data->base, softthresh_apply, thresh_del);
+	return operator_p_create(D, data->dim, D, data->dim, &/*PTR_PASS*/(data)->base, softthresh_apply, thresh_del);
 
 }
 
@@ -182,7 +182,7 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, data->dim, D, data->dim, &data->base, unisoftthresh_apply, thresh_del);
+	return operator_p_create(D, data->dim, D, data->dim, &/*PTR_PASS*/(data)->base, unisoftthresh_apply, thresh_del);
 }
 
 

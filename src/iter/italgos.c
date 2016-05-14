@@ -625,7 +625,7 @@ const struct cg_data_s* cg_data_init(long N, const struct vec_iter_s* vops)
 	cgdata->p = vops->allocate(N);
 	cgdata->Ap = vops->allocate(N);
 
-	return cgdata;
+	return PTR_PASS(cgdata);
 }
 
 void cg_data_free(const struct cg_data_s* cgdata, const struct vec_iter_s* vops) 
