@@ -17,6 +17,5 @@ endif
 lib/libnum.a: libnum.a($(numobjs))
 
 
-UTARGETS += test_flpmath
-
+UTARGETS += test_flpmath test_splines
 
