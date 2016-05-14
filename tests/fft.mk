@@ -1,6 +1,5 @@
 
 
-
 # basic 2D FFT
 
 $(TESTS_OUT)/shepplogan_fft.ra: fft $(TESTS_OUT)/shepplogan.ra
@@ -8,10 +7,11 @@ $(TESTS_OUT)/shepplogan_fft.ra: fft $(TESTS_OUT)/shepplogan.ra
 
 
 tests/test-fft-basic: scale fft nrmse $(TESTS_OUT)/shepplogan_fft.ra $(TESTS_OUT)/shepplogan.ra
-	$(TOOLDIR)/scale 16384 $(TESTS_OUT)/shepplogan.ra $(TESTS_TMP)/shepploganS.ra
-	$(TOOLDIR)/fft -i 7 $(TESTS_OUT)/shepplogan_fft.ra $(TESTS_TMP)/shepplogan2.ra
-	$(TOOLDIR)/nrmse -t 0.000001 $(TESTS_TMP)/shepploganS.ra $(TESTS_TMP)/shepplogan2.ra
-	rm $(TESTS_TMP)/*.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/scale 16384 $(TESTS_OUT)/shepplogan.ra shepploganS.ra		;\
+	$(TOOLDIR)/fft -i 7 $(TESTS_OUT)/shepplogan_fft.ra shepplogan2.ra		;\
+	$(TOOLDIR)/nrmse -t 0.000001 shepploganS.ra shepplogan2.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 	
 
@@ -21,9 +21,10 @@ $(TESTS_OUT)/shepplogan_fftu.ra: fft $(TESTS_OUT)/shepplogan.ra
 	$(TOOLDIR)/fft -u 7 $(TESTS_OUT)/shepplogan.ra $@
 
 tests/test-fft-unitary: fft nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_fftu.ra
-	$(TOOLDIR)/fft -u -i 7 $(TESTS_OUT)/shepplogan_fftu.ra $(TESTS_TMP)/shepplogan2u.ra
-	$(TOOLDIR)/nrmse -t 0.000001 $(TESTS_OUT)/shepplogan.ra $(TESTS_TMP)/shepplogan2u.ra
-	rm $(TESTS_TMP)/*.ra
+	set e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/fft -u -i 7 $(TESTS_OUT)/shepplogan_fftu.ra shepplogan2u.ra		;\
+	$(TOOLDIR)/nrmse -t 0.000001 $(TESTS_OUT)/shepplogan.ra shepplogan2u.ra		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 

@@ -2,11 +2,12 @@
 # compare with FFT on a Cartesian grid
 
 tests/test-nufft-forward: traj nufft reshape nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_fftu.ra
-	$(TOOLDIR)/traj -x128 -y128 $(TESTS_TMP)/traj.ra
-	$(TOOLDIR)/nufft $(TESTS_TMP)/traj.ra $(TESTS_OUT)/shepplogan.ra $(TESTS_TMP)/shepplogan_ksp2.ra
-	$(TOOLDIR)/reshape 7 128 128 1 $(TESTS_TMP)/shepplogan_ksp2.ra $(TESTS_TMP)/shepplogan_ksp3.ra
-	$(TOOLDIR)/nrmse -t 0.01 $(TESTS_OUT)/shepplogan_fftu.ra $(TESTS_TMP)/shepplogan_ksp3.ra
-	rm $(TESTS_TMP)/*.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -x128 -y128 traj.ra						;\
+	$(TOOLDIR)/nufft traj.ra $(TESTS_OUT)/shepplogan.ra shepplogan_ksp2.ra		;\
+	$(TOOLDIR)/reshape 7 128 128 1 shepplogan_ksp2.ra shepplogan_ksp3.ra		;\
+	$(TOOLDIR)/nrmse -t 0.01 $(TESTS_OUT)/shepplogan_fftu.ra shepplogan_ksp3.ra	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
@@ -14,17 +15,18 @@ tests/test-nufft-forward: traj nufft reshape nrmse $(TESTS_OUT)/shepplogan.ra $(
 # test adjoint using definition
 
 tests/test-nufft-adjoint: zeros noise reshape traj nufft fmac nrmse
-	$(TOOLDIR)/zeros 3 128 128 1 $(TESTS_TMP)/z.ra
-	$(TOOLDIR)/noise -s123 $(TESTS_TMP)/z.ra $(TESTS_TMP)/n1.ra
-	$(TOOLDIR)/noise -s321 $(TESTS_TMP)/z.ra $(TESTS_TMP)/n2b.ra
-	$(TOOLDIR)/reshape 7 1 128 128 $(TESTS_TMP)/n2b.ra $(TESTS_TMP)/n2.ra
-	$(TOOLDIR)/traj -r -x128 -y128 $(TESTS_TMP)/traj.ra
-	$(TOOLDIR)/nufft $(TESTS_TMP)/traj.ra $(TESTS_TMP)/n1.ra $(TESTS_TMP)/k.ra
-	$(TOOLDIR)/nufft -a $(TESTS_TMP)/traj.ra $(TESTS_TMP)/n2.ra $(TESTS_TMP)/x.ra
-	$(TOOLDIR)/fmac -C -s7 $(TESTS_TMP)/n1.ra $(TESTS_TMP)/x.ra $(TESTS_TMP)/s1.ra
-	$(TOOLDIR)/fmac -C -s7 $(TESTS_TMP)/k.ra $(TESTS_TMP)/n2.ra $(TESTS_TMP)/s2.ra
-	$(TOOLDIR)/nrmse -t 0.00001 $(TESTS_TMP)/s1.ra $(TESTS_TMP)/s2.ra
-	rm $(TESTS_TMP)/*.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/zeros 3 128 128 1 z.ra						;\
+	$(TOOLDIR)/noise -s123 z.ra n1.ra						;\
+	$(TOOLDIR)/noise -s321 z.ra n2b.ra						;\
+	$(TOOLDIR)/reshape 7 1 128 128 n2b.ra n2.ra					;\
+	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
+	$(TOOLDIR)/nufft traj.ra n1.ra k.ra						;\
+	$(TOOLDIR)/nufft -a traj.ra n2.ra x.ra						;\
+	$(TOOLDIR)/fmac -C -s7 n1.ra x.ra s1.ra						;\
+	$(TOOLDIR)/fmac -C -s7 k.ra n2.ra s2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.00001 s1.ra s2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
@@ -32,13 +34,14 @@ tests/test-nufft-adjoint: zeros noise reshape traj nufft fmac nrmse
 # test inverse using definition
 
 tests/test-nufft-inverse: traj scale phantom nufft nrmse
-	$(TOOLDIR)/traj -r -x256 -y201 $(TESTS_TMP)/traj.ra
-	$(TOOLDIR)/scale 0.5 $(TESTS_TMP)/traj.ra $(TESTS_TMP)/traj2.ra
-	$(TOOLDIR)/phantom -t $(TESTS_TMP)/traj2.ra $(TESTS_TMP)/ksp.ra
-	$(TOOLDIR)/nufft -i $(TESTS_TMP)/traj2.ra $(TESTS_TMP)/ksp.ra $(TESTS_TMP)/reco.ra
-	$(TOOLDIR)/nufft $(TESTS_TMP)/traj2.ra $(TESTS_TMP)/reco.ra $(TESTS_TMP)/k2.ra
-	$(TOOLDIR)/nrmse -t 0.001 $(TESTS_TMP)/ksp.ra $(TESTS_TMP)/k2.ra
-	rm $(TESTS_TMP)/*.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y201 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/nufft -i traj2.ra ksp.ra reco.ra					;\
+	$(TOOLDIR)/nufft traj2.ra reco.ra k2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.001 ksp.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
@@ -46,12 +49,13 @@ tests/test-nufft-inverse: traj scale phantom nufft nrmse
 # test toeplitz by comparing to non-toeplitz
 
 tests/test-nufft-toeplitz: traj phantom nufft nrmse
-	$(TOOLDIR)/traj -r -x128 -y128 $(TESTS_TMP)/traj.ra
-	$(TOOLDIR)/phantom -k -t $(TESTS_TMP)/traj.ra $(TESTS_TMP)/ksp
-	$(TOOLDIR)/nufft -i $(TESTS_TMP)/traj.ra $(TESTS_TMP)/ksp $(TESTS_TMP)/reco1.ra
-	$(TOOLDIR)/nufft -i -t $(TESTS_TMP)/traj.ra $(TESTS_TMP)/ksp $(TESTS_TMP)/reco2.ra
-	$(TOOLDIR)/nrmse -t 0.01 $(TESTS_TMP)/reco1.ra $(TESTS_TMP)/reco2.ra
-	rm $(TESTS_TMP)/*.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
+	$(TOOLDIR)/phantom -k -t traj.ra ksp.ra						;\
+	$(TOOLDIR)/nufft -i traj.ra ksp.ra reco1.ra					;\
+	$(TOOLDIR)/nufft -i -t traj.ra ksp.ra reco2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.01 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 

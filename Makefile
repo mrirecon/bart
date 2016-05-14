@@ -188,7 +188,7 @@ endif
 
 ifeq ($(MAKESTAGE),1)
 .PHONY: doc/commands.txt $(TARGETS)
-default all clean allclean distclean doc/commands.txt doxygen $(TARGETS):
+default all clean allclean distclean doc/commands.txt doxygen test $(TARGETS):
 	make MAKESTAGE=2 $(MAKECMDGOALS)
 else
 
@@ -414,6 +414,18 @@ allclean: clean
 distclean: allclean
 
 
+
+# automatic tests
+
+TOOLDIR=$(root)
+TESTS_TMP=$(root)/tests/tmp/$$$$/
+TESTS_OUT=$(root)/tests/out/
+
+
+include $(root)/tests/*.mk
+
+test:	${TESTS}
+
 endif	# MAKESTAGE
 
 
@@ -428,20 +440,5 @@ install: bart $(root)/doc/commands.txt
 # generate release tar balls (identical to github)
 %.tar.gz:
 	git archive --prefix=bart-$(patsubst bart-%.tar.gz,%,$@)/ -o $@ v$(patsubst bart-%.tar.gz,%,$@)
-
-
-
-# automatic tests
-
-TOOLDIR=$(root)
-TESTS_TMP=$(root)/tests/tmp/
-TESTS_OUT=$(root)/tests/out/
-
-
-include $(root)/tests/*.mk
-
-test:
-	PARALLEL=0 make ${TESTS}
-
 
 
