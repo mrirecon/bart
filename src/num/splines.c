@@ -27,7 +27,7 @@ static long binomial(unsigned int n, unsigned int k)
 
 
 /* basis */
-static double bernstein(unsigned int n, unsigned int v, double x)
+double bernstein(unsigned int n, unsigned int v, double x)
 {
 	assert(v <= n);
 

@@ -1,4 +1,5 @@
 
+extern double bernstein(unsigned int n, unsigned int v, double x);
 extern double bezier_curve(double u, unsigned int N, const double k[static N + 1]);
 extern void bezier_split(double t, unsigned int N, double coeffA[static N + 1], double coeffB[static N + 1], const double coeff[static N + 1]);
 extern void bezier_increase_degree(unsigned int N, double coeff2[static N + 2], const double coeff[static N + 1]);
