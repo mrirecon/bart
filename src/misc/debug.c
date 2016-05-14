@@ -14,19 +14,15 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <fcntl.h>
 #include <complex.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/time.h>
-#include <sys/mman.h>
 #include <time.h>
 #include <execinfo.h>
 
 #include "num/multind.h"
-#include "misc/io.h"
+
 #include "misc/mmio.h"
 #include "misc/cppmap.h"
 
@@ -79,6 +75,9 @@ static void get_datetime_str(int len, char* datetime_str)
 	strftime(datetime_str, len, "%F %T", dt);
 }
 
+#define RESET	"\033[0m"
+#define RED	"\033[31m"
+
 void debug_vprintf(int level, const char* fmt, va_list ap)
 {
 	if (-1 == debug_level) {
@@ -99,10 +98,14 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 			fprintf(ofp, "[%s] [%s] - ", dt_str, get_level_str(level));
 
 		} else
-		if (debug_level < DP_INFO)
-			fprintf(ofp, "%s: ", get_level_str(level));
+		if (level < DP_INFO)
+			fprintf(ofp, "%s%s: ", (level < DP_INFO ? RED : ""), get_level_str(level));
 
 		vfprintf(ofp, fmt, ap);
+
+		if ((!debug_logging) && (level < DP_INFO))
+			fprintf(ofp, RESET);
+
 		fflush(ofp);
 	}
 }
