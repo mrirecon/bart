@@ -441,9 +441,11 @@ define \n
 endef
 
 utests-all: $(UTARGETS)
-
-utest:	utests-all
 	$(patsubst %,$(\n)./%,$(UTARGETS))
+
+utest: utests-all
+	@echo ALL UNIT TESTS PASSED.
+
 
 endif	# MAKESTAGE
 
