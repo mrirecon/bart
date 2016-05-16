@@ -9,7 +9,6 @@
 #include <complex.h>
 #include <stdbool.h>
 #include <math.h>
-#include <stdio.h>
 #include <assert.h>
 
 #include "num/multind.h"

@@ -1,4 +1,3 @@
-
 /* 
  * Copyright 2013-2015 The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by
@@ -16,7 +15,6 @@
 
 #define _GNU_SOURCE
 #include <math.h>
-#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <complex.h>

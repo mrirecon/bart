@@ -8,7 +8,6 @@
 
 #include <complex.h>
 #include <assert.h>
-#include <stdio.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"

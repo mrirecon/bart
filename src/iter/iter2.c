@@ -14,15 +14,11 @@
 #include <assert.h>
 #include <math.h>
 
-#define  NUM_INTERNAL
-
 #include "misc/misc.h"
 #include "misc/debug.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/vecops.h"
-#include "num/gpuops.h"
 #include "num/iovec.h"
 #include "num/ops.h"
 

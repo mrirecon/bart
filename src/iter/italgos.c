@@ -28,17 +28,13 @@
  */
 
 #include <math.h>
-#include <stdio.h>
 #include <stdbool.h>
-
-#define NUM_INTERNAL
-#include "num/vecops.h"
-#include "num/multind.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
 
 #include "iter/vec.h"
+
 #include "italgos.h"
 
 

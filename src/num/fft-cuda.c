@@ -12,7 +12,6 @@
 #include <stdbool.h>
 #include <complex.h>
 #include <assert.h>
-#include <stdio.h>
 
 #include "misc/misc.h"
 #include "num/multind.h"

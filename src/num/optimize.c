@@ -16,8 +16,6 @@
 #include <string.h>
 #include <math.h>
 
-#include <stdio.h>
-
 #include "misc/misc.h"
 #include "misc/debug.h"
 

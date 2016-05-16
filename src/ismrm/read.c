@@ -7,7 +7,6 @@
  * 2012, 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <complex.h>

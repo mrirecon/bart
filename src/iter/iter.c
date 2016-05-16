@@ -14,14 +14,9 @@
 #include <assert.h>
 #include <math.h>
 
-#define  NUM_INTERNAL
-
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
-#ifdef USE_CUDA
-#include "num/gpuops.h"
-#endif
 
 #include "linops/linop.h"
 #include "linops/someops.h"

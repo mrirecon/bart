@@ -15,7 +15,6 @@
 
 #define _GNU_SOURCE
 #include <math.h>
-#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <complex.h>

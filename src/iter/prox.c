@@ -13,8 +13,6 @@
 #include <assert.h>
 #include <math.h>
 
-#define  NUM_INTERNAL
-
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
