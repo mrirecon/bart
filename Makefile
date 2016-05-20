@@ -400,8 +400,12 @@ $(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
 
 .SECONDEXPANSION:
 $(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) -Wl,-Tutests/utests.ld $(CFLAGS) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
-#
+	$(root)/utests/utests-collect.sh ./utests/$@.c > utests/utests.inc
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
+
+
+# linker script version - does not work on MacOS X
+#	$(CC) $(LDFLAGS) -Wl,-Tutests/utests.ld $(CFLAGS) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
 
 clean:
 	rm -f `find $(srcdir) -name "*.o"`

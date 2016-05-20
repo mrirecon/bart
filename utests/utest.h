@@ -16,7 +16,13 @@
 
 typedef bool ut_test_f(void);
 
+#if 0
 #define UT_REGISTER_TEST(x) \
 	ut_test_f* ptr_ ## x __attribute__((section(".utest"))) = &x;
+#else
+#define UT_REGISTER_TEST(x) 				\
+	extern bool call_ ## x(void);			\
+	extern bool call_ ## x(void) { return x(); };
+#endif
 
 #endif
