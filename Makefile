@@ -131,7 +131,7 @@ TIO=toimg
 
 MODULES = -lnum -lmisc -lnum -lmisc
 
-MODULES_pics = -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
+MODULES_pics = -lgrecon -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
 MODULES_sqpics = -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
 MODULES_pocsense = -lsense -lwavelet2 -liter -llinops
 MODULES_nlinv = -lnoir -liter

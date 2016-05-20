@@ -87,6 +87,8 @@ matrix:
       before_install:
         - brew update
         - brew install fftw gcc47 homebrew/science/openblas
+      script:
+          - make test
 
 script:
   - make bart
