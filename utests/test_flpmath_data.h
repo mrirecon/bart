@@ -1,5 +1,5 @@
 
-const _Complex float test_md_in0[] = {
+const complex float test_md_in0[] = {
 -7.393421e-01+6.139934e-01i, +2.055377e+00+1.326829e-03i, +1.195222e+00-1.464677e-01i,
 +1.176603e+00-8.083734e-01i, +1.552954e-01-4.527622e-01i, -3.515362e-01-1.362136e+00i,
 +1.680448e+00-4.103929e-01i, +5.236822e-01-3.636895e-01i, +1.681717e+00-5.943724e-01i,
@@ -29,7 +29,7 @@ const _Complex float test_md_in0[] = {
 +1.308183e+00+5.377352e-01i, +1.098623e+00+4.579275e-01i, +1.406074e+00+3.533691e-01i
 };
 
-const _Complex float test_md_in1[] = {
+const complex float test_md_in1[] = {
 -1.739342e+00+6.139934e-01i, +1.055377e+00+1.326829e-03i, +1.952218e-01-1.464677e-01i,
 +1.766032e-01-8.083734e-01i, -8.447046e-01-4.527622e-01i, -1.351536e+00-1.362136e+00i,
 +6.804481e-01-4.103929e-01i, -4.763178e-01-3.636895e-01i, +6.817170e-01-5.943724e-01i,
@@ -60,7 +60,7 @@ const _Complex float test_md_in1[] = {
 };
 
 
-const _Complex float test_md_zwavg_1_out[] = {
+const complex float test_md_zwavg_1_out[] = {
 +8.370856e-01+1.562842e-01i, +3.267875e-01-8.744240e-01i, +1.295282e+00-4.561515e-01i,
 +1.482982e+00-4.819572e-01i, +1.388912e+00+3.110708e-01i, +5.908900e-01+2.365202e-01i,
 +6.493732e-01-2.995733e-01i, +8.886185e-01+3.315288e-01i, +1.030630e+00+3.048438e-01i,
@@ -73,7 +73,7 @@ const _Complex float test_md_zwavg_1_out[] = {
 };
 
 
-const _Complex float test_md_zwavg_2_out[] = {
+const complex float test_md_zwavg_2_out[] = {
 +7.059031e-01-2.015909e-01i, +9.114516e-01-2.717083e-01i, +8.418009e-01-7.009922e-01i,
 +9.188184e-01-5.026386e-01i, +1.183177e+00+6.986534e-01i, +1.360789e+00-1.303809e-01i,
 +5.000055e-01-7.136064e-02i, +1.307272e+00-1.540728e-01i, +7.613443e-01+5.622328e-01i,
@@ -86,14 +86,14 @@ const _Complex float test_md_zwavg_2_out[] = {
 };
 
 
-const _Complex float test_md_zwavg_3_out[] = {
+const complex float test_md_zwavg_3_out[] = {
 +8.197184e-01-3.914304e-01i, +1.154261e+00+2.187795e-02i, +8.562073e-01+1.122665e-01i,
 +9.579368e-01-1.013746e-01i, +1.003774e+00-1.327286e-01i, +8.981237e-01+7.914554e-01i,
 +6.676020e-01+6.653453e-02i, +9.304209e-01-4.032709e-01i, +1.248249e+00+1.229790e-01i
 };
 
 
-const _Complex float test_md_zwavg_4_out[] = {
+const complex float test_md_zwavg_4_out[] = {
 +2.769299e-01-4.804891e-01i, +1.614725e+00-2.063939e-01i, +1.077786e+00+6.163673e-02i,
 +9.692690e-01-2.739946e-01i, +6.930107e-01+3.954423e-01i, +9.420384e-01-3.532722e-01i,
 +8.785279e-01-2.110653e-02i, +1.094165e+00+8.382394e-02i, +9.441100e-01+2.249513e-02i,
@@ -106,26 +106,26 @@ const _Complex float test_md_zwavg_4_out[] = {
 };
 
 
-const _Complex float test_md_zwavg_5_out[] = {
+const complex float test_md_zwavg_5_out[] = {
 +9.898136e-01-2.084154e-01i, +8.681061e-01-7.727481e-02i, +9.722676e-01+2.840418e-02i,
 +9.960256e-01+1.143539e-01i, +9.773238e-01-8.915346e-02i, +8.864853e-01+5.321518e-01i,
 +9.330794e-01-2.580181e-01i, +9.544386e-01+4.947387e-02i, +9.587538e-01-5.213102e-03i
 };
 
 
-const _Complex float test_md_zwavg_6_out[] = {
+const complex float test_md_zwavg_6_out[] = {
 +7.082424e-01-2.585301e-01i, +1.133967e+00+9.095746e-02i, +9.879780e-01-8.971346e-02i,
 +7.724728e-01+2.544726e-01i, +1.144451e+00+2.093454e-01i, +9.429109e-01+9.353432e-02i,
 +1.079236e+00+9.530504e-03i, +9.316226e-01+2.625136e-01i, +8.354129e-01-4.858014e-01i
 };
 
 
-const _Complex float test_md_zwavg_7_out[] = {
+const complex float test_md_zwavg_7_out[] = {
 +9.433958e-01-8.576202e-02i, +9.532783e-01+1.857841e-01i, +9.487572e-01-7.125244e-02i
 };
 
 
-const _Complex float test_md_zwavg_8_out[] = {
+const complex float test_md_zwavg_8_out[] = {
 +2.737418e-01+2.905264e-01i, +1.144648e+00+1.912871e-02i, +4.284064e-01-2.968628e-01i,
 +1.194739e+00+1.609637e-01i, +7.544008e-01-1.332733e-01i, +4.766911e-01-1.081598e-01i,
 +1.232672e+00-3.803800e-01i, +8.561285e-01-4.252933e-01i, +9.743440e-01-4.054612e-01i,
@@ -138,48 +138,48 @@ const _Complex float test_md_zwavg_8_out[] = {
 };
 
 
-const _Complex float test_md_zwavg_9_out[] = {
+const complex float test_md_zwavg_9_out[] = {
 +6.155986e-01+4.264096e-03i, +8.086104e-01-2.682315e-02i, +1.021048e+00-4.037115e-01i,
 +1.408533e+00-6.153616e-01i, +9.537125e-01-1.747065e-01i, +7.262106e-01+2.759466e-01i,
 +8.947864e-01+2.590179e-01i, +1.037545e+00+8.457528e-02i, +1.070248e+00+6.831079e-01i
 };
 
 
-const _Complex float test_md_zwavg_10_out[] = {
+const complex float test_md_zwavg_10_out[] = {
 +9.003845e-01+2.370337e-02i, +9.183923e-01-1.798127e-01i, +6.264805e-01-2.701613e-01i,
 +9.298828e-01-5.999085e-01i, +1.245136e+00+3.556226e-01i, +9.134372e-01-2.698355e-01i,
 +7.296839e-01+5.816782e-01i, +1.046512e+00+3.870066e-01i, +1.226384e+00+5.801621e-02i
 };
 
 
-const _Complex float test_md_zwavg_11_out[] = {
+const complex float test_md_zwavg_11_out[] = {
 +8.150858e-01-1.420902e-01i, +1.029485e+00-1.713738e-01i, +1.000860e+00+3.422337e-01i
 };
 
 
-const _Complex float test_md_zwavg_12_out[] = {
+const complex float test_md_zwavg_12_out[] = {
 +7.193845e-01-1.483252e-01i, +1.196769e+00+5.254020e-02i, +1.002765e+00-2.562946e-01i,
 +8.426213e-01+1.228994e-01i, +9.387613e-01+1.065600e-01i, +1.018486e+00-3.464138e-01i,
 +9.979453e-01+3.089886e-02i, +1.074510e+00+4.037163e-01i, +7.450514e-01+1.207278e-01i
 };
 
 
-const _Complex float test_md_zwavg_13_out[] = {
+const complex float test_md_zwavg_13_out[] = {
 +9.729728e-01-1.173599e-01i, +9.332896e-01-3.898480e-02i, +9.391689e-01+1.851143e-01i
 };
 
 
-const _Complex float test_md_zwavg_14_out[] = {
+const complex float test_md_zwavg_14_out[] = {
 +8.533171e-01+1.824304e-03i, +1.070013e+00+1.876055e-01i, +9.221007e-01-1.606602e-01i
 };
 
 
-const _Complex float test_md_zwavg_15_out[] = {
+const complex float test_md_zwavg_15_out[] = {
 +9.484771e-01+9.589870e-03i
 };
 
 
-const _Complex float* test_md_zwavg_out[] = {
+const complex float* test_md_zwavg_out[] = {
     test_md_in0,
     test_md_zwavg_1_out,
     test_md_zwavg_2_out,
@@ -199,7 +199,7 @@ const _Complex float* test_md_zwavg_out[] = {
 };
 
 
-const _Complex float test_md_zfmac2_0_out[] = {
+const complex float test_md_zfmac2_0_out[] = {
 +9.089808e-01-1.521896e+00i, +2.169196e+00+4.127438e-03i, +2.118806e-01-2.036551e-01i,
 -4.456757e-01-1.093896e+00i, -3.361723e-01+3.121384e-01i, -1.380301e+00+2.319816e+00i,
 +9.750354e-01-9.688950e-01i, -3.817092e-01-1.722589e-02i, +7.931767e-01-1.404760e+00i,
@@ -229,7 +229,7 @@ const _Complex float test_md_zfmac2_0_out[] = {
 +1.140005e-01+8.691768e-01i, -1.013480e-01+5.482519e-01i, +4.461004e-01+6.403572e-01i,
 };
 
-const _Complex float test_md_zfmac2_1_out[] = {
+const complex float test_md_zfmac2_1_out[] = {
 +3.290058e+00-1.721423e+00i, -2.162149e+00+1.538059e+00i, +1.386503e+00-2.390881e+00i,
 -3.445891e-01-2.754265e+00i, -5.388778e-01+1.275390e+00i, -9.374123e-01+4.627697e-01i,
 -3.801357e-01-4.693422e-01i, -3.384578e-01+1.953348e+00i, +9.819084e-01-7.626404e-01i,
@@ -241,7 +241,7 @@ const _Complex float test_md_zfmac2_1_out[] = {
 +6.935317e-02+7.379137e-01i, -9.756994e-02-4.016360e+00i, +4.587530e-01+2.057786e+00i,
 };
 
-const _Complex float test_md_zfmac2_2_out[] = {
+const complex float test_md_zfmac2_2_out[] = {
 +1.438341e+00-3.584686e+00i, +1.451314e+00+2.990400e-01i, -3.752439e-01+7.114013e-01i,
 -1.461830e+00-2.785981e+00i, -1.700088e+00+2.542318e+00i, +1.341039e+00-7.724423e-01i,
 -8.371719e-01+7.503493e-01i, +1.800134e+00-1.466137e+00i, -6.996476e-01+1.437153e+00i,
@@ -253,13 +253,13 @@ const _Complex float test_md_zfmac2_2_out[] = {
 +2.753034e-01+1.106633e+00i, -5.500517e-01+1.209792e+00i, +7.052846e-01-3.537086e+00i,
 };
 
-const _Complex float test_md_zfmac2_3_out[] = {
+const complex float test_md_zfmac2_3_out[] = {
 +2.514411e+00-2.574245e+00i, -1.820879e+00-1.016105e+00i, +2.633149e-01+7.213653e-01i,
 -1.834509e-01-3.059287e+00i, -7.798917e+00-4.932133e+00i, -1.094349e+01-6.362573e-01i,
 -1.154914e-01+3.424731e+00i, -4.944721e+00-3.617798e+00i, +4.305364e-01-1.220660e+00i,
 };
 
-const _Complex float test_md_zfmac2_4_out[] = {
+const complex float test_md_zfmac2_4_out[] = {
 -1.177784e+00-4.145963e+00i, +3.003703e+00-1.071887e+00i, +7.394142e-01+2.728202e-01i,
 -3.933074e-01-9.128913e-01i, -2.093488e+00+2.651916e+00i, -5.526890e-01+3.027773e+00i,
 +7.104301e-01-5.614634e-01i, +6.411469e-01-2.048068e-01i, +7.942200e-02-1.924481e+00i,
@@ -271,23 +271,23 @@ const _Complex float test_md_zfmac2_4_out[] = {
 -1.219950e+00-2.551294e-01i, +6.668591e-01+1.093100e+00i, +2.479548e-01+8.337667e-01i,
 };
 
-const _Complex float test_md_zfmac2_5_out[] = {
+const complex float test_md_zfmac2_5_out[] = {
 +2.565333e+00-4.945030e+00i, -3.039485e+00+4.766797e+00i, +1.430999e+00-2.690751e+00i,
 -2.006955e+00+4.324290e-01i, -6.316167e+00-9.803106e+00i, -1.060273e+01+7.430009e-01i,
 -4.750783e+00-2.117797e+00i, +4.262431e-01-9.676673e-01i, -3.051362e-01+1.671737e+00i,
 };
 
-const _Complex float test_md_zfmac2_6_out[] = {
+const complex float test_md_zfmac2_6_out[] = {
 -8.606613e-01-5.620318e+00i, +1.551361e+00+1.375221e+00i, +2.661474e-01+1.376112e+00i,
 -1.021097e+01-4.047591e+00i, -8.210822e+00-2.301868e+00i, -5.040607e-01-2.278218e+00i,
 +8.148711e-01+1.166298e+00i, -1.715124e-01+2.529045e+00i, -5.273035e+00-5.109070e+00i,
 };
 
-const _Complex float test_md_zfmac2_7_out[] = {
+const complex float test_md_zfmac2_7_out[] = {
 +9.568463e-01-2.868983e+00i, -1.892586e+01-8.627676e+00i, -4.629676e+00-1.413727e+00i,
 };
 
-const _Complex float test_md_zfmac2_8_out[] = {
+const complex float test_md_zfmac2_8_out[] = {
 +3.978938e-01-1.476803e+00i, +1.733981e+00+4.341910e-02i, -3.128163e-01+1.105417e+00i,
 +1.036271e+00+1.142068e-01i, +1.660281e-02-1.532072e+00i, -2.144843e+00+3.399493e+00i,
 +6.763045e-01-2.172698e+00i, +7.872713e-01-8.783617e-01i, +2.480392e-02-8.114033e-01i,
@@ -299,41 +299,41 @@ const _Complex float test_md_zfmac2_8_out[] = {
 -3.418068e+00+3.048228e+00i, -1.587065e+00-3.816760e-02i, -7.305583e-02+6.016931e-01i,
 };
 
-const _Complex float test_md_zfmac2_9_out[] = {
+const complex float test_md_zfmac2_9_out[] = {
 +1.819059e+00-3.279667e-01i, -1.091969e+00+1.981628e+00i, +1.488380e+00-3.862463e+00i,
 -3.785474e+00-8.815579e+00i, -4.891983e+00-7.251506e-01i, -5.887060e+00-2.530468e-02i,
 -2.225990e+00+2.513148e+00i, -2.945456e+00-7.260454e+00i, -5.078189e+00+3.611754e+00i,
 };
 
-const _Complex float test_md_zfmac2_10_out[] = {
+const complex float test_md_zfmac2_10_out[] = {
 +2.110470e+00-3.535294e+00i, +2.537855e+00-2.367015e+00i, -2.432855e+00+3.693507e+00i,
 -4.779583e+00-6.698401e+00i, -6.849545e+00+3.065286e+00i, -2.935391e+00-5.932921e+00i,
 -7.587648e+00+1.732084e+00i, -2.519285e+00+9.041262e-01i, -1.427019e-01-3.771762e+00i,
 };
 
-const _Complex float test_md_zfmac2_11_out[] = {
+const complex float test_md_zfmac2_11_out[] = {
 +2.215469e+00-2.208802e+00i, -1.456452e+01-9.566034e+00i, -1.024963e+01-1.135552e+00i,
 };
 
-const _Complex float test_md_zfmac2_12_out[] = {
+const complex float test_md_zfmac2_12_out[] = {
 -4.323521e+00-4.992611e+00i, +3.114076e+00+1.707538e-01i, -2.982961e+00-1.808541e+00i,
 -1.988988e+00-3.111272e+00i, -5.527018e+00-5.003531e-01i, -1.413402e+00-2.392353e+00i,
 -3.944252e+00-3.977292e-01i, -4.418031e+00+1.931997e+00i, -1.114585e+00-1.810282e+00i,
 };
 
-const _Complex float test_md_zfmac2_13_out[] = {
+const complex float test_md_zfmac2_13_out[] = {
 -4.192405e+00-6.630398e+00i, -8.929411e+00-6.003977e+00i, -9.476869e+00-2.760137e-01i,
 };
 
-const _Complex float test_md_zfmac2_14_out[] = {
+const complex float test_md_zfmac2_14_out[] = {
 -1.025676e+01-8.501611e+00i, -6.830975e+00+1.602398e+00i, -5.510948e+00-6.011176e+00i,
 };
 
-const _Complex float test_md_zfmac2_15_out[] = {
+const complex float test_md_zfmac2_15_out[] = {
 -2.259868e+01-1.291039e+01i
 };
 
-const _Complex float* test_md_zfmac2_out[] = {
+const complex float* test_md_zfmac2_out[] = {
     test_md_zfmac2_0_out,
     test_md_zfmac2_1_out,
     test_md_zfmac2_2_out,

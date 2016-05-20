@@ -33,7 +33,7 @@ matrix:
             - *default_packages
       script:
         - make test
-        - utests/build_run_utests.sh
+        - make utest
       before_install:
         - sudo apt-get update -qq
         - sudo apt-get install -qq liblapacke-dev
@@ -84,6 +84,9 @@ matrix:
 
     - os: osx
       compiler: gcc-4.7
+      script:
+        - make test
+        - make utest
       before_install:
         - brew update
         - brew install fftw gcc47 homebrew/science/openblas

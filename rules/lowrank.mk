@@ -13,4 +13,6 @@ lowrankobjs := $(lowranksrcs:.c=.o)
 lib/liblowrank.a: liblowrank.a($(lowrankobjs))
 
 
+UTARGETS += test_batchsvd
+MODULES_test_batchsvd = -llowrank
 
