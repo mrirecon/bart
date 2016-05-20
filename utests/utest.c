@@ -15,15 +15,15 @@ extern ut_test_f* _utests_begin;
 extern ut_test_f* _utests_end;
 #else
 /* A shell script called by make is used to create
- * the list of registered unit tests in 'utests.inc'.
+ * the list of registered unit tests in UTESTS.
  * This also works on MacOS X.
  */
 extern ut_test_f
-#include "utests.inc"
+UTESTS
 dummy;
 
 ut_test_f* ut_tests[] = {
-#include "utests.inc"
+UTESTS
 };
 
 #define _utests_begin	(ut_tests[0])
