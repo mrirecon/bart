@@ -36,7 +36,7 @@ void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float
 		// FIXME: this is based on gratuitous guess-work about the obscure
 		// API of this FORTRAN from ancient times... Is it really worth it?
 
-		blas_csyrk('U', (N <= M) ? 'N' : 'T', (N <= M) ? N : M, (N <= M) ? M : N, 1., (N <= M) ? M : N, dst[b], 0., minMN, *AA);
+		blas_csyrk('U', (N <= M) ? 'T' : 'N', (N <= M) ? N : M, (N <= M) ? M : N, 1., M, dst[b], 0., minMN, *AA);
 
 		// lambda_max( A ) <= max_i sum_j | a_i^T a_j |
 
