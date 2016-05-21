@@ -204,7 +204,7 @@ void thresh_free(const struct operator_p_s* o)
  */
 void set_thresh_lambda(const struct operator_p_s* o, const float lambda)
 {
-	struct thresh_s* data = operator_p_get_data(o);
+	struct thresh_s* data = CONTAINER_OF(operator_p_get_data(o), struct thresh_s, base);
 	data->lambda = lambda;
 }
 
@@ -215,7 +215,7 @@ void set_thresh_lambda(const struct operator_p_s* o, const float lambda)
  */
 float get_thresh_lambda(const struct operator_p_s* o)
 {
-	struct thresh_s* data = operator_p_get_data(o);
+	struct thresh_s* data = CONTAINER_OF(operator_p_get_data(o), struct thresh_s, base);
 	return data->lambda;
 }
 

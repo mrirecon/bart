@@ -88,8 +88,8 @@ extern const struct iovec_s* operator_codomain(const struct operator_s* op);
 extern const struct iovec_s* operator_p_domain(const struct operator_p_s* op);
 extern const struct iovec_s* operator_p_codomain(const struct operator_p_s* op);
 
-extern void* operator_get_data(const struct operator_s* op);
-extern void* operator_p_get_data(const struct operator_p_s* x);
+extern operator_data_t* operator_get_data(const struct operator_s* op);
+extern operator_data_t* operator_p_get_data(const struct operator_p_s* x);
 
 
 

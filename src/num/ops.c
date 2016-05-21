@@ -38,7 +38,7 @@ struct operator_s {
 	unsigned int N;
 	const struct iovec_s** domain;
 
-	void* data;
+	operator_data_t* data;
 	int refcount;
 
 	void (*apply)(const operator_data_t* data, unsigned int N, void* args[N]);
@@ -141,7 +141,7 @@ const struct operator_s* operator_ref(const struct operator_s* x)
  *
  * @param x operator
  */
-void* operator_get_data(const struct operator_s* x)
+operator_data_t* operator_get_data(const struct operator_s* x)
 {
 	return x->data;
 }
@@ -267,7 +267,7 @@ struct op_p_data_s {
 
 	operator_data_t base;
 
-	void* data;
+	operator_data_t* data;
 	operator_p_fun_t apply;
 	operator_del_t del;
 };
@@ -286,9 +286,9 @@ static void op_p_del(const operator_data_t* _data)
 	free((void*)data);
 }
 
-void* operator_p_get_data(const struct operator_p_s* x)
+operator_data_t* operator_p_get_data(const struct operator_p_s* x)
 {
-	struct op_p_data_s* data = operator_get_data(&x->op);
+	struct op_p_data_s* data = CONTAINER_OF(operator_get_data(&x->op), struct op_p_data_s, base);
 	return data->data;
 }
 
@@ -314,7 +314,7 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
 
 	o->op.N = 3;
 	o->op.domain = *PTR_PASS(dom);
-	o->op.data = PTR_PASS(op);
+	o->op.data = &PTR_PASS(op)->base;
 	o->op.apply = op_p_apply;
 
 	o->op.refcount = 1;

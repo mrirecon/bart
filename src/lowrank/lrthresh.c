@@ -445,6 +445,6 @@ long ls_blkdims(long blkdims[MAX_LEV][DIMS], const long idims[DIMS])
 
 float get_lrthresh_lambda(const struct operator_p_s* o)
 {
-	const struct lrthresh_data_s* data = operator_p_get_data(o);
+	const struct lrthresh_data_s* data = CONTAINER_OF(operator_p_get_data(o), const struct lrthresh_data_s, base);
 	return data->lambda;
 }
