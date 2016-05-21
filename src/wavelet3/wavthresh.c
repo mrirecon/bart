@@ -111,7 +111,7 @@ const struct operator_p_s* prox_wavelet3_thresh_create(unsigned int N, const lon
 	data->randshift = randshift;
 	data->rand_state = 1;
 
-	return operator_p_create(N, dims, N, dims, &data->base, wavelet3_thresh_apply, wavelet3_thresh_del);
+	return operator_p_create(N, dims, N, dims, &PTR_PASS(data)->base, wavelet3_thresh_apply, wavelet3_thresh_del);
 }
 
 

@@ -191,7 +191,7 @@ extern const struct linop_s* linop_clone(const struct linop_s* x)
 	lo->normal = operator_ref(x->normal);
 	lo->norm_inv = operator_p_ref(x->norm_inv);
 
-	return lo;
+	return PTR_PASS(lo);
 }
 
 

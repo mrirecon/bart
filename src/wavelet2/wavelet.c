@@ -416,7 +416,7 @@ const struct operator_p_s* prox_wavethresh_create(int numdims, const long imSize
 	data->plan->randshift = randshift;
 	data->plan->lambda = lambda;
 
-	return operator_p_create(numdims, imSize, numdims, imSize, &data->base, wavelet_thresh, wavelet_prox_del);
+	return operator_p_create(numdims, imSize, numdims, imSize, &PTR_PASS(data)->base, wavelet_thresh, wavelet_prox_del);
 
 }
 
