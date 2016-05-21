@@ -378,7 +378,7 @@ const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
 
 	pdata->fft_op = linop_fft_create(pdata->N, pdata->cim_dims, FFT_FLAGS, data->use_gpu);
 
-	return operator_create(pdata->N, pdata->cim_dims, pdata->N, pdata->cim_dims, /*PTR_PASS*/(pdata), nufft_precond_apply, nufft_precond_del);
+	return operator_create(pdata->N, pdata->cim_dims, pdata->N, pdata->cim_dims, &/*PTR_PASS*/(pdata)->base, nufft_precond_apply, nufft_precond_del);
 }
 
 
