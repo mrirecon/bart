@@ -25,7 +25,7 @@ struct operator_p_s;
 
 extern const struct operator_s* operator_create(unsigned int ON, const long out_dims[__VLA(ON)],
 		unsigned int IN, const long in_dims[__VLA(IN)],
-		void* data, operator_fun_t apply, operator_del_t del);
+		operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
 extern const struct operator_s* operator_create2(unsigned int ON, const long out_dims[__VLA(ON)], const long out_strs[__VLA(ON)],
 		unsigned int IN, const long in_dims[__VLA(IN)], const long in_strs[__VLA(IN)],
@@ -67,10 +67,10 @@ extern const struct operator_p_s* operator_p_ref(const struct operator_p_s* x);
 
 // apply functions
 extern void operator_generic_apply_unchecked(const struct operator_s* op, unsigned int N, void* args[__VLA(N)]);
-extern void operator_apply(const struct operator_s* op, unsigned int IN, const long idims[__VLA(IN)], _Complex float* dst, const long ON, const long odims[__VLA(ON)], const _Complex float* src);
-extern void operator_apply2(const struct operator_s* op, unsigned int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], _Complex float* dst, const long ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)], const _Complex float* src);
-extern void operator_p_apply(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[__VLA(IN)], _Complex float* dst, const long ON, const long odims[__VLA(ON)], const _Complex float* src);
-extern void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], _Complex float* dst, const long ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)], const _Complex float* src);
+extern void operator_apply(const struct operator_s* op, unsigned int ON, const long odims[__VLA(ON)], _Complex float* dst, const long IN, const long idims[__VLA(IN)], const _Complex float* src);
+extern void operator_apply2(const struct operator_s* op, unsigned int ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)], _Complex float* dst, const long IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], const _Complex float* src);
+extern void operator_p_apply(const struct operator_p_s* op, float mu, unsigned int ON, const long odims[__VLA(ON)], _Complex float* dst, const long IN, const long idims[__VLA(IN)], const _Complex float* src);
+extern void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned int ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)], _Complex float* dst, const long IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], const _Complex float* src);
 
 
 extern void operator_apply_unchecked(const struct operator_s* op, _Complex float* dst, const _Complex float* src);

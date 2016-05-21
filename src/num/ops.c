@@ -113,7 +113,7 @@ const struct operator_s* operator_create2(unsigned int ON, const long out_dims[O
  */
 const struct operator_s* operator_create(unsigned int ON, const long out_dims[ON], 
 		unsigned int IN, const long in_dims[IN],
-		void* data, operator_fun_t apply, operator_del_t del)
+		operator_data_t* data, operator_fun_t apply, operator_del_t del)
 {
 	return operator_create2(ON, out_dims, MD_STRIDES(ON, out_dims, CFL_SIZE),
 				IN, in_dims, MD_STRIDES(IN, in_dims, CFL_SIZE),
@@ -584,7 +584,7 @@ void operator_apply_unchecked(const struct operator_s* op, complex float* dst, c
 	operator_generic_apply_unchecked(op, 2, (void*[2]){ (void*)dst, (void*)src });
 }
 
-void operator_apply2(const struct operator_s* op, unsigned int IN, const long idims[IN], const long istrs[IN], complex float* dst, const long ON, const long odims[ON], const long ostrs[ON], const complex float* src)
+void operator_apply2(const struct operator_s* op, unsigned int ON, const long odims[ON], const long ostrs[ON], complex float* dst, const long IN, const long idims[IN], const long istrs[ON], const complex float* src)
 {
 	assert(2 == op->N);
 	assert(iovec_check(op->domain[1], IN, idims, istrs));
@@ -593,14 +593,14 @@ void operator_apply2(const struct operator_s* op, unsigned int IN, const long id
 	operator_apply_unchecked(op, dst, src);
 }
 
-void operator_apply(const struct operator_s* op, unsigned int IN, const long idims[IN], complex float* dst, const long ON, const long odims[ON], const complex float* src)
+void operator_apply(const struct operator_s* op, unsigned int ON, const long odims[ON], complex float* dst, const long IN, const long idims[IN], const complex float* src)
 {
 	operator_apply2(op, ON, odims, MD_STRIDES(ON, odims, CFL_SIZE), dst,
 			    IN, idims, MD_STRIDES(IN, idims, CFL_SIZE), src);
 }
 
 
-void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[IN], const long istrs[IN], complex float* dst, const long ON, const long odims[ON], const long ostrs[ON], const complex float* src)
+void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned int ON, const long odims[ON], const long ostrs[ON], complex float* dst, const long IN, const long idims[IN], const long istrs[IN], const complex float* src)
 {
 	assert(3 == op->op.N);
 	assert(iovec_check(op->op.domain[2], IN, idims, istrs));
@@ -610,7 +610,7 @@ void operator_p_apply2(const struct operator_p_s* op, float mu, unsigned int IN,
 }
 
 
-void operator_p_apply(const struct operator_p_s* op, float mu, unsigned int IN, const long idims[IN], complex float* dst, const long ON, const long odims[ON], const complex float* src)
+void operator_p_apply(const struct operator_p_s* op, float mu, unsigned int ON, const long odims[ON], complex float* dst, const long IN, const long idims[IN], const complex float* src)
 {
 	operator_p_apply2(op, mu,
 			ON, odims, MD_STRIDES(ON, odims, CFL_SIZE), dst,
