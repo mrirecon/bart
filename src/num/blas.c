@@ -37,7 +37,7 @@ void blas_cgemm(char transa, char transb, long M, long N,  long K, const complex
                                 (cuComplex*)C, ldc);
         } else
 #endif
-        cblas_cgemm(CblasColMajor, transa, transb, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
+        cblas_cgemm(CblasColMajor, transa, transb, M, N, K, (void*)&alpha, (void*)A, lda, (void*)B, ldb, (void*)&beta, (void*)C, ldc);
 }
 
 
@@ -53,7 +53,7 @@ void (blas_csyrk)(char uplo, char trans, long N, long K, const complex float alp
 	assert('U' == uplo);
 	assert(('T' == trans) || ('N' == trans));
 
-	cblas_csyrk(CblasColMajor, CblasUpper, ('T' == trans) ? CblasTrans : CblasNoTrans, N, K, &alpha, A, lda, &beta, C, ldc);
+	cblas_csyrk(CblasColMajor, CblasUpper, ('T' == trans) ? CblasTrans : CblasNoTrans, N, K, (void*)&alpha, (void*)A, lda, (void*)&beta, (void*)C, ldc);
 }
 
 
