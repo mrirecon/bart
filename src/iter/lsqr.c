@@ -39,8 +39,6 @@ struct lsqr_data {
 	long size;
 
 	const struct linop_s* model_op;
-	const struct operator_p_s** prox_ops;
-	const struct linop_s** G_ops;
 };
 
 
@@ -88,8 +86,6 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 
 		.l2_lambda = conf->lambda,
 		.model_op = model_op,
-		.G_ops = prox_linops,
-		.prox_ops = prox_funs,
 		.size = 2 * md_calc_size(N, x_dims),
 	};
 
