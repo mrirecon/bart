@@ -177,7 +177,7 @@ int main_wave(int argc, char* argv[])
 //	initialize iterative algorithm
     
 	italgo_fun_t italgo = NULL;
-	void* iconf = NULL;
+	iter_conf* iconf = NULL;
 
 	struct iter_conjgrad_conf cgconf;
 	struct iter_fista_conf fsconf;
@@ -191,7 +191,7 @@ int main_wave(int argc, char* argv[])
 		cgconf.tol = 1.E-3;         // cg tolerance     
 
 		italgo = iter_conjgrad;
-		iconf = &cgconf;
+		iconf = &cgconf.base;
 
 	} else {
 
@@ -202,7 +202,7 @@ int main_wave(int argc, char* argv[])
 		fsconf.hogwild = hogwild;
 
 		italgo = iter_fista;
-		iconf = &fsconf;
+		iconf = &fsconf.base;
 	}
 
 

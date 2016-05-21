@@ -52,7 +52,7 @@ struct iter2_call_s {
 	iter_conf base;
 
 	italgo_fun2_t fun;
-	void* _conf;
+	iter_conf* _conf;
 };
 
 

@@ -158,7 +158,7 @@ int main_lrmatrix(int argc, char* argv[])
         }
 
 	// Initialize algorithm
-	void* iconf;
+	iter_conf* iconf;
 
 	struct iter_admm_conf mmconf;
 	memcpy(&mmconf, &iter_admm_defaults, sizeof(struct iter_admm_conf));
@@ -167,7 +167,7 @@ int main_lrmatrix(int argc, char* argv[])
 	mmconf.hogwild = hogwild;
 	mmconf.fast = fast;
 	
-	iconf = &mmconf;
+	iconf = &mmconf.base;
 
 
 	// Initialize operators

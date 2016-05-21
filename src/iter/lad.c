@@ -40,7 +40,7 @@ const struct lad_conf lad_defaults = { 5, 0.1, ~0u, &lsqr_defaults };
  * Perform iterative, regularized least-absolute derivation reconstruction.
  */
 void lad2(	unsigned int N, const struct lad_conf* conf,
-		italgo_fun2_t italgo, void* iconf,
+		italgo_fun2_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
 		unsigned int num_funs,
 		const struct operator_p_s* thresh_op[static num_funs],
@@ -86,13 +86,13 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
  * Perform iterative, regularized least-absolute derivation reconstruction.
  */
 void lad(	unsigned int N, const struct lad_conf* conf,
-		italgo_fun_t italgo, void* iconf,
+		italgo_fun_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
 		const struct operator_p_s* thresh_op,
 		const long x_dims[static N], complex float* x,
 		const long y_dims[static N], const complex float* y)
 {
-	lad2(N, conf, iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
+	lad2(N, conf, iter2_call_iter, &((struct iter_call_s){ { }, italgo, iconf }).base,
 		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 		x_dims, x, y_dims, y);
 }
@@ -103,7 +103,7 @@ void lad(	unsigned int N, const struct lad_conf* conf,
  */
 #ifdef USE_CUDA
 extern void lad_gpu(	unsigned int N, const struct lad_conf* conf,
-			italgo_fun_t italgo, void* iconf,
+			italgo_fun_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
 			const long x_dims[static N], complex float* x,

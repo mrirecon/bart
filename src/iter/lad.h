@@ -12,14 +12,14 @@ struct lad_conf {
 };
 
 extern void lad(unsigned int N, const struct lad_conf* conf,
-		italgo_fun_t italgo, void* iconf,
+		italgo_fun_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
 		const struct operator_p_s* thresh_op,
 		const long x_dims[N], complex float* x, 
 		const long y_dims[N], const complex float* y);
 
 extern void lad2(unsigned int N, const struct lad_conf* conf,
-		italgo_fun2_t italgo, void* iconf,
+		italgo_fun2_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
 		unsigned int num_funs,
 		const struct operator_p_s* thresh_op[num_funs],
@@ -29,7 +29,7 @@ extern void lad2(unsigned int N, const struct lad_conf* conf,
 
 #ifdef USE_CUDA
 extern void lad_gpu(	unsigned int N, const struct lad_conf* conf,
-			italgo_fun_t italgo, void* iconf,
+			italgo_fun_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
 			const long x_dims[N], complex float* x, 

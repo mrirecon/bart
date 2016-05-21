@@ -146,7 +146,7 @@ int main_pocsense(int argc, char* argv[])
 	// italgo interface
 	
 	italgo_fun2_t italgo = NULL;
-	void* iconf = NULL;
+	iter_conf* iconf = NULL;
 
 	struct iter_pocs_conf pconf = iter_pocs_defaults;
 	pconf.maxiter = maxiter;
@@ -162,13 +162,13 @@ int main_pocsense(int argc, char* argv[])
 	if (use_admm) {
 
 		italgo = iter2_admm;
-		iconf = &mmconf;
+		iconf = &mmconf.base;
 		ops2 = ops;
 
 	} else {
 
 		italgo = iter2_pocs;
-		iconf = &pconf;
+		iconf = &pconf.base;
 	}
 
 

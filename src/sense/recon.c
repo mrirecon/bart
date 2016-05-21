@@ -125,7 +125,7 @@ void sense_recon(const struct sense_conf* conf,
 		 const long pat_dims[DIMS],
 		 const complex float* pattern, 
 		 italgo_fun_t italgo,
-		 void* iconf,
+		 iter_conf* iconf,
 		 const struct operator_p_s* thresh_op,
 		 const long ksp_dims[DIMS],
 		 const complex float* kspace,
@@ -133,14 +133,14 @@ void sense_recon(const struct sense_conf* conf,
 		 const struct operator_s* precond_op)
 {
 	sense_recon2(conf, dims, image, sense_op, pat_dims, pattern,
-		iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
+		iter2_call_iter, &((struct iter_call_s){ { }, italgo, iconf }).base,
 		     1, MAKE_ARRAY(thresh_op), NULL, ksp_dims, kspace, image_truth, precond_op);
 }
 
 void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex float* image,
 		  const struct linop_s* sense_op,
 		  const long pat_dims[DIMS], const complex float* pattern,
-		  italgo_fun2_t italgo, void* iconf,
+		  italgo_fun2_t italgo, iter_conf* iconf,
 		  unsigned int num_funs,
 		  const struct operator_p_s* thresh_op[num_funs],
 		  const struct linop_s* thresh_funs[num_funs],
@@ -243,7 +243,7 @@ void sense_recon_gpu(const struct sense_conf* conf,
 		     const long pat_dims[DIMS],
 		     const complex float* pattern, 
 		     italgo_fun_t italgo,
-		     void* iconf,
+		     iter_conf* iconf,
 		     const struct operator_p_s* thresh_op,
 		     const long ksp_dims[DIMS],
 		     const complex float* kspace,
@@ -251,7 +251,7 @@ void sense_recon_gpu(const struct sense_conf* conf,
 		     const struct operator_s* precond_op)
 {
 	sense_recon2_gpu(conf, dims, image, sense_op, pat_dims, pattern,
-		iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
+		iter2_call_iter, &((struct iter_call_s){ { }, italgo, iconf }).base,
 			 1, MAKE_ARRAY(thresh_op), NULL, ksp_dims, kspace, image_truth, precond_op);
 }
 
@@ -262,7 +262,7 @@ void sense_recon2_gpu(const struct sense_conf* conf,
 		      const long dims_pat[DIMS],
 		      const complex float* pattern,
 		      italgo_fun2_t italgo,
-		      void* iter_conf,
+		      iter_conf* iter_conf,
 		      unsigned int num_funs,
 		      const struct operator_p_s* thresh_op[num_funs],
 		      const struct linop_s* thresh_funs[num_funs],

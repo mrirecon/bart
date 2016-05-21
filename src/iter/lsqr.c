@@ -58,7 +58,7 @@ static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void
  * Perform iterative, multi-regularized least-squares reconstruction
  */
 void lsqr2(unsigned int N, const struct lsqr_conf* conf,
-	   italgo_fun2_t italgo, void* iconf,
+	   italgo_fun2_t italgo, iter_conf* iconf,
 	   const struct linop_s* model_op,
 	   unsigned int num_funs,
 	   const struct operator_p_s* prox_funs[static num_funs],
@@ -126,7 +126,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 void lsqr(unsigned int N,
 	  const struct lsqr_conf* conf,
 	  italgo_fun_t italgo,
-	  void* iconf,
+	  iter_conf* iconf,
 	  const struct linop_s* model_op,
 	  const struct operator_p_s* thresh_op,
 	  const long x_dims[static N],
@@ -135,7 +135,7 @@ void lsqr(unsigned int N,
 	  const complex float* y,
 	  const struct operator_s* precond_op)
 {
-	lsqr2(N, conf, iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
+	lsqr2(N, conf, iter2_call_iter, &((struct iter_call_s){ { }, italgo, iconf }).base,
 		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 	      x_dims, x, y_dims, y, precond_op, NULL, NULL, NULL);
 }
@@ -143,7 +143,7 @@ void lsqr(unsigned int N,
 
 
 void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
-	    italgo_fun2_t italgo, void* iconf,
+	    italgo_fun2_t italgo, iter_conf* iconf,
 	    const struct linop_s* model_op,
 	    unsigned int num_funs,
 	    const struct operator_p_s* prox_funs[static num_funs],
@@ -175,7 +175,7 @@ void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
 
 //  A^H W W A - A^H W W y
 void wlsqr(unsigned int N, const struct lsqr_conf* conf,
-	   italgo_fun_t italgo, void* iconf,
+	   italgo_fun_t italgo, iter_conf* iconf,
 	   const struct linop_s* model_op,
 	   const struct operator_p_s* thresh_op,
 	   const long x_dims[static N], complex float* x,
@@ -183,7 +183,7 @@ void wlsqr(unsigned int N, const struct lsqr_conf* conf,
 	   const long w_dims[static N], const complex float* w,
 	   const struct operator_s* precond_op)
 {
-	wlsqr2(N, conf, iter2_call_iter, &(struct iter_call_s){ { }, italgo, iconf },
+	wlsqr2(N, conf, iter2_call_iter, &((struct iter_call_s){ { }, italgo, iconf }).base,
 	       model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 	       x_dims, x, y_dims, y, w_dims, w, precond_op);
 }
@@ -194,7 +194,7 @@ void wlsqr(unsigned int N, const struct lsqr_conf* conf,
  */
 #ifdef USE_CUDA
 extern void lsqr_gpu(unsigned int N, const struct lsqr_conf* conf,
-		     italgo_fun_t italgo, void* iconf,
+		     italgo_fun_t italgo, iter_conf* iconf,
 		     const struct linop_s* model_op,
 		     const struct operator_p_s* thresh_op,
 		     const long x_dims[static N], complex float* x, 
@@ -225,7 +225,7 @@ extern void lsqr_gpu(unsigned int N, const struct lsqr_conf* conf,
  */
 #ifdef USE_CUDA
 extern void wlsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun_t italgo, void* iconf,
+			italgo_fun_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
 			const long x_dims[N], complex float* x, 
@@ -256,7 +256,7 @@ extern void wlsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
  */
 #ifdef USE_CUDA
 extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun2_t italgo, void* iconf,
+			italgo_fun2_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			unsigned int num_funs,
 			const struct operator_p_s* prox_funs[static num_funs],

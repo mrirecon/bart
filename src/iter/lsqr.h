@@ -25,7 +25,7 @@ extern const struct lsqr_conf lsqr_defaults;
 
 #ifdef USE_CUDA
 extern void lsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun_t italgo, void* iconf,
+			italgo_fun_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
 			const long x_dims[__VLA(N)], _Complex float* x,
@@ -33,7 +33,7 @@ extern void lsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			const struct operator_s* precond_op);
 
 extern void wlsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun_t italgo, void* iconf,
+			italgo_fun_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
 			const long x_dims[__VLA(N)], _Complex float* x,
@@ -42,7 +42,7 @@ extern void wlsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			const struct operator_s* precond_op);
 
 extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun2_t italgo, void* iconf,
+			italgo_fun2_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			unsigned int num_funs,
 			const struct operator_p_s* prox_funs[__VLA(num_funs)],
@@ -59,7 +59,7 @@ extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
 #endif
 
 extern void lsqr(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun_t italgo, void* iconf,
+			italgo_fun_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
 			const long x_dims[__VLA(N)], _Complex float* x,
@@ -67,7 +67,7 @@ extern void lsqr(	unsigned int N, const struct lsqr_conf* conf,
 			const struct operator_s* precond_op);
 
 extern void wlsqr(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun_t italgo, void* iconf,
+			italgo_fun_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			const struct operator_p_s* thresh_op,
 			const long x_dims[__VLA(N)], _Complex float* x,
@@ -76,7 +76,7 @@ extern void wlsqr(	unsigned int N, const struct lsqr_conf* conf,
 			const struct operator_s* precond_op);
 
 extern void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun2_t italgo, void* iconf,
+			italgo_fun2_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			unsigned int num_funs,
 			const struct operator_p_s* prox_funs[__VLA(num_funs)],
@@ -89,7 +89,7 @@ extern void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
 			float (*obj_eval)(const void*, const float*));
 
 extern void wlsqr2(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun2_t italgo, void* iconf,
+			italgo_fun2_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			unsigned int num_funs,
 			const struct operator_p_s* prox_funs[__VLA(num_funs)],

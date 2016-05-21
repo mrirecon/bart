@@ -359,7 +359,7 @@ int main_pics(int argc, char* argv[])
 	italgo_fun2_t italgo = iter2_call_iter;
 	struct iter_call_s iter2_data;
 
-	void* iconf = &iter2_data;
+	iter_conf* iconf = &iter2_data.base;
 
 	struct iter_conjgrad_conf cgconf;
 	struct iter_fista_conf fsconf;
@@ -449,7 +449,7 @@ int main_pics(int argc, char* argv[])
 			mmconf.RELTOL = 0.;
 
 			italgo = iter2_admm;
-			iconf = &mmconf;
+			iconf = &mmconf.base;
 
 			break;
 
