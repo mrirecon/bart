@@ -3,8 +3,8 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
- * 2016	Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * Authors:
+ * 2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
