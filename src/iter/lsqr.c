@@ -15,6 +15,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
+#include "num/iovec.h"
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -24,6 +25,7 @@
 
 #include "iter/iter.h"
 #include "iter/iter2.h"
+#include "iter/itop.h"
 
 #include "lsqr.h"
 
@@ -53,6 +55,63 @@ static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void
 	md_axpy(1, MD_DIMS(data->size), args[0], data->l2_lambda, args[1]);
 }
 
+static void normaleq_del(const operator_data_t* _data)
+{
+	const struct lsqr_data* data = CONTAINER_OF(_data, struct lsqr_data, base);
+
+	linop_free(data->model_op);
+
+	xfree(data);
+}
+
+
+
+/**
+ * Operator for iterative, multi-regularized least-squares reconstruction
+ */
+const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
+				      italgo_fun2_t italgo, void* iconf,
+				      const struct linop_s* model_op,
+				      const struct operator_s* precond_op,
+			              unsigned int num_funs,
+				      const struct operator_p_s* prox_funs[static num_funs],
+				      const struct linop_s* prox_linops[static num_funs])
+{
+	PTR_ALLOC(struct lsqr_data, data);
+
+	const struct iovec_s* iov = operator_domain(model_op->forward);
+
+	data->l2_lambda = conf->lambda;
+	data->model_op = linop_clone(model_op);
+	data->size = 2 * md_calc_size(iov->N, iov->dims);	// FIXME: assume complex
+
+	const struct operator_s* normaleq_op = operator_create(iov->N, iov->dims, iov->N, iov->dims, &PTR_PASS(data)->base, normaleq_l2_apply, normaleq_del);
+	const struct operator_s* adjoint = operator_ref(model_op->adjoint);
+
+	if (NULL != precond_op) {
+
+		const struct operator_s* tmp;
+
+		tmp = normaleq_op;
+		normaleq_op = operator_chain(normaleq_op, precond_op);
+		operator_free(tmp);
+
+		tmp = adjoint;
+		adjoint = operator_chain(adjoint, precond_op);
+		operator_free(tmp);
+	}
+
+	const struct operator_s* itop_op = itop_create(italgo, iconf, normaleq_op, num_funs, prox_funs, prox_linops);
+	const struct operator_s* lsqr_op = operator_chain(adjoint, itop_op);
+
+	operator_free(normaleq_op);
+	operator_free(itop_op);
+	operator_free(adjoint);
+
+	return lsqr_op;
+}
+
+
 
 /**
  * Perform iterative, multi-regularized least-squares reconstruction
@@ -70,6 +129,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	   void* obj_eval_data,
 	   float (*obj_eval)(const void*, const float*))
 {
+#if 1
 	// -----------------------------------------------------------
 	// normal equation right hand side
 
@@ -115,6 +175,14 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	
 	md_free(x_adj);
 	operator_free(normaleq_op);
+#else
+	// nicer, but is still missing some features
+	const struct operator_s* op = lsqr2_create(conf, italgo, iconf, model_op, precond_op,
+						num_funs, prox_funs, prox_linops);
+
+	operator_apply(op, N, x_dims, x, N, y_dims, y);
+	operator_free(op);
+#endif
 }
 
 
@@ -137,9 +205,30 @@ void lsqr(unsigned int N,
 {
 	lsqr2(N, conf, iter2_call_iter, &((struct iter_call_s){ { }, italgo, iconf }).base,
 		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
-	      x_dims, x, y_dims, y, precond_op, NULL, NULL, NULL);
+		x_dims, x, y_dims, y, precond_op, NULL, NULL, NULL);
 }
 
+
+const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
+					italgo_fun2_t italgo, void* iconf,
+					const struct linop_s* model_op,
+					const struct linop_s* weights,
+					const struct operator_s* precond_op,
+					unsigned int num_funs,
+					const struct operator_p_s* prox_funs[static num_funs],
+					const struct linop_s* prox_linops[static num_funs])
+{
+	struct linop_s* op = linop_chain(model_op, weights);
+
+	const struct operator_s* lsqr_op = lsqr2_create(conf, italgo, iconf, op, precond_op,
+						num_funs, prox_funs, prox_linops);
+	const struct operator_s* wlsqr_op = operator_chain(weights->forward, lsqr_op);
+
+	operator_free(lsqr_op);
+	linop_free(op);
+
+	return wlsqr_op;
+}
 
 
 void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
@@ -159,6 +248,7 @@ void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
 			flags = MD_SET(flags, i);
 
 	struct linop_s* weights = linop_cdiag_create(N, y_dims, flags, w);
+#if 1
 	struct linop_s* op = linop_chain(model_op, weights);
 
 	complex float* wy = md_alloc_sameplace(N, y_dims, CFL_SIZE, y);
@@ -170,6 +260,12 @@ void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
 	md_free(wy);
 
 	linop_free(op);
+#else
+	const struct operator_s* op = wlsqr2_create(conf, italgo, iconf, model_op, weights, precond_op,
+						num_funs, prox_funs, prox_linops);
+
+	operator_apply(op, N, x_dims, x, N, y_dims, y);
+#endif
 	linop_free(weights);
 }
 

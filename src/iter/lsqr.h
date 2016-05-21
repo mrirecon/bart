@@ -23,6 +23,24 @@ struct lsqr_conf {
 
 extern const struct lsqr_conf lsqr_defaults;
 
+extern const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
+				      italgo_fun2_t italgo, void* iconf,
+				      const struct linop_s* model_op,
+				      const struct operator_s* precond_op,
+			              unsigned int num_funs,
+				      const struct operator_p_s* prox_funs[static num_funs],
+				      const struct linop_s* prox_linops[static num_funs]);
+
+extern const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
+					italgo_fun2_t italgo, void* iconf,
+					const struct linop_s* model_op,
+					const struct linop_s* weights,
+					const struct operator_s* precond_op,
+					unsigned int num_funs,
+					const struct operator_p_s* prox_funs[static num_funs],
+					const struct linop_s* prox_linops[static num_funs]);
+
+
 #ifdef USE_CUDA
 extern void lsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun_t italgo, iter_conf* iconf,
