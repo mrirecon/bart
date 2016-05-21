@@ -134,6 +134,7 @@ extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned long fl
 
 
 #define MD_ACCESS(N, strs, pos, x)	((x)[md_calc_offset((N), (strs), (pos)) / sizeof((x)[0])])
+#define MD_ACCESS1(N, strs, dim, pos, x) MD_ACCESS(1, strs + dim, (const long[1]){ pos }, x)
 
 #define MD_STRIDES(N, dims, elsize)	(md_calc_strides(N, alloca(N * sizeof(long)), dims, elsize))
 
