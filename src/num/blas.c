@@ -13,7 +13,11 @@
 
 #include "misc/misc.h"
 
+#ifdef USE_MACPORTS
+#include <cblas_openblas.h>
+#else
 #include <cblas.h>
+#endif
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
