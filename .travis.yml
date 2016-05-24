@@ -91,8 +91,13 @@ matrix:
       before_install:
         - brew update
         - brew install fftw gcc47 homebrew/science/openblas
+
+    - env: MACPORTS=0
+      os: osx
+      before_install:
+        - brew update
       script:
-          - make test
+          - brew install mrirecon/bart/bart
 
 script:
   - make bart
