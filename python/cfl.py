@@ -33,11 +33,11 @@ def readcfl(
 
     # obtain the shape of the image
     shape = [int(i) for i in dim_line.split(' ')]
+    # remove trailing singleton dimensions from shape
+    while shape[-1] == 1:
+        shape.pop(-1)
     # calculate the data size
     data_size = int(np.prod(shape))
-    # remove trailing singleton dimensions
-    # by finding the last non-singleton dim
-    shape = shape[:np.searchsorted(np.cumprod(shape), data_size) + 1]
 
     # load data
     with open(filepath + ".cfl", "r") as data_file:
