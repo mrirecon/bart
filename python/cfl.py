@@ -32,8 +32,13 @@ def readcfl(
         dim_line = header_file.readline()
 
     # obtain the shape of the image
-    shape = [int(i) for i in dim_line.split(' ') if int(i) > 1]
+    shape = [int(i) for i in dim_line.split(' ')]
+    # calculate the data size
     data_size = int(np.prod(shape))
+    # remove trailing singleton dimensions
+    # by finding the last non-singleton dim
+    shape = shape[:np.searchsorted(np.cumprod(shape), data_size) + 1]
+    
 
     # load data
     with open(filepath + ".cfl", "r") as data_file:
