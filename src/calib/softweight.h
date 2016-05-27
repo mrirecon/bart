@@ -3,11 +3,11 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2015 Siddharth Iyer <sid8795@gmail.com>
+ * 2015-2016 Siddharth Iyer <sid8795@gmail.com>
  *
  * Iyer S, Ong F, Lustig M.
  * Towards a Parameter­Free ESPIRiT: Soft­Weighting for Robust Coil Sensitivity Estimation.
- * Submitted to ISMRM 2016.
+ * In Proceedings ISMRM 2016.
  *
  * Candès E, Long C, Trzasko J. 
  * Unbiased Risk Estimates for Singular Value Thresholding and Spectral Estimators.
@@ -16,7 +16,7 @@
  */
 
 #ifndef _SOFT_WEIGHT_H_
-#define  _SOFT_WEIGHT_H_
+#define _SOFT_WEIGHT_H_
  
 /**
  * soft_weight_singular_vectors - This returns weights for the singular vectors derived from the 
