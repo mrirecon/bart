@@ -199,7 +199,7 @@ void lrmc(float alpha, int iter, float lambda, int N, const long dims[N], comple
 	complex float* pattern = md_alloc(N, dims1, CFL_SIZE);
 
 	//assert(5 == N);
-	estimate_pattern(N, dims, COIL_DIM, pattern, in);
+	estimate_pattern(N, dims, COIL_FLAG, pattern, in);
 
 	complex float* comp = md_alloc(N, dims1, CFL_SIZE);
 	md_zfill(N, dims1, comp, 1.);

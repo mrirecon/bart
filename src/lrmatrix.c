@@ -154,7 +154,7 @@ int main_lrmatrix(int argc, char* argv[])
         if (!decom) {
 
                 pattern = md_alloc(DIMS, idims, CFL_SIZE);
-                estimate_pattern(DIMS, idims, TIME_DIM, pattern, idata);
+                estimate_pattern(DIMS, idims, TIME_FLAG, pattern, idata);
         }
 
 	// Initialize algorithm

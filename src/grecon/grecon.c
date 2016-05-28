@@ -70,7 +70,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 		md_select_dims(DIMS, ~(COIL_FLAG | MAPS_FLAG), pat1_dims, dims1);
 		complex float* tpattern = md_alloc(DIMS, pat1_dims, CFL_SIZE);
-		estimate_pattern(DIMS, ksp1_dims, COIL_DIM, tpattern, kspace1);
+		estimate_pattern(DIMS, ksp1_dims, COIL_FLAG, tpattern, kspace1);
 		pattern = tpattern;
 
 	} else {

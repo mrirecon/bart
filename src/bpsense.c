@@ -137,7 +137,7 @@ int main_bpsense(int argc, char* argv[])
 	} else {
 
 		pattern = md_alloc(N, dims1, CFL_SIZE);
-		estimate_pattern(N, ksp_dims, COIL_DIM, pattern, kspace_data);
+		estimate_pattern(N, ksp_dims, COIL_FLAG, pattern, kspace_data);
 	}
 
 	

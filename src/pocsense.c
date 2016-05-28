@@ -116,7 +116,7 @@ int main_pocsense(int argc, char* argv[])
 	float scaling = estimate_scaling(ksp_dims, NULL, kspace_data);
 	md_zsmul(N, ksp_dims, kspace_data, kspace_data, 1. / scaling);
 
-	estimate_pattern(N, ksp_dims, COIL_DIM, pattern, kspace_data);
+	estimate_pattern(N, ksp_dims, COIL_FLAG, pattern, kspace_data);
 
 
 	// -----------------------------------------------------------
