@@ -25,6 +25,7 @@
 #include "num/init.h"
 
 #include "calib/calib.h"
+#include "calib/estvar.h"
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
@@ -67,12 +68,14 @@ int main_ecalib(int argc, char* argv[])
 		{ '1', false, opt_set, &one, "\t\tperform only first part of the calibration" },
 		{ 'O', false, opt_clear, &conf.orthiter, NULL },
 		{ 'b', true, opt_float, &conf.perturb, NULL },
+		{ 'c', true, opt_float, &conf.crop, " crop_value\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}." },
 		{ 'V', false, opt_set, &print_svals, NULL },
 		{ 'C', false, opt_set, &calcen, NULL },
 		{ 'm', true, opt_int, &maps, NULL },
 		{ 'g', false, opt_set, &conf.usegpu, NULL },
 		{ 'p', true, opt_float, &conf.percentsv, NULL },
 		{ 'n', true, opt_int, &conf.numsv, NULL },
+		{ 'v', true, opt_float, &conf.var, " variance\tVariance of noise in data." },
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -152,7 +155,8 @@ int main_ecalib(int argc, char* argv[])
 
 	(conf.usegpu ? num_init_gpu : num_init)();
 
-
+        if (conf.var < 0 && (conf.weighting || conf.crop < 0)) 
+            conf.var = estvar_calreg(conf.kdims, cal_dims, cal_data);
 
 	if (one) {
 
