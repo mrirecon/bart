@@ -392,7 +392,7 @@ int main_sqpics(int argc, char* argv[])
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 		pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
-		estimate_pattern(DIMS, ksp_dims, COIL_DIM, pattern, kspace);
+		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 	}
 
 

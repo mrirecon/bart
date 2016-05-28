@@ -80,7 +80,7 @@ static complex float* pattern_matrix(long pcm_dims[2], const long kdims[3], cons
 	long pat_dims[4];
 	md_select_dims(4, ~MD_BIT(COIL_DIM), pat_dims, calreg_dims);
 	complex float* pattern = md_alloc_sameplace(4, pat_dims, CFL_SIZE, data);
-	estimate_pattern(4, calreg_dims, COIL_DIM, pattern, data);
+	estimate_pattern(4, calreg_dims, COIL_FLAG, pattern, data);
 
 	// compute calibration matrix of pattern
 	complex float* pm = calibration_matrix_mask(pcm_dims, kdims, mask, pat_dims, pattern);

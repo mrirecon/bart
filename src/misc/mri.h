@@ -74,8 +74,7 @@ struct transfer_data_s {
 typedef void (*transfer_fun_t)(void* data, const _Complex float* pattern, _Complex float* dst, const _Complex float* src);
 
 extern void transfer_function(void* _data, const _Complex float* pattern, _Complex float* dst, const _Complex float* src);
-extern void estimate_pattern(unsigned int D, const long dims[__VLA(D)], unsigned int dim, _Complex float* pattern, const _Complex float* kspace_data);
-extern void estimate_pattern_flags(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* pattern, const _Complex float* kspace_data);
+extern void estimate_pattern(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* pattern, const _Complex float* kspace_data);
 extern _Complex float* extract_calib(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const _Complex float* in_data, _Bool fixed);
 extern _Complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const long in_strs[DIMS], const _Complex float* in_data, _Bool fixed);
 extern void data_consistency(const long dims[DIMS], _Complex float* dst, const _Complex float* pattern, const _Complex float* kspace1, const _Complex float* kspace2);

@@ -74,7 +74,7 @@ void transfer_function(void* _data, const complex float* pattern, complex float*
 
 
 
-void estimate_pattern_flags(unsigned int D, const long dims[D], unsigned int flags, complex float* pattern, const complex float* kspace_data)
+void estimate_pattern(unsigned int D, const long dims[D], unsigned int flags, complex float* pattern, const complex float* kspace_data)
 {
 	md_zrss(D, dims, flags, pattern, kspace_data);
 
@@ -88,12 +88,6 @@ void estimate_pattern_flags(unsigned int D, const long dims[D], unsigned int fla
 
 	md_zcmp2(D, dims2, strs2, pattern, strs2, pattern, strs1, &(complex float){ 0. });
 	md_zsub2(D, dims2, strs2, pattern, strs1, &(complex float){ 1. }, strs2, pattern);
-}
-
-void estimate_pattern(unsigned int D, const long dims[D], unsigned int dim, complex float* pattern, const complex float* kspace_data)
-{
-	assert(dim < D);
-	estimate_pattern_flags(D, dims, MD_BIT(dim), pattern, kspace_data);
 }
 
 
@@ -134,7 +128,7 @@ void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], co
 	md_select_dims(DIMS, ~COIL_FLAG, pat_dims, in_dims);
 	
 	complex float* pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
-	estimate_pattern(DIMS, in_dims, COIL_DIM, pattern, in_data);
+	estimate_pattern(DIMS, in_dims, COIL_FLAG, pattern, in_data);
 
 	for (unsigned int i = 0; i < DIMS; i++)
 		caldims[i] = 1;

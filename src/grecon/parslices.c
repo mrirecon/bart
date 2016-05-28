@@ -95,8 +95,6 @@ void parslices2(grecon_fun_t grecon, void* param, const long dims[DIMS],
 
 	
 
-//	estimate_pattern(ksp1_dims, 3, pattern, kspace_data + (ksp_dims[0] / 2) * ksp_strs[0]);	// extract pattern form center of readout
-
 	bool ap_save = num_auto_parallelize;
 	num_auto_parallelize = false;
 

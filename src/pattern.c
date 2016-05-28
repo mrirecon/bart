@@ -48,7 +48,7 @@ int main_pattern(int argc, char* argv[])
 	
 	complex float* pattern = create_cfl(argv[2], N, out_dims);
 
-	estimate_pattern_flags(N, in_dims, flags, pattern, kspace);
+	estimate_pattern(N, in_dims, flags, pattern, kspace);
 
 	unmap_cfl(N, in_dims, kspace);
 	unmap_cfl(N, out_dims, pattern);

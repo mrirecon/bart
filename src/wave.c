@@ -136,7 +136,7 @@ int main_wave(int argc, char* argv[])
 	// initialize sampling pattern
 
 	complex float* pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
-	estimate_pattern(DIMS, ksp_dims, COIL_DIM, pattern, kspace);
+	estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 
 	// print some statistics
 
