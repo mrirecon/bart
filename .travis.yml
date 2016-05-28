@@ -34,9 +34,15 @@ matrix:
       script:
         - make test
         - make utest
+
       before_install:
         - sudo apt-get update -qq
         - sudo apt-get install -qq liblapacke-dev
+        - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda update --yes conda
+        - conda install --yes numpy
 
     - env: SLINK=1
       os: linux
@@ -91,13 +97,6 @@ matrix:
       before_install:
         - brew update
         - brew install fftw gcc47 homebrew/science/openblas
-
-    - env: MACPORTS=0
-      os: osx
-      before_install:
-        - brew update
-      script:
-          - brew install mrirecon/bart/bart
 
 script:
   - make bart
