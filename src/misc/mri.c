@@ -74,15 +74,13 @@ void transfer_function(void* _data, const complex float* pattern, complex float*
 
 
 
-
-void estimate_pattern(unsigned int D, const long dims[D], unsigned int dim, complex float* pattern, const complex float* kspace_data)
+void estimate_pattern_flags(unsigned int D, const long dims[D], unsigned int flags, complex float* pattern, const complex float* kspace_data)
 {
-	md_zrss(D, dims, MD_BIT(dim), pattern, kspace_data);
+	md_zrss(D, dims, flags, pattern, kspace_data);
 
 	long dims2[D];
 	long strs2[D];
-	assert(dim < D);
-	md_select_dims(D, ~MD_BIT(dim), dims2, dims);
+	md_select_dims(D, ~flags, dims2, dims);
 	md_calc_strides(D, strs2, dims2, CFL_SIZE);
 
 	long strs1[D];
@@ -92,6 +90,11 @@ void estimate_pattern(unsigned int D, const long dims[D], unsigned int dim, comp
 	md_zsub2(D, dims2, strs2, pattern, strs1, &(complex float){ 1. }, strs2, pattern);
 }
 
+void estimate_pattern(unsigned int D, const long dims[D], unsigned int dim, complex float* pattern, const complex float* kspace_data)
+{
+	assert(dim < D);
+	estimate_pattern_flags(D, dims, MD_BIT(dim), pattern, kspace_data);
+}
 
 
 static void calib_readout_pos(const long caldims[DIMS], long calpos[DIMS], const long in_dims[DIMS], const complex float* in_data)
