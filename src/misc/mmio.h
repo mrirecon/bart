@@ -3,16 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#ifndef __VLA
-#define __VLA(x)
-#endif
-#else
-#ifndef __VLA
-#define __VLA(x) static x
-#endif
-#endif
+#include "misc/cppwrap.h"
 
 // extern void* private_raw(size_t* size, const char* name);
 
@@ -32,9 +23,6 @@ extern _Complex float* load_zcoo(const char* name, unsigned int D, long dimensio
 extern _Complex float* create_zra(const char* name, unsigned int D, const long dims[__VLA(D)]);
 extern _Complex float* load_zra(const char* name, unsigned int D, long dims[__VLA(D)]);
 
-#ifdef __cplusplus
-}
-#endif
-
+#include "misc/cppwrap.h"
 
 

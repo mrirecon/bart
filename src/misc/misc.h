@@ -22,16 +22,7 @@
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof(x[0]))
 
 
-#ifdef __cplusplus
-extern "C" {
-#ifndef __VLA
-#define __VLA(x) 
-#endif
-#else
-#ifndef __VLA
-#define __VLA(x) static x
-#endif
-#endif
+#include "misc/cppwrap.h"
 
 extern void* xmalloc(size_t s);
 extern void xfree(const void*);
@@ -79,11 +70,7 @@ extern unsigned int bitcount(unsigned int flags);
 extern const char* command_line;
 extern void save_command_line(int argc, char* argv[__VLA(argc)]);
 
-#ifdef __cplusplus
-}
-#endif
-#undef __VLA
-
+#include "misc/cppwrap.h"
 
 #endif // __MISC_H
 

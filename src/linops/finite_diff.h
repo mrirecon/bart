@@ -6,18 +6,7 @@
 #ifndef __FINITE_DIFF
 #define __FINITE_DIFF
 
-#ifdef __cplusplus
-
-extern "C" {
-#ifndef __VLA
-#define __VLA(x)
-#endif
-#else
-#ifndef __VLA
-#define __VLA(x) static x
-#endif
-#endif
-
+#include "misc/cppwrap.h"
 
 
 extern void md_zfinitediff(unsigned int D, const long dim[__VLA(D)], unsigned int flags, _Bool snip, _Complex float* optr, const _Complex float* iptr);
@@ -54,11 +43,7 @@ extern _Complex float* get_fdiff_tmp2ptr(const struct linop_s* o);
 
 
   
-
-
-#ifdef __cplusplus
-}
-#endif
+#include "misc/cppwrap.h"
 
 #endif
 

@@ -7,10 +7,10 @@
 #ifndef __DEBUG_H
 #define __DEBUG_H 1
 
-#include "cppwrap.h"
-
 #include <stdarg.h>
 #include <stddef.h>
+
+#include "misc/cppwrap.h"
 
 extern void dump_cfl(const char* name, int D, const long dimensions[__VLA(D)], const _Complex float* x);
 extern double timestamp(void);
@@ -24,7 +24,7 @@ extern void debug_vprintf(int level, const char* fmt, va_list ap);
 
 extern void debug_backtrace(size_t n);
 
-#include "cppwrap.h"
+#include "misc/cppwrap.h"
 
 
 #endif // __DEBUG_H

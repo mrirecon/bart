@@ -6,6 +6,8 @@
 #ifndef __ITER2_H
 #define __ITER2_H
 
+#include "misc/cppwrap.h"
+
 struct linop_s;
 struct operator_s;
 struct operator_p_s;
@@ -15,13 +17,7 @@ struct operator_p_s;
 typedef struct iter_conf_s { int:0; } iter_conf;
 #endif
 
-#ifndef __VLA
-#ifdef __cplusplus
-#define __VLA(x)
-#else
-#define __VLA(x) static x
-#endif
-#endif
+
 
 typedef void (italgo_fun2_f)(iter_conf* conf,
 		const struct operator_s* normaleq_op,
@@ -54,6 +50,9 @@ struct iter2_call_s {
 	italgo_fun2_t fun;
 	iter_conf* _conf;
 };
+
+
+#include "misc/cppwrap.h"
 
 
 #endif

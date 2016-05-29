@@ -6,18 +6,7 @@
 #ifndef __BLOCKPROC
 #define __BLOCKPROC
 
-#ifdef __cplusplus
-
-extern "C" {
-#ifndef __VLA
-#define __VLA(x)
-#endif
-#else
-#ifndef __VLA
-#define __VLA(x) static x
-#endif
-#endif
-
+#include "misc/cppwrap.h"
 
 extern float lineproc2(unsigned int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], const long line_dims[__VLA(D)], const void * data,
 			 float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src),
@@ -74,11 +63,7 @@ extern float stackproc(unsigned int D, const long dims[__VLA(D)], const long blk
 			complex float* dst, const complex float* src);
 
 
-
-
-#ifdef __cplusplus
-}
-#endif
+#include "misc/cppwrap.h"
 
 #endif
 

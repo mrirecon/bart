@@ -3,14 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  */ 
 
-#ifdef __cplusplus
-extern "C" {
-#define __VLA(x) 
-#else
-#define __VLA(x) static x
-#endif
-
-
+#include "misc/cppwrap.h"
 
   struct wavelet_plan_s;
 
@@ -37,6 +30,5 @@ extern "C" {
   extern void prepare_wavelet_temp_gpu(struct wavelet_plan_s* plan);
   extern void wavelet_free_gpu(const struct wavelet_plan_s* plan);
 
-#ifdef __cplusplus
-}
-#endif
+#include "misc/cppwrap.h"
+

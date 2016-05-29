@@ -10,22 +10,9 @@
 #include <assert.h>
 #include <alloca.h>
 
-#ifdef __cplusplus
-
 #include <stdbool.h>
 
-extern "C" {
-#ifndef __VLA
-#define __VLA(x) 
-#endif
-#else
-#ifndef __VLA
-#define __VLA(x) static x
-#endif
-#endif
-
-
-
+#include "misc/cppwrap.h"
 
 typedef void (*md_nary_fun_t)(void* data, void* ptr[]);
 typedef void (*md_trafo_fun_t)(void* data, long N, long str, void* ptr);
@@ -144,9 +131,8 @@ extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned long fl
 
 #define MD_STRIDES(N, dims, elsize)	(md_calc_strides(N, alloca(N * sizeof(long)), dims, elsize))
 
-#ifdef __cplusplus
-}
-#endif
+
+#include "misc/cppwrap.h"
 
 #endif // __MULTIND_H
 
