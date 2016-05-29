@@ -1,10 +1,12 @@
 # Copyright 2013-2015. The Regents of the University of California.
+# Copyright 2016. Riccardo Metere.
 # All rights reserved. Use of this source code is governed by 
 # a BSD-style license which can be found in the LICENSE file.
 #
 # Authors: 
 # 2013 Martin Uecker <uecker@eecs.berkeley.edu>
 # 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+# 2016 Riccardo Metere <riccardo@metere.it>
 
 from __future__ import unicode_literals
 
