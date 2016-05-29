@@ -2992,3 +2992,53 @@ void md_zfftmod(unsigned int D, const long dims[D], complex float* optr, const c
 
 	md_zfftmod2(D, dims, strs, optr, strs, iptr, inv, phase);
 }
+
+extern void md_calc_fmac3_dims(long N, long squash, long dims1[N], long dims2[N], long out_dims[N]) 
+{
+	long dims[N];
+	for (int i = 0; i < N; i++) {
+		assert((dims1[i] == dims2[i]) || (1 == dims1[i]) || (1 == dims2[i]));
+		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
+	}   
+	md_select_dims(N, ~squash, out_dims, dims);
+}
+
+extern void md_fmac3(long N, long dims1[N], complex float* input1, long dims2[N], complex float* input2, long out_dims[N], complex float* out_data) 
+{
+	assert (out_data != NULL && out_dims != NULL);
+	long dims[N];
+	for (int i = 0; i < N; i++) {
+		assert((dims1[i] == dims2[i]) || (1 == dims1[i]) || (1 == dims2[i]));
+		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
+    	}
+
+	long str1[N];
+	long str2[N];
+	long stro[N];
+
+	md_calc_strides(N, str1, dims1, CFL_SIZE);
+	md_calc_strides(N, str2, dims2, CFL_SIZE);
+	md_calc_strides(N, stro, out_dims, CFL_SIZE);
+
+	md_zfmac2(N, dims, stro, out_data, str1, input1, str2, input2);
+}
+
+extern void md_fmacc3(long N, long dims1[N], complex float* input1, long dims2[N], complex float* input2, long out_dims[N], complex float* out_data)
+{
+	assert (out_data != NULL && out_dims != NULL);
+	long dims[N];
+	for (int i = 0; i < N; i++) {
+		assert((dims1[i] == dims2[i]) || (1 == dims1[i]) || (1 == dims2[i]));
+		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
+    	}
+
+	long str1[N];
+	long str2[N];
+	long stro[N];
+
+	md_calc_strides(N, str1, dims1, CFL_SIZE);
+	md_calc_strides(N, str2, dims2, CFL_SIZE);
+	md_calc_strides(N, stro, out_dims, CFL_SIZE);
+
+	md_zfmacc2(N, dims, stro, out_data, str1, input1, str2, input2);
+}
