@@ -203,7 +203,7 @@ void replace_kspace(const long dims[DIMS], complex float* out, const complex flo
 
 	complex float* pattern = md_alloc(DIMS, dims_one, CFL_SIZE);
 
-	estimate_pattern(DIMS, dims_ksp, COIL_DIM, pattern, kspace);
+	estimate_pattern(DIMS, dims_ksp, COIL_FLAG, pattern, kspace);
 
 	data_consistency(dims_ksp, out, pattern, kspace, data);
 

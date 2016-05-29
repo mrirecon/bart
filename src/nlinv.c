@@ -100,7 +100,7 @@ int main_nlinv(int argc, char* argv[])
 
 		md_copy_dims(DIMS, pat_dims, img_dims);
 		pattern = anon_cfl("", DIMS, pat_dims);
-		estimate_pattern(DIMS, ksp_dims, COIL_DIM, pattern, kspace_data);
+		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace_data);
 	}
 
 

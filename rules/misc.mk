@@ -19,3 +19,4 @@ DOTHIS := $(shell $(root)/rules/update-version.sh)
 $(srcdir)/misc/version.o: $(srcdir)/misc/version.inc
 
 
+UTARGETS += test_pattern
