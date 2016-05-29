@@ -6,6 +6,8 @@
 # 2013 Martin Uecker <uecker@eecs.berkeley.edu>
 # 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
 
+from __future__ import unicode_literals
+
 import os  # Miscellaneous operating system interfaces
 import numpy as np  # NumPy (multidimensional numerical arrays library)
 
@@ -32,7 +34,7 @@ def readcfl(
         dim_line = header_file.readline()
 
     # obtain the shape of the image
-    shape = [int(i) for i in dim_line.split(' ')]
+    shape = [int(i) for i in dim_line.strip().split(' ')]
     # remove trailing singleton dimensions from shape
     while shape[-1] == 1:
         shape.pop(-1)
@@ -69,8 +71,8 @@ def writecfl(
 
     # save header
     with open(filepath + '.hdr', 'w') as header_file:
-        header_file.write(str('# Dimensions'))
-        header_file.write(str(' '.join([str(n) for n in array.shape])))
+        header_file.write(str('# Dimensions\n'))
+        header_file.write(str(' '.join([str(n) for n in array.shape])) + '\n')
 
     # save data
     with open(filepath + '.cfl', 'w') as data_file:
