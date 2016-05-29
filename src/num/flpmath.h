@@ -6,17 +6,7 @@
 #ifndef __FLPMATH
 #define __FLPMATH
 
-#ifdef __cplusplus
-
-extern "C" {
-#ifndef __VLA
-#define __VLA(x)
-#endif
-#else
-#ifndef __VLA
-#define __VLA(x) static x
-#endif
-#endif
+#include "misc/cppwrap.h"
 
 
 #define CFL_SIZE	sizeof(_Complex float)
@@ -261,9 +251,7 @@ extern void md_zfftmod(unsigned int D, const long dim[__VLA(D)], _Complex float*
 extern void md_zfftmod2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr, _Bool inv, double phase);
 
 
-#ifdef __cplusplus
-}
-#endif
+#include "misc/cppwrap.h"
 
 #endif
 

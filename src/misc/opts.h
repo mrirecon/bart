@@ -3,6 +3,8 @@
 
 #include "misc/misc.h"
 
+#include "misc/cppwrap.h"
+
 typedef bool opt_conv_f(void* ptr, char c, const char* optarg);
 
 struct opt_s {
@@ -56,4 +58,5 @@ typedef long opt_vec3_t[3];
 
 extern void cmdline(int* argc, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n]);
 
+#include "misc/cppwrap.h"
 

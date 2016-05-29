@@ -9,21 +9,9 @@
 #ifndef __FFT_H
 #define __FFT_H
 
-
-#ifdef __cplusplus
-
 #include <stdbool.h>
 
-extern "C" {
-#ifndef __VLA
-#define __VLA(x)
-#endif
-#else
-#ifndef __VLA
-#define __VLA(x) static x
-#endif
-#endif
-
+#include "misc/cppwrap.h"
 
 // similar to fftshift but modulates in the transform domain
 extern void fftmod(unsigned int N, const long dims[__VLA(N)], unsigned long flags, _Complex float* dst, const _Complex float* src);
@@ -90,9 +78,7 @@ extern void fft_free(const struct operator_s* plan);
 extern void fft_set_num_threads(unsigned int n);
 
 
-#ifdef __cplusplus
-}
-#endif
+#include "misc/cppwrap.h"
 
 #endif
 

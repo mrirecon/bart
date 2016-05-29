@@ -6,18 +6,7 @@
 #ifndef __THRESH
 #define __THRESH
 
-#ifdef __cplusplus
-
-extern "C" {
-#ifndef __VLA
-#define __VLA(x)
-#endif
-#else
-#ifndef __VLA
-#define __VLA(x) static x
-#endif
-#endif
-
+#include "misc/cppwrap.h"
 
 
 struct operator_p_s;
@@ -35,13 +24,8 @@ struct linop_s;
 extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags, _Bool gpu);
 
 
+#include "misc/cppwrap.h"
 
-
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 
