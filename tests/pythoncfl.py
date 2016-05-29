@@ -10,8 +10,8 @@ def errprint(*args, **kwargs):
 
 def main(out_name, in_name):
 	input = cfl.readcfl(in_name)
-	#cfl.writecfl(input, out_name)
-	cfl.writecfl(out_name, input)
+	cfl.writecfl(input, out_name)
+	# cfl.writecfl(out_name, input)
 	return 0
 
 if __name__ == '__main__':
