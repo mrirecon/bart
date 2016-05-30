@@ -76,6 +76,7 @@ int main_ecalib(int argc, char* argv[])
 		{ 'p', true, opt_float, &conf.percentsv, NULL },
 		{ 'n', true, opt_int, &conf.numsv, NULL },
 		{ 'v', true, opt_float, &conf.var, " variance\tVariance of noise in data." },
+		{ 'a', false, opt_set, &conf.automate, "\t\tAutomatically pick thresholds." },
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -155,8 +156,17 @@ int main_ecalib(int argc, char* argv[])
 
 	(conf.usegpu ? num_init_gpu : num_init)();
 
-        if (conf.var < 0 && (conf.weighting || conf.crop < 0)) 
-            conf.var = estvar_calreg(conf.kdims, cal_dims, cal_data);
+	if (conf.automate) {
+		conf.weighting = true;
+		conf.numsv      = -1;
+		conf.threshold  = 0;
+		conf.orthiter   = false;
+		conf.crop      = -1.;
+	}
+
+        if (conf.var < 0 && (conf.weighting || conf.crop < 0)) {
+		conf.var = estvar_calreg(conf.kdims, cal_dims, cal_data);
+	}
 
 	if (one) {
 

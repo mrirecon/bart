@@ -259,7 +259,8 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 
 		estMSE = 0;
 		*div	 = 0; 
-		md_clear(5, im_dims, proj, CFL_SIZE);
+		md_clear(5,  W_dims,   ip, CFL_SIZE);
+ 		md_clear(5, im_dims, proj, CFL_SIZE);
 
 		c = cvals[idx];
 
@@ -294,9 +295,14 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	md_free(proj);
 	md_free(div);
 
+	// Smudge factor is to soften by little bit to improve robustness. This is to account for
+	// the sweeped thresholds possibly having a too large a step size between them and for any 
+	// other inconsistencies. 
+	float smudge = 0.99;
 	debug_printf(DP_DEBUG1, "Calculated c: %.2f\n", optVal);
+	debug_printf(DP_DEBUG1, "Smudge: %.2f\n", smudge);
 
-	return optVal;
+	return smudge * optVal;
 
 }
 
@@ -485,7 +491,7 @@ void calone_dims(const struct ecalib_conf* conf, long cov_dims[4], long channels
 
 
 
-const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1., false, true, -1.};
+const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1., false, true, -1., false};
 
 
 
@@ -548,11 +554,9 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 		md_zsmul(DIMS, out_dims, out_data, out_data, sqrtf((float)channels));
 	}
 
-				// Scale factor of 0.99 is to soften by little bit to improve robustness. This is to account for
-				// the sweeped thresholds possibly having a too large a step size between them and for any other inconsistencies. 
-				float c = (conf->crop > 0) ? conf->crop : 0.99 * sure_crop(conf->var, out_dims, out_data, eptr, calreg_dims, data);
+	float c = (conf->crop > 0) ? conf->crop : sure_crop(conf->var, out_dims, out_data, eptr, calreg_dims, data);
 
-	debug_printf(DP_DEBUG1, "Crop maps... (%.2f)\n", c);
+	debug_printf(DP_DEBUG1, "Crop maps... (c = %.2f)\n", c);
 
 	crop_sens(out_dims, out_data, conf->softcrop, c, eptr);
 
