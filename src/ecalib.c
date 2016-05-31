@@ -81,20 +81,23 @@ int main_ecalib(int argc, char* argv[])
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-	if (conf.weighting) {
-
-		conf.numsv      = -1;
-		conf.threshold  = 0;
-		conf.orthiter   = false;
-	}
-
 	if (-1. != conf.percentsv)
 		conf.threshold = -1.;
 
 	if (-1 != conf.numsv)
 		conf.threshold = -1.;
 
+	if (conf.automate) {
+		conf.crop      = -1.;
+		conf.weighting = true;
+	}
 
+	if (conf.weighting) {
+		conf.numsv      = -1.;
+		conf.threshold  =   0;
+		conf.percentsv  = -1.;
+		conf.orthiter   = false;
+	}
 
 	int N = DIMS;
 	long ksp_dims[N];
@@ -105,7 +108,6 @@ int main_ecalib(int argc, char* argv[])
 	// assert((kdims[0] < calsize_ro) && (kdims[1] < calsize_ro) && (kdims[2] < calsize_ro));
 	// assert((ksp_dims[0] == 1) || (calsize_ro < ksp_dims[0]));
 	assert(1 == ksp_dims[MAPS_DIM]);
-
 
 
 	long cal_dims[N];
@@ -156,17 +158,8 @@ int main_ecalib(int argc, char* argv[])
 
 	(conf.usegpu ? num_init_gpu : num_init)();
 
-	if (conf.automate) {
-		conf.weighting = true;
-		conf.numsv      = -1;
-		conf.threshold  = 0;
-		conf.orthiter   = false;
-		conf.crop      = -1.;
-	}
-
-        if (conf.var < 0 && (conf.weighting || conf.crop < 0)) {
+        if (conf.var < 0 && (conf.weighting || conf.crop < 0))
 		conf.var = estvar_calreg(conf.kdims, cal_dims, cal_data);
-	}
 
 	if (one) {
 

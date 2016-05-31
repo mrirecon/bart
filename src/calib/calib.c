@@ -225,8 +225,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 		im_dims_prod *= im_dims[idx];
 
 	// Inverse Unitary FFT
-	fftscale(5, im_dims, FFT_FLAGS, im, im);
-	ifftc(5, im_dims, FFT_FLAGS, im, im);
+	ifftuc(5, im_dims, FFT_FLAGS, im, im);
 
 	// Eigenvectors (M) 
 	complex float* M = md_alloc(5, evec_dims, CFL_SIZE);
@@ -246,8 +245,32 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	complex float* proj = md_alloc(5, im_dims, CFL_SIZE);
 
 	// Pace holder for div
-	long div_dims[5] = { 1, 1, 1, 1, 1 };
+	long div_dims[5] = MD_INIT_ARRAY(5, 1);
 	complex float* div = md_alloc(5, div_dims, CFL_SIZE);
+
+	// Calculating strides.
+	long   str1_ip[5]; long   str2_ip[5]; long   stro_ip[5];
+        md_calc_strides(5, str1_ip,   im_dims, CFL_SIZE);
+        md_calc_strides(5, str2_ip, evec_dims, CFL_SIZE);
+        md_calc_strides(5, stro_ip,    W_dims, CFL_SIZE);
+
+	long str1_proj[5]; long str2_proj[5]; long stro_proj[5];
+        md_calc_strides(5, str1_proj,    W_dims, CFL_SIZE);
+        md_calc_strides(5, str2_proj, evec_dims, CFL_SIZE);
+        md_calc_strides(5, stro_proj, im_dims, CFL_SIZE);
+
+	long  str1_div[5]; long  str2_div[5]; long  stro_div[5];
+        md_calc_strides(5, str1_div, evec_dims, CFL_SIZE);
+        md_calc_strides(5, str2_div, evec_dims, CFL_SIZE);
+        md_calc_strides(5, stro_div,  div_dims, CFL_SIZE);
+
+	long tdims_ip[5]; long tdims_proj[5];
+	for (unsigned int i = 0; i < 5; i++) {
+		assert((im_dims[i] == evec_dims[i]) || (1 == im_dims[i]) || (1 == evec_dims[i]));
+		assert(( W_dims[i] == evec_dims[i]) || (1 ==  W_dims[i]) || (1 == evec_dims[i]));
+		tdims_ip[i]   = (1 == im_dims[i]) ? evec_dims[i] : im_dims[i];
+		tdims_proj[i] = (1 ==  W_dims[i]) ? evec_dims[i] :  W_dims[i];
+	}
 
 	// Starting parameter sweep with SURE.
 	float minMSE = 0;
@@ -268,14 +291,14 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 		crop_weight(evec_dims, M, crop_thresh_function, c, W);
 
 		// Projection (stored in proj)
-		md_fmacc3(5, im_dims, im, evec_dims, M,  W_dims,   ip);
-		md_fmac3 (5,  W_dims, ip, evec_dims, M, im_dims, proj);
+		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M);
+		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
 
 		for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++) 
 			estMSE += powf(cabsf(im[jdx] - proj[jdx]), 2);
 
 		// Calculating SURE divergence.
-		md_fmacc3(5, evec_dims, M, evec_dims, M, div_dims, div);
+		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, M, str2_div, M);
 		*div = *div - im_dims_prod;
 
 		estMSE += var * creal(*div);

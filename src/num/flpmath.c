@@ -8,6 +8,7 @@
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016 Siddharth Iyer <sid8795@gmail.com>
  *
  *
  * Operations on arrays of complex single-precision floating
@@ -2993,7 +2994,7 @@ void md_zfftmod(unsigned int D, const long dims[D], complex float* optr, const c
 	md_zfftmod2(D, dims, strs, optr, strs, iptr, inv, phase);
 }
 
-extern void md_calc_fmac3_dims(unsigned int N, long squash, const long dims1[N], const long dims2[N], long out_dims[N]) 
+extern void md_calc_zfmac_dims(unsigned int N, long squash, long out_dims[N], const long dims1[N], const long dims2[N]) 
 {
 	long dims[N];
 	for (unsigned int i = 0; i < N; i++) {
@@ -3001,44 +3002,4 @@ extern void md_calc_fmac3_dims(unsigned int N, long squash, const long dims1[N],
 		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
 	}   
 	md_select_dims(N, ~squash, out_dims, dims);
-}
-
-extern void md_fmac3(unsigned int N, const long dims1[N], complex float* input1, const long dims2[N], complex float* input2, long out_dims[N], complex float* out_data) 
-{
-	assert (out_data != NULL && out_dims != NULL);
-	long dims[N];
-	for (unsigned int i = 0; i < N; i++) {
-		assert((dims1[i] == dims2[i]) || (1 == dims1[i]) || (1 == dims2[i]));
-		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
-    	}
-
-	long str1[N];
-	long str2[N];
-	long stro[N];
-
-	md_calc_strides(N, str1, dims1, CFL_SIZE);
-	md_calc_strides(N, str2, dims2, CFL_SIZE);
-	md_calc_strides(N, stro, out_dims, CFL_SIZE);
-
-	md_zfmac2(N, dims, stro, out_data, str1, input1, str2, input2);
-}
-
-extern void md_fmacc3(unsigned int N, const long dims1[N], complex float* input1, const long dims2[N], complex float* input2, long out_dims[N], complex float* out_data)
-{
-	assert (out_data != NULL && out_dims != NULL);
-	long dims[N];
-	for (unsigned int i = 0; i < N; i++) {
-		assert((dims1[i] == dims2[i]) || (1 == dims1[i]) || (1 == dims2[i]));
-		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
-    	}
-
-	long str1[N];
-	long str2[N];
-	long stro[N];
-
-	md_calc_strides(N, str1, dims1, CFL_SIZE);
-	md_calc_strides(N, str2, dims2, CFL_SIZE);
-	md_calc_strides(N, stro, out_dims, CFL_SIZE);
-
-	md_zfmacc2(N, dims, stro, out_data, str1, input1, str2, input2);
 }
