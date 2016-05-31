@@ -72,6 +72,8 @@ extern void md_zmatmul(unsigned int D, const long out_dims[__VLA(D)], _Complex f
 extern void md_zmatmulc2(unsigned int D, const long out_dims[__VLA(D)], const long out_strs[__VLA(D)], _Complex float* dst, const long mat_dims[__VLA(D)], const long mat_strs[__VLA(D)], const _Complex float* mat, const long in_dims[__VLA(D)], const long in_strs[__VLA(D)], const _Complex float* src);
 extern void md_zmatmulc(unsigned int D, const long out_dims[__VLA(D)], _Complex float* dst, const long mat_dims[__VLA(D)], const _Complex float* mat, const long in_dims[__VLA(D)], const _Complex float* src);
 
+extern void md_merge_dims(unsigned int N, long out_dims[__VLA(N)], const long dims1[__VLA(N)], const long dims2[__VLA(N)]);
+
 extern void md_fmac2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
 extern void md_fmac(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr1, const float* iptr2);
 
@@ -249,7 +251,6 @@ extern void md_zfdiff_backwards(unsigned int D, const long dims[__VLA(D)], unsig
 
 extern void md_zfftmod(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr, _Bool inv, double phase);
 extern void md_zfftmod2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr, _Bool inv, double phase);
-extern void md_calc_zfmac_dims(unsigned int N, long squash, long out_dims[__VLA(N)], const long dims1[__VLA(N)], const long dims2[__VLA(N)]);
 
 
 #include "misc/cppwrap.h"

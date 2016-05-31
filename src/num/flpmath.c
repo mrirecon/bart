@@ -1199,6 +1199,16 @@ void md_zmatmul(unsigned int D, const long out_dims[D], complex float* dst, cons
 
 
 
+extern void md_merge_dims(unsigned int N, long out_dims[N], const long dims1[N], const long dims2[N])
+{
+	for (unsigned int i = 0; i < N; i++) {
+
+		assert((dims1[i] == dims2[i]) || (1 == dims1[i]) || (1 == dims2[i]));
+
+		out_dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
+	}
+}
+
 /**
  * Multiply two complex arrays and add to output (with strides)
  *
@@ -2994,12 +3004,5 @@ void md_zfftmod(unsigned int D, const long dims[D], complex float* optr, const c
 	md_zfftmod2(D, dims, strs, optr, strs, iptr, inv, phase);
 }
 
-extern void md_calc_zfmac_dims(unsigned int N, long squash, long out_dims[N], const long dims1[N], const long dims2[N]) 
-{
-	long dims[N];
-	for (unsigned int i = 0; i < N; i++) {
-		assert((dims1[i] == dims2[i]) || (1 == dims1[i]) || (1 == dims2[i]));
-		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
-	}   
-	md_select_dims(N, ~squash, out_dims, dims);
-}
+
+
