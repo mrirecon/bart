@@ -88,11 +88,13 @@ int main_ecalib(int argc, char* argv[])
 		conf.threshold = -1.;
 
 	if (conf.automate) {
+
 		conf.crop      = -1.;
 		conf.weighting = true;
 	}
 
 	if (conf.weighting) {
+
 		conf.numsv      = -1.;
 		conf.threshold  =   0;
 		conf.percentsv  = -1.;
@@ -158,7 +160,7 @@ int main_ecalib(int argc, char* argv[])
 
 	(conf.usegpu ? num_init_gpu : num_init)();
 
-        if (conf.var < 0 && (conf.weighting || conf.crop < 0))
+        if ((conf.var < 0) && (conf.weighting || (conf.crop < 0)))
 		conf.var = estvar_calreg(conf.kdims, cal_dims, cal_data);
 
 	if (one) {
