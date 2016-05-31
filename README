@@ -233,7 +233,7 @@ with Matlab. Go to the examples directory and run:
     >> examples
 
 
-### 2.3.4. Python 
+### 2.3.4. Python
 
 You can set the TOOLBOX_PATH to the base directory and start a
 Python interactively as follows:
@@ -248,7 +248,7 @@ a data file 'xyz' from Python you can run:
 Note, that the name 'xyz' is used without filename extension.
 See below for more information about the file format used in BART.
 
-To read the data file 'xyz' back into Matlab use:
+To read the data file 'xyz' back into Python use:
 
     >>> A = cfl.readcfl('xyz');
 
@@ -258,10 +258,10 @@ To call a BART tool (e.g. ecalib) from Python, you can use the
     >>> sensitivities = bart(1, 'ecalib', kspace);
 
 The bart function expects the following signature:
-    
-    >>> <outputs> = bart(<nargout>, <command>, <arguements...>)
 
-To use BART in a script, please follow the steps in the 
+    >>> <outputs> = bart(<nargout>, <command>, <arguments>, ...)
+
+To use BART in a script, please follow the steps in the
 startup.py file.
 
 
