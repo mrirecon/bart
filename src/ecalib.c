@@ -68,7 +68,6 @@ int main_ecalib(int argc, char* argv[])
 		{ '1', false, opt_set, &one, "\t\tperform only first part of the calibration" },
 		{ 'O', false, opt_clear, &conf.orthiter, NULL },
 		{ 'b', true, opt_float, &conf.perturb, NULL },
-		{ 'c', true, opt_float, &conf.crop, " crop_value\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}." },
 		{ 'V', false, opt_set, &print_svals, NULL },
 		{ 'C', false, opt_set, &calcen, NULL },
 		{ 'm', true, opt_int, &maps, NULL },
