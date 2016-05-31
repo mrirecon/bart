@@ -25,6 +25,7 @@
 #include "num/init.h"
 
 #include "calib/calib.h"
+#include "calib/estvar.h"
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
@@ -67,22 +68,18 @@ int main_ecalib(int argc, char* argv[])
 		{ '1', false, opt_set, &one, "\t\tperform only first part of the calibration" },
 		{ 'O', false, opt_clear, &conf.orthiter, NULL },
 		{ 'b', true, opt_float, &conf.perturb, NULL },
+		{ 'c', true, opt_float, &conf.crop, " crop_value\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}." },
 		{ 'V', false, opt_set, &print_svals, NULL },
 		{ 'C', false, opt_set, &calcen, NULL },
 		{ 'm', true, opt_int, &maps, NULL },
 		{ 'g', false, opt_set, &conf.usegpu, NULL },
 		{ 'p', true, opt_float, &conf.percentsv, NULL },
 		{ 'n', true, opt_int, &conf.numsv, NULL },
+		{ 'v', true, opt_float, &conf.var, " variance\tVariance of noise in data." },
+		{ 'a', false, opt_set, &conf.automate, "\t\tAutomatically pick thresholds." },
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
-
-	if (conf.weighting) {
-
-		conf.numsv      = -1;
-		conf.threshold  = 0;
-		conf.orthiter   = false;
-	}
 
 	if (-1. != conf.percentsv)
 		conf.threshold = -1.;
@@ -90,7 +87,17 @@ int main_ecalib(int argc, char* argv[])
 	if (-1 != conf.numsv)
 		conf.threshold = -1.;
 
+	if (conf.automate) {
+		conf.crop      = -1.;
+		conf.weighting = true;
+	}
 
+	if (conf.weighting) {
+		conf.numsv      = -1.;
+		conf.threshold  =   0;
+		conf.percentsv  = -1.;
+		conf.orthiter   = false;
+	}
 
 	int N = DIMS;
 	long ksp_dims[N];
@@ -101,7 +108,6 @@ int main_ecalib(int argc, char* argv[])
 	// assert((kdims[0] < calsize_ro) && (kdims[1] < calsize_ro) && (kdims[2] < calsize_ro));
 	// assert((ksp_dims[0] == 1) || (calsize_ro < ksp_dims[0]));
 	assert(1 == ksp_dims[MAPS_DIM]);
-
 
 
 	long cal_dims[N];
@@ -152,7 +158,8 @@ int main_ecalib(int argc, char* argv[])
 
 	(conf.usegpu ? num_init_gpu : num_init)();
 
-
+        if (conf.var < 0 && (conf.weighting || conf.crop < 0))
+		conf.var = estvar_calreg(conf.kdims, cal_dims, cal_data);
 
 	if (one) {
 

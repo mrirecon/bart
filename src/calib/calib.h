@@ -23,6 +23,8 @@ struct ecalib_conf {
 	float perturb;
 	_Bool intensity;
 	_Bool rotphase;
+	float var;
+	_Bool automate;
 };
 
 extern const struct ecalib_conf ecalib_defaults;

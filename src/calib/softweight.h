@@ -3,11 +3,11 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2015 Siddharth Iyer <sid8795@gmail.com>
+ * 2015-2016 Siddharth Iyer <sid8795@gmail.com>
  *
  * Iyer S, Ong F, Lustig M.
- * Towards a Parameter­Free ESPIRiT: Soft­Weighting for Robust Coil Sensitivity Estimation.
- * Submitted to ISMRM 2016.
+ * Towards A Parameter­Free ESPIRiT: Soft­Weighting For Robust Coil Sensitivity Estimation.
+ * In Proceedings Of ISMRM 2016.
  *
  * Candès E, Long C, Trzasko J. 
  * Unbiased Risk Estimates for Singular Value Thresholding and Spectral Estimators.
@@ -16,7 +16,7 @@
  */
 
 #ifndef _SOFT_WEIGHT_H_
-#define  _SOFT_WEIGHT_H_
+#define _SOFT_WEIGHT_H_
  
 /**
  * soft_weight_singular_vectors - This returns weights for the singular vectors derived from the 
@@ -31,6 +31,6 @@
  *  S           - Array of singular values. 
  *  W           - Array to store weights to.
  */
-extern void soft_weight_singular_vectors(long N, const long kernel_dims[3], const long calreg_dims[4], const float S[N], float W[N]);
+extern void soft_weight_singular_vectors(long N, float var, const long kernel_dims[3], const long calreg_dims[4], const float S[N], float W[N]);
 
 #endif

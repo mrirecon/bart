@@ -3,11 +3,11 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2015 Siddharth Iyer <sid8795@gmail.com>
+ * 2015-2016 Siddharth Iyer <sid8795@gmail.com>
  *
  * Iyer S, Ong F, Lustig M.
  * Towards a Parameter­Free ESPIRiT: Soft­Weighting for Robust Coil Sensitivity Estimation
- * Submitted to ISMRM 2016.
+ * In Proceedings of ISMRM 2016.
  * 
  * Candès E, Long C, Trzasko J. 
  * Unbiased Risk Estimates for Singular Value Thresholding and Spectral Estimators.
@@ -68,12 +68,11 @@ static float divergence(long N, const float S[N], const long calmat_dims[2], flo
 
 }
 
-extern void soft_weight_singular_vectors(long N, const long kernel_dims[3], const long calreg_dims[4], const float S[N], float W[N]) {
+extern void soft_weight_singular_vectors(long N, float variance, const long kernel_dims[3], const long calreg_dims[4], const float S[N], float W[N]) {
 
     int idx = 0, jdx = 0;
 
     float t;
-    float variance = estvar_sv(N, S, kernel_dims, calreg_dims);
 
     long calmat_dims[2] = {(calreg_dims[0] - kernel_dims[0] + 1) * (calreg_dims[1] - kernel_dims[1] + 1) * 
                 (calreg_dims[2] - kernel_dims[2] + 1),
@@ -84,6 +83,8 @@ extern void soft_weight_singular_vectors(long N, const long kernel_dims[3], cons
     for (jdx = 0; jdx < N; jdx++) {
         G += S[jdx] * S[jdx];
     }
+
+    debug_printf(DP_DEBUG1, "Using estimated variance: : %f\n", variance);
 
     float lambda = S[0];
     float testMSE = 0;

@@ -6,13 +6,18 @@
  * Authors:
  * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
- * 2015 Siddharth Iyer <sid8795@gmail.com>
+ * 2015-2016 Siddharth Iyer <sid8795@gmail.com>
  *
  *
  * Uecker M, Lai P, Murphy MJ, Virtue P, Elad M, Pauly JM, Vasanawala SS, Lustig M.
- * ESPIRiT - An Eigenvalue Approach to  Autocalibrating Parallel MRI: Where SENSE 
+ * ESPIRiT - An Eigenvalue Approach to	Autocalibrating Parallel MRI: Where SENSE 
  * meets GRAPPA. Magn Reson Med, 71:990-1001 (2014)
  *
+ * Iyer S, Ong F, Lustig M.
+ * Towards A Parameter Free ESPIRiT: Soft-Weighting For Robust Coil Sensitivity Estimation.
+ * Presented in the session: "New Frontiers In Image Reconstruction" at ISMRM 2016.
+ * http://www.ismrm.org/16/program_files/O86.htm
+ * 
  */
 
 #include <assert.h>
@@ -52,6 +57,10 @@
 #define FLIP
 #endif
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 
 static void eigen_herm3(int M, int N, float val[M], complex float matrix[N][N]) // ordering might be different to herm2
 {
@@ -77,13 +86,13 @@ static void eigen_herm3(int M, int N, float val[M], complex float matrix[N][N]) 
 
 static float scurve(float x)
 {
-        if (x <= -1.)
-                return 0.;
+				if (x <= -1.)
+								return 0.;
 
-        if (x >= 1.)
-                return 1.;
+				if (x >= 1.)
+								return 1.;
 
-        return 0.5 * (1. + 2. * x / (1. + powf(x, 2.)));
+				return 0.5 * (1. + 2. * x / (1. + powf(x, 2.)));
 }
 
 static float crop_weight_function(float crth, float val)
@@ -107,9 +116,12 @@ static void crop_weight(const long dims[DIMS], complex float* ptr, weight_functi
 	long mm = dims[4];
 
 	assert(DIMS >= 5);
-	assert(1 == md_calc_size(DIMS - 5, dims + 5));
 
-
+				/** NOTE 
+				 *	Removing this assertion because if dims is of length 5, the following assertion fails despite the 
+				 *	fact that this code should work if it is of length 5.
+				 **/
+	//assert(1 == md_calc_size(DIMS - 5, dims + 5)); 
 
 	for (long m = 0; m < mm; m++) {
 #pragma omp parallel for
@@ -133,10 +145,189 @@ void crop_sens(const long dims[DIMS], complex float* ptr, bool soft, float crth,
 	crop_weight(dims, ptr, soft ? crop_weight_function : crop_thresh_function, crth, map);
 }
 
+/**
+ * Creates a 3D hamming window repeated across the channel dimension.
+ * In MATLAB, this would be replicated by,
+ * h = hanning(r); h = h * h'; h = repmat(h, [1 1 1 num_coils]);
+ */
+static void apply_hanning(const long calreg_dims[4], const complex float* calreg_data, complex float* out_data) {
+
+	long xx = calreg_dims[0];
+	long yy = calreg_dims[1];
+	long zz = calreg_dims[2];
+	long ch = calreg_dims[3];
+
+	float h1;
+	float h2;
+	float h3;
+	float val;
+
+	float scale = 1;
+	for (long idx = 0; idx < 3; idx ++) 
+		scale *= (calreg_dims[idx] > 1) ? 0.5 : 1;
+
+	#pragma omp parallel for collapse(3)
+	for (long kdx = 0; kdx < zz; kdx++) {
+		for (long jdx = 0; jdx < yy; jdx++) {
+			for (long idx = 0; idx < xx; idx++) {
+
+				// Inside loops for OpenMP to work.
+					h1 = (xx > 1) ? (1 - cos((2 * M_PI * idx)/(xx - 1))): 1;
+					h2 = (yy > 1) ? (1 - cos((2 * M_PI * jdx)/(yy - 1))): 1;
+					h3 = (zz > 1) ? (1 - cos((2 * M_PI * kdx)/(zz - 1))): 1;
+
+					val = scale * h1 * h2 * h3;
+					for (long pdx = 0; pdx < ch; pdx++) {
+						out_data[((pdx * zz + kdx) * yy + jdx) * xx + idx] = val * calreg_data[((pdx * zz + kdx) * yy + jdx) * xx + idx];
+					}
+			}
+		}
+	}
+}
 
 
+/**
+ * sure_crop - This determines the crop-threshold to use as described in the talk: "Towards A Parameter 
+ *	       Free ESPIRiT: Soft-Weighting For Robust Coil Sensitivity Estimation". This was given at the 
+ *	       session: "New Frontiers In Image Reconstruction" at ISMRM 2016.
+ * 
+ * Parameters:
+ *	var		- Estimated variance in data.
+ *	evec_dims	- The eigenvector dimensions. 
+ *	evec_data	- The eigenvectors.
+ *	eptr		- The eigenvalues.
+ *	calreg_dims     - Dimension of the calibration region.
+ *	calreg	        - Calibration data.
+ *
+ */
+static float sure_crop(float var, const long evec_dims[5], complex float* evec_data, complex float* eptr, const long calreg_dims[4], const complex float* calreg) {
+
+	// Must be in ascending order.
+	float cvals[] = {0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 
+		         0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89,
+			 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99}; 
+
+	long num_cvals = sizeof(cvals)/sizeof(float);
+
+	// Creating hanning window
+	complex float* h_calreg = md_alloc(4, calreg_dims, CFL_SIZE); 
+	apply_hanning(calreg_dims, calreg, h_calreg);
+
+	// Zero pad Image
+	long im_dims[5];
+	md_select_dims(5, 15, im_dims, evec_dims);
+	complex float* im = md_alloc(5, im_dims, CFL_SIZE);
+	md_resize_center(5, im_dims, im, calreg_dims, h_calreg, CFL_SIZE);
 
 
+	long im_dims_prod = 1;
+	for (int idx = 0; idx < 4; idx ++)
+		im_dims_prod *= im_dims[idx];
+
+	// Inverse Unitary FFT
+	ifftuc(5, im_dims, FFT_FLAGS, im, im);
+
+	// Eigenvectors (M) 
+	complex float* M = md_alloc(5, evec_dims, CFL_SIZE);
+	md_copy(5, evec_dims, M, evec_data, CFL_SIZE);
+
+	// Eigenvalues (W)
+	long W_dims[5];
+	md_select_dims(5, 23, W_dims, evec_dims);
+
+	complex float* W = md_alloc(5, W_dims, CFL_SIZE);
+	md_copy(5, W_dims, W, eptr, CFL_SIZE);
+
+	// Place holder for the inner product result
+	complex float* ip = md_alloc(5, W_dims, CFL_SIZE);
+
+	// Place holder for the projection results
+	complex float* proj = md_alloc(5, im_dims, CFL_SIZE);
+
+	// Pace holder for div
+	long div_dims[5] = MD_INIT_ARRAY(5, 1);
+	complex float* div = md_alloc(5, div_dims, CFL_SIZE);
+
+	// Calculating strides.
+	long   str1_ip[5]; long   str2_ip[5]; long   stro_ip[5];
+        md_calc_strides(5, str1_ip,   im_dims, CFL_SIZE);
+        md_calc_strides(5, str2_ip, evec_dims, CFL_SIZE);
+        md_calc_strides(5, stro_ip,    W_dims, CFL_SIZE);
+
+	long str1_proj[5]; long str2_proj[5]; long stro_proj[5];
+        md_calc_strides(5, str1_proj,    W_dims, CFL_SIZE);
+        md_calc_strides(5, str2_proj, evec_dims, CFL_SIZE);
+        md_calc_strides(5, stro_proj, im_dims, CFL_SIZE);
+
+	long  str1_div[5]; long  str2_div[5]; long  stro_div[5];
+        md_calc_strides(5, str1_div, evec_dims, CFL_SIZE);
+        md_calc_strides(5, str2_div, evec_dims, CFL_SIZE);
+        md_calc_strides(5, stro_div,  div_dims, CFL_SIZE);
+
+	long tdims_ip[5]; long tdims_proj[5];
+	for (unsigned int i = 0; i < 5; i++) {
+		assert((im_dims[i] == evec_dims[i]) || (1 == im_dims[i]) || (1 == evec_dims[i]));
+		assert(( W_dims[i] == evec_dims[i]) || (1 ==  W_dims[i]) || (1 == evec_dims[i]));
+		tdims_ip[i]   = (1 == im_dims[i]) ? evec_dims[i] : im_dims[i];
+		tdims_proj[i] = (1 ==  W_dims[i]) ? evec_dims[i] :  W_dims[i];
+	}
+
+	// Starting parameter sweep with SURE.
+	float minMSE = 0;
+	float estMSE = 0;
+	float optVal = 0;
+	float      c = 0;
+
+	for (int idx = 0; idx < num_cvals; idx++) {
+
+		estMSE = 0;
+		*div	 = 0; 
+		md_clear(5,  W_dims,   ip, CFL_SIZE);
+ 		md_clear(5, im_dims, proj, CFL_SIZE);
+
+		c = cvals[idx];
+
+		// Cropping
+		crop_weight(evec_dims, M, crop_thresh_function, c, W);
+
+		// Projection (stored in proj)
+		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M);
+		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
+
+		for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++) 
+			estMSE += powf(cabsf(im[jdx] - proj[jdx]), 2);
+
+		// Calculating SURE divergence.
+		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, M, str2_div, M);
+		*div = *div - im_dims_prod;
+
+		estMSE += var * creal(*div);
+
+		if (0 == idx || estMSE < minMSE) {
+			optVal = c;
+			minMSE = estMSE;
+		}
+
+	}		
+
+	md_free(h_calreg);
+	md_free(im);
+	md_free(M);
+	md_free(W);
+	md_free(ip);
+	md_free(proj);
+	md_free(div);
+
+	// Smudge factor is to soften by little bit to improve robustness. This is to account for
+	// the sweeped thresholds possibly having a too large a step size between them and for any 
+	// other inconsistencies. 
+	float smudge = 0.99;
+	debug_printf(DP_DEBUG1, "Calculated c: %.2f\n", optVal);
+	debug_printf(DP_DEBUG1, "Smudge: %.2f\n", smudge);
+
+	return smudge * optVal;
+
+}
 
 
 void calone(const struct ecalib_conf* conf, const long cov_dims[4], complex float* imgcov, unsigned int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data)
@@ -323,7 +514,7 @@ void calone_dims(const struct ecalib_conf* conf, long cov_dims[4], long channels
 
 
 
-const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1., false, true };
+const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1., false, true, -1., false};
 
 
 
@@ -386,9 +577,11 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 		md_zsmul(DIMS, out_dims, out_data, out_data, sqrtf((float)channels));
 	}
 
-	debug_printf(DP_DEBUG1, "Crop maps... (%.2f)\n", conf->crop);
+	float c = (conf->crop > 0) ? conf->crop : sure_crop(conf->var, out_dims, out_data, eptr, calreg_dims, data);
 
-	crop_sens(out_dims, out_data, conf->softcrop, conf->crop, eptr);
+	debug_printf(DP_DEBUG1, "Crop maps... (c = %.2f)\n", c);
+
+	crop_sens(out_dims, out_data, conf->softcrop, c, eptr);
 
 	debug_printf(DP_DEBUG1, "Fix phase...\n");
 
@@ -508,8 +701,8 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 #ifdef CALMAT_SVD
 	calmat_svd(conf->kdims, N, *vec, val, caldims, caldata);
 
-        if (conf->weighting)
-		soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
+				if (conf->weighting)
+		soft_weight_singular_vectors(N, conf->var, conf->kdims, caldims, val, val); 
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 
@@ -532,8 +725,8 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	for (int i = 0; i < N; i++)
 		val[i] = (tmp_val[N - 1 - i] < 0.) ? 0. : sqrtf(tmp_val[N - 1 - i]);
 
-        if (conf->weighting)
-		soft_weight_singular_vectors(N, conf->kdims, caldims, val, val);
+				if (conf->weighting)
+		soft_weight_singular_vectors(N, conf-> var, conf->kdims, caldims, val, val);
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++) 

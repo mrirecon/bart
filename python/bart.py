@@ -10,10 +10,10 @@ import tempfile as tmp
 import cfl
 import os
 
-def bart(cmd='', nargout=0, *args):
+def bart(nargout, cmd, *args):
 
-    if not cmd or not nargout:
-        print "Usage: bart <command> <arguments...>";
+    if type(nargout) != int or nargout < 0:
+        print("Usage: bart(<nargout>, <command>, <arguements...>)");
         return None
 
     bart_path = os.environ['TOOLBOX_PATH'] + '/bart ';

@@ -8,6 +8,7 @@
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016 Siddharth Iyer <sid8795@gmail.com>
  *
  *
  * Operations on arrays of complex single-precision floating
@@ -2991,4 +2992,14 @@ void md_zfftmod(unsigned int D, const long dims[D], complex float* optr, const c
 	md_calc_strides(D, strs, dims, CFL_SIZE);
 
 	md_zfftmod2(D, dims, strs, optr, strs, iptr, inv, phase);
+}
+
+extern void md_calc_zfmac_dims(unsigned int N, long squash, long out_dims[N], const long dims1[N], const long dims2[N]) 
+{
+	long dims[N];
+	for (unsigned int i = 0; i < N; i++) {
+		assert((dims1[i] == dims2[i]) || (1 == dims1[i]) || (1 == dims2[i]));
+		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
+	}   
+	md_select_dims(N, ~squash, out_dims, dims);
 }

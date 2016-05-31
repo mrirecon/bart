@@ -49,37 +49,31 @@ int main_fmac(int argc, char* argv[])
 	complex float* data1 = load_cfl(argv[1], N, dims1);
 	complex float* data2 = load_cfl(argv[2], N, dims2);
 
-	long dims[N];
-
-	for (int i = 0; i < N; i++) {
-		
-		assert((dims1[i] == dims2[i]) || (1 == dims1[i]) || (1 == dims2[i]));
-	
-		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
-	}
-
-	long dimso[N];
-	md_select_dims(N, ~squash, dimso, dims);
-	complex float* out = create_cfl(argv[3], N, dimso);
-
-	if (clear) {
-
-		md_clear(N, dimso, out, CFL_SIZE);
-	}
+        long out_dims[N]; 
+        md_calc_zfmac_dims(N, squash, out_dims, dims1, dims2);
 
 	long str1[N];
 	long str2[N];
 	long stro[N];
+	md_calc_strides(N, str1,    dims1, CFL_SIZE);
+	md_calc_strides(N, str2,    dims2, CFL_SIZE);
+	md_calc_strides(N, stro, out_dims, CFL_SIZE);
 
-	md_calc_strides(N, str1, dims1, CFL_SIZE);
-	md_calc_strides(N, str2, dims2, CFL_SIZE);
-	md_calc_strides(N, stro, dimso, CFL_SIZE);
+	long dims[N];
+	for (unsigned int i = 0; i < N; i++) 
+		dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
 
-	(conj ? md_zfmacc2 : md_zfmac2)(N, dims, stro, out, str1, data1, str2, data2);
+	complex float* out_data = create_cfl(argv[3], N, out_dims);
 
-	unmap_cfl(N, dims1, data1);
-	unmap_cfl(N, dims2, data2);
-	unmap_cfl(N, dimso, out);
+	if (clear) {
+		md_clear(N, out_dims, out_data, CFL_SIZE);
+	}
+
+	conj ? md_zfmacc2(N, dims, stro, out_data, str1, data1, str2, data2) : md_zfmac2(N, dims, stro, out_data, str1, data1, str2, data2);
+
+	unmap_cfl(N,    dims1,    data1);
+	unmap_cfl(N,    dims2,    data2);
+	unmap_cfl(N, out_dims, out_data);
 	exit(0);
 }
 
