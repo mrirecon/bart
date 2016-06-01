@@ -52,6 +52,10 @@ static float divergence(long N, const float S[N], const long calmat_dims[2], flo
     float s, s1, s2, t;
     for (idx = 0; idx < N; idx ++) {
         s  = S[idx];
+
+	if (s == 0)
+		continue;
+
         t  = 1 - lambda/s;
         s1 = (s > lambda ? 1: 0) + 2 * abs_diff_bw_calmat_dims * (t > 0? t: 0);
         s2 = 0;
@@ -86,7 +90,7 @@ extern void soft_weight_singular_vectors(long N, float variance, const long kern
 
     debug_printf(DP_DEBUG1, "Using estimated variance: : %f\n", variance);
 
-    float lambda = S[0];
+    float lambda = S[N-1];
     float testMSE = 0;
     float testLambda = 0;
     float MSE = -Y + G + variance * divergence(N, S, calmat_dims, lambda);
@@ -94,7 +98,7 @@ extern void soft_weight_singular_vectors(long N, float variance, const long kern
     for (idx = 1; idx < N; idx++) {
 
         G = 0;
-        testLambda = S[idx];
+        testLambda = S[N-idx-1];
         for (jdx = 0; jdx < N; jdx++) {
             t = S[jdx];
             G += (t < testLambda? t * t : testLambda * testLambda);
@@ -112,8 +116,8 @@ extern void soft_weight_singular_vectors(long N, float variance, const long kern
     debug_printf(DP_DEBUG1, "Soft threshold (Lambda): %f\n", lambda);
 
     for (int idx = 0; idx < N; idx++) {
-        t = (S[idx] - lambda)/S[idx];
-        W[idx] = ((!isnan(t) && t > 0)? t: 0);
+        t = (S[idx] > 0) ?(S[idx] - lambda)/S[idx] : 0;
+        W[idx] = (t > 0)? t : 0;
     }
 
 }
