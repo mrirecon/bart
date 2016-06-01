@@ -191,7 +191,7 @@ void calmat_svd(const long kdims[3], unsigned int N, complex float cov[N][N], fl
 
 	lapack_svd_econ(L, N, *U, cov, S, MD_CAST_ARRAY2(complex float, 2, calmat_dims, cm, 0, 1));
 
-	free(U);
+	PTR_FREE(U);
 	md_free(cm);
 }
 
