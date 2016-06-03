@@ -92,6 +92,7 @@ static char* file_name(const long kernel_dims[3], const long calreg_dims[4]) {
         calreg_dims[0], calreg_dims[1], calreg_dims[2], calreg_dims[3],
         DAT);
     
+
     return name;
 
 }
@@ -111,7 +112,7 @@ static int load_noise_sv(const long kernel_dims[3], const long calreg_dims[4], l
     char* name = file_name(kernel_dims, calreg_dims);
     FILE* fp   = fopen(name, "rb");
 
-    if (NULL == fp) {
+    if (!fp) {
         free(name);
         return 0;
     }
@@ -143,15 +144,15 @@ static void save_noise_sv(const long kernel_dims[3], const long calreg_dims[4], 
     FILE* fp   = fopen(name, "wb");
 
     if (!fp) {
-        perror("fopen");
         free(name);
-        exit(1);
+        return;
     }
 
     fwrite(E, sizeof(float), L, fp);
 
     free(name);
     fclose(fp);
+
 
 }
 
@@ -175,12 +176,12 @@ static void save_noise_sv(const long kernel_dims[3], const long calreg_dims[4], 
 static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, float* E, long num_iters)
 {
     
-    if (1 == load_noise_sv(kernel_dims, calreg_dims, L, E)) {
+    if (NULL != getenv("TOOLBOX_PATH") && 1 == load_noise_sv(kernel_dims, calreg_dims, L, E)) {
         return;
     }
 
     debug_printf(DP_DEBUG1, "NOTE: Running simulations to figure out noise singular values.\n");
-    debug_printf(DP_DEBUG1, "      This is done once given a particular kernel size, calibration size and number of coils.\n");
+    debug_printf(DP_DEBUG1, "      The simulation results are saved if TOOLBOX_PATH is set.\n");
 
     float tmpE[L];
     long T = md_calc_size(4, calreg_dims) * sizeof(complex float);
@@ -207,7 +208,9 @@ static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, fl
         E[idx] /= num_iters;
     }
 
-    save_noise_sv(kernel_dims, calreg_dims, L, E);
+    if (NULL != getenv("TOOLBOX_PATH"))
+        save_noise_sv(kernel_dims, calreg_dims, L, E);
+
     free(cov);
 
 }
