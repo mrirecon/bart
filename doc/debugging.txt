@@ -1,0 +1,30 @@
+
+
+Running a command in a debugger 
+-------------------------------
+
+This involves several (easy) steps:
+
+1. Recompile BART with debugging information. Create
+a Makefile.local in the BART directory with
+
+CFLAGS += -ggdb -O2 -ffast-math
+
+
+Then recompile with:
+
+make allclean
+make bart
+
+
+2. Install the GNU debugger (gdb)
+
+3. Run  from the command line with the input arguments
+exported to BART format by writecfl.m:
+
+gdb --args bart pics -g -S -d5 ....
+
+4. Then type 'run' to start the process. After it fails,
+type 'bt' to get a backtrace.
+
+
