@@ -187,7 +187,7 @@ When using the toolbox commands from a UNIX shell, it is recommended
 to set the TOOLBOX_PATH to the base directory and to add it to
 the PATH variable. You can do this by running the following command:
 
-    $ . vars.sh
+    $ . startup.sh
 
 Note: The dot or 'source' command is needed so that the variables
 are imported into the current shell.
@@ -199,7 +199,7 @@ You can set the TOOLBOX_PATH to the base directory and to add it
 to the Matlab path by running the following command in the
 bart directory:
 
-    >> vars
+    >> startup
 
 (Note: The '>>' indicates the shell prompt. Do not type '>>'
 when entering commands.)
