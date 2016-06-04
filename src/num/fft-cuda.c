@@ -175,10 +175,10 @@ struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], 
 	if (CUFFT_SUCCESS != err)
 		goto errout;
 
-	return plan;
+	return PTR_PASS(plan);
 
 errout:
-	free(plan);
+	PTR_FREE(plan);
 	return NULL;
 }
 
