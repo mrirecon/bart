@@ -28,6 +28,7 @@
 #include "num/vecops.h"
 #include "num/gpuops.h"
 #include "num/gpukrnls.h"
+#include "num/mem.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -154,145 +155,17 @@ static void cuda_float_copy(long size, float* dst, const float* src)
 }
 
 
-struct cuda_mem_s {
-
-	const void* ptr;
-	size_t len;
-	bool device;
-	bool free;
-	int device_id;
-	int thread_id;
-	struct cuda_mem_s* next;
-};
-
-static struct cuda_mem_s* cuda_mem_list = NULL;
-
-
-static bool inside_p(const struct cuda_mem_s* rptr, const void* ptr)
+static void cuda_free_wrapper(const void* ptr)
 {
-	return (ptr >= rptr->ptr) && (ptr < rptr->ptr + rptr->len);
-}
-
-static struct cuda_mem_s* search(const void* ptr, bool remove)
-{
-	struct cuda_mem_s* rptr = NULL;
-
-	#pragma omp critical
-	{
-		struct cuda_mem_s** nptr = &cuda_mem_list;
-
-		while (true) {
-
-			rptr = *nptr;
-
-			if (NULL == rptr)
-				break;
-
-			if (inside_p(rptr, ptr)) {
-
-				if (remove)
-					*nptr = rptr->next;
-
-				break;
-			}
-
-			nptr = &(rptr->next);
-		}
-	}
-
-	return rptr;
-}
-
-static bool free_check_p(const struct cuda_mem_s* rptr, size_t size, int tid)
-{
-	return (rptr->free && (rptr->device_id == last_init) && (rptr->len >= size)
-			&& ((-1 == tid) || (rptr->thread_id == tid)));
-}
-
-static struct cuda_mem_s** find_free_unsafe(size_t size, int tid)
-{
-	struct cuda_mem_s* rptr = NULL;
-	struct cuda_mem_s** nptr = &cuda_mem_list;
-
-	while (true) {
-
-		rptr = *nptr;
-
-		if (NULL == rptr)
-			break;
-
-		if (free_check_p(rptr, size, tid))
-			break;
-
-		nptr = &(rptr->next);
-	}
-
-	return nptr;
-}
-
-static struct cuda_mem_s* find_free(size_t size)
-{
-	struct cuda_mem_s* rptr = NULL;
-
-	#pragma omp critical
-	{
-		rptr = *find_free_unsafe(size, -1);
-
-		if (NULL != rptr)
-			rptr->free = false;
-	}
-
-	return rptr;
-}
-
-static void insert(const void* ptr, size_t len, bool device)
-{
-	PTR_ALLOC(struct cuda_mem_s, nptr);
-	nptr->ptr = ptr;
-	nptr->len = len;
-	nptr->device = device;
-	nptr->device_id = last_init;
-	nptr->thread_id = omp_get_thread_num();
-	nptr->free = false;
-
-	#pragma omp critical
-	{
-		nptr->next = cuda_mem_list;
-		cuda_mem_list = nptr;
-	}
+	CUDA_ERROR(cudaFree((void*)ptr));
 }
 
 void cuda_memcache_clear(void)
 {
-	struct cuda_mem_s* nptr = NULL;
-
 	if (!cuda_memcache)
 		return;
 
-	do {
-		#pragma omp critical
-		{
-			struct cuda_mem_s** rptr = find_free_unsafe(0, omp_get_thread_num());
-			nptr = *rptr;
-
-			// remove from list
-
-			if (NULL != nptr)
-				*rptr = nptr->next;
-		}
-
-		if (NULL != nptr) {
-
-			assert(nptr->device);
-
-			debug_printf(DP_DEBUG3, "Freeing %ld bytes. (DID: %d TID: %d)\n\n",
-					nptr->len, nptr->device_id, nptr->thread_id);
-
-			cudaFree((void*)nptr->ptr);
-			free(nptr);
-		}
-
-	} while (NULL != nptr);
+	memcache_clear(last_init, cuda_free_wrapper);
 }
 
 void cuda_exit(void)
@@ -326,22 +199,13 @@ static bool cuda_cuda_ondevice(const void* ptr)
 
 bool cuda_ondevice(const void* ptr)
 {
-	if (NULL == ptr)
-		return false;
-
-	struct cuda_mem_s* p = search(ptr, false);
-	bool r = ((NULL != p) && p->device);
-
-//	assert(r == cuda_cuda_ondevice(ptr));
-
-	return r;
+	return mem_ondevice(ptr);
 }
 
 bool cuda_accessible(const void* ptr)
 {
 #if 1
-	struct cuda_mem_s* p = search(ptr, false);	
-	return (NULL != p);
+	return mem_device_accessible(ptr);
 #else
 	struct cudaPointerAttributes attr;
 	//CUDA_ERROR(cudaPointerGetAttributes(&attr, ptr));
@@ -356,53 +220,26 @@ bool cuda_accessible(const void* ptr)
 
 void cuda_free(void* ptr)
 {
-	struct cuda_mem_s* nptr = search(ptr, !cuda_memcache);
-
-	assert(NULL != nptr);
-	assert(nptr->ptr == ptr);
-	assert(nptr->device);
-
-	if (cuda_memcache) {
-
-		assert(!nptr->free);
-		nptr->free = true;
-
-	} else {
-
-		free(nptr);
-		cudaFree(ptr);
-	}
+	mem_device_free(ptr, cuda_free_wrapper);
 }
 
 
-void* cuda_malloc(long size)
+static void* cuda_malloc_wrapper(size_t size)
 {
-	if (cuda_memcache) {
-
-		struct cuda_mem_s* nptr = find_free(size);
-
-		if (NULL != nptr) {
-
-			assert(nptr->device);
-			assert(!nptr->free);
-
-			nptr->thread_id = omp_get_thread_num();
-
-			return (void*)(nptr->ptr);
-		}
-	}
-
 	void* ptr;
         CUDA_ERROR(cudaMalloc(&ptr, size));
-
-	insert(ptr, size, true);
 
 	return ptr;
 }
 
+void* cuda_malloc(long size)
+{
+	return mem_device_malloc(last_init, size, cuda_malloc_wrapper);
+}
 
 
 
+#if 0
 void* cuda_hostalloc(long N)
 {
 	void* ptr;
@@ -422,6 +259,7 @@ void cuda_hostfree(void* ptr)
 
 	cudaFreeHost(ptr);
 }
+#endif
 
 static float* cuda_float_malloc(long size)
 {
