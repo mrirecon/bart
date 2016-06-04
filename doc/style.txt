@@ -1,0 +1,210 @@
+
+
+
+1. Language
+
+	The main language is C11 with commonly used GNU extensions (gnu11)
+	as supported by the GCC and clang compilers.
+
+
+1.1. Standard types:	
+
+	The complex types are the standard types introduced with ISO C99.
+	
+	#include <complex.h>
+	
+	complex float
+	complex double
+
+	In headers we use _Complex without including the standard header
+	for complex types for compatibility with C++. Similarly, we use
+	the standard boolean type.
+
+	#include <stdbool.h>
+
+	bool x = true;
+
+
+1.2. Arrays
+
+	Large multi-dimensional arrays should use our md_* functions.
+
+	Small arrays should use (variable-length) arrays to increase
+	type-safety. Pointer arithmetic should be avoided.
+
+	float kernel[N][3];
+
+	complex float* image = md_alloc(N, dims, CFL_SIZE);
+
+	In headers, we use the __VLA(x) macro for compatibility with C++
+	when this is possible.
+
+
+1.2. GNU Extensions:
+
+	Some extensions a commonly supported by compilers and useful.
+
+	statement expressions ({  })
+	__typeof__
+
+	const array parameters
+	
+
+1.3. Type safety
+
+	void* and casts should be used only when necessary. Functions must
+	have a prototype. Variable-length arrays are preferred over basic
+	pointers. Macros can often be made type-safe, e.g. using
+	the TYPE_CHECK macro.
+
+
+2. Coding Style
+
+	Coding style are meant as guidelines. It is OK to deviate from the
+	guidelines in situations, if it helps to make the code easier
+	to understand.
+
+
+2.1. Indentation
+
+	Indentation using a single tab. A tab is considered 8 characters.
+	
+	White space errors (white space after the last visible
+        character of a line) should be avoided.
+
+
+2.2. Expressions
+
+	There should be no space after the opening or before the closing
+	bracket. There should be a single space before and after any
+	operator except for prefix and postfix operators. Subexpressions
+	should be enclosed in brackets and not rely on operator precedence
+	for correct evaluation order.
+
+
+	int i = (3 + x++) * 2;
+
+
+
+
+	If there is a constant involved in a comparison the constant
+	should be on the left side.
+
+	if (0. == x)
+		return false;
+
+
+
+	The type of the controlling expression used in if statements or loops
+	should be boolean. Pointers and integers should not implicitly
+	compared to NULL or zero.
+
+	if (NULL == foo_ptr)
+		foo_ptr = init_foo_ptr();
+
+
+2.3. Statement groups.
+
+	Opening curly brace is on the next line for functions and on the
+	same line for if, for, while, and switch statements. In the later
+	case there should be an empty line afterwards. In case only a
+	single statement follows an if, for, or while statement, the
+	statement block can be omitted - but for if-else pairs only
+	it can be omitted on both sides. There should be no empty line
+	before the closing bracket.
+
+	if (0. == x) {
+
+		...		
+	}
+
+	if (0. == x)
+		y = 3;
+
+
+
+	Statements should be grouped in logical blocks by a single empty
+	line. In particular, declarations, definitions (with initialization) 
+	should be separated from other statements. Memory allocation and
+	deallocation should usually be separated.
+
+
+	void compute_bar(complex float* bar)
+	{
+		complex float* foo = md_alloc();
+
+		compute_foo(foo);
+		compute_bar_from_foo(bar, foo);
+
+		md_free(foo);
+	}
+
+
+2.4. Comments:
+
+	Comments should be used to document the API, explain complicated
+	code and algorithms, and give required background information.
+
+	Comments are not meant to explain things a competent programmer
+	should know by reading the code.
+
+
+	Good:
+
+	// gram-schmidt algorithm
+	for (...) {
+
+		for (..) {
+
+			...
+		}
+	}
+
+
+	Bad:
+
+	// initialize foo
+	int foo = 3;
+
+
+	// config struct
+	struct foo_conf_s conf = ...
+
+
+	// allocate memory
+	complex float* x = md_alloc(...);
+
+
+
+2.5. Variable and Function Names
+
+	Functions and variables names should be lower case and
+        use '_' has separator of components. Names should be
+        meaningful but not unnecessary long. If possible, use
+	self-explanatory variable names. Except for loop
+	indices, where one-letter variables names can be used.	
+
+
+
+	float norm = calc_frobenius_norm(image)
+
+
+	This is preferable to adding comments:
+	
+	// calculate frobenous norm
+	float n = clc_frbn(i);
+
+
+	On the other hand, for often used functions a short
+	name is appropriate. For example, we use
+
+	md_fmac()
+
+	instead of
+
+	multidim_fused_multiply_accumulate()
+
+	
+	Locally used loop indices can be single character 
+	letters: i, j, k
+
