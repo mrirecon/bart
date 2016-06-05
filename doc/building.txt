@@ -1,0 +1,198 @@
+
+0. Introduction
+
+BART has a build system based on GNU Make. The build system
+offers many features for users and developers: BART can be
+built on different architectures, with different compilers,
+and with various optional features. This makes it easy
+to use BART in different environments, on a laptop, a
+multi-GPU system, a HPC cluster, or in the cloud. The build
+system also supports running system and unit tests.
+
+To make developing more fun, the makefile is optimized for
+extremely fast builds. Using parallel builds, BART can be built
+from scratch in about five seconds. After changing a single
+source code file it is usually possible to rebuild the binary in 
+less than a second. This is accomplished by automatically
+maintaining dependencies between object files and incrementally
+updating the binaries from object stored in libraries.
+
+
+1. Building BART
+
+1.2. Main Build Targets
+
+1.2.1. Default
+
+By default, the main 'bart' binary will be built with:
+
+	make
+
+or
+
+	make bart
+
+
+1.2.1. Building Individual Commands
+
+
+Individual BART commands can be built as standalone binaries:
+
+	make <command>
+
+All BART commands can be built with:
+
+	make all
+
+
+Attention: If the TOOLBOX_PATH is set, the 'bart' tool will call
+the standalone tool and not the built-in tool. This can be used
+to selectively update individual tools, but can also cause
+confusion.
+
+
+
+1.2.2. Testing
+
+System and unit tests can be build and run with:
+
+	make test
+	make utest
+
+
+1.2.3. Cleaning Up
+
+To clean up working directory, run:
+
+	make clean
+
+To also remove all built commands, run:
+
+	make allclean
+
+
+
+1.3. Libraries
+
+As a side effect of build the main 'bart' tool, static libraries
+are generated in 'lib/'.
+
+
+
+2. Local Configuration
+
+The build can be configured by setting or adding variables.
+
+2.1. Makefile.local
+
+It is recommended to put this variables into a file called
+'Makefile.local' in the main BART directory. This file is
+then automatically included. By having local configuration
+is a seperate file, local changes are not overwritten when
+BART is updated and do not cause conflicts when using a
+version control system.
+
+
+2.2. Makefile.<machinename>
+
+It is also possible to put machine-specific configurations
+variables in a Makefile.<machinename> where <machinename>
+is the name of the machine as returned by 'uname -n'.
+
+
+3. Build Options
+
+3.1. Adding New BART Commands
+
+	# add new tool (src/foo.c) to list of targets
+	XTARGETS += foo
+
+	# dependencies for foo
+	MODULES_foo += -llowrank
+
+
+3.2. Build Flags
+
+3.2.1. Silent Builds
+
+Silent builds can be activated with the following option:
+
+	MAKEFLAGS += --silent
+
+
+3.3.2. Parallel Build
+
+Parallel builds can be activated with the following option:
+
+	PARALLEL=1
+
+
+
+3.3. Optional Features
+
+Some BART features are optional, because they depend on the other
+libraries or features which are not available everywhere.
+
+3.3.1. CUDA
+
+Support for CUDA can be turned on. It may be necessary to also
+provide the base path for CUDA installation.
+
+	CUDA=1
+	CUDA_BASE=/usr/
+
+
+3.3.2. OpenMP
+
+OpenMP can be turned off for compilers which do not support
+it properly (.e.g. clang):
+
+	OMP=0
+
+
+3.3.3. FFTW Threads
+
+It is possible to turn off FFTW threads if the library is
+not available:
+
+	FFTWTHREADS=0
+
+
+3.3.4. ISMRM Raw Data Format
+
+If the ISMRMRD library is installed, preliminary support for 
+the ISMRM raw data format can be activated:
+	
+	ISMRMRD=1
+
+
+3.4. Compiler
+
+3.4.1. Different Compiler
+
+If different compilers or compiler versions are installed,
+it is possible to override the default compiler:
+
+	CC = gcc-4.8
+	#CC = gcc-5
+	#CC = clang-3.5
+
+
+3.4.2. Different CFLAGS
+
+Different CFLAGS can be set like this:
+
+	CFLAGS= -g -O2 -ffast-math
+
+
+3.4.3. Static Linking
+
+Static linking can be used to build binaries which do not
+depend on external shared libraries. This might be useful if
+BART is to be deployed on a different machine where it is
+difficult to install required dependencies.
+
+	SLINK=1
+
+
+
