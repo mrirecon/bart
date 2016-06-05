@@ -11,7 +11,9 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -127,7 +129,11 @@ static void insert(const void* ptr, size_t len, bool device, int dev)
 	nptr->len = len;
 	nptr->device = device;
 	nptr->device_id = dev;
+#ifdef _OPENMP
 	nptr->thread_id = omp_get_thread_num();
+#else
+	nptr->thread_id = -1;
+#endif
 	nptr->free = false;
 
 	#pragma omp critical
@@ -147,7 +153,12 @@ void memcache_clear(int dev, void (*device_free)(const void*x))
 	do {
 		#pragma omp critical
 		{
-			struct mem_s** rptr = find_free_unsafe(0, dev, omp_get_thread_num());
+#ifdef _OPENMP
+			int tid = omp_get_thread_num();
+#else
+			int tid = -1;
+#endif
+			struct mem_s** rptr = find_free_unsafe(0, dev, tid);
 			nptr = *rptr;
 
 			// remove from list
@@ -221,8 +232,11 @@ void* mem_device_malloc(int device, long size, void* (*device_alloc)(size_t))
 
 			assert(nptr->device);
 			assert(!nptr->free);
-
+#ifdef _OPENMP
 			nptr->thread_id = omp_get_thread_num();
+#else
+			nptr->thread_id = -1;
+#endif
 
 			return (void*)(nptr->ptr);
 		}
