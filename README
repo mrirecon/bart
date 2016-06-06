@@ -57,8 +57,8 @@ the ISMRM Raw Data format when linking with the ISMRMRD library
 (http://ismrmrd.sourceforge.net/).
 
 
-In the following, the symbol '$' indicates a shell prompt.
-Do not type '$' when entering commands.
+In the following, the symbol '`$`' indicates a shell prompt.
+Do not type '`$`' when entering commands.
 
 
 
