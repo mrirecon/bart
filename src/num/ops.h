@@ -40,10 +40,13 @@ extern const struct operator_p_s* operator_p_create2(unsigned int ON, const long
 		operator_data_t* data, operator_p_fun_t apply, operator_del_t del);
 
 
-extern const struct operator_s* operator_generic_create(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)],
+extern const struct operator_s* operator_generic_create(unsigned int N, unsigned int io_flags,
+		const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)],
 		operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
-extern const struct operator_s* operator_generic_create2(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)], const long* out_strs[__VLA(N)], operator_data_t* data, operator_fun_t apply, operator_del_t del);
+extern const struct operator_s* operator_generic_create2(unsigned int N, unsigned int io_flags,
+			const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)], const long* out_strs[__VLA(N)],
+			operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
 
 
