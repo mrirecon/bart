@@ -35,6 +35,7 @@
 
 #include "linops/linop.h"
 #include "linops/sampling.h"
+#include "linops/someops.h"
 #include "linops/rvc.h"
 
 #include "iter/iter.h"
@@ -106,6 +107,67 @@ static void real_from_complex_dims(unsigned int D, long odims[D + 1], const long
 	odims[0] = 2;
 	md_copy_dims(D, odims + 1, idims);
 }
+
+
+
+const struct operator_s* sense_recon_create(const struct sense_conf* conf, const long dims[DIMS],
+		  const struct linop_s* sense_op,
+		  const long pat_dims[DIMS], const complex float* pattern,
+		  italgo_fun2_t italgo, iter_conf* iconf,
+		  unsigned int num_funs,
+		  const struct operator_p_s* thresh_op[num_funs],
+		  const struct linop_s* thresh_funs[num_funs],
+		  const long ksp_dims[DIMS],
+		  const struct operator_s* precond_op)
+{
+	struct lsqr_conf lsqr_conf = { conf->cclambda };
+
+	const struct operator_s* op = NULL;
+
+
+	long img_dims[DIMS];
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);
+
+
+	if (conf->rvc) {
+
+		struct linop_s* rvc = rvc_create(DIMS, img_dims);
+		struct linop_s* tmp_op = linop_chain(rvc, sense_op);
+
+		linop_free(rvc);
+		linop_free(sense_op);
+		sense_op = tmp_op;
+	}
+
+	assert(1 == conf->rwiter);
+
+	if (NULL == pattern) {
+
+		op = lsqr2_create(&lsqr_conf, italgo, iconf, sense_op, precond_op,
+					num_funs, thresh_op, thresh_funs);
+
+	} else {
+
+		complex float* weights = md_alloc(DIMS, pat_dims, CFL_SIZE);	// FIXME: GPU
+#if 0
+		// buggy
+//		md_zsqrt(DIMS, pat_dims, weights, pattern);
+#else
+		long dimsR[DIMS + 1];
+		real_from_complex_dims(DIMS, dimsR, pat_dims);
+		md_sqrt(DIMS + 1, dimsR, (float*)weights, (const float*)pattern);
+#endif
+		struct linop_s* weights_op = linop_cdiag_create(DIMS, ksp_dims, FFT_FLAGS, weights);	// FIXME: check pat_dims
+
+		op = wlsqr2_create(&lsqr_conf, italgo, iconf,
+						sense_op, weights_op, precond_op,
+						num_funs, thresh_op, thresh_funs);
+	}
+
+	return op;
+}
+
+
 
 /**
  * Perform iterative, regularized sense reconstruction.
