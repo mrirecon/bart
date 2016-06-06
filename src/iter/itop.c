@@ -39,6 +39,8 @@ static void itop_apply(const operator_data_t* _data, unsigned int N, void* args[
 {
 	assert(2 == N);
 	const struct itop_s* data = CONTAINER_OF(_data, const struct itop_s, base);
+
+	md_clear(1, MD_DIMS(data->size), args[0], sizeof(float));
 		
 	data->italgo(data->iconf, data->op, data->num_funs, data->prox_funs, data->prox_linops, NULL, 
 			data->size, args[0], args[1], NULL, NULL, NULL);
