@@ -53,6 +53,7 @@
 const struct sense_conf sense_defaults = {
 
 	.rvc = false,
+	.gpu = false,
 	.rwiter = 1,
 	.gamma = -1.,
 	.cclambda = 0.,
@@ -148,7 +149,7 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 
 	} else {
 
-		complex float* weights = md_alloc(DIMS, pat_dims, CFL_SIZE);	// FIXME: GPU
+		complex float* weights = md_alloc(DIMS, pat_dims, CFL_SIZE);
 #if 0
 		// buggy
 //		md_zsqrt(DIMS, pat_dims, weights, pattern);
@@ -157,6 +158,18 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		real_from_complex_dims(DIMS, dimsR, pat_dims);
 		md_sqrt(DIMS + 1, dimsR, (float*)weights, (const float*)pattern);
 #endif
+		if (conf->gpu) {
+#ifdef USE_CUDA
+			complex float* weights2 = md_gpu_move(DIMS, pat_dims, weights, CFL_SIZE);
+			md_free(weights);
+			weights = weights2;
+#else
+			assert(0);
+#endif
+		}
+
+		// FIXME: weights is never freed
+
 		struct linop_s* weights_op = linop_cdiag_create(DIMS, ksp_dims, FFT_FLAGS, weights);	// FIXME: check pat_dims
 
 		op = wlsqr2_create(&lsqr_conf, italgo, iconf,

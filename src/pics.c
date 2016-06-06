@@ -77,8 +77,6 @@ int main_pics(int argc, char* argv[])
 
 
 
-	bool use_gpu = false;
-
 	bool randshift = true;
 	unsigned int maxiter = 30;
 	float step = -1.;
@@ -125,7 +123,7 @@ int main_pics(int argc, char* argv[])
 		OPT_UINT('i', &maxiter, "iter", "max. number of iterations"),
 		OPT_STRING('t', &traj_file, "file", "k-space trajectory"),
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
-		OPT_SET('g', &use_gpu, "use GPU"),
+		OPT_SET('g', &conf.gpu, "use GPU"),
 		OPT_STRING('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "(select IST)"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
@@ -189,11 +187,11 @@ int main_pics(int argc, char* argv[])
 	assert(1 == ksp_dims[MAPS_DIM]);
 
 
-	(use_gpu ? num_init_gpu : num_init)();
+	(conf.gpu ? num_init_gpu : num_init)();
 
 	// print options
 
-	if (use_gpu)
+	if (conf.gpu)
 		debug_printf(DP_INFO, "GPU reconstruction\n");
 
 	if (map_dims[MAPS_DIM] > 1) 
@@ -267,9 +265,9 @@ int main_pics(int argc, char* argv[])
 	const struct operator_s* precond_op = NULL;
 
 	if (NULL == traj_file)
-		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps, use_gpu);
+		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps, conf.gpu);
 	else
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, use_gpu, (struct operator_s**) &precond_op);
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, conf.gpu, (struct operator_s**) &precond_op);
 
 	// apply scaling
 
@@ -300,7 +298,7 @@ int main_pics(int argc, char* argv[])
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
-	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, llr_blk, randshift, use_gpu);
+	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, llr_blk, randshift, conf.gpu);
 
 	int nr_penalties = ropts.r;
 	struct reg_s* regs = ropts.regs;
@@ -466,7 +464,7 @@ int main_pics(int argc, char* argv[])
 				italgo, iconf, nr_penalties, thresh_ops,
 				(ADMM == algo) ? trafos : NULL, ksp_dims, precond_op);
 
-	if (use_gpu) 
+	if (conf.gpu)
 #ifdef USE_CUDA
 		op = operator_gpu_wrapper(op);
 #else
