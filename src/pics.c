@@ -20,6 +20,7 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/init.h"
+#include "num/ops.h"
 
 #include "iter/misc.h"
 
@@ -459,18 +460,23 @@ int main_pics(int argc, char* argv[])
 	}
 
 
+
+	const struct operator_s* op = sense_recon_create(&conf, max_dims, forward_op, pat_dims, pattern,
+				italgo, iconf, nr_penalties, thresh_ops,
+				(ADMM == algo) ? trafos : NULL, ksp_dims, precond_op);
+
 	if (use_gpu) 
 #ifdef USE_CUDA
-		sense_recon2_gpu(&conf, max_dims, image, forward_op, pat_dims, pattern,
-				italgo, iconf, nr_penalties, thresh_ops,
-				(ADMM == algo) ? trafos : NULL, ksp_dims, kspace, image_truth, precond_op);
+		op = operator_gpu_wrapper(op);
 #else
-	assert(0);
+		assert(0);
 #endif
-	else
-		sense_recon2(&conf, max_dims, image, forward_op, pat_dims, pattern,
-				italgo, iconf, nr_penalties, thresh_ops,
-				(ADMM == algo) ? trafos : NULL, ksp_dims, kspace, image_truth, precond_op);
+
+	operator_apply(op, DIMS, img_dims, image, DIMS, ksp_dims, kspace);
+
+	operator_free(op);
+
+
 
 	if (scale_im)
 		md_zsmul(DIMS, img_dims, image, image, scaling);
