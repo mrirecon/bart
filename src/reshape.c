@@ -11,6 +11,7 @@
 #include <assert.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -29,6 +30,8 @@ static const char help_str[] = "Reshape selected dimensions.\n";
 int main_reshape(int argc, char* argv[])
 {
 	cmdline(&argc, argv, 3, 100, usage_str, help_str, 0, NULL);
+
+	num_init();
 
 	unsigned int flags = atoi(argv[1]);
 	unsigned int n = bitcount(flags);

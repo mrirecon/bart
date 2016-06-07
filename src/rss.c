@@ -15,6 +15,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -32,6 +33,8 @@ static const char help_str[] = "Calculates root of sum of squares along selected
 int main_rss(int argc, char* argv[argc])
 {
 	mini_cmdline(argc, argv, 3, usage_str, help_str);
+
+	num_init();
 
 	long dims[DIMS];
 	complex float* data = load_cfl(argv[2], DIMS, dims);

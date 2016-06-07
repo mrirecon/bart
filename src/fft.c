@@ -13,6 +13,7 @@
 
 #include "num/multind.h"
 #include "num/fft.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/opts.h"
@@ -41,6 +42,8 @@ int main_fft(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 	long dims[DIMS];
 	complex float* idata = load_cfl(argv[2], DIMS, dims);

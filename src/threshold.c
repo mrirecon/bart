@@ -14,6 +14,7 @@
 
 #include "num/flpmath.h"
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "iter/prox.h"
 #include "iter/thresh.h"
@@ -115,6 +116,8 @@ int main_threshold(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 
 	const int N = DIMS;

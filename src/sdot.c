@@ -12,6 +12,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -29,6 +30,8 @@ static const char help_str[] = "Compute dot product along selected dimensions.";
 int main_sdot(int argc, char* argv[])
 {
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, 0, NULL);
+
+	num_init();
 
 	int N = DIMS;
 	long in1_dims[N];

@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/mri.h"
@@ -37,6 +38,8 @@ int main_pattern(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 	unsigned int N = DIMS;
 	long in_dims[N];

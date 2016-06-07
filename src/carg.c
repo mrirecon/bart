@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -32,6 +33,8 @@ static const char help_str[] = "Argument (phase angle).\n";
 int main_carg(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 2, usage_str, help_str);
+
+	num_init();
 
 	long dims[DIMS];
 	

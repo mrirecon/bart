@@ -20,6 +20,7 @@
 
 #include "num/flpmath.h"
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/debug.h"
 
@@ -44,6 +45,8 @@ int main_estvar(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 	int N = DIMS;
 	long kspace_dims[N];

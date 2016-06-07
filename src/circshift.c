@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -31,6 +32,8 @@ static const char help_str[] = "Perform circular shift along {dim} by {shift} el
 int main_circshift(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
+
+	num_init();
 
 	const int N = DIMS;
 	long dims[N];

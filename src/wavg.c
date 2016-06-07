@@ -11,6 +11,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/opts.h"
@@ -27,6 +28,8 @@ static const char help_str[] = "Calculates weighted average along dimensions spe
 int main_wavg(int argc, char* argv[argc])
 {
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, 0, NULL);
+
+	num_init();
 
 	int N = DIMS;
 

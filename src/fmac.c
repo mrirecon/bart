@@ -12,6 +12,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -39,6 +40,8 @@ int main_fmac(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 
 	int N = DIMS;

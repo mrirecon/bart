@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -29,6 +30,8 @@ static const char help_str[] = "Scale array by {factor}. The scale factor can be
 int main_scale(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 3, usage_str, help_str);
+
+	num_init();
 
 	complex float scale;
 	// = atof(argv[1]);

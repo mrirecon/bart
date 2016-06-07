@@ -13,6 +13,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/wavelet.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/io.h"
@@ -40,6 +41,8 @@ int main_cdf97(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 	unsigned int flags = atoi(argv[1]);
 

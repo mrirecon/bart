@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/io.h"
@@ -29,6 +30,8 @@ static const char help_str[] = "Estimate image dimension from non-Cartesian traj
 int main_estdims(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 1, usage_str, help_str);
+
+	num_init();
 
 	int N = 16;
 
