@@ -50,24 +50,26 @@ int main_nufft(int argc, char* argv[])
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 
-	long coilim_dims[DIMS] = { 0 };
+	long coilim_vec[3] = { 0 };
 
 	float lambda = 0.;
 
 	const struct opt_s opts[] = {
 
-		{ 'a', false, opt_set, &adjoint, "\tadjoint" },
-		{ 'i', false, opt_set, &inverse, "\tinverse" },
-		{ 'd', true, opt_vec3, &coilim_dims, " x:y:z\tdimensions" },
-		{ 'D', true, opt_vec3, &coilim_dims, NULL },
-		{ 't', false, opt_set, &conf.toeplitz, "\tToeplitz embedding for inverse NUFFT" },
-		{ 'c', false, opt_set, &precond, "\tPreconditioning for inverse NUFFT" },
-		{ 'l', true, opt_float, &lambda, " lambda\tl2 regularization" },
-		{ 'm', true, opt_int, &cgconf.maxiter, NULL },
+		OPT_SET('a', &adjoint, "adjoint"),
+		OPT_SET('i', &inverse, "inverse"),
+		OPT_VEC3('d', &coilim_vec, "x:y:z", "dimensions"),
+		OPT_VEC3('D', &coilim_vec, "", "()"),
+		OPT_SET('t', &conf.toeplitz, "Toeplitz embedding for inverse NUFFT"),
+		OPT_SET('c', &precond, "Preconditioning for inverse NUFFT"),
+		OPT_FLOAT('l', &lambda, "lambda", "l2 regularization"),
+		OPT_UINT('m', &cgconf.maxiter, "", "()"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
+	long coilim_dims[DIMS] = { 0 };
+	md_copy_dims(3, coilim_dims, coilim_vec);
 
 	// Read trajectory
 	long traj_dims[DIMS];
