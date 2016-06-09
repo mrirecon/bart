@@ -168,7 +168,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 	data->xn = my_alloc(DIMS, data->imgs_dims, CFL_SIZE);
 	data->tmp = my_alloc(DIMS, data->sign_dims, CFL_SIZE);
 
-	return data;
+	return PTR_PASS(data);
 }
 
 
