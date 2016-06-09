@@ -24,6 +24,13 @@ static const char usage_str[] = "<output>";
 static const char help_str[] = "Computes k-space trajectories.";
 
 
+static float gradient_delay(const float coeff[3], float phi)
+{
+	float x = cosf(phi);
+	float y = sinf(phi);
+
+	return x * x * coeff[0] + 2. * x * y * coeff[2] + y * y * coeff[1];
+}
 
 static int remap(int all, int turns, int n)
 {
@@ -42,6 +49,8 @@ int main_traj(int argc, char* argv[])
 	int turns = 1;
 	bool d3d = false;
 
+	float gdelays[3] = { 0. };
+
 	const struct opt_s opts[] = {
 
 		OPT_INT('x', &X, "x", "readout samples"),
@@ -51,6 +60,7 @@ int main_traj(int argc, char* argv[])
 		OPT_SET('r', &radial, "radial"),
 		OPT_SET('G', &golden, "golden-ratio sampling"),
 		OPT_SET('D', &dbl, "double base angle"),
+		OPT_FLVEC3('q', &gdelays, "delays", "gradient delays"),
 		OPT_SET('3', &d3d, "3D"),
 	};
 
@@ -83,7 +93,7 @@ int main_traj(int argc, char* argv[])
 				double golden_angle = 3. - sqrtf(5.);
 				double base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
 				double angle = M_PI * (float)remap(Y, turns, j) * (dbl ? 2. : 1.) * base;
-				double read = (float)i + 0.5 - (float)X / 2.;
+				double read = (float)i + 0.5 - (float)X / 2. + gradient_delay(gdelays, angle);
 				double angle2 = 0.;
 
 				if (d3d) {
