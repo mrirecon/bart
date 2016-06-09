@@ -170,10 +170,10 @@ complex float* create_zcoo(const char* name, unsigned int D, const long dimensio
 }
 
 
-
-
 complex float* create_cfl(const char* name, unsigned int D, const long dimensions[D])
 {
+	io_register_output(name);
+
 	const char *p = strrchr(name, '.');
 
 	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".ra")))
@@ -253,6 +253,8 @@ complex float* load_zcoo(const char* name, unsigned int D, long dimensions[D])
 
 static complex float* load_cfl_internal(const char* name, unsigned int D, long dimensions[D], bool priv)
 {
+	io_register_input(name);
+
 	const char *p = strrchr(name, '.');
 
 	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".ra")))

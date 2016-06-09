@@ -7,8 +7,10 @@
  * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
+#define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <complex.h>
@@ -21,8 +23,53 @@
 
 #include "misc/version.h"
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "io.h"
+
+
+
+struct iofile_s {
+
+	const char* name;
+	bool out;
+	struct iofile_s* prev;
+};
+
+static struct iofile_s* iofiles = NULL;
+
+
+
+static void io_register(const char* name, bool out)
+{
+	const struct iofile_s* iop = iofiles;
+
+	while (NULL != iop) {
+
+		if (0 == strcmp(name, iop->name) && (out || iop->out))
+			debug_printf(DP_WARN, "Overwriting file: %s\n", name);
+
+		iop = iop->prev;
+	}
+
+	PTR_ALLOC(struct iofile_s, ion);
+
+	ion->name = strdup(name);
+	ion->out = out;
+	ion->prev = iofiles;
+
+	iofiles = PTR_PASS(ion);
+}
+
+void io_register_input(const char* name)
+{
+	io_register(name, false);
+}
+
+void io_register_output(const char* name)
+{
+	io_register(name, true);
+}
 
 
 int write_cfl_header(int fd, unsigned int n, const long dimensions[n])
@@ -43,6 +90,21 @@ int write_cfl_header(int fd, unsigned int n, const long dimensions[n])
 
 		pos += snprintf(header + pos, 4096 - pos, "# Command\n");
 		pos += snprintf(header + pos, 4096 - pos, "%s\n", command_line);
+	}
+
+	if (NULL != iofiles) {
+
+		struct iofile_s* in = iofiles;
+
+		pos += snprintf(header + pos, 4096 - pos, "# Files\n");
+
+		while (in) {
+
+			pos += snprintf(header + pos, 4096 - pos, " %c%s", in->out ? '>' : '<', in->name);
+			in = in->prev;
+		}
+
+		pos += snprintf(header + pos, 4096 - pos, "\n");
 	}
 
 	pos += snprintf(header + pos, 4096 - pos, "# Creator\n");
