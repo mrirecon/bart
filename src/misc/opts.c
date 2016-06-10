@@ -249,6 +249,18 @@ bool opt_string(void* ptr, char c, const char* optarg)
 	return false;
 }
 
+
+bool opt_float_vec3(void* ptr, char c, const char* optarg)
+{
+	UNUSED(c);
+	int r = sscanf(optarg, "%f:%f:%f", &(*(float(*)[3])ptr)[0], &(*(float(*)[3])ptr)[1], &(*(float(*)[3])ptr)[2]);
+
+	assert(3 == r);
+
+	return false;
+}
+
+
 bool opt_vec3(void* ptr, char c, const char* optarg)
 {
 	if (islower(c)) {
