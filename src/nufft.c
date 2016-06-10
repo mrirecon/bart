@@ -117,7 +117,7 @@ int main_nufft(int argc, char* argv[])
 			if (conf.toeplitz && precond)
 				precond_op = nufft_precond_create(nufft_op);
 
-			lsqr(DIMS, &(struct lsqr_conf){ lambda }, iter_conjgrad, CAST_UP(&cgconf),
+			lsqr(DIMS, &(struct lsqr_conf){ lambda, false }, iter_conjgrad, CAST_UP(&cgconf),
 			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, precond_op);
 
 			if (conf.toeplitz && precond)
