@@ -121,7 +121,7 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		  const long ksp_dims[DIMS],
 		  const struct operator_s* precond_op)
 {
-	struct lsqr_conf lsqr_conf = { conf->cclambda, false };
+	struct lsqr_conf lsqr_conf = { conf->cclambda, conf->gpu };
 
 	const struct operator_s* op = NULL;
 
