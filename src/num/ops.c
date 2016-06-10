@@ -795,7 +795,6 @@ const struct operator_s* operator_loop(unsigned int D, const long dims[D], const
 }
 
 
-#ifdef USE_CUDA
 struct gpu_data_s {
 
 	INTERFACE(operator_data_t);
@@ -807,6 +806,7 @@ DEF_TYPEID(gpu_data_s);
 
 static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
+#ifdef USE_CUDA
 	const struct operator_s* op = CAST_DOWN(gpu_data_s, _data)->op;
 	void* gpu_ptr[N];
 
@@ -833,6 +833,10 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 		md_free(gpu_ptr[i]);
 	}
+#else
+	UNUSED(_data); UNUSED(N); UNUSED(args);
+	assert(0);
+#endif
 }
 
 static void gpuwrp_del(const operator_data_t* _data)
@@ -868,5 +872,4 @@ const struct operator_s* operator_gpu_wrapper(const struct operator_s* op)
 
 	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), gpuwrp_fun, gpuwrp_del);
 }
-#endif
 
