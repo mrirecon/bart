@@ -96,9 +96,7 @@ extern operator_data_t* operator_p_get_data(const struct operator_p_s* x);
 
 
 
-#ifdef USE_CUDA
 extern const struct operator_s* operator_gpu_wrapper(const struct operator_s* op);
-#endif
 
 extern const struct operator_s* operator_loop2(unsigned int N, const unsigned int D,
 				const long dims[D], const long (*strs)[D],
