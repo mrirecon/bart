@@ -45,26 +45,6 @@ extern const struct operator_s* sense_recon_create(const struct sense_conf* conf
 		  const long ksp_dims[DIMS],
 		  const struct operator_s* precond_op);
 
-
-#ifdef USE_CUDA
-extern void sense_recon2_gpu(const struct sense_conf* conf, const long dims[DIMS], _Complex float* image,
-			const struct linop_s* sense_op,
-			const long pat_dims[DIMS], const _Complex float* pattern,
-			italgo_fun2_t italgo, iter_conf* italgo_conf,
-			unsigned int num_funs,
-			const struct operator_p_s* thresh_op[__VLA2(num_funs)],
-			const struct linop_s* thresh_funs[__VLA2(num_funs)],
-			const long ksp_dims[DIMS], const _Complex float* kspace,
-			const _Complex float* image_truth, const struct operator_s* precond_op);
-
-extern void sense_recon_gpu(const struct sense_conf* conf, const long dims[DIMS], _Complex float* image,
-			const struct linop_s* sense_op,
-			const long pat_dims[DIMS], const _Complex float* pattern,
-			italgo_fun_t italgo, iter_conf* italgo_conf,
-			const struct operator_p_s* thresh_op,
-			const long ksp_dims[DIMS], const _Complex float* kspace,
-			const _Complex float* image_truth, const struct operator_s* precond_op);
-#endif
 extern void sense_recon(const struct sense_conf* conf, const long dims[DIMS], _Complex float* image,
 			const struct linop_s* sense_op,
 			const long pat_dims[DIMS], const _Complex float* pattern,
