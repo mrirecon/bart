@@ -1,6 +1,5 @@
 
 
-# 
 
 tests/test-pics-gpu: phantom pics nrmse $(TESTS_OUT)/shepplogan_coil.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
