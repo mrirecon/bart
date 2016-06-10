@@ -18,6 +18,7 @@ struct operator_p_s;
 struct lsqr_conf {
 
 	float lambda;
+	_Bool it_gpu;
 };
 
 

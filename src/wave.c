@@ -221,7 +221,7 @@ int main_wave(int argc, char* argv[])
 	// create forward operator by adding sampling mask to sense operator
 	struct linop_s* forward = linop_chain(sense_op, sampling_create(ksp_dims, pat_dims, pattern));
 
-	struct lsqr_conf lsqr_conf = { 0. };
+	struct lsqr_conf lsqr_conf = { 0., false };
 
 	// reconstruction with LSQR
 

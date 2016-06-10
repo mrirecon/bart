@@ -121,7 +121,7 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		  const long ksp_dims[DIMS],
 		  const struct operator_s* precond_op)
 {
-	struct lsqr_conf lsqr_conf = { conf->cclambda };
+	struct lsqr_conf lsqr_conf = { conf->cclambda, false };
 
 	const struct operator_s* op = NULL;
 
@@ -227,7 +227,7 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 
 	// iterative algorithm
 
-	struct lsqr_conf lsqr_conf = { conf->cclambda };
+	struct lsqr_conf lsqr_conf = { conf->cclambda, false };
 
 	// initialize data as struct to hold all sense data and operators
 
