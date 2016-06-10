@@ -42,40 +42,6 @@ extern const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					const struct linop_s* prox_linops[static num_funs]);
 
 
-#ifdef USE_CUDA
-extern void lsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun_t italgo, iter_conf* iconf,
-			const struct linop_s* model_op,
-			const struct operator_p_s* thresh_op,
-			const long x_dims[__VLA(N)], _Complex float* x,
-			const long y_dims[__VLA(N)], const _Complex float* y,
-			const struct operator_s* precond_op);
-
-extern void wlsqr_gpu(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun_t italgo, iter_conf* iconf,
-			const struct linop_s* model_op,
-			const struct operator_p_s* thresh_op,
-			const long x_dims[__VLA(N)], _Complex float* x,
-			const long y_dims[__VLA(N)], const _Complex float* y,
-			const long w_dims[__VLA(N)], const _Complex float* w,
-			const struct operator_s* precond_op);
-
-extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
-			italgo_fun2_t italgo, iter_conf* iconf,
-			const struct linop_s* model_op,
-			unsigned int num_funs,
-			const struct operator_p_s* prox_funs[__VLA(num_funs)],
-			const struct linop_s* prox_linops[__VLA(num_funs)],
-			const long x_dims[__VLA(N)], _Complex float* x,
-			const long y_dims[__VLA(N)], const _Complex float* y,
-			const struct operator_s* precond_op,
-			const _Complex float* x_truth,
-			void* obj_eval_data,
-			float (*obj_eval)(const void*, const float*));
-
-
-
-#endif
 
 extern void lsqr(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun_t italgo, iter_conf* iconf,
