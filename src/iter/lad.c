@@ -14,6 +14,8 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/ops.h"
+#include "num/iovec.h"
 
 #include "linops/linop.h"
 
@@ -43,8 +45,8 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
 		italgo_fun2_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
 		unsigned int num_funs,
-		const struct operator_p_s* thresh_op[static num_funs],
-		const struct linop_s* thresh_funs[static num_funs],
+		const struct operator_p_s* prox_funs[static num_funs],
+		const struct linop_s* prox_linops[static num_funs],
 		const long x_dims[static N], complex float* x,
 		const long y_dims[static N], const complex float* y)
 {
@@ -73,7 +75,7 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
 		// solve weighted least-squares
 
 		wlsqr2(N, conf->lsqr_conf, italgo, iconf, model_op,
-				1, thresh_op, thresh_funs,
+				1, prox_funs, prox_linops,
 		       x_dims, x, y_dims, y, w_dims, weights, NULL);
 	}
 		
@@ -88,37 +90,98 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
 void lad(	unsigned int N, const struct lad_conf* conf,
 		italgo_fun_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
-		const struct operator_p_s* thresh_op,
+		const struct operator_p_s* prox_funs,
 		const long x_dims[static N], complex float* x,
 		const long y_dims[static N], const complex float* y)
 {
 	lad2(N, conf, iter2_call_iter, &((struct iter_call_s){ { }, italgo, iconf }).base,
-		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
+		model_op, (NULL != prox_funs) ? 1 : 0, &prox_funs, NULL,
 		x_dims, x, y_dims, y);
 }
 
 
-/**
- * Wrapper for lsqr on GPU
- */
-#ifdef USE_CUDA
-extern void lad_gpu(	unsigned int N, const struct lad_conf* conf,
-			italgo_fun_t italgo, iter_conf* iconf,
-			const struct linop_s* model_op,
-			const struct operator_p_s* thresh_op,
-			const long x_dims[static N], complex float* x,
-			const long y_dims[static N], const complex float* y)
+struct lad_s {
+
+	operator_data_t base;
+
+	const struct lad_conf* conf;
+	italgo_fun2_t italgo;
+	iter_conf* iconf;
+	const struct linop_s* model_op;
+	unsigned int num_funs;
+	const struct operator_p_s** prox_funs;
+	const struct linop_s** prox_linops;
+};
+
+static void lad_apply(const operator_data_t* _data, unsigned int N, void* args[static N])
 {
+	assert(2 == N);
+	const struct lad_s* data = CONTAINER_OF(_data, const struct lad_s, base);
 
-	complex float* gpu_y = md_gpu_move(N, y_dims, y, CFL_SIZE);
-	complex float* gpu_x = md_gpu_move(N, x_dims, x, CFL_SIZE);
+	const struct iovec_s* dom_iov = operator_domain(data->model_op->forward);
+	const struct iovec_s* cod_iov = operator_codomain(data->model_op->forward);
 
-	lad(N, conf, italgo, iconf, model_op, thresh_op, x_dims, gpu_x, y_dims, gpu_y);
-
-	md_copy(N, x_dims, x, gpu_x, CFL_SIZE);
-
-	md_free(gpu_x);
-	md_free(gpu_y);
+	lad2(dom_iov->N, data->conf, data->italgo, data->iconf, data->model_op,
+		data->num_funs, data->prox_funs, data->prox_linops,
+		cod_iov->dims, args[0], dom_iov->dims, args[1]);
 }
-#endif
+
+static void lad_del(const operator_data_t* _data)
+{
+	const struct lad_s* data = CONTAINER_OF(_data, const struct lad_s, base);
+
+	linop_free(data->model_op);
+
+	if (NULL != data->prox_funs) {
+
+		for (unsigned int i = 0; i < data->num_funs; i++)
+			operator_p_free(data->prox_funs[i]);
+
+		xfree(data->prox_funs);
+	}
+
+	if (NULL != data->prox_linops) {
+
+		for (unsigned int i = 0; i < data->num_funs; i++)
+			linop_free(data->prox_linops[i]);
+
+		xfree(data->prox_linops);
+	}
+
+	xfree(data);
+}
+
+const struct operator_s* lad2_create(const struct lad_conf* conf,
+		italgo_fun2_t italgo, iter_conf* iconf,
+		const struct linop_s* model_op,
+		unsigned int num_funs,
+		const struct operator_p_s* prox_funs[static num_funs],
+		const struct linop_s* prox_linops[static num_funs])
+{
+	PTR_ALLOC(struct lad_s, data);
+
+	const struct iovec_s* dom_iov = operator_domain(model_op->forward);
+	const struct iovec_s* cod_iov = operator_codomain(model_op->forward);
+
+	assert(cod_iov->N == dom_iov->N); // this should be relaxed
+
+	data->conf = conf;
+	data->italgo = italgo;
+	data->iconf = iconf;
+	data->model_op = linop_clone(model_op);
+	data->num_funs = num_funs;
+	data->prox_funs = *TYPE_ALLOC(const struct operator_p_s*[num_funs]);
+	data->prox_linops = *TYPE_ALLOC(const struct linop_s*[num_funs]);
+
+	for (unsigned int i = 0; i < num_funs; i++) {
+
+		data->prox_funs[i] = operator_p_ref(prox_funs[i]);
+		data->prox_linops[i] = linop_clone(prox_linops[i]);
+	}
+
+	return operator_create(cod_iov->N, cod_iov->dims, dom_iov->N, dom_iov->dims,
+				&PTR_PASS(data)->base, lad_apply, lad_del);
+}
+
+
 
