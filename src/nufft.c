@@ -44,7 +44,6 @@ int main_nufft(int argc, char* argv[])
 {
 	bool adjoint = false;
 	bool inverse = false;
-	bool use_gpu = false;
 	bool precond = false;
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
@@ -100,7 +99,7 @@ int main_nufft(int argc, char* argv[])
 
 		md_clear(DIMS, coilim_dims, img, CFL_SIZE);
 
-		const struct linop_s* nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
+		const struct linop_s* nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf);
 
 		if (inverse) {
 
@@ -136,7 +135,7 @@ int main_nufft(int argc, char* argv[])
 
 		complex float* ksp = create_cfl(argv[3], DIMS, ksp_dims);
 
-		const struct linop_s* nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
+		const struct linop_s* nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf);
 
 		// nufft
 		linop_forward(nufft_op, DIMS, ksp_dims, ksp, DIMS, coilim_dims, img);

@@ -23,6 +23,9 @@
 #include "num/ops.h"
 #include "num/iovec.h"
 #include "num/blas.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 #include "linops/linop.h"
 
@@ -37,6 +40,9 @@ struct cdiag_s {
 	const long* strs;
 	const long* dstrs;
 	const complex float* diag;
+#ifdef USE_CUDA
+	const complex float* gpu_diag;
+#endif
 	bool rmul;
 };
 
@@ -44,14 +50,34 @@ static void cdiag_apply(const linop_data_t* _data, complex float* dst, const com
 {
 	const struct cdiag_s* data = CONTAINER_OF(_data, const struct cdiag_s, base);
 
-	(data->rmul ? md_zrmul2 : md_zmul2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, data->diag);
+	const complex float* diag = data->diag;
+#ifdef USE_CUDA
+	if (cuda_ondevice(src)) {
+
+		if (NULL == data->gpu_diag)
+			((struct cdiag_s*)data)->gpu_diag = md_gpu_move(data->N, data->dims, data->diag, CFL_SIZE);
+
+		diag = data->gpu_diag;
+	}
+#endif
+	(data->rmul ? md_zrmul2 : md_zmul2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, diag);
 }
 
 static void cdiag_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const struct cdiag_s* data = CONTAINER_OF(_data, const struct cdiag_s, base);
 
-	(data->rmul ? md_zrmul2 : md_zmulc2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, data->diag);
+	const complex float* diag = data->diag;
+#ifdef USE_CUDA
+	if (cuda_ondevice(src)) {
+
+		if (NULL == data->gpu_diag)
+			((struct cdiag_s*)data)->gpu_diag = md_gpu_move(data->N, data->dims, data->diag, CFL_SIZE);
+
+		diag = data->gpu_diag;
+	}
+#endif
+	(data->rmul ? md_zrmul2 : md_zmulc2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, diag);
 }
 
 static void cdiag_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
@@ -64,6 +90,9 @@ static void cdiag_free(const linop_data_t* _data)
 {
 	const struct cdiag_s* data = CONTAINER_OF(_data, const struct cdiag_s, base);
 
+#ifdef USE_CUDA
+	md_free((void*)data->gpu_diag);
+#endif
 	free((void*)data->dims);
 	free((void*)data->dstrs);
 	free((void*)data->strs);
@@ -91,6 +120,9 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
 	data->strs = *PTR_PASS(strs);
 	data->dstrs = *PTR_PASS(dstrs);
 	data->diag = diag;	// make a copy?
+#ifdef USE_CUDA
+	data->gpu_diag = NULL;
+#endif
 
 	return linop_create(N, dims, N, dims, &PTR_PASS(data)->base, cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
 }
@@ -673,9 +705,6 @@ struct fft_linop_s {
 	const struct operator_s* frw;
 	const struct operator_s* adj;
 
-	complex float* fftmod_mat;
-	complex float* fftmodk_mat;
-
 	bool center;
 	float nscale;
 	
@@ -688,44 +717,20 @@ static void fft_linop_apply(const linop_data_t* _data, complex float* out, const
 {
 	const struct fft_linop_s* data = CONTAINER_OF(_data, const struct fft_linop_s, base);
 
-	// fftmod + fftscale
-	if (data->center) {
-
-		md_zmul2(data->N, data->dims, data->strs, out, data->strs, in, data->strs, data->fftmod_mat);
-
-	} else {
-
-		if (in != out)
-			md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
-	}
+	if (in != out)
+		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
 
 	operator_apply(data->frw, data->N, data->dims, out, data->N, data->dims, out);
-
-	// fftmodk
-	if (data->center)
-		md_zmul2(data->N, data->dims, data->strs, out, data->strs, out, data->strs, data->fftmodk_mat);
 }
 
 static void fft_linop_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
 	const struct fft_linop_s* data = CONTAINER_OF(_data, const struct fft_linop_s, base);
 
-	// fftmod
-	if (data->center) {
-
-		md_zmulc2(data->N, data->dims, data->strs, out, data->strs, in, data->strs, data->fftmodk_mat);
-
-	} else {
-
-		if (in != out)
-			md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
-	}
+	if (in != out)
+		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
 
 	operator_apply(data->adj, data->N, data->dims, out, data->N, data->dims, out);
-
-	// fftmod + fftscale
-	if (data->center)
-		md_zmulc2(data->N, data->dims, data->strs, out, data->strs, out, data->strs, data->fftmod_mat);
 }
 
 static void fft_linop_free(const linop_data_t* _data)
@@ -737,9 +742,6 @@ static void fft_linop_free(const linop_data_t* _data)
 
 	free(data->dims);
 	free(data->strs);
-
-	md_free(data->fftmod_mat);
-	md_free(data->fftmodk_mat);
 
 	free((void*)data);
 }
@@ -755,8 +757,9 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
 }
 
 
-static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool gpu, bool forward, bool center)
+static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool forward, bool center)
 {
+	bool gpu = true; // FIXME
 #ifdef USE_CUDA
 	md_alloc_fun_t alloc = (gpu ? md_alloc_gpu : md_alloc);
 #else
@@ -785,52 +788,43 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 	data->strs = *TYPE_ALLOC(long[N]);
 	md_calc_strides(N, data->strs, data->dims, CFL_SIZE);
 
+	long fft_dims[N];
+	md_select_dims(N, flags, fft_dims, dims);
+	data->nscale = (float)md_calc_size(N, fft_dims);
+
+	lop_fun_t apply = forward ? fft_linop_apply : fft_linop_adjoint;
+	lop_fun_t adjoint = forward ? fft_linop_adjoint : fft_linop_apply;
+
+	struct linop_s* lop =  linop_create(N, dims, N, dims, &PTR_PASS(data)->base, apply, adjoint, fft_linop_normal, NULL, fft_linop_free);
 
 	if (center) {
 
 		// FIXME: should only allocate flagged dims
 
 		complex float* fftmod_mat = md_alloc(N, dims, CFL_SIZE);
+		complex float* fftmodk_mat = md_alloc(N, dims, CFL_SIZE);
+
+		// we need fftmodk only because we want to apply scaling only once
 
 		complex float one[1] = { 1. };
 		md_fill(N, dims, fftmod_mat, one, CFL_SIZE);
-		fftscale(N, dims, flags, fftmod_mat, fftmod_mat);
-		fftmod(N, dims, flags, fftmod_mat, fftmod_mat);
+		fftmod(N, dims, flags, fftmodk_mat, fftmod_mat);
+		fftscale(N, dims, flags, fftmod_mat, fftmodk_mat);
 
-		// we need it only because we want to apply scaling only once
+		struct linop_s* mod = linop_cdiag_create(N, dims, ~0u, fftmod_mat);
+		struct linop_s* modk = linop_cdiag_create(N, dims, ~0u, fftmodk_mat);
 
-		complex float* fftmodk_mat = md_alloc(N, dims, CFL_SIZE);
+		struct linop_s* tmp = linop_chain(mod, lop);
+		tmp = linop_chain(tmp, modk);
 
-		md_fill(N, dims, fftmodk_mat, one, CFL_SIZE);
-		fftmod(N, dims, flags, fftmodk_mat, fftmodk_mat);
+		linop_free(lop);
+		linop_free(mod);
+		linop_free(modk);
 
-		data->fftmod_mat = fftmod_mat;
-		data->fftmodk_mat = fftmodk_mat;
-
-#ifdef USE_CUDA
-		if (gpu) {
-
-			data->fftmod_mat = md_gpu_move(N, dims, fftmod_mat, CFL_SIZE);
-			data->fftmodk_mat = md_gpu_move(N, dims, fftmodk_mat, CFL_SIZE);
-
-			md_free(fftmod_mat);
-			md_free(fftmodk_mat);
-		}
-#endif
-	} else {
-
-		data->fftmod_mat = NULL;
-		data->fftmodk_mat = NULL;
-
-		long fft_dims[N];
-		md_select_dims(N, flags, fft_dims, dims);
-		data->nscale = (float)md_calc_size(N, fft_dims);
+		lop = tmp;
 	}
 
-	lop_fun_t apply = forward ? fft_linop_apply : fft_linop_adjoint;
-	lop_fun_t adjoint = forward ? fft_linop_adjoint : fft_linop_apply;
-
-	return linop_create(N, dims, N, dims, &PTR_PASS(data)->base, apply, adjoint, fft_linop_normal, NULL, fft_linop_free);
+	return lop;
 }
 
 
@@ -842,9 +836,9 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
  * @param flags bitmask of the dimensions to apply the Fourier transform
  * @param gpu use gpu
  */
-struct linop_s* linop_fft_create(int N, const long dims[N], unsigned int flags, bool gpu)
+struct linop_s* linop_fft_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, gpu, true, false);
+	return linop_fft_create_priv(N, dims, flags, true, false);
 }
 
 
@@ -854,11 +848,10 @@ struct linop_s* linop_fft_create(int N, const long dims[N], unsigned int flags, 
  * @param N number of dimensions
  * @param dims dimensions of input
  * @param flags bitmask of the dimensions to apply the Fourier transform
- * @param gpu use gpu
  */
-struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned int flags, bool gpu)
+struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, gpu, false, false);
+	return linop_fft_create_priv(N, dims, flags, false, false);
 }
 
 
@@ -868,11 +861,10 @@ struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned int flags,
  * @param N number of dimensions
  * @param dims dimensions of input
  * @param flags bitmask of the dimensions to apply the Fourier transform
- * @param gpu use gpu
  */
-struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags, bool gpu)
+struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, gpu, true, true);
+	return linop_fft_create_priv(N, dims, flags, true, true);
 }
 
 
@@ -882,11 +874,10 @@ struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags,
  * @param N number of dimensions
  * @param dims dimensions of input
  * @param flags bitmask of the dimensions to apply the Fourier transform
- * @param gpu use gpu
  */
-struct linop_s* linop_ifftc_create(int N, const long dims[N], unsigned int flags, bool gpu)
+struct linop_s* linop_ifftc_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, gpu, false, true);
+	return linop_fft_create_priv(N, dims, flags, false, true);
 }
 
 

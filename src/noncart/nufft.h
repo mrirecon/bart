@@ -22,8 +22,7 @@ extern struct linop_s* nufft_create(unsigned int N,			///< Number of dimensions
 				    const long traj_dims[__VLA(N)],	///< Trajectory dimension
 				    const _Complex float* traj,		///< Trajectory
 				    const _Complex float* weights,	///< Weights, ex, density-compensation
-				    struct nufft_conf_s conf,		///< NUFFT configuration
-				    _Bool use_gpu);			///< Used GPU boolean
+				    struct nufft_conf_s conf);		///< NUFFT configuration
 
 extern void estimate_im_dims(unsigned int N,			///< Number of dimensions
 			     long dims[3],			///< Output estimated image dimensions

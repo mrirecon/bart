@@ -96,7 +96,7 @@ static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long 
 #endif
 	md_copy(DIMS, data->pat_dims, data->pat, pat, CFL_SIZE);
 
-	data->fft_op = linop_fftc_create(DIMS, ksp_dims, flags, use_gpu);
+	data->fft_op = linop_fftc_create(DIMS, ksp_dims, flags);
 
 	return data;
 }

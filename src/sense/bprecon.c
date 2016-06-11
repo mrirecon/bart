@@ -37,7 +37,6 @@
 #include "num/flpmath.h"
 #include "num/ops.h"
 #include "num/iovec.h"
-#include "num/gpuops.h"
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -145,13 +144,6 @@ void bpsense_recon(struct bpsense_conf* conf, const long dims[DIMS], complex flo
 		 const struct operator_p_s* l1prox,
 		 const long ksp_dims[DIMS], const complex float* kspace, const complex float* image_truth)
 {
-
-#ifdef USE_CUDA
-	bool use_gpu = cuda_ondevice(kspace);
-#else
-	bool use_gpu = false;
-#endif
-	
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);
 
@@ -159,7 +151,7 @@ void bpsense_recon(struct bpsense_conf* conf, const long dims[DIMS], complex flo
 	// -----------------------------------------------------------
 	// forward model
 
-	struct linop_s* sense_op = sense_init(dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps, use_gpu);
+	struct linop_s* sense_op = sense_init(dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
 
 	if (conf->rvc) {
 

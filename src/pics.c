@@ -47,15 +47,15 @@ static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
 
-static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const complex float* weights, bool use_gpu, struct operator_s** precond_op)
+static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const complex float* weights, struct operator_s** precond_op)
 {
 	long coilim_dims[DIMS];
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
 
-	const struct linop_s* fft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, weights, conf, use_gpu);
-	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps, use_gpu);
+	const struct linop_s* fft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, weights, conf);
+	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
 
 	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
 	precond_op[0] = NULL;
@@ -265,9 +265,9 @@ int main_pics(int argc, char* argv[])
 	const struct operator_s* precond_op = NULL;
 
 	if (NULL == traj_file)
-		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps, conf.gpu);
+		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
 	else
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, conf.gpu, (struct operator_s**) &precond_op);
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, (struct operator_s**) &precond_op);
 
 	// apply scaling
 
