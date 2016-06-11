@@ -1699,12 +1699,12 @@ void* md_alloc_sameplace(unsigned int D, const long dimensions[D], size_t size, 
  * Free CPU/GPU memory
  *
  */
-void md_free(void* ptr)
+void md_free(const void* ptr)
 {
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr))
-		cuda_free(ptr);
+		cuda_free((void*)ptr);
 	else
 #endif
-	free(ptr);
+	xfree(ptr);
 }
