@@ -1,9 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013-2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014      Frank Ong <frankong@berkeley.edu>
  *
@@ -140,8 +141,25 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		sense_op = tmp_op;
 	}
 
-	assert(1 == conf->rwiter);
+	if (1 < conf->rwiter) {
 
+		struct linop_s* sampling = sampling_create(dims, pat_dims, pattern);
+		struct linop_s* tmp_op = linop_chain(sense_op, sampling);
+
+		linop_free(sampling);
+		linop_free(sense_op);
+		sense_op = tmp_op;
+
+		unsigned int flags = 0;
+		for (unsigned int i = 0; i < DIMS; i++)
+			if (pat_dims[i] > 1)
+				flags = MD_SET(flags, i);
+
+		const struct lad_conf lad_conf = { conf->rwiter, conf->gamma, flags, &lsqr_conf };
+
+		op = lad2_create(&lad_conf, italgo, iconf, sense_op, num_funs, thresh_op, thresh_funs);
+
+	} else
 	if (NULL == pattern) {
 
 		op = lsqr2_create(&lsqr_conf, italgo, iconf, sense_op, precond_op,
