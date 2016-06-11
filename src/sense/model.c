@@ -34,6 +34,9 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/ops.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -75,28 +78,55 @@ struct maps_data {
 	long strs_img[DIMS];
 
 	/*const*/ complex float* sens;
+#ifdef USE_CUDA
+	const complex float* gpu_sens;
+#endif
 	complex float* norm;
 };
 
 DEF_TYPEID(maps_data);
 
+#ifdef USE_CUDA
+static const complex float* get_sens(const struct maps_data* data, bool gpu)
+{
+	const complex float* sens = data->sens;
+
+	if (gpu) {
+
+		if (NULL == data->gpu_sens)
+			((struct maps_data*)data)->gpu_sens = md_gpu_move(DIMS, data->mps_dims, data->sens, CFL_SIZE);
+
+		sens = data->gpu_sens;
+	}
+
+	return sens;
+}
+#endif
 
 static void maps_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const struct maps_data* data = CAST_DOWN(maps_data, _data);
-
+#ifdef USE_CUDA
+	const complex float* sens = get_sens(data, cuda_ondevice(src));
+#else
+	const complex float* sens = data->sens;
+#endif
 	md_clear(DIMS, data->ksp_dims, dst, CFL_SIZE);
-	md_zfmac2(DIMS, data->max_dims, data->strs_ksp, dst, data->strs_img, src, data->strs_mps, data->sens);
+	md_zfmac2(DIMS, data->max_dims, data->strs_ksp, dst, data->strs_img, src, data->strs_mps, sens);
 }
 
 
 static void maps_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const struct maps_data* data = CAST_DOWN(maps_data, _data);
-
+#ifdef USE_CUDA
+	const complex float* sens = get_sens(data, cuda_ondevice(src));
+#else
+	const complex float* sens = data->sens;
+#endif
 	// dst = sum( conj(sens) .* tmp )
 	md_clear(DIMS, data->img_dims, dst, CFL_SIZE);
-	md_zfmacc2(DIMS, data->max_dims, data->strs_img, dst, data->strs_ksp, src, data->strs_mps, data->sens);
+	md_zfmacc2(DIMS, data->max_dims, data->strs_img, dst, data->strs_ksp, src, data->strs_mps, sens);
 }
 
 
@@ -105,6 +135,7 @@ static void maps_init_normal(struct maps_data* data)
 	if (NULL != data->norm)
 		return;
 
+	// FIXME: gpu/cpu mixed use
 	data->norm = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, data->sens);
 	md_zrss(DIMS, data->mps_dims, COIL_FLAG, data->norm, data->sens);
 	md_zmul(DIMS, data->img_dims, data->norm, data->norm, data->norm);
@@ -145,7 +176,7 @@ static void maps_free_data(const linop_data_t* _data)
 
 
 static struct maps_data* maps_create_data(const long max_dims[DIMS], 
-			unsigned int sens_flags, const complex float* sens, bool gpu)
+			unsigned int sens_flags, const complex float* sens)
 {
 	PTR_ALLOC(struct maps_data, data);
 	SET_TYPEID(maps_data, data);
@@ -163,15 +194,13 @@ static struct maps_data* maps_create_data(const long max_dims[DIMS],
 	md_select_dims(DIMS, ~COIL_FLAG, data->img_dims, max_dims);
 	md_calc_strides(DIMS, data->strs_img, data->img_dims, CFL_SIZE);
 
-	
-#ifdef USE_CUDA
-	complex float* nsens = (gpu ? md_alloc_gpu : md_alloc)(DIMS, data->mps_dims, CFL_SIZE);
-#else
-	assert(!gpu);
 	complex float* nsens = md_alloc(DIMS, data->mps_dims, CFL_SIZE);
-#endif
+
 	md_copy(DIMS, data->mps_dims, nsens, sens, CFL_SIZE);
 	data->sens = nsens;
+#ifdef USE_CUDA
+	data->gpu_sens = NULL;
+#endif
 
 	data->norm = NULL;
 
@@ -187,12 +216,11 @@ static struct maps_data* maps_create_data(const long max_dims[DIMS],
  * @param max_dims maximal dimensions across all data structures
  * @param sens_flags active map dimensions
  * @param sens sensitivities
- * @param gpu TRUE if using gpu
  */
 struct linop_s* maps_create(const long max_dims[DIMS], 
-			unsigned int sens_flags, const complex float* sens, bool gpu)
+			unsigned int sens_flags, const complex float* sens)
 {
-	struct maps_data* data = maps_create_data(max_dims, sens_flags, sens, gpu);
+	struct maps_data* data = maps_create_data(max_dims, sens_flags, sens);
 
 	// scale the sensitivity maps by the FFT scale factor
 	fftscale(DIMS, data->mps_dims, FFT_FLAGS, data->sens, data->sens);
@@ -203,7 +231,7 @@ struct linop_s* maps_create(const long max_dims[DIMS],
 
 
 
-struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const complex float* maps, bool use_gpu)
+struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const complex float* maps)
 {
 	long max_dims[DIMS];
 
@@ -221,7 +249,7 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
 	for (unsigned int i = 0; i < DIMS; i++)
 		max_dims[i] = MAX(coilim_dims[i], MAX(maps_dims[i], img_dims[i]));
 
-	struct maps_data* data = maps_create_data(max_dims, sens_flags, maps, use_gpu);
+	struct maps_data* data = maps_create_data(max_dims, sens_flags, maps);
 
 	return linop_create(DIMS, coilim_dims, DIMS, img_dims, CAST_UP(data),
 		maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
@@ -237,16 +265,15 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
  * @param max_dims maximal dimensions across all data structures
  * @param sens_flags active map dimensions
  * @param sens sensitivities
- * @param gpu TRUE if using gpu
  */
 struct linop_s* sense_init(const long max_dims[DIMS], 
-			unsigned int sens_flags, const complex float* sens, bool gpu)
+			unsigned int sens_flags, const complex float* sens)
 {
 	long ksp_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, ksp_dims, max_dims);
 
-	struct linop_s* fft = linop_fft_create(DIMS, ksp_dims, FFT_FLAGS, gpu);
-	struct linop_s* maps = maps_create(max_dims, sens_flags, sens, gpu);
+	struct linop_s* fft = linop_fft_create(DIMS, ksp_dims, FFT_FLAGS);
+	struct linop_s* maps = maps_create(max_dims, sens_flags, sens);
 
 	struct linop_s* sense_op = linop_chain(maps, fft);
 

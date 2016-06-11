@@ -57,8 +57,8 @@ static struct linop_s* wavecaipi_create(const long dims[DIMS], long img_read, co
 	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG, img_dims, dims);
 	img_dims[READ_DIM] = img_read;
     
-	struct linop_s* fft_read = linop_fft_create(DIMS, dims, READ_FLAG, false);
-	struct linop_s* fft_yz = linop_fft_create(DIMS, dims, PHS1_FLAG|PHS2_FLAG, false);
+	struct linop_s* fft_read = linop_fft_create(DIMS, dims, READ_FLAG);
+	struct linop_s* fft_yz = linop_fft_create(DIMS, dims, PHS1_FLAG|PHS2_FLAG);
 	struct linop_s* resize = linop_resize_create(DIMS, dims, img_dims);
 	struct linop_s* wavemod = linop_cdiag_create(DIMS, dims, FFT_FLAGS, wave);
 
@@ -210,7 +210,7 @@ int main_wave(int argc, char* argv[])
 //	struct linop_s* mapsop = maps_create(map_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps, false);
 
 	md_zsmul(DIMS, map_dims, maps, maps, 1. / sqrt((double)(ksp_dims[0] * ksp_dims[1] * ksp_dims[2])));
-	struct linop_s* mapsop = maps2_create(map_dims, map_dims, img_dims, maps, false);
+	struct linop_s* mapsop = maps2_create(map_dims, map_dims, img_dims, maps);
     
 	// create wave caipi operator
 	struct linop_s* waveop = wavecaipi_create(ksp_dims, img_dims[READ_DIM], wave);

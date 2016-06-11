@@ -25,6 +25,9 @@
 #include "num/fft.h"
 #include "num/shuffle.h"
 #include "num/ops.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -52,8 +55,6 @@ struct nufft_data {
 
 	struct nufft_conf_s conf;	///< NUFFT configuration structure
 
-	bool use_gpu;			///< Use GPU boolean
-
 	unsigned int N;			///< Number of dimension
 
 	const complex float* linphase;	///< Linear phase for pruned FFT
@@ -62,7 +63,11 @@ struct nufft_data {
 	const complex float* psf;	///< Point-spread function (2x size)
 	const complex float* fftmod;	///< FFT modulation for centering
 	const complex float* weights;	///< Weights, ex, density compensation
-
+#ifdef USE_CUDA
+	const complex float* linphase_gpu;
+	const complex float* psf_gpu;
+	complex float* grid_gpu;
+#endif
 	complex float* grid;		///< Oversampling grid
 
 	float width;			///< Interpolation kernel width
@@ -115,15 +120,13 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 			     const long traj_dims[N],		///< Trajectory dimension
 			     const complex float* traj,		///< Trajectory
 			     const complex float* weights,	///< Weights, ex, soft-gating or density compensation
-			     struct nufft_conf_s conf,		///< NUFFT configuration options
-			     bool use_gpu)			///< Use gpu boolean
+			     struct nufft_conf_s conf)		///< NUFFT configuration options
 
 {
 	PTR_ALLOC(struct nufft_data, data);
 	SET_TYPEID(nufft_data, data);
 
 	data->N = N;
-	data->use_gpu = use_gpu;
 	data->traj = traj;
 	data->conf = conf;
 
@@ -227,7 +230,11 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 	data->linphase = linphase;
 	data->psf = NULL;
-
+#ifdef USE_CUDA
+	data->linphase_gpu = NULL;
+	data->psf_gpu = NULL;
+	data->grid_gpu = NULL;
+#endif
 	if (conf.toeplitz) {
 
 		debug_printf(DP_DEBUG1, "NUFFT: Toeplitz mode\n");
@@ -261,7 +268,7 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 	data->grid = md_alloc(ND, data->cml_dims, CFL_SIZE);
 
-	data->fft_op = linop_fft_create(ND, data->cml_dims, FFT_FLAGS, use_gpu);
+	data->fft_op = linop_fft_create(ND, data->cml_dims, FFT_FLAGS);
 
 
 
@@ -349,13 +356,13 @@ static void nufft_precond_del(const operator_data_t* _data)
 {
 	const struct nufft_precond_data* data = CAST_DOWN(nufft_precond_data, _data);
 
-	free(data->cim_dims);
-	free(data->pre_dims);
-	free(data->cim_strs);
-	free(data->pre_strs);
-	md_free((void*) data->pre);
+	xfree(data->cim_dims);
+	xfree(data->pre_dims);
+	xfree(data->cim_strs);
+	xfree(data->pre_strs);
 
-	free((void*)data);
+	md_free(data->pre);
+	xfree(data);
 }
 
 const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
@@ -384,7 +391,7 @@ const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
 
 	pdata->pre = compute_precond(pdata->N, pdata->pre_dims, pdata->pre_strs, data->psf_dims, data->psf_strs, data->psf, data->linphase);
 
-	pdata->fft_op = linop_fft_create(pdata->N, pdata->cim_dims, FFT_FLAGS, data->use_gpu);
+	pdata->fft_op = linop_fft_create(pdata->N, pdata->cim_dims, FFT_FLAGS);
 
 	const long* cim_dims = pdata->cim_dims;	// need to dereference pdata before PTR_PASS
 
@@ -446,8 +453,7 @@ complex float* compute_psf(unsigned int N, const long img2_dims[N], const long t
 	long ksp_dims1[N];
 	md_select_dims(N, ~MD_BIT(0), ksp_dims1, trj_dims);
 
-	struct linop_s* op2 = nufft_create(N, ksp_dims1, img2_dims, trj_dims, traj, NULL,
-					nufft_conf_defaults, false);
+	struct linop_s* op2 = nufft_create(N, ksp_dims1, img2_dims, trj_dims, traj, NULL, nufft_conf_defaults);
 
 	complex float* ones = md_alloc(N, ksp_dims1, CFL_SIZE);
 	md_zfill(N, ksp_dims1, ones, 1.);
@@ -547,11 +553,16 @@ static void nufft_free_data(const linop_data_t* _data)
 	free(data->wgh_strs);
 
 	md_free(data->grid);
-	md_free((void*)data->linphase);
-	md_free((void*)data->psf);
-	md_free((void*)data->fftmod);
-	md_free((void*)data->weights);
+	md_free(data->linphase);
+	md_free(data->psf);
+	md_free(data->fftmod);
+	md_free(data->weights);
 
+#ifdef USE_CUDA
+	md_free(data->linphase_gpu);
+	md_free(data->psf_gpu);
+	md_free(data->grid_gpu);
+#endif
 	linop_free(data->fft_op);
 
 	free(data);
@@ -565,6 +576,9 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 {
 	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
 
+#ifdef USE_CUDA
+	assert(!cuda_ondevice(src));
+#endif
 	assert(!data->conf.toeplitz); // if toeplitz linphase has no roll, so would need to be added
 
 	unsigned int ND = data->N + 3;
@@ -598,6 +612,9 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 {
 	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
 
+#ifdef USE_CUDA
+	assert(!cuda_ondevice(src));
+#endif
 	unsigned int ND = data->N + 3;
 
 	complex float* gridX = md_calloc(data->N, data->cm2_dims, CFL_SIZE);
@@ -662,14 +679,35 @@ static void toeplitz_mult(const struct nufft_data* data, complex float* dst, con
 {
 	unsigned int ND = data->N + 3;
 
-	md_zmul2(ND, data->cml_dims, data->cml_strs, data->grid, data->cim_strs, src, data->lph_strs, data->linphase);
+	const complex float* linphase = data->linphase;
+	const complex float* psf = data->psf;
+	complex float* grid = data->grid;
 
-	linop_forward(data->fft_op, ND, data->cml_dims, data->grid, ND, data->cml_dims, data->grid);
-	md_zmul2(ND, data->cml_dims, data->cml_strs, data->grid, data->cml_strs, data->grid, data->psf_strs, data->psf);
-	linop_adjoint(data->fft_op, ND, data->cml_dims, data->grid, ND, data->cml_dims, data->grid);
+#ifdef USE_CUDA
+	if (cuda_ondevice(src)) {
+
+		if (NULL == data->linphase_gpu)
+			((struct nufft_data*)data)->linphase_gpu = md_gpu_move(ND, data->lph_dims, data->linphase, CFL_SIZE);
+
+		if (NULL == data->psf_gpu)
+			((struct nufft_data*)data)->psf_gpu = md_gpu_move(ND, data->psf_dims, data->psf, CFL_SIZE);
+
+		if (NULL == data->grid_gpu)
+			((struct nufft_data*)data)->grid_gpu = md_gpu_move(ND, data->cml_dims, data->grid, CFL_SIZE);
+
+		linphase = data->linphase_gpu;
+		psf = data->psf_gpu;
+		grid = data->grid_gpu;
+	}
+#endif
+	md_zmul2(ND, data->cml_dims, data->cml_strs, grid, data->cim_strs, src, data->lph_strs, linphase);
+
+	linop_forward(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
+	md_zmul2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->psf_strs, psf);
+	linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
 
 	md_clear(ND, data->cim_dims, dst, CFL_SIZE);
-	md_zfmacc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, data->grid, data->lph_strs, data->linphase);
+	md_zfmacc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, linphase);
 }
 
 

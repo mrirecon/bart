@@ -17,10 +17,10 @@ extern struct linop_s* linop_identity_create(unsigned int N, const long dims[__V
 
 extern struct linop_s* linop_resize_create(unsigned int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);
 
-extern struct linop_s* linop_fft_create(int N, const long dims[__VLA(N)], unsigned int flags, bool gpu);
-extern struct linop_s* linop_ifft_create(int N, const long dims[__VLA(N)], unsigned int flags, bool gpu);
-extern struct linop_s* linop_fftc_create(int N, const long dims[__VLA(N)], unsigned int flags, bool gpu);
-extern struct linop_s* linop_ifftc_create(int N, const long dims[__VLA(N)], unsigned int flags, bool gpu);
+extern struct linop_s* linop_fft_create(int N, const long dims[__VLA(N)], unsigned int flags);
+extern struct linop_s* linop_ifft_create(int N, const long dims[__VLA(N)], unsigned int flags);
+extern struct linop_s* linop_fftc_create(int N, const long dims[__VLA(N)], unsigned int flags);
+extern struct linop_s* linop_ifftc_create(int N, const long dims[__VLA(N)], unsigned int flags);
 
 extern struct linop_s* linop_cdf97_create(int N, const long dims[__VLA(N)], unsigned int flag);
 

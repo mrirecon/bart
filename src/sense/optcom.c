@@ -44,7 +44,7 @@ void optimal_combine(const long dims[DIMS], float alpha, complex float* image, c
 	md_select_dims(DIMS, ~(COIL_FLAG), dims_img, dims);
 	md_select_dims(DIMS, ~(MAPS_FLAG), dims_cim, dims);
 
-	const struct linop_s* sense_data = sense_init(dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens, false);
+	const struct linop_s* sense_data = sense_init(dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens);
 	linop_adjoint(sense_data, DIMS, dims_img, image, DIMS, dims_cim, data);
 	linop_free(sense_data);
 
@@ -179,7 +179,7 @@ void fake_kspace(const long dims[DIMS], complex float* kspace, const complex flo
 	md_select_dims(DIMS, ~COIL_FLAG, dims_img, dims);
 	md_select_dims(DIMS, ~MAPS_FLAG, dims_ksp, dims);
 
-	const struct linop_s* sense_data = sense_init(dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens, false);
+	const struct linop_s* sense_data = sense_init(dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens);
 	linop_forward(sense_data, DIMS, dims_ksp, kspace, DIMS, dims_img, image);
 	linop_free(sense_data);
 }

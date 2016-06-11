@@ -44,7 +44,6 @@ int main_nufft(int argc, char* argv[])
 {
 	bool adjoint = false;
 	bool inverse = false;
-	bool use_gpu = false;
 	bool precond = false;
 	bool dft = false;
 
@@ -105,7 +104,7 @@ int main_nufft(int argc, char* argv[])
 		const struct linop_s* nufft_op;
 
 		if (!dft)
-			nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
+			nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf);
 		else
 			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
 
@@ -147,7 +146,7 @@ int main_nufft(int argc, char* argv[])
 		const struct linop_s* nufft_op;
 
 		if (!dft)
-			nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf, use_gpu);
+			nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf);
 		else
 			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
 

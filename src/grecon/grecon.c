@@ -187,7 +187,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 	const struct linop_s* sop = NULL;
 
 	{
-		sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, false);
+		sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1);
 		sense_recon(conf, dims1, image1, sop, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL, NULL);
 		//linop_free(sop);
 	}
