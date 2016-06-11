@@ -789,6 +789,8 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 	assert(N == operator_nr_args(op));
 
+	debug_printf(DP_DEBUG1, "GPU start.\n");
+
 	for (unsigned int i = 0; i < N; i++) {
 
 		const struct iovec_s* io = operator_arg_domain(op, i);
@@ -810,6 +812,9 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 		md_free(gpu_ptr[i]);
 	}
+
+	debug_printf(DP_DEBUG1, "GPU end.\n");
+
 #else
 	UNUSED(_data); UNUSED(N); UNUSED(args);
 	assert(0);
