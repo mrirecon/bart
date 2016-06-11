@@ -583,6 +583,8 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 	debug_printf(DP_DEBUG4, "Vec: %d (%ld) Opt.: ", skip, data.size);
 	debug_print_dims(DP_DEBUG4, ND, tdims);
 
+	debug_printf(DP_DEBUG3, "This is a %s call\n.", use_gpu(N, nptr1) ? "gpu" : "cpu");
+
 	double start = timestamp();
 
 	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, &(struct nary_opt_s){ too, &data }, nary_opt);
