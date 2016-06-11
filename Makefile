@@ -127,13 +127,13 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 include build_targets.mk
 
 
+
 MODULES = -lnum -lmisc -lnum -lmisc
 
 MODULES_pics = -lgrecon -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
 MODULES_sqpics = -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
 MODULES_pocsense = -lsense -lwavelet2 -liter -llinops
 MODULES_nlinv = -lnoir -liter
-MODULES_rsense = -lgrecon -lsense -lnoir -lwavelet2 -lcalib -liter -llinops
 MODULES_bpsense = -lsense -lwavelet2 -lnoncart -liter -llinops
 MODULES_itsense = -liter -llinops
 MODULES_ecalib = -lcalib
