@@ -324,7 +324,9 @@ int main_pics(int argc, char* argv[])
 	if (warm_start) { 
 
 		debug_printf(DP_DEBUG1, "Warm start: %s\n", image_start_file);
+
 		image_start = load_cfl(image_start_file, DIMS, img_start_dims);
+
 		assert(md_check_compat(DIMS, 0u, img_start_dims, img_dims));
 		md_copy(DIMS, img_dims, image, image_start, CFL_SIZE);
 
@@ -332,7 +334,7 @@ int main_pics(int argc, char* argv[])
 		unmap_cfl(DIMS, img_dims, image_start);
 
 		// if rescaling at the end, assume the input has also been rescaled
-		if (scale_im && scaling != 0.)
+		if (scale_im && (scaling != 0.))
 			md_zsmul(DIMS, img_dims, image, image, 1. /  scaling);
 	}
 
