@@ -24,12 +24,18 @@ static const char usage_str[] = "<output>";
 static const char help_str[] = "Computes k-space trajectories.";
 
 
-static float gradient_delay(const float coeff[3], float phi)
+/* We allow an arbitrary quadratic form to account for
+ * non-physical coordinate systems.
+ * Moussavi et al., MRM 71:308-312 (2014)
+ */
+static float gradient_delay(const float coeff[2][3], float phi, float psi)
 {
-	float x = cosf(phi);
-	float y = sinf(phi);
+	float x = cosf(phi) * cosf(psi);
+	float y = sinf(phi) * cosf(psi);
+	float z =             sinf(psi);
 
-	return x * x * coeff[0] + 2. * x * y * coeff[2] + y * y * coeff[1];
+	return x * x * coeff[0][0] + 2. * x * y * coeff[0][2] + y * y * coeff[0][1]
+		+ z * z * coeff[1][0] + 2. * x * z * coeff[1][1] + 2. * y * z * coeff[1][2];
 }
 
 static int remap(int all, int turns, int n)
@@ -49,7 +55,10 @@ int main_traj(int argc, char* argv[])
 	int turns = 1;
 	bool d3d = false;
 
-	float gdelays[3] = { 0. };
+	float gdelays[2][3] = {
+		{ 0., 0., 0. },
+		{ 0., 0., 0. }
+	};
 
 	const struct opt_s opts[] = {
 
@@ -60,7 +69,8 @@ int main_traj(int argc, char* argv[])
 		OPT_SET('r', &radial, "radial"),
 		OPT_SET('G', &golden, "golden-ratio sampling"),
 		OPT_SET('D', &dbl, "double base angle"),
-		OPT_FLVEC3('q', &gdelays, "delays", "gradient delays"),
+		OPT_FLVEC3('q', &gdelays[0], "delays", "(gradient delays: x, y, xy)"),
+		OPT_FLVEC3('Q', &gdelays[1], "delays", "(gradient delays: z, xy, yz)"),
 		OPT_SET('3', &d3d, "3D"),
 	};
 
@@ -93,7 +103,7 @@ int main_traj(int argc, char* argv[])
 				double golden_angle = 3. - sqrtf(5.);
 				double base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
 				double angle = M_PI * (float)remap(Y, turns, j) * (dbl ? 2. : 1.) * base;
-				double read = (float)i + 0.5 - (float)X / 2. + gradient_delay(gdelays, angle);
+				double read = (float)i + 0.5 - (float)X / 2.;
 				double angle2 = 0.;
 
 				if (d3d) {
@@ -101,6 +111,8 @@ int main_traj(int argc, char* argv[])
 					int split = sqrtf(Y);
 					angle2 = 2. * M_PI * j * split * base;
 				}
+
+				read += gradient_delay(gdelays, angle, angle2);
 
 				samples[p * 3 + 0] = read * sin(angle) * cos(angle2);
 				samples[p * 3 + 1] = read * cos(angle) * cos(angle2);
