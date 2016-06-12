@@ -1,10 +1,10 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -37,11 +37,11 @@ int main_calmat(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'k', true, opt_vec3, &kdims, " ksize\tkernel size" },
-		{ 'K', true, opt_vec3, &kdims, NULL },
-		{ 'r', true, opt_vec3, &calsize, " cal_size\tLimits the size of the calibration region." },
-		{ 'R', true, opt_vec3, &calsize, NULL },
-		{ 'C', calcen, opt_set, &calcen, NULL },
+		OPT_VEC3('k', &kdims, "ksize", "kernel size"),
+		OPT_VEC3('K', &kdims, "", "()"),
+		OPT_VEC3('r', &calsize, "cal_size", "Limits the size of the calibration region."),
+		OPT_VEC3('R', &calsize, "", "()"),
+		OPT_SET('C', &calcen, "()"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);

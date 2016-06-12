@@ -1,10 +1,10 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2015.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -128,10 +128,10 @@ int main_homodyne(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'r', true, opt_float, &alpha, " <alpha>\tOffset of ramp filter, between 0 and 1. alpha=0 is a full ramp, alpha=1 is a horizontal line" },
-		{ 'I', false, opt_set, &image, "\tInput is in image domain" },
-		{ 'C', false, opt_set, &clear, "\tClear unacquired portion of kspace" },
-		{ 'P', true, opt_string, &phase_ref, " <phase_ref>\tUse <phase_ref> as phase reference" },
+		OPT_FLOAT('r', &alpha, "alpha", "Offset of ramp filter, between 0 and 1. alpha=0 is a full ramp, alpha=1 is a horizontal line"),
+		OPT_SET('I', &image, "Input is in image domain"),
+		OPT_SET('C', &clear, "Clear unacquired portion of kspace"),
+		OPT_STRING('P', &phase_ref, "phase_ref>", "Use <phase_ref> as phase reference"),
 	};
 
 	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);

@@ -1,10 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -39,7 +39,7 @@ int main_fakeksp(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'r', false, opt_set, &rplksp, "\treplace measured samples with original values" },
+		OPT_SET('r', &rplksp, "replace measured samples with original values"),
 	};
 
 	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);

@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2014-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -516,8 +516,9 @@ int main_bench(int argc, char* argv[])
 	bool scaling = false;
 
 	const struct opt_s opts[] = {
-		{ 'T', false, opt_set, &threads, "\tvarying number of threads" },
-		{ 'S', false, opt_set, &scaling, "\tvarying problem size" },
+
+		OPT_SET('T', &threads, "varying number of threads"),
+		OPT_SET('S', &scaling, "varying problem size"),
 	};
 
 	cmdline(&argc, argv, 0, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);

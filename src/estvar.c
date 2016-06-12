@@ -1,11 +1,11 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2015 Siddharth Iyer <sid8795@gmail.com>
- * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -37,10 +37,10 @@ int main_estvar(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'k', true, opt_vec3, &kernel_dims, " ksize\tkernel size" },
-		{ 'K', true, opt_vec3, &kernel_dims, NULL },
-		{ 'r', true, opt_vec3, &calsize_dims, " cal_size\tLimits the size of the calibration region." },
-		{ 'R', true, opt_vec3, &calsize_dims, NULL },
+		OPT_VEC3('k', &kernel_dims, "ksize", "kernel size"),
+		OPT_VEC3('K', &kernel_dims, "", "()"),
+		OPT_VEC3('r', &calsize_dims, "cal_size", "Limits the size of the calibration region."),
+		OPT_VEC3('R', &calsize_dims, "", "()"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);

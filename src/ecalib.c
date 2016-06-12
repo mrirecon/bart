@@ -1,10 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2015 Siddharth Iyer <sid8795@gmail.com>
  */
@@ -54,28 +54,27 @@ int main_ecalib(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 't', true, opt_float, &conf.threshold, " threshold\tThis determined the size of the null-space." },
-		{ 'c', true, opt_float, &conf.crop, " crop_value\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}." },
-//		{ 'k', true, opt_vec3, &conf.kdims, " ksize\tkernel size" },
+		OPT_FLOAT('t', &conf.threshold, "threshold", "This determined the size of the null-space."),
+		OPT_FLOAT('c', &conf.crop, "crop_value", "Crop the sensitivities if the eigenvalue is smaller than {crop_value}."),
 		OPT_VEC3('k', &conf.kdims, "ksize", "kernel size"),
-		{ 'K', true, opt_vec3, &conf.kdims, NULL },
-		{ 'r', true, opt_vec3, &calsize, " cal_size\tLimits the size of the calibration region." },
-		{ 'R', true, opt_vec3, &calsize, NULL },
-		{ 'm', true, opt_int, &maps, " maps\t\tNumber of maps to compute." },
-		{ 'S', false, opt_set, &conf.softcrop, "\t\tcreate maps with smooth transitions (Soft-SENSE)." },
-		{ 'W', false, opt_set, &conf.weighting, "\t\tsoft-weighting of the singular vectors." },
-		{ 'I', false, opt_set, &conf.intensity, "\t\tintensity correction" },
-		{ '1', false, opt_set, &one, "\t\tperform only first part of the calibration" },
-		{ 'O', false, opt_clear, &conf.orthiter, NULL },
-		{ 'b', true, opt_float, &conf.perturb, NULL },
-		{ 'V', false, opt_set, &print_svals, NULL },
-		{ 'C', false, opt_set, &calcen, NULL },
-		{ 'm', true, opt_int, &maps, NULL },
-		{ 'g', false, opt_set, &conf.usegpu, NULL },
-		{ 'p', true, opt_float, &conf.percentsv, NULL },
-		{ 'n', true, opt_int, &conf.numsv, NULL },
-		{ 'v', true, opt_float, &conf.var, " variance\tVariance of noise in data." },
-		{ 'a', false, opt_set, &conf.automate, "\t\tAutomatically pick thresholds." },
+		OPT_VEC3('K', &conf.kdims, "", "()"),
+		OPT_VEC3('r', &calsize, "cal_size", "Limits the size of the calibration region."),
+		OPT_VEC3('R', &calsize, "", "()"),
+		OPT_INT('m', &maps, "maps", "Number of maps to compute."),
+		OPT_SET('S', &conf.softcrop, "create maps with smooth transitions (Soft-SENSE)."),
+		OPT_SET('W', &conf.weighting, "soft-weighting of the singular vectors."),
+		OPT_SET('I', &conf.intensity, "intensity correction"),
+		OPT_SET('1', &one, "perform only first part of the calibration"),
+		OPT_CLEAR('O', &conf.orthiter, "()"),
+		OPT_FLOAT('b', &conf.perturb, "", "()"),
+		OPT_SET('V', &print_svals, "()"),
+		OPT_SET('C', &calcen, "()"),
+		OPT_INT('m', &maps, "", "()"),
+		OPT_SET('g', &conf.usegpu, "()"),
+		OPT_FLOAT('p', &conf.percentsv, "", "()"),
+		OPT_INT('n', &conf.numsv, "", "()"),
+		OPT_FLOAT('v', &conf.var, "variance", "Variance of noise in data."),
+		OPT_SET('a', &conf.automate, "Automatically pick thresholds."),
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

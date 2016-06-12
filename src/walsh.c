@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -33,10 +33,10 @@ int main_walsh(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'r', true, opt_vec3, &calsize, " cal_size\tLimits the size of the calibration region." },
-		{ 'R', true, opt_vec3, &calsize, NULL },
-		{ 'b', true, opt_vec3, &bsize, " block_size\tBlock size." },
-		{ 'B', true, opt_vec3, &bsize, NULL },
+		OPT_VEC3('r', &calsize, "cal_size", "Limits the size of the calibration region."),
+		OPT_VEC3('R', &calsize, "", "()"),
+		OPT_VEC3('b', &bsize, "block_size", "Block size."),
+		OPT_VEC3('B', &bsize, "", "()"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);

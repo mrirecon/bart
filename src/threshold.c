@@ -1,5 +1,5 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
@@ -107,11 +107,11 @@ int main_threshold(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'W', false, opt_select, OPT_SEL(enum th_type, &th_type, WAV), "\t\tdaubechies wavelet soft-thresholding" },
-		{ 'L', false, opt_select, OPT_SEL(enum th_type, &th_type, LLR), "\t\tlocally low rank soft-thresholding" },
-		{ 'D', false, opt_select, OPT_SEL(enum th_type, &th_type, DFW), "\t\tdivergence-free wavelet soft-thresholding" },
-		{ 'j', true, opt_int, &flags, " bitmask\tjoint soft-thresholding" },
-		{ 'b', true, opt_int, &llrblk, NULL },
+		OPT_SELECT('W', enum th_type, &th_type, WAV, "daubechies wavelet soft-thresholding"),
+		OPT_SELECT('L', enum th_type, &th_type, LLR, "locally low rank soft-thresholding"),
+		OPT_SELECT('D', enum th_type, &th_type, DFW, "divergence-free wavelet soft-thresholding"),
+		OPT_UINT('j', &flags, "bitmask", "joint soft-thresholding"),
+		OPT_INT('b', &llrblk, "", "()"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

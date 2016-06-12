@@ -1,10 +1,10 @@
-/* Copyright 2015. Martin Uecker 
+/* Copyright 2015-2016. Martin Uecker
  * Copyright 2016. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2015 Martin Uecker <uecker@med.uni-goettingen.de>
+ * 2015-2-16 Martin Uecker <uecker@med.uni-goettingen.de>
  * 2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -33,7 +33,7 @@ int main_version(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'V', false, opt_set, &verbose, "\tOutput verbose info" },
+		OPT_SET('V', &verbose, "Output verbose info"),
 	};
 
 	cmdline(&argc, argv, 0, 0, usage_str, help_str, ARRAY_SIZE(opts), opts);

@@ -1,10 +1,10 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2012, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -36,7 +36,7 @@ int main_cdf97(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'i', false, opt_set, &inv, "\tinverse" },
+		OPT_SET('i', &inv, "inverse"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

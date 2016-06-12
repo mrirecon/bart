@@ -1,10 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -45,11 +45,11 @@ int main_ecaltwo(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 'c', true, opt_float, &conf.crop, " crop_value\tCrop the sensitivities if the eigenvalue is smaller than {crop_value}." },
-		{ 'm', true, opt_long, &maps, " maps\t\tNumber of maps to compute." },
-		{ 'S', false, opt_set, &conf.softcrop, NULL },
-		{ 'O', false, opt_clear, &conf.orthiter, NULL },
-		{ 'g', false, opt_set, &conf.usegpu, NULL },
+		OPT_FLOAT('c', &conf.crop, "crop_value", "Crop the sensitivities if the eigenvalue is smaller than {crop_value}."),
+		OPT_LONG('m', &maps, "maps", "Number of maps to compute."),
+		OPT_SET('S', &conf.softcrop, "()"),
+		OPT_CLEAR('O', &conf.orthiter, "()"),
+		OPT_SET('g', &conf.usegpu, "()"),
 	};
 
 	cmdline(&argc, argv, 5, 6, usage_str, help_str, ARRAY_SIZE(opts), opts);

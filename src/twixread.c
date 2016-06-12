@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2014, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <sys/types.h>
@@ -225,17 +225,17 @@ int main_twixread(int argc, char* argv[argc])
 
 	struct opt_s opts[] = {
 
-		{ 'x', true, opt_long, &(dims[READ_DIM]), " X\t\tnumber of samples (read-out)" },
-		{ 'y', true, opt_long, &(dims[PHS1_DIM]), " Y\t\tphase encoding steps" },
-		{ 'z', true, opt_long, &(dims[PHS2_DIM]), " Z\t\tpartition encoding steps" },
-		{ 's', true, opt_long, &(dims[SLICE_DIM]), " S\t\tnumber of slices" },
-		{ 'v', true, opt_long, &(dims[AVG_DIM]), " V\t\tnumber of averages" },
-		{ 'c', true, opt_long, &(dims[COIL_DIM]), " C\t\tnumber of channels" },
-		{ 'n', true, opt_long, &(dims[TIME_DIM]), " N\t\tnumber of repetitions" },
-		{ 'a', true, opt_long, &adcs,  " A\t\ttotal number of ADCs" },
-		{ 'A', false, opt_set, &autoc, "\tautomatic (guess dimensions)" },
-		{ 'L', false, opt_set, &linectr, "\tuse linectr offset" },
-		{ 'P', false, opt_set, &partctr, "\tuse partctr offset" },
+		OPT_LONG('x', &(dims[READ_DIM]), "X", "number of samples (read-out)"),
+		OPT_LONG('y', &(dims[PHS1_DIM]), "Y", "phase encoding steps"),
+		OPT_LONG('z', &(dims[PHS2_DIM]), "Z", "partition encoding steps"),
+		OPT_LONG('s', &(dims[SLICE_DIM]), "S", "number of slices"),
+		OPT_LONG('v', &(dims[AVG_DIM]), "V", "number of averages"),
+		OPT_LONG('c', &(dims[COIL_DIM]), "C", "number of channels"),
+		OPT_LONG('n', &(dims[TIME_DIM]), "N", "number of repetitions"),
+		OPT_LONG('a', &adcs, "A", "total number of ADCs"),
+		OPT_SET('A', &autoc, "automatic (guess dimensions)"),
+		OPT_SET('L', &linectr, "use linectr offset"),
+		OPT_SET('P', &partctr, "use partctr offset"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);

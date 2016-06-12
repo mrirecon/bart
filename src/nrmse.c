@@ -1,5 +1,5 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -7,7 +7,7 @@
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
- * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -39,7 +39,7 @@ int main_nrmse(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		{ 't', true, opt_float, &test, NULL },
+		OPT_FLOAT('t', &test, "", "()"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
