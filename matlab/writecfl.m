@@ -1,12 +1,14 @@
 function writecfl(filenameBase,data)
-% writecfl(filenameBase, data)
-%    Writes recon data to filenameBase.cfl (complex float)
-%    and write the dimensions to filenameBase.hdr.
+%WRITECFL  Write complex data to file.
+%   Writes reconstruction data to filenameBase.cfl (complex float) and its
+%   dimensions to filenameBase.hdr.
 %
-%    Written to edit data for the Berkeley recon.
+%   Written to edit data with the Berkeley Advanced Reconstruction Toolbox (BART).
 %
 % Copyright 2013. Joseph Y Cheng.
+% Copyright 2016. CBClab, Maastricht University.
 % 2012 Joseph Y Cheng (jycheng@mrsrl.stanford.edu).
+% 2016 Tim Loderhose (t.loderhose@student.maastrichtuniversity.nl).
 
     dims = size(data);
     writeReconHeader(filenameBase,dims);
@@ -14,11 +16,9 @@ function writecfl(filenameBase,data)
     filename = strcat(filenameBase,'.cfl');
     fid = fopen(filename,'w');
     
-    data_o = zeros(prod(dims)*2,1);
-    data_o(1:2:end) = real(data(:));
-    data_o(2:2:end) = imag(data(:));
+    data = data(:);
     
-    fwrite(fid,data_o,'float32');
+    fwrite(fid,[real(data)'; imag(data)'],'float32');
     fclose(fid);
 end
 
