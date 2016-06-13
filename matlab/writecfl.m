@@ -1,9 +1,9 @@
 function writecfl(filenameBase,data)
-% writecfl(filenameBase, data)
-%    Writes recon data to filenameBase.cfl (complex float)
-%    and write the dimensions to filenameBase.hdr.
+%WRITECFL  Write complex data to file.
+%   Writes reconstruction data to filenameBase.cfl (complex float) and its
+%   dimensions to filenameBase.hdr.
 %
-%    Written to edit data for the Berkeley recon.
+%   Written to edit data with the Berkeley Advanced Reconstruction Toolbox (BART).
 %
 % Copyright 2013. Joseph Y Cheng.
 % Copyright 2016. CBClab, Maastricht University.
