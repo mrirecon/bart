@@ -7,7 +7,7 @@
  * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2016 Siddharth Iyer <sid8795@gmail.com>
  *
  *
@@ -2467,59 +2467,30 @@ void md_zwavg2(unsigned int D, const long dims[D], unsigned int flags, const lon
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
+	md_clear(D, odims, optr, CFL_SIZE);
 
-	complex float* weights = md_alloc_sameplace(D, odims, CFL_SIZE, iptr);
+	//FIXME: this is faster
+#if 1
+	complex float* o = md_alloc_sameplace(1, MD_DIMS(1), CFL_SIZE, optr);
+	md_zfill(1, MD_DIMS(1), o, 1.);
 
-	md_zwavg2_core1(D, dims, flags, ostr, weights, istr, iptr);
-	md_zwavg2_core2(D, dims, flags, ostr, optr, weights, istr, iptr);
+	long ss[D];
+	md_singleton_strides(D, ss);
+	md_zfmac2(D, dims, ostr, optr, istr, iptr, ss, o);
+	md_free(o);
 
-	md_free(weights);
-}
-
-
-
-/**
- * Compute weights for weighted average
- *
- * @param iptr input array to be averaged
- * @param weights output weights
- */
-void md_zwavg2_core1(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* weights, const long istr[D], const complex float* iptr)
-{
-	long odims[D];
-	md_select_dims(D, ~flags, odims, dims);
-
-	complex float* pattern = md_alloc_sameplace(D, dims, CFL_SIZE, iptr);
-
-	long onestrs[D];
-	md_singleton_strides(D, onestrs);
-
-	md_zcmp2(D, dims, istr, pattern, istr, iptr, onestrs, &(complex float){ 0. });
-	md_zsub2(D, dims, istr, pattern, onestrs, &(complex float){ 1. }, istr, pattern);
-
-	md_clear2(D, odims, ostr, weights, CFL_SIZE);
-	md_zaxpy2(D, dims, ostr, weights, 1., istr, pattern);
-
-	md_free(pattern);
-}
-
-
-
-/**
- * Weighted average along flagged dimensions with given weights
- *
- * @param weights precomputed weights for averaging
- * @param optr output array after averaging
- */
-void md_zwavg2_core2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* optr, const complex float* weights, const long istr[D], const complex float* iptr)
-{
-	long odims[D];
-	md_select_dims(D, ~flags, odims, dims);
-
-	md_clear2(D, odims, ostr, optr, CFL_SIZE);
+#else
 	md_zaxpy2(D, dims, ostr, optr, 1., istr, iptr);
+#endif
 
-	md_zdiv(D, odims, optr, optr, weights);
+	long sdims[D];
+	md_select_dims(D, flags, sdims, dims);
+
+	long scale = md_calc_size(D, sdims);
+
+	if (scale != 0.)
+		md_zsmul(D, odims, optr, optr, 1. / scale);
+
 }
 
 
