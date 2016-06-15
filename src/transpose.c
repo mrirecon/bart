@@ -12,8 +12,8 @@
 #include <complex.h>
 #include <stdio.h>
 
-
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/mri.h"
@@ -26,6 +26,8 @@ static const char help_str[] = "Transpose dimensions {dim1} and {dim2}.\n";
 int main_transpose(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
+
+	num_init();
 
 	int N = DIMS;
 	long idims[N];

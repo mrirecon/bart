@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/io.h"
@@ -27,6 +28,8 @@ static const char help_str[] = "Create a zero-filled array with {dims} dimension
 int main_zeros(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, -3, usage_str, help_str);
+
+	num_init();
 
 	int N = atoi(argv[1]);
 

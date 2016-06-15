@@ -21,6 +21,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
+#include "num/init.h"
 
 #include "calib/cc.h"
 
@@ -55,6 +56,8 @@ int main_cc(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 	if (-1 != P)
 		proj = true;

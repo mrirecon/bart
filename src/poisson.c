@@ -15,6 +15,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/rand.h"
+#include "num/init.h"
 
 #include "misc/misc.h"
 #include "misc/mmio.h"
@@ -89,6 +90,8 @@ int main_poisson(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 	if (vd_def && (0. == vardensity))
 		vardensity = 20.;

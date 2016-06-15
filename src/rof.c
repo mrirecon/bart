@@ -23,6 +23,7 @@
 #include "num/flpmath.h"
 #include "num/iovec.h"
 #include "num/ops.h"
+#include "num/init.h"
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -49,6 +50,8 @@ static const char help_str[] = "Perform total variation denoising along dims <fl
 int main_rof(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
+
+	num_init();
 
 	long dims[DIMS];
 

@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/rand.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -46,6 +47,8 @@ int main_noise(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 	if (-1 != rinit)
 		num_rand_init(rinit);

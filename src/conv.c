@@ -12,6 +12,7 @@
 
 #include "num/multind.h"
 #include "num/conv.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/opts.h"
@@ -29,6 +30,7 @@ int main_conv(int argc, char* argv[])
 {
 	cmdline(&argc, argv, 4, 4, usage_str, help_str, 0, NULL);
 
+	num_init();
 
 	unsigned int flags = atoi(argv[1]);
 

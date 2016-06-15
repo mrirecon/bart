@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -29,6 +30,8 @@ static const char help_str[] = "Raise array to the power of {exponent}. The expo
 int main_spow(int argc, char* argv[argc])
 {
 	mini_cmdline(argc, argv, 3, usage_str, help_str);
+
+	num_init();
 
 	complex float expo;
 

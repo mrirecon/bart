@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/misc.h"
 #include "misc/mmio.h"
@@ -38,6 +39,8 @@ int main_normalize(int argc, char* argv[])
 	bool l1 = false;
 
 	l1 = mini_cmdline_bool(argc, argv, 'b', 3, usage_str, help_str);
+
+	num_init();
 
 	int N = DIMS;
 	long dims[N];

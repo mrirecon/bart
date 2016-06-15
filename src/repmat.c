@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -28,6 +29,8 @@ static const char help_str[] = "Repeat input array multiple times along a certai
 int main_repmat(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
+
+	num_init();
 
 	long in_dims[DIMS];
 	long out_dims[DIMS];

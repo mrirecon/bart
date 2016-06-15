@@ -13,6 +13,7 @@
 #include <stdio.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -28,6 +29,8 @@ static const char help_str[] = "Multiply input1 with scale factor and add input2
 int main_saxpy(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 4, usage_str, help_str);
+
+	num_init();
 
 	complex float scale;
 

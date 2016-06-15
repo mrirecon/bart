@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/fft.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -31,6 +32,8 @@ static const char help_str[] =	"Apply fftshift along dimensions selected by the 
 int main_fftshift(int argc, char* argv[])
 {
 	bool b = mini_cmdline_bool(argc, argv, 'b', 3, usage_str, help_str);
+
+	num_init();
 
 	unsigned long flags = labs(atol(argv[1]));
 

@@ -16,6 +16,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/opts.h"
@@ -43,6 +44,8 @@ int main_mip(int argc, char* argv[argc])
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 
 	unsigned int flags = atoi(argv[1]);

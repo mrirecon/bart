@@ -13,6 +13,7 @@
 #include <complex.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -27,6 +28,8 @@ static const char help_str[] = "Extracts a sub-array along {dim} from index {sta
 int main_extract(int argc, char* argv[])
 {
 	mini_cmdline(argc, argv, 5, usage_str, help_str);
+
+	num_init();
 
 	long in_dims[DIMS];
 	long out_dims[DIMS];

@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/mmio.h"
 #include "misc/debug.h"
@@ -39,6 +40,8 @@ static const char help_str[] =
 int main_join(int argc, char* argv[])
 {
 	cmdline(&argc, argv, 3, 1000, usage_str, help_str, 0, NULL);
+
+	num_init();
 
 	int N = DIMS;
 

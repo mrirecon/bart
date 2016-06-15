@@ -16,6 +16,7 @@
 #include <stdbool.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -121,6 +122,8 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 int main_toimg(int argc, char* argv[])
 {
 	bool dicom = mini_cmdline_bool(argc, argv, 'd', 2, usage_str, help_str);
+
+	num_init();
 
 	// -d option is deprecated
 

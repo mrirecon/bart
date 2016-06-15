@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 #include "num/multind.h"
+#include "num/init.h"
 
 #include "misc/resize.h"
 #include "misc/mmio.h"
@@ -42,6 +43,8 @@ int main_resize(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 4, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	num_init();
 
 
 	unsigned int N = DIMS;
