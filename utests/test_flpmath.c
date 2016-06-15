@@ -25,7 +25,7 @@
 
 
 
-static bool test_md_zfmac2_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in1, const complex float* in2, const complex float* out_ref)
+static bool test_md_zfmacc2_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in1, const complex float* in2, const complex float* out_ref)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, idims);
@@ -38,7 +38,7 @@ static bool test_md_zfmac2_flags(unsigned int D, const long idims[D], unsigned i
 	md_calc_strides(D, istr, idims, CFL_SIZE);
 	md_calc_strides(D, ostr, odims, CFL_SIZE);
 
-	md_zfmac2(D, idims, ostr, out, istr, in1, istr, in2);
+	md_zfmacc2(D, idims, ostr, out, istr, in1, istr, in2);
 
 	float err = md_znrmse(D, odims, out_ref, out);
 
@@ -53,7 +53,7 @@ static bool test_md_zfmac2_flags(unsigned int D, const long idims[D], unsigned i
 /*
  * Tests based on previously generated data included in the header file
  */
-static bool test_md_zfmac2(void)
+static bool test_md_zfmacc2(void)
 {
 	long idims[4] = { 3, 3, 3, 3 };
 
@@ -61,9 +61,9 @@ static bool test_md_zfmac2(void)
 
 	for (unsigned int flags = 0u; flags < 16u; flags++) {
 
-		debug_printf(DP_DEBUG1, "Testing md_zfmac2_flags with flags=%d\n", flags);
+		debug_printf(DP_DEBUG1, "Testing md_zfmacc2_flags with flags=%d\n", flags);
 
-		ret &= test_md_zfmac2_flags(4, idims, flags, test_md_in0, test_md_in1, test_md_zfmac2_out[flags]);
+		ret &= test_md_zfmacc2_flags(4, idims, flags, test_md_in0, test_md_in1, test_md_zfmacc2_out[flags]);
 	}
 
 	return ret;
@@ -109,6 +109,6 @@ static bool test_md_zwavg(void)
 }
 
 
-UT_REGISTER_TEST(test_md_zfmac2);
+UT_REGISTER_TEST(test_md_zfmacc2);
 UT_REGISTER_TEST(test_md_zwavg);
 
