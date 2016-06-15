@@ -14,7 +14,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/sf.h"
+#include "num/specfun.h"
 
 #include "misc/misc.h"
 

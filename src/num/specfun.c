@@ -12,7 +12,7 @@
 
 #include "num/chebfun.h"
 
-#include "sf.h"
+#include "specfun.h"
 
 
 /* FIXME: improve precision
