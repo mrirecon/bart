@@ -10,6 +10,7 @@
 #define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -26,6 +27,21 @@
 #include "misc/debug.h"
 
 #include "io.h"
+
+
+
+
+
+static void xdprintf(int fd, const char* fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	int ret = vdprintf(fd, fmt, ap);
+	va_end(ap);
+
+	if (ret < 0)
+		error("Error writing.\n");
+}
 
 
 
@@ -74,44 +90,35 @@ void io_register_output(const char* name)
 
 int write_cfl_header(int fd, unsigned int n, const long dimensions[n])
 {
-	char header[4096];
-	memset(header, 0, 4096);
-
-	int pos = 0;
-
-	pos += snprintf(header + pos, 4096 - pos, "# Dimensions\n");
+	xdprintf(fd, "# Dimensions\n");
 
 	for (unsigned int i = 0; i < n; i++)
-		pos += snprintf(header + pos, 4096 - pos, "%ld ", dimensions[i]);
+		xdprintf(fd, "%ld ", dimensions[i]);
 
-	pos += snprintf(header + pos, 4096 - pos, "\n");
+	xdprintf(fd, "\n");
 
 	if (NULL != command_line) {
 
-		pos += snprintf(header + pos, 4096 - pos, "# Command\n");
-		pos += snprintf(header + pos, 4096 - pos, "%s\n", command_line);
+		xdprintf(fd, "# Command\n");
+		xdprintf(fd, "%s\n", command_line);
 	}
 
 	if (NULL != iofiles) {
 
 		struct iofile_s* in = iofiles;
 
-		pos += snprintf(header + pos, 4096 - pos, "# Files\n");
+		xdprintf(fd, "# Files\n");
 
 		while (in) {
 
-			pos += snprintf(header + pos, 4096 - pos, " %c%s", in->out ? '>' : '<', in->name);
+			xdprintf(fd, " %c%s", in->out ? '>' : '<', in->name);
 			in = in->prev;
 		}
 
-		pos += snprintf(header + pos, 4096 - pos, "\n");
+		xdprintf(fd, "\n");
 	}
 
-	pos += snprintf(header + pos, 4096 - pos, "# Creator\n");
-	pos += snprintf(header + pos, 4096 - pos, "BART %s\n", bart_version);
-
-	if (pos != write(fd, header, pos))
-		return -1;
+	xdprintf(fd, "# Creator\nBART %s\n", bart_version);
 
 	return 0;
 }
@@ -196,11 +203,19 @@ out:
 int write_coo(int fd, unsigned int n, const long dimensions[n])
 {
 	char header[4096];
+	size_t len = ARRAY_SIZE(header);
 	memset(header, 0, 4096);
 
 	int pos = 0;
+	int ret;
 
-	pos += snprintf(header, 4096, "Type: float\nDimensions: %d\n", n);
+	ret = snprintf(header + pos, len, "Type: float\nDimensions: %d\n", n);
+
+	if ((ret < 0) || ((unsigned int)ret >= len))
+		return -1;
+
+	pos += ret;
+	len -= ret;
 
 	long start = 0;
 	long stride = 1;
@@ -209,7 +224,14 @@ int write_coo(int fd, unsigned int n, const long dimensions[n])
 
 		long size = dimensions[i];
 
-		pos += snprintf(header + pos, 4096 - pos, "[%ld\t%ld\t%ld\t%ld]\n", start, stride * size, size, stride);
+		ret = snprintf(header + pos, len, "[%ld\t%ld\t%ld\t%ld]\n", start, stride * size, size, stride);
+
+		if ((ret < 0) || ((unsigned int)ret >= len))
+			return -1;
+
+		pos += ret;
+		len -= ret;
+
 		stride *= size;
 	}
 
