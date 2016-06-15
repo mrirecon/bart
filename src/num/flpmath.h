@@ -206,6 +206,8 @@ extern float md_scalar(unsigned int D, const long dim[__VLA(D)], const float* pt
 extern void md_rss(unsigned int D, const long dims[__VLA(D)], unsigned int flags, float* dst, const float* src);
 extern void md_zrss(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* dst, const _Complex float* src);
 
+extern void md_zavg(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* optr, const _Complex float* iptr);
+extern void md_zavg2(unsigned int D, const long dims[__VLA(D)], unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
 extern void md_zwavg(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* optr, const _Complex float* iptr);
 extern void md_zwavg2(unsigned int D, const long dims[__VLA(D)], unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);

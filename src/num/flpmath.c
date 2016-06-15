@@ -2440,6 +2440,61 @@ void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex flo
 
 
 /**
+ * Average along flagged dimensions (without strides)
+ *
+ * @param dims -- full dimensions of iptr
+ * @param flags -- bitmask for applying the average, i.e. the dimensions that will not stay
+ */
+void md_zavg(unsigned int D, const long dims[D], unsigned int flags, complex float* optr, const complex float* iptr)
+{
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+
+	md_zavg2(D, dims, flags,
+			MD_STRIDES(D, odims, CFL_SIZE), optr,
+			MD_STRIDES(D, dims, CFL_SIZE), iptr);
+}
+
+
+
+/**
+ * Average along flagged dimensions (with strides)
+ *
+ * @param dims -- full dimensions of iptr
+ * @param flags -- bitmask for applying the average, i.e. the dimensions that will not stay
+ */
+void md_zavg2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* optr, const long istr[D], const complex float* iptr)
+{
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+	md_clear(D, odims, optr, CFL_SIZE);
+
+	//FIXME: this is faster
+#if 1
+	complex float* o = md_alloc_sameplace(1, MD_DIMS(1), CFL_SIZE, optr);
+	md_zfill(1, MD_DIMS(1), o, 1.);
+
+	long ss[D];
+	md_singleton_strides(D, ss);
+	md_zfmac2(D, dims, ostr, optr, istr, iptr, ss, o);
+	md_free(o);
+
+#else
+	md_zaxpy2(D, dims, ostr, optr, 1., istr, iptr);
+#endif
+
+	long sdims[D];
+	md_select_dims(D, flags, sdims, dims);
+
+	long scale = md_calc_size(D, sdims);
+
+	if (scale != 0.)
+		md_zsmul(D, odims, optr, optr, 1. / scale);
+}
+
+
+
+/**
  * Weighted average along flagged dimensions (without strides)
  *
  * @param dims -- full dimensions of iptr

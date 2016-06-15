@@ -70,14 +70,14 @@ static bool test_md_zfmacc2(void)
 }
 
 
-static bool test_md_zwavg_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in, const complex float* out_ref)
+static bool test_md_zavg_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in, const complex float* out_ref, bool wavg)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, idims);
 
 	complex float* out = md_alloc(D, odims, CFL_SIZE);
 
-	md_zwavg(D, idims, flags, out, in);
+	(wavg ? md_zwavg : md_zavg)(D, idims, flags, out, in);
 
 	float err = md_znrmse(D, odims, out_ref, out);
 
@@ -96,13 +96,32 @@ static bool test_md_zwavg(void)
 {
 	long idims[4] = { 3, 3, 3, 3 };
 
+	bool wavg = true;
 	bool ret = true;
 
 	for (unsigned int flags = 0u; flags < 16u; flags++) {
 
 		debug_printf(DP_DEBUG1, "Testing md_zwavg_flags with flags=%d\n", flags);
 
-		ret &= test_md_zwavg_flags(4, idims, flags, test_md_in0, test_md_zwavg_out[flags]);
+		ret &= test_md_zavg_flags(4, idims, flags, test_md_in0, test_md_zwavg_out[flags], wavg);
+	}
+
+	return ret;
+}
+
+
+static bool test_md_zavg(void)
+{
+	long idims[4] = { 3, 3, 3, 3 };
+
+	bool wavg = false;
+	bool ret = true;
+
+	for (unsigned int flags = 0u; flags < 16u; flags++) {
+
+		debug_printf(DP_DEBUG1, "Testing md_zavg_flags with flags=%d\n", flags);
+
+		ret &= test_md_zavg_flags(4, idims, flags, test_md_in0, test_md_zavg_out[flags], wavg);
 	}
 
 	return ret;
@@ -111,4 +130,5 @@ static bool test_md_zwavg(void)
 
 UT_REGISTER_TEST(test_md_zfmacc2);
 UT_REGISTER_TEST(test_md_zwavg);
+UT_REGISTER_TEST(test_md_zavg);
 
