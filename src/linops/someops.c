@@ -759,12 +759,8 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
 
 static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool forward, bool center)
 {
-	// FIXME: we allocate only to communicate that we need in-place plans
-
-	complex float* tmp = md_alloc(N, dims, CFL_SIZE);
-	const struct operator_s* plan = fft_create(N, dims, flags, tmp, tmp, false);
-	const struct operator_s* iplan = fft_create(N, dims, flags, tmp, tmp, true);
-	md_free(tmp);
+	const struct operator_s* plan = fft_measure_create(N, dims, flags, true, false);
+	const struct operator_s* iplan = fft_measure_create(N, dims, flags, true, true);
 
 	PTR_ALLOC(struct fft_linop_s, data);
 
