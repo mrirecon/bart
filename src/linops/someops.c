@@ -759,17 +759,9 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
 
 static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool forward, bool center)
 {
-	bool gpu = true; // FIXME
-#ifdef USE_CUDA
-	md_alloc_fun_t alloc = (gpu ? md_alloc_gpu : md_alloc);
-#else
-	UNUSED(gpu);
-	md_alloc_fun_t alloc = md_alloc;
-#endif
+	// FIXME: we allocate only to communicate that we need in-place plans
 
-	// FIXME: we allocate only to communicate the gpu flag
-	// and that need in-place plans
-	complex float* tmp = alloc(N, dims, CFL_SIZE);
+	complex float* tmp = md_alloc(N, dims, CFL_SIZE);
 	const struct operator_s* plan = fft_create(N, dims, flags, tmp, tmp, false);
 	const struct operator_s* iplan = fft_create(N, dims, flags, tmp, tmp, true);
 	md_free(tmp);
