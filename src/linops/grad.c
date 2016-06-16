@@ -22,7 +22,11 @@
 
 
 
-
+static void grad_dims(unsigned int D, long dims2[D + 1], unsigned int flags, const long dims[D])
+{
+	md_copy_dims(D, dims2, dims);
+	dims2[D] = bitcount(flags);
+}
 
 
 void grad_op(unsigned int D, const long dims[D], unsigned int flags, complex float* out, const complex float* in)
@@ -77,11 +81,8 @@ void grad_adjoint(unsigned int D, const long dims[D], unsigned int flags, comple
 
 void grad(unsigned int D, const long dims[D], unsigned int flags, complex float* out, const complex float* in)
 {
-	unsigned int N = bitcount(flags);
-
 	long dims2[D + 1];
-	md_copy_dims(D, dims2, dims);
-	dims2[D] = N;
+	grad_dims(D, dims2, flags, dims);
 
 	complex float* tmp = md_alloc_sameplace(D + 1, dims2, CFL_SIZE, out);
 
@@ -143,13 +144,16 @@ struct linop_s* grad_init(long N, const long dims[N], unsigned int flags)
 {
 	PTR_ALLOC(struct grad_s, data);
 
+	long dims2[N + 1];
+	grad_dims(N, dims2, flags, dims);
+
 	data->N = N + 1;
-	data->dims = *TYPE_ALLOC(long[N + 1]);
 	data->flags = flags;
 
-	md_copy_dims(N, data->dims, dims);
-	data->dims[N] = bitcount(flags);
-	
-	return linop_create(N + 1, data->dims, N, dims, &/*PTR_PASS*/(data)->base, grad_op_apply, grad_op_adjoint, grad_op_normal, NULL, grad_op_free);
+	data->dims = *TYPE_ALLOC(long[N + 1]);
+
+	md_copy_dims(N + 1, data->dims, dims2);
+
+	return linop_create(N + 1, dims2, N, dims, &PTR_PASS(data)->base, grad_op_apply, grad_op_adjoint, grad_op_normal, NULL, grad_op_free);
 }
 

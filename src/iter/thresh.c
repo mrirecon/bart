@@ -141,7 +141,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D],
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, data->dim, D, data->dim, &/*PTR_PASS*/(data)->base, softthresh_apply, thresh_del);
+	return operator_p_create(D, dim, D, dim, &PTR_PASS(data)->base, softthresh_apply, thresh_del);
 
 }
 
@@ -165,8 +165,10 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	data->flags = flags;
 	data->unitary_op = unitary_op;
 
+	const long* dims = linop_domain(unitary_op)->dims;
+
 	data->dim = *TYPE_ALLOC(long[D]);
-	md_copy_dims(D, data->dim, linop_domain(unitary_op)->dims);
+	md_copy_dims(D, data->dim, dims);
 
 	data->str = *TYPE_ALLOC(long[D]);
 	md_calc_strides(D, data->str, data->dim, CFL_SIZE);
@@ -182,7 +184,7 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, data->dim, D, data->dim, &/*PTR_PASS*/(data)->base, unisoftthresh_apply, thresh_del);
+	return operator_p_create(D, dims, D, dims, &PTR_PASS(data)->base, unisoftthresh_apply, thresh_del);
 }
 
 
