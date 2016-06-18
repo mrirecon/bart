@@ -229,6 +229,8 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 	if (conf.toeplitz) {
 
+		debug_printf(DP_DEBUG1, "NUFFT: Toeplitz mode\n");
+
 #if 0
 		md_copy_dims(ND, data->psf_dims, data->lph_dims);
 #else
