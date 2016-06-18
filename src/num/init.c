@@ -65,7 +65,13 @@ void num_init(void)
 
 void num_init_gpu(void)
 {
-	num_init_gpu_device(0);
+	num_init();
+
+	// don't call cuda_init so that GPU can get assigned by driver
+
+#ifdef USE_CULA
+	culaInitialize();
+#endif
 }
 
 
@@ -83,7 +89,6 @@ void num_init_gpu_device(int device)
 #ifdef USE_CULA
 	culaInitialize();
 #endif
-
 }
 
 
