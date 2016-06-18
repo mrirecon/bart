@@ -53,7 +53,38 @@ tests/test-pics-pics: traj scale phantom pics nrmse $(TESTS_OUT)/shepplogan.ra
 	touch $@
 
 
+
+# test that weights =1 have no effect
+tests/test-pics-weights: phantom pics ones nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -S8 coils.ra							;\
+	$(TOOLDIR)/ones 2 128 128 weights.ra						;\
+	$(TOOLDIR)/pics -S -r0.001 $(TESTS_OUT)/shepplogan_coil.ra coils.ra reco1.ra	;\
+	$(TOOLDIR)/pics -S -r0.001 -p weights.ra $(TESTS_OUT)/shepplogan_coil.ra coils.ra reco2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.000001 reco2.ra reco1.ra				 	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
+# test that weights =1 have no effect
+tests/test-pics-noncart-weights: traj scale ones phantom pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y32 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -s8 -t traj2.ra ksp.ra					;\
+	$(TOOLDIR)/phantom -S8 coils.ra							;\
+	$(TOOLDIR)/ones 4 1 256 32 1 weights.ra						;\
+	$(TOOLDIR)/pics -S -r0.001 -p weights.ra -t traj2.ra ksp.ra coils.ra reco1.ra	;\
+	$(TOOLDIR)/pics -S -r0.001               -t traj2.ra ksp.ra coils.ra reco2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.005 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
+TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 
 
 
