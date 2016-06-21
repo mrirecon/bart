@@ -24,6 +24,7 @@ FFTWTHREADS?=1
 ISMRMRD?=0
 
 DESTDIR ?= /
+PREFIX ?= usr/
 
 BUILDTYPE = Linux
 UNAME = $(shell uname -s)
@@ -464,11 +465,11 @@ endif	# MAKESTAGE
 
 
 install: bart $(root)/doc/commands.txt
-	install -d $(DESTDIR)/usr/bin/
-	install bart $(DESTDIR)/usr/bin/
-	install -d $(DESTDIR)/usr/share/doc/bart/
-	install $(root)/doc/*.txt $(root)/README $(DESTDIR)/usr/share/doc/bart/
-	install -d $(DESTDIR)/usr/lib/bart/commands/
+	install -d $(DESTDIR)/$(PREFIX)/bin/
+	install bart $(DESTDIR)/$(PREFIX)/bin/
+	install -d $(DESTDIR)/$(PREFIX)/share/doc/bart/
+	install $(root)/doc/*.txt $(root)/README $(DESTDIR)/$(PREFIX)/share/doc/bart/
+	install -d $(DESTDIR)/$(PREFIX)/lib/bart/commands/
 
 
 # generate release tar balls (identical to github)
