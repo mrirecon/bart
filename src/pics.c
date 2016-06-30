@@ -1,10 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -20,32 +20,16 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/init.h"
-#include "num/ops.h"
-#include "num/iovec.h"
 
-#include "iter/lsqr.h"
-#include "iter/prox.h"
-#include "iter/thresh.h"
 #include "iter/misc.h"
 
 #include "linops/linop.h"
-#include "linops/someops.h"
-#include "linops/grad.h"
-#include "linops/sum.h"
-
-#include "iter/iter.h"
-#include "iter/iter2.h"
 
 #include "noncart/nufft.h"
 
 #include "sense/recon.h"
 #include "sense/model.h"
 #include "sense/optcom.h"
-
-#include "wavelet2/wavelet.h"
-#include "wavelet3/wavthresh.h"
-
-#include "lowrank/lrthresh.h"
 
 #include "misc/debug.h"
 #include "misc/mri.h"
