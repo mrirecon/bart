@@ -477,3 +477,8 @@ install: bart $(root)/doc/commands.txt
 	git archive --prefix=bart-$(patsubst bart-%.tar.gz,%,$@)/ -o $@ v$(patsubst bart-%.tar.gz,%,$@)
 
 
+
+# symbol table
+bart.syms: bart
+	nm --defined-only bart | cut -c11-16,19- | sort > bart.syms
+
