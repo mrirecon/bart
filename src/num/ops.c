@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 #include <alloca.h>
 
 #include "num/multind.h"
@@ -575,7 +576,9 @@ const struct operator_s* operator_stack(unsigned int D, unsigned int E, const st
 
 void operator_generic_apply_unchecked(const struct operator_s* op, unsigned int N, void* args[N])
 {
-	op->apply((void*)op->data, N, args);
+	debug_trace("ENTER %p\n", op->apply);
+	op->apply(op->data, N, args);
+	debug_trace("LEAVE %p\n", op->apply);
 }
 
 

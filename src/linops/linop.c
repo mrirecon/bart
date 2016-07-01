@@ -17,6 +17,7 @@
 #include "num/ops.h"
 
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "linop.h"
 
@@ -70,14 +71,18 @@ static void shared_apply(const operator_data_t* _data, unsigned int N, void* arg
 	struct shared_data_s* data = CONTAINER_OF(_data, struct shared_data_s, base);
 
 	assert(2 == N);
+	debug_trace("ENTER %p\n", data->u.apply);
 	data->u.apply(data->data, args[0], args[1]);
+	debug_trace("LEAVE %p\n", data->u.apply);
 }
 
 static void shared_apply_p(const operator_data_t* _data, float lambda, complex float* dst, const complex float* src)
 {
 	struct shared_data_s* data = CONTAINER_OF(_data, struct shared_data_s, base);
 
+	debug_trace("ENTER %p\n", data->u.apply_p);
 	data->u.apply_p(data->data, lambda, dst, src);
+	debug_trace("LEAVE %p\n", data->u.apply_p);
 }
 
 
