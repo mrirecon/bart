@@ -25,6 +25,7 @@
 
 #include "misc/mmio.h"
 #include "misc/cppmap.h"
+#include "misc/misc.h"
 
 #include "debug.h"
 
@@ -56,7 +57,7 @@ bool debug_logging = false;
 
 static const char* level_strings[] = {
 #define LSTR(x) [DP_ ## x] = # x,
-	MAP(LSTR, ERROR, WARN, INFO, DEBUG1, DEBUG2, DEBUG3, DEBUG4, ())
+	MAP(LSTR, ERROR, WARN, INFO, DEBUG1, DEBUG2, DEBUG3, DEBUG4, TRACE, ())
 #undef  LSTR
 };
 
@@ -64,7 +65,7 @@ static const char* get_level_str(int level)
 {
 	assert(level >= 0);
 
-	return (level <= DP_DEBUG4) ? level_strings[level] : "ALL";
+	return (level < DP_ALL) ? level_strings[level] : "ALL";
 }
 
 static void get_datetime_str(int len, char* datetime_str)
@@ -129,3 +130,33 @@ void debug_backtrace(size_t n)
 		backtrace_symbols_fd(ptrs + 1, l - 1, STDERR_FILENO);
 }
 
+
+
+void debug_trace(const char* fmt, ...)
+{
+	debug_printf(DP_TRACE, "TRACE %f: ", timestamp());
+
+	va_list ap;
+	va_start(ap, fmt);
+	debug_vprintf(DP_TRACE, fmt, ap);
+	va_end(ap);
+}
+
+
+#ifdef INSTRUMENT
+/* The following functions are called when entering or
+ * leaving any function, if instrumentation is enabled with:
+ * -finstrument-functions -finstrument-functions-exclude-file-list=debug.c
+ */
+extern void __cyg_profile_func_enter(void *this_fn, void *call_site)
+{
+	UNUSED(call_site);
+	debug_trace("ENTER %p\n", this_fn);
+}
+
+extern void __cyg_profile_func_exit(void *this_fn, void *call_site)
+{
+	UNUSED(call_site);
+	debug_trace("LEAVE %p\n", this_fn);
+}
+#endif
