@@ -24,6 +24,7 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/shrdptr.h"
 
 #include "ops.h"
 
@@ -41,11 +42,26 @@ struct operator_s {
 	const struct iovec_s** domain;
 
 	operator_data_t* data;
-	int refcount;
-
 	void (*apply)(const operator_data_t* data, unsigned int N, void* args[N]);
 	void (*del)(const operator_data_t* data);
+
+	struct shared_obj_s sptr;
 };
+
+
+static void operator_del(const struct shared_obj_s* sptr)
+{
+	const struct operator_s* x = CONTAINER_OF(sptr, const struct operator_s, sptr);
+
+	if (NULL != x->del)
+		x->del(x->data);
+
+	for (unsigned int i = 0; i < x->N; i++)
+		iovec_free(x->domain[i]);
+
+	xfree(x->domain);
+	xfree(x);
+}
 
 
 
@@ -67,9 +83,9 @@ const struct operator_s* operator_generic_create2(unsigned int N, unsigned int i
 	op->domain = *PTR_PASS(dom);
 	op->data = data;
 	op->apply = apply;
-
-	op->refcount = 1;
 	op->del = del;
+
+	shared_obj_init(&op->sptr, operator_del);
 
 	return PTR_PASS(op);
 }
@@ -134,7 +150,7 @@ const struct operator_s* operator_create(unsigned int ON, const long out_dims[ON
 const struct operator_s* operator_ref(const struct operator_s* x)
 {
 	if (NULL != x)
-		((struct operator_s*)x)->refcount++;
+		shared_obj_ref(&x->sptr);
 
 	return x;
 }
@@ -164,17 +180,7 @@ void operator_free(const struct operator_s* x)
 	if (NULL == x) 
 		return;
 
-	if (1 > --(((struct operator_s*)x)->refcount)) {
-
-		if (NULL != x->del)
-			x->del(x->data);
-
-		for (unsigned int i = 0; i < x->N; i++)
-			iovec_free(x->domain[i]);
-
-		free(x->domain);
-		free((void*)x);
-	}
+	shared_obj_destroy(&x->sptr);
 }
 
 
@@ -322,9 +328,9 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
 	o->op.domain = *PTR_PASS(dom);
 	o->op.data = &PTR_PASS(op)->base;
 	o->op.apply = op_p_apply;
-
-	o->op.refcount = 1;
 	o->op.del = op_p_del;
+
+	shared_obj_init(&o->op.sptr, operator_del);
 
 	if (NULL == del)
 		debug_printf(DP_WARN, "Warning: no delete function specified for operator_p_create! Possible memory leak.\n");

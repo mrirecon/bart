@@ -18,6 +18,7 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/shrdptr.h"
 
 #include "linop.h"
 
@@ -29,12 +30,10 @@ struct shared_data_s {
 
 	operator_data_t base;
 
-	void* data;
-
-	struct shared_data_s* next;
-	struct shared_data_s* prev;
-
+	linop_data_t* data;
 	del_fun_t del;
+
+	struct shared_ptr_s sptr;
 
 	union {
 
@@ -43,27 +42,15 @@ struct shared_data_s {
 	} u;
 };
 
-static void shared_unlink(struct shared_data_s* data)
-{
-	data->next->prev = data->prev;
-	data->prev->next = data->next;
-}
+
 
 static void shared_del(const operator_data_t* _data)
 {
 	struct shared_data_s* data = CONTAINER_OF(_data, struct shared_data_s, base);
 
-	if (data->next == data) {
-
-		assert(data == data->prev);
-		data->del(data->data);
-
-	} else {
-
-		shared_unlink(data);
-	}
+	shared_ptr_destroy(&data->sptr);
 	
-	free(data);
+	xfree(data);
 }
 
 static void shared_apply(const operator_data_t* _data, unsigned int N, void* args[N])
@@ -83,6 +70,14 @@ static void shared_apply_p(const operator_data_t* _data, float lambda, complex f
 	debug_trace("ENTER %p\n", data->u.apply_p);
 	data->u.apply_p(data->data, lambda, dst, src);
 	debug_trace("LEAVE %p\n", data->u.apply_p);
+}
+
+
+static void sptr_del(const struct shared_ptr_s* p)
+{
+	struct shared_data_s* data = CONTAINER_OF(p, struct shared_data_s, sptr);
+
+	data->del(data->data);
 }
 
 
@@ -106,9 +101,10 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 		shared_data[i]->data = data;
 		shared_data[i]->del = del;
 
-		// circular double-linked list
-		shared_data[i]->next = shared_data[(i + 1) % 4];
-		shared_data[i]->prev = shared_data[(i + 3) % 4];
+		if (0 == i)
+			shared_ptr_init(&shared_data[i]->sptr, sptr_del);
+		else
+			shared_ptr_copy(&shared_data[i]->sptr, &shared_data[0]->sptr);
 	}
 
 	shared_data[0]->u.apply = forward;
@@ -128,8 +124,8 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 
 	} else {
 
-		shared_unlink(shared_data[2]);
-		free(shared_data[2]);
+		shared_ptr_destroy(&shared_data[2]->sptr);
+		xfree(shared_data[2]);
 		lo->normal = NULL;
 	}
 
@@ -139,7 +135,7 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 	
 	} else {
 
-		shared_unlink(shared_data[3]);
+		shared_ptr_destroy(&shared_data[3]->sptr);
 		xfree(shared_data[3]);
 		lo->norm_inv = NULL;
 	}
