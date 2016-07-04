@@ -14,7 +14,8 @@
 struct buf_s {
 
 	void* data;
-	bool owner;
+	size_t size;
+	void (*del)(void* data, size_t size);
 
 	struct shared_obj_s sptr;
 };
@@ -31,22 +32,23 @@ static void buf_del(const struct shared_obj_s* sptr)
 {
 	struct buf_s* p = CONTAINER_OF(sptr, struct buf_s, sptr);
 
-	if (p->owner)
-		md_free(p->data);
+	if (NULL != p->del)
+		p->del(p->data, p->size);
 
 	xfree(p);
 }
 
 
-na na_wrap(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t size)
+na na_wrap_cb(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t elsize, size_t size, void (*del)(void* data, size_t size))
 {
 	PTR_ALLOC(struct na_s, n);
 
-	iovec_init2(&n->iov, N, *dims, *strs, size);
+	iovec_init2(&n->iov, N, *dims, *strs, elsize);
 
 	n->buf = TYPE_ALLOC(struct buf_s);
 	n->buf->data = data;
-	n->buf->owner = false;
+	n->buf->del = del;
+	n->buf->size = size;
 
 	n->offset = 0;
 
@@ -54,16 +56,26 @@ na na_wrap(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* d
 
 	return PTR_PASS(n);
 }
-	
-na na_new(unsigned int N, const long (*dims)[N], size_t size)
+
+na na_wrap(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t elsize)
 {
-	void* data = md_alloc(N, *dims, size);
+	return na_wrap_cb(N, dims, strs, data, elsize, 0, NULL);
+}
+
+static void buf_free(void* data, size_t size)
+{
+	UNUSED(size);
+	xfree(data);
+}
+
+na na_new(unsigned int N, const long (*dims)[N], size_t elsize)
+{
+	void* data = md_alloc(N, *dims, elsize);
 	
 	long strs[N];
-	md_calc_strides(N, strs, *dims, size);
+	md_calc_strides(N, strs, *dims, elsize);
 	
-	na n = na_wrap(N, dims, &strs, data, size);
-	n->buf->owner = true;
+	na n = na_wrap_cb(N, dims, &strs, data, elsize, md_calc_size(N, *dims) * elsize, buf_free);
 	return n;
 }
 

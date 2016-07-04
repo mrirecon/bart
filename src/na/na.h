@@ -12,6 +12,8 @@ struct long_array_s {
 
 
 extern na na_wrap(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t size);
+extern na na_wrap_cb(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t elsize, size_t size, void (*del)(void* data, size_t size));
+
 extern na na_new(unsigned int N, const long (*dims)[N], size_t size);
 extern void na_free(na x);
 
