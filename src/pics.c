@@ -296,7 +296,7 @@ int main_pics(int argc, char* argv[])
 	if (NULL == traj_file)
 		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
 	else
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, low_mem, (struct operator_s**)&precond_op);
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, low_mem, pattern, (struct operator_s**)&precond_op);
 
 	// apply scaling
 
@@ -494,13 +494,6 @@ int main_pics(int argc, char* argv[])
 				pat_dims, (NULL == traj_file) ? pattern : NULL,
 				italgo, iconf, nr_penalties, thresh_ops,
 				(ADMM == algo) ? trafos : NULL, ksp_dims, precond_op);
-
-	if (use_gpu) 
-#ifdef USE_CUDA
-		op = operator_gpu_wrapper(op);
-#else
-		assert(0);
-#endif
 
 	operator_apply(op, DIMS, img_dims, image, DIMS, ksp_dims, kspace);
 
