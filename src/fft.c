@@ -11,11 +11,12 @@
 #include <complex.h>
 #include <stdlib.h>
 
-#include "num/multind.h"
-#include "num/fft.h"
 #include "num/init.h"
 
-#include "misc/mmio.h"
+#include "na/na.h"
+#include "na/io.h"
+#include "na/math.h"
+
 #include "misc/opts.h"
 #include "misc/misc.h"
 
@@ -45,22 +46,22 @@ int main_fft(int argc, char* argv[])
 
 	num_init();
 
-	long dims[DIMS];
-	complex float* idata = load_cfl(argv[2], DIMS, dims);
-	complex float* data = create_cfl(argv[3], DIMS, dims);
+	na in = na_load(argv[2]);
+	na out = na_create(argv[3], na_rank(in), NA_DIMS(in), na_element_size(in));
 
 	unsigned long flags = labs(atol(argv[1]));
 
+	na_copy(out, in);
+	na_free(in);
 
-	md_copy(DIMS, dims, data, idata, sizeof(complex float));
-	unmap_cfl(DIMS, dims, idata);
+	__typeof__(na_fft)* ffts[2][2] = {
+		{ na_fftc, na_ifftc },
+		{ na_fftuc, na_ifftuc },
+	};
 
-	if (unitary)
-		fftscale(DIMS, dims, flags, data, data);
+	ffts[unitary][inv](flags, out, out);
 
-	(inv ? ifftc : fftc)(DIMS, dims, flags, data, data);
-
-	unmap_cfl(DIMS, dims, data);
+	na_free(out);
 	exit(0);
 }
 
