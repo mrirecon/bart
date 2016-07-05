@@ -18,7 +18,9 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
+#include "misc/debug.h"
 
+#include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/init.h"
 
@@ -37,10 +39,12 @@ static const char help_str[] =
 int main_nrmse(int argc, char* argv[])
 {
 	float test = -1.;
+	bool auto_scale = false;
 
 	const struct opt_s opts[] = {
 
-		OPT_FLOAT('t', &test, "", "()"),
+		OPT_FLOAT('t', &test, "eps", "compare to eps"),
+		OPT_SET('s', &auto_scale, "automatic (complex) scaling"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -49,13 +53,27 @@ int main_nrmse(int argc, char* argv[])
 
 	long ref_dims[DIMS];
 	long in_dims[DIMS];
+
 	complex float* ref = load_cfl(argv[1], DIMS, ref_dims);
 	complex float* in = load_cfl(argv[2], DIMS, in_dims);
 
-	for (int i = 0; i < DIMS; i++)
-		assert(in_dims[i] == ref_dims[i]);
+	assert(md_check_compat(DIMS, 0u, in_dims, ref_dims));
+
+	if (auto_scale) {
+
+		complex float sc = md_zscalar(DIMS, ref_dims, in, ref);
+
+		float n = md_znorm(DIMS, ref_dims, ref);
+
+		sc /= n * n;
+
+		debug_printf(DP_INFO, "Scaled by: %f+%fi\n", crealf(sc), cimagf(sc));
+
+		md_zsmul(DIMS, ref_dims, ref, ref, sc);
+	}
 
 	float err = md_znrmse(DIMS, ref_dims, ref, in);
+
 	printf("%f\n", err);
 
 	unmap_cfl(DIMS, ref_dims, ref);
