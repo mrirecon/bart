@@ -88,6 +88,16 @@ matrix:
         - sudo apt-get install -qq --no-install-recommends cuda-drivers cuda-core-7.5 cuda-cudart-dev-7.5 cuda-cufft-dev-7.5 cuda-cublas-dev-7.5
         - sudo apt-get install -qq liblapacke-dev
 
+    - env: MACPORTS=0
+      os: osx
+      compiler: gcc-4.7
+      script:
+        - make test
+        - make utest
+      before_install:
+        - brew update
+        - brew install fftw gcc47 homebrew/science/openblas
+
 script:
   - make bart
   - make all
