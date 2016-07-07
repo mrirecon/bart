@@ -19,6 +19,7 @@
 #include "num/lapack.h"
 
 #include "misc/debug.h"
+#include "misc/misc.h"
 
 #include "calib/calib.h"
 #include "calib/calmat.h"
@@ -153,7 +154,6 @@ static void save_noise_sv(const long kernel_dims[3], const long calreg_dims[4], 
     free(name);
     fclose(fp);
 
-
 }
 
 /**
@@ -176,6 +176,7 @@ static void save_noise_sv(const long kernel_dims[3], const long calreg_dims[4], 
 static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, float* E, long num_iters)
 {
     
+
     if (NULL != getenv("TOOLBOX_PATH") && 1 == load_noise_sv(kernel_dims, calreg_dims, L, E)) {
         return;
     }
@@ -183,23 +184,29 @@ static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, fl
     debug_printf(DP_DEBUG1, "NOTE: Running simulations to figure out noise singular values.\n");
     debug_printf(DP_DEBUG1, "      The simulation results are saved if TOOLBOX_PATH is set.\n");
 
-    float tmpE[L];
+    long N = kernel_dims[0] * kernel_dims[1] * kernel_dims[2] * calreg_dims[3]; 
+
+    float tmpE[N];
     long T = md_calc_size(4, calreg_dims) * sizeof(complex float);
 
     complex float ncalreg[T];
     noise_calreg(T, ncalreg);
 
-    long N = kernel_dims[0] * kernel_dims[1] * kernel_dims[2] * calreg_dims[3]; 
-    complex float (*cov)[N] = calloc(N * N, sizeof(complex float)); // Place holder. Not used for anything.
-    calmat_svd(kernel_dims, N, cov, E, calreg_dims, ncalreg);
+    PTR_ALLOC(complex float[N][N], vec);
+    covariance_function(kernel_dims, N, *vec, calreg_dims, ncalreg);
+    lapack_eig(N, tmpE, *vec);
 
+    for (int idx = 0; idx < L; idx ++)
+        E[idx] = sqrtf(tmpE[N-idx-1]);
+    
     for (long idx = 0; idx < num_iters - 1; idx ++) {
 
         noise_calreg(T, ncalreg);
-        calmat_svd(kernel_dims, N, cov, tmpE, calreg_dims, ncalreg);
+        covariance_function(kernel_dims, N, *vec, calreg_dims, ncalreg);
+        lapack_eig(N, tmpE, *vec);
 
         for (long jdx = 0; jdx < L; jdx ++) {
-            E[jdx] += tmpE[jdx];
+            E[jdx] += sqrtf(tmpE[N-jdx-1]);
         }
 
     }
@@ -211,7 +218,7 @@ static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, fl
     if (NULL != getenv("TOOLBOX_PATH"))
         save_noise_sv(kernel_dims, calreg_dims, L, E);
 
-    free(cov);
+    PTR_FREE(vec);
 
 }
 
@@ -272,17 +279,19 @@ extern float estvar_calreg(const long kernel_dims[3], const long calreg_dims[4],
             (calreg_dims[2] - kernel_dims[2] + 1),
         calreg_dims[3] * kernel_dims[0] * kernel_dims[1] * kernel_dims[2]};
 
-    // Dimension (or rather, just length) of the vector of singular values.
     long L = calmat_dims[0] > calmat_dims[1] ? calmat_dims[1] : calmat_dims[0];
     long N = calmat_dims[1]; //Number of columns.
 
-
-    // Taking the SVD of the calibration region.
+    float tmpE[N];
     float S[L];
-    complex float (*cov)[N] = calloc(N * N, sizeof(complex float)); // Place holder. Not used for anything.
-    calmat_svd(kernel_dims, N, cov, S, calreg_dims, calreg);
-    free(cov);
 
+    PTR_ALLOC(complex float[N][N], vec);
+    covariance_function(kernel_dims, N, *vec, calreg_dims, calreg);
+    lapack_eig(N, tmpE, *vec);
+
+    for (int idx = 0; idx < L; idx ++)
+        S[idx] = sqrtf(tmpE[N-idx-1]);
+    
     return estvar_sv(L, S, kernel_dims, calreg_dims);
 
 }
