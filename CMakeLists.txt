@@ -34,11 +34,63 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Release")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -ffast-math -O3") # -Wall -Wextra")
 endif()
 
-find_package(CBLAS NO_MODULE REQUIRED)
-message(STATUS "CBLAS_INCLUDE_DIRS: ${CBLAS_INCLUDE_DIRS}")
-include_directories(${CBLAS_INCLUDE_DIRS})
-find_package(LAPACKE NO_MODULE REQUIRED)
-include_directories(${LAPACKE_INCLUDE_DIRS})
+##==============================================================
+## Switch based on the linear algebra optimized library to 
+## use.  Note that the first library successfully found
+## will be used 
+##
+## -*-*- Try OpenBLAS first
+if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "OpenBLAS")
+  include( ${CMAKE_CURRENT_LIST_DIR}/cmake/FindOpenBLAS.cmake )
+  if(OpenBLAS_FOUND)
+     set(LINALG_VENDOR_FOUND TRUE)
+     set(LINALG_VENDOR "OpenBLAS")
+     set(LINALG_INCLUDE_DIRS ${OpenBLAS_INCLUDE_DIRS})
+     if(OpenBLAS_HAS_PARALLEL_LIBRARIES)
+       # HACK!! set(LINALG_LIBRARIES ${OpenBLAS_PARALLEL_LIBRARIES})
+        set(LINALG_LIBRARIES ${OpenBLAS_LIBRARIES})
+     else()
+        set(LINALG_LIBRARIES ${OpenBLAS_LIBRARIES})
+     endif()
+  endif()
+endif()
+
+##
+## -*-*- Try ATLAS version next
+if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "ATLAS")
+  include( ${CMAKE_CURRENT_LIST_DIR}/cmake/FindATLAS.cmake )
+  if(ATLAS_FOUND)
+     set(LINALG_VENDOR_FOUND TRUE)
+     set(LINALG_VENDOR "ATLAS")
+     set(LINALG_INCLUDE_DIRS ${ATLAS_INCLUDE_DIRS})
+     set(LINALG_LIBRARIES ${ATLAS_LIBRARIES})
+  endif()
+endif()
+
+##
+## -*-*- Try Generic LAPACKE version Last
+if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "LAPACKE")
+  ## Only very new versions of LAPACK (> 3.5.0) have built in support
+  ## for cblas and lapacke.  This method is not very robust to older
+  ## versions of lapack that might be able to be supported.
+  ## It is know to work local builds
+  include( ${CMAKE_CURRENT_LIST_DIR}/cmake/FindLAPACKE.cmake )
+  if(LAPACKE_FOUND)
+     set(LINALG_VENDOR_FOUND TRUE)
+     set(LINALG_VENDOR "LAPACKE")
+     set(LINALG_INCLUDE_DIRS ${LAPACKE_INCLUDE_DIRS})
+     set(LINALG_LIBRARIES ${LAPACKE_LIBRARIES})
+  endif()
+endif()
+
+##
+## -*-*- Finally, set include_directories -*-*-*
+if(NOT LINALG_VENDOR_FOUND)
+   message(FATAL_ERROR "No valid linear algebra libraries found!")
+endif()
+include_directories(${LINALG_INCLUDE_DIRS})
+
+##======================================================================
 set(USE_FFTWF ON) # Only find single precision fftw
 find_package(FFTW REQUIRED)
 message(STATUS "FFTWF_LIBRARIES: ${FFTWF_LIBRARIES}")
@@ -46,7 +98,6 @@ message(STATUS "FFTWF_LIBRARIES: ${FFTWF_LIBRARIES}")
 find_package(PNG REQUIRED)
 add_definitions(${PNG_DEFINITIONS})
 include_directories(${PNG_INCLUDE_DIRS})
-
 
 execute_process(COMMAND ${CMAKE_CURRENT_LIST_DIR}/git-version.sh OUTPUT_VARIABLE BART_VERSION_STRING WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 string(STRIP ${BART_VERSION_STRING} BART_VERSION_STRING) ## Remove trailing whitespace (return characters)
@@ -91,18 +142,14 @@ list(APPEND ALLPROGS ${TSIM})
 set(TIO toimg)
 list(APPEND ALLPROGS ${TIO})
 
-set(FORTRAN_SUPPORT_LIB gfortran)
-
 file(READ src/main.c MAIN_TEMPLATE_STRING)
 foreach(curr_prog ${ALLPROGS})
   set(main_real ${curr_prog})
   string(REPLACE "main_real" "main_${curr_prog}" CURR_PROG_STRING "${MAIN_TEMPLATE_STRING}")
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${curr_prog}.c "${CURR_PROG_STRING}")
   add_executable(${curr_prog} ${CMAKE_CURRENT_BINARY_DIR}/${curr_prog}.c)
-  target_link_libraries(${curr_prog} bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LAPACKE_LIBRARIES} ${LAPACK_LIBRARIES} ${CBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${FORTRAN_SUPPORT_LIB} )
+  target_link_libraries(${curr_prog} bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES} )
 endforeach()
-
-
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/utests)
 set(UNIT_TEST_SRC utests/test_batchsvd.c  utests/test_flpmath.c   utests/test_pattern.c   utests/test_splines.c)
@@ -116,7 +163,7 @@ string(REPLACE "UTESTS" "${UTESTS}" TEST_DRIVER_CODE "${TEST_DRIVER_TEMPLATE}")
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/utest.c "${TEST_DRIVER_CODE}")
 #configure_file(utests/utest.c.in ${CMAKE_CURRENT_BINARY_DIR}/utest.c @ONLY)
 add_executable(utest ${CMAKE_CURRENT_BINARY_DIR}/utest.c ${UNIT_TEST_SRC})
-target_link_libraries(utest bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LAPACKE_LIBRARIES} ${LAPACK_LIBRARIES} ${CBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${FORTRAN_SUPPORT_LIB} )
+target_link_libraries(utest bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
 
 #-----------------------------------------------------------------------------
 include(CTest)
