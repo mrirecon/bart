@@ -45,6 +45,8 @@ extern void cholesky_solve_double(int N, complex double x[N], const complex doub
 extern complex float vec_mean(long D, const complex float src[D]);
 extern void vec_axpy(long N, complex float x[N], complex float alpha, const complex float y[N]);
 extern void vec_sadd(long D, complex float alpha, complex float dst[D], const complex float src[D]);
+extern void thomas_algorithm(int N, complex float f[N], const complex float A[N][3], const complex float d[N]);
+
 
 #if __GNUC__ < 5
 #include "misc/pcaa.h"

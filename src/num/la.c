@@ -531,5 +531,25 @@ void (cholesky_solve)(int N, complex float x[N], const complex float L[N][N], co
 
 
 
+void thomas_algorithm(int N, complex float f[N], const complex float A[N][3], const complex float d[N])
+{
+	complex float c[N];
+	complex float e[N];
 
+	c[0] = A[0][2] / A[0][1];
+	e[0] = d[0] / A[0][1];
+
+	for (int i = 1; i < N; i++) {
+
+		c[i] = A[i][2] / (A[i][1] - c[i - 1] * A[i][0]);
+		e[i] = (d[i] - A[i][0] * e[i - 1]) / (A[i][1] - A[i][0] * c[i - 1]);
+	}
+
+	// backsubstitution
+
+	f[N - 1] = e[N - 1];
+
+	for (int i = N - 2; 0 <= i; i--)
+		f[i] = e[i] - c[i] * f[i + 1];
+}
 
