@@ -38,6 +38,7 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #=============================================================================
 #
+set(OpenBLAS_HAS_PARALLEL_LIBRARIES FALSE)
 
 set(OpenBLAS_SEARCH_PATHS
   ${OpenBLAS_DIR}
@@ -88,7 +89,6 @@ if(EXISTS ${OpenBLAS_LIB})
    get_filename_component(OpenBLAS_LIB_DIR i${OpenBLAS_LIB} DIRECTORY)
 endif()
 ## Find the named parallel version of openblas
-set(OpenBLAS_HAS_PARALLEL_LIBRARIES OFF)
 set(OpenBLAS_SEARCH_VERSIONS ${OpenBLAS_VERSION_STRING} 0.2.19 0.2.18 0.2.17 0.2.16)
 list(REMOVE_DUPLICATES OpenBLAS_SEARCH_VERSIONS)
 foreach(checkVersion ${OpenBLAS_SEARCH_VERSIONS})
@@ -124,7 +124,7 @@ endif()
 # Checks 'REQUIRED', 'QUIET' and versions.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OpenBLAS FOUND_VAR OpenBLAS_FOUND
-  REQUIRED_VARS OpenBLAS_HAS_PARALLEL_LIBRARIES
+  REQUIRED_VARS 
                 OpenBLAS_CBLAS_INCLUDE_DIR
                 OpenBLAS_LAPACKE_INCLUDE_DIR
                 OpenBLAS_LIB
@@ -134,7 +134,13 @@ find_package_handle_standard_args(OpenBLAS FOUND_VAR OpenBLAS_FOUND
 if (OpenBLAS_FOUND)
   set(OpenBLAS_INCLUDE_DIRS ${OpenBLAS_CBLAS_INCLUDE_DIR} ${OpenBLAS_CBLAS_INCLUDE_DIR})
   list(REMOVE_DUPLICATES OpenBLAS_INCLUDE_DIRS)
-  list(APPEND OpenBLAS_LIBRARIES ${OpenBLAS_LIB})
+  if("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*" OR
+     "${CMAKE_C_COMPILER_ID}" MATCHES ".*GNU.*" OR
+     "${CMAKE_C_COMPILER_ID}" MATCHES ".*Intel.*"
+      ) #NOT MSVC
+    set(MATH_LIB m)
+  endif()
+  list(APPEND OpenBLAS_LIBRARIES ${OpenBLAS_LIB} ${MATH_LIB})
   if(OpenBLAS_HAS_PARALLEL_LIBRARIES)
     list(APPEND OpenBLAS_PARALLEL_LIBRARIES ${OpenBLAS_PARALLEL_LIB})
   endif()
@@ -153,12 +159,12 @@ mark_as_advanced(
 )
 
 ## For debugging
-#message(STATUS "OpenBLAS_FOUND                  :${OpenBLAS_FOUND}:  - set to true if the library is found")
-#message(STATUS "OpenBLAS_INCLUDE_DIRS           :${OpenBLAS_INCLUDE_DIRS}: - list of required include directories")
-#message(STATUS "OpenBLAS_LIBRARIES              :${OpenBLAS_LIBRARIES}: - list of libraries to be linked")
-#message(STATUS "OpenBLAS_HAS_PARALLEL_LIBRARIES :${OpenBLAS_HAS_PARALLEL_LIBRARIES}: - determine if there are parallel libraries compiled")
-#message(STATUS "OpenBLAS_PARALLEL_LIBRARIES     :${OpenBLAS_PARALLEL_LIBRARIES}: - list of libraries for parallel implementations")
-#message(STATUS "OpenBLAS_VERSION_MAJOR          :${OpenBLAS_VERSION_MAJOR}: - major version number")
-#message(STATUS "OpenBLAS_VERSION_MINOR          :${OpenBLAS_VERSION_MINOR}: - minor version number")
-#message(STATUS "OpenBLAS_VERSION_PATCH          :${OpenBLAS_VERSION_PATCH}: - patch version number")
-#message(STATUS "OpenBLAS_VERSION_STRING         :${OpenBLAS_VERSION_STRING}: - version number as a string")
+message(STATUS "OpenBLAS_FOUND                  :${OpenBLAS_FOUND}:  - set to true if the library is found")
+message(STATUS "OpenBLAS_INCLUDE_DIRS           :${OpenBLAS_INCLUDE_DIRS}: - list of required include directories")
+message(STATUS "OpenBLAS_LIBRARIES              :${OpenBLAS_LIBRARIES}: - list of libraries to be linked")
+message(STATUS "OpenBLAS_HAS_PARALLEL_LIBRARIES :${OpenBLAS_HAS_PARALLEL_LIBRARIES}: - determine if there are parallel libraries compiled")
+message(STATUS "OpenBLAS_PARALLEL_LIBRARIES     :${OpenBLAS_PARALLEL_LIBRARIES}: - list of libraries for parallel implementations")
+message(STATUS "OpenBLAS_VERSION_MAJOR          :${OpenBLAS_VERSION_MAJOR}: - major version number")
+message(STATUS "OpenBLAS_VERSION_MINOR          :${OpenBLAS_VERSION_MINOR}: - minor version number")
+message(STATUS "OpenBLAS_VERSION_PATCH          :${OpenBLAS_VERSION_PATCH}: - patch version number")
+message(STATUS "OpenBLAS_VERSION_STRING         :${OpenBLAS_VERSION_STRING}: - version number as a string")
