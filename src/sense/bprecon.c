@@ -1,10 +1,10 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2016. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2013-2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2013-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014      Frank Ong <frankong@berkeley.edu>
  *
  *
@@ -159,7 +159,7 @@ void bpsense_recon(struct bpsense_conf* conf, const long dims[DIMS], complex flo
 	// -----------------------------------------------------------
 	// forward model
 
-	struct linop_s* sense_op = sense_init(dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps, use_gpu);
+	struct linop_s* sense_op = sense_init(dims, FFT_FLAGS, FFT_FLAGS|SENS_FLAGS, maps, use_gpu);
 
 	if (conf->rvc) {
 

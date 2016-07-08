@@ -1,11 +1,12 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2016. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014 Frank Ong <uecker@eecs.berkeley.edu>
+ * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2016 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
  *
  * Ra JB, Rim CY. Fast imaging using subencoding data sets from multiple detectors. 
@@ -183,17 +184,18 @@ static struct maps_data* maps_create_data(const long max_dims[DIMS],
  * Create maps operator, m = S x
  *
  * @param max_dims maximal dimensions across all data structures
+ * @param fft_flags active dimensions for FFT, e.g. 6 for 2D, 7 for 3D
  * @param sens_flags active map dimensions
  * @param sens sensitivities
  * @param gpu TRUE if using gpu
  */
-struct linop_s* maps_create(const long max_dims[DIMS], 
+struct linop_s* maps_create(const long max_dims[DIMS], unsigned int fft_flags,
 			unsigned int sens_flags, const complex float* sens, bool gpu)
 {
 	struct maps_data* data = maps_create_data(max_dims, sens_flags, sens, gpu);
 
 	// scale the sensitivity maps by the FFT scale factor
-	fftscale(DIMS, data->mps_dims, FFT_FLAGS, data->sens, data->sens);
+	fftscale(DIMS, data->mps_dims, fft_flags, data->sens, data->sens);
 
 	return linop_create(DIMS, data->ksp_dims, DIMS, data->img_dims, &data->base,
 			maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
@@ -233,18 +235,19 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
  * where F is the Fourier transform and S is the sensitivity maps
  *
  * @param max_dims maximal dimensions across all data structures
+ * @param fft_flags active dimensions for FFT, e.g. 6 for 2D, 7 for 3D
  * @param sens_flags active map dimensions
  * @param sens sensitivities
  * @param gpu TRUE if using gpu
  */
-struct linop_s* sense_init(const long max_dims[DIMS], 
+struct linop_s* sense_init(const long max_dims[DIMS], unsigned int fft_flags, 
 			unsigned int sens_flags, const complex float* sens, bool gpu)
 {
 	long ksp_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, ksp_dims, max_dims);
 
-	struct linop_s* fft = linop_fft_create(DIMS, ksp_dims, FFT_FLAGS, gpu);
-	struct linop_s* maps = maps_create(max_dims, sens_flags, sens, gpu);
+	struct linop_s* fft = linop_fft_create(DIMS, ksp_dims, fft_flags, gpu);
+	struct linop_s* maps = maps_create(max_dims, fft_flags, sens_flags, sens, gpu);
 
 	struct linop_s* sense_op = linop_chain(maps, fft);
 

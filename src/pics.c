@@ -1,4 +1,4 @@
-/* Copyright 2013-2015. The Regents of the University of California.
+/* Copyright 2013-2016. The Regents of the University of California.
  * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -6,7 +6,7 @@
  * Authors:
  * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  */
 
@@ -110,6 +110,7 @@ int main_pics(int argc, char* argv[])
 	bool fast = false;
 	float admm_rho = iter_admm_defaults.rho;
 	unsigned int admm_maxitercg = iter_admm_defaults.maxitercg;
+	unsigned int fft_flags = FFT_FLAGS;
 
 	struct opt_reg_s ropts;
 	assert(0 == opt_reg_init(&ropts));
@@ -144,6 +145,7 @@ int main_pics(int argc, char* argv[])
 		OPT_SELECT('m', enum algo_t, &ropts.algo, ADMM, "Select ADMM"),
 		OPT_FLOAT('w', &scaling, "val", "scaling"),
 		OPT_SET('S', &scale_im, "Re-scale the image after reconstruction"),
+		OPT_UINT('a', &fft_flags, "flags", "Bitmask for FFT dimensions"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -243,8 +245,8 @@ int main_pics(int argc, char* argv[])
 
 	if (NULL == traj_file) {
 
-		fftmod(DIMS, ksp_dims, FFT_FLAGS, kspace, kspace);
-		fftmod(DIMS, map_dims, FFT_FLAGS, maps, maps);
+		fftmod(DIMS, ksp_dims, fft_flags, kspace, kspace);
+		fftmod(DIMS, map_dims, fft_flags, maps, maps);
 	}
 
 	// apply fov mask to sensitivities
@@ -266,7 +268,7 @@ int main_pics(int argc, char* argv[])
 	const struct operator_s* precond_op = NULL;
 
 	if (NULL == traj_file)
-		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps, use_gpu);
+		forward_op = sense_init(max_dims, fft_flags, FFT_FLAGS|SENS_FLAGS, maps, use_gpu);
 	else
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, use_gpu, (struct operator_s**) &precond_op);
 

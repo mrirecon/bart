@@ -1,4 +1,4 @@
-/* Copyright 2013-2015. The Regents of the University of California.
+/* Copyright 2013-2016. The Regents of the University of California.
  * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -6,7 +6,7 @@
  * Authors:
  * 2012-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  */
 
@@ -437,7 +437,7 @@ int main_sqpics(int argc, char* argv[])
 	const struct operator_s* precond_op = NULL;
 
 	if (NULL == traj_file)
-		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps, use_gpu);
+		forward_op = sense_init(max_dims, FFT_FLAGS, FFT_FLAGS|SENS_FLAGS, maps, use_gpu);
 	else
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, use_gpu, (struct operator_s**) &precond_op);
 

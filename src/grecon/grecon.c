@@ -1,9 +1,10 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2016. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2016 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
  */
 
@@ -191,7 +192,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 
 		omp_set_lock(&gpulock[gpun]);
 
-		sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, true);
+		sop = sense_init(dims1, FFT_FLAGS, FFT_FLAGS|SENS_FLAGS, sens1, true);
 		sense_recon_gpu(conf, dims1, image1, sop, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL, NULL);
 		//linop_free(sop);
 		omp_unset_lock(&gpulock[gpun]);
@@ -199,7 +200,7 @@ void grecon(struct grecon_conf* param,  const long dims1[DIMS], complex float* o
 	} else
 #endif
 	{
-		sop = sense_init(dims1, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, sens1, false);
+		sop = sense_init(dims1, FFT_FLAGS, FFT_FLAGS|SENS_FLAGS, sens1, false);
 		sense_recon(conf, dims1, image1, sop, pat1_dims, pattern, italgo, iconf, thresh_op, ksp1_dims, kspace1, NULL, NULL);
 		//linop_free(sop);
 	}

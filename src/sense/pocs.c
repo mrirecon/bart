@@ -1,11 +1,11 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2016. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012, 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014, 2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
  *
  * Samsonov AA, Kholmovski EG, Parker DL, Johnson CR. POCSENSE: POCS-based
@@ -203,7 +203,7 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 	md_copy_strides(DIMS, data.strs_ksp, strs_ksp);
 	md_copy_strides(DIMS, data.strs_pat, strs_pat);
 
-	data.sense_op = sense_init(dims, FFT_FLAGS|MAPS_FLAG|COIL_FLAG, maps, use_gpu);
+	data.sense_op = sense_init(dims, FFT_FLAGS, FFT_FLAGS|SENS_FLAGS, maps, use_gpu);
 
 	data.thresh = thresh_op;
 
