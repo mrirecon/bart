@@ -36,11 +36,13 @@ static const char help_str[] = "Maximum (minimum) intensity projection (MIP) alo
 int main_mip(int argc, char* argv[argc])
 {
 
+	bool do_abs = false;
 	bool mIP = false;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('m', &mIP, "minimum" ),
+		OPT_SET('a', &mIP, "do absolute value first" ),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -59,7 +61,11 @@ int main_mip(int argc, char* argv[argc])
 	complex float* out = create_cfl(argv[3], DIMS, odims);
 
 	complex float* tmp = md_alloc(DIMS, idims, CFL_SIZE);
-	md_zabs(DIMS, idims, tmp, in);
+
+	if (do_abs)
+		md_zabs(DIMS, idims, tmp, in);
+	else
+		md_copy(DIMS, idims, tmp, in, CFL_SIZE);
 
 	long istr[DIMS];
 	long ostr[DIMS];
