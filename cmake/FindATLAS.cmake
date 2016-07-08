@@ -104,6 +104,10 @@ find_library(LAPACK_LIB
                  NAMES ${ATLAS_THREAD_PREFIX}lapack
                  PATHS ${LAPACKE_SEARCH_PATHS}
                  PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
+find_library(LAPACKE_LIB 
+                 NAMES ${ATLAS_THREAD_PREFIX}lapacke
+                 PATHS ${LAPACKE_SEARCH_PATHS}
+                 PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
 find_library(F77BLAS_LIB 
                  NAMES ${ATLAS_THREAD_PREFIX}f77blas
                  PATHS ${LAPACKE_SEARCH_PATHS}
@@ -132,10 +136,11 @@ find_package_handle_standard_args(ATLAS FOUND_VAR ATLAS_FOUND
   REQUIRED_VARS
                 ATLAS_CBLAS_INCLUDE_DIR
                 ATLAS_LAPACKE_INCLUDE_DIR
-                ATLAS_LIB
-                CBLAS_LIB
+                LAPACKE_LIB
                 LAPACK_LIB
                 F77BLAS_LIB
+                CBLAS_LIB
+                ATLAS_LIB
   VERSION_VAR ATLAS_VERSION_STRING
 )
 if (ATLAS_FOUND)
@@ -148,7 +153,7 @@ if (ATLAS_FOUND)
       ) #NOT MSVC
     set(MATH_LIB m)
   endif()
-  list(APPEND ATLAS_LIBRARIES ${LAPACK_LIB} ${F77BLAS_LIB} ${CBLAS_LIB} ${ATLAS_LIB} ${MATH_LIB})
+  list(APPEND ATLAS_LIBRARIES ${LAPACKE_LIB} ${LAPACK_LIB} ${F77BLAS_LIB} ${CBLAS_LIB} ${ATLAS_LIB} ${MATH_LIB})
 endif()
 
 mark_as_advanced(
