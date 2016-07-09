@@ -14,7 +14,7 @@
 
 #include "num/blas.h"
 #include "num/lapack.h"
-#include "num/la.h"
+#include "num/linalg.h"
 
 #include "batchsvd.h"
 

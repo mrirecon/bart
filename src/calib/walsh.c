@@ -14,7 +14,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
-#include "num/la.h"
+#include "num/linalg.h"
 
 #include "misc/mri.h"
 #include "misc/misc.h"

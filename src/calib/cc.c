@@ -30,7 +30,7 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/lapack.h"
-#include "num/la.h"
+#include "num/linalg.h"
 
 #include "misc/debug.h"
 #include "misc/mri.h"

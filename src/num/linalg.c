@@ -28,7 +28,7 @@
 #endif
 #include "num/rand.h"
 
-#include "la.h"
+#include "linalg.h"
 
 
 

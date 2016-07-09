@@ -13,7 +13,7 @@
 #include "num/flpmath.h"
 #include "num/casorati.h"
 #include "num/lapack.h"
-#include "num/la.h"
+#include "num/linalg.h"
 
 #include "misc/misc.h"
 #include "misc/mri.h"

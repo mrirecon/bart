@@ -28,7 +28,7 @@
 #include "num/multind.h"
 #include "num/fft.h"
 #include "num/flpmath.h"
-#include "num/la.h"
+#include "num/linalg.h"
 #include "num/lapack.h"
 #include "num/casorati.h"
 #include "num/rand.h"

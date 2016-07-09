@@ -8,7 +8,7 @@
 
 #include <math.h>
 
-#include "num/la.h"
+#include "num/linalg.h"
 
 #include "utest.h"
 

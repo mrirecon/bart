@@ -22,7 +22,7 @@
 #include "num/flpmath.h"
 #include "num/lapack.h"
 #include "num/blas.h"
-#include "num/la.h"
+#include "num/linalg.h"
 #include "num/ops.h"
 #include "num/iovec.h"
 #include "num/fft.h"
