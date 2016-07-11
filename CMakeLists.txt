@@ -4,7 +4,15 @@
 # \author Hans J. Johnson <hans-johnson@uiowa.edu>
 
 cmake_minimum_required(VERSION 2.8.7)
-project(bart C)
+if(CMAKE_VERSION VERSION_LESS 3.1.3)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99") 
+else() 
+  set(CMAKE_C_STANDARD 99)
+endif()
+
+#NOTE: By specifying Fortran here, linking to lapack becomes easier
+# See https://blog.kitware.com/fortran-for-cc-developers-made-easier-with-cmake/  
+project(bart Fortran C)
 
 enable_language(C)
 

@@ -60,8 +60,8 @@ if(LAPACKE_FOUND)
     set(LAPACKE_VERSION_STRING ${PACKAGE_VERSION})
     unset(PACKAGE_VERSION) # Use cmake conventional naming
   endif()
-  find_package(LAPACK NO_MODULE ${LAPACKE_VERSION_STRING} EXACT QUIET) #Require matching versions here!
-  find_package(BLAS NO_MODULE ${LAPACKE_VERSION_STRING} EXACT QUIET)   #Require matching versions here!
+  find_package(LAPACK NO_MODULE QUIET) #Require matching versions here!
+  find_package(BLAS NO_MODULE QUIET)   #Require matching versions here!
 endif()
 
 ##################################################################################################
@@ -129,7 +129,13 @@ find_package_handle_standard_args(LAPACKE FOUND_VAR LAPACKE_FOUND
 if (LAPACKE_FOUND)
   set(LAPACKE_INCLUDE_DIRS ${LAPACKE_CBLAS_INCLUDE_DIR} ${LAPACKE_CBLAS_INCLUDE_DIR})
   list(REMOVE_DUPLICATES LAPACKE_INCLUDE_DIRS)
-  list(APPEND LAPACKE_LIBRARIES ${LAPACKE_LIB} ${LAPACK_LIB} ${CBLAS_LIB} ${BLAS_LIB})
+  if("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*" OR
+     "${CMAKE_C_COMPILER_ID}" MATCHES ".*GNU.*" OR
+     "${CMAKE_C_COMPILER_ID}" MATCHES ".*Intel.*"
+      ) #NOT MSVC
+    set(MATH_LIB m)
+  endif()
+  list(APPEND LAPACKE_LIBRARIES ${LAPACKE_LIB} ${LAPACK_LIB} ${CBLAS_LIB} ${BLAS_LIB} ${MATH_LIB})
 endif()
 
 mark_as_advanced(
