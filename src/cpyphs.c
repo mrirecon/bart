@@ -7,7 +7,6 @@
  */
 
 #include <stdlib.h>
-#include <assert.h>
 #include <stdio.h>
 #include <complex.h>
 #include <assert.h>
