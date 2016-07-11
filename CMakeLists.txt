@@ -4,17 +4,25 @@
 # \author Hans J. Johnson <hans-johnson@uiowa.edu>
 
 cmake_minimum_required(VERSION 2.8.7)
-if(CMAKE_VERSION VERSION_LESS 3.1.3)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99") 
-else() 
-  set(CMAKE_C_STANDARD 99)
-endif()
+
 
 #NOTE: By specifying Fortran here, linking to lapack becomes easier
 # See https://blog.kitware.com/fortran-for-cc-developers-made-easier-with-cmake/  
 project(bart Fortran C)
-
 enable_language(C)
+enable_language(Fortran)
+
+# http://stackoverflow.com/questions/24840030/forcing-c99-in-cmake-to-use-for-loop-initial-declaration
+macro(use_c99)
+  if (CMAKE_VERSION VERSION_LESS "3.1")
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+      set (CMAKE_C_FLAGS "--std=gnu99 ${CMAKE_C_FLAGS}")
+    endif ()
+  else ()
+    set (CMAKE_C_STANDARD 99)
+  endif ()
+endmacro(use_c99)
+use_c99()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake ${CMAKE_MODULE_PATH})
 
