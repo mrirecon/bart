@@ -140,21 +140,6 @@ void ifftmod(unsigned int N, const long dimensions[N], unsigned long flags, comp
 }
 
 
-/*
- * NOTE: fftmodk is identical to fftmod again.
- */
-void fftmodk2(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
-{
-	debug_printf(DP_WARN, "fftmodk is deprecated.");
-	fftmod2(N, dims, flags, ostrs, dst, istrs, src);
-}
-
-void fftmodk(unsigned int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
-{
-	debug_printf(DP_WARN, "fftmodk is deprecated.");
-	fftmod(N, dimensions, flags, dst, src);
-}
-
 
 
 
