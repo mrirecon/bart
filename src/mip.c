@@ -42,7 +42,7 @@ int main_mip(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_SET('m', &mIP, "minimum" ),
-		OPT_SET('a', &mIP, "do absolute value first" ),
+		OPT_SET('a', &do_abs, "do absolute value first" ),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
