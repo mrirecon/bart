@@ -157,6 +157,9 @@ static void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const
 	int skip = min_blockdim(N, ND, tdims, nstr1, sizes);
 	unsigned int flags = 0;
 
+	debug_printf(DP_DEBUG4, "MD-Fun. Io: %d Vec: %d Input: ", io, skip);
+	debug_print_dims(DP_DEBUG4, D, dim);
+
 #ifdef USE_CUDA
 	if (num_auto_parallelize && !use_gpu(N, nptr1)) {
 #else
@@ -164,14 +167,8 @@ static void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const
 #endif
 		flags = dims_parallel(N, io, ND, tdims, nstr1, sizes);
 
-		debug_printf(DP_DEBUG4, "Skip: %d %d\n", skip, ffs(flags));
-
 		while ((0 != flags) && (ffs(flags) <= skip))
 			skip--;
-
-		debug_print_dims(DP_DEBUG4, D, dim);
-		debug_print_dims(DP_DEBUG4, ND, tdims);
-		debug_printf(DP_DEBUG4, "Io: %d, Parallel: %d, Skip: %d\n", io, flags, skip);
 
 		flags = flags >> skip;
 	}
@@ -186,6 +183,9 @@ static void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const
 #else
 	struct data_s data = { md_calc_size(skip, tdims), &cpu_ops, data_ptr };
 #endif
+
+	debug_printf(DP_DEBUG4, "Parallel: %d, Vec: %d (%ld) Opt.: ", (flags << skip), skip, data.size);
+	debug_print_dims(DP_DEBUG4, ND, tdims);
 
 	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, &data, too);
 }
@@ -1448,7 +1448,12 @@ void md_axpy2(unsigned int D, const long dims[D], const long ostr[D], float* opt
 	if (0. == val)
 		return;
 
-	// (1. == val) -> md_sadd
+	// strength reduction
+	if (1. == val) {
+
+		md_add2(D, dims, ostr, optr, ostr, optr, istr, iptr);
+		return;
+	}
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(iptr)) {

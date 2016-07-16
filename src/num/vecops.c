@@ -161,6 +161,13 @@ static void smul(long N, float alpha, float* dst, const float* src)
 
 static void add(long N, float* dst, const float* src1, const float* src2)
 {
+#if 1
+	if (dst == src1) {
+
+		for (long i = 0; i < N; i++)
+			dst[i] += src2[i];
+	} else
+#endif
 	for (long i = 0; i < N; i++)
 		dst[i] = src1[i] + src2[i];
 }
