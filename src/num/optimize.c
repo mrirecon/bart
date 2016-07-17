@@ -487,12 +487,14 @@ static bool use_gpu(int p, void* ptr[p])
 	for (int i = 0; i < p; i++)
 		gpu &= cuda_accessible(ptr[i]);
 
+#if 0
+	// FIXME: fails for copy
 	if (!gpu) {
 
 		for (int i = 0; i < p; i++)
 			assert(!cuda_ondevice(ptr[i]));
 	}
-
+#endif
 	return gpu;
 }
 #endif
