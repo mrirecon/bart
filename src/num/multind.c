@@ -454,18 +454,19 @@ struct data_s {
 #endif
 };
 
-static void nary_clear(void* _data, void* ptr[])
+static void nary_clear(struct nary_opt_data_s* opt_data, void* ptr[])
 {
-	struct data_s* data = (struct data_s*)_data;
+	struct data_s* data = opt_data->data_ptr;
+	size_t size = data->size * opt_data->size;
 
 #ifdef  USE_CUDA
 	if (data->use_gpu) {
 
-		cuda_clear(data->size, ptr[0]);
+		cuda_clear(size, ptr[0]);
 		return;
 	}
 #endif
-	memset(ptr[0], 0, data->size);	
+	memset(ptr[0], 0, size);
 }
 
 /**
@@ -475,16 +476,13 @@ static void nary_clear(void* _data, void* ptr[])
  */
 void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, size_t size)
 {
-	int skip = md_calc_blockdim(D, dim, str, size);
-
-//	printf("CLEAR skip %d\n", skip);
-#ifdef  USE_CUDA
-	struct data_s data = { md_calc_size(skip, dim) * size, cuda_ondevice(ptr) };
+	const long (*nstr[1])[D] = { (const long (*)[D])str };
+#ifdef	USE_CUDA
+	struct data_s data = { size, cuda_ondevice(ptr) };
 #else
-	struct data_s data = { md_calc_size(skip, dim) * size };
+	struct data_s data = { size };
 #endif
-
-	md_nary(1, D - skip, dim + skip, (const long*[1]){ str + skip }, (void*[1]){ ptr }, &data, &nary_clear);
+	optimized_nop(1, MD_BIT(0), D, dim, nstr, (void*[1]){ ptr }, (size_t[1]){ size }, nary_clear, &data);
 }
 
 
@@ -547,21 +545,20 @@ static void nary_strided_copy(void* _data, void* ptr[])
 }
 #endif
 
-static void nary_copy(void* _data, void* ptr[])
+static void nary_copy(struct nary_opt_data_s* opt_data, void* ptr[])
 {
-	struct data_s* data = (struct data_s*)_data;
+	struct data_s* data = opt_data->data_ptr;
+	size_t size = data->size * opt_data->size;
 
 #ifdef  USE_CUDA
 	if (data->use_gpu) {
 
-//		printf("CUDA copy %ld\n", data->size);
-
-		cuda_memcpy(data->size, ptr[0], ptr[1]);
+		cuda_memcpy(size, ptr[0], ptr[1]);
 		return;
 	}
 #endif
 
-	memcpy(ptr[0], ptr[1], data->size);
+	memcpy(ptr[0], ptr[1], size);
 }
 
 /**
@@ -581,6 +578,11 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		fft2(D, dim, 0, ostr, optr, istr, iptr);
 #endif
 
+#ifndef	USE_CUDA
+	struct data_s data = { size };
+#else
+	struct data_s data = { size, cuda_ondevice(optr) || cuda_ondevice(iptr) };
+#if 1
 	long tostr[D];
 	long tistr[D];
 	long tdims[D];
@@ -591,21 +593,18 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 
 	long (*nstr2[2])[D] = { &tostr, &tistr };
 	int ND = optimize_dims(2, D, tdims, nstr2);
+
 	size_t sizes[2] = { size, size };
-	int skip = min_blockdim(2, ND, tdims, nstr2, sizes); 
+	int skip = min_blockdim(2, ND, tdims, nstr2, sizes);
 
-	const long* nstr[2] = { *nstr2[0] + skip, *nstr2[1] + skip };
 
-	void* nptr[2] = { optr, (void*)iptr };
-
-#ifdef  USE_CUDA
-	struct data_s data = { md_calc_size(skip, tdims) * size, (cuda_ondevice(optr) || cuda_ondevice(iptr)) };
-
-#if 1
 	if (data.use_gpu && (ND - skip == 1)) { 
 		// FIXME: the test was > 0 which would optimize transpose
 		// but failes in the second cuda_memcpy_strided call
 		// probably because of alignment restrictions
+		const long* nstr[2] = { *nstr2[0] + skip, *nstr2[1] + skip };
+
+		void* nptr[2] = { optr, (void*)iptr };
 
 		long sizes[2] = { md_calc_size(skip, tdims) * size, tdims[skip] };
 		struct strided_copy_s data = { { sizes[0], sizes[1] } , (*nstr2[0])[skip], (*nstr2[1])[skip] };
@@ -616,11 +615,11 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		return;
 	}
 #endif
-#else
-	struct data_s data = { md_calc_size(skip, tdims) * size };
 #endif
 
-	md_nary(2, ND - skip, tdims + skip, nstr, nptr, &data, &nary_copy);
+	const long (*nstr[2])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr };
+
+	optimized_nop(2, MD_BIT(0), D, dim, nstr, (void*[2]){ optr, (void*)iptr }, (size_t[2]){ size, size }, nary_copy, &data);
 }
 
 
