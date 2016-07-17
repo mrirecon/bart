@@ -16,3 +16,9 @@ extern unsigned int min_blockdim(unsigned int D, unsigned int N, const long dims
 extern unsigned int dims_parallel(unsigned int D, unsigned int io, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D]);
 
 
+
+
+
+typedef void (*md_nary_fun_t)(void* data, void* ptr[]);
+extern void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_fun_t too, void* data_ptr);
+
