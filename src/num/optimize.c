@@ -489,13 +489,18 @@ unsigned int dims_parallel(unsigned int D, unsigned int io, unsigned int N, cons
 extern bool num_auto_parallelize;
 bool num_auto_parallelize = true;
 
+struct nary_opt_s {
 
-struct data_s {
-
-	long size;
-	const struct vec_ops* ops;
-	void* data_ptr;
+	md_nary_opt_fun_t fun;
+	struct nary_opt_data_s* data;
 };
+
+static void nary_opt(void* _data, void* ptr[])
+{
+	struct nary_opt_s* data = _data;
+	data->fun(data->data, ptr);	
+}
+
 
 /**
  * Optimized n-op.
@@ -510,7 +515,7 @@ struct data_s {
  * @param too n-op function
  * @param data_ptr pointer to additional data used by too
  */
-void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_fun_t too, void* data_ptr)
+void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too, void* data_ptr)
 {
 	long tdims[D];
 	md_copy_dims(D, tdims, dim);
@@ -553,15 +558,15 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 		nstr2[i] = *nstr1[i] + skip;
 
 #ifdef USE_CUDA
-	struct data_s data = { md_calc_size(skip, tdims), use_gpu(N, nptr1) ? &gpu_ops : &cpu_ops, data_ptr };
+	struct nary_opt_data_s data = { md_calc_size(skip, tdims), use_gpu(N, nptr1) ? &gpu_ops : &cpu_ops, data_ptr };
 #else
-	struct data_s data = { md_calc_size(skip, tdims), &cpu_ops, data_ptr };
+	struct nary_opt_data_s data = { md_calc_size(skip, tdims), &cpu_ops, data_ptr };
 #endif
 
 	debug_printf(DP_DEBUG4, "Parallel: %d, Vec: %d (%ld) Opt.: ", (flags << skip), skip, data.size);
 	debug_print_dims(DP_DEBUG4, ND, tdims);
 
-	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, &data, too);
+	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, &(struct nary_opt_s){ too, &data }, nary_opt);
 }
 
 

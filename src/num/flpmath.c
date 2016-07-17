@@ -108,14 +108,6 @@ static void make_2op_simple(md_2op_t fun, unsigned int D, const long dims[D], fl
 
 
 
-struct data_s { 
-
-	long size;
-	const struct vec_ops* ops;
-	void* data_ptr;
-};
-
-
 
 
 /**
@@ -131,7 +123,7 @@ struct data_s {
  * @param too two-op multiply function
  * @param data_ptr pointer to additional data used by too
  */
-static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, size_t sizes[2], md_nary_fun_t too, void* data_ptr)
+static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, size_t sizes[2], md_nary_opt_fun_t too, void* data_ptr)
 {
 	const long (*nstr[2])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr1 };
 	void *nptr[2] = { optr, (void*)iptr1 };
@@ -161,7 +153,7 @@ static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ost
  * @param too three-op multiply function
  * @param data_ptr pointer to additional data used by too
  */
-static void optimized_threeop_oii(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_fun_t too, void* data_ptr)
+static void optimized_threeop_oii(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_opt_fun_t too, void* data_ptr)
 {
 	const long (*nstr[3])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr1, (const long (*)[D])istr2 };
 	void *nptr[3] = { optr, (void*)iptr1, (void*)iptr2 };
@@ -270,9 +262,8 @@ static void make_2opd_simple(md_2opd_t fun, unsigned int D, const long dims[D], 
 	fun(D, dims, strs_double, optr, strs_single, iptr1);
 }
 
-static void nary_z3op(void* _data, void* ptr[])
+static void nary_z3op(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
 
 	(*(z3op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1], ptr[2]);
@@ -284,9 +275,8 @@ static void make_z3op(size_t offset, unsigned int D, const long dim[D], const lo
 				(size_t[3]){ [0 ... 2] = CFL_SIZE }, nary_z3op, &offset);
 }
 
-static void nary_3op(void* _data, void* ptr[])
+static void nary_3op(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
 
 	(*(r3op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1], ptr[2]);
@@ -298,9 +288,8 @@ static void make_3op(size_t offset, unsigned int D, const long dim[D], const lon
 				(size_t[3]){ [0 ... 2] = FL_SIZE }, nary_3op, &offset);
 }
 
-static void nary_z3opd(void* _data, void* ptr[])
+static void nary_z3opd(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
 
 	(*(z3opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1], ptr[2]);
@@ -312,9 +301,8 @@ static void make_z3opd(size_t offset, unsigned int D, const long dim[D], const l
 			(size_t[3]){ CDL_SIZE, CFL_SIZE, CFL_SIZE }, nary_z3opd, &offset);
 }
 
-static void nary_3opd(void* _data, void* ptr[])
+static void nary_3opd(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
 
 	(*(r3opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1], ptr[2]);
@@ -326,9 +314,8 @@ static void make_3opd(size_t offset, unsigned int D, const long dim[D], const lo
 			(size_t[3]){ DL_SIZE, FL_SIZE, FL_SIZE }, nary_3opd, &offset);
 }
 
-static void nary_z2op(void* _data, void* ptr[])
+static void nary_z2op(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
 
 	(*(z2op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -339,9 +326,8 @@ static void make_z2op(size_t offset, unsigned int D, const long dim[D], const lo
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_z2op, &offset);
 }
 
-static void nary_2op(void* _data, void* ptr[])
+static void nary_2op(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
 
 	(*(r2op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -352,12 +338,8 @@ static void make_2op(size_t offset, unsigned int D, const long dim[D], const lon
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, (size_t[2]){ FL_SIZE, FL_SIZE }, nary_2op, &offset);
 }
 
-#if 0
-// UNUSED
-
-static void nary_z2opd(void* _data, void* ptr[])
+static void nary_z2opd(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
 
 	(*(z2opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -369,11 +351,11 @@ static void make_z2opd(size_t offset, unsigned int D, const long dim[D], const l
 
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, sizes, nary_z2opd, &offset);
 }
-#endif
 
-static void nary_2opd(void* _data, void* ptr[])
+void* unsued = make_z2opd;
+
+static void nary_2opd(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
 
 	(*(r2opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -384,12 +366,10 @@ static void make_2opd(size_t offset, unsigned int D, const long dim[D], const lo
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, (size_t[2]){ DL_SIZE, FL_SIZE }, nary_2opd, &offset);
 }
 
-#if 0
-// UNUSED
-static void nary_z2opf(void* _data, void* ptr[])
+static void nary_z2opf(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
+
 	(*(z2opf_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
 }
 
@@ -398,11 +378,11 @@ static void make_z2opf(size_t offset, unsigned int D, const long dim[D], const l
 	size_t sizes[2] = { sizeof(complex float), sizeof(complex double) };
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, sizes, nary_z2opf, &offset);
 }
-#endif
 
-static void nary_2opf(void* _data, void* ptr[])
+void* unused2 = make_z2opf;
+
+static void nary_2opf(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = _data;
 	size_t offset = *(size_t*)data->data_ptr;
 
 	(*(r2opf_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -2533,9 +2513,8 @@ extern void md_zfill(unsigned int D, const long dim[D], complex float* ptr, comp
  *
  * return SoftThresh(ptr)
  */
-static void nary_zsoftthresh_half(void* _data, void* ptr[])
+static void nary_zsoftthresh_half(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = (struct data_s*)_data;
 	data->ops->zsoftthresh_half(data->size, *(float*)data->data_ptr, ptr[0], ptr[1]);
 }
 
@@ -2563,9 +2542,8 @@ void md_zsoftthresh_half2(unsigned int D, const long dim[D], float lambda, const
  *
  * return SoftThresh(ptr)
  */
-static void nary_softthresh_half(void* _data, void* ptr[])
+static void nary_softthresh_half(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = (struct data_s*)_data;
 	data->ops->softthresh_half(data->size, *(float*)data->data_ptr, ptr[0], ptr[1]);
 }
 
@@ -2628,9 +2606,8 @@ void md_softthresh_core2(unsigned int D, const long dims[D], float lambda, unsig
  *
  * return SoftThresh(ptr)
  */
-static void nary_softthresh(void* _data, void* ptr[])
+static void nary_softthresh(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = (struct data_s*)_data;
 	data->ops->softthresh(data->size, *(float*)data->data_ptr, ptr[0], ptr[1]);
 }
 
@@ -2689,9 +2666,8 @@ void md_zsoftthresh_core2(unsigned int D, const long dims[D], float lambda, unsi
 
 
 
-static void nary_zsoftthresh(void* _data, void* ptr[])
+static void nary_zsoftthresh(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = (struct data_s*)_data;
 	data->ops->zsoftthresh(data->size, *(float*)data->data_ptr, ptr[0], ptr[1]);
 }
 
@@ -2948,9 +2924,8 @@ struct zfftmod_s {
 	unsigned int N;
 };
 
-static void nary_zfftmod(void* _data, void* ptr[])
+static void nary_zfftmod(struct nary_opt_data_s* data, void* ptr[])
 {
-	struct data_s* data = (struct data_s*)_data;
 	struct zfftmod_s* mdata = (struct zfftmod_s*)data->data_ptr;
 
 	data->ops->zfftmod(data->size, ptr[0], ptr[1], mdata->N, mdata->inv, mdata->phase);
