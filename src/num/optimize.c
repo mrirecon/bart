@@ -23,9 +23,10 @@
 
 #include "num/multind.h"
 #include "num/vecops.h"
-#ifdef BERKELEY_SVN
-#include "num/simplex.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
 #endif
+#include "num/simplex.h"
 
 #include "optimize.h"
 
@@ -182,7 +183,6 @@ static void reorder_long(unsigned int N, unsigned int ord[N], long x[N])
 }
 
 
-#ifdef BERKELEY_SVN
 /*
  * Jim Demmel's generic blocking theorem
  */
@@ -204,7 +204,6 @@ static void demmel_factors(unsigned int D, unsigned int N, float blocking[N], lo
 
 	simplex(D, N, blocking, ones, ones, (const float (*)[N])delta);
 }
-#endif
 
 
 static long find_factor(long x, float blocking)
@@ -287,12 +286,10 @@ unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*
 	debug_print_dims(DP_DEBUG4, ND, dims);
 
 	float blocking[N];
-#ifdef BERKELEY_SVN
 	// actually those are not the blocking factors
 	// as used below but relative to fast memory
 	//demmel_factors(D, ND, blocking, strs);
 	UNUSED(demmel_factors);
-#endif
 #if 0
 	debug_printf(DP_DEBUG4, "DB: ");
 	for (unsigned int i = 0; i < ND; i++)
@@ -483,6 +480,28 @@ unsigned int dims_parallel(unsigned int D, unsigned int io, unsigned int N, cons
 
 	return oflags;
 }
+
+
+#ifdef USE_CUDA
+static bool use_gpu(int p, void* ptr[p])
+{
+	bool gpu = false;
+
+	for (int i = 0; i < p; i++)
+		gpu |= cuda_ondevice(ptr[i]);
+
+	for (int i = 0; i < p; i++)
+		gpu &= cuda_accessible(ptr[i]);
+
+	if (!gpu) {
+
+		for (int i = 0; i < p; i++)
+			assert(!cuda_ondevice(ptr[i]));
+	}
+
+	return gpu;
+}
+#endif
 
 
 // automatic parallelization

@@ -50,26 +50,6 @@
 #endif
 
 
-#ifdef USE_CUDA
-static bool use_gpu(int p, void* ptr[p])
-{
-	bool gpu = false;
-
-	for (int i = 0; i < p; i++)
-		gpu |= cuda_ondevice(ptr[i]);
-
-	for (int i = 0; i < p; i++)
-		gpu &= cuda_accessible(ptr[i]);
-
-	if (!gpu) {
-
-		for (int i = 0; i < p; i++)
-			assert(!cuda_ondevice(ptr[i]));
-	}
-
-	return gpu;
-}
-#endif
 typedef void (*md_2op_t)(unsigned int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const float* iptr1);
 typedef void (*md_z2op_t)(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1);
 typedef void (*md_2opf_t)(unsigned int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const double* iptr1);
