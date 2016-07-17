@@ -226,17 +226,15 @@ static bool split_dims(unsigned int D, unsigned int N, long dims[N + 1], long (*
 
 	long f;
 	if ((dims[N - 1] > 1024) && (1 < (f = find_factor(dims[N - 1], blocking[N - 1])))) {
-//	if ((dims[N - 1] > 64) && (1 < (f = find_factor(dims[N - 1], blocking[N - 1])))) {
 #if 1
-		//printf("Split with %ld=%ldx%ld\n", dims[N - 1], f, dims[N - 1] / f);
-
-		dims[N] = dims[N - 1] / f;
-		dims[N - 1] = f;
+		dims[N - 1] = dims[N - 1] / f;
+		dims[N] = f;
 
 		for (unsigned int j = 0; j < D; j++)
-			(*ostrs[j])[N] = (*ostrs[j])[N - 1] * f;
+			(*ostrs[j])[N] = (*ostrs[j])[N - 1] * dims[N - 1];
 
-		blocking[N] = 1.;
+		blocking[N - 1] = blocking[N - 1];
+		blocking[N] = blocking[N - 1];
 #else
 		dims[N] = 1;
 		for (unsigned int j = 0; j < D; j++)
@@ -445,7 +443,6 @@ static unsigned int parallelizable(unsigned int D, unsigned int io, unsigned int
 
 
 #define CHUNK (32 * 1024)
-#define CORES (64)
 
 
 /**
@@ -456,14 +453,13 @@ unsigned int dims_parallel(unsigned int D, unsigned int io, unsigned int N, cons
 {
 	unsigned int flags = parallelizable(D, io, N, dims, strs, size);
 
-	unsigned int i = D;
-	unsigned int count = 1;
+	unsigned int i = N;
 
 	long reps = md_calc_size(N, dims);
 
 	unsigned int oflags = 0;
 
-	while ((count < CORES) && (i-- > 0)) {
+	while (i-- > 0) {
 
 		if (MD_IS_SET(flags, i)) {
 
@@ -473,8 +469,6 @@ unsigned int dims_parallel(unsigned int D, unsigned int io, unsigned int N, cons
 				break;
 
 			oflags = MD_SET(oflags, i);
-
-			//break; // only 1
 		}
 	}
 
@@ -503,6 +497,8 @@ static bool use_gpu(int p, void* ptr[p])
 }
 #endif
 
+extern double md_flp_total_time;
+double md_flp_total_time = 0.;
 
 // automatic parallelization
 extern bool num_auto_parallelize;
@@ -555,7 +551,7 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 	int skip = min_blockdim(N, ND, tdims, nstr1, sizes);
 	unsigned int flags = 0;
 
-	debug_printf(DP_DEBUG4, "MD-Fun. Io: %d Vec: %d Input: ", io, skip);
+	debug_printf(DP_DEBUG4, "MD-Fun. Io: %d Input: ", io);
 	debug_print_dims(DP_DEBUG4, D, dim);
 
 #ifdef USE_CUDA
@@ -582,10 +578,19 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 	struct nary_opt_data_s data = { md_calc_size(skip, tdims), &cpu_ops, data_ptr };
 #endif
 
-	debug_printf(DP_DEBUG4, "Parallel: %d, Vec: %d (%ld) Opt.: ", (flags << skip), skip, data.size);
+	debug_printf(DP_DEBUG4, "Vec: %d (%ld) Opt.: ", skip, data.size);
 	debug_print_dims(DP_DEBUG4, ND, tdims);
 
+	double start = timestamp();
+
 	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, &(struct nary_opt_s){ too, &data }, nary_opt);
+
+	double end = timestamp();
+
+#pragma omp critical
+	md_flp_total_time += end - start;
+
+	debug_printf(DP_DEBUG3, "MD time: %f\n", end - start);
 }
 
 
