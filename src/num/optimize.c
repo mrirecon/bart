@@ -592,7 +592,7 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 #pragma omp critical
 	md_flp_total_time += end - start;
 
-	debug_printf(DP_DEBUG3, "MD time: %f\n", end - start);
+	debug_printf(DP_DEBUG4, "MD time: %f\n", end - start);
 }
 
 
