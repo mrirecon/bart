@@ -1207,6 +1207,47 @@ void md_flip(unsigned int D, const long dims[D], unsigned long flags, void* optr
 }
 
 
+struct compare_s {
+
+	bool eq;
+	size_t size;
+};
+
+static void nary_cmp(struct nary_opt_data_s* opt_data, void* ptrs[])
+{
+	struct compare_s* data = opt_data->data_ptr;
+	size_t size = data->size * opt_data->size;
+
+	bool eq = (0 == memcmp(ptrs[0], ptrs[1], size));
+
+	#pragma omp critical
+	data->eq &= eq;
+}
+
+bool md_compare2(unsigned int D, const long dims[D], const long str1[D], const void* src1,
+			const long str2[D], const void* src2, size_t size)
+{
+	struct compare_s data = { true, size };
+
+	const long (*nstr[2])[D] = { (const long (*)[D])str1, (const long (*)[D])str2 };
+
+	optimized_nop(2, 0u, D, dims, nstr, (void*[2]){ (void*)src1, (void*)src2 }, (size_t[2]){ size, size }, nary_cmp, &data);
+
+	return data.eq;
+}
+
+
+bool md_compare(unsigned int D, const long dims[D], const void* src1, const void* src2, size_t size)
+{
+	long str[D];
+	md_calc_strides(D, str, dims, size);
+
+	return md_compare2(D, dims, str, src1, str, src2, size);
+}
+
+
+
+
 
 struct septrafo_s {
 

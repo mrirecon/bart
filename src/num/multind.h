@@ -76,6 +76,11 @@ extern void md_circ_ext(unsigned int D, const long dims1[__VLA(D)], void* dst, c
 extern void md_periodic2(unsigned int D, const long dims1[__VLA(D)], const long strs1[__VLA(D)], void* dst, const long dims2[__VLA(D)], const long strs2[__VLA(D)], const void* src, size_t size);
 extern void md_periodic(unsigned int D, const long dims1[__VLA(D)], void* dst, const long dims2[__VLA(D)], const void* src, size_t size);
 
+extern _Bool md_compare2(unsigned int D, const long dims[__VLA(D)], const long str1[__VLA(D)], const void* src1,
+			const long str2[__VLA(D)], const void* src2, size_t size);
+extern _Bool md_compare(unsigned int D, const long dims[__VLA(D)], const void* src1, const void* src2, size_t size);
+
+
 typedef void* (*md_alloc_fun_t)(unsigned int D, const long dimensions[__VLA(D)], size_t size);
 
 extern void* md_alloc(unsigned int D, const long dimensions[__VLA(D)], size_t size);
