@@ -747,6 +747,8 @@ void md_circular_swap(unsigned M, unsigned int D, const long dims[D], void* ptr[
 
 	const long* strp[M];
 
+	strp[0] = strs[0];
+
 	for (unsigned int i = 1; i < M; i++) {
 
 		md_copy_strides(D, strs[i], strs[0]);
