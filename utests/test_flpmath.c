@@ -12,6 +12,7 @@
 
 #include "num/flpmath.h"
 #include "num/multind.h"
+#include "num/rand.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -128,7 +129,63 @@ static bool test_md_zavg(void)
 }
 
 
+
+static void matrix_mult(int A, int B, int C, complex float (*dst)[A][C], const complex float (*src1)[A][B], const complex float (*src2)[B][C])
+{
+	for (int i = 0; i < A; i++) {
+
+		for (int k = 0; k < C; k++) {
+
+			(*dst)[i][k] = 0.;
+
+			for (int j = 0; j < B; j++)
+				(*dst)[i][k] += (*src1)[i][j] * (*src2)[j][k];
+		}
+	}
+}
+
+static bool test_md_zmatmul(void)
+{
+	int A = 10;
+	int B = 20;
+	int C = 30;
+
+	long odims[3] = { C, 1, A };
+	long idims1[3] = { 1, B, A };
+	long idims2[3] = { C, B, 1 };
+
+	complex float* dst1 = md_alloc(3, odims, CFL_SIZE);
+	complex float* dst2 = md_alloc(3, odims, CFL_SIZE);
+	complex float* src1 = md_alloc(3, idims1, CFL_SIZE);
+	complex float* src2 = md_alloc(3, idims2, CFL_SIZE);
+
+	md_gaussian_rand(3, odims, dst1);
+	md_gaussian_rand(3, odims, dst2);
+	md_gaussian_rand(3, idims1, src1);
+	md_gaussian_rand(3, idims2, src2);
+
+	md_zmatmul(3, odims, dst1, idims1, src1, idims2, src2);
+
+	matrix_mult(A, B, C, &MD_CAST_ARRAY2(complex float, 3, odims, dst2, 0, 2),
+			&MD_CAST_ARRAY2(const complex float, 3, idims1, src1, 1, 2),
+			&MD_CAST_ARRAY2(const complex float, 3, idims2, src2, 0, 1));
+
+	double err = md_znrmse(3, odims, dst2, dst1);
+
+	md_free(src1);
+	md_free(src2);
+	md_free(dst1);
+	md_free(dst2);
+
+	return (err < UT_TOL);
+}
+
+
+
+
+
 UT_REGISTER_TEST(test_md_zfmacc2);
 UT_REGISTER_TEST(test_md_zwavg);
 UT_REGISTER_TEST(test_md_zavg);
+UT_REGISTER_TEST(test_md_zmatmul);
 
