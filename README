@@ -281,7 +281,8 @@ data of dimensions described in the header stored in column-major order
 (32 bit real + 32 bit imaginary, IEEE 747 binary32 little-endian).
 
 Convenience methods to read and write our data files using Matlab may
-be found in recon/matlab (readcfl.m and writecfl.m).
+be found in the matlab/ directory (readcfl.m and writecfl.m). Similar
+methods for Python may be found in the python/ directory (cfl.py).
 
 
 
@@ -302,7 +303,7 @@ the following order:
     (more dimensions are defined in src/misc/mri.h)
 
 
-Undersampled data is stored with with zeros in the unsampled
+Undersampled data is stored with zeros in the unsampled
 positions.
 
 
