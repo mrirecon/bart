@@ -12,8 +12,8 @@ extern void overlapandsave2H(int N, unsigned int flags, const long blk[N], const
 extern void overlapandsave2NE(int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], complex float* src1, const long dims2[N], complex float* src2, const long mdims[N], complex float* msk);
 
 struct vec_ops;
-extern void overlapandsave2NEB(const struct vec_ops* ops, int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk);
+extern void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk);
 
-extern void overlapandsave2HB(const struct vec_ops* ops, int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk);
+extern void overlapandsave2HB(int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk);
 
 

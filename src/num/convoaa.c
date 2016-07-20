@@ -481,7 +481,7 @@ void overlapandsave2NE(int N, unsigned int flags, const long blk[N], const long 
 
 
 
-void overlapandsave2NEB(const struct vec_ops* ops, int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
+void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
 {
 	long dims1B[N];
 
@@ -612,10 +612,6 @@ void overlapandsave2NEB(const struct vec_ops* ops, int N, unsigned int flags, co
 	assert(tdims[N + 1] == nodims[N + 1]);
 	assert(tdims[N + 2] == nodims[N + 2]);
 
-	long R = md_calc_size(N, nodims);
-	long T = md_calc_size(N, tdims);
-
-
 	//complex float* src1C = xmalloc(S * sizeof(complex float));
 	complex float* src1C = dst;
 
@@ -626,8 +622,8 @@ void overlapandsave2NEB(const struct vec_ops* ops, int N, unsigned int flags, co
 	for (int j = 0; j < nodims[N + 1]; j++) {
 	for (int i = 0; i < nodims[N + 0]; i++) {
 
-		complex float* tmp = (complex float*)ops->allocate(2 * T);
-		complex float* tmpX = (complex float*)ops->allocate(2 * R);
+		complex float* tmp = md_alloc_sameplace(N, tdims, CFL_SIZE, dst);
+		complex float* tmpX = md_alloc_sameplace(N, nodims, CFL_SIZE, dst);
 
 		long off1 = str1[N + 0] * i + str1[N + 1] * j + str1[N + 2] * k;
 		long off2 = mstr[N + 0] * i + mstr[N + 1] * j + mstr[N + 2] * k;
@@ -640,8 +636,8 @@ void overlapandsave2NEB(const struct vec_ops* ops, int N, unsigned int flags, co
 		#pragma omp critical
 		md_zadd2(N, tdims, str1, ((void*)src1C) + off1, str1, ((void*)src1C) + off1, str2,  tmp);
 
-		ops->del((void*)tmpX);
-		ops->del((void*)tmp);
+		md_free(tmpX);
+		md_free(tmp);
 	}}}
 
 	//md_resizec(N, dims1, dst, dims1B, src1C, sizeof(complex float));
@@ -653,7 +649,7 @@ void overlapandsave2NEB(const struct vec_ops* ops, int N, unsigned int flags, co
 
 
 
-void overlapandsave2HB(const struct vec_ops* ops, int N, unsigned int flags, const long blk[N], const long dims1[N], complex float* dst, const long odims[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
+void overlapandsave2HB(int N, unsigned int flags, const long blk[N], const long dims1[N], complex float* dst, const long odims[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
 {
 	long dims1B[N];
 
@@ -780,9 +776,6 @@ void overlapandsave2HB(const struct vec_ops* ops, int N, unsigned int flags, con
 	assert(tdims[N + 1] == nodims[N + 1]);
 	assert(tdims[N + 2] == nodims[N + 2]);
 
-	long R = md_calc_size(N, nodims);
-	long T = md_calc_size(N, tdims);
-
 
 	//complex float* src1C = xmalloc(S * sizeof(complex float));
 	complex float* src1C = dst;
@@ -794,8 +787,8 @@ void overlapandsave2HB(const struct vec_ops* ops, int N, unsigned int flags, con
 	for (int j = 0; j < nodims[N + 1]; j++) {
 	for (int i = 0; i < nodims[N + 0]; i++) {
 
-		    complex float* tmp = (complex float*)ops->allocate(2 * T);
-		    complex float* tmpX = (complex float*)ops->allocate(2 * R);
+		    complex float* tmp = md_alloc_sameplace(N, tdims, CFL_SIZE, dst);
+		    complex float* tmpX = md_alloc_sameplace(N, nodims, CFL_SIZE, dst);
 
 		    long off1 = str1[N + 0] * i + str1[N + 1] * j + str1[N + 2] * k;
 		    long off2 = mstr[N + 0] * i + mstr[N + 1] * j + mstr[N + 2] * k;
@@ -807,8 +800,8 @@ void overlapandsave2HB(const struct vec_ops* ops, int N, unsigned int flags, con
 		    #pragma omp critical
 		    md_zadd2(N, tdims, str1, ((void*)src1C) + off1, str1, ((void*)src1C) + off1, str2,  tmp);
 
-		    ops->del((void*)tmpX);
-		    ops->del((void*)tmp);
+		    md_free(tmpX);
+		    md_free(tmp);
 	}}}
 }
 
