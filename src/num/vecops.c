@@ -466,6 +466,8 @@ const struct vec_ops cpu_ops = {
 	.fmac = fmac,
 	.fmac2 = fmac2,
 
+	.axpy = axpy,
+
 	.pow = vec_pow,
 	.sqrt = vec_sqrt,
 

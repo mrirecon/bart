@@ -328,6 +328,8 @@ const struct vec_ops gpu_ops = {
 	.fmac = cuda_fmac,
 	.fmac2 = cuda_fmac2,
 
+	.axpy = cuda_saxpy,
+
 	.pow = cuda_pow,
 	.sqrt = cuda_sqrt,
 
