@@ -308,7 +308,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 
 		*div = *div - im_dims_prod;
 
-		estMSE += var * creal(*div);
+		estMSE += 2 * var * creal(*div);
 
 		if ((0 == idx) || (estMSE < minMSE)) {
 
