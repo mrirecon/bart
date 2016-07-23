@@ -6,11 +6,8 @@
 cmake_minimum_required(VERSION 2.8.7)
 
 
-#NOTE: By specifying Fortran here, linking to lapack becomes easier
-# See https://blog.kitware.com/fortran-for-cc-developers-made-easier-with-cmake/  
-project(bart Fortran C)
+project(bart C)
 enable_language(C)
-enable_language(Fortran)
 
 # http://stackoverflow.com/questions/24840030/forcing-c99-in-cmake-to-use-for-loop-initial-declaration
 macro(use_c99)
@@ -86,6 +83,9 @@ endif()
 ##
 ## -*-*- Try Generic LAPACKE version Last
 if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "LAPACKE")
+  #NOTE: By specifying Fortran here, linking to lapack becomes easier
+  # See https://blog.kitware.com/fortran-for-cc-developers-made-easier-with-cmake/  
+  enable_language(Fortran)
   ## Only very new versions of LAPACK (> 3.5.0) have built in support
   ## for cblas and lapacke.  This method is not very robust to older
   ## versions of lapack that might be able to be supported.
