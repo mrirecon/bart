@@ -225,6 +225,10 @@ add_library(bartsupport ${bart_support_SRCS})
 if(USE_ISMRMRD)
   target_link_libraries(bartsupport ${ISMRMRD_LIBRARIES})
 endif()
+install(TARGETS bartsupport
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib/static)
 
 
 ## PASS #1:  Build stand-alone programs
@@ -236,6 +240,10 @@ foreach(curr_prog ${ALLPROGS})
                          "main_real" "main_${curr_prog}")
   add_executable(${curr_prog} ${CMAKE_CURRENT_BINARY_DIR}/StandAloneCode/${curr_prog}.c ${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c)
   target_link_libraries(${curr_prog} bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES} )
+  install(TARGETS ${curr_prog}
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib/static)
 endforeach()
 
 ## More crafty file manipulation so that we maintain backward comaptibility
@@ -278,6 +286,11 @@ endforeach()
 
 add_executable(bart ${ALL_BART_SRCS})
 target_link_libraries(bart bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
+install(TARGETS bart
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib/static)
+
 
 #==============================================
 # TODO: Matlab code
@@ -289,6 +302,10 @@ if(USE_MATLAB)
     include_directories(${MATLAB_INCLUDE_DIR})
     add_executable(mat2cfl ${CMAKE_CURRENT_LIST_DIR}/src/mat2cfl.c)
     target_link_libraries(mat2cfl bartsupport ${MATLAB_MAT_LIBRARY} ${MATLAB_ENG_LIBRARY} ${MATLAB_MX_LIBRARY})
+    install(TARGETS mat2cfl
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib/static)
   endif()
 endif()
 
@@ -331,3 +348,7 @@ add_custom_target(bart.syms
          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
          DEPENDS bart
          SOURCES makedoc.sh doxyconfig)
+
+file(GLOB DOCS "${CMAKE_CURRENT_LIST_DIR}/doc/*.txt")
+list(APPEND ${CMAKE_CURRENT_LIST_DIR}/README)
+install( FILES ${DOCS} DESTINATION share/doc/bart/ )
