@@ -349,6 +349,11 @@ add_custom_target(bart.syms
          DEPENDS bart
          SOURCES makedoc.sh doxyconfig)
 
+add_custom_command(TARGET bart
+        POST_BUILD
+        COMMAND ${CMAKE_CURRENT_LIST_DIR}/rules/update_commands.sh $<TARGET_FILE:bart> ${CMAKE_CURRENT_LIST_DIR}/doc/commands.txt ${ALLPROGS}
+)
+
 file(GLOB DOCS "${CMAKE_CURRENT_LIST_DIR}/doc/*.txt")
 list(APPEND ${CMAKE_CURRENT_LIST_DIR}/README)
 install( FILES ${DOCS} DESTINATION share/doc/bart/ )
