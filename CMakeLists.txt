@@ -252,8 +252,16 @@ target_link_libraries(bart bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LIN
 
 #==============================================
 # TODO: Matlab code
-# mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
-#        $(CC) $(CFLAGS) $(MATLAB_H) -omat2cfl  $+ $(MATLAB_L) $(CUDA_L)
+option(USE_MATLAB "Specify if the optional matlab programs should be built" ON)
+if(USE_MATLAB)
+  find_package(Matlab REQUIRED)
+  if(MATLAB_FOUND)
+    message(STATUS "MATLAB LIBRARIES FOUND: ${MATLAB_LIBRARIES_DIR}")
+    include_directories(${MATLAB_INCLUDE_DIR})
+    add_executable(mat2cfl ${CMAKE_CURRENT_LIST_DIR}/src/mat2cfl.c)
+    target_link_libraries(mat2cfl bartsupport ${MATLAB_MAT_LIBRARY} ${MATLAB_ENG_LIBRARY} ${MATLAB_MX_LIBRARY})
+  endif()
+endif()
 
 #==============================================
 # Testing code
