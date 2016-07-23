@@ -470,5 +470,5 @@ install: bart $(root)/doc/commands.txt
 
 # symbol table
 bart.syms: bart
-	nm --defined-only bart | cut -c11-16,19- | sort > bart.syms
+	rules/make_symbol_table.sh bart bart.syms
 

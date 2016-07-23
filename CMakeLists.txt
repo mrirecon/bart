@@ -326,3 +326,8 @@ add_custom_target(doxygen
          DEPENDS bart
          SOURCES makedoc.sh doxyconfig)
 
+add_custom_target(bart.syms
+         COMMAND ${CMAKE_CURRENT_LIST_DIR}/rules/make_symbol_table.sh $<TARGET_FILE:bart> ${CMAKE_CURRENT_BINARY_DIR}/bart.syms
+         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+         DEPENDS bart
+         SOURCES makedoc.sh doxyconfig)
