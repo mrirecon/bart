@@ -122,20 +122,9 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 
 
 
-
-
-# Main build targets
-
-TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version
-TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg
-TNUM=fft fftmod fftshift noise bench threshold conv rss filter
-TRECO=pics pocsense rsense sqpics bpsense itsense nlinv nufft rof sake wave lrmatrix estdims
-TCALIB=ecalib ecaltwo caldir walsh cc calmat svd estvar
-TMRI=homodyne poisson twixread fakeksp
-TSIM=phantom traj
-TIO=toimg
-
-
+# Main build targets are defined in build_targets.mk so that both CMake and Make can use the same definitions
+# set values for TBASE TFLP TNUM TRECO TCALIB TMRI TSIM TIO in build_targets.mk
+include build_targets.mk
 
 
 MODULES = -lnum -lmisc -lnum -lmisc

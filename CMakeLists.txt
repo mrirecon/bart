@@ -120,23 +120,24 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/version.inc.in "VERSION(\@BART_VERSION_ST
 configure_file(${CMAKE_CURRENT_BINARY_DIR}/version.inc.in ${CMAKE_CURRENT_BINARY_DIR}/version.inc @ONLY)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+## ========== Process build_targets.mk
 set (ALLPROGS "")
-set (TBASE show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version)
-list(APPEND ALLPROGS ${TBASE})
-set(TFLP scale conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg)
-list(APPEND ALLPROGS ${TFLP})
-set(TNUM fft fftmod fftshift noise bench threshold conv rss filter)
-list(APPEND ALLPROGS ${TNUM})
-set(TRECO pics pocsense rsense sqpics bpsense itsense nlinv nufft rof sake wave lrmatrix estdims)
-list(APPEND ALLPROGS ${TRECO})
-set(TCALIB ecalib ecaltwo caldir walsh cc calmat svd estvar)
-list(APPEND ALLPROGS ${TCALIB})
-set(TMRI homodyne poisson twixread fakeksp)
-list(APPEND ALLPROGS ${TMRI})
-set(TSIM phantom traj)
-list(APPEND ALLPROGS ${TSIM})
-set(TIO toimg)
-list(APPEND ALLPROGS ${TIO})
+file(READ "${CMAKE_CURRENT_LIST_DIR}/build_targets.mk" bld_tgt_list_of_list)
+# Convert file contents into a CMake list (where each element in the list
+# is one line of the file)
+#
+string(REGEX REPLACE ";" "\\\\;" bld_tgt_list_of_list "${bld_tgt_list_of_list}")
+string(REGEX REPLACE "\n" ";" bld_tgt_list_of_list "${bld_tgt_list_of_list}")
+foreach(bld_tgt_line ${bld_tgt_list_of_list})
+   if( "${bld_tgt_line}" MATCHES "^[^#].*=.*")
+     string(REGEX REPLACE "^ *([^=]*) *= *(.*) *" "\\1" BLD_KEY "${bld_tgt_line}")
+     string(REGEX REPLACE "^ *([^=]*) *= *(.*) *" "\\2" BLD_VALUE "${bld_tgt_line}")
+     string(REPLACE " " ";" ${BLD_KEY} "${BLD_VALUE}")  ## Create a new variable called ${BLD_KEY}
+     ## message(STATUS "KEY:${BLD_KEY}:    VALUE:${${BLD_KEY}}:")
+     list(APPEND ALLPROGS ${${BLD_KEY}})
+   endif()
+endforeach()
 
 ## BART Makefile depends heavily on pre-processor replacements
 ## on the command line rather than a library of common functionality
@@ -147,6 +148,8 @@ list(APPEND ALLPROGS ${TIO})
 ## any build organizaiton so that the Makefile build system is
 ## not changed at all.  A different organziation of the build
 ## proceedures could make this much less complicated.
+##
+## usage CONFIG_BY_REPLACEMENT( in.file out.file "at top string" match1 rep1 match2 rep2 .... matchN repN)
 macro(CONFIG_BY_REPLACEMENT INFILE OUTFILE PREFIX )
   if(NOT EXISTS "${INFILE}")
     message(FATAL_ERROR "\n\nMISSING INPUT FILE \"${INFILE}\" for generating \"${OUTFILE}\"\n\n")
