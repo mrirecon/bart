@@ -320,3 +320,9 @@ add_custom_target(tarball
     COMMENT "BUILD TARBALL FOR BART WITH LATEST VERSION"
 )
 
+add_custom_target(doxygen
+         COMMAND ${CMAKE_CURRENT_LIST_DIR}/makedoc.sh
+         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+         DEPENDS bart
+         SOURCES makedoc.sh doxyconfig)
+
