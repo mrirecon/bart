@@ -21,6 +21,20 @@ use_c99()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake ${CMAKE_MODULE_PATH})
 
+# --- Provide good defaults for searching for packages (i.e. ismrmrd)
+set(CMAKE_PREFIX_PATH "")
+if(CMAKE_PREFIX_PATH)
+  list(APPEND CMAKE_PREFIX_PATH "/usr/local")
+endif()
+if(EXISTS $ENV{CMAKE_PREFIX_PATH})
+  list(APPEND CMAKE_PREFIX_PATH $ENV{CMAKE_PREFIX_PATH})
+endif()
+if(EXISTS $ENV{ISMRMRD_HOME})
+  list(APPEND CMAKE_PREFIX_PATH $ENV{ISMRMRD_HOME})
+endif()
+list(REMOVE_DUPLICATES CMAKE_PREFIX_PATH)
+## -message(STATUS "Looking for packages in : ${CMAKE_PREFIX_PATH}")
+
 ## Options
 ##- TODO option(USE_CUDA    "Provide support for CUDA processing" OFF)
 ##- TODO option(USE_ACML    "Provide support for ACML processing" OFF)
@@ -37,7 +51,12 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   # Set the possible values of build type for cmake-gui
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
 endif()
-option(USE_ISMRMRD "Use external ISMRMRD package for reading/writing" OFF)
+
+find_package(ISMRMRD QUIET) ## if you can find ISMRMRD by default, then default configuration is ON
+option(USE_ISMRMRD "Use external ISMRMRD package for reading/writing" ${ISMRMRD_FOUND})
+if(USE_ISMRMRD)
+  find_package(ISMRMRD REQUIRED)
+endif()
 
 ## Compiler flags -- TODO This could be better, see ITK it won't work on windows builds
 if(${CMAKE_BUILD_TYPE} MATCHES "Release")
@@ -189,6 +208,8 @@ endmacro()
 set(BART_SUPPORT_LIBS calib misc dfwavelet grecon iter linops lowrank noir noncart num sake sense simu wavelet2 wavelet3)
 if(USE_ISMRMRD)
   list(APPEND BART_SUPPORT_LIBS ismrm)
+  link_directories(${ISMRMRD_LIBRARY_DIRS})
+  include_directories(${ISMRMRD_INCLUDE_DIRS})
 endif()
 include_directories(src)
 set(bart_support_SRCS "")
@@ -197,6 +218,10 @@ foreach(curr_lib ${BART_SUPPORT_LIBS})
     list(APPEND bart_support_SRCS ${${curr_lib}_SRCS})
 endforeach()
 add_library(bartsupport ${bart_support_SRCS})
+if(USE_ISMRMRD)
+  target_link_libraries(bartsupport ${ISMRMRD_LIBRARIES})
+endif()
+
 
 ## PASS #1:  Build stand-alone programs
 ## Generate stand alone programs
