@@ -135,7 +135,39 @@ if (LAPACKE_FOUND)
       ) #NOT MSVC
     set(MATH_LIB m)
   endif()
-  list(APPEND LAPACKE_LIBRARIES ${LAPACKE_LIB} ${LAPACK_LIB} ${CBLAS_LIB} ${BLAS_LIB} ${MATH_LIB})
+  list(APPEND LAPACKE_LIBRARIES ${LAPACKE_LIB} ${LAPACK_LIB} ${CBLAS_LIB} ${BLAS_LIB})
+  # Check for a common combination, and find required gfortran support libraries
+
+  if(1)
+    if("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*" AND "${CMAKE_Fortran_COMPILER_ID}" MATCHES "GNU")
+          message(STATUS "\n\n WARNING: ${CMAKE_C_COMPILER} identified as ${CMAKE_C_COMPILER_ID}\n"
+                                   "AND: ${CMAKE_Fortran_COMPILER} identified as ${CMAKE_Fortran_COMPILER_ID}\n"
+                               "\n"
+                               "may be require special configurations.  The most common is the need to"
+                               "explicitly link C programs against the gfortran support library.")
+                              
+    endif()
+  else()
+    ## This code automated code is hard to determine if it is robust in many different environments.
+    # Check for a common combination, and find required gfortran support libraries
+    if("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*" AND "${CMAKE_Fortran_COMPILER_ID}" MATCHES "GNU")
+       include(FortranCInterface)
+       FortranCInterface_VERIFY() 
+       if(NOT FortranCInterface_VERIFIED_C)
+          message(FATAL_ERROR "C and fortran compilers are not compatible:\n${CMAKE_Fortran_COMPILER}:${CMAKE_C_COMPILER}")
+       endif()
+       
+       execute_process(COMMAND ${CMAKE_Fortran_COMPILER} -print-file-name=libgfortran.a OUTPUT_VARIABLE FORTRANSUPPORTLIB ERROR_QUIET)
+       string(STRIP ${FORTRANSUPPORTLIB} FORTRANSUPPORTLIB)
+       if(EXISTS "${FORTRANSUPPORTLIB}")
+         list(APPEND LAPACKE_LIBRARIES ${FORTRANSUPPORTLIB})
+         message(STATUS "Appending fortran support lib: ${FORTRANSUPPORTLIB}")
+       else()
+         message(FATAL_ERROR "COULD NOT FIND libgfortran.a support library:${FORTRANSUPPORTLIB}:")
+       endif()
+    endif()
+  endif()
+  list(APPEND LAPACKE_LIBRARIES ${MATH_LIB})
 endif()
 
 mark_as_advanced(
