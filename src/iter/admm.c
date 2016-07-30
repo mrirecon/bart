@@ -126,13 +126,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	  void* obj_eval_data,
 	  float (*obj_eval)(const void*, const float*))
 {
-	bool fast = plan->fast;
-	double ABSTOL = plan->ABSTOL;
-	double RELTOL = plan->RELTOL;
-	float tau = plan->tau;
-	float mu = plan->mu;
-
-
 	unsigned int num_funs = D;
 
 	long pos = 0;
@@ -178,7 +171,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		r[j] = r_all + pos;
 	}
 
-	if (!fast) {
+	if (!plan->fast) {
 
 		GH_usum = vops->allocate(N);
 		zj_old = vops->allocate(Mjmax);
@@ -195,7 +188,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		x_err = vops->allocate(N);
 	}
 
-	if (!fast) {
+	if (!plan->fast) {
 
 		debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj");
 
@@ -233,7 +226,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	// compute norm of biases -- for eps_primal
 	double n3 = 0.;
 
-	if (!fast) {
+	if (!plan->fast) {
 
 		for (unsigned int j = 0; j < num_funs; j++)
 			if (biases[j] != NULL)
@@ -328,7 +321,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 		double n1 = 0.;
 
-		if (!fast) {
+		if (!plan->fast) {
 
 			vops->clear(N, GH_usum);
 			vops->clear(N, s);
@@ -344,7 +337,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			plan->ops[j].forward(plan->ops[j].data, Gjx_plus_uj, x); // Gj(x)
 
 			// over-relaxation: Gjx_hat = alpha * Gj(x) + (1 - alpha) * (zj_old + bj)
-			if (!fast) {
+			if (!plan->fast) {
 
 				vops->copy(z_dims[j], zj_old, z[j]);
 				vops->copy(z_dims[j], r[j], Gjx_plus_uj); // rj = Gj(x)
@@ -371,7 +364,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			vops->sub(z_dims[j], u[j], Gjx_plus_uj, z[j]);
 
-			if (!fast) {
+			if (!plan->fast) {
 
 				// rj = rj - zj - bj = Gj(x) - zj - bj
 				vops->sub(z_dims[j], r[j], r[j], z[j]);
@@ -388,11 +381,10 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 				plan->ops[j].adjoint(plan->ops[j].data, rhs, u[j]);
 				vops->add(N, GH_usum, GH_usum, rhs);
 			}
-
 		}
 
 
-		if (!fast) {
+		if (!plan->fast) {
 
 			float s_norm = rho * vops->norm(N, s);
 			float r_norm = vops->norm(M, r_all);
@@ -402,8 +394,8 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			double n2 = vops->norm(M, z_all);
 			double n = MAX(MAX(n1, n2), n3);
 
-			float eps_pri = ABSTOL * sqrt(M) + RELTOL * n;
-			float eps_dual = ABSTOL * sqrt(N) + RELTOL * rho * vops->norm(N, GH_usum);
+			float eps_pri = plan->ABSTOL * sqrt(M) + plan->RELTOL * n;
+			float eps_dual = plan->ABSTOL * sqrt(N) + plan->RELTOL * rho * vops->norm(N, GH_usum);
 
 			float relMSE = 0.;
 
@@ -435,23 +427,23 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			if (   (grad_iter > plan->maxiter)
 			    || (   (r_norm < eps_pri)
-				&& (s_norm < eps_dual))) {
-
+				&& (s_norm < eps_dual)))
 				break;
-			}
 
 			if (plan->dynamic_rho) {
 
-				if (r_norm > mu * s_norm) {
+				float sc = 1.;
 
-					rho = rho * tau;
-					vops->smul(M, 1. / tau, u_all, u_all);
+				if (r_norm > plan->mu * s_norm)
+					sc = plan->tau;
+				else
+				if (s_norm > plan->mu * r_norm)
+					sc = 1. / plan->tau;
 
-				} else
-				if (s_norm > mu * r_norm) {
+				if (1. != sc) {
 
-					rho = rho / tau;
-					vops->smul(M, tau, u_all, u_all);
+					rho = rho * sc;
+					vops->smul(M, 1. / sc, u_all, u_all);
 				}
 			}
 
@@ -487,7 +479,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	vops->del(r_all);
 	vops->del(s);
 
-	if (!fast) {
+	if (!plan->fast) {
 
 		vops->del(GH_usum);
 		vops->del(zj_old);
