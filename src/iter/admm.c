@@ -139,15 +139,28 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	};
 
 	// allocate memory for all of our auxiliary variables
-	float* z = vops->allocate(M);
-	float* u = vops->allocate(M);
+	float* z_all = vops->allocate(M);
+	float* u_all = vops->allocate(M);
 	float* rhs = vops->allocate(N);
-	float* r = vops->allocate(M);
+	float* r_all = vops->allocate(M);
 	float* s = vops->allocate(N);
 	float* Gjx_plus_uj = vops->allocate(Mjmax);
 	float* GH_usum = NULL;
 	float* zj_old = NULL;
 
+
+	float* z[num_funs];
+	float* u[num_funs];
+	float* r[num_funs];
+
+	for (unsigned int j = 0; j < num_funs; j++) {
+
+		pos = sum_long_array(j, z_dims);
+
+		z[j] = z_all + pos;
+		u[j] = u_all + pos;
+		r[j] = r_all + pos;
+	}
 
 	if (!fast) {
 
@@ -157,16 +170,23 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 
 	float* x_err = NULL;
+	float image_truth_norm = 0.;
 
-	if (NULL != plan->image_truth)
+	if (NULL != plan->image_truth) {
+
+		image_truth_norm = vops->norm(N, plan->image_truth);
+
 		x_err = vops->allocate(N);
+	}
 
 	if (!fast) {
 
+		debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj");
+
 		if (NULL != plan->image_truth)
-			debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj", "relMSE");
-		else
-			debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj");
+			debug_printf(DP_DEBUG2, "%10s", "relMSE");
+
+		debug_printf(DP_DEBUG2, "\n");
 	}
 
 	float rho = plan->rho;
@@ -199,13 +219,9 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 	if (!fast) {
 
-		for (unsigned int j = 0; j < num_funs; j++) {
-
-			long Mj = z_dims[j];
-
+		for (unsigned int j = 0; j < num_funs; j++)
 			if (biases[j] != NULL)
-				n3 = n3 + vops->dot(Mj, biases[j], biases[j]);
-		}
+				n3 += vops->dot(z_dims[j], biases[j], biases[j]);
 
 		n3 = sqrt(n3);
 	}
@@ -217,27 +233,24 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		for (unsigned int j = 0; j < num_funs; j++) {
 	
 			// initialize for j'th function update
-			pos = sum_long_array(j, z_dims);
-
-			long Mj = z_dims[j];
 
 			plan->ops[j].forward(plan->ops[j].data, Gjx_plus_uj, x); // Gj(x)
 
 			if (NULL != biases[j])
-				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, biases[j]);
+				vops->sub(z_dims[j], Gjx_plus_uj, Gjx_plus_uj, biases[j]);
 
-			if (0 == rho)
-				vops->copy(Mj, z + pos, Gjx_plus_uj);
+			if (0. == rho)
+				vops->copy(z_dims[j], z[j], Gjx_plus_uj);
 			else
-				plan->prox_ops[j].prox_fun(plan->prox_ops[j].data, 1. / rho, z + pos, Gjx_plus_uj);
+				plan->prox_ops[j].prox_fun(plan->prox_ops[j].data, 1. / rho, z[j], Gjx_plus_uj);
 
-			vops->sub(Mj, u + pos, Gjx_plus_uj, z + pos);
+			vops->sub(z_dims[j], u[j], Gjx_plus_uj, z[j]);
 		}
 
 	} else {
 
-		vops->clear(M, z);
-		vops->clear(M, u);
+		vops->clear(M, z_all);
+		vops->clear(M, u_all);
 	}
 
 
@@ -245,23 +258,16 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 		// update x
 		vops->clear(N, rhs);
-		vops->sub(M, r, z, u);
+		vops->sub(M, r_all, z_all, u_all);
 
 		for (unsigned int j = 0; j < num_funs; j++) {
 
-			pos = sum_long_array(j, z_dims);
+			if (NULL != biases[j])
+				vops->add(z_dims[j], r[j], r[j], biases[j]);
 
-			if (NULL != biases[j]) {
-
-				long Mj = z_dims[j];
-
-				vops->add(Mj, r + pos, r + pos, biases[j]);
-			}
-
-			plan->ops[j].adjoint(plan->ops[j].data, s, r + pos);
+			plan->ops[j].adjoint(plan->ops[j].data, s, r[j]);
 			vops->add(N, rhs, rhs, s);
 		}
-
 
 		if (NULL != Aop) {
 
@@ -281,7 +287,10 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			if (eps > 0.) {
 
-			  conjgrad_hist_prealloc(&cghistory, plan->maxitercg, 0., 1.E-3 * eps, N, &ndata, cgdata, vops, admm_normaleq, x, rhs, plan->image_truth, obj_eval_data, obj_eval);
+				conjgrad_hist_prealloc(&cghistory, plan->maxitercg, 0.,
+						1.E-3 * eps, N, &ndata, cgdata, vops, admm_normaleq, x, rhs,
+						plan->image_truth, obj_eval_data, obj_eval);
+
 			  //conjgrad_hist(&cghistory, plan->maxitercg, 0., 1.E-3 * eps, N, &ndata, vops, admm_normaleq, x, rhs, plan->image_truth, obj_eval_data, obj_eval);
 
 			} else {
@@ -295,11 +304,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			grad_iter += cghistory.numiter;
 		}
 
-		if (NULL != obj_eval)
-			history->objective[i] = obj_eval(obj_eval_data, x);
-		else
-			history->objective[i] = 0.;
-
+		history->objective[i] = (NULL == obj_eval) ? 0. : obj_eval(obj_eval_data, x);
 
 
 		double n1 = 0.;
@@ -308,7 +313,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 			vops->clear(N, GH_usum);
 			vops->clear(N, s);
-			vops->clear(M, r);
+			vops->clear(M, r_all);
 		}
 
 
@@ -316,57 +321,52 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		for (unsigned int j = 0; j < num_funs; j++) {
 	
 			// initialize for j'th function update
-			pos = sum_long_array(j, z_dims);
-
-			long Mj = z_dims[j];
-
 
 			plan->ops[j].forward(plan->ops[j].data, Gjx_plus_uj, x); // Gj(x)
 
 			// over-relaxation: Gjx_hat = alpha * Gj(x) + (1 - alpha) * (zj_old + bj)
 			if (!fast) {
 
-				vops->copy(Mj, zj_old, z + pos);
-				vops->copy(Mj, r + pos, Gjx_plus_uj); // rj = Gj(x)
+				vops->copy(z_dims[j], zj_old, z[j]);
+				vops->copy(z_dims[j], r[j], Gjx_plus_uj); // rj = Gj(x)
 
-				n1 = n1 + vops->dot(Mj, r + pos, r + pos);
+				n1 = n1 + vops->dot(z_dims[j], r[j], r[j]);
 
-				vops->smul(Mj, plan->alpha, Gjx_plus_uj, Gjx_plus_uj);
-				vops->axpy(Mj, Gjx_plus_uj, (1. - plan->alpha), z + pos);
+				vops->smul(z_dims[j], plan->alpha, Gjx_plus_uj, Gjx_plus_uj);
+				vops->axpy(z_dims[j], Gjx_plus_uj, (1. - plan->alpha), z[j]);
 
 				if (NULL != biases[j])
-					vops->axpy(Mj, Gjx_plus_uj, (1. - plan->alpha), biases[j]);
+					vops->axpy(z_dims[j], Gjx_plus_uj, (1. - plan->alpha), biases[j]);
 			}
 
-			vops->add(Mj, Gjx_plus_uj, Gjx_plus_uj, u + pos); // Gj(x) + uj
+			vops->add(z_dims[j], Gjx_plus_uj, Gjx_plus_uj, u[j]); // Gj(x) + uj
 
 			if (NULL != biases[j])
-				vops->sub(Mj, Gjx_plus_uj, Gjx_plus_uj, biases[j]); // Gj(x) - bj + uj
+				vops->sub(z_dims[j], Gjx_plus_uj, Gjx_plus_uj, biases[j]); // Gj(x) - bj + uj
 
 
-			if (0 == rho)
-				vops->copy(Mj, z + pos, Gjx_plus_uj);
+			if (0. == rho)
+				vops->copy(z_dims[j], z[j], Gjx_plus_uj);
 			else
-				plan->prox_ops[j].prox_fun(plan->prox_ops[j].data, 1. / rho, z + pos, Gjx_plus_uj);
+				plan->prox_ops[j].prox_fun(plan->prox_ops[j].data, 1. / rho, z[j], Gjx_plus_uj);
 
-			vops->sub(Mj, u + pos, Gjx_plus_uj, z + pos);
+			vops->sub(z_dims[j], u[j], Gjx_plus_uj, z[j]);
 
 			if (!fast) {
 
 				// rj = rj - zj - bj = Gj(x) - zj - bj
-				vops->sub(Mj, r + pos, r + pos, z + pos);
+				vops->sub(z_dims[j], r[j], r[j], z[j]);
 
 				if (NULL != biases[j])
-					vops->sub(Mj, r + pos, r + pos, biases[j]);
-
+					vops->sub(z_dims[j], r[j], r[j], biases[j]);
 
 				// add next term to s: s = s + Gj^H (zj - zj_old)
-				vops->sub(Mj, zj_old, z + pos, zj_old);
+				vops->sub(z_dims[j], zj_old, z[j], z[j]);
 				plan->ops[j].adjoint(plan->ops[j].data, rhs, zj_old);
 				vops->add(N, s, s, rhs);
 
 				// GH_usum += G_j^H uj (for updating eps_dual)
-				plan->ops[j].adjoint(plan->ops[j].data, rhs, u + pos);
+				plan->ops[j].adjoint(plan->ops[j].data, rhs, u[j]);
 				vops->add(N, GH_usum, GH_usum, rhs);
 			}
 
@@ -377,14 +377,12 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		if (!fast) {
 
 			history->s_norm[i] = rho * vops->norm(N, s); 
-			history->r_norm[i] = vops->norm(M, r);
+			history->r_norm[i] = vops->norm(M, r_all);
 
 			n1 = sqrt(n1);
 
-			double n2 = vops->norm(M, z);
-			double n = n1 > n2 ? n1 : n2;
-
-			n = n > n3 ? n : n3;
+			double n2 = vops->norm(M, z_all);
+			double n = MAX(MAX(n1, n2), n3);
 
 			history->eps_pri[i] = ABSTOL * sqrt(M) + RELTOL * n;
 			history->eps_dual[i] = ABSTOL * sqrt(N) + RELTOL * rho * vops->norm(N, GH_usum);
@@ -392,14 +390,18 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			if (NULL != plan->image_truth) {
 
 				vops->sub(N, x_err, x, plan->image_truth);
-				history->relMSE[i] = vops->norm(N, x_err) / vops->norm(N, plan->image_truth);
+				history->relMSE[i] = vops->norm(N, x_err) / image_truth_norm;
 			}
 
+			debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.5f\t%10.4f",
+						i, grad_iter, history->rho[i], history->r_norm[i],
+						history->eps_pri[i], history->s_norm[i], history->eps_dual[i],
+						history->objective[i]);
 
 			if (NULL != plan->image_truth)
-				debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\n", i, grad_iter, history->rho[i], history->r_norm[i], history->eps_pri[i], history->s_norm[i], history->eps_dual[i], history->objective[i], history->relMSE[i]);
-			else
-				debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.5f\t%10.4f\n", i, grad_iter, history->rho[i], history->r_norm[i], history->eps_pri[i], history->s_norm[i], history->eps_dual[i], history->objective[i]);
+				debug_printf(DP_DEBUG2, "%10.4f", history->relMSE[i]);
+
+			debug_printf(DP_DEBUG2, "\n");
 
 
 			if (   (grad_iter > plan->maxiter)
@@ -415,13 +417,13 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 				if (history->r_norm[i] > mu * history->s_norm[i]) {
 
 					rho = rho * tau;
-					vops->smul(M, 1. / tau, u, u);
+					vops->smul(M, 1. / tau, u_all, u_all);
 
 				} else
 				if (history->s_norm[i] > mu * history->r_norm[i]) {
 
 					rho = rho / tau;
-					vops->smul(M, tau, u, u);
+					vops->smul(M, tau, u_all, u_all);
 				}
 			}
 
@@ -440,20 +442,21 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			if (hw_k == hw_K) {
 
 				hw_k = 0;
-				rho *= 2.;
 				hw_K *= 2;
-				vops->smul(M, 0.5, u, u);
+				rho *= 2.;
+
+				vops->smul(M, 0.5, u_all, u_all);
 			}
 		}
 	}
 
 
 	// cleanup
-	vops->del(z);
-	vops->del(u);
+	vops->del(z_all);
+	vops->del(u_all);
 	vops->del(rhs);
 	vops->del(Gjx_plus_uj);
-	vops->del(r);
+	vops->del(r_all);
 	vops->del(s);
 
 	if (!fast) {
