@@ -87,11 +87,11 @@ CXX ?= g++
 ifneq ($(BUILDTYPE), MacOSX)
 BLAS_BASE ?= /usr/
 else
-BLAS_BASE ?= /usr/local/opt/openblas/
 ifeq ($(MACPORTS),1)
 BLAS_BASE ?= /opt/local/
 CPPFLAGS += -DUSE_MACPORTS
 endif
+BLAS_BASE ?= /usr/local/opt/openblas/
 endif
 
 # cuda
