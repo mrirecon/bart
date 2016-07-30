@@ -85,6 +85,28 @@ static long sum_long_array(unsigned int N, const long a[N])
 }
 
 
+static void init_history(struct admm_history_s* history, int maxiter)
+{
+	history->r_norm = *TYPE_ALLOC(double[maxiter]);
+	history->s_norm = *TYPE_ALLOC(double[maxiter]);
+	history->eps_pri = *TYPE_ALLOC(double[maxiter]);
+	history->eps_dual = *TYPE_ALLOC(double[maxiter]);
+	history->objective = *TYPE_ALLOC(double[maxiter]);
+	history->rho = *TYPE_ALLOC(float[maxiter]);
+	history->relMSE = *TYPE_ALLOC(double[maxiter]);
+}
+
+static void free_history(struct admm_history_s* history)
+{
+	free(history->r_norm);
+	free(history->s_norm);
+	free(history->eps_pri);
+	free(history->eps_dual);
+	free(history->objective);
+	free(history->rho);
+}
+
+
 /*
  * ADMM (ADMM-2 from Afonso et al.)
  *
@@ -117,13 +139,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	long M = sum_long_array(num_funs, z_dims);
 
 	// allocate memory for history
-	history->r_norm = *TYPE_ALLOC(double[plan->maxiter]);
-	history->s_norm = *TYPE_ALLOC(double[plan->maxiter]);
-	history->eps_pri = *TYPE_ALLOC(double[plan->maxiter]);
-	history->eps_dual = *TYPE_ALLOC(double[plan->maxiter]);
-	history->objective = *TYPE_ALLOC(double[plan->maxiter]);
-	history->rho = *TYPE_ALLOC(float[plan->maxiter]);
-	history->relMSE = *TYPE_ALLOC(double[plan->maxiter]);
+	init_history(history, plan->maxiter);
 
 	long Mjmax = 0;
 
@@ -304,7 +320,10 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			grad_iter += cghistory.numiter;
 		}
 
-		history->objective[i] = (NULL == obj_eval) ? 0. : obj_eval(obj_eval_data, x);
+		float objective = 0.;
+
+		if (NULL != obj_eval)
+			objective = obj_eval(obj_eval_data, x);
 
 
 		double n1 = 0.;
@@ -372,55 +391,64 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 		}
 
-		history->rho[i] = rho;
 
 		if (!fast) {
 
-			history->s_norm[i] = rho * vops->norm(N, s); 
-			history->r_norm[i] = vops->norm(M, r_all);
+			float s_norm = rho * vops->norm(N, s);
+			float r_norm = vops->norm(M, r_all);
 
 			n1 = sqrt(n1);
 
 			double n2 = vops->norm(M, z_all);
 			double n = MAX(MAX(n1, n2), n3);
 
-			history->eps_pri[i] = ABSTOL * sqrt(M) + RELTOL * n;
-			history->eps_dual[i] = ABSTOL * sqrt(N) + RELTOL * rho * vops->norm(N, GH_usum);
+			float eps_pri = ABSTOL * sqrt(M) + RELTOL * n;
+			float eps_dual = ABSTOL * sqrt(N) + RELTOL * rho * vops->norm(N, GH_usum);
+
+			float relMSE = 0.;
 
 			if (NULL != plan->image_truth) {
 
 				vops->sub(N, x_err, x, plan->image_truth);
-				history->relMSE[i] = vops->norm(N, x_err) / image_truth_norm;
+				relMSE = vops->norm(N, x_err) / image_truth_norm;
 			}
 
 			debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.5f\t%10.4f",
-						i, grad_iter, history->rho[i], history->r_norm[i],
-						history->eps_pri[i], history->s_norm[i], history->eps_dual[i],
-						history->objective[i]);
+						i, grad_iter, rho, r_norm,
+						eps_pri, s_norm, eps_dual, objective);
 
 			if (NULL != plan->image_truth)
-				debug_printf(DP_DEBUG2, "%10.4f", history->relMSE[i]);
+				debug_printf(DP_DEBUG2, "%10.4f", relMSE);
 
 			debug_printf(DP_DEBUG2, "\n");
 
 
-			if (   (grad_iter > plan->maxiter)
-			    || (   (history->r_norm[i] < history->eps_pri[i])
-				&& (history->s_norm[i] < history->eps_dual[i]))) {
+			history->s_norm[i] = s_norm;
+			history->r_norm[i] = r_norm;
+			history->eps_pri[i] = eps_pri;
+			history->eps_dual[i] = eps_dual;
+			history->relMSE[i] = relMSE;
+			history->objective[i] = objective;
+			history->rho[i] = rho;
+			history->numiter = i;
 
-				history->numiter = i;
+
+			if (   (grad_iter > plan->maxiter)
+			    || (   (r_norm < eps_pri)
+				&& (s_norm < eps_dual))) {
+
 				break;
 			}
 
 			if (plan->dynamic_rho) {
 
-				if (history->r_norm[i] > mu * history->s_norm[i]) {
+				if (r_norm > mu * s_norm) {
 
 					rho = rho * tau;
 					vops->smul(M, 1. / tau, u_all, u_all);
 
 				} else
-				if (history->s_norm[i] > mu * history->r_norm[i]) {
+				if (s_norm > mu * r_norm) {
 
 					rho = rho / tau;
 					vops->smul(M, tau, u_all, u_all);
@@ -475,10 +503,5 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	free(cghistory.objective);
 	free(cghistory.relMSE);
 
-	free(history->r_norm);
-	free(history->s_norm);
-	free(history->eps_pri);
-	free(history->eps_dual);
-	free(history->objective);
-	free(history->rho);
+	free_history(history);
 }

@@ -95,7 +95,7 @@ struct admm_plan_s {
 
 
 /**
- * Store ADMM history (also used for early stopping criterion)
+ * Store ADMM history
  *
  * @param numiter actual number of iterations run
  * @param r_norm (array) primal residual norm at each iteration
