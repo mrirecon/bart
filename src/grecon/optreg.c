@@ -143,6 +143,12 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 					  regs[r].xflags = 0u;
 					  regs[r].jflags = 0u;
 				  }
+				  else if (strcmp(rt, "F") == 0) {
+
+					  regs[r].xform = FTL1;
+					  int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+					  assert(3 == ret);
+				  }
 				  else if (strcmp(rt, "h") == 0) {
 
 					  help_reg();
@@ -351,6 +357,13 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 
 				trafos[nr] = linop_identity_create(DIMS, img_dims);
 				prox_ops[nr] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
+				break;
+
+			case FTL1:
+				debug_printf(DP_INFO, "l1 regularization of Fourier transform: %f\n", regs[nr].lambda);
+
+				trafos[nr] = linop_fft_create(DIMS, img_dims, regs[nr].xflags);
+				prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
 				break;
 		}
 
