@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include "num/ops.h"
 
@@ -383,11 +384,16 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			}
 		}
 
+		float s_norm = 0.;
+		float r_norm = 0.;
+
+		if (plan->dynamic_rho || !plan->fast) {
+
+			s_norm = rho * vops->norm(N, s);
+			r_norm = vops->norm(M, r_all);
+		}
 
 		if (!plan->fast) {
-
-			float s_norm = rho * vops->norm(N, s);
-			float r_norm = vops->norm(M, r_all);
 
 			n1 = sqrt(n1);
 
@@ -430,29 +436,25 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 				&& (s_norm < eps_dual)))
 				break;
 
-			if (plan->dynamic_rho) {
-
-				float sc = 1.;
-
-				if (r_norm > plan->mu * s_norm)
-					sc = plan->tau;
-				else
-				if (s_norm > plan->mu * r_norm)
-					sc = 1. / plan->tau;
-
-				if (1. != sc) {
-
-					rho = rho * sc;
-					vops->smul(M, 1. / sc, u_all, u_all);
-				}
-			}
-
 		} else {
 
 			debug_printf(DP_DEBUG3, "### ITER: %d (%d)\n", i, grad_iter);
 
 			if (grad_iter > plan->maxiter)
 				break;
+		}
+
+		float sc = 1.;
+
+		assert(!(plan->dynamic_rho && plan->hogwild));
+
+		if (plan->dynamic_rho) {
+
+			if (r_norm > plan->mu * s_norm)
+				sc = plan->tau;
+			else
+			if (s_norm > plan->mu * r_norm)
+				sc = 1. / plan->tau;
 		}
 
 		if (plan->hogwild) {
@@ -463,10 +465,14 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 				hw_k = 0;
 				hw_K *= 2;
-				rho *= 2.;
-
-				vops->smul(M, 0.5, u_all, u_all);
+				sc = 2.;
 			}
+		}
+
+		if (1. != sc) {
+
+			rho = rho * sc;
+			vops->smul(M, 1. / sc, u_all, u_all);
 		}
 	}
 
