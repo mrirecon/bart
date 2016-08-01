@@ -63,7 +63,7 @@ int main_reshape(int argc, char* argv[])
 	
 	for (unsigned int i = 0; i < DIMS; i++)
 		if (!(MD_IS_SET(flags, i) || (in_strs[i] == out_strs[i]))) 
-			error("Dimensions are not consistent at index %d.\n");
+			error("Dimensions are not consistent at index %d.\n", i);
 
 
 	complex float* out_data = create_cfl(argv[n + 3], DIMS, out_dims);
