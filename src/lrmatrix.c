@@ -215,7 +215,7 @@ int main_lrmatrix(int argc, char* argv[])
 		    NULL,
 		    sum_xupdate_op,
 		    size, (float*) odata, NULL,
-		    NULL, NULL, NULL);
+		    NULL);
 	
 
 

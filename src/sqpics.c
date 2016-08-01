@@ -688,7 +688,7 @@ int main_sqpics(int argc, char* argv[])
 
 
 	long size = 2 * md_calc_size(DIMS, img_dims);
-	iter2_admm(&mmconf.base, NULL, nr_penalties, thresh_ops, trafos, biases, NULL, size, (float*)image, NULL, NULL, NULL, NULL);
+	iter2_admm(CAST_UP(&mmconf), NULL, nr_penalties, thresh_ops, trafos, biases, NULL, size, (float*)image, NULL, NULL);
 
 
 #if 0

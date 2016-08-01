@@ -29,6 +29,7 @@
 
 #include "iter/italgos.h"
 #include "iter/vec.h"
+#include "iter/monitor.h"
 
 #include "admm.h"
 
@@ -93,9 +94,7 @@ struct cg_xupdate_s {
 
 	struct admm_normaleq_data* ndata;
 
-	const float* image_truth;
-	void* obj_eval_data;
-	float (*obj_eval)(const void*, const float*);
+	struct iter_monitor_s* monitor;
 };
 
 static void cg_xupdate(void* _data, float rho, float* x, const float* rhs)
@@ -114,7 +113,7 @@ static void cg_xupdate(void* _data, float rho, float* x, const float* rhs)
 
 	conjgrad(data->maxitercg, 0.,
 			1.E-3 * eps, data->N, data->ndata, data->vops, admm_normaleq, x, rhs,
-			data->image_truth, data->obj_eval_data, data->obj_eval);
+			data->monitor);
 
 	data->ndata->nr_invokes--;	// subtract one for initialization in conjgrad
 }
@@ -163,9 +162,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	  long N, float* x, const float* x_adj,
 	  const struct vec_iter_s* vops,
 	  void (*Aop)(void* _data, float* _dst, const float* _src),
-	  void* Aop_data,
-	  void* obj_eval_data,
-	  float (*obj_eval)(const void*, const float*))
+	  void* Aop_data, struct iter_monitor_s* monitor)
 {
 	unsigned int num_funs = D;
 
@@ -210,16 +207,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		zj_old = vops->allocate(Mjmax);
 	}
 
-	float* x_err = NULL;
-	float image_truth_norm = 0.;
-
-	if (NULL != plan->image_truth) {
-
-		image_truth_norm = vops->norm(N, plan->image_truth);
-
-		x_err = vops->allocate(N);
-	}
-
 	if (!plan->fast) {
 
 		debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj");
@@ -256,9 +243,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		.maxitercg = plan->maxitercg,
 		.ndata = &ndata,
 
-		.image_truth = plan->image_truth,
-		.obj_eval = obj_eval,
-		.obj_eval_data = obj_eval_data,
+		.monitor = monitor,
 	};
 
 	if (NULL == xupdate_fun) {
@@ -318,6 +303,8 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 	for (unsigned int i = 0; i < plan->maxiter; i++) {
 
+		iter_monitor(monitor, vops, x);
+
 		// update x
 		vops->clear(N, rhs);
 		vops->sub(M, r_all, z_all, u_all);
@@ -340,11 +327,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 		xupdate_fun(xupdate_data, rho, x, rhs);
 		ndata.nr_invokes++;
-
-		float objective = 0.;
-
-		if (NULL != obj_eval)
-			objective = obj_eval(obj_eval_data, x);
 
 
 		double n1 = 0.;
@@ -431,19 +413,13 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			float eps_dual = plan->ABSTOL * sqrt(N) + plan->RELTOL * rho * vops->norm(N, GH_usum);
 
 			float relMSE = 0.;
-
-			if (NULL != plan->image_truth) {
-
-				vops->sub(N, x_err, x, plan->image_truth);
-				relMSE = vops->norm(N, x_err) / image_truth_norm;
-			}
+			float objective = 0.; // FIXME, MONITOR
 
 			debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.5f\t%10.4f",
 						i, ndata.nr_invokes, rho, r_norm,
 						eps_pri, s_norm, eps_dual, objective);
 
-			if (NULL != plan->image_truth)
-				debug_printf(DP_DEBUG2, "%10.4f", relMSE);
+			debug_printf(DP_DEBUG2, "%10.4f", relMSE);
 
 			debug_printf(DP_DEBUG2, "\n");
 
@@ -517,9 +493,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		vops->del(GH_usum);
 		vops->del(zj_old);
 	}
-
-	if (NULL != x_err)
-		vops->del(x_err);
 
 	vops->del(ndata.tmp);	
 

@@ -139,12 +139,10 @@ void iter_conjgrad(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 	assert(NULL == thresh_prox);
-	iter2_conjgrad(_conf, normaleq_op, 0, NULL, NULL, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_conjgrad(_conf, normaleq_op, 0, NULL, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 
@@ -153,9 +151,7 @@ void iter_landweber(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 	struct iter_landweber_conf* conf = CAST_DOWN(iter_landweber_conf, _conf);
 
@@ -166,11 +162,7 @@ void iter_landweber(iter_conf* _conf,
 
 	assert(NULL == thresh_prox);
 
-	UNUSED(obj_eval);
-	UNUSED(objval_data);
-	UNUSED(image_truth);
-
-	landweber_sym(conf->maxiter, 1.E-3 * eps, conf->step, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, image, image_adj);
+	landweber_sym(conf->maxiter, 1.E-3 * eps, conf->step, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, image, image_adj, monitor);
 
 cleanup:
 	;
@@ -183,22 +175,18 @@ void iter_ist(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
-	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 void iter_fista(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
-	iter2_fista(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_fista(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 
@@ -207,13 +195,11 @@ void iter_admm(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 	const struct linop_s* eye[1] = { linop_identity_create(1, MD_DIMS(size / 2)) }; // using complex float identity operator... divide size by 2
 
-	iter2_admm(_conf, normaleq_op, 1, &thresh_prox, eye, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_admm(_conf, normaleq_op, 1, &thresh_prox, eye, NULL, NULL, size, image, image_adj, monitor);
 
 	linop_free(eye[0]);
 }
@@ -223,14 +209,12 @@ void iter_call_iter2(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 	struct iter2_call_s* it = CAST_DOWN(iter2_call_s, _conf);
 
 	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL, NULL,
-		size, image, image_adj, image_truth, objval_data, obj_eval);
+		size, image, image_adj, monitor);
 }
 
 

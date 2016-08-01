@@ -17,13 +17,13 @@ struct operator_p_s;
 typedef struct iter_conf_s { TYPEID* TYPEID; } iter_conf;
 #endif
 
+struct iter_monitor_s;
+
 typedef void italgo_fun_f(iter_conf* conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*));
+		struct iter_monitor_s* monitor);
 
 typedef italgo_fun_f* italgo_fun_t;
 

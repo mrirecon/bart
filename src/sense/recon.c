@@ -237,7 +237,7 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 		if (NULL == pattern) {
 
 			lsqr2(DIMS, &lsqr_conf, italgo, iconf, sense_op, num_funs, thresh_op, thresh_funs,
-			      img_dims, image, ksp_dims, kspace, precond_op, NULL, NULL, NULL);
+			      img_dims, image, ksp_dims, kspace, precond_op, NULL);
 
 		} else {
 

@@ -128,9 +128,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	   const long x_dims[static N], complex float* x,
 	   const long y_dims[static N], const complex float* y,
 	   const struct operator_s* precond_op,
-	   const complex float* x_truth,
-	   void* obj_eval_data,
-	   float (*obj_eval)(const void*, const float*))
+	   struct iter_monitor_s* monitor)
 {
 #if 1
 	// -----------------------------------------------------------
@@ -172,7 +170,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 
 	italgo(iconf, normaleq_op, num_funs, prox_funs, prox_linops, NULL, 
 			NULL, data.size, (float*)x, (const float*)x_adj,
-			(const float*)x_truth, obj_eval_data, obj_eval);
+			monitor);
 
 
 	// -----------------------------------------------------------
@@ -210,7 +208,7 @@ void lsqr(unsigned int N,
 {
 	lsqr2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s) }, italgo, iconf })),
 		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
-		x_dims, x, y_dims, y, precond_op, NULL, NULL, NULL);
+		x_dims, x, y_dims, y, precond_op, NULL);
 }
 
 
@@ -260,7 +258,7 @@ void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
 
 	linop_forward(weights, N, y_dims, wy, N, y_dims, y);
 
-	lsqr2(N, conf, italgo, iconf, op, num_funs, prox_funs, prox_linops, x_dims, x, y_dims, wy, precond_op, NULL, NULL, NULL);
+	lsqr2(N, conf, italgo, iconf, op, num_funs, prox_funs, prox_linops, x_dims, x, y_dims, wy, precond_op, NULL);
 
 	md_free(wy);
 
@@ -365,23 +363,18 @@ extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			const long x_dims[N], complex float* x,
 			const long y_dims[N], const complex float* y,
 			const struct operator_s* precond_op,
-			const complex float* x_truth,
-			void* obj_eval_data,
-			float (*obj_eval)(const void*, const float*))
+			struct iter_monitor_s* monitor)
 {
 
 	complex float* gpu_y = md_gpu_move(N, y_dims, y, CFL_SIZE);
 	complex float* gpu_x = md_gpu_move(N, x_dims, x, CFL_SIZE);
-	complex float* gpu_x_truth = md_gpu_move(N, x_dims, x_truth, CFL_SIZE);
 
 	lsqr2(N, conf, italgo, iconf, model_op, num_funs, prox_funs, prox_linops,
 	      x_dims, gpu_x, y_dims, gpu_y,
-	      precond_op,
-	      gpu_x_truth, obj_eval_data, obj_eval);
+	      precond_op, monitor);
 
 	md_copy(N, x_dims, x, gpu_x, CFL_SIZE);
 
-	md_free(gpu_x_truth);
 	md_free(gpu_x);
 	md_free(gpu_y);
 }

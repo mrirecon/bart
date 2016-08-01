@@ -122,9 +122,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	  long N, float* x, const float* x_adj,
 	  const struct vec_iter_s* vops,
 	  void (*Aop)(void* _data, float* _dst, const float* _src),
-	  void* Aop_data,
-	  void* obj_eval_data, 
-	  float (*obj_eval)(const void*, const float*));
+	  void* Aop_data, struct iter_monitor_s* monitor);
 
 #if 0
 /**

@@ -46,6 +46,7 @@
 
 #include "iter/iter2.h"
 #include "iter/prox.h"
+#include "iter/monitor.h"
 
 
 #include "misc/debug.h"
@@ -204,7 +205,7 @@ void bpsense_recon(struct bpsense_conf* conf, const long dims[DIMS], complex flo
 	// -----------------------------------------------------------
 	// recon
 	
-	iter2_admm(conf->iconf, NULL, conf->lambda == 0. ? 2 : 3, prox_ops, linops, NULL, NULL, size, (float*)image, NULL, (const float*)image_truth, data, bpsense_objective);
+	iter2_admm(conf->iconf, NULL, conf->lambda == 0. ? 2 : 3, prox_ops, linops, NULL, NULL, size, (float*)image, NULL, create_monitor(size, (const float*)image_truth, data, bpsense_objective));
 
 
 	// -----------------------------------------------------------

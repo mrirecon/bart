@@ -52,7 +52,7 @@ static void inverse(void* _data, float alpha, float* dst, const float* src)
 	md_clear(1, MD_DIMS(data->size), dst, FL_SIZE);
 
         float eps = md_norm(1, MD_DIMS(data->size), src);
-        conjgrad(100, alpha, 0.1f * eps, data->size, (void*)data, select_vecops(src), normal, dst, src, NULL, NULL, NULL);
+        conjgrad(100, alpha, 0.1f * eps, data->size, (void*)data, select_vecops(src), normal, dst, src, NULL);
 }
 
 static void forward(void* _data, float* dst, const float* src)

@@ -66,9 +66,7 @@ void iter2_conjgrad(iter_conf* _conf,
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 
 	assert(0 == D);
@@ -84,7 +82,7 @@ void iter2_conjgrad(iter_conf* _conf,
 	if (checkeps(eps))
 		goto cleanup;
 
-	conjgrad(conf->maxiter, conf->l2lambda, eps * conf->tol, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, image, image_adj, image_truth, obj_eval_data, obj_eval);
+	conjgrad(conf->maxiter, conf->l2lambda, eps * conf->tol, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, image, image_adj, monitor);
 
 cleanup:
 	;
@@ -99,9 +97,7 @@ void iter2_ist(iter_conf* _conf,
 		const float* biases[static D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 
 	assert(D == 1);
@@ -123,7 +119,7 @@ void iter2_ist(iter_conf* _conf,
 
 	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
-	ist(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, operator_p_iter, (void*)prox_ops[0], image, image_adj, image_truth, obj_eval_data, obj_eval);
+	ist(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, operator_p_iter, (void*)prox_ops[0], image, image_adj, monitor);
 
 
 cleanup:
@@ -139,9 +135,7 @@ void iter2_fista(iter_conf* _conf,
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 
 	assert(D == 1);
@@ -162,7 +156,7 @@ void iter2_fista(iter_conf* _conf,
 
 	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
-	fista(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, operator_p_iter, (void*)prox_ops[0], image, image_adj, image_truth, obj_eval_data, obj_eval);
+	fista(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, operator_p_iter, (void*)prox_ops[0], image, image_adj, monitor);
 
 cleanup:
 	;
@@ -178,9 +172,7 @@ void iter2_admm(iter_conf* _conf,
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 	struct iter_admm_conf* conf = CAST_DOWN(iter_admm_conf, _conf);
 
@@ -189,7 +181,6 @@ void iter2_admm(iter_conf* _conf,
 		.maxiter = conf->maxiter,
 		.maxitercg = conf->maxitercg,
 		.rho = conf->rho,
-		.image_truth = image_truth,
 		.num_funs = D,
 		.do_warmstart = conf->do_warmstart,
 		.dynamic_rho = conf->dynamic_rho,
@@ -240,7 +231,7 @@ void iter2_admm(iter_conf* _conf,
 			goto cleanup;
 	}
 
-	admm(&admm_history, &admm_plan, admm_plan.num_funs, z_dims, size, (float*)image, image_adj, select_vecops(image), operator_iter, (void*)normaleq_op, obj_eval_data, obj_eval);
+	admm(&admm_history, &admm_plan, admm_plan.num_funs, z_dims, size, (float*)image, image_adj, select_vecops(image), operator_iter, (void*)normaleq_op, monitor);
 
 cleanup:
 	;
@@ -256,9 +247,7 @@ void iter2_pocs(iter_conf* _conf,
 		const float* biases[static D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 	struct iter_pocs_conf* conf = CAST_DOWN(iter_pocs_conf, _conf);
 
@@ -279,7 +268,7 @@ void iter2_pocs(iter_conf* _conf,
 		proj_data[i] = (void*)prox_ops[i];
 	}
 
-	pocs(conf->maxiter, D, proj_ops, proj_data, select_vecops(image), size, image, image_truth, obj_eval_data, obj_eval);
+	pocs(conf->maxiter, D, proj_ops, proj_data, select_vecops(image), size, image, monitor);
 }
 
 
@@ -291,9 +280,7 @@ void iter2_call_iter(iter_conf* _conf,
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 	assert(D <= 1);
 	assert(NULL == ops);
@@ -304,8 +291,7 @@ void iter2_call_iter(iter_conf* _conf,
 	struct iter_call_s* it = CAST_DOWN(iter_call_s, _conf);
 
 	it->fun(it->_conf, normaleq_op, (1 == D) ? prox_ops[0] : NULL,
-		size, image, image_adj,
-		image_truth, obj_eval_data, obj_eval);
+		size, image, image_adj, monitor);
 }
 
 

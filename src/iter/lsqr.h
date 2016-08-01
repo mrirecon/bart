@@ -68,12 +68,7 @@ extern void lsqr2_gpu(	unsigned int N, const struct lsqr_conf* conf,
 			const long x_dims[__VLA(N)], _Complex float* x,
 			const long y_dims[__VLA(N)], const _Complex float* y,
 			const struct operator_s* precond_op,
-			const _Complex float* x_truth,
-			void* obj_eval_data,
-			float (*obj_eval)(const void*, const float*));
-
-
-
+			struct iter_monitor_s* monitor);
 #endif
 
 extern void lsqr(	unsigned int N, const struct lsqr_conf* conf,
@@ -102,9 +97,7 @@ extern void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
 			const long x_dims[__VLA(N)], _Complex float* x,
 			const long y_dims[__VLA(N)], const _Complex float* y,
 			const struct operator_s* precond_op,
-			const _Complex float* x_truth,
-			void* obj_eval_data,
-			float (*obj_eval)(const void*, const float*));
+			struct iter_monitor_s* monitor);
 
 extern void wlsqr2(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun2_t italgo, iter_conf* iconf,

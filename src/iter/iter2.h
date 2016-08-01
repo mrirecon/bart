@@ -19,7 +19,7 @@ struct operator_p_s;
 typedef struct iter_conf_s { TYPEID* TYPEID; } iter_conf;
 #endif
 
-
+struct iter_monitor_s;
 
 typedef void (italgo_fun2_f)(iter_conf* conf,
 		const struct operator_s* normaleq_op,
@@ -29,9 +29,7 @@ typedef void (italgo_fun2_f)(iter_conf* conf,
 		const float* biases[__VLA(D)],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* obj_eval_data,
-		float (*obj_eval)(const void*, const float*));
+		struct iter_monitor_s* monitor);
 
 typedef italgo_fun2_f* italgo_fun2_t;
 
