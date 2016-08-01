@@ -171,7 +171,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	debug_printf(DP_DEBUG1, "lsqr: solve normal equations\n");
 
 	italgo(iconf, normaleq_op, num_funs, prox_funs, prox_linops, NULL, 
-			data.size, (float*)x, (const float*)x_adj,
+			NULL, data.size, (float*)x, (const float*)x_adj,
 			(const float*)x_truth, obj_eval_data, obj_eval);
 
 

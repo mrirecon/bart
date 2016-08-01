@@ -34,7 +34,7 @@
 #include "linops/sampling.h"
 
 #include "iter/iter.h"
-#include "iter/iter2_affine.h"
+#include "iter/iter2.h"
 
 #include "noncart/nufft.h"
 
@@ -688,7 +688,7 @@ int main_sqpics(int argc, char* argv[])
 
 
 	long size = 2 * md_calc_size(DIMS, img_dims);
-	iter2a_admm(&mmconf, NULL, nr_penalties, thresh_ops, trafos, biases, NULL, size, (float*)image, NULL, NULL, NULL, NULL);
+	iter2_admm(&mmconf.base, NULL, nr_penalties, thresh_ops, trafos, biases, NULL, size, (float*)image, NULL, NULL, NULL, NULL);
 
 
 #if 0

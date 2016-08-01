@@ -1,4 +1,5 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2016. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -25,6 +26,7 @@ typedef void (italgo_fun2_f)(iter_conf* conf,
 		unsigned int D,
 		const struct operator_p_s* prox_ops[__VLA(D)],
 		const struct linop_s* ops[__VLA(D)],
+		const float* biases[__VLA(D)],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		const float* image_truth,

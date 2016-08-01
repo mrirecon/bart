@@ -244,7 +244,7 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 	const struct operator_p_s* xupdate_op = operator_p_create(DIMS, dims_ksp, DIMS, dims_ksp, (void*)&data, xupdate_apply, proj_del);
 
 	md_clear(DIMS, dims_ksp, result, CFL_SIZE);
-	italgo(iconf, NULL, (alpha == 0.) ? 2 : 3, prox_ops, ops, xupdate_op, md_calc_size(DIMS, dims_ksp) * 2, (float*)result, NULL, NULL, (void*)&data, compute_norm);
+	italgo(iconf, NULL, (alpha == 0.) ? 2 : 3, prox_ops, ops, NULL, xupdate_op, md_calc_size(DIMS, dims_ksp) * 2, (float*)result, NULL, NULL, (void*)&data, compute_norm);
 
 	debug_printf(DP_INFO, "Done\n");
 

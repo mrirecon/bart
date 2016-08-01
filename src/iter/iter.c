@@ -144,7 +144,7 @@ void iter_conjgrad(iter_conf* _conf,
 		float (*obj_eval)(const void*, const float*))
 {
 	assert(NULL == thresh_prox);
-	iter2_conjgrad(_conf, normaleq_op, 0, NULL, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_conjgrad(_conf, normaleq_op, 0, NULL, NULL, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
 }
 
 
@@ -187,7 +187,7 @@ void iter_ist(iter_conf* _conf,
 		void* objval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
 }
 
 void iter_fista(iter_conf* _conf,
@@ -198,7 +198,7 @@ void iter_fista(iter_conf* _conf,
 		void* objval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-	iter2_fista(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_fista(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
 }
 
 
@@ -213,7 +213,7 @@ void iter_admm(iter_conf* _conf,
 {
 	const struct linop_s* eye[1] = { linop_identity_create(1, MD_DIMS(size / 2)) }; // using complex float identity operator... divide size by 2
 
-	iter2_admm(_conf, normaleq_op, 1, &thresh_prox, eye, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_admm(_conf, normaleq_op, 1, &thresh_prox, eye, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
 
 	linop_free(eye[0]);
 }
@@ -229,7 +229,7 @@ void iter_call_iter2(iter_conf* _conf,
 {
 	struct iter2_call_s* it = CAST_DOWN(iter2_call_s, _conf);
 
-	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL,
+	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL, NULL,
 		size, image, image_adj, image_truth, objval_data, obj_eval);
 }
 
