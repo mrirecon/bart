@@ -269,7 +269,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 		for (unsigned int j = 0; j < num_funs; j++)
 			if (biases[j] != NULL)
-				n3 += vops->dot(z_dims[j], biases[j], biases[j]);
+				n3 += pow(vops->norm(z_dims[j], biases[j]), 2.);
 
 		n3 = sqrt(n3);
 	}
@@ -352,7 +352,7 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 				vops->copy(z_dims[j], zj_old, z[j]);
 				vops->copy(z_dims[j], r[j], Gjx_plus_uj); // rj = Gj(x)
 
-				n1 = n1 + vops->dot(z_dims[j], r[j], r[j]);
+				n1 = n1 + pow(vops->norm(z_dims[j], r[j]), 2.);
 
 				vops->smul(z_dims[j], plan->alpha, Gjx_plus_uj, Gjx_plus_uj);
 				vops->axpy(z_dims[j], Gjx_plus_uj, (1. - plan->alpha), z[j]);
