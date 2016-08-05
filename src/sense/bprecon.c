@@ -41,7 +41,7 @@
 
 #include "linops/linop.h"
 #include "linops/someops.h"
-#include "linops/rvc.h"
+#include "linops/realval.h"
 #include "linops/sampling.h"
 
 #include "iter/iter2.h"
@@ -163,7 +163,7 @@ void bpsense_recon(struct bpsense_conf* conf, const long dims[DIMS], complex flo
 
 	if (conf->rvc) {
 
-		struct linop_s* rvc = rvc_create(DIMS, img_dims);
+		struct linop_s* rvc = linop_realval_create(DIMS, img_dims);
 		struct linop_s* tmp_op = linop_chain(rvc, sense_op);
 
 		linop_free(rvc);

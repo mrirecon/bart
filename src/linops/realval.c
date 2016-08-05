@@ -16,7 +16,7 @@
 
 #include "linops/linop.h"
 
-#include "rvc.h"
+#include "realval.h"
 
 
 struct rvc_s {
@@ -42,7 +42,7 @@ static void rvc_free(const linop_data_t* _data)
 	free((void*)data);
 }
 
-struct linop_s* rvc_create(unsigned int N, const long dims[N])
+struct linop_s* linop_realval_create(unsigned int N, const long dims[N])
 {
 	PTR_ALLOC(struct rvc_s, data);
 

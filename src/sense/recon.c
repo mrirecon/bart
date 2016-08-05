@@ -36,7 +36,7 @@
 #include "linops/linop.h"
 #include "linops/sampling.h"
 #include "linops/someops.h"
-#include "linops/rvc.h"
+#include "linops/realval.h"
 
 #include "iter/iter.h"
 #include "iter/lsqr.h"
@@ -131,7 +131,7 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 
 	if (conf->rvc) {
 
-		struct linop_s* rvc = rvc_create(DIMS, img_dims);
+		struct linop_s* rvc = linop_realval_create(DIMS, img_dims);
 		struct linop_s* tmp_op = linop_chain(rvc, sense_op);
 
 		linop_free(rvc);
@@ -224,7 +224,7 @@ void sense_recon2(const struct sense_conf* conf, const long dims[DIMS], complex 
 
 	if (conf->rvc) {
 
-		struct linop_s* rvc = rvc_create(DIMS, img_dims);
+		struct linop_s* rvc = linop_realval_create(DIMS, img_dims);
 		struct linop_s* tmp_op = linop_chain(rvc, sense_op);
 
 		linop_free(rvc);
