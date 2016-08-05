@@ -140,7 +140,7 @@ static void grad_op_free(const linop_data_t* _data)
 	free((void*)data);
 }
 
-struct linop_s* grad_init(long N, const long dims[N], unsigned int flags)
+struct linop_s* linop_grad_create(long N, const long dims[N], unsigned int flags)
 {
 	PTR_ALLOC(struct grad_s, data);
 

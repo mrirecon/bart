@@ -298,7 +298,7 @@ static void finite_diff_del(const linop_data_t* _data)
  *
  * Returns a pointer to the finite difference operator
  */
-extern const struct linop_s* finite_diff_init(unsigned int D, const long dim[D], const unsigned long flags, bool snip, bool gpu)
+extern const struct linop_s* linop_finitediff_create(unsigned int D, const long dim[D], const unsigned long flags, bool snip, bool gpu)
 {
 	PTR_ALLOC(struct fdiff_s, data);
 
@@ -364,10 +364,6 @@ complex float* get_fdiff_tmp2ptr(const struct linop_s* o)
 }
 
 
-void finite_diff_free(const struct linop_s* o)
-{
-	linop_free(o);
-}
 
 /**
  * Internal data structure used for zfinitediff operator
@@ -623,10 +619,7 @@ static void zfinitediff_normal(const linop_data_t* _data,
 	}
 }
 
-void zfinitediff_free(const struct linop_s* op) 
-{
-	linop_free(op);
-}
+
 
 static void zfinitediff_del(const linop_data_t* _data)
 {
@@ -641,7 +634,7 @@ static void zfinitediff_del(const linop_data_t* _data)
 	// FIXME free data
 }
 
-const struct linop_s* zfinitediff_init(unsigned int D, const long dims[D], long diffdim, bool circular)
+const struct linop_s* linop_zfinitediff_create(unsigned int D, const long dims[D], long diffdim, bool circular)
 {
 	PTR_ALLOC(struct zfinitediff_data, data);
 

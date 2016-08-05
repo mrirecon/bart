@@ -180,7 +180,7 @@ int main_bpsense(int argc, char* argv[])
 
 	if (use_tvnorm) {
 
-		l1op = grad_init(DIMS, img_dims, FFT_FLAGS);
+		l1op = linop_grad_create(DIMS, img_dims, FFT_FLAGS);
 		l1prox = prox_thresh_create(DIMS + 1, linop_codomain(l1op)->dims, 1., 0u, usegpu);
 		conf.l1op_obj = l1op;
 

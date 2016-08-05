@@ -18,16 +18,16 @@
 #include "num/ops.h"
 
 #include "linops/linop.h"
+#include "linops/sum.h"
+#include "linops/sampling.h"
+#include "linops/someops.h"
 
 #include "iter/iter.h"
 #include "iter/lsqr.h"
 #include "iter/thresh.h"
+#include "iter/prox.h"
 
 #include "lowrank/lrthresh.h"
-#include "linops/sum.h"
-#include "linops/sampling.h"
-#include "iter/prox.h"
-#include "linops/someops.h"
 
 #include "misc/debug.h"
 #include "misc/mri.h"
@@ -172,12 +172,12 @@ int main_lrmatrix(int argc, char* argv[])
 
 	// Initialize operators
 
-	const struct linop_s* sum_op = sum_create(odims, use_gpu);
+	const struct linop_s* sum_op = linop_sum_create(odims, use_gpu);
 	const struct linop_s* sampling_op = NULL;
 
         if (!decom) {
 
-                sampling_op = sampling_create(idims, idims, pattern);
+                sampling_op = linop_sampling_create(idims, idims, pattern);
                 sum_op = linop_chain(sum_op, sampling_op);
                 linop_free(sampling_op);
         }

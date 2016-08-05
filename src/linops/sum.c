@@ -62,7 +62,7 @@ static void sum_apply_pinverse(const linop_data_t* _data, float lambda, complex 
 /**
  * Create sum operator
  */
-const struct linop_s* sum_create(const long imgd_dims[DIMS], bool use_gpu)
+const struct linop_s* linop_sum_create(const long imgd_dims[DIMS], bool use_gpu)
 {
 	struct sum_data* data = sum_create_data( imgd_dims, use_gpu );
 

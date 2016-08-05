@@ -66,7 +66,7 @@ static void ufft_apply_pinverse(const linop_data_t* _data, float rho, complex fl
 /**
  * Create undersampled/weighted fft operator
  */
-const struct linop_s* ufft_create(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu)
+const struct linop_s* linop_ufft_create(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu)
 {
 	struct ufft_data* data = ufft_create_data(ksp_dims, pat_dims, pat, flags, use_gpu);
 

@@ -63,7 +63,7 @@ static void wavelet_del(const linop_data_t* _data)
 	free((void*)data);
 }
 
-struct linop_s* wavelet3_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], const long minsize[N])
+struct linop_s* linop_wavelet3_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], const long minsize[N])
 {
 	PTR_ALLOC(struct wavelet_s, data);
 

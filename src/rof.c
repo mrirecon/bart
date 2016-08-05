@@ -63,7 +63,7 @@ int main_rof(int argc, char* argv[])
 
 	// TV operator
 
-	const struct linop_s* tv_op = grad_init(DIMS, dims, flags);
+	const struct linop_s* tv_op = linop_grad_create(DIMS, dims, flags);
 //	const struct linop_s* tv_op = linop_identity_create(DIMS, dims);
 
 	struct iter_admm_conf conf = iter_admm_defaults;

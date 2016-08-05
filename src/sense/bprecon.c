@@ -171,7 +171,7 @@ void bpsense_recon(struct bpsense_conf* conf, const long dims[DIMS], complex flo
 		sense_op = tmp_op;
 	}
 
-	const struct linop_s* sample_op = sampling_create(dims, pat_dims, pattern);
+	const struct linop_s* sample_op = linop_sampling_create(dims, pat_dims, pattern);
 	const struct linop_s* Aop = linop_chain(sense_op, sample_op);
 	linop_free(sense_op);
 	linop_free(sample_op);
