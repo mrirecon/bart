@@ -431,6 +431,8 @@ test:	${TESTS}
 
 gputest: ${TESTS_GPU}
 
+pythontest: ${TESTS_PYTHON}
+
 # unit tests
 
 # define space to faciliate running executables
