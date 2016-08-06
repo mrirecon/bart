@@ -23,6 +23,7 @@
 #include "num/iovec.h"
 
 #include "misc/misc.h"
+#include "misc/types.h"
 #include "misc/debug.h"
 #include "misc/shrdptr.h"
 
@@ -276,30 +277,32 @@ void operator_p_free(const struct operator_p_s* x)
 
 struct op_p_data_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	operator_data_t* data;
 	operator_p_fun_t apply;
 	operator_del_t del;
 };
 
+DEF_TYPEID(op_p_data_s);
+
 static void op_p_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct op_p_data_s* data = CONTAINER_OF(_data, const struct op_p_data_s, base);
+	const struct op_p_data_s* data = CAST_DOWN(op_p_data_s, _data);
 	assert(3 == N);
 	data->apply(data->data, *((float*)args[0]), args[1], args[2]);
 }
 
 static void op_p_del(const operator_data_t* _data)
 {
-	const struct op_p_data_s* data = CONTAINER_OF(_data, const struct op_p_data_s, base);
+	const struct op_p_data_s* data = CAST_DOWN(op_p_data_s, _data);
 	data->del(data->data);
 	free((void*)data);
 }
 
-operator_data_t* operator_p_get_data(const struct operator_p_s* x)
+operator_data_t* operator_p_get_data(const struct operator_p_s* _data)
 {
-	struct op_p_data_s* data = CONTAINER_OF(operator_get_data(&x->op), struct op_p_data_s, base);
+	const struct op_p_data_s* data = CAST_DOWN(op_p_data_s, operator_get_data(&_data->op));
 	return data->data;
 }
 
@@ -312,6 +315,7 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
 {
 	PTR_ALLOC(struct operator_p_s, o);
 	PTR_ALLOC(struct op_p_data_s, op);
+	SET_TYPEID(op_p_data_s, op);
 
 	op->data = data;
 	op->apply = apply;
@@ -326,7 +330,7 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
 	o->op.N = 3;
 	o->op.io_flags = MD_BIT(1);
 	o->op.domain = *PTR_PASS(dom);
-	o->op.data = &PTR_PASS(op)->base;
+	o->op.data = CAST_UP(PTR_PASS(op));
 	o->op.apply = op_p_apply;
 	o->op.del = op_p_del;
 
@@ -362,15 +366,17 @@ const struct operator_p_s* operator_p_create(unsigned int ON, const long out_dim
 
 struct identity_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	const struct iovec_s* domain;
 	const struct iovec_s* codomain;
 };
 
+DEF_TYPEID(identity_s);
+
 static void identity_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-        const struct identity_s* d = CONTAINER_OF(_data, const struct identity_s, base);
+        const struct identity_s* d = CAST_DOWN(identity_s, _data);
 	assert(2 == N);
         md_copy2(d->domain->N, d->domain->dims, d->codomain->strs, args[0], d->domain->strs, args[1], d->domain->size);
 }
@@ -378,8 +384,7 @@ static void identity_apply(const operator_data_t* _data, unsigned int N, void* a
 
 static void identity_free(const operator_data_t* _data)
 {
-        const struct identity_s* d = CONTAINER_OF(_data, const struct identity_s, base);
-        iovec_free(d->domain);
+        const struct identity_s* d = CAST_DOWN(identity_s, _data);
         iovec_free(d->codomain);
 	free((void*)d);
 }
@@ -389,11 +394,12 @@ const struct operator_s* operator_identity_create2(unsigned int N, const long di
 					const long ostrs[N], const long istrs[N])
 {
 	PTR_ALLOC(struct identity_s, data);
+	SET_TYPEID(identity_s, data);
 
         data->domain = iovec_create2(N, dims, istrs, CFL_SIZE);
         data->codomain = iovec_create2(N, dims, ostrs, CFL_SIZE);
 
-        return operator_create2(N, dims, ostrs, N, dims, istrs, &data->base, identity_apply, identity_free);
+        return operator_create2(N, dims, ostrs, N, dims, istrs, CAST_UP(PTR_PASS(data)), identity_apply, identity_free);
 }
 
 /**
@@ -411,16 +417,18 @@ const struct operator_s* operator_identity_create(unsigned int N, const long dim
 
 struct operator_chain_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	const struct operator_s* a;
 	const struct operator_s* b;
 };
 
+DEF_TYPEID(operator_chain_s);
+
 
 static void chain_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct operator_chain_s* data = CONTAINER_OF(_data, const struct operator_chain_s, base);
+	const struct operator_chain_s* data = CAST_DOWN(operator_chain_s, _data);
 
 	assert(2 == N);
 	assert(2 == data->a->N);
@@ -440,7 +448,7 @@ static void chain_apply(const operator_data_t* _data, unsigned int N, void* args
  */
 static void chain_free(const operator_data_t* _data)
 {
-	const struct operator_chain_s* data = CONTAINER_OF(_data, const struct operator_chain_s, base);
+	const struct operator_chain_s* data = CAST_DOWN(operator_chain_s, _data);
 
 	operator_free(data->a);
 	operator_free(data->b);
@@ -457,6 +465,7 @@ static void chain_free(const operator_data_t* _data)
 const struct operator_s* operator_chain(const struct operator_s* a, const struct operator_s* b)
 {
 	PTR_ALLOC(struct operator_chain_s, c);
+	SET_TYPEID(operator_chain_s, c);
 	
 	// check compatibility
 
@@ -475,7 +484,7 @@ const struct operator_s* operator_chain(const struct operator_s* a, const struct
 
 	const struct iovec_s* dom = a->domain[1];
 	const struct iovec_s* cod = b->domain[0];
-	return operator_create2(cod->N, cod->dims, cod->strs, dom->N, dom->dims, dom->strs, &PTR_PASS(c)->base, chain_apply, chain_free);
+	return operator_create2(cod->N, cod->dims, cod->strs, dom->N, dom->dims, dom->strs, CAST_UP(PTR_PASS(c)), chain_apply, chain_free);
 }
 
 
@@ -496,7 +505,7 @@ const struct operator_s* operator_chainN(unsigned int N, const struct operator_s
 
 struct operator_stack_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	const struct operator_s* a;
 	const struct operator_s* b;
@@ -505,10 +514,12 @@ struct operator_stack_s {
 	long src_offset;
 };
 
+DEF_TYPEID(operator_stack_s);
+
 
 static void stack_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct operator_stack_s* data = CONTAINER_OF(_data, const struct operator_stack_s, base);
+	const struct operator_stack_s* data = CAST_DOWN(operator_stack_s, _data);
 	assert(2 == N);
 
 	operator_apply_unchecked(data->a, args[0], args[1]);
@@ -517,7 +528,7 @@ static void stack_apply(const operator_data_t* _data, unsigned int N, void* args
 
 static void stack_free(const operator_data_t* _data)
 {
-	const struct operator_stack_s* data = CONTAINER_OF(_data, const struct operator_stack_s, base);
+	const struct operator_stack_s* data = CAST_DOWN(operator_stack_s, _data);
 
 	operator_free(data->a);
 	operator_free(data->b);
@@ -559,6 +570,7 @@ static void stack_dims(unsigned int N, long dims[N], long strs[N], unsigned int 
 const struct operator_s* operator_stack(unsigned int D, unsigned int E, const struct operator_s* a, const struct operator_s* b)
 {
 	PTR_ALLOC(struct operator_stack_s, c);
+	SET_TYPEID(operator_stack_s, c);
 
 	assert(stack_compatible(D, a->domain[0], b->domain[0]));
 	assert(stack_compatible(E, a->domain[1], b->domain[1]));
@@ -581,7 +593,7 @@ const struct operator_s* operator_stack(unsigned int D, unsigned int E, const st
 	c->dst_offset = cod_strs[D];
 	c->src_offset = dom_strs[D];
 
-	return operator_create2(cod_N, cod_dims, cod_strs, dom_N, dom_dims, dom_strs, &c->base, stack_apply, stack_free);
+	return operator_create2(cod_N, cod_dims, cod_strs, dom_N, dom_dims, dom_strs, CAST_UP(PTR_PASS(c)), stack_apply, stack_free);
 }
 
 
@@ -659,7 +671,7 @@ void operator_p_iter(void* o, float lambda, float* _dst, const float* _src)
 
 struct op_loop_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	unsigned int N;
 	unsigned int D;
@@ -669,9 +681,11 @@ struct op_loop_s {
 	const struct operator_s* op;
 };
 
+DEF_TYPEID(op_loop_s);
+
 static void op_loop_del(const operator_data_t* _data)
 {
-	const struct op_loop_s* data = CONTAINER_OF(_data, struct op_loop_s, base);
+	const struct op_loop_s* data = CAST_DOWN(op_loop_s, _data);
 	operator_free(data->op);
 
 	for (unsigned int i = 0; i < data->N; i++) {
@@ -694,7 +708,7 @@ static void op_loop_nary(void* _data, void* ptr[])
 
 static void op_loop_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct op_loop_s* data = CONTAINER_OF(_data, struct op_loop_s, base);
+	const struct op_loop_s* data = CAST_DOWN(op_loop_s, _data);
 	assert(N == data->N);
 	md_nary(N, data->D, data->dims0, data->strs, args, (void*)data, op_loop_nary);
 }
@@ -753,6 +767,7 @@ const struct operator_s* (operator_loop2)(unsigned int N, const unsigned int D,
 	}
 
 	PTR_ALLOC(struct op_loop_s, data);
+	SET_TYPEID(op_loop_s, data);
 	data->N = N;
 	data->D = D;
 	data->op = op;
@@ -761,7 +776,7 @@ const struct operator_s* (operator_loop2)(unsigned int N, const unsigned int D,
 	data->dims = *dims2;
 	data->strs = *strs2;
 
-	return operator_generic_create2(N, op->io_flags, D2, *dims2, *strs2, &data->base, op_loop_fun, op_loop_del);
+	return operator_generic_create2(N, op->io_flags, D2, *dims2, *strs2, CAST_UP(PTR_PASS(data)), op_loop_fun, op_loop_del);
 }
 
 const struct operator_s* operator_loop(unsigned int D, const long dims[D], const struct operator_s* op)
@@ -783,14 +798,16 @@ const struct operator_s* operator_loop(unsigned int D, const long dims[D], const
 #ifdef USE_CUDA
 struct gpu_data_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	const struct operator_s* op;
 };
 
+DEF_TYPEID(gpu_data_s);
+
 static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct operator_s* op = CONTAINER_OF(_data, struct gpu_data_s, base)->op;
+	const struct operator_s* op = CAST_DOWN(gpu_data_s, _data)->op;
 	void* gpu_ptr[N];
 
 	assert(N == operator_nr_args(op));
@@ -820,7 +837,7 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 static void gpuwrp_del(const operator_data_t* _data)
 {
-	const struct gpu_data_s* data = CONTAINER_OF(_data, struct gpu_data_s, base);
+	const struct gpu_data_s* data = CAST_DOWN(gpu_data_s, _data);
 
 	operator_free(data->op);
 
@@ -846,9 +863,10 @@ const struct operator_s* operator_gpu_wrapper(const struct operator_s* op)
 
 	// op = operator_ref(op);
 	PTR_ALLOC(struct gpu_data_s, data);
+	SET_TYPEID(gpu_data_s, data);
 	data->op = op;
 
-	return operator_generic_create2(N, op->io_flags, D, dims, strs, &PTR_PASS(data)->base, gpuwrp_fun, gpuwrp_del);
+	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), gpuwrp_fun, gpuwrp_del);
 }
 #endif
 

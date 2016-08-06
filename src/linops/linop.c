@@ -28,7 +28,7 @@
 
 struct shared_data_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	linop_data_t* data;
 	del_fun_t del;
@@ -42,11 +42,13 @@ struct shared_data_s {
 	} u;
 };
 
+DEF_TYPEID(shared_data_s);
+
 
 
 static void shared_del(const operator_data_t* _data)
 {
-	struct shared_data_s* data = CONTAINER_OF(_data, struct shared_data_s, base);
+	struct shared_data_s* data = CAST_DOWN(shared_data_s, _data);
 
 	shared_ptr_destroy(&data->sptr);
 	
@@ -55,7 +57,7 @@ static void shared_del(const operator_data_t* _data)
 
 static void shared_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	struct shared_data_s* data = CONTAINER_OF(_data, struct shared_data_s, base);
+	struct shared_data_s* data = CAST_DOWN(shared_data_s, _data);
 
 	assert(2 == N);
 	debug_trace("ENTER %p\n", data->u.apply);
@@ -65,7 +67,7 @@ static void shared_apply(const operator_data_t* _data, unsigned int N, void* arg
 
 static void shared_apply_p(const operator_data_t* _data, float lambda, complex float* dst, const complex float* src)
 {
-	struct shared_data_s* data = CONTAINER_OF(_data, struct shared_data_s, base);
+	struct shared_data_s* data = CAST_DOWN(shared_data_s, _data);
 
 	debug_trace("ENTER %p\n", data->u.apply_p);
 	data->u.apply_p(data->data, lambda, dst, src);
@@ -93,8 +95,11 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 
 	struct shared_data_s* shared_data[4];
 
-	for (unsigned int i = 0; i < 4; i++) 
+	for (unsigned int i = 0; i < 4; i++) {
+
 		shared_data[i] = TYPE_ALLOC(struct shared_data_s);
+		SET_TYPEID(shared_data_s, shared_data[i]);
+	}
 
 	for (unsigned int i = 0; i < 4; i++) {
 
@@ -115,12 +120,12 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 	assert((NULL != forward));
 	assert((NULL != adjoint));
 
-	lo->forward = operator_create2(ON, odims, ostrs, IN, idims, istrs, &shared_data[0]->base, shared_apply, shared_del);
-	lo->adjoint = operator_create2(IN, idims, istrs, ON, odims, ostrs, &shared_data[1]->base, shared_apply, shared_del);
+	lo->forward = operator_create2(ON, odims, ostrs, IN, idims, istrs, CAST_UP(shared_data[0]), shared_apply, shared_del);
+	lo->adjoint = operator_create2(IN, idims, istrs, ON, odims, ostrs, CAST_UP(shared_data[1]), shared_apply, shared_del);
 
 	if (NULL != normal) {
 
-		lo->normal = operator_create2(IN, idims, istrs, IN, idims, istrs, &shared_data[2]->base, shared_apply, shared_del);
+		lo->normal = operator_create2(IN, idims, istrs, IN, idims, istrs, CAST_UP(shared_data[2]), shared_apply, shared_del);
 
 	} else {
 
@@ -131,7 +136,7 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 
 	if (NULL != norm_inv) {
 
-		lo->norm_inv = operator_p_create2(IN, idims, istrs, IN, idims, istrs, &shared_data[3]->base, shared_apply_p, shared_del);
+		lo->norm_inv = operator_p_create2(IN, idims, istrs, IN, idims, istrs, CAST_UP(shared_data[3]), shared_apply_p, shared_del);
 	
 	} else {
 

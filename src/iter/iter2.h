@@ -7,6 +7,7 @@
 #define __ITER2_H
 
 #include "misc/cppwrap.h"
+#include "misc/types.h"
 
 struct linop_s;
 struct operator_s;
@@ -14,7 +15,7 @@ struct operator_p_s;
 
 #ifndef ITER_CONF_S
 #define ITER_CONF_S
-typedef struct iter_conf_s { int:0; } iter_conf;
+typedef struct iter_conf_s { TYPEID* TYPEID; } iter_conf;
 #endif
 
 
@@ -45,11 +46,13 @@ italgo_fun2_f iter2_call_iter;
 
 struct iter2_call_s {
 
-	iter_conf base;
+	INTERFACE(iter_conf);
 
 	italgo_fun2_t fun;
 	iter_conf* _conf;
 };
+
+extern DEF_TYPEID(iter2_call_s);
 
 
 #include "misc/cppwrap.h"

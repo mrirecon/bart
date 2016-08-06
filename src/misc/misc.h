@@ -1,5 +1,6 @@
-/* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+/* Copyright 2013-2015. The Regents of the University of California.
+ * Copyright 2015-2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
 
@@ -18,7 +19,6 @@
 
 #define UNUSED(x) (void)(x)
 
-#define UNCONST(T, x)  ((T)TYPE_CHECK(const T, x))
 
 #define MAKE_ARRAY(x, ...) ((__typeof__(x)[]){ x, __VA_ARGS__ })
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof(x[0]))
@@ -36,7 +36,6 @@ extern void warn_nonnull_ptr(void*);
 #define _TYPE_ALLOC(T)		((T*)xmalloc(sizeof(T)))
 #define TYPE_ALLOC(T)		_TYPE_ALLOC(__typeof__(T))
 // #define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
-#define TYPE_CHECK(T, x)	(1 ? (x) : (T)0)
 
 #define _PTR_ALLOC(T, x)										\
 	T* x __attribute__((cleanup(warn_nonnull_ptr))) = xmalloc(sizeof(T))
@@ -45,8 +44,6 @@ extern void warn_nonnull_ptr(void*);
 #define PTR_ALLOC(T, x)		_PTR_ALLOC(__typeof__(T), x)
 #define PTR_FREE(x)		XFREE(x)
 #define PTR_PASS(x)		({ __typeof__(x) __tmp = (x); (x) = NULL; __tmp; })
-
-#define CONTAINER_OF(x, T, member)	((T*)((char*)TYPE_CHECK(__typeof(&((T*)0)->member), x) - offsetof(T, member)))
 
 
 extern int parse_cfl(_Complex float res[1], const char* str);

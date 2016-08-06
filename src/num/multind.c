@@ -32,6 +32,7 @@
 #include <strings.h>
 
 #include "misc/misc.h"
+#include "misc/types.h"
 #include "misc/debug.h"
 
 #include "num/optimize.h"

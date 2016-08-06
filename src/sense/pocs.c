@@ -22,6 +22,7 @@
 #include "misc/misc.h"
 #include "misc/mri.h"
 #include "misc/debug.h"
+#include "misc/types.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -42,7 +43,7 @@
 
 struct data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	const struct linop_s* sense_op;
 	complex float* tmp;
@@ -62,10 +63,12 @@ struct data {
 	long strs_pat[DIMS];
 };
 
+DEF_TYPEID(data);
+
 
 static void xupdate_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	const struct data* data = CONTAINER_OF(_data, struct data, base);
+	const struct data* data = CAST_DOWN(data, _data);
 
 	UNUSED(mu);
 	md_zsmul(DIMS, data->dims_ksp, dst, src, 1. / (data->alpha == 0 ? 2. : 3.));
@@ -95,7 +98,7 @@ static void robust_consistency(float lambda, const long dims[DIMS], complex floa
 
 static void sparsity_proj_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	const struct data* data = CONTAINER_OF(_data, struct data, base);
+	const struct data* data = CAST_DOWN(data, _data);
 
 	const long* dims = data->dims_ksp;
 
@@ -123,7 +126,7 @@ static void sparsity_proj_apply(const operator_data_t* _data, float mu, complex 
 static void data_consistency_proj_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
 	UNUSED(mu);
-	const struct data* data = CONTAINER_OF(_data, struct data, base);
+	const struct data* data = CAST_DOWN(data, _data);
 
 	if (-1. != data->lambda)
 		robust_consistency(data->lambda, data->dims_ksp, dst, data->pattern, data->kspace);
@@ -136,7 +139,7 @@ static void sense_proj_apply(const operator_data_t* _data, float mu, complex flo
 {
 	UNUSED(mu);
 
-	const struct data* data = CONTAINER_OF(_data, const struct data, base);
+	const struct data* data = CAST_DOWN(data, _data);
 
 	// assumes normalized sensitivities
 
@@ -191,6 +194,7 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 	md_calc_strides(DIMS, strs_ksp, dims_ksp, CFL_SIZE);
 
 	struct data data;
+	SET_TYPEID(data, &data);
 
 	data.pattern = pattern;
 	data.kspace = kspace;
@@ -224,8 +228,7 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 	data.fftmod_mat = fftmod_mat;
 
 
-
-	const struct operator_p_s* sense_proj = operator_p_create(DIMS, dims_ksp, DIMS, dims_ksp, &data.base, sense_proj_apply, proj_del);
+	const struct operator_p_s* sense_proj = operator_p_create(DIMS, dims_ksp, DIMS, dims_ksp, CAST_UP(&data), sense_proj_apply, proj_del);
 
 	const struct operator_p_s* data_consistency_proj = operator_p_create(DIMS, dims_ksp, DIMS, dims_ksp, (void*)&data, data_consistency_proj_apply, proj_del);
 	

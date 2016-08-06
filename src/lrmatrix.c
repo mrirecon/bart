@@ -37,10 +37,12 @@
 
 struct s_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	long size;
 };
+
+DEF_TYPEID(s_data);
 
 // x = (z1 + z2)/2
 
@@ -48,7 +50,7 @@ static void sum_xupdate(const operator_data_t* _data, float rho, complex float* 
 {
 	UNUSED(rho);
 
-	const struct s_data* data = CONTAINER_OF(_data, struct s_data, base);
+	const struct s_data* data = CAST_DOWN(s_data, _data);
 
 	for(int i = 0; i < data->size; i++)
 		dst[i] = src[i] / 2.;
@@ -56,7 +58,7 @@ static void sum_xupdate(const operator_data_t* _data, float rho, complex float* 
 
 static void sum_xupdate_free(const operator_data_t* data)
 {
-	free(CONTAINER_OF(data, struct s_data, base));
+	xfree(CAST_DOWN(s_data, data));
 }
 
 
@@ -167,7 +169,7 @@ int main_lrmatrix(int argc, char* argv[])
 	mmconf.hogwild = hogwild;
 	mmconf.fast = fast;
 	
-	iconf = &mmconf.base;
+	iconf = CAST_UP(&mmconf);
 
 
 	// Initialize operators
@@ -198,9 +200,9 @@ int main_lrmatrix(int argc, char* argv[])
 	const struct linop_s* ops[2] = { eye_op, eye_op };
 	const struct operator_p_s* prox_ops[2] = { sum_prox, lr_prox };
 	long size = 2 * md_calc_size(DIMS, odims);
-	struct s_data s_data = { { }, size / 2 };
+	struct s_data s_data = { { &TYPEID(s_data) }, size / 2 };
 
-	const struct operator_p_s* sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims, &s_data.base, sum_xupdate, sum_xupdate_free);
+	const struct operator_p_s* sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims, CAST_UP(&s_data), sum_xupdate, sum_xupdate_free);
 
 
 	// do recon

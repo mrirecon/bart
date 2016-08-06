@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "misc/misc.h"
+#include "misc/types.h"
 
 #include "shrdptr.h"
 
@@ -63,7 +63,7 @@ void shared_ptr_destroy(const struct shared_ptr_s* ptr)
 
 	} else {
 
-		shared_unlink(UNCONST(struct shared_ptr_s*, ptr));
+		shared_unlink(CAST_CONST(struct shared_ptr_s*, ptr));
 	}
 }
 

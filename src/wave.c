@@ -191,7 +191,7 @@ int main_wave(int argc, char* argv[])
 		cgconf.tol = 1.E-3;         // cg tolerance     
 
 		italgo = iter_conjgrad;
-		iconf = &cgconf.base;
+		iconf = CAST_UP(&cgconf);
 
 	} else {
 
@@ -202,7 +202,7 @@ int main_wave(int argc, char* argv[])
 		fsconf.hogwild = hogwild;
 
 		italgo = iter_fista;
-		iconf = &fsconf.base;
+		iconf = CAST_UP(&fsconf);
 	}
 
 

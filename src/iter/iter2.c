@@ -15,6 +15,7 @@
 #include <math.h>
 
 #include "misc/misc.h"
+#include "misc/types.h"
 #include "misc/debug.h"
 
 #include "num/multind.h"
@@ -36,6 +37,7 @@
 
 
 
+DEF_TYPEID(iter2_call_s);
 
 
 static bool checkeps(float eps)
@@ -73,7 +75,7 @@ void iter2_conjgrad(iter_conf* _conf,
 	assert(NULL == ops);
 	UNUSED(xupdate_op);
 
-	struct iter_conjgrad_conf* conf = CONTAINER_OF(_conf, struct iter_conjgrad_conf, base);
+	struct iter_conjgrad_conf* conf = CAST_DOWN(iter_conjgrad_conf, _conf);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -108,7 +110,7 @@ void iter2_ist(iter_conf* _conf,
 #endif
 	UNUSED(xupdate_op);
 
-	struct iter_ist_conf* conf = CONTAINER_OF(_conf, struct iter_ist_conf, base);
+	struct iter_ist_conf* conf = CAST_DOWN(iter_ist_conf, _conf);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -145,7 +147,7 @@ void iter2_fista(iter_conf* _conf,
 #endif
 	UNUSED(xupdate_op);
 
-	struct iter_fista_conf* conf = CONTAINER_OF(_conf, struct iter_fista_conf, base);
+	struct iter_fista_conf* conf = CAST_DOWN(iter_fista_conf, _conf);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -173,7 +175,7 @@ void iter2_admm(iter_conf* _conf,
 		void* obj_eval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-	struct iter_admm_conf* conf = CONTAINER_OF(_conf, struct iter_admm_conf, base);
+	struct iter_admm_conf* conf = CAST_DOWN(iter_admm_conf, _conf);
 
 	struct admm_plan_s admm_plan = {
 
@@ -250,7 +252,7 @@ void iter2_pocs(iter_conf* _conf,
 		void* obj_eval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-	const struct iter_pocs_conf* conf = CONTAINER_OF(_conf, const struct iter_pocs_conf, base);
+	struct iter_pocs_conf* conf = CAST_DOWN(iter_pocs_conf, _conf);
 
 	assert(NULL == normaleq_op);
 	assert(NULL == ops);
@@ -288,7 +290,7 @@ void iter2_call_iter(iter_conf* _conf,
 
 	UNUSED(xupdate_op);
 
-	struct iter_call_s* it = CONTAINER_OF(_conf, struct iter_call_s, base);
+	struct iter_call_s* it = CAST_DOWN(iter_call_s, _conf);
 
 	it->fun(it->_conf, normaleq_op, (1 == D) ? prox_ops[0] : NULL,
 		size, image, image_adj,

@@ -343,13 +343,14 @@ int main_pics(int argc, char* argv[])
 
 	italgo_fun2_t italgo = iter2_call_iter;
 	struct iter_call_s iter2_data;
+	SET_TYPEID(iter_call_s, &iter2_data);
 
-	iter_conf* iconf = &iter2_data.base;
+	iter_conf* iconf = CAST_UP(&iter2_data);
 
-	struct iter_conjgrad_conf cgconf;
-	struct iter_fista_conf fsconf;
-	struct iter_ist_conf isconf;
-	struct iter_admm_conf mmconf;
+	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
+	struct iter_fista_conf fsconf = iter_fista_defaults;
+	struct iter_ist_conf isconf = iter_ist_defaults;
+	struct iter_admm_conf mmconf = iter_admm_defaults;
 
 	if ((CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
 		algo = FISTA;
@@ -397,7 +398,7 @@ int main_pics(int argc, char* argv[])
 			cgconf.l2lambda = (0 == nr_penalties) ? 0. : regs[0].lambda;
 
 			iter2_data.fun = iter_conjgrad;
-			iter2_data._conf = &cgconf.base;
+			iter2_data._conf = CAST_UP(&cgconf);
 
 			nr_penalties = 0;
 
@@ -415,7 +416,7 @@ int main_pics(int argc, char* argv[])
 			isconf.hogwild = hogwild;
 
 			iter2_data.fun = iter_ist;
-			iter2_data._conf = &isconf.base;
+			iter2_data._conf = CAST_UP(&isconf);
 
 			break;
 
@@ -434,7 +435,7 @@ int main_pics(int argc, char* argv[])
 			mmconf.RELTOL = 0.;
 
 			italgo = iter2_admm;
-			iconf = &mmconf.base;
+			iconf = CAST_UP(&mmconf);
 
 			break;
 
@@ -450,7 +451,7 @@ int main_pics(int argc, char* argv[])
 			fsconf.hogwild = hogwild;
 
 			iter2_data.fun = iter_fista;
-			iter2_data._conf = &fsconf.base;
+			iter2_data._conf = CAST_UP(&fsconf);
 
 			break;
 

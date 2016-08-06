@@ -33,15 +33,26 @@
 #include "iter.h"
 
 
+DEF_TYPEID(iter_conjgrad_conf);
+DEF_TYPEID(iter_landweber_conf);
+DEF_TYPEID(iter_ist_conf);
+DEF_TYPEID(iter_fista_conf);
+DEF_TYPEID(iter_pocs_conf);
+DEF_TYPEID(iter_admm_conf);
+DEF_TYPEID(iter_call_s);
+
 const struct iter_conjgrad_conf iter_conjgrad_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_conjgrad_conf),
 
 	.maxiter = 50,
 	.l2lambda = 0.,
 	.tol = 0.,
 };
 
-
 const struct iter_landweber_conf iter_landweber_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_landweber_conf),
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -50,6 +61,8 @@ const struct iter_landweber_conf iter_landweber_defaults = {
 
 const struct iter_ist_conf iter_ist_defaults = {
 
+	.INTERFACE.TYPEID = &TYPEID(iter_ist_conf),
+
 	.maxiter = 50,
 	.step = 0.95,
 	.continuation = 1.,
@@ -57,8 +70,9 @@ const struct iter_ist_conf iter_ist_defaults = {
 	.tol = 0.,
 };
 
-
 const struct iter_fista_conf iter_fista_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_fista_conf),
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -69,6 +83,8 @@ const struct iter_fista_conf iter_fista_defaults = {
 
 
 const struct iter_admm_conf iter_admm_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_admm_conf),
 
 	.maxiter = 50,
 	.maxitercg = 10,
@@ -90,6 +106,8 @@ const struct iter_admm_conf iter_admm_defaults = {
 
 
 const struct iter_pocs_conf iter_pocs_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_pocs_conf),
 
 	.maxiter = 50,
 };
@@ -139,7 +157,7 @@ void iter_landweber(iter_conf* _conf,
 		void* objval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-	struct iter_landweber_conf* conf = CONTAINER_OF(_conf, struct iter_landweber_conf, base);
+	struct iter_landweber_conf* conf = CAST_DOWN(iter_landweber_conf, _conf);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -209,7 +227,7 @@ void iter_call_iter2(iter_conf* _conf,
 		void* objval_data,
 		float (*obj_eval)(const void*, const float*))
 {
-	struct iter2_call_s* it = CONTAINER_OF(_conf, struct iter2_call_s, base);
+	struct iter2_call_s* it = CAST_DOWN(iter2_call_s, _conf);
 
 	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL,
 		size, image, image_adj, image_truth, objval_data, obj_eval);

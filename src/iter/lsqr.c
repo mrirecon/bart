@@ -21,6 +21,7 @@
 #include "linops/someops.h"
 
 #include "misc/debug.h"
+#include "misc/types.h"
 #include "misc/misc.h"
 
 #include "iter/iter.h"
@@ -35,7 +36,7 @@ const struct lsqr_conf lsqr_defaults = { 0. };
 
 struct lsqr_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	float l2_lambda;
 	long size;
@@ -43,10 +44,11 @@ struct lsqr_data {
 	const struct linop_s* model_op;
 };
 
+DEF_TYPEID(lsqr_data);
 
 static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void* args[static N])
 {
-	const struct lsqr_data* data = CONTAINER_OF(_data, struct lsqr_data, base);
+	const struct lsqr_data* data = CAST_DOWN(lsqr_data, _data);
 
 	assert(2 == N);
 
@@ -57,7 +59,7 @@ static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void
 
 static void normaleq_del(const operator_data_t* _data)
 {
-	const struct lsqr_data* data = CONTAINER_OF(_data, struct lsqr_data, base);
+	const struct lsqr_data* data = CAST_DOWN(lsqr_data, _data);
 
 	linop_free(data->model_op);
 
@@ -78,6 +80,7 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 				      const struct linop_s* prox_linops[static num_funs])
 {
 	PTR_ALLOC(struct lsqr_data, data);
+	SET_TYPEID(lsqr_data, data);
 
 	const struct iovec_s* iov = operator_domain(model_op->forward);
 
@@ -85,7 +88,7 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 	data->model_op = linop_clone(model_op);
 	data->size = 2 * md_calc_size(iov->N, iov->dims);	// FIXME: assume complex
 
-	const struct operator_s* normaleq_op = operator_create(iov->N, iov->dims, iov->N, iov->dims, &PTR_PASS(data)->base, normaleq_l2_apply, normaleq_del);
+	const struct operator_s* normaleq_op = operator_create(iov->N, iov->dims, iov->N, iov->dims, CAST_UP(PTR_PASS(data)), normaleq_l2_apply, normaleq_del);
 	const struct operator_s* adjoint = operator_ref(model_op->adjoint);
 
 	if (NULL != precond_op) {
@@ -149,10 +152,12 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 		.size = 2 * md_calc_size(N, x_dims),
 	};
 
+	SET_TYPEID(lsqr_data, &data);
+
 	// -----------------------------------------------------------
 	// run recon
 
-	const struct operator_s* normaleq_op = operator_create(N, x_dims, N, x_dims, &data.base, normaleq_l2_apply, NULL);
+	const struct operator_s* normaleq_op = operator_create(N, x_dims, N, x_dims, CAST_UP(&data), normaleq_l2_apply, NULL);
 
 	if (NULL != precond_op) {
 
@@ -203,7 +208,7 @@ void lsqr(unsigned int N,
 	  const complex float* y,
 	  const struct operator_s* precond_op)
 {
-	lsqr2(N, conf, iter2_call_iter, &((struct iter_call_s){ { }, italgo, iconf }).base,
+	lsqr2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s) }, italgo, iconf })),
 		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 		x_dims, x, y_dims, y, precond_op, NULL, NULL, NULL);
 }
@@ -279,7 +284,7 @@ void wlsqr(unsigned int N, const struct lsqr_conf* conf,
 	   const long w_dims[static N], const complex float* w,
 	   const struct operator_s* precond_op)
 {
-	wlsqr2(N, conf, iter2_call_iter, &((struct iter_call_s){ { }, italgo, iconf }).base,
+	wlsqr2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s) }, italgo, iconf })),
 	       model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 	       x_dims, x, y_dims, y, w_dims, w, precond_op);
 }

@@ -38,7 +38,7 @@
  */
 struct ufft_data {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	bool use_gpu;
 	unsigned int flags;
@@ -53,6 +53,10 @@ struct ufft_data {
 
         complex float* pat;
 };
+
+
+DEF_TYPEID(ufft_data);
+
 
 static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu);
 static void ufft_free_data(const linop_data_t* _data);
@@ -71,7 +75,7 @@ const struct linop_s* linop_ufft_create(const long ksp_dims[DIMS], const long pa
 	struct ufft_data* data = ufft_create_data(ksp_dims, pat_dims, pat, flags, use_gpu);
 
 	// Create operator interface
-	return linop_create(DIMS, data->ksp_dims, DIMS, data->ksp_dims, &data->base,
+	return linop_create(DIMS, data->ksp_dims, DIMS, data->ksp_dims, CAST_UP(data),
 		ufft_apply, ufft_apply_adjoint, ufft_apply_normal, ufft_apply_pinverse, ufft_free_data);
 }
 
@@ -79,6 +83,7 @@ const struct linop_s* linop_ufft_create(const long ksp_dims[DIMS], const long pa
 static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu)
 {
 	PTR_ALLOC(struct ufft_data, data);
+	SET_TYPEID(ufft_data, data);
 
 	data->flags = flags;
 	data->use_gpu = use_gpu;
@@ -98,18 +103,18 @@ static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long 
 
 	data->fft_op = linop_fftc_create(DIMS, ksp_dims, flags, use_gpu);
 
-	return data;
+	return PTR_PASS(data);
 }
 
 
 static void ufft_free_data(const linop_data_t* _data)
 {
-        struct ufft_data* data = CONTAINER_OF(_data, struct ufft_data, base);
+        struct ufft_data* data = CAST_DOWN(ufft_data, _data);
 
 	md_free(data->pat);
 	linop_free(data->fft_op);
 
-	free((void*)data);
+	xfree(data);
 }
 
 
@@ -120,7 +125,7 @@ static void ufft_free_data(const linop_data_t* _data)
  */
 void ufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        const struct ufft_data* data = CONTAINER_OF(_data, const struct ufft_data, base);
+        struct ufft_data* data = CAST_DOWN(ufft_data, _data);
 
 	linop_forward(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src);
 
@@ -133,7 +138,7 @@ void ufft_apply(const linop_data_t* _data, complex float* dst, const complex flo
  */
 void ufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        const struct ufft_data* data = CONTAINER_OF(_data, const struct ufft_data, base);
+        struct ufft_data* data = CAST_DOWN(ufft_data, _data);
 
 	md_zmul2(DIMS, data->ksp_dims, data->ksp_strs, dst, data->ksp_strs, src, data->pat_strs, data->pat);
 
@@ -147,7 +152,7 @@ void ufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const com
  */
 void ufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        const struct ufft_data* data = CONTAINER_OF(_data, const struct ufft_data, base);
+        struct ufft_data* data = CAST_DOWN(ufft_data, _data);
 
 	linop_forward(data->fft_op, DIMS, data->ksp_dims, dst, DIMS, data->ksp_dims, src);
 
@@ -167,7 +172,7 @@ void ufft_apply_normal(const linop_data_t* _data, complex float* dst, const comp
  */
 static void ufft_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst, const complex float* src)
 {
-        const struct ufft_data* data = CONTAINER_OF(_data, const struct ufft_data, base);
+        struct ufft_data* data = CAST_DOWN(ufft_data, _data);
 
 	md_zsadd(DIMS, data->pat_dims, data->pat, data->pat, rho);
 

@@ -53,7 +53,7 @@ int main_bpsense(int argc, char* argv[])
 	struct bpsense_conf conf = bpsense_defaults;
 	struct iter_admm_conf iconf = iter_admm_defaults;
 	iconf.rho = 10; // more sensibile default
-	conf.iconf = &iconf.base;
+	conf.iconf = CAST_UP(&iconf);
 
 	bool usegpu = false;
 	const char* psf = NULL;
