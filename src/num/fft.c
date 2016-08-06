@@ -291,6 +291,7 @@ static void fft_free_plan(const operator_data_t* _data)
 const struct operator_s* fft_measure_create(unsigned int D, const long dimensions[D], unsigned long flags, bool inplace, bool backwards)
 {
 	PTR_ALLOC(struct fft_plan_s, plan);
+	SET_TYPEID(fft_plan_s, plan);
 
 	complex float* src = md_alloc(D, dimensions, CFL_SIZE);
 	complex float* dst = inplace ? src : md_alloc(D, dimensions, CFL_SIZE);
@@ -324,7 +325,7 @@ const struct operator_s* fft_measure_create(unsigned int D, const long dimension
 	md_copy_strides(D, *ostrs, strides);
 	plan->ostrs = *PTR_PASS(ostrs);
 #endif
-	return operator_create2(D, dimensions, strides, D, dimensions, strides, &PTR_PASS(plan)->base, fft_apply, fft_free_plan);
+	return operator_create2(D, dimensions, strides, D, dimensions, strides, CAST_UP(PTR_PASS(plan)), fft_apply, fft_free_plan);
 }
 
 

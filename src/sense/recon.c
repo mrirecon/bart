@@ -143,7 +143,7 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 
 	if (1 < conf->rwiter) {
 
-		struct linop_s* sampling = sampling_create(dims, pat_dims, pattern);
+		struct linop_s* sampling = linop_sampling_create(dims, pat_dims, pattern);
 		struct linop_s* tmp_op = linop_chain(sense_op, sampling);
 
 		linop_free(sampling);
