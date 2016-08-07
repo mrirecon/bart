@@ -216,8 +216,6 @@ void iter2_admm(iter_conf* _conf,
 	admm_plan.xupdate_data = (void*)xupdate_op;
 
 
-	struct admm_history_s admm_history;
-
 	long z_dims[D];
 
 	for (unsigned int i = 0; i < D; i++)
@@ -231,7 +229,7 @@ void iter2_admm(iter_conf* _conf,
 			goto cleanup;
 	}
 
-	admm(&admm_history, &admm_plan, admm_plan.num_funs, z_dims, size, (float*)image, image_adj, select_vecops(image), operator_iter, (void*)normaleq_op, monitor);
+	admm(&admm_plan, admm_plan.num_funs, z_dims, size, (float*)image, image_adj, select_vecops(image), operator_iter, (void*)normaleq_op, monitor);
 
 cleanup:
 	;

@@ -1,4 +1,5 @@
 /* Copyright 2014. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */ 
@@ -7,6 +8,8 @@
 #define __ADMM_H
 
 #include "misc/cppwrap.h"
+#include "misc/types.h"
+#include "iter/monitor.h"
 
 struct vec_iter_s;
 
@@ -89,9 +92,8 @@ struct admm_plan_s {
 
 	void (*xupdate_fun)(void* _data, float rho, float* _dst, const float* _src);
 	void* xupdate_data;
-
-	const float* image_truth;
 };
+
 
 
 /**
@@ -105,43 +107,31 @@ struct admm_plan_s {
  */
 struct admm_history_s {
 
+	INTERFACE(iter_history_t);
+
 	unsigned int numiter;
-	double* r_norm;
-	double* s_norm;
-	double* eps_pri;
-	double* eps_dual;
-	double* objective;
-	float* rho;
-	double* relMSE;
+	unsigned int nr_invokes;
+	double r_norm;
+	double s_norm;
+	double eps_pri;
+	double eps_dual;
+	float rho;
 };
 
+extern DEF_TYPEID(admm_history_s);
 
 
-void admm(struct admm_history_s* history, const struct admm_plan_s* plan, 
+
+void admm(const struct admm_plan_s* plan,
 	  unsigned int D, const long z_dims[__VLA(D)],
 	  long N, float* x, const float* x_adj,
 	  const struct vec_iter_s* vops,
 	  void (*Aop)(void* _data, float* _dst, const float* _src),
 	  void* Aop_data, struct iter_monitor_s* monitor);
 
-#if 0
-/**
- * Store data for conjugate gradient x update step
- *
- *
- */
-struct admm_cgxupdate_data {
-	long size;
-	void* cgconf;
-	unsigned int num_funs;
-	struct admm_op* ops;
-	void (*Aop)(void* _data, float* _dst, const float* _src);
-	void* Aop_data;
-	float rho;
-};
 
-void admm_cgxupdate( void* data, float rho, float* _dst, const float* _src );
-#endif
 
 #include "misc/cppwrap.h"
+
 #endif // __ADMM_H
+

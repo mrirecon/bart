@@ -26,12 +26,19 @@
 
 #include "misc/debug.h"
 #include "misc/misc.h"
+#include "misc/types.h"
 
 #include "iter/italgos.h"
 #include "iter/vec.h"
 #include "iter/monitor.h"
 
 #include "admm.h"
+
+
+DEF_TYPEID(admm_history_s);
+
+
+
 
 
 
@@ -125,26 +132,7 @@ static long sum_long_array(unsigned int N, const long a[N])
 }
 
 
-static void init_history(struct admm_history_s* history, int maxiter)
-{
-	history->r_norm = *TYPE_ALLOC(double[maxiter]);
-	history->s_norm = *TYPE_ALLOC(double[maxiter]);
-	history->eps_pri = *TYPE_ALLOC(double[maxiter]);
-	history->eps_dual = *TYPE_ALLOC(double[maxiter]);
-	history->objective = *TYPE_ALLOC(double[maxiter]);
-	history->rho = *TYPE_ALLOC(float[maxiter]);
-	history->relMSE = *TYPE_ALLOC(double[maxiter]);
-}
 
-static void free_history(struct admm_history_s* history)
-{
-	free(history->r_norm);
-	free(history->s_norm);
-	free(history->eps_pri);
-	free(history->eps_dual);
-	free(history->objective);
-	free(history->rho);
-}
 
 
 /*
@@ -157,7 +145,7 @@ static void free_history(struct admm_history_s* history)
  * G_i, G_i^H, and G_i^H G_i, all which must be provided in admm_plan_s.
  * The b_i are offsets (biases) that should also be provided in admm_plan_s.
  */
-void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
+void admm(const struct admm_plan_s* plan,
 	  unsigned int D, const long z_dims[D],
 	  long N, float* x, const float* x_adj,
 	  const struct vec_iter_s* vops,
@@ -168,9 +156,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 
 	long pos = 0;
 	long M = sum_long_array(num_funs, z_dims);
-
-	// allocate memory for history
-	init_history(history, plan->maxiter);
 
 	long Mjmax = 0;
 
@@ -207,15 +192,6 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 		zj_old = vops->allocate(Mjmax);
 	}
 
-	if (!plan->fast) {
-
-		debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t", "iter", "cgiter", "rho", "r norm", "eps pri", "s norm", "eps dual", "obj");
-
-		if (NULL != plan->image_truth)
-			debug_printf(DP_DEBUG2, "%10s", "relMSE");
-
-		debug_printf(DP_DEBUG2, "\n");
-	}
 
 	float rho = plan->rho;
 
@@ -412,26 +388,30 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 			float eps_pri = plan->ABSTOL * sqrt(M) + plan->RELTOL * n;
 			float eps_dual = plan->ABSTOL * sqrt(N) + plan->RELTOL * rho * vops->norm(N, GH_usum);
 
-			float relMSE = 0.;
-			float objective = 0.; // FIXME, MONITOR
 
-			debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.5f\t%10.4f",
-						i, ndata.nr_invokes, rho, r_norm,
-						eps_pri, s_norm, eps_dual, objective);
+			struct admm_history_s history;
 
-			debug_printf(DP_DEBUG2, "%10.4f", relMSE);
+			history.s_norm = s_norm;
+			history.r_norm = r_norm;
+			history.eps_pri = eps_pri;
+			history.eps_dual = eps_dual;
+			history.rho = rho;
+			history.numiter = i;
+			history.nr_invokes = ndata.nr_invokes;
 
-			debug_printf(DP_DEBUG2, "\n");
+			iter_history(monitor, CAST_UP(&history));
+
+			if (0 == i)
+				debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n",
+					"iter", "cgiter", "rho", "r norm", "eps pri",
+					"s norm", "eps dual", "obj", "relMSE");
 
 
-			history->s_norm[i] = s_norm;
-			history->r_norm[i] = r_norm;
-			history->eps_pri[i] = eps_pri;
-			history->eps_dual[i] = eps_dual;
-			history->relMSE[i] = relMSE;
-			history->objective[i] = objective;
-			history->rho[i] = rho;
-			history->numiter = i;
+			debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\n",
+				history.numiter, history.nr_invokes, history.rho,
+				history.r_norm, history.eps_pri, history.s_norm, history.eps_dual,
+				(NULL == monitor) ? -1. : monitor->obj,
+				(NULL == monitor) ? -1. : monitor->err);
 
 
 			if (   (ndata.nr_invokes > plan->maxiter)
@@ -495,6 +475,4 @@ void admm(struct admm_history_s* history, const struct admm_plan_s* plan,
 	}
 
 	vops->del(ndata.tmp);	
-
-	free_history(history);
 }
