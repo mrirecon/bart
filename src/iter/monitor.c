@@ -23,6 +23,13 @@ void iter_monitor(struct iter_monitor_s* monitor, const struct vec_iter_s* ops, 
 		monitor->fun(monitor, ops, x);
 }
 
+void iter_history(struct iter_monitor_s* monitor, const struct iter_history_s* hist)
+{
+	if ((NULL != monitor) && (NULL != monitor->record))
+		monitor->record(monitor, hist);
+}
+
+
 
 struct monitor_default_s {
 
@@ -79,6 +86,7 @@ struct iter_monitor_s* create_monitor(long N, const float* image_truth, void* da
 	monitor->objective = objective;
 
 	monitor->INTERFACE.fun = monitor_default_fun;
+	monitor->INTERFACE.record = NULL;
 
 	return CAST_UP(PTR_PASS(monitor));
 }
