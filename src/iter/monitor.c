@@ -19,7 +19,7 @@
 
 void iter_monitor(struct iter_monitor_s* monitor, const struct vec_iter_s* ops, const float* x)
 {
-	if (NULL != monitor)
+	if ((NULL != monitor) && (NULL != monitor->fun))
 		monitor->fun(monitor, ops, x);
 }
 
@@ -71,7 +71,10 @@ static void monitor_default_fun(struct iter_monitor_s* _data, const struct vec_i
 	if (NULL != data->objective)
 		obj = data->objective(data->data, x);
 
-	debug_printf(DP_DEBUG3, "Objective: %f, Error: %f\n", obj, err);
+	debug_printf(DP_DEBUG4, "Objective: %f, Error: %f\n", obj, err);
+
+	data->INTERFACE.obj = obj;
+	data->INTERFACE.err = err;
 }
 
 struct iter_monitor_s* create_monitor(long N, const float* image_truth, void* data, float (*objective)(const void* data, const float* x))
@@ -87,6 +90,8 @@ struct iter_monitor_s* create_monitor(long N, const float* image_truth, void* da
 
 	monitor->INTERFACE.fun = monitor_default_fun;
 	monitor->INTERFACE.record = NULL;
+	monitor->INTERFACE.obj = -1.;
+	monitor->INTERFACE.err = -1.;
 
 	return CAST_UP(PTR_PASS(monitor));
 }

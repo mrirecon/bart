@@ -18,6 +18,9 @@ struct iter_monitor_s {
 	const struct typeid_s* TYPEID;
 	iter_monitor_fun_t fun;
 	iter_history_fun_t record;
+
+	double obj;
+	double err;
 };
 
 typedef struct iter_monitor_s iter_monitor_t;
