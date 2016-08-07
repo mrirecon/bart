@@ -122,7 +122,7 @@ extern DEF_TYPEID(admm_history_s);
 
 
 
-void admm(const struct admm_plan_s* plan,
+extern void admm(const struct admm_plan_s* plan,
 	  unsigned int D, const long z_dims[__VLA(D)],
 	  long N, float* x, const float* x_adj,
 	  const struct vec_iter_s* vops,
