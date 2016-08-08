@@ -69,6 +69,8 @@ struct admm_plan_s {
 	unsigned int maxiter;
 	unsigned int maxitercg;
 
+	float cg_eps;
+
 	_Bool do_warmstart;
 	_Bool dynamic_rho;
 	_Bool hogwild;
@@ -82,7 +84,6 @@ struct admm_plan_s {
 
 	float tau;
 	float mu;
-
 
 	unsigned int num_funs;
 

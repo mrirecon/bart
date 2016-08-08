@@ -89,6 +89,8 @@ const struct iter_admm_conf iter_admm_defaults = {
 	.maxiter = 50,
 	.maxitercg = 10,
 
+	.cg_eps = 1.E-3,
+
 	.do_warmstart = false,
 	.dynamic_rho = false,
 	.hogwild = false,

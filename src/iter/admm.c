@@ -99,6 +99,8 @@ struct cg_xupdate_s {
 
 	unsigned int maxitercg;
 
+	float cg_eps;
+
 	struct admm_normaleq_data* ndata;
 
 	struct iter_monitor_s* monitor;
@@ -119,7 +121,7 @@ static void cg_xupdate(void* _data, float rho, float* x, const float* rhs)
 		return;
 
 	conjgrad(data->maxitercg, 0.,
-			1.E-3 * eps, data->N, data->ndata, data->vops, admm_normaleq, x, rhs,
+			data->cg_eps * eps, data->N, data->ndata, data->vops, admm_normaleq, x, rhs,
 			data->monitor);
 
 	data->ndata->nr_invokes--;	// subtract one for initialization in conjgrad
@@ -217,6 +219,7 @@ void admm(const struct admm_plan_s* plan,
 		.N = N,
 		.vops = vops,
 		.maxitercg = plan->maxitercg,
+		.cg_eps = plan->cg_eps,
 		.ndata = &ndata,
 
 		.monitor = monitor,

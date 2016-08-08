@@ -100,6 +100,8 @@ struct iter_admm_conf {
 	float tau;
 	float mu;
 
+	float cg_eps;
+
 	_Bool fast;
 };
 

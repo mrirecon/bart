@@ -180,6 +180,7 @@ void iter2_admm(iter_conf* _conf,
 
 		.maxiter = conf->maxiter,
 		.maxitercg = conf->maxitercg,
+		.cg_eps = conf->cg_eps,
 		.rho = conf->rho,
 		.num_funs = D,
 		.do_warmstart = conf->do_warmstart,
