@@ -359,7 +359,7 @@ void admm(const struct admm_plan_s* plan,
 					vops->sub(z_dims[j], r[j], r[j], biases[j]);
 
 				// add next term to s: s = s + Gj^H (zj - zj_old)
-				vops->sub(z_dims[j], zj_old, z[j], z[j]);
+				vops->sub(z_dims[j], zj_old, z[j], zj_old);
 				plan->ops[j].adjoint(plan->ops[j].data, rhs, zj_old);
 				vops->add(N, s, s, rhs);
 
