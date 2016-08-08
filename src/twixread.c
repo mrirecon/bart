@@ -233,7 +233,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_LONG('c', &(dims[COIL_DIM]), "C", "number of channels"),
 		OPT_LONG('n', &(dims[TIME_DIM]), "N", "number of repetitions"),
 		OPT_LONG('a', &adcs, "A", "total number of ADCs"),
-		OPT_SET('A', &autoc, "automatic (guess dimensions)"),
+		OPT_SET('A', &autoc, "automatic [guess dimensions]"),
 		OPT_SET('L', &linectr, "use linectr offset"),
 		OPT_SET('P', &partctr, "use partctr offset"),
 	};
@@ -278,10 +278,10 @@ int main_twixread(int argc, char* argv[argc])
 			dims[i] = max[i] + off[i];
 		}
 
-		debug_printf(DP_INFO, "Dimensions: ");
-		debug_print_dims(DP_INFO, DIMS, dims);
-		debug_printf(DP_INFO, "Offset: ");
-		debug_print_dims(DP_INFO, DIMS, off);
+		debug_printf(DP_DEBUG2, "Dimensions: ");
+		debug_print_dims(DP_DEBUG2, DIMS, dims);
+		debug_printf(DP_DEBUG2, "Offset: ");
+		debug_print_dims(DP_DEBUG2, DIMS, off);
 
 		siemens_meas_setup(ifd, &hdr); // reset
 	}
