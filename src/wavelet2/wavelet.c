@@ -265,6 +265,7 @@ static void wavelet_del(const linop_data_t* _data)
 const struct linop_s* wavelet_create(int numdims, const long imSize[numdims], unsigned int wave_flags, const long minSize[numdims], bool randshift, bool use_gpu)
 {
 	PTR_ALLOC(struct wavelet_data_s, data);
+	SET_TYPEID(wavelet_data_s, data);
 
 	data->plan = prepare_wavelet_plan(numdims, imSize, wave_flags, minSize, use_gpu);
 

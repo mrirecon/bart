@@ -21,8 +21,6 @@
 #include "linops/linop.h"
 
 #include "misc/misc.h"
-
-
 #include "misc/debug.h"
 
 #include "thresh.h"
@@ -179,7 +177,8 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	data->str = *TYPE_ALLOC(long[D]);
 	md_calc_strides(D, data->str, data->dim, CFL_SIZE);
 
-	// norm dimensions are the flagged transform dimensions //FIXME should yse linop_codomain(unitary_op)->N 
+	// norm dimensions are the flagged transform dimensions
+	// FIXME should use linop_codomain(unitary_op)->N 
 	long norm_dim[D];
 	md_select_dims(D, ~flags, norm_dim, linop_codomain(unitary_op)->dims);
 
