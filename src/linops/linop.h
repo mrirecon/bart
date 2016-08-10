@@ -10,8 +10,10 @@
 #define __LINOP_H
 
 #include "misc/cppwrap.h"
+#include "misc/types.h"
 
-typedef struct linop_data_s { int:0; } linop_data_t;
+TYPEID linop_data_s;
+typedef struct linop_data_s { TYPEID* TYPEID; } linop_data_t;
 
 
 typedef void (*lop_fun_t)(const linop_data_t* _data, complex float* dst, const complex float* src);

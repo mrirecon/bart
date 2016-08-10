@@ -23,7 +23,7 @@
 
 struct wavelet_s {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	unsigned int N;
 	unsigned int flags;
@@ -32,9 +32,11 @@ struct wavelet_s {
 	const long* minsize;
 };
 
+DEF_TYPEID(wavelet_s);
+
 static void wavelet_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct wavelet_s* data = CONTAINER_OF(_data, const struct wavelet_s, base);
+	const struct wavelet_s* data = CAST_DOWN(wavelet_s, _data);
 
 	long shifts[data->N];
 	for (unsigned int i = 0; i < data->N; i++)
@@ -45,7 +47,7 @@ static void wavelet_forward(const linop_data_t* _data, complex float* dst, const
 
 static void wavelet_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct wavelet_s* data = CONTAINER_OF(_data, const struct wavelet_s, base);
+	const struct wavelet_s* data = CAST_DOWN(wavelet_s, _data);
 
 	long shifts[data->N];
 	for (unsigned int i = 0; i < data->N; i++)
@@ -56,16 +58,15 @@ static void wavelet_adjoint(const linop_data_t* _data, complex float* dst, const
 
 static void wavelet_del(const linop_data_t* _data)
 {
-	const struct wavelet_s* data = CONTAINER_OF(_data, const struct wavelet_s, base);
+	const struct wavelet_s* data = CAST_DOWN(wavelet_s, _data);
 
-	// free stuff
-
-	free((void*)data);
+	xfree(data);
 }
 
-struct linop_s* wavelet3_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], const long minsize[N])
+struct linop_s* linop_wavelet3_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], const long minsize[N])
 {
 	PTR_ALLOC(struct wavelet_s, data);
+	SET_TYPEID(wavelet_s, data);
 
 	// FIXME copy stuff;
 	data->N = N;
@@ -85,7 +86,7 @@ struct linop_s* wavelet3_create(unsigned int N, unsigned int flags, const long d
 	long ostr[N];
 	md_calc_strides(N, ostr, odims, CFL_SIZE);
 
-	return linop_create2(N, odims, ostr, N, dims, istr, &data->base, wavelet_forward, wavelet_adjoint, NULL, NULL, wavelet_del);
+	return linop_create2(N, odims, ostr, N, dims, istr, CAST_UP(data), wavelet_forward, wavelet_adjoint, NULL, NULL, wavelet_del);
 }
 
 

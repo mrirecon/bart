@@ -15,6 +15,7 @@
 #include <stdlib.h>
 
 #include "misc/misc.h"
+#include "misc/types.h"
 
 #include "num/multind.h"
 #include "num/ops.h"
@@ -26,7 +27,7 @@
 
 struct wavelet3_thresh_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	unsigned int N;
 	const long* dims;
@@ -36,6 +37,8 @@ struct wavelet3_thresh_s {
 	bool randshift;
 	int rand_state;
 };
+
+DEF_TYPEID(wavelet3_thresh_s);
 
 
 static int rand_lim(unsigned int* state, int limit)
@@ -54,7 +57,7 @@ static int rand_lim(unsigned int* state, int limit)
 
 static void wavelet3_thresh_apply(const operator_data_t* _data, float mu, complex float* out, const complex float* in)
 {
-	const struct wavelet3_thresh_s* data = CONTAINER_OF(_data, const struct wavelet3_thresh_s, base);
+	const struct wavelet3_thresh_s* data = CAST_DOWN(wavelet3_thresh_s, _data);
 
 	long shift[data->N];
 	for (unsigned int i = 0; i < data->N; i++)
@@ -75,7 +78,7 @@ static void wavelet3_thresh_apply(const operator_data_t* _data, float mu, comple
 
 static void wavelet3_thresh_del(const operator_data_t* _data)
 {
-	const struct wavelet3_thresh_s* data = CONTAINER_OF(_data, const struct wavelet3_thresh_s, base);
+	const struct wavelet3_thresh_s* data = CAST_DOWN(wavelet3_thresh_s, _data);
 	free((void*)data->dims);
 	free((void*)data->minsize);
 	free((void*)data);
@@ -95,6 +98,7 @@ static void wavelet3_thresh_del(const operator_data_t* _data)
 const struct operator_p_s* prox_wavelet3_thresh_create(unsigned int N, const long dims[N], unsigned int flags, const long minsize[N], float lambda, bool randshift)
 {
 	PTR_ALLOC(struct wavelet3_thresh_s, data);
+	SET_TYPEID(wavelet3_thresh_s, data);
 
 	data->N = N;
 
@@ -111,7 +115,7 @@ const struct operator_p_s* prox_wavelet3_thresh_create(unsigned int N, const lon
 	data->randshift = randshift;
 	data->rand_state = 1;
 
-	return operator_p_create(N, dims, N, dims, &PTR_PASS(data)->base, wavelet3_thresh_apply, wavelet3_thresh_del);
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), wavelet3_thresh_apply, wavelet3_thresh_del);
 }
 
 

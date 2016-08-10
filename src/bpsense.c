@@ -53,7 +53,7 @@ int main_bpsense(int argc, char* argv[])
 	struct bpsense_conf conf = bpsense_defaults;
 	struct iter_admm_conf iconf = iter_admm_defaults;
 	iconf.rho = 10; // more sensibile default
-	conf.iconf = &iconf.base;
+	conf.iconf = CAST_UP(&iconf);
 
 	bool usegpu = false;
 	const char* psf = NULL;
@@ -180,7 +180,7 @@ int main_bpsense(int argc, char* argv[])
 
 	if (use_tvnorm) {
 
-		l1op = grad_init(DIMS, img_dims, FFT_FLAGS);
+		l1op = linop_grad_create(DIMS, img_dims, FFT_FLAGS);
 		l1prox = prox_thresh_create(DIMS + 1, linop_codomain(l1op)->dims, 1., 0u, usegpu);
 		conf.l1op_obj = l1op;
 

@@ -1,4 +1,5 @@
 /* Copyright 2014-2015. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -7,8 +8,9 @@
 #define __OPS_H
 
 #include "misc/cppwrap.h"
+#include "misc/types.h"
 
-typedef struct operator_data_s { int:0; } operator_data_t;
+typedef struct operator_data_s { TYPEID* TYPEID; } operator_data_t;
 
 
 typedef void (*operator_fun_t)(const operator_data_t* _data, unsigned int N, void* args[__VLA(N)]);
@@ -40,10 +42,13 @@ extern const struct operator_p_s* operator_p_create2(unsigned int ON, const long
 		operator_data_t* data, operator_p_fun_t apply, operator_del_t del);
 
 
-extern const struct operator_s* operator_generic_create(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)],
+extern const struct operator_s* operator_generic_create(unsigned int N, unsigned int io_flags,
+		const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)],
 		operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
-extern const struct operator_s* operator_generic_create2(unsigned int N, const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)], const long* out_strs[__VLA(N)], operator_data_t* data, operator_fun_t apply, operator_del_t del);
+extern const struct operator_s* operator_generic_create2(unsigned int N, unsigned int io_flags,
+			const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)], const long* out_strs[__VLA(N)],
+			operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
 
 

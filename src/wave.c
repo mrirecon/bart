@@ -191,7 +191,7 @@ int main_wave(int argc, char* argv[])
 		cgconf.tol = 1.E-3;         // cg tolerance     
 
 		italgo = iter_conjgrad;
-		iconf = &cgconf.base;
+		iconf = CAST_UP(&cgconf);
 
 	} else {
 
@@ -202,7 +202,7 @@ int main_wave(int argc, char* argv[])
 		fsconf.hogwild = hogwild;
 
 		italgo = iter_fista;
-		iconf = &fsconf.base;
+		iconf = CAST_UP(&fsconf);
 	}
 
 
@@ -219,7 +219,7 @@ int main_wave(int argc, char* argv[])
 	struct linop_s* sense_op = linop_chain(mapsop, waveop);
 
 	// create forward operator by adding sampling mask to sense operator
-	struct linop_s* forward = linop_chain(sense_op, sampling_create(ksp_dims, pat_dims, pattern));
+	struct linop_s* forward = linop_chain(sense_op, linop_sampling_create(ksp_dims, pat_dims, pattern));
 
 	struct lsqr_conf lsqr_conf = { 0. };
 

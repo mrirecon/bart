@@ -62,7 +62,7 @@
   */
 struct maps_data {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	long max_dims[DIMS];
 
@@ -78,11 +78,12 @@ struct maps_data {
 	complex float* norm;
 };
 
+DEF_TYPEID(maps_data);
 
 
 static void maps_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct maps_data* data = CONTAINER_OF(_data, const struct maps_data, base);
+	const struct maps_data* data = CAST_DOWN(maps_data, _data);
 
 	md_clear(DIMS, data->ksp_dims, dst, CFL_SIZE);
 	md_zfmac2(DIMS, data->max_dims, data->strs_ksp, dst, data->strs_img, src, data->strs_mps, data->sens);
@@ -91,7 +92,7 @@ static void maps_apply(const linop_data_t* _data, complex float* dst, const comp
 
 static void maps_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct maps_data* data = CONTAINER_OF(_data, const struct maps_data, base);
+	const struct maps_data* data = CAST_DOWN(maps_data, _data);
 
 	// dst = sum( conj(sens) .* tmp )
 	md_clear(DIMS, data->img_dims, dst, CFL_SIZE);
@@ -112,7 +113,7 @@ static void maps_init_normal(struct maps_data* data)
 
 static void maps_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct maps_data* data = CONTAINER_OF(_data, struct maps_data, base);
+	struct maps_data* data = CAST_DOWN(maps_data, _data);
 
 	maps_init_normal(data);
 
@@ -125,7 +126,7 @@ static void maps_apply_normal(const linop_data_t* _data, complex float* dst, con
  */
 static void maps_apply_pinverse(const linop_data_t* _data, float lambda, complex float* dst, const complex float* src)
 {
-	struct maps_data* data = CONTAINER_OF(_data, struct maps_data, base);
+	struct maps_data* data = CAST_DOWN(maps_data, _data);
 
 	maps_init_normal(data);
 
@@ -136,7 +137,7 @@ static void maps_apply_pinverse(const linop_data_t* _data, float lambda, complex
 
 static void maps_free_data(const linop_data_t* _data)
 {
-	const struct maps_data* data = CONTAINER_OF(_data, const struct maps_data, base);
+	const struct maps_data* data = CAST_DOWN(maps_data, _data);
 
 	md_free((void*)data->sens);
 	free((void*)data);
@@ -147,6 +148,7 @@ static struct maps_data* maps_create_data(const long max_dims[DIMS],
 			unsigned int sens_flags, const complex float* sens, bool gpu)
 {
 	PTR_ALLOC(struct maps_data, data);
+	SET_TYPEID(maps_data, data);
 
 	// maximal dimensions
 	md_copy_dims(DIMS, data->max_dims, max_dims);
@@ -195,7 +197,7 @@ struct linop_s* maps_create(const long max_dims[DIMS],
 	// scale the sensitivity maps by the FFT scale factor
 	fftscale(DIMS, data->mps_dims, FFT_FLAGS, data->sens, data->sens);
 
-	return linop_create(DIMS, data->ksp_dims, DIMS, data->img_dims, &data->base,
+	return linop_create(DIMS, data->ksp_dims, DIMS, data->img_dims, CAST_UP(data),
 			maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
 }
 
@@ -221,7 +223,7 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
 
 	struct maps_data* data = maps_create_data(max_dims, sens_flags, maps, use_gpu);
 
-	return linop_create(DIMS, coilim_dims, DIMS, img_dims, &data->base,
+	return linop_create(DIMS, coilim_dims, DIMS, img_dims, CAST_UP(data),
 		maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
 }
 

@@ -34,6 +34,17 @@ extern const struct sense_conf sense_defaults;
 struct operator_s;
 struct operator_p_s;
 
+extern const struct operator_s* sense_recon_create(const struct sense_conf* conf, const long dims[DIMS],
+		  const struct linop_s* sense_op,
+		  const long pat_dims[DIMS], const complex float* pattern,
+		  italgo_fun2_t italgo, iter_conf* iconf,
+		  unsigned int num_funs,
+		  const struct operator_p_s* thresh_op[num_funs],
+		  const struct linop_s* thresh_funs[num_funs],
+		  const long ksp_dims[DIMS],
+		  const struct operator_s* precond_op);
+
+
 #ifdef USE_CUDA
 extern void sense_recon2_gpu(const struct sense_conf* conf, const long dims[DIMS], _Complex float* image,
 			const struct linop_s* sense_op,

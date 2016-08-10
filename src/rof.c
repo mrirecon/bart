@@ -63,7 +63,7 @@ int main_rof(int argc, char* argv[])
 
 	// TV operator
 
-	const struct linop_s* tv_op = grad_init(DIMS, dims, flags);
+	const struct linop_s* tv_op = linop_grad_create(DIMS, dims, flags);
 //	const struct linop_s* tv_op = linop_identity_create(DIMS, dims);
 
 	struct iter_admm_conf conf = iter_admm_defaults;
@@ -74,10 +74,9 @@ int main_rof(int argc, char* argv[])
 	const struct operator_p_s* thresh_prox = prox_thresh_create(DIMS + 1, linop_codomain(tv_op)->dims, 
 								lambda, MD_BIT(DIMS), false);
 
-	iter2_admm(&conf.base, linop_identity_create(DIMS, dims)->forward,
+	iter2_admm(CAST_UP(&conf), linop_identity_create(DIMS, dims)->forward,
 		   1, (const struct operator_p_s* []){ thresh_prox }, (const struct linop_s* []){ tv_op }, NULL, 
-		   2 * md_calc_size(DIMS, dims), (float*)out_data, (const float*)in_data,
-		   NULL, NULL, NULL);
+		   NULL, 2 * md_calc_size(DIMS, dims), (float*)out_data, (const float*)in_data, NULL);
 
 	linop_free(tv_op);
 	operator_p_free(thresh_prox);

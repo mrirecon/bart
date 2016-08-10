@@ -16,35 +16,39 @@
 
 #include "linops/linop.h"
 
-#include "rvc.h"
+#include "realval.h"
 
 
 struct rvc_s {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	unsigned int N;
 	const long* dims;
 };
 
+DEF_TYPEID(rvc_s);
+
+
 static void rvc_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct rvc_s* data = CONTAINER_OF(_data, const struct rvc_s, base);
+	const struct rvc_s* data = CAST_DOWN(rvc_s, _data);
 
 	md_zreal(data->N, data->dims, dst, src);
 }
 
 static void rvc_free(const linop_data_t* _data)
 {
-	const struct rvc_s* data = CONTAINER_OF(_data, const struct rvc_s, base);
+	const struct rvc_s* data = CAST_DOWN(rvc_s, _data);
 
 	free((void*)data->dims);
 	free((void*)data);
 }
 
-struct linop_s* rvc_create(unsigned int N, const long dims[N])
+struct linop_s* linop_realval_create(unsigned int N, const long dims[N])
 {
 	PTR_ALLOC(struct rvc_s, data);
+	SET_TYPEID(rvc_s, data);
 
 	PTR_ALLOC(long[N], dims2);
 	md_copy_dims(N, *dims2, dims);
@@ -52,7 +56,7 @@ struct linop_s* rvc_create(unsigned int N, const long dims[N])
 	data->N = N;
 	data->dims = *PTR_PASS(dims2);
 
-	return linop_create(N, dims, N, dims, &PTR_PASS(data)->base, rvc_apply, rvc_apply, rvc_apply, NULL, rvc_free);
+	return linop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), rvc_apply, rvc_apply, rvc_apply, NULL, rvc_free);
 }
 
 

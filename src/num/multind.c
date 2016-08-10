@@ -32,6 +32,7 @@
 #include <strings.h>
 
 #include "misc/misc.h"
+#include "misc/types.h"
 #include "misc/debug.h"
 
 #include "num/optimize.h"
@@ -692,11 +693,12 @@ struct swap_s {
 	size_t size;
 };
 
-static void nary_swap(void* _data, void* ptr[])
+static void nary_swap(struct nary_opt_data_s* opt_data, void* ptr[])
 {
-	const struct swap_s* data = _data;
-	size_t size = data->size;
+	const struct swap_s* data = opt_data->data_ptr;
+	size_t size = data->size * opt_data->size;
 	unsigned int M = data->M;
+
 	char* tmp = (size < 32) ? alloca(size) : xmalloc(size);
 
 #ifdef  USE_CUDA
@@ -711,27 +713,25 @@ static void nary_swap(void* _data, void* ptr[])
 	memcpy(ptr[M - 1], tmp, size);
 
 	if (size >= 32)
-		free(tmp);
+		xfree(tmp);
 }
 
 /**
  * Swap values between a number of arrays (with strides)
  */
-void md_circular_swap2(unsigned M, unsigned int D, const long dims[D], const long* strs[M], void* ptr[M], size_t size)
-//void md_circular_swap2(unsigned M, unsigned int D, const long dims[D], const long strs[M][D], void* ptr[M], size_t size)
+void md_circular_swap2(unsigned int M, unsigned int D, const long dims[D], const long* strs[M], void* ptr[M], size_t size)
 {
-	unsigned int skip = md_calc_blockdim(D, dims, strs[0], size);
-
-	for (unsigned int i = 1; i < M; i++)
-		skip = MIN(skip, md_calc_blockdim(D, dims, strs[i], size));
-
-	const long* nstr[M];
+	size_t sizes[M];
 	for (unsigned int i = 0; i < M; i++)
-		nstr[i] = strs[i] + skip;
+		sizes[i] = size;
 
-	struct swap_s data = { M, md_calc_size(skip, dims) * size };
+	struct swap_s data = { M, size };
 
-	md_nary(M, D - skip, dims + skip, nstr, ptr, &data, &nary_swap);
+	const long (*nstrs[M])[D];
+	for (unsigned int i = 0; i < M; i++)
+		nstrs[i] = (const long (*)[D])strs[i];
+
+	optimized_nop(M, (1 << M) - 1, D, dims, nstrs, ptr, sizes, nary_swap, &data);
 }
 
 
@@ -1700,12 +1700,12 @@ void* md_alloc_sameplace(unsigned int D, const long dimensions[D], size_t size, 
  * Free CPU/GPU memory
  *
  */
-void md_free(void* ptr)
+void md_free(const void* ptr)
 {
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr))
-		cuda_free(ptr);
+		cuda_free((void*)ptr);
 	else
 #endif
-	free(ptr);
+	xfree(ptr);
 }

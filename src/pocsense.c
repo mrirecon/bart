@@ -162,13 +162,13 @@ int main_pocsense(int argc, char* argv[])
 	if (use_admm) {
 
 		italgo = iter2_admm;
-		iconf = &mmconf.base;
+		iconf = CAST_UP(&mmconf);
 		ops2 = ops;
 
 	} else {
 
 		italgo = iter2_pocs;
-		iconf = &pconf.base;
+		iconf = CAST_UP(&pconf);
 	}
 
 

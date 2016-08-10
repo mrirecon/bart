@@ -48,7 +48,7 @@ static struct prox_4pt_dfwavelet_data*  prepare_prox_4pt_dfwavelet_data(const lo
 
 struct prox_dfwavelet_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	bool use_gpu;
         unsigned int slice_flag;
@@ -66,12 +66,14 @@ struct prox_dfwavelet_data {
         struct dfwavelet_plan_s* plan;
 };
 
+DEF_TYPEID(prox_dfwavelet_data);
+
 
 const struct operator_p_s* prox_dfwavelet_create(const long im_dims[DIMS], const long min_size[3], const complex float res[3], unsigned int flow_dim, float lambda, bool use_gpu)
 {
 	struct prox_dfwavelet_data* data = prepare_prox_dfwavelet_data(im_dims, min_size, res, flow_dim, lambda, use_gpu);
         
-	return operator_p_create(DIMS, im_dims, DIMS, im_dims, &data->base, prox_dfwavelet_thresh, prox_dfwavelet_del);
+	return operator_p_create(DIMS, im_dims, DIMS, im_dims, CAST_UP(data), prox_dfwavelet_thresh, prox_dfwavelet_del);
 
 }
 
@@ -79,6 +81,7 @@ struct prox_dfwavelet_data* prepare_prox_dfwavelet_data(const long im_dims[DIMS]
 {
         // get dimension
         PTR_ALLOC(struct prox_dfwavelet_data, data);
+	SET_TYPEID(prox_dfwavelet_data, data);
 
         md_copy_dims(DIMS, data->im_dims, im_dims);
         md_select_dims(DIMS, FFT_FLAGS, data->tim_dims, im_dims);
@@ -107,13 +110,13 @@ struct prox_dfwavelet_data* prepare_prox_dfwavelet_data(const long im_dims[DIMS]
 
         data->plan = prepare_dfwavelet_plan(3, data->tim_dims, (long*) min_size, (complex float*) res, use_gpu);
         
-        return data;
+        return PTR_PASS(data);
 }
 
 
 static void prox_dfwavelet_del(const operator_data_t* _data)
 {
-	struct prox_dfwavelet_data* data = CONTAINER_OF(_data, struct prox_dfwavelet_data, base);
+	struct prox_dfwavelet_data* data = CAST_DOWN(prox_dfwavelet_data, _data);
 
         md_free(data->vx);
         md_free(data->vy);
@@ -127,7 +130,7 @@ static void prox_dfwavelet_del(const operator_data_t* _data)
 
 static void prox_dfwavelet_thresh(const operator_data_t* _data, float thresh, complex float* out, const complex float* in)
 {
-	struct prox_dfwavelet_data* data = CONTAINER_OF(_data, struct prox_dfwavelet_data, base);
+	struct prox_dfwavelet_data* data = CAST_DOWN(prox_dfwavelet_data, _data);
 
         bool done = false;
         long pos[DIMS];
@@ -183,7 +186,7 @@ static void prox_dfwavelet_thresh(const operator_data_t* _data, float thresh, co
 
 struct prox_4pt_dfwavelet_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	bool use_gpu;
         unsigned int slice_flag;
@@ -209,18 +212,21 @@ struct prox_4pt_dfwavelet_data {
         const struct operator_p_s* wthresh_op;
 };
 
+DEF_TYPEID(prox_4pt_dfwavelet_data);
+
 
 
 const struct operator_p_s* prox_4pt_dfwavelet_create(const long im_dims[DIMS], const long min_size[3], const complex float res[3], unsigned int flow_dim, float lambda, bool use_gpu)
 {
 	struct prox_4pt_dfwavelet_data* data = prepare_prox_4pt_dfwavelet_data(im_dims, min_size, res, flow_dim, lambda, use_gpu);
         
-	return operator_p_create(DIMS, im_dims, DIMS, im_dims, &data->base, prox_4pt_dfwavelet_thresh, prox_4pt_dfwavelet_del);
+	return operator_p_create(DIMS, im_dims, DIMS, im_dims, CAST_UP(data), prox_4pt_dfwavelet_thresh, prox_4pt_dfwavelet_del);
 }
 
 struct prox_4pt_dfwavelet_data* prepare_prox_4pt_dfwavelet_data(const long im_dims[DIMS], const long min_size[3], const complex float res[3], unsigned int flow_dim, float lambda, bool use_gpu)
 {
 	PTR_ALLOC(struct prox_4pt_dfwavelet_data, data);
+	SET_TYPEID(prox_4pt_dfwavelet_data, data);
 
         md_copy_dims(DIMS, data->im_dims, im_dims);
         md_select_dims(DIMS, FFT_FLAGS, data->tim_dims, im_dims);
@@ -259,18 +265,18 @@ struct prox_4pt_dfwavelet_data* prepare_prox_4pt_dfwavelet_data(const long im_di
         data->slice_flag = ~FFT_FLAGS;
         data->lambda = lambda;
 
-        data->plan = prepare_dfwavelet_plan( 3, data->tim_dims, (long*) min_size, (complex float*) res, use_gpu );
+        data->plan = prepare_dfwavelet_plan(3, data->tim_dims, (long*) min_size, (complex float*) res, use_gpu);
         
 	data->w_op = wavelet_create(DIMS, data->tim_dims, FFT_FLAGS, min_size, true, use_gpu);
         data->wthresh_op = prox_unithresh_create(DIMS, data->w_op, lambda, MD_BIT(data->flow_dim), use_gpu);
 
-        return data;
+        return PTR_PASS(data);
 }
 
 
 static void prox_4pt_dfwavelet_del(const operator_data_t* _data)
 {
-	struct prox_4pt_dfwavelet_data* data = CONTAINER_OF(_data, struct prox_4pt_dfwavelet_data, base);
+	struct prox_4pt_dfwavelet_data* data = CAST_DOWN(prox_4pt_dfwavelet_data, _data);
 
         md_free(data->vx);
         md_free(data->vy);
@@ -293,7 +299,7 @@ static void prox_4pt_dfwavelet_del(const operator_data_t* _data)
 
 static void prox_4pt_dfwavelet_thresh(const operator_data_t* _data, float thresh, complex float* out, const complex float* in)
 {
-	struct prox_4pt_dfwavelet_data* data = CONTAINER_OF(_data, struct prox_4pt_dfwavelet_data, base);
+	struct prox_4pt_dfwavelet_data* data = CAST_DOWN(prox_4pt_dfwavelet_data, _data);
 
         bool done = false;
         long pos[DIMS];

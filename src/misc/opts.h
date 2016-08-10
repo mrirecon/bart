@@ -1,9 +1,10 @@
 
 #include <stdbool.h>
 
-#include "misc/misc.h"
 
 #include "misc/cppwrap.h"
+#include "misc/types.h"
+#include "misc/misc.h"
 
 typedef bool opt_conv_f(void* ptr, char c, const char* optarg);
 

@@ -21,8 +21,6 @@
 #include "linops/linop.h"
 
 #include "misc/misc.h"
-
-
 #include "misc/debug.h"
 
 #include "thresh.h"
@@ -41,7 +39,7 @@
  */
 struct thresh_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	float lambda;
 
@@ -57,11 +55,13 @@ struct thresh_s {
 	const struct linop_s* unitary_op;
 };
 
+DEF_TYPEID(thresh_s);
+
 
 
 static void softthresh_apply(const operator_data_t* _data, float mu, complex float* optr, const complex float* iptr)
 {
-	const struct thresh_s* data = CONTAINER_OF(_data, const struct thresh_s, base);
+	const struct thresh_s* data = CAST_DOWN(thresh_s, _data);
 
 	if (0. == mu)
 		md_copy(data->D, data->dim, optr, iptr, CFL_SIZE);
@@ -72,7 +72,7 @@ static void softthresh_apply(const operator_data_t* _data, float mu, complex flo
 
 static void unisoftthresh_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	const struct thresh_s* data = CONTAINER_OF(_data, const struct thresh_s, base);
+	const struct thresh_s* data = CAST_DOWN(thresh_s, _data);
 
 	if (0. == mu)
 		md_copy(data->D, data->dim, dst, src, CFL_SIZE);
@@ -95,11 +95,13 @@ static void unisoftthresh_apply(const operator_data_t* _data, float mu, complex 
 
 static void thresh_del(const operator_data_t* _data)
 {
-	const struct thresh_s* data = CONTAINER_OF(_data, const struct thresh_s, base);
-	free(data->dim);
-	free(data->str);
+	const struct thresh_s* data = CAST_DOWN(thresh_s, _data);
+
+	xfree(data->dim);
+	xfree(data->str);
 	md_free(data->tmp_norm);
-	free((void*)data);
+
+	xfree(data);
 }
 
 
@@ -118,6 +120,7 @@ static void thresh_del(const operator_data_t* _data)
 const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D], const float lambda, const unsigned long flags, bool gpu)
 {
 	PTR_ALLOC(struct thresh_s, data);
+	SET_TYPEID(thresh_s, data);
 
 	data->lambda = lambda;
 	data->D = D;
@@ -141,7 +144,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D],
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, dim, D, dim, &PTR_PASS(data)->base, softthresh_apply, thresh_del);
+	return operator_p_create(D, dim, D, dim, CAST_UP(PTR_PASS(data)), softthresh_apply, thresh_del);
 
 }
 
@@ -159,6 +162,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D],
 extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags, bool gpu)
 {
 	PTR_ALLOC(struct thresh_s, data);
+	SET_TYPEID(thresh_s, data);
 
 	data->lambda = lambda;
 	data->D = D;
@@ -173,7 +177,8 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	data->str = *TYPE_ALLOC(long[D]);
 	md_calc_strides(D, data->str, data->dim, CFL_SIZE);
 
-	// norm dimensions are the flagged transform dimensions //FIXME should yse linop_codomain(unitary_op)->N 
+	// norm dimensions are the flagged transform dimensions
+	// FIXME should use linop_codomain(unitary_op)->N 
 	long norm_dim[D];
 	md_select_dims(D, ~flags, norm_dim, linop_codomain(unitary_op)->dims);
 
@@ -184,7 +189,7 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
 #endif
 
-	return operator_p_create(D, dims, D, dims, &PTR_PASS(data)->base, unisoftthresh_apply, thresh_del);
+	return operator_p_create(D, dims, D, dims, CAST_UP(PTR_PASS(data)), unisoftthresh_apply, thresh_del);
 }
 
 
@@ -206,7 +211,7 @@ void thresh_free(const struct operator_p_s* o)
  */
 void set_thresh_lambda(const struct operator_p_s* o, const float lambda)
 {
-	struct thresh_s* data = CONTAINER_OF(operator_p_get_data(o), struct thresh_s, base);
+	struct thresh_s* data = CAST_DOWN(thresh_s, operator_p_get_data(o));
 	data->lambda = lambda;
 }
 
@@ -217,7 +222,7 @@ void set_thresh_lambda(const struct operator_p_s* o, const float lambda)
  */
 float get_thresh_lambda(const struct operator_p_s* o)
 {
-	struct thresh_s* data = CONTAINER_OF(operator_p_get_data(o), struct thresh_s, base);
+	struct thresh_s* data = CAST_DOWN(thresh_s, operator_p_get_data(o));
 	return data->lambda;
 }
 

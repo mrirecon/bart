@@ -12,4 +12,5 @@ tests/test-python-cfl: $(TOOLDIR)/tests/pythoncfl.py nrmse flip $(TESTS_OUT)/she
 	touch $@
 	
 
-TESTS += tests/test-python-cfl
+TESTS_PYTHON += tests/test-python-cfl
+
