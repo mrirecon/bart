@@ -19,12 +19,13 @@
 #include "num/flpmath.h"
 #include "num/ops.h"
 #include "num/iovec.h"
+#include "num/gpuops.h"
 
 #include "linops/linop.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
-#include "num/gpuops.h"
+#include "misc/types.h"
 
 #include "finite_diff.h"
 
@@ -43,7 +44,7 @@
  */
 struct fdiff_s {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	unsigned int D;
 
@@ -59,6 +60,7 @@ struct fdiff_s {
 	bool snip;
 };
 
+DEF_TYPEID(fdiff_s);
 
 
 /*
@@ -217,7 +219,7 @@ void md_zcumsum2(unsigned int D, const long dims[D], unsigned int flags, const l
  */
 static void fdiff_apply(const linop_data_t* _data, complex float* optr, const complex float* iptr)
 {
-	const struct fdiff_s* data = CONTAINER_OF(_data, const struct fdiff_s, base);
+	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
 
 	md_zfinitediff_core2(data->D, data->dims, data->flags, data->snip, data->tmp, data->str, optr, data->str, iptr);
 }
@@ -235,7 +237,7 @@ static void fdiff_apply(const linop_data_t* _data, complex float* optr, const co
  */
 static void fdiff_apply_adjoint(const linop_data_t* _data, complex float* optr, const complex float* iptr)
 {
-	const struct fdiff_s* data = CONTAINER_OF(_data, const struct fdiff_s, base);
+	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
 
 	md_copy2(data->D, data->dims, data->str, optr, data->str, iptr, CFL_SIZE);
 
@@ -268,7 +270,7 @@ static void fdiff_apply_adjoint(const linop_data_t* _data, complex float* optr, 
  */
 static void cumsum_apply(const linop_data_t* _data, float lambda, complex float* optr, const complex float* iptr)
 {
-	const struct fdiff_s* data = CONTAINER_OF(_data, const struct fdiff_s, base);
+	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
 
 	assert(0. == lambda);
 	md_zcumsum_core2(data->D, data->dims, data->flags, data->tmp, data->tmp2, data->str, optr, data->str, iptr);
@@ -276,14 +278,14 @@ static void cumsum_apply(const linop_data_t* _data, float lambda, complex float*
 
 static void finite_diff_del(const linop_data_t* _data)
 {
-	const struct fdiff_s* data = CONTAINER_OF(_data, const struct fdiff_s, base);
+	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
 
-	free(data->dims);
-	free(data->str);
+	xfree(data->dims);
+	xfree(data->str);
 	md_free(data->tmp);
 	md_free(data->tmp2);
 
-	free((void*)data);
+	xfree(data);
 }
 
 
@@ -298,9 +300,10 @@ static void finite_diff_del(const linop_data_t* _data)
  *
  * Returns a pointer to the finite difference operator
  */
-extern const struct linop_s* finite_diff_init(unsigned int D, const long dim[D], const unsigned long flags, bool snip, bool gpu)
+extern const struct linop_s* linop_finitediff_create(unsigned int D, const long dim[D], const unsigned long flags, bool snip, bool gpu)
 {
 	PTR_ALLOC(struct fdiff_s, data);
+	SET_TYPEID(fdiff_s, data);
 
 	data->D = D;
 	data->flags = flags;
@@ -322,7 +325,7 @@ extern const struct linop_s* finite_diff_init(unsigned int D, const long dim[D],
 	data->tmp2 = md_alloc(D, data->dims, CFL_SIZE);
 #endif
 
-	return linop_create(D, dim, D, dim, &data->base, fdiff_apply, fdiff_apply_adjoint, NULL, cumsum_apply, finite_diff_del);
+	return linop_create(D, dim, D, dim, CAST_UP(PTR_PASS(data)), fdiff_apply, fdiff_apply_adjoint, NULL, cumsum_apply, finite_diff_del);
 }
 
 
@@ -364,17 +367,13 @@ complex float* get_fdiff_tmp2ptr(const struct linop_s* o)
 }
 
 
-void finite_diff_free(const struct linop_s* o)
-{
-	linop_free(o);
-}
 
 /**
  * Internal data structure used for zfinitediff operator
  */
 struct zfinitediff_data {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	unsigned int D;
 	long dim_diff;
@@ -387,6 +386,8 @@ struct zfinitediff_data {
 
 	size_t size;
 };
+
+DEF_TYPEID(zfinitediff_data);
 
 
 /**
@@ -403,7 +404,7 @@ static void zfinitediff_apply(const linop_data_t* _data,
 	//     out = in(..,1:(end-1),..) - in(..,2:end,..)
 
 	//printf("zfinitediff_apply\n");
-	const struct zfinitediff_data* data = CONTAINER_OF(_data, const struct zfinitediff_data, base);
+	const struct zfinitediff_data* data = CAST_DOWN(zfinitediff_data, _data);
 
 
 	unsigned long d = data->dim_diff;
@@ -460,7 +461,7 @@ static void zfinitediff_adjoint(const linop_data_t* _data,
 			  complex float* optr, const complex float* iptr)
 {
 	//printf("zfinitediff_adjoint\n");
-	const struct zfinitediff_data* data = CONTAINER_OF(_data, const struct zfinitediff_data, base);
+	const struct zfinitediff_data* data = CAST_DOWN(zfinitediff_data, _data);
 
 	// if (docircshift)
 	//     out(..,2:end,..) = in(..,2:end,..) - in(..,1:(end-1),..)
@@ -536,7 +537,7 @@ static void zfinitediff_adjoint(const linop_data_t* _data,
 static void zfinitediff_normal(const linop_data_t* _data,
 			complex float* optr, const complex float* iptr)
 {
-	const struct zfinitediff_data* data = CONTAINER_OF(_data, const struct zfinitediff_data, base);
+	const struct zfinitediff_data* data = CAST_DOWN(zfinitediff_data, _data);
 
 	// Turns out that this is faster, but this requires extra memory.
 	complex float* tmp = md_alloc_sameplace(data->D, data->dims_in, CFL_SIZE, iptr);
@@ -623,27 +624,25 @@ static void zfinitediff_normal(const linop_data_t* _data,
 	}
 }
 
-void zfinitediff_free(const struct linop_s* op) 
-{
-	linop_free(op);
-}
+
 
 static void zfinitediff_del(const linop_data_t* _data)
 {
-	const struct zfinitediff_data* data = CONTAINER_OF(_data, const struct zfinitediff_data, base);
+	const struct zfinitediff_data* data = CAST_DOWN(zfinitediff_data, _data);
 
-	free(data->dims_in);
-	free(data->strides_in);
+	xfree(data->dims_in);
+	xfree(data->strides_in);
 
-	free(data->dims_adj);
-	free(data->strides_adj);
+	xfree(data->dims_adj);
+	xfree(data->strides_adj);
 
 	// FIXME free data
 }
 
-const struct linop_s* zfinitediff_init(unsigned int D, const long dims[D], long diffdim, bool circular)
+const struct linop_s* linop_zfinitediff_create(unsigned int D, const long dims[D], long diffdim, bool circular)
 {
 	PTR_ALLOC(struct zfinitediff_data, data);
+	SET_TYPEID(zfinitediff_data, data);
 
 	data->D = D;
 	data->dim_diff = diffdim;
@@ -664,7 +663,10 @@ const struct linop_s* zfinitediff_init(unsigned int D, const long dims[D], long 
 
 	md_calc_strides(D, data->strides_adj, data->dims_adj, CFL_SIZE);
 
-	return linop_create(D, data->dims_adj, D, data->dims_in, &data->base,
+	const long* dims_adj = data->dims_adj;
+	const long* dims_in = data->dims_in;
+
+	return linop_create(D, dims_adj, D, dims_in, CAST_UP(PTR_PASS(data)),
 			zfinitediff_apply, zfinitediff_adjoint,
 			zfinitediff_normal, NULL, zfinitediff_del);
 }

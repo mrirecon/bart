@@ -25,6 +25,7 @@
 #include "iter/thresh.h"
 
 #include "misc/misc.h"
+#include "misc/types.h"
 #include "misc/mri.h"
 #include "misc/debug.h"
 
@@ -108,7 +109,9 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	struct data data = { ndata };
 
 	struct iter3_irgnm_conf irgnm_conf = { .iter = conf->iter, .alpha = conf->alpha, .redu = conf->redu };
-	iter3_irgnm(&irgnm_conf.base, frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
+	SET_TYPEID(iter3_irgnm_conf, &irgnm_conf);
+
+	iter3_irgnm(CAST_UP(&irgnm_conf), frw, der, adj, &data, size * 2, (float*)img, data_size * 2, (const float*)kspace);
 
 
 	md_copy(DIMS, imgs_dims, outbuf, img, CFL_SIZE);

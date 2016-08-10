@@ -23,7 +23,7 @@
 
 struct sampling_data_s {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	long dims[DIMS];
 	long strs[DIMS];
@@ -31,24 +31,27 @@ struct sampling_data_s {
 	const complex float* pattern;
 };
 
+DEF_TYPEID(sampling_data_s);
+
 
 static void sampling_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct sampling_data_s* data = CONTAINER_OF(_data, const struct sampling_data_s, base);
+	const struct sampling_data_s* data = CAST_DOWN(sampling_data_s, _data);
 
 	md_zmul2(DIMS, data->dims, data->strs, dst, data->strs, src, data->pat_strs, data->pattern);
 }
 
 static void sampling_free(const linop_data_t* _data)
 {
-	const struct sampling_data_s* data = CONTAINER_OF(_data, const struct sampling_data_s, base);
+	const struct sampling_data_s* data = CAST_DOWN(sampling_data_s, _data);
 
-	free((void*)data);
+	xfree(data);
 }
 
-struct linop_s* sampling_create(const long dims[DIMS], const long pat_dims[DIMS], const complex float* pattern)
+struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims[DIMS], const complex float* pattern)
 {
 	PTR_ALLOC(struct sampling_data_s, data);
+	SET_TYPEID(sampling_data_s, data);
 
 	md_select_dims(DIMS, ~MAPS_FLAG, data->dims, dims); // dimensions of kspace
 	md_calc_strides(DIMS, data->strs, data->dims, CFL_SIZE);
@@ -56,7 +59,7 @@ struct linop_s* sampling_create(const long dims[DIMS], const long pat_dims[DIMS]
 
 	data->pattern = pattern;
 
-	return linop_create(DIMS, data->dims, DIMS, data->dims, &data->base, sampling_apply, sampling_apply, sampling_apply, NULL, sampling_free);
+	return linop_create(DIMS, data->dims, DIMS, data->dims, CAST_UP(PTR_PASS(data)), sampling_apply, sampling_apply, sampling_apply, NULL, sampling_free);
 }
 
 

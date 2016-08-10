@@ -33,15 +33,26 @@
 #include "iter.h"
 
 
+DEF_TYPEID(iter_conjgrad_conf);
+DEF_TYPEID(iter_landweber_conf);
+DEF_TYPEID(iter_ist_conf);
+DEF_TYPEID(iter_fista_conf);
+DEF_TYPEID(iter_pocs_conf);
+DEF_TYPEID(iter_admm_conf);
+DEF_TYPEID(iter_call_s);
+
 const struct iter_conjgrad_conf iter_conjgrad_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_conjgrad_conf),
 
 	.maxiter = 50,
 	.l2lambda = 0.,
 	.tol = 0.,
 };
 
-
 const struct iter_landweber_conf iter_landweber_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_landweber_conf),
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -50,6 +61,8 @@ const struct iter_landweber_conf iter_landweber_defaults = {
 
 const struct iter_ist_conf iter_ist_defaults = {
 
+	.INTERFACE.TYPEID = &TYPEID(iter_ist_conf),
+
 	.maxiter = 50,
 	.step = 0.95,
 	.continuation = 1.,
@@ -57,8 +70,9 @@ const struct iter_ist_conf iter_ist_defaults = {
 	.tol = 0.,
 };
 
-
 const struct iter_fista_conf iter_fista_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_fista_conf),
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -70,8 +84,12 @@ const struct iter_fista_conf iter_fista_defaults = {
 
 const struct iter_admm_conf iter_admm_defaults = {
 
+	.INTERFACE.TYPEID = &TYPEID(iter_admm_conf),
+
 	.maxiter = 50,
 	.maxitercg = 10,
+
+	.cg_eps = 1.E-3,
 
 	.do_warmstart = false,
 	.dynamic_rho = false,
@@ -90,6 +108,8 @@ const struct iter_admm_conf iter_admm_defaults = {
 
 
 const struct iter_pocs_conf iter_pocs_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_pocs_conf),
 
 	.maxiter = 50,
 };
@@ -121,12 +141,10 @@ void iter_conjgrad(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 	assert(NULL == thresh_prox);
-	iter2_conjgrad(_conf, normaleq_op, 0, NULL, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_conjgrad(_conf, normaleq_op, 0, NULL, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 
@@ -135,11 +153,9 @@ void iter_landweber(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
-	struct iter_landweber_conf* conf = CONTAINER_OF(_conf, struct iter_landweber_conf, base);
+	struct iter_landweber_conf* conf = CAST_DOWN(iter_landweber_conf, _conf);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -148,11 +164,7 @@ void iter_landweber(iter_conf* _conf,
 
 	assert(NULL == thresh_prox);
 
-	UNUSED(obj_eval);
-	UNUSED(objval_data);
-	UNUSED(image_truth);
-
-	landweber_sym(conf->maxiter, 1.E-3 * eps, conf->step, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, image, image_adj);
+	landweber_sym(conf->maxiter, 1.E-3 * eps, conf->step, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, image, image_adj, monitor);
 
 cleanup:
 	;
@@ -165,22 +177,18 @@ void iter_ist(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
-	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 void iter_fista(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
-	iter2_fista(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_fista(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 
@@ -189,13 +197,11 @@ void iter_admm(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
 	const struct linop_s* eye[1] = { linop_identity_create(1, MD_DIMS(size / 2)) }; // using complex float identity operator... divide size by 2
 
-	iter2_admm(_conf, normaleq_op, 1, &thresh_prox, eye, NULL, size, image, image_adj, image_truth, objval_data, obj_eval);
+	iter2_admm(_conf, normaleq_op, 1, &thresh_prox, eye, NULL, NULL, size, image, image_adj, monitor);
 
 	linop_free(eye[0]);
 }
@@ -205,14 +211,12 @@ void iter_call_iter2(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		const struct operator_p_s* thresh_prox,
 		long size, float* image, const float* image_adj,
-		const float* image_truth,
-		void* objval_data,
-		float (*obj_eval)(const void*, const float*))
+		struct iter_monitor_s* monitor)
 {
-	struct iter2_call_s* it = CONTAINER_OF(_conf, struct iter2_call_s, base);
+	struct iter2_call_s* it = CAST_DOWN(iter2_call_s, _conf);
 
-	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL,
-		size, image, image_adj, image_truth, objval_data, obj_eval);
+	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL, NULL,
+		size, image, image_adj, monitor);
 }
 
 

@@ -184,7 +184,7 @@ void fftshift(unsigned int N, const long dimensions[N], unsigned long flags, com
 
 struct fft_plan_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	fftwf_plan fftw;
 	
@@ -192,6 +192,8 @@ struct fft_plan_s {
 	struct fft_cuda_plan_s* cuplan;
 #endif
 };
+
+DEF_TYPEID(fft_plan_s);
 
 
 
@@ -237,7 +239,7 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 {
 	complex float* dst = args[0];
 	const complex float* src = args[1];
-	const struct fft_plan_s* plan = CONTAINER_OF(_plan, const struct fft_plan_s, base);
+	const struct fft_plan_s* plan = CAST_DOWN(fft_plan_s, _plan);
 
 	assert(2 == N);
 
@@ -258,7 +260,7 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 
 static void fft_free_plan(const operator_data_t* _data)
 {
-	const struct fft_plan_s* plan = CONTAINER_OF(_data, const struct fft_plan_s, base);
+	const struct fft_plan_s* plan = CAST_DOWN(fft_plan_s, _data);
 
 	fftwf_destroy_plan(plan->fftw);
 #ifdef	USE_CUDA
@@ -271,6 +273,7 @@ static void fft_free_plan(const operator_data_t* _data)
 const struct operator_s* fft_create2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards)
 {
 	PTR_ALLOC(struct fft_plan_s, plan);
+	SET_TYPEID(fft_plan_s, plan);
 
 	plan->fftw = fft_fftwf_plan(D, dimensions, flags, ostrides, dst, istrides, src, backwards);
 
@@ -281,7 +284,7 @@ const struct operator_s* fft_create2(unsigned int D, const long dimensions[D], u
 		plan->cuplan = fft_cuda_plan(D, dimensions, flags, ostrides, istrides, backwards);
 #endif
 
-	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, &PTR_PASS(plan)->base, fft_apply, fft_free_plan);
+	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, CAST_UP(PTR_PASS(plan)), fft_apply, fft_free_plan);
 }
 
 const struct operator_s* fft_create(unsigned int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src, bool backwards)

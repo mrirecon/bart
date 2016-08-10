@@ -1,9 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011, 2014-2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2011-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -452,19 +453,11 @@ static void zfftmod(long N, complex float* dst, const complex float* src, unsign
  */
 const struct vec_ops cpu_ops = {
 
-	.allocate = allocate,
-	.del = del,
-	.clear = clear,
-	.copy = copy,
 	.float2double = float2double,
 	.double2float = double2float,
 	.dot = dot,
-	.norm = norm,
 	.asum = asum,
 	.zl1norm = zl1norm,
-	.axpy = axpy,
-	.xpay = xpay,
-	.smul = smul,
 
 	.add = add,
 	.sub = sub,
@@ -472,6 +465,8 @@ const struct vec_ops cpu_ops = {
 	.div = vec_div,
 	.fmac = fmac,
 	.fmac2 = fmac2,
+
+	.axpy = axpy,
 
 	.pow = vec_pow,
 	.sqrt = vec_sqrt,
@@ -504,7 +499,6 @@ const struct vec_ops cpu_ops = {
 	.zsoftthresh_half = zsoftthresh_half,
 	.softthresh = softthresh,
 	.softthresh_half = softthresh_half,
-	.swap = swap,
 };
 
 

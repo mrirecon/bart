@@ -26,9 +26,6 @@
 
 #include "prox.h"
 
-#define PTR_BASE(T, x, b) T* x = CONTAINER_OF(b, T, base)
-#define FREE_BASE(T, b) free(CONTAINER_OF(b, T, base))
-
 
 /** 
  * Proximal function of f is defined as
@@ -49,7 +46,7 @@
  */
 struct prox_normaleq_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 	
 	const struct linop_s* op;
 	void* cgconf;
@@ -57,6 +54,8 @@ struct prox_normaleq_data {
 
 	long size;
 };
+
+DEF_TYPEID(prox_normaleq_data);
 
 /**
  * Proximal function for f(z) = 0.5 || y - A z ||_2^2.
@@ -69,7 +68,7 @@ struct prox_normaleq_data {
  */
 static void prox_normaleq_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
-	PTR_BASE(struct prox_normaleq_data, pdata, prox_data);
+	struct prox_normaleq_data* pdata = CAST_DOWN(prox_normaleq_data, prox_data);
 
 	if (0 == mu) {
 
@@ -86,7 +85,8 @@ static void prox_normaleq_fun(const operator_data_t* prox_data, float mu, float*
 
 			struct iter_conjgrad_conf* cg_conf = pdata->cgconf;
 			cg_conf->l2lambda = rho;
-			iter_conjgrad(&cg_conf->base, pdata->op->normal, NULL, pdata->size, z, (float*)b, NULL, NULL, NULL);
+
+			iter_conjgrad(CAST_UP(cg_conf), pdata->op->normal, NULL, pdata->size, z, (float*)b, NULL);
 
 		} else {
 
@@ -104,7 +104,7 @@ static void prox_normaleq_apply(const operator_data_t* _data, float mu, complex 
 
 static void prox_normaleq_del(const operator_data_t* _data)
 {
-	PTR_BASE(struct prox_normaleq_data, pdata, _data);
+	struct prox_normaleq_data* pdata = CAST_DOWN(prox_normaleq_data, _data);
 
 	free(pdata->cgconf);
 	md_free(pdata->adj);
@@ -114,6 +114,7 @@ static void prox_normaleq_del(const operator_data_t* _data)
 const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const complex float* y)
 {
 	PTR_ALLOC(struct prox_normaleq_data, pdata);
+	SET_TYPEID(prox_normaleq_data, pdata);
 	PTR_ALLOC(struct iter_conjgrad_conf, cgconf);
 
 	*cgconf = iter_conjgrad_defaults;
@@ -129,7 +130,7 @@ const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const 
 
 	return operator_p_create(linop_domain(op)->N, linop_domain(op)->dims, 
 			linop_domain(op)->N, linop_domain(op)->dims, 
-			&PTR_PASS(pdata)->base, prox_normaleq_apply, prox_normaleq_del);
+			CAST_UP(PTR_PASS(pdata)), prox_normaleq_apply, prox_normaleq_del);
 }
 
 
@@ -143,13 +144,16 @@ const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const 
  */
 struct prox_leastsquares_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 	
 	const float* y;
 	float lambda;
 
 	long size;
 };
+
+DEF_TYPEID(prox_leastsquares_data);
+
 
 /**
  * Proximal function for f(z) = lambda / 2 || y - z ||_2^2.
@@ -162,7 +166,7 @@ struct prox_leastsquares_data {
  */
 static void prox_leastsquares_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
-	PTR_BASE(struct prox_leastsquares_data, pdata, prox_data);
+	struct prox_leastsquares_data* pdata = CAST_DOWN(prox_leastsquares_data, prox_data);
 
 	md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
 
@@ -182,18 +186,19 @@ static void prox_leastsquares_apply(const operator_data_t* _data, float mu, comp
 
 static void prox_leastsquares_del(const operator_data_t* _data)
 {
-	FREE_BASE(struct prox_leastsquares_data, _data);
+	xfree(CAST_DOWN(prox_leastsquares_data, _data));
 }
 
 const struct operator_p_s* prox_leastsquares_create(unsigned int N, const long dims[N], float lambda, const complex float* y)
 {
 	PTR_ALLOC(struct prox_leastsquares_data, pdata);
+	SET_TYPEID(prox_leastsquares_data, pdata);
 
 	pdata->y = (const float*)y;
 	pdata->lambda = lambda;
 	pdata->size = md_calc_size(N, dims) * 2;
 
-	return operator_p_create(N, dims, N, dims, &PTR_PASS(pdata)->base, prox_leastsquares_apply, prox_leastsquares_del);
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_leastsquares_apply, prox_leastsquares_del);
 }
 
 
@@ -206,11 +211,14 @@ const struct operator_p_s* prox_leastsquares_create(unsigned int N, const long d
  */
 struct prox_l2norm_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 	
 	float lambda;
 	long size;
 };
+
+DEF_TYPEID(prox_l2norm_data);
+
 
 /**
  * Proximal function for f(z) = lambda  || z ||_2.
@@ -224,7 +232,7 @@ struct prox_l2norm_data {
  */
 static void prox_l2norm_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
-	PTR_BASE(struct prox_l2norm_data, pdata, prox_data);
+	struct prox_l2norm_data* pdata = CAST_DOWN(prox_l2norm_data, prox_data);
 
 	md_clear(1, MD_DIMS(pdata->size), z, FL_SIZE);
 
@@ -245,17 +253,18 @@ static void prox_l2norm_apply(const operator_data_t* _data, float mu, complex fl
 
 static void prox_l2norm_del(const operator_data_t* _data)
 {
-	FREE_BASE(struct prox_l2norm_data, _data);
+	xfree(CAST_DOWN(prox_l2norm_data, _data));
 }
 
 const struct operator_p_s* prox_l2norm_create(unsigned int N, const long dims[N], float lambda)
 {
 	PTR_ALLOC(struct prox_l2norm_data, pdata);
+	SET_TYPEID(prox_l2norm_data, pdata);
 
 	pdata->lambda = lambda;
 	pdata->size = md_calc_size(N, dims) * 2;
 
-	return operator_p_create(N, dims, N, dims, &PTR_PASS(pdata)->base, prox_l2norm_apply, prox_l2norm_del);
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_l2norm_apply, prox_l2norm_del);
 }
 
 
@@ -269,13 +278,15 @@ const struct operator_p_s* prox_l2norm_create(unsigned int N, const long dims[N]
  */
 struct prox_l2ball_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	const float* center;
 	float eps;
 
 	long size;
 };
+
+DEF_TYPEID(prox_l2ball_data);
 
 /**
  * Proximal function for f(z) = Ind{ || y - z ||_2 < eps }
@@ -288,7 +299,7 @@ struct prox_l2ball_data {
 static void prox_l2ball_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
 	UNUSED(mu);
-	PTR_BASE(struct prox_l2ball_data, pdata, prox_data);
+	struct prox_l2ball_data* pdata = CAST_DOWN(prox_l2ball_data, prox_data);
 
 	if (NULL != pdata->center)
 		md_sub(1, MD_DIMS(pdata->size), z, x_plus_u, pdata->center);
@@ -311,18 +322,19 @@ static void prox_l2ball_apply(const operator_data_t* _data, float mu, complex fl
 
 static void prox_l2ball_del(const operator_data_t* _data)
 {
-	FREE_BASE(struct prox_l2ball_data, _data);
+	xfree(CAST_DOWN(prox_l2ball_data, _data));
 }
 
 const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N], float eps, const complex float* center)
 {
 	PTR_ALLOC(struct prox_l2ball_data, pdata);
+	SET_TYPEID(prox_l2ball_data, pdata);
 
 	pdata->center = (const float*)center;
 	pdata->eps = eps;
 	pdata->size = md_calc_size(N, dims) * 2;
 
-	return operator_p_create(N, dims, N, dims, &PTR_PASS(pdata)->base, prox_l2ball_apply, prox_l2ball_del);
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_l2ball_apply, prox_l2ball_del);
 }
 
 
@@ -389,10 +401,12 @@ const struct operator_p_s* prox_thresh_create(unsigned int N, const long dims[N]
  */
 struct prox_zero_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	long size;
 };
+
+DEF_TYPEID(prox_zero_data);
 
 /**
  * Proximal function for f(z) = 0
@@ -406,7 +420,8 @@ struct prox_zero_data {
 static void prox_zero_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
 	UNUSED(mu);
-	PTR_BASE(struct prox_zero_data, pdata, prox_data);
+	struct prox_zero_data* pdata = CAST_DOWN(prox_zero_data, prox_data);
+
 	md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
 }
 
@@ -417,16 +432,17 @@ static void prox_zero_apply(const operator_data_t* _data, float mu, complex floa
 
 static void prox_zero_del(const operator_data_t* _data)
 {
-	FREE_BASE(struct prox_zero_data, _data);
+	xfree(CAST_DOWN(prox_zero_data, _data));
 }
 
 const struct operator_p_s* prox_zero_create(unsigned int N, const long dims[N])
 {
 	PTR_ALLOC(struct prox_zero_data, pdata);
+	SET_TYPEID(prox_zero_data, pdata);
 
 	pdata->size = md_calc_size(N, dims) * 2;
 
-	return operator_p_create(N, dims, N, dims, &PTR_PASS(pdata)->base, prox_zero_apply, prox_zero_del);
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_zero_apply, prox_zero_del);
 }
 
 
@@ -444,17 +460,19 @@ const struct operator_p_s* prox_zero_create(unsigned int N, const long dims[N])
  */
 struct prox_lineq_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 	
 	const struct linop_s* op;
 	complex float* adj;
 	complex float* tmp;
 };
 
+DEF_TYPEID(prox_lineq_data);
+
 static void prox_lineq_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
 	UNUSED(mu);
-	PTR_BASE(struct prox_lineq_data, pdata, _data);
+	struct prox_lineq_data* pdata = CAST_DOWN(prox_lineq_data, _data);
 
 	const struct linop_s* op = pdata->op;
 	linop_normal(op, linop_domain(op)->N, linop_domain(op)->dims, pdata->tmp, src);
@@ -465,7 +483,7 @@ static void prox_lineq_apply(const operator_data_t* _data, float mu, complex flo
 
 static void prox_lineq_del(const operator_data_t* _data)
 {
-	PTR_BASE(struct prox_lineq_data, pdata, _data);
+	struct prox_lineq_data* pdata = CAST_DOWN(prox_lineq_data, _data);
 
 	md_free(pdata->adj);
 	md_free(pdata->tmp);
@@ -486,7 +504,7 @@ const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const com
 
 	pdata->tmp = md_alloc_sameplace(N, dims, CFL_SIZE, y);
 
-	return operator_p_create(N, dims, N, dims, &PTR_PASS(pdata)->base, prox_lineq_apply, prox_lineq_del);
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_lineq_apply, prox_lineq_del);
 }
 
 
@@ -500,17 +518,19 @@ const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const com
  */
 struct prox_ineq_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 	
 	const float* b;
 	long size;
 	bool positive;
 };
 
+DEF_TYPEID(prox_ineq_data);
+
 static void prox_ineq_fun(const operator_data_t* _data, float mu, float* dst, const float* src)
 {
 	UNUSED(mu);
-	PTR_BASE(struct prox_ineq_data, pdata, _data);
+	struct prox_ineq_data* pdata = CAST_DOWN(prox_ineq_data, _data);
 
 	if (NULL == pdata->b)
 		(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, 0.);
@@ -525,18 +545,19 @@ static void prox_ineq_apply(const operator_data_t* _data, float mu, complex floa
 
 static void prox_ineq_del(const operator_data_t* _data)
 {
-	FREE_BASE(struct prox_ineq_data, _data);
+	xfree(CAST_DOWN(prox_ineq_data, _data));
 }
 
 static const struct operator_p_s* prox_ineq_create(unsigned int N, const long dims[N], const complex float* b, bool positive)
 {
 	PTR_ALLOC(struct prox_ineq_data, pdata);
+	SET_TYPEID(prox_ineq_data, pdata);
 
 	pdata->size = md_calc_size(N, dims) * 2;
 	pdata->b = (const float*)b;
 	pdata->positive = positive;
 
-	return operator_p_create(N, dims, N, dims, &PTR_PASS(pdata)->base, prox_ineq_apply, prox_ineq_del);
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_ineq_apply, prox_ineq_del);
 }
 
 
@@ -560,22 +581,24 @@ const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[N], 
 
 struct prox_rvc_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	long size;
 };
 
+DEF_TYPEID(prox_rvc_data);
+
 static void prox_rvc_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
 	UNUSED(mu);
-	PTR_BASE(struct prox_rvc_data, pdata, _data);
+	struct prox_rvc_data* pdata = CAST_DOWN(prox_rvc_data, _data);
 
 	md_zreal(1, MD_DIMS(pdata->size), dst, src);
 }
 
 static void prox_rvc_del(const operator_data_t* _data)
 {
-	FREE_BASE(struct prox_rvc_data, _data);
+	xfree(CAST_DOWN(prox_rvc_data, _data));
 }
 
 /*
@@ -584,7 +607,8 @@ static void prox_rvc_del(const operator_data_t* _data)
 const struct operator_p_s* prox_rvc_create(unsigned int N, const long dims[N])
 {
 	PTR_ALLOC(struct prox_rvc_data, pdata);
+	SET_TYPEID(prox_rvc_data, pdata);
 
 	pdata->size = md_calc_size(N, dims);
-	return operator_p_create(N, dims, N, dims, &PTR_PASS(pdata)->base, prox_rvc_apply, prox_rvc_del);
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_rvc_apply, prox_rvc_del);
 }

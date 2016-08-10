@@ -153,15 +153,17 @@ struct wavelet_plan_s* prepare_wavelet_plan(int numdims, const long imSize[numdi
 
 struct wavelet_data_s {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	struct wavelet_plan_s* plan;
 };
 
+DEF_TYPEID(wavelet_data_s);
+
 
 static void wavelet_normal(const linop_data_t* _data, data_t* out, const data_t* _in)
 {
-	struct wavelet_plan_s* plan = CONTAINER_OF(_data, struct wavelet_data_s, base)->plan;
+	struct wavelet_plan_s* plan = CAST_DOWN(wavelet_data_s, _data)->plan;
 
 	md_copy(plan->numdims, plan->imSize, out, _in, sizeof(data_t));
 }
@@ -169,7 +171,7 @@ static void wavelet_normal(const linop_data_t* _data, data_t* out, const data_t*
 
 static void wavelet_forward(const linop_data_t* _data, data_t* out, const data_t* _in)
 {
-	struct wavelet_plan_s* plan = CONTAINER_OF(_data, struct wavelet_data_s, base)->plan;
+	struct wavelet_plan_s* plan = CAST_DOWN(wavelet_data_s, _data)->plan;
 
 	if (plan->randshift)
 		wavelet_new_randshift(plan);	
@@ -208,7 +210,7 @@ static void wavelet_forward(const linop_data_t* _data, data_t* out, const data_t
 
 static void wavelet_inverse(const linop_data_t* _data, data_t* out, const data_t* _in)
 {
-	struct wavelet_plan_s* plan = CONTAINER_OF(_data, struct wavelet_data_s, base)->plan;
+	struct wavelet_plan_s* plan = CAST_DOWN(wavelet_data_s, _data)->plan;
 	data_t* in = (data_t*) _in;
 
 	int numdims_tr = plan->numdims_tr;
@@ -242,7 +244,7 @@ static void wavelet_inverse(const linop_data_t* _data, data_t* out, const data_t
 
 static void wavelet_del(const linop_data_t* _data)
 {
-	struct wavelet_data_s* data = CONTAINER_OF(_data, struct wavelet_data_s, base);
+	struct wavelet_data_s* data = CAST_DOWN(wavelet_data_s, _data);
 
 	// FIXME: free plan
 
@@ -263,6 +265,7 @@ static void wavelet_del(const linop_data_t* _data)
 const struct linop_s* wavelet_create(int numdims, const long imSize[numdims], unsigned int wave_flags, const long minSize[numdims], bool randshift, bool use_gpu)
 {
 	PTR_ALLOC(struct wavelet_data_s, data);
+	SET_TYPEID(wavelet_data_s, data);
 
 	data->plan = prepare_wavelet_plan(numdims, imSize, wave_flags, minSize, use_gpu);
 
@@ -274,7 +277,7 @@ const struct linop_s* wavelet_create(int numdims, const long imSize[numdims], un
 	coeff_dims[1] = 1;
 	coeff_dims[2] = 1;
 
-	return linop_create(numdims, coeff_dims, numdims, imSize, &data->base, wavelet_forward, wavelet_inverse, wavelet_normal, NULL, wavelet_del);
+	return linop_create(numdims, coeff_dims, numdims, imSize, CAST_UP(PTR_PASS(data)), wavelet_forward, wavelet_inverse, wavelet_normal, NULL, wavelet_del);
 }
 
 
@@ -298,14 +301,16 @@ void soft_thresh(struct wavelet_plan_s* plan, data_t* in, scalar_t thresh)
 
 struct wave_prox_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 	struct wavelet_plan_s* plan;
 };
+
+DEF_TYPEID(wave_prox_s);
 
 
 static void wavelet_thresh(const operator_data_t* _data, scalar_t thresh,  data_t* out, const data_t* _in)
 {
-	struct wavelet_plan_s* plan = CONTAINER_OF(_data, struct wave_prox_s, base)->plan;
+	struct wavelet_plan_s* plan = CAST_DOWN(wave_prox_s, _data)->plan;
 
 	if (plan->randshift)
 		wavelet_new_randshift(plan);
@@ -384,15 +389,11 @@ void wavelet_free(const struct wavelet_plan_s* plan)
 	}
 }
 
-struct prox_data_s {
 
-	operator_data_t base;
-	struct wavelet_plan_s* plan;
-};
 
 static void wavelet_prox_del(const operator_data_t* _data)
 {
-	struct prox_data_s* data = CONTAINER_OF(_data, struct prox_data_s, base);
+	struct wave_prox_s* data = CAST_DOWN(wave_prox_s, _data);
 	wavelet_free(data->plan);
 	free(data);
 }
@@ -411,12 +412,14 @@ static void wavelet_prox_del(const operator_data_t* _data)
 const struct operator_p_s* prox_wavethresh_create(int numdims, const long imSize[numdims], unsigned int wave_flags, const long minSize[numdims], float lambda, bool randshift, bool use_gpu)
 {
 	PTR_ALLOC(struct wave_prox_s, data);
+	SET_TYPEID(wave_prox_s, data);
+
 	data->plan = prepare_wavelet_plan(numdims, imSize, wave_flags, minSize, use_gpu);
 
 	data->plan->randshift = randshift;
 	data->plan->lambda = lambda;
 
-	return operator_p_create(numdims, imSize, numdims, imSize, &PTR_PASS(data)->base, wavelet_thresh, wavelet_prox_del);
+	return operator_p_create(numdims, imSize, numdims, imSize, CAST_UP(PTR_PASS(data)), wavelet_thresh, wavelet_prox_del);
 
 }
 

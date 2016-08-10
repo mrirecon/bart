@@ -41,7 +41,7 @@
 
 struct lrthresh_data_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	float lambda;
 	bool randshift;
@@ -60,6 +60,8 @@ struct lrthresh_data_s {
 	long levels;
 	long blkdims[MAX_LEV][DIMS];
 };
+
+DEF_TYPEID(lrthresh_data_s);
 
 
 
@@ -83,7 +85,7 @@ const struct operator_p_s* lrthresh_create(const long dims_lev[DIMS], bool rands
 {
 	struct lrthresh_data_s* data = lrthresh_create_data(dims_lev, randshift, mflags, blkdims, lambda, noise, remove_mean, use_gpu);
 
-	return operator_p_create(DIMS, dims_lev, DIMS, dims_lev, &data->base, lrthresh_apply, lrthresh_free_data);
+	return operator_p_create(DIMS, dims_lev, DIMS, dims_lev, CAST_UP(data), lrthresh_apply, lrthresh_free_data);
 }
 
 
@@ -101,6 +103,7 @@ const struct operator_p_s* lrthresh_create(const long dims_lev[DIMS], bool rands
 static struct lrthresh_data_s* lrthresh_create_data(const long dims_decom[DIMS], bool randshift, unsigned long mflags, const long blkdims[MAX_LEV][DIMS], float lambda, bool noise, int remove_mean, bool use_gpu)
 {
 	PTR_ALLOC(struct lrthresh_data_s, data);
+	SET_TYPEID(lrthresh_data_s, data);
 
 	data->randshift = randshift;
 	data->mflags = mflags;
@@ -126,7 +129,7 @@ static struct lrthresh_data_s* lrthresh_create_data(const long dims_decom[DIMS],
 
 	data->use_gpu = use_gpu;
 	
-	return data;
+	return PTR_PASS(data);
 }
 
 
@@ -136,7 +139,7 @@ static struct lrthresh_data_s* lrthresh_create_data(const long dims_decom[DIMS],
  */
 static void lrthresh_free_data(const operator_data_t* _data)
 {
-	free(CONTAINER_OF(_data, struct lrthresh_data_s, base));
+	xfree(CAST_DOWN(lrthresh_data_s, _data));
 }
 
 
@@ -164,7 +167,7 @@ static int rand_lim(int limit)
  */
 static void lrthresh_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	struct lrthresh_data_s* data = CONTAINER_OF(_data, struct lrthresh_data_s, base);
+	struct lrthresh_data_s* data = CAST_DOWN(lrthresh_data_s, _data);
 
 	float lambda = mu * data->lambda;
 
@@ -445,6 +448,7 @@ long ls_blkdims(long blkdims[MAX_LEV][DIMS], const long idims[DIMS])
 
 float get_lrthresh_lambda(const struct operator_p_s* o)
 {
-	const struct lrthresh_data_s* data = CONTAINER_OF(operator_p_get_data(o), const struct lrthresh_data_s, base);
+	const struct lrthresh_data_s* data = CAST_DOWN(lrthresh_data_s, operator_p_get_data(o));
+
 	return data->lambda;
 }

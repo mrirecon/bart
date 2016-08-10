@@ -192,14 +192,10 @@ static void apply_hanning(const long calreg_dims[4], const complex float* calreg
 static float sure_crop(float var, const long evec_dims[5], complex float* evec_data, complex float* eptr, const long calreg_dims[4], const complex float* calreg)
 {
 	// Must be in ascending order.
-	float cvals[] = {
+        float start = 0.7;
+        float delta = 0.001;
 
-		0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79,
-		0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89,
-		0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99
-	};
-
-	long num_cvals = ARRAY_SIZE(cvals);
+	long num_cvals = (long) (((1 - delta - start)/delta) + 1);
 
 	// Creating hanning window
 	complex float* h_calreg = md_alloc(4, calreg_dims, CFL_SIZE);
@@ -210,7 +206,6 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	md_select_dims(5, 15, im_dims, evec_dims);
 	complex float* im = md_alloc(5, im_dims, CFL_SIZE);
 	md_resize_center(5, im_dims, im, calreg_dims, h_calreg, CFL_SIZE);
-
 
 	long im_dims_prod = 1;
 	for (int idx = 0; idx < 4; idx ++)
@@ -291,7 +286,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 		md_clear(5,  W_dims,   ip, CFL_SIZE);
 		md_clear(5, im_dims, proj, CFL_SIZE);
 
-		c = cvals[idx];
+		c = start + idx * delta;
 
 		// Cropping
 		crop_weight(evec_dims, M, crop_thresh_function, c, W);
@@ -308,7 +303,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 
 		*div = *div - im_dims_prod;
 
-		estMSE += var * creal(*div);
+		estMSE += 2 * var * creal(*div);
 
 		if ((0 == idx) || (estMSE < minMSE)) {
 
@@ -328,9 +323,9 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	// Smudge factor is to soften by little bit to improve robustness. This is to account for
 	// the sweeped thresholds possibly having a too large a step size between them and for any 
 	// other inconsistencies.
-	float smudge = 0.99;
-	debug_printf(DP_DEBUG1, "Calculated c: %.2f\n", optVal);
-	debug_printf(DP_DEBUG1, "Smudge: %.2f\n", smudge);
+	float smudge = 0.999;
+	debug_printf(DP_DEBUG1, "Calculated c: %.3f\n", optVal);
+	debug_printf(DP_DEBUG1, "Smudge: %.3f\n", smudge);
 
 	return smudge * optVal;
 }

@@ -12,6 +12,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 
+#include "misc/types.h"
 #include "misc/misc.h"
 
 #include "iter/italgos.h"
@@ -19,6 +20,9 @@
 
 #include "iter3.h"
 
+
+DEF_TYPEID(iter3_irgnm_conf);
+DEF_TYPEID(iter3_landweber_conf);
 
 
 struct irgnm_s {
@@ -48,7 +52,7 @@ static void inverse(void* _data, float alpha, float* dst, const float* src)
 	md_clear(1, MD_DIMS(data->size), dst, FL_SIZE);
 
         float eps = md_norm(1, MD_DIMS(data->size), src);
-        conjgrad(100, alpha, 0.1f * eps, data->size, (void*)data, select_vecops(src), normal, dst, src, NULL, NULL, NULL);
+        conjgrad(100, alpha, 0.1f * eps, data->size, (void*)data, select_vecops(src), normal, dst, src, NULL);
 }
 
 static void forward(void* _data, float* dst, const float* src)
@@ -68,14 +72,14 @@ static void adjoint(void* _data, float* dst, const float* src)
 
 
 
-void iter3_irgnm(iter_conf* _conf,
+void iter3_irgnm(iter3_conf* _conf,
 		void (*frw)(void* _data, float* dst, const float* src),
 		void (*der)(void* _data, float* dst, const float* src),
 		void (*adj)(void* _data, float* dst, const float* src),
 		void* data2,
 		long N, float* dst, long M, const float* src)
 {
-	struct iter3_irgnm_conf* conf = CONTAINER_OF(_conf, struct iter3_irgnm_conf, base);
+	struct iter3_irgnm_conf* conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
 	struct irgnm_s data = { frw, der, adj, data2, tmp, N };
@@ -92,14 +96,14 @@ void iter3_irgnm(iter_conf* _conf,
 
 
 
-void iter3_landweber(iter_conf* _conf,
+void iter3_landweber(iter3_conf* _conf,
 		void (*frw)(void* _data, float* dst, const float* src),
 		void (*der)(void* _data, float* dst, const float* src),
 		void (*adj)(void* _data, float* dst, const float* src),
 		void* data2,
 		long N, float* dst, long M, const float* src)
 {
-	struct iter3_landweber_conf* conf = CONTAINER_OF(_conf, struct iter3_landweber_conf, base);
+	struct iter3_landweber_conf* conf = CAST_DOWN(iter3_landweber_conf, _conf);
 
 	assert(NULL == der);
 

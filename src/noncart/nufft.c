@@ -48,7 +48,7 @@ struct nufft_conf_s nufft_conf_defaults = {
  */
 struct nufft_data {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	struct nufft_conf_s conf;	///< NUFFT configuration structure
 
@@ -92,7 +92,7 @@ struct nufft_data {
 	long* wgh_strs;
 };
 
-
+DEF_TYPEID(nufft_data);
 
 
 static void nufft_free_data(const linop_data_t* data);
@@ -120,6 +120,7 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 {
 	PTR_ALLOC(struct nufft_data, data);
+	SET_TYPEID(nufft_data, data);
 
 	data->N = N;
 	data->use_gpu = use_gpu;
@@ -229,6 +230,8 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 	if (conf.toeplitz) {
 
+		debug_printf(DP_DEBUG1, "NUFFT: Toeplitz mode\n");
+
 #if 0
 		md_copy_dims(ND, data->psf_dims, data->lph_dims);
 #else
@@ -263,7 +266,7 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 
 	return linop_create(N, ksp_dims, N, cim_dims,
-			&PTR_PASS(data)->base, nufft_apply, nufft_apply_adjoint, nufft_apply_normal, NULL, nufft_free_data);
+			CAST_UP(PTR_PASS(data)), nufft_apply, nufft_apply_adjoint, nufft_apply_normal, NULL, nufft_free_data);
 }
 
 
@@ -309,7 +312,7 @@ static complex float* compute_precond(unsigned int N, const long* pre_dims, cons
  */
 struct nufft_precond_data {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	unsigned int N;
 	const complex float* pre; ///< Preconditioner
@@ -324,11 +327,14 @@ struct nufft_precond_data {
 };
 
 
+DEF_TYPEID(nufft_precond_data);
+
+
 static void nufft_precond_apply(const operator_data_t* _data, unsigned int M, void* args[M])
 {
 	assert(2 == M);
 
-	const struct nufft_precond_data* data = CONTAINER_OF(_data, const struct nufft_precond_data, base);
+	const struct nufft_precond_data* data = CAST_DOWN(nufft_precond_data, _data);
 
 	complex float* dst = args[0];
 	const complex float* src = args[1];
@@ -341,7 +347,7 @@ static void nufft_precond_apply(const operator_data_t* _data, unsigned int M, vo
 
 static void nufft_precond_del(const operator_data_t* _data)
 {
-	const struct nufft_precond_data* data = CONTAINER_OF(_data, const struct nufft_precond_data, base);
+	const struct nufft_precond_data* data = CAST_DOWN(nufft_precond_data, _data);
 
 	free(data->cim_dims);
 	free(data->pre_dims);
@@ -357,12 +363,14 @@ const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
 	const struct nufft_data* data = linop_get_data(nufft_op);
 
 	PTR_ALLOC(struct nufft_precond_data, pdata);
+	SET_TYPEID(nufft_precond_data, pdata);
 
 	assert(data->conf.toeplitz);
 
-	pdata->N = data->N;
+	unsigned int N = data->N;
 	unsigned int ND = pdata->N + 3;
 
+	pdata->N = N;
 	pdata->cim_dims = *TYPE_ALLOC(long[ND]);
 	pdata->pre_dims = *TYPE_ALLOC(long[ND]);
 	pdata->cim_strs = *TYPE_ALLOC(long[ND]);
@@ -378,7 +386,9 @@ const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
 
 	pdata->fft_op = linop_fft_create(pdata->N, pdata->cim_dims, FFT_FLAGS, data->use_gpu);
 
-	return operator_create(pdata->N, pdata->cim_dims, pdata->N, pdata->cim_dims, &/*PTR_PASS*/(pdata)->base, nufft_precond_apply, nufft_precond_del);
+	const long* cim_dims = pdata->cim_dims;	// need to dereference pdata before PTR_PASS
+
+	return operator_create(N, cim_dims, N, cim_dims, CAST_UP(PTR_PASS(pdata)), nufft_precond_apply, nufft_precond_del);
 }
 
 
@@ -516,7 +526,7 @@ static complex float* compute_psf2(unsigned int N, const long psf_dims[N + 3], c
 
 static void nufft_free_data(const linop_data_t* _data)
 {
-	struct nufft_data* data = CONTAINER_OF(_data, struct nufft_data, base);
+	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
 
 	free(data->ksp_dims);
 	free(data->cim_dims);
@@ -553,7 +563,7 @@ static void nufft_free_data(const linop_data_t* _data)
 // Forward: from image to kspace
 static void nufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct nufft_data* data = CONTAINER_OF(_data, struct nufft_data, base);
+	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
 
 	assert(!data->conf.toeplitz); // if toeplitz linphase has no roll, so would need to be added
 
@@ -586,7 +596,7 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 // Adjoint: from kspace to image
 static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct nufft_data* data = CONTAINER_OF(_data, struct nufft_data, base);
+	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
 
 	unsigned int ND = data->N + 3;
 
@@ -629,7 +639,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
  */
 static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct nufft_data* data = CONTAINER_OF(_data, struct nufft_data, base);
+	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
 
 	if (data->conf.toeplitz) {
 

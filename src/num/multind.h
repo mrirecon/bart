@@ -90,7 +90,7 @@ extern void* md_alloc_gpu(unsigned int D, const long dimensions[__VLA(D)], size_
 extern void* md_gpu_move(unsigned int D, const long dims[__VLA(D)], const void* ptr, size_t size);
 #endif
 extern void* md_alloc_sameplace(unsigned int D, const long dimensions[__VLA(D)], size_t size, const void* ptr);
-extern void md_free(void* p);
+extern void md_free(const void* p);
 
 
 extern long md_calc_size(unsigned int D, const long dimensions[__VLA(D)]);

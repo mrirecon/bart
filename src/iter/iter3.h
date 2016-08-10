@@ -4,14 +4,11 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-
-#ifndef ITER_CONF_S
-#define ITER_CONF_S
-typedef struct iter_conf_s { int:0; } iter_conf;
-#endif
+#include "misc/types.h"
+typedef struct iter3_conf_s { TYPEID* TYPEID; } iter3_conf;
 
 
-typedef void iter3_fun_f(iter_conf* _conf,
+typedef void iter3_fun_f(iter3_conf* _conf,
 		void (*frw)(void* _data, float* dst, const float* src),
 		void (*der)(void* _data, float* dst, const float* src),
 		void (*adj)(void* _data, float* dst, const float* src),
@@ -22,12 +19,14 @@ typedef void iter3_fun_f(iter_conf* _conf,
 
 struct iter3_irgnm_conf {
 
-	iter_conf base;
+	INTERFACE(iter3_conf);
 
 	int iter;
 	float alpha;
 	float redu;
 };
+
+extern DEF_TYPEID(iter3_irgnm_conf);
 
 iter3_fun_f iter3_irgnm;
 
@@ -35,12 +34,14 @@ iter3_fun_f iter3_irgnm;
 
 struct iter3_landweber_conf {
 
-	iter_conf base;
+	INTERFACE(iter3_conf);
 
 	int iter;
 	float alpha;
 	float epsilon;
 };
+
+extern DEF_TYPEID(iter3_landweber_conf);
 
 iter3_fun_f iter3_landweber;
 

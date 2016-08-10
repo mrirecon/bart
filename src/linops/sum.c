@@ -37,7 +37,7 @@
  */
 struct sum_data {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	bool use_gpu;
 
@@ -51,6 +51,8 @@ struct sum_data {
 	complex float* tmp;
 };
 
+DEF_TYPEID(sum_data);
+
 static struct sum_data* sum_create_data(const long imgd_dims[DIMS], bool use_gpu);
 static void sum_free_data(const linop_data_t* _data);
 static void sum_apply(const linop_data_t* _data, complex float* _dst, const complex float* _src);
@@ -62,20 +64,21 @@ static void sum_apply_pinverse(const linop_data_t* _data, float lambda, complex 
 /**
  * Create sum operator
  */
-const struct linop_s* sum_create(const long imgd_dims[DIMS], bool use_gpu)
+const struct linop_s* linop_sum_create(const long imgd_dims[DIMS], bool use_gpu)
 {
-	struct sum_data* data = sum_create_data( imgd_dims, use_gpu );
+	struct sum_data* data = sum_create_data(imgd_dims, use_gpu);
 
 	// create operator interface
 	return linop_create(DIMS, data->img_dims, DIMS, data->imgd_dims,
-			&data->base, sum_apply, sum_apply_adjoint, sum_apply_normal,
+			CAST_UP(data), sum_apply, sum_apply_adjoint, sum_apply_normal,
 			sum_apply_pinverse, sum_free_data);
 }
 
 
-static struct sum_data* sum_create_data( const long imgd_dims[DIMS], bool use_gpu )
+static struct sum_data* sum_create_data(const long imgd_dims[DIMS], bool use_gpu)
 {
 	PTR_ALLOC(struct sum_data, data);
+	SET_TYPEID(sum_data, data);
 
 	// decom dimensions
 	md_copy_dims(DIMS, data->imgd_dims, imgd_dims);
@@ -90,25 +93,25 @@ static struct sum_data* sum_create_data( const long imgd_dims[DIMS], bool use_gp
 
 	data->use_gpu = use_gpu;
 
-	return data;
+	return PTR_PASS(data);
 }
 
 
 
 void sum_free_data(const linop_data_t* _data)
 {
-        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
+        struct sum_data* data = CAST_DOWN(sum_data, _data);
 
 	if (NULL != data->tmp)
 		md_free(data->tmp);
 
-	free((void*)data);
+	xfree(data);
 }
 
 
 void sum_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
+        struct sum_data* data = CAST_DOWN(sum_data, _data);
 
 	md_clear(DIMS, data->img_dims, dst, CFL_SIZE);
 
@@ -118,7 +121,7 @@ void sum_apply(const linop_data_t* _data, complex float* dst, const complex floa
 
 void sum_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
+        struct sum_data* data = CAST_DOWN(sum_data, _data);
 
 	md_clear(DIMS, data->imgd_dims, dst, CFL_SIZE);
 
@@ -128,7 +131,7 @@ void sum_apply_adjoint(const linop_data_t* _data, complex float* dst, const comp
 
 void sum_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
+        struct sum_data* data = CAST_DOWN(sum_data, _data);
 
 	if (NULL == data->tmp) {
 
@@ -152,7 +155,7 @@ void sum_apply_normal(const linop_data_t* _data, complex float* dst, const compl
  */
 void sum_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst, const complex float* src)
 {
-        struct sum_data* data = CONTAINER_OF(_data, struct sum_data, base);
+        struct sum_data* data = CAST_DOWN(sum_data, _data);
 
 	if (NULL == data->tmp) {
 

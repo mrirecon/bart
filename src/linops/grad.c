@@ -98,30 +98,32 @@ void grad(unsigned int D, const long dims[D], unsigned int flags, complex float*
 
 struct grad_s {
 
-	linop_data_t base;
+	INTERFACE(linop_data_t);
 
 	unsigned int N;
 	long* dims;
 	unsigned long flags;
 };
 
+DEF_TYPEID(grad_s);
+
 static void grad_op_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct grad_s* data = CONTAINER_OF(_data, const struct grad_s, base);
+	const struct grad_s* data = CAST_DOWN(grad_s, _data);
 
 	grad_op(data->N, data->dims, data->flags, dst, src);
 }
 	
 static void grad_op_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct grad_s* data = CONTAINER_OF(_data, const struct grad_s, base);
+	const struct grad_s* data = CAST_DOWN(grad_s, _data);
 
 	grad_adjoint(data->N, data->dims, data->flags, dst, src);
 }
 
 static void grad_op_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct grad_s* data = CONTAINER_OF(_data, const struct grad_s, base);
+	const struct grad_s* data = CAST_DOWN(grad_s, _data);
 
 	complex float* tmp = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, dst);
 
@@ -134,15 +136,16 @@ static void grad_op_normal(const linop_data_t* _data, complex float* dst, const 
 
 static void grad_op_free(const linop_data_t* _data)
 {
-	const struct grad_s* data = CONTAINER_OF(_data, const struct grad_s, base);
+	const struct grad_s* data = CAST_DOWN(grad_s, _data);
 
 	free(data->dims);
 	free((void*)data);
 }
 
-struct linop_s* grad_init(long N, const long dims[N], unsigned int flags)
+struct linop_s* linop_grad_create(long N, const long dims[N], unsigned int flags)
 {
 	PTR_ALLOC(struct grad_s, data);
+	SET_TYPEID(grad_s, data);
 
 	long dims2[N + 1];
 	grad_dims(N, dims2, flags, dims);
@@ -154,6 +157,6 @@ struct linop_s* grad_init(long N, const long dims[N], unsigned int flags)
 
 	md_copy_dims(N + 1, data->dims, dims2);
 
-	return linop_create(N + 1, dims2, N, dims, &PTR_PASS(data)->base, grad_op_apply, grad_op_adjoint, grad_op_normal, NULL, grad_op_free);
+	return linop_create(N + 1, dims2, N, dims, CAST_UP(PTR_PASS(data)), grad_op_apply, grad_op_adjoint, grad_op_normal, NULL, grad_op_free);
 }
 

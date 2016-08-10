@@ -34,7 +34,7 @@
 #include "linops/sampling.h"
 
 #include "iter/iter.h"
-#include "iter/iter2_affine.h"
+#include "iter/iter2.h"
 
 #include "noncart/nufft.h"
 
@@ -538,7 +538,7 @@ int main_sqpics(int argc, char* argv[])
 		case TV:
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
-			trafos[nr] = grad_init(DIMS, img_dims, regs[nr].xflags);
+			trafos[nr] = linop_grad_create(DIMS, img_dims, regs[nr].xflags);
 			thresh_ops[nr] = prox_thresh_create(DIMS + 1,
 					linop_codomain(trafos[nr])->dims,
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS), use_gpu);
@@ -580,7 +580,7 @@ int main_sqpics(int argc, char* argv[])
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			thresh_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, 0, use_gpu);
 
-			const struct linop_s* decom_op = sum_create( img_dims, use_gpu );
+			const struct linop_s* decom_op = linop_sum_create(img_dims, use_gpu);
 			const struct linop_s* tmp_op = forward_op;
 			forward_op = linop_chain(decom_op, forward_op);
 
@@ -621,7 +621,7 @@ int main_sqpics(int argc, char* argv[])
 	}
 
 	int nr = nr_penalties;
-	struct linop_s* sampling = sampling_create(max_dims, pat_dims, pattern);
+	struct linop_s* sampling = linop_sampling_create(max_dims, pat_dims, pattern);
 	struct linop_s* tmp_op = linop_chain(forward_op, sampling);
 	linop_free(sampling);
 	linop_free(forward_op);
@@ -688,7 +688,7 @@ int main_sqpics(int argc, char* argv[])
 
 
 	long size = 2 * md_calc_size(DIMS, img_dims);
-	iter2a_admm(&mmconf, NULL, nr_penalties, thresh_ops, trafos, biases, NULL, size, (float*)image, NULL, NULL, NULL, NULL);
+	iter2_admm(CAST_UP(&mmconf), NULL, nr_penalties, thresh_ops, trafos, biases, NULL, size, (float*)image, NULL, NULL);
 
 
 #if 0

@@ -1,10 +1,11 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2014. Joseph Y Cheng.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2015	Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2016	Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 	Joseph Y Cheng <jycheng@stanford.edu>
  * 2015		Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -314,19 +315,11 @@ static void cuda_swap(long size, float* a, float* b)
 
 const struct vec_ops gpu_ops = {
 
-	.allocate = cuda_float_malloc,
-	.del = cuda_float_free,
-	.clear = cuda_float_clear,
-	.copy = cuda_float_copy,
 	.float2double = cuda_float2double,
 	.double2float = cuda_double2float,
 	.dot = cuda_sdot,
-	.norm = cuda_norm,
 	.asum = cuda_asum,
 	.zl1norm = NULL,
-	.axpy = cuda_saxpy,
-	.xpay = cuda_xpay,
-	.smul = cuda_smul,
 
 	.add = cuda_add,
 	.sub = cuda_sub,
@@ -334,6 +327,8 @@ const struct vec_ops gpu_ops = {
 	.div = cuda_div,
 	.fmac = cuda_fmac,
 	.fmac2 = cuda_fmac2,
+
+	.axpy = cuda_saxpy,
 
 	.pow = cuda_pow,
 	.sqrt = cuda_sqrt,
@@ -366,8 +361,6 @@ const struct vec_ops gpu_ops = {
 	.zsoftthresh_half = cuda_zsoftthresh_half,
 	.softthresh = cuda_softthresh,
 	.softthresh_half = cuda_softthresh_half,
-
-	.swap = cuda_swap,
 };
 
 
