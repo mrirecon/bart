@@ -73,6 +73,7 @@ static void normaleq_del(const operator_data_t* _data)
  */
 const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 				      italgo_fun2_t italgo, void* iconf,
+				      const float* init,
 				      const struct linop_s* model_op,
 				      const struct operator_s* precond_op,
 			              unsigned int num_funs,
@@ -104,7 +105,7 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 		operator_free(tmp);
 	}
 
-	const struct operator_s* itop_op = itop_create(italgo, iconf, normaleq_op, num_funs, prox_funs, prox_linops);
+	const struct operator_s* itop_op = itop_create(italgo, iconf, init, normaleq_op, num_funs, prox_funs, prox_linops);
 
 	if (conf->it_gpu)
 		itop_op = operator_gpu_wrapper(itop_op);
@@ -184,7 +185,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	operator_free(normaleq_op);
 #else
 	// nicer, but is still missing some features
-	const struct operator_s* op = lsqr2_create(conf, italgo, iconf, model_op, precond_op,
+	const struct operator_s* op = lsqr2_create(conf, italgo, iconf, NULL, model_op, precond_op,
 						num_funs, prox_funs, prox_linops);
 
 	operator_apply(op, N, x_dims, x, N, y_dims, y);
@@ -218,6 +219,7 @@ void lsqr(unsigned int N,
 
 const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					italgo_fun2_t italgo, void* iconf,
+					const float* init,
 					const struct linop_s* model_op,
 					const struct linop_s* weights,
 					const struct operator_s* precond_op,
@@ -227,8 +229,10 @@ const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 {
 	struct linop_s* op = linop_chain(model_op, weights);
 
-	const struct operator_s* lsqr_op = lsqr2_create(conf, italgo, iconf, op, precond_op,
+	const struct operator_s* lsqr_op = lsqr2_create(conf, italgo, iconf, init,
+						op, precond_op,
 						num_funs, prox_funs, prox_linops);
+
 	const struct operator_s* wlsqr_op = operator_chain(weights->forward, lsqr_op);
 
 	operator_free(lsqr_op);

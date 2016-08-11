@@ -52,7 +52,7 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
 {
 	long w_dims[N];
 	md_select_dims(N, conf->wflags, w_dims, y_dims);
-	
+
 	complex float* weights = md_alloc_sameplace(N, w_dims, CFL_SIZE, y);
 	complex float* tmp2 = md_alloc_sameplace(N, y_dims, CFL_SIZE, y);
 
@@ -153,6 +153,7 @@ static void lad_del(const operator_data_t* _data)
 
 const struct operator_s* lad2_create(const struct lad_conf* conf,
 		italgo_fun2_t italgo, iter_conf* iconf,
+		const float* init,
 		const struct linop_s* model_op,
 		unsigned int num_funs,
 		const struct operator_p_s* prox_funs[static num_funs],
@@ -172,6 +173,9 @@ const struct operator_s* lad2_create(const struct lad_conf* conf,
 	data->num_funs = num_funs;
 	data->prox_funs = *TYPE_ALLOC(const struct operator_p_s*[num_funs]);
 	data->prox_linops = *TYPE_ALLOC(const struct linop_s*[num_funs]);
+
+	assert(NULL == init);
+
 
 	for (unsigned int i = 0; i < num_funs; i++) {
 

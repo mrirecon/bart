@@ -32,6 +32,8 @@ struct itop_s {
 	unsigned int num_funs;
 	long size;
 
+	const float* init;
+
 	const struct operator_p_s** prox_funs;
 	const struct linop_s** prox_linops;
 };
@@ -43,8 +45,17 @@ static void itop_apply(const operator_data_t* _data, unsigned int N, void* args[
 	assert(2 == N);
 	const struct itop_s* data = CAST_DOWN(itop_s, _data);
 
-	md_clear(1, MD_DIMS(data->size), args[0], sizeof(float));
-		
+	if (NULL == data->init) {
+
+		md_clear(1, MD_DIMS(data->size), args[0], sizeof(float));
+
+	} else {
+
+		const struct iovec_s* iov = operator_domain(data->op);
+
+		md_copy(iov->N, iov->dims, args[0], data->init, iov->size);
+	}
+
 	data->italgo(data->iconf, data->op, data->num_funs, data->prox_funs, data->prox_linops, NULL, 
 			NULL, data->size, args[0], args[1], NULL);
 }
@@ -54,6 +65,9 @@ static void itop_del(const operator_data_t* _data)
 	const struct itop_s* data = CAST_DOWN(itop_s, _data);
 
 	operator_free(data->op);
+
+	if (NULL != data->init)
+		md_free(data->init);
 
 	if (NULL != data->prox_funs) {
 
@@ -76,6 +90,7 @@ static void itop_del(const operator_data_t* _data)
 
 
 const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
+					const float* init,
 					const struct operator_s* op,
 					unsigned int num_funs,
 					const struct operator_p_s* prox_funs[static num_funs],
@@ -93,6 +108,14 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 	data->size = 2 * md_calc_size(iov->N, iov->dims);	// FIXME: do not assume complex
 	data->prox_funs = NULL;
 	data->prox_linops = NULL;
+	data->init = NULL;
+
+	if (NULL != init) {
+
+		float* init2 = md_alloc(iov->N, iov->dims, iov->size);
+		md_copy(iov->N, iov->dims, init2, init, iov->size);
+		data->init = init2;
+	}
 
 	if (NULL != prox_funs) {
 

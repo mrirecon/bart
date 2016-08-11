@@ -316,6 +316,8 @@ int main_pics(int argc, char* argv[])
 
 		image_truth = load_cfl(image_truth_file, DIMS, img_truth_dims);
 		//md_zsmul(DIMS, img_dims, image_truth, image_truth, 1. / scaling);
+
+		xfree(image_truth_file);
 	}
 
 	long img_start_dims[DIMS];
@@ -328,14 +330,12 @@ int main_pics(int argc, char* argv[])
 		image_start = load_cfl(image_start_file, DIMS, img_start_dims);
 
 		assert(md_check_compat(DIMS, 0u, img_start_dims, img_dims));
-		md_copy(DIMS, img_dims, image, image_start, CFL_SIZE);
 
-		free((void*)image_start_file);
-		unmap_cfl(DIMS, img_dims, image_start);
+		xfree(image_start_file);
 
 		// if rescaling at the end, assume the input has also been rescaled
 		if (scale_im && (scaling != 0.))
-			md_zsmul(DIMS, img_dims, image, image, 1. /  scaling);
+			md_zsmul(DIMS, img_dims, image_start, image_start, 1. /  scaling);
 	}
 
 
@@ -464,7 +464,7 @@ int main_pics(int argc, char* argv[])
 
 	const struct operator_s* op = sense_recon_create(&conf, max_dims, forward_op,
 				pat_dims, (NULL == traj_file) ? pattern : NULL,
-				italgo, iconf, nr_penalties, thresh_ops,
+				italgo, iconf, image_start, nr_penalties, thresh_ops,
 				(ADMM == algo) ? trafos : NULL, ksp_dims, precond_op);
 
 	operator_apply(op, DIMS, img_dims, image, DIMS, ksp_dims, kspace);
@@ -491,12 +491,11 @@ int main_pics(int argc, char* argv[])
 	if (NULL != traj)
 		unmap_cfl(DIMS, traj_dims, traj);
 
-	if (im_truth) {
-
-		free((void*)image_truth_file);
+	if (im_truth)
 		unmap_cfl(DIMS, img_dims, image_truth);
-	}
 
+	if (image_start)
+		unmap_cfl(DIMS, img_dims, image_start);
 
 	double end_time = timestamp();
 

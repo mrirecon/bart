@@ -84,8 +84,21 @@ tests/test-pics-noncart-weights: traj scale ones phantom pics nrmse
 
 
 
+tests/test-pics-warmstart: phantom pics scale nrmse $(TESTS_OUT)/shepplogan_coil.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -S8 coils.ra							;\
+	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
+	$(TOOLDIR)/pics -i0 -Wo.ra $(TESTS_OUT)/shepplogan_coil.ra coils.ra reco.ra	;\
+	$(TOOLDIR)/nrmse -t 0. o.ra reco.ra 						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
+
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
+TESTS += tests/test-pics-warmstart
 
 
 

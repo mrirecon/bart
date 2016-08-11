@@ -6,6 +6,7 @@ struct operator_p_s;
 struct linop_s;
 
 const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
+					const float* init,
 					const struct operator_s* model_op,
 					unsigned int num_funs,
 					const struct operator_p_s* prox_funs[static num_funs],
