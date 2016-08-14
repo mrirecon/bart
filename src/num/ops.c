@@ -762,8 +762,8 @@ const struct operator_s* (operator_loop2)(unsigned int N, const unsigned int D,
 		PTR_ALLOC(long[D], tstrs);
 		md_copy_strides(D, *tstrs, strs[i]);
 
-		(*dims2)[i] = *tdims;
-		(*strs2)[i] = *tstrs;
+		(*dims2)[i] = *PTR_PASS(tdims);
+		(*strs2)[i] = *PTR_PASS(tstrs);
 	}
 
 	PTR_ALLOC(struct op_loop_s, data);
@@ -772,9 +772,9 @@ const struct operator_s* (operator_loop2)(unsigned int N, const unsigned int D,
 	data->D = D;
 	data->op = op;
 
-	data->dims0 = *dims0;
-	data->dims = *dims2;
-	data->strs = *strs2;
+	data->dims0 = *PTR_PASS(dims0);
+	data->dims = */*PTR_PASS*/(dims2);
+	data->strs = */*PTR_PASS*/(strs2);
 
 	return operator_generic_create2(N, op->io_flags, D2, *dims2, *strs2, CAST_UP(PTR_PASS(data)), op_loop_fun, op_loop_del);
 }
@@ -793,6 +793,100 @@ const struct operator_s* operator_loop(unsigned int D, const long dims[D], const
 
 	return operator_loop2(N, D, dims, strs, op);
 }
+
+struct copy_data_s {
+
+	INTERFACE(operator_data_t);
+
+	const struct operator_s* op;
+
+	unsigned int N;
+	const long** strs;
+};
+
+DEF_TYPEID(copy_data_s);
+
+static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N])
+{
+	const struct copy_data_s* data = CAST_DOWN(copy_data_s, _data);
+	const struct operator_s* op = data->op;
+	void* ptr[N];
+
+	assert(N == operator_nr_args(op));
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		const struct iovec_s* io = operator_arg_domain(op, i);
+
+		ptr[i] = md_alloc(io->N, io->dims, io->size);
+
+		if (!MD_IS_SET(op->io_flags, i))
+			md_copy2(io->N, io->dims, io->strs, ptr[i], data->strs[i], args[i], io->size);
+	}
+
+	operator_generic_apply_unchecked(op, N, ptr);
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		const struct iovec_s* io = operator_arg_domain(op, i);
+
+		if (MD_IS_SET(op->io_flags, i))
+			md_copy2(io->N, io->dims, data->strs[i], args[i], io->strs, ptr[i], io->size);
+
+		md_free(ptr[i]);
+	}
+}
+
+static void copy_del(const operator_data_t* _data)
+{
+	const struct copy_data_s* data = CAST_DOWN(copy_data_s, _data);
+
+	operator_free(data->op);
+
+	for (unsigned int i = 0; i < data->N; i++)
+		xfree(data->strs[i]);
+
+	xfree(data);
+}
+
+const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[N], const struct operator_s* op)
+{
+	assert(N == operator_nr_args(op));
+
+	// op = operator_ref(op);
+	PTR_ALLOC(struct copy_data_s, data);
+	SET_TYPEID(copy_data_s, data);
+	data->op = op;
+
+	unsigned int D[N];
+	const long* dims[N];
+	const long* (*strs2)[N] = TYPE_ALLOC(const long*[N]);
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		const struct iovec_s* io = operator_arg_domain(op, i);
+
+		D[i] = io->N;
+		dims[i] = io->dims;
+
+		long (*strsx)[io->N] = TYPE_ALLOC(long[io->N]);
+		md_copy_strides(io->N, *strsx, strs[i]);
+		(*strs2)[i] = *strsx;
+
+		long tstrs[io->N];
+		md_calc_strides(io->N, tstrs, io->dims, CFL_SIZE);
+
+		for (unsigned int i = 0; i < io->N; i++)
+			assert(io->strs[i] == tstrs[i]);
+	}
+
+	data->N = N;
+	data->strs = *strs2;
+
+	return operator_generic_create2(N, op->io_flags, D, dims, *strs2, CAST_UP(PTR_PASS(data)), copy_fun, copy_del);
+}
+
+
 
 
 struct gpu_data_s {
