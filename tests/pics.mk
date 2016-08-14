@@ -95,10 +95,22 @@ tests/test-pics-warmstart: phantom pics scale nrmse $(TESTS_OUT)/shepplogan_coil
 
 
 
+tests/test-pics-batch: phantom pics repmat nrmse $(TESTS_OUT)/shepplogan_coil.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -S8 coils.ra							;\
+	$(TOOLDIR)/repmat 5 32 $(TESTS_OUT)/shepplogan_coil.ra kspaces.ra		;\
+	$(TOOLDIR)/pics -r0.01 -B32 kspaces.ra coils.ra reco1.ra			;\
+	$(TOOLDIR)/pics -r0.01      kspaces.ra coils.ra reco2.ra			;\
+	$(TOOLDIR)/nrmse -t 0.00001 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
 
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
-TESTS += tests/test-pics-warmstart
+TESTS += tests/test-pics-warmstart tests/test-pics-batch
 
 
 
