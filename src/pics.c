@@ -112,6 +112,7 @@ int main_pics(int argc, char* argv[])
 	struct opt_reg_s ropts;
 	assert(0 == opt_reg_init(&ropts));
 
+	unsigned int loop_flags = 0u;
 
 	const struct opt_s opts[] = {
 
@@ -139,9 +140,10 @@ int main_pics(int argc, char* argv[])
 		OPT_UINT('C', &admm_maxitercg, "iter", "ADMM max. CG iterations"),
 		OPT_FLOAT('q', &conf.cclambda, "cclambda", "(cclambda)"),
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
-		OPT_SELECT('m', enum algo_t, &ropts.algo, ADMM, "Select ADMM"),
+		OPT_SELECT('m', enum algo_t, &ropts.algo, ADMM, "select ADMM"),
 		OPT_FLOAT('w', &scaling, "val", "scaling"),
-		OPT_SET('S', &scale_im, "Re-scale the image after reconstruction"),
+		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
+		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -294,16 +296,6 @@ int main_pics(int argc, char* argv[])
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
 
 
-	// initialize prox functions
-	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
-	const struct linop_s* trafos[NUM_REGS] = { NULL };
-
-	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, llr_blk, randshift, conf.gpu);
-
-	int nr_penalties = ropts.r;
-	struct reg_s* regs = ropts.regs;
-	enum algo_t algo = ropts.algo;
-
 
 	complex float* image = create_cfl(argv[3], DIMS, img_dims);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
@@ -337,6 +329,54 @@ int main_pics(int argc, char* argv[])
 		if (scale_im && (scaling != 0.))
 			md_zsmul(DIMS, img_dims, image_start, image_start, 1. /  scaling);
 	}
+
+
+
+	assert((0u == loop_flags) || (NULL == image_start));
+	assert((0u == loop_flags) || (NULL == traj_file));
+	assert(!(loop_flags & COIL_FLAG));
+
+	const complex float* image_start1 = image_start;
+
+	long loop_dims[DIMS];
+	md_select_dims(DIMS,  loop_flags, loop_dims, max_dims);
+
+	long img1_dims[DIMS];
+	md_select_dims(DIMS, ~loop_flags, img1_dims, img_dims);
+
+	long ksp1_dims[DIMS];
+	md_select_dims(DIMS, ~loop_flags, ksp1_dims, ksp_dims);
+
+	long max1_dims[DIMS];
+	md_select_dims(DIMS, ~loop_flags, max1_dims, max_dims);
+
+	long pat1_dims[DIMS];
+	md_select_dims(DIMS, ~loop_flags, pat1_dims, pat_dims);
+
+	complex float* pattern1 = NULL;
+
+	if (NULL != pattern) {
+
+		pattern1 = md_alloc(DIMS, pat1_dims, CFL_SIZE);
+		md_slice(DIMS, loop_flags, (const long[DIMS]){ [0 ... DIMS - 1] = 0 }, pat_dims, pattern1, pattern, CFL_SIZE);
+	}
+
+	// FIXME: re-initialize forward_op and precond_op
+
+	if (NULL == traj_file)
+		forward_op = sense_init(max1_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
+
+
+	// initialize prox functions
+
+	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
+	const struct linop_s* trafos[NUM_REGS] = { NULL };
+
+	opt_reg_configure(DIMS, img1_dims, &ropts, thresh_ops, trafos, llr_blk, randshift, conf.gpu);
+
+	int nr_penalties = ropts.r;
+	struct reg_s* regs = ropts.regs;
+	enum algo_t algo = ropts.algo;
 
 
 	// initialize algorithm
@@ -462,10 +502,28 @@ int main_pics(int argc, char* argv[])
 
 
 
-	const struct operator_s* op = sense_recon_create(&conf, max_dims, forward_op,
-				pat_dims, (NULL == traj_file) ? pattern : NULL,
-				italgo, iconf, image_start, nr_penalties, thresh_ops,
-				(ADMM == algo) ? trafos : NULL, ksp_dims, precond_op);
+	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
+				pat1_dims, (NULL != traj_file) ? NULL : pattern1,
+				italgo, iconf, image_start1, nr_penalties, thresh_ops,
+				(ADMM == algo) ? trafos : NULL, ksp1_dims, precond_op);
+
+	long strsx[2][DIMS];
+	const long* strs[2] = { strsx[0], strsx[1] };
+
+	md_calc_strides(DIMS, strsx[0], img_dims, CFL_SIZE);
+	md_calc_strides(DIMS, strsx[1], ksp_dims, CFL_SIZE);
+
+	for (unsigned int i = 0; i < DIMS; i++) {
+
+		if (MD_IS_SET(loop_flags, i)) {
+
+			strsx[0][i] = 0;
+			strsx[1][i] = 0;
+		}
+	}
+
+	op = operator_copy_wrapper(2, strs, op);
+	op = operator_loop(DIMS, loop_dims, op);
 
 	operator_apply(op, DIMS, img_dims, image, DIMS, ksp_dims, kspace);
 
@@ -482,6 +540,9 @@ int main_pics(int argc, char* argv[])
 		unmap_cfl(DIMS, pat_dims, pattern);
 	else
 		md_free(pattern);
+
+	if (NULL != pattern1)
+		md_free(pattern1);
 
 
 	unmap_cfl(DIMS, map_dims, maps);
