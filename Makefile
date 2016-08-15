@@ -143,6 +143,7 @@ MODULES_walsh = -lcalib
 MODULES_calmat = -lcalib
 MODULES_cc = -lcalib
 MODULES_estvar = -lcalib
+MODULES_estcov = -lcalib
 MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
 MODULES_bench = -lwavelet2 -lwavelet3 -llinops
