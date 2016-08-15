@@ -846,6 +846,7 @@ static void copy_del(const operator_data_t* _data)
 	for (unsigned int i = 0; i < data->N; i++)
 		xfree(data->strs[i]);
 
+	xfree(data->strs);
 	xfree(data);
 }
 
