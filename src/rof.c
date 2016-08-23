@@ -75,7 +75,7 @@ int main_rof(int argc, char* argv[])
 								lambda, MD_BIT(DIMS), false);
 
 	iter2_admm(CAST_UP(&conf), linop_identity_create(DIMS, dims)->forward,
-		   1, (const struct operator_p_s* []){ thresh_prox }, (const struct linop_s* []){ tv_op }, NULL, 
+		   1, MAKE_ARRAY(thresh_prox), MAKE_ARRAY(tv_op), NULL,
 		   NULL, 2 * md_calc_size(DIMS, dims), (float*)out_data, (const float*)in_data, NULL);
 
 	linop_free(tv_op);
