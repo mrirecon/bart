@@ -182,7 +182,7 @@ static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const l
 			pos[TIME2_DIM]	= mdh.sLC[7];
 		}
 
-		debug_print_dims(DP_DEBUG1, DIMS, pos);
+		debug_print_dims(DP_DEBUG4, DIMS, pos);
 
 		if (dims[READ_DIM] != mdh.samples) {
 
@@ -220,6 +220,7 @@ int main_twixread(int argc, char* argv[argc])
 	bool autoc = false;
 	bool linectr = false;
 	bool partctr = false;
+	bool mpi = false;
 
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
@@ -238,6 +239,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('A', &autoc, "automatic [guess dimensions]"),
 		OPT_SET('L', &linectr, "use linectr offset"),
 		OPT_SET('P', &partctr, "use partctr offset"),
+		OPT_SET('M', &mpi, "MPI mode"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -311,6 +313,8 @@ int main_twixread(int argc, char* argv[argc])
 
 	void* buf = md_alloc(DIMS, adc_dims, CFL_SIZE);
 
+	long mpi_slice = -1;
+
 	while (adcs--) {
 
 		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
@@ -323,6 +327,14 @@ int main_twixread(int argc, char* argv[argc])
 
 		for (unsigned int i = 0; i < DIMS; i++)
 			pos[i] += off[i];
+
+		if (mpi) {
+
+			pos[SLICE_DIM] = mpi_slice;
+
+			if ((0 == pos[TIME_DIM]) && (0 == pos[PHS1_DIM]))
+				mpi_slice++;
+		}
 
 		debug_print_dims(DP_DEBUG1, DIMS, pos);
 
