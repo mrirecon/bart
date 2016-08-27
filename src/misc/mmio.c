@@ -191,15 +191,18 @@ complex float* create_cfl(const char* name, unsigned int D, const long dimension
 	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
 		io_error("Creating cfl file %s", name);
 
-	int ofd;
-	if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)))
-		io_error("Creating cfl file %s", name);
+	if (num_root_node_p()) {
 
-	if (-1 == write_cfl_header(ofd, D, dimensions))
-		io_error("Creating cfl file %s", name);
+		int ofd;
+		if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)))
+			io_error("Creating cfl file %s", name);
 
-	if (-1 == close(ofd))
-		io_error("Creating cfl file %s", name);
+		if (-1 == write_cfl_header(ofd, D, dimensions))
+			io_error("Creating cfl file %s", name);
+
+		if (-1 == close(ofd))
+			io_error("Creating cfl file %s", name);
+	}
 
 	return shared_cfl(D, dimensions, name_bdy);
 }
