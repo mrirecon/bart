@@ -22,11 +22,11 @@
 #include "misc/debug.h"
 
 #include "num/multind.h"
+#include "num/simplex.h"
 #include "num/vecops.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
-#include "num/simplex.h"
 
 #include "optimize.h"
 
@@ -499,6 +499,27 @@ static bool use_gpu(int p, void* ptr[p])
 }
 #endif
 
+
+#ifdef USE_MPI
+extern unsigned long mpi_flags;
+extern int mpi_rank;
+extern int mpu_size;
+#define MPI_MAX_DIMS (sizeof(mpi_flags) * 8)
+extern long mpi_dims[MPI_MAX_DIMS];
+extern long mpi_position[MPI_MAX_DIMS];
+
+static unsigned long use_mpi(unsigned int D, long mpi_pos[D])
+{
+	assert(D < MPI_MAX_DIMS);
+
+	for (unsigned int i = 0; i < D; i++)
+		mpi_pos[i] = mpi_position[i];
+
+	return mpi_flags;
+}
+#endif
+
+
 extern double md_flp_total_time;
 double md_flp_total_time = 0.;
 
@@ -547,6 +568,27 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 		nstr1[i] = &tstrs[i];
 		nptr1[i] = nptr[i];
 	}
+
+#ifdef USE_MPI
+	long mpi_pos[D];
+	unsigned long par_flags = parallelizable(N, ~0u, D, dim, nstr1, sizes);
+	unsigned long mpi_flags = use_mpi(D, mpi_pos);
+
+	assert(mpi_flags == (mpi_flags & par_flags));
+
+	md_select_dims(D, ~mpi_flags, tdims, dim);
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		size_t offset = md_calc_offset(D, tstrs[i], mpi_pos);
+
+		for (unsigned int j = 0; j < D; j++)
+			if (1 == tdims[j])
+				tstrs[i][j] = 0;
+
+		nptr1[i] += offset;
+	}
+#endif
 
 	int ND = optimize_dims(N, D, tdims, nstr1);
 
