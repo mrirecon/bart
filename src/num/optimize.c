@@ -390,7 +390,7 @@ static void compute_enclosures(unsigned int N, bool matrix[N][N], const long dim
  * compute set of parallelizable dimensions
  *
  */
-static unsigned int parallelizable(unsigned int D, unsigned int io, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D])
+static unsigned long parallelizable(unsigned int D, unsigned int io, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D])
 {
 	// we assume no input / output overlap
 	// (i.e. inputs which are also outputs have to be marked as output)
@@ -410,7 +410,7 @@ static unsigned int parallelizable(unsigned int D, unsigned int io, unsigned int
 	//		     [1111111111111111]
 	//                                [333333333]
 
-	unsigned int flags = (1 << N) - 1;
+	unsigned long flags = (1 << N) - 1;
 
 	for (unsigned int d = 0; d < D; d++) {
 
@@ -449,15 +449,15 @@ static unsigned int parallelizable(unsigned int D, unsigned int io, unsigned int
  * compute set of dimensions to parallelize
  *
  */
-unsigned int dims_parallel(unsigned int D, unsigned int io, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D])
+unsigned long dims_parallel(unsigned int D, unsigned int io, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D])
 {
-	unsigned int flags = parallelizable(D, io, N, dims, strs, size);
+	unsigned long flags = parallelizable(D, io, N, dims, strs, size);
 
 	unsigned int i = N;
 
 	long reps = md_calc_size(N, dims);
 
-	unsigned int oflags = 0;
+	unsigned long oflags = 0;
 
 	while (i-- > 0) {
 
@@ -551,7 +551,7 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 	int ND = optimize_dims(N, D, tdims, nstr1);
 
 	int skip = min_blockdim(N, ND, tdims, nstr1, sizes);
-	unsigned int flags = 0;
+	unsigned long flags = 0;
 
 	debug_printf(DP_DEBUG4, "MD-Fun. Io: %d Input: ", io);
 	debug_print_dims(DP_DEBUG4, D, dim);
