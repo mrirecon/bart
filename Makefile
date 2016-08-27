@@ -244,6 +244,16 @@ endif
 
 
 
+# Message Passing Interface
+
+ifeq ($(MPI),1)
+CFLAGS += -DUSE_MPI 
+CC = mpicc
+endif
+
+
+
+
 # BLAS/LAPACK
 
 ifeq ($(ACML),1)
