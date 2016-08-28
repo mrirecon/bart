@@ -6,6 +6,19 @@
  * Authors:
  * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 
+ *
+ *
+ * Glowinski R and Marroco A. Sur l'approximation, par elements finis
+ * d'ordre un, et la resolution, par penalisation-dualite d'une classe
+ * de problemes de Dirichlet non lineaires. ESAIM: Mathematical
+ * Modelling and Numerical Analysis - Modelisation Mathematique
+ * et Analyse Numerique 9.R2: 41-76 (1975)
+ *
+ * Daniel Gabay and Bertrand Mercier.
+ * A dual algorithm for the solution of nonlinear variational problems
+ * via finite element approximation
+ * Computers & Mathematics with Applications, 2:17-40 (1976)
  *
  *
  * Afonso MA, Bioucas-Dias JM, Figueiredo M. An Augmented Lagrangian Approach to
