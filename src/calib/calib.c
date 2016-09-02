@@ -135,47 +135,6 @@ void crop_sens(const long dims[DIMS], complex float* ptr, bool soft, float crth,
 }
 
 
-
-/**
- * Creates a 3D hamming window repeated across the channel dimension.
- * In MATLAB, this would be replicated by,
- * h = hanning(r); h = h * h'; h = repmat(h, [1 1 1 num_coils]);
- */
-static void apply_hanning(const long calreg_dims[4], const complex float* calreg_data, complex float* out_data)
-{
-	long xx = calreg_dims[0];
-	long yy = calreg_dims[1];
-	long zz = calreg_dims[2];
-	long ch = calreg_dims[3];
-
-	float h1;
-	float h2;
-	float h3;
-	float val;
-
-	float scale = 1;
-	for (long idx = 0; idx < 3; idx ++)
-		scale *= (calreg_dims[idx] > 1) ? 0.5 : 1;
-
-#pragma omp parallel for collapse(3)
-	for (long kdx = 0; kdx < zz; kdx++) {
-		for (long jdx = 0; jdx < yy; jdx++) {
-			for (long idx = 0; idx < xx; idx++) {
-
-				// Inside loops for OpenMP to work.
-				h1 = (xx > 1) ? (1 - cos((2 * M_PI * idx)/(xx - 1))): 1;
-				h2 = (yy > 1) ? (1 - cos((2 * M_PI * jdx)/(yy - 1))): 1;
-				h3 = (zz > 1) ? (1 - cos((2 * M_PI * kdx)/(zz - 1))): 1;
-
-				val = scale * h1 * h2 * h3;
-				for (long pdx = 0; pdx < ch; pdx++)
-					out_data[((pdx * zz + kdx) * yy + jdx) * xx + idx] = val * calreg_data[((pdx * zz + kdx) * yy + jdx) * xx + idx];
-			}
-		}
-	}
-}
-
-
 /**
  * sure_crop - This determines the crop-threshold to use as described in the talk: "Towards A Parameter
  *	       Free ESPIRiT: Soft-Weighting For Robust Coil Sensitivity Estimation". This was given at the
@@ -193,45 +152,47 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 {
 	// Must be in ascending order.
         float start = 0.7;
-        float delta = 0.001;
+        float delta = 0.01;
 
 	long num_cvals = (long) (((1 - delta - start)/delta) + 1);
+	long num_maps = evec_dims[4];
 
-	// Creating hanning window
-	complex float* h_calreg = md_alloc(4, calreg_dims, CFL_SIZE);
-	apply_hanning(calreg_dims, calreg, h_calreg);
-
-	// Zero pad Image
+	// Construct low-resolution image
 	long im_dims[5];
 	md_select_dims(5, 15, im_dims, evec_dims);
 	complex float* im = md_alloc(5, im_dims, CFL_SIZE);
-	md_resize_center(5, im_dims, im, calreg_dims, h_calreg, CFL_SIZE);
-
-	long im_dims_prod = 1;
-	for (int idx = 0; idx < 4; idx ++)
-		im_dims_prod *= im_dims[idx];
-
-	// Inverse Unitary FFT
+	md_resize_center(5, im_dims, im, calreg_dims, calreg, CFL_SIZE);
 	ifftuc(5, im_dims, FFT_FLAGS, im, im);
+
+	// Temporary vector for crop dimensions
+	long cropdims[5];
+	md_select_dims(5, 15, cropdims, calreg_dims);
+	cropdims[4] = num_maps;
 
 	// Eigenvectors (M)
 	complex float* M = md_alloc(5, evec_dims, CFL_SIZE);
 	md_copy(5, evec_dims, M, evec_data, CFL_SIZE);
 
+	// Temporary eigenvector holder to hold low resolution maps
+	complex float* LM = md_alloc(5, evec_dims, CFL_SIZE);
+	// Temporary holder for projection calreg
+	complex float* TC = md_alloc(5, calreg_dims, CFL_SIZE);
+	// Temporary holder to hold low resolution calib maps
+	complex float* CM = md_alloc(5, cropdims, CFL_SIZE);
+
 	// Eigenvalues (W)
 	long W_dims[5];
 	md_select_dims(5, 23, W_dims, evec_dims);
-
 	complex float* W = md_alloc(5, W_dims, CFL_SIZE);
 	md_copy(5, W_dims, W, eptr, CFL_SIZE);
 
 	// Place holder for the inner product result
 	complex float* ip = md_alloc(5, W_dims, CFL_SIZE);
 
-	// Place holder for the projection results
+	// Place holder for the projection result
 	complex float* proj = md_alloc(5, im_dims, CFL_SIZE);
 
-	// Pace holder for div
+	// Place holder for divergence term
 	long div_dims[5] = MD_INIT_ARRAY(5, 1);
 	complex float* div = md_alloc(5, div_dims, CFL_SIZE);
 
@@ -276,15 +237,17 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	float minMSE = 0;
 	float estMSE = 0;
 	float optVal = 0;
-	float      c = 0;
+	float c	     = 0;
 
 	for (int idx = 0; idx < num_cvals; idx++) {
 
 		estMSE = 0;
-		*div	 = 0;
+		*div   = 0;
 
-		md_clear(5,  W_dims,   ip, CFL_SIZE);
-		md_clear(5, im_dims, proj, CFL_SIZE);
+		md_clear(5,      W_dims,   ip, CFL_SIZE);
+		md_clear(5,     im_dims, proj, CFL_SIZE);
+		md_clear(5,   evec_dims,   LM, CFL_SIZE);
+		md_clear(5, calreg_dims,   TC, CFL_SIZE);
 
 		c = start + idx * delta;
 
@@ -294,14 +257,24 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 		// Projection (stored in proj)
 		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M);
 		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
+		
+		// Construct low resolution projection image.
+		fftuc(5, im_dims, FFT_FLAGS, proj, proj);
+		md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
+		md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
+		ifftuc(5, im_dims, FFT_FLAGS, proj, proj);
 
 		for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
 			estMSE += powf(cabsf(im[jdx] - proj[jdx]), 2);
 
-		// Calculating SURE divergence.
-		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, M, str2_div, M);
+		// Construct low-resolution maps 
+		fftuc(5, evec_dims, FFT_FLAGS, LM, M);
+		md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
+		md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
+		ifftuc(5, evec_dims, FFT_FLAGS, LM, LM);
 
-		*div = *div - im_dims_prod;
+		// Calculating SURE divergence using low resolution maps
+		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);
 
 		estMSE += 2 * var * creal(*div);
 
@@ -312,9 +285,11 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 		}
 	}
 
-	md_free(h_calreg);
 	md_free(im);
+	md_free(TC);
+	md_free(CM);
 	md_free(M);
+	md_free(LM);
 	md_free(W);
 	md_free(ip);
 	md_free(proj);
@@ -323,7 +298,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	// Smudge factor is to soften by little bit to improve robustness. This is to account for
 	// the sweeped thresholds possibly having a too large a step size between them and for any 
 	// other inconsistencies.
-	float smudge = 0.999;
+	float smudge = 0.99;
 	debug_printf(DP_DEBUG1, "Calculated c: %.3f\n", optVal);
 	debug_printf(DP_DEBUG1, "Smudge: %.3f\n", smudge);
 
