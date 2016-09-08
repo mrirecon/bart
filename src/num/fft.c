@@ -256,6 +256,7 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 #ifdef  USE_CUDA
 	if (cuda_ondevice(src)) {
 #ifdef	LAZY_CUDA
+          if (NULL == plan->cuplan)
 		((struct fft_plan_s*)plan)->cuplan = fft_cuda_plan(plan->D, plan->dims, plan->flags, plan->ostrs, plan->istrs, plan->backwards);
 #endif
 		assert(NULL != plan->cuplan);
@@ -308,7 +309,10 @@ const struct operator_s* fft_measure_create(unsigned int D, const long dimension
 
 #ifdef  USE_CUDA
 	plan->cuplan = NULL;
-
+#ifndef LAZY_CUDA
+	if (cuda_ondevice(src))
+          plan->cuplan = fft_cuda_plan(D, dimensions, flags, strides, strides, backwards);
+#else
 	plan->D = D;
 	plan->flags = flags;
 	plan->backwards = backwards;
@@ -324,6 +328,7 @@ const struct operator_s* fft_measure_create(unsigned int D, const long dimension
 	PTR_ALLOC(long[D], ostrs);
 	md_copy_strides(D, *ostrs, strides);
 	plan->ostrs = *PTR_PASS(ostrs);
+#endif
 #endif
 	return operator_create2(D, dimensions, strides, D, dimensions, strides, CAST_UP(PTR_PASS(plan)), fft_apply, fft_free_plan);
 }
