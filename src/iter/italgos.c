@@ -475,7 +475,7 @@ void irgnm(unsigned int iter, float alpha, float redu, void* data, long N, long 
 	void (*op)(void* data, float* dst, const float* src), 
 	void (*adj)(void* data, float* dst, const float* src), 
 	void (*inv)(void* data, float alpha, float* dst, const float* src), 
-	float* x, const float* x0, const float* y)
+	float* x, const float* xref, const float* y)
 {
 	float* r = vops->allocate(M);
 	float* p = vops->allocate(N);
@@ -493,7 +493,9 @@ void irgnm(unsigned int iter, float alpha, float redu, void* data, long N, long 
 
 		adj(data, p, r);	
 
-		vops->axpy(N, p, +alpha, x0);
+		if (NULL != xref)
+			vops->axpy(N, p, +alpha, xref);
+
 		vops->axpy(N, p, -alpha, x);
 
 		inv(data, alpha, h, p);

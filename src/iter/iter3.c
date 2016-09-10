@@ -77,20 +77,17 @@ void iter3_irgnm(iter3_conf* _conf,
 		void (*der)(void* _data, float* dst, const float* src),
 		void (*adj)(void* _data, float* dst, const float* src),
 		void* data2,
-		long N, float* dst, long M, const float* src)
+		long N, float* dst, const float* ref,
+		long M, const float* src)
 {
 	struct iter3_irgnm_conf* conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
 	struct irgnm_s data = { frw, der, adj, data2, tmp, N };
 
-	float* x0 = md_alloc_sameplace(1, MD_DIMS(N), FL_SIZE, src);
-	md_copy(1, MD_DIMS(N), x0, dst, FL_SIZE);
-
 	irgnm(conf->iter, conf->alpha, conf->redu, &data, N, M, select_vecops(src),
-		forward, adjoint, inverse, dst, x0, src);
+		forward, adjoint, inverse, dst, ref, src);
 
-	md_free(x0);
 	md_free(tmp);
 }
 
@@ -101,11 +98,13 @@ void iter3_landweber(iter3_conf* _conf,
 		void (*der)(void* _data, float* dst, const float* src),
 		void (*adj)(void* _data, float* dst, const float* src),
 		void* data2,
-		long N, float* dst, long M, const float* src)
+		long N, float* dst, const float* ref,
+		long M, const float* src)
 {
 	struct iter3_landweber_conf* conf = CAST_DOWN(iter3_landweber_conf, _conf);
 
 	assert(NULL == der);
+	assert(NULL == ref);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(N), FL_SIZE, src);
 

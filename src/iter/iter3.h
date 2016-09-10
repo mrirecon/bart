@@ -13,7 +13,8 @@ typedef void iter3_fun_f(iter3_conf* _conf,
 		void (*der)(void* _data, float* dst, const float* src),
 		void (*adj)(void* _data, float* dst, const float* src),
 		void* data2,
-		long N, float* dst, long M, const float* src);
+		long N, float* dst, const float* ref,
+		long M, const float* src);
 
 
 
