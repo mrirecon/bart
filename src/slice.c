@@ -1,32 +1,25 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2012 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
-
 #include <complex.h>
 
-#include "num/multind.h"
 #include "num/init.h"
+#include "num/multind.h" // MD_BIT
 
-#include "misc/mmio.h"
+#include "na/na.h"
+#include "na/io.h"
+
 #include "misc/misc.h"
 
-
-
-#ifndef DIMS
-#define DIMS 16
-#endif
-
-#ifndef CFL_SIZE
-#define CFL_SIZE sizeof(complex float)
-#endif
 
 
 static const char usage_str[] = "dimension position <input> <output>";
@@ -39,31 +32,30 @@ int main_slice(int argc, char* argv[])
 
 	num_init();
 
-	long in_dims[DIMS];
-	long out_dims[DIMS];
-	
-	complex float* in_data = load_cfl(argv[3], DIMS, in_dims);
+	na in = na_load(argv[3]);
 
 	int dim = atoi(argv[1]);
 	int pos = atoi(argv[2]);
 
-	assert(dim < DIMS);
+	assert(dim >= 0);
 	assert(pos >= 0);
-	assert(pos < in_dims[dim]);
+	assert((unsigned int)dim < na_rank(in));
+	assert((unsigned int)pos < (*NA_DIMS(in))[dim]);
 
-	for (int i = 0; i < DIMS; i++)
-		out_dims[i] = in_dims[i];
+	long posv[na_rank(in)];
 
-	out_dims[dim] = 1;
+	for (unsigned int i = 0; i < na_rank(in); i++)
+		posv[i] = 0;
 
-	complex float* out_data = create_cfl(argv[4], DIMS, out_dims);
+	posv[dim] = pos;
 
-	long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
-	pos2[dim] = pos;
-	md_slice(DIMS, MD_BIT(dim), pos2, in_dims, out_data, in_data, CFL_SIZE);
+	na sl = na_slice(in, ~MD_BIT(dim), na_rank(in), &posv);
+	na out = na_create(argv[4], na_type(sl));
+	na_copy(out, sl);
 
-	unmap_cfl(DIMS, out_dims, out_data);
-	unmap_cfl(DIMS, in_dims, in_data);
+	na_free(sl);
+	na_free(out);
+	na_free(in);
 	exit(0);
 }
 
