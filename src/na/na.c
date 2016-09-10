@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "misc/misc.h"
+#include "misc/types.h"
 #include "misc/shrdptr.h"
 
 #include "num/multind.h"
