@@ -2,7 +2,9 @@
 #include <stdlib.h>
 
 struct na_s;
+struct iovec_s;
 typedef struct na_s* na;
+typedef const struct iovec_s* ty;
 
 struct long_array_s {
 
@@ -10,11 +12,17 @@ struct long_array_s {
 	const long* ar;
 };
 
+extern ty na_type(na x);
+extern ty ty_create(unsigned int N, const long (*dims)[N], size_t size);
 
-extern na na_wrap(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t size);
-extern na na_wrap_cb(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t elsize, size_t size, void (*del)(void* data, size_t size));
+extern void ty_free(ty t);
+
+extern na na_wrap(ty t, void* data);
+extern na na_wrap_cb(ty t, unsigned int N, const long (*strs)[N], void* data, size_t size, void (*del)(void* data, size_t size));
+extern na na_wrap2(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t elsize, size_t size, void (*del)(void* data, size_t size));
 
 extern na na_new(unsigned int N, const long (*dims)[N], size_t size);
+extern na na_inst(ty t);
 extern void na_free(na x);
 
 extern na na_view(na x);
@@ -37,5 +45,26 @@ extern void na_free(na x);
 
 extern void na_copy(na dst, na src);
 extern void na_clear(na dst);
+
+
+#if __GNUC__ < 5
+#include "misc/pcaa.h"
+
+#define ty_create(N, dims, size) \
+	ty_create(N, AR2D_CAST(const long, 1, N, dims), size)
+
+#define na_wrap_cb(t, N, strs, data, size, del) \
+	na_wrap_cb(t, N, AR2D_CAST(const long, 1, N, strs), data, size, del)
+
+#define na_wrap2(N, dims, strs, data, elsize, size, del) \
+	na_wrap2(N, AR2D_CAST(const long, 1, N, dims), AR2D_CAST(const long, 1, N, strs), data, elsize, size, del)
+
+#define na_slice(x, flags, N, pos) \
+	na_slice(x, flags, N, AR2D_CAST(const long, 1, N, pos))
+
+#define na_new(N, dims, size) \
+	na_new(N, AR2D_CAST(const long, 1, N, dims), size)
+
+#endif
 
 

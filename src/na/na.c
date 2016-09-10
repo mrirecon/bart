@@ -38,8 +38,23 @@ static void buf_del(const struct shared_obj_s* sptr)
 	xfree(p);
 }
 
+ty (ty_create)(unsigned int N, const long (*dims)[N], size_t elsize)
+{
+	return iovec_create(N, *dims, elsize);
+}
 
-na na_wrap_cb(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t elsize, size_t size, void (*del)(void* data, size_t size))
+void ty_free(ty t)
+{
+	iovec_free(t);
+}
+
+ty na_type(na x)
+{
+	return &x->iov;
+}
+
+
+na (na_wrap2)(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t elsize, size_t size, void (*del)(void* data, size_t size))
 {
 	PTR_ALLOC(struct na_s, n);
 
@@ -57,9 +72,15 @@ na na_wrap_cb(unsigned int N, const long (*dims)[N], const long (*strs)[N], void
 	return PTR_PASS(n);
 }
 
-na na_wrap(unsigned int N, const long (*dims)[N], const long (*strs)[N], void* data, size_t elsize)
+
+na (na_wrap_cb)(ty t, unsigned int N, const long (*strs)[N], void* data, size_t size, void (*del)(void* data, size_t size))
 {
-	return na_wrap_cb(N, dims, strs, data, elsize, 0, NULL);
+	return na_wrap2(t->N, (const long(*)[t->N])t->dims, strs, data, t->size, size, del);
+}
+
+na na_wrap(ty t, void* data)
+{
+	return na_wrap_cb(t, t->N, (const long (*)[t->N])t->strs, data, 0, NULL);
 }
 
 static void buf_free(void* data, size_t size)
@@ -68,15 +89,20 @@ static void buf_free(void* data, size_t size)
 	xfree(data);
 }
 
-na na_new(unsigned int N, const long (*dims)[N], size_t elsize)
+na (na_new)(unsigned int N, const long (*dims)[N], size_t elsize)
 {
 	void* data = md_alloc(N, *dims, elsize);
 	
 	long strs[N];
 	md_calc_strides(N, strs, *dims, elsize);
 	
-	na n = na_wrap_cb(N, dims, &strs, data, elsize, md_calc_size(N, *dims) * elsize, buf_free);
+	na n = na_wrap2(N, dims, &strs, data, elsize, md_calc_size(N, *dims) * elsize, buf_free);
 	return n;
+}
+
+na na_inst(ty t)
+{
+	return na_new(t->N, (const long(*)[t->N])t->dims, t->size);
 }
 
 void na_free(na x)
@@ -86,9 +112,23 @@ void na_free(na x)
 	xfree(x);
 }
 
-na na_slice(na x, unsigned int flags, unsigned int N, const long (*pos)[N])
+na na_view(na x)
 {
 	PTR_ALLOC(struct na_s, n);
+
+	iovec_init2(&n->iov, na_rank(x), *NA_DIMS(x), *NA_STRS(x), na_element_size(x));
+
+	shared_obj_ref(&x->buf->sptr);
+	n->buf = x->buf;
+
+	n->offset = x->offset;
+
+	return PTR_PASS(n);
+}
+
+na (na_slice)(na x, unsigned int flags, unsigned int N, const long (*pos)[N])
+{
+	na n = na_view(x);
 
 	assert(na_rank(x) == N);
 	long dims[N];
@@ -103,10 +143,7 @@ na na_slice(na x, unsigned int flags, unsigned int N, const long (*pos)[N])
 
 	iovec_init2(&n->iov, N, dims, strs, x->iov.size); 
 	
-	shared_obj_ref(&x->buf->sptr);
-	n->buf = x->buf;
-
-	n->offset = x->offset + md_calc_offset(N, strs, *pos); 
+	n->offset += md_calc_offset(N, x->iov.strs, *pos);
 
 	return PTR_PASS(n);
 }
@@ -129,14 +166,6 @@ struct long_array_s na_get_dimensions(na x)
 struct long_array_s na_get_strides(na x)
 {
 	return (struct long_array_s){ na_rank(x), x->iov.strs };
-}
-
-na na_view(na x)
-{
-	unsigned int N = na_rank(x);
-
-	long pos[N];
-	return na_slice(x, ~0, N, &pos);
 }
 
 na na_clone(na x)

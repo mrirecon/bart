@@ -20,14 +20,10 @@
 #include "misc/opts.h"
 #include "misc/misc.h"
 
-#ifndef DIMS
-#define DIMS 16
-#endif
 
 
 static const char usage_str[] = "bitmask <input> <output>";
 static const char help_str[] = "Performs a fast Fourier transform (FFT) along selected dimensions.";
-
 
 
 
@@ -47,7 +43,7 @@ int main_fft(int argc, char* argv[])
 	num_init();
 
 	na in = na_load(argv[2]);
-	na out = na_create(argv[3], na_rank(in), NA_DIMS(in), na_element_size(in));
+	na out = na_create(argv[3], na_type(in));
 
 	unsigned long flags = labs(atol(argv[1]));
 
