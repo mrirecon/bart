@@ -68,7 +68,7 @@ The software tools in recon should run on any recent Linux distribution.
 
 To install the required libraries on Debian and Ubuntu run:
 
-    $ sudo apt-get install gcc make libfftw3-dev liblapacke-dev libpng-dev
+    $ sudo apt-get install gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev
 
     (optional)
     $ sudo apt-get install octave
