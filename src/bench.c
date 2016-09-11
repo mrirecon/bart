@@ -20,7 +20,6 @@
 #include "num/init.h"
 #include "num/ops.h"
 
-#include "wavelet2/wavelet.h"
 #include "wavelet3/wavthresh.h"
 
 #include "misc/debug.h"
@@ -396,7 +395,7 @@ static double bench_zl1norm(long scale)
 }
 
 
-static double bench_wavelet_thresh(int version, long scale)
+static double bench_wavelet(long scale)
 {
 	long dims[DIMS] = { 1, 256 * scale, 256 * scale, 1, 16, 1, 1, 1 };
 	long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -404,18 +403,7 @@ static double bench_wavelet_thresh(int version, long scale)
 	minsize[1] = MIN(dims[1], 16);
 	minsize[2] = MIN(dims[2], 16);
 
-	const struct operator_p_s* p;
-
-	switch (version) {
-	case 2:
-		p = prox_wavethresh_create(DIMS, dims, 7, minsize, 1.1, true, false);
-		break;
-	case 3:
-		p = prox_wavelet3_thresh_create(DIMS, dims, 6, minsize, 1.1, true);
-		break;
-	default:
-		assert(0);
-	}
+	const struct operator_p_s* p = prox_wavelet3_thresh_create(DIMS, dims, 6, minsize, 1.1, true);
 
 	complex float* x = md_alloc(DIMS, dims, CFL_SIZE);
 	md_gaussian_rand(DIMS, dims, x);
@@ -430,16 +418,6 @@ static double bench_wavelet_thresh(int version, long scale)
 	operator_p_free(p);
 
 	return toc - tic;
-}
-
-static double bench_wavelet2(long scale)
-{
-	return bench_wavelet_thresh(2, scale);
-}
-
-static double bench_wavelet3(long scale)
-{
-	return bench_wavelet_thresh(3, scale);
 }
 
 
@@ -500,8 +478,7 @@ const struct benchmark_s {
 	{ bench_zl1norm,	"l1 norm" },
 	{ bench_copy1,		"copy 1" },
 	{ bench_copy2,		"copy 2" },
-	{ bench_wavelet2,	"wavelet soft thresh" },
-	{ bench_wavelet3,	"wavelet soft thresh" },
+	{ bench_wavelet,	"wavelet soft thresh" },
 };
 
 
