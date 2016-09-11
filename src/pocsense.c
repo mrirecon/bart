@@ -22,6 +22,7 @@
 
 #include "linops/someops.h"
 #include "linops/linop.h"
+#include "linops/waveop.h"
 
 #include "iter/iter.h"
 #include "iter/prox.h"
@@ -29,8 +30,6 @@
 
 #include "sense/pocs.h"
 #include "sense/optcom.h"
-
-#include "wavelet2/wavelet.h"
 
 #include "misc/mri.h"
 #include "misc/mmio.h"
@@ -132,7 +131,10 @@ int main_pocsense(int argc, char* argv[])
 		minsize[1] = MIN(ksp_dims[1], 16);
 		minsize[2] = MIN(ksp_dims[2], 16);
 
-		wave_op = wavelet_create(DIMS, ksp_dims, FFT_FLAGS, minsize, true, use_gpu);
+		long strs[DIMS];
+		md_calc_strides(DIMS, strs, ksp_dims, CFL_SIZE);
+
+		wave_op = linop_wavelet3_create(DIMS, FFT_FLAGS, ksp_dims, strs, minsize);
 		thresh_op = prox_unithresh_create(DIMS, wave_op, alpha, COIL_FLAG, use_gpu);
 
 	}

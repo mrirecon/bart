@@ -130,11 +130,11 @@ include build_targets.mk
 
 MODULES = -lnum -lmisc -lnum -lmisc
 
-MODULES_pics = -lgrecon -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
-MODULES_sqpics = -lsense -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart
-MODULES_pocsense = -lsense -lwavelet2 -liter -llinops
+MODULES_pics = -lgrecon -lsense -liter -llinops -lwavelet3 -llowrank -lnoncart
+MODULES_sqpics = -lsense -liter -llinops -lwavelet3 -llowrank -lnoncart
+MODULES_pocsense = -lsense -liter -llinops -lwavelet3
 MODULES_nlinv = -lnoir -liter
-MODULES_bpsense = -lsense -lwavelet2 -lnoncart -liter -llinops
+MODULES_bpsense = -lsense -lnoncart -liter -llinops -lwavelet3
 MODULES_itsense = -liter -llinops
 MODULES_ecalib = -lcalib
 MODULES_ecaltwo = -lcalib
@@ -145,12 +145,12 @@ MODULES_cc = -lcalib
 MODULES_estvar = -lcalib
 MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
-MODULES_bench = -lwavelet2 -lwavelet3 -llinops
+MODULES_bench = -lwavelet3 -lwavelet2 -llinops
 MODULES_phantom = -lsimu
-MODULES_bart = -lbox -lgrecon -lsense -lnoir -lwavelet2 -liter -llinops -lwavelet3 -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet
+MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet3 -lwavelet2 -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet
 MODULES_sake = -lsake
-MODULES_wave = -liter -lwavelet2 -llinops -lsense
-MODULES_threshold = -llowrank -lwavelet2 -liter -ldfwavelet -llinops
+MODULES_wave = -liter -lwavelet3 -llinops -lsense
+MODULES_threshold = -llowrank -liter -ldfwavelet -llinops -lwavelet2 -lwavelet3
 MODULES_fakeksp = -lsense -llinops
 MODULES_lrmatrix = -llowrank -liter -llinops
 MODULES_estdims = -lnoncart -llinops

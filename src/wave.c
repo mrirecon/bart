@@ -39,11 +39,7 @@
 #include "sense/model.h"
 #include "sense/optcom.h"
 
-#ifndef W3
-#include "wavelet2/wavelet.h"
-#else
 #include "wavelet3/wavthresh.h"
-#endif
 
 
 // create wavecaipi operator
@@ -163,7 +159,7 @@ int main_wave(int argc, char* argv[])
 		minsize[1] = MIN(img_dims[1], 16);
 		minsize[2] = MIN(img_dims[2], 16);
 
-		thresh_op = prox_wavethresh_create(DIMS, img_dims, FFT_FLAGS, minsize, lambda, randshift, false);
+		thresh_op = prox_wavelet3_thresh_create(DIMS, img_dims, FFT_FLAGS, minsize, lambda, randshift);
 	}
     
 
