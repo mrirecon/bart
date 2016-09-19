@@ -142,6 +142,7 @@ MODULES_caldir = -lcalib
 MODULES_walsh = -lcalib
 MODULES_calmat = -lcalib
 MODULES_cc = -lcalib
+MODULES_ccapply = -lcalib
 MODULES_estvar = -lcalib
 MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
