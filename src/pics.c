@@ -144,6 +144,7 @@ int main_pics(int argc, char* argv[])
 		OPT_FLOAT('w', &scaling, "val", "scaling"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
+		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
