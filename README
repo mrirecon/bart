@@ -96,6 +96,11 @@ of gcc (4.7 seems to work) from MacPorts (http://www.macports.org/).
     install version 0.5.2 of the ISMRMRD library
 
 
+Alternatively, use Homebrew:
+
+    $ brew install gcc47 fftw libpng openblas
+
+
 
 ### 2.1.3. Windows
 

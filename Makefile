@@ -38,7 +38,11 @@ ifeq ($(UNAME),Darwin)
 endif
 
 ifeq ($(BUILDTYPE), MacOSX)
-	MACPORTS?=1
+    ifneq ($(shell which port),)
+	    MACPORTS ?= 1
+    else ifneq ($(shell which brew),)
+	    HOMEBREW ?= 1
+    endif
 endif
 
 ARFLAGS = r
@@ -70,8 +74,10 @@ CPPFLAGS ?= -Wall -Wextra
 CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
 
-ifeq ($(BUILDTYPE), MacOSX)
+ifeq ($(MACPORTS), 1)
 	CC ?= gcc-mp-4.7
+else ifeq ($(HOMEBREW),1)
+	CC ?= gcc-4.7
 else
 	CC ?= gcc
 	# for symbols in backtraces
@@ -90,8 +96,9 @@ else
 ifeq ($(MACPORTS),1)
 BLAS_BASE ?= /opt/local/
 CPPFLAGS += -DUSE_MACPORTS
-endif
+else ifeq ($(HOMEBREW),1)
 BLAS_BASE ?= /usr/local/opt/openblas/
+endif
 endif
 
 # cuda
@@ -104,11 +111,12 @@ CUDA_BASE ?= /usr/local/
 ACML_BASE ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
 
 # fftw
-
-ifneq ($(BUILDTYPE), MacOSX)
-FFTW_BASE ?= /usr/
-else
+ifeq ($(MACPORTS),1)
 FFTW_BASE ?= /opt/local/
+else ifeq ($(HOMEBREW),1)
+FFTW_BASE ?= /usr/local/
+else
+FFTW_BASE ?= /usr/
 endif
 
 
