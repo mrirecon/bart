@@ -209,8 +209,8 @@ DEF_TYPEID(fft_plan_s);
 static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
 	unsigned int N = D;
-	fftwf_iodim dims[N];
-	fftwf_iodim hmdims[N];
+	fftwf_iodim64 dims[N];
+	fftwf_iodim64 hmdims[N];
 	unsigned int k = 0;
 	unsigned int l = 0;
 
@@ -238,7 +238,7 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 	fftwf_plan fftwf;
 
 	#pragma omp critical
-	fftwf = fftwf_plan_guru_dft(k, dims, l, hmdims, (complex float*)src, dst,
+	fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
 				backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
 
 	return fftwf;
