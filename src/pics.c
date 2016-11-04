@@ -25,6 +25,7 @@
 #include "iter/misc.h"
 
 #include "linops/linop.h"
+#include "linops/someops.h"
 
 #include "noncart/nufft.h"
 
@@ -69,6 +70,36 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 }
 
 
+
+// create wavecaipi operator
+
+static struct linop_s* wavecaipi_create(const long dims[DIMS], long img_read, const complex float* wave)
+{
+	// Wave-CAIPI linear operator created by chaining zero-padding, readout fft,
+	// psf multiplication, ky-kz fft
+
+	long img_dims[DIMS];
+	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG, img_dims, dims);
+	img_dims[READ_DIM] = img_read;
+
+	struct linop_s* fft_read = linop_fft_create(DIMS, dims, READ_FLAG);
+	struct linop_s* fft_yz = linop_fft_create(DIMS, dims, PHS1_FLAG|PHS2_FLAG);
+	struct linop_s* resize = linop_resize_create(DIMS, dims, img_dims);
+	struct linop_s* wavemod = linop_cdiag_create(DIMS, dims, FFT_FLAGS, wave);
+
+	struct linop_s* wc_op = linop_chain(linop_chain(linop_chain(resize, fft_read), wavemod), fft_yz);
+
+	linop_free(fft_read);
+	linop_free(fft_yz);
+	linop_free(resize);
+	linop_free(wavemod);
+
+	return wc_op;
+}
+
+
+
+
 int main_pics(int argc, char* argv[])
 {
 	// Initialize default parameters
@@ -92,6 +123,7 @@ int main_pics(int argc, char* argv[])
 	float restrict_fov = -1.;
 	const char* pat_file = NULL;
 	const char* traj_file = NULL;
+	const char* wave_file = NULL;
 	bool scale_im = false;
 	bool eigen = false;
 	float scaling = 0.;
@@ -144,6 +176,7 @@ int main_pics(int argc, char* argv[])
 		OPT_FLOAT('w', &scaling, "val", "scaling"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
+		OPT_STRING('w', &wave_file, "<file>", "wave phase"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -161,7 +194,6 @@ int main_pics(int argc, char* argv[])
 	long img_dims[DIMS];
 	long coilim_dims[DIMS];
 	long ksp_dims[DIMS];
-	long traj_dims[DIMS];
 
 
 
@@ -171,10 +203,18 @@ int main_pics(int argc, char* argv[])
 	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
 
 
+	long traj_dims[DIMS];
 	complex float* traj = NULL;
 
 	if (NULL != traj_file)
 		traj = load_cfl(traj_file, DIMS, traj_dims);
+
+
+	long wave_dims[DIMS];
+	complex float* wave = NULL;
+
+	if (NULL != wave_file)
+		wave = load_cfl(wave_file, DIMS, wave_dims);
 
 
 	md_copy_dims(DIMS, max_dims, ksp_dims);
@@ -366,6 +406,17 @@ int main_pics(int argc, char* argv[])
 	if (NULL == traj_file)
 		forward_op = sense_init(max1_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
 
+	if (NULL == wave_file) {
+
+		long coilim_dims[DIMS];
+		long img_dims[DIMS];
+		md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
+		md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
+
+		forward_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
+		forward_op = linop_chain(forward_op, wavecaipi_create(ksp_dims, img_dims[READ_DIM], wave));
+	}
+
 
 	// initialize prox functions
 
@@ -551,6 +602,9 @@ int main_pics(int argc, char* argv[])
 
 	if (NULL != traj)
 		unmap_cfl(DIMS, traj_dims, traj);
+
+	if (NULL != wave)
+		unmap_cfl(DIMS, wave_dims, wave);
 
 	if (im_truth)
 		unmap_cfl(DIMS, img_dims, image_truth);
