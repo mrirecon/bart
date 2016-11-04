@@ -776,7 +776,12 @@ const struct operator_s* (operator_loop2)(unsigned int N, const unsigned int D,
 	data->dims = */*PTR_PASS*/(dims2);
 	data->strs = */*PTR_PASS*/(strs2);
 
-	return operator_generic_create2(N, op->io_flags, D2, *dims2, *strs2, CAST_UP(PTR_PASS(data)), op_loop_fun, op_loop_del);
+	const struct operator_s* rop = operator_generic_create2(N, op->io_flags, D2, *dims2, *strs2, CAST_UP(PTR_PASS(data)), op_loop_fun, op_loop_del);
+
+	PTR_PASS(dims2);
+	PTR_PASS(strs2);
+
+	return rop;
 }
 
 const struct operator_s* operator_loop(unsigned int D, const long dims[D], const struct operator_s* op)
