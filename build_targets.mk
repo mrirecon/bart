@@ -1,6 +1,6 @@
 # Main build targets
 #
-TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version
+TBASE=show slice crop resize join transpose zeros ones flip circshift extract repmat bitmask reshape version delta
 TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexpj
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter
 TRECO=pics pocsense sqpics bpsense itsense nlinv nufft rof sake wave lrmatrix estdims
