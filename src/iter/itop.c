@@ -93,8 +93,8 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 					const float* init,
 					const struct operator_s* op,
 					unsigned int num_funs,
-					const struct operator_p_s* prox_funs[static num_funs],
-					const struct linop_s* prox_linops[static num_funs])
+					const struct operator_p_s* prox_funs[num_funs],
+					const struct linop_s* prox_linops[num_funs])
 {
 	PTR_ALLOC(struct itop_s, data);
 	SET_TYPEID(itop_s, data);

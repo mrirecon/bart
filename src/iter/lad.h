@@ -32,6 +32,6 @@ extern const struct operator_s* lad2_create(const struct lad_conf* conf,
 		const float* init,
 		const struct linop_s* model_op,
 		unsigned int num_funs,
-		const struct operator_p_s* thresh_op[static num_funs],
-		const struct linop_s* thresh_funs[static num_funs]);
+		const struct operator_p_s* thresh_op[num_funs],
+		const struct linop_s* thresh_funs[num_funs]);
 

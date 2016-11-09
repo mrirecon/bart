@@ -45,8 +45,8 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
 		italgo_fun2_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
 		unsigned int num_funs,
-		const struct operator_p_s* prox_funs[static num_funs],
-		const struct linop_s* prox_linops[static num_funs],
+		const struct operator_p_s* prox_funs[num_funs],
+		const struct linop_s* prox_linops[num_funs],
 		const long x_dims[static N], complex float* x,
 		const long y_dims[static N], const complex float* y)
 {
@@ -156,8 +156,8 @@ const struct operator_s* lad2_create(const struct lad_conf* conf,
 		const float* init,
 		const struct linop_s* model_op,
 		unsigned int num_funs,
-		const struct operator_p_s* prox_funs[static num_funs],
-		const struct linop_s* prox_linops[static num_funs])
+		const struct operator_p_s* prox_funs[num_funs],
+		const struct linop_s* prox_linops[num_funs])
 {
 	PTR_ALLOC(struct lad_s, data);
 

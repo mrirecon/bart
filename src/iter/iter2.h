@@ -24,9 +24,9 @@ struct iter_monitor_s;
 typedef void (italgo_fun2_f)(iter_conf* conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
-		const struct operator_p_s* prox_ops[__VLA(D)],
-		const struct linop_s* ops[__VLA(D)],
-		const float* biases[__VLA(D)],
+		const struct operator_p_s* prox_ops[__VLA2(D)],
+		const struct linop_s* ops[__VLA2(D)],
+		const float* biases[__VLA2(D)],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor);

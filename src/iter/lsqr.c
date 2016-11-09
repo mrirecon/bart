@@ -77,8 +77,8 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 				      const struct linop_s* model_op,
 				      const struct operator_s* precond_op,
 			              unsigned int num_funs,
-				      const struct operator_p_s* prox_funs[static num_funs],
-				      const struct linop_s* prox_linops[static num_funs])
+				      const struct operator_p_s* prox_funs[num_funs],
+				      const struct linop_s* prox_linops[num_funs])
 {
 	PTR_ALLOC(struct lsqr_data, data);
 	SET_TYPEID(lsqr_data, data);
@@ -128,8 +128,8 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	   italgo_fun2_t italgo, iter_conf* iconf,
 	   const struct linop_s* model_op,
 	   unsigned int num_funs,
-	   const struct operator_p_s* prox_funs[static num_funs],
-	   const struct linop_s* prox_linops[static num_funs],
+	   const struct operator_p_s* prox_funs[num_funs],
+	   const struct linop_s* prox_linops[num_funs],
 	   const long x_dims[static N], complex float* x,
 	   const long y_dims[static N], const complex float* y,
 	   const struct operator_s* precond_op,
@@ -224,8 +224,8 @@ const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					const struct linop_s* weights,
 					const struct operator_s* precond_op,
 					unsigned int num_funs,
-					const struct operator_p_s* prox_funs[static num_funs],
-					const struct linop_s* prox_linops[static num_funs])
+					const struct operator_p_s* prox_funs[num_funs],
+					const struct linop_s* prox_linops[num_funs])
 {
 	struct linop_s* op = linop_chain(model_op, weights);
 
@@ -246,8 +246,8 @@ void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
 	    italgo_fun2_t italgo, iter_conf* iconf,
 	    const struct linop_s* model_op,
 	    unsigned int num_funs,
-	    const struct operator_p_s* prox_funs[static num_funs],
-	    const struct linop_s* prox_linops[static num_funs],
+	    const struct operator_p_s* prox_funs[num_funs],
+	    const struct linop_s* prox_linops[num_funs],
 	    const long x_dims[static N], complex float* x,
 	    const long y_dims[static N], const complex float* y,
 	    const long w_dims[static N], const complex float* w,

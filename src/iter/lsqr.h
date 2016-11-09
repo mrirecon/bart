@@ -30,8 +30,8 @@ extern const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 				      const struct linop_s* model_op,
 				      const struct operator_s* precond_op,
 			              unsigned int num_funs,
-				      const struct operator_p_s* prox_funs[static num_funs],
-				      const struct linop_s* prox_linops[static num_funs]);
+				      const struct operator_p_s* prox_funs[__VLA2(num_funs)],
+				      const struct linop_s* prox_linops[__VLA2(num_funs)]);
 
 extern const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					italgo_fun2_t italgo, void* iconf,
@@ -40,8 +40,8 @@ extern const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					const struct linop_s* weights,
 					const struct operator_s* precond_op,
 					unsigned int num_funs,
-					const struct operator_p_s* prox_funs[static num_funs],
-					const struct linop_s* prox_linops[static num_funs]);
+					const struct operator_p_s* prox_funs[__VLA2(num_funs)],
+					const struct linop_s* prox_linops[__VLA2(num_funs)]);
 
 
 
@@ -67,8 +67,8 @@ extern void lsqr2(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun2_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			unsigned int num_funs,
-			const struct operator_p_s* prox_funs[__VLA(num_funs)],
-			const struct linop_s* prox_linops[__VLA(num_funs)],
+			const struct operator_p_s* prox_funs[__VLA2(num_funs)],
+			const struct linop_s* prox_linops[__VLA2(num_funs)],
 			const long x_dims[__VLA(N)], _Complex float* x,
 			const long y_dims[__VLA(N)], const _Complex float* y,
 			const struct operator_s* precond_op,
@@ -78,8 +78,8 @@ extern void wlsqr2(	unsigned int N, const struct lsqr_conf* conf,
 			italgo_fun2_t italgo, iter_conf* iconf,
 			const struct linop_s* model_op,
 			unsigned int num_funs,
-			const struct operator_p_s* prox_funs[__VLA(num_funs)],
-			const struct linop_s* prox_linops[__VLA(num_funs)],
+			const struct operator_p_s* prox_funs[__VLA2(num_funs)],
+			const struct linop_s* prox_linops[__VLA2(num_funs)],
 			const long x_dims[__VLA(N)], complex float* x,
 			const long y_dims[__VLA(N)], const complex float* y,
 			const long w_dims[__VLA(N)], const complex float* w,
