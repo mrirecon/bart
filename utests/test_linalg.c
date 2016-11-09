@@ -35,7 +35,7 @@ static bool test_thomas_algorithm(void)
 	bool ok = true;
 
 	for (int i = 0; i < 7; i++)
-		ok &= (cabsf(x[i] - 0.25 * (7 - i) * powf(-1., i)) < 1e-6);
+		ok &= (cabsf(x[i] - 0.25f * (7 - i) * powf(-1., i)) < 1e-6);
 
 	return ok;
 }
