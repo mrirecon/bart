@@ -5,7 +5,7 @@
  * 
  * Authors:
  * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2015-2016 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2015 Frank Ong <frankong@berkeley.edu>
  */
 
@@ -94,10 +94,22 @@ static void dfthresh(unsigned int D, const long dims[D], float lambda, complex f
 	operator_p_free(p);
 }
 
+static void hard_thresh(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
+{
+	long size = md_calc_size(DIMS, dims) * 2;
+
+	const float* inf = (const float*)in;
+	float* outf = (float*)out;
+
+#pragma omp parallel for
+	for (long i = 0; i < size; i++)
+		outf[i] = inf[i] > lambda ? inf[i] : 0.;
+}
+
 
 
 static const char usage_str[] = "lambda <input> <output>";
-static const char help_str[] = "Perform soft-thresholding with parameter lambda.";
+static const char help_str[] = "Perform (soft) thresholding with parameter lambda.";
 
 
 
@@ -105,23 +117,23 @@ int main_threshold(int argc, char* argv[])
 {
 	unsigned int flags = 0;
         
-	enum th_type { NONE, WAV, LLR, DFW, MPDFW } th_type = NONE;
+	enum th_type { NONE, WAV, LLR, DFW, MPDFW, HARD } th_type = NONE;
 	int llrblk = 8;
 
 
 	const struct opt_s opts[] = {
 
+		OPT_SELECT('H', enum th_type, &th_type, HARD, "hard thresholding"),
 		OPT_SELECT('W', enum th_type, &th_type, WAV, "daubechies wavelet soft-thresholding"),
 		OPT_SELECT('L', enum th_type, &th_type, LLR, "locally low rank soft-thresholding"),
 		OPT_SELECT('D', enum th_type, &th_type, DFW, "divergence-free wavelet soft-thresholding"),
 		OPT_UINT('j', &flags, "bitmask", "joint soft-thresholding"),
-		OPT_INT('b', &llrblk, "", "()"),
+		OPT_INT('b', &llrblk, "blocksize", "locally low rank block size"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
 
 	const int N = DIMS;
 	long dims[N];
@@ -143,6 +155,9 @@ int main_threshold(int argc, char* argv[])
 		case DFW:
 			dfthresh(N, dims, lambda, odata, idata);
 			break;
+
+		case HARD:
+			hard_thresh(N, dims, lambda, odata, idata);
 
 		default:
 			md_zsoftthresh(N, dims, lambda, flags, odata, idata);
