@@ -40,7 +40,7 @@ int main_noise(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('s', &rinit, "", "()"),
+		OPT_INT('s', &rinit, "", "random seed initialization"),
 		OPT_FLOAT('S', &spike, "", "()"),
 		OPT_SET('r', &rvc, "real-valued input"),
 		OPT_FLOAT('n', &var, "variance", "DEFAULT: 1.0"),
