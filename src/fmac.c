@@ -1,10 +1,11 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013, 2016. The Regents of the University of California.
  * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
 #include <stdbool.h>
@@ -22,8 +23,10 @@
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "<input1> <input2> <output>";
-static const char help_str[] = "Multiply and accumulate.";
+static const char usage_str[] = "<input1> [<input2>] <output>";
+static const char help_str[] =
+		"Multiply <input1> and <input2> and accumulate in <output>.\n"
+		"If <input2> is not specified, assume all-ones.";
 
 
 int main_fmac(int argc, char* argv[])
@@ -39,7 +42,8 @@ int main_fmac(int argc, char* argv[])
 		OPT_LONG('s', &squash, "b", "squash dimensions selected by bitmask b"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	int num_args = argc - 1;
 
 	num_init();
 
@@ -50,7 +54,17 @@ int main_fmac(int argc, char* argv[])
 	long dims2[N];
 
 	complex float* data1 = load_cfl(argv[1], N, dims1);
-	complex float* data2 = load_cfl(argv[2], N, dims2);
+
+	complex float* data2 = NULL;
+	
+	if (3 == num_args)
+		data2 = load_cfl(argv[2], N, dims2);
+	else {
+
+		md_singleton_dims(N, dims2);
+		data2 = md_alloc(N, dims2, CFL_SIZE);
+		md_zfill(N, dims2, data2, 1.);
+	}
 
 	long dims[N];
 	md_merge_dims(N, dims, dims1, dims2);
@@ -58,7 +72,7 @@ int main_fmac(int argc, char* argv[])
 	long dimso[N];
 	md_select_dims(N, ~squash, dimso, dims);
 
-	complex float* out = create_cfl(argv[3], N, dimso);
+	complex float* out = create_cfl((3 == num_args) ? argv[3] : argv[2], N, dimso);
 
 	if (clear) {
 
@@ -76,8 +90,13 @@ int main_fmac(int argc, char* argv[])
 	(conj ? md_zfmacc2 : md_zfmac2)(N, dims, stro, out, str1, data1, str2, data2);
 
 	unmap_cfl(N, dims1, data1);
-	unmap_cfl(N, dims2, data2);
 	unmap_cfl(N, dimso, out);
+
+	if (3 == num_args)
+		unmap_cfl(N, dims2, data2);
+	else
+		md_free(data2);
+
 	exit(0);
 }
 
