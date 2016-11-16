@@ -100,6 +100,15 @@ variables in a Makefile.<machinename> where <machinename>
 is the name of the machine as returned by 'uname -n'.
 
 
+2.3 Custom Makefiles directory
+
+Additional Makefiles can be included by placing them in the
+Makefiles directory. All files matching the expansion
+Makefiles/Makefile.* are automatically included in the build.
+See Makefiles/README.md for example files.
+
+
+
 3. Build Options
 
 3.1. Adding New BART Commands
