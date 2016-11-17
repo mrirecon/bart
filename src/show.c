@@ -1,10 +1,11 @@
-/* Copyright 2013-2015. The Regents of the University of California.
+/* Copyright 2013-2016. The Regents of the University of California.
  * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
  * 2013, 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015-2016 Jon Tamir <jtamir.eecs.berkeley.edu>
  */
 
 #include <stdbool.h>
@@ -27,7 +28,7 @@ static const char usage_str[] = "<input>";
 static const char help_str[] = "Outputs values or meta data.";
 
 
-static void print_cfl(unsigned int N, const long dims[N], const complex float* data, const char* sep)
+static void print_cfl(unsigned int N, const long dims[N], const complex float* data, const char* fmt, const char* sep)
 {
 	// find first non-trivial dimension
 	unsigned int l = 0;
@@ -38,8 +39,10 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 
 	for (long i = 0; i < T; i++) {
 
-		printf("%+e%+ei%s", crealf(data[i]), cimagf(data[i]),
-			(0 == (i + 1) % dims[l]) ? "\n" : sep);
+		char s[128];
+		sprintf(s, "%s%s", fmt, (0 == (i + 1) % dims[l]) ? "\n" : sep);
+
+		printf(s, crealf(data[i]), cimagf(data[i]));
 	}
 }
 
@@ -50,16 +53,17 @@ int main_show(int argc, char* argv[])
 	bool meta = false;
 	int showdim = -1;
 	const char* sep = NULL;
+	const char* fmt = NULL;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('m', &meta, "show meta data"),
 		OPT_INT('d', &showdim, "dim", "show size of dimension"),
 		OPT_STRING('s', &sep, "sep", "use <sep> as the separator"),
+		OPT_STRING('f', &fmt, "format", "use <format> as the format. Default: \"\%+e\%+ei\""),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
-
 
 	unsigned int N = DIMS;
 
@@ -87,7 +91,7 @@ int main_show(int argc, char* argv[])
 		goto out;
 	}
 
-	print_cfl(N, dims, data, (NULL == sep) ? "\t" : sep);
+	print_cfl(N, dims, data, (NULL == fmt) ? "%+e%+ei" : fmt,  (NULL == sep) ? "\t" : sep);
 out:
 	unmap_cfl(N, dims, data);
 	free((void*)sep);
