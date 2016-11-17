@@ -157,8 +157,11 @@ MODULES_estdims = -lnoncart -llinops
 MODULES_ismrmrd = -lismrm
 
 
+MAKEFILES = $(root)/Makefiles/Makefile.*
+
 -include Makefile.$(NNAME)
 -include Makefile.local
+-include $(MAKEFILES)
 
 
 ifeq ($(ISMRMRD),1)
