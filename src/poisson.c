@@ -66,6 +66,7 @@ int main_poisson(int argc, char* argv[])
 	bool vd_def = false;
 	int T = 1;
 	int rnd = 0;
+	int randseed = 11235;
 	bool msk = true;
 	int points = -1;
 	float mindist = 1. / 1.275;
@@ -87,11 +88,13 @@ int main_poisson(int argc, char* argv[])
 		OPT_INT('T', &T, "", "()"),
 		OPT_CLEAR('m', &msk, "()"),
 		OPT_INT('R', &points, "", "()"),
+		OPT_INT('s', &randseed, "seed", "random seed"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
+	num_rand_init(randseed);
 
 	if (vd_def && (0. == vardensity))
 		vardensity = 20.;
