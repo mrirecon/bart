@@ -41,6 +41,7 @@
 struct nufft_conf_s nufft_conf_defaults = {
 
 	.toeplitz = false,
+	.pcycle = false,
 };
 
 
@@ -77,7 +78,7 @@ struct nufft_data {
 
 	long* ksp_dims;			///< Kspace dimension
 	long* cim_dims;			///< Coil image dimension
-	long* cml_dims;			///< TODO
+	long* cml_dims;			///< Coil + linear phase dimension
 	long* img_dims;			///< Image dimension
 	long* trj_dims;			///< Trajectory dimension
 	long* lph_dims;			///< Linear phase dimension
@@ -95,6 +96,17 @@ struct nufft_data {
 	long* lph_strs;
 	long* psf_strs;
 	long* wgh_strs;
+
+	const struct linop_s* rfft_op;   ///< Pcycle FFT operator
+	unsigned int rand_state;
+	long* rcml_dims;		///< Pcycle Coil + linear phase dimension
+	long* rlph_dims;		///< Pcycle Linear phase dimension
+	long* rpsf_dims;		///< Pcycle Point spread function dimension
+	
+	long* rcml_strs;		
+	long* rlph_strs;		
+	long* rpsf_strs;		
+	
 };
 
 DEF_TYPEID(nufft_data);
@@ -107,6 +119,7 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 
 static void toeplitz_mult(const struct nufft_data* data, complex float* dst, const complex float* src);
+static void toeplitz_mult_pcycle(const struct nufft_data* data, complex float* dst, const complex float* src);
 static complex float* compute_linphases(unsigned int N, long lph_dims[N + 3], const long img_dims[N]);
 static complex float* compute_psf2(unsigned int N, const long psf_dims[N + 3], const long trj_dims[N], const complex float* traj, const complex float* weights);
 
@@ -156,6 +169,13 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 	data->lph_strs = *TYPE_ALLOC(long[ND]);
 	data->psf_strs = *TYPE_ALLOC(long[ND]);
 	data->wgh_strs = *TYPE_ALLOC(long[ND]);
+	
+	data->rlph_dims = *TYPE_ALLOC(long[ND]);
+	data->rpsf_dims = *TYPE_ALLOC(long[ND]);
+	data->rcml_dims = *TYPE_ALLOC(long[ND]);
+	data->rlph_strs = *TYPE_ALLOC(long[ND]);
+	data->rpsf_strs = *TYPE_ALLOC(long[ND]);
+	data->rcml_strs = *TYPE_ALLOC(long[ND]);
 
 	md_singleton_dims(ND, data->cim_dims);
 	md_singleton_dims(ND, data->ksp_dims);
@@ -270,6 +290,12 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 
 	data->fft_op = linop_fft_create(ND, data->cml_dims, FFT_FLAGS);
 
+	if (conf.pcycle) {
+
+		debug_printf(DP_DEBUG1, "NUFFT: Pcycle Mode\n");
+		data->rand_state = 0;
+		data->rfft_op = linop_fft_create(N, data->cim_dims, FFT_FLAGS);
+	}
 
 
 	return linop_create(N, ksp_dims, N, cim_dims,
@@ -551,7 +577,7 @@ static void nufft_free_data(const linop_data_t* _data)
 	free(data->lph_strs);
 	free(data->psf_strs);
 	free(data->wgh_strs);
-
+	
 	md_free(data->grid);
 	md_free(data->linphase);
 	md_free(data->psf);
@@ -564,6 +590,8 @@ static void nufft_free_data(const linop_data_t* _data)
 	md_free(data->grid_gpu);
 #endif
 	linop_free(data->fft_op);
+	if (data->conf.pcycle)
+		linop_free(data->rfft_op);
 
 	free(data);
 }
@@ -660,7 +688,10 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 	if (data->conf.toeplitz) {
 
-		toeplitz_mult(data, dst, src);
+		if (data->conf.pcycle)
+			toeplitz_mult_pcycle(data, dst, src);
+		else
+			toeplitz_mult(data, dst, src);
 
 	} else {
 
@@ -710,11 +741,43 @@ static void toeplitz_mult(const struct nufft_data* data, complex float* dst, con
 	md_zfmacc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, linphase);
 }
 
+static unsigned int rand_lim(unsigned int* state, unsigned int limit)
+{
+        /* int divisor = RAND_MAX / (limit + 1); */
+        /* unsigned int retval; */
+
+        /* do { */
+        /*         retval = rand_r(state) / divisor; */
+
+        /* } while (retval > limit); */
+	unsigned int retval = *state % (limit + 1);
+	state[0]++;
+
+        return retval;
+}
 
 
+static void toeplitz_mult_pcycle(const struct nufft_data* data, complex float* dst, const complex float* src)
+{
+	unsigned int nshifts = data->lph_dims[data->N];
+        unsigned int r = rand_lim((unsigned int*) &(data->rand_state), nshifts-1);
+	
+	const complex float* rlinphase = data->linphase + r * md_calc_size(data->N, data->lph_dims);
+	const complex float* rpsf = data->psf + r * md_calc_size(data->N, data->psf_dims);
+	complex float* grid = data->grid;
 
+#ifdef USE_CUDA
+	printf("Not Implemented.\n");
+	exit(1);
+#endif
+	md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, src, data->img_strs, rlinphase);
 
+	linop_forward(data->rfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
+	md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->img_strs, rpsf);
+	linop_adjoint(data->rfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
 
+	md_zmulc2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, grid, data->img_strs, rlinphase);
+}
 
 
 
