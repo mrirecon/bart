@@ -9,6 +9,16 @@ tests/test-join: ones join nrmse
 	touch $@
 
 
+tests/test-join-append: ones zeros join nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/ones 3 6 7 1 o								;\
+	$(TOOLDIR)/zeros 3 6 7 1 z								;\
+	$(TOOLDIR)/join 2 o z o j								;\
+	$(TOOLDIR)/join -a 2 z o o								;\
+	$(TOOLDIR)/nrmse -t 0.00001 o j								;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
-TESTS += tests/test-join
+
+TESTS += tests/test-join tests/test-join-append
 

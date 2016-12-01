@@ -39,7 +39,14 @@ static const char help_str[] =
 
 int main_join(int argc, char* argv[])
 {
-	cmdline(&argc, argv, 3, 1000, usage_str, help_str, 0, NULL);
+	bool append = false;
+
+	const struct opt_s opts[] = {
+
+		OPT_SET('a', &append, "append - only works for cfl files!"),
+	};
+
+	cmdline(&argc, argv, 3, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -50,16 +57,35 @@ int main_join(int argc, char* argv[])
 
 	int count = argc - 3;
 
+	if (append) {
+
+		count += 1;
+
+		// FIXME: check for cfl file
+	}
+
 	long in_dims[count][N];
 	long offsets[count];
 	complex float* idata[count];
 	long sum = 0;
 
 	// figure out size of output
-	for (int i = 0; i < count; i++) {
+	for (int l = 0, i = 0; i < count; i++) {
 
-		debug_printf(DP_DEBUG1, "loading %s\n", argv[2 + i]);
-		idata[i] = load_cfl(argv[2 + i], N, in_dims[i]);
+		const char* name = NULL;
+
+		if (append && (i == 0)) {
+
+			name = argv[argc - 1];
+
+		} else {
+
+			name = argv[2 + l++];
+		}
+
+		debug_printf(DP_DEBUG1, "loading %s\n", name);
+
+		idata[i] = load_cfl(name, N, in_dims[i]);
 		offsets[i] = sum;
 
 		sum += in_dims[i][dim];
@@ -83,14 +109,18 @@ int main_join(int argc, char* argv[])
 #pragma omp parallel for
 	for (int i = 0; i < count; i++) {
 
-		long pos[N];
-		md_singleton_strides(N, pos);
-		pos[dim] = offsets[i];
+		if (!(append && (0 == i))) {
 
-		long istr[N];
-		md_calc_strides(N, istr, in_dims[i], CFL_SIZE);
+			long pos[N];
+			md_singleton_strides(N, pos);
+			pos[dim] = offsets[i];
 
-		md_copy_block(N, pos, out_dims, out_data, in_dims[i], idata[i], CFL_SIZE);
+			long istr[N];
+			md_calc_strides(N, istr, in_dims[i], CFL_SIZE);
+
+			md_copy_block(N, pos, out_dims, out_data, in_dims[i], idata[i], CFL_SIZE);
+		}
+
 		unmap_cfl(N, in_dims[i], idata[i]);
 		debug_printf(DP_DEBUG1, "done copying file %d\n", i);
 	}
