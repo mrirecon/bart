@@ -28,7 +28,7 @@ static const char help_str[] = "Computes k-space trajectories.";
  * non-physical coordinate systems.
  * Moussavi et al., MRM 71:308-312 (2014)
  */
-static float gradient_delay(const float coeff[2][3], float phi, float psi)
+static float gradient_delay(/*const*/ float coeff[2][3], float phi, float psi)
 {
 	float x = cosf(phi) * cosf(psi);
 	float y = sinf(phi) * cosf(psi);
