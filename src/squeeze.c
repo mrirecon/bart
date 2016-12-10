@@ -19,7 +19,7 @@
 #include "misc/misc.h"
 
 #ifndef DIMS
-#define DIMS 16
+#define DIMS 32
 #endif
 
 
@@ -39,18 +39,20 @@ int main_squeeze(int argc, char* argv[])
 	complex float* idata = load_cfl(argv[1], DIMS, idims);
 		
 	unsigned int j = 0;
-	for (unsigned int i = 0; i < DIMS; i++) {
 
+	for (unsigned int i = 0; i < DIMS; i++)
 		if (1 < idims[i])
 			odims[j++] = idims[i];
-	}
 
-	complex float* odata = create_cfl(argv[2], DIMS, odims);
+	if (0 == j)
+		j = 1;
+
+	complex float* odata = create_cfl(argv[2], j, odims);
 
 	md_copy(DIMS, idims, odata, idata, CFL_SIZE);
 
 	unmap_cfl(DIMS, idims, idata);
-	unmap_cfl(DIMS, odims, odata);
+	unmap_cfl(j, odims, odata);
 
 	exit(0);
 }
