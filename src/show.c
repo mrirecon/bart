@@ -8,14 +8,18 @@
  * 2015-2016 Jon Tamir <jtamir.eecs.berkeley.edu>
  */
 
+#define _GNU_SOURCE
+
 #include <stdbool.h>
 #include <complex.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "num/multind.h"
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/debug.h"
 #include "misc/opts.h"
 
 
@@ -37,12 +41,24 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 
 	long T = md_calc_size(N, dims);
 
+	const char* allowed_fmts[] = {
+
+		"%+e%+ei",
+		"%+f%+fi",
+	};
+
+	for (unsigned int i = 0; i < ARRAY_SIZE(allowed_fmts); i++)
+		if (0 == strcmp(allowed_fmts[i], fmt))
+			goto ok;
+
+	debug_printf(DP_ERROR, "Invalid format string.\n");
+	return;
+ok:
+
 	for (long i = 0; i < T; i++) {
 
-		char s[128];
-		sprintf(s, "%s%s", fmt, (0 == (i + 1) % dims[l]) ? "\n" : sep);
-
-		printf(s, crealf(data[i]), cimagf(data[i]));
+		printf(fmt, crealf(data[i]), cimagf(data[i]));
+		printf((0 == (i + 1) % dims[l]) ? "\n" : sep);
 	}
 }
 
@@ -52,8 +68,8 @@ int main_show(int argc, char* argv[])
 {
 	bool meta = false;
 	int showdim = -1;
-	const char* sep = NULL;
-	const char* fmt = NULL;
+	const char* sep = strdup("\t");
+	const char* fmt = strdup("%+e%+ei");
 
 	const struct opt_s opts[] = {
 
@@ -91,11 +107,12 @@ int main_show(int argc, char* argv[])
 		goto out;
 	}
 
-	print_cfl(N, dims, data, (NULL == fmt) ? "%+e%+ei" : fmt,  (NULL == sep) ? "\t" : sep);
+	print_cfl(N, dims, data, fmt,  sep);
+
 out:
 	unmap_cfl(N, dims, data);
-	free((void*)sep);
-
+	xfree(sep);
+	xfree(fmt);
 	exit(0);
 }
 
