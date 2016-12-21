@@ -55,7 +55,7 @@ void num_init(void)
 
 	p = omp_get_max_threads();
 
-	omp_set_nested(1);
+	// omp_set_nested(1);
 #else
 	int p = 2;
 #endif
