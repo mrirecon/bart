@@ -148,7 +148,7 @@ void linear_phase(unsigned int N, const long dims[N], const float pos[N], comple
 }
 
 
-void klaplace(unsigned int N, const long dims[N], unsigned int flags, complex float* out)
+void klaplace_scaled(unsigned int N, const long dims[N], unsigned int flags, const float sc[N], complex float* out)
 {
 	unsigned int flags2 = flags;
 
@@ -165,7 +165,7 @@ void klaplace(unsigned int N, const long dims[N], unsigned int flags, complex fl
 		for (unsigned int j = 0; j < N; j++)
 			grad[j] = 0.;
 
-		grad[lsb] = 1. / (float)dims[lsb];
+		grad[lsb] = sc[lsb];
 		centered_gradient(N, dims, grad, tmp);
 		md_zspow(N, dims, tmp, tmp, 2.);
 		md_zadd(N, dims, out, out, tmp);
@@ -175,3 +175,11 @@ void klaplace(unsigned int N, const long dims[N], unsigned int flags, complex fl
 }
 
 
+void klaplace(unsigned int N, const long dims[N], unsigned int flags, complex float* out)
+{
+	float sc[N];
+	for (unsigned int j = 0; j < N; j++)
+		sc[j] = 1. / (float)dims[j];
+
+	klaplace_scaled(N, dims, flags, sc, out);
+}
