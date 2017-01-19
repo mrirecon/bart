@@ -121,14 +121,14 @@ static void wavelet_up3(const long dims[3], const long out_str[3], complex float
 
 void fwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N], complex float* low, complex float* hgh, const long istr[N], const complex float* in, const long flen, const float filter[2][2][flen])
 {
-	debug_printf(DP_DEBUG3, "fwt1: %d/%d\n", d, N);
-	debug_print_dims(DP_DEBUG3, N, dims);
+	debug_printf(DP_DEBUG4, "fwt1: %d/%d\n", d, N);
+	debug_print_dims(DP_DEBUG4, N, dims);
 
 	long odims[N];
 	md_copy_dims(N, odims, dims);
 	odims[d] = bandsize(dims[d], flen);
 
-	debug_print_dims(DP_DEBUG3, N, odims);
+	debug_print_dims(DP_DEBUG4, N, odims);
 
 	long o = d + 1;
 	long u = N - o;
@@ -175,14 +175,14 @@ void fwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N]
 
 void iwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N], complex float* out, const long istr[N], const complex float* low, const complex float* hgh, const long flen, const float filter[2][2][flen])
 {
-	debug_printf(DP_DEBUG3, "ifwt1: %d/%d\n", d, N);
-	debug_print_dims(DP_DEBUG3, N, dims);
+	debug_printf(DP_DEBUG4, "ifwt1: %d/%d\n", d, N);
+	debug_print_dims(DP_DEBUG4, N, dims);
 
 	long idims[N];
 	md_copy_dims(N, idims, dims);
 	idims[d] = bandsize(dims[d], flen);
 
-	debug_print_dims(DP_DEBUG3, N, idims);
+	debug_print_dims(DP_DEBUG4, N, idims);
 
 	long o = d + 1;
 	long u = N - o;
