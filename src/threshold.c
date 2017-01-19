@@ -21,6 +21,7 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/debug.h"
 #include "misc/opts.h"
 
 #include "lowrank/lrthresh.h"
@@ -158,6 +159,7 @@ int main_threshold(int argc, char* argv[])
 
 		case HARD:
 			hard_thresh(N, dims, lambda, odata, idata);
+			break;
 
 		default:
 			md_zsoftthresh(N, dims, lambda, flags, odata, idata);
