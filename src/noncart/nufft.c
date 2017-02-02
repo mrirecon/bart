@@ -401,7 +401,7 @@ const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
 	assert(data->conf.toeplitz);
 
 	unsigned int N = data->N;
-	unsigned int ND = pdata->N + 3;
+	unsigned int ND = N + 3;
 
 	pdata->N = N;
 	pdata->cim_dims = *TYPE_ALLOC(long[ND]);
