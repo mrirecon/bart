@@ -4,7 +4,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2016 Frank Ong <frankong@berkeley.edu>
+ * 2014-2017 Frank Ong <frankong@berkeley.edu>
  * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * Strang G. A proposal for Toeplitz matrix calculations. Journal Studies in Applied Math. 1986; 74(2):171-17
@@ -97,8 +97,8 @@ struct nufft_data {
 	long* psf_strs;
 	long* wgh_strs;
 
-	const struct linop_s* rfft_op;   ///< Pcycle FFT operator
-	unsigned int rand_state;
+	const struct linop_s* cfft_op;   ///< Pcycle FFT operator
+	unsigned int cycle;
 	long* rcml_dims;		///< Pcycle Coil + linear phase dimension
 	long* rlph_dims;		///< Pcycle Linear phase dimension
 	long* rpsf_dims;		///< Pcycle Point spread function dimension
@@ -293,8 +293,8 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 	if (conf.pcycle) {
 
 		debug_printf(DP_DEBUG1, "NUFFT: Pcycle Mode\n");
-		data->rand_state = 0;
-		data->rfft_op = linop_fft_create(N, data->cim_dims, FFT_FLAGS);
+		data->cycle = 0;
+		data->cfft_op = linop_fft_create(N, data->cim_dims, FFT_FLAGS);
 	}
 
 
@@ -591,7 +591,7 @@ static void nufft_free_data(const linop_data_t* _data)
 #endif
 	linop_free(data->fft_op);
 	if (data->conf.pcycle)
-		linop_free(data->rfft_op);
+		linop_free(data->cfft_op);
 
 	free(data);
 }
@@ -741,42 +741,26 @@ static void toeplitz_mult(const struct nufft_data* data, complex float* dst, con
 	md_zfmacc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, linphase);
 }
 
-static unsigned int rand_lim(unsigned int* state, unsigned int limit)
-{
-        /* int divisor = RAND_MAX / (limit + 1); */
-        /* unsigned int retval; */
-
-        /* do { */
-        /*         retval = rand_r(state) / divisor; */
-
-        /* } while (retval > limit); */
-	unsigned int retval = *state % (limit + 1);
-	state[0]++;
-
-        return retval;
-}
-
-
 static void toeplitz_mult_pcycle(const struct nufft_data* data, complex float* dst, const complex float* src)
 {
-	unsigned int nshifts = data->lph_dims[data->N];
-        unsigned int r = rand_lim((unsigned int*) &(data->rand_state), nshifts-1);
+	unsigned int ncycles = data->lph_dims[data->N];
+        ((struct nufft_data*) data)->cycle = (data->cycle + 1) % ncycles;
 	
-	const complex float* rlinphase = data->linphase + r * md_calc_size(data->N, data->lph_dims);
-	const complex float* rpsf = data->psf + r * md_calc_size(data->N, data->psf_dims);
+	const complex float* clinphase = data->linphase + data->cycle * md_calc_size(data->N, data->lph_dims);
+	const complex float* cpsf = data->psf + data->cycle * md_calc_size(data->N, data->psf_dims);
 	complex float* grid = data->grid;
 
 #ifdef USE_CUDA
 	printf("Not Implemented.\n");
 	exit(1);
 #endif
-	md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, src, data->img_strs, rlinphase);
+	md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, src, data->img_strs, clinphase);
 
-	linop_forward(data->rfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
-	md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->img_strs, rpsf);
-	linop_adjoint(data->rfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
+	linop_forward(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
+	md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->img_strs, cpsf);
+	linop_adjoint(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
 
-	md_zmulc2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, grid, data->img_strs, rlinphase);
+	md_zmulc2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, grid, data->img_strs, clinphase);
 }
 
 
