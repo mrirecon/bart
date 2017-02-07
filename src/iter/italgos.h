@@ -86,7 +86,12 @@ double power(unsigned int maxiter,
 	   void (*op)(void* data, float* dst, const float* src), 
 	   float* u);
 	   
-
+void altmin(unsigned int maxiter,
+	    void* data,
+	    void (*solvel)(void* data, float* l, const float* r), 
+	    void (*solver)(void* data, const float* l, float* r),
+	    float* l, float* r);
+	
 #include "misc/cppwrap.h"
 
 #endif // __ITALGOS_H

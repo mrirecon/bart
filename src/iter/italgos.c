@@ -559,3 +559,21 @@ double power(unsigned int maxiter,
 	return s;
 }
 
+
+/**
+ * Alternating minimization
+ */
+void altmin(unsigned int maxiter,
+	    void* data,
+	    void (*solvel)(void* data, float* l, const float* r), 
+	    void (*solver)(void* data, const float* l, float* r),
+	    float* l, float* r)
+{
+	for (unsigned int i = 0; i < maxiter; i++) {
+		solvel(data, l, r);
+		solver(data, l, r);
+
+		debug_printf(DP_DEBUG3, "#Iter %d\n", i);
+	}
+}
+
