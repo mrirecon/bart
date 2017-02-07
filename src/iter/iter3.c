@@ -5,6 +5,7 @@
  *
  * Authors:
  * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2017 Frank Ong <frankong@berkeley.edu>
  */
 
 #include <assert.h>
@@ -23,6 +24,7 @@
 
 DEF_TYPEID(iter3_irgnm_conf);
 DEF_TYPEID(iter3_landweber_conf);
+DEF_TYPEID(iter3_altmin_conf);
 
 
 struct irgnm_s {
@@ -95,16 +97,12 @@ void iter3_irgnm(iter3_conf* _conf,
 
 void iter3_landweber(iter3_conf* _conf,
 		void (*frw)(void* _data, float* dst, const float* src),
-		void (*der)(void* _data, float* dst, const float* src),
 		void (*adj)(void* _data, float* dst, const float* src),
 		void* data2,
-		long N, float* dst, const float* ref,
+		long N, float* dst,
 		long M, const float* src)
 {
 	struct iter3_landweber_conf* conf = CAST_DOWN(iter3_landweber_conf, _conf);
-
-	assert(NULL == der);
-	assert(NULL == ref);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(N), FL_SIZE, src);
 
@@ -112,6 +110,17 @@ void iter3_landweber(iter3_conf* _conf,
 		data2, select_vecops(src), frw, adj, dst, src, NULL);
 
 	md_free(tmp);
+}
+
+
+void iter3_altmin(iter3_conf* _conf,
+		  void* data,
+		  void (*solvel)(void* _data, float* l, const float* r),
+		  void (*solver)(void* _data, const float* l, float* r),
+		  float* l, float* r)
+{
+	struct iter3_altmin_conf* conf = CAST_DOWN(iter3_altmin_conf, _conf);
+	altmin(conf->iter, data, solvel, solver, l, r);
 }
 
 
