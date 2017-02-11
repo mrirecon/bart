@@ -364,6 +364,14 @@ const struct operator_p_s* operator_p_create(unsigned int ON, const long out_dim
 }
 
 
+
+const struct operator_s* operator_p_upcast(const struct operator_p_s* op)
+{
+	return &op->op;
+}
+
+
+
 struct identity_s {
 
 	INTERFACE(operator_data_t);
