@@ -1,10 +1,10 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
  *
@@ -649,6 +649,93 @@ void operator_p_apply_unchecked(const struct operator_p_s* op, float mu, complex
 {
 	op->op.apply(op->op.data, 3, (void*[3]){ &mu, (void*)dst, (void*)src });
 }
+
+
+struct op_bind_s {
+
+	INTERFACE(operator_data_t);
+
+	unsigned int D;
+	unsigned int arg;
+
+	const struct operator_s* op;
+	void* ptr;
+};
+
+DEF_TYPEID(op_bind_s);
+
+static void op_bind_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+{
+	const struct op_bind_s* data = CAST_DOWN(op_bind_s, _data);
+	assert(data->D == N + 1);
+
+	void* n_args[N + 1];
+
+	for (unsigned int i = 0, j = 0; i < N; i++, j++) {
+
+		// insert bound argument
+
+		if (data->arg == i)
+			n_args[j++] = data->ptr;
+
+		n_args[j] = args[i];
+	}
+
+	operator_generic_apply_unchecked(data->op, N + 1, n_args);
+}
+
+static void op_bind_del(const operator_data_t* _data)
+{
+	const struct op_bind_s* data = CAST_DOWN(op_bind_s, _data);
+	operator_free(data->op);
+}
+
+
+/**
+ * Create a new operator that binds argument 'arg'.
+ */
+const struct operator_s* operator_bind2(const struct operator_s* op, unsigned int arg,
+			unsigned int N, const long dims[N], const long strs[N], void* ptr)
+{
+	unsigned int D = operator_nr_args(op);
+	assert(arg < D);
+	assert(!MD_IS_SET(op->io_flags, arg));
+	assert(iovec_check(operator_arg_domain(op, arg), N, dims, strs));
+
+	unsigned int nn[D - 1];
+	const long* ndims[D - 1];
+	const long* nstrs[D - 1];
+
+	unsigned int n_flags = 0u;
+
+	for (unsigned int i = 0, j = 0; i < D; i++) {
+
+		if (arg == i)
+			continue;
+
+		nn[j] = operator_arg_domain(op, i)->N;
+		ndims[j] = operator_arg_domain(op, i)->dims;
+		nstrs[j] = operator_arg_domain(op, i)->strs;
+
+		if (MD_IS_SET(op->io_flags, i))
+			n_flags |= MD_BIT(j);
+
+		j++;
+	}
+
+	PTR_ALLOC(struct op_bind_s, data);
+	SET_TYPEID(op_bind_s, data);
+
+	data->D = D;
+	data->arg = arg;
+	data->ptr = ptr;
+	data->op = op;
+
+	return operator_generic_create2(D - 1, n_flags,
+		nn, ndims, nstrs,
+		CAST_UP(PTR_PASS(data)), op_bind_apply, op_bind_del);
+}
+
 
 
 void operator_iter(void* o, float* _dst, const float* _src)

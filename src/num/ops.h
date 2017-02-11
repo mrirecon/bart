@@ -1,5 +1,5 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -62,6 +62,9 @@ extern const struct operator_s* operator_chainN(unsigned int N, const struct ope
 //extern const struct operator_s* operator_mul(const struct operator_s* a, const struct operator_s* b);
 //extern const struct operator_s* operator_sum(const struct operator_s* a, const struct operator_s* b);
 extern const struct operator_s* operator_stack(unsigned int D, unsigned int E, const struct operator_s* a, const struct operator_s* b);
+
+extern const struct operator_s* operator_bind2(const struct operator_s* op, unsigned int arg,
+			unsigned int N, const long dims[__VLA(N)], const long strs[__VLA(N)], void* ptr);
 
 // del functions
 extern void operator_free(const struct operator_s* x);
