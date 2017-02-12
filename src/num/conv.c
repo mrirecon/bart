@@ -1,9 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2017. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-10-28 Martin Uecker uecker@eecs.berkeley.edu
+ * 2012, 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -127,11 +128,11 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 			// X X 1
 			// X 1 X
 			// X 1 1 (inefficient)
-			// 1 X X (or only for adjoint?)			
+			// 1 X X
 
-			// for now:
-			assert((1 == idims1[i]) || (idims1[i] == odims[i]));
-			assert((1 == idims2[i]) || (idims2[i] == odims[i]));
+			assert((1 == idims1[i]) || (idims1[i] == odims[i]) || (idims1[i] == idims2[i]));
+			assert((1 == idims2[i]) || (idims2[i] == odims[i]) || (idims2[i] == idims1[i]));
+			assert((1 == odims[i]) || (idims2[i] == odims[i]) || (idims1[i] == odims[i]));
 
 			plan->dims1[i] = idims1[i];
 			plan->dims2[i] = odims[i];
@@ -213,7 +214,9 @@ static void conv_cyclic(struct conv_plan* plan, complex float* dst, const comple
 	// FIXME: optimize tmp away when possible
 	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims1, CFL_SIZE, plan->kernel);
         ifft(plan->N, plan->dims1, plan->flags, tmp, src1);
-        md_zmul2(plan->N, plan->dims, plan->str2, dst, plan->str1, tmp, plan->kstr, plan->kernel);
+	md_clear(plan->N, plan->dims2, dst, CFL_SIZE);
+        md_zfmac2(plan->N, plan->dims, plan->str2, dst, plan->str1, tmp, plan->kstr, plan->kernel);
+  //      md_zmul2(plan->N, plan->dims, plan->str2, dst, plan->str1, tmp, plan->kstr, plan->kernel);
         fft(plan->N, plan->dims2, plan->flags, dst, dst);
 	md_free(tmp);
 }
