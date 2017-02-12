@@ -111,6 +111,12 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 					  assert(3 == ret);
 					  p->algo = ADMM;
 				  }
+				else if (strcmp(rt, "P") == 0) {
+
+					regs[r].xform = LAPLACE;
+					int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+					assert(3 == ret);
+				}
 				  else if (strcmp(rt, "R1") == 0) {
 
 					  regs[r].xform = IMAGL1;
@@ -270,6 +276,28 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 				prox_ops[nr] = prox_thresh_create(DIMS + 1,
 						linop_codomain(trafos[nr])->dims,
 						regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS), use_gpu);
+				break;
+
+			case LAPLACE:
+				debug_printf(DP_INFO, "L1-Laplace regularization: %f\n", regs[nr].lambda);
+				long krn_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
+
+				for (unsigned int i = 0; i < DIMS; i++)
+					if (MD_IS_SET(regs[nr].xflags, i))
+						krn_dims[i] = 3;
+
+				complex float krn[] = {	// laplace filter
+					-1., -2., -1.,
+					-2., 12., -2.,
+					-1., -2., -1.,
+				};
+
+				assert(9 == md_calc_size(DIMS, krn_dims));
+
+				trafos[nr] = linop_conv_create(DIMS, regs[nr].xflags, CONV_SYMMETRIC, CONV_TRUNCATED, img_dims, img_dims, krn_dims, krn);
+				prox_ops[nr] = prox_thresh_create(DIMS,
+						linop_codomain(trafos[nr])->dims,
+						regs[nr].lambda, regs[nr].jflags, use_gpu);
 				break;
 
 			case LLR:

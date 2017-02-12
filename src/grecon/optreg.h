@@ -18,7 +18,7 @@ enum algo_t { CG, IST, FISTA, ADMM };
 
 struct reg_s {
 
-	enum { L1WAV, TV, LLR, MLR, IMAGL1, IMAGL2, L1IMG, L2IMG, FTL1 } xform;
+	enum { L1WAV, TV, LLR, MLR, IMAGL1, IMAGL2, L1IMG, L2IMG, FTL1, LAPLACE } xform;
 
 	unsigned int xflags;
 	unsigned int jflags;
