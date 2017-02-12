@@ -579,6 +579,16 @@ const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[N], 
 	return prox_ineq_create(N, dims, b, true);
 }
 
+/*
+ * Proximal function for nonnegative orthant
+ * f(z) = 1{z >= 0}
+ */
+const struct operator_p_s* prox_nonneg_create(unsigned int N, const long dims[N])
+{
+	return prox_ineq_create(N, dims, NULL, true);
+}
+
+
 struct prox_rvc_data {
 
 	INTERFACE(operator_data_t);
