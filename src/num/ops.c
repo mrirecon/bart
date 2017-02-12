@@ -393,6 +393,7 @@ static void identity_apply(const operator_data_t* _data, unsigned int N, void* a
 static void identity_free(const operator_data_t* _data)
 {
         const struct identity_s* d = CAST_DOWN(identity_s, _data);
+        iovec_free(d->domain);
         iovec_free(d->codomain);
 	free((void*)d);
 }
