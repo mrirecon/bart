@@ -1,5 +1,6 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2016-2017. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */ 
 
@@ -137,6 +138,21 @@ extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned long fl
 
 #define MD_STRIDES(N, dims, elsize)	(md_calc_strides(N, alloca(N * sizeof(long)), dims, elsize))
 
+#define MD_SINGLETON_DIMS(N)				\
+({							\
+	unsigned int _N = (N);				\
+	long* _dims = alloca(_N * sizeof(long));	\
+	md_singleton_dims(_N, _dims);			\
+	_dims;						\
+})
+
+#define MD_SINGLETON_STRS(N)				\
+({							\
+	unsigned int _N = (N);				\
+	long* _dims = alloca(_N * sizeof(long)); 	\
+	md_singleton_strides(_N, _dims); 		\
+	_dims; 						\
+})
 
 #include "misc/cppwrap.h"
 
