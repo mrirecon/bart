@@ -181,7 +181,7 @@ struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enu
 
 //	plan->fftplan = fft_plan(N, plan->dims, plan->flags);
 
-	return plan;
+	return PTR_PASS(plan);
 }
 
 
