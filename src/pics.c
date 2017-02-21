@@ -1,10 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -141,7 +141,7 @@ int main_pics(int argc, char* argv[])
 		OPT_FLOAT('q', &conf.cclambda, "cclambda", "(cclambda)"),
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
 		OPT_SELECT('m', enum algo_t, &ropts.algo, ADMM, "select ADMM"),
-		OPT_FLOAT('w', &scaling, "val", "scaling"),
+		OPT_FLOAT('w', &scaling, "val", "inverse scaling of the data"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
@@ -274,7 +274,7 @@ int main_pics(int argc, char* argv[])
 
 	// apply scaling
 
-	if (scaling == 0.) {
+	if (0. == scaling) {
 
 		if (NULL == traj_file) {
 
@@ -290,12 +290,17 @@ int main_pics(int argc, char* argv[])
 			md_free(adj);
 		}
 	}
-	else
-		debug_printf(DP_DEBUG1, "Scaling: %f\n", scaling);
 
-	if (scaling != 0.)
+	if (0. == scaling ) {
+
+		debug_printf(DP_WARN, "Estimated scale is zero. Set to one.");
+		scaling = 1.;
+
+	} else {
+
+		debug_printf(DP_DEBUG1, "Inverse scaling of the data: %f\n", scaling);
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
-
+	}
 
 
 	complex float* image = create_cfl(argv[3], DIMS, img_dims);
