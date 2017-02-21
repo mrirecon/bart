@@ -1,10 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2015 Siddharth Iyer <sid8795@gmail.com>
  */
@@ -107,7 +107,8 @@ int main_ecalib(int argc, char* argv[])
 	
 	// assert((kdims[0] < calsize_ro) && (kdims[1] < calsize_ro) && (kdims[2] < calsize_ro));
 	// assert((ksp_dims[0] == 1) || (calsize_ro < ksp_dims[0]));
-	assert(1 == ksp_dims[MAPS_DIM]);
+	if (1 != ksp_dims[MAPS_DIM])
+		error("MAPS dimension is not of size one.\n");
 
 
 	long cal_dims[N];
