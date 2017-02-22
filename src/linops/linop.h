@@ -59,10 +59,6 @@ extern void linop_pseudo_inv(const struct linop_s* op, float lambda, unsigned in
 			unsigned int SN, const long sdims[__VLA(SN)], const complex float* src);
 
 
-#ifdef BERKELEY_SVN
-// FIXME: will go away, use this to
-extern struct operator_s* linop2operator_compat(struct linop_s* x);
-#endif
 
 extern void linop_forward_unchecked(const struct linop_s* op, complex float* dst, const complex float* src);
 extern void linop_adjoint_unchecked(const struct linop_s* op, complex float* dst, const complex float* src);
@@ -87,10 +83,6 @@ extern struct linop_s* linop_loop(unsigned int D, const long dims[D], struct lin
 extern const struct linop_s* linop_join(unsigned int D, const struct linop_s* a, const struct linop_s* b);
 
 
-extern void linop_forward_iter(void* _o, float* _dst, const float* _src);
-extern void linop_adjoint_iter(void* _o, float* _dst, const float* _src);
-extern void linop_normal_iter(void* _o, float* _dst, const float* _src);
-extern void linop_norm_inv_iter(void* _o, float lambda, float* _dst, const float* _src);
 
 #include "misc/cppwrap.h"
 

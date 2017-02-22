@@ -90,7 +90,7 @@ static void prox_normaleq_fun(const operator_data_t* prox_data, float mu, float*
 
 		} else {
 
-			linop_norm_inv_iter((struct linop_s*)pdata->op, rho, z, b);
+			linop_norm_inv_unchecked(pdata->op, rho, (complex float*)z, (const complex float*)b);
 		}
 
 		md_free(b);
@@ -126,7 +126,7 @@ const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const 
 
 	pdata->size = 2 * md_calc_size(linop_domain(op)->N, linop_domain(op)->dims);
 	pdata->adj = md_alloc_sameplace(1, &(pdata->size), FL_SIZE, y);
-	linop_adjoint_iter((struct linop_s*)op, pdata->adj, (const float*)y);
+	linop_adjoint_unchecked(op, (complex float*)pdata->adj, y);
 
 	return operator_p_create(linop_domain(op)->N, linop_domain(op)->dims, 
 			linop_domain(op)->N, linop_domain(op)->dims, 

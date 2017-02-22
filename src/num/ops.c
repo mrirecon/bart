@@ -747,22 +747,6 @@ const struct operator_s* operator_bind2(const struct operator_s* op, unsigned in
 
 
 
-void operator_iter(void* o, float* _dst, const float* _src)
-{
-	complex float* dst = (complex float*)_dst;
-	const complex float* src = (complex float*)_src;
-
-	operator_apply_unchecked(o, dst, src);
-}
-
-void operator_p_iter(void* o, float lambda, float* _dst, const float* _src)
-{
-	complex float* dst = (complex float*)_dst;
-	const complex float* src = (complex float*)_src;
-
-	operator_p_apply_unchecked(o, lambda, dst, src);
-}
-
 
 
 struct op_loop_s {

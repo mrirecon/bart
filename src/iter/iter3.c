@@ -1,10 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <assert.h>
@@ -27,66 +27,71 @@ DEF_TYPEID(iter3_landweber_conf);
 
 struct irgnm_s {
 
-	void (*frw)(void* _data, float* dst, const float* src);
-	void (*der)(void* _data, float* dst, const float* src);
-	void (*adj)(void* _data, float* dst, const float* src);
+	INTERFACE(iter_op_data);
 
-	void* data;
+	struct iter_op_s frw;
+	struct iter_op_s der;
+	struct iter_op_s adj;
+
 	float* tmp;
 
 	long size;
 };
 
-static void normal(void* _data, float* dst, const float* src)
-{
-	struct irgnm_s* data = _data;
+DEF_TYPEID(irgnm_s);
 
-	data->der(data->data, data->tmp, src);
-	data->adj(data->data, dst, data->tmp);
+static void normal(iter_op_data* _data, float* dst, const float* src)
+{
+	struct irgnm_s* data = CAST_DOWN(irgnm_s, _data);
+
+	iter_op_call(data->frw, data->tmp, src);
+	iter_op_call(data->adj, dst, data->tmp);
 }
 
-static void inverse(void* _data, float alpha, float* dst, const float* src)
+static void inverse(iter_op_data* _data, float alpha, float* dst, const float* src)
 {
-        struct irgnm_s* data = _data;
+	struct irgnm_s* data = CAST_DOWN(irgnm_s, _data);
 
 	md_clear(1, MD_DIMS(data->size), dst, FL_SIZE);
 
         float eps = md_norm(1, MD_DIMS(data->size), src);
-        conjgrad(100, alpha, 0.1f * eps, data->size, (void*)data, select_vecops(src), normal, dst, src, NULL);
+        conjgrad(100, alpha, 0.1f * eps, data->size, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, dst, src, NULL);
 }
 
-static void forward(void* _data, float* dst, const float* src)
+static void forward(iter_op_data* _data, float* dst, const float* src)
 {
-	struct irgnm_s* data = _data;
+	struct irgnm_s* data = CAST_DOWN(irgnm_s, _data);
 
-	data->frw(data->data, dst, src);
+	iter_op_call(data->frw, dst, src);
 }
 
-static void adjoint(void* _data, float* dst, const float* src)
+static void adjoint(iter_op_data* _data, float* dst, const float* src)
 {
-	struct irgnm_s* data = _data;
+	struct irgnm_s* data = CAST_DOWN(irgnm_s, _data);
 
-	data->adj(data->data, dst, src);
+	iter_op_call(data->adj, dst, src);
 }
 
 
 
 
 void iter3_irgnm(iter3_conf* _conf,
-		void (*frw)(void* _data, float* dst, const float* src),
-		void (*der)(void* _data, float* dst, const float* src),
-		void (*adj)(void* _data, float* dst, const float* src),
-		void* data2,
+		struct iter_op_s frw,
+		struct iter_op_s der,
+		struct iter_op_s adj,
 		long N, float* dst, const float* ref,
 		long M, const float* src)
 {
 	struct iter3_irgnm_conf* conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
-	struct irgnm_s data = { frw, der, adj, data2, tmp, N };
+	struct irgnm_s data = { { &TYPEID(irgnm_s) }, frw, der, adj, tmp, N };
 
-	irgnm(conf->iter, conf->alpha, conf->redu, &data, N, M, select_vecops(src),
-		forward, adjoint, inverse, dst, ref, src);
+	irgnm(conf->iter, conf->alpha, conf->redu, N, M, select_vecops(src),
+		(struct iter_op_s){ forward, CAST_UP(&data) },
+		(struct iter_op_s){ adjoint, CAST_UP(&data) },
+		(struct iter_op_p_s){ inverse, CAST_UP(&data) },
+		dst, ref, src);
 
 	md_free(tmp);
 }
@@ -94,22 +99,21 @@ void iter3_irgnm(iter3_conf* _conf,
 
 
 void iter3_landweber(iter3_conf* _conf,
-		void (*frw)(void* _data, float* dst, const float* src),
-		void (*der)(void* _data, float* dst, const float* src),
-		void (*adj)(void* _data, float* dst, const float* src),
-		void* data2,
+		struct iter_op_s frw,
+		struct iter_op_s der,
+		struct iter_op_s adj,
 		long N, float* dst, const float* ref,
 		long M, const float* src)
 {
 	struct iter3_landweber_conf* conf = CAST_DOWN(iter3_landweber_conf, _conf);
 
-	assert(NULL == der);
+	assert(NULL == der.fun);
 	assert(NULL == ref);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(N), FL_SIZE, src);
 
 	landweber(conf->iter, conf->epsilon, conf->alpha, N, M,
-		data2, select_vecops(src), frw, adj, dst, src, NULL);
+		select_vecops(src), frw, adj, dst, src, NULL);
 
 	md_free(tmp);
 }

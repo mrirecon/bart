@@ -136,7 +136,6 @@ int main_pocsense(int argc, char* argv[])
 
 		wave_op = linop_wavelet3_create(DIMS, FFT_FLAGS, ksp_dims, strs, minsize);
 		thresh_op = prox_unithresh_create(DIMS, wave_op, alpha, COIL_FLAG, use_gpu);
-
 	}
 #if 0
 	else {

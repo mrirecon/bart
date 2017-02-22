@@ -15,6 +15,7 @@
 #include "misc/misc.h"
 
 #include "iter/italgos.h"
+#include "iter/iter2.h"
 #include "iter/vec.h"
 
 #include "misc.h"
@@ -27,7 +28,7 @@ double iter_power(unsigned int maxiter,
 		const struct operator_s* normaleq_op,
 		long size, float* u)
 {
-	return power(maxiter, size, (void*)normaleq_op, select_vecops(u), operator_iter, u);
+	return power(maxiter, size, select_vecops(u), OPERATOR2ITOP(normaleq_op), u);
 }
 
 

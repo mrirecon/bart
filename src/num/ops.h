@@ -122,9 +122,6 @@ extern const struct operator_s* operator_loop2(unsigned int N, const unsigned in
 extern const struct operator_s* operator_loop(unsigned int D, const long dims[D], const struct operator_s* op);
 
 
-// iter helper functions
-extern void operator_iter(void* _o, float* _dst, const float* _src);
-extern void operator_p_iter(void* _o, float lambda, float* _dst, const float* _src);
 
 #include "misc/cppwrap.h"
 

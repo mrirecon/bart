@@ -164,7 +164,8 @@ void iter_landweber(iter_conf* _conf,
 
 	assert(NULL == thresh_prox);
 
-	landweber_sym(conf->maxiter, 1.E-3 * eps, conf->step, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, image, image_adj, monitor);
+	landweber_sym(conf->maxiter, 1.E-3 * eps, conf->step, size, select_vecops(image_adj),
+			OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
 
 cleanup:
 	;

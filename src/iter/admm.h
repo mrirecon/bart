@@ -1,5 +1,5 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */ 
@@ -9,29 +9,18 @@
 
 #include "misc/cppwrap.h"
 #include "misc/types.h"
+
 #include "iter/monitor.h"
+#include "iter/italgos.h"
 
 struct vec_iter_s;
 
-#ifndef __PROX_FUN_T
-#define __PROX_FUN_T
-typedef void (*prox_fun_t)(void* prox_data, float rho, float* z, const float* x_plus_u);
-#endif
-
-typedef void (*ops_fun_t)(void* dta, float* dst, const float* src);
 
 struct admm_op {
 
-	ops_fun_t forward;
-	ops_fun_t adjoint;
-	ops_fun_t normal;
-	void* data;
-};
-
-struct admm_prox_op {
-
-	prox_fun_t prox_fun;
-	void* data;
+	struct iter_op_s forward;
+	struct iter_op_s adjoint;
+	struct iter_op_s normal;
 };
 
 
@@ -56,7 +45,6 @@ struct admm_prox_op {
  * @param mu -- multiply/divide rho by tau if residuals are more than mu times apart
  *
  * @param funs array of prox functions (size is num_funs)
- * @param admm_data array of data for the prox functions (size is num_funs)
  *
  * @param ops array of operators, G_i (size is num_funs)
  * @param prox_ops array of proximal functions (size is num_funs)
@@ -87,12 +75,11 @@ struct admm_plan_s {
 
 	unsigned int num_funs;
 
-	struct admm_prox_op* prox_ops;
+	struct iter_op_p_s* prox_ops;
 	struct admm_op* ops;
 	const float* const* biases;
 
-	void (*xupdate_fun)(void* _data, float rho, float* _dst, const float* _src);
-	void* xupdate_data;
+	struct iter_op_p_s xupdate;
 };
 
 
@@ -124,11 +111,11 @@ extern DEF_TYPEID(admm_history_s);
 
 
 extern void admm(const struct admm_plan_s* plan,
-	  unsigned int D, const long z_dims[__VLA(D)],
-	  long N, float* x, const float* x_adj,
-	  const struct vec_iter_s* vops,
-	  void (*Aop)(void* _data, float* _dst, const float* _src),
-	  void* Aop_data, struct iter_monitor_s* monitor);
+		unsigned int D, const long z_dims[__VLA(D)],
+		long N, float* x, const float* x_adj,
+		const struct vec_iter_s* vops,
+		struct iter_op_s Aop,
+		struct iter_monitor_s* monitor);
 
 
 

@@ -27,9 +27,12 @@
 #include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/mri.h"
+#include "misc/types.h"
 
 
 struct sense_data {
+
+	INTERFACE(iter_op_data);
 
 	long sens_dims[DIMS];
 	long sens_strs[DIMS];
@@ -50,6 +53,7 @@ struct sense_data {
 	float alpha;
 }; 
 
+DEF_TYPEID(sense_data);
 
 
 static void sense_forward(const void* _data, complex float* out, const complex float* imgs)
@@ -80,9 +84,9 @@ static void sense_adjoint(const void* _data, complex float* imgs, const complex 
 }
 
 
-static void sense_normal(void* _data, float* out, const float* in)
+static void sense_normal(iter_op_data* _data, float* out, const float* in)
 {
-	const struct sense_data* data = _data;
+	const struct sense_data* data = CAST_DOWN(sense_data, _data);
 
 	sense_forward(data, data->tmp, (const complex float*)in);
 	sense_adjoint(data, (complex float*)out, data->tmp);
@@ -102,7 +106,8 @@ static void sense_reco(struct sense_data* data, complex float* imgs, const compl
 
 	long size = md_calc_size(DIMS, data->imgs_dims);
 
-	conjgrad(100, data->alpha, 1.E-3, 2 * size, data, &cpu_iter_ops, sense_normal,
+	conjgrad(100, data->alpha, 1.E-3, 2 * size, &cpu_iter_ops,
+			(struct iter_op_s){ sense_normal, CAST_UP(data) },
 			(float*)imgs, (const float*)adj, NULL);
 
 	md_free(adj);
@@ -145,6 +150,7 @@ int main_itsense(int argc, char* argv[])
 	mini_cmdline(argc, argv, 5, usage_str, help_str);
 
 	struct sense_data data;
+	SET_TYPEID(sense_data, &data);
 
 	data.alpha = atof(argv[1]);
 

@@ -1,10 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2011-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2011-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  *
  * Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction by regularized
@@ -23,6 +23,7 @@
 
 #include "iter/iter3.h"
 #include "iter/thresh.h"
+#include "iter/italgos.h"
 
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -36,29 +37,31 @@
 
 struct data {
 
+	INTERFACE(iter_op_data);
+
 	struct noir_data* ndata;
 };
 
+DEF_TYPEID(data);
 
 
-
-static void frw(void* ptr, float* _dst, const float* _src)
+static void frw(iter_op_data* ptr, float* _dst, const float* _src)
 {
-        struct data* data = ptr;
+        struct data* data = CAST_DOWN(data, ptr);
 
 	noir_fun(data->ndata, (complex float*)_dst, (const complex float*)_src);
 }
 
-static void adj(void* ptr, float* _dst, const float* _src)
+static void adj(iter_op_data* ptr, float* _dst, const float* _src)
 {
-        struct data* data = ptr;
+        struct data* data = CAST_DOWN(data, ptr);
 
 	noir_adj(data->ndata, (complex float*)_dst, (const complex float*)_src);
 }
 
-static void der(void* ptr, float* _dst, const float* _src)
+static void der(iter_op_data* ptr, float* _dst, const float* _src)
 {
-        struct data* data = ptr;
+        struct data* data = CAST_DOWN(data, ptr);
 
 	noir_der(data->ndata, (complex float*)_dst, (const complex float*)_src);
 }
@@ -106,12 +109,16 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	md_clear(DIMS, coil_dims, imgH + skip, CFL_SIZE);
 
 	struct noir_data* ndata = noir_init(dims, mask, psf, conf->rvc, conf->usegpu);
-	struct data data = { ndata };
+	struct data data = { { &TYPEID(data) }, ndata };
 
 	struct iter3_irgnm_conf irgnm_conf = { .iter = conf->iter, .alpha = conf->alpha, .redu = conf->redu };
 	SET_TYPEID(iter3_irgnm_conf, &irgnm_conf);
 
-	iter3_irgnm(CAST_UP(&irgnm_conf), frw, der, adj, &data, size * 2, (float*)img, NULL,
+	iter3_irgnm(CAST_UP(&irgnm_conf),
+			(struct iter_op_s){ frw, CAST_UP(&data) },
+			(struct iter_op_s){ der, CAST_UP(&data) },
+			(struct iter_op_s){ adj, CAST_UP(&data) },
+			size * 2, (float*)img, NULL,
 				data_size * 2, (const float*)kspace);
 
 	md_copy(DIMS, imgs_dims, outbuf, img, CFL_SIZE);

@@ -1,10 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -33,6 +33,18 @@
 
 #include "iter2.h"
 
+
+void operator_iter(iter_op_data* _data, float* dst, const float* src)
+{
+	struct iter_op_op* data = CAST_DOWN(iter_op_op, _data);
+	operator_apply_unchecked(data->op, (complex float*)dst, (const complex float*)src);
+}
+
+void operator_p_iter(iter_op_data* _data, float rho, float* dst, const float* src)
+{
+	struct iter_op_p_op* data = CAST_DOWN(iter_op_p_op, _data);
+	operator_p_apply_unchecked(data->op, rho, (complex float*)dst, (const complex float*)src);
+}
 
 
 
@@ -82,7 +94,8 @@ void iter2_conjgrad(iter_conf* _conf,
 	if (checkeps(eps))
 		goto cleanup;
 
-	conjgrad(conf->maxiter, conf->l2lambda, eps * conf->tol, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, image, image_adj, monitor);
+	conjgrad(conf->maxiter, conf->l2lambda, eps * conf->tol, size, select_vecops(image_adj),
+			OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
 
 cleanup:
 	;
@@ -119,7 +132,8 @@ void iter2_ist(iter_conf* _conf,
 
 	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
-	ist(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, operator_p_iter, (void*)prox_ops[0], image, image_adj, monitor);
+	ist(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, select_vecops(image_adj),
+		OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
 
 cleanup:
@@ -156,7 +170,8 @@ void iter2_fista(iter_conf* _conf,
 
 	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
-	fista(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, (void*)normaleq_op, select_vecops(image_adj), operator_iter, operator_p_iter, (void*)prox_ops[0], image, image_adj, monitor);
+	fista(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, select_vecops(image_adj),
+		OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
 cleanup:
 	;
@@ -197,24 +212,21 @@ void iter2_admm(iter_conf* _conf,
 
 
 	struct admm_op a_ops[D];
-	struct admm_prox_op a_prox_ops[D];
+	struct iter_op_p_s a_prox_ops[D];
 
 	for (unsigned int i = 0; i < D; i++) {
 
-		a_ops[i].forward = linop_forward_iter;
-		a_ops[i].normal = linop_normal_iter;
-		a_ops[i].adjoint = linop_adjoint_iter;
-		a_ops[i].data = (void*)ops[i];
+		a_ops[i].forward = OPERATOR2ITOP(ops[i]->forward),
+		a_ops[i].normal = OPERATOR2ITOP(ops[i]->normal);
+		a_ops[i].adjoint = OPERATOR2ITOP(ops[i]->adjoint);
 
-		a_prox_ops[i].prox_fun = operator_p_iter;
-		a_prox_ops[i].data = (void*)prox_ops[i];
+		a_prox_ops[i] = OPERATOR_P2ITOP(prox_ops[i]);
 	}
 
 	admm_plan.ops = a_ops;
 	admm_plan.prox_ops = a_prox_ops;
 
-	admm_plan.xupdate_fun = (NULL != xupdate_op) ? operator_p_iter : NULL;
-	admm_plan.xupdate_data = (void*)xupdate_op;
+	admm_plan.xupdate = OPERATOR_P2ITOP(xupdate_op);
 
 
 	long z_dims[D];
@@ -230,7 +242,7 @@ void iter2_admm(iter_conf* _conf,
 			goto cleanup;
 	}
 
-	admm(&admm_plan, admm_plan.num_funs, z_dims, size, (float*)image, image_adj, select_vecops(image), operator_iter, (void*)normaleq_op, monitor);
+	admm(&admm_plan, admm_plan.num_funs, z_dims, size, (float*)image, image_adj, select_vecops(image), OPERATOR2ITOP(normaleq_op), monitor);
 
 cleanup:
 	;
@@ -258,16 +270,12 @@ void iter2_pocs(iter_conf* _conf,
 	UNUSED(xupdate_op);
 	UNUSED(image_adj);
 	
-	prox_fun_t proj_ops[D];
-	void* proj_data[D];
+	struct iter_op_p_s proj_ops[D];
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (unsigned int i = 0; i < D; i++)
+		proj_ops[i] = OPERATOR_P2ITOP(prox_ops[i]);
 
-		proj_ops[i] = operator_p_iter;
-		proj_data[i] = (void*)prox_ops[i];
-	}
-
-	pocs(conf->maxiter, D, proj_ops, proj_data, select_vecops(image), size, image, monitor);
+	pocs(conf->maxiter, D, proj_ops, select_vecops(image), size, image, monitor);
 }
 
 

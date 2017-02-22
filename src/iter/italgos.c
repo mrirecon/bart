@@ -1,10 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013-2014 Frank Ong <frankong@berkeley.edu>
  * 2013-2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -39,7 +39,8 @@
 
 #include "italgos.h"
 
-
+extern inline void iter_op_call(struct iter_op_s op, float* dst, const float* src);
+extern inline void iter_op_p_call(struct iter_op_p_s op, float rho, float* dst, const float* src);
 
 /**
  * ravine step
@@ -66,9 +67,9 @@ static void ravine(const struct vec_iter_s* vops, long N, float* ftp, float* xa,
 
 
 
-void landweber_sym(unsigned int maxiter, float epsilon, float alpha, long N, void* data,
+void landweber_sym(unsigned int maxiter, float epsilon, float alpha, long N,
 	const struct vec_iter_s* vops,
-	void (*op)(void* data, float* dst, const float* src), 
+	struct iter_op_s op,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor)
 {
@@ -80,7 +81,7 @@ void landweber_sym(unsigned int maxiter, float epsilon, float alpha, long N, voi
 
 		iter_monitor(monitor, vops, x);
 
-		op(data, r, x);		// r = A x
+		iter_op_call(op, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
 
 		double rsnew = vops->norm(N, r);
@@ -154,7 +155,6 @@ static float ist_continuation(struct iter_data* itrdata, const float delta)
  * @param lambda_start initial regularization weighting
  * @param lambda_end final regularization weighting (for continuation)
  * @param N size of input, x
- * @param data structure, e.g. sense_data
  * @param vops vector ops definition
  * @param op linear operator, e.g. A
  * @param thresh threshold function, e.g. complex soft threshold
@@ -163,11 +163,10 @@ static float ist_continuation(struct iter_data* itrdata, const float delta)
  * @param monitor compute objective value, errors, etc.
  */
 void ist(unsigned int maxiter, float epsilon, float tau,
-		float continuation, bool hogwild, long N, void* data,
+		float continuation, bool hogwild, long N,
 		const struct vec_iter_s* vops,
-		void (*op)(void* data, float* dst, const float* src), 
-		void (*thresh)(void* data, float lambda, float* dst, const float* src),
-		void* tdata,
+		struct iter_op_s op,
+		struct iter_op_p_s thresh,
 		float* x, const float* b,
 		struct iter_monitor_s* monitor)
 {
@@ -201,10 +200,10 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 			debug_printf(DP_DEBUG3, "##lambda_scale = %f\n", lambda_scale);
 
 
-		thresh(tdata, tau, x, x);
+		iter_op_p_call(thresh, tau, x, x);
 
 
-		op(data, r, x);		// r = A x
+		iter_op_call(op, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
 
 		itrdata.rsnew = vops->norm(N, r);
@@ -245,7 +244,6 @@ void ist(unsigned int maxiter, float epsilon, float tau,
  * @param lambda_start initial regularization weighting
  * @param lambda_end final regularization weighting (for continuation)
  * @param N size of input, x
- * @param data structure, e.g. sense_data
  * @param vops vector ops definition
  * @param op linear operator, e.g. A
  * @param thresh threshold function, e.g. complex soft threshold
@@ -253,14 +251,13 @@ void ist(unsigned int maxiter, float epsilon, float tau,
  * @param b observations
  */
 void fista(unsigned int maxiter, float epsilon, float tau, 
-	   float continuation, bool hogwild,
-	   long N, void* data,
-	   const struct vec_iter_s* vops,
-	   void (*op)(void* data, float* dst, const float* src), 
-	   void (*thresh)(void* data, float lambda, float* dst, const float* src),
-	   void* tdata,
-	   float* x, const float* b,
-	   struct iter_monitor_s* monitor)
+	float continuation, bool hogwild,
+	long N,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op,
+	struct iter_op_p_s thresh,
+	float* x, const float* b,
+	struct iter_monitor_s* monitor)
 {
 
 	struct iter_data itrdata = {
@@ -296,10 +293,10 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 			debug_printf(DP_DEBUG3, "##lambda_scale = %f\n", lambda_scale);
 
 
-		thresh(tdata, lambda_scale * tau, x, x);
+		iter_op_p_call(thresh, lambda_scale * tau, x, x);
 
 		ravine(vops, N, &ra, x, o);	// FISTA
-		op(data, r, x);		// r = A x
+		iter_op_call(op, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
 
 		itrdata.rsnew = vops->norm(N, r);
@@ -335,10 +332,10 @@ void fista(unsigned int maxiter, float epsilon, float tau,
  *  Landweber L. An iteration formula for Fredholm integral equations of the
  *  first kind. Amer. J. Math. 1951; 73, 615-624.
  */
-void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M, void* data,
+void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
 	const struct vec_iter_s* vops,
-	void (*op)(void* data, float* dst, const float* src), 
-	void (*adj)(void* data, float* dst, const float* src), 
+	struct iter_op_s op,
+	struct iter_op_s adj,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor)
 {
@@ -351,7 +348,7 @@ void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
 
 		iter_monitor(monitor, vops, x);
 
-		op(data, r, x);		// r = A x
+		iter_op_call(op, r, x);		// r = A x
 		vops->xpay(M, -1., r, b);	// r = b - r = b - A x
 
 		double rsnew = vops->norm(M, r);
@@ -361,7 +358,7 @@ void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
 		if (rsnew < epsilon)
 			break;
 
-		adj(data, p, r);
+		iter_op_call(adj, p, r);
 		vops->axpy(N, x, alpha, p);
 	}
 
@@ -378,16 +375,15 @@ void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
  * @param regularization parameter
  * @param epsilon stop criterion
  * @param N size of input, x
- * @param data structure, e.g. sense_data
  * @param vops vector ops definition
  * @param linop linear operator, i.e. A
  * @param x initial estimate
  * @param b observations
  */
 float conjgrad(unsigned int maxiter, float l2lambda, float epsilon, 
-	long N, void* data,
+	long N,
 	const struct vec_iter_s* vops,
-	void (*linop)(void* data, float* dst, const float* src), 
+	struct iter_op_s linop,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor)
 {
@@ -399,7 +395,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 	// The first calculation of the residual might not
 	// be necessary in some cases...
 
-	linop(data, r, x);		// r = A x
+	iter_op_call(linop, r, x);		// r = A x
 	vops->axpy(N, r, l2lambda, x);
 
 	vops->xpay(N, -1., r, b);	// r = b - r = b - A x
@@ -423,7 +419,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 
 		debug_printf(DP_DEBUG3, "#%d: %f\n", i, (double)sqrtf(rsnew));
 
-		linop(data, Ap, p);	// Ap = A p
+		iter_op_call(linop, Ap, p);	// Ap = A p
 		vops->axpy(N, Ap, l2lambda, p);
 
 		float pAp = (float)vops->dot(N, p, Ap);
@@ -470,11 +466,11 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
  * IRGNM: DF^H ((y - F x_0) + DF (xn - x0)) = ( DF^H DF + alpha ) (dx + xn - x0)
  *        DF^H ((y - F x_0)) - alpha (xn - x0) = ( DF^H DF + alpha) dx
  */
-void irgnm(unsigned int iter, float alpha, float redu, void* data, long N, long M,
+void irgnm(unsigned int iter, float alpha, float redu, long N, long M,
 	const struct vec_iter_s* vops,
-	void (*op)(void* data, float* dst, const float* src), 
-	void (*adj)(void* data, float* dst, const float* src), 
-	void (*inv)(void* data, float alpha, float* dst, const float* src), 
+	struct iter_op_s op,
+	struct iter_op_s adj,
+	struct iter_op_p_s inv,
 	float* x, const float* xref, const float* y)
 {
 	float* r = vops->allocate(M);
@@ -485,20 +481,20 @@ void irgnm(unsigned int iter, float alpha, float redu, void* data, long N, long 
 
 //		printf("#--------\n");
 
-		op(data, r, x);			// r = F x
+		iter_op_call(op, r, x);			// r = F x
 
 		vops->xpay(M, -1., r, y);	// r = y - F x
 
 		debug_printf(DP_DEBUG3, "Res: %f\n", vops->norm(M, r));
 
-		adj(data, p, r);	
+		iter_op_call(adj, p, r);
 
 		if (NULL != xref)
 			vops->axpy(N, p, +alpha, xref);
 
 		vops->axpy(N, p, -alpha, x);
 
-		inv(data, alpha, h, p);
+		iter_op_p_call(inv, alpha, h, p);
 
 		vops->axpy(N, x, 1., h);
 		alpha /= redu;
@@ -517,7 +513,7 @@ void irgnm(unsigned int iter, float alpha, float redu, void* data, long N, long 
  * where the C_i are convex sets
  */
 void pocs(unsigned int maxiter,
-	unsigned int D, const prox_fun_t proj_ops[static D], void* data[static D],
+	unsigned int D, struct iter_op_p_s proj_ops[static D],
 	const struct vec_iter_s* vops,
 	long N, float* x,
 	struct iter_monitor_s* monitor)
@@ -532,7 +528,7 @@ void pocs(unsigned int maxiter,
 		iter_monitor(monitor, vops, x);
 
 		for (unsigned int j = 0; j < D; j++)
-			proj_ops[j](data[j], 1., x, x); // use temporary memory here?
+			iter_op_p_call(proj_ops[j], 1., x, x); // use temporary memory here?
 	}
 }
 
@@ -541,17 +537,17 @@ void pocs(unsigned int maxiter,
  *  Power iteration
  */
 double power(unsigned int maxiter,
-	   long N, void* data,
-	   const struct vec_iter_s* vops,
-	   void (*op)(void* data, float* dst, const float* src), 
-	   float* u)
+	long N,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op,
+	float* u)
 {
 	double s = vops->norm(N, u);
 	vops->smul(N, 1. / s, u, u);
 
 	for (unsigned int i = 0; i < maxiter; i++) {
 
-		op(data, u, u);		// r = A x
+		iter_op_call(op, u, u);		// r = A x
 		s = vops->norm(N, u);
 		vops->smul(N, 1. / s, u, u);
 	}
