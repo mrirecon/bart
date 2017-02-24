@@ -296,9 +296,10 @@ bool opt_select(void* ptr, char c, const char* optarg)
 
 bool opt_subopt(void* _ptr, char c, const char* optarg)
 {
+	UNUSED(c);
 	struct opt_subopt_s* ptr = _ptr;
 
-	process_option(c, optarg, "foo", "usage", "help", ptr->n, ptr->opts);
+	process_option(optarg[0], optarg + 1, "", "", "", ptr->n, ptr->opts);
 	return false;
 }
 
