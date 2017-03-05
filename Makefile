@@ -770,13 +770,14 @@ endif
 UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr test_cuda_multind test_cuda_shuffle test_cuda_memcache_clear test_cuda_rand
 
 # lib simu
-UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse
+UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse test_tsegf
 MODULES_test_ode_bloch += -lsimu
 MODULES_test_ode_simu += -lsimu
 MODULES_test_biot_savart += -lsimu
 MODULES_test_signals += -lsimu
 MODULES_test_epg += -lsimu
 MODULES_test_pulse += -lsimu
+MODULES_test_tsegf += -lsimu
 
 # lib geom
 UTARGETS += test_geom
