@@ -179,7 +179,7 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 #endif
 		// FIXME: weights is never freed
 
-		struct linop_s* weights_op = linop_cdiag_create(DIMS, ksp_dims, FFT_FLAGS, weights);	// FIXME: check pat_dims
+		struct linop_s* weights_op = linop_cdiag_create(DIMS, ksp_dims, ~COIL_FLAG, weights);
 
 		op = wlsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init,
 						sense_op, weights_op, precond_op,
