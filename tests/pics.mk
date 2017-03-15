@@ -107,10 +107,27 @@ tests/test-pics-batch: phantom pics repmat nrmse $(TESTS_OUT)/shepplogan_coil.ra
 
 
 
+tests/test-pics-tedim: phantom fmac fft pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -s4 -m coils.ra						;\
+	$(TOOLDIR)/phantom -m img.ra							;\
+	$(TOOLDIR)/fmac img.ra	coils.ra cimg.ra					;\
+	$(TOOLDIR)/fft -u 7 cimg.ra ksp.ra						;\
+	$(TOOLDIR)/pics -i10 -w 1. -m ksp.ra coils.ra reco.ra				;\
+	$(TOOLDIR)/nrmse -t 0.01 img.ra reco.ra 					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
+
+
+
 
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 TESTS += tests/test-pics-warmstart tests/test-pics-batch
+TESTS += tests/test-pics-tedim
 
 
 
