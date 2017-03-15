@@ -171,6 +171,11 @@ int main_pics(int argc, char* argv[])
 	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
 	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
 
+	unsigned int map_flags = FFT_FLAGS | SENS_FLAGS;
+	for (unsigned int d = 0; d < DIMS; d++)
+		if (map_dims[d] > 1)
+			map_flags = MD_SET(map_flags, d);
+
 
 	complex float* traj = NULL;
 
@@ -268,7 +273,7 @@ int main_pics(int argc, char* argv[])
 	const struct operator_s* precond_op = NULL;
 
 	if (NULL == traj_file)
-		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
+		forward_op = sense_init(max_dims, map_flags, maps);
 	else
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, (struct operator_s**) &precond_op);
 
@@ -370,7 +375,7 @@ int main_pics(int argc, char* argv[])
 	// FIXME: re-initialize forward_op and precond_op
 
 	if (NULL == traj_file)
-		forward_op = sense_init(max1_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
+		forward_op = sense_init(max1_dims, map_flags, maps);
 
 
 	// initialize prox functions
