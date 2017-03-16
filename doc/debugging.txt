@@ -26,7 +26,19 @@ make bart
 gdb --args bart <command> [<options> ...] <arg1> ...
 
 
-4. Then type 'run' to start the process. After it fails,
-type 'bt' to get a backtrace.
+4. Then type 'run' to start the process.
+
+If it crashes, you are back in the debugger. You can also
+type CTRL-C to interrupt it at any time.
+
+In the debugger:
+
+You can type 'bt' to get a backtrace which is helpful to
+investigate a segmentation fault or similar.
+
+You can also call functions. For example, this can be used to save
+a multi-dimensional array from the debugger like this:
+
+(gdb) call dump_cfl("dbg_img", 16, dims, image)
 
 
