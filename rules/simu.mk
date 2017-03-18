@@ -13,4 +13,6 @@ simuobjs := $(simusrcs:.c=.o)
 lib/libsimu.a: libsimu.a($(simuobjs))
 
 
+UTARGETS += test_biots
+MODULES_test_biots += -lsimu
 
