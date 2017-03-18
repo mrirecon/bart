@@ -8,16 +8,16 @@
  *
  */
 
-
 #include <assert.h>
 #include <complex.h>
 #include <math.h>
 
 #include "misc/misc.h"
 
-#include "simu/biots.h"
+#include "simu/biot_savart.h"
 
 #include "coil.h"
+
 
 complex float coil(float x[3], unsigned int N, unsigned int i)
 {

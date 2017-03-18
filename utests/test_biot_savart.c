@@ -13,7 +13,7 @@
 
 #include "num/vec3.h"
 
-#include "simu/biots.h"
+#include "simu/biot_savart.h"
 
 #include "utest.h"
 
@@ -38,7 +38,7 @@ static bool test_vec3_ring(void)
 }
 
 
-static bool test_biots(void)
+static bool test_biot_savart(void)
 {
 	unsigned int N = 100;
 	vec3_t r[N];
@@ -55,6 +55,6 @@ static bool test_biots(void)
 
 
 UT_REGISTER_TEST(test_vec3_ring);
-UT_REGISTER_TEST(test_biots);
+UT_REGISTER_TEST(test_biot_savart);
 
 

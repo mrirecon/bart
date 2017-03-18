@@ -1,3 +1,12 @@
+/* Copyright 2017. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ *
+ * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ *
+ * Biot-Savart law.
+ *
+ */
 
 #include <math.h>
 #include <assert.h>
@@ -5,7 +14,8 @@
 #include "misc/misc.h"
 #include "num/vec3.h"
 
-#include "biots.h"
+#include "biot_savart.h"
+
 
 typedef float vec3_t[3];
 void biot_savart(vec3_t b, const vec3_t r, unsigned int N, const vec3_t curve[static N])
