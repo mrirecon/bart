@@ -1,9 +1,9 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * Simple numerical phantom which simulates image-domain or
  * k-space data with multiple channels.
@@ -24,6 +24,7 @@
 
 #include "simu/shepplogan.h"
 #include "simu/sens.h"
+#include "simu/coil.h"
 
 #include "phantom.h"
 
@@ -38,7 +39,7 @@ typedef complex float (*krn_t)(void* _data, const double mpos[3]);
 static complex float xsens(unsigned int c, double mpos[3], void* data, krn_t fun)
 {
 	assert(c < MAX_COILS);
-
+#if 1
 	complex float val = 0.;
 
 	long sh = (COIL_COEFF - 1) / 2;
@@ -46,7 +47,10 @@ static complex float xsens(unsigned int c, double mpos[3], void* data, krn_t fun
 	for (int i = 0; i < COIL_COEFF; i++)
 		for (int j = 0; j < COIL_COEFF; j++)
 			val += sens_coeff[c][i][j] * cexpf(-2.i * M_PI * ((i - sh) * mpos[0] + (j - sh) * mpos[1]) / 4.);
-
+#else
+	float p[3] = { mpos[0], mpos[1], mpos[2] };
+	complex float val = coil(p, MAX_COILS, c);
+#endif
 	return val * fun(data, mpos);
 }
 
