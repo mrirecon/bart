@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 
 	bool good = (num_tests_pass == num_tests_run);
 
-	debug_printf(good ? DP_INFO : DP_ERROR, "%s: \t%d/%d passed.\n", argv[0], num_tests_pass, num_tests_run);
+	debug_printf(good ? DP_INFO : DP_ERROR, "%20s: %2d/%2d passed.\n", argv[0], num_tests_pass, num_tests_run);
 
 	exit(good ? 0 : 1);
 }
