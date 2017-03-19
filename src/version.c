@@ -42,6 +42,10 @@ int main_version(int argc, char* argv[])
 
 	if (verbose) {
 
+#ifdef __GNUC__
+		printf("GCC_VERSION=%s\n", __VERSION__);
+#endif
+
 		printf("CUDA=");
 #ifdef USE_CUDA
 			printf("1\n");
@@ -62,7 +66,6 @@ int main_version(int argc, char* argv[])
 #else
 			printf("0\n");
 #endif
-
 	}
 
 	exit(0);
