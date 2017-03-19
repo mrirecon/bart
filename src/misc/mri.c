@@ -52,22 +52,6 @@ void data_consistency(const long dims[DIMS], complex float* dst, const complex f
 
 
 
-/**
- * Default transfer function. dst = src .* pattern
- *
- * @param _data transfer function data
- * @param pattern sampling pattern
- * @param dst destination pointer
- * @param src source pointer
- */
-void transfer_function(void* _data, const complex float* pattern, complex float* dst, const complex float* src)
-{
-	struct transfer_data_s* data = _data;
-	md_zmul2(DIMS, data->dims, data->strs, dst, data->strs, src, data->strs_tf, pattern);
-}
-
-
-
 
 
 
