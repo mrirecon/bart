@@ -1,9 +1,9 @@
-/* Copyright 2015-2016. Martin Uecker.
+/* Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -103,6 +103,22 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 }
 
 
+static void check_options(int n, const struct opt_s opts[n ?: 1])
+{
+	bool f[256] = { false };
+
+	for (int i = 0; i < n; i++) {
+
+		assert(256 > (unsigned int)opts[i].c);
+
+		if (f[(unsigned int)opts[i].c])
+			error("duplicate option: %c\n", opts[i].c);
+
+		f[(unsigned int)opts[i].c] = true;
+	}
+}
+
+
 static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	if ('h' == c) {
@@ -134,6 +150,8 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 {
 	int argc = *argcp;
 	char optstr[2 * n + 2];
+
+	check_options(n, opts);
 
 	save_command_line(argc, argv);
 
