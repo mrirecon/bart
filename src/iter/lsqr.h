@@ -25,7 +25,7 @@ struct lsqr_conf {
 extern const struct lsqr_conf lsqr_defaults;
 
 extern const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
-				      italgo_fun2_t italgo, void* iconf,
+				      italgo_fun2_t italgo, iter_conf* iconf,
 				      const float* init,
 				      const struct linop_s* model_op,
 				      const struct operator_s* precond_op,
@@ -34,7 +34,7 @@ extern const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 				      const struct linop_s* prox_linops[__VLA2(num_funs)]);
 
 extern const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
-					italgo_fun2_t italgo, void* iconf,
+					italgo_fun2_t italgo, iter_conf* iconf,
 				        const float* init,
 					const struct linop_s* model_op,
 					const struct linop_s* weights,

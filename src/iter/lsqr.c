@@ -1,9 +1,9 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014      Frank Ong <frankong@berkeley.edu>
  * 2014      Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
@@ -72,7 +72,7 @@ static void normaleq_del(const operator_data_t* _data)
  * Operator for iterative, multi-regularized least-squares reconstruction
  */
 const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
-				      italgo_fun2_t italgo, void* iconf,
+				      italgo_fun2_t italgo, iter_conf* iconf,
 				      const float* init,
 				      const struct linop_s* model_op,
 				      const struct operator_s* precond_op,
@@ -218,7 +218,7 @@ void lsqr(unsigned int N,
 
 
 const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
-					italgo_fun2_t italgo, void* iconf,
+					italgo_fun2_t italgo, iter_conf* iconf,
 					const float* init,
 					const struct linop_s* model_op,
 					const struct linop_s* weights,
