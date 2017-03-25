@@ -69,7 +69,6 @@ int main_ecalib(int argc, char* argv[])
 		OPT_FLOAT('b', &conf.perturb, "", "()"),
 		OPT_SET('V', &print_svals, "()"),
 		OPT_SET('C', &calcen, "()"),
-		OPT_INT('m', &maps, "", "()"),
 		OPT_SET('g', &conf.usegpu, "()"),
 		OPT_FLOAT('p', &conf.percentsv, "", "()"),
 		OPT_INT('n', &conf.numsv, "", "()"),
