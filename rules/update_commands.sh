@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 BINDIR=$(dirname $0)
 BART_EXE=$1
