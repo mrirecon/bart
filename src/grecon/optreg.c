@@ -74,124 +74,124 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 
 	switch (c) {
 
-		case 'R': {
+	case 'R': {
 
-				  // first get transform type
-				  int ret = sscanf(optarg, "%4[^:]", rt);
-				  assert(1 == ret);
+		// first get transform type
+		int ret = sscanf(optarg, "%4[^:]", rt);
+		assert(1 == ret);
 
-				  // next switch based on transform type
-				  if (strcmp(rt, "W") == 0) {
+		// next switch based on transform type
+		if (strcmp(rt, "W") == 0) {
 
-					  regs[r].xform = L1WAV;
-					  int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
-					  assert(3 == ret);
-				  }
-				  else if (strcmp(rt, "L") == 0) {
+			regs[r].xform = L1WAV;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "L") == 0) {
 
-					  regs[r].xform = LLR;
-					  int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
-					  assert(3 == ret);
-				  }
-				  else if (strcmp(rt, "M") == 0) {
+			regs[r].xform = LLR;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "M") == 0) {
 
-					  regs[r].xform = regs[0].xform;
-					  regs[r].xflags = regs[0].xflags;
-					  regs[r].jflags = regs[0].jflags;
-					  regs[r].lambda = regs[0].lambda;
+			regs[r].xform = regs[0].xform;
+			regs[r].xflags = regs[0].xflags;
+			regs[r].jflags = regs[0].jflags;
+			regs[r].lambda = regs[0].lambda;
 
-					  regs[0].xform = MLR;
-					  int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
-					  assert(3 == ret);
-				  }
-				  else if (strcmp(rt, "T") == 0) {
+			regs[0].xform = MLR;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "T") == 0) {
 
-					  regs[r].xform = TV;
-					  int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
-					  assert(3 == ret);
-					  p->algo = ADMM;
-				  }
-				else if (strcmp(rt, "P") == 0) {
+			regs[r].xform = TV;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+			p->algo = ADMM;
+		}
+		else if (strcmp(rt, "P") == 0) {
 
-					regs[r].xform = LAPLACE;
-					int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
-					assert(3 == ret);
-				}
-				  else if (strcmp(rt, "R1") == 0) {
+			regs[r].xform = LAPLACE;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "R1") == 0) {
 
-					  regs[r].xform = IMAGL1;
-					  int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
-					  assert(2 == ret);
-					  regs[r].xflags = 0u;
-					  p->algo = ADMM;
-				  }
-				  else if (strcmp(rt, "R2") == 0) {
+			regs[r].xform = IMAGL1;
+			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			assert(2 == ret);
+			regs[r].xflags = 0u;
+			p->algo = ADMM;
+		}
+		else if (strcmp(rt, "R2") == 0) {
 
-					  regs[r].xform = IMAGL2;
-					  int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
-					  assert(2 == ret);
-					  regs[r].xflags = 0u;
-					  p->algo = ADMM;
-				  }
-				  else if (strcmp(rt, "I") == 0) {
+			regs[r].xform = IMAGL2;
+			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			assert(2 == ret);
+			regs[r].xflags = 0u;
+			p->algo = ADMM;
+		}
+		else if (strcmp(rt, "I") == 0) {
 
-					  regs[r].xform = L1IMG;
-					  int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
-					  assert(2 == ret);
-					  regs[r].xflags = 0u;
-				  }
-				  else if (strcmp(rt, "Q") == 0) {
+			regs[r].xform = L1IMG;
+			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			assert(2 == ret);
+			regs[r].xflags = 0u;
+		}
+		else if (strcmp(rt, "Q") == 0) {
 
-					  regs[r].xform = L2IMG;
-					  int ret = sscanf(optarg, "%*[^:]:%f", &regs[r].lambda);
-					  assert(1 == ret);
-					  regs[r].xflags = 0u;
-					  regs[r].jflags = 0u;
-				  }
-				  else if (strcmp(rt, "F") == 0) {
+			regs[r].xform = L2IMG;
+			int ret = sscanf(optarg, "%*[^:]:%f", &regs[r].lambda);
+			assert(1 == ret);
+			regs[r].xflags = 0u;
+			regs[r].jflags = 0u;
+		}
+		else if (strcmp(rt, "F") == 0) {
 
-					  regs[r].xform = FTL1;
-					  int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
-					  assert(3 == ret);
-				  }
-				  else if (strcmp(rt, "h") == 0) {
+			regs[r].xform = FTL1;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "h") == 0) {
 
-					  help_reg();
-					  exit(0);
-				  }
-				  else {
+			help_reg();
+			exit(0);
+		}
+		else {
 
-					  error("Unrecognized regularization type: \"%s\" (-Rh for help).\n", rt);
-				  }
+			error("Unrecognized regularization type: \"%s\" (-Rh for help).\n", rt);
+		}
 
-				  p->r++;
-				  break;
-			  }
+		p->r++;
+		break;
+	}
 
-		case 'l':
-			  assert(r < NUM_REGS);
-			  regs[r].lambda = lambda;
-			  regs[r].xflags = 0u;
-			  regs[r].jflags = 0u;
+	case 'l':
 
-			  if (0 == strcmp("1", optarg)) {
+		assert(r < NUM_REGS);
+		regs[r].lambda = lambda;
+		regs[r].xflags = 0u;
+		regs[r].jflags = 0u;
 
-				  regs[r].xform = L1WAV;
-				  regs[r].xflags = 7u;
+		if (0 == strcmp("1", optarg)) {
 
-			  } else
-				  if (0 == strcmp("2", optarg)) {
+			regs[r].xform = L1WAV;
+			regs[r].xflags = 7u;
 
-					  regs[r].xform = L2IMG;
+		} else if (0 == strcmp("2", optarg)) {
 
-				  } else {
+			regs[r].xform = L2IMG;
 
-					  error("Unknown regularization type.\n");
-				  }
+		} else {
 
-			  p->lambda = -1.;
-			  p->r++;
-			  break;
+			error("Unknown regularization type.\n");
+		}
+
+		p->lambda = -1.;
+		p->r++;
+		break;
 	}
 
 	return false;
@@ -243,148 +243,151 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 
 		switch (regs[nr].xform) {
 
-			case L1WAV:
-				debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
+		case L1WAV:
 
-				if (0 != regs[nr].jflags)
-					debug_printf(DP_WARN, "joint l1-wavelet thresholding not currently supported.\n");
+			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
 
-				long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-				minsize[0] = MIN(img_dims[0], 16);
-				minsize[1] = MIN(img_dims[1], 16);
-				minsize[2] = MIN(img_dims[2], 16);
+			if (0 != regs[nr].jflags)
+				debug_printf(DP_WARN, "joint l1-wavelet thresholding not currently supported.\n");
+
+			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
+			minsize[0] = MIN(img_dims[0], 16);
+			minsize[1] = MIN(img_dims[1], 16);
+			minsize[2] = MIN(img_dims[2], 16);
 
 
-				unsigned int wflags = 0;
-				for (unsigned int i = 0; i < DIMS; i++) {
+			unsigned int wflags = 0;
+			for (unsigned int i = 0; i < DIMS; i++) {
 
-					if ((1 < img_dims[i]) && MD_IS_SET(regs[nr].xflags, i)) {
+				if ((1 < img_dims[i]) && MD_IS_SET(regs[nr].xflags, i)) {
 
-						wflags = MD_SET(wflags, i);
-						minsize[i] = MIN(img_dims[i], 16);
-					}
+					wflags = MD_SET(wflags, i);
+					minsize[i] = MIN(img_dims[i], 16);
 				}
+			}
 
-				trafos[nr] = linop_identity_create(DIMS, img_dims);
-				prox_ops[nr] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, regs[nr].lambda, randshift);
-				break;
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, regs[nr].lambda, randshift);
+			break;
 
-			case TV:
-				debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
+		case TV:
+			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
-				trafos[nr] = linop_grad_create(DIMS, img_dims, regs[nr].xflags);
-				prox_ops[nr] = prox_thresh_create(DIMS + 1,
-						linop_codomain(trafos[nr])->dims,
-						regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS), use_gpu);
-				break;
+			trafos[nr] = linop_grad_create(DIMS, img_dims, regs[nr].xflags);
+			prox_ops[nr] = prox_thresh_create(DIMS + 1,
+					linop_codomain(trafos[nr])->dims,
+					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS), use_gpu);
+			break;
 
-			case LAPLACE:
-				debug_printf(DP_INFO, "L1-Laplace regularization: %f\n", regs[nr].lambda);
-				long krn_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
+		case LAPLACE:
+			debug_printf(DP_INFO, "L1-Laplace regularization: %f\n", regs[nr].lambda);
+			long krn_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
-				for (unsigned int i = 0; i < DIMS; i++)
-					if (MD_IS_SET(regs[nr].xflags, i))
-						krn_dims[i] = 3;
+			for (unsigned int i = 0; i < DIMS; i++)
+				if (MD_IS_SET(regs[nr].xflags, i))
+					krn_dims[i] = 3;
 
-				complex float krn[] = {	// laplace filter
-					-1., -2., -1.,
-					-2., 12., -2.,
-					-1., -2., -1.,
-				};
+			complex float krn[] = {	// laplace filter
+				-1., -2., -1.,
+				-2., 12., -2.,
+				-1., -2., -1.,
+			};
 
-				assert(9 == md_calc_size(DIMS, krn_dims));
+			assert(9 == md_calc_size(DIMS, krn_dims));
 
-				trafos[nr] = linop_conv_create(DIMS, regs[nr].xflags, CONV_SYMMETRIC, CONV_TRUNCATED, img_dims, img_dims, krn_dims, krn);
-				prox_ops[nr] = prox_thresh_create(DIMS,
-						linop_codomain(trafos[nr])->dims,
-						regs[nr].lambda, regs[nr].jflags, use_gpu);
-				break;
+			trafos[nr] = linop_conv_create(DIMS, regs[nr].xflags, CONV_SYMMETRIC, CONV_TRUNCATED, img_dims, img_dims, krn_dims, krn);
+			prox_ops[nr] = prox_thresh_create(DIMS,
+					linop_codomain(trafos[nr])->dims,
+					regs[nr].lambda, regs[nr].jflags, use_gpu);
+			break;
 
-			case LLR:
-				debug_printf(DP_INFO, "lowrank regularization: %f\n", regs[nr].lambda);
+		case LLR:
 
-				// add locally lowrank penalty
-				levels = llr_blkdims(blkdims, regs[nr].jflags, img_dims, llr_blk);
+			debug_printf(DP_INFO, "lowrank regularization: %f\n", regs[nr].lambda);
 
-				assert(1 == levels);
-				assert(levels == img_dims[LEVEL_DIM]);
+			// add locally lowrank penalty
+			levels = llr_blkdims(blkdims, regs[nr].jflags, img_dims, llr_blk);
 
-				for(int l = 0; l < levels; l++)
+			assert(1 == levels);
+
+			assert(levels == img_dims[LEVEL_DIM]);
+
+			for(int l = 0; l < levels; l++)
 #if 0
-					blkdims[l][MAPS_DIM] = img_dims[MAPS_DIM];
+				blkdims[l][MAPS_DIM] = img_dims[MAPS_DIM];
 #else
 				blkdims[l][MAPS_DIM] = 1;
 #endif
 
-				int remove_mean = 0;
+			int remove_mean = 0;
 
-				trafos[nr] = linop_identity_create(DIMS, img_dims);
-				prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, use_gpu);
-				break;
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, use_gpu);
+			break;
 
-			case MLR:
+		case MLR:
 #if 0
-				// FIXME: multiscale low rank changes the output image dimensions 
-				// and requires the forward linear operator. This should be decoupled...
-				debug_printf(DP_INFO, "multi-scale lowrank regularization: %f\n", regs[nr].lambda);
+			// FIXME: multiscale low rank changes the output image dimensions 
+			// and requires the forward linear operator. This should be decoupled...
+			debug_printf(DP_INFO, "multi-scale lowrank regularization: %f\n", regs[nr].lambda);
 
-				levels = multilr_blkdims(blkdims, regs[nr].jflags, img_dims, 8, 1);
+			levels = multilr_blkdims(blkdims, regs[nr].jflags, img_dims, 8, 1);
 
-				img_dims[LEVEL_DIM] = levels;
-				max_dims[LEVEL_DIM] = levels;
+			img_dims[LEVEL_DIM] = levels;
+			max_dims[LEVEL_DIM] = levels;
 
-				for(int l = 0; l < levels; l++)
-					blkdims[l][MAPS_DIM] = 1;
+			for(int l = 0; l < levels; l++)
+				blkdims[l][MAPS_DIM] = 1;
 
-				trafos[nr] = linop_identity_create(DIMS, img_dims);
-				prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, 0, use_gpu);
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, 0, use_gpu);
 
-				const struct linop_s* decom_op = sum_create( img_dims, use_gpu );
-				const struct linop_s* tmp_op = forward_op;
-				forward_op = linop_chain(decom_op, forward_op);
+			const struct linop_s* decom_op = sum_create( img_dims, use_gpu );
+			const struct linop_s* tmp_op = forward_op;
+			forward_op = linop_chain(decom_op, forward_op);
 
-				linop_free(decom_op);
-				linop_free(tmp_op);
+			linop_free(decom_op);
+			linop_free(tmp_op);
 #else
-				debug_printf(DP_WARN, "multi-scale lowrank regularization not yet supported: %f\n", regs[nr].lambda);
+			debug_printf(DP_WARN, "multi-scale lowrank regularization not yet supported: %f\n", regs[nr].lambda);
 #endif
 
-				break;
+			break;
 
-			case IMAGL1:
-				debug_printf(DP_INFO, "l1 regularization of imaginary part: %f\n", regs[nr].lambda);
+		case IMAGL1:
+			debug_printf(DP_INFO, "l1 regularization of imaginary part: %f\n", regs[nr].lambda);
 
-				trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
-				prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
-				break;
+			trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
+			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
+			break;
 
-			case IMAGL2:
-				debug_printf(DP_INFO, "l2 regularization of imaginary part: %f\n", regs[nr].lambda);
+		case IMAGL2:
+			debug_printf(DP_INFO, "l2 regularization of imaginary part: %f\n", regs[nr].lambda);
 
-				trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
-				prox_ops[nr] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
-				break;
+			trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
+			prox_ops[nr] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
+			break;
 
-			case L1IMG:
-				debug_printf(DP_INFO, "l1 regularization: %f\n", regs[nr].lambda);
+		case L1IMG:
+			debug_printf(DP_INFO, "l1 regularization: %f\n", regs[nr].lambda);
 
-				trafos[nr] = linop_identity_create(DIMS, img_dims);
-				prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
-				break;
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
+			break;
 
-			case L2IMG:
-				debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
+		case L2IMG:
+			debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
 
-				trafos[nr] = linop_identity_create(DIMS, img_dims);
-				prox_ops[nr] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
-				break;
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
+			break;
 
-			case FTL1:
-				debug_printf(DP_INFO, "l1 regularization of Fourier transform: %f\n", regs[nr].lambda);
+		case FTL1:
+			debug_printf(DP_INFO, "l1 regularization of Fourier transform: %f\n", regs[nr].lambda);
 
-				trafos[nr] = linop_fft_create(DIMS, img_dims, regs[nr].xflags);
-				prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
-				break;
+			trafos[nr] = linop_fft_create(DIMS, img_dims, regs[nr].xflags);
+			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
+			break;
 		}
 
 	}
