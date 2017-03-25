@@ -110,7 +110,6 @@ int main_lrmatrix(int argc, char* argv[])
 		OPT_SELECT('u', int, &remove_mean, 1, "()"),
 		OPT_SELECT('v', int, &remove_mean, 2, "()"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
-		OPT_LONG('k', &initblk, "", "()"),
 		OPT_FLOAT('p', &rho, "", "(rho)"),
 		OPT_CLEAR('n', &randshift, "(no randshift)"),
 		OPT_SET('g', &use_gpu, "(use GPU)"),
