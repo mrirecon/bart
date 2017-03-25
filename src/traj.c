@@ -24,21 +24,6 @@ static const char usage_str[] = "<output>";
 static const char help_str[] = "Computes k-space trajectories.";
 
 
-
-/* We allow an arbitrary quadratic form to account for
- * non-physical coordinate systems.
- * Moussavi et al., MRM 71:308-312 (2014)
- */
-static float gradient_delay(/*const*/ float coeff[2][3], float phi, float psi)
-{
-	float x = cosf(phi) * cosf(psi);
-	float y = sinf(phi) * cosf(psi);
-	float z =             sinf(psi);
-
-	return x * x * coeff[0][0] + 2. * x * y * coeff[0][2] + y * y * coeff[0][1]
-		+ z * z * coeff[1][0] + 2. * x * z * coeff[1][1] + 2. * y * z * coeff[1][2];
-}
-
 static void euler(float dir[3], float phi, float psi)
 {
 	dir[0] = cosf(phi) * cosf(psi);
@@ -46,7 +31,12 @@ static void euler(float dir[3], float phi, float psi)
 	dir[2] =             sinf(psi);
 }
 
-static void gradient_delay2(float d[3], float coeff[2][3], float phi, float psi)
+
+/* We allow an arbitrary quadratic form to account for
+ * non-physical coordinate systems.
+ * Moussavi et al., MRM 71:308-312 (2014)
+ */
+static void gradient_delay(float d[3], float coeff[2][3], float phi, float psi)
 {
 	float dir[3];
 	euler(dir, phi, psi);
@@ -143,22 +133,20 @@ int main_traj(int argc, char* argv[])
 					angle2 = 2. * M_PI * j * split * base;
 				}
 
-				// read += gradient_delay(gdelays, angle, angle2);
-
 				float d[3] = { 0., 0., 0 };
-				gradient_delay2(d, gdelays, angle, angle2);
+				gradient_delay(d, gdelays, angle, angle2);
 
 				float read_dir[3];
 				euler(read_dir, angle, angle2);
 
 				if (!transverse) {
 
+					// project to read direction
+
 					float delay = 0.;
 
 					for (unsigned int i = 0; i < 3; i++)
 						delay += read_dir[i] * d[i];
-
-					assert(1.E-6 > fabsf(delay - gradient_delay(gdelays, angle, angle2)));
 
 					for (unsigned int i = 0; i < 3; i++)
 						d[i] = delay * read_dir[i];
