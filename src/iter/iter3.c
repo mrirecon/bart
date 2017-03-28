@@ -44,7 +44,7 @@ static void normal(iter_op_data* _data, float* dst, const float* src)
 {
 	struct irgnm_s* data = CAST_DOWN(irgnm_s, _data);
 
-	iter_op_call(data->frw, data->tmp, src);
+	iter_op_call(data->der, data->tmp, src);
 	iter_op_call(data->adj, dst, data->tmp);
 }
 
