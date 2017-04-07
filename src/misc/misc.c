@@ -180,6 +180,7 @@ static const char* quote(const char* str)
 		case '"':
 		case '$':
 			j++;
+			/* fall through */
 		default:
 			break;
 		}
@@ -204,6 +205,7 @@ static const char* quote(const char* str)
 		case '"':
 		case '$':
 			(*qstr)[j++] = '\'';
+			/* fall through */
 		default:
 			(*qstr)[j++] = c;
 		}
