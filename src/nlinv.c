@@ -40,7 +40,6 @@ int main_nlinv(int argc, char* argv[])
 {
 	bool normalize = true;
 	float restrict_fov = -1.;
-	float csh[3] = { 0., 0., 0. };
 	const char* psf = NULL;
 	struct noir_conf_s conf = noir_defaults;
 
