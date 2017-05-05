@@ -38,7 +38,6 @@ static const char help_str[] =
 
 int main_nlinv(int argc, char* argv[])
 {
-	bool waterfat = false;
 	bool normalize = true;
 	float restrict_fov = -1.;
 	float csh[3] = { 0., 0., 0. };
@@ -65,8 +64,6 @@ int main_nlinv(int argc, char* argv[])
 	long dims[DIMS];
 	md_copy_dims(DIMS, dims, ksp_dims);
 
-	if (waterfat)
-		dims[CSHIFT_DIM] = 2;
 
 	long img_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|CSHIFT_FLAG, img_dims, dims);
@@ -101,33 +98,6 @@ int main_nlinv(int argc, char* argv[])
 		md_copy_dims(DIMS, pat_dims, img_dims);
 		pattern = anon_cfl("", DIMS, pat_dims);
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace_data);
-	}
-
-
-	if (waterfat) {
-
-		size_t size = md_calc_size(DIMS, msk_dims);
-		md_copy(DIMS, msk_dims, pattern + size, pattern, CFL_SIZE);
-
-		long shift_dims[DIMS];
-		md_select_dims(DIMS, FFT_FLAGS, shift_dims, msk_dims);
-
-		long shift_strs[DIMS];
-		md_calc_strides(DIMS, shift_strs, shift_dims, CFL_SIZE);
-
-		complex float* shift = md_alloc(DIMS, shift_dims, CFL_SIZE);
-
-		unsigned int X = shift_dims[READ_DIM];
-		unsigned int Y = shift_dims[PHS1_DIM];
-		unsigned int Z = shift_dims[PHS2_DIM];
-		
-		for (unsigned int x = 0; x < X; x++)
-			for (unsigned int y = 0; y < Y; y++)
-				for (unsigned int z = 0; z < Z; z++)
-					shift[(z * Z + y) * Y + x] = cexp(2.i * M_PI * ((csh[0] * x) / X + (csh[1] * y) / Y + (csh[2] * z) / Z));
-
-		md_zmul2(DIMS, msk_dims, msk_strs, pattern + size, msk_strs, pattern + size, shift_strs, shift);
-		md_free(shift);
 	}
 
 #if 0
