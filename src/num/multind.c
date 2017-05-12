@@ -1488,6 +1488,8 @@ void md_circ_shift2(unsigned int D, const long dimensions[D], const long center[
 	dim1[i] = shift;
 	dim2[i] = dimensions[i] - shift;
 
+	assert((dim1[i] >= 0) && (dim2[i] >= 0));
+
 	pos[i] = 0;
 
 	//printf("%d: %ld %ld %d\n", i, dim1[i], dim2[i], sizeof(dimensions));
