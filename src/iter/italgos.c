@@ -410,7 +410,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 	if (0. == rsold) {
 
 		debug_printf(DP_DEBUG3, "CG: early out\n");
-		return 0.;
+		goto cleanup;
 	}
 
 	for (unsigned int i = 0; i < maxiter; i++) {
@@ -446,6 +446,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 
 	}
 
+cleanup:
 	vops->del(Ap);
 	vops->del(p);
 	vops->del(r);
