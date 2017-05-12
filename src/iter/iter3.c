@@ -8,6 +8,8 @@
  */
 
 #include <assert.h>
+#include <stdbool.h>
+#include <math.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -34,6 +36,8 @@ const struct iter3_irgnm_conf iter3_irgnm_defaults = {
 
 	.cgiter = 100,
 	.cgtol = 0.1,
+
+	.nlinv_legacy = false,
 };
 
 
@@ -51,6 +55,7 @@ struct irgnm_s {
 
 	int cgiter;
 	float cgtol;
+	bool nlinv_legacy;
 };
 
 DEF_TYPEID(irgnm_s);
@@ -70,6 +75,14 @@ static void inverse(iter_op_data* _data, float alpha, float* dst, const float* s
 	md_clear(1, MD_DIMS(data->size), dst, FL_SIZE);
 
         float eps = data->cgtol * md_norm(1, MD_DIMS(data->size), src);
+
+
+	/* The original (Matlab) nlinv implementation uses
+	 * "sqrt(rsnew) < 0.01 * rsnot" as termination condition.
+	 */
+	if (data->nlinv_legacy)
+		eps = powf(eps, 2.);
+
         conjgrad(data->cgiter, alpha, eps, data->size, select_vecops(src),
 			(struct iter_op_s){ normal, CAST_UP(data) }, dst, src, NULL);
 }
@@ -101,7 +114,7 @@ void iter3_irgnm(iter3_conf* _conf,
 	struct iter3_irgnm_conf* conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
-	struct irgnm_s data = { { &TYPEID(irgnm_s) }, frw, der, adj, tmp, N, conf->cgiter, conf->cgtol };
+	struct irgnm_s data = { { &TYPEID(irgnm_s) }, frw, der, adj, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
 
 	irgnm(conf->iter, conf->alpha, conf->redu, N, M, select_vecops(src),
 		(struct iter_op_s){ forward, CAST_UP(&data) },

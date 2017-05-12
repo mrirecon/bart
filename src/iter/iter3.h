@@ -28,6 +28,8 @@ struct iter3_irgnm_conf {
 
 	int cgiter;
 	float cgtol;
+
+	_Bool nlinv_legacy;
 };
 
 extern DEF_TYPEID(iter3_irgnm_conf);
