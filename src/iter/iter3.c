@@ -24,6 +24,15 @@
 DEF_TYPEID(iter3_irgnm_conf);
 DEF_TYPEID(iter3_landweber_conf);
 
+const struct iter3_irgnm_conf iter3_irgnm_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter3_irgnm_conf),
+
+	.iter = 8,
+	.alpha = 1.,
+	.redu = 2.,
+};
+
 
 struct irgnm_s {
 
