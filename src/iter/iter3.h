@@ -25,6 +25,9 @@ struct iter3_irgnm_conf {
 	int iter;
 	float alpha;
 	float redu;
+
+	int cgiter;
+	float cgtol;
 };
 
 extern DEF_TYPEID(iter3_irgnm_conf);

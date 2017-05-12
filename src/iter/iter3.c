@@ -31,6 +31,9 @@ const struct iter3_irgnm_conf iter3_irgnm_defaults = {
 	.iter = 8,
 	.alpha = 1.,
 	.redu = 2.,
+
+	.cgiter = 100,
+	.cgtol = 0.1,
 };
 
 
@@ -45,6 +48,9 @@ struct irgnm_s {
 	float* tmp;
 
 	long size;
+
+	int cgiter;
+	float cgtol;
 };
 
 DEF_TYPEID(irgnm_s);
@@ -63,8 +69,9 @@ static void inverse(iter_op_data* _data, float alpha, float* dst, const float* s
 
 	md_clear(1, MD_DIMS(data->size), dst, FL_SIZE);
 
-        float eps = md_norm(1, MD_DIMS(data->size), src);
-        conjgrad(100, alpha, 0.1f * eps, data->size, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, dst, src, NULL);
+        float eps = data->cgtol * md_norm(1, MD_DIMS(data->size), src);
+        conjgrad(data->cgiter, alpha, eps, data->size, select_vecops(src),
+			(struct iter_op_s){ normal, CAST_UP(data) }, dst, src, NULL);
 }
 
 static void forward(iter_op_data* _data, float* dst, const float* src)
@@ -94,7 +101,7 @@ void iter3_irgnm(iter3_conf* _conf,
 	struct iter3_irgnm_conf* conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
-	struct irgnm_s data = { { &TYPEID(irgnm_s) }, frw, der, adj, tmp, N };
+	struct irgnm_s data = { { &TYPEID(irgnm_s) }, frw, der, adj, tmp, N, conf->cgiter, conf->cgtol };
 
 	irgnm(conf->iter, conf->alpha, conf->redu, N, M, select_vecops(src),
 		(struct iter_op_s){ forward, CAST_UP(&data) },
