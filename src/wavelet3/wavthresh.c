@@ -1,11 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker
+ * Copyright 2016-2017. Martin Uecker
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013 Frank Ong <uecker@eecs.berkeley.edu>
- * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -65,11 +65,16 @@ static void wavelet3_thresh_apply(const operator_data_t* _data, float mu, comple
 
 	if (data->randshift) {
 
-		int levels = wavelet_num_levels(data->N, data->flags, data->dims, data->minsize, 4);
+		for (unsigned int i = 0; i < data->N; i++) {
 
-		for (unsigned int i = 0; i < data->N; i++)
-			if (MD_IS_SET(data->flags, i))
+			if (MD_IS_SET(data->flags, i)) {
+
+				int levels = wavelet_num_levels(data->N, MD_BIT(i), data->dims, data->minsize, 4);
 				shift[i] = rand_lim((unsigned int*)&data->rand_state, 1 << levels);
+
+				assert(shift[i] < data->dims[i]);
+			}
+		}
 	}
 
 	wavelet3_thresh(data->N, data->lambda * mu, data->flags, shift, data->dims,
@@ -79,9 +84,9 @@ static void wavelet3_thresh_apply(const operator_data_t* _data, float mu, comple
 static void wavelet3_thresh_del(const operator_data_t* _data)
 {
 	const struct wavelet3_thresh_s* data = CAST_DOWN(wavelet3_thresh_s, _data);
-	free((void*)data->dims);
-	free((void*)data->minsize);
-	free((void*)data);
+	xfree(data->dims);
+	xfree(data->minsize);
+	xfree(data);
 }
 
 
