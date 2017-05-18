@@ -13,7 +13,6 @@
 
 #include "num/multind.h"
 #include "num/casorati.h"
-#include "num/flpmath.h"
 #include "num/init.h"
 
 #include "misc/mmio.h"
@@ -35,6 +34,7 @@ int main_casorati(int argc, char* argv[])
 	num_init();
 
 	int count = argc - 3;
+	
 	assert((count > 0) && (count % 2 == 0));
 
 	long idims[DIMS];
@@ -54,7 +54,6 @@ int main_casorati(int argc, char* argv[])
 		assert(ksize >= 1);
 
 		kdims[kdim] = ksize;
-
 	}
 
 
@@ -72,5 +71,3 @@ int main_casorati(int argc, char* argv[])
 
 	exit(0);
 }
-
-
