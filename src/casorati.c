@@ -23,6 +23,10 @@
 #define DIMS 16
 #endif
 
+#ifndef CFL_SIZE
+#define CFL_SIZE	sizeof(complex float)
+#endif
+
 static const char usage_str[] = "dim1 kern1 dim2 kern2 ... dimn kernn <input> <output>";
 static const char help_str[] = "Casorati matrix with kernel (kern1, ..., kernn) along dimensions (dim1, ..., dimn).\n";
 
