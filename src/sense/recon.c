@@ -33,6 +33,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/iovec.h"
 
 #include "linops/linop.h"
 #include "linops/sampling.h"
@@ -120,17 +121,19 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		  unsigned int num_funs,
 		  const struct operator_p_s* thresh_op[num_funs],
 		  const struct linop_s* thresh_funs[num_funs],
-		  const long ksp_dims[DIMS],
 		  const struct operator_s* precond_op)
 {
 	struct lsqr_conf lsqr_conf = { conf->cclambda, conf->gpu };
 
 	const struct operator_s* op = NULL;
 
+	assert(DIMS == linop_domain(sense_op)->N);
 
 	long img_dims[DIMS];
-	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);
+	md_copy_dims(DIMS, img_dims, linop_domain(sense_op)->dims);
 
+	long ksp_dims[DIMS];
+	md_copy_dims(DIMS, ksp_dims, linop_codomain(sense_op)->dims);
 
 	if (conf->rvc) {
 

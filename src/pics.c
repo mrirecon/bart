@@ -516,7 +516,7 @@ int main_pics(int argc, char* argv[])
 	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
 				pat1_dims, (NULL != traj_file) ? NULL : pattern1,
 				italgo, iconf, image_start1, nr_penalties, thresh_ops,
-				(ADMM == algo) ? trafos : NULL, ksp1_dims, precond_op);
+				(ADMM == algo) ? trafos : NULL, precond_op);
 
 	long strsx[2][DIMS];
 	const long* strs[2] = { strsx[0], strsx[1] };
