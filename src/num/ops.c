@@ -478,6 +478,10 @@ const struct operator_s* operator_chain(const struct operator_s* a, const struct
 	
 	// check compatibility
 
+	debug_printf(DP_DEBUG4, "operator chain:\n");
+	debug_print_dims(DP_DEBUG4, a->domain[0]->N, a->domain[0]->dims);
+	debug_print_dims(DP_DEBUG4, b->domain[1]->N, b->domain[1]->dims);
+
 	assert((2 == a->N) && (2 == b->N));
 	assert((MD_BIT(0) == a->io_flags) && (MD_BIT(0) == b->io_flags));
 	assert(a->domain[0]->N == b->domain[1]->N);
@@ -486,7 +490,7 @@ const struct operator_s* operator_chain(const struct operator_s* a, const struct
 	// check whether intermediate storage can be simple
 
 	assert(a->domain[0]->N == md_calc_blockdim(a->domain[0]->N, a->domain[0]->dims, a->domain[0]->strs, a->domain[0]->size));
-	assert(b->domain[1]->N == md_calc_blockdim(b->domain[1]->N, b->domain[1]->dims, b->domain[1]->strs, a->domain[1]->size));
+	assert(b->domain[1]->N == md_calc_blockdim(b->domain[1]->N, b->domain[1]->dims, b->domain[1]->strs, b->domain[1]->size));
 
 	c->a = operator_ref(a);
 	c->b = operator_ref(b);
