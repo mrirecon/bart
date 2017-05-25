@@ -171,10 +171,9 @@ int main_pics(int argc, char* argv[])
 	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
 	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
 
-	unsigned int map_flags = FFT_FLAGS | SENS_FLAGS;
-	for (unsigned int d = 0; d < DIMS; d++)
-		if (map_dims[d] > 1)
-			map_flags = MD_SET(map_flags, d);
+	unsigned int map_flags = md_nontriv_dims(DIMS, map_dims);
+
+	map_flags |= FFT_FLAGS | SENS_FLAGS;
 
 
 	complex float* traj = NULL;
