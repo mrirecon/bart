@@ -1,10 +1,10 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <assert.h>
@@ -60,6 +60,10 @@ static void wavelet_del(const linop_data_t* _data)
 {
 	const struct wavelet_s* data = CAST_DOWN(wavelet_s, _data);
 
+	xfree(data->dims);
+	xfree(data->istr);
+	xfree(data->minsize);
+
 	xfree(data);
 }
 
@@ -68,12 +72,20 @@ struct linop_s* linop_wavelet3_create(unsigned int N, unsigned int flags, const 
 	PTR_ALLOC(struct wavelet_s, data);
 	SET_TYPEID(wavelet_s, data);
 
-	// FIXME copy stuff;
 	data->N = N;
 	data->flags = flags;
-	data->dims = dims;
-	data->istr = istr;
-	data->minsize = minsize;
+
+	long (*ndims)[N] = TYPE_ALLOC(long[N]);
+	md_copy_dims(N, *ndims, dims);
+	data->dims = *ndims;
+
+	long (*nistr)[N] = TYPE_ALLOC(long[N]);
+	md_copy_strides(N, *nistr, istr);
+	data->istr = *nistr;
+
+	long (*nminsize)[N] = TYPE_ALLOC(long[N]);
+	md_copy_dims(N, *nminsize, minsize);
+	data->minsize = *nminsize;
 
 	long odims[N];
 	md_singleton_dims(N, odims);
@@ -86,7 +98,7 @@ struct linop_s* linop_wavelet3_create(unsigned int N, unsigned int flags, const 
 	long ostr[N];
 	md_calc_strides(N, ostr, odims, CFL_SIZE);
 
-	return linop_create2(N, odims, ostr, N, dims, istr, CAST_UP(data), wavelet_forward, wavelet_adjoint, NULL, NULL, wavelet_del);
+	return linop_create2(N, odims, ostr, N, dims, istr, CAST_UP(PTR_PASS(data)), wavelet_forward, wavelet_adjoint, NULL, NULL, wavelet_del);
 }
 
 
