@@ -114,6 +114,9 @@ extern void md_permute_dims(unsigned int D, const unsigned int order[__VLA(D)], 
 extern void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
 
+extern unsigned long md_nontriv_dims(unsigned int D, const long dims[__VLA(D)]);
+
+
 #define MD_INIT_ARRAY(x, y) { [ 0 ... ((x) - 1) ] = (y) } 
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
 #define MD_DIMS(...) MD_MAKE_ARRAY(long, __VA_ARGS__)

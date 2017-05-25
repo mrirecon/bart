@@ -356,6 +356,22 @@ bool md_check_dimensions(unsigned int N, const long dims[N], unsigned int flags)
 
 
 
+/*
+ * compute non-trivial (> 1) dims
+ */
+unsigned long md_nontriv_dims(unsigned int D, const long dims[D])
+{
+	unsigned long flags = 0;
+
+	for (unsigned int i = 0; i < D; i++)
+		if (dims[i] > 1)
+			flags = MD_SET(flags, i);
+
+	return flags;
+}
+
+
+
 /**
  * Set all dimensions to one
  *
