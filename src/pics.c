@@ -232,10 +232,23 @@ int main_pics(int argc, char* argv[])
 	}
 
 
-	if ((NULL != traj_file) && (NULL == pat_file)) {
+	if (NULL != traj_file) {
 
-		md_free(pattern);
-		pattern = NULL;
+		if (NULL == pat_file) {
+
+			md_free(pattern);
+			pattern = NULL;
+
+		} else {
+
+			long ksp_strs[DIMS];
+			md_calc_strides(DIMS, ksp_strs, ksp_dims, CFL_SIZE);
+
+			long pat_strs[DIMS];
+			md_calc_strides(DIMS, pat_strs, pat_dims, CFL_SIZE);
+
+			md_zmul2(DIMS, ksp_dims, ksp_strs, kspace, ksp_strs, kspace, pat_strs, pattern);
+		}
 
 	} else {
 
