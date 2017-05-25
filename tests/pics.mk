@@ -54,20 +54,21 @@ tests/test-pics-pics: traj scale phantom pics nrmse $(TESTS_OUT)/shepplogan.ra
 
 
 
-# test that weights =1 have no effect
+# test that weights =0.5 have no effect
 tests/test-pics-weights: phantom pics ones nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -S8 coils.ra							;\
 	$(TOOLDIR)/ones 2 128 128 weights.ra						;\
+	$(TOOLDIR)/scale 0.5 weights.ra	weights2.ra					;\
 	$(TOOLDIR)/pics -S -r0.001 $(TESTS_OUT)/shepplogan_coil.ra coils.ra reco1.ra	;\
-	$(TOOLDIR)/pics -S -r0.001 -p weights.ra $(TESTS_OUT)/shepplogan_coil.ra coils.ra reco2.ra	;\
+	$(TOOLDIR)/pics -S -r0.001 -p weights2.ra $(TESTS_OUT)/shepplogan_coil.ra coils.ra reco2.ra	;\
 	$(TOOLDIR)/nrmse -t 0.000001 reco2.ra reco1.ra				 	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
 
-# test that weights =1 have no effect
+# test that weights =0.5 have no effect
 # FIXME: this was 0.005 before but fails on travis
 tests/test-pics-noncart-weights: traj scale ones phantom pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -76,8 +77,9 @@ tests/test-pics-noncart-weights: traj scale ones phantom pics nrmse
 	$(TOOLDIR)/phantom -s8 -t traj2.ra ksp.ra					;\
 	$(TOOLDIR)/phantom -S8 coils.ra							;\
 	$(TOOLDIR)/ones 4 1 256 32 1 weights.ra						;\
-	$(TOOLDIR)/pics -S -r0.001 -p weights.ra -t traj2.ra ksp.ra coils.ra reco1.ra	;\
-	$(TOOLDIR)/pics -S -r0.001               -t traj2.ra ksp.ra coils.ra reco2.ra	;\
+	$(TOOLDIR)/scale 0.5 weights.ra	weights2.ra					;\
+	$(TOOLDIR)/pics -S -r0.001 -p weights2.ra -t traj2.ra ksp.ra coils.ra reco1.ra	;\
+	$(TOOLDIR)/pics -S -r0.001                -t traj2.ra ksp.ra coils.ra reco2.ra	;\
 	$(TOOLDIR)/nrmse -t 0.010 reco1.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
