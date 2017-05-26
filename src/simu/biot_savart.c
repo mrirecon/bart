@@ -47,7 +47,7 @@ void biot_savart(vec3_t b, const vec3_t r, unsigned int N, const vec3_t curve[st
 
 void vec3_ring(unsigned int N, vec3_t ring[N], const vec3_t c, const vec3_t n, float r)
 {
-	assert(1.E-7 > fabsf(1. - vec3_norm(n)));
+	assert(1.E-7 > fabsf(1.f - vec3_norm(n)));
 
 	// compute vec orth to n
 
@@ -62,13 +62,13 @@ void vec3_ring(unsigned int N, vec3_t ring[N], const vec3_t c, const vec3_t n, f
 	b1[d] = -(n[0] + n[1] + n[2] - n[d]) / n[d];
 
 	vec3_smul(b1, b1, 1. / vec3_norm(b1));
-	assert(1.E-7 > fabsf(1. - vec3_norm(b1)));
+	assert(1.E-7 > fabsf(1.f - vec3_norm(b1)));
 	assert(1.E-7 > fabsf(vec3_sdot(n, b1)));
 
 	vec3_t b2;
 	vec3_rot(b2, b1, n);
 
-	assert(1.E-7 > fabsf(1. - vec3_norm(b2)));
+	assert(1.E-7 > fabsf(1.f - vec3_norm(b2)));
 	assert(1.E-7 > fabsf(vec3_sdot(n, b2)));
 	assert(1.E-7 > fabsf(vec3_sdot(b1, b2)));
 
