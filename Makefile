@@ -196,7 +196,7 @@ else
 
 
 CPPFLAGS += $(DEPFLAG) -I$(srcdir)/
-CFLAGS += -std=c99 -I$(srcdir)/
+CFLAGS += -std=gnu11 -I$(srcdir)/
 CXXFLAGS += -I$(srcdir)/
 
 
