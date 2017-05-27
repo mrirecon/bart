@@ -14,6 +14,7 @@
 
 #include "linops/someops.h"
 #include "linops/linop.h"
+#include "linops/lintest.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -25,31 +26,33 @@
 
 static bool test_linop_matrix(void)
 {
+	enum { N = 3 };
+
 	int A = 10;
 	int B = 20;
 	int C = 30;
 
-	long odims[3] = { C, 1, A };
-	long idims1[3] = { 1, B, A };
-	long idims2[3] = { C, B, 1 };
+	long odims[N] = { C, 1, A };
+	long idims1[N] = { 1, B, A };
+	long idims2[N] = { C, B, 1 };
 
-	complex float* dst1 = md_alloc(3, odims, CFL_SIZE);
-	complex float* dst2 = md_alloc(3, odims, CFL_SIZE);
-	complex float* src1 = md_alloc(3, idims1, CFL_SIZE);
-	complex float* src2 = md_alloc(3, idims2, CFL_SIZE);
+	complex float* dst1 = md_alloc(N, odims, CFL_SIZE);
+	complex float* dst2 = md_alloc(N, odims, CFL_SIZE);
+	complex float* src1 = md_alloc(N, idims1, CFL_SIZE);
+	complex float* src2 = md_alloc(N, idims2, CFL_SIZE);
 
-	md_gaussian_rand(3, odims, dst1);
-	md_gaussian_rand(3, odims, dst2);
-	md_gaussian_rand(3, idims1, src1);
-	md_gaussian_rand(3, idims2, src2);
+	md_gaussian_rand(N, odims, dst1);
+	md_gaussian_rand(N, odims, dst2);
+	md_gaussian_rand(N, idims1, src1);
+	md_gaussian_rand(N, idims2, src2);
 
-	struct linop_s* mat = linop_matrix_create(3, odims, idims2, idims1, src1);
+	struct linop_s* mat = linop_matrix_create(N, odims, idims2, idims1, src1);
 
-	md_zmatmul(3, odims, dst1, idims1, src1, idims2, src2);
+	md_zmatmul(N, odims, dst1, idims1, src1, idims2, src2);
 
-	linop_forward(mat, 3, odims, dst2, 3, idims2, src2);
+	linop_forward(mat, N, odims, dst2, N, idims2, src2);
 
-	double err = md_znrmse(3, odims, dst2, dst1);
+	double err = md_znrmse(N, odims, dst2, dst1);
 
 	linop_free(mat);
 
@@ -63,6 +66,68 @@ static bool test_linop_matrix(void)
 
 
 
+static bool test_linop_matrix_adjoint(void)
+{
+	enum { N = 3 };
+
+	int A = 10;
+	int B = 20;
+	int C = 30;
+
+	long odims[N] = { C, 1, A };
+	long idims1[N] = { 1, B, A };
+	long idims2[N] = { C, B, 1 };
+
+	complex float* src1 = md_alloc(N, idims1, CFL_SIZE);
+
+	md_gaussian_rand(N, idims1, src1);
+
+	struct linop_s* mat = linop_matrix_create(N, odims, idims2, idims1, src1);
+
+	float diff = linop_test_adjoint(mat);
+
+	debug_printf(DP_DEBUG1, "adjoint diff: %f\n", diff);
+
+	bool ret = (diff < 1.E-4f);
+
+	linop_free(mat);
+
+	return ret;
+}
+
+
+static bool test_linop_matrix_normal(void)
+{
+	enum { N = 3 };
+
+	int A = 10;
+	int B = 15;
+	int C = 30;
+
+	long odims[N] = { C, 1, A };
+	long idims1[N] = { 1, B, A };
+	long idims2[N] = { C, B, 1 };
+
+	complex float* src1 = md_alloc(N, idims1, CFL_SIZE);
+
+	md_gaussian_rand(N, idims1, src1);
+
+	struct linop_s* mat = linop_matrix_create(N, odims, idims2, idims1, src1);
+
+	float nrmse = linop_test_normal(mat);
+
+	debug_printf(DP_DEBUG1, "normal nrmse: %f\n", nrmse);
+
+	bool ret = (nrmse < 1.E-6f);
+
+	linop_free(mat);
+
+	return ret;
+}
+
+
 
 UT_REGISTER_TEST(test_linop_matrix);
+UT_REGISTER_TEST(test_linop_matrix_adjoint);
+UT_REGISTER_TEST(test_linop_matrix_normal);
 
