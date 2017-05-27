@@ -66,6 +66,8 @@ extern void md_axpy(unsigned int D, const long dim[__VLA(D)], float* optr, float
 extern void md_zfmac2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr1[__VLA(D)], const _Complex float* iptr1, const long istr2[__VLA(D)], const _Complex float* iptr2);
 extern void md_zfmac(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr1, const _Complex float* iptr2);
 
+extern void md_matmul_dims(unsigned int D, long max_dims[__VLA(D)], const long out_dims[__VLA(D)], const long mat_dims[__VLA(D)], const long in_dims[__VLA(D)]);
+
 extern void md_zmatmul2(unsigned int D, const long out_dims[__VLA(D)], const long out_strs[__VLA(D)], _Complex float* dst, const long mat_dims[__VLA(D)], const long mat_strs[__VLA(D)], const _Complex float* mat, const long in_dims[__VLA(D)], const long in_strs[__VLA(D)], const _Complex float* src);
 extern void md_zmatmul(unsigned int D, const long out_dims[__VLA(D)], _Complex float* dst, const long mat_dims[__VLA(D)], const _Complex float* mat, const long in_dims[__VLA(D)], const _Complex float* src);
 

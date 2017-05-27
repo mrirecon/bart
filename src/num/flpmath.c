@@ -1,10 +1,10 @@
 /* Copyright 2013-2015 The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
@@ -994,43 +994,32 @@ void md_zfloat2double(unsigned int D, const long dims[D], complex double* dst, c
 }
 
 
-
-/**
- * Store max dimensions of dims1 and dims2 and check for basic consistency
- * FIXME move to some other place?
+/*
+ * A A A ok
+ * A A 1 ok
+ * A 1 A ok
+ * 1 A A ok
+ * A 1 1 !
+ * 1 A 1 !
+ * 1 1 A !
+ * 1 1 1 ok
  */
-static void md_mmdims(unsigned int D, long max_dims[D], const long dims1[D], const long dims2[D])
+void md_matmul_dims(unsigned int D, long max_dims[D], const long out_dims[D], const long mat_dims[D], const long in_dims[D])
 {
-	for (unsigned int i = 0; i < D; i++) {
+	md_max_dims(D, ~0u, max_dims, in_dims, out_dims);
 
-		if ((dims1[i] > 1) && (dims2[i] == 1)) {
+	long max2_dims[D];
+	md_max_dims(D, ~0u, max2_dims, mat_dims, out_dims);
 
-			max_dims[i] = dims1[i];
-
-		} else
-		if ((dims1[i] == 1) && (dims2[i] > 1)) {
-
-			max_dims[i] = dims2[i];
-
-		} else {
-
-			assert(dims1[i] == dims2[i]);
-			max_dims[i] = dims1[i];
-		}
-	}
+	assert(md_check_compat(D, 0u, max_dims, max2_dims));
 }
+
+
 
 static void md_zmatmul2_priv(unsigned int D, const long out_dims[D], const long out_strs[D], complex float* dst, const long mat_dims[D], const long mat_strs[D], const complex float* mat, const long in_dims[D], const long in_strs[D], const complex float* src, bool conj)
 {
-	UNUSED(mat_dims);
-
 	long max_dims[D];
-	md_mmdims(D, max_dims, in_dims, out_dims);
-
-	long max2_dims[D];
-	md_mmdims(D, max2_dims, mat_dims, out_dims);
-
-	assert(md_check_compat(D, 0, max_dims, max2_dims));
+	md_matmul_dims(D, max_dims, out_dims, mat_dims, in_dims);
 
 	md_clear2(D, out_dims, out_strs, dst, CFL_SIZE);
 	(conj ? md_zfmacc2 : md_zfmac2)(D, max_dims, out_strs, dst, in_strs, src, mat_strs, mat);
