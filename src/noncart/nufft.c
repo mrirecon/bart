@@ -393,7 +393,7 @@ static void nufft_precond_del(const operator_data_t* _data)
 
 const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
 {
-	const struct nufft_data* data = linop_get_data(nufft_op);
+	const struct nufft_data* data = CAST_DOWN(nufft_data, linop_get_data(nufft_op));
 
 	PTR_ALLOC(struct nufft_precond_data, pdata);
 	SET_TYPEID(nufft_precond_data, pdata);

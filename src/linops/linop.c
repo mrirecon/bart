@@ -182,7 +182,7 @@ struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int
  * 
  * @param ptr linear operator
  */
-const void* linop_get_data(const struct linop_s* ptr)
+const linop_data_t* linop_get_data(const struct linop_s* ptr)
 {
 	return ((struct shared_data_s*)operator_get_data(ptr->forward))->data;
 }

@@ -40,7 +40,7 @@ extern struct linop_s* linop_create2(unsigned int ON, const long odims[__VLA(ON)
 				unsigned int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], linop_data_t* data,
 				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t);
 
-extern const void* linop_get_data(const struct linop_s* ptr);
+extern const linop_data_t* linop_get_data(const struct linop_s* ptr);
 
 
 
