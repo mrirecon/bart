@@ -41,8 +41,8 @@ static bool test_linop_matrix(void)
 	complex float* src1 = md_alloc(N, idims1, CFL_SIZE);
 	complex float* src2 = md_alloc(N, idims2, CFL_SIZE);
 
-	md_gaussian_rand(N, odims, dst1);
-	md_gaussian_rand(N, odims, dst2);
+	md_gaussian_rand(N, odims, dst1); // test complete fill
+	md_gaussian_rand(N, odims, dst2); // test complete fill
 	md_gaussian_rand(N, idims1, src1);
 	md_gaussian_rand(N, idims2, src2);
 
@@ -126,8 +126,65 @@ static bool test_linop_matrix_normal(void)
 }
 
 
+static bool test_linop_matrix_chain(void)
+{
+	int A = 10;
+	int B = 20;
+	int C = 3;
+	int D = 2;
+	int E = 5;
+
+	enum { N = 8 };
+	long odims[N] =  { D, C, 1, 1, 1, 1, C, D };
+	long idims0[N] = { D, 1, 1, A, E, 1, A, D };
+	long idims1[N] = { D, 1, B, A, 1, B, A, D };
+	long tdims[N] =  { D, 1, B, 1, E, B, 1, D };
+	long idims2[N] = { D, C, B, 1, E, B, C, D };
+
+	complex float* dst1 = md_alloc(N, odims, CFL_SIZE);
+	complex float* dst2 = md_alloc(N, odims, CFL_SIZE);
+	complex float* src0 = md_alloc(N, idims0, CFL_SIZE);
+	complex float* src1 = md_alloc(N, idims1, CFL_SIZE);
+	complex float* src2 = md_alloc(N, idims2, CFL_SIZE);
+
+	md_gaussian_rand(N, odims, dst1); // test complete fill
+	md_gaussian_rand(N, odims, dst2); // test complete fill
+	md_gaussian_rand(N, idims0, src0);
+	md_gaussian_rand(N, idims1, src1);
+	md_gaussian_rand(N, idims2, src2);
+
+	struct linop_s* mat1 = linop_matrix_create(N, tdims, idims0, idims1, src1);
+	struct linop_s* mat2 = linop_matrix_create(N, odims, tdims, idims2, src2);
+
+	struct linop_s* matA = linop_chain(mat1, mat2);
+
+	linop_forward(matA, N, odims, dst1, N, idims0, src0);
+
+	linop_free(matA);
+
+	struct linop_s* matB = linop_matrix_chain(mat1, mat2);
+
+	linop_forward(matB, N, odims, dst2, N, idims0, src0);
+
+	linop_free(matB);
+
+	double err = md_znrmse(N, odims, dst2, dst1);
+
+	linop_free(mat1);
+	linop_free(mat2);
+
+	md_free(src0);
+	md_free(src1);
+	md_free(src2);
+	md_free(dst1);
+	md_free(dst2);
+
+	return (err < 1.E-5);
+}
+
 
 UT_REGISTER_TEST(test_linop_matrix);
 UT_REGISTER_TEST(test_linop_matrix_adjoint);
 UT_REGISTER_TEST(test_linop_matrix_normal);
+UT_REGISTER_TEST(test_linop_matrix_chain);
 
