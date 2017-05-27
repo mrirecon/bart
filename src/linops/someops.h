@@ -36,9 +36,6 @@ extern struct linop_s* linop_conv_create(int N, unsigned int flags, enum conv_ty
 extern struct linop_s* linop_matrix_create(unsigned int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)], const long matrix_dims[__VLA(N)], const _Complex float* matrix);
 extern struct linop_s* linop_matrix_altcreate(unsigned int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)], const unsigned int T_dim, const unsigned int K_dim, const complex float* matrix);
 
-extern const struct iovec_s* compute_gram_matrix(unsigned int N, unsigned int T_dim, unsigned int T, unsigned int K_dim, unsigned int K, _Complex float** gram, const long matrix_dims[__VLA(N)], const _Complex float* matrix);
-
-struct linop_s;
 
 extern struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s* b);
 

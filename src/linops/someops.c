@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -22,7 +22,6 @@
 #include "num/conv.h"
 #include "num/ops.h"
 #include "num/iovec.h"
-#include "num/blas.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -281,338 +280,223 @@ struct operator_matrix_s {
 	INTERFACE(linop_data_t);
 
 	const complex float* mat;
-	const complex float* mat_conj;
 	const complex float* mat_gram; // A^H A
 
-	const struct iovec_s* mat_iovec;
-	const struct iovec_s* mat_gram_iovec;
-	const struct iovec_s* domain_iovec;
-	const struct iovec_s* codomain_iovec;
+	unsigned int N;
 
-	const long* max_dims;
+	const long* mat_dims;
+	const long* out_dims;
+	const long* in_dims;
 
-	unsigned int K_dim;
-	unsigned int K;
-	unsigned int T_dim;
-	unsigned int T;
+	const long* grm_dims;
+	const long* gin_dims;
+	const long* gout_dims;
 };
 
 DEF_TYPEID(operator_matrix_s);
-
-/**
- * case 1: all singleton dimensions between T_dim and K_dim, all singleton dimensions after K_dim.
- *         then just apply standard matrix multiply
- */
-static bool cgemm_forward_standard(const struct operator_matrix_s* data)
-{
-	long N = data->mat_iovec->N;
-	long K_dim = data->K_dim;
-	long T_dim = data->T_dim;
-
-	bool use_cgemm = false;
-	long dsum = 0;
-	long csum = 0;
-
-	//debug_printf(DP_DEBUG1, "T_dim = %d, K_dim = %d\n", T_dim, K_dim);
-	//debug_print_dims(DP_DEBUG1, N, data->domain_iovec->dims);
-	//debug_print_dims(DP_DEBUG1, N, data->codomain_iovec->dims);
-	if (T_dim < K_dim) {
-		
-		for (int i = T_dim + 1; i < N; i++) {
-
-			dsum += data->domain_iovec->dims[i] - 1;
-			csum += data->codomain_iovec->dims[i] - 1;
-			//debug_printf(DP_DEBUG1, "csum = %d, dsum = %d\n", csum, dsum);
-		}
-		// don't count K_dim
-		dsum -= data->domain_iovec->dims[K_dim] - 1;
-
-		if ((dsum + csum) == 0)
-			use_cgemm = true;
-	}
-
-	//debug_printf(DP_DEBUG1, "use_cgemm = %d, dsum = %d, csum = %d\n", use_cgemm, dsum, csum);
-
-	return use_cgemm;
-}
 
 
 static void linop_matrix_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
 
-	long N = data->mat_iovec->N;
-	//debug_printf(DP_DEBUG1, "compute forward\n");
-
-	md_clear2(N, data->codomain_iovec->dims, data->codomain_iovec->strs, dst, CFL_SIZE);
-
-	// FIXME check all the cases where computation can be done with blas
-	
-	if (cgemm_forward_standard(data)) {
-
-		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
-
-		blas_cgemm('N', 'T', L, data->T, data->K, 1.,
-				L, (const complex float (*)[])src,
-				data->T, (const complex float (*)[])data->mat,
-				0., L, (complex float (*)[])dst);
-
-	} else {
-
-		md_zfmac2(N, data->max_dims, data->codomain_iovec->strs, dst, data->domain_iovec->strs, src, data->mat_iovec->strs, data->mat);
-	}
+	md_zmatmul(data->N, data->out_dims, dst, data->mat_dims, data->mat, data->in_dims, src);
 }
 
 static void linop_matrix_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
 
-	unsigned int N = data->mat_iovec->N;
-	//debug_printf(DP_DEBUG1, "compute adjoint\n");
-
-	md_clear2(N, data->domain_iovec->dims, data->domain_iovec->strs, dst, CFL_SIZE);
-
-	// FIXME check all the cases where computation can be done with blas
-	
-	if (cgemm_forward_standard(data)) {
-
-		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
-
-		blas_cgemm('N', 'N', L, data->K, data->T, 1.,
-				L, (const complex float (*)[])src,
-				data->T, (const complex float (*)[])data->mat_conj,
-				0., L, (complex float (*)[])dst);
-
-	} else {
-
-		md_zfmacc2(N, data->max_dims, data->domain_iovec->strs, dst, data->codomain_iovec->strs, src, data->mat_iovec->strs, data->mat);
-	}
+	md_zmatmulc(data->N, data->in_dims, dst, data->mat_dims, data->mat, data->out_dims, src);
 }
 
 static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
 
-	unsigned int N = data->mat_iovec->N;
-	// FIXME check all the cases where computation can be done with blas
-	
-	//debug_printf(DP_DEBUG1, "compute normal\n");
-	if (cgemm_forward_standard(data)) {
+	if (NULL == data->mat_gram) {
 
-		long max_dims_gram[N];
-		md_copy_dims(N, max_dims_gram, data->domain_iovec->dims);
-		max_dims_gram[data->T_dim] = data->K;
+		complex float* tmp = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, src);
 
-		long tmp_dims[N];
-		long tmp_str[N];
-		md_copy_dims(N, tmp_dims, max_dims_gram);
-		tmp_dims[data->K_dim] = 1;
-		md_calc_strides(N, tmp_str, tmp_dims, CFL_SIZE);
-
-		complex float* tmp = md_alloc_sameplace(N, data->domain_iovec->dims, CFL_SIZE, dst);
-
-		md_clear(N, data->domain_iovec->dims, tmp, CFL_SIZE);
-		md_zfmac2(N, max_dims_gram, tmp_str, tmp, data->domain_iovec->strs, src, data->mat_gram_iovec->strs, data->mat_gram);
-		md_transpose(N, data->T_dim, data->K_dim, data->domain_iovec->dims, dst, tmp_dims, tmp, CFL_SIZE);
+		linop_matrix_apply(_data, tmp, src);
+		linop_matrix_apply_adjoint(_data, dst, tmp);
 
 		md_free(tmp);
 
 	} else {
 
-		long L = md_calc_size(data->T_dim, data->domain_iovec->dims);
-
-		blas_cgemm('N', 'T', L, data->K, data->K, 1.,
-				L, (const complex float (*)[])src,
-				data->K, (const complex float (*)[])data->mat_gram,
-				0., L, (complex float (*)[])dst);
+		md_zmatmul(data->N, data->gout_dims, dst, data->gin_dims, src, data->grm_dims, data->mat_gram);
 	}
-
 }
 
 static void linop_matrix_del(const linop_data_t* _data)
 {
 	const struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
 
-	iovec_free(data->mat_iovec);
-	iovec_free(data->mat_gram_iovec);
-	iovec_free(data->domain_iovec);
-	iovec_free(data->codomain_iovec);
+	xfree(data->out_dims);
+	xfree(data->mat_dims);
+	xfree(data->in_dims);
+	xfree(data->gin_dims);
+	xfree(data->gout_dims);
+	xfree(data->grm_dims);
 
-	free((void*)data->max_dims);
+	md_free(data->mat);
+	md_free(data->mat_gram);
 
-	md_free((void*)data->mat);
-	md_free((void*)data->mat_conj);
-	md_free((void*)data->mat_gram);
-
-	free((void*)data);
+	xfree(data);
 }
 
 
-/**
- * Compute the Gram matrix, A^H A.
- * Stores the result in @param gram, which is allocated by the function
- * Returns: iovec_s corresponding to the gram matrix dimensions
- *
- * @param N number of dimensions
- * @param T_dim dimension corresponding to the rows of A
- * @param T number of rows of A (codomain)
- * @param K_dim dimension corresponding to the columns of A
- * @param K number of columns of A (domain)
- * @param gram store the result (allocated by this function)
- * @param matrix_dims dimensions of A
- * @param matrix matrix data
- */
-const struct iovec_s* compute_gram_matrix(unsigned int N, unsigned int T_dim, unsigned int T, unsigned int K_dim, unsigned int K, complex float** gram, const long matrix_dims[N], const complex float* matrix)
+static void shadow_dims(unsigned int N, long out[2 * N], const long in[N])
 {
-	// FIXME this can certainly be simplfied...
-	// Just be careful to consider the case where the data passed to the operator is a subset of a bigger array
-	
-
-	// B_dims = [T K 1]  or  [K T 1]
-	// C_dims = [T 1 K]  or  [1 T K]
-	// A_dims = [1 K K]  or  [K 1 K]
-	// after: gram_dims = [1 K1 K2] --> [K2 K1 1]  or  [K1 1 K2] --> [K1 K2 1]
-
-	long A_dims[N + 1];
-	long B_dims[N + 1];
-	long C_dims[N + 1];
-	long fake_gram_dims[N + 1];
-
-	long A_str[N + 1];
-	long B_str[N + 1];
-	long C_str[N + 1];
-	long max_dims[N + 1];
-
-	md_singleton_dims(N + 1, A_dims);
-	md_singleton_dims(N + 1, B_dims);
-	md_singleton_dims(N + 1, C_dims);
-	md_singleton_dims(N + 1, fake_gram_dims);
-	md_singleton_dims(N + 1, max_dims);
-
-	A_dims[K_dim] = K;
-	A_dims[N] = K;
-
-	B_dims[T_dim] = T;
-	B_dims[K_dim] = K;
-
-	C_dims[T_dim] = T;
-	C_dims[N] = K;
-
-	max_dims[T_dim] = T;
-	max_dims[K_dim] = K;
-	max_dims[N] = K;
-
-	fake_gram_dims[T_dim] = K;
-	fake_gram_dims[K_dim] = K;
-
-	md_calc_strides(N + 1, A_str, A_dims, CFL_SIZE);
-	md_calc_strides(N + 1, B_str, B_dims, CFL_SIZE);
-	md_calc_strides(N + 1, C_str, C_dims, CFL_SIZE);
-
-	complex float* tmpA = md_alloc_sameplace(N + 1 , A_dims, CFL_SIZE, matrix);
-	complex float* tmpB = md_alloc_sameplace(N + 1, B_dims, CFL_SIZE, matrix);
-	complex float* tmpC = md_alloc_sameplace(N + 1, C_dims, CFL_SIZE, matrix);
-
-	md_copy(N, matrix_dims, tmpB, matrix, CFL_SIZE);
-	//md_copy(N, matrix_dims, tmpC, matrix, CFL_SIZE);
-
-	md_transpose(N + 1, K_dim, N, C_dims, tmpC, B_dims, tmpB, CFL_SIZE);
-	md_clear(N + 1, A_dims, tmpA, CFL_SIZE);
-	md_zfmacc2(N + 1, max_dims, A_str, tmpA, B_str, tmpB, C_str, tmpC);
-
-	*gram = md_alloc_sameplace(N, fake_gram_dims, CFL_SIZE, matrix);
-	md_transpose(N + 1, T_dim, N, fake_gram_dims, *gram, A_dims, tmpA, CFL_SIZE); 
-
-
-	const struct iovec_s* s =  iovec_create(N, fake_gram_dims, CFL_SIZE);
-
-	md_free(tmpA);
-	md_free(tmpB);
-	md_free(tmpC);
-
-	return s;
-}
-
-
-/**
- * Operator interface for a true matrix:
- * out = mat * in
- * in:	[x x x x 1 x x K x x]
- * mat:	[x x x x T x x K x x]
- * out:	[x x x x T x x 1 x x]
- * where the x's are arbitrary dimensions and T and K may be transposed
- *
- * use this interface if K == 1 or T == 1
- *
- * @param N number of dimensions
- * @param out_dims output dimensions after applying the matrix (codomain)
- * @param in_dims input dimensions to apply the matrix (domain)
- * @param T_dim dimension corresponding to the rows of A
- * @param K_dim dimension corresponding to the columns of A
- * @param matrix matrix data
- */
-struct linop_s* linop_matrix_altcreate(unsigned int N, const long out_dims[N], const long in_dims[N], const unsigned int T_dim, const unsigned int K_dim, const complex float* matrix)
-{
-	long matrix_dims[N];
-	md_singleton_dims(N, matrix_dims);
-
-	matrix_dims[K_dim] = in_dims[K_dim];
-	matrix_dims[T_dim] = out_dims[T_dim];
-
-	unsigned int T = out_dims[T_dim];
-	unsigned int K = in_dims[K_dim];
-
-	PTR_ALLOC(long[N], max_dims);
-
 	for (unsigned int i = 0; i < N; i++) {
 
-		if ((in_dims[i] > 1) && (out_dims[i] == 1)) {
+		out[2 * i + 0] = in[i];
+		out[2 * i + 1] = 1;
+	}
+}
 
-			(*max_dims)[i] = in_dims[i];
-		}
-		else if ((in_dims[i] == 1) && (out_dims[i] > 1)) {
 
-			(*max_dims)[i] = out_dims[i];
-		}
-		else {
+/* O I M G
+ * 1 1 1 1   - not used
+ * 1 1 A !   - forbidden
+ * 1 A 1 !   - forbidden
+ * A 1 1 !   - forbidden
+ * A A 1 1   - replicated
+ * A 1 A 1   - output
+ * 1 A A A/A - input
+ * A A A A   - batch
+ */
+static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
+{
+	// to get assertions and cost estimate
 
-			assert(in_dims[i] == out_dims[i]);
+	long max_dims[N];
+	md_matmul_dims(N, max_dims, out_dims, in_dims, matrix_dims);
 
-			(*max_dims)[i] = in_dims[i];
+	unsigned long out_flags = md_nontriv_dims(N, out_dims);
+	unsigned long in_flags = md_nontriv_dims(N, in_dims);
+
+	unsigned long del_flags = in_flags & ~out_flags;
+	unsigned long new_flags = out_flags & ~in_flags;
+
+	PTR_ALLOC(long[2 * N], out_dims2);
+	PTR_ALLOC(long[2 * N], mat_dims2);
+	PTR_ALLOC(long[2 * N], in_dims2);
+	PTR_ALLOC(long[2 * N], gmt_dims2);
+	PTR_ALLOC(long[2 * N], gin_dims2);
+	PTR_ALLOC(long[2 * N], grm_dims2);
+	PTR_ALLOC(long[2 * N], gout_dims2);
+
+	shadow_dims(N, *out_dims2, out_dims);
+	shadow_dims(N, *gmt_dims2, matrix_dims);
+	shadow_dims(N, *mat_dims2, matrix_dims);
+	shadow_dims(N, *in_dims2, in_dims);
+	shadow_dims(N, *gout_dims2, in_dims);
+	shadow_dims(N, *gin_dims2, in_dims);
+	shadow_dims(N, *grm_dims2, matrix_dims);
+
+	/* move removed input dims into shadow position
+	 * which makes chaining easier below
+	 * also the gram matrix can have an output there
+	 */
+	for (unsigned int i = 0; i < N; i++) {
+
+		if (MD_IS_SET(del_flags, i)) {
+
+			assert(1 == (*out_dims2)[2 * i + 0]);
+			assert((*mat_dims2)[2 * i + 0] == (*in_dims2)[2 * i + 0]);
+
+			(*mat_dims2)[2 * i + 1] = (*mat_dims2)[2 * i + 0];
+			(*mat_dims2)[2 * i + 0] = 1;
+
+			(*in_dims2)[2 * i + 1] = (*gin_dims2)[2 * i + 0];
+			(*in_dims2)[2 * i + 0] = 1;
 		}
 	}
 
-	complex float* mat = md_alloc_sameplace(N, matrix_dims, CFL_SIZE, matrix);
-	complex float* matc = md_alloc_sameplace(N, matrix_dims, CFL_SIZE, matrix);
+	for (unsigned int i = 0; i < N; i++) {
+
+		if (MD_IS_SET(new_flags, i)) {
+
+			(*grm_dims2)[2 * i + 0] = 1;
+			(*grm_dims2)[2 * i + 1] = 1;
+		}
+
+		if (MD_IS_SET(del_flags, i)) {
+
+			(*gout_dims2)[2 * i + 1] = (*gin_dims2)[2 * i + 0];
+			(*gout_dims2)[2 * i + 0] = 1;
+
+			(*grm_dims2)[2 * i + 0] = in_dims[i];
+			(*grm_dims2)[2 * i + 1] = in_dims[i];
+		}
+	}
+
+	debug_printf(DP_DEBUG2, "in: ");
+	debug_print_dims(DP_DEBUG2, N * 2, *in_dims2);
+	debug_printf(DP_DEBUG2, "out: ");
+	debug_print_dims(DP_DEBUG2, N * 2, *out_dims2);
+	debug_printf(DP_DEBUG2, "mat: ");
+	debug_print_dims(DP_DEBUG2, N * 2, *mat_dims2);
+	debug_printf(DP_DEBUG2, "grm: ");
+	debug_print_dims(DP_DEBUG2, N * 2, *grm_dims2);
+	debug_printf(DP_DEBUG2, "gmt: ");
+	debug_print_dims(DP_DEBUG2, N * 2, *gmt_dims2);
+	debug_printf(DP_DEBUG2, "gin: ");
+	debug_print_dims(DP_DEBUG2, N * 2, *gin_dims2);
+	debug_printf(DP_DEBUG2, "gout: ");
+	debug_print_dims(DP_DEBUG2, N * 2, *gout_dims2);
+
+
+
+	long gmx_dims[2 * N];
+	md_matmul_dims(2 * N, gmx_dims, *gout_dims2, *gin_dims2, *grm_dims2);
+
+	long mult_mat = md_calc_size(N, max_dims);
+	long mult_gram = md_calc_size(2 * N, gmx_dims);
+
+	complex float* mat_gram = NULL;
+
+	if (mult_gram < 2 * mult_mat) {	// FIXME: rethink
+
+		debug_printf(DP_DEBUG2, "Gram matrix: 2x %ld vs %ld\n", mult_mat, mult_gram);
+
+		complex float* mat_gram = md_alloc(2 * N, *grm_dims2, CFL_SIZE);
+
+		md_zmatmulc(2 * N, *grm_dims2, mat_gram, *mat_dims2, matrix, *gmt_dims2, matrix);
+
+		mat_gram = mat_gram;
+	}
+
+
+	complex float* mat = md_alloc(N, matrix_dims, CFL_SIZE);
 
 	md_copy(N, matrix_dims, mat, matrix, CFL_SIZE);
-	md_zconj(N, matrix_dims, matc, mat);
 
-	complex float* gram = NULL;
-	const struct iovec_s* gram_iovec = compute_gram_matrix(N, T_dim, T, K_dim, K, &gram, matrix_dims, matrix);
+
 
 	PTR_ALLOC(struct operator_matrix_s, data);
 	SET_TYPEID(operator_matrix_s, data);
 
-	data->mat_iovec = iovec_create(N, matrix_dims, CFL_SIZE);
-	data->mat_gram_iovec = gram_iovec;
+	data->N = 2 * N;
 
-	data->max_dims = *max_dims;
+	data->out_dims = *PTR_PASS(out_dims2);
+	data->mat_dims = *PTR_PASS(mat_dims2);
+	data->in_dims = *PTR_PASS(in_dims2);
+	data->gin_dims = *PTR_PASS(gin_dims2);
+	data->gout_dims = *PTR_PASS(gout_dims2);
+	data->grm_dims = *PTR_PASS(grm_dims2);
 
 	data->mat = mat;
-	data->mat_conj = matc;
-	data->mat_gram = gram;
+	data->mat_gram = mat_gram;
 
-	data->K_dim = K_dim;
-	data->T_dim = T_dim;
-	data->K = K;
-	data->T = T;
+	PTR_FREE(gmt_dims2);
 
-	data->domain_iovec = iovec_create(N, in_dims, CFL_SIZE);
-	data->codomain_iovec = iovec_create(N, out_dims, CFL_SIZE);
-
-	return linop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), linop_matrix_apply, linop_matrix_apply_adjoint, linop_matrix_apply_normal, NULL, linop_matrix_del);
+	return PTR_PASS(data);
 }
+
+
 
 
 /**
@@ -622,8 +506,6 @@ struct linop_s* linop_matrix_altcreate(unsigned int N, const long out_dims[N], c
  * mat:	[x x x x T x x K x x]
  * out:	[x x x x T x x 1 x x]
  * where the x's are arbitrary dimensions and T and K may be transposed
- *
- * FIXME if K == 1 or T == 1, use the linop_matrixalt_create
  *
  * @param N number of dimensions
  * @param out_dims output dimensions after applying the matrix (codomain)
@@ -633,33 +515,11 @@ struct linop_s* linop_matrix_altcreate(unsigned int N, const long out_dims[N], c
  */
 struct linop_s* linop_matrix_create(unsigned int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
 {
-	//FIXME can auto-compute some of the dimensions, use flags, etc...
-	//FIXME check that dimensions are consistent
-	
-	UNUSED(matrix_dims);
+	struct operator_matrix_s* data = linop_matrix_priv(N, out_dims, in_dims, matrix_dims, matrix);
 
-	unsigned int K_dim = N + 1;
-	unsigned int T_dim = N + 1;
-
-	for (unsigned int i = 0; i < N; i++) {
-
-		if ((in_dims[i] > 1) && (out_dims[i] == 1)) {
-
-			K_dim = i;
-		}
-		else if ((in_dims[i] == 1) && (out_dims[i] > 1)) {
-
-			T_dim = i;
-		}
-		else {
-
-			assert(in_dims[i] == out_dims[i]);
-		}
-	}
-
-	assert((K_dim < (N + 1)) && (T_dim < (N + 1))); // FIXME what if K_dim or T_dim == 1?
-
-	return linop_matrix_altcreate(N, out_dims, in_dims, T_dim, K_dim, matrix);
+	return linop_create(N, out_dims, N, in_dims, CAST_UP(data),
+			linop_matrix_apply, linop_matrix_apply_adjoint,
+			linop_matrix_apply_normal, NULL, linop_matrix_del);
 }
 
 
@@ -673,41 +533,91 @@ struct linop_s* linop_matrix_create(unsigned int N, const long out_dims[N], cons
  */
 struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s* b)
 {
-	const struct operator_matrix_s* a_data = linop_get_data(a);
-	const struct operator_matrix_s* b_data = linop_get_data(b);
+	const struct operator_matrix_s* a_data = CAST_DOWN(operator_matrix_s, linop_get_data(a));
+	const struct operator_matrix_s* b_data = CAST_DOWN(operator_matrix_s, linop_get_data(b));
 
 	// check compatibility
 	assert(linop_codomain(a)->N == linop_domain(b)->N);
-	assert(md_calc_size(linop_codomain(a)->N, linop_codomain(a)->dims) == md_calc_size(linop_domain(b)->N, linop_domain(b)->dims));
-	assert(a_data->K_dim != b_data->T_dim); // FIXME error for now -- need to deal with this specially.
-	assert((a_data->T_dim == b_data->K_dim) && (a_data->T == b_data->K));
+	assert(md_check_compat(linop_codomain(a)->N, 0u, linop_codomain(a)->dims, linop_domain(b)->dims));
 
-	unsigned int N = linop_domain(a)->N;
+	unsigned int D = linop_domain(a)->N;
 
-	long max_dims[N];
+	unsigned long outB_flags = md_nontriv_dims(D, linop_codomain(b)->dims);
+	unsigned long inB_flags = md_nontriv_dims(D, linop_domain(b)->dims);
 
-	md_singleton_dims(N, max_dims);
-	max_dims[a_data->T_dim] = a_data->T;
-	max_dims[a_data->K_dim] = a_data->K;
-	max_dims[b_data->T_dim] = b_data->T;
+	unsigned long delB_flags = inB_flags & ~outB_flags;
+
+	unsigned int N = a_data->N;
+	assert(N == 2 * D);
+
+	long in_dims[N];
+	md_copy_dims(N, in_dims, a_data->in_dims);
+
+	long matA_dims[N];
+	md_copy_dims(N, matA_dims, a_data->mat_dims);
+
+	long matB_dims[N];
+	md_copy_dims(N, matB_dims, b_data->mat_dims);
+
+	long out_dims[N];
+	md_copy_dims(N, out_dims, b_data->out_dims);
+
+	for (unsigned int i = 0; i < D; i++) {
+
+		if (MD_IS_SET(delB_flags, i)) {
+
+			matA_dims[2 * i + 0] = a_data->mat_dims[2 * i + 1];
+			matA_dims[2 * i + 1] = a_data->mat_dims[2 * i + 0];
+
+			in_dims[2 * i + 0] = a_data->in_dims[2 * i + 1];
+			in_dims[2 * i + 1] = a_data->in_dims[2 * i + 0];
+		}
+	}
+
 
 	long matrix_dims[N];
-	long matrix_strs[N];
+	md_singleton_dims(N, matrix_dims);
 
-	md_select_dims(N, ~MD_BIT(a_data->T_dim), matrix_dims, max_dims);
-	md_calc_strides(N, matrix_strs, matrix_dims, CFL_SIZE);
+	unsigned long iflags = md_nontriv_dims(N, in_dims);
+	unsigned long oflags = md_nontriv_dims(N, out_dims);
+	unsigned long flags = iflags | oflags;
 
-	complex float* matrix = md_alloc_sameplace(N, matrix_dims, CFL_SIZE, a_data->mat);
+	// we combine a and b and sum over dims not in input or output
 
-	md_clear(N, matrix_dims, matrix, CFL_SIZE);
-	md_zfmac2(N, max_dims, matrix_strs, matrix, a_data->mat_iovec->strs, a_data->mat, b_data->mat_iovec->strs, b_data->mat);
+	md_max_dims(N, flags, matrix_dims, matA_dims, matB_dims);
 
-	struct linop_s* c = linop_matrix_create(N, linop_codomain(b)->dims, linop_domain(a)->dims, matrix_dims, matrix);
+	debug_printf(DP_DEBUG1, "tensor chain: %ld x %ld -> %ld\n",
+			md_calc_size(N, matA_dims), md_calc_size(N, matB_dims), md_calc_size(N, matrix_dims));
+
+
+	complex float* matrix = md_alloc(N, matrix_dims, CFL_SIZE);
+
+	debug_print_dims(DP_DEBUG2, N, matrix_dims);
+	debug_print_dims(DP_DEBUG2, N, in_dims);
+	debug_print_dims(DP_DEBUG2, N, matA_dims);
+	debug_print_dims(DP_DEBUG2, N, matB_dims);
+	debug_print_dims(DP_DEBUG2, N, out_dims);
+
+	md_zmatmul(N, matrix_dims, matrix, matA_dims, a_data->mat, matB_dims, b_data->mat);
+
+	struct operator_matrix_s* data = linop_matrix_priv(N, out_dims, in_dims, matrix_dims, matrix);
+
+	/* although we internally use different dimensions we define the
+	 * correct interface
+	 */
+
+	struct linop_s* c = linop_create(linop_codomain(b)->N, linop_codomain(b)->dims,
+			linop_domain(a)->N, linop_domain(a)->dims, CAST_UP(data),
+			linop_matrix_apply, linop_matrix_apply_adjoint,
+			linop_matrix_apply_normal, NULL, linop_matrix_del);
 
 	md_free(matrix);
 
 	return c;
 }
+
+
+
 
 
 struct fft_linop_s {
