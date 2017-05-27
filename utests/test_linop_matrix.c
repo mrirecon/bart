@@ -28,9 +28,9 @@ static bool test_linop_matrix(void)
 {
 	enum { N = 3 };
 
-	int A = 10;
-	int B = 20;
-	int C = 30;
+	int A = 2;
+	int B = 3;
+	int C = 4;
 
 	long odims[N] = { C, 1, A };
 	long idims1[N] = { 1, B, A };
@@ -70,9 +70,9 @@ static bool test_linop_matrix_adjoint(void)
 {
 	enum { N = 3 };
 
-	int A = 10;
-	int B = 20;
-	int C = 30;
+	int A = 2;
+	int B = 3;
+	int C = 4;
 
 	long odims[N] = { C, 1, A };
 	long idims1[N] = { 1, B, A };
@@ -100,9 +100,9 @@ static bool test_linop_matrix_normal(void)
 {
 	enum { N = 3 };
 
-	int A = 10;
-	int B = 15;
-	int C = 30;
+	int A = 2;
+	int B = 3;
+	int C = 4;
 
 	long odims[N] = { C, 1, A };
 	long idims1[N] = { 1, B, A };
@@ -128,8 +128,8 @@ static bool test_linop_matrix_normal(void)
 
 static bool test_linop_matrix_chain(void)
 {
-	int A = 10;
-	int B = 20;
+	int A = 9;
+	int B = 7;
 	int C = 3;
 	int D = 2;
 	int E = 5;
