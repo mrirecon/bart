@@ -1,10 +1,10 @@
 /* Copyright 2013-2015 The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013      Frank Ong <frankong@berkeley.edu>
  *
  * Generic operations on multi-dimensional arrays. Most functions
@@ -459,6 +459,25 @@ void md_min_dims(unsigned int D, unsigned long flags, long odims[D], const long 
 	for (unsigned int i = 0; i < D; i++)
 		if (MD_IS_SET(flags, i))
 			odims[i] = MIN(idims1[i], idims2[i]);
+}
+
+
+/**
+ * Set the output's flagged dimensions to the maximum of the two input dimensions
+ *
+ * odims = [ MIN(idims1[0],idims2[0] ... MIN(idims1[D-1],idims2[D-1]) ]
+ *
+ * @param D number of dimensions
+ * @param flags bitmask specifying which dimensions to maimize
+ * @param odims output dimensions
+ * @param idims1 input 1 dimensions
+ * @param idims2 input 2 dimensions
+ */
+void md_max_dims(unsigned int D, unsigned long flags, long odims[D], const long idims1[D], const long idims2[D])
+{
+	for (unsigned int i = 0; i < D; i++)
+		if (MD_IS_SET(flags, i))
+			odims[i] = MAX(idims1[i], idims2[i]);
 }
 
 
