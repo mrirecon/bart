@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -62,19 +62,15 @@ static double bench_generic_matrix_multiply(long dims[DIMS])
 	long dimsX[DIMS];
 	long dimsY[DIMS];
 	long dimsZ[DIMS];
-
+#if 1
 	md_select_dims(DIMS, 2 * 3 + 17, dimsX, dims);	// 1 110 1
 	md_select_dims(DIMS, 2 * 6 + 17, dimsY, dims);	// 1 011 1
 	md_select_dims(DIMS, 2 * 5 + 17, dimsZ, dims);	// 1 101 1
-
-	long strsX[DIMS];
-	long strsY[DIMS];
-	long strsZ[DIMS];
-
-	md_calc_strides(DIMS, strsX, dimsX, CFL_SIZE);
-	md_calc_strides(DIMS, strsY, dimsY, CFL_SIZE);
-	md_calc_strides(DIMS, strsZ, dimsZ, CFL_SIZE);
-
+#else
+	md_select_dims(DIMS, 2 * 5 + 17, dimsZ, dims);	// 1 101 1
+	md_select_dims(DIMS, 2 * 3 + 17, dimsY, dims);	// 1 110 1
+	md_select_dims(DIMS, 2 * 6 + 17, dimsX, dims);	// 1 011 1
+#endif
 	complex float* x = md_alloc(DIMS, dimsX, CFL_SIZE);
 	complex float* y = md_alloc(DIMS, dimsY, CFL_SIZE);
 	complex float* z = md_alloc(DIMS, dimsZ, CFL_SIZE);
@@ -82,12 +78,9 @@ static double bench_generic_matrix_multiply(long dims[DIMS])
 	md_gaussian_rand(DIMS, dimsX, x);
 	md_gaussian_rand(DIMS, dimsY, y);
 
-	md_clear(DIMS, dimsZ, z, CFL_SIZE);
-
-
 	double tic = timestamp();
 
-	md_zfmac2(DIMS, dims, strsZ, z, strsX, x, strsY, y);
+	md_ztenmul(DIMS, dimsZ, z, dimsX, x, dimsY, y);
 
 	double toc = timestamp();
 
