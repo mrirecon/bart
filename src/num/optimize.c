@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * 
  * Optimization framework for operations on multi-dimensional arrays.
@@ -265,7 +265,8 @@ static bool split_dims(unsigned int D, unsigned int N, long dims[N + 1], long (*
 }
 
 
-unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N])
+
+unsigned int simplify_dims(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N])
 {
 	merge_dims(D, N, dims, strs);
 
@@ -280,6 +281,14 @@ unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*
 
 		ND = 1;
 	}
+
+	return ND;
+}
+
+
+unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N])
+{
+	unsigned int ND = simplify_dims(D, N, dims, strs);
 
 	debug_print_dims(DP_DEBUG4, ND, dims);
 
