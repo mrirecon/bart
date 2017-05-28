@@ -1005,12 +1005,12 @@ void md_zfloat2double(unsigned int D, const long dims[D], complex double* dst, c
  * 1 1 A !
  * 1 1 1 ok
  */
-void md_matmul_dims(unsigned int D, long max_dims[D], const long out_dims[D], const long mat_dims[D], const long in_dims[D])
+void md_tenmul_dims(unsigned int D, long max_dims[D], const long out_dims[D], const long in1_dims[D], const long in2_dims[D])
 {
-	md_max_dims(D, ~0u, max_dims, in_dims, out_dims);
+	md_max_dims(D, ~0u, max_dims, in1_dims, out_dims);
 
 	long max2_dims[D];
-	md_max_dims(D, ~0u, max2_dims, mat_dims, out_dims);
+	md_max_dims(D, ~0u, max2_dims, in2_dims, out_dims);
 
 	assert(md_check_compat(D, 0u, max_dims, max2_dims));
 }
@@ -1093,11 +1093,58 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 }
 
 
+/*
+ * tenmul (tensor multiplication) family of functions are revised
+ * versions of the matmul functions.
+ */
+void md_ztenmul2(unsigned int D, const long max_dims[D], const long out_strs[D], complex float* out, const long in1_strs[D], const complex float* in1, const long in2_strs[D], const complex float* in2)
+{
+	if (simple_matmul(D, max_dims, out_strs, out, in2_strs, in2, in1_strs, in1))
+		return;
+
+	md_clear2(D, max_dims, out_strs, out, CFL_SIZE);
+	md_zfmac2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
+}
+
+
+void md_ztenmulc2(unsigned int D, const long max_dims[D], const long out_strs[D], complex float* out, const long in1_strs[D], const complex float* in1, const long in2_strs[D], const complex float* in2)
+{
+	md_clear2(D, max_dims, out_strs, out, CFL_SIZE);
+	md_zfmacc2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
+}
+
+
+void md_ztenmul(unsigned int D, const long out_dims[D], complex float* out, const long in1_dims[D], const complex float* in1, const long in2_dims[D], const complex float* in2)
+{
+	long max_dims[D];
+	md_tenmul_dims(D, max_dims, out_dims, in1_dims, in2_dims);
+
+	md_ztenmul2(D, max_dims, MD_STRIDES(D, out_dims, CFL_SIZE), out,
+				 MD_STRIDES(D, in1_dims, CFL_SIZE), in1,
+				 MD_STRIDES(D, in2_dims, CFL_SIZE), in2);
+}
+
+
+void md_ztenmulc(unsigned int D, const long out_dims[D], complex float* out, const long in1_dims[D], const complex float* in1, const long in2_dims[D], const complex float* in2)
+{
+	long max_dims[D];
+	md_tenmul_dims(D, max_dims, out_dims, in1_dims, in2_dims);
+
+	md_ztenmulc2(D, max_dims, MD_STRIDES(D, out_dims, CFL_SIZE), out,
+				  MD_STRIDES(D, in1_dims, CFL_SIZE), in1,
+				  MD_STRIDES(D, in2_dims, CFL_SIZE), in2);
+}
+
+
+
+/*
+ * matmul family of functions is deprecated - use tenmul instead
+ */
 
 static void md_zmatmul2_priv(unsigned int D, const long out_dims[D], const long out_strs[D], complex float* dst, const long mat_dims[D], const long mat_strs[D], const complex float* mat, const long in_dims[D], const long in_strs[D], const complex float* src, bool conj)
 {
 	long max_dims[D];
-	md_matmul_dims(D, max_dims, out_dims, mat_dims, in_dims);
+	md_tenmul_dims(D, max_dims, out_dims, mat_dims, in_dims);
 
 	if ((!conj) && simple_matmul(D, max_dims, out_strs, dst, mat_strs, mat, in_strs, src))
 		return;
