@@ -35,6 +35,7 @@
 #include "num/flpmath.h"
 #include "num/vecops.h"
 #include "num/optimize.h"
+#include "num/blas.h"
 
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -1015,11 +1016,65 @@ void md_matmul_dims(unsigned int D, long max_dims[D], const long out_dims[D], co
 }
 
 
+static bool simple_matmul(unsigned int N, const long max_dims[N], const long ostrs[N], complex float* out,
+		const long mstrs[N], const complex float* mat, const long istrs[N], const complex float* in)
+{
+	long dims[N];
+	md_copy_dims(N, dims, max_dims);
+
+	long ostrs2[N];
+	md_copy_strides(N, ostrs2, ostrs);
+
+	long mstrs2[N];
+	md_copy_strides(N, mstrs2, mstrs);
+
+	long istrs2[N];
+	md_copy_strides(N, istrs2, istrs);
+
+	long (*strs[3])[N] = { &ostrs2, &istrs2, &mstrs2 };
+	unsigned int ND = simplify_dims(3, N, dims, strs);
+
+	long C = dims[0];
+	long B = dims[1];
+	long A = dims[2];
+
+	if (   (3 == ND)
+	    && (0 == (*strs[0])[1])
+	    && (0 == (*strs[1])[2])
+	    && (0 == (*strs[2])[0])
+	    && ((CFL_SIZE == (*strs[0])[0]) && ((*strs[0])[0] * C == (*strs[0])[2]))
+	    && ((CFL_SIZE == (*strs[1])[0]) && ((*strs[1])[0] * C == (*strs[1])[1]))
+	    && ((CFL_SIZE == (*strs[2])[1]) && ((*strs[2])[1] * B == (*strs[2])[2]))) {
+
+		debug_printf(DP_DEBUG2, "matmul: matrix multiplication.\n");
+#if 0
+		// num/linalg.h
+
+		mat_mul(A, B, C,
+			*(complex float (*)[A][C])out,
+			*(const complex float (*)[A][B])mat,
+			*(const complex float (*)[B][C])in);
+#else
+		blas_matrix_multiply(C, A, B,
+			*(complex float (*)[A][C])out,
+			*(const complex float (*)[B][C])in,
+			*(const complex float (*)[A][B])mat);
+#endif
+		return true;
+	}
+
+	return false;
+}
+
+
 
 static void md_zmatmul2_priv(unsigned int D, const long out_dims[D], const long out_strs[D], complex float* dst, const long mat_dims[D], const long mat_strs[D], const complex float* mat, const long in_dims[D], const long in_strs[D], const complex float* src, bool conj)
 {
 	long max_dims[D];
 	md_matmul_dims(D, max_dims, out_dims, mat_dims, in_dims);
+
+	if ((!conj) && simple_matmul(D, max_dims, out_strs, dst, mat_strs, mat, in_strs, src))
+		return;
 
 	md_clear2(D, out_dims, out_strs, dst, CFL_SIZE);
 	(conj ? md_zfmacc2 : md_zfmac2)(D, max_dims, out_strs, dst, in_strs, src, mat_strs, mat);
@@ -1051,6 +1106,7 @@ void md_zmatmulc(unsigned int D, const long out_dims[D], complex float* dst, con
 /**
  * Matrix multiplication (with strides)
  * FIXME simplify interface?
+ * FIXME: implementation assumes strides == 0 for dims == 1
  */
 void md_zmatmul2(unsigned int D, const long out_dims[D], const long out_strs[D], complex float* dst, const long mat_dims[D], const long mat_strs[D], const complex float* mat, const long in_dims[D], const long in_strs[D], const complex float* src)
 {
