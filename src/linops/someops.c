@@ -325,7 +325,7 @@ static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* 
 
 	} else {
 
-		md_zmatmul(data->N, data->gout_dims, dst, data->gin_dims, src, data->grm_dims, data->mat_gram);
+		md_zmatmul(2 * data->N, data->gout_dims, dst, data->gin_dims, src, data->grm_dims, data->mat_gram);
 	}
 }
 
@@ -367,12 +367,41 @@ static void shadow_dims(unsigned int N, long out[2 * N], const long in[N])
  * 1 A A A/A - input
  * A A A A   - batch
  */
-static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
+static struct operator_matrix_s* linop_matrix_priv2(unsigned int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
 {
 	// to get assertions and cost estimate
 
 	long max_dims[N];
 	md_matmul_dims(N, max_dims, out_dims, in_dims, matrix_dims);
+
+
+	PTR_ALLOC(struct operator_matrix_s, data);
+	SET_TYPEID(operator_matrix_s, data);
+
+	data->N = N;
+
+	PTR_ALLOC(long[N], out_dims1);
+	md_copy_dims(N, *out_dims1, out_dims);
+	data->out_dims = *PTR_PASS(out_dims1);
+
+	PTR_ALLOC(long[N], mat_dims1);
+	md_copy_dims(N, *mat_dims1, matrix_dims);
+	data->mat_dims = *PTR_PASS(mat_dims1);
+
+	PTR_ALLOC(long[N], in_dims1);
+	md_copy_dims(N, *in_dims1, in_dims);
+	data->in_dims = *PTR_PASS(in_dims1);
+
+
+	complex float* mat = md_alloc(N, matrix_dims, CFL_SIZE);
+
+	md_copy(N, matrix_dims, mat, matrix, CFL_SIZE);
+
+	data->mat = mat;
+	data->mat_gram = NULL;
+
+#if 1
+	// pre-multiply gram matrix (if there is a cost reduction)
 
 	unsigned long out_flags = md_nontriv_dims(N, out_dims);
 	unsigned long in_flags = md_nontriv_dims(N, in_dims);
@@ -380,7 +409,9 @@ static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long ou
 	unsigned long del_flags = in_flags & ~out_flags;
 	unsigned long new_flags = out_flags & ~in_flags;
 
-	PTR_ALLOC(long[2 * N], out_dims2);
+	/* we double (again) for the gram matrix
+	 */
+
 	PTR_ALLOC(long[2 * N], mat_dims2);
 	PTR_ALLOC(long[2 * N], in_dims2);
 	PTR_ALLOC(long[2 * N], gmt_dims2);
@@ -388,7 +419,6 @@ static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long ou
 	PTR_ALLOC(long[2 * N], grm_dims2);
 	PTR_ALLOC(long[2 * N], gout_dims2);
 
-	shadow_dims(N, *out_dims2, out_dims);
 	shadow_dims(N, *gmt_dims2, matrix_dims);
 	shadow_dims(N, *mat_dims2, matrix_dims);
 	shadow_dims(N, *in_dims2, in_dims);
@@ -397,14 +427,12 @@ static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long ou
 	shadow_dims(N, *grm_dims2, matrix_dims);
 
 	/* move removed input dims into shadow position
-	 * which makes chaining easier below
-	 * also the gram matrix can have an output there
+	 * for the gram matrix can have an output there
 	 */
 	for (unsigned int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(del_flags, i)) {
 
-			assert(1 == (*out_dims2)[2 * i + 0]);
 			assert((*mat_dims2)[2 * i + 0] == (*in_dims2)[2 * i + 0]);
 
 			(*mat_dims2)[2 * i + 1] = (*mat_dims2)[2 * i + 0];
@@ -433,30 +461,12 @@ static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long ou
 		}
 	}
 
-	debug_printf(DP_DEBUG2, "in: ");
-	debug_print_dims(DP_DEBUG2, N * 2, *in_dims2);
-	debug_printf(DP_DEBUG2, "out: ");
-	debug_print_dims(DP_DEBUG2, N * 2, *out_dims2);
-	debug_printf(DP_DEBUG2, "mat: ");
-	debug_print_dims(DP_DEBUG2, N * 2, *mat_dims2);
-	debug_printf(DP_DEBUG2, "grm: ");
-	debug_print_dims(DP_DEBUG2, N * 2, *grm_dims2);
-	debug_printf(DP_DEBUG2, "gmt: ");
-	debug_print_dims(DP_DEBUG2, N * 2, *gmt_dims2);
-	debug_printf(DP_DEBUG2, "gin: ");
-	debug_print_dims(DP_DEBUG2, N * 2, *gin_dims2);
-	debug_printf(DP_DEBUG2, "gout: ");
-	debug_print_dims(DP_DEBUG2, N * 2, *gout_dims2);
-
-
 
 	long gmx_dims[2 * N];
 	md_matmul_dims(2 * N, gmx_dims, *gout_dims2, *gin_dims2, *grm_dims2);
 
 	long mult_mat = md_calc_size(N, max_dims);
 	long mult_gram = md_calc_size(2 * N, gmx_dims);
-
-	complex float* mat_gram = NULL;
 
 	if (mult_gram < 2 * mult_mat) {	// FIXME: rethink
 
@@ -466,36 +476,65 @@ static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long ou
 
 		md_zmatmulc(2 * N, *grm_dims2, mat_gram, *mat_dims2, matrix, *gmt_dims2, matrix);
 
-		mat_gram = mat_gram;
+		data->mat_gram = mat_gram;
 	}
 
+	PTR_FREE(gmt_dims2);
+	PTR_FREE(mat_dims2);
+	PTR_FREE(in_dims2);
 
-	complex float* mat = md_alloc(N, matrix_dims, CFL_SIZE);
-
-	md_copy(N, matrix_dims, mat, matrix, CFL_SIZE);
-
-
-
-	PTR_ALLOC(struct operator_matrix_s, data);
-	SET_TYPEID(operator_matrix_s, data);
-
-	data->N = 2 * N;
-
-	data->out_dims = *PTR_PASS(out_dims2);
-	data->mat_dims = *PTR_PASS(mat_dims2);
-	data->in_dims = *PTR_PASS(in_dims2);
 	data->gin_dims = *PTR_PASS(gin_dims2);
 	data->gout_dims = *PTR_PASS(gout_dims2);
 	data->grm_dims = *PTR_PASS(grm_dims2);
-
-	data->mat = mat;
-	data->mat_gram = mat_gram;
-
-	PTR_FREE(gmt_dims2);
+#else
+	data->gin_dims = NULL;
+	data->gout_dims = NULL;
+	data->grm_dims = NULL;
+#endif
 
 	return PTR_PASS(data);
 }
 
+
+static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
+{
+	unsigned long out_flags = md_nontriv_dims(N, out_dims);
+	unsigned long in_flags = md_nontriv_dims(N, in_dims);
+
+	unsigned long del_flags = in_flags & ~out_flags;
+
+	/* we double dimensions for chaining which can lead to
+	 * matrices with the same input and output dimension
+	 */
+
+	long out_dims2[2 * N];
+	long mat_dims2[2 * N];
+	long in_dims2[2 * N];
+
+	shadow_dims(N, out_dims2, out_dims);
+	shadow_dims(N, mat_dims2, matrix_dims);
+	shadow_dims(N, in_dims2, in_dims);
+
+	/* move removed input dims into shadow position
+	 * which makes chaining easier below
+	 */
+	for (unsigned int i = 0; i < N; i++) {
+
+		if (MD_IS_SET(del_flags, i)) {
+
+			assert(1 == out_dims2[2 * i + 0]);
+			assert(mat_dims2[2 * i + 0] == in_dims2[2 * i + 0]);
+
+			mat_dims2[2 * i + 1] = mat_dims2[2 * i + 0];
+			mat_dims2[2 * i + 0] = 1;
+
+			in_dims2[2 * i + 1] = in_dims[i];
+			in_dims2[2 * i + 0] = 1;
+		}
+	}
+
+	return linop_matrix_priv2(2 * N, out_dims2, in_dims2, mat_dims2, matrix);
+}
 
 
 
@@ -600,12 +639,13 @@ struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s
 
 	md_zmatmul(N, matrix_dims, matrix, matA_dims, a_data->mat, matB_dims, b_data->mat);
 
-	struct operator_matrix_s* data = linop_matrix_priv(N, out_dims, in_dims, matrix_dims, matrix);
+	// priv2 takes our doubled dimensions
+
+	struct operator_matrix_s* data = linop_matrix_priv2(N, out_dims, in_dims, matrix_dims, matrix);
 
 	/* although we internally use different dimensions we define the
 	 * correct interface
 	 */
-
 	struct linop_s* c = linop_create(linop_codomain(b)->N, linop_codomain(b)->dims,
 			linop_domain(a)->N, linop_domain(a)->dims, CAST_UP(data),
 			linop_matrix_apply, linop_matrix_apply_adjoint,
