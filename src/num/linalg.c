@@ -113,17 +113,7 @@ void (mat_muladd)(int A, int B, int C, complex float x[MVLA(A)][C], const comple
 void (mat_mul)(int A, int B, int C, complex float x[A][C], const complex float y[A][B], const complex float z[B][C])
 {
 #ifdef MAT_USE_LAPACK
-	complex float a[C][A];
-	complex float b[A][B];
-	complex float c[B][C];
-
-	mat_transpose(A, B, b, y);
-	mat_transpose(B, C, c, z);
-#ifndef AR2D_CAST
-#define AR2D_CAST(a, b, c, d) d
-#endif
-	blas_matrix_multiply(A, B, C, a, AR2D_CAST(complex float, A, B, b), AR2D_CAST(complex float, B, C, c));
-	mat_transpose(C, A, x, a);
+	blas_matrix_multiply(C, A, B, x, z, y);
 #else
 	for (int i = 0; i < A; i++) {
 		for (int j = 0; j < C; j++) {

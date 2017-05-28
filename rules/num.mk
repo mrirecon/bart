@@ -18,4 +18,5 @@ lib/libnum.a: libnum.a($(numobjs))
 
 
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom
+UTARGETS += test_blas
 

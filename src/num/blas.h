@@ -4,7 +4,7 @@
 #include "misc/misc.h"
 #include "misc/pcaa.h"
 
-extern void blas_matrix_multiply(long M, long N, long K, complex float C[M][N], const complex float A[M][K], const complex float B[K][N]);
+extern void blas_matrix_multiply(long M, long N, long K, complex float C[N][M], const complex float A[K][M], const complex float B[N][K]);
 
 #define blas_matrix_multiply(M, N, K, C, A, B) \
 	blas_matrix_multiply(M, N, K, C, AR2D_CAST(complex float, M, K, A), AR2D_CAST(complex float, K, N, B))
