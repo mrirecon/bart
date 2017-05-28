@@ -1046,7 +1046,7 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 	    && ((CFL_SIZE == (*strs[1])[0]) && ((*strs[1])[0] * C == (*strs[1])[1]))
 	    && ((CFL_SIZE == (*strs[2])[1]) && ((*strs[2])[1] * B == (*strs[2])[2]))) {
 
-		debug_printf(DP_DEBUG2, "matmul: matrix multiplication.\n");
+		debug_printf(DP_DEBUG2, "matmul: matrix multiplication (1).\n");
 #if 0
 		// num/linalg.h
 
@@ -1062,6 +1062,32 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 #endif
 		return true;
 	}
+
+	if (   (3 == ND)
+	    && (0 == (*strs[0])[1])
+	    && (0 == (*strs[1])[0])
+	    && (0 == (*strs[2])[2])
+	    && ((CFL_SIZE == (*strs[0])[0]) && ((*strs[0])[0] * C == (*strs[0])[2]))
+	    && ((CFL_SIZE == (*strs[1])[1]) && ((*strs[1])[1] * B == (*strs[1])[2]))
+	    && ((CFL_SIZE == (*strs[2])[0]) && ((*strs[2])[0] * C == (*strs[2])[1]))) {
+
+		debug_printf(DP_DEBUG2, "matmul: matrix multiplication (2).\n");
+#if 0
+		// num/linalg.h
+
+		mat_mul(A, B, C,
+			*(complex float (*)[A][C])out,
+			*(const complex float (*)[A][B])in,
+			*(const complex float (*)[B][C])mat);
+#else
+		blas_matrix_multiply(C, A, B,
+			*(complex float (*)[A][C])out,
+			*(const complex float (*)[B][C])mat,
+			*(const complex float (*)[A][B])in);
+#endif
+		return true;
+	}
+
 
 	return false;
 }
