@@ -281,7 +281,10 @@ struct operator_matrix_s {
 
 	const complex float* mat;
 	const complex float* mat_gram; // A^H A
-
+#ifdef USE_CUDA
+	const complex float* mat_gpu;
+	const complex float* mat_gram_gpu;
+#endif
 	unsigned int N;
 
 	const long* mat_dims;
@@ -298,21 +301,43 @@ DEF_TYPEID(operator_matrix_s);
 
 static void linop_matrix_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
+	struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
+	const complex float* mat = data->mat;
 
-	md_zmatmul(data->N, data->out_dims, dst, data->mat_dims, data->mat, data->in_dims, src);
+#ifdef USE_CUDA
+	if (cuda_ondevice(src)) {
+
+		if (NULL == data->mat_gpu)
+			data->mat_gpu = md_gpu_move(data->N, data->mat_dims, data->mat, CFL_SIZE);
+
+		mat = data->mat_gpu;
+	}
+#endif
+
+	md_zmatmul(data->N, data->out_dims, dst, data->mat_dims, mat, data->in_dims, src);
 }
 
 static void linop_matrix_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
+	struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
+	const complex float* mat = data->mat;
 
-	md_zmatmulc(data->N, data->in_dims, dst, data->mat_dims, data->mat, data->out_dims, src);
+#ifdef USE_CUDA
+	if (cuda_ondevice(src)) {
+
+		if (NULL == data->mat_gpu)
+			data->mat_gpu = md_gpu_move(data->N, data->mat_dims, data->mat, CFL_SIZE);
+
+		mat = data->mat_gpu;
+	}
+#endif
+
+	md_zmatmulc(data->N, data->in_dims, dst, data->mat_dims, mat, data->out_dims, src);
 }
 
 static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
+	struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
 
 	if (NULL == data->mat_gram) {
 
@@ -325,7 +350,17 @@ static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* 
 
 	} else {
 
-		md_zmatmul(2 * data->N, data->gout_dims, dst, data->gin_dims, src, data->grm_dims, data->mat_gram);
+		const complex float* mat_gram = data->mat_gram;
+#ifdef USE_CUDA
+		if (cuda_ondevice(src)) {
+
+			if (NULL == data->mat_gram_gpu)
+				data->mat_gram_gpu = md_gpu_move(2 * data->N, data->grm_dims, data->mat_gram, CFL_SIZE);
+
+			mat_gram = data->mat_gram_gpu;
+		}
+#endif
+		md_zmatmul(2 * data->N, data->gout_dims, dst, data->gin_dims, src, data->grm_dims, mat_gram);
 	}
 }
 
@@ -342,7 +377,10 @@ static void linop_matrix_del(const linop_data_t* _data)
 
 	md_free(data->mat);
 	md_free(data->mat_gram);
-
+#ifdef USE_CUDA
+	md_free(data->mat_gpu);
+	md_free(data->mat_gram_gpu);
+#endif
 	xfree(data);
 }
 
@@ -399,6 +437,10 @@ static struct operator_matrix_s* linop_matrix_priv2(unsigned int N, const long o
 
 	data->mat = mat;
 	data->mat_gram = NULL;
+#ifdef USE_CUDA
+	data->mat_gpu = NULL;
+	data->mat_gram_gpu = NULL;
+#endif
 
 #if 1
 	// pre-multiply gram matrix (if there is a cost reduction)
