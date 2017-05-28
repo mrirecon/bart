@@ -314,7 +314,7 @@ static void linop_matrix_apply(const linop_data_t* _data, complex float* dst, co
 	}
 #endif
 
-	md_zmatmul(data->N, data->out_dims, dst, data->mat_dims, mat, data->in_dims, src);
+	md_ztenmul(data->N, data->out_dims, dst, data->in_dims, src, data->mat_dims, mat);
 }
 
 static void linop_matrix_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
@@ -332,7 +332,7 @@ static void linop_matrix_apply_adjoint(const linop_data_t* _data, complex float*
 	}
 #endif
 
-	md_zmatmulc(data->N, data->in_dims, dst, data->mat_dims, mat, data->out_dims, src);
+	md_ztenmulc(data->N, data->in_dims, dst, data->out_dims, src, data->mat_dims, mat);
 }
 
 static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
@@ -360,7 +360,7 @@ static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* 
 			mat_gram = data->mat_gram_gpu;
 		}
 #endif
-		md_zmatmul(2 * data->N, data->gout_dims, dst, data->gin_dims, src, data->grm_dims, mat_gram);
+		md_ztenmul(2 * data->N, data->gout_dims, dst, data->gin_dims, src, data->grm_dims, mat_gram);
 	}
 }
 
@@ -410,7 +410,7 @@ static struct operator_matrix_s* linop_matrix_priv2(unsigned int N, const long o
 	// to get assertions and cost estimate
 
 	long max_dims[N];
-	md_matmul_dims(N, max_dims, out_dims, in_dims, matrix_dims);
+	md_tenmul_dims(N, max_dims, out_dims, in_dims, matrix_dims);
 
 
 	PTR_ALLOC(struct operator_matrix_s, data);
@@ -505,7 +505,7 @@ static struct operator_matrix_s* linop_matrix_priv2(unsigned int N, const long o
 
 
 	long gmx_dims[2 * N];
-	md_matmul_dims(2 * N, gmx_dims, *gout_dims2, *gin_dims2, *grm_dims2);
+	md_tenmul_dims(2 * N, gmx_dims, *gout_dims2, *gin_dims2, *grm_dims2);
 
 	long mult_mat = md_calc_size(N, max_dims);
 	long mult_gram = md_calc_size(2 * N, gmx_dims);
@@ -516,7 +516,7 @@ static struct operator_matrix_s* linop_matrix_priv2(unsigned int N, const long o
 
 		complex float* mat_gram = md_alloc(2 * N, *grm_dims2, CFL_SIZE);
 
-		md_zmatmulc(2 * N, *grm_dims2, mat_gram, *mat_dims2, matrix, *gmt_dims2, matrix);
+		md_ztenmulc(2 * N, *grm_dims2, mat_gram, *gmt_dims2, matrix, *mat_dims2, matrix);
 
 		data->mat_gram = mat_gram;
 	}
@@ -679,7 +679,7 @@ struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s
 	debug_print_dims(DP_DEBUG2, N, matB_dims);
 	debug_print_dims(DP_DEBUG2, N, out_dims);
 
-	md_zmatmul(N, matrix_dims, matrix, matA_dims, a_data->mat, matB_dims, b_data->mat);
+	md_ztenmul(N, matrix_dims, matrix, matA_dims, a_data->mat, matB_dims, b_data->mat);
 
 	// priv2 takes our doubled dimensions
 
