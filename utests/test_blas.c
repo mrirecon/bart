@@ -55,14 +55,14 @@ static bool test_blas_matrix_mult(void)
 	md_gaussian_rand(3, idims2, src2);
 
 	blas_matrix_multiply(A, C, B, MD_CAST_ARRAY2(complex float, 3, odims, dst1, 0, 2),
-			MD_CAST_ARRAY2(const complex float, 3, idims1, src1, 1, 2),
-			MD_CAST_ARRAY2(const complex float, 3, idims2, src2, 0, 1));
+			MD_CAST_ARRAY2(const complex float, 3, idims2, src2, 0, 1),
+			MD_CAST_ARRAY2(const complex float, 3, idims1, src1, 1, 2));
 
 	// (A^T B^T)^T = B A
 	
 	matrix_mult(C, B, A, &MD_CAST_ARRAY2(complex float, 3, odims, dst2, 0, 2),
-			&MD_CAST_ARRAY2(const complex float, 3, idims2, src2, 0, 1),
-			&MD_CAST_ARRAY2(const complex float, 3, idims1, src1, 1, 2));
+			&MD_CAST_ARRAY2(const complex float, 3, idims1, src1, 1, 2),
+			&MD_CAST_ARRAY2(const complex float, 3, idims2, src2, 0, 1));
 
 	double err = md_znrmse(3, odims, dst2, dst1);
 
