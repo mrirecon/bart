@@ -465,10 +465,10 @@ void md_min_dims(unsigned int D, unsigned long flags, long odims[D], const long 
 /**
  * Set the output's flagged dimensions to the maximum of the two input dimensions
  *
- * odims = [ MIN(idims1[0],idims2[0] ... MIN(idims1[D-1],idims2[D-1]) ]
+ * odims = [ MAX(idims1[0],idims2[0] ... MAX(idims1[D-1],idims2[D-1]) ]
  *
  * @param D number of dimensions
- * @param flags bitmask specifying which dimensions to maimize
+ * @param flags bitmask specifying which dimensions to maximize
  * @param odims output dimensions
  * @param idims1 input 1 dimensions
  * @param idims2 input 2 dimensions
