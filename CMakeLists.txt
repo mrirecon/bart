@@ -62,7 +62,7 @@ else()
   endmacro(bart_add_executable)
   macro(bart_add_library target_name)
     add_library(${target_name} ${ARGN})
-  endmacro(bart_add_executable)
+  endmacro(bart_add_library)
 endif(USE_CUDA)
 
 ##- TODO option(USE_ACML    "Provide support for ACML processing" OFF)
