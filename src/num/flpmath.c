@@ -1016,6 +1016,17 @@ void md_tenmul_dims(unsigned int D, long max_dims[D], const long out_dims[D], co
 }
 
 
+static bool detect_matrix(const long dims[3], const long ostrs[3], const long mstrs[3], const long istrs[3])
+{
+        return (   (0 == ostrs[1])
+                && (0 == mstrs[2])
+                && (0 == istrs[0])
+                && ((CFL_SIZE == ostrs[0]) && (ostrs[0] * dims[0] == ostrs[2]))
+                && ((CFL_SIZE == mstrs[0]) && (mstrs[0] * dims[0] == mstrs[1]))
+                && ((CFL_SIZE == istrs[1]) && (istrs[1] * dims[1] == istrs[2])));
+}
+
+
 static bool simple_matmul(unsigned int N, const long max_dims[N], const long ostrs[N], complex float* out,
 		const long mstrs[N], const complex float* mat, const long istrs[N], const complex float* in)
 {
@@ -1038,13 +1049,7 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 	long B = dims[1];
 	long A = dims[2];
 
-	if (   (3 == ND)
-	    && (0 == (*strs[0])[1])
-	    && (0 == (*strs[1])[2])
-	    && (0 == (*strs[2])[0])
-	    && ((CFL_SIZE == (*strs[0])[0]) && ((*strs[0])[0] * C == (*strs[0])[2]))
-	    && ((CFL_SIZE == (*strs[1])[0]) && ((*strs[1])[0] * C == (*strs[1])[1]))
-	    && ((CFL_SIZE == (*strs[2])[1]) && ((*strs[2])[1] * B == (*strs[2])[2]))) {
+	if ((3 == ND) && detect_matrix(dims, ostrs2, istrs2, mstrs2)) {
 
 		debug_printf(DP_DEBUG2, "matmul: matrix multiplication (1).\n");
 #if 0
@@ -1063,13 +1068,7 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 		return true;
 	}
 
-	if (   (3 == ND)
-	    && (0 == (*strs[0])[1])
-	    && (0 == (*strs[1])[0])
-	    && (0 == (*strs[2])[2])
-	    && ((CFL_SIZE == (*strs[0])[0]) && ((*strs[0])[0] * C == (*strs[0])[2]))
-	    && ((CFL_SIZE == (*strs[1])[1]) && ((*strs[1])[1] * B == (*strs[1])[2]))
-	    && ((CFL_SIZE == (*strs[2])[0]) && ((*strs[2])[0] * C == (*strs[2])[1]))) {
+	if ((3 == ND) && detect_matrix(dims, ostrs2, mstrs2, istrs2)) {
 
 		debug_printf(DP_DEBUG2, "matmul: matrix multiplication (2).\n");
 #if 0
