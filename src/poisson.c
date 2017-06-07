@@ -229,6 +229,8 @@ int main_poisson(int argc, char* argv[])
 #endif
 			}
 
+			PTR_FREE(points);
+			PTR_FREE(kind);
 			break;
 		}
 

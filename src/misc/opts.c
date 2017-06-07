@@ -212,7 +212,6 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 	for (i = optind; i < argc; i++)
 		argv[i - optind + 1] = argv[i];
 
-	argv[i] = NULL;
 	*argcp = argc - optind + 1;
 }
 

@@ -1963,8 +1963,10 @@ float md_scalar2(unsigned int D, const long dim[D], const long str1[D], const fl
 	md_fmacD2(D, dim, stro, retp, str1, ptr1, str2, ptr2);
 
 #ifdef USE_CUDA
-	if (cuda_ondevice(ptr1))
+	if (cuda_ondevice(ptr1)) {
 		md_copy(1, (long[1]){ 1 }, &ret, retp, DL_SIZE);
+		md_free(retp);
+	}
 #endif
 	return ret;
 }
@@ -2111,8 +2113,10 @@ complex float md_zscalar2(unsigned int D, const long dim[D], const long str1[D],
 	md_zfmaccD2(D, dim, stro, retp, str1, ptr1, str2, ptr2);
 
 #ifdef USE_CUDA
-	if (cuda_ondevice(ptr1))
+	if (cuda_ondevice(ptr1)) {
 		md_copy(1, (long[1]){ 1 }, &ret, retp, CDL_SIZE);
+		md_free(retp);
+	}
 #endif
 
 	return (complex float)ret;
@@ -2300,8 +2304,10 @@ float md_asum2(unsigned int D, const long dims[D], const long strs[D], const flo
 	md_axpy2(D, dims, MD_STRIDES(D, dims0, FL_SIZE), retp, 1., strs1, tmp);
 
 #ifdef USE_CUDA
-	if (cuda_ondevice(ptr))
+	if (cuda_ondevice(ptr)) {
 		md_copy(D, dims0, &ret, retp, FL_SIZE);
+		md_free(retp);
+	}
 #endif
 
 	md_free(tmp);

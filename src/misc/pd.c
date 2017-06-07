@@ -258,7 +258,7 @@ out:
 	md_free(grid);
 	md_free(patch);
 #endif
-	free(active);
+	XFREE(active);
 	return p;
 }
 
@@ -271,7 +271,7 @@ extern int poissondisc(int D, int N, int I, float vardens, float delta, float po
 	memset(*kind, 0, I * sizeof(int));
 	const float dd[1][1] = { { delta } };
 	int P = poissondisc_mc(D, 1, N, I, vardens, dd, points, *kind);
-	free(kind);
+	XFREE(kind);
 	return P;
 }
 
