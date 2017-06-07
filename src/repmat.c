@@ -1,9 +1,10 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2016. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Author:
  * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2016 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
 #include <stdlib.h>
@@ -41,12 +42,11 @@ int main_repmat(int argc, char* argv[])
 	int rep = atoi(argv[2]);
 
 	assert(dim < DIMS);
-	assert(rep >= 0);
-	assert(1 == in_dims[dim]);
+	assert(rep > 0);
 
 	md_copy_dims(DIMS, out_dims, in_dims);
 
-	out_dims[dim] = rep;
+	out_dims[dim] *= rep;
 
 	complex float* out_data = create_cfl(argv[4], DIMS, out_dims);
 
