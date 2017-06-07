@@ -110,7 +110,7 @@ int main_pics(int argc, char* argv[])
 	unsigned int admm_maxitercg = iter_admm_defaults.maxitercg;
 
 	struct opt_reg_s ropts;
-	assert(0 == opt_reg_init(&ropts));
+	opt_reg_init(&ropts);
 
 	unsigned int loop_flags = 0u;
 

@@ -136,6 +136,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 	if (use_gpu) {
 
 		data->weights = md_gpu_move(DIMS, data->wght_dims, weights, CFL_SIZE);
+		md_free(weights);
 	}
 #endif
 

@@ -171,6 +171,15 @@ static void maps_free_data(const linop_data_t* _data)
 	const struct maps_data* data = CAST_DOWN(maps_data, _data);
 
 	md_free((void*)data->sens);
+	if (NULL != data->norm) {
+		md_free((void*)data->norm);
+	}
+	
+#ifdef USE_CUDA
+	if (NULL != data->gpu_sens) {
+		md_free((void*)data->gpu_sens);
+	}
+#endif
 	free((void*)data);
 }
 

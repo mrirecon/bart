@@ -70,6 +70,7 @@ float lineproc2( unsigned int D,  const long dims[D], const long blkdims[D], con
 
 	}
 	md_free( blk );
+	md_free( line );
 	return info;
 }
 
