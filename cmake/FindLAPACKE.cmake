@@ -135,7 +135,7 @@ if (LAPACKE_FOUND)
       ) #NOT MSVC
     set(MATH_LIB m)
   endif()
-  list(APPEND LAPACKE_LIBRARIES ${LAPACKE_LIB} ${LAPACK_LIB} ${CBLAS_LIB} ${BLAS_LIB})
+  list(APPEND LAPACKE_LIBRARIES ${LAPACKE_LIB} ${LAPACK_LIB} ${BLAS_LIB} ${CBLAS_LIB})
   # Check for a common combination, and find required gfortran support libraries
 
   if(1)

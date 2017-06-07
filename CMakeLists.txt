@@ -135,13 +135,13 @@ if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "LAPACKE")
   ## for cblas and lapacke.  This method is not very robust to older
   ## versions of lapack that might be able to be supported.
   ## It is know to work local builds
-  include( ${CMAKE_CURRENT_LIST_DIR}/cmake/FindLAPACKE.cmake )
+  find_package(LAPACKE REQUIRED)
   if(LAPACKE_FOUND)
      set(LINALG_VENDOR_FOUND TRUE)
      set(LINALG_VENDOR "LAPACKE")
      set(LINALG_INCLUDE_DIRS ${LAPACKE_INCLUDE_DIRS})
      set(LINALG_LIBRARIES ${LAPACKE_LIBRARIES})
-  endif()
+   endif()
 endif()
 
 ##
