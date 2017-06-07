@@ -212,14 +212,6 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 	for (i = optind; i < argc; i++)
 		argv[i - optind + 1] = argv[i];
 
-	/*
-	 * Setting the value in argv to NULL, although a good idea to prevent 
-	 * accidentally reading/writing to it in memory, *may* actually trigger
-	 * GCC's stack protection routines (even in release mode!), which then
-	 * kill the program using SIGABRT.
-	 * (tested with GCC 4.6.3, 4.6.4, 4.7.4, 5.4.1 and 6.2.0)
-	 */
-	/* argv[i] = NULL; */
 	*argcp = argc - optind + 1;
 }
 
