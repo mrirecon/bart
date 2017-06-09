@@ -187,7 +187,7 @@ matrix:
       compiler: gcc-4.8
       script:
         - make test
-        - make utest
+        # make utest
       before_install:
         - brew update
         - brew install fftw gcc48 homebrew/science/openblas
