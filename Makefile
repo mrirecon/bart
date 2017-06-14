@@ -38,7 +38,7 @@ ifeq ($(UNAME),Darwin)
 endif
 
 ifeq ($(BUILDTYPE), MacOSX)
-	MACPORTS?=1
+	MACPORTS ?= 1
 endif
 
 
@@ -49,6 +49,13 @@ ifeq ($(BUILDTYPE), Linux)
 else
 	ARFLAGS ?= rs
 endif
+
+
+ifeq ($(UNAME),Cygwin)
+	BUILDTYPE = Cygwin
+	NOLAPACKE ?= 1
+endif
+
 
 
 
@@ -179,6 +186,11 @@ TMRI += ismrmrd
 MODULES_bart += -lismrm
 endif
 
+ifeq ($(NOLAPACKE),1)
+MODULES += -llapacke
+endif
+
+
 
 XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
 TARGETS = bart $(XTARGETS)
@@ -270,7 +282,12 @@ BLAS_H := -I$(BLAS_BASE)/include
 ifeq ($(BUILDTYPE), MacOSX)
 BLAS_L := -L$(BLAS_BASE)/lib -lopenblas
 else
+ifeq ($(NOLAPACKE),1)
+BLAS_L := -L$(BLAS_BASE)/lib -llapack -lblas
+CPPFLAGS += -Isrc/lapacke
+else
 BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lblas
+endif
 endif
 endif
 
