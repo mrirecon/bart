@@ -408,6 +408,7 @@ $(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
 
 clean:
 	rm -f `find $(srcdir) -name "*.o"`
+	rm -f utests/*.o
 	rm -f $(patsubst %, %, $(UTARGETS))
 	rm -f $(root)/lib/.*.lock
 
