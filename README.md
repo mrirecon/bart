@@ -3,6 +3,8 @@
 BART: Toolbox for Computational Magnetic Resonance Imaging
 ==========================================================
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.592960.svg)](https://doi.org/10.5281/zenodo.592960)
+
 The Berkeley Advanced Reconstruction Toolbox (BART) is a free and
 open-source image-reconstruction framework for Computational 
 Magnetic Resonance Imaging. The tools in this software implement
