@@ -211,8 +211,8 @@ void iter2_admm(iter_conf* _conf,
 	};
 
 
-	struct admm_op a_ops[D];
-	struct iter_op_p_s a_prox_ops[D];
+	struct admm_op a_ops[D ?:1];
+	struct iter_op_p_s a_prox_ops[D ?:1];
 
 	for (unsigned int i = 0; i < D; i++) {
 
@@ -229,7 +229,7 @@ void iter2_admm(iter_conf* _conf,
 	admm_plan.xupdate = OPERATOR_P2ITOP(xupdate_op);
 
 
-	long z_dims[D];
+	long z_dims[D ?: 1];
 
 	for (unsigned int i = 0; i < D; i++)
 		z_dims[i] = 2 * md_calc_size(linop_codomain(ops[i])->N, linop_codomain(ops[i])->dims);

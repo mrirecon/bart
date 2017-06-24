@@ -181,9 +181,9 @@ void admm(const struct admm_plan_s* plan,
 	float* GH_usum = NULL;
 
 
-	float* z[num_funs];
-	float* u[num_funs];
-	float* r[num_funs];
+	float* z[num_funs ?:1];
+	float* u[num_funs ?:1];
+	float* r[num_funs ?:1];
 
 	for (unsigned int j = 0; j < num_funs; j++) {
 
@@ -233,7 +233,7 @@ void admm(const struct admm_plan_s* plan,
 	int hw_K = 1;
 	int hw_k = 0;
 
-	const float* biases[num_funs];
+	const float* biases[num_funs ?:1];
 
 	for (unsigned int j = 0; j < num_funs; j++)
 		biases[j] = (NULL != plan->biases) ? plan->biases[j] : NULL;

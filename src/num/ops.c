@@ -240,7 +240,9 @@ struct operator_p_s {
 
 const struct operator_p_s* operator_p_ref(const struct operator_p_s* x)
 {
-	operator_ref(&x->op);
+	if (NULL != x)
+		operator_ref(&x->op);
+
 	return x;
 }
 
@@ -271,7 +273,8 @@ const struct iovec_s* operator_p_codomain(const struct operator_p_s* op)
 
 void operator_p_free(const struct operator_p_s* x)
 {
-	operator_free(&x->op);
+	if (NULL != x)
+		operator_free(&x->op);
 }
 
 
