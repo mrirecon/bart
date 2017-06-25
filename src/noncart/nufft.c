@@ -1,11 +1,11 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014-2017 Frank Ong <frankong@berkeley.edu>
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * Strang G. A proposal for Toeplitz matrix calculations. Journal Studies in Applied Math. 1986; 74(2):171-17
  *
@@ -40,7 +40,7 @@
 
 struct nufft_conf_s nufft_conf_defaults = {
 
-	.toeplitz = false,
+	.toeplitz = true,
 	.pcycle = false,
 };
 
@@ -479,7 +479,10 @@ complex float* compute_psf(unsigned int N, const long img2_dims[N], const long t
 	long ksp_dims1[N];
 	md_select_dims(N, ~MD_BIT(0), ksp_dims1, trj_dims);
 
-	struct linop_s* op2 = nufft_create(N, ksp_dims1, img2_dims, trj_dims, traj, NULL, nufft_conf_defaults);
+	struct nufft_conf_s conf = nufft_conf_defaults;
+	conf.toeplitz = false;	// avoid infinite loop
+
+	struct linop_s* op2 = nufft_create(N, ksp_dims1, img2_dims, trj_dims, traj, NULL, conf);
 
 	complex float* ones = md_alloc(N, ksp_dims1, CFL_SIZE);
 	md_zfill(N, ksp_dims1, ones, 1.);
@@ -750,10 +753,6 @@ static void toeplitz_mult_pcycle(const struct nufft_data* data, complex float* d
 	const complex float* cpsf = data->psf + data->cycle * md_calc_size(data->N, data->psf_dims);
 	complex float* grid = data->grid;
 
-#ifdef USE_CUDA
-	printf("Not Implemented.\n");
-	exit(1);
-#endif
 	md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, src, data->img_strs, clinphase);
 
 	linop_forward(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
