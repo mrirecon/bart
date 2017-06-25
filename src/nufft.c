@@ -1,11 +1,11 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -46,6 +46,7 @@ int main_nufft(int argc, char* argv[])
 	bool inverse = false;
 	bool precond = false;
 	bool dft = false;
+	bool gpu = false;
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
@@ -61,13 +62,20 @@ int main_nufft(int argc, char* argv[])
 		OPT_VEC3('d', &coilim_vec, "x:y:z", "dimensions"),
 		OPT_VEC3('D', &coilim_vec, "", "()"),
 		OPT_SET('t', &conf.toeplitz, "Toeplitz embedding for inverse NUFFT"),
+		OPT_CLEAR('r', &conf.toeplitz, "turn-off Toeplitz embedding for inverse NUFFT"),
 		OPT_SET('c', &precond, "Preconditioning for inverse NUFFT"),
 		OPT_FLOAT('l', &lambda, "lambda", "l2 regularization"),
 		OPT_UINT('m', &cgconf.maxiter, "", "()"),
 		OPT_SET('s', &dft, "DFT"),
+		OPT_SET('g', &gpu, "GPU (only inverse)"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	// avoid computing PSF if not necessary
+	if (!inverse)
+		conf.toeplitz = false;
+
 
 	long coilim_dims[DIMS] = { 0 };
 	md_copy_dims(3, coilim_dims, coilim_vec);
@@ -79,7 +87,7 @@ int main_nufft(int argc, char* argv[])
 	assert(3 == traj_dims[0]);
 
 
-	num_init();
+	(gpu ? num_init_gpu : num_init)();
 
 	if (inverse || adjoint) {
 
@@ -116,7 +124,7 @@ int main_nufft(int argc, char* argv[])
 			if (conf.toeplitz && precond)
 				precond_op = nufft_precond_create(nufft_op);
 
-			lsqr(DIMS, &(struct lsqr_conf){ lambda, false }, iter_conjgrad, CAST_UP(&cgconf),
+			lsqr(DIMS, &(struct lsqr_conf){ lambda, gpu }, iter_conjgrad, CAST_UP(&cgconf),
 			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, precond_op);
 
 			if (conf.toeplitz && precond)

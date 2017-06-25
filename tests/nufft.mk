@@ -85,7 +85,7 @@ tests/test-nufft-inverse: traj scale phantom nufft nrmse
 	$(TOOLDIR)/traj -r -x256 -y201 traj.ra						;\
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
 	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
-	$(TOOLDIR)/nufft -i traj2.ra ksp.ra reco.ra					;\
+	$(TOOLDIR)/nufft -r -i traj2.ra ksp.ra reco.ra					;\
 	$(TOOLDIR)/nufft traj2.ra reco.ra k2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.001 ksp.ra k2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -99,15 +99,27 @@ tests/test-nufft-toeplitz: traj phantom nufft nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
 	$(TOOLDIR)/phantom -k -t traj.ra ksp.ra						;\
-	$(TOOLDIR)/nufft -l1. -i    traj.ra ksp.ra reco1.ra				;\
+	$(TOOLDIR)/nufft -l1. -i -r traj.ra ksp.ra reco1.ra				;\
 	$(TOOLDIR)/nufft -l1. -i -t traj.ra ksp.ra reco2.ra				;\
 	$(TOOLDIR)/nrmse -t 0.002 reco1.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
+tests/test-nufft-gpu: traj phantom nufft nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
+	$(TOOLDIR)/phantom -k -t traj.ra ksp.ra						;\
+	$(TOOLDIR)/nufft -l1.    -i -r traj.ra ksp.ra reco1.ra				;\
+	$(TOOLDIR)/nufft -l1. -g -i -t traj.ra ksp.ra reco2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.002 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
 TESTS += tests/test-nufft-forward tests/test-nufft-adjoint tests/test-nufft-inverse tests/test-nufft-toeplitz
 TESTS += tests/test-nufft-nudft tests/test-nudft-forward tests/test-nudft-adjoint
 
-
+TESTS_GPU += tests/test-nufft-gpu
 
