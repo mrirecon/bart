@@ -21,7 +21,7 @@ struct lsqr_conf {
 	_Bool it_gpu;
 };
 
-
+struct iter_monitor_s;
 extern const struct lsqr_conf lsqr_defaults;
 
 extern const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
@@ -31,7 +31,8 @@ extern const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 				      const struct operator_s* precond_op,
 			              unsigned int num_funs,
 				      const struct operator_p_s* prox_funs[__VLA2(num_funs)],
-				      const struct linop_s* prox_linops[__VLA2(num_funs)]);
+				      const struct linop_s* prox_linops[__VLA2(num_funs)],
+				      struct iter_monitor_s* monitor);
 
 extern const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					italgo_fun2_t italgo, iter_conf* iconf,
@@ -41,7 +42,8 @@ extern const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					const struct operator_s* precond_op,
 					unsigned int num_funs,
 					const struct operator_p_s* prox_funs[__VLA2(num_funs)],
-					const struct linop_s* prox_linops[__VLA2(num_funs)]);
+					const struct linop_s* prox_linops[__VLA2(num_funs)],
+				        struct iter_monitor_s* monitor);
 
 
 

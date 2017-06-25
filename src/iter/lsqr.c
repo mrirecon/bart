@@ -78,7 +78,8 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 				      const struct operator_s* precond_op,
 			              unsigned int num_funs,
 				      const struct operator_p_s* prox_funs[num_funs],
-				      const struct linop_s* prox_linops[num_funs])
+				      const struct linop_s* prox_linops[num_funs],
+				      struct iter_monitor_s* monitor)
 {
 	PTR_ALLOC(struct lsqr_data, data);
 	SET_TYPEID(lsqr_data, data);
@@ -105,10 +106,13 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 		operator_free(tmp);
 	}
 
-	const struct operator_s* itop_op = itop_create(italgo, iconf, init, normaleq_op, num_funs, prox_funs, prox_linops);
+	const struct operator_s* itop_op = itop_create(italgo, iconf, init, normaleq_op, num_funs, prox_funs, prox_linops, monitor);
 
-	if (conf->it_gpu)
+	if (conf->it_gpu) {
+
+		debug_printf(DP_DEBUG1, "lsqr: add GPU wrapper\n");
 		itop_op = operator_gpu_wrapper(itop_op);
+	}
 
 	const struct operator_s* lsqr_op = operator_chain(adjoint, itop_op);
 
@@ -135,62 +139,12 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	   const struct operator_s* precond_op,
 	   struct iter_monitor_s* monitor)
 {
-#if 1
-	// -----------------------------------------------------------
-	// normal equation right hand side
-
-	debug_printf(DP_DEBUG1, "lsqr: right hand side\n");
-
-	complex float* x_adj = md_alloc_sameplace(N, x_dims, CFL_SIZE, y);
-	linop_adjoint(model_op, N, x_dims, x_adj, N, y_dims, y);
-
-	if (NULL != precond_op)
-		operator_apply(precond_op, N, x_dims, x_adj, N, x_dims, x_adj);
-
-
-	struct lsqr_data data = {
-
-		.l2_lambda = conf->lambda,
-		.model_op = model_op,
-		.size = 2 * md_calc_size(N, x_dims),
-	};
-
-	SET_TYPEID(lsqr_data, &data);
-
-	// -----------------------------------------------------------
-	// run recon
-
-	const struct operator_s* normaleq_op = operator_create(N, x_dims, N, x_dims, CAST_UP(&data), normaleq_l2_apply, NULL);
-
-	if (NULL != precond_op) {
-
-		const struct operator_s* tmp = normaleq_op;
-		
-		normaleq_op = operator_chain(normaleq_op, precond_op);
-		operator_free(tmp);
-	}
-	
-
-	debug_printf(DP_DEBUG1, "lsqr: solve normal equations\n");
-
-	italgo(iconf, normaleq_op, num_funs, prox_funs, prox_linops, NULL, 
-			NULL, data.size, (float*)x, (const float*)x_adj,
-			monitor);
-
-
-	// -----------------------------------------------------------
-	// clean up
-	
-	md_free(x_adj);
-	operator_free(normaleq_op);
-#else
 	// nicer, but is still missing some features
 	const struct operator_s* op = lsqr2_create(conf, italgo, iconf, NULL, model_op, precond_op,
-						num_funs, prox_funs, prox_linops);
+						num_funs, prox_funs, prox_linops, monitor);
 
 	operator_apply(op, N, x_dims, x, N, y_dims, y);
 	operator_free(op);
-#endif
 }
 
 
@@ -225,13 +179,15 @@ const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					const struct operator_s* precond_op,
 					unsigned int num_funs,
 					const struct operator_p_s* prox_funs[num_funs],
-					const struct linop_s* prox_linops[num_funs])
+					const struct linop_s* prox_linops[num_funs],
+					struct iter_monitor_s* monitor)
 {
 	struct linop_s* op = linop_chain(model_op, weights);
 
 	const struct operator_s* lsqr_op = lsqr2_create(conf, italgo, iconf, init,
 						op, precond_op,
-						num_funs, prox_funs, prox_linops);
+						num_funs, prox_funs, prox_linops,
+						monitor);
 
 	const struct operator_s* wlsqr_op = operator_chain(weights->forward, lsqr_op);
 

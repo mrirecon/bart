@@ -28,6 +28,8 @@ struct itop_s {
 
 	italgo_fun2_t italgo;
 	iter_conf* iconf;
+	struct iter_monitor_s* monitor;
+
 	const struct operator_s* op;
 	unsigned int num_funs;
 	long size;
@@ -57,7 +59,7 @@ static void itop_apply(const operator_data_t* _data, unsigned int N, void* args[
 	}
 
 	data->italgo(data->iconf, data->op, data->num_funs, data->prox_funs, data->prox_linops, NULL, 
-			NULL, data->size, args[0], args[1], NULL);
+			NULL, data->size, args[0], args[1], data->monitor);
 }
 
 static void itop_del(const operator_data_t* _data)
@@ -94,7 +96,8 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 					const struct operator_s* op,
 					unsigned int num_funs,
 					const struct operator_p_s* prox_funs[num_funs],
-					const struct linop_s* prox_linops[num_funs])
+					const struct linop_s* prox_linops[num_funs],
+					struct iter_monitor_s* monitor)
 {
 	PTR_ALLOC(struct itop_s, data);
 	SET_TYPEID(itop_s, data);
@@ -103,6 +106,7 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 
 	data->iconf = iconf;
 	data->italgo = italgo;
+	data->monitor = monitor;
 	data->op = operator_ref(op);
 	data->num_funs = num_funs;
 	data->size = 2 * md_calc_size(iov->N, iov->dims);	// FIXME: do not assume complex
