@@ -518,7 +518,16 @@ void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, 
 #else
 	struct data_s data = { size };
 #endif
-	optimized_nop(1, MD_BIT(0), D, dim, nstr, (void*[1]){ ptr }, (size_t[1]){ size }, nary_clear, &data);
+	unsigned long flags = 0;
+
+	for (unsigned int i = 0; i < D; i++)
+		if (0 == str[i])
+			flags |= MD_BIT(i);
+
+	long dim2[D];
+	md_select_dims(D, ~flags, dim2, dim);
+
+	optimized_nop(1, MD_BIT(0), D, dim2, nstr, (void*[1]){ ptr }, (size_t[1]){ size }, nary_clear, &data);
 }
 
 
