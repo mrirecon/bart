@@ -327,6 +327,7 @@ static void nary_z2opd(struct nary_opt_data_s* data, void* ptr[])
 	(*(z2opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
 }
 
+__attribute__((unused))
 static void make_z2opd(size_t offset, unsigned int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
 {
 	size_t sizes[2] = { sizeof(complex double), sizeof(complex float) };
@@ -334,7 +335,6 @@ static void make_z2opd(size_t offset, unsigned int D, const long dim[D], const l
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, sizes, nary_z2opd, &offset);
 }
 
-void* unsued = make_z2opd;
 
 static void nary_2opd(struct nary_opt_data_s* data, void* ptr[])
 {
