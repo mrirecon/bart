@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include <png.h>
 
@@ -16,9 +17,8 @@
 #include "png.h"
 
 
-int png_write_rgb24(const char* name, unsigned int w, unsigned int h, long inum, const unsigned char* buf)
+static int png_write_anyrgb(const char* name, unsigned int w, unsigned int h, unsigned int nbytes, bool rgb, const unsigned char* buf)
 {
-	UNUSED(inum);
 
 	FILE* fp;
 	png_structp structp = NULL;
@@ -38,7 +38,19 @@ int png_write_rgb24(const char* name, unsigned int w, unsigned int h, long inum,
 	if (setjmp(png_jmpbuf(structp)))
         	goto cleanup;
 
-	png_set_IHDR(structp, infop, w, h, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+	switch(nbytes){
+		case 3:
+			png_set_IHDR(structp, infop, w, h, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+			break;
+		case 4:
+			png_set_IHDR(structp, infop, w, h, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+			break;
+		default:
+			error("Supported PNG formats are 24bit (RGB) and 32bit (RGBA)!\n");
+	}
+
+	if (!rgb)
+		png_set_bgr(structp);
 
 	png_init_io(structp, fp);
 	png_write_info(structp, infop);
@@ -65,3 +77,31 @@ cleanup:
 	return ret;
 }
 
+
+
+
+
+
+int png_write_rgb24(const char* name, unsigned int w, unsigned int h, long inum, const unsigned char* buf)
+{
+	UNUSED(inum);
+	return png_write_anyrgb(name, w, h, 3, true, buf);
+}
+
+int png_write_rgb32(const char* name, unsigned int w, unsigned int h, long inum, const unsigned char* buf)
+{
+	UNUSED(inum);
+	return png_write_anyrgb(name, w, h, 4, true, buf);
+}
+
+int png_write_bgr24(const char* name, unsigned int w, unsigned int h, long inum, const unsigned char* buf)
+{
+	UNUSED(inum);
+	return png_write_anyrgb(name, w, h, 3, false, buf);
+}
+
+int png_write_bgr32(const char* name, unsigned int w, unsigned int h, long inum, const unsigned char* buf)
+{
+	UNUSED(inum);
+	return png_write_anyrgb(name, w, h, 4, false, buf);
+}
