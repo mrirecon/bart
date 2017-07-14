@@ -34,11 +34,13 @@ int main_fft(int argc, char* argv[])
 {
 	bool unitary = false;
 	bool inv = false;
+	bool center = true;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('u', &unitary, "unitary"),
 		OPT_SET('i', &inv, "inverse"),
+		OPT_CLEAR('n', &center, "un-centered"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -58,7 +60,7 @@ int main_fft(int argc, char* argv[])
 	if (unitary)
 		fftscale(DIMS, dims, flags, data, data);
 
-	(inv ? ifftc : fftc)(DIMS, dims, flags, data, data);
+	(inv ? (center ? ifftc : ifft) : (center ? fftc : fft))(DIMS, dims, flags, data, data);
 
 	unmap_cfl(DIMS, dims, data);
 	exit(0);
