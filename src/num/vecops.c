@@ -1,5 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -7,6 +8,7 @@
  * 2011-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
  * This file defines basic operations on vectors of floats/complex floats
@@ -24,6 +26,8 @@
 #include <stdbool.h>
 
 #include "misc/misc.h"
+#include "num/filter.h"
+#include "misc/debug.h"
 
 #include "vecops.h"
 
@@ -374,7 +378,29 @@ static void zsoftthresh(long N, float lambda, complex float* d, const complex fl
 	}
 }
 
+/**
+ * Hard thesholding, y = HT(x, t).
+ * computes the thresholded vector, y = x * (abs(x) >= t(kmax))
+ * 
+ * @param N number of elements
+ * @param k threshold parameter, index of kth largest element of sorted x 
+ * @param d pointer to destination, y
+ * @param x pointer to input
+ */
 
+static void zhardthresh(long N,  unsigned int k, complex float* d, const complex float* x)
+{
+  if (N <= k)
+    debug_printf(DP_WARN,"\nk larger than N, threshold will be set to 0\n");
+  
+  float thr = klargest_complex_sort_part_selcpx(N, k, x);
+   
+	for (long i = 0; i < N; i++) {
+
+		float norm = cabsf(x[i]);
+		d[i] = (norm >= thr) ? x[i] : 0.;
+	}
+}
 
 static void softthresh_half(long N, float lambda, float* d, const float* x)
 {
@@ -496,6 +522,7 @@ const struct vec_ops cpu_ops = {
 	.min = min,
 
 	.zsoftthresh = zsoftthresh,
+	.zhardthresh = zhardthresh,
 	.zsoftthresh_half = zsoftthresh_half,
 	.softthresh = softthresh,
 	.softthresh_half = softthresh_half,
@@ -521,6 +548,8 @@ struct vec_iter_s {
 	void (*smul)(long N, float alpha, float* a, const float* x);
 	void (*xpay)(long N, float alpha, float* a, const float* x);
 	void (*axpy)(long N, float* a, float alpha, const float* x);
+        double (*asum)(long N, const float* x);
+        double (*zl1norm)(long N, const complex float* x);
 };
 
 
@@ -539,6 +568,8 @@ const struct vec_iter_s cpu_iter_ops = {
 	.add = add,
 	.sub = sub,
 	.swap = swap,
+	.asum = asum,
+	.zl1norm = zl1norm,
 };
 
 

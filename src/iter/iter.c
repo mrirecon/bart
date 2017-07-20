@@ -1,11 +1,13 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
+* Copyright 2016-2017. University of Oxford.
  *
  * Authors: 
  * 2012, 2014 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <complex.h>
@@ -36,6 +38,7 @@
 DEF_TYPEID(iter_conjgrad_conf);
 DEF_TYPEID(iter_landweber_conf);
 DEF_TYPEID(iter_ist_conf);
+DEF_TYPEID(iter_niht_conf);
 DEF_TYPEID(iter_fista_conf);
 DEF_TYPEID(iter_pocs_conf);
 DEF_TYPEID(iter_admm_conf);
@@ -67,6 +70,14 @@ const struct iter_ist_conf iter_ist_defaults = {
 	.step = 0.95,
 	.continuation = 1.,
 	.hogwild = false,
+	.tol = 0.,
+};
+
+const struct iter_niht_conf iter_niht_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_niht_conf),
+
+	.maxiter = 50,
 	.tol = 0.,
 };
 
@@ -144,7 +155,7 @@ void iter_conjgrad(iter_conf* _conf,
 		struct iter_monitor_s* monitor)
 {
 	assert(NULL == thresh_prox);
-	iter2_conjgrad(_conf, normaleq_op, 0, NULL, NULL, NULL, NULL, size, image, image_adj, monitor);
+	iter2_conjgrad(_conf, normaleq_op, 0, 0, NULL, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 
@@ -180,7 +191,7 @@ void iter_ist(iter_conf* _conf,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
-	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
+  iter2_ist(_conf, normaleq_op, 1, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 void iter_fista(iter_conf* _conf,
@@ -189,7 +200,7 @@ void iter_fista(iter_conf* _conf,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
-	iter2_fista(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
+  iter2_fista(_conf, normaleq_op, 1, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 
@@ -202,11 +213,21 @@ void iter_admm(iter_conf* _conf,
 {
 	const struct linop_s* eye[1] = { linop_identity_create(1, MD_DIMS(size / 2)) }; // using complex float identity operator... divide size by 2
 
-	iter2_admm(_conf, normaleq_op, 1, &thresh_prox, eye, NULL, NULL, size, image, image_adj, monitor);
+	iter2_admm(_conf, normaleq_op, 1, 1, &thresh_prox, eye, NULL, NULL, size, image, image_adj, monitor);
 
 	linop_free(eye[0]);
 }
 
+/* Note: This was added for consistency and potential future use but is not working */
+/* correctly currently (incompatible pointer type for thresh_prox from iter2_call_iter) */
+void iter_niht(iter_conf* _conf,
+		const struct operator_s* normaleq_op,
+		const struct operator_p_s* thresh_prox,
+		long size, float* image, const float* image_adj,
+		struct iter_monitor_s* monitor)
+{
+  iter2_niht(_conf, normaleq_op, 1, 2, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
+}
 
 void iter_call_iter2(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
@@ -216,7 +237,7 @@ void iter_call_iter2(iter_conf* _conf,
 {
 	struct iter2_call_s* it = CAST_DOWN(iter2_call_s, _conf);
 
-	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL, NULL,
+	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL, NULL,
 		size, image, image_adj, monitor);
 }
 

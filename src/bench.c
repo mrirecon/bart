@@ -1,11 +1,13 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
  * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <stdio.h>
@@ -396,7 +398,7 @@ static double bench_wavelet(long scale)
 	minsize[1] = MIN(dims[1], 16);
 	minsize[2] = MIN(dims[2], 16);
 
-	const struct operator_p_s* p = prox_wavelet3_thresh_create(DIMS, dims, 6, minsize, 1.1, true);
+	const struct operator_p_s* p = prox_wavelet3_thresh_create(DIMS, dims, 6, 0,minsize, 1.1, true);
 
 	complex float* x = md_alloc(DIMS, dims, CFL_SIZE);
 	md_gaussian_rand(DIMS, dims, x);

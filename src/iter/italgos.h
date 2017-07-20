@@ -82,6 +82,12 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor);
 
+void niht(unsigned int maxiter, float epsilon,  
+	 long N, const struct vec_iter_s* vops,
+	 struct iter_op_s op, struct iter_op_p_s thresh,
+	 struct iter_op_p_s supp, float* x, const float* b,
+	 struct iter_monitor_s* monitor);
+
 void fista(unsigned int maxiter, float epsilon, float tau, 
 	float continuation, _Bool hogwild,
 	long N,

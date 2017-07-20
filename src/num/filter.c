@@ -1,9 +1,11 @@
 /* Copyright 2015. The Regents of the University of California.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2012 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <assert.h>
@@ -20,6 +22,13 @@
 
 #include "filter.h"
 
+
+
+static void zabs(long N, float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = cabsf(src[i]);
+}
 
 static int cmp_float(const void* a, const void* b)
 {
@@ -41,6 +50,12 @@ static void sort_complex_floats(int N, complex float ar[N])
 	qsort((void*)ar, N, sizeof(complex float), cmp_complex_float);
 }
 
+/* Using dynamically allocated array (pointer) */
+static void sort_complex_floats_dyn(int N, complex float* ar)
+{
+	qsort((void*)ar, N, sizeof(complex float), cmp_complex_float);
+}
+
 float median_float(int N, float ar[N])
 {
 	float tmp[N];
@@ -57,6 +72,178 @@ complex float median_complex_float(int N, complex float ar[N])
 	return (1 == N % 2) ? tmp[(N - 1) / 2] : ((tmp[(N - 1) / 2 + 0] + tmp[(N - 1) / 2 + 1]) / 2.);
 }
 
+
+/**
+ * Quickselect adapted from §8.5 in Numerical Recipes in C, 
+ * The Art of Scientific Computing
+ * Second Edition, William H. Press, 1992.
+ */
+static float quickselect(float *arr, unsigned int n, unsigned int k) {
+  unsigned long i,ir,j,l,mid;
+  float a;
+   
+  l=0;
+  ir=n-1;
+  for(;;) {
+    if (ir <= l+1) { 
+      if (ir == l+1 && arr[ir] > arr[l]) {
+	SWAP(arr[l],arr[ir], float);
+      }
+      return arr[k];
+    }
+    else {
+      mid=(l+ir) >> 1; 
+      SWAP(arr[mid],arr[l+1], float);
+      if (arr[l] < arr[ir]) {
+	SWAP(arr[l],arr[ir], float);
+      }
+      if (arr[l+1] < arr[ir]) {
+	SWAP(arr[l+1],arr[ir], float);
+      }
+      if (arr[l] < arr[l+1]) {
+	SWAP(arr[l],arr[l+1], float);
+      }
+      i=l+1; 
+      j=ir;
+      a=arr[l+1];
+
+      for (;;) { 
+	do i++; while (arr[i] > a); 
+	do j--; while (arr[j] < a); 
+	if (j < i) break; 
+	SWAP(arr[i],arr[j], float);
+      } 
+      arr[l+1]=arr[j]; 
+      arr[j]=a;
+      
+      if (j >= k) ir=j-1; 
+      if (j <= k) l=i;
+    }
+  }
+}
+
+static float quickselect_complex(complex float *arr, unsigned int n, unsigned int k) {
+  unsigned long i,ir,j,l,mid;
+  float a;
+  complex float ca;
+   
+  l=0;
+  ir=n-1;
+  for(;;) {
+    if (ir <= l+1) { 
+      if (ir == l+1 && cabsf(arr[ir]) > cabsf(arr[l])) {
+	SWAP(arr[l],arr[ir], complex float);
+      }
+      return cabsf(arr[k]);
+    }
+    else {
+      mid=(l+ir) >> 1; 
+      SWAP(arr[mid],arr[l+1], complex float);
+      if (cabsf(arr[l]) < cabsf(arr[ir])) {
+	SWAP(arr[l],arr[ir], complex float);
+      }
+      if (cabsf(arr[l+1]) < cabsf(arr[ir])) {
+	SWAP(arr[l+1],arr[ir], complex float);
+      }
+      if (cabsf(arr[l]) < cabsf(arr[l+1])) {
+	SWAP(arr[l],arr[l+1], complex float);
+      }
+      i=l+1; 
+      j=ir;
+      a=cabsf(arr[l+1]);
+      ca = arr[l+1];
+      for (;;) { 
+	do i++; while (cabsf(arr[i]) > a); 
+	do j--; while (cabsf(arr[j]) < a); 
+	if (j < i) break; 
+	SWAP(arr[i],arr[j], complex float);
+      } 
+      arr[l+1]=arr[j]; 
+      arr[j]=ca;
+      
+      if (j >= k) ir=j-1; 
+      if (j <= k) l=i;
+    }
+  }
+}
+
+/**
+ * Return the absolute value of the kth largest array element
+ * To be used for hard thresholding
+ * using full sort
+ *
+ * @param N number of elements
+ * @param k the sorted element index to pick
+ * @param r the input complex array
+ *
+ */
+
+float klargest_complex_sort( unsigned int N,  unsigned int k, const complex float* ar)
+{
+  
+        complex float* tmp = (complex float*)malloc(N * sizeof(complex float));
+	memcpy(tmp, ar, N * sizeof(complex float));
+
+	
+	
+	sort_complex_floats_dyn(N, tmp);
+	
+	float thr = (N >= k) ? cabsf(tmp[N-k]) : 0.;
+
+	free(tmp);
+
+	return thr;
+
+}
+
+/**
+ * Return the absolute value of the kth largest array element
+ * To be used for hard thresholding
+ * using partial sort (quickselect) on the absolute values of the complex array
+ *
+ * @param N number of elements
+ * @param k the sorted element index to pick
+ * @param r the input complex array
+ *
+ */
+float klargest_complex_sort_part_selfloat(unsigned int N, unsigned int k, const complex float* ar)
+{
+  assert(k <= N);
+  float* tmp =  (float*)malloc(N * sizeof(float));
+  zabs(N, tmp, ar); 
+
+	
+	float thr = quickselect(tmp, N, k);
+
+	free(tmp);
+
+	return thr;
+
+}
+
+/**
+ * Return the absolute value of the kth largest array element
+ * To be used for hard thresholding
+ * using partial sort (quickselect) on the complex array (copy of)
+ *
+ * @param N number of elements
+ * @param k the sorted element index to pick
+ * @param r the input complex array
+ *
+ */
+float klargest_complex_sort_part_selcpx( unsigned int N,  unsigned int k, const complex float* ar)
+{
+  assert(k <= N);
+  complex float* tmp =  (complex float*)malloc(N * sizeof(complex float));
+  memcpy(tmp, ar, N * sizeof(complex float));
+	
+	float thr = quickselect_complex(tmp, N, k);
+
+	free(tmp);
+
+	return thr;
+
+}
 
 struct median_s {
 

@@ -1,5 +1,6 @@
 /* Copyright 2013-2015 The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -9,6 +10,7 @@
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2016 Siddharth Iyer <sid8795@gmail.com>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
  * Operations on arrays of complex single-precision floating
@@ -2623,6 +2625,20 @@ static void nary_zsoftthresh_half(struct nary_opt_data_s* data, void* ptr[])
 }
 
 /**
+ * Hard Thresholding complex array
+ *
+ * return HardThresh(ptr)
+ */
+static void nary_zhardthresh(struct nary_opt_data_s* data, void* ptr[])
+{
+  /* * here float lambda is replaced by integer k (data->data_ptr) * */
+  /* in order to be used as an index for hard thresholding*/
+  
+  data->ops->zhardthresh(data->size, (*(unsigned int*)data->data_ptr), ptr[0], ptr[1]);
+}
+
+
+/**
  * Step (2) of Soft Thresholding multi-dimensional arrays, y = ST(x, lambda)
  * 2) computes resid = MAX( (abs(x) - lambda)/abs(x), 0 ) (with strides)
  *
@@ -2768,7 +2784,19 @@ void md_zsoftthresh_core2(unsigned int D, const long dims[D], float lambda, unsi
 	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
 }
 
+void md_zhardthresh_core2(unsigned int D, const long dims[D], unsigned int k, unsigned int flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+{
+	long norm_dims[D];
+	long norm_strs[D];
 
+	md_select_dims(D, ~flags, norm_dims, dims);
+	md_calc_strides(D, norm_strs, norm_dims, CFL_SIZE);
+
+	md_zrss(D, dims, flags, tmp_norm, iptr); // for compatibility with joint thresholding design
+	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh, &k);
+	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
+
+}
 
 static void nary_zsoftthresh(struct nary_opt_data_s* data, void* ptr[])
 {
@@ -2807,6 +2835,36 @@ void md_zsoftthresh2(unsigned int D, const long dims[D], float lambda, unsigned 
 	md_free(tmp_norm);
 }
 
+/**
+ * Hard thresholding using norm along arbitrary dimension (with strides)
+ *
+ * y = HT(x, k)
+ * selects k largest elements of x
+ *
+ * @param D number of dimensions
+ * @param dims dimensions of input/output
+ * @param k threshold index of sorted array
+ * @param flags jointly thresholded dimensions
+ * @param optr destination -- soft thresholded values (y)
+ * @param iptr source -- values to be soft thresholded (x)
+ */
+void md_zhardthresh2(unsigned int D, const long dims[D], unsigned int k, unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+{
+	if (0 == flags) {
+
+		optimized_twoop_oi(D, dims, ostrs, optr, istrs, iptr, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh, &k);
+		return;
+	}
+
+	long norm_dims[D];
+	md_select_dims(D, ~flags, norm_dims, dims);
+
+	complex float* tmp_norm = md_alloc_sameplace(D, norm_dims, CFL_SIZE, iptr);
+
+	md_zhardthresh_core2(D, dims, k, flags, tmp_norm, ostrs, optr, istrs, iptr);
+
+	md_free(tmp_norm);
+}
 
 
 /**
@@ -2831,6 +2889,26 @@ void md_zsoftthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 	md_zsoftthresh2(D, dims, lambda, flags, strs, optr, strs, iptr);
 }
 
+/**
+ * Hard thresholding
+ *
+ * y = HT(x, k)
+ * selects k largest elements of x
+ *
+ * @param D number of dimensions
+ * @param dims dimensions of input/output
+ * @param k threshold index of sorted array
+ * @param flags jointly thresholded dimensions
+ * @param optr destination -- soft thresholded values
+ * @param iptr source -- values to be soft thresholded
+ */
+void md_zhardthresh(unsigned int D, const long dims[D], unsigned int k, unsigned int flags, complex float* optr, const complex float* iptr)
+{
+	long strs[D];
+	md_calc_strides(D, strs, dims, CFL_SIZE);
+
+	md_zhardthresh2(D, dims, k, flags, strs, optr, strs, iptr);
+}
 
 
 /**

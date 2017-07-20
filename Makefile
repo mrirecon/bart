@@ -228,8 +228,18 @@ CUDA_H :=
 CUDA_L :=  
 endif
 
-NVCCFLAGS = -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 -arch=sm_20 -I$(srcdir)/ -m64 -ccbin $(CC)
+GENCODE_FLAGS   ?= -gencode arch=compute_20,code=sm_20
+NVCCFLAGS = -DUSE_CUDA -Xcompiler -fPIC -O3 $(GENCODE_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
 #NVCCFLAGS = -Xcompiler -fPIC -Xcompiler -fopenmp -O3  -I$(srcdir)/
+
+ifeq ($(OMP),1)
+NVCCFLAGS += -Xcompiler -fopenmp
+endif
+
+ifeq ($(DEBUG),1)
+NVCCFLAGS += -lineinfo
+endif
+
 
 
 %.o: %.cu
@@ -242,6 +252,7 @@ NVCCFLAGS = -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 -arch=sm_20 -I$(
 ifeq ($(OMP),1)
 CFLAGS += -fopenmp
 CXXFLAGS += -fopenmp
+NVCCFLAGS+= -Xcompiler -fopenmp
 else
 CFLAGS += -Wno-unknown-pragmas
 CXXFLAGS += -Wno-unknown-pragmas
