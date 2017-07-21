@@ -287,9 +287,12 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			debug_printf(DP_INFO, "NIHT with wavelets: %d\n", regs[nr].k);
 
 			if (0 != regs[nr].jflags){
+			      debug_printf(DP_WARN, "joint NIHT-wavelet thresholding implementation not complete\n");				     
 				 for (unsigned int i = 0; i < DIMS; i++) {
-				     if (MD_IS_SET(regs[nr].jflags, i))
-				          debug_printf(DP_WARN, "joint NIHT-wavelet thresholding implementation not complete,\nProceeding to apply joint hard thresholding of wavelet coefficients on dimension %d\n", i);
+				   if (MD_IS_SET(regs[nr].jflags, i)){
+				     if (10 != i)
+				       debug_printf(DP_WARN, "\nDimension %d not implemented\n", i);
+				   }
 				 }
 			}
 

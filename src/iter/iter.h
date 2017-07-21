@@ -140,7 +140,7 @@ extern const struct iter_pocs_conf iter_pocs_defaults;
 italgo_fun_f iter_conjgrad;
 italgo_fun_f iter_landweber;
 italgo_fun_f iter_ist;
-//italgo_fun_f iter_niht;
+italgo_fun_f iter_niht;
 italgo_fun_f iter_fista;
 italgo_fun_f iter_admm;
 
