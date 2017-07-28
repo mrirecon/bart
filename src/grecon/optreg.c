@@ -1,5 +1,6 @@
 /* Copyright 2015-2016. The Regents of the University of California.
  * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -7,6 +8,7 @@
  * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015-2016 Frank Ong <frankong@berkeley.edu>
  * 2015-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  */
 
@@ -51,6 +53,7 @@ void help_reg(void)
 			"-R Q:C    \tl2-norm in image domain\n"
 			"-R I:B:C  \tl1-norm in image domain\n"
 			"-R W:A:B:C\tl1-wavelet\n"
+		        "-R H:A:B:C\tNIHT with wavelets\n"
 			"-R T:A:B:C\ttotal variation\n"
 			"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
 			"-R L:7:7:.02\tLocally low rank with spatial decimation and 0.02 regularization.\n"
@@ -85,6 +88,13 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 
 			regs[r].xform = L1WAV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "H") == 0) {
+
+			regs[r].xform = L0WAV;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
+			p->k=regs[r].k;
 			assert(3 == ret);
 		}
 		else if (strcmp(rt, "L") == 0) {
@@ -202,6 +212,7 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 	ropts->r = 0;
 	ropts->algo = CG;
 	ropts->lambda = -1;
+	ropts->k = 0u;
 
 	return false;
 }
@@ -232,6 +243,8 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 
 	int nr_penalties = ropts->r;
 	long blkdims[MAX_LEV][DIMS];
+	long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
+	unsigned int wflags = 0;
 	int levels;
 
 
@@ -250,13 +263,13 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			if (0 != regs[nr].jflags)
 				debug_printf(DP_WARN, "joint l1-wavelet thresholding not currently supported.\n");
 
-			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
+
 			minsize[0] = MIN(img_dims[0], 16);
 			minsize[1] = MIN(img_dims[1], 16);
 			minsize[2] = MIN(img_dims[2], 16);
 
 
-			unsigned int wflags = 0;
+			wflags = 0;
 			for (unsigned int i = 0; i < DIMS; i++) {
 
 				if ((1 < img_dims[i]) && MD_IS_SET(regs[nr].xflags, i)) {
@@ -267,7 +280,35 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			}
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, regs[nr].lambda, randshift);
+			prox_ops[nr] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].lambda, randshift);
+			break;
+
+		case L0WAV:
+			debug_printf(DP_INFO, "NIHT with wavelets: %d\n", regs[nr].k);
+
+			if (0 != regs[nr].jflags){
+			      debug_printf(DP_WARN, "joint NIHT-wavelet thresholding implementation not complete\n");				     
+				 for (unsigned int i = 0; i < DIMS; i++) {
+				   if (MD_IS_SET(regs[nr].jflags, i)){
+				     if (10 != i)
+				       debug_printf(DP_WARN, "\nDimension %d not implemented\n", i);
+				   }
+				 }
+			}
+
+ 			wflags = 0;
+			for (unsigned int i = 0; i < DIMS; i++) {
+
+				if ((1 < img_dims[i]) && MD_IS_SET(regs[nr].xflags, i)) {
+
+					wflags = MD_SET(wflags, i);
+					minsize[i] = MIN(img_dims[i], 16);
+				}
+			}
+
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr] = prox_wavelet3_niht_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].k, randshift);
+			prox_ops[nr + 1] = prox_wavelet3_niht_support_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].k, randshift);
 			break;
 
 		case TV:

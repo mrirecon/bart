@@ -1,10 +1,12 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014      Frank Ong <frankong@berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <complex.h>
@@ -44,8 +46,8 @@ const struct lad_conf lad_defaults = { 5, 0.1, ~0u, &lsqr_defaults };
 void lad2(	unsigned int N, const struct lad_conf* conf,
 		italgo_fun2_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
-		unsigned int num_funs,
-		const struct operator_p_s* prox_funs[num_funs],
+		unsigned int num_funs, unsigned int num_pfuns,
+		const struct operator_p_s* prox_funs[num_pfuns],
 		const struct linop_s* prox_linops[num_funs],
 		const long x_dims[static N], complex float* x,
 		const long y_dims[static N], const complex float* y)
@@ -75,7 +77,7 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
 		// solve weighted least-squares
 
 		wlsqr2(N, conf->lsqr_conf, italgo, iconf, model_op,
-				1, prox_funs, prox_linops,
+		       1, 1, prox_funs, prox_linops,
 		       x_dims, x, y_dims, y, w_dims, weights, NULL);
 	}
 		
@@ -95,7 +97,7 @@ void lad(	unsigned int N, const struct lad_conf* conf,
 		const long y_dims[static N], const complex float* y)
 {
 	lad2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s) }, italgo, iconf })),
-		model_op, (NULL != prox_funs) ? 1 : 0, &prox_funs, NULL,
+	     model_op, (NULL != prox_funs) ? 1 : 0, (NULL != prox_funs) ? 1 : 0, &prox_funs, NULL,
 		x_dims, x, y_dims, y);
 }
 
@@ -109,6 +111,7 @@ struct lad_s {
 	iter_conf* iconf;
 	const struct linop_s* model_op;
 	unsigned int num_funs;
+        unsigned int num_pfuns;
 	const struct operator_p_s** prox_funs;
 	const struct linop_s** prox_linops;
 };
@@ -122,7 +125,7 @@ static void lad_apply(const operator_data_t* _data, unsigned int N, void* args[s
 	const struct iovec_s* cod_iov = operator_codomain(data->model_op->forward);
 
 	lad2(dom_iov->N, data->conf, data->italgo, data->iconf, data->model_op,
-		data->num_funs, data->prox_funs, data->prox_linops,
+	     data->num_funs, data->num_pfuns, data->prox_funs, data->prox_linops,
 		cod_iov->dims, args[0], dom_iov->dims, args[1]);
 }
 
@@ -134,7 +137,7 @@ static void lad_del(const operator_data_t* _data)
 
 	if (NULL != data->prox_funs) {
 
-		for (unsigned int i = 0; i < data->num_funs; i++)
+		for (unsigned int i = 0; i < data->num_pfuns; i++)
 			operator_p_free(data->prox_funs[i]);
 
 		xfree(data->prox_funs);
@@ -155,8 +158,8 @@ const struct operator_s* lad2_create(const struct lad_conf* conf,
 		italgo_fun2_t italgo, iter_conf* iconf,
 		const float* init,
 		const struct linop_s* model_op,
-		unsigned int num_funs,
-		const struct operator_p_s* prox_funs[num_funs],
+		unsigned int num_funs, unsigned int num_pfuns,
+		const struct operator_p_s* prox_funs[num_pfuns],
 		const struct linop_s* prox_linops[num_funs])
 {
 	PTR_ALLOC(struct lad_s, data);
@@ -171,7 +174,8 @@ const struct operator_s* lad2_create(const struct lad_conf* conf,
 	data->iconf = iconf;
 	data->model_op = linop_clone(model_op);
 	data->num_funs = num_funs;
-	data->prox_funs = *TYPE_ALLOC(const struct operator_p_s*[num_funs]);
+	data->num_pfuns = num_pfuns;
+	data->prox_funs = *TYPE_ALLOC(const struct operator_p_s*[num_pfuns]);
 	data->prox_linops = *TYPE_ALLOC(const struct linop_s*[num_funs]);
 
 	assert(NULL == init);
@@ -179,8 +183,11 @@ const struct operator_s* lad2_create(const struct lad_conf* conf,
 
 	for (unsigned int i = 0; i < num_funs; i++) {
 
-		data->prox_funs[i] = operator_p_ref(prox_funs[i]);
-		data->prox_linops[i] = linop_clone(prox_linops[i]);
+	  data->prox_linops[i] = linop_clone(prox_linops[i]);
+	}
+
+	for (unsigned int i = 0; i < num_pfuns; i++) {
+	  data->prox_funs[i] = operator_p_ref(prox_funs[i]);
 	}
 
 	return operator_create(cod_iov->N, cod_iov->dims, dom_iov->N, dom_iov->dims,

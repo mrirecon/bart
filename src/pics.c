@@ -1,5 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -7,6 +8,7 @@
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  */
 
@@ -127,6 +129,7 @@ int main_pics(int argc, char* argv[])
 		OPT_SET('g', &conf.gpu, "use GPU"),
 		OPT_STRING('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "select IST"),
+		OPT_SELECT('N', enum algo_t, &ropts.algo, NIHT, "select NIHT"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
@@ -231,6 +234,9 @@ int main_pics(int argc, char* argv[])
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 	}
 
+	// calculate number of samples and total image size
+	long T = md_calc_size(DIMS, pat_dims);
+	long samples = (long)pow(md_znorm(DIMS, pat_dims, pattern), 2.);
 
 	if (NULL != traj_file) {
 
@@ -254,8 +260,6 @@ int main_pics(int argc, char* argv[])
 
 		// print some statistics
 
-		long T = md_calc_size(DIMS, pat_dims);
-		long samples = (long)pow(md_znorm(DIMS, pat_dims, pattern), 2.);
 
 		debug_printf(DP_INFO, "Size: %ld Samples: %ld Acc: %.2f\n", T, samples, (float)T / (float)samples);
 	}
@@ -393,14 +397,14 @@ int main_pics(int argc, char* argv[])
 	// initialize prox functions
 
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
+	const struct operator_p_s* nthresh_ops[NUM_REGS + 1] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
+	enum algo_t algo = ropts.algo;
 
-	opt_reg_configure(DIMS, img1_dims, &ropts, thresh_ops, trafos, llr_blk, randshift, conf.gpu);
+	opt_reg_configure(DIMS, img1_dims, &ropts, ((NIHT == algo) ? nthresh_ops : thresh_ops), trafos, llr_blk, randshift, conf.gpu);
 
 	int nr_penalties = ropts.r;
 	struct reg_s* regs = ropts.regs;
-	enum algo_t algo = ropts.algo;
-
 
 	// initialize algorithm
 
@@ -413,6 +417,7 @@ int main_pics(int argc, char* argv[])
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 	struct iter_fista_conf fsconf = iter_fista_defaults;
 	struct iter_ist_conf isconf = iter_ist_defaults;
+	struct iter_niht_conf ihconf = iter_niht_defaults;
 	struct iter_admm_conf mmconf = iter_admm_defaults;
 
 	if ((CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
@@ -482,6 +487,22 @@ int main_pics(int argc, char* argv[])
 			iter2_data._conf = CAST_UP(&isconf);
 
 			break;
+			
+		case NIHT:
+
+			debug_printf(DP_INFO, "NIHT\n");
+
+			ihconf = iter_niht_defaults;
+			ihconf.maxiter = maxiter;
+			ihconf.tol = 0.001f;
+			ihconf.samples = samples;
+
+			italgo = iter2_niht;
+			iconf = CAST_UP(&ihconf);
+			//			iter2_data.fun = iter_niht;
+		      //			iter2_data._conf = CAST_UP(&ihconf);
+
+			break;		   
 
 		case ADMM:
 
@@ -526,9 +547,11 @@ int main_pics(int argc, char* argv[])
 
 
 	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
-				pat1_dims, (NULL != traj_file) ? NULL : pattern1,
-				italgo, iconf, image_start1, nr_penalties, thresh_ops,
-				(ADMM == algo) ? trafos : NULL, precond_op);
+				 pat1_dims, (NULL != traj_file) ? NULL : pattern1,
+				 italgo, iconf, image_start1, nr_penalties,
+				 ((NIHT == algo) ? nr_penalties +1 : nr_penalties),
+				 ((NIHT == algo) ? nthresh_ops : thresh_ops),
+				 (ADMM == algo) ? trafos : NULL, precond_op);
 
 	long strsx[2][DIMS];
 	const long* strs[2] = { strsx[0], strsx[1] };

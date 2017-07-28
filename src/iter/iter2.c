@@ -1,11 +1,13 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014	Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <complex.h>
@@ -72,8 +74,8 @@ static bool checkeps(float eps)
 
 void iter2_conjgrad(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s* prox_ops[D],
+		unsigned int D, unsigned int P,
+		const struct operator_p_s* prox_ops[P],
 		const struct linop_s* ops[D],
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
@@ -82,6 +84,7 @@ void iter2_conjgrad(iter_conf* _conf,
 {
 
 	assert(0 == D);
+	assert(0 == P);
 	assert(NULL == prox_ops);
 	assert(NULL == ops);
 	assert(NULL == biases);
@@ -104,8 +107,8 @@ cleanup:
 
 void iter2_ist(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s* prox_ops[D],
+		unsigned int D, unsigned int P,
+		const struct operator_p_s* prox_ops[P],
 		const struct linop_s* ops[D],
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
@@ -114,6 +117,7 @@ void iter2_ist(iter_conf* _conf,
 {
 
 	assert(D == 1);
+	assert(P == 1);
 	assert(NULL != prox_ops[0]);
 	assert(NULL == biases);
 #if 0
@@ -140,11 +144,53 @@ cleanup:
 	;
 }
 
+void iter2_niht(iter_conf* _conf,
+		const struct operator_s* normaleq_op,
+		unsigned int D, unsigned int P,
+		const struct operator_p_s* prox_ops[static P],
+		const struct linop_s* ops[static D],
+		const float* biases[static D],
+		const struct operator_p_s* xupdate_op,
+		long size, float* image, const float* image_adj,
+		struct iter_monitor_s* monitor)
+{
+
+	assert(D == 1);
+	assert(P == 2);
+	assert(NULL != prox_ops[0] && NULL != prox_ops[1]);
+	assert(NULL == biases);
+#if 0
+	assert(NULL == ops);
+#else
+	UNUSED(ops);
+#endif
+	UNUSED(xupdate_op);
+
+	struct iter_niht_conf* conf = CAST_DOWN(iter_niht_conf, _conf);
+
+	//	float eps = md_norm(1, MD_DIMS(size), image_adj);
+	// epsilon here defined by the undersampling ratio
+	double n = (double)size / 2.0; //size = 2*n (due to complex numbers)
+	double m = (double)conf->samples;
+	float eps = (float)(m / n);
+	
+	if (checkeps(eps))
+		goto cleanup;
+
+
+	niht(conf->maxiter, eps * conf->tol, size, select_vecops(image_adj), 
+	OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), OPERATOR_P2ITOP(prox_ops[1]), image, image_adj, monitor);
+
+
+cleanup:
+	;
+}
+
 
 void iter2_fista(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s* prox_ops[D],
+		unsigned int D, unsigned int P, 
+		const struct operator_p_s* prox_ops[P],
 		const struct linop_s* ops[D],
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
@@ -153,6 +199,7 @@ void iter2_fista(iter_conf* _conf,
 {
 
 	assert(D == 1);
+	assert(P == 1);
 	assert(NULL == biases);
 #if 0
 	assert(NULL == ops);
@@ -181,14 +228,16 @@ cleanup:
 
 void iter2_admm(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s* prox_ops[D],
+		unsigned int D, unsigned int P,
+		const struct operator_p_s* prox_ops[P],
 		const struct linop_s* ops[D],
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
+        assert(D == P);
+	
 	struct iter_admm_conf* conf = CAST_DOWN(iter_admm_conf, _conf);
 
 	struct admm_plan_s admm_plan = {
@@ -252,20 +301,22 @@ cleanup:
 
 void iter2_pocs(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s* prox_ops[D],
+		unsigned int D, unsigned int P,
+		const struct operator_p_s* prox_ops[P],
 		const struct linop_s* ops[D],
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
+  
 	struct iter_pocs_conf* conf = CAST_DOWN(iter_pocs_conf, _conf);
 
 	assert(NULL == normaleq_op);
 	assert(NULL == ops);
 	assert(NULL == biases);
 	assert(NULL == image_adj);
+	assert(D == P);
 
 	UNUSED(xupdate_op);
 	UNUSED(image_adj);
@@ -281,8 +332,8 @@ void iter2_pocs(iter_conf* _conf,
 
 void iter2_call_iter(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s* prox_ops[D],
+		unsigned int D, unsigned int P,
+		const struct operator_p_s* prox_ops[P],
 		const struct linop_s* ops[D],
 		const float* biases[D],
 		const struct operator_p_s* xupdate_op,
@@ -290,15 +341,17 @@ void iter2_call_iter(iter_conf* _conf,
 		struct iter_monitor_s* monitor)
 {
 	assert(D <= 1);
+	assert(P <= 1);
 	assert(NULL == ops);
 	assert(NULL == biases);
 
 	UNUSED(xupdate_op);
 
 	struct iter_call_s* it = CAST_DOWN(iter_call_s, _conf);
-
+	
 	it->fun(it->_conf, normaleq_op, (1 == D) ? prox_ops[0] : NULL,
 		size, image, image_adj, monitor);
+	
 }
 
 

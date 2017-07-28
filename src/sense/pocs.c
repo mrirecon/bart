@@ -1,11 +1,13 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012, 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
  * Samsonov AA, Kholmovski EG, Parker DL, Johnson CR. POCSENSE: POCS-based
@@ -247,7 +249,7 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 	long size = 2 * md_calc_size(DIMS, dims_ksp);
 
 	md_clear(DIMS, dims_ksp, result, CFL_SIZE);
-	italgo(iconf, NULL, (alpha == 0.) ? 2 : 3, prox_ops, ops, NULL, xupdate_op, size, (float*)result, NULL, create_monitor(size, NULL, (void*)&data, compute_norm));
+	italgo(iconf, NULL, (alpha == 0.) ? 2 : 3, (alpha == 0.) ? 2 : 3, prox_ops, ops, NULL, xupdate_op, size, (float*)result, NULL, create_monitor(size, NULL, (void*)&data, compute_norm));
 
 	debug_printf(DP_INFO, "Done\n");
 

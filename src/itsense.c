@@ -1,10 +1,12 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
  * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  * 
  * Basic iterative sense reconstruction
@@ -26,7 +28,6 @@
 #include "iter/iter.h"
 
 #include "misc/misc.h"
-#include "misc/types.h"
 #include "misc/mmio.h"
 #include "misc/mri.h"
 #include "misc/types.h"

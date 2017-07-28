@@ -1,9 +1,11 @@
 /* Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <assert.h>
@@ -32,6 +34,7 @@ struct itop_s {
 
 	const struct operator_s* op;
 	unsigned int num_funs;
+  	unsigned int num_pfuns;
 	long size;
 
 	const float* init;
@@ -58,7 +61,7 @@ static void itop_apply(const operator_data_t* _data, unsigned int N, void* args[
 		md_copy(iov->N, iov->dims, args[0], data->init, iov->size);
 	}
 
-	data->italgo(data->iconf, data->op, data->num_funs, data->prox_funs, data->prox_linops, NULL, 
+	data->italgo(data->iconf, data->op, data->num_funs, data->num_pfuns, data->prox_funs, data->prox_linops, NULL, 
 			NULL, data->size, args[0], args[1], data->monitor);
 }
 
@@ -73,7 +76,7 @@ static void itop_del(const operator_data_t* _data)
 
 	if (NULL != data->prox_funs) {
 
-		for (unsigned int i = 0; i < data->num_funs; i++)
+		for (unsigned int i = 0; i < data->num_pfuns; i++)
 			operator_p_free(data->prox_funs[i]);
 
 		xfree(data->prox_funs);
@@ -94,8 +97,8 @@ static void itop_del(const operator_data_t* _data)
 const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 					const float* init,
 					const struct operator_s* op,
-					unsigned int num_funs,
-					const struct operator_p_s* prox_funs[num_funs],
+					unsigned int num_funs, unsigned int num_pfuns,
+					const struct operator_p_s* prox_funs[num_pfuns],
 					const struct linop_s* prox_linops[num_funs],
 					struct iter_monitor_s* monitor)
 {
@@ -113,6 +116,8 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 	data->prox_funs = NULL;
 	data->prox_linops = NULL;
 	data->init = NULL;
+	data->num_funs = num_funs;
+	data->num_pfuns = num_pfuns;
 
 	if (NULL != init) {
 
@@ -123,9 +128,9 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 
 	if (NULL != prox_funs) {
 
-		data->prox_funs = *TYPE_ALLOC(const struct operator_p_s*[num_funs]);
+		data->prox_funs = *TYPE_ALLOC(const struct operator_p_s*[num_pfuns]);
 
-		for (unsigned int i = 0; i < num_funs; i++)
+		for (unsigned int i = 0; i < num_pfuns; i++)
 			data->prox_funs[i] = operator_p_ref(prox_funs[i]);
 	}
 

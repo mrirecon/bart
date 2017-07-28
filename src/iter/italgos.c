@@ -1,5 +1,6 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -7,7 +8,7 @@
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013-2014 Frank Ong <frankong@berkeley.edu>
  * 2013-2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
- *
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
  * Landweber L. An iteration formula for Fredholm integral equations of the
@@ -25,6 +26,14 @@
  *
  * Beck A, Teboulle M. A fast iterative shrinkage-thresholding algorithm for
  * linear inverse problems. SIAM Journal on Imaging Sciences 2.1 2009; 183-202.
+ * 
+ * Blumensath T, Davies ME. Normalized iterative hard thresholding: Guaranteed 
+ * stability and performance. IEEE Journal of selected topics in signal 
+ * processing. 2010 Apr;4(2):298-309.
+ *
+ * Blanchard JD, Tanner J. Performance comparisons of greedy algorithms in 
+ * compressed sensing. Numerical Linear Algebra with Applications. 
+ * 2015 Mar 1;22(2):254-82.
  *
  */
 
@@ -230,6 +239,9 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 
 	debug_printf(DP_DEBUG3, "\n");
 
+	debug_printf(DP_DEBUG2, "\n#residual l2 norm: %f\n", itrdata.rsnew);
+	debug_printf(DP_DEBUG2, "\n#relative signal residual: %f\n\n", itrdata.rsnew / itrdata.rsnot);
+	
 	vops->del(r);
 }
 
@@ -326,6 +338,113 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 	vops->del(r);
 }
 
+static void check_niht_mu()
+{
+  debug_printf(DP_INFO, "\nChecking and correcting the step size mu for NIHT is not currently implemented.\nIt may be implemented in a future version.\n");
+  
+}
+
+/**
+ * Normalised Iterative Hard Thresholding/NIHT to solve min || b - Ax ||_2 s.t. || T x ||_0 <= k
+ * using an adaptive step size with the iteration: x_n+1 = H_k (x_n + mu_n(A^T (y - A x_n))
+ * where H_k(x) = support(x) the hard thresholding operator, keeps the k largest elements of x 
+ * mu_n the adaptive step size.
+ *
+ * @param maxiter maximum number of iterations
+ * @param epsilon stop criterion
+ * @param N size of input, x
+ * @param vops vector ops definition
+ * @param op linear operator, e.g. A
+ * @param thresh NIHT threshold function
+ * @param supp NIHT support operator function
+ * @param x initial estimate
+ * @param b observations
+ * @param monitor compute objective value, errors, etc.
+ */
+void niht(unsigned int maxiter, float epsilon,
+	long N, const struct vec_iter_s* vops,
+	struct iter_op_s op, struct iter_op_p_s thresh,
+	struct iter_op_p_s supp, float* x, const float* b,
+	struct iter_monitor_s* monitor)
+{
+	struct iter_data itrdata = {
+
+                .rsnew = 1.,
+		.rsnot = 1.,
+		.iter = 0,
+		.maxiter = maxiter,
+	};
+
+	float* r = vops->allocate(N);
+	float* g = vops->allocate(N); // negative gradient of ||y - Ax||^2 with non-zero support
+	float* pg = vops->allocate(N); // temp for mu calculations
+	
+	itrdata.rsnot = vops->norm(N, b); // initial residual norm
+	float rsold = itrdata.rsnot;
+			      
+	int ic = 0;
+	
+	// create initial support for x and g from b.
+	iter_op_p_call(thresh, 1.0, x, b);
+
+	for (itrdata.iter = 0; itrdata.iter < maxiter; itrdata.iter++) {
+	  iter_monitor(monitor, vops, x);
+       
+	  iter_op_call(op, r, x);   // r = A x
+	  vops->xpay(N, -1., r, b); // r = b - r = b - A x,
+
+	  vops->copy(N, g, r);	  
+	    
+	  // apply support of x to g
+	  iter_op_p_call(supp, 1.0, g, x);	 
+	  
+	  // mu = ||g_n||^2 / ||A g_n||^2
+	  double num = vops->norm(N, g);
+	  num *= num;
+	  iter_op_call(op, pg, g);	 
+	  double den = vops->norm(N, pg);
+	  den *= den;
+	  double mu = num / den;
+	  
+	  itrdata.rsnew = vops->norm(N, r);
+	  
+	  debug_printf(DP_DEBUG3, "\n#It %03d relative residual r / r_0: %f \n", itrdata.iter, itrdata.rsnew / itrdata.rsnot);
+	  debug_printf(DP_DEBUG3, "#It %03d absolute residual: %f , mu = %f \n", itrdata.iter, itrdata.rsnew, mu);
+	  
+	  // Stopping criteria: Blanchard and Tanner 2015
+	  // TODO: select appropriate epsilon and other criteria values
+	  if (itrdata.rsnew < epsilon) // residual is small
+	    break;
+	  
+	  if (itrdata.rsnew > 100.0 * itrdata.rsnot){ // algorithm is diverging r_l > 100*r_0
+	    break;
+	  }
+	  
+	  if (fabs(itrdata.rsnew - rsold) <= 1.0E-06f){ // no significant change in residual
+	    debug_printf(DP_INFO, "\n*** rsnew - rsold =  %f **\n", fabs(itrdata.rsnew - rsold) );
+	    ic++;
+	    if (15 == ic)        // in 16 iterations. Normally 1e-06
+	      break;             // more appropriate for noisy measurements
+	                         // where convergence will occur with larger residual
+	  }
+	  
+	  vops->axpy(N, x, mu, r); // update solution: xk+1 = xk + mu rk+1
+	  iter_op_p_call(thresh, 1.0, x, x); // apply thresholding Hs(xk+1)
+	  
+	  rsold = itrdata.rsnew; // keep residual for comparison
+	  
+	}
+
+	debug_printf(DP_DEBUG3, "\n");
+	
+	debug_printf(DP_DEBUG2, "\n#residual l2 norm: %f\n", itrdata.rsnew);
+	debug_printf(DP_DEBUG2, "\n#relative signal residual: %f\n\n", itrdata.rsnew / itrdata.rsnot);
+		     
+	vops->del(r);
+	vops->del(g);
+	vops->del(pg);
+
+}
 
 
 /**
@@ -391,6 +510,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 	float* p = vops->allocate(N);
 	float* Ap = vops->allocate(N);
 
+	unsigned int i = 0;
 
 	// The first calculation of the residual might not
 	// be necessary in some cases...
@@ -413,7 +533,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 		goto cleanup;
 	}
 
-	for (unsigned int i = 0; i < maxiter; i++) {
+	for (i = 0; i < maxiter; i++) {
 
 		iter_monitor(monitor, vops, x);
 
@@ -445,6 +565,9 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 		vops->xpay(N, beta, p, r);	// p = beta * p + r
 
 	}
+	 
+	debug_printf(DP_DEBUG2, "\nCG finished in %d iterations\n", i);
+	debug_printf(DP_DEBUG2, "\n#residual l2 norm: %f (%e)\n", sqrtf(rsnew), sqrtf(rsnew));
 
 cleanup:
 	vops->del(Ap);

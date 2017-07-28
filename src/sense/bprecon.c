@@ -1,4 +1,5 @@
 /* Copyright 2013-2014. The Regents of the University of California.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -6,6 +7,7 @@
  * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2013-2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014      Frank Ong <frankong@berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
  * Ra JB, Rim CY. Fast imaging using subencoding data sets from multiple
@@ -197,7 +199,7 @@ void bpsense_recon(struct bpsense_conf* conf, const long dims[DIMS], complex flo
 	// -----------------------------------------------------------
 	// recon
 	
-	iter2_admm(conf->iconf, NULL, conf->lambda == 0. ? 2 : 3, prox_ops, linops, NULL, NULL, size, (float*)image, NULL, create_monitor(size, (const float*)image_truth, data, bpsense_objective));
+	iter2_admm(conf->iconf, NULL, conf->lambda == 0. ? 2 : 3, conf->lambda == 0. ? 2 : 3, prox_ops, linops, NULL, NULL, size, (float*)image, NULL, create_monitor(size, (const float*)image_truth, data, bpsense_objective));
 
 
 	// -----------------------------------------------------------

@@ -53,8 +53,8 @@ struct iter_monitor_s;
 
 typedef void (italgo_fun2_f)(iter_conf* conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
-		const struct operator_p_s* prox_ops[__VLA2(D)],
+		unsigned int D, unsigned int P,
+		const struct operator_p_s* prox_ops[__VLA2(P)],
 		const struct linop_s* ops[__VLA2(D)],
 		const float* biases[__VLA2(D)],
 		const struct operator_p_s* xupdate_op,
@@ -65,6 +65,7 @@ typedef italgo_fun2_f* italgo_fun2_t;
 
 italgo_fun2_f iter2_conjgrad;
 italgo_fun2_f iter2_ist;
+italgo_fun2_f iter2_niht;
 italgo_fun2_f iter2_fista;
 italgo_fun2_f iter2_admm;
 italgo_fun2_f iter2_pocs;

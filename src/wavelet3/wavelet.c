@@ -1,10 +1,12 @@
 /* Copyright 2014. The Regents of the University of California.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013 Frank Ong <uecker@eecs.berkeley.edu>
  * 2013-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 /*
@@ -31,6 +33,7 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/mri.h"
 
 #include "num/flpmath.h"
 #include "num/multind.h"
@@ -118,6 +121,223 @@ static void wavelet_up3(const long dims[3], const long out_str[3], complex float
 			}
 }
 
+
+
+/* Function to apply the non-zero support of array in to array out */
+/* i.e out[i] = 0. where in[i] = 0. */
+static void niht_support(unsigned long N, complex float* out, complex float* in)
+{
+  complex float czero = 0. + 0. * I;
+ #pragma omp parallel for // not sure if this is appropriate at this level
+  for (unsigned long i = 0; i < N; ++i){
+    if (in[i] == czero)
+      out[i] = czero;
+  }
+}
+
+/* Functions to implement joint time dimension in wavelet thresholding */
+/* Temporary for testing ... */
+static int tjoint_wavthresh(unsigned int N, float lambda, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+{
+    if (1024 != jflags){
+	debug_printf(DP_WARN, "\nJoint thresholding is currently only implemented for the time dimension\nWill proceed with thresholding the full vector\n");
+	return -1;
+    }
+  unsigned long coeffs;	
+  long istr[N]; //input frame image domain strides
+  long istrt[N]; //total input image domain strides
+  long owstr[N];//output multiple  frames wavelet domain strides
+  long bwstr[N];//output frame wavelet domain strides
+  long jdims[N]; // joint dims
+  long owdims[N]; // output dims for wavelet transformed data for joint operations
+  long bwdims[N]; // wavelet frame dimensions
+  long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
+	  
+  md_select_dims(N, ~jflags, jdims, dims); // select dimensions without the joint dimension
+  md_select_dims(N, jflags, owdims, dims); // select time dimension for output multiple 2d wavelet vector
+  md_calc_strides(N, istr, jdims, CFL_SIZE); // istr: strides for joint vector in image domain (input) this a 2d slice
+  md_calc_strides(N, istrt, dims, CFL_SIZE); // total image strides
+  
+  coeffs  = wavelet_coeffs(N, flags, jdims, minsize, flen); //number of wav coefficients for 1 2d frame
+
+  owdims[0] = coeffs; //vector of multiple wavelet transforms dim[0] is number of coefficiens per frame
+  md_select_dims(N, ~jflags, bwdims, owdims); // wavelet frame dims are without the time dimension
+  md_calc_strides(N, owstr, owdims, CFL_SIZE); // output wavelet strides
+  md_calc_strides(N, bwstr, bwdims, CFL_SIZE); // output wavelet strides single frame
+  
+  complex float* itmp1 = md_alloc_sameplace(N, jdims, CFL_SIZE, in); // temp image input array single frame
+  complex float* otmp1 = md_alloc_sameplace(N, bwdims, CFL_SIZE, out); // temp wav output array single frame
+  complex float* otmp2 = md_alloc_sameplace(N, owdims, CFL_SIZE, out); // temp wav output array all frames
+  complex float* norm_tmp = md_alloc_sameplace(N, bwdims, CFL_SIZE, out); // temp wav single frame array for norm storage
+
+  for (int i = 0; i < dims[TIME_DIM]; ++i){ // temporary: go through time slices and transform
+    pos2[TIME_DIM] = i;
+    md_slice(N, jflags, pos2, dims, itmp1, in, CFL_SIZE); //itmp1 takes a slice from in image
+    fwt(N, flags, shifts, jdims, otmp1, istr, itmp1, minsize, flen, filter); // wav transform itmp1 put result to otmp1
+    md_copy_block(N, pos2, owdims, otmp2, bwdims, otmp1, CFL_SIZE); // copy the wavelet frame  to the multiple frames vector otmp2
+  }
+	  
+  // take norm in time dimension
+  md_zrss(N, owdims, jflags, norm_tmp, otmp2); // root sum of squares, l2 norm at time dimension
+  md_zsoftthresh_half2(N, bwdims, lambda, bwstr, norm_tmp, bwstr, norm_tmp); // soft threshold the norm
+  md_zmul2(N, owdims, owstr, otmp2, bwstr, norm_tmp, owstr, otmp2); // multiply norm with frames
+
+  // inverse transform in time dimension
+  for (int i = 0; i < dims[TIME_DIM]; ++i){
+    pos2[TIME_DIM] = i;
+    md_slice(N, jflags, pos2, owdims, otmp1, otmp2, CFL_SIZE);
+    iwt(N, flags, shifts, jdims, istr, itmp1, otmp1, minsize, flen, filter);
+    md_copy_block(N, pos2, dims, out, jdims, itmp1, CFL_SIZE);
+  }
+
+  md_free(itmp1);
+  md_free(otmp2);
+  md_free(otmp1);
+  md_free(norm_tmp);
+
+  return 0;
+}
+
+static int tjoint_wavthresh_niht(unsigned int N, int k, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+{
+   if (1024 != jflags){
+	debug_printf(DP_WARN, "\nJoint thresholding is currently only implemented for the time dimension\n\nWill proceed with thresholding the full vector\n");
+	return -1;
+    }  
+unsigned long coeffs;
+  long istr[N];
+  long jdims[N]; // joint dims
+  long owdims[N]; // output dims for wavelet transformed data for joint operations
+  long bwdims[N]; // wavelet frame dimensions
+  long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
+
+  long jdim_ind = 0; // index of joint dimension
+
+  //find index of joint dimension from flag, assuming it's only one
+  for (unsigned int i = 0; i < N; i++)
+    if (MD_IS_SET(jflags, i))
+      jdim_ind = i;
+		  
+  md_select_dims(N, ~jflags, jdims, dims); // select dimensions without the joint dimension
+  md_select_dims(N, jflags, owdims, dims);
+  md_calc_strides(N, istr, jdims, CFL_SIZE);
+
+  coeffs  = wavelet_coeffs(N, flags, jdims, minsize, flen);
+  debug_printf(DP_DEBUG2, "Coefficients for jflags %ld: %ld",jflags, coeffs);
+  owdims[0] = coeffs;
+  md_select_dims(N, ~jflags, bwdims, owdims);
+	
+  complex float* itmp1 = md_alloc_sameplace(N, jdims, CFL_SIZE, in);
+  complex float* otmp1 = md_alloc_sameplace(N, bwdims, CFL_SIZE, out);
+  complex float* otmp2 = md_alloc_sameplace(N, owdims, CFL_SIZE, out);
+  complex float* norm_tmp = md_alloc_sameplace(N, bwdims, CFL_SIZE, out);
+	
+  for (int i = 0; i < dims[jdim_ind]; ++i){ // temporary
+    pos2[TIME_DIM] = i;
+    md_slice(N, jflags, pos2, dims, itmp1, in, CFL_SIZE);
+    fwt(N, flags, shifts, jdims, otmp1, istr, itmp1, minsize, flen, filter);
+    md_copy_block(N, pos2, owdims, otmp2, bwdims, otmp1, CFL_SIZE);
+  }
+	
+  // take norm in time dimension
+  md_zrss(N, owdims, jflags, norm_tmp, otmp2);
+  md_zhardthresh(1, MD_DIMS(coeffs), k, 0u, norm_tmp, norm_tmp); 
+	
+  // apply support and inverse transform in time dimension
+  for (int i = 0; i < dims[jdim_ind]; ++i){
+    pos2[jdim_ind] = i;
+    md_slice(N, jflags, pos2, owdims, otmp1, otmp2, CFL_SIZE);
+    niht_support(coeffs, otmp1, norm_tmp);
+    iwt(N, flags, shifts, jdims, istr, itmp1, otmp1, minsize, flen, filter);
+    md_copy_block(N, pos2, dims, out, jdims, itmp1, CFL_SIZE);
+  }
+	
+  md_free(itmp1);
+  md_free(otmp2);
+  md_free(otmp1);
+  md_free(norm_tmp);
+
+  return 0;
+}
+
+static int tjoint_wavthresh_nihtsup(unsigned int N, int k, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+{
+   if (1024 != jflags){
+	debug_printf(DP_WARN, "\nJoint thresholding is currently only implemented for the time dimension\n\nWill proceed with thresholding the full vector\n");
+	return -1;
+    } 
+ unsigned long coeffs;
+  long istr[N];
+
+  long jdims[N]; // joint dims
+  long owdims[N]; // output dims for wavelet transformed data for joint operations
+  long bwdims[N];
+
+  long jdim_ind  = 0; // index of joint dimension
+
+  //find index of joint dimension from flag, assuming it's only one
+  for (unsigned int i = 0; i < N; i++)
+    if (MD_IS_SET(jflags, i))
+      jdim_ind = i;
+	  
+  md_select_dims(N, ~jflags, jdims, dims); // select dimensions without the joint dimension
+  md_select_dims(N, jflags, owdims, dims);
+	  
+  coeffs = wavelet_coeffs(N, flags, jdims, minsize, flen);
+
+  owdims[0] = coeffs;
+  md_select_dims(N, ~jflags, bwdims, owdims);
+	
+  md_calc_strides(N, istr, jdims, CFL_SIZE);
+
+  long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
+
+
+  complex float* itmp1 = md_alloc_sameplace(N, jdims, CFL_SIZE, out);
+  complex float* itmp2 = md_alloc_sameplace(N, jdims, CFL_SIZE, out);
+  complex float* otmp1 = md_alloc_sameplace(N, bwdims, CFL_SIZE, out);
+  complex float* otmp2 = md_alloc_sameplace(N, bwdims, CFL_SIZE, out);
+  complex float* otmp3 = md_alloc_sameplace(N, owdims, CFL_SIZE, out);
+  complex float* otmp4 = md_alloc_sameplace(N, owdims, CFL_SIZE, out);
+  complex float* norm_tmp = md_alloc_sameplace(N, bwdims, CFL_SIZE, out);
+
+  for (int i = 0; i < dims[jdim_ind]; ++i){ // temporary
+    pos2[jdim_ind] = i;
+    md_slice(N, jflags, pos2, dims, itmp1, in, CFL_SIZE);
+    md_slice(N, jflags, pos2, dims, itmp2, out, CFL_SIZE);
+    fwt(N, flags, shifts, jdims, otmp1, istr, itmp1, minsize, flen, filter);
+    fwt(N, flags, shifts, jdims, otmp2, istr, itmp2, minsize, flen, filter);
+    md_copy_block(N, pos2, owdims, otmp3, bwdims, otmp1, CFL_SIZE);
+    md_copy_block(N, pos2, owdims, otmp4, bwdims, otmp2, CFL_SIZE);
+  }
+	  
+  // take norm in time dimension
+  md_zrss(N, owdims, jflags, norm_tmp, otmp3);
+  md_zhardthresh(1, MD_DIMS(coeffs), k, 0u, norm_tmp, norm_tmp);
+
+  // apply support and inverse transform in time dimension
+  md_clear(N, bwdims, otmp1, CFL_SIZE); //clear individual wavelet frame vectors
+  md_clear(N, bwdims, otmp2, CFL_SIZE);
+  md_clear(N, jdims, itmp2, CFL_SIZE);
+	  
+  for (int i = 0; i < dims[jdim_ind]; ++i){
+    pos2[jdim_ind] = i;
+    md_slice(N, jflags, pos2, owdims, otmp2, otmp4, CFL_SIZE);
+    niht_support(coeffs, otmp2, norm_tmp);
+    iwt(N, flags, shifts, jdims, istr, itmp2, otmp2, minsize, flen, filter);
+    md_copy_block(N, pos2, dims, out, jdims, itmp2, CFL_SIZE);
+  }
+
+  md_free(itmp1);
+  md_free(itmp2);
+  md_free(otmp1);
+  md_free(otmp2);
+  md_free(otmp3);
+  md_free(otmp4);
+  md_free(norm_tmp);
+
+  return 0;
+}
 
 void fwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N], complex float* low, complex float* hgh, const long istr[N], const complex float* in, const long flen, const float filter[2][2][flen])
 {
@@ -476,10 +696,17 @@ void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long di
 }
 
 
-void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
-	unsigned long coeffs = wavelet_coeffs(N, flags, dims, minsize, flen);
+  unsigned long coeffs;
 
+  if (0 != jflags){ // do joint thresholding
+    if(-1 == tjoint_wavthresh (N, lambda, flags, jflags, shifts, dims, out, in, minsize, flen, filter))
+       jflags = 0;
+  }
+ 
+  if (0 == jflags){ // do full vector thresholding
+	coeffs = wavelet_coeffs(N, flags, dims, minsize, flen);
 	long istr[N];
 	md_calc_strides(N, istr, dims, CFL_SIZE);
 
@@ -490,10 +717,68 @@ void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, const lon
 	iwt(N, flags, shifts, dims, istr, out, tmp, minsize, flen, filter);
 
 	md_free(tmp);
+  }
 }
 
 
+/* wavelet transform for NIHT */
+void wavelet3_niht_thresh(unsigned int N, unsigned int k, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+{
+  unsigned long coeffs;	
 
+  if (0 != jflags){ // do joint thresholding
+    if (-1 == tjoint_wavthresh_niht(N, k, flags, jflags, shifts, dims, out, in, minsize, flen, filter))
+      jflags = 0;
+  }
+
+  if (0 == jflags){ // do full vector thresholding
+    long istr[N];
+	
+    md_calc_strides(N, istr, dims, CFL_SIZE);
+    coeffs = wavelet_coeffs(N, flags, dims, minsize, flen);
+    
+    complex float* tmp = md_alloc_sameplace(1, MD_DIMS(coeffs), CFL_SIZE, out);
+    
+    fwt(N, flags, shifts, dims, tmp, istr, in, minsize, flen, filter);
+    md_zhardthresh(1, MD_DIMS(coeffs), k, 0u, tmp, tmp);
+    iwt(N, flags, shifts, dims, istr, out, tmp, minsize, flen, filter);
+    
+    md_free(tmp);
+  }
+  
+}
+
+/* wavelet thresholding support vector for NIHT */
+void wavelet3_niht_support(unsigned int N, unsigned int k, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+{
+        unsigned long coeffs;
+	
+	if (0 != jflags){ // do joint thresholding
+	  if (-1 == tjoint_wavthresh_nihtsup(N, k, flags, jflags, shifts, dims, out, in, minsize, flen, filter))
+	    jflags =0;
+	}
+
+	if (0 == jflags){ // do full vector thresholding
+	  long istr[N];
+
+	  md_calc_strides(N, istr, dims, CFL_SIZE);
+	  coeffs = wavelet_coeffs(N, flags, dims, minsize, flen);
+	  
+	  complex float* tmp1 = md_alloc_sameplace(1, MD_DIMS(coeffs), CFL_SIZE, out);
+	  complex float* tmp2 = md_alloc_sameplace(1, MD_DIMS(coeffs), CFL_SIZE, out);
+
+	  fwt(N, flags, shifts, dims, tmp1, istr, in, minsize, flen, filter);
+	  fwt(N, flags, shifts, dims, tmp2, istr, out, minsize, flen, filter);
+	
+	  md_zhardthresh(1, MD_DIMS(coeffs), k, 0u, tmp1, tmp1);
+	  niht_support(coeffs, tmp2, tmp1);
+	
+	  iwt(N, flags, shifts, dims, istr, out, tmp2, minsize, flen, filter);
+
+	  md_free(tmp1);
+	  md_free(tmp2);
+	}
+}
 
 
 const float wavelet3_haar[2][2][2] = {

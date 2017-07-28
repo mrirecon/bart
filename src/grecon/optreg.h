@@ -14,21 +14,21 @@
 struct operator_p_s;
 struct linop_s;
 
-enum algo_t { CG, IST, FISTA, ADMM };
+enum algo_t { CG, IST, FISTA, ADMM, NIHT};
 
 struct reg_s {
 
-	enum { L1WAV, TV, LLR, MLR, IMAGL1, IMAGL2, L1IMG, L2IMG, FTL1, LAPLACE } xform;
+	enum { L1WAV, L0WAV, TV, LLR, MLR, IMAGL1, IMAGL2, L1IMG, L2IMG, FTL1, LAPLACE} xform;
 
 	unsigned int xflags;
 	unsigned int jflags;
-
+        unsigned int k; // hard thresholding parameter
 	float lambda;
 };
 
 
 struct opt_reg_s {
-
+        unsigned int k; // hard thresholding parameter
 	float lambda;
 	enum algo_t algo;
 	struct reg_s regs[NUM_REGS];

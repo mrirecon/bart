@@ -1,11 +1,13 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2015. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <stdbool.h>
@@ -193,7 +195,7 @@ int main_bpsense(int argc, char* argv[])
 		bool randshift = true;
 		l1op = linop_identity_create(DIMS, img_dims);
 		conf.l1op_obj = linop_wavelet3_create(DIMS, FFT_FLAGS, img_dims, strs, minsize);
-		l1prox = prox_wavelet3_thresh_create(DIMS, img_dims, FFT_FLAGS, minsize, 1., randshift);
+		l1prox = prox_wavelet3_thresh_create(DIMS, img_dims, FFT_FLAGS, 0, minsize, 1., randshift);
 	}
 
 

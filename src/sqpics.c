@@ -1,5 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2015. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -7,6 +8,7 @@
  * 2012-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  */
 
@@ -524,7 +526,7 @@ int main_sqpics(int argc, char* argv[])
 			}
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			thresh_ops[nr] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, regs[nr].lambda, randshift);
+			thresh_ops[nr] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, 0, minsize, regs[nr].lambda, randshift);
 			break;
 
 		case TV:
@@ -680,7 +682,7 @@ int main_sqpics(int argc, char* argv[])
 
 
 	long size = 2 * md_calc_size(DIMS, img_dims);
-	iter2_admm(CAST_UP(&mmconf), NULL, nr_penalties, thresh_ops, trafos, biases, NULL, size, (float*)image, NULL, NULL);
+	iter2_admm(CAST_UP(&mmconf), NULL, nr_penalties, nr_penalties, thresh_ops, trafos, biases, NULL, size, (float*)image, NULL, NULL);
 
 
 #if 0

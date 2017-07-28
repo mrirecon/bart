@@ -1,9 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
  * Rudin LI, Osher S, Fatemi E. Nonlinear total variation based
@@ -75,7 +77,7 @@ int main_rof(int argc, char* argv[])
 								lambda, MD_BIT(DIMS), false);
 
 	iter2_admm(CAST_UP(&conf), linop_identity_create(DIMS, dims)->forward,
-		   1, MAKE_ARRAY(thresh_prox), MAKE_ARRAY(tv_op), NULL,
+		   1, 1, MAKE_ARRAY(thresh_prox), MAKE_ARRAY(tv_op), NULL,
 		   NULL, 2 * md_calc_size(DIMS, dims), (float*)out_data, (const float*)in_data, NULL);
 
 	linop_free(tv_op);

@@ -32,6 +32,10 @@ extern long wavelet_num_levels(unsigned int N, unsigned int flags, const long di
 extern long wavelet_coeffs(unsigned int N, unsigned int flags, const long dims[N], const long min[N], const long flen);
 
 
-extern void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen]);
+extern void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen]);
+
+extern void wavelet3_niht_thresh(unsigned int N, unsigned int k, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen]);
+
+extern void wavelet3_niht_support(unsigned int N, unsigned int k, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen]);
 
 

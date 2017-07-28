@@ -1,11 +1,13 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014      Frank Ong <frankong@berkeley.edu>
  * 2014      Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <complex.h>
@@ -76,8 +78,8 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 				      const float* init,
 				      const struct linop_s* model_op,
 				      const struct operator_s* precond_op,
-			              unsigned int num_funs,
-				      const struct operator_p_s* prox_funs[num_funs],
+			              unsigned int num_funs, unsigned int num_pfuns,
+				      const struct operator_p_s* prox_funs[num_pfuns],
 				      const struct linop_s* prox_linops[num_funs],
 				      struct iter_monitor_s* monitor)
 {
@@ -106,7 +108,7 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 		operator_free(tmp);
 	}
 
-	const struct operator_s* itop_op = itop_create(italgo, iconf, init, normaleq_op, num_funs, prox_funs, prox_linops, monitor);
+	const struct operator_s* itop_op = itop_create(italgo, iconf, init, normaleq_op, num_funs, num_pfuns, prox_funs, prox_linops, monitor);
 
 	if (conf->it_gpu) {
 
@@ -131,8 +133,8 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	   italgo_fun2_t italgo, iter_conf* iconf,
 	   const struct linop_s* model_op,
-	   unsigned int num_funs,
-	   const struct operator_p_s* prox_funs[num_funs],
+	   unsigned int num_funs, unsigned int num_pfuns,
+	   const struct operator_p_s* prox_funs[num_pfuns],
 	   const struct linop_s* prox_linops[num_funs],
 	   const long x_dims[static N], complex float* x,
 	   const long y_dims[static N], const complex float* y,
@@ -141,7 +143,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 {
 	// nicer, but is still missing some features
 	const struct operator_s* op = lsqr2_create(conf, italgo, iconf, NULL, model_op, precond_op,
-						num_funs, prox_funs, prox_linops, monitor);
+						num_funs, num_pfuns, prox_funs, prox_linops, monitor);
 
 	operator_apply(op, N, x_dims, x, N, y_dims, y);
 	operator_free(op);
@@ -166,7 +168,7 @@ void lsqr(unsigned int N,
 	  const struct operator_s* precond_op)
 {
 	lsqr2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s) }, italgo, iconf })),
-		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
+		model_op, (NULL != thresh_op) ? 1 : 0, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 		x_dims, x, y_dims, y, precond_op, NULL);
 }
 
@@ -177,8 +179,8 @@ const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					const struct linop_s* model_op,
 					const struct linop_s* weights,
 					const struct operator_s* precond_op,
-					unsigned int num_funs,
-					const struct operator_p_s* prox_funs[num_funs],
+					unsigned int num_funs, unsigned int num_pfuns,
+					const struct operator_p_s* prox_funs[num_pfuns],
 					const struct linop_s* prox_linops[num_funs],
 					struct iter_monitor_s* monitor)
 {
@@ -186,7 +188,7 @@ const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 
 	const struct operator_s* lsqr_op = lsqr2_create(conf, italgo, iconf, init,
 						op, precond_op,
-						num_funs, prox_funs, prox_linops,
+						num_funs, num_pfuns, prox_funs, prox_linops,
 						monitor);
 
 	const struct operator_s* wlsqr_op = operator_chain(weights->forward, lsqr_op);
@@ -201,8 +203,8 @@ const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
 	    italgo_fun2_t italgo, iter_conf* iconf,
 	    const struct linop_s* model_op,
-	    unsigned int num_funs,
-	    const struct operator_p_s* prox_funs[num_funs],
+	    unsigned int num_funs, unsigned int num_pfuns,
+	    const struct operator_p_s* prox_funs[num_pfuns],
 	    const struct linop_s* prox_linops[num_funs],
 	    const long x_dims[static N], complex float* x,
 	    const long y_dims[static N], const complex float* y,
@@ -222,14 +224,14 @@ void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
 
 	linop_forward(weights, N, y_dims, wy, N, y_dims, y);
 
-	lsqr2(N, conf, italgo, iconf, op, num_funs, prox_funs, prox_linops, x_dims, x, y_dims, wy, precond_op, NULL);
+	lsqr2(N, conf, italgo, iconf, op, num_funs, num_pfuns, prox_funs, prox_linops, x_dims, x, y_dims, wy, precond_op, NULL);
 
 	md_free(wy);
 
 	linop_free(op);
 #else
 	const struct operator_s* op = wlsqr2_create(conf, italgo, iconf, model_op, weights, precond_op,
-						num_funs, prox_funs, prox_linops);
+						    num_funs, num_pfuns, prox_funs, prox_linops);
 
 	operator_apply(op, N, x_dims, x, N, y_dims, y);
 #endif
@@ -247,6 +249,6 @@ void wlsqr(unsigned int N, const struct lsqr_conf* conf,
 	   const struct operator_s* precond_op)
 {
 	wlsqr2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s) }, italgo, iconf })),
-	       model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
+	       model_op, (NULL != thresh_op) ? 1 : 0, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 	       x_dims, x, y_dims, y, w_dims, w, precond_op);
 }

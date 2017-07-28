@@ -1,5 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -7,6 +8,7 @@
  * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013-2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2014      Frank Ong <frankong@berkeley.edu>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
  * Ra JB, Rim CY. Fast imaging using subencoding data sets from multiple
@@ -118,8 +120,8 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		  const long pat_dims[DIMS], const complex float* pattern,
 		  italgo_fun2_t italgo, iter_conf* iconf,
 		  const complex float* init,
-		  unsigned int num_funs,
-		  const struct operator_p_s* thresh_op[num_funs],
+		  unsigned int num_funs, unsigned int num_pfuns,
+		  const struct operator_p_s* thresh_op[num_pfuns],
 		  const struct linop_s* thresh_funs[num_funs],
 		  const struct operator_s* precond_op)
 {
@@ -161,13 +163,13 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 
 		const struct lad_conf lad_conf = { conf->rwiter, conf->gamma, flags, &lsqr_conf };
 
-		op = lad2_create(&lad_conf, italgo, iconf, (const float*)init, sense_op, num_funs, thresh_op, thresh_funs);
+		op = lad2_create(&lad_conf, italgo, iconf, (const float*)init, sense_op, num_funs, num_pfuns, thresh_op, thresh_funs);
 
 	} else
 	if (NULL == pattern) {
 
 		op = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init, sense_op, precond_op,
-					num_funs, thresh_op, thresh_funs, NULL);
+					num_funs, num_pfuns, thresh_op, thresh_funs, NULL);
 
 	} else {
 
@@ -186,7 +188,7 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 
 		op = wlsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init,
 						sense_op, weights_op, precond_op,
-						num_funs, thresh_op, thresh_funs,
+						num_funs, num_pfuns, thresh_op, thresh_funs,
 						NULL);
 	}
 

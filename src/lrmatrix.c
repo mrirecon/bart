@@ -1,11 +1,13 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2016-2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <stdbool.h>
@@ -208,6 +210,7 @@ int main_lrmatrix(int argc, char* argv[])
 	
 	iter2_admm( iconf,
 		    NULL,
+		    num_funs,
 		    num_funs,
 		    prox_ops,
 		    ops,
