@@ -22,6 +22,8 @@
 
 void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float dst[num_blocks][N][M])
 {
+#pragma omp parallel
+    {
 	long minMN = MIN(M, N);
 
 	PTR_ALLOC(complex float[minMN][M], U);
@@ -29,6 +31,7 @@ void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float
 	PTR_ALLOC(float[minMN], S);
 	PTR_ALLOC(complex float[minMN][minMN], AA);
 
+#pragma omp for
 	for (int b = 0; b < num_blocks; b++) {
 
 		// Compute upper bound | A^T A |_inf
@@ -77,5 +80,6 @@ void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float
 	PTR_FREE(VT);
 	PTR_FREE(S);
 	PTR_FREE(AA);
+    } // #pragma omp parallel
 }
 
