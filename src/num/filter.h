@@ -15,5 +15,11 @@ extern void centered_gradient(unsigned int N, const long dims[__VLA(N)], const _
 extern void klaplace(unsigned int N, const long dims[__VLA(N)], unsigned int flags, _Complex float* out);
 void klaplace_scaled(unsigned int N, const long dims[N], unsigned int flags, const float sc[N], complex float* out);
 
+extern void md_zhamming(const unsigned int D, const long dims[__VLA(D)], const long flags, complex float* optr, const complex float* iptr);
+extern void md_zhamming2(const unsigned int D, const long dims[__VLA(D)], const long flags, const long ostr[__VLA(D)], complex float* optr, const long istr[__VLA(D)], const complex float* iptr);
+
+extern void md_zhann(const unsigned int D, const long dims[__VLA(D)], const long flags, complex float* optr, const complex float* iptr);
+extern void md_zhann2(const unsigned int D, const long dims[__VLA(D)], const long flags, const long ostr[__VLA(D)], complex float* optr, const long istr[__VLA(D)], const complex float* iptr);
+
 #include "misc/cppwrap.h"
 
