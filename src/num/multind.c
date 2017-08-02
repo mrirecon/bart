@@ -85,6 +85,9 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 		return;
 	}
 
+	long dimc[D];
+	md_select_dims(D, ~flags, dimc, dim);
+
 	// Collect all parallel dimensions
 	int parallel_dim[D];
 	int parallel_b[D];
@@ -101,16 +104,6 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 		if(total_iterations > 0) total_iterations *= parallel_dim[nparallel];
 		else total_iterations = parallel_dim[nparallel];
 		nparallel++;
-	}
-
-	// Select dims
-	long dimc[D];
-	long dimc_tmp[D];
-	md_copy_dims(D, dimc, dim);
-	for(int p = 0 ; p < nparallel ; p++)
-	{
-		md_select_dims(D, ~MD_BIT(parallel_b[p]), dimc_tmp, dimc);
-		md_copy_dims(D, dimc, dimc_tmp);
 	}
 
 	// Run parallel work
@@ -136,7 +129,7 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 				moving_ptr[j] += iter_i[p] * str[j][parallel_b[p]];
 		}
 
-		md_parallel_nary(C, D, dimc, flags, str, moving_ptr, data, fun);
+		md_nary(C, D, dimc, str, moving_ptr, data, fun);
 	}
 }
 
