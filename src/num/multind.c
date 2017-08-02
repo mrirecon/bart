@@ -103,6 +103,16 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 		nparallel++;
 	}
 
+	// Select dims
+	long dimc[D];
+	long dimc_tmp[D];
+	md_copy_dims(D, dimc, dim);
+	for(int p = 0 ; p < nparallel ; p++)
+	{
+		md_select_dims(D, ~MD_BIT(parallel_b[p]), dimc_tmp, dimc);
+		md_copy_dims(D, dimc, dimc_tmp);
+	}
+
 	// Run parallel work
 	#pragma omp parallel for
 	for(long i = 0 ; i < total_iterations ; i++)
@@ -114,16 +124,6 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 		{
 			iter_i[p] = ii % parallel_dim[p];
 			ii /= parallel_dim[p];
-		}
-
-		// Select dims
-		long dimc[D];
-		long dimc_tmp[D];
-		md_copy_dims(D, dimc, dim);
-		for(int p = 0 ; p < nparallel ; p++)
-		{
-			md_select_dims(D, ~MD_BIT(parallel_b[p]), dimc_tmp, dimc);
-			md_copy_dims(D, dimc, dimc_tmp);
 		}
 
 		// Update ptr
