@@ -89,7 +89,7 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 	md_select_dims(D, ~flags, dimc, dim);
 
 	// Collect all parallel dimensions
-	int parallel_dim[D];
+	long parallel_dim[D];
 	int parallel_b[D];
 	int nparallel = 0;
 	long total_iterations = 0L;
