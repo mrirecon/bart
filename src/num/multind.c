@@ -85,28 +85,58 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 		return;
 	}
 
-	int b = ffsl(flags & -flags) - 1;
-	assert(MD_IS_SET(flags, b));
+    // Collect all parallel dimensions
+    int parallel_dim[D];
+    int parallel_b[D];
+    int nparallel = 0;
+    long total_iterations = 0L;
+    while(0 != flags)
+    {
+	    int b = ffsl(flags & -flags) - 1;
+	    assert(MD_IS_SET(flags, b));
+	    flags = MD_CLEAR(flags, b);
+	    debug_printf(DP_DEBUG4, "Parallelize: %d\n", dim[b]);
+        parallel_b[nparallel] = b;
+        parallel_dim[nparallel] = dim[b];
+        if(total_iterations > 0) total_iterations *= parallel_dim[nparallel];
+        else total_iterations = parallel_dim[nparallel];
+        nparallel++;
+    }
 
-	flags = MD_CLEAR(flags, b);
+    // Run parallel work
+    #pragma omp parallel for
+    for(long i = 0 ; i < total_iterations ; i++)
+    {
+      // Recover place in parallel iteration space
+      long iter_i[D];
+      long ii = i;
+      for(int p = nparallel-1 ; p >= 0 ; p--)
+      {
+        iter_i[p] = ii % parallel_dim[p];
+        ii /= parallel_dim[p];
+      }
 
-	long dimc[D];
-	md_select_dims(D, ~MD_BIT(b), dimc, dim);
+      // Select dims
+	  long dimc[D];
+	  long dimc_tmp[D];
+	  md_copy_dims(D, dimc, dim);
+      for(int p = 0 ; p < nparallel ; p++)
+      {
+	    md_select_dims(D, ~MD_BIT(parallel_b[p]), dimc_tmp, dimc);
+	    md_copy_dims(D, dimc, dimc_tmp);
+      }
 
-	debug_printf(DP_DEBUG4, "Parallelize: %d\n", dim[b]);
+      // Update ptr
+	  void* moving_ptr[C];
+      for (unsigned int j = 0; j < C; j++)
+	    moving_ptr[j] = ptr[j];
 
-	// FIXME: this probably doesn't nest
-	// (maybe collect all parallelizable dims into one giant loop?)
-	#pragma omp parallel for
-	for (long i = 0; i < dim[b]; i++) {
+      for(int p = 0 ; p < nparallel ; p++)
+        for (unsigned int j = 0; j < C; j++)
+	      moving_ptr[j] += iter_i[p] * str[j][parallel_b[p]];
 
-		void* moving_ptr[C];
-
-		for (unsigned int j = 0; j < C; j++)
-			moving_ptr[j] = ptr[j] + i * str[j][b];
-
-		md_parallel_nary(C, D, dimc, flags, str, moving_ptr, data, fun);
-	}
+      md_parallel_nary(C, D, dimc, flags, str, moving_ptr, data, fun);
+    }
 }
 
 
