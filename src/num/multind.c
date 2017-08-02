@@ -129,7 +129,7 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 		// Update ptr
 		void* moving_ptr[C];
 		for (unsigned int j = 0; j < C; j++)
-		moving_ptr[j] = ptr[j];
+			moving_ptr[j] = ptr[j];
 
 		for(int p = 0 ; p < nparallel ; p++)
 			for (unsigned int j = 0; j < C; j++)
