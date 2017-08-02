@@ -128,12 +128,13 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 
 		// Update ptr
 		void* moving_ptr[C];
-		for (unsigned int j = 0; j < C; j++)
-			moving_ptr[j] = ptr[j];
 
-		for(int p = 0 ; p < nparallel ; p++)
-			for (unsigned int j = 0; j < C; j++)
+		for (unsigned int j = 0; j < C; j++) 
+		{
+			moving_ptr[j] = ptr[j];
+			for(int p = 0 ; p < nparallel ; p++)
 				moving_ptr[j] += iter_i[p] * str[j][parallel_b[p]];
+		}
 
 		md_parallel_nary(C, D, dimc, flags, str, moving_ptr, data, fun);
 	}
