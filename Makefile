@@ -41,7 +41,7 @@ ifeq ($(BUILDTYPE), MacOSX)
 	MACPORTS?=1
 endif
 
-ARFLAGS = r
+ARFLAGS ?= r
 
 
 # Paths
