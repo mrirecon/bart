@@ -189,6 +189,12 @@ void klaplace(unsigned int N, const long dims[N], unsigned int flags, complex fl
 
 static void nary_zwindow(const long N, const float alpha, const float beta, complex float* ptr)
 {
+	if (1 == N) {
+
+		ptr[0] = 1.;
+		return;
+	}
+
 #pragma omp parallel for
 	for (long i = 0; i < N; i++)
 		ptr[i] = alpha - beta * cosf(2. * M_PI * i / (N - 1));
