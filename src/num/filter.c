@@ -1,9 +1,10 @@
-/* Copyright 2015, 2017. The Regents of the University of California.
+/* Copyright 2015-2017. The Regents of the University of California.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -220,66 +221,47 @@ static void nary_zhann(const long N, complex float* ptr)
 	const float beta = 0.5;
 
 	return nary_zwindow(N, alpha, beta, ptr);
-
 }
 
-// FIXME: use enum for various types of windows
-static void md_zwindow2(const unsigned int D, const long dims[D], const long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, bool hamming)
-{
-	bool first = true;
+enum window_type { WINDOW_HAMMING, WINDOW_HANN };
 
+static void md_zwindow2(unsigned int D, const long dims[D], unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, enum window_type wt)
+{
 	if (0 == flags) {
+
 		md_copy2(D, dims, ostrs, optr, istrs, iptr, CFL_SIZE);
 		return;
 	}
 
-	md_clear2(D, dims, ostrs, optr, CFL_SIZE);
+	// process first flagged dimension
 
-	// apply along each active dimension
-	for (unsigned int i = 0; i < D; i++) {
+	unsigned int lsb = ffs(flags) - 1;
 
-		if (MD_IS_SET(flags, i)) {
+	long win_dims[D];
+	long win_strs[D];
 
-			long win_dims[D];
-			long win_strs[D];
+	md_select_dims(D, MD_BIT(lsb), win_dims, dims);
+	md_calc_strides(D, win_strs, win_dims, CFL_SIZE);
 
-			md_select_dims(D, MD_BIT(i), win_dims, dims);
-			md_calc_strides(D, win_strs, win_dims, CFL_SIZE);
+	complex float* win = md_alloc_sameplace(D, win_dims, CFL_SIZE, iptr);
 
-			complex float* win = md_alloc_sameplace(D, win_dims, CFL_SIZE, iptr);
-
-			(hamming ? nary_zhamming : nary_zhann)(dims[i], win);
-
-			complex float* tmp = NULL;
-			long tmp_strs[D];
+	switch (wt) {
+	case WINDOW_HAMMING: nary_zhamming(dims[lsb], win); break;
+	case WINDOW_HANN: nary_zhann(dims[lsb], win); break;
+	};
 			
-			if (first) {
+	md_zmul2(D, dims, ostrs, optr, istrs, iptr, win_strs, win);
 
-				// initially apply to input
-				tmp = (complex float*)iptr;
-				md_copy_strides(D, tmp_strs, istrs);
-			}
-			else {
+	md_free(win);
 
-				// accumulate
-				tmp = md_alloc_sameplace(D, dims, CFL_SIZE, iptr);
-				md_copy_strides(D, tmp_strs, ostrs);
-				md_copy2(D, dims, ostrs, tmp, ostrs, optr, CFL_SIZE);
+	flags = MD_CLEAR(flags, lsb);
 
-			}
+	// process other dimensions
 
-			// apply
-			md_clear2(D, dims, ostrs, optr, CFL_SIZE);
-			md_zfmac2(D, dims, ostrs, optr, tmp_strs, tmp, win_strs, win);
+	if (0 != flags)
+		md_zwindow2(D, dims, flags, ostrs, optr, ostrs, optr, wt);
 
-			if (!first)
-				md_free(tmp);
-
-			md_free(win);
-
-			first = false;
-		}
-	}
+	return;
 }
 
 
@@ -311,7 +293,7 @@ void md_zhamming(const unsigned int D, const long dims[D], const long flags, com
  */
 void md_zhamming2(const unsigned int D, const long dims[D], const long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
-	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, true);
+	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, WINDOW_HAMMING);
 	
 }
 
@@ -333,5 +315,5 @@ void md_zhann(const unsigned int D, const long dims[D], const long flags, comple
  */
 void md_zhann2(const unsigned int D, const long dims[D], const long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
-	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, false);
+	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, WINDOW_HANN);
 }
