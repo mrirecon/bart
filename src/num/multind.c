@@ -1,11 +1,13 @@
 /* Copyright 2013-2015 The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2017. Intel Corporation.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013      Frank Ong <frankong@berkeley.edu>
+ * 2017      Michael J. Anderson <michael.j.anderson@intel.com>
  *
  * Generic operations on multi-dimensional arrays. Most functions
  * come in two flavours:
