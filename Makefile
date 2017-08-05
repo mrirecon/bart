@@ -41,7 +41,15 @@ ifeq ($(BUILDTYPE), MacOSX)
 	MACPORTS?=1
 endif
 
-ARFLAGS ?= r
+
+ifeq ($(BUILDTYPE), Linux)
+	# as the defaults changed on most Linux distributions
+	# explicitly specify non-deterministic archives to not break make
+	ARFLAGS ?= rsU
+else
+	ARFLAGS ?= rs
+endif
+
 
 
 # Paths
