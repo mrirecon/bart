@@ -89,43 +89,50 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 	md_select_dims(D, ~flags, dimc, dim);
 
 	// Collect all parallel dimensions
-	long parallel_dim[D];
-	int parallel_b[D];
 	int nparallel = 0;
-	long total_iterations = 0L;
-	while(0 != flags)
-	{
+	int parallel_b[D];
+
+	long parallel_dim[D];
+	long total_iterations = 1L;
+
+	while (0 != flags) {
+
 		int b = ffsl(flags & -flags) - 1;
+
 		assert(MD_IS_SET(flags, b));
+
 		flags = MD_CLEAR(flags, b);
+
 		debug_printf(DP_DEBUG4, "Parallelize: %d\n", dim[b]);
+
 		parallel_b[nparallel] = b;
 		parallel_dim[nparallel] = dim[b];
-		if(total_iterations > 0) total_iterations *= parallel_dim[nparallel];
-		else total_iterations = parallel_dim[nparallel];
+
+		total_iterations *= parallel_dim[nparallel];
 		nparallel++;
 	}
 
-	// Run parallel work
+
 	#pragma omp parallel for
-	for(long i = 0 ; i < total_iterations ; i++)
-	{
+	for (long i = 0; i < total_iterations; i++) {
+
 		// Recover place in parallel iteration space
 		long iter_i[D];
 		long ii = i;
-		for(int p = nparallel-1 ; p >= 0 ; p--)
-		{
+
+		for (int p = nparallel - 1; p >= 0; p--) {
+
 			iter_i[p] = ii % parallel_dim[p];
 			ii /= parallel_dim[p];
 		}
 
-		// Update ptr
 		void* moving_ptr[C];
 
-		for (unsigned int j = 0; j < C; j++) 
-		{
+		for (unsigned int j = 0; j < C; j++) {
+
 			moving_ptr[j] = ptr[j];
-			for(int p = 0 ; p < nparallel ; p++)
+
+			for(int p = 0; p < nparallel; p++)
 				moving_ptr[j] += iter_i[p] * str[j][parallel_b[p]];
 		}
 
