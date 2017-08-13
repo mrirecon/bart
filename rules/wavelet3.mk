@@ -18,4 +18,3 @@ endif
 lib/libwavelet3.a: libwavelet3.a($(wavelet3objs))
 
 
-
