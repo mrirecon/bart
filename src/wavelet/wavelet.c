@@ -415,8 +415,10 @@ long wavelet_coeffs(unsigned int N, unsigned int flags, const long dims[N], cons
 
 
 
-void wavelet_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+void wavelet_thresh(unsigned int N, float lambda, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
+	assert(0 == (flags & jflags));
+
 	long wdims[N];
 	wavelet_coeffs2(N, flags, wdims, dims, minsize, flen);
 
@@ -430,7 +432,7 @@ void wavelet_thresh(unsigned int N, float lambda, unsigned int flags, const long
 
 	fwt2(N, flags, shifts, wdims, wstr, tmp, dims, str, in, minsize, flen, filter);
 
-	md_zsoftthresh(N, wdims, lambda, 0u, tmp, tmp);
+	md_zsoftthresh(N, wdims, lambda, jflags, tmp, tmp);
 
 	iwt2(N, flags, shifts, dims, str, out, wdims, wstr, tmp, minsize, flen, filter);
 

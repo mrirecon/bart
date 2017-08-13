@@ -247,8 +247,6 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 
 			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
 
-			if (0 != regs[nr].jflags)
-				debug_printf(DP_WARN, "joint l1-wavelet thresholding not currently supported.\n");
 
 			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
 			minsize[0] = MIN(img_dims[0], 16);
@@ -267,7 +265,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			}
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, minsize, regs[nr].lambda, randshift);
+			prox_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].lambda, randshift);
 			break;
 
 		case TV:
