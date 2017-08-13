@@ -42,7 +42,7 @@
 #include "sense/model.h"
 #include "sense/optcom.h"
 
-#include "wavelet3/wavthresh.h"
+#include "wavelet/wavthresh.h"
 
 #include "lowrank/lrthresh.h"
 

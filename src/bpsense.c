@@ -24,7 +24,7 @@
 #include "linops/grad.h"
 #include "linops/waveop.h"
 
-#include "wavelet3/wavthresh.h"
+#include "wavelet/wavthresh.h"
 
 #include "iter/thresh.h"
 #include "iter/iter.h"

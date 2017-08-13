@@ -20,7 +20,7 @@
 #include "num/multind.h"
 #include "num/ops.h"
 
-#include "wavelet3/wavelet.h"
+#include "wavelet/wavelet.h"
 
 #include "wavthresh.h"
 

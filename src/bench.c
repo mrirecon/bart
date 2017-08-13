@@ -20,7 +20,7 @@
 #include "num/init.h"
 #include "num/ops.h"
 
-#include "wavelet3/wavthresh.h"
+#include "wavelet/wavthresh.h"
 
 #include "misc/debug.h"
 #include "misc/misc.h"

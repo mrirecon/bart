@@ -17,7 +17,7 @@
 
 #include "misc/misc.h"
 
-#include "wavelet3/wavelet.h"
+#include "wavelet/wavelet.h"
 
 #include "waveop.h"
 

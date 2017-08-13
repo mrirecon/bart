@@ -27,7 +27,7 @@
 #include "linops/grad.h"
 #include "linops/sum.h"
 
-#include "wavelet3/wavthresh.h"
+#include "wavelet/wavthresh.h"
 
 #include "lowrank/lrthresh.h"
 

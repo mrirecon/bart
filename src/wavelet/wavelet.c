@@ -40,7 +40,7 @@
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
-#include "wavelet3/wl3-cuda.h"
+#include "wavelet/wl3-cuda.h"
 #endif
 
 #include "wavelet.h"
