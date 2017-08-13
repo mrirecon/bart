@@ -192,8 +192,8 @@ int main_bpsense(int argc, char* argv[])
 
 		bool randshift = true;
 		l1op = linop_identity_create(DIMS, img_dims);
-		conf.l1op_obj = linop_wavelet3_create(DIMS, FFT_FLAGS, img_dims, strs, minsize);
-		l1prox = prox_wavelet3_thresh_create(DIMS, img_dims, FFT_FLAGS, minsize, 1., randshift);
+		conf.l1op_obj = linop_wavelet_create(DIMS, FFT_FLAGS, img_dims, strs, minsize);
+		l1prox = prox_wavelet_thresh_create(DIMS, img_dims, FFT_FLAGS, minsize, 1., randshift);
 	}
 
 

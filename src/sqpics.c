@@ -524,7 +524,7 @@ int main_sqpics(int argc, char* argv[])
 			}
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			thresh_ops[nr] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, regs[nr].lambda, randshift);
+			thresh_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, minsize, regs[nr].lambda, randshift);
 			break;
 
 		case TV:

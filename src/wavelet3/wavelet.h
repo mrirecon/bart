@@ -1,4 +1,5 @@
 /* Copyright 2014-2015. The Regents of the University of California.
+ * Copyright 2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -7,9 +8,9 @@
 #include <complex.h>
 #include <stdbool.h>
 
-extern const float wavelet3_haar[2][2][2];
-extern const float wavelet3_dau2[2][2][4];
-extern const float wavelet3_cdf44[2][2][10];
+extern const float wavelet_haar[2][2][2];
+extern const float wavelet_dau2[2][2][4];
+extern const float wavelet_cdf44[2][2][10];
 
 // layer 1
 
@@ -36,6 +37,6 @@ extern void wavelet_coeffs2(unsigned int N, unsigned int flags, long odims[N], c
 extern void fwt2(unsigned int N, unsigned int flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen]);
 extern void iwt2(unsigned int N, unsigned int flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], const long flen, const float filter[2][2][flen]);
 
-extern void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen]);
+extern void wavelet_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen]);
 
 

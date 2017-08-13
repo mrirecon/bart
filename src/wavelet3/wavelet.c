@@ -411,7 +411,7 @@ long wavelet_coeffs(unsigned int N, unsigned int flags, const long dims[N], cons
 
 
 
-void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+void wavelet_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
 	long wdims[N];
 	wavelet_coeffs2(N, flags, wdims, dims, minsize, flen);
@@ -627,21 +627,21 @@ void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long od
 
 
 
-const float wavelet3_haar[2][2][2] = {
+const float wavelet_haar[2][2][2] = {
 	{ { +0.7071067811865475, +0.7071067811865475 },
 	  { -0.7071067811865475, +0.7071067811865475 }, },
 	{ { +0.7071067811865475, +0.7071067811865475 },
 	  { +0.7071067811865475, -0.7071067811865475 }, },
 };
 
-const float wavelet3_dau2[2][2][4] = {
+const float wavelet_dau2[2][2][4] = {
 	{ { -0.1294095225512603, +0.2241438680420134, +0.8365163037378077, +0.4829629131445341 },
 	  { -0.4829629131445341, +0.8365163037378077, -0.2241438680420134, -0.1294095225512603 }, },
 	{ { +0.4829629131445341, +0.8365163037378077, +0.2241438680420134, -0.1294095225512603 },
 	  { -0.1294095225512603, -0.2241438680420134, +0.8365163037378077, -0.4829629131445341 }, },
 };
 
-const float wavelet3_cdf44[2][2][10] = {
+const float wavelet_cdf44[2][2][10] = {
 	{ { +0.00000000000000000, +0.03782845550726404 , -0.023849465019556843, -0.11062440441843718 , +0.37740285561283066, 
 	    +0.85269867900889385, +0.37740285561283066 , -0.11062440441843718 , -0.023849465019556843, +0.03782845550726404 },
 	  { +0.00000000000000000, -0.064538882628697058, +0.040689417609164058, +0.41809227322161724 , -0.7884856164055829, 

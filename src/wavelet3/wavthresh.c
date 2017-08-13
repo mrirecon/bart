@@ -25,7 +25,7 @@
 #include "wavthresh.h"
 
 
-struct wavelet3_thresh_s {
+struct wavelet_thresh_s {
 
 	INTERFACE(operator_data_t);
 
@@ -38,7 +38,7 @@ struct wavelet3_thresh_s {
 	int rand_state;
 };
 
-DEF_TYPEID(wavelet3_thresh_s);
+DEF_TYPEID(wavelet_thresh_s);
 
 
 static int rand_lim(unsigned int* state, int limit)
@@ -55,9 +55,9 @@ static int rand_lim(unsigned int* state, int limit)
 }
 
 
-static void wavelet3_thresh_apply(const operator_data_t* _data, float mu, complex float* out, const complex float* in)
+static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex float* out, const complex float* in)
 {
-	const struct wavelet3_thresh_s* data = CAST_DOWN(wavelet3_thresh_s, _data);
+	const struct wavelet_thresh_s* data = CAST_DOWN(wavelet_thresh_s, _data);
 
 	long shift[data->N];
 	for (unsigned int i = 0; i < data->N; i++)
@@ -77,13 +77,13 @@ static void wavelet3_thresh_apply(const operator_data_t* _data, float mu, comple
 		}
 	}
 
-	wavelet3_thresh(data->N, data->lambda * mu, data->flags, shift, data->dims,
-		out, in, data->minsize, 4, wavelet3_dau2);
+	wavelet_thresh(data->N, data->lambda * mu, data->flags, shift, data->dims,
+		out, in, data->minsize, 4, wavelet_dau2);
 }
 
-static void wavelet3_thresh_del(const operator_data_t* _data)
+static void wavelet_thresh_del(const operator_data_t* _data)
 {
-	const struct wavelet3_thresh_s* data = CAST_DOWN(wavelet3_thresh_s, _data);
+	const struct wavelet_thresh_s* data = CAST_DOWN(wavelet_thresh_s, _data);
 	xfree(data->dims);
 	xfree(data->minsize);
 	xfree(data);
@@ -100,10 +100,10 @@ static void wavelet3_thresh_del(const operator_data_t* _data)
  * @param lambda threshold parameter
  * @param randshift random shifting
  */
-const struct operator_p_s* prox_wavelet3_thresh_create(unsigned int N, const long dims[N], unsigned int flags, const long minsize[N], float lambda, bool randshift)
+const struct operator_p_s* prox_wavelet_thresh_create(unsigned int N, const long dims[N], unsigned int flags, const long minsize[N], float lambda, bool randshift)
 {
-	PTR_ALLOC(struct wavelet3_thresh_s, data);
-	SET_TYPEID(wavelet3_thresh_s, data);
+	PTR_ALLOC(struct wavelet_thresh_s, data);
+	SET_TYPEID(wavelet_thresh_s, data);
 
 	data->N = N;
 
@@ -120,7 +120,7 @@ const struct operator_p_s* prox_wavelet3_thresh_create(unsigned int N, const lon
 	data->randshift = randshift;
 	data->rand_state = 1;
 
-	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), wavelet3_thresh_apply, wavelet3_thresh_del);
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), wavelet_thresh_apply, wavelet_thresh_del);
 }
 
 
