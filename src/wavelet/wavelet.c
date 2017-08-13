@@ -126,6 +126,8 @@ void fwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N]
 	debug_printf(DP_DEBUG4, "fwt1: %d/%d\n", d, N);
 	debug_print_dims(DP_DEBUG4, N, dims);
 
+	assert(dims[d] >= 2);
+
 	long odims[N];
 	md_copy_dims(N, odims, dims);
 	odims[d] = bandsize(dims[d], flen);
@@ -179,6 +181,8 @@ void iwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N]
 {
 	debug_printf(DP_DEBUG4, "ifwt1: %d/%d\n", d, N);
 	debug_print_dims(DP_DEBUG4, N, dims);
+
+	assert(dims[d] >= 2);
 
 	long idims[N];
 	md_copy_dims(N, idims, dims);
@@ -454,20 +458,30 @@ void wavelet_coeffs2(unsigned int N, unsigned int flags, long odims[N], const lo
 }
 
 
+static bool wavelet_check_dims(unsigned int N, unsigned int flags, const long dims[N], const long minsize[N])
+{
+	for (unsigned int i = 0; i < N; i++)
+		if (MD_IS_SET(flags, i))
+			if ((minsize[i] <= 2) || (dims[i] < minsize[i]))
+				return false;
+
+	return true;
+}
+
 
 void fwt2(unsigned int N, unsigned int flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
-#if 1
-	if (0 == flags) {
+	assert(wavelet_check_dims(N, flags, idims, minsize));
 
-	//	assert(md_calc_size(N, odims) == md_calc_size(N, idims));
+	if (0 == flags) {	// note: recursion does *not* end here
+
 		assert(md_check_compat(N, 0u, odims, idims));
 
 		md_copy2(N, idims, ostr, out, istr, in, CFL_SIZE);
 
 		return;
 	}
-#endif
+
 	// check output dimensions
 
 	long odims2[N];
@@ -532,9 +546,10 @@ void fwt2(unsigned int N, unsigned int flags, const long shifts[N], const long o
 
 void iwt2(unsigned int N, unsigned int flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], const long flen, const float filter[2][2][flen])
 {
-	if (0 == flags) {
+	assert(wavelet_check_dims(N, flags, odims, minsize));
 
-		// assert(md_calc_size(N, odims) == md_calc_size(N, idims));
+	if (0 == flags) {	// note: recursion does *not* end here
+
 		assert(md_check_compat(N, 0u, odims, idims));
 
 		md_copy2(N, idims, ostr, out, istr, in, CFL_SIZE);
