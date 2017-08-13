@@ -295,7 +295,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 
 			assert(9 == md_calc_size(DIMS, krn_dims));
 
-			trafos[nr] = linop_conv_create(DIMS, regs[nr].xflags, CONV_SYMMETRIC, CONV_TRUNCATED, img_dims, img_dims, krn_dims, krn);
+			trafos[nr] = linop_conv_create(DIMS, regs[nr].xflags, CONV_TRUNCATED, CONV_SYMMETRIC, img_dims, img_dims, krn_dims, krn);
 			prox_ops[nr] = prox_thresh_create(DIMS,
 					linop_codomain(trafos[nr])->dims,
 					regs[nr].lambda, regs[nr].jflags, use_gpu);
