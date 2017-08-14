@@ -50,7 +50,7 @@ float linop_test_adjoint(const struct linop_s* op)
 	md_free(tmp3);
 	md_free(tmp4);
 
-	debug_printf(DP_DEBUG4, "- %f+%fi - %f+%fi -\n", crealf(sc1), cimagf(sc1), crealf(sc2), cimagf(sc2));
+	debug_printf(DP_DEBUG4, "- %f%+fi - %f%+fi -\n", crealf(sc1), cimagf(sc1), crealf(sc2), cimagf(sc2));
 
 	return cabsf(sc1 - sc2);
 }
