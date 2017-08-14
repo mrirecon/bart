@@ -51,6 +51,34 @@ tests/test-pics-wavl1: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepploga
 	touch $@
 
 
+tests/test-pics-poisson-wavl1: poisson reshape fft fmac ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/poisson -Y128 -Z128 -y1.2 -z1.2 -e -v -C24 p.ra			;\
+	$(TOOLDIR)/reshape 7 128 128 1 p.ra p2.ra					;\
+	$(TOOLDIR)/fft -u 7 $(TESTS_OUT)/shepplogan.ra ksp1.ra				;\
+	$(TOOLDIR)/fmac ksp1.ra p2.ra ksp.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
+	$(TOOLDIR)/pics -S -RW:3:0:0.01 -i50 ksp.ra o.ra reco.ra			;\
+	$(TOOLDIR)/nrmse -t 0.21 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-pics-joint-wavl1: poisson reshape fft fmac ones pics slice nrmse $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/poisson -Y128 -Z128 -y1.1 -z1.1 -e -v -C24 -T2 p.ra			;\
+	$(TOOLDIR)/reshape 63 128 128 1 1 1 2 p.ra p2.ra				;\
+	$(TOOLDIR)/fft -u 7 $(TESTS_OUT)/shepplogan.ra ksp1.ra				;\
+	$(TOOLDIR)/fmac ksp1.ra p2.ra ksp.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
+	$(TOOLDIR)/pics -S -RW:3:32:0.02 -i50 ksp.ra o.ra reco2.ra			;\
+	$(TOOLDIR)/slice 5 0 reco2.ra reco.ra						;\
+	$(TOOLDIR)/nrmse -t 0.21 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
 
 tests/test-pics-pics: traj scale phantom pics nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -133,7 +161,8 @@ tests/test-pics-tedim: phantom fmac fft pics nrmse
 
 
 
-TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics tests/test-pics-wavl1
+TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
+TESTS += tests/test-pics-wavl1 tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 TESTS += tests/test-pics-warmstart tests/test-pics-batch
 TESTS += tests/test-pics-tedim
