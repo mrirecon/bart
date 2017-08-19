@@ -96,8 +96,13 @@ int main_nlinv(int argc, char* argv[])
 	if (NULL != psf) {
 
 		pattern = load_cfl(psf, DIMS, pat_dims);
-
 		// FIXME: check compatibility
+
+		if (-1 == restrict_fov)
+			restrict_fov = 0.5;
+
+		conf.noncart = true;
+
 	} else {
 
 		md_copy_dims(DIMS, pat_dims, img_dims);
