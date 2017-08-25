@@ -108,7 +108,11 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	md_clear(DIMS, imgs_dims, imgH, CFL_SIZE);
 	md_clear(DIMS, coil_dims, imgH + skip, CFL_SIZE);
 
-	struct noir_data* ndata = noir_init(dims, mask, psf, conf->rvc, conf->usegpu);
+	struct noir_model_conf_s mconf = noir_model_conf_defaults;
+	mconf.rvc = conf->rvc;
+	mconf.use_gpu = conf->usegpu;
+
+	struct noir_data* ndata = noir_init(dims, mask, psf, &mconf);
 	struct data data = { { &TYPEID(data) }, ndata };
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;

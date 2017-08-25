@@ -31,6 +31,14 @@
 
 
 
+struct noir_model_conf_s noir_model_conf_defaults = {
+
+	.rvc = false,
+	.use_gpu = false,
+};
+
+
+
 struct noir_data {
 
 	long dims[DIMS];
@@ -66,7 +74,7 @@ struct noir_data {
 
 	complex float* tmp;
 
-	bool rvc;
+	struct noir_model_conf_s conf;
 };
 
 
@@ -86,19 +94,18 @@ static void noir_calc_weights(const long dims[3], complex float* dst)
 }
 
 
-struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, const complex float* psf, bool rvc, bool use_gpu)
+struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf)
 {
 #ifdef USE_CUDA
 	md_alloc_fun_t my_alloc = use_gpu ? md_alloc_gpu : md_alloc;
 #else
-	assert(!use_gpu);
+	assert(!conf->use_gpu);
 	md_alloc_fun_t my_alloc = md_alloc;
 #endif
 
 	PTR_ALLOC(struct noir_data, data);
 
-
-	data->rvc = rvc;
+	data->conf = *conf;
 
 	md_copy_dims(DIMS, data->dims, dims);
 
@@ -133,7 +140,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 	data->weights = weights;
 
 #ifdef USE_CUDA
-	if (use_gpu) {
+	if (conf->use_gpu) {
 
 		data->weights = md_gpu_move(DIMS, data->wght_dims, weights, CFL_SIZE);
 		md_free(weights);
@@ -152,7 +159,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 
 	if (NULL == mask) {
 
-		assert(!use_gpu);
+		assert(!conf->use_gpu);
 		md_zfill(DIMS, data->mask_dims, msk, 1.);
 
 	} else {
@@ -262,7 +269,7 @@ void noir_adj(struct noir_data* data, complex float* dst, const complex float* s
 	md_clear(DIMS, data->imgs_dims, dst, CFL_SIZE);
 	md_zfmacc2(DIMS, data->sign_dims, data->imgs_strs, dst, data->sign_strs, data->tmp, data->coil_strs, data->sens);
 
-	if (data->rvc)
+	if (data->conf.rvc)
 		md_zreal(DIMS, data->imgs_dims, dst, dst);
 }
 
