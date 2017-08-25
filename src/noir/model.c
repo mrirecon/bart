@@ -35,6 +35,7 @@ struct noir_model_conf_s noir_model_conf_defaults = {
 
 	.rvc = false,
 	.use_gpu = false,
+	.noncart = false,
 };
 
 
@@ -66,6 +67,7 @@ struct noir_data {
 
 
 	const complex float* pattern;
+	const complex float* adj_pattern;
 	const complex float* mask;
 	const complex float* weights;
 
@@ -155,6 +157,21 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 
 	data->pattern = ptr;
 
+	complex float* adj_pattern = md_alloc(DIMS, data->ptrn_dims, CFL_SIZE);
+
+	if (!conf->noncart) {
+
+		md_zconj(DIMS, data->ptrn_dims, adj_pattern, ptr);
+
+	} else {
+
+		md_zfill(DIMS, data->ptrn_dims, adj_pattern, 1.);
+		ifftmod(DIMS, data->ptrn_dims, FFT_FLAGS, adj_pattern, adj_pattern);
+	}
+
+	data->adj_pattern = adj_pattern;
+
+
 	complex float* msk = my_alloc(DIMS, data->mask_dims, CFL_SIZE);
 
 	if (NULL == mask) {
@@ -182,12 +199,13 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 
 void noir_free(struct noir_data* data)
 {
-	md_free((void*)data->pattern);
-	md_free((void*)data->mask);
-	md_free((void*)data->xn);
-	md_free((void*)data->sens);
-	md_free((void*)data->weights);
-	md_free((void*)data->tmp);
+	md_free(data->pattern);
+	md_free(data->mask);
+	md_free(data->xn);
+	md_free(data->sens);
+	md_free(data->weights);
+	md_free(data->tmp);
+	md_free(data->adj_pattern);
 	free(data);
 }
 
@@ -254,7 +272,7 @@ void noir_adj(struct noir_data* data, complex float* dst, const complex float* s
 {
 	long split = md_calc_size(DIMS, data->imgs_dims);
 
-	md_zmulc2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->data_strs, src, data->ptrn_strs, data->pattern);
+	md_zmul2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->data_strs, src, data->ptrn_strs, data->adj_pattern);
 
 	ifft(DIMS, data->sign_dims, FFT_FLAGS, data->tmp, data->tmp);
 

@@ -20,6 +20,7 @@ struct noir_model_conf_s {
 
 	_Bool rvc;
 	_Bool use_gpu;
+	_Bool noncart;
 };
 
 extern struct noir_model_conf_s noir_model_conf_defaults;
