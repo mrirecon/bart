@@ -25,6 +25,7 @@
 #include "iter/misc.h"
 
 #include "linops/linop.h"
+#include "linops/someops.h"
 
 #include "noncart/nufft.h"
 
@@ -47,7 +48,7 @@ static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
 
-static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const complex float* weights, struct operator_s** precond_op)
+static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const complex float* weights, struct operator_s** precond_op, bool sms)
 {
 	long coilim_dims[DIMS];
 	long img_dims[DIMS];
@@ -57,10 +58,22 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	const struct linop_s* fft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, weights, conf);
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
 
-	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
-	precond_op[0] = NULL;
+	if (sms) {
+
+		/**
+		 * Apply Fourier encoding in image space (after coil
+		 * sensitivity weighting but before NUFFT).
+		 */
+
+		const struct linop_s* fft_slice = linop_fft_create(DIMS, map_dims, SLICE_FLAG);
+		fft_op = linop_chain(fft_slice, fft_op);
+		linop_free(fft_slice);
+	}
 
 	const struct linop_s* lop = linop_chain(maps_op, fft_op);
+
+	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
+	precond_op[0] = NULL;
 
 	linop_free(maps_op);
 	linop_free(fft_op);
@@ -95,6 +108,9 @@ int main_pics(int argc, char* argv[])
 	bool scale_im = false;
 	bool eigen = false;
 	float scaling = 0.;
+
+        // Simultaneous Multi-Slice
+        bool sms = false;
 
 	unsigned int llr_blk = 8;
 
@@ -145,6 +161,7 @@ int main_pics(int argc, char* argv[])
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
+		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction")
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -169,6 +186,13 @@ int main_pics(int argc, char* argv[])
 	// load kspace and maps and get dimensions
 
 	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
+
+        if (sms) {
+
+                debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
+                nuconf.toeplitz = false; // no longer toeplitz-shaped because of chaining of operators (see later)?!
+        }
+
 	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
 
 	unsigned int map_flags = md_nontriv_dims(DIMS, map_dims);
@@ -287,7 +311,8 @@ int main_pics(int argc, char* argv[])
 	if (NULL == traj_file)
 		forward_op = sense_init(max_dims, map_flags, maps);
 	else
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, (struct operator_s**) &precond_op);
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, (struct operator_s**) &precond_op, sms);
+
 
 	// apply scaling
 
@@ -386,7 +411,7 @@ int main_pics(int argc, char* argv[])
 
 	// FIXME: re-initialize forward_op and precond_op
 
-	if (NULL == traj_file)
+	if ((NULL == traj_file) && !sms)
 		forward_op = sense_init(max1_dims, map_flags, maps);
 
 
