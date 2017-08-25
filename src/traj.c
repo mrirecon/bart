@@ -57,20 +57,39 @@ static void gradient_delay(float d[3], float coeff[2][3], float phi, float psi)
 	}
 }
 
-static int remap(int all, int turns, int n)
+enum part_mode { REGULAR, LINEAR, ALIGNED };
+
+static int remap(enum part_mode mode, int all, int turns, int mb, int n)
 {
+	int spp = all / (turns * mb);
 	int spt = all / turns;
-	return (n % spt) * turns + n / spt;
+//	int ind_sp = ((n % (spp * mb)) % spp) * mb * turns;
+	int ind_sp = (n % spp) * mb * turns;
+	int ind_fr = ((n % (turns * spp)) / spp) * mb;
+//	int ind_pr = (n / (turns * spp)) * turns;
+
+	switch (mode) {
+	case REGULAR:
+		return (n % spt) * turns + n / spt;
+	case LINEAR:
+		return ind_sp + ind_fr;// + ind_pr;
+	case ALIGNED:
+		return ind_sp + ind_fr;
+	}
+	assert(0);
 }
 
 int main_traj(int argc, char* argv[])
 {
 	int X = 128;
 	int Y = 128;
+	int mb = 0;
 	int accel = 1;
 	bool radial = false;
 	bool golden = false;
+	bool aligned = false;
 	bool dbl = false;
+	bool pGold = false;
 	int turns = 1;
 	bool d3d = false;
 	bool transverse = false;
@@ -86,6 +105,9 @@ int main_traj(int argc, char* argv[])
 		OPT_INT('y', &Y, "y", "phase encoding lines"),
 		OPT_INT('a', &accel, "a", "acceleration"),
 		OPT_INT('t', &turns, "t", "turns"),
+		OPT_INT('m', &mb, "mb", "SMS multiband factor"),
+		OPT_SET('l', &aligned, "aligned partition angle"),
+		OPT_SET('g', &pGold, "golden angle in partition direction"),
 		OPT_SET('r', &radial, "radial"),
 		OPT_SET('G', &golden, "golden-ratio sampling"),
 		OPT_SET('D', &dbl, "double base angle"),
@@ -99,14 +121,59 @@ int main_traj(int argc, char* argv[])
 
 	num_init();
 
-	if (golden || dbl)
-		radial = true;
+	int spp = Y;		// spokes per partition
 
+	if (0 != mb)
+		Y = Y * mb * turns;	// total number of spokes
 
 	int N = X * Y / accel;
-	long dims[3] = { 3, X, Y / accel };
-	complex float* samples = create_cfl(argv[1], 3, dims);
+	long dims[DIMS] = { [0 ... DIMS - 1] = 1  };
+	dims[0] = 3;
+	dims[1] = X;
 
+	if (0 == mb) {
+
+		mb = 1;
+
+	} else {
+
+		dims[TIME_DIM] = turns;
+		dims[SLICE_DIM] = mb;
+	}
+
+
+	enum part_mode mode = LINEAR;
+
+	if (golden) {
+
+		radial = true;
+
+		if ((turns != 1) || (mb != 1))
+			error("No turns and SMS implemented for golden angle!");
+
+	} else if (dbl || radial) {
+
+		radial = true;
+
+		if (d3d)
+			error("3D radial trajectory not implemented yet!");
+
+		if ((mb != 1) && (turns != 1))
+			if (0 == turns % mb)
+				error("'turns % multiband factor' must be nonzero!");
+
+		if (aligned || pGold)
+			mode = ALIGNED;
+
+	} else {
+
+		if ((turns != 1) || (mb != 1))
+			error("No turns or spokes in Cartesian trajectories please!");
+	}
+
+	dims[2] = (radial ? spp : (Y / accel));
+
+	complex float* samples = create_cfl(argv[1], DIMS, dims);
 
 	int p = 0;
 	for (int j = 0; j < Y; j += accel) {
@@ -123,7 +190,7 @@ int main_traj(int argc, char* argv[])
 
 				double golden_angle = 3. - sqrtf(5.);
 				double base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
-				double angle = M_PI * (float)remap(Y, turns, j) * (dbl ? 2. : 1.) * base;
+				double angle = M_PI * (float)remap(mode, Y, turns, mb, j) * (dbl ? 2. : 1.) * base;
 				double read = (float)i + 0.5 - (float)X / 2.;
 				double angle2 = 0.;
 
@@ -131,6 +198,20 @@ int main_traj(int argc, char* argv[])
 
 					int split = sqrtf(Y);
 					angle2 = 2. * M_PI * j * split * base;
+				}
+
+
+				if (!(aligned || pGold)) {
+
+					int pt_ind = j / (turns * spp);
+					double angle_part = M_PI / (float)Y * turns;
+					angle += pt_ind * angle_part;
+				}
+
+				if (pGold) {
+
+					int part = (int)((j % (spp * mb)) / spp); // current partition
+					angle += fmod(part * M_PI / spp * (sqrt(5.) - 1) / 2, M_PI / spp);
 				}
 
 				float d[3] = { 0., 0., 0 };
