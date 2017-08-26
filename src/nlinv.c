@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <complex.h>
+#include <math.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -68,12 +69,22 @@ int main_nlinv(int argc, char* argv[])
 	long ksp_dims[DIMS];
 	complex float* kspace_data = load_cfl(argv[1], DIMS, ksp_dims);
 
+	// SMS
+	if (1 != ksp_dims[SLICE_DIM]) {
+
+		debug_printf(DP_INFO, "SMS-NLINV reconstruction. Multiband factor: %d\n", ksp_dims[SLICE_DIM]);
+		fftmod(DIMS, ksp_dims, SLICE_FLAG, kspace_data, kspace_data); // fftmod to get correct slice order in output
+	}
+
+
+	assert(1 == ksp_dims[MAPS_DIM]);
+
 	long dims[DIMS];
 	md_copy_dims(DIMS, dims, ksp_dims);
 
 
 	long img_dims[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS|CSHIFT_FLAG, img_dims, dims);
+	md_select_dims(DIMS, FFT_FLAGS|CSHIFT_FLAG|SLICE_FLAG, img_dims, dims);
 
 	long img_strs[DIMS];
 	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);
@@ -87,8 +98,8 @@ int main_nlinv(int argc, char* argv[])
 	long msk_strs[DIMS];
 	md_calc_strides(DIMS, msk_strs, msk_dims, CFL_SIZE);
 
-	complex float* mask; 
-	complex float* norm = md_alloc(DIMS, msk_dims, CFL_SIZE);
+	complex float* mask;
+	complex float* norm = md_alloc(DIMS, img_dims, CFL_SIZE);
 	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, ksp_dims);
 
 
@@ -115,7 +126,19 @@ int main_nlinv(int argc, char* argv[])
 #if 0
 	float scaling = 1. / estimate_scaling(ksp_dims, NULL, kspace_data);
 #else
-	float scaling = 100. / md_znorm(DIMS, ksp_dims, kspace_data);
+	double scaling = 100. / md_znorm(DIMS, ksp_dims, kspace_data);
+
+	if (1 != ksp_dims[SLICE_DIM]) { // SMS
+
+		if (conf.noncart) {
+
+			scaling *= sqrt(ksp_dims[SLICE_DIM]);  // Sqrt seems to work better for radial trajectories
+
+		} else {
+			// ksp_dims[SLICE_DIM] =  Multiband factor (Multislice k-space contains dims[2] times as much energy as single slice)
+			scaling *=  ksp_dims[SLICE_DIM];
+		}
+	}
 #endif
 	debug_printf(DP_INFO, "Scaling: %f\n", scaling);
 	md_zsmul(DIMS, ksp_dims, kspace_data, kspace_data, scaling);
@@ -151,13 +174,12 @@ int main_nlinv(int argc, char* argv[])
 	if (normalize) {
 
 		md_zrss(DIMS, ksp_dims, COIL_FLAG, norm, sens);
-		md_zmul2(DIMS, img_dims, img_strs, image, img_strs, image, msk_strs, norm);
+                md_zmul2(DIMS, img_dims, img_strs, image, img_strs, image, img_strs, norm);
 	}
 
 	if (out_sens) {
 
 		long strs[DIMS];
-
 		md_calc_strides(DIMS, strs, ksp_dims, CFL_SIZE);
 
 		if (normalize)
