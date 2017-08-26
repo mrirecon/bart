@@ -95,7 +95,6 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	long d1[1] = { size };
 	complex float* img = md_alloc_sameplace(1, d1, CFL_SIZE, kspace);
-	complex float* imgH = md_alloc_sameplace(1, d1, CFL_SIZE, kspace);
 
 
 	md_clear(DIMS, imgs_dims, img, CFL_SIZE);
@@ -105,8 +104,6 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	md_clear(DIMS, coil_dims, img + skip, CFL_SIZE);
 
-	md_clear(DIMS, imgs_dims, imgH, CFL_SIZE);
-	md_clear(DIMS, coil_dims, imgH + skip, CFL_SIZE);
 
 	struct noir_model_conf_s mconf = noir_model_conf_defaults;
 	mconf.rvc = conf->rvc;
@@ -138,7 +135,6 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	noir_free(ndata);
 
 	md_free(img);
-	md_free(imgH);
 }
 
 
