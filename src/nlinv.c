@@ -42,6 +42,7 @@ int main_nlinv(int argc, char* argv[])
 	float restrict_fov = -1.;
 	const char* psf = NULL;
 	struct noir_conf_s conf = noir_defaults;
+	bool out_sens = false;
 
 	const struct opt_s opts[] = {
 
@@ -54,6 +55,11 @@ int main_nlinv(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	if (4 == argc)
+		out_sens = true;
+
+
 
 	num_init();
 
@@ -141,7 +147,7 @@ int main_nlinv(int argc, char* argv[])
 		md_zmul2(DIMS, img_dims, img_strs, image, img_strs, image, msk_strs, norm);
 	}
 
-	if (4 == argc) {
+	if (out_sens) {
 
 		long strs[DIMS];
 
