@@ -72,6 +72,7 @@ const struct noir_conf_s noir_defaults = {
 	.iter = 8,
 	.rvc = false,
 	.usegpu = false,
+	.noncart = false,
 	.alpha = 1.,
 	.redu = 2.,
 };
@@ -104,10 +105,10 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	md_clear(DIMS, coil_dims, img + skip, CFL_SIZE);
 
-
 	struct noir_model_conf_s mconf = noir_model_conf_defaults;
 	mconf.rvc = conf->rvc;
 	mconf.use_gpu = conf->usegpu;
+	mconf.noncart = conf->noncart;
 
 	struct noir_data* ndata = noir_init(dims, mask, psf, &mconf);
 	struct data data = { { &TYPEID(data) }, ndata };
@@ -116,6 +117,8 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	irgnm_conf.iter = conf->iter;
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.redu = conf->redu;
+	irgnm_conf.cgtol = 0.1f;
+	irgnm_conf.nlinv_legacy = true;
 
 	iter3_irgnm(CAST_UP(&irgnm_conf),
 			(struct iter_op_s){ frw, CAST_UP(&data) },
