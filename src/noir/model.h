@@ -18,6 +18,7 @@ extern void noir_back_coils(struct noir_data* data, complex float* dst, const co
 
 struct noir_model_conf_s {
 
+	unsigned int fft_flags;
 	_Bool rvc;
 	_Bool use_gpu;
 	_Bool noncart;

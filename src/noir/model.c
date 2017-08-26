@@ -1,9 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
+ * Copyright 2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-2012 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2011-2012,2017 Martin Uecker
  *
  *
  * Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction by regularized nonlinear
@@ -33,6 +34,7 @@
 
 struct noir_model_conf_s noir_model_conf_defaults = {
 
+	.fft_flags = FFT_FLAGS,
 	.rvc = false,
 	.use_gpu = false,
 	.noncart = false,
@@ -111,16 +113,16 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 
 	md_copy_dims(DIMS, data->dims, dims);
 
-	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG|CSHIFT_FLAG, data->sign_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|COIL_FLAG|CSHIFT_FLAG, data->sign_dims, dims);
 	md_calc_strides(DIMS, data->sign_strs, data->sign_dims, CFL_SIZE);
 
-	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, data->coil_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|COIL_FLAG|MAPS_FLAG, data->coil_dims, dims);
 	md_calc_strides(DIMS, data->coil_strs, data->coil_dims, CFL_SIZE);
 
-	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|CSHIFT_FLAG, data->imgs_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|MAPS_FLAG|CSHIFT_FLAG, data->imgs_dims, dims);
 	md_calc_strides(DIMS, data->imgs_strs, data->imgs_dims, CFL_SIZE);
 
-	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG, data->data_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|COIL_FLAG, data->data_dims, dims);
 	md_calc_strides(DIMS, data->data_strs, data->data_dims, CFL_SIZE);
 
 	md_select_dims(DIMS, FFT_FLAGS, data->mask_dims, dims);
@@ -129,7 +131,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 	md_select_dims(DIMS, FFT_FLAGS, data->wght_dims, dims);
 	md_calc_strides(DIMS, data->wght_strs, data->wght_dims, CFL_SIZE);
 
-	md_select_dims(DIMS, FFT_FLAGS|CSHIFT_FLAG, data->ptrn_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|CSHIFT_FLAG, data->ptrn_dims, dims);
 	md_calc_strides(DIMS, data->ptrn_strs, data->ptrn_dims, CFL_SIZE);
 
 
@@ -153,7 +155,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 	complex float* ptr = my_alloc(DIMS, data->ptrn_dims, CFL_SIZE);
 
 	md_copy(DIMS, data->ptrn_dims, ptr, psf, CFL_SIZE);
-	fftmod(DIMS, data->ptrn_dims, FFT_FLAGS, ptr, ptr);
+	fftmod(DIMS, data->ptrn_dims, conf->fft_flags, ptr, ptr);
 
 	data->pattern = ptr;
 
@@ -166,7 +168,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 	} else {
 
 		md_zfill(DIMS, data->ptrn_dims, adj_pattern, 1.);
-		ifftmod(DIMS, data->ptrn_dims, FFT_FLAGS, adj_pattern, adj_pattern);
+		ifftmod(DIMS, data->ptrn_dims, conf->fft_flags, adj_pattern, adj_pattern);
 	}
 
 	data->adj_pattern = adj_pattern;
@@ -239,7 +241,7 @@ void noir_fun(struct noir_data* data, complex float* dst, const complex float* s
 	// could be moved to the benning, but see comment below
 	md_zmul2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->sign_strs, data->tmp, data->mask_strs, data->mask);
 
-	fft(DIMS, data->sign_dims, FFT_FLAGS, data->tmp, data->tmp);
+	fft(DIMS, data->sign_dims, data->conf.fft_flags, data->tmp, data->tmp);
 
 	md_clear(DIMS, data->data_dims, dst, CFL_SIZE);
 	md_zfmac2(DIMS, data->sign_dims, data->data_strs, dst, data->sign_strs, data->tmp, data->ptrn_strs, data->pattern);
@@ -261,7 +263,7 @@ void noir_der(struct noir_data* data, complex float* dst, const complex float* s
 	// could be moved to the benning, but see comment below
 	md_zmul2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->sign_strs, data->tmp, data->mask_strs, data->mask);
 
-	fft(DIMS, data->sign_dims, FFT_FLAGS, data->tmp, data->tmp);
+	fft(DIMS, data->sign_dims, data->conf.fft_flags, data->tmp, data->tmp);
 
 	md_clear(DIMS, data->data_dims, dst, CFL_SIZE);
 	md_zfmac2(DIMS, data->sign_dims, data->data_strs, dst, data->sign_strs, data->tmp, data->ptrn_strs, data->pattern);
@@ -274,7 +276,7 @@ void noir_adj(struct noir_data* data, complex float* dst, const complex float* s
 
 	md_zmul2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->data_strs, src, data->ptrn_strs, data->adj_pattern);
 
-	ifft(DIMS, data->sign_dims, FFT_FLAGS, data->tmp, data->tmp);
+	ifft(DIMS, data->sign_dims, data->conf.fft_flags, data->tmp, data->tmp);
 
 	// we should move it to the end, but fft scaling is applied so this would be need to moved into data->xn or weights maybe?
 	md_zmulc2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->sign_strs, data->tmp, data->mask_strs, data->mask);
