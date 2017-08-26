@@ -85,10 +85,12 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	long data_dims[DIMS];
 	long img1_dims[DIMS];
 
-	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|CSHIFT_FLAG, imgs_dims, dims);
-	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, coil_dims, dims);
-	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG, data_dims, dims);
-	md_select_dims(DIMS, FFT_FLAGS, img1_dims, dims);
+	unsigned int fft_flags = FFT_FLAGS|SLICE_FLAG;
+
+	md_select_dims(DIMS, fft_flags|MAPS_FLAG|CSHIFT_FLAG, imgs_dims, dims);
+	md_select_dims(DIMS, fft_flags|COIL_FLAG|MAPS_FLAG, coil_dims, dims);
+	md_select_dims(DIMS, fft_flags|COIL_FLAG, data_dims, dims);
+	md_select_dims(DIMS, fft_flags, img1_dims, dims);
 
 	long skip = md_calc_size(DIMS, imgs_dims);
 	long size = skip + md_calc_size(DIMS, coil_dims);
@@ -109,6 +111,7 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	mconf.rvc = conf->rvc;
 	mconf.use_gpu = conf->usegpu;
 	mconf.noncart = conf->noncart;
+	mconf.fft_flags = fft_flags;
 
 	struct noir_data* ndata = noir_init(dims, mask, psf, &mconf);
 	struct data data = { { &TYPEID(data) }, ndata };
@@ -133,6 +136,7 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 		assert(!conf->usegpu);
 		noir_forw_coils(ndata, sensout, img + skip);
+		fftmod(DIMS, coil_dims, fft_flags, sensout, sensout);
 	}
 
 	noir_free(ndata);
