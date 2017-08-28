@@ -73,7 +73,7 @@ tests/test-pics-joint-wavl1: poisson reshape fft fmac ones pics slice nrmse $(TE
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
 	$(TOOLDIR)/pics -S -RW:3:32:0.02 -i50 ksp.ra o.ra reco2.ra			;\
 	$(TOOLDIR)/slice 5 0 reco2.ra reco.ra						;\
-	$(TOOLDIR)/nrmse -t 0.21 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
+	$(TOOLDIR)/nrmse -t 0.22 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
