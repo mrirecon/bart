@@ -99,7 +99,7 @@ static void noir_calc_weights(const long dims[3], complex float* dst)
 struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf)
 {
 #ifdef USE_CUDA
-	md_alloc_fun_t my_alloc = use_gpu ? md_alloc_gpu : md_alloc;
+	md_alloc_fun_t my_alloc = conf->use_gpu ? md_alloc_gpu : md_alloc;
 #else
 	assert(!conf->use_gpu);
 	md_alloc_fun_t my_alloc = md_alloc;
