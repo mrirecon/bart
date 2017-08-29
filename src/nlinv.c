@@ -92,7 +92,7 @@ int main_nlinv(int argc, char* argv[])
 	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);
 
 
-	complex float* image = create_cfl(argv[2], DIMS, img_dims);
+	complex float* img = create_cfl(argv[2], DIMS, img_dims);
 
 	long msk_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, msk_dims, dims);
@@ -156,19 +156,19 @@ int main_nlinv(int argc, char* argv[])
 
 		complex float* kspace_gpu = md_alloc_gpu(DIMS, ksp_dims, CFL_SIZE);
 		md_copy(DIMS, ksp_dims, kspace_gpu, kspace_data, CFL_SIZE);
-		noir_recon(&conf, dims, image, NULL, pattern, mask, kspace_gpu);
+		noir_recon(&conf, dims, img, NULL, pattern, mask, kspace_gpu);
 		md_free(kspace_gpu);
 
 		md_zfill(DIMS, ksp_dims, sens, 1.);
 
 	} else
 #endif
-	noir_recon(&conf, dims, image, sens, pattern, mask, kspace_data);
+	noir_recon(&conf, dims, img, sens, pattern, mask, kspace_data);
 
 	if (normalize) {
 
 		md_zrss(DIMS, ksp_dims, COIL_FLAG, norm, sens);
-                md_zmul2(DIMS, img_dims, img_strs, image, img_strs, image, img_strs, norm);
+                md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, img_strs, norm);
 	}
 
 	if (out_sens) {
@@ -183,14 +183,14 @@ int main_nlinv(int argc, char* argv[])
 	}
 
 	if (scale_im)
-		md_zsmul(DIMS, img_dims, image, image, 1. / scaling);
+		md_zsmul(DIMS, img_dims, img, img, 1. / scaling);
 
 	md_free(norm);
 	md_free(mask);
 
 	unmap_cfl(DIMS, ksp_dims, sens);
 	unmap_cfl(DIMS, pat_dims, pattern);
-	unmap_cfl(DIMS, img_dims, image);
+	unmap_cfl(DIMS, img_dims, img );
 	unmap_cfl(DIMS, ksp_dims, kspace_data);
 	exit(0);
 }
