@@ -128,17 +128,9 @@ int main_nlinv(int argc, char* argv[])
 #else
 	double scaling = 100. / md_znorm(DIMS, ksp_dims, kspace_data);
 
-	if (1 != ksp_dims[SLICE_DIM]) { // SMS
+	if (1 != ksp_dims[SLICE_DIM]) // SMS
+			scaling *= sqrt(ksp_dims[SLICE_DIM]); 
 
-		if (conf.noncart) {
-
-			scaling *= sqrt(ksp_dims[SLICE_DIM]);  // Sqrt seems to work better for radial trajectories
-
-		} else {
-			// ksp_dims[SLICE_DIM] =  Multiband factor (Multislice k-space contains dims[2] times as much energy as single slice)
-			scaling *=  ksp_dims[SLICE_DIM];
-		}
-	}
 #endif
 	debug_printf(DP_INFO, "Scaling: %f\n", scaling);
 	md_zsmul(DIMS, ksp_dims, kspace_data, kspace_data, scaling);
