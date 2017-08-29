@@ -48,8 +48,7 @@ const struct noir_conf_s noir_defaults = {
 	.redu = 2.,
 };
 
-
-void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex float* outbuf, complex float* sensout, const complex float* psf, const complex float* mask, const complex float* kspace)
+void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex float* img, complex float* sens, const complex float* pattern, const complex float* mask, const complex float* kspace_data )
 {
 	long imgs_dims[DIMS];
 	long coil_dims[DIMS];
@@ -69,13 +68,13 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	long d1[1] = { size };
 	// variable which is optimized by the IRGNM
-	complex float* x = md_alloc_sameplace(1, d1, CFL_SIZE, kspace);
+	complex float* x = md_alloc_sameplace(1, d1, CFL_SIZE, kspace_data );
 
 
 	md_clear(DIMS, imgs_dims, x, CFL_SIZE);
 
-	md_zfill(DIMS, img1_dims, outbuf, 1.);	// initial only first image
-	md_copy(DIMS, img1_dims, x, outbuf, CFL_SIZE);
+	md_zfill(DIMS, img1_dims, img, 1.);	// initial only first image
+	md_copy(DIMS, img1_dims, x, img, CFL_SIZE);
 
 	md_clear(DIMS, coil_dims, x + skip, CFL_SIZE);
 
@@ -85,7 +84,7 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	mconf.noncart = conf->noncart;
 	mconf.fft_flags = fft_flags;
 
-	struct nlop_s* nlop = noir_create(dims, mask, psf, &mconf);
+	struct nlop_s* nlop = noir_create(dims, mask, pattern, &mconf);
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 
@@ -98,15 +97,15 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	iter4_irgnm(CAST_UP(&irgnm_conf),
 			nlop,
 			size * 2, (float*) x, NULL,
-			data_size * 2, (const float*)kspace);
+			data_size * 2, (const float*) kspace_data );
 
-	md_copy(DIMS, imgs_dims, outbuf, x, CFL_SIZE);
+	md_copy(DIMS, imgs_dims, img, x, CFL_SIZE);
 
-	if (NULL != sensout) {
+	if (NULL != sens ) {
 
 		assert(!conf->usegpu);
-		noir_forw_coils(noir_get_data(nlop), sensout, x + skip);
-		fftmod(DIMS, coil_dims, fft_flags, sensout, sensout);
+		noir_forw_coils(noir_get_data(nlop), sens, x + skip);
+		fftmod(DIMS, coil_dims, fft_flags, sens, sens);
 	}
 
 	nlop_free(nlop);
