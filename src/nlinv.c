@@ -49,6 +49,7 @@ int main_nlinv(int argc, char* argv[])
 	const struct opt_s opts[] = {
 
 		OPT_UINT('i', &conf.iter, "iter", ""),
+		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('c', &conf.rvc, ""),
 		OPT_CLEAR('N', &normalize, ""),
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
