@@ -61,6 +61,7 @@ int main_nlinv(int argc, char* argv[])
 		OPT_STRING('I', &init_file, "file", "File for initialization"),
 		OPT_SET('g', &conf.usegpu, "use gpu"),
 		OPT_SET('S', &scale_im, "Re-scale image after reconstruction"),
+		OPT_SET('P', &conf.pattern_for_each_coil, "(supplied psf is different for each coil)"),
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -134,10 +135,14 @@ int main_nlinv(int argc, char* argv[])
 		pattern = load_cfl(psf, DIMS, pat_dims);
 		// FIXME: check compatibility
 
-		if (-1 == restrict_fov)
-			restrict_fov = 0.5;
+		if (conf.pattern_for_each_coil) {
+			assert( 1 != pat_dims[COIL_DIM] );
+		} else {
+			if (-1 == restrict_fov)
+				restrict_fov = 0.5;
 
-		conf.noncart = true;
+			conf.noncart = true;
+		}
 
 	} else {
 

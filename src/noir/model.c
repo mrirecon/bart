@@ -38,6 +38,7 @@ struct noir_model_conf_s noir_model_conf_defaults = {
 	.rvc = false,
 	.use_gpu = false,
 	.noncart = false,
+	.pattern_for_each_coil = false,
 };
 
 
@@ -131,7 +132,11 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 	md_select_dims(DIMS, FFT_FLAGS, data->wght_dims, dims);
 	md_calc_strides(DIMS, data->wght_strs, data->wght_dims, CFL_SIZE);
 
-	md_select_dims(DIMS, conf->fft_flags|CSHIFT_FLAG, data->ptrn_dims, dims);
+	if (!conf->pattern_for_each_coil)
+		md_select_dims(DIMS, conf->fft_flags|CSHIFT_FLAG, data->ptrn_dims, dims);
+	else
+		md_select_dims(DIMS, conf->fft_flags|COIL_FLAG|CSHIFT_FLAG, data->ptrn_dims, dims);
+
 	md_calc_strides(DIMS, data->ptrn_strs, data->ptrn_dims, CFL_SIZE);
 
 

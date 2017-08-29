@@ -22,6 +22,7 @@ struct noir_model_conf_s {
 	_Bool rvc;
 	_Bool use_gpu;
 	_Bool noncart;
+	_Bool pattern_for_each_coil;
 };
 
 extern struct noir_model_conf_s noir_model_conf_defaults;
