@@ -42,6 +42,7 @@ int main_nlinv(int argc, char* argv[])
 	bool normalize = true;
 	float restrict_fov = -1.;
 	const char* psf = NULL;
+	const char* init_file = NULL;
 	struct noir_conf_s conf = noir_defaults;
 	bool out_sens = false;
 	bool scale_im = false;
@@ -55,6 +56,7 @@ int main_nlinv(int argc, char* argv[])
 		OPT_CLEAR('N', &normalize, "Do not normalize image with coil sensitivities"),
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
 		OPT_STRING('p', &psf, "PSF", ""),
+		OPT_STRING('I', &init_file, "file", "File for initialization"),
 		OPT_SET('g', &conf.usegpu, "use gpu"),
 		OPT_SET('S', &scale_im, "Re-scale image after reconstruction"),
 	};
@@ -105,8 +107,22 @@ int main_nlinv(int argc, char* argv[])
 	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, ksp_dims);
 
 	// initialization
-	md_zfill(DIMS, img_dims, img, 1.);
-	md_clear(DIMS, ksp_dims, sens, CFL_SIZE);
+	if (NULL != init_file) {
+
+		long skip = md_calc_size(DIMS, img_dims);
+		long init_dims[DIMS];
+		complex float* init = load_cfl(init_file, DIMS, init_dims);
+
+		assert(md_check_bounds(DIMS, 0, img_dims, init_dims));
+
+		md_copy(DIMS, img_dims, img, init, CFL_SIZE);
+		fftmod(DIMS, ksp_dims, FFT_FLAGS|SLICE_FLAG, sens, init + skip);
+
+	} else {
+
+		md_zfill(DIMS, img_dims, img, 1.);
+		md_clear(DIMS, ksp_dims, sens, CFL_SIZE);
+	}
 
 	complex float* pattern = NULL;
 	long pat_dims[DIMS];
