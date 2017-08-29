@@ -17,6 +17,7 @@ struct noir_conf_s {
 	_Bool noncart;
 	float alpha;
 	float redu;
+	_Bool pattern_for_each_coil;
 };
 
 extern const struct noir_conf_s noir_defaults;

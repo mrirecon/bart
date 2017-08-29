@@ -46,6 +46,7 @@ const struct noir_conf_s noir_defaults = {
 	.noncart = false,
 	.alpha = 1.,
 	.redu = 2.,
+	.pattern_for_each_coil = false,
 };
 
 void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex float* img, complex float* sens, const complex float* pattern, const complex float* mask, const complex float* kspace_data )
@@ -78,6 +79,7 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	mconf.use_gpu = conf->usegpu;
 	mconf.noncart = conf->noncart;
 	mconf.fft_flags = fft_flags;
+	mconf.pattern_for_each_coil = conf->pattern_for_each_coil;
 
 	struct nlop_s* nlop = noir_create(dims, mask, pattern, &mconf);
 
