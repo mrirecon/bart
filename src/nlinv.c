@@ -100,7 +100,7 @@ int main_nlinv(int argc, char* argv[])
 	long msk_strs[DIMS];
 	md_calc_strides(DIMS, msk_strs, msk_dims, CFL_SIZE);
 
-	complex float* mask;
+	complex float* mask = NULL;
 	complex float* norm = md_alloc(DIMS, img_dims, CFL_SIZE);
 	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, ksp_dims);
 
