@@ -48,10 +48,10 @@ int main_nlinv(int argc, char* argv[])
 
 	const struct opt_s opts[] = {
 
-		OPT_UINT('i', &conf.iter, "iter", ""),
+		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
-		OPT_SET('c', &conf.rvc, ""),
-		OPT_CLEAR('N', &normalize, ""),
+		OPT_SET('c', &conf.rvc, "Real-value constraint"),
+		OPT_CLEAR('N', &normalize, "Do not normalize image with coil sensitivities"),
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
 		OPT_STRING('p', &psf, "PSF", ""),
 		OPT_SET('g', &conf.usegpu, "use gpu"),
