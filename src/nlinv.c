@@ -104,6 +104,9 @@ int main_nlinv(int argc, char* argv[])
 	complex float* norm = md_alloc(DIMS, img_dims, CFL_SIZE);
 	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, ksp_dims);
 
+	// initialization
+	md_zfill(DIMS, img_dims, img, 1.);
+	md_clear(DIMS, ksp_dims, sens, CFL_SIZE);
 
 	complex float* pattern = NULL;
 	long pat_dims[DIMS];

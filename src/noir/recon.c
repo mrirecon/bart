@@ -70,13 +70,8 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	// variable which is optimized by the IRGNM
 	complex float* x = md_alloc_sameplace(1, d1, CFL_SIZE, kspace_data );
 
-
-	md_clear(DIMS, imgs_dims, x, CFL_SIZE);
-
-	md_zfill(DIMS, img1_dims, img, 1.);	// initial only first image
-	md_copy(DIMS, img1_dims, x, img, CFL_SIZE);
-
-	md_clear(DIMS, coil_dims, x + skip, CFL_SIZE);
+	md_copy(DIMS, imgs_dims, x, img, CFL_SIZE);
+	md_copy(DIMS, coil_dims, x + skip, sens, CFL_SIZE);
 
 	struct noir_model_conf_s mconf = noir_model_conf_defaults;
 	mconf.rvc = conf->rvc;
