@@ -51,7 +51,8 @@ static void nlop_adj_iter(iter_op_data* _o, float* _dst, const float* _src)
 void iter4_irgnm(iter3_conf* _conf,
 		struct nlop_s* nlop,
 		long N, float* dst, const float* ref,
-		long M, const float* src)
+		long M, const float* src,
+		 struct iter_op_s cb)
 {
 	struct iter4_nlop_s data = { { &TYPEID(iter4_nlop_s) }, *nlop };
 
@@ -59,7 +60,7 @@ void iter4_irgnm(iter3_conf* _conf,
 		(struct iter_op_s){ nlop_for_iter, CAST_UP(&data) },
 		(struct iter_op_s){ nlop_der_iter, CAST_UP(&data) },
 		(struct iter_op_s){ nlop_adj_iter, CAST_UP(&data) },
-		N, dst, ref, M, src);
+		N, dst, ref, M, src, cb);
 }
 
 void iter4_landweber(iter3_conf* _conf,

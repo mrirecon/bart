@@ -14,7 +14,13 @@ typedef void iter4_fun_f(iter3_conf* _conf,
 		long N, float* dst, const float* ref,
 		long M, const float* src);
 
-iter4_fun_f iter4_irgnm;
+typedef void iter4_irgnm_f(iter3_conf* _conf,
+			   struct nlop_s* nlop,
+			   long N, float* dst, const float* ref,
+			   long M, const float* src,
+			   struct iter_op_s cb);
+
+iter4_irgnm_f iter4_irgnm;
 iter4_fun_f iter4_landweber;
 
 

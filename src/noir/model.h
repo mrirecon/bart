@@ -30,5 +30,7 @@ extern struct noir_model_conf_s noir_model_conf_defaults;
 extern struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf);
 extern void noir_free(struct noir_data* data);
 
+extern void noir_orthogonalize(struct noir_data*, complex float* dst, const complex float* src);
+
 
 
