@@ -489,7 +489,7 @@ void irgnm(unsigned int iter, float alpha, float redu, long N, long M,
 
 		vops->xpay(M, -1., r, y);	// r = y - F x
 
-		debug_printf(DP_DEBUG3, "Res: %f\n", vops->norm(M, r));
+		debug_printf(DP_DEBUG2, "Step: %u, Res: %f\n", i, vops->norm(M, r));
 
 		iter_op_call(adj, p, r);
 
