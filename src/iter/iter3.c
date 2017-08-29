@@ -120,7 +120,8 @@ void iter3_irgnm(iter3_conf* _conf,
 		(struct iter_op_s){ forward, CAST_UP(&data) },
 		(struct iter_op_s){ adjoint, CAST_UP(&data) },
 		(struct iter_op_p_s){ inverse, CAST_UP(&data) },
-		dst, ref, src);
+		dst, ref, src,
+		(struct iter_op_s){NULL, NULL});
 
 	md_free(tmp);
 }

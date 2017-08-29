@@ -475,7 +475,8 @@ void irgnm(unsigned int iter, float alpha, float redu, long N, long M,
 	struct iter_op_s op,
 	struct iter_op_s adj,
 	struct iter_op_p_s inv,
-	float* x, const float* xref, const float* y)
+	float* x, const float* xref, const float* y,
+	struct iter_op_s callback)
 {
 	float* r = vops->allocate(M);
 	float* p = vops->allocate(N);
@@ -502,6 +503,8 @@ void irgnm(unsigned int iter, float alpha, float redu, long N, long M,
 
 		vops->axpy(N, x, 1., h);
 		alpha /= redu;
+		if (NULL != callback.fun)
+			iter_op_call(callback, x, x);
 	}
 
 	vops->del(h);
