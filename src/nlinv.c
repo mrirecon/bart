@@ -49,6 +49,7 @@ int main_nlinv(int argc, char* argv[])
 	const struct opt_s opts[] = {
 
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
+		OPT_FLOAT('R', &conf.redu, "", "(reduction factor)"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('c', &conf.rvc, "Real-value constraint"),
 		OPT_CLEAR('N', &normalize, "Do not normalize image with coil sensitivities"),
