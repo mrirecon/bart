@@ -42,6 +42,8 @@ int main_nlinv(int argc, char* argv[])
 	double start_time = timestamp();
 
 	bool normalize = true;
+	bool combine = true;
+	unsigned int nmaps = 1;
 	float restrict_fov = -1.;
 	const char* psf = NULL;
 	const char* init_file = NULL;
@@ -56,6 +58,8 @@ int main_nlinv(int argc, char* argv[])
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('c', &conf.rvc, "Real-value constraint"),
 		OPT_CLEAR('N', &normalize, "Do not normalize image with coil sensitivities"),
+		OPT_UINT('m', &nmaps, "nmaps", "Number of ENLIVE maps to use in reconsctruction"),
+		OPT_CLEAR('U', &combine, "Do not combine ENLIVE maps in output"),
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
 		OPT_STRING('p', &psf, "PSF", ""),
 		OPT_STRING('I', &init_file, "file", "File for initialization"),
@@ -65,6 +69,7 @@ int main_nlinv(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
 
 	if (4 == argc)
 		out_sens = true;
@@ -83,31 +88,50 @@ int main_nlinv(int argc, char* argv[])
 		fftmod(DIMS, ksp_dims, SLICE_FLAG, kspace_data, kspace_data); // fftmod to get correct slice order in output
 	}
 
-
+	// The only multimap we understand with is the one we do ourselves, where
+	// we allow multiple images and sensitivities during the reconsctruction
 	assert(1 == ksp_dims[MAPS_DIM]);
 
-	long dims[DIMS];
-	md_copy_dims(DIMS, dims, ksp_dims);
+	long ksp_strs[DIMS];
+	md_calc_strides(DIMS, ksp_strs, ksp_dims, CFL_SIZE);
+
+	long sens_dims[DIMS];
+	md_copy_dims(DIMS, sens_dims, ksp_dims);
+	sens_dims[MAPS_DIM] = nmaps;
+
+	long sens_strs[DIMS];
+	md_calc_strides(DIMS, sens_strs, sens_dims, CFL_SIZE);
 
 
 	long img_dims[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS|CSHIFT_FLAG|SLICE_FLAG, img_dims, dims);
+	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|CSHIFT_FLAG|SLICE_FLAG, img_dims, sens_dims );
 
 	long img_strs[DIMS];
 	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);
 
+	long img_output_dims[DIMS];
+	md_select_dims(DIMS, FFT_FLAGS|SLICE_FLAG, img_output_dims, sens_dims);
+	if (!combine)
+		img_output_dims[MAPS_DIM] = nmaps;
 
-	complex float* img = create_cfl(argv[2], DIMS, img_dims);
+	long img_output_strs[DIMS];
+	md_calc_strides(DIMS, img_output_strs, img_output_dims, CFL_SIZE);
+
+	complex float* img_output = create_cfl(argv[2], DIMS, img_output_dims);
+	md_clear(DIMS, img_output_dims, img_output, CFL_SIZE);
+	complex float* img = md_alloc(DIMS, img_dims, CFL_SIZE);
 
 	long msk_dims[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS, msk_dims, dims);
+	md_select_dims(DIMS, FFT_FLAGS, msk_dims, img_dims);
 
 	long msk_strs[DIMS];
 	md_calc_strides(DIMS, msk_strs, msk_dims, CFL_SIZE);
 
 	complex float* mask = NULL;
 	complex float* norm = md_alloc(DIMS, img_dims, CFL_SIZE);
-	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, ksp_dims);
+
+	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, sens_dims);
+
 
 	// initialization
 	if (NULL != init_file) {
@@ -119,12 +143,14 @@ int main_nlinv(int argc, char* argv[])
 		assert(md_check_bounds(DIMS, 0, img_dims, init_dims));
 
 		md_copy(DIMS, img_dims, img, init, CFL_SIZE);
-		fftmod(DIMS, ksp_dims, FFT_FLAGS|SLICE_FLAG, sens, init + skip);
+		fftmod(DIMS, sens_dims, FFT_FLAGS|SLICE_FLAG, sens, init + skip);
+
+		unmap_cfl(DIMS, init_dims, init);
 
 	} else {
 
 		md_zfill(DIMS, img_dims, img, 1.);
-		md_clear(DIMS, ksp_dims, sens, CFL_SIZE);
+		md_clear(DIMS, sens_dims, sens, CFL_SIZE);
 	}
 
 	complex float* pattern = NULL;
@@ -183,38 +209,62 @@ int main_nlinv(int argc, char* argv[])
 		complex float* kspace_gpu = md_alloc_gpu(DIMS, ksp_dims, CFL_SIZE);
 		md_copy(DIMS, ksp_dims, kspace_gpu, kspace_data, CFL_SIZE);
 
-		noir_recon(&conf, dims, img, sens, pattern, mask, kspace_gpu);
+		noir_recon(&conf, sens_dims, img, sens, pattern, mask, kspace_gpu);
 		md_free(kspace_gpu);
 	} else
 #endif
-	noir_recon(&conf, dims, img, sens, pattern, mask, kspace_data);
+	noir_recon(&conf, sens_dims, img, sens, pattern, mask, kspace_data);
 
+
+	// image output
 	if (normalize) {
 
-		md_zrss(DIMS, ksp_dims, COIL_FLAG, norm, sens);
-                md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, img_strs, norm);
-	}
+		complex float* buf = md_alloc(DIMS, sens_dims, CFL_SIZE);
+		md_clear(DIMS, sens_dims, buf, CFL_SIZE);
 
-	if (out_sens) {
+		if (combine) {
 
-		long strs[DIMS];
-		md_calc_strides(DIMS, strs, ksp_dims, CFL_SIZE);
+			md_zfmac2(DIMS, sens_dims, ksp_strs, buf, img_strs, img, sens_strs, sens);
+			md_zrss(DIMS, ksp_dims, COIL_FLAG, img_output, buf);
+		} else {
 
-		if (normalize)
-			md_zdiv2(DIMS, ksp_dims, strs, sens, strs, sens, img_strs, norm);
+			md_zfmac2(DIMS, sens_dims, sens_strs, buf, img_strs, img, sens_strs, sens);
+			md_zrss(DIMS, sens_dims, COIL_FLAG, img_output, buf);
+		}
+		md_zmul2(DIMS, img_output_dims, img_output_strs, img_output, img_output_strs, img_output, msk_strs, mask);
 
-		fftmod(DIMS, ksp_dims, FFT_FLAGS, sens, sens);
+		if (1 == nmaps || !combine) {
+
+			//restore phase
+			md_zphsr(DIMS, img_output_dims, buf, img);
+			md_zmul(DIMS, img_output_dims, img_output, img_output, buf);
+		}
+
+		md_free(buf);
+	} else {
+
+		if (combine) {
+
+			// just sum up the map images
+			md_zaxpy2(DIMS, img_dims, img_output_strs, img_output, 1., img_strs, img);
+		} else { /*!normalize && !combine */
+
+			// Just copy
+			md_copy(DIMS, img_output_dims, img_output, img, CFL_SIZE);
+		}
 	}
 
 	if (scale_im)
-		md_zsmul(DIMS, img_dims, img, img, 1. / scaling);
+		md_zsmul(DIMS, img_output_dims, img_output, img_output, 1. / scaling);
+
 
 	md_free(norm);
 	md_free(mask);
+	md_free(img);
 
-	unmap_cfl(DIMS, ksp_dims, sens);
+	unmap_cfl(DIMS, sens_dims, sens);
 	unmap_cfl(DIMS, pat_dims, pattern);
-	unmap_cfl(DIMS, img_dims, img );
+	unmap_cfl(DIMS, img_output_dims, img_output);
 	unmap_cfl(DIMS, ksp_dims, kspace_data);
 
 	double recosecs = timestamp() - start_time;

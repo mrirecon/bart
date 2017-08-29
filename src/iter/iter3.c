@@ -49,6 +49,8 @@ struct irgnm_s {
 	struct iter_op_s der;
 	struct iter_op_s adj;
 
+	struct iter_op_s cb;
+
 	float* tmp;
 
 	long size;
@@ -101,7 +103,12 @@ static void adjoint(iter_op_data* _data, float* dst, const float* src)
 	iter_op_call(data->adj, dst, src);
 }
 
+static void callback(iter_op_data* _data, float* dst, const float* src)
+{
+	struct irgnm_s* data = CAST_DOWN(irgnm_s, _data);
 
+	iter_op_call(data->cb, dst, src);
+}
 
 
 void iter3_irgnm(iter3_conf* _conf,
@@ -109,19 +116,20 @@ void iter3_irgnm(iter3_conf* _conf,
 		struct iter_op_s der,
 		struct iter_op_s adj,
 		long N, float* dst, const float* ref,
-		long M, const float* src)
+		long M, const float* src,
+		 struct iter_op_s cb)
 {
 	struct iter3_irgnm_conf* conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
-	struct irgnm_s data = { { &TYPEID(irgnm_s) }, frw, der, adj, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
+	struct irgnm_s data = { { &TYPEID(irgnm_s) }, frw, der, adj, cb, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
 
 	irgnm(conf->iter, conf->alpha, conf->redu, N, M, select_vecops(src),
 		(struct iter_op_s){ forward, CAST_UP(&data) },
 		(struct iter_op_s){ adjoint, CAST_UP(&data) },
 		(struct iter_op_p_s){ inverse, CAST_UP(&data) },
 		dst, ref, src,
-		(struct iter_op_s){NULL, NULL});
+		(struct iter_op_s){ callback, CAST_UP(&data) });
 
 	md_free(tmp);
 }
