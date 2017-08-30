@@ -50,9 +50,6 @@ struct noir_data {
 
 	long dims[DIMS];
 
-	long sign_dims[DIMS];
-	long sign_strs[DIMS];
-
 	long data_dims[DIMS];
 	long data_strs[DIMS];
 
@@ -116,9 +113,6 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 	data->conf = *conf;
 
 	md_copy_dims(DIMS, data->dims, dims);
-
-	md_select_dims(DIMS, conf->fft_flags|COIL_FLAG|CSHIFT_FLAG, data->sign_dims, dims);
-	md_calc_strides(DIMS, data->sign_strs, data->sign_dims, CFL_SIZE);
 
 	md_select_dims(DIMS, conf->fft_flags|COIL_FLAG|MAPS_FLAG, data->coil_dims, dims);
 	md_calc_strides(DIMS, data->coil_strs, data->coil_dims, CFL_SIZE);
@@ -201,7 +195,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 
 	data->sens = my_alloc(DIMS, data->coil_dims, CFL_SIZE);
 	data->xn = my_alloc(DIMS, data->imgs_dims, CFL_SIZE);
-	data->tmp = my_alloc(DIMS, data->sign_dims, CFL_SIZE);
+	data->tmp = my_alloc(DIMS, data->data_dims, CFL_SIZE);
 
 	return PTR_PASS(data);
 }
@@ -243,16 +237,16 @@ void noir_fun(struct noir_data* data, complex float* dst, const complex float* s
 	md_copy(DIMS, data->imgs_dims, data->xn, src, CFL_SIZE);
 	noir_forw_coils(data, data->sens, src + split);
 
-	md_clear(DIMS, data->sign_dims, data->tmp, CFL_SIZE);
-	md_zfmac2(DIMS, data->coil_dims, data->sign_strs, data->tmp, data->imgs_strs, src, data->coil_strs, data->sens);
+	md_clear(DIMS, data->data_dims, data->tmp, CFL_SIZE);
+	md_zfmac2(DIMS, data->coil_dims, data->data_strs, data->tmp, data->imgs_strs, src, data->coil_strs, data->sens);
 
 	// could be moved to the benning, but see comment below
-	md_zmul2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->sign_strs, data->tmp, data->mask_strs, data->mask);
+	md_zmul2(DIMS, data->data_dims, data->data_strs, data->tmp, data->data_strs, data->tmp, data->mask_strs, data->mask);
 
-	fft(DIMS, data->sign_dims, data->conf.fft_flags, data->tmp, data->tmp);
+	fft(DIMS, data->data_dims, data->conf.fft_flags, data->tmp, data->tmp);
 
 	md_clear(DIMS, data->data_dims, dst, CFL_SIZE);
-	md_zfmac2(DIMS, data->sign_dims, data->data_strs, dst, data->sign_strs, data->tmp, data->ptrn_strs, data->pattern);
+	md_zfmac2(DIMS, data->data_dims, data->data_strs, dst, data->data_strs, data->tmp, data->ptrn_strs, data->pattern);
 }
 
 
@@ -260,21 +254,21 @@ void noir_der(struct noir_data* data, complex float* dst, const complex float* s
 {
 	long split = md_calc_size(DIMS, data->imgs_dims);
 
-	md_clear(DIMS, data->sign_dims, data->tmp, CFL_SIZE);
-	md_zfmac2(DIMS, data->coil_dims, data->sign_strs, data->tmp, data->imgs_strs, src, data->coil_strs, data->sens);
+	md_clear(DIMS, data->data_dims, data->tmp, CFL_SIZE);
+	md_zfmac2(DIMS, data->coil_dims, data->data_strs, data->tmp, data->imgs_strs, src, data->coil_strs, data->sens);
 
 	complex float* delta_coils = md_alloc_sameplace(DIMS, data->coil_dims, CFL_SIZE, src);
 	noir_forw_coils(data, delta_coils, src + split);
-	md_zfmac2(DIMS, data->coil_dims, data->sign_strs, data->tmp, data->coil_strs, delta_coils, data->imgs_strs, data->xn);
+	md_zfmac2(DIMS, data->coil_dims, data->data_strs, data->tmp, data->coil_strs, delta_coils, data->imgs_strs, data->xn);
 	md_free(delta_coils);
 
 	// could be moved to the benning, but see comment below
-	md_zmul2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->sign_strs, data->tmp, data->mask_strs, data->mask);
+	md_zmul2(DIMS, data->data_dims, data->data_strs, data->tmp, data->data_strs, data->tmp, data->mask_strs, data->mask);
 
-	fft(DIMS, data->sign_dims, data->conf.fft_flags, data->tmp, data->tmp);
+	fft(DIMS, data->data_dims, data->conf.fft_flags, data->tmp, data->tmp);
 
 	md_clear(DIMS, data->data_dims, dst, CFL_SIZE);
-	md_zfmac2(DIMS, data->data_dims, data->data_strs, dst, data->sign_strs, data->tmp, data->ptrn_strs, data->pattern);
+	md_zfmac2(DIMS, data->data_dims, data->data_strs, dst, data->data_strs, data->tmp, data->ptrn_strs, data->pattern);
 }
 
 
@@ -282,20 +276,20 @@ void noir_adj(struct noir_data* data, complex float* dst, const complex float* s
 {
 	long split = md_calc_size(DIMS, data->imgs_dims);
 
-	md_zmul2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->data_strs, src, data->ptrn_strs, data->adj_pattern);
+	md_zmul2(DIMS, data->data_dims, data->data_strs, data->tmp, data->data_strs, src, data->ptrn_strs, data->adj_pattern);
 
-	ifft(DIMS, data->sign_dims, data->conf.fft_flags, data->tmp, data->tmp);
+	ifft(DIMS, data->data_dims, data->conf.fft_flags, data->tmp, data->tmp);
 
 	// we should move it to the end, but fft scaling is applied so this would be need to moved into data->xn or weights maybe?
-	md_zmulc2(DIMS, data->sign_dims, data->sign_strs, data->tmp, data->sign_strs, data->tmp, data->mask_strs, data->mask);
+	md_zmulc2(DIMS, data->data_dims, data->data_strs, data->tmp, data->data_strs, data->tmp, data->mask_strs, data->mask);
 
 	md_clear(DIMS, data->coil_dims, dst + split, CFL_SIZE);
-	md_zfmacc2(DIMS, data->coil_dims, data->coil_strs, dst + split, data->sign_strs, data->tmp, data->imgs_strs, data->xn);
+	md_zfmacc2(DIMS, data->coil_dims, data->coil_strs, dst + split, data->data_strs, data->tmp, data->imgs_strs, data->xn);
 
 	noir_back_coils(data, dst + split, dst + split);
 
 	md_clear(DIMS, data->imgs_dims, dst, CFL_SIZE);
-	md_zfmacc2(DIMS, data->coil_dims, data->imgs_strs, dst, data->sign_strs, data->tmp, data->coil_strs, data->sens);
+	md_zfmacc2(DIMS, data->coil_dims, data->imgs_strs, dst, data->data_strs, data->tmp, data->coil_strs, data->sens);
 
 	if (data->conf.rvc)
 		md_zreal(DIMS, data->imgs_dims, dst, dst);
