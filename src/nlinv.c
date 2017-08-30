@@ -39,6 +39,8 @@ static const char help_str[] =
 
 int main_nlinv(int argc, char* argv[])
 {
+	double start_time = timestamp();
+
 	bool normalize = true;
 	float restrict_fov = -1.;
 	const char* psf = NULL;
@@ -211,6 +213,9 @@ int main_nlinv(int argc, char* argv[])
 	unmap_cfl(DIMS, pat_dims, pattern);
 	unmap_cfl(DIMS, img_dims, img );
 	unmap_cfl(DIMS, ksp_dims, kspace_data);
+
+	double recosecs = timestamp() - start_time;
+	debug_printf(DP_DEBUG2, "Total Time: %.2f s\n", recosecs);
 	exit(0);
 }
 
