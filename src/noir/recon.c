@@ -98,8 +98,14 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	if (NULL != sens ) {
 
-		assert(!conf->usegpu);
-		noir_forw_coils(noir_get_data(nlop), sens, x + skip);
+#ifdef USE_CUDA
+		if (conf->usegpu) {
+
+			noir_forw_coils(noir_get_data(nlop), x + skip, x + skip);
+			md_copy(DIMS, coil_dims, sens, x + skip, CFL_SIZE);
+		} else
+#endif
+			noir_forw_coils(noir_get_data(nlop), sens, x + skip);
 		fftmod(DIMS, coil_dims, fft_flags, sens, sens);
 	}
 

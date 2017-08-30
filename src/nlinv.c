@@ -177,11 +177,9 @@ int main_nlinv(int argc, char* argv[])
 
 		complex float* kspace_gpu = md_alloc_gpu(DIMS, ksp_dims, CFL_SIZE);
 		md_copy(DIMS, ksp_dims, kspace_gpu, kspace_data, CFL_SIZE);
-		noir_recon(&conf, dims, img, NULL, pattern, mask, kspace_gpu);
+
+		noir_recon(&conf, dims, img, sens, pattern, mask, kspace_gpu);
 		md_free(kspace_gpu);
-
-		md_zfill(DIMS, ksp_dims, sens, 1.);
-
 	} else
 #endif
 	noir_recon(&conf, dims, img, sens, pattern, mask, kspace_data);
