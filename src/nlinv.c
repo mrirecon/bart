@@ -104,7 +104,7 @@ int main_nlinv(int argc, char* argv[])
 
 
 	long img_dims[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|CSHIFT_FLAG|SLICE_FLAG, img_dims, sens_dims );
+	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|SLICE_FLAG, img_dims, sens_dims );
 
 	long img_strs[DIMS];
 	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);
