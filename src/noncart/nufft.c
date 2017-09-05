@@ -580,12 +580,22 @@ static void nufft_free_data(const linop_data_t* _data)
 	free(data->lph_strs);
 	free(data->psf_strs);
 	free(data->wgh_strs);
-	
+
+	free(data->rlph_dims);
+	free(data->rpsf_dims);
+	free(data->rcml_dims);
+	free(data->rlph_strs);
+	free(data->rpsf_strs);
+	free(data->rcml_strs);
+
+	free(data->cm2_dims);
+
 	md_free(data->grid);
 	md_free(data->linphase);
 	md_free(data->psf);
 	md_free(data->fftmod);
 	md_free(data->weights);
+	md_free(data->roll);
 
 #ifdef USE_CUDA
 	md_free(data->linphase_gpu);
