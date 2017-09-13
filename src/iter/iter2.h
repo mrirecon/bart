@@ -68,6 +68,7 @@ italgo_fun2_f iter2_ist;
 italgo_fun2_f iter2_fista;
 italgo_fun2_f iter2_admm;
 italgo_fun2_f iter2_pocs;
+italgo_fun2_f iter2_niht;
 
 
 // use with iter_call_s from iter.h as _conf

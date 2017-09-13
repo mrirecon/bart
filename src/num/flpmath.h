@@ -1,5 +1,6 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -152,7 +153,8 @@ extern void md_zsoftthresh_core2(unsigned int D, const long dims[__VLA(D)], floa
 extern void md_zsoftthresh2(unsigned int D, const long dim[__VLA(D)], float lambda, unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 extern void md_zsoftthresh(unsigned int D, const long dim[__VLA(D)], float lambda, unsigned int flags, _Complex float* optr, const _Complex float* iptr);
 
-
+extern void md_zhardthresh2(unsigned int D, const long dims[__VLA(D)], unsigned int k, unsigned int flags, _Complex float* tmp_norm, const long ostrs[__VLA(D)], _Complex float* optr, const long istrs[__VLA(D)], const _Complex float* iptr);
+extern void md_zhardthresh(unsigned int D, const long dims[__VLA(D)], unsigned int k, unsigned int flags, _Complex float* optr, const _Complex float* iptr);
 
 
 extern void md_zconj(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);

@@ -1,11 +1,13 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014	Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <complex.h>
@@ -30,6 +32,7 @@
 #include "iter/prox.h"
 #include "iter/admm.h"
 #include "iter/vec.h"
+#include "iter/niht.h"
 
 #include "iter2.h"
 
@@ -279,6 +282,42 @@ void iter2_pocs(iter_conf* _conf,
 }
 
 
+void iter2_niht(iter_conf* _conf,
+		const struct operator_s* normaleq_op,
+		unsigned int D,
+		const struct operator_p_s* prox_ops[D],
+		const struct linop_s* ops[D],
+		const float* biases[D],
+		const struct operator_p_s* xupdate_op,
+		long size, float* image, const float* image_adj,
+		struct iter_monitor_s* monitor)
+{
+	UNUSED(ops);
+	UNUSED(xupdate_op);
+	UNUSED(biases);
+	
+	struct iter_niht_conf* conf = CAST_DOWN(iter_niht_conf, _conf);
+  
+	struct niht_conf_s niht_conf = {
+    
+		.maxiter = conf->maxiter,
+		.num_funs = D,
+	};
+	
+	float eps = md_norm(1, MD_DIMS(size), image_adj);
+  
+	if (checkeps(eps))
+		goto cleanup;
+  
+	niht_conf.epsilon = eps * conf->tol;
+
+	niht(&niht_conf, size, select_vecops(image_adj), OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+
+cleanup:
+	;
+
+}
+  
 void iter2_call_iter(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
