@@ -1,5 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -23,6 +24,7 @@
 #define MAKE_ARRAY(x, ...) ((__typeof__(x)[]){ x, __VA_ARGS__ })
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof(x[0]))
 
+#define SWAP(x, y, T) do { T temp = x; x = y; y = temp; } while (0) // for quickselect
 
 #include "misc/cppwrap.h"
 
@@ -55,6 +57,10 @@ extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
 typedef int (*quicksort_cmp_t)(const void* data, unsigned int a, unsigned int b);
 
 extern void quicksort(unsigned int N, unsigned int ord[__VLA(N)], const void* data, quicksort_cmp_t cmp);
+
+extern float quickselect(float *arr, unsigned int n, unsigned int k);
+
+extern float quickselect_complex(_Complex float *arr, unsigned int n, unsigned int k);
 
 extern void mini_cmdline(int argc, char* argv[], int expected_args, const char* usage_str, const char* help_str);
 extern _Bool mini_cmdline_bool(int argc, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str);

@@ -117,12 +117,23 @@ struct iter_pocs_conf {
 
 extern DEF_TYPEID(iter_pocs_conf);
 
+struct iter_niht_conf {
+
+	INTERFACE(iter_conf);
+  
+	unsigned int maxiter;
+	float tol;
+};
+
+extern DEF_TYPEID(iter_niht_conf);
+
 extern const struct iter_conjgrad_conf iter_conjgrad_defaults;
 extern const struct iter_landweber_conf iter_landweber_defaults;
 extern const struct iter_ist_conf iter_ist_defaults;
 extern const struct iter_fista_conf iter_fista_defaults;
 extern const struct iter_admm_conf iter_admm_defaults;
 extern const struct iter_pocs_conf iter_pocs_defaults;
+extern const struct iter_niht_conf iter_niht_defaults;
 
 
 italgo_fun_f iter_conjgrad;
