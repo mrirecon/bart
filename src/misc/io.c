@@ -250,9 +250,12 @@ int read_coo(int fd, unsigned int n, long dimensions[n])
 		return -1;
 
 	int pos = 0;
-	int delta;
+	int delta = 0;
 
 	if (0 != sscanf(header + pos, "Type: float\n%n", &delta))
+		return -1;
+
+	if (0 == delta)
 		return -1;
 
 	pos += delta;
