@@ -120,7 +120,7 @@ extern DEF_TYPEID(iter_pocs_conf);
 struct iter_niht_conf {
 
 	INTERFACE(iter_conf);
-  
+
 	unsigned int maxiter;
 	float tol;
 };

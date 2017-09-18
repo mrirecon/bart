@@ -6,7 +6,7 @@
  *
  * Authors:
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
- * 
+ *
  *
  *
  * Blumensath T, Davies ME. Normalized iterative hard thresholding: Guaranteed 
@@ -58,7 +58,6 @@ void niht(const struct niht_conf_s* conf,
 	  float* x, const float* b,
 	  struct iter_monitor_s* monitor)
 {
-    
 	double rsnew = 1.; // current residual
 	double rsnot = 1.; // initial residual
 	double rsold = 1.; // previous residual
@@ -76,6 +75,7 @@ void niht(const struct niht_conf_s* conf,
 	iter_op_p_call(thresh, 1.0, x, b);
   
 	for (iter = 0; iter < conf->maxiter; iter++) {
+
 		iter_monitor(monitor, vops, x);
     
 		iter_op_call(op, r, x);   // r = A x
@@ -89,31 +89,31 @@ void niht(const struct niht_conf_s* conf,
 		// TODO: select appropriate epsilon and other criteria values
 		if (rsnew < conf->epsilon) // residual is small
 			break;
-    
-		if (rsnew > 100.0 * rsnot){ // algorithm is diverging r_l > 100*r_0
+
+		if (rsnew > 100.0 * rsnot) // algorithm is diverging r_l > 100*r_0
 			break;
-		}
-    
-		if (fabs(rsnew - rsold) <= 1.0E-06f){ // no significant change in residual
-			debug_printf(DP_INFO, "\n*** rsnew - rsold =  %f **\n", fabs(rsnew - rsold) );
+
+		if (fabs(rsnew - rsold) <= 1.0E-06f) { // no significant change in residual
+
+			debug_printf(DP_INFO, "\n*** rsnew - rsold =  %f **\n", fabs(rsnew - rsold));
+
 			ic++;
+
 			if (15 == ic)        // in 16 iterations. Normally 1e-06
 				break;             // more appropriate for noisy measurements
 		}                      // where convergence will occur with larger residual
-    
+
 		vops->axpy(N, x, mu, r); // update solution: xk+1 = xk + mu rk+1
 		iter_op_p_call(thresh, 1.0, x, x); // apply thresholding Hs(xk+1)
-    
+
 		rsold = rsnew; // keep residual for comparison
-    
 	}
-  
+
 	debug_printf(DP_DEBUG3, "\n");
-  
+
 	debug_printf(DP_DEBUG2, "\n#residual l2 norm: %f\n", rsnew);
 	debug_printf(DP_DEBUG2, "\n#relative signal residual: %f\n\n", rsnew / rsnot);
-  
+
 	vops->del(r);
-  
 }
 

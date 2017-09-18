@@ -2838,8 +2838,7 @@ void md_zsoftthresh(unsigned int D, const long dims[D], float lambda, unsigned i
  */
 static void nary_zhardthresh(struct nary_opt_data_s* data, void* ptr[])
 {
-  
-  data->ops->zhardthresh(data->size, (*(unsigned int*)data->data_ptr), ptr[0], ptr[1]);
+	data->ops->zhardthresh(data->size, (*(unsigned int*)data->data_ptr), ptr[0], ptr[1]);
 }
 
 
@@ -2862,13 +2861,12 @@ static void nary_zhardthresh(struct nary_opt_data_s* data, void* ptr[])
  */
 void md_zhardthresh2(unsigned int D, const long dims[D], unsigned int k, unsigned int flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
-
 	if (0 == flags) {
-		
+
 		optimized_twoop_oi(D, dims, ostrs, optr, istrs, iptr, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh, &k);
 		return;
 	}
-	
+
 	long norm_dims[D];
 	long norm_strs[D];
 
@@ -2880,8 +2878,8 @@ void md_zhardthresh2(unsigned int D, const long dims[D], unsigned int k, unsigne
 
 	// TODO: change this operation for NIHT joint thresholding
 	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
-
 }
+
 
 /**
  * Hard thresholding (without strides)
@@ -2902,16 +2900,16 @@ void md_zhardthresh(unsigned int D, const long dims[D], unsigned int k, unsigned
 
 	long norm_dims[D];
 	complex float* tmp_norm = NULL;
-	
-	if (0 != flags){
+
+	if (0 != flags) {
+
 		md_select_dims(D, ~flags, norm_dims, dims);
 		tmp_norm = md_alloc_sameplace(D, norm_dims, CFL_SIZE, iptr);
 	}
 
 	md_zhardthresh2(D, dims, k, flags, tmp_norm, strs, optr, strs, iptr);
 
-	if (NULL != tmp_norm)
-		md_free(tmp_norm);	
+	md_free(tmp_norm);
 }
 
 /**

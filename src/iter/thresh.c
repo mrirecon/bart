@@ -243,7 +243,6 @@ const struct operator_p_s* prox_niht_thresh_create(unsigned int D, const long di
 #endif
 
 	return operator_p_create(D, dim, D, dim, CAST_UP(PTR_PASS(data)), hardthresh_apply, thresh_del);
-
 }
 
 void thresh_free(const struct operator_p_s* o)

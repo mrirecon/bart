@@ -295,7 +295,7 @@ void iter2_niht(iter_conf* _conf,
 	UNUSED(ops);
 	UNUSED(xupdate_op);
 	UNUSED(biases);
-	
+
 	struct iter_niht_conf* conf = CAST_DOWN(iter_niht_conf, _conf);
   
 	struct niht_conf_s niht_conf = {
@@ -303,9 +303,9 @@ void iter2_niht(iter_conf* _conf,
 		.maxiter = conf->maxiter,
 		.num_funs = D,
 	};
-	
+
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
-  
+
 	if (checkeps(eps))
 		goto cleanup;
   
@@ -315,7 +315,6 @@ void iter2_niht(iter_conf* _conf,
 
 cleanup:
 	;
-
 }
   
 void iter2_call_iter(iter_conf* _conf,
