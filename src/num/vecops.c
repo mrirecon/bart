@@ -424,7 +424,6 @@ static float klargest_complex_partsort( unsigned int N,  unsigned int k, const c
 	xfree(tmp);
 
 	return thr;
-
 }
 
 /**
@@ -444,7 +443,7 @@ static void zhardthresh(long N,  unsigned int k, complex float* d, const complex
 	for (long i = 0; i < N; i++) {
 
 		float norm = cabsf(x[i]);
-		d[i] = (norm >= thr) ? x[i] : 0.;
+		d[i] = (norm > thr) ? x[i] : 0.;
 	}
 }
 

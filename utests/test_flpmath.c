@@ -182,10 +182,34 @@ static bool test_md_zmatmul(void)
 
 
 
+static bool test_md_zhardthresh(void)
+{
+	complex float test_vec[] = { 1., 2., 3., 4., 5., 6., 7., 8., 9. };
+
+	unsigned int N = ARRAY_SIZE(test_vec);
+	complex float test_out[N];
+
+	unsigned int k = 5;
+
+	md_zhardthresh(1, (long[1]){ N }, k, 0, test_out, test_vec);
+
+	bool ok = true;
+
+	for (unsigned int i = 0; i < N - k; i++)
+		ok &= (0. == test_out[i]);
+
+	for (unsigned int i = N - k; i < N; i++)
+		ok &= (test_vec[i] == test_out[i]);
+
+	return ok;
+}
+
+
 
 
 UT_REGISTER_TEST(test_md_zfmacc2);
 UT_REGISTER_TEST(test_md_zwavg);
 UT_REGISTER_TEST(test_md_zavg);
 UT_REGISTER_TEST(test_md_zmatmul);
+UT_REGISTER_TEST(test_md_zhardthresh);
 
