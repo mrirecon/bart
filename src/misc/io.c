@@ -135,7 +135,7 @@ int read_cfl_header(int fd, unsigned int n, long dimensions[n])
 		return -1;
 
 	int pos = 0;
-	int delta;
+	int delta = 0;
 	bool ok = false;
 
 	while (true) {
@@ -149,6 +149,9 @@ int read_cfl_header(int fd, unsigned int n, long dimensions[n])
 
 			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
 				return -1;
+
+			if (0 == delta)
+				goto out;
 
 			pos += delta;
 		}
@@ -190,6 +193,18 @@ int read_cfl_header(int fd, unsigned int n, long dimensions[n])
 
 				ok = true;
 			}
+
+		} else {
+
+			// skip this line
+
+			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
+				return -1;
+
+			if (0 == delta)
+				goto out;
+
+			pos += delta;
 		}
 	}
 
