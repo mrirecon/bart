@@ -1,10 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -319,6 +319,8 @@ enum ra_types {
 };
 
 
+#define err_assert(x)	({ if (!(x)) { debug_printf(DP_ERROR, "%s", #x); return -1; } })
+
 
 int read_ra(int fd, unsigned int n, long dimensions[n])
 {
@@ -327,11 +329,11 @@ int read_ra(int fd, unsigned int n, long dimensions[n])
 	if (sizeof(header) != read(fd, &header, sizeof(header)))
 		return -1;
 
-	assert(RA_MAGIC_NUMBER == header.magic);
-	assert(!(header.flags & RA_FLAG_BIG_ENDIAN));
-	assert(RA_TYPE_COMPLEX == header.eltype);
-	assert(sizeof(complex float) == header.elbyte);
-	assert(header.ndims <= n);
+	err_assert(RA_MAGIC_NUMBER == header.magic);
+	err_assert(!(header.flags & RA_FLAG_BIG_ENDIAN));
+	err_assert(RA_TYPE_COMPLEX == header.eltype);
+	err_assert(sizeof(complex float) == header.elbyte);
+	err_assert(header.ndims <= n);
 
 	uint64_t dims[header.ndims];
 
@@ -343,7 +345,8 @@ int read_ra(int fd, unsigned int n, long dimensions[n])
 	for (unsigned int i = 0; i < header.ndims; i++)
 		dimensions[i] = dims[i];
 
-	assert(header.size == (uint64_t)md_calc_size(n, dimensions) * sizeof(complex float));
+	// this can overflow, but we check in mmio
+	err_assert(header.size == md_calc_size(n, dimensions) * sizeof(complex float));
 
 	return 0;
 }
