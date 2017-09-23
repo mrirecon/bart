@@ -61,7 +61,7 @@ void error(const char* fmt, ...)
 	debug_vprintf(DP_ERROR, fmt, ap);
 
 	va_end(ap);
-	abort();
+	exit(EXIT_FAILURE);
 }
 
 
