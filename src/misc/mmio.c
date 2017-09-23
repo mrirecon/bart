@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #include <sys/mman.h>
 
@@ -28,6 +29,7 @@
 
 #include "misc/misc.h"
 #include "misc/io.h"
+#include "misc/debug.h"
 
 #include "mmio.h"
 
@@ -35,6 +37,7 @@
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif
+
 
 
 
@@ -47,8 +50,40 @@ static void io_error(const char* fmt, ...)
 	fflush(stderr);
 	perror(" ");
 	exit(EXIT_FAILURE);
-
 }
+
+
+#define err_assert(x)	({ if (!(x)) { debug_printf(DP_ERROR, "%s", #x); exit(EXIT_FAILURE); } })
+
+static bool long_mul_overflow_p(long a, long b)
+{
+	bool of = false;
+
+	of |= (a > 0) && (b > 0) && (a > LONG_MAX / b);
+	of |= (a > 0) && (b < 0) && (b < LONG_MIN / a);
+	of |= (a < 0) && (b > 0) && (a < LONG_MIN / b);
+	of |= (a < 0) && (b < 0) && (b < LONG_MAX / a);
+
+	return of;
+}
+
+static long io_calc_size(unsigned int D, const long dims[D], size_t size)
+{
+	if (0 == D)
+		return size;
+
+	long a = io_calc_size(D - 1, dims + 1, size);
+	long b = dims[0];
+
+	if ((a < 0) || (b < 0))
+		return -1;
+
+	if (long_mul_overflow_p(a, b))
+		return -1;
+
+	return a * b;
+}
+
 
 
 complex float* load_zra(const char* name, unsigned int D, long dims[D])
@@ -60,7 +95,9 @@ complex float* load_zra(const char* name, unsigned int D, long dims[D])
 	if (-1 == read_ra(fd, D, dims))
 		io_error("Loading ra file %s", name);
 
-//	long T = md_calc_size(D, dims) * sizeof(complex float);
+	long T;
+	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
+		io_error("Loading ra file %s", name);
 
 	void* addr;
 	struct stat st;
@@ -74,8 +111,8 @@ complex float* load_zra(const char* name, unsigned int D, long dims[D])
 		io_error("Loading ra file %s", name);
 
 	// ra allows random stuff at the end
-//	if (T + header_size >= st.st_size)
-//		io_error("Loading ra file %s", name);
+	if (T + header_size > st.st_size)
+		io_error("Loading ra file %s", name);
 
 	assert(header_size < 4096);
 
@@ -113,7 +150,9 @@ complex float* create_zra(const char* name, unsigned int D, const long dims[D])
 	if (-1 == write_ra(ofd, D, dims))
 		io_error("Creating ra file %s", name);
 
-	long T = md_calc_size(D, dims) * sizeof(complex float);
+	long T;
+	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
+		io_error("Creating ra file %s", name);
 
 	off_t header_size;
 
@@ -136,13 +175,17 @@ complex float* create_zra(const char* name, unsigned int D, const long dims[D])
 float* create_coo(const char* name, unsigned int D, const long dims[D])
 {	
 	int ofd;
+
 	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
 		io_error("Creating coo file %s", name);
 
 	if (-1 == write_coo(ofd, D, dims))
 		io_error("Creating coo file %s", name);
 
-	long T = md_calc_size(D, dims) * sizeof(float);
+	long T;
+
+	if (-1 == (T = io_calc_size(D, dims, sizeof(float))))
+		io_error("Creating coo file %s", name);
 
 	void* addr;
 
@@ -210,13 +253,17 @@ complex float* create_cfl(const char* name, unsigned int D, const long dimension
 float* load_coo(const char* name, unsigned int D, long dims[D])
 {
 	int fd;
+
 	if (-1 == (fd = open(name, O_RDONLY)))
 		io_error("Loading coo file %s", name);
 
 	if (-1 == read_coo(fd, D, dims))
 		io_error("Loading coo file %s", name);
 
-	long T = md_calc_size(D, dims) * sizeof(float);
+	long T;
+
+	if (-1 == (T = io_calc_size(D, dims, sizeof(float))))
+		io_error("Loading coo file %s", name);
 
 	void* addr;
 	struct stat st;
@@ -304,8 +351,12 @@ complex float* shared_cfl(unsigned int D, const long dims[D], const char* name)
 //	struct stat st;
 	int fd;
 	void* addr;
+	long T;
 
-	long T = md_calc_size(D, dims) * sizeof(complex float);
+	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
+		io_error("Shared cfl %s", name);
+
+	err_assert(T > 0);
 
         if (-1 == (fd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
                 abort();
@@ -330,7 +381,10 @@ complex float* anon_cfl(const char* name, unsigned int D, const long dims[D])
 {
 	UNUSED(name);
 	void* addr;
-	long T = md_calc_size(D, dims) * sizeof(complex float);
+	long T;
+
+	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
+		io_error("anon cfl");
 
 	if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0)))
 		abort();
@@ -369,7 +423,10 @@ void* private_raw(size_t* size, const char* name)
 
 complex float* private_cfl(unsigned int D, const long dims[D], const char* name)
 {
-	long T = md_calc_size(D, dims) * sizeof(complex float);
+	long T;
+
+	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
+		io_error("private cfl %s", name);
 
 	int fd;
 	void* addr;
@@ -400,7 +457,10 @@ complex float* private_cfl(unsigned int D, const long dims[D], const char* name)
 
 void unmap_cfl(unsigned int D, const long dims[D], const complex float* x)
 {
-	long T = md_calc_size(D, dims) * sizeof(complex float);
+	long T;
+
+	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
+		io_error("unmap cfl");
 
 	if (-1 == munmap((void*)((uintptr_t)x & ~4095UL), T))
 		abort();
