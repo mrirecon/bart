@@ -13,7 +13,7 @@
 struct operator_p_s;
 extern const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[__VLA(D)], const float lambda, const unsigned long flags, _Bool gpu);
 
-extern const struct operator_p_s* prox_niht_thresh_create(unsigned int D, const long dim[D], const unsigned int k, const unsigned long flags, bool gpu);
+extern const struct operator_p_s* prox_niht_thresh_create(unsigned int D, const long dim[D], const unsigned int k, const unsigned long flags, _Bool gpu);
 
 extern void thresh_free(const struct operator_p_s* data);
 	
