@@ -2415,14 +2415,13 @@ void md_rss(unsigned int D, const long dims[D], unsigned int flags, float* dst, 
 
 
 /**
- * Root of sum of squares along selected dimensions
+ * Sum of squares along selected dimensions
  *
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
  */
-void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
+void md_zss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
 {
-#if 1
 	long str1[D];
 	long str2[D];
 	long dims2[D];
@@ -2434,6 +2433,22 @@ void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex flo
 
 	md_clear(D, dims2, dst, CFL_SIZE);
 	md_zfmacc2(D, dims, str2, dst, str1, src, str1, src);
+}
+
+
+
+/**
+ * Root of sum of squares along selected dimensions
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
+ */
+void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
+{
+	long dims2[D];
+	md_select_dims(D, ~flags, dims2, dims);
+#if 1
+	md_zss(D, dims, flags, dst, src);
 
 #if 1
 	long dims2R[D + 1];
