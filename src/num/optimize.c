@@ -534,7 +534,7 @@ bool num_auto_parallelize = true;
  * @param too n-op function
  * @param data_ptr pointer to additional data used by too
  */
-void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too, void* data_ptr)
+void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too)
 {
 	assert(N > 0);
 
@@ -599,9 +599,9 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 #ifdef USE_CUDA
 	debug_printf(DP_DEBUG4, "This is a %s call\n.", use_gpu(N, nptr1) ? "gpu" : "cpu");
 
-	struct nary_opt_data_s data = { md_calc_size(skip, tdims), use_gpu(N, nptr1) ? &gpu_ops : &cpu_ops, data_ptr };
+	struct nary_opt_data_s data = { md_calc_size(skip, tdims), use_gpu(N, nptr1) ? &gpu_ops : &cpu_ops };
 #else
-	struct nary_opt_data_s data = { md_calc_size(skip, tdims), &cpu_ops, data_ptr };
+	struct nary_opt_data_s data = { md_calc_size(skip, tdims), &cpu_ops };
 #endif
 
 	debug_printf(DP_DEBUG4, "Vec: %d (%ld) Opt.: ", skip, data.size);

@@ -25,12 +25,11 @@ struct nary_opt_data_s {
 
 	long size;
 	const struct vec_ops* ops;
-	void* data_ptr;
 };
 
 
 
 typedef void (*md_nary_opt_fun_t)(struct nary_opt_data_s* data, void* ptr[]);
 
-extern void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too, void* data_ptr);
+extern void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too);
 
