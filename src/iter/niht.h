@@ -40,8 +40,8 @@ struct niht_conf_s {
 	_Bool do_warmstart;
 };
 
-void niht(const struct niht_conf_s* conf,
-	  long N, const struct vec_iter_s* vops,
+void niht(const struct niht_conf_s* conf, const struct niht_transop* trans, 
+	  const struct vec_iter_s* vops,
 	  struct iter_op_s op, struct iter_op_p_s thresh,
 	  float* x, const float* b,
 	  struct iter_monitor_s* monitor);
