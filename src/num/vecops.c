@@ -25,7 +25,12 @@
 #include <complex.h>
 #include <stdbool.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "vecops.h"
 
@@ -438,12 +443,29 @@ static float klargest_complex_partsort( unsigned int N,  unsigned int k, const c
 
 static void zhardthresh(long N,  unsigned int k, complex float* d, const complex float* x)
 {
+	
 	float thr = klargest_complex_partsort(N, k, x);
    
 	for (long i = 0; i < N; i++) {
 
 		float norm = cabsf(x[i]);
 		d[i] = (norm > thr) ? x[i] : 0.;
+	}
+}
+
+/* Apply the non-zero support of one vector to another, complex numbers */ 
+static void nzsupport(long N, float* out, const float* in)
+{
+	int par = 0;
+
+#ifdef _OPENMP
+	par = omp_in_parallel();
+#endif
+	
+#pragma omp parallel for if (par == 0)	// if not already in a parallel region
+	for (long i = 0; i < N; ++i){
+		if (in[i] == 0.)
+			out[i] = 0.; 
 	}
 }
 
@@ -548,6 +570,7 @@ const struct vec_ops cpu_ops = {
 	.softthresh = softthresh,
 	.softthresh_half = softthresh_half,
 	.zhardthresh = zhardthresh,
+	.nzsupport = nzsupport,
 };
 
 
@@ -570,6 +593,7 @@ struct vec_iter_s {
 	void (*smul)(long N, float alpha, float* a, const float* x);
 	void (*xpay)(long N, float alpha, float* a, const float* x);
 	void (*axpy)(long N, float* a, float alpha, const float* x);
+	void (*nzsupport)(long N, float* out, const float* in);
 };
 
 
@@ -588,6 +612,7 @@ const struct vec_iter_s cpu_iter_ops = {
 	.add = add,
 	.sub = sub,
 	.swap = swap,
+	.nzsupport = nzsupport,
 };
 
 

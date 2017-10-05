@@ -60,6 +60,7 @@ struct vec_ops {
 	void (*softthresh)(long N, float lambda,  float* dst, const float* src);
 //	void (*swap)(long N, float* a, float* b);
 	void (*zhardthresh)(long N,  unsigned int k, _Complex float* d, const _Complex float* x);
+	void (*nzsupport)(long N, float* out, const float* in);
 };
 
 
