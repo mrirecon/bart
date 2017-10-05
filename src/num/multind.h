@@ -15,20 +15,20 @@
 
 #include "misc/cppwrap.h"
 
-typedef void (*md_nary_fun_t)(void* data, void* ptr[]);
-typedef void (*md_trafo_fun_t)(void* data, long N, long str, void* ptr);
-typedef void (*md_loop_fun_t)(void* data, const long* pos);
+typedef void (*md_nary_fun_t)(void* ptr[]);
+typedef void (*md_trafo_fun_t)(long N, long str, void* ptr);
+typedef void (*md_loop_fun_t)(const long* pos);
 
 
-extern void md_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], void* data, md_nary_fun_t fun);
+extern void md_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);
 
-extern void md_parallel_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], unsigned long flags, const long* str[__VLA(C)], void* ptr[__VLA(C)], void* data, md_nary_fun_t fun);
-extern void md_parallel_loop(unsigned int D, const long dim[__VLA(D)], unsigned long flags, void* data, md_loop_fun_t fun);
+extern void md_parallel_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], unsigned long flags, const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);
+extern void md_parallel_loop(unsigned int D, const long dim[__VLA(D)], unsigned long flags, md_loop_fun_t fun);
 
-extern void md_loop(unsigned int D, const long dim[__VLA(D)], void* data, md_loop_fun_t fun);
+extern void md_loop(unsigned int D, const long dim[__VLA(D)], md_loop_fun_t fun);
 
-extern void md_septrafo2(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, const long strides[__VLA(D)], void* ptr, md_trafo_fun_t fun, void* _data);
-extern void md_septrafo(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun, void* _data);
+extern void md_septrafo2(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, const long strides[__VLA(D)], void* ptr, md_trafo_fun_t fun);
+extern void md_septrafo(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun);
 
 
 extern void md_clear2(unsigned int D, const long dim[__VLA(D)], const long str[__VLA(D)], void* ptr, size_t size);

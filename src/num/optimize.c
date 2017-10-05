@@ -516,17 +516,7 @@ double md_flp_total_time = 0.;
 extern bool num_auto_parallelize;
 bool num_auto_parallelize = true;
 
-struct nary_opt_s {
 
-	md_nary_opt_fun_t fun;
-	struct nary_opt_data_s* data;
-};
-
-static void nary_opt(void* _data, void* ptr[])
-{
-	struct nary_opt_s* data = _data;
-	data->fun(data->data, ptr);	
-}
 
 
 
@@ -617,10 +607,14 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 	debug_printf(DP_DEBUG4, "Vec: %d (%ld) Opt.: ", skip, data.size);
 	debug_print_dims(DP_DEBUG4, ND, tdims);
 
+	void nary_opt(void* ptr[])
+	{
+		too(&data, ptr);
+	}
 
 	double start = timestamp();
 
-	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, &(struct nary_opt_s){ too, &data }, nary_opt);
+	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, nary_opt);
 
 	double end = timestamp();
 

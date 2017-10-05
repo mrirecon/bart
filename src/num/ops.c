@@ -786,17 +786,17 @@ static void op_loop_del(const operator_data_t* _data)
 	xfree(data);
 }
 
-static void op_loop_nary(void* _data, void* ptr[])
-{
-	const struct op_loop_s* data = _data;
-	operator_generic_apply_unchecked(data->op, data->N, ptr);
-}
-
 static void op_loop_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
 	const struct op_loop_s* data = CAST_DOWN(op_loop_s, _data);
 	assert(N == data->N);
-	md_nary(N, data->D, data->dims0, data->strs, args, (void*)data, op_loop_nary);
+
+	void op_loop_nary(void* ptr[])
+	{
+		operator_generic_apply_unchecked(data->op, data->N, ptr);
+	}
+
+	md_nary(N, data->D, data->dims0, data->strs, args, op_loop_nary);
 }
 
 static void merge_dims(unsigned int D, long odims[D], const long idims1[D], const long idims2[D])

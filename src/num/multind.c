@@ -52,11 +52,11 @@
  * Generic functions which loops over all dimensions of a set of
  * multi-dimensional arrays and calls a given function for each position.
  */
-void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[C], void* ptr[C], void* data, md_nary_fun_t fun)
+void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[C], void* ptr[C], md_nary_fun_t fun)
 {
 	if (0 == D) {
 
-		fun(data, ptr);
+		fun(ptr);
 		return;
 	}
 
@@ -67,7 +67,7 @@ void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[
 		for (unsigned int j = 0; j < C; j++)
 			moving_ptr[j] = ptr[j] + i * str[j][D - 1];
 
-		md_nary(C, D - 1, dim, str, moving_ptr, data, fun);
+		md_nary(C, D - 1, dim, str, moving_ptr, fun);
 	}
 }
 
@@ -79,11 +79,11 @@ void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[
  * This functions tries to parallelize over the dimensions indicated
  * with flags.
  */
-void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigned long flags, const long* str[C], void* ptr[C], void* data, md_nary_fun_t fun)
+void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigned long flags, const long* str[C], void* ptr[C], md_nary_fun_t fun)
 {
 	if (0 == flags) {
 
-		md_nary(C, D, dim, str, ptr, data, fun);
+		md_nary(C, D, dim, str, ptr, fun);
 		return;
 	}
 
@@ -138,17 +138,17 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 				moving_ptr[j] += iter_i[p] * str[j][parallel_b[p]];
 		}
 
-		md_nary(C, D, dimc, str, moving_ptr, data, fun);
+		md_nary(C, D, dimc, str, moving_ptr, fun);
 	}
 }
 
 
 
-static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[static N], unsigned int flags, const long pos[static N], void* data, md_loop_fun_t fun)
+static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[static N], unsigned int flags, const long pos[static N], md_loop_fun_t fun)
 {
 	if (0 == D) {
 
-		fun(data, pos);
+		fun(pos);
 		return;
 	}
 
@@ -165,7 +165,7 @@ static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[st
 
 		pos_copy[D] = i;
 
-		md_parallel_loop_r(D, N, dim, flags, pos_copy, data, fun);
+		md_parallel_loop_r(D, N, dim, flags, pos_copy, fun);
 	}
 }
 
@@ -176,39 +176,39 @@ static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[st
  * Runs fun(data, position) for all position in dim
  *
  */
-void md_parallel_loop(unsigned int D, const long dim[static D], unsigned long flags, void* data, md_loop_fun_t fun)
+void md_parallel_loop(unsigned int D, const long dim[static D], unsigned long flags, md_loop_fun_t fun)
 {
 	long pos[D];
-	md_parallel_loop_r(D, D, dim, flags, pos, data, fun);
+	md_parallel_loop_r(D, D, dim, flags, pos, fun);
 }
 
 
 
-static void md_loop_r(unsigned int D, const long dim[D], long pos[D], void* data, md_loop_fun_t fun)
+static void md_loop_r(unsigned int D, const long dim[D], long pos[D], md_loop_fun_t fun)
 {
 	if (0 == D) {
 
-		fun(data, pos);
+		fun(pos);
 		return;
 	}
 
 	D--;
 
 	for (pos[D] = 0; pos[D] < dim[D]; pos[D]++)
-		md_loop_r(D, dim, pos, data, fun);
+		md_loop_r(D, dim, pos, fun);
 }
 
 /**
  * Generic function which loops over all dimensions and calls a given
  * function passing the current indices as argument.
  *
- * Runs fun( data, position ) for all position in dim
+ * Runs fun( position ) for all position in dim
  *
  */
-void md_loop(unsigned int D, const long dim[D], void* data, md_loop_fun_t fun)
+void md_loop(unsigned int D, const long dim[D], md_loop_fun_t fun)
 {
 	long pos[D];
-	md_loop_r(D, dim, pos, data, fun);
+	md_loop_r(D, dim, pos, fun);
 }
 
 
@@ -1328,38 +1328,29 @@ bool md_compare(unsigned int D, const long dims[D], const void* src1, const void
 
 
 
-struct septrafo_s {
-
-	long N;
-	long str;
-	void* data;
-	md_trafo_fun_t fun;
-};
-
-static void nary_septrafo(void* _data, void* ptr[])
-{
-	struct septrafo_s* data = (struct septrafo_s*)_data;
-
-	data->fun(data->data, data->N, data->str, ptr[0]);
-}
-
-static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun, void* _data)
+static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun)
 {
 	if (0 == R--)
 		return;
 
-	md_septrafo_r(D, R, dimensions, flags, strides, ptr, fun, _data);
+	md_septrafo_r(D, R, dimensions, flags, strides, ptr, fun);
 
         if (MD_IS_SET(flags, R)) {
 
-        	struct septrafo_s data = { dimensions[R], strides[R], _data, fun };
                 void* nptr[1] = { ptr };
                 const long* nstrides[1] = { strides };
 
                 dimensions[R] = 1;      // we made a copy in md_septrafo2
+		long dimsR = dimensions[R];
+
+		void nary_septrafo(void* ptr[])
+		{
+			fun(dimsR, strides[R], ptr[0]);
+		}
+
                 //md_nary_parallel(1, D, dimensions, nstrides, nptr, &data, nary_septrafo);
-                md_nary(1, D, dimensions, nstrides, nptr, &data, nary_septrafo);
-                dimensions[R] = data.N;
+                md_nary(1, D, dimensions, nstrides, nptr, nary_septrafo);
+                dimensions[R] = dimsR;
         }
 }
 
@@ -1367,12 +1358,12 @@ static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], un
  * Apply a separable transformation along selected dimensions.
  * 
  */
-void md_septrafo2(unsigned int D, const long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun, void* _data)
+void md_septrafo2(unsigned int D, const long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun)
 {
         long dimcopy[D];
 	md_copy_dims(D, dimcopy, dimensions);
 
-        md_septrafo_r(D, D, dimcopy, flags, strides, ptr, fun, _data);
+        md_septrafo_r(D, D, dimcopy, flags, strides, ptr, fun);
 }
 
 
@@ -1381,9 +1372,9 @@ void md_septrafo2(unsigned int D, const long dimensions[D], unsigned long flags,
  * Apply a separable transformation along selected dimensions.
  *
  */
-void md_septrafo(unsigned int D, const long dims[D], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun, void* _data)
+void md_septrafo(unsigned int D, const long dims[D], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun)
 {
-        md_septrafo2(D, dims, flags, MD_STRIDES(D, dims, size), ptr, fun, _data);
+        md_septrafo2(D, dims, flags, MD_STRIDES(D, dims, size), ptr, fun);
 }
 
 

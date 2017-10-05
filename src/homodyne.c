@@ -34,13 +34,10 @@ static const char help_str[] = "Perform homodyne reconstruction along dimension 
 struct wdata {
 
 	float frac;
-	float alpha;
 	int pfdim;
 	long wdims[DIMS];
 	long wstrs[DIMS];
 	complex float* weights;
-
-	bool clear;
 };
 
 
@@ -74,12 +71,7 @@ static float homodyne_filter(long N, float frac, float alpha, bool clear, long p
 	return ret;
 }
 
-static void comp_weights(void* _data, const long pos[])
-{
-	struct wdata* data = _data;
-	data->weights[md_calc_offset(DIMS, data->wstrs, pos) / CFL_SIZE] 
-		= homodyne_filter(data->wdims[data->pfdim], data->frac, data->alpha, data->clear, pos[data->pfdim]);
-}
+
 
 static complex float* estimate_phase(struct wdata wdata, unsigned int flags,
 		unsigned int N, const long dims[N], const complex float* idata, bool center_fft)
@@ -167,10 +159,14 @@ int main_homodyne(int argc, char* argv[])
 	md_select_dims(N, MD_BIT(pfdim), wdata.wdims, dims);
 	md_calc_strides(N, wdata.wstrs, wdata.wdims, CFL_SIZE);
 	wdata.weights = md_alloc(N, wdata.wdims, CFL_SIZE);
-	wdata.alpha = alpha;
-	wdata.clear = clear;
 
-	md_loop(N, wdata.wdims, &wdata, comp_weights);
+	void comp_weights(const long pos[])
+	{
+		wdata.weights[md_calc_offset(DIMS, wdata.wstrs, pos) / CFL_SIZE]
+			= homodyne_filter(wdata.wdims[pfdim], frac, alpha, clear, pos[pfdim]);
+	}
+
+	md_loop(N, wdata.wdims, comp_weights);
 
 	long pstrs[N];
 	long pdims[N];

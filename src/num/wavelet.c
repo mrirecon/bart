@@ -135,24 +135,20 @@ static void iresort(int n, int str, float* src)
 
 
 
-static void cdf97_line(void* _data, long n, long str, void* ptr)
+static void cdf97_line(long n, long str, void* ptr)
 {
-	assert(NULL == _data);
 	cdf97(n, str / 4, ptr);
 	resort(n, str / 4, ptr);
 }
 
-static void icdf97_line(void* _data, long n, long str, void* ptr)
+static void icdf97_line(long n, long str, void* ptr)
 {
-	assert(NULL == _data);
 	iresort(n, str / 4, ptr);
 	icdf97(n, str / 4, ptr);
 }
 
-static void cdf97_line_nosort(void* _data, long n, long str, void* ptr)
+static void cdf97_line_nosort(long n, long str, void* ptr)
 {
-	assert(NULL == _data);
-
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr))
 #ifdef BERKELEY_SVN
@@ -165,10 +161,8 @@ static void cdf97_line_nosort(void* _data, long n, long str, void* ptr)
 	cdf97(n, str / 4, ptr);
 }
 
-static void icdf97_line_nosort(void* _data, long n, long str, void* ptr)
+static void icdf97_line_nosort(long n, long str, void* ptr)
 {
-	assert(NULL == _data);
-
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr))
 #ifdef BERKELEY_SVN
@@ -201,8 +195,8 @@ void md_wavtrafo2(int D, const long dims[D], unsigned int flags, const long strs
 	}
 
 	if (!inv)
-		md_septrafo2(D, dims, flags, strs, ptr, fun, NULL);
-		//md_parallel_septrafo2(D, dims, flags, strs, ptr, fun, NULL);
+		md_septrafo2(D, dims, flags, strs, ptr, fun);
+		//md_parallel_septrafo2(D, dims, flags, strs, ptr, fun);
 
 	if (rec) {
 
@@ -224,7 +218,7 @@ void md_wavtrafo2(int D, const long dims[D], unsigned int flags, const long strs
 	}
 
 	if (inv)
-		md_septrafo2(D, dims, flags, strs, ptr, fun, NULL);
+		md_septrafo2(D, dims, flags, strs, ptr, fun);
 		//md_parallel_septrafo2(D, dims, flags, strs, ptr, fun, NULL);
 }
 
