@@ -124,6 +124,7 @@ const struct iter_niht_conf iter_niht_defaults = {
 
 	.maxiter = 50,
 	.tol = 1e-8,
+	.do_warmstart = false,
 };
 
 typedef void (*thresh_fun_t)(void* data, float lambda, float* dst, const float* src);

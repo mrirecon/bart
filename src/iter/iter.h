@@ -123,6 +123,7 @@ struct iter_niht_conf {
 
 	unsigned int maxiter;
 	float tol;
+	_Bool do_warmstart;	
 };
 
 extern DEF_TYPEID(iter_niht_conf);

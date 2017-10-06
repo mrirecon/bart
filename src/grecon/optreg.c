@@ -26,6 +26,7 @@
 #include "linops/someops.h"
 #include "linops/grad.h"
 #include "linops/sum.h"
+#include "linops/waveop.h"
 
 #include "wavelet/wavthresh.h"
 
@@ -39,6 +40,7 @@
 #include "optreg.h"
 
 
+#define CFL_SIZE sizeof(complex float)
 
 
 void help_reg(void)
@@ -51,6 +53,9 @@ void help_reg(void)
 			"-R Q:C    \tl2-norm in image domain\n"
 			"-R I:B:C  \tl1-norm in image domain\n"
 			"-R W:A:B:C\tl1-wavelet\n"
+		        "-R N:A:B:C\tNormalized Iterative Hard Thresholding (NIHT), image domain\n"
+		        "\t\t\tC is an integer percentage, i.e. from 0-100"
+		        "-R H:A:B:C\tNIHT, wavelet domain\n"
 			"-R T:A:B:C\ttotal variation\n"
 			"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
 			"-R L:7:7:.02\tLocally low rank with spatial decimation and 0.02 regularization.\n"
@@ -86,6 +91,20 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].xform = L1WAV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
+		}
+		else if (strcmp(rt, "H") == 0) {
+			
+			regs[r].xform = NIHTWAV;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
+			assert(3 == ret);
+			p->algo = NIHT;
+		}
+		else if (strcmp(rt, "N") == 0) {
+			
+			regs[r].xform = NIHTIM;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
+			assert(3 == ret);
+			p->algo = NIHT;
 		}
 		else if (strcmp(rt, "L") == 0) {
 
@@ -202,6 +221,7 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 	ropts->r = 0;
 	ropts->algo = CG;
 	ropts->lambda = -1;
+	ropts->k = 0;
 
 	return false;
 }
@@ -244,6 +264,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 		switch (regs[nr].xform) {
 
 		case L1WAV:
+		{
 
 			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
 
@@ -267,6 +288,63 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].lambda, randshift);
 			break;
+		}
+		
+		case NIHTWAV:
+		{
+			debug_printf(DP_INFO, "NIHT with wavelets regularization: k = %d%% of total elements in each wavelet transform\n", regs[nr].k);
+			use_gpu = false; // not implemented, TODO: implement NIHT with gpu
+			long img_strs[N];
+			md_calc_strides(N, img_strs, img_dims, CFL_SIZE);
+
+			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
+			minsize[0] = MIN(img_dims[0], 16);
+			minsize[1] = MIN(img_dims[1], 16);
+			minsize[2] = MIN(img_dims[2], 16);
+
+
+			unsigned int wflags = 0;
+			unsigned int wxdim = 0;
+			for (unsigned int i = 0; i < DIMS; i++) {
+
+				if ((1 < img_dims[i]) && MD_IS_SET(regs[nr].xflags, i)) {
+
+					wflags = MD_SET(wflags, i);
+					minsize[i] = MIN(img_dims[i], 16);
+					wxdim += 1;
+				}
+			}
+
+			trafos[nr] = linop_wavelet_create(N, wflags, img_dims, img_strs, minsize);
+
+			long* wav_dims = linop_codomain(trafos[nr])->dims;
+
+			unsigned int K = (md_calc_size(wxdim, wav_dims) / 100) * regs[nr].k;
+
+			debug_printf(DP_DEBUG3, "\nK = %d elements will be thresholded per wavelet transform\n", K);
+			debug_printf(DP_DEBUG3, "Total wavelet dimensions: \n[");
+			for (unsigned int i = 0; i < DIMS; i++)
+				debug_printf(DP_DEBUG3,"%d ", wav_dims[i]);
+			debug_printf(DP_DEBUG3, "]\n");
+			
+			prox_ops[nr] = prox_niht_thresh_create(N, wav_dims, K, regs[nr].jflags, use_gpu );			
+			break;
+		}
+
+		case NIHTIM:
+		{
+			debug_printf(DP_INFO, "NIHT regularization in the image domain: k = %d%% of total elements in image vector\n", regs[nr].k);
+			use_gpu = false; // not implemented, TODO: implement NIHT with gpu
+
+			long thresh_dims[N];
+			md_select_dims(N, regs[nr].xflags, thresh_dims, img_dims);		
+			unsigned int K = (md_calc_size(N, thresh_dims) / 100) * regs[nr].k;
+			debug_printf(DP_INFO, "k = %d%%, actual K = %d\n", regs[nr].k, K);
+
+			prox_ops[nr] = prox_niht_thresh_create(N, img_dims, K, regs[nr].jflags, use_gpu );
+			debug_printf(DP_INFO, "NIHTIM initialization complete\n");
+			break;
+		}
 
 		case TV:
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);

@@ -292,18 +292,29 @@ void iter2_niht(iter_conf* _conf,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
-	UNUSED(ops);
 	UNUSED(xupdate_op);
 	UNUSED(biases);
 
+	assert(D == 1);
+	
 	struct iter_niht_conf* conf = CAST_DOWN(iter_niht_conf, _conf);
   
 	struct niht_conf_s niht_conf = {
     
 		.maxiter = conf->maxiter,
-		.num_funs = D,
+		.N = size,
+		.trans = 0,
+		.do_warmstart = conf->do_warmstart,
 	};
 
+	struct niht_transop trans;
+	if (NULL != ops){
+		trans.forward = OPERATOR2ITOP(ops[0]->forward);
+		trans.adjoint = OPERATOR2ITOP(ops[0]->adjoint);
+		trans.N = 2 * md_calc_size(linop_codomain(ops[0])->N, linop_codomain(ops[0])->dims);
+		niht_conf.trans = 1;
+	}		
+	
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
 	if (checkeps(eps))
@@ -311,7 +322,7 @@ void iter2_niht(iter_conf* _conf,
   
 	niht_conf.epsilon = eps * conf->tol;
 
-	niht(&niht_conf, size, select_vecops(image_adj), OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+	niht(&niht_conf, &trans, select_vecops(image_adj), OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
 cleanup:
 	;

@@ -414,6 +414,7 @@ int main_pics(int argc, char* argv[])
 	struct iter_fista_conf fsconf = iter_fista_defaults;
 	struct iter_ist_conf isconf = iter_ist_defaults;
 	struct iter_admm_conf mmconf = iter_admm_defaults;
+	struct iter_niht_conf ihconf = iter_niht_defaults;
 
 	if ((CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
 		algo = FISTA;
@@ -518,17 +519,28 @@ int main_pics(int argc, char* argv[])
 
 			break;
 
-		default:
+		case NIHT:
 
+			debug_printf(DP_INFO, "NIHT\n");
+
+			ihconf = iter_niht_defaults;
+			ihconf.maxiter = maxiter;
+			ihconf.do_warmstart=warm_start;
+
+			italgo = iter2_niht;
+			iconf = CAST_UP(&ihconf);
+			break;		
+
+		default:			
 			assert(0);
 	}
 
-
-
+	bool trafos_cond = ((ADMM == algo) || ((NIHT == algo) && (regs[0].xform == NIHTWAV)));
+	
 	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
 				pat1_dims, (NULL != traj_file) ? NULL : pattern1,
 				italgo, iconf, image_start1, nr_penalties, thresh_ops,
-				(ADMM == algo) ? trafos : NULL, precond_op);
+				trafos_cond ? trafos : NULL, precond_op);
 
 	long strsx[2][DIMS];
 	const long* strs[2] = { strsx[0], strsx[1] };
