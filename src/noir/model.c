@@ -157,7 +157,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 
 	data->pattern = ptr;
 
-	complex float* adj_pattern = md_alloc(DIMS, data->ptrn_dims, CFL_SIZE);
+	complex float* adj_pattern = my_alloc(DIMS, data->ptrn_dims, CFL_SIZE);
 
 	if (!conf->noncart) {
 
