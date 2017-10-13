@@ -471,6 +471,21 @@ static bool wavelet_check_dims(unsigned int N, unsigned int flags, const long di
 }
 
 
+static void embed(unsigned int N, unsigned int flags, long ostr[N], const long dims[N], const long str[N])
+{
+	unsigned int b = ffs(flags) - 1;
+
+	long dims1[N];
+	md_select_dims(N, flags, dims1, dims);
+
+	md_calc_strides(N, ostr, dims1, str[b]);
+
+	for (unsigned int i = 0; i < N; i++)
+		if (!MD_IS_SET(flags, i))
+			ostr[i] = str[i];
+}
+
+
 void fwt2(unsigned int N, unsigned int flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
 	assert(wavelet_check_dims(N, flags, idims, minsize));
@@ -523,8 +538,7 @@ void fwt2(unsigned int N, unsigned int flags, const long shifts[N], const long o
 	long bands = md_calc_size(N, wdims + N);
 	long coeffs = md_calc_size(N, wdims + 0);
 
-
-	debug_printf(DP_DEBUG4, "fwt2: %d %ld %ld (space: %ld) %ld %ld\n", flags, level_coeffs, coeffs, odims2[b], ostr[b], offset / istr[b]);
+	debug_printf(DP_DEBUG2, "fwt2: flags:%d lcoeffs:%ld coeffs:%ld (space:%ld) bands:%ld str:%ld off:%ld\n", flags, level_coeffs, coeffs, odims2[b], bands, ostr[b], offset / istr[b]);
 
 	// subtract coefficients in high band
 
@@ -541,8 +555,16 @@ void fwt2(unsigned int N, unsigned int flags, const long shifts[N], const long o
 
 	fwtN(N, flags, shifts, idims, ostr2, out + offset, istr, in, flen, filter);
 
-	if (0 != flags2)
-		fwt2(N, flags2, shifts0, odims2, ostr, out, wdims2, ostr2, out + offset, minsize, flen, filter);
+	if (0 != flags2) {
+
+		long odims3[N];
+		wavelet_coeffs2(N, flags2, odims3, wdims2, minsize, flen);
+
+		long ostr3[N];
+		embed(N, flags, ostr3, odims3, ostr);
+
+		fwt2(N, flags2, shifts0, odims3, ostr3, out, wdims2, ostr2, out + offset, minsize, flen, filter);
+	}
 }
 
 
@@ -604,7 +626,7 @@ void iwt2(unsigned int N, unsigned int flags, const long shifts[N], const long o
 
 	assert(idims2[b] > 0);
 
-	debug_printf(DP_DEBUG4, "%d %ld %ld\n", flags, coeffs, offset);
+	debug_printf(DP_DEBUG2, "ifwt2: flags:%d lcoeffs:%ld coeffs:%ld (space:%ld) bands:%ld str:%ld off:%ld\n", flags, level_coeffs, coeffs, idims2[b], bands, istr[b], offset / ostr[b]);
 
 	// fix me we need temp storage
 	complex float* tmp = md_alloc_sameplace(2 * N, wdims2, CFL_SIZE, out);
@@ -621,8 +643,16 @@ void iwt2(unsigned int N, unsigned int flags, const long shifts[N], const long o
 	unsigned int flags2 = wavelet_filter_flags(N, flags, wdims, minsize);
 	assert((0 == offset) == (0u == flags2));
 
-	if (0u != flags2)
-		iwt2(N, flags2, shifts0, wdims2, tstr, tmp, idims2, istr, in, minsize, flen, filter);
+	if (0u != flags2) {
+
+		long idims3[N];
+		wavelet_coeffs2(N, flags2, idims3, wdims2, minsize, flen);
+
+		long istr3[N];
+		embed(N, flags, istr3, idims3, istr);
+
+		iwt2(N, flags2, shifts0, wdims2, tstr, tmp, idims3, istr3, in, minsize, flen, filter);
+	}
 
 	iwtN(N, flags, shifts, odims, ostr, out, tstr, tmp, flen, filter);
 
