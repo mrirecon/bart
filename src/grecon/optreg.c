@@ -317,7 +317,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 
 			trafos[nr] = linop_wavelet_create(N, wflags, img_dims, img_strs, minsize);
 
-			long* wav_dims = linop_codomain(trafos[nr])->dims;
+			const long* wav_dims = linop_codomain(trafos[nr])->dims;
 
 			unsigned int K = (md_calc_size(wxdim, wav_dims) / 100) * regs[nr].k;
 

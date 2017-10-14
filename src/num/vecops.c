@@ -456,9 +456,9 @@ static void zhardthresh(long N,  unsigned int k, complex float* d, const complex
 /* Apply the non-zero support of one vector to another, complex numbers */ 
 static void nzsupport(long N, float* out, const float* in)
 {
+#ifdef _OPENMP
 	int par = 0;
 
-#ifdef _OPENMP
 	par = omp_in_parallel();
 #endif
 	
