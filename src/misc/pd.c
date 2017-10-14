@@ -327,7 +327,7 @@ extern void mc_poisson_rmatrix(int D, int T, float rmatrix[T][T], const float de
 		table[i].index = i;
 		table[i].x = delta[i];
 	}
-	
+
 	qsort(&table, T, sizeof(struct sort_label), sort_cmp);
 
 	int mc[T][T];
@@ -336,11 +336,11 @@ extern void mc_poisson_rmatrix(int D, int T, float rmatrix[T][T], const float de
 	int i;
 
 	for (i = 0; (i < T) && (ind < T); i++) {
-	
+
 		float val = table[ind].x;
 		int j = 0;
 
-		while ((table[ind].x == val) && (ind < T))
+		while ((ind < T) && (table[ind].x == val))
 			mc[i][j++] = table[ind++].index;
 
 		nc[i] = j;
