@@ -39,7 +39,7 @@ struct wavelet_thresh_s {
 	int rand_state;
 };
 
-DEF_TYPEID(wavelet_thresh_s);
+static DEF_TYPEID(wavelet_thresh_s);
 
 
 static int rand_lim(unsigned int* state, int limit)

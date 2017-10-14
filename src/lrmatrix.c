@@ -42,7 +42,7 @@ struct s_data {
 	long size;
 };
 
-DEF_TYPEID(s_data);
+static DEF_TYPEID(s_data);
 
 // x = (z1 + z2)/2
 

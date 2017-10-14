@@ -12,7 +12,7 @@
 #include "misc/cppwrap.h"
 #include "misc/types.h"
 
-TYPEID linop_data_s;
+extern TYPEID linop_data_s;
 typedef struct linop_data_s { TYPEID* TYPEID; } linop_data_t;
 
 

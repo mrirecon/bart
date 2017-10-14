@@ -84,7 +84,7 @@ struct maps_data {
 	complex float* norm;
 };
 
-DEF_TYPEID(maps_data);
+static DEF_TYPEID(maps_data);
 
 #ifdef USE_CUDA
 static const complex float* get_sens(const struct maps_data* data, bool gpu)

@@ -44,7 +44,7 @@ struct lsqr_data {
 	const struct linop_s* model_op;
 };
 
-DEF_TYPEID(lsqr_data);
+static DEF_TYPEID(lsqr_data);
 
 static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void* args[static N])
 {

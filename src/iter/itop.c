@@ -40,7 +40,7 @@ struct itop_s {
 	const struct linop_s** prox_linops;
 };
 
-DEF_TYPEID(itop_s);
+static DEF_TYPEID(itop_s);
 
 static void itop_apply(const operator_data_t* _data, unsigned int N, void* args[static N])
 {

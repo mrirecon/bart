@@ -25,7 +25,7 @@ struct iter_op_op {
 	const struct operator_s* op;
 };
 
-DEF_TYPEID(iter_op_op);
+extern DEF_TYPEID(iter_op_op);
 
 struct iter_op_p_op {
 
@@ -33,7 +33,7 @@ struct iter_op_p_op {
 	const struct operator_p_s* op;
 };
 
-DEF_TYPEID(iter_op_p_op);
+extern DEF_TYPEID(iter_op_p_op);
 
 extern void operator_iter(iter_op_data* data, float* dst, const float* src);
 extern void operator_p_iter(iter_op_data* data, float rho, float* dst, const float* src);

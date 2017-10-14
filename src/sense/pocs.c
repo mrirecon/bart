@@ -64,7 +64,7 @@ struct data {
 	long strs_pat[DIMS];
 };
 
-DEF_TYPEID(data);
+static DEF_TYPEID(data);
 
 
 static void xupdate_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)

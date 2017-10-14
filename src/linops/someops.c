@@ -30,7 +30,7 @@
 
 #include "someops.h"
 
-DEF_TYPEID(cdiag_s);
+static DEF_TYPEID(cdiag_s);
 
 struct cdiag_s {
 
@@ -168,7 +168,7 @@ struct identity_data_s {
 	const struct iovec_s* domain;
 };
 
-DEF_TYPEID(identity_data_s);
+static DEF_TYPEID(identity_data_s);
 
 static void identity_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
@@ -211,7 +211,7 @@ struct resize_op_s {
 	const long* in_dims;
 };
 
-DEF_TYPEID(resize_op_s);
+static DEF_TYPEID(resize_op_s);
 
 static void resize_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
@@ -296,7 +296,7 @@ struct operator_matrix_s {
 	const long* gout_dims;
 };
 
-DEF_TYPEID(operator_matrix_s);
+static DEF_TYPEID(operator_matrix_s);
 
 
 static void linop_matrix_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
@@ -717,7 +717,7 @@ struct fft_linop_s {
 	long* strs;
 };
 
-DEF_TYPEID(fft_linop_s);
+static DEF_TYPEID(fft_linop_s);
 
 static void fft_linop_apply(const linop_data_t* _data, complex float* out, const complex float* in)
 {
@@ -887,7 +887,7 @@ struct linop_cdf97_s {
 	unsigned int flags;
 };
 
-DEF_TYPEID(linop_cdf97_s);
+static DEF_TYPEID(linop_cdf97_s);
 
 static void linop_cdf97_apply(const linop_data_t* _data, complex float* out, const complex float* in)
 {
@@ -954,7 +954,7 @@ struct conv_data_s {
 	struct conv_plan* plan;
 };
 
-DEF_TYPEID(conv_data_s);
+static DEF_TYPEID(conv_data_s);
 
 static void linop_conv_forward(const linop_data_t* _data, complex float* out, const complex float* in)
 {

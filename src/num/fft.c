@@ -202,7 +202,7 @@ struct fft_plan_s {
 #endif
 };
 
-DEF_TYPEID(fft_plan_s);
+static DEF_TYPEID(fft_plan_s);
 
 
 

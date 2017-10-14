@@ -31,7 +31,7 @@ struct sampling_data_s {
 	const complex float* pattern;
 };
 
-DEF_TYPEID(sampling_data_s);
+static DEF_TYPEID(sampling_data_s);
 
 
 static void sampling_apply(const linop_data_t* _data, complex float* dst, const complex float* src)

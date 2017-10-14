@@ -55,7 +55,7 @@ struct sense_data {
 	float alpha;
 }; 
 
-DEF_TYPEID(sense_data);
+static DEF_TYPEID(sense_data);
 
 
 static void sense_forward(const struct sense_data* data, complex float* out, const complex float* imgs)

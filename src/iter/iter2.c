@@ -52,6 +52,8 @@ void operator_p_iter(iter_op_data* _data, float rho, float* dst, const float* sr
 
 
 
+DEF_TYPEID(iter_op_op);
+DEF_TYPEID(iter_op_p_op);
 DEF_TYPEID(iter2_call_s);
 
 

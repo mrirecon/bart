@@ -55,7 +55,7 @@ struct prox_normaleq_data {
 	long size;
 };
 
-DEF_TYPEID(prox_normaleq_data);
+static DEF_TYPEID(prox_normaleq_data);
 
 /**
  * Proximal function for f(z) = 0.5 || y - A z ||_2^2.
@@ -152,7 +152,7 @@ struct prox_leastsquares_data {
 	long size;
 };
 
-DEF_TYPEID(prox_leastsquares_data);
+static DEF_TYPEID(prox_leastsquares_data);
 
 
 /**
@@ -217,7 +217,7 @@ struct prox_l2norm_data {
 	long size;
 };
 
-DEF_TYPEID(prox_l2norm_data);
+static DEF_TYPEID(prox_l2norm_data);
 
 
 /**
@@ -286,7 +286,7 @@ struct prox_l2ball_data {
 	long size;
 };
 
-DEF_TYPEID(prox_l2ball_data);
+static DEF_TYPEID(prox_l2ball_data);
 
 /**
  * Proximal function for f(z) = Ind{ || y - z ||_2 < eps }
@@ -406,7 +406,7 @@ struct prox_zero_data {
 	long size;
 };
 
-DEF_TYPEID(prox_zero_data);
+static DEF_TYPEID(prox_zero_data);
 
 /**
  * Proximal function for f(z) = 0
@@ -467,7 +467,7 @@ struct prox_lineq_data {
 	complex float* tmp;
 };
 
-DEF_TYPEID(prox_lineq_data);
+static DEF_TYPEID(prox_lineq_data);
 
 static void prox_lineq_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
@@ -525,7 +525,7 @@ struct prox_ineq_data {
 	bool positive;
 };
 
-DEF_TYPEID(prox_ineq_data);
+static DEF_TYPEID(prox_ineq_data);
 
 static void prox_ineq_fun(const operator_data_t* _data, float mu, float* dst, const float* src)
 {
@@ -596,7 +596,7 @@ struct prox_rvc_data {
 	long size;
 };
 
-DEF_TYPEID(prox_rvc_data);
+static DEF_TYPEID(prox_rvc_data);
 
 static void prox_rvc_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {

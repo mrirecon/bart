@@ -34,7 +34,7 @@ struct wavelet_s {
 	const long* minsize;
 };
 
-DEF_TYPEID(wavelet_s);
+static DEF_TYPEID(wavelet_s);
 
 static void wavelet_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {

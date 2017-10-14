@@ -69,7 +69,7 @@ struct prox_dfwavelet_data {
         struct dfwavelet_plan_s* plan;
 };
 
-DEF_TYPEID(prox_dfwavelet_data);
+static DEF_TYPEID(prox_dfwavelet_data);
 
 
 const struct operator_p_s* prox_dfwavelet_create(const long im_dims[DIMS], const long min_size[3], const complex float res[3], unsigned int flow_dim, float lambda, bool use_gpu)
@@ -215,7 +215,7 @@ struct prox_4pt_dfwavelet_data {
         const struct operator_p_s* wthresh_op;
 };
 
-DEF_TYPEID(prox_4pt_dfwavelet_data);
+static DEF_TYPEID(prox_4pt_dfwavelet_data);
 
 
 

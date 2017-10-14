@@ -72,7 +72,7 @@ struct admm_normaleq_data {
 	struct iter_op_s Aop;
 };
 
-DEF_TYPEID(admm_normaleq_data);
+static DEF_TYPEID(admm_normaleq_data);
 
 
 static void admm_normaleq(iter_op_data* _data, float* dst, const float* src)
@@ -121,7 +121,7 @@ struct cg_xupdate_s {
 	struct iter_monitor_s* monitor;
 };
 
-DEF_TYPEID(cg_xupdate_s);
+static DEF_TYPEID(cg_xupdate_s);
 
 static void cg_xupdate(iter_op_data* _data, float rho, float* x, const float* rhs)
 {

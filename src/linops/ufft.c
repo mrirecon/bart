@@ -55,7 +55,7 @@ struct ufft_data {
 };
 
 
-DEF_TYPEID(ufft_data);
+static DEF_TYPEID(ufft_data);
 
 
 static struct ufft_data* ufft_create_data(const long ksp_dims[DIMS], const long pat_dims[DIMS], const complex float* pat, unsigned int flags, bool use_gpu);

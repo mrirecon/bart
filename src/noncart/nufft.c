@@ -109,7 +109,7 @@ struct nufft_data {
 	
 };
 
-DEF_TYPEID(nufft_data);
+static DEF_TYPEID(nufft_data);
 
 
 static void nufft_free_data(const linop_data_t* data);
@@ -360,7 +360,7 @@ struct nufft_precond_data {
 };
 
 
-DEF_TYPEID(nufft_precond_data);
+static DEF_TYPEID(nufft_precond_data);
 
 
 static void nufft_precond_apply(const operator_data_t* _data, unsigned int M, void* args[M])

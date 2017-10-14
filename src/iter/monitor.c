@@ -43,7 +43,7 @@ struct monitor_default_s {
 	float (*objective)(const void* data, const float* x);
 };
 
-DEF_TYPEID(monitor_default_s);
+static DEF_TYPEID(monitor_default_s);
 
 
 static void monitor_default_fun(struct iter_monitor_s* _data, const struct vec_iter_s* vops, const float* x)

@@ -60,7 +60,7 @@ struct fdiff_s {
 	bool snip;
 };
 
-DEF_TYPEID(fdiff_s);
+static DEF_TYPEID(fdiff_s);
 
 
 /*
@@ -387,7 +387,7 @@ struct zfinitediff_data {
 	size_t size;
 };
 
-DEF_TYPEID(zfinitediff_data);
+static DEF_TYPEID(zfinitediff_data);
 
 
 /**

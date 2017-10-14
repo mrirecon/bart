@@ -42,7 +42,7 @@ struct data {
 	struct noir_data* ndata;
 };
 
-DEF_TYPEID(data);
+static DEF_TYPEID(data);
 
 
 static void frw(iter_op_data* ptr, float* _dst, const float* _src)

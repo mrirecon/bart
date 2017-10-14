@@ -58,7 +58,7 @@ struct thresh_s {
 	const struct linop_s* unitary_op;
 };
 
-DEF_TYPEID(thresh_s);
+static DEF_TYPEID(thresh_s);
 
 
 
