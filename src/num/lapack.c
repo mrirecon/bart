@@ -1,9 +1,11 @@
-/* Copyright 2016. Martin Uecker.
+/* Copyright 2017. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
 #include "misc/misc.h"
@@ -55,9 +57,37 @@ void lapack_svd_double(long M, long N, complex double U[M][M], complex double VH
 	LAPACKE(zgesdd, 'A', M, N, &A[0][0], M, S, &U[0][0], M, &VH[0][0], N);
 }
 
+static void lapack_cholesky_UL(long N, char UL, complex float A[N][N])
+{
+	LAPACKE(cpotrf, UL, N, &A[0][0], N);
+}
+
 void lapack_cholesky(long N, complex float A[N][N])
 {
-	LAPACKE(cpotrf, 'U', N, &A[0][0], N);
+	lapack_cholesky_UL(N, 'U', A);
 }
+
+void lapack_cholesky_lower(long N, complex float A[N][N])
+{
+	lapack_cholesky_UL(N, 'L', A);
+}
+
+
+static void lapack_trimat_inverse_UL(long N, char UL, complex float A[N][N])
+{
+	LAPACKE(ctrtri, UL, 'N', N, &A[0][0], N);
+}
+
+void lapack_trimat_inverse(long N, complex float A[N][N])
+{
+	lapack_trimat_inverse_UL(N, 'U', A);
+}
+
+void lapack_trimat_inverse_lower(long N, complex float A[N][N])
+{
+	lapack_trimat_inverse_UL(N, 'L', A);
+}
+
+
 
 

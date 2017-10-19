@@ -1,4 +1,4 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  */ 
@@ -20,6 +20,11 @@ extern void lapack_svd_econ(long M, long N,
 extern void lapack_eig_double(long N, double eigenval[N], complex double matrix[N][N]);
 extern void lapack_svd_double(long M, long N, complex double U[M][M], complex double VH[N][N], double S[(N > M) ? M : N], complex double A[N][M]);
 extern void lapack_matrix_multiply(long M, long N, long K, complex float C[M][N], const complex float A[M][K], const complex float B[K][N]);
+
 extern void lapack_cholesky(long N, complex float A[N][N]);
+extern void lapack_cholesky_lower(long N, complex float A[N][N]);
+
+extern void lapack_trimat_inverse(long N, complex float A[N][N]);
+extern void lapack_trimat_inverse_lower(long N, complex float A[N][N]);
 
 
