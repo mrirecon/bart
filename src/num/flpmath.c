@@ -1053,7 +1053,7 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 
 	if ((3 == ND) && detect_matrix(dims, ostrs2, istrs2, mstrs2)) {
 
-		debug_printf(DP_DEBUG2, "matmul: matrix multiplication (1).\n");
+		debug_printf(DP_DEBUG4, "matmul: matrix multiplication (1).\n");
 #if 0
 		// num/linalg.h
 
@@ -1072,7 +1072,7 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 
 	if ((3 == ND) && detect_matrix(dims, ostrs2, mstrs2, istrs2)) {
 
-		debug_printf(DP_DEBUG2, "matmul: matrix multiplication (2).\n");
+		debug_printf(DP_DEBUG4, "matmul: matrix multiplication (2).\n");
 #if 0
 		// num/linalg.h
 

@@ -538,7 +538,7 @@ void fwt2(unsigned int N, unsigned int flags, const long shifts[N], const long o
 	long bands = md_calc_size(N, wdims + N);
 	long coeffs = md_calc_size(N, wdims + 0);
 
-	debug_printf(DP_DEBUG2, "fwt2: flags:%d lcoeffs:%ld coeffs:%ld (space:%ld) bands:%ld str:%ld off:%ld\n", flags, level_coeffs, coeffs, odims2[b], bands, ostr[b], offset / istr[b]);
+	debug_printf(DP_DEBUG4, "fwt2: flags:%d lcoeffs:%ld coeffs:%ld (space:%ld) bands:%ld str:%ld off:%ld\n", flags, level_coeffs, coeffs, odims2[b], bands, ostr[b], offset / istr[b]);
 
 	// subtract coefficients in high band
 
@@ -626,7 +626,7 @@ void iwt2(unsigned int N, unsigned int flags, const long shifts[N], const long o
 
 	assert(idims2[b] > 0);
 
-	debug_printf(DP_DEBUG2, "ifwt2: flags:%d lcoeffs:%ld coeffs:%ld (space:%ld) bands:%ld str:%ld off:%ld\n", flags, level_coeffs, coeffs, idims2[b], bands, istr[b], offset / ostr[b]);
+	debug_printf(DP_DEBUG4, "ifwt2: flags:%d lcoeffs:%ld coeffs:%ld (space:%ld) bands:%ld str:%ld off:%ld\n", flags, level_coeffs, coeffs, idims2[b], bands, istr[b], offset / ostr[b]);
 
 	// fix me we need temp storage
 	complex float* tmp = md_alloc_sameplace(2 * N, wdims2, CFL_SIZE, out);
