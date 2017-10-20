@@ -27,6 +27,7 @@ struct sense_conf {
 	int rwiter;	// should be moved into a recon_lad
 	float gamma;	// ..
 	float cclambda;
+	bool bpsense;
 };
 
 

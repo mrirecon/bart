@@ -59,6 +59,7 @@ const struct sense_conf sense_defaults = {
 	.rwiter = 1,
 	.gamma = -1.,
 	.cclambda = 0.,
+	.bpsense = false,
 };
 
 
@@ -137,6 +138,8 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 
 	if (conf->rvc) {
 
+		assert(!conf->bpsense); // FIXME: add rvc as separate constraint or build into forward model earlier
+
 		struct linop_s* rvc = linop_realval_create(DIMS, img_dims);
 		struct linop_s* tmp_op = linop_chain(rvc, sense_op);
 
@@ -146,6 +149,8 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 	}
 
 	if (1 < conf->rwiter) {
+
+		assert(!conf->bpsense); // not compatible
 
 		struct linop_s* sampling = linop_sampling_create(dims, pat_dims, pattern);
 		struct linop_s* tmp_op = linop_chain(sense_op, sampling);
@@ -166,10 +171,16 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 	} else
 	if (NULL == pattern) {
 
-		op = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init, sense_op, precond_op,
+		if (conf->bpsense)
+			op = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init, NULL, NULL,
+					num_funs, thresh_op, thresh_funs, NULL);
+		else
+			op = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init, sense_op, precond_op,
 					num_funs, thresh_op, thresh_funs, NULL);
 
 	} else {
+
+		assert(!conf->bpsense); // pattern should be built into forward model
 
 		complex float* weights = md_alloc(DIMS, pat_dims, CFL_SIZE);
 #if 0
