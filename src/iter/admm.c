@@ -303,8 +303,9 @@ void admm(const struct admm_plan_s* plan,
 		if (NULL != Aop.fun) {
 
 			vops->xpay(N, rho, rhs, x_adj);
-			ndata.rho = rho;
 		}
+
+		ndata.rho = rho;
 
 
 		iter_op_p_call(xupdate, rho, x, rhs);
