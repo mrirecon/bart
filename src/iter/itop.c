@@ -1,9 +1,11 @@
-/* Copyright 2016. Martin Uecker.
+/* Copyright 2017. The Regents of the University of California.
+ * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
 #include <assert.h>
@@ -34,10 +36,13 @@ struct itop_s {
 	unsigned int num_funs;
 	long size;
 
+	const struct iovec_s* iov;
+
 	const float* init;
 
 	const struct operator_p_s** prox_funs;
 	const struct linop_s** prox_linops;
+
 };
 
 static DEF_TYPEID(itop_s);
@@ -53,9 +58,7 @@ static void itop_apply(const operator_data_t* _data, unsigned int N, void* args[
 
 	} else {
 
-		const struct iovec_s* iov = operator_domain(data->op);
-
-		md_copy(iov->N, iov->dims, args[0], data->init, iov->size);
+		md_copy(data->iov->N, data->iov->dims, args[0], data->init, data->iov->size);
 	}
 
 	data->italgo(data->iconf, data->op, data->num_funs, data->prox_funs, data->prox_linops, NULL, 
@@ -66,6 +69,7 @@ static void itop_del(const operator_data_t* _data)
 {
 	const struct itop_s* data = CAST_DOWN(itop_s, _data);
 
+	iovec_free(data->iov);
 	operator_free(data->op);
 
 	if (NULL != data->init)
@@ -102,17 +106,26 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 	PTR_ALLOC(struct itop_s, data);
 	SET_TYPEID(itop_s, data);
 
-	const struct iovec_s* iov = operator_domain(op);
+	const struct iovec_s* iov;
+
+	if (NULL == op) {
+
+		assert(0 < num_funs);
+		iov = linop_domain(prox_linops[0]);
+	}
+	else
+		iov = operator_domain(op);
 
 	data->iconf = iconf;
 	data->italgo = italgo;
 	data->monitor = monitor;
-	data->op = operator_ref(op);
+	data->op = (NULL == op) ? NULL : operator_ref(op);
 	data->num_funs = num_funs;
 	data->size = 2 * md_calc_size(iov->N, iov->dims);	// FIXME: do not assume complex
 	data->prox_funs = NULL;
 	data->prox_linops = NULL;
 	data->init = NULL;
+	data->iov = iovec_create(iov->N, iov->dims, iov->size);
 
 	if (NULL != init) {
 
