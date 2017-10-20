@@ -1,11 +1,11 @@
-/* Copyright 2014. The Regents of the University of California.
+/* Copyright 2014,2017. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014      Frank Ong <frankong@berkeley.edu>
- * 2014      Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014,2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
 #include <complex.h>
@@ -84,14 +84,32 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 	PTR_ALLOC(struct lsqr_data, data);
 	SET_TYPEID(lsqr_data, data);
 
-	const struct iovec_s* iov = operator_domain(model_op->forward);
+	const struct iovec_s* iov = NULL;
+	
+	if (NULL == model_op) {
+
+		assert(0 < num_funs);
+		iov = linop_domain(prox_linops[0]);
+		data->model_op = NULL;
+	}
+	else {
+
+		iov = operator_domain(model_op->forward);
+		data->model_op = linop_clone(model_op);
+	}
+
 
 	data->l2_lambda = conf->lambda;
-	data->model_op = linop_clone(model_op);
 	data->size = 2 * md_calc_size(iov->N, iov->dims);	// FIXME: assume complex
 
-	const struct operator_s* normaleq_op = operator_create(iov->N, iov->dims, iov->N, iov->dims, CAST_UP(PTR_PASS(data)), normaleq_l2_apply, normaleq_del);
-	const struct operator_s* adjoint = operator_ref(model_op->adjoint);
+	const struct operator_s* normaleq_op = NULL;
+	const struct operator_s* adjoint = NULL;
+	
+	if (NULL != model_op) {
+
+		normaleq_op = operator_create(iov->N, iov->dims, iov->N, iov->dims, CAST_UP(PTR_PASS(data)), normaleq_l2_apply, normaleq_del);
+		adjoint = operator_ref(model_op->adjoint);
+	}
 
 	if (NULL != precond_op) {
 
@@ -114,7 +132,12 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 		itop_op = operator_gpu_wrapper(itop_op);
 	}
 
-	const struct operator_s* lsqr_op = operator_chain(adjoint, itop_op);
+	const struct operator_s* lsqr_op;
+
+	if (NULL != adjoint)
+		lsqr_op = operator_chain(adjoint, itop_op);
+	else
+		lsqr_op = operator_ref(itop_op);
 
 	operator_free(normaleq_op);
 	operator_free(itop_op);
