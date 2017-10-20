@@ -567,6 +567,8 @@ int main_pics(int argc, char* argv[])
 
 	operator_free(op);
 
+	opt_reg_free(&ropts, thresh_ops, trafos);
+
 
 
 	if (scale_im)
