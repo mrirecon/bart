@@ -228,6 +228,19 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 }
 
 
+void opt_bpursuit_configure(struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const struct linop_s* model_op, const complex float* data, const float eps)
+{
+	int nr_penalties = ropts->r;
+	assert(NUM_REGS > nr_penalties);
+
+	const struct iovec_s* iov = linop_codomain(model_op);
+	prox_ops[nr_penalties] = prox_l2ball_create(iov->N, iov->dims, eps, data);
+	trafos[nr_penalties] = linop_clone(model_op);
+
+	ropts->r++;
+	ropts->algo = ADMM;
+}
+
 void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, bool randshift, bool use_gpu)
 {
 	float lambda = ropts->lambda;
