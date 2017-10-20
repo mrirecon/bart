@@ -1,4 +1,4 @@
-/* Copyright 2013-2015. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -6,7 +6,7 @@
  * Authors:
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
  */
 
@@ -23,8 +23,10 @@
 #include "num/ops.h"
 
 #include "iter/misc.h"
+#include "iter/prox.h"
 
 #include "linops/linop.h"
+#include "linops/sampling.h"
 
 #include "noncart/nufft.h"
 
@@ -75,7 +77,7 @@ int main_pics(int argc, char* argv[])
 
 	struct sense_conf conf = sense_defaults;
 
-
+	float bpsense_eps = -1.;
 
 	bool randshift = true;
 	unsigned int maxiter = 30;
@@ -145,6 +147,7 @@ int main_pics(int argc, char* argv[])
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
+		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, 0.5 || y- Ax ||_2 <= eps"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -154,6 +157,10 @@ int main_pics(int argc, char* argv[])
 
 	if (NULL != image_start_file)
 		warm_start = true;
+
+	if (0 <= bpsense_eps)
+		conf.bpsense = true;
+
 
 
 	long max_dims[DIMS];
@@ -204,6 +211,9 @@ int main_pics(int argc, char* argv[])
 	if (map_dims[MAPS_DIM] > 1) 
 		debug_printf(DP_INFO, "%ld maps.\nESPIRiT reconstruction.\n", map_dims[MAPS_DIM]);
 
+	if (conf.bpsense)
+		debug_printf(DP_INFO, "Basis Pursuit formulation\n");
+
 	if (hogwild)
 		debug_printf(DP_INFO, "Hogwild stepsize\n");
 
@@ -211,7 +221,7 @@ int main_pics(int argc, char* argv[])
 		debug_printf(DP_INFO, "Compare to truth\n");
 
 
-	assert(!((conf.rwiter > 1) && nuconf.toeplitz));
+	assert(!((conf.rwiter > 1) && (nuconf.toeplitz || conf.bpsense)));
 
 
 	// initialize sampling pattern
@@ -386,8 +396,22 @@ int main_pics(int argc, char* argv[])
 
 	// FIXME: re-initialize forward_op and precond_op
 
-	if (NULL == traj_file)
+	if (NULL == traj_file) {
+
 		forward_op = sense_init(max1_dims, map_flags, maps);
+
+		// basis pursuit requires the full forward model to add as a linop constraint
+		if (conf.bpsense) {
+
+			const struct linop_s* sample_op = linop_sampling_create(max1_dims, pat1_dims, pattern1);
+			struct linop_s* tmp = linop_chain(forward_op, sample_op);
+
+			linop_free(sample_op);
+			linop_free(forward_op);
+			forward_op = tmp;
+		}
+	}
+
 
 
 	// initialize prox functions
@@ -396,6 +420,9 @@ int main_pics(int argc, char* argv[])
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
 	opt_reg_configure(DIMS, img1_dims, &ropts, thresh_ops, trafos, llr_blk, randshift, conf.gpu);
+
+	if (conf.bpsense)
+		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace, bpsense_eps);
 
 	int nr_penalties = ropts.r;
 	struct reg_s* regs = ropts.regs;
@@ -538,7 +565,7 @@ int main_pics(int argc, char* argv[])
 	bool trafos_cond = ((ADMM == algo) || ((NIHT == algo) && (regs[0].xform == NIHTWAV)));
 	
 	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
-				pat1_dims, (NULL != traj_file) ? NULL : pattern1,
+				pat1_dims, (NULL != traj_file) ? NULL : (conf.bpsense ? NULL : pattern1),
 				italgo, iconf, image_start1, nr_penalties, thresh_ops,
 				trafos_cond ? trafos : NULL, precond_op);
 
@@ -563,9 +590,11 @@ int main_pics(int argc, char* argv[])
 		op = operator_loop(DIMS, loop_dims, op);
 	}
 
-	operator_apply(op, DIMS, img_dims, image, DIMS, ksp_dims, kspace);
+	operator_apply(op, DIMS, img_dims, image, DIMS, conf.bpsense ? img_dims : ksp_dims, conf.bpsense ? NULL : kspace);
 
 	operator_free(op);
+
+	opt_reg_free(&ropts, thresh_ops, trafos);
 
 
 

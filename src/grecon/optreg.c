@@ -1,4 +1,4 @@
-/* Copyright 2015-2016. The Regents of the University of California.
+/* Copyright 2015-2017. The Regents of the University of California.
  * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -6,7 +6,7 @@
  * Authors:
  * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015-2016 Frank Ong <frankong@berkeley.edu>
- * 2015-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2015-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
  */
 
@@ -18,6 +18,7 @@
 
 #include "num/multind.h"
 #include "num/iovec.h"
+#include "num/ops.h"
 
 #include "iter/prox.h"
 #include "iter/thresh.h"
@@ -226,6 +227,19 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 	return false;
 }
 
+
+void opt_bpursuit_configure(struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const struct linop_s* model_op, const complex float* data, const float eps)
+{
+	int nr_penalties = ropts->r;
+	assert(NUM_REGS > nr_penalties);
+
+	const struct iovec_s* iov = linop_codomain(model_op);
+	prox_ops[nr_penalties] = prox_l2ball_create(iov->N, iov->dims, eps, data);
+	trafos[nr_penalties] = linop_clone(model_op);
+
+	ropts->r++;
+	ropts->algo = ADMM;
+}
 
 void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, bool randshift, bool use_gpu)
 {
@@ -469,3 +483,15 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 	}
 }
 
+
+void opt_reg_free(struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS])
+{
+	int nr_penalties = ropts->r;
+
+	for (int nr = 0; nr < nr_penalties; nr++) {
+
+		operator_p_free(prox_ops[nr]);
+		linop_free(trafos[nr]);
+
+	}
+}
