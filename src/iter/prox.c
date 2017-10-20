@@ -1,10 +1,10 @@
-/* Copyright 2014-2016. The Regents of the University of California.
+/* Copyright 2014-2017. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2014-2016	Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2017	Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2016		Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
@@ -17,6 +17,9 @@
 #include "num/flpmath.h"
 #include "num/ops.h"
 #include "num/iovec.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 #include "linops/linop.h"
 
@@ -280,13 +283,34 @@ struct prox_l2ball_data {
 
 	INTERFACE(operator_data_t);
 
-	const float* center;
+	float* center;
 	float eps;
 
 	long size;
+#ifdef USE_CUDA
+	const float* gpu_center;
+#endif
 };
 
 static DEF_TYPEID(prox_l2ball_data);
+
+
+#ifdef USE_CUDA
+static const float* get_center(const struct prox_l2ball_data* data, bool gpu)
+{
+	const float* center = data->center;
+
+	if (gpu) {
+
+		if (NULL == data->gpu_center)
+			((struct prox_l2ball_data*)data)->gpu_center = md_gpu_move(1, MD_DIMS(data->size), data->center, FL_SIZE);
+
+		center = data->gpu_center;
+	}
+
+	return center;
+}
+#endif
 
 /**
  * Proximal function for f(z) = Ind{ || y - z ||_2 < eps }
@@ -301,8 +325,14 @@ static void prox_l2ball_fun(const operator_data_t* prox_data, float mu, float* z
 	UNUSED(mu);
 	struct prox_l2ball_data* pdata = CAST_DOWN(prox_l2ball_data, prox_data);
 
-	if (NULL != pdata->center)
-		md_sub(1, MD_DIMS(pdata->size), z, x_plus_u, pdata->center);
+#ifdef USE_CUDA
+	const float* center = get_center(pdata, cuda_ondevice(x_plus_u));
+#else
+	const float* center = pdata->center;
+#endif
+
+	if (NULL != center)
+		md_sub(1, MD_DIMS(pdata->size), z, x_plus_u, center);
 	else
 		md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
 
@@ -311,8 +341,8 @@ static void prox_l2ball_fun(const operator_data_t* prox_data, float mu, float* z
 	if (q1 > pdata->eps)
 		md_smul(1, MD_DIMS(pdata->size), z, z, pdata->eps / q1);
 
-	if (NULL != pdata->center)
-		md_add(1, MD_DIMS(pdata->size), z, z, pdata->center);
+	if (NULL != center)
+		md_add(1, MD_DIMS(pdata->size), z, z, center);
 }
 
 static void prox_l2ball_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
@@ -322,7 +352,13 @@ static void prox_l2ball_apply(const operator_data_t* _data, float mu, complex fl
 
 static void prox_l2ball_del(const operator_data_t* _data)
 {
-	xfree(CAST_DOWN(prox_l2ball_data, _data));
+	struct prox_l2ball_data* data = CAST_DOWN(prox_l2ball_data, _data);
+#ifdef USE_CUDA
+	if (NULL != data->gpu_center) {
+		md_free((void*)data->gpu_center);
+	}
+#endif
+	xfree(data);
 }
 
 const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N], float eps, const complex float* center)
@@ -330,9 +366,13 @@ const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N]
 	PTR_ALLOC(struct prox_l2ball_data, pdata);
 	SET_TYPEID(prox_l2ball_data, pdata);
 
-	pdata->center = (const float*)center;
+	pdata->center = (float*)center;
 	pdata->eps = eps;
 	pdata->size = md_calc_size(N, dims) * 2;
+
+#ifdef USE_CUDA
+	pdata->gpu_center = NULL;
+#endif
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_l2ball_apply, prox_l2ball_del);
 }
