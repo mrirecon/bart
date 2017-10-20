@@ -1,4 +1,4 @@
-/* Copyright 2014-2016. The Regents of the University of California.
+/* Copyright 2014-2017. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -42,6 +42,8 @@ struct opt_reg_s {
 extern _Bool opt_reg_init(struct opt_reg_s* ropts);
 
 extern void opt_reg_configure(unsigned int N, const long img_dims[__VLA(N)], struct opt_reg_s* ropts, const struct operator_p_s* thresh_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, _Bool randshift, _Bool use_gpu);
+
+extern void opt_reg_free(struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS]);
 
 extern _Bool opt_reg(void* ptr, char c, const char* optarg);
 

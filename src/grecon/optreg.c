@@ -1,4 +1,4 @@
-/* Copyright 2015-2016. The Regents of the University of California.
+/* Copyright 2015-2017. The Regents of the University of California.
  * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -6,7 +6,7 @@
  * Authors:
  * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015-2016 Frank Ong <frankong@berkeley.edu>
- * 2015-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2015-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
  */
 
@@ -18,6 +18,7 @@
 
 #include "num/multind.h"
 #include "num/iovec.h"
+#include "num/ops.h"
 
 #include "iter/prox.h"
 #include "iter/thresh.h"
@@ -469,3 +470,15 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 	}
 }
 
+
+void opt_reg_free(struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS])
+{
+	int nr_penalties = ropts->r;
+
+	for (int nr = 0; nr < nr_penalties; nr++) {
+
+		operator_p_free(prox_ops[nr]);
+		linop_free(trafos[nr]);
+
+	}
+}
