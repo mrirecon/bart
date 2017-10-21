@@ -103,8 +103,8 @@ and other processing steps (16s) on a multi-GPU system.
 		<ul>
 		<li>support for Linux, Mac OS X, and Windows (using WSL)</li>
 		<li>multi-dimensional operations on arrays</li>
-		<li>fast non-uniform Fourier Transform (nuFFT)</br>
-		<li>multi-dimensional (divergence-free) wavelet transform</br>
+		<li>fast non-uniform Fourier Transform (nuFFT and convolution-based method)</li>
+		<li>multi-dimensional (divergence-free) wavelet transform</li>
 		<li>parallel computation on multiple cores and with <strong>Graphical Processing Units (GPU)</strong></li>
 		</ul>
 	</li>
@@ -112,8 +112,10 @@ and other processing steps (16s) on a multi-GPU system.
 		<ul>
 		<li>Conjugate Gradients (CG)</li>
 		<li>(Fast) Iterative Soft-Thresholding Algorithm (ISTA and FISTA)</li>
+		<li>Normalized iterative hard thresholding (NIHT)</li>
 		<li><strong>Alternating Direction Method of Multipliers (ADMM)</strong></li>
 		<li>Iteratively Regularized Gauss-Newton Method (IRGNM)</li>
+		<li>
 		</ul>
 	</li>
 	<li>calibration methods for parallel MRI:
@@ -127,8 +129,7 @@ and other processing steps (16s) on a multi-GPU system.
 		<ul>
 		<li>iterative parallel imaging reconstruction: POCSENSE, SENSE</li>
 		<li><strong>compressed sensing and parallel imaging</strong></li>
-		<li>non-linear inverse reconstruction: NLINV (blind multi-channel deconvolution)</li>
-		<li>calibration-less parallel imaging: SAKE (structured low-rank matrix completion)</li>
+		<li>calibration-less parallel imaging: NLINV and SAKE</li>
 		</ul>
 	</li>
 	<li>regularization (in arbitrary dimensions):
