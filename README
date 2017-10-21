@@ -167,22 +167,27 @@ build the ISMRM raw data import tool:
 
     .           main directory / built software tools
     Makefile    Makefile
-    matlab/		Matlab helper scripts
-    python/		Python helper functions
-    doc/		documentation
-    src/		source code
+    matlab/	Matlab helper scripts
+    python/	Python helper functions
+    doc/	documentation
+    rules/	more built-related files
+    scripts/	various helper scripts and examples
+    src/	source code
     src/calib 	source code for sensitivity calibration
     src/sense	source code for SENSE or ESPIRiT reconstruction
     src/noir	source code for nonlinear inversion
     src/sake	source code for SAKE reconstruction
-    src/wavelet2	source code for wavelets
-    src/wavelet3	source code for new wavelets (experimental)
-    src/num		base library with numerical functions
+    src/wavelet	source code for wavelets
+    src/num	base library with numerical functions
     src/iter	iterative algorithms
     src/linops	library of linear operators
     src/misc	miscellaneous (e.g. I/O)
     src/ismrm	support for ISMRM raw data format
-    lib/		built software libraries
+    src/simu	source code for simulation
+    src/noncart	source code for non-uniform FFT
+    tests/	system tests
+    utests/	unit tests
+    lib/	built software libraries
 
 
 
