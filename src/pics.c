@@ -105,6 +105,7 @@ int main_pics(int argc, char* argv[])
 	const char* image_start_file = NULL;
 	bool warm_start = false;
 
+	bool dynamic_rho = false;
 	bool hogwild = false;
 	bool fast = false;
 	float admm_rho = iter_admm_defaults.rho;
@@ -131,6 +132,7 @@ int main_pics(int argc, char* argv[])
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
+		OPT_SET('D', &dynamic_rho, "(dynamic_rho)"),
 		OPT_SET('F', &fast, "(fast)"),
 		OPT_STRING('T', &image_truth_file, "file", "(truth file)"),
 		OPT_STRING('W', &image_start_file, "<img>", "Warm start with <img>"),
@@ -215,6 +217,9 @@ int main_pics(int argc, char* argv[])
 
 	if (hogwild)
 		debug_printf(DP_INFO, "Hogwild stepsize\n");
+
+	if (dynamic_rho)
+		debug_printf(DP_INFO, "ADMM Dynamic stepsize\n");
 
 	if (im_truth)
 		debug_printf(DP_INFO, "Compare to truth\n");
@@ -526,7 +531,7 @@ int main_pics(int argc, char* argv[])
 			mmconf.rho = admm_rho;
 			mmconf.hogwild = hogwild;
 			mmconf.fast = fast;
-			//		mmconf.dynamic_rho = true;
+			mmconf.dynamic_rho = dynamic_rho;
 			mmconf.ABSTOL = 0.;
 			mmconf.RELTOL = 0.;
 

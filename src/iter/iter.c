@@ -106,7 +106,7 @@ const struct iter_admm_conf iter_admm_defaults = {
 	.alpha = 1.6,
 
 	.tau = 2.,
-	.mu = 100,
+	.mu = 3,
 };
 
 
