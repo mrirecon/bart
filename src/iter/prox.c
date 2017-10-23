@@ -275,7 +275,7 @@ const struct operator_p_s* prox_l2norm_create(unsigned int N, const long dims[N]
  * Data for computing prox_l2ball_fun: 
  * Proximal function for f(z) = Ind{ || y - z ||_2 < eps }
  *
- * @param center y
+ * @param y y
  * @param eps
  * @param size size of z
  */
@@ -283,12 +283,12 @@ struct prox_l2ball_data {
 
 	INTERFACE(operator_data_t);
 
-	float* center;
+	float* y;
 	float eps;
 
 	long size;
 #ifdef USE_CUDA
-	const float* gpu_center;
+	const float* gpu_y;
 #endif
 };
 
@@ -296,24 +296,25 @@ static DEF_TYPEID(prox_l2ball_data);
 
 
 #ifdef USE_CUDA
-static const float* get_center(const struct prox_l2ball_data* data, bool gpu)
+static const float* get_y(const struct prox_l2ball_data* data, bool gpu)
 {
-	const float* center = data->center;
+	const float* y = data->y;
 
 	if (gpu) {
 
-		if (NULL == data->gpu_center)
-			((struct prox_l2ball_data*)data)->gpu_center = md_gpu_move(1, MD_DIMS(data->size), data->center, FL_SIZE);
+		if (NULL == data->gpu_y)
+			((struct prox_l2ball_data*)data)->gpu_y = md_gpu_move(1, MD_DIMS(data->size), data->y, FL_SIZE);
 
-		center = data->gpu_center;
+		y = data->gpu_y;
 	}
 
-	return center;
+	return y;
 }
 #endif
 
 /**
  * Proximal function for f(z) = Ind{ || y - z ||_2 < eps }
+ * Solution is y + (x - y) * q, where q = eps / norm(x - y) if norm(x - y) > eps, 1 o.w.
  * 
  * @param prox_data should be of type prox_l2ball_data
  * @param mu proximal penalty
@@ -326,13 +327,13 @@ static void prox_l2ball_fun(const operator_data_t* prox_data, float mu, float* z
 	struct prox_l2ball_data* pdata = CAST_DOWN(prox_l2ball_data, prox_data);
 
 #ifdef USE_CUDA
-	const float* center = get_center(pdata, cuda_ondevice(x_plus_u));
+	const float* y = get_y(pdata, cuda_ondevice(x_plus_u));
 #else
-	const float* center = pdata->center;
+	const float* y = pdata->y;
 #endif
 
-	if (NULL != center)
-		md_sub(1, MD_DIMS(pdata->size), z, x_plus_u, center);
+	if (NULL != y)
+		md_sub(1, MD_DIMS(pdata->size), z, x_plus_u, y);
 	else
 		md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
 
@@ -341,8 +342,8 @@ static void prox_l2ball_fun(const operator_data_t* prox_data, float mu, float* z
 	if (q1 > pdata->eps)
 		md_smul(1, MD_DIMS(pdata->size), z, z, pdata->eps / q1);
 
-	if (NULL != center)
-		md_add(1, MD_DIMS(pdata->size), z, z, center);
+	if (NULL != y)
+		md_add(1, MD_DIMS(pdata->size), z, z, y);
 }
 
 static void prox_l2ball_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
@@ -354,24 +355,24 @@ static void prox_l2ball_del(const operator_data_t* _data)
 {
 	struct prox_l2ball_data* data = CAST_DOWN(prox_l2ball_data, _data);
 #ifdef USE_CUDA
-	if (NULL != data->gpu_center) {
-		md_free((void*)data->gpu_center);
+	if (NULL != data->gpu_y) {
+		md_free((void*)data->gpu_y);
 	}
 #endif
 	xfree(data);
 }
 
-const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N], float eps, const complex float* center)
+const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N], float eps, const complex float* y)
 {
 	PTR_ALLOC(struct prox_l2ball_data, pdata);
 	SET_TYPEID(prox_l2ball_data, pdata);
 
-	pdata->center = (float*)center;
+	pdata->y = (float*)y;
 	pdata->eps = eps;
 	pdata->size = md_calc_size(N, dims) * 2;
 
 #ifdef USE_CUDA
-	pdata->gpu_center = NULL;
+	pdata->gpu_y = NULL;
 #endif
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_l2ball_apply, prox_l2ball_del);
