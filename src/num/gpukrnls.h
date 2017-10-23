@@ -1,4 +1,4 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -11,6 +11,7 @@ extern void cuda_float2double(long size, double* dst, const float* src);
 extern void cuda_double2float(long size, float* dst, const double* src);
 extern void cuda_sxpay(long size, float* y, float alpha, const float* src);
 extern void cuda_xpay(long N, float beta, float* dst, const float* src);
+extern void cuda_axpbz(long N, float* dst, const float a, const float* x, const float b, const float* z);
 extern void cuda_smul(long N, float alpha, float* dst, const float* src);
 extern void cuda_mul(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_div(long N, float* dst, const float* src1, const float* src2);

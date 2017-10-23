@@ -1,10 +1,10 @@
-/* Copyright 2013-2015. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2012-03-24 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2015,2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
  * 
  * This file defines basic operations on vectors of floats/complex floats
@@ -110,6 +110,22 @@ __global__ void kern_xpay(int N, float beta, float* dst, const float* src)
 extern "C" void cuda_xpay(long N, float beta, float* dst, const float* src)
 {
 	kern_xpay<<<gridsize(N), blocksize(N)>>>(N, beta, dst, src);
+}
+
+
+__global__ void kern_axpbz(int N, float* dst, const float a1, const float* src1, const float a2, const float* src2)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = a1 * src1[i] + a2 * src2[i];
+}
+
+
+extern "C" void cuda_axpbz(long N, float* dst, const float a1, const float* src1, const float a2, const float* src2)
+{
+	kern_axpbz<<<gridsize(N), blocksize(N)>>>(N, dst, a1, src1, a2, src2);
 }
 
 
