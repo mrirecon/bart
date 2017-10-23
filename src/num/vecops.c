@@ -1,4 +1,4 @@
-/* Copyright 2013-2015. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
@@ -7,7 +7,7 @@
  * Authors:
  * 2011-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
@@ -145,25 +145,29 @@ static double zl1norm(long N, const complex float* vec)
 	return res;
 }
 
+
+static void axpbz(long N, float* dst, const float a1, const float* src1, const float a2, const float* src2)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = a1 * src1[i]  + a2 * src2[i];
+}
+
 static void axpy(long N, float* dst, float alpha, const float* src)
 {
-	if (0. != alpha)
-	for (long i = 0; i < N; i++)
-		dst[i] += alpha * src[i];
-//		dst[i] = fmaf(alpha, src[i], dst[i]);
+	axpbz(N, dst, 1., dst, alpha, src);
+	//dst[i] = fmaf(alpha, src[i], dst[i]);
 }
 
 static void xpay(long N, float beta, float* dst, const float* src)
 {
-	for (long i = 0; i < N; i++)
-		dst[i] = dst[i] * beta + src[i];
-//		dst[i] = fmaf(beta, dst[i], src[i]);
+	axpbz(N, dst, beta, dst, 1., src);
+	//dst[i] = fmaf(beta, dst[i], src[i]);
 }
+
 
 static void smul(long N, float alpha, float* dst, const float* src)
 {
-	for (long i = 0; i < N; i++)
-		dst[i] = alpha * src[i];
+	axpbz(N, dst, 0., NULL, alpha, src);
 	//dst[i] = fmaf(alpha, src[i], 0.f);
 }
 
@@ -593,6 +597,7 @@ struct vec_iter_s {
 	void (*smul)(long N, float alpha, float* a, const float* x);
 	void (*xpay)(long N, float alpha, float* a, const float* x);
 	void (*axpy)(long N, float* a, float alpha, const float* x);
+	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
 	void (*nzsupport)(long N, float* out, const float* in);
 };
 
@@ -608,6 +613,7 @@ const struct vec_iter_s cpu_iter_ops = {
 	.norm = norm,
 	.axpy = axpy,
 	.xpay = xpay,
+	.axpbz = axpbz,
 	.smul = smul,
 	.add = add,
 	.sub = sub,

@@ -1,4 +1,4 @@
-/* Copyright 2013-2015. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2014. Joseph Y Cheng.
  * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
@@ -7,7 +7,7 @@
  * Authors: 
  * 2012-2016	Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 	Joseph Y Cheng <jycheng@stanford.edu>
- * 2015		Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2015,2017		Jon Tamir <jtamir@eecs.berkeley.edu>
  *
  * 
  * CUDA support functions. The file exports gpu_ops of type struct vec_ops
@@ -383,6 +383,7 @@ struct vec_iter_s {
 	void (*smul)(long N, float alpha, float* a, const float* x);
 	void (*xpay)(long N, float alpha, float* a, const float* x);
 	void (*axpy)(long N, float* a, float alpha, const float* x);
+	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
 };
 
 extern const struct vec_iter_s gpu_iter_ops;
@@ -396,6 +397,7 @@ const struct vec_iter_s gpu_iter_ops = {
 	.norm = cuda_norm,
 	.axpy = cuda_saxpy,
 	.xpay = cuda_xpay,
+	.axpbz = cuda_axpbz,
 	.smul = cuda_smul,
 	.add = cuda_add,
 	.sub = cuda_sub,
