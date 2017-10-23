@@ -1,4 +1,4 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -6,7 +6,7 @@
  * Authors:
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013-2014 Frank Ong <frankong@berkeley.edu>
- * 2013-2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2013-2014,2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
  *
  *
@@ -25,6 +25,9 @@
  *
  * Beck A, Teboulle M. A fast iterative shrinkage-thresholding algorithm for
  * linear inverse problems. SIAM Journal on Imaging Sciences 2.1 2009; 183-202.
+ *
+ * Chambolle A, Pock, T. A First-Order Primal-Dual Algorithm for Convex Problems
+ * with Applications to Imaging. J. Math. Imaging Vis. 2011; 40, 120-145.
  *
  */
 
@@ -556,3 +559,127 @@ double power(unsigned int maxiter,
 	return s;
 }
 
+
+
+
+/**
+ * Chambolle Pock First Order Primal Dual algorithm. Solves min_x F(Ax) + G(x)
+ *
+ * @param maxiter maximum number of iterations
+ * @param epsilon stop criterion
+ * @param tau primal step size
+ * @param sigma dual step size
+ * @param decay decay rate
+ * @param theta convex combination rate
+ * @param N size of input, x
+ * @param M size of transformed input, Ax
+ * @param vops vector ops definition
+ * @param op_forw forward operator, A
+ * @param op_adj adjoint operator, AH
+ * @param prox1 proximal function of F, e.g. prox_l2ball
+ * @param prox2 proximal function of G, e.g. prox_wavelet_thresh
+ * @param x initial estimate
+ * @param monitor callback function
+ */
+void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
+	long N, long M,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op_forw,
+	struct iter_op_s op_adj,
+	struct iter_op_p_s prox1,
+	struct iter_op_p_s prox2,
+	float* x,
+	struct iter_monitor_s* monitor)
+{
+	float* x_avg = vops->allocate(N);
+	float* x_old = vops->allocate(N);
+	float* x_new = vops->allocate(N);
+
+	float* u_old = vops->allocate(M);
+	float* u = vops->allocate(M);
+	float* u_new = vops->allocate(M);
+
+	vops->copy(N, x_old, x);
+	vops->copy(N, x_new, x);
+	vops->copy(N, x_avg, x);
+
+	vops->clear(M, u);
+	vops->clear(M, u_new);
+	vops->clear(M, u_old);
+
+
+
+	for (unsigned int i = 0; i < maxiter; i++) {
+
+		float lambda = (float)pow(decay, i);
+
+		/* update u
+		 * u0 = u
+		 * p = u + sigma * A(x)
+		 * u = p - sigma * prox1(p / sigma, 1 / sigma)
+		 * u = lambda * u + (1 - lambda) * u0
+		 */
+
+		iter_op_call(op_forw, u_old, x_avg);
+		vops->axpy(M, u_old, 1. / sigma, u); // (u + sigma * A(x)) / sigma
+		iter_op_p_call(prox1, 1. / sigma, u_new, u_old);
+		vops->axpbz(M, u_new, -1. * sigma, u_new, sigma, u_old);
+		vops->copy(M, u_old, u);
+		vops->axpbz(M, u, lambda, u_new, 1. - lambda, u_old);
+
+		/* update x
+		 * x0 = x
+		 * q = x0 - tau * AH(u)
+		 * x = prox2(q, tau)
+		 * x = lambda * x + (1 - lambda * x0)
+		 */
+		vops->copy(N, x_old, x);
+		iter_op_call(op_adj, x_new, u);
+		vops->axpy(N, x, -1. * tau, x_new);
+		iter_op_p_call(prox2, tau, x_new, x);
+		vops->axpbz(N, x, lambda, x_new, 1. - lambda, x_old);
+
+		/* update x_avg
+		 * a_avg = x + theta * (x - x0)
+		 */
+		vops->axpbz(N, x_avg, 1 + theta, x, -1. * theta, x_old);
+
+		// residual
+		vops->sub(N, x_old, x, x_old);
+		vops->sub(M, u_old, u, u_old);
+
+		float res1 = vops->norm(N, x_old) / sigma;
+		float res2 = vops->norm(M, u_old) / tau;
+
+		iter_monitor(monitor, vops, x);
+
+		debug_printf(DP_DEBUG3, "#It %03d: %f %f  \n", i, res1, res2);
+
+		if (epsilon > (res1 + res2))
+			break;
+
+#if 0 // buggy
+		if (res1 < 100 * res2) {
+
+			sigma /= 2;
+			tau *= 2;
+		}
+		else if (res2 > 100 * res1) {
+
+			sigma *= 2;
+			tau /= 2;
+		}
+#endif
+	}
+
+	debug_printf(DP_DEBUG3, "\n");
+
+	vops->del(x_avg);
+	vops->del(x_old);
+	vops->del(x_new);
+
+	vops->del(u_old);
+	vops->del(u);
+	vops->del(u_new);
+
+}

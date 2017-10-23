@@ -1,4 +1,4 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
@@ -6,7 +6,7 @@
  *
  * Authors: 
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014	Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014, 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
@@ -180,6 +180,54 @@ void iter2_fista(iter_conf* _conf,
 
 cleanup:
 	;
+}
+
+
+/* Chambolle Pock Primal Dual algorithm. Solves G(x) + F(Ax)
+ * Assumes that G is in prox_ops[0], F is in prox_ops[1], A is in ops[1]
+ */
+void iter2_chambolle_pock(iter_conf* _conf,
+		const struct operator_s* normaleq_op,
+		unsigned int D,
+		const struct operator_p_s* prox_ops[D],
+		const struct linop_s* ops[D],
+		const float* biases[D],
+		const struct operator_p_s* xupdate_op,
+		long size, float* image, const float* image_adj,
+		struct iter_monitor_s* monitor)
+{
+
+	assert(D == 2);
+	assert(NULL == biases);
+	assert(NULL == normaleq_op);
+
+	UNUSED(xupdate_op);
+	UNUSED(image_adj);
+
+	struct iter_chambolle_pock_conf* conf = CAST_DOWN(iter_chambolle_pock_conf, _conf);
+
+	const struct iovec_s* iv = linop_domain(ops[1]);
+	const struct iovec_s* ov = linop_codomain(ops[1]);
+
+	assert((long)md_calc_size(iv->N, iv->dims) * 2 == size);
+
+	// FIXME: sensible way to check for corrupt data?
+#if 0
+	float eps = md_norm(1, MD_DIMS(size), image_adj);
+
+	if (checkeps(eps))
+		goto cleanup;
+#else
+	float eps = 1.;
+#endif
+
+
+	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau, conf->sigma, conf->theta, conf->decay, 2 * md_calc_size(iv->N, iv->dims), 2 * md_calc_size(ov->N, ov->dims), select_vecops(image),
+			OPERATOR2ITOP(ops[1]->forward), OPERATOR2ITOP(ops[1]->adjoint), OPERATOR_P2ITOP(prox_ops[1]), OPERATOR_P2ITOP(prox_ops[0]), 
+			image, monitor);
+
+	//cleanup:
+	//;
 }
 
 

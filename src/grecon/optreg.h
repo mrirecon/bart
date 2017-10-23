@@ -14,7 +14,7 @@
 struct operator_p_s;
 struct linop_s;
 
-enum algo_t { CG, IST, FISTA, ADMM, NIHT };
+enum algo_t { CG, IST, FISTA, ADMM, NIHT, PRIDU };
 
 struct reg_s {
 
