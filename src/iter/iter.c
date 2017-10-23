@@ -1,11 +1,11 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012, 2014 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2014	Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014, 2017	Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
@@ -39,6 +39,7 @@ DEF_TYPEID(iter_conjgrad_conf);
 DEF_TYPEID(iter_landweber_conf);
 DEF_TYPEID(iter_ist_conf);
 DEF_TYPEID(iter_fista_conf);
+DEF_TYPEID(iter_chambolle_pock_conf);
 DEF_TYPEID(iter_pocs_conf);
 DEF_TYPEID(iter_admm_conf);
 DEF_TYPEID(iter_niht_conf);
@@ -125,6 +126,19 @@ const struct iter_niht_conf iter_niht_defaults = {
 	.maxiter = 50,
 	.tol = 1e-8,
 	.do_warmstart = false,
+};
+
+const struct iter_chambolle_pock_conf iter_chambolle_pock_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID(iter_chambolle_pock_conf),
+
+	.maxiter = 50,
+	.tol = 1e-8,
+	.theta = 1.,
+	.tau = 1.,
+	.sigma = 1.,
+	.decay = 1.,
+	.fast = false,
 };
 
 typedef void (*thresh_fun_t)(void* data, float lambda, float* dst, const float* src);

@@ -1,4 +1,4 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -79,6 +79,20 @@ struct iter_fista_conf {
 extern DEF_TYPEID(iter_fista_conf);
 
 
+struct iter_chambolle_pock_conf {
+
+	INTERFACE(iter_conf);
+
+	unsigned int maxiter;
+	float tau;
+	float sigma;
+	float theta;
+	float decay;
+	float tol;
+	bool fast;
+};
+
+extern DEF_TYPEID(iter_chambolle_pock_conf);
 
 struct iter_admm_conf {
 
@@ -135,6 +149,7 @@ extern const struct iter_fista_conf iter_fista_defaults;
 extern const struct iter_admm_conf iter_admm_defaults;
 extern const struct iter_pocs_conf iter_pocs_defaults;
 extern const struct iter_niht_conf iter_niht_defaults;
+extern const struct iter_chambolle_pock_conf iter_chambolle_pock_defaults;
 
 
 italgo_fun_f iter_conjgrad;
