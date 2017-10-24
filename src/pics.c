@@ -127,6 +127,8 @@ int main_pics(int argc, char* argv[])
 	float admm_rho = iter_admm_defaults.rho;
 	unsigned int admm_maxitercg = iter_admm_defaults.maxitercg;
 
+	unsigned int gpun = 0;
+
 	struct opt_reg_s ropts;
 	opt_reg_init(&ropts);
 
@@ -143,6 +145,7 @@ int main_pics(int argc, char* argv[])
 		OPT_STRING('t', &traj_file, "file", "k-space trajectory"),
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('g', &conf.gpu, "use GPU"),
+		OPT_UINT('G', &gpun, "gpun", "use GPU device gpun"),
 		OPT_STRING('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "select IST"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
@@ -226,7 +229,10 @@ int main_pics(int argc, char* argv[])
 	assert(1 == ksp_dims[MAPS_DIM]);
 
 
-	(conf.gpu ? num_init_gpu : num_init)();
+	if (conf.gpu)
+		num_init_gpu_device(gpun);
+	else
+		num_init();
 
 	// print options
 
