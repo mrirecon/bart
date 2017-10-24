@@ -70,8 +70,10 @@ tests/test-pics-bpwavl1: scale fft noise fmac ones pics nrmse $(TESTS_OUT)/shepp
 	$(TOOLDIR)/fft -u 7 shepp.ra ksp1.ra						;\
 	$(TOOLDIR)/noise -s 1 -n 1 ksp1.ra ksp2.ra					;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
-	$(TOOLDIR)/pics -P 128 -w1. -RW:3:0:1. -i50 -u 2 ksp2.ra o.ra reco.ra		;\
+	$(TOOLDIR)/pics -a -P 128 -w1. -RW:3:0:1. -i50 ksp2.ra o.ra reco.ra		;\
+	$(TOOLDIR)/pics -m -P 128 -w1. -RW:3:0:1. -i50 -u 2 ksp2.ra o.ra reco2.ra	;\
 	$(TOOLDIR)/nrmse -t 0.08 shepp.ra reco.ra					;\
+	$(TOOLDIR)/nrmse -t 0.08 shepp.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

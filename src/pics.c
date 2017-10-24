@@ -168,7 +168,8 @@ int main_pics(int argc, char* argv[])
 		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
-		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction")
+		OPT_SELECT('a', enum algo_t, &ropts.algo, PRIDU, "select Primal Dual"),
+		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -483,11 +484,14 @@ int main_pics(int argc, char* argv[])
 	struct iter_ist_conf isconf = iter_ist_defaults;
 	struct iter_admm_conf mmconf = iter_admm_defaults;
 	struct iter_niht_conf ihconf = iter_niht_defaults;
+	struct iter_chambolle_pock_conf pdconf = iter_chambolle_pock_defaults;
 
 	if ((CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
 		algo = FISTA;
 
-	if (nr_penalties > 1)
+	if (conf.bpsense)
+		assert(ADMM == algo || PRIDU == algo);
+	else if (nr_penalties > 1)
 		algo = ADMM;
 
 	if ((IST == algo) || (FISTA == algo)) {
@@ -571,6 +575,26 @@ int main_pics(int argc, char* argv[])
 
 			break;
 
+		case PRIDU:
+
+			debug_printf(DP_INFO, "Primal Dual\n");
+
+			assert(2 == nr_penalties);
+
+			pdconf = iter_chambolle_pock_defaults;
+
+			pdconf.maxiter = maxiter;
+			pdconf.sigma = 1. * scaling;
+			pdconf.tau = 1. / pdconf.sigma;
+			pdconf.theta = 1;
+			pdconf.decay = (hogwild ? .95 : 1);
+			pdconf.tol = 1E-4;
+
+			italgo = iter2_chambolle_pock;
+			iconf = CAST_UP(&pdconf);
+
+			break;
+
 		case FISTA:
 
 			debug_printf(DP_INFO, "FISTA\n");
@@ -603,7 +627,7 @@ int main_pics(int argc, char* argv[])
 			assert(0);
 	}
 
-	bool trafos_cond = ((ADMM == algo) || ((NIHT == algo) && (regs[0].xform == NIHTWAV)));
+	bool trafos_cond = ((PRIDU == algo) || (ADMM == algo) || ((NIHT == algo) && (regs[0].xform == NIHTWAV)));
 	
 	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
 				pat1_dims, (NULL != traj_file) ? NULL : (conf.bpsense ? NULL : pattern1),
