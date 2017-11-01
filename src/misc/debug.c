@@ -19,7 +19,9 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
+#ifndef __CYGWIN__
 #include <execinfo.h>
+#endif
 
 #include "num/multind.h"
 
@@ -123,11 +125,16 @@ void debug_printf(int level, const char* fmt, ...)
 
 void debug_backtrace(size_t n)
 {
+#ifndef __CYGWIN__
 	void* ptrs[n + 1];
 	size_t l = backtrace(ptrs, n + 1);
 
 	if (l > 1)
 		backtrace_symbols_fd(ptrs + 1, l - 1, STDERR_FILENO);
+#else
+	UNUSED(n);
+	debug_printf(DP_WARN, "no backtrace on cygwin.");
+#endif
 }
 
 
