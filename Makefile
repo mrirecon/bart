@@ -56,6 +56,11 @@ ifeq ($(UNAME),Cygwin)
 	NOLAPACKE ?= 1
 endif
 
+ifeq ($(UNAME),CYGWIN_NET-10.0)
+	BUILDTYPE = Cygwin
+	NOLAPACKE ?= 1
+endif
+
 
 
 
