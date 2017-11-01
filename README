@@ -103,7 +103,7 @@ The recommended way to use BART on Windows is with the Windows Subsystem for
 Linux (WSL) which is available for Windows 10.
 
 
-Older versions of BART (until 0.3.01) also work with Cygwin:
+BART should also work with Cygwin:
 
 https://www.cygwin.com/
 
@@ -118,8 +118,8 @@ Install Cygwin and select the following packages:
 Then use the cygwin shell to compile BART as described below.
 
 
-An alternative to using the Windows Subsystem for Linux or
-Cygwin is a virtual machine with Linux.
+An alternative to using the Windows Subsystem for Linux or Cygwin
+is a virtual machine with Linux installed.
 
 
 
