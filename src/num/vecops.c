@@ -149,7 +149,7 @@ static double zl1norm(long N, const complex float* vec)
 static void axpbz(long N, float* dst, const float a1, const float* src1, const float a2, const float* src2)
 {
 	for (long i = 0; i < N; i++)
-		dst[i] = a1 * src1[i]  + a2 * src2[i];
+		dst[i] = a1 * src1[i] + a2 * src2[i];
 }
 
 static void axpy(long N, float* dst, float alpha, const float* src)
@@ -167,7 +167,7 @@ static void xpay(long N, float beta, float* dst, const float* src)
 
 static void smul(long N, float alpha, float* dst, const float* src)
 {
-	axpbz(N, dst, 0., NULL, alpha, src);
+	axpbz(N, dst, 0., src, alpha, src);
 	//dst[i] = fmaf(alpha, src[i], 0.f);
 }
 
