@@ -101,7 +101,7 @@ and other processing steps (16s) on a multi-GPU system.
 	<ul>
 	<li>basic features:
 		<ul>
-		<li>support for Linux, Mac OS X, and Windows (using WSL)</li>
+		<li>runs on Linux, Mac OS X, and Windows (using WSL or Cygwin)</li>
 		<li>multi-dimensional operations on arrays</li>
 		<li>fast non-uniform Fourier Transform (nuFFT and convolution-based method)</li>
 		<li>multi-dimensional (divergence-free) wavelet transform</li>
@@ -115,13 +115,16 @@ and other processing steps (16s) on a multi-GPU system.
 		<li>Normalized iterative hard thresholding (NIHT)</li>
 		<li><strong>Alternating Direction Method of Multipliers (ADMM)</strong></li>
 		<li>Iteratively Regularized Gauss-Newton Method (IRGNM)</li>
+		<li>Chambolle-Pock primal-dual algorithm</li>
 		</ul>
 	</li>
-	<li>calibration methods for parallel MRI:
+	<li>calibration methods:
 		<ul>
-		<li>direct calibration from k-space center</li>
-		<li>Walsh's method</li>
+		<li>direct calibration of coil sensitivities from k-space center</li>
+		<li>Walsh's method for calibration of coil sensitivities</li>
 		<li><strong>ESPIRiT</strong></li>
+		<li>(geometric) channel compression and whitening</li>
+		<li>estimation of gradient delays for radial MRI</li>
 		</ul>
 	</li>
 	<li>reconstruction methods for MRI:
