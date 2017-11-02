@@ -31,7 +31,7 @@ static const char help_str[] = "Compute variance along selected dimensions speci
 
 int main_var(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 3, usage_str, help_str);
+	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 
 	num_init();
 

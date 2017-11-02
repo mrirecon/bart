@@ -35,7 +35,7 @@ static const char help_str[] = "Extracts a slice from {position} along {dimensio
 
 int main_slice(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 4, usage_str, help_str);
+	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 
 	num_init();
 

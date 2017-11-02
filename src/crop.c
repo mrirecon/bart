@@ -29,7 +29,7 @@ static const char help_str[] = "Extracts a sub-array corresponding to the centra
 
 int main_crop(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 4, usage_str, help_str);
+	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 
 	num_init();
 

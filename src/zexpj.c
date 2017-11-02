@@ -31,7 +31,7 @@ static const char help_str[] = "Complex exponential of array, exp(1j * <input>).
 
 int main_zexpj(int argc, char* argv[argc])
 {
-	mini_cmdline(argc, argv, 2, usage_str, help_str);
+	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 
 	num_init();
 

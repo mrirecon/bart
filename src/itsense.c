@@ -157,7 +157,7 @@ static const char help_str[] = "A simplified implementation of iterative sense r
 
 int main_itsense(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 5, usage_str, help_str);
+	mini_cmdline(&argc, argv, 5, usage_str, help_str);
 
 	struct sense_data data;
 	SET_TYPEID(sense_data, &data);

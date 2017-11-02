@@ -29,7 +29,7 @@ static const char help_str[] = "Flatten array to one dimension.\n";
 
 int main_flatten(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 2, usage_str, help_str);
+	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 
 	num_init();
 

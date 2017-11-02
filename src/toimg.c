@@ -121,7 +121,7 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 
 int main_toimg(int argc, char* argv[])
 {
-	bool dicom = mini_cmdline_bool(argc, argv, 'd', 2, usage_str, help_str);
+	bool dicom = mini_cmdline_bool(&argc, argv, 'd', 2, usage_str, help_str);
 
 	num_init();
 

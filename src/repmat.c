@@ -28,7 +28,7 @@ static const char help_str[] = "Repeat input array multiple times along a certai
 
 int main_repmat(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 4, usage_str, help_str);
+	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 
 	num_init();
 

@@ -98,7 +98,7 @@ static const char help_str[] = "Estimate gradient delays from radial data.";
 
 int main_estdelay(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 2, usage_str, help_str);
+	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 
 	long tdims[DIMS];
 	const complex float* traj = load_cfl(argv[1], DIMS, tdims);

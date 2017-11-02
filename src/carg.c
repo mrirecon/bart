@@ -32,7 +32,7 @@ static const char help_str[] = "Argument (phase angle).\n";
 
 int main_carg(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 2, usage_str, help_str);
+	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 
 	num_init();
 
