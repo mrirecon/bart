@@ -5,10 +5,15 @@
 
 extern float median_float(int N, const float ar[N]);
 extern complex float median_complex_float(int N, const complex float ar[N]);
+extern void weiszfeld(int iter, int N, int D, float out[D], const float in[N][D]);
 
 
 extern void md_medianz2(int D, int M, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr);
 extern void md_medianz(int D, int M, const long dim[D], complex float* optr, const complex float* iptr);
+
+extern void md_geometric_medianz2(int D, int M, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr);
+extern void md_geometric_medianz(int D, int M, const long dim[D], complex float* optr, const complex float* iptr);
+
 
 extern void linear_phase(unsigned int N, const long dims[__VLA(N)], const float pos[__VLA(N)], _Complex float* out);
 extern void centered_gradient(unsigned int N, const long dims[__VLA(N)], const _Complex float grad[__VLA(N)], _Complex float* out);
