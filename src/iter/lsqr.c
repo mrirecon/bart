@@ -91,8 +91,8 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 		assert(0 < num_funs);
 		iov = linop_domain(prox_linops[0]);
 		data->model_op = NULL;
-	}
-	else {
+
+	} else {
 
 		iov = operator_domain(model_op->forward);
 		data->model_op = linop_clone(model_op);
@@ -109,6 +109,10 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 
 		normaleq_op = operator_create(iov->N, iov->dims, iov->N, iov->dims, CAST_UP(PTR_PASS(data)), normaleq_l2_apply, normaleq_del);
 		adjoint = operator_ref(model_op->adjoint);
+
+	} else {
+
+		PTR_FREE(data);
 	}
 
 	if (NULL != precond_op) {
