@@ -19,14 +19,14 @@
  * (but should be good enough for our purposes...)
  */
 
-static float coeff_0to8[] = {
+static const float coeff_0to8[] = {
 
 	0.143432, 0.144372, 0.147260, 0.152300, 0.159883,
 	0.170661, 0.185731, 0.207002, 0.238081, 0.286336,
 	0.366540, 0.501252, 0.699580, 0.906853, 1.000000,
 };
 
-static float coeff_8toinf[] = {
+static const float coeff_8toinf[] = {
 
 	0.405687, 0.405664, 0.405601, 0.405494, 0.405349,
 	0.405164, 0.404945, 0.404692, 0.404413, 0.404107,

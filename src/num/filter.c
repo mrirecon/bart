@@ -43,7 +43,7 @@ static void sort_complex_floats(int N, complex float ar[N])
 	qsort((void*)ar, N, sizeof(complex float), cmp_complex_float);
 }
 
-float median_float(int N, float ar[N])
+float median_float(int N, const float ar[N])
 {
 	float tmp[N];
 	memcpy(tmp, ar, N * sizeof(float));
@@ -51,7 +51,7 @@ float median_float(int N, float ar[N])
 	return (1 == N % 2) ? tmp[(N - 1) / 2] : ((tmp[(N - 1) / 2 + 0] + tmp[(N - 1) / 2 + 1]) / 2.);
 }
 
-complex float median_complex_float(int N, complex float ar[N])
+complex float median_complex_float(int N, const complex float ar[N])
 {
 	complex float tmp[N];
 	memcpy(tmp, ar, N * sizeof(complex float));
@@ -78,11 +78,11 @@ static void nary_medianz(void* _data, void* ptr[])
 	*(complex float*)ptr[0] = median_complex_float(data->length, tmp);
 }
 
-void md_medianz2(int D, int M, long dim[D], long ostr[D], complex float* optr, long istr[D], complex float* iptr)
+void md_medianz2(int D, int M, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
 	assert(M < D);
 	const long* nstr[2] = { ostr, istr };
-	void* nptr[2] = { optr, iptr };
+	void* nptr[2] = { optr, (void*)iptr };
 
 	struct median_s data = { dim[M], istr[M] };
 
@@ -95,7 +95,7 @@ void md_medianz2(int D, int M, long dim[D], long ostr[D], complex float* optr, l
 	md_nary(2, D, dim2, nstr, nptr, (void*)&data, &nary_medianz);
 }
 
-void md_medianz(int D, int M, long dim[D], complex float* optr, complex float* iptr)
+void md_medianz(int D, int M, const long dim[D], complex float* optr, const complex float* iptr)
 {
 	assert(M < D);
 
