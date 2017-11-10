@@ -1,4 +1,9 @@
 
+
+#if __GNUC__ >= 5
+#warning "Don't include pcaa.h for newer compilers!"
+#endif
+
 /* Macro wrappers for functions to work around a limitation of
  * the C language standard: A pointer to an array cannot passed
  * as a pointer to a constant array without adding an explicit cast.
