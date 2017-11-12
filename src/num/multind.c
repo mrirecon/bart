@@ -1,11 +1,13 @@
 /* Copyright 2013-2015 The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2017. Intel Corporation.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013      Frank Ong <frankong@berkeley.edu>
+ * 2017      Michael J. Anderson <michael.j.anderson@intel.com>
  *
  * Generic operations on multi-dimensional arrays. Most functions
  * come in two flavours:
@@ -85,27 +87,58 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 		return;
 	}
 
-	int b = ffsl(flags & -flags) - 1;
-	assert(MD_IS_SET(flags, b));
-
-	flags = MD_CLEAR(flags, b);
-
 	long dimc[D];
-	md_select_dims(D, ~MD_BIT(b), dimc, dim);
+	md_select_dims(D, ~flags, dimc, dim);
 
-	debug_printf(DP_DEBUG4, "Parallelize: %d\n", dim[b]);
+	// Collect all parallel dimensions
+	int nparallel = 0;
+	int parallel_b[D];
 
-	// FIXME: this probably doesn't nest
-	// (maybe collect all parallelizable dims into one giant loop?)
+	long parallel_dim[D];
+	long total_iterations = 1L;
+
+	while (0 != flags) {
+
+		int b = ffsl(flags & -flags) - 1;
+
+		assert(MD_IS_SET(flags, b));
+
+		flags = MD_CLEAR(flags, b);
+
+		debug_printf(DP_DEBUG4, "Parallelize: %d\n", dim[b]);
+
+		parallel_b[nparallel] = b;
+		parallel_dim[nparallel] = dim[b];
+
+		total_iterations *= parallel_dim[nparallel];
+		nparallel++;
+	}
+
+
 	#pragma omp parallel for
-	for (long i = 0; i < dim[b]; i++) {
+	for (long i = 0; i < total_iterations; i++) {
+
+		// Recover place in parallel iteration space
+		long iter_i[D];
+		long ii = i;
+
+		for (int p = nparallel - 1; p >= 0; p--) {
+
+			iter_i[p] = ii % parallel_dim[p];
+			ii /= parallel_dim[p];
+		}
 
 		void* moving_ptr[C];
 
-		for (unsigned int j = 0; j < C; j++)
-			moving_ptr[j] = ptr[j] + i * str[j][b];
+		for (unsigned int j = 0; j < C; j++) {
 
-		md_parallel_nary(C, D, dimc, flags, str, moving_ptr, data, fun);
+			moving_ptr[j] = ptr[j];
+
+			for(int p = 0; p < nparallel; p++)
+				moving_ptr[j] += iter_i[p] * str[j][parallel_b[p]];
+		}
+
+		md_nary(C, D, dimc, str, moving_ptr, data, fun);
 	}
 }
 

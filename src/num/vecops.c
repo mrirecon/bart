@@ -1,12 +1,14 @@
-/* Copyright 2013-2015. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2011-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
  * This file defines basic operations on vectors of floats/complex floats
@@ -23,7 +25,12 @@
 #include <complex.h>
 #include <stdbool.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "vecops.h"
 
@@ -138,25 +145,29 @@ static double zl1norm(long N, const complex float* vec)
 	return res;
 }
 
+
+static void axpbz(long N, float* dst, const float a1, const float* src1, const float a2, const float* src2)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = a1 * src1[i] + a2 * src2[i];
+}
+
 static void axpy(long N, float* dst, float alpha, const float* src)
 {
-	if (0. != alpha)
-	for (long i = 0; i < N; i++)
-		dst[i] += alpha * src[i];
-//		dst[i] = fmaf(alpha, src[i], dst[i]);
+	axpbz(N, dst, 1., dst, alpha, src);
+	//dst[i] = fmaf(alpha, src[i], dst[i]);
 }
 
 static void xpay(long N, float beta, float* dst, const float* src)
 {
-	for (long i = 0; i < N; i++)
-		dst[i] = dst[i] * beta + src[i];
-//		dst[i] = fmaf(beta, dst[i], src[i]);
+	axpbz(N, dst, beta, dst, 1., src);
+	//dst[i] = fmaf(beta, dst[i], src[i]);
 }
+
 
 static void smul(long N, float alpha, float* dst, const float* src)
 {
-	for (long i = 0; i < N; i++)
-		dst[i] = alpha * src[i];
+	axpbz(N, dst, 0., src, alpha, src);
 	//dst[i] = fmaf(alpha, src[i], 0.f);
 }
 
@@ -398,6 +409,69 @@ static void softthresh(long N, float lambda, float* d, const float* x)
 	}
 }
 
+/**
+ * Return the absolute value of the kth largest array element
+ * To be used for hard thresholding
+ *
+ * @param N number of elements
+ * @param k the sorted element index to pick
+ * @param ar the input complex array
+ *
+ * @returns the absolute value of the kth largest array element.
+ *
+ */
+
+static float klargest_complex_partsort( unsigned int N,  unsigned int k, const complex float* ar)
+{
+	assert(k <= N);
+	
+	complex float* tmp =  (complex float*)xmalloc(N * sizeof(complex float));
+	copy(2 * N, (float*)tmp, (float*)ar);
+	
+	float thr = quickselect_complex(tmp, N, k);
+
+	xfree(tmp);
+
+	return thr;
+}
+
+/**
+ * Hard thesholding, y = HT(x, thr).
+ * computes the thresholded vector, y = x * (abs(x) >= t(kmax))
+ * 
+ * @param N number of elements
+ * @param k threshold parameter, index of kth largest element of sorted x 
+ * @param d pointer to destination, y
+ * @param x pointer to input
+ */
+
+static void zhardthresh(long N,  unsigned int k, complex float* d, const complex float* x)
+{
+	
+	float thr = klargest_complex_partsort(N, k, x);
+   
+	for (long i = 0; i < N; i++) {
+
+		float norm = cabsf(x[i]);
+		d[i] = (norm > thr) ? x[i] : 0.;
+	}
+}
+
+/* Apply the non-zero support of one vector to another, complex numbers */ 
+static void nzsupport(long N, float* out, const float* in)
+{
+#ifdef _OPENMP
+	int par = 0;
+
+	par = omp_in_parallel();
+#endif
+	
+#pragma omp parallel for if (par == 0)	// if not already in a parallel region
+	for (long i = 0; i < N; ++i){
+		if (in[i] == 0.)
+			out[i] = 0.; 
+	}
+}
 
 static void swap(long N, float* a, float* b)
 {
@@ -499,6 +573,8 @@ const struct vec_ops cpu_ops = {
 	.zsoftthresh_half = zsoftthresh_half,
 	.softthresh = softthresh,
 	.softthresh_half = softthresh_half,
+	.zhardthresh = zhardthresh,
+	.nzsupport = nzsupport,
 };
 
 
@@ -521,6 +597,8 @@ struct vec_iter_s {
 	void (*smul)(long N, float alpha, float* a, const float* x);
 	void (*xpay)(long N, float alpha, float* a, const float* x);
 	void (*axpy)(long N, float* a, float alpha, const float* x);
+	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
+	void (*nzsupport)(long N, float* out, const float* in);
 };
 
 
@@ -535,10 +613,12 @@ const struct vec_iter_s cpu_iter_ops = {
 	.norm = norm,
 	.axpy = axpy,
 	.xpay = xpay,
+	.axpbz = axpbz,
 	.smul = smul,
 	.add = add,
 	.sub = sub,
 	.swap = swap,
+	.nzsupport = nzsupport,
 };
 
 

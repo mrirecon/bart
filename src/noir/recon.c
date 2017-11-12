@@ -42,7 +42,7 @@ struct data {
 	struct noir_data* ndata;
 };
 
-DEF_TYPEID(data);
+static DEF_TYPEID(data);
 
 
 static void frw(iter_op_data* ptr, float* _dst, const float* _src)
@@ -72,6 +72,7 @@ const struct noir_conf_s noir_defaults = {
 	.iter = 8,
 	.rvc = false,
 	.usegpu = false,
+	.noncart = false,
 	.alpha = 1.,
 	.redu = 2.,
 };
@@ -84,10 +85,12 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	long data_dims[DIMS];
 	long img1_dims[DIMS];
 
-	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|CSHIFT_FLAG, imgs_dims, dims);
-	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, coil_dims, dims);
-	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG, data_dims, dims);
-	md_select_dims(DIMS, FFT_FLAGS, img1_dims, dims);
+	unsigned int fft_flags = FFT_FLAGS|SLICE_FLAG;
+
+	md_select_dims(DIMS, fft_flags|MAPS_FLAG|CSHIFT_FLAG, imgs_dims, dims);
+	md_select_dims(DIMS, fft_flags|COIL_FLAG|MAPS_FLAG, coil_dims, dims);
+	md_select_dims(DIMS, fft_flags|COIL_FLAG, data_dims, dims);
+	md_select_dims(DIMS, fft_flags, img1_dims, dims);
 
 	long skip = md_calc_size(DIMS, imgs_dims);
 	long size = skip + md_calc_size(DIMS, coil_dims);
@@ -95,7 +98,6 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	long d1[1] = { size };
 	complex float* img = md_alloc_sameplace(1, d1, CFL_SIZE, kspace);
-	complex float* imgH = md_alloc_sameplace(1, d1, CFL_SIZE, kspace);
 
 
 	md_clear(DIMS, imgs_dims, img, CFL_SIZE);
@@ -105,16 +107,21 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	md_clear(DIMS, coil_dims, img + skip, CFL_SIZE);
 
-	md_clear(DIMS, imgs_dims, imgH, CFL_SIZE);
-	md_clear(DIMS, coil_dims, imgH + skip, CFL_SIZE);
+	struct noir_model_conf_s mconf = noir_model_conf_defaults;
+	mconf.rvc = conf->rvc;
+	mconf.use_gpu = conf->usegpu;
+	mconf.noncart = conf->noncart;
+	mconf.fft_flags = fft_flags;
 
-	struct noir_data* ndata = noir_init(dims, mask, psf, conf->rvc, conf->usegpu);
+	struct noir_data* ndata = noir_init(dims, mask, psf, &mconf);
 	struct data data = { { &TYPEID(data) }, ndata };
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 	irgnm_conf.iter = conf->iter;
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.redu = conf->redu;
+	irgnm_conf.cgtol = 0.1f;
+	irgnm_conf.nlinv_legacy = true;
 
 	iter3_irgnm(CAST_UP(&irgnm_conf),
 			(struct iter_op_s){ frw, CAST_UP(&data) },
@@ -129,12 +136,12 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 		assert(!conf->usegpu);
 		noir_forw_coils(ndata, sensout, img + skip);
+		fftmod(DIMS, coil_dims, fft_flags, sensout, sensout);
 	}
 
 	noir_free(ndata);
 
 	md_free(img);
-	md_free(imgH);
 }
 
 

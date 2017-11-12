@@ -1,11 +1,13 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014	Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014, 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #include <complex.h>
@@ -30,6 +32,7 @@
 #include "iter/prox.h"
 #include "iter/admm.h"
 #include "iter/vec.h"
+#include "iter/niht.h"
 
 #include "iter2.h"
 
@@ -49,6 +52,8 @@ void operator_p_iter(iter_op_data* _data, float rho, float* dst, const float* sr
 
 
 
+DEF_TYPEID(iter_op_op);
+DEF_TYPEID(iter_op_p_op);
 DEF_TYPEID(iter2_call_s);
 
 
@@ -178,6 +183,54 @@ cleanup:
 }
 
 
+/* Chambolle Pock Primal Dual algorithm. Solves G(x) + F(Ax)
+ * Assumes that G is in prox_ops[0], F is in prox_ops[1], A is in ops[1]
+ */
+void iter2_chambolle_pock(iter_conf* _conf,
+		const struct operator_s* normaleq_op,
+		unsigned int D,
+		const struct operator_p_s* prox_ops[D],
+		const struct linop_s* ops[D],
+		const float* biases[D],
+		const struct operator_p_s* xupdate_op,
+		long size, float* image, const float* image_adj,
+		struct iter_monitor_s* monitor)
+{
+
+	assert(D == 2);
+	assert(NULL == biases);
+	assert(NULL == normaleq_op);
+
+	UNUSED(xupdate_op);
+	UNUSED(image_adj);
+
+	struct iter_chambolle_pock_conf* conf = CAST_DOWN(iter_chambolle_pock_conf, _conf);
+
+	const struct iovec_s* iv = linop_domain(ops[1]);
+	const struct iovec_s* ov = linop_codomain(ops[1]);
+
+	assert((long)md_calc_size(iv->N, iv->dims) * 2 == size);
+
+	// FIXME: sensible way to check for corrupt data?
+#if 0
+	float eps = md_norm(1, MD_DIMS(size), image_adj);
+
+	if (checkeps(eps))
+		goto cleanup;
+#else
+	float eps = 1.;
+#endif
+
+
+	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau, conf->sigma, conf->theta, conf->decay, 2 * md_calc_size(iv->N, iv->dims), 2 * md_calc_size(ov->N, ov->dims), select_vecops(image),
+			OPERATOR2ITOP(ops[1]->forward), OPERATOR2ITOP(ops[1]->adjoint), OPERATOR_P2ITOP(prox_ops[1]), OPERATOR_P2ITOP(prox_ops[0]), 
+			image, monitor);
+
+	//cleanup:
+	//;
+}
+
+
 
 void iter2_admm(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
@@ -279,6 +332,52 @@ void iter2_pocs(iter_conf* _conf,
 }
 
 
+void iter2_niht(iter_conf* _conf,
+		const struct operator_s* normaleq_op,
+		unsigned int D,
+		const struct operator_p_s* prox_ops[D],
+		const struct linop_s* ops[D],
+		const float* biases[D],
+		const struct operator_p_s* xupdate_op,
+		long size, float* image, const float* image_adj,
+		struct iter_monitor_s* monitor)
+{
+	UNUSED(xupdate_op);
+	UNUSED(biases);
+
+	assert(D == 1);
+	
+	struct iter_niht_conf* conf = CAST_DOWN(iter_niht_conf, _conf);
+  
+	struct niht_conf_s niht_conf = {
+    
+		.maxiter = conf->maxiter,
+		.N = size,
+		.trans = 0,
+		.do_warmstart = conf->do_warmstart,
+	};
+
+	struct niht_transop trans;
+	if (NULL != ops){
+		trans.forward = OPERATOR2ITOP(ops[0]->forward);
+		trans.adjoint = OPERATOR2ITOP(ops[0]->adjoint);
+		trans.N = 2 * md_calc_size(linop_codomain(ops[0])->N, linop_codomain(ops[0])->dims);
+		niht_conf.trans = 1;
+	}		
+	
+	float eps = md_norm(1, MD_DIMS(size), image_adj);
+
+	if (checkeps(eps))
+		goto cleanup;
+  
+	niht_conf.epsilon = eps * conf->tol;
+
+	niht(&niht_conf, &trans, select_vecops(image_adj), OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+
+cleanup:
+	;
+}
+  
 void iter2_call_iter(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,

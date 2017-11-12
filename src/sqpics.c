@@ -42,7 +42,7 @@
 #include "sense/model.h"
 #include "sense/optcom.h"
 
-#include "wavelet3/wavthresh.h"
+#include "wavelet/wavthresh.h"
 
 #include "lowrank/lrthresh.h"
 
@@ -504,9 +504,6 @@ int main_sqpics(int argc, char* argv[])
 		case L1WAV:
 			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
 
-			if (0 != regs[nr].jflags)
-				debug_printf(DP_WARN, "joint l1-wavelet thresholding not currently supported.\n");
-
 			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
 			minsize[0] = MIN(img_dims[0], 16);
 			minsize[1] = MIN(img_dims[1], 16);
@@ -524,7 +521,7 @@ int main_sqpics(int argc, char* argv[])
 			}
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			thresh_ops[nr] = prox_wavelet3_thresh_create(DIMS, img_dims, wflags, minsize, regs[nr].lambda, randshift);
+			thresh_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].lambda, randshift);
 			break;
 
 		case TV:

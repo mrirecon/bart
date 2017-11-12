@@ -25,7 +25,7 @@ static const char help_str[] = "Transpose dimensions {dim1} and {dim2}.\n";
 
 int main_transpose(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 4, usage_str, help_str);
+	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 
 	num_init();
 

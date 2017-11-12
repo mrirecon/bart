@@ -1,5 +1,6 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -18,6 +19,7 @@ struct vec_ops {
 	double (*zl1norm)(long N, const _Complex float* vec);
 
 	void (*axpy)(long N, float* a, float alpha, const float* x);
+	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
 
 	void (*pow)(long N, float* dst, const float* src1, const float* src2);
 	void (*sqrt)(long N, float* dst, const float* src);
@@ -58,6 +60,8 @@ struct vec_ops {
 	void (*softthresh_half)(long N, float lambda,  float* dst, const float* src);
 	void (*softthresh)(long N, float lambda,  float* dst, const float* src);
 //	void (*swap)(long N, float* a, float* b);
+	void (*zhardthresh)(long N,  unsigned int k, _Complex float* d, const _Complex float* x);
+	void (*nzsupport)(long N, float* out, const float* in);
 };
 
 

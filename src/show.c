@@ -58,7 +58,7 @@ ok:
 	for (long i = 0; i < T; i++) {
 
 		printf(fmt, crealf(data[i]), cimagf(data[i]));
-		printf((0 == (i + 1) % dims[l]) ? "\n" : sep);
+		printf("%s", (0 == (i + 1) % dims[l]) ? "\n" : sep);
 	}
 }
 

@@ -1,10 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
+ * Copyright 2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013 Frank Ong <uecker@eecs.berkeley.edu>
- * 2013-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 /*
@@ -24,6 +25,7 @@
  *   (symmetric, periodic, zero)
  */
 
+#include <stdio.h>
 #include <complex.h>
 #include <assert.h>
 #include <limits.h>
@@ -38,7 +40,7 @@
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
-#include "wavelet3/wl3-cuda.h"
+#include "wavelet/wl3-cuda.h"
 #endif
 
 #include "wavelet.h"
@@ -124,6 +126,8 @@ void fwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N]
 	debug_printf(DP_DEBUG4, "fwt1: %d/%d\n", d, N);
 	debug_print_dims(DP_DEBUG4, N, dims);
 
+	assert(dims[d] >= 2);
+
 	long odims[N];
 	md_copy_dims(N, odims, dims);
 	odims[d] = bandsize(dims[d], flen);
@@ -177,6 +181,8 @@ void iwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N]
 {
 	debug_printf(DP_DEBUG4, "ifwt1: %d/%d\n", d, N);
 	debug_print_dims(DP_DEBUG4, N, dims);
+
+	assert(dims[d] >= 2);
 
 	long idims[N];
 	md_copy_dims(N, idims, dims);
@@ -402,115 +408,287 @@ long wavelet_coeffs(unsigned int N, unsigned int flags, const long dims[N], cons
 
 	assert(levels > 0);
 
-	return wavelet_coeffs_r(levels - 1, N, flags, dims, min, flen);	
+	return wavelet_coeffs_r(levels - 1, N, flags, dims, min, flen);
 }
 
 
 
-void fwt(unsigned int N, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
-{
-	if (0 == flags) {
 
-		if (out != in)
-			md_copy2(N, dims, istr, out, istr, in, CFL_SIZE);
+
+void wavelet_thresh(unsigned int N, float lambda, unsigned int flags, unsigned int jflags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+{
+	assert(0 == (flags & jflags));
+
+	long wdims[N];
+	wavelet_coeffs2(N, flags, wdims, dims, minsize, flen);
+
+	long wstr[N];
+	md_calc_strides(N, wstr, wdims, CFL_SIZE);
+
+	complex float* tmp = md_alloc_sameplace(N, wdims, CFL_SIZE, out);
+
+	long str[N];
+	md_calc_strides(N, str, dims, CFL_SIZE);
+
+	fwt2(N, flags, shifts, wdims, wstr, tmp, dims, str, in, minsize, flen, filter);
+
+	md_zsoftthresh(N, wdims, lambda, jflags, tmp, tmp);
+
+	iwt2(N, flags, shifts, dims, str, out, wdims, wstr, tmp, minsize, flen, filter);
+
+	md_free(tmp);
+}
+
+
+void wavelet_coeffs2(unsigned int N, unsigned int flags, long odims[N], const long dims[N], const long min[N], const long flen)
+{
+	md_select_dims(N, ~flags, odims, dims);
+
+	if (0 == flags)
+		return;
+
+	unsigned int levels = wavelet_num_levels(N, flags, dims, min, flen);
+
+	assert(levels > 0);
+
+	long wdims[N];
+	md_select_dims(N, flags, wdims, dims);	// remove unmodified dims
+
+	unsigned int b = ffs(flags) - 1;
+
+	odims[b] = wavelet_coeffs_r(levels - 1, N, flags, wdims, min, flen);
+}
+
+
+static bool wavelet_check_dims(unsigned int N, unsigned int flags, const long dims[N], const long minsize[N])
+{
+	for (unsigned int i = 0; i < N; i++)
+		if (MD_IS_SET(flags, i))
+			if ((minsize[i] <= 2) || (dims[i] < minsize[i]))
+				return false;
+
+	return true;
+}
+
+
+static void embed(unsigned int N, unsigned int flags, long ostr[N], const long dims[N], const long str[N])
+{
+	unsigned int b = ffs(flags) - 1;
+
+	long dims1[N];
+	md_select_dims(N, flags, dims1, dims);
+
+	md_calc_strides(N, ostr, dims1, str[b]);
+
+	for (unsigned int i = 0; i < N; i++)
+		if (!MD_IS_SET(flags, i))
+			ostr[i] = str[i];
+}
+
+
+void fwt2(unsigned int N, unsigned int flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+{
+	assert(wavelet_check_dims(N, flags, idims, minsize));
+
+	if (0 == flags) {	// note: recursion does *not* end here
+
+		assert(md_check_compat(N, 0u, odims, idims));
+
+		md_copy2(N, idims, ostr, out, istr, in, CFL_SIZE);
 
 		return;
 	}
 
-	unsigned long coeffs = wavelet_coeffs(N, flags, dims, minsize, flen);
+	// check output dimensions
+
+	long odims2[N];
+	wavelet_coeffs2(N, flags, odims2, idims, minsize, flen);
+
+	assert(md_check_compat(N, 0u, odims2, odims));
+
+	long wdims2[2 * N];
+	wavelet_dims(N, flags, wdims2, idims, flen);
+
+	// only consider transform dims...
+
+	long dims1[N];
+	md_select_dims(N, flags, dims1, idims);
 
 	long wdims[2 * N];
-	wavelet_dims(N, flags, wdims, dims, flen);
+	wavelet_dims(N, flags, wdims, dims1, flen);
+	long level_coeffs = md_calc_size(2 * N, wdims);
 
-	long ostr[2 * N];
-	md_calc_strides(2 * N, ostr, wdims, CFL_SIZE);
+	// ... which get embedded in dimension b
 
-	long offset = coeffs - md_calc_size(2 * N, wdims);
+	unsigned int b = ffs(flags) - 1;
 
-	debug_printf(DP_DEBUG4, "%d %ld %ld\n", flags, coeffs, offset);
+	long ostr2[2 * N];
+	md_calc_strides(2 * N, ostr2, wdims, ostr[b]);
+
+	// merge with original strides
+
+	for (unsigned int i = 0; i < N; i++)
+		if (!MD_IS_SET(flags, i))
+			ostr2[i] = ostr[i];
+
+	assert(odims[b] >= level_coeffs);
+
+	long offset = (odims[b] - level_coeffs) * (ostr[b] / CFL_SIZE);
+
+	long bands = md_calc_size(N, wdims + N);
+	long coeffs = md_calc_size(N, wdims + 0);
+
+	debug_printf(DP_DEBUG4, "fwt2: flags:%d lcoeffs:%ld coeffs:%ld (space:%ld) bands:%ld str:%ld off:%ld\n", flags, level_coeffs, coeffs, odims2[b], bands, ostr[b], offset / istr[b]);
+
+	// subtract coefficients in high band
+
+	odims2[b] -= (bands - 1) * coeffs;
+
+	assert(odims2[b] > 0);
 
 	long shifts0[N];
 	for (unsigned int i = 0; i < N; i++)
 		shifts0[i] = 0;
 
-	fwtN(N, flags, shifts, dims, ostr, out + offset, istr, in, flen, filter);
-	fwt(N, wavelet_filter_flags(N, flags, wdims, minsize), shifts0, wdims, out, ostr, out + offset, minsize, flen, filter);
+	unsigned int flags2 = wavelet_filter_flags(N, flags, wdims, minsize);
+	assert((0 == offset) == (0u == flags2));
+
+	fwtN(N, flags, shifts, idims, ostr2, out + offset, istr, in, flen, filter);
+
+	if (0 != flags2) {
+
+		long odims3[N];
+		wavelet_coeffs2(N, flags2, odims3, wdims2, minsize, flen);
+
+		long ostr3[N];
+		embed(N, flags, ostr3, odims3, ostr);
+
+		fwt2(N, flags2, shifts0, odims3, ostr3, out, wdims2, ostr2, out + offset, minsize, flen, filter);
+	}
 }
 
 
-void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long dims[N], const long ostr[N], complex float* out, const complex float* in, const long minsize[N], const long flen, const float filter[2][2][flen])
+void iwt2(unsigned int N, unsigned int flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], const long flen, const float filter[2][2][flen])
 {
-	if (0 == flags) {
+	assert(wavelet_check_dims(N, flags, odims, minsize));
 
-		if (out != in)
-			md_copy2(N, dims, ostr, out, ostr, in, CFL_SIZE);
+	if (0 == flags) {	// note: recursion does *not* end here
+
+		assert(md_check_compat(N, 0u, odims, idims));
+
+		md_copy2(N, idims, ostr, out, istr, in, CFL_SIZE);
 
 		return;
 	}
 
-	unsigned long coeffs = wavelet_coeffs(N, flags, dims, minsize, flen);
+	// check input dimensions
+
+	long idims2[N];
+	wavelet_coeffs2(N, flags, idims2, odims, minsize, flen);
+
+	assert(md_check_compat(N, 0u, idims2, idims));
+
+	long wdims2[2 * N];
+	wavelet_dims(N, flags, wdims2, odims, flen);
+
+	// only consider transform dims...
+
+	long dims1[N];
+	md_select_dims(N, flags, dims1, odims);
 
 	long wdims[2 * N];
-	wavelet_dims(N, flags, wdims, dims, flen);
+	wavelet_dims(N, flags, wdims, dims1, flen);
+	long level_coeffs = md_calc_size(2 * N, wdims);
 
-	long istr[2 * N];
-	md_calc_strides(2 * N, istr, wdims, CFL_SIZE);
+	// ... which get embedded in dimension b
 
-	long offset = coeffs - md_calc_size(2 * N, wdims);
+	unsigned int b = ffs(flags) - 1;
 
-	debug_printf(DP_DEBUG4, "%d %ld %ld\n", flags, coeffs, offset);
+	long istr2[2 * N];
+	md_calc_strides(2 * N, istr2, wdims, istr[b]);
 
-	complex float* tmp = md_alloc_sameplace(2 * N, wdims, CFL_SIZE, out);
+	// merge with original strides
 
-	md_copy(2 * N, wdims, tmp, in + offset, CFL_SIZE);
-
-	long shifts0[N];
 	for (unsigned int i = 0; i < N; i++)
-		shifts0[i] = 0;
+		if (!MD_IS_SET(flags, i))
+			istr2[i] = istr[i];
+
+	assert(idims[b] >= level_coeffs);
+
+	long offset = (idims[b] - level_coeffs) * (istr[b] / CFL_SIZE);
+
+	long bands = md_calc_size(N, wdims + N);
+	long coeffs = md_calc_size(N, wdims + 0);
+
+	// subtract coefficients in high band
+
+	idims2[b] -= (bands - 1) * coeffs;
+
+	assert(idims2[b] > 0);
+
+	debug_printf(DP_DEBUG4, "ifwt2: flags:%d lcoeffs:%ld coeffs:%ld (space:%ld) bands:%ld str:%ld off:%ld\n", flags, level_coeffs, coeffs, idims2[b], bands, istr[b], offset / ostr[b]);
 
 	// fix me we need temp storage
-	iwt(N, wavelet_filter_flags(N, flags, wdims, minsize), shifts0, wdims, istr, tmp, in, minsize, flen, filter);
-	iwtN(N, flags, shifts, dims, ostr, out, istr, tmp, flen, filter);
+	complex float* tmp = md_alloc_sameplace(2 * N, wdims2, CFL_SIZE, out);
+
+	long tstr[2 * N];
+	md_calc_strides(2 * N, tstr, wdims2, CFL_SIZE);
+
+	md_copy2(2 * N, wdims2, tstr, tmp, istr2, in + offset, CFL_SIZE);
+
+	long shifts0[N];
+	for (unsigned int i = 0; i < N; i++)
+		shifts0[i] = 0;
+
+	unsigned int flags2 = wavelet_filter_flags(N, flags, wdims, minsize);
+	assert((0 == offset) == (0u == flags2));
+
+	if (0u != flags2) {
+
+		long idims3[N];
+		wavelet_coeffs2(N, flags2, idims3, wdims2, minsize, flen);
+
+		long istr3[N];
+		embed(N, flags, istr3, idims3, istr);
+
+		iwt2(N, flags2, shifts0, wdims2, tstr, tmp, idims3, istr3, in, minsize, flen, filter);
+	}
+
+	iwtN(N, flags, shifts, odims, ostr, out, tstr, tmp, flen, filter);
 
 	md_free(tmp);
 }
 
 
-void wavelet3_thresh(unsigned int N, float lambda, unsigned int flags, const long shifts[N], const long dims[N], complex float* out, const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+
+void fwt(unsigned int N, unsigned int flags, const long shifts[N], const long odims[N], complex float* out, const long idims[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
-	unsigned long coeffs = wavelet_coeffs(N, flags, dims, minsize, flen);
+	fwt2(N, flags, shifts, odims, MD_STRIDES(N, odims, CFL_SIZE), out, idims, MD_STRIDES(N, idims, CFL_SIZE), in, minsize, flen, filter);
+}
 
-	long istr[N];
-	md_calc_strides(N, istr, dims, CFL_SIZE);
 
-	complex float* tmp = md_alloc_sameplace(1, MD_DIMS(coeffs), CFL_SIZE, out);
-
-	fwt(N, flags, shifts, dims, tmp, istr, in, minsize, flen, filter);
-	md_zsoftthresh(1, MD_DIMS(coeffs), lambda, 0u, tmp, tmp);
-	iwt(N, flags, shifts, dims, istr, out, tmp, minsize, flen, filter);
-
-	md_free(tmp);
+void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long odims[N], complex float* out, const long idims[N], const complex float* in, const long minsize[N], const long flen, const float filter[2][2][flen])
+{
+	iwt2(N, flags, shifts, odims, MD_STRIDES(N, odims, CFL_SIZE), out, idims, MD_STRIDES(N, idims, CFL_SIZE), in, minsize, flen, filter);
 }
 
 
 
-
-
-const float wavelet3_haar[2][2][2] = {
+const float wavelet_haar[2][2][2] = {
 	{ { +0.7071067811865475, +0.7071067811865475 },
 	  { -0.7071067811865475, +0.7071067811865475 }, },
 	{ { +0.7071067811865475, +0.7071067811865475 },
 	  { +0.7071067811865475, -0.7071067811865475 }, },
 };
 
-const float wavelet3_dau2[2][2][4] = {
+const float wavelet_dau2[2][2][4] = {
 	{ { -0.1294095225512603, +0.2241438680420134, +0.8365163037378077, +0.4829629131445341 },
 	  { -0.4829629131445341, +0.8365163037378077, -0.2241438680420134, -0.1294095225512603 }, },
 	{ { +0.4829629131445341, +0.8365163037378077, +0.2241438680420134, -0.1294095225512603 },
 	  { -0.1294095225512603, -0.2241438680420134, +0.8365163037378077, -0.4829629131445341 }, },
 };
 
-const float wavelet3_cdf44[2][2][10] = {
+const float wavelet_cdf44[2][2][10] = {
 	{ { +0.00000000000000000, +0.03782845550726404 , -0.023849465019556843, -0.11062440441843718 , +0.37740285561283066, 
 	    +0.85269867900889385, +0.37740285561283066 , -0.11062440441843718 , -0.023849465019556843, +0.03782845550726404 },
 	  { +0.00000000000000000, -0.064538882628697058, +0.040689417609164058, +0.41809227322161724 , -0.7884856164055829, 

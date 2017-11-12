@@ -1,3 +1,10 @@
+/* Copyright 2017. Martin Uecker
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ *
+ * Authors:
+ * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ */
 
 #include <complex.h>
 #include <stdlib.h>
@@ -23,7 +30,7 @@ static const char help_str[] = "Estimate sub-pixel shift.";
 
 int main_estshift(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 3, usage_str, help_str);
+	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 
 	unsigned int flags = atoi(argv[1]);
 

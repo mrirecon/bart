@@ -1,4 +1,4 @@
-/* Copyright 2013-2016. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -25,7 +25,7 @@ struct iter_op_op {
 	const struct operator_s* op;
 };
 
-DEF_TYPEID(iter_op_op);
+extern DEF_TYPEID(iter_op_op);
 
 struct iter_op_p_op {
 
@@ -33,7 +33,7 @@ struct iter_op_p_op {
 	const struct operator_p_s* op;
 };
 
-DEF_TYPEID(iter_op_p_op);
+extern DEF_TYPEID(iter_op_p_op);
 
 extern void operator_iter(iter_op_data* data, float* dst, const float* src);
 extern void operator_p_iter(iter_op_data* data, float rho, float* dst, const float* src);
@@ -66,8 +66,10 @@ typedef italgo_fun2_f* italgo_fun2_t;
 italgo_fun2_f iter2_conjgrad;
 italgo_fun2_f iter2_ist;
 italgo_fun2_f iter2_fista;
+italgo_fun2_f iter2_chambolle_pock;
 italgo_fun2_f iter2_admm;
 italgo_fun2_f iter2_pocs;
+italgo_fun2_f iter2_niht;
 
 
 // use with iter_call_s from iter.h as _conf

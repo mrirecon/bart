@@ -29,7 +29,7 @@ static const char help_str[] = "Scale array by {factor}. The scale factor can be
 
 int main_scale(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 3, usage_str, help_str);
+	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 
 	num_init();
 

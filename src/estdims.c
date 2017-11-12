@@ -29,7 +29,7 @@ static const char help_str[] = "Estimate image dimension from non-Cartesian traj
 
 int main_estdims(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 1, usage_str, help_str);
+	mini_cmdline(&argc, argv, 1, usage_str, help_str);
 
 	num_init();
 

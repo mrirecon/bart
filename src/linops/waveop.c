@@ -17,7 +17,7 @@
 
 #include "misc/misc.h"
 
-#include "wavelet3/wavelet.h"
+#include "wavelet/wavelet.h"
 
 #include "waveop.h"
 
@@ -27,12 +27,14 @@ struct wavelet_s {
 
 	unsigned int N;
 	unsigned int flags;
-	const long* dims;
+	const long* idims;
 	const long* istr;
+	const long* odims;
+	const long* ostr;
 	const long* minsize;
 };
 
-DEF_TYPEID(wavelet_s);
+static DEF_TYPEID(wavelet_s);
 
 static void wavelet_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
@@ -42,7 +44,7 @@ static void wavelet_forward(const linop_data_t* _data, complex float* dst, const
 	for (unsigned int i = 0; i < data->N; i++)
 		shifts[i] = 0;
 
-	fwt(data->N, data->flags, shifts, data->dims, dst, data->istr, src, data->minsize, 4, wavelet3_dau2);
+	fwt2(data->N, data->flags, shifts, data->odims, data->ostr, dst, data->idims, data->istr, src, data->minsize, 4, wavelet_dau2);
 }
 
 static void wavelet_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
@@ -53,21 +55,23 @@ static void wavelet_adjoint(const linop_data_t* _data, complex float* dst, const
 	for (unsigned int i = 0; i < data->N; i++)
 		shifts[i] = 0;
 
-	iwt(data->N, data->flags, shifts, data->dims, data->istr, dst, src, data->minsize, 4, wavelet3_dau2);
+	iwt2(data->N, data->flags, shifts, data->idims, data->istr, dst, data->odims, data->ostr, src, data->minsize, 4, wavelet_dau2);
 }
 
 static void wavelet_del(const linop_data_t* _data)
 {
 	const struct wavelet_s* data = CAST_DOWN(wavelet_s, _data);
 
-	xfree(data->dims);
+	xfree(data->odims);
+	xfree(data->ostr);
+	xfree(data->idims);
 	xfree(data->istr);
 	xfree(data->minsize);
 
 	xfree(data);
 }
 
-struct linop_s* linop_wavelet3_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], const long minsize[N])
+struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], const long minsize[N])
 {
 	PTR_ALLOC(struct wavelet_s, data);
 	SET_TYPEID(wavelet_s, data);
@@ -75,9 +79,9 @@ struct linop_s* linop_wavelet3_create(unsigned int N, unsigned int flags, const 
 	data->N = N;
 	data->flags = flags;
 
-	long (*ndims)[N] = TYPE_ALLOC(long[N]);
-	md_copy_dims(N, *ndims, dims);
-	data->dims = *ndims;
+	long (*idims)[N] = TYPE_ALLOC(long[N]);
+	md_copy_dims(N, *idims, dims);
+	data->idims = *idims;
 
 	long (*nistr)[N] = TYPE_ALLOC(long[N]);
 	md_copy_strides(N, *nistr, istr);
@@ -87,18 +91,17 @@ struct linop_s* linop_wavelet3_create(unsigned int N, unsigned int flags, const 
 	md_copy_dims(N, *nminsize, minsize);
 	data->minsize = *nminsize;
 
-	long odims[N];
-	md_singleton_dims(N, odims);
-//	md_select_dims(N, ~flags, odims, dims);
 
-	assert(1 == odims[0]);
+	long (*odims)[N] = TYPE_ALLOC(long[N]);
+	wavelet_coeffs2(N, flags, *odims, dims, minsize, 4);
+	data->odims = *odims;
 
-	odims[0] = wavelet_coeffs(N, flags, dims, minsize, 4);
+	long (*ostr)[N] = TYPE_ALLOC(long[N]);
+	md_calc_strides(N, *ostr, *odims, CFL_SIZE);
+	data->ostr = *ostr;
 
-	long ostr[N];
-	md_calc_strides(N, ostr, odims, CFL_SIZE);
 
-	return linop_create2(N, odims, ostr, N, dims, istr, CAST_UP(PTR_PASS(data)), wavelet_forward, wavelet_adjoint, NULL, NULL, wavelet_del);
+	return linop_create2(N, *odims, *ostr, N, dims, istr, CAST_UP(PTR_PASS(data)), wavelet_forward, wavelet_adjoint, NULL, NULL, wavelet_del);
 }
 
 

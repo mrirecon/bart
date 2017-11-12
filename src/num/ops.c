@@ -287,7 +287,7 @@ struct op_p_data_s {
 	operator_del_t del;
 };
 
-DEF_TYPEID(op_p_data_s);
+static DEF_TYPEID(op_p_data_s);
 
 static void op_p_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
@@ -383,7 +383,7 @@ struct identity_s {
 	const struct iovec_s* codomain;
 };
 
-DEF_TYPEID(identity_s);
+static DEF_TYPEID(identity_s);
 
 static void identity_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
@@ -435,7 +435,7 @@ struct operator_chain_s {
 	const struct operator_s* b;
 };
 
-DEF_TYPEID(operator_chain_s);
+static DEF_TYPEID(operator_chain_s);
 
 
 static void chain_apply(const operator_data_t* _data, unsigned int N, void* args[N])
@@ -530,7 +530,7 @@ struct operator_stack_s {
 	long src_offset;
 };
 
-DEF_TYPEID(operator_stack_s);
+static DEF_TYPEID(operator_stack_s);
 
 
 static void stack_apply(const operator_data_t* _data, unsigned int N, void* args[N])
@@ -678,7 +678,7 @@ struct op_bind_s {
 	void* ptr;
 };
 
-DEF_TYPEID(op_bind_s);
+static DEF_TYPEID(op_bind_s);
 
 static void op_bind_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
@@ -768,7 +768,7 @@ struct op_loop_s {
 	const struct operator_s* op;
 };
 
-DEF_TYPEID(op_loop_s);
+static DEF_TYPEID(op_loop_s);
 
 static void op_loop_del(const operator_data_t* _data)
 {
@@ -896,7 +896,7 @@ struct copy_data_s {
 	const long** strs;
 };
 
-DEF_TYPEID(copy_data_s);
+static DEF_TYPEID(copy_data_s);
 
 static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
@@ -989,7 +989,7 @@ struct gpu_data_s {
 	const struct operator_s* op;
 };
 
-DEF_TYPEID(gpu_data_s);
+static DEF_TYPEID(gpu_data_s);
 
 static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {

@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015-2016 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2015 Frank Ong <frankong@berkeley.edu>
  */
@@ -44,12 +44,18 @@ static void wthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 	md_singleton_dims(D, minsize);
 
 	long course_scale[3] = MD_INIT_ARRAY(3, 16);
-	md_min_dims(3, ~0u, minsize, dims, course_scale);
+	md_copy_dims(3, minsize, course_scale);
+
+	unsigned int wflags = 7; // FIXME
+
+	for (unsigned int i = 0; i < 3; i++)
+		if (dims[i] < minsize[i])
+			wflags = MD_CLEAR(wflags, i);
 
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
 
-	const struct linop_s* w = linop_wavelet3_create(D, 7, dims, strs, minsize);
+	const struct linop_s* w = linop_wavelet_create(D, wflags, dims, strs, minsize);
 	const struct operator_p_s* p = prox_unithresh_create(D, w, lambda, flags, false);
 
 	operator_p_apply(p, 1., D, dims, out, D, dims, in);

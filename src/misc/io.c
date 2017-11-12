@@ -1,10 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -135,7 +135,7 @@ int read_cfl_header(int fd, unsigned int n, long dimensions[n])
 		return -1;
 
 	int pos = 0;
-	int delta;
+	int delta = 0;
 	bool ok = false;
 
 	while (true) {
@@ -149,6 +149,9 @@ int read_cfl_header(int fd, unsigned int n, long dimensions[n])
 
 			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
 				return -1;
+
+			if (0 == delta)
+				goto out;
 
 			pos += delta;
 		}
@@ -190,6 +193,18 @@ int read_cfl_header(int fd, unsigned int n, long dimensions[n])
 
 				ok = true;
 			}
+
+		} else {
+
+			// skip this line
+
+			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
+				return -1;
+
+			if (0 == delta)
+				goto out;
+
+			pos += delta;
 		}
 	}
 
@@ -250,9 +265,12 @@ int read_coo(int fd, unsigned int n, long dimensions[n])
 		return -1;
 
 	int pos = 0;
-	int delta;
+	int delta = 0;
 
 	if (0 != sscanf(header + pos, "Type: float\n%n", &delta))
+		return -1;
+
+	if (0 == delta)
 		return -1;
 
 	pos += delta;
@@ -316,6 +334,8 @@ enum ra_types {
 };
 
 
+#define err_assert(x)	({ if (!(x)) { debug_printf(DP_ERROR, "%s", #x); return -1; } })
+
 
 int read_ra(int fd, unsigned int n, long dimensions[n])
 {
@@ -324,11 +344,11 @@ int read_ra(int fd, unsigned int n, long dimensions[n])
 	if (sizeof(header) != read(fd, &header, sizeof(header)))
 		return -1;
 
-	assert(RA_MAGIC_NUMBER == header.magic);
-	assert(!(header.flags & RA_FLAG_BIG_ENDIAN));
-	assert(RA_TYPE_COMPLEX == header.eltype);
-	assert(sizeof(complex float) == header.elbyte);
-	assert(header.ndims <= n);
+	err_assert(RA_MAGIC_NUMBER == header.magic);
+	err_assert(!(header.flags & RA_FLAG_BIG_ENDIAN));
+	err_assert(RA_TYPE_COMPLEX == header.eltype);
+	err_assert(sizeof(complex float) == header.elbyte);
+	err_assert(header.ndims <= n);
 
 	uint64_t dims[header.ndims];
 
@@ -340,7 +360,8 @@ int read_ra(int fd, unsigned int n, long dimensions[n])
 	for (unsigned int i = 0; i < header.ndims; i++)
 		dimensions[i] = dims[i];
 
-	assert(header.size == (uint64_t)md_calc_size(n, dimensions) * sizeof(complex float));
+	// this can overflow, but we check in mmio
+	err_assert(header.size == md_calc_size(n, dimensions) * sizeof(complex float));
 
 	return 0;
 }

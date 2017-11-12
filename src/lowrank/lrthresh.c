@@ -61,7 +61,7 @@ struct lrthresh_data_s {
 	long blkdims[MAX_LEV][DIMS];
 };
 
-DEF_TYPEID(lrthresh_data_s);
+static DEF_TYPEID(lrthresh_data_s);
 
 
 

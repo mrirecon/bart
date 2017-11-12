@@ -99,7 +99,11 @@ of gcc (4.7 seems to work) from MacPorts (http://www.macports.org/).
 
 ### 2.1.3. Windows
 
-You can use BART on Windows using Cygwin:
+The recommended way to use BART on Windows is with the Windows Subsystem for
+Linux (WSL) which is available for Windows 10.
+
+
+BART should also work with Cygwin:
 
 https://www.cygwin.com/
 
@@ -114,7 +118,8 @@ Install Cygwin and select the following packages:
 Then use the cygwin shell to compile BART as described below.
 
 
-(An alternative to using Cygwin is a virtual machine with Linux.)
+An alternative to using the Windows Subsystem for Linux or Cygwin
+is a virtual machine with Linux installed.
 
 
 
@@ -162,22 +167,27 @@ build the ISMRM raw data import tool:
 
     .           main directory / built software tools
     Makefile    Makefile
-    matlab/		Matlab helper scripts
-    python/		Python helper functions
-    doc/		documentation
-    src/		source code
+    matlab/	Matlab helper scripts
+    python/	Python helper functions
+    doc/	documentation
+    rules/	more built-related files
+    scripts/	various helper scripts and examples
+    src/	source code
     src/calib 	source code for sensitivity calibration
     src/sense	source code for SENSE or ESPIRiT reconstruction
     src/noir	source code for nonlinear inversion
     src/sake	source code for SAKE reconstruction
-    src/wavelet2	source code for wavelets
-    src/wavelet3	source code for new wavelets (experimental)
-    src/num		base library with numerical functions
+    src/wavelet	source code for wavelets
+    src/num	base library with numerical functions
     src/iter	iterative algorithms
     src/linops	library of linear operators
     src/misc	miscellaneous (e.g. I/O)
     src/ismrm	support for ISMRM raw data format
-    lib/		built software libraries
+    src/simu	source code for simulation
+    src/noncart	source code for non-uniform FFT
+    tests/	system tests
+    utests/	unit tests
+    lib/	built software libraries
 
 
 

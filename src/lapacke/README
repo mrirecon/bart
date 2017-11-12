@@ -1,0 +1,7 @@
+
+This is a small subset of LAPACKE needed for BART extracted from
+the Debian package of lapack with version 3.5.0-4. It is provided
+here as a workaround for systems without LAPACKE. Add the flag
+NOLAPACKE=1 to Makefile.local if LAPACKE is not available on the
+system.
+

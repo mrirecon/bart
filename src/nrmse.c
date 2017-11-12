@@ -67,7 +67,7 @@ int main_nrmse(int argc, char* argv[])
 
 		sc /= n * n;
 
-		debug_printf(DP_INFO, "Scaled by: %f+%fi\n", crealf(sc), cimagf(sc));
+		debug_printf(DP_INFO, "Scaled by: %f%+fi\n", crealf(sc), cimagf(sc));
 
 		md_zsmul(DIMS, ref_dims, ref, ref, sc);
 	}

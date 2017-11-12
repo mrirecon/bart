@@ -27,7 +27,7 @@ struct rvc_s {
 	const long* dims;
 };
 
-DEF_TYPEID(rvc_s);
+static DEF_TYPEID(rvc_s);
 
 
 static void rvc_apply(const linop_data_t* _data, complex float* dst, const complex float* src)

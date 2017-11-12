@@ -34,7 +34,7 @@ static const char help_str[] =
 
 int main_caldir(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 3, usage_str, help_str);
+	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 
 	long dims[DIMS];
 

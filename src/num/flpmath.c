@@ -1,5 +1,6 @@
 /* Copyright 2013-2015 The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -9,6 +10,7 @@
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2016 Siddharth Iyer <sid8795@gmail.com>
+ * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
  *
  * Operations on arrays of complex single-precision floating
@@ -327,6 +329,7 @@ static void nary_z2opd(struct nary_opt_data_s* data, void* ptr[])
 	(*(z2opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
 }
 
+__attribute__((unused))
 static void make_z2opd(size_t offset, unsigned int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
 {
 	size_t sizes[2] = { sizeof(complex double), sizeof(complex float) };
@@ -334,7 +337,6 @@ static void make_z2opd(size_t offset, unsigned int D, const long dim[D], const l
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, sizes, nary_z2opd, &offset);
 }
 
-void* unsued = make_z2opd;
 
 static void nary_2opd(struct nary_opt_data_s* data, void* ptr[])
 {
@@ -1051,7 +1053,7 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 
 	if ((3 == ND) && detect_matrix(dims, ostrs2, istrs2, mstrs2)) {
 
-		debug_printf(DP_DEBUG2, "matmul: matrix multiplication (1).\n");
+		debug_printf(DP_DEBUG4, "matmul: matrix multiplication (1).\n");
 #if 0
 		// num/linalg.h
 
@@ -1070,7 +1072,7 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 
 	if ((3 == ND) && detect_matrix(dims, ostrs2, mstrs2, istrs2)) {
 
-		debug_printf(DP_DEBUG2, "matmul: matrix multiplication (2).\n");
+		debug_printf(DP_DEBUG4, "matmul: matrix multiplication (2).\n");
 #if 0
 		// num/linalg.h
 
@@ -2413,14 +2415,13 @@ void md_rss(unsigned int D, const long dims[D], unsigned int flags, float* dst, 
 
 
 /**
- * Root of sum of squares along selected dimensions
+ * Sum of squares along selected dimensions
  *
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
  */
-void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
+void md_zss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
 {
-#if 1
 	long str1[D];
 	long str2[D];
 	long dims2[D];
@@ -2432,6 +2433,22 @@ void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex flo
 
 	md_clear(D, dims2, dst, CFL_SIZE);
 	md_zfmacc2(D, dims, str2, dst, str1, src, str1, src);
+}
+
+
+
+/**
+ * Root of sum of squares along selected dimensions
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
+ */
+void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
+{
+	long dims2[D];
+	md_select_dims(D, ~flags, dims2, dims);
+#if 1
+	md_zss(D, dims, flags, dst, src);
 
 #if 1
 	long dims2R[D + 1];
@@ -2446,6 +2463,96 @@ void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex flo
 	real_from_complex_dims(D, dimsR, dims);
 	md_rrss(D + 1, dimsR, (flags << 1), (float*)dst, (const float*)src);
 #endif
+}
+
+
+
+/**
+ * Compute variance or standard deviation along selected dimensions (with strides)
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for calculating var/std, i.e. the dimensions that will not stay
+ * @param variance -- true if computing variance, false if computing standard deviation
+ */
+static void md_zvarstd2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, bool variance)
+{
+	long odims[D];
+	long fdims[D];
+
+	md_select_dims(D, ~flags, odims, dims);
+	md_select_dims(D, flags, fdims, dims);
+
+	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, iptr);
+
+	md_zavg2(D, dims, flags, ostr, optr, istr, iptr);
+	md_zsub2(D, dims, istr, tmp, istr, iptr, ostr, optr);
+
+	double scale = variance ? md_calc_size(D, fdims) - 1. : sqrtf(md_calc_size(D, fdims) - 1.);
+	(variance ? md_zss : md_zrss)(D, dims, flags, optr, tmp);
+
+	md_zsmul2(D, odims, ostr, optr, ostr, optr, 1. / scale);
+
+	md_free(tmp);
+}
+
+
+
+/**
+ * Compute variance along selected dimensions (without strides)
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
+ */
+void md_zvar(unsigned int D, const long dims[D], unsigned int flags, complex float* optr, const complex float* iptr)
+{
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+
+	md_zvar2(D, dims, flags,
+			MD_STRIDES(D, odims, CFL_SIZE), optr,
+			MD_STRIDES(D, dims, CFL_SIZE), iptr);
+}
+
+
+/**
+ * Compute variance along selected dimensions (with strides)
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
+ */
+void md_zvar2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	md_zvarstd2(D, dims, flags, ostr, optr, istr, iptr, true);
+}
+
+
+
+/**
+ * Compute standard deviation along selected dimensions (without strides)
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for calculating standard deviation, i.e. the dimensions that will not stay
+ */
+void md_zstd(unsigned int D, const long dims[D], unsigned int flags, complex float* optr, const complex float* iptr)
+{
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+
+	md_zvarstd2(D, dims, flags,
+			MD_STRIDES(D, odims, CFL_SIZE), optr,
+			MD_STRIDES(D, dims, CFL_SIZE), iptr, false);
+}
+
+
+/**
+ * Compute standard deviation along selected dimensions (with strides)
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for calculating standard deviation, i.e. the dimensions that will not stay
+ */
+void md_zstd2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	md_zvarstd2(D, dims, flags, ostr, optr, istr, iptr, false);
 }
 
 
@@ -2807,8 +2914,6 @@ void md_zsoftthresh2(unsigned int D, const long dims[D], float lambda, unsigned 
 	md_free(tmp_norm);
 }
 
-
-
 /**
  * Soft thresholding using norm along arbitrary dimension (without strides)
  *
@@ -2831,7 +2936,86 @@ void md_zsoftthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 	md_zsoftthresh2(D, dims, lambda, flags, strs, optr, strs, iptr);
 }
 
+/**
+ * Hard Thresholding complex array (select k-largest elements)
+ *
+ * return HardThresh(ptr)
+ */
+static void nary_zhardthresh(struct nary_opt_data_s* data, void* ptr[])
+{
+	data->ops->zhardthresh(data->size, (*(unsigned int*)data->data_ptr), ptr[0], ptr[1]);
+}
 
+
+/**
+ * Hard thresholding (with strides)
+ *
+ * y = HT(x, k), selects k largest elements of x
+ * computes y = x * (abs(x) > t(k)), 
+ * k = threshold index of sorted x, t(k)= value of sorted x at k
+ *
+ * @param D number of dimensions
+ * @param dims dimensions of input/output
+ * @param k threshold (sorted) index
+ * @param flags jointly thresholded dimensions
+ * @param tmp_norm temporary array for joint operation
+ * @param ostrs destination strides
+ * @param optr destination -- thresholded values
+ * @param istrs source strides
+ * @param iptr source -- values to be thresholded
+ */
+void md_zhardthresh2(unsigned int D, const long dims[D], unsigned int k, unsigned int flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+{
+	if (0 == flags) {
+
+		optimized_twoop_oi(D, dims, ostrs, optr, istrs, iptr, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh, &k);
+		return;
+	}
+
+	long norm_dims[D];
+	long norm_strs[D];
+
+	md_select_dims(D, ~flags, norm_dims, dims);
+	md_calc_strides(D, norm_strs, norm_dims, CFL_SIZE);
+
+	md_zrss(D, dims, flags, tmp_norm, iptr);
+	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh, &k);
+
+	// TODO: change this operation for NIHT joint thresholding
+	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
+}
+
+
+/**
+ * Hard thresholding (without strides)
+ *
+ * y = HT(x, k), select k largest elements.
+ *
+ * @param D number of dimensions
+ * @param dims dimensions of input/output
+ * @param k threshold parameter
+ * @param flags jointly thresholded dimensions
+ * @param optr destination -- thresholded values
+ * @param iptr source -- values to be thresholded
+ */
+void md_zhardthresh(unsigned int D, const long dims[D], unsigned int k, unsigned int flags, complex float* optr, const complex float* iptr)
+{
+	long strs[D];
+	md_calc_strides(D, strs, dims, CFL_SIZE);
+
+	long norm_dims[D];
+	complex float* tmp_norm = NULL;
+
+	if (0 != flags) {
+
+		md_select_dims(D, ~flags, norm_dims, dims);
+		tmp_norm = md_alloc_sameplace(D, norm_dims, CFL_SIZE, iptr);
+	}
+
+	md_zhardthresh2(D, dims, k, flags, tmp_norm, strs, optr, strs, iptr);
+
+	md_free(tmp_norm);
+}
 
 /**
  * Elementwise minimum of input and scalar (with strides)

@@ -31,7 +31,7 @@ static const char help_str[] = "Perform circular shift along {dim} by {shift} el
 
 int main_circshift(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 4, usage_str, help_str);
+	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 
 	num_init();
 

@@ -20,7 +20,7 @@
 #include "num/init.h"
 #include "num/ops.h"
 
-#include "wavelet3/wavthresh.h"
+#include "wavelet/wavthresh.h"
 
 #include "misc/debug.h"
 #include "misc/misc.h"
@@ -396,7 +396,7 @@ static double bench_wavelet(long scale)
 	minsize[1] = MIN(dims[1], 16);
 	minsize[2] = MIN(dims[2], 16);
 
-	const struct operator_p_s* p = prox_wavelet3_thresh_create(DIMS, dims, 6, minsize, 1.1, true);
+	const struct operator_p_s* p = prox_wavelet_thresh_create(DIMS, dims, 6, 0u, minsize, 1.1, true);
 
 	complex float* x = md_alloc(DIMS, dims, CFL_SIZE);
 	md_gaussian_rand(DIMS, dims, x);

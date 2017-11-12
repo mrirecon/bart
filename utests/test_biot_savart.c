@@ -29,7 +29,7 @@ static bool test_vec3_ring(void)
 	bool ok = true;
 
 	for (unsigned int i = 0; i < N; i++)
-		ok &= (1.E-6 > fabsf(0.33 - vec3_norm(r[i])));
+		ok &= (1.E-6 > fabs(0.33 - vec3_norm(r[i])));
 
 	for (unsigned int i = 0; i < N; i++)
 		ok &= (0. == vec3_sdot(r[i], n));

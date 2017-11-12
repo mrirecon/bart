@@ -1,9 +1,10 @@
-/* Copyright 2015, 2017. The Regents of the University of California.
+/* Copyright 2015-2017. The Regents of the University of California.
+ * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -42,7 +43,7 @@ static void sort_complex_floats(int N, complex float ar[N])
 	qsort((void*)ar, N, sizeof(complex float), cmp_complex_float);
 }
 
-float median_float(int N, float ar[N])
+float median_float(int N, const float ar[N])
 {
 	float tmp[N];
 	memcpy(tmp, ar, N * sizeof(float));
@@ -50,7 +51,7 @@ float median_float(int N, float ar[N])
 	return (1 == N % 2) ? tmp[(N - 1) / 2] : ((tmp[(N - 1) / 2 + 0] + tmp[(N - 1) / 2 + 1]) / 2.);
 }
 
-complex float median_complex_float(int N, complex float ar[N])
+complex float median_complex_float(int N, const complex float ar[N])
 {
 	complex float tmp[N];
 	memcpy(tmp, ar, N * sizeof(complex float));
@@ -77,11 +78,11 @@ static void nary_medianz(void* _data, void* ptr[])
 	*(complex float*)ptr[0] = median_complex_float(data->length, tmp);
 }
 
-void md_medianz2(int D, int M, long dim[D], long ostr[D], complex float* optr, long istr[D], complex float* iptr)
+void md_medianz2(int D, int M, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
 	assert(M < D);
 	const long* nstr[2] = { ostr, istr };
-	void* nptr[2] = { optr, iptr };
+	void* nptr[2] = { optr, (void*)iptr };
 
 	struct median_s data = { dim[M], istr[M] };
 
@@ -94,7 +95,7 @@ void md_medianz2(int D, int M, long dim[D], long ostr[D], complex float* optr, l
 	md_nary(2, D, dim2, nstr, nptr, (void*)&data, &nary_medianz);
 }
 
-void md_medianz(int D, int M, long dim[D], complex float* optr, complex float* iptr)
+void md_medianz(int D, int M, const long dim[D], complex float* optr, const complex float* iptr)
 {
 	assert(M < D);
 
@@ -189,6 +190,12 @@ void klaplace(unsigned int N, const long dims[N], unsigned int flags, complex fl
 
 static void nary_zwindow(const long N, const float alpha, const float beta, complex float* ptr)
 {
+	if (1 == N) {
+
+		ptr[0] = 1.;
+		return;
+	}
+
 #pragma omp parallel for
 	for (long i = 0; i < N; i++)
 		ptr[i] = alpha - beta * cosf(2. * M_PI * i / (N - 1));
@@ -214,66 +221,47 @@ static void nary_zhann(const long N, complex float* ptr)
 	const float beta = 0.5;
 
 	return nary_zwindow(N, alpha, beta, ptr);
-
 }
 
-// FIXME: use enum for various types of windows
-static void md_zwindow2(const unsigned int D, const long dims[D], const long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, bool hamming)
-{
-	bool first = true;
+enum window_type { WINDOW_HAMMING, WINDOW_HANN };
 
+static void md_zwindow2(unsigned int D, const long dims[D], unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, enum window_type wt)
+{
 	if (0 == flags) {
+
 		md_copy2(D, dims, ostrs, optr, istrs, iptr, CFL_SIZE);
 		return;
 	}
 
-	md_clear2(D, dims, ostrs, optr, CFL_SIZE);
+	// process first flagged dimension
 
-	// apply along each active dimension
-	for (unsigned int i = 0; i < D; i++) {
+	unsigned int lsb = ffs(flags) - 1;
 
-		if (MD_IS_SET(flags, i)) {
+	long win_dims[D];
+	long win_strs[D];
 
-			long win_dims[D];
-			long win_strs[D];
+	md_select_dims(D, MD_BIT(lsb), win_dims, dims);
+	md_calc_strides(D, win_strs, win_dims, CFL_SIZE);
 
-			md_select_dims(D, MD_BIT(i), win_dims, dims);
-			md_calc_strides(D, win_strs, win_dims, CFL_SIZE);
+	complex float* win = md_alloc_sameplace(D, win_dims, CFL_SIZE, iptr);
 
-			complex float* win = md_alloc_sameplace(D, win_dims, CFL_SIZE, iptr);
-
-			(hamming ? nary_zhamming : nary_zhann)(dims[i], win);
-
-			complex float* tmp = NULL;
-			long tmp_strs[D];
+	switch (wt) {
+	case WINDOW_HAMMING: nary_zhamming(dims[lsb], win); break;
+	case WINDOW_HANN: nary_zhann(dims[lsb], win); break;
+	};
 			
-			if (first) {
+	md_zmul2(D, dims, ostrs, optr, istrs, iptr, win_strs, win);
 
-				// initially apply to input
-				tmp = (complex float*)iptr;
-				md_copy_strides(D, tmp_strs, istrs);
-			}
-			else {
+	md_free(win);
 
-				// accumulate
-				tmp = md_alloc_sameplace(D, dims, CFL_SIZE, iptr);
-				md_copy_strides(D, tmp_strs, ostrs);
-				md_copy2(D, dims, ostrs, tmp, ostrs, optr, CFL_SIZE);
+	flags = MD_CLEAR(flags, lsb);
 
-			}
+	// process other dimensions
 
-			// apply
-			md_clear2(D, dims, ostrs, optr, CFL_SIZE);
-			md_zfmac2(D, dims, ostrs, optr, tmp_strs, tmp, win_strs, win);
+	if (0 != flags)
+		md_zwindow2(D, dims, flags, ostrs, optr, ostrs, optr, wt);
 
-			if (!first)
-				md_free(tmp);
-
-			md_free(win);
-
-			first = false;
-		}
-	}
+	return;
 }
 
 
@@ -305,7 +293,7 @@ void md_zhamming(const unsigned int D, const long dims[D], const long flags, com
  */
 void md_zhamming2(const unsigned int D, const long dims[D], const long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
-	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, true);
+	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, WINDOW_HAMMING);
 	
 }
 
@@ -327,5 +315,5 @@ void md_zhann(const unsigned int D, const long dims[D], const long flags, comple
  */
 void md_zhann2(const unsigned int D, const long dims[D], const long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
-	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, false);
+	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, WINDOW_HANN);
 }

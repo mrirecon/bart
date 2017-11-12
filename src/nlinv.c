@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <complex.h>
+#include <math.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -42,6 +43,8 @@ int main_nlinv(int argc, char* argv[])
 	float restrict_fov = -1.;
 	const char* psf = NULL;
 	struct noir_conf_s conf = noir_defaults;
+	bool out_sens = false;
+	bool scale_im = false;
 
 	const struct opt_s opts[] = {
 
@@ -51,21 +54,37 @@ int main_nlinv(int argc, char* argv[])
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
 		OPT_STRING('p', &psf, "PSF", ""),
 		OPT_SET('g', &conf.usegpu, "use gpu"),
+		OPT_SET('S', &scale_im, "Re-scale image after reconstruction"),
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	if (4 == argc)
+		out_sens = true;
+
+
 
 	num_init();
 
 	long ksp_dims[DIMS];
 	complex float* kspace_data = load_cfl(argv[1], DIMS, ksp_dims);
 
+	// SMS
+	if (1 != ksp_dims[SLICE_DIM]) {
+
+		debug_printf(DP_INFO, "SMS-NLINV reconstruction. Multiband factor: %d\n", ksp_dims[SLICE_DIM]);
+		fftmod(DIMS, ksp_dims, SLICE_FLAG, kspace_data, kspace_data); // fftmod to get correct slice order in output
+	}
+
+
+	assert(1 == ksp_dims[MAPS_DIM]);
+
 	long dims[DIMS];
 	md_copy_dims(DIMS, dims, ksp_dims);
 
 
 	long img_dims[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS|CSHIFT_FLAG, img_dims, dims);
+	md_select_dims(DIMS, FFT_FLAGS|CSHIFT_FLAG|SLICE_FLAG, img_dims, dims);
 
 	long img_strs[DIMS];
 	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);
@@ -79,9 +98,9 @@ int main_nlinv(int argc, char* argv[])
 	long msk_strs[DIMS];
 	md_calc_strides(DIMS, msk_strs, msk_dims, CFL_SIZE);
 
-	complex float* mask; 
-	complex float* norm = md_alloc(DIMS, msk_dims, CFL_SIZE);
-	complex float* sens = ((4 == argc) ? create_cfl : anon_cfl)((4 == argc) ? argv[3] : "", DIMS, ksp_dims);
+	complex float* mask;
+	complex float* norm = md_alloc(DIMS, img_dims, CFL_SIZE);
+	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, ksp_dims);
 
 
 	complex float* pattern = NULL;
@@ -90,8 +109,13 @@ int main_nlinv(int argc, char* argv[])
 	if (NULL != psf) {
 
 		pattern = load_cfl(psf, DIMS, pat_dims);
-
 		// FIXME: check compatibility
+
+		if (-1 == restrict_fov)
+			restrict_fov = 0.5;
+
+		conf.noncart = true;
+
 	} else {
 
 		md_copy_dims(DIMS, pat_dims, img_dims);
@@ -102,7 +126,11 @@ int main_nlinv(int argc, char* argv[])
 #if 0
 	float scaling = 1. / estimate_scaling(ksp_dims, NULL, kspace_data);
 #else
-	float scaling = 100. / md_znorm(DIMS, ksp_dims, kspace_data);
+	double scaling = 100. / md_znorm(DIMS, ksp_dims, kspace_data);
+
+	if (1 != ksp_dims[SLICE_DIM]) // SMS
+			scaling *= sqrt(ksp_dims[SLICE_DIM]); 
+
 #endif
 	debug_printf(DP_INFO, "Scaling: %f\n", scaling);
 	md_zsmul(DIMS, ksp_dims, kspace_data, kspace_data, scaling);
@@ -138,21 +166,22 @@ int main_nlinv(int argc, char* argv[])
 	if (normalize) {
 
 		md_zrss(DIMS, ksp_dims, COIL_FLAG, norm, sens);
-		md_zmul2(DIMS, img_dims, img_strs, image, img_strs, image, msk_strs, norm);
+                md_zmul2(DIMS, img_dims, img_strs, image, img_strs, image, img_strs, norm);
 	}
 
-	if (4 == argc) {
+	if (out_sens) {
 
 		long strs[DIMS];
-
 		md_calc_strides(DIMS, strs, ksp_dims, CFL_SIZE);
 
-		if (norm)
+		if (normalize)
 			md_zdiv2(DIMS, ksp_dims, strs, sens, strs, sens, img_strs, norm);
 
 		fftmod(DIMS, ksp_dims, FFT_FLAGS, sens, sens);
 	}
 
+	if (scale_im)
+		md_zsmul(DIMS, img_dims, image, image, 1. / scaling);
 
 	md_free(norm);
 	md_free(mask);

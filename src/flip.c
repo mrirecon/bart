@@ -30,7 +30,7 @@ static const char help_str[] = "Flip (reverse) dimensions specified by the {bitm
 
 int main_flip(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 3, usage_str, help_str);
+	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 
 	num_init();
 

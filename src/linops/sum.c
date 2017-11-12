@@ -51,7 +51,7 @@ struct sum_data {
 	complex float* tmp;
 };
 
-DEF_TYPEID(sum_data);
+static DEF_TYPEID(sum_data);
 
 static struct sum_data* sum_create_data(const long imgd_dims[DIMS], bool use_gpu);
 static void sum_free_data(const linop_data_t* _data);

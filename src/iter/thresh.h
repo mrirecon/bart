@@ -1,4 +1,5 @@
 /* Copyright 2013-2014. The Regents of the University of California.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -11,6 +12,8 @@
 
 struct operator_p_s;
 extern const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[__VLA(D)], const float lambda, const unsigned long flags, _Bool gpu);
+
+extern const struct operator_p_s* prox_niht_thresh_create(unsigned int D, const long dim[D], const unsigned int k, const unsigned long flags, _Bool gpu);
 
 extern void thresh_free(const struct operator_p_s* data);
 	

@@ -1,4 +1,10 @@
 /* Copyright 2017. Martin Uecker
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ *
+ * Authors:
+ * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ *
  *
  * Kai Tobias Block and Martin Uecker, Simple Method for Adaptive
  * Gradient-Delay Compensation in Radial MRI, Annual Meeting ISMRM,
@@ -92,7 +98,7 @@ static const char help_str[] = "Estimate gradient delays from radial data.";
 
 int main_estdelay(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 2, usage_str, help_str);
+	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 
 	long tdims[DIMS];
 	const complex float* traj = load_cfl(argv[1], DIMS, tdims);

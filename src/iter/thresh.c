@@ -1,11 +1,13 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013-2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2013,2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 
@@ -41,7 +43,8 @@ struct thresh_s {
 
 	INTERFACE(operator_data_t);
 
-	float lambda;
+	float lambda; //for soft thresholding
+        unsigned int k; // for hard thresholding
 
 	int D;
 
@@ -55,7 +58,7 @@ struct thresh_s {
 	const struct linop_s* unitary_op;
 };
 
-DEF_TYPEID(thresh_s);
+static DEF_TYPEID(thresh_s);
 
 
 
@@ -92,6 +95,15 @@ static void unisoftthresh_apply(const operator_data_t* _data, float mu, complex 
 		md_free(tmp);
 	}
 }
+
+static void hardthresh_apply(const operator_data_t* _data,  float mu, complex float* optr, const complex float* iptr)
+{
+	UNUSED(mu);
+	const struct thresh_s* data = CAST_DOWN(thresh_s, _data);
+
+	md_zhardthresh2(data->D, data->dim, data->k, data->flags, data->tmp_norm, data->str, optr, data->str, iptr);
+}
+
 
 static void thresh_del(const operator_data_t* _data)
 {
@@ -192,6 +204,46 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
 	return operator_p_create(D, dims, D, dims, CAST_UP(PTR_PASS(data)), unisoftthresh_apply, thresh_del);
 }
 
+/**
+ * Thresholding operator for l0-norm: f(x) =  || x ||_0 <= k, as used in NIHT algorithm.
+ * y = HT(x, k) (hard thresholding, ie keeping the k largest elements).
+ *
+ * @param D number of dimensions
+ * @param dim dimensions of x
+ * @param k threshold parameter (non-zero elements to keep)
+ * @param flags bitmask for joint thresholding
+ * @param gpu true if using gpu, false if using cpu
+ */
+const struct operator_p_s* prox_niht_thresh_create(unsigned int D, const long dim[D], const unsigned int k, const unsigned long flags, bool gpu)
+{
+	PTR_ALLOC(struct thresh_s, data);
+	SET_TYPEID(thresh_s, data);
+
+	data->lambda = 0.;
+	data->k = k;
+	data->D = D;
+	data->flags = flags;
+	data->unitary_op = NULL;
+
+	data->dim = *TYPE_ALLOC(long[D]);
+	md_copy_dims(D, data->dim, dim);
+
+	// norm dimensions are the flagged input dimensions
+	long norm_dim[D];
+	md_select_dims(D, ~flags, norm_dim, data->dim);
+
+	data->str = *TYPE_ALLOC(long[D]);
+	md_calc_strides(D, data->str, data->dim, CFL_SIZE);
+
+#ifdef USE_CUDA
+	data->tmp_norm = (gpu ? md_alloc_gpu : md_alloc)(D, norm_dim, CFL_SIZE);
+#else
+	assert(!gpu);
+	data->tmp_norm = md_alloc(D, norm_dim, CFL_SIZE);
+#endif
+
+	return operator_p_create(D, dim, D, dim, CAST_UP(PTR_PASS(data)), hardthresh_apply, thresh_del);
+}
 
 void thresh_free(const struct operator_p_s* o)
 {

@@ -49,7 +49,7 @@ struct fmac_data {
 #endif
 };
 
-DEF_TYPEID(fmac_data);
+static DEF_TYPEID(fmac_data);
 
 
 

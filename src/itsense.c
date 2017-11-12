@@ -55,7 +55,7 @@ struct sense_data {
 	float alpha;
 }; 
 
-DEF_TYPEID(sense_data);
+static DEF_TYPEID(sense_data);
 
 
 static void sense_forward(const struct sense_data* data, complex float* out, const complex float* imgs)
@@ -157,7 +157,7 @@ static const char help_str[] = "A simplified implementation of iterative sense r
 
 int main_itsense(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 5, usage_str, help_str);
+	mini_cmdline(&argc, argv, 5, usage_str, help_str);
 
 	struct sense_data data;
 	SET_TYPEID(sense_data, &data);

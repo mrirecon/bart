@@ -69,7 +69,7 @@ struct prox_dfwavelet_data {
         struct dfwavelet_plan_s* plan;
 };
 
-DEF_TYPEID(prox_dfwavelet_data);
+static DEF_TYPEID(prox_dfwavelet_data);
 
 
 const struct operator_p_s* prox_dfwavelet_create(const long im_dims[DIMS], const long min_size[3], const complex float res[3], unsigned int flow_dim, float lambda, bool use_gpu)
@@ -215,7 +215,7 @@ struct prox_4pt_dfwavelet_data {
         const struct operator_p_s* wthresh_op;
 };
 
-DEF_TYPEID(prox_4pt_dfwavelet_data);
+static DEF_TYPEID(prox_4pt_dfwavelet_data);
 
 
 
@@ -273,7 +273,7 @@ struct prox_4pt_dfwavelet_data* prepare_prox_4pt_dfwavelet_data(const long im_di
 	long strs[DIMS];
 	md_calc_strides(DIMS, strs, data->tim_dims, CFL_SIZE);
 
-	data->w_op = linop_wavelet3_create(DIMS, FFT_FLAGS, data->tim_dims, strs, min_size);
+	data->w_op = linop_wavelet_create(DIMS, FFT_FLAGS, data->tim_dims, strs, min_size);
         data->wthresh_op = prox_unithresh_create(DIMS, data->w_op, lambda, MD_BIT(data->flow_dim), use_gpu);
 
         return PTR_PASS(data);

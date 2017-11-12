@@ -49,7 +49,7 @@ static const char help_str[] = "Perform total variation denoising along dims <fl
 	
 int main_rof(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 4, usage_str, help_str);
+	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 
 	num_init();
 

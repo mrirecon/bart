@@ -1,10 +1,12 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2015. Martin Uecker.
+ * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2011-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
 #define _GNU_SOURCE
@@ -59,7 +61,7 @@ void error(const char* fmt, ...)
 	debug_vprintf(DP_ERROR, fmt, ap);
 
 	va_end(ap);
-	abort();
+	exit(EXIT_FAILURE);
 }
 
 
@@ -161,6 +163,115 @@ void quicksort(unsigned int N, unsigned int ord[N], const void* data, quicksort_
 		quicksort(N - l, ord + l, data, cmp);
 }
 
+/**
+ * Quickselect adapted from §8.5 in Numerical Recipes in C, 
+ * The Art of Scientific Computing
+ * Second Edition, William H. Press, 1992.
+ * Sort descending of an array of floats, stop at k largest element.
+ *
+ * @param arr array of floats, input
+ * @param n total number of elements in input array
+ * @param k the rank of the element to be selected in the sort
+ *
+ * @returns the k-th largest float in the array
+ *
+ * @note In-place sort. The input array contents are not preserved in their original order. 
+ */
+float quickselect(float *arr, unsigned int n, unsigned int k) {
+	unsigned long i,ir,j,l,mid;
+	float a;
+   
+	l=0;
+	ir=n-1;
+	for(;;) {
+		if (ir <= l+1) { 
+			if (ir == l+1 && arr[ir] > arr[l]) {
+				SWAP(arr[l],arr[ir], float);
+			}
+			return arr[k];
+		}
+		else {
+			mid=(l+ir) >> 1; 
+			SWAP(arr[mid],arr[l+1], float);
+			if (arr[l] < arr[ir]) {
+				SWAP(arr[l],arr[ir], float);
+			}
+			if (arr[l+1] < arr[ir]) {
+				SWAP(arr[l+1],arr[ir], float);
+			}
+			if (arr[l] < arr[l+1]) {
+				SWAP(arr[l],arr[l+1], float);
+			}
+			i=l+1; 
+			j=ir;
+			a=arr[l+1];
+
+			for (;;) { 
+				do i++; while (arr[i] > a); 
+				do j--; while (arr[j] < a); 
+				if (j < i) break; 
+				SWAP(arr[i],arr[j], float);
+			} 
+			arr[l+1]=arr[j]; 
+			arr[j]=a;
+      
+			if (j >= k) ir=j-1; 
+			if (j <= k) l=i;
+		}
+	}
+}
+
+/**
+ *
+ * Same as quickselect, but the input is a complex array
+ * and the absolute value of the k-th largest element is returned.
+ * Possibly faster for application to complex arrays.
+ *
+ */
+float quickselect_complex(complex float *arr, unsigned int n, unsigned int k) {
+	unsigned long i,ir,j,l,mid;
+	float a;
+	complex float ca;
+   
+	l=0;
+	ir=n-1;
+	for(;;) {
+		if (ir <= l+1) { 
+			if (ir == l+1 && cabsf(arr[ir]) > cabsf(arr[l])) {
+				SWAP(arr[l],arr[ir], complex float);
+			}
+			return cabsf(arr[k]);
+		}
+		else {
+			mid=(l+ir) >> 1; 
+			SWAP(arr[mid],arr[l+1], complex float);
+			if (cabsf(arr[l]) < cabsf(arr[ir])) {
+				SWAP(arr[l],arr[ir], complex float);
+			}
+			if (cabsf(arr[l+1]) < cabsf(arr[ir])) {
+				SWAP(arr[l+1],arr[ir], complex float);
+			}
+			if (cabsf(arr[l]) < cabsf(arr[l+1])) {
+				SWAP(arr[l],arr[l+1], complex float);
+			}
+			i=l+1; 
+			j=ir;
+			a=cabsf(arr[l+1]);
+			ca = arr[l+1];
+			for (;;) { 
+				do i++; while (cabsf(arr[i]) > a); 
+				do j--; while (cabsf(arr[j]) < a); 
+				if (j < i) break; 
+				SWAP(arr[i],arr[j], complex float);
+			} 
+			arr[l+1]=arr[j]; 
+			arr[j]=ca;
+      
+			if (j >= k) ir=j-1; 
+			if (j <= k) l=i;
+		}
+	}
+}
 
 static const char* quote(const char* str)
 {
@@ -249,13 +360,13 @@ void save_command_line(int argc, char* argv[])
 
 
 
-void mini_cmdline(int argc, char* argv[], int expected_args, const char* usage_str, const char* help_str)
+void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str)
 {
-	mini_cmdline_bool(argc, argv, '\0', expected_args, usage_str, help_str);
+	mini_cmdline_bool(argcp, argv, '\0', expected_args, usage_str, help_str);
 }
 
 
-bool mini_cmdline_bool(int argc, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str)
+bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str)
 {
 	bool flag = false;
 	struct opt_s opts[1] = { { flag_char, false, opt_set, &flag, NULL } };
@@ -276,7 +387,7 @@ bool mini_cmdline_bool(int argc, char* argv[], char flag_char, int expected_args
 		max_args = 1000;
 	}
 
-	cmdline(&argc, argv, min_args, max_args, usage_str, help, 1, opts);
+	cmdline(argcp, argv, min_args, max_args, usage_str, help, 1, opts);
 
 	free(help);
 

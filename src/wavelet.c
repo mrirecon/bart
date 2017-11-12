@@ -60,10 +60,9 @@ int main_wavelet(int argc, char* argv[])
 	complex float* idata = load_cfl(argv[n + 2], N, idims);
 
 	long dims[N];
+	md_copy_dims(N, dims, idims);
 
 	if (adj) {
-
-		md_singleton_dims(N, dims);
 
 		unsigned int j = 0;
 
@@ -72,10 +71,6 @@ int main_wavelet(int argc, char* argv[])
 				dims[i] = atoi(argv[j++ + 2]);
 
 		assert(j == n);
-	
-	} else {
-
-		md_copy_dims(N, dims, idims);
 	}
 
 	long minsize[N];
@@ -86,7 +81,7 @@ int main_wavelet(int argc, char* argv[])
 	long strs[N];
 	md_calc_strides(N, strs, dims, CFL_SIZE);
 
-	const struct linop_s* w = linop_wavelet3_create(N, flags, dims, strs, minsize);
+	const struct linop_s* w = linop_wavelet_create(N, flags, dims, strs, minsize);
 
 	long odims[N];
 	md_copy_dims(N, odims, (adj ? linop_domain : linop_codomain)(w)->dims);

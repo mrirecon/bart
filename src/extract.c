@@ -27,7 +27,7 @@ static const char help_str[] = "Extracts a sub-array along {dim} from index {sta
 
 int main_extract(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 5, usage_str, help_str);
+	mini_cmdline(&argc, argv, 5, usage_str, help_str);
 
 	num_init();
 

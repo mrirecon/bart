@@ -1,4 +1,4 @@
-/* Copyright 2013-2014. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -112,6 +112,15 @@ double power(unsigned int maxiter,
 	struct iter_op_s op,
 	float* u);
 	   
+void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
+	long N, long M,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op_forw,
+	struct iter_op_s op_adj,
+	struct iter_op_p_s thresh1,
+	struct iter_op_p_s thresh2,
+	float* x,
+	struct iter_monitor_s* monitor);
 
 #include "misc/cppwrap.h"
 

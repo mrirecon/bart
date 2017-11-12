@@ -1,4 +1,4 @@
-/* Copyright 2013-2015. The Regents of the University of California.
+/* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -6,7 +6,7 @@
  * Authors:
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
  */
 
@@ -25,6 +25,8 @@
 #include "iter/misc.h"
 
 #include "linops/linop.h"
+#include "linops/sampling.h"
+#include "linops/someops.h"
 
 #include "noncart/nufft.h"
 
@@ -47,7 +49,7 @@ static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
 
-static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const complex float* weights, struct operator_s** precond_op)
+static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const complex float* weights, struct operator_s** precond_op, bool sms)
 {
 	long coilim_dims[DIMS];
 	long img_dims[DIMS];
@@ -57,10 +59,22 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	const struct linop_s* fft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, weights, conf);
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
 
-	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
-	precond_op[0] = NULL;
+	if (sms) {
+
+		/**
+		 * Apply Fourier encoding in image space (after coil
+		 * sensitivity weighting but before NUFFT).
+		 */
+
+		const struct linop_s* fft_slice = linop_fft_create(DIMS, map_dims, SLICE_FLAG);
+		fft_op = linop_chain(fft_slice, fft_op);
+		linop_free(fft_slice);
+	}
 
 	const struct linop_s* lop = linop_chain(maps_op, fft_op);
+
+	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
+	precond_op[0] = NULL;
 
 	linop_free(maps_op);
 	linop_free(fft_op);
@@ -75,7 +89,7 @@ int main_pics(int argc, char* argv[])
 
 	struct sense_conf conf = sense_defaults;
 
-
+	float bpsense_eps = -1.;
 
 	bool randshift = true;
 	unsigned int maxiter = 30;
@@ -96,6 +110,9 @@ int main_pics(int argc, char* argv[])
 	bool eigen = false;
 	float scaling = 0.;
 
+        // Simultaneous Multi-Slice
+        bool sms = false;
+
 	unsigned int llr_blk = 8;
 
 	const char* image_truth_file = NULL;
@@ -104,10 +121,13 @@ int main_pics(int argc, char* argv[])
 	const char* image_start_file = NULL;
 	bool warm_start = false;
 
+	bool dynamic_rho = false;
 	bool hogwild = false;
 	bool fast = false;
 	float admm_rho = iter_admm_defaults.rho;
 	unsigned int admm_maxitercg = iter_admm_defaults.maxitercg;
+
+	unsigned int gpun = 0;
 
 	struct opt_reg_s ropts;
 	opt_reg_init(&ropts);
@@ -125,11 +145,13 @@ int main_pics(int argc, char* argv[])
 		OPT_STRING('t', &traj_file, "file", "k-space trajectory"),
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('g', &conf.gpu, "use GPU"),
+		OPT_UINT('G', &gpun, "gpun", "use GPU device gpun"),
 		OPT_STRING('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "select IST"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
+		OPT_SET('D', &dynamic_rho, "(dynamic_rho)"),
 		OPT_SET('F', &fast, "(fast)"),
 		OPT_STRING('T', &image_truth_file, "file", "(truth file)"),
 		OPT_STRING('W', &image_start_file, "<img>", "Warm start with <img>"),
@@ -145,6 +167,9 @@ int main_pics(int argc, char* argv[])
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
+		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
+		OPT_SELECT('a', enum algo_t, &ropts.algo, PRIDU, "select Primal Dual"),
+		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -154,6 +179,10 @@ int main_pics(int argc, char* argv[])
 
 	if (NULL != image_start_file)
 		warm_start = true;
+
+	if (0 <= bpsense_eps)
+		conf.bpsense = true;
+
 
 
 	long max_dims[DIMS];
@@ -169,6 +198,13 @@ int main_pics(int argc, char* argv[])
 	// load kspace and maps and get dimensions
 
 	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
+
+        if (sms) {
+
+                debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
+                nuconf.toeplitz = false; // no longer toeplitz-shaped because of chaining of operators (see later)?!
+        }
+
 	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
 
 	unsigned int map_flags = md_nontriv_dims(DIMS, map_dims);
@@ -194,7 +230,10 @@ int main_pics(int argc, char* argv[])
 	assert(1 == ksp_dims[MAPS_DIM]);
 
 
-	(conf.gpu ? num_init_gpu : num_init)();
+	if (conf.gpu)
+		num_init_gpu_device(gpun);
+	else
+		num_init();
 
 	// print options
 
@@ -204,14 +243,20 @@ int main_pics(int argc, char* argv[])
 	if (map_dims[MAPS_DIM] > 1) 
 		debug_printf(DP_INFO, "%ld maps.\nESPIRiT reconstruction.\n", map_dims[MAPS_DIM]);
 
+	if (conf.bpsense)
+		debug_printf(DP_INFO, "Basis Pursuit formulation\n");
+
 	if (hogwild)
 		debug_printf(DP_INFO, "Hogwild stepsize\n");
+
+	if (dynamic_rho)
+		debug_printf(DP_INFO, "ADMM Dynamic stepsize\n");
 
 	if (im_truth)
 		debug_printf(DP_INFO, "Compare to truth\n");
 
 
-	assert(!((conf.rwiter > 1) && nuconf.toeplitz));
+	assert(!((conf.rwiter > 1) && (nuconf.toeplitz || conf.bpsense)));
 
 
 	// initialize sampling pattern
@@ -287,7 +332,8 @@ int main_pics(int argc, char* argv[])
 	if (NULL == traj_file)
 		forward_op = sense_init(max_dims, map_flags, maps);
 	else
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, (struct operator_s**) &precond_op);
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, pattern, (struct operator_s**) &precond_op, sms);
+
 
 	// apply scaling
 
@@ -317,6 +363,12 @@ int main_pics(int argc, char* argv[])
 
 		debug_printf(DP_DEBUG1, "Inverse scaling of the data: %f\n", scaling);
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
+
+		if (conf.bpsense) {
+
+			bpsense_eps /= scaling;
+			debug_printf(DP_DEBUG1, "scaling basis pursuit eps: %.3f\n", bpsense_eps);
+		}
 	}
 
 
@@ -386,8 +438,22 @@ int main_pics(int argc, char* argv[])
 
 	// FIXME: re-initialize forward_op and precond_op
 
-	if (NULL == traj_file)
+	if ((NULL == traj_file) && !sms) {
+
 		forward_op = sense_init(max1_dims, map_flags, maps);
+
+		// basis pursuit requires the full forward model to add as a linop constraint
+		if (conf.bpsense) {
+
+			const struct linop_s* sample_op = linop_sampling_create(max1_dims, pat1_dims, pattern1);
+			struct linop_s* tmp = linop_chain(forward_op, sample_op);
+
+			linop_free(sample_op);
+			linop_free(forward_op);
+			forward_op = tmp;
+		}
+	}
+
 
 
 	// initialize prox functions
@@ -396,6 +462,9 @@ int main_pics(int argc, char* argv[])
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
 	opt_reg_configure(DIMS, img1_dims, &ropts, thresh_ops, trafos, llr_blk, randshift, conf.gpu);
+
+	if (conf.bpsense)
+		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace, bpsense_eps);
 
 	int nr_penalties = ropts.r;
 	struct reg_s* regs = ropts.regs;
@@ -414,11 +483,15 @@ int main_pics(int argc, char* argv[])
 	struct iter_fista_conf fsconf = iter_fista_defaults;
 	struct iter_ist_conf isconf = iter_ist_defaults;
 	struct iter_admm_conf mmconf = iter_admm_defaults;
+	struct iter_niht_conf ihconf = iter_niht_defaults;
+	struct iter_chambolle_pock_conf pdconf = iter_chambolle_pock_defaults;
 
 	if ((CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
 		algo = FISTA;
 
-	if (nr_penalties > 1)
+	if (conf.bpsense)
+		assert(ADMM == algo || PRIDU == algo);
+	else if (nr_penalties > 1)
 		algo = ADMM;
 
 	if ((IST == algo) || (FISTA == algo)) {
@@ -493,12 +566,32 @@ int main_pics(int argc, char* argv[])
 			mmconf.rho = admm_rho;
 			mmconf.hogwild = hogwild;
 			mmconf.fast = fast;
-			//		mmconf.dynamic_rho = true;
+			mmconf.dynamic_rho = dynamic_rho;
 			mmconf.ABSTOL = 0.;
 			mmconf.RELTOL = 0.;
 
 			italgo = iter2_admm;
 			iconf = CAST_UP(&mmconf);
+
+			break;
+
+		case PRIDU:
+
+			debug_printf(DP_INFO, "Primal Dual\n");
+
+			assert(2 == nr_penalties);
+
+			pdconf = iter_chambolle_pock_defaults;
+
+			pdconf.maxiter = maxiter;
+			pdconf.sigma = 1. * scaling;
+			pdconf.tau = 1. / pdconf.sigma;
+			pdconf.theta = 1;
+			pdconf.decay = (hogwild ? .95 : 1);
+			pdconf.tol = 1E-4;
+
+			italgo = iter2_chambolle_pock;
+			iconf = CAST_UP(&pdconf);
 
 			break;
 
@@ -518,17 +611,28 @@ int main_pics(int argc, char* argv[])
 
 			break;
 
-		default:
+		case NIHT:
 
+			debug_printf(DP_INFO, "NIHT\n");
+
+			ihconf = iter_niht_defaults;
+			ihconf.maxiter = maxiter;
+			ihconf.do_warmstart=warm_start;
+
+			italgo = iter2_niht;
+			iconf = CAST_UP(&ihconf);
+			break;		
+
+		default:			
 			assert(0);
 	}
 
-
-
+	bool trafos_cond = ((PRIDU == algo) || (ADMM == algo) || ((NIHT == algo) && (regs[0].xform == NIHTWAV)));
+	
 	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
-				pat1_dims, (NULL != traj_file) ? NULL : pattern1,
+				pat1_dims, (NULL != traj_file) ? NULL : (conf.bpsense ? NULL : pattern1),
 				italgo, iconf, image_start1, nr_penalties, thresh_ops,
-				(ADMM == algo) ? trafos : NULL, precond_op);
+				trafos_cond ? trafos : NULL, precond_op);
 
 	long strsx[2][DIMS];
 	const long* strs[2] = { strsx[0], strsx[1] };
@@ -551,9 +655,11 @@ int main_pics(int argc, char* argv[])
 		op = operator_loop(DIMS, loop_dims, op);
 	}
 
-	operator_apply(op, DIMS, img_dims, image, DIMS, ksp_dims, kspace);
+	operator_apply(op, DIMS, img_dims, image, DIMS, conf.bpsense ? img_dims : ksp_dims, conf.bpsense ? NULL : kspace);
 
 	operator_free(op);
+
+	opt_reg_free(&ropts, thresh_ops, trafos);
 
 
 

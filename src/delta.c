@@ -28,7 +28,7 @@ static const char help_str[] = "Kronecker delta.\n";
 
 int main_delta(int argc, char* argv[])
 {
-	mini_cmdline(argc, argv, 4, usage_str, help_str);
+	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 
 	num_init();
 

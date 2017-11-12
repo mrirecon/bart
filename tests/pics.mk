@@ -38,6 +38,61 @@ tests/test-pics-cs: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplogan.r
 	touch $@
 
 
+tests/test-pics-wavl1: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y48 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
+	$(TOOLDIR)/pics -S -RW:3:0:0.001 -i150 -e -t traj2.ra ksp.ra o.ra reco.ra	;\
+	$(TOOLDIR)/scale 128. reco.ra reco2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.23 reco2.ra $(TESTS_OUT)/shepplogan.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-pics-poisson-wavl1: poisson squeeze fft fmac ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/poisson -Y128 -Z128 -y1.2 -z1.2 -e -v -C24 p.ra			;\
+	$(TOOLDIR)/squeeze p.ra p2.ra							;\
+	$(TOOLDIR)/fft -u 7 $(TESTS_OUT)/shepplogan.ra ksp1.ra				;\
+	$(TOOLDIR)/fmac ksp1.ra p2.ra ksp.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
+	$(TOOLDIR)/pics -S -RW:3:0:0.01 -i50 ksp.ra o.ra reco.ra			;\
+	$(TOOLDIR)/nrmse -t 0.21 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-pics-bpwavl1: scale fft noise fmac ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/scale 50 $(TESTS_OUT)/shepplogan.ra shepp.ra				;\
+	$(TOOLDIR)/fft -u 7 shepp.ra ksp1.ra						;\
+	$(TOOLDIR)/noise -s 1 -n 1 ksp1.ra ksp2.ra					;\
+	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
+	$(TOOLDIR)/pics -a -P 128 -w1. -RW:3:0:1. -i50 ksp2.ra o.ra reco.ra		;\
+	$(TOOLDIR)/pics -m -P 128 -w1. -RW:3:0:1. -i50 -u 2 ksp2.ra o.ra reco2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.08 shepp.ra reco.ra					;\
+	$(TOOLDIR)/nrmse -t 0.08 shepp.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-pics-joint-wavl1: poisson reshape fft fmac ones pics slice nrmse $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/poisson -Y128 -Z128 -y1.1 -z1.1 -e -v -C24 -T2 p.ra			;\
+	$(TOOLDIR)/reshape 63 128 128 1 1 1 2 p.ra p2.ra				;\
+	$(TOOLDIR)/fft -u 7 $(TESTS_OUT)/shepplogan.ra ksp1.ra				;\
+	$(TOOLDIR)/fmac ksp1.ra p2.ra ksp.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
+	$(TOOLDIR)/pics -S -RW:3:32:0.02 -i50 ksp.ra o.ra reco2.ra			;\
+	$(TOOLDIR)/slice 5 0 reco2.ra reco.ra						;\
+	$(TOOLDIR)/nrmse -t 0.22 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
 
 tests/test-pics-pics: traj scale phantom pics nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -121,6 +176,7 @@ tests/test-pics-tedim: phantom fmac fft pics nrmse
 
 
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
+TESTS += tests/test-pics-wavl1 tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 TESTS += tests/test-pics-warmstart tests/test-pics-batch
 TESTS += tests/test-pics-tedim

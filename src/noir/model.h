@@ -16,7 +16,17 @@ extern void noir_adj(struct noir_data*, complex float* dst, const complex float*
 extern void noir_forw_coils(struct noir_data* data, complex float* dst, const complex float* src);
 extern void noir_back_coils(struct noir_data* data, complex float* dst, const complex float* src);
 
-extern struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, const complex float* psf, bool rvc, bool use_gpu);
+struct noir_model_conf_s {
+
+	unsigned int fft_flags;
+	_Bool rvc;
+	_Bool use_gpu;
+	_Bool noncart;
+};
+
+extern struct noir_model_conf_s noir_model_conf_defaults;
+
+extern struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf);
 extern void noir_free(struct noir_data* data);
 
 

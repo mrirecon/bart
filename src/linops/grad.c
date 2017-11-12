@@ -105,7 +105,7 @@ struct grad_s {
 	unsigned long flags;
 };
 
-DEF_TYPEID(grad_s);
+static DEF_TYPEID(grad_s);
 
 static void grad_op_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
