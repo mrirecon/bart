@@ -22,6 +22,7 @@
 #include "num/fft.h"
 
 #include "iter/iter3.h"
+#include "iter/iter4.h"
 #include "iter/thresh.h"
 #include "iter/italgos.h"
 
@@ -31,40 +32,10 @@
 #include "misc/debug.h"
 
 #include "noir/model.h"
+#include "noir/nl.h"
 
 #include "recon.h"
 
-
-struct data {
-
-	INTERFACE(iter_op_data);
-
-	struct noir_data* ndata;
-};
-
-static DEF_TYPEID(data);
-
-
-static void frw(iter_op_data* ptr, float* _dst, const float* _src)
-{
-        struct data* data = CAST_DOWN(data, ptr);
-
-	noir_fun(data->ndata, (complex float*)_dst, (const complex float*)_src);
-}
-
-static void adj(iter_op_data* ptr, float* _dst, const float* _src)
-{
-        struct data* data = CAST_DOWN(data, ptr);
-
-	noir_adj(data->ndata, (complex float*)_dst, (const complex float*)_src);
-}
-
-static void der(iter_op_data* ptr, float* _dst, const float* _src)
-{
-        struct data* data = CAST_DOWN(data, ptr);
-
-	noir_der(data->ndata, (complex float*)_dst, (const complex float*)_src);
-}
 
 
 const struct noir_conf_s noir_defaults = {
@@ -113,20 +84,18 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	mconf.noncart = conf->noncart;
 	mconf.fft_flags = fft_flags;
 
-	struct noir_data* ndata = noir_init(dims, mask, psf, &mconf);
-	struct data data = { { &TYPEID(data) }, ndata };
+	struct nlop_s* nlop = noir_create(dims, mask, psf, &mconf);
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
+
 	irgnm_conf.iter = conf->iter;
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.redu = conf->redu;
 	irgnm_conf.cgtol = 0.1f;
 	irgnm_conf.nlinv_legacy = true;
 
-	iter3_irgnm(CAST_UP(&irgnm_conf),
-			(struct iter_op_s){ frw, CAST_UP(&data) },
-			(struct iter_op_s){ der, CAST_UP(&data) },
-			(struct iter_op_s){ adj, CAST_UP(&data) },
+	iter4_irgnm(CAST_UP(&irgnm_conf),
+			nlop,
 			size * 2, (float*)img, NULL,
 			data_size * 2, (const float*)kspace);
 
@@ -135,11 +104,11 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	if (NULL != sensout) {
 
 		assert(!conf->usegpu);
-		noir_forw_coils(ndata, sensout, img + skip);
+		noir_forw_coils(noir_get_data(nlop), sensout, img + skip);
 		fftmod(DIMS, coil_dims, fft_flags, sensout, sensout);
 	}
 
-	noir_free(ndata);
+	nlop_free(nlop);
 
 	md_free(img);
 }
