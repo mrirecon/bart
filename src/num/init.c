@@ -32,6 +32,7 @@
 
 #include "init.h"
 
+extern unsigned long num_chunk_size;
 
 void num_init(void)
 {
@@ -62,6 +63,11 @@ void num_init(void)
 #ifdef FFTWTHREADS
 	fft_set_num_threads(p);
 #endif
+	// Set chunk size
+	if (NULL != getenv("BART_PARALLEL_CHUNK_SIZE"))
+	{
+	  num_chunk_size = (unsigned long) strtoul(getenv("BART_PARALLEL_CHUNK_SIZE"), NULL, 10);
+	}
 }
 
 
