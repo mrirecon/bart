@@ -22,7 +22,7 @@
 #define DIMS 16
 
 static const char usage_str[] = "dimension start end <input> <output>";
-static const char help_str[] = "Extracts a sub-array along {dim} from index {start} to {end}.\n";
+static const char help_str[] = "Extracts a sub-array along {dim} from index {start} to (not including) {end}.\n";
 
 
 int main_extract(int argc, char* argv[])
@@ -42,13 +42,13 @@ int main_extract(int argc, char* argv[])
 
 	assert((0 <= dim) && (dim < DIMS));
 	assert(start >= 0);
-	assert(start <= end);
-	assert(end < in_dims[dim]);
+	assert(start < end);
+	assert(end <= in_dims[dim]);
 
 	for (int i = 0; i < DIMS; i++)
 		out_dims[i] = in_dims[i];
 
-	out_dims[dim] = end - start + 1;
+	out_dims[dim] = end - start;
 
 	complex float* out_data = create_cfl(argv[5], DIMS, out_dims);
 
