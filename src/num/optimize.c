@@ -451,7 +451,8 @@ static unsigned long parallelizable(unsigned int D, unsigned int io, unsigned in
 }
 
 
-#define CHUNK (32 * 1024)
+extern unsigned long num_chunk_size;
+unsigned long num_chunk_size = (32*1024);
 
 
 /**
@@ -474,7 +475,7 @@ unsigned long dims_parallel(unsigned int D, unsigned int io, unsigned int N, con
 
 			reps /= dims[i];
 
-			if (reps < CHUNK)
+			if (reps < num_chunk_size)
 				break;
 
 			oflags = MD_SET(oflags, i);
