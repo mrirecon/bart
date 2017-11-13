@@ -1908,6 +1908,32 @@ void md_zexpj(unsigned int D, const long dims[D], complex float* optr, const com
 
 
 
+
+/**
+ * Complex exponential
+ *
+ * optr = zexp(iptr)
+ */
+void md_zexp2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zexp, D, dims, ostr, optr, istr, iptr);
+}
+
+
+
+/**
+ * Complex exponential
+ *
+ * optr = zexp(iptr)
+ */
+void md_zexp(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zexp2, D, dims, optr, iptr);
+}
+
+
+
+
 /**
  * Get argument of complex arrays (with strides)
  *

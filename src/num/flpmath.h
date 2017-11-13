@@ -177,6 +177,9 @@ extern void md_zcmp2(unsigned int D, const long dim[__VLA(D)], const long ostr[_
 extern void md_zexpj(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
 extern void md_zexpj2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
+extern void md_zexp(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
+extern void md_zexp2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+
 extern void md_zarg(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
 extern void md_zarg2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 

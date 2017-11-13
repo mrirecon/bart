@@ -48,6 +48,7 @@ struct vec_ops {
 	void (*zphsr)(long N, _Complex float* dst, const _Complex float* src);
 	void (*zconj)(long N, _Complex float* dst, const _Complex float* src);
 	void (*zexpj)(long N, _Complex float* dst, const _Complex float* src);
+	void (*zexp)(long N, _Complex float* dst, const _Complex float* src);
 	void (*zarg)(long N, _Complex float* dst, const _Complex float* src);
 	void (*zabs)(long N, _Complex float* dst, const _Complex float* src);
 

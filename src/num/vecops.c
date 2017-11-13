@@ -1,11 +1,11 @@
 /* Copyright 2013-2018. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2011-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
@@ -303,6 +303,12 @@ static void zphsr(long N, complex float* dst, const complex float* src)
 	}
 }
 
+static void zexp(long N, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = cexpf(src[i]);
+}
+
 static void zexpj(long N, complex float* dst, const complex float* src)
 {
 	for (long i = 0; i < N; i++)
@@ -575,6 +581,7 @@ const struct vec_ops cpu_ops = {
 	.zphsr = zphsr,
 	.zconj = zconj,
 	.zexpj = zexpj,
+	.zexp = zexp,
 	.zarg = zarg,
 	.zabs = zabs,
 
