@@ -192,6 +192,7 @@ MODULES_bart += -lismrm
 endif
 
 ifeq ($(NOLAPACKE),1)
+CPPFLAGS += -DNOLAPACKE
 MODULES += -llapacke
 endif
 

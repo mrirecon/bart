@@ -10,7 +10,11 @@
 
 #include "misc/misc.h"
 
+#ifndef NOLAPACKE
 #include <lapacke.h>
+#else
+#include "lapacke/lapacke.h"
+#endif
 
 #include "lapack.h"
 
