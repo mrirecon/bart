@@ -451,8 +451,8 @@ static unsigned long parallelizable(unsigned int D, unsigned int io, unsigned in
 }
 
 
-extern unsigned long num_chunk_size;
-unsigned long num_chunk_size = (32*1024);
+extern long num_chunk_size;
+long num_chunk_size = 32 * 1024;
 
 
 /**
