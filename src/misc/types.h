@@ -16,6 +16,13 @@
 
 
 #define CAST_CONST(T, x)  ((T)TYPE_CHECK(const T, x))
+#define CAST_MAYBE(T, x)	({ \
+	__typeof__(x) __tmp = (x); \
+	extern __typeof__(*__tmp->TYPEID) T ## _TYPEID; \
+	(__tmp->TYPEID == &T ## _TYPEID) ?		\
+		CONTAINER_OF(__tmp, struct T, INTERFACE)\
+		: NULL;	\
+})
 #define CAST_DOWN(T, x)	({ \
 	__typeof__(x) __tmp = (x); \
 	extern __typeof__(*__tmp->TYPEID) T ## _TYPEID; \
