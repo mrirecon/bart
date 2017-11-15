@@ -237,7 +237,7 @@ macro(CONFIG_BY_REPLACEMENT INFILE OUTFILE PREFIX )
   endif()
 endmacro()
 
-set(BART_SUPPORT_LIBS calib misc dfwavelet grecon iter linops lowrank noir noncart num sake sense simu wavelet)
+set(BART_SUPPORT_LIBS calib misc dfwavelet grecon iter linops lowrank nlops noir noncart num sake sense simu wavelet)
 if(USE_ISMRMRD)
   list(APPEND BART_SUPPORT_LIBS ismrm)
   link_directories(${ISMRMRD_LIBRARY_DIRS})
