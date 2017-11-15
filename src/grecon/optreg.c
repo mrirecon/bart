@@ -55,7 +55,7 @@ void help_reg(void)
 			"-R I:B:C  \tl1-norm in image domain\n"
 			"-R W:A:B:C\tl1-wavelet\n"
 		        "-R N:A:B:C\tNormalized Iterative Hard Thresholding (NIHT), image domain\n"
-		        "\t\t\tC is an integer percentage, i.e. from 0-100"
+		        "\t\tC is an integer percentage, i.e. from 0-100\n"
 		        "-R H:A:B:C\tNIHT, wavelet domain\n"
 			"-R T:A:B:C\ttotal variation\n"
 			"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
@@ -306,7 +306,11 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 		case NIHTWAV:
 		{
 			debug_printf(DP_INFO, "NIHT with wavelets regularization: k = %d%% of total elements in each wavelet transform\n", regs[nr].k);
-			use_gpu = false; // not implemented, TODO: implement NIHT with gpu
+			if (use_gpu){
+				debug_printf(DP_WARN, "GPU operation is not currently implemented for NIHT.\nContinuing with CPU.\n");
+				use_gpu = false; // not implemented, TODO: implement NIHT with gpu
+			}
+
 			long img_strs[N];
 			md_calc_strides(N, img_strs, img_dims, CFL_SIZE);
 
@@ -328,10 +332,10 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 				}
 			}
 
-			trafos[nr] = linop_wavelet_create(N, wflags, img_dims, img_strs, minsize);
+			trafos[nr] = linop_wavelet_create(N, wflags, img_dims, img_strs, minsize, randshift);
 
-			const long* wav_dims = linop_codomain(trafos[nr])->dims;
-
+			long wav_dims[DIMS];
+			md_copy_dims(DIMS, wav_dims, linop_codomain(trafos[nr])->dims);
 			unsigned int K = (md_calc_size(wxdim, wav_dims) / 100) * regs[nr].k;
 
 			debug_printf(DP_DEBUG3, "\nK = %d elements will be thresholded per wavelet transform\n", K);
@@ -347,7 +351,10 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 		case NIHTIM:
 		{
 			debug_printf(DP_INFO, "NIHT regularization in the image domain: k = %d%% of total elements in image vector\n", regs[nr].k);
-			use_gpu = false; // not implemented, TODO: implement NIHT with gpu
+			if (use_gpu){
+				debug_printf(DP_WARN, "GPU operation is not currently implemented for NIHT.\nContinuing with CPU.\n");
+				use_gpu = false; // not implemented, TODO: implement NIHT with gpu
+			}
 
 			long thresh_dims[N];
 			md_select_dims(N, regs[nr].xflags, thresh_dims, img_dims);		

@@ -81,7 +81,7 @@ int main_wavelet(int argc, char* argv[])
 	long strs[N];
 	md_calc_strides(N, strs, dims, CFL_SIZE);
 
-	const struct linop_s* w = linop_wavelet_create(N, flags, dims, strs, minsize);
+	const struct linop_s* w = linop_wavelet_create(N, flags, dims, strs, minsize, false);
 
 	long odims[N];
 	md_copy_dims(N, odims, (adj ? linop_domain : linop_codomain)(w)->dims);

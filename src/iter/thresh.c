@@ -101,7 +101,8 @@ static void hardthresh_apply(const operator_data_t* _data,  float mu, complex fl
 	UNUSED(mu);
 	const struct thresh_s* data = CAST_DOWN(thresh_s, _data);
 
-	md_zhardthresh2(data->D, data->dim, data->k, data->flags, data->tmp_norm, data->str, optr, data->str, iptr);
+	//only producing the support mask
+	md_zhardthresh_mask2(data->D, data->dim, data->k, data->flags, data->tmp_norm, data->str, optr, data->str, iptr);
 }
 
 

@@ -5,7 +5,7 @@
 
 #include "misc/cppwrap.h"
 
-extern struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const long dims[__VLA(N)], const long istr[__VLA(N)], const long minsize[__VLA(N)]);
+extern struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const long dims[__VLA(N)], const long istr[__VLA(N)], const long minsize[__VLA(N)], _Bool randshift);
 
 #include "misc/cppwrap.h"
 
