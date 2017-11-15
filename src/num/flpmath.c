@@ -43,7 +43,6 @@
 #include "misc/types.h"
 #include "misc/debug.h"
 
-
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 /*
@@ -2937,6 +2936,105 @@ void md_zsoftthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 }
 
 /**
+ * Hard Thresholding mask complex array (nonzero support of k-largest elements)
+ * Writes to the output a mask of the non-zero elements in the input
+ *
+ * return HardThreshSupp(ptr)
+ */
+static void nary_zhardthresh_mask(struct nary_opt_data_s* data, void* ptr[])
+{
+	data->ops->zhardthresh_mask(data->size, (*(unsigned int*)data->data_ptr), ptr[0], ptr[1]);
+}
+
+/**
+ * Produces a mask (1s and 0s) of the non-zero support of a hard thresholded input vector
+ * Multi-dimensional operation with strides
+ * Hard thresholding is performed by selection of the k largest elements in input.
+ *
+ * @param D number of dimensions
+ * @param dim dimensions of input/output
+ * @param k threshold parameter
+ * @param flags flags for joint operation
+ * @param ostr output strides
+ * @param optr pointer to output
+ * @param istr input strides
+ * @param iptr pointer to input
+ */
+void md_zhardthresh_mask2(unsigned int D, const long dim[D], unsigned int k, unsigned int flags, complex float* tmp_norm, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	if (0 == flags) {
+		optimized_twoop_oi(D, dim, ostr, optr, istr, iptr, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask, &k);
+		return;
+	}
+
+	long norm_dims[D];
+	long norm_strs[D];
+
+	md_select_dims(D, ~flags, norm_dims, dim);
+	md_calc_strides(D, norm_strs, norm_dims, CFL_SIZE);
+
+	md_zrss(D, dim, flags, tmp_norm, iptr);
+	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask, &k);
+	md_copy2(D, dim, ostr, optr, norm_strs, tmp_norm, CFL_SIZE);
+}
+
+/**
+ * Produces a mask (1s and 0s) of the non-zero support of a hard thresholded input vector
+ * Multi-dimensional operation using the same strides for input and output.
+ * Hard thresholding is performed by selection of the k largest elements in input.
+ *
+ * @param D number of dimensions
+ * @param dim dimensions of input/output
+ * @param k threshold parameter
+ * @param optr pointer to output
+ * @param iptr pointer to input
+ */
+void md_zhardthresh_mask(unsigned int D, const long dim[D], unsigned int k, unsigned int flags, complex float* optr, const complex float* iptr)
+{
+	long str[D];
+	md_calc_strides(D, str, dim, CFL_SIZE);
+
+	long norm_dims[D];
+	md_select_dims(D, ~flags, norm_dims, dim);
+
+	complex float* tmp_norm = md_alloc_sameplace(D, norm_dims, CFL_SIZE, iptr);
+
+	md_zhardthresh_mask2(D, dim, k, flags, tmp_norm, str, optr, str, iptr);
+
+	md_free(tmp_norm);
+
+}
+
+/**
+ * Joint Hard thresholding  (with strides)
+ * Performs hard thresholding to the norm along dimension specified by flags
+ * Applies the support of thresholded norm to every vector along that dimension
+ * Hard thresholding refers to the selection of the k largest elements in vector.
+ *
+ * @param D number of dimensions
+ * @param dims dimensions of input/output
+ * @param k threshold (sorted) index
+ * @param flags jointly thresholded dimensions
+ * @param tmp_norm temporary array for joint operation
+ * @param ostrs destination strides
+ * @param optr destination -- thresholded values
+ * @param istrs source strides
+ * @param iptr source -- values to be thresholded
+ */
+void md_zhardthresh_joint2(unsigned int D, const long dims[D], unsigned int k, unsigned int flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+{
+	long norm_dims[D];
+	long norm_strs[D];
+
+	md_select_dims(D, ~flags, norm_dims, dims);
+	md_calc_strides(D, norm_strs, norm_dims, CFL_SIZE);
+
+	md_zrss(D, dims, flags, tmp_norm, iptr);
+	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask, &k);
+	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
+}
+
+/**
  * Hard Thresholding complex array (select k-largest elements)
  *
  * return HardThresh(ptr)
@@ -2945,7 +3043,6 @@ static void nary_zhardthresh(struct nary_opt_data_s* data, void* ptr[])
 {
 	data->ops->zhardthresh(data->size, (*(unsigned int*)data->data_ptr), ptr[0], ptr[1]);
 }
-
 
 /**
  * Hard thresholding (with strides)
@@ -2964,7 +3061,7 @@ static void nary_zhardthresh(struct nary_opt_data_s* data, void* ptr[])
  * @param istrs source strides
  * @param iptr source -- values to be thresholded
  */
-void md_zhardthresh2(unsigned int D, const long dims[D], unsigned int k, unsigned int flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+void md_zhardthresh2(unsigned int D, const long dims[D], unsigned int k, unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
 	if (0 == flags) {
 
@@ -2973,18 +3070,14 @@ void md_zhardthresh2(unsigned int D, const long dims[D], unsigned int k, unsigne
 	}
 
 	long norm_dims[D];
-	long norm_strs[D];
-
 	md_select_dims(D, ~flags, norm_dims, dims);
-	md_calc_strides(D, norm_strs, norm_dims, CFL_SIZE);
 
-	md_zrss(D, dims, flags, tmp_norm, iptr);
-	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh, &k);
+	complex float* tmp_norm = md_alloc_sameplace(D, norm_dims, CFL_SIZE, iptr);
 
-	// TODO: change this operation for NIHT joint thresholding
-	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
+	md_zhardthresh_joint2(D, dims, k, flags, tmp_norm, ostrs, optr, istrs,iptr);
+
+	md_free(tmp_norm);
 }
-
 
 /**
  * Hard thresholding (without strides)
@@ -3003,18 +3096,8 @@ void md_zhardthresh(unsigned int D, const long dims[D], unsigned int k, unsigned
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
 
-	long norm_dims[D];
-	complex float* tmp_norm = NULL;
+	md_zhardthresh2(D, dims, k, flags, strs, optr, strs, iptr);
 
-	if (0 != flags) {
-
-		md_select_dims(D, ~flags, norm_dims, dims);
-		tmp_norm = md_alloc_sameplace(D, norm_dims, CFL_SIZE, iptr);
-	}
-
-	md_zhardthresh2(D, dims, k, flags, tmp_norm, strs, optr, strs, iptr);
-
-	md_free(tmp_norm);
 }
 
 /**

@@ -457,19 +457,26 @@ static void zhardthresh(long N,  unsigned int k, complex float* d, const complex
 	}
 }
 
-/* Apply the non-zero support of one vector to another, complex numbers */ 
-static void nzsupport(long N, float* out, const float* in)
-{
-#ifdef _OPENMP
-	int par = 0;
+/**
+ * Hard thesholding mask, m = HS(x, thr).
+ * computes the non-zero complex support vector, m = 1.0 * (abs(x) >= t(kmax))
+ * This mask should be applied by complex multiplication.
+ *
+ * @param N number of elements
+ * @param k threshold parameter, index of kth largest element of sorted x
+ * @param d pointer to destination
+ * @param x pointer to input
+ */
 
-	par = omp_in_parallel();
-#endif
+static void zhardthresh_mask(long N,  unsigned int k, complex float* d, const complex float* x)
+{
 	
-#pragma omp parallel for if (par == 0)	// if not already in a parallel region
-	for (long i = 0; i < N; ++i){
-		if (in[i] == 0.)
-			out[i] = 0.; 
+	float thr = klargest_complex_partsort(N, k, x);
+
+	for (long i = 0; i < N; i++) {
+
+		float norm = cabsf(x[i]);
+		d[i] = (norm > thr) ? 1. : 0.;
 	}
 }
 
@@ -574,7 +581,7 @@ const struct vec_ops cpu_ops = {
 	.softthresh = softthresh,
 	.softthresh_half = softthresh_half,
 	.zhardthresh = zhardthresh,
-	.nzsupport = nzsupport,
+	.zhardthresh_mask = zhardthresh_mask,
 };
 
 
@@ -598,7 +605,7 @@ struct vec_iter_s {
 	void (*xpay)(long N, float alpha, float* a, const float* x);
 	void (*axpy)(long N, float* a, float alpha, const float* x);
 	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
-	void (*nzsupport)(long N, float* out, const float* in);
+	void (*zmul)(long N, complex float* dst, const complex float* src1, const complex float* src2);
 };
 
 
@@ -618,7 +625,7 @@ const struct vec_iter_s cpu_iter_ops = {
 	.add = add,
 	.sub = sub,
 	.swap = swap,
-	.nzsupport = nzsupport,
+	.zmul = zmul
 };
 
 

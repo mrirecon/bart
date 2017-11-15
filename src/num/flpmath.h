@@ -153,9 +153,14 @@ extern void md_zsoftthresh_core2(unsigned int D, const long dims[__VLA(D)], floa
 extern void md_zsoftthresh2(unsigned int D, const long dim[__VLA(D)], float lambda, unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 extern void md_zsoftthresh(unsigned int D, const long dim[__VLA(D)], float lambda, unsigned int flags, _Complex float* optr, const _Complex float* iptr);
 
-extern void md_zhardthresh2(unsigned int D, const long dims[__VLA(D)], unsigned int k, unsigned int flags, _Complex float* tmp_norm, const long ostrs[__VLA(D)], _Complex float* optr, const long istrs[__VLA(D)], const _Complex float* iptr);
-extern void md_zhardthresh(unsigned int D, const long dims[__VLA(D)], unsigned int k, unsigned int flags, _Complex float* optr, const _Complex float* iptr);
+void md_zhardthresh_mask2(unsigned int D, const long dim[__VLA(D)], unsigned int k, unsigned int flags, _Complex float* tmp_norm, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
+extern void md_zhardthresh_mask(unsigned int D, const long dim[__VLA(D)], unsigned int k, unsigned int flags, _Complex float* optr, const _Complex float* iptr);
+
+extern void md_zhardthresh_joint2(unsigned int D, const long dims[__VLA(D)], unsigned int k, unsigned int flags, _Complex float* tmp_norm, const long ostrs[__VLA(D)], _Complex float* optr, const long istrs[__VLA(D)], const _Complex float* iptr);
+
+extern void md_zhardthresh2(unsigned int D, const long dims[__VLA(D)], unsigned int k, unsigned int flags, const long ostrs[__VLA(D)], _Complex float* optr, const long istrs[__VLA(D)], const _Complex float* iptr);
+extern void md_zhardthresh(unsigned int D, const long dims[__VLA(D)], unsigned int k, unsigned int flags, _Complex float* optr, const _Complex float* iptr);
 
 extern void md_zconj(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
 extern void md_zconj2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);

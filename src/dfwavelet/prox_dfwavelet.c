@@ -273,7 +273,7 @@ struct prox_4pt_dfwavelet_data* prepare_prox_4pt_dfwavelet_data(const long im_di
 	long strs[DIMS];
 	md_calc_strides(DIMS, strs, data->tim_dims, CFL_SIZE);
 
-	data->w_op = linop_wavelet_create(DIMS, FFT_FLAGS, data->tim_dims, strs, min_size);
+	data->w_op = linop_wavelet_create(DIMS, FFT_FLAGS, data->tim_dims, strs, min_size, false);
         data->wthresh_op = prox_unithresh_create(DIMS, data->w_op, lambda, MD_BIT(data->flow_dim), use_gpu);
 
         return PTR_PASS(data);

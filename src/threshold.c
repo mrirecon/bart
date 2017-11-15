@@ -55,7 +55,7 @@ static void wthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
 
-	const struct linop_s* w = linop_wavelet_create(D, wflags, dims, strs, minsize);
+	const struct linop_s* w = linop_wavelet_create(D, wflags, dims, strs, minsize, false);
 	const struct operator_p_s* p = prox_unithresh_create(D, w, lambda, flags, false);
 
 	operator_p_apply(p, 1., D, dims, out, D, dims, in);
