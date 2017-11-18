@@ -251,6 +251,17 @@ Python interactively as follows:
 
     $ python -i startup.py
 
+To avoid doing the above everytime, it is recommended to update your
+PYTHONPATH environment. For example, in Linux, assuming your 
+TOOLBOX_PATH is set, add the below line to your bashrc file.
+
+    $ export PYTHONPATH="${TOOLBOX_PATH}/python:$PYTHONPATH"
+
+After doing so, we can simply import as needed.
+
+    >>> from bart import bart
+    >>> import cfl
+
 You can use Python to read and visualize/process files. To write
 a data file 'xyz' from Python you can run:
 
