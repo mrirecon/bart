@@ -60,7 +60,9 @@ static const char* trim_space(const char* str)
 
 static bool show_option_p(const struct opt_s opt)
 {
-	return (NULL != opt.descr) && (')' != opt.descr[strlen(opt.descr) - 1]);
+	return     (NULL != opt.descr)
+		&& !(   ('(' == trim_space(opt.descr)[0])
+		     && (')' == opt.descr[strlen(opt.descr) - 1]));
 }
 
 static void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
