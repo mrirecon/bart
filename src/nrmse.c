@@ -65,6 +65,9 @@ int main_nrmse(int argc, char* argv[])
 
 		float n = md_znorm(DIMS, ref_dims, ref);
 
+		if (0. == n)
+			error("Reference has zero norm");
+
 		sc /= n * n;
 
 		debug_printf(DP_INFO, "Scaled by: %f%+fi\n", crealf(sc), cimagf(sc));
