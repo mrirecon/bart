@@ -89,7 +89,7 @@ struct iter_chambolle_pock_conf {
 	float theta;
 	float decay;
 	float tol;
-	bool fast;
+	_Bool fast;
 };
 
 extern DEF_TYPEID(iter_chambolle_pock_conf);
