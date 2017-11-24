@@ -181,6 +181,7 @@ build the ISMRM raw data import tool:
     src/num	base library with numerical functions
     src/iter	iterative algorithms
     src/linops	library of linear operators
+    src/nlops   library of nonlinear operators
     src/misc	miscellaneous (e.g. I/O)
     src/ismrm	support for ISMRM raw data format
     src/simu	source code for simulation
@@ -378,8 +379,52 @@ copyright headers in all new or changed files.
 
 
 
+6. Troubleshooting
+==================
 
-6. References
+6.1. Installation Problems
+--------------------------
+
+When problems occur after updating BART or changing build
+variables, it may help to clean the build environment and
+to recompile BART:
+
+    $ make allclean
+    $ make
+
+
+Make sure the PATH and TOOLBOX_PATH environment variables
+are set correctly. Sometimes, several versions of BART
+are installed and the wrong version is used accidentally.
+
+
+6.2. Reporting Problems
+-----------------------
+
+Please report problems to our mailing list and include
+the following information (as applicable):
+
+* The output of the 'version' command:
+
+    $ bart version -V
+
+* The exact BART command-line that caused the problem.
+
+* The specific error message.
+
+* Information about the data files used when the problem occured
+  (please provide atleast the dimensions of all input files).
+
+
+
+6.3. Debugging
+--------------
+
+See 'doc/debugging.txt' for details.
+
+
+
+7. References
 =============
 
 * Tamir JI, Ong F, Cheng JY, Uecker M, Lustig M,
