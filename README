@@ -81,11 +81,11 @@ To install the required libraries on Debian and Ubuntu run:
 ### 2.1.2. Mac OS X
 
 Xcode is required and it is recommended to install a newer version 
-of gcc (4.7 seems to work) from MacPorts (http://www.macports.org/).
+of gcc from MacPorts (http://www.macports.org/).
 
 
     $ sudo port install fftw-3-single
-    $ sudo port install gcc47
+    $ sudo port install gcc6
     $ sudo port install libpng
     $ sudo port install openblas
 
