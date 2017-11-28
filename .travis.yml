@@ -198,13 +198,13 @@ matrix:
 
     - env: MACPORTS=0
       os: osx
-      compiler: gcc
+      compiler: gcc-6
       script:
         - make test
         # make utest
       before_install:
         - brew update
-        - brew install fftw gcc homebrew/science/openblas
+        - brew install fftw gcc@6 homebrew/science/openblas
 
 script:
   - make bart
