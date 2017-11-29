@@ -13,11 +13,4 @@ extern int poissondisc_mc(int D, int T, int N, int II, float vardens,
 
 extern void mc_poisson_rmatrix(int D, int T, float rmatrix[static T][T], const float delta[static T]);
 
-#if __GNUC__ < 5
-#include "misc/pcaa.h"
-
-#define poissondisc_mc(A, B, C, D, E, x, y, z) \
-	poissondisc_mc(A, B, C, D, E, AR2D_CAST(float, B, B, x), y, z)
-
-#endif
 
