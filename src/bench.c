@@ -486,11 +486,13 @@ int main_bench(int argc, char* argv[])
 {
 	bool threads = false;
 	bool scaling = false;
+	unsigned int reps = 5;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('T', &threads, "varying number of threads"),
 		OPT_SET('S', &scaling, "varying problem size"),
+		OPT_UINT('R', &reps, "repetitions", "number of repetitionse [Default: 5]"),
 	};
 
 	cmdline(&argc, argv, 0, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -499,7 +501,7 @@ int main_bench(int argc, char* argv[])
 	long strs[BENCH_DIMS];
 	long pos[BENCH_DIMS] = { 0 };
 
-	dims[REPETITION_IND] = 5;
+	dims[REPETITION_IND] = reps;
 	dims[THREADS_IND] = threads ? 8 : 1;
 	dims[SCALE_IND] = scaling ? 5 : 1;
 	dims[TESTS_IND] = sizeof(benchmarks) / sizeof(benchmarks[0]);
