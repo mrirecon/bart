@@ -123,6 +123,7 @@ static double bench_generic_add(long dims[DIMS], unsigned int flags, bool forloo
 
 	if (forloop) {
 
+#pragma omp parallel for
 		for (long i = 0; i < L; i++) {
 
 			for (long j = 0; j < T; j++)
@@ -173,6 +174,7 @@ static double bench_generic_sum(long dims[DIMS], unsigned int flags, bool forloo
 
 	if (forloop) {
 
+#pragma omp parallel for
 		for (long i = 0; i < L; i++) {
 
 			for (long j = 0; j < T; j++)
