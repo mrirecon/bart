@@ -196,16 +196,6 @@ matrix:
         - CC=gcc CXX=g++ cmake -DLINALG_VENDOR=LAPACKE -DLAPACKE_DIR=/usr/lib -DUSE_MATLAB=OFF -DUSE_CUDA=ON -DCUDA_TOOLKIT_ROOT_DIR=${CUDA_BASE} ..
         - make
 
-    - env: MACPORTS=0
-      os: osx
-      compiler: gcc-6
-      script:
-        - make test
-        # make utest
-      before_install:
-        - brew update
-        - brew install fftw gcc@6 homebrew/science/openblas
-
 script:
   - make bart
   - make all
