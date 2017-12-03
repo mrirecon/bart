@@ -514,6 +514,7 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 	if (conf->rotphase) {
 
+		// rotate the the phase with respect to the first principle component
 		long scc_dims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
 		scc_dims[COIL_DIM] = channels;
 		scc_dims[MAPS_DIM] = channels;
@@ -564,7 +565,6 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 	debug_printf(DP_DEBUG1, "Fix phase...\n");
 
 
-	// rotate the the phase with respect to the first principle component
 	fixphase2(DIMS, out_dims, COIL_DIM, rot[0], out_data, out_data);
 
 	md_free(imgcov);

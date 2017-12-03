@@ -65,6 +65,7 @@ int main_ecalib(int argc, char* argv[])
 		OPT_SET('W', &conf.weighting, "soft-weighting of the singular vectors."),
 		OPT_SET('I', &conf.intensity, "intensity correction"),
 		OPT_SET('1', &one, "perform only first part of the calibration"),
+		OPT_CLEAR('P', &conf.rotphase, "Do not rotate the phase with respect to the first principal component"),
 		OPT_CLEAR('O', &conf.orthiter, "()"),
 		OPT_FLOAT('b', &conf.perturb, "", "()"),
 		OPT_SET('V', &print_svals, "()"),

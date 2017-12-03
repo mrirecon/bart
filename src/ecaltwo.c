@@ -47,7 +47,7 @@ int main_ecaltwo(int argc, char* argv[])
 
 		OPT_FLOAT('c', &conf.crop, "crop_value", "Crop the sensitivities if the eigenvalue is smaller than {crop_value}."),
 		OPT_LONG('m', &maps, "maps", "Number of maps to compute."),
-		OPT_SET('S', &conf.softcrop, "()"),
+		OPT_SET('S', &conf.softcrop, "Create maps with smooth transitions (Soft-SENSE)."),
 		OPT_CLEAR('O', &conf.orthiter, "()"),
 		OPT_SET('g', &conf.usegpu, "()"),
 	};
