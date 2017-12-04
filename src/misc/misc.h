@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdnoreturn.h>
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
@@ -49,7 +50,7 @@ extern void warn_nonnull_ptr(void*);
 
 
 extern int parse_cfl(_Complex float res[1], const char* str);
-extern void error(const char* str, ...);
+extern noreturn void error(const char* str, ...);
 
 extern void print_dims(int D, const long dims[__VLA(D)]);
 extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
