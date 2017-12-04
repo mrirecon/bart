@@ -24,8 +24,6 @@
 #include <cuda.h>
 #include <cublas.h>
 
-#include <omp.h>
-
 #include "num/vecops.h"
 #include "num/gpuops.h"
 #include "num/gpukrnls.h"

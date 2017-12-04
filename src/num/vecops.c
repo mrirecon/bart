@@ -25,10 +25,6 @@
 #include <complex.h>
 #include <stdbool.h>
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
 #include "misc/misc.h"
 #include "misc/debug.h"
 
