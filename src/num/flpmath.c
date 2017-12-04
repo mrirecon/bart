@@ -1808,7 +1808,7 @@ void md_slessequal(unsigned int D, const long dims[D], float* optr, const float*
  */
 void md_greatequal2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	MAKE_3OP(ge, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	md_lessequal2(D, dims, ostr, optr, istr2, iptr2, istr1, iptr1);
 }
 
 

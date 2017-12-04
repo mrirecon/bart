@@ -345,12 +345,6 @@ static void vec_le(long N, float* dst, const float* src1, const float* src2)
 		dst[i] = (src1[i] <= src2[i]);
 }
 
-static void vec_ge(long N, float* dst, const float* src1, const float* src2)
-{
-	for (long i = 0; i < N; i++)
-		dst[i] = (src1[i] >= src2[i]);
-}
-
 /**
  * Step (1) of soft thesholding, y = ST(x, lambda).
  * Only computes the residual, resid = MAX( (abs(x) - lambda)/abs(x)), 0 )
@@ -547,7 +541,6 @@ const struct vec_ops cpu_ops = {
 	.sqrt = vec_sqrt,
 
 	.le = vec_le,
-	.ge = vec_ge,
 
 	.zmul = zmul,
 	.zdiv = zdiv,

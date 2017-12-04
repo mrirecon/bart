@@ -639,20 +639,6 @@ extern "C" void cuda_le(long N, float* dst, const float* src1, const float* src2
 	kern_le<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
 }
 
-__global__ void kern_ge(int N, float* dst, const float* src1, const float* src2)
-{
-	int start = threadIdx.x + blockDim.x * blockIdx.x;
-	int stride = blockDim.x * gridDim.x;
-
-	for (int i = start; i < N; i += stride)
-		dst[i] = (src1[i] >= src2[i]);
-}
-
-extern "C" void cuda_ge(long N, float* dst, const float* src1, const float* src2)
-{
-	kern_ge<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
-}
-
 __device__ cuFloatComplex cuDouble2Float(cuDoubleComplex x)
 {
 	return make_cuFloatComplex(cuCreal(x), cuCimag(x));
