@@ -499,7 +499,7 @@ static void make_z2opf_from_real(size_t offset, unsigned int D, const long dims[
 }
 
 
-// type save
+// type safe
 #define MAKE_3OP(fun, ...)	((void)TYPE_CHECK(r3op_t, cpu_ops.fun), make_3op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
 #define MAKE_Z3OP(fun, ...)	((void)TYPE_CHECK(z3op_t, cpu_ops.fun), make_z3op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
 #define MAKE_2OP(fun, ...)	((void)TYPE_CHECK(r2op_t, cpu_ops.fun), make_2op(offsetof(struct vec_ops, fun),  __VA_ARGS__))
@@ -2913,6 +2913,7 @@ void md_zsoftthresh2(unsigned int D, const long dims[D], float lambda, unsigned 
 	md_free(tmp_norm);
 }
 
+
 /**
  * Soft thresholding using norm along arbitrary dimension (without strides)
  *
@@ -2934,6 +2935,7 @@ void md_zsoftthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 
 	md_zsoftthresh2(D, dims, lambda, flags, strs, optr, strs, iptr);
 }
+
 
 /**
  * Hard Thresholding mask complex array (nonzero support of k-largest elements)
@@ -2963,6 +2965,7 @@ static void nary_zhardthresh_mask(struct nary_opt_data_s* data, void* ptr[])
 void md_zhardthresh_mask2(unsigned int D, const long dim[D], unsigned int k, unsigned int flags, complex float* tmp_norm, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
 	if (0 == flags) {
+
 		optimized_twoop_oi(D, dim, ostr, optr, istr, iptr, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask, &k);
 		return;
 	}
@@ -2977,6 +2980,7 @@ void md_zhardthresh_mask2(unsigned int D, const long dim[D], unsigned int k, uns
 	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask, &k);
 	md_copy2(D, dim, ostr, optr, norm_strs, tmp_norm, CFL_SIZE);
 }
+
 
 /**
  * Produces a mask (1s and 0s) of the non-zero support of a hard thresholded input vector
@@ -3002,8 +3006,8 @@ void md_zhardthresh_mask(unsigned int D, const long dim[D], unsigned int k, unsi
 	md_zhardthresh_mask2(D, dim, k, flags, tmp_norm, str, optr, str, iptr);
 
 	md_free(tmp_norm);
-
 }
+
 
 /**
  * Joint Hard thresholding  (with strides)
@@ -3033,6 +3037,7 @@ void md_zhardthresh_joint2(unsigned int D, const long dims[D], unsigned int k, u
 	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask, &k);
 	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
 }
+
 
 /**
  * Hard Thresholding complex array (select k-largest elements)
@@ -3079,6 +3084,7 @@ void md_zhardthresh2(unsigned int D, const long dims[D], unsigned int k, unsigne
 	md_free(tmp_norm);
 }
 
+
 /**
  * Hard thresholding (without strides)
  *
@@ -3097,8 +3103,8 @@ void md_zhardthresh(unsigned int D, const long dims[D], unsigned int k, unsigned
 	md_calc_strides(D, strs, dims, CFL_SIZE);
 
 	md_zhardthresh2(D, dims, k, flags, strs, optr, strs, iptr);
-
 }
+
 
 /**
  * Elementwise minimum of input and scalar (with strides)

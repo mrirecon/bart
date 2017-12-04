@@ -447,7 +447,6 @@ static float klargest_complex_partsort( unsigned int N,  unsigned int k, const c
 
 static void zhardthresh(long N,  unsigned int k, complex float* d, const complex float* x)
 {
-	
 	float thr = klargest_complex_partsort(N, k, x);
    
 	for (long i = 0; i < N; i++) {
@@ -470,7 +469,6 @@ static void zhardthresh(long N,  unsigned int k, complex float* d, const complex
 
 static void zhardthresh_mask(long N,  unsigned int k, complex float* d, const complex float* x)
 {
-	
 	float thr = klargest_complex_partsort(N, k, x);
 
 	for (long i = 0; i < N; i++) {
