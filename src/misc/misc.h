@@ -50,7 +50,11 @@ extern void warn_nonnull_ptr(void*);
 
 
 extern int parse_cfl(_Complex float res[1], const char* str);
+#ifndef __CUDACC__
 extern noreturn void error(const char* str, ...);
+#else
+extern void error(const char* str, ...);
+#endif
 
 extern void print_dims(int D, const long dims[__VLA(D)]);
 extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
