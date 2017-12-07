@@ -271,6 +271,7 @@ static void make_3op(size_t offset, unsigned int D, const long dim[D], const lon
 				(size_t[3]){ [0 ... 2] = FL_SIZE }, nary_3op, &offset);
 }
 
+
 static void nary_z3opd(struct nary_opt_data_s* data, void* ptr[])
 {
 	size_t offset = *(size_t*)data->data_ptr;
@@ -2234,6 +2235,9 @@ void md_abs(unsigned int D, const long dims[D], float* optr, const float* iptr)
 void md_zabs2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr,
 		const long istr[D], const complex float* iptr)
 {
+#if 1
+	MAKE_Z2OP(zabs, D, dims, ostr, optr, istr, iptr);
+#else
 	// FIXME: special case of md_rss
 
 	assert(optr != iptr);
@@ -2251,6 +2255,7 @@ void md_zabs2(unsigned int D, const long dims[D], const long ostr[D], complex fl
 	md_sqrt2(D + 1, dimsR, strsR, (float*)optr, strsR, (const float*)optr);
 #else
 	md_zsqrt2(D, dims, ostr, optr, ostr, optr);
+#endif
 #endif
 }
 
