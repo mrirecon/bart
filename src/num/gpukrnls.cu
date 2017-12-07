@@ -382,6 +382,11 @@ __device__ float zarg(cuFloatComplex x)
 	return atan2(cuCimagf(x), cuCrealf(x));
 }
 
+__device__ float zabs(cuFloatComplex x)
+{
+	return cuCabsf(x);
+}
+
 __device__ cuFloatComplex zlog(cuFloatComplex x)
 {
 	return make_cuFloatComplex(log(cuCabsf(x)), zarg(x));
@@ -518,6 +523,21 @@ __global__ void kern_zarg(int N, cuFloatComplex* dst, const cuFloatComplex* src)
 extern "C" void cuda_zarg(long N, _Complex float* dst, const _Complex float* src)
 {
 	kern_zarg<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+}
+
+
+__global__ void kern_zabs(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = make_cuFloatComplex(zabs(src[i]), 0.);
+}
+
+extern "C" void cuda_zabs(long N, _Complex float* dst, const _Complex float* src)
+{
+	kern_zabs<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 

@@ -310,6 +310,12 @@ static void zarg(long N, complex float* dst, const complex float* src)
 		dst[i] = cargf(src[i]);
 }
 
+static void zabs(long N, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = cabsf(src[i]);
+}
+
 
 static void max(long N, float* dst, const float* src1, const float* src2)
 {
@@ -555,6 +561,7 @@ const struct vec_ops cpu_ops = {
 	.zconj = zconj,
 	.zexpj = zexpj,
 	.zarg = zarg,
+	.zabs = zabs,
 
 	.zcmp = zcmp,
 	.zdiv_reg = zdiv_reg,

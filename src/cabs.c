@@ -11,6 +11,7 @@
 #include <complex.h>
 #include <stdio.h>
 
+#include "num/init.h"
 #include "num/flpmath.h"
 
 #include "misc/mmio.h"
@@ -27,6 +28,8 @@ static const char help_str[] = "Absolute value of array (|<input>|).\n";
 int main_cabs(int argc, char* argv[])
 {
 	mini_cmdline(&argc, argv, 2, usage_str, help_str);
+
+	num_init();
 
 	long dims[DIMS];
 
