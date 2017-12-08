@@ -39,6 +39,7 @@ struct cdiag_s {
 	unsigned int N;
 	const long* dims;
 	const long* strs;
+	const long* ddims;
 	const long* dstrs;
 	const complex float* diag;
 #ifdef USE_CUDA
@@ -57,7 +58,7 @@ static void cdiag_apply(const linop_data_t* _data, complex float* dst, const com
 	if (cuda_ondevice(src)) {
 
 		if (NULL == data->gpu_diag)
-			((struct cdiag_s*)data)->gpu_diag = md_gpu_move(data->N, data->dims, data->diag, CFL_SIZE);
+			((struct cdiag_s*)data)->gpu_diag = md_gpu_move(data->N, data->ddims, data->diag, CFL_SIZE);
 
 		diag = data->gpu_diag;
 	}
@@ -74,7 +75,7 @@ static void cdiag_adjoint(const linop_data_t* _data, complex float* dst, const c
 	if (cuda_ondevice(src)) {
 
 		if (NULL == data->gpu_diag)
-			((struct cdiag_s*)data)->gpu_diag = md_gpu_move(data->N, data->dims, data->diag, CFL_SIZE);
+			((struct cdiag_s*)data)->gpu_diag = md_gpu_move(data->N, data->ddims, data->diag, CFL_SIZE);
 
 		diag = data->gpu_diag;
 	}
@@ -93,12 +94,13 @@ static void cdiag_free(const linop_data_t* _data)
 	const struct cdiag_s* data = CAST_DOWN(cdiag_s, _data);
 
 #ifdef USE_CUDA
-	md_free((void*)data->gpu_diag);
+	md_free(data->gpu_diag);
 #endif
-	free((void*)data->dims);
-	free((void*)data->dstrs);
-	free((void*)data->strs);
-	free((void*)data);
+	xfree(data->ddims);
+	xfree(data->dims);
+	xfree(data->dstrs);
+	xfree(data->strs);
+	xfree(data);
 }
 
 static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag, bool rdiag)
@@ -109,18 +111,20 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
 	data->rmul = rdiag;
 
 	data->N = N;
-	PTR_ALLOC(long[N], dims2);
+	PTR_ALLOC(long[N], ddims);
 	PTR_ALLOC(long[N], dstrs);
+	PTR_ALLOC(long[N], dims2);
 	PTR_ALLOC(long[N], strs);
 
-	long ddims[N];
-	md_select_dims(N, flags, ddims, dims);
+	md_select_dims(N, flags, *ddims, dims);
+	md_calc_strides(N, *dstrs, *ddims, CFL_SIZE);
+
 	md_copy_dims(N, *dims2, dims);
 	md_calc_strides(N, *strs, dims, CFL_SIZE);
-	md_calc_strides(N, *dstrs, ddims, CFL_SIZE);
 
 	data->dims = *PTR_PASS(dims2);
 	data->strs = *PTR_PASS(strs);
+	data->ddims = *PTR_PASS(ddims);
 	data->dstrs = *PTR_PASS(dstrs);
 	data->diag = diag;	// make a copy?
 #ifdef USE_CUDA
