@@ -36,6 +36,7 @@
 #include "misc/misc.h"
 #include "misc/types.h"
 #include "misc/debug.h"
+#include "misc/nested.h"
 
 #include "num/optimize.h"
 #ifdef USE_CUDA
@@ -535,7 +536,8 @@ void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, 
 	long dim2[D];
 	md_select_dims(D, ~flags, dim2, dim);
 
-	void nary_clear(struct nary_opt_data_s* opt_data, void* ptr[])
+
+	NESTED(void, nary_clear, (struct nary_opt_data_s* opt_data, void* ptr[]))
 	{
 		size_t size2 = size * opt_data->size;
 
@@ -547,7 +549,7 @@ void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, 
 		}
 #endif
 		memset(ptr[0], 0, size2);
-	}
+	};
 
 	optimized_nop(1, MD_BIT(0), D, dim2, nstr, (void*[1]){ ptr }, (size_t[1]){ size }, nary_clear);
 }
@@ -661,7 +663,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 
 	const long (*nstr[2])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr };
 
-	void nary_copy(struct nary_opt_data_s* opt_data, void* ptr[])
+	NESTED(void, nary_copy, (struct nary_opt_data_s* opt_data, void* ptr[]))
 	{
 		size_t size2 = size * opt_data->size;
 
@@ -674,7 +676,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 #endif
 
 		memcpy(ptr[0], ptr[1], size2);
-	}
+	};
 
 	optimized_nop(2, MD_BIT(0), D, dim, nstr, (void*[2]){ optr, (void*)iptr }, (size_t[2]){ size, size }, nary_copy);
 }
@@ -758,7 +760,7 @@ void md_circular_swap2(unsigned int M, unsigned int D, const long dims[D], const
 		nstrs[i] = (const long (*)[D])strs[i];
 
 
-	void nary_swap(struct nary_opt_data_s* opt_data, void* ptr[])
+	NESTED(void, nary_swap, (struct nary_opt_data_s* opt_data, void* ptr[]))
 	{
 		size_t size2 = size * opt_data->size;
 
@@ -777,7 +779,7 @@ void md_circular_swap2(unsigned int M, unsigned int D, const long dims[D], const
 
 		if (size2 >= 32)
 			xfree(tmp);
-	}
+	};
 
 	optimized_nop(M, (1 << M) - 1, D, dims, nstrs, ptr, sizes, nary_swap);
 }
@@ -1260,11 +1262,11 @@ void md_flip(unsigned int D, const long dims[D], unsigned long flags, void* optr
 bool md_compare2(unsigned int D, const long dims[D], const long str1[D], const void* src1,
 			const long str2[D], const void* src2, size_t size)
 {
-	bool eq = true;
+	__block bool eq = true;
 
 	const long (*nstr[2])[D] = { (const long (*)[D])str1, (const long (*)[D])str2 };
 
-	void nary_cmp(struct nary_opt_data_s* opt_data, void* ptrs[])
+	NESTED(void, nary_cmp, (struct nary_opt_data_s* opt_data, void* ptrs[]))
 	{
 		size_t size2 = size * opt_data->size;
 
@@ -1272,7 +1274,7 @@ bool md_compare2(unsigned int D, const long dims[D], const long str1[D], const v
 
 		#pragma omp critical
 		eq &= eq2;
-	}
+	};
 
 	optimized_nop(2, 0u, D, dims, nstr, (void*[2]){ (void*)src1, (void*)src2 }, (size_t[2]){ size, size }, nary_cmp);
 
@@ -1306,11 +1308,12 @@ static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], un
 
                 dimensions[R] = 1;      // we made a copy in md_septrafo2
 		long dimsR = dimensions[R];
+		long strsR = strides[R]; // because of clang
 
-		void nary_septrafo(void* ptr[])
+		NESTED(void, nary_septrafo, (void* ptr[]))
 		{
-			fun(dimsR, strides[R], ptr[0]);
-		}
+			fun(dimsR, strsR, ptr[0]);
+		};
 
                 //md_nary_parallel(1, D, dimensions, nstrides, nptr, &data, nary_septrafo);
                 md_nary(1, D, dimensions, nstrides, nptr, nary_septrafo);

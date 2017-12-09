@@ -20,6 +20,7 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
+#include "misc/nested.h"
 
 
 
@@ -160,11 +161,11 @@ int main_homodyne(int argc, char* argv[])
 	md_calc_strides(N, wdata.wstrs, wdata.wdims, CFL_SIZE);
 	wdata.weights = md_alloc(N, wdata.wdims, CFL_SIZE);
 
-	void comp_weights(const long pos[])
+	NESTED(void, comp_weights, (const long pos[]))
 	{
 		wdata.weights[md_calc_offset(DIMS, wdata.wstrs, pos) / CFL_SIZE]
 			= homodyne_filter(wdata.wdims[pfdim], frac, alpha, clear, pos[pfdim]);
-	}
+	};
 
 	md_loop(N, wdata.wdims, comp_weights);
 

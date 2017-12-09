@@ -25,6 +25,7 @@
 #include "misc/types.h"
 #include "misc/debug.h"
 #include "misc/shrdptr.h"
+#include "misc/nested.h"
 
 #include "ops.h"
 
@@ -791,10 +792,10 @@ static void op_loop_fun(const operator_data_t* _data, unsigned int N, void* args
 	const struct op_loop_s* data = CAST_DOWN(op_loop_s, _data);
 	assert(N == data->N);
 
-	void op_loop_nary(void* ptr[])
+	NESTED(void, op_loop_nary, (void* ptr[]))
 	{
 		operator_generic_apply_unchecked(data->op, data->N, ptr);
-	}
+	};
 
 	md_nary(N, data->D, data->dims0, data->strs, args, op_loop_nary);
 }

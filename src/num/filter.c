@@ -19,6 +19,7 @@
 #include "num/loop.h"
 
 #include "misc/misc.h"
+#include "misc/nested.h"
 
 #include "filter.h"
 
@@ -77,7 +78,7 @@ void md_medianz2(int D, int M, const long dim[D], const long ostr[D], complex fl
 
 	dim2[M] = 1;
 
-	void nary_medianz(void* ptr[])
+	NESTED(void, nary_medianz, (void* ptr[]))
 	{
 		complex float tmp[length];
 
@@ -85,7 +86,7 @@ void md_medianz2(int D, int M, const long dim[D], const long ostr[D], complex fl
 			tmp[i] = *((complex float*)(ptr[1] + i * stride));
 
 		*(complex float*)ptr[0] = median_complex_float(length, tmp);
-	}
+	};
 
 	md_nary(2, D, dim2, nstr, nptr, nary_medianz);
 }

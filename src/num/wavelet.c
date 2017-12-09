@@ -135,19 +135,19 @@ static void iresort(int n, int str, float* src)
 
 
 
-static void cdf97_line(long n, long str, void* ptr)
+static NESTED(void, cdf97_line, (long n, long str, void* ptr))
 {
 	cdf97(n, str / 4, ptr);
 	resort(n, str / 4, ptr);
-}
+};
 
-static void icdf97_line(long n, long str, void* ptr)
+static NESTED(void, icdf97_line, (long n, long str, void* ptr))
 {
 	iresort(n, str / 4, ptr);
 	icdf97(n, str / 4, ptr);
-}
+};
 
-static void cdf97_line_nosort(long n, long str, void* ptr)
+static NESTED(void, cdf97_line_nosort, (long n, long str, void* ptr))
 {
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr))
@@ -159,9 +159,9 @@ static void cdf97_line_nosort(long n, long str, void* ptr)
 	else
 #endif
 	cdf97(n, str / 4, ptr);
-}
+};
 
-static void icdf97_line_nosort(long n, long str, void* ptr)
+static NESTED(void, icdf97_line_nosort, (long n, long str, void* ptr))
 {
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr))
@@ -173,7 +173,7 @@ static void icdf97_line_nosort(long n, long str, void* ptr)
 	else
 #endif
 	icdf97(n, str / 4, ptr);
-}
+};
 
 
 

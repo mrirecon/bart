@@ -14,10 +14,11 @@
 #include <stdbool.h>
 
 #include "misc/cppwrap.h"
+#include "misc/nested.h"
 
-typedef void (*md_nary_fun_t)(void* ptr[]);
-typedef void (*md_trafo_fun_t)(long N, long str, void* ptr);
-typedef void (*md_loop_fun_t)(const long* pos);
+typedef void CLOSURE_TYPE(md_nary_fun_t)(void* ptr[]);
+typedef void CLOSURE_TYPE(md_trafo_fun_t)(long N, long str, void* ptr);
+typedef void CLOSURE_TYPE(md_loop_fun_t)(const long* pos);
 
 
 extern void md_nary(unsigned int C, unsigned int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);

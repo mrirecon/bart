@@ -20,6 +20,7 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/nested.h"
 
 #include "num/multind.h"
 #include "num/vecops.h"
@@ -599,18 +600,18 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 #ifdef USE_CUDA
 	debug_printf(DP_DEBUG4, "This is a %s call\n.", use_gpu(N, nptr1) ? "gpu" : "cpu");
 
-	struct nary_opt_data_s data = { md_calc_size(skip, tdims), use_gpu(N, nptr1) ? &gpu_ops : &cpu_ops };
+	__block struct nary_opt_data_s data = { md_calc_size(skip, tdims), use_gpu(N, nptr1) ? &gpu_ops : &cpu_ops };
 #else
-	struct nary_opt_data_s data = { md_calc_size(skip, tdims), &cpu_ops };
+	__block struct nary_opt_data_s data = { md_calc_size(skip, tdims), &cpu_ops };
 #endif
 
 	debug_printf(DP_DEBUG4, "Vec: %d (%ld) Opt.: ", skip, data.size);
 	debug_print_dims(DP_DEBUG4, ND, tdims);
 
-	void nary_opt(void* ptr[])
+	NESTED(void, nary_opt, (void* ptr[]))
 	{
 		too(&data, ptr);
-	}
+	};
 
 	double start = timestamp();
 
