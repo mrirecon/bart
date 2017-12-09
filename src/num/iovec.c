@@ -58,9 +58,9 @@ const struct iovec_s* iovec_create(unsigned int N, const long dims[N], size_t si
 
 void iovec_free(const struct iovec_s* x)
 {
-	free((void*)x->dims);
-	free((void*)x->strs);
-	free((void*)x);
+	xfree(x->dims);
+	xfree(x->strs);
+	xfree(x);
 }
 
 bool iovec_check(const struct iovec_s* iov, unsigned int N, const long dims[N], const long strs[N])

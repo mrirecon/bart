@@ -138,8 +138,8 @@ static void grad_op_free(const linop_data_t* _data)
 {
 	const struct grad_s* data = CAST_DOWN(grad_s, _data);
 
-	free(data->dims);
-	free((void*)data);
+	xfree(data->dims);
+	xfree(data);
 }
 
 struct linop_s* linop_grad_create(long N, const long dims[N], unsigned int flags)

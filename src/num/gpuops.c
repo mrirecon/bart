@@ -254,7 +254,7 @@ void cuda_hostfree(void* ptr)
 	struct cuda_mem_s* nptr = search(ptr, true);
 	assert(nptr->ptr == ptr);
 	assert(!nptr->device);
-	free(nptr);
+	xfree(nptr);
 
 	cudaFreeHost(ptr);
 }

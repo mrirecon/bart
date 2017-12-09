@@ -41,8 +41,8 @@ static void rvc_free(const linop_data_t* _data)
 {
 	const struct rvc_s* data = CAST_DOWN(rvc_s, _data);
 
-	free((void*)data->dims);
-	free((void*)data);
+	xfree(data->dims);
+	xfree(data);
 }
 
 struct linop_s* linop_realval_create(unsigned int N, const long dims[N])

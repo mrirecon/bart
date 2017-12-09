@@ -201,7 +201,7 @@ static void cooley_tukey(unsigned int N, const long dims[N],
 
 	complex float* tw = md_alloc_sameplace(N + 1, tdims, CFL_SIZE, dst);
 	md_copy(N + 1, tdims, tw, &(*xtw)[0][0], CFL_SIZE);
-	free(xtw);
+	xfree(xtw);
 
 	md_fft2(N + 1, xdims, MD_SET(flags1, N), dirs, bstr, dst, astr, in);
 	(MD_IS_SET(dirs, D) ?  md_zmulc2 : md_zmul2)(N + 1, xdims, bstr, dst, bstr, dst, tstrs, tw);

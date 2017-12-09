@@ -177,7 +177,7 @@ static void lowrank(float alpha, int D, const long dims[D], complex float* matri
 		md_free(U2);
 		md_free(VT);
 		md_free(V2);
-		free(S);
+		xfree(S);
 	}
 
 	md_clear(D, dims, matrix, CFL_SIZE);

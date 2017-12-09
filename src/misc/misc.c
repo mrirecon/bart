@@ -349,7 +349,7 @@ void save_command_line(int argc, char* argv[])
 
 		strcpy((*buf) + pos, qargv[i]);
 		pos += strlen(qargv[i]);
-		free((void*)qargv[i]);
+		xfree(qargv[i]);
 		(*buf)[pos++] = ' ';
 	}
 
@@ -389,7 +389,7 @@ bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_ar
 
 	cmdline(argcp, argv, min_args, max_args, usage_str, help, 1, opts);
 
-	free(help);
+	xfree(help);
 
 	return flag;
 }

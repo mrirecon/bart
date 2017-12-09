@@ -175,7 +175,7 @@ void memcache_clear(int dev, void (*device_free)(const void*x))
 					nptr->len, nptr->device_id, nptr->thread_id);
 
 			device_free(nptr->ptr);
-			free(nptr);
+			xfree(nptr);
 		}
 
 	} while (NULL != nptr);
@@ -217,7 +217,7 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
 	} else {
 
 		device_free(ptr);
-		free(nptr);
+		xfree(nptr);
 	}
 }
 

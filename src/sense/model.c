@@ -180,7 +180,7 @@ static void maps_free_data(const linop_data_t* _data)
 		md_free((void*)data->gpu_sens);
 	}
 #endif
-	free((void*)data);
+	xfree(data);
 }
 
 

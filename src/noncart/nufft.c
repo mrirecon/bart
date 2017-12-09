@@ -563,32 +563,32 @@ static void nufft_free_data(const linop_data_t* _data)
 {
 	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
 
-	free(data->ksp_dims);
-	free(data->cim_dims);
-	free(data->cml_dims);
-	free(data->img_dims);
-	free(data->trj_dims);
-	free(data->lph_dims);
-	free(data->psf_dims);
-	free(data->wgh_dims);
+	xfree(data->ksp_dims);
+	xfree(data->cim_dims);
+	xfree(data->cml_dims);
+	xfree(data->img_dims);
+	xfree(data->trj_dims);
+	xfree(data->lph_dims);
+	xfree(data->psf_dims);
+	xfree(data->wgh_dims);
 
-	free(data->ksp_strs);
-	free(data->cim_strs);
-	free(data->cml_strs);
-	free(data->img_strs);
-	free(data->trj_strs);
-	free(data->lph_strs);
-	free(data->psf_strs);
-	free(data->wgh_strs);
+	xfree(data->ksp_strs);
+	xfree(data->cim_strs);
+	xfree(data->cml_strs);
+	xfree(data->img_strs);
+	xfree(data->trj_strs);
+	xfree(data->lph_strs);
+	xfree(data->psf_strs);
+	xfree(data->wgh_strs);
 
-	free(data->rlph_dims);
-	free(data->rpsf_dims);
-	free(data->rcml_dims);
-	free(data->rlph_strs);
-	free(data->rpsf_strs);
-	free(data->rcml_strs);
+	xfree(data->rlph_dims);
+	xfree(data->rpsf_dims);
+	xfree(data->rcml_dims);
+	xfree(data->rlph_strs);
+	xfree(data->rpsf_strs);
+	xfree(data->rcml_strs);
 
-	free(data->cm2_dims);
+	xfree(data->cm2_dims);
 
 	md_free(data->grid);
 	md_free(data->linphase);
@@ -606,7 +606,7 @@ static void nufft_free_data(const linop_data_t* _data)
 	if (data->conf.pcycle)
 		linop_free(data->cfft_op);
 
-	free(data);
+	xfree(data);
 }
 
 

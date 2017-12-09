@@ -109,9 +109,9 @@ static void prox_normaleq_del(const operator_data_t* _data)
 {
 	struct prox_normaleq_data* pdata = CAST_DOWN(prox_normaleq_data, _data);
 
-	free(pdata->cgconf);
+	xfree(pdata->cgconf);
 	md_free(pdata->adj);
-	free(pdata);
+	xfree(pdata);
 }
 
 const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const complex float* y)
@@ -416,7 +416,7 @@ static void prox_thresh_apply(const void* _data, float mu, complex float* dst, c
 
 static void prox_thresh_del(const void* _data)
 {
-	free((void*)_data);
+	xfree((void*)_data);
 }
 
 const struct operator_p_s* prox_thresh_create(unsigned int N, const long dims[N], float lambda,
@@ -528,7 +528,7 @@ static void prox_lineq_del(const operator_data_t* _data)
 
 	md_free(pdata->adj);
 	md_free(pdata->tmp);
-	free(pdata);
+	xfree(pdata);
 }
 
 const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const complex float* y)

@@ -188,14 +188,14 @@ static void nudft_delete(const linop_data_t* _data)
 {
 	const struct nudft_s* data = CONTAINER_OF(_data, const struct nudft_s, base);
 
-	free(data->kdims);
-	free(data->idims);
-	free(data->tdims);
-	free(data->kstrs);
-	free(data->istrs);
-	free(data->tstrs);
+	xfree(data->kdims);
+	xfree(data->idims);
+	xfree(data->tdims);
+	xfree(data->kstrs);
+	xfree(data->istrs);
+	xfree(data->tstrs);
 
-	free((void*)data);
+	xfree(data);
 }
 
 const struct linop_s* nudft_create2(unsigned int N, unsigned long flags,

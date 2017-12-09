@@ -310,7 +310,7 @@ float lrnucnorm(const struct operator_p_s* op, const complex float* src)
 		// Block SVD Threshold
 		nnorm = blockproc(DIMS, data->dims, blkdims, (void*)svdata, nucnorm_blockproc, tmp, tmp);
 
-		free(svdata);
+		xfree(svdata);
 		md_free(tmp);
 	}
 

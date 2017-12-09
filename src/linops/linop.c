@@ -435,7 +435,7 @@ void linop_free(const struct linop_s* op)
 	operator_free(op->adjoint);
 	operator_free(op->normal);
 	operator_p_free(op->norm_inv);
-	free((void*)op);
+	xfree(op);
 }
 
 

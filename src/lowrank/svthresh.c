@@ -206,7 +206,7 @@ float maxsingular(long M, long N, const complex float* d) {	// FIXME: destroys i
 
 	md_free(U);
 	md_free(VT);
-	free(S);
+	xfree(S);
 
 	return value;
 }

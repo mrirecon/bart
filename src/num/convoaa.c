@@ -125,7 +125,7 @@ void overlapandsave_exec(struct conv_plan* plan, int N, const long dims[N], cons
 	md_copy2(2 * N, ndim3, str2, tmp, str1, src1, 8);
 	conv_exec(plan, dst, tmp);
 	
-	free(tmp);
+	xfree(tmp);
 }
 #endif
 
@@ -641,8 +641,8 @@ void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long
 	}}}
 
 	//md_resizec(N, dims1, dst, dims1B, src1C, sizeof(complex float));
-	//free(src1C);
-	//free(src1B);
+	//xfree(src1C);
+	//xfree(src1B);
 }
 
 

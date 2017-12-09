@@ -100,6 +100,7 @@ static void cdiag_free(const linop_data_t* _data)
 	xfree(data->dims);
 	xfree(data->dstrs);
 	xfree(data->strs);
+
 	xfree(data);
 }
 
@@ -187,7 +188,7 @@ static void identity_free(const linop_data_t* _data)
 
 	iovec_free(data->domain);
 
-	free((void*)data);
+	xfree(data);
 }
 
 /**
@@ -247,10 +248,10 @@ static void resize_free(const linop_data_t* _data)
 {
 	const struct resize_op_s* data = CAST_DOWN(resize_op_s, _data);
 
-	free((void*)data->out_dims);
-	free((void*)data->in_dims);
+	xfree(data->out_dims);
+	xfree(data->in_dims);
 
-	free((void*)data);
+	xfree(data);
 }
 
 
@@ -750,10 +751,10 @@ static void fft_linop_free(const linop_data_t* _data)
 	fft_free(data->frw);
 	fft_free(data->adj);
 
-	free(data->dims);
-	free(data->strs);
+	xfree(data->dims);
+	xfree(data->strs);
 
-	free((void*)data);
+	xfree(data);
 }
 
 static void fft_linop_normal(const linop_data_t* _data, complex float* out, const complex float* in)
@@ -920,9 +921,9 @@ static void linop_cdf97_free(const linop_data_t* _data)
 {
 	const struct linop_cdf97_s* data = CAST_DOWN(linop_cdf97_s, _data);
 
-	free((void*)data->dims);
+	xfree(data->dims);
 
-	free((void*)data);
+	xfree(data);
 }
 
 
@@ -980,7 +981,7 @@ static void linop_conv_free(const linop_data_t* _data)
 
 	conv_free(data->plan);
 
-	free(data);
+	xfree(data);
 }
 
 

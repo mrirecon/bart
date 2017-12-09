@@ -208,7 +208,7 @@ void noir_free(struct noir_data* data)
 	md_free(data->weights);
 	md_free(data->tmp);
 	md_free(data->adj_pattern);
-	free(data);
+	xfree(data);
 }
 
 

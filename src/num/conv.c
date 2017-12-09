@@ -194,17 +194,17 @@ void conv_free(struct conv_plan* plan)
 
 	// fft_free_plan
 
-	free(plan->dims);
-	free(plan->dims1);
-	free(plan->dims2);
-	free(plan->kdims);
-	free(plan->str1);
-	free(plan->str2);
-	free(plan->kstr);
-	free(plan->idims);
-	free(plan->odims);
+	xfree(plan->dims);
+	xfree(plan->dims1);
+	xfree(plan->dims2);
+	xfree(plan->kdims);
+	xfree(plan->str1);
+	xfree(plan->str2);
+	xfree(plan->kstr);
+	xfree(plan->idims);
+	xfree(plan->odims);
 
-	free(plan);
+	xfree(plan);
 }
 
 

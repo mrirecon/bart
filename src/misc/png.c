@@ -71,7 +71,7 @@ cleanup:
 		png_destroy_write_struct(&structp, &infop);
 
 	if (NULL != row_ptrs)
-		free(row_ptrs);
+		xfree(row_ptrs);
 
 	fclose(fp);
 	return ret;

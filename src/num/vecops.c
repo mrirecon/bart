@@ -46,7 +46,7 @@ static float* allocate(long N)
 
 static void del(float* vec)
 {
-	free(vec);
+	xfree(vec);
 }
 
 static void copy(long N, float* dst, const float* src)

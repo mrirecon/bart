@@ -187,7 +187,7 @@ errout:
 void fft_cuda_free_plan(struct fft_cuda_plan_s* cuplan)
 {
 	cufftDestroy(cuplan->cufft);
-	free(cuplan);
+	xfree(cuplan);
 }
 
 
