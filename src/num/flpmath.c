@@ -2911,16 +2911,8 @@ void md_zsoftthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 }
 
 
-/**
- * Hard Thresholding mask complex array (nonzero support of k-largest elements)
- * Writes to the output a mask of the non-zero elements in the input
- *
- * return HardThreshSupp(ptr)
- */
-static void nary_zhardthresh_mask(struct nary_opt_data_s* data, void* ptr[])
-{
-	data->ops->zhardthresh_mask(data->size, (*(unsigned int*)data->data_ptr), ptr[0], ptr[1]);
-}
+
+
 
 /**
  * Produces a mask (1s and 0s) of the non-zero support of a hard thresholded input vector
@@ -2938,9 +2930,14 @@ static void nary_zhardthresh_mask(struct nary_opt_data_s* data, void* ptr[])
  */
 void md_zhardthresh_mask2(unsigned int D, const long dim[D], unsigned int k, unsigned int flags, complex float* tmp_norm, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
+	void nary_zhardthresh_mask(struct nary_opt_data_s* data, void* ptr[])
+	{
+		data->ops->zhardthresh_mask(data->size, k, ptr[0], ptr[1]);
+	}
+
 	if (0 == flags) {
 
-		optimized_twoop_oi(D, dim, ostr, optr, istr, iptr, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask, &k);
+		optimized_twoop_oi(D, dim, ostr, optr, istr, iptr, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask);
 		return;
 	}
 
@@ -2951,7 +2948,7 @@ void md_zhardthresh_mask2(unsigned int D, const long dim[D], unsigned int k, uns
 	md_calc_strides(D, norm_strs, norm_dims, CFL_SIZE);
 
 	md_zrss(D, dim, flags, tmp_norm, iptr);
-	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask, &k);
+	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask);
 	md_copy2(D, dim, ostr, optr, norm_strs, tmp_norm, CFL_SIZE);
 }
 
@@ -3008,7 +3005,13 @@ void md_zhardthresh_joint2(unsigned int D, const long dims[D], unsigned int k, u
 	md_calc_strides(D, norm_strs, norm_dims, CFL_SIZE);
 
 	md_zrss(D, dims, flags, tmp_norm, iptr);
-	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask, &k);
+
+	void nary_zhardthresh_mask(struct nary_opt_data_s* data, void* ptr[])
+	{
+		data->ops->zhardthresh_mask(data->size, k, ptr[0], ptr[1]);
+	}
+
+	optimized_twoop_oi(D, norm_dims, norm_strs, tmp_norm, norm_strs, tmp_norm, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zhardthresh_mask);
 	md_zmul2(D, dims, ostrs, optr, norm_strs, tmp_norm, istrs, iptr);
 }
 

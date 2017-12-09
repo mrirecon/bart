@@ -550,7 +550,7 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 			nstr1[i] = &tstrs[i];
 		}
 
-		optimized_nop(N, io, 1, dim1, (void*)nstr1, nptr, sizes, too, data_ptr);
+		optimized_nop(N, io, 1, dim1, (void*)nstr1, nptr, sizes, too);
 
 		return;
 	}
