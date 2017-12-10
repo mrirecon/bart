@@ -642,18 +642,19 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		void* nptr[2] = { optr, (void*)iptr };
 
 		long sizes[2] = { md_calc_size(skip, tdims) * size, tdims[skip] };
-		struct strided_copy_s data = { { sizes[0], sizes[1] } , 
 		long ostr2 = (*nstr2[0])[skip];
 		long istr2 = (*nstr2[1])[skip];
 
 		skip++;
 
-		void nary_strided_copy(void* ptr[])
+		long* sizesp = sizes; // because of clang
+
+		NESTED(void, nary_strided_copy, (void* ptr[]))
 		{
 		//	printf("CUDA 2D copy %ld %ld %ld %ld %ld %ld\n", data->sizes[0], data->sizes[1], data->ostr, data->istr, (long)ptr[0], (long)ptr[1]);
 
-			cuda_memcpy_strided(sizes, ostr2, ptr[0], istr2, ptr[1]);
-		}
+			cuda_memcpy_strided(sizesp, ostr2, ptr[0], istr2, ptr[1]);
+		};
 
 		md_nary(2, ND - skip, tdims + skip , nstr, nptr, nary_strided_copy);
 		return;
