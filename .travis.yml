@@ -53,7 +53,7 @@ matrix:
         - sudo apt-get update -qq
         - sudo apt-get install -qq liblapacke-dev liblapack-dev
 
-    - env: OMP=0
+    - env: OMP=0 CFLAGS=-fblocks LDFLAGS=-lBlocksRuntime
       os: linux
       compiler: clang
       sudo: required
@@ -67,7 +67,7 @@ matrix:
         - make utest
       before_install:
         - sudo apt-get update -qq
-        - sudo apt-get install -qq liblapacke-dev
+        - sudo apt-get install -qq liblapacke-dev libblocksruntime-dev
 
     - env: OMP=1
       os: linux
@@ -99,7 +99,7 @@ matrix:
         - sudo apt-get update -qq
         - sudo apt-get install -qq liblapack-dev
 
-    - env: CUDA=1 CUDA_BASE=/usr/local/cuda-7.5/
+    - env: CUDA=1 CUDA_BASE=/usr/local/cuda-7.5/ CFLAGS=-fblocks LDFLAGS=-lBlocksRuntime
       os: linux
       compiler: clang-3.5
       sudo: required
@@ -114,7 +114,7 @@ matrix:
         - sudo apt-get update -qq
         - sudo apt-get install -qq clang-3.5
         - sudo apt-get install -qq --no-install-recommends cuda-drivers cuda-core-7.5 cuda-cudart-dev-7.5 cuda-cufft-dev-7.5 cuda-cublas-dev-7.5
-        - sudo apt-get install -qq liblapacke-dev
+        - sudo apt-get install -qq liblapacke-dev libblocksruntime-dev
 
     - env: BUILD_NAME="CMake"
       os: linux
@@ -156,7 +156,6 @@ matrix:
 
     - env: BUILD_NAME="CMake + CUDA" CUDA_BASE=/usr/local/cuda-7.5/
       os: linux
-      compiler: clang-3.5
       sudo: required
       dist: trusty
       addons:
