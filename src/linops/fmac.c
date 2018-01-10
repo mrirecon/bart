@@ -15,6 +15,9 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 //#include "num/iovec.h"
 
 #include "linops/linop.h"
@@ -41,6 +44,7 @@ struct fmac_data {
 	long *odims;
 	long *ostrs;
 
+	long *tdims;
 	long *tstrs;
 
 	const complex float* tensor;
@@ -51,17 +55,41 @@ struct fmac_data {
 
 static DEF_TYPEID(fmac_data);
 
+#ifdef USE_CUDA
+static const complex float* get_tensor(const struct fmac_data* data, bool gpu)
+{
+	const complex float* tensor = data->tensor;
+
+	if (gpu) {
+
+		if (NULL == data->gpu_tensor)
+			((struct fmac_data*)data)->gpu_tensor = md_gpu_move(data->N, data->tdims, data->tensor, CFL_SIZE);
+
+		tensor = data->gpu_tensor;
+	}
+
+	return tensor;
+}
+#endif
+
 
 
 static void fmac_free_data(const linop_data_t* _data)
 {
         struct fmac_data* data = CAST_DOWN(fmac_data, _data);
 
+#ifdef USE_CUDA
+	if (NULL != data->gpu_tensor) {
+		md_free((void*)data->gpu_tensor);
+	}
+#endif
+
 	xfree(data->dims);
 	xfree(data->idims);
 	xfree(data->istrs);
 	xfree(data->odims);
 	xfree(data->ostrs);
+	xfree(data->tdims);
 	xfree(data->tstrs);
 
 	xfree(data);
@@ -72,20 +100,28 @@ static void fmac_apply(const linop_data_t* _data, complex float* dst, const comp
 {
         struct fmac_data* data = CAST_DOWN(fmac_data, _data);
 
-	// FIXME: gpuA
+#ifdef USE_CUDA
+	const complex float* tensor = get_tensor(data, cuda_ondevice(src));
+#else
+	const complex float* tensor = data->tensor;
+#endif
 
 	md_clear2(data->N, data->odims, data->ostrs, dst, CFL_SIZE);
-	md_zfmac2(data->N, data->dims, data->ostrs, dst, data->istrs, src, data->tstrs, data->tensor);
+	md_zfmac2(data->N, data->dims, data->ostrs, dst, data->istrs, src, data->tstrs, tensor);
 }
 
 static void fmac_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
         struct fmac_data* data = CAST_DOWN(fmac_data, _data);
 
-	// FIXME: gpu
+#ifdef USE_CUDA
+	const complex float* tensor = get_tensor(data, cuda_ondevice(src));
+#else
+	const complex float* tensor = data->tensor;
+#endif
 
 	md_clear2(data->N, data->idims, data->istrs, dst, CFL_SIZE);
-	md_zfmacc2(data->N, data->dims, data->istrs, dst, data->ostrs, src, data->tstrs, data->tensor);
+	md_zfmacc2(data->N, data->dims, data->istrs, dst, data->ostrs, src, data->tstrs, tensor);
 }
 
 const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N], 
@@ -112,12 +148,15 @@ const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N],
 	md_calc_strides(N, data->ostrs, data->odims, CFL_SIZE);
 
 	data->tstrs = *TYPE_ALLOC(long[N]);
+	data->tdims = *TYPE_ALLOC(long[N]);
 
-	long tdims[N];
-	md_select_dims(N, ~tflags, tdims, dims);
-	md_calc_strides(N, data->tstrs, tdims, CFL_SIZE);
+	md_select_dims(N, ~tflags, data->tdims, dims);
+	md_calc_strides(N, data->tstrs, data->tdims, CFL_SIZE);
 
 	data->tensor = tensor;
+#ifdef USE_CUDA
+	data->gpu_tensor = NULL;
+#endif
 
 	long odims[N];
 	md_copy_dims(N, odims, data->odims);
