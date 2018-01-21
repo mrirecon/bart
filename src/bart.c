@@ -60,11 +60,12 @@ int main_bart(int argc, char* argv[])
 			exit(1);
 		}
 
-		const char* tpath[3] = {
-
+		const char* tpath[] = {
+#ifdef TOOLBOX_PATH_OVERRIDE
 			getenv("TOOLBOX_PATH"),
-			"/usr/lib/bart/commands/",
+#endif
 			"/usr/local/lib/bart/commands/",
+			"/usr/lib/bart/commands/",
 		};
 
 		for (unsigned int i = 0; i < ARRAY_SIZE(tpath); i++) {
