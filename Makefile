@@ -91,7 +91,7 @@ CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
 
 ifeq ($(BUILDTYPE), MacOSX)
-	CC ?= gcc-mp-4.7
+	CC ?= gcc-mp-6
 else
 	CC ?= gcc
 	# for symbols in backtraces
