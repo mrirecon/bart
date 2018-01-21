@@ -327,7 +327,7 @@ install(TARGETS bart
 
 #==============================================
 # TODO: Matlab code
-option(USE_MATLAB "Specify if the optional matlab programs should be built" ON)
+option(USE_MATLAB "Specify if the optional matlab programs should be built" OFF)
 if(USE_MATLAB)
   find_package(Matlab REQUIRED)
   if(MATLAB_FOUND)
