@@ -24,7 +24,7 @@ FFTWTHREADS?=1
 ISMRMRD?=0
 
 DESTDIR ?= /
-PREFIX ?= usr/
+PREFIX ?= usr/local/
 
 BUILDTYPE = Linux
 UNAME = $(shell uname -s)
