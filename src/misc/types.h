@@ -34,7 +34,7 @@
 
 #define INTERFACE(X) X INTERFACE
 
-typedef const struct typeid_s { int:0; } TYPEID;
+typedef const struct typeid_s { int:1; } TYPEID;
 
 #define TYPEID(T) T ## _TYPEID
 #define DEF_TYPEID(T) TYPEID TYPEID(T)
