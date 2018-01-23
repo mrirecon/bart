@@ -234,11 +234,13 @@ float blockproc_circshift( unsigned int D,  const long dims[D], const long blkdi
 
 	md_circ_shift( D, dims, shifts, tmp, src, CFL_SIZE );
 
-	return blockproc( D, dims, blkdims, data, op, tmp, tmp );
+	float info = blockproc( D, dims, blkdims, data, op, tmp, tmp );
 
 	md_circ_shift( D, dims, unshifts, dst, tmp, CFL_SIZE );
 
 	md_free( tmp );
+
+	return info;
 }
 
 
