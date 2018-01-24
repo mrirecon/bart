@@ -288,6 +288,7 @@ extern float estvar_calreg(const long kernel_dims[3], const long calreg_dims[4],
     PTR_ALLOC(complex float[N][N], vec);
     covariance_function(kernel_dims, N, *vec, calreg_dims, calreg);
     lapack_eig(N, tmpE, *vec);
+    PTR_FREE(vec);
 
     for (int idx = 0; idx < L; idx ++)
         S[idx] = sqrtf(tmpE[N-idx-1]);
