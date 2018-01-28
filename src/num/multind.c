@@ -1,11 +1,11 @@
 /* Copyright 2013-2015 The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * Copyright 2017. Intel Corporation.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013      Frank Ong <frankong@berkeley.edu>
  * 2017      Michael J. Anderson <michael.j.anderson@intel.com>
  *
@@ -399,6 +399,21 @@ unsigned long md_nontriv_dims(unsigned int D, const long dims[D])
 
 	for (unsigned int i = 0; i < D; i++)
 		if (dims[i] > 1)
+			flags = MD_SET(flags, i);
+
+	return flags;
+}
+
+
+/*
+ * compute non-trivial (!= 0) strides
+ */
+unsigned long md_nontriv_strides(unsigned int D, const long strs[D])
+{
+	unsigned long flags = 0;
+
+	for (unsigned int i = 0; i < D; i++)
+		if (strs[i] != 0)
 			flags = MD_SET(flags, i);
 
 	return flags;

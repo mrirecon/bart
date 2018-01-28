@@ -117,6 +117,7 @@ extern void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int di
 extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
 
 extern unsigned long md_nontriv_dims(unsigned int D, const long dims[__VLA(D)]);
+extern unsigned long md_nontriv_strides(unsigned int D, const long dims[__VLA(D)]);
 
 
 #define MD_INIT_ARRAY(x, y) { [ 0 ... ((x) - 1) ] = (y) } 
