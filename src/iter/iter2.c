@@ -1,4 +1,4 @@
-/* Copyright 2013-2017. The Regents of the University of California.
+/* Copyright 2013-2018. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
@@ -6,7 +6,7 @@
  *
  * Authors: 
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014, 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2014, 2017-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
 
@@ -253,11 +253,14 @@ void iter2_admm(iter_conf* _conf,
 		.num_funs = D,
 		.do_warmstart = conf->do_warmstart,
 		.dynamic_rho = conf->dynamic_rho,
+		.dynamic_tau = conf->dynamic_tau,
+		.relative_norm = conf->relative_norm,
 		.hogwild = conf->hogwild,
 		.ABSTOL = conf->ABSTOL,
 		.RELTOL = conf->RELTOL,
 		.alpha = conf->alpha,
 		.tau = conf->tau,
+		.tau_max = conf->tau_max,
 		.mu = conf->mu,
 		.fast = conf->fast,
 		.biases = biases,

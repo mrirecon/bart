@@ -1,4 +1,4 @@
-/* Copyright 2014. The Regents of the University of California.
+/* Copyright 2014-2018. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -61,6 +61,8 @@ struct admm_plan_s {
 
 	_Bool do_warmstart;
 	_Bool dynamic_rho;
+	_Bool dynamic_tau;
+	_Bool relative_norm;
 	_Bool hogwild;
 	_Bool fast;
 
@@ -71,6 +73,7 @@ struct admm_plan_s {
 	float alpha;
 
 	float tau;
+	float tau_max;
 	float mu;
 
 	unsigned int num_funs;
@@ -88,10 +91,13 @@ struct admm_plan_s {
  * Store ADMM history
  *
  * @param numiter actual number of iterations run
- * @param r_norm (array) primal residual norm at each iteration
- * @param s_norm (array) dual residual norm at each iteration
- * @param eps_pri (array) primal epsilon at each iteration
- * @parram eps_dual (array) dual epsilon at each iteration
+ * @param r_norm primal residual norm at each iteration
+ * @param s_norm dual residual norm at each iteration
+ * @param r_scaling relative scaling of primary residual norm at each iteration
+ * @param s_scaling relative scaling of dual residual norm at each iteration
+ * @param eps_pri primal epsilon at each iteration
+ * @param eps_dual dual epsilon at each iteration
+ * @param rho ADMM penalty parameter at each iteration
  */
 struct admm_history_s {
 
@@ -101,9 +107,12 @@ struct admm_history_s {
 	unsigned int nr_invokes;
 	double r_norm;
 	double s_norm;
+	double r_scaling;
+	double s_scaling;
 	double eps_pri;
 	double eps_dual;
 	float rho;
+	float tau;
 };
 
 extern DEF_TYPEID(admm_history_s);

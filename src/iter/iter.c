@@ -1,11 +1,11 @@
-/* Copyright 2013-2017. The Regents of the University of California.
+/* Copyright 2013-2018. The Regents of the University of California.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2012, 2014 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2014, 2017	Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2014, 2017-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  */
@@ -97,6 +97,8 @@ const struct iter_admm_conf iter_admm_defaults = {
 
 	.do_warmstart = false,
 	.dynamic_rho = false,
+	.dynamic_tau = false,
+	.relative_norm = false,
 	.hogwild = false,
 	.fast = false,
 
@@ -107,6 +109,7 @@ const struct iter_admm_conf iter_admm_defaults = {
 	.alpha = 1.6,
 
 	.tau = 2.,
+	.tau_max = 20,
 	.mu = 3,
 };
 

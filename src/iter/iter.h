@@ -1,4 +1,4 @@
-/* Copyright 2013-2017. The Regents of the University of California.
+/* Copyright 2013-2018. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -104,6 +104,8 @@ struct iter_admm_conf {
 
 	_Bool do_warmstart;
 	_Bool dynamic_rho;
+	_Bool dynamic_tau;
+	_Bool relative_norm;
 	_Bool hogwild;
 	
 	double ABSTOL;
@@ -112,6 +114,7 @@ struct iter_admm_conf {
 	float alpha;
 
 	float tau;
+	float tau_max;
 	float mu;
 
 	float cg_eps;
