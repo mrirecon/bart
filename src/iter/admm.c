@@ -1,11 +1,11 @@
-/* Copyright 2014-2016. The Regents of the University of California.
+/* Copyright 2014-2018. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2016, 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 
  *
  *
@@ -20,7 +20,6 @@
  * via finite element approximation
  * Computers & Mathematics with Applications, 2:17-40 (1976)
  *
- *
  * Afonso MA, Bioucas-Dias JM, Figueiredo M. An Augmented Lagrangian Approach to
  * the Constrained Optimization Formulation of Imaging Inverse Problems,
  * IEEE Trans Image Process, 20:681-695 (2011)
@@ -28,6 +27,9 @@
  * Boyd S, Parikh N, Chu E, Peleato B, Eckstein J. Distributed Optimization and
  * Statistical Learning via the Alternating Direction Method of Multipliers,
  * Foundations and Trends in Machine Learning, 3:1-122 (2011)
+ *
+ * Wohlberg B. ADMM Penalty Parameter Selection by Residual Balancing,
+ * arXiv:1704.06209 (2017)
  *
  */
 
@@ -197,6 +199,7 @@ void admm(const struct admm_plan_s* plan,
 		GH_usum = vops->allocate(N);
 
 	float rho = plan->rho;
+	float tau = plan->tau;
 
 	struct admm_normaleq_data ndata = {
 
@@ -388,6 +391,9 @@ void admm(const struct admm_plan_s* plan,
 		float s_norm = 0.;
 		float r_norm = 0.;
 
+		double s_scaling = 1.;
+		double r_scaling = 1.;
+
 		if (plan->dynamic_rho || !plan->fast) {
 
 			s_norm = rho * vops->norm(N, s);
@@ -406,34 +412,38 @@ void admm(const struct admm_plan_s* plan,
 			for (unsigned int j = 0; j < num_funs; j++)
 				n2 += pow(vops->norm(z_dims[j], z[j]), 2.);
 
-			double n = MAX(MAX(n1, n2), n3);
+			r_scaling = sqrt(MAX(MAX(n1, n2), n3));
+			s_scaling = rho * vops->norm(N, GH_usum);
 
 			long M = sum_long_array(num_funs, z_dims);
 
-			float eps_pri = plan->ABSTOL * sqrt(M) + plan->RELTOL * sqrt(n);
-			float eps_dual = plan->ABSTOL * sqrt(N) + plan->RELTOL * rho * vops->norm(N, GH_usum);
+			float eps_pri = plan->ABSTOL * sqrt(M) + plan->RELTOL * r_scaling;
+			float eps_dual = plan->ABSTOL * sqrt(N) + plan->RELTOL * s_scaling;
 
 
 			struct admm_history_s history;
 
 			history.s_norm = s_norm;
 			history.r_norm = r_norm;
+			history.s_scaling = s_scaling;
+			history.r_scaling = r_scaling;
 			history.eps_pri = eps_pri;
 			history.eps_dual = eps_dual;
 			history.rho = rho;
+			history.tau = tau;
 			history.numiter = i;
 			history.nr_invokes = ndata.nr_invokes;
 
 			iter_history(monitor, CAST_UP(&history));
 
 			if (0 == i)
-				debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n",
-					"iter", "cgiter", "rho", "r norm", "eps pri",
+				debug_printf(DP_DEBUG2, "%3s\t%3s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\n",
+					"iter", "cgiter", "rho", "tau", "r norm", "eps pri",
 					"s norm", "eps dual", "obj", "relMSE");
 
 
-			debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\n",
-				history.numiter, history.nr_invokes, history.rho,
+			debug_printf(DP_DEBUG2, "%3d\t%3d\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\t%10.4f\n",
+				history.numiter, history.nr_invokes, history.rho, history.tau,
 				history.r_norm, history.eps_pri, history.s_norm, history.eps_dual,
 				(NULL == monitor) ? -1. : monitor->obj,
 				(NULL == monitor) ? -1. : monitor->err);
@@ -456,13 +466,33 @@ void admm(const struct admm_plan_s* plan,
 
 		assert(!(plan->dynamic_rho && plan->hogwild));
 
+		if (plan->dynamic_tau) {
+
+			double t = sqrt(r_norm / s_norm);
+			if (plan->tau_max > t && 1 <= t)
+				tau = t;
+			else if (1 > t && (1/plan->tau_max) < t)
+				tau = 1. / t;
+			else
+				tau = plan->tau_max;
+		}
+
 		if (plan->dynamic_rho) {
 
-			if (r_norm > plan->mu * s_norm)
-				sc = plan->tau;
+			double r = r_norm;
+			double s = s_norm;
+
+			if (plan->relative_norm) {
+
+				r /= r_scaling;
+				s /= s_scaling;
+			}
+
+			if (r > plan->mu * s)
+				sc = tau;
 			else
-			if (s_norm > plan->mu * r_norm)
-				sc = 1. / plan->tau;
+			if (s > plan->mu * r)
+				sc = 1. / tau;
 		}
 
 		if (plan->hogwild) {
