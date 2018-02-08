@@ -213,6 +213,11 @@ static void fmac2(long N, double* dst, const float* src1, const float* src2)
 		dst[i] += src1[i] * src2[i];
 }
 
+static void zsmul(long N, complex float val, complex float* dst, const complex float* src1)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = src1[i] * val;
+}
 
 static void zmul(long N, complex float* dst, const complex float* src1, const complex float* src2)
 {
@@ -541,6 +546,8 @@ const struct vec_ops cpu_ops = {
 	.fmac = fmac,
 	.fmac2 = fmac2,
 
+	.smul = smul,
+
 	.axpy = axpy,
 
 	.pow = vec_pow,
@@ -555,6 +562,8 @@ const struct vec_ops cpu_ops = {
 	.zmulc = zmulc,
 	.zfmacc = zfmacc,
 	.zfmacc2 = zfmacc2,
+
+	.zsmul = zsmul,
 
 	.zpow = zpow,
 	.zphsr = zphsr,

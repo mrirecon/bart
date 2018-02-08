@@ -607,7 +607,20 @@ void md_zsmul2(unsigned int D, const long dims[D], const long ostr[D], complex f
 		return;
 	}
 
+#if 0
 	make_z3op_scalar(md_zmul2, D, dims, ostr, optr, istr, iptr, val);
+#else
+	// FIXME: we should rather optimize md_zmul2 for this case
+
+	NESTED(void, nary_zsmul, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zsmul(data->size, val, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims, ostr, optr, istr, iptr,
+		(size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zsmul);
+#endif
+
 }
 
 
@@ -662,7 +675,22 @@ void md_smul2(unsigned int D, const long dims[D], const long ostr[D], float* opt
 	}
 fallback:
 #endif
+
+#if 0
 	make_3op_scalar(md_mul2, D, dims, ostr, optr, istr, iptr, var);
+#else
+	// FIXME: we should rather optimize md_mul2 for this case
+
+	(void)0;
+
+	NESTED(void, nary_smul, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->smul(data->size, var, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims, ostr, optr, istr, iptr,
+		(size_t[2]){ FL_SIZE, FL_SIZE }, nary_smul);
+#endif
 }
 
 

@@ -238,6 +238,20 @@ extern "C" void cuda_fmac2(long N, double* dst, const float* src1, const float* 
 	kern_fmac2<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
 }
 
+__global__ void kern_zsmul(int N, cuFloatComplex val, cuFloatComplex* dst, const cuFloatComplex* src1)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = cuCmulf(src1[i], val);
+}
+
+extern "C" void cuda_zsmul(long N, _Complex float alpha, _Complex float* dst, const _Complex float* src1)
+{
+	kern_zsmul<<<gridsize(N), blocksize(N)>>>(N, make_cuFloatComplex(__real(alpha), __imag(alpha)), (cuFloatComplex*)dst, (const cuFloatComplex*)src1);
+}
+
 
 __global__ void kern_zmul(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
