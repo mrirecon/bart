@@ -279,12 +279,7 @@ float lrnucnorm(const struct operator_p_s* op, const complex float* src)
 
 		struct svthresh_blockproc_data* svdata = svthresh_blockproc_create(data->mflags, 0., 0);
 
-		complex float* tmp;
-#ifdef USE_CUDA
-		tmp = (data->use_gpu ? md_alloc_gpu : md_alloc)(DIMS, data->dims, CFL_SIZE);
-#else
-		tmp = md_alloc(DIMS, data->dims, CFL_SIZE);
-#endif
+		complex float* tmp = md_alloc_sameplace(DIMS, data->dims, CFL_SIZE, src);
 
 		//debug_print_dims(DP_DEBUG1, DIMS, data->dims);
 		md_copy(DIMS, data->dims, tmp, srcl, CFL_SIZE);
