@@ -18,8 +18,6 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
-#include "num/iovec.h"
-#include "num/gpuops.h"
 
 #include "linops/linop.h"
 
@@ -50,9 +48,6 @@ struct fdiff_s {
 
 	long* dims;
 	long* str;
-
-	complex float* tmp;
-	complex float* tmp2; // future: be less sloppy with memory
 
 	unsigned int flags;
 	int order;
@@ -221,7 +216,9 @@ static void fdiff_apply(const linop_data_t* _data, complex float* optr, const co
 {
 	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
 
-	md_zfinitediff_core2(data->D, data->dims, data->flags, data->snip, data->tmp, data->str, optr, data->str, iptr);
+	complex float* tmp = md_alloc_sameplace(data->D, data->dims, CFL_SIZE, optr);
+	md_zfinitediff_core2(data->D, data->dims, data->flags, data->snip, tmp, data->str, optr, data->str, iptr);
+	md_free(tmp);
 }
 
 
@@ -247,9 +244,14 @@ static void fdiff_apply_adjoint(const linop_data_t* _data, complex float* optr, 
 
 		if (single_flag) {
 
-			md_flip2(data->D, data->dims, single_flag, data->str, data->tmp2, data->str, optr, CFL_SIZE);
-			md_zfinitediff_core2(data->D, data->dims, single_flag, false, data->tmp, data->str, data->tmp2, data->str, data->tmp2);
-			md_flip2(data->D, data->dims, single_flag, data->str, optr, data->str, data->tmp2, CFL_SIZE);
+			complex float* tmp = md_alloc_sameplace(data->D, data->dims, CFL_SIZE, optr);
+			complex float* tmp2 = md_alloc_sameplace(data->D, data->dims, CFL_SIZE, optr);
+			md_flip2(data->D, data->dims, single_flag, data->str, tmp2, data->str, optr, CFL_SIZE);
+			md_zfinitediff_core2(data->D, data->dims, single_flag, false, tmp, data->str, tmp2, data->str, tmp2);
+			md_flip2(data->D, data->dims, single_flag, data->str, optr, data->str, tmp2, CFL_SIZE);
+
+			md_free(tmp2);
+			md_free(tmp);
 
 			if (data->snip) {
 
@@ -273,7 +275,14 @@ static void cumsum_apply(const linop_data_t* _data, float lambda, complex float*
 	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
 
 	assert(0. == lambda);
-	md_zcumsum_core2(data->D, data->dims, data->flags, data->tmp, data->tmp2, data->str, optr, data->str, iptr);
+
+	complex float* tmp = md_alloc_sameplace(data->D, data->dims, CFL_SIZE, optr);
+	complex float* tmp2 = md_alloc_sameplace(data->D, data->dims, CFL_SIZE, optr);
+
+	md_zcumsum_core2(data->D, data->dims, data->flags, tmp, tmp2, data->str, optr, data->str, iptr);
+
+	md_free(tmp2);
+	md_free(tmp);
 }
 
 static void finite_diff_del(const linop_data_t* _data)
@@ -282,8 +291,6 @@ static void finite_diff_del(const linop_data_t* _data)
 
 	xfree(data->dims);
 	xfree(data->str);
-	md_free(data->tmp);
-	md_free(data->tmp2);
 
 	xfree(data);
 }
@@ -296,11 +303,10 @@ static void finite_diff_del(const linop_data_t* _data)
  * @param dim input dimensions
  * @param flags bitmask for applying operator
  * @param snip true: clear initial entry (i.c.); false: keep initial entry (i.c.)
- * @param gpu true if using gpu, false if using cpu
  *
  * Returns a pointer to the finite difference operator
  */
-extern const struct linop_s* linop_finitediff_create(unsigned int D, const long dim[D], const unsigned long flags, bool snip, bool gpu)
+extern const struct linop_s* linop_finitediff_create(unsigned int D, const long dim[D], const unsigned long flags, bool snip)
 {
 	PTR_ALLOC(struct fdiff_s, data);
 	SET_TYPEID(fdiff_s, data);
@@ -316,15 +322,6 @@ extern const struct linop_s* linop_finitediff_create(unsigned int D, const long 
 	data->str = *TYPE_ALLOC(long[D]);
 	md_calc_strides(D, data->str, data->dims, CFL_SIZE);
 
-#ifdef USE_CUDA
-	data->tmp = (gpu ? md_alloc_gpu : md_alloc)(D, data->dims, CFL_SIZE);
-	data->tmp2 = (gpu ? md_alloc_gpu : md_alloc)(D, data->dims, CFL_SIZE);
-#else
-	assert(!gpu);
-	data->tmp = md_alloc(D, data->dims, CFL_SIZE);
-	data->tmp2 = md_alloc(D, data->dims, CFL_SIZE);
-#endif
-
 	return linop_create(D, dim, D, dim, CAST_UP(PTR_PASS(data)), fdiff_apply, fdiff_apply_adjoint, NULL, cumsum_apply, finite_diff_del);
 }
 
@@ -335,36 +332,39 @@ void fd_proj_noninc(const struct linop_s* o, complex float* optr, const complex 
 	struct fdiff_s* data = (struct fdiff_s*)linop_get_data(o);
 	
 	dump_cfl("impre", data->D, data->dims, iptr);
-	linop_forward_unchecked(o, data->tmp2, iptr);
+
+	complex float* tmp2 = md_alloc_sameplace(data->D, data->dims, CFL_SIZE, optr);
+	linop_forward_unchecked(o, tmp2, iptr);
 
 	long tmpdim = data->dims[0];
 	long dims2[data->D];
 	md_select_dims(data->D, ~0u, dims2, data->dims);
 	dims2[0] *= 2; 
-	dump_cfl("dxpre", data->D, data->dims, data->tmp2);
+	dump_cfl("dxpre", data->D, data->dims, tmp2);
 
-	md_smin(data->D, dims2, (float*)optr, (float*)data->tmp2, 0.);
+	md_smin(data->D, dims2, (float*)optr, (float*)tmp2, 0.);
 
 	// add back initial value
 	dims2[0] = tmpdim;
-	for (unsigned int i=0; i < data->D; i++) {
+
+	for (unsigned int i = 0; i < data->D; i++) {
+
 		if (MD_IS_SET(data->flags, i)) {
+
 			dims2[i] = 1;
-			md_copy2(data->D, dims2, data->str, optr, data->str, data->tmp2, sizeof(complex float));
+			md_copy2(data->D, dims2, data->str, optr, data->str, tmp2, CFL_SIZE);
 			break;
 		}
 	}
+
 	dump_cfl("dxpost", data->D, data->dims, optr);
 	linop_norm_inv_unchecked(o, 0., optr, optr);
 	
 	dump_cfl("impost", data->D, data->dims, optr);
+
+	md_free(tmp2);
 }
 
-complex float* get_fdiff_tmp2ptr(const struct linop_s* o)
-{
-	struct fdiff_s* fdata = (struct fdiff_s*)linop_get_data(o);
-	return fdata->tmp2;
-}
 
 
 
@@ -636,7 +636,7 @@ static void zfinitediff_del(const linop_data_t* _data)
 	xfree(data->dims_adj);
 	xfree(data->strides_adj);
 
-	// FIXME free data
+	xfree(data);
 }
 
 const struct linop_s* linop_zfinitediff_create(unsigned int D, const long dims[D], long diffdim, bool circular)

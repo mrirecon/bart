@@ -16,10 +16,9 @@ extern void md_zcumsum(unsigned int D, const long dim[__VLA(D)], unsigned int fl
 extern void md_zcumsum2(unsigned int D, const long dim[__VLA(D)], unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
 struct linop_s;
-extern const struct linop_s* linop_finitediff_create(unsigned int D, const long dim[__VLA(D)], const unsigned long flags, _Bool snip, _Bool gpu);
+extern const struct linop_s* linop_finitediff_create(unsigned int D, const long dim[__VLA(D)], const unsigned long flags, _Bool snip);
 
 extern void fd_proj_noninc(const struct linop_s* o, _Complex float* optr, const _Complex float* iptr);
-extern _Complex float* get_fdiff_tmp2ptr(const struct linop_s* o);
 
 
 /**
