@@ -11,9 +11,9 @@
 
 
 struct operator_p_s;
-extern const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[__VLA(D)], const float lambda, const unsigned long flags, _Bool gpu);
+extern const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[__VLA(D)], const float lambda, const unsigned long flags);
 
-extern const struct operator_p_s* prox_niht_thresh_create(unsigned int D, const long dim[D], const unsigned int k, const unsigned long flags, _Bool gpu);
+extern const struct operator_p_s* prox_niht_thresh_create(unsigned int D, const long dim[D], const unsigned int k, const unsigned long flags);
 
 extern void thresh_free(const struct operator_p_s* data);
 	
@@ -24,7 +24,7 @@ extern float get_thresh_lambda(const struct operator_p_s* o);
 
 struct linop_s;
 
-extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags, _Bool gpu);
+extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags);
 
 
 #include "misc/cppwrap.h"

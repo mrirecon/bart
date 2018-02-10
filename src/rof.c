@@ -72,7 +72,7 @@ int main_rof(int argc, char* argv[])
 	conf.rho = .1;
 
 	const struct operator_p_s* thresh_prox = prox_thresh_create(DIMS + 1, linop_codomain(tv_op)->dims, 
-								lambda, MD_BIT(DIMS), false);
+								lambda, MD_BIT(DIMS));
 
 	iter2_admm(CAST_UP(&conf), linop_identity_create(DIMS, dims)->forward,
 		   1, MAKE_ARRAY(thresh_prox), MAKE_ARRAY(tv_op), NULL,

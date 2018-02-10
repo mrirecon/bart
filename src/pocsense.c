@@ -135,7 +135,7 @@ int main_pocsense(int argc, char* argv[])
 		md_calc_strides(DIMS, strs, ksp_dims, CFL_SIZE);
 
 		wave_op = linop_wavelet_create(DIMS, FFT_FLAGS, ksp_dims, strs, minsize, false);
-		thresh_op = prox_unithresh_create(DIMS, wave_op, alpha, COIL_FLAG, use_gpu);
+		thresh_op = prox_unithresh_create(DIMS, wave_op, alpha, COIL_FLAG);
 	}
 #if 0
 	else {

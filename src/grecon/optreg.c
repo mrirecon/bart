@@ -344,7 +344,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 				debug_printf(DP_DEBUG3,"%d ", wav_dims[i]);
 			debug_printf(DP_DEBUG3, "]\n");
 			
-			prox_ops[nr] = prox_niht_thresh_create(N, wav_dims, K, regs[nr].jflags, use_gpu );			
+			prox_ops[nr] = prox_niht_thresh_create(N, wav_dims, K, regs[nr].jflags);
 			break;
 		}
 
@@ -361,7 +361,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			unsigned int K = (md_calc_size(N, thresh_dims) / 100) * regs[nr].k;
 			debug_printf(DP_INFO, "k = %d%%, actual K = %d\n", regs[nr].k, K);
 
-			prox_ops[nr] = prox_niht_thresh_create(N, img_dims, K, regs[nr].jflags, use_gpu );
+			prox_ops[nr] = prox_niht_thresh_create(N, img_dims, K, regs[nr].jflags);
 			debug_printf(DP_INFO, "NIHTIM initialization complete\n");
 			break;
 		}
@@ -372,7 +372,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			trafos[nr] = linop_grad_create(DIMS, img_dims, regs[nr].xflags);
 			prox_ops[nr] = prox_thresh_create(DIMS + 1,
 					linop_codomain(trafos[nr])->dims,
-					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS), use_gpu);
+					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
 			break;
 
 		case LAPLACE:
@@ -394,7 +394,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			trafos[nr] = linop_conv_create(DIMS, regs[nr].xflags, CONV_TRUNCATED, CONV_SYMMETRIC, img_dims, img_dims, krn_dims, krn);
 			prox_ops[nr] = prox_thresh_create(DIMS,
 					linop_codomain(trafos[nr])->dims,
-					regs[nr].lambda, regs[nr].jflags, use_gpu);
+					regs[nr].lambda, regs[nr].jflags);
 			break;
 
 		case LLR:
@@ -454,7 +454,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			debug_printf(DP_INFO, "l1 regularization of imaginary part: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
-			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
+			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
 			break;
 
 		case IMAGL2:
@@ -468,7 +468,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			debug_printf(DP_INFO, "l1 regularization: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
+			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
 			break;
 
 		case L2IMG:
@@ -482,7 +482,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			debug_printf(DP_INFO, "l1 regularization of Fourier transform: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_fft_create(DIMS, img_dims, regs[nr].xflags);
-			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags, use_gpu);
+			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
 			break;
 		}
 
