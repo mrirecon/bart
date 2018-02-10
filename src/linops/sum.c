@@ -1,25 +1,19 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  */
 
-#include <string.h>
 #include <complex.h>
-#include <assert.h>
 #include <math.h>
-#include <stdbool.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/fft.h"
-#include "num/ops.h"
-#include "num/iovec.h"
 
 #include "linops/linop.h"
 
@@ -28,18 +22,11 @@
 
 #include "sum.h"
 
-#include "misc/debug.h"
 
 
-
-/**
- * data structure
- */
 struct sum_data {
 
 	INTERFACE(linop_data_t);
-
-	bool use_gpu;
 
 	long imgd_dims[DIMS];
 	long img_dims[DIMS];
@@ -53,7 +40,7 @@ struct sum_data {
 
 static DEF_TYPEID(sum_data);
 
-static struct sum_data* sum_create_data(const long imgd_dims[DIMS], bool use_gpu);
+static struct sum_data* sum_create_data(const long imgd_dims[DIMS]);
 static void sum_free_data(const linop_data_t* _data);
 static void sum_apply(const linop_data_t* _data, complex float* _dst, const complex float* _src);
 static void sum_apply_adjoint(const linop_data_t* _data, complex float* _dst, const complex float* _src);
@@ -61,21 +48,18 @@ static void sum_apply_normal(const linop_data_t* _data, complex float* _dst, con
 static void sum_apply_pinverse(const linop_data_t* _data, float lambda, complex float* _dst, const complex float* _src);
 
 
-/**
- * Create sum operator
- */
-const struct linop_s* linop_sum_create(const long imgd_dims[DIMS], bool use_gpu)
-{
-	struct sum_data* data = sum_create_data(imgd_dims, use_gpu);
 
-	// create operator interface
+const struct linop_s* linop_sum_create(const long imgd_dims[DIMS])
+{
+	struct sum_data* data = sum_create_data(imgd_dims);
+
 	return linop_create(DIMS, data->img_dims, DIMS, data->imgd_dims,
 			CAST_UP(data), sum_apply, sum_apply_adjoint, sum_apply_normal,
 			sum_apply_pinverse, sum_free_data);
 }
 
 
-static struct sum_data* sum_create_data(const long imgd_dims[DIMS], bool use_gpu)
+static struct sum_data* sum_create_data(const long imgd_dims[DIMS])
 {
 	PTR_ALLOC(struct sum_data, data);
 	SET_TYPEID(sum_data, data);
@@ -86,12 +70,9 @@ static struct sum_data* sum_create_data(const long imgd_dims[DIMS], bool use_gpu
 
 	// image dimensions
 	data->levels = imgd_dims[LEVEL_DIM];
+
 	md_select_dims(DIMS, ~LEVEL_FLAG, data->img_dims, imgd_dims);
 	md_calc_strides(DIMS, data->img_strs, data->img_dims, CFL_SIZE);
-
-	data->tmp = NULL;
-
-	data->use_gpu = use_gpu;
 
 	return PTR_PASS(data);
 }
@@ -133,17 +114,10 @@ void sum_apply_normal(const linop_data_t* _data, complex float* dst, const compl
 {
         struct sum_data* data = CAST_DOWN(sum_data, _data);
 
-	if (NULL == data->tmp) {
-
-#ifdef USE_CUDA
-		data->tmp = (data->use_gpu ? md_alloc_gpu : md_alloc)(DIMS, data->img_dims, CFL_SIZE);
-#else
-		data->tmp = md_alloc(DIMS, data->img_dims, CFL_SIZE);
-#endif
-	}
-
+	complex float* tmp = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, dst);
 	sum_apply(_data, data->tmp, src);
 	sum_apply_adjoint(_data, dst, data->tmp);
+	md_free(tmp);
 }
 
 
@@ -157,15 +131,7 @@ void sum_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst
 {
         struct sum_data* data = CAST_DOWN(sum_data, _data);
 
-	if (NULL == data->tmp) {
-
-#ifdef USE_CUDA
-		data->tmp = (data->use_gpu ? md_alloc_gpu : md_alloc)(DIMS, data->img_dims, CFL_SIZE);
-#else
-		data->tmp = md_alloc(DIMS, data->img_dims, CFL_SIZE);
-#endif
-	}
-
+	complex float* tmp = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, dst);
 
 	// get average
 	md_clear(DIMS, data->img_dims, data->tmp, CFL_SIZE);
@@ -185,5 +151,7 @@ void sum_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst
 
 	// dst = avg + nonavg
 	md_zadd2(DIMS, data->imgd_dims, data->imgd_strs, dst, data->imgd_strs, dst, data->img_strs, data->tmp);
+
+	md_free(tmp);
 }
 

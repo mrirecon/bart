@@ -9,7 +9,7 @@ extern "C" {
 
 struct operator_s;
 
-extern const struct linop_s* linop_sum_create(const long imgd_dims[DIMS], _Bool use_gpu);
+extern const struct linop_s* linop_sum_create(const long imgd_dims[DIMS]);
 
 #ifdef __cplusplus
 }

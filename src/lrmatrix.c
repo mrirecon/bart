@@ -173,7 +173,7 @@ int main_lrmatrix(int argc, char* argv[])
 
 	// Initialize operators
 
-	const struct linop_s* sum_op = linop_sum_create(odims, use_gpu);
+	const struct linop_s* sum_op = linop_sum_create(odims);
 	const struct linop_s* sampling_op = NULL;
 
         if (!decom) {
