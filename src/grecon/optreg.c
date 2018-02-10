@@ -306,10 +306,9 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 		case NIHTWAV:
 		{
 			debug_printf(DP_INFO, "NIHT with wavelets regularization: k = %d%% of total elements in each wavelet transform\n", regs[nr].k);
-			if (use_gpu){
-				debug_printf(DP_WARN, "GPU operation is not currently implemented for NIHT.\nContinuing with CPU.\n");
-				use_gpu = false; // not implemented, TODO: implement NIHT with gpu
-			}
+
+			if (use_gpu)
+				error("GPU operation is not currently implemented for NIHT.\nContinuing with CPU.\n");
 
 			long img_strs[N];
 			md_calc_strides(N, img_strs, img_dims, CFL_SIZE);
@@ -351,9 +350,10 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 		case NIHTIM:
 		{
 			debug_printf(DP_INFO, "NIHT regularization in the image domain: k = %d%% of total elements in image vector\n", regs[nr].k);
+
 			if (use_gpu){
-				debug_printf(DP_WARN, "GPU operation is not currently implemented for NIHT.\nContinuing with CPU.\n");
-				use_gpu = false; // not implemented, TODO: implement NIHT with gpu
+
+				error("GPU operation is not currently implemented for NIHT.\nContinuing with CPU.\n");
 			}
 
 			long thresh_dims[N];
@@ -418,7 +418,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			int remove_mean = 0;
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, use_gpu);
+			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean);
 			break;
 
 		case MLR:
