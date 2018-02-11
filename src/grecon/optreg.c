@@ -359,6 +359,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			unsigned int K = (md_calc_size(N, thresh_dims) / 100) * regs[nr].k;
 			debug_printf(DP_INFO, "k = %d%%, actual K = %d\n", regs[nr].k, K);
 
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = prox_niht_thresh_create(N, img_dims, K, regs[nr].jflags);
 			debug_printf(DP_INFO, "NIHTIM initialization complete\n");
 			break;
@@ -500,6 +501,5 @@ void opt_reg_free(struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[N
 
 		operator_p_free(prox_ops[nr]);
 		linop_free(trafos[nr]);
-
 	}
 }
