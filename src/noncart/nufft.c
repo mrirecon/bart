@@ -1,11 +1,11 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014-2017 Frank Ong <frankong@berkeley.edu>
- * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * Strang G. A proposal for Toeplitz matrix calculations. Journal Studies in Applied Math. 1986; 74(2):171-17
  *
@@ -42,6 +42,7 @@ struct nufft_conf_s nufft_conf_defaults = {
 
 	.toeplitz = true,
 	.pcycle = false,
+	.periodic = false,
 };
 
 
@@ -480,6 +481,7 @@ complex float* compute_psf(unsigned int N, const long img2_dims[N], const long t
 	md_select_dims(N, ~MD_BIT(0), ksp_dims1, trj_dims);
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
+	conf.periodic = true; // FIXME: periodic ???
 	conf.toeplitz = false;	// avoid infinite loop
 
 	struct linop_s* op2 = nufft_create(N, ksp_dims1, img2_dims, trj_dims, traj, NULL, conf);
@@ -639,7 +641,15 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 
 	md_recompose(data->N, factors, data->cm2_dims, gridX, data->cml_dims, data->grid, CFL_SIZE);
 
-	grid2H(2., data->width, data->beta, ND, data->trj_dims, data->traj, data->ksp_dims, dst, data->cm2_dims, gridX);
+	struct grid_conf_s conf = {
+
+		.width = data->width,
+		.os = 2.,
+		.periodic = data->conf.periodic,
+		.beta = data->beta,
+	};
+
+	grid2H(&conf, ND, data->trj_dims, data->traj, data->ksp_dims, dst, data->cm2_dims, gridX);
 
 	md_free(gridX);
 
@@ -669,7 +679,15 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 		src = wdat;
 	}
 
-	grid2(2., data->width, data->beta, ND, data->trj_dims, data->traj, data->cm2_dims, gridX, data->ksp_dims, src);
+	struct grid_conf_s conf = {
+
+		.width = data->width,
+		.os = 2.,
+		.periodic = data->conf.periodic,
+		.beta = data->beta,
+	};
+
+	grid2(&conf, ND, data->trj_dims, data->traj, data->cm2_dims, gridX, data->ksp_dims, src);
 
 	md_free(wdat);
 

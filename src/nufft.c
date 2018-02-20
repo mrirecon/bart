@@ -66,6 +66,7 @@ int main_nufft(int argc, char* argv[])
 		OPT_SET('c', &precond, "Preconditioning for inverse NUFFT"),
 		OPT_FLOAT('l', &lambda, "lambda", "l2 regularization"),
 		OPT_UINT('m', &cgconf.maxiter, "", "()"),
+		OPT_SET('P', &conf.periodic, "periodic k-space"),
 		OPT_SET('s', &dft, "DFT"),
 		OPT_SET('g', &gpu, "GPU (only inverse)"),
 	};

@@ -1,9 +1,9 @@
 /* Copyright 2014-2015 The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2018 Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2011, 2015 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2011, 2015, 2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  */
 
@@ -137,14 +137,14 @@ static float intlookup(int n, const float table[n + 1], float x)
 
 
 
-void gridH(float os, float width, double beta, const complex float* traj, const long ksp_dims[4], complex float* dst, const long grid_dims[4], const complex float* grid)
+void gridH(const struct grid_conf_s* conf, const complex float* traj, const long ksp_dims[4], complex float* dst, const long grid_dims[4], const complex float* grid)
 {
 	long C = ksp_dims[3];
 #ifndef KB128
 	// precompute kaiser bessel table
 	int kb_size = 500;
 	float kb_table[kb_size + 1];
-	kb_precompute(beta, kb_size, kb_table);
+	kb_precompute(conf->beta, kb_size, kb_table);
 #else
 	assert(KB_BETA == beta);
 	int kb_size = 128;
@@ -157,9 +157,9 @@ void gridH(float os, float width, double beta, const complex float* traj, const 
 	for(int i = 0; i < samples; i++) {
 
 		float pos[3];
-		pos[0] = os * (creal(traj[i * 3 + 0]));
-		pos[1] = os * (creal(traj[i * 3 + 1]));
-		pos[2] = os * (creal(traj[i * 3 + 2]));
+		pos[0] = conf->os * (creal(traj[i * 3 + 0]));
+		pos[1] = conf->os * (creal(traj[i * 3 + 1]));
+		pos[2] = conf->os * (creal(traj[i * 3 + 2]));
 
 		pos[0] += (grid_dims[0] > 1) ? ((float)grid_dims[0] / 2.) : 0.;
 		pos[1] += (grid_dims[1] > 1) ? ((float)grid_dims[1] / 2.) : 0.;
@@ -169,7 +169,7 @@ void gridH(float os, float width, double beta, const complex float* traj, const 
 		for (int j = 0; j < C; j++)
 			val[j] = 0.0;
 		
-		grid_pointH(C, grid_dims, pos, val, grid, width, kb_size, kb_table);
+		grid_pointH(C, grid_dims, pos, val, grid, conf->periodic, conf->width, kb_size, kb_table);
 
 		for (int j = 0; j < C; j++)
 			dst[j * samples + i] += val[j];
@@ -177,7 +177,7 @@ void gridH(float os, float width, double beta, const complex float* traj, const 
 }
 
 
-void grid(float os, float width, double beta, const complex float* traj, const long grid_dims[4], complex float* grid, const long ksp_dims[4], const complex float* src)
+void grid(const struct grid_conf_s* conf, const complex float* traj, const long grid_dims[4], complex float* grid, const long ksp_dims[4], const complex float* src)
 {
 	long C = ksp_dims[3];
 
@@ -185,7 +185,7 @@ void grid(float os, float width, double beta, const complex float* traj, const l
 	// precompute kaiser bessel table
 	int kb_size = 500;
 	float kb_table[kb_size + 1];
-	kb_precompute(beta, kb_size, kb_table);
+	kb_precompute(conf->beta, kb_size, kb_table);
 #else
 	assert(KB_BETA == beta);
 	int kb_size = 128;
@@ -199,9 +199,9 @@ void grid(float os, float width, double beta, const complex float* traj, const l
 	for(int i = 0; i < samples; i++) {
 
 		float pos[3];
-		pos[0] = os * (creal(traj[i * 3 + 0]));
-		pos[1] = os * (creal(traj[i * 3 + 1]));
-		pos[2] = os * (creal(traj[i * 3 + 2]));
+		pos[0] = conf->os * (creal(traj[i * 3 + 0]));
+		pos[1] = conf->os * (creal(traj[i * 3 + 1]));
+		pos[2] = conf->os * (creal(traj[i * 3 + 2]));
 
 		pos[0] += (grid_dims[0] > 1) ? ((float) grid_dims[0] / 2.) : 0.;
 		pos[1] += (grid_dims[1] > 1) ? ((float) grid_dims[1] / 2.) : 0.;
@@ -212,7 +212,7 @@ void grid(float os, float width, double beta, const complex float* traj, const l
 		for (int j = 0; j < C; j++)
 			val[j] = src[j * samples + i];
 
-		grid_point(C, grid_dims, pos, grid, val, width, kb_size, kb_table);
+		grid_point(C, grid_dims, pos, grid, val, conf->periodic, conf->width, kb_size, kb_table);
 	}
 }
 
@@ -230,7 +230,7 @@ static void grid2_dims(unsigned int D, const long trj_dims[D], const long ksp_di
 }
 
 
-void grid2(float os, float width, double beta, unsigned int D, const long trj_dims[D], const complex float* traj, const long grid_dims[D], complex float* dst, const long ksp_dims[D], const complex float* src)
+void grid2(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D], const complex float* traj, const long grid_dims[D], complex float* dst, const long ksp_dims[D], const complex float* src)
 {
 	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
 
@@ -250,7 +250,7 @@ void grid2(float os, float width, double beta, unsigned int D, const long trj_di
 
 	do {
 
-		grid(os, width, beta, &MD_ACCESS(D, trj_strs, pos, traj),
+		grid(conf, &MD_ACCESS(D, trj_strs, pos, traj),
 			grid_dims, &MD_ACCESS(D, grid_strs, pos, dst),
 			ksp_dims, &MD_ACCESS(D, ksp_strs, pos, src));
 
@@ -258,7 +258,7 @@ void grid2(float os, float width, double beta, unsigned int D, const long trj_di
 }
 
 
-void grid2H(float os, float width, double beta, unsigned int D, const long trj_dims[D], const complex float* traj, const long ksp_dims[D], complex float* dst, const long grid_dims[D], const complex float* src)
+void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D], const complex float* traj, const long ksp_dims[D], complex float* dst, const long grid_dims[D], const complex float* src)
 {
 	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
 
@@ -276,7 +276,7 @@ void grid2H(float os, float width, double beta, unsigned int D, const long trj_d
 		pos[i] = 0;
 
 	do {
-		gridH(os, width, beta, &MD_ACCESS(D, trj_strs, pos, traj),
+		gridH(conf, &MD_ACCESS(D, trj_strs, pos, traj),
 			ksp_dims, &MD_ACCESS(D, ksp_strs, pos, dst),
 			grid_dims, &MD_ACCESS(D, grid_strs, pos, src));
 
@@ -285,40 +285,50 @@ void grid2H(float os, float width, double beta, unsigned int D, const long trj_d
 
 
 
-void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex float* dst, const complex float val[ch], float width, int kb_size, const float kb_table[kb_size + 1])
+void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex float* dst, const complex float val[ch], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
 	int sti[3];
 	int eni[3];
 
 	for (int j = 0; j < 3; j++) {
 
-		int st = MAX((int)ceil(pos[j] - width), 0);
-		int en = MIN((int)floor(pos[j] + width), dims[j] - 1);
+		sti[j] = (int)ceil(pos[j] - width);
+		eni[j] = (int)floor(pos[j] + width);
 
-		if (st > en)
+		if (sti[j] > eni[j])
 			return;
 
-		sti[j] = st;
-		eni[j] = en;
+		if (!periodic) {
+
+			sti[j] = MAX(sti[j], 0);
+			eni[j] = MIN(eni[j], dims[j] - 1);
+		}
+
+		if (1 == dims[j]) {
+
+			assert(0. == pos[j]);
+			sti[j] = 0;
+			eni[j] = 0;
+		}
 	}
 
 	for (int w = sti[2]; w <= eni[2]; w++) {
 
 		float frac = fabs(((float)w - pos[2]));
 		float dw = 1. * intlookup(kb_size, kb_table, frac / width);
-		int indw = w * dims[1];
+		int indw = ((dims[2] + w) % dims[2]) * dims[1];
 
 	for (int v = sti[1]; v <= eni[1]; v++) {
 
 		float frac = fabs(((float)v - pos[1]));
 		float dv = dw * intlookup(kb_size, kb_table, frac / width);
-		int indv = (indw + v) * dims[0];
+		int indv = (indw + ((dims[1] + v) % dims[1])) * dims[0];
 
 	for (int u = sti[0]; u <= eni[0]; u++) {
 
 		float frac = fabs(((float)u - pos[0]));
 		float du = dv * intlookup(kb_size, kb_table, frac / width);
-		int indu = (indv + u);
+		int indu = (indv + ((dims[0] + u) % dims[0]));
 
 	for (unsigned int c = 0; c < ch; c++) {
 
@@ -332,15 +342,28 @@ void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex
 
 
 
-void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], complex float val[ch], const complex float* src, float width, int kb_size, const float kb_table[kb_size + 1])
+void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], complex float val[ch], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
 	int sti[3];
 	int eni[3];
 
 	for (int j = 0; j < 3; j++) {
 
-		sti[j] = MAX((int)ceil(pos[j] - width), 0);
-		eni[j] = MIN((int)floor(pos[j] + width), dims[j] - 1);
+		sti[j] = (int)ceil(pos[j] - width);
+		eni[j] = (int)floor(pos[j] + width);
+
+		if (!periodic) {
+
+			sti[j] = MAX(sti[j], 0);
+			eni[j] = MIN(eni[j], dims[j] - 1);
+		}
+
+		if (1 == dims[j]) {
+
+			assert(0. == pos[j]);
+			sti[j] = 0;
+			eni[j] = 0;
+		}
 	}
 
 	for (unsigned int i = 0; i < ch; i++)
@@ -353,19 +376,19 @@ void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], comple
 
 		float frac = fabs(((float)w - pos[2]));
 		float dw = 1. * intlookup(kb_size, kb_table, frac / width);
-		int indw = w * dims[1];
+		int indw = ((dims[2] + w) % dims[2]) * dims[1];
 
 	for (int v = sti[1]; v <= eni[1]; v++) {
 
 		float frac = fabs(((float)v - pos[1]));
 		float dv = dw * intlookup(kb_size, kb_table, frac / width);
-		int indv = (indw + v) * dims[0];
+		int indv = (indw + ((dims[1] + v) % dims[1])) * dims[0];
 
 	for (int u = sti[0]; u <= eni[0]; u++) {
 
 		float frac = fabs(((float)u - pos[0]));
 		float du = dv * intlookup(kb_size, kb_table, frac / width);
-		int indu = (indv + u);
+		int indu = (indv + ((dims[0] + u) % dims[0]));
 
 	for (unsigned int c = 0; c < ch; c++) {
 

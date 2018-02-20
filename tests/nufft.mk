@@ -18,9 +18,9 @@ tests/test-nudft-forward: traj nufft reshape nrmse $(TESTS_OUT)/shepplogan.ra $(
 tests/test-nufft-forward: traj nufft reshape nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_fftu.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -x128 -y128 traj.ra						;\
-	$(TOOLDIR)/nufft traj.ra $(TESTS_OUT)/shepplogan.ra shepplogan_ksp2.ra		;\
+	$(TOOLDIR)/nufft -P traj.ra $(TESTS_OUT)/shepplogan.ra shepplogan_ksp2.ra		;\
 	$(TOOLDIR)/reshape 7 128 128 1 shepplogan_ksp2.ra shepplogan_ksp3.ra		;\
-	$(TOOLDIR)/nrmse -t 0.01 $(TESTS_OUT)/shepplogan_fftu.ra shepplogan_ksp3.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0015 $(TESTS_OUT)/shepplogan_fftu.ra shepplogan_ksp3.ra	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -31,10 +31,10 @@ tests/test-nufft-forward: traj nufft reshape nrmse $(TESTS_OUT)/shepplogan.ra $(
 tests/test-nufft-nudft: traj nufft reshape nrmse $(TESTS_OUT)/shepplogan.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x128 -y12 traj.ra						;\
-	$(TOOLDIR)/nufft traj.ra $(TESTS_OUT)/shepplogan.ra shepplogan_ksp1.ra		;\
+	$(TOOLDIR)/nufft -P traj.ra $(TESTS_OUT)/shepplogan.ra shepplogan_ksp1.ra		;\
 	$(TOOLDIR)/nufft -s traj.ra $(TESTS_OUT)/shepplogan.ra shepplogan_ksp2.ra	;\
 	$(TOOLDIR)/scale 128. shepplogan_ksp1.ra shepplogan_ksp3.ra			;\
-	$(TOOLDIR)/nrmse -t 0.002 shepplogan_ksp2.ra shepplogan_ksp3.ra			;\
+	$(TOOLDIR)/nrmse -t 0.0015 shepplogan_ksp2.ra shepplogan_ksp3.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -99,9 +99,9 @@ tests/test-nufft-toeplitz: traj phantom nufft nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
 	$(TOOLDIR)/phantom -k -t traj.ra ksp.ra						;\
-	$(TOOLDIR)/nufft -l1. -i -r traj.ra ksp.ra reco1.ra				;\
-	$(TOOLDIR)/nufft -l1. -i -t traj.ra ksp.ra reco2.ra				;\
-	$(TOOLDIR)/nrmse -t 0.002 reco1.ra reco2.ra					;\
+	$(TOOLDIR)/nufft -P -l1. -i -r traj.ra ksp.ra reco1.ra				;\
+	$(TOOLDIR)/nufft -P -l1. -i -t traj.ra ksp.ra reco2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.0015 reco1.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
