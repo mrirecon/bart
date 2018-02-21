@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "misc/debug.h"
 #include "misc/opts.h"
@@ -429,3 +430,10 @@ unsigned int bitcount(unsigned int flags)
 
 	return N;
 }
+
+ __attribute__((optimize("-fno-finite-math-only")))
+bool safe_isnanf(float x)
+{
+	return isnanf(x);
+}
+

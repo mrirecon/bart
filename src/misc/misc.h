@@ -80,6 +80,8 @@ extern unsigned int bitcount(unsigned int flags);
 extern const char* command_line;
 extern void save_command_line(int argc, char* argv[__VLA(argc)]);
 
+extern _Bool safe_isnanf(float x);
+
 #include "misc/cppwrap.h"
 
 #endif // __MISC_H
