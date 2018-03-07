@@ -475,7 +475,7 @@ cleanup:
  * IRGNM: DF^H ((y - F x_0) + DF (xn - x0)) = ( DF^H DF + alpha ) (dx + xn - x0)
  *        DF^H ((y - F x_0)) - alpha (xn - x0) = ( DF^H DF + alpha) dx
  */
-void irgnm(unsigned int iter, float alpha, float redu, long N, long M,
+void irgnm(unsigned int iter, float alpha, float alpha_min, float redu, long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	struct iter_op_s adj,
@@ -507,7 +507,7 @@ void irgnm(unsigned int iter, float alpha, float redu, long N, long M,
 		iter_op_p_call(inv, alpha, h, p);
 
 		vops->axpy(N, x, 1., h);
-		alpha /= redu;
+		alpha = (alpha-alpha_min)/redu + alpha_min;
 		if (NULL != callback.fun)
 			iter_op_call(callback, x, x);
 	}

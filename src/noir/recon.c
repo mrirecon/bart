@@ -65,6 +65,7 @@ const struct noir_conf_s noir_defaults = {
 	.usegpu = false,
 	.noncart = false,
 	.alpha = 1.,
+	.alpha_min = 0.,
 	.redu = 2.,
 	.a = 220.,
 	.b = 32.,
@@ -121,6 +122,7 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	irgnm_conf.iter = conf->iter;
 	irgnm_conf.alpha = conf->alpha;
+	irgnm_conf.alpha_min = conf->alpha_min;
 	irgnm_conf.redu = conf->redu;
 	irgnm_conf.cgtol = 0.1f;
 	irgnm_conf.nlinv_legacy = true;

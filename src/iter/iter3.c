@@ -32,6 +32,7 @@ const struct iter3_irgnm_conf iter3_irgnm_defaults = {
 
 	.iter = 8,
 	.alpha = 1.,
+	.alpha_min = 0.,
 	.redu = 2.,
 
 	.cgiter = 100,
@@ -100,7 +101,7 @@ void iter3_irgnm(iter3_conf* _conf,
 
 	struct irgnm_s data = { { &TYPEID(irgnm_s) }, der, adj, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
 
-	irgnm(conf->iter, conf->alpha, conf->redu, N, M, select_vecops(src),
+	irgnm(conf->iter, conf->alpha, conf->alpha_min, conf->redu, N, M, select_vecops(src),
 		frw,
 		adj,
 		(struct iter_op_p_s){ inverse, CAST_UP(&data) },

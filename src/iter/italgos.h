@@ -104,7 +104,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 	struct iter_monitor_s* monitor);
 	
 
-void irgnm(unsigned int iter, float alpha, float redu,
+void irgnm(unsigned int iter, float alpha, float alpha_min, float redu,
 	long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,

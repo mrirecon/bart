@@ -31,6 +31,7 @@ struct iter3_irgnm_conf {
 
 	int iter;
 	float alpha;
+	float alpha_min;
 	float redu;
 
 	int cgiter;
