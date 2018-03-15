@@ -27,7 +27,7 @@
 	__typeof__(x) __tmp = (x); \
 	extern __typeof__(*__tmp->TYPEID) T ## _TYPEID; \
 	if (__tmp->TYPEID != &T ## _TYPEID) \
-		error("run-time type check failed: %s\n", #T); \
+		error("%s:%d run-time type check failed: %s\n", __FILE__, __LINE__, #T); \
 	CONTAINER_OF(__tmp, struct T, INTERFACE);	\
 })
 #define CAST_UP(x) (&(x)->INTERFACE)
