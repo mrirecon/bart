@@ -42,6 +42,8 @@ struct noir_model_conf_s noir_model_conf_defaults = {
 	.use_gpu = false,
 	.noncart = false,
 	.pattern_for_each_coil = false,
+	.a = 220.,
+	.b = 32.,
 };
 
 
@@ -84,7 +86,7 @@ struct noir_data {
 
 
 
-static void noir_calc_weights(const long dims[3], complex float* dst)
+static void noir_calc_weights(const struct noir_model_conf_s *conf, const long dims[3], complex float* dst)
 {
 	unsigned int flags = 0;
 
@@ -93,9 +95,9 @@ static void noir_calc_weights(const long dims[3], complex float* dst)
 			flags = MD_SET(flags, i);
 
 	klaplace(3, dims, flags, dst);
-	md_zsmul(3, dims, dst, dst, 220.);
+	md_zsmul(3, dims, dst, dst, conf->a);
 	md_zsadd(3, dims, dst, dst, 1.);
-	md_zspow(3, dims, dst, dst, -16.);	// 1 + 222. \Laplace^16
+	md_zspow(3, dims, dst, dst, -conf->b / 2.);	// 1 + 220. \Laplace^16
 }
 
 
@@ -139,7 +141,7 @@ struct noir_data* noir_init(const long dims[DIMS], const complex float* mask, co
 
 	complex float* weights = md_alloc(DIMS, data->wght_dims, CFL_SIZE);
 
-	noir_calc_weights(dims, weights);
+	noir_calc_weights(conf, dims, weights);
 	fftmod(DIMS, data->wght_dims, FFT_FLAGS, weights, weights);
 	fftscale(DIMS, data->wght_dims, FFT_FLAGS, weights, weights);
 

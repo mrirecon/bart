@@ -23,6 +23,8 @@ struct noir_model_conf_s {
 	_Bool use_gpu;
 	_Bool noncart;
 	_Bool pattern_for_each_coil;
+	float a;
+	float b;
 };
 
 extern struct noir_model_conf_s noir_model_conf_defaults;

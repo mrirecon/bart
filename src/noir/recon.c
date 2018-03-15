@@ -57,6 +57,8 @@ const struct noir_conf_s noir_defaults = {
 	.noncart = false,
 	.alpha = 1.,
 	.redu = 2.,
+	.a = 220.,
+	.b = 32.,
 	.pattern_for_each_coil = false,
 };
 
@@ -91,6 +93,8 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	mconf.noncart = conf->noncart;
 	mconf.fft_flags = fft_flags;
 	mconf.pattern_for_each_coil = conf->pattern_for_each_coil;
+	mconf.a = conf->a;
+	mconf.b = conf->b;
 
 	struct nlop_s* nlop = noir_create(dims, mask, pattern, &mconf);
 

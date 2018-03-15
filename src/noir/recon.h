@@ -17,6 +17,8 @@ struct noir_conf_s {
 	_Bool noncart;
 	float alpha;
 	float redu;
+	float a;
+	float b;
 	_Bool pattern_for_each_coil;
 };
 
