@@ -58,7 +58,7 @@ int main_nlinv(int argc, char* argv[])
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('c', &conf.rvc, "Real-value constraint"),
 		OPT_CLEAR('N', &normalize, "Do not normalize image with coil sensitivities"),
-		OPT_UINT('m', &nmaps, "nmaps", "Number of ENLIVE maps to use in reconsctruction"),
+		OPT_UINT('m', &nmaps, "nmaps", "Number of ENLIVE maps"),
 		OPT_CLEAR('U', &combine, "Do not combine ENLIVE maps in output"),
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
 		OPT_STRING('p', &psf, "PSF", ""),

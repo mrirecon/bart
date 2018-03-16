@@ -303,19 +303,16 @@ __attribute__((optimize("-fno-finite-math-only")))
 static void proj(unsigned int D, const long dims[D],
 		 complex float* optr, complex float* v1, complex float* v2)
 {
-	#ifdef USE_CUDA
-	if (cuda_ondevice(v1)) {
+#ifdef USE_CUDA
+	if (cuda_ondevice(v1))
 		error("md_zscalar is far too slow on the GPU, refusing to run...\n");
-	}
-	#endif
+#endif
 	float v22 = md_zscalar_real(D, dims, v2, v2); // since it is real anyway
 
 	complex float v12 = md_zscalar(D, dims, v1, v2) / v22;
 
-	if (!isfinite(crealf(v12)) || !isfinite(cimagf(v12)) ) {
-
+	if (!isfinite(crealf(v12)) || !isfinite(cimagf(v12)))
 		v12 = 0.;
-	}
 
 	md_zsmul(D, dims, optr, v2, v12);
 }
@@ -329,13 +326,13 @@ void noir_orthogonalize(struct noir_data* data, complex float* dst, const comple
 
 	// orthogonalization of the coil profiles
 	long nmaps = data->imgs_dims[MAPS_DIM];
-	if (1L == nmaps) {
+
+	if (1L == nmaps)
 		return;
-	}
 
 	// as long as the slice dim is after the maps dim, this orthogonalization
 	// will do it wrong. Therefore, we refuse to run in that case:
-	assert( (1 == data->imgs_dims[SLICE_DIM]) || (MAPS_DIM > SLICE_DIM) );
+	assert((1 == data->imgs_dims[SLICE_DIM]) || (MAPS_DIM > SLICE_DIM));
 
 	long single_coils_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG|SLICE_FLAG, single_coils_dims, data->dims);
@@ -351,19 +348,22 @@ void noir_orthogonalize(struct noir_data* data, complex float* dst, const comple
 
 
 	for (long map = 0L; map < nmaps; ++map) {
-		complex float* map_ptr = start_ptr + map*map_offset;
+
+		complex float* map_ptr = start_ptr + map * map_offset;
+
 		md_clear(DIMS, single_coils_dims, tmp, CFL_SIZE);
+
 		for (long prev = 0L; prev < map; ++prev) {
+
 			// calculate projection of current map onto previous
 			// and add to tmp
-			complex float* prev_map_ptr = start_ptr + prev*map_offset;
-
+			complex float* prev_map_ptr = start_ptr + prev * map_offset;
 			proj(DIMS, single_coils_dims,
 			     proj_tmp, map_ptr, prev_map_ptr);
 
 			md_zadd(DIMS, single_coils_dims, tmp, tmp, proj_tmp);
-
 		}
+
 		md_zsub(DIMS, single_coils_dims, map_ptr, map_ptr, tmp);
 	}
 
