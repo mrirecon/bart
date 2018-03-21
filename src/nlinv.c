@@ -113,14 +113,18 @@ int main_nlinv(int argc, char* argv[])
 
 	long img_output_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|SLICE_FLAG, img_output_dims, sens_dims);
+
 	if (!combine)
 		img_output_dims[MAPS_DIM] = nmaps;
 
 	long img_output_strs[DIMS];
 	md_calc_strides(DIMS, img_output_strs, img_output_dims, CFL_SIZE);
 
+
 	complex float* img_output = create_cfl(argv[2], DIMS, img_output_dims);
+
 	md_clear(DIMS, img_output_dims, img_output, CFL_SIZE);
+
 	complex float* img = md_alloc(DIMS, img_dims, CFL_SIZE);
 
 	long msk_dims[DIMS];
@@ -164,8 +168,11 @@ int main_nlinv(int argc, char* argv[])
 		// FIXME: check compatibility
 
 		if (conf.pattern_for_each_coil) {
-			assert( 1 != pat_dims[COIL_DIM] );
+
+			assert(1 != pat_dims[COIL_DIM]);
+
 		} else {
+
 			if (-1 == restrict_fov)
 				restrict_fov = 0.5;
 
@@ -228,6 +235,7 @@ int main_nlinv(int argc, char* argv[])
 
 			md_zfmac2(DIMS, sens_dims, ksp_strs, buf, img_strs, img, sens_strs, sens);
 			md_zrss(DIMS, ksp_dims, COIL_FLAG, img_output, buf);
+
 		} else {
 
 			md_zfmac2(DIMS, sens_dims, sens_strs, buf, img_strs, img, sens_strs, sens);
@@ -235,7 +243,7 @@ int main_nlinv(int argc, char* argv[])
 		}
 		md_zmul2(DIMS, img_output_dims, img_output_strs, img_output, img_output_strs, img_output, msk_strs, mask);
 
-		if (1 == nmaps || !combine) {
+		if ((1 == nmaps) || !combine) {
 
 			//restore phase
 			md_zphsr(DIMS, img_output_dims, buf, img);
@@ -243,6 +251,7 @@ int main_nlinv(int argc, char* argv[])
 		}
 
 		md_free(buf);
+
 	} else {
 
 		if (combine) {
@@ -270,7 +279,9 @@ int main_nlinv(int argc, char* argv[])
 	unmap_cfl(DIMS, ksp_dims, kspace_data);
 
 	double recosecs = timestamp() - start_time;
+
 	debug_printf(DP_DEBUG2, "Total Time: %.2f s\n", recosecs);
+
 	exit(0);
 }
 

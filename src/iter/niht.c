@@ -59,17 +59,19 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 	rsold = rsnot;
 
 	// create initial support
-	if (!conf->do_warmstart){  //x_0 = 0, take support from b
+	if (!conf->do_warmstart) {  //x_0 = 0, take support from b
+
 		iter_op_p_call(thresh, 1.0, m, b);
 		vops->zmul(N/2, (complex float*)x, (complex float*)b, (complex float*)m);
-	}
-       	
-	else{  // x_0 has an initial value, take support from x
+
+	} else {  // x_0 has an initial value, take support from x
+
 		iter_op_p_call(thresh, 1.0, m, x);
 		vops->zmul(N/2, (complex float*)x, (complex float*)x, (complex float*)m);
 	}
 	
 	for (iter = 0; iter < conf->maxiter; iter++) {
+
 		iter_monitor(monitor, vops, x);
     
 		iter_op_call(op, r, x);   // r = A x
@@ -80,8 +82,10 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 		vops->zmul(N/2, (complex float*)g, (complex float*)r, (complex float*)m);
 
 		//mu = ||g_n||^2 / ||A g_n||^2
-		double num = vops->dot(N, g, g);	       
-		iter_op_call(op, g, g);	 
+		double num = vops->dot(N, g, g);
+
+		iter_op_call(op, g, g);
+
 		double den = vops->dot(N, g, g);
 		mu = num / den; //step size
 
@@ -94,13 +98,13 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 		if (rsnew < conf->epsilon) // residual is small
 			break;
     
-		if (rsnew > 100.0 * rsnot){ // algorithm is diverging r_l > 100*r_0
+		if (rsnew > 100.0 * rsnot) // algorithm is diverging r_l > 100*r_0
 			break;
-		}
     
-		if (fabs(rsnew - rsold) <= 1.0E-06f){ // no significant change in residual
+		if (fabs(rsnew - rsold) <= 1.0E-06f) { // no significant change in residual
 			debug_printf(DP_INFO, "\n*** rsnew - rsold =  %f **\n", fabs(rsnew - rsold) );
 			ic++;
+
 			if (15 == ic)        // in 16 iterations. Normally 1e-06
 				break;             // more appropriate for noisy measurements
 		}                      // where convergence will occur with larger residual
@@ -111,7 +115,6 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 		vops->zmul(N/2, (complex float*)x, (complex float*)x, (complex float*)m);
 		
 		rsold = rsnew; // keep residual for comparison
-    
 	}
   
 	debug_printf(DP_DEBUG3, "\n");
@@ -122,8 +125,9 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 	vops->del(r);
 	vops->del(g);
 	vops->del(m);
-
 }
+
+
 /**
  * Normalised Iterative Hard Thresholding/NIHT to solve min || b - Ax ||_2 s.t. || T x ||_0 <= k
  * using an adaptive step size with the iteration: x_n+1 = H_k (x_n + mu_n(A^T (y - A x_n))
@@ -145,7 +149,8 @@ void niht(const struct niht_conf_s* conf, const struct niht_transop* trans,
 	  float* x, const float* b,
 	  struct iter_monitor_s* monitor)
 {
-	if (0 == conf->trans){ // do NIHT in image domain
+	if (0 == conf->trans) { // do NIHT in image domain
+
 		niht_imdom(conf, vops, op, thresh, x, b, monitor);
 		return;
 	}
@@ -171,17 +176,19 @@ void niht(const struct niht_conf_s* conf, const struct niht_transop* trans,
 	rsold = rsnot;
   
 	// create initial support
-	if (!conf->do_warmstart){  //x_0 = 0, take support from b
+	if (!conf->do_warmstart) {  //x_0 = 0, take support from b
+
 		iter_op_call(trans->forward, wx, b);
 		iter_op_p_call(thresh, 1.0, wm, wx); //produce mask by thresholding
 		vops->zmul(WN/2, (complex float*)wx, (complex float*)wx, (complex float*)wm); // apply mask
-	}
-	
-	else { // x_0 has an initial value, take support from x
+
+	} else { // x_0 has an initial value, take support from x
+
 		iter_op_call(trans->forward, wx, x);
 		iter_op_p_call(thresh, 1.0, wm, wx);
 		vops->zmul(WN/2, (complex float*)wx, (complex float*)wx, (complex float*)wm);
 	}
+
 	iter_op_call(trans->adjoint, x, wx);	
   
 	for (iter = 0; iter < conf->maxiter; iter++) {
@@ -199,8 +206,11 @@ void niht(const struct niht_conf_s* conf, const struct niht_transop* trans,
 
 		// 2. mu = ||g_n||^2 / ||A g_n||^2
 		double num = vops->dot(N, g, g);
+
 		iter_op_call(op, g, g);		
+
 		double den = vops->dot(N, g, g);
+
 		mu = num / den; 
 		debug_printf(DP_DEBUG3, "\n#step size: %f\n", mu);
 		rsnew = vops->norm(N, r);
@@ -232,7 +242,6 @@ void niht(const struct niht_conf_s* conf, const struct niht_transop* trans,
 		iter_op_call(trans->adjoint, x, wx);
 
 		rsold = rsnew; // keep residual for comparison
-    
 	}
 
 	debug_printf(DP_DEBUG3, "\n");
