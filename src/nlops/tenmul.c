@@ -16,6 +16,10 @@
 
 #include "nlops/nlop.h"
 
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
+
 #include "tenmul.h"
 
 
@@ -37,6 +41,17 @@ struct tenmul_s {
 
 DEF_TYPEID(tenmul_s);
 
+
+static void tenmul_initialize(struct tenmul_s* data, const complex float* arg)
+{
+	if (NULL == data->x1)
+		data->x1 = md_alloc_sameplace(data->N, data->dims1, CFL_SIZE, arg);
+
+	if (NULL == data->x2)
+		data->x2 = md_alloc_sameplace(data->N, data->dims2, CFL_SIZE, arg);
+}
+
+
 static void tenmul_fun(const nlop_data_t* _data, int N, complex float* args[N])
 {
 	struct tenmul_s* data = CAST_DOWN(tenmul_s, _data);
@@ -45,6 +60,11 @@ static void tenmul_fun(const nlop_data_t* _data, int N, complex float* args[N])
 	complex float* dst = args[0];
 	const complex float* src1 = args[1];
 	const complex float* src2 = args[2];
+
+#ifdef USE_CUDA
+	assert((cuda_ondevice(dst) == cuda_ondevice(src1)) && (cuda_ondevice(src1) == cuda_ondevice(src2)));
+#endif
+	tenmul_initialize(data, dst);
 
 	md_copy2(data->N, data->dims1, MD_STRIDES(data->N, data->dims1, CFL_SIZE), data->x1, data->istr1, src1, CFL_SIZE);
 	md_copy2(data->N, data->dims2, MD_STRIDES(data->N, data->dims2, CFL_SIZE), data->x2, data->istr2, src2, CFL_SIZE);
@@ -109,6 +129,7 @@ static void tenmul_del(const nlop_data_t* _data)
 struct nlop_s* nlop_tenmul_create2(int N, const long dims[N], const long ostr[N],
 		const long istr1[N], const long istr2[N])
 {
+
 	PTR_ALLOC(struct tenmul_s, data);
 	SET_TYPEID(tenmul_s, data);
 
@@ -137,8 +158,9 @@ struct nlop_s* nlop_tenmul_create2(int N, const long dims[N], const long ostr[N]
 	data->dims2 = *PTR_PASS(ndims2);
 	data->istr2 = *PTR_PASS(nistr2);
 
-	data->x1 = md_alloc(N, data->dims1, CFL_SIZE);
-	data->x2 = md_alloc(N, data->dims2, CFL_SIZE);
+	// will be initialized later, to transparently support GPU
+	data->x1 = NULL;
+	data->x2 = NULL;
 
 	long nl_odims[1][N];
 	md_select_dims(N, md_nontriv_strides(N, ostr), nl_odims[0], dims);
