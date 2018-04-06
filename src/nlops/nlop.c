@@ -396,7 +396,7 @@ static void flatten_der(const nlop_data_t* _data, complex float* dst, const comp
 
 		auto iov = linop_codomain(nlop_get_derivative(data->op, o, 0));
 
-		complex float* tmp = md_alloc(iov->N, iov->dims, iov->size);
+		complex float* tmp = md_alloc_sameplace(iov->N, iov->dims, iov->size, src);
 
 		md_clear(iov->N, iov->dims, (void*)dst + data->off[o], iov->size);
 
@@ -429,7 +429,7 @@ static void flatten_adj(const nlop_data_t* _data, complex float* dst, const comp
 
 		auto iov = linop_domain(nlop_get_derivative(data->op, 0, i));
 
-		complex float* tmp = md_alloc(iov->N, iov->dims, iov->size);
+		complex float* tmp = md_alloc_sameplace(iov->N, iov->dims, iov->size, src);
 
 		md_clear(iov->N, iov->dims, (void*)dst + data->off[OO + i], iov->size);
 
