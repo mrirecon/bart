@@ -12,11 +12,15 @@ Software Toolbox and Programming Library for Compressed Sensing and
 Parallel Imaging,
 ISMRM Workshop on Data Sampling and Image Reconstruction, Sedona 2013.
 
+Tamir JI, Ong F, Cheng JY, Uecker M, Lustig M. Generalized Magnetic
+Resonance Image Reconstruction using The Berkeley Advanced
+Reconstruction Toolbox,
+ISMRM Workshop on Data Sampling and Image Reconstruction, Sedona 2016.
 
 
 
 - sensitivity-encoded parallel imaging -
-(commands: itsense, pocsense, bpsense, rsense, pics)
+(commands: itsense, pocsense, bpsense, pics)
 
 
 Ra JB and Rim CY.
@@ -57,6 +61,11 @@ Major speedup of reconstruction for sensitivity­encoding with arbitrary
 trajectories.
 Annual Meeting of the ISMRM, Glasgow 2001,
 In: Proc Intl Soc Mag Reson Med 9; 767.
+
+Uecker M, Zhang S, Frahm J.
+Nonlinear Inverse Reconstruction for Real-time MRI of the
+Human Heart Using Undersampled Radial FLASH.
+Magn Reson Med 2010; 63:1456-1462.
 
 Ong F, Uecker M, Jiang W, Lustig M.
 Fast Non-Cartesian Reconstruction with Pruned Fast Fourier Transform.
@@ -119,6 +128,11 @@ Calibrationless Parallel Imaging Reconstruction Based on Structured
 Low-Rank Matrix Completion.
 Magn Reson Med 2014; 72:959-970.
 
+Holme HCM, Rosenzweig S, Ong F, Wilke RN, Lustig M, Uecker M.
+ENLIVE: An Efficient Nonlinear Method for Calibrationless and
+Robust Parallel Imaging.
+arXiv:1706.09780 [physics.med-ph]
+
 
 
 
@@ -169,7 +183,7 @@ Magn Reson Med 2009; 61:145-152.
 
 
 - sparsity transforms, variational penalties, regularization -
-(commands: cdf97, rof, lrmatrix, pocsense, rsense, pics)
+(commands: cdf97, rof, lrmatrix, pocsense, pics)
 
 
 Rudin LI, Osher S, Fatemi E.
@@ -177,7 +191,7 @@ Nonlinear total variation based noise removal algorithms,
 Physica D: Nonlinear Phenomena 1992; 60:259-268.
 
 Figueiredo MAT and Nowak RD.
-An EM algorithm for wavelet-based image restoration
+An EM algorithm for wavelet-based image restoration.
 IEEE Trans Image Process 2003; 12:906-916.
 
 Ong F, Uecker M, Tariq U, Hsiao A, Alley MT, Vasanawala SS, Lustig M.
@@ -186,8 +200,7 @@ Magn Reson Med 2015; 73:828-842.
 
 Ong F, Lustig M.
 Beyond low rank + sparse: Multi-scale low rank matrix decomposition,
-preprint 2015; arXiv:1507.08751.
-
+IEEE J Sel Topics Signal Process 2016; 10:672-687.
 
 
 
@@ -252,7 +265,7 @@ Hollingsworth KG, Higgins DM, McCallum M, Ward L, Coombs A, Straub V.
 Investigating the quantitative fidelity of prospectively undersampled
 chemical shift imaging in muscular dystrophy with compressed sensing
 and parallel imaging reconstruction.
-Magn Reson Med 2014; 72: 1610-1619.
+Magn Reson Med 2014; 72:1610-1619.
 
 Zhang T, Cheng JY, Potnick AG, Barth RA, Alley MT, Uecker M, Lustig M,
 Pauly JM, Vasanawala SS.
@@ -262,7 +275,7 @@ J Magn Reson Imaging 2015; 41:460-473.
 
 Addy NO, Ingle RR, Wu HH, Hu BS, Nishimura DG.
 High-resolution variable-density 3D cones coronary MRA.
-Magn Reson Med 2015; 74: 614-621.
+Magn Reson Med 2015; 74:614-621.
 
 Cheng JY, Zhang T, Ruangwattanapaisarn N, Alley MT, Uecker M, Pauly JM,
 Lustig M, Vasanawala SS.
@@ -283,10 +296,25 @@ Radiology 2016; 278:245-256.
 Cheng JY, Hanneman K, Zhang T, Alley MT, Lai P, Tamir JI, Uecker M,
 Pauly JM, Lustig M, Vasanawala SS.
 Comprehensive Motion-Compensated Highly-Accelerated 4D Flow MRI with
-Ferumoxytol Enhancement for Pediatric Congenital Heart Disease,
-J Magn Reson Imaging, Epub (2015)
+Ferumoxytol Enhancement for Pediatric Congenital Heart Disease.
+J Magn Reson Imaging 2016; 43:1355-1368.
 
 Tamir JI, Uecker M, Chen W, Lai P, Aleey MT, Vasanawala SS, Lustig M.
-T2-Shuffling: Sharp, Multi-Contrast, Volumetric Fast Spin-Echo Imaging
-Magn Recon Med; in press (2015).
+T2-Shuffling: Sharp, Multi-Contrast, Volumetric Fast Spin-Echo Imaging.
+Magn Recon Med 2017; 77:180-195.
+
+Uecker M, Lustig M.
+Estimating Absolute-Phase Maps Using ESPIRiT and Virtual Conjugate Coils.
+Magn Reson Med 2017; 77:1201-1207.
+
+Moghari MH, Uecker M, Roujol S, Sabbagh M, Geva T, Powell AJ.
+Accelerated Whole-heart Magnetic Resonance Angiography Using
+a Variable-Density Poisson-Disc Undersampling Pattern and
+Compressed Sensing Reconstruction.
+Magn Reson Med 2018; 79:761-769.
+
+Cheng JY, Zhang T, Alley MT, Uecker M, Lustig M, Pauly JM, Vasanawala SS.
+Comprehensive Multi-Dimensional MRI for the Simultaneous Assessment
+of Cardiopulmonary Anatomy and Physiology.
+Scientific Reports 2017; 7:5330.
 
