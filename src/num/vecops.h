@@ -55,6 +55,7 @@ struct vec_ops {
 	void (*zdiv_reg)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2, _Complex float lambda);
 	void (*zfftmod)(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Bool inv, double phase);
 
+	void (*smax)(long N, float* dst, const float* src1, const float val);
 	void (*max)(long N, float* dst, const float* src1, const float* src2);
 	void (*min)(long N, float* dst, const float* src1, const float* src2);
 

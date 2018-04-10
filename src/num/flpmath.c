@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 The Regents of the University of California.
+/* Copyright 2013-2018 The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
@@ -8,7 +8,7 @@
  * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2018 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2016 Siddharth Iyer <sid8795@gmail.com>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  *
@@ -3148,12 +3148,25 @@ void md_smin(unsigned int D, const long dim[D], float* optr, const float* iptr, 
 void md_smax2(unsigned int D, const long dim[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
 #if 0
+	// slow on GPU due to make_3op_scalar
+#if 0
 	float* tmp = md_alloc_sameplace(D, dim, FL_SIZE, iptr);
 	md_sgreatequal2(D, dim, ostr, tmp, istr, iptr, val);
 	md_mul2(D, dim, ostr, optr, istr, iptr, istr, tmp);
 	md_free(tmp);
 #else
 	make_3op_scalar(md_max2, D, dim, ostr, optr, istr, iptr, val);
+#endif
+#else
+	(void)0;
+
+	NESTED(void, nary_smax, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->smax(data->size, ptr[0], ptr[1], val);
+	};
+
+	optimized_twoop_oi(D, dim, ostr, optr, istr, iptr,
+		(size_t[2]){ FL_SIZE, FL_SIZE }, nary_smax);
 #endif
 }
 
