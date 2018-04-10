@@ -160,6 +160,13 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 		}
+		else if (strcmp(rt, "S") == 0) {
+
+			regs[r].xform = POS;
+			regs[r].lambda = 0u;
+			regs[r].xflags = 0u;
+			regs[r].jflags = 0u;
+		}
 		else if (strcmp(rt, "Q") == 0) {
 
 			regs[r].xform = L2IMG;
@@ -473,6 +480,14 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
 			break;
+
+		case POS:
+			debug_printf(DP_INFO, "non-negative constraint\n");
+
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr] = prox_nonneg_create(DIMS, img_dims);
+			break;
+
 
 		case L2IMG:
 			debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
