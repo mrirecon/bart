@@ -1017,12 +1017,12 @@ void md_zfloat2double(unsigned int D, const long dims[D], complex double* dst, c
  */
 void md_tenmul_dims(unsigned int D, long max_dims[D], const long out_dims[D], const long in1_dims[D], const long in2_dims[D])
 {
-	md_max_dims(D, ~0u, max_dims, in1_dims, out_dims);
+	md_max_dims(D, ~0lu, max_dims, in1_dims, out_dims);
 
 	long max2_dims[D];
-	md_max_dims(D, ~0u, max2_dims, in2_dims, out_dims);
+	md_max_dims(D, ~0lu, max2_dims, in2_dims, out_dims);
 
-	assert(md_check_compat(D, 0u, max_dims, max2_dims));
+	assert(md_check_compat(D, 0lu, max_dims, max2_dims));
 }
 
 
