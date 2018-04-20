@@ -462,6 +462,8 @@ struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* o
  */
 void linop_free(const struct linop_s* op)
 {
+	if (NULL == op)
+		return;
 	operator_free(op->forward);
 	operator_free(op->adjoint);
 	operator_free(op->normal);
