@@ -97,6 +97,7 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 	long tdims[N];
 	md_select_dims(N, ~MD_BIT(i), tdims, dims);
 
+	#pragma omp parallel for
 	for (int j = 0; j < dims[i]; j++)
 		fftmod2_r(N, tdims, MD_CLEAR(flags, i),
 			ostrs, (void*)dst + j * ostrs[i], istrs, (void*)src + j * istrs[i],
