@@ -30,9 +30,8 @@ void debug_print_iovec(int level, const struct iovec_s* vec)
 #endif
 
 
-const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const long strs[N], size_t size)
+void iovec_init2(struct iovec_s* n, unsigned int N, const long dims[N], const long strs[N], size_t size)
 {
-	PTR_ALLOC(struct iovec_s, n);
 	n->N = N;
 
 	PTR_ALLOC(long[N], ndims);
@@ -44,9 +43,16 @@ const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const lo
 	n->strs = *PTR_PASS(nstrs);
 
 	n->size = size;
+}
 
+
+const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const long strs[N], size_t size)
+{
+	PTR_ALLOC(struct iovec_s, n);
+	iovec_init2(n, N, dims, strs, size);
 	return PTR_PASS(n);
 }
+
 
 const struct iovec_s* iovec_create(unsigned int N, const long dims[N], size_t size)
 {
@@ -56,10 +62,15 @@ const struct iovec_s* iovec_create(unsigned int N, const long dims[N], size_t si
 }
 
 
-void iovec_free(const struct iovec_s* x)
+void iovec_destroy(const struct iovec_s* x)
 {
 	xfree(x->dims);
 	xfree(x->strs);
+}
+
+void iovec_free(const struct iovec_s* x)
+{
+	iovec_destroy(x);
 	xfree(x);
 }
 
