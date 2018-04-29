@@ -6,6 +6,8 @@
  * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
+#ifndef __SHRDPTR_H
+#define __SHRDPTR_H
 
 // to be included in pointed-to object
 
@@ -36,4 +38,5 @@ extern void shared_ptr_init(struct shared_ptr_s* dst, void (*del)(const struct s
 extern void shared_ptr_copy(struct shared_ptr_s* dst, struct shared_ptr_s* src);
 extern void shared_ptr_destroy(const struct shared_ptr_s* ptr);
 
+#endif // __SHRDPTR_H
 
