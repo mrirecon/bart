@@ -1228,7 +1228,7 @@ static void combi_apply(const operator_data_t* _data, unsigned int N, void* args
 
 	int off = N;
 
-	for (int i = data->N - 1; 0 <= i; i--) {
+	for (int i = (int)data->N - 1; 0 <= i; i--) {
 
 		int A = operator_nr_args(data->x[i]);
 
@@ -1238,7 +1238,7 @@ static void combi_apply(const operator_data_t* _data, unsigned int N, void* args
 			debug_printf(DP_DEBUG4, "combi apply: op[%d].arg[%d] == %p\n", i, a, args[off + a]);
 
 		assert(0 <= off);
-		assert(off < N);
+		assert(off < (int)N);
 
 		operator_generic_apply_unchecked(data->x[i], A, args + off);
 	}
@@ -1445,7 +1445,7 @@ static void permute_fun(const operator_data_t* _data, unsigned int N, void* args
 
 	void* ptr[N];
 
-	for (int i = 0; i < N; i++)
+	for (int i = 0; i < (int)N; i++)
 		ptr[data->perm[i]] = args[i];
 
 	for (int i = 0; i < (int)N; i++)
@@ -1471,7 +1471,7 @@ static void permute_del(const operator_data_t* _data)
 
 const struct operator_s* operator_permute(const struct operator_s* op, int N, const int perm[N])
 {
-	assert(N == operator_nr_args(op));
+	assert(N == (int)operator_nr_args(op));
 
 	unsigned long flags = 0;
 	unsigned long io_flags = 0;
