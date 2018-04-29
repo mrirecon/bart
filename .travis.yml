@@ -11,47 +11,34 @@ matrix:
   include:
     - env: PARALLEL=1
       os: linux
-      compiler: gcc
+      compiler: gcc-5
       sudo: required
       dist: trusty
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
           packages:
             - *default_packages
-      before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq liblapacke-dev
+            - gcc-5
+            - liblapacke-dev
 
     - env:
       os: linux
-      compiler: gcc
+      compiler: gcc-5
       sudo: required
       dist: trusty
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
           packages:
             - *default_packages
+            - gcc-5
+            - liblapacke-dev
       script:
         - make test
         - make utest
-
-      before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq liblapacke-dev
-
-    - env: SLINK=1
-      os: linux
-      compiler: gcc
-      sudo: required
-      dist: trusty
-      addons:
-        apt:
-          packages:
-            - *default_packages
-            - gfortran
-      before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq liblapacke-dev liblapack-dev
 
     - env: OMP=0 CFLAGS=-fblocks LDFLAGS=-lBlocksRuntime
       os: linux
@@ -62,138 +49,43 @@ matrix:
         apt:
           packages:
             - *default_packages
+            - liblapacke-dev
+            - libblocksruntime-dev
       script:
         - make test
         - make utest
-      before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq liblapacke-dev libblocksruntime-dev
 
     - env: OMP=1
       os: linux
-      compiler: gcc
+      compiler: gcc-5
       sudo: required
       dist: trusty
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
           packages:
             - *default_packages
+            - gcc-5
+            - liblapacke-dev
       script:
         - make test
         - make utest
-      before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq liblapacke-dev
 
     - env: NOLAPACKE=1
       os: linux
-      compiler: gcc
+      compiler: gcc-5
       sudo: required
       dist: trusty
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
           packages:
             - *default_packages
+            - gcc-5
             - gfortran
-      before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq liblapack-dev
-
-    - env: CUDA=1 CUDA_BASE=/usr/local/cuda-7.5/ CFLAGS=-fblocks LDFLAGS=-lBlocksRuntime
-      os: linux
-      compiler: clang-3.5
-      sudo: required
-      dist: trusty
-      addons:
-        apt:
-          packages:
-            - *default_packages
-      before_install:
-        - wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_7.5-18_amd64.deb
-        - sudo dpkg -i cuda-repo-ubuntu1404_7.5-18_amd64.deb
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq clang-3.5
-        - sudo apt-get install -qq --no-install-recommends cuda-drivers cuda-core-7.5 cuda-cudart-dev-7.5 cuda-cufft-dev-7.5 cuda-cublas-dev-7.5
-        - sudo apt-get install -qq liblapacke-dev libblocksruntime-dev
-
-    - env: BUILD_NAME="CMake"
-      os: linux
-      compiler: gcc
-      sudo: required
-      dist: trusty
-      addons:
-        apt:
-          packages:
-            - *default_packages
-            - gfortran
-      before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq liblapack-dev liblapacke-dev
-      script:
-        - wget http://www.netlib.org/blas/blast-forum/cblas.tgz
-        - tar zxvf cblas.tgz && rm cblas.tgz
-        - pushd CBLAS
-        - |
-          cat << EOF > Makefile.in
-          SHELL = /bin/sh
-          PLAT = LINUX
-          CBLIB = ../lib/libcblas.so
-          CFLAGS = -O3 -DADD_ -fPIC
-          FFLAGS = -O3 -fPIC
-          CC = gcc
-          FC = gfortran
-          LOADER = $(FC)
-          ARCH = cc
-          ARCHFLAGS = -shared -o
-          RANLIB = echo
-          EOF
-        - cd src && make all && sudo cp -v ../lib/libcblas.so /usr/lib/
-        - popd
-        - mkdir build && cd build
-        - export FC=$(which gfortran)
-        - CC=gcc CXX=g++ cmake -DLINALG_VENDOR=LAPACKE -DLAPACKE_DIR=/usr/lib -DUSE_MATLAB=OFF ..
-        - make
-
-    - env: BUILD_NAME="CMake + CUDA" CUDA_BASE=/usr/local/cuda-7.5/
-      os: linux
-      sudo: required
-      dist: trusty
-      addons:
-        apt:
-          packages:
-            - *default_packages
-            - gfortran
-      before_install:
-        - wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_7.5-18_amd64.deb
-        - sudo dpkg -i cuda-repo-ubuntu1404_7.5-18_amd64.deb
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq clang-3.5
-        - sudo apt-get install -qq --no-install-recommends cuda-drivers cuda-core-7.5 cuda-cudart-dev-7.5 cuda-cufft-dev-7.5 cuda-cublas-dev-7.5
-        - sudo apt-get install -qq liblapack-dev liblapacke-dev
-      script:
-        - wget http://www.netlib.org/blas/blast-forum/cblas.tgz
-        - tar zxvf cblas.tgz && rm cblas.tgz
-        - pushd CBLAS
-        - |
-          cat << EOF > Makefile.in
-          SHELL = /bin/sh
-          PLAT = LINUX
-          CBLIB = ../lib/libcblas.so
-          CFLAGS = -O3 -DADD_ -fPIC
-          FFLAGS = -O3 -fPIC
-          CC = gcc
-          FC = gfortran
-          LOADER = $(FC)
-          ARCH = cc
-          ARCHFLAGS = -shared -o
-          RANLIB = echo
-          EOF
-        - cd src && make all && sudo cp -v ../lib/libcblas.so /usr/lib/
-        - popd
-        - mkdir build && cd build
-        - export FC=$(which gfortran)
-        - CC=gcc CXX=g++ cmake -DLINALG_VENDOR=LAPACKE -DLAPACKE_DIR=/usr/lib -DUSE_MATLAB=OFF -DUSE_CUDA=ON -DCUDA_TOOLKIT_ROOT_DIR=${CUDA_BASE} ..
-        - make
+            - liblapack-dev
 
 script:
   - make bart
