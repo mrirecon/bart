@@ -35,14 +35,14 @@ static void nlop_der_iter(iter_op_data* _o, float* _dst, const float* _src)
 {
 	const struct iter4_nlop_s* nlop = CAST_DOWN(iter4_nlop_s, _o);
 
-	linop_forward_unchecked(nlop->nlop.derivative, (complex float*)_dst, (const complex float*)_src);
+	linop_forward_unchecked(nlop->nlop.derivative[0], (complex float*)_dst, (const complex float*)_src);
 }
 
 static void nlop_adj_iter(iter_op_data* _o, float* _dst, const float* _src)
 {
 	const struct iter4_nlop_s* nlop = CAST_DOWN(iter4_nlop_s, _o);
 
-	linop_adjoint_unchecked(nlop->nlop.derivative, (complex float*)_dst, (const complex float*)_src);
+	linop_adjoint_unchecked(nlop->nlop.derivative[0], (complex float*)_dst, (const complex float*)_src);
 }
 
 
