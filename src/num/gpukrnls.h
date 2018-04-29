@@ -33,6 +33,7 @@ extern void cuda_sqrt(long N, float* dst, const float* src);
 extern void cuda_zconj(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zphsr(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zexpj(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zexp(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zarg(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zabs(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zsoftthresh_half(long N, float lambda, _Complex float* d, const _Complex float* x);
@@ -44,6 +45,8 @@ extern void cuda_zcmp(long N, _Complex float* dst, const _Complex float* src1, c
 extern void cuda_zdiv_reg(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2, _Complex float lambda);
 extern void cuda_le(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Bool inv, double phase);
+extern void cuda_zmax(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
+extern void cuda_zle(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 extern void cuda_smax(long N, float* dst, const float* src1, const float val);
 extern void cuda_max(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_min(long N, float* dst, const float* src1, const float* src2);
