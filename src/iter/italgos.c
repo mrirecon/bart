@@ -325,6 +325,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 	}
 
 	debug_printf(DP_DEBUG3, "\n");
+	debug_printf(DP_DEBUG2, "\t\tFISTA iterations: %u\n", itrdata.iter);
 
 	vops->del(o);
 	vops->del(r);
