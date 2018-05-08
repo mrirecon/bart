@@ -93,6 +93,7 @@ int main_traj(int argc, char* argv[])
 	int turns = 1;
 	bool d3d = false;
 	bool transverse = false;
+	bool asymTraj = false;
 
 	float gdelays[2][3] = {
 		{ 0., 0., 0. },
@@ -115,6 +116,7 @@ int main_traj(int argc, char* argv[])
 		OPT_FLVEC3('Q', &gdelays[1], "delays", "(gradient delays: z, xz, yz)"),
 		OPT_SET('O', &transverse, "correct transverse gradient error for radial tajectories"),
 		OPT_SET('3', &d3d, "3D"),
+		OPT_SET('c', &asymTraj, "Asymmetric trajectory [DC sampled]"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -191,7 +193,13 @@ int main_traj(int argc, char* argv[])
 				double golden_angle = 3. - sqrtf(5.);
 				double base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
 				double angle = M_PI * (float)remap(mode, Y, turns, mb, j) * (dbl ? 2. : 1.) * base;
-				double read = (float)i + 0.5 - (float)X / 2.;
+
+				/* Calculate read-out samples
+				* for symmetric Trajectory [DC between between sample no. X/2-1 and X/2, zero-based indexing]
+				* or asymmetric Trajectory [DC component at sample no. X/2, zero-based indexing]
+				*/
+				double read = (float)i + (asymTraj ? 0 : 0.5) - (float)X / 2.;
+
 				double angle2 = 0.;
 
 				if (d3d) {
