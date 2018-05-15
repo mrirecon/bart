@@ -3478,5 +3478,31 @@ void md_zfftmod(unsigned int D, const long dims[D], complex float* optr, const c
 	md_zfftmod2(D, dims, strs, optr, strs, iptr, inv, phase);
 }
 
+/**
+ * Sum along selected dimensions
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for applying the sum, i.e. the dimensions that will not stay
+ */
+void md_zsum(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
+{
+	long str1[D];
+	long str2[D];
+	long dims2[D];
+
+	md_select_dims(D, ~flags, dims2, dims);
+
+	md_calc_strides(D, str1, dims, CFL_SIZE);
+	md_calc_strides(D, str2, dims2, CFL_SIZE);
+
+	complex float* ones = md_alloc(D, dims, CFL_SIZE);
+	md_zfill(D, dims, ones, 1.);
+
+	md_clear(D, dims2, dst, CFL_SIZE);
+	md_zfmac2(D, dims, str2, dst, str1, src, str1, ones);
+
+	md_free(ones);
+}
+
 
 
