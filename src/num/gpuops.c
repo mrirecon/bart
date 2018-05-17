@@ -34,12 +34,31 @@
 
 #include "gpuops.h"
 
+#define MiBYTE (1024*1024)
 
 
 static void cuda_error(int line, cudaError_t code)
 {
 	const char *err_str = cudaGetErrorString(code);
 	error("cuda error: %d %s \n", line, err_str);
+}
+
+static void printMemInfo()
+{
+    size_t byte_tot;
+    size_t byte_free;
+    cudaError_t cudaStatus = cudaMemGetInfo( &byte_free, &byte_tot ) ;
+
+    if ( cudaStatus != cudaSuccess ){
+        printf("ERROR: cudaMemGetInfo failed. %s\n", cudaGetErrorString(cudaStatus));
+        exit(1);
+    }
+
+    double dbyte_tot = (double)byte_tot;
+    double dbyte_free = (double)byte_free;
+    double dbyte_used = dbyte_tot - dbyte_free;
+
+    debug_printf(DP_INFO , "GPU memory usage: used = %.4f MiB, free = %.4f MiB, total = %.4f MiB\n", dbyte_used/MiBYTE, dbyte_free/MiBYTE, dbyte_tot/MiBYTE);
 }
 
 #define CUDA_ERROR(x)	({ cudaError_t errval = (x); if (cudaSuccess != errval) cuda_error(__LINE__, errval); })
