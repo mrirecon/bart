@@ -680,12 +680,12 @@ __global__ void kern_zle(int N, cuFloatComplex* dst, const cuFloatComplex* src1,
 	int stride = blockDim.x * gridDim.x;
 
 	for (int i = start; i < N; i += stride)
-		dst[i] = (cuCrealf(src1[i]) <= cuCrealf(src2[i]));
+		dst[i] = make_cuFloatComplex((cuCrealf(src1[i]) <= cuCrealf(src2[i])), 0.);
 }
 
 extern "C" void cuda_zle(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zle<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	kern_zle<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -772,7 +772,7 @@ __global__ void kern_zmax(int N, cuFloatComplex* dst, const cuFloatComplex* src1
 
 extern "C" void cuda_zmax(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zmax<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	kern_zmax<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
