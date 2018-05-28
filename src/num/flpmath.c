@@ -1800,7 +1800,7 @@ void md_zlessequal2(unsigned int D, const long dims[D], const long ostr[D], comp
  *
  * optr = (iptr1 <= iptr2)
  */
-void md_zlessequal(unsigned int D, const long dims[D], float* optr, const complex float* iptr1, const complex float* iptr2)
+void md_zlessequal(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr1, const complex float* iptr2)
 {
 	make_z3op_simple(md_zlessequal2, D, dims, optr, iptr1, iptr2);
 }
