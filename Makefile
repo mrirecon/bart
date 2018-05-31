@@ -177,6 +177,7 @@ MODULES_lrmatrix = -llowrank -liter -llinops
 MODULES_estdims = -lnoncart -llinops
 MODULES_ismrmrd = -lismrm
 MODULES_wavelet = -llinops -lwavelet
+MODULES_wshfl = -llinops -lwavelet -liter -llowrank -llinops
 
 
 MAKEFILES = $(root)/Makefiles/Makefile.*
