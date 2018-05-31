@@ -887,7 +887,7 @@ static void op_loop_fun(const operator_data_t* _data, unsigned int N, void* args
 	assert(N == data->N);
 
 	if (data->gpu) {
-#ifdef USE_CUDA
+#if defined(USE_CUDA) && defined(_OPENMP)
                 int nr_cuda_devices = cuda_devices();
                 omp_set_num_threads(nr_cuda_devices * 2);
 //              fft_set_num_threads(1);
@@ -1119,7 +1119,7 @@ struct gpu_data_s {
 static DEF_TYPEID(gpu_data_s);
 
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) && defined(_OPENMP)
 #include <omp.h>
 #define MAX_CUDA_DEVICES 16
 omp_lock_t gpulock[MAX_CUDA_DEVICES];
@@ -1128,7 +1128,7 @@ omp_lock_t gpulock[MAX_CUDA_DEVICES];
 
 static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-#ifdef USE_CUDA
+#if defined(USE_CUDA) && defined(_OPENMP)
 	const struct operator_s* op = CAST_DOWN(gpu_data_s, _data)->op;
 	void* gpu_ptr[N];
 
