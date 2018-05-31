@@ -89,9 +89,9 @@ static void print_opdims(const struct linop_s* op)
 {
 	const struct iovec_s* domain	 = linop_domain(op);
 	const struct iovec_s* codomain = linop_codomain(op);
-	debug_printf(DP_INFO, "  domain: ");
+	debug_printf(DP_INFO, "\t  domain: ");
 	debug_print_dims(DP_INFO, domain->N, domain->dims);
-	debug_printf(DP_INFO, "codomain: ");
+	debug_printf(DP_INFO, "\tcodomain: ");
 	debug_print_dims(DP_INFO, codomain->N, codomain->dims);
 }
 
@@ -366,9 +366,6 @@ static const struct linop_s* linop_kern_create(long N,
 
 	const struct linop_s* K = linop_create(N, output_dims, N, input_dims, CAST_UP(PTR_PASS(data)), 
 																				 kern_apply, kern_adjoint, kern_normal, NULL, kern_free);
-	debug_printf(DP_INFO, "KERNEL operator information.\n");
-	print_opdims(K);
-													 
 	return K;
 }
 
@@ -387,9 +384,6 @@ static const struct linop_s* linop_espirit_create(long sx, long sy, long sz, lon
 	const struct linop_s* E = linop_fmac_create(DIMS, max_dims, MAPS_FLAG, 
 		COIL_FLAG, TE_FLAG|COEFF_FLAG, maps);
  
-	debug_printf(DP_INFO, "ESPIRiT operator information.\n");
-	print_opdims(E);
-													 
 	return E;
 }
 
@@ -406,8 +400,6 @@ static const struct linop_s* linop_reshape_create(long wx, long sx, long sy, lon
 	md_copy_dims(DIMS, output_dims, input_dims);
 	output_dims[0] = wx;
 	struct linop_s* R = linop_resize_create(DIMS, output_dims, input_dims);
-	debug_printf(DP_INFO, "RESHAPE operator information.\n");
-	print_opdims(R);
 	return R;
 }
 
@@ -421,8 +413,6 @@ static const struct linop_s* linop_fx_create(long wx, long sy, long sz, long nc,
 	dims[3] = nc;
 	dims[6] = tk;
 	struct linop_s* Fx = linop_fftc_create(DIMS, dims, READ_FLAG);
-	debug_printf(DP_INFO, "FX operator information.\n");
-	print_opdims(Fx);
 	return Fx;
 }
 
@@ -437,8 +427,6 @@ static const struct linop_s* linop_wave_create(long wx, long sy, long sz, long n
 	dims[3] = nc;
 	dims[6] = tk;
 	struct linop_s* W = linop_cdiag_create(DIMS, dims, FFT_FLAGS, psf);
-	debug_printf(DP_INFO, "WAVE operator information.\n");
-	print_opdims(W);
 	return W;
 }
 
@@ -452,8 +440,6 @@ static const struct linop_s* linop_fyz_create(long wx, long sy, long sz, long nc
 	dims[3] = nc;
 	dims[6] = tk;
 	struct linop_s* Fyz = linop_fftc_create(DIMS, dims, PHS1_FLAG|PHS2_FLAG);
-	debug_printf(DP_INFO, "FYZ operator information.\n");
-	print_opdims(Fyz);
 	return Fyz;
 }
 
@@ -538,7 +524,8 @@ int main_wshfl(int argc, char* argv[])
 	bool	wav			= false;
 	int		gpun		= -1;
 	bool	fista		= false;
-	float cont		= 0.1;
+	bool	hgwld		= false;
+	float cont		= 1;
 							 
 	const struct opt_s opts[] = {
 		OPT_FLOAT('r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
@@ -549,6 +536,7 @@ int main_wshfl(int argc, char* argv[])
 		OPT_FLOAT('t', &tol,		 "tol",		 "Tolerance convergence condition for iterative method."),
 		OPT_INT(	'g', &gpun,		 "gpun",	 "Set GPU device number. If not set, use CPU."),
 		OPT_SET(	'f', &fista,						 "Reconstruct using FISTA instead of IST."),
+		OPT_SET(	'H', &hgwld,						 "Use hogwild in IST/FISTA."),
 		OPT_SET(	'w', &wav,							 "Use wavelet."),
 		OPT_SET(	'l', &llr,							 "Use locally low rank."),
 	};
@@ -635,7 +623,7 @@ int main_wshfl(int argc, char* argv[])
 	md_free(mask);
 	debug_printf(DP_INFO, "Done.\n");
 
-	debug_printf(DP_INFO, "Creating linear operators:\n");
+	debug_printf(DP_INFO, "Creating linear operators... ");
 	const struct linop_s* E		= linop_espirit_create(sx, sy, sz, nc, md, tk, maps);
 	const struct linop_s* R		= linop_reshape_create(wx, sx, sy, sz, nc, tk);
 	const struct linop_s* Fx	= linop_fx_create(wx, sy, sz, nc, tk);
@@ -646,13 +634,13 @@ int main_wshfl(int argc, char* argv[])
 
 	struct linop_s* A = linop_chain(linop_chain(linop_chain(linop_chain(linop_chain(
 												E, R), Fx), W), Fyz), K);
+	debug_printf(DP_INFO, "Done.\n");
 
-	debug_printf(DP_INFO, "Forward model A information.\n");
+	debug_printf(DP_INFO, "Forward model information:\n");
 	print_opdims(A);
 	double maxeigen = estimate_maxeigenval(A->normal);
-	debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
+	debug_printf(DP_INFO, "\tMaximum eigenvalue: %.2e\n", maxeigen);
 	step /= maxeigen;
-	debug_printf(DP_INFO, "Using stepsize: %.2e\n", step);
 
 	const struct operator_p_s* T = NULL;
 	long blkdims[MAX_LEV][DIMS];
@@ -665,7 +653,7 @@ int main_wshfl(int argc, char* argv[])
 	if ((wav == true) || (llr == true)) {
 		if (wav) {
 			debug_printf(DP_INFO, "Creating wavelet threshold operator... ");
-			T = prox_wavelet_thresh_create(DIMS, coeff_dims, WAVFLAG, 0u, minsize, lambda, false);
+			T = prox_wavelet_thresh_create(DIMS, coeff_dims, WAVFLAG, 0u, minsize, lambda, true);
 		} else {
 			debug_printf(DP_INFO, "Creating locally low rank threshold operator... ");
 			llr_blkdims(blkdims, ~COEFF_DIM, coeff_dims, blksize);
@@ -690,25 +678,40 @@ int main_wshfl(int argc, char* argv[])
 		italgo							= iter_conjgrad;
 		iconf								= CAST_UP(&cgconf);
 		debug_printf(DP_INFO, "Using conjugate gradient.\n");
+		debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
+		debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
 	} else if (fista) {
 		fsconf							= iter_fista_defaults;
 		fsconf.maxiter			= maxiter;
 		fsconf.step					= step;
-		fsconf.hogwild			= false;
+		fsconf.hogwild			= hgwld;
 		fsconf.tol					= tol;
 		fsconf.continuation = cont;
 		italgo							= iter_fista;
 		iconf								= CAST_UP(&fsconf);
 		debug_printf(DP_INFO, "Using FISTA.\n");
+		debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
+		debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
+		debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
+		debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
+		debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
+		debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
 	} else {
 		isconf							= iter_ist_defaults;
 		isconf.step					= step;
 		isconf.maxiter			= maxiter;
 		isconf.tol					= tol;
 		isconf.continuation = cont;
+		isconf.hogwild			= hgwld;
 		italgo							= iter_ist;
 		iconf								= CAST_UP(&isconf);
 		debug_printf(DP_INFO, "Using IST.\n");
+		debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
+		debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
+		debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
+		debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
+		debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
+		debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
 	}
 
 	debug_printf(DP_INFO, "Starting reconstruction... ");
