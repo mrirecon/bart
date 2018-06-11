@@ -1,10 +1,10 @@
-/* Copyright 2013-2015 The Regents of the University of California.
+/* Copyright 2013-2018 The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2013, 2015 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2015,2018 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
 #include <stdlib.h>
@@ -14,15 +14,18 @@
 #include <strings.h>
 #include <complex.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include "num/multind.h"
 #include "num/init.h"
+#include "num/flpmath.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/mmio.h"
 #include "misc/png.h"
 #include "misc/dicom.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
@@ -39,8 +42,18 @@ static const char help_str[] = "Create magnitude images as png or proto-dicom.\n
 				"be used for the image, and the other dimensions\n"
 				"will be looped over.\n";
 
+// from view:src/draw.c
+static double clamp(double a, double b, double x)
+{
+	return (x < a) ? a : ((x > b) ? b : x);
+}
 
-static void toimg(bool dicom, const char* name, long inum, float max, long h, long w, const complex float* data)
+static double windowing(double g, double a, double b, double x)
+{
+	return pow(clamp(0., 1., (x - a) / (b - a)), g);
+}
+
+static void toimg(bool dicom, const char* name, long inum, float scale, float gamma, float contrast, float window, long h, long w, const complex float* data, bool use_windowing)
 {
 	int len = strlen(name);
 	assert(len >= 1);
@@ -54,7 +67,8 @@ static void toimg(bool dicom, const char* name, long inum, float max, long h, lo
 
 		for (int j = 0; j < w; j++) {
 
-			unsigned int value = max_val * (cabsf(data[j * h + i]) / max);
+			double val = cabsf(data[j * h + i]) / scale;
+			unsigned int value = (unsigned int)(max_val * (use_windowing ? windowing(gamma, contrast, window, val) : val));
 
 			if (!dicom) {
 
@@ -75,11 +89,13 @@ static void toimg(bool dicom, const char* name, long inum, float max, long h, lo
 }
 
 
-static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], const complex float* data)
+static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], const complex float* data, float gamma, float contrast, float window, bool single_scale, bool use_windowing)
 {
 	long data_size = md_calc_size(DIMS, dims); 
 
 	long sq_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
+
+	float max = 0.;
 
 	int l = 0;
 
@@ -87,12 +103,9 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 		if (1 != dims[i])
 			sq_dims[l++] = dims[i];
 
-	float max = 0.;
+
 	for (long i = 0; i < data_size; i++)
 		max = MAX(cabsf(data[i]), max);
-
-	if (0. == max)
-		max = 1.;
 
 	int len = strlen(name);
 	assert(len >= 1);
@@ -112,7 +125,26 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 		else
 			sprintf(name_i, "%s.%s", name, dicom ? "dcm" : "png");
 
-		toimg(dicom, name_i, i, max, sq_dims[0], sq_dims[1], data + i * img_size);
+		float scale = 1.;
+
+		if (use_windowing)
+			scale = md_znorm(2, sq_dims, data + i * img_size) / md_calc_size(2, sq_dims);
+		else if (single_scale)
+			scale = max;
+		else {
+
+			float max2 = 0;
+
+			for (long j = 0; j < md_calc_size(2, sq_dims); j++)
+				max2 = MAX(cabsf(data[i * img_size + j]), max2);
+
+			scale = max2;
+		}
+
+		if (0. == scale)
+			scale = 1.;
+
+		toimg(dicom, name_i, i, scale, gamma, contrast, window, sq_dims[0], sq_dims[1], data + i * img_size, use_windowing);
 	}
 
 	debug_printf(DP_INFO, "done.\n", num_imgs);
@@ -121,11 +153,26 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 
 int main_toimg(int argc, char* argv[])
 {
-	bool dicom = mini_cmdline_bool(&argc, argv, 'd', 2, usage_str, help_str);
+	float gamma = 1.;
+	float contrast = 0.;
+	float window = 750.;
+	bool use_windowing = false;
+	bool single_scale = true;
+	bool dicom = false;
+
+	const struct opt_s opts[] = {
+
+		OPT_FLOAT('g', &gamma, "gamma", "gamma level"),
+		OPT_FLOAT('c', &contrast, "contrast", "contrast level"),
+		OPT_FLOAT('w', &window, "window", "window level"),
+		OPT_SET('d', &dicom, "write to dicom format (deprecated, use extension .dcm)"),
+		OPT_CLEAR('m', &single_scale, "re-scale each image"),
+		OPT_SET('W', &use_windowing, "use dynamic windowing"),
+	};
+
+	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	// -d option is deprecated
 
 	char* ext = rindex(argv[2], '.');
 
@@ -145,7 +192,7 @@ int main_toimg(int argc, char* argv[])
 	long dims[DIMS];
 	complex float* data = load_cfl(argv[1], DIMS, dims);
 
-	toimg_stack(argv[2], dicom, dims, data);
+	toimg_stack(argv[2], dicom, dims, data, gamma, contrast, window, single_scale, use_windowing);
 
 	unmap_cfl(DIMS, dims, data);
 
