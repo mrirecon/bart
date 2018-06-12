@@ -4,7 +4,7 @@
  *
  * Authors: 
  * 2013, 2015 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2015,2018 Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2015, 2018 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
 #include <stdlib.h>
@@ -53,7 +53,7 @@ static double windowing(double g, double a, double b, double x)
 	return pow(clamp(0., 1., (x - a) / (b - a)), g);
 }
 
-static void toimg(bool dicom, const char* name, long inum, float scale, float gamma, float contrast, float window, long h, long w, const complex float* data, bool use_windowing)
+static void toimg(bool dicom, bool use_windowing, const char* name, long inum, float gamma, float contrast, float window, float scale, long h, long w, const complex float* data)
 {
 	int len = strlen(name);
 	assert(len >= 1);
@@ -89,13 +89,11 @@ static void toimg(bool dicom, const char* name, long inum, float scale, float ga
 }
 
 
-static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], const complex float* data, float gamma, float contrast, float window, bool single_scale, bool use_windowing)
+static void toimg_stack(const char* name, bool dicom, bool single_scale, bool use_windowing, float gamma, float contrast, float window, const long dims[DIMS], const complex float* data)
 {
 	long data_size = md_calc_size(DIMS, dims); 
 
 	long sq_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
-
-	float max = 0.;
 
 	int l = 0;
 
@@ -103,7 +101,7 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 		if (1 != dims[i])
 			sq_dims[l++] = dims[i];
 
-
+	float max = 0.;
 	for (long i = 0; i < data_size; i++)
 		max = MAX(cabsf(data[i]), max);
 
@@ -125,26 +123,20 @@ static void toimg_stack(const char* name, bool dicom, const long dims[DIMS], con
 		else
 			sprintf(name_i, "%s.%s", name, dicom ? "dcm" : "png");
 
-		float scale = 1.;
+		float scale = 0.;
 
 		if (use_windowing)
 			scale = md_znorm(2, sq_dims, data + i * img_size) / md_calc_size(2, sq_dims);
 		else if (single_scale)
 			scale = max;
-		else {
-
-			float max2 = 0;
-
+		else 
 			for (long j = 0; j < md_calc_size(2, sq_dims); j++)
-				max2 = MAX(cabsf(data[i * img_size + j]), max2);
-
-			scale = max2;
-		}
+				scale = MAX(cabsf(data[i * img_size + j]), scale);
 
 		if (0. == scale)
 			scale = 1.;
 
-		toimg(dicom, name_i, i, scale, gamma, contrast, window, sq_dims[0], sq_dims[1], data + i * img_size, use_windowing);
+		toimg(dicom, use_windowing, name_i, i, gamma, contrast, window, scale, sq_dims[0], sq_dims[1], data + i * img_size);
 	}
 
 	debug_printf(DP_INFO, "done.\n", num_imgs);
@@ -192,7 +184,7 @@ int main_toimg(int argc, char* argv[])
 	long dims[DIMS];
 	complex float* data = load_cfl(argv[1], DIMS, dims);
 
-	toimg_stack(argv[2], dicom, dims, data, gamma, contrast, window, single_scale, use_windowing);
+	toimg_stack(argv[2], dicom, single_scale, use_windowing, gamma, contrast, window, dims, data);
 
 	unmap_cfl(DIMS, dims, data);
 
