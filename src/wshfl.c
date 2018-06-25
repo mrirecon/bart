@@ -15,7 +15,8 @@
  *
  * Iyer S, Bilgic B, Setsompop K.
  * Faster T2 shuffling with Wave.
- * Submitted to ISMRM 2018.
+ * Presented in the session: "Signal Encoding and Decoding" at ISMRM 2018.
+ * https://www.ismrm.org/18/program_files/O67.htm 
  */
 
 #include <assert.h>
@@ -50,54 +51,56 @@
 #include "lowrank/lrthresh.h"
 
 static const char usage_str[] = "<maps> <wave> <phi> <reorder> <table> <output>";
-static const char help_str[] = "Perform wave-shuffling reconstruction.\n\n"
-															 "Conventions:\n"
-															 "	* (sx, sy, sz) - Spatial dimensions.\n"
-															 "	* wx					 - Extended FOV in READ_DIM due to\n"
-															 "									 wave's voxel spreading.\n"
-															 "	* (nc, md)		 - Number of channels and ESPIRiT's \n"
-															 "									 extended-SENSE model operator\n"
-															 "									 dimensions (or # of maps).\n"
-															 "	* (tf, tk)		 - Turbo-factor and the rank\n"
-															 "									 of the temporal basis used in\n"
-															 "									 shuffling.\n"
-															 "	* ntr					 - Number of TRs, or the number of\n"
-															 "									 (ky, kz) points acquired of one\n"
-															 "									 echo image.\n"
-															 "	* n						 - Total number of (ky, kz) points\n"
-															 "									 acquired. This is equal to the\n"
-															 "									 product of ntr and tf.\n\n"
-															 "Descriptions:\n"
-															 "	* reorder is an (n by 3) index matrix such that\n"
-															 "		[ky, kz, t] = reorder(i, :) represents the\n"
-															 "		(ky, kz) kspace position of the readout line\n" 
-															 "		acquired at echo number (t), and 0 <= ky < sy,\n"
-															 "		0 <= kz < sz, 0 <= t < tf).\n"
-															 "	* table is a (wx by nc by n) matrix such that\n"
-															 "		table(:, :, k) represents the kth multichannel\n"
-															 "		kspace line.\n\n"
-															 "Expected dimensions:\n"
-															 "	* maps		- (		sx, sy, sz, nc, md,  1,  1)\n"
-															 "	* wave		- (		wx, sy, sz,  1,  1,  1,  1)\n"
-															 "	* phi			- (		 1,  1,  1,  1,  1, tf, tk)\n"
-															 "	* output	- (		sx, sy, sz,  1, md,  1, tk)\n"
-															 "	* reorder - (		 n,  3,  1,  1,  1,  1,  1)\n"
-															 "	* table		- (		wx, nc,  n,  1,  1,  1,  1)";
+static const char help_str[]  = 
+	"Perform a wave-shuffling reconstruction.\n\n"
+	"Conventions:\n"
+	"  * (sx, sy, sz) - Spatial dimensions.\n"
+	"  * wx           - Extended FOV in READ_DIM due to\n"
+	"                   wave's voxel spreading.\n"
+	"  * (nc, md)     - Number of channels and ESPIRiT's \n"
+	"                   extended-SENSE model operator\n"
+	"                   dimensions (or # of maps).\n"
+	"  * (tf, tk)     - Turbo-factor and the rank\n"
+	"                   of the temporal basis used in\n"
+	"                   shuffling.\n"
+	"  * ntr          - Number of TRs, or the number of\n"
+	"                   (ky, kz) points acquired of one\n"
+	"                   echo image.\n"
+	"  * n            - Total number of (ky, kz) points\n"
+	"                   acquired. This is equal to the\n"
+	"                   product of ntr and tf.\n\n"
+	"Descriptions:\n"
+	"  * reorder is an (n by 3) index matrix such that\n"
+	"    [ky, kz, t] = reorder(i, :) represents the\n"
+	"    (ky, kz) kspace position of the readout line\n" 
+	"    acquired at echo number (t), and 0 <= ky < sy,\n"
+	"    0 <= kz < sz, 0 <= t < tf).\n"
+	"  * table is a (wx by nc by n) matrix such that\n"
+	"    table(:, :, k) represents the kth multichannel\n"
+	"    kspace line.\n\n"
+	"Expected dimensions:\n"
+	"  * maps    - (   sx, sy, sz, nc, md,  1,  1)\n"
+	"  * wave    - (   wx, sy, sz,  1,  1,  1,  1)\n"
+                                "  * phi     - (    1,  1,  1,  1,  1, tf, tk)\n"
+	"  * output  - (   sx, sy, sz,  1, md,  1, tk)\n"
+	"  * reorder - (    n,  3,  1,  1,  1,  1,  1)\n"
+	"  * table   - (   wx, nc,  n,  1,  1,  1,  1)";
 
 /* Helper function to print out operator dimensions. */
 static void print_opdims(const struct linop_s* op) 
 {
-	const struct iovec_s* domain	 = linop_domain(op);
+	const struct iovec_s* domain   = linop_domain(op);
 	const struct iovec_s* codomain = linop_codomain(op);
-	debug_printf(DP_INFO, "\t  domain: ");
+	debug_printf(DP_INFO, "\tDomain:   ");
 	debug_print_dims(DP_INFO, domain->N, domain->dims);
-	debug_printf(DP_INFO, "\tcodomain: ");
+	debug_printf(DP_INFO, "\tCodomain: ");
 	debug_print_dims(DP_INFO, codomain->N, codomain->dims);
 }
 
 /* Construct sampling mask array from reorder tables. */
-static void construct_mask(long reorder_dims[DIMS], complex float* reorder, 
-													 long mask_dims[DIMS],		complex float* mask)
+static void construct_mask(
+	long reorder_dims[DIMS], complex float* reorder, 
+	long mask_dims[DIMS],    complex float* mask)
 {
 	int n  = reorder_dims[0];
 	int sy = mask_dims[1];
@@ -106,7 +109,7 @@ static void construct_mask(long reorder_dims[DIMS], complex float* reorder,
 	int y = -1;
 	int z = -1;
 	int t = -1;
-	
+
 	for (int i = 0; i < n; i++) {
 		y = reorder[i];
 		z = reorder[i + n];
@@ -122,14 +125,14 @@ struct kern_s {
 
 	unsigned int N;
 
-	long* reorder_dims; // Dimension of the index table:		( n,	3,	1,	1, 1,  1,  1,  1)
-	long* phi_dims;			// Dimension of the temporal basis: ( 1,	1,	1,	1, 1, tf, tk,  1)
-	long* table_dims;		// Dimension of the data table:			(wx, nc,	n,	1, 1,  1,  1,  1)
-	long* kernel_dims;	// Dimension of the kernel:					( 1, sy, sz,	1, 1,  1, tk, tk)
+	long* reorder_dims; // Dimension of the index table:    ( n,  3,  1,  1, 1,  1,  1,  1)
+	long* phi_dims;     // Dimension of the temporal basis: ( 1,  1,  1,  1, 1, tf, tk,  1)
+	long* table_dims;   // Dimension of the data table:     (wx, nc,  n,  1, 1,  1,  1,  1)
+	long* kernel_dims;  // Dimension of the kernel:         ( 1, sy, sz,  1, 1,  1, tk, tk)
 
-	const complex float* reorder;
-	const complex float* phi;
-	const complex float* kernel;
+	complex float* reorder;
+	complex float* phi;
+	complex float* kernel;
 };
 
 /* Go to table from coefficient-kspace with memory efficiency. */
@@ -141,7 +144,7 @@ static void kern_apply(const linop_data_t* _data, complex float* dst, const comp
 	long sy = data->kernel_dims[1];
 	long sz = data->kernel_dims[2];
 	long nc = data->table_dims[1];
-	long n	= data->reorder_dims[0];
+	long n  = data->reorder_dims[0];
 	long tf = data->phi_dims[5];
 	long tk = data->phi_dims[6];
 
@@ -164,11 +167,11 @@ static void kern_apply(const linop_data_t* _data, complex float* dst, const comp
 		permute_order[i] = i;
 	md_permute(DIMS, permute_order, perm_dims, perm, input_dims, src, CFL_SIZE);
 
-	long vec_dims[]			= {wx, nc, tf,	1};
-	long phi_mat_dims[] = { 1,	1, tf, tk};
-	long phi_in_dims[]	= {wx, nc,	1, tk};
-	long fmac_dims[]		= {wx, nc, tf, tk};
-	long line_dims[]		= {wx, nc,	1,	1};
+	long vec_dims[]     = {wx, nc, tf,  1};
+	long phi_mat_dims[] = { 1,  1, tf, tk};
+	long phi_in_dims[]  = {wx, nc,  1, tk};
+	long fmac_dims[]    = {wx, nc, tf, tk};
+	long line_dims[]    = {wx, nc,  1,  1};
 
 	complex float* vec = md_alloc_sameplace(4, vec_dims, CFL_SIZE, src);
 
@@ -192,8 +195,7 @@ static void kern_apply(const linop_data_t* _data, complex float* dst, const comp
 		t = data->reorder[i + 2 * n];
 
 		md_clear(4, vec_dims, vec, CFL_SIZE);
-		md_zfmac2(4, fmac_dims, vec_str, vec, phi_in_str, (perm + ((wx * nc * tk) * (y + z * sy))),
-							phi_mat_str, data->phi);
+		md_zfmac2(4, fmac_dims, vec_str, vec, phi_in_str, (perm + ((wx * nc * tk) * (y + z * sy))), phi_mat_str, data->phi);
 		md_copy(4, line_dims, dst + (i * wx * nc), vec + (t * wx * nc), CFL_SIZE);
 	}
 
@@ -204,13 +206,13 @@ static void kern_apply(const linop_data_t* _data, complex float* dst, const comp
 /* Collapse data table into the temporal basis for memory efficiency. */
 static void kern_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct kern_s* data = CAST_DOWN(kern_s, _data);
+	struct kern_s* data = CAST_DOWN(kern_s, _data);
 
 	long wx = data->table_dims[0];
 	long sy = data->kernel_dims[1];
 	long sz = data->kernel_dims[2];
 	long nc = data->table_dims[1];
-	long n	= data->reorder_dims[0];
+	long n  = data->reorder_dims[0];
 	long tf = data->phi_dims[5];
 	long tk = data->phi_dims[6];
 
@@ -221,14 +223,14 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	perm_dims[4] = sy;
 	perm_dims[5] = sz;
 
-	complex float* perm = md_alloc_sameplace(DIMS, perm_dims, CFL_SIZE, src);
+	complex float* perm = md_alloc_sameplace(DIMS, perm_dims, CFL_SIZE, dst);
 	md_clear(DIMS, perm_dims, perm, CFL_SIZE);
 
-	long vec_dims[]			= {wx, nc, tf,	1};
-	long phi_mat_dims[] = { 1,	1, tf, tk};
-	long phi_out_dims[] = {wx, nc,	1, tk};
-	long fmac_dims[]		= {wx, nc, tf, tk};
-	long line_dims[]		= {wx, nc,	1,	1};
+	long vec_dims[]     = {wx, nc, tf,  1};
+	long phi_mat_dims[] = { 1,  1, tf, tk};
+	long phi_out_dims[] = {wx, nc,  1, tk};
+	long fmac_dims[]    = {wx, nc, tf, tk};
+	long line_dims[]    = {wx, nc,  1,  1};
 
 	complex float* vec = md_alloc_sameplace(4, vec_dims, CFL_SIZE, src);
 
@@ -254,8 +256,8 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 				}
 			}
 
-			md_zfmacc2(4, fmac_dims, phi_out_str, perm + (y + z * sy) * (wx * nc * tk), vec_str, vec, 
-				phi_mat_str, data->phi);
+			md_zfmacc2(4, fmac_dims, phi_out_str, perm + (y + z * sy) * (wx * nc * tk), vec_str, vec, phi_mat_str, data->phi);
+
 		}
 	}
 
@@ -295,7 +297,7 @@ static void kern_normal(const linop_data_t* _data, complex float* dst, const com
 
 	long output_dims[DIMS];
 	md_copy_dims(DIMS, output_dims, input_dims);
-	output_dims[6] =	1;
+	output_dims[6] = 1;
 	output_dims[7] = tk;
 	long output_str[DIMS];
 	md_calc_strides(DIMS, output_str, output_dims, CFL_SIZE);
@@ -322,16 +324,16 @@ static void kern_free(const linop_data_t* _data)
 	xfree(data);
 }
 
-static const struct linop_s* linop_kern_create(long N, 
-																							 long _reorder_dims[N], complex float* reorder,
-																							 long _phi_dims[N],			complex float* phi,
-																							 long _kernel_dims[N],	complex float* kernel,
-																							 long _table_dims[N])
+static const struct linop_s* linop_kern_create(long N,
+	const long _reorder_dims[N], complex float* reorder,
+	const long _phi_dims[N],     complex float* phi,
+	const long _kernel_dims[N],  complex float* kernel,
+	const long _table_dims[N])
 {
 	PTR_ALLOC(struct kern_s, data);
 	SET_TYPEID(kern_s, data);
 
-	data->N  = N;
+	data->N = N;
 
 	PTR_ALLOC(long[N], reorder_dims);
 	PTR_ALLOC(long[N], phi_dims);
@@ -339,18 +341,18 @@ static const struct linop_s* linop_kern_create(long N,
 	PTR_ALLOC(long[N], kernel_dims);
 
 	md_copy_dims(N, *reorder_dims, _reorder_dims);
-	md_copy_dims(N, *phi_dims,		 _phi_dims);
-	md_copy_dims(N, *table_dims,	 _table_dims);
+	md_copy_dims(N, *phi_dims,     _phi_dims);
+	md_copy_dims(N, *table_dims,   _table_dims);
 	md_copy_dims(N, *kernel_dims,  _kernel_dims);
 
 	data->reorder_dims = *PTR_PASS(reorder_dims);
-	data->phi_dims		 = *PTR_PASS(phi_dims);
-	data->table_dims	 = *PTR_PASS(table_dims);
+	data->phi_dims     = *PTR_PASS(phi_dims);
+	data->table_dims   = *PTR_PASS(table_dims);
 	data->kernel_dims  = *PTR_PASS(kernel_dims);
 
 	data->reorder = reorder;
-	data->phi			= phi;
-	data->kernel	= kernel;
+	data->phi     = phi;
+	data->kernel  = kernel;
 
 	long input_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	input_dims[0] = _table_dims[0];
@@ -364,14 +366,12 @@ static const struct linop_s* linop_kern_create(long N,
 	output_dims[1] = _table_dims[1];
 	output_dims[2] = _reorder_dims[0];
 
-	const struct linop_s* K = linop_create(N, output_dims, N, input_dims, CAST_UP(PTR_PASS(data)), 
-																				 kern_apply, kern_adjoint, kern_normal, NULL, kern_free);
+	const struct linop_s* K = linop_create(N, output_dims, N, input_dims, CAST_UP(PTR_PASS(data)), kern_apply, kern_adjoint, kern_normal, NULL, kern_free);
 	return K;
 }
 
 /* ESPIRiT operator. */
-static const struct linop_s* linop_espirit_create(long sx, long sy, long sz, long nc, long md, long tk,
-																						complex float* maps)
+static const struct linop_s* linop_espirit_create(long sx, long sy, long sz, long nc, long md, long tk, complex float* maps)
 {
 	long max_dims[] = { [0 ... DIMS - 1] = 1};
 	max_dims[0] = sx;
@@ -381,8 +381,7 @@ static const struct linop_s* linop_espirit_create(long sx, long sy, long sz, lon
 	max_dims[4] = md;
 	max_dims[6] = tk;
 
-	const struct linop_s* E = linop_fmac_create(DIMS, max_dims, MAPS_FLAG, 
-		COIL_FLAG, TE_FLAG|COEFF_FLAG, maps);
+	const struct linop_s* E = linop_fmac_create(DIMS, max_dims, MAPS_FLAG, COIL_FLAG, TE_FLAG|COEFF_FLAG, maps);
  
 	return E;
 }
@@ -412,13 +411,12 @@ static const struct linop_s* linop_fx_create(long wx, long sy, long sz, long nc,
 	dims[2] = sz;
 	dims[3] = nc;
 	dims[6] = tk;
-	struct linop_s* Fx = linop_fftc_create(DIMS, dims, READ_FLAG);
+	struct linop_s* Fx = linop_fft_create(DIMS, dims, READ_FLAG);
 	return Fx;
 }
 
 /* Wave operator. */
-static const struct linop_s* linop_wave_create(long wx, long sy, long sz, long nc, long tk,
-																							 complex float* psf)
+static const struct linop_s* linop_wave_create(long wx, long sy, long sz, long nc, long tk, complex float* psf)
 {
 	long dims[] = { [0 ... DIMS - 1] = 1};
 	dims[0] = wx;
@@ -439,14 +437,15 @@ static const struct linop_s* linop_fyz_create(long wx, long sy, long sz, long nc
 	dims[2] = sz;
 	dims[3] = nc;
 	dims[6] = tk;
-	struct linop_s* Fyz = linop_fftc_create(DIMS, dims, PHS1_FLAG|PHS2_FLAG);
+	struct linop_s* Fyz = linop_fft_create(DIMS, dims, PHS1_FLAG|PHS2_FLAG);
 	return Fyz;
 }
 
 /* Construction sampling temporal kernel.*/
-static void construct_kernel(long mask_dims[DIMS], complex float* mask,
-														 long phi_dims[DIMS],  complex float* phi, 
-														 long kern_dims[DIMS], complex float* kern)
+static void construct_kernel(
+	long mask_dims[DIMS], complex float* mask,
+	long phi_dims[DIMS],  complex float* phi, 
+	long kern_dims[DIMS], complex float* kern)
 {
 	long sy = mask_dims[1];
 	long sz = mask_dims[2];
@@ -477,7 +476,7 @@ static void construct_kernel(long mask_dims[DIMS], complex float* mask,
 	out_dims[1] = sy;
 	out_dims[2] = sz;
 	out_dims[3] = tk;
-	complex float* out	= md_alloc_sameplace(DIMS, out_dims, CFL_SIZE, kern);
+	complex float* out = md_calloc(DIMS, out_dims, CFL_SIZE);
 
 	for (int y = 0; y < sy; y ++) {
 		for (int z = 0; z < sz; z ++) {
@@ -496,7 +495,7 @@ static void construct_kernel(long mask_dims[DIMS], complex float* mask,
 
 				md_clear(DIMS, cvec_dims, out + y * tk + z * sy * tk + t * sy * sz * tk, CFL_SIZE);
 				md_zfmacc2(DIMS, phi_dims, cvec_str, out + y * tk + z * sy * tk + t * sy * sz * tk,
-					tvec_str, tvec2, phi_str, phi);
+				tvec_str, tvec2, phi_str, phi);
 
 				cvec[t] = 0;
 			}
@@ -511,34 +510,70 @@ static void construct_kernel(long mask_dims[DIMS], complex float* mask,
 	md_free(out);
 }
 
+static void fftmod_apply(long sy, long sz,
+	long reorder_dims[DIMS], complex float* reorder, 
+	long table_dims[DIMS],   complex float* table,
+	long maps_dims[DIMS],    complex float* maps)
+{
+	long wx = table_dims[0];
+	long nc = table_dims[1];
+
+	fftmod(DIMS, table_dims, READ_FLAG, table, table);
+	fftmod(DIMS, maps_dims, FFT_FLAGS, maps, maps);
+
+	long y = -1;
+	long z = -1;
+
+	double dy = ((double) sy/2)/((double) sy);
+	double dz = ((double) sz/2)/((double) sz);
+
+	complex float py = 1;
+	complex float pz = 1;
+
+	long dims[] = { [0 ... DIMS] = 1};
+	dims[0] = wx;
+	dims[1] = nc;
+
+	long n = reorder_dims[0];
+	for (long k = 0; k < n; k++) {
+		y = reorder[k];
+		z = reorder[k + n];
+
+		py = cexp(2.i * M_PI * dy * y);
+		pz = cexp(2.i * M_PI * dz * z);
+
+		md_zsmul(DIMS, dims, table + k * wx * nc, table + k * wx * nc, py * pz);
+	}
+}
+
+enum algo_t { CG, IST, FISTA };
+
 int main_wshfl(int argc, char* argv[])
 {
 	double start_time = timestamp();
 
-	float lambda	= 1E-5;
-	int		maxiter = 300;
-	int		blksize = 8;
-	float step		= 0.5;
-	float tol			= 1.E-3;
-	bool	llr			= false;
-	bool	wav			= false;
-	int		gpun		= -1;
-	bool	fista		= false;
-	bool	hgwld		= false;
-	float cont		= 1;
-							 
+	float lambda  = 1E-5;
+	int   maxiter = 300;
+	int   blksize = 8;
+	float step    = 0.5;
+	float tol     = 1.E-3;
+	bool  llr     = false;
+	bool  wav     = false;
+	bool  fista   = false;
+	bool  hgwld   = false;
+	float cont    = 1;
+
 	const struct opt_s opts[] = {
-		OPT_FLOAT('r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
-		OPT_INT(	'b', &blksize, "blkdim", "Block size for locally low rank."),
-		OPT_INT(	'i', &maxiter, "mxiter", "Maximum number of iterations."),
-		OPT_FLOAT('s', &step,		 "step",	 "Step size for iterative method."),
-		OPT_FLOAT('c', &cont,		 "cntnu",  "Continuation value for IST/FISTA."),
-		OPT_FLOAT('t', &tol,		 "tol",		 "Tolerance convergence condition for iterative method."),
-		OPT_INT(	'g', &gpun,		 "gpun",	 "Set GPU device number. If not set, use CPU."),
-		OPT_SET(	'f', &fista,						 "Reconstruct using FISTA instead of IST."),
-		OPT_SET(	'H', &hgwld,						 "Use hogwild in IST/FISTA."),
-		OPT_SET(	'w', &wav,							 "Use wavelet."),
-		OPT_SET(	'l', &llr,							 "Use locally low rank."),
+		OPT_FLOAT( 'r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
+		OPT_INT(   'b', &blksize, "blkdim", "Block size for locally low rank."),
+		OPT_INT(   'i', &maxiter, "mxiter", "Maximum number of iterations."),
+		OPT_FLOAT( 's', &step,    "stepsz", "Step size for iterative method."),
+		OPT_FLOAT( 'c', &cont,    "cntnu",  "Continuation value for IST/FISTA."),
+		OPT_FLOAT( 't', &tol,     "toler",  "Tolerance convergence condition for iterative method."),
+		OPT_SET(   'f', &fista,             "Reconstruct using FISTA instead of IST."),
+		OPT_SET(   'H', &hgwld,             "Use hogwild in IST/FISTA."),
+		OPT_SET(   'w', &wav,               "Use wavelet."),
+		OPT_SET(   'l', &llr,               "Use locally low rank."),
 	};
 
 	cmdline(&argc, argv, 6, 6, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -547,36 +582,22 @@ int main_wshfl(int argc, char* argv[])
 
 	long maps_dims[DIMS];
 	complex float* maps = load_cfl(argv[1], DIMS, maps_dims);
-		 
+
 	long wave_dims[DIMS];
 	complex float* wave = load_cfl(argv[2], DIMS, wave_dims);
-					
+
 	long phi_dims[DIMS];
 	complex float* phi = load_cfl(argv[3], DIMS, phi_dims);
-							 
+
 	long reorder_dims[DIMS];
 	complex float* reorder = load_cfl(argv[4], DIMS, reorder_dims);
-										
+
 	long table_dims[DIMS];
 	complex float* table = load_cfl(argv[5], DIMS, table_dims);
-	float norm = md_znorm(DIMS, table_dims, table);
-	md_zsmul(DIMS, table_dims, table, table, 1. / norm);
 
 	debug_printf(DP_INFO, "Done.\n");
 
-#ifdef USE_CUDA
-	if (gpun != -1) {
-		debug_printf(DP_INFO, "Transferring maps and wave to GPU memory... ");
-		complex float* tmp = maps;
-		maps = md_gpu_move(DIMS, maps_dims, tmp, CFL_SIZE);
-		unmap_cfl(DIMS, maps_dims, maps);
-
-		tmp = wave;
-		wave = md_gpu_move(DIMS, wave_dims, tmp, CFL_SIZE);
-		unmap_cfl(DIMS, wave_dims, wave);
-		debug_printf(DP_INFO, "Done.\n");
-	}
-#endif
+	num_init();
 
 	int wx = wave_dims[0];
 	int sx = maps_dims[0];
@@ -587,28 +608,12 @@ int main_wshfl(int argc, char* argv[])
 	int tf = phi_dims[5];
 	int tk = phi_dims[6];
 
-	long coeff_dims[] = { [0 ... DIMS - 1] = 1 };
-	coeff_dims[0] = sx; 
-	coeff_dims[1] = sy; 
-	coeff_dims[2] = sz;
-	coeff_dims[4] = md; 
-	coeff_dims[6] = tk;
-
-#ifdef USE_CUDA
-	if (gpun != -1) 
-		num_init_gpu_device(gpun);
-	else
-		num_init();
-#else
-	num_init();
-#endif
-
 	debug_printf(DP_INFO, "Constructing sampling mask from reorder table... ");
 	long mask_dims[] = { [0 ... DIMS - 1] = 1 };
 	mask_dims[1] = sy;
 	mask_dims[2] = sz;
 	mask_dims[5] = tf;
-	complex float* mask = md_alloc_sameplace(DIMS, mask_dims, CFL_SIZE, maps);
+	complex float* mask = md_calloc(DIMS, mask_dims, CFL_SIZE);
 	construct_mask(reorder_dims, reorder, mask_dims, mask);
 	debug_printf(DP_INFO, "Done.\n");
 
@@ -618,28 +623,45 @@ int main_wshfl(int argc, char* argv[])
 	kernel_dims[2] = sz;
 	kernel_dims[6] = tk;
 	kernel_dims[7] = tk;
-	complex float* kernel = md_alloc_sameplace(DIMS, kernel_dims, CFL_SIZE, maps); 
+	complex float* kernel = md_calloc(DIMS, kernel_dims, CFL_SIZE);
 	construct_kernel(mask_dims, mask, phi_dims, phi, kernel_dims, kernel);
 	md_free(mask);
 	debug_printf(DP_INFO, "Done.\n");
 
-	debug_printf(DP_INFO, "Creating linear operators... ");
-	const struct linop_s* E		= linop_espirit_create(sx, sy, sz, nc, md, tk, maps);
-	const struct linop_s* R		= linop_reshape_create(wx, sx, sy, sz, nc, tk);
-	const struct linop_s* Fx	= linop_fx_create(wx, sy, sz, nc, tk);
-	const struct linop_s* W		= linop_wave_create(wx, sy, sz, nc, tk, wave);
-	const struct linop_s* Fyz = linop_fyz_create(wx, sy, sz, nc, tk);
-	const struct linop_s* K		= linop_kern_create(DIMS, reorder_dims, reorder, phi_dims, phi,
-																								kernel_dims, kernel, table_dims);
+	long coeff_dims[] = { [0 ... DIMS - 1] = 1 };
+	coeff_dims[0] = sx;
+	coeff_dims[1] = sy;
+	coeff_dims[2] = sz;
+	coeff_dims[4] = md;
+	coeff_dims[6] = tk;
 
-	struct linop_s* A = linop_chain(linop_chain(linop_chain(linop_chain(linop_chain(
-												E, R), Fx), W), Fyz), K);
+	debug_printf(DP_INFO, "Normalizing data table and applying fftmod to table... ");
+	float norm = md_znorm(DIMS, table_dims, table);
+	md_zsmul(DIMS, table_dims, table, table, 1. / norm);
+	fftmod_apply(sy, sz, reorder_dims, reorder, table_dims, table, maps_dims, maps);
 	debug_printf(DP_INFO, "Done.\n");
 
-	debug_printf(DP_INFO, "Forward model information:\n");
+	debug_printf(DP_INFO, "Linear operator.\n");
+	const struct linop_s* E   = linop_espirit_create(sx, sy, sz, nc, md, tk, maps);
+	const struct linop_s* R   = linop_reshape_create(wx, sx, sy, sz, nc, tk);
+	const struct linop_s* Fx  = linop_fx_create(wx, sy, sz, nc, tk);
+	const struct linop_s* W   = linop_wave_create(wx, sy, sz, nc, tk, wave);
+	const struct linop_s* Fyz = linop_fyz_create(wx, sy, sz, nc, tk);
+	const struct linop_s* K   = linop_kern_create(DIMS, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, table_dims);
+
+	struct linop_s* A = linop_chain(linop_chain(linop_chain(linop_chain(linop_chain(
+		E, R), Fx), W), Fyz), K);
+
+	linop_free(E);
+	linop_free(R);
+	linop_free(Fx);
+	linop_free(W);
+	linop_free(Fyz);
+	linop_free(K);
+
 	print_opdims(A);
 	double maxeigen = estimate_maxeigenval(A->normal);
-	debug_printf(DP_INFO, "\tMaximum eigenvalue: %.2e\n", maxeigen);
+	debug_printf(DP_INFO, "\tMax eval: %.2e\n", maxeigen);
 	step /= maxeigen;
 
 	const struct operator_p_s* T = NULL;
@@ -650,110 +672,117 @@ int main_wshfl(int argc, char* argv[])
 	minsize[2] = MIN(sz, 16);
 	unsigned int WAVFLAG = (sx > 1) * READ_FLAG | (sy > 1) * PHS1_FLAG | (sz > 2) * PHS2_FLAG;
 
+	enum algo_t algo = CG;
 	if ((wav == true) || (llr == true)) {
+		algo = (fista) ? FISTA : IST;
 		if (wav) {
 			debug_printf(DP_INFO, "Creating wavelet threshold operator... ");
 			T = prox_wavelet_thresh_create(DIMS, coeff_dims, WAVFLAG, 0u, minsize, lambda, true);
 		} else {
 			debug_printf(DP_INFO, "Creating locally low rank threshold operator... ");
 			llr_blkdims(blkdims, ~COEFF_DIM, coeff_dims, blksize);
-			T = lrthresh_create(coeff_dims, true, ~COEFF_FLAG, (const long (*)[])blkdims, 
-				lambda, false, false);
+			T = lrthresh_create(coeff_dims, true, ~COEFF_FLAG, (const long (*)[])blkdims, lambda, false, false);
 		}
 		debug_printf(DP_INFO, "Done.\n");
 	}
 
-	italgo_fun_t italgo = NULL;
-	iter_conf*	 iconf	= NULL;
+	italgo_fun2_t italgo = iter2_call_iter;
+	struct iter_call_s iter2_data;
+	SET_TYPEID(iter_call_s, &iter2_data);
+	iter_conf* iconf = CAST_UP(&iter2_data);
 
-	struct iter_conjgrad_conf cgconf;
-	struct iter_fista_conf		fsconf;
-	struct iter_ist_conf			isconf;
+	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
+	struct iter_fista_conf    fsconf = iter_fista_defaults;
+	struct iter_ist_conf      isconf = iter_ist_defaults;
 
-	if ((wav == false) && (llr == false)) {
-		cgconf							= iter_conjgrad_defaults;
-		cgconf.maxiter			= maxiter;
-		cgconf.l2lambda			= 0;
-		cgconf.tol					= tol;
-		italgo							= iter_conjgrad;
-		iconf								= CAST_UP(&cgconf);
-		debug_printf(DP_INFO, "Using conjugate gradient.\n");
-		debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
-		debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
-	} else if (fista) {
-		fsconf							= iter_fista_defaults;
-		fsconf.maxiter			= maxiter;
-		fsconf.step					= step;
-		fsconf.hogwild			= hgwld;
-		fsconf.tol					= tol;
-		fsconf.continuation = cont;
-		italgo							= iter_fista;
-		iconf								= CAST_UP(&fsconf);
-		debug_printf(DP_INFO, "Using FISTA.\n");
-		debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
-		debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
-		debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
-		debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
-		debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
-		debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
-	} else {
-		isconf							= iter_ist_defaults;
-		isconf.step					= step;
-		isconf.maxiter			= maxiter;
-		isconf.tol					= tol;
-		isconf.continuation = cont;
-		isconf.hogwild			= hgwld;
-		italgo							= iter_ist;
-		iconf								= CAST_UP(&isconf);
-		debug_printf(DP_INFO, "Using IST.\n");
-		debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
-		debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
-		debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
-		debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
-		debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
-		debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
+	switch(algo) {
+
+		case IST:
+
+			debug_printf(DP_INFO, "Using IST.\n");
+			debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
+			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
+			debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
+			debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
+			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
+			debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
+
+			isconf              = iter_ist_defaults;
+			isconf.step         = step;
+			isconf.maxiter      = maxiter;
+			isconf.tol          = tol;
+			isconf.continuation = cont;
+			isconf.hogwild      = hgwld;
+
+			iter2_data.fun   = iter_ist;
+			iter2_data._conf = CAST_UP(&isconf);
+
+			break;
+
+		case FISTA:
+
+			debug_printf(DP_INFO, "Using FISTA.\n");
+			debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
+			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
+			debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
+			debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
+			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
+			debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
+
+			fsconf              = iter_fista_defaults;
+			fsconf.maxiter      = maxiter;
+			fsconf.step         = step;
+			fsconf.hogwild      = hgwld;
+			fsconf.tol          = tol;
+			fsconf.continuation = cont;
+
+			iter2_data.fun   = iter_fista;
+			iter2_data._conf = CAST_UP(&fsconf);
+
+			break;
+
+		default:
+		case CG:
+
+			debug_printf(DP_INFO, "Using CG.\n");
+			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
+			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
+
+			cgconf          = iter_conjgrad_defaults;
+			cgconf.maxiter  = maxiter;
+			cgconf.l2lambda = 0;
+			cgconf.tol      = tol;
+
+			iter2_data.fun   = iter_conjgrad;
+			iter2_data._conf = CAST_UP(&cgconf);
+
+			break;
+
 	}
 
-	debug_printf(DP_INFO, "Starting reconstruction... ");
-	complex float* recon = md_alloc_sameplace(DIMS, coeff_dims, CFL_SIZE, maps); 
-	struct lsqr_conf lsqr_conf = { 0., gpun != -1 };
-	lsqr(DIMS, &lsqr_conf, italgo, iconf, A, T, coeff_dims, recon,
-		table_dims, table, NULL);
-	debug_printf(DP_INFO, "Done.\n");
+	debug_printf(DP_INFO, "Reconstruction... ");
+	complex float* recon = create_cfl(argv[6], DIMS, coeff_dims);
+	struct lsqr_conf lsqr_conf = { 0., false };
+	double recon_start = timestamp();
+	const struct operator_s* J = lsqr2_create(&lsqr_conf, italgo, iconf, NULL, A, NULL, 1, &T, NULL, NULL);
+	operator_apply(J, DIMS, coeff_dims, recon, DIMS, table_dims, table);
+	double recon_end = timestamp();
+	debug_printf(DP_INFO, "Done.\nReconstruction time: %f seconds.\n", recon_end - recon_start);
 
 	debug_printf(DP_INFO, "Cleaning up and saving result... ");
-
-	linop_free(E);
-	linop_free(R);
-	linop_free(Fx);
-	linop_free(W);
-	linop_free(Fyz);
-	linop_free(K);
+	operator_free(J);
 	linop_free(A);
-
 	md_free(kernel);
-	unmap_cfl(DIMS, phi_dims, phi);
-#ifdef USE_CUDA
-	if (gpun != -1) {
-		md_free(maps);
-		md_free(wave);
-	} else {
-		unmap_cfl(DIMS, maps_dims, maps);
-		unmap_cfl(DIMS, wave_dims, wave);
-	}
-#else
 	unmap_cfl(DIMS, maps_dims, maps);
 	unmap_cfl(DIMS, wave_dims, wave);
-#endif
-
-	complex float* result = create_cfl(argv[6], DIMS, coeff_dims);
-	md_copy(DIMS, coeff_dims, result, recon, CFL_SIZE);
-	unmap_cfl(DIMS, coeff_dims, result);
-	md_free(recon);
+	unmap_cfl(DIMS, phi_dims, phi);
+	unmap_cfl(DIMS, reorder_dims, reorder);
+	unmap_cfl(DIMS, table_dims, table);
+	unmap_cfl(DIMS, coeff_dims, recon);
 	debug_printf(DP_INFO, "Done.\n");
 
 	double end_time = timestamp();
-	debug_printf(DP_INFO, "Total Time: %f seconds.\n", end_time - start_time);
+	debug_printf(DP_INFO, "Total time: %f seconds.\n", end_time - start_time);
 
 	return 0;
 }
