@@ -24,7 +24,7 @@
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "L N a0 a1 ... aN output";
+static const char usage_str[] = "L N a_0 a_1 ... a_N output";
 static const char help_str[]  = "Evaluate polynomial p(x) = a_0 + a_1 x + a_2 x^2 ... a_N x^N at x = {0, 1, ... , L - 1} where a_i are floats.";
 
 int main_poly(int argc, char* argv[])
