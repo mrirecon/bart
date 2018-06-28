@@ -102,18 +102,18 @@ static void construct_mask(
 	long reorder_dims[DIMS], complex float* reorder, 
 	long mask_dims[DIMS],    complex float* mask)
 {
-	int n  = reorder_dims[0];
-	int sy = mask_dims[1];
-	int sz = mask_dims[2];
+	long n  = reorder_dims[0];
+	long sy = mask_dims[1];
+	long sz = mask_dims[2];
 
-	int y = -1;
-	int z = -1;
-	int t = -1;
+	long y = 0;
+	long z = 0;
+	long t = 0;
 
 	for (int i = 0; i < n; i++) {
-		y = reorder[i];
-		z = reorder[i + n];
-		t = reorder[i + 2 * n];
+		y = lround(creal(reorder[i]));
+		z = lround(creal(reorder[i + n]));
+		t = lround(creal(reorder[i + 2 * n]));
 		mask[(y + z * sy) + t * sy * sz] = 1;
 	}
 }
@@ -190,9 +190,9 @@ static void kern_apply(const linop_data_t* _data, complex float* dst, const comp
 
 	for (int i = 0; i < n; i ++) {
 
-		y = data->reorder[i];
-		z = data->reorder[i + n];
-		t = data->reorder[i + 2 * n];
+		y = lround(creal(data->reorder[i]));
+		z = lround(creal(data->reorder[i + n]));
+		t = lround(creal(data->reorder[i + 2 * n]));
 
 		md_clear(4, vec_dims, vec, CFL_SIZE);
 		md_zfmac2(4, fmac_dims, vec_str, vec, phi_in_str, (perm + ((wx * nc * tk) * (y + z * sy))), phi_mat_str, data->phi);
@@ -250,8 +250,8 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 			md_clear(4, vec_dims, vec, CFL_SIZE);
 
 			for (int i = 0; i < n; i ++) {
-				if ((y == data->reorder[i]) && (z == data->reorder[i + n])) {
-					t = data->reorder[i + 2 * n];
+				if ((y == lround(creal(data->reorder[i]))) && (z == lround(creal(data->reorder[i + n])))) {
+					t = lround(creal(data->reorder[i + 2 * n]));
 					md_copy(4, line_dims, (vec + t * wx * nc), (src + i * wx * nc), CFL_SIZE);
 				}
 			}
@@ -536,8 +536,8 @@ static void fftmod_apply(long sy, long sz,
 
 	long n = reorder_dims[0];
 	for (long k = 0; k < n; k++) {
-		y = reorder[k];
-		z = reorder[k + n];
+		y = lround(creal(reorder[k]));
+		z = lround(creal(reorder[k + n]));
 
 		py = cexp(2.i * M_PI * dy * y);
 		pz = cexp(2.i * M_PI * dz * z);
