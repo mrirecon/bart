@@ -1,4 +1,4 @@
-/* Copyright 2017-2018. Martin Uecker.
+/* Copyright 2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
