@@ -106,6 +106,24 @@ tests/test-nufft-toeplitz: traj phantom nufft nrmse
 	touch $@
 
 
+
+# test batch mode
+
+tests/test-nufft-batch: traj phantom repmat nufft nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x64 -y11 traj.ra						;\
+	$(TOOLDIR)/phantom -k -t traj.ra ksp.ra						;\
+	$(TOOLDIR)/nufft -i -r traj.ra ksp.ra reco.ra					;\
+	$(TOOLDIR)/repmat 3 2 ksp.ra ksp2.ra						;\
+	$(TOOLDIR)/nufft -i -r traj.ra ksp2.ra reco2.ra					;\
+	$(TOOLDIR)/repmat 3 2 reco.ra reco1.ra						;\
+	$(TOOLDIR)/nrmse -t 0.001 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
+
 tests/test-nufft-gpu: traj phantom nufft nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
@@ -119,6 +137,7 @@ tests/test-nufft-gpu: traj phantom nufft nrmse
 
 
 TESTS += tests/test-nufft-forward tests/test-nufft-adjoint tests/test-nufft-inverse tests/test-nufft-toeplitz
+TESTS += tests/test-nufft-batch
 TESTS += tests/test-nufft-nudft tests/test-nudft-forward tests/test-nudft-adjoint
 
 TESTS_GPU += tests/test-nufft-gpu
