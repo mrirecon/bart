@@ -49,8 +49,9 @@ Updates and further information can be found here:
 GCC compiler, the FFTW library, and optionally CUDA.
 (see recon/Makefile to turn options on or off)
 
-It should be possible to use the clang compiler, but older
-version before version 4.0 are known to cause problems.
+The minimum GCC supported is 5.0. It should also be possible
+to use the clang compiler, but older version before version
+4.0 are known to cause problems.
 
 The software can be used in combination with Matlab or octave.
 
