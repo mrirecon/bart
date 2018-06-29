@@ -57,6 +57,7 @@ void help_reg(void)
 		        "-R N:A:B:C\tNormalized Iterative Hard Thresholding (NIHT), image domain\n"
 		        "\t\tC is an integer percentage, i.e. from 0-100\n"
 		        "-R H:A:B:C\tNIHT, wavelet domain\n"
+			"-R F:A:B:C\tl1-Fourier\n"
 			"-R T:A:B:C\ttotal variation\n"
 			"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
 			"-R L:7:7:.02\tLocally low rank with spatial decimation and 0.02 regularization.\n"
