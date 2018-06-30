@@ -1,4 +1,5 @@
 /* Copyright 2014-2017. The Regents of the University of California.
+ * Copyright 2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -14,7 +15,7 @@
 struct operator_p_s;
 struct linop_s;
 
-enum algo_t { CG, IST, FISTA, ADMM, NIHT, PRIDU };
+enum algo_t { ALGO_DEFAULT, ALGO_CG, ALGO_IST, ALGO_FISTA, ALGO_ADMM, ALGO_NIHT, ALGO_PRIDU };
 
 struct reg_s {
 

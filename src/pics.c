@@ -1,10 +1,10 @@
 /* Copyright 2013-2018. The Regents of the University of California.
- * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2015-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
  * 2014-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -150,7 +150,7 @@ int main_pics(int argc, char* argv[])
 		OPT_SET('g', &conf.gpu, "use GPU"),
 		OPT_UINT('G', &gpun, "gpun", "use GPU device gpun"),
 		OPT_STRING('p', &pat_file, "file", "pattern or weights"),
-		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "select IST"),
+		OPT_SELECT('I', enum algo_t, &ropts.algo, ALGO_IST, "select IST"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
@@ -166,13 +166,13 @@ int main_pics(int argc, char* argv[])
 		OPT_UINT('C', &admm_maxitercg, "iter", "ADMM max. CG iterations"),
 		OPT_FLOAT('q', &conf.cclambda, "cclambda", "(cclambda)"),
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
-		OPT_SELECT('m', enum algo_t, &ropts.algo, ADMM, "select ADMM"),
+		OPT_SELECT('m', enum algo_t, &ropts.algo, ALGO_ADMM, "select ADMM"),
 		OPT_FLOAT('w', &scaling, "val", "inverse scaling of the data"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
-		OPT_SELECT('a', enum algo_t, &ropts.algo, PRIDU, "select Primal Dual"),
+		OPT_SELECT('a', enum algo_t, &ropts.algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 	};
 
@@ -495,15 +495,15 @@ int main_pics(int argc, char* argv[])
 	struct iter_niht_conf ihconf = iter_niht_defaults;
 	struct iter_chambolle_pock_conf pdconf = iter_chambolle_pock_defaults;
 
-	if ((CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
-		algo = FISTA;
+	if ((ALGO_CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
+		algo = ALGO_FISTA;
 
 	if (conf.bpsense)
-		assert(ADMM == algo || PRIDU == algo);
+		assert((ALGO_ADMM == algo) || (ALGO_PRIDU == algo));
 	else if (nr_penalties > 1)
-		algo = ADMM;
+		algo = ALGO_ADMM;
 
-	if ((IST == algo) || (FISTA == algo)) {
+	if ((ALGO_IST == algo) || (ALGO_FISTA == algo)) {
 
 		// For non-Cartesian trajectories, the default
 		// will usually not work. TODO: The same is true
@@ -517,7 +517,7 @@ int main_pics(int argc, char* argv[])
 			step = 0.95;
 	}
 
-	if ((CG == algo) || (ADMM == algo))
+	if ((ALGO_CG == algo) || (ALGO_ADMM == algo))
 		if (-1. != step)
 			debug_printf(DP_INFO, "Stepsize ignored.\n");
 
@@ -532,7 +532,7 @@ int main_pics(int argc, char* argv[])
 
 	switch (algo) {
 
-		case CG:
+		case ALGO_CG:
 
 			debug_printf(DP_INFO, "conjugate gradients\n");
 
@@ -549,7 +549,7 @@ int main_pics(int argc, char* argv[])
 
 			break;
 
-		case IST:
+		case ALGO_IST:
 
 			debug_printf(DP_INFO, "IST\n");
 
@@ -565,7 +565,7 @@ int main_pics(int argc, char* argv[])
 
 			break;
 
-		case ADMM:
+		case ALGO_ADMM:
 
 			debug_printf(DP_INFO, "ADMM\n");
 
@@ -586,7 +586,7 @@ int main_pics(int argc, char* argv[])
 
 			break;
 
-		case PRIDU:
+		case ALGO_PRIDU:
 
 			debug_printf(DP_INFO, "Primal Dual\n");
 
@@ -606,7 +606,7 @@ int main_pics(int argc, char* argv[])
 
 			break;
 
-		case FISTA:
+		case ALGO_FISTA:
 
 			debug_printf(DP_INFO, "FISTA\n");
 
@@ -622,13 +622,13 @@ int main_pics(int argc, char* argv[])
 
 			break;
 
-		case NIHT:
+		case ALGO_NIHT:
 
 			debug_printf(DP_INFO, "NIHT\n");
 
 			ihconf = iter_niht_defaults;
 			ihconf.maxiter = maxiter;
-			ihconf.do_warmstart=warm_start;
+			ihconf.do_warmstart = warm_start;
 
 			italgo = iter2_niht;
 			iconf = CAST_UP(&ihconf);
@@ -641,7 +641,10 @@ int main_pics(int argc, char* argv[])
 			assert(0);
 	}
 
-	bool trafos_cond = ((PRIDU == algo) || (ADMM == algo) || ((NIHT == algo) && (regs[0].xform == NIHTWAV)));
+	bool trafos_cond = (   (ALGO_PRIDU == algo)
+			    || (ALGO_ADMM == algo)
+			    || (   (ALGO_NIHT == algo)
+				&& (regs[0].xform == NIHTWAV)));
 	
 	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
 				pat1_dims, (NULL != traj_file) ? NULL : (conf.bpsense ? NULL : pattern1),
