@@ -48,6 +48,153 @@
 static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
+struct admm_conf {
+
+	bool dynamic_rho;
+	bool dynamic_tau;
+	bool relative_norm;
+	float rho;
+	unsigned int maxitercg;
+};
+
+
+struct iter {
+
+	italgo_fun2_t italgo;
+	iter_conf* iconf;
+};
+
+static struct iter configure_italgo(enum algo_t algo, int nr_penalties, const struct reg_s* regs, unsigned int maxiter, float step, bool hogwild, bool fast, const struct admm_conf admm, float scaling, bool warm_start)
+{
+	italgo_fun2_t italgo = iter2_call_iter;
+	static struct iter_call_s iter2_data;
+	SET_TYPEID(iter_call_s, &iter2_data);
+
+	iter_conf* iconf = CAST_UP(&iter2_data);
+
+	static struct iter_conjgrad_conf cgconf;
+	cgconf = iter_conjgrad_defaults;
+	static struct iter_fista_conf fsconf;
+	fsconf = iter_fista_defaults;
+	static struct iter_ist_conf isconf;
+	isconf = iter_ist_defaults;
+	static struct iter_admm_conf mmconf;
+	mmconf = iter_admm_defaults;
+	static struct iter_niht_conf ihconf;
+	ihconf = iter_niht_defaults;
+	static struct iter_chambolle_pock_conf pdconf;
+	pdconf = iter_chambolle_pock_defaults;
+
+	switch (algo) {
+
+		case ALGO_CG:
+
+			debug_printf(DP_INFO, "conjugate gradients\n");
+
+			assert((0 == nr_penalties) || ((1 == nr_penalties) && (L2IMG == regs[0].xform)));
+
+			cgconf = iter_conjgrad_defaults;
+			cgconf.maxiter = maxiter;
+			cgconf.l2lambda = (0 == nr_penalties) ? 0. : regs[0].lambda;
+
+			iter2_data.fun = iter_conjgrad;
+			iter2_data._conf = CAST_UP(&cgconf);
+
+			break;
+
+		case ALGO_IST:
+
+			debug_printf(DP_INFO, "IST\n");
+
+			assert(1 == nr_penalties);
+
+			isconf = iter_ist_defaults;
+			isconf.maxiter = maxiter;
+			isconf.step = step;
+			isconf.hogwild = hogwild;
+
+			iter2_data.fun = iter_ist;
+			iter2_data._conf = CAST_UP(&isconf);
+
+			break;
+
+		case ALGO_ADMM:
+
+			debug_printf(DP_INFO, "ADMM\n");
+
+			mmconf = iter_admm_defaults;
+			mmconf.maxiter = maxiter;
+			mmconf.maxitercg = admm.maxitercg;
+			mmconf.rho = admm.rho;
+			mmconf.hogwild = hogwild;
+			mmconf.fast = fast;
+			mmconf.dynamic_rho = admm.dynamic_rho;
+			mmconf.dynamic_tau = admm.dynamic_tau;
+			mmconf.relative_norm = admm.relative_norm;
+			mmconf.ABSTOL = 0.;
+			mmconf.RELTOL = 0.;
+
+			italgo = iter2_admm;
+			iconf = CAST_UP(&mmconf);
+
+			break;
+
+		case ALGO_PRIDU:
+
+			debug_printf(DP_INFO, "Primal Dual\n");
+
+			assert(2 == nr_penalties);
+
+			pdconf = iter_chambolle_pock_defaults;
+
+			pdconf.maxiter = maxiter;
+			pdconf.sigma = 1. * scaling;
+			pdconf.tau = 1. / pdconf.sigma;
+			pdconf.theta = 1;
+			pdconf.decay = (hogwild ? .95 : 1);
+			pdconf.tol = 1E-4;
+
+			italgo = iter2_chambolle_pock;
+			iconf = CAST_UP(&pdconf);
+
+			break;
+
+		case ALGO_FISTA:
+
+			debug_printf(DP_INFO, "FISTA\n");
+
+			assert(1 == nr_penalties);
+
+			fsconf = iter_fista_defaults;
+			fsconf.maxiter = maxiter;
+			fsconf.step = step;
+			fsconf.hogwild = hogwild;
+
+			iter2_data.fun = iter_fista;
+			iter2_data._conf = CAST_UP(&fsconf);
+
+			break;
+
+		case ALGO_NIHT:
+
+			debug_printf(DP_INFO, "NIHT\n");
+
+			ihconf = iter_niht_defaults;
+			ihconf.maxiter = maxiter;
+			ihconf.do_warmstart = warm_start;
+
+			italgo = iter2_niht;
+			iconf = CAST_UP(&ihconf);
+
+			break;
+
+		default:
+			assert(0);
+	}
+
+	return (struct iter){ italgo, iconf };
+}
+
 
 static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const complex float* weights, struct operator_s** precond_op, bool sms)
 {
@@ -121,11 +268,8 @@ int main_pics(int argc, char* argv[])
 	const char* image_start_file = NULL;
 	bool warm_start = false;
 
-	bool admm_dynamic_rho = false;
-	bool admm_dynamic_tau = false;
-	bool admm_relative_norm = false;
-	float admm_rho = iter_admm_defaults.rho;
-	unsigned int admm_maxitercg = iter_admm_defaults.maxitercg;
+	struct admm_conf admm = { false, false, false, iter_admm_defaults.rho, iter_admm_defaults.maxitercg };
+
 
 	bool hogwild = false;
 	bool fast = false;
@@ -154,16 +298,16 @@ int main_pics(int argc, char* argv[])
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
-		OPT_SET('D', &admm_dynamic_rho, "(ADMM dynamic step size)"),
+		OPT_SET('D', &admm.dynamic_rho, "(ADMM dynamic step size)"),
 		OPT_SET('F', &fast, "(fast)"),
-		OPT_SET('J', &admm_relative_norm, "(ADMM residual balancing)"),
+		OPT_SET('J', &admm.relative_norm, "(ADMM residual balancing)"),
 		OPT_STRING('T', &image_truth_file, "file", "(truth file)"),
 		OPT_STRING('W', &image_start_file, "<img>", "Warm start with <img>"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_INT('O', &conf.rwiter, "rwiter", "(reweighting)"),
 		OPT_FLOAT('o', &conf.gamma, "gamma", "(reweighting)"),
-		OPT_FLOAT('u', &admm_rho, "rho", "ADMM rho"),
-		OPT_UINT('C', &admm_maxitercg, "iter", "ADMM max. CG iterations"),
+		OPT_FLOAT('u', &admm.rho, "rho", "ADMM rho"),
+		OPT_UINT('C', &admm.maxitercg, "iter", "ADMM max. CG iterations"),
 		OPT_FLOAT('q', &conf.cclambda, "cclambda", "(cclambda)"),
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
 		OPT_SELECT('m', enum algo_t, &ropts.algo, ALGO_ADMM, "select ADMM"),
@@ -187,7 +331,7 @@ int main_pics(int argc, char* argv[])
 	if (0 <= bpsense_eps)
 		conf.bpsense = true;
 
-	admm_dynamic_tau = admm_relative_norm;
+	admm.dynamic_tau = admm.relative_norm;
 
 
 
@@ -255,10 +399,10 @@ int main_pics(int argc, char* argv[])
 	if (hogwild)
 		debug_printf(DP_INFO, "Hogwild stepsize\n");
 
-	if (admm_dynamic_rho)
+	if (admm.dynamic_rho)
 		debug_printf(DP_INFO, "ADMM Dynamic stepsize\n");
 
-	if (admm_relative_norm)
+	if (admm.relative_norm)
 		debug_printf(DP_INFO, "ADMM residual balancing\n");
 
 	if (im_truth)
@@ -463,6 +607,14 @@ int main_pics(int argc, char* argv[])
 		}
 	}
 
+	double maxeigen = 1.;
+
+	if (eigen) {
+
+		maxeigen = estimate_maxeigenval(forward_op->normal);
+
+		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
+	}
 
 
 	// initialize prox functions
@@ -481,19 +633,6 @@ int main_pics(int argc, char* argv[])
 
 
 	// initialize algorithm
-
-	italgo_fun2_t italgo = iter2_call_iter;
-	struct iter_call_s iter2_data;
-	SET_TYPEID(iter_call_s, &iter2_data);
-
-	iter_conf* iconf = CAST_UP(&iter2_data);
-
-	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
-	struct iter_fista_conf fsconf = iter_fista_defaults;
-	struct iter_ist_conf isconf = iter_ist_defaults;
-	struct iter_admm_conf mmconf = iter_admm_defaults;
-	struct iter_niht_conf ihconf = iter_niht_defaults;
-	struct iter_chambolle_pock_conf pdconf = iter_chambolle_pock_defaults;
 
 	if ((ALGO_CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
 		algo = ALGO_FISTA;
@@ -521,125 +660,13 @@ int main_pics(int argc, char* argv[])
 		if (-1. != step)
 			debug_printf(DP_INFO, "Stepsize ignored.\n");
 
-	if (eigen) {
+	step /= maxeigen;
 
-		double maxeigen = estimate_maxeigenval(forward_op->normal);
 
-		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
+	struct iter it = configure_italgo(algo, nr_penalties, regs, maxiter, step, hogwild, fast, admm, scaling, warm_start);
 
-		step /= maxeigen;
-	}
-
-	switch (algo) {
-
-		case ALGO_CG:
-
-			debug_printf(DP_INFO, "conjugate gradients\n");
-
-			assert((0 == nr_penalties) || ((1 == nr_penalties) && (L2IMG == regs[0].xform)));
-
-			cgconf = iter_conjgrad_defaults;
-			cgconf.maxiter = maxiter;
-			cgconf.l2lambda = (0 == nr_penalties) ? 0. : regs[0].lambda;
-
-			iter2_data.fun = iter_conjgrad;
-			iter2_data._conf = CAST_UP(&cgconf);
-
-			nr_penalties = 0;
-
-			break;
-
-		case ALGO_IST:
-
-			debug_printf(DP_INFO, "IST\n");
-
-			assert(1 == nr_penalties);
-
-			isconf = iter_ist_defaults;
-			isconf.maxiter = maxiter;
-			isconf.step = step;
-			isconf.hogwild = hogwild;
-
-			iter2_data.fun = iter_ist;
-			iter2_data._conf = CAST_UP(&isconf);
-
-			break;
-
-		case ALGO_ADMM:
-
-			debug_printf(DP_INFO, "ADMM\n");
-
-			mmconf = iter_admm_defaults;
-			mmconf.maxiter = maxiter;
-			mmconf.maxitercg = admm_maxitercg;
-			mmconf.rho = admm_rho;
-			mmconf.hogwild = hogwild;
-			mmconf.fast = fast;
-			mmconf.dynamic_rho = admm_dynamic_rho;
-			mmconf.dynamic_tau = admm_dynamic_tau;
-			mmconf.relative_norm = admm_relative_norm;
-			mmconf.ABSTOL = 0.;
-			mmconf.RELTOL = 0.;
-
-			italgo = iter2_admm;
-			iconf = CAST_UP(&mmconf);
-
-			break;
-
-		case ALGO_PRIDU:
-
-			debug_printf(DP_INFO, "Primal Dual\n");
-
-			assert(2 == nr_penalties);
-
-			pdconf = iter_chambolle_pock_defaults;
-
-			pdconf.maxiter = maxiter;
-			pdconf.sigma = 1. * scaling;
-			pdconf.tau = 1. / pdconf.sigma;
-			pdconf.theta = 1;
-			pdconf.decay = (hogwild ? .95 : 1);
-			pdconf.tol = 1E-4;
-
-			italgo = iter2_chambolle_pock;
-			iconf = CAST_UP(&pdconf);
-
-			break;
-
-		case ALGO_FISTA:
-
-			debug_printf(DP_INFO, "FISTA\n");
-
-			assert(1 == nr_penalties);
-
-			fsconf = iter_fista_defaults;
-			fsconf.maxiter = maxiter;
-			fsconf.step = step;
-			fsconf.hogwild = hogwild;
-
-			iter2_data.fun = iter_fista;
-			iter2_data._conf = CAST_UP(&fsconf);
-
-			break;
-
-		case ALGO_NIHT:
-
-			debug_printf(DP_INFO, "NIHT\n");
-
-			ihconf = iter_niht_defaults;
-			ihconf.maxiter = maxiter;
-			ihconf.do_warmstart = warm_start;
-
-			italgo = iter2_niht;
-			iconf = CAST_UP(&ihconf);
-
-			conf.gpu = false; // gpu not implemented, disable
-
-			break;		
-
-		default:			
-			assert(0);
-	}
+	if (ALGO_CG == algo)
+		nr_penalties = 0;
 
 	bool trafos_cond = (   (ALGO_PRIDU == algo)
 			    || (ALGO_ADMM == algo)
@@ -648,7 +675,7 @@ int main_pics(int argc, char* argv[])
 	
 	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
 				pat1_dims, (NULL != traj_file) ? NULL : (conf.bpsense ? NULL : pattern1),
-				italgo, iconf, image_start1, nr_penalties, thresh_ops,
+				it.italgo, it.iconf, image_start1, nr_penalties, thresh_ops,
 				trafos_cond ? trafos : NULL, precond_op);
 
 	long strsx[2][DIMS];
