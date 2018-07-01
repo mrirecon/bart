@@ -20,3 +20,6 @@ enum algo_t;
 
 extern struct iter configure_italgo(enum algo_t algo, int nr_penalties, const struct reg_s* regs, unsigned int maxiter, float step, bool hogwild, bool fast, const struct admm_conf admm, float scaling, bool warm_start);
 
+extern void configure_italgo_free(struct iter it);
+
+

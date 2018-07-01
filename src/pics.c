@@ -458,6 +458,7 @@ int main_pics(int argc, char* argv[])
 
 			linop_free(sample_op);
 			linop_free(forward_op);
+
 			forward_op = tmp;
 		}
 	}
@@ -560,7 +561,7 @@ int main_pics(int argc, char* argv[])
 
 	opt_reg_free(&ropts, thresh_ops, trafos);
 
-
+	configure_italgo_free(it);
 
 	if (scale_im)
 		md_zsmul(DIMS, img_dims, image, image, scaling);
@@ -590,6 +591,7 @@ int main_pics(int argc, char* argv[])
 		unmap_cfl(DIMS, img_dims, image_start);
 
 	double end_time = timestamp();
+
 
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);
 	exit(0);
