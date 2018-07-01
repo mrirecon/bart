@@ -189,6 +189,8 @@ int main_pics(int argc, char* argv[])
 
 	admm.dynamic_tau = admm.relative_norm;
 
+	if (conf.bpsense)
+		nuconf.toeplitz = false;
 
 
 	long max_dims[DIMS];
