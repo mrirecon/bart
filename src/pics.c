@@ -125,6 +125,7 @@ int main_pics(int argc, char* argv[])
 
 	struct admm_conf admm = { false, false, false, iter_admm_defaults.rho, iter_admm_defaults.maxitercg };
 
+	enum algo_t algo = ALGO_DEFAULT;
 
 	bool hogwild = false;
 	bool fast = false;
@@ -149,7 +150,7 @@ int main_pics(int argc, char* argv[])
 		OPT_SET('g', &conf.gpu, "use GPU"),
 		OPT_UINT('G', &gpun, "gpun", "use GPU device gpun"),
 		OPT_STRING('p', &pat_file, "file", "pattern or weights"),
-		OPT_SELECT('I', enum algo_t, &ropts.algo, ALGO_IST, "select IST"),
+		OPT_SELECT('I', enum algo_t, &algo, ALGO_IST, "select IST"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
@@ -165,13 +166,13 @@ int main_pics(int argc, char* argv[])
 		OPT_UINT('C', &admm.maxitercg, "iter", "ADMM max. CG iterations"),
 		OPT_FLOAT('q', &conf.cclambda, "cclambda", "(cclambda)"),
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
-		OPT_SELECT('m', enum algo_t, &ropts.algo, ALGO_ADMM, "select ADMM"),
+		OPT_SELECT('m', enum algo_t, &algo, ALGO_ADMM, "select ADMM"),
 		OPT_FLOAT('w', &scaling, "val", "inverse scaling of the data"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_UINT('B', &loop_flags, "flags", "batch-mode"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
-		OPT_SELECT('a', enum algo_t, &ropts.algo, ALGO_PRIDU, "select Primal Dual"),
+		OPT_SELECT('a', enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 	};
 
@@ -485,18 +486,17 @@ int main_pics(int argc, char* argv[])
 
 	int nr_penalties = ropts.r;
 	struct reg_s* regs = ropts.regs;
-	enum algo_t algo = ropts.algo;
 
+	// choose algorithm
 
-	// initialize algorithm
-
-	if ((ALGO_CG == algo) && (1 == nr_penalties) && (L2IMG != regs[0].xform))
-		algo = ALGO_FISTA;
+	if (ALGO_DEFAULT == algo)
+		algo = italgo_choose(nr_penalties, regs);
 
 	if (conf.bpsense)
 		assert((ALGO_ADMM == algo) || (ALGO_PRIDU == algo));
-	else if (nr_penalties > 1)
-		algo = ALGO_ADMM;
+
+
+	// choose step size
 
 	if ((ALGO_IST == algo) || (ALGO_FISTA == algo)) {
 
@@ -519,7 +519,9 @@ int main_pics(int argc, char* argv[])
 	step /= maxeigen;
 
 
-	struct iter it = configure_italgo(algo, nr_penalties, regs, maxiter, step, hogwild, fast, admm, scaling, warm_start);
+	// initialize algorithm
+
+	struct iter it = italgo_config(algo, nr_penalties, regs, maxiter, step, hogwild, fast, admm, scaling, warm_start);
 
 	if (ALGO_CG == algo)
 		nr_penalties = 0;
@@ -561,7 +563,7 @@ int main_pics(int argc, char* argv[])
 
 	opt_reg_free(&ropts, thresh_ops, trafos);
 
-	configure_italgo_free(it);
+	italgo_config_free(it);
 
 	if (scale_im)
 		md_zsmul(DIMS, img_dims, image, image, scaling);

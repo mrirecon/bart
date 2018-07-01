@@ -15,7 +15,6 @@
 struct operator_p_s;
 struct linop_s;
 
-enum algo_t { ALGO_DEFAULT, ALGO_CG, ALGO_IST, ALGO_FISTA, ALGO_ADMM, ALGO_NIHT, ALGO_PRIDU };
 
 struct reg_s {
 
@@ -32,7 +31,6 @@ struct reg_s {
 struct opt_reg_s {
 
 	float lambda;
-	enum algo_t algo;
 	struct reg_s regs[NUM_REGS];
 	unsigned int r;
 	unsigned int k;

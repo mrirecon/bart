@@ -26,7 +26,45 @@
 
 
 
-struct iter configure_italgo(enum algo_t algo, int nr_penalties, const struct reg_s* regs, unsigned int maxiter, float step, bool hogwild, bool fast, const struct admm_conf admm, float scaling, bool warm_start)
+enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties])
+{
+	enum algo_t algo = ALGO_CG;
+
+	for (int i = 0; i < nr_penalties; i++) {
+
+		switch (regs[i].xform) {
+
+		case L2IMG:
+			break;
+
+		case NIHTWAV:
+		case NIHTIM:
+
+			algo = ALGO_NIHT;
+			break;
+
+		case TV:
+		case IMAGL1:
+		case IMAGL2:
+
+			algo = ALGO_ADMM;
+			break;
+
+		default:
+			if (0 == i)
+				algo = ALGO_FISTA;
+			else
+				algo = ALGO_ADMM;
+
+			break;
+		}
+	}
+
+	return algo;
+}
+
+
+struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs, unsigned int maxiter, float step, bool hogwild, bool fast, const struct admm_conf admm, float scaling, bool warm_start)
 {
 	italgo_fun2_t italgo = NULL;
 	iter_conf* iconf = NULL;
@@ -178,7 +216,7 @@ struct iter configure_italgo(enum algo_t algo, int nr_penalties, const struct re
 
 
 
-void configure_italgo_free(struct iter it)
+void italgo_config_free(struct iter it)
 {
 	if (iter2_call_iter == it.italgo) {
 

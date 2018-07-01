@@ -99,14 +99,12 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].xform = NIHTWAV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
 			assert(3 == ret);
-			p->algo = ALGO_NIHT;
 		}
 		else if (strcmp(rt, "N") == 0) {
 			
 			regs[r].xform = NIHTIM;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
 			assert(3 == ret);
-			p->algo = ALGO_NIHT;
 		}
 		else if (strcmp(rt, "L") == 0) {
 
@@ -115,6 +113,8 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			assert(3 == ret);
 		}
 		else if (strcmp(rt, "M") == 0) {
+
+			// FIXME: here an explanation is missing
 
 			regs[r].xform = regs[0].xform;
 			regs[r].xflags = regs[0].xflags;
@@ -130,7 +130,6 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].xform = TV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-			p->algo = ALGO_ADMM;
 		}
 		else if (strcmp(rt, "P") == 0) {
 
@@ -144,7 +143,6 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
-			p->algo = ALGO_ADMM;
 		}
 		else if (strcmp(rt, "R2") == 0) {
 
@@ -152,7 +150,6 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
-			p->algo = ALGO_ADMM;
 		}
 		else if (strcmp(rt, "I") == 0) {
 
@@ -228,7 +225,6 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 bool opt_reg_init(struct opt_reg_s* ropts)
 {
 	ropts->r = 0;
-	ropts->algo = ALGO_CG;
 	ropts->lambda = -1;
 	ropts->k = 0;
 
