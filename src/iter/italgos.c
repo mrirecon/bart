@@ -661,18 +661,6 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 		if (epsilon > (res1 + res2))
 			break;
 
-#if 0 // buggy
-		if (res1 < 100 * res2) {
-
-			sigma /= 2;
-			tau *= 2;
-		}
-		else if (res2 > 100 * res1) {
-
-			sigma *= 2;
-			tau /= 2;
-		}
-#endif
 	}
 
 	debug_printf(DP_DEBUG3, "\n");
@@ -684,5 +672,4 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 	vops->del(u_old);
 	vops->del(u);
 	vops->del(u_new);
-
 }

@@ -64,7 +64,7 @@ enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties
 }
 
 
-struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs, unsigned int maxiter, float step, bool hogwild, bool fast, const struct admm_conf admm, float scaling, bool warm_start)
+struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs, unsigned int maxiter, float step, bool hogwild, bool fast, const struct admm_conf admm, double maxeigen, float scaling, bool warm_start)
 {
 	italgo_fun2_t italgo = NULL;
 	iter_conf* iconf = NULL;
@@ -155,8 +155,15 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 			*pdconf = iter_chambolle_pock_defaults;
 
 			pdconf->maxiter = maxiter;
-			pdconf->sigma = 1. * scaling;
-			pdconf->tau = 1. / pdconf->sigma;
+			pdconf->sigma *= scaling;
+			if (scaling > 0.)
+				pdconf->tau /= scaling;
+			else
+				debug_printf(DP_WARN, "scaling is not positive!\n");
+			if (maxeigen > 0.)
+				pdconf->sigma /= maxeigen;
+			else
+				debug_printf(DP_WARN, "maxeigen is not positive!\n");
 			pdconf->theta = 1.;
 			pdconf->decay = (hogwild ? .95 : 1.);
 			pdconf->tol = 1.E-4;

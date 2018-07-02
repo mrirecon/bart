@@ -378,7 +378,7 @@ int main_pics(int argc, char* argv[])
 		if (conf.bpsense) {
 
 			bpsense_eps /= scaling;
-			debug_printf(DP_DEBUG1, "scaling basis pursuit eps: %.3f\n", bpsense_eps);
+			debug_printf(DP_DEBUG1, "scaling basis pursuit eps: %.3e\n", bpsense_eps);
 		}
 	}
 
@@ -474,6 +474,8 @@ int main_pics(int argc, char* argv[])
 
 		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
 	}
+	else if (ALGO_PRIDU == algo)
+		debug_printf(DP_WARN, "Primal-dual algorithm requires maximum eigenvalue estimate (-e).\n");
 
 
 	// initialize prox functions
@@ -523,7 +525,7 @@ int main_pics(int argc, char* argv[])
 
 	// initialize algorithm
 
-	struct iter it = italgo_config(algo, nr_penalties, regs, maxiter, step, hogwild, fast, admm, scaling, warm_start);
+	struct iter it = italgo_config(algo, nr_penalties, regs, maxiter, step, hogwild, fast, admm, maxeigen, scaling, warm_start);
 
 	if (ALGO_CG == algo)
 		nr_penalties = 0;
