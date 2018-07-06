@@ -18,6 +18,7 @@
 
 #include "num/multind.h"
 #include "num/loop.h"
+#include "num/flpmath.h"
 
 #include "misc/misc.h"
 #include "misc/mri.h"
@@ -153,6 +154,12 @@ static complex float krn(void* _data, const double mpos[3])
 	return phantom(data->N, data->el, mpos, data->kspace);
 }
 
+static complex float krnX(void* _data, const double mpos[3])
+{
+	struct krn_data* data = _data;
+	return phantomX(data->N, data->el, mpos, data->kspace);
+}
+
 struct krn3d_data {
 
 	bool kspace;
@@ -166,23 +173,50 @@ static complex float krn3d(void* _data, const double mpos[3])
 	return phantom3d(data->N, data->el, mpos, data->kspace);
 }
 
-static void sample(unsigned int N, const long dims[N], complex float* out, unsigned int D, const struct ellipsis_s* el, bool kspace)
+static void sample(unsigned int N, const long dims[N], complex float* out, unsigned int D, const struct ellipsis_s* el, bool kspace, bool round)
 {
 	struct data1 data = {
 
 		.sens = (dims[COIL_DIM] > 1),
 		.dims = { dims[0], dims[1], dims[2] },
 		.data = &(struct krn_data){ kspace, D, el },
-		.fun = krn,
+		.fun = round ? krn : krnX,
 	};
 
 	md_parallel_zsample(N, dims, out, &data, kspace ? kkernel : xkernel);
 }
 
-
 void calc_phantom(const long dims[DIMS], complex float* out, bool kspace)
 {
-	sample(DIMS, dims, out, 10, shepplogan_mod, kspace);
+	sample(DIMS, dims, out, 10, shepplogan_mod, kspace, 1);
+}
+
+
+void calc_geo_phantom(const long dims[DIMS], complex float* out, bool kspace, int phtype)
+{
+	complex float* round = md_alloc(DIMS, dims, CFL_SIZE);
+	complex float* angular = md_alloc(DIMS, dims, CFL_SIZE);
+
+	switch (phtype) {
+
+	case 1:
+		sample(DIMS, dims, round, ARRAY_SIZE(phantom_geo1), phantom_geo1, kspace, true);
+		sample(DIMS, dims, angular, ARRAY_SIZE(phantom_geo2), phantom_geo2, kspace, false);
+		md_zadd(DIMS, dims, out, round, angular);
+		break;
+
+	case 2:
+		sample(DIMS, dims, round, ARRAY_SIZE(phantom_geo4), phantom_geo4, kspace, true);
+		sample(DIMS, dims, angular, ARRAY_SIZE(phantom_geo3), phantom_geo3, kspace, false);
+		md_zadd(DIMS, dims, out, round, angular);
+		break;
+
+	default:
+		assert(0);
+	}
+
+	md_free(round);
+	md_free(angular);
 }
 
 
@@ -206,14 +240,16 @@ void calc_phantom3d(const long dims[DIMS], complex float* out, bool kspace)
 }
 
 
-static void sample_noncart(const long dims[DIMS], complex float* out, const complex float* traj, unsigned int D, const struct ellipsis_s* el)
+
+
+static void sample_noncart(const long dims[DIMS], complex float* out, const complex float* traj, unsigned int D, const struct ellipsis_s* el, bool round)
 {
 	struct data2 data = {
 
 		.traj = traj,
 		.sens = (dims[COIL_DIM] > 1),
 		.data = &(struct krn_data){ true, D, el },
-		.fun = krn,
+		.fun = round ? krn : krnX,
 	};
 
 	assert(3 == dims[0]);
@@ -254,8 +290,40 @@ static void sample3d_noncart(const long dims[DIMS], complex float* out, const co
 
 void calc_phantom_noncart(const long dims[DIMS], complex float* out, const complex float* traj)
 {
-	sample_noncart(dims, out, traj, 10, shepplogan_mod);
+	sample_noncart(dims, out, traj, 10, shepplogan_mod, 1);
 }
+
+
+void calc_geo_phantom_noncart(const long dims[DIMS], complex float* out, const complex float* traj, int phtype)
+{
+	long kdims[DIMS];
+	md_select_dims(DIMS, ~READ_FLAG, kdims, dims);
+
+	complex float* round = md_alloc(DIMS, kdims, CFL_SIZE);
+	complex float* angular = md_alloc(DIMS, kdims, CFL_SIZE);
+
+	switch (phtype) {
+
+	case 1:
+		sample_noncart(dims, round, traj, ARRAY_SIZE(phantom_geo1), phantom_geo1, true);
+		sample_noncart(dims, angular, traj, ARRAY_SIZE(phantom_geo2), phantom_geo2, false);
+		md_zadd(DIMS, kdims, out, round, angular);
+		break;
+
+	case 2:
+		sample_noncart(dims, round, traj, ARRAY_SIZE(phantom_geo4), phantom_geo4, true);
+		sample_noncart(dims, angular, traj, ARRAY_SIZE(phantom_geo3), phantom_geo3, false);
+		md_zadd(DIMS, kdims, out, round, angular);
+		break;
+
+	default:
+		assert(0);
+	}
+
+	md_free(round);
+	md_free(angular);
+}
+
 
 void calc_phantom3d_noncart(const long dims[DIMS], complex float* out, const complex float* traj)
 {
@@ -288,7 +356,7 @@ void calc_sens(const long dims[DIMS], complex float* sens)
 
 void calc_circ(const long dims[DIMS], complex float* out, bool kspace)
 {
-	sample(DIMS, dims, out, 1, phantom_disc, kspace);
+	sample(DIMS, dims, out, 1, phantom_disc, kspace, 1);
 }
 
 void calc_circ3d(const long dims[DIMS], complex float* out, bool kspace)
@@ -298,7 +366,7 @@ void calc_circ3d(const long dims[DIMS], complex float* out, bool kspace)
 
 void calc_ring(const long dims[DIMS], complex float* out, bool kspace)
 {
-	sample(DIMS, dims, out, 4, phantom_ring, kspace);
+	sample(DIMS, dims, out, 4, phantom_ring, kspace, 1);
 }
 
 void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace)
@@ -317,7 +385,7 @@ void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace)
 
 		disc[0].center[0] = 0.5 * sin(2. * M_PI * (float)i / (float)dims[TE_DIM]);
 		disc[0].center[1] = 0.5 * cos(2. * M_PI * (float)i / (float)dims[TE_DIM]);
-		sample(DIMS, dims1, (void*)out + strs[TE_DIM] * i, 1, disc, kspace);
+		sample(DIMS, dims1, (void*)out + strs[TE_DIM] * i, 1, disc, kspace, 1);
 	}
 }
 

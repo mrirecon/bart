@@ -35,6 +35,7 @@ int main_phantom(int argc, char* argv[])
 	int sens = 0;
 	int osens = -1;
 	int xdim = -1;
+	int geo = 0;
 	bool out_sens = false;
 	bool tecirc = false;
 	bool circ = false;
@@ -56,6 +57,7 @@ int main_phantom(int argc, char* argv[])
 		OPT_SET('c', &circ, "()"),
 		OPT_SET('m', &tecirc, "()"),
 		OPT_INT('x', &xdim, "n", "dimensions in y and z"),
+		OPT_INT('G', &geo, "n=1,2", "Geometric object phantom"),
 		OPT_SET('3', &d3, "3D"),
 	};
 
@@ -109,8 +111,7 @@ int main_phantom(int argc, char* argv[])
 
 		calc_sens(dims, out);
 
-	} else
-	if (circ) {
+	} else if (circ) {
 
 		assert(NULL == traj);
 
@@ -122,7 +123,26 @@ int main_phantom(int argc, char* argv[])
 		} else {
 
 			(d3 ? calc_circ3d : calc_circ)(dims, out, kspace);
-//		calc_ring(dims, out, kspace);
+//			calc_ring(dims, out, kspace);
+		}
+
+	} else if (geo > 0) {
+
+		if (geo > 2)
+			error("geometric phantom: invalid geometry");
+
+		if (d3)
+			error("geometric phantom: no 3D mode");
+
+		if (NULL == samples) {
+
+			calc_geo_phantom(dims, out, kspace, geo);
+
+		} else {
+
+			dims[0] = 3;
+			calc_geo_phantom_noncart(dims, out, samples, geo);
+			dims[0] = 1;
 		}
 
 	} else {

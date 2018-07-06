@@ -63,6 +63,31 @@ const struct ellipsis_s phantom_ring[4] = {
 //	{	1., { 0.48, 0.48 }, { 0., 0. }, 0. },
 };
 
+// Some geometric objects
+const struct ellipsis_s phantom_geo1[3] = {
+	{	.5,    { .2,   .2   }, { .6,      .5 },	   0        },
+	{	.2,    { .2,   .4   }, { -.6,    -.6 },	   M_PI/7.  },
+	{	.6,    { .3,   .1   }, { .6,     -.5 },	   M_PI/5.  },
+};
+
+const struct ellipsis_s phantom_geo2[2] = {
+	{      0.5,   { .5,   -.5   }, { 0.,     0.  },	   M_PI/5  },
+	{	.7,   { .2,   .2    }, { -.5,     .7 },	  -M_PI/4  },
+};
+
+const struct ellipsis_s phantom_geo3[7] = {
+	{	1.,    { .2,   .2   }, { -.6,   .6   },	   M_PI/4 },
+	{	1.,    { .2,   .2   }, { -.6,  -.6   },	   M_PI/4  },
+	{	0.6,   { .07,   .07   }, { 0.15,   0   },	   0.  },
+	{	0.7,   { .07,   .07   }, { 0,      0   },	   0.  },
+	{	0.8,   { .07,   .07   }, { -0.15,  0   },	   0.  },
+	{	0.9,   { .07,   .07   }, { 0.15,   0.15},  0.  },
+	{	0.9,   { .07,   .07   }, { 0.15,  -0.15},  0.  },
+};
+
+const struct ellipsis_s phantom_geo4[1] = {
+	{	0.8,   { .1,   .7   }, { .6,     0  },	   0},
+};
 
 /* Magnetic Resonance in Medicine 58:430--436 (2007)
  * Three-Dimensional Analytical Magnetic Resonance
