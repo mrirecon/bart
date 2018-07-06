@@ -143,9 +143,9 @@ complex double xrectangle(const double center[2], const double axis[2], double a
 	pshift[0] = p90[0] + center[0];
 	pshift[1] = p90[1] + center[1];
 	double prot[2];
-	rot2d(prot, pshift, angle);
+	rot2d(prot, pshift, M_PI/4 + angle);
 
-	double radius = fabs(prot[0] / axis[0]) + fabs(prot[1] / axis[1]);
+	double radius = fabs(prot[0] / axis[0] / sqrt(2)) + fabs(prot[1] / axis[1] / sqrt(2));
 
 	return (radius <= 1.) ? 1. : 0.;
 }
