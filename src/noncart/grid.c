@@ -289,6 +289,7 @@ void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex
 {
 	int sti[3];
 	int eni[3];
+	int off[3] = { 0, 0, 0 };
 
 	for (int j = 0; j < 3; j++) {
 
@@ -302,6 +303,11 @@ void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex
 
 			sti[j] = MAX(sti[j], 0);
 			eni[j] = MIN(eni[j], dims[j] - 1);
+
+		} else {
+
+			while (sti[j] + off[j] < 0)
+				off[j] += dims[j];
 		}
 
 		if (1 == dims[j]) {
@@ -316,19 +322,19 @@ void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex
 
 		float frac = fabs(((float)w - pos[2]));
 		float dw = 1. * intlookup(kb_size, kb_table, frac / width);
-		int indw = ((dims[2] + w) % dims[2]) * dims[1];
+		int indw = ((w + off[2]) % dims[2]) * dims[1];
 
 	for (int v = sti[1]; v <= eni[1]; v++) {
 
 		float frac = fabs(((float)v - pos[1]));
 		float dv = dw * intlookup(kb_size, kb_table, frac / width);
-		int indv = (indw + ((dims[1] + v) % dims[1])) * dims[0];
+		int indv = (indw + ((v + off[1]) % dims[1])) * dims[0];
 
 	for (int u = sti[0]; u <= eni[0]; u++) {
 
 		float frac = fabs(((float)u - pos[0]));
 		float du = dv * intlookup(kb_size, kb_table, frac / width);
-		int indu = (indv + ((dims[0] + u) % dims[0]));
+		int indu = (indv + ((u + off[0]) % dims[0]));
 
 	for (unsigned int c = 0; c < ch; c++) {
 
@@ -346,16 +352,26 @@ void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], comple
 {
 	int sti[3];
 	int eni[3];
+	int off[3] = { 0, 0, 0 };
 
 	for (int j = 0; j < 3; j++) {
 
 		sti[j] = (int)ceil(pos[j] - width);
 		eni[j] = (int)floor(pos[j] + width);
 
+		if (sti[j] > eni[j])
+			return;
+
+
 		if (!periodic) {
 
 			sti[j] = MAX(sti[j], 0);
 			eni[j] = MIN(eni[j], dims[j] - 1);
+
+		} else {
+
+			while (sti[j] + off[j] < 0)
+				off[j] += dims[j];
 		}
 
 		if (1 == dims[j]) {
@@ -376,19 +392,19 @@ void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], comple
 
 		float frac = fabs(((float)w - pos[2]));
 		float dw = 1. * intlookup(kb_size, kb_table, frac / width);
-		int indw = ((dims[2] + w) % dims[2]) * dims[1];
+		int indw = ((w + off[2]) % dims[2]) * dims[1];
 
 	for (int v = sti[1]; v <= eni[1]; v++) {
 
 		float frac = fabs(((float)v - pos[1]));
 		float dv = dw * intlookup(kb_size, kb_table, frac / width);
-		int indv = (indw + ((dims[1] + v) % dims[1])) * dims[0];
+		int indv = (indw + ((v + off[1]) % dims[1])) * dims[0];
 
 	for (int u = sti[0]; u <= eni[0]; u++) {
 
 		float frac = fabs(((float)u - pos[0]));
 		float du = dv * intlookup(kb_size, kb_table, frac / width);
-		int indu = (indv + ((dims[0] + u) % dims[0]));
+		int indu = (indv + ((u + off[0]) % dims[0]));
 
 	for (unsigned int c = 0; c < ch; c++) {
 
