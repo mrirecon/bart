@@ -55,7 +55,7 @@ int main_pattern(int argc, char* argv[])
 
 	unmap_cfl(N, in_dims, kspace);
 	unmap_cfl(N, out_dims, pattern);
-	exit(0);
+	return 0;
 }
 
 

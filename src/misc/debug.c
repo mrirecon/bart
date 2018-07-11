@@ -1,5 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2018. Damien Nguyen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -7,6 +8,7 @@
  * 2013-2016	Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013,2015	Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2013 Dara Bahri <dbahri123@gmail.com
+ * 2017-2018    Damien Nguyen <damien.nguyen@alumni.epfl.ch>
  */
 
 #define _GNU_SOURCE
@@ -81,7 +83,12 @@ static void get_datetime_str(int len, char* datetime_str)
 #define RESET	"\033[0m"
 #define RED	"\033[31m"
 
-void debug_vprintf(int level, const char* fmt, va_list ap)
+void debug_vprintf_trace(const char* func_name,
+			 const char* file,
+			 unsigned int line,
+			 int level,
+			 const char* fmt,
+			 va_list ap)
 {
 	if (-1 == debug_level) {
 
@@ -90,7 +97,15 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 	}
 
 	if (level <= debug_level) {
-
+#ifdef USE_LOG_BACKEND
+		char fmt_copy[1024] = "";
+		strcpy(fmt_copy, fmt);
+		// take care of the trailing newline often present...
+		if (fmt_copy[strlen(fmt)-1] == '\n') {
+			fmt_copy[strlen(fmt)-1] = '\0';
+		}
+		(level == DP_WARN ? bart_vwarn : ((level < DP_INFO) ? bart_verr : bart_vout))(func_name,file, line, fmt_copy, ap);
+#else
 		FILE* ofp = (level < DP_INFO) ? stderr : stdout;
 
 		if (debug_logging) {
@@ -100,25 +115,34 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 
 			fprintf(ofp, "[%s] [%s] - ", dt_str, get_level_str(level));
 
-		} else
-		if (level < DP_INFO)
+		}
+		else {
+			if (level < DP_INFO) {
 			fprintf(ofp, "%s%s: ", (level < DP_INFO ? RED : ""), get_level_str(level));
+			}
+		}
 
 		vfprintf(ofp, fmt, ap);
 
-		if ((!debug_logging) && (level < DP_INFO))
+		if ((!debug_logging) && (level < DP_INFO)) {
 			fprintf(ofp, RESET);
+		}
 
 		fflush(ofp);
+#endif /* USE_LOG_BACKEND */
 	}
 }
 
-
-void debug_printf(int level, const char* fmt, ...)
+void debug_printf_trace(const char* func_name,
+			const char* file,
+			unsigned int line,
+			int level,
+			const char* fmt,
+			...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	debug_vprintf(level, fmt, ap);	
+	debug_vprintf_trace(func_name, file, line, level, fmt, ap);
 	va_end(ap);
 }
 

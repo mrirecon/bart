@@ -1,6 +1,7 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2015-2016. Martin Uecker.
  * Copyright 2017. University of Oxford.
+ * Copyright 2017-2018. Damien Nguyen
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -10,7 +11,10 @@
 
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdnoreturn.h>
+
+#include "misc/output_macros.h"
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
@@ -51,13 +55,23 @@ extern void warn_nonnull_ptr(void*);
 
 extern int parse_cfl(_Complex float res[1], const char* str);
 #ifndef __CUDACC__
-extern noreturn void error(const char* str, ...);
+extern void error(const char* str, ...);
 #else
 extern void error(const char* str, ...);
 #endif
 
+// small wrapper around snprintf to gracefully handle cases where 'size' is negative
+extern int safeneg_snprintf(char* buffer, long size, const char* format, ... );
 extern void print_dims(int D, const long dims[__VLA(D)]);
-extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
+#define debug_print_dims(...)						\
+     debug_print_dims_trace(__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+
+extern void debug_print_dims_trace(const char* func_name,
+				   const char* file,
+				   unsigned int line,
+				   int dblevel,
+				   int D,
+				   const long dims[__VLA(D)]);
 
 typedef int (*quicksort_cmp_t)(const void* data, unsigned int a, unsigned int b);
 
@@ -67,8 +81,19 @@ extern float quickselect(float *arr, unsigned int n, unsigned int k);
 
 extern float quickselect_complex(_Complex float *arr, unsigned int n, unsigned int k);
 
-extern void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str);
-extern _Bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str);
+extern int mini_cmdline_impl(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str);
+extern int mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str, _Bool* flag);
+
+#define mini_cmdline(acp, av, e_args, u_str, h_str)			\
+     do {								\
+	  int ret = mini_cmdline_impl(acp, av, e_args, u_str, h_str);	\
+	  if (ret > 0) {						\
+	       return ret;						\
+	  }								\
+	  else if (ret < 0) {						\
+	       return 0;						\
+	  }								\
+     } while(0)
 
 extern void print_long(unsigned int D, const long arr[__VLA(D)]);
 extern void print_float(unsigned int D, const float arr[__VLA(D)]);

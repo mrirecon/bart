@@ -203,7 +203,7 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 		else if (strcmp(rt, "h") == 0) {
 
 			help_reg();
-			exit(0);
+			return 0;
 		}
 		else {
 
@@ -723,7 +723,7 @@ int main_sqpics(int argc, char* argv[])
 	double end_time = timestamp();
 
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);
-	exit(0);
+	return 0;
 }
 
 

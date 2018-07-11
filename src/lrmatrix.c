@@ -246,6 +246,6 @@ int main_lrmatrix(int argc, char* argv[])
 
 	double end_time = timestamp();
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);
-	exit(0);
+	return 0;
 }
 

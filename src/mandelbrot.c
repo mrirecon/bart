@@ -86,7 +86,7 @@ int main_mandelbrot(int argc, char* argv[])
 	md_free(x);
 
 	unmap_cfl(2, dims, o);
-	exit(0);
+	return 0;
 }
 
 

@@ -15,7 +15,6 @@
 
 #include "utest.h"
 
-
 #if 0
 /* A linker script is used to assemble a list of all
  * registered unit tests and to set begin and end.

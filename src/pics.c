@@ -97,6 +97,9 @@ int main_pics(int argc, char* argv[])
 	unsigned int maxiter = 30;
 	float step = -1.;
 
+	int debug_level_save = debug_level;
+	int debug_level_local = debug_level;
+
 	// Start time count
 
 	double start_time = timestamp();
@@ -159,7 +162,7 @@ int main_pics(int argc, char* argv[])
 		OPT_SET('J', &admm.relative_norm, "(ADMM residual balancing)"),
 		OPT_STRING('T', &image_truth_file, "file", "(truth file)"),
 		OPT_STRING('W', &image_start_file, "<img>", "Warm start with <img>"),
-		OPT_INT('d', &debug_level, "level", "Debug level"),
+		OPT_INT('d', &debug_level_local, "level", "Debug level"),
 		OPT_INT('O', &conf.rwiter, "rwiter", "(reweighting)"),
 		OPT_FLOAT('o', &conf.gamma, "gamma", "(reweighting)"),
 		OPT_FLOAT('u', &admm.rho, "rho", "ADMM rho"),
@@ -177,6 +180,7 @@ int main_pics(int argc, char* argv[])
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	debug_level = debug_level_local;
 
 	if (NULL != image_truth_file)
 		im_truth = true;
@@ -598,7 +602,8 @@ int main_pics(int argc, char* argv[])
 
 
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);
-	exit(0);
+	debug_level = debug_level_save;
+	return 0;
 }
 
 

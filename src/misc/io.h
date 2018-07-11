@@ -12,6 +12,9 @@ extern int read_cfl_header(int fd, unsigned int D, long dimensions[__VLA(D)]);
 
 extern void io_register_input(const char* name);
 extern void io_register_output(const char* name);
+extern void io_unregister(const char* name);
+
+extern void io_memory_cleanup();
 
 #include "misc/cppwrap.h"
 

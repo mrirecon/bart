@@ -40,7 +40,7 @@ int main_vec(int argc, char* argv[])
 			error("argument %d/%d is not a number: %s", i, argc - 2, argv[1 + i]);
 
 	unmap_cfl(1, dims, x);
-	exit(0);
+	return 0;
 }
 
 

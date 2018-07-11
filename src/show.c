@@ -32,8 +32,11 @@ static const char usage_str[] = "<input>";
 static const char help_str[] = "Outputs values or meta data.";
 
 
-static void print_cfl(unsigned int N, const long dims[N], const complex float* data, const char* fmt, const char* sep)
+static void print_cfl(unsigned int N, const long dims[N], const complex float* data, const char* fmt, const char* sep, char* output)
 {
+	int idx = 0;
+	int max_length = 512;
+	
 	// find first non-trivial dimension
 	unsigned int l = 0;
 	while ((l < N - 1) && (1 == dims[l]))
@@ -57,14 +60,30 @@ ok:
 
 	for (long i = 0; i < T; i++) {
 
-		printf(fmt, crealf(data[i]), cimagf(data[i]));
-		printf("%s", (0 == (i + 1) % dims[l]) ? "\n" : sep);
+		if (output != NULL) {
+			idx += safeneg_snprintf(output+idx,
+						max_length-idx,
+						fmt,
+						crealf(data[i]), cimagf(data[i]));
+			idx += safeneg_snprintf(output+idx,
+						max_length-idx,
+						(0 == (i + 1) % dims[l]) ? "\n" : sep);
+		}
+		else {
+			printf(fmt, crealf(data[i]), cimagf(data[i]));
+			printf((0 == (i + 1) % dims[l]) ? "\n" : sep);
+		}
 	}
 }
 
 
 
 int main_show(int argc, char* argv[])
+{
+	return in_mem_show_main(argc, argv, NULL);
+}
+
+int in_mem_show_main(int argc, char* argv[], char* output)
 {
 	bool meta = false;
 	int showdim = -1;
@@ -89,31 +108,50 @@ int main_show(int argc, char* argv[])
 	if (-1 != showdim) {
 
 		assert((showdim >= 0) && (showdim < (int)N));
-		printf("%ld\n", dims[showdim]);
+		if (output != NULL) {
+			safeneg_snprintf(output, 512, "%ld", dims[showdim]);
+		}
+		else {
+			printf("%ld\n", dims[showdim]);
+		}
 		goto out;
 	}
 
 	if (meta) {
 
-		printf("Type: complex float\n");
-		printf("Dimensions: %d\n", N);
-		printf("AoD:");
+		if (output != NULL) {
+			int idx = 0;
+			int max_length = 512;
+			
+			idx += safeneg_snprintf(output+idx,
+						max_length-idx,
+						"Type: complex float\nDimensions: %d\nAoD:",
+						N);
+	       
+			for (unsigned int i = 0; i < N; i++)
+				idx += safeneg_snprintf(output+idx, max_length-idx, "\t%ld", dims[i]);
+		}
+		else {
+			printf("Type: complex float\n");
+			printf("Dimensions: %d\n", N);
+			printf("AoD:");
 
-		for (unsigned int i = 0; i < N; i++)
-			printf("\t%ld", dims[i]);
+			for (unsigned int i = 0; i < N; i++)
+				printf("\t%ld", dims[i]);
 
-		printf("\n");
+			printf("\n");
+		}
 
 		goto out;
 	}
 
-	print_cfl(N, dims, data, fmt,  sep);
+	print_cfl(N, dims, data, fmt,  sep, output);
 
 out:
 	unmap_cfl(N, dims, data);
 	xfree(sep);
 	xfree(fmt);
-	exit(0);
+	return 0;
 }
 
 

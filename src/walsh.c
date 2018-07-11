@@ -66,7 +66,7 @@ int main_walsh(int argc, char* argv[])
 
 	md_free(cal_data);
 	unmap_cfl(DIMS, dims, out_data);
-	exit(0);
+	return 0;
 }
 
 

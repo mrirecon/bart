@@ -169,7 +169,7 @@ int main_cc(int argc, char* argv[])
 	}
 
 	printf("Done.\n");
-	exit(0);
+	return 0;
 }
 
 

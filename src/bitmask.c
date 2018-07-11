@@ -20,10 +20,13 @@
 static const char usage_str[] = "-b <bitmask> | <dim1> ... <dimN>";
 static const char help_str[] = "Convert between a bitmask and set of dimensions.";
 
-
-
-
 int main_bitmask(int argc, char* argv[])
+{
+	return in_mem_bitmask_main(argc, argv, NULL);
+}
+
+
+int in_mem_bitmask_main(int argc, char* argv[], char* output)
 {
 	bool inverse = false;
 	long flags = 0;
@@ -49,26 +52,40 @@ int main_bitmask(int argc, char* argv[])
 			flags = MD_SET(flags, d);
 		}
 
-		printf("%ld\n", flags);
+		if (output != NULL) {
+			safeneg_snprintf(output, 512, "%ld", flags);
+		}
+		else {
+			printf("%ld\n", flags);
+		}
 
 	} else {
 
+		int idx = 0;
+		int max_length = 512;
 		int i = 0;
 		flags = atoi(argv[1]);
 
 		while (flags) {
 
-			if (flags & 1)
-				printf("%d ", i);
-
+			if (flags & 1) {
+				if (output != NULL) {
+					idx += safeneg_snprintf(output + idx, max_length - idx, "%d ", i);
+				}
+				else {
+					printf("%d ", i);
+				}
+			}
 			flags >>= 1;
 			i++;
 		}
 
-		printf("\n");
+		if (output == NULL) {
+			printf("\n");
+		}
 	}
 
-	exit(0);
+	return 0;
 }
 
 

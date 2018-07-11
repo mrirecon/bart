@@ -49,7 +49,7 @@ int main_conv(int argc, char* argv[])
 	unmap_cfl(N, dims, out);
 	unmap_cfl(N, krn_dims, krn);
 	unmap_cfl(N, dims, in);
-	exit(0);
+	return 0;
 }
 
 

@@ -47,7 +47,7 @@ int main_flatten(int argc, char* argv[])
 	unmap_cfl(DIMS, idims, idata);
 	unmap_cfl(DIMS, odims, odata);
 
-	exit(0);
+	return 0;
 }
 
 

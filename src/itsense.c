@@ -193,7 +193,7 @@ int main_itsense(int argc, char* argv[])
 	unmap_cfl(DIMS, data.data_dims, data.sens);
 	md_free(data.tmp);
 
-	exit(0);
+	return 0;
 }
 
 

@@ -2,10 +2,16 @@
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 # \author Hans J. Johnson <hans-johnson@uiowa.edu>
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 2.8.12)
 
 project(bart C)
 enable_language(C)
+enable_language(CXX)
+
+# Silence a CMake-warning about object libraries
+if(CMAKE_VERSION VERSION_GREATER 3.0)
+  cmake_policy(SET CMP0051 OLD)
+endif(CMAKE_VERSION VERSION_GREATER 3.0)
 
 # http://stackoverflow.com/questions/24840030/forcing-c99-in-cmake-to-use-for-loop-initial-declaration
 macro(use_c99)
@@ -19,7 +25,48 @@ macro(use_c99)
 endmacro(use_c99)
 use_c99()
 
+option(USE_FPIC "Compile using position-independent code" OFF)
+if(USE_FPIC)
+  message(STATUS "ENABLED compilation with -fPIC")
+  set (CMAKE_C_FLAGS "-fPIC ${CMAKE_C_FLAGS}")
+  set (CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
+endif(USE_FPIC)
+
+
+option(USE_SUPER_DEBUG "Enable super-duper (!) debug output" OFF)
+if(USE_SUPER_DEBUG)
+  add_definitions(-DBART_SUPER_DEBUG)
+  message(STATUS "ENABLED super-duper debug output")
+endif(USE_SUPER_DEBUG)
+
+# ==============================================================================
+
+option(USE_LOG_BACKEND "Enable delegating all outputs to some scanner backend using BART_OUT, BART_WARN and BART_ERR macros. Otherwise simply use printf(...)" OFF)
+
+include(CMakeDependentOption)
+cmake_dependent_option(USE_LOG_SIEMENS_BACKEND "Use the Siemens logging backend" ON
+  "USE_LOG_BACKEND" OFF)
+if(USE_LOG_SIEMENS_BACKEND)
+  message(STATUS "Delegating all outputs to the Siemens logging backend")
+endif(USE_LOG_SIEMENS_BACKEND)
+
+# ==============================================================================
+
+option(GENERATE_DOC "Automatically generate documentation after building BART" ON)
+if(GENERATE_DOC)
+  message(STATUS "Automatically generating documentation after building BART")
+endif(GENERATE_DOC)
+  
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake ${CMAKE_MODULE_PATH})
+
+# ==============================================================================
+
+option(CREATE_PYTHON_MODULE "Compile the pyBART Python module" OFF)
+if(CREATE_PYTHON_MODULE)
+  message(STATUS "Generating the pyBART Python module")
+endif(CREATE_PYTHON_MODULE)
+
+# ==============================================================================
 
 # --- Provide good defaults for searching for packages (i.e. ismrmrd)
 set(CMAKE_PREFIX_PATH "")
@@ -35,15 +82,27 @@ endif()
 list(REMOVE_DUPLICATES CMAKE_PREFIX_PATH)
 ## -message(STATUS "Looking for packages in : ${CMAKE_PREFIX_PATH}")
 
-## Options
-option(USE_CUDA    "Provide support for CUDA processing" OFF)
+# --- Mac specific setup options
+if(APPLE)
+  # Look for MacPorts only as Homebrew users do not require any particular setup
+  find_program(MACPORTS
+    NAMES port
+    PATHS /opt/local/bin /opt/local/sbin)
+  if(MACPORTS)
+    add_definitions(-DUSE_MACPORTS)
+  endif(MACPORTS)
+endif(APPLE)
+
+# ==============================================================================
+
+option(USE_CUDA "Provide support for CUDA processing" OFF)
 if(USE_CUDA)
   enable_language(CXX)
   find_package(CUDA)
   add_definitions(-DUSE_CUDA)
   CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR}/src)
   # set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;-arch=sm_20;-m64;-ccbin ${CMAKE_C_COMPILER}")
-  set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;-arch=sm_20;-ccbin ${CMAKE_C_COMPILER}")
+  set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;${GPUARCH_FLAGS};-ccbin ${CMAKE_C_COMPILER}")
   macro(bart_add_executable target_name)
     CUDA_ADD_EXECUTABLE(${target_name} ${ARGN})
     CUDA_ADD_CUFFT_TO_TARGET(${target_name})
@@ -65,12 +124,19 @@ else()
   endmacro(bart_add_library)
 endif(USE_CUDA)
 
+# ==============================================================================
+
+## Options
 ##- TODO option(USE_ACML    "Provide support for ACML processing" OFF)
-find_package(OpenMP)
-if (OPENMP_FOUND)
+
+option(USE_OPENMP "Enable OpenMP support" ON)
+if(USE_OPENMP)
+  find_package(OpenMP)
+  if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
+  endif()
+endif(USE_OPENMP)
 ##- TODO option(USE_SLINK "Provide SLINK support" OFF)
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -90,6 +156,14 @@ endif()
 if(${CMAKE_BUILD_TYPE} MATCHES "Release")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffast-math -O3") # -Wall -Wextra -Wmissing-prototypes")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -ffast-math -O3") # -Wall -Wextra")
+endif()
+
+##======================================================================
+
+option(ENABLE_LONGJUMP "Enable the use of the setjmp & longjmp functions to emulate C++ exceptions" OFF)
+if(ENABLE_LONGJUMP)
+  message(STATUS "Using setjmp & longjmp to emulate C++ exceptions")
+  add_definitions(-DENABLE_LONGJUMP)
 endif()
 
 ##==============================================================
@@ -130,19 +204,24 @@ endif()
 if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "LAPACKE")
   #NOTE: By specifying Fortran here, linking to lapack becomes easier
   # See https://blog.kitware.com/fortran-for-cc-developers-made-easier-with-cmake/  
-  enable_language(Fortran)
+  # enable_language(Fortran)
   ## Only very new versions of LAPACK (> 3.5.0) have built in support
   ## for cblas and lapacke.  This method is not very robust to older
   ## versions of lapack that might be able to be supported.
   ## It is know to work local builds
-  find_package(LAPACKE REQUIRED)
+  include( ${CMAKE_CURRENT_LIST_DIR}/cmake/FindLAPACKE.cmake )
   if(LAPACKE_FOUND)
      set(LINALG_VENDOR_FOUND TRUE)
      set(LINALG_VENDOR "LAPACKE")
      set(LINALG_INCLUDE_DIRS ${LAPACKE_INCLUDE_DIRS})
      set(LINALG_LIBRARIES ${LAPACKE_LIBRARIES})
-   endif()
+  endif()
 endif()
+
+# mainly since our local installation is using static fftw & lapack
+if(EXISTS "/usr/lib/x86_64-linux-gnu/libgfortran.so.3")
+  list(APPEND LINALG_LIBRARIES "/usr/lib/x86_64-linux-gnu/libgfortran.so.3")
+endif(EXISTS "/usr/lib/x86_64-linux-gnu/libgfortran.so.3")
 
 ##
 ## -*-*- Finally, set include_directories -*-*-*
@@ -152,13 +231,74 @@ endif()
 include_directories(${LINALG_INCLUDE_DIRS})
 
 ##======================================================================
+
 set(USE_FFTWF ON) # Only find single precision fftw
-find_package(FFTW REQUIRED)
+option(USE_LOCAL_FFTW "Use a modified version of FFTW where all functions are prefixed with local_ (useful for static FFTW linking)" ON)
+if(USE_LOCAL_FFTW)
+  set(FFTWF_FOUND 1)
+  set(FFTW_INCLUDE ${CURRENT_LIST_DIR/src})
+  set(FFTWF_THREADS_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f_threads.a")
+  set(FFTWF_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f.a" ${FFTWF_THREADS_LIB})
+  set(FFTWF_LIBRARIES ${FFTWF_LIB})
+  add_definitions(-DUSE_LOCAL_FFTW)
+else(USE_LOCAL_FFTW)
+  find_package(FFTW REQUIRED)
+endif(USE_LOCAL_FFTW)
 message(STATUS "FFTWF_LIBRARIES: ${FFTWF_LIBRARIES}")
 
-find_package(PNG REQUIRED)
-add_definitions(${PNG_DEFINITIONS})
-include_directories(${PNG_INCLUDE_DIRS})
+option(USE_FFTWTHREADS ON)
+if(USE_FFTWTHREADS)
+  # manually add the pthread library in case one is using static fftw libraries...
+  find_library(PTHREAD_LIB pthread)
+  list(APPEND FFTWF_LIBRARIES ${PTHREAD_LIB})
+  add_definitions(-DFFTWTHREADS)
+else(USE_FFTWTHREADS)
+  # remove the threaded library when not using threads
+  list(REMOVE_ITEM FFTWF_LIBRARIES ${FFTWF_THREADS_LIB})
+endif(USE_FFTWTHREADS)
+
+##======================================================================
+
+option (FORCE_BUILTIN_COMMANDS "Force the BART to use builtin commands instead of external commands" ON)
+if(FORCE_BUILTIN_COMMANDS)
+  message(STATUS "Forcing BART to call builtin commands")
+  add_definitions(-DFORCE_BUILTIN_COMMANDS)
+endif(FORCE_BUILTIN_COMMANDS)
+
+##======================================================================
+
+option (ENABLE_MEM_CFL "Enable the use of in-memory CFL files" OFF)
+
+##----------------------------------------------------------------------
+
+option (USE_MEMONLY_CFL "Use only in-memory CFL files" OFF)
+if(USE_MEMONLY_CFL)
+  message(STATUS "Forcing BART to use only in-memory CFLs")
+  if(NOT ENABLE_MEM_CFL)
+    message(STATUS "Setting ENABLE_MEM_CFL = ON")
+    set(ENABLE_MEM_CFL ON)
+  endif(NOT ENABLE_MEM_CFL)
+  add_definitions(-DMEMONLY_CFL)
+endif(USE_MEMONLY_CFL)
+
+##----------------------------------------------------------------------
+
+if(ENABLE_MEM_CFL)
+  message(STATUS "Using in-memory CFL files")
+  add_definitions(-DUSE_MEM_CFL)
+endif(ENABLE_MEM_CFL)
+
+##======================================================================
+
+option(DISABLE_PNG "Disable the use of the PNG library" OFF)
+if(NOT DISABLE_PNG)
+  find_package(PNG REQUIRED)
+  add_definitions(${PNG_DEFINITIONS})
+  include_directories(${PNG_INCLUDE_DIRS})
+else(NOT DISABLE_PNG)
+  set(PNG_DEFINITIONS "")
+  set(PNG_INCLUDE_DIRS "")
+endif(NOT DISABLE_PNG)
 
 execute_process(COMMAND ${CMAKE_CURRENT_LIST_DIR}/git-version.sh OUTPUT_VARIABLE BART_FULL_VERSION_STRING WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 string(STRIP ${BART_FULL_VERSION_STRING} BART_FULL_VERSION_STRING) ## Remove trailing whitespace (return characters)
@@ -189,6 +329,19 @@ foreach(bld_tgt_line ${bld_tgt_list_of_list})
      list(APPEND ALLPROGS ${${BLD_KEY}})
    endif()
 endforeach()
+
+ if(USE_ISMRMRD)
+  list(APPEND ALLPROGS ismrmrd) 
+endif(USE_ISMRMRD)
+
+
+list(SORT ALLPROGS)
+
+
+if(DISABLE_PNG)
+  list(REMOVE_ITEM ALLPROGS "toimg")
+endif(DISABLE_PNG)
+
 
 ## BART Makefile depends heavily on pre-processor replacements
 ## on the command line rather than a library of common functionality
@@ -245,39 +398,87 @@ if(USE_ISMRMRD)
 endif()
 include_directories(src)
 set(bart_support_SRCS "")
+set(bart_support_CCSRCS "")
+set(bart_support_CUSRCS "")
 foreach(curr_lib ${BART_SUPPORT_LIBS})
     file(GLOB ${curr_lib}_SRCS "src/${curr_lib}/*.c")
     list(APPEND bart_support_SRCS ${${curr_lib}_SRCS})
+  
+    file(GLOB ${curr_lib}_CCSRCS "src/${curr_lib}/*.cc")
+    list(APPEND bart_support_SRCS ${${curr_lib}_CCSRCS})
+
     if(USE_CUDA)
-      file(GLOB ${curr_lib}_SRCS "src/${curr_lib}/*.cu")
-      list(APPEND bart_support_SRCS ${${curr_lib}_SRCS})
-    endif()
+      file(GLOB ${curr_lib}_CUSRCS "src/${curr_lib}/*.cu")
+      list(APPEND bart_support_SRCS ${${curr_lib}_CUSRCS})
+    endif(USE_CUDA)
 endforeach()
-bart_add_library(bartsupport ${bart_support_SRCS})
+
+# ------------------------------------------------------------------------------
+# These files need to be compiled separately since they might contain
+# Python code
+set(BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES
+  "${CMAKE_CURRENT_LIST_DIR}/src/misc/mmiocc.cc"
+  "${CMAKE_CURRENT_LIST_DIR}/src/misc/mmio.c"
+  "${CMAKE_CURRENT_LIST_DIR}/src/misc/misc.c")
+foreach(file ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES})
+  list(REMOVE_ITEM bart_support_SRCS "${file}")
+endforeach()
+
+if(NOT ENABLE_MEM_CFL)
+  list(REMOVE_ITEM BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES "${CMAKE_CURRENT_LIST_DIR}/src/misc/mmiocc.cc")
+endif(NOT ENABLE_MEM_CFL)
+
+# ------------------------------------------------------------------------------
+
+if(DISABLE_PNG)
+  list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/png.c")
+endif(DISABLE_PNG)
+
+set(LOG_BACKEND_SRCS "")
+if(USE_LOG_BACKEND)
+  if(USE_LOG_SIEMENS_BACKEND)
+    add_definitions(-DUSE_LOG_SIEMENS_BACKEND)
+    list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/UTrace.cc")
+  endif(USE_LOG_SIEMENS_BACKEND)
+endif(USE_LOG_BACKEND)
+
+list(REMOVE_ITEM bart_support_SRCS "${LOG_BACKEND_SRCS}")
+
+bart_add_library(bartsupport_objs OBJECT ${bart_support_SRCS})
+bart_add_library(bartsupport STATIC $<TARGET_OBJECTS:bartsupport_objs> ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES})
 target_link_libraries(bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
 if(USE_ISMRMRD)
   target_link_libraries(bartsupport ${ISMRMRD_LIBRARIES})
 endif()
 install(TARGETS bartsupport
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib/static)
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib/static)
+
+install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src/
+  DESTINATION include
+  FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src/
+  DESTINATION include
+  FILES_MATCHING PATTERN "*.hh")
 
 
-### PASS #1:  Build stand-alone programs
-### Generate stand alone programs
-#file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/StandAloneCode)
-#foreach(curr_prog ${ALLPROGS})
-#  CONFIG_BY_REPLACEMENT( ${CMAKE_CURRENT_LIST_DIR}/src/main.c ${CMAKE_CURRENT_BINARY_DIR}/StandAloneCode/${curr_prog}.c
-#                         "/* Generated by cmake */"
-#                        "main_real" "main_${curr_prog}")
-#  bart_add_executable(${curr_prog} ${CMAKE_CURRENT_BINARY_DIR}/StandAloneCode/${curr_prog}.c ${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c)
-#  target_link_libraries(${curr_prog} bartsupport )
-#  install(TARGETS ${curr_prog}
-#        RUNTIME DESTINATION bin
-#        LIBRARY DESTINATION lib
-#        ARCHIVE DESTINATION lib/static)
-#endforeach()
+if(NOT FORCE_BUILTIN_COMMANDS)
+  ### PASS #1:  Build stand-alone programs
+  ### Generate stand alone programs
+  #file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/StandAloneCode)
+  #foreach(curr_prog ${ALLPROGS})
+  #  CONFIG_BY_REPLACEMENT( ${CMAKE_CURRENT_LIST_DIR}/src/main.c ${CMAKE_CURRENT_BINARY_DIR}/StandAloneCode/${curr_prog}.c
+  #    "/* Generated by cmake */"
+  #    "main_real" "main_${curr_prog}")
+  #  bart_add_executable(${curr_prog} ${CMAKE_CURRENT_BINARY_DIR}/StandAloneCode/${curr_prog}.c ${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c)
+  #  target_link_libraries(${curr_prog} bartsupport )
+  #  install(TARGETS ${curr_prog}
+  #    RUNTIME DESTINATION bin
+  #    LIBRARY DESTINATION lib
+  #    ARCHIVE DESTINATION lib/static)
+  #endforeach()
+endif(NOT FORCE_BUILTIN_COMMANDS)
 
 ## More crafty file manipulation so that we maintain backward comaptibility
 ## with the Makefile
@@ -301,12 +502,18 @@ set(DRIVER_LIST "\n\n/* Generated by cmake */\n")
 foreach(driver ${ALLPROGS})
    set(DRIVER_LIST "${DRIVER_LIST}{ main_${driver}, \"${driver}\" },\n")
 endforeach()
+
 set(ALL_BART_SRCS "")
+set(ALL_BART_LIB_SRCS "")
 foreach(curr_prog ${ALLPROGS})
-  CONFIG_BY_REPLACEMENT( "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c" "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c"
-                         "/* Generated by cmake */\n#include \"config_main.h\""
-                         "MAP(DENTRY, MAIN_LIST)" "${DRIVER_LIST}")
-  list(APPEND ALL_BART_SRCS "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c")
+  set(curr_prog_name "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c")
+  set(comb_prog_name "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c")
+  
+  CONFIG_BY_REPLACEMENT( ${curr_prog_name} ${comb_prog_name}
+    "/* Generated by cmake */\n#include \"config_main.h\""
+    "MAP(DENTRY, MAIN_LIST)" "${DRIVER_LIST}")
+  list(APPEND ALL_BART_SRCS ${comb_prog_name})
+  list(APPEND ALL_BART_LIB_SRCS ${comb_prog_name})
 endforeach()
 foreach(curr_prog bart)
   CONFIG_BY_REPLACEMENT( "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c" "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c"
@@ -314,16 +521,95 @@ foreach(curr_prog bart)
                          "MAP(DENTRY, MAIN_LIST)" "${DRIVER_LIST}" ## Replacement 1
                          "main_bart" "main"                        ## Replacement 2
                          "misc/cppmap.h" "stdio.h")                ## Replacement 3 no longer need this include 
+  CONFIG_BY_REPLACEMENT( "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c" "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}_lib.c"
+                         "#include \"config_main.h\""
+                         "MAP(DENTRY, MAIN_LIST)" "${DRIVER_LIST}" ## Replacement 1
+                         "misc/cppmap.h" "stdio.h")                ## Replacement 2 no longer need this include 
   list(APPEND ALL_BART_SRCS "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c")
+  list(APPEND ALL_BART_LIB_SRCS "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}_lib.c")
 endforeach()
 
-bart_add_executable(bart ${ALL_BART_SRCS})
+bart_add_executable(bart ${ALL_BART_SRCS} ${LOG_BACKEND_SRCS})
 target_link_libraries(bart bartsupport)
 install(TARGETS bart
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib/static)
 
+set(BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/bart_lib.c")
+foreach(file ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES})
+  list(REMOVE_ITEM ALL_BART_LIB_SRCS "${file}")
+endforeach()
+      
+bart_add_library(bartmain_objs OBJECT ${ALL_BART_LIB_SRCS})
+bart_add_library(bartmain STATIC $<TARGET_OBJECTS:bartsupport_objs> $<TARGET_OBJECTS:bartmain_objs> ${LOG_BACKEND_SRCS} ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES})
+
+if(USE_LOG_BACKEND)
+  # ensure that src/misc/misc.c will be compiled with logging backend support
+  # but *ONLY* for the bartmain target
+  target_compile_definitions(bartmain PUBLIC -DUSE_LOG_BACKEND)
+endif(USE_LOG_BACKEND)
+
+if(CREATE_PYTHON_MODULE)
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    find_package(PythonLibs REQUIRED)
+    set(PYMODULE_INCLUDE_DIRS "${PYTHON_INCLUDE_DIRS}")
+    set(PYMODULE_LIBRARIES "${PYTHON_LIBRARIES}")
+  else(CMAKE_VERSION VERSION_LESS "3.12")
+    set(PYMODULE_INCLUDE_DIRS "${Python_INCLUDE_DIRS}")
+    set(PYMODULE_LIBRARIES "${Python_LIBRARIES}")
+  endif(CMAKE_VERSION VERSION_LESS "3.12")
+
+  set(PYBART_FUNCTION_PROTOTYPE "")
+  set(PYBART_COMMANDS_MODULE_METHODS "")
+  set(PYBART_COMMANDS_IMPLEMENTATION "")
+  
+  foreach(curr_prog ${ALLPROGS})
+    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c")
+      set(PYBART_FUNCTION_PROTOTYPE "${PYBART_FUNCTION_PROTOTYPE}static PyObject* call_${curr_prog}(PyObject* self, PyObject* args);\n")
+      set(PYBART_COMMANDS_MODULE_METHODS "${PYBART_COMMANDS_MODULE_METHODS}     {\"${curr_prog}\", call_${curr_prog}, METH_VARARGS, bart_subcommand_docstring},\n")
+      set(PYBART_COMMANDS_IMPLEMENTATION "${PYBART_COMMANDS_IMPLEMENTATION}PyObject* call_${curr_prog} (PyObject* self, PyObject* args)\n{\n     enum { MAX_ARGS = 256 };\n     char* cmdline = NULL;\n     char output[256] = { \"\" };\n     if (!PyArg_ParseTuple(args, \"s\", &cmdline)) {\n	  Py_RETURN_NONE;\n     }\n\n     return call_submain(\"${curr_prog}\", cmdline);\n}\n\n")
+    endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c")
+  endforeach()
+
+  configure_file(${CMAKE_CURRENT_LIST_DIR}/src/python/pyBART.c.in ${PROJECT_BINARY_DIR}/pyBART.c @ONLY)
+
+  include_directories(${PYMODULE_INCLUDE_DIRS})
+  bart_add_library(pyBART
+    SHARED
+    ${PROJECT_BINARY_DIR}/pyBART.c
+    ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES}
+    ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES}
+    $<TARGET_OBJECTS:bartsupport_objs>
+    $<TARGET_OBJECTS:bartmain_objs>)
+  
+  target_compile_definitions(pyBART PUBLIC -DBART_WITH_PYTHON)
+  target_link_libraries(pyBART ${PYMODULE_LIBRARIES} ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
+  if(USE_ISMRMRD)
+    target_link_libraries(pyBART ${ISMRMRD_LIBRARIES})
+  endif()
+  set_target_properties(pyBART PROPERTIES PREFIX "")
+endif(CREATE_PYTHON_MODULE)
+
+option (BARTMAIN_AUTOCOPY "Automaticall copy the bartmain library to the lib/ folder" OFF)
+if(BARTMAIN_AUTOCOPY)
+  if(USE_CUDA)
+    add_custom_command(
+      TARGET bartmain
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:bartmain> ${CMAKE_SOURCE_DIR}/lib/libbartmain_cuda.a
+      COMMENT "copy bartmain (CUDA) to ../lib"
+      )
+  else(USE_CUDA)
+    add_custom_command(
+      TARGET bartmain
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:bartmain> ${CMAKE_SOURCE_DIR}/lib
+      COMMENT "copy bartmain to ../lib"
+      )
+  endif(USE_CUDA)
+endif(BARTMAIN_AUTOCOPY)
 
 #==============================================
 # TODO: Matlab code
@@ -333,12 +619,13 @@ if(USE_MATLAB)
   if(MATLAB_FOUND)
     message(STATUS "MATLAB LIBRARIES FOUND: ${MATLAB_LIBRARIES_DIR}")
     include_directories(${MATLAB_INCLUDE_DIR})
-    bart_add_executable(mat2cfl ${CMAKE_CURRENT_LIST_DIR}/src/mat2cfl.c)
+    bart_add_executable(mat2cfl ${CMAKE_CURRENT_LIST_DIR}/src/mat2cfl.c ${LOG_BACKEND_SRCS})
     target_link_libraries(mat2cfl bartsupport ${MATLAB_MAT_LIBRARY} ${MATLAB_ENG_LIBRARY} ${MATLAB_MX_LIBRARY})
+
     install(TARGETS mat2cfl
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib/static)
+      RUNTIME DESTINATION bin
+      LIBRARY DESTINATION lib
+      ARCHIVE DESTINATION lib/static)
   endif()
 endif()
 
@@ -365,27 +652,29 @@ add_test(NAME BartUTest COMMAND $<TARGET_FILE:utest>)
 
 set(TARBALL_VERSION "${BART_VERSION_MAJOR}.${BART_VERSION_MINOR}.${BART_VERSION_PATCH}")
 add_custom_target(tarball
-    COMMAND git archive --prefix=bart-${TARBALL_VERSION}/ -o ${CMAKE_CURRENT_BINARY_DIR}/bart-${TARBALL_VERSION}.tar.gz v${TARBALL_VERSION}
-    WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
-    COMMENT "BUILD TARBALL FOR BART WITH LATEST VERSION"
-)
+  COMMAND git archive --prefix=bart-${TARBALL_VERSION}/ -o ${CMAKE_CURRENT_BINARY_DIR}/bart-${TARBALL_VERSION}.tar.gz v${TARBALL_VERSION}
+  WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+  COMMENT "BUILD TARBALL FOR BART WITH LATEST VERSION"
+  )
 
 add_custom_target(doxygen
-         COMMAND ${CMAKE_CURRENT_LIST_DIR}/makedoc.sh
-         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-         DEPENDS bart
-         SOURCES makedoc.sh doxyconfig)
+  COMMAND ${CMAKE_CURRENT_LIST_DIR}/makedoc.sh
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+  DEPENDS bart
+  SOURCES makedoc.sh doxyconfig)
 
 add_custom_target(bart.syms
-         COMMAND ${CMAKE_CURRENT_LIST_DIR}/rules/make_symbol_table.sh $<TARGET_FILE:bart> ${CMAKE_CURRENT_BINARY_DIR}/bart.syms
-         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-         DEPENDS bart
-         SOURCES makedoc.sh doxyconfig)
+  COMMAND ${CMAKE_CURRENT_LIST_DIR}/rules/make_symbol_table.sh $<TARGET_FILE:bart> ${CMAKE_CURRENT_BINARY_DIR}/bart.syms
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  DEPENDS bart
+  SOURCES makedoc.sh doxyconfig)
 
-add_custom_command(TARGET bart
-        POST_BUILD
-        COMMAND ${CMAKE_CURRENT_LIST_DIR}/rules/update_commands.sh $<TARGET_FILE:bart> ${CMAKE_CURRENT_LIST_DIR}/doc/commands.txt ${ALLPROGS}
-)
+if(GENERATE_DOC)
+  add_custom_command(TARGET bart
+    POST_BUILD
+    COMMAND ${CMAKE_CURRENT_LIST_DIR}/rules/update_commands.sh $<TARGET_FILE:bart> ${CMAKE_CURRENT_LIST_DIR}/doc/commands.txt ${ALLPROGS}
+    )
+endif(GENERATE_DOC)
 
 file(GLOB DOCS "${CMAKE_CURRENT_LIST_DIR}/doc/*.txt")
 list(APPEND ${CMAKE_CURRENT_LIST_DIR}/README)

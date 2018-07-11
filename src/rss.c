@@ -53,7 +53,7 @@ int main_rss(int argc, char* argv[argc])
 	unmap_cfl(DIMS, dims, data);
 	unmap_cfl(DIMS, odims, out);
 
-	exit(0);
+	return 0;
 }
 
 

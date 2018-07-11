@@ -38,6 +38,11 @@ static const char help_str[] =
 
 int main_nrmse(int argc, char* argv[])
 {
+	return in_mem_nrmse_main(argc, argv, NULL);
+}
+
+int in_mem_nrmse_main(int argc, char* argv[], char* output)
+{
 	float test = -1.;
 	bool auto_scale = false;
 
@@ -77,12 +82,17 @@ int main_nrmse(int argc, char* argv[])
 
 	float err = md_znrmse(DIMS, ref_dims, ref, in);
 
-	printf("%f\n", err);
+	if (output != NULL) {
+		safeneg_snprintf(output, 512, "%f", err);
+	}
+	else {
+		printf("%f\n", err);
+	}
 
 	unmap_cfl(DIMS, ref_dims, ref);
 	unmap_cfl(DIMS, in_dims, in);
 
-	exit(((test == -1.) || (err <= test)) ? 0 : 1);
+	return ((test == -1.) || (err <= test)) ? 0 : 1;
 }
 
 

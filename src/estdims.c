@@ -29,6 +29,11 @@ static const char help_str[] = "Estimate image dimension from non-Cartesian traj
 
 int main_estdims(int argc, char* argv[])
 {
+	return in_mem_estdims_main(argc, argv, NULL);
+}
+
+int in_mem_estdims_main(int argc, char* argv[], char* output)
+{
 	mini_cmdline(&argc, argv, 1, usage_str, help_str);
 
 	num_init();
@@ -43,9 +48,14 @@ int main_estdims(int argc, char* argv[])
 	
 	estimate_im_dims(N, im_dims, traj_dims, traj);
 
-	printf("%ld %ld %ld\n", im_dims[0], im_dims[1], im_dims[2]);
+	if (output != NULL) {
+		safeneg_snprintf(output, 512, "%ld %ld %ld\n", im_dims[0], im_dims[1], im_dims[2]);
+	}
+	else {
+		printf("%ld %ld %ld\n", im_dims[0], im_dims[1], im_dims[2]);
+	}
 	
 	unmap_cfl(N, traj_dims, traj);
-	exit(0);
+	return 0;
 }
 

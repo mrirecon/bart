@@ -26,7 +26,7 @@ static const char help_str[] = "Import ISMRM raw data files.\n";
 
 int main_ismrmrd(int argc, char* argv[])
 {
-        mini_cmdline(argc, argv, 2, usage_str, help_str);
+        mini_cmdline(&argc, argv, 2, usage_str, help_str);
 
 	long dims[DIMS];
 
@@ -35,7 +35,7 @@ int main_ismrmrd(int argc, char* argv[])
 	if (-1 == ismrm_read(argv[1], dims, NULL)) {
 
 		fprintf(stderr, "Reading headers failed.\n");
-		exit(1);
+		return 1;
 	}
 
 	printf("done.\n");
@@ -55,13 +55,13 @@ int main_ismrmrd(int argc, char* argv[])
 	if (-1 == ismrm_read(argv[1], dims, out)) {
 
 		fprintf(stderr, "Reading data failed.\n");
-		exit(1);
+		return 1;
 	}
 
 	printf("done.\n");
 
 	unmap_cfl(DIMS, dims, out);
-	exit(0);
+	return 0;
 }
 
 

@@ -65,7 +65,7 @@ int main_cdf97(int argc, char* argv[])
 	}
 
 	unmap_cfl(DIMS, dims, odata);
-	exit(0);
+	return 0;
 }
 
 

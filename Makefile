@@ -23,6 +23,13 @@ DEBUG?=0
 FFTWTHREADS?=1
 ISMRMRD?=0
 
+SUPER_DEBUG?=0
+LOG_BACKEND?=0
+LOG_SIEMENS_BACKEND?=1
+ENABLE_LONGJUMP?=0
+FORCE_BUILTIN_COMMANDS?=0
+MEMONLY_CFL?=0
+
 DESTDIR ?= /
 PREFIX ?= usr/local/
 
@@ -98,7 +105,11 @@ else
 	LDFLAGS += -rdynamic
 endif
 
-CXX ?= g++
+ifeq ($(CC), clang)
+	CXX ?= clang++
+else
+	CXX ?= g++
+endif
 
 
 
@@ -339,6 +350,36 @@ ISMRM_H :=
 ISMRM_L :=
 endif
 
+# Support for longjumps (emulate C++ exceptions)
+
+ifeq ($(ENABLE_LONGJUMP),1)
+	CPPFLAGS += -DENABLE_LONGJUMP
+endif
+
+# Force the usage of builtin commands
+
+ifeq ($(FORCE_BUILTIN_COMMANDS),1)
+	CPPFLAGS += -DFORCE_BUILTIN_COMMANDS
+endif
+
+# Only allow in-memory CFL files (ie. disable support for all other files)
+
+ifeq ($(MEMONLY_CFL),1)
+	CPPFLAGS += -DMEMONLY_CFL
+endif
+
+# Logging backends
+
+ifeq ($(LOG_BACKEND),1)
+	ifeq ($(LOG_SIEMENS_BACKEND),1)
+		CPPFLAGS += -DUSE_LOG_SIEMENS_BACKEND -I$(srcdir)/src/misc
+		miscextracxxsrcs = $(srcdir)/misc/UTrace.cc
+	endif
+else
+miscextracxxsrcs = 
+endif
+
+
 # change for static linking
 
 ifeq ($(SLINK),1)
@@ -426,15 +467,18 @@ endif
 
 
 .SECONDEXPANSION:
-$(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) -lm
+$(TARGETS): % : $(srcdir)/%.o $$(MODULES_%) $(MODULES)
+	$(CC)  $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -c -o src/main_$@.o src/main.c
+	$(CXX) $(LDFLAGS) $(CXXFLAGS) -o $@ src/main_$@.o $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) -lm
+	rm src/main_$@.o
 #	rm $(srcdir)/$@.o
 
 UTESTS=$(shell $(root)/utests/utests-collect.sh ./utests/$@.c)
 
 .SECONDEXPANSION:
-$(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) -DUTESTS="$(UTESTS)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
+$(UTARGETS): % : utests/%.o $$(MODULES_%) $(MODULES)
+	$(CC)  $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS)" -c -o utests/utest_$@.o utests/utest.c
+	$(CXX) $(LDFLAGS) $(CXXFLAGS) -o $@ utests/utest_$@.o $+  $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
 
 
 # linker script version - does not work on MacOS X

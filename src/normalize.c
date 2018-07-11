@@ -38,7 +38,13 @@ int main_normalize(int argc, char* argv[])
 {
 	bool l1 = false;
 
-	l1 = mini_cmdline_bool(&argc, argv, 'b', 3, usage_str, help_str);
+	int ret = mini_cmdline_bool(&argc, argv, 'b', 3, usage_str, help_str, &l1);
+	if (ret > 0) {
+		return ret;
+	}
+	else if (ret < 0) {
+		return 0; // Normal exit for help
+	}
 
 	num_init();
 
@@ -56,7 +62,7 @@ int main_normalize(int argc, char* argv[])
 	(l1 ? normalizel1 : normalize)(N, flags, dims, out);
 
 	unmap_cfl(N, dims, out);
-	exit(0);
+	return 0;
 }
 
 

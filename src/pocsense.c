@@ -210,7 +210,7 @@ int main_pocsense(int argc, char* argv[])
 	unmap_cfl(N, ksp_dims, kspace_data);
 	unmap_cfl(N, dims, sens_maps);
 
-	exit(0);
+	return 0;
 }
 
 

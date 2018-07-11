@@ -170,7 +170,7 @@ int main_nufft(int argc, char* argv[])
 	unmap_cfl(DIMS, traj_dims, traj);
 
 	debug_printf(DP_INFO, "Done.\n");
-	exit(0);
+	return 0;
 }
 
 

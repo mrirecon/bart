@@ -62,7 +62,19 @@ typedef float opt_fvec3_t[3];
 #define OPT_SELECT(c, T, ptr, value, descr)	{ (c), false, opt_select, OPT_SEL(T, TYPE_CHECK(T*, ptr), value), "\t" descr }
 #define OPT_SUBOPT(c, argname, descr, NR, opts)	OPT_ARG(c, opt_subopt, struct opt_subopt_s, OPT_SUB(NR, opts), argname, descr)
 
-extern void cmdline(int* argc, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n]);
+extern int cmdline_impl(int* argc, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n]);
+
+#define cmdline(ac, av, min_a, max_a, u_str, h_str, n, o)		\
+	do {								\
+		int ret = cmdline_impl(ac, av, min_a, max_a, u_str, h_str, n, o); \
+		if (ret > 0) {						\
+			return ret;					\
+		}							\
+		else if (ret < 0) {					\
+			return 0;					\
+		}							\
+	} while(0)
+	
 
 #include "misc/cppwrap.h"
 
