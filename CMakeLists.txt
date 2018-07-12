@@ -409,7 +409,7 @@ foreach(curr_lib ${BART_SUPPORT_LIBS})
 
     if(USE_CUDA)
       file(GLOB ${curr_lib}_CUSRCS "src/${curr_lib}/*.cu")
-      list(APPEND bart_support_SRCS ${${curr_lib}_CUSRCS})
+      list(APPEND bart_support_CUSRCS ${${curr_lib}_CUSRCS})
     endif(USE_CUDA)
 endforeach()
 
@@ -444,8 +444,15 @@ endif(USE_LOG_BACKEND)
 
 list(REMOVE_ITEM bart_support_SRCS "${LOG_BACKEND_SRCS}")
 
-bart_add_library(bartsupport_objs OBJECT ${bart_support_SRCS})
-bart_add_library(bartsupport STATIC $<TARGET_OBJECTS:bartsupport_objs> ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES})
+
+if(USE_CUDA)
+  cuda_wrap_srcs(bartsupport_objs OBJ bartsupport_cuda_objs ${bart_support_CUSRCS})
+else()
+  set(bart_support_CUDA "")
+endif(USE_CUDA)
+
+add_library(bartsupport_objs OBJECT ${bart_support_SRCS})
+bart_add_library(bartsupport STATIC $<TARGET_OBJECTS:bartsupport_objs> ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
 target_link_libraries(bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
 if(USE_ISMRMRD)
   target_link_libraries(bartsupport ${ISMRMRD_LIBRARIES})
@@ -542,8 +549,8 @@ foreach(file ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES})
   list(REMOVE_ITEM ALL_BART_LIB_SRCS "${file}")
 endforeach()
       
-bart_add_library(bartmain_objs OBJECT ${ALL_BART_LIB_SRCS})
-bart_add_library(bartmain STATIC $<TARGET_OBJECTS:bartsupport_objs> $<TARGET_OBJECTS:bartmain_objs> ${LOG_BACKEND_SRCS} ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES})
+add_library(bartmain_objs OBJECT ${ALL_BART_LIB_SRCS})
+bart_add_library(bartmain STATIC $<TARGET_OBJECTS:bartsupport_objs> $<TARGET_OBJECTS:bartmain_objs> ${LOG_BACKEND_SRCS} ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
 
 if(USE_LOG_BACKEND)
   # ensure that src/misc/misc.c will be compiled with logging backend support

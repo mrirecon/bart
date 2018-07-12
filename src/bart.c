@@ -189,7 +189,7 @@ int in_mem_bart_main(int argc, char* argv[], char* output)
 
 extern void io_memory_cleanup();
 #ifdef USE_CUDA
-extern void cuda_memcache_allclear(void);
+extern void cuda_memcache_clear(void);
 #endif /* USE_CUDA */
 
 #ifdef USE_LOCAL_FFTW
@@ -210,6 +210,6 @@ void bart_exit_cleanup()
 	MANGLE(fftwf_cleanup_threads)();
 #endif /* FFTWTHREADS */
 #ifdef USE_CUDA
-	cuda_memcache_allclear();
+	cuda_memcache_clear();
 #endif /* USE_CUDA */
 }
