@@ -26,9 +26,34 @@ static const char help_str[] =
 	"the abbreviated hash of the last commit (SHA). If there\n"
 	"are local changes '-dirty' is added at the end.\n";
 			
+#ifdef USE_CUDA
+#  define USE_CUDA_NUM 1
+#else
+#  define USE_CUDA_NUM 0
+#endif /* USE_CUDA */
+			
+#ifdef USE_ACML
+#  define USE_ACML_NUM 1
+#else
+#  define USE_ACML_NUM 0
+#endif /* USE_ACML */
+
+#ifdef FFTWTHREADS
+#  define FFTWTHREADS_NUM 1
+#else
+#  define FFTWTHREADS_NUM 0
+#endif /* FFTWTHREADS */
+
 
 int main_version(int argc, char* argv[])
 {
+	return in_mem_version_main(argc, argv, NULL);
+}
+
+int in_mem_version_main(int argc, char* argv[], char* output)
+{
+	int idx = 0;
+	int max_length = 512;
 	bool verbose = false;
 
 	const struct opt_s opts[] = {
@@ -38,37 +63,48 @@ int main_version(int argc, char* argv[])
 
 	cmdline(&argc, argv, 0, 0, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-	printf("%s\n", bart_version);
+	if (output != NULL) {
+		idx += safeneg_snprintf(output+idx, max_length-idx, "%s", bart_version);
+	}
+	else {
+		printf("%s\n", bart_version);
+	}
 
 	if (verbose) {
 
 #ifdef __GNUC__
-		printf("GCC_VERSION=%s\n", __VERSION__);
+		if (output != NULL) {
+			idx += safeneg_snprintf(output+idx, max_length-idx, "\nGCC_VERSION=%s", __VERSION__);			
+		}
+		else {
+			printf("GCC_VERSION=%s\n", __VERSION__);
+		}
 #endif
 
 		printf("CUDA=");
-#ifdef USE_CUDA
-			printf("1\n");
-#else
-			printf("0\n");
-#endif
+		if (output != NULL) {
+			idx += safeneg_snprintf(output+idx, max_length-idx, "\nCUDA=%d", USE_CUDA_NUM);
+		}
+		else {
+			printf("CUDA=%d\n", USE_CUDA_NUM);
+		}
 
-		printf("ACML=");
-#ifdef USE_ACML
-			printf("1\n");
-#else
-			printf("0\n");
-#endif
+		if (output != NULL) {
+			idx += safeneg_snprintf(output+idx, max_length-idx, "\nACML=%d", USE_ACML_NUM);
+		}
+		else {
+			printf("ACML=%d\n", USE_ACML_NUM);
+		}
 
-		printf("FFTWTHREADS=");
-#ifdef FFTWTHREADS
-			printf("1\n");
-#else
-			printf("0\n");
-#endif
+		if (output != NULL) {
+			idx += safeneg_snprintf(output+idx, max_length-idx, "\nFFTWTHREADS=%d", FFTWTHREADS_NUM);
+		}
+		else {
+			printf("FFTWTHREADS=%d\n", FFTWTHREADS_NUM);
+		}
 	}
 
-	exit(0);
+	return 0;
 }
 
 

@@ -44,7 +44,7 @@ int main_cpyphs(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, dims, in_data);
 	unmap_cfl(DIMS, dims, out_data);
-	exit(0);
+	return 0;
 }
 
 

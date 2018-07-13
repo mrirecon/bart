@@ -55,7 +55,7 @@ int main_avg(int argc, char* argv[argc])
 	unmap_cfl(N, idims, data);
 	unmap_cfl(N, odims, out);
 
-	exit(0);
+	return 0;
 }
 
 

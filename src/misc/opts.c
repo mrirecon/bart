@@ -1,13 +1,17 @@
 /* Copyright 2015-2017. Martin Uecker.
+ * Copyright 2017-2018. Damien Nguyen.
+ * Copyright 2017-2018. Francesco Santini.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2015-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2017-2018 Nguyen Damien <damien.nguyen@alumni.epfl.ch>
+ * 2017-2018 Francesco Santini <francesco.santini@unibas.ch>
  */
 
 #define _GNU_SOURCE
-#include <getopt.h>
+#include "ya_getopt.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -121,13 +125,13 @@ static void check_options(int n, const struct opt_s opts[n ?: 1])
 }
 
 
-static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
+static int process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	if ('h' == c) {
 
 		print_usage(stdout, name, usage_str, n, opts);
 		print_help(help_str, n, opts);
-		exit(0);
+		return -1;
 	}
 
 	for (int i = 0; i < n; i++) {
@@ -137,21 +141,22 @@ static void process_option(char c, const char* optarg, const char* name, const c
 			if (opts[i].conv(opts[i].ptr, c, optarg)) {
 
 				print_usage(stderr, name, usage_str, n, opts);
-				exit(1);
+				return 1;
 			}
 
-			return;
+			return 0;
 		}
 	}
 
 	print_usage(stderr, name, usage_str, n, opts);
-	exit(1);
+	return 1;
 }
 
-void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
+int cmdline_impl(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	int argc = *argcp;
 	char optstr[2 * n + 2];
+	getopt_reset(); // reset getopt variables to process multiple argc/argv pairs
 
 	check_options(n, opts);
 
@@ -177,7 +182,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 			print_usage(stdout, argv[0], usage_str, n, opts);
 			print_help(help_str, n, opts);
-			exit(0);
+			return -1;
 		}
 
 		for (int i = 0; i < n; i++) {
@@ -187,7 +192,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 				if (opts[i].conv(opts[i].ptr, c, optarg)) {
 
 					print_usage(stderr, argv[0], usage_str, n, opts);
-					exit(1);
+					return 1;
 				}
 
 				goto out;
@@ -199,22 +204,25 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 	out:	continue;
 #else
-		process_option(c, optarg, argv[0], usage_str, help_str, n, opts);
+		int ret = process_option(c, optarg, argv[0], usage_str, help_str, n, opts);
+		if (ret != 0) {
+			return ret;
+		}
 #endif
 	}
 
-	if (	   (argc - optind < min_args)
-		|| (argc - optind > max_args)) {
-
+	if ((argc - optind < min_args)
+	    || (argc - optind > max_args)) {
 		print_usage(stderr, argv[0], usage_str, n, opts);
-		exit(1);
+		return 1;
 	}
 
 	int i;
 	for (i = optind; i < argc; i++)
 		argv[i - optind + 1] = argv[i];
 
-	*argcp = argc - optind + 1;
+	 *argcp = argc - optind + 1;
+	 return 0;
 }
 
 
@@ -318,7 +326,9 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 	UNUSED(c);
 	struct opt_subopt_s* ptr = _ptr;
 
-	process_option(optarg[0], optarg + 1, "", "", "", ptr->n, ptr->opts);
+	if (process_option(optarg[0], optarg + 1, "", "", "", ptr->n, ptr->opts) != 0) {
+		return true;
+	}
 	return false;
 }
 

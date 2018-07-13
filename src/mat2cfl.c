@@ -36,12 +36,12 @@ int main(int argc, char *argv[])
 	if (argc != 2) {
 
 		fprintf(stderr, "Usage: %s file.mat\n", argv[0]);
-		exit(1);
+		return 1;
 	}
 
 
 	if (NULL == (mat = matOpen(argv[1], "r")))
-		exit(1);
+		return 1;
 
 	mxArray* ar;
 

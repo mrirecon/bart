@@ -38,7 +38,7 @@ int main_scale(int argc, char* argv[])
 	if (0 != parse_cfl(&scale, argv[1])) {
 
 		fprintf(stderr, "ERROR: scale factor %s is not a number.\n", argv[1]);
-		exit(1);
+		return 1;
 	}
 
 	const int N = DIMS;
@@ -50,7 +50,7 @@ int main_scale(int argc, char* argv[])
 
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, odata);
-	exit(0);
+	return 0;
 }
 
 

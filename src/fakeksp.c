@@ -109,7 +109,7 @@ int main_fakeksp(int argc, char* argv[])
 	unmap_cfl(N, img_dims, image);
 	unmap_cfl(N, ksp_dims, out);
 
-	exit(0);
+	return 0;
 }
 
 

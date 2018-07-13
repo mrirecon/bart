@@ -97,7 +97,7 @@ int main_fmac(int argc, char* argv[])
 	else
 		md_free(data2);
 
-	exit(0);
+	return 0;
 }
 
 

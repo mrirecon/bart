@@ -21,7 +21,13 @@
 #include <stdbool.h>
 #include <math.h>
 
+#ifdef USE_LOCAL_FFTW
+#  include "../fftw3_local.h"
+#  define MANGLE(name) local_ ## name
+#else
 #include <fftw3.h>
+#  define MANGLE(name) name
+#endif /* USE_LOCAL_FFTW */
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -29,6 +35,8 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
+
+#include "misc/output_macros.h"
 
 #include "fft.h"
 #undef fft_plan_s
@@ -188,7 +196,7 @@ struct fft_plan_s {
 
 	INTERFACE(operator_data_t);
 
-	fftwf_plan fftw;
+     MANGLE(fftwf_plan) fftw;
 
 #ifdef  USE_CUDA
 #ifdef	LAZY_CUDA
@@ -207,11 +215,11 @@ static DEF_TYPEID(fft_plan_s);
 
 
 
-static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
+static MANGLE(fftwf_plan) fft_fftwf_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
 	unsigned int N = D;
-	fftwf_iodim64 dims[N];
-	fftwf_iodim64 hmdims[N];
+	MANGLE(fftwf_iodim64) dims[N];
+	MANGLE(fftwf_iodim64) hmdims[N];
 	unsigned int k = 0;
 	unsigned int l = 0;
 
@@ -236,10 +244,10 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 		}
 	}
 
-	fftwf_plan fftwf;
+	MANGLE(fftwf_plan) fftwf;
 
 	#pragma omp critical
-	fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
+	fftwf = MANGLE(fftwf_plan_guru64_dft)(k, dims, l, hmdims, (complex float*)src, dst,
 				backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
 
 	return fftwf;
@@ -267,7 +275,7 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 #endif
 	{
 		assert(NULL != plan->fftw);
-		fftwf_execute_dft(plan->fftw, (complex float*)src, dst);
+		MANGLE(fftwf_execute_dft)(plan->fftw, (complex float*)src, dst);
 	}
 }
 
@@ -276,7 +284,7 @@ static void fft_free_plan(const operator_data_t* _data)
 {
 	const struct fft_plan_s* plan = CAST_DOWN(fft_plan_s, _data);
 
-	fftwf_destroy_plan(plan->fftw);
+	MANGLE(fftwf_destroy_plan)(plan->fftw);
 #ifdef	USE_CUDA
 #ifdef	LAZY_CUDA
 	xfree(plan->dims);
@@ -508,11 +516,11 @@ void fft_set_num_threads(unsigned int n)
 	if (!fft_threads_init) {
 
 		fft_threads_init = true;
-		fftwf_init_threads();
+		MANGLE(fftwf_init_threads)();
 	}
 
 	#pragma omp critical
-        fftwf_plan_with_nthreads(n);
+        MANGLE(fftwf_plan_with_nthreads)(n);
 #else
 	UNUSED(n);
 #endif

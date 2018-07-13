@@ -87,5 +87,5 @@ int main_mip(int argc, char* argv[argc])
 	unmap_cfl(DIMS, idims, in);
 	unmap_cfl(DIMS, odims, out);
 
-	exit(0);
+	return 0;
 }

@@ -49,7 +49,7 @@ int main_delta(int argc, char* argv[])
 	md_fill_diag(N, dims, flags, x, &(complex float){ 1. }, CFL_SIZE); 
 
 	unmap_cfl(N, dims, x);
-	exit(0);
+	return 0;
 }
 
 

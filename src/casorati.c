@@ -73,5 +73,5 @@ int main_casorati(int argc, char* argv[])
 	unmap_cfl(DIMS, idims, idata);
 	unmap_cfl(2, odims, odata);
 
-	exit(0);
+	return 0;
 }

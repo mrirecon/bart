@@ -148,7 +148,7 @@ int main_phantom(int argc, char* argv[])
 		unmap_cfl(3, sdims, samples);
 
 	unmap_cfl(DIMS, dims, out);
-	exit(0);
+	return 0;
 }
 
 

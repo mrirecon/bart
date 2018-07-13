@@ -29,6 +29,8 @@
 #include <sys/stat.h>
 
 #include "dicom.h"
+#include "misc/misc.h"
+extern void error(const char* str, ...);
 
 
 
@@ -237,7 +239,7 @@ int dicom_write(const char* name, unsigned int cols, unsigned int rows, long inu
 	for (int i = 0; i < entries; i++) {
 
 		assert(((last_group == dicom_elements[i].group) && (last_element < dicom_elements[i].element))
-			|| (last_group < dicom_elements[i].group));
+		       || (last_group < dicom_elements[i].group));
 
 		last_group = dicom_elements[i].group;
 		last_element = dicom_elements[i].element;
@@ -250,11 +252,11 @@ int dicom_write(const char* name, unsigned int cols, unsigned int rows, long inu
 	ret = 0;
 
 	if (-1 == munmap((void*)addr, size))
-		abort();
+		error("abort!");
 
 cleanup:
 	if (-1 == close(fd))
-		abort();
+		error("abort!");
 
 	return ret;
 }

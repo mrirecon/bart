@@ -43,7 +43,7 @@ int main_invert(int argc, char* argv[])
 	unmap_cfl(DIMS, dims, idata);
 	unmap_cfl(DIMS, dims, odata);
 
-	exit(0);
+	return 0;
 }
 
 

@@ -40,7 +40,7 @@ matrix:
         - make test
         - make utest
 
-    - env: OMP=0 CFLAGS=-fblocks LDFLAGS=-lBlocksRuntime
+    - env: OMP=0 CPPFLAGS=-fblocks LDFLAGS=-lBlocksRuntime CXX=clang++
       os: linux
       compiler: clang
       sudo: required

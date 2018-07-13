@@ -51,7 +51,7 @@ int main_var(int argc, char* argv[])
 	unmap_cfl(DIMS, idims, in);
 	unmap_cfl(DIMS, odims, out);
 
-	exit(0);
+	return 0;
 }
 
 

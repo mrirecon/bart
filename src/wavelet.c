@@ -92,7 +92,7 @@ int main_wavelet(int argc, char* argv[])
 	
 	unmap_cfl(N, idims, idata);
 	unmap_cfl(N, odims, odata);
-	exit(0);
+	return 0;
 }
 
 

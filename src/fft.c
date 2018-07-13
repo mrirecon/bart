@@ -63,7 +63,7 @@ int main_fft(int argc, char* argv[])
 	(inv ? (center ? ifftc : ifft) : (center ? fftc : fft))(DIMS, dims, flags, data, data);
 
 	unmap_cfl(DIMS, dims, data);
-	exit(0);
+	return 0;
 }
 
 

@@ -7,8 +7,10 @@
 
 // extern void* private_raw(size_t* size, const char* name);
 
+#ifndef MEMONLY_CFL
 extern _Complex float* shared_cfl(unsigned int D, const long dims[__VLA(D)], const char* name);
 extern _Complex float* private_cfl(unsigned int D, const long dims[__VLA(D)], const char* name);
+#endif /* !MEMONLY_CFL */
 extern void unmap_cfl(unsigned int D, const long dims[__VLA(D)], const _Complex float* x);
 
 extern _Complex float* anon_cfl(const char* name, unsigned int D, const long dims[__VLA(D)]);

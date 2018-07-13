@@ -1,12 +1,14 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2015. Martin Uecker.
  * Copyright 2017. University of Oxford.
+ * Copyright 2017-2018. Damien Nguyen
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2011-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
+ * 2017-2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
  */
 
 #define _GNU_SOURCE
@@ -23,6 +25,14 @@
 #include "misc/opts.h"
 #include "misc.h"
 
+#ifdef BART_WITH_PYTHON
+#  include <Python.h>
+#endif /* BART_WITH_PYTHON */
+
+#ifdef ENABLE_LONGJUMP
+#  include "jumper.h"
+jmp_buf error_jumper;
+#endif /* ENABLE_LONGJUMP */
 
 void* xmalloc(size_t s)
 {
@@ -53,16 +63,46 @@ void warn_nonnull_ptr(void* p)
 	}
 }
 
+int safeneg_snprintf(char* buffer, long size, const char* format, ... )
+{
+	if (size < 0) {
+		return 0;
+	}
+     
+	va_list ap;
+	va_start(ap, format);
+	int ret = vsnprintf(buffer, size, format, ap);
+	va_end(ap);
+	return ret;
+}
+
 
 void error(const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 
+#ifndef BART_WITH_PYTHON
+#  ifdef USE_LOG_BACKEND
+	bart_verr("error", __FILE__, __LINE__, fmt, ap);
+#  else
 	debug_vprintf(DP_ERROR, fmt, ap);
-
+#  endif /* USE_LOG_BACKEND */
+#else
+	char err[1024] = {"\0"};
+	if (PyErr_Occurred() == NULL) {
+		vsnprintf(err, 1024, fmt, ap);
+		PyErr_SetString(PyExc_RuntimeError, err);
+	}
+	// No else required as the error indicator has already been set elsewhere
+#endif /* !BART_WITH_PYTHON */
 	va_end(ap);
+	
+#ifdef ENABLE_LONGJUMP
+	longjmp(error_jumper, 1);
+#else
 	exit(EXIT_FAILURE);
+#endif /* ENABLE_LONGJUMP */
 }
 
 
@@ -79,16 +119,21 @@ void print_dims(int D, const long dims[D])
 
 
 
-void debug_print_dims(int dblevel, int D, const long dims[D])
+void debug_print_dims_trace(const char* func_name,
+			    const char* file,
+			    unsigned int line,
+			    int dblevel,
+			    int D,
+			    const long dims[D])
 {
 	bool dbl = debug_logging;
 	debug_logging = false;
-	debug_printf(dblevel, "[");
+	debug_printf_trace(func_name, file, line, dblevel, "[");
 
 	for (int i = 0; i < D; i++)
-		debug_printf(dblevel, "%3ld ", dims[i]);
+		debug_printf_trace(func_name, file, line, dblevel, "%3ld ", dims[i]);
 
-	debug_printf(dblevel, "]\n");
+	debug_printf_trace(func_name, file, line, dblevel, "]\n");
 	debug_logging = dbl;
 }
 
@@ -356,21 +401,24 @@ void save_command_line(int argc, char* argv[])
 
 	(*buf)[pos] = '\0';
 
+	if (command_line != NULL) {
+		XFREE(command_line);
+	}	
 	command_line = (*buf);
 }
 
 
 
-void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str)
+int mini_cmdline_impl(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str)
 {
-	mini_cmdline_bool(argcp, argv, '\0', expected_args, usage_str, help_str);
+	return mini_cmdline_bool(argcp, argv, '\0', expected_args, usage_str, help_str, NULL);
 }
 
 
-bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str)
+int mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str, bool* flag)
 {
-	bool flag = false;
-	struct opt_s opts[1] = { { flag_char, false, opt_set, &flag, NULL } };
+	bool lflag = false;
+	struct opt_s opts[1] = { { flag_char, false, opt_set, &lflag, NULL } };
 
 	char* help = strdup(help_str);
 
@@ -388,11 +436,18 @@ bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_ar
 		max_args = 1000;
 	}
 
-	cmdline(argcp, argv, min_args, max_args, usage_str, help, 1, opts);
-
+	int ret = cmdline_impl(argcp, argv, min_args, max_args, usage_str, help, 1, opts);
+	if (ret != 0) {
+		return ret;
+	}
+	
 	xfree(help);
 
-	return flag;
+	if (flag != NULL) {
+		*flag = lflag;
+	}
+
+	return 0;
 }
 
 

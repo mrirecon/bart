@@ -175,5 +175,5 @@ int main_whiten(int argc, char* argv[])
 	unmap_cfl(DIMS, mat_dims, optmat_out);
 	unmap_cfl(DIMS, mat_dims, covar_out);
 
-	exit(0);
+	return 0;
 }

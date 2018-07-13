@@ -197,7 +197,7 @@ int main_homodyne(int argc, char* argv[])
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, data);
 
-	exit(0);
+	return 0;
 }
 
 

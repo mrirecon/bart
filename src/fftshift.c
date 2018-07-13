@@ -31,7 +31,14 @@ static const char help_str[] =	"Apply fftshift along dimensions selected by the 
 
 int main_fftshift(int argc, char* argv[])
 {
-	bool b = mini_cmdline_bool(&argc, argv, 'b', 3, usage_str, help_str);
+	bool b = false;
+	int ret = mini_cmdline_bool(&argc, argv, 'b', 3, usage_str, help_str, &b);
+	if (ret > 0) {
+		return ret;
+	}
+	else if (ret < 0) {
+		return 0; // Normal exit for help
+	}
 
 	num_init();
 
@@ -47,7 +54,7 @@ int main_fftshift(int argc, char* argv[])
 
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, odata);
-	exit(0);
+	return 0;
 }
 
 

@@ -37,7 +37,7 @@ int main_saxpy(int argc, char* argv[])
 	if (0 != parse_cfl(&scale, argv[1])) {
 		
 		fprintf(stderr, "ERROR: %s is not a complex number.\n", argv[1]);
-		exit(1);
+		return 1;
 	}
 
 	const int N = DIMS;
@@ -59,7 +59,7 @@ int main_saxpy(int argc, char* argv[])
 	unmap_cfl(N, dims1, data1);
 	unmap_cfl(N, dims2, data2);
 	unmap_cfl(N, dims2, out);
-	exit(0);
+	return 0;
 }
 
 

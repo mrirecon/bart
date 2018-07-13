@@ -125,7 +125,7 @@ int main_ecaltwo(int argc, char* argv[])
 	else
 		md_free(emaps);
 
-	exit(0);
+	return 0;
 }
 
 

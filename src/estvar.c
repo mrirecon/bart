@@ -33,6 +33,11 @@ static const char help_str[] = "Estimate the noise variance assuming white Gauss
 
 int main_estvar(int argc, char* argv[])
 {
+	return in_mem_estvar_main(argc, argv, NULL);
+}
+
+int in_mem_estvar_main(int argc, char* argv[], char* output)
+{
 	long calsize_dims[3]  = { 24, 24, 24};
 	long kernel_dims[3]   = {  6,  6,  6};
 
@@ -63,7 +68,12 @@ int main_estvar(int argc, char* argv[])
 
 	unmap_cfl(N, kspace_dims, kspace);
 
-	printf("Estimated noise variance: %f\n", variance);
+	if (output != NULL) {
+		safeneg_snprintf(output, 512, "Estimated noise variance: %f", variance);
+	}
+	else {
+		printf("Estimated noise variance: %f\n", variance);
+	}
 
-	exit(0);
+	return 0;
 }

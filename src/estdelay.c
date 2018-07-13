@@ -95,8 +95,12 @@ static void radial_self_delays(unsigned int N, float shifts[N], const float phi[
 static const char usage_str[] = "<trajectory> <data>";
 static const char help_str[] = "Estimate gradient delays from radial data.";
 
-
 int main_estdelay(int argc, char* argv[])
+{
+	return in_mem_estdelay_main(argc, argv, NULL);
+}
+
+int in_mem_estdelay_main(int argc, char* argv[], char* output)
 {
 	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 
@@ -135,12 +139,17 @@ int main_estdelay(int argc, char* argv[])
 	 */
 	float qf[3];
 	fit_quadratic_form(qf, N, angles, delays);
-	printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
+	if (output != NULL) {
+		safeneg_snprintf(output, 512, "%f:%f:%f", qf[0], qf[1], qf[2]);	  
+	}
+	else {
+		printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
+	}
 
 
 	unmap_cfl(DIMS, dims, in);
 
-	exit(0);
+	return 0;
 }
 
 
