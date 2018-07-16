@@ -55,6 +55,19 @@ void warn_nonnull_ptr(void* p)
 	}
 }
 
+int safeneg_snprintf(char* buffer, long size, const char* format, ... )
+{
+	if (size < 0) {
+		return 0;
+	}
+     
+	va_list ap;
+	va_start(ap, format);
+	int ret = vsnprintf(buffer, size, format, ap);
+	va_end(ap);
+	return ret;
+}
+
 
 void error(const char* fmt, ...)
 {

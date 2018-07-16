@@ -29,6 +29,11 @@ static const char help_str[] = "Compute dot product along selected dimensions.";
 
 int main_sdot(int argc, char* argv[])
 {
+	return in_mem_sdot_main(argc, argv, NULL);
+}
+
+int in_mem_sdot_main(int argc, char* argv[], char* output)
+{
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, 0, NULL);
 
 	num_init();
@@ -46,7 +51,12 @@ int main_sdot(int argc, char* argv[])
 
 	// compute scalar product
 	complex float value = md_zscalar(N, in1_dims, in1_data, in2_data);
-	printf("%+e%+ei\n", crealf(value), cimagf(value));
+	if (output != NULL) {
+		safeneg_snprintf(output, 512, "%+e%+ei\n", crealf(value), cimagf(value));
+	}
+	else {
+		printf("%+e%+ei\n", crealf(value), cimagf(value));
+	}
 
 	unmap_cfl(N, in1_dims, in1_data);
 	unmap_cfl(N, in2_dims, in2_data);

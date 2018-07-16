@@ -259,6 +259,14 @@ endif(USE_FFTWTHREADS)
 
 ##======================================================================
 
+option (FORCE_BUILTIN_COMMANDS "Force the BART to use builtin commands instead of external commands" ON)
+if(FORCE_BUILTIN_COMMANDS)
+  message(STATUS "Forcing BART to call builtin commands")
+  add_definitions(-DFORCE_BUILTIN_COMMANDS)
+endif(FORCE_BUILTIN_COMMANDS)
+
+##======================================================================
+
 option (ENABLE_MEM_CFL "Enable the use of in-memory CFL files" OFF)
 
 ##----------------------------------------------------------------------
@@ -479,6 +487,8 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src/
   DESTINATION include
   FILES_MATCHING PATTERN "*.hh")
 
+
+if(NOT FORCE_BUILTIN_COMMANDS)
   ### PASS #1:  Build stand-alone programs
   ### Generate stand alone programs
   #file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/StandAloneCode)
@@ -493,6 +503,7 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src/
   #    LIBRARY DESTINATION lib
   #    ARCHIVE DESTINATION lib/static)
   #endforeach()
+endif(NOT FORCE_BUILTIN_COMMANDS)
 
 ## More crafty file manipulation so that we maintain backward comaptibility
 ## with the Makefile
