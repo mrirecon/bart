@@ -1,5 +1,6 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2018. Martin Uecker.
+ + Copyright 2018. Damien Nguyen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -15,9 +16,22 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "misc/io.h"
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/cppmap.h"
+
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
+
+#ifdef USE_LOCAL_FFTW
+#include "fftw3_local.h"
+#define MANGLE(name) local_ ## name
+#else
+#include <fftw3.h>
+#define MANGLE(name) name
+#endif
 
 #include "main.h"
 
@@ -155,5 +169,6 @@ int bart_command(int len, char* buf, int argc, char* argv[])
 
 	return ret;
 }
+
 
 

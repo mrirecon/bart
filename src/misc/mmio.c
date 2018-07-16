@@ -41,6 +41,9 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
+#ifdef BART_WITH_PYTHON
+#  include <Python.h>
+#endif /* BART_WITH_PYTHON */
 
 
 
@@ -48,10 +51,22 @@ static void io_error(const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
+#ifndef BART_WITH_PYTHON
 	vfprintf(stderr, fmt, ap);	
 	va_end(ap);
 	fflush(stderr);
 	perror(" ");
+#else
+	if (NULL == PyErr_Occurred()) {
+
+		char err[1024] = { 0 };
+	     vsnprintf(err, 1023, fmt, ap);
+	     va_end(ap);
+	     PyErr_SetString(PyExc_RuntimeError, err);
+	}
+	// No else required as the error indicator has already been set elsewhere
+
+#endif /* !BART_WITH_PYTHON */
 
 	error("");	// FIXME: we may leak open files descriptors...
 }

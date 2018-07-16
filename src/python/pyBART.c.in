@@ -1,0 +1,316 @@
+/* Copyright 2018. Damien Nguyen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ *
+ * Authors:
+ * 2018    Damien Nguyen <damien.nguyen@alumni.epfl.ch>
+ */
+
+#include <Python.h>
+#define PY_ARRAY_UNIQUE_SYMBOL bart_numpy_identifier
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include <numpy/arrayobject.h>
+
+#include <complex.h>
+
+#ifdef ENABLE_LONGJUMP
+extern struct error_jmpbuf_s {
+
+	_Bool initialized;
+	jmp_buf jmpbuf;
+} error_jmpbuf;
+#endif /* ENABLE_LONGJUMP */
+
+#ifndef DIMS
+#  define DIMS 16
+#endif
+
+extern void* load_cfl(const char* name, unsigned int D, long dimensions[]);
+extern _Bool register_mem_cfl_python(const char* name, PyArrayObject* npy_data);
+extern int bart_command(int size, char* out, int argc, char* argv[]);
+extern void deallocate_all_mem_cfl();
+
+/* Docstrings */
+static char module_docstring[] =
+     "This modules provides a way to use BART as native Python module.";
+static char call_bart_docstring[] =
+     "Call the `bart` command on some data";
+static char register_python_memory_docstring[] =
+     "Register some data for later use with BART";
+static char unregister_all_mem_cfl_docstring[] =
+     "Unregister all memory CFLs";
+static char load_cfl_python_docstring[] =
+     "Access an in-memory CFL file (returns a numpy.ndarray)";
+static char bart_subcommand_with_output_docstring[] =
+     "Calls a BART subcommand that produces some output";
+static char bart_subcommand_docstring[] =
+     "Calls a BART subcommand";
+
+/* Available functions */
+static PyObject* call_bart(PyObject *self, PyObject *args);
+static PyObject* register_python_memory(PyObject *self, PyObject *args);
+static PyObject* unregister_all_memory(PyObject *self, PyObject *args);
+static PyObject* load_cfl_python(PyObject* self, PyObject* args);
+@PYBART_FUNCTION_PROTOTYPE@
+
+/* ========================================================================== */
+
+struct module_state {
+     PyObject *error;
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#else
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+#endif
+
+static PyObject *
+error_out(PyObject *m) {
+    struct module_state *st = GETSTATE(m);
+    PyErr_SetString(st->error, "something bad happened");
+    return NULL;
+}
+
+/* ========================================================================== */
+
+static PyMethodDef module_methods[] = {
+     {"bart", call_bart, METH_VARARGS, call_bart_docstring},
+     {"register_memory", register_python_memory, METH_VARARGS, register_python_memory_docstring},
+     {"unregister_all_memory", unregister_all_memory, METH_NOARGS, unregister_all_mem_cfl_docstring},
+     {"load_cfl", load_cfl_python, METH_VARARGS, load_cfl_python_docstring},
+     @PYBART_COMMANDS_MODULE_METHODS@
+     {NULL, NULL, 0, NULL}
+};
+
+/* -------------------------------------------------------------------------- */
+
+#if PY_MAJOR_VERSION >= 3
+static int pyBART_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->error);
+    return 0;
+}
+
+static int pyBART_clear(PyObject *m) {
+     Py_CLEAR(GETSTATE(m)->error);
+     return 0;
+}
+
+static struct PyModuleDef pyBART_definition = {
+     PyModuleDef_HEAD_INIT,
+     "pyBART",
+     module_docstring,
+     sizeof(struct module_state),
+     module_methods,
+     NULL,
+     pyBART_traverse,
+     pyBART_clear,
+     NULL
+};
+
+#  define INITERROR return NULL
+
+PyObject* PyInit_pyBART(void)
+#else
+#  define INITERROR return
+     
+PyMODINIT_FUNC initpyBART(void)
+#endif /* PY_MAJOR_VERSION >= 3 */
+{
+#if PY_MAJOR_VERSION >= 3
+     PyObject *module = PyModule_Create(&pyBART_definition);
+#else
+     PyObject *module = Py_InitModule3("pyBART", module_methods, module_docstring);
+#endif /* PY_MAJOR_VERSION >= 3 */
+
+     if (module == NULL) {
+	  INITERROR;
+     }
+     
+     struct module_state *st = GETSTATE(module);
+
+     st->error = PyErr_NewException("pyBART.Error", NULL, NULL);
+     if (st->error == NULL) {
+	  Py_DECREF(module);
+	  INITERROR;
+     }
+
+     /* Load `numpy` functionality. */
+     import_array();
+
+#if PY_MAJOR_VERSION >= 3
+     return module;
+#endif
+}
+
+/* ========================================================================== */
+
+
+PyObject* call_submain(const char* subcommand, const char* cmdline_in)
+{
+     enum { MAX_ARGS = 256 };
+     char cmdline[1024] = { '\0' };
+     char output[512] = { '\0' };
+
+     snprintf(cmdline, 1024, "%s %s", subcommand, cmdline_in);
+
+     // tokenize the command string into argc/argv (basic, hopefully enough)
+     int argc = 0;
+     char *argv[MAX_ARGS];
+     char *argvv[MAX_ARGS];
+
+     char *p2 = strtok(cmdline, " ");
+     while (p2 && argc < MAX_ARGS-1)
+     {
+	  argv[argc++] = p2;
+	  p2 = strtok(0, " ");
+     }
+     argv[argc] = 0;
+
+     int ret = bart_command(512, output, argc, argv); // execute bart
+
+     if (strlen(output) > 0) {
+	  return PyString_FromString(output);
+     }
+     else {
+	  if (PyErr_Occurred()) {
+	       return NULL;
+	  }
+	  else {
+	       return PyInt_FromLong(ret);
+	  }
+     }
+}
+
+/* ========================================================================== */
+
+PyObject* call_bart(PyObject *self, PyObject *args)
+{
+     char* cmdline = NULL;
+
+     if (!PyArg_ParseTuple(args, "s", &cmdline)) {
+	  Py_RETURN_NONE;
+     }
+
+     return call_submain("", cmdline);
+}
+
+/* ========================================================================== */
+
+PyObject* register_python_memory(PyObject *self, PyObject *args)
+{
+     char* name = NULL;
+     PyObject* data = NULL;
+     if (!PyArg_ParseTuple(args, "sO", &name, &data)) {
+	  PyErr_SetString(PyExc_RuntimeError,
+			  "failed to parse input arguments");
+	  return NULL;
+     }
+
+     PyArrayObject* npy_data = (PyArrayObject*)(data);
+
+     if (name == NULL) {
+	  PyErr_SetString(PyExc_RuntimeError,
+			  "name == NULL");
+	  return NULL;
+     }
+
+     if (npy_data == NULL) {
+	  PyErr_SetString(PyExc_RuntimeError,
+			  "npy_data == NULL");
+	  return NULL;
+     }
+
+     if (!PyArray_Check(npy_data)) {
+	  PyErr_SetString(PyExc_RuntimeError,
+			  "npy_data is not of type numpy.ndarray");
+	  return NULL;
+     }
+
+     if (PyArray_DESCR(npy_data)->type_num != NPY_CFLOAT) {
+	  PyErr_SetString(PyExc_RuntimeError,
+			  "npy_data must be of type complex float (numpy.complex64)");
+	  return NULL;
+     }
+     
+     // ------------------------------------------------------------------------
+
+#ifdef ENABLE_LONGJUMP
+     error_jmpbuf.initialized = 1;
+     if (setjmp(error_jmpbuf.jmpbuf) == 0) {
+#endif /* ENABLE_LONGJUMP */
+	  if (register_mem_cfl_python(name, npy_data)) {
+	       Py_RETURN_NONE;
+	  }
+	  else {
+	       return NULL;
+	  }
+#ifdef ENABLE_LONGJUMP
+     }
+     else {
+	  if (PyErr_Occurred() != NULL) {
+	       return NULL;
+	  }
+	  else {
+	       Py_RETURN_NONE;
+	  }
+     }
+#endif /* ENABLE_LONGJUMP */
+}
+
+/* ========================================================================== */
+
+PyObject* unregister_all_memory(PyObject* self, PyObject* args)
+{
+     deallocate_all_mem_cfl();
+     Py_RETURN_NONE;
+}
+
+/* ========================================================================== */
+
+PyObject* load_cfl_python(PyObject* self, PyObject* args)
+{
+     char* name = NULL;
+     if (!PyArg_ParseTuple(args, "s", &name)) {
+	  PyErr_SetString(PyExc_RuntimeError,
+			  "failed to parse input arguments");
+	  return NULL;
+     }
+
+#ifdef ENABLE_LONGJUMP
+     error_jmpbuf.initialized = 1;
+     if (setjmp(error_jmpbuf.jmpbuf) == 0) {
+#endif /* ENABLE_LONGJUMP */
+	  long dims[DIMS] = {0};
+	  void* data = load_cfl(name, DIMS, dims);
+
+	  if (data == NULL) {
+	       PyErr_SetString(PyExc_RuntimeError,
+			       "failed loading cfl file");
+	       return NULL;	  
+	  }
+
+	  npy_intp pydims[DIMS] = {0};
+	  for (unsigned int i = 0; i < DIMS; ++i) {
+	       pydims[i] = dims[i];
+	  }
+
+	  return PyArray_New(&PyArray_Type,
+			     DIMS, pydims,
+			     NPY_CFLOAT,
+			     NULL, /* strides */
+			     data,
+			     sizeof(complex float),
+			     NPY_ARRAY_FARRAY_RO,
+			     NULL /* obj */);
+#ifdef ENABLE_LONGJUMP
+     }
+     else {
+	  return NULL;
+     }
+#endif /* ENABLE_LONGJUMP */
+}
+
+/* ========================================================================== */
+@PYBART_COMMANDS_IMPLEMENTATION@

@@ -22,6 +22,10 @@
 #include <ctype.h>
 #include <math.h>
 
+#ifdef BART_WITH_PYTHON
+#include <Python.h>
+#endif
+
 #include "misc/debug.h"
 #include "misc/nested.h"
 #include "misc/opts.h"
@@ -37,6 +41,8 @@ struct error_jumper_s {
 extern struct error_jumper_s error_jumper;	// FIXME should not be extern
 
 struct error_jumper_s error_jumper = { .initialized = false };
+
+
 
 
 
@@ -76,11 +82,23 @@ void error(const char* fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 
+#ifndef BART_WITH_PYTHON
 #ifdef USE_LOG_BACKEND
 	debug_printf_trace("error", __FILE__, __LINE__, DP_ERROR, fmt, ap);
 #else
 	debug_vprintf(DP_ERROR, fmt, ap);
 #endif
+#else
+	char err[1024] = { 0 };
+
+	if (NULL == PyErr_Occurred()) {
+
+		vsnprintf(err, 1023, fmt, ap);
+		PyErr_SetString(PyExc_RuntimeError, err);
+	}
+	// No else required as the error indicator has already been set elsewhere
+#endif /* !BART_WITH_PYTHON */
+
 	va_end(ap);
 
 	if (error_jumper.initialized)
