@@ -81,6 +81,10 @@ void print_dims(int D, const long dims[D])
 
 
 
+#ifdef REDEFINE_PRINTF_FOR_TRACE
+#  undef debug_print_dims
+#endif /* REDEFINE_PRINTF_FOR_TRACE */
+
 void debug_print_dims(int dblevel, int D, const long dims[D])
 {
 	bool dbl = debug_logging;
@@ -91,6 +95,27 @@ void debug_print_dims(int dblevel, int D, const long dims[D])
 		debug_printf(dblevel, "%3ld ", dims[i]);
 
 	debug_printf(dblevel, "]\n");
+	debug_logging = dbl;
+}
+
+
+
+
+void debug_print_dims_trace(const char* func_name,
+			    const char* file,
+			    unsigned int line,
+			    int dblevel,
+			    int D,
+			    const long dims[D])
+{
+	bool dbl = debug_logging;
+	debug_logging = false;
+	debug_printf_trace(func_name, file, line, dblevel, "[");
+
+	for (int i = 0; i < D; i++)
+		debug_printf_trace(func_name, file, line, dblevel, "%3ld ", dims[i]);
+
+	debug_printf_trace(func_name, file, line, dblevel, "]\n");
 	debug_logging = dbl;
 }
 

@@ -1,6 +1,7 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2015-2016. Martin Uecker.
  * Copyright 2017. University of Oxford.
+ * Copyright 2017-2018. Damien Nguyen
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -56,8 +57,22 @@ extern noreturn void error(const char* str, ...);
 extern __attribute__((noreturn)) void error(const char* str, ...);
 #endif
 
+// small wrapper around snprintf to gracefully handle cases where 'size' is negative
+extern int safeneg_snprintf(char* buffer, long size, const char* format, ... );
 extern void print_dims(int D, const long dims[__VLA(D)]);
+#ifdef REDEFINE_PRINTF_FOR_TRACE
+#define debug_print_dims(...)						\
+     debug_print_dims_trace(__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+#else
 extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
+#endif /* REDEFINE_PRINTF_FOR_TRACE */
+
+extern void debug_print_dims_trace(const char* func_name,
+				   const char* file,
+				   unsigned int line,
+				   int dblevel,
+				   int D,
+				   const long dims[__VLA(D)]);
 
 typedef int (*quicksort_cmp_t)(const void* data, unsigned int a, unsigned int b);
 
