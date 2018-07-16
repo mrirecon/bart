@@ -1,13 +1,17 @@
 /* Copyright 2015-2017. Martin Uecker.
+ * Copyright 2017-2018. Damien Nguyen.
+ * Copyright 2017-2018. Francesco Santini.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2015-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2017-2018 Nguyen Damien <damien.nguyen@alumni.epfl.ch>
+ * 2017-2018 Francesco Santini <francesco.santini@unibas.ch>
  */
 
 #define _GNU_SOURCE
-#include <getopt.h>
+#include "ya_getopt.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -137,7 +141,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 			if (opts[i].conv(opts[i].ptr, c, optarg)) {
 
 				print_usage(stderr, name, usage_str, n, opts);
-				exit(1);
+				error("process_option: failed to convert value");
 			}
 
 			return;
@@ -145,13 +149,14 @@ static void process_option(char c, const char* optarg, const char* name, const c
 	}
 
 	print_usage(stderr, name, usage_str, n, opts);
-	exit(1);
+	error("process_option: unknown option");
 }
 
 void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	int argc = *argcp;
 	char optstr[2 * n + 2];
+	getopt_reset(); // reset getopt variables to process multiple argc/argv pairs
 
 	check_options(n, opts);
 
@@ -177,7 +182,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 			print_usage(stdout, argv[0], usage_str, n, opts);
 			print_help(help_str, n, opts);
-			exit(0);
+			error("cmdline: exit for help");
 		}
 
 		for (int i = 0; i < n; i++) {
@@ -187,7 +192,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 				if (opts[i].conv(opts[i].ptr, c, optarg)) {
 
 					print_usage(stderr, argv[0], usage_str, n, opts);
-					exit(1);
+					error("cmdline: failed to convert value");
 				}
 
 				goto out;
@@ -203,11 +208,10 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 #endif
 	}
 
-	if (	   (argc - optind < min_args)
-		|| (argc - optind > max_args)) {
-
+	if ((argc - optind < min_args)
+	    || (argc - optind > max_args)) {
 		print_usage(stderr, argv[0], usage_str, n, opts);
-		exit(1);
+		error("cmdline: too few or too many arguments");
 	}
 
 	int i;

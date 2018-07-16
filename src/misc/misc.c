@@ -1,12 +1,14 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2015. Martin Uecker.
  * Copyright 2017. University of Oxford.
+ * Copyright 2017-2018. Damien Nguyen
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2011-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
+ * 2017-2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
  */
 
 #define _GNU_SOURCE
@@ -356,6 +358,9 @@ void save_command_line(int argc, char* argv[])
 
 	(*buf)[pos] = '\0';
 
+	if (command_line != NULL) {
+		XFREE(command_line);
+	}
 	command_line = (*buf);
 }
 
