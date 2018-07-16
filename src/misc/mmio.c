@@ -36,6 +36,10 @@
 #include "mmiocc.hh"
 #endif
 
+#ifdef ENABLE_LONGJUMP
+#  include "jumper.h"
+#endif /* ENABLE_LONGJUMP */
+
 // for BSD compatibility
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
@@ -52,7 +56,11 @@ static void io_error(const char* fmt, ...)
 	va_end(ap);
 	fflush(stderr);
 	perror(" ");
+#ifdef ENABLE_LONGJUMP
+	longjmp(error_jumper, 1);
+#else
 	exit(EXIT_FAILURE);
+#endif /* ENABLE_LONGJUMP */
 }
 
 

@@ -171,6 +171,14 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Release")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -ffast-math -O3") # -Wall -Wextra")
 endif()
 
+##======================================================================
+
+option(ENABLE_LONGJUMP "Enable the use of the setjmp & longjmp functions to emulate C++ exceptions" OFF)
+if(ENABLE_LONGJUMP)
+  message(STATUS "Using setjmp & longjmp to emulate C++ exceptions")
+  add_definitions(-DENABLE_LONGJUMP)
+endif()
+
 ##==============================================================
 ## Switch based on the linear algebra optimized library to 
 ## use.  Note that the first library successfully found

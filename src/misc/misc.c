@@ -25,6 +25,10 @@
 #include "misc/opts.h"
 #include "misc.h"
 
+#ifdef ENABLE_LONGJUMP
+#  include "jumper.h"
+jmp_buf error_jumper;
+#endif /* ENABLE_LONGJUMP */
 
 void* xmalloc(size_t s)
 {
@@ -80,7 +84,12 @@ void error(const char* fmt, ...)
 	debug_vprintf(DP_ERROR, fmt, ap);
 #endif
 	va_end(ap);
+
+#ifdef ENABLE_LONGJUMP
+	longjmp(error_jumper, 1);
+#else
 	exit(EXIT_FAILURE);
+#endif /* ENABLE_LONGJUMP */
 }
 
 

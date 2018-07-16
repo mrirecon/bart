@@ -20,6 +20,10 @@
 
 #include "main.h"
 
+#ifdef ENABLE_LONGJUMP
+#  include "jumper.h"
+#endif /* ENABLE_LONGJUMP */
+
 #ifdef MEMONLY_CFL
 #  ifndef FORCE_BUILTIN_COMMANDS
 #   define FORCE_BUILTIN_COMMANDS
@@ -142,6 +146,9 @@ int in_mem_bart_main(int argc, char* argv[], char* output)
 
 	int debug_level_save = debug_level;
 	int ret = -1;
+#ifdef ENABLE_LONGJUMP
+	if (setjmp(error_jumper) == 0) {
+#endif /* ENABLE_LONGJUMP */
 		if (output != NULL) {
 			for (int i = 0; NULL != in_mem_dispatch_table[i].name; i++) {
 				if (0 == strcmp(bn, in_mem_dispatch_table[i].name)) {
@@ -167,6 +174,17 @@ int in_mem_bart_main(int argc, char* argv[], char* output)
 		bart_exit_cleanup();
 		debug_level = debug_level_save;
 		return -1;
+#ifdef ENABLE_LONGJUMP
 	}
+	else {
+		BART_ERR("Some error occurred!\n");
+		bart_exit_cleanup();
+		debug_level = debug_level_save;
+		return -1;
+	}
+#endif /* ENABLE_LONGJUMP */
+}
+
+// =============================================================================
 
 
