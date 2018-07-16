@@ -60,6 +60,7 @@ if(LAPACKE_FOUND)
     set(LAPACKE_VERSION_STRING ${PACKAGE_VERSION})
     unset(PACKAGE_VERSION) # Use cmake conventional naming
   endif()
+  unset(LAPACKE_LIBRARIES) # avoid pollution
   find_package(LAPACK NO_MODULE QUIET) #Require matching versions here!
   find_package(BLAS NO_MODULE QUIET)   #Require matching versions here!
 endif()
@@ -127,7 +128,7 @@ find_package_handle_standard_args(LAPACKE FOUND_VAR LAPACKE_FOUND
 )
 
 if (LAPACKE_FOUND)
-  set(LAPACKE_INCLUDE_DIRS ${LAPACKE_CBLAS_INCLUDE_DIR} ${LAPACKE_CBLAS_INCLUDE_DIR})
+  set(LAPACKE_INCLUDE_DIRS ${LAPACKE_LAPACKE_INCLUDE_DIR} ${LAPACKE_CBLAS_INCLUDE_DIR})
   list(REMOVE_DUPLICATES LAPACKE_INCLUDE_DIRS)
   if("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*" OR
      "${CMAKE_C_COMPILER_ID}" MATCHES ".*GNU.*" OR

@@ -1,13 +1,19 @@
 # Copyright 2015-2016. Hans J. Johnson <hans-johnson@uiowa.edu>
+# Copyright 2017-2018. Damien Nguyen <damien.nguyen@alumni.epfl.ch>
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 # \author Hans J. Johnson <hans-johnson@uiowa.edu>
-cmake_minimum_required(VERSION 2.8.7)
+# \author Damien Nguyen <damien.nguyen@alumni.epfl.ch>
+cmake_minimum_required(VERSION 2.8.12)
 
 project(bart C)
 enable_language(C)
 enable_language(CXX)
 
+# Silence a CMake-warning about object libraries
+if(CMAKE_VERSION VERSION_GREATER 3.0)
+  cmake_policy(SET CMP0051 NEW)
+endif(CMAKE_VERSION VERSION_GREATER 3.0)
 
 # http://stackoverflow.com/questions/24840030/forcing-c99-in-cmake-to-use-for-loop-initial-declaration
 macro(use_c99)
@@ -20,6 +26,19 @@ macro(use_c99)
   endif ()
 endmacro(use_c99)
 use_c99()
+
+option(USE_FPIC "Compile using position-independent code" OFF)
+if(USE_FPIC)
+  message(STATUS "ENABLED compilation with -fPIC")
+  set (CMAKE_C_FLAGS "-fPIC ${CMAKE_C_FLAGS}")
+  set (CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
+endif(USE_FPIC)
+
+option(REDEFINE_PRINTF_FOR_TRACE "Replace debug_print* functions with macros for better log tracing (e.g. with external loggers)" OFF)
+if(REDEFINE_PRINTF_FOR_TRACE)
+  add_definitions(-DREDEFINE_PRINTF_FOR_TRACE)
+  message(STATUS "Redefining debug_print* functions as macros for better log tracing")
+endif(REDEFINE_PRINTF_FOR_TRACE)
 
 option(USE_SUPER_DEBUG "Enable super-duper (!) debug output" OFF)
 if(USE_SUPER_DEBUG)
@@ -52,8 +71,16 @@ endif(USE_LOG_GADGETRON_BACKEND)
 
 # ==============================================================================
 
+option(GENERATE_DOC "Automatically generate documentation after building BART" ON)
+if(GENERATE_DOC)
+  message(STATUS "Automatically generating documentation after building BART")
+endif(GENERATE_DOC)
+  
+# ==============================================================================
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake ${CMAKE_MODULE_PATH})
 
+# ==============================================================================
 # --- Provide good defaults for searching for packages (i.e. ismrmrd)
 set(CMAKE_PREFIX_PATH "")
 if(CMAKE_PREFIX_PATH)
@@ -68,7 +95,19 @@ endif()
 list(REMOVE_DUPLICATES CMAKE_PREFIX_PATH)
 ## -message(STATUS "Looking for packages in : ${CMAKE_PREFIX_PATH}")
 
-## Options
+# --- Mac specific setup options
+if(APPLE)
+  # Look for MacPorts only as Homebrew users do not require any particular setup
+  find_program(MACPORTS
+    NAMES port
+    PATHS /opt/local/bin /opt/local/sbin)
+  if(MACPORTS)
+    add_definitions(-DUSE_MACPORTS)
+  endif(MACPORTS)
+endif(APPLE)
+
+# ==============================================================================
+
 option(USE_CUDA "Provide support for CUDA processing" OFF)
 if(USE_CUDA)
   enable_language(CXX)
@@ -76,7 +115,7 @@ if(USE_CUDA)
   add_definitions(-DUSE_CUDA)
   CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR}/src)
   # set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;-arch=sm_20;-m64;-ccbin ${CMAKE_C_COMPILER}")
-  set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;-arch=sm_20;-ccbin ${CMAKE_C_COMPILER}")
+  set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;${GPUARCH_FLAGS};-ccbin ${CMAKE_C_COMPILER}")
   macro(bart_add_executable target_name)
     CUDA_ADD_EXECUTABLE(${target_name} ${ARGN})
     CUDA_ADD_CUFFT_TO_TARGET(${target_name})
@@ -84,7 +123,7 @@ if(USE_CUDA)
     target_link_libraries(${target_name} ${CUDA_LIBRARIES})
   endmacro(bart_add_executable)
   macro(bart_add_library target_name)
-    CUDA_ADD_LIBRARY(${target_name} ${ARGN} STATIC)
+    CUDA_ADD_LIBRARY(${target_name} ${ARGN})
     CUDA_ADD_CUFFT_TO_TARGET(${target_name})
     CUDA_ADD_CUBLAS_TO_TARGET(${target_name})
     target_link_libraries(${target_name} ${CUDA_LIBRARIES})
@@ -98,12 +137,19 @@ else()
   endmacro(bart_add_library)
 endif(USE_CUDA)
 
+# ==============================================================================
+
+## Options
 ##- TODO option(USE_ACML    "Provide support for ACML processing" OFF)
+
+option(USE_OPENMP "Enable OpenMP support" ON)
+if(USE_OPENMP)
   find_package(OpenMP)
   if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   endif()
+endif(USE_OPENMP)
 ##- TODO option(USE_SLINK "Provide SLINK support" OFF)
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -185,9 +231,31 @@ endif()
 include_directories(${LINALG_INCLUDE_DIRS})
 
 ##======================================================================
+
 set(USE_FFTWF ON) # Only find single precision fftw
+option(USE_LOCAL_FFTW "Use a modified version of FFTW where all functions are prefixed with local_ (useful for static FFTW linking)" OFF)
+if(USE_LOCAL_FFTW)
+  set(FFTWF_FOUND 1)
+  set(FFTW_INCLUDE ${CURRENT_LIST_DIR/src})
+  set(FFTWF_THREADS_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f_threads.a")
+  set(FFTWF_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f.a" ${FFTWF_THREADS_LIB})
+  set(FFTWF_LIBRARIES ${FFTWF_LIB})
+  add_definitions(-DUSE_LOCAL_FFTW)
+else(USE_LOCAL_FFTW)
   find_package(FFTW REQUIRED)
+endif(USE_LOCAL_FFTW)
 message(STATUS "FFTWF_LIBRARIES: ${FFTWF_LIBRARIES}")
+
+option(USE_FFTWTHREADS ON)
+if(USE_FFTWTHREADS)
+  # manually add the pthread library in case one is using static fftw libraries...
+  find_library(PTHREAD_LIB pthread)
+  list(APPEND FFTWF_LIBRARIES ${PTHREAD_LIB})
+  add_definitions(-DFFTWTHREADS)
+else(USE_FFTWTHREADS)
+  # remove the threaded library when not using threads
+  list(REMOVE_ITEM FFTWF_LIBRARIES ${FFTWF_THREADS_LIB})
+endif(USE_FFTWTHREADS)
 
 ##======================================================================
 
@@ -214,9 +282,15 @@ endif(ENABLE_MEM_CFL)
 
 ##======================================================================
 
+option(DISABLE_PNG "Disable the use of the PNG library" OFF)
+if(NOT DISABLE_PNG)
   find_package(PNG REQUIRED)
   add_definitions(${PNG_DEFINITIONS})
   include_directories(${PNG_INCLUDE_DIRS})
+else(NOT DISABLE_PNG)
+  set(PNG_DEFINITIONS "")
+  set(PNG_INCLUDE_DIRS "")
+endif(NOT DISABLE_PNG)
 
 execute_process(COMMAND ${CMAKE_CURRENT_LIST_DIR}/git-version.sh OUTPUT_VARIABLE BART_FULL_VERSION_STRING WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 string(STRIP ${BART_FULL_VERSION_STRING} BART_FULL_VERSION_STRING) ## Remove trailing whitespace (return characters)
@@ -247,6 +321,19 @@ foreach(bld_tgt_line ${bld_tgt_list_of_list})
      list(APPEND ALLPROGS ${${BLD_KEY}})
    endif()
 endforeach()
+
+ if(USE_ISMRMRD)
+  list(APPEND ALLPROGS ismrmrd) 
+endif(USE_ISMRMRD)
+
+
+list(SORT ALLPROGS)
+
+
+if(DISABLE_PNG)
+  list(REMOVE_ITEM ALLPROGS "toimg")
+endif(DISABLE_PNG)
+
 
 ## BART Makefile depends heavily on pre-processor replacements
 ## on the command line rather than a library of common functionality
@@ -318,6 +405,10 @@ foreach(curr_lib ${BART_SUPPORT_LIBS})
     endif(USE_CUDA)
 endforeach()
   
+if(DISABLE_PNG)
+  list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/png.c")
+endif(DISABLE_PNG)
+
 bart_add_library(bartsupport ${bart_support_SRCS})
 
 set(LOG_BACKEND_SRCS "")
@@ -381,6 +472,12 @@ install(TARGETS bartsupport
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib/static)
 
+install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src/
+  DESTINATION include
+  FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src/
+  DESTINATION include
+  FILES_MATCHING PATTERN "*.hh")
 
   ### PASS #1:  Build stand-alone programs
   ### Generate stand alone programs
@@ -419,12 +516,16 @@ set(DRIVER_LIST "\n\n/* Generated by cmake */\n")
 foreach(driver ${ALLPROGS})
    set(DRIVER_LIST "${DRIVER_LIST}{ main_${driver}, \"${driver}\" },\n")
 endforeach()
+
 set(ALL_BART_SRCS "")
 foreach(curr_prog ${ALLPROGS})
-  CONFIG_BY_REPLACEMENT( "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c" "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c"
+  set(curr_prog_name "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c")
+  set(comb_prog_name "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c")
+  
+  CONFIG_BY_REPLACEMENT( ${curr_prog_name} ${comb_prog_name}
     "/* Generated by cmake */\n#include \"config_main.h\""
     "MAP(DENTRY, MAIN_LIST)" "${DRIVER_LIST}")
-  list(APPEND ALL_BART_SRCS "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c")
+  list(APPEND ALL_BART_SRCS ${comb_prog_name})
 endforeach()
 foreach(curr_prog bart)
   CONFIG_BY_REPLACEMENT( "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c" "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c"
@@ -510,10 +611,12 @@ add_custom_target(bart.syms
   DEPENDS bart
   SOURCES makedoc.sh doxyconfig)
 
+if(GENERATE_DOC)
   add_custom_command(TARGET bart
     POST_BUILD
     COMMAND ${CMAKE_CURRENT_LIST_DIR}/rules/update_commands.sh $<TARGET_FILE:bart> ${CMAKE_CURRENT_LIST_DIR}/doc/commands.txt ${ALLPROGS}
     )
+endif(GENERATE_DOC)
 
 file(GLOB DOCS "${CMAKE_CURRENT_LIST_DIR}/doc/*.txt")
 list(APPEND ${CMAKE_CURRENT_LIST_DIR}/README)
