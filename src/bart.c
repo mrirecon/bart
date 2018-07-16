@@ -16,9 +16,12 @@
 #include <errno.h>
 
 #include "misc/misc.h"
+#include "misc/debug.h"
 #include "misc/cppmap.h"
 
 #include "main.h"
+
+void bart_exit_cleanup();
 
 #ifdef ENABLE_LONGJUMP
 #  include "jumper.h"
@@ -187,4 +190,29 @@ int in_mem_bart_main(int argc, char* argv[], char* output)
 
 // =============================================================================
 
+extern void io_memory_cleanup();
+#ifdef USE_CUDA
+extern void cuda_memcache_clear(void);
+#endif /* USE_CUDA */
 
+#ifdef USE_LOCAL_FFTW
+#  include "fftw3_local.h"
+#  define MANGLE(name) local_ ## name
+#else
+#  include <fftw3.h>
+#  define MANGLE(name) name
+#endif /* USE_LOCAL_FFTW */
+
+void bart_exit_cleanup()
+{
+	if (command_line != NULL) {
+		XFREE(command_line);
+	}
+	io_memory_cleanup();
+#ifdef FFTWTHREADS
+	MANGLE(fftwf_cleanup_threads)();
+#endif /* FFTWTHREADS */
+#ifdef USE_CUDA
+	cuda_memcache_clear();
+#endif /* USE_CUDA */
+}
