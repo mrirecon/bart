@@ -27,6 +27,9 @@ LOG_BACKEND?=0
 LOG_SIEMENS_BACKEND?=1
 LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
+ENABLE_MEM_CFL?=0
+MEMONLY_CFL?=0
+
 DESTDIR ?= /
 PREFIX ?= usr/local/
 
@@ -341,6 +344,18 @@ ISMRM_L := -L$(ISMRM_BASE)/lib -lismrmrd
 else
 ISMRM_H :=
 ISMRM_L :=
+endif
+
+# Enable in-memory CFL files
+
+ifeq ($(ENABLE_MEM_CFL),1)
+	CPPFLAGS += -DUSE_MEM_CFL
+endif
+
+# Only allow in-memory CFL files (ie. disable support for all other files)
+
+ifeq ($(MEMONLY_CFL),1)
+	CPPFLAGS += -DMEMONLY_CFL
 endif
 
 # Logging backends
