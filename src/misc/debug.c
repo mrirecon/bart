@@ -141,7 +141,19 @@ void debug_vprintf_trace(const char* func_name,
 			 va_list ap)
 
 {
-	debug_vprintf(level, fmt, ap);
+#ifdef USE_LOG_BACKEND
+	char tmp[1024] = {""};
+	vsnprintf(tmp, 1024, fmt, ap);
+	
+	// take care of the trailing newline often present...
+	if (tmp[strlen(tmp)-1] == '\n') {
+	     tmp[strlen(tmp)-1] = '\0';
+	}
+
+	vendor_log(level, func_name, file, line, tmp);
+#else
+	debug_printf(level, fmt, ap);
+#endif /* USE_LOG_BACKEND */
 }
 
 void debug_printf_trace(const char* func_name,

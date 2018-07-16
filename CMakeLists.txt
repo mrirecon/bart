@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 2.8.7)
 
 project(bart C)
 enable_language(C)
+enable_language(CXX)
+
 
 # http://stackoverflow.com/questions/24840030/forcing-c99-in-cmake-to-use-for-loop-initial-declaration
 macro(use_c99)
@@ -18,6 +20,31 @@ macro(use_c99)
   endif ()
 endmacro(use_c99)
 use_c99()
+
+# ==============================================================================
+
+option(USE_LOG_BACKEND "Enable delegating all outputs to external logging backend" OFF)
+
+include(CMakeDependentOption)
+cmake_dependent_option(USE_LOG_SIEMENS_BACKEND "Use the Siemens logging backend" OFF
+  "USE_LOG_BACKEND" OFF)
+if(USE_LOG_SIEMENS_BACKEND)
+  message(STATUS "Delegating all outputs to the Siemens logging backend")
+endif(USE_LOG_SIEMENS_BACKEND)
+
+cmake_dependent_option(USE_LOG_ORCHESTRA_BACKEND "Use the Orchestra logging backend" OFF
+  "USE_LOG_BACKEND" OFF)
+if(USE_LOG_ORCHESTRA_BACKEND)
+  message(STATUS "Delegating all outputs to the Orchestra logging backend")
+endif(USE_LOG_ORCHESTRA_BACKEND)
+
+cmake_dependent_option(USE_LOG_GADGETRON_BACKEND "Use the Gadgetron logging backend" OFF
+  "USE_LOG_BACKEND" OFF)
+if(USE_LOG_GADGETRON_BACKEND)
+  message(STATUS "Delegating all outputs to the Gadgetron logging backend")
+endif(USE_LOG_GADGETRON_BACKEND)
+
+# ==============================================================================
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake ${CMAKE_MODULE_PATH})
 
@@ -245,15 +272,75 @@ if(USE_ISMRMRD)
 endif()
 include_directories(src)
 set(bart_support_SRCS "")
+set(bart_support_CCSRCS "")
+set(bart_support_CUSRCS "")
 foreach(curr_lib ${BART_SUPPORT_LIBS})
     file(GLOB ${curr_lib}_SRCS "src/${curr_lib}/*.c")
     list(APPEND bart_support_SRCS ${${curr_lib}_SRCS})
+  
+    file(GLOB ${curr_lib}_CCSRCS "src/${curr_lib}/*.cc")
+    list(APPEND bart_support_SRCS ${${curr_lib}_CCSRCS})
+
     if(USE_CUDA)
-      file(GLOB ${curr_lib}_SRCS "src/${curr_lib}/*.cu")
-      list(APPEND bart_support_SRCS ${${curr_lib}_SRCS})
-    endif()
+      file(GLOB ${curr_lib}_CUSRCS "src/${curr_lib}/*.cu")
+      list(APPEND bart_support_CUSRCS ${${curr_lib}_CUSRCS})
+    endif(USE_CUDA)
 endforeach()
+  
 bart_add_library(bartsupport ${bart_support_SRCS})
+
+set(LOG_BACKEND_SRCS "")
+list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/UTrace.cc")
+list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Orchestra.cc")
+list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Gadgetron.cc")
+if(USE_LOG_BACKEND)
+  if(USE_LOG_SIEMENS_BACKEND)
+    # No need to add any include paths as the required code was copied into UTrace.cc from Siemens' IDEA framework
+    list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/UTrace.cc")
+  endif(USE_LOG_SIEMENS_BACKEND)
+  if(USE_LOG_ORCHESTRA_BACKEND)
+    set(OX_INSTALL_DIRECTORY "" CACHE PATH "Install directory of the GE Orchestra SDK")
+    set(TOPDIR "${OX_INSTALL_DIRECTORY}/include")
+    
+    # Include recon libraries exported from the SDK CMake build
+    set(RECON_LIBRARIES_INCLUDE_FILE ${OX_INSTALL_DIRECTORY}/lib/ReconLibraries.cmake)
+    if(EXISTS ${RECON_LIBRARIES_INCLUDE_FILE})
+      include (${RECON_LIBRARIES_INCLUDE_FILE})
+    else(EXISTS ${RECON_LIBRARIES_INCLUDE_FILE})
+      message("Could not find ${RECON_LIBRARIES_INCLUDE_FILE}")
+      message(FATAL_ERROR "Verify that the CMake OX_INSTALL_DIRECTORY option is set correctly")
+    endif(EXISTS ${RECON_LIBRARIES_INCLUDE_FILE})
+    
+    # Include Orchestra SDK build configuration
+    include (${TOPDIR}/recon/SDK/product.cmake)
+
+    # FIXME: need to check which libraries are actually required
+    target_link_libraries(bartsupport Core Common Control System ${OX_3P_LIBS} ${OX_OS_LIBS})
+    
+    list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Orchestra.cc")
+  endif(USE_LOG_ORCHESTRA_BACKEND)
+  if(USE_LOG_GADGETRON_BACKEND)
+    if(NOT DEFINED GADGETRON_CMAKE_MODULES)
+      find_path(GADGETRON_CMAKE_MODULES FindGadgetron.cmake
+	HINTS
+	$ENV{GADGETRON_HOME}/share/gadgetron/cmake
+	/usr/local/gadgetron)
+
+      if(NOT GADGETRON_CMAKE_MODULES)
+	message(FATAL_ERROR "GADGETRON_CMAKE_MODULES cannot be found. Try to set GADGETRON_HOME environment variable.")
+      endif(NOT GADGETRON_CMAKE_MODULES)
+
+      list(APPEND CMAKE_MODULE_PATH ${GADGETRON_CMAKE_MODULES})
+    endif(NOT DEFINED GADGETRON_CMAKE_MODULES)
+
+    find_package(Gadgetron REQUIRED)
+    include_directories(${GADGETRON_HOME}/toolboxes/log)
+    list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Gadgetron.cc")
+  endif(USE_LOG_GADGETRON_BACKEND)
+endif(USE_LOG_BACKEND)
+set(LOG_BACKEND_SRCS "${LOG_BACKEND_SRCS}" CACHE INTERNAL "")
+list(REMOVE_ITEM bart_support_SRCS "${LOG_BACKEND_SRCS}")
+
 target_link_libraries(bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
 if(USE_ISMRMRD)
   target_link_libraries(bartsupport ${ISMRMRD_LIBRARIES})
@@ -317,7 +404,7 @@ foreach(curr_prog bart)
   list(APPEND ALL_BART_SRCS "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/${curr_prog}.c")
 endforeach()
 
-bart_add_executable(bart ${ALL_BART_SRCS})
+bart_add_executable(bart ${ALL_BART_SRCS} ${LOG_BACKEND_SRCS})
 target_link_libraries(bart bartsupport)
 install(TARGETS bart
         RUNTIME DESTINATION bin
@@ -333,8 +420,9 @@ if(USE_MATLAB)
   if(MATLAB_FOUND)
     message(STATUS "MATLAB LIBRARIES FOUND: ${MATLAB_LIBRARIES_DIR}")
     include_directories(${MATLAB_INCLUDE_DIR})
-    bart_add_executable(mat2cfl ${CMAKE_CURRENT_LIST_DIR}/src/mat2cfl.c)
+    bart_add_executable(mat2cfl ${CMAKE_CURRENT_LIST_DIR}/src/mat2cfl.c ${LOG_BACKEND_SRCS})
     target_link_libraries(mat2cfl bartsupport ${MATLAB_MAT_LIBRARY} ${MATLAB_ENG_LIBRARY} ${MATLAB_MX_LIBRARY})
+
     install(TARGETS mat2cfl
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib

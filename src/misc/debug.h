@@ -17,6 +17,10 @@ extern void dump_cfl(const char* name, int D, const long dimensions[__VLA(D)], c
 extern double timestamp(void);
 
 extern int debug_level;
+
+#ifdef __cplusplus
+#  define _Bool bool
+#endif /* __cplusplus */
 extern _Bool debug_logging;
 
 enum debug_levels { DP_ERROR, DP_WARN, DP_INFO, DP_DEBUG1, DP_DEBUG2, DP_DEBUG3, DP_DEBUG4, DP_TRACE, DP_ALL };
@@ -39,12 +43,34 @@ extern void debug_vprintf_trace(const char* func_name,
 				unsigned int line,
 				int level, const char* fmt, va_list ap);
 
+#ifdef __cplusplus
+#  define EXTERN_FUNC extern "C"
+#else
+#  define EXTERN_FUNC extern
+#endif /* __cplusplus */
+
+#define BART_OUT(...)							\
+     debug_printf_trace(__FUNCTION__, __FILE__, __LINE__, DP_INFO, __VA_ARGS__)
+#define BART_ERR(...)							\
+     debug_printf_trace(__FUNCTION__, __FILE__, __LINE__, DP_ERROR, __VA_ARGS__)
+#define BART_WARN(...)							\
+     debug_printf_trace(__FUNCTION__, __FILE__, __LINE__, DP_WARN, __VA_ARGS__)
+
+
 extern void debug_backtrace(size_t n);
 
 extern void debug_trace(const char* fmt, ...);
 
 #define TRACE()	debug_trace("%s:%d %s\n", __FILE__, __LINE__, __func__)
 
+
+#ifdef USE_LOG_BACKEND
+void vendor_log(int level,
+		const char* func_name,
+		const char* file,
+		unsigned int line,
+		const char* message);
+#endif /* USE_LOG_BACKEND */
 
 #include "misc/cppwrap.h"
 

@@ -61,8 +61,11 @@ void error(const char* fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 
+#  ifdef USE_LOG_BACKEND
+	debug_printf_trace("error", __FILE__, __LINE__, DP_ERROR, fmt, ap);
+#  else
 	debug_vprintf(DP_ERROR, fmt, ap);
-
+#  endif /* USE_LOG_BACKEND */
 	va_end(ap);
 	exit(EXIT_FAILURE);
 }
