@@ -45,7 +45,7 @@ int main_creal(int argc, char* argv[])
 
 	unmap_cfl(DIMS, dims, out_data);
 	unmap_cfl(DIMS, dims, in_data);
-	exit(0);
+	return 0;
 }
 
 

@@ -103,7 +103,7 @@ int main_calmat(int argc, char* argv[])
 
 	unmap_cfl(N, calmat_dims, out_data);
 
-	exit(0);
+	return 0;
 }
 
 

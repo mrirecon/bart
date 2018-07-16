@@ -82,7 +82,7 @@ int main_nrmse(int argc, char* argv[])
 	unmap_cfl(DIMS, ref_dims, ref);
 	unmap_cfl(DIMS, in_dims, in);
 
-	exit(((test == -1.) || (err <= test)) ? 0 : 1);
+	return ((test == -1.) || (err <= test)) ? 0 : 1;
 }
 
 

@@ -82,7 +82,7 @@ int main_noise(int argc, char* argv[])
 
 	unmap_cfl(N, dims, y);
 	unmap_cfl(N, dims, x);
-	exit(0);
+	return 0;
 }
 
 

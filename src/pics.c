@@ -598,7 +598,7 @@ int main_pics(int argc, char* argv[])
 
 
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);
-	exit(0);
+	return 0;
 }
 
 

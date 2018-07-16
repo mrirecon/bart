@@ -362,10 +362,10 @@ complex float* shared_cfl(unsigned int D, const long dims[D], const char* name)
 		io_error("shared cfl %s", name);
 
 //	if (-1 == (fstat(fd, &st)))
-//		abort();
+//		error("abort");
 
 //	if (!((0 == st.st_size) || (T == st.st_size)))
-//		abort();
+//		error("abort");
 
 	if (NULL == (addr = create_data(fd, 0, T)))
 		error("shared cfl %s", name);
@@ -402,18 +402,18 @@ void* private_raw(size_t* size, const char* name)
 	struct stat st;
 
 	if (-1 == (fd = open(name, O_RDONLY)))
-		abort();
+		error("abort");
 
 	if (-1 == (fstat(fd, &st)))
-		abort();
+		error("abort");
 
 	*size = st.st_size;
 
 	if (MAP_FAILED == (addr = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
-		abort();
+		error("abort");
 
 	if (-1 == close(fd))
-		abort();
+		error("abort");
 
 	return addr;
 }

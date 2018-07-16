@@ -56,7 +56,7 @@ int main_normalize(int argc, char* argv[])
 	(l1 ? normalizel1 : normalize)(N, flags, dims, out);
 
 	unmap_cfl(N, dims, out);
-	exit(0);
+	return 0;
 }
 
 

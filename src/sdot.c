@@ -50,7 +50,7 @@ int main_sdot(int argc, char* argv[])
 
 	unmap_cfl(N, in1_dims, in1_data);
 	unmap_cfl(N, in2_dims, in2_data);
-	exit(0);
+	return 0;
 }
 
 

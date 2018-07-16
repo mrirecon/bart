@@ -47,7 +47,7 @@ int main_fftshift(int argc, char* argv[])
 
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, odata);
-	exit(0);
+	return 0;
 }
 
 

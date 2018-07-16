@@ -616,7 +616,7 @@ int main_bench(int argc, char* argv[])
 
 	unmap_cfl(BENCH_DIMS, dims, out);
 
-	exit(0);
+	return 0;
 }
 
 

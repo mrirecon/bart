@@ -141,5 +141,5 @@ int main_wavepsf(int argc, char* argv[])
 	md_copy(3, psf_dims, psf_cfl, psf, sizeof(complex float));
 	unmap_cfl(3, psf_dims, psf_cfl);
 
-	exit(0);
+	return 0;
 }

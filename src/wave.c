@@ -231,7 +231,7 @@ int main_wave(int argc, char* argv[])
 	unmap_cfl(DIMS, ksp_dims, kspace);
 	unmap_cfl(DIMS, img_dims, image);
 
-	exit(0);
+	return 0;
 }
 
 

@@ -65,5 +65,5 @@ int main_estvar(int argc, char* argv[])
 
 	printf("Estimated noise variance: %f\n", variance);
 
-	exit(0);
+	return 0;
 }

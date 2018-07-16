@@ -263,7 +263,7 @@ void* cuda_hostalloc(long N)
 {
 	void* ptr;
 	if (cudaSuccess != cudaHostAlloc(&ptr, N, cudaHostAllocDefault))
-		abort();
+	     error("abort");
 
 	insert(ptr, N, false);
 	return ptr;

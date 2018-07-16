@@ -21,7 +21,7 @@
 #include "main.h"
 
 struct {
-
+	
 	int (*main_fun)(int argc, char* argv[]);
 	const char* name;
 
@@ -57,7 +57,7 @@ int main_bart(int argc, char* argv[])
 		if (1 == argc) {
 
 			usage();
-			exit(1);
+			return 1;
 		}
 
 		const char* tpath[] = {
@@ -86,7 +86,7 @@ int main_bart(int argc, char* argv[])
 				if (ENOENT != errno) {
 
 					perror("Executing bart command failed");
-					exit(1);
+					return 1;
 				}
 
 			} else {
@@ -105,7 +105,7 @@ int main_bart(int argc, char* argv[])
 	}
 
 	fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
-	exit(1);
+	return -1;
 }
 
 

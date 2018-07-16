@@ -140,7 +140,7 @@ int main_estdelay(int argc, char* argv[])
 
 	unmap_cfl(DIMS, dims, in);
 
-	exit(0);
+	return 0;
 }
 
 

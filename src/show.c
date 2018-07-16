@@ -113,7 +113,7 @@ out:
 	unmap_cfl(N, dims, data);
 	xfree(sep);
 	xfree(fmt);
-	exit(0);
+	return 0;
 }
 
 

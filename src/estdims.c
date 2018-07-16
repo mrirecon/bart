@@ -46,6 +46,6 @@ int main_estdims(int argc, char* argv[])
 	printf("%ld %ld %ld\n", im_dims[0], im_dims[1], im_dims[2]);
 	
 	unmap_cfl(N, traj_dims, traj);
-	exit(0);
+	return 0;
 }
 

@@ -127,7 +127,7 @@ int main_join(int argc, char* argv[])
 
 	unmap_cfl(N, out_dims, out_data);
 
-	exit(0);
+	return 0;
 }
 
 

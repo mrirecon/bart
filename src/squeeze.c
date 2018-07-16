@@ -54,7 +54,7 @@ int main_squeeze(int argc, char* argv[])
 	unmap_cfl(DIMS, idims, idata);
 	unmap_cfl(j, odims, odata);
 
-	exit(0);
+	return 0;
 }
 
 

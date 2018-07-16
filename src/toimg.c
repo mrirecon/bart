@@ -188,7 +188,7 @@ int main_toimg(int argc, char* argv[])
 
 	unmap_cfl(DIMS, dims, data);
 
-	exit(0);
+	return 0;
 }
 
 

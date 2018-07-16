@@ -68,7 +68,7 @@ int main_version(int argc, char* argv[])
 #endif
 	}
 
-	exit(0);
+	return 0;
 }
 
 

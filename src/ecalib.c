@@ -238,7 +238,7 @@ int main_ecalib(int argc, char* argv[])
 	unmap_cfl(N, ksp_dims, in_data);
 	md_free(cal_data);
 
-	exit(0);
+	return 0;
 }
 
 

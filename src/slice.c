@@ -64,7 +64,7 @@ int main_slice(int argc, char* argv[])
 
 	unmap_cfl(DIMS, out_dims, out_data);
 	unmap_cfl(DIMS, in_dims, in_data);
-	exit(0);
+	return 0;
 }
 
 

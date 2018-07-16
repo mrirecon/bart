@@ -38,7 +38,7 @@ int main_spow(int argc, char* argv[argc])
 	if (0 != parse_cfl(&expo, argv[1])) {
 
 		fprintf(stderr, "ERROR: exponent %s is not a number.\n", argv[1]);
-		exit(1);
+		return 1;
 	}
 
 	const int N = DIMS;
@@ -50,7 +50,7 @@ int main_spow(int argc, char* argv[argc])
 
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, odata);
-	exit(0);
+	return 0;
 }
 
 

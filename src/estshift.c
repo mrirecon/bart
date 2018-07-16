@@ -60,7 +60,7 @@ int main_estshift(int argc, char* argv[])
 	unmap_cfl(DIMS, dims1, in1);
 	unmap_cfl(DIMS, dims2, in2);
 
-	exit(0);
+	return 0;
 }
 
 

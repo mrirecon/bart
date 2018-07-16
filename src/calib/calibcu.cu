@@ -29,6 +29,7 @@
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
+extern "C" void error(const char* str, ...);
 
 #if 0
 // pass &matrix[0][0]
@@ -201,12 +202,12 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 	eigenmapscu_kern<<<blocks, threads, sharedMem>>>(imgcov2_device_filled, imgcov2_device, optr_device, eptr_device, iter, x, y, z, N, M);
 	cudaThreadSynchronize();
 
-	cudaError_t error = cudaGetLastError();
+	cudaError_t cu_error = cudaGetLastError();
 
-	if (error != cudaSuccess) {
+	if (cu_error != cudaSuccess) {
 
-		fprintf(stderr, "ERROR: %s\n", cudaGetErrorString(error));
-		abort();
+		fprintf(stderr, "ERROR: %s\n", cudaGetErrorString(cu_error));
+		error("abort!");
 	}
 
 	md_copy(5, dims, optr, optr_device, sizeof(_Complex float));
