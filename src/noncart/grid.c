@@ -285,14 +285,28 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 }
 
 
-typedef void grid_update_t(int ind, float d);
+typedef void CLOSURE_TYPE(grid_update_t)(int ind, float d);
 
-static void grid_point_gen(int N, const long dims[N], const float pos[N], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1], grid_update_t update)
+#ifndef __clang__
+#define VLA(x) x
+#else
+// blocks extension does not play well even with arguments which
+// just look like variably-modified types
+#define VLA(x)
+#endif
+
+static void grid_point_gen(int N, const long dims[VLA(N)], const float pos[VLA(N)], bool periodic, float width, int kb_size, const float kb_table[VLA(kb_size + 1)], grid_update_t update)
 {
+#ifndef __clang__
 	int sti[N];
 	int eni[N];
 	int off[N];
-
+#else
+	// blocks extension does not play well with variably-modified types
+	int* sti = alloca(sizeof(int[N]));
+	int* eni = alloca(sizeof(int[N]));
+	int* off = alloca(sizeof(int[N]));
+#endif
 	for (int j = 0; j < N; j++) {
 
 		sti[j] = (int)ceil(pos[j] - width);
@@ -321,7 +335,7 @@ static void grid_point_gen(int N, const long dims[N], const float pos[N], bool p
 		}
 	}
 
-	NESTED(void, grid_point_r, (int N, int ind, float d))
+	__block NESTED(void, grid_point_r, (int N, int ind, float d))	// __block for recursion
 	{
 		if (0 == N) {
 
@@ -340,14 +354,14 @@ static void grid_point_gen(int N, const long dims[N], const float pos[N], bool p
 				grid_point_r(N, ind2, d2);
 			}
 		}
-	}
+	};
 
 	grid_point_r(N, 0, 1.);
 }
 
 
 
-void grid_point(unsigned int ch, int N, const long dims[N], const float pos[N], complex float* dst, const complex float val[ch], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
+void grid_point(unsigned int ch, int N, const long dims[VLA(N)], const float pos[VLA(N)], complex float* dst, const complex float val[VLA(ch)], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
 	NESTED(void, update, (int ind, float d))
 	{
@@ -359,14 +373,14 @@ void grid_point(unsigned int ch, int N, const long dims[N], const float pos[N], 
 			#pragma omp atomic
 			__imag(dst[ind + c * dims[0] * dims[1] * dims[2]]) += __imag(val[c]) * d;
 		}
-	}
+	};
 
 	grid_point_gen(N, dims, pos, periodic, width, kb_size, kb_table, update);
 }
 
 
 
-void grid_pointH(unsigned int ch, int N, const long dims[N], const float pos[N], complex float val[ch], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
+void grid_pointH(unsigned int ch, int N, const long dims[VLA(N)], const float pos[VLA(N)], complex float val[VLA(ch)], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
 	NESTED(void, update, (int ind, float d))
 	{
@@ -378,7 +392,7 @@ void grid_pointH(unsigned int ch, int N, const long dims[N], const float pos[N],
 			#pragma omp atomic
 			__imag(val[c]) += __imag(src[ind + c * dims[0] * dims[1] * dims[2]]) * d;
 		}
-	}
+	};
 
 	grid_point_gen(N, dims, pos, periodic, width, kb_size, kb_table, update);
 }
