@@ -72,8 +72,10 @@ struct nlop_s* nlop_chain2(const struct nlop_s* a, int o, const struct nlop_s* b
 #endif
 
 	struct nlop_s* nl = nlop_combine(b, a);
+	struct nlop_s* li = nlop_link(nl, ao + o, i);
+	nlop_free(nl);
 
-	return nlop_link(nl, ao + o, i);
+	return li;
 }
 
 
@@ -195,10 +197,14 @@ struct nlop_s* nlop_link(const struct nlop_s* x, int oo, int ii)
 			if (o == oo)
 				op++;
 
+			const struct linop_s* tmp = linop_chain(nlop_get_derivative(x, oo, ip),
+								nlop_get_derivative(x, op, ii));
+
 			(*der)[i][o] = linop_plus(
-				linop_clone(nlop_get_derivative(x, op, ip)),
-				linop_chain(linop_clone(nlop_get_derivative(x, oo, ip)),
-					linop_clone(nlop_get_derivative(x, op, ii))));
+				nlop_get_derivative(x, op, ip),
+				tmp);
+
+			linop_free(tmp);
 		}
 	}
 
