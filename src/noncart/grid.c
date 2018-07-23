@@ -16,6 +16,7 @@
 #include "num/flpmath.h"
 #include "num/specfun.h"
 
+#include "misc/nested.h"
 #include "misc/misc.h"
 
 #include "grid.h"
@@ -169,7 +170,7 @@ void gridH(const struct grid_conf_s* conf, const complex float* traj, const long
 		for (int j = 0; j < C; j++)
 			val[j] = 0.0;
 		
-		grid_pointH(C, grid_dims, pos, val, grid, conf->periodic, conf->width, kb_size, kb_table);
+		grid_pointH(C, 3, grid_dims, pos, val, grid, conf->periodic, conf->width, kb_size, kb_table);
 
 		for (int j = 0; j < C; j++)
 			dst[j * samples + i] += val[j];
@@ -212,7 +213,7 @@ void grid(const struct grid_conf_s* conf, const complex float* traj, const long 
 		for (int j = 0; j < C; j++)
 			val[j] = src[j * samples + i];
 
-		grid_point(C, grid_dims, pos, grid, val, conf->periodic, conf->width, kb_size, kb_table);
+		grid_point(C, 3, grid_dims, pos, grid, val, conf->periodic, conf->width, kb_size, kb_table);
 	}
 }
 
@@ -284,17 +285,19 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 }
 
 
+typedef void grid_update_t(int ind, float d);
 
-void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex float* dst, const complex float val[ch], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
+static void grid_point_gen(int N, const long dims[N], const float pos[N], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1], grid_update_t update)
 {
-	int sti[3];
-	int eni[3];
-	int off[3] = { 0, 0, 0 };
+	int sti[N];
+	int eni[N];
+	int off[N];
 
-	for (int j = 0; j < 3; j++) {
+	for (int j = 0; j < N; j++) {
 
 		sti[j] = (int)ceil(pos[j] - width);
 		eni[j] = (int)floor(pos[j] + width);
+		off[j] = 0;
 
 		if (sti[j] > eni[j])
 			return;
@@ -318,102 +321,66 @@ void grid_point(unsigned int ch, const long dims[3], const float pos[3], complex
 		}
 	}
 
-	for (int w = sti[2]; w <= eni[2]; w++) {
+	NESTED(void, grid_point_r, (int N, int ind, float d))
+	{
+		if (0 == N) {
 
-		float frac = fabs(((float)w - pos[2]));
-		float dw = 1. * intlookup(kb_size, kb_table, frac / width);
-		int indw = ((w + off[2]) % dims[2]) * dims[1];
+			update(ind, d);
 
-	for (int v = sti[1]; v <= eni[1]; v++) {
+		} else {
 
-		float frac = fabs(((float)v - pos[1]));
-		float dv = dw * intlookup(kb_size, kb_table, frac / width);
-		int indv = (indw + ((v + off[1]) % dims[1])) * dims[0];
+			N--;
 
-	for (int u = sti[0]; u <= eni[0]; u++) {
+			for (int w = sti[N]; w <= eni[N]; w++) {
 
-		float frac = fabs(((float)u - pos[0]));
-		float du = dv * intlookup(kb_size, kb_table, frac / width);
-		int indu = (indv + ((u + off[0]) % dims[0]));
+				float frac = fabs(((float)w - pos[N]));
+				float d2 = d * intlookup(kb_size, kb_table, frac / width);
+				int ind2 = (ind * dims[N] + ((w + off[N]) % dims[N]));
 
-	for (unsigned int c = 0; c < ch; c++) {
+				grid_point_r(N, ind2, d2);
+			}
+		}
+	}
 
-		// we are allowed to update real and imaginary part independently which works atomically
-		#pragma omp atomic
-		__real(dst[indu + c * dims[0] * dims[1] * dims[2]]) += __real(val[c]) * du;
-		#pragma omp atomic
-		__imag(dst[indu + c * dims[0] * dims[1] * dims[2]]) += __imag(val[c]) * du;
-	}}}}
+	grid_point_r(N, 0, 1.);
 }
 
 
 
-void grid_pointH(unsigned int ch, const long dims[3], const float pos[3], complex float val[ch], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
+void grid_point(unsigned int ch, int N, const long dims[N], const float pos[N], complex float* dst, const complex float val[ch], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
-	int sti[3];
-	int eni[3];
-	int off[3] = { 0, 0, 0 };
+	NESTED(void, update, (int ind, float d))
+	{
+		for (unsigned int c = 0; c < ch; c++) {
 
-	for (int j = 0; j < 3; j++) {
-
-		sti[j] = (int)ceil(pos[j] - width);
-		eni[j] = (int)floor(pos[j] + width);
-
-		if (sti[j] > eni[j])
-			return;
-
-
-		if (!periodic) {
-
-			sti[j] = MAX(sti[j], 0);
-			eni[j] = MIN(eni[j], dims[j] - 1);
-
-		} else {
-
-			while (sti[j] + off[j] < 0)
-				off[j] += dims[j];
-		}
-
-		if (1 == dims[j]) {
-
-			assert(0. == pos[j]);
-			sti[j] = 0;
-			eni[j] = 0;
+			// we are allowed to update real and imaginary part independently which works atomically
+			#pragma omp atomic
+			__real(dst[ind + c * dims[0] * dims[1] * dims[2]]) += __real(val[c]) * d;
+			#pragma omp atomic
+			__imag(dst[ind + c * dims[0] * dims[1] * dims[2]]) += __imag(val[c]) * d;
 		}
 	}
 
-	for (unsigned int i = 0; i < ch; i++)
-		val[i] = 0.;
+	grid_point_gen(N, dims, pos, periodic, width, kb_size, kb_table, update);
+}
 
 
-        //printf("%f %f %f: %d %d %d -- %d %d %d\n", pos[0], pos[1], pos[2], sti[0], sti[1], sti[2], eni[0], eni[1], eni[2]);
 
-	for (int w = sti[2]; w <= eni[2]; w++) {
+void grid_pointH(unsigned int ch, int N, const long dims[N], const float pos[N], complex float val[ch], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
+{
+	NESTED(void, update, (int ind, float d))
+	{
+		for (unsigned int c = 0; c < ch; c++) {
 
-		float frac = fabs(((float)w - pos[2]));
-		float dw = 1. * intlookup(kb_size, kb_table, frac / width);
-		int indw = ((w + off[2]) % dims[2]) * dims[1];
+			// we are allowed to update real and imaginary part independently which works atomically
+			#pragma omp atomic
+			__real(val[c]) += __real(src[ind + c * dims[0] * dims[1] * dims[2]]) * d;
+			#pragma omp atomic
+			__imag(val[c]) += __imag(src[ind + c * dims[0] * dims[1] * dims[2]]) * d;
+		}
+	}
 
-	for (int v = sti[1]; v <= eni[1]; v++) {
-
-		float frac = fabs(((float)v - pos[1]));
-		float dv = dw * intlookup(kb_size, kb_table, frac / width);
-		int indv = (indw + ((v + off[1]) % dims[1])) * dims[0];
-
-	for (int u = sti[0]; u <= eni[0]; u++) {
-
-		float frac = fabs(((float)u - pos[0]));
-		float du = dv * intlookup(kb_size, kb_table, frac / width);
-		int indu = (indv + ((u + off[0]) % dims[0]));
-
-	for (unsigned int c = 0; c < ch; c++) {
-
-		// we are allowed to update real and imaginary part independently which works atomically
-		#pragma omp atomic
-		__real(val[c]) += __real(src[indu + c * dims[0] * dims[1] * dims[2]]) * du;
-		#pragma omp atomic
-		__imag(val[c]) += __imag(src[indu + c * dims[0] * dims[1] * dims[2]]) * du;
-	}}}}
+	grid_point_gen(N, dims, pos, periodic, width, kb_size, kb_table, update);
 }
 
 
