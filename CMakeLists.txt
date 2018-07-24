@@ -344,24 +344,33 @@ endif()
 
 #==============================================
 # Testing code
-include_directories(${CMAKE_CURRENT_LIST_DIR}/utests)
-set(UNIT_TEST_SRC utests/test_batchsvd.c  utests/test_flpmath.c   utests/test_pattern.c   utests/test_splines.c)
-
-set(UTESTS
-"call_test_batch_svthresh_tall,
-call_test_batch_svthresh_wide,
-")
-file(READ utests/utest.c TEST_DRIVER_TEMPLATE)
-string(REPLACE "UTESTS" "${UTESTS}" TEST_DRIVER_CODE "${TEST_DRIVER_TEMPLATE}")
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/utest.c "${TEST_DRIVER_CODE}")
-#configure_file(utests/utest.c.in ${CMAKE_CURRENT_BINARY_DIR}/utest.c @ONLY)
-bart_add_executable(utest ${CMAKE_CURRENT_BINARY_DIR}/utest.c ${UNIT_TEST_SRC})
-target_link_libraries(utest bartsupport)
-
-#-----------------------------------------------------------------------------
 include(CTest)
 enable_testing()
-add_test(NAME BartUTest COMMAND $<TARGET_FILE:utest>)
+
+if(BUILD_TESTING)
+  file(GLOB utests_list_SRCS "${CMAKE_CURRENT_LIST_DIR}/utests/test_*.c")
+  foreach(f ${utests_list_SRCS})
+    file(STRINGS ${f} ut_register_lines
+      REGEX "UT_REGISTER_TEST\\(.*\\)")
+    string(REGEX
+      REPLACE "UT_REGISTER_TEST\\(([a-zA-Z0-9_ ]+)\\)[\\r\\n\\t ]*\\;" "\\1"
+      tests_list
+      "${ut_register_lines}")
+
+    get_filename_component(test_name ${f} NAME_WE)
+    set(${test_name}_tests "")
+    foreach(sub_test_name ${tests_list})
+      set(${test_name}_tests "${${test_name}_tests}call_${sub_test_name},")
+    endforeach()
+
+    add_executable(${test_name} ${CMAKE_CURRENT_LIST_DIR}/utests/utest.c ${f})
+    target_link_libraries(${test_name} bartsupport)
+    target_compile_definitions(${test_name} PUBLIC UTESTS=${${test_name}_tests})
+    add_test(${test_name} ${test_name})
+  endforeach()
+endif(BUILD_TESTING)
+
+# ==============================================================================
 
 set(TARBALL_VERSION "${BART_VERSION_MAJOR}.${BART_VERSION_MINOR}.${BART_VERSION_PATCH}")
 add_custom_target(tarball
