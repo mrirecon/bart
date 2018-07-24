@@ -151,7 +151,7 @@ static bool test_quadratic_formula(void)
 	complex double r2[2];
 	quadratic_formula(r2, coeff);
 
-	return array_eq(2, r2, roots, 0.);
+	return array_eq(2, r2, roots, 1.e-15);
 }
 
 UT_REGISTER_TEST(test_quadratic_formula);
