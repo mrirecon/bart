@@ -1,11 +1,11 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2015-2018. Martin Uecker.
  * Copyright 2017-2018. Damien Nguyen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017-2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
  */
 
@@ -91,45 +91,30 @@ void io_register_output(const char* name)
 
 void io_unregister(const char* name)
 {
-	struct iofile_s* iop = iofiles;
-	struct iofile_s* iop_old = iofiles;
-	struct iofile_s* tmp = NULL;
-	
-	while (NULL != iop) {
-		if (0 == strcmp(name, iop->name)) {
-			tmp = iop->prev;
-			XFREE(iop->name);
-			xfree(iop); // Note the lowercase, GODDAMMIT!
-			
-			if (iofiles == iop) {
-				iofiles = tmp;
-				iop_old = tmp;
-			}
-			else {				
-				iop_old->prev = tmp;
-			}
-			
-			iop = tmp;
+	struct iofile_s** iop = &iofiles;
+	struct iofile_s* io;
+
+	while (NULL != (io = *iop)) {
+
+		if (0 == strcmp(name, io->name)) {
+
+			*iop = io->prev;
+
+			xfree(io->name);
+			xfree(io);
+
+			return;
 		}
-		else {
-			iop_old = iop;
-			iop = iop->prev;
-		}
+
+		iop = &io->prev;
 	}
 }
 
-void io_memory_cleanup()
-{
-	struct iofile_s* iop = iofiles;
-	struct iofile_s* tmp = NULL;
 
-	while (NULL != iop) {
-		tmp = iop->prev;
-		XFREE(iop->name);
-		XFREE(iop);
-		iop = tmp;
-	}
-	iofiles = NULL;
+void io_memory_cleanup(void)
+{
+	while (NULL != iofiles)
+		io_unregister(iofiles->name);
 }
 
 

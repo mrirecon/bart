@@ -24,11 +24,12 @@ FFTWTHREADS?=1
 ISMRMRD?=0
 
 LOG_BACKEND?=0
-LOG_SIEMENS_BACKEND?=1
+LOG_SIEMENS_BACKEND?=0
 LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
 ENABLE_MEM_CFL?=0
 MEMONLY_CFL?=0
+
 
 DESTDIR ?= /
 PREFIX ?= usr/local/
@@ -349,30 +350,32 @@ endif
 # Enable in-memory CFL files
 
 ifeq ($(ENABLE_MEM_CFL),1)
-	CPPFLAGS += -DUSE_MEM_CFL
+CPPFLAGS += -DUSE_MEM_CFL
+miscextracxxsrcs += $(srcdir)/misc/mmiocc.cc
+LDFLAGS += -lstdc++
 endif
 
 # Only allow in-memory CFL files (ie. disable support for all other files)
 
 ifeq ($(MEMONLY_CFL),1)
-	CPPFLAGS += -DMEMONLY_CFL
+CPPFLAGS += -DMEMONLY_CFL
+miscextracxxsrcs += $(srcdir)/misc/mmiocc.cc
+LDFLAGS += -lstdc++
 endif
 
 # Logging backends
 
 ifeq ($(LOG_BACKEND),1)
-	CPPFLAGS += -I$(srcdir)/src/misc
-	ifeq ($(LOG_SIEMENS_BACKEND),1)
-		miscextracxxsrcs = $(srcdir)/misc/UTrace.cc
-	endif
-	ifeq ($(LOG_ORCHESTRA_BACKEND),1)
-		miscextracxxsrcs = $(srcdir)/misc/Orchestra.cc
-	endif
-	ifeq ($(LOG_GADGETRON_BACKEND),1)
-		miscextracxxsrcs = $(srcdir)/misc/Gadgetron.cc
-	endif
-else
-miscextracxxsrcs = 
+CPPFLAGS += -DUSE_LOG_BACKEND
+ifeq ($(LOG_SIEMENS_BACKEND),1)
+miscextracxxsrcs += $(srcdir)/misc/UTrace.cc
+endif
+ifeq ($(LOG_ORCHESTRA_BACKEND),1)
+miscextracxxsrcs += $(srcdir)/misc/Orchestra.cc
+endif
+ifeq ($(LOG_GADGETRON_BACKEND),1)
+miscextracxxsrcs += $(srcdir)/misc/Gadgetron.cc
+endif
 endif
 
 

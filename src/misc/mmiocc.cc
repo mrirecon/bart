@@ -20,6 +20,9 @@
 #  include <numpy/arrayobject.h>
 #endif /* BART_WITH_PYTHON */
 
+#ifndef SUPER_DEBUG_OUT
+#define SUPER_DEBUG_OUT(...)	((void)0)
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>

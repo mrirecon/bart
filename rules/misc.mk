@@ -8,7 +8,7 @@
 miscsrcs := $(wildcard $(srcdir)/misc/*.c)
 miscobjs := $(miscsrcs:.c=.o)
 
-miscobjs += $(misccxxsrcs:.cc=.o)
+miscobjs += $(miscextracxxsrcs:.cc=.o)
 
 .INTERMEDIATE: $(miscobjs)
 
