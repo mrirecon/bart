@@ -189,7 +189,7 @@ struct nlop_s* nlop_generic_create2(int OO, int ON, const long odims[OO][ON], co
 			d2->sptr.del = sptr_linop_del;
 
 			(*der)[i][o] = linop_create2(ON, odims[o], ostr[o], IN, idims[i], istr[i],
-						CAST_UP(PTR_PASS(d2)), lop_der, lop_adj, lop_nrm, lop_nrm_inv, lop_del);
+						     CAST_UP(PTR_PASS(d2)), lop_der, lop_adj,  (NULL != normal) ? lop_nrm : NULL, (NULL != norm_inv) ? lop_nrm_inv : NULL, lop_del);
 		}
 	}
 
@@ -204,7 +204,7 @@ struct nlop_s* nlop_create2(unsigned int ON, const long odims[__VLA(ON)], const 
 				nlop_fun_t forward, nlop_fun_t deriv, nlop_fun_t adjoint, nlop_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t del)
 {
 	struct nlop_s* op = nlop_generic_create2(1, ON, (const long(*)[])&odims[0], (const long(*)[])&ostrs[0], 1, IN, (const long(*)[])&idims[0], (const long(*)[])&istrs[0], data, NULL,
-					(nlop_fun_t[1][1]){ { deriv } }, (nlop_fun_t[1][1]){ { adjoint } }, (nlop_fun_t[1][1]){ { normal } }, (nlop_p_fun_t[1][1]){ { norm_inv } }, del);
+					(nlop_fun_t[1][1]){ { deriv } }, (nlop_fun_t[1][1]){ { adjoint } }, (NULL != normal) ? (nlop_fun_t[1][1]){ { normal } } : NULL, (NULL != norm_inv) ? (nlop_p_fun_t[1][1]){ { norm_inv } } : NULL, del);
 
 	struct nlop_op_data_s* data2 = CAST_DOWN(nlop_op_data_s, operator_get_data(op->op));
 
