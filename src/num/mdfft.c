@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <complex.h>
 #include <strings.h>
+#include <stdint.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -58,7 +59,9 @@ static unsigned int next_powerof2(unsigned int x)
 {
 	x--;
 
-	for (unsigned int i = 0, n = 1; i < 6; i++, n *= 2)
+	assert(x <= (UINT32_MAX >> 1));
+
+	for (unsigned int i = 0, n = 1; i < 5; i++, n *= 2)
 		x = (x >> n) | x;
 
 	return x + 1;
