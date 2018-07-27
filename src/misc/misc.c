@@ -61,11 +61,11 @@ void error(const char* fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 
-#  ifdef USE_LOG_BACKEND
+#ifdef USE_LOG_BACKEND
 	debug_printf_trace("error", __FILE__, __LINE__, DP_ERROR, fmt, ap);
-#  else
+#else
 	debug_vprintf(DP_ERROR, fmt, ap);
-#  endif /* USE_LOG_BACKEND */
+#endif
 	va_end(ap);
 	exit(EXIT_FAILURE);
 }
@@ -85,8 +85,8 @@ void print_dims(int D, const long dims[D])
 
 
 #ifdef REDEFINE_PRINTF_FOR_TRACE
-#  undef debug_print_dims
-#endif /* REDEFINE_PRINTF_FOR_TRACE */
+#undef debug_print_dims
+#endif
 
 void debug_print_dims(int dblevel, int D, const long dims[D])
 {
@@ -193,6 +193,8 @@ void quicksort(unsigned int N, unsigned int ord[N], const void* data, quicksort_
 	if (N > l)
 		quicksort(N - l, ord + l, data, cmp);
 }
+
+
 
 /**
  * Quickselect adapted from §8.5 in Numerical Recipes in C, 
@@ -386,9 +388,8 @@ void save_command_line(int argc, char* argv[])
 
 	(*buf)[pos] = '\0';
 
-	if (command_line != NULL) {
-		XFREE(command_line);
-	}
+	XFREE(command_line);
+
 	command_line = (*buf);
 }
 

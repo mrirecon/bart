@@ -208,8 +208,9 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 #endif
 	}
 
-	if ((argc - optind < min_args)
+	if (   (argc - optind < min_args)
 	    || (argc - optind > max_args)) {
+
 		print_usage(stderr, argv[0], usage_str, n, opts);
 		error("cmdline: too few or too many arguments");
 	}

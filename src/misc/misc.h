@@ -59,13 +59,14 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 
 // small wrapper around snprintf to gracefully handle cases where 'size' is negative
 extern int safeneg_snprintf(char* buffer, long size, const char* format, ... );
+
 extern void print_dims(int D, const long dims[__VLA(D)]);
-#ifdef REDEFINE_PRINTF_FOR_TRACE
-#define debug_print_dims(...)						\
-     debug_print_dims_trace(__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
-#else
 extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
-#endif /* REDEFINE_PRINTF_FOR_TRACE */
+
+#ifdef REDEFINE_PRINTF_FOR_TRACE
+#define debug_print_dims(...) \
+	debug_print_dims_trace(__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+#endif
 
 extern void debug_print_dims_trace(const char* func_name,
 				   const char* file,

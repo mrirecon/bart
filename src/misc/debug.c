@@ -7,7 +7,7 @@
  * Authors:
  * 2013-2016	Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013,2015	Jonathan Tamir <jtamir@eecs.berkeley.edu>
- * 2013 Dara Bahri <dbahri123@gmail.com
+ * 2013		Dara Bahri <dbahri123@gmail.com
  * 2017-2018    Damien Nguyen <damien.nguyen@alumni.epfl.ch>
  */
 
@@ -83,10 +83,12 @@ static void get_datetime_str(int len, char* datetime_str)
 #define RESET	"\033[0m"
 #define RED	"\033[31m"
 
+
 #ifdef REDEFINE_PRINTF_FOR_TRACE
-#  undef debug_printf
-#  undef debug_vprintf
-#endif /* REDEFINE_PRINTF_FOR_TRACE */
+#undef debug_printf
+#undef debug_vprintf
+#endif
+
 
 void debug_vprintf(int level, const char* fmt, va_list ap)
 {
@@ -133,6 +135,7 @@ void debug_printf(int level, const char* fmt, ...)
 	va_end(ap);
 }
 
+
 void debug_vprintf_trace(const char* func_name,
 			 const char* file,
 			 unsigned int line,
@@ -141,20 +144,21 @@ void debug_vprintf_trace(const char* func_name,
 			 va_list ap)
 
 {
-#ifdef USE_LOG_BACKEND
-	char tmp[1024] = {""};
-	vsnprintf(tmp, 1024, fmt, ap);
+#ifndef USE_LOG_BACKEND
+	UNUSED(func_name); UNUSED(file); UNUSED(line);
+	debug_printf(level, fmt, ap);
+#else
+	char tmp[1024] = { 0 };
+	vsnprintf(tmp, 1023, fmt, ap);
 	
 	// take care of the trailing newline often present...
-	if (tmp[strlen(tmp)-1] == '\n') {
-	     tmp[strlen(tmp)-1] = '\0';
-	}
+	if ('\n' == tmp[strlen(tmp) - 1])
+		tmp[strlen(tmp) - 1] = '\0';
 
 	vendor_log(level, func_name, file, line, tmp);
-#else
-	debug_printf(level, fmt, ap);
 #endif /* USE_LOG_BACKEND */
 }
+
 
 void debug_printf_trace(const char* func_name,
 			const char* file,
