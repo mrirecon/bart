@@ -141,7 +141,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 			if (opts[i].conv(opts[i].ptr, c, optarg)) {
 
 				print_usage(stderr, name, usage_str, n, opts);
-				error("process_option: failed to convert value");
+				error("process_option: failed to convert value\n");
 			}
 
 			return;
@@ -149,7 +149,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 	}
 
 	print_usage(stderr, name, usage_str, n, opts);
-	error("process_option: unknown option");
+	error("process_option: unknown option\n");
 }
 
 void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
@@ -182,7 +182,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 			print_usage(stdout, argv[0], usage_str, n, opts);
 			print_help(help_str, n, opts);
-			error("cmdline: exit for help");
+			exit(0);
 		}
 
 		for (int i = 0; i < n; i++) {
@@ -192,7 +192,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 				if (opts[i].conv(opts[i].ptr, c, optarg)) {
 
 					print_usage(stderr, argv[0], usage_str, n, opts);
-					error("cmdline: failed to convert value");
+					error("cmdline: failed to convert value\n");
 				}
 
 				goto out;
@@ -212,7 +212,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 	    || (argc - optind > max_args)) {
 
 		print_usage(stderr, argv[0], usage_str, n, opts);
-		error("cmdline: too few or too many arguments");
+		error("cmdline: too few or too many arguments\n");
 	}
 
 	int i;
