@@ -21,6 +21,28 @@
 
 #include "main.h"
 
+
+
+extern FILE* bart_output;	// src/misc.c
+
+
+static void bart_exit_cleanup(void)
+{
+	if (NULL != command_line)
+		XFREE(command_line);
+
+	io_memory_cleanup();
+
+#ifdef FFTWTHREADS
+	MANGLE(fftwf_cleanup_threads)();
+#endif
+#ifdef USE_CUDA
+	cuda_memcache_clear();
+#endif
+}
+
+
+
 struct {
 	
 	int (*main_fun)(int argc, char* argv[]);
@@ -99,22 +121,39 @@ int main_bart(int argc, char* argv[])
 		return main_bart(argc - 1, argv + 1);
 	}
 
-	for (int i = 0; NULL != dispatch_table[i].name; i++) {
-
-		if (0 == strcmp(bn, dispatch_table[i].name)) {
-
-			int save = debug_level;
-
-			int ret = error_catcher(dispatch_table[i].main_fun, argc, argv);
-
-			debug_level = save;
-
-			return ret;
-		}
-	}
+	for (int i = 0; NULL != dispatch_table[i].name; i++)
+		if (0 == strcmp(bn, dispatch_table[i].name))
+			return dispatch_table[i].main_fun(argc, argv);
 
 	fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
 	return -1;
+}
+
+
+
+int bart_command(int len, char* buf, int argc, char* argv[])
+{
+	int save = debug_level;
+
+	if (NULL != buf) {
+
+		buf[0] = '\0';
+		bart_output = fmemopen(buf, len, "w");
+	}
+
+	int ret = error_catcher(main_bart, argc, argv);
+
+	bart_exit_cleanup();
+
+	debug_level = save;
+
+	if (NULL != bart_output) {
+
+		fclose(bart_output);	// write final nul
+		bart_output = NULL;
+	}
+
+	return ret;
 }
 
 

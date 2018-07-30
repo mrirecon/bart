@@ -10,3 +10,7 @@ MAP(DECLMAIN, MAIN_LIST)
 extern int main_bart(int argc, char* argv[]);
 extern int main_bbox(int argc, char* argv[]);
 
+
+// for use as a library
+extern int bart_command(int len, char* buf, int argc, char* argv[]);
+
