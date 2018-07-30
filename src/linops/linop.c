@@ -186,7 +186,8 @@ struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int
  */
 const linop_data_t* linop_get_data(const struct linop_s* ptr)
 {
-	return ((struct shared_data_s*)operator_get_data(ptr->forward))->data;
+	auto sdata = CAST_MAYBE(shared_data_s, operator_get_data(ptr->forward));
+	return sdata == NULL ? NULL : sdata->data;
 }
 
 
