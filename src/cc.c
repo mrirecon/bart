@@ -60,7 +60,7 @@ int main_cc(int argc, char* argv[])
 
 	num_init();
 
-	if (-1 == P) {
+	if ((-1 == P) && proj) {
 
 		debug_printf(DP_WARN, "Use -M to output compression matrix.\n");
 		proj = false;
