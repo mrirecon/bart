@@ -10,7 +10,6 @@
 
 #include <complex.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 #include "misc/mmio.h"
 #include "misc/mri.h"
@@ -63,7 +62,7 @@ int main_estvar(int argc, char* argv[])
 
 	unmap_cfl(N, kspace_dims, kspace);
 
-	printf("Estimated noise variance: %f\n", variance);
+	bart_printf("Estimated noise variance: %f\n", variance);
 
 	return 0;
 }

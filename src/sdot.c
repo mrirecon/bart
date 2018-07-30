@@ -8,7 +8,6 @@
  */
 
 #include <complex.h>
-#include <stdio.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -46,7 +45,7 @@ int main_sdot(int argc, char* argv[])
 
 	// compute scalar product
 	complex float value = md_zscalar(N, in1_dims, in1_data, in2_data);
-	printf("%+e%+ei\n", crealf(value), cimagf(value));
+	bart_printf("%+e%+ei\n", crealf(value), cimagf(value));
 
 	unmap_cfl(N, in1_dims, in1_data);
 	unmap_cfl(N, in2_dims, in2_data);

@@ -17,7 +17,6 @@
 
 #include <complex.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
 #include <assert.h>
 
@@ -135,7 +134,7 @@ int main_estdelay(int argc, char* argv[])
 	 */
 	float qf[3];
 	fit_quadratic_form(qf, N, angles, delays);
-	printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
+	bart_printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
 
 
 	unmap_cfl(DIMS, dims, in);

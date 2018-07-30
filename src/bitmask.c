@@ -8,7 +8,6 @@
  */
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdbool.h>
 
 #include "num/multind.h"
@@ -49,7 +48,7 @@ int main_bitmask(int argc, char* argv[])
 			flags = MD_SET(flags, d);
 		}
 
-		printf("%ld\n", flags);
+		bart_printf("%ld\n", flags);
 
 	} else {
 
@@ -59,13 +58,13 @@ int main_bitmask(int argc, char* argv[])
 		while (flags) {
 
 			if (flags & 1)
-				printf("%d ", i);
+				bart_printf("%d ", i);
 
 			flags >>= 1;
 			i++;
 		}
 
-		printf("\n");
+		bart_printf("\n");
 	}
 
 	return 0;

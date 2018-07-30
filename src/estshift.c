@@ -8,7 +8,6 @@
 
 #include <complex.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "num/multind.h"
 
@@ -45,17 +44,17 @@ int main_estshift(int argc, char* argv[])
 	float shifts[DIMS];
 	est_subpixel_shift(DIMS, shifts, dims1, flags, in1, in2);
 
-	printf("Shifts:");
+	bart_printf("Shifts:");
 
 	for (unsigned int i = 0; i < DIMS; i++) {
 
 		if (!MD_IS_SET(flags, i))
 			continue;
 
-		printf("\t%f", shifts[i]);
+		bart_printf("\t%f", shifts[i]);
 	}
 
-	printf("\n");
+	bart_printf("\n");
 
 	unmap_cfl(DIMS, dims1, in1);
 	unmap_cfl(DIMS, dims2, in2);

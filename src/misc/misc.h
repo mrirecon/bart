@@ -62,6 +62,7 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 
 extern int error_catcher(int fun(int argc, char* argv[__VLA(argc)]), int argc, char* argv[__VLA(argc)]);
 
+extern int bart_printf(const char* fmt, ...);
 
 extern void print_dims(int D, const long dims[__VLA(D)]);
 extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);

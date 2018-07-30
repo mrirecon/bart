@@ -10,7 +10,6 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "misc/misc.h"
 #include "misc/opts.h"
@@ -38,33 +37,33 @@ int main_version(int argc, char* argv[])
 
 	cmdline(&argc, argv, 0, 0, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-	printf("%s\n", bart_version);
+	bart_printf("%s\n", bart_version);
 
 	if (verbose) {
 
 #ifdef __GNUC__
-		printf("GCC_VERSION=%s\n", __VERSION__);
+		bart_printf("GCC_VERSION=%s\n", __VERSION__);
 #endif
 
-		printf("CUDA=");
+		bart_printf("CUDA=");
 #ifdef USE_CUDA
-			printf("1\n");
+			bart_printf("1\n");
 #else
-			printf("0\n");
+			bart_printf("0\n");
 #endif
 
-		printf("ACML=");
+		bart_printf("ACML=");
 #ifdef USE_ACML
-			printf("1\n");
+			bart_printf("1\n");
 #else
-			printf("0\n");
+			bart_printf("0\n");
 #endif
 
-		printf("FFTWTHREADS=");
+		bart_printf("FFTWTHREADS=");
 #ifdef FFTWTHREADS
-			printf("1\n");
+			bart_printf("1\n");
 #else
-			printf("0\n");
+			bart_printf("0\n");
 #endif
 	}
 

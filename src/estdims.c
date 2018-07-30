@@ -6,7 +6,6 @@
  * 2015 Frank Ong <frankong@berkeley.edu>
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <complex.h>
@@ -43,7 +42,7 @@ int main_estdims(int argc, char* argv[])
 	
 	estimate_im_dims(N, im_dims, traj_dims, traj);
 
-	printf("%ld %ld %ld\n", im_dims[0], im_dims[1], im_dims[2]);
+	bart_printf("%ld %ld %ld\n", im_dims[0], im_dims[1], im_dims[2]);
 	
 	unmap_cfl(N, traj_dims, traj);
 	return 0;

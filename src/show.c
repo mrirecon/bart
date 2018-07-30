@@ -89,20 +89,20 @@ int main_show(int argc, char* argv[])
 	if (-1 != showdim) {
 
 		assert((showdim >= 0) && (showdim < (int)N));
-		printf("%ld\n", dims[showdim]);
+		bart_printf("%ld\n", dims[showdim]);
 		goto out;
 	}
 
 	if (meta) {
 
-		printf("Type: complex float\n");
-		printf("Dimensions: %d\n", N);	// FIXME always DIMS
-		printf("AoD:");
+		bart_printf("Type: complex float\n");
+		bart_printf("Dimensions: %d\n", N);	// FIXME always DIMS
+		bart_printf("AoD:");
 
 		for (unsigned int i = 0; i < N; i++)
-			printf("\t%ld", dims[i]);
+			bart_printf("\t%ld", dims[i]);
 
-		printf("\n");
+		bart_printf("\n");
 
 		goto out;
 	}

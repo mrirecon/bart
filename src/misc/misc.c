@@ -105,6 +105,25 @@ int error_catcher(int fun(int argc, char* argv[argc]), int argc, char* argv[argc
 }
 
 
+extern FILE* bart_output;
+FILE* bart_output = NULL;
+
+int bart_printf(const char* fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	FILE* out = bart_output;
+
+	if (NULL == bart_output)
+		out = stdout;
+
+	int ret = vfprintf(out, fmt, ap);
+	va_end(ap);
+
+	return ret;
+}
+
 
 void print_dims(int D, const long dims[D])
 {
