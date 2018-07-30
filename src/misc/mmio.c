@@ -52,7 +52,8 @@ static void io_error(const char* fmt, ...)
 	va_end(ap);
 	fflush(stderr);
 	perror(" ");
-	exit(EXIT_FAILURE);
+
+	error("");	// FIXME: we may leak open files descriptors...
 }
 
 

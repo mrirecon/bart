@@ -13,6 +13,8 @@
 #include <stddef.h>
 #include <stdnoreturn.h>
 
+#include "misc/nested.h"
+
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
 #endif
@@ -57,8 +59,9 @@ extern noreturn void error(const char* str, ...);
 extern __attribute__((noreturn)) void error(const char* str, ...);
 #endif
 
-// small wrapper around snprintf to gracefully handle cases where 'size' is negative
-extern int safeneg_snprintf(char* buffer, long size, const char* format, ... );
+
+extern int error_catcher(int fun(int argc, char* argv[__VLA(argc)]), int argc, char* argv[__VLA(argc)]);
+
 
 extern void print_dims(int D, const long dims[__VLA(D)]);
 extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);

@@ -1,12 +1,12 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2015. Martin Uecker.
+ * Copyright 2015-2018. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * Copyright 2017-2018. Damien Nguyen
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2011-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  * 2017-2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
  */
@@ -16,14 +16,29 @@
 #include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
+#include <setjmp.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
 
 #include "misc/debug.h"
+#include "misc/nested.h"
 #include "misc/opts.h"
 #include "misc.h"
+
+
+struct error_jumper_s {
+
+	bool initialized;
+	jmp_buf buf;
+};
+
+extern struct error_jumper_s error_jumper;	// FIXME should not be extern
+
+struct error_jumper_s error_jumper = { .initialized = false };
+
+
 
 
 void* xmalloc(size_t s)
@@ -67,7 +82,26 @@ void error(const char* fmt, ...)
 	debug_vprintf(DP_ERROR, fmt, ap);
 #endif
 	va_end(ap);
+
+	if (error_jumper.initialized)
+		longjmp(error_jumper.buf, 1);
+
 	exit(EXIT_FAILURE);
+}
+
+
+int error_catcher(int fun(int argc, char* argv[argc]), int argc, char* argv[argc])
+{
+	int ret = -1;
+
+	error_jumper.initialized = true;
+
+	if (0 == setjmp(error_jumper.buf))
+		ret = fun(argc, argv);
+
+	error_jumper.initialized = false;
+
+	return ret;
 }
 
 

@@ -16,6 +16,7 @@
 #include <errno.h>
 
 #include "misc/misc.h"
+#include "misc/debug.h"
 #include "misc/cppmap.h"
 
 #include "main.h"
@@ -100,8 +101,16 @@ int main_bart(int argc, char* argv[])
 
 	for (int i = 0; NULL != dispatch_table[i].name; i++) {
 
-		if (0 == strcmp(bn, dispatch_table[i].name))
-			return dispatch_table[i].main_fun(argc, argv);
+		if (0 == strcmp(bn, dispatch_table[i].name)) {
+
+			int save = debug_level;
+
+			int ret = error_catcher(dispatch_table[i].main_fun, argc, argv);
+
+			debug_level = save;
+
+			return ret;
+		}
 	}
 
 	fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
