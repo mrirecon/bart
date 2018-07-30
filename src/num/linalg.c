@@ -1,10 +1,10 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  *
  *
@@ -331,6 +331,13 @@ void (mat_copy)(int A, int B, complex float dst[A][B], const complex float src[A
 	for (int i = 0; i < A; i++)
 		for (int j = 0; j < B; j++)
 			dst[i][j] = src[i][j];
+}
+
+void (mat_conj)(int A, int B, complex float dst[A][B], const complex float src[A][B])
+{
+	for (int i = 0; i < A; i++)
+		for (int j = 0; j < B; j++)
+			dst[i][j] = conj(src[i][j]);
 }
 
 void (orthiter_noinit)(int M, int N, int iter, float val[M], complex float out[M][N], const complex float matrix[N][N])
