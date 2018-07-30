@@ -96,7 +96,7 @@ int main_show(int argc, char* argv[])
 	if (meta) {
 
 		printf("Type: complex float\n");
-		printf("Dimensions: %d\n", N);
+		printf("Dimensions: %d\n", N);	// FIXME always DIMS
 		printf("AoD:");
 
 		for (unsigned int i = 0; i < N; i++)
