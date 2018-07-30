@@ -191,8 +191,8 @@ static bool test_bspline_zero(void)
 		double coord[7] = { 0., 0., 0., 0., 0., 0., 0. };
 		coord[i] = 1.;
 
-		double k2[9] = {0., 0., 0., 0., 0., 0., 0., 0., 0.};
-		double c2[6] = {0., 0., 0., 0., 0., 0.};
+		double k2[9] = { 0., 0., 0., 0., 0., 0., 0., 0., 0. }; // FIXME: this and next line's inits may hide bug (crash with clang)
+		double c2[6] = { 0., 0., 0., 0., 0., 0. };
 
 		bspline_coeff_derivative_n(1, 10, 3, k2, c2, knots, coord);
 		double z = bspline_curve_zero(8, 2, k2, c2);
