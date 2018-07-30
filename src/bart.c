@@ -16,9 +16,22 @@
 #include <errno.h>
 
 #include "misc/misc.h"
+#include "misc/debug.h"
 #include "misc/cppmap.h"
 
 #include "main.h"
+
+void bart_exit_cleanup();
+
+#ifdef ENABLE_LONGJUMP
+#  include "jumper.h"
+#endif /* ENABLE_LONGJUMP */
+
+#ifdef MEMONLY_CFL
+#  ifndef FORCE_BUILTIN_COMMANDS
+#   define FORCE_BUILTIN_COMMANDS
+#  endif /* !FORCE_BUILTIN_COMMANDS */
+#endif /* MEMONLY_CFL */
 
 struct {
 	
@@ -33,6 +46,24 @@ struct {
 	{ NULL, NULL }
 };
 
+struct {
+
+	int (*main_fun)(int argc, char* argv[], char* out);
+	const char* name;
+
+} in_mem_dispatch_table[] = {
+	{ in_mem_bitmask_main,  "bitmask"  },
+	{ in_mem_estdelay_main, "estdelay" },
+	{ in_mem_estdims_main,  "estdims"  },
+	{ in_mem_estshift_main, "estshift" },
+	{ in_mem_estvar_main,   "estvar"   },
+	{ in_mem_nrmse_main,    "nrmse"    },
+	{ in_mem_sdot_main,     "sdot"     },
+	{ in_mem_show_main,     "show"     },
+	{ in_mem_version_main,  "version"  },
+	{ NULL, NULL }
+};
+
 static void usage(void)
 {
 	printf("BART. Available commands are:");
@@ -44,14 +75,30 @@ static void usage(void)
 
 		printf("%-12s", dispatch_table[i].name);
 	}
+	printf("\n");
+
+	printf("\nin-memory commands overrides are:");
+
+	for (int i = 0; NULL != in_mem_dispatch_table[i].name; i++) {
+
+		if (0 == i % 6)
+			printf("\n");
+
+		printf("%-12s", in_mem_dispatch_table[i].name);
+	}
 
 	printf("\n");
 }
 
 int main_bart(int argc, char* argv[])
 {
-	char* bn = basename(argv[0]);
+	return in_mem_bart_main(argc, argv, NULL);
+}
 
+// if not NULL, output should point to a memory location with at least *512* elements
+int in_mem_bart_main(int argc, char* argv[], char* output)
+{
+	char* bn = basename(argv[0]);
 	if (0 == strcmp(bn, "bart")) {
 
 		if (1 == argc) {
@@ -60,6 +107,7 @@ int main_bart(int argc, char* argv[])
 			return 1;
 		}
 
+#ifndef FORCE_BUILTIN_COMMANDS
 		const char* tpath[] = {
 #ifdef TOOLBOX_PATH_OVERRIDE
 			getenv("TOOLBOX_PATH"),
@@ -94,18 +142,77 @@ int main_bart(int argc, char* argv[])
 				assert(0);
 			}
 		}
+#endif /* !FORCE_BUILTIN_COMMANDS */
 
-		return main_bart(argc - 1, argv + 1);
+		return in_mem_bart_main(argc - 1, argv + 1, output);
 	}
 
-	for (int i = 0; NULL != dispatch_table[i].name; i++) {
+	int debug_level_save = debug_level;
+	int ret = -1;
+#ifdef ENABLE_LONGJUMP
+	if (setjmp(error_jumper) == 0) {
+#endif /* ENABLE_LONGJUMP */
+		if (output != NULL) {
+			for (int i = 0; NULL != in_mem_dispatch_table[i].name; i++) {
+				if (0 == strcmp(bn, in_mem_dispatch_table[i].name)) {
+					ret = in_mem_dispatch_table[i].main_fun(argc, argv, output);
+					bart_exit_cleanup();
+					debug_level = debug_level_save;
+					return ret;
+				}
+			}
+		}
 
-		if (0 == strcmp(bn, dispatch_table[i].name))
-			return dispatch_table[i].main_fun(argc, argv);
+		for (int i = 0; NULL != dispatch_table[i].name; i++) {
+
+			if (0 == strcmp(bn, dispatch_table[i].name)) {
+				ret = dispatch_table[i].main_fun(argc, argv);
+				bart_exit_cleanup();
+				debug_level = debug_level_save;
+				return ret;
+			}
+		}
+
+		BART_ERR("Unknown bart command: \"%s\".\n", bn);
+		bart_exit_cleanup();
+		debug_level = debug_level_save;
+		return -1;
+#ifdef ENABLE_LONGJUMP
 	}
-
-	fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
-	return -1;
+	else {
+		BART_ERR("Some error occurred!\n");
+		bart_exit_cleanup();
+		debug_level = debug_level_save;
+		return -1;
+	}
+#endif /* ENABLE_LONGJUMP */
 }
 
+// =============================================================================
 
+extern void io_memory_cleanup();
+#ifdef USE_CUDA
+extern void cuda_memcache_clear(void);
+#endif /* USE_CUDA */
+
+#ifdef USE_LOCAL_FFTW
+#  include "fftw3_local.h"
+#  define MANGLE(name) local_ ## name
+#else
+#  include <fftw3.h>
+#  define MANGLE(name) name
+#endif /* USE_LOCAL_FFTW */
+
+void bart_exit_cleanup()
+{
+	if (command_line != NULL) {
+		XFREE(command_line);
+	}
+	io_memory_cleanup();
+#ifdef FFTWTHREADS
+	MANGLE(fftwf_cleanup_threads)();
+#endif /* FFTWTHREADS */
+#ifdef USE_CUDA
+	cuda_memcache_clear();
+#endif /* USE_CUDA */
+}

@@ -27,6 +27,8 @@ LOG_BACKEND?=0
 LOG_SIEMENS_BACKEND?=0
 LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
+ENABLE_LONGJUMP?=0
+FORCE_BUILTIN_COMMANDS?=0
 ENABLE_MEM_CFL?=0
 MEMONLY_CFL?=0
 
@@ -345,6 +347,18 @@ ISMRM_L := -L$(ISMRM_BASE)/lib -lismrmrd
 else
 ISMRM_H :=
 ISMRM_L :=
+endif
+
+# Support for longjumps (emulate C++ exceptions)
+
+ifeq ($(ENABLE_LONGJUMP),1)
+	CPPFLAGS += -DENABLE_LONGJUMP
+endif
+
+# Force the usage of builtin commands
+
+ifeq ($(FORCE_BUILTIN_COMMANDS),1)
+	CPPFLAGS += -DFORCE_BUILTIN_COMMANDS
 endif
 
 # Enable in-memory CFL files

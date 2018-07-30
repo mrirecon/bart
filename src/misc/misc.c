@@ -25,6 +25,14 @@
 #include "misc/opts.h"
 #include "misc.h"
 
+#ifdef BART_WITH_PYTHON
+#  include <Python.h>
+#endif /* BART_WITH_PYTHON */
+
+#ifdef ENABLE_LONGJUMP
+#  include "jumper.h"
+jmp_buf error_jumper;
+#endif /* ENABLE_LONGJUMP */
 
 void* xmalloc(size_t s)
 {
@@ -55,19 +63,46 @@ void warn_nonnull_ptr(void* p)
 	}
 }
 
+int safeneg_snprintf(char* buffer, long size, const char* format, ... )
+{
+	if (size < 0) {
+		return 0;
+	}
+     
+	va_list ap;
+	va_start(ap, format);
+	int ret = vsnprintf(buffer, size, format, ap);
+	va_end(ap);
+	return ret;
+}
+
 
 void error(const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 
+#ifndef BART_WITH_PYTHON
 #ifdef USE_LOG_BACKEND
 	debug_printf_trace("error", __FILE__, __LINE__, DP_ERROR, fmt, ap);
 #else
 	debug_vprintf(DP_ERROR, fmt, ap);
-#endif
+#endif /* USE_LOG_BACKEND */
+#else
+	char err[1024] = {"\0"};
+	if (PyErr_Occurred() == NULL) {
+		vsnprintf(err, 1024, fmt, ap);
+		PyErr_SetString(PyExc_RuntimeError, err);
+	}
+	// No else required as the error indicator has already been set elsewhere
+#endif /* !BART_WITH_PYTHON */
 	va_end(ap);
+
+#ifdef ENABLE_LONGJUMP
+	longjmp(error_jumper, 1);
+#else
 	exit(EXIT_FAILURE);
+#endif /* ENABLE_LONGJUMP */
 }
 
 

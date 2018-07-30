@@ -30,6 +30,14 @@ static const char help_str[] = "Estimate sub-pixel shift.";
 
 int main_estshift(int argc, char* argv[])
 {
+	return in_mem_estshift_main(argc, argv, NULL);
+}
+
+int in_mem_estshift_main(int argc, char* argv[], char* output)
+{
+	int idx = 0;
+	int max_length = 512;
+	
 	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 
 	unsigned int flags = atoi(argv[1]);
@@ -45,17 +53,34 @@ int main_estshift(int argc, char* argv[])
 	float shifts[DIMS];
 	est_subpixel_shift(DIMS, shifts, dims1, flags, in1, in2);
 
-	printf("Shifts:");
+	if (output != NULL) {
+		idx += safeneg_snprintf(output+idx,
+					max_length-idx,
+					"Shifts:");
+	}
+	else {
+		printf("Shifts:");
+	}
 
 	for (unsigned int i = 0; i < DIMS; i++) {
 
 		if (!MD_IS_SET(flags, i))
 			continue;
 
-		printf("\t%f", shifts[i]);
+		if (output != NULL) {
+			idx += safeneg_snprintf(output+idx,
+						max_length-idx,
+						"\t%f",
+						shifts[i]);
+		}
+		else {
+			printf("\t%f", shifts[i]);
+		}
 	}
 
-	printf("\n");
+	if (output == NULL) {
+		printf("\n");
+	}
 
 	unmap_cfl(DIMS, dims1, in1);
 	unmap_cfl(DIMS, dims2, in2);
