@@ -1,9 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2018. Martin Uecker.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -165,7 +166,7 @@ void fixphase2(unsigned int N, const long dims[N], unsigned int dim, const compl
 	md_calc_strides(N, tstrs, tdims, CFL_SIZE);
 
 	md_clear(N, dims2, tmp, CFL_SIZE);
-	md_zfmac2(N, dims, strs2, tmp, tstrs, rot, strs, in);
+	md_zfmacc2(N, dims, strs2, tmp, strs, in, tstrs, rot);
 	md_zphsr(N, dims2, tmp, tmp);
 
 	md_zmulc2(N, dims, strs, out, strs, in, strs2, tmp);
