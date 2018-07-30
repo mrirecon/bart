@@ -1,4 +1,15 @@
 
+
+
+tests/test-copy: ones copy nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/ones 2 50 50 a.ra								;\
+	$(TOOLDIR)/copy a.ra b.ra								;\
+	$(TOOLDIR)/nrmse -t 0. a.ra b.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 tests/test-copy-out: ones zeros copy resize nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/ones 2 50 50 o.ra								;\
@@ -22,5 +33,5 @@ tests/test-copy-in: ones zeros copy resize nrmse
 
 
 
-TESTS += tests/test-copy-out tests/test-copy-in
+TESTS += tests/test-copy tests/test-copy-out tests/test-copy-in
 

@@ -1,9 +1,9 @@
-/* Copyright 2016. Martin Uecker.
+/* Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -27,14 +27,14 @@
 #endif
 
 
-static const char usage_str[] = "dim1 pos1 ... dimn posn <input> <output>";
-static const char help_str[] = "Copy an array to a given position in the output file (which must exist).";
+static const char usage_str[] = "[dim1 pos1 ... dimn posn] <input> <output>";
+static const char help_str[] = "Copy an array (to a given position in the output file - which then must exist).";
 
 
 int main_copy(int argc, char* argv[])
 {
 	const struct opt_s opts[] = { };
-	cmdline(&argc, argv, 4, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, 2, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -42,17 +42,26 @@ int main_copy(int argc, char* argv[])
 	unsigned int N = DIMS;
 
 	int count = argc - 3;
-	assert((count > 0) && (count % 2 == 0));
+	assert((count >= 0) && (count % 2 == 0));
 
 	long in_dims[N];
 	long out_dims[N];
 
 	void* in_data = load_cfl(argv[argc - 2], N, in_dims);
-	void* out_data = load_cfl(argv[argc - 1], N, out_dims);
 
-	// reload
-	unmap_cfl(N, out_dims, out_data);
-	out_data = create_cfl(argv[argc - 1], N, out_dims);
+	if (count > 0) {
+
+		// get dimensions
+		void* out_data = load_cfl(argv[argc - 1], N, out_dims);
+
+		unmap_cfl(N, out_dims, out_data);
+
+	} else {
+
+		md_copy_dims(N, out_dims, in_dims);
+	}
+
+	void* out_data = create_cfl(argv[argc - 1], N, out_dims);
 
 	long position[N];
 
