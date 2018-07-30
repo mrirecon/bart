@@ -36,7 +36,7 @@ tests/test-cc-svd-matrix: cc extract fmac transpose nrmse $(TESTS_OUT)/shepploga
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/cc -S -p 4 $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp-cc.ra		;\
 	$(TOOLDIR)/cc -M -S $(TESTS_OUT)/shepplogan_coil_ksp.ra sccmat.ra		;\
-	$(TOOLDIR)/extract 4 0 3 sccmat.ra sccmat-4.ra					;\
+	$(TOOLDIR)/extract 4 0 4 sccmat.ra sccmat-4.ra					;\
 	$(TOOLDIR)/fmac -C -s 8 $(TESTS_OUT)/shepplogan_coil_ksp.ra sccmat-4.ra ksp-cc-3.ra	;\
 	$(TOOLDIR)/transpose 3 4 ksp-cc-3.ra ksp-cc-4.ra				;\
 	$(TOOLDIR)/nrmse -t 0.001 ksp-cc.ra ksp-cc-4.ra					;\
@@ -45,5 +45,5 @@ tests/test-cc-svd-matrix: cc extract fmac transpose nrmse $(TESTS_OUT)/shepploga
 
 
 
-TESTS += tests/test-cc-svd tests/test-cc-geom tests/test-cc-esp
+TESTS += tests/test-cc-svd tests/test-cc-geom tests/test-cc-esp tests/test-cc-svd-matrix
 
