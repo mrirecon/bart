@@ -23,11 +23,18 @@ struct vec_iter_s;
 typedef struct iter_op_data_s { TYPEID* TYPEID; } iter_op_data;
 #endif
 typedef void (*iter_op_fun_t)(iter_op_data* data, float* dst, const float* src);
+typedef void (*iter_nlop_fun_t)(iter_op_data* data, int N, float* args[N]);
 typedef void (*iter_op_p_fun_t)(iter_op_data* data, float rho, float* dst, const float* src);
 
 struct iter_op_s {
 
 	iter_op_fun_t fun;
+	iter_op_data* data;
+};
+
+struct iter_nlop_s {
+
+	iter_nlop_fun_t fun;
 	iter_op_data* data;
 };
 
@@ -40,6 +47,11 @@ struct iter_op_p_s {
 inline void iter_op_call(struct iter_op_s op, float* dst, const float* src)
 {
 	op.fun(op.data, dst, src);
+}
+
+inline void iter_nlop_call(struct iter_nlop_s op, int N, float* args[N])
+{
+	op.fun(op.data, N, args);
 }
 
 inline void iter_op_p_call(struct iter_op_p_s op, float rho, float* dst, const float* src)
@@ -100,6 +112,15 @@ void irgnm(unsigned int iter, float alpha, float redu,
 	struct iter_op_p_s inv,
 	float* x, const float* x0, const float* y,
 	struct iter_op_s callback);
+
+void altmin(unsigned int iter, float alpha, float redu,
+	long N,
+	const struct vec_iter_s* vops,
+	unsigned int NI,
+	struct iter_nlop_s op,
+	struct iter_op_p_s min_ops[__VLA(NI)],
+	float* x[__VLA(NI)], const float* y,
+	struct iter_nlop_s callback);
 
 void pocs(unsigned int maxiter,
 	unsigned int D, struct iter_op_p_s proj_ops[__VLA(D)],
