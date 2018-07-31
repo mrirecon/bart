@@ -146,7 +146,7 @@ void debug_vprintf_trace(const char* func_name,
 {
 #ifndef USE_LOG_BACKEND
 	UNUSED(func_name); UNUSED(file); UNUSED(line);
-	debug_printf(level, fmt, ap);
+	debug_vprintf(level, fmt, ap);
 #else
 	char tmp[1024] = { 0 };
 	vsnprintf(tmp, 1023, fmt, ap);

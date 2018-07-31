@@ -69,6 +69,14 @@ if(USE_LOG_GADGETRON_BACKEND)
   message(STATUS "Delegating all outputs to the Gadgetron logging backend")
 endif(USE_LOG_GADGETRON_BACKEND)
 
+##======================================================================
+
+option(ENABLE_LONGJUMP "Enable the use of the setjmp & longjmp functions to emulate C++ exceptions" OFF)
+if(ENABLE_LONGJUMP)
+  message(STATUS "Using setjmp & longjmp to emulate C++ exceptions")
+  add_definitions(-DENABLE_LONGJUMP)
+endif()
+
 # ==============================================================================
 
 option(GENERATE_DOC "Automatically generate documentation after building BART" ON)
