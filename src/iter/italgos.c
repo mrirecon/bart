@@ -43,6 +43,7 @@
 #include "italgos.h"
 
 extern inline void iter_op_call(struct iter_op_s op, float* dst, const float* src);
+extern inline void iter_nlop_call(struct iter_nlop_s op, int N, float* args[N]);
 extern inline void iter_op_p_call(struct iter_op_p_s op, float rho, float* dst, const float* src);
 
 /**
@@ -509,6 +510,50 @@ void irgnm(unsigned int iter, float alpha, float redu, long N, long M,
 
 	vops->del(h);
 	vops->del(p);
+	vops->del(r);
+}
+
+/**
+ * Alternating Minimzation
+ *
+ * Minimize residual by calling each min_op in turn.
+ */
+void altmin(unsigned int iter, float alpha, float redu,
+	    long N,
+	    const struct vec_iter_s* vops,
+	    unsigned int NI,
+	    struct iter_nlop_s op,
+	    struct iter_op_p_s min_ops[__VLA(NI)],
+	    float* x[__VLA(NI)], const float* y,
+	    struct iter_nlop_s callback)
+{
+	float* r = vops->allocate(N);
+	vops->clear(N, r);
+
+
+	float* args[1+NI];
+	args[0] = r;
+	for (long i = 0; i < NI; ++i)
+		args[1+i] = x[i];
+
+	for (unsigned int i = 0; i < iter; i++) {
+
+		for (unsigned int j = 0; j < NI; ++j) {
+			iter_nlop_call(op, 1+NI, args); 	// r = F x
+
+			vops->xpay(N, -1., r, y);		// r = y - F x
+
+			debug_printf(DP_DEBUG2, "Step: %u, Res: %f\n", i, vops->norm(N, r));
+			iter_op_p_call(min_ops[j], alpha, x[j], y);
+
+			if (NULL != callback.fun)
+				iter_nlop_call(callback, NI, x);
+		}
+
+		alpha /= redu;
+
+	}
+
 	vops->del(r);
 }
 
