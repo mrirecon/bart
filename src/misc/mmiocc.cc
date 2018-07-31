@@ -179,7 +179,7 @@ namespace internal_ {
 	  virtual void reset()
 	       {
 		    Node::reset();
-		    PyArray_XDECREF(ptr_);
+ 		    // PyArray_XDECREF(ptr_); // FIXME: this should really be uncommented... but right now it segfaults with python3
 		    ptr_ = NULL;
 		    std::fill(dims_, dims_+DIMS_MAX, 1);
 		    dirty_ = false;
