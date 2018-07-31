@@ -11,6 +11,7 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
+#include <stdbool.h>
 #include <complex.h>
 
 #ifdef ENABLE_LONGJUMP
@@ -18,7 +19,7 @@ extern struct error_jmpbuf_s {
 
 	_Bool initialized;
 	jmp_buf jmpbuf;
-} error_jmpbuf;
+} error_jumper;
 #endif /* ENABLE_LONGJUMP */
 
 #ifndef DIMS
@@ -171,14 +172,22 @@ PyObject* call_submain(const char* subcommand, const char* cmdline_in)
      int ret = bart_command(512, output, argc, argv); // execute bart
 
      if (strlen(output) > 0) {
+#if PY_MAJOR_VERSION >= 3
+	  return PyUnicode_FromString(output);
+#else
 	  return PyString_FromString(output);
+#endif /* PY_MAJOR_VERSION >= 3 */
      }
      else {
 	  if (PyErr_Occurred()) {
 	       return NULL;
 	  }
 	  else {
+#if PY_MAJOR_VERSION >= 3
+	       return PyLong_FromLong(ret);
+#else
 	       return PyInt_FromLong(ret);
+#endif /* PY_MAJOR_VERSION >= 3 */
 	  }
      }
 }
@@ -237,8 +246,8 @@ PyObject* register_python_memory(PyObject *self, PyObject *args)
      // ------------------------------------------------------------------------
 
 #ifdef ENABLE_LONGJUMP
-     error_jmpbuf.initialized = 1;
-     if (setjmp(error_jmpbuf.jmpbuf) == 0) {
+     error_jumper.initialized = 1;
+     if (setjmp(error_jumper.jmpbuf) == 0) {
 #endif /* ENABLE_LONGJUMP */
 	  if (register_mem_cfl_python(name, npy_data)) {
 	       Py_RETURN_NONE;
@@ -279,8 +288,8 @@ PyObject* load_cfl_python(PyObject* self, PyObject* args)
      }
 
 #ifdef ENABLE_LONGJUMP
-     error_jmpbuf.initialized = 1;
-     if (setjmp(error_jmpbuf.jmpbuf) == 0) {
+     error_jumper.initialized = 1;
+     if (setjmp(error_jumper.jmpbuf) == 0) {
 #endif /* ENABLE_LONGJUMP */
 	  long dims[DIMS] = {0};
 	  void* data = load_cfl(name, DIMS, dims);
