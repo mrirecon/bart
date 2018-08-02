@@ -557,6 +557,7 @@ const struct operator_s* operator_null_create(unsigned int N, const long dims[N]
 
 
 
+
 /**
  * Create a new operator that first applies a, then applies b:
  * c(x) = b(a(x))
@@ -1508,3 +1509,37 @@ const struct operator_s* operator_permute(const struct operator_s* op, int N, co
 
 	return operator_generic_create2(N, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), permute_fun, permute_del);
 }
+
+
+
+
+bool operator_zero_or_null_p(const struct operator_s* op)
+{
+	auto opd = operator_get_data(op);
+
+	if (   (NULL != CAST_MAYBE(zero_s, opd))
+	    || (NULL != CAST_MAYBE(null_s, opd)))
+		return true;
+
+	auto p = CAST_MAYBE(permute_data_s, opd);
+
+	if (NULL != p)
+		return operator_zero_or_null_p(p->op);
+
+	// FIXME: unwrap other types...
+
+	auto c = CAST_MAYBE(operator_combi_s, opd);
+
+	if (NULL != c) {
+
+		for (int i = 0; i < c->N; i++)
+			if (!operator_zero_or_null_p(c->x[i]))
+				return false;
+
+		return true;
+	}
+
+	return false;
+}
+
+

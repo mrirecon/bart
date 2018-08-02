@@ -1,5 +1,5 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -136,6 +136,9 @@ extern const struct operator_s* operator_combi_create(int N, const struct operat
 extern const struct operator_s* operator_link_create(const struct operator_s* op, unsigned int o, unsigned int i);
 
 extern const struct operator_s* operator_permute(const struct operator_s* op, int N, const int perm[N]);
+
+
+extern _Bool operator_zero_or_null_p(const struct operator_s* op);
 
 #include "misc/cppwrap.h"
 
