@@ -11,6 +11,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/rand.h"
+#include "num/ops.h"
 
 #include "linops/someops.h"
 #include "linops/linop.h"
@@ -64,4 +65,24 @@ static bool test_linop_plus(void)
 
 
 UT_REGISTER_TEST(test_linop_plus);
+
+
+static bool test_linop_null(void)
+{
+	long dims[1] = { 5 };
+	const struct linop_s* l = linop_null_create(1, dims, dims);
+
+	bool ok = true;
+
+	ok &= operator_zero_or_null_p(l->forward);
+	ok &= operator_zero_or_null_p(l->adjoint);
+	ok &= operator_zero_or_null_p(l->normal);
+
+	linop_free(l);
+
+	return ok;
+}
+
+
+UT_REGISTER_TEST(test_linop_null);
 

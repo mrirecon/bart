@@ -400,6 +400,11 @@ struct linop_s* linop_null_create2(unsigned int N, const long odims[N], const lo
 
 
 
+struct linop_s* linop_null_create(unsigned int N, const long odims[N], const long idims[N])
+{
+	return linop_null_create2(N, odims, MD_STRIDES(N, odims, CFL_SIZE),
+					idims, MD_STRIDES(N, idims, CFL_SIZE));
+}
 
 
 /**

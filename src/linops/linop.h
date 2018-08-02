@@ -80,6 +80,7 @@ extern struct linop_s* linop_loop(unsigned int D, const long dims[D], struct lin
 
 
 extern struct linop_s* linop_null_create2(unsigned int N, const long odims[N], const long ostrs[N], const long idims[N], const long istrs[N]);
+extern struct linop_s* linop_null_create(unsigned int N, const long odims[N], const long idims[N]);
 
 extern struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b);
 
