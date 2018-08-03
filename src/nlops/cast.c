@@ -81,7 +81,12 @@ struct nlop_s* nlop_from_linop(const struct linop_s* x)
 const struct linop_s* linop_from_nlop(const struct nlop_s* x)
 {
 	struct nlop_data_s* data = nlop_get_data((struct nlop_s*)x);
+
+	if (NULL == data)
+		return NULL;
+
 	auto ldata = CAST_MAYBE(nlop_linop_s, data);
+
 	return (NULL != ldata) ? ldata->lop : NULL;
 }
 
