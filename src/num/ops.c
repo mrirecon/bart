@@ -593,7 +593,13 @@ const struct operator_s* operator_chain(const struct operator_s* a, const struct
 	return op2;
 }
 
-
+const struct operator_s* operator_chain_FF(const struct operator_s* a, const struct operator_s* b)
+{
+	const struct operator_s* x= operator_chain(a, b);
+	operator_free(a);
+	operator_free(b);
+	return x;
+}
 
 const struct operator_s* operator_chainN(unsigned int N, const struct operator_s* ops[N])
 {

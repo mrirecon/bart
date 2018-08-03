@@ -56,6 +56,14 @@ struct nlop_s* nlop_chain(const struct nlop_s* a, const struct nlop_s* b)
 	return PTR_PASS(n);
 }
 
+struct nlop_s* nlop_chain_FF(const struct nlop_s* a, const struct nlop_s* b)
+{
+	struct nlop_s* x = nlop_chain(a, b);
+	nlop_free(a);
+	nlop_free(b);
+	return x;
+}
+
 
 struct nlop_s* nlop_chain2(const struct nlop_s* a, int o, const struct nlop_s* b, int i)
 {
