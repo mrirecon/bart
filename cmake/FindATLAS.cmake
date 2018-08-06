@@ -67,10 +67,15 @@ find_path(ATLAS_CBLAS_INCLUDE_DIR
              NAMES cblas.h 
              PATHS ${ATLAS_SEARCH_PATHS} 
              PATH_SUFFIXES include include/openblas)
-find_path(ATLAS_LAPACKE_INCLUDE_DIR 
-             NAMES lapacke.h 
-             PATHS ${ATLAS_SEARCH_PATHS} 
-             PATH_SUFFIXES include)
+if(NOT DEFINED OpenBLAS_NO_LAPACKE OR NOT OpenBLAS_NO_LAPACKE)
+  find_path(ATLAS_LAPACKE_INCLUDE_DIR 
+               NAMES lapacke.h 
+               PATHS ${ATLAS_SEARCH_PATHS} 
+               PATH_SUFFIXES include)
+  set(LAPACKE_INCLUDE_VAR "ATLAS_LAPACKE_INCLUDE_DIR")
+else()
+  set(LAPACKE_INCLUDE_VAR "")
+endif()
 
 ##################################################################################################
 set(PATH_SUFFIXES_LIST
@@ -104,10 +109,15 @@ find_library(LAPACK_LIB
                  NAMES ${ATLAS_THREAD_PREFIX}lapack
                  PATHS ${LAPACKE_SEARCH_PATHS}
                  PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
-find_library(LAPACKE_LIB 
-                 NAMES ${ATLAS_THREAD_PREFIX}lapacke
-                 PATHS ${LAPACKE_SEARCH_PATHS}
-                 PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
+if(NOT DEFINED OpenBLAS_NO_LAPACKE OR NOT OpenBLAS_NO_LAPACKE)
+  find_library(LAPACKE_LIB 
+                   NAMES ${ATLAS_THREAD_PREFIX}lapacke
+                   PATHS ${LAPACKE_SEARCH_PATHS}
+                   PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
+  set(LAPACKE_LIB_VAR "LAPACKE_LIB")
+else()
+  set(LAPACKE_LIB_VAR "")
+endif()
 find_library(F77BLAS_LIB 
                  NAMES ${ATLAS_THREAD_PREFIX}f77blas
                  PATHS ${LAPACKE_SEARCH_PATHS}
@@ -135,8 +145,8 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ATLAS FOUND_VAR ATLAS_FOUND
   REQUIRED_VARS
                 ATLAS_CBLAS_INCLUDE_DIR
-                ATLAS_LAPACKE_INCLUDE_DIR
-                LAPACKE_LIB
+                ${LAPACKE_INCLUDE_VAR}
+                ${LAPACKE_LIB_VAR}
                 LAPACK_LIB
                 F77BLAS_LIB
                 CBLAS_LIB

@@ -40,6 +40,15 @@ if(BART_REDEFINE_PRINTF_FOR_TRACE)
   message(STATUS "Redefining debug_print* functions as macros for better log tracing")
 endif(BART_REDEFINE_PRINTF_FOR_TRACE)
 
+option(BART_NO_LAPACKE "Compile without LAPACKE installed on the system" OFF)
+if(BART_NO_LAPACKE)
+  set(ATLAS_NO_LAPACKE ON)
+  set(OpenBLAS_NO_LAPACKE ON)
+  set(BLAS_NO_LAPACKE ON)
+  add_definitions(-DNOLAPACKE)
+  include_directories(${CMAKE_CURRENT_LIST_DIR}/src/lapacke)
+  message(STATUS "Compiling with NOLAPACKE")
+endif(BART_NO_LAPACKE)
 
 # ==============================================================================
 
@@ -187,7 +196,19 @@ endif()
 ## use.  Note that the first library successfully found
 ## will be used 
 ##
-## -*-*- Try OpenBLAS first
+## -*-*- Try with only a BLAS library first if BART_NO_LAPACKE is set
+if(BART_NO_LAPACKE AND (NOT LINALG_VENDOR OR LINALG_VENDOR STREQUAL "BLAS"))
+  find_package(BLASlib REQUIRED)
+  set(LINALG_VENDOR_FOUND TRUE)
+  set(LINALG_VENDOR "BLAS")
+  set(LINALG_INCLUDE_DIRS ${BLAS_INCLUDE_DIRS})
+  set(LINALG_LIBRARIES ${BLAS_LIBRARIES})
+  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
+endif()
+
+## -*-*- Try OpenBLAS next
 if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "OpenBLAS")
   include( ${CMAKE_CURRENT_LIST_DIR}/cmake/FindOpenBLAS.cmake )
   if(OpenBLAS_FOUND)
@@ -399,6 +420,9 @@ if(BART_ISMRMRD)
   link_directories(${ISMRMRD_LIBRARY_DIRS})
   include_directories(${ISMRMRD_INCLUDE_DIRS})
 endif()
+if(BART_NO_LAPACKE)
+  list(APPEND BART_SUPPORT_LIBS lapacke)
+endif(BART_NO_LAPACKE)
 include_directories(src)
 set(bart_support_SRCS "")
 set(bart_support_CCSRCS "")
