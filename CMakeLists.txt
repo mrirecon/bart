@@ -8,7 +8,6 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(bart C)
 enable_language(C)
-enable_language(CXX)
 
 # Silence a CMake-warning about object libraries
 if(CMAKE_VERSION VERSION_GREATER 3.0)
@@ -27,11 +26,17 @@ macro(use_c99)
 endmacro(use_c99)
 use_c99()
 
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fblocks")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fblocks")
+endif()
+
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+
 option(BART_FPIC "Compile using position-independent code" OFF)
 if(BART_FPIC)
   message(STATUS "ENABLED compilation with -fPIC")
-  set (CMAKE_C_FLAGS "-fPIC ${CMAKE_C_FLAGS}")
-  set (CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif(BART_FPIC)
 
 option(BART_REDEFINE_PRINTF_FOR_TRACE "Replace debug_print* functions with macros for better log tracing (e.g. with external loggers)" OFF)
@@ -53,6 +58,9 @@ endif(BART_NO_LAPACKE)
 # ==============================================================================
 
 option(BART_LOG_BACKEND "Enable delegating all outputs to external logging backend" OFF)
+if(BART_LOG_BACKEND)
+  enable_language(CXX)
+endif(BART_LOG_BACKEND)
 
 include(CMakeDependentOption)
 cmake_dependent_option(BART_LOG_SIEMENS_BACKEND "Use the Siemens logging backend" OFF
@@ -128,6 +136,8 @@ endif(APPLE)
 
 # ==============================================================================
 
+# NB: important to be *before* looking for OpenMP as we might need
+#     to properly setup flags for C++ as well
 option(USE_CUDA "Provide support for CUDA processing" OFF)
 if(USE_CUDA)
   enable_language(CXX)
@@ -159,8 +169,72 @@ endif(USE_CUDA)
 
 # ==============================================================================
 
+set(USE_FFTWF ON) # Only find single precision fftw
+option(BART_LOCAL_FFTW "Use a modified version of FFTW where all functions are prefixed with local_ (useful for static FFTW linking)" OFF)
+if(BART_LOCAL_FFTW)
+  set(FFTWF_FOUND 1)
+  set(FFTW_INCLUDE ${CURRENT_LIST_DIR/src})
+  set(FFTWF_THREADS_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f_threads.a")
+  set(FFTWF_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f.a" ${FFTWF_THREADS_LIB})
+  set(FFTWF_LIBRARIES ${FFTWF_LIB})
+  add_definitions(-DUSE_LOCAL_FFTW)
+else(BART_LOCAL_FFTW)
+  find_package(FFTW REQUIRED)
+endif(BART_LOCAL_FFTW)
+message(STATUS "FFTWF_LIBRARIES: ${FFTWF_LIBRARIES}")
+
+option(BART_FFTWTHREADS ON)
+if(BART_FFTWTHREADS)
+  # manually add the pthread library in case one is using static fftw libraries...
+  find_library(PTHREAD_LIB pthread)
+  list(APPEND FFTWF_LIBRARIES ${PTHREAD_LIB})
+  add_definitions(-DFFTWTHREADS)
+else(BART_FFTWTHREADS)
+  # remove the threaded library when not using threads
+  list(REMOVE_ITEM FFTWF_LIBRARIES ${FFTWF_THREADS_LIB})
+endif(BART_FFTWTHREADS)
+
+##======================================================================
+
+option (BART_ENABLE_MEM_CFL "Enable the use of in-memory CFL files" OFF)
+
+##----------------------------------------------------------------------
+
+option (BART_MEMONLY_CFL "Use only in-memory CFL files" OFF)
+if(BART_MEMONLY_CFL)
+  message(STATUS "Forcing BART to use only in-memory CFLs")
+  if(NOT BART_ENABLE_MEM_CFL)
+    message(STATUS "Setting BART_ENABLE_MEM_CFL = ON")
+    set(BART_ENABLE_MEM_CFL ON)
+  endif(NOT BART_ENABLE_MEM_CFL)
+  add_definitions(-DMEMONLY_CFL)
+endif(BART_MEMONLY_CFL)
+
+##----------------------------------------------------------------------
+
+# NB: important to be *before* looking for OpenMP as we might need
+#     to properly setup flags for C++ as well
+if(BART_ENABLE_MEM_CFL)
+  message(STATUS "Using in-memory CFL files")
+  add_definitions(-DUSE_MEM_CFL)
+  enable_language(CXX)
+endif(BART_ENABLE_MEM_CFL)
+
+##======================================================================
+
+option(BART_DISABLE_PNG "Disable the use of the PNG library" OFF)
+if(NOT BART_DISABLE_PNG)
+  find_package(PNG REQUIRED)
+  add_definitions(${PNG_DEFINITIONS})
+  include_directories(${PNG_INCLUDE_DIRS})
+else(NOT BART_DISABLE_PNG)
+  set(PNG_DEFINITIONS "")
+  set(PNG_INCLUDE_DIRS "")
+endif(NOT BART_DISABLE_PNG)
+
+##======================================================================
 ## Options
-##- TODO option(USE_ACML    "Provide support for ACML processing" OFF)
+##- TODO option(BART_ACML    "Provide support for ACML processing" OFF)
 
 option(USE_OPENMP "Enable OpenMP support" ON)
 if(USE_OPENMP)
@@ -263,66 +337,6 @@ endif()
 include_directories(${LINALG_INCLUDE_DIRS})
 
 ##======================================================================
-
-set(USE_FFTWF ON) # Only find single precision fftw
-option(BART_LOCAL_FFTW "Use a modified version of FFTW where all functions are prefixed with local_ (useful for static FFTW linking)" OFF)
-if(BART_LOCAL_FFTW)
-  set(FFTWF_FOUND 1)
-  set(FFTW_INCLUDE ${CURRENT_LIST_DIR/src})
-  set(FFTWF_THREADS_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f_threads.a")
-  set(FFTWF_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f.a" ${FFTWF_THREADS_LIB})
-  set(FFTWF_LIBRARIES ${FFTWF_LIB})
-  add_definitions(-DUSE_LOCAL_FFTW)
-else(BART_LOCAL_FFTW)
-  find_package(FFTW REQUIRED)
-endif(BART_LOCAL_FFTW)
-message(STATUS "FFTWF_LIBRARIES: ${FFTWF_LIBRARIES}")
-
-option(BART_FFTWTHREADS ON)
-if(BART_FFTWTHREADS)
-  # manually add the pthread library in case one is using static fftw libraries...
-  find_library(PTHREAD_LIB pthread)
-  list(APPEND FFTWF_LIBRARIES ${PTHREAD_LIB})
-  add_definitions(-DFFTWTHREADS)
-else(BART_FFTWTHREADS)
-  # remove the threaded library when not using threads
-  list(REMOVE_ITEM FFTWF_LIBRARIES ${FFTWF_THREADS_LIB})
-endif(BART_FFTWTHREADS)
-
-##======================================================================
-
-option (ENABLE_MEM_CFL "Enable the use of in-memory CFL files" OFF)
-
-##----------------------------------------------------------------------
-
-option (BART_MEMONLY_CFL "Use only in-memory CFL files" OFF)
-if(BART_MEMONLY_CFL)
-  message(STATUS "Forcing BART to use only in-memory CFLs")
-  if(NOT ENABLE_MEM_CFL)
-    message(STATUS "Setting ENABLE_MEM_CFL = ON")
-    set(ENABLE_MEM_CFL ON)
-  endif(NOT ENABLE_MEM_CFL)
-  add_definitions(-DMEMONLY_CFL)
-endif(BART_MEMONLY_CFL)
-
-##----------------------------------------------------------------------
-
-if(ENABLE_MEM_CFL)
-  message(STATUS "Using in-memory CFL files")
-  add_definitions(-DUSE_MEM_CFL)
-endif(ENABLE_MEM_CFL)
-
-##======================================================================
-
-option(BART_DISABLE_PNG "Disable the use of the PNG library" OFF)
-if(NOT BART_DISABLE_PNG)
-  find_package(PNG REQUIRED)
-  add_definitions(${PNG_DEFINITIONS})
-  include_directories(${PNG_INCLUDE_DIRS})
-else(NOT BART_DISABLE_PNG)
-  set(PNG_DEFINITIONS "")
-  set(PNG_INCLUDE_DIRS "")
-endif(NOT BART_DISABLE_PNG)
 
 execute_process(COMMAND ${CMAKE_CURRENT_LIST_DIR}/git-version.sh OUTPUT_VARIABLE BART_FULL_VERSION_STRING WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 string(STRIP ${BART_FULL_VERSION_STRING} BART_FULL_VERSION_STRING) ## Remove trailing whitespace (return characters)
@@ -492,6 +506,7 @@ if(BART_LOG_BACKEND)
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Orchestra.cc")
   endif(BART_LOG_ORCHESTRA_BACKEND)
   if(BART_LOG_GADGETRON_BACKEND)
+    if(NOT DEFINED GADGETRON_IN_SOURCE_BUILD)
       if(NOT DEFINED GADGETRON_CMAKE_MODULES)
 	find_path(GADGETRON_CMAKE_MODULES FindGadgetron.cmake
 	  HINTS
@@ -507,6 +522,7 @@ if(BART_LOG_BACKEND)
 
       find_package(Gadgetron REQUIRED)
       include_directories(${GADGETRON_HOME}/toolboxes/log)
+    endif(NOT DEFINED GADGETRON_IN_SOURCE_BUILD)
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Gadgetron.cc")
   endif(BART_LOG_GADGETRON_BACKEND)
 endif(BART_LOG_BACKEND)
@@ -617,7 +633,10 @@ endforeach()
       
 add_library(bartmain_objs OBJECT ${ALL_BART_LIB_SRCS})
 add_library(bartmain STATIC $<TARGET_OBJECTS:bartsupport_objs> $<TARGET_OBJECTS:bartmain_objs> ${LOG_BACKEND_SRCS} ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES} ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
+
+if(BART_ENABLE_MEM_CFL)
   set_target_properties(bartmain PROPERTIES LINKER_LANGUAGE CXX)
+endif(BART_ENABLE_MEM_CFL)
 install(TARGETS bartmain
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
@@ -636,6 +655,7 @@ if(BART_CREATE_PYTHON_MODULE)
     set(PYMODULE_INCLUDE_DIRS "${PYTHON_INCLUDE_DIRS}")
     set(PYMODULE_LIBRARIES "${PYTHON_LIBRARIES}")
   else(CMAKE_VERSION VERSION_LESS "3.12")
+    find_package(Python REQUIRED COMPONENTS Development)
     set(PYMODULE_INCLUDE_DIRS "${Python_INCLUDE_DIRS}")
     set(PYMODULE_LIBRARIES "${Python_LIBRARIES}")
   endif(CMAKE_VERSION VERSION_LESS "3.12")
