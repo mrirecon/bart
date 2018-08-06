@@ -69,10 +69,15 @@ find_path(OpenBLAS_CBLAS_INCLUDE_DIR
              NAMES cblas.h 
              PATHS ${OpenBLAS_SEARCH_PATHS} 
              PATH_SUFFIXES include include/openblas)
-find_path(OpenBLAS_LAPACKE_INCLUDE_DIR 
-             NAMES lapacke.h 
-             PATHS ${OpenBLAS_SEARCH_PATHS} 
-             PATH_SUFFIXES include)
+if(NOT DEFINED OpenBLAS_NO_LAPACKE OR NOT OpenBLAS_NO_LAPACKE)
+  find_path(OpenBLAS_LAPACKE_INCLUDE_DIR 
+               NAMES lapacke.h 
+               PATHS ${OpenBLAS_SEARCH_PATHS} 
+               PATH_SUFFIXES include)
+  set(OpenBLAS_LAPACKE_VAR "OpenBLAS_LAPACKE_INCLUDE_DIR")
+else()
+  set(OpenBLAS_LAPACKE_VAR "")
+endif()
 
 ##################################################################################################
 ### Second, search for libraries
@@ -126,7 +131,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OpenBLAS FOUND_VAR OpenBLAS_FOUND
   REQUIRED_VARS 
                 OpenBLAS_CBLAS_INCLUDE_DIR
-                OpenBLAS_LAPACKE_INCLUDE_DIR
+                ${OpenBLAS_LAPACKE_VAR}
                 OpenBLAS_LIB
   VERSION_VAR OpenBLAS_VERSION_STRING
 )
