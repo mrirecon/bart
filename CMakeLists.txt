@@ -27,62 +27,57 @@ macro(use_c99)
 endmacro(use_c99)
 use_c99()
 
-option(USE_FPIC "Compile using position-independent code" OFF)
-if(USE_FPIC)
+option(BART_FPIC "Compile using position-independent code" OFF)
+if(BART_FPIC)
   message(STATUS "ENABLED compilation with -fPIC")
   set (CMAKE_C_FLAGS "-fPIC ${CMAKE_C_FLAGS}")
   set (CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
-endif(USE_FPIC)
+endif(BART_FPIC)
 
-option(REDEFINE_PRINTF_FOR_TRACE "Replace debug_print* functions with macros for better log tracing (e.g. with external loggers)" OFF)
-if(REDEFINE_PRINTF_FOR_TRACE)
+option(BART_REDEFINE_PRINTF_FOR_TRACE "Replace debug_print* functions with macros for better log tracing (e.g. with external loggers)" OFF)
+if(BART_REDEFINE_PRINTF_FOR_TRACE)
   add_definitions(-DREDEFINE_PRINTF_FOR_TRACE)
   message(STATUS "Redefining debug_print* functions as macros for better log tracing")
-endif(REDEFINE_PRINTF_FOR_TRACE)
+endif(BART_REDEFINE_PRINTF_FOR_TRACE)
 
-option(USE_SUPER_DEBUG "Enable super-duper (!) debug output" OFF)
-if(USE_SUPER_DEBUG)
-  add_definitions(-DBART_SUPER_DEBUG)
-  message(STATUS "ENABLED super-duper debug output")
-endif(USE_SUPER_DEBUG)
 
 # ==============================================================================
 
-option(USE_LOG_BACKEND "Enable delegating all outputs to external logging backend" OFF)
+option(BART_LOG_BACKEND "Enable delegating all outputs to external logging backend" OFF)
 
 include(CMakeDependentOption)
-cmake_dependent_option(USE_LOG_SIEMENS_BACKEND "Use the Siemens logging backend" OFF
-  "USE_LOG_BACKEND" OFF)
-if(USE_LOG_SIEMENS_BACKEND)
+cmake_dependent_option(BART_LOG_SIEMENS_BACKEND "Use the Siemens logging backend" OFF
+  "BART_LOG_BACKEND" OFF)
+if(BART_LOG_SIEMENS_BACKEND)
   message(STATUS "Delegating all outputs to the Siemens logging backend")
-endif(USE_LOG_SIEMENS_BACKEND)
+endif(BART_LOG_SIEMENS_BACKEND)
 
-cmake_dependent_option(USE_LOG_ORCHESTRA_BACKEND "Use the Orchestra logging backend" OFF
-  "USE_LOG_BACKEND" OFF)
-if(USE_LOG_ORCHESTRA_BACKEND)
+cmake_dependent_option(BART_LOG_ORCHESTRA_BACKEND "Use the Orchestra logging backend" OFF
+  "BART_LOG_BACKEND" OFF)
+if(BART_LOG_ORCHESTRA_BACKEND)
   message(STATUS "Delegating all outputs to the Orchestra logging backend")
-endif(USE_LOG_ORCHESTRA_BACKEND)
+endif(BART_LOG_ORCHESTRA_BACKEND)
 
-cmake_dependent_option(USE_LOG_GADGETRON_BACKEND "Use the Gadgetron logging backend" OFF
-  "USE_LOG_BACKEND" OFF)
-if(USE_LOG_GADGETRON_BACKEND)
+cmake_dependent_option(BART_LOG_GADGETRON_BACKEND "Use the Gadgetron logging backend" OFF
+  "BART_LOG_BACKEND" OFF)
+if(BART_LOG_GADGETRON_BACKEND)
   message(STATUS "Delegating all outputs to the Gadgetron logging backend")
-endif(USE_LOG_GADGETRON_BACKEND)
+endif(BART_LOG_GADGETRON_BACKEND)
 
 ##======================================================================
 
-option(ENABLE_LONGJUMP "Enable the use of the setjmp & longjmp functions to emulate C++ exceptions" OFF)
-if(ENABLE_LONGJUMP)
+option(BART_ENABLE_LONGJUMP "Enable the use of the setjmp & longjmp functions to emulate C++ exceptions" OFF)
+if(BART_ENABLE_LONGJUMP)
   message(STATUS "Using setjmp & longjmp to emulate C++ exceptions")
   add_definitions(-DENABLE_LONGJUMP)
 endif()
 
 # ==============================================================================
 
-option(GENERATE_DOC "Automatically generate documentation after building BART" ON)
-if(GENERATE_DOC)
+option(BART_GENERATE_DOC "Automatically generate documentation after building BART" ON)
+if(BART_GENERATE_DOC)
   message(STATUS "Automatically generating documentation after building BART")
-endif(GENERATE_DOC)
+endif(BART_GENERATE_DOC)
   
 # ==============================================================================
 
@@ -90,10 +85,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 # ==============================================================================
 
-option(CREATE_PYTHON_MODULE "Compile the pyBART Python module" OFF)
-if(CREATE_PYTHON_MODULE)
+option(BART_CREATE_PYTHON_MODULE "Compile the pyBART Python module" OFF)
+if(BART_CREATE_PYTHON_MODULE)
   message(STATUS "Generating the pyBART Python module")
-endif(CREATE_PYTHON_MODULE)
+endif(BART_CREATE_PYTHON_MODULE)
 
 # ==============================================================================
 
@@ -166,7 +161,7 @@ if(USE_OPENMP)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   endif()
 endif(USE_OPENMP)
-##- TODO option(USE_SLINK "Provide SLINK support" OFF)
+##- TODO option(BART_SLINK "Provide SLINK support" OFF)
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
@@ -176,8 +171,8 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 find_package(ISMRMRD QUIET) ## if you can find ISMRMRD by default, then default configuration is ON
-option(USE_ISMRMRD "Use external ISMRMRD package for reading/writing" ${ISMRMRD_FOUND})
-if(USE_ISMRMRD)
+option(BART_ISMRMRD "Use external ISMRMRD package for reading/writing" ${ISMRMRD_FOUND})
+if(BART_ISMRMRD)
   find_package(ISMRMRD REQUIRED)
 endif()
 
@@ -249,29 +244,29 @@ include_directories(${LINALG_INCLUDE_DIRS})
 ##======================================================================
 
 set(USE_FFTWF ON) # Only find single precision fftw
-option(USE_LOCAL_FFTW "Use a modified version of FFTW where all functions are prefixed with local_ (useful for static FFTW linking)" OFF)
-if(USE_LOCAL_FFTW)
+option(BART_LOCAL_FFTW "Use a modified version of FFTW where all functions are prefixed with local_ (useful for static FFTW linking)" OFF)
+if(BART_LOCAL_FFTW)
   set(FFTWF_FOUND 1)
   set(FFTW_INCLUDE ${CURRENT_LIST_DIR/src})
   set(FFTWF_THREADS_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f_threads.a")
   set(FFTWF_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f.a" ${FFTWF_THREADS_LIB})
   set(FFTWF_LIBRARIES ${FFTWF_LIB})
   add_definitions(-DUSE_LOCAL_FFTW)
-else(USE_LOCAL_FFTW)
+else(BART_LOCAL_FFTW)
   find_package(FFTW REQUIRED)
-endif(USE_LOCAL_FFTW)
+endif(BART_LOCAL_FFTW)
 message(STATUS "FFTWF_LIBRARIES: ${FFTWF_LIBRARIES}")
 
-option(USE_FFTWTHREADS ON)
-if(USE_FFTWTHREADS)
+option(BART_FFTWTHREADS ON)
+if(BART_FFTWTHREADS)
   # manually add the pthread library in case one is using static fftw libraries...
   find_library(PTHREAD_LIB pthread)
   list(APPEND FFTWF_LIBRARIES ${PTHREAD_LIB})
   add_definitions(-DFFTWTHREADS)
-else(USE_FFTWTHREADS)
+else(BART_FFTWTHREADS)
   # remove the threaded library when not using threads
   list(REMOVE_ITEM FFTWF_LIBRARIES ${FFTWF_THREADS_LIB})
-endif(USE_FFTWTHREADS)
+endif(BART_FFTWTHREADS)
 
 ##======================================================================
 
@@ -279,15 +274,15 @@ option (ENABLE_MEM_CFL "Enable the use of in-memory CFL files" OFF)
 
 ##----------------------------------------------------------------------
 
-option (USE_MEMONLY_CFL "Use only in-memory CFL files" OFF)
-if(USE_MEMONLY_CFL)
+option (BART_MEMONLY_CFL "Use only in-memory CFL files" OFF)
+if(BART_MEMONLY_CFL)
   message(STATUS "Forcing BART to use only in-memory CFLs")
   if(NOT ENABLE_MEM_CFL)
     message(STATUS "Setting ENABLE_MEM_CFL = ON")
     set(ENABLE_MEM_CFL ON)
   endif(NOT ENABLE_MEM_CFL)
   add_definitions(-DMEMONLY_CFL)
-endif(USE_MEMONLY_CFL)
+endif(BART_MEMONLY_CFL)
 
 ##----------------------------------------------------------------------
 
@@ -298,15 +293,15 @@ endif(ENABLE_MEM_CFL)
 
 ##======================================================================
 
-option(DISABLE_PNG "Disable the use of the PNG library" OFF)
-if(NOT DISABLE_PNG)
+option(BART_DISABLE_PNG "Disable the use of the PNG library" OFF)
+if(NOT BART_DISABLE_PNG)
   find_package(PNG REQUIRED)
   add_definitions(${PNG_DEFINITIONS})
   include_directories(${PNG_INCLUDE_DIRS})
-else(NOT DISABLE_PNG)
+else(NOT BART_DISABLE_PNG)
   set(PNG_DEFINITIONS "")
   set(PNG_INCLUDE_DIRS "")
-endif(NOT DISABLE_PNG)
+endif(NOT BART_DISABLE_PNG)
 
 execute_process(COMMAND ${CMAKE_CURRENT_LIST_DIR}/git-version.sh OUTPUT_VARIABLE BART_FULL_VERSION_STRING WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 string(STRIP ${BART_FULL_VERSION_STRING} BART_FULL_VERSION_STRING) ## Remove trailing whitespace (return characters)
@@ -338,17 +333,17 @@ foreach(bld_tgt_line ${bld_tgt_list_of_list})
    endif()
 endforeach()
 
- if(USE_ISMRMRD)
+ if(BART_ISMRMRD)
   list(APPEND ALLPROGS ismrmrd) 
-endif(USE_ISMRMRD)
+endif(BART_ISMRMRD)
 
 
 list(SORT ALLPROGS)
 
 
-if(DISABLE_PNG)
+if(BART_DISABLE_PNG)
   list(REMOVE_ITEM ALLPROGS "toimg")
-endif(DISABLE_PNG)
+endif(BART_DISABLE_PNG)
 
 
 ## BART Makefile depends heavily on pre-processor replacements
@@ -399,7 +394,7 @@ macro(CONFIG_BY_REPLACEMENT INFILE OUTFILE PREFIX )
 endmacro()
 
 set(BART_SUPPORT_LIBS calib misc dfwavelet grecon iter linops lowrank nlops noir noncart num sake sense simu wavelet)
-if(USE_ISMRMRD)
+if(BART_ISMRMRD)
   list(APPEND BART_SUPPORT_LIBS ismrm)
   link_directories(${ISMRMRD_LIBRARY_DIRS})
   include_directories(${ISMRMRD_INCLUDE_DIRS})
@@ -432,26 +427,26 @@ foreach(file ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES})
   list(REMOVE_ITEM bart_support_SRCS "${file}")
 endforeach()
 
-if(NOT ENABLE_MEM_CFL)
+if(NOT BART_ENABLE_MEM_CFL)
   list(REMOVE_ITEM BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES "${CMAKE_CURRENT_LIST_DIR}/src/misc/mmiocc.cc")
-endif(NOT ENABLE_MEM_CFL)
+endif(NOT BART_ENABLE_MEM_CFL)
 
 # ------------------------------------------------------------------------------
 
-if(DISABLE_PNG)
+if(BART_DISABLE_PNG)
   list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/png.c")
-endif(DISABLE_PNG)
+endif(BART_DISABLE_PNG)
 
 set(LOG_BACKEND_SRCS "")
 list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/UTrace.cc")
 list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Orchestra.cc")
 list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Gadgetron.cc")
-if(USE_LOG_BACKEND)
-  if(USE_LOG_SIEMENS_BACKEND)
+if(BART_LOG_BACKEND)
+  if(BART_LOG_SIEMENS_BACKEND)
     # No need to add any include paths as the required code was copied into UTrace.cc from Siemens' IDEA framework
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/UTrace.cc")
-  endif(USE_LOG_SIEMENS_BACKEND)
-  if(USE_LOG_ORCHESTRA_BACKEND)
+  endif(BART_LOG_SIEMENS_BACKEND)
+  if(BART_LOG_ORCHESTRA_BACKEND)
     set(OX_INSTALL_DIRECTORY "" CACHE PATH "Install directory of the GE Orchestra SDK")
     set(TOPDIR "${OX_INSTALL_DIRECTORY}/include")
     
@@ -471,26 +466,26 @@ if(USE_LOG_BACKEND)
     target_link_libraries(bartsupport Core Common Control System ${OX_3P_LIBS} ${OX_OS_LIBS})
     
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Orchestra.cc")
-  endif(USE_LOG_ORCHESTRA_BACKEND)
-  if(USE_LOG_GADGETRON_BACKEND)
-    if(NOT DEFINED GADGETRON_CMAKE_MODULES)
-      find_path(GADGETRON_CMAKE_MODULES FindGadgetron.cmake
-	HINTS
-	$ENV{GADGETRON_HOME}/share/gadgetron/cmake
-	/usr/local/gadgetron)
+  endif(BART_LOG_ORCHESTRA_BACKEND)
+  if(BART_LOG_GADGETRON_BACKEND)
+      if(NOT DEFINED GADGETRON_CMAKE_MODULES)
+	find_path(GADGETRON_CMAKE_MODULES FindGadgetron.cmake
+	  HINTS
+	  $ENV{GADGETRON_HOME}/share/gadgetron/cmake
+	  /usr/local/gadgetron)
 
-      if(NOT GADGETRON_CMAKE_MODULES)
-	message(FATAL_ERROR "GADGETRON_CMAKE_MODULES cannot be found. Try to set GADGETRON_HOME environment variable.")
-      endif(NOT GADGETRON_CMAKE_MODULES)
+	if(NOT GADGETRON_CMAKE_MODULES)
+	  message(FATAL_ERROR "GADGETRON_CMAKE_MODULES cannot be found. Try to set GADGETRON_HOME environment variable.")
+	endif(NOT GADGETRON_CMAKE_MODULES)
 
-      list(APPEND CMAKE_MODULE_PATH ${GADGETRON_CMAKE_MODULES})
-    endif(NOT DEFINED GADGETRON_CMAKE_MODULES)
+	list(APPEND CMAKE_MODULE_PATH ${GADGETRON_CMAKE_MODULES})
+      endif(NOT DEFINED GADGETRON_CMAKE_MODULES)
 
-    find_package(Gadgetron REQUIRED)
-    include_directories(${GADGETRON_HOME}/toolboxes/log)
+      find_package(Gadgetron REQUIRED)
+      include_directories(${GADGETRON_HOME}/toolboxes/log)
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Gadgetron.cc")
-  endif(USE_LOG_GADGETRON_BACKEND)
-endif(USE_LOG_BACKEND)
+  endif(BART_LOG_GADGETRON_BACKEND)
+endif(BART_LOG_BACKEND)
 set(LOG_BACKEND_SRCS "${LOG_BACKEND_SRCS}" CACHE INTERNAL "")
 list(REMOVE_ITEM bart_support_SRCS "${LOG_BACKEND_SRCS}")
 
@@ -504,7 +499,7 @@ endif(USE_CUDA)
 add_library(bartsupport_objs OBJECT ${bart_support_SRCS})
 bart_add_library(bartsupport STATIC $<TARGET_OBJECTS:bartsupport_objs> ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
 target_link_libraries(bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
-if(USE_ISMRMRD)
+if(BART_ISMRMRD)
   target_link_libraries(bartsupport ${ISMRMRD_LIBRARIES})
 endif()
 install(TARGETS bartsupport
@@ -598,20 +593,20 @@ endforeach()
       
 add_library(bartmain_objs OBJECT ${ALL_BART_LIB_SRCS})
 add_library(bartmain STATIC $<TARGET_OBJECTS:bartsupport_objs> $<TARGET_OBJECTS:bartmain_objs> ${LOG_BACKEND_SRCS} ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES} ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
-set_target_properties(bartmain PROPERTIES LINKER_LANGUAGE CXX)
+  set_target_properties(bartmain PROPERTIES LINKER_LANGUAGE CXX)
 install(TARGETS bartmain
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   COMPONENT bartmain)
 add_custom_target(install_bartmain COMMAND ${CMAKE_COMMAND} -DCOMPONENT=bartmain -P ${CMAKE_BINARY_DIR}/cmake_install.cmake)
 
-if(USE_LOG_BACKEND)
+if(BART_LOG_BACKEND)
   # ensure that src/misc/misc.c will be compiled with logging backend support
   # but *ONLY* for the bartmain target
   target_compile_definitions(bartmain PUBLIC -DUSE_LOG_BACKEND)
-endif(USE_LOG_BACKEND)
+endif(BART_LOG_BACKEND)
 
-if(CREATE_PYTHON_MODULE)
+if(BART_CREATE_PYTHON_MODULE)
   if(CMAKE_VERSION VERSION_LESS "3.12")
     find_package(PythonLibs REQUIRED)
     set(PYMODULE_INCLUDE_DIRS "${PYTHON_INCLUDE_DIRS}")
@@ -646,11 +641,11 @@ if(CREATE_PYTHON_MODULE)
   
   target_compile_definitions(pyBART PUBLIC -DBART_WITH_PYTHON)
   target_link_libraries(pyBART ${PYMODULE_LIBRARIES} ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
-  if(USE_ISMRMRD)
+  if(BART_ISMRMRD)
     target_link_libraries(pyBART ${ISMRMRD_LIBRARIES})
   endif()
   set_target_properties(pyBART PROPERTIES PREFIX "")
-endif(CREATE_PYTHON_MODULE)
+endif(BART_CREATE_PYTHON_MODULE)
 
 option (BARTMAIN_AUTOCOPY "Automaticall copy the bartmain library to the lib/ folder" OFF)
 if(BARTMAIN_AUTOCOPY)
@@ -673,8 +668,8 @@ endif(BARTMAIN_AUTOCOPY)
 
 #==============================================
 # TODO: Matlab code
-option(USE_MATLAB "Specify if the optional matlab programs should be built" OFF)
-if(USE_MATLAB)
+option(BART_MATLAB "Specify if the optional matlab programs should be built" OFF)
+if(BART_MATLAB)
   find_package(Matlab REQUIRED)
   if(MATLAB_FOUND)
     message(STATUS "MATLAB LIBRARIES FOUND: ${MATLAB_LIBRARIES_DIR}")
@@ -738,12 +733,12 @@ add_custom_target(bart.syms
   DEPENDS bart
   SOURCES makedoc.sh doxyconfig)
 
-if(GENERATE_DOC)
+if(BART_GENERATE_DOC)
   add_custom_command(TARGET bart
     POST_BUILD
     COMMAND ${CMAKE_CURRENT_LIST_DIR}/rules/update_commands.sh $<TARGET_FILE:bart> ${CMAKE_CURRENT_LIST_DIR}/doc/commands.txt ${ALLPROGS}
     )
-endif(GENERATE_DOC)
+endif(BART_GENERATE_DOC)
 
 file(GLOB DOCS "${CMAKE_CURRENT_LIST_DIR}/doc/*.txt")
 list(APPEND ${CMAKE_CURRENT_LIST_DIR}/README)
