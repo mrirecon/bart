@@ -1,0 +1,146 @@
+#.rst:
+# FindlibFlame
+# -------------
+#
+# Find libFlame include dirs and libraries
+#
+# This module defines
+#
+# ::
+#
+#   libFlame_FOUND            - True if headers and requested libraries were found
+#   libFlame_INCLUDE_DIRS     - Boost include directories
+#   libFlame_LIBRARIES        - Boost component libraries to be linked
+#
+#
+# This module reads hints about search locations from variables
+#
+# ::
+#
+#   libFlame_ROOT             - Preferred installation prefix
+#
+#
+# The following :prop_tgt:`IMPORTED` targets are also defined
+#
+# ::
+#
+#   libFlame::libFlame        - Target for specific component dependency
+#                                (shared or static library)
+#
+
+# ==============================================================================
+# Copyright 2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
+#
+# Distributed under the OSI-approved BSD License (the "License")
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# ==============================================================================
+
+set(libFlame_SEARCH_PATHS
+  ${libFlame_ROOT}
+  $ENV{libFlame_ROOT}
+  $ENV{CMAKE_PREFIX_PATH}
+  ${CMAKE_PREFIX_PATH}
+  /usr
+  /usr/local/
+  /usr/local/amd
+  /opt
+  /opt/amd
+  /opt/local
+  )
+
+find_library(libFlame_LIBRARY
+  NAMES flame
+  PATHS ${libFlame_SEARCH_PATHS}
+  PATH_SUFFIXES lib lib32 lib64 libflame/lib
+  )
+
+get_filename_component(libFlame_ROOT_HINT ${libFlame_LIBRARY} PATH) # for CMake > 2.8.11 we should really use DIRECTORY
+get_filename_component(libFlame_ROOT_HINT ${libFlame_ROOT_HINT} PATH)
+
+find_path(libFlame_INCLUDE_DIR
+  NAMES FLAME.h flame.h
+  HINTS ${libFlame_ROOT_HINT}
+  PATHS ${libFlame_SEARCH_PATHS}
+  PATH_SUFFIXES include libflame/include
+  )
+
+set(libFlame_LAPACKE_COMPONENTS cblas)
+
+# ==============================================================================
+
+set(CMAKE_REQUIRED_LIBRARIES ${CBLAS_LIBRARY})
+include(CheckLibraryExists)
+check_library_exists(${libFlame_LIBRARY} zgesdd_ "" HAVE_ZGESDD)
+check_library_exists(${libFlame_LIBRARY} zgelss_ "" HAVE_ZGELSS)
+
+if(HAVE_ZGESDD AND HAVE_ZGELSS)
+  set(HAVE_LAPACK_INTERFACE 1)
+else()
+  set(HAVE_LAPACK_INTERFACE 0)
+endif()
+
+# ------------------------------------------------------------------------------
+
+set(LAPACK_LIB_VAR "")
+if(NOT HAVE_LAPACK_INTERFACE)
+  message(STATUS "libFlame has no LAPACK interface, looking for a LAPACK library")
+  list(APPEND libFlame_LAPACKE_COMPONENTS lapack)
+endif()
+
+find_package(LAPACKE QUIET REQUIRED COMPONENTS ${libFlame_LAPACKE_COMPONENTS})
+
+# ==============================================================================
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(libFlame
+  FOUND_VAR libFlame_FOUND
+  REQUIRED_VARS
+  libFlame_INCLUDE_DIR
+  libFlame_LIBRARY
+  LAPACKE_FOUND
+  LAPACKE_LIBRARIES
+  LAPACKE_INCLUDE_DIRS
+  )
+
+# ==============================================================================
+
+if(libFlame_FOUND)
+  set(libFlame_INCLUDE_DIRS)
+  list(APPEND libFlame_INCLUDE_DIRS
+    ${libFlame_INCLUDE_DIR}
+    ${LAPACKE_INCLUDE_DIRS})
+  list(REMOVE_DUPLICATES libFlame_INCLUDE_DIRS)
+
+  set(libFlame_LIBRARIES)
+  list(APPEND libFlame_LIBRARIES
+    ${libFlame_LIBRARY}
+    ${LAPACKE_LIBRARIES})
+endif()
+
+# Define imported target if supported by CMake
+if(libFlame_FOUND AND NOT TARGET libFlame::libFlame)
+  add_library(libFlame::libFlame UNKNOWN IMPORTED)
+  set_target_properties(libFlame::libFlame PROPERTIES
+    IMPORTED_LOCATION "${libFlame_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${libFlame_INCLUDE_DIR}"
+    INTERFACE_LINK_LIBRARIES "${LAPACKE_LIBRARIES}"
+    )
+endif()
+
+# ==============================================================================
+
+mark_as_advanced(
+  libFlame_LIBRARY
+  libFlame_INCLUDE_DIR
+  libFlame_CBLAS_INCLUDE_DIR
+  )
+
+# ==============================================================================
+
+## For debugging
+message(STATUS "libFlame_FOUND         :${libFlame_FOUND}:  - set to true if the library is found")
+message(STATUS "libFlame_INCLUDE_DIRS  :${libFlame_INCLUDE_DIRS}: - list of required include directories")
+message(STATUS "libFlame_LIBRARIES     :${libFlame_LIBRARIES}: - list of libraries to be linked")
+
