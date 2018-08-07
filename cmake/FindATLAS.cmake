@@ -2,82 +2,61 @@
 # FindATLAS
 # -------------
 #
-# Find the ATLAS library
+# Find ATLAS include dirs and libraries
 #
-# Using ATLAS:
+# Use this module by invoking find_package with the form::
 #
-# ::
+#   find_package(Boost
+#     [REQUIRED]             # Fail with error if ATLAS is not found
+#     )
 #
 #   [OPTIONAL]  set(ATLAS_REQUIRE_THREADED [TRUE|FALSE]) to find threaded versions of the libraries
-#   find_package(ATLAS REQUIRED)
-#   include_directories(${ATLAS_INCLUDE_DIRS})
-#   add_executable(foo foo.cc)
-#   target_link_libraries(foo ${ATLAS_LIBRARIES})
-#   -- OR --
-#   target_link_libraries(foo ${ATLAS_PARALLEL_LIBRARIES})
 #
-# This module sets the following variables:
+# This module defines::
 #
-# ::
+#   ATLAS_FOUND            - set to true if the library is found
+#   ATLAS_INCLUDE_DIRS     - list of required include directories
+#   ATLAS_LIBRARIES        - list of libraries to be linked
+#   ATLAS_VERSION_MAJOR    - major version number
+#   ATLAS_VERSION_MINOR    - minor version number
+#   ATLAS_VERSION_PATCH    - patch version number
+#   ATLAS_VERSION_STRING   - version number as a string (ex: "0.2.18")
 #
-#   ATLAS_FOUND - set to true if the library is found
-#   ATLAS_INCLUDE_DIRS - list of required include directories
-#   ATLAS_LIBRARIES - list of libraries to be linked
-#   ATLAS_VERSION_MAJOR - major version number
-#   ATLAS_VERSION_MINOR - minor version number
-#   ATLAS_VERSION_PATCH - patch version number
-#   ATLAS_VERSION_STRING - version number as a string (ex: "0.2.18")
+#
+# This module reads hints about search locations from variables
+# (either CMake variables or environment variables)::
+#
+#   ATLAS_ROOT             - Preferred installation prefix for ATLAS
+#
+#
+#   ATLAS::ATLAS           - Imported target for the ATLAS library
+#
 
-#=============================================================================
+# ==============================================================================
 # Copyright 2016 Hans J. Johnson <hans-johnson@uiowa.edu>
+# Copyright 2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
 #
 # Distributed under the OSI-approved BSD License (the "License")
 #
 # This software is distributed WITHOUT ANY WARRANTY; without even the
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#=============================================================================
-#
+# ==============================================================================
 
 set(ATLAS_SEARCH_PATHS
+  ${ATLAS_ROOT}
+  $ENV{ATLAS_ROOT}
   ${ATLAS_DIR}
   $ENV{ATLAS_DIR}
-  $ENV{CMAKE_PREFIX_PATH}
   ${CMAKE_PREFIX_PATH}
+  $ENV{CMAKE_PREFIX_PATH}
   /usr
-  /usr/local
-  /usr/local/opt/openblas  ## Mac Homebrew install path
+  /usr/local/
+  /usr/local/opt # homebrew on mac
+  /opt
+  /opt/local
   /opt/ATLAS
-)
+  )
 
-set(CMAKE_PREFIX_PATH ${ATLAS_SEARCH_PATHS})
-list(REMOVE_DUPLICATES CMAKE_PREFIX_PATH)
-
-## First try to find ATLAS with NO_MODULE,
-## As of 20160706 version 0.2.18 there is limited cmake support for ATLAS
-## that is not as complete as this version, if found, use it
-## to identify the ATLAS_VERSION_STRING and improve searching.
-find_package(ATLAS NO_MODULE QUIET)
-if(ATLAS_VERSION)
-  set(ATLAS_VERSION_STRING ${ATLAS_VERSION})
-  unset(ATLAS_VERSION) # Use cmake conventional naming
-endif()
-##################################################################################################
-### First search for headers
-find_path(ATLAS_CBLAS_INCLUDE_DIR 
-             NAMES cblas.h 
-             PATHS ${ATLAS_SEARCH_PATHS} 
-             PATH_SUFFIXES include include/openblas)
-if(NOT DEFINED OpenBLAS_NO_LAPACKE OR NOT OpenBLAS_NO_LAPACKE)
-  find_path(ATLAS_LAPACKE_INCLUDE_DIR 
-               NAMES lapacke.h 
-               PATHS ${ATLAS_SEARCH_PATHS} 
-               PATH_SUFFIXES include)
-  set(LAPACKE_INCLUDE_VAR "ATLAS_LAPACKE_INCLUDE_DIR")
-else()
-  set(LAPACKE_INCLUDE_VAR "")
-endif()
-
-##################################################################################################
 set(PATH_SUFFIXES_LIST
   lib64/atlas-sse3 #openSUSE 13.2 (Harlequin)
   lib64/atlas-sse2 #openSUSE 13.2 (Harlequin)
@@ -91,41 +70,80 @@ set(PATH_SUFFIXES_LIST
   lib
 )
 
-### Second, search for libraries
-find_library(ATLAS_LIB 
-                 NAMES atlas
-                 PATHS ${ATLAS_SEARCH_PATHS}
-                 PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
+if(APPLE)
+  list(APPEND PATH_SUFFIXES_LIST openblas/lib)
+endif()
+
+# ==============================================================================
+# Prepare some helper variables
+
+set(ATLAS_INCLUDE_DIRS)
+set(ATLAS_LIBRARIES)
 
 set(ATLAS_THREAD_PREFIX "")
 if(ATLAS_REQUIRE_THREADED)
   set(ATLAS_THREAD_PREFIX "pt")
 endif()
+
+# ==============================================================================
+
+## First try to find ATLAS with NO_MODULE,
+## As of 20160706 version 0.2.18 there is limited cmake support for ATLAS
+## that is not as complete as this version, if found, use it
+## to identify the ATLAS_VERSION_STRING and improve searching.
+find_package(ATLAS NO_MODULE QUIET)
+if(ATLAS_VERSION)
+  set(ATLAS_VERSION_STRING ${ATLAS_VERSION})
+  unset(ATLAS_VERSION) # Use cmake conventional naming
+endif()
+
+# ==============================================================================
+### First search for headers
+
+find_path(ATLAS_CBLAS_INCLUDE_DIR 
+  NAMES cblas.h 
+  PATHS ${ATLAS_SEARCH_PATHS} 
+  PATH_SUFFIXES include include/openblas)
+	   
+# ==============================================================================
+### Second, search for libraries
+
+find_library(ATLAS_LIB
+  NAMES atlas
+  PATHS ${ATLAS_SEARCH_PATHS}
+  PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
+
 find_library(CBLAS_LIB 
-                 NAMES ${ATLAS_THREAD_PREFIX}cblas
-                 PATHS ${LAPACKE_SEARCH_PATHS}
-                 PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
+  NAMES ${ATLAS_THREAD_PREFIX}cblas
+  PATHS ${LAPACKE_SEARCH_PATHS}
+  PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
+
 find_library(LAPACK_LIB 
-                 NAMES ${ATLAS_THREAD_PREFIX}lapack
-                 PATHS ${LAPACKE_SEARCH_PATHS}
-                 PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
-if(NOT DEFINED OpenBLAS_NO_LAPACKE OR NOT OpenBLAS_NO_LAPACKE)
-  find_library(LAPACKE_LIB 
-                   NAMES ${ATLAS_THREAD_PREFIX}lapacke
-                   PATHS ${LAPACKE_SEARCH_PATHS}
-                   PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
-  set(LAPACKE_LIB_VAR "LAPACKE_LIB")
+  NAMES ${ATLAS_THREAD_PREFIX}lapack
+  PATHS ${LAPACKE_SEARCH_PATHS}
+  PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
+
+if(NOT DEFINED ATLAS_NO_LAPACKE OR NOT ATLAS_NO_LAPACKE)
+  if(ATLAS_LIB)
+    include(CheckLibraryExists)
+    check_library_exists(${ATLAS_LIB} LAPACKE_cheev  "" HAVE_LAPACKE_CHEEV)
+    check_library_exists(${ATLAS_LIB} LAPACKE_zgesdd "" HAVE_LAPACKE_ZGESDD)
+    
+    if(NOT HAVE_LAPACKE_CHEEV OR NOT HAVE_LAPACKE_ZGESDD)
+      message(WARNING "ATLAS has no LAPACKE symbols. Attempting to look for a LAPACKE library")
+      find_package(LAPACKE QUIET REQUIRED COMPONENTS lapacke)
+      list(APPEND ATLAS_LIBRARIES ${LAPACKE_LIBRARIES})
+    endif()
+  endif()
+  set(LAPACKE_LIB_VAR "LAPACKE_LIBRARIES")
 else()
   set(LAPACKE_LIB_VAR "")
 endif()
-find_library(F77BLAS_LIB 
-                 NAMES ${ATLAS_THREAD_PREFIX}f77blas
-                 PATHS ${LAPACKE_SEARCH_PATHS}
-                 PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
 
-# ------------------------------------------------------------------------
-#  Extract version information
-# ------------------------------------------------------------------------
+find_library(F77BLAS_LIB 
+  NAMES ${ATLAS_THREAD_PREFIX}f77blas
+  PATHS ${LAPACKE_SEARCH_PATHS}
+  PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
 
 # WARNING: We may not be able to determine the version of some ATLAS
 set(ATLAS_VERSION_MAJOR 0)
@@ -135,35 +153,58 @@ if(ATLAS_VERSION_STRING)
   string(REGEX REPLACE "([0-9]+).([0-9]+).([0-9]+)" "\\1" ATLAS_VERSION_MAJOR "${ATLAS_VERSION_STRING}")
   string(REGEX REPLACE "([0-9]+).([0-9]+).([0-9]+)" "\\2" ATLAS_VERSION_MINOR "${ATLAS_VERSION_STRING}")
   string(REGEX REPLACE "([0-9]+).([0-9]+).([0-9]+)" "\\3" ATLAS_VERSION_PATCH "${ATLAS_VERSION_STRING}")
-else()
+elseif(ATLAS_LIB)
   set(ATLAS_VERSION_STRING "ATLAS.UNKOWN.VERSION")
+else()
+  set(ATLAS_VERSION_STRING)
 endif()
 
-#======================
+# ==============================================================================
 # Checks 'REQUIRED', 'QUIET' and versions.
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ATLAS FOUND_VAR ATLAS_FOUND
   REQUIRED_VARS
-                ATLAS_CBLAS_INCLUDE_DIR
-                ${LAPACKE_INCLUDE_VAR}
-                ${LAPACKE_LIB_VAR}
-                LAPACK_LIB
-                F77BLAS_LIB
-                CBLAS_LIB
-                ATLAS_LIB
+  ATLAS_CBLAS_INCLUDE_DIR
+  ${LAPACKE_INCLUDE_VAR}
+  ${LAPACKE_LIB_VAR}
+  LAPACK_LIB
+  F77BLAS_LIB
+  CBLAS_LIB
+  ATLAS_LIB
   VERSION_VAR ATLAS_VERSION_STRING
-)
+  )
+
+# ------------------------------------------------------------------------------
+
 if (ATLAS_FOUND)
-  set(ATLAS_INCLUDE_DIRS ${ATLAS_CBLAS_INCLUDE_DIR} ${ATLAS_CBLAS_INCLUDE_DIR})
+  list(APPEND ATLAS_INCLUDE_DIRS
+    ${ATLAS_CBLAS_INCLUDE_DIR}
+    ${ATLAS_CBLAS_INCLUDE_DIR})
   list(REMOVE_DUPLICATES ATLAS_INCLUDE_DIRS)
+  
   if("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*" OR
      "${CMAKE_C_COMPILER_ID}" MATCHES ".*GNU.*" OR
      "${CMAKE_C_COMPILER_ID}" MATCHES ".*Intel.*"
       ) #NOT MSVC
     set(MATH_LIB m)
   endif()
-  list(APPEND ATLAS_LIBRARIES ${LAPACKE_LIB} ${LAPACK_LIB} ${F77BLAS_LIB} ${CBLAS_LIB} ${ATLAS_LIB} ${MATH_LIB})
+  
+  list(APPEND ATLAS_LIBRARIES ${LAPACKE_LIBRARIES}} ${LAPACK_LIB} ${F77BLAS_LIB} ${CBLAS_LIB} ${ATLAS_LIB} ${MATH_LIB})
 endif()
+
+# ==============================================================================
+
+if(NOT TARGET ATLAS::ATLAS)
+  add_library(ATLAS::ATLAS UNKNOWN IMPORTED)
+  set_target_properties(ATLAS::ATLAS
+    PROPERTIES
+    IMPORTED_LOCATION "${ATLAS_LIB}"
+    INTERFACE_INCLUDE_DIRECTORIES "${ATLAS_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${LAPACKE_LIBRARIES};${LAPACK_LIB};${F77BLAS_LIB};${CBLAS_LIB};${MATH_LIB}")
+endif()
+
+# ==============================================================================
 
 mark_as_advanced(
   ATLAS_FOUND
@@ -175,11 +216,12 @@ mark_as_advanced(
   ATLAS_VERSION_STRING
 )
 
-## For debugging
-message(STATUS "ATLAS_FOUND                  :${ATLAS_FOUND}:  - set to true if the library is found")
-message(STATUS "ATLAS_INCLUDE_DIRS           :${ATLAS_INCLUDE_DIRS}: - list of required include directories")
-message(STATUS "ATLAS_LIBRARIES              :${ATLAS_LIBRARIES}: - list of libraries to be linked")
-message(STATUS "ATLAS_VERSION_MAJOR          :${ATLAS_VERSION_MAJOR}: - major version number")
-message(STATUS "ATLAS_VERSION_MINOR          :${ATLAS_VERSION_MINOR}: - minor version number")
-message(STATUS "ATLAS_VERSION_PATCH          :${ATLAS_VERSION_PATCH}: - patch version number")
-message(STATUS "ATLAS_VERSION_STRING         :${ATLAS_VERSION_STRING}: - version number as a string")
+if(NOT ATLAS_FIND_QUIETLY)
+  message(STATUS "ATLAS_FOUND           :${ATLAS_FOUND}:  - set to true if the library is found")
+  message(STATUS "ATLAS_INCLUDE_DIRS    :${ATLAS_INCLUDE_DIRS}: - list of required include directories")
+  message(STATUS "ATLAS_LIBRARIES       :${ATLAS_LIBRARIES}: - list of libraries to be linked")
+  message(STATUS "ATLAS_VERSION_MAJOR   :${ATLAS_VERSION_MAJOR}: - major version number")
+  message(STATUS "ATLAS_VERSION_MINOR   :${ATLAS_VERSION_MINOR}: - minor version number")
+  message(STATUS "ATLAS_VERSION_PATCH   :${ATLAS_VERSION_PATCH}: - patch version number")
+  message(STATUS "ATLAS_VERSION_STRING  :${ATLAS_VERSION_STRING}: - version number as a string")
+endif()

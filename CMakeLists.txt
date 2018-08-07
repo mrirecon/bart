@@ -12,6 +12,7 @@ enable_language(C)
 # Silence a CMake-warning about object libraries
 if(CMAKE_VERSION VERSION_GREATER 3.0)
   cmake_policy(SET CMP0051 NEW)
+  cmake_policy(SET CMP0057 NEW) # if IN_LIST
 endif(CMAKE_VERSION VERSION_GREATER 3.0)
 
 # http://stackoverflow.com/questions/24840030/forcing-c99-in-cmake-to-use-for-loop-initial-declaration
@@ -234,7 +235,6 @@ endif(NOT BART_DISABLE_PNG)
 
 ##======================================================================
 ## Options
-##- TODO option(BART_ACML    "Provide support for ACML processing" OFF)
 
 option(USE_OPENMP "Enable OpenMP support" ON)
 if(USE_OPENMP)
@@ -266,48 +266,52 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Release")
 endif()
 
 ##==============================================================
+
+macro(setup_linalg_vendor vendor target)
+  set(LINALG_VENDOR_LIB ${ARGN})
+  set(LINALG_VENDOR_FOUND TRUE)
+  set(LINALG_VENDOR ${vendor} CACHE STRING "Vendor type for linear algebra library" FORCE)
+  set(LINALG_VENDOR_TGT ${target})
+endmacro()
+
+##==============================================================
 ## Switch based on the linear algebra optimized library to 
 ## use.  Note that the first library successfully found
 ## will be used 
 ##
 ## -*-*- Try with only a BLAS library first if BART_NO_LAPACKE is set
 if(BART_NO_LAPACKE AND (NOT LINALG_VENDOR OR LINALG_VENDOR STREQUAL "BLAS"))
-  find_package(BLASlib REQUIRED)
-  set(LINALG_VENDOR_FOUND TRUE)
-  set(LINALG_VENDOR "BLAS")
-  set(LINALG_INCLUDE_DIRS ${BLAS_INCLUDE_DIRS})
-  set(LINALG_LIBRARIES ${BLAS_LIBRARIES})
-  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
+  find_package(LAPACKE REQUIRED COMPONENTS lapack cblas blas)
+  setup_linalg_vendor("BLAS" LAPACKE LAPACKE::LAPACK LAPACKE::CBLAS LAPACKE::BLAS)
+endif()
+
+## -*-*- Try AMD BLIS/libFlame next
+if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "AMD_FLAME")
+  find_package(libFlame REQUIRED)
+  setup_linalg_vendor("AMD_FLAME" libFlame libFlame::libFlame)
+
+  if(NOT BART_NO_LAPACKE)
+    find_package(LAPACKE REQUIRED COMPONENTS LAPACKE)
+    get_target_property(
+      libFlame_INTERFACE_LINK_LIBRARIES
+      ${LINALG_VENDOR_LIB}
+      INTERFACE_LINK_LIBRARIES)
+    set_target_properties(${LINALG_VENDOR_LIB} PROPERTIES
+      INTERFACE_LINK_LIBRARIES "${libFlame_INTERFACE_LINK_LIBRARIES};LAPACKE::LAPACKE")
+  endif()
 endif()
 
 ## -*-*- Try OpenBLAS next
 if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "OpenBLAS")
-  include( ${CMAKE_CURRENT_LIST_DIR}/cmake/FindOpenBLAS.cmake )
-  if(OpenBLAS_FOUND)
-     set(LINALG_VENDOR_FOUND TRUE)
-     set(LINALG_VENDOR "OpenBLAS")
-     set(LINALG_INCLUDE_DIRS ${OpenBLAS_INCLUDE_DIRS})
-     if(OpenBLAS_HAS_PARALLEL_LIBRARIES)
-       # HACK!! set(LINALG_LIBRARIES ${OpenBLAS_PARALLEL_LIBRARIES})
-        set(LINALG_LIBRARIES ${OpenBLAS_LIBRARIES})
-     else()
-        set(LINALG_LIBRARIES ${OpenBLAS_LIBRARIES})
-     endif()
-  endif()
+  find_package(OpenBLAS REQUIRED)
+  setup_linalg_vendor("OpenBLAS" OpenBLAS OpenBLAS::OpenBLAS)
 endif()
 
 ##
 ## -*-*- Try ATLAS version next
 if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "ATLAS")
-  include( ${CMAKE_CURRENT_LIST_DIR}/cmake/FindATLAS.cmake )
-  if(ATLAS_FOUND)
-     set(LINALG_VENDOR_FOUND TRUE)
-     set(LINALG_VENDOR "ATLAS")
-     set(LINALG_INCLUDE_DIRS ${ATLAS_INCLUDE_DIRS})
-     set(LINALG_LIBRARIES ${ATLAS_LIBRARIES})
-  endif()
+  find_package(ATLAS REQUIRED)
+  setup_linalg_vendor("ATLAS" ATLAS ATLAS::ATLAS)
 endif()
 
 ##
@@ -321,12 +325,12 @@ if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "LAPACKE")
   ## versions of lapack that might be able to be supported.
   ## It is know to work local builds
   find_package(LAPACKE REQUIRED)
-  if(LAPACKE_FOUND)
-     set(LINALG_VENDOR_FOUND TRUE)
-     set(LINALG_VENDOR "LAPACKE")
-     set(LINALG_INCLUDE_DIRS ${LAPACKE_INCLUDE_DIRS})
-     set(LINALG_LIBRARIES ${LAPACKE_LIBRARIES})
-  endif()
+  setup_linalg_vendor("LAPACKE" LAPACKE LAPACKE::LAPACKE LAPACKE::LAPACKE LAPACKE::CBLAS LAPACKE::BLAS)
+endif()
+
+# Fix weird error when compiling on Mac...
+if(APPLE)
+  include_directories(${${LINALG_VENDOR_TGT}_INCLUDE_DIRS})
 endif()
 
 ##
@@ -334,7 +338,6 @@ endif()
 if(NOT LINALG_VENDOR_FOUND)
    message(FATAL_ERROR "No valid linear algebra libraries found!")
 endif()
-include_directories(${LINALG_INCLUDE_DIRS})
 
 ##======================================================================
 
@@ -538,7 +541,7 @@ endif(USE_CUDA)
 
 add_library(bartsupport_objs OBJECT ${bart_support_SRCS})
 bart_add_library(bartsupport STATIC $<TARGET_OBJECTS:bartsupport_objs> ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
-target_link_libraries(bartsupport ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
+target_link_libraries(bartsupport ${LINALG_VENDOR_LIB} ${PNG_LIBRARIES} ${FFTWF_LIBRARIES})
 if(BART_ISMRMRD)
   target_link_libraries(bartsupport ${ISMRMRD_LIBRARIES})
 endif()
@@ -690,25 +693,6 @@ if(BART_CREATE_PYTHON_MODULE)
   endif()
   set_target_properties(pyBART PROPERTIES PREFIX "")
 endif(BART_CREATE_PYTHON_MODULE)
-
-option (BARTMAIN_AUTOCOPY "Automaticall copy the bartmain library to the lib/ folder" OFF)
-if(BARTMAIN_AUTOCOPY)
-  if(USE_CUDA)
-    add_custom_command(
-      TARGET bartmain
-      POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:bartmain> ${CMAKE_SOURCE_DIR}/lib/libbartmain_cuda.a
-      COMMENT "copy bartmain (CUDA) to ../lib"
-      )
-  else(USE_CUDA)
-    add_custom_command(
-      TARGET bartmain
-      POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:bartmain> ${CMAKE_SOURCE_DIR}/lib
-      COMMENT "copy bartmain to ../lib"
-      )
-  endif(USE_CUDA)
-endif(BARTMAIN_AUTOCOPY)
 
 #==============================================
 # TODO: Matlab code
