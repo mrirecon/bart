@@ -1322,9 +1322,10 @@ static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], un
                 void* nptr[1] = { ptr };
                 const long* nstrides[1] = { strides };
 
-                dimensions[R] = 1;      // we made a copy in md_septrafo2
 		long dimsR = dimensions[R];
 		long strsR = strides[R]; // because of clang
+
+                dimensions[R] = 1;      // we made a copy in md_septrafo2
 
 		NESTED(void, nary_septrafo, (void* ptr[]))
 		{
