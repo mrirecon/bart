@@ -244,8 +244,8 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	md_calc_strides(4, fmac_str, fmac_dims, CFL_SIZE);
 
 	int t = -1;
-	for (int y = 0; y < sy; y ++) {
-		for (int z = 0; z < sz; z ++) {
+	for (int z = 0; z < sz; z ++) {
+		for (int y = 0; y < sy; y ++) {
 
 			md_clear(4, vec_dims, vec, CFL_SIZE);
 
@@ -552,16 +552,18 @@ int main_wshfl(int argc, char* argv[])
 {
 	double start_time = timestamp();
 
-	float lambda  = 1E-5;
-	int   maxiter = 300;
-	int   blksize = 8;
-	float step    = 0.5;
-	float tol     = 1.E-3;
-	bool  llr     = false;
-	bool  wav     = false;
-	bool  fista   = false;
-	bool  hgwld   = false;
-	float cont    = 1;
+	float lambda    = 1E-5;
+	int   maxiter   = 300;
+	int   blksize   = 8;
+	float step      = 0.5;
+	float tol       = 1.E-3;
+	bool  llr       = false;
+	bool  wav       = false;
+	bool  fista     = false;
+	bool  hgwld     = false;
+	float cont      = 1;
+	float eval      = -1;
+	const char* fwd = NULL;
 
 	const struct opt_s opts[] = {
 		OPT_FLOAT( 'r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
@@ -570,6 +572,8 @@ int main_wshfl(int argc, char* argv[])
 		OPT_FLOAT( 's', &step,    "stepsz", "Step size for iterative method."),
 		OPT_FLOAT( 'c', &cont,    "cntnu",  "Continuation value for IST/FISTA."),
 		OPT_FLOAT( 't', &tol,     "toler",  "Tolerance convergence condition for iterative method."),
+		OPT_FLOAT( 'e', &eval,    "eigvl",  "Maximum eigenvalue of normal operator, if known."),
+		OPT_STRING('F', &fwd,     "frwrd",  "Go from shfl-coeffs to data-table. Pass in coeffs path."),
 		OPT_SET(   'f', &fista,             "Reconstruct using FISTA instead of IST."),
 		OPT_SET(   'H', &hgwld,             "Use hogwild in IST/FISTA."),
 		OPT_SET(   'w', &wav,               "Use wavelet."),
@@ -635,12 +639,6 @@ int main_wshfl(int argc, char* argv[])
 	coeff_dims[4] = md;
 	coeff_dims[6] = tk;
 
-	debug_printf(DP_INFO, "Normalizing data table and applying fftmod to table... ");
-	float norm = md_znorm(DIMS, table_dims, table);
-	md_zsmul(DIMS, table_dims, table, table, 1. / norm);
-	fftmod_apply(sy, sz, reorder_dims, reorder, table_dims, table, maps_dims, maps);
-	debug_printf(DP_INFO, "Done.\n");
-
 	debug_printf(DP_INFO, "Linear operator.\n");
 	const struct linop_s* E   = linop_espirit_create(sx, sy, sz, nc, md, tk, maps);
 	const struct linop_s* R   = linop_reshape_create(wx, sx, sy, sz, nc, tk);
@@ -660,9 +658,27 @@ int main_wshfl(int argc, char* argv[])
 	linop_free(K);
 
 	print_opdims(A);
-	double maxeigen = estimate_maxeigenval(A->normal);
-	debug_printf(DP_INFO, "\tMax eval: %.2e\n", maxeigen);
-	step /= maxeigen;
+
+	if (fwd != NULL) {
+		debug_printf(DP_INFO, "Going from coefficients to data table... ");
+		complex float* coeffs_to_fwd = load_cfl(fwd, DIMS, coeff_dims);
+		complex float* table_forward = create_cfl(argv[6], DIMS, table_dims);
+		operator_apply(A->forward, DIMS, table_dims, table_forward, DIMS, coeff_dims, coeffs_to_fwd);
+		unmap_cfl(DIMS, table_dims, table_forward);
+		debug_printf(DP_INFO, "Done. Output table not normalized and not centered for fft.\n");
+		return 0;
+	}
+
+	if (eval < 0)	
+		eval = estimate_maxeigenval(A->normal);
+	debug_printf(DP_INFO, "\tMax eval: %.2e\n", eval);
+	step /= eval;
+
+	debug_printf(DP_INFO, "Normalizing data table and applying fftmod to table... ");
+	float norm = md_znorm(DIMS, table_dims, table);
+	md_zsmul(DIMS, table_dims, table, table, 1. / norm);
+	fftmod_apply(sy, sz, reorder_dims, reorder, table_dims, table, maps_dims, maps);
+	debug_printf(DP_INFO, "Done.\n");
 
 	const struct operator_p_s* T = NULL;
 	long blkdims[MAX_LEV][DIMS];
