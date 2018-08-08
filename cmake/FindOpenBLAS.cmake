@@ -187,25 +187,45 @@ if (OpenBLAS_FOUND)
   if(OpenBLAS_HAS_PARALLEL_LIBRARIES)
     list(APPEND OpenBLAS_PARALLEL_LIBRARIES ${OpenBLAS_PARALLEL_LIB})
   endif()
-endif()
 
-# ==============================================================================
+  # ----------------------------------------------------------------------------
 
-if(NOT TARGET OpenBLAS::OpenBLAS)
-  add_library(OpenBLAS::OpenBLAS UNKNOWN IMPORTED)
-  set_target_properties(OpenBLAS::OpenBLAS
-    PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${MATH_LIB};${LAPACKE_LIBRARIES}")
-  
-  if(OpenBLAS_HAS_PARALLEL_LIBRARIES)
+  if(NOT TARGET OpenBLAS::OpenBLAS)
+    get_filename_component(LIB_EXT "${LAPACKE_${UPPERCOMPONENT}_LIB}" EXT)
+    if(LIB_EXT STREQUAL ".a" OR LIB_EXT STREQUAL ".lib")
+      set(LIB_TYPE STATIC)
+    else()
+      set(LIB_TYPE SHARED)
+    endif()
+    add_library(OpenBLAS::OpenBLAS ${LIB_TYPE} IMPORTED GLOBAL)
     set_target_properties(OpenBLAS::OpenBLAS
       PROPERTIES
-      IMPORTED_LOCATION "${OpenBLAS_PARALLEL_LIB}")
-  else()
-    set_target_properties(OpenBLAS::OpenBLAS
-      PROPERTIES
-      IMPORTED_LOCATION "${OpenBLAS_LIB}")
+      INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${MATH_LIB};${LAPACKE_LIBRARIES}")
+    
+    if(OpenBLAS_HAS_PARALLEL_LIBRARIES)
+      set_target_properties(OpenBLAS::OpenBLAS
+	PROPERTIES
+	IMPORTED_LOCATION "${OpenBLAS_PARALLEL_LIB}")
+    else()
+      set_target_properties(OpenBLAS::OpenBLAS
+	PROPERTIES
+	IMPORTED_LOCATION "${OpenBLAS_LIB}")
+    endif()
+  endif()
+
+  # ----------------------------------------------------------------------------
+
+  if(NOT OpenBLAS_FIND_QUIETLY)
+    message(STATUS "OpenBLAS_FOUND                  :${OpenBLAS_FOUND}:  - set to true if the library is found")
+    message(STATUS "OpenBLAS_INCLUDE_DIRS           :${OpenBLAS_INCLUDE_DIRS}: - list of required include directories")
+    message(STATUS "OpenBLAS_LIBRARIES              :${OpenBLAS_LIBRARIES}: - list of libraries to be linked")
+    message(STATUS "OpenBLAS_HAS_PARALLEL_LIBRARIES :${OpenBLAS_HAS_PARALLEL_LIBRARIES}: - determine if there are parallel libraries compiled")
+    message(STATUS "OpenBLAS_PARALLEL_LIBRARIES     :${OpenBLAS_PARALLEL_LIBRARIES}: - list of libraries for parallel implementations")
+    message(STATUS "OpenBLAS_VERSION_MAJOR          :${OpenBLAS_VERSION_MAJOR}: - major version number")
+    message(STATUS "OpenBLAS_VERSION_MINOR          :${OpenBLAS_VERSION_MINOR}: - minor version number")
+    message(STATUS "OpenBLAS_VERSION_PATCH          :${OpenBLAS_VERSION_PATCH}: - patch version number")
+    message(STATUS "OpenBLAS_VERSION_STRING         :${OpenBLAS_VERSION_STRING}: - version number as a string")
   endif()
 endif()
 
@@ -221,16 +241,5 @@ mark_as_advanced(
   OpenBLAS_VERSION_MINOR
   OpenBLAS_VERSION_PATCH
   OpenBLAS_VERSION_STRING
-)
+  )
 
-if(NOT OpenBLAS_FIND_QUIETLY)
-  message(STATUS "OpenBLAS_FOUND                  :${OpenBLAS_FOUND}:  - set to true if the library is found")
-  message(STATUS "OpenBLAS_INCLUDE_DIRS           :${OpenBLAS_INCLUDE_DIRS}: - list of required include directories")
-  message(STATUS "OpenBLAS_LIBRARIES              :${OpenBLAS_LIBRARIES}: - list of libraries to be linked")
-  message(STATUS "OpenBLAS_HAS_PARALLEL_LIBRARIES :${OpenBLAS_HAS_PARALLEL_LIBRARIES}: - determine if there are parallel libraries compiled")
-  message(STATUS "OpenBLAS_PARALLEL_LIBRARIES     :${OpenBLAS_PARALLEL_LIBRARIES}: - list of libraries for parallel implementations")
-  message(STATUS "OpenBLAS_VERSION_MAJOR          :${OpenBLAS_VERSION_MAJOR}: - major version number")
-  message(STATUS "OpenBLAS_VERSION_MINOR          :${OpenBLAS_VERSION_MINOR}: - minor version number")
-  message(STATUS "OpenBLAS_VERSION_PATCH          :${OpenBLAS_VERSION_PATCH}: - patch version number")
-  message(STATUS "OpenBLAS_VERSION_STRING         :${OpenBLAS_VERSION_STRING}: - version number as a string")
-endif()
