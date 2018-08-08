@@ -9,7 +9,8 @@ addons:
 
 matrix:
   include:
-    - name: "Makefile"
+    - name: "Makefile PARALLEL"
+      env: PARALLEL=1
       os: linux
       compiler: gcc-5
       sudo: required
