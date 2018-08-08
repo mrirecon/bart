@@ -56,8 +56,10 @@ find_library(libFlame_LIBRARY
   PATH_SUFFIXES lib lib32 lib64 libflame/lib
   )
 
-get_filename_component(libFlame_ROOT_HINT ${libFlame_LIBRARY} PATH) # for CMake > 2.8.11 we should really use DIRECTORY
-get_filename_component(libFlame_ROOT_HINT ${libFlame_ROOT_HINT} PATH)
+if(libFLame_LIBRARY)
+  get_filename_component(libFlame_ROOT_HINT ${libFlame_LIBRARY} PATH) # for CMake > 2.8.11 we should really use DIRECTORY
+  get_filename_component(libFlame_ROOT_HINT ${libFlame_ROOT_HINT} PATH)  
+endif()
 
 find_path(libFlame_INCLUDE_DIR
   NAMES FLAME.h flame.h
@@ -70,24 +72,26 @@ set(libFlame_LAPACKE_COMPONENTS cblas)
 
 # ==============================================================================
 
-set(CMAKE_REQUIRED_LIBRARIES ${CBLAS_LIBRARY})
-include(CheckLibraryExists)
-check_library_exists(${libFlame_LIBRARY} zgesdd_ "" HAVE_ZGESDD)
-check_library_exists(${libFlame_LIBRARY} zgelss_ "" HAVE_ZGELSS)
-
-if(HAVE_ZGESDD AND HAVE_ZGELSS)
-  set(HAVE_LAPACK_INTERFACE 1)
-else()
-  set(HAVE_LAPACK_INTERFACE 0)
+if(libFLame_LIBRARY)
+  set(CMAKE_REQUIRED_LIBRARIES ${CBLAS_LIBRARY})
+  include(CheckLibraryExists)
+  check_library_exists(${libFlame_LIBRARY} zgesdd_ "" HAVE_ZGESDD)
+  check_library_exists(${libFlame_LIBRARY} zgelss_ "" HAVE_ZGELSS)
+  
+  if(HAVE_ZGESDD AND HAVE_ZGELSS)
+    set(HAVE_LAPACK_INTERFACE 1)
+  else()
+    set(HAVE_LAPACK_INTERFACE 0)
+  endif()
+  
+  set(LAPACK_LIB_VAR "")
+  if(NOT HAVE_LAPACK_INTERFACE)
+    message(STATUS "libFlame has no LAPACK interface, looking for a LAPACK library")
+    list(APPEND libFlame_LAPACKE_COMPONENTS lapack)
+  endif()
 endif()
 
 # ------------------------------------------------------------------------------
-
-set(LAPACK_LIB_VAR "")
-if(NOT HAVE_LAPACK_INTERFACE)
-  message(STATUS "libFlame has no LAPACK interface, looking for a LAPACK library")
-  list(APPEND libFlame_LAPACKE_COMPONENTS lapack)
-endif()
 
 find_package(LAPACKE QUIET REQUIRED COMPONENTS ${libFlame_LAPACKE_COMPONENTS})
 
@@ -117,17 +121,33 @@ if(libFlame_FOUND)
   list(APPEND libFlame_LIBRARIES
     ${libFlame_LIBRARY}
     ${LAPACKE_LIBRARIES})
+  
+  # ----------------------------------------------------------------------------
+
+  if(NOT TARGET libFlame::libFlame)
+    get_filename_component(LIB_EXT "${libFlame_LIBRARY}" EXT)
+    if(LIB_EXT STREQUAL ".a" OR LIB_EXT STREQUAL ".lib")
+      set(LIB_TYPE STATIC)
+    else()
+      set(LIB_TYPE SHARED)
+    endif()
+    add_library(libFlame::libFlame ${LIB_TYPE} IMPORTED GLOBAL)
+    set_target_properties(libFlame::libFlame PROPERTIES
+      IMPORTED_LOCATION "${libFlame_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES "${libFlame_INCLUDE_DIR}"
+      INTERFACE_LINK_LIBRARIES "${LAPACKE_LIBRARIES}"
+      )
+  endif()
+  
+  # ----------------------------------------------------------------------------
+  ## For debugging
+  if(NOT libFlame_FIND_QUIETLY)
+    message(STATUS "libFlame_FOUND         :${libFlame_FOUND}:  - set to true if the library is found")
+    message(STATUS "libFlame_INCLUDE_DIRS  :${libFlame_INCLUDE_DIRS}: - list of required include directories")
+    message(STATUS "libFlame_LIBRARIES     :${libFlame_LIBRARIES}: - list of libraries to be linked")
+  endif()
 endif()
 
-# Define imported target if supported by CMake
-if(libFlame_FOUND AND NOT TARGET libFlame::libFlame)
-  add_library(libFlame::libFlame UNKNOWN IMPORTED)
-  set_target_properties(libFlame::libFlame PROPERTIES
-    IMPORTED_LOCATION "${libFlame_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES "${libFlame_INCLUDE_DIR}"
-    INTERFACE_LINK_LIBRARIES "${LAPACKE_LIBRARIES}"
-    )
-endif()
 
 # ==============================================================================
 
@@ -138,9 +158,4 @@ mark_as_advanced(
   )
 
 # ==============================================================================
-
-## For debugging
-message(STATUS "libFlame_FOUND         :${libFlame_FOUND}:  - set to true if the library is found")
-message(STATUS "libFlame_INCLUDE_DIRS  :${libFlame_INCLUDE_DIRS}: - list of required include directories")
-message(STATUS "libFlame_LIBRARIES     :${libFlame_LIBRARIES}: - list of libraries to be linked")
 

@@ -178,34 +178,49 @@ if(LAPACKE_FOUND)
   if(NOT "${LAPACKE_INCLUDE_DIRS}" STREQUAL "")
     list(REMOVE_DUPLICATES LAPACKE_INCLUDE_DIRS)
   endif()
-endif()
 
-# ------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
 
-set(LAPACKE_IMPORTED_TARGET_LIST)
-# Inspired by FindBoost.cmake
-foreach(COMPONENT ${LAPACKE_FIND_COMPONENTS})
-  string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
-  if(NOT TARGET LAPACKE::${UPPERCOMPONENT} AND LAPACKE_${UPPERCOMPONENT}_FOUND)
-    add_library(LAPACKE::${UPPERCOMPONENT} UNKNOWN IMPORTED)
-    if(LAPACKE_INCLUDE_DIRS)
+  # Inspired by FindBoost.cmake
+  foreach(COMPONENT ${LAPACKE_FIND_COMPONENTS})
+    string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
+    if(NOT TARGET LAPACKE::${UPPERCOMPONENT} AND LAPACKE_${UPPERCOMPONENT}_FOUND)
+      get_filename_component(LIB_EXT "${LAPACKE_${UPPERCOMPONENT}_LIB}" EXT)
+      if(LIB_EXT STREQUAL ".a" OR LIB_EXT STREQUAL ".lib")
+        set(LIB_TYPE STATIC)
+      else()
+        set(LIB_TYPE SHARED)
+      endif()
+      add_library(LAPACKE::${UPPERCOMPONENT} ${LIB_TYPE} IMPORTED GLOBAL)
+      if(LAPACKE_INCLUDE_DIRS)
+        set_target_properties(LAPACKE::${UPPERCOMPONENT} PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${LAPACKE_INCLUDE_DIRS}")
+      endif()
+      if(EXISTS "${LAPACKE_${UPPERCOMPONENT}_LIB}")
+        set_target_properties(LAPACKE::${UPPERCOMPONENT} PROPERTIES
+          IMPORTED_LOCATION "${LAPACKE_${UPPERCOMPONENT}_LIB}")
+      endif()
       set_target_properties(LAPACKE::${UPPERCOMPONENT} PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${LAPACKE_INCLUDE_DIRS}")
+        INTERFACE_LINK_LIBRARIES "${MATH_LIB}")
     endif()
-    if(EXISTS "${LAPACKE_${UPPERCOMPONENT}_LIB}")
-      set_target_properties(LAPACKE::${UPPERCOMPONENT} PROPERTIES
-        IMPORTED_LOCATION "${LAPACKE_${UPPERCOMPONENT}_LIB}")
-    endif()
-    set_target_properties(LAPACKE::${UPPERCOMPONENT} PROPERTIES
-      INTERFACE_LINK_LIBRARIES "${MATH_LIB}")
-    list(APPEND LAPACKE_IMPORTED_TARGET_LIST LAPACKE::${UPPERCOMPONENT})
+  endforeach()
+
+  # ----------------------------------------------------------------------------
+
+  if(NOT LAPACKE_FIND_QUIETLY)
+    message(STATUS "LAPACKE_FOUND         :${LAPACKE_FOUND}:  - set to true if the library is found")
+    message(STATUS "LAPACKE_INCLUDE_DIRS  :${LAPACKE_INCLUDE_DIRS}: - list of required include directories")
+    message(STATUS "LAPACKE_LIBRARIES     :${LAPACKE_LIBRARIES}: - list of libraries to be linked")
   endif()
-endforeach()
+endif()
 
 # ==============================================================================
 
-if(NOT LAPACKE_FIND_QUIETLY)
-  message(STATUS "LAPACKE_FOUND         :${LAPACKE_FOUND}:  - set to true if the library is found")
-  message(STATUS "LAPACKE_INCLUDE_DIRS  :${LAPACKE_INCLUDE_DIRS}: - list of required include directories")
-  message(STATUS "LAPACKE_LIBRARIES     :${LAPACKE_LIBRARIES}: - list of libraries to be linked")
-endif()
+mark_as_advanced(
+  LAPACKE_FOUND
+  LAPACKE_INCLUDE_DIRS
+  LAPACKE_LIBRARIES
+  )
+
+
+

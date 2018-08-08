@@ -190,18 +190,32 @@ if (ATLAS_FOUND)
     set(MATH_LIB m)
   endif()
   
-  list(APPEND ATLAS_LIBRARIES ${LAPACKE_LIBRARIES}} ${LAPACK_LIB} ${F77BLAS_LIB} ${CBLAS_LIB} ${ATLAS_LIB} ${MATH_LIB})
-endif()
-
-# ==============================================================================
-
-if(NOT TARGET ATLAS::ATLAS)
-  add_library(ATLAS::ATLAS UNKNOWN IMPORTED)
-  set_target_properties(ATLAS::ATLAS
-    PROPERTIES
-    IMPORTED_LOCATION "${ATLAS_LIB}"
-    INTERFACE_INCLUDE_DIRECTORIES "${ATLAS_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${LAPACKE_LIBRARIES};${LAPACK_LIB};${F77BLAS_LIB};${CBLAS_LIB};${MATH_LIB}")
+  list(APPEND ATLAS_LIBRARIES ${LAPACKE_LIBRARIES} ${LAPACK_LIB} ${F77BLAS_LIB} ${CBLAS_LIB} ${ATLAS_LIB} ${MATH_LIB})
+  
+  if(NOT TARGET ATLAS::ATLAS)
+    get_filename_component(LIB_EXT "${ATLAS_LIB}" EXT)
+    if(LIB_EXT STREQUAL ".a" OR LIB_EXT STREQUAL ".lib")
+      set(LIB_TYPE STATIC)
+    else()
+      set(LIB_TYPE SHARED)
+    endif()
+    add_library(ATLAS::ATLAS ${LIB_TYPE} IMPORTED GLOBAL)
+    set_target_properties(ATLAS::ATLAS
+      PROPERTIES
+      IMPORTED_LOCATION "${ATLAS_LIB}"
+      INTERFACE_INCLUDE_DIRECTORIES "${ATLAS_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${LAPACKE_LIBRARIES};${LAPACK_LIB};${F77BLAS_LIB};${CBLAS_LIB};${MATH_LIB}")
+  endif()
+  
+  if(NOT ATLAS_FIND_QUIETLY)
+    message(STATUS "ATLAS_FOUND           :${ATLAS_FOUND}:  - set to true if the library is found")
+    message(STATUS "ATLAS_INCLUDE_DIRS    :${ATLAS_INCLUDE_DIRS}: - list of required include directories")
+    message(STATUS "ATLAS_LIBRARIES       :${ATLAS_LIBRARIES}: - list of libraries to be linked")
+    message(STATUS "ATLAS_VERSION_MAJOR   :${ATLAS_VERSION_MAJOR}: - major version number")
+    message(STATUS "ATLAS_VERSION_MINOR   :${ATLAS_VERSION_MINOR}: - minor version number")
+    message(STATUS "ATLAS_VERSION_PATCH   :${ATLAS_VERSION_PATCH}: - patch version number")
+    message(STATUS "ATLAS_VERSION_STRING  :${ATLAS_VERSION_STRING}: - version number as a string")
+  endif()
 endif()
 
 # ==============================================================================
@@ -214,14 +228,7 @@ mark_as_advanced(
   ATLAS_VERSION_MINOR
   ATLAS_VERSION_PATCH
   ATLAS_VERSION_STRING
-)
+  )
 
-if(NOT ATLAS_FIND_QUIETLY)
-  message(STATUS "ATLAS_FOUND           :${ATLAS_FOUND}:  - set to true if the library is found")
-  message(STATUS "ATLAS_INCLUDE_DIRS    :${ATLAS_INCLUDE_DIRS}: - list of required include directories")
-  message(STATUS "ATLAS_LIBRARIES       :${ATLAS_LIBRARIES}: - list of libraries to be linked")
-  message(STATUS "ATLAS_VERSION_MAJOR   :${ATLAS_VERSION_MAJOR}: - major version number")
-  message(STATUS "ATLAS_VERSION_MINOR   :${ATLAS_VERSION_MINOR}: - minor version number")
-  message(STATUS "ATLAS_VERSION_PATCH   :${ATLAS_VERSION_PATCH}: - patch version number")
-  message(STATUS "ATLAS_VERSION_STRING  :${ATLAS_VERSION_STRING}: - version number as a string")
-endif()
+# ==============================================================================
+
