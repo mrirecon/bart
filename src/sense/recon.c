@@ -64,33 +64,6 @@ const struct sense_conf sense_defaults = {
 
 
 
-/**
- * Data structure for storing all relevant recon information
- *
- * @param pattern sampling mask
- * @param transfer_data optional data to be applied to transfer function
- * @param transfer optional transfer function to apply normal equations (e.g. weights)
- * @param sense_data data structure for holding sense information
- * @param tmp temporary storage in kspace domain
- * @param conf sense configuration
- * @param img_dims dimensions of image
- */
-struct data {
-
- 	// Optional function to apply normal equations:
-	//     For example, used for sampling mask, weights
-/*	const */ complex float* pattern;
-	  
-	const struct operator_s* sense_data;
-	complex float* tmp;
-	const complex float* kspace;
-
-	struct sense_conf* conf;
-
-	long img_dims[DIMS];
-	long ksp_dims[DIMS];
-	long pat_dims[DIMS];
-};
 
 
 void debug_print_sense_conf(int level, const struct sense_conf* conf)
