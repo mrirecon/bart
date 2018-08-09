@@ -496,6 +496,9 @@ list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Orchestra
 list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Gadgetron.cc")
 if(BART_LOG_BACKEND)
   if(BART_LOG_SIEMENS_BACKEND)
+    set(DEBUG_C_FILE "${CMAKE_CURRENT_LIST_DIR}/src/misc/debug.c")
+    set(LOG_BACKEND_SRCS "${DEBUG_C_FILE}")
+
     # No need to add any include paths as the required code was copied into UTrace.cc from Siemens' IDEA framework
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/UTrace.cc")
   endif(BART_LOG_SIEMENS_BACKEND)
@@ -542,7 +545,9 @@ if(BART_LOG_BACKEND)
   endif(BART_LOG_GADGETRON_BACKEND)
 endif(BART_LOG_BACKEND)
 set(LOG_BACKEND_SRCS "${LOG_BACKEND_SRCS}" CACHE INTERNAL "")
-list(REMOVE_ITEM bart_support_SRCS "${LOG_BACKEND_SRCS}")
+foreach(file ${LOG_BACKEND_SRCS})
+  list(REMOVE_ITEM bart_support_SRCS "${file}")
+endforeach()
 
 
 if(USE_CUDA)
@@ -552,7 +557,7 @@ else()
 endif(USE_CUDA)
 
 add_library(bartsupport_objs OBJECT ${bart_support_SRCS})
-bart_add_library(bartsupport STATIC $<TARGET_OBJECTS:bartsupport_objs> ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
+bart_add_library(bartsupport STATIC $<TARGET_OBJECTS:bartsupport_objs> ${DEBUG_C_FILE} ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
 target_link_libraries(bartsupport ${LINALG_VENDOR_LIB} ${PNG_LIBRARIES} ${FFTWF_LIBRARIES})
 if(BART_ISMRMRD)
   target_link_libraries(bartsupport ${ISMRMRD_LIBRARIES})

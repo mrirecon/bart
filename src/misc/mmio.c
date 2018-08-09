@@ -52,10 +52,15 @@ static void io_error(const char* fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 #ifndef BART_WITH_PYTHON
+#ifdef USE_LOG_BACKEND
+	debug_vprintf_trace("error", __FILE__, __LINE__, DP_ERROR, fmt, ap);
+	va_end(ap);
+#else
 	vfprintf(stderr, fmt, ap);	
 	va_end(ap);
 	fflush(stderr);
 	perror(" ");
+#endif
 #else
 	if (NULL == PyErr_Occurred()) {
 
