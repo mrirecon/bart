@@ -26,17 +26,24 @@ void vendor_log(int level,
      // TODO: the calls below definitely need some improvements to differentiate
      //       between debugging level, as well as properly forwarding location
      //       information to the logging backend
-     switch(level) {
-     case DP_ERROR:
-	  trace->ConsoleMsg(message);
-	  break;
-     case DP_WARN:
-	  trace->ConsoleMsg(message);
-	  break;
-     case DP_INFO:
-	  trace->ConsoleMsg(message);
-	  break;
-     default:
-	  trace->ConsoleMsg(message);
+     if (-1 == debug_level) {
+	  char* str = getenv("DEBUG_LEVEL");
+	  debug_level = (NULL != str) ? atoi(str) : DP_INFO;
+     }
+
+     if (level <= debug_level) {
+	  switch(level) {
+	  case DP_ERROR:
+	       trace->ConsoleMsg(message);
+	       break;
+	  case DP_WARN:
+	       trace->ConsoleMsg(message);
+	       break;
+	  case DP_INFO:
+	       trace->ConsoleMsg(message);
+	       break;
+	  default:
+	       trace->ConsoleMsg(message);
+	  }
      }
 }

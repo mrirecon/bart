@@ -89,11 +89,11 @@ if(libFLame_LIBRARY)
     message(STATUS "libFlame has no LAPACK interface, looking for a LAPACK library")
     list(APPEND libFlame_LAPACKE_COMPONENTS lapack)
   endif()
+
+  # ----------------------------------------------------------------------------
+
+  find_package(LAPACKE QUIET REQUIRED COMPONENTS ${libFlame_LAPACKE_COMPONENTS})
 endif()
-
-# ------------------------------------------------------------------------------
-
-find_package(LAPACKE QUIET REQUIRED COMPONENTS ${libFlame_LAPACKE_COMPONENTS})
 
 # ==============================================================================
 

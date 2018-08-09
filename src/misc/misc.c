@@ -84,7 +84,7 @@ void error(const char* fmt, ...)
 
 #ifndef BART_WITH_PYTHON
 #ifdef USE_LOG_BACKEND
-	debug_printf_trace("error", __FILE__, __LINE__, DP_ERROR, fmt, ap);
+	debug_vprintf_trace("error", __FILE__, __LINE__, DP_ERROR, fmt, ap);
 #else
 	debug_vprintf(DP_ERROR, fmt, ap);
 #endif
