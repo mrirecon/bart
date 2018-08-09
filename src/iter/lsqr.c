@@ -210,6 +210,7 @@ const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 					struct iter_monitor_s* monitor)
 {
 	struct linop_s* op = linop_chain(model_op, weights);
+	linop_free(model_op);
 
 	const struct operator_s* lsqr_op = lsqr2_create(conf, italgo, iconf, init,
 						op, precond_op,
@@ -218,6 +219,7 @@ const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 
 	const struct operator_s* wlsqr_op = operator_chain(weights->forward, lsqr_op);
 
+	linop_free(weights);
 	operator_free(lsqr_op);
 	linop_free(op);
 

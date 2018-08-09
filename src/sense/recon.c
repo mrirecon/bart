@@ -168,6 +168,8 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 
 		op = lad2_create(&lad_conf, italgo, iconf, (const float*)init, sense_op, num_funs, thresh_op, thresh_funs);
 
+		linop_free(sense_op);
+
 	} else
 	if (NULL == pattern) {
 
@@ -177,6 +179,8 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		else
 			op = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init, sense_op, precond_op,
 					num_funs, thresh_op, thresh_funs, NULL);
+
+		linop_free(sense_op);
 
 	} else {
 

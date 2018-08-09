@@ -521,6 +521,13 @@ void admm(const struct admm_plan_s* plan,
 	vops->del(rhs);
 	vops->del(s);
 
+	for (unsigned int j = 0; j < num_funs; j++) {
+
+		vops->del(z[j]);
+		vops->del(u[j]);
+		vops->del(r[j]);
+	}
+
 	if (!plan->fast)
 		vops->del(GH_usum);
 }
