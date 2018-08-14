@@ -14,13 +14,11 @@
 #include <stdbool.h>
 #include <complex.h>
 
-#ifdef ENABLE_LONGJUMP
 extern struct error_jmpbuf_s {
 
-	_Bool initialized;
+     _Bool initialized;
 	jmp_buf jmpbuf;
 } error_jumper;
-#endif /* ENABLE_LONGJUMP */
 
 #ifndef DIMS
 #  define DIMS 16
@@ -245,17 +243,14 @@ PyObject* register_python_memory(PyObject *self, PyObject *args)
      
      // ------------------------------------------------------------------------
 
-#ifdef ENABLE_LONGJUMP
      error_jumper.initialized = 1;
      if (setjmp(error_jumper.jmpbuf) == 0) {
-#endif /* ENABLE_LONGJUMP */
 	  if (register_mem_cfl_python(name, npy_data)) {
 	       Py_RETURN_NONE;
 	  }
 	  else {
 	       return NULL;
 	  }
-#ifdef ENABLE_LONGJUMP
      }
      else {
 	  if (PyErr_Occurred() != NULL) {
@@ -265,7 +260,6 @@ PyObject* register_python_memory(PyObject *self, PyObject *args)
 	       Py_RETURN_NONE;
 	  }
      }
-#endif /* ENABLE_LONGJUMP */
 }
 
 /* ========================================================================== */
@@ -287,10 +281,8 @@ PyObject* load_cfl_python(PyObject* self, PyObject* args)
 	  return NULL;
      }
 
-#ifdef ENABLE_LONGJUMP
      error_jumper.initialized = 1;
      if (setjmp(error_jumper.jmpbuf) == 0) {
-#endif /* ENABLE_LONGJUMP */
 	  long dims[DIMS] = {0};
 	  void* data = load_cfl(name, DIMS, dims);
 
@@ -313,12 +305,10 @@ PyObject* load_cfl_python(PyObject* self, PyObject* args)
 			     sizeof(complex float),
 			     NPY_ARRAY_FARRAY_RO,
 			     NULL /* obj */);
-#ifdef ENABLE_LONGJUMP
      }
      else {
 	  return NULL;
      }
-#endif /* ENABLE_LONGJUMP */
 }
 
 /* ========================================================================== */

@@ -1,0 +1,47 @@
+# Copyright 2018. Damien Nguyen <damien.nguyen@alumni.epfl.ch>
+# All rights reserved. Use of this source code is governed by
+# a BSD-style license which can be found in the LICENSE file.
+# \author Damien Nguyen <damien.nguyen@alumni.epfl.ch>
+
+@PACKAGE_INIT@
+
+set(BART_ENABLE_MEM_CFL @BART_ENABLE_MEM_CFL@)
+set(BART_FPIC @BART_FPIC@)
+set(BART_FFTWTHREADS @BART_FFTWTHREADS@)
+set(BART_DISABLE_PNG @BART_DISABLE_PNG@)
+set(BART_ISMRMRD @BART_ISMRMRD@)
+set(BART_LOCAL_FFTW @BART_LOCAL_FFTW@)
+set(BART_LOG_BACKEND @BART_LOG_BACKEND@)
+set(BART_LOG_SIEMENS_BACKEND @BART_LOG_SIEMENS_BACKEND@)
+set(BART_LOG_ORCHESTRA_BACKEND @BART_LOG_ORCHESTRA_BACKEND@)
+set(BART_LOG_GADGETRON_BACKEND @BART_LOG_GADGETRON_BACKEND@)
+set(BART_NO_LAPACKE @BART_NO_LAPACKE@)
+set(BART_MATLAB @BART_MATLAB@)
+set(BART_MEMONLY_CFL @BART_MEMONLY_CFL@)
+set(BART_USE_CUDA @USE_CUDA@)
+set(BART_USE_OPENMP @USE_OPENMP@)
+set(BART_REDEFINE_PRINTF_FOR_TRACE @BART_REDEFINE_PRINTF_FOR_TRACE@)
+
+set(BART_LINALG_VENDOR "@LINALG_VENDOR@")
+set(LINALG_VENDOR "@LINALG_VENDOR@")
+
+# ------------------------------------------------------------------------------
+
+get_filename_component(BART_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+list(APPEND CMAKE_MODULE_PATH ${BART_CMAKE_DIR})
+include(${BART_CMAKE_DIR}/BARTFindBLASlib.cmake)
+list(REMOVE_AT CMAKE_MODULE_PATH -1)
+
+# ==============================================================================
+
+set_and_check(BARTTargetForEmbedding "${BART_CMAKE_DIR}/BARTTargetsForEmbedding.cmake")
+include(${BARTTargetForEmbedding})
+
+set(BARTTargetGeneral "${BART_CMAKE_DIR}/BARTTargets.cmake")
+if(NOT TARGET BART::BART AND EXISTS ${BARTTargetGeneral})
+  include(${BARTTargetGeneral})
+endif()
+
+# ==============================================================================
+
