@@ -105,9 +105,28 @@ find_library(OpenBLAS_LIB
   PATHS ${OpenBLAS_SEARCH_PATHS}
   PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
 
-if(EXISTS ${OpenBLAS_LIB})
+if(OpenBLAS_LIB)
   get_filename_component(OpenBLAS_LIB_DIR i${OpenBLAS_LIB} DIRECTORY)
+
+  include(CheckLibraryExists)
+  check_library_exists(${OpenBLAS_LIB} LAPACKE_cheev  "" HAVE_LAPACKE_CHEEV)
+  check_library_exists(${OpenBLAS_LIB} LAPACKE_zgesdd "" HAVE_LAPACKE_ZGESDD)
+
+  if(NOT HAVE_LAPACKE_CHEEV OR NOT HAVE_LAPACKE_ZGESDD)
+    message(WARNING "OpenBLAS has no LAPACKE symbols. Attempting to look for a LAPACKE library")
+    find_package(LAPACKE QUIET COMPONENTS LAPACKE)
+    if(LAPACKE_FOUND)
+      message(STATUS "Found LAPACKE: ${LAPACKE_LIBRARIES}")
+      list(APPEND OpenBLAS_LIBRARIES ${LAPACKE_LIBRARIES})
+    else()
+      message(WARNING "Unable to find a LAPACKE library. Consider configuring CMake with BART_NO_LAPACKE=ON")
+    endif()
+  else()
+    # Make sure we find lapacke.h
+    find_package(LAPACKE QUIET COMPONENTS LAPACKE_H)
+  endif()
 endif()
+
 ## Find the named parallel version of openblas
 set(OpenBLAS_SEARCH_VERSIONS ${OpenBLAS_VERSION_STRING} 0.3.2 0.3.1 0.3.0 0.2.19 0.2.18 0.2.17 0.2.16)
 list(REMOVE_DUPLICATES OpenBLAS_SEARCH_VERSIONS)
@@ -134,26 +153,6 @@ if(OpenBLAS_VERSION_STRING)
   string(REGEX REPLACE "([0-9]+).([0-9]+).([0-9]+)" "\\1" OpenBLAS_VERSION_MAJOR "${OpenBLAS_VERSION_STRING}")
   string(REGEX REPLACE "([0-9]+).([0-9]+).([0-9]+)" "\\2" OpenBLAS_VERSION_MINOR "${OpenBLAS_VERSION_STRING}")
   string(REGEX REPLACE "([0-9]+).([0-9]+).([0-9]+)" "\\3" OpenBLAS_VERSION_PATCH "${OpenBLAS_VERSION_STRING}")
-endif()
-
-# ==============================================================================
-
-include(CheckLibraryExists)
-check_library_exists(${OpenBLAS_LIB} LAPACKE_cheev  "" HAVE_LAPACKE_CHEEV)
-check_library_exists(${OpenBLAS_LIB} LAPACKE_zgesdd "" HAVE_LAPACKE_ZGESDD)
-
-if(NOT HAVE_LAPACKE_CHEEV OR NOT HAVE_LAPACKE_ZGESDD)
-  message(WARNING "OpenBLAS has no LAPACKE symbols. Attempting to look for a LAPACKE library")
-  find_package(LAPACKE QUIET COMPONENTS LAPACKE)
-  if(LAPACKE_FOUND)
-    message(STATUS "Found LAPACKE: ${LAPACKE_LIBRARIES}")
-    list(APPEND OpenBLAS_LIBRARIES ${LAPACKE_LIBRARIES})
-  else()
-    message(WARNING "Unable to find a LAPACKE library. Consider configuring CMake with BART_NO_LAPACKE=ON")
-  endif()
-else()
-  # Make sure we find lapacke.h
-  find_package(LAPACKE QUIET COMPONENTS LAPACKE_H)
 endif()
 
 # ==============================================================================

@@ -373,9 +373,6 @@ endif
 ifeq ($(LOG_ORCHESTRA_BACKEND),1)
 miscextracxxsrcs += $(srcdir)/misc/Orchestra.cc
 endif
-ifeq ($(LOG_GADGETRON_BACKEND),1)
-miscextracxxsrcs += $(srcdir)/misc/Gadgetron.cc
-endif
 endif
 
 
