@@ -29,9 +29,39 @@ set(LINALG_VENDOR "@LINALG_VENDOR@")
 
 get_filename_component(BART_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
-list(APPEND CMAKE_MODULE_PATH ${BART_CMAKE_DIR})
+list(INSERT CMAKE_MODULE_PATH 0 ${BART_CMAKE_DIR})
+
+include(CMakeFindDependencyMacro)
+
 include(${BART_CMAKE_DIR}/BARTFindBLASlib.cmake)
-list(REMOVE_AT CMAKE_MODULE_PATH -1)
+
+if(BART_ISMRMRD)
+  find_dependency(ISMRMRD)
+endif()
+
+if(NOT BART_LOCAL_FFTW)
+  if(CMAKE_VERSION VERSION_GREATER 3.8)
+    find_dependency(FFTW 3 COMPONENTS FFTWF FFTWF_MT)
+  else()
+    find_package(FFTW 3 REQUIRED COMPONENTS FFTWF FFTWF_MT)
+  endif()
+else()
+  find_dependency(Threads)
+endif()
+
+if(NOT BART_DISABLE_PNG)
+  find_dependency(PNG)
+endif()
+
+if(BART_USE_CUDA AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.8)
+  if(CMAKE_VERSION VERSION_GREATER 3.8)
+    find_dependency(CUDAlibs COMPONENTS CUBLAS CUFFT)
+  else()
+    find_package(CUDAlibs REQUIRED COMPONENTS CUBLAS CUFFT)
+  endif()
+endif()
+
+list(REMOVE_AT CMAKE_MODULE_PATH 0)
 
 # ==============================================================================
 

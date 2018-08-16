@@ -5,7 +5,7 @@
 
 include(GNUInstallDirs)
 
-set(INSTALL_CONFIGDIR  ${CMAKE_INSTALL_LIBDIR}/cmake/BART)
+set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/BART)
 set(INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/bart)
 
 # ==============================================================================
@@ -52,15 +52,12 @@ install(TARGETS bartmain
 # Now take care of exporting all the information for inclusion in other CMake
 # projects
 
-set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/BART)
-
-
 # Write a CMake file with information about the version of BART being compiled
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/BARTConfigVersion.cmake
   VERSION "${BART_VERSION_MAJOR}.${BART_VERSION_MINOR}.${BART_VERSION_PATCH}"
-  COMPATIBILITY AnyNewerVersion)
+  COMPATIBILITY SameMajorVersion)
 
 # Write a CMake config file
 configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/BARTConfig.cmake.in
@@ -71,9 +68,10 @@ configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/BARTConfig.cmake.in
 install(FILES
   ${CMAKE_CURRENT_LIST_DIR}/BARTFindBLASlib.cmake
   ${CMAKE_CURRENT_LIST_DIR}/FindATLAS.cmake
+  ${CMAKE_CURRENT_LIST_DIR}/FindFFTW.cmake
   ${CMAKE_CURRENT_LIST_DIR}/FindLAPACKE.cmake
-  ${CMAKE_CURRENT_LIST_DIR}/FindOpenBLAS.cmake
   ${CMAKE_CURRENT_LIST_DIR}/FindlibFlame.cmake
+  ${CMAKE_CURRENT_LIST_DIR}/FindOpenBLAS.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/BARTConfig.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/BARTConfigVersion.cmake
   DESTINATION ${INSTALL_CONFIGDIR}
@@ -83,13 +81,14 @@ install(FILES
 # Write a CMake file with all the targets information
 export(EXPORT bart-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/BARTTargets.cmake NAMESPACE BART::)
 
-# Install the CMake target file
+# Install the general CMake target file
 install(EXPORT bart-targets
   FILE BARTTargets.cmake
   NAMESPACE BART::
   DESTINATION ${INSTALL_CONFIGDIR}
   )
 
+# Install the CMake target file for embedding
 install(EXPORT bart-targets-for-embedding
   FILE BARTTargetsForEmbedding.cmake
   NAMESPACE BART::
@@ -97,6 +96,7 @@ install(EXPORT bart-targets-for-embedding
   COMPONENT for_embedding
   )
 
+# Register BART in user package directory
 export(PACKAGE BART)
 
 # ==============================================================================

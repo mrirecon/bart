@@ -26,7 +26,7 @@
 #
 #   LAPACKE_FOUND            - True if headers and requested libraries were found
 #   LAPACKE_INCLUDE_DIRS     - LAPACKE include directories
-#   LAPACKE_LIBRARIES        - Boost component libraries to be linked
+#   LAPACKE_LIBRARIES        - LAPACKE component libraries to be linked
 #
 #
 # This module reads hints about search locations from variables

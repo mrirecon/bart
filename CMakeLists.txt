@@ -13,7 +13,23 @@ enable_language(C)
 if(CMAKE_VERSION VERSION_GREATER 3.0)
   cmake_policy(SET CMP0051 NEW)
   cmake_policy(SET CMP0057 NEW) # if IN_LIST
+  cmake_policy(SET CMP0028 NEW) # :: in target names
+  if(CMAKE_VERSION VERSION_LESS 3.8) # 3.8 instead of 3.3 due to CUDA support
+    cmake_policy(SET CMP0023 OLD) # target_link_libraries mixed signatures
+  else()
+    cmake_policy(SET CMP0023 NEW) # target_link_libraries mixed signatures
+  endif()
 endif(CMAKE_VERSION VERSION_GREATER 3.0)
+
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_LIST_DIR}/cmake)
+
+#==============================================================================
+# Options
+
+# NB: must be before compiler flags since we might enable CXX or CUDA
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/bart_options.cmake)
+
+#==============================================================================
 
 # http://stackoverflow.com/questions/24840030/forcing-c99-in-cmake-to-use-for-loop-initial-declaration
 if (CMAKE_VERSION VERSION_LESS "3.1")
@@ -21,8 +37,15 @@ if (CMAKE_VERSION VERSION_LESS "3.1")
       CMAKE_C_COMPILER_ID STREQUAL "Clang")
     set (CMAKE_C_FLAGS "--std=gnu11 ${CMAKE_C_FLAGS}")
   endif()
+  if (CMAKE_CX_COMPILER_ID STREQUAL "GNU" OR
+      CMAKE_CX_COMPILER_ID STREQUAL "Clang")
+    set (CMAKE_CXX_FLAGS "--std=c++11x ${CMAKE_CXX_FLAGS}")
+  endif()
 else()
   set (CMAKE_C_STANDARD 11)
+  set (CMAKE_C_STANDARD_REQUIRED ON)
+  set (CMAKE_CXX_STANDARD 11)
+  set (CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
 set(CMAKE_DEBUG_POSTFIX "d")
@@ -35,17 +58,9 @@ if ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fblocks")
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake ${CMAKE_MODULE_PATH})
-
-#==============================================================================
-# Options
-
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/bart_options.cmake)
-
 # ==============================================================================
 
 # --- Provide good defaults for searching for packages (i.e. ismrmrd)
-set(CMAKE_PREFIX_PATH)
 if(NOT CMAKE_PREFIX_PATH)
   list(APPEND CMAKE_PREFIX_PATH "/usr/local")
 endif()
@@ -80,12 +95,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
-endif()
-
-find_package(ISMRMRD QUIET) ## if you can find ISMRMRD by default, then default configuration is ON
-option(BART_ISMRMRD "Use external ISMRMRD package for reading/writing" ${ISMRMRD_FOUND})
-if(BART_ISMRMRD)
-  find_package(ISMRMRD REQUIRED)
 endif()
 
 ## Compiler flags -- TODO This could be better, see ITK it won't work on windows builds
@@ -195,22 +204,33 @@ macro(CONFIG_BY_REPLACEMENT INFILE OUTFILE PREFIX )
   endif()
 endmacro()
 
-set(BART_SUPPORT_LIBS calib misc dfwavelet grecon iter linops lowrank nlops noir noncart num sake sense simu wavelet)
+set(BART_SUPPORT_LIBS)
+file(GLOB support_libs ${CMAKE_CURRENT_LIST_DIR}/src/*)
+foreach(_f ${support_libs})
+  if(IS_DIRECTORY ${_f})
+    get_filename_component(_name ${_f} NAME)
+    if(NOT "${_name}" STREQUAL "python")
+      list(APPEND BART_SUPPORT_LIBS ${_name})
+    endif()
+  endif()
+endforeach()
+
 if(BART_ISMRMRD)
-  list(APPEND BART_SUPPORT_LIBS ismrm)
   link_directories(${ISMRMRD_LIBRARY_DIRS})
   include_directories(${ISMRMRD_INCLUDE_DIRS})
+else()
+    list(REMOVE_ITEM BART_SUPPORT_LIBS ismrm)
 endif()
 
-if(BART_NO_LAPACKE)
-  list(APPEND BART_SUPPORT_LIBS lapacke)
-endif(BART_NO_LAPACKE)
+if(NOT BART_NO_LAPACKE)
+  list(REMOVE_ITEM BART_SUPPORT_LIBS lapacke)
+endif()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
 
 set(bart_support_SRCS "")
 set(bart_support_CCSRCS "")
-set(bart_support_CUSRCS "" CACHE INTERNAL "")
+set(bart_support_CUSRCS "")
 foreach(curr_lib ${BART_SUPPORT_LIBS})
     file(GLOB ${curr_lib}_SRCS "src/${curr_lib}/*.c")
     list(APPEND bart_support_SRCS ${${curr_lib}_SRCS})
@@ -218,10 +238,8 @@ foreach(curr_lib ${BART_SUPPORT_LIBS})
     file(GLOB ${curr_lib}_CCSRCS "src/${curr_lib}/*.cc")
     list(APPEND bart_support_SRCS ${${curr_lib}_CCSRCS})
 
-    if(USE_CUDA)
-      file(GLOB ${curr_lib}_CUSRCS "src/${curr_lib}/*.cu")
-      list(APPEND bart_support_CUSRCS ${${curr_lib}_CUSRCS})
-    endif(USE_CUDA)
+    file(GLOB ${curr_lib}_CUSRCS "src/${curr_lib}/*.cu")
+    list(APPEND bart_support_CUSRCS ${${curr_lib}_CUSRCS})
 endforeach()
 
 # ------------------------------------------------------------------------------
@@ -231,7 +249,7 @@ endforeach()
 set(BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES
   "${CMAKE_CURRENT_LIST_DIR}/src/misc/mmiocc.cc"
   "${CMAKE_CURRENT_LIST_DIR}/src/misc/mmio.c"
-  "${CMAKE_CURRENT_LIST_DIR}/src/misc/misc.c" CACHE INTERNAL "")
+  "${CMAKE_CURRENT_LIST_DIR}/src/misc/misc.c")
 foreach(file ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES})
   list(REMOVE_ITEM bart_support_SRCS "${file}")
 endforeach()
@@ -286,7 +304,7 @@ if(BART_LOG_BACKEND)
     include (${TOPDIR}/recon/SDK/product.cmake)
 
     # FIXME: need to check which libraries are actually required
-    target_link_libraries(bartsupport Core Common Control System ${OX_3P_LIBS} ${OX_OS_LIBS})
+    target_link_libraries(bartsupport PUBLIC "Core;Common;Control;System;${OX_3P_LIBS};${OX_OS_LIBS}")
     
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Orchestra.cc")
   endif(BART_LOG_ORCHESTRA_BACKEND)
@@ -298,21 +316,22 @@ if(BART_LOG_BACKEND)
   endif(BART_LOG_GADGETRON_BACKEND)
 endif(BART_LOG_BACKEND)
 
-set(LOG_BACKEND_SRCS "${LOG_BACKEND_SRCS}" CACHE INTERNAL "")
 foreach(file ${LOG_BACKEND_SRCS})
   list(REMOVE_ITEM bart_support_SRCS "${file}")
 endforeach()
 
 if(USE_CUDA)
-  cuda_wrap_srcs(bartsupport_objs OBJ bartsupport_cuda_objs ${bart_support_CUSRCS})
-else()
-  set(bart_support_CUDA "")
+  if("${CMAKE_VERSION}" VERSION_GREATER_EQUAL 3.8)
+    set(bartsupport_cuda_objs ${bart_support_CUSRCS})
+  else()
+    cuda_wrap_srcs(bartsupport_objs OBJ bartsupport_cuda_objs ${bart_support_CUSRCS})
+  endif()
 endif(USE_CUDA)
 
-add_library(bartsupport_objs OBJECT ${bart_support_SRCS})
+bart_add_object_library(bartsupport_objs ${bart_support_SRCS})
 bart_add_library(bartsupport STATIC $<TARGET_OBJECTS:bartsupport_objs> ${DEBUG_C_FILE} ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
 
-target_link_libraries(bartsupport PUBLIC ${LINALG_VENDOR_LIB} ${PNG_LIBRARIES} ${FFTWF_LIBRARIES})
+target_link_libraries(bartsupport PUBLIC "${LINALG_VENDOR_LIB};${PNG_TGT};${FFTW_TGT}")
 if(BART_ISMRMRD)
   target_link_libraries(bartsupport PUBLIC ${ISMRMRD_LIBRARIES})
 endif()
@@ -326,6 +345,7 @@ set_target_properties(bartsupport
 
 ## Generate combined programs
 #==============================================
+
 set(EXTERN_LIST "\n\n/* Generated by cmake */\n")
 foreach(driver ${ALLPROGS})
    set(EXTERN_LIST "${EXTERN_LIST}extern int main_${driver}(int argc, char* argv[])__EOL__\n")
@@ -339,6 +359,7 @@ CONFIG_BY_REPLACEMENT( "${CMAKE_CURRENT_LIST_DIR}/src/main.h" "${CMAKE_CURRENT_B
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/CombinedCode)
 
 #==============================================
+
 set(DRIVER_LIST "\n\n/* Generated by cmake */\n")
 foreach(driver ${ALLPROGS})
    set(DRIVER_LIST "${DRIVER_LIST}{ main_${driver}, \"${driver}\" },\n")
@@ -375,12 +396,14 @@ target_link_libraries(bart PRIVATE bartsupport)
 set_target_properties(bart PROPERTIES EXPORT_NAME BART)
 
 set(BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/bart_lib.c" CACHE INTERNAL "")
+  "${CMAKE_CURRENT_BINARY_DIR}/CombinedCode/bart_lib.c")
 foreach(file ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES})
   list(REMOVE_ITEM ALL_BART_LIB_SRCS "${file}")
 endforeach()
       
-add_library(bartmain_objs OBJECT ${ALL_BART_LIB_SRCS})
+# ==============================================================================
+
+bart_add_object_library(bartmain_objs ${ALL_BART_LIB_SRCS})
 add_library(bartmain
   STATIC
   $<TARGET_OBJECTS:bartsupport_objs>
@@ -390,7 +413,7 @@ add_library(bartmain
   ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES}
   ${bartsupport_cuda_objs})
 
-target_link_libraries(bartmain PUBLIC ${LINALG_VENDOR_LIB} ${PNG_LIBRARIES} ${FFTWF_LIBRARIES})
+target_link_libraries(bartmain PUBLIC "${LINALG_VENDOR_LIB};${PNG_TGT};${FFTW_TGT}")
 if(BART_ISMRMRD)
   target_link_libraries(bartmain PUBLIC ${ISMRMRD_LIBRARIES})
 endif()
@@ -439,7 +462,6 @@ if(BART_CREATE_PYTHON_MODULE)
 
   configure_file(${CMAKE_CURRENT_LIST_DIR}/src/python/pyBART.c.in ${PROJECT_BINARY_DIR}/pyBART.c @ONLY)
 
-  include_directories(${PYMODULE_INCLUDE_DIRS})
   bart_add_library(pyBART
     SHARED
     ${PROJECT_BINARY_DIR}/pyBART.c
@@ -447,11 +469,12 @@ if(BART_CREATE_PYTHON_MODULE)
     ${BARTMAIN_PYTHON_SEPARATE_COMPILATION_FILES}
     $<TARGET_OBJECTS:bartsupport_objs>
     $<TARGET_OBJECTS:bartmain_objs>)
-  
+
+  target_include_directories(pyBART PRIVATE ${PYMODULE_INCLUDE_DIRS})
   target_compile_definitions(pyBART PRIVATE -DBART_WITH_PYTHON)
-  target_link_libraries(pyBART ${PYMODULE_LIBRARIES} ${PNG_LIBRARIES} ${FFTWF_LIBRARIES} ${LINALG_LIBRARIES})
+  target_link_libraries(pyBART PUBLIC "${PYMODULE_LIBRARIES};${PNG_TGT};${FFTW_TGT};${LINALG_LIBRARIES}")
   if(BART_ISMRMRD)
-    target_link_libraries(pyBART ${ISMRMRD_LIBRARIES})
+    target_link_libraries(pyBART PUBLIC ${ISMRMRD_LIBRARIES})
   endif()
   set_target_properties(pyBART
     PROPERTIES
