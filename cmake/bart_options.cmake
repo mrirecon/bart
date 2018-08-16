@@ -8,12 +8,15 @@ option(BART_DISABLE_PNG "Disable the use of the PNG library" OFF)
 option(BART_ENABLE_MEM_CFL "Enable the use of in-memory CFL files" OFF)
 option(BART_FPIC "Compile using position-independent code" OFF)
 option(BART_FFTWTHREADS "Enable multi-threaded FFTW libraries" ON)
-option(BART_GENERATE_DOC "Automatically generate documentation after building BART" ON)
+option(BART_GENERATE_DOC "Automatically generate documentation after building BART" OFF)
 option(BART_LOCAL_FFTW "Use a modified version of FFTW where all functions are prefixed with local_ (useful for static FFTW linking)" OFF)
 option(BART_MEMONLY_CFL "Use only in-memory CFL files" OFF)
 option(BART_MATLAB "Specify if the optional matlab programs should be built" OFF)
 option(BART_NO_LAPACKE "Compile without LAPACKE installed on the system" OFF)
 option(BART_REDEFINE_PRINTF_FOR_TRACE "Replace debug_print* functions with macros for better log tracing (e.g. with external loggers)" OFF)
+
+find_package(ISMRMRD QUIET CONFIG) ## if you can find ISMRMRD by default, then default configuration is ON
+option(BART_ISMRMRD "Use external ISMRMRD package for reading/writing" ${ISMRMRD_FOUND})
 
 # ------------------------------------------------------------------------------
 
@@ -46,12 +49,10 @@ endif()
 # --------------------------------------
 
 if(BART_DISABLE_PNG)
-  set(PNG_DEFINITIONS "")
-  set(PNG_INCLUDE_DIRS "")
+  set(PNG_TGT "")
 else()
   find_package(PNG REQUIRED)
-  add_definitions(${PNG_DEFINITIONS})
-  include_directories(${PNG_INCLUDE_DIRS})
+  set(PNG_TGT "PNG::PNG")
 endif()
 
 # --------------------------------------
@@ -86,27 +87,35 @@ endif()
 # --------------------------------------
 
 if(BART_LOCAL_FFTW)
-  set(FFTWF_FOUND 1)
-  set(FFTW_INCLUDE ${CURRENT_LIST_DIR/src})
-  set(FFTWF_THREADS_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f_threads.a")
-  set(FFTWF_LIB "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f.a" ${FFTWF_THREADS_LIB})
-  set(FFTWF_LIBRARIES ${FFTWF_LIB})
+  # manually add the pthread library in case one is using static fftw libraries...
+  set(CMAKE_THREAD_PREFER_PTHREAD ON)
+  find_package(Threads REQUIRED)
+  
   add_definitions(-DUSE_LOCAL_FFTW)
-else(BART_LOCAL_FFTW)
-  set(USE_FFTWF ON) # Only find single precision fftw
-  find_package(FFTW REQUIRED)
-endif(BART_LOCAL_FFTW)
-message(STATUS "FFTWF_LIBRARIES: ${FFTWF_LIBRARIES}")
+  
+  add_library(FFTW::FFTWF STATIC IMPORTED GLOBAL)
+  set_target_properties(FFTW::FFTWF
+    PROPERTIES
+    INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/src"
+    IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f.a")
+
+  add_library(FFTW::FFTWF_MT STATIC IMPORTED GLOBAL)  
+  set_target_properties(FFTW::FFTWF_MT
+    PROPERTIES
+    INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/src"
+    INTERFACE_LINK_LIBRARIES "Threads::Threads"
+    IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/lib/libfftw3f_threads.a")
+else()
+  find_package(FFTW 3 REQUIRED COMPONENTS FFTWF FFTWF_MT)
+endif()
+set(FFTW_TGT "FFTW::FFTWF;FFTW::FFTWF_MT")
 
 if(BART_FFTWTHREADS)
-  # manually add the pthread library in case one is using static fftw libraries...
-  find_library(PTHREAD_LIB pthread)
-  list(APPEND FFTWF_LIBRARIES ${PTHREAD_LIB})
   add_definitions(-DFFTWTHREADS)
-else(BART_FFTWTHREADS)
+else()
   # remove the threaded library when not using threads
-  list(REMOVE_ITEM FFTWF_LIBRARIES ${FFTWF_THREADS_LIB})
-endif(BART_FFTWTHREADS)
+  list(REMOVE_ITEM FFTW_TGT "FFTW::FFTWF_MT")
+endif()
 
 # --------------------------------------
 
@@ -117,7 +126,7 @@ if(BART_NO_LAPACKE)
   add_definitions(-DNOLAPACKE)
   include_directories(${CMAKE_CURRENT_LIST_DIR}/src/lapacke)
   message(STATUS "Compiling with NOLAPACKE")
-endif(BART_NO_LAPACKE)
+endif()
 
 # --------------------------------------
 
@@ -125,6 +134,12 @@ if(BART_REDEFINE_PRINTF_FOR_TRACE)
   add_definitions(-DREDEFINE_PRINTF_FOR_TRACE)
   message(STATUS "Redefining debug_print* functions as macros for better log tracing")
 endif(BART_REDEFINE_PRINTF_FOR_TRACE)
+
+# --------------------------------------
+
+if(BART_ISMRMRD)
+  find_package(ISMRMRD REQUIRED)
+endif()
 
 # ==============================================================================
 
@@ -143,41 +158,85 @@ endif(BART_LOG_GADGETRON_BACKEND)
 # ==============================================================================
 
 if(USE_CUDA)
-  find_package(CUDA)
-  add_definitions(-DUSE_CUDA)
-  CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR}/src)
-  # set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;-arch=sm_20;-m64;-ccbin ${CMAKE_C_COMPILER}")
-  set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;${GPUARCH_FLAGS};-ccbin ${CMAKE_C_COMPILER}")
-  macro(bart_add_executable target_name)
-    CUDA_ADD_EXECUTABLE(${target_name} ${ARGN})
-    CUDA_ADD_CUFFT_TO_TARGET(${target_name})
-    CUDA_ADD_CUBLAS_TO_TARGET(${target_name})
-    target_link_libraries(${target_name} ${CUDA_LIBRARIES})
-  endmacro(bart_add_executable)
-  macro(bart_add_library target_name)
-    CUDA_ADD_LIBRARY(${target_name} ${ARGN})
-    CUDA_ADD_CUFFT_TO_TARGET(${target_name})
-    CUDA_ADD_CUBLAS_TO_TARGET(${target_name})
-    target_link_libraries(${target_name} ${CUDA_LIBRARIES})
-  endmacro(bart_add_library)  
-else()
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.8)
+    enable_language(CUDA)
+
+    find_package(CUDAlibs REQUIRED COMPONENTS CUBLAS CUFFT)
+
+    macro(bart_add_object_library target_name)
+      add_library(${target_name} OBJECT ${ARGN})
+      target_include_directories(${target_name} PRIVATE "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
+    endmacro()
+    macro(bart_add_executable target_name)
+      add_executable(${target_name} ${ARGN})
+      target_compile_definitions(${target_name} PRIVATE -DUSE_CUDA)
+      target_link_libraries(${target_name} PUBLIC "CUDAlibs::CUBLAS;CUDAlibs::CUFFT")
+      set_target_properties(${target_name} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    endmacro()
+    macro(bart_add_library target_name)
+      add_library(${target_name} ${ARGN})
+      target_compile_definitions(${target_name} PRIVATE -DUSE_CUDA)
+      target_link_libraries(${target_name} PUBLIC "CUDAlibs::CUBLAS;CUDAlibs::CUFFT")
+      set_target_properties(${target_name} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    endmacro()
+  else()
+    find_package(CUDA)
+    add_definitions(-DUSE_CUDA)
+    CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR}/src)
+    # set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;-arch=sm_20;-m64;-ccbin ${CMAKE_C_COMPILER}")
+    set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;${GPUARCH_FLAGS};-ccbin ${CMAKE_C_COMPILER}")
+    macro(bart_add_object_library target_name)
+      add_library(${target_name} OBJECT ${ARGN})
+      target_include_directories(${target_name} PRIVATE "${CUDA_INCLUDE_DIRS}")
+    endmacro()
+    macro(bart_add_executable target_name)
+      CUDA_ADD_EXECUTABLE(${target_name} ${ARGN})
+      target_link_libraries(${target_name} PUBLIC ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
+    endmacro()
+    macro(bart_add_library target_name)
+      CUDA_ADD_LIBRARY(${target_name} ${ARGN})
+      target_link_libraries(${target_name} PUBLIC ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
+    endmacro()  
+  endif()  
+else() # NOT USE_CUDA
+  macro(bart_add_object_library target_name)
+    add_library(${target_name} OBJECT ${ARGN})
+  endmacro()
   macro(bart_add_executable target_name)
     add_executable(${target_name} ${ARGN})
-  endmacro(bart_add_executable)
+  endmacro()
   macro(bart_add_library target_name)
     add_library(${target_name} ${ARGN})
-  endmacro(bart_add_library)
-endif(USE_CUDA)
+  endmacro()
+endif()
 
 # ------------------------------------------------------------------------------
 
 if(USE_OPENMP)
-  find_package(OpenMP)
+  find_package(OpenMP REQUIRED)
   if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  endif()
-endif(USE_OPENMP)
+    list(APPEND CMAKE_C_FLAGS "${OpenMP_C_FLAGS}")
+    list(APPEND CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS}")
+
+    if(DEFINED CMAKE_CUDA_FLAGS)
+      get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+      if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.3)
+	if("CXX" IN_LIST languages)
+	  list(APPEND CMAKE_CUDA_FLAGS ${OpenMP_CXX_FLAGS})
+	else(DEFINED CMAKE_CUDA_FLAGS)
+	  list(APPEND CMAKE_CUDA_FLAGS ${OpenMP_C_FLAGS})
+	endif()
+      else()
+	list (FIND languages "CXX" _index)
+	if (${_index} GREATER -1)
+	  list(APPEND CMAKE_CUDA_FLAGS ${OpenMP_CXX_FLAGS})
+	else(DEFINED CMAKE_CUDA_FLAGS)
+	  list(APPEND CMAKE_CUDA_FLAGS ${OpenMP_C_FLAGS})
+	endif()
+      endif() # CXX in languages
+    endif() # DEFINED CMAKE_CUDA_FLAGS
+  endif() # OpenMP found
+endif() # USE_OPENMP
 
 # ==============================================================================
 

@@ -1,65 +1,222 @@
+#.rst:
+# FindFFTW
+# -------------
+#
+# Find FFTW3 include dirs and libraries
+#
+# Use this module by invoking find_package with the form::
+#
+#   find_package(Boost
+#     [REQUIRED]             # Fail with error if FFTW is not found
+#     [VERSION [2,3]]        # Version of FFTW to look for (only considers major version)
+#     [COMPONENTS <libs>...] # List of libraries to look for
+#     )
+#
+# Valid names for COMPONENTS libraries are::
+#
+#   ALL                      - Find all libraries
+#   FFTW                     - Find a FFTW (double) library
+#   FFTW_MT                  - Find a FFTW multi-threaded (double) library
+#   FFTWF                    - Find a FFTW (single) library
+#   FFTWF_MT                 - Find a FFTW multi-threaded (single) library
+#
+#  Not specifying COMPONENTS is identical to choosing ALL
+#
+# This module defines::
+#
+#   FFTW_FOUND            - True if headers and requested libraries were found
+#   FFTW_VERSION          - Version of the FFTW libraries
+#   FFTW_INCLUDE_DIRS     - FFTW include directories
+#   FFTW_LIBRARIES        - FFTW component libraries to be linked
+#
+#
+# This module reads hints about search locations from variables
+# (either CMake variables or environment variables)::
+#
+#   FFTW_ROOT             - Preferred installation prefix for FFTW
+#
+#
+# The following :prop_tgt:`IMPORTED` targets are also defined::
+#
+#   FFTW::FFTW            - Imported target for the FFTW (double) library
+#   FFTW::FFTW_MT         - Imported target for the FFTW multi-thread (double) library
+#   FFTW::FFTWF           - Imported target for the FFTW (single) library
+#   FFTW::FFTWF_MT        - Imported target for the FFTW multi-thread (single) library
+#
+
+# ==============================================================================
+# Copyright 2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
+#
+# Distributed under the OSI-approved BSD License (the "License")
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# ==============================================================================
+
+set(FFTW_SEARCH_PATHS
+  ${FFTW_ROOT}
+  $ENV{FFTW_ROOT}
+  ${CMAKE_PREFIX_PATH}
+  $ENV{CMAKE_PREFIX_PATH}
+  /sw
+  /usr
+  /usr/local/
+  /usr/local/opt # homebrew on mac
+  /opt
+  /opt/local
+  /opt/FFTW
+  )
+
+set(INC_PATH_SUFFIXES_LIST
+  include
+  include/fftw
+  include/fftw3
+)
+
+set(LIB_PATH_SUFFIXES_LIST
+  lib64
+  lib
+  lib/fftw
+  lib/x86_64-linux-gnu
+  lib32
+)
+
+# ==============================================================================
+# Prepare some helper variables
+
+set(FFTW_REQUIRED_VARS)
+set(FFTW_INCLUDE_DIRS)
+set(FFTW_LIBRARIES)
+
+# ==============================================================================
+
+macro(_find_library_with_header component libnames incnames)
+  find_library(FFTW_${component}_LIB
+    NAMES ${libnames}
+    PATHS ${FFTW_SEARCH_PATHS}
+    PATH_SUFFIXES ${LIB_PATH_SUFFIXES_LIST})
+  if(FFTW_${component}_LIB)    
+    set(FFTW_${component}_LIB_FOUND 1)
+  endif()
+  list(APPEND FFTW_REQUIRED_VARS "FFTW_${component}_LIB")
+
+  # If necessary, look for the header file as well
+  if(NOT "${incnames}" STREQUAL "")
+    find_path(FFTW_${component}_INCLUDE_DIR
+      NAMES ${incnames}
+      PATHS ${FFTW_SEARCH_PATHS}
+      PATH_SUFFIXES ${INC_PATH_SUFFIXES_LIST})
+    list(APPEND FFTW_REQUIRED_VARS "FFTW_${component}_INCLUDE_DIR")
+    if(FFTW_${component}_LIB)
+      set(FFTW_${component}_INC_FOUND 1)
+    endif()
+  else()
+    set(FFTW_${component}_INC_FOUND 1)
+  endif()
+  
+  if(FFTW_${component}_LIB_FOUND AND FFTW_${component}_INC_FOUND)
+    set(FFTW_${component}_FOUND 1)
+  else()
+    set(FFTW_${component}_FOUND 0)
+  endif()
+endmacro()
+
+macro(_mangle_names)
+endmacro()
+
+# ------------------------------------------------------------------------------
+
 ## FFTW can be compiled and subsequently linked against
 ## various data types.
 ## There is a single set of include files, and then muttiple libraries,
 ## One for each type.  I.e. libfftw.a-->double, libfftwf.a-->float
 
-set(FFTW_INC_SEARCHPATH
-  /sw/include
-  /usr/include
-  /usr/local/include
-  /usr/include/fftw
-  /usr/include/fftw3
-  /usr/local/include/fftw
-  /usr/local/include/fftw3
-)
 
-find_path(FFTW_INCLUDE_PATH fftw3.h ${FFTW_INC_SEARCHPATH})
-
-if(FFTW_INCLUDE_PATH)
-  file(TO_CMAKE_PATH "${FFTW_INCLUDE_PATH}" FFTW_INCLUDE_PATH)
-  set(FFTW_INCLUDE ${FFTW_INCLUDE_PATH})
+if(NOT FFTW_FIND_COMPONENTS OR FFTW_FIND_COMPONENTS STREQUAL "ALL")
+  set(FFTW_FIND_ALL_COMPONENTS 1)
+  set(FFTW_FIND_COMPONENTS "FFTW;FFTW_MT;FFTWF;FFTWF_MT")
 endif()
 
-if(FFTW_INCLUDE)
-  include_directories(${FFTW_INCLUDE})
+if(NOT DEFINED FFTW_FIND_VERSION_MAJOR)
+  set(FFTW_FIND_VERSION_MAJOR 3)
 endif()
 
-get_filename_component(FFTW_INSTALL_BASE_PATH ${FFTW_INCLUDE_PATH} PATH)
+if(FFTW_FIND_VERSION_MAJOR EQUAL 2)
+  set(_fftw_suffix "")
+elseif(FFTW_FIND_VERSION_MAJOR EQUAL 3)
+  set(_fftw_suffix "3")
+else()
+  message(FATAL_ERROR "Unsupported version number for FFTW")
+endif()
 
-set(FFTW_LIB_SEARCHPATH
-  ${FFTW_INSTALL_BASE_PATH}/lib
-  ${FFTW_INSTALL_BASE_PATH}/lib64
-  /usr/lib/fftw
-  /usr/local/lib/fftw
-)
+# ------------------------------------------------------------------------------
 
-if(USE_FFTWD)
-  mark_as_advanced(FFTWD_LIB)
-  find_library(FFTWD_LIB fftw3 ${FFTW_LIB_SEARCHPATH}) #Double Precision Lib
-  find_library(FFTWD_THREADS_LIB fftw3_threads ${FFTW_LIB_SEARCHPATH}) #Double Precision Lib only if compiled with threads support
+foreach(COMPONENT ${FFTW_FIND_COMPONENTS})
+  string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
+  if(UPPERCOMPONENT STREQUAL "FFTW")
+    _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix} fftw${_fftw_suffix}.h)
+  elseif(UPPERCOMPONENT STREQUAL "FFTW_MT")
+    _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix}_threads fftw${_fftw_suffix}.h)
+  elseif(UPPERCOMPONENT STREQUAL "FFTWF" AND FFTW_FIND_VERSION_MAJOR GREATER_EQUAL 3)
+    _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix}f fftw${_fftw_suffix}.h)
+  elseif(UPPERCOMPONENT STREQUAL "FFTWF_MT" AND FFTW_FIND_VERSION_MAJOR GREATER_EQUAL 3)
+    _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix}f_threads fftw${_fftw_suffix}.h)
+  else()
+    message(FATAL_ERROR "Unknown component (looked for FFTW ${FFTW_FIND_VERSION_MAJOR}): ${COMPONENT}")
+  endif()
+  mark_as_advanced(
+    FFTW_${UPPERCOMPONENT}_LIB
+    FFTW_${UPPERCOMPONENT}_INCLUDE_DIR)
+endforeach()
 
-  if(FFTWD_LIB)
-    set(FFTWD_FOUND 1)
-    get_filename_component(FFTW_LIBDIR ${FFTWD_LIB} PATH)
-    if(FFTWD_THREADS_LIB)
-      set(FFTWD_LIB ${FFTWD_LIB} ${FFTWD_THREADS_LIB} )
+# ==============================================================================
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(FFTW
+  FOUND_VAR FFTW_FOUND
+  REQUIRED_VARS ${FFTW_REQUIRED_VARS})
+
+# ==============================================================================
+
+if(FFTW_FOUND)  
+  # Inspired by FindBoost.cmake
+  foreach(COMPONENT ${FFTW_FIND_COMPONENTS})
+    string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
+    if(NOT TARGET FFTW::${UPPERCOMPONENT} AND FFTW_${UPPERCOMPONENT}_FOUND)
+      get_filename_component(LIB_EXT "${FFTW_${UPPERCOMPONENT}_LIB}" EXT)
+      if(LIB_EXT STREQUAL ".a" OR LIB_EXT STREQUAL ".lib")
+        set(LIB_TYPE STATIC)
+      else()
+        set(LIB_TYPE SHARED)
+      endif()
+      add_library(FFTW::${UPPERCOMPONENT} ${LIB_TYPE} IMPORTED GLOBAL)
+      set_target_properties(FFTW::${UPPERCOMPONENT}
+	PROPERTIES
+	IMPORTED_LOCATION "${FFTW_${UPPERCOMPONENT}_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${FFTW_${UPPERCOMPONENT}_INCLUDE_DIR}")
     endif()
+
+    if(FFTW_${UPPERCOMPONENT}_FOUND)
+      set(APPEND FFTW_INCLUDE_DIRS "${FFTW_${UPPERCOMPONENT}_INCLUDE_DIR}")
+      set(APPEND FFTW_LIBRARIES "${FFTW_${UPPERCOMPONENT}_LIB}")
+    endif()
+  endforeach()
+
+  # ----------------------------------------------------------------------------
+
+  if(NOT FFTW_FIND_QUIETLY)
+    message(STATUS "Found FFTW and defined the following imported targets:")
+    foreach(_comp ${FFTW_FIND_COMPONENTS})
+      message(STATUS "  - FFTW::${_comp}")
+    endforeach()
   endif()
 endif()
 
-if(USE_FFTWF)
-  mark_as_advanced(FFTWF_LIB)
-  find_library(FFTWF_LIB fftw3f ${FFTW_LIB_SEARCHPATH}) #Single Precision Lib
-  find_library(FFTWF_THREADS_LIB fftw3f_threads ${FFTW_LIB_SEARCHPATH}) #Single Precision Lib only if compiled with threads support
+# ==============================================================================
 
-  if(FFTWF_LIB)
-    set(FFTWF_FOUND 1)
-    get_filename_component(FFTW_LIBDIR ${FFTWF_LIB} PATH)
-    if(FFTWF_THREADS_LIB)
-      set(FFTWF_LIB ${FFTWF_LIB} ${FFTWF_THREADS_LIB} )
-    endif()
-  endif()
-endif()
+mark_as_advanced(
+  FFTW_FOUND
+  FFTW_INCLUDE_DIRS
+  FFTW_LIBRARIES
+  )
 
-set(FFTWD_LIBRARIES ${FFTWD_LIB})
-set(FFTWF_LIBRARIES ${FFTWF_LIB})
