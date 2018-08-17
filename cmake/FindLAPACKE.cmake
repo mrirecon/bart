@@ -65,15 +65,26 @@ set(LAPACKE_SEARCH_PATHS
   /opt/LAPACKE
   )
 
-set(PATH_SUFFIXES_LIST
+set(LIB_PATH_SUFFIXES
   lib64
   lib
   lib/x86_64-linux-gnu
   lib32
-)
+  )
+
+set(INC_PATH_SUFFIXES
+  include
+  include/lapack
+  include/lapacke/
+  lapack/include
+  lapacke/include
+  )
 
 if(APPLE)
-  list(APPEND PATH_SUFFIXES_LIST lapack/lib openblas/lib)
+  list(APPEND LIB_PATH_SUFFIXES lapack/lib openblas/lib)
+elseif(WIN32)
+  list(APPEND LAPACKE_SEARCH_PATHS "C:/Program Files (x86)/LAPACK")
+  list(APPEND LAPACKE_SEARCH_PATHS "C:/Program Files/LAPACK")
 endif()
 
 # ==============================================================================
@@ -86,22 +97,23 @@ set(LAPACKE_FIND_ALL_COMPONENTS 0)
 
 # ==============================================================================
 
-macro(_find_library_with_header component libnames incnames)
+macro(_find_library_with_header component incname)
   find_library(LAPACKE_${component}_LIB
-    NAMES ${libnames}
+    NAMES ${ARGN}
+    NAMES_PER_DIR
     PATHS ${LAPACKE_SEARCH_PATHS}
-    PATH_SUFFIXES ${PATH_SUFFIXES_LIST})
+    PATH_SUFFIXES ${LIB_PATH_SUFFIXES})
   if(LAPACKE_${component}_LIB)    
     set(LAPACKE_${component}_LIB_FOUND 1)
   endif()
   list(APPEND LAPACKE_REQUIRED_VARS "LAPACKE_${component}_LIB")
 
   # If necessary, look for the header file as well
-  if(NOT "${incnames}" STREQUAL "")
+  if(NOT "${incname}" STREQUAL "")
     find_path(LAPACKE_${component}_INCLUDE_DIR
-      NAMES ${incnames}
+      NAMES ${incname}
       PATHS ${LAPACKE_SEARCH_PATHS}
-      PATH_SUFFIXES include lapack/include)
+      PATH_SUFFIXES ${INC_PATH_SUFFIXES})
     list(APPEND LAPACKE_REQUIRED_VARS "LAPACKE_${component}_INCLUDE_DIR")
     if(LAPACKE_${component}_LIB)
       set(LAPACKE_${component}_INC_FOUND 1)
@@ -124,31 +136,39 @@ if(NOT LAPACKE_FIND_COMPONENTS OR LAPACKE_FIND_COMPONENTS STREQUAL "ALL")
   set(LAPACKE_FIND_COMPONENTS "LAPACKE;LAPACK;CBLAS;BLAS")
 endif(NOT LAPACKE_FIND_COMPONENTS OR LAPACKE_FIND_COMPONENTS STREQUAL "ALL")
 
-foreach(COMPONENT ${LAPACKE_FIND_COMPONENTS})
-  string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
-  if(UPPERCOMPONENT STREQUAL "LAPACKE")
-    _find_library_with_header(${UPPERCOMPONENT} lapacke lapacke.h)
-  elseif(UPPERCOMPONENT STREQUAL "LAPACKE_H")
-    find_path(LAPACKE_${UPPERCOMPONENT}_INCLUDE_DIR
+# Make sure that all components are in capitals
+set(_tmp_component_list)
+foreach(_comp ${LAPACKE_FIND_COMPONENTS})
+  string(TOUPPER ${_comp} _comp)
+  list(APPEND _tmp_component_list ${_comp})
+endforeach()
+set(LAPACKE_FIND_COMPONENTS ${_tmp_component_list})
+set(_tmp_component_list)
+
+foreach(_comp ${LAPACKE_FIND_COMPONENTS})
+  if(_comp STREQUAL "LAPACKE")
+    _find_library_with_header(${_comp} lapacke.h lapacke liblapacke)
+  elseif(_comp STREQUAL "LAPACKE_H")
+    find_path(LAPACKE_${_comp}_INCLUDE_DIR
       NAMES lapacke.h
       PATHS ${LAPACKE_SEARCH_PATHS}
       PATH_SUFFIXES include lapack/include)
-    list(APPEND LAPACKE_REQUIRED_VARS "LAPACKE_${UPPERCOMPONENT}_INCLUDE_DIR")
-    if(LAPACKE_${UPPERCOMPONENT}_LIB)
-      set(LAPACKE_${UPPERCOMPONENT}_INC_FOUND 1)
+    list(APPEND LAPACKE_REQUIRED_VARS "LAPACKE_${_comp}_INCLUDE_DIR")
+    if(LAPACKE_${_comp}_LIB)
+      set(LAPACKE_${_comp}_INC_FOUND 1)
     endif()
-  elseif(UPPERCOMPONENT STREQUAL "LAPACK")
-    _find_library_with_header(${UPPERCOMPONENT} lapack "")
-  elseif(UPPERCOMPONENT STREQUAL "CBLAS")
-    _find_library_with_header(${UPPERCOMPONENT} cblas cblas.h)
-  elseif(UPPERCOMPONENT STREQUAL "BLAS")
-    _find_library_with_header(${UPPERCOMPONENT} blas "")
+  elseif(_comp STREQUAL "LAPACK")
+    _find_library_with_header(${_comp} "" lapack liblapack)
+  elseif(_comp STREQUAL "CBLAS")
+    _find_library_with_header(${_comp} cblas.h cblas libcblas)
+  elseif(_comp STREQUAL "BLAS")
+    _find_library_with_header(${_comp} "" blas blas)
   else()
-    message(FATAL_ERROR "Unknown component: ${COMPONENT}")
+    message(FATAL_ERROR "Unknown component: ${_comp}")
   endif()
   mark_as_advanced(
-    LAPACKE_${UPPERCOMPONENT}_LIB
-    LAPACKE_${UPPERCOMPONENT}_INCLUDE_DIR)
+    LAPACKE_${_comp}_LIB
+    LAPACKE_${_comp}_INCLUDE_DIR)
 endforeach()
 
 # ==============================================================================
@@ -156,15 +176,15 @@ endforeach()
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LAPACKE
   FOUND_VAR LAPACKE_FOUND
-  REQUIRED_VARS ${LAPACKE_REQUIRED_VARS})
+  REQUIRED_VARS ${LAPACKE_REQUIRED_VARS}
+  HANDLE_COMPONENTS)
 
 # ==============================================================================
 
 if(LAPACKE_FOUND)
-  foreach(COMPONENT ${LAPACKE_FIND_COMPONENTS})
-    string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
-    list(APPEND LAPACKE_INCLUDE_DIRS ${LAPACKE_${UPPERCOMPONENT}_INCLUDE_DIR})
-    list(APPEND LAPACKE_LIBRARIES ${LAPACKE_${UPPERCOMPONENT}_LIB})
+  foreach(_comp ${LAPACKE_FIND_COMPONENTS})
+    list(APPEND LAPACKE_INCLUDE_DIRS ${LAPACKE_${_comp}_INCLUDE_DIR})
+    list(APPEND LAPACKE_LIBRARIES ${LAPACKE_${_comp}_LIB})
   endforeach()
   
   if("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*" OR
@@ -182,25 +202,24 @@ if(LAPACKE_FOUND)
   # ----------------------------------------------------------------------------
 
   # Inspired by FindBoost.cmake
-  foreach(COMPONENT ${LAPACKE_FIND_COMPONENTS})
-    string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
-    if(NOT TARGET LAPACKE::${UPPERCOMPONENT} AND LAPACKE_${UPPERCOMPONENT}_FOUND)
-      get_filename_component(LIB_EXT "${LAPACKE_${UPPERCOMPONENT}_LIB}" EXT)
+  foreach(_comp ${LAPACKE_FIND_COMPONENTS})
+    if(NOT TARGET LAPACKE::${_comp} AND LAPACKE_${_comp}_FOUND)
+      get_filename_component(LIB_EXT "${LAPACKE_${_comp}_LIB}" EXT)
       if(LIB_EXT STREQUAL ".a" OR LIB_EXT STREQUAL ".lib")
         set(LIB_TYPE STATIC)
       else()
         set(LIB_TYPE SHARED)
       endif()
-      add_library(LAPACKE::${UPPERCOMPONENT} ${LIB_TYPE} IMPORTED GLOBAL)
+      add_library(LAPACKE::${_comp} ${LIB_TYPE} IMPORTED GLOBAL)
       if(LAPACKE_INCLUDE_DIRS)
-        set_target_properties(LAPACKE::${UPPERCOMPONENT} PROPERTIES
+        set_target_properties(LAPACKE::${_comp} PROPERTIES
           INTERFACE_INCLUDE_DIRECTORIES "${LAPACKE_INCLUDE_DIRS}")
       endif()
-      if(EXISTS "${LAPACKE_${UPPERCOMPONENT}_LIB}")
-        set_target_properties(LAPACKE::${UPPERCOMPONENT} PROPERTIES
-          IMPORTED_LOCATION "${LAPACKE_${UPPERCOMPONENT}_LIB}")
+      if(EXISTS "${LAPACKE_${_comp}_LIB}")
+        set_target_properties(LAPACKE::${_comp} PROPERTIES
+          IMPORTED_LOCATION "${LAPACKE_${_comp}_LIB}")
       endif()
-      set_target_properties(LAPACKE::${UPPERCOMPONENT} PROPERTIES
+      set_target_properties(LAPACKE::${_comp} PROPERTIES
         INTERFACE_LINK_LIBRARIES "${MATH_LIB}")
     endif()
   endforeach()

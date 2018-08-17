@@ -50,11 +50,6 @@
 #   CUDA_PATH
 #   CUDA_LIB_PATH
 #
-# The following :prop_tgt:`IMPORTED` targets are always defined::
-#
-#   CUDAlibs::HEADERS        - Imported target for the CUDA headers
-#
-#
 # The following :prop_tgt:`IMPORTED` targets are defined if required::
 #
 #   CUDAlibs::CUDART         - Imported target for the CUDA RT library
@@ -97,8 +92,14 @@ endif()
 
 # ------------------------------------------------------------------------------
 
+set(_cuda_root_dir_hint)
+foreach(_dir ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+  get_filename_component(_dirname "${_dir}" DIRECTORY)
+  list(APPEND _cuda_root_dir_hint ${_dirname})
+endforeach()
+
 set(CUDAlibs_SEARCH_PATHS
-  ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}
+  ${_cuda_root_dir_hint}
   ${CUDA_ROOT}
   $ENV{CUDA_ROOT}
   ${CMAKE_PREFIX_PATH}
@@ -108,10 +109,21 @@ set(CUDAlibs_SEARCH_PATHS
   /usr/local/cuda
   /opt
   /opt/local
-  "C:/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA"
   )
 
 set(PATH_SUFFIXES_LIST lib/x64 lib64 libx64 lib lib/Win32 lib libWin32)
+
+if(WIN32)
+  set(_root_dir "C:/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA")
+  file(GLOB _children RELATIVE ${_root_dir} ${_root_dir}/*)
+  list(SORT _children)
+  list(REVERSE _children)
+  foreach(_child ${_children})
+    if(IS_DIRECTORY ${_root_dir}/${_child} AND ${_child} MATCH "v[0-9]+.[0-9]")
+      list(APPEND CUDAlibs_SEARCH_PATHS ${_root_dir}/${child})
+    endif()
+  endforeach()
+endif()
 
 # ==============================================================================
 # Prepare some helper variables
@@ -143,7 +155,7 @@ endmacro()
 
 # ------------------------------------------------------------------------------
 
-set(CUDAlibs_ALL_LIBS "CUDA_H;CUDART;CUBLAS;CUFFT;CUFFTW;CUPTI;CURAND;CUSOLVER;CUSPARSE;NPP;NPPC;NPPI;NPPIAL;NPPICC;NPPICOM;NPPIDEI;NPPIF;NPPIG;NPPIM;NPPIST;NPPISU;NPPITC;NPPS;NVBLAS")
+set(CUDAlibs_ALL_LIBS "CUDART;CUBLAS;CUFFT;CUFFTW;CUPTI;CURAND;CUSOLVER;CUSPARSE;NPP;NPPC;NPPI;NPPIAL;NPPICC;NPPICOM;NPPIDEI;NPPIF;NPPIG;NPPIM;NPPIST;NPPISU;NPPITC;NPPS;NVBLAS")
 
 # List dependent libraries for relevant targets
 set(CUDAlibs_DEP_CUFFTW "CUFFT")
@@ -192,7 +204,8 @@ endforeach()
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(CUDAlibs
   FOUND_VAR CUDAlibs_FOUND
-  REQUIRED_VARS ${CUDAlibs_REQUIRED_VARS})
+  REQUIRED_VARS ${CUDAlibs_REQUIRED_VARS}
+  HANDLE_COMPONENTS)
 
 # ==============================================================================
 
@@ -201,11 +214,6 @@ if(CUDAlibs_FOUND)
   foreach(COMPONENT ${CUDAlibs_FIND_COMPONENTS})
     string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
 
-    if(NOT TARGET CUDAlibs::HEADERS)
-      add_library(CUDAlibs::${UPPERCOMPONENT} INTERFACE)
-      target_include_directories(CUDAlibs::${UPPERCOMPONENT} PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    endif()
-    
     if(NOT TARGET CUDAlibs::${UPPERCOMPONENT} AND CUDAlibs_${UPPERCOMPONENT}_FOUND)
       get_filename_component(LIB_EXT "${CUDAlibs_${UPPERCOMPONENT}_LIB}" EXT)
       if(LIB_EXT STREQUAL ".a" OR LIB_EXT STREQUAL ".lib")
@@ -214,8 +222,6 @@ if(CUDAlibs_FOUND)
         set(LIB_TYPE SHARED)
       endif()
 
-      message(STATUS "CUDAlibs::${UPPERCOMPONENT}")
-      
       add_library(CUDAlibs::${UPPERCOMPONENT} ${LIB_TYPE} IMPORTED GLOBAL)
       set_target_properties(CUDAlibs::${UPPERCOMPONENT} PROPERTIES
 	IMPORTED_LOCATION "${CUDAlibs_${UPPERCOMPONENT}_LIB}"
@@ -239,7 +245,10 @@ if(CUDAlibs_FOUND)
   # ----------------------------------------------------------------------------
 
   if(NOT CUDAlibs_FIND_QUIETLY)
-    message(STATUS "CUDAlibs_FOUND   :${CUDAlibs_FOUND}:  - set to true if the libraries where found")
+    message(STATUS "Found CUDAlibs and defined the following imported targets:")
+    foreach(_comp ${CUDAlibs_FIND_COMPONENTS})
+      message(STATUS "  - CUDAlibs::${_comp}")
+    endforeach()
   endif()
 endif()
 

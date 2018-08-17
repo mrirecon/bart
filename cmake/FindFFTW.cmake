@@ -157,9 +157,9 @@ foreach(COMPONENT ${FFTW_FIND_COMPONENTS})
     _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix} fftw${_fftw_suffix}.h)
   elseif(UPPERCOMPONENT STREQUAL "FFTW_MT")
     _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix}_threads fftw${_fftw_suffix}.h)
-  elseif(UPPERCOMPONENT STREQUAL "FFTWF" AND FFTW_FIND_VERSION_MAJOR GREATER_EQUAL 3)
+  elseif(UPPERCOMPONENT STREQUAL "FFTWF" AND FFTW_FIND_VERSION_MAJOR GREATER 2)
     _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix}f fftw${_fftw_suffix}.h)
-  elseif(UPPERCOMPONENT STREQUAL "FFTWF_MT" AND FFTW_FIND_VERSION_MAJOR GREATER_EQUAL 3)
+  elseif(UPPERCOMPONENT STREQUAL "FFTWF_MT" AND FFTW_FIND_VERSION_MAJOR GREATER 2)
     _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix}f_threads fftw${_fftw_suffix}.h)
   else()
     message(FATAL_ERROR "Unknown component (looked for FFTW ${FFTW_FIND_VERSION_MAJOR}): ${COMPONENT}")
@@ -174,7 +174,8 @@ endforeach()
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(FFTW
   FOUND_VAR FFTW_FOUND
-  REQUIRED_VARS ${FFTW_REQUIRED_VARS})
+  REQUIRED_VARS ${FFTW_REQUIRED_VARS}
+  HANDLE_COMPONENTS)
 
 # ==============================================================================
 

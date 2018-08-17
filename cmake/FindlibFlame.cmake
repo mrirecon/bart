@@ -73,7 +73,6 @@ set(libFlame_LAPACKE_COMPONENTS cblas)
 # ==============================================================================
 
 if(libFLame_LIBRARY)
-  set(CMAKE_REQUIRED_LIBRARIES ${CBLAS_LIBRARY})
   include(CheckLibraryExists)
   check_library_exists(${libFlame_LIBRARY} zgesdd_ "" HAVE_ZGESDD)
   check_library_exists(${libFlame_LIBRARY} zgelss_ "" HAVE_ZGELSS)
