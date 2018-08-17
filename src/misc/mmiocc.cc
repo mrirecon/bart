@@ -20,10 +20,6 @@
 #  include <numpy/arrayobject.h>
 #endif /* BART_WITH_PYTHON */
 
-#ifndef SUPER_DEBUG_OUT
-#define SUPER_DEBUG_OUT(...)	((void)0)
-#endif
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -65,13 +61,16 @@ namespace internal_ {
 	  Node(const std::string& name)
 	       : name_(name)
 	       , dirty_(name.empty() ? true : false)
-	       {}
+	       {
+		    std::fill(dims_, dims_+DIMS_MAX, 1);
+	       }
 	  
 	  virtual ~Node() {}
 
 	  virtual void reset() {
 	       name_.clear();
 	       dirty_ = false;
+	       std::fill(dims_, dims_+DIMS_MAX, 1);
 	  }
 	  virtual std::string name() const { return name_; }
 	  virtual const long* dims() { return dims_; }
@@ -118,12 +117,8 @@ namespace internal_ {
      struct PointerNode : public Node
      {
 	  PointerNode(const std::string& name, unsigned int D, long dims[])
-	       : Node(name)
-	       , ptr_(new cx_float[md_calc_size(D, dims)])
-	       {
-		    std::fill(dims_, dims_+DIMS_MAX, 1);
-		    std::copy(dims, dims+D, dims_);
-	       }
+	       : PointerNode(name, D, dims, new cx_float[md_calc_size(D, dims)])
+	       {}
 
 	  PointerNode(const std::string& name,
 		      unsigned int D,
@@ -132,15 +127,14 @@ namespace internal_ {
 	       : Node(name)
 	       , ptr_(ptr)
 	       {
-		    std::fill(dims_, dims_+DIMS_MAX, 1);
 		    std::copy(dims, dims+D, dims_);
 	       }
 
 	  virtual ~PointerNode()
 	       {
-		    SUPER_DEBUG_OUT("in: PointerNode::~PointerNode()");
-		    SUPER_DEBUG_OUT("     deleting %s node",
-				    name_.empty() ? "anonymous" : ("\"" + name_ + "\"").c_str());
+		    debug_printf(DP_DEBUG2, "in: PointerNode::~PointerNode()");
+		    debug_printf(DP_DEBUG2, "     deleting %s node",
+				 name_.empty() ? "anonymous" : ("\"" + name_ + "\"").c_str());
 	  	    reset();
 	       }
 
@@ -148,8 +142,7 @@ namespace internal_ {
 	       {
 		    Node::reset();
 		    deleter_t::deallocate(ptr_);
-		    ptr_ = NULL;
-		    std::fill(dims_, dims_+DIMS_MAX, 1);
+		    ptr_ = nullptr;
 	       }
 
 	  virtual void* data() const { return ptr_; }
@@ -170,9 +163,9 @@ namespace internal_ {
 
 	  virtual ~PyPointerNode()
 	       {
-		    SUPER_DEBUG_OUT("in: PyPointerNode::~PyPointerNode()");
-		    SUPER_DEBUG_OUT("     deleting %s node",
-				    name_.empty() ? "anonymous" : ("\"" + name_ + "\"").c_str());
+		    debug_printf(DP_DEBUG2, "in: PyPointerNode::~PyPointerNode()");
+		    debug_printf(DP_DEBUG2, "     deleting %s node",
+				 name_.empty() ? "anonymous" : ("\"" + name_ + "\"").c_str());
 	  	    reset();
 	       }
 
@@ -180,18 +173,16 @@ namespace internal_ {
 	       {
 		    Node::reset();
  		    // PyArray_XDECREF(ptr_); // FIXME: this should really be uncommented... but right now it segfaults with python3
-		    ptr_ = NULL;
-		    std::fill(dims_, dims_+DIMS_MAX, 1);
-		    dirty_ = false;
+		    ptr_ = nullptr;
 	       }
 
 	  virtual const long* dims()
 	       {
-		    SUPER_DEBUG_OUT("PyPointerNode::dims()");
+		    debug_printf(DP_DEBUG2, "PyPointerNode::dims()");
 		    unsigned int D(PyArray_NDIM(ptr_));
-		    npy_intp* npy_dims(PyArray_SHAPE(ptr_));
+		    auto* npy_dims(PyArray_SHAPE(ptr_));
 		    std::fill(dims_, dims_+DIMS_MAX, 1);
-		    std::copy(npy_dims, npy_dims +  + std::min(D, DIMS_MAX), dims_);
+		    std::copy(npy_dims, npy_dims + std::min(D, DIMS_MAX), dims_);
 		    return dims_;
 	       }
 	  virtual void* data() const { return PyArray_DATA(ptr_); }
@@ -213,7 +204,6 @@ namespace internal_ {
 	  NameEqual(const std::string& name)
 	       : name_(name)
 	       {}
-	  virtual ~NameEqual() {}
 
 	  bool operator() (const Node* node) const
 	       {
@@ -229,11 +219,10 @@ namespace internal_ {
 	  PtrDataEqual(const void* ptr)
 	       : ptr_(ptr)
 	       {}
-	  virtual ~PtrDataEqual() {}
 
 	  bool operator() (const Node* node) const
 	       {
-		    return ptr_ != NULL && ptr_ == node->data();
+		    return ptr_ != nullptr && ptr_ == node->data();
 	       }
      private:
 	  const void* ptr_;
@@ -247,19 +236,20 @@ namespace internal_ {
      
      public:
 	  MemoryHandler() {}
-
+	  MemoryHandler(const MemoryHandler&) = delete;
+	  MemoryHandler& operator=(const MemoryHandler&) = delete;
 	  ~MemoryHandler() { clear(); }
 
 	  template <typename T>
 	  T* allocate_mem_cfl(const std::string& name, unsigned int D, long dims[])
 	       {
-		    SUPER_DEBUG_OUT("in: MemoryHandler::allocate_mem_cfl<T>(\"%s\", %d, ...)", name.c_str(), D);
+		    debug_printf(DP_DEBUG2, "in: MemoryHandler::allocate_mem_cfl<T>(\"%s\", %d, ...)", name.c_str(), D);
 		    
-		    vector_t::iterator it(std::find_if(list_.begin(),
-						       list_.end(),
-						       NameEqual(name)));
+		    auto it(std::find_if(list_.begin(),
+					 list_.end(),
+					 NameEqual(name)));
 		    if (it != list_.end()) {
-			 SUPER_DEBUG_OUT("     found \"%s\" already in the database!", name.c_str());
+			 debug_printf(DP_DEBUG2, "     found \"%s\" already in the database!", name.c_str());
 			 
 			 /* We are attempting to create a new memory CFL
 			  * but found that another one with the same name
@@ -281,18 +271,18 @@ namespace internal_ {
 			 }
 		    }
 		    
-		    SUPER_DEBUG_OUT("     allocating PointerNode<T>");
-		    list_.push_back(new PointerNode<T>(name, D, dims));
-		    SUPER_DEBUG_OUT("     returning from MemoryHandler::allocate_mem_cfl<T>");
+		    debug_printf(DP_DEBUG2, "     allocating PointerNode<T>");
+		    list_.emplace_back(new PointerNode<T>(name, D, dims));
+		    debug_printf(DP_DEBUG2, "     returning from MemoryHandler::allocate_mem_cfl<T>");
 		    return reinterpret_cast<T*>(list_.back()->data());
 	       }
 	  template <typename T>
 	  T* allocate_mem_cfl(unsigned int D, long dims[])
 	       {
-		    SUPER_DEBUG_OUT("in: MemoryHandler::allocate_mem_cfl<T>(%d, ...)", D);
-		    SUPER_DEBUG_OUT("     allocating PointerNode<T>");
-		    list_.push_back(new PointerNode<T>("", D, dims));
-		    SUPER_DEBUG_OUT("     returning from MemoryHandler::allocate_mem_cfl<T>");
+		    debug_printf(DP_DEBUG2, "in: MemoryHandler::allocate_mem_cfl<T>(%d, ...)", D);
+		    debug_printf(DP_DEBUG2, "     allocating PointerNode<T>");
+		    list_.emplace_back(new PointerNode<T>("", D, dims));
+		    debug_printf(DP_DEBUG2, "     returning from MemoryHandler::allocate_mem_cfl<T>");
 		    return reinterpret_cast<T*>(list_.back()->data());
 	       }
 
@@ -303,13 +293,13 @@ namespace internal_ {
 				T* ptr,
 				deleter_t)
 	       {
-		    SUPER_DEBUG_OUT("in: MemoryHandler::register_mem_cfl<T>(\"%s\", ...)", name.c_str());
+		    debug_printf(DP_DEBUG2, "in: MemoryHandler::register_mem_cfl<T>(\"%s\", ...)", name.c_str());
 		    
-		    vector_t::iterator it(std::find_if(list_.begin(),
-						       list_.end(),
-						       NameEqual(name)));
+		    auto it(std::find_if(list_.begin(),
+					 list_.end(),
+					 NameEqual(name)));
 		    if (it != list_.end()) {
-			 SUPER_DEBUG_OUT("In-mem CFL: found existing data with the same name, deleting old data");
+			 debug_printf(DP_DEBUG2, "In-mem CFL: found existing data with the same name, deleting old data");
 			 remove_node_(it);
 		    }
 
@@ -326,20 +316,20 @@ namespace internal_ {
 		    // Need to call io_register_input here since no calls to
 		    // either create_cfl() or load_cfl() lead to here...
 		    io_register_input(name.c_str());
-		    list_.push_back(new PointerNode<T, deleter_t>(name, D, dims, ptr));
+		    list_.emplace_back(new PointerNode<T, deleter_t>(name, D, dims, ptr));
 		    list_.back()->data_dir() = INPUT;
 	       }
 
 #ifdef BART_WITH_PYTHON
 	  void register_mem_cfl(const std::string& name, PyArrayObject* npy_data)
 	       {
-		    SUPER_DEBUG_OUT("in: MemoryHandler::register_mem_cfl(\"%s\", npy_data)", name.c_str());
+		    debug_printf(DP_DEBUG2, "in: MemoryHandler::register_mem_cfl(\"%s\", npy_data)", name.c_str());
 		    
-		    vector_t::iterator it(std::find_if(list_.begin(),
-						       list_.end(),
-						       NameEqual(name)));
+		    auto it(std::find_if(list_.begin(),
+					 list_.end(),
+					 NameEqual(name)));
 		    if (it != list_.end()) {
-			 SUPER_DEBUG_OUT("In-mem CFL: found existing data with the same name, deleting old data");
+			 debug_printf(DP_DEBUG2, "In-mem CFL: found existing data with the same name, deleting old data");
 			 remove_node_(it);
 		    }
 
@@ -356,7 +346,7 @@ namespace internal_ {
 		    // Need to call io_register_input here since no calls to
 		    // either create_cfl() or load_cfl() lead to here...
 		    io_register_input(name.c_str());
-		    list_.push_back(new PyPointerNode(name, npy_data));
+		    list_.emplace_back(new PyPointerNode(name, npy_data));
 		    list_.back()->data_dir() = INPUT;
 	       }
 #endif /* BART_WITH_PYTHON */
@@ -365,24 +355,24 @@ namespace internal_ {
 				 unsigned int D,
 				 long dims[])
 	       {
-		    SUPER_DEBUG_OUT("in: MemoryHandler::load_mem_cfl<T> (\"%s\", ...)", name.c_str());
+		    debug_printf(DP_DEBUG2, "in: MemoryHandler::load_mem_cfl<T> (\"%s\", ...)", name.c_str());
 		    
-		    vector_t::iterator it(std::find_if(list_.begin(),
-						       list_.end(),
-						       NameEqual(name)));
+		    auto it(std::find_if(list_.begin(),
+					 list_.end(),
+					 NameEqual(name)));
 		    if (it != list_.end()) {
-			 SUPER_DEBUG_OUT("     found it! copying dimensions");
+			 debug_printf(DP_DEBUG2, "     found it! copying dimensions");
 
-			 const long* d = (*it)->dims();
+			 auto* d = (*it)->dims();
 			 std::copy(d, d + std::min(D, DIMS_MAX), dims);
-			 SUPER_DEBUG_OUT("     marking it as input");
+			 debug_printf(DP_DEBUG2, "     marking it as input");
 			 (*it)->data_dir() = INPUT;
 
-			 SUPER_DEBUG_OUT("     returning from MemoryHandler::load_mem_cfl<T>");
+			 debug_printf(DP_DEBUG2, "     returning from MemoryHandler::load_mem_cfl<T>");
 			 return reinterpret_cast<cx_float*>((*it)->data());
 		    }
 		    else {
-			 return NULL;
+			 return nullptr;
 		    }
 	       }
 
@@ -397,26 +387,26 @@ namespace internal_ {
 	  template <typename T>
 	  bool try_delete_mem_cfl(T* ptr)
 	       {
-		    SUPER_DEBUG_OUT("in: MemoryHandler::try_delete_mem_cfl<T>");
+		    debug_printf(DP_DEBUG2, "in: MemoryHandler::try_delete_mem_cfl<T>");
 		    
-		    vector_t::iterator it(std::find_if(list_.begin(),
-						       list_.end(),
-						       PtrDataEqual(ptr)));
+		    auto it(std::find_if(list_.begin(),
+					 list_.end(),
+					 PtrDataEqual(ptr)));
 		    if (it != list_.end()) {
-			 SUPER_DEBUG_OUT("     found data (%s)!", (*it)->name().empty() ? "anonymous" : ("\"" + (*it)->name() + "\"").c_str());
+			 debug_printf(DP_DEBUG2, "     found data (%s)!", (*it)->name().empty() ? "anonymous" : ("\"" + (*it)->name() + "\"").c_str());
 			 
 			 if ((*it)->dirty()) {
-			      SUPER_DEBUG_OUT("     node is dirty, deallocating!");
+			      debug_printf(DP_DEBUG2, "     node is dirty, deallocating!");
 			      remove_node_(it);
 			 }
 			 else {
-			      SUPER_DEBUG_OUT("     node is ok, calling io_unregister(...) and clear_flags(...)");
+			      debug_printf(DP_DEBUG2, "     node is ok, calling io_unregister(...) and clear_flags(...)");
 			      io_unregister((*it)->name().c_str());
 			      (*it)->clear_flags();
 			 }
 			 return true;
 		    }
-		    SUPER_DEBUG_OUT("     data *not* found!");
+		    debug_printf(DP_DEBUG2, "     data *not* found!");
 		    return false;
 	       }
      
@@ -441,7 +431,7 @@ namespace internal_ {
 	  void remove_node_(vector_t::iterator it)
 	       {
 		    delete (*it);
-		    *it = NULL;
+		    *it = nullptr;
 		    list_.erase(it);
 	       }
 	  
@@ -462,10 +452,6 @@ namespace internal_ {
 
      
 	  vector_t list_;
-
-	  // Not implemented!
-	  MemoryHandler(const MemoryHandler&);
-	  MemoryHandler& operator=(const MemoryHandler&);
      };
 } // namespace internal_
 
@@ -479,7 +465,7 @@ static internal_::MemoryHandler mem_handler;
 
 void* create_mem_cfl(const char* name, unsigned int D, const long dims[])
 {
-     SUPER_DEBUG_OUT("in: create_mem_cfl");
+     debug_printf(DP_DEBUG2, "in: create_mem_cfl");
      
      if (D > DIMS_MAX) {
 	  BART_WARN("create_mem_cfl: D > DIMS_MAX: %d > %d!\n", D, DIMS_MAX);
@@ -492,7 +478,7 @@ void* create_mem_cfl(const char* name, unsigned int D, const long dims[])
 
 void* create_anon_mem_cfl(unsigned int D, const long dims[])
 {
-     SUPER_DEBUG_OUT("in: create_anon_mem_cfl");
+     debug_printf(DP_DEBUG2, "in: create_anon_mem_cfl");
      
      if (D > DIMS_MAX) {
 	  BART_WARN("create_anon_mem_cfl: D > DIMS_MAX: %d > %d!\n", D, DIMS_MAX);
@@ -503,7 +489,7 @@ void* create_anon_mem_cfl(unsigned int D, const long dims[])
 
 void* load_mem_cfl(const char* name, unsigned int D, long dims[])
 {
-     SUPER_DEBUG_OUT("in: load_mem_cfl");
+     debug_printf(DP_DEBUG2, "in: load_mem_cfl");
 
      if (D > DIMS_MAX) {
 	  BART_WARN("load_mem_cfl: D > DIMS_MAX: %d > %d!\n", D, DIMS_MAX);
@@ -511,7 +497,7 @@ void* load_mem_cfl(const char* name, unsigned int D, long dims[])
      
      cx_float* ret = mem_handler.load_mem_cfl(name, D, dims);
 
-     if (ret == NULL) {
+     if (ret == nullptr) {
 #ifndef BART_WITH_PYTHON
 	  BART_ERR("failed loading memory cfl file \"%s\"", name);
 #else
@@ -547,7 +533,7 @@ void register_mem_cfl_non_managed(const char* name,
 				  void* data)
      
 {
-     SUPER_DEBUG_OUT("in: register_mem_cfl_non_managed");
+     debug_printf(DP_DEBUG2, "in: register_mem_cfl_non_managed");
 
      register_mem_cfl_impl<noop_delete>(name, D, dims, data);
 }
@@ -557,7 +543,7 @@ void register_mem_cfl_malloc(const char* name,
 			     const long dims[],
 			     void* data)
 {
-     SUPER_DEBUG_OUT("in: register_mem_cfl_malloc");
+     debug_printf(DP_DEBUG2, "in: register_mem_cfl_malloc");
      
      register_mem_cfl_impl<c_delete>(name, D, dims, data);
 }
@@ -566,7 +552,7 @@ void register_mem_cfl_new(const char* name,
 			  const long dims[],
 			  void* data)
 {
-     SUPER_DEBUG_OUT("in: register_mem_cfl_new");
+     debug_printf(DP_DEBUG2, "in: register_mem_cfl_new");
      
      register_mem_cfl_impl<cpp_delete>(name, D, dims, data);
 }
@@ -593,7 +579,7 @@ _Bool deallocate_mem_cfl_ptr(const cx_float* ptr)
 
 void deallocate_all_mem_cfl()
 {
-     SUPER_DEBUG_OUT("in: deallocate_all_mem_cfl");
+     debug_printf(DP_DEBUG2, "in: deallocate_all_mem_cfl");
      mem_handler.clear();
 }
 
@@ -602,8 +588,8 @@ void deallocate_all_mem_cfl()
 #ifdef BART_WITH_PYTHON
 extern "C" _Bool register_mem_cfl_python(const char* name, PyArrayObject* npy_data)
 {
-     SUPER_DEBUG_OUT("in: register_mem_cfl_python");
-     unsigned int D(PyArray_NDIM(npy_data));
+     debug_printf(DP_DEBUG2, "in: register_mem_cfl_python");
+     auto D(PyArray_NDIM(npy_data));
      if (D > DIMS_MAX) {
 	  BART_WARN("register_mem_cfl_python: D > DIMS_MAX: %d > %d!\n", D, DIMS_MAX);
      }
