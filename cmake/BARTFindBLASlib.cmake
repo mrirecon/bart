@@ -66,8 +66,10 @@ endif()
 ## -*-*- Try Generic LAPACKE version Last
 if(NOT LINALG_VENDOR OR LINALG_VENDOR MATCHES "LAPACKE")
   #NOTE: By specifying Fortran here, linking to lapack becomes easier
-  # See https://blog.kitware.com/fortran-for-cc-developers-made-easier-with-cmake/  
-  enable_language(Fortran)
+  # See https://blog.kitware.com/fortran-for-cc-developers-made-easier-with-cmake/
+  if(NOT WIN32)
+    enable_language(Fortran)
+  endif()
   ## Only very new versions of LAPACK (> 3.5.0) have built in support
   ## for cblas and lapacke.  This method is not very robust to older
   ## versions of lapack that might be able to be supported.

@@ -28,7 +28,7 @@ install(FILES ${PROJECT_SOURCE_DIR}/src/bart_embed_api.h
   COMPONENT for_embedding)
 
 # Install all of the targets (except bartmain)
-set(BART_TARGET_LIST bart bartsupport ${BART_MATLAB_TGT} pyBART)
+set(BART_TARGET_LIST bart bartsupport mat2cfl pyBART)
 foreach(target ${BART_TARGET_LIST})
   if(TARGET ${target})
     install(TARGETS ${target}
@@ -79,7 +79,15 @@ install(FILES
   )
 
 # Write a CMake file with all the targets information
-export(EXPORT bart-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/BARTTargets.cmake NAMESPACE BART::)
+# (not for installing, but for external project to import targets from the
+#  current build tree)
+if(CMAKE_VERSION VERSION_LESS 3.0)
+  export(TARGETS bartsupport bart ${BART_MATLAB_TGT} ${BART_pyBART_TGT} FILE ${CMAKE_CURRENT_BINARY_DIR}/BARTTargets.cmake NAMESPACE BART::)
+  export(TARGETS bartmain FILE ${CMAKE_CURRENT_BINARY_DIR}/BARTTargetsForEmbedding.cmake NAMESPACE BART::)
+else()
+  export(EXPORT bart-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/BARTTargets.cmake NAMESPACE BART::)
+  export(EXPORT bart-targets-for-embedding FILE ${CMAKE_CURRENT_BINARY_DIR}/BARTTargetsForEmbedding.cmake NAMESPACE BART::)
+endif()
 
 # Install the general CMake target file
 install(EXPORT bart-targets

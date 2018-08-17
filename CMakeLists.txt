@@ -11,15 +11,26 @@ enable_language(C)
 
 # Silence a CMake-warning about object libraries
 if(CMAKE_VERSION VERSION_GREATER 3.0)
-  cmake_policy(SET CMP0051 NEW)
-  cmake_policy(SET CMP0057 NEW) # if IN_LIST
-  cmake_policy(SET CMP0028 NEW) # :: in target names
-  if(CMAKE_VERSION VERSION_LESS 3.8) # 3.8 instead of 3.3 due to CUDA support
-    cmake_policy(SET CMP0023 OLD) # target_link_libraries mixed signatures
-  else()
-    cmake_policy(SET CMP0023 NEW) # target_link_libraries mixed signatures
+  set(_policy_list CMP0028 CMP0051 CMP0054 CMP0057 CMP0074)
+  foreach(_policy ${_policy_list})
+    if(POLICY ${_policy})
+      cmake_policy(SET ${_policy} NEW)
+    endif()
+  endforeach()
+  # CMP0028: :: in target names
+  # CMP0051: list TARGET_OBJECTS in SOURCES property
+  # CMP0054: no more de-referencing of "expr" in if() statements
+  # CMP0057: if IN_LIST
+  # CMP0074: XXX_ROOT variables for find_package(XXX)
+endif()
+if(CMAKE_VERSION VERSION_LESS 3.10) # 3.10 instead of 3.3 due to CUDA support
+  if(CMAKE_VERSION VERSION_GREATER 2.8.2)
+    message(STATUS "From the BART maintainers: ignore the message below")
   endif()
-endif(CMAKE_VERSION VERSION_GREATER 3.0)
+  cmake_policy(SET CMP0023 OLD) # target_link_libraries mixed signatures
+else()
+  cmake_policy(SET CMP0023 NEW) # target_link_libraries mixed signatures
+endif()
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
@@ -32,14 +43,14 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/bart_options.cmake)
 #==============================================================================
 
 # http://stackoverflow.com/questions/24840030/forcing-c99-in-cmake-to-use-for-loop-initial-declaration
-if (CMAKE_VERSION VERSION_LESS "3.1")
+if (CMAKE_VERSION VERSION_LESS 3.1)
   if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR
       CMAKE_C_COMPILER_ID STREQUAL "Clang")
     set (CMAKE_C_FLAGS "--std=gnu11 ${CMAKE_C_FLAGS}")
   endif()
-  if (CMAKE_CX_COMPILER_ID STREQUAL "GNU" OR
-      CMAKE_CX_COMPILER_ID STREQUAL "Clang")
-    set (CMAKE_CXX_FLAGS "--std=c++11x ${CMAKE_CXX_FLAGS}")
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+      CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set (CMAKE_CXX_FLAGS "--std=c++11 ${CMAKE_CXX_FLAGS}")
   endif()
 else()
   set (CMAKE_C_STANDARD 11)
@@ -83,8 +94,8 @@ if(APPLE)
     PATHS /opt/local/bin /opt/local/sbin)
   if(MACPORTS)
     add_definitions(-DUSE_MACPORTS)
-  endif(MACPORTS)
-endif(APPLE)
+  endif()
+endif()
 
 # ==============================================================================
 
@@ -148,11 +159,11 @@ endforeach()
 
 if(BART_ISMRMRD)
   list(APPEND ALLPROGS ismrmrd) 
-endif(BART_ISMRMRD)
+endif()
 
 if(BART_DISABLE_PNG)
   list(REMOVE_ITEM ALLPROGS "toimg")
-endif(BART_DISABLE_PNG)
+endif()
 
 list(SORT ALLPROGS)
 
@@ -258,13 +269,13 @@ if(NOT BART_ENABLE_MEM_CFL)
   list(REMOVE_ITEM
     BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES
     "${CMAKE_CURRENT_LIST_DIR}/src/misc/mmiocc.cc")
-endif(NOT BART_ENABLE_MEM_CFL)
+endif()
 
 # ------------------------------------------------------------------------------
 
 if(BART_DISABLE_PNG)
   list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/png.c")
-endif(BART_DISABLE_PNG)
+endif()
 
 set(LOG_BACKEND_SRCS "")
 list(REMOVE_ITEM bart_support_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/UTrace.cc")
@@ -283,7 +294,7 @@ if(BART_LOG_BACKEND)
     endif()
     # No need to add any include paths as the required code was copied into UTrace.cc from Siemens' IDEA framework
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/UTrace.cc")
-  endif(BART_LOG_SIEMENS_BACKEND)
+  endif()
 
   # ------------------------------------
   
@@ -298,7 +309,7 @@ if(BART_LOG_BACKEND)
     else(EXISTS ${RECON_LIBRARIES_INCLUDE_FILE})
       message("Could not find ${RECON_LIBRARIES_INCLUDE_FILE}")
       message(FATAL_ERROR "Verify that the CMake OX_INSTALL_DIRECTORY option is set correctly")
-    endif(EXISTS ${RECON_LIBRARIES_INCLUDE_FILE})
+    endif()
     
     # Include Orchestra SDK build configuration
     include (${TOPDIR}/recon/SDK/product.cmake)
@@ -307,26 +318,26 @@ if(BART_LOG_BACKEND)
     target_link_libraries(bartsupport PUBLIC "Core;Common;Control;System;${OX_3P_LIBS};${OX_OS_LIBS}")
     
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Orchestra.cc")
-  endif(BART_LOG_ORCHESTRA_BACKEND)
+  endif()
 
   # ------------------------------------
 
   if(BART_LOG_GADGETRON_BACKEND)
     # Actually we do nothing here, Gagdetron will provide the vendor_log function
-  endif(BART_LOG_GADGETRON_BACKEND)
-endif(BART_LOG_BACKEND)
+  endif()
+endif()
 
 foreach(file ${LOG_BACKEND_SRCS})
   list(REMOVE_ITEM bart_support_SRCS "${file}")
 endforeach()
 
 if(USE_CUDA)
-  if("${CMAKE_VERSION}" VERSION_GREATER_EQUAL 3.8)
-    set(bartsupport_cuda_objs ${bart_support_CUSRCS})
-  else()
+  if("${CMAKE_VERSION}" VERSION_LESS 3.10)
     cuda_wrap_srcs(bartsupport_objs OBJ bartsupport_cuda_objs ${bart_support_CUSRCS})
+  else()
+    set(bartsupport_cuda_objs ${bart_support_CUSRCS})
   endif()
-endif(USE_CUDA)
+endif()
 
 bart_add_object_library(bartsupport_objs ${bart_support_SRCS})
 bart_add_library(bartsupport STATIC $<TARGET_OBJECTS:bartsupport_objs> ${DEBUG_C_FILE} ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES} ${bartsupport_cuda_objs})
@@ -404,7 +415,7 @@ endforeach()
 # ==============================================================================
 
 bart_add_object_library(bartmain_objs ${ALL_BART_LIB_SRCS})
-add_library(bartmain
+bart_add_library(bartmain
   STATIC
   $<TARGET_OBJECTS:bartsupport_objs>
   $<TARGET_OBJECTS:bartmain_objs>
@@ -425,7 +436,7 @@ set_target_properties(bartmain
 
 if(BART_ENABLE_MEM_CFL)
   set_target_properties(bartmain PROPERTIES LINKER_LANGUAGE CXX)
-endif(BART_ENABLE_MEM_CFL)
+endif()
 
 # Workaround for possible name conflicts with libC's error function
 target_compile_definitions(bartmain PRIVATE -Derror=bart_error__)
@@ -433,20 +444,20 @@ if(BART_LOG_BACKEND)
   # ensure that src/misc/misc.c will be compiled with logging backend support
   # but *ONLY* for the bartmain target
   target_compile_definitions(bartmain PRIVATE -DUSE_LOG_BACKEND)
-endif(BART_LOG_BACKEND)
+endif()
 
 # ==============================================================================
 
 if(BART_CREATE_PYTHON_MODULE)
-  if(CMAKE_VERSION VERSION_LESS "3.12")
+  if(CMAKE_VERSION VERSION_LESS 3.12)
     find_package(PythonLibs REQUIRED)
     set(PYMODULE_INCLUDE_DIRS "${PYTHON_INCLUDE_DIRS}")
     set(PYMODULE_LIBRARIES "${PYTHON_LIBRARIES}")
-  else(CMAKE_VERSION VERSION_LESS "3.12")
+  else()
     find_package(Python REQUIRED COMPONENTS Development)
     set(PYMODULE_INCLUDE_DIRS "${Python_INCLUDE_DIRS}")
     set(PYMODULE_LIBRARIES "${Python_LIBRARIES}")
-  endif(CMAKE_VERSION VERSION_LESS "3.12")
+  endif()
 
   set(PYBART_FUNCTION_PROTOTYPE "")
   set(PYBART_COMMANDS_MODULE_METHODS "")
@@ -457,7 +468,7 @@ if(BART_CREATE_PYTHON_MODULE)
       set(PYBART_FUNCTION_PROTOTYPE "${PYBART_FUNCTION_PROTOTYPE}static PyObject* call_${curr_prog}(PyObject* self, PyObject* args);\n")
       set(PYBART_COMMANDS_MODULE_METHODS "${PYBART_COMMANDS_MODULE_METHODS}     {\"${curr_prog}\", call_${curr_prog}, METH_VARARGS, bart_subcommand_docstring},\n")
       set(PYBART_COMMANDS_IMPLEMENTATION "${PYBART_COMMANDS_IMPLEMENTATION}PyObject* call_${curr_prog} (PyObject* self, PyObject* args)\n{\n     enum { MAX_ARGS = 256 };\n     char* cmdline = NULL;\n     char output[256] = { \"\" };\n     if (!PyArg_ParseTuple(args, \"s\", &cmdline)) {\n	  Py_RETURN_NONE;\n     }\n\n     return call_submain(\"${curr_prog}\", cmdline);\n}\n\n")
-    endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c")
+    endif()
   endforeach()
 
   configure_file(${CMAKE_CURRENT_LIST_DIR}/src/python/pyBART.c.in ${PROJECT_BINARY_DIR}/pyBART.c @ONLY)
@@ -480,7 +491,8 @@ if(BART_CREATE_PYTHON_MODULE)
     PROPERTIES
     PREFIX ""
     EXPORT_NAME pyBART)
-endif(BART_CREATE_PYTHON_MODULE)
+    set(BART_pyBART_TGT pyBART)
+endif()
 
 #==============================================
 # TODO: Matlab code
@@ -522,7 +534,7 @@ if(BUILD_TESTING)
     target_compile_definitions(${test_name} PUBLIC UTESTS=${${test_name}_tests})
     add_test(${test_name} ${test_name})
   endforeach()
-endif(BUILD_TESTING)
+endif()
 
 # ==============================================================================
 
@@ -554,5 +566,5 @@ if(BART_GENERATE_DOC)
     POST_BUILD
     COMMAND ${CMAKE_CURRENT_LIST_DIR}/rules/update_commands.sh $<TARGET_FILE:bart> ${CMAKE_CURRENT_LIST_DIR}/doc/commands.txt ${ALLPROGS}
     )
-endif(BART_GENERATE_DOC)
+endif()
 
