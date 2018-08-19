@@ -6,30 +6,89 @@
 # \author Damien Nguyen <damien.nguyen@alumni.epfl.ch>
 cmake_minimum_required(VERSION 2.8.12)
 
-project(bart C)
-enable_language(C)
-
-# Silence a CMake-warning about object libraries
 if(CMAKE_VERSION VERSION_GREATER 3.0)
-  set(_policy_list CMP0028 CMP0051 CMP0054 CMP0057 CMP0074)
+  set(_policy_list CMP0028 CMP0048 CMP0051 CMP0054 CMP0057 CMP0074)
   foreach(_policy ${_policy_list})
     if(POLICY ${_policy})
       cmake_policy(SET ${_policy} NEW)
     endif()
   endforeach()
   # CMP0028: :: in target names
+  # CMP0048: allow VERSION in project()
   # CMP0051: list TARGET_OBJECTS in SOURCES property
   # CMP0054: no more de-referencing of "expr" in if() statements
   # CMP0057: if IN_LIST
   # CMP0074: XXX_ROOT variables for find_package(XXX)
 endif()
 if(CMAKE_VERSION VERSION_LESS 3.10) # 3.10 instead of 3.3 due to CUDA support
-  if(CMAKE_VERSION VERSION_GREATER 2.8.2)
+  if(CMAKE_VERSION VERSION_GREATER 3.8.99)
     message(STATUS "From the BART maintainers: ignore the message below")
   endif()
   cmake_policy(SET CMP0023 OLD) # target_link_libraries mixed signatures
 else()
   cmake_policy(SET CMP0023 NEW) # target_link_libraries mixed signatures
+endif()
+
+# ==============================================================================
+# Get the version now, so that we can set it when creating the project
+
+macro(get_version_from_file filename)
+  message(STATUS "Getting version info from ${filename}")
+  file(READ ${filename} _version_string)
+  string(STRIP ${_version_string} _version_string)
+  string(SUBSTRING ${_version_string} 1 -1 _version_string)
+  string(REGEX MATCHALL "[0-9]+" _version_list ${_version_string})
+  list(GET _version_list 0 _version_major)
+  list(GET _version_list 1 _version_minor)
+  list(GET _version_list 2 _version_patch)
+endmacro()
+
+# ------------------------------------------------------------------------------
+
+if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/.git)
+  find_package(Git QUIET)
+  if(Git_FOUND)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} describe --match "v*" --dirty
+      OUTPUT_VARIABLE _full_version
+      RESULT_VARIABLE _ret
+      WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+
+    if(_ret EQUAL 0)
+      string(STRIP ${_full_version} _full_version)
+      # _full_version is of the form: v0.4.03-109-gf9c0f56-dirty
+      string(REGEX MATCHALL "[0-9]+" _version_list ${_full_version})
+      list(GET _version_list 0 _version_major)
+      list(GET _version_list 1 _version_minor)
+      list(GET _version_list 2 _version_patch)
+      file(WRITE ${CMAKE_CURRENT_LIST_DIR}/version.txt
+	"v${_version_major}.${_version_minor}.${_version_patch}\n")
+    else()
+      get_version_from_file(${CMAKE_CURRENT_LIST_DIR}/version.txt)
+    endif()
+    
+  else()
+    get_version_from_file(${CMAKE_CURRENT_LIST_DIR}/version.txt)
+  endif()
+else()
+  get_version_from_file(${CMAKE_CURRENT_LIST_DIR}/version.txt)
+endif()
+
+# ==============================================================================
+# Create the BART project
+
+if(CMAKE_VERSION VERSION_LESS 3.0)
+  project(BART C)
+  set(PROJECT_VERSION_MAJOR ${_version_major})
+  set(PROJECT_VERSION_MINOR ${_version_minor})
+  set(PROJECT_VERSION_PATCH ${_version_patch})
+  set(${CMAKE_PROJECT_NAME}_VERSION_MAJOR ${_version_major})
+  set(${CMAKE_PROJECT_NAME}_VERSION_MINOR ${_version_minor})
+  set(${CMAKE_PROJECT_NAME}_VERSION_PATCH ${_version_patch})
+else()
+  project(BART
+    LANGUAGES C
+    VERSION "${_version_major}.${_version_minor}.${_version_patch}")
 endif()
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_LIST_DIR}/cmake)
@@ -125,13 +184,6 @@ if(APPLE)
 endif()
 
 ##======================================================================
-
-execute_process(COMMAND ${CMAKE_CURRENT_LIST_DIR}/git-version.sh OUTPUT_VARIABLE BART_FULL_VERSION_STRING WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-string(STRIP ${BART_FULL_VERSION_STRING} BART_FULL_VERSION_STRING) ## Remove trailing whitespace (return characters)
-string(REGEX REPLACE ".*v([0-9]*)\\.([0-9]*)\\.([0-9]*)-.*" "\\1" BART_VERSION_MAJOR "${BART_FULL_VERSION_STRING}")
-string(REGEX REPLACE ".*v([0-9]*)\\.([0-9]*)\\.([0-9]*)-.*" "\\2" BART_VERSION_MINOR "${BART_FULL_VERSION_STRING}")
-string(REGEX REPLACE ".*v([0-9]*)\\.([0-9]*)\\.([0-9]*)-.*" "\\3" BART_VERSION_PATCH "${BART_FULL_VERSION_STRING}")
-message(STATUS "BART VERSION: ${BART_FULL_VERSION_STRING}:  ${BART_VERSION_MAJOR} ${BART_VERSION_MINOR} ${BART_VERSION_PATCH}")
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/version.inc.in "VERSION(\@BART_FULL_VERSION_STRING\@)")
 configure_file(${CMAKE_CURRENT_BINARY_DIR}/version.inc.in ${CMAKE_CURRENT_BINARY_DIR}/version.inc @ONLY)
