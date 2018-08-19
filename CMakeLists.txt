@@ -592,14 +592,10 @@ endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/bart_install.cmake)
 
-# ==============================================================================
+# Packaging stuff (deb, rpm, windows installer)
+include(${CMAKE_CURRENT_LIST_DIR}/packaging/CPackConfig.cmake)
 
-set(TARBALL_VERSION "${BART_VERSION_MAJOR}.${BART_VERSION_MINOR}.${BART_VERSION_PATCH}")
-add_custom_target(tarball
-  COMMAND git archive --prefix=bart-${TARBALL_VERSION}/ -o ${CMAKE_CURRENT_BINARY_DIR}/bart-${TARBALL_VERSION}.tar.gz v${TARBALL_VERSION}
-  WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
-  COMMENT "BUILD TARBALL FOR BART WITH LATEST VERSION"
-  )
+# ==============================================================================
 
 add_custom_target(doxygen
   COMMAND ${CMAKE_CURRENT_LIST_DIR}/makedoc.sh
