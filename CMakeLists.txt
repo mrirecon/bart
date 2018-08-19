@@ -588,6 +588,13 @@ if(BUILD_TESTING)
   endforeach()
 endif()
 
+# ------------------------------------------------------------------------------
+
+# Include integration testing
+if(NOT BART_MEMONLY_CFL)
+  add_subdirectory(tests)
+endif()
+
 # ==============================================================================
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/bart_install.cmake)
