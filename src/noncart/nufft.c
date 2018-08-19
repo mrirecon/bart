@@ -368,7 +368,7 @@ static void nufft_precond_apply(const operator_data_t* _data, unsigned int M, vo
 {
 	assert(2 == M);
 
-	const struct nufft_precond_data* data = CAST_DOWN(nufft_precond_data, _data);
+	const auto data = CAST_DOWN(nufft_precond_data, _data);
 
 	complex float* dst = args[0];
 	const complex float* src = args[1];
@@ -381,7 +381,7 @@ static void nufft_precond_apply(const operator_data_t* _data, unsigned int M, vo
 
 static void nufft_precond_del(const operator_data_t* _data)
 {
-	const struct nufft_precond_data* data = CAST_DOWN(nufft_precond_data, _data);
+	const auto data = CAST_DOWN(nufft_precond_data, _data);
 
 	xfree(data->cim_dims);
 	xfree(data->pre_dims);
@@ -394,7 +394,7 @@ static void nufft_precond_del(const operator_data_t* _data)
 
 const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
 {
-	const struct nufft_data* data = CAST_DOWN(nufft_data, linop_get_data(nufft_op));
+	const auto data = CAST_DOWN(nufft_data, linop_get_data(nufft_op));
 
 	PTR_ALLOC(struct nufft_precond_data, pdata);
 	SET_TYPEID(nufft_precond_data, pdata);
@@ -563,7 +563,7 @@ static complex float* compute_psf2(unsigned int N, const long psf_dims[N + 3], c
 
 static void nufft_free_data(const linop_data_t* _data)
 {
-	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
+	auto data = CAST_DOWN(nufft_data, _data);
 
 	xfree(data->ksp_dims);
 	xfree(data->cim_dims);
@@ -617,7 +617,7 @@ static void nufft_free_data(const linop_data_t* _data)
 // Forward: from image to kspace
 static void nufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
+	auto data = CAST_DOWN(nufft_data, _data);
 
 #ifdef USE_CUDA
 	assert(!cuda_ondevice(src));
@@ -661,7 +661,7 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 // Adjoint: from kspace to image
 static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
+	auto data = CAST_DOWN(nufft_data, _data);
 
 #ifdef USE_CUDA
 	assert(!cuda_ondevice(src));
@@ -715,7 +715,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
  */
 static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct nufft_data* data = CAST_DOWN(nufft_data, _data);
+	auto data = CAST_DOWN(nufft_data, _data);
 
 	if (data->conf.toeplitz) {
 

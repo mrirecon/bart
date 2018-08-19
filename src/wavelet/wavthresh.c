@@ -1,11 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker
+ * Copyright 2016-2018. Martin Uecker
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013 Frank Ong <uecker@eecs.berkeley.edu>
- * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -58,7 +58,7 @@ static int rand_lim(unsigned int* state, int limit)
 
 static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex float* out, const complex float* in)
 {
-	const struct wavelet_thresh_s* data = CAST_DOWN(wavelet_thresh_s, _data);
+	const auto data = CAST_DOWN(wavelet_thresh_s, _data);
 
 	long shift[data->N];
 	for (unsigned int i = 0; i < data->N; i++)
@@ -84,7 +84,7 @@ static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex
 
 static void wavelet_thresh_del(const operator_data_t* _data)
 {
-	const struct wavelet_thresh_s* data = CAST_DOWN(wavelet_thresh_s, _data);
+	const auto data = CAST_DOWN(wavelet_thresh_s, _data);
 	xfree(data->dims);
 	xfree(data->minsize);
 	xfree(data);

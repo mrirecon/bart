@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
  
 #include <complex.h>
@@ -109,21 +109,21 @@ static DEF_TYPEID(grad_s);
 
 static void grad_op_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct grad_s* data = CAST_DOWN(grad_s, _data);
+	const auto data = CAST_DOWN(grad_s, _data);
 
 	grad_op(data->N, data->dims, data->flags, dst, src);
 }
 	
 static void grad_op_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct grad_s* data = CAST_DOWN(grad_s, _data);
+	const auto data = CAST_DOWN(grad_s, _data);
 
 	grad_adjoint(data->N, data->dims, data->flags, dst, src);
 }
 
 static void grad_op_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct grad_s* data = CAST_DOWN(grad_s, _data);
+	const auto data = CAST_DOWN(grad_s, _data);
 
 	complex float* tmp = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, dst);
 
@@ -136,7 +136,7 @@ static void grad_op_normal(const linop_data_t* _data, complex float* dst, const 
 
 static void grad_op_free(const linop_data_t* _data)
 {
-	const struct grad_s* data = CAST_DOWN(grad_s, _data);
+	const auto data = CAST_DOWN(grad_s, _data);
 
 	xfree(data->dims);
 	xfree(data);

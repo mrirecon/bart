@@ -1,11 +1,11 @@
 /* Copyright 2014-2018. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014-2016, 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 
  *
  *
@@ -79,7 +79,7 @@ static DEF_TYPEID(admm_normaleq_data);
 
 static void admm_normaleq(iter_op_data* _data, float* dst, const float* src)
 {
-	struct admm_normaleq_data* data = CAST_DOWN(admm_normaleq_data, _data);
+	auto data = CAST_DOWN(admm_normaleq_data, _data);
 
 	float* tmp = data->vops->allocate(data->N);
 
@@ -127,7 +127,7 @@ static DEF_TYPEID(cg_xupdate_s);
 
 static void cg_xupdate(iter_op_data* _data, float rho, float* x, const float* rhs)
 {
-	struct cg_xupdate_s* data = CAST_DOWN(cg_xupdate_s, _data);
+	auto data = CAST_DOWN(cg_xupdate_s, _data);
 	assert(data->ndata->rho == rho);
 
 	data->ndata->nr_invokes--;	// undo counting in admm

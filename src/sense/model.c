@@ -1,10 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <uecker@eecs.berkeley.edu>
  *
  *
@@ -105,7 +105,7 @@ static const complex float* get_sens(const struct maps_data* data, bool gpu)
 
 static void maps_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct maps_data* data = CAST_DOWN(maps_data, _data);
+	const auto data = CAST_DOWN(maps_data, _data);
 #ifdef USE_CUDA
 	const complex float* sens = get_sens(data, cuda_ondevice(src));
 #else
@@ -118,7 +118,7 @@ static void maps_apply(const linop_data_t* _data, complex float* dst, const comp
 
 static void maps_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct maps_data* data = CAST_DOWN(maps_data, _data);
+	const auto data = CAST_DOWN(maps_data, _data);
 #ifdef USE_CUDA
 	const complex float* sens = get_sens(data, cuda_ondevice(src));
 #else
@@ -144,7 +144,7 @@ static void maps_init_normal(struct maps_data* data)
 
 static void maps_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct maps_data* data = CAST_DOWN(maps_data, _data);
+	auto data = CAST_DOWN(maps_data, _data);
 
 	maps_init_normal(data);
 
@@ -157,7 +157,7 @@ static void maps_apply_normal(const linop_data_t* _data, complex float* dst, con
  */
 static void maps_apply_pinverse(const linop_data_t* _data, float lambda, complex float* dst, const complex float* src)
 {
-	struct maps_data* data = CAST_DOWN(maps_data, _data);
+	auto data = CAST_DOWN(maps_data, _data);
 
 	maps_init_normal(data);
 
@@ -168,17 +168,16 @@ static void maps_apply_pinverse(const linop_data_t* _data, float lambda, complex
 
 static void maps_free_data(const linop_data_t* _data)
 {
-	const struct maps_data* data = CAST_DOWN(maps_data, _data);
+	const auto data = CAST_DOWN(maps_data, _data);
 
-	md_free((void*)data->sens);
-	if (NULL != data->norm) {
-		md_free((void*)data->norm);
-	}
+	md_free(data->sens);
+
+	if (NULL != data->norm)
+		md_free(data->norm);
 	
 #ifdef USE_CUDA
-	if (NULL != data->gpu_sens) {
-		md_free((void*)data->gpu_sens);
-	}
+	if (NULL != data->gpu_sens)
+		md_free(data->gpu_sens);
 #endif
 	xfree(data);
 }
@@ -229,7 +228,7 @@ static struct maps_data* maps_create_data(const long max_dims[DIMS],
 struct linop_s* maps_create(const long max_dims[DIMS], 
 			unsigned int sens_flags, const complex float* sens)
 {
-	struct maps_data* data = maps_create_data(max_dims, sens_flags, sens);
+	auto data = maps_create_data(max_dims, sens_flags, sens);
 
 	// scale the sensitivity maps by the FFT scale factor
 	fftscale(DIMS, data->mps_dims, FFT_FLAGS, data->sens, data->sens);

@@ -158,7 +158,7 @@ static int rand_lim(int limit)
  */
 static void lrthresh_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	struct lrthresh_data_s* data = CAST_DOWN(lrthresh_data_s, _data);
+	auto data = CAST_DOWN(lrthresh_data_s, _data);
 
 	float lambda = mu * data->lambda;
 
@@ -425,7 +425,7 @@ long ls_blkdims(long blkdims[MAX_LEV][DIMS], const long idims[DIMS])
 
 float get_lrthresh_lambda(const struct operator_p_s* o)
 {
-	const struct lrthresh_data_s* data = CAST_DOWN(lrthresh_data_s, operator_p_get_data(o));
+	auto data = CAST_DOWN(lrthresh_data_s, operator_p_get_data(o));
 
 	return data->lambda;
 }

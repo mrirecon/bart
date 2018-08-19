@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -32,14 +32,14 @@ static DEF_TYPEID(rvc_s);
 
 static void rvc_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct rvc_s* data = CAST_DOWN(rvc_s, _data);
+	const auto data = CAST_DOWN(rvc_s, _data);
 
 	md_zreal(data->N, data->dims, dst, src);
 }
 
 static void rvc_free(const linop_data_t* _data)
 {
-	const struct rvc_s* data = CAST_DOWN(rvc_s, _data);
+	const auto data = CAST_DOWN(rvc_s, _data);
 
 	xfree(data->dims);
 	xfree(data);

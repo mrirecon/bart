@@ -206,7 +206,7 @@ struct nlop_s* nlop_create2(unsigned int ON, const long odims[__VLA(ON)], const 
 	struct nlop_s* op = nlop_generic_create2(1, ON, (const long(*)[])&odims[0], (const long(*)[])&ostrs[0], 1, IN, (const long(*)[])&idims[0], (const long(*)[])&istrs[0], data, NULL,
 					(nlop_fun_t[1][1]){ { deriv } }, (nlop_fun_t[1][1]){ { adjoint } }, (NULL != normal) ? (nlop_fun_t[1][1]){ { normal } } : NULL, (NULL != norm_inv) ? (nlop_p_fun_t[1][1]){ { norm_inv } } : NULL, del);
 
-	struct nlop_op_data_s* data2 = CAST_DOWN(nlop_op_data_s, operator_get_data(op->op));
+	auto data2 = CAST_DOWN(nlop_op_data_s, operator_get_data(op->op));
 
 	data2->forward1 = forward;
 

@@ -55,7 +55,7 @@ static int wrand_lim(unsigned int* state, int limit)
 
 static void wavelet_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct wavelet_s* data = CAST_DOWN(wavelet_s, _data);
+	const auto data = CAST_DOWN(wavelet_s, _data);
 
 	if (data->randshift) {
 
@@ -76,14 +76,14 @@ static void wavelet_forward(const linop_data_t* _data, complex float* dst, const
 
 static void wavelet_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct wavelet_s* data = CAST_DOWN(wavelet_s, _data);
+	const auto data = CAST_DOWN(wavelet_s, _data);
 
 	iwt2(data->N, data->flags, data->shifts, data->idims, data->istr, dst, data->odims, data->ostr, src, data->minsize, 4, wavelet_dau2);
 }
 
 static void wavelet_del(const linop_data_t* _data)
 {
-	const struct wavelet_s* data = CAST_DOWN(wavelet_s, _data);
+	const auto data = CAST_DOWN(wavelet_s, _data);
 
 	xfree(data->odims);
 	xfree(data->ostr);

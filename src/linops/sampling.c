@@ -1,10 +1,10 @@
 /* Copyright 2014,2017. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
  
@@ -62,7 +62,7 @@ static const complex float* get_pat(const struct sampling_data_s* data, bool gpu
 
 static void sampling_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct sampling_data_s* data = CAST_DOWN(sampling_data_s, _data);
+	const auto data = CAST_DOWN(sampling_data_s, _data);
 
 #ifdef USE_CUDA
 	const complex float* pattern = get_pat(data, cuda_ondevice(src));
@@ -75,7 +75,7 @@ static void sampling_apply(const linop_data_t* _data, complex float* dst, const 
 
 static void sampling_free(const linop_data_t* _data)
 {
-	const struct sampling_data_s* data = CAST_DOWN(sampling_data_s, _data);
+	const auto data = CAST_DOWN(sampling_data_s, _data);
 
 #ifdef USE_CUDA
 	if (NULL != data->gpu_pattern) {

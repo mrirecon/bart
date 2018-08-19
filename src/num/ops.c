@@ -340,21 +340,21 @@ static DEF_TYPEID(op_p_data_s);
 
 static void op_p_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct op_p_data_s* data = CAST_DOWN(op_p_data_s, _data);
+	const auto data = CAST_DOWN(op_p_data_s, _data);
 	assert(3 == N);
 	data->apply(data->data, *((float*)args[0]), args[1], args[2]);
 }
 
 static void op_p_del(const operator_data_t* _data)
 {
-	const struct op_p_data_s* data = CAST_DOWN(op_p_data_s, _data);
+	const auto data = CAST_DOWN(op_p_data_s, _data);
 	data->del(data->data);
 	xfree(data);
 }
 
 operator_data_t* operator_p_get_data(const struct operator_p_s* _data)
 {
-	const struct op_p_data_s* data = CAST_DOWN(op_p_data_s, operator_get_data(&_data->op));
+	const auto data = CAST_DOWN(op_p_data_s, operator_get_data(&_data->op));
 	return data->data;
 }
 
@@ -436,7 +436,7 @@ static DEF_TYPEID(identity_s);
 
 static void identity_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-        const struct identity_s* d = CAST_DOWN(identity_s, _data);
+        const auto d = CAST_DOWN(identity_s, _data);
 	assert(2 == N);
         md_copy2(d->domain->N, d->domain->dims, d->codomain->strs, args[0], d->domain->strs, args[1], d->domain->size);
 }
@@ -444,7 +444,7 @@ static void identity_apply(const operator_data_t* _data, unsigned int N, void* a
 
 static void identity_free(const operator_data_t* _data)
 {
-        const struct identity_s* d = CAST_DOWN(identity_s, _data);
+        const auto d = CAST_DOWN(identity_s, _data);
         iovec_free(d->domain);
         iovec_free(d->codomain);
 	xfree(d);
@@ -625,7 +625,7 @@ static DEF_TYPEID(operator_stack_s);
 
 static void stack_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct operator_stack_s* data = CAST_DOWN(operator_stack_s, _data);
+	const auto data = CAST_DOWN(operator_stack_s, _data);
 	assert(2 == N);
 
 	operator_apply_unchecked(data->a, args[0], args[1]);
@@ -634,7 +634,7 @@ static void stack_apply(const operator_data_t* _data, unsigned int N, void* args
 
 static void stack_free(const operator_data_t* _data)
 {
-	const struct operator_stack_s* data = CAST_DOWN(operator_stack_s, _data);
+	const auto data = CAST_DOWN(operator_stack_s, _data);
 
 	operator_free(data->a);
 	operator_free(data->b);
@@ -774,7 +774,7 @@ static DEF_TYPEID(op_bind_s);
 
 static void op_bind_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct op_bind_s* data = CAST_DOWN(op_bind_s, _data);
+	const auto data = CAST_DOWN(op_bind_s, _data);
 	assert(data->D == N + 1);
 
 	void* n_args[N + 1];
@@ -794,7 +794,7 @@ static void op_bind_apply(const operator_data_t* _data, unsigned int N, void* ar
 
 static void op_bind_del(const operator_data_t* _data)
 {
-	const struct op_bind_s* data = CAST_DOWN(op_bind_s, _data);
+	const auto data = CAST_DOWN(op_bind_s, _data);
 	operator_free(data->op);
 }
 
@@ -867,7 +867,7 @@ static DEF_TYPEID(op_loop_s);
 
 static void op_loop_del(const operator_data_t* _data)
 {
-	const struct op_loop_s* data = CAST_DOWN(op_loop_s, _data);
+	const auto data = CAST_DOWN(op_loop_s, _data);
 	operator_free(data->op);
 
 	for (unsigned int i = 0; i < data->N; i++) {
@@ -884,7 +884,7 @@ static void op_loop_del(const operator_data_t* _data)
 
 static void op_loop_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct op_loop_s* data = CAST_DOWN(op_loop_s, _data);
+	const auto data = CAST_DOWN(op_loop_s, _data);
 	assert(N == data->N);
 
 	if (data->gpu) {
@@ -1028,7 +1028,7 @@ static DEF_TYPEID(copy_data_s);
 
 static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	const struct copy_data_s* data = CAST_DOWN(copy_data_s, _data);
+	const auto data = CAST_DOWN(copy_data_s, _data);
 	const struct operator_s* op = data->op;
 	void* ptr[N];
 
@@ -1059,7 +1059,7 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 
 static void copy_del(const operator_data_t* _data)
 {
-	const struct copy_data_s* data = CAST_DOWN(copy_data_s, _data);
+	const auto data = CAST_DOWN(copy_data_s, _data);
 
 	operator_free(data->op);
 
@@ -1130,7 +1130,7 @@ omp_lock_t gpulock[MAX_CUDA_DEVICES];
 static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
 #if defined(USE_CUDA) && defined(_OPENMP)
-	const struct operator_s* op = CAST_DOWN(gpu_data_s, _data)->op;
+	const auto op = CAST_DOWN(gpu_data_s, _data)->op;
 	void* gpu_ptr[N];
 
 	assert(N == operator_nr_args(op));
@@ -1176,7 +1176,7 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 static void gpuwrp_del(const operator_data_t* _data)
 {
-	const struct gpu_data_s* data = CAST_DOWN(gpu_data_s, _data);
+	const auto data = CAST_DOWN(gpu_data_s, _data);
 
 	operator_free(data->op);
 

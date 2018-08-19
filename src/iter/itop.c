@@ -1,10 +1,10 @@
 /* Copyright 2017. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016,2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -42,15 +42,15 @@ struct itop_s {
 
 	const struct operator_p_s** prox_funs;
 	const struct linop_s** prox_linops;
-
 };
 
 static DEF_TYPEID(itop_s);
 
+
 static void itop_apply(const operator_data_t* _data, unsigned int N, void* args[static N])
 {
 	assert(2 == N);
-	const struct itop_s* data = CAST_DOWN(itop_s, _data);
+	const auto data = CAST_DOWN(itop_s, _data);
 
 	if (NULL == data->init) {
 
@@ -67,7 +67,7 @@ static void itop_apply(const operator_data_t* _data, unsigned int N, void* args[
 
 static void itop_del(const operator_data_t* _data)
 {
-	const struct itop_s* data = CAST_DOWN(itop_s, _data);
+	auto data = CAST_DOWN(itop_s, _data);
 
 	iovec_free(data->iov);
 	operator_free(data->op);
@@ -112,9 +112,11 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 
 		assert(0 < num_funs);
 		iov = linop_domain(prox_linops[0]);
-	}
-	else
+
+	} else {
+
 		iov = operator_domain(op);
+	}
 
 	data->iconf = iconf;
 	data->italgo = italgo;
@@ -131,6 +133,7 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 
 		float* init2 = md_alloc(iov->N, iov->dims, iov->size);
 		md_copy(iov->N, iov->dims, init2, init, iov->size);
+
 		data->init = init2;
 	}
 

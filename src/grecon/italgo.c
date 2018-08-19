@@ -220,7 +220,7 @@ void italgo_config_free(struct iter it)
 {
 	if (iter2_call_iter == it.italgo) {
 
-		struct iter_call_s* id = CAST_DOWN(iter_call_s, it.iconf);
+		auto id = CAST_DOWN(iter_call_s, it.iconf);
 		xfree(id->_conf);
 	}
 

@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2015-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -51,7 +51,7 @@ struct cdiag_s {
 
 static void cdiag_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct cdiag_s* data = CAST_DOWN(cdiag_s, _data);
+	const auto data = CAST_DOWN(cdiag_s, _data);
 
 	const complex float* diag = data->diag;
 #ifdef USE_CUDA
@@ -68,7 +68,7 @@ static void cdiag_apply(const linop_data_t* _data, complex float* dst, const com
 
 static void cdiag_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct cdiag_s* data = CAST_DOWN(cdiag_s, _data);
+	const auto data = CAST_DOWN(cdiag_s, _data);
 
 	const complex float* diag = data->diag;
 #ifdef USE_CUDA
@@ -91,7 +91,7 @@ static void cdiag_normal(const linop_data_t* _data, complex float* dst, const co
 
 static void cdiag_free(const linop_data_t* _data)
 {
-	const struct cdiag_s* data = CAST_DOWN(cdiag_s, _data);
+	const auto data = CAST_DOWN(cdiag_s, _data);
 
 #ifdef USE_CUDA
 	md_free(data->gpu_diag);
@@ -177,14 +177,15 @@ static DEF_TYPEID(identity_data_s);
 
 static void identity_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct iovec_s* domain = CAST_DOWN(identity_data_s, _data)->domain;
+	const auto data = CAST_DOWN(identity_data_s, _data);
+	const struct iovec_s* domain = data->domain;
 
 	md_copy2(domain->N, domain->dims, domain->strs, dst, domain->strs, src, CFL_SIZE);
 }
 
 static void identity_free(const linop_data_t* _data)
 {	
-	const struct identity_data_s* data = CAST_DOWN(identity_data_s, _data);
+	const auto data = CAST_DOWN(identity_data_s, _data);
 
 	iovec_free(data->domain);
 
@@ -220,21 +221,21 @@ static DEF_TYPEID(resize_op_s);
 
 static void resize_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct resize_op_s* data = CAST_DOWN(resize_op_s, _data);
+	const auto data = CAST_DOWN(resize_op_s, _data);
 
 	md_resize_center(data->N, data->out_dims, dst, data->in_dims, src, CFL_SIZE);
 }
 
 static void resize_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct resize_op_s* data = CAST_DOWN(resize_op_s, _data);
+	const auto data = CAST_DOWN(resize_op_s, _data);
 
 	md_resize_center(data->N, data->in_dims, dst, data->out_dims, src, CFL_SIZE);
 }
 
 static void resize_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const struct resize_op_s* data = CAST_DOWN(resize_op_s, _data);
+	const auto data = CAST_DOWN(resize_op_s, _data);
 
 	complex float* tmp = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
 
@@ -246,7 +247,7 @@ static void resize_normal(const linop_data_t* _data, complex float* dst, const c
 
 static void resize_free(const linop_data_t* _data)
 {
-	const struct resize_op_s* data = CAST_DOWN(resize_op_s, _data);
+	const auto data = CAST_DOWN(resize_op_s, _data);
 
 	xfree(data->out_dims);
 	xfree(data->in_dims);
@@ -306,7 +307,7 @@ static DEF_TYPEID(operator_matrix_s);
 
 static void linop_matrix_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
+	auto data = CAST_DOWN(operator_matrix_s, _data);
 	const complex float* mat = data->mat;
 
 #ifdef USE_CUDA
@@ -324,7 +325,7 @@ static void linop_matrix_apply(const linop_data_t* _data, complex float* dst, co
 
 static void linop_matrix_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
+	auto data = CAST_DOWN(operator_matrix_s, _data);
 	const complex float* mat = data->mat;
 
 #ifdef USE_CUDA
@@ -342,7 +343,7 @@ static void linop_matrix_apply_adjoint(const linop_data_t* _data, complex float*
 
 static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
+	auto data = CAST_DOWN(operator_matrix_s, _data);
 
 	if (NULL == data->mat_gram) {
 
@@ -371,7 +372,7 @@ static void linop_matrix_apply_normal(const linop_data_t* _data, complex float* 
 
 static void linop_matrix_del(const linop_data_t* _data)
 {
-	const struct operator_matrix_s* data = CAST_DOWN(operator_matrix_s, _data);
+	auto data = CAST_DOWN(operator_matrix_s, _data);
 
 	xfree(data->out_dims);
 	xfree(data->mat_dims);
@@ -619,8 +620,8 @@ struct linop_s* linop_matrix_create(unsigned int N, const long out_dims[N], cons
  */
 struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s* b)
 {
-	const struct operator_matrix_s* a_data = CAST_DOWN(operator_matrix_s, linop_get_data(a));
-	const struct operator_matrix_s* b_data = CAST_DOWN(operator_matrix_s, linop_get_data(b));
+	const auto a_data = CAST_DOWN(operator_matrix_s, linop_get_data(a));
+	const auto b_data = CAST_DOWN(operator_matrix_s, linop_get_data(b));
 
 	// check compatibility
 	assert(linop_codomain(a)->N == linop_domain(b)->N);
@@ -726,7 +727,7 @@ static DEF_TYPEID(fft_linop_s);
 
 static void fft_linop_apply(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct fft_linop_s* data = CAST_DOWN(fft_linop_s, _data);
+	const auto data = CAST_DOWN(fft_linop_s, _data);
 
 	if (in != out)
 		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
@@ -736,7 +737,7 @@ static void fft_linop_apply(const linop_data_t* _data, complex float* out, const
 
 static void fft_linop_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct fft_linop_s* data = CAST_DOWN(fft_linop_s, _data);
+	const auto data = CAST_DOWN(fft_linop_s, _data);
 
 	if (in != out)
 		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
@@ -746,7 +747,7 @@ static void fft_linop_adjoint(const linop_data_t* _data, complex float* out, con
 
 static void fft_linop_free(const linop_data_t* _data)
 {
-	const struct fft_linop_s* data = CAST_DOWN(fft_linop_s, _data);
+	const auto data = CAST_DOWN(fft_linop_s, _data);
 
 	fft_free(data->frw);
 	fft_free(data->adj);
@@ -759,7 +760,7 @@ static void fft_linop_free(const linop_data_t* _data)
 
 static void fft_linop_normal(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct fft_linop_s* data = CAST_DOWN(fft_linop_s, _data);
+	const auto data = CAST_DOWN(fft_linop_s, _data);
 
 	if (data->center)
 		md_copy(data->N, data->dims, out, in, CFL_SIZE);
@@ -896,7 +897,7 @@ static DEF_TYPEID(linop_cdf97_s);
 
 static void linop_cdf97_apply(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct linop_cdf97_s* data = CAST_DOWN(linop_cdf97_s, _data);
+	const auto data = CAST_DOWN(linop_cdf97_s, _data);
 
 	md_copy(data->N, data->dims, out, in, CFL_SIZE);
 	md_cdf97z(data->N, data->dims, data->flags, out);
@@ -904,7 +905,7 @@ static void linop_cdf97_apply(const linop_data_t* _data, complex float* out, con
 
 static void linop_cdf97_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct linop_cdf97_s* data = CAST_DOWN(linop_cdf97_s, _data);
+	const auto data = CAST_DOWN(linop_cdf97_s, _data);
 
 	md_copy(data->N, data->dims, out, in, CFL_SIZE);
 	md_icdf97z(data->N, data->dims, data->flags, out);
@@ -912,14 +913,14 @@ static void linop_cdf97_adjoint(const linop_data_t* _data, complex float* out, c
 
 static void linop_cdf97_normal(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct linop_cdf97_s* data = CAST_DOWN(linop_cdf97_s, _data);
+	const auto data = CAST_DOWN(linop_cdf97_s, _data);
 
 	md_copy(data->N, data->dims, out, in, CFL_SIZE);
 }
 
 static void linop_cdf97_free(const linop_data_t* _data)
 {
-	const struct linop_cdf97_s* data = CAST_DOWN(linop_cdf97_s, _data);
+	const auto data = CAST_DOWN(linop_cdf97_s, _data);
 
 	xfree(data->dims);
 
@@ -963,21 +964,21 @@ static DEF_TYPEID(conv_data_s);
 
 static void linop_conv_forward(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	struct conv_data_s* data = CAST_DOWN(conv_data_s, _data);
+	auto data = CAST_DOWN(conv_data_s, _data);
 
 	conv_exec(data->plan, out, in);
 }
 
 static void linop_conv_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	struct conv_data_s* data = CAST_DOWN(conv_data_s, _data);
+	auto data = CAST_DOWN(conv_data_s, _data);
 
 	conv_adjoint(data->plan, out, in);
 }
 
 static void linop_conv_free(const linop_data_t* _data)
 {
-	struct conv_data_s* data = CAST_DOWN(conv_data_s, _data);
+	auto data = CAST_DOWN(conv_data_s, _data);
 
 	conv_free(data->plan);
 

@@ -1,10 +1,11 @@
 /* Copyright 2013-2018. The Regents of the University of California.
  * Copyright 2017. University of Oxford.
+ * Copyright 2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012, 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2014, 2018 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014, 2017-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
@@ -185,7 +186,7 @@ void iter_landweber(iter_conf* _conf,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
-	struct iter_landweber_conf* conf = CAST_DOWN(iter_landweber_conf, _conf);
+	auto conf = CAST_DOWN(iter_landweber_conf, _conf);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
@@ -244,7 +245,7 @@ void iter_call_iter2(iter_conf* _conf,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
-	struct iter2_call_s* it = CAST_DOWN(iter2_call_s, _conf);
+	auto it = CAST_DOWN(iter2_call_s, _conf);
 
 	it->fun(it->_conf, normaleq_op, (NULL == thresh_prox) ? 1 : 0, &thresh_prox, NULL, NULL, NULL,
 		size, image, image_adj, monitor);

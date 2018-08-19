@@ -50,7 +50,7 @@ static DEF_TYPEID(shared_data_s);
 
 static void shared_del(const operator_data_t* _data)
 {
-	struct shared_data_s* data = CAST_DOWN(shared_data_s, _data);
+	auto data = CAST_DOWN(shared_data_s, _data);
 
 	shared_ptr_destroy(&data->sptr);
 	
@@ -59,7 +59,7 @@ static void shared_del(const operator_data_t* _data)
 
 static void shared_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
-	struct shared_data_s* data = CAST_DOWN(shared_data_s, _data);
+	auto data = CAST_DOWN(shared_data_s, _data);
 
 	assert(2 == N);
 	debug_trace("ENTER %p\n", data->u.apply);
@@ -69,7 +69,7 @@ static void shared_apply(const operator_data_t* _data, unsigned int N, void* arg
 
 static void shared_apply_p(const operator_data_t* _data, float lambda, complex float* dst, const complex float* src)
 {
-	struct shared_data_s* data = CAST_DOWN(shared_data_s, _data);
+	auto data = CAST_DOWN(shared_data_s, _data);
 
 	debug_trace("ENTER %p\n", data->u.apply_p);
 	data->u.apply_p(data->data, lambda, dst, src);
@@ -79,7 +79,7 @@ static void shared_apply_p(const operator_data_t* _data, float lambda, complex f
 
 static void sptr_del(const struct shared_ptr_s* p)
 {
-	struct shared_data_s* data = CONTAINER_OF(p, struct shared_data_s, sptr);
+	auto data = CONTAINER_OF(p, struct shared_data_s, sptr);
 
 	data->del(data->data);
 }
@@ -531,17 +531,14 @@ static void plus_free(const linop_data_t* _data)
 
 struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b)
 {
-
 #if 1
 	// detect null operations and just clone
 
-	if (operator_zero_or_null_p(a->forward)) {
+	if (operator_zero_or_null_p(a->forward))
+		return (struct linop_s*)linop_clone(b);
 
-		return (struct linop_s*) linop_clone(b);
-	} else if (operator_zero_or_null_p(b->forward)) {
-
-		return (struct linop_s*) linop_clone(a);
-	}
+	if (operator_zero_or_null_p(b->forward))
+		return (struct linop_s*)linop_clone(a);
 #endif
 
 	auto bdo = linop_domain(b);

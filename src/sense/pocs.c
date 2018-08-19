@@ -68,7 +68,7 @@ static DEF_TYPEID(data);
 
 static void xupdate_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	const struct data* data = CAST_DOWN(data, _data);
+	const auto data = CAST_DOWN(data, _data);
 
 	UNUSED(mu);
 	md_zsmul(DIMS, data->dims_ksp, dst, src, 1. / (data->alpha == 0 ? 2. : 3.));
@@ -98,7 +98,7 @@ static void robust_consistency(float lambda, const long dims[DIMS], complex floa
 
 static void sparsity_proj_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
-	const struct data* data = CAST_DOWN(data, _data);
+	const auto data = CAST_DOWN(data, _data);
 
 	const long* dims = data->dims_ksp;
 
@@ -126,7 +126,7 @@ static void sparsity_proj_apply(const operator_data_t* _data, float mu, complex 
 static void data_consistency_proj_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
 	UNUSED(mu);
-	const struct data* data = CAST_DOWN(data, _data);
+	const auto data = CAST_DOWN(data, _data);
 
 	if (-1. != data->lambda)
 		robust_consistency(data->lambda, data->dims_ksp, dst, data->pattern, data->kspace);
@@ -139,7 +139,7 @@ static void sense_proj_apply(const operator_data_t* _data, float mu, complex flo
 {
 	UNUSED(mu);
 
-	const struct data* data = CAST_DOWN(data, _data);
+	const auto data = CAST_DOWN(data, _data);
 
 	// assumes normalized sensitivities
 
@@ -156,7 +156,7 @@ static void proj_del(const operator_data_t* _data)
 
 static float compute_norm(const void* _data, const float* ksp)
 {
-	const struct data* data = _data;
+	const struct data* data = _data;	// FIXME: CAST?
 
 	float norm = md_znorm(DIMS, data->dims_ksp, (complex float*)ksp);
 	//assert(isnormal(norm));
@@ -223,6 +223,7 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 	const struct operator_p_s* data_consistency_proj = operator_p_create(DIMS, dims_ksp, DIMS, dims_ksp, CAST_UP(&data), data_consistency_proj_apply, proj_del);
 	
 	const struct operator_p_s* sparsity_proj = NULL;
+
 	if (NULL != thresh_op)
 		sparsity_proj = operator_p_create(DIMS, dims_ksp, DIMS, dims_ksp, CAST_UP(&data), sparsity_proj_apply, proj_del);
 	else

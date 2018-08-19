@@ -1,9 +1,9 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014      Frank Ong <frankong@berkeley.edu>
  */
 
@@ -21,6 +21,7 @@
 
 #include "misc/debug.h"
 #include "misc/misc.h"
+#include "misc/types.h"
 
 #include "iter/iter.h"
 #include "iter/lsqr.h"
@@ -102,7 +103,7 @@ void lad(	unsigned int N, const struct lad_conf* conf,
 
 struct lad_s {
 
-	operator_data_t base;
+	INTERFACE(operator_data_t);
 
 	const struct lad_conf* conf;
 	italgo_fun2_t italgo;
@@ -113,10 +114,12 @@ struct lad_s {
 	const struct linop_s** prox_linops;
 };
 
+DEF_TYPEID(lad_s);
+
 static void lad_apply(const operator_data_t* _data, unsigned int N, void* args[static N])
 {
 	assert(2 == N);
-	const struct lad_s* data = CONTAINER_OF(_data, const struct lad_s, base);
+	const auto data = CAST_DOWN(lad_s, _data);
 
 	const struct iovec_s* dom_iov = operator_domain(data->model_op->forward);
 	const struct iovec_s* cod_iov = operator_codomain(data->model_op->forward);
@@ -128,7 +131,7 @@ static void lad_apply(const operator_data_t* _data, unsigned int N, void* args[s
 
 static void lad_del(const operator_data_t* _data)
 {
-	const struct lad_s* data = CONTAINER_OF(_data, const struct lad_s, base);
+	const auto data = CAST_DOWN(lad_s, _data);
 
 	linop_free(data->model_op);
 
@@ -184,7 +187,7 @@ const struct operator_s* lad2_create(const struct lad_conf* conf,
 	}
 
 	return operator_create(cod_iov->N, cod_iov->dims, dom_iov->N, dom_iov->dims,
-				&PTR_PASS(data)->base, lad_apply, lad_del);
+				CAST_UP(PTR_PASS(data)), lad_apply, lad_del);
 }
 
 

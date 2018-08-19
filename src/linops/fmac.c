@@ -1,9 +1,9 @@
-/* Copyright 2016. Martin Uecker.
+/* Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <string.h>
@@ -76,12 +76,11 @@ static const complex float* get_tensor(const struct fmac_data* data, bool gpu)
 
 static void fmac_free_data(const linop_data_t* _data)
 {
-        struct fmac_data* data = CAST_DOWN(fmac_data, _data);
+        auto data = CAST_DOWN(fmac_data, _data);
 
 #ifdef USE_CUDA
-	if (NULL != data->gpu_tensor) {
+	if (NULL != data->gpu_tensor)
 		md_free((void*)data->gpu_tensor);
-	}
 #endif
 
 	xfree(data->dims);
@@ -98,7 +97,7 @@ static void fmac_free_data(const linop_data_t* _data)
 
 static void fmac_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        struct fmac_data* data = CAST_DOWN(fmac_data, _data);
+        auto data = CAST_DOWN(fmac_data, _data);
 
 #ifdef USE_CUDA
 	const complex float* tensor = get_tensor(data, cuda_ondevice(src));
@@ -112,7 +111,7 @@ static void fmac_apply(const linop_data_t* _data, complex float* dst, const comp
 
 static void fmac_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        struct fmac_data* data = CAST_DOWN(fmac_data, _data);
+        auto data = CAST_DOWN(fmac_data, _data);
 
 #ifdef USE_CUDA
 	const complex float* tensor = get_tensor(data, cuda_ondevice(src));

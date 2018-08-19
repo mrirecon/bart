@@ -214,7 +214,7 @@ void md_zcumsum2(unsigned int D, const long dims[D], unsigned int flags, const l
  */
 static void fdiff_apply(const linop_data_t* _data, complex float* optr, const complex float* iptr)
 {
-	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
+	const auto data = CAST_DOWN(fdiff_s, _data);
 
 	complex float* tmp = md_alloc_sameplace(data->D, data->dims, CFL_SIZE, optr);
 	md_zfinitediff_core2(data->D, data->dims, data->flags, data->snip, tmp, data->str, optr, data->str, iptr);
@@ -234,7 +234,7 @@ static void fdiff_apply(const linop_data_t* _data, complex float* optr, const co
  */
 static void fdiff_apply_adjoint(const linop_data_t* _data, complex float* optr, const complex float* iptr)
 {
-	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
+	const auto data = CAST_DOWN(fdiff_s, _data);
 
 	md_copy2(data->D, data->dims, data->str, optr, data->str, iptr, CFL_SIZE);
 
@@ -272,7 +272,7 @@ static void fdiff_apply_adjoint(const linop_data_t* _data, complex float* optr, 
  */
 static void cumsum_apply(const linop_data_t* _data, float lambda, complex float* optr, const complex float* iptr)
 {
-	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
+	const auto data = CAST_DOWN(fdiff_s, _data);
 
 	assert(0. == lambda);
 
@@ -287,7 +287,7 @@ static void cumsum_apply(const linop_data_t* _data, float lambda, complex float*
 
 static void finite_diff_del(const linop_data_t* _data)
 {
-	const struct fdiff_s* data = CAST_DOWN(fdiff_s, _data);
+	const auto data = CAST_DOWN(fdiff_s, _data);
 
 	xfree(data->dims);
 	xfree(data->str);
@@ -328,8 +328,7 @@ extern const struct linop_s* linop_finitediff_create(unsigned int D, const long 
 
 void fd_proj_noninc(const struct linop_s* o, complex float* optr, const complex float* iptr)
 {
-
-	struct fdiff_s* data = (struct fdiff_s*)linop_get_data(o);
+	struct fdiff_s* data = (struct fdiff_s*)linop_get_data(o);	// FIXME: CAST?
 	
 	dump_cfl("impre", data->D, data->dims, iptr);
 
@@ -403,8 +402,7 @@ static void zfinitediff_apply(const linop_data_t* _data,
 	// else
 	//     out = in(..,1:(end-1),..) - in(..,2:end,..)
 
-	//printf("zfinitediff_apply\n");
-	const struct zfinitediff_data* data = CAST_DOWN(zfinitediff_data, _data);
+	const auto data = CAST_DOWN(zfinitediff_data, _data);
 
 
 	unsigned long d = data->dim_diff;
@@ -460,8 +458,7 @@ static void zfinitediff_apply(const linop_data_t* _data,
 static void zfinitediff_adjoint(const linop_data_t* _data,
 			  complex float* optr, const complex float* iptr)
 {
-	//printf("zfinitediff_adjoint\n");
-	const struct zfinitediff_data* data = CAST_DOWN(zfinitediff_data, _data);
+	const auto data = CAST_DOWN(zfinitediff_data, _data);
 
 	// if (docircshift)
 	//     out(..,2:end,..) = in(..,2:end,..) - in(..,1:(end-1),..)
@@ -537,7 +534,7 @@ static void zfinitediff_adjoint(const linop_data_t* _data,
 static void zfinitediff_normal(const linop_data_t* _data,
 			complex float* optr, const complex float* iptr)
 {
-	const struct zfinitediff_data* data = CAST_DOWN(zfinitediff_data, _data);
+	const auto data = CAST_DOWN(zfinitediff_data, _data);
 
 	// Turns out that this is faster, but this requires extra memory.
 	complex float* tmp = md_alloc_sameplace(data->D, data->dims_in, CFL_SIZE, iptr);
@@ -628,7 +625,7 @@ static void zfinitediff_normal(const linop_data_t* _data,
 
 static void zfinitediff_del(const linop_data_t* _data)
 {
-	const struct zfinitediff_data* data = CAST_DOWN(zfinitediff_data, _data);
+	const auto data = CAST_DOWN(zfinitediff_data, _data);
 
 	xfree(data->dims_in);
 	xfree(data->strides_in);

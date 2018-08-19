@@ -1,10 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2011-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  *
  * 
@@ -250,7 +250,7 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 {
 	complex float* dst = args[0];
 	const complex float* src = args[1];
-	const struct fft_plan_s* plan = CAST_DOWN(fft_plan_s, _plan);
+	const auto plan = CAST_DOWN(fft_plan_s, _plan);
 
 	assert(2 == N);
 
@@ -274,7 +274,7 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 
 static void fft_free_plan(const operator_data_t* _data)
 {
-	const struct fft_plan_s* plan = CAST_DOWN(fft_plan_s, _data);
+	const auto plan = CAST_DOWN(fft_plan_s, _data);
 
 	fftwf_destroy_plan(plan->fftw);
 #ifdef	USE_CUDA

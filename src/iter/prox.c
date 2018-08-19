@@ -1,11 +1,11 @@
 /* Copyright 2014-2017. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2014-2017	Jon Tamir <jtamir@eecs.berkeley.edu>
- * 2016		Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016,2018	Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -60,6 +60,8 @@ struct prox_normaleq_data {
 
 static DEF_TYPEID(prox_normaleq_data);
 
+
+
 /**
  * Proximal function for f(z) = 0.5 || y - A z ||_2^2.
  * Solution is (A^H A + (1/mu) I)z = A^H y + (1/mu)(x_plus_u)
@@ -71,7 +73,7 @@ static DEF_TYPEID(prox_normaleq_data);
  */
 static void prox_normaleq_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
-	struct prox_normaleq_data* pdata = CAST_DOWN(prox_normaleq_data, prox_data);
+	auto pdata = CAST_DOWN(prox_normaleq_data, prox_data);
 
 	if (0 == mu) {
 
@@ -107,7 +109,7 @@ static void prox_normaleq_apply(const operator_data_t* _data, float mu, complex 
 
 static void prox_normaleq_del(const operator_data_t* _data)
 {
-	struct prox_normaleq_data* pdata = CAST_DOWN(prox_normaleq_data, _data);
+	auto pdata = CAST_DOWN(prox_normaleq_data, _data);
 
 	xfree(pdata->cgconf);
 	md_free(pdata->adj);
@@ -169,7 +171,7 @@ static DEF_TYPEID(prox_leastsquares_data);
  */
 static void prox_leastsquares_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
-	struct prox_leastsquares_data* pdata = CAST_DOWN(prox_leastsquares_data, prox_data);
+	auto pdata = CAST_DOWN(prox_leastsquares_data, prox_data);
 
 	md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
 
@@ -235,7 +237,7 @@ static DEF_TYPEID(prox_l2norm_data);
  */
 static void prox_l2norm_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
-	struct prox_l2norm_data* pdata = CAST_DOWN(prox_l2norm_data, prox_data);
+	auto pdata = CAST_DOWN(prox_l2norm_data, prox_data);
 
 	md_clear(1, MD_DIMS(pdata->size), z, FL_SIZE);
 
@@ -324,7 +326,7 @@ static const float* get_y(const struct prox_l2ball_data* data, bool gpu)
 static void prox_l2ball_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
 	UNUSED(mu);
-	struct prox_l2ball_data* pdata = CAST_DOWN(prox_l2ball_data, prox_data);
+	auto pdata = CAST_DOWN(prox_l2ball_data, prox_data);
 
 #ifdef USE_CUDA
 	const float* y = get_y(pdata, cuda_ondevice(x_plus_u));
@@ -353,11 +355,10 @@ static void prox_l2ball_apply(const operator_data_t* _data, float mu, complex fl
 
 static void prox_l2ball_del(const operator_data_t* _data)
 {
-	struct prox_l2ball_data* data = CAST_DOWN(prox_l2ball_data, _data);
+	auto data = CAST_DOWN(prox_l2ball_data, _data);
 #ifdef USE_CUDA
-	if (NULL != data->gpu_y) {
-		md_free((void*)data->gpu_y);
-	}
+	if (NULL != data->gpu_y)
+		md_free(data->gpu_y);
 #endif
 	xfree(data);
 }
@@ -449,6 +450,7 @@ struct prox_zero_data {
 
 static DEF_TYPEID(prox_zero_data);
 
+
 /**
  * Proximal function for f(z) = 0
  * Solution is z = x_plus_u
@@ -461,7 +463,7 @@ static DEF_TYPEID(prox_zero_data);
 static void prox_zero_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
 {
 	UNUSED(mu);
-	struct prox_zero_data* pdata = CAST_DOWN(prox_zero_data, prox_data);
+	auto pdata = CAST_DOWN(prox_zero_data, prox_data);
 
 	md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
 }
@@ -513,7 +515,7 @@ static DEF_TYPEID(prox_lineq_data);
 static void prox_lineq_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
 	UNUSED(mu);
-	struct prox_lineq_data* pdata = CAST_DOWN(prox_lineq_data, _data);
+	auto pdata = CAST_DOWN(prox_lineq_data, _data);
 
 	const struct linop_s* op = pdata->op;
 	linop_normal(op, linop_domain(op)->N, linop_domain(op)->dims, pdata->tmp, src);
@@ -524,7 +526,7 @@ static void prox_lineq_apply(const operator_data_t* _data, float mu, complex flo
 
 static void prox_lineq_del(const operator_data_t* _data)
 {
-	struct prox_lineq_data* pdata = CAST_DOWN(prox_lineq_data, _data);
+	auto pdata = CAST_DOWN(prox_lineq_data, _data);
 
 	md_free(pdata->adj);
 	md_free(pdata->tmp);
@@ -571,7 +573,7 @@ static DEF_TYPEID(prox_ineq_data);
 static void prox_ineq_fun(const operator_data_t* _data, float mu, float* dst, const float* src)
 {
 	UNUSED(mu);
-	struct prox_ineq_data* pdata = CAST_DOWN(prox_ineq_data, _data);
+	auto pdata = CAST_DOWN(prox_ineq_data, _data);
 
 	if (NULL == pdata->b)
 		(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, 0.);
@@ -639,10 +641,11 @@ struct prox_rvc_data {
 
 static DEF_TYPEID(prox_rvc_data);
 
+
 static void prox_rvc_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
 	UNUSED(mu);
-	struct prox_rvc_data* pdata = CAST_DOWN(prox_rvc_data, _data);
+	auto pdata = CAST_DOWN(prox_rvc_data, _data);
 
 	md_zreal(1, MD_DIMS(pdata->size), dst, src);
 }

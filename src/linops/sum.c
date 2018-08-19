@@ -81,7 +81,7 @@ static struct sum_data* sum_create_data(const long imgd_dims[DIMS])
 
 void sum_free_data(const linop_data_t* _data)
 {
-        struct sum_data* data = CAST_DOWN(sum_data, _data);
+        auto data = CAST_DOWN(sum_data, _data);
 
 	if (NULL != data->tmp)
 		md_free(data->tmp);
@@ -92,7 +92,7 @@ void sum_free_data(const linop_data_t* _data)
 
 void sum_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        struct sum_data* data = CAST_DOWN(sum_data, _data);
+        auto data = CAST_DOWN(sum_data, _data);
 
 	md_clear(DIMS, data->img_dims, dst, CFL_SIZE);
 
@@ -102,7 +102,7 @@ void sum_apply(const linop_data_t* _data, complex float* dst, const complex floa
 
 void sum_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        struct sum_data* data = CAST_DOWN(sum_data, _data);
+        auto data = CAST_DOWN(sum_data, _data);
 
 	md_clear(DIMS, data->imgd_dims, dst, CFL_SIZE);
 
@@ -112,7 +112,7 @@ void sum_apply_adjoint(const linop_data_t* _data, complex float* dst, const comp
 
 void sum_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        struct sum_data* data = CAST_DOWN(sum_data, _data);
+        auto data = CAST_DOWN(sum_data, _data);
 
 	complex float* tmp = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, dst);
 	sum_apply(_data, data->tmp, src);
@@ -129,7 +129,7 @@ void sum_apply_normal(const linop_data_t* _data, complex float* dst, const compl
  */
 void sum_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst, const complex float* src)
 {
-        struct sum_data* data = CAST_DOWN(sum_data, _data);
+        auto data = CAST_DOWN(sum_data, _data);
 
 	complex float* tmp = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, dst);
 

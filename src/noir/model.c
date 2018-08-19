@@ -269,7 +269,7 @@ void noir_back_coils(const struct linop_s* op, complex float* dst, const complex
 
 static void noir_fun(const nlop_data_t* _data, complex float* dst, const complex float* src)
 {	
-	struct noir_op_s* data = CAST_DOWN(noir_op_s, _data);
+	const auto data = CAST_DOWN(noir_op_s, _data);
 
 	long split = md_calc_size(DIMS, data->imgs_dims);
 
@@ -279,7 +279,7 @@ static void noir_fun(const nlop_data_t* _data, complex float* dst, const complex
 
 static void noir_der(const nlop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct noir_op_s* data = CAST_DOWN(noir_op_s, _data);
+	const auto data = CAST_DOWN(noir_op_s, _data);
 
 	long split = md_calc_size(DIMS, data->imgs_dims);
 #if 1
@@ -312,7 +312,7 @@ static void noir_der(const nlop_data_t* _data, complex float* dst, const complex
 
 static void noir_adj(const nlop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct noir_op_s* data = CAST_DOWN(noir_op_s, _data);
+	const auto data = CAST_DOWN(noir_op_s, _data);
 
 	long split = md_calc_size(DIMS, data->imgs_dims);
 
