@@ -517,6 +517,7 @@ void irgnm(unsigned int iter, float alpha, float redu, long N, long M,
 	vops->del(r);
 }
 
+
 /**
  * Alternating Minimzation
  *
@@ -535,19 +536,22 @@ void altmin(unsigned int iter, float alpha, float redu,
 	vops->clear(N, r);
 
 
-	float* args[1+NI];
+	float* args[1 + NI];
 	args[0] = r;
+
 	for (long i = 0; i < NI; ++i)
-		args[1+i] = x[i];
+		args[1 + i] = x[i];
 
 	for (unsigned int i = 0; i < iter; i++) {
 
 		for (unsigned int j = 0; j < NI; ++j) {
-			iter_nlop_call(op, 1+NI, args); 	// r = F x
+
+			iter_nlop_call(op, 1 + NI, args); 	// r = F x
 
 			vops->xpay(N, -1., r, y);		// r = y - F x
 
 			debug_printf(DP_DEBUG2, "Step: %u, Res: %f\n", i, vops->norm(N, r));
+
 			iter_op_p_call(min_ops[j], alpha, x[j], y);
 
 			if (NULL != callback.fun)
@@ -555,7 +559,6 @@ void altmin(unsigned int iter, float alpha, float redu,
 		}
 
 		alpha /= redu;
-
 	}
 
 	vops->del(r);
@@ -733,5 +736,4 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 	vops->del(u_old);
 	vops->del(u);
 	vops->del(u_new);
-
 }

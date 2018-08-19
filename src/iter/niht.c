@@ -1,5 +1,5 @@
 /* Copyright 2014-2016. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -10,12 +10,12 @@
  *
  *
  * Blumensath T, Davies ME. Normalized iterative hard thresholding: Guaranteed 
- * stability and performance. IEEE Journal of selected topics in signal 
- * processing. 2010 Apr;4(2):298-309.
+ * stability and performance.
+ * IEEE Journal of selected topics in signal processing. 2010;4:298-309.
  *
  * Blanchard JD, Tanner J. Performance comparisons of greedy algorithms in 
- * compressed sensing. Numerical Linear Algebra with Applications. 
- * 2015 Mar 1;22(2):254-82.
+ * compressed sensing.
+ * Numerical Linear Algebra with Applications. 2015;22:254-82.
  *
  */
 
@@ -62,12 +62,14 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 	if (!conf->do_warmstart) {  //x_0 = 0, take support from b
 
 		iter_op_p_call(thresh, 1.0, m, b);
-		vops->zmul(N/2, (complex float*)x, (complex float*)b, (complex float*)m);
+
+		vops->zmul(N / 2, (complex float*)x, (complex float*)b, (complex float*)m);
 
 	} else {  // x_0 has an initial value, take support from x
 
 		iter_op_p_call(thresh, 1.0, m, x);
-		vops->zmul(N/2, (complex float*)x, (complex float*)x, (complex float*)m);
+
+		vops->zmul(N / 2, (complex float*)x, (complex float*)x, (complex float*)m);
 	}
 	
 	for (iter = 0; iter < conf->maxiter; iter++) {
@@ -75,11 +77,12 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 		iter_monitor(monitor, vops, x);
     
 		iter_op_call(op, r, x);   // r = A x
+
 		vops->xpay(N, -1., r, b); // r = b - r = b - A x.
 
                 // calculate step size.
 		// 1. apply support x->g
-		vops->zmul(N/2, (complex float*)g, (complex float*)r, (complex float*)m);
+		vops->zmul(N / 2, (complex float*)g, (complex float*)r, (complex float*)m);
 
 		//mu = ||g_n||^2 / ||A g_n||^2
 		double num = vops->dot(N, g, g);
@@ -102,6 +105,7 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 			break;
     
 		if (fabs(rsnew - rsold) <= 1.0E-06f) { // no significant change in residual
+
 			debug_printf(DP_INFO, "\n*** rsnew - rsold =  %f **\n", fabs(rsnew - rsold) );
 			ic++;
 
@@ -112,7 +116,8 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 		vops->axpy(N, x, mu, r); // update solution: xk+1 = xk + mu rk+1
 
 		iter_op_p_call(thresh, 1.0, m, x); // apply thresholding Hs(xk+1)
-		vops->zmul(N/2, (complex float*)x, (complex float*)x, (complex float*)m);
+
+		vops->zmul(N / 2, (complex float*)x, (complex float*)x, (complex float*)m);
 		
 		rsold = rsnew; // keep residual for comparison
 	}
@@ -180,13 +185,13 @@ void niht(const struct niht_conf_s* conf, const struct niht_transop* trans,
 
 		iter_op_call(trans->forward, wx, b);
 		iter_op_p_call(thresh, 1.0, wm, wx); //produce mask by thresholding
-		vops->zmul(WN/2, (complex float*)wx, (complex float*)wx, (complex float*)wm); // apply mask
+		vops->zmul(WN / 2, (complex float*)wx, (complex float*)wx, (complex float*)wm); // apply mask
 
 	} else { // x_0 has an initial value, take support from x
 
 		iter_op_call(trans->forward, wx, x);
 		iter_op_p_call(thresh, 1.0, wm, wx);
-		vops->zmul(WN/2, (complex float*)wx, (complex float*)wx, (complex float*)wm);
+		vops->zmul(WN / 2, (complex float*)wx, (complex float*)wx, (complex float*)wm);
 	}
 
 	iter_op_call(trans->adjoint, x, wx);	
@@ -201,7 +206,9 @@ void niht(const struct niht_conf_s* conf, const struct niht_transop* trans,
 		// calculate step size.
 		// 1. apply support x->g
 		iter_op_call(trans->forward, wg, r);
-		vops->zmul(WN/2, (complex float*)wg, (complex float*)wg, (complex float*)wm);
+
+		vops->zmul(WN / 2, (complex float*)wg, (complex float*)wg, (complex float*)wm);
+
 		iter_op_call(trans->adjoint, g, wg);
 
 		// 2. mu = ||g_n||^2 / ||A g_n||^2
@@ -238,7 +245,9 @@ void niht(const struct niht_conf_s* conf, const struct niht_transop* trans,
 
 		iter_op_call(trans->forward, wx, x);
 		iter_op_p_call(thresh, 1.0, wm, wx); // apply thresholding Hs(xk+1)
-		vops->zmul(WN/2, (complex float*)wx, (complex float*)wx, (complex float*)wm);
+
+		vops->zmul(WN / 2, (complex float*)wx, (complex float*)wx, (complex float*)wm);
+
 		iter_op_call(trans->adjoint, x, wx);
 
 		rsold = rsnew; // keep residual for comparison
