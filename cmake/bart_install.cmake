@@ -68,9 +68,11 @@ configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/BARTConfig.cmake.in
 install(FILES
   ${CMAKE_CURRENT_LIST_DIR}/BARTFindBLASlib.cmake
   ${CMAKE_CURRENT_LIST_DIR}/FindATLAS.cmake
+  ${CMAKE_CURRENT_LIST_DIR}/FindCUDAlibs.cmake
   ${CMAKE_CURRENT_LIST_DIR}/FindFFTW.cmake
   ${CMAKE_CURRENT_LIST_DIR}/FindLAPACKE.cmake
   ${CMAKE_CURRENT_LIST_DIR}/FindlibFlame.cmake
+  ${CMAKE_CURRENT_LIST_DIR}/FindMatlab.cmake
   ${CMAKE_CURRENT_LIST_DIR}/FindOpenBLAS.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/BARTConfig.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/BARTConfigVersion.cmake
