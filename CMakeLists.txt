@@ -185,6 +185,11 @@ endif()
 
 ##======================================================================
 
+if(DEFINED _full_version)
+  set(BART_FULL_VERSION_STRING ${_full_version})
+else()
+  set(BART_FULL_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
+endif()
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/version.inc.in "VERSION(\@BART_FULL_VERSION_STRING\@)")
 configure_file(${CMAKE_CURRENT_BINARY_DIR}/version.inc.in ${CMAKE_CURRENT_BINARY_DIR}/version.inc @ONLY)
 
@@ -555,7 +560,7 @@ if(BART_MATLAB)
     message(STATUS "MATLAB LIBRARIES FOUND: ${MATLAB_LIBRARIES_DIR}")
     include_directories(${MATLAB_INCLUDE_DIR})
     bart_add_executable(mat2cfl ${CMAKE_CURRENT_LIST_DIR}/src/mat2cfl.c ${LOG_BACKEND_SRCS})
-    target_link_libraries(mat2cfl bartsupport ${MATLAB_MAT_LIBRARY} ${MATLAB_ENG_LIBRARY} ${MATLAB_MX_LIBRARY})
+    target_link_libraries(mat2cfl PRIVATE bartsupport ${MATLAB_MAT_LIBRARY} ${MATLAB_ENG_LIBRARY} ${MATLAB_MX_LIBRARY})
     set(BART_MATLAB_TGT mat2cfl)
   endif()
 endif()
