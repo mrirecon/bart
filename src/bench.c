@@ -282,6 +282,41 @@ static double bench_sumf(long scale)
 }
 
 
+static double bench_zmul(long scale)
+{
+	long dimsx[DIMS] = { 256, 256, 1, 1, 90 * scale, 1, 1, 1 };
+	long dimsy[DIMS] = { 256, 256, 1, 1,  1, 1, 1, 1 };
+	long dimsz[DIMS] = {   1,   1, 1, 1, 90 * scale, 1, 1, 1 };
+
+	complex float* x = md_alloc(DIMS, dimsx, CFL_SIZE);
+	complex float* y = md_alloc(DIMS, dimsy, CFL_SIZE);
+	complex float* z = md_alloc(DIMS, dimsz, CFL_SIZE);
+
+	md_gaussian_rand(DIMS, dimsy, y);
+	md_gaussian_rand(DIMS, dimsz, z);
+
+	long strsx[DIMS];
+	long strsy[DIMS];
+	long strsz[DIMS];
+
+	md_calc_strides(DIMS, strsx, dimsx, CFL_SIZE);
+	md_calc_strides(DIMS, strsy, dimsy, CFL_SIZE);
+	md_calc_strides(DIMS, strsz, dimsz, CFL_SIZE);
+
+	double tic = timestamp();
+
+	md_zmul2(DIMS, dimsx, strsx, x, strsy, y, strsz, z);
+
+	double toc = timestamp();
+
+	md_free(x);
+	md_free(y);
+	md_free(z);
+
+	return toc - tic;
+}
+
+
 static double bench_transpose(long scale)
 {
 	long dims[DIMS] = { 2000 * scale, 2000 * scale, 1, 1, 1, 1, 1, 1 };
@@ -547,6 +582,7 @@ const struct benchmark_s {
 	{ bench_sum,   		"sum (md_zaxpy)" },
 	{ bench_sum2,   	"sum (md_zaxpy), contiguous" },
 	{ bench_sumf,   	"sum (for loop)" },
+	{ bench_zmul,   	"complex mult. (md_zmul2)" },
 	{ bench_transpose,	"complex transpose" },
 	{ bench_resize,   	"complex resize" },
 	{ bench_matrix_mult,	"complex matrix multiply" },
