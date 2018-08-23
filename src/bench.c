@@ -613,11 +613,13 @@ int main_bench(int argc, char* argv[])
 {
 	bool threads = false;
 	bool scaling = false;
+	long flags = ~0l;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('T', &threads, "varying number of threads"),
 		OPT_SET('S', &scaling, "varying problem size"),
+		OPT_LONG('s', &flags, "flags", "select benchmarks"),
 	};
 
 	cmdline(&argc, argv, 0, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -638,7 +640,12 @@ int main_bench(int argc, char* argv[])
 
 	num_init();
 
+	md_clear(BENCH_DIMS, dims, out, CFL_SIZE);
+
 	do {
+		if (!(flags & (1 << pos[TESTS_IND])))
+			continue;
+
 		if (threads) {
 
 			num_set_num_threads(pos[THREADS_IND] + 1);
