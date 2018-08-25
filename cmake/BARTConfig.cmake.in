@@ -64,6 +64,18 @@ if(NOT BART_DISABLE_PNG)
   endif()
 endif()
 
+if(BART_USE_OPENMP)
+  if(CMAKE_VERSION VERSION_LESS 3.11)
+    # Actually CMake 3.9 should be enough for OpenMP::OpenMP support,
+    # however, until CMake 3.11 we might get problems with the
+    # INTERFACE_COMPILE_OPTIONS property if we are compiling with
+    # CMake's native CUDA compilation
+    find_package(BOpenMP REQUIRED) # BOpenMP is FindOpenMP.cmake from 3.12
+  else()
+    find_package(OpenMP REQUIRED)
+  endif()
+endif()
+
 if(BART_USE_NATIVE_CUDA)
   find_dependency(CUDAlibs COMPONENTS CUBLAS CUFFT)
 endif()

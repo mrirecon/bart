@@ -15,6 +15,8 @@ option(BART_MATLAB "Specify if the optional matlab programs should be built" OFF
 option(BART_NO_LAPACKE "Compile without LAPACKE installed on the system" OFF)
 option(BART_REDEFINE_PRINTF_FOR_TRACE "Replace debug_print* functions with macros for better log tracing (e.g. with external loggers)" OFF)
 
+##- TODO option(BART_SLINK "Provide SLINK support" OFF)
+
 find_package(ISMRMRD QUIET CONFIG) ## if you can find ISMRMRD by default, then default configuration is ON
 option(BART_ISMRMRD "Use external ISMRMRD package for reading/writing" ${ISMRMRD_FOUND})
 
@@ -257,7 +259,7 @@ if(USE_CUDA)
     add_definitions(-DUSE_CUDA)
     CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR}/src)
     # set(CUDA_NVCC_FLAGS "-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;-arch=sm_20;-m64;-ccbin ${CMAKE_C_COMPILER}")
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-std=c++11;-DUSE_CUDA;-Xcompiler;-fPIC;-Xcompiler;-fopenmp;-O3;${GPUARCH_FLAGS};-ccbin ${CMAKE_C_COMPILER}")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-std=c++11;-DUSE_CUDA;-Xcompiler;-fPIC;-O3;${GPUARCH_FLAGS};-ccbin ${CMAKE_C_COMPILER}")
     macro(bart_add_object_library target_name)
       add_library(${target_name} OBJECT ${ARGN})
       target_include_directories(${target_name} PRIVATE "${CUDA_INCLUDE_DIRS}")
@@ -312,30 +314,32 @@ endif()
 # ------------------------------------------------------------------------------
 
 if(USE_OPENMP)
-  find_package(OpenMP REQUIRED)
-  if (OPENMP_FOUND)
-    list(APPEND CMAKE_C_FLAGS "${OpenMP_C_FLAGS}")
-    list(APPEND CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS}")
+  if(CMAKE_VERSION VERSION_LESS 3.11)
+    # Actually CMake 3.9 should be enough for OpenMP::OpenMP support,
+    # however, until CMake 3.11 we might get problems with the
+    # INTERFACE_COMPILE_OPTIONS property if we are compiling with
+    # CMake's native CUDA compilation
+    find_package(BOpenMP REQUIRED) # BOpenMP is FindOpenMP.cmake from 3.12
+  else()
+    find_package(OpenMP REQUIRED)
+  endif()
 
-    if(USE_CUDA)
-      get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-      if(CMAKE_VERSION VERSION_LESS 3.3)
-	list (FIND languages "CXX" _index)
-	if (${_index} GREATER -1)
-	  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS}")
-	else(DEFINED CMAKE_CUDA_FLAGS)
-	  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_C_FLAGS}")
-	endif()
-      else()
-	if("CXX" IN_LIST languages)
-	  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS}")
-	else(DEFINED CMAKE_CUDA_FLAGS)
-	  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_C_FLAGS}")
-	endif()
-      endif() # CXX in languages
+  if(CMAKE_CXX_COMPILER_LOADED)
+    set(OpenMP_TGT "OpenMP::OpenMP_CXX")
+  else()
+    set(OpenMP_TGT "OpenMP::OpenMP_C")
+  endif()
+
+  if(USE_CUDA)
+    if(CMAKE_CXX_COMPILER_LOADED)
+      set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS}")
+      list(APPEND CUDA_NVCC_FLAGS "-Xcompiler=${OpenMP_CXX_FLAGS}")
+    else(DEFINED CMAKE_CUDA_FLAGS)
+      set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_C_FLAGS}")
+      list(APPEND CUDA_NVCC_FLAGS "-Xcompiler=${OpenMP_C_FLAGS}")
     endif()
-  endif() # OpenMP found
-endif() # USE_OPENMP
+  endif()
+endif()
 
 # ==============================================================================
 
