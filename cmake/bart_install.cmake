@@ -80,6 +80,14 @@ install(FILES
   COMPONENT for_embedding
   )
 
+if(CMAKE_VERSION VERSION_LESS 3.11)
+install(FILES
+  ${CMAKE_CURRENT_LIST_DIR}/FindBOpenMP.cmake
+  DESTINATION ${INSTALL_CONFIGDIR}
+  COMPONENT for_embedding
+  )
+endif()
+
 # Write a CMake file with all the targets information
 # (not for installing, but for external project to import targets from the
 #  current build tree)
