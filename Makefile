@@ -230,9 +230,9 @@ default all clean allclean distclean doc/commands.txt doxygen test utest gputest
 else
 
 
-CPPFLAGS += $(DEPFLAG) -I$(srcdir)/
-CFLAGS += -std=gnu11 -I$(srcdir)/
-CXXFLAGS += -std=c++11 -I$(srcdir)/
+CPPFLAGS += $(DEPFLAG) -iquote $(srcdir)/
+CFLAGS += -std=gnu11
+CXXFLAGS += -std=c++11
 
 
 
@@ -464,14 +464,14 @@ endif
 
 .SECONDEXPANSION:
 $(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) -lm
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) -lm
 #	rm $(srcdir)/$@.o
 
 UTESTS=$(shell $(root)/utests/utests-collect.sh ./utests/$@.c)
 
 .SECONDEXPANSION:
 $(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) -DUTESTS="$(UTESTS)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
 
 
 # linker script version - does not work on MacOS X
