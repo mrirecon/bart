@@ -355,12 +355,12 @@ int main_pics(int argc, char* argv[])
 
 	if (NULL != traj_file) {
 
-		if (NULL == pat_file) {
-
+		if (NULL != pat_file) {
+/*
 			md_free(pattern);
 			pattern = NULL;
 
-		} else {
+		} else {*/
 
 			long ksp_strs[DIMS];
 			md_calc_strides(DIMS, ksp_strs, ksp_dims, CFL_SIZE);
