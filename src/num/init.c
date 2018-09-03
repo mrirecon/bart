@@ -1,9 +1,10 @@
-/* Copyright 2013. The Regents of the University of California.
+/* Copyright 2013-2015. The Regents of the University of California.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013-2018 Martin Uecker <martin.uecker@med-uni-goettingen.de>
  *
  *
  * Initialization routines. 
@@ -12,7 +13,6 @@
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <fenv.h>
-#include <assert.h>
 #include <sys/resource.h>
 
 #ifdef _OPENMP
@@ -20,6 +20,8 @@
 #endif
 
 #include "misc/debug.h"
+#include "misc/misc.h"
+
 #include "num/fft.h"
 
 #ifdef USE_CUDA
@@ -103,7 +105,7 @@ void num_init_gpu_device(int device)
 	cuda_init(device);
 #else
 	(void)device;
-	assert(0);
+	error("BART compiled without GPU support.\n");
 #endif
 
 #ifdef USE_CULA
@@ -119,7 +121,7 @@ void num_init_gpu_memopt(void)
 #ifdef USE_CUDA
 	cuda_init_memopt();
 #else
-	assert(0);
+	error("BART compiled without GPU support.\n");
 #endif
 
 #ifdef USE_CULA
