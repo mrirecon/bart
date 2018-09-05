@@ -648,11 +648,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	int skip = min_blockdim(2, ND, tdims, nstr2, sizes);
 
 
-	if (use_gpu && (ND - skip == 1)) { 
-		// FIXME: the test was > 0 which would optimize transpose
-		// but failes in the second cuda_memcpy_strided call
-		// probably because of alignment restrictions
-		const long* nstr[2] = { *nstr2[0] + skip, *nstr2[1] + skip };
+	if (use_gpu && (ND - skip > 0)) {
 
 		void* nptr[2] = { optr, (void*)iptr };
 
@@ -661,6 +657,8 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		long istr2 = (*nstr2[1])[skip];
 
 		skip++;
+
+		const long* nstr[2] = { *nstr2[0] + skip, *nstr2[1] + skip };
 
 		long* sizesp = sizes; // because of clang
 
