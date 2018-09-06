@@ -463,27 +463,7 @@ endif()
 # ==============================================================================
 
 if(BART_CREATE_PYTHON_MODULE)
-  if(CMAKE_VERSION VERSION_LESS 3.12)
-    find_package(PythonLibs REQUIRED)
-    set(PYMODULE_INCLUDE_DIRS "${PYTHON_INCLUDE_DIRS}")
-    set(PYMODULE_LIBRARIES "${PYTHON_LIBRARIES}")
-  else()
-    find_package(Python REQUIRED COMPONENTS Development)
-    set(PYMODULE_INCLUDE_DIRS "${Python_INCLUDE_DIRS}")
-    set(PYMODULE_LIBRARIES "${Python_LIBRARIES}")
-  endif()
-
-  set(PYBART_FUNCTION_PROTOTYPE "")
-  set(PYBART_COMMANDS_MODULE_METHODS "")
-  set(PYBART_COMMANDS_IMPLEMENTATION "")
-  
-  foreach(curr_prog ${ALLPROGS})
-    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c")
-      set(PYBART_FUNCTION_PROTOTYPE "${PYBART_FUNCTION_PROTOTYPE}static PyObject* call_${curr_prog}(PyObject* self, PyObject* args);\n")
-      set(PYBART_COMMANDS_MODULE_METHODS "${PYBART_COMMANDS_MODULE_METHODS}     {\"${curr_prog}\", call_${curr_prog}, METH_VARARGS, bart_subcommand_docstring},\n")
-      set(PYBART_COMMANDS_IMPLEMENTATION "${PYBART_COMMANDS_IMPLEMENTATION}PyObject* call_${curr_prog} (PyObject* self, PyObject* args)\n{\n     enum { MAX_ARGS = 256 };\n     char* cmdline = NULL;\n     char output[256] = { \"\" };\n     if (!PyArg_ParseTuple(args, \"s\", &cmdline)) {\n	  Py_RETURN_NONE;\n     }\n\n     return call_submain(\"${curr_prog}\", cmdline);\n}\n\n")
-    endif()
-  endforeach()
+  include(${CMAKE_CURRENT_LIST_DIR}/cmake/bart_python.cmake)
 
   configure_file(${CMAKE_CURRENT_LIST_DIR}/src/python/pyBART.c.in ${PROJECT_BINARY_DIR}/pyBART.c @ONLY)
 
@@ -494,9 +474,11 @@ if(BART_CREATE_PYTHON_MODULE)
     $<TARGET_OBJECTS:bartsupport_objs>
     $<TARGET_OBJECTS:bartmain_objs>)
 
-  target_include_directories(pyBART PRIVATE ${PYMODULE_INCLUDE_DIRS})
+  if(CMAKE_VERSION VERSION_LESS 3.1)
+    target_include_directories(pyBART PRIVATE ${Python_INCLUDE_DIR})
+  endif()
   target_compile_definitions(pyBART PRIVATE -DBART_WITH_PYTHON)
-  target_link_libraries(pyBART PUBLIC "${PYMODULE_LIBRARIES};${PNG_TGT};${FFTW_TGT};${LINALG_LIBRARIES}")
+  target_link_libraries(pyBART PUBLIC "${Python_TGT};${PNG_TGT};${FFTW_TGT};${LINALG_VENDOR_LIB}")
   if(BART_ISMRMRD)
     target_link_libraries(pyBART PUBLIC ${ISMRMRD_LIBRARIES})
   endif()
