@@ -47,8 +47,7 @@
 # (either CMake variables or environment variables)::
 #
 #   CUDA_TOOLKIT_ROOT_DIR
-#   CUDA_PATH
-#   CUDA_LIB_PATH
+#   CUDA_ROOT
 #
 # The following :prop_tgt:`IMPORTED` targets are defined if required::
 #
@@ -102,6 +101,8 @@ set(CUDAlibs_SEARCH_PATHS
   ${_cuda_root_dir_hint}
   ${CUDA_ROOT}
   $ENV{CUDA_ROOT}
+  ${CUDA_TOOLKIT_ROOT_DIR}
+  $ENV{CUDA_TOOLKIT_ROOT_DIR}
   ${CMAKE_PREFIX_PATH}
   $ENV{CMAKE_PREFIX_PATH}
   /usr

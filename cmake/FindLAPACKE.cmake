@@ -6,7 +6,7 @@
 #
 # Use this module by invoking find_package with the form::
 #
-#   find_package(Boost
+#   find_package(LAPACKE
 #     [REQUIRED]             # Fail with error if LAPACKE is not found
 #     [COMPONENTS <libs>...] # List of libraries to look for
 #     )
@@ -33,6 +33,7 @@
 # (either CMake variables or environment variables)::
 #
 #   LAPACKE_ROOT             - Preferred installation prefix for LAPACKE
+#   LAPACKE_DIR              - Preferred installation prefix for LAPACKE
 #
 #
 # The following :prop_tgt:`IMPORTED` targets are also defined::
@@ -55,6 +56,8 @@
 set(LAPACKE_SEARCH_PATHS
   ${LAPACKE_ROOT}
   $ENV{LAPACKE_ROOT}
+  ${LAPACKE_DIR}
+  $ENV{LAPACKE_DIR}
   ${CMAKE_PREFIX_PATH}
   $ENV{CMAKE_PREFIX_PATH}
   /usr
@@ -227,9 +230,13 @@ if(LAPACKE_FOUND)
   # ----------------------------------------------------------------------------
 
   if(NOT LAPACKE_FIND_QUIETLY)
-    message(STATUS "LAPACKE_FOUND         :${LAPACKE_FOUND}:  - set to true if the library is found")
-    message(STATUS "LAPACKE_INCLUDE_DIRS  :${LAPACKE_INCLUDE_DIRS}: - list of required include directories")
-    message(STATUS "LAPACKE_LIBRARIES     :${LAPACKE_LIBRARIES}: - list of libraries to be linked")
+    message(STATUS "Found LAPACKE and defined the following imported targets:")
+    foreach(_comp ${LAPACKE_FIND_COMPONENTS})
+      message(STATUS "  - LAPACKE::${_comp}:")
+      message(STATUS "      + include:      ${LAPACKE_INCLUDE_DIRS}")
+      message(STATUS "      + library:      ${LAPACKE_${_comp}_LIB}")
+      message(STATUS "      + dependencies: ${MATH_LIB}")
+    endforeach()
   endif()
 endif()
 
@@ -240,6 +247,3 @@ mark_as_advanced(
   LAPACKE_INCLUDE_DIRS
   LAPACKE_LIBRARIES
   )
-
-
-

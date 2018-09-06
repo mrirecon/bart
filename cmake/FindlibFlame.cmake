@@ -4,28 +4,30 @@
 #
 # Find libFlame include dirs and libraries
 #
-# This module defines
+# Use this module by invoking find_package with the form::
 #
-# ::
+#   find_package(libFlame
+#     [REQUIRED]             # Fail with error if libFlame is not found
+#     )
+#
+# This module defines::
 #
 #   libFlame_FOUND            - True if headers and requested libraries were found
-#   libFlame_INCLUDE_DIRS     - Boost include directories
-#   libFlame_LIBRARIES        - Boost component libraries to be linked
+#   libFlame_INCLUDE_DIRS     - libFlame include directories
+#   libFlame_LIBRARIES        - libFlame component libraries to be linked
 #
 #
 # This module reads hints about search locations from variables
-#
-# ::
+# (either CMake variables or environment variables)::
 #
 #   libFlame_ROOT             - Preferred installation prefix
+#   libFlame_DIR              - Preferred installation prefix
 #
 #
-# The following :prop_tgt:`IMPORTED` targets are also defined
-#
-# ::
+# The following :prop_tgt:`IMPORTED` targets are also defined::
 #
 #   libFlame::libFlame        - Target for specific component dependency
-#                                (shared or static library)
+#                               (shared or static library)
 #
 
 # ==============================================================================
@@ -40,6 +42,8 @@
 set(libFlame_SEARCH_PATHS
   ${libFlame_ROOT}
   $ENV{libFlame_ROOT}
+  ${libFlame_DIR}
+  $ENV{libFlame_DIR}
   $ENV{CMAKE_PREFIX_PATH}
   ${CMAKE_PREFIX_PATH}
   /usr
@@ -133,7 +137,7 @@ if(libFlame_FOUND)
     add_library(libFlame::libFlame ${LIB_TYPE} IMPORTED GLOBAL)
     set_target_properties(libFlame::libFlame PROPERTIES
       IMPORTED_LOCATION "${libFlame_LIBRARY}"
-      INTERFACE_INCLUDE_DIRECTORIES "${libFlame_INCLUDE_DIR}"
+      INTERFACE_INCLUDE_DIRECTORIES "${libFlame_INCLUDE_DIRS}"
       INTERFACE_LINK_LIBRARIES "${LAPACKE_LIBRARIES}"
       )
   endif()
@@ -141,9 +145,11 @@ if(libFlame_FOUND)
   # ----------------------------------------------------------------------------
   ## For debugging
   if(NOT libFlame_FIND_QUIETLY)
-    message(STATUS "libFlame_FOUND         :${libFlame_FOUND}:  - set to true if the library is found")
-    message(STATUS "libFlame_INCLUDE_DIRS  :${libFlame_INCLUDE_DIRS}: - list of required include directories")
-    message(STATUS "libFlame_LIBRARIES     :${libFlame_LIBRARIES}: - list of libraries to be linked")
+    get_target_property(_dep_libs libFlame::libFlame INTERFACE_LINK_LIBRARIES)
+    message(STATUS "Found libFlame and defined the libFlame::libFlame imported target:")
+    message(STATUS "  - include:      ${libFlame_INCLUDE_DIR}")
+    message(STATUS "  - library:      ${libFlame_LIBRARY}")
+    message(STATUS "  - dependencies: ${_dep_libs}")
   endif()
 endif()
 

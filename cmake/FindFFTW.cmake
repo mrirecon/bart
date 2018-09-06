@@ -34,6 +34,7 @@
 # (either CMake variables or environment variables)::
 #
 #   FFTW_ROOT             - Preferred installation prefix for FFTW
+#   FFTW_DIR              - Preferred installation prefix for FFTW
 #
 #
 # The following :prop_tgt:`IMPORTED` targets are also defined::
@@ -56,6 +57,8 @@
 set(FFTW_SEARCH_PATHS
   ${FFTW_ROOT}
   $ENV{FFTW_ROOT}
+  ${FFTW_DIR}
+  $ENV{FFTW_DIR}
   ${CMAKE_PREFIX_PATH}
   $ENV{CMAKE_PREFIX_PATH}
   /sw
@@ -126,6 +129,17 @@ endmacro()
 
 # ------------------------------------------------------------------------------
 
+# Make sure that all components are in capitals
+set(_tmp_component_list)
+foreach(_comp ${FFTW_FIND_COMPONENTS})
+  string(TOUPPER ${_comp} _comp)
+  list(APPEND _tmp_component_list ${_comp})
+endforeach()
+set(FFTW_FIND_COMPONENTS ${_tmp_component_list})
+set(_tmp_component_list)
+
+# ------------------------------------------------------------------------------
+
 ## FFTW can be compiled and subsequently linked against
 ## various data types.
 ## There is a single set of include files, and then muttiple libraries,
@@ -151,22 +165,21 @@ endif()
 
 # ------------------------------------------------------------------------------
 
-foreach(COMPONENT ${FFTW_FIND_COMPONENTS})
-  string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
-  if(UPPERCOMPONENT STREQUAL "FFTW")
-    _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix} fftw${_fftw_suffix}.h)
-  elseif(UPPERCOMPONENT STREQUAL "FFTW_MT")
-    _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix}_threads fftw${_fftw_suffix}.h)
-  elseif(UPPERCOMPONENT STREQUAL "FFTWF" AND FFTW_FIND_VERSION_MAJOR GREATER 2)
-    _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix}f fftw${_fftw_suffix}.h)
-  elseif(UPPERCOMPONENT STREQUAL "FFTWF_MT" AND FFTW_FIND_VERSION_MAJOR GREATER 2)
-    _find_library_with_header(${UPPERCOMPONENT} fftw${_fftw_suffix}f_threads fftw${_fftw_suffix}.h)
+foreach(_comp ${FFTW_FIND_COMPONENTS})
+  if(_comp STREQUAL "FFTW")
+    _find_library_with_header(${_comp} fftw${_fftw_suffix} fftw${_fftw_suffix}.h)
+  elseif(_comp STREQUAL "FFTW_MT")
+    _find_library_with_header(${_comp} fftw${_fftw_suffix}_threads fftw${_fftw_suffix}.h)
+  elseif(_comp STREQUAL "FFTWF" AND FFTW_FIND_VERSION_MAJOR GREATER 2)
+    _find_library_with_header(${_comp} fftw${_fftw_suffix}f fftw${_fftw_suffix}.h)
+  elseif(_comp STREQUAL "FFTWF_MT" AND FFTW_FIND_VERSION_MAJOR GREATER 2)
+    _find_library_with_header(${_comp} fftw${_fftw_suffix}f_threads fftw${_fftw_suffix}.h)
   else()
-    message(FATAL_ERROR "Unknown component (looked for FFTW ${FFTW_FIND_VERSION_MAJOR}): ${COMPONENT}")
+    message(FATAL_ERROR "Unknown component (looked for FFTW ${FFTW_FIND_VERSION_MAJOR}): ${_comp}")
   endif()
   mark_as_advanced(
-    FFTW_${UPPERCOMPONENT}_LIB
-    FFTW_${UPPERCOMPONENT}_INCLUDE_DIR)
+    FFTW_${_comp}_LIB
+    FFTW_${_comp}_INCLUDE_DIR)
 endforeach()
 
 # ==============================================================================
@@ -181,25 +194,24 @@ find_package_handle_standard_args(FFTW
 
 if(FFTW_FOUND)  
   # Inspired by FindBoost.cmake
-  foreach(COMPONENT ${FFTW_FIND_COMPONENTS})
-    string(TOUPPER ${COMPONENT} UPPERCOMPONENT)
-    if(NOT TARGET FFTW::${UPPERCOMPONENT} AND FFTW_${UPPERCOMPONENT}_FOUND)
-      get_filename_component(LIB_EXT "${FFTW_${UPPERCOMPONENT}_LIB}" EXT)
+  foreach(_comp ${FFTW_FIND_COMPONENTS})
+    if(NOT TARGET FFTW::${_comp} AND FFTW_${_comp}_FOUND)
+      get_filename_component(LIB_EXT "${FFTW_${_comp}_LIB}" EXT)
       if(LIB_EXT STREQUAL ".a" OR LIB_EXT STREQUAL ".lib")
         set(LIB_TYPE STATIC)
       else()
         set(LIB_TYPE SHARED)
       endif()
-      add_library(FFTW::${UPPERCOMPONENT} ${LIB_TYPE} IMPORTED GLOBAL)
-      set_target_properties(FFTW::${UPPERCOMPONENT}
+      add_library(FFTW::${_comp} ${LIB_TYPE} IMPORTED GLOBAL)
+      set_target_properties(FFTW::${_comp}
 	PROPERTIES
-	IMPORTED_LOCATION "${FFTW_${UPPERCOMPONENT}_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${FFTW_${UPPERCOMPONENT}_INCLUDE_DIR}")
+	IMPORTED_LOCATION "${FFTW_${_comp}_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${FFTW_${_comp}_INCLUDE_DIR}")
     endif()
 
-    if(FFTW_${UPPERCOMPONENT}_FOUND)
-      set(APPEND FFTW_INCLUDE_DIRS "${FFTW_${UPPERCOMPONENT}_INCLUDE_DIR}")
-      set(APPEND FFTW_LIBRARIES "${FFTW_${UPPERCOMPONENT}_LIB}")
+    if(FFTW_${_comp}_FOUND)
+      set(APPEND FFTW_INCLUDE_DIRS "${FFTW_${_comp}_INCLUDE_DIR}")
+      set(APPEND FFTW_LIBRARIES "${FFTW_${_comp}_LIB}")
     endif()
   endforeach()
 
@@ -208,7 +220,9 @@ if(FFTW_FOUND)
   if(NOT FFTW_FIND_QUIETLY)
     message(STATUS "Found FFTW and defined the following imported targets:")
     foreach(_comp ${FFTW_FIND_COMPONENTS})
-      message(STATUS "  - FFTW::${_comp}")
+      message(STATUS "  - FFTW::${_comp}:")
+      message(STATUS "      + include: ${FFTW_${_comp}_INCLUDE_DIR}")
+      message(STATUS "      + library: ${FFTW_${_comp}_LIB}")
     endforeach()
   endif()
 endif()
