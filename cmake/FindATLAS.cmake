@@ -6,7 +6,7 @@
 #
 # Use this module by invoking find_package with the form::
 #
-#   find_package(Boost
+#   find_package(ATLAS
 #     [REQUIRED]             # Fail with error if ATLAS is not found
 #     )
 #
@@ -27,6 +27,7 @@
 # (either CMake variables or environment variables)::
 #
 #   ATLAS_ROOT             - Preferred installation prefix for ATLAS
+#   ATLAS_DIR              - Preferred installation prefix for ATLAS
 #
 #
 #   ATLAS::ATLAS           - Imported target for the ATLAS library
@@ -200,21 +201,29 @@ if (ATLAS_FOUND)
       set(LIB_TYPE SHARED)
     endif()
     add_library(ATLAS::ATLAS ${LIB_TYPE} IMPORTED GLOBAL)
+    set(_tmp_dep_libs "${LAPACKE_LIBRARIES};${LAPACK_LIB};${F77BLAS_LIB};${CBLAS_LIB};${MATH_LIB}")
+    list(REMOVE_DUPLICATES _tmp_dep_libs)
     set_target_properties(ATLAS::ATLAS
       PROPERTIES
       IMPORTED_LOCATION "${ATLAS_LIB}"
       INTERFACE_INCLUDE_DIRECTORIES "${ATLAS_INCLUDE_DIRS}"
-      INTERFACE_LINK_LIBRARIES "${LAPACKE_LIBRARIES};${LAPACK_LIB};${F77BLAS_LIB};${CBLAS_LIB};${MATH_LIB}")
+      INTERFACE_LINK_LIBRARIES "${_tmp_dep_libs}")
   endif()
   
   if(NOT ATLAS_FIND_QUIETLY)
-    message(STATUS "ATLAS_FOUND           :${ATLAS_FOUND}:  - set to true if the library is found")
-    message(STATUS "ATLAS_INCLUDE_DIRS    :${ATLAS_INCLUDE_DIRS}: - list of required include directories")
-    message(STATUS "ATLAS_LIBRARIES       :${ATLAS_LIBRARIES}: - list of libraries to be linked")
-    message(STATUS "ATLAS_VERSION_MAJOR   :${ATLAS_VERSION_MAJOR}: - major version number")
-    message(STATUS "ATLAS_VERSION_MINOR   :${ATLAS_VERSION_MINOR}: - minor version number")
-    message(STATUS "ATLAS_VERSION_PATCH   :${ATLAS_VERSION_PATCH}: - patch version number")
-    message(STATUS "ATLAS_VERSION_STRING  :${ATLAS_VERSION_STRING}: - version number as a string")
+    get_target_property(_dep_libs ATLAS::ATLAS INTERFACE_LINK_LIBRARIES)
+
+    set(_version "${ATLAS_VERSION_STRING}")
+    if(_version STREQUAL "ATLAS.UNKOWN.VERSION")
+      set(_version)
+    else()
+      set(_version " (${_version})")
+    endif()
+    
+    message(STATUS "Found ATLAS${_version} and defined the ATLAS::ATLAS imported target:")
+    message(STATUS "  - include:      ${ATLAS_INCLUDE_DIRS}")
+    message(STATUS "  - library:      ${ATLAS_LIB}")
+    message(STATUS "  - dependencies: ${_dep_libs}")
   endif()
 endif()
 

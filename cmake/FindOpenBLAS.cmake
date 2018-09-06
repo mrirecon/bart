@@ -6,7 +6,7 @@
 #
 # Use this module by invoking find_package with the form::
 #
-#   find_package(Boost
+#   find_package(OpenBLAS
 #     [REQUIRED]             # Fail with error if OpenBLAS is not found
 #     )
 #
@@ -197,10 +197,12 @@ if (OpenBLAS_FOUND)
       set(LIB_TYPE SHARED)
     endif()
     add_library(OpenBLAS::OpenBLAS ${LIB_TYPE} IMPORTED GLOBAL)
+    set(_tmp_dep_libs "${MATH_LIB};${LAPACKE_LIBRARIES}")
+    list(REMOVE_DUPLICATES _tmp_dep_libs)
     set_target_properties(OpenBLAS::OpenBLAS
       PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
-      INTERFACE_LINK_LIBRARIES "${MATH_LIB};${LAPACKE_LIBRARIES}")
+      INTERFACE_LINK_LIBRARIES "${_tmp_dep_libs}")
     
     if(OpenBLAS_HAS_PARALLEL_LIBRARIES)
       set_target_properties(OpenBLAS::OpenBLAS
@@ -216,15 +218,12 @@ if (OpenBLAS_FOUND)
   # ----------------------------------------------------------------------------
 
   if(NOT OpenBLAS_FIND_QUIETLY)
-    message(STATUS "OpenBLAS_FOUND                  :${OpenBLAS_FOUND}:  - set to true if the library is found")
-    message(STATUS "OpenBLAS_INCLUDE_DIRS           :${OpenBLAS_INCLUDE_DIRS}: - list of required include directories")
-    message(STATUS "OpenBLAS_LIBRARIES              :${OpenBLAS_LIBRARIES}: - list of libraries to be linked")
-    message(STATUS "OpenBLAS_HAS_PARALLEL_LIBRARIES :${OpenBLAS_HAS_PARALLEL_LIBRARIES}: - determine if there are parallel libraries compiled")
-    message(STATUS "OpenBLAS_PARALLEL_LIBRARIES     :${OpenBLAS_PARALLEL_LIBRARIES}: - list of libraries for parallel implementations")
-    message(STATUS "OpenBLAS_VERSION_MAJOR          :${OpenBLAS_VERSION_MAJOR}: - major version number")
-    message(STATUS "OpenBLAS_VERSION_MINOR          :${OpenBLAS_VERSION_MINOR}: - minor version number")
-    message(STATUS "OpenBLAS_VERSION_PATCH          :${OpenBLAS_VERSION_PATCH}: - patch version number")
-    message(STATUS "OpenBLAS_VERSION_STRING         :${OpenBLAS_VERSION_STRING}: - version number as a string")
+    get_target_property(_lib OpenBLAS::OpenBLAS IMPORTED_LOCATION)
+    get_target_property(_dep_libs OpenBLAS::OpenBLAS INTERFACE_LINK_LIBRARIES)
+    message(STATUS "Found OpenBLAS and defined the OpenBLAS::OpenBLAS imported target:")
+    message(STATUS "  - include:      ${OpenBLAS_INCLUDE_DIRS}")
+    message(STATUS "  - library:      ${_lib}")
+    message(STATUS "  - dependencies: ${_dep_libs}")
   endif()
 endif()
 
