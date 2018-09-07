@@ -14,11 +14,12 @@
 #include <stdbool.h>
 #include <complex.h>
 
-extern struct error_jmpbuf_s {
+struct error_jumper_s {
+     bool initialized;
+     jmp_buf buf;
+};
 
-     _Bool initialized;
-	jmp_buf jmpbuf;
-} error_jumper;
+extern struct error_jumper_s error_jumper;
 
 #ifndef DIMS
 #  define DIMS 16
@@ -244,7 +245,7 @@ PyObject* register_python_memory(PyObject *self, PyObject *args)
      // ------------------------------------------------------------------------
 
      error_jumper.initialized = 1;
-     if (setjmp(error_jumper.jmpbuf) == 0) {
+     if (setjmp(error_jumper.buf) == 0) {
 	  if (register_mem_cfl_python(name, npy_data)) {
 	       Py_RETURN_NONE;
 	  }
@@ -282,7 +283,7 @@ PyObject* load_cfl_python(PyObject* self, PyObject* args)
      }
 
      error_jumper.initialized = 1;
-     if (setjmp(error_jumper.jmpbuf) == 0) {
+     if (setjmp(error_jumper.buf) == 0) {
 	  long dims[DIMS] = {0};
 	  void* data = load_cfl(name, DIMS, dims);
 

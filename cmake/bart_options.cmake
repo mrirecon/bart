@@ -3,7 +3,6 @@
 # a BSD-style license which can be found in the LICENSE file.
 # \author Damien Nguyen <damien.nguyen@alumni.epfl.ch>
 
-option(BART_CREATE_PYTHON_MODULE "Compile the pyBART Python module" OFF)
 option(BART_DISABLE_PNG "Disable the use of the PNG library" OFF)
 option(BART_ENABLE_MEM_CFL "Enable the use of in-memory CFL files" OFF)
 option(BART_FPIC "Compile using position-independent code" OFF)
@@ -22,8 +21,14 @@ option(BART_ISMRMRD "Use external ISMRMRD package for reading/writing" ${ISMRMRD
 
 # ------------------------------------------------------------------------------
 
-option(BART_LOG_BACKEND "Enable delegating all outputs to external logging backend" OFF)
+option(BART_CREATE_PYTHON_MODULE "Compile the pyBART Python module" OFF)
 include(CMakeDependentOption)
+cmake_dependent_option(BART_PYTHON_FORCE_27 "Force BART to use Python 2.7" OFF
+  "BART_CREATE_PYTHON_MODULE" OFF)
+
+# ------------------------------------------------------------------------------
+
+option(BART_LOG_BACKEND "Enable delegating all outputs to external logging backend" OFF)
 cmake_dependent_option(BART_LOG_SIEMENS_BACKEND "Use the Siemens logging backend" OFF
   "BART_LOG_BACKEND" OFF)
 cmake_dependent_option(BART_LOG_ORCHESTRA_BACKEND "Use the Orchestra logging backend" OFF
@@ -54,22 +59,22 @@ option(USE_OPENMP "Enable OpenMP support" ON)
 
 # ==============================================================================
 
-if(BART_ENABLE_MEM_CFL OR USE_CUDA OR BART_LOG_BACKEND)
-  enable_language(CXX)
-endif()
-
-# ------------------------------------------------------------------------------
-
 if(BART_CREATE_PYTHON_MODULE)
   message(STATUS "Generating the pyBART Python module")
   if(NOT BART_ENABLE_MEM_CFL)
     message(STATUS "  - Setting BART_ENABLE_MEM_CFL = ON")
-    set(BART_ENABLE_MEM_CFL ON CACHE BOOL "Enable the use of in-memory CFL files")
+    set(BART_ENABLE_MEM_CFL ON CACHE BOOL "Enable the use of in-memory CFL files" FORCE)
   endif()
   if(NOT BART_FPIC)
     message(STATUS "  - Setting BART_FPIC = ON")
-    set(BART_FPIC ON CACHE BOOL "Compile using position-independent code")
+    set(BART_FPIC ON CACHE BOOL "Compile using position-independent code" FORCE)
   endif()
+endif()
+
+# --------------------------------------
+
+if(BART_ENABLE_MEM_CFL OR USE_CUDA OR BART_LOG_BACKEND)
+  enable_language(CXX)
 endif()
 
 # --------------------------------------
