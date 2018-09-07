@@ -31,6 +31,9 @@
 #include "num/init.h"
 #include "num/iovec.h"
 #include "num/ops.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 #include "iter/iter.h"
 #include "iter/lsqr.h"
@@ -134,6 +137,8 @@ struct kern_s {
 	complex float* reorder;
 	complex float* phi;
 	complex float* kernel;
+
+	complex float* gpu_kernel;
 };
 
 /* Go to table from coefficient-kspace with memory efficiency. */
@@ -315,7 +320,12 @@ static void kern_normal(const linop_data_t* _data, complex float* dst, const com
 	md_merge_dims(DIMS, fmac_dims, input_dims, data->kernel_dims);
 
 	md_clear(DIMS, output_dims, dst, CFL_SIZE);
-	md_zfmac2(DIMS, fmac_dims, output_str, dst, input_str, src, kernel_str, data->kernel);
+	#ifdef USE_CUDA
+	if(cuda_ondevice(src))
+		md_zfmac2(DIMS, fmac_dims, output_str, dst, input_str, src, kernel_str, data->gpu_kernel);
+	else
+	#endif
+		md_zfmac2(DIMS, fmac_dims, output_str, dst, input_str, src, kernel_str, data->kernel);
 }
 
 static void kern_free(const linop_data_t* _data)
@@ -328,6 +338,10 @@ static void kern_free(const linop_data_t* _data)
 	xfree(data->kernel_dims);
 
 	xfree(data);
+
+	#ifdef USE_CUDA
+	md_free(data->gpu_kernel);
+	#endif
 }
 
 static const struct linop_s* linop_kern_create(long N,
@@ -359,6 +373,10 @@ static const struct linop_s* linop_kern_create(long N,
 	data->reorder = reorder;
 	data->phi     = phi;
 	data->kernel  = kernel;
+
+	#ifdef USE_CUDA
+	data->gpu_kernel = md_gpu_move(N, _kernel_dims, kernel, CFL_SIZE);
+	#endif
 
 	long input_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	input_dims[0] = _table_dims[0];
@@ -570,6 +588,7 @@ int main_wshfl(int argc, char* argv[])
 	float cont      = 1;
 	float eval      = -1;
 	const char* fwd = NULL;
+	int   gpun      = -1;
 
 	const struct opt_s opts[] = {
 		OPT_FLOAT( 'r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
@@ -580,6 +599,7 @@ int main_wshfl(int argc, char* argv[])
 		OPT_FLOAT( 't', &tol,     "toler",  "Tolerance convergence condition for iterative method."),
 		OPT_FLOAT( 'e', &eval,    "eigvl",  "Maximum eigenvalue of normal operator, if known."),
 		OPT_STRING('F', &fwd,     "frwrd",  "Go from shfl-coeffs to data-table. Pass in coeffs path."),
+		OPT_INT(   'g', &gpun,    "gpunm",  "GPU device number."),
 		OPT_SET(   'f', &fista,             "Reconstruct using FISTA instead of IST."),
 		OPT_SET(   'H', &hgwld,             "Use hogwild in IST/FISTA."),
 		OPT_SET(   'w', &wav,               "Use wavelet."),
@@ -607,7 +627,10 @@ int main_wshfl(int argc, char* argv[])
 
 	debug_printf(DP_INFO, "Done.\n");
 
-	num_init();
+	if (gpun >= 0)
+		num_init_gpu_device(gpun);
+	else
+		num_init();
 
 	int wx = wave_dims[0];
 	int sx = maps_dims[0];
@@ -784,7 +807,7 @@ int main_wshfl(int argc, char* argv[])
 
 	debug_printf(DP_INFO, "Reconstruction... ");
 	complex float* recon = create_cfl(argv[6], DIMS, coeff_dims);
-	struct lsqr_conf lsqr_conf = { 0., false };
+	struct lsqr_conf lsqr_conf = { 0., gpun >= 0 };
 	double recon_start = timestamp();
 	const struct operator_s* J = lsqr2_create(&lsqr_conf, italgo, iconf, NULL, A, NULL, 1, &T, NULL, NULL);
 	operator_apply(J, DIMS, coeff_dims, recon, DIMS, table_dims, table);
