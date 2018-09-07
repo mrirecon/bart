@@ -3,11 +3,18 @@
 # a BSD-style license which can be found in the LICENSE file.
 # \author Damien Nguyen <damien.nguyen@alumni.epfl.ch>
 
+if(BART_PYTHON_FORCE_27)
+  set(_python_version 2.7)
+else()
+  set(_python_version)
+endif()
+
+
 # Interpreter only required to find site-lib directories
 if(CMAKE_VERSION VERSION_LESS 3.12)
-  find_package(BPython REQUIRED COMPONENTS Development Interpreter)
+  find_package(BPython ${_python_version} REQUIRED COMPONENTS Development Interpreter)
 else()
-  find_package(Python REQUIRED COMPONENTS Development Interpreter)
+  find_package(Python ${_python_version} REQUIRED COMPONENTS Development Interpreter)
 endif()
 
 set(Python_TGT Python::Python)
@@ -80,7 +87,7 @@ set(PYBART_COMMANDS_MODULE_METHODS)
 set(PYBART_COMMANDS_IMPLEMENTATION)
 
 foreach(curr_prog ${ALLPROGS})
-  if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/${curr_prog}.c")
+  if(EXISTS "${PROJECT_SOURCE_DIR}/src/${curr_prog}.c")
     set(PYBART_FUNCTION_PROTOTYPE "${PYBART_FUNCTION_PROTOTYPE}static PyObject* call_${curr_prog}(PyObject* self, PyObject* args);\n")
     set(PYBART_COMMANDS_MODULE_METHODS "${PYBART_COMMANDS_MODULE_METHODS}     {\"${curr_prog}\", call_${curr_prog}, METH_VARARGS, bart_subcommand_docstring},\n")
     set(PYBART_COMMANDS_IMPLEMENTATION "${PYBART_COMMANDS_IMPLEMENTATION}PyObject* call_${curr_prog} (PyObject* self, PyObject* args)\n{\n     enum { MAX_ARGS = 256 };\n     char* cmdline = NULL;\n     char output[256] = { \"\" };\n     if (!PyArg_ParseTuple(args, \"s\", &cmdline)) {\n	  Py_RETURN_NONE;\n     }\n\n     return call_submain(\"${curr_prog}\", cmdline);\n}\n\n")

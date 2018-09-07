@@ -353,9 +353,6 @@ if(BART_LOG_BACKEND)
     # Include Orchestra SDK build configuration
     include (${TOPDIR}/recon/SDK/product.cmake)
 
-    # FIXME: need to check which libraries are actually required
-    target_link_libraries(bartsupport PUBLIC "Core;Common;Control;System;${OX_3P_LIBS};${OX_OS_LIBS}")
-    
     list(APPEND LOG_BACKEND_SRCS "${CMAKE_CURRENT_LIST_DIR}/src/misc/Orchestra.cc")
   endif()
 
@@ -386,6 +383,13 @@ target_link_libraries(bartsupport PUBLIC
   ${PNG_TGT}
   ${FFTW_TGT}
   ${OpenMP_TGT})
+
+if(BART_LOG_BACKEND)
+  if(BART_LOG_ORCHESTRA_BACKEND)
+    # FIXME: need to check which libraries are actually required
+    target_link_libraries(bartsupport PUBLIC "Core;Common;Control;System;${OX_3P_LIBS};${OX_OS_LIBS}")    
+  endif()
+endif()
 
 if(BART_ISMRMRD)
   target_link_libraries(bartsupport PUBLIC ${ISMRMRD_LIBRARIES})
@@ -477,10 +481,17 @@ if(BART_CREATE_PYTHON_MODULE)
   if(CMAKE_VERSION VERSION_LESS 3.1)
     target_include_directories(pyBART PRIVATE ${Python_INCLUDE_DIR})
   endif()
-  target_compile_definitions(pyBART PRIVATE -DBART_WITH_PYTHON)
+  # Also need to workaround for possible name conflicts with libC's error function
+  target_compile_definitions(pyBART PRIVATE -DBART_WITH_PYTHON -Derror=bart_error__)
   target_link_libraries(pyBART PUBLIC "${Python_TGT};${PNG_TGT};${FFTW_TGT};${LINALG_VENDOR_LIB}")
   if(BART_ISMRMRD)
     target_link_libraries(pyBART PUBLIC ${ISMRMRD_LIBRARIES})
+  endif()
+  
+  if(APPLE)
+    set_target_properties(pyBART
+      PROPERTIES
+      SUFFIX ".so")
   endif()
   set_target_properties(pyBART
     PROPERTIES
