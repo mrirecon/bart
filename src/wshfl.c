@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <complex.h>
 #include <math.h>
+#include <omp.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -226,13 +227,16 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	complex float* perm = md_alloc_sameplace(DIMS, perm_dims, CFL_SIZE, dst);
 	md_clear(DIMS, perm_dims, perm, CFL_SIZE);
 
+	long num_threads = omp_get_max_threads();
+
 	long vec_dims[]     = {wx, nc, tf,  1};
 	long phi_mat_dims[] = { 1,  1, tf, tk};
 	long phi_out_dims[] = {wx, nc,  1, tk};
 	long fmac_dims[]    = {wx, nc, tf, tk};
 	long line_dims[]    = {wx, nc,  1,  1};
+	long vthrd_dims[]   = {wx, nc, tf,  1, num_threads};
 
-	complex float* vec = md_alloc_sameplace(4, vec_dims, CFL_SIZE, src);
+	complex float* vec = md_calloc(5, vthrd_dims, CFL_SIZE);
 
 	long vec_str[4];
 	md_calc_strides(4, vec_str, vec_dims, CFL_SIZE);
@@ -243,22 +247,24 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	long fmac_str[4];
 	md_calc_strides(4, fmac_str, fmac_dims, CFL_SIZE);
 
-	int t = -1;
-	for (int z = 0; z < sz; z ++) {
-		for (int y = 0; y < sy; y ++) {
+	#pragma omp parallel for
+	for (int k = 0; k < sy * sz; k ++) {
 
-			md_clear(4, vec_dims, vec, CFL_SIZE);
+		int tid = omp_get_thread_num();
+		int y = k % sy;
+		int z = k / sy;
+		int t = -1;
 
-			for (int i = 0; i < n; i ++) {
-				if ((y == lround(creal(data->reorder[i]))) && (z == lround(creal(data->reorder[i + n])))) {
-					t = lround(creal(data->reorder[i + 2 * n]));
-					md_copy(4, line_dims, (vec + t * wx * nc), (src + i * wx * nc), CFL_SIZE);
-				}
+		md_clear(4, vec_dims, vec + (wx * nc * tf * tid), CFL_SIZE);
+
+		for (int i = 0; i < n; i ++) {
+			if ((y == lround(creal(data->reorder[i]))) && (z == lround(creal(data->reorder[i + n])))) {
+				t = lround(creal(data->reorder[i + 2 * n]));
+				md_copy(4, line_dims, (vec + (wx * nc * tf * tid) + t * wx * nc), (src + i * wx * nc), CFL_SIZE);
 			}
-
-			md_zfmacc2(4, fmac_dims, phi_out_str, perm + (y + z * sy) * (wx * nc * tk), vec_str, vec, phi_mat_str, data->phi);
-
 		}
+
+		md_zfmacc2(4, fmac_dims, phi_out_str, perm + (y + z * sy) * (wx * nc * tk), vec_str, vec + (wx * nc * tf * tid), phi_mat_str, data->phi);
 	}
 
 	long out_dims[] = { [0 ... DIMS - 1] = 1 };
