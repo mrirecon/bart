@@ -313,8 +313,16 @@ static void kern_normal(const linop_data_t* _data, complex float* dst, const com
 	long output_str[DIMS];
 	md_calc_strides(DIMS, output_str, output_dims, CFL_SIZE);
 
+	long gpu_kernel_dims[DIMS] = { [0 ... DIMS - 1] = 1};
+	md_copy_dims(DIMS, gpu_kernel_dims, data->kernel_dims);
+	gpu_kernel_dims[0] = wx;
+	gpu_kernel_dims[3] = nc;
+
 	long kernel_str[DIMS];
 	md_calc_strides(DIMS, kernel_str, data->kernel_dims, CFL_SIZE);
+
+	long gpu_kernel_str[DIMS];
+	md_calc_strides(DIMS, gpu_kernel_str, gpu_kernel_dims, CFL_SIZE);
 
 	long fmac_dims[DIMS];
 	md_merge_dims(DIMS, fmac_dims, input_dims, data->kernel_dims);
@@ -322,7 +330,7 @@ static void kern_normal(const linop_data_t* _data, complex float* dst, const com
 	md_clear(DIMS, output_dims, dst, CFL_SIZE);
 	#ifdef USE_CUDA
 	if(cuda_ondevice(src))
-		md_zfmac2(DIMS, fmac_dims, output_str, dst, input_str, src, kernel_str, data->gpu_kernel);
+		md_zfmac2(DIMS, fmac_dims, output_str, dst, input_str, src, gpu_kernel_str, data->gpu_kernel);
 	else
 	#endif
 		md_zfmac2(DIMS, fmac_dims, output_str, dst, input_str, src, kernel_str, data->kernel);
@@ -337,33 +345,34 @@ static void kern_free(const linop_data_t* _data)
 	xfree(data->table_dims);
 	xfree(data->kernel_dims);
 
-	xfree(data);
-
 	#ifdef USE_CUDA
-	md_free(data->gpu_kernel);
+	if (data->gpu_kernel != NULL)
+		md_free(data->gpu_kernel);
 	#endif
+
+	xfree(data);
 }
 
-static const struct linop_s* linop_kern_create(long N,
-	const long _reorder_dims[N], complex float* reorder,
-	const long _phi_dims[N],     complex float* phi,
-	const long _kernel_dims[N],  complex float* kernel,
-	const long _table_dims[N])
+static const struct linop_s* linop_kern_create(bool gpu_flag, 
+	const long _reorder_dims[DIMS], complex float* reorder,
+	const long _phi_dims[DIMS],     complex float* phi,
+	const long _kernel_dims[DIMS],  complex float* kernel,
+	const long _table_dims[DIMS])
 {
 	PTR_ALLOC(struct kern_s, data);
 	SET_TYPEID(kern_s, data);
 
-	data->N = N;
+	data->N = DIMS;
 
-	PTR_ALLOC(long[N], reorder_dims);
-	PTR_ALLOC(long[N], phi_dims);
-	PTR_ALLOC(long[N], table_dims);
-	PTR_ALLOC(long[N], kernel_dims);
+	PTR_ALLOC(long[DIMS], reorder_dims);
+	PTR_ALLOC(long[DIMS], phi_dims);
+	PTR_ALLOC(long[DIMS], table_dims);
+	PTR_ALLOC(long[DIMS], kernel_dims);
 
-	md_copy_dims(N, *reorder_dims, _reorder_dims);
-	md_copy_dims(N, *phi_dims,     _phi_dims);
-	md_copy_dims(N, *table_dims,   _table_dims);
-	md_copy_dims(N, *kernel_dims,  _kernel_dims);
+	md_copy_dims(DIMS, *reorder_dims, _reorder_dims);
+	md_copy_dims(DIMS, *phi_dims,     _phi_dims);
+	md_copy_dims(DIMS, *table_dims,   _table_dims);
+	md_copy_dims(DIMS, *kernel_dims,  _kernel_dims);
 
 	data->reorder_dims = *PTR_PASS(reorder_dims);
 	data->phi_dims     = *PTR_PASS(phi_dims);
@@ -374,8 +383,27 @@ static const struct linop_s* linop_kern_create(long N,
 	data->phi     = phi;
 	data->kernel  = kernel;
 
+	data->gpu_kernel = NULL;
 	#ifdef USE_CUDA
-	data->gpu_kernel = md_gpu_move(N, _kernel_dims, kernel, CFL_SIZE);
+	if(gpu_flag) {
+
+		long repmat_kernel_dims[DIMS] = { [0 ... DIMS - 1] = 1};
+		md_copy_dims(DIMS, repmat_kernel_dims, _kernel_dims);
+		repmat_kernel_dims[0] = _table_dims[0];
+		repmat_kernel_dims[3] = _table_dims[1];
+
+		long kernel_strs[DIMS];
+		long repmat_kernel_strs[DIMS];
+		md_calc_strides(DIMS,        kernel_strs,       _kernel_dims, CFL_SIZE);
+		md_calc_strides(DIMS, repmat_kernel_strs, repmat_kernel_dims, CFL_SIZE);
+
+		complex float* repmat_kernel = md_calloc(DIMS, repmat_kernel_dims, CFL_SIZE);
+		md_copy2(DIMS, repmat_kernel_dims, repmat_kernel_strs, repmat_kernel, kernel_strs, kernel, CFL_SIZE);
+
+		data->gpu_kernel = md_gpu_move(DIMS, repmat_kernel_dims, repmat_kernel, CFL_SIZE);
+
+		md_free(repmat_kernel);
+	}
 	#endif
 
 	long input_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -390,7 +418,7 @@ static const struct linop_s* linop_kern_create(long N,
 	output_dims[1] = _table_dims[1];
 	output_dims[2] = _reorder_dims[0];
 
-	const struct linop_s* K = linop_create(N, output_dims, N, input_dims, CAST_UP(PTR_PASS(data)), kern_apply, kern_adjoint, kern_normal, NULL, kern_free);
+	const struct linop_s* K = linop_create(DIMS, output_dims, DIMS, input_dims, CAST_UP(PTR_PASS(data)), kern_apply, kern_adjoint, kern_normal, NULL, kern_free);
 	return K;
 }
 
@@ -674,7 +702,7 @@ int main_wshfl(int argc, char* argv[])
 	const struct linop_s* Fx  = linop_fx_create(wx, sy, sz, nc, tk);
 	const struct linop_s* W   = linop_wave_create(wx, sy, sz, nc, tk, wave);
 	const struct linop_s* Fyz = linop_fyz_create(wx, sy, sz, nc, tk);
-	const struct linop_s* K   = linop_kern_create(DIMS, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, table_dims);
+	const struct linop_s* K   = linop_kern_create(gpun >= 0, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, table_dims);
 
 	struct linop_s* A = linop_chain(linop_chain(linop_chain(linop_chain(linop_chain(
 		E, R), Fx), W), Fyz), K);
