@@ -727,7 +727,11 @@ int main_wshfl(int argc, char* argv[])
 	}
 
 	if (eval < 0)	
+		#ifdef USE_CUDA
 		eval = (gpun >= 0) ? estimate_maxeigenval_gpu(A->normal) : estimate_maxeigenval(A->normal);
+		#else
+		eval = estimate_maxeigenval(A->normal);
+		#endif
 	debug_printf(DP_INFO, "\tMax eval: %.2e\n", eval);
 	step /= eval;
 
