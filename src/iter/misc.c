@@ -48,3 +48,20 @@ double estimate_maxeigenval(const struct operator_s* op)
 	return max_eval;
 }
 
+#ifdef USE_CUDA
+double estimate_maxeigenval_gpu(const struct operator_s* op)
+{
+	const struct iovec_s* io = operator_domain(op);
+	long size = md_calc_size(io->N, io->dims);
+
+	void* x = md_alloc_gpu(io->N, io->dims, io->size);
+
+	md_gaussian_rand(io->N, io->dims, x);
+
+	double max_eval = iter_power(30, op, 2 * size, x);
+
+	md_free(x);
+
+	return max_eval;
+}
+#endif
