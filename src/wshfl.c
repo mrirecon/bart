@@ -23,7 +23,9 @@
 #include <stdbool.h>
 #include <complex.h>
 #include <math.h>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -232,7 +234,11 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	complex float* perm = md_alloc_sameplace(DIMS, perm_dims, CFL_SIZE, dst);
 	md_clear(DIMS, perm_dims, perm, CFL_SIZE);
 
+	#ifdef _OPENMP
 	long num_threads = omp_get_max_threads();
+	#else
+	long num_threads = 1;
+	#endif
 
 	long vec_dims[]     = {wx, nc, tf,  1};
 	long phi_mat_dims[] = { 1,  1, tf, tk};
@@ -254,8 +260,11 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 
 	#pragma omp parallel for
 	for (int k = 0; k < sy * sz; k ++) {
-
+		#ifdef _OPENMP
 		int tid = omp_get_thread_num();
+		#else
+		int tid = 0;
+		#endif
 		int y = k % sy;
 		int z = k / sy;
 		int t = -1;
