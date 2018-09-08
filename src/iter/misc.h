@@ -9,5 +9,4 @@ extern double iter_power(unsigned int maxiter,
 		long size, float* u);
 
 extern double estimate_maxeigenval(const struct operator_s* op);
-
-
+extern double estimate_maxeigenval_gpu(const struct operator_s* op);

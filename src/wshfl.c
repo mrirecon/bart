@@ -727,7 +727,7 @@ int main_wshfl(int argc, char* argv[])
 	}
 
 	if (eval < 0)	
-		eval = estimate_maxeigenval(A->normal);
+		eval = (gpun >= 0) ? estimate_maxeigenval_gpu(A->normal) : estimate_maxeigenval(A->normal);
 	debug_printf(DP_INFO, "\tMax eval: %.2e\n", eval);
 	step /= eval;
 
