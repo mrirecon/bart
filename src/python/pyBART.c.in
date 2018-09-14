@@ -34,17 +34,136 @@ extern void deallocate_all_mem_cfl();
 static char module_docstring[] =
      "This modules provides a way to use BART as native Python module.";
 static char call_bart_docstring[] =
-     "Call the `bart` command on some data";
+     "pyBART.bart(command_line)\n"
+     "\n"
+     "Register some NumPy data for later use with pyBART\n"
+     "\n"
+     "Parameters\n"
+     "----------\n"
+     "command_line : str\n"
+     "    BART command line to execute\n"
+     "\n"
+     "Returns\n"
+     "-------\n"
+     "result : string or int\n"
+     "    Output of the command or return value of the BART main function\n"
+     "    The list of functions outputting strings is listed below:\n"
+     "      - bitmask\n"
+     "      - estdelay\n"
+     "      - estdims\n"
+     "      - estshift\n"
+     "      - estvar\n"
+     "      - nrmse\n"
+     "      - sdot\n"
+     "      - show\n"
+     "      - version\n"
+     "\n"
+     "All other commands will result in an int being returned.\n"
+     "\n"
+     "Examples\n"
+     "--------\n"
+     ">>> pyBART.bart('phantom -x 64 output')";
 static char register_python_memory_docstring[] =
-     "Register some data for later use with BART";
+     "pyBART.register_memory(name, data)\n"
+     "\n"
+     "Register some NumPy data for later use with pyBART\n"
+     "\n"
+     "Parameters\n"
+     "----------\n"
+     "name : str\n"
+     "    Name of in-memory CFL file\n"
+     "data : numpy.ndarray (with dtype=numpy.complex64)\n"
+     "    Data to transfer to pyBART\n"
+     "\n"
+     "Raises\n"
+     "------\n"
+     "TypeError\n"
+     "    Raised when:\n"
+     "      - `data` is not of type numpy.ndarray\n"
+     "      - `data` is not an array of complex floats (dtype = numpy.complex64)\n"
+     "        In that case, use a.asstype(numpy.complex64)\n"
+     "\n"
+     "RuntimeError\n"
+     "    Raised if `name` is empty or if getting the data from NumPy fails\n"
+     "\n"
+     "Examples\n"
+     "--------\n"
+     ">>> a = numpy.array([ [0,1,2], [3,4,5] ])\n"
+     ">>> pyBART.register_memory('test.mem', a.astype(numpy.complex64))";
 static char unregister_all_mem_cfl_docstring[] =
-     "Unregister all memory CFLs";
+     "pyBART.unregister_all_memory()\n"
+     "\n"
+     "Cleanup pyBART's internal memory database\n"
+     "\n"
+     "Parameters\n"
+     "----------\n"
+     "None\n"
+     "\n"
+     "Returns\n"
+     "-------\n"
+     "None";
 static char load_cfl_python_docstring[] =
-     "Access an in-memory CFL file (returns a numpy.ndarray)";
-static char bart_subcommand_with_output_docstring[] =
-     "Calls a BART subcommand that produces some output";
+     "pyBART.load_cfl(name)\n"
+     "\n"
+     "Load some CFL file and return a copy of the data.\n"
+     "\n"
+     "Parameters\n"
+     "----------\n"
+     "name : str\n"
+     "    Name of CFL file (see Note below)\n"
+     "\n"
+     "Returns\n"
+     "-------\n"
+     "out : numpy.ndarray\n"
+     "    Data contained in the CFL file\n"
+     "\n"
+     "\n"
+     "Note\n"
+     "----\n"
+     "If pyBART is compiled with -DMEMONLY_CFL (CMake option: BART_MEMONLY_CFL)\n"
+     "only in-memory CFL files can be read using this function.\n"
+     "\n"
+     "Raises\n"
+     "------\n"
+     "RuntimeError\n"
+     "    Raised if the file does not exist or an error occurs while reading it.\n"
+     "      \n"
+     "Examples\n"
+     "--------\n"
+     ">>> a = numpy.array([ [0,1,2], [3,4,5] ])\n"
+     ">>> pyBART.register_memory('test.mem', a.astype(numpy.complex64))\n"
+     ">>> b = pyBART.load_cfl('test.mem')\n";
 static char bart_subcommand_docstring[] =
-     "Calls a BART subcommand";
+     "pyBART.<command>(command_line)\n"
+     "\n"
+     "Call the <command> BART command\n"
+     "This is effectively identical to calling pyBART.bart('<command> ...')\n"
+     "\n"
+     "Parameters\n"
+     "----------\n"
+     "command_line : str\n"
+     "    BART command line to execute (ie. arguments)\n"
+     "\n"
+     "Returns\n"
+     "-------\n"
+     "result : string or int\n"
+     "    Output of the command or return value of the BART main function\n"
+     "    The list of functions outputting strings is listed below:\n"
+     "      - bitmask\n"
+     "      - estdelay\n"
+     "      - estdims\n"
+     "      - estshift\n"
+     "      - estvar\n"
+     "      - nrmse\n"
+     "      - sdot\n"
+     "      - show\n"
+     "      - version\n"
+     "\n"
+     "All other commands will result in an int being returned.\n"
+     "\n"
+     "Examples\n"
+     "--------\n"
+     ">>> pyBART.phantom('-x 64 output')";
 
 /* Available functions */
 static PyObject* call_bart(PyObject *self, PyObject *args);
@@ -224,6 +343,18 @@ PyObject* register_python_memory(PyObject *self, PyObject *args)
 	  return NULL;
      }
 
+#ifndef MEMONLY_CFL
+     char* ext = strrchr(name, '.');
+     if (ext == NULL || !strncmp(ext, ".mem", strlen(ext))) {
+	  PyErr_SetString(PyExc_RuntimeError,
+			  "Name does not have the .mem extension, but pyBART "
+			  "was not compiled with -DMEMONLY_CFL "
+			  "(CMake option: BART_MEMONLY_CFL). Your "
+			  "in-memory CFL file will be unreachable!");
+	  return NULL;
+     }
+#endif /* !MEMONLY_CFL */
+
      if (npy_data == NULL) {
 	  PyErr_SetString(PyExc_RuntimeError,
 			  "npy_data == NULL");
@@ -231,13 +362,13 @@ PyObject* register_python_memory(PyObject *self, PyObject *args)
      }
 
      if (!PyArray_Check(npy_data)) {
-	  PyErr_SetString(PyExc_RuntimeError,
+	  PyErr_SetString(PyExc_TypeError,
 			  "npy_data is not of type numpy.ndarray");
 	  return NULL;
      }
 
      if (PyArray_DESCR(npy_data)->type_num != NPY_CFLOAT) {
-	  PyErr_SetString(PyExc_RuntimeError,
+	  PyErr_SetString(PyExc_TypeError,
 			  "npy_data must be of type complex float (numpy.complex64)");
 	  return NULL;
      }

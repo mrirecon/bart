@@ -456,8 +456,6 @@ if(BART_ENABLE_MEM_CFL)
   set_target_properties(bartmain PROPERTIES LINKER_LANGUAGE CXX)
 endif()
 
-# Workaround for possible name conflicts with libC's error function
-target_compile_definitions(bartmain PRIVATE -Derror=bart_error__)
 if(BART_LOG_BACKEND)
   # ensure that src/misc/misc.c will be compiled with logging backend support
   # but *ONLY* for the bartmain target
@@ -481,8 +479,7 @@ if(BART_CREATE_PYTHON_MODULE)
   if(CMAKE_VERSION VERSION_LESS 3.1)
     target_include_directories(pyBART PRIVATE ${Python_INCLUDE_DIR})
   endif()
-  # Also need to workaround for possible name conflicts with libC's error function
-  target_compile_definitions(pyBART PRIVATE -DBART_WITH_PYTHON -Derror=bart_error__)
+  target_compile_definitions(pyBART PRIVATE -DBART_WITH_PYTHON)
   target_link_libraries(pyBART PUBLIC "${Python_TGT};${PNG_TGT};${FFTW_TGT};${LINALG_VENDOR_LIB}")
   if(BART_ISMRMRD)
     target_link_libraries(pyBART PUBLIC ${ISMRMRD_LIBRARIES})
