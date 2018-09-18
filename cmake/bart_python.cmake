@@ -3,13 +3,6 @@
 # a BSD-style license which can be found in the LICENSE file.
 # \author Damien Nguyen <damien.nguyen@alumni.epfl.ch>
 
-if(BART_PYTHON_FORCE_27)
-  set(_python_version 2.7)
-else()
-  set(_python_version)
-endif()
-
-
 # Interpreter only required to find site-lib directories
 if(CMAKE_VERSION VERSION_LESS 3.12)
   find_package(BPython ${_python_version} REQUIRED COMPONENTS Development Interpreter)
