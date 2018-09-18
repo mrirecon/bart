@@ -22,12 +22,11 @@ option(BART_ISMRMRD "Use external ISMRMRD package for reading/writing" ${ISMRMRD
 # ------------------------------------------------------------------------------
 
 option(BART_CREATE_PYTHON_MODULE "Compile the pyBART Python module" OFF)
-include(CMakeDependentOption)
-cmake_dependent_option(BART_PYTHON_FORCE_27 "Force BART to use Python 2.7" OFF
-  "BART_CREATE_PYTHON_MODULE" OFF)
+option(BART_PYTHON_FORCE_27 "Force BART to use Python 2.7" OFF)
 
 # ------------------------------------------------------------------------------
 
+include(CMakeDependentOption)
 option(BART_LOG_BACKEND "Enable delegating all outputs to external logging backend" OFF)
 cmake_dependent_option(BART_LOG_SIEMENS_BACKEND "Use the Siemens logging backend" OFF
   "BART_LOG_BACKEND" OFF)
@@ -69,6 +68,12 @@ if(BART_CREATE_PYTHON_MODULE)
     message(STATUS "  - Setting BART_FPIC = ON")
     set(BART_FPIC ON CACHE BOOL "Compile using position-independent code" FORCE)
   endif()
+endif()
+
+if(BART_PYTHON_FORCE_27)
+  set(_python_version 2.7)
+else()
+  set(_python_version)
 endif()
 
 # --------------------------------------
