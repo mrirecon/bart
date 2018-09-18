@@ -4,6 +4,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+     //! BART's current debug level
      extern int debug_level;
 
      //! Load the content of some in-memory CFL
@@ -16,6 +17,9 @@ extern "C" {
       *  \param D          Size of the dimensions array (should be < 16)
       *  \param dimensions Array holding the dimensions of the data
       *                    (will get modified)
+      *
+      *  \return Pointer to the data or NULL if no matching in-memory CFL file
+      *  was found
       */
      void* load_mem_cfl(const char* name, unsigned int D, long dimensions[]);
      
@@ -29,10 +33,17 @@ extern "C" {
       *  \param dimensions Array holding the dimensions of the data
       *  \param ptr        Pointer to the data
       *
-      *  \note The underlying data type of ptr is assumed to be complex floats (complex float or _Complex float)
-      *  \warning Calling this function on data allocated with new[] will result in undefined behaviour!
+      *  \note The underlying data type of ptr is assumed to be complex floats
+      *  (complex float or _Complex float)
+      *
+      *  \warning Calling this function on data allocated with new[] will result
+      *  in undefined behaviour!
+      *
+      *  \warning Be aware that if MEMONLY_CFL is not defined, names that do not
+      *  end with the '.mem' extension will be unreachable by user code
       */
      void register_mem_cfl_malloc(const char* name, unsigned int D, const long dimensions[], void* ptr);
+
      //! Register some memory into the list of in-memory CFL files
      /*! 
       *  This function handles data that was allocated using the C++ new[] operator
@@ -43,14 +54,21 @@ extern "C" {
       *  \param dimensions Array holding the dimensions of the data
       *  \param ptr        Pointer to the data
       *
-      *  \note The underlying data type of ptr is assumed to be complex floats (complex float or _Complex float)
-      *  \warning Calling this function on data allocated with malloc will result in undefined behaviour!
+      *  \note The underlying data type of ptr is assumed to be complex floats
+      *  (complex float or _Complex float)
+      *
+      *  \warning Calling this function on data allocated with malloc will
+      *  result in undefined behaviour!
+      *
+      *  \warning Be aware that if MEMONLY_CFL is not defined, names that do not
+      *  end with the '.mem' extension will be unreachable by user code
       */
-     extern "C" void register_mem_cfl_new(const char* name, unsigned int D, const long dimensions[], void* ptr);
-     
+     void register_mem_cfl_new(const char* name, unsigned int D, const long dimensions[], void* ptr);
+
      //! Register some memory into the list of in-memory CFL files
      /*! 
-      *  This function handles data that was allocated using the C++ new[] operator
+      *  This function handles data that was allocated by the user and of which
+      *  the user wishes to retain control of its lifetime.
       *  It does *not* takes ownership of the data
       *
       *  \param name       Name which will be used to refer to the created in-mem CFL
@@ -58,7 +76,11 @@ extern "C" {
       *  \param dimensions Array holding the dimensions of the data
       *  \param ptr        Pointer to the data
       *
-      *  \note The underlying data type of ptr is assumed to be complex floats (complex float or _Complex float)
+      *  \note The underlying data type of ptr is assumed to be complex floats
+      *  (complex float or _Complex float)
+      *
+      *  \warning Be aware that if MEMONLY_CFL is not defined, names that do not
+      *  end with the '.mem' extension will be unreachable by user code
       */
      void register_mem_cfl_non_managed(const char* name, unsigned int D, const long dims[], void* ptr);
      
@@ -66,7 +88,8 @@ extern "C" {
      /*!
       *  This function will execute the BART command specified in argv[0]
       *  
-      *  If applicable, the output of the BART command will be returned into out. This applies to:
+      *  If applicable, the output of the BART command will be returned into
+      *  out. This applies to:
       *    - bitmask
       *    - estdims
       *    - estvar
@@ -81,6 +104,9 @@ extern "C" {
       *  \param out  Should be either NULL or point to a valid array of characters
       *  \param argc Same as for the main function
       *  \param argv Same as for the main function
+      *
+      *  \warning Be aware that if MEMONLY_CFL is not defined, names that do not
+      *  end with the '.mem' extension will be unreachable by user code
       */
      int bart_command(int len, char* out, int argc, char* argv[]);
      
