@@ -44,6 +44,7 @@
 #include "linops/linop.h"
 #include "linops/fmac.h"
 #include "linops/someops.h"
+#include "linops/realval.h"
 #include "sense/model.h"
 
 #include "misc/debug.h"
@@ -626,6 +627,7 @@ int main_wshfl(int argc, char* argv[])
 	float eval      = -1;
 	const char* fwd = NULL;
 	int   gpun      = -1;
+	bool  rvc       = false;
 
 	const struct opt_s opts[] = {
 		OPT_FLOAT( 'r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
@@ -641,6 +643,7 @@ int main_wshfl(int argc, char* argv[])
 		OPT_SET(   'H', &hgwld,             "Use hogwild in IST/FISTA."),
 		OPT_SET(   'w', &wav,               "Use wavelet."),
 		OPT_SET(   'l', &llr,               "Use locally low rank."),
+		OPT_SET(   'v', &rvc,               "Apply real valued constraint on coefficients."),
 	};
 
 	cmdline(&argc, argv, 6, 6, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -715,6 +718,17 @@ int main_wshfl(int argc, char* argv[])
 
 	struct linop_s* A = linop_chain(linop_chain(linop_chain(linop_chain(linop_chain(
 		E, R), Fx), W), Fyz), K);
+
+	if (rvc == true) {
+		debug_printf(DP_INFO, "\tDomain is restricted to real numbers.\n");
+		struct linop_s* tmp = A;
+		struct linop_s* rvcop = linop_realval_create(DIMS, linop_domain(A)->dims);
+
+		A = linop_chain(rvcop, tmp);
+
+		linop_free(rvcop);
+		linop_free(tmp);
+	}
 
 	linop_free(E);
 	linop_free(R);
