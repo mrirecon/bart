@@ -14,6 +14,21 @@
 #include <stdbool.h>
 #include <complex.h>
 
+#include "bart_embed_api.h"
+
+#include "misc/debug.h"
+#include "misc/misc.h"
+#include "misc/mmio.h"
+#include "misc/mmiocc.hh"
+
+#ifndef DIMS
+#  define DIMS 16
+#endif
+
+#define DP_UNSET -1
+
+/* ========================================================================== */
+
 struct error_jumper_s {
      bool initialized;
      jmp_buf buf;
@@ -21,155 +36,31 @@ struct error_jumper_s {
 
 extern struct error_jumper_s error_jumper;
 
-#ifndef DIMS
-#  define DIMS 16
-#endif
+/* -------------------------------------------------------------------------- */
 
-extern void* load_cfl(const char* name, unsigned int D, long dimensions[]);
+struct disk_cfl_data_s {
+     long D;
+     long dims[DIMS];
+     const _Complex float* data;
+     struct disk_cfl_data_s* prev;
+};
+static struct disk_cfl_data_s* disk_cfl_data = NULL;
+
+/* ========================================================================== */
+
+extern int   bart_command(int size, char* out, int argc, char* argv[]);
 extern _Bool register_mem_cfl_python(const char* name, PyArrayObject* npy_data);
-extern int bart_command(int size, char* out, int argc, char* argv[]);
-extern void deallocate_all_mem_cfl();
 
 /* Docstrings */
-static char module_docstring[] =
-     "This modules provides a way to use BART as native Python module.";
-static char call_bart_docstring[] =
-     "pyBART.bart(command_line)\n"
-     "\n"
-     "Register some NumPy data for later use with pyBART\n"
-     "\n"
-     "Parameters\n"
-     "----------\n"
-     "command_line : str\n"
-     "    BART command line to execute\n"
-     "\n"
-     "Returns\n"
-     "-------\n"
-     "result : string or int\n"
-     "    Output of the command or return value of the BART main function\n"
-     "    The list of functions outputting strings is listed below:\n"
-     "      - bitmask\n"
-     "      - estdelay\n"
-     "      - estdims\n"
-     "      - estshift\n"
-     "      - estvar\n"
-     "      - nrmse\n"
-     "      - sdot\n"
-     "      - show\n"
-     "      - version\n"
-     "\n"
-     "All other commands will result in an int being returned.\n"
-     "\n"
-     "Examples\n"
-     "--------\n"
-     ">>> pyBART.bart('phantom -x 64 output')";
-static char register_python_memory_docstring[] =
-     "pyBART.register_memory(name, data)\n"
-     "\n"
-     "Register some NumPy data for later use with pyBART\n"
-     "\n"
-     "Parameters\n"
-     "----------\n"
-     "name : str\n"
-     "    Name of in-memory CFL file\n"
-     "data : numpy.ndarray (with dtype=numpy.complex64)\n"
-     "    Data to transfer to pyBART\n"
-     "\n"
-     "Raises\n"
-     "------\n"
-     "TypeError\n"
-     "    Raised when:\n"
-     "      - `data` is not of type numpy.ndarray\n"
-     "      - `data` is not an array of complex floats (dtype = numpy.complex64)\n"
-     "        In that case, use a.asstype(numpy.complex64)\n"
-     "\n"
-     "RuntimeError\n"
-     "    Raised if `name` is empty or if getting the data from NumPy fails\n"
-     "\n"
-     "Examples\n"
-     "--------\n"
-     ">>> a = numpy.array([ [0,1,2], [3,4,5] ])\n"
-     ">>> pyBART.register_memory('test.mem', a.astype(numpy.complex64))";
-static char unregister_all_mem_cfl_docstring[] =
-     "pyBART.unregister_all_memory()\n"
-     "\n"
-     "Cleanup pyBART's internal memory database\n"
-     "\n"
-     "Parameters\n"
-     "----------\n"
-     "None\n"
-     "\n"
-     "Returns\n"
-     "-------\n"
-     "None";
-static char load_cfl_python_docstring[] =
-     "pyBART.load_cfl(name)\n"
-     "\n"
-     "Load some CFL file and return a copy of the data.\n"
-     "\n"
-     "Parameters\n"
-     "----------\n"
-     "name : str\n"
-     "    Name of CFL file (see Note below)\n"
-     "\n"
-     "Returns\n"
-     "-------\n"
-     "out : numpy.ndarray\n"
-     "    Data contained in the CFL file\n"
-     "\n"
-     "\n"
-     "Note\n"
-     "----\n"
-     "If pyBART is compiled with -DMEMONLY_CFL (CMake option: BART_MEMONLY_CFL)\n"
-     "only in-memory CFL files can be read using this function.\n"
-     "\n"
-     "Raises\n"
-     "------\n"
-     "RuntimeError\n"
-     "    Raised if the file does not exist or an error occurs while reading it.\n"
-     "      \n"
-     "Examples\n"
-     "--------\n"
-     ">>> a = numpy.array([ [0,1,2], [3,4,5] ])\n"
-     ">>> pyBART.register_memory('test.mem', a.astype(numpy.complex64))\n"
-     ">>> b = pyBART.load_cfl('test.mem')\n";
-static char bart_subcommand_docstring[] =
-     "pyBART.<command>(command_line)\n"
-     "\n"
-     "Call the <command> BART command\n"
-     "This is effectively identical to calling pyBART.bart('<command> ...')\n"
-     "\n"
-     "Parameters\n"
-     "----------\n"
-     "command_line : str\n"
-     "    BART command line to execute (ie. arguments)\n"
-     "\n"
-     "Returns\n"
-     "-------\n"
-     "result : string or int\n"
-     "    Output of the command or return value of the BART main function\n"
-     "    The list of functions outputting strings is listed below:\n"
-     "      - bitmask\n"
-     "      - estdelay\n"
-     "      - estdims\n"
-     "      - estshift\n"
-     "      - estvar\n"
-     "      - nrmse\n"
-     "      - sdot\n"
-     "      - show\n"
-     "      - version\n"
-     "\n"
-     "All other commands will result in an int being returned.\n"
-     "\n"
-     "Examples\n"
-     "--------\n"
-     ">>> pyBART.phantom('-x 64 output')";
+#include "python/pyBART_docstrings.c"
 
 /* Available functions */
 static PyObject* call_bart(PyObject *self, PyObject *args);
-static PyObject* register_python_memory(PyObject *self, PyObject *args);
-static PyObject* unregister_all_memory(PyObject *self, PyObject *args);
+static PyObject* cleanup_memory(PyObject *self, PyObject *args);
 static PyObject* load_cfl_python(PyObject* self, PyObject* args);
+static PyObject* register_python_memory(PyObject *self, PyObject *args);
+static PyObject* get_debug_level(PyObject *self, PyObject *args);
+static PyObject* set_debug_level(PyObject *self, PyObject *args);
 @PYBART_FUNCTION_PROTOTYPE@
 
 /* ========================================================================== */
@@ -183,7 +74,7 @@ struct module_state {
 #else
 #define GETSTATE(m) (&_state)
 static struct module_state _state;
-#endif
+#endif /* PY_MAJOR_VERSION >= 3 */
 
 static PyObject *
 error_out(PyObject *m) {
@@ -196,14 +87,21 @@ error_out(PyObject *m) {
 
 static PyMethodDef module_methods[] = {
      {"bart", call_bart, METH_VARARGS, call_bart_docstring},
-     {"register_memory", register_python_memory, METH_VARARGS, register_python_memory_docstring},
-     {"unregister_all_memory", unregister_all_memory, METH_NOARGS, unregister_all_mem_cfl_docstring},
+     {"cleanup_memory", cleanup_memory, METH_NOARGS, cleanup_memory_docstring},
      {"load_cfl", load_cfl_python, METH_VARARGS, load_cfl_python_docstring},
+     {"register_memory", register_python_memory, METH_VARARGS, register_python_memory_docstring},
+     {"get_debug_level", get_debug_level, METH_NOARGS, get_debug_level_docstring},
+     {"set_debug_level", set_debug_level, METH_O, set_debug_level_docstring},
      @PYBART_COMMANDS_MODULE_METHODS@
      {NULL, NULL, 0, NULL}
 };
 
 /* -------------------------------------------------------------------------- */
+
+#define ADD_PYTHON_CONSTANT(name)				\
+     if (PyModule_AddIntConstant(module, #name, name)) {	\
+	  INITERROR;						\
+     }
 
 #if PY_MAJOR_VERSION >= 3
 static int pyBART_traverse(PyObject *m, visitproc visit, void *arg) {
@@ -218,8 +116,8 @@ static int pyBART_clear(PyObject *m) {
 
 static struct PyModuleDef pyBART_definition = {
      PyModuleDef_HEAD_INIT,
-     "pyBART",
-     module_docstring,
+     pyBART_module_name,
+     pyBART_module_doc,
      sizeof(struct module_state),
      module_methods,
      NULL,
@@ -240,12 +138,25 @@ PyMODINIT_FUNC initpyBART(void)
 #if PY_MAJOR_VERSION >= 3
      PyObject *module = PyModule_Create(&pyBART_definition);
 #else
-     PyObject *module = Py_InitModule3("pyBART", module_methods, module_docstring);
+     PyObject *module = Py_InitModule3("pyBART",
+				       module_methods,
+				       module_docstring);
 #endif /* PY_MAJOR_VERSION >= 3 */
 
      if (module == NULL) {
 	  INITERROR;
      }
+
+     ADD_PYTHON_CONSTANT(DP_ERROR);
+     ADD_PYTHON_CONSTANT(DP_WARN);
+     ADD_PYTHON_CONSTANT(DP_INFO);
+     ADD_PYTHON_CONSTANT(DP_DEBUG1);
+     ADD_PYTHON_CONSTANT(DP_DEBUG2);
+     ADD_PYTHON_CONSTANT(DP_DEBUG3);
+     ADD_PYTHON_CONSTANT(DP_DEBUG4);
+     ADD_PYTHON_CONSTANT(DP_TRACE);
+     ADD_PYTHON_CONSTANT(DP_ALL);
+     ADD_PYTHON_CONSTANT(DP_UNSET);
      
      struct module_state *st = GETSTATE(module);
 
@@ -263,8 +174,10 @@ PyMODINIT_FUNC initpyBART(void)
 #endif
 }
 
-/* ========================================================================== */
+#undef ADD_PYTHON_CONSTANT
+#undef INITERROR
 
+/* ========================================================================== */
 
 PyObject* call_submain(const char* subcommand, const char* cmdline_in)
 {
@@ -345,13 +258,13 @@ PyObject* register_python_memory(PyObject *self, PyObject *args)
 
 #ifndef MEMONLY_CFL
      char* ext = strrchr(name, '.');
-     if (ext == NULL || !strncmp(ext, ".mem", strlen(ext))) {
-	  PyErr_SetString(PyExc_RuntimeError,
-			  "Name does not have the .mem extension, but pyBART "
-			  "was not compiled with -DMEMONLY_CFL "
-			  "(CMake option: BART_MEMONLY_CFL). Your "
-			  "in-memory CFL file will be unreachable!");
-	  return NULL;
+     if (ext == NULL || strncmp(ext, ".mem", strlen(ext)) != 0) {
+	  return PyErr_Format(PyExc_RuntimeError,
+			      "Name '%s' (%s) does not have the .mem extension,"
+			      " but pyBART was not compiled with -DMEMONLY_CFL"
+			      "(CMake option: BART_MEMONLY_CFL). "
+			      "Your in-memory CFL file will be unreachable!",
+			      name, ext);
      }
 #endif /* !MEMONLY_CFL */
 
@@ -369,7 +282,8 @@ PyObject* register_python_memory(PyObject *self, PyObject *args)
 
      if (PyArray_DESCR(npy_data)->type_num != NPY_CFLOAT) {
 	  PyErr_SetString(PyExc_TypeError,
-			  "npy_data must be of type complex float (numpy.complex64)");
+			  "npy_data must be of type complex float "
+			  "(numpy.complex64)");
 	  return NULL;
      }
      
@@ -396,13 +310,37 @@ PyObject* register_python_memory(PyObject *self, PyObject *args)
 
 /* ========================================================================== */
 
-PyObject* unregister_all_memory(PyObject* self, PyObject* args)
+static void register_disk_cfl(unsigned int D,
+			      const long dims[__VLA(D)],
+			      const _Complex float* data)
 {
-     deallocate_all_mem_cfl();
-     Py_RETURN_NONE;
+     PTR_ALLOC(struct disk_cfl_data_s, new_data);
+
+     new_data->D = D;
+     memcpy(new_data->dims, dims, D * sizeof(long));
+     new_data->data = data;
+     new_data->prev = disk_cfl_data;
+
+     disk_cfl_data = PTR_PASS(new_data);
 }
 
-/* ========================================================================== */
+void disk_cfl_cleanup(void)
+{
+     struct disk_cfl_data_s* tmp = NULL;
+     while (NULL != disk_cfl_data) {
+	  // Unmap memory
+	  unmap_cfl(disk_cfl_data->D,
+		    disk_cfl_data->dims,
+		    disk_cfl_data->data);
+
+	  // Cleanup memory
+	  tmp = disk_cfl_data;
+	  disk_cfl_data = disk_cfl_data->prev;
+	  xfree(tmp);
+     }
+}
+
+/* -------------------------------------------------------------------------- */
 
 PyObject* load_cfl_python(PyObject* self, PyObject* args)
 {
@@ -424,6 +362,10 @@ PyObject* load_cfl_python(PyObject* self, PyObject* args)
 	       return NULL;	  
 	  }
 
+	  if (!is_mem_cfl(data)) {
+	       register_disk_cfl(DIMS, dims, data);
+	  }
+
 	  npy_intp pydims[DIMS] = {0};
 	  for (unsigned int i = 0; i < DIMS; ++i) {
 	       pydims[i] = dims[i];
@@ -435,7 +377,7 @@ PyObject* load_cfl_python(PyObject* self, PyObject* args)
 			     NULL, /* strides */
 			     data,
 			     sizeof(complex float),
-			     NPY_ARRAY_FARRAY_RO,
+			     NPY_ARRAY_CARRAY_RO,
 			     NULL /* obj */);
      }
      else {
@@ -444,4 +386,166 @@ PyObject* load_cfl_python(PyObject* self, PyObject* args)
 }
 
 /* ========================================================================== */
+
+PyObject* cleanup_memory(PyObject* self, PyObject* args)
+{
+     deallocate_all_mem_cfl();
+     disk_cfl_cleanup();
+     
+     Py_RETURN_NONE;
+}
+
+/* ========================================================================== */
+
+#define IF_LEVEL_IS(name)					\
+     if (debug_level == name) {					\
+	  constant = PyDict_GetItemString(module_dict, #name);	\
+     }
+
+PyObject* get_debug_level(PyObject* self, PyObject* args)
+{
+    PyObject* module_dict = PyModule_GetDict(self);
+    PyObject* constant = NULL;
+    
+    IF_LEVEL_IS(DP_ERROR)
+    else IF_LEVEL_IS(DP_INFO)
+    else IF_LEVEL_IS(DP_DEBUG1)
+    else IF_LEVEL_IS(DP_DEBUG2)
+    else IF_LEVEL_IS(DP_DEBUG3)
+    else IF_LEVEL_IS(DP_DEBUG4)
+    else IF_LEVEL_IS(DP_TRACE)
+    else IF_LEVEL_IS(DP_ALL)
+    else {
+        constant = PyDict_GetItemString(module_dict, "DP_UNSET");
+    }
+    
+    Py_INCREF(constant);
+    return constant;
+}
+
+#undef IF_LEVEL_IS
+
+/* -------------------------------------------------------------------------- */
+
+PyObject* set_debug_level(PyObject* self, PyObject* param)
+{
+     int level = DP_UNSET;
+     
+     if (PyLong_Check(param)) {
+	  level = PyLong_AsLong(param);
+	  if (PyErr_Occurred()) {
+	       return NULL;	  
+	  }
+     }
+#if PY_MAJOR_VERSION == 2
+     else if (PyInt_Check(param)) {
+	  level = PyInt_AsLong(param);
+	  if (PyErr_Occurred()) {
+	       return NULL;	  
+	  }
+     }
+#endif /* PY_MAJOR_VERSION == 2 */
+     else if (PyFloat_Check(param)) {
+	  double d = PyFloat_AsDouble(param);
+	  if (PyErr_Occurred()) {
+	       return NULL;	  
+	  }
+
+	  level = d;
+	  if (level != d) {
+	       PyErr_SetString(PyExc_RuntimeError,
+			       "Cannot have decimal debug level");
+	       return NULL;
+	  }
+     }
+     else {
+	  char buf[10] = { '\0' };
+	  char* str = NULL;
+	  
+#if PY_MAJOR_VERSION >= 3
+	  if (PyUnicode_Check(param)) {
+#if PY_MINOR_VERSION >= 2
+	       PyObject* tmp;
+	       wchar_t* wstr = PyUnicode_AsWideCharString(param, NULL);
+	       if (wstr == NULL) {
+		    fprintf(stderr,
+			    "ERROR: getting string from Python object\n");
+		    return NULL;
+	       }
+	       wcstombs(buf, wstr, sizeof(buf)/sizeof(char));
+	       str = buf;
+	       PyMem_Free(wstr);
+#else
+	       // NB: not really tested...
+	       str = PyUnicode_AS_DATA(param);
+#endif /* PY_MINOR_VERSION >= 2 */
+	  }
+#else
+	  if (PyString_Check(param)) {
+	       str = PyString_AsString(param);	       
+	  }
+#endif /* PY_MAJOR_VERSION >= 3 */
+	  else {
+	       return PyErr_Format(PyExc_RuntimeError,
+				   "Input argument has unsupported type: %s",
+				   param->ob_type->tp_name);
+	  }
+	  
+	  if (PyErr_Occurred() || str == NULL) {
+	       fprintf(stderr,
+		       "ERROR: something went wrong!\n");
+	       return NULL;
+	  }
+	  else {
+	       
+#define IF_STR_IS(name) if (strcmp(str, #name) == 0) { level = name; }
+	       
+	       IF_STR_IS(DP_ERROR)
+	       else IF_STR_IS(DP_WARN)
+	       else IF_STR_IS(DP_INFO)
+	       else IF_STR_IS(DP_DEBUG1)
+	       else IF_STR_IS(DP_DEBUG2)
+	       else IF_STR_IS(DP_DEBUG3)
+	       else IF_STR_IS(DP_DEBUG4)
+	       else IF_STR_IS(DP_TRACE)
+	       else IF_STR_IS(DP_ALL)
+	       else IF_STR_IS(DP_UNSET)
+	       else {
+		    return PyErr_Format(PyExc_RuntimeError,
+					"String %s is not a valid debug level",
+					str);
+	       }
+
+#undef IF_STR_IS
+	  }
+     }
+     
+     /* ----------------------------- */
+     
+#define ADD_CASE(name) case name: debug_level = name; break
+     
+     switch (level) {
+	  ADD_CASE(DP_ERROR);
+	  ADD_CASE(DP_WARN);
+	  ADD_CASE(DP_INFO);
+	  ADD_CASE(DP_DEBUG1);
+	  ADD_CASE(DP_DEBUG2);
+	  ADD_CASE(DP_DEBUG3);
+	  ADD_CASE(DP_DEBUG4);
+	  ADD_CASE(DP_TRACE);
+	  ADD_CASE(DP_ALL);
+	  ADD_CASE(DP_UNSET);
+     default:
+	  printf("WARNING: invalid value for debug level (%d),"
+		 " setting level to DP_UNSET (%d)\n", level, DP_UNSET);
+	  debug_level = DP_UNSET;
+     }
+
+#undef ADD_CASE
+
+     Py_RETURN_NONE;
+}
+
+/* ========================================================================== */
+
 @PYBART_COMMANDS_IMPLEMENTATION@
