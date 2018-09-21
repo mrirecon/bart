@@ -27,6 +27,48 @@ endif()
 
 # ==============================================================================
 
+set(PYBART_PYBIND11_SEARCH_PATHS
+  ${PYBART_PYBIND11_ROOT}
+  $ENV{PYBART_PYBIND11_ROOT}
+  ${PYBART_PYBIND11_DIR}
+  $ENV{PYBART_PYBIND11_DIR}
+  ${CMAKE_PREFIX_PATH}
+  $ENV{CMAKE_PREFIX_PATH}
+  /usr
+  /usr/local/
+  /opt
+  /opt/local
+  )
+
+set(_pybind11_file pybind11.h)
+
+get_filename_component(_python_inc_path ${Python_INCLUDE_DIR} DIRECTORY)
+get_filename_component(_python_ver_name ${Python_INCLUDE_DIR} NAME)
+string(REGEX MATCH "python[0-9].[0-9]" _python_ver ${_python_ver_name})
+
+if(UNIX)
+  list(APPEND PYBART_PYBIND11_SEARCH_PATHS "/usr/local/include/${_python_ver}")
+  list(APPEND PYBART_PYBIND11_SEARCH_PATHS "/usr/local/include/${_python_ver}m")
+endif()
+
+find_path(PYBART_PYBIND11_INCLUDE
+  NAMES ${_pybind11_file}
+  HINTS ${Python_SITELIB} ${Python_INCLUDE_DIR} ${Python_EXTRA_INCLUDE_DIR}
+  PATHS ${PYBART_PYBIND11_SEARCH_PATHS}
+  PATH_SUFFIXES pybind11
+  NO_DEFAULT_PATH
+  )
+
+if(NOT PYBART_PYBIND11_INCLUDE)
+  set(_msg "Unable to find pybind11/${_pybind11_file}. Please set the path to this")
+  set(_msg "${_msg} file on your system to either a system or CMake variable")
+  set(_msg "${_msg} named PYBART_PYBIND11_ROOT or PYBART_PYBIND11_DIR or add the")
+  set(_msg "${_msg} the path to the CMAKE_PREFIX_PATH")
+  message(FATAL_ERROR "${_msg}")
+endif()
+
+# ==============================================================================
+
 set(PYBART_NUMPY_SEARCH_PATHS
   ${PYBART_NUMPY_ROOT}
   $ENV{PYBART_NUMPY_ROOT}
@@ -60,13 +102,15 @@ endif()
 
 # ------------------------------------------------------------------------------
 
-get_filename_component(_inc_dir ${PYBART_NUMPY_INCLUDE} DIRECTORY)
+get_filename_component(_numpy_inc_dir ${PYBART_NUMPY_INCLUDE} DIRECTORY)
+get_filename_component(_pybind11_inc_dir ${PYBART_PYBIND11_INCLUDE} DIRECTORY)
 
 get_target_property(_interface_inc_dir
   ${Python_TGT}
   INTERFACE_INCLUDE_DIRECTORIES
   )
-list(APPEND _interface_inc_dir ${_inc_dir})
+list(APPEND _interface_inc_dir ${_numpy_inc_dir})
+list(APPEND _interface_inc_dir ${_pybind11_inc_dir})
 
 set_target_properties(${Python_TGT}
   PROPERTIES
@@ -81,9 +125,9 @@ set(PYBART_COMMANDS_IMPLEMENTATION)
 
 foreach(curr_prog ${ALLPROGS})
   if(EXISTS "${PROJECT_SOURCE_DIR}/src/${curr_prog}.c")
-    set(PYBART_FUNCTION_PROTOTYPE "${PYBART_FUNCTION_PROTOTYPE}static PyObject* call_${curr_prog}(PyObject* self, PyObject* args);\n")
-    set(PYBART_COMMANDS_MODULE_METHODS "${PYBART_COMMANDS_MODULE_METHODS}     {\"${curr_prog}\", call_${curr_prog}, METH_VARARGS, bart_subcommand_docstring},\n")
-    set(PYBART_COMMANDS_IMPLEMENTATION "${PYBART_COMMANDS_IMPLEMENTATION}PyObject* call_${curr_prog} (PyObject* self, PyObject* args)\n{\n     enum { MAX_ARGS = 256 };\n     char* cmdline = NULL;\n     char output[256] = { \"\" };\n     if (!PyArg_ParseTuple(args, \"s\", &cmdline)) {\n	  Py_RETURN_NONE;\n     }\n\n     return call_submain(\"${curr_prog}\", cmdline);\n}\n\n")
+    set(PYBART_FUNCTION_PROTOTYPE "${PYBART_FUNCTION_PROTOTYPE}static py::object call_${curr_prog} (const char* cmdline);\n")
+    set(PYBART_COMMANDS_MODULE_METHODS "${PYBART_COMMANDS_MODULE_METHODS}          m.def(\"${curr_prog}\", call_${curr_prog}, bart_subcommand_docstring);\n")
+    set(PYBART_COMMANDS_IMPLEMENTATION "${PYBART_COMMANDS_IMPLEMENTATION}py::object call_${curr_prog} (const char* cmdline)\n{\n     return call_submain(\"${curr_prog}\", cmdline);\n}\n\n")
   endif()
 endforeach()
 
