@@ -1,0 +1,446 @@
+/* Copyright 2018. Damien Nguyen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ *
+ * Authors:
+ * 2018    Damien Nguyen <damien.nguyen@alumni.epfl.ch>
+ */
+
+#include <Python.h>
+#define PY_ARRAY_UNIQUE_SYMBOL bart_numpy_identifier
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include <numpy/arrayobject.h>
+
+#include "pybind11/pybind11.h"
+#include "pybind11/operators.h"
+#include "pybind11/stl.h"
+#include "pybind11/numpy.h"
+
+namespace py = pybind11;
+using numpy_array_t = py::array_t<std::complex<float>,
+				  py::array::c_style
+				  | py::array::forcecast>;
+
+#include <algorithm>
+#include <complex>
+#include <tuple>
+
+#define _Bool bool
+#include "bart_embed_api.h"
+
+#include "misc/debug.h"
+#include "misc/misc.h"
+#include "misc/mmio.h"
+#include "misc/mmiocc.hh"
+
+#ifndef DIMS
+#  define DIMS 16
+#endif
+
+#define DP_UNSET -1
+
+/* ========================================================================== */
+
+struct error_jumper_s {
+     bool initialized;
+     jmp_buf buf;
+};
+
+extern "C" struct error_jumper_s error_jumper;
+
+/* -------------------------------------------------------------------------- */
+
+struct disk_cfl_data_s
+{
+     long D;
+     long dims[DIMS];
+     const std::complex<float>* data;
+};
+
+struct unmap_cfl_deleter
+{
+     void operator() (disk_cfl_data_s* p) const
+	  {
+	       unmap_cfl(p->D, p->dims, (_Complex float*) p->data);
+	       p->data = nullptr;
+	  }
+};
+
+using disk_cfl_ptr = std::unique_ptr<disk_cfl_data_s, unmap_cfl_deleter>;
+
+static std::vector<disk_cfl_ptr> disk_cfl_data;
+static std::vector<std::tuple<void*, py::capsule>> load_cfl_base_objects;
+
+/* ========================================================================== */
+
+extern "C" {
+     extern const char* bart_version;
+     int  bart_command(int size, char* out, int argc, char* argv[]);
+}
+
+bool register_mem_cfl_python(const char* name,
+			     const numpy_array_t& array);
+void disk_cfl_cleanup(void);
+
+/* Docstrings */
+#include "python/pyBART_docstrings.c"
+
+/* Available functions */
+static py::object call_bart(const char* cmdline);
+static void cleanup_memory();
+static numpy_array_t load_cfl_python(const std::string& name);
+static void register_python_memory(const std::string& name,
+				   numpy_array_t& array);
+static py::int_ get_debug_level();
+static void set_debug_level(py::int_ param);
+static void set_debug_level(py::float_ param);
+static void set_debug_level(py::str param);
+@PYBART_FUNCTION_PROTOTYPE@
+
+/* ========================================================================== */
+
+#define ADD_PYTHON_CONSTANT(name)		\
+     m.attr(#name) = int(name)
+
+static int pyBART_clear(PyObject *m)
+{
+     deallocate_all_mem_cfl();
+     disk_cfl_cleanup();
+     return 0;
+}
+
+class A {};
+
+PYBIND11_MODULE(pyBART, m)
+{
+     py::options options;
+     options.disable_function_signatures();
+     
+     m.def("bart",
+	   call_bart,
+	   call_bart_docstring);
+     // Removed for now since it's dangerous when used wrongly...
+     // -> now done when module unloads
+     // m.def("cleanup_memory",
+     // 	   cleanup_memory,
+     // 	   cleanup_memory_docstring);
+     m.def("load_cfl",
+	   load_cfl_python,
+	   load_cfl_python_docstring,
+	   py::return_value_policy::reference);
+     m.def("register_memory",
+	   register_python_memory,
+	   register_python_memory_docstring);
+     m.def("get_debug_level",
+	   get_debug_level,
+	   get_debug_level_docstring);
+     m.def("set_debug_level",
+	   py::overload_cast<py::int_>(set_debug_level),
+	   set_debug_level_int_docstring);
+     m.def("set_debug_level",
+	   py::overload_cast<py::float_>(set_debug_level),
+	   set_debug_level_float_docstring);
+     m.def("set_debug_level",
+	   py::overload_cast<py::str>(set_debug_level),
+	   set_debug_level_str_docstring);
+     
+     @PYBART_COMMANDS_MODULE_METHODS@
+	  
+     ADD_PYTHON_CONSTANT(DP_ERROR);
+     ADD_PYTHON_CONSTANT(DP_WARN);
+     ADD_PYTHON_CONSTANT(DP_INFO);
+     ADD_PYTHON_CONSTANT(DP_DEBUG1);
+     ADD_PYTHON_CONSTANT(DP_DEBUG2);
+     ADD_PYTHON_CONSTANT(DP_DEBUG3);
+     ADD_PYTHON_CONSTANT(DP_DEBUG4);
+     ADD_PYTHON_CONSTANT(DP_TRACE);
+     ADD_PYTHON_CONSTANT(DP_ALL);
+     ADD_PYTHON_CONSTANT(DP_UNSET);
+
+
+     py::class_<A>(m, "BaseClass");
+     // Register a callback function that is invoked when the BaseClass object is colelcted
+     py::cpp_function cleanup_callback(
+     	  [](py::handle weakref) {
+	       cleanup_memory();
+     	       weakref.dec_ref(); // release weak reference
+     	  }
+     	  );
+
+     // Create a weak reference with a cleanup callback and initially leak it
+     (void) py::weakref(m.attr("BaseClass"), cleanup_callback).release();
+     
+     m.attr("__doc__")     = pyBART_module_doc;
+     m.attr("__version__") = bart_version;
+
+     /* Load `numpy` functionality. */
+     if (_import_array() < 0) {
+	  PyErr_Print();
+	  PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");
+	  throw py::error_already_set();
+     }
+}
+
+#undef ADD_PYTHON_CONSTANT
+
+/* ========================================================================== */
+
+py::object call_submain(const char* subcommand, const char* cmdline_in)
+{
+     enum { MAX_ARGS = 256 };
+     char cmdline[1024] = { '\0' };
+     char output[512] = { '\0' };
+
+     snprintf(cmdline, 1024, "%s %s", subcommand, cmdline_in);
+
+     // tokenize the command string into argc/argv (basic, hopefully enough)
+     int argc = 0;
+     char *argv[MAX_ARGS];
+     char *argvv[MAX_ARGS];
+
+     char *p2 = strtok(cmdline, " ");
+     while (p2 && argc < MAX_ARGS-1)
+     {
+	  argv[argc++] = p2;
+	  p2 = strtok(0, " ");
+     }
+     argv[argc] = 0;
+
+     int ret = bart_command(512, output, argc, argv); // execute bart
+
+     if (strlen(output) > 0) {
+	  return py::str(output);
+     }
+     else {
+	  if (PyErr_Occurred()) {
+	       throw std::runtime_error("something wrong happened");
+	       return py::none();
+	  }
+	  else {
+	       return py::int_(ret);
+	  }
+     }
+}
+
+/* ========================================================================== */
+
+py::object call_bart(const char* cmdline)
+{
+     return call_submain("", cmdline);
+}
+
+/* ========================================================================== */
+
+void register_python_memory(const std::string& name,
+			    numpy_array_t& array)
+{
+     debug_printf(DP_DEBUG4, "in: register_python_memory\n");
+     /*
+      * No need to use the error_jumper here since this code path will
+      * never encounter a call to BART's error() function
+      *
+      * However, this call might throw, which would then be handled by pybind11
+      */
+
+     register_mem_cfl_python(name.c_str(), array);
+}
+
+/* ========================================================================== */
+
+static void register_disk_cfl(unsigned int D,
+			      const long dims[__VLA(D)],
+			      void* data)
+{
+     auto new_data = disk_cfl_ptr(new disk_cfl_data_s);
+     new_data->D = D;
+     memcpy(new_data->dims, dims, D * sizeof(long));
+     new_data->data = reinterpret_cast<const std::complex<float>*>(data);
+     disk_cfl_data.push_back(std::move(new_data));
+}
+
+void disk_cfl_cleanup(void)
+{
+     disk_cfl_data.clear();
+}
+
+/* -------------------------------------------------------------------------- */
+
+numpy_array_t load_cfl_python(const std::string& name)
+{
+     debug_printf(DP_DEBUG4, "in: load_cfl_python\n");
+     
+     error_jumper.initialized = 1;
+     if (setjmp(error_jumper.buf) == 0) {
+	  long dims[DIMS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	  void* data = load_cfl(name.c_str(), DIMS, dims);
+
+	  if (data == nullptr) {
+	       throw std::runtime_error("failed loading CFL file");
+	  }
+
+	  if (!is_mem_cfl(reinterpret_cast<_Complex float*>(data))) {
+	       debug_printf(DP_DEBUG4, "     registering on-disk CFL file\n");
+	       register_disk_cfl(DIMS, dims, data);
+	  }
+
+	  std::vector<py::ssize_t> pydims(dims, dims+DIMS);
+
+	  /* 
+	   * Make sure that all NumPy arrays pointing to the same memory 
+	   * location have the same base object.
+	   * This also tells NumPy that the arrays are not the owners
+	   * of the memory they refer to.
+	   *
+	   * The destructor is a bit dumb since it's not doing anything
+	   * but could be used for tracing
+	   */
+	  auto it = std::find_if(load_cfl_base_objects.begin(),
+				 load_cfl_base_objects.end(),
+				 [&] (auto& t) {
+				      return std::get<0>(t) == data;
+				 });
+
+	  if (it == load_cfl_base_objects.end()) {
+	       debug_printf(DP_DEBUG4,
+			    "     creating new Python capsule as base "
+			    "object\n");
+	       auto tmp = std::make_tuple(data,
+					  py::capsule(data,
+						      [](void *v) {}));
+	       load_cfl_base_objects.push_back(std::move(tmp));
+	       it = std::prev(load_cfl_base_objects.end());
+	  }
+	  else {
+	       debug_printf(DP_DEBUG4,
+			    "     re-using existing Python capsule as base "
+			    "object\n");
+	  }
+
+	  debug_printf(DP_DEBUG4,
+		       "     creating NumPy.ndarray with capsule "
+		       "as base\n");
+	  auto ret = py::array(pydims,
+			       reinterpret_cast<std::complex<float>*>(data),
+			       std::get<1>(*it));
+	  
+	  using api = py::detail::npy_api;
+	  py::detail::array_proxy(ret.ptr())->flags &= ~api::NPY_ARRAY_WRITEABLE_;
+
+	  return ret;
+     }
+     else {
+	  throw py::error_already_set();
+     }
+}
+
+/* ========================================================================== */
+
+void cleanup_memory()
+{
+     deallocate_all_mem_cfl();
+     disk_cfl_cleanup();
+     load_cfl_base_objects.clear();
+}
+
+/* ========================================================================== */
+
+#define IF_LEVEL_IS(name)					\
+     if (debug_level == name) {					\
+	  constant = module_dict[#name];			\
+     }
+
+py::int_ get_debug_level()
+{
+     auto module_dict = py::reinterpret_borrow<py::dict>(py::module::import("pyBART").attr("__dict__"));
+
+     py::int_ constant;
+    
+     IF_LEVEL_IS(DP_ERROR)
+     else IF_LEVEL_IS(DP_INFO)
+     else IF_LEVEL_IS(DP_DEBUG1)
+     else IF_LEVEL_IS(DP_DEBUG2)
+     else IF_LEVEL_IS(DP_DEBUG3)
+     else IF_LEVEL_IS(DP_DEBUG4)
+     else IF_LEVEL_IS(DP_TRACE)
+     else IF_LEVEL_IS(DP_ALL)
+     else {
+	  constant = module_dict["DP_UNSET"];
+     }
+    
+     return constant;
+}
+
+#undef IF_LEVEL_IS
+
+/* -------------------------------------------------------------------------- */
+
+void set_debug_level_impl(int level)
+{
+#define ADD_CASE(name) case name: debug_level = name; break
+     
+     switch (level) {
+	  ADD_CASE(DP_ERROR);
+	  ADD_CASE(DP_WARN);
+	  ADD_CASE(DP_INFO);
+	  ADD_CASE(DP_DEBUG1);
+	  ADD_CASE(DP_DEBUG2);
+	  ADD_CASE(DP_DEBUG3);
+	  ADD_CASE(DP_DEBUG4);
+	  ADD_CASE(DP_TRACE);
+	  ADD_CASE(DP_ALL);
+	  ADD_CASE(DP_UNSET);
+     default:
+	  printf("WARNING: invalid value for debug level (%d),"
+		 " setting level to DP_UNSET (%d)\n", level, DP_UNSET);
+	  debug_level = DP_UNSET;
+     }
+
+#undef ADD_CASE
+}
+
+void set_debug_level(py::int_ param)
+{
+     set_debug_level_impl(param);
+}
+
+void set_debug_level(py::float_ param)
+{
+     double d = param.cast<double>();
+     int level = d;
+     if (level != d) {
+	  throw std::runtime_error("Cannot have decimal debug level");
+     }
+     else {
+	  set_debug_level_impl(level);
+     }
+}
+
+void set_debug_level(py::str param)
+{
+     int level(DP_UNSET);
+     const std::string str(param);
+     
+#define IF_STR_IS(name) if (str == #name) { level = name; }
+	       
+     IF_STR_IS(DP_ERROR)
+     else IF_STR_IS(DP_WARN)
+     else IF_STR_IS(DP_INFO)
+     else IF_STR_IS(DP_DEBUG1)
+     else IF_STR_IS(DP_DEBUG2)
+     else IF_STR_IS(DP_DEBUG3)
+     else IF_STR_IS(DP_DEBUG4)
+     else IF_STR_IS(DP_TRACE)
+     else IF_STR_IS(DP_ALL)
+     else IF_STR_IS(DP_UNSET)
+     else {
+	  // TODO: add str to error message
+	  throw std::runtime_error("String is not a valid debug level");
+     }
+
+#undef IF_STR_IS
+     set_debug_level_impl(level);
+}
+
+/* ========================================================================== */
+
+@PYBART_COMMANDS_IMPLEMENTATION@

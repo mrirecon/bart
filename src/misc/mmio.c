@@ -358,12 +358,9 @@ static complex float* load_cfl_internal(const char* name, unsigned int D, long d
 
 	     complex float* ptr = load_mem_cfl(name, D, dimensions);
 
-	     if (NULL == ptr) {
-
-		  BART_WARN("Unable to find %s in in-memory CFL files", name);
-
-	     }  else {
-
+	     if (ptr == NULL) {
+		     io_error("failed loading memory cfl file \"%s\"", name);
+	     } else {
 		  return ptr;
 	     }
 	}

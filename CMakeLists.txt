@@ -467,11 +467,11 @@ endif()
 if(BART_CREATE_PYTHON_MODULE)
   include(${CMAKE_CURRENT_LIST_DIR}/cmake/bart_python.cmake)
 
-  configure_file(${CMAKE_CURRENT_LIST_DIR}/src/python/pyBART.c.in ${PROJECT_BINARY_DIR}/pyBART.c @ONLY)
+  configure_file(${CMAKE_CURRENT_LIST_DIR}/src/python/pyBART.cpp.in ${PROJECT_BINARY_DIR}/pyBART.cpp @ONLY)
 
   bart_add_library(pyBART
     SHARED
-    ${PROJECT_BINARY_DIR}/pyBART.c
+    ${PROJECT_BINARY_DIR}/pyBART.cpp
     ${BARTSUPPORT_PYTHON_SEPARATE_COMPILATION_FILES}
     $<TARGET_OBJECTS:bartsupport_objs>
     $<TARGET_OBJECTS:bartmain_objs>)
