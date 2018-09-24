@@ -17,6 +17,9 @@
 #include "pybind11/numpy.h"
 
 namespace py = pybind11;
+using numpy_farray_t = py::array_t<std::complex<float>,
+				   py::array::f_style
+				   | py::array::forcecast>;
 using numpy_array_t = py::array_t<std::complex<float>,
 				  py::array::c_style
 				  | py::array::forcecast>;
@@ -88,7 +91,7 @@ void disk_cfl_cleanup(void);
 /* Available functions */
 static py::object call_bart(const char* cmdline);
 static void cleanup_memory();
-static numpy_array_t load_cfl_python(const std::string& name);
+static numpy_farray_t load_cfl_python(const std::string& name);
 static void register_python_memory(const std::string& name,
 				   numpy_array_t& array);
 static py::int_ get_debug_level();
@@ -119,11 +122,9 @@ PYBIND11_MODULE(pyBART, m)
      m.def("bart",
 	   call_bart,
 	   call_bart_docstring);
-     // Removed for now since it's dangerous when used wrongly...
-     // -> now done when module unloads
-     // m.def("cleanup_memory",
-     // 	   cleanup_memory,
-     // 	   cleanup_memory_docstring);
+     m.def("cleanup_memory",
+     	   cleanup_memory,
+     	   cleanup_memory_docstring);
      m.def("load_cfl",
 	   load_cfl_python,
 	   load_cfl_python_docstring,
@@ -265,7 +266,7 @@ void disk_cfl_cleanup(void)
 
 /* -------------------------------------------------------------------------- */
 
-numpy_array_t load_cfl_python(const std::string& name)
+numpy_farray_t load_cfl_python(const std::string& name)
 {
      debug_printf(DP_DEBUG4, "in: load_cfl_python\n");
      
@@ -319,9 +320,10 @@ numpy_array_t load_cfl_python(const std::string& name)
 	  debug_printf(DP_DEBUG4,
 		       "     creating NumPy.ndarray with capsule "
 		       "as base\n");
-	  auto ret = py::array(pydims,
-			       reinterpret_cast<std::complex<float>*>(data),
-			       std::get<1>(*it));
+
+	  auto ret = numpy_farray_t(pydims,
+				    reinterpret_cast<std::complex<float>*>(data),
+				    std::get<1>(*it));
 	  
 	  using api = py::detail::npy_api;
 	  py::detail::array_proxy(ret.ptr())->flags &= ~api::NPY_ARRAY_WRITEABLE_;

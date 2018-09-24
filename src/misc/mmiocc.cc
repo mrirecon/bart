@@ -385,14 +385,16 @@ namespace internal_ {
 		    }
 	       }
 
-	  auto is_mem_cfl(auto* ptr)
+	  template <typename T>
+	  auto is_mem_cfl(T* ptr)
 	       {
 		    return std::find_if(list_.cbegin(),
 					list_.cend(),
 					PtrDataEqual(ptr)) != list_.cend();
 	       }
 
-	  auto try_delete_mem_cfl(auto* ptr)
+	  template <typename T>
+	  auto try_delete_mem_cfl(T* ptr)
 	       {
 		    debug_printf(DP_DEBUG2, "in: MemoryHandler::try_delete_mem_cfl<T>\n");
 		    
@@ -418,7 +420,8 @@ namespace internal_ {
 	       }
      
 	  // Attempt to deallocate memory based on address or name
-	  bool remove(auto* ptr)
+	  template <typename T>
+	  bool remove(T* ptr)
 	       {
 		    return remove_(PtrDataEqual(ptr));
 	       }
@@ -439,7 +442,8 @@ namespace internal_ {
 	       }
 	  
 	  // Return true if deletion occurred, false otherwise
-	  bool remove_(auto op) 
+	  template <typename unop_t>
+	  bool remove_(unop_t op) 
 	       {
 		    auto it = std::remove_if(list_.begin(), list_.end(), op);
 		    if (it != list_.end()) {
