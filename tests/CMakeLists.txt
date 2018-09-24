@@ -209,7 +209,8 @@ macro(create_integration_test group)
     string(REGEX MATCH ".*gpu.*" _test_require_gpu ${_test})
     if(USE_CUDA OR _test_require_gpu STREQUAL "")
       # Build the CMake script file content
-      set(_cmd_list "execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --blue \"Executing ${_test}\")\n")
+      set(_cmd_list "set(_error_flag 0)\n")
+      list(APPEND _cmd_list "execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --blue \"Executing ${_test}\")\n")
       foreach(_cmd ${TEST_${group}_${_test}})
 	set(_exec_in)
 	
@@ -219,12 +220,14 @@ macro(create_integration_test group)
             set(_exec_in "${_exec_in}\nset(ENV{${_name}} \"${_test_${group}_env_val}\")")
 	  endforeach()
 	endif()
+
+	string(REPLACE "\"" "\\\"" _cmd_escaped ${_cmd})
 	
 	# For each command in the test, we make a call execute_process()
-	set(_exec_in "${_exec_in}\nexecute_process(\nCOMMAND ${_cmd}\nRESULT_VARIABLE res_var\nWORKING_DIRECTORY ${_tests_out_dir}\nOUTPUT_VARIABLE _output\nERROR_VARIABLE _output)\nif(NOT \"\${res_var}\" STREQUAL \"0\")\n  message(ERROR \"Command ${_cmd} failed with return \${res_var}:\\n \${_output} \")\nendif()\n\n")
+	set(_exec_in "${_exec_in}\nexecute_process(\nCOMMAND ${_cmd}\nRESULT_VARIABLE res_var\nWORKING_DIRECTORY ${_tests_out_dir}\nOUTPUT_VARIABLE _output\nERROR_VARIABLE _output)\nif(NOT \"\${res_var}\" STREQUAL \"0\")\n  message(ERROR \"Command ${_cmd_escaped} failed with return \${res_var}:\\n \${_output} \")\nset(_error_flag 1)\nendif()\n\n")
 	list(APPEND _cmd_list "${_exec_in}")
       endforeach()
-      list(APPEND _cmd_list "execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green \"PASSED\")\n")
+      list(APPEND _cmd_list "if(_error_flag)\nexecute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --red \"FAILED\")\nelse()\nexecute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green \"PASSED\")\nendif()\n")
       string(REPLACE ";" "\n" _cmd_list ${_cmd_list})
 
       # Finally, we write the file...
@@ -248,6 +251,22 @@ macro(_parse_cmdline_custom cmd type)
       string(REGEX REPLACE "\\$\\(TOOLDIR\\)/(.*)" "${PROJECT_SOURCE_DIR}/\\1" _cmd "${_cmd}")
     endif()
   endif()
+endmacro()
+
+# ==============================================================================
+# Macros to manually add some tests (ie. not based on some *.mk file)
+macro(add_new_test_group group)
+  list(APPEND _test_groups ${group})
+endmacro()
+
+macro(add_test_to_group group test_name)
+  list(APPEND _test_list_${group} ${test_name})
+  set(TEST_${group}_${test_name} ${ARGN})
+endmacro()
+
+macro(add_env_var_to_group group name value)
+  set(_test_${group}_env_name "${name}")
+  set(_test_${group}_env_val "${value}")
 endmacro()
 
 # ==============================================================================
@@ -289,6 +308,19 @@ foreach(_file ${_file_list})
     parse_test_file(${_file})
   endif()
 endforeach()
+
+if(BART_CREATE_PYTHON_MODULE)
+  if(CMAKE_VERSION VERSION_LESS 3.12)
+    find_package(BPython ${_python_version} QUIET COMPONENTS Interpreter)
+  else()
+    find_package(Python ${_python_version} QUIET COMPONENTS Interpreter)
+  endif()
+  if(Python_FOUND)
+    include(${CMAKE_CURRENT_LIST_DIR}/pyBART.cmake)
+  else()
+    message(WARNING "Python interpreter not found: unable to perform pyBART test")
+  endif()
+endif()
 
 add_commands_for_test_data_generation()
 
