@@ -414,6 +414,8 @@ static const struct linop_s* linop_kern_create(bool gpu_flag,
 
 		md_free(repmat_kernel);
 	}
+#else
+	UNUSED(gpu_flag);
 #endif
 
 	long input_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
