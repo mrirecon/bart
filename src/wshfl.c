@@ -235,11 +235,11 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	complex float* perm = md_alloc_sameplace(DIMS, perm_dims, CFL_SIZE, dst);
 	md_clear(DIMS, perm_dims, perm, CFL_SIZE);
 
-	#ifdef _OPENMP
+#ifdef _OPENMP
 	long num_threads = omp_get_max_threads();
-	#else
+#else
 	long num_threads = 1;
-	#endif
+#endif
 
 	long vec_dims[]     = {wx, nc, tf,  1};
 	long phi_mat_dims[] = { 1,  1, tf, tk};
@@ -261,11 +261,11 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 
 	#pragma omp parallel for
 	for (int k = 0; k < sy * sz; k ++) {
-		#ifdef _OPENMP
+#ifdef _OPENMP
 		int tid = omp_get_thread_num();
-		#else
+#else
 		int tid = 0;
-		#endif
+#endif
 		int y = k % sy;
 		int z = k / sy;
 		int t = -1;
@@ -338,11 +338,11 @@ static void kern_normal(const linop_data_t* _data, complex float* dst, const com
 	md_merge_dims(DIMS, fmac_dims, input_dims, data->kernel_dims);
 
 	md_clear(DIMS, output_dims, dst, CFL_SIZE);
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 	if(cuda_ondevice(src))
 		md_zfmac2(DIMS, fmac_dims, output_str, dst, input_str, src, gpu_kernel_str, data->gpu_kernel);
 	else
-	#endif
+#endif
 		md_zfmac2(DIMS, fmac_dims, output_str, dst, input_str, src, kernel_str, data->kernel);
 }
 
@@ -355,10 +355,10 @@ static void kern_free(const linop_data_t* _data)
 	xfree(data->table_dims);
 	xfree(data->kernel_dims);
 
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 	if (data->gpu_kernel != NULL)
 		md_free(data->gpu_kernel);
-	#endif
+#endif
 
 	xfree(data);
 }
@@ -394,7 +394,7 @@ static const struct linop_s* linop_kern_create(bool gpu_flag,
 	data->kernel  = kernel;
 
 	data->gpu_kernel = NULL;
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 	if(gpu_flag) {
 
 		long repmat_kernel_dims[DIMS] = { [0 ... DIMS - 1] = 1};
@@ -414,7 +414,7 @@ static const struct linop_s* linop_kern_create(bool gpu_flag,
 
 		md_free(repmat_kernel);
 	}
-	#endif
+#endif
 
 	long input_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	input_dims[0] = _table_dims[0];
@@ -750,11 +750,11 @@ int main_wshfl(int argc, char* argv[])
 	}
 
 	if (eval < 0)	
-		#ifdef USE_CUDA
+#ifdef USE_CUDA
 		eval = (gpun >= 0) ? estimate_maxeigenval_gpu(A->normal) : estimate_maxeigenval(A->normal);
-		#else
+#else
 		eval = estimate_maxeigenval(A->normal);
-		#endif
+#endif
 	debug_printf(DP_INFO, "\tMax eval: %.2e\n", eval);
 	step /= eval;
 
