@@ -16,6 +16,8 @@
 #include "pybind11/stl.h"
 #include "pybind11/numpy.h"
 
+#include "python/pyBART_pybind11_patch.h"
+
 namespace py = pybind11;
 using numpy_farray_t = py::array_t<std::complex<float>,
 				   py::array::f_style
@@ -105,16 +107,28 @@ static void set_debug_level(py::str param);
 #define ADD_PYTHON_CONSTANT(name)		\
      m.attr(#name) = int(name)
 
-static int pyBART_clear(PyObject *m)
+#if PY_MAJOR_VERSION >= 3
+static int pyBART_clear(PyObject*)
 {
-     deallocate_all_mem_cfl();
-     disk_cfl_cleanup();
+     cleanup_memory();
      return 0;
 }
 
-class A {};
+/* 
+ * This is the GC function for the module.
+ * Ideally we could detect dirty memory items and delete them with this 
+ * function.
+ * However, for that to work, we need a way to detect when all NumPy arrays 
+ * pointing to one memory location are destroyed so that we know we can safely 
+ * do so without incurring any segmentation faults...
+ */
+static int pyBART_traverse(PyObject* m, visitproc visit, void* arg)
+{
+     return 0;
+}
+#endif /* PY_MAJOR_VERSION >= 3 */
 
-PYBIND11_MODULE(pyBART, m)
+MYPYBIND11_MODULE(pyBART, m)
 {
      py::options options;
      options.disable_function_signatures();
@@ -158,19 +172,8 @@ PYBIND11_MODULE(pyBART, m)
      ADD_PYTHON_CONSTANT(DP_ALL);
      ADD_PYTHON_CONSTANT(DP_UNSET);
 
+     MYPYBIND11_MODULE_DESTRUCTOR_IMPLEMENT;
 
-     py::class_<A>(m, "BaseClass");
-     // Register a callback function that is invoked when the BaseClass object is colelcted
-     py::cpp_function cleanup_callback(
-     	  [](py::handle weakref) {
-	       cleanup_memory();
-     	       weakref.dec_ref(); // release weak reference
-     	  }
-     	  );
-
-     // Create a weak reference with a cleanup callback and initially leak it
-     (void) py::weakref(m.attr("BaseClass"), cleanup_callback).release();
-     
      m.attr("__doc__")     = pyBART_module_doc;
      m.attr("__version__") = bart_version;
 
