@@ -75,6 +75,11 @@ namespace internal_ {
 	       {
 		    std::fill(dims_, dims_+DIMS_MAX, 1);
 	       }
+
+	  Node(const Node&) = delete;
+	  Node(Node&&) = delete;
+	  Node& operator=(const Node&) = delete;
+	  Node& operator=(Node&&) = delete;
 	  
 	  virtual ~Node() {}
 
@@ -254,6 +259,8 @@ namespace internal_ {
 		    const auto it(std::find_if(list_.begin(),
 					       list_.end(),
 					       NameEqual(name)));
+
+		    bool is_dirty(false);
 		    if (it != list_.end()) {
 			 debug_printf(DP_DEBUG2, "     found \"%s\" already in the database!\n", name.c_str());
 			 
@@ -270,6 +277,8 @@ namespace internal_ {
 			 if ((*it)->data_dir() == INPUT) {
 			      BART_OUT("MEMCFL: marking first occurrence of %s as DIRTY!\n", (*it)->name().c_str());
 			      (*it)->dirty() = true;
+			      is_dirty = true;
+			      std::iter_swap(it, list_.end()-1); // move it to the end
 			 }
 			 else {
 			      BART_OUT("MEMCFL: deleting first occurrence of %s\n", (*it)->name().c_str());
@@ -279,8 +288,17 @@ namespace internal_ {
 		    
 		    debug_printf(DP_DEBUG2, "     allocating PointerNode<T>\n");
 		    list_.emplace_back(std::make_unique<PointerNode<T>>(name, D, dims));
+		    auto* data = reinterpret_cast<T*>(list_.back()->data());
+		    if (is_dirty) {
+		    	 /*
+		    	  * Make sure the dirty node is after the one we just added
+		    	  * NB: cannot use 'it' here as a re-allocation might have
+		    	  *     happened...
+		    	  */
+		    	 std::iter_swap(list_.end()-2, list_.end()-1);
+		    }
 		    debug_printf(DP_DEBUG2, "     returning from MemoryHandler::allocate_mem_cfl<T>\n");
-		    return reinterpret_cast<T*>(list_.back()->data());
+		    return data;
 	       }
 	  template <typename T>
 	  T* allocate_mem_cfl(unsigned int D, long dims[])
