@@ -106,7 +106,7 @@ static void sense_reco(struct sense_data* data, complex float* imgs, const compl
 
 	sense_adjoint(data, adj, kspace);
 
-	long size = md_calc_size(DIMS, data->imgs_dims);
+	long size = 2 * md_calc_size(DIMS, data->imgs_dims); // multiply by 2 for float size
 
 	const struct operator_s* op = operator_create(DIMS, data->imgs_dims, DIMS, data->imgs_dims,
 		CAST_UP(data), sense_normal, NULL);
