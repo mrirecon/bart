@@ -45,7 +45,6 @@
 #include "linops/fmac.h"
 #include "linops/someops.h"
 #include "linops/realval.h"
-#include "sense/model.h"
 
 #include "misc/debug.h"
 #include "misc/mri.h"
@@ -88,7 +87,7 @@ static const char help_str[]  =
 	"Expected dimensions:\n"
 	"  * maps    - (   sx, sy, sz, nc, md,  1,  1)\n"
 	"  * wave    - (   wx, sy, sz,  1,  1,  1,  1)\n"
-                                "  * phi     - (    1,  1,  1,  1,  1, tf, tk)\n"
+	"  * phi     - (    1,  1,  1,  1,  1, tf, tk)\n"
 	"  * output  - (   sx, sy, sz,  1, md,  1, tk)\n"
 	"  * reorder - (    n,  3,  1,  1,  1,  1,  1)\n"
 	"  * table   - (   wx, nc,  n,  1,  1,  1,  1)";
