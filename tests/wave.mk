@@ -6,7 +6,7 @@ tests/test-wave: wave wavepsf scale nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT
 	$(TOOLDIR)/fft -u 1 wave_zpad.ra wave_hyb.ra                          ;\
 	$(TOOLDIR)/fmac wave_hyb.ra wave_psf.ra wave_acq.ra                   ;\
 	$(TOOLDIR)/fft -u 6 wave_acq.ra wave_ksp.ra                           ;\
-	$(TOOLDIR)/wave wave_ksp.ra $(TESTS_OUT)/coils.ra wave_psf.ra reco.ra ;\
+	$(TOOLDIR)/wave $(TESTS_OUT)/coils.ra wave_psf.ra wave_ksp.ra reco.ra ;\
 	$(TOOLDIR)/nrmse -t 0.23 -s reco.ra $(TESTS_OUT)/shepplogan.ra        ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
