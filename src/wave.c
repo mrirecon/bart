@@ -277,9 +277,8 @@ int main_wave(int argc, char* argv[])
 	step /= eval;
 
 	debug_printf(DP_INFO, "Normalizing kspace... ");
-	float scaling = estimate_scaling(kspc_dims, NULL, kspc);
-	if (scaling != 0.)
-		md_zsmul(DIMS, kspc_dims, kspc, kspc, 1. / scaling);
+	float norm = md_znorm(DIMS, kspc_dims, kspc);
+	md_zsmul(DIMS, kspc_dims, kspc, kspc, 1. / norm);
 	debug_printf(DP_INFO, "Done.\n");
 
 	const struct operator_p_s* T = NULL;
