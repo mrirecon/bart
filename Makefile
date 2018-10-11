@@ -15,6 +15,7 @@ MAKEFLAGS += -R
 # use for parallel make
 AR=./ar_lock.sh
 
+MKL?=0
 CUDA?=0
 ACML?=0
 OMP?=1
@@ -107,6 +108,7 @@ else
 endif
 
 CXX ?= g++
+LINKER ?= $(CC)
 
 
 
@@ -130,6 +132,9 @@ CUDA_BASE ?= /usr/local/
 # acml
 
 ACML_BASE ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
+
+# mkl
+MKL_BASE ?= /opt/intel/mkl/lib/intel64/ 
 
 # fftw
 
@@ -306,6 +311,12 @@ endif
 endif
 endif
 
+ifeq ($(MKL),1)
+BLAS_H := -I$(MKL_BASE)/include
+BLAS_L := -L$(MKL_BASE)/lib/intel64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core
+CPPFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex double"
+CFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex double"
+endif
 
 
 
@@ -464,7 +475,7 @@ endif
 
 .SECONDEXPANSION:
 $(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) -lm
+	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) -lm
 #	rm $(srcdir)/$@.o
 
 UTESTS=$(shell $(root)/utests/utests-collect.sh ./utests/$@.c)
