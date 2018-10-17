@@ -84,7 +84,7 @@ extern "C" {
 }
 
 bool register_mem_cfl_python(const char* name,
-			     const numpy_array_t& array);
+			     const numpy_farray_t& array);
 void disk_cfl_cleanup(void);
 
 /* Docstrings */
@@ -96,6 +96,8 @@ static void cleanup_memory();
 static numpy_farray_t load_cfl_python(const std::string& name);
 static void register_python_memory(const std::string& name,
 				   numpy_array_t& array);
+static void register_python_memory(const std::string& name,
+				   numpy_farray_t& array);
 static py::int_ get_debug_level();
 static void set_debug_level(py::int_ param);
 static void set_debug_level(py::float_ param);
@@ -144,7 +146,12 @@ MYPYBIND11_MODULE(pyBART, m)
 	   load_cfl_python_docstring,
 	   py::return_value_policy::reference);
      m.def("register_memory",
-	   register_python_memory,
+	   py::overload_cast<const std::string&,
+	   numpy_array_t&>(register_python_memory),
+	   register_python_memory_docstring);
+     m.def("register_memory",
+	   py::overload_cast<const std::string&,
+	   numpy_farray_t&>(register_python_memory),
 	   register_python_memory_docstring);
      m.def("get_debug_level",
 	   get_debug_level,
@@ -236,15 +243,28 @@ py::object call_bart(const char* cmdline)
 /* ========================================================================== */
 
 void register_python_memory(const std::string& name,
-			    numpy_array_t& array)
+			    numpy_farray_t& array)
 {
-     debug_printf(DP_DEBUG4, "in: register_python_memory\n");
+     debug_printf(DP_DEBUG4, "in: register_python_memory (F-contiguous)\n");
      /*
       * No need to use the error_jumper here since this code path will
       * never encounter a call to BART's error() function
       *
       * However, this call might throw, which would then be handled by pybind11
       */
+
+     register_mem_cfl_python(name.c_str(), array);
+}
+
+void register_python_memory(const std::string& name,
+			    numpy_array_t& array)
+{
+     debug_printf(DP_DEBUG4, "in: register_python_memory (C-contiguous)\n");
+     debug_printf(DP_WARN,
+		  "BART only works with F-contiguous arrays (column major).\n"
+		  "The array being registered is C-contiguous (row major)!\n"
+		  "A copy of the data will be stored internally with the "
+		  "appropriate ordering.\n");
 
      register_mem_cfl_python(name.c_str(), array);
 }
