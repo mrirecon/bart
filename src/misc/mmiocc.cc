@@ -22,6 +22,9 @@
 #  include "pybind11/numpy.h"
 
 namespace py = pybind11;
+using numpy_farray_t = py::array_t<std::complex<float>,
+				   py::array::f_style
+				   | py::array::forcecast>;
 using numpy_array_t = py::array_t<std::complex<float>,
 				  py::array::c_style
 				  | py::array::forcecast>;
@@ -169,7 +172,7 @@ namespace internal_ {
      {
      public:
 	  PyPointerNode(const std::string& name,
-			const numpy_array_t& array)
+			const numpy_farray_t& array)
 	       : Node(name)
 	       , array_(array)
 	       {}
@@ -200,7 +203,7 @@ namespace internal_ {
 	   * reference count was automatically increased by pybind11
 	   * so that even if the user deletes it, the memory stays valid
 	   */
-	  numpy_array_t array_;
+	  numpy_farray_t array_;
      };
 #pragma GCC visibility pop
 #endif /* BART_WITH_PYTHON */
@@ -346,7 +349,7 @@ namespace internal_ {
 
 #ifdef BART_WITH_PYTHON
 	  void register_mem_cfl(const std::string& name,
-				const numpy_array_t& array)
+				const numpy_farray_t& array)
 	       {
 		    debug_printf(DP_DEBUG2, "in: MemoryHandler::register_mem_cfl(\"%s\", npy_data)\n", name.c_str());
 		    
@@ -600,7 +603,7 @@ void deallocate_all_mem_cfl()
 // =============================================================================
 
 #ifdef BART_WITH_PYTHON
-bool register_mem_cfl_python(const char* name, const numpy_array_t& array)
+bool register_mem_cfl_python(const char* name, const numpy_farray_t& array)
 {
      debug_printf(DP_DEBUG2, "in: register_mem_cfl_python\n");
      if (array.ndim() > DIMS_MAX) {
