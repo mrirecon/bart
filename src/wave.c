@@ -234,14 +234,40 @@ int main_wave(int argc, char* argv[])
 	estimate_pattern(DIMS, kspc_dims, ~FFT_FLAGS, mask, kspc);
 	debug_printf(DP_INFO, "Done.\n");
 
-	debug_printf(DP_INFO, "Creating linear operators... ");
-	const struct linop_s* E   = linop_espirit_create(sx, sy, sz, nc, md, maps);
-	const struct linop_s* R   = linop_reshape_create(wx, sx, sy, sz, nc);
-	const struct linop_s* Fx  = linop_fx_create(wx, sy, sz, nc);
-	const struct linop_s* W   = linop_wave_create(wx, sy, sz, nc, wave);
+	debug_printf(DP_INFO, "Creating linear operators:\n");
+
+	double t1;
+	double t2;
+
+	t1 = timestamp();
+	const struct linop_s* E = linop_espirit_create(sx, sy, sz, nc, md, maps);
+	t2 = timestamp();
+	debug_printf(DP_INFO, "\tE:   %f seconds.\n", t2 - t1);
+
+	t1 = timestamp();
+	const struct linop_s* R = linop_reshape_create(wx, sx, sy, sz, nc);
+	t2 = timestamp();
+	debug_printf(DP_INFO, "\tR:   %f seconds.\n", t2 - t1);
+
+	t1 = timestamp();
+	const struct linop_s* Fx = linop_fx_create(wx, sy, sz, nc);
+	t2 = timestamp();
+	debug_printf(DP_INFO, "\tFx:  %f seconds.\n", t2 - t1);
+
+	t1 = timestamp();
+	const struct linop_s* W = linop_wave_create(wx, sy, sz, nc, wave);
+	t2 = timestamp();
+	debug_printf(DP_INFO, "\tW:   %f seconds.\n", t2 - t1);
+
+	t1 = timestamp();
 	const struct linop_s* Fyz = linop_fyz_create(wx, sy, sz, nc);
+	t2 = timestamp();
+	debug_printf(DP_INFO, "\tFyz: %f seconds.\n", t2 - t1);
+
+	t1 = timestamp();
 	const struct linop_s* M   = linop_samp_create(wx, sy, sz, nc, mask);
-	debug_printf(DP_INFO, "Done.\n");
+	t2 = timestamp();
+	debug_printf(DP_INFO, "\tM:   %f seconds.\n", t2 - t1);
 
 	debug_printf(DP_INFO, "Forward linear operator information:\n");
 	struct linop_s* A = linop_chain(linop_chain(linop_chain(linop_chain(linop_chain(
