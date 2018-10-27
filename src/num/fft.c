@@ -1,11 +1,13 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2018. Massachusetts Institute of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2011-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2018 Siddharth Iyer <ssi@mit.edu>
  *
  * 
  * FFT. It uses FFTW or CUFFT internally.
@@ -182,8 +184,6 @@ void fftshift(unsigned int N, const long dimensions[N], unsigned long flags, com
 	fftshift2(N, dimensions, flags, strs, dst, strs, src);
 }
 
-
-
 struct fft_plan_s {
 
 	INTERFACE(operator_data_t);
@@ -205,15 +205,53 @@ struct fft_plan_s {
 
 static DEF_TYPEID(fft_plan_s);
 
+static char* fftw_wisdom_name(unsigned int N, bool backwards, unsigned int flags, const long dims[N])
+{
 
+	char* tbpath = getenv("TOOLBOX_PATH");
+	if (NULL == tbpath)
+		return NULL;
+	char* loc  = NULL;
+
+	// Space for path and null terminator.
+	size_t space = snprintf(loc, 0, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
+	// Space for dimensions.
+	for (size_t idx = 0; idx < N; idx ++)
+		space += snprintf(loc, 0, "_%lu", dims[idx]);
+	// Space for extension.
+	space += snprintf(loc, 0, ".fftw");
+	// Space for null terminator.
+	space += 1;
+
+	loc = calloc(space, sizeof(char));
+	sprintf(loc , "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
+
+	char tmp[64];
+	for (size_t idx = 0; idx < N; idx++) {
+		sprintf(tmp, "_%lu", dims[idx]);
+		strcat(loc, tmp);
+	}
+
+	sprintf(tmp, ".fftw");
+	strcat(loc, tmp);
+	loc[space - 1] = '\0';
+
+	return loc;
+}
 
 static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
+	fftwf_plan fftwf;
+
 	unsigned int N = D;
 	fftwf_iodim64 dims[N];
 	fftwf_iodim64 hmdims[N];
 	unsigned int k = 0;
 	unsigned int l = 0;
+
+	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
+	if (NULL != wisdom)
+		fftwf_import_wisdom_from_filename(wisdom);
 
 	//FFTW seems to be fine with this
 	//assert(0 != flags); 
@@ -236,11 +274,14 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 		}
 	}
 
-	fftwf_plan fftwf;
-
 	#pragma omp critical
 	fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
 				backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
+
+	if (NULL != wisdom)
+		fftwf_export_wisdom_to_filename(wisdom);
+
+	md_free(wisdom);
 
 	return fftwf;
 }
