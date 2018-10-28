@@ -396,10 +396,6 @@ int main_wave(int argc, char* argv[])
 
 	}
 
-	complex float* tmp = create_cfl("../../tmp", DIMS, mask_dims);
-  md_copy(DIMS, mask_dims, tmp, mask, CFL_SIZE);
-  unmap_cfl(DIMS, mask_dims, tmp);
-
 	debug_printf(DP_INFO, "Reconstruction... ");
 	complex float* recon = create_cfl(argv[4], DIMS, recon_dims);
 	struct lsqr_conf lsqr_conf = { 0., gpun >= 0 };
