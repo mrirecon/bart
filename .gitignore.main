@@ -28,6 +28,9 @@ src/misc/version.inc
 # noise simulations
 save/nsv/*.dat
 
+# fftw wisdoms
+save/fftw/*.fftw
+
 # ctags
 tags
 GTAGS
