@@ -268,7 +268,7 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 		data->psf_dims[N] = data->lph_dims[N];
 #endif
 		md_calc_strides(ND, data->psf_strs, data->psf_dims, CFL_SIZE);
-		data->psf = compute_psf2(N, data->psf_dims, data->trj_dims, data->traj, data->weights, conf.periodic);
+		data->psf = compute_psf2(N, data->psf_dims, data->trj_dims, data->traj, data->weights, true /*conf.periodic*/);
 	}
 
 
