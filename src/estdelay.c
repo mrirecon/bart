@@ -28,6 +28,9 @@
 #include <math.h>
 #include <assert.h>
 #include <float.h>
+#ifdef RING_PAPER
+#include <stdio.h>
+#endif
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -300,7 +303,7 @@ static void calc_intersections(unsigned int Nint, unsigned int N, unsigned int n
 		}
 	}
 
-#if 0
+#ifdef RING_PAPER
 	// Print projection angles and corresponding offsets to files
 
 	const char* idx_out = "projangle.txt";
