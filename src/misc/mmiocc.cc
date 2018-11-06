@@ -40,6 +40,7 @@ using numpy_array_t = py::array_t<std::complex<float>,
 #include <vector>
 #include <stdexcept>
 #include <memory>
+#include <type_traits>
 
 #include "num/multind.h"
 
@@ -442,7 +443,12 @@ namespace internal_ {
      
 	  // Attempt to deallocate memory based on address or name
 	  template <typename T>
-	  bool remove(T* ptr)
+	  std::enable_if_t<
+	       !std::is_same<
+		    char,
+		    std::remove_reference_t<std::remove_cv_t<T>>>::value,
+	       bool>
+	  remove(T* ptr)
 	       {
 		    return remove_(PtrDataEqual(ptr));
 	       }
