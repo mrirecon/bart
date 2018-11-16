@@ -370,24 +370,21 @@ struct noir_s noir_create(const long dims[DIMS], const complex float* mask, cons
 
 
 __attribute__((optimize("-fno-finite-math-only")))
-static void proj(unsigned int D, const long dims[D],
-		 complex float* optr, complex float* v1, complex float* v2)
+static void proj_add(unsigned int D, const long dims[D], const long ostrs[D],
+			complex float* optr, const long v1_strs[D], complex float* v1, const long v2_strs[D], complex float* v2)
 {
 #ifdef USE_CUDA
-	if (cuda_ondevice(v1)) {
+	if (cuda_ondevice(v1))
 		error("md_zscalar is far too slow on the GPU, refusing to run...\n");
-	}
 #endif
-	float v22 = md_zscalar_real(D, dims, v2, v2); // since it is real anyway
+	float v22 = md_zscalar_real2(D, dims, v2_strs, v2, v2_strs, v2); // since it is real anyway
 
-	complex float v12 = md_zscalar(D, dims, v1, v2) / v22;
+	complex float v12 = md_zscalar2(D, dims, v1_strs, v1, v2_strs, v2) / v22;
 
-	if (!isfinite(crealf(v12)) || !isfinite(cimagf(v12)) ) {
-
+	if (!isfinite(crealf(v12)) || !isfinite(cimagf(v12)))
 		v12 = 0.;
-	}
 
-	md_zsmul(D, dims, optr, v2, v12);
+	md_zaxpy2(D, dims, ostrs, optr, v12, v2_strs, v2);
 }
 
 
@@ -396,49 +393,41 @@ static void proj(unsigned int D, const long dims[D],
 
 void noir_orthogonalize(struct noir_s* op, complex float* coils)
 {
-
 	struct noir_op_s* data = op->noir_op;
+
 	// orthogonalization of the coil profiles
 	long nmaps = data->imgs_dims[MAPS_DIM];
-	if (1L == nmaps) {
+
+	if (1L == nmaps)
 		return;
-	}
 
-	// as long as the slice dim is after the maps dim, this orthogonalization
-	// will do it wrong. Therefore, we refuse to run in that case:
-	assert( (1 == data->imgs_dims[SLICE_DIM]) || (MAPS_DIM > SLICE_DIM) );
+	long single_map_dims[DIMS];
+	md_select_dims(DIMS, ~MAPS_FLAG, single_map_dims, data->dims);
 
-	long single_coils_dims[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG|SLICE_FLAG, single_coils_dims, data->dims);
+	long single_map_strs[DIMS];
+	md_calc_strides(DIMS, single_map_strs, single_map_dims, CFL_SIZE);
 
+	long data_strs[DIMS];
+	md_calc_strides(DIMS, data_strs, data->dims, CFL_SIZE);
 
-	// start of coil profiles
-	complex float* start_ptr = coils;
-
-	long map_offset = md_calc_size(DIMS, single_coils_dims);
-
-	complex float* tmp = md_alloc_sameplace(DIMS, single_coils_dims, CFL_SIZE, coils);
-	complex float* proj_tmp = md_alloc_sameplace(DIMS, single_coils_dims, CFL_SIZE, coils);
-
+	complex float* tmp = md_alloc_sameplace(DIMS, single_map_dims, CFL_SIZE, coils);
 
 	for (long map = 0L; map < nmaps; ++map) {
-		complex float* map_ptr = start_ptr + map*map_offset;
-		md_clear(DIMS, single_coils_dims, tmp, CFL_SIZE);
+
+		complex float* map_ptr = (void*)coils + map * data_strs[MAPS_DIM];
+
+		md_clear(DIMS, single_map_dims, tmp, CFL_SIZE);
+
 		for (long prev = 0L; prev < map; ++prev) {
-			// calculate projection of current map onto previous
-			// and add to tmp
-			complex float* prev_map_ptr = start_ptr + prev*map_offset;
 
-			proj(DIMS, single_coils_dims,
-			     proj_tmp, map_ptr, prev_map_ptr);
+			complex float* prev_map_ptr = (void*)coils + prev * data_strs[MAPS_DIM];
 
-			md_zadd(DIMS, single_coils_dims, tmp, tmp, proj_tmp);
-
+			proj_add(DIMS, single_map_dims, single_map_strs, tmp, single_map_strs, map_ptr, data_strs, prev_map_ptr);
 		}
-		md_zsub(DIMS, single_coils_dims, map_ptr, map_ptr, tmp);
+
+		md_zsub2(DIMS, single_map_dims, data_strs, map_ptr, data_strs, map_ptr, single_map_strs, tmp);
 	}
 
 	md_free(tmp);
-	md_free(proj_tmp);
 }
 
