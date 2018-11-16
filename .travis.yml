@@ -1,5 +1,7 @@
 language: c
 
+env:
+
 addons:
   apt:
     packages: &default_packages
@@ -8,6 +10,8 @@ addons:
       - libpng-dev
 
 matrix:
+  allow_failures:
+    - env: MAYFAIL=1
   include:
     - name: "Makefile PARALLEL"
       env: PARALLEL=1
@@ -91,7 +95,9 @@ matrix:
             - gcc-5
             - gfortran
             - liblapack-dev
+
     - name: "CMake GCC-5"
+      env: MAYFAIL=1
       os: linux
       compiler: gcc-5
       sudo: required
@@ -111,6 +117,7 @@ matrix:
         - cmake .. -DLINALG_VENDOR=ATLAS -DBART_ENABLE_MEM_CFL=OFF -DBUILD_TESTING=OFF -DBART_LOG_BACKEND=OFF -DUSE_OPENMP=ON -DBART_GENERATE_DOC=OFF
 
     - name: "CMake GCC-5 NOLAPACKE"
+      env: MAYFAIL=1
       os: linux
       compiler: gcc-5
       sudo: required
@@ -131,6 +138,7 @@ matrix:
         - cmake .. -DBART_ENABLE_MEM_CFL=OFF -DBUILD_TESTING=OFF -DBART_LOG_BACKEND=OFF -DUSE_OPENMP=ON -DBART_GENERATE_DOC=OFF -DBART_NO_LAPACKE=ON
 
     - name: "CMake GCC-5/G++-5 (with mem-CFL support) + utest"
+      env: MAYFAIL=1
       os: linux
       compiler: gcc-5
       sudo: required
