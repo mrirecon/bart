@@ -205,10 +205,45 @@ struct fft_plan_s {
 
 static DEF_TYPEID(fft_plan_s);
 
+static char* fftw_wisdom_name(unsigned int N, bool backwards, unsigned int flags, const long dims[N]) {
+
+	char* tbpath = getenv("TOOLBOX_PATH");
+	if (NULL == tbpath)
+		return NULL;
+
+	char STR_PATH[] = "/save/fftw/";
+	char STR_N[]    = "N_";
+	char STR_BACK[] = "_BACKWARD_";
+	char STR_FLAG[] = "_FLAGS_";
+	char STR_DIMS[] = "_DIMS";
+
+	int space[] = {strlen(tbpath), strlen(STR_PATH), strlen(STR_N), floor(log10(N)) + 1, strlen(STR_BACK), 1, strlen(STR_FLAG), floor(log10(flags)) + 1, strlen(STR_DIMS)};
+	size_t total = 1;                         // Start from one for null terminator.
+	for (size_t idx = 0; idx < sizeof(space)/sizeof(int); idx ++)
+		total += space[idx];                    // Space for base path.
+	for (size_t idx = 0; idx < N; idx ++)
+		total += (2 + floor(log10(dims[idx]))); // Space for dimensions.
+	total += 5;                               // Space for extension.
+
+	char* name = calloc(total, sizeof(char));
+	sprintf(name, "%s%s%s%u%s%u%s%u%s", tbpath, STR_PATH, STR_N, N, STR_BACK, backwards, STR_FLAG, flags, STR_DIMS);
+
+	char tmp[64];                             // Safe assumption since largest int in a 64 bit system is less than 20 places in base 10.
+	for (size_t idx = 0; idx < N; idx++) {
+		sprintf(tmp, "_%lu", dims[idx]);
+		strcat(name, tmp);
+	}
+
+	sprintf(tmp, ".fftw");
+	strcat(name, tmp);
+	name[total - 1] = '\0';
+
+	return name;
+}
+
 static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
 	fftwf_plan fftwf;
-	char* wisdom = NULL;
 
 	unsigned int N = D;
 	fftwf_iodim64 dims[N];
@@ -216,15 +251,7 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 	unsigned int k = 0;
 	unsigned int l = 0;
 
-	char* tbpath = getenv("TOOLBOX_PATH");
-	if (NULL != tbpath) {
-		wisdom = calloc(2048, sizeof(char));
-		sprintf(wisdom, "%s/save/fftw/N_%u_BACKWARD_%d_FLAGS_%lu_DIMS", tbpath, D, backwards, flags);
-		for (long k = 0; k < N; k++)
-			sprintf(wisdom, "%s_%lu", wisdom, dimensions[k]);
-		sprintf(wisdom, "%s.fftw", wisdom);
-	}
-
+	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
 	if (NULL != wisdom)
 		fftwf_import_wisdom_from_filename(wisdom);
 
@@ -255,6 +282,8 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 
 	if (NULL != wisdom)
 		fftwf_export_wisdom_to_filename(wisdom);
+
+	md_free(wisdom);
 
 	return fftwf;
 }
