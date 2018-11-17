@@ -15,6 +15,15 @@
 #include <stdlib.h>
 #include <complex.h>
 #include <math.h>
+#include <stdbool.h>
+#include <assert.h>
+#ifdef USE_MKL
+#include <mkl.h>
+#endif
+
+#ifdef USE_INTEL_KERNELS
+#include "intel_kernels.h"
+#endif
 
 #include "misc/misc.h"
 #include "misc/mri.h"
@@ -173,7 +182,9 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 
 		long blkdims[DIMS];
 		long shifts[DIMS];
+#ifndef USE_INTEL_KERNELS
 		long unshifts[DIMS];
+#endif
 		long zpad_dims[DIMS];
 		long M = 1;
 
@@ -191,7 +202,9 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 			else
 				shifts[i] = 0;
 
+#ifndef USE_INTEL_KERNELS
 			unshifts[i] = -shifts[i];
+#endif
 		}
 
 		long zpad_strs[DIMS];
@@ -208,8 +221,14 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 			N = 1;
 			B = 1;
 		}
-
-
+#ifdef USE_INTEL_KERNELS
+		int dim0 = data->dims[PHS1_DIM];
+		int dim1 = data->dims[PHS2_DIM];
+		const unsigned long nmaps = data->dims[MAPS_DIM];
+		const unsigned long nimg = data->dims[COEFF_DIM];
+		const int blkdim = blkdims[PHS1_DIM];
+		mylrthresh(srcl, dstl, lambda * GWIDTH(M, N, B), dim1, dim0, nimg, nmaps, blkdim, shifts[PHS2_DIM], shifts[PHS1_DIM]);
+#else
 		complex float* tmp = md_alloc_sameplace(DIMS, zpad_dims, CFL_SIZE, dst);
 
 		md_circ_ext(DIMS, zpad_dims, tmp, data->dims, srcl, CFL_SIZE);
@@ -239,6 +258,7 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 
 		md_free(tmp);
 		md_free(tmp_mat);
+#endif // USE_INTEL_KERNELS
 	}
 }
 
