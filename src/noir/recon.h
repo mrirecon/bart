@@ -21,6 +21,7 @@ struct noir_conf_s {
 	float a;
 	float b;
 	_Bool pattern_for_each_coil;
+	_Bool sms;
 };
 
 extern const struct noir_conf_s noir_defaults;

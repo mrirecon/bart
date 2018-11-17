@@ -70,6 +70,7 @@ const struct noir_conf_s noir_defaults = {
 	.a = 220.,
 	.b = 32.,
 	.pattern_for_each_coil = false,
+	.sms = false,
 };
 
 
@@ -80,7 +81,10 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	long data_dims[DIMS];
 	long img1_dims[DIMS];
 
-	unsigned int fft_flags = FFT_FLAGS|SLICE_FLAG;
+	unsigned int fft_flags = FFT_FLAGS;
+
+	if (conf->sms)
+		fft_flags |= SLICE_FLAG;
 
 	md_select_dims(DIMS, fft_flags|MAPS_FLAG, imgs_dims, dims);
 	md_select_dims(DIMS, fft_flags|COIL_FLAG|MAPS_FLAG, coil_dims, dims);

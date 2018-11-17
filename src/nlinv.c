@@ -83,11 +83,13 @@ int main_nlinv(int argc, char* argv[])
 	long ksp_dims[DIMS];
 	complex float* kspace_data = load_cfl(argv[1], DIMS, ksp_dims);
 
-	// SMS
+	// FIXME: SMS should not be the default
+
 	if (1 != ksp_dims[SLICE_DIM]) {
 
 		debug_printf(DP_INFO, "SMS-NLINV reconstruction. Multiband factor: %d\n", ksp_dims[SLICE_DIM]);
 		fftmod(DIMS, ksp_dims, SLICE_FLAG, kspace_data, kspace_data); // fftmod to get correct slice order in output
+		conf.sms = true;
 	}
 
 	// The only multimap we understand with is the one we do ourselves, where
