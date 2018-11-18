@@ -844,7 +844,7 @@ int main_wshfl(int argc, char* argv[])
 		} else {
 			debug_printf(DP_INFO, "Creating locally low rank threshold operator... ");
 			llr_blkdims(blkdims, ~COEFF_DIM, coeff_dims, blksize);
-			T = lrthresh_create(coeff_dims, true, ~COEFF_FLAG, (const long (*)[])blkdims, lambda, false, false);
+			T = lrthresh_create(coeff_dims, true, ~COEFF_FLAG, (const long (*)[])blkdims, lambda, false, false, false);
 		}
 		debug_printf(DP_INFO, "Done.\n");
 	}

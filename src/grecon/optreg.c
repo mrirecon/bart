@@ -244,9 +244,11 @@ void opt_bpursuit_configure(struct opt_reg_s* ropts, const struct operator_p_s* 
 	ropts->r++;
 }
 
-void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, bool randshift, bool use_gpu)
+void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, unsigned int shift_mode, bool use_gpu)
 {
 	float lambda = ropts->lambda;
+	bool randshift = shift_mode == 1;
+	bool overlapping_blocks = shift_mode == 2;
 
 	if (-1. == lambda)
 		lambda = 0.;
@@ -425,7 +427,7 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			int remove_mean = 0;
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean);
+			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, overlapping_blocks);
 			break;
 
 		case MLR:
