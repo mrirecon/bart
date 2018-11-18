@@ -331,6 +331,10 @@ ifeq ($(SLINK),1)
 	PNG_L += -lz
 endif
 
+ifeq ($(LINKER),icc)
+	PNG_L += -lz
+endif
+
 
 
 # fftw
