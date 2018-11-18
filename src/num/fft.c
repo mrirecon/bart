@@ -216,9 +216,11 @@ static char* fftw_wisdom_name(unsigned int N, bool backwards, unsigned int flags
 	size_t space = snprintf(loc , 0, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
 	// Space for dimensions.
 	for (size_t idx = 0; idx < N; idx ++)
-		space += (snprintf(loc, 0, "_%lu", dims[N]) - 1);
+		space += snprintf(loc, 0, "_%lu", dims[N]);
 	// Space for extension.
-	space += snprintf(loc, 0, ".fftw") - 1;
+	space += snprintf(loc, 0, ".fftw");
+	// Space for null terminator.
+	space += 1;
 
 	loc = calloc(space, sizeof(char));
 	sprintf(loc , "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
