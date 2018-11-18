@@ -184,7 +184,7 @@ int main_lrmatrix(int argc, char* argv[])
         }
 	
 	const struct operator_p_s* sum_prox = prox_lineq_create( sum_op, idata );
-	const struct operator_p_s* lr_prox = lrthresh_create(odims, randshift, mflags, (const long (*)[])blkdims, 1., noise, remove_mean);
+	const struct operator_p_s* lr_prox = lrthresh_create(odims, randshift, mflags, (const long (*)[])blkdims, 1., noise, remove_mean, false);
 
         assert(use_gpu == false);
 
