@@ -47,7 +47,7 @@ matrix:
         - make utest
 
     - name: "Makefile Clang"
-      env: OMP=0 CFLAGS=-fblocks LDFLAGS=-lBlocksRuntime
+      env: OMP=0
       os: linux
       compiler: clang
       sudo: required

@@ -1,5 +1,5 @@
 # Copyright 2013-2015. The Regents of the University of California.
-# Copyright 2015-2016. Martin Uecker <martin.uecker@med.uni-goettingen.de>
+# Copyright 2015-2018. Martin Uecker <martin.uecker@med.uni-goettingen.de>
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 
@@ -107,8 +107,6 @@ else
 	LDFLAGS += -rdynamic
 endif
 
-CXX ?= g++
-LINKER ?= $(CC)
 
 
 
@@ -198,6 +196,19 @@ MAKEFILES = $(root)/Makefiles/Makefile.*
 -include Makefile.$(NNAME)
 -include Makefile.local
 -include $(MAKEFILES)
+
+
+# clang
+
+ifeq ($(findstring clang,$(CC)),clang)
+	CFLAGS += -fblocks
+	LDFLAGS += -lBlocksRuntime
+endif
+
+
+CXX ?= g++
+LINKER ?= $(CC)
+
 
 
 ifeq ($(ISMRMRD),1)
