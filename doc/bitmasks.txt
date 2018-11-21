@@ -1,0 +1,29 @@
+
+A bitmask is a binary number where the individual bits
+are used to indicate something.
+
+For example, a bitmask is often used to select a subset
+of dimensions, e.g. if the FFT should be applited to
+dimensions 3 and 5 the corresponding bits at position
+3 and 5 are set in a bitmask:
+
+876543210  (position of the bit)
+000101000b (bitmask as binary number)
+
+In decimal this binary number is 40, so the command
+
+$ bart fft 40 input output
+
+would transform the dimensions 3 and 5 (counting from
+zero).
+
+The 'bitmask' command computes the required bitmask
+from the set of dimensions:
+
+$ bart bitmask 3 5
+40
+
+On the command-line both commands can also be combined:
+
+$ bart fft 'bart bitmask 3 5' input output
+
