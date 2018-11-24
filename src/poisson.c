@@ -158,6 +158,7 @@ int main_poisson(int argc, char* argv[])
 
 				mc_poisson_rmatrix(2, T, *delta, dd);
 				P = poissondisc_mc(2, T, M, 1, vardensity, *delta, *points, *kind);
+				XFREE(delta);
 			}
 
 		} else { // random pattern

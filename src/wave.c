@@ -270,7 +270,7 @@ int main_wave(int argc, char* argv[])
 	debug_printf(DP_INFO, "\tM:   %f seconds.\n", t2 - t1);
 
 	debug_printf(DP_INFO, "Forward linear operator information:\n");
-	struct linop_s* A = linop_chain(linop_chain(linop_chain(linop_chain(linop_chain(
+	struct linop_s* A = linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(
 		E, R), Fx), W), Fyz), M);
 
 	if (rvc == true) {
@@ -278,18 +278,8 @@ int main_wave(int argc, char* argv[])
 		struct linop_s* tmp = A;
 		struct linop_s* rvcop = linop_realval_create(DIMS, linop_domain(A)->dims);
 
-		A = linop_chain(rvcop, tmp);
-
-		linop_free(rvcop);
-		linop_free(tmp);
+		A = linop_chain_FF(rvcop, tmp);
 	}
-
-	linop_free(E);
-	linop_free(R);
-	linop_free(Fx);
-	linop_free(W);
-	linop_free(Fyz);
-	linop_free(M);
 
 	print_opdims(A);
 

@@ -437,6 +437,17 @@ struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b)
 }
 
 
+struct linop_s* linop_chain_FF(const struct linop_s* a, const struct linop_s* b)
+{
+	struct linop_s* x = linop_chain(a, b);
+
+	linop_free(a);
+	linop_free(b);
+
+	return x;
+}
+
+
 struct linop_s* linop_chainN(unsigned int N, struct linop_s* a[N])
 {
 	assert(N > 0);
@@ -444,7 +455,7 @@ struct linop_s* linop_chainN(unsigned int N, struct linop_s* a[N])
 	if (1 == N)
 		return a[0];
 
-	return linop_chain(a[0], linop_chainN(N - 1, a + 1));
+	return linop_chain(a[0], linop_chainN(N - 1, a + 1));	// FIXME: free intermed.
 }
 
 

@@ -93,6 +93,7 @@ static void cdiag_free(const linop_data_t* _data)
 {
 	const auto data = CAST_DOWN(cdiag_s, _data);
 
+	md_free(data->diag);
 #ifdef USE_CUDA
 	md_free(data->gpu_diag);
 #endif
@@ -127,7 +128,11 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
 	data->strs = *PTR_PASS(strs);
 	data->ddims = *PTR_PASS(ddims);
 	data->dstrs = *PTR_PASS(dstrs);
-	data->diag = diag;	// make a copy?
+
+	complex float* tmp = md_alloc(N, data->ddims, CFL_SIZE);
+	md_copy(N, data->ddims, tmp, diag, CFL_SIZE);
+	data->diag = tmp;
+
 #ifdef USE_CUDA
 	data->gpu_diag = NULL;
 #endif

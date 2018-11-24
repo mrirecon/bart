@@ -191,6 +191,8 @@ void gcc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 		md_free(out2);
 		md_free(tmp2);
 	}
+
+	md_free(tmp);
 }
 
 

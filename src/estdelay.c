@@ -425,6 +425,8 @@ int main_estdelay(int argc, char* argv[])
 	for (unsigned int i = 0; i < N; i++)
 		angles[i] = M_PI + atan2f(crealf(traj1[3 * i + 0]), crealf(traj1[3 * i + 1]));
 
+	md_free(traj1);
+
 
 	long full_dims[DIMS];
 	const complex float* full_in = load_cfl(argv[2], DIMS, full_dims);
@@ -475,6 +477,7 @@ int main_estdelay(int argc, char* argv[])
 		complex float* im_pad = md_alloc(DIMS, pad_dims, CFL_SIZE);
 
 		md_resize_center(DIMS, pad_dims, im_pad, dims, im, CFL_SIZE);
+		md_free(im);
 
 		// Sinc filter in k-space (= crop FOV in image space)
 		long crop_dims[DIMS];
@@ -489,8 +492,11 @@ int main_estdelay(int argc, char* argv[])
 
 		complex float* im_pad2 = md_alloc(DIMS, pad_dims, CFL_SIZE);
 		md_zmul(DIMS, pad_dims, im_pad2, im_pad, mask);
+		md_free(im_pad);
+		md_free(mask);
 
 		fftuc(DIMS, pad_dims, PHS1_FLAG, k_pad, im_pad2);
+		md_free(im_pad2);
 
 		//--- Consider only center region ---
 
@@ -503,6 +509,7 @@ int main_estdelay(int argc, char* argv[])
 		long pos[DIMS] = { 0 };
 		pos[PHS1_DIM] = pad_dims[PHS1_DIM]/2 - (c_region/2);
 		md_copy_block(DIMS, pos, kc_dims, kc, pad_dims, k_pad, CFL_SIZE);
+		md_free(k_pad);
 
 		//--- Calculate intersections ---
 
@@ -516,6 +523,7 @@ int main_estdelay(int argc, char* argv[])
 		check_intersections(Nint, N, S, angles, idx, c_region);
 
 		bart_printf("%f:%f:%f\n\n", creal(S[0][0]) / pad_factor, creal(S[1][0]) / pad_factor, creal(S[2][0]) / pad_factor);
+		md_free(kc);
 	}
 
 	unmap_cfl(DIMS, full_dims, full_in);

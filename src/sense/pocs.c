@@ -237,7 +237,10 @@ void pocs_recon2(italgo_fun2_t italgo, void* iconf, const struct linop_s* ops[3]
 	long size = 2 * md_calc_size(DIMS, dims_ksp);
 
 	md_clear(DIMS, dims_ksp, result, CFL_SIZE);
-	italgo(iconf, NULL, (alpha == 0.) ? 2 : 3, prox_ops, ops, NULL, xupdate_op, size, (float*)result, NULL, create_monitor(size, NULL, (void*)&data, compute_norm));
+
+	struct iter_monitor_s* mon = create_monitor(size, NULL, (void*)&data, compute_norm);
+	italgo(iconf, NULL, (alpha == 0.) ? 2 : 3, prox_ops, ops, NULL, xupdate_op, size, (float*)result, NULL, mon);
+	free(mon); // FIXME
 
 	debug_printf(DP_INFO, "Done\n");
 

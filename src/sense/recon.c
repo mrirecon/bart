@@ -168,9 +168,8 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		real_from_complex_dims(DIMS, dimsR, pat_dims);
 		md_sqrt(DIMS + 1, dimsR, (float*)weights, (const float*)pattern);
 #endif
-		// FIXME: weights is never freed
-
 		struct linop_s* weights_op = linop_cdiag_create(DIMS, ksp_dims, ~COIL_FLAG, weights);
+		md_free(weights);
 
 		op = wlsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init,
 						sense_op, weights_op, precond_op,

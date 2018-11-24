@@ -761,20 +761,14 @@ int main_wshfl(int argc, char* argv[])
 		complex float* table_forward = create_cfl(argv[6], DIMS, table_dims);
 		const struct linop_s* CFx    = linop_fx_create( wx, sy, sz, nc, tk, true);
 		const struct linop_s* CFyz   = linop_fyz_create(wx, sy, sz, nc, tk, true);
-		struct linop_s* AC = linop_chain(linop_chain(linop_chain(linop_chain(linop_chain(
+		struct linop_s* AC = linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(
 			E, R), CFx), W), CFyz), K);
 		operator_apply(AC->forward, DIMS, table_dims, table_forward, DIMS, coeff_dims, coeffs_to_fwd);
 		debug_printf(DP_INFO, "Done.\n");
 
 		debug_printf(DP_INFO, "Cleaning up... ");
-		linop_free(E);
-		linop_free(R);
 		linop_free(Fx);
-		linop_free(CFx);
-		linop_free(W);
-		linop_free(Fyz);
 		linop_free(CFyz);
-		linop_free(K);
 		linop_free(AC);
 		md_free(kernel);
 		unmap_cfl(DIMS, maps_dims, maps);
@@ -789,7 +783,7 @@ int main_wshfl(int argc, char* argv[])
 	}
 
 	debug_printf(DP_INFO, "Forward linear operator information:\n");
-	struct linop_s* A = linop_chain(linop_chain(linop_chain(linop_chain(linop_chain(
+	struct linop_s* A = linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(
 		E, R), Fx), W), Fyz), K);
 
 	if (rvc == true) {
@@ -802,13 +796,6 @@ int main_wshfl(int argc, char* argv[])
 		linop_free(rvcop);
 		linop_free(tmp);
 	}
-
-	linop_free(E);
-	linop_free(R);
-	linop_free(Fx);
-	linop_free(W);
-	linop_free(Fyz);
-	linop_free(K);
 
 	print_opdims(A);
 
