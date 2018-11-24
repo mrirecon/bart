@@ -91,6 +91,7 @@ static bool test_linop_matrix_adjoint(void)
 	bool ret = (diff < 1.E-4f);
 
 	linop_free(mat);
+	md_free(src1);
 
 	return ret;
 }
@@ -121,6 +122,7 @@ static bool test_linop_matrix_normal(void)
 	bool ret = (nrmse < 1.E-6f);
 
 	linop_free(mat);
+	md_free(src1);
 
 	return ret;
 }

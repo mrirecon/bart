@@ -27,12 +27,12 @@ static bool test_window(unsigned int D, long dims[D], long flags, bool hamming, 
 
 	(hamming ? md_zhamming : md_zhann)(3, dims, flags, out, in);
 
-	UT_ASSERT(md_znrmse(3, dims, &ref[0], out) < UT_TOL);
+	bool ret = (md_znrmse(3, dims, &ref[0], out) < UT_TOL);
 
 	md_free(out);
 	md_free(in);
 	
-	return true;
+	return ret;
 }
 
 static bool test_hamming(void)

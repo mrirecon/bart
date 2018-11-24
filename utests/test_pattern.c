@@ -28,11 +28,11 @@ static bool test_pattern_flags(unsigned int D, const long dims[D], unsigned int 
 
 	estimate_pattern(D, dims, flags, out, in);
 
-	UT_ASSERT(md_znrmse(D, odims, ref, out) < UT_TOL);
+	bool ret = (md_znrmse(D, odims, ref, out) < UT_TOL);
 
 	md_free(out);
 
-	return true;
+	return ret;
 }
 
 
