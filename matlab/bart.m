@@ -1,8 +1,9 @@
-function [varargout] = bart(cmd, varargin);
+function [varargout] = bart(cmd, varargin)
 % BART	Call BART command from Matlab.
 %   [A, B] = bart('command', X, Y) call command with inputs X Y and outputs A B
 %
 % 2014-2016 Martin Uecker <uecker@med.uni-goettingen.de>
+% Edited for WSL, by Soumick Chatterjee <soumick.chatterjee@ovgu.de>
 
 
 	if nargin==0 || all(cmd==0)
@@ -11,15 +12,23 @@ function [varargout] = bart(cmd, varargin);
 	end
 
 	bart_path = getenv('TOOLBOX_PATH');
+    isWSL = false;
 
 	if isempty(bart_path)
 		if exist('/usr/local/bin/bart', 'file')
 			bart_path = '/usr/local/bin';
 		elseif exist('/usr/bin/bart', 'file')
 			bart_path = '/usr/bin';
-		else
-			error('Environment variable TOOLBOX_PATH is not set.');
-		end
+        else    
+            % Try to execute bart inside wsl, if it works, then it returns
+            % status 0
+            [bartstatus, ~] = system('wsl bart version -V');
+            if bartstatus==0
+                bart_path = '/usr/bin';
+                isWSL = true;
+            else
+                error('Environment variable TOOLBOX_PATH is not set.');
+            end
 	end
 
 	% clear the LD_LIBRARY_PATH environment variable (to work around
@@ -35,7 +44,7 @@ function [varargout] = bart(cmd, varargin);
 
 	in = cell(1, nargin - 1);
 
-	for i=1:nargin - 1,
+	for i=1:nargin - 1
 		in{i} = strcat(name, 'in', num2str(i));
 		writecfl(in{i}, varargin{i});
 	end
@@ -44,24 +53,32 @@ function [varargout] = bart(cmd, varargin);
 
 	out = cell(1, nargout);
 
-	for i=1:nargout,
+	for i=1:nargout
 		out{i} = strcat(name, 'out', num2str(i));
 	end
 
 	out_str = sprintf(' %s', out{:});
 
 	if ispc
-		% For cygwin use bash and modify paths
-		ERR = system(['bash.exe --login -c ', ...
-			strrep(bart_path, filesep, '/'), ...
-	                '"', '/bart ', strrep(cmd, filesep, '/'), ' ', ...
-			strrep(in_str, filesep, '/'), ...
-                	' ', strrep(out_str, filesep, '/'), '"']);
+        if isWSL
+            % For WSL and modify paths
+            cmdWSL = WSLPathCorrection(cmd);
+            in_strWSL = WSLPathCorrection(in_str);
+            out_strWSL =  WSLPathCorrection(out_str);		
+            ERR = system(['wsl bart ', cmdWSL, ' ', in_strWSL, ' ', out_strWSL]);
+        else
+            % For cygwin use bash and modify paths
+            ERR = system(['bash.exe --login -c ', ...
+                strrep(bart_path, filesep, '/'), ...
+                        '"', '/bart ', strrep(cmd, filesep, '/'), ' ', ...
+                strrep(in_str, filesep, '/'), ...
+                        ' ', strrep(out_str, filesep, '/'), '"']);
+        end
 	else
 		ERR = system([bart_path, '/bart ', cmd, ' ', in_str, ' ', out_str]);
 	end
 
-	for i=1:nargin - 1,
+	for i=1:nargin - 1
 		if (exist(strcat(in{i}, '.cfl'),'file'))
 			delete(strcat(in{i}, '.cfl'));
 		end
@@ -71,7 +88,7 @@ function [varargout] = bart(cmd, varargin);
 		end
 	end
 
-	for i=1:nargout,
+	for i=1:nargout
 		if ERR==0
 			varargout{i} = readcfl(out{i});
 		end
