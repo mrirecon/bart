@@ -4,19 +4,25 @@
 #
 # Authors: 
 # 2016 Siddharth Iyer <sid8795@gmail.com>
+# 2018 Soumick Chatterjee <soumick.chatterjee@ovgu.de> , WSL Support
 
 import subprocess as sp
 import tempfile as tmp
 import cfl
 import os
+from wslsupport import PathCorrection
 
 def bart(nargout, cmd, *args):
 
     if type(nargout) != int or nargout < 0:
-        print("Usage: bart(<nargout>, <command>, <arguements...>)");
+        print("Usage: bart(<nargout>, <command>, <arguements...>)")
         return None
 
-    bart_path = os.environ['TOOLBOX_PATH'] + '/bart ';
+    try:
+        bart_path = os.environ['TOOLBOX_PATH'] + '/bart '
+    except:
+        bart_path = None
+    isWSL = False
 
     if not bart_path:
         if os.path.isfile('/usr/local/bin/bart'):
@@ -24,11 +30,16 @@ def bart(nargout, cmd, *args):
         elif os.path.isfile('/usr/bin/bart'):
             bart_path = '/usr/bin'
         else:
-            raise Exception('Environment variable TOOLBOX_PATH is not set.')
+            bartstatus = os.system('wsl bart version -V')
+            if bartstatus==0:
+                bart_path = '/usr/bin'
+                isWSL = True
+            else:
+                raise Exception('Environment variable TOOLBOX_PATH is not set.')
 
     name = tmp.NamedTemporaryFile().name
 
-    nargin = len(args);
+    nargin = len(args)
     infiles = [name + 'in' + str(idx) for idx in range(nargin)]
     in_str = ' '.join(infiles)
 
@@ -38,8 +49,19 @@ def bart(nargout, cmd, *args):
     outfiles = [name + 'out' + str(idx) for idx in range(nargout)]
     out_str = ' '.join(outfiles)
 
-    #TODO: Windows option.
-    ERR = os.system(bart_path + '/bart ' + cmd + ' ' + in_str + ' ' + out_str);
+    if os.name =='nt':
+        if isWSL:
+            #For WSL and modify paths
+            cmdWSL = PathCorrection(cmd)
+            in_strWSL = PathCorrection(in_str)
+            out_strWSL =  PathCorrection(out_str)	
+            ERR = os.system('wsl bart ' + cmdWSL + ' ' + in_strWSL + ' ' + out_strWSL)
+        else:
+            #For cygwin use bash and modify paths
+            ERR = os.system('bash.exe --login -c ' + bart_path + '"/bart ' + cmd.replace(os.path.sep, '/') + ' ' + in_str.replace(os.path.sep, '/') + ' ' + out_str.replace(os.path.sep, '/') + '"')
+            #TODO: Test with cygwin, this is just translation from matlab code
+    else:
+        ERR = os.system(bart_path + '/bart ' + cmd + ' ' + in_str + ' ' + out_str)
 
     for elm in infiles:
         if os.path.isfile(elm + '.cfl'):
