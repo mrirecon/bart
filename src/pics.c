@@ -396,7 +396,7 @@ int main_pics(int argc, char* argv[])
 		if (conf.bpsense) {
 
 			bpsense_eps /= scaling;
-			debug_printf(DP_DEBUG1, "scaling basis pursuit eps: %.3f\n", bpsense_eps);
+			debug_printf(DP_DEBUG1, "scaling basis pursuit eps: %.3e\n", bpsense_eps);
 		}
 	}
 
@@ -492,8 +492,8 @@ int main_pics(int argc, char* argv[])
 		maxeigen = estimate_maxeigenval(forward_op->normal);
 
 		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
-	}
 
+	}
 
 	// initialize prox functions
 
@@ -519,7 +519,7 @@ int main_pics(int argc, char* argv[])
 
 	// choose step size
 
-	if ((ALGO_IST == algo) || (ALGO_FISTA == algo)) {
+	if ((ALGO_IST == algo) || (ALGO_FISTA == algo) || (ALGO_PRIDU == algo)) {
 
 		// For non-Cartesian trajectories, the default
 		// will usually not work. TODO: The same is true

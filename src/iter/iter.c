@@ -139,8 +139,8 @@ const struct iter_chambolle_pock_conf iter_chambolle_pock_defaults = {
 	.maxiter = 50,
 	.tol = 1e-8,
 	.theta = 1.,
-	.tau = 1.,
-	.sigma = 1.,
+	.tau = .95,
+	.sigma = .95,
 	.decay = 1.,
 	.fast = false,
 };

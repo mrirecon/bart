@@ -12,6 +12,7 @@
 
 #include <stdbool.h>
 #include <assert.h>
+#include <math.h>
 
 #include "misc/debug.h"
 #include "misc/types.h"
@@ -155,8 +156,12 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 			*pdconf = iter_chambolle_pock_defaults;
 
 			pdconf->maxiter = maxiter;
-			pdconf->sigma = 1. * scaling;
-			pdconf->tau = 1. / pdconf->sigma;
+			pdconf->sigma = sqrtf(step);
+			pdconf->tau = sqrtf(step);
+
+			pdconf->sigma *= scaling;
+			pdconf->tau /= scaling;
+
 			pdconf->theta = 1.;
 			pdconf->decay = (hogwild ? .95 : 1.);
 			pdconf->tol = 1.E-4;
