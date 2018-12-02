@@ -1,10 +1,10 @@
 /* Copyright 2013-2017. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013-2014 Frank Ong <frankong@berkeley.edu>
  * 2013-2014,2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -420,6 +420,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 		debug_printf(DP_DEBUG3, "CG: early out\n");
 		goto cleanup;
 	}
+
 	for (i = 0; i < maxiter; i++) {
 
 		iter_monitor(monitor, vops, x);
@@ -439,24 +440,23 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 		vops->axpy(N, x, +alpha, p);
 		vops->axpy(N, r, -alpha, Ap);
 	
-		rsnew = (float)pow(vops->norm(N, r), 2.);
+		rsnew = pow(vops->norm(N, r), 2.);
+
 		float beta = rsnew / rsold;
 		
 		rsold = rsnew;
 
-		if (rsnew <= eps_squared) {
-			//debug_printf(DP_DEBUG3, "%d ", i);
+		if (rsnew <= eps_squared)
 			break;
-		}
 
 		vops->xpay(N, beta, p, r);	// p = beta * p + r
-
 	}
 
 cleanup:
 	vops->del(Ap);
 	vops->del(p);
 	vops->del(r);
+
 	debug_printf(DP_DEBUG2, "\t cg: %3d\n", i);
 
 	return sqrtf(rsnew);
@@ -507,7 +507,9 @@ void irgnm(unsigned int iter, float alpha, float alpha_min, float redu, long N, 
 		iter_op_p_call(inv, alpha, h, p);
 
 		vops->axpy(N, x, 1., h);
-		alpha = (alpha-alpha_min)/redu + alpha_min;
+
+		alpha = (alpha - alpha_min) / redu + alpha_min;
+
 		if (NULL != callback.fun)
 			iter_op_call(callback, x, x);
 	}
@@ -607,6 +609,7 @@ double power(unsigned int maxiter,
 	for (unsigned int i = 0; i < maxiter; i++) {
 
 		iter_op_call(op, u, u);		// r = A x
+
 		s = vops->norm(N, u);
 		vops->smul(N, 1. / s, u, u);
 	}
@@ -663,7 +666,6 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 	vops->clear(M, u_old);
 
 
-
 	for (unsigned int i = 0; i < maxiter; i++) {
 
 		float lambda = (float)pow(decay, i);
@@ -676,8 +678,11 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 		 */
 
 		iter_op_call(op_forw, u_old, x_avg);
+
 		vops->axpy(M, u_old, 1. / sigma, u); // (u + sigma * A(x)) / sigma
+
 		iter_op_p_call(prox1, 1. / sigma, u_new, u_old);
+
 		vops->axpbz(M, u_new, -1. * sigma, u_new, sigma, u_old);
 		vops->copy(M, u_old, u);
 		vops->axpbz(M, u, lambda, u_new, 1. - lambda, u_old);
@@ -689,9 +694,13 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 		 * x = lambda * x + (1 - lambda * x0)
 		 */
 		vops->copy(N, x_old, x);
+
 		iter_op_call(op_adj, x_new, u);
+
 		vops->axpy(N, x, -1. * tau, x_new);
+
 		iter_op_p_call(prox2, tau, x_new, x);
+
 		vops->axpbz(N, x, lambda, x_new, 1. - lambda, x_old);
 
 		/* update x_avg
@@ -712,19 +721,6 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 
 		if (epsilon > (res1 + res2))
 			break;
-
-#if 0 // buggy
-		if (res1 < 100 * res2) {
-
-			sigma /= 2;
-			tau *= 2;
-		}
-		else if (res2 > 100 * res1) {
-
-			sigma *= 2;
-			tau /= 2;
-		}
-#endif
 	}
 
 	debug_printf(DP_DEBUG3, "\n");
