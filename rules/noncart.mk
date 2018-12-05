@@ -12,4 +12,6 @@ noncartobjs := $(noncartsrcs:.c=.o)
 lib/libnoncart.a: libnoncart.a($(noncartobjs))
 
 
+UTARGETS += test_nufft
+MODULES_test_nufft += -lnoncart -llinops
 
