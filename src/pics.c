@@ -270,19 +270,18 @@ int main_pics(int argc, char* argv[])
 	if (im_truth)
 		debug_printf(DP_INFO, "Compare to truth\n");
 
-	if (randshift && overlapping_blocks)
-		debug_printf(DP_WARN, "Random shifts and overlapping blocks selected. Turning off random shifts\n");
+	if (randshift)
+		shift_mode = 1;
 
 	if (overlapping_blocks) {
+
+		if (randshift)
+			debug_printf(DP_WARN, "Turning off random shifts\n");
 
 		shift_mode = 2;
 		debug_printf(DP_INFO, "Fully overlapping LLR blocks\n");
 	}
-	else if (randshift) {
 
-		debug_printf(DP_INFO, "Random shift mode\n");
-		shift_mode = 1;
-	}
 
 
 	assert(!((conf.rwiter > 1) && (nuconf.toeplitz || conf.bpsense)));
