@@ -329,7 +329,7 @@ static void grid_point_gen(int N, const long dims[VLA(N)], const float pos[VLA(N
 
 		if (1 == dims[j]) {
 
-			assert(0. == pos[j]);
+			assert(1.E-5 > fabsf(pos[j])); // ==0. fails nondeterministically for test_nufft_forward bbdec08cb
 			sti[j] = 0;
 			eni[j] = 0;
 		}
