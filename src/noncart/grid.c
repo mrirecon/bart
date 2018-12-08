@@ -222,7 +222,7 @@ static void grid2_dims(unsigned int D, const long trj_dims[D], const long ksp_di
 {
 	assert(D >= 4);
 	assert(md_check_compat(D - 3, ~0, grid_dims + 3, ksp_dims + 3));
-	assert(md_check_compat(D - 3, ~(MD_BIT(1) | MD_BIT(2)), trj_dims + 3, ksp_dims + 3));
+//	assert(md_check_compat(D - 3, ~(MD_BIT(0) | MD_BIT(1)), trj_dims + 3, ksp_dims + 3));
 	assert(md_check_bounds(D - 3, ~0, trj_dims + 3, ksp_dims + 3));
 
 	assert(3 == trj_dims[0]);
@@ -329,7 +329,7 @@ static void grid_point_gen(int N, const long dims[VLA(N)], const float pos[VLA(N
 
 		if (1 == dims[j]) {
 
-			assert(1.E-5 > fabsf(pos[j])); // ==0. fails nondeterministically for test_nufft_forward bbdec08cb
+			assert(0. == pos[j]); // ==0. fails nondeterministically for test_nufft_forward bbdec08cb
 			sti[j] = 0;
 			eni[j] = 0;
 		}
