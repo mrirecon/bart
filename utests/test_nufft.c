@@ -7,6 +7,7 @@
  */
 
 #include <complex.h>
+#include <assert.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -27,18 +28,18 @@ enum { N = 8 };
 static const long ksp_dims[N] = { 1, 5, 1, 1, 1, 1, 1, 1 };
 static const long cim_dims[N] = { 8, 8, 1, 1, 1, 1, 1, 1 };
 static const long trj_dims[N] = { 3, 5, 1, 1, 1, 1, 1, 1 };
-	
+
+static const complex float traj[5][3] = {
+	{ 0., 0. , 0. },
+	{ 1., 0. , 0. },
+	{ 0., 1. , 0. },
+	{ -1., 0., 0. },
+	{ 0., -1., 0. },
+};
+
 
 static struct linop_s* create_nufft(bool toeplitz, bool use_weights)
 {
-	const complex float traj[5][3] = {
-		{ 0., 0. , 0. },
-		{ 1., 0. , 0. },
-		{ 0., 1. , 0. },
-		{ -1., 0., 0. },
-		{ 0., -1., 0. },
-	};
-
 	const complex float weights[5] = {
 		0.5, 0.5, 0.5, 0.5, 0.5
 	};
@@ -48,6 +49,34 @@ static struct linop_s* create_nufft(bool toeplitz, bool use_weights)
 
 	return nufft_create(N, ksp_dims, cim_dims, trj_dims, &traj[0][0], use_weights ? weights : NULL, conf);
 }
+
+
+static const long ci2_dims[N] = { 8, 8, 1, 1, 1, 1, 2, 1 };
+static const long ks2_dims[N] = { 1, 5, 1, 1, 1, 1, 2, 1 };
+static const long tr2_dims[N] = { 3, 5, 1, 1, 1, 1, 1, 1 };
+static const long bas_dims[N] = { 1, 1, 1, 1, 1, 3, 2, 1 };
+static const long wg2_dims[N] = { 1, 5, 1, 1, 1, 3, 1, 1 };
+
+
+
+static struct linop_s* create_nufft2(bool toeplitz)
+{
+	const complex float weights[15] = {
+		0.5, 0.5, 0.5, 0.5, 0.5,
+		0.5, 0.5, 0.5, 0.5, 0.5,
+		0.5, 0.5, 0.5, 0.5, 0.5,
+	};
+
+	const complex float basis[6] = {
+		1., 0., 1., 0., 1., 0.,
+	};
+
+	struct nufft_conf_s conf = nufft_conf_defaults;
+	conf.toeplitz = toeplitz;
+
+	return nufft_create2(N, ks2_dims, ci2_dims, tr2_dims, &traj[0][0], wg2_dims, weights, bas_dims, basis, conf);
+}
+
 
 
 static bool test_nufft_forward(void)
@@ -140,6 +169,64 @@ static bool test_nufft_toeplitz_weights(void)
 }
 
 
+static bool test_nufft_basis_adjoint(void)
+{
+	struct linop_s* op = create_nufft2(false);
+
+	float diff = linop_test_adjoint(op);
+
+	debug_printf(DP_DEBUG1, "adjoint diff: %f\n", diff);
+
+	bool ret = (diff < 1.E-6f);
+
+	linop_free(op);
+
+	return ret;
+}
+
+
+static bool test_nufft_basis_normal(void)
+{
+	struct linop_s* op = create_nufft2(false);
+
+	float nrmse = linop_test_normal(op);
+
+	debug_printf(DP_DEBUG1, "normal nrmse: %f\n", nrmse);
+
+	bool ret = (nrmse < 1.E-7f);
+
+	linop_free(op);
+
+	return ret;
+}
+
+
+static bool test_nufft_basis_toeplitz(void)
+{
+	complex float src[128];
+	complex float dst1[128];
+	complex float dst2[128];
+
+	assert(128 == md_calc_size(N, ci2_dims));
+
+	md_gaussian_rand(N, ci2_dims, src);
+
+	struct linop_s* op1 = create_nufft2(false);
+	linop_normal(op1, N, ci2_dims, dst1, src);
+	linop_free(op1);
+
+	struct linop_s* op2 = create_nufft2(true);
+	linop_normal(op2, N, ci2_dims, dst2, src);
+	linop_free(op2);
+
+	complex float sc = md_zscalar(N, ci2_dims, dst2, dst1);
+	float n = md_znorm(N, ci2_dims, dst1);
+
+	md_zsmul(N, ci2_dims, dst1, dst1, sc / (n * n));
+
+	return md_znrmse(N, ci2_dims, dst1, dst2) < 1.E-5;
+}
+
 
 
 
@@ -149,5 +236,8 @@ UT_REGISTER_TEST(test_nufft_adjoint);
 UT_REGISTER_TEST(test_nufft_normal);
 UT_REGISTER_TEST(test_nufft_toeplitz_weights);
 UT_REGISTER_TEST(test_nufft_toeplitz_noweights);
+UT_REGISTER_TEST(test_nufft_basis_adjoint);
+UT_REGISTER_TEST(test_nufft_basis_normal);
+UT_REGISTER_TEST(test_nufft_basis_toeplitz);
 
 
