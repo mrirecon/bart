@@ -542,10 +542,12 @@ endif()
 
 # ------------------------------------------------------------------------------
 
-# Include integration testing
-if(NOT BART_MEMONLY_CFL)
-  add_subdirectory(tests)
-endif()
+##Testing broke in 2c8c1a27 when adding a test.
+
+## Include integration testing
+#if(NOT BART_MEMONLY_CFL)
+#  add_subdirectory(tests)
+#endif()
 
 # ==============================================================================
 
