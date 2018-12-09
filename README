@@ -103,8 +103,14 @@ of gcc from MacPorts (http://www.macports.org/).
 
 ### 2.1.3. Windows
 
+Note that Windows is currently not supported. Nevertheless, many people
+use BART on Windows. If you have trouble to get it to work, you may
+want to try an older version (e.g. version 4.00).
+
+
 The recommended way to use BART on Windows is with the Windows Subsystem for
-Linux (WSL) which is available for Windows 10.
+Linux (WSL) which is available for Windows 10. If you use WSL, you need to
+use the clang compiler.
 
 
 BART should also work with Cygwin:
