@@ -19,6 +19,35 @@ ISMRM Workshop on Data Sampling and Image Reconstruction, Sedona 2016.
 
 
 
+
+- reproducible publications using BART -
+
+Uecker M, Lustig M.
+Estimating Absolute-Phase Maps Using ESPIRiT and Virtual Conjugate Coils.
+Magn Reson Med 2017; 77:1201-1207.
+https://github.com/mrirecon/vcc-espirit
+
+Rosenzweig S, Holme HCM, Wilke RN, Voit D, Frahm J, Uecker M.
+Simultaneous Multi-Slice Reconstruction Using Regularized Nonlinear Inversion:
+SMS-NLINV.
+Magnetic Resonance in Medicine 2018; 79:2057-2066.
+https://github.com/mrirecon/sms-nlinv
+
+Rosenzweig S, Holme HCM, Uecker M.
+Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial
+Intersections (RING).
+Magnetic Resonance in Medicine, DOI:10.1002/mrm.27506 (2018)
+https://github.com/mrirecon/ring
+
+Holme HCM, Rosenzweig S, Ong F, Wilke RN, Lustig M, Uecker M.
+ENLIVE: An Efficient Nonlinear Method for Calibrationless and Robust Parallel
+Imaging.
+arXiv:1706.09780 [physics.med-ph]
+https://github.com/mrirecon/enlive
+
+
+
+
 - sensitivity-encoded parallel imaging -
 (commands: itsense, pocsense, bpsense, pics)
 
@@ -154,7 +183,7 @@ Coil compression for accelerated imaging with cartesian sampling.
 Magn Reson Med 2013; 69:571-582.
 
 Bahri D, Uecker M, Lustig M.
-ESPIRiT-Based Coil Compression for Cartesian Sampling,
+ESPIRiT-Based Coil Compression for Cartesian Sampling.
 Annual Meeting ISMRM, Salt Lake City 2013,
 In: Proc Intl Soc Mag Reson Med 21; 2657.
 
@@ -162,7 +191,7 @@ In: Proc Intl Soc Mag Reson Med 21; 2657.
 
 
 - compressed sensing MRI -
-(commands: pocsense, rsense, pics)
+(commands: pocsense, pics)
 
 
 Block KT, Uecker M, and Frahm J.
@@ -221,8 +250,26 @@ In: Proc Intl Soc Mag Reson Med 17; 379.
 
 
 
+- trajectory correction -
+(commands: estdelay)
+
+
+Block KT, Uecker M.
+Simple Method for Adaptive Gradient-Delay Compensation in Radial MRI.
+Annual Meeting ISMRM, Montreal 2011,
+In: Proc. Intl. Soc. Mag. Reson. Med 19: 2816.
+
+Rosenzweig S, Holme HCM, Uecker M.
+Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial
+Intersections (RING).
+Magnetic Resonance in Medicine, DOI:10.1002/mrm.27506 (2018)
+
+
+
+
+
 - acceleration with graphical processing units -
-(commands: pocsense, rsense, nufft, pics)
+(commands: pocsense, nufft, pics, nlinv)
 
 
 Uecker M, Zhang S, Frahm J.
@@ -258,8 +305,9 @@ IEEE Trans Med Imaging 2012; 31:626-636.
 
 
 
-- applications -
 
+- applications -
+(an incomplete list of papers using BART...)
 
 Hollingsworth KG, Higgins DM, McCallum M, Ward L, Coombs A, Straub V.
 Investigating the quantitative fidelity of prospectively undersampled
@@ -317,4 +365,25 @@ Cheng JY, Zhang T, Alley MT, Uecker M, Lustig M, Pauly JM, Vasanawala SS.
 Comprehensive Multi-Dimensional MRI for the Simultaneous Assessment
 of Cardiopulmonary Anatomy and Physiology.
 Scientific Reports 2017; 7:5330.
+
+Bao S, Tamir JI, Young JL, Tariq U, Uecker M, Lai P, Chen W, Lustig M,
+Vasanawala SS.
+Fast comprehensive single-sequence four-dimensional pediatric knee MRI with
+T2 shuffling.
+Journal of Magnetic Resonance Imaging 2017; 45:1700-1711.
+
+Rosenzweig S, Holme HCM, Wilke RN, Voit D, Frahm J, Uecker M.
+Simultaneous Multi-Slice Reconstruction Using Regularized Nonlinear Inversion:
+SMS-NLINV.
+Magnetic Resonance in Medicine 2018; 79:2057-2066.
+
+Roeloffs V, Rosenzweig S, Holme HCM, Uecker M, Frahm J.
+Frequency-modulated SSFP with radial sampling and subspace reconstruction:
+A time-efficient alternative to phase-cycled bSSFP.
+Magnetic Resonance in Medicine, DOI:10.1002/mrm.27505 (2018)
+
+Rosenzweig S, Holme HCM, Uecker M.
+Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial
+Intersections (RING).
+Magnetic Resonance in Medicine, DOI:10.1002/mrm.27506 (2018)
 
