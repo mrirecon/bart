@@ -79,19 +79,14 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 		 */
 
 		const struct linop_s* fft_slice = linop_fft_create(DIMS, map_dims, SLICE_FLAG);
-		const struct linop_s* tmp = fft_op;
-		fft_op = linop_chain(fft_slice, tmp);
-		linop_free(tmp);
-		linop_free(fft_slice);
+
+		fft_op = linop_chain_FF(fft_slice, fft_op);
 	}
 
-	const struct linop_s* lop = linop_chain(maps_op, fft_op);
+	const struct linop_s* lop = linop_chain_FF(maps_op, fft_op);
 
 	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
 	precond_op[0] = NULL;
-
-	linop_free(maps_op);
-	linop_free(fft_op);
 
 	return lop;
 }
@@ -414,7 +409,7 @@ int main_pics(int argc, char* argv[])
 		if (NULL != basis_file) {
 
 			const struct linop_s* basis_op = linop_fmac_create(DIMS, bmx_dims, COEFF_FLAG, TE_FLAG, ~(COEFF_FLAG | TE_FLAG), basis);
-			forward_op = linop_chain(forward_op, basis_op);
+			forward_op = linop_chain_FF(forward_op, basis_op);
 		}
 
 	} else {
@@ -677,6 +672,7 @@ int main_pics(int argc, char* argv[])
 
 	xfree(pat_file);
 	xfree(traj_file);
+	xfree(basis_file);
 
 	double end_time = timestamp();
 

@@ -590,6 +590,7 @@ static void nufft_free_data(const linop_data_t* _data)
 	md_free(data->fftmod);
 	md_free(data->weights);
 	md_free(data->roll);
+	md_free(data->basis);
 
 #ifdef USE_CUDA
 	md_free(data->linphase_gpu);
