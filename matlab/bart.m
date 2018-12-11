@@ -12,23 +12,24 @@ function [varargout] = bart(cmd, varargin)
 	end
 
 	bart_path = getenv('TOOLBOX_PATH');
-    isWSL = false;
+	isWSL = false;
 
 	if isempty(bart_path)
 		if exist('/usr/local/bin/bart', 'file')
 			bart_path = '/usr/local/bin';
 		elseif exist('/usr/bin/bart', 'file')
 			bart_path = '/usr/bin';
-        else    
-            % Try to execute bart inside wsl, if it works, then it returns
-            % status 0
-            [bartstatus, ~] = system('wsl bart version -V');
-            if bartstatus==0
-                bart_path = '/usr/bin';
-                isWSL = true;
-            else
-                error('Environment variable TOOLBOX_PATH is not set.');
-            end
+		else
+			% Try to execute bart inside wsl, if it works, then it returns
+			% status 0
+			[bartstatus, ~] = system('wsl bart version -V');
+			if bartstatus==0
+				bart_path = '/usr/bin';
+				isWSL = true;
+			else
+				error('Environment variable TOOLBOX_PATH is not set.');
+			end
+		end
 	end
 
 	% clear the LD_LIBRARY_PATH environment variable (to work around
@@ -60,20 +61,20 @@ function [varargout] = bart(cmd, varargin)
 	out_str = sprintf(' %s', out{:});
 
 	if ispc
-        if isWSL
-            % For WSL and modify paths
-            cmdWSL = WSLPathCorrection(cmd);
-            in_strWSL = WSLPathCorrection(in_str);
-            out_strWSL =  WSLPathCorrection(out_str);		
-            ERR = system(['wsl bart ', cmdWSL, ' ', in_strWSL, ' ', out_strWSL]);
-        else
-            % For cygwin use bash and modify paths
-            ERR = system(['bash.exe --login -c ', ...
-                strrep(bart_path, filesep, '/'), ...
-                        '"', '/bart ', strrep(cmd, filesep, '/'), ' ', ...
-                strrep(in_str, filesep, '/'), ...
-                        ' ', strrep(out_str, filesep, '/'), '"']);
-        end
+		if isWSL
+			% For WSL and modify paths
+			cmdWSL = WSLPathCorrection(cmd);
+			in_strWSL = WSLPathCorrection(in_str);
+			out_strWSL =  WSLPathCorrection(out_str);
+			ERR = system(['wsl bart ', cmdWSL, ' ', in_strWSL, ' ', out_strWSL]);
+	        else
+			% For cygwin use bash and modify paths
+			ERR = system(['bash.exe --login -c ', ...
+			strrep(bart_path, filesep, '/'), ...
+			        '"', '/bart ', strrep(cmd, filesep, '/'), ' ', ...
+			strrep(in_str, filesep, '/'), ...
+			        ' ', strrep(out_str, filesep, '/'), '"']);
+	        end
 	else
 		ERR = system([bart_path, '/bart ', cmd, ' ', in_str, ' ', out_str]);
 	end
