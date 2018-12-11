@@ -224,7 +224,7 @@ static bool test_nufft_basis_toeplitz(void)
 
 	md_zsmul(N, ci2_dims, dst1, dst1, sc / (n * n));
 
-	return md_znrmse(N, ci2_dims, dst1, dst2) < 1.E-5;
+	return md_znrmse(N, ci2_dims, dst1, dst2) < 1.E-4;
 }
 
 
