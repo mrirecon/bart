@@ -24,6 +24,8 @@ extern opt_conv_f opt_uint;
 extern opt_conv_f opt_long;
 extern opt_conv_f opt_float;
 extern opt_conv_f opt_string;
+extern opt_conv_f opt_vec2;
+extern opt_conv_f opt_float_vec2;
 extern opt_conv_f opt_vec3;
 extern opt_conv_f opt_float_vec3;
 extern opt_conv_f opt_select;
@@ -43,6 +45,8 @@ struct opt_subopt_s {
 	struct opt_s* opts;
 };
 
+typedef long opt_vec2_t[2];
+typedef float opt_fvec2_t[2];
 typedef long opt_vec3_t[3];
 typedef float opt_fvec3_t[3];
 
@@ -57,6 +61,8 @@ typedef float opt_fvec3_t[3];
 #define OPT_INT(c, ptr, argname, descr)		OPT_ARG(c, opt_int, int, ptr, argname, descr)
 #define OPT_LONG(c, ptr, argname, descr)	OPT_ARG(c, opt_long, long, ptr, argname, descr)
 #define OPT_FLOAT(c, ptr, argname, descr)	OPT_ARG(c, opt_float, float, ptr, argname, descr)
+#define OPT_VEC2(c, ptr, argname, descr)	OPT_ARG(c, opt_vec2, opt_vec2_t, ptr, argname, descr)
+#define OPT_FLVEC2(c, ptr, argname, descr)	OPT_ARG(c, opt_float_vec2, opt_fvec2_t, ptr, argname, descr)
 #define OPT_VEC3(c, ptr, argname, descr)	OPT_ARG(c, opt_vec3, opt_vec3_t, ptr, argname, descr)
 #define OPT_FLVEC3(c, ptr, argname, descr)	OPT_ARG(c, opt_float_vec3, opt_fvec3_t, ptr, argname, descr)
 #define OPT_SELECT(c, T, ptr, value, descr)	{ (c), false, opt_select, OPT_SEL(T, TYPE_CHECK(T*, ptr), value), "\t" descr }

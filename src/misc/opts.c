@@ -273,6 +273,35 @@ bool opt_string(void* ptr, char c, const char* optarg)
 	return false;
 }
 
+bool opt_float_vec2(void* ptr, char c, const char* optarg)
+{
+	UNUSED(c);
+	int r = sscanf(optarg, "%f:%f", &(*(float(*)[2])ptr)[0], &(*(float(*)[2])ptr)[1]);
+
+	assert(2 == r);
+
+	return false;
+}
+
+bool opt_vec2(void* ptr, char c, const char* optarg)
+{
+	if (islower(c)) {
+
+		if (2 != sscanf(optarg, "%ld:%ld", &(*(long(*)[2])ptr)[0], &(*(long(*)[2])ptr)[1])) {
+
+			(*(long(*)[3])ptr)[0] = atol(optarg);
+			(*(long(*)[3])ptr)[1] = atol(optarg);
+		}
+
+	} else {
+
+		debug_printf(DP_WARN, "the upper-case options for specifying dimensions are deprecated.\n");
+		int r = sscanf(optarg, "%ld:%ld", &(*(long(*)[2])ptr)[0], &(*(long(*)[2])ptr)[1]);
+		assert(2 == r);
+	}
+
+	return false;
+}
 
 bool opt_float_vec3(void* ptr, char c, const char* optarg)
 {
