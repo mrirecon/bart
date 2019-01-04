@@ -91,7 +91,7 @@ inline _hdev_ double abs(double2 z1) {
   } while(0)
 
 #define cuda_sync() do{				\
-    cuda (ThreadSynchronize());			\
+    cuda (DeviceSynchronize());			\
     cuda (GetLastError());			\
   } while(0)
 
@@ -106,7 +106,7 @@ inline _hdev_ double abs(double2 z1) {
   } while(0)
 
 #define cuda_sync() do{				\
-    cuda (ThreadSynchronize());			\
+    cuda (DeviceSynchronize());			\
     cuda (GetLastError());			\
   } while(0)
 

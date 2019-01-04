@@ -190,7 +190,7 @@ void cuda_memcache_clear(void)
 void cuda_exit(void)
 {
 	cuda_memcache_clear();
-	CUDA_ERROR(cudaThreadExit());
+	CUDA_ERROR(cudaDeviceReset());
 }
 
 #if 0
