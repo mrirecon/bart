@@ -23,6 +23,7 @@
 #include "num/ops.h"
 
 #include "iter/misc.h"
+#include "iter/monitor.h"
 
 #include "linops/linop.h"
 #include "linops/fmac.h"
@@ -468,6 +469,14 @@ int main_pics(int argc, char* argv[])
 		image_truth = load_cfl(image_truth_file, DIMS, img_truth_dims);
 		//md_zsmul(DIMS, img_dims, image_truth, image_truth, 1. / scaling);
 
+#ifdef USE_CUDA
+		if (conf.gpu) {
+
+			complex float* gpu_image_truth = md_gpu_move(DIMS, img_dims, image_truth, CFL_SIZE);
+			unmap_cfl(DIMS, img_dims, image_truth);
+			image_truth = gpu_image_truth;
+		}
+#endif
 		xfree(image_truth_file);
 	}
 
@@ -491,6 +500,7 @@ int main_pics(int argc, char* argv[])
 
 
 
+	assert((0u == loop_flags) || (NULL == image_truth));
 	assert((0u == loop_flags) || (NULL == image_start));
 	assert((0u == loop_flags) || (NULL == traj_file));
 	assert(!(loop_flags & COIL_FLAG));
@@ -607,11 +617,16 @@ int main_pics(int argc, char* argv[])
 			    || (ALGO_ADMM == algo)
 			    || (   (ALGO_NIHT == algo)
 				&& (regs[0].xform == NIHTWAV)));
+
+	// FIXME: will fail with looped dims
+	struct iter_monitor_s* monitor = NULL;
+	if (im_truth)
+		monitor = create_monitor(2*md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL); 
 	
 	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
 				pat1_dims, ((NULL != traj_file) || conf.bpsense) ? NULL : pattern1,
 				it.italgo, it.iconf, image_start1, nr_penalties, thresh_ops,
-				trafos_cond ? trafos : NULL, precond_op);
+				trafos_cond ? trafos : NULL, precond_op, monitor);
 
 	long strsx[2][DIMS];
 	const long* strs[2] = { strsx[0], strsx[1] };
@@ -664,8 +679,15 @@ int main_pics(int argc, char* argv[])
 	if (NULL != traj)
 		unmap_cfl(DIMS, traj_dims, traj);
 
-	if (im_truth)
-		unmap_cfl(DIMS, img_dims, image_truth);
+	if (im_truth) {
+
+#ifdef USE_CUDA
+		if (conf.gpu)
+			md_free(image_truth);
+		else
+#endif
+			unmap_cfl(DIMS, img_dims, image_truth);
+	}
 
 	if (image_start)
 		unmap_cfl(DIMS, img_dims, image_start);

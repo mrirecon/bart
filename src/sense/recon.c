@@ -95,7 +95,8 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		  unsigned int num_funs,
 		  const struct operator_p_s* thresh_op[num_funs],
 		  const struct linop_s* thresh_funs[num_funs],
-		  const struct operator_s* precond_op)
+		  const struct operator_s* precond_op,
+		  struct iter_monitor_s* monitor)
 {
 	struct lsqr_conf lsqr_conf = { conf->cclambda, conf->gpu };
 
@@ -148,10 +149,10 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 
 		if (conf->bpsense)
 			op = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init, NULL, NULL,
-					num_funs, thresh_op, thresh_funs, NULL);
+					num_funs, thresh_op, thresh_funs, monitor);
 		else
 			op = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init, sense_op, precond_op,
-					num_funs, thresh_op, thresh_funs, NULL);
+					num_funs, thresh_op, thresh_funs, monitor);
 
 		linop_free(sense_op);
 
@@ -174,7 +175,7 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 		op = wlsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init,
 						sense_op, weights_op, precond_op,
 						num_funs, thresh_op, thresh_funs,
-						NULL);
+						monitor);
 	}
 
 	return op;
