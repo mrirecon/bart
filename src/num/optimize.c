@@ -610,7 +610,7 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 
 	NESTED(void, nary_opt, (void* ptr[]))
 	{
-		too(&data, ptr);
+		NESTED_CALL(too, (&data, ptr));
 	};
 
 	double start = timestamp();

@@ -57,7 +57,7 @@ void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[
 {
 	if (0 == D) {
 
-		fun(ptr);
+		NESTED_CALL(fun, (ptr));
 		return;
 	}
 
@@ -149,7 +149,7 @@ static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[st
 {
 	if (0 == D) {
 
-		fun(pos);
+		NESTED_CALL(fun, (pos));
 		return;
 	}
 
@@ -189,7 +189,7 @@ static void md_loop_r(unsigned int D, const long dim[D], long pos[D], md_loop_fu
 {
 	if (0 == D) {
 
-		fun(pos);
+		NESTED_CALL(fun, (pos));
 		return;
 	}
 
