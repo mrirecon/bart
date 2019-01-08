@@ -44,7 +44,8 @@ extern const struct operator_s* sense_recon_create(const struct sense_conf* conf
 		  unsigned int num_funs,
 		  const struct operator_p_s* thresh_op[num_funs],
 		  const struct linop_s* thresh_funs[num_funs],
-		  const struct operator_s* precond_op);
+		  const struct operator_s* precond_op,
+		  struct iter_monitor_s* monitor);
 
 extern void debug_print_sense_conf(int debug_level, const struct sense_conf* conf);
 
