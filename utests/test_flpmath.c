@@ -1,11 +1,11 @@
 /* Copyright 2016. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
- * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -247,6 +247,41 @@ static bool test_md_zstd(void)
 }
 
 
+static bool test_md_zconv(void)
+{
+	enum { N = 1 };
+	long idims[N] = { 10 };
+	long kdims[N] = { 3 };
+	long odims[N] = { 8 };
+
+	complex float* x = md_calloc(N, idims, sizeof(complex float));
+	complex float* y = md_calloc(N, odims, sizeof(complex float));
+	complex float* z = md_calloc(N, odims, sizeof(complex float));
+
+	x[5] = 1.;
+
+	z[3] = 0.5;
+	z[4] = 1.;
+	z[5] = -0.5;
+
+	complex float k[3] = { 0.5, 1., -0.5 };
+
+	md_zconv(N, 1u, odims, y, kdims, &k[0], idims, x);
+
+	float err = md_znrmse(N, odims, y, z);
+
+	md_free(x);
+	md_free(y);
+	md_free(z);
+
+	return (err < 1.E-6);
+}
+
+
+
+
+
+
 
 UT_REGISTER_TEST(test_md_zfmacc2);
 UT_REGISTER_TEST(test_md_zwavg);
@@ -255,4 +290,5 @@ UT_REGISTER_TEST(test_md_zmatmul);
 UT_REGISTER_TEST(test_md_zhardthresh);
 UT_REGISTER_TEST(test_md_zvar);
 UT_REGISTER_TEST(test_md_zstd);
+UT_REGISTER_TEST(test_md_zconv);
 

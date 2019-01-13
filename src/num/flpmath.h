@@ -1,5 +1,5 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2015-2019. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
@@ -75,6 +75,16 @@ extern void md_ztenmul(unsigned int D, const long out_dims[__VLA(D)], _Complex f
 
 extern void md_ztenmulc2(unsigned int D, const long max_dims[__VLA(D)], const long out_strs[__VLA(D)], _Complex float* out, const long in1_strs[__VLA(D)], const _Complex float* in1, const long in2_strs[__VLA(D)], const _Complex float* in2);
 extern void md_ztenmulc(unsigned int D, const long out_dims[__VLA(D)], _Complex float* out, const long in1_dims[__VLA(D)], const _Complex float* in1, const long in2_dims[__VLA(D)], const _Complex float* int2);
+
+extern void md_zconv2(int N, unsigned long flags,
+				const long odims[__VLA(N)], const long ostrs[__VLA(N)], _Complex float* out,
+				const long kdims[__VLA(N)], const long kstrs[__VLA(N)], const _Complex float* krn,
+				const long idims[__VLA(N)], const long istrs[__VLA(N)], const _Complex float* in);
+
+extern void md_zconv(int N, unsigned long flags,
+				const long odims[__VLA(N)], _Complex float* out,
+				const long kdims[__VLA(N)], const _Complex float* krn,
+				const long idims[__VLA(N)], const _Complex float* in);
 
 
 extern void md_matmul_dims(unsigned int D, long max_dims[__VLA(D)], const long out_dims[__VLA(D)], const long mat_dims[__VLA(D)], const long in_dims[__VLA(D)]);

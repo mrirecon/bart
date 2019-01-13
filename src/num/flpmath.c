@@ -1,11 +1,11 @@
 /* Copyright 2013-2018 The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2019. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2018 Jonathan Tamir <jtamir@eecs.berkeley.edu>
@@ -1055,6 +1055,9 @@ static bool simple_matmul(unsigned int N, const long max_dims[N], const long ost
 	long (*strs[3])[N] = { &ostrs2, &istrs2, &mstrs2 };
 	unsigned int ND = simplify_dims(3, N, dims, strs);
 
+	if (ND < 3)
+		return false;
+
 	long C = dims[0];
 	long B = dims[1];
 	long A = dims[2];
@@ -1143,6 +1146,90 @@ void md_ztenmulc(unsigned int D, const long out_dims[D], complex float* out, con
 				  MD_STRIDES(D, in1_dims, CFL_SIZE), in1,
 				  MD_STRIDES(D, in2_dims, CFL_SIZE), in2);
 }
+
+
+static int calc_conv_geom(int N, unsigned long flags,
+			long mdims[2 * N], long ostrs2[2 * N], long kstrs2[2 * N], long istrs2[2 * N],
+			const long odims[N], const long ostrs[N],
+			const long kdims[N], const long kstrs[N],
+			const long idims[N], const long istrs[N])
+{
+	int shift = 0;
+
+	md_copy_strides(N, ostrs2, ostrs);
+	md_singleton_strides(N, ostrs2 + N);
+
+	md_copy_strides(N, kstrs2, kstrs);
+	md_singleton_strides(N, kstrs2 + N);
+
+	md_copy_strides(N, istrs2, istrs);
+	md_singleton_strides(N, istrs2 + N);
+
+	md_copy_dims(N, mdims, odims);
+	md_singleton_dims(N, mdims + N);
+
+	for (int i = 0; i < N; i++) {
+
+		if (MD_IS_SET(flags, i)) {
+
+			assert(odims[i] == idims[i] - kdims[i] + 1);
+
+			mdims[0 + i] = odims[i];
+			mdims[N + i] = kdims[i];
+
+			kstrs2[0 + i] = 0;
+			kstrs2[N + i] = -kstrs[i];
+
+			shift += (kdims[i] - 1) * kstrs[i];
+
+			istrs2[0 + i] = istrs[i];
+			istrs2[N + i] = istrs[i];
+
+		} else {
+
+			assert((1 == odims[i]) || (odims[i] == idims[i]) || (odims[i] == kdims[i]));
+			assert((1 == idims[i]) || (odims[i] == idims[i]) || (idims[i] == kdims[i]));
+			assert((1 == kdims[i]) || (kdims[i] == idims[i]) || (odims[i] == kdims[i]));
+		}
+	}
+
+	return shift;
+}
+
+
+void md_zconv2(int N, unsigned long flags,
+				const long odims[N], const long ostrs[N], complex float* out,
+				const long kdims[N], const long kstrs[N], const complex float* krn,
+				const long idims[N], const long istrs[N], const complex float* in)
+{
+	long mdims[2 * N];
+	long ostrs2[2 * N];
+	long kstrs2[2 * N];
+	long istrs2[2 * N];
+
+	krn += calc_conv_geom(N, flags, mdims, ostrs2, kstrs2, istrs2,
+			odims, ostrs, kdims, kstrs, idims, istrs) / CFL_SIZE;
+
+	md_ztenmul2(2 * N, mdims, ostrs2, out, kstrs2, krn, istrs2, in);
+}
+
+void md_zconv(int N, unsigned long flags,
+				const long odims[N], complex float* out,
+				const long kdims[N], const complex float* krn,
+				const long idims[N], const complex float* in)
+{
+	long ostrs[N];
+	md_calc_strides(N, ostrs, odims, CFL_SIZE);
+
+	long kstrs[N];
+	md_calc_strides(N, kstrs, kdims, CFL_SIZE);
+
+	long istrs[N];
+	md_calc_strides(N, istrs, idims, CFL_SIZE);
+
+	md_zconv2(N, flags, odims, ostrs, out, kdims, kstrs, krn, idims, istrs, in);
+}
+
 
 
 
