@@ -61,12 +61,10 @@ static const char help_str[]  =
 	"                   extended-SENSE model operator\n"
 	"                   dimensions (or # of maps).\n"
 	"Expected dimensions:\n"
-	"  * maps    - (   sx, sy, sz, nc, md)\n"
-	"  * wave    - (   wx, sy, sz,  1,  1)\n"
-	"  * phi     - (    1,  1,  1,  1,  1)\n"
-	"  * output  - (   sx, sy, sz,  1, md)\n"
-	"  * reorder - (    n,  3,  1,  1,  1)\n"
-	"  * table   - (   wx, nc,  n,  1,  1)";
+	"  * maps    - ( sx, sy, sz, nc, md)\n"
+	"  * wave    - ( wx, sy, sz,  1,  1)\n"
+	"  * kspace  - ( wx, sy, sz, nc,  1)\n"
+	"  * output  - ( sx, sy, sz,  1, md)";
 
 /* Helper function to print out operator dimensions. */
 static void print_opdims(const struct linop_s* op) 
