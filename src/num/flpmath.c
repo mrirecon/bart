@@ -2330,6 +2330,29 @@ complex float md_zscalar2(unsigned int D, const long dim[D], const long str1[D],
 	complex double* retp = &ret;
 
 #ifdef USE_CUDA
+	if (cuda_ondevice(ptr1)) {
+
+		// FIXME: because md_zfmacc2 with stride = 0 is slow
+
+		complex float* tmp = md_alloc_gpu(D, dim, CFL_SIZE);
+
+		long strs[D];
+		md_calc_strides(D, strs, dim, CFL_SIZE);
+		md_clear(D, dim, tmp, CFL_SIZE);
+
+		md_zfmacc2(D, dim, strs, tmp, str1, ptr1, str2, ptr2);
+
+		gpu_ops.zsum(md_calc_size(D, dim), tmp);
+
+		complex float ret = 0.;
+		md_copy(1, (long[1]){ 1 }, &ret, tmp, CFL_SIZE);
+		md_free(tmp);
+
+		return ret;
+	}
+#endif
+
+#ifdef USE_CUDA
 	if (cuda_ondevice(ptr1))
 		retp = gpu_constant(&ret, CDL_SIZE);
 #endif
@@ -2541,6 +2564,7 @@ float md_asum2(unsigned int D, const long dims[D], const long strs[D], const flo
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr)) {
+
 		md_copy(D, dims0, &ret, retp, FL_SIZE);
 		md_free(retp);
 	}
