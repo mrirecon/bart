@@ -373,10 +373,6 @@ __attribute__((optimize("-fno-finite-math-only")))
 static void proj_add(unsigned int D, const long dims[D], const long ostrs[D],
 			complex float* optr, const long v1_strs[D], complex float* v1, const long v2_strs[D], complex float* v2)
 {
-#ifdef USE_CUDA
-	if (cuda_ondevice(v1))
-		error("md_zscalar is far too slow on the GPU, refusing to run...\n");
-#endif
 	float v22 = md_zscalar_real2(D, dims, v2_strs, v2, v2_strs, v2); // since it is real anyway
 
 	complex float v12 = md_zscalar2(D, dims, v1_strs, v1, v2_strs, v2) / v22;
