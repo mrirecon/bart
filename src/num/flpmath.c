@@ -1448,6 +1448,15 @@ void md_zfmaccD(unsigned int D, const long dims[D], complex double* optr, const 
  */
 void md_zaxpy2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, complex float val, const long istr[D], const complex float* iptr)
 {
+#ifdef USE_CUDA
+	// FIXME: faster on GPU
+	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
+	md_zsmul2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), tmp, istr, iptr, val);
+	md_zadd2(D, dims, ostr, optr, ostr, optr, MD_STRIDES(D, dims, CFL_SIZE), tmp);
+	md_free(tmp);
+	return;
+#endif
+
 	if (0. == cimagf(val)) { // strength reduction: complex to real multiplication
 
 		long dimsR[D + 1];
