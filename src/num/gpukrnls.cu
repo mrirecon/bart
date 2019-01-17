@@ -829,3 +829,31 @@ extern "C" void cuda_min(long N, float* dst, const float* src1, const float* src
 }
 
 
+__global__ void kern_reduce_zsum(int N, cuFloatComplex* dst)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	cuFloatComplex sum = make_cuFloatComplex(0., 0.);
+
+	for (int i = start; i < N; i += stride)
+		sum = cuCaddf(sum, dst[i]);
+
+	if (start < N)
+		dst[start] = sum;
+}
+
+extern "C" void cuda_zsum(long N, _Complex float* dst)
+{
+	int B = blocksize(N);
+
+	while (N > 1) {
+
+		kern_reduce_zsum<<<1, B>>>(N, (cuFloatComplex*)dst);
+		N = MIN(B, N);
+		B /= 32;
+	}
+}
+
+
+

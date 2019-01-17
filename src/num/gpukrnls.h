@@ -50,6 +50,7 @@ extern void cuda_zle(long N, _Complex float* dst, const _Complex float* src1, co
 extern void cuda_smax(long N, float* dst, const float* src1, const float val);
 extern void cuda_max(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_min(long N, float* dst, const float* src1, const float* src2);
+extern void cuda_zsum(long N, _Complex float* dst);
 
 #ifdef __cplusplus
 }

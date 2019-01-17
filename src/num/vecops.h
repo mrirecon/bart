@@ -1,5 +1,5 @@
 /* Copyright 2013-2017. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2019. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -16,6 +16,7 @@ struct vec_ops {
 	void (*double2float)(long N, float* dst, const double* src);
 	double (*dot)(long N, const float* vec1, const float* vec2);
 	double (*asum)(long N, const float* vec);
+	void (*zsum)(long N, _Complex float* vec);
 	double (*zl1norm)(long N, const _Complex float* vec);
 
 	void (*axpy)(long N, float* a, float alpha, const float* x);

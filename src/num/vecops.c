@@ -1,5 +1,5 @@
 /* Copyright 2013-2018. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2019. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -140,6 +140,20 @@ static double zl1norm(long N, const complex float* vec)
 
 	return res;
 }
+
+
+
+// we should probably replace asum and zl1norm
+static void zsum(long N, complex float* vec)
+{
+	complex float res = 0.;
+
+	for (long i = 0; i < N; i++)
+		res += vec[i];
+
+	vec[0] = res;
+}
+
 
 
 static void axpbz(long N, float* dst, const float a1, const float* src1, const float a2, const float* src2)
@@ -576,6 +590,7 @@ const struct vec_ops cpu_ops = {
 	.double2float = double2float,
 	.dot = dot,
 	.asum = asum,
+	.zsum = zsum,
 	.zl1norm = zl1norm,
 
 	.add = add,
