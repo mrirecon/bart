@@ -369,6 +369,13 @@ static void min(long N, float* dst, const float* src1, const float* src2)
 }
 
 
+static void zsmax(long N, complex float val, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = CMPLX(MAX(crealf(src[i]), crealf(val)), 0.0);
+}
+
+
 static void vec_pow(long N, float* dst, const float* src1, const float* src2)
 {
 	for (long i = 0; i < N; i++)
@@ -668,6 +675,7 @@ struct vec_iter_s {
 	void (*axpy)(long N, float* a, float alpha, const float* x);
 	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
 	void (*zmul)(long N, complex float* dst, const complex float* src1, const complex float* src2);
+	void (*zsmax)(long N, complex float val, complex float* dst, const complex float* src);
 };
 
 
@@ -687,7 +695,8 @@ const struct vec_iter_s cpu_iter_ops = {
 	.add = add,
 	.sub = sub,
 	.swap = swap,
-	.zmul = zmul
+	.zmul = zmul,
+	.zsmax = zsmax
 };
 
 

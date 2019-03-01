@@ -20,7 +20,9 @@ struct vec_iter_s {
 	void (*xpay)(long N, float alpha, float* a, const float* x);
 	void (*axpy)(long N, float* a, float alpha, const float* x);
 	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
+
 	void (*zmul)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
+ 	void (*zsmax)(long N, _Complex float val, _Complex float* dst, const _Complex float* src1);
 };
 
 #ifdef USE_CUDA
