@@ -79,7 +79,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 		 * sensitivity weighting but before NUFFT).
 		 */
 
-		const struct linop_s* fft_slice = linop_fft_create(DIMS, map_dims, SLICE_FLAG);
+		const struct linop_s* fft_slice = linop_fft_create(DIMS, coilim_dims, SLICE_FLAG);
 
 		fft_op = linop_chain_FF(fft_slice, fft_op);
 	}
