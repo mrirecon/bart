@@ -698,7 +698,6 @@ int main_pics(int argc, char* argv[])
 
 	double end_time = timestamp();
 
-	/*yuxin*/
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);
 
 	return 0;

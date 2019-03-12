@@ -139,7 +139,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 			mmconf->relative_norm = admm.relative_norm;
 			mmconf->ABSTOL = 0.;
 			mmconf->RELTOL = 0.;
-
+			mmconf->do_warmstart = warm_start;
 			italgo = iter2_admm;
 			iconf = CAST_UP(PTR_PASS(mmconf));
 
