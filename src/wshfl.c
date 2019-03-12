@@ -1,9 +1,9 @@
-/* Copyright 2018. Massachusetts Institute of Technology.
+/* Copyright 2018-2019. Massachusetts Institute of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2018 Siddharth Iyer <ssi@mit.edu>
+ * 2018-2019 Siddharth Iyer <ssi@mit.edu>
  *
  * Tamir J, Uecker M, Chen W, Lai P, Alley MT, Vasanawala SS, Lustig M. 
  * T2 shuffling: Sharp, multicontrast, volumetric fast spin‐echo imaging. 
@@ -19,7 +19,6 @@
  * https://www.ismrm.org/18/program_files/O67.htm 
  */
 
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
 #include <math.h>
@@ -44,7 +43,7 @@
 #include "linops/linop.h"
 #include "linops/fmac.h"
 #include "linops/someops.h"
-#include "linops/realval.h"
+#include "linops/decompose_complex.h"
 
 #include "misc/debug.h"
 #include "misc/mri.h"
@@ -637,7 +636,8 @@ int main_wshfl(int argc, char* argv[])
 	const char* fwd = NULL;
 	const char* x0  = NULL;
 	int   gpun      = -1;
-	bool  rvc       = false;
+	bool  dcx       = false;
+	bool  pf        = false;
 
 	const struct opt_s opts[] = {
 		OPT_FLOAT( 'r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
@@ -652,12 +652,16 @@ int main_wshfl(int argc, char* argv[])
 		OPT_INT(   'g', &gpun,    "gpunm",  "GPU device number."),
 		OPT_SET(   'f', &fista,             "Reconstruct using FISTA instead of IST."),
 		OPT_SET(   'H', &hgwld,             "Use hogwild in IST/FISTA."),
+		OPT_SET(   'v', &dcx,               "Split coefficients to real and imaginary components."),
 		OPT_SET(   'w', &wav,               "Use wavelet."),
-		OPT_SET(   'l', &llr,               "Use locally low rank."),
-		OPT_SET(   'v', &rvc,               "Apply real valued constraint on coefficients."),
+		OPT_SET(   'l', &llr,               "Use locally low rank across temporal coefficients."),
+		OPT_SET(   'p', &pf,                "Use locally low rank and real-imaginary components for partial fourier."),
 	};
 
 	cmdline(&argc, argv, 6, 6, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	if (pf)
+		dcx = true;
 
 	debug_printf(DP_INFO, "Loading data... ");
 
@@ -718,6 +722,7 @@ int main_wshfl(int argc, char* argv[])
 	coeff_dims[2] = sz;
 	coeff_dims[4] = md;
 	coeff_dims[6] = tk;
+	coeff_dims[8] = dcx ? 2 : 1;
 
 	debug_printf(DP_INFO, "Creating linear operators:\n");
 
@@ -786,14 +791,14 @@ int main_wshfl(int argc, char* argv[])
 	struct linop_s* A = linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(
 		E, R), Fx), W), Fyz), K);
 
-	if (rvc == true) {
-		debug_printf(DP_INFO, "\tDomain is restricted to real numbers.\n");
+	if (dcx) {
+		debug_printf(DP_INFO, "\tSplitting result into real and imaginary components.\n");
 		struct linop_s* tmp = A;
-		struct linop_s* rvcop = linop_realval_create(DIMS, linop_domain(A)->dims);
+		struct linop_s* dcxop = linop_decompose_complex_create(DIMS, ITER_DIM, linop_domain(A)->dims);
 
-		A = linop_chain(rvcop, tmp);
+		A = linop_chain(dcxop, tmp);
 
-		linop_free(rvcop);
+		linop_free(dcxop);
 		linop_free(tmp);
 	}
 
@@ -823,15 +828,20 @@ int main_wshfl(int argc, char* argv[])
 	unsigned int WAVFLAG = (sx > 1) * READ_FLAG | (sy > 1) * PHS1_FLAG | (sz > 2) * PHS2_FLAG;
 
 	enum algo_t algo = CG;
-	if ((wav == true) || (llr == true)) {
+	if ((wav) || (llr) || (pf)) {
 		algo = (fista) ? FISTA : IST;
 		if (wav) {
 			debug_printf(DP_INFO, "Creating wavelet threshold operator... ");
 			T = prox_wavelet_thresh_create(DIMS, coeff_dims, WAVFLAG, 0u, minsize, lambda, true);
+		} else if (llr) {
+			debug_printf(DP_INFO, "Creating locally low rank threshold operator across coeff and real-imag... ");
+			llr_blkdims(blkdims, ~(COEFF_FLAG | ITER_FLAG), coeff_dims, blksize);
+			T = lrthresh_create(coeff_dims, true, ~(COEFF_FLAG | ITER_FLAG), (const long (*)[])blkdims, lambda, false, false, false);
 		} else {
-			debug_printf(DP_INFO, "Creating locally low rank threshold operator... ");
-			llr_blkdims(blkdims, ~COEFF_DIM, coeff_dims, blksize);
-			T = lrthresh_create(coeff_dims, true, ~COEFF_FLAG, (const long (*)[])blkdims, lambda, false, false, false);
+			assert(dcx);
+			debug_printf(DP_INFO, "Creating locally low rank threshold operator across real-imag... ");
+			llr_blkdims(blkdims, ~ITER_FLAG, coeff_dims, blksize);
+			T = lrthresh_create(coeff_dims, true, ~ITER_FLAG, (const long (*)[])blkdims, lambda, false, false, false);
 		}
 		debug_printf(DP_INFO, "Done.\n");
 	}
