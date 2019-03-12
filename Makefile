@@ -181,14 +181,14 @@ MODULES_bench = -lwavelet -llinops
 MODULES_phantom = -lsimu
 MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet -lnlops
 MODULES_sake = -lsake
-MODULES_wave = -liter -lwavelet -llinops -lsense
+MODULES_wave = -liter -lwavelet -llinops -llowrank
 MODULES_threshold = -llowrank -liter -ldfwavelet -llinops -lwavelet
 MODULES_fakeksp = -lsense -llinops
 MODULES_lrmatrix = -llowrank -liter -llinops
 MODULES_estdims = -lnoncart -llinops
 MODULES_ismrmrd = -lismrm
 MODULES_wavelet = -llinops -lwavelet
-MODULES_wshfl = -llinops -lwavelet -liter -llowrank -llinops
+MODULES_wshfl = -llinops -lwavelet -liter -llowrank
 
 
 MAKEFILES = $(root)/Makefiles/Makefile.*

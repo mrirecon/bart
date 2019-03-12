@@ -1,6 +1,6 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2015. Martin Uecker.
- * Copyright 2018. Massachusetts Institute of Technology.
+ * Copyright 2018-2019. Massachusetts Institute of Technology.
  *
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -8,14 +8,13 @@
  * Authors: 
  * 2015 Berkin Bilgic <berkin@nmr.mgh.harvard.edu>
  * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2018 Siddharth Iyer <ssi@mit.edu>
+ * 2018-2019 Siddharth Iyer <ssi@mit.edu>
  *
  * B Bilgic, BA Gagoski, SF Cauley, AP Fan, JR Polimeni, PE Grant,
  * LL Wald, and K Setsompop, Wave-CAIPI for highly accelerated 3D
  * imaging. Magn Reson Med (2014) doi: 10.1002/mrm.25347
  */
 
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
 #include <math.h>
@@ -37,9 +36,7 @@
 #include "linops/linop.h"
 #include "linops/fmac.h"
 #include "linops/someops.h"
-#include "linops/realval.h"
-
-#include "sense/optcom.h"
+#include "linops/decompose_complex.h"
 
 #include "misc/debug.h"
 #include "misc/mri.h"
@@ -49,6 +46,7 @@
 #include "misc/opts.h"
 
 #include "wavelet/wavthresh.h"
+#include "lowrank/lrthresh.h"
 
 static const char usage_str[] = "<maps> <wave> <kspace> <output>";
 static const char help_str[]  = 
@@ -160,19 +158,22 @@ int main_wave(int argc, char* argv[])
 	double start_time = timestamp();
 
 	float lambda    = 1E-5;
+	int   blksize   = 8;
 	int   maxiter   = 300;
 	float step      = 0.5;
 	float tol       = 1.E-3;
 	bool  wav       = false;
+	bool  llr       = false;
 	bool  fista     = false;
 	bool  hgwld     = false;
 	float cont      = 1;
 	float eval      = -1;
 	int   gpun      = -1;
-	bool  rvc       = false;
+	bool  dcx       = false;
 
 	const struct opt_s opts[] = {
 		OPT_FLOAT( 'r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
+		OPT_INT(   'b', &blksize, "blkdim", "Block size for locally low rank."),
 		OPT_INT(   'i', &maxiter, "mxiter", "Maximum number of iterations."),
 		OPT_FLOAT( 's', &step,    "stepsz", "Step size for iterative method."),
 		OPT_FLOAT( 'c', &cont,    "cntnu",  "Continuation value for IST/FISTA."),
@@ -181,8 +182,9 @@ int main_wave(int argc, char* argv[])
 		OPT_INT(   'g', &gpun,    "gpunm",  "GPU device number."),
 		OPT_SET(   'f', &fista,             "Reconstruct using FISTA instead of IST."),
 		OPT_SET(   'H', &hgwld,             "Use hogwild in IST/FISTA."),
+		OPT_SET(   'v', &dcx,               "Split result to real and imaginary components."),
 		OPT_SET(   'w', &wav,               "Use wavelet."),
-		OPT_SET(   'v', &rvc,               "Apply real valued constraint on coefficients."),
+		OPT_SET(   'l', &llr,               "Use locally low rank across the real and imaginary components."),
 	};
 
 	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -217,6 +219,7 @@ int main_wave(int argc, char* argv[])
 	recon_dims[1] = sy;
 	recon_dims[2] = sz;
 	recon_dims[4] = md;
+	recon_dims[8] = dcx ? 2 : 1;
 
 	debug_printf(DP_INFO, "FFTMOD maps and kspc... ");
 	fftmod(DIMS, kspc_dims, FFT_FLAGS, kspc, kspc);
@@ -271,12 +274,12 @@ int main_wave(int argc, char* argv[])
 	struct linop_s* A = linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(
 		E, R), Fx), W), Fyz), M);
 
-	if (rvc == true) {
-		debug_printf(DP_INFO, "\tDomain is restricted to real numbers.\n");
+	if (dcx) {
+		debug_printf(DP_INFO, "\tSplitting result into real and imaginary components.\n");
 		struct linop_s* tmp = A;
-		struct linop_s* rvcop = linop_realval_create(DIMS, linop_domain(A)->dims);
+		struct linop_s* dcxop = linop_decompose_complex_create(DIMS, ITER_DIM, linop_domain(A)->dims);
 
-		A = linop_chain_FF(rvcop, tmp);
+		A = linop_chain_FF(dcxop, tmp);
 	}
 
 	print_opdims(A);
@@ -296,6 +299,7 @@ int main_wave(int argc, char* argv[])
 	debug_printf(DP_INFO, "Done.\n");
 
 	const struct operator_p_s* T = NULL;
+	long blkdims[MAX_LEV][DIMS];
 	long minsize[] = { [0 ... DIMS - 1] = 1 };
 	minsize[0] = MIN(sx, 16);
 	minsize[1] = MIN(sy, 16);
@@ -303,10 +307,17 @@ int main_wave(int argc, char* argv[])
 	unsigned int WAVFLAG = (sx > 1) * READ_FLAG | (sy > 1) * PHS1_FLAG | (sz > 2) * PHS2_FLAG;
 
 	enum algo_t algo = CG;
-	if (wav == true) {
+	if ((wav) || (llr)) {
 		algo = (fista) ? FISTA : IST;
-		debug_printf(DP_INFO, "Creating wavelet threshold operator... ");
-		T = prox_wavelet_thresh_create(DIMS, recon_dims, WAVFLAG, 0u, minsize, lambda, true);
+		if (wav) {
+			debug_printf(DP_INFO, "Creating wavelet threshold operator... ");
+			T = prox_wavelet_thresh_create(DIMS, recon_dims, WAVFLAG, 0u, minsize, lambda, true);
+			debug_printf(DP_INFO, "Done.\n");
+		} else {
+			debug_printf(DP_INFO, "Creating locally low rank threshold operator across real-imag dimension... ");
+			llr_blkdims(blkdims, ~ITER_FLAG, recon_dims, blksize);
+			T = lrthresh_create(recon_dims, true, ~ITER_FLAG, (const long (*)[])blkdims, lambda, false, false, false);
+		}
 		debug_printf(DP_INFO, "Done.\n");
 	}
 
