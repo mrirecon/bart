@@ -556,7 +556,7 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 		md_zsmul(DIMS, out_dims, out_data, out_data, sqrtf((float)channels));
 	}
 
-	float c = (conf->crop > 0) ? conf->crop : sure_crop(conf->var, out_dims, out_data, eptr, calreg_dims, data);
+	float c = (conf->crop >= 0.) ? conf->crop : sure_crop(conf->var, out_dims, out_data, eptr, calreg_dims, data);
 
 	debug_printf(DP_DEBUG1, "Crop maps... (c = %.2f)\n", c);
 
