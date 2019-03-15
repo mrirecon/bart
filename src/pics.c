@@ -224,7 +224,6 @@ int main_pics(int argc, char* argv[])
         if (sms) {
 
                 debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
-                nuconf.toeplitz = false; // no longer toeplitz-shaped because of chaining of operators (see later)?!
         }
 
 	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
