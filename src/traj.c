@@ -206,8 +206,8 @@ int main_traj(int argc, char* argv[])
 					MRI based on generalized fibonacci sequences."
 					IEEE transactions on medical imaging 34.6 (2015): 1262-1269.
 					 */
-					double tau = 1. - sqrtf(5.) / 2;
-					base = 1 / tau + (float)small_golden - 1;
+					double tau = (1. + sqrtf(5.))/ 2;
+					base = 1 / ( tau + (float)small_golden - 1);
 				} else {
 					base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
 				}
