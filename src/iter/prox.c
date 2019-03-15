@@ -536,6 +536,7 @@ static void prox_lineq_del(const operator_data_t* _data)
 const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const complex float* y)
 {
 	PTR_ALLOC(struct prox_lineq_data, pdata);
+	SET_TYPEID(prox_lineq_data, pdata);
 
 	unsigned int N = linop_domain(op)->N;
 	const long* dims = linop_domain(op)->dims;
