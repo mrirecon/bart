@@ -426,6 +426,19 @@ int main_estdelay(int argc, char* argv[])
 	for (unsigned int i = 0; i < N; i++)
 		angles[i] = M_PI + atan2f(crealf(traj1[3 * i + 0]), crealf(traj1[3 * i + 1]));
 
+
+	if (ring) {
+
+		assert(0 == tdims[1] % 2);
+
+		md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 }, tdims, traj1, traj, CFL_SIZE);
+
+		for (unsigned int i = 0; i < N; i++)
+			if (0. != cabsf(traj1[3 * i]))
+				error("Nominal trajectory must be centered for RING.\n");
+	}
+
+
 	md_free(traj1);
 
 
