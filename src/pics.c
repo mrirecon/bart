@@ -283,6 +283,11 @@ int main_pics(int argc, char* argv[])
 	if (!md_check_compat(DIMS, ~(MD_BIT(MAPS_DIM)|FFT_FLAGS), img_dims, map_dims))
 		error("Dimensions of image and sensitivities do not match!\n");
 
+	if ((NULL != traj_file) && (!md_check_compat(DIMS, ~0, ksp_dims, traj_dims)))
+		error("Dimensions of data and trajectory do not match!\n");
+
+
+
 	assert(1 == ksp_dims[MAPS_DIM]);
 
 
