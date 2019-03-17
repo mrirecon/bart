@@ -8,7 +8,7 @@ tests/test-estdelay: estdelay traj phantom nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-estdelay-coils: estdelay traj phantom nrmse
+tests/test-estdelay-coils: estdelay scale traj phantom nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/traj -G -q0.3:-0.1:0.2 -y5 t.ra						;\
 	$(TOOLDIR)/traj -G -r -y5 n.ra								;\
@@ -20,7 +20,7 @@ tests/test-estdelay-coils: estdelay traj phantom nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-estdelay-ring: estdelay traj phantom nrmse
+tests/test-estdelay-ring: estdelay scale traj phantom nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/traj -G -q0.3:-0.1:0.2 -c -y5 t.ra						;\
 	$(TOOLDIR)/traj -G -c -r -y5 n.ra							;\
