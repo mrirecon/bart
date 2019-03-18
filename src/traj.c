@@ -95,6 +95,7 @@ int main_traj(int argc, char* argv[])
 	bool transverse = false;
 	bool asymTraj = false;
 	bool halfCircle = false;
+	int small_golden = 1;
 
 	float gdelays[2][3] = {
 		{ 0., 0., 0. },
@@ -119,6 +120,7 @@ int main_traj(int argc, char* argv[])
 		OPT_SET('O', &transverse, "correct transverse gradient error for radial tajectories"),
 		OPT_SET('3', &d3d, "3D"),
 		OPT_SET('c', &asymTraj, "Asymmetric trajectory [DC sampled]"),
+		OPT_INT('s', &small_golden, "s","small golden angle"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -196,7 +198,19 @@ int main_traj(int argc, char* argv[])
 				 */
 
 				double golden_angle = 3. - sqrtf(5.);
-				double base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
+				double base = 0;
+				if (small_golden > 1) {
+					/*
+					Wundrak, Stefan, et al. "
+					A small surrogate for the golden angle in time-resolved radial
+					MRI based on generalized fibonacci sequences."
+					IEEE transactions on medical imaging 34.6 (2015): 1262-1269.
+					 */
+					double tau = (1. + sqrtf(5.))/ 2;
+					base = 1 / ( tau + (float)small_golden - 1);
+				} else {
+					base = golden ? ((2. - golden_angle) / 2.) : (1. / (float)Y);
+				}
 				double angle = M_PI * (float)remap(mode, Y, turns, mb, j) * (dbl ? 2. : 1.) * base;
 
 				if (halfCircle)
@@ -268,5 +282,3 @@ int main_traj(int argc, char* argv[])
 	unmap_cfl(3, dims, samples);
 	return 0;
 }
-
-
