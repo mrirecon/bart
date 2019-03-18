@@ -146,7 +146,7 @@ int main_lrmatrix(int argc, char* argv[])
 	// Get outdims
 	md_copy_dims(DIMS, odims, idims);
 	odims[LEVEL_DIM] = levels;
-	complex float* odata = create_cfl(argv[22], DIMS, odims);
+	complex float* odata = create_cfl(argv[2], DIMS, odims);
 	md_clear(DIMS, odims, odata, sizeof(complex float));
 
 	// Get pattern

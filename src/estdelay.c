@@ -111,18 +111,18 @@ static void radial_self_delays(unsigned int N, float shifts[N], const float phi[
 static void calc_pinv(unsigned int Nint, complex float pinv[3][2 * Nint], const complex float A[2 * Nint][3])
 {
 	//AH
-	complex float AH[3][2*Nint];
-	mat_transpose(2*Nint, 3, AH, A);
+	complex float AH[3][2 * Nint];
+	mat_transpose(2 * Nint, 3, AH, A);
 
 	// (AH * A)^-1
 	complex float dot[3][3];
-	mat_mul(3, 2*Nint, 3, dot, AH, A);
+	mat_mul(3, 2 * Nint, 3, dot, AH, A);
 
 	complex float inv[3][3];
 	mat_inverse(3, inv, dot);
 
 	// (AH * A)^-1 * AH
-	mat_mul(3, 3, 2*Nint, pinv, inv, AH);
+	mat_mul(3, 3, 2 * Nint, pinv, inv, AH);
 
 	return;
 }
@@ -396,6 +396,7 @@ int main_estdelay(int argc, char* argv[])
 	float size = 1.5;
 
 	const struct opt_s opts[] = {
+
 		OPT_SET('R', &ring, "RING method"),
 		OPT_INT('p', &pad_factor, "p", "[RING] Padding"),
 		OPT_UINT('n', &no_intersec_sp, "n", "[RING] Number of intersecting spokes"),
@@ -424,6 +425,19 @@ int main_estdelay(int argc, char* argv[])
 	float angles[N];
 	for (unsigned int i = 0; i < N; i++)
 		angles[i] = M_PI + atan2f(crealf(traj1[3 * i + 0]), crealf(traj1[3 * i + 1]));
+
+
+	if (ring) {
+
+		assert(0 == tdims[1] % 2);
+
+		md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 }, tdims, traj1, traj, CFL_SIZE);
+
+		for (unsigned int i = 0; i < N; i++)
+			if (0. != cabsf(traj1[3 * i]))
+				error("Nominal trajectory must be centered for RING.\n");
+	}
+
 
 	md_free(traj1);
 
@@ -507,7 +521,7 @@ int main_estdelay(int argc, char* argv[])
 		complex float* kc = md_alloc(DIMS, kc_dims, CFL_SIZE);
 
 		long pos[DIMS] = { 0 };
-		pos[PHS1_DIM] = pad_dims[PHS1_DIM]/2 - (c_region/2);
+		pos[PHS1_DIM] = pad_dims[PHS1_DIM] / 2 - (c_region / 2);
 		md_copy_block(DIMS, pos, kc_dims, kc, pad_dims, k_pad, CFL_SIZE);
 		md_free(k_pad);
 
