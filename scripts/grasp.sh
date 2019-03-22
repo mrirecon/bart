@@ -159,7 +159,7 @@ calib_slice()
 	bart slice 2 $1 grasp_hybrid grasp1-$1
 
 	# extract first $CALIB spokes
-	bart extract 1 $(($SKIP + 0)) $(($SKIP + $CALIB - 1)) grasp1-$1 grasp2-$1
+	bart extract 1 $(($SKIP + 0)) $(($SKIP + $CALIB)) grasp1-$1 grasp2-$1
 
 	# reshape dimensions
 	bart reshape $(bart bitmask 0 1 2 3) 1 $READ $CALIB $COILS grasp2-$1 grasp3-$1
@@ -174,7 +174,7 @@ recon_slice()
 	bart slice 2 $1 sens sens-$1
 
 	# extract spokes and split-off time dim
-	bart extract 1 $(($SKIP + 0)) $(($SKIP + $SPOKES * $PHASES - 1)) grasp1-$1 grasp2-$1
+	bart extract 1 $(($SKIP + 0)) $(($SKIP + $SPOKES * $PHASES)) grasp1-$1 grasp2-$1
 	bart reshape $(bart bitmask 1 2) $SPOKES $PHASES grasp2-$1 grasp1-$1
 
 	# move time dimensions to dim 10 and reshape
