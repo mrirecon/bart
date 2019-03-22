@@ -115,6 +115,13 @@ static complex float median_geometric_complex_float(int N, const complex float a
 	return x;
 }
 
+static complex float moving_average(int N, const complex float ar[N])
+{
+	complex float sum = 0;
+	long dims[1] = { N };
+	md_zavg(1, dims, 1, &sum, ar);
+	return sum;
+}
 
 
 void md_medianz2(int D, int M, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
@@ -199,6 +206,55 @@ void md_geometric_medianz(int D, int M, const long dim[D], complex float* optr, 
 
 	md_medianz2(D, M, dim, ostr, optr, istr, iptr);
 }
+
+
+void md_moving_avgz2(int D, int M, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	assert(M < D);
+	const long* nstr[2] = { ostr, istr };
+	void* nptr[2] = { optr, (void*)iptr };
+
+	long length = dim[M];
+	long stride = istr[M];
+
+	long dim2[D];
+	for (int i = 0; i < D; i++)
+		dim2[i] = dim[i];
+
+	dim2[M] = 1;
+
+	NESTED(void, nary_moving_avgz, (void* ptr[]))
+	{
+		complex float tmp[length];
+
+		for (long i = 0; i < length; i++)
+			tmp[i] = *((complex float*)(ptr[1] + i * stride));
+
+		*(complex float*)ptr[0] = moving_average(length, tmp);
+	};
+
+	md_nary(2, D, dim2, nstr, nptr, nary_moving_avgz);
+}
+
+void md_moving_avgz(int D, int M, const long dim[D], complex float* optr, const complex float* iptr)
+{
+	assert(M < D);
+
+	long dim2[D];
+	for (int i = 0; i < D; i++)
+		dim2[i] = dim[i];
+
+	dim2[M] = 1;
+
+	long istr[D];
+	long ostr[D];
+
+	md_calc_strides(D, istr, dim, 8);
+	md_calc_strides(D, ostr, dim2, 8);
+
+	md_moving_avgz2(D, M, dim, ostr, optr, istr, iptr);
+}
+
 
 
 
