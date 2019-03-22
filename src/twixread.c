@@ -215,6 +215,7 @@ static const char help_str[] = "Read data from Siemens twix (.dat) files.";
 int main_twixread(int argc, char* argv[argc])
 {
 	long adcs = 0;
+	long radial_lines = -1;
 
 	bool autoc = false;
 	bool linectr = false;
@@ -226,6 +227,7 @@ int main_twixread(int argc, char* argv[argc])
 	struct opt_s opts[] = {
 
 		OPT_LONG('x', &(dims[READ_DIM]), "X", "number of samples (read-out)"),
+		OPT_LONG('r', &radial_lines, "R", "radial lines"),
 		OPT_LONG('y', &(dims[PHS1_DIM]), "Y", "phase encoding steps"),
 		OPT_LONG('z', &(dims[PHS2_DIM]), "Z", "partition encoding steps"),
 		OPT_LONG('s', &(dims[SLICE_DIM]), "S", "number of slices"),
@@ -240,6 +242,8 @@ int main_twixread(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
+	if (-1 != radial_lines)
+		dims[PHS1_DIM] = radial_lines;
 
 	if (0 == adcs)
 		adcs = dims[PHS1_DIM] * dims[PHS2_DIM] * dims[SLICE_DIM] * dims[TIME_DIM];
@@ -286,9 +290,20 @@ int main_twixread(int argc, char* argv[argc])
 		siemens_meas_setup(ifd, &hdr); // reset
 	}
 
+	long odims[DIMS];
+	md_copy_dims(DIMS, odims, dims);
 
-	complex float* out = create_cfl(argv[2], DIMS, dims);
-	md_clear(DIMS, dims, out, CFL_SIZE);
+	if (-1 != radial_lines) {
+
+		// change output dims (must have identical layout!)
+		odims[0] = 1;
+		odims[1] = dims[0];
+		odims[2] = dims[1];
+		assert(1 == dims[2]);
+	}
+
+	complex float* out = create_cfl(argv[2], DIMS, odims);
+	md_clear(DIMS, odims, out, CFL_SIZE);
 
 
 	long adc_dims[DIMS];
