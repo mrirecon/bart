@@ -96,6 +96,7 @@ int main_traj(int argc, char* argv[])
 	bool asymTraj = false;
 	bool halfCircle = false;
 	int small_golden = 1;
+	float rot = 0.;
 
 	float gdelays[2][3] = {
 		{ 0., 0., 0. },
@@ -115,6 +116,7 @@ int main_traj(int argc, char* argv[])
 		OPT_SET('G', &golden, "golden-ratio sampling"),
 		OPT_SET('H', &halfCircle, "halfCircle golden-ratio sampling"),
 		OPT_SET('D', &dbl, "double base angle"),
+		OPT_FLOAT('R', &rot, "phi", "rotate"),
 		OPT_FLVEC3('q', &gdelays[0], "delays", "gradient delays: x, y, xy"),
 		OPT_FLVEC3('Q', &gdelays[1], "delays", "(gradient delays: z, xz, yz)"),
 		OPT_SET('O', &transverse, "correct transverse gradient error for radial tajectories"),
@@ -215,6 +217,8 @@ int main_traj(int argc, char* argv[])
 
 				if (halfCircle)
 					angle = fmod(angle, M_PI);
+
+				angle += M_PI * rot / 180.;
 
 				/* Calculate read-out samples
 				* for symmetric Trajectory [DC between between sample no. X/2-1 and X/2, zero-based indexing]
