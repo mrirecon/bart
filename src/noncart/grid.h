@@ -7,7 +7,6 @@
 
 #include "misc/cppwrap.h"
 
-extern const float kb_table128[129];
 
 struct grid_conf_s {
 
