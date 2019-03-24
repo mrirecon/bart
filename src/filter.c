@@ -17,6 +17,7 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
+#include "misc/debug.h"
 
 
 
@@ -62,14 +63,15 @@ int main_filter(int argc, char* argv[])
 	md_copy_dims(DIMS, tmp_dims, in_dims);
 	tmp_dims[DIMS] = 1;
 
-	long tmp2_strs[DIMS + 1];
-	md_calc_strides(DIMS + 1, tmp2_strs, tmp_dims, CFL_SIZE);
-
 	long tmp_strs[DIMS + 1];
 	md_calc_strides(DIMS, tmp_strs, tmp_dims, CFL_SIZE);
 
-	tmp_dims[DIMS] = len;
 	tmp_dims[dim] = in_dims[dim] - len + 1;
+
+	long tmp2_strs[DIMS + 1];
+	md_calc_strides(DIMS + 1, tmp2_strs, tmp_dims, CFL_SIZE);
+
+	tmp_dims[DIMS] = len;
 	tmp_strs[DIMS] = tmp_strs[dim];
 
 	long out_dims[DIMS];
