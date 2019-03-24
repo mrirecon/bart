@@ -81,8 +81,8 @@ static float intlookup(int n, const float table[n + 1], float x)
 }
 
 enum { kb_size = 100 };
-static bool kb_init = false;
 static float kb_table[kb_size + 1];
+static float kb_beta = -1.;
 
 
 void gridH(const struct grid_conf_s* conf, const complex float* traj, const long ksp_dims[4], complex float* dst, const long grid_dims[4], const complex float* grid)
@@ -90,11 +90,14 @@ void gridH(const struct grid_conf_s* conf, const complex float* traj, const long
 	long C = ksp_dims[3];
 
 	// precompute kaiser bessel table
-	if (!kb_init) {
+#pragma	omp critical
+	if (-1 == kb_beta) {
 
 		kb_precompute(conf->beta, kb_size, kb_table);
-		kb_init = true;
+		kb_beta = conf->beta;
 	}
+
+	assert(fabs(kb_beta - conf->beta) < 1.E-6);
 
 	assert(1 == ksp_dims[0]);
 	long samples = ksp_dims[1] * ksp_dims[2];
@@ -128,11 +131,14 @@ void grid(const struct grid_conf_s* conf, const complex float* traj, const long 
 	long C = ksp_dims[3];
 
 	// precompute kaiser bessel table
-	if (!kb_init) {
+#pragma	omp critical
+	if (-1 == kb_beta) {
 
 		kb_precompute(conf->beta, kb_size, kb_table);
-		kb_init = true;
+		kb_beta = conf->beta;
 	}
+
+	assert(fabs(kb_beta - conf->beta) < 1.E-6);
 
 	assert(1 == ksp_dims[0]);
 	long samples = ksp_dims[1] * ksp_dims[2];
