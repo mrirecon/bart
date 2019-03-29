@@ -1,4 +1,4 @@
-/* Copyright 2017-2018. Martin Uecker.
+/* Copyright 2017-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -108,7 +108,7 @@ static void altmin_inverse(iter_op_data* _o, float alpha, float* dst, const floa
 
 	const struct iovec_s* idest = nlop_generic_domain(data->nlop, data->i);
 
-	long size = 2*md_calc_size(idest->N, idest->dims);
+	long size = 2 * md_calc_size(idest->N, idest->dims);
 
 	float* AHy = md_alloc_sameplace(1, MD_DIMS(size), FL_SIZE, src);
 
@@ -131,24 +131,21 @@ void iter4_altmin(iter3_conf* _conf,
 		struct iter_nlop_s cb)
 {
 	auto conf = CAST_DOWN(iter3_irgnm_conf, _conf);
-	struct iter4_altmin_s data = { { &TYPEID(iter4_altmin_s) }, nlop, conf, -1};
+	struct iter4_altmin_s data = { { &TYPEID(iter4_altmin_s) }, nlop, conf, -1 };
 
 	struct iter_op_p_s min_ops[NI];
 	struct iter4_altmin_s min_data[NI];
 
 	for(long i = 0; i < NI; ++i) {
 
-		min_data[i] = (struct iter4_altmin_s){ { &TYPEID(iter4_altmin_s) }, nlop, conf, i};
+		min_data[i] = (struct iter4_altmin_s){ { &TYPEID(iter4_altmin_s) }, nlop, conf, i };
 		min_ops[i] = (struct iter_op_p_s){ altmin_inverse, CAST_UP(&min_data[i]) };
 	}
 
 	altmin(conf->iter, conf->alpha, conf->redu,
 		M, select_vecops(src),
-		NI,
-		(struct iter_nlop_s){ altmin_nlop, CAST_UP(&data) },
-		min_ops,
-		dst, src,
-		cb);
+		NI, (struct iter_nlop_s){ altmin_nlop, CAST_UP(&data) },
+		min_ops, dst, src, cb);
 }
 
 

@@ -1,10 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <assert.h>
@@ -93,7 +93,7 @@ void iter3_irgnm(iter3_conf* _conf,
 		struct iter_op_s adj,
 		long N, float* dst, const float* ref,
 		long M, const float* src,
-		 struct iter_op_s cb)
+		struct iter_op_s cb)
 {
 	auto conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
@@ -102,13 +102,11 @@ void iter3_irgnm(iter3_conf* _conf,
 	struct irgnm_s data = { { &TYPEID(irgnm_s) }, der, adj, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
 
 	irgnm(conf->iter, conf->alpha, conf->alpha_min, conf->redu, N, M, select_vecops(src),
-		frw,
-		adj,
+		frw, adj,
 		(struct iter_op_p_s){ inverse, CAST_UP(&data) },
-		dst, ref, src,
-		cb);
-	md_free(tmp);
+		dst, ref, src, cb);
 
+	md_free(tmp);
 }
 
 
