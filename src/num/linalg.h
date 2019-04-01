@@ -24,6 +24,7 @@ extern void mat_adjoint(int A, int B, complex float dst[B][A], const complex flo
 extern void mat_conj(int A, int B, complex float dst[B][A], const complex float src[A][B]);
 extern void mat_copy(int A, int B, complex float dst[A][B], const complex float src[A][B]);
 extern bool mat_inverse(unsigned int N, complex float dst[N][N], const complex float src[N][N]);
+extern void mat_pinv(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B]);
 extern void mat_vecmul(unsigned int A, unsigned int B, complex float out[A], const complex float mat[A][B], const complex float in[B]);
 extern void mat_kron(unsigned int A, unsigned int B, unsigned int C, unsigned int D,
 		complex float out[A * C][B * D], const complex float in1[A][B], const complex float in2[C][D]);

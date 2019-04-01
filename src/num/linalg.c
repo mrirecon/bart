@@ -1,10 +1,10 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  *
  *
@@ -170,6 +170,31 @@ bool (mat_inverse)(unsigned int N, complex float out[N][N], const complex float 
 	return true;
 #endif
 }
+
+
+
+void mat_pinv(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B])
+{
+	if (A == B) {
+
+		mat_inverse(A, out, in);
+		return;
+	}
+
+	assert(B < A);
+
+	complex float adj[B][A];
+	mat_adjoint(A, B, adj, in);
+
+	complex float prod[B][B];
+	mat_mul(B, A, B, prod, adj, in);
+
+	complex float inv[B][B];
+	mat_inverse(B, inv, prod);
+
+	mat_mul(B, B, A, out, inv, adj);
+}
+
 
 void (mat_kron)(unsigned int A, unsigned int B, unsigned int C, unsigned int D, 
 		complex float out[A * C][B * D], const complex float in1[A][B], const complex float in2[C][D])
