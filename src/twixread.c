@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <sys/types.h>
@@ -27,17 +27,24 @@
 
 
 /* Information about twix files can be found here:
- * (Matlab code by Philipp Ehses and others)
+ * (Matlab code by Philipp Ehses and others, Yarra by Tobias Block)
  * https://github.com/cjohnevans/Gannet2.0/blob/master/mapVBVD.m
+ * https://bitbucket.org/yarra-dev/yarramodules-setdcmtags/src/
  */ 
 struct hdr_s {
 
 	uint32_t offset;
 	uint32_t nscans;
+};
+
+struct entry_s {
+
 	uint32_t measid;
 	uint32_t fileid;
-	uint64_t datoff;
-//	uint64_t length;
+	uint64_t offset;
+	uint64_t length;
+        char patient[64];
+        char protocol[64];
 };
 
 static void xread(int fd, void* buf, size_t size)
@@ -60,18 +67,27 @@ static bool siemens_meas_setup(int fd, struct hdr_s* hdr)
 	xread(fd, hdr, sizeof(struct hdr_s));
 
 	// check for VD version
-	bool vd = ((hdr->offset < 10000) && (hdr->nscans < 64));
+	bool vd = ((0 == hdr->offset) && (hdr->nscans < 64));
 
 	if (vd) {
 	
+		assert((0 < hdr->nscans) && (hdr->nscans < 30));
+
+		struct entry_s entries[hdr->nscans];
+		xread(fd, &entries, sizeof(entries));
+
+		int n = hdr->nscans - 1;
+
 		debug_printf(DP_INFO, "VD Header. MeasID: %d FileID: %d Scans: %d\n",
-					hdr->measid, hdr->fileid, hdr->nscans);
+					entries[n].measid, entries[n].fileid, hdr->nscans);
 
-		start += hdr->datoff;
+		debug_printf(DP_INFO, "Patient: %.64s\nProtocol: %.64s\n", entries[n].patient, entries[n].protocol);
 
-		xseek(fd, start);
+
+		start = entries[n].offset;
 
 		// reread offset
+		xseek(fd, start);
 		xread(fd, &hdr->offset, sizeof(hdr->offset));
 
 	} else {
