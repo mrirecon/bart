@@ -514,6 +514,7 @@ allclean: clean
 	rm -f $(libdir)/*.a $(ALLDEPS)
 	rm -f $(patsubst %, %, $(TARGETS))
 	rm -f $(srcdir)/misc/version.inc
+	rm -rf $(root)/tests/tmp/*/
 	rm -rf doc/dx
 	rm -f doc/commands.txt
 
