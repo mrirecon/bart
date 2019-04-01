@@ -79,7 +79,7 @@ static void toimg(bool dicom, bool use_windowing, const char* name, long inum, f
 			} else {
 
 				(*buf)[i][j][0] = (value >> 0) & 0xFF;
-				(*buf)[i][j][2] = (value >> 8) & 0xFF;
+				(*buf)[i][j][1] = (value >> 8) & 0xFF;
 			}
 		}
 	}
