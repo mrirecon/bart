@@ -140,6 +140,13 @@ int main_version(int argc, char* argv[])
 #else
 			bart_printf("0\n");
 #endif
+
+		bart_printf("OMP=");
+#ifdef _OPENMP
+			bart_printf("1\n");
+#else
+			bart_printf("0\n");
+#endif
 	}
 
 	return 0;
