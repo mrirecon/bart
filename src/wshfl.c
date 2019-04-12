@@ -257,27 +257,33 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	long fmac_str[4];
 	md_calc_strides(4, fmac_str, fmac_dims, CFL_SIZE);
 
+	long flag_dims[1] = { n };
+	complex float* flags = md_calloc(1, flag_dims, CFL_SIZE);
+
 	#pragma omp parallel for
-	for (int k = 0; k < sy * sz; k ++) {
+	for (int k = 0; k < n; k ++) {
 #ifdef _OPENMP
 		int tid = omp_get_thread_num();
 #else
 		int tid = 0;
 #endif
-		int y = k % sy;
-		int z = k / sy;
+		int y = lround(creal(data->reorder[k]));
+		int z = lround(creal(data->reorder[k + n]));
 		int t = -1;
 
-		md_clear(4, vec_dims, vec + (wx * nc * tf * tid), CFL_SIZE);
+		if (0 == flags[k]) {
+			md_clear(4, vec_dims, vec + (wx * nc * tf * tid), CFL_SIZE);
 
-		for (int i = 0; i < n; i ++) {
-			if ((y == lround(creal(data->reorder[i]))) && (z == lround(creal(data->reorder[i + n])))) {
-				t = lround(creal(data->reorder[i + 2 * n]));
-				md_copy(4, line_dims, (vec + (wx * nc * tf * tid) + t * wx * nc), (src + i * wx * nc), CFL_SIZE);
+			for (int i = k; i < n; i ++) {
+				if ((y == lround(creal(data->reorder[i]))) && (z == lround(creal(data->reorder[i + n])))) {
+					flags[i] = 1;
+					t = lround(creal(data->reorder[i + 2 * n]));
+					md_copy(4, line_dims, (vec + (wx * nc * tf * tid) + t * wx * nc), (src + i * wx * nc), CFL_SIZE);
+				}
 			}
-		}
 
-		md_zfmacc2(4, fmac_dims, phi_out_str, perm + (y + z * sy) * (wx * nc * tk), vec_str, vec + (wx * nc * tf * tid), phi_mat_str, data->phi);
+			md_zfmacc2(4, fmac_dims, phi_out_str, perm + (y + z * sy) * (wx * nc * tk), vec_str, vec + (wx * nc * tf * tid), phi_mat_str, data->phi);
+		}
 	}
 
 	long out_dims[] = { [0 ... DIMS - 1] = 1 };
@@ -293,6 +299,7 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 
 	md_free(vec);
 	md_free(perm);
+	md_free(flags);
 }
 
 static void kern_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
