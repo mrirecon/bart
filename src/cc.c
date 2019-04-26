@@ -97,6 +97,10 @@ int main_cc(int argc, char* argv[])
 		cal_data = extract_calib(caldims, calsize, in_dims, in_data, false);
 	}
 
+	if (0. == md_znorm(DIMS, caldims, cal_data))
+		debug_printf(DP_WARN, "Empty calibration region.\n");
+
+
 	if (ECC == cc_type)
 		debug_printf(DP_WARN, "Warning: ECC depends on a parameter choice rule for optimal results which is not implemented.\n");
 
