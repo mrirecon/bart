@@ -287,7 +287,7 @@ static void grid_point_gen(int N, const long dims[VLA(N)], const float pos[VLA(N
 	{
 		if (0 == N) {
 
-			update(ind, d);
+			NESTED_CALL(update, (ind, d));
 
 		} else {
 
