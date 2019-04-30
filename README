@@ -110,7 +110,7 @@ want to try an older version (e.g. version 4.00).
 
 The recommended way to use BART on Windows is with the Windows Subsystem for
 Linux (WSL) which is available for Windows 10. If you use WSL, you need to
-use the clang compiler.
+either use the clang compiler or gcc with the NOEXEC_STACK option.
 
 
 BART should also work with Cygwin:
