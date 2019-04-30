@@ -32,6 +32,12 @@
 #include "misc.h"
 
 
+#ifndef isnanf
+#define isnanf(X) isnan(X)  
+#endif
+
+
+
 struct error_jumper_s {
 
 	bool initialized;
