@@ -5,6 +5,7 @@
  *
  * Authors:
  * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2019 Aurélien Trotier <a.trotier@gmail.com>
  */
 
 #include <stdbool.h>
@@ -18,7 +19,7 @@
 #include "misc/misc.h"
 #include "misc/mri.h"
 #include "misc/opts.h"
-
+#include "misc/debug.h"
 
 static const char usage_str[] = "<output>";
 static const char help_str[] = "Computes k-space trajectories.";
@@ -103,6 +104,8 @@ int main_traj(int argc, char* argv[])
 		{ 0., 0., 0. }
 	};
 
+	const char* custom_angle = NULL;
+
 	const struct opt_s opts[] = {
 
 		OPT_INT('x', &X, "x", "readout samples"),
@@ -123,11 +126,25 @@ int main_traj(int argc, char* argv[])
 		OPT_SET('3', &d3d, "3D"),
 		OPT_SET('c', &asymTraj, "Asymmetric trajectory [DC sampled]"),
 		OPT_INT('s', &small_golden, "s","small golden angle"),
+		OPT_STRING('C', &custom_angle, "file", "custom_angle"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
+
+	// Load custom_angle
+	long sdims[DIMS];
+	complex float* custom_angle_val = NULL;
+		if (NULL != custom_angle && radial) {
+			debug_printf(DP_INFO, "custom_angle file is used \n");
+			custom_angle_val = load_cfl(custom_angle, DIMS, sdims);
+
+			if(Y != sdims[0]){
+				debug_printf(DP_INFO, "According to the custom angle file : y = %d\n",sdims[0]);
+				Y = sdims[0];
+			}
+		}
 
 	int spp = Y;		// spokes per partition
 
@@ -237,6 +254,10 @@ int main_traj(int argc, char* argv[])
 
 					int split = sqrtf(Y);
 					angle2 = 2. * M_PI * j * split * base;
+
+					if (NULL != custom_angle) {
+						angle2 = cimag(custom_angle_val[j]);
+					}
 				}
 
 				if (!(aligned || pGold)) {
@@ -250,6 +271,11 @@ int main_traj(int argc, char* argv[])
 
 					int part = (int)((j % (spp * mb)) / spp); // current partition
 					angle += fmod(part * M_PI / spp * (sqrt(5.) - 1) / 2, M_PI / spp);
+				}
+
+				if (NULL != custom_angle) {
+					angle = creal(custom_angle_val[j]);
+
 				}
 
 				float d[3] = { 0., 0., 0 };
@@ -286,6 +312,9 @@ int main_traj(int argc, char* argv[])
 		}
 	}
 	assert(p == N - 0);
+
+	if (NULL != custom_angle_val)
+		unmap_cfl(3, sdims, custom_angle_val);
 
 	unmap_cfl(3, dims, samples);
 	return 0;
