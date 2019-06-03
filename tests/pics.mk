@@ -220,6 +220,24 @@ tests/test-pics-basis-noncart: traj scale phantom delta fmac ones repmat pics nu
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-pics-basis-noncart-memory: traj scale phantom delta fmac ones repmat pics nufft nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -D -y31 traj.ra					;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/ones 6 1 1 1 1 1 31 o.ra						;\
+	$(TOOLDIR)/scale 0.5 o.ra o1.ra							;\
+	$(TOOLDIR)/join 6 o.ra o1.ra o2.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
+	$(TOOLDIR)/transpose 2 5 traj2.ra traj3.ra					;\
+	$(TOOLDIR)/transpose 2 5 ksp.ra ksp1.ra						;\
+	$(TOOLDIR)/pics -S -r0.001 -t traj3.ra -Bo2.ra ksp1.ra coils.ra reco1.ra	;\
+	$(TOOLDIR)/pics -S -r0.001 -t traj2.ra ksp.ra coils.ra reco.ra			;\
+	$(TOOLDIR)/scale 2.5 reco1.ra reco2.ra						;\
+	$(TOOLDIR)/slice 6 0 reco2.ra reco20.ra						;\
+	$(TOOLDIR)/nrmse -t 0.002 reco.ra reco20.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
 
@@ -230,6 +248,6 @@ TESTS += tests/test-pics-wavl1 tests/test-pics-poisson-wavl1 tests/test-pics-joi
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 TESTS += tests/test-pics-warmstart tests/test-pics-batch
 TESTS += tests/test-pics-tedim tests/test-pics-bp-noncart
-TESTS += tests/test-pics-basis tests/test-pics-basis-noncart
+TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory
 
 
