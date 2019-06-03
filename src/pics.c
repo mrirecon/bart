@@ -64,7 +64,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	long ksp_dims2[DIMS];
 	md_copy_dims(DIMS, ksp_dims2, ksp_dims);
 	ksp_dims2[COEFF_DIM] = max_dims[COEFF_DIM];
-	ksp_dims2[TE_DIM] = 1;
+	//ksp_dims2[TE_DIM] = 1;
 
 	debug_print_dims(DP_INFO, DIMS, ksp_dims2);
 	debug_print_dims(DP_INFO, DIMS, coilim_dims);
@@ -355,12 +355,12 @@ int main_pics(int argc, char* argv[])
 
 	if (NULL != traj_file) {
 
-		if (NULL != pat_file) {
-/*
+		if (NULL == pat_file && NULL == basis) {
+
 			md_free(pattern);
 			pattern = NULL;
 
-		} else {*/
+		} else {
 
 			long ksp_strs[DIMS];
 			md_calc_strides(DIMS, ksp_strs, ksp_dims, CFL_SIZE);
