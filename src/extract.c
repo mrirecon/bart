@@ -19,7 +19,13 @@
 #include "misc/misc.h"
 
 
+#ifndef DIMS
 #define DIMS 16
+#endif
+
+#ifndef CFL_SIZE
+#define CFL_SIZE sizeof(complex float)
+#endif
 
 static const char usage_str[] = "dimension start end <input> <output>";
 static const char help_str[] = "Extracts a sub-array along {dim} from index {start} to (not including) {end}.\n";
@@ -55,7 +61,7 @@ int main_extract(int argc, char* argv[])
 	long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
 	pos2[dim] = start;
 	
-	md_copy_block(DIMS, pos2, out_dims, out_data, in_dims, in_data, sizeof(complex float));
+	md_copy_block(DIMS, pos2, out_dims, out_data, in_dims, in_data, CFL_SIZE);
 
 	unmap_cfl(DIMS, in_dims, in_data);
 	unmap_cfl(DIMS, out_dims, out_data);
