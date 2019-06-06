@@ -150,17 +150,13 @@ void crop_sens(const long dims[DIMS], complex float* ptr, bool soft, float crth,
  */
 static float sure_crop(float var, const long evec_dims[5], complex float* evec_data, complex float* eptr, const long calreg_dims[4], const complex float* calreg)
 {
-	// Must be in ascending order.
-        float start = 0.7;
-        float delta = 0.01;
-
-	long num_cvals = (long) (((1 - delta - start)/delta) + 1);
 	long num_maps = evec_dims[4];
 
 	// Construct low-resolution image
 	long im_dims[5];
 	md_select_dims(5, 15, im_dims, evec_dims);
-	complex float* im = md_alloc(5, im_dims, CFL_SIZE);
+	complex float* im = md_alloc_sameplace(5, im_dims, CFL_SIZE, calreg);
+	md_clear(5, im_dims, im, CFL_SIZE);
 	md_resize_center(5, im_dims, im, calreg_dims, calreg, CFL_SIZE);
 	ifftuc(5, im_dims, FFT_FLAGS, im, im);
 
@@ -170,31 +166,31 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	cropdims[4] = num_maps;
 
 	// Eigenvectors (M)
-	complex float* M = md_alloc(5, evec_dims, CFL_SIZE);
+	complex float* M = md_alloc_sameplace(5, evec_dims, CFL_SIZE, calreg);
 	md_copy(5, evec_dims, M, evec_data, CFL_SIZE);
 
 	// Temporary eigenvector holder to hold low resolution maps
-	complex float* LM = md_alloc(5, evec_dims, CFL_SIZE);
+	complex float* LM = md_alloc_sameplace(5, evec_dims, CFL_SIZE, calreg);
 	// Temporary holder for projection calreg
-	complex float* TC = md_alloc(5, calreg_dims, CFL_SIZE);
+	complex float* TC = md_alloc_sameplace(5, calreg_dims, CFL_SIZE, calreg);
 	// Temporary holder to hold low resolution calib maps
-	complex float* CM = md_alloc(5, cropdims, CFL_SIZE);
+	complex float* CM = md_alloc_sameplace(5, cropdims, CFL_SIZE, calreg);
 
 	// Eigenvalues (W)
 	long W_dims[5];
 	md_select_dims(5, 23, W_dims, evec_dims);
-	complex float* W = md_alloc(5, W_dims, CFL_SIZE);
+	complex float* W = md_alloc_sameplace(5, W_dims, CFL_SIZE, calreg);
 	md_copy(5, W_dims, W, eptr, CFL_SIZE);
 
 	// Place holder for the inner product result
-	complex float* ip = md_alloc(5, W_dims, CFL_SIZE);
+	complex float* ip = md_alloc_sameplace(5, W_dims, CFL_SIZE, calreg);
 
 	// Place holder for the projection result
-	complex float* proj = md_alloc(5, im_dims, CFL_SIZE);
+	complex float* proj = md_alloc_sameplace(5, im_dims, CFL_SIZE, calreg);
 
 	// Place holder for divergence term
 	long div_dims[5] = MD_INIT_ARRAY(5, 1);
-	complex float* div = md_alloc(5, div_dims, CFL_SIZE);
+	complex float* div = md_alloc_sameplace(5, div_dims, CFL_SIZE, calreg);
 
 	// Calculating strides.
 	long str1_ip[5];
@@ -211,7 +207,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 
 	md_calc_strides(5, str1_proj,    W_dims, CFL_SIZE);
 	md_calc_strides(5, str2_proj, evec_dims, CFL_SIZE);
-	md_calc_strides(5, stro_proj, im_dims, CFL_SIZE);
+	md_calc_strides(5, stro_proj,   im_dims, CFL_SIZE);
 
 	long str1_div[5];
 	long str2_div[5];
@@ -225,7 +221,6 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	long tdims_proj[5];
 
 	for (unsigned int i = 0; i < 5; i++) {
-
 		assert((im_dims[i] == evec_dims[i]) || (1 == im_dims[i]) || (1 == evec_dims[i]));
 		assert(( W_dims[i] == evec_dims[i]) || (1 ==  W_dims[i]) || (1 == evec_dims[i]));
 
@@ -234,56 +229,112 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	}
 
 	// Starting parameter sweep with SURE.
-	float minMSE = 0;
-	float estMSE = 0;
-	float optVal = 0;
-	float c	     = 0;
+	float mse_a = 0;
+	float mse_b = 0;
+	float mse   = 0;
 
-	for (int idx = 0; idx < num_cvals; idx++) {
+	float ca = 0.70;
+	float cb = 0.99;
+	float c	 = 0;
+	float old_ca = -1;
+	float old_cb = -1;
 
-		estMSE = 0;
-		*div   = 0;
-
+	debug_printf(DP_INFO,   "----------------------------------        ----------------------------------\n");
+	debug_printf(DP_INFO,   "|        CROP THRESH VALS        |        ");
+	debug_printf(DP_INFO,   "|            Estm MSE            |\n");
+	debug_printf(DP_INFO,   "----------------------------------        ----------------------------------\n");
+	debug_printf(DP_INFO,   "|    CA    |    CM    |    CB    |        ");
+	debug_printf(DP_INFO,   "|   MSEA   |   MSEM   |   MSEB   |\n");
+	debug_printf(DP_INFO,   "----------------------------------        ----------------------------------\n");
+	while (cb - ca > 0.01) {
+		// MSE_A
 		md_clear(5,      W_dims,   ip, CFL_SIZE);
 		md_clear(5,     im_dims, proj, CFL_SIZE);
 		md_clear(5,   evec_dims,   LM, CFL_SIZE);
 		md_clear(5, calreg_dims,   TC, CFL_SIZE);
-
-		c = start + idx * delta;
-
-		// Cropping
-		crop_weight(evec_dims, M, crop_thresh_function, c, W);
-
-		// Projection (stored in proj)
-		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M);
+		mse_a = 0;
+		*div  = 0;
+		crop_weight(evec_dims, M, crop_thresh_function, ca, W);                  // Cropping.
+		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M); // Projection.
 		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
-		
-		// Construct low resolution projection image.
-		fftuc(5, im_dims, FFT_FLAGS, proj, proj);
+		fftuc(5, im_dims, FFT_FLAGS, proj, proj);                                // Low res proj img.
 		md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
 		md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
 		ifftuc(5, im_dims, FFT_FLAGS, proj, proj);
-
 		for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
-			estMSE += powf(cabsf(im[jdx] - proj[jdx]), 2);
-
-		// Construct low-resolution maps 
-		fftuc(5, evec_dims, FFT_FLAGS, LM, M);
+			mse_a += powf((float) (cabsf(im[jdx] - proj[jdx])), 2);
+		fftuc(5, evec_dims, FFT_FLAGS, LM, M);                                   // low-res maps .
 		md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
 		md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
 		ifftuc(5, evec_dims, FFT_FLAGS, LM, LM);
+		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);     // Calc SURE div using low res maps.
+		mse_a += (float) (2 * var * creal(*div));
 
-		// Calculating SURE divergence using low resolution maps
-		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);
+		// MSE_B
+		md_clear(5,      W_dims,   ip, CFL_SIZE);
+		md_clear(5,     im_dims, proj, CFL_SIZE);
+		md_clear(5,   evec_dims,   LM, CFL_SIZE);
+		md_clear(5, calreg_dims,   TC, CFL_SIZE);
+		mse_b = 0;
+		*div  = 0;
+		crop_weight(evec_dims, M, crop_thresh_function, cb, W);                  // Cropping.
+		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M); // Projection.
+		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
+		fftuc(5, im_dims, FFT_FLAGS, proj, proj);                                // Low res proj img.
+		md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
+		md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
+		ifftuc(5, im_dims, FFT_FLAGS, proj, proj);
+		for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
+			mse_b += powf((float) (cabsf(im[jdx] - proj[jdx])), 2);
+		fftuc(5, evec_dims, FFT_FLAGS, LM, M);                                   // low-res maps .
+		md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
+		md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
+		ifftuc(5, evec_dims, FFT_FLAGS, LM, LM);
+		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);     // Calc SURE div using low res maps.
+		mse_b += (float) (2 * var * creal(*div));
 
-		estMSE += 2 * var * creal(*div);
+		// MSE
+		md_clear(5,      W_dims,   ip, CFL_SIZE);
+		md_clear(5,     im_dims, proj, CFL_SIZE);
+		md_clear(5,   evec_dims,   LM, CFL_SIZE);
+		md_clear(5, calreg_dims,   TC, CFL_SIZE);
+		c	= (cb + ca)/2;
+		mse = 0;
+		*div  = 0;
+		crop_weight(evec_dims, M, crop_thresh_function, c, W);                     // Cropping.
+		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M);   // Projection.
+		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
+		fftuc(5, im_dims, FFT_FLAGS, proj, proj);                                  // Low res proj img.
+		md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
+		md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
+		ifftuc(5, im_dims, FFT_FLAGS, proj, proj);
+		for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
+			mse += powf((float) (cabsf(im[jdx] - proj[jdx])), 2);
+		fftuc(5, evec_dims, FFT_FLAGS, LM, M);                                     // low-res maps .
+		md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
+		md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
+		ifftuc(5, evec_dims, FFT_FLAGS, LM, LM);
+		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);       // Calc SURE div using low res maps.
+		mse += (float) (2 * var * creal(*div));
 
-		if ((0 == idx) || (estMSE < minMSE)) {
+		debug_printf(DP_INFO,   "| %0.2e | %0.2e | %0.2e |        ",    ca,   c,    cb);
+		debug_printf(DP_INFO,   "| %0.2e | %0.2e | %0.2e |\n",       mse_a, mse, mse_b);
 
-			optVal = c;
-			minMSE = estMSE;
+		if ((mse_b < mse) && (mse < mse_a)) {
+			cb = old_cb;
+			ca = cb;
+		} else if ((mse_a < mse) && (mse < mse_b)) {
+			ca = old_ca;
+			cb = ca;
+		} else if (mse_b <= mse_a) {
+			old_ca = ca;
+			ca = (c + ca)/2;
+		} else {
+			old_cb = cb;
+			cb = (c + cb)/2;
 		}
 	}
+	debug_printf(DP_INFO,   "----------------------------------        ----------------------------------\n");
 
 	md_free(im);
 	md_free(TC);
@@ -299,10 +350,10 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	// the sweeped thresholds possibly having a too large a step size between them and for any 
 	// other inconsistencies.
 	float smudge = 0.99;
-	debug_printf(DP_DEBUG1, "Calculated c: %.3f\n", optVal);
+	debug_printf(DP_DEBUG1, "Calculated c: %.3f\n", c);
 	debug_printf(DP_DEBUG1, "Smudge: %.3f\n", smudge);
 
-	return smudge * optVal;
+	return smudge * c;
 }
 
 
