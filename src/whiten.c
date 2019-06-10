@@ -68,7 +68,7 @@ static void calc_optmat(const long mat_dims[DIMS], complex float* optmat, const 
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < i; j++)
-			chol[i*N + j] = 0.;
+			chol[i * N + j] = 0.;
 
 	md_transpose(DIMS, COIL_DIM, MAPS_DIM, mat_dims, optmat, mat_dims, chol, CFL_SIZE);
 	
@@ -158,7 +158,7 @@ int main_whiten(int argc, char* argv[])
 
 		// get scale factor by whitening the noise data and taking stdev
 		whiten(noise_dims, nwhite, mat_dims, optmat_out, ndata);
-		md_zstd(DIMS, noise_dims, READ_FLAG | COIL_FLAG, nstdev, nwhite);
+		md_zstd(DIMS, noise_dims, ~0, nstdev, nwhite);
 
 		float stdev = md_zasum(DIMS, std_dims, nstdev);
 		md_zsmul(DIMS, dims, odata, odata, 1. / stdev);
