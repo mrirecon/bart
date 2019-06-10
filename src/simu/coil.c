@@ -19,14 +19,19 @@
 #include "coil.h"
 
 
-complex float coil(float x[3], unsigned int N, unsigned int i)
+const struct coil coil_defaults = { .size = 0.2, .dist = 1.5, };
+
+
+complex float coil(const struct coil* data, float x[3], unsigned int N, unsigned int i)
 {
 	assert(i < N);
 
+	float dist = data->dist;
+
 	vec3_t c[50];
-	vec3_t nc1 = { 1.5 * sinf(2. * M_PI * i / N), 1.5 * cosf(2. * M_PI * i / N), 0. };
+	vec3_t nc1 = { dist * sinf(2. * M_PI * i / N), dist * cosf(2. * M_PI * i / N), 0. };
 	vec3_t nc2 = { sinf(2. * M_PI * i / N), cosf(2. * M_PI * i / N), 0. };
-	vec3_ring(50, c, nc1, nc2, 0.2);
+	vec3_ring(50, c, nc1, nc2, data->size);
 
 	vec3_t b;
 	biot_savart(b, x, 50, (const vec3_t*)c);
