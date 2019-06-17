@@ -233,7 +233,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	float mse_b = 0;
 	float mse   = 0;
 
-	float ca = 0.70;
+	float ca = 0.50;
 	float cb = 0.99;
 	float c	 = 0;
 	float old_ca = -1;
@@ -250,10 +250,11 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 		// MSE_A
 		md_clear(5,      W_dims,   ip, CFL_SIZE);
 		md_clear(5,     im_dims, proj, CFL_SIZE);
+		md_clear(5,    div_dims,  div, CFL_SIZE);
+		md_clear(5,   evec_dims,    M, CFL_SIZE);
 		md_clear(5,   evec_dims,   LM, CFL_SIZE);
 		md_clear(5, calreg_dims,   TC, CFL_SIZE);
 		mse_a = 0;
-		*div  = 0;
 		crop_weight(evec_dims, M, crop_thresh_function, ca, W);                  // Cropping.
 		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M); // Projection.
 		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
@@ -273,10 +274,11 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 		// MSE_B
 		md_clear(5,      W_dims,   ip, CFL_SIZE);
 		md_clear(5,     im_dims, proj, CFL_SIZE);
+		md_clear(5,    div_dims,  div, CFL_SIZE);
+		md_clear(5,   evec_dims,    M, CFL_SIZE);
 		md_clear(5,   evec_dims,   LM, CFL_SIZE);
 		md_clear(5, calreg_dims,   TC, CFL_SIZE);
 		mse_b = 0;
-		*div  = 0;
 		crop_weight(evec_dims, M, crop_thresh_function, cb, W);                  // Cropping.
 		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M); // Projection.
 		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
@@ -296,11 +298,12 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 		// MSE
 		md_clear(5,      W_dims,   ip, CFL_SIZE);
 		md_clear(5,     im_dims, proj, CFL_SIZE);
+		md_clear(5,    div_dims,  div, CFL_SIZE);
+		md_clear(5,   evec_dims,    M, CFL_SIZE);
 		md_clear(5,   evec_dims,   LM, CFL_SIZE);
 		md_clear(5, calreg_dims,   TC, CFL_SIZE);
 		c	= (cb + ca)/2;
 		mse = 0;
-		*div  = 0;
 		crop_weight(evec_dims, M, crop_thresh_function, c, W);                     // Cropping.
 		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M);   // Projection.
 		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
@@ -320,10 +323,10 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 		debug_printf(DP_INFO,   "| %0.2e | %0.2e | %0.2e |        ",    ca,   c,    cb);
 		debug_printf(DP_INFO,   "| %0.2e | %0.2e | %0.2e |\n",       mse_a, mse, mse_b);
 
-		if ((mse_b < mse) && (mse < mse_a)) {
+		if (mse_b < mse) {
 			cb = old_cb;
 			ca = cb;
-		} else if ((mse_a < mse) && (mse < mse_b)) {
+		} else if (mse_a < mse) {
 			ca = old_ca;
 			cb = ca;
 		} else if (mse_b <= mse_a) {
