@@ -229,115 +229,63 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	}
 
 	// Starting parameter sweep with SURE.
-	float mse_a = 0;
-	float mse_b = 0;
-	float mse   = 0;
+	float mse     = -1;
+	float old_mse = 0;
 
-	float ca = 0.50;
-	float cb = 0.99;
-	float c	 = 0;
-	float old_ca = -1;
-	float old_cb = -1;
+	float s = -0.1;
+	float c = 0.99;
+	long ctr1 = 0;
+	long ctr2 = 0;
+	
 
-	debug_printf(DP_INFO,   "----------------------------------        ----------------------------------\n");
-	debug_printf(DP_INFO,   "|        CROP THRESH VALS        |        ");
-	debug_printf(DP_INFO,   "|            Estm MSE            |\n");
-	debug_printf(DP_INFO,   "----------------------------------        ----------------------------------\n");
-	debug_printf(DP_INFO,   "|    CA    |    CM    |    CB    |        ");
-	debug_printf(DP_INFO,   "|   MSEA   |   MSEM   |   MSEB   |\n");
-	debug_printf(DP_INFO,   "----------------------------------        ----------------------------------\n");
-	while (cb - ca > 0.01) {
-		// MSE_A
-		md_clear(5,      W_dims,   ip, CFL_SIZE);
-		md_clear(5,     im_dims, proj, CFL_SIZE);
-		md_clear(5,    div_dims,  div, CFL_SIZE);
-		md_clear(5,   evec_dims,    M, CFL_SIZE);
-		md_clear(5,   evec_dims,   LM, CFL_SIZE);
-		md_clear(5, calreg_dims,   TC, CFL_SIZE);
-		mse_a = 0;
-		crop_weight(evec_dims, M, crop_thresh_function, ca, W);                  // Cropping.
-		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M); // Projection.
-		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
-		fftuc(5, im_dims, FFT_FLAGS, proj, proj);                                // Low res proj img.
-		md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
-		md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
-		ifftuc(5, im_dims, FFT_FLAGS, proj, proj);
-		for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
-			mse_a += powf((float) (cabsf(im[jdx] - proj[jdx])), 2);
-		fftuc(5, evec_dims, FFT_FLAGS, LM, M);                                   // low-res maps .
-		md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
-		md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
-		ifftuc(5, evec_dims, FFT_FLAGS, LM, LM);
-		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);     // Calc SURE div using low res maps.
-		mse_a += (float) (2 * var * creal(*div));
+	debug_printf(DP_INFO, "---------------------------------------------\n");
+	debug_printf(DP_INFO, "| CTR1 | CTR2 |  Crop  |      Est. MSE      |\n");
+	debug_printf(DP_INFO, "---------------------------------------------\n");
 
-		// MSE_B
-		md_clear(5,      W_dims,   ip, CFL_SIZE);
-		md_clear(5,     im_dims, proj, CFL_SIZE);
-		md_clear(5,    div_dims,  div, CFL_SIZE);
-		md_clear(5,   evec_dims,    M, CFL_SIZE);
-		md_clear(5,   evec_dims,   LM, CFL_SIZE);
-		md_clear(5, calreg_dims,   TC, CFL_SIZE);
-		mse_b = 0;
-		crop_weight(evec_dims, M, crop_thresh_function, cb, W);                  // Cropping.
-		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M); // Projection.
-		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
-		fftuc(5, im_dims, FFT_FLAGS, proj, proj);                                // Low res proj img.
-		md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
-		md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
-		ifftuc(5, im_dims, FFT_FLAGS, proj, proj);
-		for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
-			mse_b += powf((float) (cabsf(im[jdx] - proj[jdx])), 2);
-		fftuc(5, evec_dims, FFT_FLAGS, LM, M);                                   // low-res maps .
-		md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
-		md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
-		ifftuc(5, evec_dims, FFT_FLAGS, LM, LM);
-		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);     // Calc SURE div using low res maps.
-		mse_b += (float) (2 * var * creal(*div));
+	while (fabs(s) > 1E-4) {
+		ctr1 ++;
+		while (c < 0.999 && c > 0.001 && (ctr2 <= 1 || mse < old_mse)) {
+			ctr2 ++;
 
-		// MSE
-		md_clear(5,      W_dims,   ip, CFL_SIZE);
-		md_clear(5,     im_dims, proj, CFL_SIZE);
-		md_clear(5,    div_dims,  div, CFL_SIZE);
-		md_clear(5,   evec_dims,    M, CFL_SIZE);
-		md_clear(5,   evec_dims,   LM, CFL_SIZE);
-		md_clear(5, calreg_dims,   TC, CFL_SIZE);
-		c	= (cb + ca)/2;
-		mse = 0;
-		crop_weight(evec_dims, M, crop_thresh_function, c, W);                     // Cropping.
-		md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M);   // Projection.
-		md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
-		fftuc(5, im_dims, FFT_FLAGS, proj, proj);                                  // Low res proj img.
-		md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
-		md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
-		ifftuc(5, im_dims, FFT_FLAGS, proj, proj);
-		for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
-			mse += powf((float) (cabsf(im[jdx] - proj[jdx])), 2);
-		fftuc(5, evec_dims, FFT_FLAGS, LM, M);                                     // low-res maps .
-		md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
-		md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
-		ifftuc(5, evec_dims, FFT_FLAGS, LM, LM);
-		md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);       // Calc SURE div using low res maps.
-		mse += (float) (2 * var * creal(*div));
+			md_clear(5,      W_dims,   ip, CFL_SIZE);
+			md_clear(5,     im_dims, proj, CFL_SIZE);
+			md_clear(5,    div_dims,  div, CFL_SIZE);
+			md_clear(5,   evec_dims,    M, CFL_SIZE);
+			md_clear(5,   evec_dims,   LM, CFL_SIZE);
+			md_clear(5, calreg_dims,   TC, CFL_SIZE);
+			md_copy(5, evec_dims, M, evec_data, CFL_SIZE);
+			old_mse = mse;
+			mse = 0;
 
-		debug_printf(DP_INFO,   "| %0.2e | %0.2e | %0.2e |        ",    ca,   c,    cb);
-		debug_printf(DP_INFO,   "| %0.2e | %0.2e | %0.2e |\n",       mse_a, mse, mse_b);
+			crop_weight(evec_dims, M, crop_thresh_function, c, W);                   // Cropping.
+			md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M); // Projection.
+			md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
+			fftuc(5, im_dims, FFT_FLAGS, proj, proj);                                // Low res proj img.
+			md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
+			md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
+			ifftuc(5, im_dims, FFT_FLAGS, proj, proj);
+			for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
+				mse += powf((float) (cabsf(im[jdx] - proj[jdx])), 2);
+			fftuc(5, evec_dims, FFT_FLAGS, LM, M);                                   // low-res maps .
+			md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
+			md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
+			ifftuc(5, evec_dims, FFT_FLAGS, LM, LM);
+			md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);     // Calc SURE div using low res maps.
+			mse += (float) (2 * var * crealf(*div));
 
-		if (mse_b < mse) {
-			cb = old_cb;
-			ca = cb;
-		} else if (mse_a < mse) {
-			ca = old_ca;
-			cb = ca;
-		} else if (mse_b <= mse_a) {
-			old_ca = ca;
-			ca = (c + ca)/2;
-		} else {
-			old_cb = cb;
-			cb = (c + cb)/2;
+			if (ctr2 == 1)
+				debug_printf(DP_INFO, "| %4ld | %4ld | %0.4f | %0.12e |\n", ctr1, ctr2, c, mse);
+			else
+				debug_printf(DP_INFO, "|      | %4ld | %0.4f | %0.12e |\n", ctr2, c, mse);
+			c = c + s;
 		}
+		c -= s;
+		ctr2 = 0;
+		s = -s/2;
+		c += s;
 	}
-	debug_printf(DP_INFO,   "----------------------------------        ----------------------------------\n");
+	c = c + s;
+	debug_printf(DP_INFO, "---------------------------------------------\n");
 
 	md_free(im);
 	md_free(TC);
@@ -349,14 +297,9 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	md_free(proj);
 	md_free(div);
 
-	// Smudge factor is to soften by little bit to improve robustness. This is to account for
-	// the sweeped thresholds possibly having a too large a step size between them and for any 
-	// other inconsistencies.
-	float smudge = 0.99;
-	debug_printf(DP_DEBUG1, "Calculated c: %.3f\n", c);
-	debug_printf(DP_DEBUG1, "Smudge: %.3f\n", smudge);
+	debug_printf(DP_DEBUG1, "Calculated c: %.4f\n", c);
 
-	return smudge * c;
+	return c;
 }
 
 
