@@ -101,7 +101,7 @@ static bool test_nufft_forward(void)
 
 	linop_free(op);
 
-	return (cabsf(dst[0] - 8.) < 0.02);	// !
+	return (cabsf(dst[0] - 8.f) < 0.02);	// !
 }
 
 
