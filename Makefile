@@ -185,6 +185,7 @@ MODULES_bench = -lwavelet -llinops
 MODULES_phantom = -lsimu
 MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet -lnlops
 MODULES_sake = -lsake
+MODULES_traj = -lnoncart
 MODULES_wave = -liter -lwavelet -llinops -llowrank
 MODULES_threshold = -llowrank -liter -ldfwavelet -llinops -lwavelet
 MODULES_fakeksp = -lsense -llinops
