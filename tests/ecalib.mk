@@ -14,7 +14,7 @@ tests/test-ecalib-auto: ecalib pocsense nrmse noise $(TESTS_OUT)/shepplogan_coil
 	$(TOOLDIR)/noise -n 100 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_noise.ra ;\
 	$(TOOLDIR)/ecalib -m 1 -a -v 100 shepplogan_noise.ra coils.ra ;\
 	$(TOOLDIR)/pocsense -i 1 shepplogan_noise.ra coils.ra proj.ra ;\
-	$(TOOLDIR)/nrmse -t 0.05 proj.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra ;\
+	$(TOOLDIR)/nrmse -t 0.035 $(TESTS_OUT)/shepplogan_coil_ksp.ra proj.ra;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
