@@ -196,7 +196,6 @@ static void compute_kern(unsigned int N, const long krn_dims[N], complex float* 
 
 		krn2_dims[2] = wgh_dims[2];
 		krn2_dims[3] = wgh_dims[5];
-
 	}
 
 
@@ -221,7 +220,6 @@ complex float* compute_psf(unsigned int N, const long img2_dims[N], const long t
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights, bool periodic)
 {
-
 	long trj2_dims[N];
 	md_copy_dims(N, trj2_dims, trj_dims);
 	trj2_dims[2] = trj_dims[2] * trj_dims[5];
@@ -236,18 +234,23 @@ complex float* compute_psf(unsigned int N, const long img2_dims[N], const long t
 	conf.periodic = periodic;
 	conf.toeplitz = false;	// avoid infinite loop
 
-	struct linop_s* op2 = nufft_create(N, ksp_dims1, img2_dims, trj2_dims, traj, NULL, conf);
 
 	complex float* ones = md_alloc(N, ksp_dims1, CFL_SIZE);
+
+	debug_printf(DP_INFO, "nufft kernel size: %ld (= %ld x %ld)\n",
+		md_calc_size(N, ksp_dims1), md_calc_size(3, ksp_dims1), md_calc_size(N - 3, ksp_dims1 + 3));
 
 	compute_kern(N, ksp_dims1, ones, bas_dims, basis, wgh_dims, weights);
 
 	complex float* psft = md_alloc(N, img2_dims, CFL_SIZE);
 
+	struct linop_s* op2 = nufft_create(N, ksp_dims1, img2_dims, trj2_dims, traj, NULL, conf);
+
 	linop_adjoint_unchecked(op2, psft, ones);
 
-	md_free(ones);
 	linop_free(op2);
+
+	md_free(ones);
 
 	return psft;
 }
@@ -507,7 +510,6 @@ struct linop_s* nufft_create2(unsigned int N,
 			debug_print_dims(DP_DEBUG3, N, data->psf_dims);
 			data->psf_dims[6] = data->bas_dims[6];
 			data->psf_dims[5] = data->bas_dims[6];
-
 		}
 
 		md_calc_strides(ND, data->psf_strs, data->psf_dims, CFL_SIZE);
@@ -929,6 +931,5 @@ void estimate_im_dims(int N, unsigned long flags, long dims[N], const long tdims
 		}
 	}
 }
-
 
 
