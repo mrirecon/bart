@@ -67,6 +67,5 @@ struct nufft_data {
 };
 
 
-extern DEF_TYPEID(nufft_data);
 
 

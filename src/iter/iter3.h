@@ -40,7 +40,6 @@ struct iter3_irgnm_conf {
 	_Bool nlinv_legacy;
 };
 
-extern DEF_TYPEID(iter3_irgnm_conf);
 
 iter3_irgnm_f iter3_irgnm;
 
@@ -55,7 +54,6 @@ struct iter3_landweber_conf {
 	float epsilon;
 };
 
-extern DEF_TYPEID(iter3_landweber_conf);
 
 iter3_fun_f iter3_landweber;
 

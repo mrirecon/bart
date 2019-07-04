@@ -34,11 +34,14 @@
 
 #define INTERFACE(X) X INTERFACE
 
-typedef const struct typeid_s { int:1; } TYPEID;
+typedef const struct typeid_s { int size; } TYPEID;
 
-#define TYPEID(T) T ## _TYPEID
-#define DEF_TYPEID(T) TYPEID TYPEID(T)
+#define TYPEID2(T) (T ## _TYPEID)
+#define TYPEID(T) (*({ extern TYPEID T ## _TYPEID; &T ## _TYPEID; }))
+#define DEF_TYPEID(T) TYPEID T ## _TYPEID = { sizeof(struct T) };
 #define SET_TYPEID(T, x) (TYPE_CHECK(struct T*, x)->INTERFACE.TYPEID = &TYPEID(T))
+
+#define SIZEOF(x) ((x)->TYPEID->size)
 
 // redefine auto - needs newer compilers
 #define auto __auto_type

@@ -28,7 +28,7 @@ DEF_TYPEID(iter3_landweber_conf);
 
 const struct iter3_irgnm_conf iter3_irgnm_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID(iter3_irgnm_conf),
+	.INTERFACE.TYPEID = &TYPEID2(iter3_irgnm_conf),
 
 	.iter = 8,
 	.alpha = 1.,

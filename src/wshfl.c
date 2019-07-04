@@ -124,9 +124,9 @@ static void construct_mask(
 	}
 }
 
-static DEF_TYPEID(kern_s);
 
 struct kern_s {
+
 	INTERFACE(linop_data_t);
 
 	unsigned int N;
@@ -142,6 +142,8 @@ struct kern_s {
 
 	complex float* gpu_kernel;
 };
+
+static DEF_TYPEID(kern_s);
 
 /* Go to table from coefficient-kspace with memory efficiency. */
 static void kern_apply(const linop_data_t* _data, complex float* dst, const complex float* src)

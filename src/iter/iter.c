@@ -48,7 +48,7 @@ DEF_TYPEID(iter_call_s);
 
 const struct iter_conjgrad_conf iter_conjgrad_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID(iter_conjgrad_conf),
+	.INTERFACE.TYPEID = &TYPEID2(iter_conjgrad_conf),
 
 	.maxiter = 50,
 	.l2lambda = 0.,
@@ -57,7 +57,7 @@ const struct iter_conjgrad_conf iter_conjgrad_defaults = {
 
 const struct iter_landweber_conf iter_landweber_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID(iter_landweber_conf),
+	.INTERFACE.TYPEID = &TYPEID2(iter_landweber_conf),
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -66,7 +66,7 @@ const struct iter_landweber_conf iter_landweber_defaults = {
 
 const struct iter_ist_conf iter_ist_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID(iter_ist_conf),
+	.INTERFACE.TYPEID = &TYPEID2(iter_ist_conf),
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -77,7 +77,7 @@ const struct iter_ist_conf iter_ist_defaults = {
 
 const struct iter_fista_conf iter_fista_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID(iter_fista_conf),
+	.INTERFACE.TYPEID = &TYPEID2(iter_fista_conf),
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -89,7 +89,7 @@ const struct iter_fista_conf iter_fista_defaults = {
 
 const struct iter_admm_conf iter_admm_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID(iter_admm_conf),
+	.INTERFACE.TYPEID = &TYPEID2(iter_admm_conf),
 
 	.maxiter = 50,
 	.maxitercg = 10,
@@ -117,7 +117,7 @@ const struct iter_admm_conf iter_admm_defaults = {
 
 const struct iter_pocs_conf iter_pocs_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID(iter_pocs_conf),
+	.INTERFACE.TYPEID = &TYPEID2(iter_pocs_conf),
 
 	.maxiter = 50,
 };
@@ -125,7 +125,7 @@ const struct iter_pocs_conf iter_pocs_defaults = {
 
 const struct iter_niht_conf iter_niht_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID(iter_niht_conf),
+	.INTERFACE.TYPEID = &TYPEID2(iter_niht_conf),
 
 	.maxiter = 50,
 	.tol = 1e-8,
@@ -134,7 +134,7 @@ const struct iter_niht_conf iter_niht_defaults = {
 
 const struct iter_chambolle_pock_conf iter_chambolle_pock_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID(iter_chambolle_pock_conf),
+	.INTERFACE.TYPEID = &TYPEID2(iter_chambolle_pock_conf),
 
 	.maxiter = 50,
 	.tol = 1e-8,

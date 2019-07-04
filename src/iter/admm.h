@@ -115,7 +115,6 @@ struct admm_history_s {
 	float tau;
 };
 
-extern DEF_TYPEID(admm_history_s);
 
 
 
