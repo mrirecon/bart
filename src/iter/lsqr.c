@@ -194,7 +194,7 @@ void lsqr(unsigned int N,
 	  const complex float* y,
 	  const struct operator_s* precond_op)
 {
-	lsqr2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s) }, italgo, iconf })),
+	lsqr2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s), 1. }, italgo, iconf })),
 		model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 		x_dims, x, y_dims, y, precond_op, NULL);
 }
@@ -277,7 +277,7 @@ void wlsqr(unsigned int N, const struct lsqr_conf* conf,
 	   const long w_dims[static N], const complex float* w,
 	   const struct operator_s* precond_op)
 {
-	wlsqr2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s) }, italgo, iconf })),
+	wlsqr2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s), 1. }, italgo, iconf })),
 	       model_op, (NULL != thresh_op) ? 1 : 0, &thresh_op, NULL,
 	       x_dims, x, y_dims, y, w_dims, w, precond_op);
 }

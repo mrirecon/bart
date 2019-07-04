@@ -96,7 +96,7 @@ void lad(	unsigned int N, const struct lad_conf* conf,
 		const long x_dims[static N], complex float* x,
 		const long y_dims[static N], const complex float* y)
 {
-	lad2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s) }, italgo, iconf })),
+	lad2(N, conf, iter2_call_iter, CAST_UP(&((struct iter_call_s){ { &TYPEID(iter_call_s), 1. }, italgo, iconf })),
 		model_op, (NULL != prox_funs) ? 1 : 0, &prox_funs, NULL,
 		x_dims, x, y_dims, y);
 }

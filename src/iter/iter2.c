@@ -99,7 +99,7 @@ void iter2_conjgrad(iter_conf* _conf,
 	if (checkeps(eps))
 		goto cleanup;
 
-	conjgrad(conf->maxiter, conf->l2lambda, eps * conf->tol, size, select_vecops(image_adj),
+	conjgrad(conf->maxiter, conf->INTERFACE.alpha * conf->l2lambda, eps * conf->tol, size, select_vecops(image_adj),
 			OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
 
 cleanup:
@@ -136,7 +136,7 @@ void iter2_ist(iter_conf* _conf,
 
 	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
-	ist(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, select_vecops(image_adj),
+	ist(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step, conf->continuation, conf->hogwild, size, select_vecops(image_adj),
 		OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
 cleanup:
@@ -172,7 +172,7 @@ void iter2_fista(iter_conf* _conf,
 
 	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
-	fista(conf->maxiter, eps * conf->tol, conf->step, conf->continuation, conf->hogwild, size, select_vecops(image_adj),
+	fista(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step, conf->continuation, conf->hogwild, size, select_vecops(image_adj),
 		OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
 cleanup:
@@ -217,7 +217,7 @@ void iter2_chambolle_pock(iter_conf* _conf,
 	float eps = 1.;
 #endif
 
-
+	// FIXME: conf->INTERFACE.alpha * c
 	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau, conf->sigma, conf->theta, conf->decay, 2 * md_calc_size(iv->N, iv->dims), 2 * md_calc_size(ov->N, ov->dims), select_vecops(image),
 			OPERATOR2ITOP(ops[1]->forward), OPERATOR2ITOP(ops[1]->adjoint), OPERATOR_P2ITOP(prox_ops[1]), OPERATOR_P2ITOP(prox_ops[0]), 
 			image, monitor);
@@ -254,7 +254,7 @@ void iter2_admm(iter_conf* _conf,
 		.hogwild = conf->hogwild,
 		.ABSTOL = conf->ABSTOL,
 		.RELTOL = conf->RELTOL,
-		.alpha = conf->alpha,
+		.alpha = conf->alpha * conf->INTERFACE.alpha,
 		.tau = conf->tau,
 		.tau_max = conf->tau_max,
 		.mu = conf->mu,

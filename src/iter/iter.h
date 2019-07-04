@@ -1,5 +1,5 @@
 /* Copyright 2013-2018. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
+ * Copyright 2016-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -14,7 +14,7 @@ struct operator_p_s;
 
 #ifndef ITER_CONF_S
 #define ITER_CONF_S
-typedef struct iter_conf_s { TYPEID* TYPEID; } iter_conf;
+typedef struct iter_conf_s { TYPEID* TYPEID; float alpha; } iter_conf;
 #endif
 
 struct iter_monitor_s;
