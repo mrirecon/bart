@@ -117,9 +117,9 @@ struct lad_s {
 
 DEF_TYPEID(lad_s);
 
-static void lad_apply(const operator_data_t* _data, unsigned int N, void* args[static N])
+static void lad_apply(const operator_data_t* _data, float alpha, complex float* dst, const complex float* src)
 {
-	assert(2 == N);
+	assert(1. == alpha);
 	const auto data = CAST_DOWN(lad_s, _data);
 
 	const struct iovec_s* dom_iov = operator_domain(data->model_op->forward);
@@ -127,7 +127,7 @@ static void lad_apply(const operator_data_t* _data, unsigned int N, void* args[s
 
 	lad2(dom_iov->N, data->conf, data->italgo, data->iconf, data->model_op,
 		data->num_funs, data->prox_funs, data->prox_linops,
-		cod_iov->dims, args[0], dom_iov->dims, args[1]);
+		cod_iov->dims, dst, dom_iov->dims, src);
 }
 
 static void lad_del(const operator_data_t* _data)
@@ -155,7 +155,7 @@ static void lad_del(const operator_data_t* _data)
 	xfree(data);
 }
 
-const struct operator_s* lad2_create(const struct lad_conf* conf,
+const struct operator_p_s* lad2_create(const struct lad_conf* conf,
 		italgo_fun2_t italgo, iter_conf* iconf,
 		const float* init,
 		const struct linop_s* model_op,
@@ -187,7 +187,7 @@ const struct operator_s* lad2_create(const struct lad_conf* conf,
 		data->prox_linops[i] = linop_clone(prox_linops[i]);
 	}
 
-	return operator_create(cod_iov->N, cod_iov->dims, dom_iov->N, dom_iov->dims,
+	return operator_p_create(cod_iov->N, cod_iov->dims, dom_iov->N, dom_iov->dims,
 				CAST_UP(PTR_PASS(data)), lad_apply, lad_del);
 }
 

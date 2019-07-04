@@ -628,10 +628,13 @@ int main_pics(int argc, char* argv[])
 	if (im_truth)
 		monitor = create_monitor(2*md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL); 
 	
-	const struct operator_s* op = sense_recon_create(&conf, max1_dims, forward_op,
+	const struct operator_p_s* po = sense_recon_create(&conf, max1_dims, forward_op,
 				pat1_dims, ((NULL != traj_file) || conf.bpsense) ? NULL : pattern1,
 				it.italgo, it.iconf, image_start1, nr_penalties, thresh_ops,
 				trafos_cond ? trafos : NULL, precond_op, monitor);
+
+	const struct operator_s* op = operator_p_bind(po, 1.);
+//	operator_p_free(po);	// FIXME
 
 	long strsx[2][DIMS];
 	const long* strs[2] = { strsx[0], strsx[1] };

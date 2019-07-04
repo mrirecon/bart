@@ -73,7 +73,7 @@ static void normaleq_del(const operator_data_t* _data)
 /**
  * Operator for iterative, multi-regularized least-squares reconstruction
  */
-const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
+const struct operator_p_s* lsqr2_create(const struct lsqr_conf* conf,
 				      italgo_fun2_t italgo, iter_conf* iconf,
 				      const float* init,
 				      const struct linop_s* model_op,
@@ -130,23 +130,23 @@ const struct operator_s* lsqr2_create(const struct lsqr_conf* conf,
 		operator_free(tmp);
 	}
 
-	const struct operator_s* itop_op = itop_create(italgo, iconf, init, normaleq_op, num_funs, prox_funs, prox_linops, monitor);
+	const struct operator_p_s* itop_op = itop_p_create(italgo, iconf, init, normaleq_op, num_funs, prox_funs, prox_linops, monitor);
 
 	if (conf->it_gpu) {
 
 		debug_printf(DP_DEBUG1, "lsqr: add GPU wrapper\n");
-		itop_op = operator_gpu_wrapper(itop_op);
+		itop_op = operator_p_gpu_wrapper(itop_op);
 	}
 
-	const struct operator_s* lsqr_op;
+	const struct operator_p_s* lsqr_op;
 
 	if (NULL != adjoint)
-		lsqr_op = operator_chain(adjoint, itop_op);
+		lsqr_op = operator_p_pre_chain(adjoint, itop_op);
 	else
-		lsqr_op = operator_ref(itop_op);
+		lsqr_op = operator_p_ref(itop_op);
 
 	operator_free(normaleq_op);
-	operator_free(itop_op);
+	operator_p_free(itop_op);
 	operator_free(adjoint);
 
 	return lsqr_op;
@@ -169,11 +169,11 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 	   struct iter_monitor_s* monitor)
 {
 	// nicer, but is still missing some features
-	const struct operator_s* op = lsqr2_create(conf, italgo, iconf, NULL, model_op, precond_op,
+	const struct operator_p_s* op = lsqr2_create(conf, italgo, iconf, NULL, model_op, precond_op,
 						num_funs, prox_funs, prox_linops, monitor);
 
-	operator_apply(op, N, x_dims, x, N, y_dims, y);
-	operator_free(op);
+	operator_p_apply(op, 1., N, x_dims, x, N, y_dims, y);
+	operator_p_free(op);
 }
 
 
@@ -200,7 +200,7 @@ void lsqr(unsigned int N,
 }
 
 
-const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
+const struct operator_p_s* wlsqr2_create(const struct lsqr_conf* conf,
 					italgo_fun2_t italgo, iter_conf* iconf,
 					const float* init,
 					const struct linop_s* model_op,
@@ -214,15 +214,15 @@ const struct operator_s* wlsqr2_create(	const struct lsqr_conf* conf,
 	struct linop_s* op = linop_chain(model_op, weights);
 	linop_free(model_op);
 
-	const struct operator_s* lsqr_op = lsqr2_create(conf, italgo, iconf, init,
+	const struct operator_p_s* lsqr_op = lsqr2_create(conf, italgo, iconf, init,
 						op, precond_op,
 						num_funs, prox_funs, prox_linops,
 						monitor);
 
-	const struct operator_s* wlsqr_op = operator_chain(weights->forward, lsqr_op);
+	const struct operator_p_s* wlsqr_op = operator_p_pre_chain(weights->forward, lsqr_op);
 
 	linop_free(weights);
-	operator_free(lsqr_op);
+	operator_p_free(lsqr_op);
 	linop_free(op);
 
 	return wlsqr_op;

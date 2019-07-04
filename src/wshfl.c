@@ -942,13 +942,13 @@ int main_wshfl(int argc, char* argv[])
 	complex float* recon = create_cfl(argv[6], DIMS, coeff_dims);
 	struct lsqr_conf lsqr_conf = { 0., gpun >= 0 };
 	double recon_start = timestamp();
-	const struct operator_s* J = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*) init, A, NULL, 1, &T, NULL, NULL);
-	operator_apply(J, DIMS, coeff_dims, recon, DIMS, table_dims, table);
+	const struct operator_p_s* J = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*) init, A, NULL, 1, &T, NULL, NULL);
+	operator_p_apply(J, 1., DIMS, coeff_dims, recon, DIMS, table_dims, table);
 	double recon_end = timestamp();
 	debug_printf(DP_INFO, "Done.\nReconstruction time: %f seconds.\n", recon_end - recon_start);
 
 	debug_printf(DP_INFO, "Cleaning up and saving result... ");
-	operator_free(J);
+	operator_p_free(J);
 	linop_free(A);
 	md_free(kernel);
 	unmap_cfl(DIMS, maps_dims, maps);

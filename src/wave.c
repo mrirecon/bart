@@ -400,13 +400,13 @@ int main_wave(int argc, char* argv[])
 	complex float* recon = create_cfl(argv[4], DIMS, recon_dims);
 	struct lsqr_conf lsqr_conf = { 0., gpun >= 0 };
 	double recon_start = timestamp();
-	const struct operator_s* J = lsqr2_create(&lsqr_conf, italgo, iconf, NULL, A, NULL, 1, &T, NULL, NULL);
-	operator_apply(J, DIMS, recon_dims, recon, DIMS, kspc_dims, kspc);
+	const struct operator_p_s* J = lsqr2_create(&lsqr_conf, italgo, iconf, NULL, A, NULL, 1, &T, NULL, NULL);
+	operator_p_apply(J, 1., DIMS, recon_dims, recon, DIMS, kspc_dims, kspc);
 	double recon_end = timestamp();
 	debug_printf(DP_INFO, "Done.\nReconstruction time: %f seconds.\n", recon_end - recon_start);
 
 	debug_printf(DP_INFO, "Cleaning up and saving result... ");
-	operator_free(J);
+	operator_p_free(J);
 	linop_free(A);
 	md_free(mask);
 	unmap_cfl(DIMS, maps_dims, maps);

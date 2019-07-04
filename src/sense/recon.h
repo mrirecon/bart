@@ -36,7 +36,7 @@ extern const struct sense_conf sense_defaults;
 struct operator_s;
 struct operator_p_s;
 
-extern const struct operator_s* sense_recon_create(const struct sense_conf* conf, const long dims[DIMS],
+extern const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, const long dims[DIMS],
 		  const struct linop_s* sense_op,
 		  const long pat_dims[DIMS], const complex float* pattern,
 		  italgo_fun2_t italgo, iter_conf* iconf,

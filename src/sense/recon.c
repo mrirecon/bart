@@ -87,7 +87,7 @@ static void real_from_complex_dims(unsigned int D, long odims[D + 1], const long
 
 
 
-const struct operator_s* sense_recon_create(const struct sense_conf* conf, const long dims[DIMS],
+const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, const long dims[DIMS],
 		  const struct linop_s* sense_op,
 		  const long pat_dims[DIMS], const complex float* pattern,
 		  italgo_fun2_t italgo, iter_conf* iconf,
@@ -100,7 +100,7 @@ const struct operator_s* sense_recon_create(const struct sense_conf* conf, const
 {
 	struct lsqr_conf lsqr_conf = { conf->cclambda, conf->gpu };
 
-	const struct operator_s* op = NULL;
+	const struct operator_p_s* op = NULL;
 
 	assert(DIMS == linop_domain(sense_op)->N);
 
