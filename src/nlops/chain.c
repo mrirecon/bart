@@ -147,10 +147,10 @@ struct nlop_s* nlop_combine(const struct nlop_s* a, const struct nlop_s* b)
 	}
 
 
-	n->op = operator_combi_create(2, (const struct operator_s*[]){ a->op, b->op });
+	auto cop = operator_combi_create(2, (const struct operator_s*[]){ a->op, b->op });
 
-	assert(II == (int)operator_nr_in_args(n->op));
-	assert(OO == (int)operator_nr_out_args(n->op));
+	assert(II == (int)operator_nr_in_args(cop));
+	assert(OO == (int)operator_nr_out_args(cop));
 
 	int perm[II + OO];	// ao ai bo bi -> ao bo ai bi
 	int p = 0;
@@ -169,7 +169,8 @@ struct nlop_s* nlop_combine(const struct nlop_s* a, const struct nlop_s* b)
 
 	assert(II + OO == p);
 
-	n->op = operator_permute(n->op, II + OO, perm);
+	n->op = operator_permute(cop, II + OO, perm);
+	operator_free(cop);
 
 	return PTR_PASS(n);
 }
