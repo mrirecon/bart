@@ -20,6 +20,7 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/init.h"
+#include "num/ops_p.h"
 #include "num/ops.h"
 
 #include "iter/misc.h"

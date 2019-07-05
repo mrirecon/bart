@@ -18,7 +18,7 @@
 #include "num/flpmath.h"
 #include "num/rand.h"
 #include "num/init.h"
-#include "num/ops.h"
+#include "num/ops_p.h"
 #include "num/mdfft.h"
 #include "num/fft.h"
 

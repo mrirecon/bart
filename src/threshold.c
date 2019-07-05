@@ -15,6 +15,7 @@
 #include "num/flpmath.h"
 #include "num/multind.h"
 #include "num/init.h"
+#include "num/ops_p.h"
 
 #include "iter/prox.h"
 #include "iter/thresh.h"

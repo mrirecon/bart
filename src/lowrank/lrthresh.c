@@ -24,6 +24,7 @@
 #include "num/flpmath.h"
 #include "num/linalg.h"
 #include "num/ops.h"
+#include "num/ops_p.h"
 #include "num/blockproc.h"
 #include "num/casorati.h"
 

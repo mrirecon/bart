@@ -18,6 +18,7 @@
 
 #include "num/multind.h"
 #include "num/iovec.h"
+#include "num/ops_p.h"
 #include "num/ops.h"
 
 #include "iter/prox.h"

@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/ops_p.h"
 #include "num/ops.h"
 #include "num/iovec.h"
 

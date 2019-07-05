@@ -19,6 +19,7 @@
 
 #include "num/multind.h"
 #include "num/ops.h"
+#include "num/ops_p.h"
 
 #include "wavelet/wavelet.h"
 

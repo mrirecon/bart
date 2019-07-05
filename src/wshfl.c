@@ -32,6 +32,7 @@
 #include "num/init.h"
 #include "num/iovec.h"
 #include "num/ops.h"
+#include "num/ops_p.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
