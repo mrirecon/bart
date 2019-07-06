@@ -20,6 +20,7 @@ struct shared_obj_s {
 extern void shared_obj_init(struct shared_obj_s* obj, void (*del)(const struct shared_obj_s* s));
 extern void shared_obj_destroy(const struct shared_obj_s* x);
 extern void shared_obj_ref(const struct shared_obj_s*);
+extern void shared_obj_unref(const struct shared_obj_s*);
 
 
 

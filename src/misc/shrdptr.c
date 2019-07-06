@@ -24,6 +24,11 @@ void shared_obj_ref(const struct shared_obj_s* obj)
 	((struct shared_obj_s*)obj)->refcount++;
 }
 
+void shared_obj_unref(const struct shared_obj_s* obj)
+{
+	((struct shared_obj_s*)obj)->refcount--;
+}
+
 void shared_obj_destroy(const struct shared_obj_s* x)
 {
 	if (1 > --(((struct shared_obj_s*)x)->refcount))
