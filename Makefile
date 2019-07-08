@@ -667,6 +667,14 @@ pythontest: ${TESTS_PYTHON}
 
 # unit tests
 
+UTEST_RUN=
+
+ifeq ($(UTESTLEAK),1)
+# we blacklist some targets because valgrind crashes (blas related)
+UTARGETS:=$(filter-out test_flpmath test_blas,$(UTARGETS))
+UTEST_RUN=valgrind --quiet --leak-check=full --error-exitcode=1 valgrind --suppressions=./valgrind.supp --log-file=/dev/null
+endif
+
 # define space to faciliate running executables
 define \n
 
@@ -674,7 +682,7 @@ define \n
 endef
 
 utests-all: $(UTARGETS)
-	$(patsubst %,$(\n)./%,$(UTARGETS))
+	$(patsubst %,$(\n)$(UTEST_RUN) ./%,$(UTARGETS))
 
 utest: utests-all
 	@echo ALL CPU UNIT TESTS PASSED.
