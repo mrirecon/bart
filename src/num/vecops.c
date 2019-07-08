@@ -372,7 +372,7 @@ static void min(long N, float* dst, const float* src1, const float* src2)
 static void zsmax(long N, complex float val, complex float* dst, const complex float* src)
 {
 	for (long i = 0; i < N; i++)
-		dst[i] = CMPLX(MAX(crealf(src[i]), crealf(val)), 0.0);
+		dst[i] = MAX(crealf(src[i]), crealf(val));
 }
 
 
