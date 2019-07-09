@@ -283,7 +283,7 @@ struct nlop_s* nlop_permute_inputs(const struct nlop_s* x, int I2, const int per
 	for (int i = 0; i < II + OO; i++)
 		perm2[i] = (i < OO) ? i : (OO + perm[i - OO]);
 
-	n->op = operator_permute(operator_ref(x->op), II + OO, perm2);
+	n->op = operator_permute(x->op, II + OO, perm2);
 
 	return PTR_PASS(n);
 }
