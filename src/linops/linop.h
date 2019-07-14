@@ -70,6 +70,9 @@ extern struct linop_s* linop_chainN(unsigned int N, struct linop_s* x[N]);
 
 extern struct linop_s* linop_chain_FF(const struct linop_s* a, const struct linop_s* b);
 
+extern struct linop_s* linop_stack(int D, int E, const struct linop_s* a, const struct linop_s* b);
+
+
 struct iovec_s;
 extern const struct iovec_s* linop_domain(const struct linop_s* x);
 extern const struct iovec_s* linop_codomain(const struct linop_s* x);

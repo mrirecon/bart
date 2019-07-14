@@ -1,12 +1,13 @@
-/* Copyright 2017. Martin Uecker.
+/* Copyright 2017-2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2017-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
+#include <stdbool.h>
 
 #include "misc/debug.h"
 
@@ -20,7 +21,7 @@
 #include "lintest.h"
 
 
-float linop_test_adjoint(const struct linop_s* op)
+static float linop_test_adjoint_generic(const struct linop_s* op, bool rvc)
 {
 	int N_dom = linop_domain(op)->N;
 	int N_cod = linop_codomain(op)->N;
@@ -37,9 +38,17 @@ float linop_test_adjoint(const struct linop_s* op)
 	complex float* tmp4 = md_alloc(N_dom, dims_dom, CFL_SIZE);
 
 	md_gaussian_rand(N_dom, dims_dom, tmp1);
+
+	if (rvc)
+		md_zreal(N_dom, dims_dom, tmp1, tmp1);
+
 	linop_forward_unchecked(op, tmp3, tmp1);
 
 	md_gaussian_rand(N_cod, dims_cod, tmp2);
+
+	if (rvc)
+		md_zreal(N_dom, dims_cod, tmp2, tmp2);
+
 	linop_adjoint_unchecked(op, tmp4, tmp2);
 
 	complex float sc1 = md_zscalar(N_dom, dims_dom, tmp1, tmp4);
@@ -53,6 +62,18 @@ float linop_test_adjoint(const struct linop_s* op)
 	debug_printf(DP_DEBUG4, "- %f%+fi - %f%+fi -\n", crealf(sc1), cimagf(sc1), crealf(sc2), cimagf(sc2));
 
 	return cabsf(sc1 - sc2);
+}
+
+
+
+float linop_test_adjoint(const struct linop_s* op)
+{
+	return linop_test_adjoint_generic(op, false);
+}
+
+float linop_test_adjoint_real(const struct linop_s* op)
+{
+	return linop_test_adjoint_generic(op, true);
 }
 
 

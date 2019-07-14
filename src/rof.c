@@ -61,28 +61,27 @@ int main_rof(int argc, char* argv[])
 	complex float* in_data = load_cfl(argv[3], DIMS, dims);
 	complex float* out_data = create_cfl(argv[4], DIMS, dims);
 
-	// TV operator
-
-	const struct linop_s* tv_op = linop_grad_create(DIMS, dims, flags);
-//	const struct linop_s* tv_op = linop_identity_create(DIMS, dims);
+	auto id_op  = linop_identity_create(DIMS, dims);
+	const struct linop_s* grad_op = linop_grad_create(DIMS, dims, DIMS, flags);
+	auto thresh_prox = prox_thresh_create(DIMS + 1, linop_codomain(grad_op)->dims, lambda, MD_BIT(DIMS));
 
 	struct iter_admm_conf conf = iter_admm_defaults;
 
 	conf.maxiter = 50;
 	conf.rho = .1;
 
-	const struct operator_p_s* thresh_prox = prox_thresh_create(DIMS + 1, linop_codomain(tv_op)->dims, 
-								lambda, MD_BIT(DIMS));
-
-	iter2_admm(CAST_UP(&conf), linop_identity_create(DIMS, dims)->forward,
-		   1, MAKE_ARRAY(thresh_prox), MAKE_ARRAY(tv_op), NULL,
+	iter2_admm(CAST_UP(&conf), id_op->forward,
+		   1, MAKE_ARRAY(thresh_prox), MAKE_ARRAY(grad_op), NULL,
 		   NULL, 2 * md_calc_size(DIMS, dims), (float*)out_data, (const float*)in_data, NULL);
 
-	linop_free(tv_op);
+	linop_free(id_op);
+	linop_free(grad_op);
+
 	operator_p_free(thresh_prox);
 	
 	unmap_cfl(DIMS, dims, in_data);
 	unmap_cfl(DIMS, dims, out_data);
+
 	return 0;
 }
 

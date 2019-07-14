@@ -30,7 +30,6 @@
 
 #include "someops.h"
 
-static DEF_TYPEID(cdiag_s);
 
 struct cdiag_s {
 
@@ -48,6 +47,7 @@ struct cdiag_s {
 	bool rmul;
 };
 
+static DEF_TYPEID(cdiag_s);
 
 static void cdiag_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
@@ -217,6 +217,8 @@ struct resize_op_s {
 
 	INTERFACE(linop_data_t);
 
+	bool center;
+
 	unsigned int N;
 	const long* out_dims;
 	const long* in_dims;
@@ -228,14 +230,14 @@ static void resize_forward(const linop_data_t* _data, complex float* dst, const 
 {
 	const auto data = CAST_DOWN(resize_op_s, _data);
 
-	md_resize_center(data->N, data->out_dims, dst, data->in_dims, src, CFL_SIZE);
+	(data->center ? md_resize_center : md_resize)(data->N, data->out_dims, dst, data->in_dims, src, CFL_SIZE);
 }
 
 static void resize_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(resize_op_s, _data);
 
-	md_resize_center(data->N, data->in_dims, dst, data->out_dims, src, CFL_SIZE);
+	(data->center ? md_resize_center : md_resize)(data->N, data->in_dims, dst, data->out_dims, src, CFL_SIZE);
 }
 
 static void resize_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
@@ -261,6 +263,23 @@ static void resize_free(const linop_data_t* _data)
 }
 
 
+static struct linop_s* linop_resize_generic_create(unsigned int N, const long out_dims[N], const long in_dims[N], bool center)
+{
+	PTR_ALLOC(struct resize_op_s, data);
+	SET_TYPEID(resize_op_s, data);
+
+	data->center = center;
+	data->N = N;
+	data->out_dims = *TYPE_ALLOC(long[N]);
+	data->in_dims = *TYPE_ALLOC(long[N]);
+
+	md_copy_dims(N, (long*)data->out_dims, out_dims);
+	md_copy_dims(N, (long*)data->in_dims, in_dims);
+
+	return linop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), resize_forward, resize_adjoint, resize_normal, NULL, resize_free);
+}
+
+
 /**
  * Create a resize linear operator: y = M x,
  * where M either crops or expands the the input dimensions to match the output dimensions.
@@ -272,18 +291,198 @@ static void resize_free(const linop_data_t* _data)
  */
 struct linop_s* linop_resize_create(unsigned int N, const long out_dims[N], const long in_dims[N])
 {
-	PTR_ALLOC(struct resize_op_s, data);
-	SET_TYPEID(resize_op_s, data);
+	return linop_resize_generic_create(N, out_dims, in_dims, true);
+}
+
+struct linop_s* linop_resize_center_create(unsigned int N, const long out_dims[N], const long in_dims[N])
+{
+	return linop_resize_generic_create(N, out_dims, in_dims, true);
+}
+
+struct linop_s* linop_expand_create(unsigned int N, const long out_dims[N], const long in_dims[N])
+{
+	return linop_resize_generic_create(N, out_dims, in_dims, false);
+}
+
+
+
+
+
+struct extract_op_s {
+
+	INTERFACE(linop_data_t);
+
+	int N;
+	const long* pos;
+	const long* in_dims;
+	const long* out_dims;
+};
+
+static DEF_TYPEID(extract_op_s);
+
+static void extract_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	const auto data = CAST_DOWN(extract_op_s, _data);
+
+	md_clear(data->N, data->out_dims, dst, CFL_SIZE);
+	md_copy_block(data->N, data->pos, data->out_dims, dst, data->in_dims, src, CFL_SIZE);
+}
+
+static void extract_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	const auto data = CAST_DOWN(extract_op_s, _data);
+
+	md_clear(data->N, data->in_dims, dst, CFL_SIZE);
+	md_copy_block(data->N, data->pos, data->in_dims, dst, data->out_dims, src, CFL_SIZE);
+}
+
+static void extract_free(const linop_data_t* _data)
+{
+	const auto data = CAST_DOWN(extract_op_s, _data);
+
+	xfree(data->out_dims);
+	xfree(data->in_dims);
+	xfree(data->pos);
+
+	xfree(data);
+}
+
+extern struct linop_s* linop_extract_create(unsigned int N, const long pos[N], const long out_dims[N], const long in_dims[N])
+{
+	PTR_ALLOC(struct extract_op_s, data);
+	SET_TYPEID(extract_op_s, data);
 
 	data->N = N;
+	data->pos = *TYPE_ALLOC(long[N]);
 	data->out_dims = *TYPE_ALLOC(long[N]);
 	data->in_dims = *TYPE_ALLOC(long[N]);
 
+	md_copy_dims(N, (long*)data->pos, pos);
 	md_copy_dims(N, (long*)data->out_dims, out_dims);
 	md_copy_dims(N, (long*)data->in_dims, in_dims);
 
-	return linop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), resize_forward, resize_adjoint, resize_normal, NULL, resize_free);
+	return linop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), extract_forward, extract_adjoint, NULL, NULL, extract_free);
 }
+
+
+
+
+
+struct reshape_op_s {
+
+	INTERFACE(linop_data_t);
+
+	unsigned int N;
+	const long* dims;
+};
+
+static DEF_TYPEID(reshape_op_s);
+
+static void reshape_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	const struct reshape_op_s* data = CAST_DOWN(reshape_op_s, _data);
+
+	md_copy(data->N, data->dims, dst, src, CFL_SIZE);
+}
+
+static void reshape_free(const linop_data_t* _data)
+{
+	const struct reshape_op_s* data = CAST_DOWN(reshape_op_s, _data);
+
+	xfree(data->dims);
+
+	xfree(data);
+}
+
+
+struct linop_s* linop_reshape_create(unsigned int A, const long out_dims[A], int B, const long in_dims[B])
+{
+	PTR_ALLOC(struct reshape_op_s, data);
+	SET_TYPEID(reshape_op_s, data);
+
+	assert(md_calc_size(A, out_dims) == md_calc_size(B, in_dims));
+
+	unsigned int N = A;
+	data->N = N;
+	long* dims = *TYPE_ALLOC(long[N]);
+	md_copy_dims(N, dims, out_dims);
+	data->dims = dims;
+
+	return linop_create(A, out_dims, B, in_dims, CAST_UP(PTR_PASS(data)), reshape_forward, reshape_forward, reshape_forward, NULL, reshape_free);
+}
+
+
+
+struct transpose_op_s {
+
+	INTERFACE(linop_data_t);
+
+	int N;
+	int a;
+	int b;
+	const long* dims;
+};
+
+static DEF_TYPEID(transpose_op_s);
+
+static void transpose_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(transpose_op_s, _data);
+
+	long odims[data->N];
+	md_copy_dims(data->N, odims, data->dims);
+	odims[data->a] = data->dims[data->b];
+	odims[data->b] = data->dims[data->a];
+
+	md_transpose(data->N, data->a, data->b, odims, dst, data->dims, src, CFL_SIZE);
+}
+
+static void transpose_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(transpose_op_s, _data);
+
+	md_copy(data->N, data->dims, dst, src, CFL_SIZE);
+}
+
+static void transpose_free(const linop_data_t* _data)
+{
+	auto data = CAST_DOWN(transpose_op_s, _data);
+
+	xfree(data->dims);
+
+	xfree(data);
+}
+
+
+struct linop_s* linop_transpose_create(int N, int a, int b, const long dims[N])
+{
+	assert((0 <= a) && (a < N));
+	assert((0 <= b) && (b < N));
+	assert(a != b);
+
+	PTR_ALLOC(struct transpose_op_s, data);
+	SET_TYPEID(transpose_op_s, data);
+
+	data->N = N;
+	data->a = a;
+	data->b = b;
+
+	long* idims = *TYPE_ALLOC(long[N]);
+	md_copy_dims(N, idims, dims);
+	data->dims = idims;
+
+	long odims[N];
+	md_copy_dims(N, odims, dims);
+	odims[a] = idims[b];
+	odims[b] = idims[a];
+
+	return linop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)), transpose_forward, transpose_forward, transpose_normal, NULL, transpose_free);
+}
+
+
+
+
+
 
 
 struct operator_matrix_s {
@@ -774,10 +973,25 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
 }
 
 
-static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool forward, bool center)
+static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool forward, bool center, bool measure)
 {
-	const struct operator_s* plan = fft_measure_create(N, dims, flags, true, false);
-	const struct operator_s* iplan = fft_measure_create(N, dims, flags, true, true);
+	const struct operator_s* plan = NULL;
+	const struct operator_s* iplan = NULL;
+
+	if (measure) {
+
+		plan = fft_measure_create(N, dims, flags, true, false);
+		iplan = fft_measure_create(N, dims, flags, true, true);
+
+	} else {
+
+		complex float* tmp1 = md_alloc(N, dims, CFL_SIZE);
+
+		plan = fft_create(N, dims, flags, tmp1, tmp1, false);
+		iplan = fft_create(N, dims, flags, tmp1, tmp1, true);
+
+		md_free(tmp1);
+	}
 
 	PTR_ALLOC(struct fft_linop_s, data);
 	SET_TYPEID(fft_linop_s, data);
@@ -821,13 +1035,17 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 		struct linop_s* modk = linop_cdiag_create(N, dims, ~0u, fftmodk_mat);
 
 		struct linop_s* tmp = linop_chain(mod, lop);
-		tmp = linop_chain(tmp, modk);
 
 		linop_free(lop);
 		linop_free(mod);
+
+		lop = linop_chain(tmp, modk);
+
+		linop_free(tmp);
 		linop_free(modk);
 
-		lop = tmp;
+		md_free(fftmod_mat);
+		md_free(fftmodk_mat);
 	}
 
 	return lop;
@@ -844,7 +1062,7 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
  */
 struct linop_s* linop_fft_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, true, false);
+	return linop_fft_create_priv(N, dims, flags, true, false, true);
 }
 
 
@@ -857,7 +1075,7 @@ struct linop_s* linop_fft_create(int N, const long dims[N], unsigned int flags)
  */
 struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, false, false);
+	return linop_fft_create_priv(N, dims, flags, false, false, true);
 }
 
 
@@ -870,7 +1088,7 @@ struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned int flags)
  */
 struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, true, true);
+	return linop_fft_create_priv(N, dims, flags, true, true, true);
 }
 
 
@@ -883,11 +1101,23 @@ struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags)
  */
 struct linop_s* linop_ifftc_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, false, true);
+	return linop_fft_create_priv(N, dims, flags, false, true, true);
 }
 
 
-
+/**
+ * Uncentered forward Fourier transform linear operator
+ * no fft_measure_create used
+ *
+ * @param N number of dimensions
+ * @param dims dimensions of input
+ * @param flags bitmask of the dimensions to apply the Fourier transform
+ * @param gpu use gpu
+ */
+struct linop_s* linop_fft_create_no_measure(int N, const long dims[N], unsigned int flags)
+{
+	return linop_fft_create_priv(N, dims, flags, true, false, false);
+}
 
 struct linop_cdf97_s {
 

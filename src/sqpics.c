@@ -527,7 +527,7 @@ int main_sqpics(int argc, char* argv[])
 		case TV:
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_grad_create(DIMS, img_dims, regs[nr].xflags);
+			trafos[nr] = linop_grad_create(DIMS, img_dims, DIMS, regs[nr].xflags);
 			thresh_ops[nr] = prox_thresh_create(DIMS + 1,
 					linop_codomain(trafos[nr])->dims,
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));

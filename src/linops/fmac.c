@@ -123,6 +123,16 @@ static void fmac_adjoint(const linop_data_t* _data, complex float* dst, const co
 	md_zfmacc2(data->N, data->dims, data->istrs, dst, data->ostrs, src, data->tstrs, tensor);
 }
 
+static void fmac_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+        struct fmac_data* data = CAST_DOWN(fmac_data, _data);
+
+	complex float* tmp = md_alloc_sameplace(data->N, data->odims, CFL_SIZE, dst);
+	fmac_apply(_data, tmp, src);
+	fmac_adjoint(_data, dst, tmp);
+	md_free(tmp);
+}
+
 const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N], 
 		unsigned int oflags, unsigned int iflags, unsigned int tflags, const complex float* tensor)
 {
@@ -164,7 +174,7 @@ const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N],
 	md_copy_dims(N, idims, data->idims);
 
 	return linop_create(N, odims, N, idims,
-			CAST_UP(PTR_PASS(data)), fmac_apply, fmac_adjoint, NULL,
+			CAST_UP(PTR_PASS(data)), fmac_apply, fmac_adjoint, fmac_normal,
 			NULL, fmac_free_data);
 }
 

@@ -1,10 +1,10 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  */
 
@@ -458,6 +458,38 @@ struct linop_s* linop_chainN(unsigned int N, struct linop_s* a[N])
 
 	return linop_chain(a[0], linop_chainN(N - 1, a + 1));	// FIXME: free intermed.
 }
+
+
+
+
+
+struct linop_s* linop_stack(int D, int E, const struct linop_s* a, const struct linop_s* b)
+{
+	PTR_ALLOC(struct linop_s, c);
+
+	c->forward = operator_stack(D, E, a->forward, b->forward);
+	c->adjoint = operator_stack(E, D, b->adjoint, a->adjoint);
+
+	const struct operator_s* an = a->normal;
+
+	if (NULL == an)
+		an = operator_chain(a->forward, a->adjoint);
+
+	const struct operator_s* bn = b->normal;
+
+	if (NULL == bn)
+		bn = operator_chain(b->forward, b->adjoint);
+
+	c->normal = operator_stack(D, D, an, bn);
+
+	c->norm_inv = NULL;
+
+	return PTR_PASS(c);
+}
+
+
+
+
 
 
 
