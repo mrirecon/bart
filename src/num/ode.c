@@ -207,7 +207,7 @@ static void ode_matrix_fun(void* _data, float* x, float t, const float* in)
 	}
 }
 
-void ode_matrix_interval(float h, float tol, unsigned int N, float x[N], float st, float end, /*const*/ float matrix[N][N])
+void ode_matrix_interval(float h, float tol, unsigned int N, float x[N], float st, float end, const float matrix[N][N])
 {
 	struct ode_matrix_s data = { N, &matrix[0][0] };
 	ode_interval(h, tol, N, x, st, end, &data, ode_matrix_fun);
@@ -234,24 +234,26 @@ struct seq_data {
 static void seq(void* _data, float* out, float t, const float* yn)
 {
 	struct seq_data* data = _data;
+	int N = data->N;
+	int P = data->P;
 
 	data->f(data->data, out, t, yn);
 
-	float dy[data->N][data->N];
+	float dy[N][N];
 	data->pdy(data->data, &dy[0][0], t, yn);
 
-	float dp[data->P][data->N];
+	float dp[P][N];
 	data->pdp(data->data, &dp[0][0], t, yn);
 
-	for (unsigned int i = 0; i < data->P; i++) {
-		for (unsigned int j = 0; j < data->N; j++) {
+	for (int i = 0; i < P; i++) {
+		for (int j = 0; j < N; j++) {
 
-			out[(1 + i) * data->N + j] = 0.;
+			out[(1 + i) * N + j] = 0.;
 
-			for (unsigned int k = 0; k < data->N; k++)
-				out[(1 + i) * data->N + j] += dy[k][j] * yn[(1 + i) * data->N + k];
+			for (int k = 0; k < N; k++)
+				out[(1 + i) * N + j] += dy[k][j] * yn[(1 + i) * N + k];
 
-			out[(1 + i) * data->N + j] += dp[i][j];
+			out[(1 + i) * N + j] += dp[i][j];
 		}
 	}
 }

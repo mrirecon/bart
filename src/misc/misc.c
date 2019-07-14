@@ -233,14 +233,14 @@ ok:
 
 
 
-void quicksort(unsigned int N, unsigned int ord[N], const void* data, quicksort_cmp_t cmp)
+void quicksort(int N, int ord[N], const void* data, quicksort_cmp_t cmp)
 {
 	if (N < 2)
 		return;
 
-	unsigned int pivot = ord[N / 2];
-	unsigned int l = 0;
-	unsigned int h = N - 1;
+	int pivot = ord[N / 2];
+	int l = 0;
+	int h = N - 1;
 
 	while (l <= h) {
 
@@ -256,7 +256,7 @@ void quicksort(unsigned int N, unsigned int ord[N], const void* data, quicksort_
 			continue;
 		}
 
-		unsigned int swap = ord[l];
+		int swap = ord[l];
 		ord[l] = ord[h];
 		ord[h] = swap;
 
@@ -532,7 +532,7 @@ void print_complex(unsigned int D, const complex float arr[D])
 }
 
 
-unsigned int bitcount(unsigned int flags)
+unsigned int bitcount(unsigned long flags)
 {
 	unsigned int N = 0;
 
@@ -547,4 +547,12 @@ bool safe_isnanf(float x)
 {
 	return isnanf(x);
 }
+
+__attribute__((optimize("-fno-finite-math-only")))
+bool safe_isfinite(float x)
+{
+	return (!isnan(x) && !isinf(x));
+	// return isfinite(x); <- is sometimes true when x is NaN.
+}
+
 

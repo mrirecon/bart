@@ -79,9 +79,9 @@ extern void debug_print_dims_trace(const char* func_name,
 				   int D,
 				   const long dims[__VLA(D)]);
 
-typedef int (*quicksort_cmp_t)(const void* data, unsigned int a, unsigned int b);
+typedef int (*quicksort_cmp_t)(const void* data, int a, int b);
 
-extern void quicksort(unsigned int N, unsigned int ord[__VLA(N)], const void* data, quicksort_cmp_t cmp);
+extern void quicksort(int N, int ord[__VLA(N)], const void* data, quicksort_cmp_t cmp);
 
 extern float quickselect(float *arr, unsigned int n, unsigned int k);
 
@@ -95,12 +95,13 @@ extern void print_float(unsigned int D, const float arr[__VLA(D)]);
 extern void print_int(unsigned int D, const int arr[__VLA(D)]);
 extern void print_complex(unsigned int D, const _Complex float arr[__VLA(D)]);
 
-extern unsigned int bitcount(unsigned int flags);
+extern unsigned int bitcount(unsigned long flags);
 
 extern const char* command_line;
 extern void save_command_line(int argc, char* argv[__VLA(argc)]);
 
 extern _Bool safe_isnanf(float x);
+extern _Bool safe_isfinite(float x);
 
 #include "misc/cppwrap.h"
 

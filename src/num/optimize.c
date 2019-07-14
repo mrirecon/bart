@@ -153,7 +153,7 @@ unsigned int remove_empty_dims(unsigned int D, unsigned int N, long dims[N], lon
 }
 
 
-static int cmp_strides(const void* _data, unsigned int a, unsigned int b)
+static int cmp_strides(const void* _data, int a, int b)
 {
 	const long* strs = _data;
 	long d = strs[a] - strs[b];
@@ -166,7 +166,7 @@ static int cmp_strides(const void* _data, unsigned int a, unsigned int b)
 	return 0;
 }
 
-static void compute_permutation(unsigned int N, unsigned int ord[N], const long strs[N])
+static void compute_permutation(unsigned int N, int ord[N], const long strs[N])
 {
 	for (unsigned int i = 0; i < N; i++)
 		ord[i] = i;
@@ -174,12 +174,12 @@ static void compute_permutation(unsigned int N, unsigned int ord[N], const long 
 	quicksort(N, ord, (const void*)strs, cmp_strides);
 }
 
-static void reorder_long(unsigned int N, unsigned int ord[N], long x[N])
+static void reorder_long(int N, int ord[N], long x[N])
 {
 	long tmp[N];
 	memcpy(tmp, x, N * sizeof(long));
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		x[i] = tmp[ord[i]];
 }
 
@@ -339,7 +339,7 @@ unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*
 			max_strides[i] = MAX(max_strides[i], (*strs[j])[i]);
 	}
 
-	unsigned int ord[ND];
+	int ord[ND];
 	compute_permutation(ND, ord, max_strides);
 
 //	for (unsigned int i = 0; i < ND; i++)
