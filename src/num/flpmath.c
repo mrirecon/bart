@@ -108,7 +108,7 @@ static void make_2op_simple(md_2op_t fun, unsigned int D, const long dims[D], fl
  */
 static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, size_t sizes[2], md_nary_opt_fun_t too)
 {
-	const long (*nstr[2])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr1 };
+	const long (*nstr[2])[D?D:1] = { (const long (*)[D?D:1])ostr, (const long (*)[D?D:1])istr1 };
 	void *nptr[2] = { optr, (void*)iptr1 };
 
 	unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0);
@@ -137,7 +137,7 @@ static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ost
  */
 static void optimized_threeop_oii(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_opt_fun_t too)
 {
-	const long (*nstr[3])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr1, (const long (*)[D])istr2 };
+	const long (*nstr[3])[D?D:1] = { (const long (*)[D?D:1])ostr, (const long (*)[D?D:1])istr1, (const long (*)[D?D:1])istr2 };
 	void *nptr[3] = { optr, (void*)iptr1, (void*)iptr2 };
 
 	unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);

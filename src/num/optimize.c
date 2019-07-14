@@ -119,7 +119,7 @@ void merge_dims(unsigned int D, unsigned int N, long dims[N], long (*ostrs[D])[N
 		bool domerge = true;
 
 		for (unsigned int j = 0; j < D; j++) // mergeable
-			domerge &= (*ostrs[j])[i + 1] == dims[i] * (*ostrs[j])[i];
+			domerge = domerge && ((*ostrs[j])[i + 1] == dims[i] * (*ostrs[j])[i]);
 
 		if (domerge) {
 
