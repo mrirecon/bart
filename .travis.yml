@@ -59,7 +59,6 @@ matrix:
             - liblapacke-dev
             - libblocksruntime-dev
       script:
-        - make test
         - make utest
 
     - name: "Makefile OpenMP"
