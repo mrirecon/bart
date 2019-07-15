@@ -460,7 +460,7 @@ static const struct linop_s* linop_espirit_create(long sx, long sy, long sz, lon
 }
 
 /* Resize operator. */
-static const struct linop_s* Xlinop_reshape_create(long wx, long sx, long sy, long sz, long nc, long tk)
+static const struct linop_s* linop_wavereshape_create(long wx, long sx, long sy, long sz, long nc, long tk)
 {
 	long input_dims[] = { [0 ... DIMS - 1] = 1};
 	input_dims[0] = sx;
@@ -746,7 +746,7 @@ int main_wshfl(int argc, char* argv[])
 	debug_printf(DP_INFO, "\tE:   %f seconds.\n", t2 - t1);
 
 	t1 = timestamp();
-	const struct linop_s* R = Xlinop_reshape_create(wx, sx, sy, sz, nc, tk);
+	const struct linop_s* R = linop_wavereshape_create(wx, sx, sy, sz, nc, tk);
 	t2 = timestamp();
 	debug_printf(DP_INFO, "\tR:   %f seconds.\n", t2 - t1);
 
