@@ -181,6 +181,7 @@ MODULES_ccapply = -lcalib
 MODULES_estvar = -lcalib
 MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
+MODULES_tgv = -liter -llinops
 MODULES_bench = -lwavelet -llinops
 MODULES_phantom = -lsimu
 MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet -lnlops
