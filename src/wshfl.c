@@ -97,10 +97,20 @@ static void print_opdims(const struct linop_s* op)
 {
 	const struct iovec_s* domain   = linop_domain(op);
 	const struct iovec_s* codomain = linop_codomain(op);
-	debug_printf(DP_INFO, "\tDomain:   ");
-	debug_print_dims(DP_INFO, domain->N, domain->dims);
-	debug_printf(DP_INFO, "\tCodomain: ");
-	debug_print_dims(DP_INFO, codomain->N, codomain->dims);
+	debug_printf(DP_INFO, "\tDomain:   [");
+	for (long k = 0; k < domain->N; k ++) {
+		for (long t = (long) floor(log10(domain->dims[k])) + 1; t < 7; t ++)
+			debug_printf(DP_INFO, " ");
+		debug_printf(DP_INFO, "%d", domain->dims[k]);
+	}
+	debug_printf(DP_INFO, "]\n");
+	debug_printf(DP_INFO, "\tCodomain: [");
+	for (long k = 0; k < codomain->N; k ++) {
+		for (long t = (long) floor(log10(codomain->dims[k])) + 1; t < 7; t ++)
+			debug_printf(DP_INFO, " ");
+		debug_printf(DP_INFO, "%d", codomain->dims[k]);
+	}
+	debug_printf(DP_INFO, "]\n");
 }
 
 /* Construct sampling mask array from reorder tables. */
