@@ -559,7 +559,7 @@ static void multc_adjoint(const linop_data_t* _data, complex float* dst, const c
 
 	long dst_dims[] = { [0 ... DIMS - 1] = 1};
 	md_copy_dims(DIMS, dst_dims, sc_out_dims);
-	src_dims[MAPS_DIM] = md;
+	dst_dims[MAPS_DIM] = md;
 
 	long map_dims[] = { [0 ... DIMS - 1] = 1};
 	map_dims[0] = sx;
