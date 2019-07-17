@@ -102,9 +102,8 @@ static void print_opdims(const struct linop_s* op)
 		debug_printf(DP_INFO, "%6ld", domain->dims[k]);
 	debug_printf(DP_INFO, "]\n");
 	debug_printf(DP_INFO, "\tCodomain: [");
-	for (long k = 0; k < codomain->N; k ++) {
+	for (long k = 0; k < codomain->N; k ++)
 		debug_printf(DP_INFO, "%6ld", codomain->dims[k]);
-	}
 	debug_printf(DP_INFO, "]\n");
 }
 
