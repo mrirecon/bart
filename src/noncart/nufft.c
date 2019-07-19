@@ -232,8 +232,12 @@ complex float* compute_psf(unsigned int N, const long img2_dims[N], const long t
 {
 	long trj2_dims[N];
 	md_copy_dims(N, trj2_dims, trj_dims);
-	trj2_dims[2] = trj_dims[2] * trj_dims[5];
-	trj2_dims[5] = 1;
+
+	if (NULL != basis) {
+
+		trj2_dims[2] = trj_dims[2] * trj_dims[5];
+		trj2_dims[5] = 1;
+	}
 
 	long ksp_dims1[N];
 	md_copy_dims(N, ksp_dims1, img2_dims);
