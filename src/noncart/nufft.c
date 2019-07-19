@@ -110,29 +110,11 @@ static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned lo
 }
 
 
-static void compute_kern(unsigned int N, const long krn_dims[N], complex float* krn,
+
+static void compute_kern_basis(unsigned int N, const long krn_dims[N], complex float* krn,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights)
 {
-	if (NULL == basis) {
-
-		md_zfill(N, krn_dims, krn, 1.);
-
-		if (NULL != weights) {
-
-			long krn_strs[N];
-			md_calc_strides(N, krn_strs, krn_dims, CFL_SIZE);
-
-			long wgh_strs[N];
-			md_calc_strides(N, wgh_strs, wgh_dims, CFL_SIZE);
-
-			md_zmul2(N, krn_dims, krn_strs, krn, krn_strs, krn, wgh_strs, weights);
-			md_zmulc2(N, krn_dims, krn_strs, krn, krn_strs, krn, wgh_strs, weights);
-		}
-
-		return;
-	}
-
 	// Use `time_dim` to unfold temporal dimension
 	long time_dim = 3;
 
@@ -214,6 +196,34 @@ static void compute_kern(unsigned int N, const long krn_dims[N], complex float* 
 
 	md_free(tmp);
 }
+
+
+
+static void compute_kern(unsigned int N, const long krn_dims[N], complex float* krn,
+				const long bas_dims[N], const complex float* basis,
+				const long wgh_dims[N], const complex float* weights)
+{
+	if (NULL != basis)
+		return compute_kern_basis(N, krn_dims, krn, bas_dims, basis, wgh_dims, weights);
+
+
+	md_zfill(N, krn_dims, krn, 1.);
+
+	if (NULL != weights) {
+
+		long krn_strs[N];
+		md_calc_strides(N, krn_strs, krn_dims, CFL_SIZE);
+
+		long wgh_strs[N];
+		md_calc_strides(N, wgh_strs, wgh_dims, CFL_SIZE);
+
+		md_zmul2(N, krn_dims, krn_strs, krn, krn_strs, krn, wgh_strs, weights);
+		md_zmulc2(N, krn_dims, krn_strs, krn, krn_strs, krn, wgh_strs, weights);
+	}
+
+	return;
+}
+
 
 
 complex float* compute_psf(unsigned int N, const long img2_dims[N], const long trj_dims[N], const complex float* traj,
