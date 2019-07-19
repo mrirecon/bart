@@ -176,7 +176,6 @@ static void save_noise_sv(const long kernel_dims[3], const long calreg_dims[4], 
 static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, float* E, long num_iters)
 {
     
-
     if (NULL != getenv("TOOLBOX_PATH") && 1 == load_noise_sv(kernel_dims, calreg_dims, L, E)) {
         return;
     }
@@ -189,7 +188,8 @@ static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, fl
     float tmpE[N];
     long T = md_calc_size(4, calreg_dims) * sizeof(complex float);
 
-    complex float ncalreg[T];
+    long ncalreg_dims[] = {T};
+    complex float* ncalreg = md_calloc(1, ncalreg_dims, sizeof(complex float));
     noise_calreg(T, ncalreg);
 
     PTR_ALLOC(complex float[N][N], vec);
@@ -219,6 +219,7 @@ static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, fl
         save_noise_sv(kernel_dims, calreg_dims, L, E);
 
     PTR_FREE(vec);
+    md_free(ncalreg);
 
 }
 
