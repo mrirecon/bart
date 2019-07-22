@@ -40,15 +40,12 @@
 static void noise_calreg(long T, complex float* ncalreg)
 {
 
-    float spike = 1;
-    float stdev = 1.f/sqrtf(2.f); 
+	float spike = 1;
+	float stdev = 1.f/sqrtf(2.f);
 
-    for (long idx = 0; idx < T; idx++) {
-        if (spike >= uniform_rand()) {
-            ncalreg[idx] = stdev * gaussian_rand();
-        }
-    }
-
+	for (long idx = 0; idx < T; idx++)
+		if (spike >= uniform_rand())
+			ncalreg[idx] = stdev * gaussian_rand();
 }
 
 /**
@@ -59,43 +56,40 @@ static void noise_calreg(long T, complex float* ncalreg)
  *  kernel_dims - kernel dimensions.
  *  calreg_dims - calibration region dimensions.
  */
-static char* file_name(const long kernel_dims[3], const long calreg_dims[4]) {
+static char* file_name(const long kernel_dims[3], const long calreg_dims[4])
+{
+	char PATH[]     = "/save/nsv/";
+	char KERNEL[]   = "KERNEL_";
+	char CALREG[]   = "CALREG_";
+	char DAT[]      = ".dat";
 
-    char PATH[]     = "/save/nsv/";
-    char KERNEL[]   = "KERNEL_";
-    char CALREG[]   = "CALREG_";
-    char DAT[]      = ".dat";
+	int space[] = {strlen(TOOLBOX_PATH), strlen(PATH), strlen(KERNEL),
+	  floor(log10(kernel_dims[0])) + 2,
+	  floor(log10(kernel_dims[1])) + 2,
+	  floor(log10(kernel_dims[2])) + 2, strlen(CALREG),
+	  floor(log10(calreg_dims[0])) + 2,
+	  floor(log10(calreg_dims[1])) + 2,
+	  floor(log10(calreg_dims[2])) + 2,
+	  floor(log10(calreg_dims[3])) + 1, strlen(DAT) + 1};
 
-    int space[] = {strlen(TOOLBOX_PATH), strlen(PATH), strlen(KERNEL), 
-        floor(log10(kernel_dims[0])) + 2,
-        floor(log10(kernel_dims[1])) + 2,
-        floor(log10(kernel_dims[2])) + 2, strlen(CALREG),
-        floor(log10(calreg_dims[0])) + 2,
-        floor(log10(calreg_dims[1])) + 2,
-        floor(log10(calreg_dims[2])) + 2,
-        floor(log10(calreg_dims[3])) + 1, strlen(DAT) + 1};
+	size_t total = 0;
+	for (size_t idx = 0; idx < sizeof(space)/sizeof(int); idx ++)
+		total += space[idx];
 
-    size_t total = 0;
-    for (size_t idx = 0; idx < sizeof(space)/sizeof(int); idx ++) {
-        total += space[idx];
-    }
+	char* name = calloc(total, sizeof(char));
 
-    char* name = calloc(total, sizeof(char));
+	assert(NULL != name);
 
-    assert(NULL != name);
-
-    sprintf(name, "%s%s%s%ldx%ldx%ld_%s%ldx%ldx%ldx%ld%s", 
-        TOOLBOX_PATH, 
-        PATH, 
-        KERNEL,
-        kernel_dims[0], kernel_dims[1], kernel_dims[2],
-        CALREG,
-        calreg_dims[0], calreg_dims[1], calreg_dims[2], calreg_dims[3],
-        DAT);
+	sprintf(name, "%s%s%s%ldx%ldx%ld_%s%ldx%ldx%ldx%ld%s",
+	  TOOLBOX_PATH,
+	  PATH,
+	  KERNEL,
+	  kernel_dims[0], kernel_dims[1], kernel_dims[2],
+	  CALREG,
+	  calreg_dims[0], calreg_dims[1], calreg_dims[2], calreg_dims[3],
+	  DAT);
     
-
-    return name;
-
+	return name;
 }
 
 /**
@@ -110,22 +104,21 @@ static char* file_name(const long kernel_dims[3], const long calreg_dims[4]) {
  */
 static int load_noise_sv(const long kernel_dims[3], const long calreg_dims[4], long L, float* E)
 {
-    char* name = file_name(kernel_dims, calreg_dims);
-    FILE* fp = fopen(name, "rb");
+	char* name = file_name(kernel_dims, calreg_dims);
+	FILE* fp = fopen(name, "rb");
 
-    if (!fp) {
+	if (!fp) {
+		xfree(name);
+		return 0;
+	}
 
-        xfree(name);
-        return 0;
-    }
-
-    int c = fread(E, sizeof(float), L, fp);
-    assert(c == L);
+	int c = fread(E, sizeof(float), L, fp);
+	assert(c == L);
     
-    xfree(name);
-    fclose(fp);
+	xfree(name);
+	fclose(fp);
 
-    return 1;
+	return 1;
 }
 
 /**
@@ -141,19 +134,18 @@ static int load_noise_sv(const long kernel_dims[3], const long calreg_dims[4], l
  */
 static void save_noise_sv(const long kernel_dims[3], const long calreg_dims[4], long L, float* E)
 {
-    char* name = file_name(kernel_dims, calreg_dims);
-    FILE* fp = fopen(name, "wb");
+	char* name = file_name(kernel_dims, calreg_dims);
+	FILE* fp = fopen(name, "wb");
 
-    if (!fp) {
+	if (!fp) {
+		xfree(name);
+		return;
+	}
 
-        xfree(name);
-        return;
-    }
+	fwrite(E, sizeof(float), L, fp);
 
-    fwrite(E, sizeof(float), L, fp);
-
-    free(name);
-    fclose(fp);
+	free(name);
+	fclose(fp);
 }
 
 /**
@@ -175,52 +167,45 @@ static void save_noise_sv(const long kernel_dims[3], const long calreg_dims[4], 
  */
 static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, float* E, long num_iters)
 {
+	if (NULL != getenv("TOOLBOX_PATH") && 1 == load_noise_sv(kernel_dims, calreg_dims, L, E))
+		return;
+
+	debug_printf(DP_DEBUG1, "NOTE: Running simulations to figure out noise singular values.\n");
+	debug_printf(DP_DEBUG1, "      The simulation results are saved if TOOLBOX_PATH is set.\n");
+
+	long N = kernel_dims[0] * kernel_dims[1] * kernel_dims[2] * calreg_dims[3]; 
+
+	float tmpE[N];
+	long T = md_calc_size(4, calreg_dims) * sizeof(complex float);
+
+	long ncalreg_dims[] = {T};
+	complex float* ncalreg = md_calloc(1, ncalreg_dims, sizeof(complex float));
+	noise_calreg(T, ncalreg);
+
+	PTR_ALLOC(complex float[N][N], vec);
+	covariance_function(kernel_dims, N, *vec, calreg_dims, ncalreg);
+	lapack_eig(N, tmpE, *vec);
+
+	for (int idx = 0; idx < L; idx ++)
+		E[idx] = sqrtf(tmpE[N-idx-1]);
     
-    if (NULL != getenv("TOOLBOX_PATH") && 1 == load_noise_sv(kernel_dims, calreg_dims, L, E)) {
-        return;
-    }
+	for (long idx = 0; idx < num_iters - 1; idx ++) {
+		noise_calreg(T, ncalreg);
+		covariance_function(kernel_dims, N, *vec, calreg_dims, ncalreg);
+		lapack_eig(N, tmpE, *vec);
 
-    debug_printf(DP_DEBUG1, "NOTE: Running simulations to figure out noise singular values.\n");
-    debug_printf(DP_DEBUG1, "      The simulation results are saved if TOOLBOX_PATH is set.\n");
+		for (long jdx = 0; jdx < L; jdx ++)
+			E[jdx] += sqrtf(tmpE[N-jdx-1]);
+	}
 
-    long N = kernel_dims[0] * kernel_dims[1] * kernel_dims[2] * calreg_dims[3]; 
+	for (long idx = 0; idx < L; idx++)
+		E[idx] /= num_iters;
 
-    float tmpE[N];
-    long T = md_calc_size(4, calreg_dims) * sizeof(complex float);
+	if (NULL != getenv("TOOLBOX_PATH"))
+		save_noise_sv(kernel_dims, calreg_dims, L, E);
 
-    long ncalreg_dims[] = {T};
-    complex float* ncalreg = md_calloc(1, ncalreg_dims, sizeof(complex float));
-    noise_calreg(T, ncalreg);
-
-    PTR_ALLOC(complex float[N][N], vec);
-    covariance_function(kernel_dims, N, *vec, calreg_dims, ncalreg);
-    lapack_eig(N, tmpE, *vec);
-
-    for (int idx = 0; idx < L; idx ++)
-        E[idx] = sqrtf(tmpE[N-idx-1]);
-    
-    for (long idx = 0; idx < num_iters - 1; idx ++) {
-
-        noise_calreg(T, ncalreg);
-        covariance_function(kernel_dims, N, *vec, calreg_dims, ncalreg);
-        lapack_eig(N, tmpE, *vec);
-
-        for (long jdx = 0; jdx < L; jdx ++) {
-            E[jdx] += sqrtf(tmpE[N-jdx-1]);
-        }
-
-    }
-
-    for (long idx = 0; idx < L; idx++) {
-        E[idx] /= num_iters;
-    }
-
-    if (NULL != getenv("TOOLBOX_PATH"))
-        save_noise_sv(kernel_dims, calreg_dims, L, E);
-
-    PTR_FREE(vec);
-    md_free(ncalreg);
-
+	PTR_FREE(vec);
+	md_free(ncalreg);
 }
 
 /**
@@ -241,69 +226,62 @@ static void nsv(const long kernel_dims[3], const long calreg_dims[4], long L, fl
  */
 static float estimate_noise_variance(long L, const float* S, const float* E)
 {
+	float t = 0.f;
+	float c = 0.f; // Counter to avoid zero singular values.
+	long  s = 4;   // We fit the last one s^th singular values.
 
-    float t = 0.f;
-    float c = 0.f; // Counter to avoid zero singular values.
-    long  s = 4;   // We fit the last one s^th singular values.
+	int num   = L/s;
+	int start = L - num;
 
-    int num   = L/s;
-    int start = L - num;
+	for (long idx = 0; idx < num; idx ++) {
+		if (isnan(S[start + idx]) || S[start + idx] <= 0 || isnan(E[start + idx]) || E[start + idx] <= 0)
+			break;
 
-    for (long idx = 0; idx < num; idx ++) {
+		t += ((float)S[start + idx])/((float)E[start + idx]);
+		c += 1.f;
+	}
 
-        if (isnan(S[start + idx]) || S[start + idx] <= 0 || isnan(E[start + idx]) || E[start + idx] <= 0) {
-            break;
-        }
-
-        t += ((float)S[start + idx])/((float)E[start + idx]);
-        c += 1.f;
-
-    }
-
-    return ((t * t)/(c * c))/1.21; //Scaling down since it works well in practice.
-
+	return ((t * t)/(c * c))/1.21; //Scaling down since it works well in practice.
 }
 
-extern float estvar_sv(long L, const float S[L], const long kernel_dims[3], const long calreg_dims[4]) {
-
-    float E[L];
-    nsv(kernel_dims, calreg_dims, L, E, 10); // Number of iterations set to 5.
-    return estimate_noise_variance(L, S, E);
-
+extern float estvar_sv(long L, const float S[L], const long kernel_dims[3], const long calreg_dims[4])
+{
+	float E[L];
+	nsv(kernel_dims, calreg_dims, L, E, 10); // Number of iterations set to 5.
+	return estimate_noise_variance(L, S, E);
 }
 
-extern float estvar_calreg(const long kernel_dims[3], const long calreg_dims[4], const complex float* calreg) {
+extern float estvar_calreg(const long kernel_dims[3], const long calreg_dims[4], const complex float* calreg)
+{
+	// Calibration/Hankel matrix dimension.
+	long calmat_dims[2] = {(calreg_dims[0] - kernel_dims[0] + 1) *
+	  (calreg_dims[1] - kernel_dims[1] + 1) *
+	  (calreg_dims[2] - kernel_dims[2] + 1),
+	  calreg_dims[3] * kernel_dims[0] * kernel_dims[1] * kernel_dims[2]};
 
-    // Calibration/Hankel matrix dimension.
-    long calmat_dims[2] = {(calreg_dims[0] - kernel_dims[0] + 1) *
-            (calreg_dims[1] - kernel_dims[1] + 1) *
-            (calreg_dims[2] - kernel_dims[2] + 1),
-        calreg_dims[3] * kernel_dims[0] * kernel_dims[1] * kernel_dims[2]};
+	long L = calmat_dims[0] > calmat_dims[1] ? calmat_dims[1] : calmat_dims[0];
+	long N = calmat_dims[1]; //Number of columns.
 
-    long L = calmat_dims[0] > calmat_dims[1] ? calmat_dims[1] : calmat_dims[0];
-    long N = calmat_dims[1]; //Number of columns.
+	float tmpE[N];
+	float S[L];
 
-    float tmpE[N];
-    float S[L];
+	PTR_ALLOC(complex float[N][N], vec);
+	covariance_function(kernel_dims, N, *vec, calreg_dims, calreg);
+	lapack_eig(N, tmpE, *vec);
+	PTR_FREE(vec);
 
-    PTR_ALLOC(complex float[N][N], vec);
-    covariance_function(kernel_dims, N, *vec, calreg_dims, calreg);
-    lapack_eig(N, tmpE, *vec);
-    PTR_FREE(vec);
-
-    for (int idx = 0; idx < L; idx ++)
-        S[idx] = sqrtf(tmpE[N-idx-1]);
+	for (int idx = 0; idx < L; idx ++)
+		S[idx] = sqrtf(tmpE[N-idx-1]);
     
-    return estvar_sv(L, S, kernel_dims, calreg_dims);
-
+	return estvar_sv(L, S, kernel_dims, calreg_dims);
 }
 
 extern float estvar_kspace(long N, const long kernel_dims[3], const long calib_size[3], const long kspace_dims[N], const complex float* kspace)
 {
-    long calreg_dims[N];
-    complex float* calreg = NULL;
-    calreg = extract_calib(calreg_dims, calib_size, kspace_dims, kspace, false);
-    float variance = estvar_calreg(kernel_dims, calreg_dims, calreg);
-    md_free(calreg);
-    return variance;
+	long calreg_dims[N];
+	complex float* calreg = NULL;
+	calreg = extract_calib(calreg_dims, calib_size, kspace_dims, kspace, false);
+	float variance = estvar_calreg(kernel_dims, calreg_dims, calreg);
+	md_free(calreg);
+	return variance;
 }
