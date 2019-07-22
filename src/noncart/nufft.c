@@ -115,21 +115,18 @@ static void compute_kern_basis(unsigned int N, const long krn_dims[N], complex f
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights)
 {
-	// Use `time_dim` to unfold temporal dimension
-	long time_dim = 3;
-
- 	assert(1 == krn_dims[time_dim]);
-	assert(1 == wgh_dims[time_dim]);
-	assert(1 == bas_dims[time_dim]);
+// 	assert(1 == krn_dims[N - 1]);
+	assert(1 == wgh_dims[N - 1]);
+	assert(1 == bas_dims[N - 1]);
 
 	long baT_dims[N];
 	md_copy_dims(N, baT_dims, bas_dims);
-	baT_dims[time_dim] = bas_dims[5];
+	baT_dims[N - 1] = bas_dims[5];
 	baT_dims[5] = 1;
 
 	long wgT_dims[N];
 	md_copy_dims(N, wgT_dims, wgh_dims);
-	wgT_dims[time_dim] = wgh_dims[5];
+	wgT_dims[N - 1] = wgh_dims[5];
 	wgT_dims[5] = 1;
 
 	long max_dims[N];
@@ -143,7 +140,7 @@ static void compute_kern_basis(unsigned int N, const long krn_dims[N], complex f
 
 	long baT_strs[N];
 	md_copy_strides(N, baT_strs, bas_strs);
-	baT_strs[time_dim] = bas_strs[5];
+	baT_strs[N - 1] = bas_strs[5];
 	baT_strs[5] = 0;
 
 	long wgh_strs[N];
@@ -151,7 +148,7 @@ static void compute_kern_basis(unsigned int N, const long krn_dims[N], complex f
 
 	long wgT_strs[N];
 	md_copy_strides(N, wgT_strs, wgh_strs);
-	wgT_strs[time_dim] = wgh_strs[5];
+	wgT_strs[N - 1] = wgh_strs[5];
 	wgT_strs[5] = 0;
 
 	complex float* tmp = md_alloc(N, max_dims, CFL_SIZE);
@@ -170,17 +167,6 @@ static void compute_kern_basis(unsigned int N, const long krn_dims[N], complex f
 	long krn2_dims[N];
 	md_copy_dims(N, krn2_dims, krn_dims);
 
-	// Ensure valid dimensions for following tensor product
-	// This corrects the dimensions in case of:
-	// I) Only one spoke per time-step
-	// II) Different spoke pattern per time-step
-	if (krn_dims[2] > wgh_dims[2]) {
-
-		krn2_dims[2] = wgh_dims[2];
-		krn2_dims[3] = wgh_dims[5];
-	}
-
-
 	long krn_strs[N];
 	md_calc_strides(N, krn_strs, krn2_dims, CFL_SIZE);
 
@@ -190,9 +176,6 @@ static void compute_kern_basis(unsigned int N, const long krn_dims[N], complex f
 	md_ztenmulc2(N, ma2_dims, krn_strs, krn, max_strs, tmp, baT_strs, basis);
 
 	md_zsmul(N, krn2_dims, krn, krn, (double)bas_dims[6]);	// FIXME: Why?
-
-	// Note: krn_dims[3] = 1, i.e. krn_dims[2] = krn2_dims[2] * krn2_dims[3]
-	// Hence the dimensions `2` and `3` of krn2_dims are implicitly joined
 
 	md_free(tmp);
 }
@@ -226,39 +209,61 @@ static void compute_kern(unsigned int N, const long krn_dims[N], complex float* 
 
 
 
-complex float* compute_psf(unsigned int N, const long img2_dims[N], const long trj_dims[N], const complex float* traj,
+complex float* compute_psf(unsigned int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights, bool periodic)
 {
-	long trj2_dims[N];
+	long img2_dims[N + 1];
+	md_copy_dims(N, img2_dims, img_dims);
+	img2_dims[N] = 1;
+
+	long trj2_dims[N + 1];
 	md_copy_dims(N, trj2_dims, trj_dims);
+	trj2_dims[N] = 1;
+
+	long bas2_dims[N + 1];
+	md_copy_dims(N, bas2_dims, bas_dims);
+	bas2_dims[N] = 1;
+
+	long wgh2_dims[N + 1];
+	md_copy_dims(N, wgh2_dims, wgh_dims);
+	wgh2_dims[N] = 1;
+
+	N++;
+
+	long ksp2_dims[N];
+	md_copy_dims(N, ksp2_dims, img2_dims);
+	md_select_dims(3, ~MD_BIT(0), ksp2_dims, trj2_dims);
 
 	if (NULL != basis) {
 
-		trj2_dims[2] = trj_dims[2] * trj_dims[5];
+		assert(1 == trj2_dims[6]);
+		ksp2_dims[N - 1] = trj2_dims[5];
+		trj2_dims[N - 1] = trj2_dims[5];
 		trj2_dims[5] = 1;
 	}
-
-	long ksp_dims1[N];
-	md_copy_dims(N, ksp_dims1, img2_dims);
-	md_select_dims(3, ~MD_BIT(0), ksp_dims1, trj2_dims);
-
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	conf.periodic = periodic;
 	conf.toeplitz = false;	// avoid infinite loop
 
+	complex float* ones = md_alloc(N, ksp2_dims, CFL_SIZE);
 
-	complex float* ones = md_alloc(N, ksp_dims1, CFL_SIZE);
+	debug_printf(DP_DEBUG2, "nufft kernel dims: ");
+	debug_print_dims(DP_DEBUG2, N, ksp2_dims);
 
-	debug_printf(DP_INFO, "nufft kernel size: %ld (= %ld x %ld)\n",
-		md_calc_size(N, ksp_dims1), md_calc_size(3, ksp_dims1), md_calc_size(N - 3, ksp_dims1 + 3));
-
-	compute_kern(N, ksp_dims1, ones, bas_dims, basis, wgh_dims, weights);
+	compute_kern(N, ksp2_dims, ones, bas2_dims, basis, wgh2_dims, weights);
 
 	complex float* psft = md_alloc(N, img2_dims, CFL_SIZE);
 
-	struct linop_s* op2 = nufft_create(N, ksp_dims1, img2_dims, trj2_dims, traj, NULL, conf);
+	debug_printf(DP_DEBUG2, "nufft psf dims:    ");
+	debug_print_dims(DP_DEBUG2, N, img2_dims);
+
+	debug_printf(DP_DEBUG2, "nufft traj dims:   ");
+	debug_print_dims(DP_DEBUG2, N, trj2_dims);
+
+
+	struct linop_s* op2 = nufft_create(N, ksp2_dims, img2_dims, trj2_dims, traj, NULL, conf);
 
 	linop_adjoint_unchecked(op2, psft, ones);
 
@@ -368,7 +373,7 @@ struct linop_s* nufft_create2(unsigned int N,
 
 	// dim 0 must be transformed (we treat this special in the trajectory)
 	assert(MD_IS_SET(data->flags, 0));
-	assert(md_check_bounds(N, ~(data->flags | (1 << 5)), ksp_dims, cim_dims)); // Allow toeplitz trick for basis function reconstruction
+//	assert(md_check_compat(N, ~data->flags, ksp_dims, cim_dims));
 	assert(md_check_bounds(N, ~data->flags, cim_dims, ksp_dims));
 
 	// extend internal dimensions by one for linear phases
@@ -416,7 +421,7 @@ struct linop_s* nufft_create2(unsigned int N,
 	long chk_dims[N];
 	md_select_dims(N, ~data->flags, chk_dims, traj_dims);
 	assert(md_check_compat(N, ~0ul, chk_dims, ksp_dims));
-	assert(md_check_bounds(N, ~0ul, chk_dims, ksp_dims));
+//	assert(md_check_bounds(N, ~0ul, chk_dims, ksp_dims));
 
 
 	md_copy_dims(N, data->trj_dims, traj_dims);
