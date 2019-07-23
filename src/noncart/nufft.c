@@ -173,17 +173,15 @@ static void compute_kern_basis(unsigned int N, unsigned int flags, const long po
 
 	long ma3_dims[N];
 	md_select_dims(N, flags, ma3_dims, ma2_dims);
-#if 1
+
 	long tmp_off = md_calc_offset(N - 1, max_strs, pos);
 	long bas_off = md_calc_offset(N - 1, baT_strs, pos);
-#endif
+
 	md_zsmul(N, max_dims, tmp, tmp, (double)bas_dims[6]);	// FIXME: Why?
 
 	md_ztenmulc2(N, ma3_dims, krn_strs, krn, 
 			max_strs, (void*)tmp + tmp_off,
 			baT_strs, (void*)basis + bas_off);
-
-	//md_zsmul(N, krn_dims, krn, krn, (double)bas_dims[6]);	// FIXME: Why?
 
 	md_free(tmp);
 }
@@ -198,6 +196,7 @@ static void compute_kern(unsigned int N, unsigned int flags, const long pos[N],
 	if (NULL != basis)
 		return compute_kern_basis(N, flags, pos, krn_dims, krn, bas_dims, basis, wgh_dims, weights);
 
+	assert(~0u == flags);
 
 	md_zfill(N, krn_dims, krn, 1.);
 
@@ -218,7 +217,7 @@ static void compute_kern(unsigned int N, unsigned int flags, const long pos[N],
 
 
 
-complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
+complex float* compute_psf(unsigned int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights, bool periodic)
 {
@@ -267,7 +266,7 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 	debug_print_dims(DP_DEBUG2, N, trj2_dims);
 
 	long pos[N];
-	for (int i = 0; i < N; i++)
+	for (unsigned int i = 0; i < N; i++)
 		pos[i] = 0;
 
 #if 0
@@ -294,11 +293,19 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 	complex float* ones = md_alloc(N - 1, ksp2_dims, CFL_SIZE);
 	complex float* tmp = md_alloc(N - 1, img2_dims, CFL_SIZE);
 
+	assert(!((1 != trj2_dims[N - 1]) && (NULL == basis)));
+
 	for (long i = 0; i < trj2_dims[N - 1]; i++) {
 
+		debug_printf(DP_INFO, "KERN %d\n", i);
+
+		unsigned int flags = ~0u;
+
+		if (1 != trj2_dims[N - 1])
+			flags = ~(1u << ((unsigned int)N - 1u));
 
 		pos[N - 1] = i;
-		compute_kern(N, ~(1 << (N - 1)), pos, ksp2_dims, ones, bas2_dims, basis, wgh2_dims, weights);
+		compute_kern(N, flags, pos, ksp2_dims, ones, bas2_dims, basis, wgh2_dims, weights);
 
 		struct linop_s* op2 = nufft_create(N - 1, ksp2_dims, img2_dims, trj2_dims, (void*)traj + i * trj2_strs[N - 1], NULL, conf);
 
