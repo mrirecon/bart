@@ -742,7 +742,7 @@ static const struct linop_s* linop_fx_create(long wx, long sy, long sz, long nc,
 }
 
 /* Wave operator. */
-static const struct linop_s* linop_wave_create(long wx, long sy, long sz, long nc, long tk, complex float* psf)
+static const struct linop_s* linop_wave_create(long wx, long sy, long sz, long nc, long tk, long psf_tk, complex float* psf)
 {
 	long dims[] = { [0 ... DIMS - 1] = 1};
 	dims[0] = wx;
@@ -750,8 +750,7 @@ static const struct linop_s* linop_wave_create(long wx, long sy, long sz, long n
 	dims[2] = sz;
 	dims[3] = nc;
 	dims[6] = tk;
-	struct linop_s* W = linop_cdiag_create(DIMS, dims, FFT_FLAGS, psf);
-	return W;
+	return (psf_tk > 1) ? linop_cdiag_create(DIMS, dims, FFT_FLAGS | COEFF_FLAG, psf) : linop_cdiag_create(DIMS, dims, FFT_FLAGS, psf);
 }
 
 /* Fyz operator. */
@@ -1000,7 +999,7 @@ int main_wshfl(int argc, char* argv[])
 	debug_printf(DP_INFO, "\tFx:  %f seconds.\n", t2 - t1);
 
 	t1 = timestamp();
-	const struct linop_s* W = linop_wave_create(wx, sy, sz, 1, tk, wave);
+	const struct linop_s* W = linop_wave_create(wx, sy, sz, 1, tk, wave_dims[COEFF_DIM], wave);
 	t2 = timestamp();
 	debug_printf(DP_INFO, "\tW:   %f seconds.\n", t2 - t1);
 
@@ -1042,7 +1041,7 @@ int main_wshfl(int argc, char* argv[])
 		complex float* table_forward = create_cfl(argv[6], DIMS, table_dims);
 		const struct linop_s* R      = linop_wavereshape_create(wx, sx, sy, sz, 1, tk);
 		const struct linop_s* CFx    = linop_fx_create( wx, sy, sz, 1, tk, true);
-		const struct linop_s* W      = linop_wave_create(wx, sy, sz, 1, tk, wave);
+		const struct linop_s* W      = linop_wave_create(wx, sy, sz, 1, tk, wave_dims[COEFF_DIM], wave);
 		const struct linop_s* CFyz   = linop_fyz_create(wx, sy, sz, 1, tk, true);
 		const struct linop_s* K      = linop_kern_create(gpun >= 0, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, single_channel_table_dims);
 		struct linop_s* AC_sc = linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(
