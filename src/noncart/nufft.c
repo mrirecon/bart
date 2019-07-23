@@ -152,6 +152,8 @@ static void compute_kern_basis(unsigned int N, unsigned int flags, const long po
 	wgT_strs[N - 1] = wgh_strs[5];
 	wgT_strs[5] = 0;
 
+	debug_printf(DP_INFO, "Allocating %ld\n", md_calc_size(N, max_dims));
+
 	complex float* tmp = md_alloc(N, max_dims, CFL_SIZE);
 
 	md_copy2(N, max_dims, max_strs, tmp, baT_strs, basis, CFL_SIZE);
@@ -265,59 +267,71 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 	debug_printf(DP_DEBUG2, "nufft traj dims:   ");
 	debug_print_dims(DP_DEBUG2, N, trj2_dims);
 
+	complex float* psft = NULL;
+
 	long pos[N];
 	for (unsigned int i = 0; i < N; i++)
 		pos[i] = 0;
 
-#if 0
-	complex float* ones = md_alloc(N, ksp2_dims, CFL_SIZE);
+	long A = md_calc_size(N, ksp2_dims);
+	long B = md_calc_size(N - 1, ksp2_dims) + md_calc_size(N - 1, img2_dims);
+	long C = md_calc_size(N, img2_dims);
 
-	compute_kern(N, ~0u, pos, ksp2_dims, ones, bas2_dims, basis, wgh2_dims, weights);
+	if (A <= B) {
 
-	complex float* psft = md_alloc(N, img2_dims, CFL_SIZE);
+		debug_printf(DP_INFO, "Allocating %ld (vs. %ld) + %ld\n", A, B, C);
 
+		complex float* ones = md_alloc(N, ksp2_dims, CFL_SIZE);
 
-	struct linop_s* op2 = nufft_create(N, ksp2_dims, img2_dims, trj2_dims, traj, NULL, conf);
+		compute_kern(N, ~0u, pos, ksp2_dims, ones, bas2_dims, basis, wgh2_dims, weights);
 
-	linop_adjoint_unchecked(op2, psft, ones);
+		psft = md_alloc(N, img2_dims, CFL_SIZE);
 
-	linop_free(op2);
+		struct linop_s* op2 = nufft_create(N, ksp2_dims, img2_dims, trj2_dims, traj, NULL, conf);
 
-	md_free(ones);
-#else
-	complex float* psft = md_calloc(N, img2_dims, CFL_SIZE);
-
-	long trj2_strs[N];
-	md_calc_strides(N, trj2_strs, trj2_dims, CFL_SIZE);
-
-	complex float* ones = md_alloc(N - 1, ksp2_dims, CFL_SIZE);
-	complex float* tmp = md_alloc(N - 1, img2_dims, CFL_SIZE);
-
-	assert(!((1 != trj2_dims[N - 1]) && (NULL == basis)));
-
-	for (long i = 0; i < trj2_dims[N - 1]; i++) {
-
-		debug_printf(DP_INFO, "KERN %d\n", i);
-
-		unsigned int flags = ~0u;
-
-		if (1 != trj2_dims[N - 1])
-			flags = ~(1u << ((unsigned int)N - 1u));
-
-		pos[N - 1] = i;
-		compute_kern(N, flags, pos, ksp2_dims, ones, bas2_dims, basis, wgh2_dims, weights);
-
-		struct linop_s* op2 = nufft_create(N - 1, ksp2_dims, img2_dims, trj2_dims, (void*)traj + i * trj2_strs[N - 1], NULL, conf);
-
-		linop_adjoint_unchecked(op2, tmp, ones);
-		md_zadd(N - 1, img2_dims, psft, psft, tmp);
+		linop_adjoint_unchecked(op2, psft, ones);
 
 		linop_free(op2);
-	}
 
-	md_free(ones);
-	md_free(tmp);
-#endif
+		md_free(ones);
+
+	} else {
+
+		debug_printf(DP_INFO, "Allocating %ld (vs. %ld) + %ld\n", B, A, C);
+
+		psft = md_calloc(N, img2_dims, CFL_SIZE);
+
+		long trj2_strs[N];
+		md_calc_strides(N, trj2_strs, trj2_dims, CFL_SIZE);
+
+		complex float* ones = md_alloc(N - 1, ksp2_dims, CFL_SIZE);
+		complex float* tmp = md_alloc(N - 1, img2_dims, CFL_SIZE);
+
+		assert(!((1 != trj2_dims[N - 1]) && (NULL == basis)));
+
+		for (long i = 0; i < trj2_dims[N - 1]; i++) {
+
+			debug_printf(DP_INFO, "KERN %03ld\n", i);
+
+			unsigned int flags = ~0u;
+
+			if (1 != trj2_dims[N - 1])
+				flags = ~(1u << (N - 1u));
+
+			pos[N - 1] = i;
+			compute_kern(N, flags, pos, ksp2_dims, ones, bas2_dims, basis, wgh2_dims, weights);
+
+			struct linop_s* op2 = nufft_create(N - 1, ksp2_dims, img2_dims, trj2_dims, (void*)traj + i * trj2_strs[N - 1], NULL, conf);
+
+			linop_adjoint_unchecked(op2, tmp, ones);
+			md_zadd(N - 1, img2_dims, psft, psft, tmp);
+
+			linop_free(op2);
+		}
+
+		md_free(ones);
+		md_free(tmp);
+	}
 
 	return psft;
 }
