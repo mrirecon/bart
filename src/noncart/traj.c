@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 #include <math.h>
+#include <assert.h>
 
 #include "misc/mri.h"
 #include "misc/misc.h"
@@ -35,6 +36,7 @@ const struct traj_conf traj_defaults = {
 	.mems_traj = false,
 	.accel = 1,
 	.tiny_gold = 0,
+	.rational = false,
 };
 
 
@@ -71,6 +73,38 @@ void gradient_delay(float d[3], float coeff[2][3], float phi, float psi)
 	}
 }
 
+static void fib_next(int f[2])
+{
+	int t = f[0];
+	f[0] = f[1];
+	f[1] += t;
+}
+
+int gen_fibonacci(int n, int ind)
+{
+	int fib[2] = { 1, n };
+
+	for (int i = 0; i < ind; i++)
+		fib_next(fib);
+
+	return fib[1];
+}
+
+static double rational_angle(int Y, int n)
+{
+	int fib1[2] = { 1, 1 };
+	int fibn[2] = { 1, n };
+
+	while (fibn[1] < Y) {
+
+		fib_next(fib1);
+		fib_next(fibn);
+	}
+
+	return M_PI  * fib1[0] / fibn[1];
+}
+
+
 void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, struct traj_conf conf)
 {
 	/*
@@ -97,7 +131,10 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 			golden_angle = M_PI * (2. - (3. - sqrtf(5.))) / 2.;
 	}
 
+	if (conf.rational)
+		golden_angle = rational_angle(Y, conf.tiny_gold);
 
+	printf("A: %f\n", golden_angle);
 
 	double angle_atom = M_PI / Y;
 
