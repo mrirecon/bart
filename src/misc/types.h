@@ -10,10 +10,20 @@
 #ifndef __TYPES_H
 #define __TYPES_H
 
+#include <stddef.h>
+#include <stdnoreturn.h>
+
+#ifndef __cplusplus
+extern noreturn void error(const char* str, ...);
+#else
+extern __attribute__((noreturn)) void error(const char* str, ...);
+#endif
+
+
+
 #define TYPE_CHECK(T, x)	(1 ? (x) : (T)0)
 #define CONTAINER_OF(x, T, member)	\
 	((T*)((char*)TYPE_CHECK(__typeof__(&((T*)0)->member), x) - offsetof(T, member)))
-
 
 #define CAST_CONST(T, x)  ((T)TYPE_CHECK(const T, x))
 #define CAST_MAYBE(T, x)	({ \
