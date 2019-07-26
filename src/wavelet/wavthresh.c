@@ -1,11 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker
+ * Copyright 2016-2019. Martin Uecker
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013 Frank Ong <uecker@eecs.berkeley.edu>
- * 2013-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -83,6 +83,15 @@ static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex
 		out, in, data->minsize, 4, wavelet_dau2);
 }
 
+
+
+void wavthresh_rand_state_set(const struct operator_p_s* op, int x)
+{
+	auto data = CAST_DOWN(wavelet_thresh_s, operator_p_get_data(op));
+	data->rand_state = x;
+}
+
+
 static void wavelet_thresh_del(const operator_data_t* _data)
 {
 	const auto data = CAST_DOWN(wavelet_thresh_s, _data);
@@ -126,6 +135,4 @@ const struct operator_p_s* prox_wavelet_thresh_create(unsigned int N, const long
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), wavelet_thresh_apply, wavelet_thresh_del);
 }
-
-
 
