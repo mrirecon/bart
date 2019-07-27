@@ -244,10 +244,25 @@ void cuda_free(void* ptr)
 }
 
 
+bool cuda_global_memory = false;
+
+void cuda_use_global_memory(void)
+{
+	cuda_global_memory = true;
+}
+
 static void* cuda_malloc_wrapper(size_t size)
 {
 	void* ptr;
-        CUDA_ERROR(cudaMalloc(&ptr, size));
+
+	if (cuda_global_memory) {
+
+		CUDA_ERROR(cudaMallocManaged(&ptr, size, cudaMemAttachGlobal));
+
+	} else {
+
+		CUDA_ERROR(cudaMalloc(&ptr, size));
+	}
 
 	return ptr;
 }
@@ -357,6 +372,7 @@ const struct vec_ops gpu_ops = {
 	.le = cuda_le,
 
 	.zsmul = cuda_zsmul,
+	.zsmax = cuda_zsmax,
 
 	.zmul = cuda_zmul,
 	.zdiv = cuda_zdiv,
@@ -414,7 +430,6 @@ struct vec_iter_s {
 	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
 
 	void (*zmul)(long N, complex float* dst, const complex float* src1, const complex float* src2);
-	void (*zsmax)(long N, complex float alpha, complex float* dst, const complex float* src);
 };
 
 extern const struct vec_iter_s gpu_iter_ops;
@@ -434,7 +449,6 @@ const struct vec_iter_s gpu_iter_ops = {
 	.sub = cuda_sub,
 	.swap = cuda_swap,
 	.zmul = cuda_zmul,
-	.zsmax = cuda_zsmax,
 };
 
 

@@ -47,11 +47,11 @@ extern void cuda_le(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Bool inv, double phase);
 extern void cuda_zmax(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 extern void cuda_zle(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
-extern void cuda_smax(long N, float* dst, const float* src1, const float val);
+extern void cuda_smax(long N, float val, float* dst, const float* src1);
 extern void cuda_max(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_min(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_zsum(long N, _Complex float* dst);
-extern void cuda_zsmax(long N, _Complex float alpha, _Complex float* dst, const _Complex float* src);
+extern void cuda_zsmax(long N, float alpha, _Complex float* dst, const _Complex float* src);
 
 #ifdef __cplusplus
 }

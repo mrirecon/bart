@@ -781,7 +781,7 @@ extern "C" void cuda_zmax(long N, _Complex float* dst, const _Complex float* src
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 
-__global__ void kern_smax(int N, float* dst, const float* src1, const float val)
+__global__ void kern_smax(int N, float val, float* dst, const float* src1)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
@@ -791,9 +791,9 @@ __global__ void kern_smax(int N, float* dst, const float* src1, const float val)
 }
 
 
-extern "C" void cuda_smax(long N, float* dst, const float* src1, const float val)
+extern "C" void cuda_smax(long N, float val, float* dst, const float* src1)
 {
-	kern_smax<<<gridsize(N), blocksize(N)>>>(N, dst, src1, val);
+	kern_smax<<<gridsize(N), blocksize(N)>>>(N, val, dst, src1);
 }
 
 
@@ -828,21 +828,21 @@ extern "C" void cuda_min(long N, float* dst, const float* src1, const float* src
 	kern_min<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
 }
 
-__global__ void kern_zsmax(int N, cuFloatComplex val, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zsmax(int N, float val, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
 	for (int i = start; i < N; i += stride) {
 
-		dst[i].x = MAX(src[i].x, val.x);
+		dst[i].x = MAX(src[i].x, val);
 		dst[i].y = 0.0;
 	}
 }
 
-extern "C" void cuda_zsmax(long N, _Complex float alpha, _Complex float* dst, const _Complex float* src)
+extern "C" void cuda_zsmax(long N, float alpha, _Complex float* dst, const _Complex float* src)
 {
-	kern_zsmax<<<gridsize(N), blocksize(N)>>>(N, make_cuFloatComplex(__real(alpha), __imag(alpha)), (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zsmax<<<gridsize(N), blocksize(N)>>>(N, alpha, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_reduce_zsum(int N, cuFloatComplex* dst)
