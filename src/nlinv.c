@@ -50,6 +50,7 @@ int main_nlinv(int argc, char* argv[])
 	struct noir_conf_s conf = noir_defaults;
 	bool out_sens = false;
 	bool scale_im = false;
+	bool usegpu = false;
 
 	const struct opt_s opts[] = {
 
@@ -64,7 +65,7 @@ int main_nlinv(int argc, char* argv[])
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
 		OPT_STRING('p', &psf, "PSF", ""),
 		OPT_STRING('I', &init_file, "file", "File for initialization"),
-		OPT_SET('g', &conf.usegpu, "use gpu"),
+		OPT_SET('g', &usegpu, "use gpu"),
 		OPT_SET('S', &scale_im, "Re-scale image after reconstruction"),
 		OPT_FLOAT('a', &conf.a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPT_FLOAT('b', &conf.b, "", "(b in 1 + a * \\Laplace^-b/2)"),
@@ -123,6 +124,8 @@ int main_nlinv(int argc, char* argv[])
 
 	complex float* img_output = create_cfl(argv[2], DIMS, img_output_dims);
 	md_clear(DIMS, img_output_dims, img_output, CFL_SIZE);
+
+
 	complex float* img = md_alloc(DIMS, img_dims, CFL_SIZE);
 
 	long msk_dims[DIMS];
@@ -133,6 +136,7 @@ int main_nlinv(int argc, char* argv[])
 
 	complex float* mask = NULL;
 
+	complex float* ksens = md_alloc(DIMS, sens_dims, CFL_SIZE);
 	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, sens_dims);
 
 	// initialization
@@ -145,14 +149,14 @@ int main_nlinv(int argc, char* argv[])
 		assert(md_check_bounds(DIMS, 0, img_dims, init_dims));
 
 		md_copy(DIMS, img_dims, img, init, CFL_SIZE);
-		fftmod(DIMS, sens_dims, FFT_FLAGS|SLICE_FLAG, sens, init + skip);
+		fftmod(DIMS, sens_dims, FFT_FLAGS|SLICE_FLAG, ksens, init + skip);
 
 		unmap_cfl(DIMS, init_dims, init);
 
 	} else {
 
 		md_zfill(DIMS, img_dims, img, 1.);
-		md_clear(DIMS, sens_dims, sens, CFL_SIZE);
+		md_clear(DIMS, sens_dims, ksens, CFL_SIZE);
 	}
 
 	complex float* pattern = NULL;
@@ -212,16 +216,16 @@ int main_nlinv(int argc, char* argv[])
 	complex float* ref = NULL;
 
 #ifdef  USE_CUDA
-	if (conf.usegpu) {
+	if (usegpu) {
 
 		complex float* kspace_gpu = md_alloc_gpu(DIMS, ksp_dims, CFL_SIZE);
 		md_copy(DIMS, ksp_dims, kspace_gpu, kspace_data, CFL_SIZE);
 
-		noir_recon(&conf, sens_dims, img, sens, ref, pattern, mask, kspace_gpu);
+		noir_recon(&conf, sens_dims, img, sens, ksens, ref, pattern, mask, kspace_gpu);
 		md_free(kspace_gpu);
 	} else
 #endif
-		noir_recon(&conf, sens_dims, img, sens, ref, pattern, mask, kspace_data);
+		noir_recon(&conf, sens_dims, img, sens, ksens, ref, pattern, mask, kspace_data);
 
 
 	// image output
@@ -264,6 +268,7 @@ int main_nlinv(int argc, char* argv[])
 
 	if (scale_im)
 		md_zsmul(DIMS, img_output_dims, img_output, img_output, 1. / scaling);
+
 
 	md_free(mask);
 	md_free(img);

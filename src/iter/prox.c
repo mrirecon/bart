@@ -1,11 +1,11 @@
 /* Copyright 2014-2017. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2014-2017	Jon Tamir <jtamir@eecs.berkeley.edu>
- * 2016,2018	Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016-2019	Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -667,4 +667,122 @@ const struct operator_p_s* prox_rvc_create(unsigned int N, const long dims[N])
 
 	pdata->size = md_calc_size(N, dims);
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_rvc_apply, prox_rvc_del);
+}
+
+
+
+
+
+struct auto_norm_s {
+
+	INTERFACE(operator_data_t);
+
+	long flags;
+	const struct operator_p_s* op;
+};
+
+DEF_TYPEID(auto_norm_s);
+
+static void auto_norm_apply(const operator_data_t* _data, float mu, complex float* y, const complex float* x)
+{
+	auto data = CAST_DOWN(auto_norm_s, _data);
+
+	auto io = operator_p_domain(data->op);
+
+	unsigned int N = io->N;
+
+	long sdims[N];
+	md_select_dims(N, ~data->flags, sdims, io->dims);
+
+	long sstrs[N];
+	md_calc_strides(N, sstrs, sdims, CFL_SIZE);
+
+#if 0
+	complex float* scale = md_alloc_sameplace(N, sdims, CFL_SIZE, x);
+
+	md_zrss(N, io->dims, data->flags, scale, x);
+	md_zdiv2(N, io->dims, io->strs, y, io->strs, x, sstrs, scale);
+#else
+	long pos[N];
+	for (unsigned int i = 0; i < N; i++)
+		pos[i] = 0;
+
+	long xdims[N];
+	md_select_dims(N, data->flags, xdims, io->dims);
+
+	complex float* scale = md_alloc(N, sdims, CFL_SIZE);
+
+
+
+	do {
+		MD_ACCESS(N, sstrs, pos, scale) = md_znorm2(N, xdims, io->strs, &MD_ACCESS(N, io->strs, pos, x));
+
+		complex float val = MD_ACCESS(N, sstrs, pos, scale);
+
+		md_zsmul2(N, xdims, io->strs, &MD_ACCESS(N, io->strs, pos, y),
+				io->strs, &MD_ACCESS(N, io->strs, pos, x),
+				(0. == val) ? 0. : (1. / val));
+
+	} while (md_next(N, io->dims, ~data->flags, pos));
+#endif
+
+	operator_p_apply_unchecked(data->op, mu, y, y);	// FIXME: input == output
+#if 0
+	md_zmul2(N, io->dims, io->strs, y, io->strs, y, sstrs, scale);
+#else
+	for (unsigned int i = 0; i < N; i++)
+		pos[i] = 0;
+
+	do {
+		complex float val = MD_ACCESS(N, sstrs, pos, scale);
+
+		md_zsmul2(N, xdims, io->strs, &MD_ACCESS(N, io->strs, pos, y),
+				io->strs, &MD_ACCESS(N, io->strs, pos, y),
+				val);
+
+	} while (md_next(N, io->dims, ~data->flags, pos));
+#endif
+
+	md_free(scale);
+}
+
+static void auto_norm_del(const operator_data_t* _data)
+{
+	auto data = CAST_DOWN(auto_norm_s, _data);
+
+	operator_p_free(data->op);
+
+	xfree(data);
+}
+
+
+
+/* This functor normalizes data along given dimensions and undoes
+ * the normalization after application of the operator.
+ *
+ */
+const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s* op, long flags)
+{
+	PTR_ALLOC(struct auto_norm_s, data);
+	SET_TYPEID(auto_norm_s, data);
+
+	data->flags = flags;
+	data->op = operator_p_ref(op);
+
+	auto io_in = operator_p_domain(op);
+	auto io_out = operator_p_codomain(op);
+
+	unsigned int N = io_in->N;
+	long dims[N];
+	md_copy_dims(N, dims, io_in->dims);
+
+	long strs[N];
+	md_calc_strides(N, strs, dims, CFL_SIZE);
+
+	assert(N == io_out->N);
+	assert(md_check_compat(N, 0L, dims, io_out->dims));
+	assert(md_check_compat(N, 0L, strs, io_in->strs));
+	assert(md_check_compat(N, 0L, strs, io_out->strs));
+
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), auto_norm_apply, auto_norm_del);
 }

@@ -23,5 +23,8 @@ extern const struct operator_p_s* prox_greq_create(unsigned int N, const long di
 extern const struct operator_p_s* prox_rvc_create(unsigned int N, const long dims[__VLA(N)]);
 extern const struct operator_p_s* prox_nonneg_create(unsigned int N, const long dims[__VLA(N)]);
 
+struct operator_p_s;
+extern const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s*, long flags);
+
 #include "misc/cppwrap.h"
 #endif

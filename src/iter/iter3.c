@@ -41,94 +41,15 @@ const struct iter3_irgnm_conf iter3_irgnm_defaults = {
 	.nlinv_legacy = false,
 };
 
+const struct iter3_landweber_conf iter3_landweber_defaults = {
 
-struct irgnm_s {
+	.INTERFACE.TYPEID = &TYPEID2(iter3_landweber_conf),
 
-	INTERFACE(iter_op_data);
-
-	struct iter_op_s der;
-	struct iter_op_s adj;
-
-	float* tmp;
-
-	long size;
-
-	int cgiter;
-	float cgtol;
-	bool nlinv_legacy;
+	.iter = 8,
+	.alpha = 1.,
+	.epsilon = 0.1,
 };
 
-DEF_TYPEID(irgnm_s);
-
-static void normal(iter_op_data* _data, float* dst, const float* src)
-{
-	auto data = CAST_DOWN(irgnm_s, _data);
-
-	iter_op_call(data->der, data->tmp, src);
-	iter_op_call(data->adj, dst, data->tmp);
-}
-
-static void inverse(iter_op_data* _data, float alpha, float* dst, const float* src)
-{
-	auto data = CAST_DOWN(irgnm_s, _data);
-
-	md_clear(1, MD_DIMS(data->size), dst, FL_SIZE);
-
-        float eps = data->cgtol * md_norm(1, MD_DIMS(data->size), src);
-
-
-	/* The original (Matlab) nlinv implementation uses
-	 * "sqrt(rsnew) < 0.01 * rsnot" as termination condition.
-	 */
-	if (data->nlinv_legacy)
-		eps = powf(eps, 2.);
-
-        conjgrad(data->cgiter, alpha, eps, data->size, select_vecops(src),
-			(struct iter_op_s){ normal, CAST_UP(data) }, dst, src, NULL);
-}
-
-void iter3_irgnm(iter3_conf* _conf,
-		struct iter_op_s frw,
-		struct iter_op_s der,
-		struct iter_op_s adj,
-		long N, float* dst, const float* ref,
-		long M, const float* src,
-		struct iter_op_s cb)
-{
-	auto conf = CAST_DOWN(iter3_irgnm_conf, _conf);
-
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
-
-	struct irgnm_s data = { { &TYPEID(irgnm_s) }, der, adj, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
-
-	irgnm(conf->iter, conf->alpha, conf->alpha_min, conf->redu, N, M, select_vecops(src),
-		frw, adj,
-		(struct iter_op_p_s){ inverse, CAST_UP(&data) },
-		dst, ref, src, cb);
-
-	md_free(tmp);
-}
-
-
-void iter3_landweber(iter3_conf* _conf,
-		struct iter_op_s frw,
-		struct iter_op_s der,
-		struct iter_op_s adj,
-		long N, float* dst, const float* ref,
-		long M, const float* src)
-{
-	auto conf = CAST_DOWN(iter3_landweber_conf, _conf);
-
-	assert(NULL == der.fun);
-	assert(NULL == ref);
-
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(N), FL_SIZE, src);
-
-	landweber(conf->iter, conf->epsilon, conf->alpha, N, M,
-		select_vecops(src), frw, adj, dst, src, NULL);
-
-	md_free(tmp);
-}
 
 
 

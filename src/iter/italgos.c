@@ -106,47 +106,10 @@ void landweber_sym(unsigned int maxiter, float epsilon, float alpha, long N,
 
 
 
-/**
- * Store information about iterative algorithm.
- * Used to flexibly modify behavior, e.g. continuation
- *
- * @param rsnew current residual
- * @param rsnot initial residual
- * @param iter current iteration
- * @param maxiter maximum iteration
- */
-struct iter_data {
-
-	double rsnew;
-	double rsnot;
-	unsigned int iter;
-	const unsigned int maxiter;
-};
 
 
 
-/**
- * Continuation for regularization. Returns fraction to scale regularization parameter
- *
- * @param itrdata state of iterative algorithm
- * @param delta scaling of regularization in the final iteration (1. means don't scale, 0. means scale to zero)
- *
- */
-static float ist_continuation(struct iter_data* itrdata, const float delta)
-{
-/*
-	// for now, just divide into evenly spaced bins
-	const float num_steps = itrdata->maxiter - 1;
 
-	int step = (int)(itrdata->iter * num_steps / (itrdata->maxiter - 1));
-
-	float scale = 1. - (1. - delta) * step / num_steps;
-
-	return scale;
-*/
-	float a = logf( delta ) / (float) itrdata->maxiter;
-	return expf( a * itrdata->iter );
-}
 
 
 
@@ -156,8 +119,6 @@ static float ist_continuation(struct iter_data* itrdata, const float delta)
  * @param maxiter maximum number of iterations
  * @param epsilon stop criterion
  * @param tau (step size) weighting on the residual term, A^H (b - Ax)
- * @param lambda_start initial regularization weighting
- * @param lambda_end final regularization weighting (for continuation)
  * @param N size of input, x
  * @param vops vector ops definition
  * @param op linear operator, e.g. A
@@ -166,45 +127,37 @@ static float ist_continuation(struct iter_data* itrdata, const float delta)
  * @param b observations
  * @param monitor compute objective value, errors, etc.
  */
-void ist(unsigned int maxiter, float epsilon, float tau,
-		float continuation, bool hogwild, long N,
+void ist(unsigned int maxiter, float epsilon, float tau, long N,
 		const struct vec_iter_s* vops,
+		ist_continuation_t ist_continuation,
 		struct iter_op_s op,
 		struct iter_op_p_s thresh,
 		float* x, const float* b,
 		struct iter_monitor_s* monitor)
 {
-	struct iter_data itrdata = {
+	struct ist_data itrdata = {
 
 		.rsnew = 1.,
 		.rsnot = 1.,
 		.iter = 0,
 		.maxiter = maxiter,
+		.tau = tau,
+		.scale = 1.,
 	};
 
 	float* r = vops->allocate(N);
 
 	itrdata.rsnot = vops->norm(N, b);
 
-	float ls_old = 1.;
-	float lambda_scale = 1.;
-
-	int hogwild_k = 0;
-	int hogwild_K = 10;
-
 
 	for (itrdata.iter = 0; itrdata.iter < maxiter; itrdata.iter++) {
 
 		iter_monitor(monitor, vops, x);
 
-		ls_old = lambda_scale;
-		lambda_scale = ist_continuation(&itrdata, continuation);
+		if (NULL != ist_continuation)
+			ist_continuation(&itrdata);
 		
-		if (lambda_scale != ls_old) 
-			debug_printf(DP_DEBUG3, "##lambda_scale = %f\n", lambda_scale);
-
-
-		iter_op_p_call(thresh, tau, x, x);
+		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
 
 
 		iter_op_call(op, r, x);		// r = A x
@@ -217,19 +170,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 		if (itrdata.rsnew < epsilon)
 			break;
 
-		vops->axpy(N, x, tau * lambda_scale, r);
-
-
-		if (hogwild)
-			hogwild_k++;
-		
-		if (hogwild_k == hogwild_K) {
-
-			hogwild_K *= 2;
-			hogwild_k = 0;
-			tau /= 2;
-		}
-
+		vops->axpy(N, x, itrdata.tau, r);
 	}
 
 	debug_printf(DP_DEBUG3, "\n");
@@ -245,8 +186,6 @@ void ist(unsigned int maxiter, float epsilon, float tau,
  * @param maxiter maximum number of iterations
  * @param epsilon stop criterion
  * @param tau (step size) weighting on the residual term, A^H (b - Ax)
- * @param lambda_start initial regularization weighting
- * @param lambda_end final regularization weighting (for continuation)
  * @param N size of input, x
  * @param vops vector ops definition
  * @param op linear operator, e.g. A
@@ -254,22 +193,23 @@ void ist(unsigned int maxiter, float epsilon, float tau,
  * @param x initial estimate
  * @param b observations
  */
-void fista(unsigned int maxiter, float epsilon, float tau, 
-	float continuation, bool hogwild,
+void fista(unsigned int maxiter, float epsilon, float tau,
 	long N,
 	const struct vec_iter_s* vops,
+	ist_continuation_t ist_continuation,
 	struct iter_op_s op,
 	struct iter_op_p_s thresh,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor)
 {
-
-	struct iter_data itrdata = {
+	struct ist_data itrdata = {
 
 		.rsnew = 1.,
 		.rsnot = 1.,
 		.iter = 0,
 		.maxiter = maxiter,
+		.tau = tau,
+		.scale = 1.,
 	};
 
 	float* r = vops->allocate(N);
@@ -280,24 +220,15 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 
 	itrdata.rsnot = vops->norm(N, b);
 
-	float ls_old = 1.;
-	float lambda_scale = 1.;
-
-	int hogwild_k = 0;
-	int hogwild_K = 10;
 
 	for (itrdata.iter = 0; itrdata.iter < maxiter; itrdata.iter++) {
 
 		iter_monitor(monitor, vops, x);
 
-		ls_old = lambda_scale;
-		lambda_scale = ist_continuation(&itrdata, continuation);
-		
-		if (lambda_scale != ls_old) 
-			debug_printf(DP_DEBUG3, "##lambda_scale = %f\n", lambda_scale);
+		if (NULL != ist_continuation)
+			ist_continuation(&itrdata);
 
-
-		iter_op_p_call(thresh, lambda_scale * tau, x, x);
+		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
 
 		ravine(vops, N, &ra, x, o);	// FISTA
 		iter_op_call(op, r, x);		// r = A x
@@ -310,18 +241,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 		if (itrdata.rsnew < epsilon)
 			break;
 
-		vops->axpy(N, x, tau, r);
-
-
-		if (hogwild)
-			hogwild_k++;
-		
-		if (hogwild_k == hogwild_K) {
-
-			hogwild_K *= 2;
-			hogwild_k = 0;
-			tau /= 2;
-		}
+		vops->axpy(N, x, itrdata.tau, r);
 	}
 
 	debug_printf(DP_DEBUG3, "\n");
@@ -342,6 +262,7 @@ void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
 	struct iter_op_s op,
 	struct iter_op_s adj,
 	float* x, const float* b,
+	struct iter_op_s callback,
 	struct iter_monitor_s* monitor)
 {
 	float* r = vops->allocate(M);
@@ -365,6 +286,9 @@ void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
 
 		iter_op_call(adj, p, r);
 		vops->axpy(N, x, alpha, p);
+
+		if (NULL != callback.fun)
+			iter_op_call(callback, x, x);
 	}
 
 	vops->del(r);
@@ -470,10 +394,14 @@ cleanup:
  * Iteratively Regularized Gauss-Newton Method
  * (Bakushinsky 1993)
  *
- * y = F(x) = F x0 + DF dx + ...
+ * y = F(x) = F xn + DF dx + ...
  *
- * IRGNM: DF^H ((y - F x_0) + DF (xn - x0)) = ( DF^H DF + alpha ) (dx + xn - x0)
- *        DF^H ((y - F x_0)) - alpha (xn - x0) = ( DF^H DF + alpha) dx
+ * IRGNM: DF^H ((y - F xn) + DF (xn - x0)) = ( DF^H DF + alpha ) (dx + xn - x0)
+ *        DF^H ((y - F xn)) - alpha (xn - x0) = ( DF^H DF + alpha) dx
+ *
+ * This version only solves the second equation for the update 'dx'. This corresponds
+ * to a least-squares problem where the quadratic regularization applies to the difference
+ * to 'x0'.
  */
 void irgnm(unsigned int iter, float alpha, float alpha_min, float redu, long N, long M,
 	const struct vec_iter_s* vops,
@@ -481,7 +409,8 @@ void irgnm(unsigned int iter, float alpha, float alpha_min, float redu, long N, 
 	struct iter_op_s adj,
 	struct iter_op_p_s inv,
 	float* x, const float* xref, const float* y,
-	struct iter_op_s callback)
+	struct iter_op_s callback,
+	struct iter_monitor_s* monitor)
 {
 	float* r = vops->allocate(M);
 	float* p = vops->allocate(N);
@@ -489,7 +418,7 @@ void irgnm(unsigned int iter, float alpha, float alpha_min, float redu, long N, 
 
 	for (unsigned int i = 0; i < iter; i++) {
 
-//		printf("#--------\n");
+		iter_monitor(monitor, vops, x);
 
 		iter_op_call(op, r, x);			// r = F x
 
@@ -518,6 +447,67 @@ void irgnm(unsigned int iter, float alpha, float alpha_min, float redu, long N, 
 	vops->del(p);
 	vops->del(r);
 }
+
+
+
+/**
+ * Iteratively Regularized Gauss-Newton Method
+ * (Bakushinsky 1993)
+ *
+ * y = F(x) = F xn + DF dx + ...
+ *
+ * IRGNM: R(DF^H, DF^H DF, alpha) ((y - F xn) + DF (xn - x0)) = (dx + xn - x0)
+ *
+ * This version has an extra call to DF, but we can use a generic regularized
+ * least-squares solver.
+ */
+void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha_min0, float redu, long N, long M,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op,
+	struct iter_op_s der,
+	struct iter_op_p_s lsqr,
+	float* x, const float* xref, const float* y,
+	struct iter_op_s callback,
+	struct iter_monitor_s* monitor)
+{
+	float* r = vops->allocate(M);
+	float* q = vops->allocate(M);
+
+	for (unsigned int i = 0; i < iter; i++) {
+
+		iter_monitor(monitor, vops, x);
+
+		iter_op_call(op, r, x);			// r = F x
+
+		vops->xpay(M, -1., r, y);	// r = y - F x
+
+		debug_printf(DP_DEBUG2, "Step: %u, Res: %f\n", i, vops->norm(M, r));
+
+		if (NULL != xref)
+			vops->axpy(N, x, -1., xref);
+
+		iter_op_call(der, q, x);
+
+		vops->axpy(M, r, +1., q);
+
+		iter_op_p_call(lsqr, alpha, x, r);
+
+		if (NULL != xref)
+			vops->axpy(N, x, +1., xref);
+
+		alpha = (alpha - alpha_min) / redu + alpha_min;
+
+		if (alpha < alpha_min0)
+			alpha = alpha_min0;
+
+		if (NULL != callback.fun)
+			iter_op_call(callback, x, x);
+	}
+
+	vops->del(q);
+	vops->del(r);
+}
+
 
 
 /**

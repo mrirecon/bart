@@ -14,12 +14,12 @@ extern void noir_back_coils(const struct linop_s* op, complex float* dst, const 
 struct noir_model_conf_s {
 
 	unsigned int fft_flags;
+	unsigned int cnstcoil_flags;
+	unsigned int ptrn_flags;
 	_Bool rvc;
-	_Bool use_gpu;
 	_Bool noncart;
 	float a;
 	float b;
-	_Bool pattern_for_each_coil;
 };
 
 extern struct noir_model_conf_s noir_model_conf_defaults;
@@ -35,6 +35,7 @@ struct noir_s {
 
 extern struct noir_s noir_create2(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf);
 extern struct noir_s noir_create(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf);
+extern struct noir_s noir_create3(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf);
 
 
 struct nlop_data_s;

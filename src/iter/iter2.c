@@ -76,6 +76,54 @@ static bool checkeps(float eps)
 }
 
 
+static bool check_ops(long size,
+	const struct operator_s* normaleq_op,
+	unsigned int D,
+	const struct operator_p_s* prox_ops[D],
+	const struct linop_s* ops[D])
+{
+	if (NULL != normaleq_op) {
+
+		auto dom = operator_domain(normaleq_op);
+
+		if (size != 2 * md_calc_size(dom->N, dom->dims))	// FIXME: too weak
+			return false;
+
+		auto cod = operator_codomain(normaleq_op);
+
+		if (size != 2 * md_calc_size(cod->N, cod->dims))	// FIXME: too weak
+			return false;
+	}
+
+	for (unsigned int i = 0; i < D; i++) {
+
+		long cosize = size;
+
+		if ((NULL != ops) && (NULL != ops[i])) {
+
+			auto dom = linop_domain(ops[i]);
+
+			if (size != 2 * md_calc_size(dom->N, dom->dims))	// FIXME: too weak
+				return false;
+
+			auto cod = linop_codomain(ops[i]);
+			cosize = 2 * md_calc_size(cod->N, cod->dims);
+		}
+
+		if ((NULL != prox_ops) && (NULL != prox_ops[i])) {
+
+			auto dom2 = operator_p_domain(prox_ops[i]);
+
+			if (cosize != 2 * md_calc_size(dom2->N, dom2->dims))
+				return false;	// FIXME: too weak
+		}
+	}
+
+	return true;
+}
+
+
+
 void iter2_conjgrad(iter_conf* _conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
@@ -91,6 +139,8 @@ void iter2_conjgrad(iter_conf* _conf,
 	assert(NULL == ops);
 	assert(NULL == biases);
 	UNUSED(xupdate_op);
+
+	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
 	auto conf = CAST_DOWN(iter_conjgrad_conf, _conf);
 
@@ -127,6 +177,8 @@ void iter2_ist(iter_conf* _conf,
 #endif
 	UNUSED(xupdate_op);
 
+	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
+
 	auto conf = CAST_DOWN(iter_ist_conf, _conf);
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
@@ -134,10 +186,15 @@ void iter2_ist(iter_conf* _conf,
 	if (checkeps(eps))
 		goto cleanup;
 
-	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
+	// This was probably broken for IST until v0.4.04
+	// better turn of it off with an error
+	assert(1 == conf->continuation);
 
-	ist(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step, conf->continuation, conf->hogwild, size, select_vecops(image_adj),
-		OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+	// Let's see whether somebody uses it...
+	assert(!conf->hogwild);
+
+	ist(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step, size, select_vecops(image_adj),
+		NULL, OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
 cleanup:
 	;
@@ -167,15 +224,43 @@ void iter2_fista(iter_conf* _conf,
 
 	float eps = md_norm(1, MD_DIMS(size), image_adj);
 
+	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
+
 	if (checkeps(eps))
-		goto cleanup;
+		return; // clang limitation
+	//	goto cleanup;
 
 	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
-	fista(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step, conf->continuation, conf->hogwild, size, select_vecops(image_adj),
-		OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+	__block int hogwild_k = 0;
+	__block int hogwild_K = 10;
 
-cleanup:
+	NESTED(void, continuation, (struct ist_data* itrdata))
+	{
+		float a = logf(conf->continuation) / (float)itrdata->maxiter;
+		itrdata->scale = expf(a * itrdata->iter);
+
+		if (conf->hogwild) {
+
+			/* this is not exactly identical to what was implemented
+			 * before as tau is now reduced at the beginning. But this
+			 * seems more correct. */
+
+			hogwild_k++;
+
+			if (hogwild_k == hogwild_K) {
+
+				hogwild_k = 0;
+				hogwild_K *= 2;
+				itrdata->tau /= 2;
+			}
+		}
+	};
+
+	fista(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step, size, select_vecops(image_adj),
+		continuation, OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+
+// cleanup:
 	;
 }
 
@@ -206,6 +291,8 @@ void iter2_chambolle_pock(iter_conf* _conf,
 	const struct iovec_s* ov = linop_codomain(ops[1]);
 
 	assert((long)md_calc_size(iv->N, iv->dims) * 2 == size);
+
+	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
 	// FIXME: sensible way to check for corrupt data?
 #if 0
@@ -239,6 +326,8 @@ void iter2_admm(iter_conf* _conf,
 		struct iter_monitor_s* monitor)
 {
 	auto conf = CAST_DOWN(iter_admm_conf, _conf);
+
+	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
 	struct admm_plan_s admm_plan = {
 
@@ -322,6 +411,8 @@ void iter2_pocs(iter_conf* _conf,
 	UNUSED(xupdate_op);
 	UNUSED(image_adj);
 	
+	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
+
 	struct iter_op_p_s proj_ops[D];
 
 	for (unsigned int i = 0; i < D; i++)
