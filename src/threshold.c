@@ -114,6 +114,18 @@ static void hard_thresh(unsigned int D, const long dims[D], float lambda, comple
 		outf[i] = inf[i] > lambda ? inf[i] : 0.;
 }
 
+static void binary_thresh(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
+{
+	long size = md_calc_size(DIMS, dims) * 2;
+
+	const float* inf = (const float*)in;
+	float* outf = (float*)out;
+
+#pragma omp parallel for
+	for (long i = 0; i < size; i++)
+		outf[i] = inf[i] > lambda ? 1. : 0.;
+}
+
 
 
 static const char usage_str[] = "lambda <input> <output>";
@@ -125,7 +137,7 @@ int main_threshold(int argc, char* argv[argc])
 {
 	unsigned int flags = 0;
         
-	enum th_type { NONE, WAV, LLR, DFW, MPDFW, HARD } th_type = NONE;
+	enum th_type { NONE, WAV, LLR, DFW, MPDFW, HARD, BINARY } th_type = NONE;
 	int llrblk = 8;
 
 
@@ -135,6 +147,7 @@ int main_threshold(int argc, char* argv[argc])
 		OPT_SELECT('W', enum th_type, &th_type, WAV, "daubechies wavelet soft-thresholding"),
 		OPT_SELECT('L', enum th_type, &th_type, LLR, "locally low rank soft-thresholding"),
 		OPT_SELECT('D', enum th_type, &th_type, DFW, "divergence-free wavelet soft-thresholding"),
+		OPT_SELECT('B', enum th_type, &th_type, BINARY, "thresholding with binary output"),
 		OPT_UINT('j', &flags, "bitmask", "joint soft-thresholding"),
 		OPT_INT('b', &llrblk, "blocksize", "locally low rank block size"),
 	};
@@ -166,6 +179,10 @@ int main_threshold(int argc, char* argv[argc])
 
 		case HARD:
 			hard_thresh(N, dims, lambda, odata, idata);
+			break;
+		
+		case BINARY:
+			binary_thresh(N, dims, lambda, odata, idata);
 			break;
 
 		default:
