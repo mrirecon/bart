@@ -23,6 +23,7 @@ struct iter3_irgnm_conf {
 
 	int cgiter;
 	float cgtol;
+	float step;
 
 	_Bool nlinv_legacy;
 };

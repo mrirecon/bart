@@ -37,6 +37,7 @@ const struct iter3_irgnm_conf iter3_irgnm_defaults = {
 
 	.cgiter = 100,
 	.cgtol = 0.1,
+	.step = 0.9,
 
 	.nlinv_legacy = false,
 };
