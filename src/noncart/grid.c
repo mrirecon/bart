@@ -233,7 +233,7 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 }
 
 
-typedef void CLOSURE_TYPE(grid_update_t)(int ind, float d);
+typedef void CLOSURE_TYPE(grid_update_t)(long ind, float d);
 
 #ifndef __clang__
 #define VLA(x) x
@@ -283,7 +283,7 @@ static void grid_point_gen(int N, const long dims[VLA(N)], const float pos[VLA(N
 		}
 	}
 
-	__block NESTED(void, grid_point_r, (int N, int ind, float d))	// __block for recursion
+	__block NESTED(void, grid_point_r, (int N, long ind, float d))	// __block for recursion
 	{
 		if (0 == N) {
 
@@ -297,7 +297,7 @@ static void grid_point_gen(int N, const long dims[VLA(N)], const float pos[VLA(N
 
 				float frac = fabs(((float)w - pos[N]));
 				float d2 = d * intlookup(kb_size, kb_table, frac / width);
-				int ind2 = (ind * dims[N] + ((w + off[N]) % dims[N]));
+				long ind2 = (ind * dims[N] + ((w + off[N]) % dims[N]));
 
 				grid_point_r(N, ind2, d2);
 			}
@@ -311,7 +311,7 @@ static void grid_point_gen(int N, const long dims[VLA(N)], const float pos[VLA(N
 
 void grid_point(unsigned int ch, int N, const long dims[VLA(N)], const float pos[VLA(N)], complex float* dst, const complex float val[VLA(ch)], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
-	NESTED(void, update, (int ind, float d))
+	NESTED(void, update, (long ind, float d))
 	{
 		for (unsigned int c = 0; c < ch; c++) {
 
@@ -330,7 +330,7 @@ void grid_point(unsigned int ch, int N, const long dims[VLA(N)], const float pos
 
 void grid_pointH(unsigned int ch, int N, const long dims[VLA(N)], const float pos[VLA(N)], complex float val[VLA(ch)], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
-	NESTED(void, update, (int ind, float d))
+	NESTED(void, update, (long ind, float d))
 	{
 		for (unsigned int c = 0; c < ch; c++) {
 
