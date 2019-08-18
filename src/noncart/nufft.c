@@ -152,7 +152,7 @@ static void compute_kern_basis(unsigned int N, unsigned int flags, const long po
 	wgT_strs[N - 1] = wgh_strs[5];
 	wgT_strs[5] = 0;
 
-	debug_printf(DP_INFO, "Allocating %ld\n", md_calc_size(N, max_dims));
+	debug_printf(DP_DEBUG1, "Allocating %ld\n", md_calc_size(N, max_dims));
 
 	complex float* tmp = md_alloc(N, max_dims, CFL_SIZE);
 
@@ -176,8 +176,8 @@ static void compute_kern_basis(unsigned int N, unsigned int flags, const long po
 	long ma3_dims[N];
 	md_select_dims(N, flags, ma3_dims, ma2_dims);
 
-	long tmp_off = md_calc_offset(N - 1, max_strs, pos);
-	long bas_off = md_calc_offset(N - 1, baT_strs, pos);
+	long tmp_off = md_calc_offset(N, max_strs, pos);
+	long bas_off = md_calc_offset(N, baT_strs, pos);
 
 	md_zsmul(N, max_dims, tmp, tmp, (double)bas_dims[6]);	// FIXME: Why?
 
@@ -279,7 +279,7 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 
 	if (A <= B) {
 
-		debug_printf(DP_INFO, "Allocating %ld (vs. %ld) + %ld\n", A, B, C);
+		debug_printf(DP_DEBUG1, "Allocating %ld (vs. %ld) + %ld\n", A, B, C);
 
 		complex float* ones = md_alloc(N, ksp2_dims, CFL_SIZE);
 
@@ -297,7 +297,7 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 
 	} else {
 
-		debug_printf(DP_INFO, "Allocating %ld (vs. %ld) + %ld\n", B, A, C);
+		debug_printf(DP_DEBUG1, "Allocating %ld (vs. %ld) + %ld\n", B, A, C);
 
 		psft = md_calloc(N, img2_dims, CFL_SIZE);
 
@@ -311,7 +311,7 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 
 		for (long i = 0; i < trj2_dims[N - 1]; i++) {
 
-			debug_printf(DP_INFO, "KERN %03ld\n", i);
+			debug_printf(DP_DEBUG1, "KERN %03ld\n", i);
 
 			unsigned int flags = ~0u;
 
