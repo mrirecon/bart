@@ -115,7 +115,7 @@ int main_pics(int argc, char* argv[])
 	// Read input options
 	struct nufft_conf_s nuconf = nufft_conf_defaults;
 	nuconf.toeplitz = true;
-	nuconf.lowmem = true;
+	nuconf.lowmem = false;
 
 	float restrict_fov = -1.;
 	const char* pat_file = NULL;
@@ -190,6 +190,7 @@ int main_pics(int argc, char* argv[])
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
 		OPT_SELECT('a', enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
+		OPT_SET('U', &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
