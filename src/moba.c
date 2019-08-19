@@ -22,8 +22,6 @@
 #include "misc/opts.h"
 #include "misc/debug.h"
 
-#include "noir/recon.h"
-
 #include "moba/recon_T1.h"
 
 
@@ -39,7 +37,7 @@ int main_moba(int argc, char* argv[])
 
 	float restrict_fov = -1.;
 	const char* psf = NULL;
-	struct noir_conf_s conf = noir_defaults;
+	struct moba_conf conf = moba_defaults;
 	bool out_sens = false;
 	bool usegpu = false;
 	bool unused = false;
@@ -51,6 +49,9 @@ int main_moba(int argc, char* argv[])
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPT_FLOAT('R', &conf.redu, "", "(reduction factor)"),
 		OPT_FLOAT('j', &conf.alpha_min, "", "Minimum regu. parameter"),
+		OPT_UINT('C', &conf.inner_iter, "iter", "inner iterations"),
+		OPT_FLOAT('s', &conf.step, "step", "step size"),
+		OPT_FLOAT('B', &conf.lower_bound, "bound", "lower bound for relaxivity"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('N', &unused, "(normalize)"), // no-op
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
@@ -130,7 +131,7 @@ int main_moba(int argc, char* argv[])
 		if (-1 == restrict_fov)
 			restrict_fov = 0.5;
 
-		conf.noncart = true;
+		conf.noncartesian = true;
 
 	} else {
 

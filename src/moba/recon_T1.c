@@ -34,8 +34,21 @@
 #include "recon_T1.h"
 
 
+struct moba_conf moba_defaults = {
 
-void T1_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex float* img, complex float* sens, const complex float* pattern, const complex float* mask, const complex float* TI, const complex float* kspace_data, _Bool usegpu)
+	.iter = 8,
+	.alpha = 1.,
+	.alpha_min = 0.,
+	.redu = 2.,
+	.step = 0.9,
+	.lower_bound = 0.,
+	.tolerance = 0.01,
+	.inner_iter = 250,
+	.noncartesian = false,
+};
+
+
+void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float* img, complex float* sens, const complex float* pattern, const complex float* mask, const complex float* TI, const complex float* kspace_data, _Bool usegpu)
 {
 	long imgs_dims[DIMS];
 	long coil_dims[DIMS];
@@ -63,13 +76,12 @@ void T1_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex flo
 	md_copy(DIMS, coil_dims, x + skip, sens, CFL_SIZE);
 
 	struct noir_model_conf_s mconf = noir_model_conf_defaults;
-	mconf.rvc = conf->rvc;
-	mconf.noncart = conf->noncart;
+	mconf.rvc = false;
+	mconf.noncart = conf->noncartesian;
 	mconf.fft_flags = fft_flags;
 	mconf.a = 880.;
 	mconf.b = 32.;
 
-	//struct noir_s nl = noir_create(dims, mask, pattern, &mconf);
 	struct T1_s nl = T1_create(dims, mask, TI, pattern, &mconf, usegpu);
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
@@ -78,10 +90,11 @@ void T1_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex flo
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.redu = conf->redu;
 	irgnm_conf.alpha_min = conf->alpha_min;
-	irgnm_conf.cgtol = 0.1f;
-	irgnm_conf.cgiter = 300;
+	irgnm_conf.cgtol = conf->tolerance;
+	irgnm_conf.cgiter = conf->inner_iter;
 	irgnm_conf.nlinv_legacy = true;
-	irgnm_conf.step = 0.475;
+
+	struct mdb_irgnm_l1_conf conf2 = { .c2 = &irgnm_conf, .step = conf->step, .lower_bound = conf->lower_bound };
 
 	long irgnm_conf_dims[DIMS];
 	md_select_dims(DIMS, fft_flags|MAPS_FLAG|CSHIFT_FLAG|COEFF_FLAG|TIME2_FLAG, irgnm_conf_dims, imgs_dims);
@@ -92,7 +105,7 @@ void T1_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex flo
 	debug_print_dims(DP_INFO, DIMS, irgnm_conf_dims);
 
 
-	mdb_irgnm_l1(CAST_UP(&irgnm_conf),
+	mdb_irgnm_l1(&conf2,
 			irgnm_conf_dims,
 			nl.nlop,
 			size * 2, (float*)x,
