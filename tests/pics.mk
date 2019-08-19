@@ -254,7 +254,7 @@ tests/test-pics-basis-noncart-memory2: traj scale phantom ones join noise transp
 	$(TOOLDIR)/fmac -s 64 ksp4.ra o1.ra ksp5.ra					;\
 	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
 	$(TOOLDIR)/transpose 2 5 traj2.ra traj3.ra					;\
-	$(TOOLDIR)/pics -S -i100 -r0. -t traj3.ra -Bo1.ra ksp5.ra coils.ra reco1.ra	;\
+	$(TOOLDIR)/pics -S -U -i100 -r0. -t traj3.ra -Bo1.ra ksp5.ra coils.ra reco1.ra	;\
 	$(TOOLDIR)/slice 6 0 reco1.ra reco.ra						;\
 	$(TOOLDIR)/slice 6 1 reco1.ra reco2.ra						;\
 	$(TOOLDIR)/scale 2. reco2.ra reco3.ra						;\
