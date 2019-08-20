@@ -5,7 +5,7 @@
 Uecker M, Ong F, Tamir JI, Bahri D, Virtue P, Cheng JY, Zhang T, Lustig M.
 Berkeley Advanced Reconstruction Toolbox.
 Annual Meeting ISMRM, Toronto 2015,
-In: Proc Intl Soc Mag Reson Med 23; 2486.
+In: Proc Intl Soc Mag Reson Med 2015; 23:2486.
 
 Uecker M, Virtue P, Ong F, Murphy MJ, Alley MT, Vasanawala SS, Lustig M.
 Software Toolbox and Programming Library for Compressed Sensing and
@@ -30,19 +30,18 @@ https://github.com/mrirecon/vcc-espirit
 Rosenzweig S, Holme HCM, Wilke RN, Voit D, Frahm J, Uecker M.
 Simultaneous Multi-Slice Reconstruction Using Regularized Nonlinear Inversion:
 SMS-NLINV.
-Magnetic Resonance in Medicine 2018; 79:2057-2066.
+Magn Reson Med 2018; 79:2057-2066.
 https://github.com/mrirecon/sms-nlinv
 
 Rosenzweig S, Holme HCM, Uecker M.
 Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial
 Intersections (RING).
-Magnetic Resonance in Medicine, DOI:10.1002/mrm.27506 (2018)
+Magn Reson Med 2019; 81:1898-1906.
 https://github.com/mrirecon/ring
 
 Holme HCM, Rosenzweig S, Ong F, Wilke RN, Lustig M, Uecker M.
 ENLIVE: An Efficient Nonlinear Method for Calibrationless and Robust Parallel
-Imaging.
-arXiv:1706.09780 [physics.med-ph]
+Imaging. Scientific Reports 2019; 9:3034.
 https://github.com/mrirecon/enlive
 
 
@@ -72,8 +71,8 @@ Magn Reson Med 2004; 52:1397-1406.
 
 
 
-- implementation of the non-uniform FFT -
-(command: nufft, pics)
+- implementation of the (non-uniform) FFT -
+(commands: fft, nufft, pics)
 
 
 O’Sullivan JD.
@@ -89,7 +88,11 @@ Wajer F and Pruessmann KP.
 Major speedup of reconstruction for sensitivity­encoding with arbitrary
 trajectories.
 Annual Meeting of the ISMRM, Glasgow 2001,
-In: Proc Intl Soc Mag Reson Med 9; 767.
+In: Proc Intl Soc Mag Reson Med 2001; 9:767.
+
+Frigo M, Johnson SG.
+The Design and Implementation of FFTW3.
+Proc IEEE 2005; 93:216-231.
 
 Uecker M, Zhang S, Frahm J.
 Nonlinear Inverse Reconstruction for Real-time MRI of the
@@ -99,7 +102,7 @@ Magn Reson Med 2010; 63:1456-1462.
 Ong F, Uecker M, Jiang W, Lustig M.
 Fast Non-Cartesian Reconstruction with Pruned Fast Fourier Transform.
 Annual Meeting ISMRM, Toronto 2015,
-In: Proc Intl Soc Mag Reson Med 23; 3639.
+In: Proc Intl Soc Mag Reson Med 2015; 23:3639.
 
 
 
@@ -110,13 +113,13 @@ In: Proc Intl Soc Mag Reson Med 23; 3639.
 
 Walsh DO, Gmitro AF, Marcellin MW.
 Adaptive reconstruction of phased array MR imagery.
-Magn Reson Med 2000, 43:682-690.
+Magn Reson Med 2000; 43:682-690.
 
 Griswold M, Walsh D, Heidemann R, Haase A, Jakob A.
 The Use of an Adaptive Reconstruction for Array Coil Sensitivity
 Mapping and Intensity Normalization
 Annual Meetig ISMRM, Honolulu 2002,
-In: Proc Intl Soc Mag Reson Med 10; 2410.
+In: Proc Intl Soc Mag Reson Med 2002; 10:2410.
 
 McKenzie CA, Yeh EN, Ohliger MA, Price MD, Sodickson DK.
 Self-calibrating parallel imaging with automatic coil sensitivity
@@ -126,7 +129,7 @@ Magn Reson Med 2002; 47:529-538.
 Uecker M, Virtue P, Vasanawala SS, Lustig M.
 ESPIRiT Reconstruction Using Soft SENSE.
 Annual Meeting ISMRM, Salt Lake City 2013,
-In: Proc Intl Soc Mag Reson Med 21; 127.
+In: Proc Intl Soc Mag Reson Med 2013; 21:127.
 
 Uecker M, Lai P, Murphy MJ, Virtue P, Elad M, Pauly JM, Vasanawala SS,
 Lustig M.
@@ -150,7 +153,7 @@ Bi Z, Uecker M, Jiang D, Lustig M, Ying K.
 Robust Low-rank Matrix Completion for sparse motion correction in auto
 calibration PI.
 Annual Meeting ISMRM, Salt Lake City 2013,
-In: Proc Intl Soc Mag Reson Med 21; 2584.
+In: Proc Intl Soc Mag Reson Med 2013; 21:2584.
 
 Shin PJ, Larson PEZ, Ohliger MA, Elad M, Pauly JM, Vigneron DB, Lustig M.
 Calibrationless Parallel Imaging Reconstruction Based on Structured
@@ -158,9 +161,9 @@ Low-Rank Matrix Completion.
 Magn Reson Med 2014; 72:959-970.
 
 Holme HCM, Rosenzweig S, Ong F, Wilke RN, Lustig M, Uecker M.
-ENLIVE: An Efficient Nonlinear Method for Calibrationless and
-Robust Parallel Imaging.
-arXiv:1706.09780 [physics.med-ph]
+ENLIVE: An Efficient Nonlinear Method for Calibrationless and Robust Parallel
+Imaging. Scientific Reports 2019; 9:3034.
+
 
 
 
@@ -185,7 +188,7 @@ Magn Reson Med 2013; 69:571-582.
 Bahri D, Uecker M, Lustig M.
 ESPIRiT-Based Coil Compression for Cartesian Sampling.
 Annual Meeting ISMRM, Salt Lake City 2013,
-In: Proc Intl Soc Mag Reson Med 21; 2657.
+In: Proc Intl Soc Mag Reson Med 2013; 21:2657.
 
 
 
@@ -194,12 +197,12 @@ In: Proc Intl Soc Mag Reson Med 21; 2657.
 (commands: pocsense, pics)
 
 
-Block KT, Uecker M, and Frahm J.
+Block KT, Uecker M, Frahm J.
 Undersampled radial MRI with multiple coils. Iterative image
 reconstruction using a total variation constraint.
 Magn Reson Med 2007; 57:1086-1098.
 
-Lustig M, Donoho D and Pauly JM.
+Lustig M, Donoho D, Pauly JM.
 Sparse MRI: The application of compressed sensing for rapid MR imaging.
 Magn Reson Med 2007; 58:1182-1195.
 
@@ -211,8 +214,33 @@ Magn Reson Med 2009; 61:145-152.
 
 
 
+- model-based reconstruction -
+(commands: moba, pics)
+
+
+Block KT, Uecker M, Frahm J.
+Model-Based Iterative Reconstruction for Radial Fast Spin-Echo MRI.
+IEEE Trans Med Imag 2019; 28:1759-1769.
+
+Petzschner FH, Ponce IP, Blaimer M, Jakob PM, Breuer FA.
+Fast MR parameter mapping using k‐t principal component analysis.
+Magn Reson Med 2011; 66;706-716.
+
+Mani M, Jacob M, Magnotta V, Zhong J.
+Fast iterative algorithm for the reconstruction of multishot non-cartesian
+diffusion data.
+Magn Reson Med 2015; 74:1086–1094.
+
+Wang X, Roeloffs V, Klosowski J, Tan Z, Voit D, Uecker M, Frahm J.
+Model-based T1 Mapping with Sparsity Constraints Using Single-Shot
+Inversion-Recovery Radial FLASH.
+Magn Reson Med 2018; 79:730-740.
+
+
+
+
 - sparsity transforms, variational penalties, regularization -
-(commands: cdf97, rof, lrmatrix, pocsense, pics)
+(commands: cdf97, rof, tgv, lrmatrix, pocsense, pics)
 
 
 Rudin LI, Osher S, Fatemi E.
@@ -231,10 +259,15 @@ Ong F, Lustig M.
 Beyond low rank + sparse: Multi-scale low rank matrix decomposition,
 IEEE J Sel Topics Signal Process 2016; 10:672-687.
 
+Bredies K, Kunisch K, Pock T.
+Total generalized variation.
+SIAM Journal on Imaging Sciences 2010; 3:492-526.
+
+
 
 
 - sampling schemes -
-(commands: traj, poisson)
+(commands: traj, poisson, wave, wavepsf)
 
 
 Winkelmann S, Schaeffter T, Koehler T, Eggers H, Doessel O.
@@ -245,7 +278,17 @@ IEEE Trans Med Imaging 2007; 26:68-76.
 Lustig M, Alley M, Vasanawala S, Donoho DL, Pauly JM.
 L1 SPIR-iT: Autocalibrating Parallel Imaging Compressed Sensing
 Annual Meeting ISMRM, Honolulu 2009,
-In: Proc Intl Soc Mag Reson Med 17; 379.
+In: Proc Intl Soc Mag Reson Med 2009; 17:379.
+
+Bilgic B, Gagoski BA, Cauley SF, Fan AP, Polimeni JR, Grant PE,
+Wald LL, Setsompop K. Wave-CAIPI for highly accelerated 3D
+imaging.
+Magn Reson Med 2014; 73:2152-2162.
+
+Wundrak S, Paul J, Ulrici J, Hell E, Geibel M-A, Bernhardt P, Rottbauer W,
+Rasche V.
+Golden ratio sparse MRI using tiny golden angles.
+Magn Reson Med 2016; 75:2372-2378.
 
 
 
@@ -257,13 +300,12 @@ In: Proc Intl Soc Mag Reson Med 17; 379.
 Block KT, Uecker M.
 Simple Method for Adaptive Gradient-Delay Compensation in Radial MRI.
 Annual Meeting ISMRM, Montreal 2011,
-In: Proc. Intl. Soc. Mag. Reson. Med 19: 2816.
+In: Proc. Intl. Soc. Mag. Reson. Med 2011; 19:2816.
 
 Rosenzweig S, Holme HCM, Uecker M.
 Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial
 Intersections (RING).
-Magnetic Resonance in Medicine, DOI:10.1002/mrm.27506 (2018)
-
+Magn Reson Med 2019; 81:1898-1906.
 
 
 
@@ -302,88 +344,4 @@ Guerquin-Kern M, Lejeune L, Pruessmann KP, M Unser M,
 Realistic Analytical Phantoms for Parallel Magnetic Resonance Imaging.
 IEEE Trans Med Imaging 2012; 31:626-636.
 
-
-
-
-
-- applications -
-(an incomplete list of papers using BART...)
-
-Hollingsworth KG, Higgins DM, McCallum M, Ward L, Coombs A, Straub V.
-Investigating the quantitative fidelity of prospectively undersampled
-chemical shift imaging in muscular dystrophy with compressed sensing
-and parallel imaging reconstruction.
-Magn Reson Med 2014; 72:1610-1619.
-
-Zhang T, Cheng JY, Potnick AG, Barth RA, Alley MT, Uecker M, Lustig M,
-Pauly JM, Vasanawala SS.
-Fast Pediatric 3D Free Breathing Abdominal Dynamic Contrast Enhanced MRI
-with a High Spatiotemporal Resolution,
-J Magn Reson Imaging 2015; 41:460-473.
-
-Addy NO, Ingle RR, Wu HH, Hu BS, Nishimura DG.
-High-resolution variable-density 3D cones coronary MRA.
-Magn Reson Med 2015; 74:614-621.
-
-Cheng JY, Zhang T, Ruangwattanapaisarn N, Alley MT, Uecker M, Pauly JM,
-Lustig M, Vasanawala SS.
-Free-Breathing Pediatric MRI with Nonrigid Motion Correction and Acceleration,
-J Magn Reson Imaging 2015; 42:407-420.
-
-Athalye V, Lustig M, Uecker M.
-Parallel Magnetic Resonance Imaging as Approximation in a
-Reproducing Kernel Hilbert Space,
-Inverse Problems 2015; 31:045008.
-
-Mann LW, Higgins DM, Peters CN, Cassidy S, Hodson KK, Coombs A,
-Taylor R, Hollingsworth KG.
-Accelerating MR Imaging Liver Steatosis Measurement Using Combined
-Compressed Sensing and Parallel Imaging: A Quantitative Evaluation,
-Radiology 2016; 278:245-256.
-
-Cheng JY, Hanneman K, Zhang T, Alley MT, Lai P, Tamir JI, Uecker M,
-Pauly JM, Lustig M, Vasanawala SS.
-Comprehensive Motion-Compensated Highly-Accelerated 4D Flow MRI with
-Ferumoxytol Enhancement for Pediatric Congenital Heart Disease.
-J Magn Reson Imaging 2016; 43:1355-1368.
-
-Tamir JI, Uecker M, Chen W, Lai P, Aleey MT, Vasanawala SS, Lustig M.
-T2-Shuffling: Sharp, Multi-Contrast, Volumetric Fast Spin-Echo Imaging.
-Magn Recon Med 2017; 77:180-195.
-
-Uecker M, Lustig M.
-Estimating Absolute-Phase Maps Using ESPIRiT and Virtual Conjugate Coils.
-Magn Reson Med 2017; 77:1201-1207.
-
-Moghari MH, Uecker M, Roujol S, Sabbagh M, Geva T, Powell AJ.
-Accelerated Whole-heart Magnetic Resonance Angiography Using
-a Variable-Density Poisson-Disc Undersampling Pattern and
-Compressed Sensing Reconstruction.
-Magn Reson Med 2018; 79:761-769.
-
-Cheng JY, Zhang T, Alley MT, Uecker M, Lustig M, Pauly JM, Vasanawala SS.
-Comprehensive Multi-Dimensional MRI for the Simultaneous Assessment
-of Cardiopulmonary Anatomy and Physiology.
-Scientific Reports 2017; 7:5330.
-
-Bao S, Tamir JI, Young JL, Tariq U, Uecker M, Lai P, Chen W, Lustig M,
-Vasanawala SS.
-Fast comprehensive single-sequence four-dimensional pediatric knee MRI with
-T2 shuffling.
-Journal of Magnetic Resonance Imaging 2017; 45:1700-1711.
-
-Rosenzweig S, Holme HCM, Wilke RN, Voit D, Frahm J, Uecker M.
-Simultaneous Multi-Slice Reconstruction Using Regularized Nonlinear Inversion:
-SMS-NLINV.
-Magnetic Resonance in Medicine 2018; 79:2057-2066.
-
-Roeloffs V, Rosenzweig S, Holme HCM, Uecker M, Frahm J.
-Frequency-modulated SSFP with radial sampling and subspace reconstruction:
-A time-efficient alternative to phase-cycled bSSFP.
-Magnetic Resonance in Medicine, DOI:10.1002/mrm.27505 (2018)
-
-Rosenzweig S, Holme HCM, Uecker M.
-Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial
-Intersections (RING).
-Magnetic Resonance in Medicine, DOI:10.1002/mrm.27506 (2018)
 

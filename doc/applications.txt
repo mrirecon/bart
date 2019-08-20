@@ -1,0 +1,115 @@
+
+(an incomplete list of papers using BART...)
+
+
+Hollingsworth KG, Higgins DM, McCallum M, Ward L, Coombs A, Straub V.
+Investigating the quantitative fidelity of prospectively undersampled
+chemical shift imaging in muscular dystrophy with compressed sensing
+and parallel imaging reconstruction.
+Magn Reson Med 2014; 72:1610-1619.
+
+Zhang T, Cheng JY, Potnick AG, Barth RA, Alley MT, Uecker M, Lustig M,
+Pauly JM, Vasanawala SS.
+Fast Pediatric 3D Free Breathing Abdominal Dynamic Contrast Enhanced MRI
+with a High Spatiotemporal Resolution,
+J Magn Reson Imaging 2015; 41:460-473.
+
+Addy NO, Ingle RR, Wu HH, Hu BS, Nishimura DG.
+High-resolution variable-density 3D cones coronary MRA.
+Magn Reson Med 2015; 74:614-621.
+
+Cheng JY, Zhang T, Ruangwattanapaisarn N, Alley MT, Uecker M, Pauly JM,
+Lustig M, Vasanawala SS.
+Free-Breathing Pediatric MRI with Nonrigid Motion Correction and Acceleration,
+J Magn Reson Imaging 2015; 42:407-420.
+
+Athalye V, Lustig M, Uecker M.
+Parallel Magnetic Resonance Imaging as Approximation in a
+Reproducing Kernel Hilbert Space,
+Inverse Problems 2015; 31:045008.
+
+Mann LW, Higgins DM, Peters CN, Cassidy S, Hodson KK, Coombs A,
+Taylor R, Hollingsworth KG.
+Accelerating MR Imaging Liver Steatosis Measurement Using Combined
+Compressed Sensing and Parallel Imaging: A Quantitative Evaluation,
+Radiology 2016; 278:245-256.
+
+Cheng JY, Hanneman K, Zhang T, Alley MT, Lai P, Tamir JI, Uecker M,
+Pauly JM, Lustig M, Vasanawala SS.
+Comprehensive Motion-Compensated Highly-Accelerated 4D Flow MRI with
+Ferumoxytol Enhancement for Pediatric Congenital Heart Disease.
+J Magn Reson Imaging 2016; 43:1355-1368.
+
+Tamir JI, Uecker M, Chen W, Lai P, Aleey MT, Vasanawala SS, Lustig M.
+T2-Shuffling: Sharp, Multi-Contrast, Volumetric Fast Spin-Echo Imaging.
+Magn Recon Med 2017; 77:180-195.
+
+Uecker M, Lustig M.
+Estimating Absolute-Phase Maps Using ESPIRiT and Virtual Conjugate Coils.
+Magn Reson Med 2017; 77:1201-1207.
+
+Cheng JY, Zhang T, Alley MT, Uecker M, Lustig M, Pauly JM, Vasanawala SS.
+Comprehensive Multi-Dimensional MRI for the Simultaneous Assessment
+of Cardiopulmonary Anatomy and Physiology.
+Scientific Reports 2017; 7:5330.
+
+Bao S, Tamir JI, Young JL, Tariq U, Uecker M, Lai P, Chen W, Lustig M,
+Vasanawala SS.
+Fast comprehensive single-sequence four-dimensional pediatric knee MRI with
+T2 shuffling.
+J Magn Reson Imaging 2017; 45:1700-1711.
+
+Mazzoli V, Schoormans J,  Froeling M, Sprengers AM, Coolen BF, Verdonschot N,
+Strijkers GJ, Nederveen AJ.
+Accelerated 4D self‐gated MRI of tibiofemoral kinematics.
+NMR in Biomed 2017; 30:e3791.
+
+Moghari MH, Uecker M, Roujol S, Sabbagh M, Geva T, Powell AJ.
+Accelerated Whole-heart Magnetic Resonance Angiography Using
+a Variable-Density Poisson-Disc Undersampling Pattern and
+Compressed Sensing Reconstruction.
+Magn Reson Med 2018; 79:761-769.
+
+Peper ES, Strijkers GJ, Gazzola K, Potters WV, Motaal AG, Luirink IK, Hutten BA,
+Wiegman A, van Ooij P, van den Born B-JH, Nederveen AJ, Coolen BF.
+Regional assessment of carotid artery pulse wave velocity using compressed
+sensing accelerated high temporal resolution 2D CINE PC MRI.
+J Cardiovasc Magn Reson 2018; 20:1-12.
+
+Mazzoli V, Gottwald LM, Peper ES, Froeling M, Coolen BF, Verdonschot N,
+Sprengers AM, van Ooij P, Strijkers GJ, Nederveen AJ.
+Accelerated 4D phase contrast MRI in skeletal muscles contraction.
+Magn Reson Med 2018; 80:1799-1811.
+
+Rosenzweig S, Holme HCM, Wilke RN, Voit D, Frahm J, Uecker M.
+Simultaneous Multi-Slice Reconstruction Using Regularized Nonlinear Inversion:
+SMS-NLINV.
+Magn Reson Med 2018; 79:2057-2066.
+
+Sanders J, Song H, Frank S, Bathala T, Venkatesan A, Anscher M, Tang C, Bruno T,
+Wei W, Ma J.
+Parallel imaging compressed sensing for accelerated imaging and improved SNR in
+MRI-based prostate brachytherapy post-implant dosimetry.
+Brachytherapy 2018; 17:816-824.
+
+Roeloffs V, Rosenzweig S, Holme HCM, Uecker M, Frahm J.
+Frequency-modulated SSFP with radial sampling and subspace reconstruction:
+A time-efficient alternative to phase-cycled bSSFP.
+Magn Reson Med 2019; 81:1566-1579.
+
+de Jonge CS, Coolen BF, Peper ES, Motaal AG, Nio CY, Somers I, Strijkers GJ,
+Stoker J, Nederveen AJ.
+Evaluation of compressed sensing MRI for accelerated bowel motility imaging.
+European Radiology Experimental 2019; 3:1-12.
+
+Walheim J, Dillinger H, Kozerke.
+Multipoint 5D flow cardiovascular magnetic resonance - accelerated cardiac-
+and respiratory-motion resolved mapping of mean and turbulent velocities.
+J Cardiovasc Magn Reson 2019; 21:42.
+
+Wang X, Kohler F, Unterberg-Buchwald C, Lotz J, Frahm J, Uecker M.
+Model-based myocardial T1 mapping with sparsity constraints using single-shot
+inversion-recovery radial FLASH.
+J Cardiovasc Magn Reson 2019; in press.
+
+
