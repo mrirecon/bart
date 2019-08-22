@@ -1,4 +1,4 @@
-tests/test-wshfl: wavepsf fft resize transpose squeeze poly join wshfl nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
+tests/test-wshfl: wavepsf fmac fft resize transpose squeeze poly join wshfl nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)                          ;\
 	$(TOOLDIR)/wavepsf -x 640 -y 128 wave_psf.ra                          ;\
 	$(TOOLDIR)/fft -iu 7 $(TESTS_OUT)/shepplogan_coil_ksp.ra img.ra       ;\
@@ -14,7 +14,7 @@ tests/test-wshfl: wavepsf fft resize transpose squeeze poly join wshfl nrmse $(T
 	$(TOOLDIR)/join 1 ky.ra kz.ra te.ra reorder.ra                        ;\
 	$(TOOLDIR)/poly 1 0 1 phi.ra                                          ;\
 	$(TOOLDIR)/wshfl -i 100 $(TESTS_OUT)/coils.ra wave_psf.ra phi.ra reorder.ra table.ra reco.ra ;\
-	$(TOOLDIR)/nrmse -t 0.23 -s reco.ra $(TESTS_OUT)/shepplogan.ra        ;\
+	$(TOOLDIR)/nrmse -t 0.23 -s $(TESTS_OUT)/shepplogan.ra reco.ra        ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
