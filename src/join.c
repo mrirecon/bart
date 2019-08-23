@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <complex.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "num/multind.h"
 #include "num/init.h"
@@ -61,7 +62,28 @@ int main_join(int argc, char* argv[])
 
 		count += 1;
 
-		// FIXME: check for cfl file
+		assert(count > 1);
+
+		int len = strlen(argv[argc - 1]);
+		char buf[len + 5];
+		strcpy(buf, argv[argc - 1]);
+		strcat(buf, ".cfl");
+
+		if (-1 == access(buf, F_OK)) {
+
+			// make sure we do not have any other file format
+
+			strcpy(buf, argv[argc - 1]);
+			strcat(buf, ".coo");
+			assert(-1 == access(buf, F_OK));
+
+			strcpy(buf, argv[argc - 1]);
+			strcat(buf, ".ra");
+			assert(-1 == access(buf, F_OK));
+
+			count--;
+			append = false;
+		}
 	}
 
 	long in_dims[count][N];

@@ -15,10 +15,21 @@ tests/test-join-append: ones zeros join nrmse
 	$(TOOLDIR)/zeros 3 6 7 1 z								;\
 	$(TOOLDIR)/join 2 o z o j								;\
 	$(TOOLDIR)/join -a 2 z o o								;\
-	$(TOOLDIR)/nrmse -t 0.00001 o j								;\
+	$(TOOLDIR)/nrmse -t 0.00001 j o								;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
-TESTS += tests/test-join tests/test-join-append
+tests/test-join-append-one: ones zeros join nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/ones 3 6 7 1 o								;\
+	$(TOOLDIR)/zeros 3 6 7 1 z								;\
+	$(TOOLDIR)/join 2 o z j									;\
+	$(TOOLDIR)/join -a 2 o z x								;\
+	$(TOOLDIR)/nrmse -t 0.00001 j x								;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+TESTS += tests/test-join tests/test-join-append tests/test-join-append-one
 
