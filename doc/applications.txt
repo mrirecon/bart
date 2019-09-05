@@ -86,11 +86,22 @@ Simultaneous Multi-Slice Reconstruction Using Regularized Nonlinear Inversion:
 SMS-NLINV.
 Magn Reson Med 2018; 79:2057-2066.
 
+Lyu M, Barth M, Xie VB, Liu Y, Ma X, Feng Y, Wu EX.
+Robust SENSE reconstruction of simultaneous multislice
+EPI with low‐rank enhanced coil sensitivity calibration and slice‐dependent
+2D Nyquist ghost correction.
+Magn Reson Medo 2018; 80:1376-1390.
+
 Sanders J, Song H, Frank S, Bathala T, Venkatesan A, Anscher M, Tang C, Bruno T,
 Wei W, Ma J.
 Parallel imaging compressed sensing for accelerated imaging and improved SNR in
 MRI-based prostate brachytherapy post-implant dosimetry.
 Brachytherapy 2018; 17:816-824.
+
+Chen F, Taviani V, Tamir JI, Cheng JY, Zhang T, Song Q, Hargreaves BA,
+Pauly JM, Vasanawala SS.
+Self‐Calibrating Wave‐Encoded Variable‐Density Single‐Shot Fast Spin Echo Imaging.
+J Magn Reson Imaging 2018; 47:954-966.
 
 Roeloffs V, Rosenzweig S, Holme HCM, Uecker M, Frahm J.
 Frequency-modulated SSFP with radial sampling and subspace reconstruction:
@@ -111,5 +122,22 @@ Wang X, Kohler F, Unterberg-Buchwald C, Lotz J, Frahm J, Uecker M.
 Model-based myocardial T1 mapping with sparsity constraints using single-shot
 inversion-recovery radial FLASH.
 J Cardiovasc Magn Reson 2019; in press.
+
+Hauptmann A, Arridge S, Lucka F, Muthurangu V, Steeden JA.
+Real‐time cardiovascular MR with spatio‐temporal artifact suppression using
+deep learning–proof of concept in congenital heart disease.
+Magn Reson Med 2019; 81:1143-1156.
+
+Tamir JI, Taviani V, Alley MT, Perkins BC, Hart L, O'Brien K, Wishah F, Sandberg JK,
+Anderson MJ, Turek JS, Willke TL, Lustig M, Vasanawala SS.
+Targeted rapid knee MRI exam using T2 shuffling.
+J Magn Reson Imaging 2019; 49: e195-e204. doi:10.1002/jmri.26600
+
+Su Y, Anderson M, Tamir JI, Lustig M, Li K.
+Compressed Sensing MRI Reconstruction on Intel HARPv2.
+2019 IEEE 27th Annual International Symposium on Field-Programmable Custom
+Computing Machines (FCCM), San Diego, CA, USA, 2019, pp. 254-257.
+doi: 10.1109/FCCM.2019.00041
+
 
 
