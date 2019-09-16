@@ -139,5 +139,8 @@ Compressed Sensing MRI Reconstruction on Intel HARPv2.
 Computing Machines (FCCM), San Diego, CA, USA, 2019, pp. 254-257.
 doi: 10.1109/FCCM.2019.00041
 
-
+Smith DS, Sengupta S, Smith SA, Welch EB.
+Trajectory optimized NUFFT: Faster non-Cartesian MRI reconstruction through
+prior knowledge and parallel architectures.
+Magn Reson Med 2019; 81:2064-2071.
 
