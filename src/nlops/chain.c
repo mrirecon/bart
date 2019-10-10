@@ -222,6 +222,44 @@ struct nlop_s* nlop_link(const struct nlop_s* x, int oo, int ii)
 }
 
 
+struct nlop_s* nlop_dup(const struct nlop_s* x, int a, int b)
+{
+	int II = nlop_get_nr_in_args(x);
+	int OO = nlop_get_nr_out_args(x);
+
+	assert(a < II);
+	assert(b < II);
+        assert(a < b);
+
+	PTR_ALLOC(struct nlop_s, n);
+	PTR_ALLOC(const struct linop_s*[II-1][OO], der);
+
+	assert(operator_ioflags(x->op) == ((1u << OO) - 1));
+
+	n->op = operator_dup_create(x->op, OO + a, OO + b);
+
+	assert(operator_ioflags(n->op) == ((1u << OO) - 1));
+
+	// f(x_1, ..., xa, ... xa, ..., xn)
+
+	for (int i = 0, ip = 0; i < II - 1; i++, ip++) {
+
+		if (i == b)
+			ip++;
+
+		for (int o = 0; o < OO; o++) {
+
+                        (*der)[i][o] = nlop_get_derivative(x, o, ip);
+                        
+                        if (i == a)
+                                (*der)[i][o] = linop_plus((*der)[i][o], nlop_get_derivative(x, o, b));
+		}
+	}
+
+	n->derivative = &(*PTR_PASS(der))[0][0];
+
+	return PTR_PASS(n);
+}
 
 struct nlop_s* nlop_permute_inputs(const struct nlop_s* x, int I2, const int perm[I2])
 {
