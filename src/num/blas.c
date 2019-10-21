@@ -15,6 +15,8 @@
 
 #ifdef USE_MACPORTS
 #include <cblas_openblas.h>
+#elif USE_MKL
+#include <mkl.h>
 #else
 #include <cblas.h>
 #endif
