@@ -207,27 +207,35 @@ static DEF_TYPEID(fft_plan_s);
 
 static char* fftw_wisdom_name(unsigned int N, bool backwards, unsigned int flags, const long dims[N])
 {
-
 	char* tbpath = getenv("TOOLBOX_PATH");
+
 	if (NULL == tbpath)
 		return NULL;
+
 	char* loc  = NULL;
 
 	// Space for path and null terminator.
 	size_t space = snprintf(loc, 0, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
+
 	// Space for dimensions.
 	for (size_t idx = 0; idx < N; idx ++)
 		space += snprintf(loc, 0, "_%lu", dims[idx]);
+
 	// Space for extension.
 	space += snprintf(loc, 0, ".fftw");
 	// Space for null terminator.
 	space += 1;
 
 	loc = calloc(space, sizeof(char));
+
+	if (NULL == loc)
+		error("memory out");
+
 	sprintf(loc , "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
 
 	char tmp[64];
 	for (size_t idx = 0; idx < N; idx++) {
+
 		sprintf(tmp, "_%lu", dims[idx]);
 		strcat(loc, tmp);
 	}
