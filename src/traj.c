@@ -193,7 +193,7 @@ int main_traj(int argc, char* argv[])
 			double read = (float)i + (conf.asym_traj ? 0 : 0.5) - (float)X / 2.;
 
 			if (conf.golden_partition)
-				base_angle[1] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
+				base_angle[SLICE_DIM] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
 
 			double angle = 0.;
 
