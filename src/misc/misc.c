@@ -2,6 +2,7 @@
  * Copyright 2015-2018. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * Copyright 2017-2018. Damien Nguyen
+ * Copyright 2019. Uecker Lab, University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -9,6 +10,7 @@
  * 2011-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
  * 2017-2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
+ * Christian Holme <christian.holme@med.uni-goettingen.de>
  */
 
 #define _GNU_SOURCE
@@ -159,6 +161,25 @@ void print_dims(int D, const long dims[D])
 	printf("]\n");
 }
 
+
+
+void debug_print_bits(int dblevel, int D, unsigned long bitmask)
+{
+	bool dbl = debug_logging;
+	debug_logging = false;
+	debug_printf(dblevel, "[");
+
+	unsigned long curr_bit = 1;
+
+	while (curr_bit < (1ul << (D - 1))) {
+
+		debug_printf(dblevel, "%u", bitmask & curr_bit ? 1 : 0);
+		curr_bit = curr_bit << 1;
+	}
+
+	debug_printf(dblevel, "]\n");
+	debug_logging = dbl;
+}
 
 
 #ifdef REDEFINE_PRINTF_FOR_TRACE
