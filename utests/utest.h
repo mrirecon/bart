@@ -35,4 +35,6 @@ typedef bool ut_test_f(void);
 	extern bool call_ ## x(void) { return x(); };
 #endif
 
+#define UT_GPU_REGISTER_TEST(x) UT_REGISTER_TEST(x)
+
 #endif

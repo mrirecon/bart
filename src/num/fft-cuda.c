@@ -1,10 +1,12 @@
 /* Copyright 2013, 2015. The Regents of the University of California.
  * Copyright 2019. Martin Uecker.
+ * Copyright 2019. Uecker Lab, University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * Christian Holme <christian.holme@med.uni-goettingen.de>
  *
  *
  * Internal interface to the CUFFT library used in fft.c.
@@ -13,6 +15,7 @@
 #include <stdbool.h>
 #include <complex.h>
 #include <assert.h>
+#include <limits.h>
 
 #include "misc/misc.h"
 #include "num/multind.h"
@@ -186,23 +189,50 @@ errout:
 }
 
 
+static bool noncontiguous_flags(unsigned int D, unsigned long flags)
+{
+	bool o = false;
+	bool z = false;
+
+	for (unsigned int i = 0; i < D; ++i) {
+
+		bool curr_bit = MD_IS_SET(flags, i);
+		if (curr_bit) // found a block of ones
+			o = true;
+		if (o && !curr_bit) // found the end of a block of ones
+			z = true;
+		if (o && z && curr_bit) // found a second block of ones
+			return true;
+	}
+	return false;
+}
+
+
 struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], const long istrides[D], bool backwards)
 {
-	struct fft_cuda_plan_s* plan = fft_cuda_plan0(D, dimensions, flags, ostrides, istrides, backwards);
+	// detect if flags has blocks of 1's seperated by 0's
+	// and if yes, create a chained fft
 
-	if (NULL != plan)
-		return plan;
+	// TODO: This is not optimal, as it will often create separate fft's where they
+	// are not needed.
+	bool chain = noncontiguous_flags(D, flags);
 
-	int lsb = ffs(flags) - 1;
+	if (!chain) {
 
-	if (flags & lsb) {	// FIXME: this couldbe better...
+		return fft_cuda_plan0(D, dimensions, flags, ostrides, istrides, backwards);
+	} else {
 
-		struct fft_cuda_plan_s* plan = fft_cuda_plan0(D, dimensions, lsb, ostrides, istrides, backwards);
+		assert(0 != flags);
+		// get "rightmost" (most significant) bit in flags
+		unsigned int long_width = CHAR_BIT * sizeof(flags);
+ 		unsigned int msb_pos = (long_width - 1) - __builtin_clzl(flags);
+
+		struct fft_cuda_plan_s* plan = fft_cuda_plan0(D, dimensions, MD_BIT(msb_pos), ostrides, istrides, backwards);
 
 		if (NULL == plan)
 			return NULL;
 
-		plan->chain = fft_cuda_plan(D, dimensions, MD_CLEAR(flags, lsb), ostrides, ostrides, backwards);
+		plan->chain = fft_cuda_plan(D, dimensions, MD_CLEAR(flags, msb_pos), ostrides, ostrides, backwards);
 
 		if (NULL == plan->chain) {
 
@@ -212,8 +242,6 @@ struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], 
 
 		return plan;
 	}
-
-	return NULL;
 }
 
 
