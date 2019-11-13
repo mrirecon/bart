@@ -528,7 +528,7 @@ __global__ void kern_zexpj(int N, cuFloatComplex* dst, const cuFloatComplex* src
 
 	for (int i = start; i < N; i += stride) {
 
-		float abs = cuCabsf(src[i]); // moved out, otherwise it triggers a compiler error in nvcc
+		float abs = cuCrealf(src[i]); // moved out, otherwise it triggers a compiler error in nvcc
 		dst[i] = zexp(make_cuFloatComplex(0., abs));
 	}
 }
