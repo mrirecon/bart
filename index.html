@@ -133,7 +133,7 @@ and other processing steps (16s) on a multi-GPU system.
 		<li><strong>compressed sensing and parallel imaging</strong></li>
 		<li>calibration-less parallel imaging: NLINV and <strong>ENLIVE</strong> (non-linear optimization) and SAKE (structured low-rank matrix completion)</li>
 		<li>reconstruction with linear subspace constraints</li>
-		<li>model-based reconstruction for T1 mapping using a non-linear model</li>
+		<li>non-linear model-based reconstruction for T1 mapping</li>
 		</ul>
 	</li>
 	<li>regularization (in arbitrary dimensions):
@@ -192,8 +192,6 @@ and other processing steps (16s) on a multi-GPU system.
 	<ul>
 	<li><a href="https://github.com/mrirecon/bart/releases/tag/v0.5.00">bart: version 0.5.00 (2019)</a> <a href="http://dx.doi.org/10.5281/zenodo.3376744"><img src="./zenodo.3376744.svg" alt="DOI: 10.5281/zenodo.3376744"></a>
 	<li><a href="https://github.com/mrirecon/bart/releases/tag/v0.4.04">bart: version 0.4.04 (2018)</a> <a href="http://dx.doi.org/10.5281/zenodo.2149128"><img src="./zenodo.2149128.svg" alt="DOI: 10.5281/zenodo.2149128"></a>
-	<li><a href="https://github.com/mrirecon/bart/releases/tag/v0.4.03">bart: version 0.4.03 (2018)</a> <a href="http://dx.doi.org/10.5281/zenodo.1215477"><img src="./zenodo.1215477.svg" alt="DOI: 10.5281/zenodo.1215477"></a>
-	<li><a href="https://github.com/mrirecon/bart/releases/tag/v0.4.00">bart: version 0.4.00 (2016)</a> <a href="http://dx.doi.org/10.5281/zenodo.216718"><img src="./zenodo.216718.svg" alt="DOI: 10.5281/zenodo.216718"></a>
 	<li><a href="https://github.com/mrirecon/bart/releases/tag/v0.2.08">bart: version 0.2.08 (2015)</a> <a href="http://dx.doi.org/10.5281/zenodo.18041"><img src="./zenodo.18041.svg" alt="DOI: 10.5281/zenodo.18041"></a>
 	</ul>
 	<p>BART has also been included in <a href="https://www.debian.org/">Debian GNU/Linux</a> (and Ubuntu). The
@@ -251,12 +249,15 @@ and other processing steps (16s) on a multi-GPU system.
 	<p>
 	<h2>Reproducible Research</h2>
 	<p>
-	This is a list of research paper which can be fully reproduced using BART.
+	This is a list of research paper which can be reproduced using BART.
 	</p>
 	<ul>
-	<li>Sebastian Rosenzweig, H. Christian M. Holme, Martin Uecker. <a href="https://onlinelibrary.wiley.com/doi/10.1002/mrm.27506">Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial Intersections (RING)</a>. Magnetic Resonance in Medicine, DOI:10.1002/mrm.27506 (2018) <a class="github" href="https://github.com/mrirecon/ring">GitHub repository</a></li>
+	<li>Xiaoqing Wang, Florian Kohler, Christina Unterberg-Buchwald, Joachim Lotz, Jens Frahm, Martin Uecker.
+	<a href="https://jcmr-online.biomedcentral.com/articles/10.1186/s12968-019-0570-3">Model-based myocardial T1 mapping with sparsity constraints using single-shot inversion-recovery radial FLASH cardiovascular magnetic resonance.</a> Journal of Cardiovascular Magnetic Resonance 21:60 (2019) <a class="github" href="https://github.com/mrirecon/myocardial-t1-mapping">GitHub repository</a></li>
+	<li>Sebastian Rosenzweig, H. Christian M. Holme, Martin Uecker.
+	<a href="https://onlinelibrary.wiley.com/doi/10.1002/mrm.27506">Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial Intersections (RING)</a>. Magnetic Resonance in Medicine 81:1898-1906 (2019) <a class="github" href="https://github.com/mrirecon/ring">GitHub repository</a></li>
 	<li>H. Christian M. Holme, Sebastian Rosenzweig, Frank Ong, Robin N. Wilke, Michael Lustig, Martin Uecker.
-	ENLIVE: An Efficient Nonlinear Method for Calibrationless and Robust Parallel Imaging. submitted 2017, <a href="https://arxiv.org/abs/1706.09780">arXiv:1706.09780 [physics.med-ph]</a> <a class="github" href="https://github.com/mrirecon/enlive">GitHub repository</a></li>
+	<a href="https://www.nature.com/articles/s41598-019-39888-7">ENLIVE: An Efficient Nonlinear Method for Calibrationless and Robust Parallel Imaging.</a> Scientific Reports 9:3034 (2019) <a class="github" href="https://github.com/mrirecon/enlive">GitHub repository</a></li>
 	<li>Sebastian Rosenzweig, H. Christian M. Holme, Robin N. Wilke, Dirk Voit, Jens Frahm, Martin Uecker. <a href="http://onlinelibrary.wiley.com/doi/10.1002/mrm.26878/abstract">Simultaneous Multi-Slice Reconstruction Using Regularized Nonlinear Inversion: SMS-NLINV.<a> Magnetic Resonance in Medicine 79:2057-2066 (2018) <a class="github" href="https://github.com/mrirecon/sms-nlinv">GitHub repository</a></li>
 	<li>Martin Uecker and Michael Lustig. <a href="http://onlinelibrary.wiley.com/doi/10.1002/mrm.26191/abstract">Estimating Absolute-Phase Maps Using ESPIRiT and Virtual Conjugate Coils.</a> Magnetic Resonance in Medicine 77:1201-1207 (2017) <a class="github" href="https://github.com/mrirecon/vcc-espirit">GitHub repository</a></li>
 	</ul>
