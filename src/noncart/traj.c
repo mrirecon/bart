@@ -111,7 +111,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 	double angle_t = 0.;
 
 	if (turns > 1)
-		angle_t = angle_atom / (turns * mb) * (conf.full_circle ? 2 : 1);
+		angle_t = angle_atom / turns * (conf.full_circle ? 2 : 1);
 
 
 	// Golden Angle
