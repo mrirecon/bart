@@ -95,6 +95,9 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 	 */
 	double golden_angle = M_PI / (golden_ratio + conf.tiny_gold - 1.);
 
+	// For numerical stability
+	if (1 == conf.tiny_gold)
+		golden_angle = M_PI * (2. - (3. - sqrtf(5.))) / 2.;
 
 	double angle_atom = M_PI / Y;
 
