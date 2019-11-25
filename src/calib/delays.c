@@ -281,7 +281,7 @@ static void calc_S(const int Nint, const int N, float S[3], const float angles[N
 
 	complex float pinv[3][2 * Nint];
 
-	mat_pinv(2 * Nint, 3, pinv, A);
+	mat_pinv_left(2 * Nint, 3, pinv, A);
 
 	complex float Sc[3];
 

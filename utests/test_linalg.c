@@ -29,7 +29,7 @@ static bool test_mat_pinv(void)
 
 	complex float B[2][3];
 
-	mat_pinv(3, 2, B, A);
+	mat_pinv_left(3, 2, B, A);
 
 	float err = 0.;
 
