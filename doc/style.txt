@@ -106,10 +106,10 @@
 2.3. Statement groups.
 
 	Opening curly brace is on the next line for functions and on the
-	same line for if, for, while, and switch statements. In the later
+	same line for if, for, while, and switch statements. In the latter
 	case there should be an empty line afterwards. In case only a
 	single statement follows an if, for, or while statement, the
-	statement block can be omitted - but for if-else pairs only
+	statement block can be omitted - but for if-else pairs only if
 	it can be omitted on both sides. There should be no empty line
 	before the closing bracket.
 
