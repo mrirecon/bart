@@ -1003,7 +1003,7 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 #else
 	UNUSED(_data); UNUSED(N); UNUSED(args);
-	assert(0);
+	error("Both OpenMP and CUDA are necessary for automatic GPU execution. At least one was not found.\n");
 #endif
 }
 
