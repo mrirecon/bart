@@ -2833,6 +2833,67 @@ void md_zstd(unsigned int D, const long dims[D], unsigned int flags, complex flo
 
 
 /**
+ * Compute covariance along selected dimensions (with strides)
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
+ */
+void md_zcovar2(unsigned int D, const long dims[D], unsigned int flags,
+		const long ostr[D], complex float* optr,
+		const long istr1[D], const complex float* iptr1,
+		const long istr2[D], const complex float* iptr2)
+{
+	long odims[D];
+	long fdims[D];
+
+	md_select_dims(D, ~flags, odims, dims);
+	md_select_dims(D, flags, fdims, dims);
+
+	long tstrs[D];
+	md_calc_strides(D, tstrs, dims, CFL_SIZE);
+
+	complex float* tmp1 = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
+
+	md_zavg2(D, dims, flags, ostr, optr, istr1, iptr1);
+	md_zsub2(D, dims, tstrs, tmp1, istr1, iptr1, ostr, optr);
+
+	complex float* tmp2 = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
+
+	md_zavg2(D, dims, flags, ostr, optr, istr2, iptr2);
+	md_zsub2(D, dims, tstrs, tmp2, istr2, iptr2, ostr, optr);
+
+	double scale = md_calc_size(D, fdims) - 1.;
+
+	md_clear2(D, odims, ostr, optr, CFL_SIZE);
+	md_zfmacc2(D, dims, ostr, optr, tstrs, tmp1, tstrs, tmp2);
+
+	md_free(tmp1);
+	md_free(tmp2);
+
+	md_zsmul2(D, odims, ostr, optr, ostr, optr, 1. / scale);
+}
+
+
+/**
+ * Compute covariance along selected dimensions (without strides)
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
+ */
+void md_zcovar(unsigned int D, const long dims[D], unsigned int flags,
+		complex float* optr, const complex float* iptr1, const complex float* iptr2)
+{
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+
+	md_zcovar2(D, dims, flags,
+			MD_STRIDES(D, odims, CFL_SIZE), optr,
+			MD_STRIDES(D, dims, CFL_SIZE), iptr1,
+			MD_STRIDES(D, dims, CFL_SIZE), iptr2);
+}
+
+
+/**
  * Average along flagged dimensions (without strides)
  *
  * @param dims -- full dimensions of iptr

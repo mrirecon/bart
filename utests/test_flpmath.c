@@ -207,8 +207,7 @@ static bool test_md_zhardthresh(void)
 
 static bool test_md_zvar(void)
 {
-
-	const complex float test_vec[] = { 1 -6.j, 2 - 5.j, 3 - 4.j, 4 - 3.j, 5 - 2.j, 6 - 1.j };
+	const complex float test_vec[] = { 1. -6.j, 2. - 5.j, 3. - 4.j, 4. - 3.j, 5. - 2.j, 6. - 1.j };
 	const complex float ref[] = { 8., 8. };
 
 	long idims[2] = { 2, 3 };
@@ -226,11 +225,32 @@ static bool test_md_zvar(void)
 }
 
 
+static bool test_md_zcovar(void)
+{
+	const complex float test_vec1[] = { 1. - 6.j, 2. - 5.j, 3. - 4.j, 4. - 3.j, 5. - 2.j, 6. - 1.j };
+	const complex float test_vec2[] = { 1. - 6.j, 2.j + 5., 3. - 4.j, 4.j + 3., 5. - 2.j, 6.j + 1. };
+	const complex float ref[] = { 8., -8.j };
+
+	long idims[2] = { 2, 3 };
+	long odims[2] = { 2, 1 };
+
+	complex float* out = md_alloc(2, odims, CFL_SIZE);
+
+	md_zcovar(2, idims, MD_BIT(1), out, test_vec1, test_vec2);
+
+	double err = md_znrmse(2, odims, ref, out);
+
+	md_free(out);
+
+	return (err < UT_TOL);
+}
+
+
+
 static bool test_md_zstd(void)
 {
-
-	const complex float test_vec[] = { 1 -6.j, 2 - 5.j, 3 - 4.j, 4 - 3.j, 5 - 2.j, 6 - 1.j };
-	const complex float ref[] = { 1., 1., 1.};
+	const complex float test_vec[] = { 1. - 6.j, 2. - 5.j, 3. - 4.j, 4. - 3.j, 5. - 2.j, 6. - 1.j };
+	const complex float ref[] = { 1., 1., 1. };
 
 	long idims[2] = { 2, 3 };
 	long odims[2] = { 1, 3 };
@@ -289,6 +309,7 @@ UT_REGISTER_TEST(test_md_zavg);
 UT_REGISTER_TEST(test_md_zmatmul);
 UT_REGISTER_TEST(test_md_zhardthresh);
 UT_REGISTER_TEST(test_md_zvar);
+UT_REGISTER_TEST(test_md_zcovar);
 UT_REGISTER_TEST(test_md_zstd);
 UT_REGISTER_TEST(test_md_zconv);
 
