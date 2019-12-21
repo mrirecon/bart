@@ -214,6 +214,7 @@ int main_pics(int argc, char* argv[])
 			error("SMS is only supported for non-Cartesian trajectories.\n");
 
 		nuconf.cfft |= SLICE_FLAG;
+
                 debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
         }
 
@@ -261,9 +262,6 @@ int main_pics(int argc, char* argv[])
 
 		debug_printf(DP_INFO, "Max:   ");
 		debug_print_dims(DP_INFO, DIMS, max_dims);
-
-//		if (NULL != traj_file)
-//			nuconf.toeplitz = false;
 	}
 
 
@@ -318,6 +316,7 @@ int main_pics(int argc, char* argv[])
 			debug_printf(DP_WARN, "Turning off random shifts\n");
 
 		shift_mode = 2;
+
 		debug_printf(DP_INFO, "Fully overlapping LLR blocks\n");
 	}
 
@@ -346,7 +345,7 @@ int main_pics(int argc, char* argv[])
 
 	if (NULL != traj_file) {
 
-		if (NULL == pat_file && NULL == basis) {
+		if ((NULL == pat_file) && (NULL == basis)) {
 
 			md_free(pattern);
 			pattern = NULL;
@@ -434,7 +433,7 @@ int main_pics(int argc, char* argv[])
 		}
 	}
 
-	if (0. == scaling ) {
+	if (0. == scaling) {
 
 		debug_printf(DP_WARN, "Estimated scale is zero. Set to one.");
 		scaling = 1.;
@@ -468,7 +467,9 @@ int main_pics(int argc, char* argv[])
 		if (conf.gpu) {
 
 			complex float* gpu_image_truth = md_gpu_move(DIMS, img_dims, image_truth, CFL_SIZE);
+
 			unmap_cfl(DIMS, img_dims, image_truth);
+
 			image_truth = gpu_image_truth;
 		}
 #endif
@@ -490,7 +491,7 @@ int main_pics(int argc, char* argv[])
 
 		// if rescaling at the end, assume the input has also been rescaled
 		if (scale_im && (scaling != 0.))
-			md_zsmul(DIMS, img_dims, image_start, image_start, 1. /  scaling);
+			md_zsmul(DIMS, img_dims, image_start, image_start, 1. / scaling);
 	}
 
 
@@ -536,12 +537,7 @@ int main_pics(int argc, char* argv[])
 		if (conf.bpsense) {
 
 			const struct linop_s* sample_op = linop_sampling_create(max1_dims, pat1_dims, pattern1);
-			struct linop_s* tmp = linop_chain(forward_op, sample_op);
-
-			linop_free(sample_op);
-			linop_free(forward_op);
-
-			forward_op = tmp;
+			forward_op = linop_chain_FF(forward_op, sample_op);
 		}
 	}
 
@@ -552,7 +548,6 @@ int main_pics(int argc, char* argv[])
 		maxeigen = estimate_maxeigenval(forward_op->normal);
 
 		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
-
 	}
 
 
@@ -615,6 +610,7 @@ int main_pics(int argc, char* argv[])
 
 	// FIXME: will fail with looped dims
 	struct iter_monitor_s* monitor = NULL;
+
 	if (im_truth)
 		monitor = create_monitor(2*md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL); 
 	
