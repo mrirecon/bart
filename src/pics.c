@@ -1,13 +1,12 @@
 /* Copyright 2013-2018. The Regents of the University of California.
- * Copyright 2015-2018. Martin Uecker.
+ * Copyright 2015-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014-2016 Frank Ong <frankong@berkeley.edu>
  * 2014-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
- *
  */
 
 #include <assert.h>
@@ -29,7 +28,6 @@
 #include "linops/linop.h"
 #include "linops/fmac.h"
 #include "linops/sampling.h"
-#include "linops/someops.h"
 
 #include "noncart/nufft.h"
 
@@ -55,7 +53,7 @@ static const char help_str[] = "Parallel-imaging compressed-sensing reconstructi
 
 
 
-static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const long wgs_dims[DIMS], const complex float* weights, const long basis_dims[DIMS], const complex float* basis, struct operator_s** precond_op, bool sms)
+static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const long wgs_dims[DIMS], const complex float* weights, const long basis_dims[DIMS], const complex float* basis, struct operator_s** precond_op)
 {
 	long coilim_dims[DIMS];
 	long img_dims[DIMS];
@@ -72,19 +70,6 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 
 	const struct linop_s* fft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, wgs_dims, weights, basis_dims, basis, conf);
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
-
-	if (sms) {
-
-		/**
-		 * Apply Fourier encoding in image space (after coil
-		 * sensitivity weighting but before NUFFT).
-		 */
-
-		const struct linop_s* fft_slice = linop_fft_create(DIMS, coilim_dims, SLICE_FLAG);
-
-		fft_op = linop_chain_FF(fft_slice, fft_op);
-	}
-
 	const struct linop_s* lop = linop_chain_FF(maps_op, fft_op);
 
 	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
@@ -225,6 +210,10 @@ int main_pics(int argc, char* argv[])
 
         if (sms) {
 
+		if (NULL == traj_file)
+			error("SMS is only supported for non-Cartesian trajectories.\n");
+
+		nuconf.cfft |= SLICE_FLAG;
                 debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
         }
 
@@ -422,7 +411,7 @@ int main_pics(int argc, char* argv[])
 	} else {
 
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf,
-				pat_dims, pattern, basis_dims, basis, (struct operator_s**)&precond_op, sms);
+				pat_dims, pattern, basis_dims, basis, (struct operator_s**)&precond_op);
 	}
 
 
