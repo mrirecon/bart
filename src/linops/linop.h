@@ -88,6 +88,7 @@ extern struct linop_s* linop_null_create2(unsigned int N, const long odims[N], c
 extern struct linop_s* linop_null_create(unsigned int N, const long odims[N], const long idims[N]);
 
 extern struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b);
+extern struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b);
 
 
 #include "misc/cppwrap.h"

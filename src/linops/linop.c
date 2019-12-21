@@ -602,4 +602,13 @@ struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b)
 	return linop_create(bco->N, bco->dims, bdo->N, bdo->dims, CAST_UP(PTR_PASS(data)), plus_apply, plus_adjoint, NULL, NULL, plus_free);
 }
 
+struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b)
+{
+	auto x = linop_plus(a, b);
+
+	linop_free(a);
+	linop_free(b);
+
+	return x;
+}
 
