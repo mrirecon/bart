@@ -439,6 +439,7 @@ struct linop_s* nufft_create2(unsigned int N,
 	assert(MD_IS_SET(data->flags, 0));
 //	assert(md_check_compat(N, ~data->flags, ksp_dims, cim_dims));
 	assert(md_check_bounds(N, ~data->flags, cim_dims, ksp_dims));
+	assert(0 == (data->flags & conf.cfft));
 
 	// extend internal dimensions by one for linear phases
 	unsigned int ND = N + 1;
