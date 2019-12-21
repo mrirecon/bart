@@ -150,7 +150,7 @@ int main_tgv(int argc, char* argv[])
 
 	linop_free(id);
 	linop_free(grad1f);
-	linop_free(grad2c);
+	linop_free(grad2f);
 
 	operator_p_free(p1);
 	operator_p_free(p2);
