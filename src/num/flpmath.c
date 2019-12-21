@@ -2740,17 +2740,36 @@ static void md_zvarstd2(unsigned int D, const long dims[D], unsigned int flags, 
 	md_select_dims(D, ~flags, odims, dims);
 	md_select_dims(D, flags, fdims, dims);
 
-	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, iptr);
+	long tstrs[D];
+	md_calc_strides(D, tstrs, dims, CFL_SIZE);
+
+	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
 
 	md_zavg2(D, dims, flags, ostr, optr, istr, iptr);
-	md_zsub2(D, dims, istr, tmp, istr, iptr, ostr, optr);
+	md_zsub2(D, dims, tstrs, tmp, istr, iptr, ostr, optr);
 
-	double scale = variance ? md_calc_size(D, fdims) - 1. : sqrtf(md_calc_size(D, fdims) - 1.);
-	(variance ? md_zss : md_zrss)(D, dims, flags, optr, tmp);
+	double scale = md_calc_size(D, fdims) - 1.;
+
+	md_zss(D, dims, flags, optr, tmp);	// FIXME: ostrs
+
+	md_free(tmp);
 
 	md_zsmul2(D, odims, ostr, optr, ostr, optr, 1. / scale);
 
-	md_free(tmp);
+	if (!variance) {
+
+#if 1
+		long dimsR[D + 1];
+		real_from_complex_dims(D, dimsR, odims);
+
+		long strsR[D + 1];
+		real_from_complex_strides(D, strsR, ostr);
+
+		md_sqrt2(D + 1, dimsR, strsR, (float*)optr, strsR, (const float*)optr);
+#else
+		md_zsqrt2(D, odims, ostr, optr, ostr, optr);
+#endif
+	}
 }
 
 
