@@ -453,7 +453,7 @@ lib/lib$(1).a: lib$(1).a($$($(1)objs)
 
 endef
 
-ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba
+ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba lapacke
 $(eval $(foreach t,$(ALIBS),$(eval $(call alib,$(t)))))
 
 # lib box is special
