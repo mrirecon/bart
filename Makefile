@@ -435,12 +435,87 @@ endif
 
 .LIBPATTERNS := lib%.a
 
-
 vpath %.a lib
 
-DIRS = $(root)/rules/*.mk
 
-include $(DIRS)
+define alib
+$(1)srcs := $(wildcard $(srcdir)/$(1)/*.c)
+$(1)cudasrcs := $(wildcard $(srcdir)/$(1)/*.cu)
+$(1)objs := $$($(1)srcs:.c=.o))
+
+ifeq ($(CUDA),1)
+$(1)objs += $$($(1)cudasrcs:.cu=.o)
+endif
+
+.INTERMEDIATE: $$($(1)objs)
+
+lib/lib$(1).a: lib$(1).a($$($(1)objs)
+
+endef
+
+ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba
+$(eval $(foreach t,$(ALIBS),$(eval $(call alib,$(t)))))
+
+# lib box is special
+#
+boxsrcs := $(XTARGETS:%=src/%.c)
+boxobjs := $(boxsrcs:.c=.o)
+
+.INTERMEDIATE: $(boxobjs)
+
+lib/libbox.a: libbox.a($(boxobjs))
+
+
+# additional rules for lib misc
+DOTHIS := $(shell $(root)/rules/update-version.sh)
+
+$(srcdir)/misc/version.o: $(srcdir)/misc/version.inc
+
+
+# additional rules for lib ismrm
+lib/libismrm.a: CPPFLAGS += $(ISMRM_H)
+
+
+# lib linop
+UTARGETS += test_linop_matrix test_linop
+MODULES_test_linop += -llinops
+MODULES_test_linop_matrix += -llinops
+
+# lib lowrank
+UTARGETS += test_batchsvd
+MODULES_test_batchsvd = -llowrank
+
+# lib misc
+UTARGETS += test_pattern test_types
+
+# lib moba
+UTARGETS += test_moba
+MODULES_test_moba += -lmoba -lnlops -llinops
+
+# lib nlop
+UTARGETS += test_nlop
+MODULES_test_nlop += -lnlops -llinops
+
+# lib noncart
+UTARGETS += test_nufft
+MODULES_test_nufft += -lnoncart -llinops
+
+# lib num
+UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window
+UTARGETS += test_blas test_mdfft test_ops test_ops_p
+UTARGETS_GPU += test_cudafft
+
+# lib simu
+UTARGETS += test_ode_bloch test_biot_savart
+MODULES_test_ode_bloch += -lsimu
+MODULES_test_biot_savart += -lsimu
+
+
+
+
+
+
+
 
 # sort BTARGETS after everything is included
 BTARGETS:=$(sort $(BTARGETS))
