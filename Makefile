@@ -266,7 +266,7 @@ else
 
 CPPFLAGS += $(DEPFLAG) -iquote $(srcdir)/
 CFLAGS += -std=gnu11
-CXXFLAGS += -std=c++11
+CXXFLAGS += -std=c++14
 
 
 
@@ -437,37 +437,31 @@ endif
 
 vpath %.a lib
 
+boxextrasrcs := $(XTARGETS:%=src/%.c)
 
 define alib
 $(1)srcs := $(wildcard $(srcdir)/$(1)/*.c)
 $(1)cudasrcs := $(wildcard $(srcdir)/$(1)/*.cu)
-$(1)objs := $$($(1)srcs:.c=.o))
+$(1)objs := $$($(1)srcs:.c=.o)
+$(1)objs += $$($(1)extrasrcs:.c=.o)
+$(1)objs += $$($(1)extracxxsrcs:.cc=.o)
 
 ifeq ($(CUDA),1)
 $(1)objs += $$($(1)cudasrcs:.cu=.o)
 endif
 
-.INTERMEDIATE: $$($(1)objs)
+.INTERMEDIATE: $(filter %.o,$$($(1)objs))
 
-lib/lib$(1).a: lib$(1).a($$($(1)objs)
+lib/lib$(1).a: lib$(1).a($$($(1)objs))
 
 endef
 
-ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba lapacke
+ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba lapacke box
 $(eval $(foreach t,$(ALIBS),$(eval $(call alib,$(t)))))
-
-# lib box is special
-#
-boxsrcs := $(XTARGETS:%=src/%.c)
-boxobjs := $(boxsrcs:.c=.o)
-
-.INTERMEDIATE: $(boxobjs)
-
-lib/libbox.a: libbox.a($(boxobjs))
 
 
 # additional rules for lib misc
-DOTHIS := $(shell $(root)/rules/update-version.sh)
+$(eval $(shell $(root)/rules/update-version.sh))
 
 $(srcdir)/misc/version.o: $(srcdir)/misc/version.inc
 
