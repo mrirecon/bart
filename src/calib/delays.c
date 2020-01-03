@@ -20,7 +20,6 @@
  * Intersections (RING), Magnetic Resonance in Medicine 81:1898-1906 (2019)
  */
 
-
 #include <complex.h>
 #include <stdlib.h>
 #include <math.h>
@@ -38,6 +37,7 @@
 #include "misc/debug.h"
 #include "misc/subpixel.h"
 #include "misc/mri.h"
+#include "misc/misc.h"
 
 #include "delays.h"
 
@@ -100,34 +100,42 @@ void radial_self_delays(int N, float shifts[N], const float phi[N], const long d
 
 static float angle_dist(float a, float b)
 {
-	return fabsf(fmodf(fabsf(a - b), M_PI) - M_PI / 2.);
+	return fabsf(fmodf(fabsf(a - b), M_PI) - (float)(M_PI / 2.));
+}
+
+static int dist_compare(const void* _data, int a, int b)
+{
+	const float* dist = _data;
+	float d = dist[a] - dist[b];
+
+	if (d > 0.)
+		return 1;
+
+	return (0. == d) ? 0 : -1;
 }
 
 static void find_nearest_orthogonal_spokes(int N, int spokes[N], float ref_angle, const float angles[N])
 {
-	int angle_compare(const void* _a, const void* _b)
-	{
-		const int* ap = _a;
-		const int* bp = _b;
-		return copysignf(1., angle_dist(ref_angle, angles[*ap]) - angle_dist(ref_angle, angles[*bp]));
+	float dist[N];
+
+	for (int i = 0; i < N; i++) {
+
+		spokes[i] = i;
+		dist[i] = angle_dist(ref_angle, angles[i]);
 	}
 
-	for (int i = 0; i < N; i++)
-		spokes[i] = i;
-
-	qsort(spokes, N, sizeof(int), angle_compare);
+	quicksort(N, spokes, dist, dist_compare);
 }
 
 
-
-
 // [RING] Test that hints if the chosen region (-r) is too small
-static void check_intersections(const int Nint, const int N, const float S[3], const float angles[N], const long idx[2][Nint], const int c_region)
+static void check_intersections(const int Nint, const int N, const float S[3], const float angles[N], const long idx[Nint][2], const int c_region)
 {
 	for (int i = 0; i < Nint; i++) {
 
-		float phi0 = angles[idx[0][i]];
-		float phi1 = angles[idx[1][i]];
+		float phi0 = angles[idx[i][0]];
+		float phi1 = angles[idx[i][1]];
+
 		float N1 = cosf(phi0) - cosf(phi1);
 		float N2 = sinf(phi0) - sinf(phi1);
 
@@ -155,7 +163,7 @@ static void check_intersections(const int Nint, const int N, const float S[3], c
 
 
 // [RING] Caclucate intersection points
-static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[2][Nint], long idx[2][Nint], const float angles[N], const long kc_dims[DIMS], const complex float* kc, int ROI)
+static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[Nint][2], long idx[Nint][2], const float angles[N], const long kc_dims[DIMS], const complex float* kc)
 {
 	long spoke_dims[DIMS];
 	md_select_dims(DIMS, ~PHS2_FLAG, spoke_dims, kc_dims);
@@ -166,23 +174,7 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[2
 	long pos_i[DIMS] = { 0 };
 	long pos_j[DIMS] = { 0 };
 
-	long coilPixel_dims[DIMS];
-	md_select_dims(DIMS, ~PHS1_FLAG, coilPixel_dims, spoke_dims);
-
-	complex float* coilPixel_l = md_alloc(DIMS, coilPixel_dims, CFL_SIZE);
-	complex float* coilPixel_m = md_alloc(DIMS, coilPixel_dims, CFL_SIZE);
-	complex float* diff = md_alloc(DIMS, coilPixel_dims, CFL_SIZE);
-
-	long diff_rss_dims[DIMS];
-	md_select_dims(DIMS, ~(COIL_FLAG|PHS1_FLAG), diff_rss_dims, coilPixel_dims);
-
-	complex float* diff_rss = md_alloc(DIMS, diff_rss_dims, CFL_SIZE);
-
-	long pos_l[DIMS] = { 0 };
-	long pos_m[DIMS] = { 0 };
-
-	if (0 == ROI % 2)
-		ROI++;
+	int ROI = kc_dims[PHS1_DIM];
 
 	// Intersection determination
 	for (int i = 0; i < N; i++) {
@@ -200,32 +192,31 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[2
 
 			md_slice(DIMS, PHS2_FLAG, pos_j, kc_dims, spoke_j, kc, CFL_SIZE);
 
-			idx[0][i * no_intersec_sp + j] = i;
-			idx[1][i * no_intersec_sp + j] = intersec_sp[j];
+			idx[i * no_intersec_sp + j][0] = i;
+			idx[i * no_intersec_sp + j][1] = intersec_sp[j];
 
 			// Elementwise rss comparisson
-			float rss = FLT_MAX;
+			float ss = FLT_MAX;
+			int channels = spoke_dims[COIL_DIM];
 
 			for (int l = 0; l < ROI; l++) {
 
-				pos_l[PHS1_DIM] = l;
-
-				md_copy_block(DIMS, pos_l, coilPixel_dims, coilPixel_l, spoke_dims, spoke_i, CFL_SIZE);
-
 				for (int m = 0; m < ROI; m++) {
 
-					pos_m[PHS1_DIM] = m;
+					float diff_ss = 0.;
 
-					md_copy_block(DIMS, pos_m, coilPixel_dims, coilPixel_m, spoke_dims, spoke_j, CFL_SIZE);
+					for (int c = 0; c < channels; c++) {
 
-					md_zsub(DIMS, coilPixel_dims, diff, coilPixel_l, coilPixel_m);
-					md_zrss(DIMS, coilPixel_dims, PHS1_FLAG|COIL_FLAG, diff_rss, diff);
+						complex float diff = spoke_i[l + c * ROI] - spoke_j[m + c * ROI];
 
-					if (cabsf(diff_rss[0]) < rss) { // New minimum found
+						diff_ss += pow(crealf(diff), 2.) + pow(cimagf(diff), 2.);
+					}
 
-						rss = cabsf(diff_rss[0]);
-						dist[0][i * no_intersec_sp + j] = (l + 1/2 - ROI/2);
-						dist[1][i * no_intersec_sp + j] = (m + 1/2 - ROI/2);
+					if (diff_ss < ss) { // New minimum found
+
+						ss = diff_ss;
+						dist[i * no_intersec_sp + j][0] = (l + 1/2 - ROI/2);
+						dist[i * no_intersec_sp + j][1] = (m + 1/2 - ROI/2);
 					}
 				}
 			}
@@ -245,8 +236,8 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[2
 
 		for (int j = 0; j < no_intersec_sp; j++) {
 
-			fprintf(fp, "%f \t %f\n", angles[idx[0][i * no_intersec_sp + j]], angles[idx[1][i * no_intersec_sp + j]]);
-			fprintf(fp1, "%f \t %f\n", dist[0][i * no_intersec_sp + j], dist[1][i * no_intersec_sp + j]);
+			fprintf(fp, "%f \t %f\n", angles[idx[i * no_intersec_sp + j][0]], angles[idx[i * no_intersec_sp + j][1]]);
+			fprintf(fp1, "%f \t %f\n", dist[i * no_intersec_sp + j][0], dist[i * no_intersec_sp + j][1]);
 		}
 	}
 
@@ -256,30 +247,26 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[2
 
 	md_free(spoke_i);
 	md_free(spoke_j);
-	md_free(coilPixel_l);
-	md_free(coilPixel_m);
-	md_free(diff);
-	md_free(diff_rss);
 }
 
 
 
 // [RING] Solve inverse problem AS = B using pseudoinverse
-static void calc_S(const int Nint, const int N, float S[3], const float angles[N], const float dist[2][Nint], const long idx[2][Nint])
+static void calc_S(const int Nint, const int N, float S[3], const float angles[N], const float dist[Nint][2], const long idx[Nint][2])
 {
 	complex float A[2 * Nint][3];
 	complex float B[2 * Nint];
 
 	for (int i = 0; i < Nint; i++) {
 
-		float phi0 = angles[idx[0][i]];
-		float phi1 = angles[idx[1][i]];
+		float phi0 = angles[idx[i][0]];
+		float phi1 = angles[idx[i][1]];
 
 		float a0 = cosf(phi0) - cosf(phi1);
 		float a1 = sinf(phi0) - sinf(phi1);
 
-		float b0 = dist[1][i] * cosf(phi1) - dist[0][i] * cosf(phi0);
-		float b1 = dist[1][i] * sinf(phi1) - dist[0][i] * sinf(phi0);
+		float b0 = dist[i][1] * cosf(phi1) - dist[i][0] * cosf(phi0);
+		float b1 = dist[i][1] * sinf(phi1) - dist[i][0] * sinf(phi0);
 
 		A[2 * i + 0][0] = a0;
 		A[2 * i + 0][1] = 0.;
@@ -310,6 +297,7 @@ struct ring_conf ring_defaults = {
 	.pad_factor = 100,
 	.size = 1.5,
 	.no_intersec_sp = 1,
+	.crop_factor = 0.6,
 };
 
 void ring(const struct ring_conf* conf, float S[3], int N, const float angles[N], const long dims[DIMS], const complex float* in)
@@ -332,7 +320,7 @@ void ring(const struct ring_conf* conf, float S[3], int N, const float angles[N]
 	long crop_dims[DIMS];
 
 	md_copy_dims(DIMS, crop_dims, dims);
-	crop_dims[PHS1_DIM] = 0.6 * dims[PHS1_DIM];
+	crop_dims[PHS1_DIM] = conf->crop_factor * dims[PHS1_DIM];
 
 	complex float* crop = md_alloc(DIMS, crop_dims, CFL_SIZE);
 
@@ -375,10 +363,10 @@ void ring(const struct ring_conf* conf, float S[3], int N, const float angles[N]
 	//--- Calculate intersections ---
 
 	int Nint = N * conf->no_intersec_sp; // Number of intersection points
-	long idx[2][Nint];
-	float dist[2][Nint];
+	long idx[Nint][2];
+	float dist[Nint][2];
 
-	calc_intersections(Nint, N, conf->no_intersec_sp, dist, idx, angles, kc_dims, kc, c_region);
+	calc_intersections(Nint, N, conf->no_intersec_sp, dist, idx, angles, kc_dims, kc);
 
 	calc_S(Nint, N, S, angles, dist, idx);
 

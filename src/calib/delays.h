@@ -14,6 +14,7 @@ struct ring_conf {
 	int pad_factor;
 	float size;
 	int no_intersec_sp;
+	float crop_factor;
 };
 
 extern struct ring_conf ring_defaults;
