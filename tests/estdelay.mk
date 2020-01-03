@@ -80,16 +80,6 @@ tests/test-estdelay-ring: estdelay traj phantom nrmse
 	touch $@
 
 
-tests/test-estdelay-scale: estdelay traj phantom nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/traj -D -q1.5:1:-0.5 -r -y8 -o2. t.ra					;\
-	$(TOOLDIR)/traj -D -r -y8 -o2. t0.ra							;\
-	$(TOOLDIR)/phantom -k -t t.ra k.ra							;\
-	$(TOOLDIR)/traj -D -q`DEBUG_LEVEL=0 $(TOOLDIR)/estdelay t0.ra k.ra` -r -y8 -o2. t2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.0001 t.ra t2.ra							;\
-	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@
-
 tests/test-estdelay-asym: estdelay traj phantom nrmse extract
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
 	$(TOOLDIR)/traj -D -q1.5:1.:-0.5 -r -y8 -x128 t.ra						;\
@@ -102,6 +92,43 @@ tests/test-estdelay-asym: estdelay traj phantom nrmse extract
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
+tests/test-estdelay-ring-coils: estdelay scale traj phantom nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/traj -D -r -q0.3:0.1:0.2 -O -c -y5 t.ra					;\
+	$(TOOLDIR)/traj -D -c -r -y5 n.ra							;\
+	$(TOOLDIR)/scale 0.5 n.ra ns.ra								;\
+	$(TOOLDIR)/scale 0.5 t.ra ts.ra								;\
+	$(TOOLDIR)/phantom -k -s8 -t ts.ra k.ra							;\
+	$(TOOLDIR)/traj -D -r -q`$(TOOLDIR)/estdelay -R ns.ra k.ra` -O -c -y5 t2.ra		;\
+	$(TOOLDIR)/nrmse -t 0.0001 t.ra t2.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-estdelay-ring-b0: estdelay scale index zexp fmac traj phantom nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/traj -D -r -q0.3:0.1:0.2 -O -c -y5 t.ra					;\
+	$(TOOLDIR)/traj -D -c -r -y5 n.ra							;\
+	$(TOOLDIR)/scale 0.5 n.ra ns.ra								;\
+	$(TOOLDIR)/scale 0.5 t.ra ts.ra								;\
+	$(TOOLDIR)/phantom -k -s8 -t ts.ra k.ra							;\
+	$(TOOLDIR)/index 2 5 i.ra								;\
+	$(TOOLDIR)/zexp -i i.ra ii.ra								;\
+	$(TOOLDIR)/fmac k.ra ii.ra ki.ra							;\
+	$(TOOLDIR)/traj -D -r -q`$(TOOLDIR)/estdelay -B -R ns.ra ki.ra` -O -c -y5 t2.ra		;\
+	$(TOOLDIR)/nrmse -t 0.00015 t.ra t2.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-estdelay-scale: estdelay traj phantom nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/traj -D -q1.5:1:-0.5 -r -y8 -o2. t.ra					;\
+	$(TOOLDIR)/traj -D -r -y8 -o2. t0.ra							;\
+	$(TOOLDIR)/phantom -k -t t.ra k.ra							;\
+	$(TOOLDIR)/traj -D -q`DEBUG_LEVEL=0 $(TOOLDIR)/estdelay t0.ra k.ra` -r -y8 -o2. t2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0001 t.ra t2.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 tests/test-estdelay-dccen-asym: estdelay traj phantom nrmse extract
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
@@ -121,4 +148,6 @@ TESTS += tests/test-estdelay tests/test-estdelay-dccen tests/test-estdelay-trans
 TESTS += tests/test-estdelay-ring tests/test-estdelay-coils tests/test-estdelay-scale
 TESTS += tests/test-estdelay-dccen-scale tests/test-estdelay-ring-scale
 TESTS += tests/test-estdelay-ring-uncen tests/test-estdelay-asym tests/test-estdelay-dccen-asym
+TESTS += tests/test-estdelay-ring-coils tests/test-estdelay-ring-b0
+
 

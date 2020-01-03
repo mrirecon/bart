@@ -1,5 +1,6 @@
 
 #include <complex.h>
+#include <stdbool.h>
 
 #ifndef DIMS
 #define DIMS 16
@@ -15,6 +16,7 @@ struct ring_conf {
 	float size;
 	int no_intersec_sp;
 	float crop_factor;
+	bool b0;
 };
 
 extern struct ring_conf ring_defaults;

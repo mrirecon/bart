@@ -71,6 +71,7 @@ int main_estdelay(int argc, char* argv[argc])
 		OPT_PINT('p', &conf.pad_factor, "p", "[RING] Padding"),
 		OPT_PINT('n', &conf.no_intersec_sp, "n", "[RING] Number of intersecting spokes"),
 		OPT_FLOAT('r', &conf.size, "r", "[RING] Central region size"),
+		OPT_SET('B', &conf.b0, "[RING] Assume B0 eddy currents"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
