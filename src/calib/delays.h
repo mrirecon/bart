@@ -11,9 +11,9 @@ extern void radial_self_delays(int N, float shifts[N], const float phi[N], const
 
 struct ring_conf {
 
-	int pad_factor;
+	unsigned int pad_factor;
 	float size;
-	int no_intersec_sp;
+	unsigned int no_intersec_sp;
 	float crop_factor;
 };
 

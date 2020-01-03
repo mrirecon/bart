@@ -52,23 +52,21 @@ static const char help_str[] = "Estimate gradient delays from radial data.";
 int main_estdelay(int argc, char* argv[])
 {
 	bool do_ring = false;
-	unsigned int pad_factor = 100;
-	unsigned int no_intersec_sp = 1;
-	float ring_size = 1.5;
+	struct ring_conf conf = ring_defaults;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('R', &do_ring, "RING method"),
-		OPT_UINT('p', &pad_factor, "p", "[RING] Padding"),
-		OPT_UINT('n', &no_intersec_sp, "n", "[RING] Number of intersecting spokes"),
-		OPT_FLOAT('r', &ring_size, "r", "[RING] Central region size"),
+		OPT_UINT('p', &conf.pad_factor, "p", "[RING] Padding"),
+		OPT_UINT('n', &conf.no_intersec_sp, "n", "[RING] Number of intersecting spokes"),
+		OPT_FLOAT('r', &conf.size, "r", "[RING] Central region size"),
 	};
 
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	if (0 != pad_factor % 2)
+	if (0 != conf.pad_factor % 2)
 		error("Pad_factor -p should be even\n");
 
 
@@ -140,12 +138,6 @@ int main_estdelay(int argc, char* argv[])
 		/* RING method
 		 * Rosenzweig et al., MRM 81:1898-1906 (2019)
 		 */
-
-		struct ring_conf conf = ring_defaults;
-
-		conf.pad_factor = pad_factor;
-		conf.size = ring_size;
-		conf.no_intersec_sp = no_intersec_sp;
 
 		ring(&conf, qf, N, angles, dims, in);
 	}
