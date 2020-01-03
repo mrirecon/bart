@@ -96,25 +96,32 @@ static bool test_linop_stack(void)
 
 	n = powf(md_znorm(N, dims2, out), 2);
 	n2 = (powf(val1a, 2.) + powf(val1b, 2.)) * md_calc_size(N, dims);
-	err = fabsf(n - n2);
+	err = fabs(n - n2);
 
+#ifdef  __clang__
+	ok &= (err < 100. * UT_TOL);
+#else
 	ok &= (err < UT_TOL);
-
+#endif
 
 	linop_adjoint(stack, N, dims2, out, N, dims2, in);
 
 	n = powf(md_znorm(N, dims2, out), 2);
 	n2 = (powf(val1a, 2.) + powf(val1b, 2.)) * md_calc_size(N, dims);
-	err = fabsf(n - n2);
+	err = fabs(n - n2);
 
+#ifdef  __clang__
+	ok &= (err < 100. * UT_TOL);
+#else
 	ok &= (err < UT_TOL);
+#endif
 
 
 	linop_normal(stack, N, dims2, out, in);
 
 	n = powf(md_znorm(N, dims2, out), 2);
 	n2 = (powf(val1a, 4.) + powf(val1b, 4.)) * md_calc_size(N, dims);
-	err = fabsf(n - n2);
+	err = fabs(n - n2);
 
 	ok &= (err < 1.E-3);
 

@@ -80,8 +80,11 @@ static bool test_auto_norm(void)
 
 	md_free(src);
 	md_free(dst);
-
+#ifdef  __clang__
+	UT_ASSERT(err < 1.E-6);
+#else
 	UT_ASSERT(err < 1.E-10);
+#endif
 }
 
 UT_REGISTER_TEST(test_auto_norm);
