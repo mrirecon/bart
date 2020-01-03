@@ -480,7 +480,7 @@ UTARGETS += test_batchsvd
 MODULES_test_batchsvd = -llowrank
 
 # lib misc
-UTARGETS += test_pattern test_types
+UTARGETS += test_pattern test_types test_misc
 
 # lib moba
 UTARGETS += test_moba
@@ -504,6 +504,10 @@ UTARGETS += test_ode_bloch test_biot_savart
 MODULES_test_ode_bloch += -lsimu
 MODULES_test_biot_savart += -lsimu
 
+# lib iter
+UTARGETS += test_iter test_prox
+MODULES_test_iter += -liter -lnlops -llinops
+MODULES_test_prox += -liter -llinops
 
 
 

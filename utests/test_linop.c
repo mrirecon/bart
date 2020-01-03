@@ -1,12 +1,13 @@
-/* Copyright 2018. Martin Uecker.
+/* Copyright 2018-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2018-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
+#include <math.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -65,6 +66,72 @@ static bool test_linop_plus(void)
 
 
 UT_REGISTER_TEST(test_linop_plus);
+
+
+
+
+static bool test_linop_stack(void)
+{
+	enum { N = 3 };
+	long dims[N] = { 8, 4, 1 };
+	long dims2[N] = { 8, 4, 2 };
+
+	complex float val1a = 2.;
+	complex float val1b = 3.;
+
+	struct linop_s* diaga = linop_cdiag_create(N, dims, 0, &val1a);
+	struct linop_s* diagb = linop_cdiag_create(N, dims, 0, &val1b);
+	struct linop_s* stack = linop_stack(2, 2, diaga, diagb);
+
+	complex float* in = md_alloc(N, dims2, CFL_SIZE);
+	complex float* out = md_alloc(N, dims2, CFL_SIZE);
+
+	md_zfill(N, dims2, in, 1.);
+
+	bool ok = true;
+	double n, n2, err;
+
+
+	linop_forward(stack, N, dims2, out, N, dims2, in);
+
+	n = powf(md_znorm(N, dims2, out), 2);
+	n2 = (powf(val1a, 2.) + powf(val1b, 2.)) * md_calc_size(N, dims);
+	err = fabsf(n - n2);
+
+	ok &= (err < UT_TOL);
+
+
+	linop_adjoint(stack, N, dims2, out, N, dims2, in);
+
+	n = powf(md_znorm(N, dims2, out), 2);
+	n2 = (powf(val1a, 2.) + powf(val1b, 2.)) * md_calc_size(N, dims);
+	err = fabsf(n - n2);
+
+	ok &= (err < UT_TOL);
+
+
+	linop_normal(stack, N, dims2, out, in);
+
+	n = powf(md_znorm(N, dims2, out), 2);
+	n2 = (powf(val1a, 4.) + powf(val1b, 4.)) * md_calc_size(N, dims);
+	err = fabsf(n - n2);
+
+	ok &= (err < 1.E-3);
+
+
+	linop_free(diaga);
+	linop_free(diagb);
+	linop_free(stack);
+
+	md_free(in);
+	md_free(out);
+
+	return ok;
+}
+
+
+UT_REGISTER_TEST(test_linop_stack);
+
 
 
 static bool test_linop_null(void)
