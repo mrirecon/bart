@@ -450,7 +450,7 @@ ifeq ($(CUDA),1)
 $(1)objs += $$($(1)cudasrcs:.cu=.o)
 endif
 
-.INTERMEDIATE: $(filter %.o,$$($(1)objs))
+.INTERMEDIATE: $$($(1)objs)
 
 lib/lib$(1).a: lib$(1).a($$($(1)objs))
 
@@ -570,13 +570,8 @@ ifeq ($(PARALLEL),1)
 else
 (%): %
 	$(AR) $(ARFLAGS) $@ $%
-	rm $%
 endif
 
-
-# we add the rm because intermediate files are not deleted
-# automatically for some reason
-# (but it produces errors for parallel builds for make all)
 
 
 
