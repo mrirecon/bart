@@ -36,7 +36,7 @@ tests/test-smallfov-enlive: fmac fft nrmse nlinv $(TESTS_OUT)/shepplogan-smallfo
 	$(TOOLDIR)/nlinv -m2 -i12 -U -S -N ku.ra xu2.ra sn.ra			 			;\
 	$(TOOLDIR)/fmac -s16 xu2.ra sn.ra xsn.ra							;\
 	$(TOOLDIR)/fft -u 7 xsn.ra xsn2.ra								;\
-	$(TOOLDIR)/nrmse -t 0.03 $(TESTS_OUT)/shepplogan-smallfov-ksp.ra xsn2.ra		 	;\
+	$(TOOLDIR)/nrmse -t 0.032 $(TESTS_OUT)/shepplogan-smallfov-ksp.ra xsn2.ra		 	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
