@@ -1,10 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2020. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -207,11 +207,10 @@ int main_nlinv(int argc, char* argv[])
 #else
 	double scaling = 100. / md_znorm(DIMS, ksp_dims, kspace_data);
 
-
-	if (1 != ksp_dims[SLICE_DIM]) // SMS
-			scaling *= sqrt(ksp_dims[SLICE_DIM]); 
-
+	if (conf.sms)
+		scaling *= sqrt(ksp_dims[SLICE_DIM]);
 #endif
+
 	debug_printf(DP_INFO, "Scaling: %f\n", scaling);
 	md_zsmul(DIMS, ksp_dims, kspace_data, kspace_data, scaling);
 
