@@ -21,6 +21,7 @@ struct noir_conf_s {
 	float b;
 	_Bool pattern_for_each_coil;
 	_Bool sms;
+	unsigned int cnstcoil_flags;
 };
 
 

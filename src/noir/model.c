@@ -44,7 +44,7 @@
 struct noir_model_conf_s noir_model_conf_defaults = {
 
 	.fft_flags = FFT_FLAGS,
-	.cnstcoil_flags = TE_FLAG,
+	.cnstcoil_flags = 0u,
 	.ptrn_flags = ~(COIL_FLAG|MAPS_FLAG),
 	.rvc = false,
 	.noncart = false,
@@ -508,13 +508,13 @@ void noir_orthogonalize(struct noir_s* op, complex float* coils)
 		return;
 
 	long single_map_dims[DIMS];
-	md_select_dims(DIMS, ~MAPS_FLAG, single_map_dims, data->dims);
+	md_select_dims(DIMS, ~MAPS_FLAG, single_map_dims, data->coil_dims);
 
 	long single_map_strs[DIMS];
 	md_calc_strides(DIMS, single_map_strs, single_map_dims, CFL_SIZE);
 
 	long data_strs[DIMS];
-	md_calc_strides(DIMS, data_strs, data->dims, CFL_SIZE);
+	md_calc_strides(DIMS, data_strs, data->coil_dims, CFL_SIZE);
 
 	complex float* tmp = md_alloc_sameplace(DIMS, single_map_dims, CFL_SIZE, coils);
 

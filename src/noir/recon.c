@@ -76,10 +76,11 @@ const struct noir_conf_s noir_defaults = {
 	.b = 32.,
 	.pattern_for_each_coil = false,
 	.sms = false,
+	.cnstcoil_flags = 0u,
 };
 
 
-void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex float* img, complex float* sens, complex float* ksens, const complex float* ref, const complex float* pattern, const complex float* mask, const complex float* kspace_data )
+void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex float* img, complex float* sens, complex float* ksens, const complex float* ref, const complex float* pattern, const complex float* mask, const complex float* kspace_data)
 {
 	struct noir_model_conf_s mconf = noir_model_conf_defaults;
 	mconf.rvc = conf->rvc;
@@ -88,6 +89,7 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 	mconf.a = conf->a;
 	mconf.b = conf->b;
 	mconf.ptrn_flags = ~(MAPS_FLAG|COIL_FLAG);
+	mconf.cnstcoil_flags = conf->cnstcoil_flags;
 
 	if (conf->sms)
 		mconf.fft_flags |= SLICE_FLAG;
