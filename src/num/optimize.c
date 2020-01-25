@@ -573,6 +573,75 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 
 	int ND = optimize_dims(N, D, tdims, nstr1);
 
+#if 1
+	unsigned long cnst_flags = 0;
+	bool cnst_ok = true;
+
+	for (unsigned int i = 0; i < N; i++) {
+
+		if (0 == tstrs[i][0]) {
+
+			if (MD_IS_SET(io, i))  {
+
+				cnst_ok = false;
+				break;
+			}
+
+			cnst_flags = MD_SET(cnst_flags, i);
+
+			for (int d = 0; d < ND; d++)
+				cnst_ok &= (0 == tstrs[i][d]);
+		}
+	}
+
+	long cnst_size = 1;
+	int cnst_dims = 0;
+
+	for (; cnst_dims < ND; cnst_dims++) {
+
+		cnst_size *= tdims[cnst_dims];
+
+		for (unsigned int i = 0; i < N; i++) {
+			if (cnst_size * sizes[i] > 4096) {	// buffer too big
+
+				cnst_size /= tdims[cnst_dims];
+				cnst_dims--;
+				goto out;
+			}
+		}
+	}
+out:
+
+	if ((0 == cnst_size) || (1 > cnst_dims))
+		cnst_ok = false;
+
+#ifdef USE_CUDA
+	if (use_gpu(N, nptr1))	// not implemented yet
+		cnst_ok = false;
+#endif
+
+	if (cnst_ok) {
+
+		debug_printf(DP_DEBUG4, "MD constant buffer Io: %d Cnst: %d Size %ld.\n", io, cnst_flags, cnst_size);
+
+		for (unsigned int i = 0; i < N; i++) {
+
+			if (MD_IS_SET(cnst_flags, i)) {
+
+				for (int d = 0; d < cnst_dims; d++)
+					tstrs[i][d] = ((0 < d) ? tdims[d - 1] : 1) * sizes[i];
+
+				void* np = alloca(cnst_size * sizes[i]);
+
+				for (long n = 0; n < cnst_size; n++)
+					memcpy(np + n * sizes[i], nptr[i], sizes[i]);
+
+				nptr1[i] = np;
+			}
+		}
+	}
+#endif
+
 	int skip = min_blockdim(N, ND, tdims, nstr1, sizes);
 	unsigned long flags = 0;
 
