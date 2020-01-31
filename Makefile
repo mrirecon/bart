@@ -63,6 +63,12 @@ else
 	ARFLAGS ?= rs
 endif
 
+ifeq ($(BUILDTYPE), Linux)
+ifneq (,$(findstring Red Hat,$(shell gcc --version)))
+	CPPFLAGS+=-I/usr/include/lapacke/
+	LDFLAGS+=-L/usr/lib64/atlas -ltatlas
+endif
+endif
 
 ifeq ($(UNAME),Cygwin)
 	BUILDTYPE = Cygwin
