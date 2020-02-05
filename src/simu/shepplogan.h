@@ -4,6 +4,9 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
+#ifndef __SHEPPLOGAN_H
+#define __SHEPPLOGAN_H
+
 #include <complex.h>
 
 #include "misc/cppwrap.h"
@@ -39,6 +42,8 @@ extern const struct ellipsis_s phantom_geo2[2];
 extern const struct ellipsis_s phantom_geo3[7];
 extern const struct ellipsis_s phantom_geo4[1];
 
+extern const struct ellipsis_s phantom_tubes[10];
+
 
 extern complex double xellipsis(const double center[2], const double axis[2], double angle, const double p[2]);
 extern complex double kellipsis(const double center[2], const double axis[2], double angle, const double p[2]);
@@ -58,3 +63,4 @@ extern complex double phantom3d(unsigned int N, const struct ellipsis3d_s arr[__
 
 #include "misc/cppwrap.h"
 
+#endif	// __SHEPPLOGAN_H

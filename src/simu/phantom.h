@@ -1,19 +1,21 @@
 
-#include "misc/mri.h"
 
-extern void calc_phantom(const long dims[DIMS], complex float* out, _Bool ksp);
-extern void calc_geo_phantom(const long dims[DIMS], complex float* out, _Bool ksp, int phtype);
+extern void calc_sens(const long dims[DIMS], complex float* sens);
+
+extern void calc_geo_phantom(const long dims[DIMS], complex float* out, _Bool ksp, int phtype, const long tstrs[DIMS], const _Complex float* traj);
 
 extern void calc_phantom_noncart(const long dims[3], complex float* out, const complex float* traj);
 extern void calc_geo_phantom_noncart(const long dims[3], complex float* out, const complex float* traj, int phtype);
 
-extern void calc_sens(const long dims[DIMS], complex float* sens);
-extern void calc_circ(const long dims[DIMS], complex float* img, _Bool ksp);
-extern void calc_ring(const long dims[DIMS], complex float* img, _Bool ksp);
+extern void calc_phantom(const long dims[DIMS], _Complex float* out, _Bool d3, _Bool ksp, const long tstrs[DIMS], const _Complex float* traj);
+extern void calc_circ(const long dims[DIMS], _Complex float* img, _Bool d3, _Bool ksp, const long tstrs[DIMS], const _Complex float* traj);
+extern void calc_ring(const long dims[DIMS], _Complex float* img, _Bool ksp, const long tstrs[DIMS], const _Complex float* traj);
 
-extern void calc_phantom3d(const long dims[DIMS], complex float* out, _Bool ksp);
-extern void calc_phantom3d_noncart(const long dims[3], complex float* out, const complex float* traj);
-extern void calc_circ3d(const long dims[DIMS], complex float* out, _Bool kspace);
+extern void calc_moving_circ(const long dims[DIMS], _Complex float* out, _Bool ksp, const long tstrs[DIMS], const _Complex float* traj);
 
-extern void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace);
+extern void calc_phantom_tubes(const long dims[DIMS], _Complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj);
+
+
+struct ellipsis_s;
+extern void calc_phantom_arb(int N, const struct ellipsis_s* data /*[N]*/, const long dims[DIMS], _Complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj);
 
