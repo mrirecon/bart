@@ -27,7 +27,7 @@ extern struct linop_s* linop_fft_create(int N, const long dims[__VLA(N)], unsign
 extern struct linop_s* linop_ifft_create(int N, const long dims[__VLA(N)], unsigned int flags);
 extern struct linop_s* linop_fftc_create(int N, const long dims[__VLA(N)], unsigned int flags);
 extern struct linop_s* linop_ifftc_create(int N, const long dims[__VLA(N)], unsigned int flags);
-extern struct linop_s* linop_fft_create_no_measure(int N, const long dims[__VLA(N)], unsigned int flags);
+extern struct linop_s* linop_fft_create_measure(int N, const long dims[__VLA(N)], unsigned int flags);
 
 extern struct linop_s* linop_cdf97_create(int N, const long dims[__VLA(N)], unsigned int flag);
 
