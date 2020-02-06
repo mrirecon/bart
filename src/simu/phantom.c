@@ -367,7 +367,7 @@ void calc_phantom_arb(int N, const struct ellipsis_s data[N], const long dims[DI
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
-	assert((!coeff) || (0 == tstrs[COEFF_DIM]));
+	assert((!coeff) || (NULL == traj) || (0 == tstrs[COEFF_DIM]));
 	assert((!coeff) || (N == dims[COEFF_DIM]));
 
 	sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, N, data }, krn2d, kspace);
