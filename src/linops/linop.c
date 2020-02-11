@@ -416,6 +416,16 @@ struct linop_s* linop_null_create(unsigned int NO, const long odims[NO], unsigne
  */
 struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b)
 {
+	if (   operator_zero_or_null_p(a->forward)
+	    || operator_zero_or_null_p(b->forward)) {
+
+		auto dom = linop_domain(a);
+		auto cod = linop_codomain(b);
+
+		return linop_null_create2(cod->N, cod->dims, cod->strs,
+					dom->N, dom->dims, dom->strs);
+	}
+
 	PTR_ALLOC(struct linop_s, c);
 
 	c->forward = operator_chain(a->forward, b->forward);
