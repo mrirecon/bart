@@ -144,7 +144,7 @@ UT_REGISTER_TEST(test_linop_stack);
 static bool test_linop_null(void)
 {
 	long dims[1] = { 5 };
-	const struct linop_s* l = linop_null_create(1, dims, dims);
+	const struct linop_s* l = linop_null_create(1, dims, 1, dims);
 
 	bool ok = true;
 

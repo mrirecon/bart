@@ -377,14 +377,14 @@ const struct iovec_s* linop_codomain(const struct linop_s* op)
 
 
 
-struct linop_s* linop_null_create2(unsigned int N, const long odims[N], const long ostrs[N], const long idims[N], const long istrs[N])
+struct linop_s* linop_null_create2(unsigned int NO, const long odims[NO], const long ostrs[NO], unsigned int NI, const long idims[NI], const long istrs[NI])
 {
 	PTR_ALLOC(struct linop_s, c);
 
-	const struct operator_s* nudo = operator_null_create2(N, idims, istrs);
-	const struct operator_s* zedo = operator_zero_create2(N, idims, istrs);
-	const struct operator_s* nuco = operator_null_create2(N, odims, ostrs);
-	const struct operator_s* zeco = operator_zero_create2(N, odims, ostrs);
+	const struct operator_s* nudo = operator_null_create2(NI, idims, istrs);
+	const struct operator_s* zedo = operator_zero_create2(NI, idims, istrs);
+	const struct operator_s* nuco = operator_null_create2(NO, odims, ostrs);
+	const struct operator_s* zeco = operator_zero_create2(NO, odims, ostrs);
 
 	c->forward = operator_combi_create(2, MAKE_ARRAY(zeco, nudo));
 	c->adjoint = operator_combi_create(2, MAKE_ARRAY(zedo, nuco));
@@ -401,10 +401,10 @@ struct linop_s* linop_null_create2(unsigned int N, const long odims[N], const lo
 
 
 
-struct linop_s* linop_null_create(unsigned int N, const long odims[N], const long idims[N])
+struct linop_s* linop_null_create(unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI])
 {
-	return linop_null_create2(N, odims, MD_STRIDES(N, odims, CFL_SIZE),
-					idims, MD_STRIDES(N, idims, CFL_SIZE));
+	return linop_null_create2(NO, odims, MD_STRIDES(NO, odims, CFL_SIZE),
+					NI, idims, MD_STRIDES(NI, idims, CFL_SIZE));
 }
 
 
