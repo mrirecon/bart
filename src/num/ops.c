@@ -269,6 +269,48 @@ const struct iovec_s* operator_arg_domain(const struct operator_s* op, unsigned 
 
 
 /**
+ * Return the iovec of input arg n
+ *
+ * @param op operator
+ * @param n input arg number
+ */
+const struct iovec_s* operator_arg_in_domain(const struct operator_s* op, unsigned int n)
+{
+	assert(n < operator_nr_in_args(op));
+
+	unsigned int count = 0;
+	unsigned int index = 0;
+
+	for (; count <= n; index++)
+		if (!MD_IS_SET(operator_ioflags(op), index))
+			count++;
+
+	return operator_arg_domain(op, index - 1);
+}
+
+
+/**
+ * Return the iovec of output arg n
+ *
+ * @param op operator
+ * @param n output arg number
+ */
+const struct iovec_s* operator_arg_out_codomain(const struct operator_s* op, unsigned int n)
+{
+	assert(n < operator_nr_out_args(op));
+
+	unsigned int count = 0;
+	unsigned int index = 0;
+
+	for (; count <= n; index++)
+		if (MD_IS_SET(operator_ioflags(op), index))
+			count++;
+
+	return operator_arg_domain(op, index - 1);
+}
+
+
+/**
  * Return the dimensions and strides of the domain of an operator
  *
  * @param op operator

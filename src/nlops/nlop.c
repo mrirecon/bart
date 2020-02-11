@@ -331,12 +331,12 @@ const struct linop_s* nlop_get_derivative(const struct nlop_s* op, int o, int i)
 
 const struct iovec_s* nlop_generic_domain(const struct nlop_s* op, int i)
 {
-	return linop_domain(nlop_get_derivative(op, 0, i));
+	return operator_arg_in_domain(op->op, (unsigned int)i);
 }
 
 const struct iovec_s* nlop_generic_codomain(const struct nlop_s* op, int o)
 {
-	return linop_codomain(nlop_get_derivative(op, o, 0));
+	return operator_arg_out_codomain(op->op, (unsigned int)o);
 }
 
 

@@ -21,7 +21,6 @@
 
 
 
-
 static bool test_op_stack(void)
 {
 	enum { N = 3 };
@@ -94,6 +93,40 @@ static bool test_op_extract(void)
 
 UT_REGISTER_TEST(test_op_extract);
 
+
+static bool test_op_combi_inout(void)
+{
+	enum { N = 1 };
+	long dimsi1[N] = { 2 };
+	long dimso1[N] = { 3 };
+	long dimsi2[N] = { 4 };
+	long dimso2[N] = { 5 };
+
+	const auto ai = operator_null_create(N, dimsi1);
+	const auto ao = operator_zero_create(N, dimso1);
+	auto a = operator_combi_create(2, MAKE_ARRAY(OP_PASS(ai), OP_PASS(ao)));
+	const auto bi = operator_null_create(N, dimsi2);
+	const auto bo = operator_zero_create(N, dimso2);
+	auto b = operator_combi_create(2, MAKE_ARRAY(OP_PASS(bi), OP_PASS(bo)));
+
+	const auto c = operator_combi_create(2, MAKE_ARRAY(a, b));
+
+	bool ok = true;
+
+	ok &= (operator_arg_in_domain(a, 0)->dims[0] == operator_arg_in_domain(c, 0)->dims[0]);
+	ok &= (operator_arg_in_domain(b, 0)->dims[0] == operator_arg_in_domain(c, 1)->dims[0]);
+
+	ok &= (operator_arg_out_codomain(a, 0)->dims[0] == operator_arg_out_codomain(c, 0)->dims[0]);
+	ok &= (operator_arg_out_codomain(b, 0)->dims[0] == operator_arg_out_codomain(c, 1)->dims[0]);
+
+	operator_free(a);
+	operator_free(b);
+	operator_free(c);
+
+	return ok;
+}
+
+UT_REGISTER_TEST(test_op_combi_inout);
 
 
 
