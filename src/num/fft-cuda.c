@@ -228,6 +228,9 @@ static unsigned long find_msb(unsigned long flags)
 
 struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], const long istrides[D], bool backwards)
 {
+	assert(0u != flags);
+	assert(0u == (flags & ~md_nontriv_dims(D, dimensions)));
+
 	struct fft_cuda_plan_s* plan = fft_cuda_plan0(D, dimensions, flags, ostrides, istrides, backwards);
 
 	if (NULL != plan)

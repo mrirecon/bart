@@ -6,9 +6,6 @@
  * 2019 Christian Holme <christian.holme@med.uni-goettingen.de>
  */
 
-
-
-
 #include <complex.h>
 #include <assert.h>
 
@@ -23,7 +20,10 @@
 
 #include "utest.h"
 
-static bool run_cuda_fft_test (const unsigned int D, const long* dims, const unsigned long flags,
+
+
+
+static bool run_cuda_fft_test(const unsigned int D, const long* dims, const unsigned long flags,
 			       const complex float* in, complex float* cpu_inout,
 			       complex float* gpu_inout, complex float* gpu_result)
 {
@@ -44,25 +44,29 @@ static bool run_cuda_fft_test (const unsigned int D, const long* dims, const uns
 
 
 
-enum {test_cuda_fft_dims = 6};
 
-static bool test_cuda_fft (void)
+static bool test_cuda_fft(void)
 {
 #ifndef USE_CUDA
 	return true;
-#endif
-
+#else
 	// TODO: detect if GPU works
 
 	num_rand_init(5);
 
-	const long dims[test_cuda_fft_dims] = { 4, 4, 4, 4, 4, 4 };
-	const bool transform_dims[4][test_cuda_fft_dims] = {
-		{ 1, 1, 1, 0, 0, 0 },
-		{ 1, 1, 0, 0, 1, 0 },
-		{ 1, 0, 1, 0, 1, 0 },
-		{ 1, 1, 0, 1, 1, 1 },
+	enum { test_cuda_fft_dims = 7 };
+
+	const long dims[test_cuda_fft_dims] = { 4, 4, 4, 4, 4, 4, 1 }; // in last dim != 1 works...
+
+	const bool transform_dims[][test_cuda_fft_dims] = {
+		{ 1, 1, 1, 0, 0, 0, 0 },
+		{ 1, 1, 0, 0, 1, 0, 0 },
+		{ 1, 0, 1, 0, 1, 0, 0 },
+		{ 1, 1, 0, 1, 1, 1, 0 },
+		{ 1, 1, 0, 1, 1, 0, 1 },
+		{ 0, 0, 0, 0, 0, 0, 0 },
 	};
+
 	const unsigned int D = test_cuda_fft_dims;
 
 	complex float* in = md_alloc(D, dims, CFL_SIZE);
@@ -76,18 +80,21 @@ static bool test_cuda_fft (void)
 	for (unsigned int i = 0; i < ARRAY_SIZE(transform_dims); ++i) {
 
 		unsigned long flags = 0;
+
 		for (unsigned int j = 0; j < D; ++j)
 			if (transform_dims[i][j])
 				flags = MD_SET(flags, j);
 
-		run_cuda_fft_test (D, dims, flags, in, cpu_inout, gpu_inout, gpu_result);
+		run_cuda_fft_test(D, dims, flags, in, cpu_inout, gpu_inout, gpu_result);
 	}
+
 	md_free(gpu_result);
 	md_free(gpu_inout);
 	md_free(cpu_inout);
 	md_free(in);
 
 	return true;
+#endif
 }
 
 UT_GPU_REGISTER_TEST(test_cuda_fft);
