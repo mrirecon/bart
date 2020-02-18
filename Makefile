@@ -520,9 +520,10 @@ UTARGETS += test_blas test_mdfft test_ops test_ops_p
 UTARGETS_GPU += test_cudafft
 
 # lib simu
-UTARGETS += test_ode_bloch test_biot_savart
+UTARGETS += test_ode_bloch test_biot_savart test_signals
 MODULES_test_ode_bloch += -lsimu
 MODULES_test_biot_savart += -lsimu
+MODULES_test_signals += -lsimu
 
 # lib geom
 UTARGETS += test_geom
