@@ -676,6 +676,7 @@ struct vec_iter_s {
 	void (*axpy)(long N, float* a, float alpha, const float* x);
 	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
 	void (*zmul)(long N, complex float* dst, const complex float* src1, const complex float* src2);
+	void (*zsmax)(long N, float val, complex float* dst, const complex float* src1);
 };
 
 
@@ -696,6 +697,7 @@ const struct vec_iter_s cpu_iter_ops = {
 	.sub = sub,
 	.swap = swap,
 	.zmul = zmul,
+	.zsmax = zsmax,
 };
 
 
