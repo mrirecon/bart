@@ -6,7 +6,7 @@
  * Authors:
  * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
- * 
+ *
  * Optimization framework for operations on multi-dimensional arrays.
  *
  */
@@ -44,7 +44,7 @@
 #if 0
 static bool regular(long dim, long str)
 {
-	return (dim > 0) && (str > 0);	
+	return (dim > 0) && (str > 0);
 }
 
 static bool singular(long dim, long str)
@@ -87,25 +87,25 @@ static long memory_footprint(int N, const long dims[N], const long strs[N])
  * 2. merging of dimensions
  * 3. splitting and ordering (cache-oblivious algorithms)
  * 4. parallelization
- * 
+ *
  */
 
 /* strategies:
 
         - cache-oblivous algorithms (e.g. transpose)
-        - use of accelerators 
+        - use of accelerators
         - parallelization
         - vectorization
         - reordering of memory access
         - temporaries
         - loop merging
         - splitting
-*/      
+*/
 
 /*
  * Each parameter is either input or output. The pointers must valid
  * and all accesses using any position inside the range given by
- * dimensions and using corresponding strides must be inside of the 
+ * dimensions and using corresponding strides must be inside of the
  * adressed memory region. Pointers pointing inside the same region
  * can be passed multipe times.
  */
@@ -129,6 +129,18 @@ void merge_dims(unsigned int D, unsigned int N, long dims[N], long (*ostrs[D])[N
 			dims[i + 0] *= dims[i + 1];
 			dims[i + 1] = 1;
 		}
+
+		if (1 == dims[i + 0]) { //everything can be merged with an empty dimension
+
+			dims[i + 0] = dims[i + 1];
+			dims[i + 1] = 1;
+
+			for (unsigned int j = 0; j < D; j++) {
+
+				(*ostrs[j])[i + 0] = (*ostrs[j])[i + 1];
+				(*ostrs[j])[i + 1] = 0;
+			}
+		}
 	}
 }
 
@@ -142,7 +154,7 @@ unsigned int remove_empty_dims(unsigned int D, unsigned int N, long dims[N], lon
 		if (1 != dims[i]) {
 
 			dims[o] = dims[i];
-			
+
 			for (unsigned int j = 0; j < D; j++)
 				(*ostrs[j])[o] = (*ostrs[j])[i];
 			o++;
@@ -276,7 +288,7 @@ unsigned int simplify_dims(unsigned int D, unsigned int N, long dims[N], long (*
 	if (0 == ND) { // atleast return a single dimension
 
 		dims[0] = 1;
-		
+
 		for (unsigned int j = 0; j < D; j++)
 			(*strs[j])[0] = 0;
 
@@ -693,5 +705,3 @@ out:
 
 	debug_printf(DP_DEBUG4, "MD time: %f\n", end - start);
 }
-
-
