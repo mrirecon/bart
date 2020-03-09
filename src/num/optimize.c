@@ -465,7 +465,7 @@ static unsigned long parallelizable(unsigned int D, unsigned int io, unsigned in
 
 
 extern long num_chunk_size;
-long num_chunk_size = 32 * 1024;
+long num_chunk_size = 32 * 256;
 
 
 /**
@@ -478,7 +478,11 @@ unsigned long dims_parallel(unsigned int D, unsigned int io, unsigned int N, con
 
 	unsigned int i = N;
 
-	long reps = md_calc_size(N, dims);
+	unsigned int max_size = 0;
+	for (unsigned int i = 0; i < D; i++)
+		max_size = MAX(max_size, size[i]);
+
+	long reps = md_calc_size(N, dims) * max_size;
 
 	unsigned long oflags = 0;
 
