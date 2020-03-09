@@ -364,54 +364,17 @@ extern struct linop_s* linop_extract_create(unsigned int N, const long pos[N], c
 	return linop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), extract_forward, extract_adjoint, NULL, NULL, extract_free);
 }
 
-
-
-
-
-struct reshape_op_s {
-
-	INTERFACE(linop_data_t);
-
-	unsigned int N;
-	const long* dims;
-};
-
-static DEF_TYPEID(reshape_op_s);
-
-static void reshape_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
-{
-	const struct reshape_op_s* data = CAST_DOWN(reshape_op_s, _data);
-
-	md_copy(data->N, data->dims, dst, src, CFL_SIZE);
-}
-
-static void reshape_free(const linop_data_t* _data)
-{
-	const struct reshape_op_s* data = CAST_DOWN(reshape_op_s, _data);
-
-	xfree(data->dims);
-
-	xfree(data);
-}
-
-
 struct linop_s* linop_reshape_create(unsigned int A, const long out_dims[A], int B, const long in_dims[B])
 {
-	PTR_ALLOC(struct reshape_op_s, data);
-	SET_TYPEID(reshape_op_s, data);
+	PTR_ALLOC(struct linop_s, c);
 
-	assert(md_calc_size(A, out_dims) == md_calc_size(B, in_dims));
+	c->forward = operator_reshape_create(A, out_dims, B, in_dims);
+	c->adjoint = operator_reshape_create(B, in_dims, A, out_dims);
+	c->normal = operator_reshape_create(B, in_dims, B, in_dims);
+	c->norm_inv = NULL;
 
-	unsigned int N = A;
-	data->N = N;
-	long* dims = *TYPE_ALLOC(long[N]);
-	md_copy_dims(N, dims, out_dims);
-	data->dims = dims;
-
-	return linop_create(A, out_dims, B, in_dims, CAST_UP(PTR_PASS(data)), reshape_forward, reshape_forward, reshape_forward, NULL, reshape_free);
+	return PTR_PASS(c);
 }
-
-
 
 struct transpose_op_s {
 
@@ -1246,5 +1209,3 @@ struct linop_s* linop_conv_create(int N, unsigned int flags, enum conv_type ctyp
 
 	return linop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)), linop_conv_forward, linop_conv_adjoint, NULL, NULL, linop_conv_free);
 }
-
-
