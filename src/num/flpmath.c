@@ -408,22 +408,32 @@ static void make_z3op_scalar(md_z3op_t fun, unsigned int D, const long dims[D], 
 
 static void make_3op_scalar(md_3op_t fun, unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
-	float* valp = &val;
+	size_t size = FL_SIZE;
+	unsigned long flags = 0;
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(optr))
-		valp = gpu_constant(&val, FL_SIZE);
-#endif
+	if ((4096 >= size * dims[0]) && (FL_SIZE == ostr[0]) && (FL_SIZE == istr[0]))
+		flags = MD_SET(flags, 0);
 
+	for (unsigned int i = 1; i < D; i++) {
+
+		if (!MD_IS_SET(flags, i - 1))
+			continue;
+		if ((4096 >= size * dims[i]) && (dims[i - 1] * ostr[i - 1] == ostr[i]) && (ostr[i] == istr[i]))
+			flags = MD_SET(flags, i);
+	}
+
+	long tdims[D];
 	long strs1[D];
-	md_singleton_strides(D, strs1);
+
+	md_select_dims(D, flags, tdims, dims);
+	md_calc_strides(D, strs1, tdims, FL_SIZE);
+
+	float* valp = md_alloc_sameplace(D, tdims, FL_SIZE, optr);
+	md_fill(D, tdims, valp, &val, FL_SIZE);
 
 	fun(D, dims, ostr, optr, istr, iptr, strs1, valp);
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(optr))
-		md_free(valp);
-#endif
+	md_free(valp);
 }
 
 static void real_from_complex_dims(unsigned int D, long odims[D + 1], const long idims[D])
