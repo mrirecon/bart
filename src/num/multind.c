@@ -657,11 +657,40 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	int ND = optimize_dims(2, D, tdims, nstr2);
 
 
+#if 1
+	//permute dims with 0 input strides to the end
+	//these might be permutet to the inner dimensions by optimize_dims and break the strided copy
+	unsigned int perm[ND];
+	for (int i = 0, j = 0; i < ND; i++)
+		if (0 >= (*nstr2[1])[i]) {
+
+			perm[ND - 1 -j] = i;
+			j += 1;
+
+		} else {
+
+			perm[i - j] = i;
+		}
+
+	long tmp[ND];
+	md_permute_dims(ND, perm, tmp, tdims);
+	md_copy_dims(ND, tdims, tmp);
+	md_permute_dims(ND, perm, tmp, tostr);
+	md_copy_dims(ND, tostr, tmp);
+	md_permute_dims(ND, perm, tmp, tistr);
+	md_copy_dims(ND, tistr, tmp);
+#endif
+
 	size_t sizes[2] = { size, size };
 	int skip = min_blockdim(2, ND, tdims, nstr2, sizes);
 
 	long ostr2 = (*nstr2[0])[skip];
 	long istr2 = (*nstr2[1])[skip];
+
+	debug_printf(DP_DEBUG4, "md_copy_2 skip=%d\n", skip);
+	debug_print_dims(DP_DEBUG4, ND, tdims);
+	debug_print_dims(DP_DEBUG4, ND, (*nstr2[0]));
+	debug_print_dims(DP_DEBUG4, ND, (*nstr2[1]));
 
 	if (use_gpu && (ND - skip > 0) && (ostr2 > 0) && (istr2 > 0)) {
 
