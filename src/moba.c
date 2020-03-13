@@ -107,7 +107,7 @@ int main_moba(int argc, char* argv[argc])
 
 	bool out_origin_maps = false;
 	bool out_sens = false;
-	bool usegpu = false;
+	bool use_gpu = false;
 	bool unused = false;
 	enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE } mode = { MDB_T1 };
 
@@ -137,7 +137,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('J', &conf.stack_frames, "Stack frames for joint recon"),
 		OPT_SET('M', &conf.sms, "Simultaneous Multi-Slice reconstruction"),
 		OPT_SET('O', &out_origin_maps, "(Output original maps from reconstruction without post processing)"),
-		OPT_SET('g', &usegpu, "use gpu"),
+		OPT_SET('g', &use_gpu, "use gpu"),
 		OPT_STRING('I', &init_file, "init", "File for initialization"),
 		OPT_STRING('t', &trajectory, "Traj", ""),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.25]"),
@@ -151,8 +151,8 @@ int main_moba(int argc, char* argv[argc])
 		out_sens = true;
 
 
-	num_init();
-
+	(use_gpu ? num_init_gpu_memopt : num_init)();
+	
 #ifdef USE_CUDA
 	cuda_use_global_memory();
 #endif
@@ -430,7 +430,7 @@ int main_moba(int argc, char* argv[argc])
 	}
 
 #ifdef  USE_CUDA
-	if (usegpu) {
+	if (use_gpu) {
 
 //		cuda_use_global_memory();
 
@@ -445,11 +445,11 @@ int main_moba(int argc, char* argv[argc])
 		switch (mode) {
 
 		case MDB_T1:
-			T1_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, usegpu);
+			T1_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, use_gpu);
 			break;
 
 		case MDB_T2:
-			T2_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, usegpu);
+			T2_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, use_gpu);
 			break;
 
 		case MDB_MGRE:
@@ -465,11 +465,11 @@ int main_moba(int argc, char* argv[argc])
 	switch (mode) {
 
 	case MDB_T1:
-		T1_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, usegpu);
+		T1_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, use_gpu);
 		break;
 
 	case MDB_T2:
-		T2_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, usegpu);
+		T2_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, use_gpu);
 		break;
 
 	case MDB_MGRE:

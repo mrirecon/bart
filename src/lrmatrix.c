@@ -187,9 +187,10 @@ int main_lrmatrix(int argc, char* argv[argc])
 	const struct operator_p_s* sum_prox = prox_lineq_create( sum_op, idata );
 	const struct operator_p_s* lr_prox = lrthresh_create(odims, randshift, mflags, (const long (*)[])blkdims, 1., noise, remove_mean, false);
 
-        assert(use_gpu == false);
+	if (use_gpu)
+		error("GPU support not implemented yet!\n");
 
-	(use_gpu ? num_init_gpu : num_init)();
+	(use_gpu ? num_init_gpu_memopt : num_init)();
 
 	if (use_gpu)
 		debug_printf(DP_INFO, "GPU reconstruction\n");

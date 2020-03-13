@@ -46,7 +46,7 @@ int main_nufft(int argc, char* argv[argc])
 	bool inverse = false;
 	bool precond = false;
 	bool dft = false;
-	bool gpu = false;
+	bool use_gpu = false;
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
@@ -68,7 +68,7 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_UINT('m', &cgconf.maxiter, "", "()"),
 		OPT_SET('P', &conf.periodic, "periodic k-space"),
 		OPT_SET('s', &dft, "DFT"),
-		OPT_SET('g', &gpu, "GPU (only inverse)"),
+		OPT_SET('g', &use_gpu, "GPU (only inverse)"),
 		OPT_CLEAR('1', &conf.decomp, "use/return oversampled grid"),
 		OPTL_SET(0, "lowmem", &conf.lowmem, "Use low-mem mode of the nuFFT"),
 	};
@@ -89,7 +89,7 @@ int main_nufft(int argc, char* argv[argc])
 	assert(3 == traj_dims[0]);
 
 
-	(gpu ? num_init_gpu : num_init)();
+	(use_gpu ? num_init_gpu_memopt : num_init)();
 
 	if (inverse || adjoint) {
 
@@ -135,7 +135,7 @@ int main_nufft(int argc, char* argv[argc])
 
 			struct lsqr_conf lsqr_conf = lsqr_defaults;
 			lsqr_conf.lambda = lambda;
-			lsqr_conf.it_gpu = gpu;
+			lsqr_conf.it_gpu = use_gpu;
 
 			lsqr(DIMS, &lsqr_conf, iter_conjgrad, CAST_UP(&cgconf),
 			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, precond_op);

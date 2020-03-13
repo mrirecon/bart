@@ -894,7 +894,7 @@ int main_wshfl(int argc, char* argv[argc])
 	bool  ksp       = false;
 	const char* fwd = NULL;
 	const char* x0  = NULL;
-	int   gpun      = -1;
+	bool  use_gpu       = false;
 	bool  dcx       = false;
 
 	const struct opt_s opts[] = {
@@ -905,7 +905,7 @@ int main_wshfl(int argc, char* argv[argc])
 		OPT_FLOAT(  's', &rho,     "admrho",    "ADMM Rho value."),
 		OPT_STRING( 'F', &fwd,     "frwrd",     "Go from shfl-coeffs to data-table. Pass in coeffs path."),
 		OPT_STRING( 'O', &x0,      "initl",     "Initialize reconstruction with guess."),
-		OPT_INT(    'g', &gpun,    "gpunm",     "GPU device number."),
+		OPT_SET(    'g', &use_gpu,              "use GPU."),
 		OPT_SET(    'K', &ksp,                  "Go from data-table to shuffling basis k-space."),
 		OPT_SET(    'H', &hgwld,                "Use hogwild."),
 		OPT_SET(    'v', &dcx,                  "Split coefficients to real and imaginary components."),
@@ -934,10 +934,7 @@ int main_wshfl(int argc, char* argv[argc])
 
 	debug_printf(DP_INFO, "Done.\n");
 
-	if (gpun >= 0)
-		num_init_gpu_device(gpun);
-	else
-		num_init();
+	(use_gpu ? num_init_gpu_memopt : num_init)();
 
 	int wx = wave_dims[0];
 	int sx = maps_dims[0];
@@ -977,7 +974,7 @@ int main_wshfl(int argc, char* argv[argc])
 	coeff_dims[8] = dcx ? 2 : 1;
 
 	if (ksp == true) {
-		const struct linop_s* Knc = linop_kern_create(gpun >= 0, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, table_dims);
+		const struct linop_s* Knc = linop_kern_create(use_gpu, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, table_dims);
 		long ksp_dims[] = { [0 ... DIMS - 1] = 1 };
 		ksp_dims[0] = wx;
 		ksp_dims[1] = sy;
@@ -1029,7 +1026,7 @@ int main_wshfl(int argc, char* argv[argc])
 	long single_channel_table_dims[] = { [0 ... DIMS - 1] = 1 };
 	md_copy_dims(DIMS, single_channel_table_dims, table_dims);
 	single_channel_table_dims[1] = 1;
-	const struct linop_s* K = linop_kern_create(gpun >= 0, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, single_channel_table_dims);
+	const struct linop_s* K = linop_kern_create(use_gpu, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, single_channel_table_dims);
 	t2 = timestamp();
 	debug_printf(DP_INFO, "\tK:   %f seconds.\n", t2 - t1);
 
@@ -1052,7 +1049,7 @@ int main_wshfl(int argc, char* argv[argc])
 		const struct linop_s* CFx    = linop_fx_create( wx, sy, sz, 1, tk, true);
 		const struct linop_s* W      = linop_wave_create(wx, sy, sz, 1, tk, wave_dims[COEFF_DIM], wave);
 		const struct linop_s* CFyz   = linop_fyz_create(wx, sy, sz, 1, tk, true);
-		const struct linop_s* K      = linop_kern_create(gpun >= 0, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, single_channel_table_dims);
+		const struct linop_s* K      = linop_kern_create(use_gpu, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, single_channel_table_dims);
 		struct linop_s* AC_sc = linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(
 			R, CFx), W), CFyz), K);
 		struct linop_s* AC = linop_multc_create(nc, md, maps, AC_sc);
@@ -1097,7 +1094,7 @@ int main_wshfl(int argc, char* argv[argc])
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
-	opt_reg_configure(DIMS, coeff_dims, &ropts, thresh_ops, trafos, blksize, 1, gpun >= 0);
+	opt_reg_configure(DIMS, coeff_dims, &ropts, thresh_ops, trafos, blksize, 1, use_gpu);
 	int nr_penalties = ropts.r;
 	struct reg_s* regs = ropts.regs;
 
@@ -1116,7 +1113,7 @@ int main_wshfl(int argc, char* argv[argc])
 	complex float* recon = create_cfl(argv[6], DIMS, coeff_dims);
 	struct lsqr_conf lsqr_conf = lsqr_defaults;
 	lsqr_conf.lambda = 0.;
-	lsqr_conf.it_gpu = (gpun >= 0);
+	lsqr_conf.it_gpu = use_gpu;
 	double recon_start = timestamp();
 	const struct operator_p_s* J = lsqr2_create(&lsqr_conf, it.italgo, it.iconf, (const float*) init, A, NULL, nr_penalties, thresh_ops, trafos, NULL);
 	operator_p_apply(J, 1., DIMS, coeff_dims, recon, DIMS, table_dims, table);

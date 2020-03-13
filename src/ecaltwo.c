@@ -12,6 +12,7 @@
 
 #include "num/multind.h"
 #include "num/fft.h"
+#include "num/init.h"
 
 #include "calib/calib.h"
 
@@ -54,6 +55,7 @@ int main_ecaltwo(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, 5, 6, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
+	(conf.usegpu ? num_init_gpu_memopt : num_init)();
 
 	long in_dims[DIMS];
 
