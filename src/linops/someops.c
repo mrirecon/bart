@@ -1028,7 +1028,10 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 
 		complex float one[1] = { 1. };
 		md_fill(N, dims, fftmod_mat, one, CFL_SIZE);
-		fftmod(N, dims, flags, fftmodk_mat, fftmod_mat);
+		if (forward)
+			fftmod(N, dims, flags, fftmodk_mat, fftmod_mat);
+		else
+			ifftmod(N, dims, flags, fftmodk_mat, fftmod_mat);
 		fftscale(N, dims, flags, fftmod_mat, fftmodk_mat);
 
 		struct linop_s* mod = linop_cdiag_create(N, dims, ~0u, fftmod_mat);
