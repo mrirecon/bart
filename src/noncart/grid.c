@@ -360,16 +360,14 @@ static float pos(int d, int i)
 
 void rolloff_correction(float os, float width, float beta, const long dimensions[3], complex float* dst)
 {
-	UNUSED(os);
-
 #pragma omp parallel for collapse(3)
 	for (int z = 0; z < dimensions[2]; z++) 
 		for (int y = 0; y < dimensions[1]; y++) 
 			for (int x = 0; x < dimensions[0]; x++)
 				dst[x + dimensions[0] * (y + z * dimensions[1])] 
-					= rolloff(pos(dimensions[0], x), beta, width)
-					* rolloff(pos(dimensions[1], y), beta, width)
-					* rolloff(pos(dimensions[2], z), beta, width);
+					= rolloff(os * pos(dimensions[0], x), beta, width)
+					* rolloff(os * pos(dimensions[1], y), beta, width)
+					* rolloff(os * pos(dimensions[2], z), beta, width);
 }
 
 

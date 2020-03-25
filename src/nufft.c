@@ -69,6 +69,7 @@ int main_nufft(int argc, char* argv[])
 		OPT_SET('P', &conf.periodic, "periodic k-space"),
 		OPT_SET('s', &dft, "DFT"),
 		OPT_SET('g', &gpu, "GPU (only inverse)"),
+		OPT_CLEAR('1', &conf.decomp, "use/return oversampled grid"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -76,7 +77,6 @@ int main_nufft(int argc, char* argv[])
 	// avoid computing PSF if not necessary
 	if (!inverse)
 		conf.toeplitz = false;
-
 
 	long coilim_dims[DIMS] = { 0 };
 	md_copy_dims(3, coilim_dims, coilim_vec);
@@ -102,6 +102,13 @@ int main_nufft(int argc, char* argv[])
 
 			estimate_im_dims(DIMS, FFT_FLAGS, coilim_dims, traj_dims, traj);
 			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", coilim_dims[0], coilim_dims[1], coilim_dims[2]);
+
+			if (!conf.decomp) {
+
+				for (unsigned int i = 0; i < DIMS; i++)
+					if (MD_IS_SET(FFT_FLAGS, i) && (1 < coilim_dims[i]))
+						coilim_dims[i] *= 2;
+			}
 		}
 
 		md_copy_dims(DIMS - 3, coilim_dims + 3, ksp_dims + 3);

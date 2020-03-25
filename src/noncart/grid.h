@@ -2,7 +2,10 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
- 
+
+#ifndef _GRID
+#define _GRID
+
 #include <complex.h>
 
 #include "misc/cppwrap.h"
@@ -35,4 +38,6 @@ extern void rolloff_correction(float os, float width, float beta, const long dim
 
 
 #include "misc/cppwrap.h"
+
+#endif // _GRID
 

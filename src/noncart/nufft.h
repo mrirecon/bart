@@ -17,6 +17,7 @@ struct nufft_conf_s {
 	_Bool lowmem;
 	unsigned long flags;
 	unsigned long cfft;
+	_Bool decomp;
 };
 
 extern struct nufft_conf_s nufft_conf_defaults;
