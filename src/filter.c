@@ -3,7 +3,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2020 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -46,17 +47,38 @@ int main_filter(int argc, char* argv[argc])
 
 	int len = -1;
 	int dim = -1;
+	int med = -1;
+	int mavg = -1;
+	bool geom = false;
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('m', &dim, "dim", "median filter along dimension dim"),
+		OPT_INT('m', &med, "dim", "median filter along dimension dim"),
 		OPT_INT('l', &len, "len", "length of filter"),
+		OPT_SET('G', &geom, "geometric median"),
+		OPT_INT('a', &mavg, "dim", "Moving average filter along dimension dim"),
+		
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
+	char filter_type;
+
+	assert (med == -1 || mavg == -1);
+
+	if (med >= 0) {
+
+		dim = med;
+		filter_type = 'm';
+
+	} else if (mavg >= 0) {
+
+		dim = mavg;
+		filter_type = 'a';
+
+	}
 
 	long in_dims[DIMS];
 	
@@ -87,7 +109,22 @@ int main_filter(int argc, char* argv[argc])
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
-	md_medianz2(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
+	switch (filter_type) {
+
+		case 'm': {
+	
+			(geom ? md_geometric_medianz2 : md_medianz2)(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
+			break;
+
+		}
+
+		case 'a': {
+
+			md_moving_avgz2(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
+			break;
+			
+		}
+	}
 
 	unmap_cfl(DIMS, in_dims, in_data);
 	unmap_cfl(DIMS, out_dims, out_data);
