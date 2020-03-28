@@ -254,7 +254,7 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	long vthrd_dims[]   = {wx, nc, tf,  1, num_threads};
 
 	complex float* vec = md_alloc_sameplace(5, vthrd_dims, CFL_SIZE, dst);
-	md_clear(DIMS, vthrd_dims, vec, CFL_SIZE);
+	md_clear(5, vthrd_dims, vec, CFL_SIZE);
 
 	long vec_str[4];
 	md_calc_strides(4, vec_str, vec_dims, CFL_SIZE);
