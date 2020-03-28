@@ -83,7 +83,11 @@ static bool test_auto_norm(void)
 #ifdef  __clang__
 	UT_ASSERT(err < 1.E-6);
 #else
+#if __GNUC__ >= 10
+	UT_ASSERT(err < 1.E-7);
+#else
 	UT_ASSERT(err < 1.E-10);
+#endif
 #endif
 }
 

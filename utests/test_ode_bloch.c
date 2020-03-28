@@ -83,7 +83,11 @@ static bool test_ode_bloch(void)
 	for (int i = 0; i < 3; i++)
 		err2 += powf(x[i] - x2[i], 2.);
 
+#if __GNUC__ >= 10
+	return (err2 < 1.E-6);
+#else
 	return (err2 < 1.E-7);
+#endif
 }
 
 UT_REGISTER_TEST(test_ode_bloch);
