@@ -2,8 +2,8 @@
  * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- * 
- * Authors: 
+ *
+ * Authors:
  * 2013, 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015-2016 Jon Tamir <jtamir.eecs.berkeley.edu>
  */
@@ -41,22 +41,25 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 
 	long T = md_calc_size(N, dims);
 
-	const char* allowed_fmts[] = {
-
-		"%+e%+ei",
-		"%+f%+fi",
+	char* allowed_fmts[] = {
+	 	"%%%[+0-9.]f%%%[+0-9.]fi",
+		"%%%[+0-9.]e%%%[+0-9.]ei"
 	};
 
+	// declare buffers for the real and imaginary precision values
+	char p_re[strlen(fmt)];
+	char p_im[strlen(fmt)];
+
+	// ensure that the input format string matches one of the valid format templates
 	for (unsigned int i = 0; i < ARRAY_SIZE(allowed_fmts); i++)
-		if (0 == strcmp(allowed_fmts[i], fmt))
+		if (2 == sscanf(fmt, allowed_fmts[i], &p_re, &p_im))
 			goto ok;
 
 	debug_printf(DP_ERROR, "Invalid format string.\n");
 	return;
+
 ok:
-
 	for (long i = 0; i < T; i++) {
-
 		printf(fmt, crealf(data[i]), cimagf(data[i]));
 		printf("%s", (0 == (i + 1) % dims[l]) ? "\n" : sep);
 	}
@@ -72,7 +75,6 @@ int main_show(int argc, char* argv[])
 	const char* fmt = strdup("%+e%+ei");
 
 	const struct opt_s opts[] = {
-
 		OPT_SET('m', &meta, "show meta data"),
 		OPT_INT('d', &showdim, "dim", "show size of dimension"),
 		OPT_STRING('s', &sep, "sep", "use <sep> as the separator"),
@@ -115,5 +117,3 @@ out:
 	xfree(fmt);
 	return 0;
 }
-
-
