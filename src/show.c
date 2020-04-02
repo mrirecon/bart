@@ -2,8 +2,8 @@
  * Copyright 2015-2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- * 
- * Authors: 
+ *
+ * Authors:
  * 2013, 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015-2016 Jon Tamir <jtamir.eecs.berkeley.edu>
  */
@@ -43,18 +43,23 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 
 	const char* allowed_fmts[] = {
 
-		"%+e%+ei",
-		"%+f%+fi",
+	 	"%%+%[0-9.]f%%+%[0-9.]fi",
+		"%%+%[0-9.]e%%+%[0-9.]ei"
 	};
 
+	// declare buffers for the real and imaginary format values
+	char fmt_re[strlen(fmt)];
+	char fmt_im[strlen(fmt)];
+
+	// ensure that the input format string matches one of the valid format templates
 	for (unsigned int i = 0; i < ARRAY_SIZE(allowed_fmts); i++)
-		if (0 == strcmp(allowed_fmts[i], fmt))
+		if (2 == sscanf(fmt, allowed_fmts[i], &fmt_re, &fmt_im))
 			goto ok;
 
 	debug_printf(DP_ERROR, "Invalid format string.\n");
 	return;
-ok:
 
+ok:
 	for (long i = 0; i < T; i++) {
 
 		printf(fmt, crealf(data[i]), cimagf(data[i]));
@@ -69,14 +74,13 @@ int main_show(int argc, char* argv[])
 	bool meta = false;
 	int showdim = -1;
 	const char* sep = strdup("\t");
-	const char* fmt = strdup("%+e%+ei");
+	const char* fmt = strdup("%+.6e%+.6ei");
 
 	const struct opt_s opts[] = {
-
 		OPT_SET('m', &meta, "show meta data"),
 		OPT_INT('d', &showdim, "dim", "show size of dimension"),
 		OPT_STRING('s', &sep, "sep", "use <sep> as the separator"),
-		OPT_STRING('f', &fmt, "format", "use <format> as the format. Default: \"\%+e\%+ei\""),
+		OPT_STRING('f', &fmt, "format", "use <format> as the format. Default: \"%%+.6e%%+.6ei\""),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -107,7 +111,7 @@ int main_show(int argc, char* argv[])
 		goto out;
 	}
 
-	print_cfl(N, dims, data, fmt,  sep);
+	print_cfl(N, dims, data, fmt, sep);
 
 out:
 	unmap_cfl(N, dims, data);
@@ -115,5 +119,3 @@ out:
 	xfree(fmt);
 	return 0;
 }
-
-
