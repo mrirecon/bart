@@ -90,7 +90,7 @@ void iter5_altmin(iter3_conf* _conf,
 
 	for(long i = 0; i < NI; ++i) {
 
-		min_data[i] = (struct iter5_altmin_s){ { &TYPEID(iter4_altmin_s) }, nlop, conf, i };
+		min_data[i] = (struct iter5_altmin_s){ { &TYPEID(iter5_altmin_s) }, nlop, conf, i };
 		min_ops[i] = (struct iter_op_p_s){ altmin_inverse, CAST_UP(&min_data[i]) };
 	}
 
