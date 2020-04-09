@@ -115,6 +115,8 @@ int main_phantom(int argc, char* argv[])
 		dims[2] = sdims[2];
 
 		dims[TE_DIM] = sdims[TE_DIM];
+
+		dims[TIME_DIM] = sdims[TIME_DIM];
 	}
 
 	if (sens > 0)
