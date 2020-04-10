@@ -64,7 +64,8 @@ extern void md_flip(unsigned int D, const long dims[__VLA(D)], unsigned long fla
 extern void md_swap_flip2(unsigned int D, const long dims[__VLA(D)], unsigned long flags, const long ostr[__VLA(D)], void* optr, const long istr[__VLA(D)], void* iptr, size_t size);
 extern void md_swap_flip(unsigned int D, const long dims[__VLA(D)], unsigned long flags, void* optr, void* iptr, size_t size);
 
-
+extern void md_reshape(unsigned int D, unsigned long flags, const long odims[__VLA(D)], void* optr, const long idims[__VLA(D)], const void* iptr, size_t size);
+extern void md_reshape2(unsigned int D, unsigned long flags, const long odims[__VLA(D)], const long ostrs[__VLA(D)], void* optr, const long idims[__VLA(D)], const long istrs[__VLA(D)], const void* iptr, size_t size);
 
 extern void md_copy_diag2(unsigned int D, const long dims[__VLA(D)], unsigned long flags, const long str1[__VLA(D)], void* dst, const long str2[__VLA(D)], const void* src, size_t size);
 extern void md_copy_diag(unsigned int D, const long dims[__VLA(D)], unsigned long flags, void* dst, const void* src, size_t size);

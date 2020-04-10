@@ -1315,6 +1315,88 @@ void md_flip(unsigned int D, const long dims[D], unsigned long flags, void* optr
 }
 
 
+/**
+ * Reshape array (with strides)
+ *
+ * Only flagged dims may flow
+ */
+void md_reshape2(unsigned int D, unsigned long flags, const long odims[D], const long ostrs[D], void* optr, const long idims[D], const long istrs[D], const void* iptr, size_t size)
+{
+	assert(md_calc_size(D, odims) == md_calc_size(D, idims));
+	assert(md_check_equal_dims(D, odims, idims, ~flags));
+
+	unsigned int order[D];
+	unsigned int j = 0;
+
+	for (unsigned int i = 0; i < D; i++)
+		if (MD_IS_SET(flags, i))
+			order[j++] = i;
+
+	for (unsigned int i = 0; i < D; i++)
+		if (!MD_IS_SET(flags, i))
+			order[j++] = i;
+
+	assert(D == j);
+
+
+	unsigned int iorder[D];
+
+	for (unsigned int i = 0; i < D; i++)
+		iorder[order[i]] = i;
+
+
+	long dims2[D];
+	long strs2[D];
+
+	// FIXME: we could avoid the buffer in some cases
+
+	void* buf = md_alloc_sameplace(D, odims, size, optr);
+
+
+	md_permute_dims(D, order, dims2, idims);
+	md_calc_strides(D, strs2, dims2, size);
+
+	md_permute2(D, order, dims2, strs2, buf, idims, istrs, iptr, size);
+
+
+	md_permute_dims(D, order, dims2, odims);
+	md_calc_strides(D, strs2, dims2, size);
+
+	md_permute2(D, iorder, odims, ostrs, optr, dims2, strs2, buf, size);
+
+
+	md_free(buf);
+}
+
+
+/**
+ * Reshape array (without strides)
+ *
+ * Only flagged dims may flow
+ */
+void md_reshape(unsigned int D, unsigned long flags, const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
+{
+	assert(md_calc_size(D, odims) == md_calc_size(D, idims));
+	assert(md_check_equal_dims(D, odims, idims, ~flags));
+
+	long ostrs[D];
+	md_calc_strides(D, ostrs, odims, size);
+
+	long istrs[D];
+	md_calc_strides(D, istrs, idims, size);
+
+	if (md_check_equal_dims(D, ostrs, istrs, ~flags)) {	// strides consistent!
+
+		md_copy(D, odims, optr, iptr, size);
+
+	} else {
+
+		md_reshape2(D, flags, odims, ostrs, optr, idims, istrs, iptr, size);
+	}
+}
+
+
+
 bool md_compare2(unsigned int D, const long dims[D], const long str1[D], const void* src1,
 			const long str2[D], const void* src2, size_t size)
 {

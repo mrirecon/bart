@@ -129,3 +129,36 @@ static bool test_md_flip(void)
 UT_REGISTER_TEST(test_md_flip);
 
 
+
+static bool test_md_reshape(void)
+{
+	enum { N = 4 };
+	long dims1[N] = { 10, 10, 10, 10 };
+	long dims2[N] = { 10, 20, 10,  5 };
+	long dims3[N] = {  5, 20, 20,  5 };
+	long dims4[N] = {  5, 10, 20, 10 };
+
+	complex float* a = md_alloc(N, dims1, sizeof(complex float));
+	complex float* b = md_alloc(N, dims1, sizeof(complex float));
+	complex float* c = md_alloc(N, dims1, sizeof(complex float));
+
+	md_gaussian_rand(N, dims1, a);
+
+	md_reshape(N, MD_BIT(1)|MD_BIT(3), dims2, b, dims1, a, sizeof(complex float));
+	md_reshape(N, MD_BIT(0)|MD_BIT(2), dims3, c, dims2, b, sizeof(complex float));
+	md_reshape(N, MD_BIT(1)|MD_BIT(3), dims4, b, dims3, c, sizeof(complex float));
+	md_reshape(N, MD_BIT(0)|MD_BIT(2), dims1, c, dims4, b, sizeof(complex float));
+
+	bool eq = md_compare(N, dims1, a, c, sizeof(complex float));
+
+	md_free(a);
+	md_free(b);
+	md_free(c);
+
+	return eq;
+}
+
+
+UT_REGISTER_TEST(test_md_reshape);
+
+
