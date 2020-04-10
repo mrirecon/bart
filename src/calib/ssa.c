@@ -60,10 +60,6 @@
 #include "ssa.h"
 
 
-static const char usage_str[] = "<src> <EOF> [<S>] [<backprojection>]";
-static const char help_str[] =
-		"Perform SSA-FARY or Singular Spectrum Analysis. <src>: [samples, coordinates]\n";
-
 static bool check_selection(const long group, const int j)
 {
 	if (j > 30)
@@ -175,16 +171,14 @@ static void ssa_backprojection( const long N,
 
 extern void ssa_fary(	const long kernel_dims[3],
 			const long cal_dims[DIMS],
-			const complex float* cal,
-			const char* name_EOF,
-			const char* name_S,
-			const char* backproj,
+			const long A_dims[2],
+			const complex float* A,
+			complex float* U,
+			float* S_square,
+			complex float* back,
 			const int rank,
 			const long group)
 {
-	long A_dims[2];
-	complex float* A = calibration_matrix(A_dims, kernel_dims, cal_dims, cal);
-
 	long N = A_dims[0];
 	long M = A_dims[1];
 
@@ -207,10 +201,7 @@ extern void ssa_fary(	const long kernel_dims[3],
 
 	// AAH = U @ S @ UH
 	long U_dims[2] = { N, N };
-	complex float* U = create_cfl(name_EOF, 2, U_dims);
 	complex float* UH = md_alloc(2, U_dims, CFL_SIZE);
-
-	float* S_square = xmalloc(N * sizeof(float));
 
 	debug_printf(DP_DEBUG3, "SVD of %dx%d matrix...", AAH_dims[0], AAH_dims[1]);
 
@@ -218,37 +209,16 @@ extern void ssa_fary(	const long kernel_dims[3],
 
 	debug_printf(DP_DEBUG3, "done\n");
 
-
-	if (NULL != name_S) {
-
-		long S_dims[1] = { N };
-		complex float* S = create_cfl(name_S, 1, S_dims);
-
-		for (int i = 0; i < N; i++)
-			S[i] = sqrt(S_square[i]) + 0i;
-
-		unmap_cfl(1, S_dims, S);
-	}
-
-	if (NULL != backproj) {
-
-		long back_dims[DIMS];
-		md_transpose_dims(DIMS, 3, 1, back_dims, cal_dims);
-
-		complex float* back = create_cfl(backproj, DIMS, back_dims);
+	if (NULL != back) {
 
 		debug_printf(DP_DEBUG3, "Backprojection...\n");
 
 		ssa_backprojection(N, M, kernel_dims, cal_dims, back, A_dims, A, U_dims, U, UH, rank, group);
 	}
 
-	unmap_cfl(2, U_dims, U);
-
 	md_free(UH);
 	md_free(A);
 	md_free(AH);
 	md_free(AAH);
-
-	xfree(S_square);
 }
 

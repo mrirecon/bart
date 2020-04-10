@@ -20,6 +20,7 @@
 #include "num/init.h"
 #include "num/flpmath.h"
 
+#include "calib/calmat.h"
 #include "calib/ssa.h"
 
 
@@ -139,12 +140,47 @@ int main_ssa(int argc, char* argv[])
 	long cal_dims[DIMS];
 	md_transpose_dims(DIMS, 1, 3, cal_dims, cal0_dims);
 
+
 	debug_printf(DP_INFO, backproj ? "Performing SSA\n" : "Performing SSA-FARY\n");
 
-	// Perform SSA-FARY or SSA
-	ssa_fary(kernel_dims, cal_dims, cal, name_EOF, name_S, backproj, rank, group);
+	long A_dims[2];
+	complex float* A = calibration_matrix(A_dims, kernel_dims, cal_dims, cal);
 
+	long N = A_dims[0];
+
+	long U_dims[2] = { N, N };
+	complex float* U = create_cfl(name_EOF, 2, U_dims);
+
+	complex float* back = NULL;
+
+	if (NULL != backproj) {
+
+		long back_dims[DIMS];
+		md_transpose_dims(DIMS, 3, 1, back_dims, cal_dims);
+
+		back = create_cfl(backproj, DIMS, back_dims);
+	}
+
+	float* S_square = xmalloc(N * sizeof(float));
+
+	ssa_fary(kernel_dims, cal_dims, A_dims, A, U, S_square, back, rank, group);
+
+	if (NULL != name_S) {
+
+		long S_dims[1] = { N };
+		complex float* S = create_cfl(name_S, 1, S_dims);
+
+		for (int i = 0; i < N; i++)
+			S[i] = sqrt(S_square[i]) + 0.i;
+
+		unmap_cfl(1, S_dims, S);
+	}
+
+	xfree(S_square);
+
+	unmap_cfl(2, U_dims, U);
 	unmap_cfl(DIMS, in_dims, in);
+
 	md_free(cal);
 
 	exit(0);
