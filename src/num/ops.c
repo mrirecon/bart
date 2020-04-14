@@ -1654,8 +1654,10 @@ const struct operator_s* operator_stack2(int M, const int arg_list[M], const int
 		for (int i = 0; i < D; i++)
 			pos[i] = 0;
 
+		int X = ia->dims[dim];
+
 		auto aa = operator_extract_create2(a, arg, D, dims, strs, (pos[dim] = 0, pos));
-		auto bb = operator_extract_create2(b, arg, D, dims, strs, (pos[dim] = 1, pos));
+		auto bb = operator_extract_create2(b, arg, D, dims, strs, (pos[dim] = X, pos));
 
 		operator_free(a);
 		operator_free(b);
