@@ -170,7 +170,7 @@ TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pa
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter mandelbrot wavelet window var std fftrot
 TRECO=pics pocsense sqpics itsense nlinv moba nufft rof tgv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin
-TMRI=homodyne poisson twixread fakeksp looklocker
+TMRI=homodyne poisson twixread fakeksp looklocker upat
 TSIM=phantom traj
 TIO=toimg
 
