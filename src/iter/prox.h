@@ -22,6 +22,7 @@ extern const struct operator_p_s* prox_lesseq_create(unsigned int N, const long 
 extern const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[__VLA(N)], const _Complex float* b);
 extern const struct operator_p_s* prox_rvc_create(unsigned int N, const long dims[__VLA(N)]);
 extern const struct operator_p_s* prox_nonneg_create(unsigned int N, const long dims[__VLA(N)]);
+extern const struct operator_p_s* prox_zsmax_create(unsigned int N, const long dims[__VLA(N)], float a);
 
 struct operator_p_s;
 extern const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s*, long flags);

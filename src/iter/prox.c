@@ -567,6 +567,7 @@ struct prox_ineq_data {
 	INTERFACE(operator_data_t);
 	
 	const float* b;
+	float a;
 	long size;
 	bool positive;
 };
@@ -578,10 +579,22 @@ static void prox_ineq_fun(const operator_data_t* _data, float mu, float* dst, co
 	UNUSED(mu);
 	auto pdata = CAST_DOWN(prox_ineq_data, _data);
 
-	if (NULL == pdata->b)
-		(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, 0.);
-	else
+	if (NULL == pdata->b) {
+		
+		if (0. == pdata->a) {
+
+			(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, 0.);
+			
+		} else {
+
+			(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, pdata->a);
+			md_zreal(1, MD_DIMS(pdata->size/2), (complex float*)dst, (complex float*)dst);
+		}
+
+	} else {
+
 		(pdata->positive ? md_max : md_min)(1, MD_DIMS(pdata->size), dst, src, pdata->b);
+	}
 }
 
 static void prox_ineq_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
@@ -594,13 +607,14 @@ static void prox_ineq_del(const operator_data_t* _data)
 	xfree(CAST_DOWN(prox_ineq_data, _data));
 }
 
-static const struct operator_p_s* prox_ineq_create(unsigned int N, const long dims[N], const complex float* b, bool positive)
+static const struct operator_p_s* prox_ineq_create(unsigned int N, const long dims[N], const complex float* b, float a, bool positive)
 {
 	PTR_ALLOC(struct prox_ineq_data, pdata);
 	SET_TYPEID(prox_ineq_data, pdata);
 
 	pdata->size = md_calc_size(N, dims) * 2;
 	pdata->b = (const float*)b;
+	pdata->a = a;
 	pdata->positive = positive;
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_ineq_apply, prox_ineq_del);
@@ -613,7 +627,7 @@ static const struct operator_p_s* prox_ineq_create(unsigned int N, const long di
  */
 const struct operator_p_s* prox_lesseq_create(unsigned int N, const long dims[N], const complex float* b)
 {
-	return prox_ineq_create(N, dims, b, false);
+	return prox_ineq_create(N, dims, b, 0., false);
 }
 
 /*
@@ -622,7 +636,7 @@ const struct operator_p_s* prox_lesseq_create(unsigned int N, const long dims[N]
  */
 const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[N], const complex float* b)
 {
-	return prox_ineq_create(N, dims, b, true);
+	return prox_ineq_create(N, dims, b, 0., true);
 }
 
 /*
@@ -631,7 +645,16 @@ const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[N], 
  */
 const struct operator_p_s* prox_nonneg_create(unsigned int N, const long dims[N])
 {
-	return prox_ineq_create(N, dims, NULL, true);
+	return prox_ineq_create(N, dims, NULL, 0., true);
+}
+
+/*
+ * Proximal function for greater than or equal to a scalar:
+ * f(z) = 1{z >= a}
+ */
+const struct operator_p_s* prox_zsmax_create(unsigned int N, const long dims[N], float a)
+{
+	return prox_ineq_create(N, dims, NULL, a, true);
 }
 
 
