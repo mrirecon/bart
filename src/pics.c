@@ -245,10 +245,11 @@ int main_pics(int argc, char* argv[])
 	md_copy_dims(DIMS, max_dims, ksp_dims);
 	md_copy_dims(5, max_dims, map_dims);
 
-	assert(1 == ksp_dims[COEFF_DIM]);
 	long bmx_dims[DIMS];
 
 	if (NULL != basis_file) {
+
+		assert(1 == ksp_dims[COEFF_DIM]);
 
 		assert(basis_dims[TE_DIM] == ksp_dims[TE_DIM]);
 
