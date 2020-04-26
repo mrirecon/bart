@@ -37,7 +37,7 @@ int main_phantom(int argc, char* argv[])
 	int xdim = -1;
 
 	int geo = -1;
-	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, TUBES } ptype = SHEPPLOGAN;
+	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, TUBES } ptype = SHEPPLOGAN;
 
 	const char* traj = NULL;
 	bool basis = false;
@@ -55,9 +55,11 @@ int main_phantom(int argc, char* argv[])
 		OPT_SET('k', &kspace, "k-space"),
 		OPT_STRING('t', &traj, "file", "trajectory"),
 		OPT_SELECT('c', enum ptype_e, &ptype, CIRC, "()"),
+		OPT_SELECT('a', enum ptype_e, &ptype, STAR, "()"),
 		OPT_SELECT('m', enum ptype_e, &ptype, TIME, "()"),
 		OPT_SELECT('G', enum ptype_e, &ptype, GEOM, "geometric object phantom"),
 		OPT_SELECT('T', enum ptype_e, &ptype, TUBES, "tubes phantom"),
+		OPT_SELECT('B', enum ptype_e, &ptype, BART, "BART logo"),
 		OPT_INT('x', &xdim, "n", "dimensions in y and z"),
 		OPT_INT('g', &geo, "n=1,2", "select geometry for object phantom"),
 		OPT_SET('3', &d3, "3D"),
@@ -96,7 +98,7 @@ int main_phantom(int argc, char* argv[])
 
 
 	long sdims[DIMS];
-	long sstrs[DIMS];
+	long sstrs[DIMS] = { 0 };
 	complex float* samples = NULL;
 
 	if (NULL != traj) {
@@ -155,6 +157,12 @@ int main_phantom(int argc, char* argv[])
 		calc_geo_phantom(dims, out, kspace, geo, sstrs, samples);
 		break;
 
+	case STAR:
+
+		assert(!d3);
+		calc_star(dims, out, kspace, sstrs, samples);
+		break;
+
 	case TIME:
 
 		assert(!d3);
@@ -175,6 +183,11 @@ int main_phantom(int argc, char* argv[])
 	case TUBES:
 
 		calc_phantom_tubes(dims, out, kspace, sstrs, samples);
+		break;
+
+	case BART:
+
+		calc_bart(dims, out, kspace, sstrs, samples);
 		break;
 	}
 

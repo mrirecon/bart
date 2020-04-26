@@ -24,8 +24,11 @@
 #include "misc/mri.h"
 #include "misc/debug.h"
 
+#include "geom/logo.h"
+
 #include "simu/sens.h"
 #include "simu/coil.h"
+#include "simu/shape.h"
 #include "simu/shepplogan.h"
 
 #include "phantom.h"
@@ -359,7 +362,128 @@ void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace, co
 }
 
 
+struct poly1 {
 
+	int N;
+	complex float coeff;
+	double (*pg)[][2];
+};
+
+struct poly {
+
+	bool kspace;
+	bool coeff;
+	int P;
+	struct poly1 (*p)[];
+};
+
+static complex float krn_poly(void* _data, int s, const double mpos[3])
+{
+	struct poly* data = _data;
+
+	complex float val = 0.;
+
+	for (int p = 0; p < data->P; p++) {
+
+		if (data->coeff && (s == p))
+			continue;
+
+		val += (*data->p)[p].coeff * (data->kspace ? kpolygon : xpolygon)((*data->p)[p].N, *(*data->p)[p].pg, mpos);
+	}
+
+	return val;
+}
+
+void calc_star(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+{
+	bool coeff = (dims[COEFF_DIM] > 1);
+
+	struct poly poly = {
+		kspace,
+		coeff,
+		1,
+		&(struct poly1[]){
+			{
+			8,
+			1.,
+			&(double[][2]){
+				{ -0.5, -0.5 },
+				{  0.0, -0.3 },
+				{ +0.5, -0.5 },
+				{  0.3,  0.0 },
+				{ +0.5, +0.5 },
+				{  0.0, +0.3 },
+				{ -0.5, +0.5 },
+				{ -0.3,  0.0 },
+			}
+			}
+		}
+	};
+
+	struct data data = {
+
+		.traj = traj,
+		.tstrs = tstrs,
+		.sens = (dims[COIL_DIM] > 1),
+		.dims = { dims[0], dims[1], dims[2] },
+		.data = &poly,
+		.fun = krn_poly,
+	};
+
+	md_parallel_zsample(DIMS, dims, out, &data, kspace ? kkernel : xkernel);
+}
+
+#define ARRAY_SLICE(x, a, b) ({ __auto_type __x = &(x); assert((0 <= a) && (a < b) && (b <= ARRAY_SIZE(*__x))); ((__typeof__((*__x)[0]) (*)[b - a])&((*__x)[a])); })
+
+void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+{
+	bool coeff = (dims[COEFF_DIM] > 1);
+
+	int N = 11 + 6 + 6 + 8 + 4 + 16 + 6 + 8 + 6 + 6;
+	double points[N * 11][2];
+
+	struct poly poly = {
+		kspace,
+		coeff,
+		10,
+		&(struct poly1[]){
+			{ 11 * 11, -1., ARRAY_SLICE(points,  0 * 11, 11 * 11) },
+			{  6 * 11, -1., ARRAY_SLICE(points, 11 * 11, 17 * 11) },
+			{  6 * 11, -1., ARRAY_SLICE(points, 17 * 11, 23 * 11) },
+			{  8 * 11, -1., ARRAY_SLICE(points, 23 * 11, 31 * 11) },
+			{  4 * 11, -1., ARRAY_SLICE(points, 31 * 11, 35 * 11) },
+			{ 16 * 11, -1., ARRAY_SLICE(points, 35 * 11, 51 * 11) },
+			{  6 * 11, -1., ARRAY_SLICE(points, 51 * 11, 57 * 11) },
+			{  8 * 11, -1., ARRAY_SLICE(points, 57 * 11, 65 * 11) },
+			{  6 * 11, -1., ARRAY_SLICE(points, 65 * 11, 71 * 11) },
+			{  6 * 11, -1., ARRAY_SLICE(points, 71 * 11, 77 * 11) },
+		}
+	};
+
+	for (int i = 0; i < N; i++) {
+
+		for (int j = 0; j <= 10; j++) {
+
+			double t = j * 0.1;
+			int n = i * 11 + j;
+
+			points[n][1] = cspline(t, bart_logo[i][0]) / 250. - 0.50;
+			points[n][0] = cspline(t, bart_logo[i][1]) / 250. - 0.75;
+		}
+	}
+
+	struct data data = {
+
+		.traj = traj,
+		.tstrs = tstrs,
+		.sens = (dims[COIL_DIM] > 1),
+		.dims = { dims[0], dims[1], dims[2] },
+		.data = &poly,
+		.fun = krn_poly,
+	};
+
+	md_parallel_zsample(DIMS, dims, out, &data, kspace ? kkernel : xkernel);
+}
 
 
 
@@ -367,15 +491,53 @@ void calc_phantom_arb(int N, const struct ellipsis_s data[N], const long dims[DI
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
-	assert((!coeff) || (NULL == traj) || (0 == tstrs[COEFF_DIM]));
+	assert((!coeff) || (0 == tstrs[COEFF_DIM]));
 	assert((!coeff) || (N == dims[COEFF_DIM]));
 
 	sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, N, data }, krn2d, kspace);
 }
 
 
+static void compensate_bckgrd(const long dims[DIMS], complex float* out, float intensity)
+{
+	long strs[DIMS];
+	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
+
+	long dims2[DIMS];
+	md_copy_dims(DIMS, dims2, dims);
+	dims2[COEFF_DIM]--; // remove background
+
+	long strs2[DIMS];
+	md_copy_strides(DIMS, strs2, strs);
+	strs2[COEFF_DIM] = 0;
+
+	long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
+	pos[COEFF_DIM] = 1; // first foreground object
+
+	md_zaxpy2(DIMS, dims2, strs2, out, -intensity, strs, &MD_ACCESS(DIMS, strs, pos, out));
+}
+
 void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
 {
-	calc_phantom_arb(ARRAY_SIZE(phantom_tubes), phantom_tubes, dims, out, kspace, tstrs, traj);
+	if (1 < dims[COEFF_DIM]) {
+
+		calc_phantom_arb(ARRAY_SIZE(phantom_tubes), phantom_tubes, dims, out, kspace, tstrs, traj);
+
+		compensate_bckgrd(dims, out, phantom_tubes[0].intensity);
+
+	} else { // sum up all objects
+
+		long tdims[DIMS];
+		md_copy_dims(DIMS, tdims, dims);
+
+		tdims[COEFF_DIM] = ARRAY_SIZE(phantom_tubes);
+
+		complex float* tmp = md_alloc(DIMS, tdims, CFL_SIZE);
+
+		calc_phantom_tubes(tdims, tmp, kspace, tstrs, traj);
+
+		md_zsum(DIMS, tdims, COEFF_FLAG, out, tmp);
+		md_free(tmp);
+	}
 }
 
