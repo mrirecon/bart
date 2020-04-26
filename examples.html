@@ -88,12 +88,12 @@ zf_rss = squeeze(zf_rss);
 
 figure,subplot(1,2,1), imshow(abs(ksp_rss).^0.125, []); title(<span class="string">'k-space'</span>)
 subplot(1,2,2), imshow(abs(zf_rss), []); title(<span class="string">'zero-filled recon'</span>)
-</pre><img vspace="5" hspace="5" src="examples_01.png" alt=""> <p>Show singular values of the calibration matrix</p><pre class="codeinput">calmat = bart(<span class="string">'calmat -r 20 -k 6'</span>, und2x2);
+</pre><img vspace="5" hspace="5" src="imgs/examples_01.png" alt=""> <p>Show singular values of the calibration matrix</p><pre class="codeinput">calmat = bart(<span class="string">'calmat -r 20 -k 6'</span>, und2x2);
 [U SV VH] = bart(<span class="string">'svd'</span>, calmat);
 
 figure, plot(SV);
 title(<span class="string">'Singular Values of the Calibration Matrix'</span>);
-</pre><img vspace="5" hspace="5" src="examples_02.png" alt=""> <p>ESPIRiT calibration (using a maximum calibration region of size 20)</p><pre class="codeinput">[calib emaps] = bart(<span class="string">'ecalib -r 20'</span>, und2x2);
+</pre><img vspace="5" hspace="5" src="imgs/examples_02.png" alt=""> <p>ESPIRiT calibration (using a maximum calibration region of size 20)</p><pre class="codeinput">[calib emaps] = bart(<span class="string">'ecalib -r 20'</span>, und2x2);
 </pre><pre class="codeoutput">Calibration region...  (size: 1x20x20, pos: 0x105x80)
 Energy: 0.568 0.282 0.104 0.031 0.008 0.003 0.002 0.001
 Build calibration matrix and SVD...
@@ -117,16 +117,16 @@ subplot(121), imshow3(abs(sens_maps), [],[2,4]);
 title(<span class="string">'Magnitude ESPIRiT 1st Set of Maps'</span>)
 subplot(122), imshow3(angle(sens_maps),[],[2,4])
 title(<span class="string">'Phase ESPIRiT 1st Set of Maps'</span>)
-</pre><img vspace="5" hspace="5" src="examples_03.png" alt=""> <p>For comparison: Produce coil images from fully-sampled data using the fft command. It uses a bitmask as argument to specify the dimensions which are transformed. Here, the bitmask is 6 = 2^1 + 2^2 which corresponds to the dimensions 1 and 2.</p><pre class="codeinput">full = readcfl(<span class="string">'data/full'</span>);
+</pre><img vspace="5" hspace="5" src="imgs/examples_03.png" alt=""> <p>For comparison: Produce coil images from fully-sampled data using the fft command. It uses a bitmask as argument to specify the dimensions which are transformed. Here, the bitmask is 6 = 2^1 + 2^2 which corresponds to the dimensions 1 and 2.</p><pre class="codeinput">full = readcfl(<span class="string">'data/full'</span>);
 coilimgs = bart(<span class="string">'fft -i 6'</span>, full);
 
 coil_imgs = squeeze(coilimgs);
 figure, imshow3(abs(coil_imgs), [],[2,4])
 title(<span class="string">'Coil images'</span>)
-</pre><img vspace="5" hspace="5" src="examples_04.png" alt=""> <p>Show eigenvalue maps</p><pre class="codeinput">emaps = squeeze(emaps);
+</pre><img vspace="5" hspace="5" src="imgs/examples_04.png" alt=""> <p>Show eigenvalue maps</p><pre class="codeinput">emaps = squeeze(emaps);
 figure, imshow3(emaps, [], [1, 2]);
 title(<span class="string">'First Two Eigenvalue Maps'</span>)
-</pre><img vspace="5" hspace="5" src="examples_05.png" alt=""> <p>SENSE reconstruction using ESPIRiT maps (using the generalized parallel imaging compressed sensing tool)</p><pre class="codeinput">reco = bart(<span class="string">'pics'</span>, und2x2, sens);
+</pre><img vspace="5" hspace="5" src="imgs/examples_05.png" alt=""> <p>SENSE reconstruction using ESPIRiT maps (using the generalized parallel imaging compressed sensing tool)</p><pre class="codeinput">reco = bart(<span class="string">'pics'</span>, und2x2, sens);
 
 sense_recon = squeeze(reco);
 figure, imshow(abs(sense_recon), []); title(<span class="string">'ESPIRiT Reconstruction'</span>)
@@ -134,7 +134,7 @@ figure, imshow(abs(sense_recon), []); title(<span class="string">'ESPIRiT Recons
 l2 regularization: 0.000000
 conjugate gradients
 Total Time: 0.652066
-</pre><img vspace="5" hspace="5" src="examples_06.png" alt=""> <p>Evaluation of the coil sensitivities.</p><pre class="codeinput"><span class="comment">%</span>
+</pre><img vspace="5" hspace="5" src="imgs/examples_06.png" alt=""> <p>Evaluation of the coil sensitivities.</p><pre class="codeinput"><span class="comment">%</span>
 <span class="comment">% Computing error from projecting fully sampled error</span>
 <span class="comment">% onto the sensitivities. This can be done with one</span>
 <span class="comment">% iteration of POCSENSE.</span>
@@ -168,7 +168,7 @@ Done.
 Reconstruction...
 Done
 Done.
-</pre><img vspace="5" hspace="5" src="examples_07.png" alt=""> <h2>Example 2: Reconstruction of undersampled data with small FOV.<a name="15"></a></h2><p>This example uses a undersampled data set with a small FOV. The image reconstructed using ESPIRiT is compared to an image reconstructed with SENSE. By using two sets of maps, ESPIRiT can avoid the central artifact which appears in the SENSE reconstruction.</p><pre class="codeinput"><span class="comment">% Zero padding to make square voxels since resolution in x-y for this</span>
+</pre><img vspace="5" hspace="5" src="imgs/examples_07.png" alt=""> <h2>Example 2: Reconstruction of undersampled data with small FOV.<a name="15"></a></h2><p>This example uses a undersampled data set with a small FOV. The image reconstructed using ESPIRiT is compared to an image reconstructed with SENSE. By using two sets of maps, ESPIRiT can avoid the central artifact which appears in the SENSE reconstruction.</p><pre class="codeinput"><span class="comment">% Zero padding to make square voxels since resolution in x-y for this</span>
 <span class="comment">% data set is lower in phase-encode than readout</span>
 smallfov = readcfl(<span class="string">'data/smallfov'</span>);
 smallfov = bart(<span class="string">'resize -c 2 252'</span>, smallfov);
@@ -217,7 +217,7 @@ l2 regularization: 0.010000
 conjugate gradients
 Total Time: 0.682624
 Warning: Image is too big to fit on screen; displaying at 50% 
-</pre><img vspace="5" hspace="5" src="examples_08.png" alt=""> <pre class="codeinput"><span class="comment">% SENSE image:</span>
+</pre><img vspace="5" hspace="5" src="imgs/examples_08.png" alt=""> <pre class="codeinput"><span class="comment">% SENSE image:</span>
 
 reco1 = squeeze(sensereco);
 figure,
@@ -230,7 +230,7 @@ title(<span class="string">'SENSE Reconstruction'</span>)
 reco2 = squeeze(espiritreco_rss);
 subplot(1,2,2), imshow(abs(reco2), [])
 title(<span class="string">'ESPIRiT Reconstruction from 2 maps'</span>)
-</pre><img vspace="5" hspace="5" src="examples_09.png" alt=""> <h2>Example 3: Compressed Sensing and Parallel Imaging<a name="18"></a></h2><p>This example demonstrates L1-ESPIRiT reconstruction of a human knee. Data has been acquired with variable-density poisson-disc sampling.</p><pre class="codeinput"><span class="comment">% A visualization of k-space data</span>
+</pre><img vspace="5" hspace="5" src="imgs/examples_09.png" alt=""> <h2>Example 3: Compressed Sensing and Parallel Imaging<a name="18"></a></h2><p>This example demonstrates L1-ESPIRiT reconstruction of a human knee. Data has been acquired with variable-density poisson-disc sampling.</p><pre class="codeinput"><span class="comment">% A visualization of k-space data</span>
 
 knee = readcfl(<span class="string">'data/knee'</span>);
 ksp_rss = bart(<span class="string">'rss 8'</span>, knee);
@@ -281,7 +281,7 @@ Size: 67968 Samples: 8082 Acc: 8.41
 l1-wavelet regularization: 0.010000
 FISTA
 Total Time: 5.277991
-</pre><img vspace="5" hspace="5" src="examples_10.png" alt=""> <img vspace="5" hspace="5" src="examples_11.png" alt=""> <h2>Example 4: Basic Tools<a name="21"></a></h2><p>Various tools are demonstrated by manipulating an image.</p><pre class="codeinput">knee_l1 = readcfl(<span class="string">'data/knee_l1'</span>);
+</pre><img vspace="5" hspace="5" src="imgs/examples_10.png" alt=""> <img vspace="5" hspace="5" src="imgs/examples_11.png" alt=""> <h2>Example 4: Basic Tools<a name="21"></a></h2><p>Various tools are demonstrated by manipulating an image.</p><pre class="codeinput">knee_l1 = readcfl(<span class="string">'data/knee_l1'</span>);
 
 <span class="comment">% Zero pad</span>
 
@@ -320,7 +320,7 @@ shift = bart(<span class="string">'circshift 2 150'</span>, tmp);
 <span class="comment">% Show the final result.</span>
 
 figure, imshow(abs(squeeze(shift)), []);
-</pre><img vspace="5" hspace="5" src="examples_12.png" alt=""> <p>non-Cartesian MRI using BART</p><pre class="codeinput"><span class="comment">% Generate k-space trajectory with 64 radial spokes</span>
+</pre><img vspace="5" hspace="5" src="imgs/examples_12.png" alt=""> <p>non-Cartesian MRI using BART</p><pre class="codeinput"><span class="comment">% Generate k-space trajectory with 64 radial spokes</span>
 traj_rad = bart(<span class="string">'traj -r -x512 -y64'</span>);
 
 <span class="comment">% 2x oversampling</span>
@@ -376,7 +376,7 @@ Done.
 l2 regularization: 0.001000
 conjugate gradients
 Total Time: 1.684765
-</pre><img vspace="5" hspace="5" src="examples_13.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013b</a><br></p></div><!--
+</pre><img vspace="5" hspace="5" src="imgs/examples_13.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 % To begin, add '$(TOOLBOX_PATH)/matlab' to the library path. The
 % environment variable TOOLBOX_PATH needs to be set to the base
