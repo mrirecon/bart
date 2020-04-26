@@ -180,15 +180,13 @@ int main_nlinv(int argc, char* argv[])
 
 		if (conf.pattern_for_each_coil) {
 
-			assert(1 != pat_dims[COIL_DIM]);
-
-		} else {
-
-			if (-1 == restrict_fov)
-				restrict_fov = 0.5;
-
-			conf.noncart = true;
+			assert(sens_dims[COIL_DIM] == pat_dims[COIL_DIM]);
 		}
+
+		if (-1 == restrict_fov)
+			restrict_fov = 0.5;
+
+		conf.noncart = true;
 
 	} else {
 
