@@ -21,6 +21,20 @@
 
 #include "bin.h"
 
+const struct bin_conf_s bin_defaults = {
+
+	.n_resp = 0,
+	.n_card = 0,
+	.mavg_window = 0,
+	.mavg_window_card = 0,
+	.cluster_dim = -1,
+
+	.resp_labels_idx = { 0, 1 },
+	.card_labels_idx = { 2, 3 },
+
+	.card_out = NULL,
+
+};
 
 // Binning by equal central angle
 static void det_bins(const complex float* state, const long bins_dims[DIMS], float* bins, const int idx, const int n)
@@ -197,9 +211,7 @@ static void moving_average(const long state_dims[DIMS], complex float* state, co
 
 extern int bin_quadrature(const long bins_dims[DIMS], float* bins,
 			const long labels_dims[DIMS], complex float* labels,
-			const long resp_labels_idx[2], const long card_labels_idx[2],
-			int n_resp, int n_card,
-			int mavg_window, int mavg_window_card, const char* card_out)
+			const struct bin_conf_s conf)
 {
 	// Extract respiratory labels
 	long resp_state_dims[DIMS];
@@ -214,13 +226,13 @@ extern int bin_quadrature(const long bins_dims[DIMS], float* bins,
 
 	complex float* resp_state_singleton = md_alloc(DIMS, resp_state_singleton_dims, CFL_SIZE);
 
-	bool valid_time_resp = check_valid_time(resp_state_singleton_dims, resp_state_singleton, labels_dims, labels, resp_labels_idx);
+	bool valid_time_resp = check_valid_time(resp_state_singleton_dims, resp_state_singleton, labels_dims, labels, conf.resp_labels_idx);
 
 	long pos[DIMS] = { 0 };
 
 	for (int i = 0; i < 2; i++){
 
-		pos[TIME2_DIM] = resp_labels_idx[i];
+		pos[TIME2_DIM] = conf.resp_labels_idx[i];
 		md_copy_block(DIMS, pos, resp_state_singleton_dims, resp_state_singleton, labels_dims, labels, CFL_SIZE);
 
 		if (valid_time_resp)
@@ -245,11 +257,11 @@ extern int bin_quadrature(const long bins_dims[DIMS], float* bins,
 
 	complex float* card_state_singleton = md_alloc(DIMS, card_state_singleton_dims, CFL_SIZE);
 
-	bool valid_time_card = check_valid_time(card_state_singleton_dims, card_state_singleton, labels_dims, labels, card_labels_idx);
+	bool valid_time_card = check_valid_time(card_state_singleton_dims, card_state_singleton, labels_dims, labels, conf.card_labels_idx);
 
 	for (int i = 0; i < 2; i++) {
 
-		pos[TIME2_DIM] = card_labels_idx[i];
+		pos[TIME2_DIM] = conf.card_labels_idx[i];
 		md_copy_block(DIMS, pos, card_state_singleton_dims, card_state_singleton, labels_dims, labels, CFL_SIZE);
 
 		if (valid_time_card)
@@ -260,18 +272,18 @@ extern int bin_quadrature(const long bins_dims[DIMS], float* bins,
 		md_copy_block(DIMS, pos, card_state_dims, card_state, card_state_singleton_dims, card_state_singleton, CFL_SIZE);
 	}
 
-	if (mavg_window > 0) {
+	if (conf.mavg_window > 0) {
 
-		moving_average(resp_state_dims, resp_state, mavg_window);
-		moving_average(card_state_dims, card_state, (mavg_window_card > 0) ? mavg_window_card : mavg_window);
+		moving_average(resp_state_dims, resp_state, conf.mavg_window);
+		moving_average(card_state_dims, card_state, (conf.mavg_window_card > 0) ? conf.mavg_window_card : conf.mavg_window);
 	}
 
-	if (NULL != card_out)
-		dump_cfl(card_out, DIMS, card_state_dims, card_state);
+	if (NULL != conf.card_out)
+		dump_cfl(conf.card_out, DIMS, card_state_dims, card_state);
 
 	// Determine bins
-	det_bins(resp_state, bins_dims, bins, 1, n_resp); // respiratory motion
-	det_bins(card_state, bins_dims, bins, 0, n_card); // cardiac motion
+	det_bins(resp_state, bins_dims, bins, 1, conf.n_resp); // respiratory motion
+	det_bins(card_state, bins_dims, bins, 0, conf.n_card); // cardiac motion
 
 	md_free(card_state);
 	md_free(card_state_singleton);
@@ -279,7 +291,7 @@ extern int bin_quadrature(const long bins_dims[DIMS], float* bins,
 	md_free(resp_state);
 	md_free(resp_state_singleton);
 
-	return get_binsize_max(bins_dims, bins, n_card, n_resp);
+	return get_binsize_max(bins_dims, bins, conf.n_card, conf.n_resp);
 }
 
 
