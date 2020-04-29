@@ -14,6 +14,8 @@ struct bin_conf_s {
 
 	const char* card_out;
 
+	float offset_angle[2];
+
 };
 
 extern const struct bin_conf_s bin_defaults;

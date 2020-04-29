@@ -51,6 +51,78 @@ tests/test-bin-reorder: ones scale join bin nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-bin-quadrature: ones scale reshape transpose join bin nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+		$(TOOLDIR)/ones 2 1 1 o1.ra									;\
+		$(TOOLDIR)/scale 0 o1.ra o0.ra 								;\
+		$(TOOLDIR)/scale -- -1 o1.ra om1.ra						    ;\
+		$(TOOLDIR)/scale 2 o1.ra o2.ra 								;\
+		$(TOOLDIR)/scale 3 o1.ra o3.ra 								;\
+		$(TOOLDIR)/scale 4 o1.ra o4.ra 								;\
+		$(TOOLDIR)/scale 5 o1.ra o5.ra 								;\
+		$(TOOLDIR)/join 1 o1.ra o1.ra q1.ra						    ;\
+		$(TOOLDIR)/join 1 om1.ra o1.ra q2.ra						;\
+		$(TOOLDIR)/join 1 om1.ra om1.ra q3.ra						;\
+		$(TOOLDIR)/join 1 o1.ra om1.ra q4.ra						;\
+		$(TOOLDIR)/join 0 q2.ra q3.ra q4.ra q1.ra q2.ra qc.ra		;\
+		$(TOOLDIR)/join 0 q1.ra q1.ra q3.ra q3.ra q1.ra qr.ra		;\
+		$(TOOLDIR)/join 1 qr.ra qc.ra q.ra					     	;\
+		$(TOOLDIR)/reshape 3075 1 1 5 4 q.ra eof.ra					;\
+		$(TOOLDIR)/join 0 o1.ra o2.ra o3.ra o4.ra o5.ra k.ra 		;\
+		$(TOOLDIR)/transpose 0 10 k.ra k1.ra 						;\
+		$(TOOLDIR)/bin -C4 -R2  eof.ra k1.ra qbin.ra				;\
+		$(TOOLDIR)/join 0 o0.ra o0.ra r1c1.ra						;\
+		$(TOOLDIR)/join 0 o1.ra o5.ra r1c2.ra						;\
+		$(TOOLDIR)/join 0 o2.ra o0.ra r1c3.ra						;\
+		$(TOOLDIR)/join 0 o0.ra o0.ra r1c4.ra						;\
+		$(TOOLDIR)/join 10 r1c1.ra r1c2.ra r1c3.ra r1c4.ra r1.ra						;\
+		$(TOOLDIR)/join 0 o4.ra o0.ra r2c1.ra						;\
+		$(TOOLDIR)/join 0 o0.ra o0.ra r2c2.ra 						;\
+		$(TOOLDIR)/join 0 o0.ra o0.ra r2c3.ra						;\
+		$(TOOLDIR)/join 0 o3.ra o0.ra r2c4.ra						;\
+		$(TOOLDIR)/join 10 r2c1.ra r2c2.ra r2c3.ra r2c4.ra r2.ra    ;\
+		$(TOOLDIR)/join 11 r1.ra r2.ra ref.ra						;\
+		$(TOOLDIR)/transpose 0 2 ref.ra ref1.ra						;\
+		$(TOOLDIR)/nrmse -t 0.00001 ref1.ra qbin.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@	
 
-TESTS += tests/test-bin-label tests/test-bin-reorder
+tests/test-bin-quadrature-offset: ones scale reshape transpose join bin nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+		$(TOOLDIR)/ones 2 1 1 o1.ra									;\
+		$(TOOLDIR)/scale 0 o1.ra o0.ra 								;\
+		$(TOOLDIR)/scale -- -1 o1.ra om1.ra						    ;\
+		$(TOOLDIR)/scale 2 o1.ra o2.ra 								;\
+		$(TOOLDIR)/scale 3 o1.ra o3.ra 								;\
+		$(TOOLDIR)/scale 4 o1.ra o4.ra 								;\
+		$(TOOLDIR)/scale 5 o1.ra o5.ra 								;\
+		$(TOOLDIR)/join 1 o1.ra o1.ra q1.ra						    ;\
+		$(TOOLDIR)/join 1 om1.ra o1.ra q2.ra						;\
+		$(TOOLDIR)/join 1 om1.ra om1.ra q3.ra						;\
+		$(TOOLDIR)/join 1 o1.ra om1.ra q4.ra						;\
+		$(TOOLDIR)/join 0 q2.ra q3.ra q4.ra q1.ra q2.ra qc.ra		;\
+		$(TOOLDIR)/join 0 q1.ra q1.ra q3.ra q3.ra q1.ra qr.ra		;\
+		$(TOOLDIR)/join 1 qr.ra qc.ra q.ra					     	;\
+		$(TOOLDIR)/reshape 3075 1 1 5 4 q.ra eof.ra					;\
+		$(TOOLDIR)/join 0 o1.ra o2.ra o3.ra o4.ra o5.ra k.ra 		;\
+		$(TOOLDIR)/transpose 0 10 k.ra k1.ra 						;\
+		$(TOOLDIR)/bin -C4 -R2 -O 180:-90 eof.ra k1.ra qbin.ra		;\
+		$(TOOLDIR)/join 0 o0.ra o0.ra r1c1.ra						;\
+		$(TOOLDIR)/join 0 o0.ra o0.ra r1c2.ra 						;\
+		$(TOOLDIR)/join 0 o3.ra o0.ra r1c3.ra						;\
+		$(TOOLDIR)/join 0 o4.ra o0.ra r1c4.ra						;\
+		$(TOOLDIR)/join 10 r1c1.ra r1c2.ra r1c3.ra r1c4.ra r1.ra 	;\
+		$(TOOLDIR)/join 0 o1.ra o5.ra r2c1.ra						;\
+		$(TOOLDIR)/join 0 o2.ra o0.ra r2c2.ra						;\
+		$(TOOLDIR)/join 0 o0.ra o0.ra r2c3.ra						;\
+		$(TOOLDIR)/join 0 o0.ra o0.ra r2c4.ra						;\
+		$(TOOLDIR)/join 10 r2c1.ra r2c2.ra r2c3.ra r2c4.ra r2.ra	;\
+		$(TOOLDIR)/join 11 r1.ra r2.ra ref.ra						;\
+		$(TOOLDIR)/transpose 0 2 ref.ra ref1.ra						;\
+		$(TOOLDIR)/nrmse -t 0.00001 ref1.ra qbin.ra					;\
+	#rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@	
+
+
+TESTS += tests/test-bin-label tests/test-bin-reorder tests/test-bin-quadrature tests/test-bin-quadrature-offset
 

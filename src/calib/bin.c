@@ -34,25 +34,26 @@ const struct bin_conf_s bin_defaults = {
 
 	.card_out = NULL,
 
+	.offset_angle = { 0., 0. },
+
 };
 
 // Binning by equal central angle
-static void det_bins(const complex float* state, const long bins_dims[DIMS], float* bins, const int idx, const int n)
+static void det_bins(const complex float* state, const long bins_dims[DIMS], float* bins, const int idx, const int n, float offset)
 {
 	int T = bins_dims[TIME_DIM];
 
-	float offset_angle = 0.;
 	float central_angle = 2. * M_PI / n;
 
 	for (int t = 0; t < T; t++) {
 
-		float angle = atan2f(crealf(state[T + t]), crealf(state[t])) + offset_angle;
+		float angle = atan2f(crealf(state[T + t]), crealf(state[t])) + offset * ( 2 * M_PI / 360.);
 
 		angle = (angle < 0.) ? (angle + 2. * M_PI) : angle;
 
 		bins[idx * T + t] = floorf(angle / central_angle);
 
- 		//debug_printf(DP_INFO, "%f: bin %f\n", (M_PI + atan2f(crealf(state[t]), crealf(state[T + t]))) * 360 / 2. / M_PI, bins[idx * T + t]);
+ 		//debug_printf(DP_INFO, "%f: bin %f\n", (M_PI + atan2f(crealf(state[T + t]), crealf(state[t]))) * 360 / 2. / M_PI, bins[idx * T + t]);
 	}
 }
 
@@ -282,8 +283,8 @@ extern int bin_quadrature(const long bins_dims[DIMS], float* bins,
 		dump_cfl(conf.card_out, DIMS, card_state_dims, card_state);
 
 	// Determine bins
-	det_bins(resp_state, bins_dims, bins, 1, conf.n_resp); // respiratory motion
-	det_bins(card_state, bins_dims, bins, 0, conf.n_card); // cardiac motion
+	det_bins(resp_state, bins_dims, bins, 1, conf.n_resp, conf.offset_angle[0]); // respiratory motion
+	det_bins(card_state, bins_dims, bins, 0, conf.n_card, conf.offset_angle[1]); // cardiac motion
 
 	md_free(card_state);
 	md_free(card_state_singleton);
