@@ -716,8 +716,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	md_copy_dims(D, tdims, dim);
 
 	long (*nstr2[2])[D] = { &tostr, &tistr };
-	int ND = optimize_dims(2, D, tdims, nstr2);
-
+	int ND = optimize_dims_gpu(2, D, tdims, nstr2);
 
 #if 1
 	//permute dims with 0 input strides to the end

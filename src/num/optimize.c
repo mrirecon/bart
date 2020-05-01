@@ -377,6 +377,36 @@ unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*
 	return ND;
 }
 
+unsigned int optimize_dims_gpu(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N])
+{
+	unsigned int ND = simplify_dims(D, N, dims, strs);
+
+	debug_print_dims(DP_DEBUG4, ND, dims);
+
+	long max_strides[ND];
+
+	for (unsigned int i = 0; i < ND; i++) {
+
+		max_strides[i] = 0;
+
+		for (unsigned int j = 0; j < D; j++)
+			max_strides[i] = MAX(max_strides[i], (*strs[j])[i]);
+	}
+
+	int ord[ND];
+	compute_permutation(ND, ord, max_strides);
+
+#if 1
+	for (unsigned int j = 0; j < D; j++)
+		reorder_long(ND, ord, *strs[j]);
+
+	reorder_long(ND, ord, dims);
+#endif
+
+	return ND;
+}
+
+
 
 
 /**
@@ -587,7 +617,11 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 		nptr1[i] = nptr[i];
 	}
 
+#ifdef USE_CUDA
+	int ND = (use_gpu(N, nptr1) ? optimize_dims_gpu : optimize_dims)(N, D, tdims, nstr1);
+#else
 	int ND = optimize_dims(N, D, tdims, nstr1);
+#endif
 
 #if 1
 	unsigned long cnst_flags = 0;

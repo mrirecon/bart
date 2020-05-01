@@ -15,6 +15,7 @@ extern unsigned int remove_empty_dims(unsigned int D, unsigned int N, long dims[
 
 extern unsigned int simplify_dims(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N]);
 extern unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N]);
+extern unsigned int optimize_dims_gpu(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N]);
 extern unsigned int min_blockdim(unsigned int D, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D]);
 extern unsigned long dims_parallel(unsigned int D, unsigned int io, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D]);
 
