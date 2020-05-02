@@ -8,12 +8,16 @@
  * 2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
 
+#include <complex.h>
+
 #include "misc/misc.h"
 
-#ifndef NOLAPACKE
-#include <lapacke.h>
-#else
+#ifdef NOLAPACKE
 #include "lapacke/lapacke.h"
+#elif USE_MKL
+#include <mkl.h>
+#else
+#include <lapacke.h>
 #endif
 
 #include "lapack.h"
