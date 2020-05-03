@@ -892,6 +892,7 @@ int main_wshfl(int argc, char* argv[])
 	bool  hgwld     = false;
 	float cont      = 1;
 	float eval      = -1;
+	bool  ksp       = false;
 	const char* fwd = NULL;
 	const char* x0  = NULL;
 	int   gpun      = -1;
@@ -899,7 +900,7 @@ int main_wshfl(int argc, char* argv[])
 	bool  pf        = false;
 
 	const struct opt_s opts[] = {
-		OPT_FLOAT( 'r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
+		OPT_FLOAT( 'r', &lambda,  "lambda", "Regularization value."),
 		OPT_INT(   'b', &blksize, "blkdim", "Block size for locally low rank."),
 		OPT_INT(   'i', &maxiter, "mxiter", "Maximum number of iterations."),
 		OPT_FLOAT( 's', &step,    "stepsz", "Step size for iterative method."),
@@ -909,6 +910,7 @@ int main_wshfl(int argc, char* argv[])
 		OPT_STRING('F', &fwd,     "frwrd",  "Go from shfl-coeffs to data-table. Pass in coeffs path."),
 		OPT_STRING('O', &x0,      "initl",  "Initialize reconstruction with guess."),
 		OPT_INT(   'g', &gpun,    "gpunm",  "GPU device number."),
+		OPT_SET(   'K', &ksp,               "Go from data-table to shuffling basis k-space."),
 		OPT_SET(   'f', &fista,             "Reconstruct using FISTA instead of IST."),
 		OPT_SET(   'H', &hgwld,             "Use hogwild in IST/FISTA."),
 		OPT_SET(   'v', &dcx,               "Split coefficients to real and imaginary components."),
@@ -982,6 +984,31 @@ int main_wshfl(int argc, char* argv[])
 	coeff_dims[4] = md;
 	coeff_dims[6] = tk;
 	coeff_dims[8] = dcx ? 2 : 1;
+
+	if (ksp == true) {
+
+		const struct linop_s* Knc = linop_kern_create(gpun >= 0, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, table_dims);
+		long ksp_dims[] = { [0 ... DIMS - 1] = 1 };
+		ksp_dims[0] = wx;
+		ksp_dims[1] = sy;
+		ksp_dims[2] = sz;
+		ksp_dims[3] = nc;
+		ksp_dims[6] = tk;
+		complex float* res = create_cfl(argv[6], DIMS, ksp_dims);
+
+		operator_apply(Knc->adjoint, DIMS, ksp_dims, res, DIMS, table_dims, table);
+
+		linop_free(Knc);
+		md_free(kernel);
+		unmap_cfl(DIMS, maps_dims, maps);
+		unmap_cfl(DIMS, wave_dims, wave);
+		unmap_cfl(DIMS, phi_dims, phi);
+		unmap_cfl(DIMS, reorder_dims, reorder);
+		unmap_cfl(DIMS, table_dims, table);
+		unmap_cfl(DIMS, ksp_dims, res);
+
+		return 0;
+	}
 
 	debug_printf(DP_INFO, "Creating single channel linear operators:\n");
 
@@ -1071,6 +1098,8 @@ int main_wshfl(int argc, char* argv[])
 		struct linop_s* dcxop = linop_decompose_complex_create(DIMS, ITER_DIM, linop_domain(A)->dims);
 
 		A = linop_chain(dcxop, tmp);
+		debug_printf(DP_INFO, "New operator information:\n");
+			print_opdims(A);
 
 		linop_free(dcxop);
 		linop_free(tmp);
@@ -1097,7 +1126,7 @@ int main_wshfl(int argc, char* argv[])
 			debug_printf(DP_INFO, "Creating wavelet threshold operator... ");
 			T = prox_wavelet_thresh_create(DIMS, coeff_dims, WAVFLAG, 0u, minsize, lambda, true);
 		} else if (llr) {
-			debug_printf(DP_INFO, "Creating locally low rank threshold operator across coeff and real-imag... ");
+			debug_printf(DP_INFO, "Creating locally low rank threshold operator across coeff dim and real-imag dim... ");
 			llr_blkdims(blkdims, ~(COEFF_FLAG | ITER_FLAG), coeff_dims, blksize);
 			T = lrthresh_create(coeff_dims, true, ~(COEFF_FLAG | ITER_FLAG), (const long (*)[])blkdims, lambda, false, false, false);
 		} else {
@@ -1168,12 +1197,13 @@ int main_wshfl(int argc, char* argv[])
 		case CG:
 
 			debug_printf(DP_INFO, "Using CG.\n");
+			debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
 			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
 			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
 
 			cgconf          = iter_conjgrad_defaults;
 			cgconf.maxiter  = maxiter;
-			cgconf.l2lambda = 0;
+			cgconf.l2lambda = lambda;
 			cgconf.tol      = tol;
 
 			iter2_data.fun   = iter_conjgrad;
