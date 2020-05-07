@@ -69,12 +69,7 @@ static void normal_fista(iter_op_data* _data, float* dst, const float* src)
 {
 	auto data = CAST_DOWN(T1inv_s, _data);
 
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(data->size_y), FL_SIZE, src);
-
-	linop_forward_unchecked(nlop_get_derivative(data->nlop, 0, 0), (complex float*)tmp, (const complex float*)src);
-	linop_adjoint_unchecked(nlop_get_derivative(data->nlop, 0, 0), (complex float*)dst, (const complex float*)tmp);
-
-	md_free(tmp);
+	linop_normal_unchecked(nlop_get_derivative(data->nlop, 0, 0), (complex float*)dst, (const complex float*)src);
 
 	long res = data->dims[0];
 	long parameters = data->dims[COEFF_DIM];
