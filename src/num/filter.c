@@ -57,10 +57,12 @@ float median_float(int N, const float ar[N])
 
 complex float median_complex_float(int N, const complex float ar[N])
 {
-	complex float tmp[N];
+	complex float* tmp = malloc(sizeof(complex float) * N);
 	memcpy(tmp, ar, N * sizeof(complex float));
 	sort_complex_floats(N, tmp);
-	return (1 == N % 2) ? tmp[(N - 1) / 2] : ((tmp[(N - 1) / 2 + 0] + tmp[(N - 1) / 2 + 1]) / 2.);
+	complex float result = (1 == N % 2) ? tmp[(N - 1) / 2] : ((tmp[(N - 1) / 2 + 0] + tmp[(N - 1) / 2 + 1]) / 2.);
+	free(tmp);
+	return result;
 }
 
 
