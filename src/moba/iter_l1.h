@@ -14,6 +14,7 @@ struct mdb_irgnm_l1_conf {
 
 	float step;
 	float lower_bound;
+	int constrained_maps;
 };
 
 void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
