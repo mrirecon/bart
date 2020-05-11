@@ -20,6 +20,15 @@ struct vec_iter_s {
 	void (*xpay)(long N, float alpha, float* a, const float* x);
 	void (*axpy)(long N, float* a, float alpha, const float* x);
 	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
+	void (*fmac)(long N, float* a, const float* x, const float* y);
+
+	void (*div)(long N, float* a, const float* x, const float* y);
+	void (*sqrt)(long N, float* a, const float* x);
+
+	void (*smax)(long N, float alpha, float* a, const float* x);
+	void (*smin)(long N, float alpha, float* a, const float* x);
+	void (*sadd)(long N, float* x, float y);
+	void (*sdiv)(long N, float* a, float x, const float* y);
 
 	void (*zmul)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zsmax)(long N, float val, _Complex float* dst, const _Complex float* src1);

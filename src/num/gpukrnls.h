@@ -1,5 +1,5 @@
 /* Copyright 2013-2018. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
 
@@ -34,8 +34,12 @@ extern void cuda_zconj(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zphsr(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zexpj(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zexp(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zlog(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zarg(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zabs(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zatanr(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_exp(long N, float* dst, const float* src);
+extern void cuda_log(long N, float* dst, const float* src);
 extern void cuda_zsoftthresh_half(long N, float lambda, _Complex float* d, const _Complex float* x);
 extern void cuda_zsoftthresh(long N, float lambda, _Complex float* d, const _Complex float* x);
 extern void cuda_softthresh_half(long N, float lambda, float* d, const float* x);
