@@ -44,6 +44,7 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.pcycle = false,
 	.periodic = false,
 	.lowmem = false,
+	.loopdim = -1,
 	.flags = FFT_FLAGS,
 	.cfft = 0u,
 	.decomp = true,
@@ -396,7 +397,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 
 
 
-struct linop_s* nufft_create2(unsigned int N,
+static struct linop_s* nufft_create3(unsigned int N,
 			     const long ksp_dims[N],
 			     const long cim_dims[N],
 			     const long traj_dims[N],
@@ -686,6 +687,75 @@ struct linop_s* nufft_create2(unsigned int N,
 	return linop_create(N, out_dims, N, cim_dims,
 			CAST_UP(PTR_PASS(data)), nufft_apply, nufft_apply_adjoint, nufft_apply_normal, NULL, nufft_free_data);
 }
+
+
+struct linop_s* nufft_create2(unsigned int N,
+			     const long ksp_dims[N],
+			     const long cim_dims[N],
+			     const long traj_dims[N],
+			     const complex float* traj,
+			     const long wgh_dims[N],
+			     const complex float* weights,
+			     const long bas_dims[N],
+			     const complex float* basis,
+			     struct nufft_conf_s conf)
+{
+	if (0 <= conf.loopdim) {
+
+		int d = conf.loopdim;
+		const long L = ksp_dims[d];
+
+		assert(d < (int)N);
+		assert((NULL == weights) || (1 == wgh_dims[d]));
+		assert((NULL == basis) || (1 == bas_dims[d]));
+		assert(1 == traj_dims[d]);
+		assert(L == cim_dims[d]);
+
+		if (1 < L) {
+
+			debug_printf(DP_WARN, "NEW NUFFT LOOP CODE\n");
+
+			long ksp1_dims[N];
+			md_select_dims(N, ~MD_BIT(d), ksp1_dims, ksp_dims);
+
+			long cim1_dims[N];
+			md_select_dims(N, ~MD_BIT(d), cim1_dims, cim_dims);
+
+			auto nu = nufft_create2(N, ksp1_dims, cim1_dims, traj_dims, traj, wgh_dims, weights, bas_dims, basis, conf);
+
+			long out_dims[N];
+			md_copy_dims(N, out_dims, ksp_dims);
+
+			if (NULL != basis)
+				out_dims[6] = 1;
+
+			long istrs[N];
+			long ostrs[N];
+
+			md_calc_strides(N, istrs, cim_dims, CFL_SIZE);
+			md_calc_strides(N, ostrs, out_dims, CFL_SIZE);
+
+			istrs[d] = 0;
+			ostrs[d] = 0;
+
+			auto nu1 = linop_copy_wrapper(N, istrs, ostrs, nu);
+
+			long loop_dims[N];
+			md_select_dims(N, MD_BIT(d), loop_dims, out_dims);
+
+			auto nu2 = linop_loop(N, loop_dims, nu1);
+
+			linop_free(nu);
+
+			return nu2;
+		}
+	}
+
+	return nufft_create3(N, ksp_dims, cim_dims,
+			traj_dims, traj, wgh_dims, weights,
+			bas_dims, basis, conf);
+}
+
 
 
 struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
