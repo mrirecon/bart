@@ -554,6 +554,16 @@ static bool use_gpu(int p, void* ptr[p])
 #endif
 	return gpu;
 }
+
+static bool one_on_gpu(int p, void* ptr[p])
+{
+	bool gpu = false;
+
+	for (int i = 0; i < p; i++)
+		gpu |= cuda_ondevice(ptr[i]);
+
+	return gpu;
+}
 #endif
 
 extern double md_flp_total_time;
@@ -699,7 +709,7 @@ out:
 	debug_print_dims(DP_DEBUG4, D, dim);
 
 #ifdef USE_CUDA
-	if (num_auto_parallelize && !use_gpu(N, nptr1)) {
+	if (num_auto_parallelize && !use_gpu(N, nptr1) && !one_on_gpu(N, nptr1)) {
 #else
 	if (num_auto_parallelize) {
 #endif
