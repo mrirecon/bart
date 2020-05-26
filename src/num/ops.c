@@ -781,7 +781,7 @@ static void merge_dims(unsigned int D, long odims[D], const long idims1[D], cons
 
 	for (unsigned int i = 0; i < D; i++) {
 
-		assert((1 == odims[i]) | (1 == idims2[i]));
+		assert((1 == odims[i]) || (1 == idims2[i]));
 
 		if (1 == odims[i])
 			odims[i] = idims2[i];
@@ -878,6 +878,7 @@ const struct operator_s* operator_loop(unsigned int D, const long dims[D], const
 	return operator_loop_parallel(D, dims, op, 0u, false);
 }
 
+
 struct copy_data_s {
 
 	INTERFACE(operator_data_t);
@@ -957,6 +958,8 @@ const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[
 		long (*strsx)[io->N] = TYPE_ALLOC(long[io->N]);
 		md_copy_strides(io->N, *strsx, strs[i]);
 		(*strs2)[i] = *strsx;
+
+		// check for trivial strides
 
 		long tstrs[io->N];
 		md_calc_strides(io->N, tstrs, io->dims, CFL_SIZE);
