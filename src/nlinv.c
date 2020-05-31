@@ -3,7 +3,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
@@ -16,6 +16,9 @@
 #include "num/fft.h"
 #include "num/init.h"
 
+#include "noncart/nufft.h"
+#include "linops/linop.h"
+
 #include "misc/mri.h"
 #include "misc/misc.h"
 #include "misc/mmio.h"
@@ -24,6 +27,7 @@
 #include "misc/debug.h"
 
 #include "noir/recon.h"
+#include "noir/misc.h"
 
 
 
@@ -45,12 +49,14 @@ int main_nlinv(int argc, char* argv[])
 	bool combine = true;
 	unsigned int nmaps = 1;
 	float restrict_fov = -1.;
-	const char* psf = NULL;
+	const char* psf_file = NULL;
+	const char* trajectory = NULL;
 	const char* init_file = NULL;
 	struct noir_conf_s conf = noir_defaults;
 	bool out_sens = false;
 	bool scale_im = false;
 	bool usegpu = false;
+	float scaling = -1.;
 
 	const struct opt_s opts[] = {
 
@@ -60,10 +66,11 @@ int main_nlinv(int argc, char* argv[])
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('c', &conf.rvc, "Real-value constraint"),
 		OPT_CLEAR('N', &normalize, "Do not normalize image with coil sensitivities"),
-		OPT_UINT('m', &nmaps, "nmaps", "Number of ENLIVE maps to use in reconsctruction"),
+		OPT_UINT('m', &nmaps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),
 		OPT_CLEAR('U', &combine, "Do not combine ENLIVE maps in output"),
-		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
-		OPT_STRING('p', &psf, "PSF", ""),
+		OPT_FLOAT('f', &restrict_fov, "FOV", "restrict FOV"),
+		OPT_STRING('p', &psf_file, "file", "pattern / transfer function"),
+		OPT_STRING('t', &trajectory, "file", "kspace trajectory"),
 		OPT_STRING('I', &init_file, "file", "File for initialization"),
 		OPT_SET('g', &usegpu, "use gpu"),
 		OPT_SET('S', &scale_im, "Re-scale image after reconstruction"),
@@ -71,6 +78,8 @@ int main_nlinv(int argc, char* argv[])
 		OPT_FLOAT('a', &conf.a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPT_FLOAT('b', &conf.b, "", "(b in 1 + a * \\Laplace^-b/2)"),
 		OPT_SET('P', &conf.pattern_for_each_coil, "(supplied psf is different for each coil)"),
+		OPT_SET('n', &conf.noncart, "(non-Cartesian)"),
+		OPT_FLOAT('w', &scaling, "val", "inverse scaling of the data"),
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -83,14 +92,14 @@ int main_nlinv(int argc, char* argv[])
 	num_init();
 
 	long ksp_dims[DIMS];
-	complex float* kspace_data = load_cfl(argv[1], DIMS, ksp_dims);
+	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
 
 	// FIXME: SMS should not be the default
 
 	if (1 != ksp_dims[SLICE_DIM]) {
 
 		debug_printf(DP_INFO, "SMS-NLINV reconstruction. Multiband factor: %d\n", ksp_dims[SLICE_DIM]);
-		fftmod(DIMS, ksp_dims, SLICE_FLAG, kspace_data, kspace_data); // fftmod to get correct slice order in output
+		fftmod(DIMS, ksp_dims, SLICE_FLAG, kspace, kspace); // fftmod to get correct slice order in output
 		conf.sms = true;
 	}
 
@@ -105,16 +114,34 @@ int main_nlinv(int argc, char* argv[])
 	md_copy_dims(DIMS, dims, ksp_dims);
 	dims[MAPS_DIM] = nmaps;
 
+
+	complex float* traj = NULL;
+	long trj_dims[DIMS];
+
+	if (NULL != trajectory) {
+
+		conf.noncart = true;
+
+		traj = load_cfl(trajectory, DIMS, trj_dims);
+
+		//if (0 == md_calc_size(3, sens_dims))
+			estimate_fast_sq_im_dims(3, dims, trj_dims, traj);
+
+		md_zsmul(DIMS, trj_dims, traj, traj, 2.);
+
+		for (int i = 0; i < 3; i++)
+			if (1 != dims[i])
+				dims[i] *= 2;
+	}
+
 	long strs[DIMS];
 	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
-
 
 	long sens_dims[DIMS];
 	md_select_dims(DIMS, ~conf.cnstcoil_flags, sens_dims, dims);
 
 	long sens_strs[DIMS];
 	md_calc_strides(DIMS, sens_strs, sens_dims, CFL_SIZE);
-
 
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);
@@ -124,6 +151,13 @@ int main_nlinv(int argc, char* argv[])
 
 	long img_output_dims[DIMS];
 	md_copy_dims(DIMS, img_output_dims, img_dims);
+
+	if (conf.noncart) {
+
+		for (int i = 0; i < 3; i++)
+			if (1 != img_output_dims[i])
+				img_output_dims[i] /= 2;
+	}
 
 	if (combine)
 		img_output_dims[MAPS_DIM] = 1;
@@ -169,12 +203,13 @@ int main_nlinv(int argc, char* argv[])
 		md_clear(DIMS, sens_dims, ksens, CFL_SIZE);
 	}
 
+
 	complex float* pattern = NULL;
 	long pat_dims[DIMS];
 
-	if (NULL != psf) {
+	if (NULL != psf_file) {
 
-		pattern = load_cfl(psf, DIMS, pat_dims);
+		pattern = load_cfl(psf_file, DIMS, pat_dims);
 
 		// FIXME: check compatibility
 
@@ -183,31 +218,93 @@ int main_nlinv(int argc, char* argv[])
 			assert(sens_dims[COIL_DIM] == pat_dims[COIL_DIM]);
 		}
 
-		if (-1 == restrict_fov)
-			restrict_fov = 0.5;
-
-		conf.noncart = true;
-
 	} else {
 
-		md_copy_dims(DIMS, pat_dims, img_dims);
+		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 
 		pattern = anon_cfl("", DIMS, pat_dims);
 
-		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace_data);
+		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 	}
 
-#if 0
-	float scaling = 1. / estimate_scaling(ksp_dims, NULL, kspace_data);
-#else
-	double scaling = 100. / md_znorm(DIMS, ksp_dims, kspace_data);
 
-	if (conf.sms)
-		scaling *= sqrt(ksp_dims[SLICE_DIM]);
+	complex float* psf = NULL;
+	long psf_dims[DIMS];
+
+	complex float* kgrid = NULL;
+	long kgrid_dims[DIMS];
+	struct linop_s* nufft_op;
+
+
+	if ((-1 == restrict_fov) && conf.noncart)
+		restrict_fov = 0.5;
+
+
+
+	if (NULL != trajectory) {
+
+		debug_printf(DP_DEBUG3, "Start gridding psf ...");
+
+		md_select_dims(DIMS, ~(COIL_FLAG|MAPS_FLAG), psf_dims, sens_dims);
+
+		psf = compute_psf(DIMS, psf_dims, trj_dims, traj, trj_dims, NULL, pat_dims, pattern, false, false);
+
+		fftuc(DIMS, psf_dims, FFT_FLAGS, psf, psf);
+
+		float psf_sc = 1.;
+
+		for (int i = 0; i < 3; i++)
+			if (1 != psf_dims[i])
+				psf_sc *= 2.;
+
+		md_zsmul(DIMS, psf_dims, psf, psf, psf_sc);
+
+		debug_printf(DP_DEBUG3, "finished\n");
+
+
+		debug_printf(DP_DEBUG3, "Start creating nufft-objects...");
+
+		md_select_dims(DIMS, ~MAPS_FLAG, kgrid_dims, sens_dims);
+
+		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
+		nufft_conf.toeplitz = false;
+
+		nufft_op = nufft_create(DIMS, ksp_dims, kgrid_dims, trj_dims, traj, NULL, nufft_conf);
+
+		debug_printf(DP_DEBUG3, "finished\n");
+
+		kgrid = md_alloc(DIMS, kgrid_dims, CFL_SIZE);
+
+		linop_adjoint(nufft_op, DIMS, kgrid_dims, kgrid, DIMS, ksp_dims, kspace);
+		fftuc(DIMS, kgrid_dims, FFT_FLAGS, kgrid, kgrid);
+
+	} else {
+
+		md_copy_dims(DIMS, kgrid_dims, ksp_dims);
+		md_copy_dims(DIMS, psf_dims, pat_dims);
+
+		kgrid = kspace;
+		psf = pattern;
+	}
+
+
+
+	if (-1. == scaling) {
+#if 0
+		scaling = 1. / estimate_scaling(ksp_dims, NULL, kspace);
+#else
+		scaling = 100. / md_znorm(DIMS, kgrid_dims, kgrid);
+
+		if (conf.sms)
+			scaling *= sqrt(kgrid_dims[SLICE_DIM]);
 #endif
+	}
+
 
 	debug_printf(DP_INFO, "Scaling: %f\n", scaling);
-	md_zsmul(DIMS, ksp_dims, kspace_data, kspace_data, scaling);
+
+	md_zsmul(DIMS, kgrid_dims, kgrid, kgrid, scaling);
+
 
 	if (-1. == restrict_fov) {
 
@@ -228,59 +325,22 @@ int main_nlinv(int argc, char* argv[])
 #ifdef  USE_CUDA
 	if (usegpu) {
 
-		complex float* kspace_gpu = md_alloc_gpu(DIMS, ksp_dims, CFL_SIZE);
+		complex float* kspace_gpu = md_alloc_gpu(DIMS, kgrid_dims, CFL_SIZE);
 
-		md_copy(DIMS, ksp_dims, kspace_gpu, kspace_data, CFL_SIZE);
+		md_copy(DIMS, kgrid_dims, kspace_gpu, kgrid, CFL_SIZE);
 
-		noir_recon(&conf, dims, img, sens, ksens, ref, pattern, mask, kspace_gpu);
+		noir_recon(&conf, dims, img, sens, ksens, ref, psf, mask, kspace_gpu);
 
 		md_free(kspace_gpu);
 
 	} else
 #endif
-		noir_recon(&conf, dims, img, sens, ksens, ref, pattern, mask, kspace_data);
+		noir_recon(&conf, dims, img, sens, ksens, ref, psf, mask, kgrid);
 
 
-	// image output
-	if (normalize) {
 
-		complex float* buf = md_alloc(DIMS, dims, CFL_SIZE);
-		md_clear(DIMS, dims, buf, CFL_SIZE);
-
-		if (combine) {
-
-			md_zfmac2(DIMS, dims, ksp_strs, buf, img_strs, img, sens_strs, sens);
-			md_zrss(DIMS, ksp_dims, COIL_FLAG, img_output, buf);
-
-		} else {
-
-			md_zfmac2(DIMS, dims, strs, buf, img_strs, img, sens_strs, sens);
-			md_zrss(DIMS, dims, COIL_FLAG, img_output, buf);
-		}
-
-		md_zmul2(DIMS, img_output_dims, img_output_strs, img_output, img_output_strs, img_output, msk_strs, mask);
-
-		if ((1 == nmaps) || !combine) {
-
-			//restore phase
-			md_zphsr(DIMS, img_output_dims, buf, img);
-			md_zmul(DIMS, img_output_dims, img_output, img_output, buf);
-		}
-
-		md_free(buf);
-
-	} else {
-
-		if (combine) {
-
-			// just sum up the map images
-			md_zaxpy2(DIMS, img_dims, img_output_strs, img_output, 1., img_strs, img);
-
-		} else { /*!normalize && !combine */
-
-			md_copy(DIMS, img_output_dims, img_output, img, CFL_SIZE);
-		}
-	}
+	postprocess(dims, normalize, sens_strs, sens, img_strs, img,
+			img_output_dims, img_output_strs, img_output);
 
 	if (scale_im)
 		md_zsmul(DIMS, img_output_dims, img_output, img_output, 1. / scaling);
@@ -292,10 +352,12 @@ int main_nlinv(int argc, char* argv[])
 	unmap_cfl(DIMS, sens_dims, sens);
 	unmap_cfl(DIMS, pat_dims, pattern);
 	unmap_cfl(DIMS, img_output_dims, img_output);
-	unmap_cfl(DIMS, ksp_dims, kspace_data);
+	unmap_cfl(DIMS, ksp_dims, kspace);
 
 	double recosecs = timestamp() - start_time;
-	debug_printf(DP_DEBUG2, "Total Time: %.2f s\n", recosecs);
+
+	debug_printf(DP_DEBUG2, "Total time: %.2f s\n", recosecs);
+
 	exit(0);
 }
 
