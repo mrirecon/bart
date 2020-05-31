@@ -35,6 +35,7 @@ int main_traj(int argc, char* argv[])
 {
 	int X = 128;
 	int Y = 128;
+	int D = -1;
 	int mb = 1;
 	int turns = 1;
 	float rot = 0.;
@@ -55,6 +56,7 @@ int main_traj(int argc, char* argv[])
 
 		OPT_INT('x', &X, "x", "readout samples"),
 		OPT_INT('y', &Y, "y", "phase encoding lines"),
+		OPT_INT('d', &D, "d", "full readout samples"),
 		OPT_INT('a', &conf.accel, "a", "acceleration"),
 		OPT_INT('t', &turns, "t", "turns"),
 		OPT_INT('m', &mb, "mb", "SMS multiband factor"),
@@ -104,6 +106,12 @@ int main_traj(int argc, char* argv[])
 	dims[0] = 3;
 	dims[1] = X;
 	dims[2] = (conf.radial ? Y : (Y / conf.accel));
+
+	if (-1 == D)
+		D = X;
+
+	if (D < X)
+	    error("actual readout samples must be less than full samples");
 
 	// Variables for z-undersampling
 	long z_reflines = z_usamp[0];
@@ -189,7 +197,7 @@ int main_traj(int argc, char* argv[])
 			 * for symmetric trajectory [DC between between sample no. X/2-1 and X/2, zero-based indexing]
 			 * or asymmetric trajectory [DC component at sample no. X/2, zero-based indexing]
 			 */
-			double read = (float)i + (conf.asym_traj ? 0 : 0.5) - (float)X / 2.;
+			double read = (float)(i + D - X) + (conf.asym_traj ? 0 : 0.5) - (float)D / 2.;
 
 			if (conf.golden_partition)
 				base_angle[SLICE_DIM] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
