@@ -91,7 +91,7 @@ function [varargout] = bart(cmd, varargin)
 			cmdWSL = wslPathCorrection(cmd);
 			in_strWSL = wslPathCorrection(in_str);
 			out_strWSL =  wslPathCorrection(out_str);
-			ERR = system(['wsl bart ', cmdWSL, ' ', in_strWSL, ' ', out_strWSL]);
+			ERR = system(['wsl ', bart_path, '/bart ', cmdWSL, ' ', in_strWSL, ' ', out_strWSL]);
         else
 			% For cygwin use bash and modify paths
 			ERR = system(['bash.exe --login -c ', ...
