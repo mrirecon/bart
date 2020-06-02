@@ -1,9 +1,13 @@
 function writecfl(filenameBase,data)
 %WRITECFL  Write complex data to file.
-%   Writes reconstruction data to filenameBase.cfl (complex float) and its
-%   dimensions to filenameBase.hdr.
+%   WRITECFL(filenameBase, data) writes reconstruction data to 
+%   filenameBase.cfl (complex float) and its dimensions to filenameBase.hdr.
 %
 %   Written to edit data with the Berkeley Advanced Reconstruction Toolbox (BART).
+%
+%   Parameters:
+%       filenameBase:   path and filename of cfl file (without extension)
+%       data:           array/matrix to be written
 %
 % Copyright 2013. Joseph Y Cheng.
 % Copyright 2016. CBClab, Maastricht University.
