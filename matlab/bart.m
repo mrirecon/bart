@@ -14,7 +14,7 @@ function [varargout] = bart(cmd, varargin)
 %
 % Example:
 %   bart traj -h
-%   [reco] = bart('nuft -i traj', data) call nufft with inputs data and outputs reco
+%   [reco] = bart('nufft -i traj', data) call nufft with inputs data and outputs reco
 %
 % Authors:
 % 2014-2016 Martin Uecker <uecker@med.uni-goettingen.de>
@@ -22,7 +22,7 @@ function [varargout] = bart(cmd, varargin)
 % 2020 Martin Krämer <martin.kraemer@med.uni-jena.de>
 
     % Check input variables
-	if nargin==0 || all(cmd==0)
+	if nargin==0 || isempty(cmd)
 		fprintf('Usage: bart <command> <arguments...>\n\n');
 		cmd = '';
 	end
