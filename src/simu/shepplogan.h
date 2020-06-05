@@ -27,6 +27,12 @@ struct ellipsis3d_s {
 	double angle;
 };
 
+struct ellipsis_bs {
+
+	struct ellipsis_s geo;
+	bool background;
+};
+
 
 extern const struct ellipsis_s shepplogan[10];
 extern const struct ellipsis_s shepplogan_mod[10];
@@ -42,7 +48,7 @@ extern const struct ellipsis_s phantom_geo2[2];
 extern const struct ellipsis_s phantom_geo3[7];
 extern const struct ellipsis_s phantom_geo4[1];
 
-extern const struct ellipsis_s phantom_tubes[10];
+extern const struct ellipsis_bs phantom_tubes[21];
 
 
 extern complex double xellipsis(const double center[2], const double axis[2], double angle, const double p[2]);

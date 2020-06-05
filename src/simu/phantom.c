@@ -498,39 +498,77 @@ void calc_phantom_arb(int N, const struct ellipsis_s data[N], const long dims[DI
 }
 
 
-static void compensate_bckgrd(const long dims[DIMS], complex float* out, float intensity)
+static void separate_bckgrd(int Nb, struct ellipsis_s bckgrd[Nb], int Nf, struct ellipsis_s frgrd[Nf], int N, const struct ellipsis_bs geometry[N])
 {
-	long strs[DIMS];
-	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
+	// FIXME: Do not pass unused variables
 
-	long dims2[DIMS];
-	md_copy_dims(DIMS, dims2, dims);
-	dims2[COEFF_DIM]--; // remove background
+	for(int j = 0, jb = 0, jf = 0 ; j < N; j++) {
 
-	long strs2[DIMS];
-	md_copy_strides(DIMS, strs2, strs);
-	strs2[COEFF_DIM] = 0;
+		if (geometry[j].background) {
 
-	long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
-	pos[COEFF_DIM] = 1; // first foreground object
+			bckgrd[jb] = geometry[j].geo;
+			jb++;
 
-	md_zaxpy2(DIMS, dims2, strs2, out, -intensity, strs, &MD_ACCESS(DIMS, strs, pos, out));
+		} else {
+
+			frgrd[jf] = geometry[j].geo;
+			jf++;
+		}
+	}
 }
 
 void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
 {
 	if (1 < dims[COEFF_DIM]) {
 
-		calc_phantom_arb(ARRAY_SIZE(phantom_tubes), phantom_tubes, dims, out, kspace, tstrs, traj);
+		// Define geometry parameter -> see src/shepplogan.c
 
-		compensate_bckgrd(dims, out, phantom_tubes[0].intensity);
+		struct ellipsis_s tubes_bkgrd[11];
+		struct ellipsis_s tubes_frgrd[10];
+
+		assert(dims[COEFF_DIM] == ARRAY_SIZE(tubes_frgrd) + 1); // foreground + 1 background image!
+
+		separate_bckgrd(ARRAY_SIZE(tubes_bkgrd), tubes_bkgrd, ARRAY_SIZE(tubes_frgrd), tubes_frgrd, ARRAY_SIZE(phantom_tubes), phantom_tubes);
+
+		// Determine basis functions of the background
+
+		long dims2[DIMS];
+		md_copy_dims(DIMS, dims2, dims);
+		dims2[COEFF_DIM] = ARRAY_SIZE(tubes_bkgrd);
+
+		complex float* bkgrd = md_alloc(DIMS, dims2, CFL_SIZE);
+
+		calc_phantom_arb(dims2[COEFF_DIM], tubes_bkgrd, dims2, bkgrd, kspace, tstrs, traj);
+
+		// Save background to output
+
+		md_zsum(DIMS, dims2, COEFF_FLAG, out, bkgrd);
+
+		md_free(bkgrd);
+
+		// Determine basis functions of the foreground
+
+		dims2[COEFF_DIM] = ARRAY_SIZE(tubes_frgrd); // remove background
+
+		complex float* frgrd = md_alloc(DIMS, dims2, CFL_SIZE);
+
+		calc_phantom_arb(dims2[COEFF_DIM], tubes_frgrd, dims2, frgrd, kspace, tstrs, traj);
+
+		// Add foreground basis functions to out
+
+		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
+		pos[COEFF_DIM] = 1;
+
+		md_copy_block(DIMS, pos, dims, out, dims2, frgrd, CFL_SIZE);
+
+		md_free(frgrd);
 
 	} else { // sum up all objects
 
 		long tdims[DIMS];
 		md_copy_dims(DIMS, tdims, dims);
 
-		tdims[COEFF_DIM] = ARRAY_SIZE(phantom_tubes);
+		tdims[COEFF_DIM] = 11;	// Number of elements of tubes phantom with rings see src/shepplogan.c
 
 		complex float* tmp = md_alloc(DIMS, tdims, CFL_SIZE);
 
