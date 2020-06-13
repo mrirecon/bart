@@ -13,7 +13,7 @@ tests/test-wshfl: wavepsf fmac fft resize transpose squeeze poly join wshfl nrms
 	$(TOOLDIR)/poly 128 1 0 0 te.ra                                       ;\
 	$(TOOLDIR)/join 1 ky.ra kz.ra te.ra reorder.ra                        ;\
 	$(TOOLDIR)/poly 1 0 1 phi.ra                                          ;\
-	$(TOOLDIR)/wshfl -i 100 $(TESTS_OUT)/coils.ra wave_psf.ra phi.ra reorder.ra table.ra reco.ra ;\
+	$(TOOLDIR)/wshfl $(TESTS_OUT)/coils.ra wave_psf.ra phi.ra reorder.ra table.ra reco.ra ;\
 	$(TOOLDIR)/nrmse -t 0.23 -s $(TESTS_OUT)/shepplogan.ra reco.ra        ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@

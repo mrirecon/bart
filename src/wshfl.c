@@ -56,6 +56,10 @@
 #include "wavelet/wavthresh.h"
 #include "lowrank/lrthresh.h"
 
+#include "grecon/optreg.h"
+#include "grecon/italgo.h"
+
+
 static const char usage_str[] = "<maps> <wave> <phi> <reorder> <table> <output>";
 static const char help_str[]  = 
 	"Perform a wave-shuffling reconstruction.\n\n"
@@ -875,54 +879,41 @@ static void fftmod_apply(long sy, long sz,
 	}
 }
 
-enum algo_t { CG, IST, FISTA };
-
 int main_wshfl(int argc, char* argv[])
 {
 	double start_time = timestamp();
 
-	float lambda    = 1E-5;
-	int   maxiter   = 300;
+	struct opt_reg_s ropts;
+	opt_reg_init(&ropts);
+
+	int   maxiter   = 30;
+	int   cgiter    = 10;
 	int   blksize   = 8;
-	float step      = 0.5;
-	float tol       = 1.E-3;
-	bool  llr       = false;
-	bool  wav       = false;
-	bool  fista     = false;
+	float rho       = 1;
 	bool  hgwld     = false;
-	float cont      = 1;
-	float eval      = -1;
 	bool  ksp       = false;
 	const char* fwd = NULL;
 	const char* x0  = NULL;
 	int   gpun      = -1;
 	bool  dcx       = false;
-	bool  pf        = false;
 
 	const struct opt_s opts[] = {
-		OPT_FLOAT( 'r', &lambda,  "lambda", "Regularization value."),
-		OPT_INT(   'b', &blksize, "blkdim", "Block size for locally low rank."),
-		OPT_INT(   'i', &maxiter, "mxiter", "Maximum number of iterations."),
-		OPT_FLOAT( 's', &step,    "stepsz", "Step size for iterative method."),
-		OPT_FLOAT( 'c', &cont,    "cntnu",  "Continuation value for IST/FISTA."),
-		OPT_FLOAT( 't', &tol,     "toler",  "Tolerance convergence condition for iterative method."),
-		OPT_FLOAT( 'e', &eval,    "eigvl",  "Maximum eigenvalue of normal operator, if known."),
-		OPT_STRING('F', &fwd,     "frwrd",  "Go from shfl-coeffs to data-table. Pass in coeffs path."),
-		OPT_STRING('O', &x0,      "initl",  "Initialize reconstruction with guess."),
-		OPT_INT(   'g', &gpun,    "gpunm",  "GPU device number."),
-		OPT_SET(   'K', &ksp,               "Go from data-table to shuffling basis k-space."),
-		OPT_SET(   'f', &fista,             "Reconstruct using FISTA instead of IST."),
-		OPT_SET(   'H', &hgwld,             "Use hogwild in IST/FISTA."),
-		OPT_SET(   'v', &dcx,               "Split coefficients to real and imaginary components."),
-		OPT_SET(   'w', &wav,               "Use wavelet."),
-		OPT_SET(   'l', &llr,               "Use locally low rank across temporal coefficients."),
-		OPT_SET(   'p', &pf,                "Use locally low rank and real-imaginary components for partial fourier."),
+		{ 'R', true, opt_reg, &ropts, "<T>:A:B:C\tGeneralized regularization options. (-Rh for help)" },
+		OPT_INT(    'b', &blksize, "blkdim",    "Block size for locally low rank."),
+		OPT_INT(    'i', &maxiter, "mxiter",    "Maximum number of iterations."),
+		OPT_INT(    'j', &cgiter,  "cgiter",    "Maximum number of CG iterations in ADMM."),
+		OPT_FLOAT(  's', &rho,     "admrho",    "ADMM Rho value."),
+		OPT_STRING( 'F', &fwd,     "frwrd",     "Go from shfl-coeffs to data-table. Pass in coeffs path."),
+		OPT_STRING( 'O', &x0,      "initl",     "Initialize reconstruction with guess."),
+		OPT_INT(    'g', &gpun,    "gpunm",     "GPU device number."),
+		OPT_SET(    'K', &ksp,                  "Go from data-table to shuffling basis k-space."),
+		OPT_SET(    'H', &hgwld,                "Use hogwild."),
+		OPT_SET(    'v', &dcx,                  "Split coefficients to real and imaginary components."),
 	};
 
 	cmdline(&argc, argv, 6, 6, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
-	if (pf)
-		dcx = true;
+	struct admm_conf admm = { false, false, false, rho, cgiter };
 
 	debug_printf(DP_INFO, "Loading data... ");
 
@@ -986,7 +977,6 @@ int main_wshfl(int argc, char* argv[])
 	coeff_dims[8] = dcx ? 2 : 1;
 
 	if (ksp == true) {
-
 		const struct linop_s* Knc = linop_kern_create(gpun >= 0, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, table_dims);
 		long ksp_dims[] = { [0 ... DIMS - 1] = 1 };
 		ksp_dims[0] = wx;
@@ -1048,14 +1038,6 @@ int main_wshfl(int argc, char* argv[])
 
 	debug_printf(DP_INFO, "Single channel forward operator information:\n");
 	print_opdims(A_sc);
-	if (eval < 0)	
-#ifdef USE_CUDA
-		eval = (gpun >= 0) ? estimate_maxeigenval_gpu(A_sc->normal) : estimate_maxeigenval(A_sc->normal);
-#else
-		eval = estimate_maxeigenval(A_sc->normal);
-#endif
-	debug_printf(DP_INFO, "\tMax eval: %.2e\n", eval);
-	step /= eval;
 
 	struct linop_s* A = linop_multc_create(nc, md, maps, A_sc);
 	debug_printf(DP_INFO, "Overall forward linear operator information:\n");
@@ -1111,107 +1093,17 @@ int main_wshfl(int argc, char* argv[])
 	fftmod_apply(sy, sz, reorder_dims, reorder, table_dims, table, maps_dims, maps);
 	debug_printf(DP_INFO, "Done.\n");
 
-	const struct operator_p_s* T = NULL;
-	long blkdims[MAX_LEV][DIMS];
-	long minsize[] = { [0 ... DIMS - 1] = 1 };
-	minsize[0] = MIN(sx, 16);
-	minsize[1] = MIN(sy, 16);
-	minsize[2] = MIN(sz, 16);
-	unsigned int WAVFLAG = (sx > 1) * READ_FLAG | (sy > 1) * PHS1_FLAG | (sz > 2) * PHS2_FLAG;
+	debug_printf(DP_INFO, "Preparing reconstruction operator... ");
+	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
+	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
-	enum algo_t algo = CG;
-	if ((wav) || (llr) || (pf)) {
-		algo = (fista) ? FISTA : IST;
-		if (wav) {
-			debug_printf(DP_INFO, "Creating wavelet threshold operator... ");
-			T = prox_wavelet_thresh_create(DIMS, coeff_dims, WAVFLAG, 0u, minsize, lambda, true);
-		} else if (llr) {
-			debug_printf(DP_INFO, "Creating locally low rank threshold operator across coeff dim and real-imag dim... ");
-			llr_blkdims(blkdims, ~(COEFF_FLAG | ITER_FLAG), coeff_dims, blksize);
-			T = lrthresh_create(coeff_dims, true, ~(COEFF_FLAG | ITER_FLAG), (const long (*)[])blkdims, lambda, false, false, false);
-		} else {
-			assert(dcx);
-			debug_printf(DP_INFO, "Creating locally low rank threshold operator across real-imag... ");
-			llr_blkdims(blkdims, ~ITER_FLAG, coeff_dims, blksize);
-			T = lrthresh_create(coeff_dims, true, ~ITER_FLAG, (const long (*)[])blkdims, lambda, false, false, false);
-		}
-		debug_printf(DP_INFO, "Done.\n");
-	}
+	opt_reg_configure(DIMS, coeff_dims, &ropts, thresh_ops, trafos, blksize, 1, gpun >= 0);
+	int nr_penalties = ropts.r;
+	struct reg_s* regs = ropts.regs;
 
-	italgo_fun2_t italgo = iter2_call_iter;
-	struct iter_call_s iter2_data;
-	SET_TYPEID(iter_call_s, &iter2_data);
-	iter_conf* iconf = CAST_UP(&iter2_data);
-
-	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
-	struct iter_fista_conf    fsconf = iter_fista_defaults;
-	struct iter_ist_conf      isconf = iter_ist_defaults;
-
-	switch(algo) {
-
-		case IST:
-
-			debug_printf(DP_INFO, "Using IST.\n");
-			debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
-			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
-			debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
-			debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
-			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
-			debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
-
-			isconf              = iter_ist_defaults;
-			isconf.step         = step;
-			isconf.maxiter      = maxiter;
-			isconf.tol          = tol;
-			isconf.continuation = cont;
-			isconf.hogwild      = hgwld;
-
-			iter2_data.fun   = iter_ist;
-			iter2_data._conf = CAST_UP(&isconf);
-
-			break;
-
-		case FISTA:
-
-			debug_printf(DP_INFO, "Using FISTA.\n");
-			debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
-			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
-			debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
-			debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
-			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
-			debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
-
-			fsconf              = iter_fista_defaults;
-			fsconf.maxiter      = maxiter;
-			fsconf.step         = step;
-			fsconf.hogwild      = hgwld;
-			fsconf.tol          = tol;
-			fsconf.continuation = cont;
-
-			iter2_data.fun   = iter_fista;
-			iter2_data._conf = CAST_UP(&fsconf);
-
-			break;
-
-		default:
-		case CG:
-
-			debug_printf(DP_INFO, "Using CG.\n");
-			debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
-			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
-			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
-
-			cgconf          = iter_conjgrad_defaults;
-			cgconf.maxiter  = maxiter;
-			cgconf.l2lambda = lambda;
-			cgconf.tol      = tol;
-
-			iter2_data.fun   = iter_conjgrad;
-			iter2_data._conf = CAST_UP(&cgconf);
-
-			break;
-
-	}
+	enum algo_t algo = ALGO_ADMM;
+	struct iter it = italgo_config(algo, nr_penalties, regs, maxiter, -1, hgwld, false, admm, 1, false);
+	debug_printf(DP_INFO, "Done.\n");
 
 	complex float* init = NULL;
 	if (x0 != NULL) {
@@ -1224,7 +1116,7 @@ int main_wshfl(int argc, char* argv[])
 	complex float* recon = create_cfl(argv[6], DIMS, coeff_dims);
 	struct lsqr_conf lsqr_conf = { 0., gpun >= 0 };
 	double recon_start = timestamp();
-	const struct operator_p_s* J = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*) init, A, NULL, 1, &T, NULL, NULL);
+	const struct operator_p_s* J = lsqr2_create(&lsqr_conf, it.italgo, it.iconf, (const float*) init, A, NULL, nr_penalties, thresh_ops, trafos, NULL);
 	operator_p_apply(J, 1., DIMS, coeff_dims, recon, DIMS, table_dims, table);
 	md_zsmul(DIMS, coeff_dims, recon, recon, norm);
 	double recon_end = timestamp();
