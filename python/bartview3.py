@@ -93,19 +93,19 @@ class BartView(object):
         dims = self.im_unsqueeze_shape[ self.order ].astype(str)
         for i in range(0,len(dims)):
             dims[i] = "Dim " + dims[i]
-        oboxx_ax = plt.axes( [0, 1 - 0.03, 0.1, 0.03], axisbg = "gainsboro" )
+        oboxx_ax = plt.axes( [0, 1 - 0.03, 0.1, 0.03], facecolor = "gainsboro" )
         oboxx_ax.set_xticks([]);
         oboxx_ax.set_yticks([]);
-        orderx_ax = plt.axes( [0, 1 - 0.18, 0.1, 0.15], axisbg = 'gainsboro' )
+        orderx_ax = plt.axes( [0, 1 - 0.18, 0.1, 0.15], facecolor = 'gainsboro' )
         orderx_radio = RadioButtons( orderx_ax, dims, activecolor = 'SteelBlue', active = 0 )
         orderx_ax.text(0.5,1.05,  'Up/Down', horizontalalignment = 'center')
         radios.append( orderx_radio )
         orderx_radio.on_clicked( self.update_orderx )
 
-        oboxy_ax = plt.axes( [0.1, 1 - 0.03, 0.1, 0.03], axisbg = "gainsboro" )
+        oboxy_ax = plt.axes( [0.1, 1 - 0.03, 0.1, 0.03], facecolor = "gainsboro" )
         oboxy_ax.set_xticks([]);
         oboxy_ax.set_yticks([]);
-        ordery_ax = plt.axes( [0.1, 1 - 0.18, 0.1, 0.15], axisbg = 'gainsboro' )
+        ordery_ax = plt.axes( [0.1, 1 - 0.18, 0.1, 0.15], facecolor = 'gainsboro' )
         ordery_radio = RadioButtons( ordery_ax, dims, activecolor = 'SteelBlue', active = 1 )
         ordery_ax.text(0.5,1.05,  'Left/Right', horizontalalignment = 'center')
         radios.append( ordery_radio )
@@ -114,10 +114,10 @@ class BartView(object):
 
         # Create Radio buttons for mosaic
         self.mosaic_valid = False
-        mbox_ax = plt.axes( [0.2, 1 - 0.03, 0.1, 0.03], axisbg = "gainsboro" )
+        mbox_ax = plt.axes( [0.2, 1 - 0.03, 0.1, 0.03], facecolor = "gainsboro" )
         mbox_ax.set_xticks([]);
         mbox_ax.set_yticks([]);
-        mosaic_ax = plt.axes( [0.2, 1 - 0.18, 0.1, 0.15], axisbg = 'gainsboro' )
+        mosaic_ax = plt.axes( [0.2, 1 - 0.18, 0.1, 0.15], facecolor = 'gainsboro' )
         mosaic_radio = RadioButtons( mosaic_ax, dims, activecolor = 'SteelBlue', active = 1 )
         mosaic_ax.text(0.5,1.05,  'Mosaic', horizontalalignment = 'center')
         radios.append( mosaic_radio )
@@ -158,18 +158,18 @@ class BartView(object):
 
         # Create Magnitude/phase radio button
         self.magnitude = True
-        mag_ax = plt.axes( [0.5, 1 - 0.18, 0.1, 0.18], axisbg = 'gainsboro' )
+        mag_ax = plt.axes( [0.5, 1 - 0.18, 0.1, 0.18], facecolor = 'gainsboro' )
         mag_radio = RadioButtons( mag_ax, ('Mag','Phase') , activecolor = 'SteelBlue', active = 0 )
         radios.append( mag_radio )
         mag_radio.on_clicked( self.update_magnitude )
 
         
-        sbox_ax = plt.axes( [0.6, 1 - 0.18, 0.5, 0.18], axisbg='gainsboro')
+        sbox_ax = plt.axes( [0.6, 1 - 0.18, 0.5, 0.18], facecolor='gainsboro')
         sbox_ax.set_xticks([])
         sbox_ax.set_yticks([])
         
         # Create aspect sliders
-        aspect_ax = plt.axes( [0.65, 1 - 0.09 + 0.02, 0.1, 0.02], axisbg = 'white' )
+        aspect_ax = plt.axes( [0.65, 1 - 0.09 + 0.02, 0.1, 0.02], facecolor = 'white' )
         aspect_slider = Slider( aspect_ax, "", 0.25, 4, valinit=1, color='SteelBlue')
         aspect_ax.text( 4 / 2,1.5,  'Aspect Ratio', horizontalalignment = 'center')
         sliders.append( aspect_slider )
@@ -177,14 +177,14 @@ class BartView(object):
         
         # Create contrast sliders
         self.vmin = 0
-        vmin_ax = plt.axes( [0.83, 1 - 0.09 + 0.02, 0.1, 0.02], axisbg = 'white' )
+        vmin_ax = plt.axes( [0.83, 1 - 0.09 + 0.02, 0.1, 0.02], facecolor = 'white' )
         vmin_slider = Slider( vmin_ax, "", 0, 1, valinit=0, color='SteelBlue')
         vmin_ax.text(0.5,1.5,  'Contrast Min', horizontalalignment = 'center')
         sliders.append( vmin_slider )
         vmin_slider.on_changed( self.update_vmin )
 
         self.vmax = 1
-        vmax_ax = plt.axes( [0.83, 1 - 0.18 + 0.02, 0.1, 0.02], axisbg = 'white' )
+        vmax_ax = plt.axes( [0.83, 1 - 0.18 + 0.02, 0.1, 0.02], facecolor = 'white' )
         vmax_slider = Slider( vmax_ax, "", 0, 1, valinit=1, color='SteelBlue')
         vmax_ax.text(0.5,1.5,  'Contrast Max', horizontalalignment = 'center')
         sliders.append( vmax_slider )
@@ -192,7 +192,7 @@ class BartView(object):
 
         
         # Create sliders for choosing slices
-        box_ax = plt.axes( [0, 1 - 0.25, 1, 0.07], axisbg='gainsboro')
+        box_ax = plt.axes( [0, 1 - 0.25, 1, 0.07], facecolor='gainsboro')
         box_ax.set_xticks([])
         box_ax.set_yticks([])
 
@@ -200,7 +200,7 @@ class BartView(object):
         slider_start = 0.1
         ax = []
         for d in np.r_[:self.Ndims]:
-            slice_ax = plt.axes( [0.01 + 1 / self.Ndims * d, 1 - 0.24, 0.8 / self.Ndims, slider_thick] , axisbg='white')
+            slice_ax = plt.axes( [0.01 + 1 / self.Ndims * d, 1 - 0.24, 0.8 / self.Ndims, slider_thick] , facecolor='white')
             slice_slider = DiscreteSlider( slice_ax, "", 0, self.im_shape[d]-1, valinit=self.slice_num[d],valfmt='%i', color='SteelBlue')
             slice_ax.text( (self.im_shape[d]-1)/2,1.5,  'Dim %d Slice' % self.im_unsqueeze_shape[d], horizontalalignment = 'center' )
             sliders.append(slice_slider);

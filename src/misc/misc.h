@@ -2,6 +2,7 @@
  * Copyright 2015-2016. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * Copyright 2017-2018. Damien Nguyen
+ * Copyright 2019. Uecker Lab, University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -63,6 +64,8 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 extern int error_catcher(int fun(int argc, char* argv[__VLA(argc)]), int argc, char* argv[__VLA(argc)]);
 
 extern int bart_printf(const char* fmt, ...);
+
+extern void debug_print_bits(int dblevel, int D, unsigned long bitmask);
 
 extern void print_dims(int D, const long dims[__VLA(D)]);
 extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);

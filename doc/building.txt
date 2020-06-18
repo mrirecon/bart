@@ -59,6 +59,10 @@ System and unit tests can be build and run with:
 	make test
 	make utest
 
+To run individual tests:
+
+	make tests/test-pics-cs
+
 
 1.2.3. Cleaning Up
 

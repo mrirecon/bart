@@ -1,5 +1,5 @@
 
-
+#include "noncart/grid.h"
 
 
 /**
@@ -12,6 +12,7 @@ struct nufft_data {
 	INTERFACE(linop_data_t);
 
 	struct nufft_conf_s conf;	///< NUFFT configuration structure
+	struct grid_conf_s grid_conf;
 
 	unsigned int N;			///< Number of dimension
 	unsigned long flags;
@@ -50,6 +51,7 @@ struct nufft_data {
 
 	//!
 	long* cm2_dims;			///< 2x oversampled coil image dimension
+	long* factors;
 
 	long* ksp_strs;
 	long* cim_strs;

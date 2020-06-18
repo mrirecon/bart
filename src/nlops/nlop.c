@@ -278,7 +278,10 @@ const struct nlop_s* nlop_clone(const struct nlop_s* op)
 
 nlop_data_t* nlop_get_data(struct nlop_s* op)
 {
-	auto data2 = CAST_DOWN(nlop_op_data_s, operator_get_data(op->op));
+	auto data2 = CAST_MAYBE(nlop_op_data_s, operator_get_data(op->op));
+
+	if (NULL == data2)
+		return NULL;
 #if 1
 	auto data3 = CAST_DOWN(nlop_linop_data_s, linop_get_data(op->derivative[0]));
 	assert(data3->data == data2->data);
@@ -328,12 +331,12 @@ const struct linop_s* nlop_get_derivative(const struct nlop_s* op, int o, int i)
 
 const struct iovec_s* nlop_generic_domain(const struct nlop_s* op, int i)
 {
-	return linop_domain(nlop_get_derivative(op, 0, i));
+	return operator_arg_in_domain(op->op, (unsigned int)i);
 }
 
 const struct iovec_s* nlop_generic_codomain(const struct nlop_s* op, int o)
 {
-	return linop_codomain(nlop_get_derivative(op, o, 0));
+	return operator_arg_out_codomain(op->op, (unsigned int)o);
 }
 
 

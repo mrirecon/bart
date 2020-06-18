@@ -93,6 +93,8 @@ extern unsigned int operator_nr_out_args(const struct operator_s* op);
 extern unsigned int operator_ioflags(const struct operator_s* op);
 
 extern const struct iovec_s* operator_arg_domain(const struct operator_s* op, unsigned int n);
+extern const struct iovec_s* operator_arg_in_domain(const struct operator_s* op, unsigned int n);
+extern const struct iovec_s* operator_arg_out_codomain(const struct operator_s* op, unsigned int n);
 extern const struct iovec_s* operator_domain(const struct operator_s* op);
 extern const struct iovec_s* operator_codomain(const struct operator_s* op);
 

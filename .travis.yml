@@ -59,6 +59,7 @@ matrix:
             - liblapacke-dev
             - libblocksruntime-dev
       script:
+        - make
         - make utest
 
     - name: "Makefile OpenMP"
@@ -76,6 +77,7 @@ matrix:
             - gcc-5
             - liblapacke-dev
       script:
+        - make
         - make test
         - make utest
 
@@ -94,70 +96,6 @@ matrix:
             - gcc-5
             - gfortran
             - liblapack-dev
-
-    - name: "CMake GCC-5"
-      env: MAYFAIL=1
-      os: linux
-      compiler: gcc-5
-      sudo: required
-      dist: trusty
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - *default_packages
-            - gcc-5
-            - libatlas-base-dev
-            - liblapacke-dev
-      before_script:
-        - mkdir build && cd build
-        # NB: CC is automatically set to `compiler` by Travis
-        - cmake .. -DLINALG_VENDOR=ATLAS -DBART_ENABLE_MEM_CFL=OFF -DBUILD_TESTING=OFF -DBART_LOG_BACKEND=OFF -DUSE_OPENMP=ON -DBART_GENERATE_DOC=OFF
-
-    - name: "CMake GCC-5 NOLAPACKE"
-      env: MAYFAIL=1
-      os: linux
-      compiler: gcc-5
-      sudo: required
-      dist: trusty
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - *default_packages
-            - gcc-5
-            - gfortran
-            - libatlas-base-dev
-            - liblapack-dev
-      before_script:
-        - mkdir build && cd build
-        # NB: CC is automatically set to `compiler` by Travis
-        - cmake .. -DBART_ENABLE_MEM_CFL=OFF -DBUILD_TESTING=OFF -DBART_LOG_BACKEND=OFF -DUSE_OPENMP=ON -DBART_GENERATE_DOC=OFF -DBART_NO_LAPACKE=ON
-
-    - name: "CMake GCC-5/G++-5 (with mem-CFL support) + utest"
-      env: MAYFAIL=1
-      os: linux
-      compiler: gcc-5
-      sudo: required
-      dist: trusty
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - *default_packages
-            - gcc-5
-            - g++-5
-            - libatlas-base-dev
-            - liblapacke-dev
-      before_script:
-        - mkdir build && cd build
-        # NB: CC is automatically set to `compiler` by Travis
-        - CXX=g++-5 cmake .. -DLINALG_VENDOR=ATLAS -DBART_ENABLE_MEM_CFL=ON -DBUILD_TESTING=ON -DBART_LOG_BACKEND=OFF -DUSE_OPENMP=ON -DBART_GENERATE_DOC=OFF
-      after_script:
-        - make test
 
 script:
   - make bart

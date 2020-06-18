@@ -1,10 +1,10 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2015-2019. Martin Uecker.
+ * Copyright 2015-2020. Martin Uecker.
  * Copyright 2017. University of Oxford.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
- 
+
 #ifndef __FLPMATH
 #define __FLPMATH
 
@@ -80,12 +80,10 @@ extern void md_zconv2(int N, unsigned long flags,
 				const long odims[__VLA(N)], const long ostrs[__VLA(N)], _Complex float* out,
 				const long kdims[__VLA(N)], const long kstrs[__VLA(N)], const _Complex float* krn,
 				const long idims[__VLA(N)], const long istrs[__VLA(N)], const _Complex float* in);
-
 extern void md_zconv(int N, unsigned long flags,
 				const long odims[__VLA(N)], _Complex float* out,
 				const long kdims[__VLA(N)], const _Complex float* krn,
 				const long idims[__VLA(N)], const _Complex float* in);
-
 
 extern void md_matmul_dims(unsigned int D, long max_dims[__VLA(D)], const long out_dims[__VLA(D)], const long mat_dims[__VLA(D)], const long in_dims[__VLA(D)]);
 
@@ -138,6 +136,9 @@ extern void md_abs2(unsigned int D, const long dim[__VLA(D)], const long ostr[__
 
 extern void md_zabs(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
 extern void md_zabs2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+
+extern void md_zatanr(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
+extern void md_zatanr2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
 extern void md_zmax(unsigned int D, const long dims[__VLA(D)], _Complex float* optr, const _Complex float* iptr1, const _Complex float* iptr2);
 extern void md_zmax2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr1[__VLA(D)], const _Complex float* iptr1, const long istr2[__VLA(D)], const _Complex float* iptr2);
@@ -192,8 +193,23 @@ extern void md_zexpj2(unsigned int D, const long dim[__VLA(D)], const long ostr[
 extern void md_zexp(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
 extern void md_zexp2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
+extern void md_exp(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr);
+extern void md_exp2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr);
+
+extern void md_zlog(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
+extern void md_zlog2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+
+extern void md_log(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr);
+extern void md_log2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr);
+
 extern void md_zarg(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
 extern void md_zarg2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+
+extern void md_zsin(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
+extern void md_zsin2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+
+extern void md_zcos(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
+extern void md_zcos2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
 extern void md_zlessequal(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr1, const _Complex float* iptr2);
 extern void md_zlessequal2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr1[__VLA(D)], const _Complex float* iptr1, const long istr2[__VLA(D)], const _Complex float* iptr2);
@@ -247,12 +263,16 @@ extern float md_scalar(unsigned int D, const long dim[__VLA(D)], const float* pt
 extern void md_rss(unsigned int D, const long dims[__VLA(D)], unsigned int flags, float* dst, const float* src);
 extern void md_zrss(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* dst, const _Complex float* src);
 extern void md_zss(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* dst, const _Complex float* src);
+extern void md_zss2(unsigned int D, const long dims[__VLA(D)], unsigned int flags, const long str2[__VLA(D)], _Complex float* dst, const long str1[__VLA(D)], const _Complex float* src);
 
 extern void md_zstd(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* optr, const _Complex float* iptr);
 extern void md_zstd2(unsigned int D, const long dims[__VLA(D)], unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
 extern void md_zvar(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* optr, const _Complex float* iptr);
 extern void md_zvar2(unsigned int D, const long dims[__VLA(D)], unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+
+extern void md_zcovar(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* optr, const _Complex float* iptr1, const _Complex float* iptr2);
+extern void md_zcovar2(unsigned int D, const long dims[__VLA(D)], unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr1[__VLA(D)], const _Complex float* iptr1, const long istr2[__VLA(D)], const _Complex float* iptr2);
 
 extern void md_zavg(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* optr, const _Complex float* iptr);
 extern void md_zavg2(unsigned int D, const long dims[__VLA(D)], unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
@@ -282,6 +302,8 @@ extern void md_zfill(unsigned int D, const long dim[__VLA(D)], _Complex float* p
 
 extern void md_zsmax2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr, float val);
 extern void md_zsmax(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr, float val);
+extern void md_zsmin2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr, float val);
+extern void md_zsmin(unsigned int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr, float val);
 
 extern void md_smin2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr, float val);
 extern void md_smin(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr, float val);
@@ -304,9 +326,11 @@ extern void md_zfftmod2(unsigned int D, const long dim[__VLA(D)], const long ost
 
 extern void md_zsum(unsigned int D, const long dims[__VLA(D)], unsigned int flags, _Complex float* dst, const _Complex float* src);
 
+extern void md_imag2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], float* dst, const long istr[__VLA(D)], const _Complex float* src);
+extern void md_imag(unsigned int D, const long dims[__VLA(D)], float* dst, const _Complex float* src);
+extern void md_real2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], float* dst, const long istr[__VLA(D)], const _Complex float* src);
+extern void md_real(unsigned int D, const long dims[__VLA(D)], float* dst, const _Complex float* src);
 
 #include "misc/cppwrap.h"
 
 #endif
-
-

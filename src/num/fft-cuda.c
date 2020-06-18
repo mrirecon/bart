@@ -1,10 +1,11 @@
 /* Copyright 2013, 2015. The Regents of the University of California.
- * Copyright 2019. Martin Uecker.
+ * Copyright 2019. Uecker Lab, University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * Christian Holme <christian.holme@med.uni-goettingen.de>
  *
  *
  * Internal interface to the CUFFT library used in fft.c.
@@ -13,6 +14,7 @@
 #include <stdbool.h>
 #include <complex.h>
 #include <assert.h>
+#include <limits.h>
 
 #include "misc/misc.h"
 #include "num/multind.h"
@@ -49,10 +51,39 @@ struct iovec {
 
 
 
+// detect if flags has blocks of 1's seperated by 0's
+static bool noncontiguous_flags(int D, unsigned long flags)
+{
+	bool o = false;
+	bool z = false;
+
+	for (int i = 0; i < D; i++) {
+
+		bool curr_bit = MD_IS_SET(flags, i);
+
+		if (curr_bit) // found a block of ones
+			o = true;
+
+		if (o && !curr_bit) // found the end of a block of ones
+			z = true;
+
+		if (o && z && curr_bit) // found a second block of ones
+			return true;
+	}
+
+	return false;
+}
 
 
 static struct fft_cuda_plan_s* fft_cuda_plan0(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], const long istrides[D], bool backwards)
 {
+	// TODO: This is not optimal, as it will often create separate fft's where they
+	// are not needed. And since we compute blocks, we could also recurse
+	// into both blocks...
+
+	if (noncontiguous_flags(D, flags))
+		return NULL;
+
 	PTR_ALLOC(struct fft_cuda_plan_s, plan);
 	unsigned int N = D;
 
@@ -186,23 +217,35 @@ errout:
 }
 
 
+static unsigned long find_msb(unsigned long flags)
+{
+	for (unsigned int i = 1; i < CHAR_BIT * sizeof(flags); i *= 2)
+		flags |= flags >> i;
+
+	return (flags + 1) / 2;
+}
+
+
 struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], const long istrides[D], bool backwards)
 {
+	assert(0u != flags);
+	assert(0u == (flags & ~md_nontriv_dims(D, dimensions)));
+
 	struct fft_cuda_plan_s* plan = fft_cuda_plan0(D, dimensions, flags, ostrides, istrides, backwards);
 
 	if (NULL != plan)
 		return plan;
 
-	int lsb = ffs(flags) - 1;
+	unsigned long msb = find_msb(flags);
 
-	if (flags & lsb) {	// FIXME: this couldbe better...
+	if (flags & msb) {
 
-		struct fft_cuda_plan_s* plan = fft_cuda_plan0(D, dimensions, lsb, ostrides, istrides, backwards);
+		struct fft_cuda_plan_s* plan = fft_cuda_plan0(D, dimensions, msb, ostrides, istrides, backwards);
 
 		if (NULL == plan)
 			return NULL;
 
-		plan->chain = fft_cuda_plan(D, dimensions, MD_CLEAR(flags, lsb), ostrides, ostrides, backwards);
+		plan->chain = fft_cuda_plan(D, dimensions, flags & ~msb, ostrides, ostrides, backwards);
 
 		if (NULL == plan->chain) {
 

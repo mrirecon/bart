@@ -63,6 +63,12 @@ else
 	ARFLAGS ?= rs
 endif
 
+ifeq ($(BUILDTYPE), Linux)
+ifneq (,$(findstring Red Hat,$(shell gcc --version)))
+	CPPFLAGS+=-I/usr/include/lapacke/
+	LDFLAGS+=-L/usr/lib64/atlas -ltatlas
+endif
+endif
 
 ifeq ($(UNAME),Cygwin)
 	BUILDTYPE = Cygwin
@@ -157,9 +163,16 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 
 
 
-# Main build targets are defined in build_targets.mk so that both CMake and Make can use the same definitions
-# set values for TBASE TFLP TNUM TRECO TCALIB TMRI TSIM TIO in build_targets.mk
-include build_targets.mk
+# Main build targets
+#
+TBASE=show slice crop resize join transpose squeeze flatten zeros ones flip circshift extract repmat bitmask reshape version delta copy casorati vec poly index
+TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexp
+TNUM=fft fftmod fftshift noise bench threshold conv rss filter mandelbrot wavelet window var std fftrot
+TRECO=pics pocsense sqpics itsense nlinv moba nufft rof tgv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv
+TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin
+TMRI=homodyne poisson twixread fakeksp looklocker upat
+TSIM=phantom traj
+TIO=toimg
 
 
 
@@ -168,12 +181,14 @@ MODULES = -lnum -lmisc -lnum -lmisc
 MODULES_pics = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart
 MODULES_sqpics = -lsense -liter -llinops -lwavelet -llowrank -lnoncart
 MODULES_pocsense = -lsense -liter -llinops -lwavelet
-MODULES_nlinv = -lnoir -liter -lnlops -llinops
-MODULES_moba = -lmoba -lnoir -liter -lnlops -llinops -lwavelet
+MODULES_nlinv = -lnoir -liter -lnlops -llinops -lnoncart
+MODULES_rtnlinv = -lnoir -liter -lnlops -llinops -lnoncart
+MODULES_moba = -lmoba -lnoir -liter -lnlops -llinops -lwavelet -lnoncart
 MODULES_bpsense = -lsense -lnoncart -liter -llinops -lwavelet
 MODULES_itsense = -liter -llinops
 MODULES_ecalib = -lcalib
 MODULES_ecaltwo = -lcalib
+MODULES_estdelay = -lcalib
 MODULES_caldir = -lcalib
 MODULES_walsh = -lcalib
 MODULES_calmat = -lcalib
@@ -184,8 +199,8 @@ MODULES_nufft = -lnoncart -liter -llinops
 MODULES_rof = -liter -llinops
 MODULES_tgv = -liter -llinops
 MODULES_bench = -lwavelet -llinops
-MODULES_phantom = -lsimu
-MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet -lnlops -lmoba
+MODULES_phantom = -lsimu -lgeom
+MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet -lnlops -lmoba -lgeom
 MODULES_sake = -lsake
 MODULES_traj = -lnoncart
 MODULES_wave = -liter -lwavelet -llinops -llowrank
@@ -195,7 +210,9 @@ MODULES_lrmatrix = -llowrank -liter -llinops
 MODULES_estdims = -lnoncart -llinops
 MODULES_ismrmrd = -lismrm
 MODULES_wavelet = -llinops -lwavelet
-MODULES_wshfl = -llinops -lwavelet -liter -llowrank
+MODULES_wshfl = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart
+MODULES_ssa = -lcalib
+MODULES_bin = -lcalib
 
 
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
@@ -252,7 +269,7 @@ endif
 
 ifeq ($(MAKESTAGE),1)
 .PHONY: doc/commands.txt $(TARGETS)
-default all clean allclean distclean doc/commands.txt doxygen test utest gputest $(TARGETS):
+default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest pythontest $(TARGETS):
 	make MAKESTAGE=2 $(MAKECMDGOALS)
 
 tests/test-%: force
@@ -265,7 +282,7 @@ else
 
 CPPFLAGS += $(DEPFLAG) -iquote $(srcdir)/
 CFLAGS += -std=gnu11
-CXXFLAGS += -std=c++11
+CXXFLAGS += -std=c++14
 
 
 
@@ -434,12 +451,85 @@ endif
 
 .LIBPATTERNS := lib%.a
 
-
 vpath %.a lib
 
-DIRS = $(root)/rules/*.mk
+boxextrasrcs := $(XTARGETS:%=src/%.c)
 
-include $(DIRS)
+define alib
+$(1)srcs := $(wildcard $(srcdir)/$(1)/*.c)
+$(1)cudasrcs := $(wildcard $(srcdir)/$(1)/*.cu)
+$(1)objs := $$($(1)srcs:.c=.o)
+$(1)objs += $$($(1)extrasrcs:.c=.o)
+$(1)objs += $$($(1)extracxxsrcs:.cc=.o)
+
+ifeq ($(CUDA),1)
+$(1)objs += $$($(1)cudasrcs:.cu=.o)
+endif
+
+.INTERMEDIATE: $$($(1)objs)
+
+lib/lib$(1).a: lib$(1).a($$($(1)objs))
+
+endef
+
+ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba lapacke box geom
+$(eval $(foreach t,$(ALIBS),$(eval $(call alib,$(t)))))
+
+
+# additional rules for lib misc
+$(eval $(shell $(root)/rules/update-version.sh))
+
+$(srcdir)/misc/version.o: $(srcdir)/misc/version.inc
+
+
+# additional rules for lib ismrm
+lib/libismrm.a: CPPFLAGS += $(ISMRM_H)
+
+
+# lib linop
+UTARGETS += test_linop_matrix test_linop
+MODULES_test_linop += -llinops
+MODULES_test_linop_matrix += -llinops
+
+# lib lowrank
+UTARGETS += test_batchsvd
+MODULES_test_batchsvd = -llowrank
+
+# lib misc
+UTARGETS += test_pattern test_types test_misc
+
+# lib moba
+UTARGETS += test_moba
+MODULES_test_moba += -lmoba -lnlops -llinops
+
+# lib nlop
+UTARGETS += test_nlop
+MODULES_test_nlop += -lnlops -llinops
+
+# lib noncart
+UTARGETS += test_nufft
+MODULES_test_nufft += -lnoncart -llinops
+
+# lib num
+UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window
+UTARGETS += test_blas test_mdfft test_ops test_ops_p
+UTARGETS_GPU += test_cudafft
+
+# lib simu
+UTARGETS += test_ode_bloch test_biot_savart
+MODULES_test_ode_bloch += -lsimu
+MODULES_test_biot_savart += -lsimu
+
+# lib iter
+UTARGETS += test_iter test_prox
+MODULES_test_iter += -liter -lnlops -llinops
+MODULES_test_prox += -liter -llinops
+
+
+
+
+
+
 
 # sort BTARGETS after everything is included
 BTARGETS:=$(sort $(BTARGETS))
@@ -450,7 +540,7 @@ XTARGETS:=$(sort $(XTARGETS))
 .gitignore: .gitignore.main Makefile*
 	@echo '# AUTOGENERATED. DO NOT EDIT. (are you looking for .gitignore.main ?)' > .gitignore
 	cat .gitignore.main >> .gitignore
-	@echo $(patsubst %, /%, $(TARGETS) $(UTARGETS)) | tr ' ' '\n' >> .gitignore
+	@echo $(patsubst %, /%, $(TARGETS) $(UTARGETS) $(UTARGETS_GPU)) | tr ' ' '\n' >> .gitignore
 
 
 doc/commands.txt: bart
@@ -496,13 +586,8 @@ ifeq ($(PARALLEL),1)
 else
 (%): %
 	$(AR) $(ARFLAGS) $@ $%
-	rm $%
 endif
 
-
-# we add the rm because intermediate files are not deleted
-# automatically for some reason
-# (but it produces errors for parallel builds for make all)
 
 
 
@@ -516,6 +601,13 @@ UTESTS=$(shell $(root)/utests/utests-collect.sh ./utests/$@.c)
 .SECONDEXPANSION:
 $(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
 	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm
+
+UTESTS_GPU=$(shell $(root)/utests/utests_gpu-collect.sh ./utests/$@.c)
+
+.SECONDEXPANSION:
+$(UTARGETS_GPU): % : utests/utest_gpu.c utests/%.o $$(MODULES_%) $(MODULES)
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS_GPU="$(UTESTS_GPU)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm
+
 
 
 # linker script version - does not work on MacOS X
@@ -585,7 +677,14 @@ utests-all: $(UTARGETS)
 	$(patsubst %,$(\n)./%,$(UTARGETS))
 
 utest: utests-all
-	@echo ALL UNIT TESTS PASSED.
+	@echo ALL CPU UNIT TESTS PASSED.
+
+utests_gpu-all: $(UTARGETS_GPU)
+	$(patsubst %,$(\n)./%,$(UTARGETS_GPU))
+
+utest_gpu: utests_gpu-all
+	@echo ALL GPU UNIT TESTS PASSED.
+
 
 
 endif	# MAKESTAGE

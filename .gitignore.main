@@ -16,8 +16,11 @@
 python/.ipynb_checkpoints/
 
 # temporary files
-.*.swp
+*.swp
 *~
+
+# Mac file
+.DS_Store
 
 # local Makefile
 Makefile.local
@@ -43,7 +46,6 @@ doc/html
 doc/latex
 doc/dx
 doc/commands.txt
-
 
 # test files
 tests/test-*

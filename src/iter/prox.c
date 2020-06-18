@@ -245,6 +245,7 @@ static void prox_l2norm_fun(const operator_data_t* prox_data, float mu, float* z
 	double q1 = md_norm(1, MD_DIMS(pdata->size), x_plus_u);
 
 	if (q1 != 0) {
+
 		double q2 = 1 - pdata->lambda * mu / q1;
 
 		if (q2 > 0.)

@@ -1,11 +1,12 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2017 Frank Ong <frankong@berkeley.edu>
- * 2014-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2017 Frank Ong
+ * 2014-2020 Martin Uecker
+ * 2018      Sebastian Rosenzweig
  *
  */
 
@@ -43,8 +44,10 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.pcycle = false,
 	.periodic = false,
 	.lowmem = false,
+	.loopdim = -1,
 	.flags = FFT_FLAGS,
 	.cfft = 0u,
+	.decomp = true,
 };
 
 #include "nufft_priv.h"
@@ -394,7 +397,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 
 
 
-struct linop_s* nufft_create2(unsigned int N,
+static struct linop_s* nufft_create3(unsigned int N,
 			     const long ksp_dims[N],
 			     const long cim_dims[N],
 			     const long traj_dims[N],
@@ -439,6 +442,18 @@ struct linop_s* nufft_create2(unsigned int N,
 	assert(MD_IS_SET(data->flags, 0));
 //	assert(md_check_compat(N, ~data->flags, ksp_dims, cim_dims));
 	assert(md_check_bounds(N, ~data->flags, cim_dims, ksp_dims));
+	assert(0 == (data->flags & conf.cfft));
+
+	assert(!((!conf.decomp) && conf.toeplitz));
+
+	data->grid_conf = (struct grid_conf_s){
+
+		.width = data->width,
+		.os = 2.,
+		.periodic = data->conf.periodic,
+		.beta = data->beta,
+	};
+
 
 	// extend internal dimensions by one for linear phases
 	unsigned int ND = N + 1;
@@ -542,26 +557,50 @@ struct linop_s* nufft_create2(unsigned int N,
 
 
 	complex float* roll = md_alloc(ND, data->img_dims, CFL_SIZE);
-	rolloff_correction(2., data->width, data->beta, data->img_dims, roll);
+	rolloff_correction(conf.decomp ? 1. : data->grid_conf.os, data->width, data->beta, data->img_dims, roll);
 	data->roll = roll;
 
+	complex float* linphase = NULL;
 
-	complex float* linphase = compute_linphases(N, data->lph_dims, data->flags, data->img_dims);
+	if (conf.decomp) {
 
-	md_calc_strides(ND, data->lph_strs, data->lph_dims, CFL_SIZE);
+		linphase = compute_linphases(N, data->lph_dims, data->flags, data->img_dims);
 
-	if (!conf.toeplitz)
-		md_zmul2(ND, data->lph_dims, data->lph_strs, linphase, data->lph_strs, linphase, data->img_strs, data->roll);
+		md_calc_strides(ND, data->lph_strs, data->lph_dims, CFL_SIZE);
+
+		if (!conf.toeplitz)
+			md_zmul2(ND, data->lph_dims, data->lph_strs, linphase, data->lph_strs, linphase, data->img_strs, data->roll);
+
+	} else {
+
+		linphase = roll;
+		data->roll = NULL;
+
+		md_copy_dims(ND, data->lph_dims, data->img_dims);
+		md_calc_strides(ND, data->lph_strs, data->lph_dims, CFL_SIZE);
+	}
 
 
 	fftmod(ND, data->lph_dims, data->flags, linphase, linphase);
 	fftscale(ND, data->lph_dims, data->flags, linphase, linphase);
 
 	float scale = 1.;
+
 	for (int i = 0; i < (int)N; i++)
-		scale *= ((data->lph_dims[i] > 1) && (MD_IS_SET(data->flags, i))) ? 0.5 : 1.;
+		if ((data->lph_dims[i] > 1) && MD_IS_SET(data->flags, i))
+			scale *= conf.decomp ? 0.5 : sqrtf(0.5);
 
 	md_zsmul(ND, data->lph_dims, linphase, linphase, scale);
+
+
+	data->factors = *TYPE_ALLOC(long[data->N]);
+
+	for (int i = 0; i < (int)data->N; i++)
+		if (data->conf.decomp && (data->img_dims[i] > 1) && MD_IS_SET(data->flags, i))
+			data->factors[i] = 2;
+		else
+			data->factors[i] = 1;
+
 
 
 	complex float* fftm = md_alloc(ND, data->img_dims, CFL_SIZE);
@@ -626,7 +665,7 @@ struct linop_s* nufft_create2(unsigned int N,
 	md_copy_dims(ND, data->cm2_dims, data->cim_dims);
 
 	for (int i = 0; i < (int)N; i++)
-		if (MD_IS_SET(data->flags, i))
+		if (conf.decomp && MD_IS_SET(data->flags, i))
 			data->cm2_dims[i] = (1 == cim_dims[i]) ? 1 : (2 * cim_dims[i]);
 
 
@@ -648,6 +687,75 @@ struct linop_s* nufft_create2(unsigned int N,
 	return linop_create(N, out_dims, N, cim_dims,
 			CAST_UP(PTR_PASS(data)), nufft_apply, nufft_apply_adjoint, nufft_apply_normal, NULL, nufft_free_data);
 }
+
+
+struct linop_s* nufft_create2(unsigned int N,
+			     const long ksp_dims[N],
+			     const long cim_dims[N],
+			     const long traj_dims[N],
+			     const complex float* traj,
+			     const long wgh_dims[N],
+			     const complex float* weights,
+			     const long bas_dims[N],
+			     const complex float* basis,
+			     struct nufft_conf_s conf)
+{
+	if (0 <= conf.loopdim) {
+
+		int d = conf.loopdim;
+		const long L = ksp_dims[d];
+
+		assert(d < (int)N);
+		assert((NULL == weights) || (1 == wgh_dims[d]));
+		assert((NULL == basis) || (1 == bas_dims[d]));
+		assert(1 == traj_dims[d]);
+		assert(L == cim_dims[d]);
+
+		if (1 < L) {
+
+			debug_printf(DP_WARN, "NEW NUFFT LOOP CODE\n");
+
+			long ksp1_dims[N];
+			md_select_dims(N, ~MD_BIT(d), ksp1_dims, ksp_dims);
+
+			long cim1_dims[N];
+			md_select_dims(N, ~MD_BIT(d), cim1_dims, cim_dims);
+
+			auto nu = nufft_create2(N, ksp1_dims, cim1_dims, traj_dims, traj, wgh_dims, weights, bas_dims, basis, conf);
+
+			long out_dims[N];
+			md_copy_dims(N, out_dims, ksp_dims);
+
+			if (NULL != basis)
+				out_dims[6] = 1;
+
+			long istrs[N];
+			long ostrs[N];
+
+			md_calc_strides(N, istrs, cim_dims, CFL_SIZE);
+			md_calc_strides(N, ostrs, out_dims, CFL_SIZE);
+
+			istrs[d] = 0;
+			ostrs[d] = 0;
+
+			auto nu1 = linop_copy_wrapper(N, istrs, ostrs, nu);
+
+			long loop_dims[N];
+			md_select_dims(N, MD_BIT(d), loop_dims, out_dims);
+
+			auto nu2 = linop_loop(N, loop_dims, nu1);
+
+			linop_free(nu);
+
+			return nu2;
+		}
+	}
+
+	return nufft_create3(N, ksp_dims, cim_dims,
+			traj_dims, traj, wgh_dims, weights,
+			bas_dims, basis, conf);
+}
+
 
 
 struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
@@ -698,6 +806,7 @@ static void nufft_free_data(const linop_data_t* _data)
 	xfree(data->out_strs);
 
 	xfree(data->cm2_dims);
+	xfree(data->factors);
 
 	md_free(data->linphase);
 	md_free(data->psf);
@@ -742,21 +851,9 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 
 	complex float* gridX = md_alloc(data->N, data->cm2_dims, CFL_SIZE);
 
-	long factors[data->N];
-
-	for (int i = 0; i < (int)data->N; i++)
-		factors[i] = ((data->img_dims[i] > 1) && MD_IS_SET(data->flags, i)) ? 2 : 1;
-
-	md_recompose(data->N, factors, data->cm2_dims, gridX, data->cml_dims, grid, CFL_SIZE);
+	md_recompose(data->N, data->factors, data->cm2_dims, gridX, data->cml_dims, grid, CFL_SIZE);
 	md_free(grid);
 
-	struct grid_conf_s conf = {
-
-		.width = data->width,
-		.os = 2.,
-		.periodic = data->conf.periodic,
-		.beta = data->beta,
-	};
 
 	complex float* tmp = dst;
 
@@ -764,7 +861,7 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 		tmp = md_alloc(ND, data->ksp_dims, CFL_SIZE);
 
 	md_clear(ND, data->ksp_dims, tmp, CFL_SIZE);
-	grid2H(&conf, ND, data->trj_dims, data->traj, data->ksp_dims, tmp, data->cm2_dims, gridX);
+	grid2H(&data->grid_conf, ND, data->trj_dims, data->traj, data->ksp_dims, tmp, data->cm2_dims, gridX);
 
 	md_free(gridX);
 
@@ -807,29 +904,17 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 		src = bdat;
 	}
 
-	struct grid_conf_s conf = {
-
-		.width = data->width,
-		.os = 2.,
-		.periodic = data->conf.periodic,
-		.beta = data->beta,
-	};
-
 	complex float* gridX = md_calloc(data->N, data->cm2_dims, CFL_SIZE);
 
-	grid2(&conf, ND, data->trj_dims, data->traj, data->cm2_dims, gridX, data->ksp_dims, src);
+	grid2(&data->grid_conf, ND, data->trj_dims, data->traj, data->cm2_dims, gridX, data->ksp_dims, src);
 
 	md_free(bdat);
 	md_free(wdat);
 
-	long factors[data->N];
-
-	for (int i = 0; i < (int)data->N; i++)
-		factors[i] = ((data->img_dims[i] > 1) && MD_IS_SET(data->flags, i)) ? 2 : 1;
 
 	complex float* grid = md_alloc(ND, data->cml_dims, CFL_SIZE);
 
-	md_decompose(data->N, factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
+	md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
 	md_free(gridX);
 	md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, data->fftmod);
 	linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
@@ -1017,4 +1102,44 @@ void estimate_im_dims(int N, unsigned long flags, long dims[N], const long tdims
 	}
 }
 
+/**
+ * Estimate fast square image dimensions from trajectory
+ */
+void estimate_fast_sq_im_dims(unsigned int N, long dims[3], const long tdims[N], const complex float* traj)
+{
+	float max_dims[3] = { 0., 0., 0. };
+
+	for (long i = 0; i < md_calc_size(N - 1, tdims + 1); i++)
+		for(int j = 0; j < 3; j++)
+			max_dims[j] = MAX(cabsf(traj[j + tdims[0] * i]), max_dims[j]);
+
+
+	// 2* is needed since we take the absolute value of the trajectory above, and it is scaled from
+	// -DIM/2 to DIM/2
+	long max_square = 2 * MAX(MAX(max_dims[0], max_dims[1]), max_dims[2]);
+
+
+	// compute next fast size for Fourier transform.
+	// That is the next number only composed of small prime factors,
+	// i.e. 2, 3, 5 (and possibly 7?)
+
+	// to avoid an infinite loop here, we constrain our search
+	long fast_size = max_square;
+
+	for ( ; fast_size <= 4 * max_square; ++fast_size) {
+
+		long n = fast_size;
+
+		while (0 == n % 2l) { n /= 2l; }
+		while (0 == n % 3l) { n /= 3l; }
+		while (0 == n % 5l) { n /= 5l; }
+		while (0 == n % 7l) { n /= 7l; }
+
+		if (n <= 1)
+			break;
+	}
+
+	for (int j = 0; j < 3; j++)
+		dims[j] = (0. == max_dims[j]) ? 1 : fast_size;
+}
 

@@ -269,6 +269,48 @@ const struct iovec_s* operator_arg_domain(const struct operator_s* op, unsigned 
 
 
 /**
+ * Return the iovec of input arg n
+ *
+ * @param op operator
+ * @param n input arg number
+ */
+const struct iovec_s* operator_arg_in_domain(const struct operator_s* op, unsigned int n)
+{
+	assert(n < operator_nr_in_args(op));
+
+	unsigned int count = 0;
+	unsigned int index = 0;
+
+	for (; count <= n; index++)
+		if (!MD_IS_SET(operator_ioflags(op), index))
+			count++;
+
+	return operator_arg_domain(op, index - 1);
+}
+
+
+/**
+ * Return the iovec of output arg n
+ *
+ * @param op operator
+ * @param n output arg number
+ */
+const struct iovec_s* operator_arg_out_codomain(const struct operator_s* op, unsigned int n)
+{
+	assert(n < operator_nr_out_args(op));
+
+	unsigned int count = 0;
+	unsigned int index = 0;
+
+	for (; count <= n; index++)
+		if (MD_IS_SET(operator_ioflags(op), index))
+			count++;
+
+	return operator_arg_domain(op, index - 1);
+}
+
+
+/**
  * Return the dimensions and strides of the domain of an operator
  *
  * @param op operator
@@ -739,7 +781,7 @@ static void merge_dims(unsigned int D, long odims[D], const long idims1[D], cons
 
 	for (unsigned int i = 0; i < D; i++) {
 
-		assert((1 == odims[i]) | (1 == idims2[i]));
+		assert((1 == odims[i]) || (1 == idims2[i]));
 
 		if (1 == odims[i])
 			odims[i] = idims2[i];
@@ -836,6 +878,7 @@ const struct operator_s* operator_loop(unsigned int D, const long dims[D], const
 	return operator_loop_parallel(D, dims, op, 0u, false);
 }
 
+
 struct copy_data_s {
 
 	INTERFACE(operator_data_t);
@@ -915,6 +958,8 @@ const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[
 		long (*strsx)[io->N] = TYPE_ALLOC(long[io->N]);
 		md_copy_strides(io->N, *strsx, strs[i]);
 		(*strs2)[i] = *strsx;
+
+		// check for trivial strides
 
 		long tstrs[io->N];
 		md_calc_strides(io->N, tstrs, io->dims, CFL_SIZE);
@@ -1003,7 +1048,7 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 #else
 	UNUSED(_data); UNUSED(N); UNUSED(args);
-	assert(0);
+	error("Both OpenMP and CUDA are necessary for automatic GPU execution. At least one was not found.\n");
 #endif
 }
 

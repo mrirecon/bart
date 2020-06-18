@@ -240,7 +240,7 @@ tests/test-pics-basis-noncart-memory: traj scale phantom ones join transpose pic
 	touch $@
 
 
-tests/test-pics-basis-noncart-memory2: traj scale phantom ones join noise transpose fmac pics slice nrmse
+tests/test-pics-basis-noncart-memory2: traj scale phantom ones join noise transpose fmac pics slice nrmse zeros
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x256 -D -y301 traj.ra					;\
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
@@ -265,6 +265,33 @@ tests/test-pics-basis-noncart-memory2: traj scale phantom ones join noise transp
 	touch $@
 
 
+tests/test-pics-noncart-sms: traj slice phantom conj join fft flip pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -y55 -m2 -r t.ra						;\
+	$(TOOLDIR)/slice 13 0 t.ra t0.ra 						;\
+	$(TOOLDIR)/slice 13 1 t.ra t1.ra 						;\
+	$(TOOLDIR)/phantom -t t0.ra -s8 -k k0.ra					;\
+	$(TOOLDIR)/phantom -t t1.ra -s8 -k k1.ra					;\
+	$(TOOLDIR)/conj k1.ra k1C.ra							;\
+	$(TOOLDIR)/join 13 k0.ra k1C.ra k.ra						;\
+	$(TOOLDIR)/fft -n 8192 k.ra kk.ra						;\
+	$(TOOLDIR)/phantom -S8 s.ra							;\
+	$(TOOLDIR)/flip 7 s.ra sF.ra							;\
+	$(TOOLDIR)/conj sF.ra sFC.ra							;\
+	$(TOOLDIR)/join 13 s.ra sFC.ra ss.ra 						;\
+	$(TOOLDIR)/pics -t t.ra -M kk.ra ss.ra x.ra					;\
+	$(TOOLDIR)/slice 13 0 x.ra x0.ra						;\
+	$(TOOLDIR)/slice 13 1 x.ra x1.ra						;\
+	$(TOOLDIR)/phantom -k rk.ra							;\
+	$(TOOLDIR)/conj rk.ra rkc.ra							;\
+	$(TOOLDIR)/fft -i 7 rk.ra r0.ra							;\
+	$(TOOLDIR)/fft -i 7 rkc.ra r1.ra						;\
+	$(TOOLDIR)/join 13 r0.ra r1.ra r.ra						;\
+	$(TOOLDIR)/nrmse -s -t 0.15 r.ra x.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 
 
 
@@ -276,5 +303,6 @@ TESTS += tests/test-pics-warmstart tests/test-pics-batch
 TESTS += tests/test-pics-tedim tests/test-pics-bp-noncart
 TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory
 TESTS += tests/test-pics-basis-noncart-memory2
+TESTS += tests/test-pics-noncart-sms
 
 

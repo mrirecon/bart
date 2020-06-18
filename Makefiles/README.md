@@ -1,7 +1,7 @@
 ### Custom Makefiles
 Put custom Makefiles here, to be included in the standard Makefile.
 The build will automatically include the following files in this directory
-matching the expansion `Makefiles.*`
+matching the expansion `Makefile.*`
 
 Example custom Makefile for modifying build:
 

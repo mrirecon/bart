@@ -45,6 +45,8 @@ struct moba_conf moba_defaults = {
 	.tolerance = 0.01,
 	.inner_iter = 250,
 	.noncartesian = false,
+	.sms = false,
+        .k_filter = false,
 };
 
 
@@ -55,7 +57,10 @@ void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float
 	long data_dims[DIMS];
 	long img1_dims[DIMS];
 
-	unsigned int fft_flags = FFT_FLAGS|SLICE_FLAG;
+	unsigned int fft_flags = FFT_FLAGS;
+
+	if (conf->sms)
+		fft_flags |= SLICE_FLAG;
 
 	md_select_dims(DIMS, fft_flags|MAPS_FLAG|CSHIFT_FLAG|COEFF_FLAG|TIME2_FLAG, imgs_dims, dims);
 	md_select_dims(DIMS, fft_flags|COIL_FLAG|MAPS_FLAG|TIME2_FLAG, coil_dims, dims);
@@ -81,6 +86,7 @@ void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float
 	mconf.fft_flags = fft_flags;
 	mconf.a = 880.;
 	mconf.b = 32.;
+	mconf.cnstcoil_flags = TE_FLAG;
 
 	struct T1_s nl = T1_create(dims, mask, TI, pattern, &mconf, usegpu);
 
@@ -94,10 +100,10 @@ void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float
 	irgnm_conf.cgiter = conf->inner_iter;
 	irgnm_conf.nlinv_legacy = true;
 
-	struct mdb_irgnm_l1_conf conf2 = { .c2 = &irgnm_conf, .step = conf->step, .lower_bound = conf->lower_bound };
+	struct mdb_irgnm_l1_conf conf2 = { .c2 = &irgnm_conf, .step = conf->step, .lower_bound = conf->lower_bound, .constrained_maps = 1 };
 
 	long irgnm_conf_dims[DIMS];
-	md_select_dims(DIMS, fft_flags|MAPS_FLAG|CSHIFT_FLAG|COEFF_FLAG|TIME2_FLAG, irgnm_conf_dims, imgs_dims);
+	md_select_dims(DIMS, fft_flags|MAPS_FLAG|COEFF_FLAG|TIME2_FLAG, irgnm_conf_dims, imgs_dims);
 
 	irgnm_conf_dims[COIL_DIM] = coil_dims[COIL_DIM];
 
@@ -121,7 +127,6 @@ void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float
 	}
 
 	nlop_free(nl.nlop);
-
 
 	md_free(x);
 }

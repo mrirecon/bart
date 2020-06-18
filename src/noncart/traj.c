@@ -1,9 +1,9 @@
 /* Copyright 2014-2015 The Regents of the University of California.
- * Copyright 2015-2019 Martin Uecker.
+ * Copyright 2015-2020 Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2014-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2018-2019 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
  */
 
@@ -11,6 +11,9 @@
 #include <math.h>
 
 #include "misc/mri.h"
+#ifdef SSAFARY_PAPER
+#include "misc/debug.h"
+#endif
 
 #include "traj.h"
 
@@ -95,6 +98,9 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 	 */
 	double golden_angle = M_PI / (golden_ratio + conf.tiny_gold - 1.);
 
+	// For numerical stability
+	if (1 == conf.tiny_gold)
+		golden_angle = M_PI * (2. - (3. - sqrtf(5.))) / 2.;
 
 	double angle_atom = M_PI / Y;
 
@@ -111,7 +117,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 	double angle_t = 0.;
 
 	if (turns > 1)
-		angle_t = angle_atom / (turns * mb) * (conf.full_circle ? 2 : 1);
+		angle_t = angle_atom / turns * (conf.full_circle ? 2 : 1);
 
 
 	// Golden Angle
@@ -129,6 +135,26 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 			angle_m = golden_angle * Y;
 			angle_t = golden_angle * Y * mb;
 		}
+
+#ifdef SSAFARY_PAPER
+		/* Specific trajectory designed for z-undersampled Stack-of-Stars imaging:
+		 *
+		 * Sebastian Rosenzweig, Nick Scholand, H. Christian M. Holme, Martin Uecker.
+		 * Cardiac and Respiratory Self-Gating in Radial MRI using an Adapted Singular Spectrum
+		 * Analysis (SSA-FARY). IEEE Tran Med Imag 2020; 10.1109/TMI.2020.2985994. arXiv:1812.09057.
+		 */
+
+		if (14 == mb) {
+
+			int mb_red = 8;
+
+			angle_m = golden_angle;
+			angle_s = golden_angle * mb_red;
+			angle_t = golden_angle * Y * mb_red;
+
+			debug_printf(DP_INFO, "Trajectory generation to reproduce SSA-FARY Paper!\n");
+		}
+#endif
 	}
 
 	base_angle[PHS2_DIM] = angle_s;

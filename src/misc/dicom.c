@@ -51,7 +51,7 @@
 #define DTAG_IMAGE_PIXEL_HIGH_BIT	0x0102
 #define DTAG_IMAGE_PIXEL_REP		0x0103	// 0 unsigned 2 two's complement
 
-#define MONOCHROME2			"MONOCHROME2"
+#define MONOCHROME2			"MONOCHROME2 "
 
 #define DGRP_PIXEL			0x7FE0
 #define DTAG_PIXEL_DATA			0x0010
@@ -110,7 +110,7 @@ struct element dicom_elements_default[EOFF_END] = {
 	{ ITAG_IMAGE_INSTANCE_NUM, DGRP_IMAGE2, DTAG_IMAGE_INSTANCE_NUM, "IS", 0, NULL },
 	{ ITAG_COMMENT, DGRP_IMAGE2, DTAG_COMMENT, "LT", 22, "NOT FOR DIAGNOSTIC USE\0\0" },
 	{ ITAG_IMAGE_SAMPLES_PER_PIXEL, DGRP_IMAGE, DTAG_IMAGE_SAMPLES_PER_PIXEL, "US", 2, &(uint16_t){ 1 } }, 		// gray scale
-	{ ITAG_IMAGE_PHOTOM_INTER, DGRP_IMAGE, DTAG_IMAGE_PHOTOM_INTER, "CS", sizeof(MONOCHROME2), MONOCHROME2 },	// 0 is black
+	{ ITAG_IMAGE_PHOTOM_INTER, DGRP_IMAGE, DTAG_IMAGE_PHOTOM_INTER, "CS", sizeof(MONOCHROME2) - 1, MONOCHROME2 },	// 0 is black
 	{ ITAG_IMAGE_ROWS, DGRP_IMAGE, DTAG_IMAGE_ROWS, "US", 2, &(uint16_t){ 0 } },
 	{ ITAG_IMAGE_COLS, DGRP_IMAGE, DTAG_IMAGE_COLS, "US", 2, &(uint16_t){ 0 } },
 	{ ITAG_IMAGE_BITS_ALLOC, DGRP_IMAGE, DTAG_IMAGE_BITS_ALLOC, "US", 2, &(uint16_t){ 16 } },			//
@@ -185,6 +185,7 @@ int dicom_write(const char* name, unsigned int cols, unsigned int rows, long inu
 	struct element dicom_elements[entries];
 
 	for (int i = 0; i < entries; i++) {
+
 		memcpy(&dicom_elements[i], &dicom_elements_default[i], sizeof(struct element));
 		assert(dicom_elements[i].eoff == (enum eoffset)i);
 	}
@@ -202,11 +203,18 @@ int dicom_write(const char* name, unsigned int cols, unsigned int rows, long inu
 	dicom_elements[ITAG_IMAGE_ROWS].data = &(uint16_t){ rows };
 	dicom_elements[ITAG_IMAGE_COLS].data = &(uint16_t){ cols };
 
-	char inst_num[12]; // max number of bytes for InstanceNumber tag
-	sprintf(inst_num, "+%04ld", inum);
+	assert(inum >= 0L);
+
+	char inst_num[13]; // max number of bytes for InstanceNumber tag
+	int ilen = snprintf(inst_num, 13, "%04ld", inum);
+
+	assert(ilen < 13);
+
+	if (1 == ilen % 2)
+		inst_num[ilen++] = ' ';
 
 	dicom_elements[ITAG_IMAGE_INSTANCE_NUM].data = inst_num;
-	dicom_elements[ITAG_IMAGE_INSTANCE_NUM].len = sizeof(inst_num);
+	dicom_elements[ITAG_IMAGE_INSTANCE_NUM].len = ilen;
 
 	dicom_elements[ITAG_PIXEL_DATA].data = img;
 	dicom_elements[ITAG_PIXEL_DATA].len = 2 * rows * cols;

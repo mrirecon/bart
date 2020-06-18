@@ -1,10 +1,10 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2015-2020. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2018-2019 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
  * 2019 Aurélien Trotier <a.trotier@gmail.com>
  */
@@ -35,6 +35,7 @@ int main_traj(int argc, char* argv[])
 {
 	int X = 128;
 	int Y = 128;
+	int D = -1;
 	int mb = 1;
 	int turns = 1;
 	float rot = 0.;
@@ -55,6 +56,7 @@ int main_traj(int argc, char* argv[])
 
 		OPT_INT('x', &X, "x", "readout samples"),
 		OPT_INT('y', &Y, "y", "phase encoding lines"),
+		OPT_INT('d', &D, "d", "full readout samples"),
 		OPT_INT('a', &conf.accel, "a", "acceleration"),
 		OPT_INT('t', &turns, "t", "turns"),
 		OPT_INT('m', &mb, "mb", "SMS multiband factor"),
@@ -72,7 +74,7 @@ int main_traj(int argc, char* argv[])
 		OPT_SET('3', &conf.d3d, "3D"),
 		OPT_SET('c', &conf.asym_traj, "asymmetric trajectory [DC sampled]"),
 		OPT_VEC2('z', &z_usamp, "Ref:Acel", "Undersampling in z-direction."),
-		OPT_STRING('C', &custom_angle, "file", "custom_angle"),
+		OPT_STRING('C', &custom_angle, "file", "custom_angle file [phi + i * psi]"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -90,7 +92,7 @@ int main_traj(int argc, char* argv[])
 
 		if(Y != sdims[0]){
 
-			debug_printf(DP_INFO, "According to the custom angle file : y = %d\n",sdims[0]);
+			debug_printf(DP_INFO, "According to the custom angle file : number of projection (y) = %d\n",sdims[0]);
 			Y = sdims[0];
 
 		}
@@ -104,6 +106,12 @@ int main_traj(int argc, char* argv[])
 	dims[0] = 3;
 	dims[1] = X;
 	dims[2] = (conf.radial ? Y : (Y / conf.accel));
+
+	if (-1 == D)
+		D = X;
+
+	if (D < X)
+	    error("actual readout samples must be less than full samples");
 
 	// Variables for z-undersampling
 	long z_reflines = z_usamp[0];
@@ -177,9 +185,8 @@ int main_traj(int argc, char* argv[])
 	long pos[DIMS] = { 0 };
 
 	do {
-
 		int i = pos[PHS1_DIM];
-		int j = pos[PHS2_DIM];
+		int j = pos[PHS2_DIM] * conf.accel;
 		int m = pos[SLICE_DIM];
 
 		if (conf.radial) {
@@ -190,10 +197,10 @@ int main_traj(int argc, char* argv[])
 			 * for symmetric trajectory [DC between between sample no. X/2-1 and X/2, zero-based indexing]
 			 * or asymmetric trajectory [DC component at sample no. X/2, zero-based indexing]
 			 */
-			double read = (float)i + (conf.asym_traj ? 0 : 0.5) - (float)X / 2.;
+			double read = (float)(i + D - X) + (conf.asym_traj ? 0 : 0.5) - (float)D / 2.;
 
 			if (conf.golden_partition)
-				base_angle[1] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
+				base_angle[SLICE_DIM] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
 
 			double angle = 0.;
 
@@ -215,13 +222,12 @@ int main_traj(int argc, char* argv[])
 				angle2 = s * M_PI / Y * (conf.full_circle ? 2 : 1) * split;
 
 				if (NULL != custom_angle)
-						angle2 = cimag(custom_angle_val[p%X]);
-
+					angle2 = cimag(custom_angle_val[j]);
 			}
 
 
 			if (NULL != custom_angle)
-					angle = creal(custom_angle_val[p%X]);
+				angle = creal(custom_angle_val[j]);
 
 
 			float d[3] = { 0., 0., 0 };

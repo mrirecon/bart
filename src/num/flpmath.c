@@ -1,5 +1,5 @@
 /* Copyright 2013-2018 The Regents of the University of California.
- * Copyright 2016-2019. Martin Uecker.
+ * Copyright 2016-2020. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -103,7 +103,7 @@ static void make_2op_simple(md_2op_t fun, unsigned int D, const long dims[D], fl
  * @param optr output
  * @param istr1 input 1 strides
  * @param iptr1 input 1 (constant)
- * @param size size of data structures, e.g. complex float 
+ * @param size size of data structures, e.g. complex float
  * @param too two-op multiply function
  */
 static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, size_t sizes[2], md_nary_opt_fun_t too)
@@ -132,7 +132,7 @@ static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ost
  * @param iptr1 input 1 (constant)
  * @param istr2 input 2 strides
  * @param iptr2 input 2 (constant)
- * @param size size of data structures, e.g. complex float 
+ * @param size size of data structures, e.g. complex float
  * @param too three-op multiply function
  */
 static void optimized_threeop_oii(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_opt_fun_t too)
@@ -757,6 +757,36 @@ void md_zdiv(unsigned int D, const long dims[D], complex float* optr, const comp
 }
 
 
+/**
+ * Divide the first complex array by the second complex array with regularization and save to output (with strides)
+ *
+ * optr = iptr1 / (iptr2 + epsilon)
+ */
+void md_zdiv_reg2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2, complex float lambda)
+{
+	NESTED(void, nary_zdiv_reg, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zdiv_reg(data->size, ptr[0], ptr[1], ptr[2], lambda);
+	};
+
+	optimized_threeop_oii(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2,
+				(size_t[3]){ [0 ... 2] = CFL_SIZE }, nary_zdiv_reg);
+}
+
+
+/**
+ * Divide the first complex array by the second complex array with regularization and save to output (without strides)
+ *
+ * optr = iptr1 / (iptr2 + epsilon)
+ */
+void md_zdiv_reg(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr1, const complex float* iptr2, complex float lambda)
+{
+	long str[D];
+	md_calc_strides(D, str, dims, CFL_SIZE);
+
+	md_zdiv_reg2(D, dims, str, optr, str, iptr1, str, iptr2, lambda);
+}
+
 
 /**
  * Divide the first scalar array by the second scalar array and save to output (with strides)
@@ -1028,12 +1058,12 @@ void md_tenmul_dims(unsigned int D, long max_dims[D], const long out_dims[D], co
 
 static bool detect_matrix(const long dims[3], const long ostrs[3], const long mstrs[3], const long istrs[3])
 {
-        return (   (0 == ostrs[1])
-                && (0 == mstrs[2])
-                && (0 == istrs[0])
-                && ((CFL_SIZE == ostrs[0]) && (ostrs[0] * dims[0] == ostrs[2]))
-                && ((CFL_SIZE == mstrs[0]) && (mstrs[0] * dims[0] == mstrs[1]))
-                && ((CFL_SIZE == istrs[1]) && (istrs[1] * dims[1] == istrs[2])));
+	return (   (0 == ostrs[1])
+		&& (0 == mstrs[2])
+		&& (0 == istrs[0])
+		&& ((CFL_SIZE == ostrs[0]) && (ostrs[0] * dims[0] == ostrs[2]))
+		&& ((CFL_SIZE == mstrs[0]) && (mstrs[0] * dims[0] == mstrs[1]))
+		&& ((CFL_SIZE == istrs[1]) && (istrs[1] * dims[1] == istrs[2])));
 }
 
 
@@ -2092,7 +2122,7 @@ void md_zexpj2(unsigned int D, const long dims[D], const long ostr[D], complex f
 
 /**
  * Get complex exponential with phase = complex arrays (without strides)
- * 
+ *
  * optr = zexp(j * iptr)
  */
 void md_zexpj(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
@@ -2126,6 +2156,66 @@ void md_zexp(unsigned int D, const long dims[D], complex float* optr, const comp
 }
 
 
+/**
+ * Real exponential (with strides)
+ *
+ * optr = exp(iptr)
+ */
+void md_exp2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr)
+{
+	MAKE_2OP(exp, D, dims, ostr, optr, istr, iptr);
+}
+
+/**
+ * Real exponential
+ *
+ * optr = exp(iptr)
+ */
+void md_exp(unsigned int D, const long dims[D], float* optr, const float* iptr)
+{
+	make_2op_simple(md_exp2, D, dims, optr, iptr);
+}
+
+/**
+ * Real log (with strides)
+ *
+ * optr = log(iptr)
+ */
+void md_log2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr)
+{
+	MAKE_2OP(log, D, dims, ostr, optr, istr, iptr);
+}
+
+/**
+ * Real log
+ *
+ * optr = log(iptr)
+ */
+void md_log(unsigned int D, const long dims[D], float* optr, const float* iptr)
+{
+	make_2op_simple(md_log2, D, dims, optr, iptr);
+}
+
+/**
+ * Complex logarithm
+ *
+ * optr = zlog(iptr)
+ */
+void md_zlog2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zlog, D, dims, ostr, optr, istr, iptr);
+}
+
+/**
+ * Complex logarithm
+ *
+ * optr = zlog(iptr)
+ */
+void md_zlog(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zlog2, D, dims, optr, iptr);
+}
+
 
 
 /**
@@ -2149,6 +2239,54 @@ void md_zarg(unsigned int D, const long dims[D], complex float* optr, const comp
 {
 	make_z2op_simple(md_zarg2, D, dims, optr, iptr);
 }
+
+
+
+/**
+ * Complex sinus
+ *
+ * optr = zsin(iptr)
+ */
+void md_zsin2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zsin, D, dims, ostr, optr, istr, iptr);
+}
+
+
+/**
+ * Complex sinus
+ *
+ * optr = zsin(iptr)
+ */
+void md_zsin(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zsin2, D, dims, optr, iptr);
+}
+
+
+/**
+ * Complex cosinus
+ *
+ * optr = zexp(iptr)
+ */
+void md_zcos2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zcos, D, dims, ostr, optr, istr, iptr);
+}
+
+
+/**
+ * Complex cosinus
+ *
+ * optr = zsin(iptr)
+ */
+void md_zcos(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zcos2, D, dims, optr, iptr);
+}
+
+
+
 
 
 /**
@@ -2186,7 +2324,7 @@ float md_scalar2(unsigned int D, const long dim[D], const long str1[D], const fl
 	md_singleton_strides(D, stro);
 
 	// Because this might lose precision for large data sets
-	// we use double precision to accumlate result 
+	// we use double precision to accumlate result
 	// (Kahan summation formula would be another option)
 
 	md_fmacD2(D, dim, stro, retp, str1, ptr1, str2, ptr2);
@@ -2526,6 +2664,29 @@ void md_zabs(unsigned int D, const long dims[D], complex float* optr, const comp
 
 
 /**
+ * Calculate arc tangent of real part.
+ *
+ */
+void md_zatanr2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr,
+		const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zatanr, D, dims, ostr, optr, istr, iptr);
+}
+
+
+/**
+ * Calculate arc tangent of real part.
+ *
+ */
+void md_zatanr(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zatanr2, D, dims, optr, iptr);
+}
+
+
+
+
+/**
  * Calculate sum of absolute values.
  *
  */
@@ -2673,26 +2834,36 @@ void md_rss(unsigned int D, const long dims[D], unsigned int flags, float* dst, 
 
 
 /**
- * Sum of squares along selected dimensions
+ * Sum of squares along selected dimensions (without strides)
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
+ */
+void md_zss2(unsigned int D, const long dims[D], unsigned int flags, const long str2[D], complex float* dst, const long str1[D], const complex float* src)
+{
+	long dims2[D];
+	md_select_dims(D, ~flags, dims2, dims);
+
+	md_clear2(D, dims2, str2, dst, CFL_SIZE);
+	md_zfmacc2(D, dims, str2, dst, str1, src, str1, src);
+}
+
+
+/**
+ * Sum of squares along selected dimensions (with strides)
  *
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
  */
 void md_zss(unsigned int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
 {
-	long str1[D];
-	long str2[D];
 	long dims2[D];
 
 	md_select_dims(D, ~flags, dims2, dims);
 
-	md_calc_strides(D, str1, dims, CFL_SIZE);
-	md_calc_strides(D, str2, dims2, CFL_SIZE);
-
-	md_clear(D, dims2, dst, CFL_SIZE);
-	md_zfmacc2(D, dims, str2, dst, str1, src, str1, src);
+	md_zss2(D, dims, flags, MD_STRIDES(D, dims2, CFL_SIZE), dst,
+				MD_STRIDES(D, dims, CFL_SIZE), src);
 }
-
 
 
 /**
@@ -2726,13 +2897,12 @@ void md_zrss(unsigned int D, const long dims[D], unsigned int flags, complex flo
 
 
 /**
- * Compute variance or standard deviation along selected dimensions (with strides)
+ * Compute variance along selected dimensions (with strides)
  *
  * @param dims -- full dimensions of src image
- * @param flags -- bitmask for calculating var/std, i.e. the dimensions that will not stay
- * @param variance -- true if computing variance, false if computing standard deviation
+ * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
  */
-static void md_zvarstd2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, bool variance)
+void md_zvar2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
 	long odims[D];
 	long fdims[D];
@@ -2740,17 +2910,21 @@ static void md_zvarstd2(unsigned int D, const long dims[D], unsigned int flags, 
 	md_select_dims(D, ~flags, odims, dims);
 	md_select_dims(D, flags, fdims, dims);
 
-	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, iptr);
+	long tstrs[D];
+	md_calc_strides(D, tstrs, dims, CFL_SIZE);
+
+	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
 
 	md_zavg2(D, dims, flags, ostr, optr, istr, iptr);
-	md_zsub2(D, dims, istr, tmp, istr, iptr, ostr, optr);
+	md_zsub2(D, dims, tstrs, tmp, istr, iptr, ostr, optr);
 
-	double scale = variance ? md_calc_size(D, fdims) - 1. : sqrtf(md_calc_size(D, fdims) - 1.);
-	(variance ? md_zss : md_zrss)(D, dims, flags, optr, tmp);
+	double scale = md_calc_size(D, fdims) - 1.;
 
-	md_zsmul2(D, odims, ostr, optr, ostr, optr, 1. / scale);
+	md_zss2(D, dims, flags, ostr, optr, tstrs, tmp);
 
 	md_free(tmp);
+
+	md_zsmul2(D, odims, ostr, optr, ostr, optr, 1. / scale);
 }
 
 
@@ -2772,15 +2946,31 @@ void md_zvar(unsigned int D, const long dims[D], unsigned int flags, complex flo
 }
 
 
+
 /**
- * Compute variance along selected dimensions (with strides)
+ * Compute standard deviation along selected dimensions (with strides)
  *
  * @param dims -- full dimensions of src image
- * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
+ * @param flags -- bitmask for calculating standard deviation, i.e. the dimensions that will not stay
  */
-void md_zvar2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+void md_zstd2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
-	md_zvarstd2(D, dims, flags, ostr, optr, istr, iptr, true);
+	md_zvar2(D, dims, flags, ostr, optr, istr, iptr);
+
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
+
+#if 1
+	long dimsR[D + 1];
+	real_from_complex_dims(D, dimsR, odims);
+
+	long strsR[D + 1];
+	real_from_complex_strides(D, strsR, ostr);
+
+	md_sqrt2(D + 1, dimsR, strsR, (float*)optr, strsR, (const float*)optr);
+#else
+	md_zsqrt2(D, odims, ostr, optr, ostr, optr);
+#endif
 }
 
 
@@ -2796,23 +2986,72 @@ void md_zstd(unsigned int D, const long dims[D], unsigned int flags, complex flo
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
 
-	md_zvarstd2(D, dims, flags,
+	md_zstd2(D, dims, flags,
 			MD_STRIDES(D, odims, CFL_SIZE), optr,
-			MD_STRIDES(D, dims, CFL_SIZE), iptr, false);
+			MD_STRIDES(D, dims, CFL_SIZE), iptr);
+}
+
+
+
+/**
+ * Compute covariance along selected dimensions (with strides)
+ *
+ * @param dims -- full dimensions of src image
+ * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
+ */
+void md_zcovar2(unsigned int D, const long dims[D], unsigned int flags,
+		const long ostr[D], complex float* optr,
+		const long istr1[D], const complex float* iptr1,
+		const long istr2[D], const complex float* iptr2)
+{
+	long odims[D];
+	long fdims[D];
+
+	md_select_dims(D, ~flags, odims, dims);
+	md_select_dims(D, flags, fdims, dims);
+
+	long tstrs[D];
+	md_calc_strides(D, tstrs, dims, CFL_SIZE);
+
+	complex float* tmp1 = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
+
+	md_zavg2(D, dims, flags, ostr, optr, istr1, iptr1);
+	md_zsub2(D, dims, tstrs, tmp1, istr1, iptr1, ostr, optr);
+
+	complex float* tmp2 = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
+
+	md_zavg2(D, dims, flags, ostr, optr, istr2, iptr2);
+	md_zsub2(D, dims, tstrs, tmp2, istr2, iptr2, ostr, optr);
+
+	double scale = md_calc_size(D, fdims) - 1.;
+
+	md_clear2(D, odims, ostr, optr, CFL_SIZE);
+	md_zfmacc2(D, dims, ostr, optr, tstrs, tmp1, tstrs, tmp2);
+
+	md_free(tmp1);
+	md_free(tmp2);
+
+	md_zsmul2(D, odims, ostr, optr, ostr, optr, 1. / scale);
 }
 
 
 /**
- * Compute standard deviation along selected dimensions (with strides)
+ * Compute covariance along selected dimensions (without strides)
  *
  * @param dims -- full dimensions of src image
- * @param flags -- bitmask for calculating standard deviation, i.e. the dimensions that will not stay
+ * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
  */
-void md_zstd2(unsigned int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+void md_zcovar(unsigned int D, const long dims[D], unsigned int flags,
+		complex float* optr, const complex float* iptr1, const complex float* iptr2)
 {
-	md_zvarstd2(D, dims, flags, ostr, optr, istr, iptr, false);
-}
+	long odims[D];
+	md_select_dims(D, ~flags, odims, dims);
 
+	md_zcovar2(D, dims, flags,
+			MD_STRIDES(D, odims, CFL_SIZE), optr,
+			MD_STRIDES(D, dims, CFL_SIZE), iptr1,
+			MD_STRIDES(D, dims, CFL_SIZE), iptr2);
+}
 
 
 /**
@@ -3648,6 +3887,27 @@ void md_zsum(unsigned int D, const long dims[D], unsigned int flags, complex flo
 	md_zfmac2(D, dims, str2, dst, str1, src, str1, ones);
 
 	md_free(ones);
+}
+
+
+void md_real2(unsigned int D, const long dims[D], const long ostrs[D], float* dst, const long istrs[D], const complex float* src)
+{
+	md_copy2(D, dims, ostrs, dst, istrs, (const float*)src + 0, FL_SIZE);
+}
+
+void md_real(unsigned int D, const long dims[D], float* dst, const complex float* src)
+{
+	md_real2(D, dims, MD_STRIDES(D, dims, FL_SIZE), dst, MD_STRIDES(D, dims, CFL_SIZE), src);
+}
+
+void md_imag2(unsigned int D, const long dims[D], const long ostrs[D], float* dst, const long istrs[D], const complex float* src)
+{
+	md_copy2(D, dims, ostrs, dst, istrs, (const float*)src + 1, FL_SIZE);
+}
+
+void md_imag(unsigned int D, const long dims[D], float* dst, const complex float* src)
+{
+	md_imag2(D, dims, MD_STRIDES(D, dims, FL_SIZE), dst, MD_STRIDES(D, dims, CFL_SIZE), src);
 }
 
 

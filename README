@@ -81,6 +81,18 @@ To install the required libraries on Debian and Ubuntu run:
     install version 0.5.2 of the ISMRMRD library
 
 
+To install the required libraries on Redhat / Centos run:
+
+    $ sudo yum install devtoolset-8 atlas-devel fftw3-devel libpng-devel lapack-devel
+
+It may be required to install support for software collections (for Centos):
+
+    $ sudo yum install centos-release-scl
+
+To enable gcc 8 and start a bash shell run:
+
+    $ scl enable devtoolset-8 bash
+
 
 ### 2.1.2. Mac OS X
 

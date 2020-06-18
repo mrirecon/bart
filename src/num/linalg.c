@@ -1,11 +1,12 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2016-2019. Martin Uecker.
+ * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2013 Dara Bahri <dbahri123@gmail.com>
+ * 2019-2020 Sebastian Rosenzweig
+ * 2012-2020 Martin Uecker
+ * 2013	     Dara Bahri
  *
  *
  * Simple linear algebra functions.
@@ -172,8 +173,14 @@ bool (mat_inverse)(unsigned int N, complex float out[N][N], const complex float 
 }
 
 
-
+// Moore-Penrose pseudo inverse
 void mat_pinv(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B])
+{
+	((B <= A) ? mat_pinv_left : mat_pinv_right)(A, B, out, in);
+}
+
+
+void mat_pinv_left(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B])
 {
 	if (A == B) {
 
@@ -193,6 +200,29 @@ void mat_pinv(unsigned int A, unsigned int B, complex float out[B][A], const com
 	mat_inverse(B, inv, prod);
 
 	mat_mul(B, B, A, out, inv, adj);
+}
+
+
+void mat_pinv_right(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B])
+{
+	if (A == B) {
+
+		mat_inverse(A, out, in);
+		return;
+	}
+
+	assert(A < B);
+
+	complex float adj[B][A];
+	mat_adjoint(A, B, adj, in);
+
+	complex float prod[A][A];
+	mat_mul(A, B, A, prod, in, adj);
+
+	complex float inv[A][A];
+	mat_inverse(A, inv, prod);
+
+	mat_mul(B, A, A, out, adj, inv);
 }
 
 

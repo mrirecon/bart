@@ -377,14 +377,14 @@ const struct iovec_s* linop_codomain(const struct linop_s* op)
 
 
 
-struct linop_s* linop_null_create2(unsigned int N, const long odims[N], const long ostrs[N], const long idims[N], const long istrs[N])
+struct linop_s* linop_null_create2(unsigned int NO, const long odims[NO], const long ostrs[NO], unsigned int NI, const long idims[NI], const long istrs[NI])
 {
 	PTR_ALLOC(struct linop_s, c);
 
-	const struct operator_s* nudo = operator_null_create2(N, idims, istrs);
-	const struct operator_s* zedo = operator_zero_create2(N, idims, istrs);
-	const struct operator_s* nuco = operator_null_create2(N, odims, ostrs);
-	const struct operator_s* zeco = operator_zero_create2(N, odims, ostrs);
+	const struct operator_s* nudo = operator_null_create2(NI, idims, istrs);
+	const struct operator_s* zedo = operator_zero_create2(NI, idims, istrs);
+	const struct operator_s* nuco = operator_null_create2(NO, odims, ostrs);
+	const struct operator_s* zeco = operator_zero_create2(NO, odims, ostrs);
 
 	c->forward = operator_combi_create(2, MAKE_ARRAY(zeco, nudo));
 	c->adjoint = operator_combi_create(2, MAKE_ARRAY(zedo, nuco));
@@ -401,10 +401,10 @@ struct linop_s* linop_null_create2(unsigned int N, const long odims[N], const lo
 
 
 
-struct linop_s* linop_null_create(unsigned int N, const long odims[N], const long idims[N])
+struct linop_s* linop_null_create(unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI])
 {
-	return linop_null_create2(N, odims, MD_STRIDES(N, odims, CFL_SIZE),
-					idims, MD_STRIDES(N, idims, CFL_SIZE));
+	return linop_null_create2(NO, odims, MD_STRIDES(NO, odims, CFL_SIZE),
+					NI, idims, MD_STRIDES(NI, idims, CFL_SIZE));
 }
 
 
@@ -416,6 +416,16 @@ struct linop_s* linop_null_create(unsigned int N, const long odims[N], const lon
  */
 struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b)
 {
+	if (   operator_zero_or_null_p(a->forward)
+	    || operator_zero_or_null_p(b->forward)) {
+
+		auto dom = linop_domain(a);
+		auto cod = linop_codomain(b);
+
+		return linop_null_create2(cod->N, cod->dims, cod->strs,
+					dom->N, dom->dims, dom->strs);
+	}
+
 	PTR_ALLOC(struct linop_s, c);
 
 	c->forward = operator_chain(a->forward, b->forward);
@@ -496,12 +506,33 @@ struct linop_s* linop_stack(int D, int E, const struct linop_s* a, const struct 
 struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* op)
 {
 	PTR_ALLOC(struct linop_s, op2);
-	op2->forward = operator_loop(D, dims, op->forward);
-	op2->adjoint = operator_loop(D, dims, op->adjoint);
-	op2->normal = (NULL == op->normal) ? NULL : operator_loop(D, dims, op->normal);
+
+	op2->forward = operator_loop(D, dims, operator_ref(op->forward));
+	op2->adjoint = operator_loop(D, dims, operator_ref(op->adjoint));
+	op2->normal = (NULL == op->normal) ? NULL : operator_loop(D, dims, operator_ref(op->normal));
 	op2->norm_inv = NULL; // FIXME
-	return op2;
+
+	return PTR_PASS(op2);
 }
+
+
+struct linop_s* linop_copy_wrapper(unsigned int D, const long istrs[D], const long ostrs[D],  struct linop_s* op)
+{
+	PTR_ALLOC(struct linop_s, op2);
+
+	const long* strsx[2] = { ostrs, istrs };
+	const long* strsy[2] = { istrs, ostrs };
+	const long* strsz[2] = { istrs, istrs };
+
+	op2->forward = operator_copy_wrapper(2, strsx, operator_ref(op->forward));
+	op2->adjoint = operator_copy_wrapper(2, strsy, operator_ref(op->adjoint));
+	op2->normal = (NULL == op->normal) ? NULL : operator_copy_wrapper(2, strsz, operator_ref(op->normal));
+	op2->norm_inv = NULL; // FIXME
+
+	return PTR_PASS(op2);
+}
+
+
 
 
 /**
@@ -602,4 +633,13 @@ struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b)
 	return linop_create(bco->N, bco->dims, bdo->N, bdo->dims, CAST_UP(PTR_PASS(data)), plus_apply, plus_adjoint, NULL, NULL, plus_free);
 }
 
+struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b)
+{
+	auto x = linop_plus(a, b);
+
+	linop_free(a);
+	linop_free(b);
+
+	return x;
+}
 

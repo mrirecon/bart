@@ -1,11 +1,12 @@
 /* Copyright 2013-2015 The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
  * Copyright 2017. Intel Corporation.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2019-2020 Sebastian Rosenzweig
  * 2013      Frank Ong <frankong@berkeley.edu>
  * 2017      Michael J. Anderson <michael.j.anderson@intel.com>
  *
@@ -286,7 +287,7 @@ long md_calc_size(unsigned int D, const long dim[D])
 /**
  * Computes the number of smallest dimensions which are stored
  * contineously, i.e. can be accessed as a block of memory.
- * 
+ *
  */
 unsigned int md_calc_blockdim(unsigned int D, const long dim[D], const long str[D], size_t size)
 {
@@ -386,6 +387,17 @@ bool md_check_dimensions(unsigned int N, const long dims[N], unsigned int flags)
 	md_select_dims(N, ~flags, d, dims);
 
 	return (1 != md_calc_size(N, d));
+}
+
+
+
+/**
+ * Check if dimensions at 'flags' position are equal
+ */
+bool md_check_equal_dims(unsigned int N, const long dims1[N], const long dims2[N], unsigned int flags)
+{
+	return (   md_check_bounds(N, flags, dims1, dims2)
+	        && md_check_bounds(N, flags, dims2, dims1));
 }
 
 
@@ -572,7 +584,7 @@ void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, 
 
 
 /**
- * Calculate strides in column-major format 
+ * Calculate strides in column-major format
  * (smallest index is sequential)
  *
  * @param D number of dimensions
@@ -623,7 +635,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 #if 0
 	// this is for a fun comparison between our copy engine and FFTW
 
-	extern void fft2(unsigned int D, const long dim[D], unsigned int flags, 
+	extern void fft2(unsigned int D, const long dim[D], unsigned int flags,
 			const long ostr[D], void* optr, const long istr[D], const void* iptr);
 
 	if (sizeof(complex float) == size)
@@ -643,6 +655,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 
 	long (*nstr2[2])[D] = { &tostr, &tistr };
 	int ND = optimize_dims(2, D, tdims, nstr2);
+
 
 	size_t sizes[2] = { size, size };
 	int skip = min_blockdim(2, ND, tdims, nstr2, sizes);
@@ -674,7 +687,6 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	}
 #endif
 #endif
-
 	const long (*nstr[2])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr };
 
 	NESTED(void, nary_copy, (struct nary_opt_data_s* opt_data, void* ptr[]))
@@ -954,6 +966,20 @@ void md_resize(unsigned int D, const long odim[D], void* optr, const long idim[D
 	md_copy_block(D, pos, odim, optr, idim, iptr, size);
 }
 
+/**
+ * Pad an array by val at the end.
+ *
+ * optr = [iptr val val val val]
+ *
+ */
+void md_pad(unsigned int D, const void* val, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+{
+	long pos[D];
+	memset(pos, 0, D * sizeof(long));
+
+	md_fill(D, odim, optr, val, size);
+	md_copy_block(D, pos, odim, optr, idim, iptr, size);
+}
 
 /**
  * Resize an array by zero-padding or by truncation at both ends symmetrically.
@@ -974,6 +1000,22 @@ void md_resize_center(unsigned int D, const long odim[D], void* optr, const long
 	md_copy_block(D, pos, odim, optr, idim, iptr, size);
 }
 
+/**
+ * Pad an array on both ends by val.
+ *
+ * optr = [val val iptr val val]
+ *
+ */
+void md_pad_center(unsigned int D, const void* val, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+{
+
+	long pos[D];
+	for (unsigned int i = 0; i < D; i++)
+		pos[i] = labs((odim[i] / 2) - (idim[i] / 2));
+
+	md_fill(D, odim, optr, val, size);
+	md_copy_block(D, pos, odim, optr, idim, iptr, size);
+}
 
 
 /**
@@ -1273,6 +1315,88 @@ void md_flip(unsigned int D, const long dims[D], unsigned long flags, void* optr
 }
 
 
+/**
+ * Reshape array (with strides)
+ *
+ * Only flagged dims may flow
+ */
+void md_reshape2(unsigned int D, unsigned long flags, const long odims[D], const long ostrs[D], void* optr, const long idims[D], const long istrs[D], const void* iptr, size_t size)
+{
+	assert(md_calc_size(D, odims) == md_calc_size(D, idims));
+	assert(md_check_equal_dims(D, odims, idims, ~flags));
+
+	unsigned int order[D];
+	unsigned int j = 0;
+
+	for (unsigned int i = 0; i < D; i++)
+		if (MD_IS_SET(flags, i))
+			order[j++] = i;
+
+	for (unsigned int i = 0; i < D; i++)
+		if (!MD_IS_SET(flags, i))
+			order[j++] = i;
+
+	assert(D == j);
+
+
+	unsigned int iorder[D];
+
+	for (unsigned int i = 0; i < D; i++)
+		iorder[order[i]] = i;
+
+
+	long dims2[D];
+	long strs2[D];
+
+	// FIXME: we could avoid the buffer in some cases
+
+	void* buf = md_alloc_sameplace(D, odims, size, optr);
+
+
+	md_permute_dims(D, order, dims2, idims);
+	md_calc_strides(D, strs2, dims2, size);
+
+	md_permute2(D, order, dims2, strs2, buf, idims, istrs, iptr, size);
+
+
+	md_permute_dims(D, order, dims2, odims);
+	md_calc_strides(D, strs2, dims2, size);
+
+	md_permute2(D, iorder, odims, ostrs, optr, dims2, strs2, buf, size);
+
+
+	md_free(buf);
+}
+
+
+/**
+ * Reshape array (without strides)
+ *
+ * Only flagged dims may flow
+ */
+void md_reshape(unsigned int D, unsigned long flags, const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
+{
+	assert(md_calc_size(D, odims) == md_calc_size(D, idims));
+	assert(md_check_equal_dims(D, odims, idims, ~flags));
+
+	long ostrs[D];
+	md_calc_strides(D, ostrs, odims, size);
+
+	long istrs[D];
+	md_calc_strides(D, istrs, idims, size);
+
+	if (md_check_equal_dims(D, ostrs, istrs, ~flags)) {	// strides consistent!
+
+		md_copy(D, odims, optr, iptr, size);
+
+	} else {
+
+		md_reshape2(D, flags, odims, ostrs, optr, idims, istrs, iptr, size);
+	}
+}
+
+
+
 bool md_compare2(unsigned int D, const long dims[D], const long str1[D], const void* src1,
 			const long str2[D], const void* src2, size_t size)
 {
@@ -1338,7 +1462,7 @@ static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], un
 
 /**
  * Apply a separable transformation along selected dimensions.
- * 
+ *
  */
 void md_septrafo2(unsigned int D, const long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun)
 {
@@ -1390,7 +1514,7 @@ void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, cons
 	long xdims[D];
 	md_select_dims(D, ~flags, xdims, dims);
 
-	for (long i = 0; i < count; i++) 
+	for (long i = 0; i < count; i++)
 		md_copy2(D, xdims, str1, dst + i * stride1, str2, src + i * stride2, size);
 }
 
@@ -1403,7 +1527,7 @@ void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, cons
  *
  */
 void md_copy_diag(unsigned int D, const long dims[D], unsigned long flags, void* dst, const void* src, size_t size)
-{	
+{
 	long str[D];
 	md_calc_strides(D, str, dims, size);
 

@@ -1,5 +1,5 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */ 
@@ -46,6 +46,8 @@ extern void md_copy_block(unsigned int D, const long pos[__VLA(D)], const long o
 extern void md_move_block2(unsigned int D, const long dim[__VLA(D)], const long opos[__VLA(D)], const long odim[__VLA(D)], const long ostr[__VLA(D)], void* optr, const long ipos[__VLA(D)], const long idim[__VLA(D)], const long istr[__VLA(D)], const void* iptr, size_t size);
 extern void md_move_block(unsigned int D, const long dim[__VLA(D)], const long opos[__VLA(D)], const long odim[__VLA(D)], void* optr, const long ipos[__VLA(D)], const long idim[__VLA(D)], const void* iptr, size_t size);
 
+extern void md_pad(unsigned int D, const void* val, const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
+extern void md_pad_center(unsigned int D, const void* val, const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
 extern void md_resize(unsigned int D, const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
 extern void md_resize_center(unsigned int D, const long odim[__VLA(D)], void* optr, const long idim[__VLA(D)], const void* iptr, size_t size);
 extern void md_fill2(unsigned int D, const long dim[__VLA(D)], const long str[__VLA(D)], void* ptr, const void* iptr, size_t size);
@@ -62,7 +64,8 @@ extern void md_flip(unsigned int D, const long dims[__VLA(D)], unsigned long fla
 extern void md_swap_flip2(unsigned int D, const long dims[__VLA(D)], unsigned long flags, const long ostr[__VLA(D)], void* optr, const long istr[__VLA(D)], void* iptr, size_t size);
 extern void md_swap_flip(unsigned int D, const long dims[__VLA(D)], unsigned long flags, void* optr, void* iptr, size_t size);
 
-
+extern void md_reshape(unsigned int D, unsigned long flags, const long odims[__VLA(D)], void* optr, const long idims[__VLA(D)], const void* iptr, size_t size);
+extern void md_reshape2(unsigned int D, unsigned long flags, const long odims[__VLA(D)], const long ostrs[__VLA(D)], void* optr, const long idims[__VLA(D)], const long istrs[__VLA(D)], const void* iptr, size_t size);
 
 extern void md_copy_diag2(unsigned int D, const long dims[__VLA(D)], unsigned long flags, const long str1[__VLA(D)], void* dst, const long str2[__VLA(D)], const void* src, size_t size);
 extern void md_copy_diag(unsigned int D, const long dims[__VLA(D)], unsigned long flags, void* dst, const void* src, size_t size);
@@ -112,6 +115,7 @@ extern void md_min_dims(unsigned int D, unsigned long flags, long odims[__VLA(D)
 extern void md_max_dims(unsigned int D, unsigned long flags, long odims[__VLA(D)], const long idims1[__VLA(D)], const long idims2[__VLA(D)]);
 extern _Bool md_is_index(unsigned int D, const long pos[__VLA(D)], const long dims[__VLA(D)]);
 extern _Bool md_check_dimensions(unsigned int N, const long dims[__VLA(N)], unsigned int flags);
+extern _Bool md_check_equal_dims(unsigned int N, const long dims1[__VLA(N)], const long dims2[__VLA(N)], unsigned int flags);
 extern void md_permute_dims(unsigned int D, const unsigned int order[__VLA(D)], long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern _Bool md_next(unsigned int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);

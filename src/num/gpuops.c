@@ -4,12 +4,12 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2012-2019	Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 	Joseph Y Cheng <jycheng@stanford.edu>
  * 2015-2018	Jon Tamir <jtamir@eecs.berkeley.edu>
  *
- * 
+ *
  * CUDA support functions. The file exports gpu_ops of type struct vec_ops
  * for basic operations on single-precision floating pointer vectors defined
  * in gpukrnls.cu. See vecops.c for the CPU version.
@@ -106,7 +106,7 @@ void cuda_init(int device)
 	CUDA_ERROR(cudaSetDevice(device));
 }
 
-int cuda_init_memopt(void) 
+int cuda_init_memopt(void)
 {
 	int num_devices = cuda_devices();
 	int device;
@@ -319,7 +319,7 @@ static double cuda_norm(long size, const float* src1)
 {
 #if 1
 	// cublasSnrm2 produces NaN in some situations
-	// e.g. nlinv -g -i8 utests/data/und2x2 o 
+	// e.g. nlinv -g -i8 utests/data/und2x2 o
 	// git rev: ab28a9a953a80d243511640b23501f964a585349
 //	printf("cublas: %f\n", cublasSnrm2(size, src1, 1));
 //	printf("GPU norm (sdot: %f)\n", sqrt(cuda_sdot(size, src1, src1)));
@@ -336,13 +336,13 @@ static double cuda_asum(long size, const float* src)
 }
 
 static void cuda_saxpy(long size, float* y, float alpha, const float* src)
-{       
+{
 //	printf("SAXPY %x %x %ld\n", y, src, size);
         cublasSaxpy(size, alpha, src, 1, y, 1);
 }
 
 static void cuda_swap(long size, float* a, float* b)
-{       
+{
         cublasSswap(size, a, 1, b, 1);
 }
 
@@ -387,8 +387,13 @@ const struct vec_ops gpu_ops = {
 	.zconj = cuda_zconj,
 	.zexpj = cuda_zexpj,
 	.zexp = cuda_zexp,
+	.zlog = cuda_zlog,
 	.zarg = cuda_zarg,
 	.zabs = cuda_zabs,
+	.zatanr = cuda_zatanr,
+
+	.exp = cuda_exp,
+	.log = cuda_log,
 
 	.zcmp = cuda_zcmp,
 	.zdiv_reg = cuda_zdiv_reg,
@@ -453,5 +458,3 @@ const struct vec_iter_s gpu_iter_ops = {
 
 
 #endif
-
-

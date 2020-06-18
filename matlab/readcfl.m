@@ -1,7 +1,10 @@
 function data = readcfl(filenameBase)
 %READCFL Read complex data from file.
-%   Read in reconstruction data stored in filenameBase.cfl (complex float)
-%   based on dimensions stored in filenameBase.hdr.
+%   READCFL(filenameBase) read in reconstruction data stored in filenameBase.cfl 
+%   (complex float) based on dimensions stored in filenameBase.hdr.
+%
+%   Parameters:
+%       filenameBase:   path and filename of cfl file (without extension)
 %
 %   Written to edit data with the Berkeley Advanced Reconstruction Toolbox (BART).
 %

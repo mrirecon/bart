@@ -1,0 +1,6 @@
+function bart_git_version_dots() {
+    ./git-version.sh | tr - . | tr -d '\n'
+}
+function bart_git_version() {
+    ./git-version.sh | tr -d '\n'
+}
