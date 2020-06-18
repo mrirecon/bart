@@ -83,11 +83,11 @@ To install the required libraries on Debian and Ubuntu run:
 
 To install the required libraries on Redhat / Centos run:
 
-    $ sudo yum install devtoolset-8 atlas-devel fftw3-devel libpng-devel lapack-devel
+    $ sudo yum install atlas-devel fftw3-devel libpng-devel lapack-devel
 
 It may be required to install support for software collections (for Centos):
 
-    $ sudo yum install centos-release-scl
+    $ sudo yum install centos-release-scl devtoolset-8
 
 To enable gcc 8 and start a bash shell run:
 
