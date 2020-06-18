@@ -56,7 +56,8 @@ class BartView(object):
         self.im = self.readcfl(self.cflname)
         self.im_unsqueeze_shape = np.where( np.array(self.im.shape) > 1 )[0]
         self.im = self.im.squeeze()
-        t1 = time.clock()
+        if sys.version_info.major==3 and sys.version_info.minor < 8:
+           t1 = time.clock()
 
         # Reorder image
         self.Ndims = len( self.im.shape )
