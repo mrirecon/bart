@@ -27,6 +27,8 @@ DEBUG?=0
 FFTWTHREADS?=1
 ISMRMRD?=0
 NOEXEC_STACK?=0
+PARALLEL?=0
+PARALLEL_NJOBS?=
 
 LOG_BACKEND?=0
 LOG_SIEMENS_BACKEND?=0
@@ -262,18 +264,19 @@ ifeq ($(NOEXEC_STACK),1)
 CPPFLAGS += -DNOEXEC_STACK
 endif
 
+
 ifeq ($(PARALLEL),1)
-MAKEFLAGS += -j
+MAKEFLAGS += -j$(PARALLEL_NJOBS)
 endif
 
 
 ifeq ($(MAKESTAGE),1)
 .PHONY: doc/commands.txt $(TARGETS)
 default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest pythontest $(TARGETS):
-	make MAKESTAGE=2 $(MAKECMDGOALS)
+	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
 
 tests/test-%: force
-	make MAKESTAGE=2 $(MAKECMDGOALS)
+	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
 
 force: ;
 
@@ -639,7 +642,7 @@ isclean: $(ALLMAKEFILES)
 ifeq ($(AUTOCLEAN),1)
 	@echo "CONFIGURATION MODIFIED. RUNNING FULL REBUILD."
 	touch isclean
-	make allclean || rm isclean
+	$(MAKE) allclean || rm isclean
 else
 ifneq ($(MAKECMDGOALS),allclean)
 	@echo "CONFIGURATION MODIFIED."
