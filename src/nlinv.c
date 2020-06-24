@@ -124,14 +124,10 @@ int main_nlinv(int argc, char* argv[])
 
 		traj = load_cfl(trajectory, DIMS, trj_dims);
 
-		//if (0 == md_calc_size(3, sens_dims))
-			estimate_fast_sq_im_dims(3, dims, trj_dims, traj);
-
 		md_zsmul(DIMS, trj_dims, traj, traj, 2.);
 
-		for (int i = 0; i < 3; i++)
-			if (1 != dims[i])
-				dims[i] *= 2;
+		//if (0 == md_calc_size(3, sens_dims))
+			estimate_fast_sq_im_dims(3, dims, trj_dims, traj);
 	}
 
 	long strs[DIMS];

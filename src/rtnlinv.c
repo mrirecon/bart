@@ -1,5 +1,5 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015-2020. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2015-2020. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -136,12 +136,6 @@ int main_rtnlinv(int argc, char* argv[])
 	long ksp_dims[DIMS];
 	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
 
-	if ((-1. == scaling) && (!alt_scaling))
-		scaling = 100. / md_znorm(DIMS, ksp_dims, kspace);
-
-	if (-1. != scaling)
-		md_zsmul(DIMS, ksp_dims, kspace, kspace, scaling);
-
 	long frames = ksp_dims[TIME_DIM];
 
 	long ksp1_dims[DIMS];
@@ -189,7 +183,7 @@ int main_rtnlinv(int argc, char* argv[])
 
 		debug_print_dims(DP_INFO, 3, my_img_dims);
 
-
+		md_zsmul(DIMS, trj_dims, traj, traj, 2.);
 
 		if (0 == my_img_dims[0] + my_img_dims[1] + my_img_dims[2])
 			estimate_fast_sq_im_dims(3, sens_dims, trj_dims, traj);
@@ -224,8 +218,15 @@ int main_rtnlinv(int argc, char* argv[])
 	long img_output_dims[DIMS];
 	md_copy_dims(DIMS, img_output_dims, img_dims);
 
+	if (conf.noncart) {
+
+		for (int i = 0; i < 3; i++)
+			if (1 != img_output_dims[i])
+				img_output_dims[i] /= 2;
+	}
+
 	long img_output1_dims[DIMS];
-	md_copy_dims(DIMS, img_output1_dims, img1_dims);
+	md_select_dims(DIMS, ~TIME_FLAG, img_output1_dims, img_output_dims);
 
 	if (!combine) {
 
@@ -330,6 +331,15 @@ int main_rtnlinv(int argc, char* argv[])
 				// This scaling accounts for variable spokes per frame
 				scale_psf_k(pat_dims, pattern, ksp_dims, kspace, trj_dims, traj);
 			}
+		} else {
+
+			float psf_sc = 1.;
+
+			for (int i = 0; i < 3; i++)
+				if (1 != pat_dims[i])
+					psf_sc *= 2.;
+
+			md_zsmul(DIMS, pat_dims, pattern, pattern, psf_sc);
 		}
 
 		debug_printf(DP_DEBUG3, "finished\n");
@@ -444,12 +454,10 @@ int main_rtnlinv(int argc, char* argv[])
 		}
 
 
-		if (alt_scaling) {
-
+		if ((-1. == scaling) || alt_scaling)
 			scaling = 100. / md_znorm(DIMS, kgrid1_dims, kgrid1);
 
-			md_zsmul(DIMS, kgrid1_dims, kgrid1, kgrid1, scaling);
-		}
+		md_zsmul(DIMS, kgrid1_dims, kgrid1, kgrid1, scaling);
 
 #ifdef USE_CUDA
 		if (usegpu) {
