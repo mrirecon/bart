@@ -124,5 +124,36 @@ tests/test-bin-quadrature-offset: ones scale reshape transpose join bin nrmse
 	touch $@	
 
 
-TESTS += tests/test-bin-label tests/test-bin-reorder tests/test-bin-quadrature tests/test-bin-quadrature-offset
+tests/test-bin-amplitude: ones scale reshape transpose join bin nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+		$(TOOLDIR)/bart ones 2 1 1 o1.ra 			;\
+		$(TOOLDIR)/bart scale 0 o1.ra o0.ra 		;\
+		$(TOOLDIR)/bart scale -- -1 o1.ra om1.ra 	;\
+		$(TOOLDIR)/bart scale 2 o1.ra o2.ra 		;\
+		$(TOOLDIR)/bart scale 3 o1.ra o3.ra			;\
+		$(TOOLDIR)/bart scale 4 o1.ra o4.ra			;\
+		$(TOOLDIR)/bart scale 5 o1.ra o5.ra			;\
+		$(TOOLDIR)/bart join 1 o1.ra o1.ra q1.ra	;\
+		$(TOOLDIR)/bart join 1 om1.ra o1.ra q2.ra	;\
+		$(TOOLDIR)/bart join 1 om1.ra om1.ra q3.ra	;\
+		$(TOOLDIR)/bart join 1 o1.ra om1.ra q4.ra	;\
+		$(TOOLDIR)/bart join 1 om1.ra om1.ra qrm1.ra ;\
+		$(TOOLDIR)/bart join 1 o0.ra o0.ra qr0.ra	;\
+		$(TOOLDIR)/bart join 1 o1.ra o1.ra qr1.ra	;\
+		$(TOOLDIR)/bart join 0 q2.ra  q3.ra   q4.ra  q1.ra  q2.ra  qc.ra	;\
+		$(TOOLDIR)/bart join 0 qr1.ra qrm1.ra qr0.ra qr1.ra qrm1.ra qr.ra	;\
+		$(TOOLDIR)/bart join 0 o1.ra  o2.ra   o3.ra  o4.ra  o5.ra   k.ra	;\
+		$(TOOLDIR)/bart join 1 qr.ra qc.ra q.ra				;\
+		$(TOOLDIR)/bart reshape 3075 1 1 5 4 q.ra eof.ra 	;\
+		$(TOOLDIR)/bart transpose 0 10 k.ra k1.ra			;\
+		$(TOOLDIR)/bart bin -C4 -R3 -M  eof.ra k1.ra qbin.ra 	;\
+		$(TOOLDIR)/bart join 10 o0.ra o5.ra o2.ra o0.ra kb0.ra	;\
+		$(TOOLDIR)/bart join 10 o0.ra o0.ra o0.ra o3.ra kb1.ra	;\
+		$(TOOLDIR)/bart join 10 o4.ra o1.ra o0.ra o0.ra kb2.ra	;\
+		$(TOOLDIR)/bart join 11 kb0.ra kb1.ra kb2.ra kj.ra		;\
+		$(TOOLDIR)/bart nrmse -t 0.00001 kj.ra qbin.ra 			;\
+	#rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@	
+
+TESTS += tests/test-bin-label tests/test-bin-reorder tests/test-bin-quadrature tests/test-bin-quadrature-offset tests/test-bin-amplitude
 

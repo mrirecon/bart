@@ -16,6 +16,8 @@ struct bin_conf_s {
 
 	float offset_angle[2];
 
+	_Bool amplitude;
+
 };
 
 extern const struct bin_conf_s bin_defaults;

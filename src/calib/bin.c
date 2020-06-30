@@ -14,6 +14,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/filter.h"
+#include "num/vecops.h"
 
 #include "misc/misc.h"
 #include "misc/mri.h"
@@ -36,6 +37,8 @@ const struct bin_conf_s bin_defaults = {
 
 	.offset_angle = { 0., 0. },
 
+	.amplitude = 0,
+
 };
 
 // Binning by equal central angle
@@ -54,6 +57,35 @@ static void det_bins(const complex float* state, const long bins_dims[DIMS], flo
 		bins[idx * T + t] = floorf(angle / central_angle);
 
  		//debug_printf(DP_INFO, "%f: bin %f\n", (M_PI + atan2f(crealf(state[T + t]), crealf(state[t]))) * 360 / 2. / M_PI, bins[idx * T + t]);
+	}
+}
+
+// Binning by amplitude
+static void det_bins_amp(const long state_dims[DIMS], const complex float* state, const long bins_dims[DIMS], float* bins, const int idx, const int n)
+{
+	int T = bins_dims[TIME_DIM];
+	
+	float* s = md_alloc(DIMS, state_dims, FL_SIZE);
+	
+	md_real(DIMS, state_dims, s, state);
+
+	float min = quickselect(s, T, T - 1); // resorts s!
+
+	md_real(DIMS, state_dims, s, state);
+	md_sadd(DIMS, state_dims, s, s, -min); // make positive
+
+	float max = quickselect(s, T, 0); // resorts s!
+
+	md_real(DIMS, state_dims, s, state);
+	md_sadd(DIMS, state_dims, s, s, -min);
+
+	float delta = (float)max / n;
+	float amp = 0.;
+
+	for (int t = 0; t < T; t++) {
+
+		amp = s[t];
+		bins[idx * T + t] = floorf(amp * 0.99 / delta);
 	}
 }
 
@@ -283,7 +315,11 @@ extern int bin_quadrature(const long bins_dims[DIMS], float* bins,
 		dump_cfl(conf.card_out, DIMS, card_state_dims, card_state);
 
 	// Determine bins
-	det_bins(resp_state, bins_dims, bins, 1, conf.n_resp, conf.offset_angle[0]); // respiratory motion
+	if (conf.amplitude)
+		det_bins_amp(resp_state_dims, resp_state, bins_dims, bins, 1, conf.n_resp); // amplitude binning for respiratory motion
+	else
+		det_bins(resp_state, bins_dims, bins, 1, conf.n_resp, conf.offset_angle[0]); // respiratory motion	 
+
 	det_bins(card_state, bins_dims, bins, 0, conf.n_card, conf.offset_angle[1]); // cardiac motion
 
 	md_free(card_state);
