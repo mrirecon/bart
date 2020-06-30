@@ -279,7 +279,7 @@ tests/test-pics-noncart-sms: traj slice phantom conj join fft flip pics nrmse
 	$(TOOLDIR)/flip 7 s.ra sF.ra							;\
 	$(TOOLDIR)/conj sF.ra sFC.ra							;\
 	$(TOOLDIR)/join 13 s.ra sFC.ra ss.ra 						;\
-	$(TOOLDIR)/pics -t t.ra -M kk.ra ss.ra x.ra					;\
+	$(TOOLDIR)/pics -t t.ra --sms kk.ra ss.ra x.ra					;\
 	$(TOOLDIR)/slice 13 0 x.ra x0.ra						;\
 	$(TOOLDIR)/slice 13 1 x.ra x1.ra						;\
 	$(TOOLDIR)/phantom -k rk.ra							;\

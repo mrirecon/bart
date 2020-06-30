@@ -502,7 +502,7 @@ void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage
 bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str)
 {
 	bool flag = false;
-	struct opt_s opts[1] = { { flag_char, false, opt_set, &flag, NULL } };
+	struct opt_s opts[1] = { { flag_char, NULL, false, opt_set, &flag, NULL } };
 
 	char* help = strdup(help_str);
 

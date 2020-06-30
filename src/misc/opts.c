@@ -74,8 +74,19 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 	fprintf(fp, "Usage: %s ", name);
 
 	for (int i = 0; i < n; i++)
-		if (show_option_p(opts[i]))
-			fprintf(fp, "[-%c%s] ", opts[i].c, opt_arg_types[opt_arg_type(opts[i].conv)]);
+		if (show_option_p(opts[i])) {
+
+			if (NULL == opts[i].s) {
+
+				fprintf(fp, "[-%c%s] ", opts[i].c, opt_arg_types[opt_arg_type(opts[i].conv)]);
+			} else {
+
+				if (opts[i].c < (int) ' ')
+					fprintf(fp, "[--%s%s] ", opts[i].s, opt_arg_types[opt_arg_type(opts[i].conv)]);
+				else
+					fprintf(fp, "[-%c,--%s%s] ", opts[i].c, opts[i].s, opt_arg_types[opt_arg_type(opts[i].conv)]);
+			}
+		}
 
 	fprintf(fp, "%s\n", usage_str);
 }
@@ -100,10 +111,26 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 	printf("\n%s\n\n",  help_str);
 
 	for (int i = 0; i < n; i++)
-		if (show_option_p(opts[i]))
-			printf("-%c%s%s\n", opts[i].c,
+		if (show_option_p(opts[i])) {
+
+			if (NULL == opts[i].s) {
+
+
+				printf("-%c%s%s\n", opts[i].c,
 					add_space(opts[i].arg, isspace(opts[i].descr[0])),
 					trim_space(opts[i].descr));
+			} else {
+				if (opts[i].c < (int) ' ')
+					printf("--%s%s%s\n", opts[i].s,
+						add_space(opts[i].arg, isspace(opts[i].descr[0])),
+						trim_space(opts[i].descr));
+				else
+					printf("-%c,--%s%s%s\n", opts[i].c, opts[i].s,
+					       add_space(opts[i].arg, isspace(opts[i].descr[0])),
+					       trim_space(opts[i].descr));
+			}
+		}
+
 
 	printf("-h\t\thelp\n");
 }
@@ -155,10 +182,48 @@ static void process_option(char c, const char* optarg, const char* name, const c
 void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	int argc = *argcp;
-	char optstr[2 * n + 2];
-	getopt_reset(); // reset getopt variables to process multiple argc/argv pairs
 
-	check_options(n, opts);
+	// create writable copy of opts
+	struct opt_s wopts[n];
+	memcpy(wopts, opts, sizeof wopts);
+
+
+	int max_num_long_opts = (int) ' ';
+	struct option longopts[max_num_long_opts];
+	// According to documentation, the last element of the longopts array has to be filled with zeros.
+	// So we fill it entirely before using it
+	memset(longopts, 0, sizeof longopts);
+
+
+	char lc = 1;
+	int nlong = 0;
+	for (int i = 0; i < n; i++) {
+
+		if (NULL != wopts[i].s) {
+
+			// if it is only longopt, overwrite c with an unprintable char
+			if (0 == wopts[i].c)
+				wopts[i].c = lc++;
+
+			longopts[nlong++] = (struct option) {wopts[i].s, wopts[i].arg, NULL, wopts[i].c};
+		}
+	};
+
+	// Ensure that we only used unprintable characters
+	// and that the last entry of the array is only zeros
+	assert(nlong < max_num_long_opts);
+
+#if 0
+	for (int i = 0; i < n; ++i)
+		debug_printf(DP_INFO, "opt: %d: %s: %d\n",i, wopts[i].descr, (int) wopts[i].c);
+#endif
+
+
+
+	char optstr[2 * n + 2];
+	ya_getopt_reset(); // reset getopt variables to process multiple argc/argv pairs
+
+	check_options(n, wopts);
 
 	save_command_line(argc, argv);
 
@@ -167,16 +232,18 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 	for (int i = 0; i < n; i++) {
 
-		optstr[l++] = opts[i].c;
+		optstr[l++] = wopts[i].c;
 
-		if (opts[i].arg)
+		if (wopts[i].arg)
 			optstr[l++] = ':';
 	}
 
 	optstr[l] = '\0';
 
 	int c;
-	while (-1 != (c = getopt(argc, argv, optstr))) {
+	int longindex = -1;
+	while (-1 != (c = ya_getopt_long(argc, argv, optstr, longopts, &longindex))) {
+	//while (-1 != (c = ya_getopt(argc, argv, optstr))) {
 #if 0
 		if ('h' == c) {
 
@@ -204,14 +271,14 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 	out:	continue;
 #else
-		process_option(c, optarg, argv[0], usage_str, help_str, n, opts);
+	process_option(c, optarg, argv[0], usage_str, help_str, n, wopts);
 #endif
 	}
 
 	if (   (argc - optind < min_args)
 	    || (argc - optind > max_args)) {
 
-		print_usage(stderr, argv[0], usage_str, n, opts);
+		print_usage(stderr, argv[0], usage_str, n, wopts);
 		error("cmdline: too few or too many arguments\n");
 	}
 
