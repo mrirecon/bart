@@ -11,6 +11,30 @@ tests/test-nlinv: normalize nlinv pocsense nrmse $(TESTS_OUT)/shepplogan_coil_ks
 	touch $@
 
 
+tests/test-nlinv-sms: repmat fft nlinv nrmse scale $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/repmat 13 4 $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp.ra		;\
+	$(TOOLDIR)/fft 8192 ksp.ra ksp2.ra						;\
+	$(TOOLDIR)/nlinv $(TESTS_OUT)/shepplogan_coil_ksp.ra r.ra			;\
+	$(TOOLDIR)/nlinv ksp2.ra r2.ra							;\
+	$(TOOLDIR)/repmat 13 4 r.ra r3.ra						;\
+	$(TOOLDIR)/scale 2. r2.ra r4.ra							;\
+	$(TOOLDIR)/nrmse -s -t 0.1 r3.ra r4.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-nlinv-norm: nlinv rss fmac nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/nlinv $(TESTS_OUT)/shepplogan_coil_ksp.ra r.ra			;\
+	$(TOOLDIR)/nlinv -N $(TESTS_OUT)/shepplogan_coil_ksp.ra rN.ra c.ra		;\
+	$(TOOLDIR)/rss 8 c.ra c_norm.ra							;\
+	$(TOOLDIR)/fmac rN.ra c_norm.ra x.ra						;\
+	$(TOOLDIR)/nrmse -t 0.0000001 r.ra x.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 tests/test-nlinv-batch: conj join nlinv fmac fft nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/conj $(TESTS_OUT)/shepplogan_coil_ksp.ra kc.ra			;\
@@ -26,7 +50,7 @@ tests/test-nlinv-batch: conj join nlinv fmac fft nrmse $(TESTS_OUT)/shepplogan_c
 tests/test-nlinv-batch2: repmat nlinv fmac fft nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/repmat 7 2 $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp.ra		;\
-	$(TOOLDIR)/nlinv -s128 -N -S ksp.ra r.ra c.ra		;\
+	$(TOOLDIR)/nlinv -s128 -N -S ksp.ra r.ra c.ra					;\
 	$(TOOLDIR)/fmac r.ra c.ra x.ra							;\
 	$(TOOLDIR)/fft -u 7 x.ra ksp2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.05 ksp.ra ksp2.ra						;\
@@ -34,5 +58,80 @@ tests/test-nlinv-batch2: repmat nlinv fmac fft nrmse $(TESTS_OUT)/shepplogan_coi
 	touch $@
 
 
-TESTS += tests/test-nlinv tests/test-nlinv-batch tests/test-nlinv-batch2
+tests/test-nlinv-noncart: traj scale phantom nufft resize nlinv fmac nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/traj -r -x256 -y21 traj.ra				;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra				;\
+	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra			;\
+	$(TOOLDIR)/nlinv -N -S -i9 -t traj2.ra ksp.ra r.ra c.ra		;\
+	$(TOOLDIR)/resize -c 0 128 1 128 c.ra c2.ra			;\
+	$(TOOLDIR)/fmac r.ra c2.ra x.ra					;\
+	$(TOOLDIR)/nufft traj2.ra x.ra k2.ra				;\
+	$(TOOLDIR)/scale 2. k2.ra k3.ra					;\
+	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k3.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-nlinv-gpu: normalize nlinv pocsense nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/nlinv -g $(TESTS_OUT)/shepplogan_coil_ksp.ra r.ra c.ra		;\
+	$(TOOLDIR)/normalize 8 c.ra c_norm.ra						;\
+	$(TOOLDIR)/pocsense -i1 $(TESTS_OUT)/shepplogan_coil_ksp.ra c_norm.ra proj.ra	;\
+	$(TOOLDIR)/nrmse -t 0.05 proj.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-nlinv-sms-gpu: repmat fft nlinv nrmse scale $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/repmat 13 4 $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp.ra		;\
+	$(TOOLDIR)/fft 8192 ksp.ra ksp2.ra						;\
+	$(TOOLDIR)/nlinv -g $(TESTS_OUT)/shepplogan_coil_ksp.ra r.ra			;\
+	$(TOOLDIR)/nlinv -g ksp2.ra r2.ra						;\
+	$(TOOLDIR)/repmat 13 4 r.ra r3.ra						;\
+	$(TOOLDIR)/scale 2. r2.ra r4.ra							;\
+	$(TOOLDIR)/nrmse -s -t 0.1 r3.ra r4.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-nlinv-precomp: traj scale phantom ones repmat fft nufft nlinv nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/traj -r -x256 -y55 traj.ra					;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra					;\
+	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra				;\
+	$(TOOLDIR)/ones 3 1 256 55 o.ra						;\
+	$(TOOLDIR)/nufft -a traj.ra o.ra psf.ra					;\
+	$(TOOLDIR)/nufft -a traj.ra ksp.ra adj.ra				;\
+	$(TOOLDIR)/fft -u 7 psf.ra mtf.ra					;\
+	$(TOOLDIR)/fft -u 7 adj.ra ksp2.ra					;\
+	$(TOOLDIR)/scale 4. mtf.ra mtf2.ra					;\
+	$(TOOLDIR)/nlinv -w1. -n -N -i7 -p mtf2.ra ksp2.ra r1.ra c1.ra		;\
+	$(TOOLDIR)/nlinv -w1. -N -i7 -t traj2.ra ksp.ra r2.ra c2.ra		;\
+	$(TOOLDIR)/nrmse -t 0.0002 r2.ra r1.ra					;\
+	$(TOOLDIR)/nrmse -t 0.0002 c2.ra c1.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-nlinv-pics: traj scale phantom resize pics nlinv nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/traj -r -x256 -y21 traj.ra				;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra				;\
+	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra			;\
+	$(TOOLDIR)/nlinv -N -S -i8 -t traj2.ra ksp.ra r.ra c.ra		;\
+	$(TOOLDIR)/resize -c 0 128 1 128 c.ra c2.ra			;\
+	$(TOOLDIR)/pics -r0.01 -S -t traj2.ra ksp.ra c2.ra x2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.05 x2.ra r.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
+TESTS += tests/test-nlinv tests/test-nlinv-sms
+TESTS += tests/test-nlinv-batch tests/test-nlinv-batch2
+TESTS += tests/test-nlinv-noncart tests/test-nlinv-precomp
+TESTS_GPU += tests/test-nlinv-gpu tests/test-nlinv-sms-gpu
+
 
