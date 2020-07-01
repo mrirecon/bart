@@ -181,9 +181,8 @@ int main_bin(int argc, char* argv[argc])
 	if (amplitude) {
 		
 		assert(conf.cluster_dim != -1);
-
+		assert(conf.mavg_window == 0);
 	}
-
 
 	// Identify binning type
 	if ((conf.n_resp > 0) || (conf.n_card > 0)) {
