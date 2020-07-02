@@ -110,16 +110,16 @@ int main_rtnlinv(int argc, char* argv[])
 		OPT_STRING('p', &psf, "file", "pattern / transfer function"),
 		OPT_STRING('t', &trajectory, "file", "kspace trajectory"),
 		OPT_STRING('I', &init_file, "file", "File for initialization"),
-		OPT_STRING('C', &init_file_im, "file", "(File for initialization with image space sensitivities)"),
+		OPT_STRING('C', &init_file_im, "", "(File for initialization with image space sensitivities)"),
 		OPT_SET('g', &usegpu, "use gpu"),
 		OPT_SET('S', &scale_im, "Re-scale image after reconstruction"),
 		OPT_FLOAT('a', &conf.a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPT_FLOAT('b', &conf.b, "", "(b in 1 + a * \\Laplace^-b/2)"),
 		OPT_FLOAT('T', &temp_damp, "temp_damp", "temporal damping [default: 0.9]"),
-		OPT_FLOAT('w', &scaling, "scaling", "inverse scaling of the data"),
+		OPT_FLOAT('w', &scaling, "", "(inverse scaling of the data)"),
 		OPT_VEC3('x', &my_img_dims, "x:y:z", "Explicitly specify image dimensions"),
 		OPT_SET('A', &alt_scaling, "(Alternative scaling)"), // Used for SSA-FARY paper
- 		OPT_SET('s', &conf.sms, "Simultaneous Multi-Slice reconstruction")
+ 		OPT_SET('s', &conf.sms, "(Simultaneous Multi-Slice reconstruction)")
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

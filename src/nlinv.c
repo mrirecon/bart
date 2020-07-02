@@ -74,12 +74,12 @@ int main_nlinv(int argc, char* argv[])
 		OPT_STRING('I', &init_file, "file", "File for initialization"),
 		OPT_SET('g', &usegpu, "use gpu"),
 		OPT_SET('S', &scale_im, "Re-scale image after reconstruction"),
-		OPT_UINT('s', &conf.cnstcoil_flags, "flags", "dimensions with constant sensitivities"),
+		OPT_UINT('s', &conf.cnstcoil_flags, "", "(dimensions with constant sensitivities)"),
 		OPT_FLOAT('a', &conf.a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPT_FLOAT('b', &conf.b, "", "(b in 1 + a * \\Laplace^-b/2)"),
 		OPT_SET('P', &conf.pattern_for_each_coil, "(supplied psf is different for each coil)"),
 		OPT_SET('n', &conf.noncart, "(non-Cartesian)"),
-		OPT_FLOAT('w', &scaling, "val", "inverse scaling of the data"),
+		OPT_FLOAT('w', &scaling, "", "(inverse scaling of the data)"),
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
