@@ -5,6 +5,25 @@
  *
  * Authors:
  * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ *
+ * Publications:
+ *
+ * Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction
+ * by regularized nonlinear inversion-joint estimation of coil
+ * sensitivities and image content. Magn Reson Med 2008; 60:674-682.
+ *
+ * Uecker M, Zhang S, Frahm J. Nonlinear Inverse Reconstruction for
+ * Real-time MRI of the Human Heart Using Undersampled Radial FLASH.
+ * Magn Reson Med 2010; 63:1456-1462.
+ *
+ * Holme HCM, Rosenzweig S, Ong F, Wilke RN, Lustig M, Uecker M.
+ * ENLIVE: An Efficient Nonlinear Method for Calibrationless and
+ * Robust Parallel Imaging. Sci Rep 2019; 9:3034.
+ *
+ * Rosenzweig S, Holme HMC, Wilke RN, Voit D, Frahm J, Uecker M.
+ * Simultaneous multi-slice MRI using cartesian and radial FLASH and
+ * regularized nonlinear inversion: SMS-NLINV.
+ * Magn Reson Med 2018; 79:2057--2066.
  */
 
 #include <stdbool.h>
