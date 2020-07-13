@@ -1,4 +1,11 @@
 function test_bart()
+%TEST_BART  Runs a unit test for the MATLAB BART wrapper.
+%   TEST_BART() can be used to test if the BART toolbox is properly set-up
+%   and if changes/additions made to the MATLAB wrapper break any core
+%   functionality of the MATLAB wrapper.
+%   
+% Copyright 2020. Martin Krämer (Martin.Kraemer@uni-jena.de)
+
     %% Test setup
     testLog = [];
     capture = false;
