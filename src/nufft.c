@@ -47,6 +47,8 @@ int main_nufft(int argc, char* argv[argc])
 	bool precond = false;
 	bool dft = false;
 	bool gpu = false;
+	bool lowmem = false;
+	bool lowmem2 = false;
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
@@ -70,6 +72,8 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_SET('s', &dft, "DFT"),
 		OPT_SET('g', &gpu, "GPU (only inverse)"),
 		OPT_CLEAR('1', &conf.decomp, "use/return oversampled grid"),
+		OPTL_SET(0, "lowmem", &conf.lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_SET(0, "lowmem2", &conf.lowmem2, "Use low-mem mode 2 of the nuFFT"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

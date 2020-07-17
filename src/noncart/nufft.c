@@ -44,6 +44,7 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.pcycle = false,
 	.periodic = false,
 	.lowmem = false,
+	.lowmem2 = false,
 	.loopdim = -1,
 	.flags = FFT_FLAGS,
 	.cfft = 0u,
@@ -226,7 +227,7 @@ static void compute_kern(unsigned int N, unsigned int flags, const long pos[N],
 complex float* compute_psf(unsigned int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights,
-				bool periodic, bool lowmem)
+				bool periodic, bool lowmem, bool lowmem2)
 {
 	long img2_dims[N + 1];
 	md_copy_dims(N, img2_dims, img_dims);
@@ -261,6 +262,7 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	conf.periodic = periodic;
 	conf.toeplitz = false;	// avoid infinite loop
+	conf.lowmem2 = lowmem2;
 
 
 	debug_printf(DP_DEBUG2, "nufft kernel dims: ");
@@ -344,7 +346,7 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 
 static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned long flags, const long trj_dims[N + 1], const complex float* traj,
 				const long bas_dims[N + 1], const complex float* basis, const long wgh_dims[N + 1], const complex float* weights,
-				bool periodic, bool lowmem)
+				bool periodic, bool lowmem, bool lowmem2)
 {
 	int ND = N + 1;
 
@@ -370,7 +372,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 	complex float* traj2 = md_alloc(ND, trj_dims, CFL_SIZE);
 	md_zsmul(ND, trj_dims, traj2, traj, 2.);
 
-	complex float* psft = compute_psf(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem);
+	complex float* psft = compute_psf(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem, lowmem2);
 	md_free(traj2);
 
 	fftuc(ND, img2_dims, flags, psft, psft);
@@ -639,7 +641,7 @@ static struct linop_s* nufft_create3(unsigned int N,
 
 		data->psf = compute_psf2(N, data->psf_dims, data->flags, data->trj_dims, data->traj,
 					data->bas_dims, data->basis, data->wgh_dims, data->weights,
-					true /*conf.periodic*/, conf.lowmem);
+					true /*conf.periodic*/, conf.lowmem, conf.lowmem2);
 	}
 
 
@@ -906,19 +908,113 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 		src = bdat;
 	}
 
-	complex float* gridX = md_calloc(data->N, data->cm2_dims, CFL_SIZE);
-
-	grid2(&data->grid_conf, ND, data->trj_dims, data->traj, data->cm2_dims, gridX, data->ksp_dims, src);
-
-	md_free(bdat);
-	md_free(wdat);
-
-
 	complex float* grid = md_alloc(ND, data->cml_dims, CFL_SIZE);
 
-	md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
-	md_free(gridX);
-	md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, data->fftmod);
+	// check if we want to do stuff outside:
+	long traj_flags = FFT_FLAGS | md_nontriv_dims(data->N, data->trj_dims);
+	long cm2_red_dims[ND];
+	md_select_dims(ND, traj_flags, cm2_red_dims, data->cm2_dims);
+
+#if LOWMEM2_DEBUG
+	long cm2_size = md_calc_size(ND, cm2_red_dims);
+
+	debug_printf(DP_INFO, "cm2_red_dims (%ld)\n\t", cm2_size);
+	debug_print_dims(DP_INFO, ND, cm2_red_dims);
+#endif
+
+	//if ( (2L << 30L) < cm2_size || true) {
+	if (data->conf.lowmem2) {
+
+#if LOWMEM2_DEBUG
+		debug_printf(DP_INFO, "nufft_adj lowmem2\n");
+#endif
+
+		// everything not in traj dims is done separately
+		long cm2_iter_dims[data->N];
+		md_select_dims(data->N, ~traj_flags, cm2_iter_dims, data->cm2_dims);
+
+		long ksp_red_dims[ND];
+		md_select_dims(ND, traj_flags, ksp_red_dims, data->ksp_dims);
+
+		long ksp_strs[ND];
+		md_calc_strides(ND, ksp_strs, data->ksp_dims, CFL_SIZE);
+
+		long cml_red_dims[ND];
+		cml_red_dims[data->N] = data->cml_dims[data->N];
+		md_select_dims(data->N, traj_flags, cml_red_dims, data->cml_dims);
+
+		long cml_red_strs[ND];
+		md_calc_strides(ND, cml_red_strs, cml_red_dims, CFL_SIZE);
+
+#if LOWMEM2_DEBUG
+		debug_printf(DP_INFO, "data->cm2_dims (%ld)\n\t", md_calc_size(data->N, data->cm2_dims));
+		debug_print_dims(DP_INFO, data->N, data->cm2_dims);
+
+		debug_printf(DP_INFO, "cm2_iter_dims (%ld)\n\t", md_calc_size(data->N, cm2_iter_dims));
+		debug_print_dims(DP_INFO, data->N, cm2_iter_dims);
+
+		debug_printf(DP_INFO, "data->ksp_dims (%ld)\n\t", md_calc_size(data->N, data->ksp_dims));
+		debug_print_dims(DP_INFO, data->N, data->ksp_dims);
+
+		debug_printf(DP_INFO, "ksp_red_dims (%ld)\n\t", md_calc_size(ND, ksp_red_dims));
+		debug_print_dims(DP_INFO, ND, ksp_red_dims);
+
+		debug_printf(DP_INFO, "data->cml_dims (%ld)\n\t", md_calc_size(ND, data->cml_dims));
+		debug_print_dims(DP_INFO, ND, data->cml_dims);
+
+		debug_printf(DP_INFO, "cml_red_dims (%ld)\n\t", md_calc_size(ND, cml_red_dims));
+		debug_print_dims(DP_INFO, ND, cml_red_dims);
+#endif
+
+
+		complex float* grid_red = md_alloc(ND, cml_red_dims, CFL_SIZE);
+		complex float* gridX = md_calloc(data->N, cm2_red_dims, CFL_SIZE);
+
+		long pos[ND];
+		md_set_dims(ND, pos, 0L);
+		do {
+
+#if LOWMEM2_DEBUG
+			debug_printf(DP_INFO, "pos\n\t");
+			debug_print_dims(DP_INFO, data->N, pos);
+#endif
+
+			grid2(&data->grid_conf, ND, data->trj_dims, data->traj, cm2_red_dims, gridX,  ksp_red_dims, &MD_ACCESS(data->N, ksp_strs, pos, src));
+
+
+			md_decompose(data->N, data->factors, cml_red_dims, grid_red, cm2_red_dims, gridX, CFL_SIZE);
+
+			md_zmulc2(ND, cml_red_dims, cml_red_strs, grid_red, cml_red_strs, grid_red, data->img_strs, data->fftmod);
+			md_copy_block2(ND, pos, data->cml_dims, data->cml_strs, grid, cml_red_dims, cml_red_strs, grid_red, CFL_SIZE);
+
+			md_clear(data->N, cm2_red_dims, gridX, CFL_SIZE);
+
+		} while(md_next(data->N, cm2_iter_dims, ~0L, pos));
+
+		md_free(bdat);
+		md_free(wdat);
+		md_free(grid_red);
+		md_free(gridX);
+
+	} else {
+
+#if LOWMEM2_DEBUG
+		debug_printf(DP_INFO, "nufft_adj NO lowmem2\n");
+#endif
+
+		complex float* gridX = md_calloc(data->N, data->cm2_dims, CFL_SIZE);
+
+		grid2(&data->grid_conf, ND, data->trj_dims, data->traj, data->cm2_dims, gridX, data->ksp_dims, src);
+
+		md_free(bdat);
+		md_free(wdat);
+
+
+		md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
+		md_free(gridX);
+		md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, data->fftmod);
+	}
+
 	linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
 
 	md_clear(ND, data->cim_dims, dst, CFL_SIZE);

@@ -76,6 +76,8 @@ int main_nlinv(int argc, char* argv[argc])
 	bool scale_im = false;
 	bool usegpu = false;
 	float scaling = -1.;
+	bool nufft_lowmem = false;
+	bool nufft_lowmem2 = false;
 
 	const struct opt_s opts[] = {
 
@@ -99,6 +101,8 @@ int main_nlinv(int argc, char* argv[argc])
 		OPT_SET('P', &conf.pattern_for_each_coil, "(supplied psf is different for each coil)"),
 		OPT_SET('n', &conf.noncart, "(non-Cartesian)"),
 		OPT_FLOAT('w', &scaling, "", "(inverse scaling of the data)"),
+		OPTL_SET(0, "lowmem", &nufft_lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_SET(0, "lowmem2", &nufft_lowmem2, "Use low-mem mode 2 of the nuFFT"),
 	};
 
 	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -268,7 +272,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 		md_select_dims(DIMS, ~(COIL_FLAG|MAPS_FLAG), psf_dims, sens_dims);
 
-		psf = compute_psf(DIMS, psf_dims, trj_dims, traj, trj_dims, NULL, pat_dims, pattern, false, false);
+		psf = compute_psf(DIMS, psf_dims, trj_dims, traj, trj_dims, NULL, pat_dims, pattern, false, nufft_lowmem, nufft_lowmem2);
 
 		fftuc(DIMS, psf_dims, FFT_FLAGS, psf, psf);
 
@@ -279,7 +283,6 @@ int main_nlinv(int argc, char* argv[argc])
 				psf_sc *= 2.;
 
 		md_zsmul(DIMS, psf_dims, psf, psf, psf_sc);
-
 		debug_printf(DP_DEBUG3, "finished\n");
 
 
@@ -289,6 +292,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
 		nufft_conf.toeplitz = false;
+		nufft_conf.lowmem2 = nufft_lowmem2;
 
 		nufft_op = nufft_create(DIMS, ksp_dims, kgrid_dims, trj_dims, traj, NULL, nufft_conf);
 
@@ -300,7 +304,6 @@ int main_nlinv(int argc, char* argv[argc])
 		linop_free(nufft_op);
 
 		fftuc(DIMS, kgrid_dims, FFT_FLAGS, kgrid, kgrid);
-
 	} else {
 
 		md_copy_dims(DIMS, kgrid_dims, ksp_dims);

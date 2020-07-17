@@ -15,6 +15,7 @@ struct nufft_conf_s {
 	_Bool pcycle; /// < Phase cycling
 	_Bool periodic;
 	_Bool lowmem;
+	_Bool lowmem2;
 	int loopdim;
 	unsigned long flags;
 	unsigned long cfft;
@@ -52,7 +53,8 @@ extern _Complex float* compute_psf(unsigned int N,
 				   const long wgh_dims[__VLA(N)],
 				   const complex float* weights,
 				   _Bool periodic,
-				   _Bool lowmem);
+				   _Bool lowmem,
+				   _Bool lowmem2);
 
 extern void estimate_im_dims(int N, unsigned long flags, long dims[__VLA(N)], const long tdims[__VLA(N)], const complex float* traj);
 

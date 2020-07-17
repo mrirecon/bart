@@ -175,7 +175,8 @@ int main_pics(int argc, char* argv[argc])
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
 		OPT_SELECT('a', enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
-		OPT_SET('U', &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_SET('U', "lowmem", &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_SET(0, "lowmem2", &nuconf.lowmem2, "Use low-mem mode 2 of the nuFFT"),
 	};
 
 
