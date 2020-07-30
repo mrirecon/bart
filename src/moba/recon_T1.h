@@ -7,6 +7,7 @@
 struct moba_conf {
 
 	unsigned int iter;
+	unsigned int opt_reg;
 	float alpha;
 	float alpha_min;
 	float redu;

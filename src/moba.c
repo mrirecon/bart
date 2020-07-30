@@ -27,6 +27,7 @@
 #include "linops/linop.h"
 
 #include "moba/recon_T1.h"
+#include "moba/recon_T2.h"
 
 
 
@@ -49,11 +50,13 @@ int main_moba(int argc, char* argv[])
 	bool out_sens = false;
 	bool usegpu = false;
 	bool unused = false;
-	enum mdb_t { MDB_T1 } mode = { MDB_T1 };
+	enum mdb_t { MDB_T1, MDB_T2 } mode = { MDB_T1 };
 
 	const struct opt_s opts[] = {
 
 		OPT_SELECT('L', enum mdb_t, &mode, MDB_T1, "T1 mapping using model-based look-locker"),
+		OPT_SELECT('F', enum mdb_t, &mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
+		OPT_UINT('l', &conf.opt_reg, "reg", "1/-l2\ttoggle l1-wavelet or l2 regularization."),
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPT_FLOAT('R', &conf.redu, "", "(reduction factor)"),
 		OPT_FLOAT('j', &conf.alpha_min, "", "Minimum regu. parameter"),
@@ -114,7 +117,7 @@ int main_moba(int argc, char* argv[])
 	long img_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|COEFF_FLAG|SLICE_FLAG|TIME2_FLAG, img_dims, grid_dims);
 
-	img_dims[COEFF_DIM] = 3;
+	img_dims[COEFF_DIM] = (MDB_T2 == mode) ? 2 : 3;
 
 	long img_strs[DIMS];
 	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);
@@ -133,6 +136,11 @@ int main_moba(int argc, char* argv[])
 
 	complex float* img = create_cfl(argv[3], DIMS, img_dims);
 	complex float* single_map = anon_cfl("", DIMS, single_map_dims);
+
+	long dims[DIMS];
+	md_copy_dims(DIMS, dims, grid_dims);
+
+	dims[COEFF_DIM] = img_dims[COEFF_DIM];
 
 	long msk_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, msk_dims, grid_dims);
@@ -252,7 +260,6 @@ int main_moba(int argc, char* argv[])
 
 		md_zsmul(DIMS, map_dims, filter, filter, -1. / M_PI);
 		md_zsadd(DIMS, map_dims, filter, filter, 1.0);
-
 		md_zsmul(DIMS, map_dims, filter, filter, lambda);
 
 		md_zadd2(DIMS, pat_dims, pat_strs, pattern, pat_strs, pattern, map_strs, filter);
@@ -287,17 +294,15 @@ int main_moba(int argc, char* argv[])
 		restrict_dims[1] = restrict_fov;
 		restrict_dims[2] = restrict_fov;
 		mask = compute_mask(DIMS, msk_dims, restrict_dims);
-		//md_zsmul2(DIMS, img_dims, img_strs, img, msk_strs, mask ,1.0);
-
 		md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, msk_strs, mask);
 
-		// Choose a different initial guess for R1*
+		// Choose a different initial guess for R1* / R2
 		long pos[DIMS];
 
 		for (int i = 0; i < (int)DIMS; i++)
 			pos[i] = 0;
 
-		pos[COEFF_DIM] = 2;
+		pos[COEFF_DIM] = (MDB_T2 == mode) ? 1 : 2;
 		md_copy_block(DIMS, pos, single_map_dims, single_map, img_dims, img, CFL_SIZE);
 		md_zsmul2(DIMS, single_map_dims, single_map_strs, single_map, single_map_strs, single_map, conf.sms ? 2.0 : 1.5);
 		md_copy_block(DIMS, pos, img_dims, img, single_map_dims, single_map, CFL_SIZE);
@@ -317,7 +322,11 @@ int main_moba(int argc, char* argv[])
 		switch (mode) {
 
 		case MDB_T1:
-			T1_recon(&conf, grid_dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, usegpu);
+			T1_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, usegpu);
+			break;
+
+		case MDB_T2:
+			T2_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, usegpu);
 			break;
 		};
 
@@ -328,7 +337,11 @@ int main_moba(int argc, char* argv[])
 	switch (mode) {
 
 	case MDB_T1:
-		T1_recon(&conf, grid_dims, img, sens, pattern, mask, TI, k_grid_data, usegpu);
+		T1_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, usegpu);
+		break;
+
+	case MDB_T2:
+		T2_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, usegpu);
 		break;
 	};
 

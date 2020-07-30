@@ -11,6 +11,7 @@ struct nlop_s;
 struct mdb_irgnm_l1_conf {
 
 	struct iter3_irgnm_conf* c2;
+	unsigned int opt_reg;
 
 	float step;
 	float lower_bound;

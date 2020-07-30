@@ -80,10 +80,16 @@ static void normal_fista(iter_op_data* _data, float* dst, const float* src)
 	long coils = data->dims[COIL_DIM];
 	long slices = data->dims[SLICE_DIM];
 
-	md_axpy(1, MD_DIMS(data->size_x * coils * slices / (coils * slices + parameters * slices)),
+	if (1 == data->conf->opt_reg) {
+
+		md_axpy(1, MD_DIMS(data->size_x * coils / (coils + parameters)),
 	                                        dst + res * res * 2 * parameters * slices,
 						data->alpha,
 	                                        src + res * res * 2 * parameters * slices);
+	} else {
+
+		md_axpy(1, MD_DIMS(data->size_x), dst, data->alpha, src);
+	}
 }
 
 static void pos_value(iter_op_data* _data, float* dst, const float* src)
