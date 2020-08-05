@@ -251,7 +251,8 @@ int main_moba(int argc, char* argv[])
 		md_zatanr(DIMS, map_dims, filter, filter);
 
 		md_zsmul(DIMS, map_dims, filter, filter, -1. / M_PI);
-		md_zsadd(DIMS, map_dims, filter, filter, 0.5);
+		md_zsadd(DIMS, map_dims, filter, filter, 1.0);
+
 		md_zsmul(DIMS, map_dims, filter, filter, lambda);
 
 		md_zadd2(DIMS, pat_dims, pat_strs, pattern, pat_strs, pattern, map_strs, filter);
@@ -259,14 +260,13 @@ int main_moba(int argc, char* argv[])
 		unmap_cfl(DIMS, map_dims, filter);
 	}
 
-
 	double scaling = 5000. / md_znorm(DIMS, grid_dims, k_grid_data);
 	double scaling_psf = 1000. / md_znorm(DIMS, pat_dims, pattern);
 
         if (conf.sms) {
 
-		scaling *= sqrt(grid_dims[SLICE_DIM] / 5.0);
-		scaling_psf *= sqrt(grid_dims[SLICE_DIM] / 5.0);
+		scaling *= grid_dims[SLICE_DIM] / 5.0;
+		scaling_psf *= grid_dims[SLICE_DIM] / 5.0;
 	}
 
 	debug_printf(DP_INFO, "Scaling: %f\n", scaling);
