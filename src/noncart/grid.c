@@ -334,10 +334,7 @@ void grid_pointH(unsigned int ch, int N, const long dims[VLA(N)], const float po
 	{
 		for (unsigned int c = 0; c < ch; c++) {
 
-			// we are allowed to update real and imaginary part independently which works atomically
-			#pragma omp atomic
 			__real(val[c]) += __real(src[ind + c * dims[0] * dims[1] * dims[2]]) * d;
-			#pragma omp atomic
 			__imag(val[c]) += __imag(src[ind + c * dims[0] * dims[1] * dims[2]]) * d;
 		}
 	};
