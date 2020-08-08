@@ -12,6 +12,7 @@
 
 #include "num/multind.h"
 #include "num/init.h"
+#include "num/rand.h"
 
 #include "misc/mri.h"
 #include "misc/mmio.h"
@@ -37,7 +38,7 @@ int main_phantom(int argc, char* argv[])
 	int xdim = -1;
 
 	int geo = -1;
-	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, TUBES } ptype = SHEPPLOGAN;
+	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, TUBES, RAND_TUBES } ptype = SHEPPLOGAN;
 
 	const char* traj = NULL;
 	bool basis = false;
@@ -46,6 +47,9 @@ int main_phantom(int argc, char* argv[])
 	dims[0] = 128;
 	dims[1] = 128;
 	dims[2] = 1;
+
+	int rinit = -1;
+	int N = -1;
 
 
 	const struct opt_s opts[] = {
@@ -59,16 +63,26 @@ int main_phantom(int argc, char* argv[])
 		OPT_SELECT('m', enum ptype_e, &ptype, TIME, "()"),
 		OPT_SELECT('G', enum ptype_e, &ptype, GEOM, "geometric object phantom"),
 		OPT_SELECT('T', enum ptype_e, &ptype, TUBES, "tubes phantom"),
+		OPT_INT('N', &N, "num", "Random tubes phantom and number"),
 		OPT_SELECT('B', enum ptype_e, &ptype, BART, "BART logo"),
 		OPT_INT('x', &xdim, "n", "dimensions in y and z"),
 		OPT_INT('g', &geo, "n=1,2", "select geometry for object phantom"),
 		OPT_SET('3', &d3, "3D"),
 		OPT_SET('b', &basis, "basis functions for geometry"),
+		OPT_INT('r', &rinit, "seed", "random seed initialization"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
+
+	if (-1 != rinit)
+		num_rand_init(rinit);
+
+	if (-1 != N)
+		ptype = RAND_TUBES;
+	else
+		N = 11;
 
 	if ((GEOM != ptype) && (-1 != geo)) {
 
@@ -126,9 +140,8 @@ int main_phantom(int argc, char* argv[])
 
 	if (basis) {
 
-		assert(TUBES == ptype);
-
-		dims[COEFF_DIM] = 11; // Number of elements of tubes phantom with rings see src/shepplogan.c
+		assert(TUBES == ptype || RAND_TUBES == ptype);
+		dims[COEFF_DIM] = N; // Number of elements of tubes phantom with rings see src/shepplogan.c
 	}
 
 
@@ -183,7 +196,12 @@ int main_phantom(int argc, char* argv[])
 
 	case TUBES:
 
-		calc_phantom_tubes(dims, out, kspace, sstrs, samples);
+		calc_phantom_tubes(dims, out, kspace, false, N, sstrs, samples);
+		break;
+
+	case RAND_TUBES:
+
+		calc_phantom_tubes(dims, out, kspace, true, N, sstrs, samples);
 		break;
 
 	case BART:
