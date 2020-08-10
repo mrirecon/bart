@@ -19,6 +19,7 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 
+
 #ifndef DIMS
 #define DIMS 16
 #endif
@@ -41,6 +42,9 @@ int main_fftshift(int argc, char* argv[])
 	long dims[N];
 
 	complex float* idata = load_cfl(argv[2], N, dims);
+
+	copy_if_equal_in_out(argv[3], argv[2], DIMS, dims, &idata, "fftshift");
+
 	complex float* odata = create_cfl(argv[3], N, dims);
 
 	(b ? ifftshift : fftshift)(N, dims, flags, odata, idata);

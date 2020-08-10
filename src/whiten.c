@@ -101,6 +101,9 @@ int main_whiten(int argc, char* argv[])
 	long mat_dims[DIMS];
 
 	complex float* idata = load_cfl(argv[1], DIMS, dims);
+
+	copy_if_equal_in_out(argv[3], argv[1], DIMS, dims, &idata, "whiten");
+
 	complex float* ndata = load_cfl(argv[2], DIMS, noise_dims);
 	complex float* odata = create_cfl(argv[3], DIMS, dims);
 

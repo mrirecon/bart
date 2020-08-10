@@ -40,6 +40,8 @@ int main_transpose(int argc, char* argv[])
 
 	complex float* idata = load_cfl(argv[3], N, idims);
 
+	copy_if_equal_in_out(argv[4], argv[3], DIMS, idims, &idata, "transpose");
+
 	long odims[N];
 	md_transpose_dims(N, dim1, dim2, odims, idims);
 

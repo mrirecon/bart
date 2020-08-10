@@ -43,6 +43,8 @@ int main_reshape(int argc, char* argv[])
 
 	complex float* in_data = load_cfl(argv[n + 2], DIMS, in_dims);
 
+	copy_if_equal_in_out(argv[n + 3], argv[n + 2], DIMS, in_dims, &in_data, "reshape");
+
 	md_copy_dims(DIMS, out_dims, in_dims);
 	
 	unsigned int j = 0;

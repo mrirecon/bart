@@ -37,6 +37,8 @@ int main_flatten(int argc, char* argv[])
 
 	complex float* idata = load_cfl(argv[1], DIMS, idims);
 
+	copy_if_equal_in_out(argv[2], argv[1], DIMS, idims, &idata, "flatten");
+
 	long odims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
 	odims[0] = md_calc_size(DIMS, idims);
 

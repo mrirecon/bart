@@ -54,6 +54,8 @@ int main_filter(int argc, char* argv[])
 	
 	complex float* in_data = load_cfl(argv[1], DIMS, in_dims);
 
+	copy_if_equal_in_out(argv[2], argv[1], DIMS, in_dims, &in_data, "filter");
+
 	assert(dim >= 0);
 	assert(dim < DIMS);
 	assert(len > 0);

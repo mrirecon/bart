@@ -35,7 +35,10 @@ int main_repmat(int argc, char* argv[])
 	long in_dims[DIMS];
 	long out_dims[DIMS];
 	
+
 	complex float* in_data = load_cfl(argv[3], DIMS, in_dims);
+
+	copy_if_equal_in_out(argv[4], argv[3], DIMS, in_dims, &in_data, "repmat");
 
 	int dim = atoi(argv[1]);
 	int rep = atoi(argv[2]);

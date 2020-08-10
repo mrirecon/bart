@@ -47,6 +47,8 @@ int main_casorati(int argc, char* argv[])
 
 	complex float* idata = load_cfl(argv[argc - 2], DIMS, idims);
 
+	copy_if_equal_in_out(argv[argc - 1], argv[argc - 2], DIMS, idims, &idata, "casorati");
+
 	md_copy_dims(DIMS, kdims, idims);
 
 	for (int i = 0; i < count; i += 2) {

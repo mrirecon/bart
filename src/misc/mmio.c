@@ -541,3 +541,21 @@ void unmap_cfl(unsigned int D, const long dims[D], const complex float* x)
 #endif
 }
 
+
+
+void copy_if_equal_in_out(const char* outf, const char* inf, unsigned int D, long dims[__VLA(D)], _Complex float** in, const char* toolname)
+{
+	if (0 == strcmp(inf, outf)) {
+
+		debug_printf(DP_WARN, "%s should not be called with identical input and output!\n", toolname);
+
+		complex float* tmp = *in;
+		*in = anon_cfl("", D, dims);
+
+		md_copy(D, dims, *in, tmp, sizeof(complex float));
+
+		unmap_cfl(D, dims, tmp);
+		io_unregister(inf);
+	}
+}
+

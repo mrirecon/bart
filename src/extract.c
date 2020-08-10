@@ -46,6 +46,8 @@ int main_extract(int argc, char* argv[])
 	complex float* in_data = load_cfl(argv[argc - 2], DIMS, in_dims);
 	md_copy_dims(DIMS, out_dims, in_dims);
 
+	copy_if_equal_in_out(argv[argc - 1], argv[argc - 2], DIMS, in_dims, &in_data, "extract");
+
 	int count = argc - 3;
 	assert((count > 0) && (count % 3 == 0));
 

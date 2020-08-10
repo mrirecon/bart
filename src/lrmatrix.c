@@ -128,6 +128,8 @@ int main_lrmatrix(int argc, char* argv[])
 	// Load input
 	complex float* idata = load_cfl(argv[1], DIMS, idims);
 
+	copy_if_equal_in_out(argv[2], argv[1], DIMS, idims, &idata, "lrmatrix");
+
 	// Get levels and block dimensions
 	long blkdims[MAX_LEV][DIMS];
 	long levels;

@@ -48,6 +48,10 @@ int main_circshift(int argc, char* argv[])
 	center[dim] = shift;
 
 	complex float* idata = load_cfl(argv[3], N, dims);
+
+	copy_if_equal_in_out(argv[4], argv[3], DIMS, dims, &idata, "circshift");
+
+
 	complex float* odata = create_cfl(argv[4], N, dims);
 
 	md_circ_shift(N, dims, center, odata, idata, sizeof(complex float));

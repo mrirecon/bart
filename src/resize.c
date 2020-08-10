@@ -57,6 +57,8 @@ int main_resize(int argc, char* argv[])
 
 	void* in_data = load_cfl(argv[argc - 2], N, in_dims);
 	md_copy_dims(N, out_dims, in_dims);
+
+	copy_if_equal_in_out(argv[argc - 1], argv[argc - 2], DIMS, in_dims, &in_data, "resize");
 	
 	for (int i = 0; i < count; i += 2) {
 

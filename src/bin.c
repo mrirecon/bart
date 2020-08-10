@@ -85,7 +85,7 @@ n_card, const int n_resp)
 	for (int t = 0; t < T; t++) { // Iterate all spokes of input array
 
 		pos0[TIME_DIM] = t;
-		md_copy_block(DIMS, pos0, in_singleton_dims, in_singleton, in_dims, in, CFL_SIZE);
+		md_copy_block(DIMS, pos0, in_singleton_dims, in_singleton, in_dims, &in, CFL_SIZE);
 
 		int cBin = (int)bins[0 * T + t];
 		int rBin = (int)bins[1 * T + t];
@@ -170,6 +170,9 @@ int main_bin(int argc, char* argv[])
 
 	long src_dims[DIMS];
 	complex float* src = load_cfl(argv[2], DIMS, src_dims);
+
+	if (0 == strcmp(argv[2], argv[3]))
+		error("bin cannot be called with identical input and output!\n");
 
 	enum { BIN_QUADRATURE, BIN_LABEL, BIN_REORDER } bin_type;
 

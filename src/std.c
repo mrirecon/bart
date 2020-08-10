@@ -42,6 +42,8 @@ int main_std(int argc, char* argv[])
 
 	complex float* in = load_cfl(argv[2], DIMS, idims);
 
+	copy_if_equal_in_out(argv[3], argv[2], DIMS, idims, &in, "std");
+
 	md_select_dims(DIMS, ~flags, odims, idims);
 
 	complex float* out = create_cfl(argv[3], DIMS, odims);

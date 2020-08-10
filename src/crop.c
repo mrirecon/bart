@@ -39,6 +39,8 @@ int main_crop(int argc, char* argv[])
 	
 	complex float* in_data = load_cfl(argv[3], N, in_dims);
 
+	copy_if_equal_in_out(argv[4], argv[3], DIMS, in_dims, &in_data, "crop");
+
 	int dim = atoi(argv[1]);
 	int count = atoi(argv[2]);
 

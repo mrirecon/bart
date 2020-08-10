@@ -37,6 +37,10 @@ int main_flip(int argc, char* argv[])
 	int N = DIMS;
 	long dims[N];
 	complex float* idata = load_cfl(argv[2], N, dims);
+
+	copy_if_equal_in_out(argv[3], argv[2], DIMS, dims, &idata, "flip");
+
+
 	complex float* odata = create_cfl(argv[3], N, dims);
 
 	unsigned long flags = atoi(argv[1]);

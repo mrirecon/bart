@@ -37,7 +37,10 @@ int main_squeeze(int argc, char* argv[])
 	long odims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
 
 	complex float* idata = load_cfl(argv[1], DIMS, idims);
-		
+
+	copy_if_equal_in_out(argv[2], argv[1], DIMS, idims, &idata, "squeeze");
+
+
 	unsigned int j = 0;
 
 	for (unsigned int i = 0; i < DIMS; i++)

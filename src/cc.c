@@ -70,6 +70,8 @@ int main_cc(int argc, char* argv[])
 
 	complex float* in_data = load_cfl(argv[1], DIMS, in_dims);
 
+	copy_if_equal_in_out(argv[2], argv[1], DIMS, in_dims, &in_data, "cc");
+
 	assert(1 == in_dims[MAPS_DIM]);
 	long channels = in_dims[COIL_DIM];
 

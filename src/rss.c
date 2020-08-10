@@ -39,6 +39,8 @@ int main_rss(int argc, char* argv[argc])
 	long dims[DIMS];
 	complex float* data = load_cfl(argv[2], DIMS, dims);
 
+	copy_if_equal_in_out(argv[3], argv[2], DIMS, dims, &data, "rss");
+
 	int flags = atoi(argv[1]);
 
 	assert(0 <= flags);

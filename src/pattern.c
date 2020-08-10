@@ -47,6 +47,8 @@ int main_pattern(int argc, char* argv[])
 
 	complex float* kspace = load_cfl(argv[1], N, in_dims);
 
+	copy_if_equal_in_out(argv[2], argv[1], DIMS, in_dims, &kspace, "pattern");
+
 	md_select_dims(N, ~flags, out_dims, in_dims);
 	
 	complex float* pattern = create_cfl(argv[2], N, out_dims);

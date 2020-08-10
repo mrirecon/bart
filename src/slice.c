@@ -51,6 +51,8 @@ int main_slice(int argc, char* argv[])
 	complex float* in_data = load_cfl(argv[argc - 2], DIMS, in_dims);
 	md_copy_dims(DIMS, out_dims, in_dims);
 
+	copy_if_equal_in_out(argv[argc - 1], argv[argc - 2], DIMS, in_dims, &in_data, "slice");
+
 	long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
 	unsigned long flags = 0L;
 

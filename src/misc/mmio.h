@@ -25,6 +25,8 @@ extern _Complex float* load_zcoo(const char* name, unsigned int D, long dimensio
 extern _Complex float* create_zra(const char* name, unsigned int D, const long dims[__VLA(D)]);
 extern _Complex float* load_zra(const char* name, unsigned int D, long dims[__VLA(D)]);
 
+extern void copy_if_equal_in_out(const char* outf, const char* inf, unsigned int D, long dims[__VLA(D)], _Complex float** in, const char* toolname);
+
 #include "misc/cppwrap.h"
 
 

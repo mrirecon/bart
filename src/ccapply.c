@@ -58,6 +58,9 @@ int main_ccapply(int argc, char* argv[])
 	complex float* in_data = load_cfl(argv[1], DIMS, in_dims);
 	complex float* cc_data = load_cfl(argv[2], DIMS, cc_dims);
 
+	copy_if_equal_in_out(argv[2], argv[1], DIMS, in_dims, &in_data, "ccapply");
+
+
 	assert(1 == in_dims[MAPS_DIM]);
 	const long channels = cc_dims[COIL_DIM];
 
@@ -70,7 +73,7 @@ int main_ccapply(int argc, char* argv[])
 
 	md_select_dims(DIMS, ~COIL_FLAG, out_dims, in_dims);
 	out_dims[COIL_DIM] = forward ? P : channels;
-	
+
 	complex float* out_data = create_cfl(argv[3], DIMS, out_dims);
 
 	// transpose for the matrix multiplication
