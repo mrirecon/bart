@@ -519,24 +519,6 @@ static void separate_bckgrd(int Nb, struct ellipsis_s bckgrd[Nb], int Nf, struct
 }
 
 
-static bool rect_intersection(float sx1, float sy1, float px1, float py1, float sx2, float sy2, float px2, float py2)
-{
-	float lx1 = px1 - sx1;
-	float ly1 = py1 + sy1;
-	float rx1 = px1 + sx1;
-	float ry1 = py1 - sy1;
-
-	float lx2 = px2 - sx2;
-	float ly2 = py2 + sy2;
-	float rx2 = px2 + sx2;
-	float ry2 = py2 - sy2;
-
-	if (lx1 < rx2 && lx2 < rx1 && ly1 > ry2 && ly2 > ry1)
-		return true;
-
-	return false;
-}
-
 static bool circ_intersection(float s1, float px1, float py1, float s2, float px2, float py2)
 {
 	float dist2 = (px1 - px2) * (px1 - px2) + (py1 - py2) * (py1 - py2);
@@ -565,7 +547,12 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		if (random) {
 
-			// min and max ellipse scale (0. to 1.)
+			// background circle position and radius
+			float sx_bg = .9;
+			float px_bg = 0.;
+			float py_bg = 0.;
+
+			// min and max tube radius (0. to 1.)
 			float smin = .025;
 			float smax = .4;
 
@@ -573,11 +560,13 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 			float pmin = -.8;
 			float pmax = .8;
 
+			// dead zone between tubes
+			float edge_scale = 1.2;
+
 			// generate random ellipse
 			for (int i = 0; i < 2 * N - 2; i+=2) {
 
 				double sx = 0;
-				double sy = 0;
 				double px = 0;
 				double py = 0;
 
@@ -585,11 +574,6 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 				unsigned int total_count = 0;
 				unsigned int count = 0;
-#if 0
-				float ang = uniform_rand() * 3.14;
-#else
-				float ang = 0.;
-#endif
 
 				while (overlap) {
 
@@ -603,21 +587,11 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 					}
 
 					sx = smin +  (smax - smin) * uniform_rand();
-#if 0
-					sy = smin +  (smax - smin) * uniform_rand();
-					if (sy > sx)
-						sy = MIN(1.8 * sx, sy);
-					else
-						sy = MAX(.2 * sx, sy);
-#else
-					sy = sx;
-#endif
-
 					px = pmin + (pmax - pmin) * uniform_rand();
 					py = pmin + (pmax - pmin) * uniform_rand();
 
 					// check that ellipse fits within background circle
-					overlap = ! circ_in_background(1.2 * sx, px, py, .9, 0., 0.);
+					overlap = ! circ_in_background(edge_scale * sx, px, py, sx_bg, px_bg, py_bg);
 
 					// check that new ellipse does not overlap with existing ellipses
 					// FIXME: change from circle to ellipse intersection
@@ -626,15 +600,10 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 						for (int j = 1; j < i; j+=2) {
 
 							float _sx = phantom_tubes_N[j].geo.axis[0];
-							float _sy = phantom_tubes_N[j].geo.axis[1];
 							float _px = phantom_tubes_N[j].geo.center[0];
 							float _py = phantom_tubes_N[j].geo.center[1];
 
-#if 0
-							overlap = rect_intersection(1.2 * sx, 1.2 * sy, px, py, _sx, _sy, _px, _py);
-#else
-							overlap = circ_intersection(1.2 * sx, px, py, _sx, _px, _py);
-#endif
+							overlap = circ_intersection(edge_scale * sx, px, py, _sx, _px, _py);
 							if (overlap)
 								break;
 						}
@@ -644,16 +613,16 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 					if (total_count > 10000)
 						error("Could not fit tube in phantom (requested %d, stopped at %d after %d trials\n", N, i/2, total_count);
 				}
-				debug_printf(DP_DEBUG4, "i=%d, (%f, %f), (%f, %f)\n", i, sx, sy, px, py);
+				debug_printf(DP_DEBUG4, "i=%d, (%f, %f), (%f, %f)\n", i, sx, sx, px, py);
 
-				struct ellipsis_bs _ebs = {{ 1., {sx, sy}, {px, py}, ang}, false };
+				struct ellipsis_bs _ebs = {{ 1., {sx, sx}, {px, py}, 0.}, false };
 				phantom_tubes_N[i] = _ebs;
 
-				struct ellipsis_bs _ebs2 = {{ -1., {1.2 * sx, 1.2 * sy}, {px, py}, ang}, true };
+				struct ellipsis_bs _ebs2 = {{ -1., {edge_scale * sx, edge_scale * sx}, {px, py}, 0.}, true };
 				phantom_tubes_N[i+1] = _ebs2;
 			}
 
-			struct ellipsis_bs _ebsb = {{ 1., {.9, .9}, {0., 0.}, 0.}, true };
+			struct ellipsis_bs _ebsb = {{ 1., {sx_bg, sx_bg}, {px_bg, py_bg}, 0.}, true };
 			phantom_tubes_N[2 * N - 2] = _ebsb;
 		}
 		else {
