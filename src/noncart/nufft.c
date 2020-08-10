@@ -746,6 +746,7 @@ struct linop_s* nufft_create2(unsigned int N,
 			auto nu2 = linop_loop(N, loop_dims, nu1);
 
 			linop_free(nu);
+			linop_free(nu1);
 
 			return nu2;
 		}
