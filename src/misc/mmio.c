@@ -244,18 +244,23 @@ complex float* create_cfl(const char* name, unsigned int D, const long dimension
 #ifdef MEMONLY_CFL
 	return create_mem_cfl(name, D, dimensions);
 #else
-	const char *p = strrchr(name, '.');
+	enum file_types_e type = file_type(name);
 
-	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".ra")))
-		return create_zra(name, D, dimensions);
+	switch (type) {
+		case FILE_TYPE_RA:
+			return create_zra(name, D, dimensions);
 
-	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".coo")))
-		return create_zcoo(name, D, dimensions);
+		case FILE_TYPE_COO:
+			return create_zcoo(name, D, dimensions);
 
 #ifdef USE_MEM_CFL
-	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".mem")))
-		return create_mem_cfl(name, D, dimensions);
+		case MEM:
+			return create_mem_cfl(name, D, dimensions);
 #endif
+
+		default:
+			; // handled in this function
+	}
 
  
 	char name_bdy[1024];
@@ -345,26 +350,30 @@ static complex float* load_cfl_internal(const char* name, unsigned int D, long d
 
 	return ptr;
 #else
-	const char *p = strrchr(name, '.');
+	enum file_types_e type = file_type(name);
 
-	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".ra")))
-		return load_zra(name, D, dimensions);
+	switch (type) {
+		case FILE_TYPE_RA:
+			return load_zra(name, D, dimensions);
 
-	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".coo")))
-		return load_zcoo(name, D, dimensions);
+		case FILE_TYPE_COO:
+			return load_zcoo(name, D, dimensions);
 
 #ifdef USE_MEM_CFL
-	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".mem"))) {
+		case MEM:
+		{
+			complex float* ptr = load_mem_cfl(name, D, dimensions);
 
-	     complex float* ptr = load_mem_cfl(name, D, dimensions);
+			if (ptr == NULL)
+				io_error("failed loading memory cfl file \"%s\"\n", name);
+			else
+				return ptr;
+		}
+#endif // USE_MEM_CFL
 
-	     if (ptr == NULL) {
-		     io_error("failed loading memory cfl file \"%s\"", name);
-	     } else {
-		  return ptr;
-	     }
+		default:
+			; // handled in this function
 	}
-#endif /* USE_MEM_CFL */
 
 
 	char name_bdy[1024];
