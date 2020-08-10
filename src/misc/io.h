@@ -1,6 +1,16 @@
 
 #include "misc/cppwrap.h"
 
+
+enum file_types_e {
+	FILE_TYPE_CFL, FILE_TYPE_RA, FILE_TYPE_COO,
+#ifdef USE_MEM_CFL
+	FILE_TYPE_MEM,
+#endif
+};
+
+extern enum file_types_e file_type(const char* name);
+
 extern int write_ra(int fd, unsigned int n, const long dimensions[__VLA(n)]);
 extern int read_ra(int fd, unsigned int n, long dimensions[__VLA(n)]);
 

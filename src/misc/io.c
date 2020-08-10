@@ -47,6 +47,28 @@ static void xdprintf(int fd, const char* fmt, ...)
 
 
 
+enum file_types_e file_type(const char* name)
+{
+	const char *p = strrchr(name, '.');
+
+	if ((NULL != p) && (p != name)) {
+
+		if (0 == strcmp(p, ".ra"))
+			return FILE_TYPE_RA;
+
+		if (0 == strcmp(p, ".coo"))
+			return FILE_TYPE_COO;
+
+#ifdef USE_MEM_CFL
+		if (0 == strcmp(p, ".mem"))
+			return MEM;
+#endif
+	}
+
+	return FILE_TYPE_CFL;
+}
+
+
 struct iofile_s {
 
 	const char* name;
