@@ -537,11 +537,35 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 				bool overlap = true;
 
+				int count = 0;
+#if 0
+				float ang = uniform_rand() * 3.14;
+#else
+				float ang = 0.;
+#endif
+					float smax = .4;
+					float smin = .025;
+
+
 				while (overlap) {
 
-					sx = .025 +  (.4 - .025) * uniform_rand();
-					//sy = .025 +  (.2 - .025) * uniform_rand();
+					if (count > 1000) {
+					
+						smax *= .95;
+						smin *= .95;
+						count = 0;
+					}
+
+					sx = smin +  (smax - smin) * uniform_rand();
+#if 0
+					sy = smin +  (smax - smin) * uniform_rand();
+					if (sy > sx)
+						sy = MIN(1.8 * sx, sy);
+					else
+						sy = MAX(.2 * sx, sy);
+#else
 					sy = sx;
+#endif
 
 					px = -.8 + (.8 + .8) * uniform_rand();
 					py = -.8 + (.8 + .8) * uniform_rand();
@@ -582,13 +606,14 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 						}
 					}
+					count++;
 				}
 				debug_printf(DP_DEBUG4, "i=%d, (%f, %f), (%f, %f)\n", i, sx, sy, px, py);
 
-				struct ellipsis_bs _ebs = {{ 1., {sx, sy}, {px, py}, 0.}, false };
+				struct ellipsis_bs _ebs = {{ 1., {sx, sy}, {px, py}, ang}, false };
 				phantom_tubes_N[i] = _ebs;
 
-				struct ellipsis_bs _ebs2 = {{ -1., {1.2 * sx, 1.2 * sy}, {px, py}, 0.}, true };
+				struct ellipsis_bs _ebs2 = {{ -1., {1.2 * sx, 1.2 * sy}, {px, py}, ang}, true };
 				phantom_tubes_N[i+1] = _ebs2;
 			}
 
