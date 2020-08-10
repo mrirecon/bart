@@ -519,6 +519,44 @@ static void separate_bckgrd(int Nb, struct ellipsis_s bckgrd[Nb], int Nf, struct
 }
 
 
+static bool rect_intersection(float sx1, float sy1, float px1, float py1, float sx2, float sy2, float px2, float py2)
+{
+	float lx1 = px1 - sx1;
+	float ly1 = py1 + sy1;
+	float rx1 = px1 + sx1;
+	float ry1 = py1 - sy1;
+
+	float lx2 = px2 - sx2;
+	float ly2 = py2 + sy2;
+	float rx2 = px2 + sx2;
+	float ry2 = py2 - sy2;
+
+	if (lx1 < rx2 && lx2 < rx1 && ly1 > ry2 && ly2 > ry1)
+		return true;
+
+	return false;
+}
+
+static bool circ_intersection(float s1, float px1, float py1, float s2, float px2, float py2)
+{
+	float dist2 = (px1 - px2) * (px1 - px2) + (py1 - py2) * (py1 - py2);
+
+	if (dist2 < (s1 + s2) * (s1 + s2))
+		return true;
+
+	return false;
+}
+
+static bool circ_in_background(float s1, float px1, float py1, float s2, float px2, float py2)
+{
+	float dist2 = (px1 - px2) * (px1 - px2) + (py1 - py2) * (py1 - py2);
+
+	if (sqrtf(dist2) + s1 < s2)
+		return true;
+
+	return false;
+}
+
 void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, bool random, int N, const long tstrs[DIMS], const complex float* traj)
 {
 	if (1 < dims[COEFF_DIM]) {
@@ -578,21 +616,11 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 					px = pmin + (pmax - pmin) * uniform_rand();
 					py = pmin + (pmax - pmin) * uniform_rand();
 
-					float lx = px - 1.2 * sx;
-					float ly = py + 1.2 * sy;
-					float rx = px + 1.2 * sx;
-					float ry = py - 1.2 * sy;
-
 					// check that ellipse fits within background circle
-					if (lx * lx + ly * ly > .9*.9/1.2 || rx * rx + ry * ry > .9*.9/1.2) {
-
-						overlap = true;
-					}
-					else
-						overlap = false;
+					overlap = ! circ_in_background(1.2 * sx, px, py, .9, 0., 0.);
 
 					// check that new ellipse does not overlap with existing ellipses
-					// FIXME: change from rectangle to ellipse intersection
+					// FIXME: change from circle to ellipse intersection
 					if (i > 0 && !overlap) {
 
 						for (int j = 1; j < i; j+=2) {
@@ -602,17 +630,13 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 							float _px = phantom_tubes_N[j].geo.center[0];
 							float _py = phantom_tubes_N[j].geo.center[1];
 
-							float _lx = _px - _sx;
-							float _ly = _py + _sy;
-							float _rx = _px + _sx;
-							float _ry = _py - _sy;
-
-							if (lx < _rx && _lx < rx && ly > _ry && _ly > ry) {
-
-								overlap = true;
+#if 0
+							overlap = rect_intersection(1.2 * sx, 1.2 * sy, px, py, _sx, _sy, _px, _py);
+#else
+							overlap = circ_intersection(1.2 * sx, px, py, _sx, _px, _py);
+#endif
+							if (overlap)
 								break;
-							}
-
 						}
 					}
 					count++;
