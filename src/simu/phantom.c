@@ -527,6 +527,14 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		if (random) {
 
+			// min and max ellipse scale (0. to 1.)
+			float smin = .025;
+			float smax = .4;
+
+			// min and max center position (-1. to 1.)
+			float pmin = -.8;
+			float pmax = .8;
+
 			// generate random ellipse
 			for (int i = 0; i < 2 * N - 2; i+=2) {
 
@@ -537,22 +545,22 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 				bool overlap = true;
 
-				int count = 0;
+				unsigned int total_count = 0;
+				unsigned int count = 0;
 #if 0
 				float ang = uniform_rand() * 3.14;
 #else
 				float ang = 0.;
 #endif
-					float smax = .4;
-					float smin = .025;
-
 
 				while (overlap) {
 
 					if (count > 1000) {
 					
+						// shrink ellipse
 						smax *= .95;
 						smin *= .95;
+						total_count += count;
 						count = 0;
 					}
 
@@ -567,8 +575,8 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 					sy = sx;
 #endif
 
-					px = -.8 + (.8 + .8) * uniform_rand();
-					py = -.8 + (.8 + .8) * uniform_rand();
+					px = pmin + (pmax - pmin) * uniform_rand();
+					py = pmin + (pmax - pmin) * uniform_rand();
 
 					float lx = px - 1.2 * sx;
 					float ly = py + 1.2 * sy;
@@ -584,6 +592,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 						overlap = false;
 
 					// check that new ellipse does not overlap with existing ellipses
+					// FIXME: change from rectangle to ellipse intersection
 					if (i > 0 && !overlap) {
 
 						for (int j = 1; j < i; j+=2) {
@@ -607,6 +616,9 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 						}
 					}
 					count++;
+					
+					if (total_count > 10000)
+						error("Could not fit tube in phantom (requested %d, stopped at %d after %d trials\n", N, i/2, total_count);
 				}
 				debug_printf(DP_DEBUG4, "i=%d, (%f, %f), (%f, %f)\n", i, sx, sy, px, py);
 
