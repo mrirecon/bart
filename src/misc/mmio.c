@@ -300,7 +300,7 @@ float* load_coo(const char* name, unsigned int D, long dims[D])
 
 	void* addr;
 	struct stat st;
-        
+
 	if (-1 == fstat(fd, &st))
 		io_error("Loading coo file %s\n", name);
 
