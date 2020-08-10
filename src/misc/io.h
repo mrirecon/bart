@@ -24,6 +24,8 @@ extern void io_register_input(const char* name);
 extern void io_register_output(const char* name);
 extern void io_unregister(const char* name);
 
+extern void io_unlink_if_opened(const char* name);
+
 extern void io_memory_cleanup(void);
 
 #include "misc/cppwrap.h"

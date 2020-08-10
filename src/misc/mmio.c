@@ -239,6 +239,7 @@ complex float* create_zcoo(const char* name, unsigned int D, const long dimensio
 
 complex float* create_cfl(const char* name, unsigned int D, const long dimensions[D])
 {
+	io_unlink_if_opened(name);
 	io_register_output(name);
 
 #ifdef MEMONLY_CFL
