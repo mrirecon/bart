@@ -11,6 +11,9 @@
 
 #include "misc/cppwrap.h"
 
+#ifndef GYRO
+#define GYRO 42.57747892
+#endif
 
 enum mri_dims {
 	READ_DIM,
@@ -55,6 +58,7 @@ enum mri_dims {
 #define FFT_FLAGS (READ_FLAG|PHS1_FLAG|PHS2_FLAG)
 #define SENS_FLAGS (COIL_FLAG|MAPS_FLAG)
 #define SLICE_FLAG (1u << SLICE_DIM)
+#define AVG_FLAG (1u << AVG_DIM)
 
 
 

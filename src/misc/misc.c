@@ -112,7 +112,7 @@ void error(const char* fmt, ...)
 	if (error_jumper.initialized)
 		longjmp(error_jumper.buf, 1);
 
-	exit(EXIT_FAILURE);
+	abort();
 }
 
 
