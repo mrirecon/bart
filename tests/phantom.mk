@@ -68,8 +68,17 @@ tests/test-phantom-basis: nrmse phantom fmac
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-phantom-random-tubes: nrmse phantom fmac
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -N 5 -k k0.ra								;\
+	$(TOOLDIR)/phantom -N 5 -b -k k1.ra							;\
+	$(TOOLDIR)/fmac -s 64 k1.ra k2.ra							;\
+	$(TOOLDIR)/nrmse -t 0.000001 k0.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 
 TESTS += tests/test-phantom-ksp tests/test-phantom-noncart tests/test-phantom-coil tests/test-phantom-ksp-coil
-TESTS += tests/test-phantom-bart tests/test-phantom-basis
+TESTS += tests/test-phantom-bart tests/test-phantom-basis tests/test-phantom-random-tubes
 

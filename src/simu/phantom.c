@@ -19,6 +19,7 @@
 #include "num/loop.h"
 #include "num/flpmath.h"
 #include "num/splines.h"
+#include "num/rand.h"
 
 #include "misc/misc.h"
 #include "misc/mri.h"
@@ -517,18 +518,128 @@ static void separate_bckgrd(int Nb, struct ellipsis_s bckgrd[Nb], int Nf, struct
 	}
 }
 
-void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+
+static bool circ_intersection(float s1, float px1, float py1, float s2, float px2, float py2)
+{
+	float dist2 = (px1 - px2) * (px1 - px2) + (py1 - py2) * (py1 - py2);
+
+	if (dist2 < (s1 + s2) * (s1 + s2))
+		return true;
+
+	return false;
+}
+
+static bool circ_in_background(float s1, float px1, float py1, float s2, float px2, float py2)
+{
+	float dist2 = (px1 - px2) * (px1 - px2) + (py1 - py2) * (py1 - py2);
+
+	if (sqrtf(dist2) + s1 < s2)
+		return true;
+
+	return false;
+}
+
+void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, bool random, int N, const long tstrs[DIMS], const complex float* traj)
 {
 	if (1 < dims[COEFF_DIM]) {
 
+		struct ellipsis_bs phantom_tubes_N[2 * N - 1];
+
+		if (random) {
+
+			// background circle position and radius
+			float sx_bg = .9;
+			float px_bg = 0.;
+			float py_bg = 0.;
+
+			// min and max tube radius (0. to 1.)
+			float smin = .025;
+			float smax = .4;
+
+			// min and max center position (-1. to 1.)
+			float pmin = -.8;
+			float pmax = .8;
+
+			// dead zone between tubes
+			float edge_scale = 1.2;
+
+			// generate random ellipse
+			for (int i = 0; i < 2 * N - 2; i+=2) {
+
+				double sx = 0;
+				double px = 0;
+				double py = 0;
+
+				bool overlap = true;
+
+				unsigned int total_count = 0;
+				unsigned int count = 0;
+
+				while (overlap) {
+
+					if (count > 1000) {
+					
+						// shrink ellipse
+						smax *= .95;
+						smin *= .95;
+						total_count += count;
+						count = 0;
+					}
+
+					sx = smin +  (smax - smin) * uniform_rand();
+					px = pmin + (pmax - pmin) * uniform_rand();
+					py = pmin + (pmax - pmin) * uniform_rand();
+
+					// check that ellipse fits within background circle
+					overlap = ! circ_in_background(edge_scale * sx, px, py, sx_bg, px_bg, py_bg);
+
+					// check that new ellipse does not overlap with existing ellipses
+					// FIXME: change from circle to ellipse intersection
+					if (i > 0 && !overlap) {
+
+						for (int j = 1; j < i; j+=2) {
+
+							float _sx = phantom_tubes_N[j].geo.axis[0];
+							float _px = phantom_tubes_N[j].geo.center[0];
+							float _py = phantom_tubes_N[j].geo.center[1];
+
+							overlap = circ_intersection(edge_scale * sx, px, py, _sx, _px, _py);
+							if (overlap)
+								break;
+						}
+					}
+					count++;
+					
+					if (total_count > 10000)
+						error("Could not fit tube in phantom (requested %d, stopped at %d after %d trials\n", N, i/2, total_count);
+				}
+				debug_printf(DP_DEBUG4, "i=%d, (%f, %f), (%f, %f)\n", i, sx, sx, px, py);
+
+				struct ellipsis_bs _ebs = {{ 1., {sx, sx}, {px, py}, 0.}, false };
+				phantom_tubes_N[i] = _ebs;
+
+				struct ellipsis_bs _ebs2 = {{ -1., {edge_scale * sx, edge_scale * sx}, {px, py}, 0.}, true };
+				phantom_tubes_N[i+1] = _ebs2;
+			}
+
+			struct ellipsis_bs _ebsb = {{ 1., {sx_bg, sx_bg}, {px_bg, py_bg}, 0.}, true };
+			phantom_tubes_N[2 * N - 2] = _ebsb;
+		}
+		else {
+			assert(N == 11);
+			for (int i = 0; i < 2 * N - 1; i++)
+				phantom_tubes_N[i] = phantom_tubes[i];
+		}
+
+
 		// Define geometry parameter -> see src/shepplogan.c
 
-		struct ellipsis_s tubes_bkgrd[11];
-		struct ellipsis_s tubes_frgrd[10];
+		struct ellipsis_s tubes_bkgrd[N];
+		struct ellipsis_s tubes_frgrd[N-1];
 
-		assert(dims[COEFF_DIM] == ARRAY_SIZE(tubes_frgrd) + 1); // foreground + 1 background image!
+		assert(dims[COEFF_DIM] == (unsigned int)ARRAY_SIZE(tubes_frgrd) + 1); // foreground + 1 background image!
 
-		separate_bckgrd(ARRAY_SIZE(tubes_bkgrd), tubes_bkgrd, ARRAY_SIZE(tubes_frgrd), tubes_frgrd, ARRAY_SIZE(phantom_tubes), phantom_tubes);
+		separate_bckgrd(ARRAY_SIZE(tubes_bkgrd), tubes_bkgrd, ARRAY_SIZE(tubes_frgrd), tubes_frgrd, ARRAY_SIZE(phantom_tubes_N), phantom_tubes_N);
 
 		// Determine basis functions of the background
 
@@ -568,11 +679,11 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 		long tdims[DIMS];
 		md_copy_dims(DIMS, tdims, dims);
 
-		tdims[COEFF_DIM] = 11;	// Number of elements of tubes phantom with rings see src/shepplogan.c
+		tdims[COEFF_DIM] = N;	// Number of elements of tubes phantom with rings see src/shepplogan.c
 
 		complex float* tmp = md_alloc(DIMS, tdims, CFL_SIZE);
 
-		calc_phantom_tubes(tdims, tmp, kspace, tstrs, traj);
+		calc_phantom_tubes(tdims, tmp, kspace, random, N, tstrs, traj);
 
 		md_zsum(DIMS, tdims, COEFF_FLAG, out, tmp);
 		md_free(tmp);
