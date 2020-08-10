@@ -79,8 +79,12 @@ int main_phantom(int argc, char* argv[])
 	if (-1 != rinit)
 		num_rand_init(rinit);
 
-	if (-1 != N)
+	if (-1 != N) {
+
 		ptype = RAND_TUBES;
+		if (N > 200)
+			BART_WARN("Number of tubes is large. Runetime may be very slow.\n");
+	}
 	else
 		N = 11;
 
