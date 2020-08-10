@@ -9,9 +9,10 @@
 
 #include "misc/cppwrap.h"
 #include "misc/types.h"
+#include <stdint.h>
 
 typedef struct operator_data_s { TYPEID* TYPEID; } operator_data_t;
-
+typedef uint64_t operator_io_flags_t;
 
 typedef void (*operator_fun_t)(const operator_data_t* _data, unsigned int N, void* args[__VLA(N)]);
 typedef void (*operator_del_t)(const operator_data_t* _data);
@@ -32,11 +33,11 @@ extern const struct operator_s* operator_create2(unsigned int ON, const long out
 		operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
 
-extern const struct operator_s* operator_generic_create(unsigned int N, unsigned int io_flags,
+extern const struct operator_s* operator_generic_create(unsigned int N, operator_io_flags_t io_flags,
 		const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)],
 		operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
-extern const struct operator_s* operator_generic_create2(unsigned int N, unsigned int io_flags,
+extern const struct operator_s* operator_generic_create2(unsigned int N, operator_io_flags_t io_flags,
 			const unsigned int D[__VLA(N)], const long* out_dims[__VLA(N)], const long* out_strs[__VLA(N)],
 			operator_data_t* data, operator_fun_t apply, operator_del_t del);
 
@@ -45,6 +46,7 @@ extern const struct operator_s* operator_generic_create2(unsigned int N, unsigne
 extern const struct operator_s* operator_identity_create(unsigned int N, const long dims[__VLA(N)]);
 extern const struct operator_s* operator_identity_create2(unsigned int N, const long dims[__VLA(N)],
 					const long ostr[__VLA(N)], const long istr[__VLA(N)]);
+extern const struct operator_s* operator_reshape_create(unsigned int A, const long out_dims[__VLA(A)], int B, const long in_dims[__VLA(B)]);
 
 
 extern const struct operator_s* operator_zero_create(unsigned int N, const long dims[N]);
@@ -56,6 +58,7 @@ extern const struct operator_s* operator_null_create2(unsigned int N, const long
 
 extern const struct operator_s* operator_chain(const struct operator_s* a, const struct operator_s* b);
 extern const struct operator_s* operator_chainN(unsigned int N, const struct operator_s* ops[__VLA(N)]);
+extern const struct operator_s* operator_plus_create(const struct operator_s* a, const struct operator_s* b);
 
 
 //extern const struct operator_s* operator_mul(const struct operator_s* a, const struct operator_s* b);
@@ -83,6 +86,7 @@ extern void operator_apply(const struct operator_s* op, unsigned int ON, const l
 extern void operator_apply2(const struct operator_s* op, unsigned int ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)], _Complex float* dst, const long IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], const _Complex float* src);
 
 extern void operator_apply_unchecked(const struct operator_s* op, _Complex float* dst, const _Complex float* src);
+extern void operator_apply_parallel_unchecked(unsigned int N, const struct operator_s* op[__VLA(N)], _Complex float* dst[__VLA(N)], const _Complex float* src);
 
 
 // get functions
@@ -127,6 +131,7 @@ extern const struct operator_s* operator_dup_create(const struct operator_s* op,
 extern const struct operator_s* operator_extract_create(const struct operator_s* op, int a, int N, const long dims[N], const long pos[N]);
 extern const struct operator_s* operator_extract_create2(const struct operator_s* op, int a, int Da, const long dimsa[Da], const long strsa[Da], const long pos[Da]);
 extern const struct operator_s* operator_permute(const struct operator_s* op, int N, const int perm[N]);
+extern const struct operator_s* operator_reshape(const struct operator_s* op, unsigned int i, long N, const long dims[__VLA(N)]);
 
 
 extern _Bool operator_zero_or_null_p(const struct operator_s* op);

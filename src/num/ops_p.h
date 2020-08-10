@@ -1,4 +1,8 @@
 
+#ifndef _OPS_P_H
+#define _OPS_P_H
+
+#include "misc/cppwrap.h"
 
 struct operator_data_s;
 typedef struct operator_data_s operator_data_t;
@@ -51,4 +55,8 @@ extern const struct operator_p_s* operator_p_downcast(const struct operator_s* o
 
 extern const struct operator_p_s* operator_p_gpu_wrapper(const struct operator_p_s* op);
 
+
+#include "misc/cppwrap.h"
+
+#endif //  _OPS_P_H
 

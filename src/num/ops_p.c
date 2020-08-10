@@ -19,7 +19,7 @@
 struct operator_s {
 
 	unsigned int N;
-	unsigned int io_flags;
+	operator_io_flags_t io_flags;
 	const struct iovec_s** domain;
 
 	operator_data_t* data;
