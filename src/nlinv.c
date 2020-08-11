@@ -142,10 +142,16 @@ int main_nlinv(int argc, char* argv[])
 
 		traj = load_cfl(trajectory, DIMS, trj_dims);
 
-		md_zsmul(DIMS, trj_dims, traj, traj, 2.);
-
 		estimate_im_dims(DIMS, FFT_FLAGS, dims, trj_dims, traj);
 		debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", dims[0], dims[1], dims[2]);
+
+		md_zsmul(DIMS, trj_dims, traj, traj, 2.);
+		for (unsigned int i = 0; i < DIMS; i++)
+			if (MD_IS_SET(FFT_FLAGS, i) && (1 < dims[i])) {
+
+				dims[i] *= 2;
+			}
+
 		md_copy_dims(DIMS - 3, dims + 3, ksp_dims + 3);
 	}	
 
