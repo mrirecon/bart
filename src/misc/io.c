@@ -125,7 +125,7 @@ void io_unregister(const char* name)
 			xfree(io->name);
 			xfree(io);
 
-			return;
+			continue;
 		}
 
 		iop = &io->prev;
