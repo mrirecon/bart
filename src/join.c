@@ -20,6 +20,7 @@
 #include "misc/debug.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
+#include "misc/io.h"
 
 
 #ifndef DIMS
@@ -99,7 +100,6 @@ int main_join(int argc, char* argv[])
 		if (append && (i == 0)) {
 
 			name = argv[argc - 1];
-
 		} else {
 
 			name = argv[2 + l++];
@@ -114,6 +114,9 @@ int main_join(int argc, char* argv[])
 
 		for (int j = 0; j < N; j++)
 			assert((dim == j) || (in_dims[0][j] == in_dims[i][j]));
+
+		if (append && (i == 0))
+			unmap_cfl(N, in_dims[i], idata[i]);
 	}
 
 	long out_dims[N];
@@ -122,6 +125,13 @@ int main_join(int argc, char* argv[])
 		out_dims[i] = in_dims[0][i];
 
 	out_dims[dim] = sum;
+
+	if (append) {
+
+		// Here, we need to trick the IO subsystem into absolutely NOT
+		// unlinking our input, as the same file is also an output here.
+		io_unregister(argv[argc - 1]);
+	}
 
 	complex float* out_data = create_cfl(argv[argc - 1], N, out_dims);
 
@@ -141,10 +151,10 @@ int main_join(int argc, char* argv[])
 			md_calc_strides(N, istr, in_dims[i], CFL_SIZE);
 
 			md_copy_block(N, pos, out_dims, out_data, in_dims[i], idata[i], CFL_SIZE);
-		}
 
-		unmap_cfl(N, in_dims[i], idata[i]);
-		debug_printf(DP_DEBUG1, "done copying file %d\n", i);
+			unmap_cfl(N, in_dims[i], idata[i]);
+			debug_printf(DP_DEBUG1, "done copying file %d\n", i);
+		}
 	}
 
 	unmap_cfl(N, out_dims, out_data);
