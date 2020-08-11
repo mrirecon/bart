@@ -1098,7 +1098,7 @@ void estimate_im_dims(int N, unsigned long flags, long dims[N], const long tdims
 
 		if (MD_IS_SET(flags, j)) {
 
-			dims[t] = (0. == max_dims[t]) ? 1 : (2 * (long)((2. * max_dims[t] + 1.5) / 2.));
+			dims[t] = (0. == max_dims[t]) ? 1 : (2 * ceilf(max_dims[t]));
 			t++;
 		}
 	}
