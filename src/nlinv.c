@@ -130,6 +130,8 @@ int main_nlinv(int argc, char* argv[])
 	md_calc_strides(DIMS, ksp_strs, ksp_dims, CFL_SIZE);
 
 	long dims[DIMS];
+	md_copy_dims(DIMS, dims, ksp_dims);
+	dims[MAPS_DIM] = nmaps;
 
 	complex float* traj = NULL;
 	long trj_dims[DIMS];
@@ -145,10 +147,7 @@ int main_nlinv(int argc, char* argv[])
 		estimate_im_dims(DIMS, FFT_FLAGS, dims, trj_dims, traj);
 		debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", dims[0], dims[1], dims[2]);
 		md_copy_dims(DIMS - 3, dims + 3, ksp_dims + 3);
-	} else {
-		md_copy_dims(DIMS, dims, ksp_dims);
-	}
-	dims[MAPS_DIM] = nmaps;
+	}	
 
 	long strs[DIMS];
 	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
