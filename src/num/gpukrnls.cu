@@ -37,7 +37,7 @@ static int blocksize(int N)
 	return BLOCKSIZE;
 }
 
-static int gridsize(int N)
+static long gridsize(long N)
 {
 	return (N + BLOCKSIZE - 1) / BLOCKSIZE;
 }
@@ -59,7 +59,7 @@ static int blocksize(int N)
 	return WARPSIZE * warps_block;
 }
 
-static int gridsize(int N)
+static long gridsize(long N)
 {
 	int warps_total = (N + WARPSIZE - 1) / WARPSIZE;
 	int warps_block = MAX(1, MIN(4, warps_total));
@@ -68,12 +68,12 @@ static int gridsize(int N)
 }
 #endif
 
-__global__ void kern_float2double(int N, double* dst, const float* src)
+__global__ void kern_float2double(long N, double* dst, const float* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = src[i];
 }
 
@@ -82,12 +82,12 @@ extern "C" void cuda_float2double(long N, double* dst, const float* src)
 	kern_float2double<<<gridsize(N), blocksize(N)>>>(N, dst, src);
 }
 
-__global__ void kern_double2float(int N, float* dst, const double* src)
+__global__ void kern_double2float(long N, float* dst, const double* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = src[i];
 }
 
@@ -96,17 +96,14 @@ extern "C" void cuda_double2float(long N, float* dst, const double* src)
 	kern_double2float<<<gridsize(N), blocksize(N)>>>(N, dst, src);
 }
 
-__global__ void kern_xpay(int N, float beta, float* dst, const float* src)
+__global__ void kern_xpay(long N, float beta, float* dst, const float* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = dst[i] * beta + src[i];
 }
-
-
-
 
 extern "C" void cuda_xpay(long N, float beta, float* dst, const float* src)
 {
@@ -114,12 +111,12 @@ extern "C" void cuda_xpay(long N, float beta, float* dst, const float* src)
 }
 
 
-__global__ void kern_axpbz(int N, float* dst, const float a1, const float* src1, const float a2, const float* src2)
+__global__ void kern_axpbz(long N, float* dst, const float a1, const float* src1, const float a2, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = a1 * src1[i] + a2 * src2[i];
 }
 
@@ -130,12 +127,12 @@ extern "C" void cuda_axpbz(long N, float* dst, const float a1, const float* src1
 }
 
 
-__global__ void kern_smul(int N, float alpha, float* dst, const float* src)
+__global__ void kern_smul(long N, float alpha, float* dst, const float* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = alpha * src[i];
 }
 
@@ -144,20 +141,34 @@ extern "C" void cuda_smul(long N, float alpha, float* dst, const float* src)
 	kern_smul<<<gridsize(N), blocksize(N)>>>(N, alpha, dst, src);
 }
 
+__global__ void kern_smul_ptr(long N, const float* alpha, float* dst, const float* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
 
-typedef void (*cuda_3op_f)(int N, float* dst, const float* src1, const float* src2);
+	for (long i = start; i < N; i += stride)
+		dst[i] = alpha[0] * src[i];
+}
+
+extern "C" void cuda_smul_ptr(long N, const float* alpha, float* dst, const float* src)
+{
+	kern_smul_ptr<<<gridsize(N), blocksize(N)>>>(N, alpha, dst, src);
+}
+
+
+typedef void (*cuda_3op_f)(long N, float* dst, const float* src1, const float* src2);
 
 extern "C" void cuda_3op(cuda_3op_f krn, int N, float* dst, const float* src1, const float* src2)
 {
 	krn<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
 }
 
-__global__ void kern_add(int N, float* dst, const float* src1, const float* src2)
+__global__ void kern_add(long N, float* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = src1[i] + src2[i];
 }
 
@@ -166,12 +177,40 @@ extern "C" void cuda_add(long N, float* dst, const float* src1, const float* src
 	cuda_3op(kern_add, N, dst, src1, src2);
 }
 
-__global__ void kern_sub(int N, float* dst, const float* src1, const float* src2)
+__global__ void kern_sadd(long N, float val, float* dst, const float* src1)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
+		dst[i] = src1[i] + val;
+}
+
+extern "C" void cuda_sadd(long N, float val, float* dst, const float* src1)
+{
+	kern_sadd<<<gridsize(N), blocksize(N)>>>(N, val, dst, src1);
+}
+
+__global__ void kern_zsadd(long N, cuFloatComplex val, cuFloatComplex* dst, const cuFloatComplex* src1)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
+		dst[i] = cuCaddf(src1[i], val);
+}
+
+extern "C" void cuda_zsadd(long N, _Complex float val, _Complex float* dst, const _Complex float* src1)
+{
+	kern_zsadd<<<gridsize(N), blocksize(N)>>>(N, make_cuFloatComplex(__real(val), __imag(val)), (cuFloatComplex*)dst, (const cuFloatComplex*)src1);
+}
+
+__global__ void kern_sub(long N, float* dst, const float* src1, const float* src2)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
 		dst[i] = src1[i] - src2[i];
 }
 
@@ -181,12 +220,12 @@ extern "C" void cuda_sub(long N, float* dst, const float* src1, const float* src
 }
 
 
-__global__ void kern_mul(int N, float* dst, const float* src1, const float* src2)
+__global__ void kern_mul(long N, float* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = src1[i] * src2[i];
 }
 
@@ -195,12 +234,12 @@ extern "C" void cuda_mul(long N, float* dst, const float* src1, const float* src
 	cuda_3op(kern_mul, N, dst, src1, src2);
 }
 
-__global__ void kern_div(int N, float* dst, const float* src1, const float* src2)
+__global__ void kern_div(long N, float* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = src1[i] / src2[i];
 }
 
@@ -210,12 +249,12 @@ extern "C" void cuda_div(long N, float* dst, const float* src1, const float* src
 }
 
 
-__global__ void kern_fmac(int N, float* dst, const float* src1, const float* src2)
+__global__ void kern_fmac(long N, float* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] += src1[i] * src2[i];
 }
 
@@ -225,12 +264,12 @@ extern "C" void cuda_fmac(long N, float* dst, const float* src1, const float* sr
 }
 
 
-__global__ void kern_fmac2(int N, double* dst, const float* src1, const float* src2)
+__global__ void kern_fmac2(long N, double* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] += src1[i] * src2[i];
 }
 
@@ -239,12 +278,12 @@ extern "C" void cuda_fmac2(long N, double* dst, const float* src1, const float* 
 	kern_fmac2<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
 }
 
-__global__ void kern_zsmul(int N, cuFloatComplex val, cuFloatComplex* dst, const cuFloatComplex* src1)
+__global__ void kern_zsmul(long N, cuFloatComplex val, cuFloatComplex* dst, const cuFloatComplex* src1)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCmulf(src1[i], val);
 }
 
@@ -254,12 +293,12 @@ extern "C" void cuda_zsmul(long N, _Complex float alpha, _Complex float* dst, co
 }
 
 
-__global__ void kern_zmul(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zmul(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCmulf(src1[i], src2[i]);
 }
 
@@ -268,12 +307,12 @@ extern "C" void cuda_zmul(long N, _Complex float* dst, const _Complex float* src
 	kern_zmul<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
-__global__ void kern_zdiv(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zdiv(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride) {
+	for (long i = start; i < N; i += stride) {
 
 		float abs = cuCabsf(src2[i]);
 
@@ -287,12 +326,12 @@ extern "C" void cuda_zdiv(long N, _Complex float* dst, const _Complex float* src
 }
 
 
-__global__ void kern_zfmac(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zfmac(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCaddf(dst[i], cuCmulf(src1[i], src2[i]));
 }
 
@@ -303,12 +342,12 @@ extern "C" void cuda_zfmac(long N, _Complex float* dst, const _Complex float* sr
 }
 
 
-__global__ void kern_zfmac2(int N, cuDoubleComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zfmac2(long N, cuDoubleComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCadd(dst[i], cuComplexFloatToDouble(cuCmulf(src1[i], src2[i])));
 }
 
@@ -318,12 +357,12 @@ extern "C" void cuda_zfmac2(long N, _Complex double* dst, const _Complex float* 
 }
 
 
-__global__ void kern_zmulc(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zmulc(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCmulf(src1[i], cuConjf(src2[i]));
 }
 
@@ -332,12 +371,12 @@ extern "C" void cuda_zmulc(long N, _Complex float* dst, const _Complex float* sr
 	kern_zmulc<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
-__global__ void kern_zfmacc(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zfmacc(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCaddf(dst[i], cuCmulf(src1[i], cuConjf(src2[i])));
 }
 
@@ -348,12 +387,12 @@ extern "C" void cuda_zfmacc(long N, _Complex float* dst, const _Complex float* s
 }
 
 
-__global__ void kern_zfmacc2(int N, cuDoubleComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zfmacc2(long N, cuDoubleComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCadd(dst[i], cuComplexFloatToDouble(cuCmulf(src1[i], cuConjf(src2[i]))));
 }
 
@@ -364,12 +403,12 @@ extern "C" void cuda_zfmacc2(long N, _Complex double* dst, const _Complex float*
 }
 
 
-__global__ void kern_pow(int N, float* dst, const float* src1, const float* src2)
+__global__ void kern_pow(long N, float* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = powf(src1[i], src2[i]);
 }
 
@@ -418,12 +457,12 @@ __device__ cuFloatComplex zpow(cuFloatComplex x, cuFloatComplex y)
 	return zexp(cuCmulf(y, zlog(x)));
 }
 
-__global__ void kern_zpow(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zpow(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = zpow(src1[i], src2[i]);
 }
 
@@ -433,12 +472,12 @@ extern "C" void cuda_zpow(long N, _Complex float* dst, const _Complex float* src
 }
 
 
-__global__ void kern_sqrt(int N, float* dst, const float* src)
+__global__ void kern_sqrt(long N, float* dst, const float* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = sqrtf(fabs(src[i]));
 }
 
@@ -448,12 +487,12 @@ extern "C" void cuda_sqrt(long N, float* dst, const float* src)
 }
 
 
-__global__ void kern_zconj(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zconj(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuConjf(src[i]);
 }
 
@@ -463,12 +502,12 @@ extern "C" void cuda_zconj(long N, _Complex float* dst, const _Complex float* sr
 }
 
 
-__global__ void kern_zcmp(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zcmp(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = make_cuFloatComplex(((cuCrealf(src1[i]) == cuCrealf(src2[i])) && (cuCimagf(src1[i]) == cuCimagf(src2[i]))) ? 1. : 0, 0.);
 }
 
@@ -477,12 +516,12 @@ extern "C" void cuda_zcmp(long N, _Complex float* dst, const _Complex float* src
 	kern_zcmp<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
-__global__ void kern_zdiv_reg(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2, cuFloatComplex lambda)
+__global__ void kern_zdiv_reg(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2, cuFloatComplex lambda)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCdivf(src1[i], cuCaddf(src2[i], lambda));
 }
 
@@ -492,12 +531,12 @@ extern "C" void cuda_zdiv_reg(long N, _Complex float* dst, const _Complex float*
 }
 
 
-__global__ void kern_zphsr(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zphsr(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride) {
+	for (long i = start; i < N; i += stride) {
 
 		float abs = cuCabsf(src[i]); // moved out, otherwise it triggers a compiler error in nvcc
 		dst[i] = (0. == abs) ? make_cuFloatComplex(1., 0.) : (cuCdivf(src[i], make_cuFloatComplex(abs, 0.)));
@@ -510,12 +549,12 @@ extern "C" void cuda_zphsr(long N, _Complex float* dst, const _Complex float* sr
 }
 
 
-__global__ void kern_zexp(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zexp(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = zexp(src[i]);
 }
 
@@ -525,12 +564,12 @@ extern "C" void cuda_zexp(long N, _Complex float* dst, const _Complex float* src
 }
 
 
-__global__ void kern_zexpj(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zexpj(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride) {
+	for (long i = start; i < N; i += stride) {
 
 		float re = cuCrealf(src[i]); // moved out, otherwise it triggers a compiler error in nvcc
 		float im = cuCimagf(src[i]); // moved out, otherwise it triggers a compiler error in nvcc
@@ -543,12 +582,12 @@ extern "C" void cuda_zexpj(long N, _Complex float* dst, const _Complex float* sr
 	kern_zexpj<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
-__global__ void kern_zlog(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zlog(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride){
+	for (long i = start; i < N; i += stride){
 
 		float abs = cuCabsf(src[i]);
 		dst[i] = (0. == abs) ? make_cuFloatComplex(0., 0.) : zlog(src[i]);
@@ -560,12 +599,12 @@ extern "C" void cuda_zlog(long N, _Complex float* dst, const _Complex float* src
 	kern_zlog<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
-__global__ void kern_zarg(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zarg(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = make_cuFloatComplex(zarg(src[i]), 0.);
 }
 
@@ -575,12 +614,12 @@ extern "C" void cuda_zarg(long N, _Complex float* dst, const _Complex float* src
 }
 
 
-__global__ void kern_zabs(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zabs(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = make_cuFloatComplex(zabs(src[i]), 0.);
 }
 
@@ -589,12 +628,12 @@ extern "C" void cuda_zabs(long N, _Complex float* dst, const _Complex float* src
 	kern_zabs<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
-__global__ void kern_exp(int N, float* dst, const float* src)
+__global__ void kern_exp(long N, float* dst, const float* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = expf(src[i]);
 }
 
@@ -603,12 +642,12 @@ extern "C" void cuda_exp(long N, float* dst, const float* src)
 	kern_exp<<<gridsize(N), blocksize(N)>>>(N, dst, src);
 }
 
-__global__ void kern_log(int N, float* dst, const float* src)
+__global__ void kern_log(long N, float* dst, const float* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = (0. == src[i]) ? 0. : logf(src[i]);
 }
 
@@ -618,18 +657,32 @@ extern "C" void cuda_log(long N, float* dst, const float* src)
 }
 
 
-__global__ void kern_zatanr(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zatanr(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = make_cuFloatComplex(atan(cuCrealf(src[i])), 0.);
 }
 
 extern "C" void cuda_zatanr(long N, _Complex float* dst, const _Complex float* src)
 {
 	kern_zatanr<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+}
+
+__global__ void kern_zacos(long N, cuFloatComplex* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
+		dst[i] = make_cuFloatComplex(acosf(cuCrealf(src[i])), 0.);
+}
+
+extern "C" void cuda_zacos(long N, _Complex float* dst, const _Complex float* src)
+{
+	kern_zacos<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 
@@ -643,12 +696,12 @@ extern "C" void cuda_zatanr(long N, _Complex float* dst, const _Complex float* s
  * @param d pointer to destination, resid
  * @param x pointer to input
  */
-__global__ void kern_zsoftthresh_half(int N, float lambda, cuFloatComplex* d, const cuFloatComplex* x)
+__global__ void kern_zsoftthresh_half(long N, float lambda, cuFloatComplex* d, const cuFloatComplex* x)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride) {
+	for (long i = start; i < N; i += stride) {
 
 		float norm = cuCabsf(x[i]);
 		float red = norm - lambda;
@@ -663,12 +716,12 @@ extern "C" void cuda_zsoftthresh_half(long N, float lambda, _Complex float* d, c
 }
 
 
-__global__ void kern_zsoftthresh(int N, float lambda, cuFloatComplex* d, const cuFloatComplex* x)
+__global__ void kern_zsoftthresh(long N, float lambda, cuFloatComplex* d, const cuFloatComplex* x)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride) {
+	for (long i = start; i < N; i += stride) {
 
 		float norm = cuCabsf(x[i]);
 		float red = norm - lambda;
@@ -683,12 +736,12 @@ extern "C" void cuda_zsoftthresh(long N, float lambda, _Complex float* d, const 
 }
 
 
-__global__ void kern_softthresh_half(int N, float lambda, float* d, const float* x)
+__global__ void kern_softthresh_half(long N, float lambda, float* d, const float* x)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride) {
+	for (long i = start; i < N; i += stride) {
 
 		float norm = fabsf(x[i]);
 		float red = norm - lambda;
@@ -703,12 +756,12 @@ extern "C" void cuda_softthresh_half(long N, float lambda, float* d, const float
 }
 
 
-__global__ void kern_softthresh(int N, float lambda, float* d, const float* x)
+__global__ void kern_softthresh(long N, float lambda, float* d, const float* x)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride) {
+	for (long i = start; i < N; i += stride) {
 
 		float norm = fabsf(x[i]);
 		float red = norm - lambda;
@@ -723,12 +776,12 @@ extern "C" void cuda_softthresh(long N, float lambda, float* d, const float* x)
 }
 
 
-__global__ void kern_zreal(int N, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zreal(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = make_cuFloatComplex(cuCrealf(src[i]), 0.);
 }
 
@@ -738,12 +791,12 @@ extern "C" void cuda_zreal(long N, _Complex float* dst, const _Complex float* sr
 }
 
 
-__global__ void kern_zle(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zle(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = make_cuFloatComplex((cuCrealf(src1[i]) <= cuCrealf(src2[i])), 0.);
 }
 
@@ -753,12 +806,12 @@ extern "C" void cuda_zle(long N, _Complex float* dst, const _Complex float* src1
 }
 
 
-__global__ void kern_le(int N, float* dst, const float* src1, const float* src2)
+__global__ void kern_le(long N, float* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = (src1[i] <= src2[i]);
 }
 
@@ -806,12 +859,12 @@ __device__ cuDoubleComplex fftmod_phase2(long n, int j, bool inv, double phase)
 	return zexpD(make_cuDoubleComplex(0., M_PI * 2. * sgn * rem));
 }
 
-__global__ void kern_zfftmod(int N, cuFloatComplex* dst, const cuFloatComplex* src, unsigned int n, _Bool inv, double phase)
+__global__ void kern_zfftmod(long N, cuFloatComplex* dst, const cuFloatComplex* src, unsigned int n, _Bool inv, double phase)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		for (int j = 0; j < n; j++)
 			dst[i * n + j] = cuDouble2Float(cuCmul(fftmod_phase2(n, j, inv, phase),
 						 cuFloat2Double(src[i * n + j])));
@@ -824,12 +877,12 @@ extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* 
 
 
 
-__global__ void kern_zmax(int N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zmax(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = (cuCrealf(src1[i]) > cuCrealf(src2[i])) ? src1[i] : src2[i];
 }
 
@@ -845,12 +898,12 @@ extern "C" void cuda_zmax(long N, _Complex float* dst, const _Complex float* src
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 
-__global__ void kern_smax(int N, float val, float* dst, const float* src1)
+__global__ void kern_smax(long N, float val, float* dst, const float* src1)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = MAX(src1[i], val);
 }
 
@@ -861,12 +914,12 @@ extern "C" void cuda_smax(long N, float val, float* dst, const float* src1)
 }
 
 
-__global__ void kern_max(int N, float* dst, const float* src1, const float* src2)
+__global__ void kern_max(long N, float* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = MAX(src1[i], src2[i]);
 }
 
@@ -877,12 +930,12 @@ extern "C" void cuda_max(long N, float* dst, const float* src1, const float* src
 }
 
 
-__global__ void kern_min(int N, float* dst, const float* src1, const float* src2)
+__global__ void kern_min(long N, float* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = MIN(src1[i], src2[i]);
 }
 
@@ -892,12 +945,12 @@ extern "C" void cuda_min(long N, float* dst, const float* src1, const float* src
 	kern_min<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
 }
 
-__global__ void kern_zsmax(int N, float val, cuFloatComplex* dst, const cuFloatComplex* src)
+__global__ void kern_zsmax(long N, float val, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride) {
+	for (long i = start; i < N; i += stride) {
 
 		dst[i].x = MAX(src[i].x, val);
 		dst[i].y = 0.0;
@@ -909,14 +962,14 @@ extern "C" void cuda_zsmax(long N, float alpha, _Complex float* dst, const _Comp
 	kern_zsmax<<<gridsize(N), blocksize(N)>>>(N, alpha, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
-__global__ void kern_reduce_zsum(int N, cuFloatComplex* dst)
+__global__ void kern_reduce_zsum(long N, cuFloatComplex* dst)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
 	cuFloatComplex sum = make_cuFloatComplex(0., 0.);
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		sum = cuCaddf(sum, dst[i]);
 
 	if (start < N)
@@ -933,5 +986,75 @@ extern "C" void cuda_zsum(long N, _Complex float* dst)
 		N = MIN(B, N);
 		B /= 32;
 	}
+}
+
+__global__ void kern_real(int N, float* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = cuCrealf(src[i]);
+}
+
+extern "C" void cuda_real(long N, float* dst, const _Complex float* src)
+{
+	kern_real<<<gridsize(N), blocksize(N)>>>(N, dst, (cuFloatComplex*)src);
+}
+
+__global__ void kern_imag(int N, float* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = cuCimagf(src[i]);
+}
+
+extern "C" void cuda_imag(long N, float* dst, const _Complex float* src)
+{
+	kern_imag<<<gridsize(N), blocksize(N)>>>(N, dst, (cuFloatComplex*)src);
+}
+
+__global__ void kern_zcmpl_real(int N, cuFloatComplex* dst, const float* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = make_cuFloatComplex(src[i], 0);
+}
+
+extern "C" void cuda_zcmpl_real(long N, _Complex float* dst, const float* src)
+{
+	kern_zcmpl_real<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, src);
+}
+
+__global__ void kern_zcmpl_imag(int N, cuFloatComplex* dst, const float* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = make_cuFloatComplex(0., src[i]);
+}
+
+extern "C" void cuda_zcmpl_imag(long N, _Complex float* dst, const float* src)
+{
+	kern_zcmpl_imag<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, src);
+}
+
+__global__ void kern_zcmpl(int N, cuFloatComplex* dst, const float* real_src, const float* imag_src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (int i = start; i < N; i += stride)
+		dst[i] = make_cuFloatComplex(real_src[i], imag_src[i]);
+}
+
+extern "C" void cuda_zcmpl(long N, _Complex float* dst, const float* real_src, const float* imag_src)
+{
+	kern_zcmpl<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, real_src, imag_src);
 }
 

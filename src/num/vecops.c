@@ -200,6 +200,18 @@ static void add(long N, float* dst, const float* src1, const float* src2)
 		dst[i] = src1[i] + src2[i];
 }
 
+static void sadd_update(long N, float val, float* dst, const float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = src[i] + val;
+}
+
+static void zsadd(long N, complex float val, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = src[i] + val;
+}
+
 static void sub(long N, float* dst, const float* src1, const float* src2)
 {
 	for (long i = 0; i < N; i++)
@@ -388,6 +400,11 @@ static void zcos(long N, complex float* dst, const complex float* src)
 		dst[i] = ccosf(src[i]);
 }
 
+static void zacos(long N, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = acosf(crealf(src[i])) + 0.I;
+}
 
 static void zmax(long N, complex float* dst, const complex float* src1, const complex float* src2)
 {
@@ -640,7 +657,35 @@ static void zfftmod(long N, complex float* dst, const complex float* src, unsign
 			dst[i * n + j] = src[i * n + j] * fftmod_phase2(n, j, inv, phase);
 }
 
+static void vec_real(long N, float* dst, const _Complex float* src)
+{
+	for (int i = 0; i < N; i ++)
+		dst[i] = crealf(src[i]);
+}
 
+static  void vec_imag(long N, float* dst, const _Complex float* src)
+{
+	for (int i = 0; i < N; i ++)
+		dst[i] = cimagf(src[i]);
+}
+
+static void vec_zcmpl_real(long N, _Complex float* dst, const float* src)
+{
+	for (int i = 0; i < N; i ++)
+		dst[i] = src[i];
+}
+
+static void vec_zcmpl_imag(long N, _Complex float* dst, const float* src)
+{
+	for (int i = 0; i < N; i ++)
+		dst[i] = src[i] * I;
+}
+
+static void vec_zcmpl(long N, _Complex float* dst, const float* real_src, const float* imag_src)
+{
+	for (int i = 0; i < N; i ++)
+		dst[i] = real_src[i] + imag_src[i] * I;
+}
 
 /*
  * If you add functions here, please also add to gpuops.c/gpukrnls.cu
@@ -660,6 +705,7 @@ const struct vec_ops cpu_ops = {
 	.div = vec_div,
 	.fmac = fmac,
 	.fmac2 = fmac2,
+	.sadd = sadd_update,
 
 	.smul = smul,
 
@@ -681,6 +727,7 @@ const struct vec_ops cpu_ops = {
 
 	.zsmax = zsmax,
 	.zsmul = zsmul,
+	.zsadd = zsadd,
 
 	.zpow = zpow,
 	.zphsr = zphsr,
@@ -694,6 +741,7 @@ const struct vec_ops cpu_ops = {
 
 	.zsin = zsin,
 	.zcos = zcos,
+	.zacos = zacos,
 
 	.zcmp = zcmp,
 	.zdiv_reg = zdiv_reg,
@@ -714,6 +762,12 @@ const struct vec_ops cpu_ops = {
 
 	.exp = vec_exp,
 	.log = vec_log,
+
+	.real = vec_real,
+	.imag = vec_imag,
+	.zcmpl_real = vec_zcmpl_real,
+	.zcmpl_imag = vec_zcmpl_imag,
+	.zcmpl = vec_zcmpl,
 };
 
 
@@ -748,7 +802,7 @@ struct vec_iter_s {
 	void (*sdiv)(long N, float* a, float x, const float* y);
 
 	void (*zmul)(long N, complex float* dst, const complex float* src1, const complex float* src2);
-	void (*zsmax)(long N, complex float val, complex float* dst, const complex float* src1);
+ 	void (*zsmax)(long N, complex float val, complex float* dst, const complex float* src1);
 };
 
 

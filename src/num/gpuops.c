@@ -308,6 +308,7 @@ static void cuda_float_free(float* x)
 
 static double cuda_sdot(long size, const float* src1, const float* src2)
 {
+	assert(size <= INT_MAX / 2);
 	assert(cuda_ondevice(src1));
 	assert(cuda_ondevice(src2));
 //	printf("SDOT %x %x %ld\n", src1, src2, size);
@@ -332,18 +333,21 @@ static double cuda_norm(long size, const float* src1)
 
 static double cuda_asum(long size, const float* src)
 {
+	assert(size <= INT_MAX / 2);
 	return cublasSasum(size, src, 1);
 }
 
 static void cuda_saxpy(long size, float* y, float alpha, const float* src)
 {
 //	printf("SAXPY %x %x %ld\n", y, src, size);
-        cublasSaxpy(size, alpha, src, 1, y, 1);
+	assert(size <= INT_MAX / 2);
+    cublasSaxpy(size, alpha, src, 1, y, 1);
 }
 
 static void cuda_swap(long size, float* a, float* b)
 {
-        cublasSswap(size, a, 1, b, 1);
+	assert(size <= INT_MAX / 2);
+	cublasSswap(size, a, 1, b, 1);
 }
 
 const struct vec_ops gpu_ops = {
@@ -363,6 +367,7 @@ const struct vec_ops gpu_ops = {
 	.fmac2 = cuda_fmac2,
 
 	.smul = cuda_smul,
+	.sadd = cuda_sadd,
 
 	.axpy = cuda_saxpy,
 
@@ -372,6 +377,7 @@ const struct vec_ops gpu_ops = {
 	.le = cuda_le,
 
 	.zsmul = cuda_zsmul,
+	.zsadd = cuda_zsadd,
 	.zsmax = cuda_zsmax,
 
 	.zmul = cuda_zmul,
@@ -391,6 +397,7 @@ const struct vec_ops gpu_ops = {
 	.zarg = cuda_zarg,
 	.zabs = cuda_zabs,
 	.zatanr = cuda_zatanr,
+	.zacos = cuda_zacos,
 
 	.exp = cuda_exp,
 	.log = cuda_log,
@@ -411,6 +418,12 @@ const struct vec_ops gpu_ops = {
 	.softthresh = cuda_softthresh,
 	.softthresh_half = cuda_softthresh_half,
 	.zhardthresh = NULL,
+
+	.real = cuda_real,
+	.imag = cuda_imag,
+	.zcmpl_real = cuda_zcmpl_real,
+	.zcmpl_imag = cuda_zcmpl_imag,
+	.zcmpl = cuda_zcmpl,
 };
 
 

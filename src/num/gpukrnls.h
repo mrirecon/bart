@@ -16,6 +16,8 @@ extern void cuda_smul(long N, float alpha, float* dst, const float* src);
 extern void cuda_mul(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_div(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_add(long N, float* dst, const float* src1, const float* src2);
+extern void cuda_sadd(long N, float val, float* dst, const float* src1);
+extern void cuda_zsadd(long N, _Complex float val, _Complex float* dst, const _Complex float* src1);
 extern void cuda_sub(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_fmac(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_fmac2(long N, double* dst, const float* src1, const float* src2);
@@ -38,6 +40,7 @@ extern void cuda_zlog(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zarg(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zabs(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zatanr(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zacos(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_exp(long N, float* dst, const float* src);
 extern void cuda_log(long N, float* dst, const float* src);
 extern void cuda_zsoftthresh_half(long N, float lambda, _Complex float* d, const _Complex float* x);
@@ -56,6 +59,11 @@ extern void cuda_max(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_min(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_zsum(long N, _Complex float* dst);
 extern void cuda_zsmax(long N, float alpha, _Complex float* dst, const _Complex float* src);
+extern void cuda_real(long N, float* dst, const _Complex float* src);
+extern void cuda_imag(long N, float* dst, const _Complex float* src);
+extern void cuda_zcmpl_real(long N, _Complex float* dst, const float* src);
+extern void cuda_zcmpl_imag(long N, _Complex float* dst, const float* src);
+extern void cuda_zcmpl(long N, _Complex float* dst, const float* real_src, const float* imag_src);
 
 #ifdef __cplusplus
 }
