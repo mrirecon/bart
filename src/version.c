@@ -38,7 +38,7 @@ static bool parse_version(const char* version, unsigned int v[5])
 
 	v[3] = 0;	// patch level
 
-	int ret = sscanf(version, "v%u.%u.%u%n-%u-g%*7[0-9a-f]%n-dirty%n", &v[0], &v[1], &v[2], &q, &v[3], &r, &s);
+	int ret = sscanf(version, "v%u.%u.%u%n-%u-g%*40[0-9a-f]%n-dirty%n", &v[0], &v[1], &v[2], &q, &v[3], &r, &s);
 
 	if (!(   ((3 == ret) && (len == q))
 	      || ((4 == ret) && (len == r))
