@@ -2,9 +2,9 @@
 
 if test -d ${GIT_DIR:-.git} -o -f .git
 then
-    git describe --match "v*" --dirty
+    git describe --abbrev=7 --match "v*" --dirty
     if [[ $? -eq 0 ]]; then
-	git describe --match "v*" | cut -f1 -d'-' > version.txt
+	git describe --abbrev=7 --match "v*" | cut -f1 -d'-' > version.txt
     else
 	var=`cat version.txt`
 	echo ${var}-dirty
