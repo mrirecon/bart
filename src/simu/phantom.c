@@ -547,6 +547,8 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		if (random) {
 
+			unsigned int max_count = 10000;
+
 			// background circle position and radius
 			float sx_bg = .9;
 			float px_bg = 0.;
@@ -557,8 +559,8 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 			float smax = .4;
 
 			// min and max center position (-1. to 1.)
-			float pmin = -.8;
-			float pmax = .8;
+			float pmin = -1.;
+			float pmax = 1.;
 
 			// dead zone between tubes
 			float edge_scale = 1.2;
@@ -577,7 +579,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 				while (overlap) {
 
-					if (count > 1000) {
+					if (count > max_count) {
 					
 						// shrink ellipse
 						smax *= .95;
@@ -610,7 +612,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 					}
 					count++;
 					
-					if (total_count > 10000)
+					if (total_count > 100 * max_count)
 						error("Could not fit tube in phantom (requested %d, stopped at %d after %d trials\n", N, i/2, total_count);
 				}
 				debug_printf(DP_DEBUG4, "i=%d, (%f, %f), (%f, %f)\n", i, sx, sx, px, py);
