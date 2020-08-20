@@ -15,7 +15,7 @@
 
 
 
-float gradient_form(const float qf[3], float phi)
+float quadratic_form(const float qf[3], float phi)
 {
 	float x = cosf(phi);
 	float y = sinf(phi);
