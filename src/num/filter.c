@@ -139,10 +139,10 @@ void linear_phase(unsigned int N, const long dims[N], const float pos[N], comple
 	complex float grad[N];
 
 	for (unsigned int n = 0; n < N; n++)
-		grad[n] = 2.i * M_PI * (float)(pos[n]) / ((float)dims[n]);
+		grad[n] = 2. * M_PI * (float)(pos[n]) / ((float)dims[n]);
 
 	centered_gradient(N, dims, grad, out);
-	md_zmap(N, dims, out, out, cexpf);
+	md_zexpj(N, dims, out, out);
 }
 
 
