@@ -36,8 +36,14 @@ struct nlop_s* nlop_chain(const struct nlop_s* a, const struct nlop_s* b)
 	const struct linop_s* la = linop_from_nlop(a);
 	const struct linop_s* lb = linop_from_nlop(b);
 
-	if ((NULL != la) && (NULL != lb))
-		return nlop_from_linop(linop_chain(la, lb));
+	if ((NULL != la) && (NULL != lb)) {
+
+		const struct linop_s* tmp = linop_chain(la, lb);
+		linop_free(la);
+		linop_free(lb);
+		return nlop_from_linop_F(tmp);
+	}
+
 
 	PTR_ALLOC(struct nlop_s, n);
 
@@ -45,13 +51,16 @@ struct nlop_s* nlop_chain(const struct nlop_s* a, const struct nlop_s* b)
 	n->derivative = &(*der)[0][0];
 
 	if (NULL == la)
-		la = a->derivative[0];
+		la = linop_clone(a->derivative[0]);
 
 	if (NULL == lb)
-		lb = b->derivative[0];
+		lb = linop_clone(b->derivative[0]);
 
 	n->op = operator_chain(a->op, b->op);
 	n->derivative[0] = linop_chain(la, lb);
+
+	linop_free(la);
+	linop_free(lb);
 
 	return PTR_PASS(n);
 }
