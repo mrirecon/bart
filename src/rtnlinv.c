@@ -184,7 +184,8 @@ int main_rtnlinv(int argc, char* argv[])
 
 		debug_print_dims(DP_INFO, 3, my_img_dims);
 
-		md_zsmul(DIMS, trj_dims, traj, traj, 2.);
+		if (!alt_scaling)
+			md_zsmul(DIMS, trj_dims, traj, traj, 2.);
 
 		if (0 == my_img_dims[0] + my_img_dims[1] + my_img_dims[2])
 			estimate_fast_sq_im_dims(3, sens_dims, trj_dims, traj);
@@ -219,7 +220,7 @@ int main_rtnlinv(int argc, char* argv[])
 	long img_output_dims[DIMS];
 	md_copy_dims(DIMS, img_output_dims, img_dims);
 
-	if (conf.noncart) {
+	if (conf.noncart && !alt_scaling) {
 
 		for (int i = 0; i < 3; i++)
 			if (1 != img_output_dims[i])
@@ -332,6 +333,7 @@ int main_rtnlinv(int argc, char* argv[])
 				// This scaling accounts for variable spokes per frame
 				scale_psf_k(pat_dims, pattern, ksp_dims, kspace, trj_dims, traj);
 			}
+
 		} else {
 
 			float psf_sc = 1.;
