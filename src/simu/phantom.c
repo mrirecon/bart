@@ -141,7 +141,15 @@ static complex float kkernel(void* _data, const long pos[])
 }
 
 
+static void my_sample(const long dims[DIMS], complex float* out, void* data, complex float (*krn)(void* data, const long pos[]))
+{
+	NESTED(complex float, kernel, (const long pos[]))
+	{
+		return krn(data, pos);
+	};
 
+	md_parallel_zsample(DIMS, dims, out, kernel);
+}
 
 static void sample(const long dims[DIMS], complex float* out, const long tstrs[DIMS], const complex float* traj, void* krn_data, krn_t krn, bool kspace)
 {
@@ -155,7 +163,7 @@ static void sample(const long dims[DIMS], complex float* out, const long tstrs[D
 		.fun = krn,
 	};
 
-	md_parallel_zsample(DIMS, dims, out, &data, kspace ? kkernel : xkernel);
+	my_sample(dims, out, &data, kspace ? kkernel : xkernel);
 }
 
 
@@ -279,7 +287,7 @@ void calc_sens(const long dims[DIMS], complex float* sens)
 		.fun = cnst_one,
 	};
 
-	md_parallel_zsample(DIMS, dims, sens, &data, xkernel);
+	my_sample(dims, sens, &data, xkernel);
 }
 
 
@@ -431,7 +439,7 @@ void calc_star(const long dims[DIMS], complex float* out, bool kspace, const lon
 		.fun = krn_poly,
 	};
 
-	md_parallel_zsample(DIMS, dims, out, &data, kspace ? kkernel : xkernel);
+	my_sample(dims, out, &data, kspace ? kkernel : xkernel);
 }
 
 #define ARRAY_SLICE(x, a, b) ({ __auto_type __x = &(x); assert((0 <= a) && (a < b) && (b <= ARRAY_SIZE(*__x))); ((__typeof__((*__x)[0]) (*)[b - a])&((*__x)[a])); })
@@ -483,7 +491,7 @@ void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const lon
 		.fun = krn_poly,
 	};
 
-	md_parallel_zsample(DIMS, dims, out, &data, kspace ? kkernel : xkernel);
+	my_sample(dims, out, &data, kspace ? kkernel : xkernel);
 }
 
 
