@@ -1419,7 +1419,7 @@ const struct operator_s* operator_link_create(const struct operator_s* op, unsig
 	const long* dims[N - 2];
 	const long* strs[N - 2];
 
-	debug_printf(DP_DEBUG3, "Linking args %d-%d of %d.\n", i, o, N);
+	debug_printf(DP_DEBUG4, "Linking args %d-%d of %d.\n", i, o, N);
 
 	for (unsigned int s = 0, t = 0; s < N; s++) {
 
