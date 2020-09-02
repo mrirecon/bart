@@ -297,6 +297,8 @@ int main_nlinv(int argc, char* argv[])
 		kgrid = md_alloc(DIMS, kgrid_dims, CFL_SIZE);
 
 		linop_adjoint(nufft_op, DIMS, kgrid_dims, kgrid, DIMS, ksp_dims, kspace);
+		linop_free(nufft_op);
+
 		fftuc(DIMS, kgrid_dims, FFT_FLAGS, kgrid, kgrid);
 
 	} else {
