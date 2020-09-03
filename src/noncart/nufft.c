@@ -936,6 +936,9 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 		long ksp_red_dims[ND];
 		md_select_dims(ND, traj_flags, ksp_red_dims, data->ksp_dims);
 
+		long ksp_red_strs[ND];
+		md_calc_strides(ND, ksp_red_strs, ksp_red_dims, CFL_SIZE);
+
 		long ksp_strs[ND];
 		md_calc_strides(ND, ksp_strs, data->ksp_dims, CFL_SIZE);
 
@@ -969,6 +972,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 		complex float* grid_red = md_alloc(ND, cml_red_dims, CFL_SIZE);
 		complex float* gridX = md_calloc(data->N, cm2_red_dims, CFL_SIZE);
+		complex float* src_red = md_alloc(data->N, ksp_red_dims, CFL_SIZE);
 
 		long pos[ND];
 		md_set_dims(ND, pos, 0L);
@@ -978,8 +982,9 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 			debug_printf(DP_INFO, "pos\n\t");
 			debug_print_dims(DP_INFO, data->N, pos);
 #endif
+			md_copy_block2(data->N, pos, ksp_red_dims, ksp_red_strs, src_red, data->ksp_dims, ksp_strs, src, CFL_SIZE );
 
-			grid2(&data->grid_conf, ND, data->trj_dims, data->traj, cm2_red_dims, gridX,  ksp_red_dims, &MD_ACCESS(data->N, ksp_strs, pos, src));
+			grid2(&data->grid_conf, ND, data->trj_dims, data->traj, cm2_red_dims, gridX,  ksp_red_dims, src_red);
 
 
 			md_decompose(data->N, data->factors, cml_red_dims, grid_red, cm2_red_dims, gridX, CFL_SIZE);
@@ -995,6 +1000,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 		md_free(wdat);
 		md_free(grid_red);
 		md_free(gridX);
+		md_free(src_red);
 
 	} else {
 
