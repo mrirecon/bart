@@ -23,6 +23,17 @@ tests/test-pics-noncart: traj scale phantom ones pics nufft nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-pics-noncart2: traj scale phantom ones pics nufft nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y64 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
+	$(TOOLDIR)/pics --lowmem --lowmem2 -S -r0.001 -t traj2.ra ksp.ra o.ra reco.ra			;\
+	$(TOOLDIR)/nufft traj2.ra reco.ra k2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.002 ksp.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
 tests/test-pics-cs: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
@@ -216,7 +227,26 @@ tests/test-pics-basis-noncart: traj scale phantom delta fmac ones repmat pics sl
 	$(TOOLDIR)/pics -r0.001 -t traj2.ra ksp.ra coils.ra reco.ra			;\
 	$(TOOLDIR)/scale 4. reco1.ra reco2.ra						;\
 	$(TOOLDIR)/slice 6 0 reco2.ra reco20.ra						;\
-	$(TOOLDIR)/nrmse -t 0.002 reco.ra reco20.ra					;\
+	$(TOOLDIR)/nrmse -t 0.003 reco.ra reco20.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-basis-noncart2: traj scale phantom delta fmac ones repmat pics slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -D -y31 traj.ra					;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/delta 16 36 31 p.ra 							;\
+	$(TOOLDIR)/fmac ksp.ra p.ra pk.ra						;\
+	$(TOOLDIR)/repmat 1 256 p.ra p2.ra						;\
+	$(TOOLDIR)/ones 6 1 1 1 1 1 31 o.ra						;\
+	$(TOOLDIR)/repmat 6 2 o.ra o2.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
+	$(TOOLDIR)/pics --lowmem --lowmem2 -r0.001 -t traj2.ra -pp2.ra -Bo2.ra pk.ra coils.ra reco1.ra	;\
+	$(TOOLDIR)/pics -r0.001 -t traj2.ra ksp.ra coils.ra reco.ra			;\
+	$(TOOLDIR)/scale 4. reco1.ra reco2.ra						;\
+	$(TOOLDIR)/slice 6 0 reco2.ra reco20.ra						;\
+	$(TOOLDIR)/nrmse -t 0.003 reco.ra reco20.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -235,7 +265,7 @@ tests/test-pics-basis-noncart-memory: traj scale phantom ones join transpose pic
 	$(TOOLDIR)/pics -r0.001 -t traj2.ra ksp.ra coils.ra reco.ra			;\
 	$(TOOLDIR)/scale 4. reco1.ra reco2.ra						;\
 	$(TOOLDIR)/slice 6 0 reco2.ra reco20.ra						;\
-	$(TOOLDIR)/nrmse -t 0.002 reco.ra reco20.ra					;\
+	$(TOOLDIR)/nrmse -t 0.003 reco.ra reco20.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -264,6 +294,31 @@ tests/test-pics-basis-noncart-memory2: traj scale phantom ones join noise transp
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-pics-basis-noncart-memory3: traj scale phantom ones join noise transpose fmac pics slice nrmse zeros
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -D -y301 traj.ra					;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/phantom p.ra								;\
+	$(TOOLDIR)/scale 0.5 ksp.ra ksp2.ra						;\
+	$(TOOLDIR)/zeros 7 1 1 1 1 1 301 2 o.ra						;\
+	$(TOOLDIR)/noise o.ra o1.ra							;\
+	$(TOOLDIR)/join 6 ksp.ra ksp2.ra ksp3.ra					;\
+	$(TOOLDIR)/transpose 2 5 ksp3.ra ksp4.ra					;\
+	$(TOOLDIR)/fmac -s 64 ksp4.ra o1.ra ksp5.ra					;\
+	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
+	$(TOOLDIR)/transpose 2 5 traj2.ra traj3.ra					;\
+	$(TOOLDIR)/pics -S --lowmem --lowmem2 -i100 -r0. -t traj3.ra -Bo1.ra ksp5.ra coils.ra reco1.ra	;\
+	$(TOOLDIR)/slice 6 0 reco1.ra reco.ra						;\
+	$(TOOLDIR)/slice 6 1 reco1.ra reco2.ra						;\
+	$(TOOLDIR)/scale 2. reco2.ra reco3.ra						;\
+	$(TOOLDIR)/nrmse -s -t 0.25 reco.ra p.ra					;\
+	$(TOOLDIR)/nrmse -s -t 0.25 reco3.ra p.ra					;\
+	$(TOOLDIR)/nrmse -t 0.06 reco.ra reco3.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 
 tests/test-pics-noncart-sms: traj slice phantom conj join fft flip pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -291,18 +346,42 @@ tests/test-pics-noncart-sms: traj slice phantom conj join fft flip pics nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-pics-noncart-sms2: traj slice phantom conj join fft flip pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -y55 -m2 -r t.ra						;\
+	$(TOOLDIR)/slice 13 0 t.ra t0.ra 						;\
+	$(TOOLDIR)/slice 13 1 t.ra t1.ra 						;\
+	$(TOOLDIR)/phantom -t t0.ra -s8 -k k0.ra					;\
+	$(TOOLDIR)/phantom -t t1.ra -s8 -k k1.ra					;\
+	$(TOOLDIR)/conj k1.ra k1C.ra							;\
+	$(TOOLDIR)/join 13 k0.ra k1C.ra k.ra						;\
+	$(TOOLDIR)/fft -n 8192 k.ra kk.ra						;\
+	$(TOOLDIR)/phantom -S8 s.ra							;\
+	$(TOOLDIR)/flip 7 s.ra sF.ra							;\
+	$(TOOLDIR)/conj sF.ra sFC.ra							;\
+	$(TOOLDIR)/join 13 s.ra sFC.ra ss.ra 						;\
+	$(TOOLDIR)/pics --lowmem --lowmem2 -t t.ra -M kk.ra ss.ra x.ra					;\
+	$(TOOLDIR)/slice 13 0 x.ra x0.ra						;\
+	$(TOOLDIR)/slice 13 1 x.ra x1.ra						;\
+	$(TOOLDIR)/phantom -k rk.ra							;\
+	$(TOOLDIR)/conj rk.ra rkc.ra							;\
+	$(TOOLDIR)/fft -i 7 rk.ra r0.ra							;\
+	$(TOOLDIR)/fft -i 7 rkc.ra r1.ra						;\
+	$(TOOLDIR)/join 13 r0.ra r1.ra r.ra						;\
+	$(TOOLDIR)/nrmse -s -t 0.15 r.ra x.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
 
 
-
-TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
+TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-noncart2 tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-wavl1 tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 TESTS += tests/test-pics-warmstart tests/test-pics-batch
 TESTS += tests/test-pics-tedim tests/test-pics-bp-noncart
-TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory
-TESTS += tests/test-pics-basis-noncart-memory2
-TESTS += tests/test-pics-noncart-sms
+TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart2 tests/test-pics-basis-noncart-memory
+TESTS += tests/test-pics-basis-noncart-memory2 tests/test-pics-basis-noncart-memory3
+TESTS += tests/test-pics-noncart-sms tests/test-pics-noncart-sms2
 
 
