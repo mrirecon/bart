@@ -911,7 +911,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 	complex float* grid = md_alloc(ND, data->cml_dims, CFL_SIZE);
 
 	// check if we want to do stuff outside:
-	long traj_flags = FFT_FLAGS | md_nontriv_dims(data->N, data->trj_dims);
+	long traj_flags = FFT_FLAGS | md_nontriv_dims(data->N, data->trj_dims) | (md_nontriv_dims(ND, data->ksp_dims) & ~md_nontriv_dims(ND, data->cm2_dims));
 	long cm2_red_dims[ND];
 	md_select_dims(ND, traj_flags, cm2_red_dims, data->cm2_dims);
 
@@ -930,8 +930,10 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 #endif
 
 		// everything not in traj dims is done separately
-		long cm2_iter_dims[data->N];
-		md_select_dims(data->N, ~traj_flags, cm2_iter_dims, data->cm2_dims);
+		long max_dims[ND];
+		md_max_dims(ND, ~traj_flags, max_dims, data->cm2_dims, data->ksp_dims);
+		long iter_dims[data->N];
+		md_select_dims(data->N, ~traj_flags, iter_dims, max_dims);
 
 		long ksp_red_dims[ND];
 		md_select_dims(ND, traj_flags, ksp_red_dims, data->ksp_dims);
@@ -971,8 +973,8 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 
 		complex float* grid_red = md_alloc(ND, cml_red_dims, CFL_SIZE);
-		complex float* gridX = md_calloc(data->N, cm2_red_dims, CFL_SIZE);
-		complex float* src_red = md_alloc(data->N, ksp_red_dims, CFL_SIZE);
+		complex float* gridX = md_alloc(ND, cm2_red_dims, CFL_SIZE);
+		complex float* src_red = md_alloc(ND, ksp_red_dims, CFL_SIZE);
 
 		long pos[ND];
 		md_set_dims(ND, pos, 0L);
@@ -984,20 +986,18 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 #endif
 			md_copy_block2(data->N, pos, ksp_red_dims, ksp_red_strs, src_red, data->ksp_dims, ksp_strs, src, CFL_SIZE );
 
+			md_clear(ND, cm2_red_dims, gridX, CFL_SIZE);
 			grid2(&data->grid_conf, ND, data->trj_dims, data->traj, cm2_red_dims, gridX,  ksp_red_dims, src_red);
-
 
 			md_decompose(data->N, data->factors, cml_red_dims, grid_red, cm2_red_dims, gridX, CFL_SIZE);
 
-			md_zmulc2(ND, cml_red_dims, cml_red_strs, grid_red, cml_red_strs, grid_red, data->img_strs, data->fftmod);
+// 			md_zmulc2(ND, cml_red_dims, cml_red_strs, grid_red, cml_red_strs, grid_red, data->img_strs, data->fftmod);
 			md_copy_block2(ND, pos, data->cml_dims, data->cml_strs, grid, cml_red_dims, cml_red_strs, grid_red, CFL_SIZE);
 
-			md_clear(data->N, cm2_red_dims, gridX, CFL_SIZE);
+		} while(md_next(data->N, iter_dims, ~0L, pos));
 
-		} while(md_next(data->N, cm2_iter_dims, ~0L, pos));
+		md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, data->fftmod);
 
-		md_free(bdat);
-		md_free(wdat);
 		md_free(grid_red);
 		md_free(gridX);
 		md_free(src_red);
@@ -1012,14 +1012,14 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 		grid2(&data->grid_conf, ND, data->trj_dims, data->traj, data->cm2_dims, gridX, data->ksp_dims, src);
 
-		md_free(bdat);
-		md_free(wdat);
-
 
 		md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
 		md_free(gridX);
 		md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, data->fftmod);
 	}
+
+	md_free(bdat);
+	md_free(wdat);
 
 	linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
 
