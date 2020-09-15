@@ -268,7 +268,7 @@ void admm(const struct admm_plan_s* plan,
 			if (0. == rho)
 				vops->copy(z_dims[j], z[j], Gjx_plus_uj);
 			else
-				iter_op_p_call(plan->prox_ops[j], 1. / rho, z[j], Gjx_plus_uj);
+				iter_op_p_call(plan->prox_ops[j], plan->lambda / rho, z[j], Gjx_plus_uj);
 
 			vops->sub(z_dims[j], u[j], Gjx_plus_uj, z[j]);
 
@@ -361,7 +361,7 @@ void admm(const struct admm_plan_s* plan,
 			if (0. == rho)
 				vops->copy(z_dims[j], z[j], Gjx_plus_uj);
 			else
-				iter_op_p_call(plan->prox_ops[j], 1. / rho, z[j], Gjx_plus_uj);
+				iter_op_p_call(plan->prox_ops[j], plan->lambda / rho, z[j], Gjx_plus_uj);
 
 			vops->sub(z_dims[j], u[j], Gjx_plus_uj, z[j]);
 
@@ -469,6 +469,7 @@ void admm(const struct admm_plan_s* plan,
 		if (plan->dynamic_tau) {
 
 			double t = sqrt(r_norm / s_norm);
+
 			if (plan->tau_max > t && 1 <= t)
 				tau = t;
 			else if (1 > t && (1/plan->tau_max) < t)

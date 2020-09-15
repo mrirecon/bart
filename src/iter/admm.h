@@ -71,6 +71,7 @@ struct admm_plan_s {
 
 	float rho;
 	float alpha;
+	float lambda;
 
 	float tau;
 	float tau_max;

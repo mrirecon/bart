@@ -167,7 +167,7 @@ static bool test_iter_irgnm_lsqr1(bool ref, bool regu)
 				NULL);
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
-	irgnm_conf.iter = 5;
+	irgnm_conf.iter = 4;
 
 	iter4_irgnm2(CAST_UP(&irgnm_conf), zexp,
 		2 * md_calc_size(N, dims), (float*)src2, ref ? (const float*)src1 : NULL,
@@ -183,7 +183,7 @@ static bool test_iter_irgnm_lsqr1(bool ref, bool regu)
 	md_free(dst1);
 	md_free(src2);
 
-	UT_ASSERT(err < 1.E-5);
+	UT_ASSERT(err < 1.E-3);
 }
 
 
