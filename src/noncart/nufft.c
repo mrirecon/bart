@@ -918,8 +918,14 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 #if LOWMEM2_DEBUG
 	long cm2_size = md_calc_size(ND, cm2_red_dims);
 
-	debug_printf(DP_INFO, "cm2_red_dims (%ld)\n\t", cm2_size);
+	debug_printf(DP_INFO, "data->trj_dims \t");
+	debug_print_dims(DP_INFO, ND, data->trj_dims);
+	debug_printf(DP_INFO, "cm2_red_dims (%ld) \t", cm2_size);
 	debug_print_dims(DP_INFO, ND, cm2_red_dims);
+
+	debug_printf(DP_INFO, "traj_flags \t");
+	debug_print_bits(DP_INFO, ND, traj_flags);
+
 #endif
 
 	//if ( (2L << 30L) < cm2_size || true) {
@@ -952,23 +958,26 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 		md_calc_strides(ND, cml_red_strs, cml_red_dims, CFL_SIZE);
 
 #if LOWMEM2_DEBUG
-		debug_printf(DP_INFO, "data->cm2_dims (%ld)\n\t", md_calc_size(data->N, data->cm2_dims));
+		debug_printf(DP_INFO, "data->cm2_dims (%ld) \t", md_calc_size(data->N, data->cm2_dims));
 		debug_print_dims(DP_INFO, data->N, data->cm2_dims);
 
-		debug_printf(DP_INFO, "cm2_iter_dims (%ld)\n\t", md_calc_size(data->N, cm2_iter_dims));
-		debug_print_dims(DP_INFO, data->N, cm2_iter_dims);
+		debug_printf(DP_INFO, "iter_dims (%ld) \t", md_calc_size(data->N, iter_dims));
+		debug_print_dims(DP_INFO, data->N, iter_dims);
 
-		debug_printf(DP_INFO, "data->ksp_dims (%ld)\n\t", md_calc_size(data->N, data->ksp_dims));
+		debug_printf(DP_INFO, "data->ksp_dims (%ld) \t", md_calc_size(data->N, data->ksp_dims));
 		debug_print_dims(DP_INFO, data->N, data->ksp_dims);
 
-		debug_printf(DP_INFO, "ksp_red_dims (%ld)\n\t", md_calc_size(ND, ksp_red_dims));
+		debug_printf(DP_INFO, "ksp_red_dims (%ld) \t", md_calc_size(ND, ksp_red_dims));
 		debug_print_dims(DP_INFO, ND, ksp_red_dims);
 
-		debug_printf(DP_INFO, "data->cml_dims (%ld)\n\t", md_calc_size(ND, data->cml_dims));
+		debug_printf(DP_INFO, "data->cml_dims (%ld) \t", md_calc_size(ND, data->cml_dims));
 		debug_print_dims(DP_INFO, ND, data->cml_dims);
 
-		debug_printf(DP_INFO, "cml_red_dims (%ld)\n\t", md_calc_size(ND, cml_red_dims));
+		debug_printf(DP_INFO, "cml_red_dims (%ld) \t", md_calc_size(ND, cml_red_dims));
 		debug_print_dims(DP_INFO, ND, cml_red_dims);
+
+		debug_printf(DP_INFO, "factors \t");
+		debug_print_dims(DP_INFO, data->N, data->factors);
 #endif
 
 
@@ -978,10 +987,11 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 		long pos[ND];
 		md_set_dims(ND, pos, 0L);
+
 		do {
 
 #if LOWMEM2_DEBUG
-			debug_printf(DP_INFO, "pos\n\t");
+			debug_printf(DP_INFO, "pos       ");
 			debug_print_dims(DP_INFO, data->N, pos);
 #endif
 			md_copy_block2(data->N, pos, ksp_red_dims, ksp_red_strs, src_red, data->ksp_dims, ksp_strs, src, CFL_SIZE );
