@@ -179,21 +179,25 @@ static void process_option(char c, const char* optarg, const char* name, const c
 	error("process_option: unknown option\n");
 }
 
+
 void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	int argc = *argcp;
 
 	// create writable copy of opts
+
 	struct opt_s wopts[n ?: 1];
 
 	if (NULL != opts)
 		memcpy(wopts, opts, sizeof wopts);
 
 
-	int max_num_long_opts = (int) ' ';
+	int max_num_long_opts = ' ';
 	struct option longopts[max_num_long_opts];
+
 	// According to documentation, the last element of the longopts array has to be filled with zeros.
 	// So we fill it entirely before using it
+
 	memset(longopts, 0, sizeof longopts);
 
 
@@ -207,12 +211,13 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 			if (0 == wopts[i].c)
 				wopts[i].c = lc++;
 
-			longopts[nlong++] = (struct option) {wopts[i].s, wopts[i].arg, NULL, wopts[i].c};
+			longopts[nlong++] = (struct option){ wopts[i].s, wopts[i].arg, NULL, wopts[i].c };
 		}
-	};
+	}
 
 	// Ensure that we only used unprintable characters
 	// and that the last entry of the array is only zeros
+
 	assert(nlong < max_num_long_opts);
 
 #if 0
@@ -244,6 +249,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 	int c;
 	int longindex = -1;
+
 	while (-1 != (c = ya_getopt_long(argc, argv, optstr, longopts, &longindex))) {
 	//while (-1 != (c = ya_getopt(argc, argv, optstr))) {
 #if 0
@@ -273,7 +279,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 	out:	continue;
 #else
-	process_option(c, optarg, argv[0], usage_str, help_str, n, wopts);
+		process_option(c, optarg, argv[0], usage_str, help_str, n, wopts);
 #endif
 	}
 
