@@ -184,8 +184,10 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 	int argc = *argcp;
 
 	// create writable copy of opts
-	struct opt_s wopts[n];
-	memcpy(wopts, opts, sizeof wopts);
+	struct opt_s wopts[n ?: 1];
+
+	if (NULL != opts)
+		memcpy(wopts, opts, sizeof wopts);
 
 
 	int max_num_long_opts = (int) ' ';
