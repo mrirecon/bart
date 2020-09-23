@@ -38,7 +38,17 @@ static bool parse_version(const char* version, unsigned int v[5])
 
 	v[3] = 0;	// patch level
 
-	int ret = sscanf(version, "v%u.%u.%u%n-%u-g%*40[0-9a-f]%n-dirty%n", &v[0], &v[1], &v[2], &q, &v[3], &r, &s);
+	// simple version string format, for when git describe fails
+	// This might happen if the .git directory exsits, but git is not installed on a system
+	int ret = sscanf(version, "v%u.%u.%u-dirty%n", &v[0], &v[1], &v[2], &s);
+
+	if ((3 == ret) && (len == s)) {
+		v[4] = 1; 	// dirty
+		return true;
+	}
+
+
+	ret = sscanf(version, "v%u.%u.%u%n-%u-g%*40[0-9a-f]%n-dirty%n", &v[0], &v[1], &v[2], &q, &v[3], &r, &s);
 
 	if (!(   ((3 == ret) && (len == q))
 	      || ((4 == ret) && (len == r))
