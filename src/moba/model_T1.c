@@ -36,7 +36,10 @@
 
 struct T1_s T1_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf, const struct noir_model_conf_s* conf, _Bool use_gpu)
 {
-	struct noir_s nlinv = noir_create3(dims, mask, psf, conf);
+	long data_dims[DIMS];
+	md_select_dims(DIMS, ~COEFF_FLAG, data_dims, dims);
+
+	struct noir_s nlinv = noir_create3(data_dims, mask, psf, conf);
 	struct T1_s ret;
 
 	long map_dims[DIMS];
@@ -49,7 +52,6 @@ struct T1_s T1_create(const long dims[DIMS], const complex float* mask, const co
 	md_select_dims(DIMS, conf->fft_flags|COEFF_FLAG|TIME2_FLAG, in_dims, dims);
 	md_select_dims(DIMS, TE_FLAG|TIME2_FLAG, TI_dims, dims);
 
-	in_dims[COEFF_DIM] = 3;
 
 #if 1
 	// chain T1 model
