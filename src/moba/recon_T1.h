@@ -18,6 +18,7 @@ struct moba_conf {
 	bool noncartesian;
         bool sms;
 	bool k_filter;
+	bool auto_norm_off;
 };
 
 

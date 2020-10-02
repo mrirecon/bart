@@ -48,6 +48,7 @@ struct moba_conf moba_defaults = {
 	.noncartesian = false,
 	.sms = false,
         .k_filter = false,
+	.auto_norm_off = false,
 };
 
 
@@ -93,7 +94,7 @@ void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.redu = conf->redu;
 	irgnm_conf.alpha_min = conf->alpha_min;
-	irgnm_conf.cgtol = (2 == conf->opt_reg) ? 1e-3:conf->tolerance;
+	irgnm_conf.cgtol = ((2 == conf->opt_reg) || (conf->auto_norm_off)) ? 1e-3 : conf->tolerance;
 	irgnm_conf.cgiter = conf->inner_iter;
 	irgnm_conf.nlinv_legacy = true;
 
@@ -102,7 +103,8 @@ void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float
 		.opt_reg = conf->opt_reg, 
 		.step = conf->step, 
 		.lower_bound = conf->lower_bound, 
-		.constrained_maps = 1 };
+		.constrained_maps = 1,
+		.auto_norm_off = conf->auto_norm_off };
 
 	long irgnm_conf_dims[DIMS];
 	md_select_dims(DIMS, fft_flags|MAPS_FLAG|COEFF_FLAG|TIME2_FLAG, irgnm_conf_dims, imgs_dims);

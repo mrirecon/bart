@@ -72,6 +72,7 @@ int main_moba(int argc, char* argv[])
 		OPT_STRING('t', &trajectory, "Traj", ""),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.25]"),
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
+		OPT_SET('n', &conf.auto_norm_off, "disable normlization of parameter maps for thresholding"),
 	};
 
 	cmdline(&argc, argv, 2, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
