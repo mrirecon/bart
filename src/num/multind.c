@@ -159,6 +159,7 @@ static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[st
 	// we need to make a copy because firstprivate needs to see
 	// an array instead of a pointer
 	long pos_copy[N];
+
 	for (unsigned int i = 0; i < N; i++)
 		pos_copy[i] = pos[i];
 
@@ -646,8 +647,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	bool use_gpu = cuda_ondevice(optr) || cuda_ondevice(iptr);
 
 #if 1
-	// less calls for filling-like copies
-
+	//less calls for filling-like copies
 	long tostr_fill[D];
 	long tistr_fill[D];
 	long tdims_fill[D];
@@ -657,7 +657,6 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	md_copy_dims(D, tdims_fill, dim);
 
 	long (*nstr2_fill[2])[D] = { &tostr_fill, &tistr_fill };
-
 	int ND_fill = simplify_dims(2, D, tdims_fill, nstr2_fill);
 
 	bool fill = (2 == ND_fill) || (1 == ND_fill);
@@ -691,7 +690,6 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		cuda_memcpy(cp_size, optr, iptr);
 
 		unsigned int i = 1;
-
 		while (2 * i <= repetitions) {
 
 			cuda_memcpy(cp_size * i, optr + i * cp_size, optr);
@@ -704,7 +702,6 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		return;
 	}
 #endif
-
 
 #if 1
 	long tostr[D];
@@ -719,11 +716,15 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	int ND = optimize_dims_gpu(2, D, tdims, nstr2);
 
 #if 1
-	//permute dims with 0 input strides to the end
-	//these might be permutet to the inner dimensions by optimize_dims and break the strided copy
+	// permute dims with 0 input strides or negative in/output strides to the end
+	// these might be permuted to the inner dimensions by optimize_dims and break the strided copy
+
 	unsigned int perm[ND];
-	for (int i = 0, j = 0; i < ND; i++)
-		if (0 >= (*nstr2[1])[i]) {
+
+	for (int i = 0, j = 0; i < ND; i++) {
+
+		if (   (0 >= (*nstr2[1])[i])
+		    || (0 >= (*nstr2[0])[i])) {
 
 			perm[ND - 1 -j] = i;
 			j += 1;
@@ -732,12 +733,16 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 
 			perm[i - j] = i;
 		}
+	}
 
 	long tmp[ND];
+
 	md_permute_dims(ND, perm, tmp, tdims);
 	md_copy_dims(ND, tdims, tmp);
+
 	md_permute_dims(ND, perm, tmp, tostr);
 	md_copy_dims(ND, tostr, tmp);
+
 	md_permute_dims(ND, perm, tmp, tistr);
 	md_copy_dims(ND, tistr, tmp);
 #endif
@@ -753,7 +758,10 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	debug_print_dims(DP_DEBUG4, ND, (*nstr2[0]));
 	debug_print_dims(DP_DEBUG4, ND, (*nstr2[1]));
 
-	if (use_gpu && (ND - skip > 0) && (ostr2 > 0) && (istr2 > 0)) {
+	if (   use_gpu
+	    && (ND - skip > 0)
+	    && (ostr2 > 0)
+	    && (istr2 > 0)) {
 
 		void* nptr[2] = { optr, (void*)iptr };
 		long sizes[2] = { md_calc_size(skip, tdims) * size, tdims[skip] };
@@ -868,10 +876,12 @@ void md_fill(unsigned int D, const long dim[D], void* ptr, const void* iptr, siz
 void md_circular_swap2(unsigned int M, unsigned int D, const long dims[D], const long* strs[M], void* ptr[M], size_t size)
 {
 	size_t sizes[M];
+
 	for (unsigned int i = 0; i < M; i++)
 		sizes[i] = size;
 
 	const long (*nstrs[M])[D];
+
 	for (unsigned int i = 0; i < M; i++)
 		nstrs[i] = (const long (*)[D])strs[i];
 
@@ -1098,8 +1108,8 @@ void md_resize_center(unsigned int D, const long odim[D], void* optr, const long
  */
 void md_pad_center(unsigned int D, const void* val, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
-
 	long pos[D];
+
 	for (unsigned int i = 0; i < D; i++)
 		pos[i] = labs((odim[i] / 2) - (idim[i] / 2));
 
@@ -1277,6 +1287,7 @@ void md_swap_flip2(unsigned int D, const long dims[D], unsigned long flags, cons
 {
 #if 1
 	int i;
+
 	for (i = D - 1; i >= 0; i--)
 		if ((1 != dims[i]) && MD_IS_SET(flags, i))
 			break;
@@ -1292,10 +1303,13 @@ void md_swap_flip2(unsigned int D, const long dims[D], unsigned long flags, cons
 	assert(istr[i] != 0);
 
 	long dims2[D];
+
 	md_copy_dims(D, dims2, dims);
+
 	dims2[i] = dims[i] / 2;
 
 	long off = (dims[i] + 1) / 2;
+
 	assert(dims2[i] + off == dims[i]);
 
 	md_swap_flip2(D, dims2, flags, ostr, optr, istr, iptr + off * istr[i], size);
@@ -1336,6 +1350,7 @@ void md_swap_flip(unsigned int D, const long dims[D], unsigned long flags, void*
 static void md_flip_inpl2(unsigned int D, const long dims[D], unsigned long flags, const long str[D], void* ptr, size_t size)
 {
 	int i;
+
 	for (i = D - 1; i >= 0; i--)
 		if ((1 != dims[i]) && MD_IS_SET(flags, i))
 			break;
@@ -1347,7 +1362,9 @@ static void md_flip_inpl2(unsigned int D, const long dims[D], unsigned long flag
 	assert(str[i] != 0);
 
 	long dims2[D];
+
 	md_copy_dims(D, dims2, dims);
+
 	dims2[i] = dims[i] / 2;
 
 	long off = str[i] * (0 + (dims[i] + 1) / 2);
@@ -1722,6 +1739,7 @@ void md_circ_shift2(unsigned int D, const long dimensions[D], const long center[
 	}
 
 	unsigned int i = 0;		// FIXME :maybe we shoud search the other way?
+
 	while ((i < D) && (0 == pos[i]))
 		i++;
 
