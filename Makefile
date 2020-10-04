@@ -523,6 +523,10 @@ UTARGETS += test_ode_bloch test_biot_savart
 MODULES_test_ode_bloch += -lsimu
 MODULES_test_biot_savart += -lsimu
 
+# lib geom
+UTARGETS += test_geom
+MODULES_test_geom += -lgeom
+
 # lib iter
 UTARGETS += test_iter test_prox
 MODULES_test_iter += -liter -lnlops -llinops

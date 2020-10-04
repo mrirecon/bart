@@ -1,4 +1,4 @@
-
+ 
 #include "logo.h"
 
 const double bart_logo[77][2][4] = { // cubic hermite spline (really just floats)

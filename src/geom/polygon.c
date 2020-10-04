@@ -2,9 +2,9 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2019-2020 Martin Uecker
+ * Authors:
+ * 2019-2020 Martin Uecker <muecker@gwdg.de>
  */
-
 
 #include "polygon.h"
 
