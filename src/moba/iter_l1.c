@@ -181,7 +181,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 }
 
 
-static const struct operator_p_s* create_prox(const long img_dims[DIMS])
+static const struct operator_p_s* create_prox(const long img_dims[DIMS], unsigned long jflag, float lambda)
 {
 	bool randshift = true;
 	long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -196,7 +196,7 @@ static const struct operator_p_s* create_prox(const long img_dims[DIMS])
 		}
 	}
 
-	return prox_wavelet_thresh_create(DIMS, img_dims, wflags, COEFF_FLAG, minsize, 1., randshift);
+	return prox_wavelet_thresh_create(DIMS, img_dims, wflags, jflag, minsize, lambda, randshift);
 }
 
 
@@ -252,7 +252,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);
 	debug_print_dims(DP_INFO, DIMS, img_dims);
 
-	auto prox1 = create_prox(img_dims);
+	auto prox1 = create_prox(img_dims, COEFF_FLAG, 1.);
 	auto prox2 = op_p_auto_normalize(prox1, ~(COEFF_FLAG | SLICE_FLAG));
 
 	struct T1inv_s idata = {
