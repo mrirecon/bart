@@ -115,6 +115,10 @@ static void combined_prox(iter_op_data* _data, float rho, float* dst, const floa
 {
 	struct T1inv_s* data = CAST_DOWN(T1inv_s, _data);
 
+	// coil sensitivity part is left untouched
+
+	assert(src == dst); 
+
 	if (data->first_iter) {
 
 		data->first_iter = false;
