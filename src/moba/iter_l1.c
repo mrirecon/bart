@@ -65,7 +65,7 @@ DEF_TYPEID(T1inv_s);
 
 
 
-static void normal_fista(iter_op_data* _data, float* dst, const float* src)
+static void normal(iter_op_data* _data, float* dst, const float* src)
 {
 	auto data = CAST_DOWN(T1inv_s, _data);
 
@@ -143,7 +143,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
     
 	void* x = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
 	md_gaussian_rand(1, MD_DIMS(data->size_x / 2), x);
-	double maxeigen = power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal_fista, CAST_UP(data) }, x);
+	double maxeigen = power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x);
 	md_free(x);
 
 	double step = data->conf->step / maxeigen;
@@ -171,7 +171,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 		data->size_x,
 		select_vecops(src),
 		continuation,
-		(struct iter_op_s){ normal_fista, CAST_UP(data) },
+		(struct iter_op_s){ normal, CAST_UP(data) },
 		(struct iter_op_p_s){ combined_prox, CAST_UP(data) },
 		dst, tmp, NULL);
 
