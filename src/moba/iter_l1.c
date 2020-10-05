@@ -123,11 +123,9 @@ static void combined_prox(iter_op_data* _data, float rho, float* dst, const floa
 
 		pos_value(_data, dst, src);
 	}
-	
-        if (1 == data->conf->opt_reg) {
 
-	        operator_p_apply_unchecked(data->prox2, rho, (_Complex float*)dst, (const _Complex float*)dst);
-        }
+	if (1 == data->conf->opt_reg)
+		operator_p_apply_unchecked(data->prox2, rho, (_Complex float*)dst, (const _Complex float*)dst);
 
 	pos_value(_data, dst, dst);
 }
@@ -140,7 +138,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 
 	data->alpha = alpha;	// update alpha for normal operator
 
-    
+
 	void* x = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
 	md_gaussian_rand(1, MD_DIMS(data->size_x / 2), x);
 	double maxeigen = power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x);
