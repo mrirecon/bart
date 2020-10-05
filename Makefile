@@ -173,7 +173,7 @@ TNUM=fft fftmod fftshift noise bench threshold conv rss filter mandelbrot wavele
 TRECO=pics pocsense sqpics itsense nlinv moba nufft rof tgv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin
 TMRI=homodyne poisson twixread fakeksp looklocker upat
-TSIM=phantom traj
+TSIM=phantom traj signal
 TIO=toimg
 
 
@@ -215,6 +215,7 @@ MODULES_wavelet = -llinops -lwavelet
 MODULES_wshfl = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart
 MODULES_ssa = -lcalib
 MODULES_bin = -lcalib
+MODULES_signal = -lsimu
 
 
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
