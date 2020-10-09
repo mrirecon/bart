@@ -1263,20 +1263,11 @@ void md_zconv2(int N, unsigned long flags,
 }
 
 void md_zconv(int N, unsigned long flags,
-				const long odims[N], complex float* out,
-				const long kdims[N], const complex float* krn,
-				const long idims[N], const complex float* in)
+	      const long odims[N], complex float* out,
+	      const long kdims[N], const complex float* krn,
+	      const long idims[N], const complex float* in)
 {
-	long ostrs[N];
-	md_calc_strides(N, ostrs, odims, CFL_SIZE);
-
-	long kstrs[N];
-	md_calc_strides(N, kstrs, kdims, CFL_SIZE);
-
-	long istrs[N];
-	md_calc_strides(N, istrs, idims, CFL_SIZE);
-
-	md_zconv2(N, flags, odims, ostrs, out, kdims, kstrs, krn, idims, istrs, in);
+	md_zconv2(N, flags, odims, MD_STRIDES(N, odims, CFL_SIZE), out, kdims, MD_STRIDES(N, kdims, CFL_SIZE), krn, idims, MD_STRIDES(N, idims, CFL_SIZE), in);
 }
 
 
