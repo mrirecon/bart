@@ -288,6 +288,10 @@ extern float md_znrmse(unsigned int D, const long dim[__VLA(D)], const _Complex 
 extern float md_znorme(unsigned int D, const long dim[__VLA(D)], const _Complex float* in1, const _Complex float* in2);
 extern float md_zrnorme(unsigned int D, const long dim[__VLA(D)], const _Complex float* ref, const _Complex float* in);
 
+extern float md_rms(unsigned int D, const long dim[__VLA(D)], const float* in);
+extern float md_rmse(unsigned int D, const long dim[__VLA(D)], const float* in1, const float* in2);
+extern float md_nrmse(unsigned int D, const long dim[__VLA(D)], const float* ref, const float* in);
+
 extern void md_zdouble2float(unsigned int D, const long dims[__VLA(D)], _Complex float* dst, const _Complex double* src);
 extern void md_zfloat2double(unsigned int D, const long dims[__VLA(D)], _Complex double* dst, const _Complex float* src);
 extern void md_float2double(unsigned int D, const long dims[__VLA(D)], double* dst, const float* src);
@@ -330,6 +334,13 @@ extern void md_imag2(unsigned int D, const long dims[__VLA(D)], const long ostr[
 extern void md_imag(unsigned int D, const long dims[__VLA(D)], float* dst, const _Complex float* src);
 extern void md_real2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], float* dst, const long istr[__VLA(D)], const _Complex float* src);
 extern void md_real(unsigned int D, const long dims[__VLA(D)], float* dst, const _Complex float* src);
+extern void md_zcmpl_real2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], _Complex float* dst, const long istr[__VLA(D)], const float* src);
+extern void md_zcmpl_real(unsigned int D, const long dims[__VLA(D)], _Complex float* dst, const float* src);
+extern void md_zcmpl_imag2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], _Complex float* dst, const long istr[__VLA(D)], const float* src);
+extern void md_zcmpl_imag(unsigned int D, const long dims[__VLA(D)], _Complex float* dst, const float* src);
+extern void md_zcmpl2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], _Complex float* dst, const long istr1[__VLA(D)], const float* src_real, const long istr2[__VLA(D)], const float* src_imag);
+extern void md_zcmpl(unsigned int D, const long dims[__VLA(D)], _Complex float* dst, const float* src_real, const float* src_imag);
+
 
 #include "misc/cppwrap.h"
 

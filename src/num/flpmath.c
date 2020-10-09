@@ -2432,6 +2432,46 @@ float md_znrmse(unsigned int D, const long dim[D], const complex float* ref, con
 	return md_zrmse(D, dim, ref, in) / md_zrms(D, dim, ref);
 }
 
+/**
+ * Calculate root-mean-square of real array
+ *
+ * return sqrt(in * in / length(in))
+ */
+float md_rms(unsigned int D, const long dim[D], const float* in)
+{
+	return md_norm(D, dim, in) / sqrtl(md_calc_size(D, dim));
+}
+
+/**
+ * Calculate root-mean-square error between two real arrays
+ *
+ * return sqrt((in1 - in2)^2 / length(in))
+ */
+float md_rmse(unsigned int D, const long dim[D], const float* in1, const float* in2)
+{
+	float* err = md_alloc_sameplace(D, dim, FL_SIZE, in1);
+
+	md_sub(D, dim, err, in1, in2);
+
+	float val = md_rms(D, dim, err);
+
+	md_free(err);
+
+	return val;
+}
+
+
+
+/**
+ * Calculate normalized root-mean-square error between two real arrays
+ *
+ * return RMSE(ref,in) / RMS(ref)
+ */
+float md_nrmse(unsigned int D, const long dim[D], const float* ref, const float* in)
+{
+	return md_rmse(D, dim, ref, in) / md_rms(D, dim, ref);
+}
+
 
 
 /**
@@ -3921,4 +3961,74 @@ void md_imag(unsigned int D, const long dims[D], float* dst, const complex float
 }
 
 
+
+void md_zcmpl_real2(unsigned int D, const long dims[D], const long ostrs[D], complex float* dst, const long istrs[D], const float* src)
+{
+#ifdef USE_CUDA
+	if (cuda_ondevice(dst) != cuda_ondevice(src)) {
+
+		md_clear2(D, dims, ostrs, (float*)dst + 0, CFL_SIZE);
+		md_copy2(D, dims, ostrs, (float*)dst + 0, istrs, src, FL_SIZE);
+		return;
+	}
+#endif
+	NESTED(void, nary_real, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zcmpl_real(data->size, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims, ostrs, dst, istrs, src, (size_t[2]){ CFL_SIZE, FL_SIZE }, nary_real);
+}
+
+void md_zcmpl_real(unsigned int D, const long dims[D], complex float* dst, const float* src)
+{
+	md_zcmpl_real2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), dst, MD_STRIDES(D, dims, FL_SIZE), src);
+}
+
+void md_zcmpl_imag2(unsigned int D, const long dims[D], const long ostrs[D], complex float* dst, const long istrs[D], const float* src)
+{
+#ifdef USE_CUDA
+	if (cuda_ondevice(dst) != cuda_ondevice(src)) {
+
+		md_clear2(D, dims, ostrs, (float*)dst + 0, CFL_SIZE);
+		md_copy2(D, dims, ostrs, (float*)dst + 1, istrs, src, FL_SIZE);
+		return;
+	}
+#endif
+	NESTED(void, nary_imag, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zcmpl_imag(data->size, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims, ostrs, dst, istrs, src, (size_t[2]){ CFL_SIZE, FL_SIZE }, nary_imag);
+}
+
+void md_zcmpl_imag(unsigned int D, const long dims[D], complex float* dst, const float* src)
+{
+	md_zcmpl_imag2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), dst, MD_STRIDES(D, dims, FL_SIZE), src);
+}
+
+
+void md_zcmpl2(unsigned int D, const long dims[D], const long ostr[D], complex float* dst, const long istr1[D], const float* src_real, const long istr2[D], const float* src_imag)
+{
+#ifdef USE_CUDA
+	if ((cuda_ondevice(dst) != cuda_ondevice(src_real)) || (cuda_ondevice(dst) != cuda_ondevice(src_imag))) {
+
+		md_copy2(D, dims, ostr, (float*)dst + 0, istr1, src_real, FL_SIZE);
+		md_copy2(D, dims, ostr, (float*)dst + 1, istr2, src_imag, FL_SIZE);
+		return;
+	}
+#endif
+	NESTED(void, nary_zcmpl, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zcmpl(data->size, ptr[0], ptr[1], ptr[2]);
+	};
+
+	optimized_threeop_oii(D, dims, ostr, dst, istr1, src_real, istr2, src_imag, (size_t[3]){ CFL_SIZE, FL_SIZE , FL_SIZE }, nary_zcmpl);
+}
+
+extern void md_zcmpl(unsigned int D, const long dims[D], complex float* dst, const float* src_real, const float* src_imag)
+{
+	md_zcmpl2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), dst, MD_STRIDES(D, dims, FL_SIZE), src_real, MD_STRIDES(D, dims, FL_SIZE), src_imag);
+}
 
