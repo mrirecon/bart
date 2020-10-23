@@ -1570,6 +1570,8 @@ struct extract_data_s {
 	int a;
 	size_t off;
 	const struct operator_s* op;
+
+	long* strs;
 };
 
 static DEF_TYPEID(extract_data_s);
@@ -1591,15 +1593,41 @@ static void extract_fun(const operator_data_t* _data, unsigned int N, void* args
 }
 
 
+static void extract_copy_fun(const operator_data_t* _data, unsigned int N, void* args[N])
+{
+	auto data = CAST_DOWN(extract_data_s, _data);
+
+	assert(N == operator_nr_args(data->op));
+
+	void* ptr[N];
+
+	for (int i = 0; i < (int)N; i++)
+		ptr[i] = args[i];
+	
+	auto iov = operator_arg_domain(data->op, data->a);
+
+	ptr[data->a] = md_alloc_sameplace(iov->N, iov->dims, iov->size, args[data->a]);
+	if (!(data->op->io_flags[data->a]))
+		md_copy2(iov->N, iov->dims, iov->strs, ptr[data->a], data->strs, args[data->a] + data->off, iov->size);
+
+	operator_generic_apply_unchecked(data->op, N, ptr);
+
+	if ((data->op->io_flags[data->a]))
+		md_copy2(iov->N, iov->dims, data->strs, args[data->a] + data->off, iov->strs, ptr[data->a], iov->size);
+	md_free(ptr[data->a]);
+}
+
+
 static void extract_del(const operator_data_t* _data)
 {
 	auto data = CAST_DOWN(extract_data_s, _data);
 
 	operator_free(data->op);
 
+	xfree(data->strs);
+
 	xfree(data);
 }
-
 
 const struct operator_s* operator_extract_create2(const struct operator_s* op, int a, int Da, const long dimsa[Da], const long strsa[Da], const long pos[Da])
 {
@@ -1622,12 +1650,18 @@ const struct operator_s* operator_extract_create2(const struct operator_s* op, i
 
 	assert(Da == (int)D[a]);
 
+	auto ioa = operator_arg_domain(op, a);
+	bool trivial_strides = iovec_check(ioa, ioa->N, ioa->dims, MD_STRIDES(ioa->N, ioa->dims, ioa->size));
+	bool copy_needed = false;
+
 	for (int i = 0; i < Da; i++) {
 
 		assert((0 <= pos[i]) && (pos[i] < dimsa[i]));
 		assert(dims[a][i] + pos[i] <= dimsa[i]);
-		assert((0 == strs[a][i]) || (strs[a][i] == strsa[i]));
+		copy_needed = copy_needed || !((0 == strs[a][i]) || (strs[a][i] == strsa[i]));
 	}
+
+	assert(trivial_strides || !copy_needed);
 
 	dims[a] = dimsa;
 	strs[a] = strsa;
@@ -1639,7 +1673,11 @@ const struct operator_s* operator_extract_create2(const struct operator_s* op, i
 	data->a = a;
 	data->off = md_calc_offset(Da, strsa, pos);
 
-	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), extract_fun, extract_del);
+	PTR_ALLOC(long[Da], nstrs);
+	md_copy_strides(Da, *nstrs, strsa);
+	data->strs = *PTR_PASS(nstrs);
+
+	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), copy_needed ? extract_copy_fun : extract_fun, extract_del);
 }
 
 
@@ -1658,6 +1696,10 @@ static bool stack_compatible(unsigned int D, const struct iovec_s* a, const stru
 	for (unsigned int i = 0; i < N; i++)
 		if ((D != i) && ((a->dims[i] != b->dims[i] || (a->strs[i] != b->strs[i]))))
 			return false;
+	
+	for (unsigned int i = D + 1; i < N; i++)
+		if (((a->dims[i] != 1) && (a->strs[i] != 0)) || ((b->dims[i] != 1) && (b->strs[i] != 0)))
+			return false;
 
 	if ((1 != a->dims[D]) && (1 != b->dims[D]))
 		if (a->strs[D] != b->strs[D])
@@ -1671,8 +1713,25 @@ static bool stack_compatible(unsigned int D, const struct iovec_s* a, const stru
 	if ((1 != a->dims[D]) && (S != a->strs[D]))
 		return false;
 
-	if ((1 != b->dims[D]) && (S != b->strs[D]))
+
+	return true;
+}
+
+static bool stack_compatible_copy(unsigned int D, const struct iovec_s* a, const struct iovec_s* b)
+{
+	if (a->N != b->N)
 		return false;
+
+	unsigned int N = a->N;
+
+	if (!iovec_check(a, a->N, a->dims, MD_STRIDES(a->N, a->dims, a->size)))
+		return false;
+	if (!iovec_check(b, b->N, b->dims, MD_STRIDES(b->N, b->dims, b->size)))
+		return false;
+
+	for (unsigned int i = 0; i < N; i++)
+		if ((D != i) && (a->dims[i] != b->dims[i]))
+			return false;
 
 	return true;
 }
@@ -1689,7 +1748,22 @@ static void stack_dims(unsigned int N, long dims[N], long strs[N], unsigned int 
 	dims[D] = a->dims[D] + b->dims[D];
 }
 
+static void stack_dims_trivial(unsigned int N, long dims[N], long strs[N], unsigned int D, const struct iovec_s* a, const struct iovec_s* b)
+{
+	md_copy_dims(N, dims, a->dims);
+	dims[D] = a->dims[D] + b->dims[D];
+	md_calc_strides(N, strs, dims, a->size);
+}
 
+/**
+ *Stacks two operators over selected arguments, the other arguments are duplex
+ *
+ * @param M nr of arguments to stack over
+ * @param arg_list index of arguments to stack
+ * @param dim_list stack dimension for respective argument
+ * @param a first operator to stack
+ * @param b second operator to stack
+ **/ 
 const struct operator_s* operator_stack2(int M, const int arg_list[M], const int dim_list[M], const struct operator_s* a, const struct operator_s* b)
 {
 	a = operator_ref(a);
@@ -1703,14 +1777,18 @@ const struct operator_s* operator_stack2(int M, const int arg_list[M], const int
 		auto ia = operator_arg_domain(a, arg);
 		auto ib = operator_arg_domain(b, arg);
 
-		assert(stack_compatible(dim, ia, ib));
+		assert(stack_compatible(dim, ia, ib) || stack_compatible_copy(dim, ia, ib));
 
 		int D = ia->N;
 
 		long dims[D];
 		long strs[D];
-		stack_dims(D, dims, strs, dim, ia, ib);
-
+		
+		if (stack_compatible(dim, ia, ib))
+			stack_dims(D, dims, strs, dim, ia, ib);
+		else
+			stack_dims_trivial(D, dims, strs, dim, ia, ib);
+		
 		long pos[D];
 
 		for (int i = 0; i < D; i++)
@@ -1744,7 +1822,6 @@ const struct operator_s* operator_stack2(int M, const int arg_list[M], const int
 
 	return c;
 }
-
 
 /**
  * Create a new operator that stacks a and b along dimension D
