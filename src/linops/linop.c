@@ -605,3 +605,54 @@ struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b)
 	return x;
 }
 
+
+struct linop_s* linop_reshape_in(const struct linop_s* op, unsigned int NI, const long idims[NI]) {
+
+	PTR_ALLOC(struct linop_s, c);
+
+	c->forward = operator_reshape(op->forward, 1, NI, idims);
+	c->adjoint = operator_reshape(op->forward, 0, NI, idims);
+
+	if (NULL != op->normal) {
+
+		auto tmp = operator_reshape(op->normal, 1, NI, idims);
+		c->normal = operator_reshape(tmp, 0, NI, idims);
+		operator_free(tmp);
+	} else {
+
+		c->normal = NULL;
+	}
+
+	if (NULL != op->norm_inv)
+		c->norm_inv = operator_p_reshape_out_F(operator_p_reshape_in(op->norm_inv, NI, idims), NI, idims);
+	else
+		c->norm_inv = NULL;
+
+	return PTR_PASS(c);
+}
+
+struct linop_s* linop_reshape_out(const struct linop_s* op, unsigned int NO, const long odims[NO])
+{
+	PTR_ALLOC(struct linop_s, c);
+
+	c->forward = operator_reshape(op->forward, 0, NO, odims);
+	c->adjoint = operator_reshape(op->forward, 1, NO, odims);
+	c->normal = operator_ref(op->normal);
+	c->norm_inv = operator_p_ref(op->norm_inv);
+
+	return PTR_PASS(c);
+}
+
+struct linop_s* linop_reshape_in_F(const struct linop_s* op, unsigned int NI, const long idims[NI])
+{
+	auto result = linop_reshape_in(op, NI, idims);
+	linop_free(op);
+	return result;
+}
+
+struct linop_s* linop_reshape_out_F(const struct linop_s* op, unsigned int NO, const long odims[NO])
+{
+	auto result = linop_reshape_out(op, NO, odims);
+	linop_free(op);
+	return result;
+}

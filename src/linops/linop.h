@@ -92,6 +92,12 @@ extern struct linop_s* linop_null_create(unsigned int NO, const long odims[NO], 
 extern struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b);
 extern struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b);
 
+extern struct linop_s* linop_reshape_in(const struct linop_s* op, unsigned int NI, const long idims[NI]);
+extern struct linop_s* linop_reshape_out(const struct linop_s* op, unsigned int NO, const long odims[NO]);
+
+extern struct linop_s* linop_reshape_in_F(const struct linop_s* op, unsigned int NI, const long idims[NI]);
+extern struct linop_s* linop_reshape_out_F(const struct linop_s* op, unsigned int NO, const long odims[NO]);
+
 
 #include "misc/cppwrap.h"
 
