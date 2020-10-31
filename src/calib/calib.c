@@ -155,9 +155,12 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	// Construct low-resolution image
 	long im_dims[5];
 	md_select_dims(5, 15, im_dims, evec_dims);
+
 	complex float* im = md_alloc_sameplace(5, im_dims, CFL_SIZE, calreg);
+
 	md_clear(5, im_dims, im, CFL_SIZE);
 	md_resize_center(5, im_dims, im, calreg_dims, calreg, CFL_SIZE);
+
 	ifftuc(5, im_dims, FFT_FLAGS, im, im);
 
 	// Temporary vector for crop dimensions
@@ -167,18 +170,22 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 
 	// Eigenvectors (M)
 	complex float* M = md_alloc_sameplace(5, evec_dims, CFL_SIZE, calreg);
+
 	md_copy(5, evec_dims, M, evec_data, CFL_SIZE);
 
 	// Temporary eigenvector holder to hold low resolution maps
 	complex float* LM = md_alloc_sameplace(5, evec_dims, CFL_SIZE, calreg);
+
 	// Temporary holder for projection calreg
 	complex float* TC = md_alloc_sameplace(5, calreg_dims, CFL_SIZE, calreg);
+
 	// Temporary holder to hold low resolution calib maps
 	complex float* CM = md_alloc_sameplace(5, cropdims, CFL_SIZE, calreg);
 
 	// Eigenvalues (W)
 	long W_dims[5];
 	md_select_dims(5, 23, W_dims, evec_dims);
+
 	complex float* W = md_alloc_sameplace(5, W_dims, CFL_SIZE, calreg);
 	md_copy(5, W_dims, W, eptr, CFL_SIZE);
 
@@ -197,17 +204,17 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	long str2_ip[5];
 	long stro_ip[5];
 
-	md_calc_strides(5, str1_ip,   im_dims, CFL_SIZE);
+	md_calc_strides(5, str1_ip, im_dims, CFL_SIZE);
 	md_calc_strides(5, str2_ip, evec_dims, CFL_SIZE);
-	md_calc_strides(5, stro_ip,    W_dims, CFL_SIZE);
+	md_calc_strides(5, stro_ip, W_dims, CFL_SIZE);
 
 	long str1_proj[5];
 	long str2_proj[5];
 	long stro_proj[5];
 
-	md_calc_strides(5, str1_proj,    W_dims, CFL_SIZE);
+	md_calc_strides(5, str1_proj, W_dims, CFL_SIZE);
 	md_calc_strides(5, str2_proj, evec_dims, CFL_SIZE);
-	md_calc_strides(5, stro_proj,   im_dims, CFL_SIZE);
+	md_calc_strides(5, stro_proj, im_dims, CFL_SIZE);
 
 	long str1_div[5];
 	long str2_div[5];
@@ -215,22 +222,23 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 
 	md_calc_strides(5, str1_div, evec_dims, CFL_SIZE);
 	md_calc_strides(5, str2_div, evec_dims, CFL_SIZE);
-	md_calc_strides(5, stro_div,  div_dims, CFL_SIZE);
+	md_calc_strides(5, stro_div, div_dims, CFL_SIZE);
 
 	long tdims_ip[5];
 	long tdims_proj[5];
 
 	for (unsigned int i = 0; i < 5; i++) {
-		assert((im_dims[i] == evec_dims[i]) || (1 == im_dims[i]) || (1 == evec_dims[i]));
-		assert(( W_dims[i] == evec_dims[i]) || (1 ==  W_dims[i]) || (1 == evec_dims[i]));
 
-		tdims_ip[i]   = (1 == im_dims[i]) ? evec_dims[i] : im_dims[i];
-		tdims_proj[i] = (1 ==  W_dims[i]) ? evec_dims[i] :  W_dims[i];
+		assert((im_dims[i] == evec_dims[i]) || (1 == im_dims[i]) || (1 == evec_dims[i]));
+		assert((W_dims[i] == evec_dims[i]) || (1 == W_dims[i]) || (1 == evec_dims[i]));
+
+		tdims_ip[i] = (1 == im_dims[i]) ? evec_dims[i] : im_dims[i];
+		tdims_proj[i] = (1 == W_dims[i]) ? evec_dims[i] : W_dims[i];
 	}
 
 	// Starting parameter sweep with SURE.
-	float mse     = -1;
-	float old_mse = 0;
+	float mse = -1.;
+	float old_mse = 0.;
 
 	float s = -0.1;
 	float c = 0.99;
@@ -242,49 +250,71 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	debug_printf(DP_INFO, "| CTR1 | CTR2 |  Crop  |      Est. MSE      |\n");
 	debug_printf(DP_INFO, "---------------------------------------------\n");
 
-	while (fabs(s) > 1E-4) {
-		ctr1 ++;
-		while (c < 0.999 && c > 0.001 && (ctr2 <= 1 || mse < old_mse)) {
-			ctr2 ++;
+	while (fabs(s) > 1.E-4) {
 
-			md_clear(5,      W_dims,   ip, CFL_SIZE);
-			md_clear(5,     im_dims, proj, CFL_SIZE);
-			md_clear(5,    div_dims,  div, CFL_SIZE);
-			md_clear(5,   evec_dims,    M, CFL_SIZE);
-			md_clear(5,   evec_dims,   LM, CFL_SIZE);
-			md_clear(5, calreg_dims,   TC, CFL_SIZE);
+		ctr1++;
+
+		while (   (c < 0.999)
+		       && (c > 0.001)
+		       && (   (ctr2 <= 1)
+			   || (mse < old_mse))) {
+
+			ctr2++;
+
+			md_clear(5, W_dims, ip, CFL_SIZE);
+			md_clear(5, im_dims, proj, CFL_SIZE);
+			md_clear(5, div_dims, div, CFL_SIZE);
+			md_clear(5, evec_dims, M, CFL_SIZE);
+			md_clear(5, evec_dims, LM, CFL_SIZE);
+			md_clear(5, calreg_dims, TC, CFL_SIZE);
+
 			md_copy(5, evec_dims, M, evec_data, CFL_SIZE);
-			old_mse = mse;
-			mse = 0;
 
-			crop_weight(evec_dims, M, crop_thresh_function, c, W);                   // Cropping.
-			md_zfmacc2(5,   tdims_ip,   stro_ip,   ip,   str1_ip, im,   str2_ip, M); // Projection.
-			md_zfmac2 (5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
+			old_mse = mse;
+			mse = 0.;
+
+			crop_weight(evec_dims, M, crop_thresh_function, c, W);
+
+			md_zfmacc2(5, tdims_ip, stro_ip, ip, str1_ip, im, str2_ip, M); // Projection.
+			md_zfmac2(5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
+
 			fftuc(5, im_dims, FFT_FLAGS, proj, proj);                                // Low res proj img.
+
 			md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
 			md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
+
 			ifftuc(5, im_dims, FFT_FLAGS, proj, proj);
-			for (int jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
-				mse += powf((float) (cabsf(im[jdx] - proj[jdx])), 2);
+
+			for (long jdx = 0; jdx < md_calc_size(5, im_dims); jdx++)
+				mse += powf(cabsf(im[jdx] - proj[jdx]), 2.);
+
 			fftuc(5, evec_dims, FFT_FLAGS, LM, M);                                   // low-res maps .
+
 			md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
 			md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
+
 			ifftuc(5, evec_dims, FFT_FLAGS, LM, LM);
+
 			md_zfmacc2(5, evec_dims, stro_div, div, str1_div, LM, str2_div, LM);     // Calc SURE div using low res maps.
-			mse += (float) (2 * var * crealf(*div));
+
+			mse += 2. * var * crealf(*div);
 
 			if (ctr2 == 1)
 				debug_printf(DP_INFO, "| %4ld | %4ld | %0.4f | %0.12e |\n", ctr1, ctr2, c, mse);
 			else
 				debug_printf(DP_INFO, "|      | %4ld | %0.4f | %0.12e |\n", ctr2, c, mse);
+
 			c = c + s;
 		}
+
 		c -= s;
 		ctr2 = 0;
-		s = -s/2;
+		s = -s / 2;
 		c += s;
 	}
+
 	c = c + s;
+
 	debug_printf(DP_INFO, "---------------------------------------------\n");
 
 	md_free(im);
