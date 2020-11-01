@@ -31,7 +31,7 @@ static const char usage_str[] = "dim1 kern1 dim2 kern2 ... dimn kernn <input> <o
 static const char help_str[] = "Casorati matrix with kernel (kern1, ..., kernn) along dimensions (dim1, ..., dimn).\n";
 
 
-int main_casorati(int argc, char* argv[])
+int main_casorati(int argc, char* argv[argc])
 {
 	cmdline(&argc, argv, 4, 100, usage_str, help_str, 0, NULL);
 

@@ -79,7 +79,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 }
 
 
-int main_pics(int argc, char* argv[])
+int main_pics(int argc, char* argv[argc])
 {
 	// Initialize default parameters
 

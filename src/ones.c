@@ -26,7 +26,7 @@ static const char help_str[] = "Create an array filled with ones with {dims} dim
 
 
 
-int main_ones(int argc, char* argv[])
+int main_ones(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, -3, usage_str, help_str);
 

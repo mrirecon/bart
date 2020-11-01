@@ -34,7 +34,7 @@ static const char help_str[] = "Normalize along selected dimensions.\n";
 
 
 
-int main_normalize(int argc, char* argv[])
+int main_normalize(int argc, char* argv[argc])
 {
 	bool l1 = false;
 

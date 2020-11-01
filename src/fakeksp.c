@@ -33,7 +33,7 @@ static const char help_str[] = "Recreate k-space from image and sensitivities.";
 
 
 
-int main_fakeksp(int argc, char* argv[])
+int main_fakeksp(int argc, char* argv[argc])
 {
 	bool rplksp = false;
 

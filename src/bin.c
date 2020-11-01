@@ -132,7 +132,7 @@ static const char help_str[] = "Binning\n";
 
 
 
-int main_bin(int argc, char* argv[])
+int main_bin(int argc, char* argv[argc])
 {
 	unsigned int n_resp = 0;
 	unsigned int n_card = 0;

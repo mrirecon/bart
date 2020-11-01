@@ -24,7 +24,7 @@ static const char usage_str[] = "<input> <U> <S> <VH>";
 static const char help_str[] = "Compute singular-value-decomposition (SVD).\n";
 
 
-int main_svd(int argc, char* argv[])
+int main_svd(int argc, char* argv[argc])
 {
 	bool econ = false;
 

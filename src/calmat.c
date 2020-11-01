@@ -29,7 +29,7 @@ static const char help_str[] = "Compute calibration matrix.";
 
 
 
-int main_calmat(int argc, char* argv[])
+int main_calmat(int argc, char* argv[argc])
 {
 	long calsize[3] = { 24, 24, 24 };
 	long kdims[3] = { 5, 5, 5 };

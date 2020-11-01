@@ -60,7 +60,7 @@ static const char help_str[] =
 
 
 
-int main_nlinv(int argc, char* argv[])
+int main_nlinv(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 

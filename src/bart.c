@@ -85,7 +85,7 @@ static void usage(void)
 	printf("\n");
 }
 
-int main_bart(int argc, char* argv[])
+int main_bart(int argc, char* argv[argc])
 {
 	char* bn = basename(argv[0]);
 

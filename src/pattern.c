@@ -27,7 +27,7 @@ static const char usage_str[] = "<kspace> <pattern>";
 static const char help_str[] = "Compute sampling pattern from kspace\n";
 
 
-int main_pattern(int argc, char* argv[])
+int main_pattern(int argc, char* argv[argc])
 {
 
 	unsigned int flags = COIL_FLAG;

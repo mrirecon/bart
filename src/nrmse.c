@@ -35,7 +35,7 @@ static const char help_str[] =
 			
 
 
-int main_nrmse(int argc, char* argv[])
+int main_nrmse(int argc, char* argv[argc])
 {
 	float test = -1.;
 	bool auto_scale = false;

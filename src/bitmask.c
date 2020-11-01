@@ -22,7 +22,7 @@ static const char help_str[] = "Convert between a bitmask and set of dimensions.
 
 
 
-int main_bitmask(int argc, char* argv[])
+int main_bitmask(int argc, char* argv[argc])
 {
 	bool inverse = false;
 	long flags = 0;

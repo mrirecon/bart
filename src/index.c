@@ -26,7 +26,7 @@ static const char help_str[] = "Create an array counting from 0 to {size-1} in d
 
 
 
-int main_index(int argc, char* argv[])
+int main_index(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 

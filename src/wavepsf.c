@@ -42,7 +42,7 @@ static const char help_str[] = "Generate a wave PSF in hybrid space.\n"
 															 "bart reshape 7 wZ 768 1 128 wZ wZ\n"
 															 "bart fmac wY wZ wYZ";
 
-int main_wavepsf(int argc, char* argv[])
+int main_wavepsf(int argc, char* argv[argc])
 {
 	
 	// Spatial dimensions.

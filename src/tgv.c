@@ -57,7 +57,7 @@ static const char help_str[] = "Perform total generalized variation denoising al
  * min x,z \| Ix - y \|_2^2 + \alpha \|grad x - z\|_1 + \beta \|eps z\|_1
  * */
 	
-int main_tgv(int argc, char* argv[])
+int main_tgv(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 

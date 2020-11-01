@@ -76,7 +76,7 @@ static void calc_optmat(const long mat_dims[DIMS], complex float* optmat, const 
 }
 
 
-int main_whiten(int argc, char* argv[])
+int main_whiten(int argc, char* argv[argc])
 {
 
 	const char* optmat_file = NULL;

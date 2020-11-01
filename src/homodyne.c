@@ -109,7 +109,7 @@ static void homodyne(struct wdata wdata, unsigned int flags, unsigned int N, con
 
 
 
-int main_homodyne(int argc, char* argv[])
+int main_homodyne(int argc, char* argv[argc])
 {
 	bool clear = false;
 	bool image = false;

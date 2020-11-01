@@ -650,7 +650,7 @@ static const char help_str[] = "Performs a series of micro-benchmarks.";
 
 
 
-int main_bench(int argc, char* argv[])
+int main_bench(int argc, char* argv[argc])
 {
 	bool threads = false;
 	bool scaling = false;

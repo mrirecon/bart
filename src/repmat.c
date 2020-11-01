@@ -26,7 +26,7 @@ static const char usage_str[] = "dimension repetitions <input> <output>";
 static const char help_str[] = "Repeat input array multiple times along a certain dimension.\n";
 
 
-int main_repmat(int argc, char* argv[])
+int main_repmat(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 

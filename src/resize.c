@@ -33,7 +33,7 @@ static const char usage_str[] = "dim1 size1 ... dimn sizen <input> <output>";
 static const char help_str[] = "Resizes an array along dimensions to sizes by truncating or zero-padding.";
 
 
-int main_resize(int argc, char* argv[])
+int main_resize(int argc, char* argv[argc])
 {
 	bool center = false;
 

@@ -34,7 +34,7 @@ static const char usage_str[] = "dim1 pos1 ... dimn posn <input> <output>";
 static const char help_str[] = "Extracts a slice from positions along dimensions.\n";
 
 
-int main_slice(int argc, char* argv[])
+int main_slice(int argc, char* argv[argc])
 {
 	const struct opt_s opts[] = {};
 

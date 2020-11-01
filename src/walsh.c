@@ -26,7 +26,7 @@ static const char usage_str[] = "<input> <output>";
 static const char help_str[] = "Estimate coil sensitivities using walsh method (use with ecaltwo).";
 
 
-int main_walsh(int argc, char* argv[])
+int main_walsh(int argc, char* argv[argc])
 {
 	long bsize[3] = { 20, 20, 20 };
 	long calsize[3] = { 24, 24, 24 };

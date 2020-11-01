@@ -28,7 +28,7 @@ static const char help_str[] = "Analytical simulation tool.";
 
 
 
-int main_signal(int argc, char* argv[])
+int main_signal(int argc, char* argv[argc])
 {
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[TE_DIM] = 100;

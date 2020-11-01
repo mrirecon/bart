@@ -39,7 +39,7 @@ static const char help_str[] =
 
 
 
-int main_join(int argc, char* argv[])
+int main_join(int argc, char* argv[argc])
 {
 	bool append = false;
 

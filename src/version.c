@@ -65,7 +65,7 @@ static bool parse_version(const char* version, unsigned int v[5])
 }
 			
 
-int main_version(int argc, char* argv[])
+int main_version(int argc, char* argv[argc])
 {
 	bool verbose = false;
 	const char* version = NULL;

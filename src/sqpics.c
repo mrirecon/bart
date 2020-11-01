@@ -243,7 +243,7 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 	return false;
 }
 
-int main_sqpics(int argc, char* argv[])
+int main_sqpics(int argc, char* argv[argc])
 {
 	// Initialize default parameters
 

@@ -31,7 +31,7 @@ static const char help_str[] =	"Apply 1 -1 modulation along dimensions selected 
 
 
 
-int main_fftmod(int argc, char* argv[])
+int main_fftmod(int argc, char* argv[argc])
 {
 	bool inv = false;
 

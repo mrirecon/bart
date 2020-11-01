@@ -36,7 +36,7 @@ static const char help_str[] = "Performs coil compression.";
 
 
 
-int main_cc(int argc, char* argv[])
+int main_cc(int argc, char* argv[argc])
 {
 	long calsize[3] = { 24, 24, 24 };
 	bool proj = true;

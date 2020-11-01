@@ -27,7 +27,7 @@ static const char help_str[] = "Estimate sub-pixel shift.";
 
 
 
-int main_estshift(int argc, char* argv[])
+int main_estshift(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 

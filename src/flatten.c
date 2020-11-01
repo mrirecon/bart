@@ -27,7 +27,7 @@ static const char usage_str[] = "<input> <output>";
 static const char help_str[] = "Flatten array to one dimension.\n";
 
 
-int main_flatten(int argc, char* argv[])
+int main_flatten(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 

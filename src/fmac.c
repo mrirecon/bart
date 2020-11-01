@@ -29,7 +29,7 @@ static const char help_str[] =
 		"If <input2> is not specified, assume all-ones.";
 
 
-int main_fmac(int argc, char* argv[])
+int main_fmac(int argc, char* argv[argc])
 {
 	bool clear = true;
 	bool conj = false;

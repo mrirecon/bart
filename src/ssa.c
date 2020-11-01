@@ -29,7 +29,7 @@ static const char help_str[] =
 		"Perform SSA-FARY or Singular Spectrum Analysis. <src>: [samples, coordinates]\n";
 
 
-int main_ssa(int argc, char* argv[])
+int main_ssa(int argc, char* argv[argc])
 {
 	int window = -1;
 	int normalize = 0;

@@ -31,7 +31,7 @@ static const char help_str[] = "Add noise with selected variance to input.";
 
 
 
-int main_noise(int argc, char* argv[])
+int main_noise(int argc, char* argv[argc])
 {
 	float var = 1.;
 	float spike = 1.;

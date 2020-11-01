@@ -41,7 +41,7 @@ static const char help_str[] =
 		"Use SAKE algorithm to recover a full k-space from undersampled\n"
 		"data using low-rank matrix completion.";
 
-int main_sake(int argc, char* argv[])
+int main_sake(int argc, char* argv[argc])
 {
 	float alpha = 0.22;
 	int iter = 50;

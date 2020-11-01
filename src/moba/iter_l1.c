@@ -274,7 +274,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 
 
 void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
-	const long dims[],
+	const long dims[DIMS],
 	struct nlop_s* nlop,
 	long N, float* dst,
 	long M, const float* src)

@@ -32,7 +32,7 @@ static const char help_str[] = "Performs a rotation using Fourier transform (FFT
 
 
 
-int main_fftrot(int argc, char* argv[])
+int main_fftrot(int argc, char* argv[argc])
 {
 	const struct opt_s opts[] = {
 

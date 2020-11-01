@@ -32,7 +32,7 @@ static const char usage_str[] = "dim1 start1 end1 ... dimn startn endn <input> <
 static const char help_str[] = "Extracts a sub-array along dims from index start to (not including) end.\n";
 
 
-int main_extract(int argc, char* argv[])
+int main_extract(int argc, char* argv[argc])
 {
 	const struct opt_s opts[] = {};
 

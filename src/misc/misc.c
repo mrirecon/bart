@@ -461,7 +461,7 @@ static const char* quote(const char* str)
 
 const char* command_line = NULL;
 
-void save_command_line(int argc, char* argv[])
+void save_command_line(int argc, char* argv[static argc])
 {
 	size_t len = 0;
 	const char* qargv[argc];

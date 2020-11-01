@@ -37,7 +37,7 @@ static const char help_str[] =
 
 
 
-int main_ecaltwo(int argc, char* argv[])
+int main_ecaltwo(int argc, char* argv[argc])
 {
 	long maps = 2; // channels;
 	struct ecalib_conf conf = ecalib_defaults;

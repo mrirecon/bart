@@ -27,7 +27,7 @@ static const char usage_str[] = "dimension size <input> <output>";
 static const char help_str[] = "Extracts a sub-array corresponding to the central part of {size} along {dimension}\n";
 
 
-int main_crop(int argc, char* argv[])
+int main_crop(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 4, usage_str, help_str);
 

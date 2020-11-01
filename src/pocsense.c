@@ -47,7 +47,7 @@ static const char help_str[] = "Perform POCSENSE reconstruction.";
 
 	
 
-int main_pocsense(int argc, char* argv[])
+int main_pocsense(int argc, char* argv[argc])
 {
 	float alpha = 0.;
 	int maxiter = 50;

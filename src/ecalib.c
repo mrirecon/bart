@@ -42,7 +42,7 @@ static const char help_str[] =
 
 
 
-int main_ecalib(int argc, char* argv[])
+int main_ecalib(int argc, char* argv[argc])
 {
 	long calsize[3] = { 24, 24, 24 }; 
 	int maps = 2;

@@ -27,7 +27,7 @@ static const char usage_str[] = "<input> <output>";
 static const char help_str[] = "Remove singleton dimensions of array.\n";
 
 
-int main_squeeze(int argc, char* argv[])
+int main_squeeze(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 

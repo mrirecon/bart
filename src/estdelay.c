@@ -49,7 +49,7 @@ static const char usage_str[] = "<trajectory> <data>";
 static const char help_str[] = "Estimate gradient delays from radial data.";
 
 
-int main_estdelay(int argc, char* argv[])
+int main_estdelay(int argc, char* argv[argc])
 {
 	bool do_ring = false;
 	struct ring_conf conf = ring_defaults;

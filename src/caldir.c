@@ -32,7 +32,7 @@ static const char help_str[] =
 
 
 
-int main_caldir(int argc, char* argv[])
+int main_caldir(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 

@@ -27,7 +27,7 @@ static const char usage_str[] = "flags dim1 ... dimN <input> <output>";
 static const char help_str[] = "Reshape selected dimensions.\n";
 
 
-int main_reshape(int argc, char* argv[])
+int main_reshape(int argc, char* argv[argc])
 {
 	cmdline(&argc, argv, 3, 100, usage_str, help_str, 0, NULL);
 

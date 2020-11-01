@@ -57,7 +57,7 @@ static const char usage_str[] = "<outfile>";
 static const char help_str[] = "Computes Poisson-disc sampling pattern.";
 
 
-int main_poisson(int argc, char* argv[])
+int main_poisson(int argc, char* argv[argc])
 {
 	int yy = 128;
 	int zz = 128;

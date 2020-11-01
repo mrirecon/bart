@@ -26,7 +26,7 @@ static const char usage_str[] = "flags <input> <output>";
 static const char help_str[] = "Apply Hamming (Hann) window to <input> along dimensions specified by flags";
 
 
-int main_window(int argc, char* argv[])
+int main_window(int argc, char* argv[argc])
 {
 	bool hamming = true;
 

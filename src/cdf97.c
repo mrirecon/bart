@@ -31,7 +31,7 @@ static const char help_str[] = "Perform a wavelet (cdf97) transform.\n";
 
 
 
-int main_cdf97(int argc, char* argv[])
+int main_cdf97(int argc, char* argv[argc])
 {
 	bool inv = false;
 

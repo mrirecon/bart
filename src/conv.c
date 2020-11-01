@@ -26,7 +26,7 @@ static const char usage_str[] = "bitmask <input> <kernel> <output>";
 static const char help_str[] = "Performs a convolution along selected dimensions.";
 
 
-int main_conv(int argc, char* argv[])
+int main_conv(int argc, char* argv[argc])
 {
 	cmdline(&argc, argv, 4, 4, usage_str, help_str, 0, NULL);
 

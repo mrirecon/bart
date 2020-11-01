@@ -155,7 +155,7 @@ static const char help_str[] = "A simplified implementation of iterative sense r
 
 
 
-int main_itsense(int argc, char* argv[])
+int main_itsense(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 5, usage_str, help_str);
 

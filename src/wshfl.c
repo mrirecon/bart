@@ -879,7 +879,7 @@ static void fftmod_apply(long sy, long sz,
 	}
 }
 
-int main_wshfl(int argc, char* argv[])
+int main_wshfl(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 

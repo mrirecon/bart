@@ -25,7 +25,7 @@ static const char help_str[] = "Create a vector of values.\n";
 
 
 
-int main_vec(int argc, char* argv[])
+int main_vec(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, -1, usage_str, help_str);
 

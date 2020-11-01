@@ -31,7 +31,7 @@ static const char usage_str[] = "[dim1 pos1 ... dimn posn] <input> <output>";
 static const char help_str[] = "Copy an array (to a given position in the output file - which then must exist).";
 
 
-int main_copy(int argc, char* argv[])
+int main_copy(int argc, char* argv[argc])
 {
 	const struct opt_s opts[] = { };
 	cmdline(&argc, argv, 2, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);

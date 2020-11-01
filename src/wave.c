@@ -154,7 +154,7 @@ static const struct linop_s* linop_samp_create(long wx, long sy, long sz, long n
 
 enum algo_t { CG, IST, FISTA };
 
-int main_wave(int argc, char* argv[])
+int main_wave(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 

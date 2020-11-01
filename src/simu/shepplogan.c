@@ -216,7 +216,7 @@ complex double krectangle(const double center[2], const double axis[2], double a
 }
 
 
-complex double phantom(unsigned int N, const struct ellipsis_s arr[N], const double pos[3], bool ksp)
+complex double phantom(unsigned int N, const struct ellipsis_s arr[N], const double pos[2], bool ksp)
 {
 	complex double res = 0.;
 

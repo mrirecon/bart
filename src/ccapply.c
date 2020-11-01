@@ -31,7 +31,7 @@ static const char help_str[] = "Apply coil compression forward/inverse operation
 
 
 
-int main_ccapply(int argc, char* argv[])
+int main_ccapply(int argc, char* argv[argc])
 {
 	bool forward = true;
 	bool do_fft = true;

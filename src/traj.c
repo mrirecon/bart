@@ -31,7 +31,7 @@ static const char usage_str[] = "<output>";
 static const char help_str[] = "Computes k-space trajectories.";
 
 
-int main_traj(int argc, char* argv[])
+int main_traj(int argc, char* argv[argc])
 {
 	int X = 128;
 	int Y = 128;

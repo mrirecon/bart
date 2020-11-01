@@ -29,7 +29,7 @@ static const char help_str[] = "Image and k-space domain phantoms.";
 
 
 
-int main_phantom(int argc, char* argv[])
+int main_phantom(int argc, char* argv[argc])
 {
 	bool kspace = false;
 	bool d3 = false;

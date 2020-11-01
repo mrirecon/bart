@@ -32,7 +32,7 @@ static const char help_str[] = "Remove angle-dependent frequency\n";
 
 
 
-int main_rmfreq(int argc, char* argv[])
+int main_rmfreq(int argc, char* argv[argc])
 {
 	unsigned int n_harmonics = 5;
 

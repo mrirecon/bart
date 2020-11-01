@@ -25,7 +25,7 @@ static const char usage_str[] = "<input> <output>";
 static const char help_str[] = "Compute complex conjugate.\n";
 
 
-int main_conj(int argc, char* argv[])
+int main_conj(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 

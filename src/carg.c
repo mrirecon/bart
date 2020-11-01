@@ -30,7 +30,7 @@ static const char usage_str[] = "<input> <output>";
 static const char help_str[] = "Argument (phase angle).\n";
 
 
-int main_carg(int argc, char* argv[])
+int main_carg(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 

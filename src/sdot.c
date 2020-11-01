@@ -26,7 +26,7 @@
 static const char usage_str[] = "<input1> <input2>";
 static const char help_str[] = "Compute dot product along selected dimensions.";
 
-int main_sdot(int argc, char* argv[])
+int main_sdot(int argc, char* argv[argc])
 {
 	cmdline(&argc, argv, 2, 2, usage_str, help_str, 0, NULL);
 

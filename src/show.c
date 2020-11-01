@@ -69,7 +69,7 @@ ok:
 
 
 
-int main_show(int argc, char* argv[])
+int main_show(int argc, char* argv[argc])
 {
 	bool meta = false;
 	int showdim = -1;

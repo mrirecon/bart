@@ -27,7 +27,7 @@ static const char help_str[] = "Create a sampling pattern.\n";
 
 
 
-int main_upat(int argc, char* argv[])
+int main_upat(int argc, char* argv[argc])
 {
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
         dims[PHS1_DIM] = 128;

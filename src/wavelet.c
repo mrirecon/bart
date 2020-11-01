@@ -35,7 +35,7 @@ static const char help_str[] = "Perform wavelet transform.";
 
 
 
-int main_wavelet(int argc, char* argv[])
+int main_wavelet(int argc, char* argv[argc])
 {
 	bool adj = false;
         

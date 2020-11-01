@@ -3,12 +3,12 @@
 
 
 #define DECLMAIN(x) \
-extern int main_ ## x(int argc, char* argv[]);
+extern int main_ ## x(int argc, char* argv[argc]);
 MAP(DECLMAIN, MAIN_LIST)
 #undef	DECLMAIN
 
-extern int main_bart(int argc, char* argv[]);
-extern int main_bbox(int argc, char* argv[]);
+extern int main_bart(int argc, char* argv[argc]);
+extern int main_bbox(int argc, char* argv[argc]);
 
 
 // for use as a library

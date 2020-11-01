@@ -62,8 +62,8 @@ extern complex double krectangle(const double center[2], const double axis[2], d
     
 
 
-extern complex double phantom(unsigned int N, const struct ellipsis_s arr[__VLA(N)], const double pos[3], _Bool ksp);
-extern complex double phantomX(unsigned int N, const struct ellipsis_s arr[__VLA(N)], const double pos[3], _Bool ksp);
+extern complex double phantom(unsigned int N, const struct ellipsis_s arr[__VLA(N)], const double pos[2], _Bool ksp);
+extern complex double phantomX(unsigned int N, const struct ellipsis_s arr[__VLA(N)], const double pos[2], _Bool ksp);
 
 extern complex double phantom3d(unsigned int N, const struct ellipsis3d_s arr[__VLA(N)], const double pos[3], _Bool ksp);
 

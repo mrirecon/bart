@@ -29,7 +29,7 @@ static const char help_str[] = "Compute standard deviation along selected dimens
 
 
 
-int main_std(int argc, char* argv[])
+int main_std(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 3, usage_str, help_str);
 

@@ -36,7 +36,7 @@ static const char usage_str[] = "<kspace> <TI/TE> <output> [<sensitivities>]";
 static const char help_str[] = "Model-based nonlinear inverse reconstruction\n";
 
 
-int main_moba(int argc, char* argv[])
+int main_moba(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 

@@ -28,7 +28,7 @@ static const char help_str[] = "Compute mandelbrot set.\n";
 
 
 
-int main_mandelbrot(int argc, char* argv[])
+int main_mandelbrot(int argc, char* argv[argc])
 {
 	unsigned int size = 512;
 	unsigned int iter = 20;

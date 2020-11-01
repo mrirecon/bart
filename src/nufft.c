@@ -40,7 +40,7 @@ static const char help_str[] = "Perform non-uniform Fast Fourier Transform.";
 
 
 
-int main_nufft(int argc, char* argv[])
+int main_nufft(int argc, char* argv[argc])
 {
 	bool adjoint = false;
 	bool inverse = false;

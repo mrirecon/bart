@@ -29,7 +29,7 @@ static const char help_str[] =	"Apply fftshift along dimensions selected by the 
 
 
 
-int main_fftshift(int argc, char* argv[])
+int main_fftshift(int argc, char* argv[argc])
 {
 	bool b = mini_cmdline_bool(&argc, argv, 'b', 3, usage_str, help_str);
 

@@ -25,7 +25,7 @@ static const char usage_str[] = "<input> <output>";
 static const char help_str[] = "Invert array (1 / <input>). The output is set to zero in case of divide by zero.\n";
 
 
-int main_invert(int argc, char* argv[])
+int main_invert(int argc, char* argv[argc])
 {
 	mini_cmdline(&argc, argv, 2, usage_str, help_str);
 
