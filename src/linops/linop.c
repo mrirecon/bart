@@ -611,7 +611,7 @@ struct linop_s* linop_reshape_in(const struct linop_s* op, unsigned int NI, cons
 	PTR_ALLOC(struct linop_s, c);
 
 	c->forward = operator_reshape(op->forward, 1, NI, idims);
-	c->adjoint = operator_reshape(op->forward, 0, NI, idims);
+	c->adjoint = operator_reshape(op->adjoint, 0, NI, idims);
 
 	if (NULL != op->normal) {
 
@@ -636,7 +636,7 @@ struct linop_s* linop_reshape_out(const struct linop_s* op, unsigned int NO, con
 	PTR_ALLOC(struct linop_s, c);
 
 	c->forward = operator_reshape(op->forward, 0, NO, odims);
-	c->adjoint = operator_reshape(op->forward, 1, NO, odims);
+	c->adjoint = operator_reshape(op->adjoint, 1, NO, odims);
 	c->normal = operator_ref(op->normal);
 	c->norm_inv = operator_p_ref(op->norm_inv);
 
