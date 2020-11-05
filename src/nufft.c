@@ -47,7 +47,6 @@ int main_nufft(int argc, char* argv[argc])
 	bool precond = false;
 	bool dft = false;
 	bool gpu = false;
-	bool lowmem = false;
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
