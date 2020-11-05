@@ -290,6 +290,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
 		nufft_conf.toeplitz = false;
+		nufft_conf.lowmem = nufft_lowmem;
 
 		nufft_op = nufft_create(DIMS, ksp_dims, kgrid_dims, trj_dims, traj, NULL, nufft_conf);
 
