@@ -880,6 +880,125 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 }
 
 
+static void split_nufft_adjoint (const struct nufft_data* data, int ND, complex float* grid, const complex float* src)
+{
+
+	// FFT_FLAGS, because the image dimensions can always occur in the trajectory
+	long nontriv_traj_flags = FFT_FLAGS | md_nontriv_dims(data->N, data->trj_dims);
+
+	long cm2_reduced_dims[ND];
+	md_select_dims(ND, nontriv_traj_flags, cm2_reduced_dims, data->cm2_dims);
+
+
+	// everything not in traj dims is done separately
+	long max_dims[ND];
+	md_set_dims(ND, max_dims, 1);
+	md_max_dims(ND, ~nontriv_traj_flags, max_dims, data->cm2_dims, data->ksp_dims);
+
+	long iter_dims[data->N];
+	// All dimension not in the nontriv_traj_flags and all dimensions in ksp dims but not in cm2 dims
+	// We need to exclude these last dimensions, because we have to sum over sum in the gridding procedure
+	long iter_flags = ~(nontriv_traj_flags | (md_nontriv_dims(ND, data->ksp_dims) & ~md_nontriv_dims(ND, data->cm2_dims)));
+	md_select_dims(data->N, iter_flags, iter_dims, max_dims);
+
+	long ksp_reduced_dims[ND];
+	md_select_dims(ND, nontriv_traj_flags, ksp_reduced_dims, data->ksp_dims);
+
+	long ksp_reduced_strs[ND];
+	md_calc_strides(ND, ksp_reduced_strs, ksp_reduced_dims, CFL_SIZE);
+
+	long ksp_strs[ND];
+	md_calc_strides(ND, ksp_strs, data->ksp_dims, CFL_SIZE);
+
+	long cml_reduced_dims[ND];
+	cml_reduced_dims[data->N] = data->cml_dims[data->N];
+	md_select_dims(data->N, nontriv_traj_flags, cml_reduced_dims, data->cml_dims);
+
+	long cml_reduced_strs[ND];
+	md_calc_strides(ND, cml_reduced_strs, cml_reduced_dims, CFL_SIZE);
+
+#if LOWMEM2_DEBUG
+
+	debug_printf(DP_INFO, "data->trj_dims \t");
+	debug_print_dims(DP_INFO, ND, data->trj_dims);
+	debug_printf(DP_INFO, "cm2_reduced_dims (%ld) \t", md_calc_size(ND, cm2_reduced_dims));
+	debug_print_dims(DP_INFO, ND, cm2_reduced_dims);
+
+	debug_printf(DP_INFO, "nontriv_traj_flags \t");
+	debug_print_bits(DP_INFO, ND, nontriv_traj_flags);
+
+	debug_printf(DP_INFO, "iter_flags \t");
+	debug_print_bits(DP_INFO, ND, iter_flags);
+
+	debug_printf(DP_INFO, "data->cm2_dims (%ld) \t", md_calc_size(data->N, data->cm2_dims));
+	debug_print_dims(DP_INFO, data->N, data->cm2_dims);
+
+	debug_printf(DP_INFO, "max_dims (%ld) \t", md_calc_size(data->N, max_dims));
+	debug_print_dims(DP_INFO, data->N, max_dims);
+
+	debug_printf(DP_INFO, "iter_dims (%ld) \t", md_calc_size(data->N, iter_dims));
+	debug_print_dims(DP_INFO, data->N, iter_dims);
+
+	debug_printf(DP_INFO, "data->ksp_dims (%ld) \t", md_calc_size(data->N, data->ksp_dims));
+	debug_print_dims(DP_INFO, data->N, data->ksp_dims);
+
+	debug_printf(DP_INFO, "ksp_reduced_dims (%ld) \t", md_calc_size(ND, ksp_reduced_dims));
+	debug_print_dims(DP_INFO, ND, ksp_reduced_dims);
+
+	debug_printf(DP_INFO, "data->cml_dims (%ld) \t", md_calc_size(ND, data->cml_dims));
+	debug_print_dims(DP_INFO, ND, data->cml_dims);
+
+	debug_printf(DP_INFO, "cml_reduced_dims (%ld) \t", md_calc_size(ND, cml_reduced_dims));
+	debug_print_dims(DP_INFO, ND, cml_reduced_dims);
+
+	debug_printf(DP_INFO, "factors \t");
+	debug_print_dims(DP_INFO, data->N, data->factors);
+#endif
+
+
+	complex float* grid_reduced = md_alloc(ND, cml_reduced_dims, CFL_SIZE);
+	complex float* gridX = md_alloc(ND, cm2_reduced_dims, CFL_SIZE);
+	complex float* src_reduced = md_alloc(ND, ksp_reduced_dims, CFL_SIZE);
+
+	long pos[ND];
+	md_set_dims(ND, pos, 0L);
+
+	do {
+
+#if LOWMEM2_DEBUG
+		debug_printf(DP_INFO, "pos       ");
+		debug_print_dims(DP_INFO, data->N, pos);
+#endif
+
+		// sum over additional dimensions in the k-space
+		long sum_dims[ND];
+		long sum_flags = ~(nontriv_traj_flags | iter_flags);
+		md_select_dims(ND, sum_flags, sum_dims, max_dims);
+
+		md_clear(ND, cm2_reduced_dims, gridX, CFL_SIZE);
+		do {
+
+			md_copy_block2(data->N, pos, ksp_reduced_dims, ksp_reduced_strs, src_reduced, data->ksp_dims, ksp_strs, src, CFL_SIZE );
+			grid2(&data->grid_conf, ND, data->trj_dims, data->traj, cm2_reduced_dims, gridX,  ksp_reduced_dims, src_reduced);
+		} while(md_next(ND, sum_dims, sum_flags, pos));
+
+		md_decompose(data->N, data->factors, cml_reduced_dims, grid_reduced, cm2_reduced_dims, gridX, CFL_SIZE);
+
+		md_copy_block2(ND, pos, data->cml_dims, data->cml_strs, grid, cml_reduced_dims, cml_reduced_strs, grid_reduced, CFL_SIZE);
+
+	} while(md_next(data->N, iter_dims, ~0L, pos));
+
+	md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, data->fftmod);
+
+	md_free(grid_reduced);
+	md_free(gridX);
+	md_free(src_reduced);
+
+}
+
+
+
+
 // Adjoint: from kspace to image
 static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
@@ -910,122 +1029,14 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 	complex float* grid = md_alloc(ND, data->cml_dims, CFL_SIZE);
 
-	// check if we want to do stuff outside:
-	long traj_flags = FFT_FLAGS | md_nontriv_dims(data->N, data->trj_dims);
-	long cm2_red_dims[ND];
-	md_select_dims(ND, traj_flags, cm2_red_dims, data->cm2_dims);
 
-#if LOWMEM2_DEBUG
-	long cm2_size = md_calc_size(ND, cm2_red_dims);
-
-	debug_printf(DP_INFO, "data->trj_dims \t");
-	debug_print_dims(DP_INFO, ND, data->trj_dims);
-	debug_printf(DP_INFO, "cm2_red_dims (%ld) \t", cm2_size);
-	debug_print_dims(DP_INFO, ND, cm2_red_dims);
-
-	debug_printf(DP_INFO, "traj_flags \t");
-	debug_print_bits(DP_INFO, ND, traj_flags);
-
-#endif
-
-	//if ( (2L << 30L) < cm2_size || true) {
 	if (data->conf.lowmem2) {
 
 #if LOWMEM2_DEBUG
 		debug_printf(DP_INFO, "nufft_adj lowmem2\n");
 #endif
 
-		// everything not in traj dims is done separately
-		long max_dims[ND];
-		md_set_dims(ND, max_dims, 1);
-		md_max_dims(ND, ~traj_flags, max_dims, data->cm2_dims, data->ksp_dims);
-		long iter_dims[data->N];
-		long iter_flags = ~(traj_flags | (md_nontriv_dims(ND, data->ksp_dims) & ~md_nontriv_dims(ND, data->cm2_dims)));
-		md_select_dims(data->N, iter_flags, iter_dims, max_dims);
-
-		long ksp_red_dims[ND];
-		md_select_dims(ND, traj_flags, ksp_red_dims, data->ksp_dims);
-
-		long ksp_red_strs[ND];
-		md_calc_strides(ND, ksp_red_strs, ksp_red_dims, CFL_SIZE);
-
-		long ksp_strs[ND];
-		md_calc_strides(ND, ksp_strs, data->ksp_dims, CFL_SIZE);
-
-		long cml_red_dims[ND];
-		cml_red_dims[data->N] = data->cml_dims[data->N];
-		md_select_dims(data->N, traj_flags, cml_red_dims, data->cml_dims);
-
-		long cml_red_strs[ND];
-		md_calc_strides(ND, cml_red_strs, cml_red_dims, CFL_SIZE);
-
-#if LOWMEM2_DEBUG
-		debug_printf(DP_INFO, "iter_flags \t");
-		debug_print_bits(DP_INFO, ND, iter_flags);
-
-		debug_printf(DP_INFO, "data->cm2_dims (%ld) \t", md_calc_size(data->N, data->cm2_dims));
-		debug_print_dims(DP_INFO, data->N, data->cm2_dims);
-
-		debug_printf(DP_INFO, "max_dims (%ld) \t", md_calc_size(data->N, max_dims));
-		debug_print_dims(DP_INFO, data->N, max_dims);
-
-		debug_printf(DP_INFO, "iter_dims (%ld) \t", md_calc_size(data->N, iter_dims));
-		debug_print_dims(DP_INFO, data->N, iter_dims);
-
-		debug_printf(DP_INFO, "data->ksp_dims (%ld) \t", md_calc_size(data->N, data->ksp_dims));
-		debug_print_dims(DP_INFO, data->N, data->ksp_dims);
-
-		debug_printf(DP_INFO, "ksp_red_dims (%ld) \t", md_calc_size(ND, ksp_red_dims));
-		debug_print_dims(DP_INFO, ND, ksp_red_dims);
-
-		debug_printf(DP_INFO, "data->cml_dims (%ld) \t", md_calc_size(ND, data->cml_dims));
-		debug_print_dims(DP_INFO, ND, data->cml_dims);
-
-		debug_printf(DP_INFO, "cml_red_dims (%ld) \t", md_calc_size(ND, cml_red_dims));
-		debug_print_dims(DP_INFO, ND, cml_red_dims);
-
-		debug_printf(DP_INFO, "factors \t");
-		debug_print_dims(DP_INFO, data->N, data->factors);
-#endif
-
-
-		complex float* grid_red = md_alloc(ND, cml_red_dims, CFL_SIZE);
-		complex float* gridX = md_alloc(ND, cm2_red_dims, CFL_SIZE);
-		complex float* src_red = md_alloc(ND, ksp_red_dims, CFL_SIZE);
-
-		long pos[ND];
-		md_set_dims(ND, pos, 0L);
-
-		do {
-
-#if LOWMEM2_DEBUG
-			debug_printf(DP_INFO, "pos       ");
-			debug_print_dims(DP_INFO, data->N, pos);
-#endif
-
-			long sum_dims[ND];
-			long sum_flags = ~(traj_flags | iter_flags);
-			md_select_dims(ND, sum_flags, sum_dims, max_dims);
-
-			md_clear(ND, cm2_red_dims, gridX, CFL_SIZE);
-			do {
-
-				md_copy_block2(data->N, pos, ksp_red_dims, ksp_red_strs, src_red, data->ksp_dims, ksp_strs, src, CFL_SIZE );
-				grid2(&data->grid_conf, ND, data->trj_dims, data->traj, cm2_red_dims, gridX,  ksp_red_dims, src_red);
-			} while(md_next(ND, sum_dims, sum_flags, pos));
-
-			md_decompose(data->N, data->factors, cml_red_dims, grid_red, cm2_red_dims, gridX, CFL_SIZE);
-
-			md_copy_block2(ND, pos, data->cml_dims, data->cml_strs, grid, cml_red_dims, cml_red_strs, grid_red, CFL_SIZE);
-
-		} while(md_next(data->N, iter_dims, ~0L, pos));
-
-		md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, data->fftmod);
-
-		md_free(grid_red);
-		md_free(gridX);
-		md_free(src_red);
-
+		split_nufft_adjoint (data, ND, grid, src);
 	} else {
 
 #if LOWMEM2_DEBUG
