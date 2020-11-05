@@ -29,7 +29,7 @@ tests/test-pics-noncart2: traj scale phantom ones pics nufft nrmse
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
 	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
-	$(TOOLDIR)/pics --lowmem --lowmem2 -S -r0.001 -t traj2.ra ksp.ra o.ra reco.ra			;\
+	$(TOOLDIR)/pics --lowmem -S -r0.001 -t traj2.ra ksp.ra o.ra reco.ra			;\
 	$(TOOLDIR)/nufft traj2.ra reco.ra k2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.002 ksp.ra k2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -242,7 +242,7 @@ tests/test-pics-basis-noncart2: traj scale phantom delta fmac ones repmat pics s
 	$(TOOLDIR)/ones 6 1 1 1 1 1 31 o.ra						;\
 	$(TOOLDIR)/repmat 6 2 o.ra o2.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
-	$(TOOLDIR)/pics --lowmem --lowmem2 -r0.001 -t traj2.ra -pp2.ra -Bo2.ra pk.ra coils.ra reco1.ra	;\
+	$(TOOLDIR)/pics --lowmem -r0.001 -t traj2.ra -pp2.ra -Bo2.ra pk.ra coils.ra reco1.ra	;\
 	$(TOOLDIR)/pics -r0.001 -t traj2.ra ksp.ra coils.ra reco.ra			;\
 	$(TOOLDIR)/scale 4. reco1.ra reco2.ra						;\
 	$(TOOLDIR)/slice 6 0 reco2.ra reco20.ra						;\
@@ -308,7 +308,7 @@ tests/test-pics-basis-noncart-memory3: traj scale phantom ones join noise transp
 	$(TOOLDIR)/fmac -s 64 ksp4.ra o1.ra ksp5.ra					;\
 	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
 	$(TOOLDIR)/transpose 2 5 traj2.ra traj3.ra					;\
-	$(TOOLDIR)/pics -S --lowmem --lowmem2 -i100 -r0. -t traj3.ra -Bo1.ra ksp5.ra coils.ra reco1.ra	;\
+	$(TOOLDIR)/pics -S --lowmem -i100 -r0. -t traj3.ra -Bo1.ra ksp5.ra coils.ra reco1.ra	;\
 	$(TOOLDIR)/slice 6 0 reco1.ra reco.ra						;\
 	$(TOOLDIR)/slice 6 1 reco1.ra reco2.ra						;\
 	$(TOOLDIR)/scale 2. reco2.ra reco3.ra						;\
@@ -360,7 +360,7 @@ tests/test-pics-noncart-sms2: traj slice phantom conj join fft flip pics nrmse
 	$(TOOLDIR)/flip 7 s.ra sF.ra							;\
 	$(TOOLDIR)/conj sF.ra sFC.ra							;\
 	$(TOOLDIR)/join 13 s.ra sFC.ra ss.ra 						;\
-	$(TOOLDIR)/pics --lowmem --lowmem2 -t t.ra -M kk.ra ss.ra x.ra					;\
+	$(TOOLDIR)/pics --lowmem -t t.ra -M kk.ra ss.ra x.ra					;\
 	$(TOOLDIR)/slice 13 0 x.ra x0.ra						;\
 	$(TOOLDIR)/slice 13 1 x.ra x1.ra						;\
 	$(TOOLDIR)/phantom -k rk.ra							;\

@@ -313,7 +313,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 		complex float* wgh = md_alloc(DIMS, wgh_dims, CFL_SIZE);
 
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, wgh, kspace);
-		pattern = compute_psf(DIMS, pat_dims, trj_dims, traj, trj_dims, NULL, wgh_dims, wgh, false, false, false);
+		pattern = compute_psf(DIMS, pat_dims, trj_dims, traj, trj_dims, NULL, wgh_dims, wgh, false, false);
 
 		md_free(wgh);
 

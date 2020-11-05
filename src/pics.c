@@ -176,7 +176,6 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SELECT('a', enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 		OPTL_SET('U', "lowmem", &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
-		OPTL_SET(0, "lowmem2", &nuconf.lowmem2, "Use low-mem mode 2 of the nuFFT"),
 	};
 
 

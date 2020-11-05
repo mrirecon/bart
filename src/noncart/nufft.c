@@ -44,7 +44,6 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.pcycle = false,
 	.periodic = false,
 	.lowmem = false,
-	.lowmem2 = false,
 	.loopdim = -1,
 	.flags = FFT_FLAGS,
 	.cfft = 0u,
@@ -227,7 +226,7 @@ static void compute_kern(unsigned int N, unsigned int flags, const long pos[N],
 complex float* compute_psf(unsigned int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights,
-				bool periodic, bool lowmem, bool lowmem2)
+				bool periodic, bool lowmem)
 {
 	long img2_dims[N + 1];
 	md_copy_dims(N, img2_dims, img_dims);
@@ -262,7 +261,6 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	conf.periodic = periodic;
 	conf.toeplitz = false;	// avoid infinite loop
-	conf.lowmem2 = lowmem2;
 
 
 	debug_printf(DP_DEBUG2, "nufft kernel dims: ");
@@ -346,7 +344,7 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 
 static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned long flags, const long trj_dims[N + 1], const complex float* traj,
 				const long bas_dims[N + 1], const complex float* basis, const long wgh_dims[N + 1], const complex float* weights,
-				bool periodic, bool lowmem, bool lowmem2)
+				bool periodic, bool lowmem)
 {
 	int ND = N + 1;
 
@@ -372,7 +370,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 	complex float* traj2 = md_alloc(ND, trj_dims, CFL_SIZE);
 	md_zsmul(ND, trj_dims, traj2, traj, 2.);
 
-	complex float* psft = compute_psf(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem, lowmem2);
+	complex float* psft = compute_psf(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem);
 	md_free(traj2);
 
 	fftuc(ND, img2_dims, flags, psft, psft);
@@ -641,7 +639,7 @@ static struct linop_s* nufft_create3(unsigned int N,
 
 		data->psf = compute_psf2(N, data->psf_dims, data->flags, data->trj_dims, data->traj,
 					data->bas_dims, data->basis, data->wgh_dims, data->weights,
-					true /*conf.periodic*/, conf.lowmem, conf.lowmem2);
+					true /*conf.periodic*/, conf.lowmem);
 	}
 
 
@@ -1030,18 +1028,14 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 	complex float* grid = md_alloc(ND, data->cml_dims, CFL_SIZE);
 
 
-	if (data->conf.lowmem2) {
+	if (data->conf.lowmem) {
 
 #if LOWMEM2_DEBUG
-		debug_printf(DP_INFO, "nufft_adj lowmem2\n");
+		debug_printf(DP_INFO, "nufft_adj split calculation for lowmem\n");
 #endif
 
 		split_nufft_adjoint (data, ND, grid, src);
 	} else {
-
-#if LOWMEM2_DEBUG
-		debug_printf(DP_INFO, "nufft_adj NO lowmem2\n");
-#endif
 
 		complex float* gridX = md_calloc(data->N, data->cm2_dims, CFL_SIZE);
 
