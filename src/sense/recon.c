@@ -98,7 +98,9 @@ const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, con
 		  const struct operator_s* precond_op,
 		  struct iter_monitor_s* monitor)
 {
-	struct lsqr_conf lsqr_conf = { conf->cclambda, conf->gpu };
+	struct lsqr_conf lsqr_conf = lsqr_defaults;
+	lsqr_conf.lambda = conf->cclambda;
+	lsqr_conf.it_gpu = conf->gpu;
 
 	const struct operator_p_s* op = NULL;
 

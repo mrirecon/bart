@@ -1114,7 +1114,9 @@ int main_wshfl(int argc, char* argv[argc])
 
 	debug_printf(DP_INFO, "Reconstruction... ");
 	complex float* recon = create_cfl(argv[6], DIMS, coeff_dims);
-	struct lsqr_conf lsqr_conf = { 0., gpun >= 0 };
+	struct lsqr_conf lsqr_conf = lsqr_defaults;
+	lsqr_conf.lambda = 0.;
+	lsqr_conf.it_gpu = (gpun >= 0);
 	double recon_start = timestamp();
 	const struct operator_p_s* J = lsqr2_create(&lsqr_conf, it.italgo, it.iconf, (const float*) init, A, NULL, nr_penalties, thresh_ops, trafos, NULL);
 	operator_p_apply(J, 1., DIMS, coeff_dims, recon, DIMS, table_dims, table);
