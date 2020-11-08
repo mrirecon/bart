@@ -7,6 +7,7 @@ struct linop_s;
 struct iter_monitor_s;
 
 const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
+					_Bool warmstart,
 					const float* init,
 					const struct operator_s* model_op,
 					unsigned int num_funs,
@@ -15,6 +16,7 @@ const struct operator_s* itop_create(	italgo_fun2_t italgo, iter_conf* iconf,
 					struct iter_monitor_s* monitor);
 
 const struct operator_p_s* itop_p_create(italgo_fun2_t italgo, iter_conf* iconf,
+					_Bool warmstart,
 					const float* init,
 					const struct operator_s* model_op,
 					unsigned int num_funs,

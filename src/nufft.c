@@ -133,7 +133,11 @@ int main_nufft(int argc, char* argv[argc])
 			if (conf.toeplitz && precond)
 				precond_op = nufft_precond_create(nufft_op);
 
-			lsqr(DIMS, &(struct lsqr_conf){ lambda, gpu }, iter_conjgrad, CAST_UP(&cgconf),
+			struct lsqr_conf lsqr_conf = lsqr_defaults;
+			lsqr_conf.lambda = lambda;
+			lsqr_conf.it_gpu = gpu;
+
+			lsqr(DIMS, &lsqr_conf, iter_conjgrad, CAST_UP(&cgconf),
 			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, precond_op);
 
 			if (conf.toeplitz && precond)

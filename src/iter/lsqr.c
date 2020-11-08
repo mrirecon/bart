@@ -1,9 +1,9 @@
 /* Copyright 2014,2017. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2020. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014      Frank Ong <frankong@berkeley.edu>
  * 2014,2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  */
@@ -32,7 +32,7 @@
 #include "lsqr.h"
 
 
-const struct lsqr_conf lsqr_defaults = { .lambda = 0., .it_gpu = false };
+const struct lsqr_conf lsqr_defaults = { .lambda = 0., .it_gpu = false, .warmstart = false, };
 
 
 struct lsqr_data {
@@ -130,7 +130,7 @@ const struct operator_p_s* lsqr2_create(const struct lsqr_conf* conf,
 		operator_free(tmp);
 	}
 
-	const struct operator_p_s* itop_op = itop_p_create(italgo, iconf, init, normaleq_op, num_funs, prox_funs, prox_linops, monitor);
+	const struct operator_p_s* itop_op = itop_p_create(italgo, iconf, conf->warmstart, init, normaleq_op, num_funs, prox_funs, prox_linops, monitor);
 
 	if (conf->it_gpu) {
 
