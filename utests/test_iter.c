@@ -299,38 +299,37 @@ static bool test_iter_lsqr_warmstart(void)
 	enum { N = 3 };
 	long dims[N] = { 4, 2, 3 };
 
-	complex float* src1 = md_alloc(N, dims, CFL_SIZE);
-	complex float* dst1 = md_alloc(N, dims, CFL_SIZE);
-	complex float* dst2 = md_alloc(N, dims, CFL_SIZE);
+	complex float* src = md_alloc(N, dims, CFL_SIZE);
+	complex float* dst = md_alloc(N, dims, CFL_SIZE);
 
-	md_zfill(N, dims, src1, 1.);
-	md_zfill(N, dims, dst1, 0.);
-
-	md_copy(N, dims, dst2, src1, CFL_SIZE);
+	md_zfill(N, dims, src, 1.66);
+	md_zfill(N, dims, dst, 0.66);
 
 	const struct linop_s* id = linop_identity_create(3, dims);
 
-	linop_forward_unchecked(id, dst1, src1);
+	struct lsqr_conf conf = lsqr_defaults;
+	conf.warmstart = true;
 
-	const struct operator_p_s* lsqr = NULL;
+	struct iter_conjgrad_conf cg_conf = iter_conjgrad_defaults;
+	cg_conf.maxiter = 0;
 
-	struct iter_conjgrad_conf conf = iter_conjgrad_defaults;
-	conf.maxiter = 0;
+	const struct operator_p_s* lsqr = lsqr2_create(&conf,
+						iter2_conjgrad, CAST_UP(&cg_conf),
+						NULL, id, NULL,
+						0, NULL, NULL, NULL);
 
-	lsqr = lsqr2_create(&lsqr_defaults,
-				iter2_conjgrad, CAST_UP(&conf),
-				NULL, true, id, NULL,
-				0, NULL, NULL, NULL);
+	operator_p_apply(lsqr, 0.3, N, dims, dst, N, dims, src);
 
-	operator_p_apply(lsqr, 1., N, dims, dst2, N, dims, src1);
+	md_zfill(N, dims, src, 0.66);
 
-	double err = md_znrmse(N, dims, dst1, dst2);
+	double err = md_znrmse(N, dims, src, dst);
 
 	linop_free(id);
 
-	md_free(src1);
-	md_free(dst1);
-	md_free(dst2);
+	md_free(src);
+	md_free(dst);
+
+	operator_p_free(lsqr);
 
 	UT_ASSERT(err < UT_TOL);
 }
