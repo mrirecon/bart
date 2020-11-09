@@ -49,7 +49,7 @@ int main_traj(int argc, char* argv[argc])
 
 	long z_usamp[2] = { 0, 1 }; // { reference Lines, acceleration }
 
-	const char* custom_angle = NULL;
+	const char* custom_angle_file = NULL;
 
 
 	const struct opt_s opts[] = {
@@ -74,7 +74,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_SET('3', &conf.d3d, "3D"),
 		OPT_SET('c', &conf.asym_traj, "asymmetric trajectory [DC sampled]"),
 		OPT_VEC2('z', &z_usamp, "Ref:Acel", "Undersampling in z-direction."),
-		OPT_STRING('C', &custom_angle, "file", "custom_angle file [phi + i * psi]"),
+		OPT_STRING('C', &custom_angle_file, "file", "custom_angle file [phi + i * psi]"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -83,19 +83,21 @@ int main_traj(int argc, char* argv[argc])
 
 	// Load custom_angle
 	long sdims[DIMS];
-	complex float* custom_angle_val = NULL;
+	complex float* custom_angle_vals = NULL;
 
-	if (NULL != custom_angle && conf.radial) {
+	if (NULL != custom_angle_file) {
 
-		debug_printf(DP_INFO, "custom_angle file is used \n");
-		custom_angle_val = load_cfl(custom_angle, DIMS, sdims);
+		if (!conf.radial)
+			error("Custom angles make sense only for radial trajectories!");
 
-		if(Y != sdims[0]){
+		debug_printf(DP_INFO, "Custom-angle file is used.\n");
 
-			debug_printf(DP_INFO, "According to the custom angle file : number of projection (y) = %d\n",sdims[0]);
-			Y = sdims[0];
+		custom_angle_vals = load_cfl(custom_angle_file, DIMS, sdims);
 
-		}
+		if (Y != sdims[0])
+			debug_printf(DP_INFO, "According to the custom angle file : number of projection (y) = %d\n", sdims[0]);
+
+		Y = sdims[0];
 	}
 
 	int tot_sp = Y * mb * turns;	// total number of lines/spokes
@@ -111,7 +113,7 @@ int main_traj(int argc, char* argv[argc])
 		D = X;
 
 	if (D < X)
-	    error("actual readout samples must be less than full samples");
+		error("actual readout samples must be less than full samples");
 
 	// Variables for z-undersampling
 	long z_reflines = z_usamp[0];
@@ -125,7 +127,6 @@ int main_traj(int argc, char* argv[argc])
 
 		if ((mb2 < 1) || ((mb - z_reflines) % z_acc != 0))
 			error("Invalid z-Acceleration!\n");
-
 	}
 
 
@@ -221,13 +222,13 @@ int main_traj(int argc, char* argv[argc])
 				int split = sqrtf(Y);
 				angle2 = s * M_PI / Y * (conf.full_circle ? 2 : 1) * split;
 
-				if (NULL != custom_angle)
-					angle2 = cimag(custom_angle_val[j]);
+				if (NULL != custom_angle_vals)
+					angle2 = cimagf(custom_angle_vals[j]);
 			}
 
 
-			if (NULL != custom_angle)
-				angle = creal(custom_angle_val[j]);
+			if (NULL != custom_angle_vals)
+				angle = crealf(custom_angle_vals[j]);
 
 
 			float d[3] = { 0., 0., 0 };
@@ -266,8 +267,8 @@ int main_traj(int argc, char* argv[argc])
 
 	assert(p == N - 0);
 
-	if (NULL != custom_angle_val)
-		unmap_cfl(3, sdims, custom_angle_val);
+	if (NULL != custom_angle_vals)
+		unmap_cfl(3, sdims, custom_angle_vals);
 
 	unmap_cfl(3, dims, samples);
 
