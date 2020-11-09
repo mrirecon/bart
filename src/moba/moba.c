@@ -17,11 +17,14 @@ struct moba_conf moba_defaults = {
 	.step = 0.9,
 	.lower_bound = 0.,
 	.tolerance = 0.01,
+	.damping = 0.9,
 	.inner_iter = 250,
 	.noncartesian = false,
 	.sms = false,
         .k_filter = false,
 	.auto_norm_off = false,
+	.algo = 3,
+	.rho = 0.01,
+	.stack_frames = false,
 };
-
 
