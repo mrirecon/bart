@@ -1,5 +1,5 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2019. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2019-2020. Uecker Lab, University Medical Center Goettingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -30,26 +30,10 @@
 
 #include "moba/model_T1.h"
 #include "moba/iter_l1.h"
+#include "moba/moba.h"
 
 #include "recon_T1.h"
 
-
-struct moba_conf moba_defaults = {
-
-	.iter = 8,
-	.opt_reg = 1.,
-	.alpha = 1.,
-	.alpha_min = 0.,
-	.redu = 2.,
-	.step = 0.9,
-	.lower_bound = 0.,
-	.tolerance = 0.01,
-	.inner_iter = 250,
-	.noncartesian = false,
-	.sms = false,
-        .k_filter = false,
-	.auto_norm_off = false,
-};
 
 
 void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float* img, complex float* sens, const complex float* pattern, const complex float* mask, const complex float* TI, const complex float* kspace_data, _Bool usegpu)
