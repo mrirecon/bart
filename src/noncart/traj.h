@@ -5,6 +5,7 @@
  *
  * 2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2018 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
+ * 2019-2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
  */
 
 struct traj_conf {
@@ -18,6 +19,7 @@ struct traj_conf {
 	_Bool d3d;
 	_Bool transverse;
 	_Bool asym_traj;
+	_Bool mems_traj;
 	int accel;
 	int tiny_gold;
 };
@@ -31,7 +33,7 @@ extern const struct traj_conf rmfreq_defaults;
 
 extern void euler(float dir[3], float phi, float psi);
 extern void gradient_delay(float d[3], float coeff[2][3], float phi, float psi);
-extern void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct traj_conf conf);
+extern void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, struct traj_conf conf);
 extern bool zpartition_skip(long partitions, long z_usamp[2], long partition, long frame);
 
 

@@ -4,7 +4,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * 2014-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2018-2019 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
+ * 2018-2020 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
+ * 2019-2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
  */
 
 #include <stdbool.h>
@@ -29,6 +30,7 @@ const struct traj_conf traj_defaults = {
 	.d3d = false,
 	.transverse = false,
 	.asym_traj = false,
+	.mems_traj = false,
 	.accel = 1,
 	.tiny_gold = 0,
 };
@@ -44,6 +46,7 @@ const struct traj_conf rmfreq_defaults = {
 	.d3d = false,
 	.transverse = false,
 	.asym_traj = false,
+	.mems_traj = false,
 	.accel = 1,
 	.tiny_gold = 0,
 };
@@ -82,22 +85,18 @@ void gradient_delay(float d[3], float coeff[2][3], float phi, float psi)
 	}
 }
 
-void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct traj_conf conf)
+void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, struct traj_conf conf)
 {
-	/* Golden-ratio sampling
-	 *
+	/*
 	 * Winkelmann S, Schaeffter T, Koehler T, Eggers H, Doessel O.
 	 * An optimal radial profile order based on the Golden Ratio
 	 * for time-resolved MRI. IEEE TMI 26:68--76 (2007)
-	 */
-	double golden_ratio = (sqrt(5.) + 1.) / 2.;
-
-	/* Tiny golden angle
 	 *
 	 * Wundrak S, Paul J, Ulrici J, Hell E, Geibel MA, Bernhardt P, Rottbauer W, Rasche V.
 	 * Golden ratio sparse MRI using tiny golden angles.
 	 * Magn Reson Med 75:2372-2378 (2016)
 	 */
+	double golden_ratio = (sqrt(5.) + 1.) / 2;
 	double golden_angle = M_PI / (golden_ratio + conf.tiny_gold - 1.);
 
 	// For numerical stability
@@ -113,7 +112,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 	double angle_m = angle_atom / mb; // linear-turned partitions
 
 	if (conf.aligned)
-		angle_m = 0.;
+		angle_m = 0;
 
 	// Angle between turns
 	double angle_t = 0.;
@@ -121,14 +120,27 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 	if (turns > 1)
 		angle_t = angle_atom / turns * (conf.full_circle ? 2 : 1);
 
+	/* radial multi-echo multi-spoke sampling
+	 *
+	 * Tan Z, Voit D, Kollmeier JM, Uecker M, Frahm J.
+	 * Dynamic water/fat separation and B0 inhomogeneity mapping -- joint
+	 * estimation using undersampled  triple-echo multi-spoke radial FLASH.
+	 * Magn Reson Med 82:1000-1011 (2019)
+	 */
+	double angle_e = 0.;
 
-	// Golden Angle
-	if (conf.golden) {
+	if (conf.mems_traj) {
+
+		angle_s = angle_s * 1.;
+		angle_e = angle_s / E;
+		angle_t = golden_angle;
+
+	} else if (conf.golden) {
 
 		if (conf.aligned) {
 
 			angle_s = golden_angle;
-			angle_m = 0.;
+			angle_m = 0;
 			angle_t = golden_angle * Y;
 
 		} else {
@@ -161,6 +173,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 
 	base_angle[PHS2_DIM] = angle_s;
 	base_angle[SLICE_DIM] = angle_m;
+	base_angle[TE_DIM] = angle_e;
 	base_angle[TIME_DIM] = angle_t;
 }
 
