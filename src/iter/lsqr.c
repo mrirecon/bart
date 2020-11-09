@@ -32,7 +32,7 @@
 #include "lsqr.h"
 
 
-const struct lsqr_conf lsqr_defaults = { .lambda = 0., .it_gpu = false, .warmstart = false, };
+const struct lsqr_conf lsqr_defaults = { .lambda = 0., .it_gpu = false, .warmstart = false, .icont = NULL };
 
 
 struct lsqr_data {
@@ -130,7 +130,7 @@ const struct operator_p_s* lsqr2_create(const struct lsqr_conf* conf,
 		operator_free(tmp);
 	}
 
-	const struct operator_p_s* itop_op = itop_p_create(italgo, iconf, conf->warmstart, init, normaleq_op, num_funs, prox_funs, prox_linops, monitor);
+	const struct operator_p_s* itop_op = itop_p_create(italgo, iconf, conf->warmstart, init, normaleq_op, num_funs, prox_funs, prox_linops, monitor, conf->icont);
 
 	if (conf->it_gpu) {
 

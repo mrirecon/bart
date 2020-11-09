@@ -8,6 +8,7 @@
 
 #include "iter/iter.h"
 #include "iter/iter2.h"
+#include "iter/itop.h"
 
 #include "misc/cppwrap.h"
 
@@ -20,6 +21,7 @@ struct lsqr_conf {
 	float lambda;
 	_Bool it_gpu;
 	_Bool warmstart;
+	itop_continuation_t* icont;
 };
 
 struct iter_monitor_s;
