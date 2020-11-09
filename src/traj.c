@@ -230,7 +230,7 @@ int main_traj(int argc, char* argv[argc])
 			 */
 			int sample = i + D - X;
 
-			if (conf.mems_traj && (0 == e % 2))
+			if (conf.mems_traj && (1 == e % 2))
 			       sample =	D - i;
 
 			double read = (float)sample + (conf.asym_traj ? 0 : 0.5) - (float)D / 2.;
@@ -267,7 +267,7 @@ int main_traj(int argc, char* argv[argc])
 				angle = crealf(custom_angle_vals[j]);
 
 
-			if (NULL != gdelays) {
+			if (NULL != gdelays2) {
 
 				for (pos[0] = 0; pos[0] < gdims[0]; pos[0]++) {
 
