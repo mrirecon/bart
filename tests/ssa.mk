@@ -32,7 +32,7 @@ tests/test-ssa: traj phantom resize squeeze svd transpose ssa cabs nrmse casorat
 		$(TOOLDIR)/cabs eof.ra eofabs.ra					;\
 		$(TOOLDIR)/resize 1 10 uabs.ra utest.ra					;\
 		$(TOOLDIR)/resize 1 10 eofabs.ra eoftest.ra				;\
-		$(TOOLDIR)/nrmse -t 0.00001 utest.ra eoftest.ra				;\
+		$(TOOLDIR)/nrmse -t 0.000015 utest.ra eoftest.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

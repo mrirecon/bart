@@ -85,13 +85,15 @@ void gradient_delay(float d[3], float coeff[2][3], float phi, float psi)
 void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct traj_conf conf)
 {
 	/* Golden-ratio sampling
+	 *
 	 * Winkelmann S, Schaeffter T, Koehler T, Eggers H, Doessel O.
 	 * An optimal radial profile order based on the Golden Ratio
 	 * for time-resolved MRI. IEEE TMI 26:68--76 (2007)
 	 */
-	double golden_ratio = (sqrtf(5.) + 1.) / 2;
+	double golden_ratio = (sqrt(5.) + 1.) / 2.;
 
 	/* Tiny golden angle
+	 *
 	 * Wundrak S, Paul J, Ulrici J, Hell E, Geibel MA, Bernhardt P, Rottbauer W, Rasche V.
 	 * Golden ratio sparse MRI using tiny golden angles.
 	 * Magn Reson Med 75:2372-2378 (2016)
@@ -100,7 +102,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 
 	// For numerical stability
 	if (1 == conf.tiny_gold)
-		golden_angle = M_PI * (2. - (3. - sqrtf(5.))) / 2.;
+		golden_angle = M_PI * (2. - (3. - sqrt(5.))) / 2.;
 
 	double angle_atom = M_PI / Y;
 
@@ -111,7 +113,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 	double angle_m = angle_atom / mb; // linear-turned partitions
 
 	if (conf.aligned)
-		angle_m = 0;
+		angle_m = 0.;
 
 	// Angle between turns
 	double angle_t = 0.;
@@ -126,7 +128,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int mb, int turns, struct 
 		if (conf.aligned) {
 
 			angle_s = golden_angle;
-			angle_m = 0;
+			angle_m = 0.;
 			angle_t = golden_angle * Y;
 
 		} else {
