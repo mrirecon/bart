@@ -1,4 +1,4 @@
-/* Copyright 2017-2019. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2017-2020. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -45,7 +45,7 @@
 
 
 
-static const char usage_str[] = "<trajectory> <data>";
+static const char usage_str[] = "<trajectory> <data> [<qf>]";
 static const char help_str[] = "Estimate gradient delays from radial data.";
 
 
@@ -62,7 +62,7 @@ int main_estdelay(int argc, char* argv[argc])
 		OPT_FLOAT('r', &conf.size, "r", "[RING] Central region size"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -143,6 +143,18 @@ int main_estdelay(int argc, char* argv[argc])
 	}
 
 	bart_printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
+
+	if (NULL != argv[3]) {
+
+		long qf_dims[1] = { 3 };
+
+		complex float* oqf = create_cfl(argv[3], 1, qf_dims);
+
+		for (int i = 0; i < 3; i++)
+			oqf[i] = qf[i];
+
+		unmap_cfl(1, qf_dims, oqf);
+	}
 
 	unmap_cfl(DIMS, full_dims, full_in);
 	unmap_cfl(DIMS, tdims, traj);
