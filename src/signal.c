@@ -33,7 +33,7 @@ int main_signal(int argc, char* argv[argc])
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[TE_DIM] = 100;
 
-	enum seq_type { BSSFP, FLASH, TSE, MOLLI };
+	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE };
 	enum seq_type seq = FLASH;
 
 	bool IR = false;
@@ -53,6 +53,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_SELECT('B', enum seq_type, &seq, BSSFP, "bSSFP"),
 		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
+		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPT_SET('I', &IR, "inversion recovery"),
 		OPT_SET('s', &IR_SS, "inversion recovery starting from steady state"),
 		OPT_FLVEC3('1', &T1, "min:max:N", "range of T1s"),
@@ -75,6 +76,7 @@ int main_signal(int argc, char* argv[argc])
 	switch (seq) {
 
 	case FLASH: parm = signal_looklocker_defaults; break;
+	case MGRE:  parm = signal_multi_grad_echo_defaults; break;
 	case BSSFP: parm = signal_IR_bSSFP_defaults; break;
 	case TSE:   parm = signal_TSE_defaults; break;
 	case MOLLI: parm = signal_looklocker_defaults; break;
@@ -88,7 +90,7 @@ int main_signal(int argc, char* argv[argc])
 	if (-1. != TR)
 		parm.tr = TR;
 
-        parm.ir = IR;
+	parm.ir = IR;
 	parm.ir_ss = IR_SS;
 
 	assert(!(parm.ir && parm.ir_ss));
@@ -119,6 +121,7 @@ int main_signal(int argc, char* argv[argc])
 		switch (seq) {
 
 		case FLASH: looklocker_model(&parm, N, out); break;
+		case MGRE:  multi_grad_echo_model(&parm, N, out); break;
 		case BSSFP: IR_bSSFP_model(&parm, N, out); break;
 		case TSE:   TSE_model(&parm, N, out); break;
 		case MOLLI: MOLLI_model(&parm, N, Hbeats, time_T1relax, out); break;
