@@ -388,7 +388,6 @@ void iter2_admm(iter_conf* _conf,
 
 cleanup:
 	;
-
 }
 
 
