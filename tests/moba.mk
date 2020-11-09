@@ -138,7 +138,28 @@ tests/test-moba-t2: phantom signal fmac fft ones index scale moba slice invert n
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-moba-meco-noncart: traj scale phantom signal fmac index extract moba slice resize nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	                  ;\
+	$(TOOLDIR)/traj -x16 -y15 -r -D -E -e7 -c _traj.ra		  ;\
+	$(TOOLDIR)/scale 0.5 _traj.ra traj.ra                             ;\
+	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra                 ;\
+	$(TOOLDIR)/signal -G -n7 -1 3:3:1 -2 0.02:0.02:1 signal.ra        ;\
+	$(TOOLDIR)/fmac -s 64 basis_geom.ra signal.ra data.ra             ;\
+	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
+	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
+	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
+	$(TOOLDIR)/moba -G -m3 -rQ:1 -rS -rW:0:0:1 -i10 -C100 -u0.0001 -R3 -o1.5 -t _traj.ra data.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/slice 6 1 reco.ra R2S.ra                               ;\
+	$(TOOLDIR)/resize -c 0 8 1 8 R2S.ra R2S_crop.ra                   ;\
+	$(TOOLDIR)/phantom -x8 -c circ.ra                                 ;\
+	$(TOOLDIR)/fmac R2S_crop.ra circ.ra masked.ra                     ;\
+	$(TOOLDIR)/scale -- 50 circ.ra ref.ra                             ;\
+	$(TOOLDIR)/nrmse -t 0.05 ref.ra masked.ra                         ;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
 TESTS += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
 TESTS += tests/test-moba-t2
+TESTS += tests/test-moba-meco-noncart
 
