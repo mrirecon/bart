@@ -261,6 +261,7 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	conf.periodic = periodic;
 	conf.toeplitz = false;	// avoid infinite loop
+	conf.lowmem = lowmem;
 
 
 	debug_printf(DP_DEBUG2, "nufft kernel dims: ");
