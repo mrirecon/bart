@@ -178,7 +178,7 @@ tests/test-nufft-lowmem-inverse: traj scale phantom nufft nrmse
 	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
 	$(TOOLDIR)/nufft -m5 -r -i traj2.ra ksp.ra reco1.ra				;\
 	$(TOOLDIR)/nufft -m5 --lowmem -r -i traj2.ra ksp.ra reco2.ra			;\
-	$(TOOLDIR)/nrmse -t 0.00005 reco1.ra reco2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00006 reco1.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
