@@ -881,7 +881,7 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 
 static void split_nufft_adjoint (const struct nufft_data* data, int ND, complex float* grid, const complex float* src)
 {
-	debug_printf(DP_DEBUG3, "nufft_adj split calculation for lowmem\n");
+	debug_printf(DP_DEBUG1, "nufft_adj split calculation for lowmem\n");
 
 	// FFT_FLAGS, because the image dimensions can always occur in the trajectory
 
