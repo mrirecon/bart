@@ -373,6 +373,24 @@ tests/test-pics-noncart-sms2: traj slice phantom conj join fft flip pics nrmse
 	touch $@
 
 
+# Without limiting the number of threads, this takes a very long time. The process appears
+# to sleep for most of it, so it seems to be parallelization overhead.
+tests/test-pics-lowmem: traj phantom repmat ones  pics nrmse
+	set +e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	export OMP_NUM_THREADS=4							;\
+	$(TOOLDIR)/traj -x 16 -y 3 -D -r t.ra						;\
+	$(TOOLDIR)/phantom -tt.ra -k k0.ra						;\
+	$(TOOLDIR)/repmat 5 200 k0.ra k1.ra						;\
+	$(TOOLDIR)/repmat 6 200 k1.ra k2.ra						;\
+	$(TOOLDIR)/ones 2 4 4 s.ra							;\
+	if [[ `$(TOOLDIR)/tests/print_max_rss.sh $(TOOLDIR)/pics -U -tt.ra k2.ra s.ra r1.ra` -ge \
+	      `$(TOOLDIR)/tests/print_max_rss.sh $(TOOLDIR)/pics    -tt.ra k2.ra s.ra r2.ra` ]] ; then \
+	     	echo "-U/--lowmem failed to reduce memory usage!"			;\
+		false									;\
+	fi										;\
+	$(TOOLDIR)/nrmse -t 0.0005 r1.ra r2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-noncart2 tests/test-pics-cs tests/test-pics-pics
@@ -383,5 +401,5 @@ TESTS += tests/test-pics-tedim tests/test-pics-bp-noncart
 TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart2 tests/test-pics-basis-noncart-memory
 TESTS += tests/test-pics-basis-noncart-memory2 tests/test-pics-basis-noncart-memory3
 TESTS += tests/test-pics-noncart-sms tests/test-pics-noncart-sms2
-
+TESTS += tests/test-pics-lowmem
 
