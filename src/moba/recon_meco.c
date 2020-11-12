@@ -105,9 +105,10 @@ static void rescale_maps(unsigned int model, double scaling_Y, const struct lino
 
 	} else {
 
+		md_zsmul(DIMS, maps_dims, maps, maps, 1000.); // kHz --> Hz
+
 		long nr_coeff = maps_dims[COEFF_DIM];
 
-		long R2S_flag = set_R2S_flag(model);
 		long fB0_flag = set_fB0_flag(model);
 
 		long map_dims[DIMS];
@@ -125,13 +126,8 @@ static void rescale_maps(unsigned int model, double scaling_Y, const struct lino
 
 			md_zsmul(DIMS, map_dims, map, map, scaling[n]);
 
-			if (MD_IS_SET(R2S_flag, n) || MD_IS_SET(fB0_flag, n)) {
-
-				if (MD_IS_SET(fB0_flag, n))
-					linop_forward_unchecked(op, map, map);
-
-				md_zsmul(DIMS, map_dims, map, map, 1000.); // kHz --> Hz
-			}
+			if (MD_IS_SET(fB0_flag, n))
+				linop_forward_unchecked(op, map, map);
 
 			md_copy_block(DIMS, pos, maps_dims, maps, map_dims, map, CFL_SIZE);
 		}
@@ -360,7 +356,7 @@ void meco_recon(struct moba_conf* moba_conf,
 			{
 				auto aconf = CAST_DOWN(iter_admm_conf, iconf);
 
-		                aconf->maxiter = MIN(iadmm_conf.maxiter, 10. * powf(2., logf(1. / iconf->alpha)));
+				aconf->maxiter = MIN(iadmm_conf.maxiter, 10. * powf(2., logf(1. / iconf->alpha)));
 				aconf->cg_eps = iadmm_conf.cg_eps * iconf->alpha;
 			};
 
