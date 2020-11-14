@@ -1,4 +1,6 @@
 
+# for math in lowmem test
+SHELL=/bin/bash
 
 
 tests/test-pics-pi: pics scale nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
@@ -383,8 +385,8 @@ tests/test-pics-lowmem: traj phantom repmat ones  pics nrmse
 	$(TOOLDIR)/repmat 5 200 k0.ra k1.ra						;\
 	$(TOOLDIR)/repmat 6 200 k1.ra k2.ra						;\
 	$(TOOLDIR)/ones 2 4 4 s.ra							;\
-	if [ $$(( 100 * `$(TOOLDIR)/tests/print_max_rss.sh $(TOOLDIR)/pics -U -tt.ra k2.ra s.ra r1.ra` )) -ge \
-	      $$(( 75 * `$(TOOLDIR)/tests/print_max_rss.sh $(TOOLDIR)/pics    -tt.ra k2.ra s.ra r2.ra` )) ] ; then \
+	if [ $(( 100 * `$(TOOLDIR)/tests/print_max_rss.sh $(TOOLDIR)/pics -U -tt.ra k2.ra s.ra r1.ra` )) -ge \
+	      $(( 75 * `$(TOOLDIR)/tests/print_max_rss.sh $(TOOLDIR)/pics    -tt.ra k2.ra s.ra r2.ra` )) ] ; then \
 	     	echo "-U/--lowmem failed to reduce memory usage!"			;\
 		false									;\
 	fi										;\
