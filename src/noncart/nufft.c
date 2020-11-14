@@ -993,24 +993,30 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 	}
 
 	complex float* grid = md_alloc(ND, data->cml_dims, CFL_SIZE);
+	complex float* gridX = NULL;
 
 	if (data->conf.lowmem) {
 
-		split_nufft_adjoint (data, ND, grid, src);
+		split_nufft_adjoint(data, ND, grid, src);
 
 	} else {
 
-		complex float* gridX = md_calloc(data->N, data->cm2_dims, CFL_SIZE);
+		gridX = md_calloc(data->N, data->cm2_dims, CFL_SIZE);
 
 		grid2(&data->grid_conf, ND, data->trj_dims, data->traj, data->cm2_dims, gridX, data->ksp_dims, src);
-
-		md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
-		md_free(gridX);
-		md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, data->fftmod);
 	}
 
 	md_free(bdat);
 	md_free(wdat);
+
+	if (!data->conf.lowmem) {
+
+		md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
+
+		md_free(gridX);
+
+		md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, data->fftmod);
+	}
 
 	linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
 
