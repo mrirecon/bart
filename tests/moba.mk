@@ -158,8 +158,8 @@ tests/test-moba-meco-noncart: traj scale phantom signal fmac index extract moba 
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
-TESTS += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
-TESTS += tests/test-moba-t2
-TESTS += tests/test-moba-meco-noncart
+TESTS_SLOW += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
+TESTS_SLOW += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
+TESTS_SLOW += tests/test-moba-t2
+TESTS_SLOW += tests/test-moba-meco-noncart
 
