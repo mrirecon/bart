@@ -14,6 +14,8 @@ struct linop_s;
 struct opt_reg_s;
 
 
+extern const struct operator_p_s* moba_nonneg_prox_create(unsigned int N, const long maps_dims[__VLA(N)], unsigned int coeff_dim, long nonneg_flag, float lambda);
+
 extern void help_reg_moba(void);
 
 extern _Bool opt_reg_moba(void* ptr, char c, const char* optarg);
