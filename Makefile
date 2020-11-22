@@ -504,7 +504,7 @@ UTARGETS += test_pattern test_types test_misc
 
 # lib moba
 UTARGETS += test_moba
-MODULES_test_moba += -lmoba -lnlops -llinops
+MODULES_test_moba += -lmoba -lnoir -llowrank -lwavelet -liter -lnlops -llinops -lsimu
 
 # lib nlop
 UTARGETS += test_nlop

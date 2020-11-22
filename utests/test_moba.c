@@ -11,6 +11,7 @@
 #include "num/flpmath.h"
 #include "num/rand.h"
 #include "num/iovec.h"
+#include "num/ops_p.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -23,6 +24,7 @@
 #include "nlops/nlop.h"
 
 #include "moba/T1fun.h"
+#include "moba/optreg.h"
 
 #include "utest.h"
 
@@ -62,3 +64,53 @@ static bool test_nlop_T1fun(void)
 
 UT_REGISTER_TEST(test_nlop_T1fun);
 
+static bool test_op_p_stack_moba_nonneg(void)
+{
+	enum { N = 5 };
+	long dims[N] = { 2, 4, 7, 5, 6};
+
+	long strs[N];
+	md_calc_strides(N, strs, dims, CFL_SIZE);
+
+	long s_dim = 2;
+
+	long p_pos = 3;
+	unsigned int s_flag = MD_BIT(p_pos);
+
+	const struct operator_p_s* p = moba_nonneg_prox_create(N, dims, s_dim, s_flag, 0.);
+
+	complex float* in  = md_alloc(N, dims, CFL_SIZE);
+	complex float* out = md_alloc(N, dims, CFL_SIZE);
+
+	md_zfill(N, dims, in, -1.);
+	md_zfill(N, dims, out, 100.);
+
+	operator_p_apply(p, 0., N, dims, out, N, dims, in);
+	operator_p_free(p);
+
+	dump_cfl("/scratch/ztan/out", N, dims, out);
+	dump_cfl("/scratch/ztan/in", N, dims, in);
+
+
+	long dims1[N];
+	md_select_dims(N, ~MD_BIT(s_dim), dims1, dims);
+
+	complex float* in1 = md_alloc(N, dims1, CFL_SIZE);
+
+	long* pos = calloc(N, sizeof(long));
+	pos[s_dim] = p_pos;
+
+	md_copy_block(N, pos, dims1, in1, dims, in, CFL_SIZE);
+	md_clear(N, dims1, in1, CFL_SIZE);
+	md_copy_block(N, pos, dims, in, dims1, in1, CFL_SIZE);
+
+	float err = md_znrmse(N, dims, out, in);
+
+	md_free(in);
+	md_free(in1);
+	md_free(out);
+
+	UT_ASSERT(err < UT_TOL);
+}
+
+UT_REGISTER_TEST(test_op_p_stack_moba_nonneg);
