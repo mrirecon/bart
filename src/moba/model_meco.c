@@ -58,6 +58,7 @@ struct meco_s meco_create(const long dims[DIMS], const long y_dims[DIMS], const 
 		ret.linop = nlinv.linop;
 		ret.linop_fB0 = meco_get_fB0_trafo(meco);
 		ret.scaling = meco_get_scaling(meco);
+		ret.weight_fB0_type = meco_get_weight_fB0_type(meco);
 
 		nlop_free(meco);
 		nlop_free(nlinv.nlop);		

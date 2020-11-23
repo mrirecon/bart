@@ -63,6 +63,7 @@ struct meco_s {
 	complex float* weights;
 
 	const struct linop_s* linop_fB0;
+	unsigned int weight_fB0_type;
 };
 
 DEF_TYPEID(meco_s);
@@ -211,6 +212,8 @@ static void meco_calc_weights(const nlop_data_t* _data, const int N, const long 
 
 		data->linop_fB0 = linop_cdiag_create(N, data->map_dims, FFT_FLAGS, data->weights);
 
+		data->weight_fB0_type = MECO_IDENTITY;
+
 		break;
 
 	case MECO_SOBOLEV:
@@ -226,6 +229,8 @@ static void meco_calc_weights(const nlop_data_t* _data, const int N, const long 
 		auto linop_ifftc = linop_ifftc_create(N, data->map_dims, FFT_FLAGS);
 
 		data->linop_fB0 = linop_chain_FF(linop_wghts, linop_ifftc);
+
+		data->weight_fB0_type = MECO_SOBOLEV;
 
 		break;
 
@@ -260,6 +265,12 @@ void meco_back_fB0(const struct linop_s* op, complex float* dst, const complex f
 	linop_adjoint_unchecked(op, dst, src);
 }
 
+unsigned int meco_get_weight_fB0_type(struct nlop_s* op)
+{
+	const nlop_data_t* _data = nlop_get_data(op);
+	struct meco_s* data = CAST_DOWN(meco_s, _data);
+	return data->weight_fB0_type;
+}
 
 // ************************************************************* //
 //  Model: (W + F cshift) .* exp(i 2\pi fB0 TE)

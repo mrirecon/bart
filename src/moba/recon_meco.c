@@ -339,7 +339,12 @@ void meco_recon(struct moba_conf* moba_conf,
 			/* use lsqr */
 			debug_printf(DP_DEBUG2, "in lsqr\n");
 
-			opt_reg_moba_configure(DIMS, x_dims, ropts, prox_ops, trafos, sel_model);
+			struct optreg_conf optreg_conf = optreg_defaults;
+
+			optreg_conf.moba_model = sel_model;
+			optreg_conf.weight_fB0_type = nl.weight_fB0_type;
+
+			opt_reg_moba_configure(DIMS, x_dims, ropts, prox_ops, trafos, &optreg_conf);
 
 
 			struct iter_admm_conf iadmm_conf = iter_admm_defaults;

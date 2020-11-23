@@ -41,6 +41,12 @@
 
 #include "optreg.h"
 
+struct optreg_conf optreg_defaults = {
+
+	.moba_model = MECO_WFR2S,
+	.weight_fB0_type = MECO_SOBOLEV,
+};
+
 
 static const struct operator_p_s* create_wav_prox(const long img_dims[DIMS], unsigned int x_flags, unsigned int jt_flag, float lambda)
 {
@@ -273,7 +279,7 @@ bool opt_reg_moba(void* ptr, char c, const char* optarg)
 }
 
 
-static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int model)
+static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
 {
 	long maps_dims[N];
 	md_select_dims(N, ~COIL_FLAG, maps_dims, dims);
@@ -286,6 +292,19 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 	long sens_size = md_calc_size(N, sens_dims);
 
 	long x_size = maps_size + sens_size;
+
+
+	// set number of coefficients for joint regularization
+	long nr_joint_coeff = set_num_of_coeff(optreg_conf->moba_model);
+
+	if (MECO_SOBOLEV == optreg_conf->weight_fB0_type) {
+
+		nr_joint_coeff -= 1;
+	}
+
+	// set the flag for the position of the coefficient 
+	// which needs non-negativity constraint
+	long nonneg_flag = set_R2S_flag(optreg_conf->moba_model);
 
 
 	struct reg_s* regs = ropts->regs;
@@ -301,7 +320,7 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 		{
 			debug_printf(DP_INFO, "  > l1-wavelet regularization with parameters %d:%d:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
-			auto prox_maps = moba_joint_wavthresh_prox_create(N, maps_dims, COEFF_DIM, regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, set_num_of_coeff(model) - 1);
+			auto prox_maps = moba_joint_wavthresh_prox_create(N, maps_dims, COEFF_DIM, regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, nr_joint_coeff);
 
 			auto prox_sens = moba_sens_prox_create(N, sens_dims);
 
@@ -326,7 +345,8 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 		{
 			debug_printf(DP_INFO, "  > non-negative constraint with lambda %f\n", regs[nr].lambda);
 
-			auto prox_maps = moba_nonneg_prox_create(N, maps_dims, COEFF_DIM, set_R2S_flag(model), regs[nr].lambda);
+			auto prox_maps = moba_nonneg_prox_create(N, maps_dims, COEFF_DIM, nonneg_flag, regs[nr].lambda);
+
 			auto prox_sens = moba_sens_prox_create(N, sens_dims);
 
 			prox_ops[nr] = stack_flatten_prox(prox_maps, prox_sens);
@@ -365,9 +385,9 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 }
 
 
-void opt_reg_moba_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int model)
+void opt_reg_moba_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
 {
-	switch (model) {
+	switch (optreg_conf->moba_model) {
 
 	case MECO_WF:
 	case MECO_WFR2S:
@@ -375,7 +395,7 @@ void opt_reg_moba_configure(unsigned int N, const long dims[N], struct opt_reg_s
 	case MECO_R2S:
 	case MECO_PHASEDIFF:
 
-		opt_reg_meco_configure(N, dims, ropts, prox_ops, trafos, model);
+		opt_reg_meco_configure(N, dims, ropts, prox_ops, trafos, optreg_conf);
 
 		break;
 	}
