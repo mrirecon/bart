@@ -44,11 +44,11 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 
 #define INTERFACE(X) X INTERFACE
 
-typedef const struct typeid_s { int size; } TYPEID;
+typedef const struct typeid_s { int size; const char* name; } TYPEID;
 
 #define TYPEID2(T) (T ## _TYPEID)
 #define TYPEID(T) (*({ extern TYPEID T ## _TYPEID; &T ## _TYPEID; }))
-#define DEF_TYPEID(T) TYPEID T ## _TYPEID = { sizeof(struct T) };
+#define DEF_TYPEID(T) TYPEID T ## _TYPEID = { .size = sizeof(struct T), .name = "" #T ""};
 #define SET_TYPEID(T, x) (TYPE_CHECK(struct T*, x)->INTERFACE.TYPEID = &TYPEID(T))
 
 #define SIZEOF(x) ((x)->TYPEID->size)
