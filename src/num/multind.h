@@ -2,7 +2,7 @@
  * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- */ 
+ */
 
 #ifndef __MULTIND_H
 #define __MULTIND_H	1
@@ -124,7 +124,7 @@ extern unsigned long md_nontriv_dims(unsigned int D, const long dims[__VLA(D)]);
 extern unsigned long md_nontriv_strides(unsigned int D, const long dims[__VLA(D)]);
 
 
-#define MD_INIT_ARRAY(x, y) { [ 0 ... ((x) - 1) ] = (y) } 
+#define MD_INIT_ARRAY(x, y) { [ 0 ... ((x) - 1) ] = (y) }
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
 #define MD_DIMS(...) MD_MAKE_ARRAY(long, __VA_ARGS__)
 
@@ -164,7 +164,24 @@ extern unsigned long md_nontriv_strides(unsigned int D, const long dims[__VLA(D)
 	_dims; 						\
 })
 
+#define MD_REAL_DIMS(N, dims)				\
+({							\
+	unsigned int _N = (N);				\
+	long* _dims = alloca((_N + 1) * sizeof(long)); 	\
+	md_copy_dims(_N, _dims + 1, dims);		\
+	_dims[0] = 2l;			 		\
+	_dims; 						\
+})
+
+#define MD_REAL_STRS(N, strs)				\
+({							\
+	unsigned int _N = (N);				\
+	long* _strs = alloca((_N + 1) * sizeof(long)); 	\
+	md_copy_dims(_N, _strs + 1, strs);		\
+	_strs[0] = 4l;			 		\
+	_strs; 						\
+})
+
 #include "misc/cppwrap.h"
 
 #endif // __MULTIND_H
-
