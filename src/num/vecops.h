@@ -84,11 +84,15 @@ struct vec_ops {
 	void (*zhardthresh)(long N,  unsigned int k, _Complex float* d, const _Complex float* x);
 	void (*zhardthresh_mask)(long N,  unsigned int k, _Complex float* d, const _Complex float* x);
 
+	void (*pdf_gauss)(long N, float mu, float sig, float* dst, const float* src);
+
 	void (*real)(long N, float* dst, const _Complex float* src);
 	void (*imag)(long N, float* dst, const _Complex float* src);
 	void (*zcmpl_real)(long N, _Complex float* dst, const float* src);
 	void (*zcmpl_imag)(long N, _Complex float* dst, const float* src);
 	void (*zcmpl)(long N, _Complex float* dst, const float* real_src, const float* imag_src);
+
+	void (*zfill)(long N, _Complex float val, _Complex float* dst);
 };
 
 

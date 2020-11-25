@@ -393,6 +393,8 @@ const struct vec_ops gpu_ops = {
 	.zconj = cuda_zconj,
 	.zexpj = cuda_zexpj,
 	.zexp = cuda_zexp,
+	.zsin = cuda_zsin,
+	.zcos = cuda_zcos,
 	.zlog = cuda_zlog,
 	.zarg = cuda_zarg,
 	.zabs = cuda_zabs,
@@ -419,11 +421,15 @@ const struct vec_ops gpu_ops = {
 	.softthresh_half = cuda_softthresh_half,
 	.zhardthresh = NULL,
 
+	.pdf_gauss = cuda_pdf_gauss,
+
 	.real = cuda_real,
 	.imag = cuda_imag,
 	.zcmpl_real = cuda_zcmpl_real,
 	.zcmpl_imag = cuda_zcmpl_imag,
 	.zcmpl = cuda_zcmpl,
+
+	.zfill = cuda_zfill,
 };
 
 

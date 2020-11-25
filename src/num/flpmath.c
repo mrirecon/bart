@@ -1580,7 +1580,7 @@ void md_min2(unsigned int D, const long dims[D], const long ostr[D], float* optr
 /**
  * Max of inputs (without strides)
  *
- * optr = max(iptr1, iptr2)
+ * optr = max(iptr1, iptr2) + 0i
  */
 void md_zmax(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr1, const complex float* iptr2)
 {
@@ -1594,7 +1594,7 @@ void md_zmax(unsigned int D, const long dims[D], complex float* optr, const comp
 /**
  * Max of inputs (with strides)
  *
- * optr = max(iptr1, iptr2)
+ * optr = max(iptr1, iptr2) + 0i
  */
 void md_zmax2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
@@ -1705,7 +1705,19 @@ void md_zadd(unsigned int D, const long dims[D], complex float* optr, const comp
  */
 void md_zsadd2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
 {
+#if 0
 	make_z3op_scalar(md_zadd2, D, dims, ostr, optr, istr, iptr, val);
+#else
+	// FIXME: we should rather optimize md_zadd2 for this case
+
+	NESTED(void, nary_zsadd, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zsadd(data->size, val, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims, ostr, optr, istr, iptr,
+		(size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zsadd);
+#endif
 }
 
 
@@ -1780,7 +1792,19 @@ void md_add(unsigned int D, const long dims[D], float* optr, const float* iptr1,
  */
 void md_sadd2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
+#if 0
 	make_3op_scalar(md_add2, D, dims, ostr, optr, istr, iptr, val);
+#else
+	// FIXME: we should rather optimize md_zadd2 for this case
+
+	NESTED(void, nary_sadd, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->sadd(data->size, val, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims, ostr, optr, istr, iptr,
+		(size_t[2]){ FL_SIZE, FL_SIZE }, nary_sadd);
+#endif
 }
 
 
@@ -3288,7 +3312,21 @@ void md_zwavg2_core2(unsigned int D, const long dims[D], unsigned int flags, con
  */
 void md_zfill2(unsigned int D, const long dim[D], const long str[D], complex float* ptr, complex float val)
 {
+#if 1
+	const long (*nstr[1])[D?D:1] = { (const long (*)[D?D:1])str};
+	void *nptr[1] = { ptr };
+	unsigned int io = 1;
+	size_t sizes[1] = { CFL_SIZE };
+
+	NESTED(void, nary_zfill, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zfill(data->size, val, ptr[0]);
+	};
+
+	optimized_nop(1, io, D, dim, nstr, nptr, sizes, nary_zfill);
+#else
 	md_fill2(D, dim, str, ptr, &val, CFL_SIZE);
+#endif
 }
 
 
@@ -3299,7 +3337,10 @@ void md_zfill2(unsigned int D, const long dim[D], const long str[D], complex flo
  */
 extern void md_zfill(unsigned int D, const long dim[D], complex float* ptr, complex float val)
 {
-	md_fill(D, dim, ptr, &val, CFL_SIZE);
+	long str[D];
+	md_calc_strides(D, str, dim, CFL_SIZE);
+
+	md_zfill2(D, dim, str, ptr, val);
 }
 
 
@@ -3624,7 +3665,7 @@ void md_zhardthresh_joint2(unsigned int D, const long dims[D], unsigned int k, u
  * Hard thresholding (with strides)
  *
  * y = HT(x, k), selects k largest elements of x
- * computes y = x * (abs(x) > t(k)), 
+ * computes y = x * (abs(x) > t(k)),
  * k = threshold index of sorted x, t(k)= value of sorted x at k
  *
  * @param D number of dimensions
@@ -3969,19 +4010,27 @@ void md_zsum(unsigned int D, const long dims[D], unsigned int flags, complex flo
 	md_calc_strides(D, str1, dims, CFL_SIZE);
 	md_calc_strides(D, str2, dims2, CFL_SIZE);
 
-	complex float* ones = md_alloc_sameplace(D, dims, CFL_SIZE, dst);
-	md_zfill(D, dims, ones, 1.);
-
 	md_clear(D, dims2, dst, CFL_SIZE);
-	md_zfmac2(D, dims, str2, dst, str1, src, str1, ones);
-
-	md_free(ones);
+	md_zadd2(D, dims, str2, dst, str2, dst, str1, src);
 }
+
 
 
 void md_real2(unsigned int D, const long dims[D], const long ostrs[D], float* dst, const long istrs[D], const complex float* src)
 {
-	md_copy2(D, dims, ostrs, dst, istrs, (const float*)src + 0, FL_SIZE);
+#ifdef USE_CUDA
+	if (cuda_ondevice(dst) != cuda_ondevice(src)) {
+
+		md_copy2(D, dims, ostrs, dst, istrs, (const float*)src + 0, FL_SIZE);
+		return;
+	}
+#endif
+	NESTED(void, nary_real, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->real(data->size, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims, ostrs, dst, istrs, src, (size_t[2]){ FL_SIZE, CFL_SIZE }, nary_real);
 }
 
 void md_real(unsigned int D, const long dims[D], float* dst, const complex float* src)
@@ -3991,7 +4040,19 @@ void md_real(unsigned int D, const long dims[D], float* dst, const complex float
 
 void md_imag2(unsigned int D, const long dims[D], const long ostrs[D], float* dst, const long istrs[D], const complex float* src)
 {
-	md_copy2(D, dims, ostrs, dst, istrs, (const float*)src + 1, FL_SIZE);
+#ifdef USE_CUDA
+	if (cuda_ondevice(dst) != cuda_ondevice(src)) {
+
+		md_copy2(D, dims, ostrs, dst, istrs, (const float*)src + 1, FL_SIZE);
+		return;
+	}
+#endif
+	NESTED(void, nary_imag, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->imag(data->size, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims, ostrs, dst, istrs, src, (size_t[2]){ FL_SIZE, CFL_SIZE }, nary_imag);
 }
 
 void md_imag(unsigned int D, const long dims[D], float* dst, const complex float* src)
@@ -4071,3 +4132,25 @@ extern void md_zcmpl(unsigned int D, const long dims[D], complex float* dst, con
 	md_zcmpl2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), dst, MD_STRIDES(D, dims, FL_SIZE), src_real, MD_STRIDES(D, dims, FL_SIZE), src_imag);
 }
 
+
+
+/**
+ * Gaussian propability density
+ *
+ * optr = 1/sqrt(2pi) * sigma * exp(-(iptr-mu)^2/(2*sigma^2))
+ */
+void md_pdf_gauss2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float mu, float sigma)
+{
+	NESTED(void, nary_pdf_gauss, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->pdf_gauss(data->size, mu, sigma, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims, ostr, optr, istr, iptr,
+		(size_t[2]){ FL_SIZE, FL_SIZE }, nary_pdf_gauss);
+}
+
+void md_pdf_gauss(unsigned int D, const long dims[D], float* optr, const float* iptr, float mu, float sigma)
+{
+	md_pdf_gauss2(D, dims, MD_STRIDES(D, dims, FL_SIZE), optr, MD_STRIDES(D, dims, FL_SIZE), iptr, mu, sigma);
+}

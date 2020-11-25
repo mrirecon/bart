@@ -344,6 +344,8 @@ extern void md_zcmpl_imag(unsigned int D, const long dims[__VLA(D)], _Complex fl
 extern void md_zcmpl2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], _Complex float* dst, const long istr1[__VLA(D)], const float* src_real, const long istr2[__VLA(D)], const float* src_imag);
 extern void md_zcmpl(unsigned int D, const long dims[__VLA(D)], _Complex float* dst, const float* src_real, const float* src_imag);
 
+extern void md_pdf_gauss2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr, float mu, float sigma);
+extern void md_pdf_gauss(unsigned int D, const long dims[__VLA(D)], float* optr, const float* iptr, float mu, float sigma);
 
 #include "misc/cppwrap.h"
 
