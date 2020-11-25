@@ -1962,11 +1962,17 @@ static const struct operator_chain_s* get_chain_data(const struct operator_s* ch
  */
 const struct operator_s* operator_chain(const struct operator_s* a, const struct operator_s* b)
 {
-	#if 0
+	#if 1
 	if (NULL != get_plus_data(b)) {
 
 		auto bd = get_plus_data(b);
-		return operator_plus_create(operator_chain(a, bd->a), operator_chain(a, bd->b));
+		auto tmpa = operator_chain(a, bd->a);
+		auto tmpb = operator_chain(a, bd->b);
+
+		auto result = operator_plus_create(tmpa, tmpb);
+		operator_free(tmpa);
+		operator_free(tmpb);
+		return result;
 	}
 	#endif
 
@@ -2149,46 +2155,74 @@ static bool check_plus(unsigned int N, const struct operator_s* op[N], complex f
 
 static bool check_start_plus(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
 {
-	const struct operator_s* nop[N + 1];
-	complex float* ndst[N + 1];
+	const struct operator_s* nop1[N + 1];
+	complex float* ndst1[N + 1];
 
-	for (unsigned int i = 0; i < N; i++) {
+	const struct operator_s* nop2[N + 1];
+	complex float* ndst2[N + 1];
 
-		ndst[i] = dst[i];
-		nop[i] = op[i];
-	}
+	unsigned int N1 = 0;
+	unsigned int N2 = 0;
+
+	unsigned int plus_index = 0;
+
+	const struct operator_s* opened_plus_op = NULL;
+	const struct iovec_s* iov = NULL;
 
 	for (unsigned int i = 0; i < N; i++) {
 
 		auto op_chain_data = get_chain_data(op[i]);
 
-		if ((1 < op_chain_data->N) && (NULL != get_plus_data(op_chain_data->x[0]))) {
+		if ((NULL == opened_plus_op) && (NULL != get_plus_data(op_chain_data->x[0]))) {
 
 			auto op_plus_data = get_plus_data(op_chain_data->x[0]);
 
-			auto iov = operator_codomain(op_plus_data->a);
+			iov = operator_codomain(op_plus_data->a);
 
-			ndst[N] = md_alloc_sameplace(iov->N, iov->dims, iov->size, dst[i]);
-			ndst[i] = md_alloc_sameplace(iov->N, iov->dims, iov->size, dst[i]);
+			ndst1[N1] = md_alloc_sameplace(iov->N, iov->dims, iov->size, dst[i]);
+			nop1[N1] = op_plus_data->b;
+			plus_index = N1;
+			N1++;
 
-			nop[N] = op_plus_data->b;
-			nop[i] = op_plus_data->a;
+			ndst1[N1] = md_alloc_sameplace(iov->N, iov->dims, iov->size, dst[i]);
+			nop1[N1] = op_plus_data->a;
+			N1++;
 
-			operator_apply_parallel_unchecked(N + 1, nop, ndst, src);
+			nop2[N2] = (1 < op_chain_data->N) ? operator_chainN(op_chain_data->N - 1, op_chain_data->x + 1) : operator_identity_create(iov->N, iov->dims);
+			ndst2[N2] = dst[i];
+			N2++;
 
-			md_zadd(iov->N, iov->dims, ndst[i], ndst[i], ndst[N]);
-			md_free(ndst[N]);
-
-			auto tmp_chain_op = operator_chain_optimized_F(operator_chainN(op_chain_data->N - 1, op_chain_data->x + 1));
-			operator_apply_unchecked(tmp_chain_op, dst[i], ndst[i]);
-			operator_free(tmp_chain_op);
-			md_free(ndst[i]);
-
-			return true;
+			opened_plus_op = op_chain_data->x[0];
+			continue;
 		}
+
+		if (opened_plus_op == op_chain_data->x[0]) {
+
+			nop2[N2] = (1 < op_chain_data->N) ? operator_chainN(op_chain_data->N - 1, op_chain_data->x + 1) : operator_identity_create(iov->N, iov->dims);
+			ndst2[N2] = dst[i];
+			N2++;
+			continue;
+		}
+
+		nop1[N1] = op[i];
+		ndst1[N1] = dst[i];
+		N1++;
 	}
 
-	return false;
+	if (NULL == opened_plus_op)
+		return false;
+
+	operator_apply_parallel_unchecked(N1, nop1, ndst1, src);
+	md_zadd(iov->N, iov->dims, ndst1[plus_index], ndst1[plus_index], ndst1[plus_index + 1]);
+	md_free(ndst1[plus_index + 1]);
+
+	operator_apply_parallel_unchecked(N2, nop2, ndst2, ndst1[plus_index]);
+	md_free(ndst1[plus_index]);
+
+	for (unsigned int i = 0; i < N2; i++)
+		operator_free(nop2[i]);
+
+	return true;
 }
 
 
@@ -2262,6 +2296,9 @@ static bool check_mututal_start(unsigned int N, const struct operator_s* op[N], 
 		operator_free(same_op);
 
 		operator_apply_parallel_unchecked(nN, nop, ndst, tmp);
+
+		for (unsigned int i = 0; i < nN; i++)
+			operator_free(nop[i]);
 
 		md_free(tmp);
 	}
