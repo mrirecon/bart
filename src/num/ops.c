@@ -353,6 +353,11 @@ struct identity_s {
 
 static DEF_TYPEID(identity_s);
 
+static const struct identity_s* get_identity_data(const struct operator_s* op)
+{
+	return CAST_MAYBE(identity_s, operator_get_data(op));
+}
+
 static void identity_apply(const operator_data_t* _data, unsigned int N, void* args[N])
 {
 	const auto d = CAST_DOWN(identity_s, _data);
@@ -394,79 +399,63 @@ const struct operator_s* operator_identity_create(unsigned int N, const long dim
 	return operator_identity_create2(N, dims, strs, strs);
 }
 
-struct reshape_s {
-
-	INTERFACE(operator_data_t);
-
-	const struct iovec_s* domain;
-};
-
-static DEF_TYPEID(reshape_s);
-
-static void reshape_apply(const operator_data_t* _data, unsigned int N, void* args[N])
-{
-	const auto d = CAST_DOWN(reshape_s, _data);
-	assert(2 == N);
-	md_copy(d->domain->N, d->domain->dims, args[0], args[1], d->domain->size);
-}
-
-
-static void reshape_free(const operator_data_t* _data)
-{
-	const auto d = CAST_DOWN(reshape_s, _data);
-	iovec_free(d->domain);
-	xfree(d);
-}
-
-
+/**
+ * Create a Reshape operator: I x
+ * @param A number of out dimensions
+ * @param out_dims dimensions of output (codomain)
+ * @param B number of in dimensions
+ * @param in_dims dimensions of input (domain)
+ */
 const struct operator_s* operator_reshape_create(unsigned int A, const long out_dims[A], int B, const long in_dims[B])
 {
-	PTR_ALLOC(struct reshape_s, data);
-	SET_TYPEID(reshape_s, data);
-
-	assert(md_calc_size(A, out_dims) == md_calc_size(B, in_dims));
-	data->domain = iovec_create(B, in_dims, CFL_SIZE);
-
-	return operator_create(A, out_dims, B, in_dims, CAST_UP(PTR_PASS(data)), reshape_apply, reshape_free);
+	auto id = operator_identity_create(A, out_dims);
+	auto result = operator_reshape(id, 1, B, in_dims);
+	operator_free(id);
+	return result;
 }
 
-static bool check_simple_copy(const struct operator_s* op)
-{
-	if (NULL != CAST_MAYBE(reshape_s, operator_get_data(op)))
-		return true;
-	return false;
-}
 
-struct reshape_container_s {
+struct op_reshape_s {
 
 	INTERFACE(operator_data_t);
 
 	const struct operator_s* x;
 };
 
-static DEF_TYPEID(reshape_container_s );
+static DEF_TYPEID(op_reshape_s );
 
-static void reshape_container_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+static const struct op_reshape_s* get_reshape_data(const struct operator_s* op)
 {
-	const auto d = CAST_DOWN(reshape_container_s, _data);
+	return CAST_MAYBE(op_reshape_s, operator_get_data(op));
+}
+
+static void reshape_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+{
+	const auto d = CAST_DOWN(op_reshape_s, _data);
 	operator_generic_apply_unchecked(d->x, N, args);
 }
 
-static void reshape_container_free(const operator_data_t* _data)
+
+
+static void reshape_free(const operator_data_t* _data)
 {
-	const auto d = CAST_DOWN(reshape_container_s, _data);
+	const auto d = CAST_DOWN(op_reshape_s, _data);
 	operator_free(d->x);
 	xfree(d);
 }
 
 const struct operator_s* operator_reshape(const struct operator_s* op, unsigned int i, long N, const long dims[N])
 {
-	PTR_ALLOC(struct reshape_container_s, data);
-	SET_TYPEID(reshape_container_s, data);
+	PTR_ALLOC(struct op_reshape_s, data);
+	SET_TYPEID(op_reshape_s, data);
 
 	assert(md_calc_size(N, dims) == md_calc_size(operator_arg_domain(op, i)->N, operator_arg_domain(op, i)->dims));
 
-	data->x = operator_ref(op);
+	auto opdata_test = CAST_MAYBE(op_reshape_s, op->data);
+	if (NULL != opdata_test)
+		data->x = operator_ref(opdata_test->x);
+	else
+		data->x = operator_ref(op);
 
 	long strs[N];
 	md_calc_strides(N, strs, dims, operator_arg_domain(op, i)->size);
@@ -488,10 +477,17 @@ const struct operator_s* operator_reshape(const struct operator_s* op, unsigned 
 	op_dims[i] = dims;
 	op_strs[i] = strs;
 
-	return operator_generic_create2(A, op->io_flags, D, op_dims, op_strs, CAST_UP(PTR_PASS(data)), reshape_container_apply, reshape_container_free);
+	return operator_generic_create2(A, op->io_flags, D, op_dims, op_strs, CAST_UP(PTR_PASS(data)), reshape_apply, reshape_free);
 }
 
-
+static bool check_simple_copy(const struct operator_s* op)
+{
+	if (NULL != get_identity_data(op))
+		return true;
+	if (NULL != get_reshape_data(op))
+		return check_simple_copy(get_reshape_data(op)->x);
+	return false;
+}
 
 struct zero_s {
 
