@@ -199,7 +199,11 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 		}
 	}
 
-	n->op = operator_generic_create2(OO + II, (1lu << OO) - 1lu, D, dims, strs, CAST_UP(PTR_PASS(d)), op_fun, op_del);
+	bool io_flags[OO + II];
+	for (int i = 0; i < OO + II; i++)
+		io_flags[i] = i < OO;
+
+	n->op = operator_generic_create2(OO + II, io_flags, D, dims, strs, CAST_UP(PTR_PASS(d)), op_fun, op_del);
 
 
 	return PTR_PASS(n);

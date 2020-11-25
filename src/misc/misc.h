@@ -52,6 +52,7 @@ extern void warn_nonnull_ptr(void*);
 #define PTR_FREE(x)		XFREE(x)
 #define PTR_PASS(x)		({ __typeof__(x) __tmp = (x); (x) = NULL; __tmp; })
 
+#define ARR_CLONE(T, x)		({PTR_ALLOC(T, __tmp2); memcpy(*__tmp2, x, sizeof(T)); *PTR_PASS(__tmp2); })
 
 extern int parse_cfl(_Complex float res[1], const char* str);
 #ifndef __cplusplus
