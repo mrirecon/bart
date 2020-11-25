@@ -52,9 +52,12 @@ struct nlop_linop_data_s {
 
 	struct shared_ptr_s sptr;
 
-	nlop_fun_t deriv;
-	nlop_fun_t adjoint;
-	nlop_fun_t normal;
+	unsigned int o;
+	unsigned int i;
+
+	nlop_der_fun_t deriv;
+	nlop_der_fun_t adjoint;
+	nlop_der_fun_t normal;
 	nlop_p_fun_t norm_inv;
 };
 
@@ -100,28 +103,28 @@ static void lop_der(const linop_data_t* _data, complex float* dst, const complex
 {
 	auto data = CAST_DOWN(nlop_linop_data_s, _data);
 
-	data->deriv(data->data, dst, src);
+	data->deriv(data->data, data->o, data->i, dst, src);
 }
 
 static void lop_adj(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(nlop_linop_data_s, _data);
 
-	data->adjoint(data->data, dst, src);
+	data->adjoint(data->data, data->o, data->i, dst, src);
 }
 
 static void lop_nrm_inv(const linop_data_t* _data, float lambda, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(nlop_linop_data_s, _data);
 
-	data->norm_inv(data->data, lambda, dst, src);
+	data->norm_inv(data->data, data->o, data->i, lambda, dst, src);
 }
 
 static void lop_nrm(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(nlop_linop_data_s, _data);
 
-	data->normal(data->data, dst, src);
+	data->normal(data->data, data->o, data->i, dst, src);
 }
 
 
@@ -133,9 +136,9 @@ static void lop_del(const linop_data_t* _data)
 	xfree(data);
 }
 
-
-struct nlop_s* nlop_generic_create2(int OO, int ON, const long odims[OO][ON], const long ostr[OO][ON], int II, int IN, const long idims[II][IN], const long istr[II][IN],
-	nlop_data_t* data, nlop_gen_fun_t forward, nlop_fun_t deriv[II][OO], nlop_fun_t adjoint[II][OO], nlop_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO], nlop_del_fun_t del)
+struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], const long ostr[OO][ON], int II, int IN, const long idims[II][IN], const long istr[II][IN],
+					nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO],
+					nlop_del_fun_t del)
 {
 	PTR_ALLOC(struct nlop_s, n);
 
@@ -185,6 +188,9 @@ struct nlop_s* nlop_generic_create2(int OO, int ON, const long odims[OO][ON], co
 			d2->normal = (NULL != normal) ? normal[i][o] : NULL;
 			d2->norm_inv = (NULL != norm_inv) ? norm_inv[i][o] : NULL;
 
+			d2->o = o;
+			d2->i = i;
+
 			shared_ptr_copy(&d2->sptr, &d->sptr);
 			d2->sptr.del = sptr_linop_del;
 
@@ -193,18 +199,33 @@ struct nlop_s* nlop_generic_create2(int OO, int ON, const long odims[OO][ON], co
 		}
 	}
 
-	n->op = operator_generic_create2(OO + II, (1u << OO) - 1u, D, dims, strs, CAST_UP(PTR_PASS(d)), op_fun, op_del);
+	n->op = operator_generic_create2(OO + II, (1lu << OO) - 1lu, D, dims, strs, CAST_UP(PTR_PASS(d)), op_fun, op_del);
 
 
 	return PTR_PASS(n);
 }
 
+
+struct nlop_s* nlop_generic_create(int OO, int ON, const long odims[OO][ON], int II, int IN, const long idims[II][IN],
+	nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO], nlop_del_fun_t del)
+{
+	long istrs[II][IN];
+	for (int i = 0; i < II; i++)
+		md_calc_strides(IN, istrs[i], idims[i], CFL_SIZE);
+	long ostrs[OO][ON];
+	for (int o = 0; o < OO; o++)
+		md_calc_strides(ON, ostrs[o], odims[o], CFL_SIZE);
+
+	return nlop_generic_create2(OO, ON, odims, ostrs, II, IN, idims, istrs, data, forward, deriv, adjoint, normal, norm_inv, del);
+}
+
+
 struct nlop_s* nlop_create2(unsigned int ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)],
 				unsigned int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], nlop_data_t* data,
-				nlop_fun_t forward, nlop_fun_t deriv, nlop_fun_t adjoint, nlop_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t del)
+				nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t del)
 {
 	struct nlop_s* op = nlop_generic_create2(1, ON, (const long(*)[])&odims[0], (const long(*)[])&ostrs[0], 1, IN, (const long(*)[])&idims[0], (const long(*)[])&istrs[0], data, NULL,
-					(nlop_fun_t[1][1]){ { deriv } }, (nlop_fun_t[1][1]){ { adjoint } }, (NULL != normal) ? (nlop_fun_t[1][1]){ { normal } } : NULL, (NULL != norm_inv) ? (nlop_p_fun_t[1][1]){ { norm_inv } } : NULL, del);
+					(nlop_der_fun_t[1][1]){ { deriv } }, (nlop_der_fun_t[1][1]){ { adjoint } }, (NULL != normal) ? (nlop_der_fun_t[1][1]){ { normal } } : NULL, (NULL != norm_inv) ? (nlop_p_fun_t[1][1]){ { norm_inv } } : NULL, del);
 
 	auto data2 = CAST_DOWN(nlop_op_data_s, operator_get_data(op->op));
 
@@ -214,7 +235,7 @@ struct nlop_s* nlop_create2(unsigned int ON, const long odims[__VLA(ON)], const 
 }
 
 struct nlop_s* nlop_create(unsigned int ON, const long odims[__VLA(ON)], unsigned int IN, const long idims[__VLA(IN)], nlop_data_t* data,
-				nlop_fun_t forward, nlop_fun_t deriv, nlop_fun_t adjoint, nlop_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t del)
+				nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t del)
 {
 	return nlop_create2(	ON, odims, MD_STRIDES(ON, odims, CFL_SIZE),
 				IN, idims, MD_STRIDES(IN, idims, CFL_SIZE),
@@ -387,8 +408,11 @@ static void flatten_fun(const nlop_data_t* _data, complex float* dst, const comp
 	nlop_generic_apply_unchecked(data->op, OO + II, args);
 }
 
-static void flatten_der(const nlop_data_t* _data, complex float* dst, const complex float* src)
+static void flatten_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
+	UNUSED(o);
+	UNUSED(i);
+
 	auto data = CAST_DOWN(flatten_s, _data);
 
 	int OO = nlop_get_nr_out_args(data->op);
@@ -421,8 +445,11 @@ static void flatten_der(const nlop_data_t* _data, complex float* dst, const comp
 	}
 }
 
-static void flatten_adj(const nlop_data_t* _data, complex float* dst, const complex float* src)
+static void flatten_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
+	UNUSED(o);
+	UNUSED(i);
+
 	auto data = CAST_DOWN(flatten_s, _data);
 
 	int OO = nlop_get_nr_out_args(data->op);

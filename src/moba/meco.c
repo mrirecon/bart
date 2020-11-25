@@ -1,7 +1,7 @@
 /* Copyright 2020. Uecker Lab, University Medical Center Goettingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- * 
+ *
  * Authors:
  * 2019-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2019-2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
@@ -787,9 +787,11 @@ static void meco_fun_phasediff(const nlop_data_t* _data, complex float* dst, con
 }
 
 
-
-static void meco_der(const nlop_data_t* _data, complex float* dst, const complex float* src)
+static void meco_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
+	UNUSED(o);
+	UNUSED(i);
+
 	struct meco_s* data = CAST_DOWN(meco_s, _data);
 
 	long x_pos[data->N];
@@ -804,7 +806,7 @@ static void meco_der(const nlop_data_t* _data, complex float* dst, const complex
 	md_clear(data->N, data->y_dims, dst, CFL_SIZE);
 
 	for (long pind = 0; pind < data->x_dims[COEFF_DIM]; pind++) {
-		
+
 		x_pos[COEFF_DIM] = pind;
 
 		md_copy_block(data->N, x_pos, data->map_dims, tmp_map, data->x_dims, src, CFL_SIZE);
@@ -820,8 +822,11 @@ static void meco_der(const nlop_data_t* _data, complex float* dst, const complex
 	md_free(tmp_exp);
 }
 
-static void meco_adj(const nlop_data_t* _data, complex float* dst, const complex float* src)
+static void meco_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
+	UNUSED(o);
+	UNUSED(i);
+
 	struct meco_s* data = CAST_DOWN(meco_s, _data);
 
 	long x_pos[data->N];
@@ -836,7 +841,7 @@ static void meco_adj(const nlop_data_t* _data, complex float* dst, const complex
 	md_clear(data->N, data->x_dims, dst, CFL_SIZE);
 
 	for (long pind = 0; pind < data->x_dims[COEFF_DIM]; pind++) {
-		
+
 		x_pos[COEFF_DIM] = pind;
 
 		md_copy_block(data->N, x_pos, data->map_dims, tmp_map, data->x_dims, dst, CFL_SIZE);
@@ -913,7 +918,7 @@ struct nlop_s* nlop_meco_create(const int N, const long y_dims[N], const long x_
 	assert(!use_gpu);
 	md_alloc_fun_t my_alloc = md_alloc;
 #endif
-	
+
 	PTR_ALLOC(struct meco_s, data);
 	SET_TYPEID(meco_s, data);
 
@@ -1020,4 +1025,3 @@ struct nlop_s* nlop_meco_create(const int N, const long y_dims[N], const long x_
 
 	return nlop_create(N, y_dims, N, x_dims, CAST_UP(PTR_PASS(data)), meco_funs[sel_model], meco_der, meco_adj, NULL, NULL, meco_del);
 }
-

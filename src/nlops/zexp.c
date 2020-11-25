@@ -39,14 +39,20 @@ static void zexp_fun(const nlop_data_t* _data, complex float* dst, const complex
 	md_copy(data->N, data->dims, dst, data->xn, CFL_SIZE);
 }
 
-static void zexp_der(const nlop_data_t* _data, complex float* dst, const complex float* src)
+static void zexp_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
+	UNUSED(o);
+	UNUSED(i);
+
 	const auto data = CAST_DOWN(zexp_s, _data);
 	md_zmul(data->N, data->dims, dst, src, data->xn);
 }
 
-static void zexp_adj(const nlop_data_t* _data, complex float* dst, const complex float* src)
+static void zexp_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
+	UNUSED(o);
+	UNUSED(i);
+
 	const auto data = CAST_DOWN(zexp_s, _data);
 	md_zmulc(data->N, data->dims, dst, src, data->xn);
 }
@@ -68,7 +74,7 @@ struct nlop_s* nlop_zexp_create(int N, const long dims[N])
 
 	PTR_ALLOC(long[N], ndims);
 	md_copy_dims(N, *ndims, dims);
-	
+
 	data->N = N;
 	data->dims = *PTR_PASS(ndims);
 	data->xn = md_alloc(N, dims, CFL_SIZE);
@@ -76,4 +82,3 @@ struct nlop_s* nlop_zexp_create(int N, const long dims[N])
 	return nlop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)),
 		zexp_fun, zexp_der, zexp_adj, NULL, NULL, zexp_del);
 }
-

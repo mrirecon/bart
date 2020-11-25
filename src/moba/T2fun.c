@@ -105,8 +105,11 @@ static void T2_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_dz, data->map_strs, data->rho, data->out_strs, data->tmp_exp);
 }
 
-static void T2_der(const nlop_data_t* _data, complex float* dst, const complex float* src)
+static void T2_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
+	UNUSED(o);
+	UNUSED(i);
+
 	struct T2_s* data = CAST_DOWN(T2_s, _data);
 	long pos[data->N];
 
@@ -128,8 +131,11 @@ static void T2_der(const nlop_data_t* _data, complex float* dst, const complex f
 	md_zfmac2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->tmp_map, data->out_strs, data->tmp_dz);
 }
 
-static void T2_adj(const nlop_data_t* _data, complex float* dst, const complex float* src)
+static void T2_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
+	UNUSED(o);
+	UNUSED(i);
+
 	struct T2_s* data = CAST_DOWN(T2_s, _data);
 
 	long pos[data->N];
@@ -249,4 +255,3 @@ struct nlop_s* nlop_T2_create(int N, const long map_dims[N], const long out_dims
 
 	return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), T2_fun, T2_der, T2_adj, NULL, NULL, T2_del);
 }
-
