@@ -207,7 +207,7 @@ int main_moba(int argc, char* argv[argc])
 		break;
 
 	case MDB_MGRE:
-		img_dims[COEFF_DIM] = set_num_of_coeff(mgre_model);
+		img_dims[COEFF_DIM] = (MECO_PI != mgre_model) ? set_num_of_coeff(mgre_model) : grid_dims[TE_DIM];
 		break;
 	}
 
