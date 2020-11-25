@@ -652,7 +652,7 @@ const struct operator_s* operator_attach(const struct operator_s* op, void* ptr,
 	// op = operator_ref(op);
 	PTR_ALLOC(struct attach_data_s, data);
 	SET_TYPEID(attach_data_s, data);
-	data->op = op;
+	data->op = operator_ref(op);
 	data->ptr = ptr;
 	data->del = del;
 
@@ -741,7 +741,7 @@ const struct operator_s* operator_bind2(const struct operator_s* op, unsigned in
 	data->D = D;
 	data->arg = arg;
 	data->ptr = ptr;
-	data->op = op;
+	data->op = operator_ref(op);
 
 	return operator_generic_create2(D - 1, n_flags,
 		nn, ndims, nstrs,
@@ -874,7 +874,7 @@ const struct operator_s* (operator_loop_parallel2)(unsigned int N, const unsigne
 	SET_TYPEID(op_loop_s, data);
 	data->N = N;
 	data->D = D;
-	data->op = op;
+	data->op = operator_ref(op);
 
 	data->dims0 = *PTR_PASS(dims0);
 	data->dims = */*PTR_PASS*/(dims2);
@@ -982,7 +982,7 @@ const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[
 	// op = operator_ref(op);
 	PTR_ALLOC(struct copy_data_s, data);
 	SET_TYPEID(copy_data_s, data);
-	data->op = op;
+	data->op = operator_ref(op);
 
 	unsigned int D[N];
 	const long* dims[N];

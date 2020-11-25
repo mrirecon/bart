@@ -133,7 +133,7 @@ static void operator_del(const struct shared_obj_s* sptr)
 /**
  * Create an operator with one parameter (without strides)
  */
-const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_dims[ON], const long out_strs[ON], 
+const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_dims[ON], const long out_strs[ON],
 		unsigned int IN, const long in_dims[IN], const long in_strs[IN],
 		operator_data_t* data, operator_p_fun_t apply, operator_del_t del)
 {
@@ -178,8 +178,8 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
  * @param apply function that applies the operation
  * @param del function that frees the data
  */
-const struct operator_p_s* operator_p_create(unsigned int ON, const long out_dims[ON], 
-		unsigned int IN, const long in_dims[IN], 
+const struct operator_p_s* operator_p_create(unsigned int ON, const long out_dims[ON],
+		unsigned int IN, const long in_dims[IN],
 		operator_data_t* data, operator_p_fun_t apply, operator_del_t del)
 {
 	return operator_p_create2(ON, out_dims, MD_STRIDES(ON, out_dims, CFL_SIZE),
@@ -268,7 +268,10 @@ const struct operator_s* operator_p_bind(const struct operator_p_s* op, float al
 	float* nalpha = xmalloc(sizeof(float));
 	*nalpha = alpha;
 
-	return operator_attach(operator_bind2(operator_p_upcast(op), 0, 1, (long[]){ 1 }, (long[]){ 0 }, nalpha), nalpha, xfree);
+	auto binded_op = operator_bind2(operator_p_upcast(op), 0, 1, (long[]){ 1 }, (long[]){ 0 }, nalpha);
+	auto result = operator_attach(binded_op, nalpha, xfree);
+	operator_free(binded_op);
+	return result;
 }
 
 
@@ -320,5 +323,3 @@ const struct operator_p_s* operator_p_scale(int N, const long dims[N])
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), op_p_scale_apply, op_p_scale_del);
 }
-
-

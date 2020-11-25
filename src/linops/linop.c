@@ -507,9 +507,9 @@ struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* o
 {
 	PTR_ALLOC(struct linop_s, op2);
 
-	op2->forward = operator_loop(D, dims, operator_ref(op->forward));
-	op2->adjoint = operator_loop(D, dims, operator_ref(op->adjoint));
-	op2->normal = (NULL == op->normal) ? NULL : operator_loop(D, dims, operator_ref(op->normal));
+	op2->forward = operator_loop(D, dims, op->forward);
+	op2->adjoint = operator_loop(D, dims, op->adjoint);
+	op2->normal = (NULL == op->normal) ? NULL : operator_loop(D, dims, op->normal);
 	op2->norm_inv = NULL; // FIXME
 
 	return PTR_PASS(op2);
@@ -524,9 +524,9 @@ struct linop_s* linop_copy_wrapper(unsigned int D, const long istrs[D], const lo
 	const long* strsy[2] = { istrs, ostrs };
 	const long* strsz[2] = { istrs, istrs };
 
-	op2->forward = operator_copy_wrapper(2, strsx, operator_ref(op->forward));
-	op2->adjoint = operator_copy_wrapper(2, strsy, operator_ref(op->adjoint));
-	op2->normal = (NULL == op->normal) ? NULL : operator_copy_wrapper(2, strsz, operator_ref(op->normal));
+	op2->forward = operator_copy_wrapper(2, strsx, op->forward);
+	op2->adjoint = operator_copy_wrapper(2, strsy, op->adjoint);
+	op2->normal = (NULL == op->normal) ? NULL : operator_copy_wrapper(2, strsz, op->normal);
 	op2->norm_inv = NULL; // FIXME
 
 	return PTR_PASS(op2);
