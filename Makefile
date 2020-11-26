@@ -595,6 +595,9 @@ MODULES_test_nn_tf += -lnn -lnlops -llinops
 endif
 
 
+UTARGETS += test_nn_ops test_nn
+MODULES_test_nn_ops += -lnn -lnlops -llinops -liter
+MODULES_test_nn += -lnn -lnlops -llinops -liter
 
 
 
