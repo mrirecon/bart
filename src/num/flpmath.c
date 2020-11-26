@@ -1599,6 +1599,8 @@ void md_zmax(unsigned int D, const long dims[D], complex float* optr, const comp
  */
 void md_zmax2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	if (simple_zmax(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
 	MAKE_Z3OP(zmax, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
@@ -1682,6 +1684,9 @@ void md_axpy(unsigned int D, const long dims[D], float* optr, float val, const f
  */
 void md_zadd2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	if (simple_zadd(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
 	MAKE_Z3OP_FROM_REAL(add, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
@@ -1769,6 +1774,8 @@ void md_zsub(unsigned int D, const long dims[D], complex float* optr, const comp
  */
 void md_add2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
+	if (simple_add(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
 	MAKE_3OP(add, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
