@@ -76,14 +76,33 @@ extern void md_ztenmul(unsigned int D, const long out_dims[__VLA(D)], _Complex f
 extern void md_ztenmulc2(unsigned int D, const long max_dims[__VLA(D)], const long out_strs[__VLA(D)], _Complex float* out, const long in1_strs[__VLA(D)], const _Complex float* in1, const long in2_strs[__VLA(D)], const _Complex float* in2);
 extern void md_ztenmulc(unsigned int D, const long out_dims[__VLA(D)], _Complex float* out, const long in1_dims[__VLA(D)], const _Complex float* in1, const long in2_dims[__VLA(D)], const _Complex float* int2);
 
-extern void md_zconv2(int N, unsigned long flags,
-				const long odims[__VLA(N)], const long ostrs[__VLA(N)], _Complex float* out,
-				const long kdims[__VLA(N)], const long kstrs[__VLA(N)], const _Complex float* krn,
-				const long idims[__VLA(N)], const long istrs[__VLA(N)], const _Complex float* in);
-extern void md_zconv(int N, unsigned long flags,
-				const long odims[__VLA(N)], _Complex float* out,
-				const long kdims[__VLA(N)], const _Complex float* krn,
-				const long idims[__VLA(N)], const _Complex float* in);
+extern void md_zcorr2(	int N, unsigned long flags,
+			const long odims[__VLA(N)], const long ostrs[__VLA(N)], _Complex float* out,
+			const long kdims[__VLA(N)], const long kstrs[__VLA(N)], const _Complex float* krn,
+			const long idims[__VLA(N)], const long istrs[__VLA(N)], const _Complex float* in);
+extern void md_zcorr(	int N, unsigned long flags,
+			const long odims[__VLA(N)], _Complex float* out,
+			const long kdims[__VLA(N)], const _Complex float* krn,
+			const long idims[__VLA(N)], const _Complex float* in);
+
+extern void md_zconv2(	int N, unsigned long flags,
+			const long odims[__VLA(N)], const long ostrs[__VLA(N)], _Complex float* out,
+			const long kdims[__VLA(N)], const long kstrs[__VLA(N)], const _Complex float* krn,
+			const long idims[__VLA(N)], const long istrs[__VLA(N)], const _Complex float* in);
+extern void md_zconv(	int N, unsigned long flags,
+			const long odims[__VLA(N)], _Complex float* out,
+			const long kdims[__VLA(N)], const _Complex float* krn,
+			const long idims[__VLA(N)], const _Complex float* in);
+
+extern int calc_convcorr_geom(int N, unsigned long flags,
+ 			long mdims[__VLA(2 * N)], long ostrs2[__VLA(2 * N)], long kstrs2[__VLA(2 * N)], long istrs2[__VLA(2 * N)],
+ 			const long odims[__VLA(N)], const long ostrs[__VLA(N)],
+ 			const long kdims[__VLA(N)], const long kstrs[__VLA(N)],
+ 			const long idims[__VLA(N)], const long istrs[__VLA(N)], _Bool conv);
+extern int calc_convcorr_geom_strs_dil(int N, unsigned long flags,
+				       long mdims[__VLA(2 * N)], long ostrs2[__VLA(2 * N)], long kstrs2[__VLA(2 * N)], long istrs2[__VLA(2 * N)],
+				       const long odims[__VLA(N)], const long ostrs[__VLA(N)], const long kdims[__VLA(N)], const long kstrs[__VLA(N)], const long idims[__VLA(N)], const long istrs[__VLA(N)],
+				       const long dilation[__VLA(N)], const long strides[__VLA(N)], _Bool conv, _Bool test_mode);
 
 extern void md_matmul_dims(unsigned int D, long max_dims[__VLA(D)], const long out_dims[__VLA(D)], const long mat_dims[__VLA(D)], const long in_dims[__VLA(D)]);
 

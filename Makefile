@@ -18,7 +18,7 @@ MAKEFLAGS += -R
 # use for parallel make
 AR=./ar_lock.sh
 
-# some operations might still be non deterministic 
+# some operations might still be non deterministic
 NON_DETERMINISTIC?=0
 
 # use for ppc64le HPC
@@ -277,6 +277,7 @@ TARGETS = bart $(XTARGETS)
 ifeq ($(DEBUG),1)
 CPPFLAGS += -g
 CFLAGS += -g
+NVCCFLAGS += -g
 endif
 
 ifeq ($(UBSAN),1)
@@ -341,7 +342,7 @@ endif
 
 # sm_20 no longer supported in CUDA 9
 GPUARCH_FLAGS ?=
-NVCCFLAGS = -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
+NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
 #NVCCFLAGS = -Xcompiler -fPIC -Xcompiler -fopenmp -O3  -I$(srcdir)/
 
 
@@ -396,6 +397,7 @@ endif
 ifeq ($(NON_DETERMINISTIC),1)
 CPPFLAGS += -DNON_DETERMINISTIC
 CFLAGS += -DNON_DETERMINISTIC
+NVCCFLAGS += -DNON_DETERMINISTIC
 endif
 
 
@@ -539,8 +541,8 @@ MODULES_test_nufft += -lnoncart -llinops
 
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv
-UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2
-UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2
+UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr
+UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr
 
 # lib simu
 UTARGETS += test_ode_bloch test_biot_savart test_signals test_epg

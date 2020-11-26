@@ -1080,7 +1080,6 @@ extern "C" void cuda_zsum(long N, _Complex float* dst)
 	}
 }
 
-
 __global__ void kern_pdf_gauss(long N, float mu, float sig, float* dst, const float* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;

@@ -42,6 +42,7 @@
 #include "num/optimize.h"
 #include "num/blas_md_wrapper.h"
 #include "num/reduce_md_wrapper.h"
+#include "num/convcorr.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -631,7 +632,7 @@ static long check_reduce_inner(unsigned long N, long ndims[N], long nostrs[N], l
 
 	if (!reduce)
 		return -1;
-	
+
 	md_copy_dims(N, ndims, tdims);
 	md_copy_strides(N, nostrs, tostrs);
 	md_copy_strides(N, nistrs1, tistrs1);
@@ -928,6 +929,9 @@ static bool simple_s2op(int N_checks, struct simple_s2op_check strided_calls[N_c
 
 bool simple_zfmac(unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
+	if (simple_zconvcorr(N, dims, ostrs, out, istrs1, in1, istrs2, in2))
+		return true;
+
 	struct simple_z3op_check strided_calls[] = {
 		{ check_gemm,	blas_zfmac_cgemm, true, true, false, false },
 		{ check_gemv,	blas_zfmac_cgemv, true, true, false, false },
