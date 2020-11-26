@@ -14,6 +14,7 @@
 #include "misc/cppwrap.h"
 
 extern void dump_cfl(const char* name, int D, const long dimensions[__VLA(D)], const _Complex float* x);
+extern void dump_multi_cfl(const char* name, int N, int D[__VLA(N)], const long* dimensions[__VLA(N)], const _Complex float* x[__VLA(N)]);
 extern double timestamp(void);
 
 extern int debug_level;
@@ -64,10 +65,14 @@ extern void vendor_log(int level,
 		const char* message);
 #endif
 
+#ifndef TIMER
+#define TIMER
+#define START_TIMER static double time = 0.; static long count = 0.; time -= timestamp();
+#define PRINT_TIMER(name) { time += timestamp(); count += 1; debug_printf(DP_DEBUG4, "%d %s\tapplied in %3.4f seconds\n", count, name, time); }
+#endif
 
 
 #include "misc/cppwrap.h"
 
 
 #endif // __DEBUG_H
-

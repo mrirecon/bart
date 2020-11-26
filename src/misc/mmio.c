@@ -314,7 +314,7 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 		; // handled in this function
 	}
 
- 
+
 	char name_bdy[1024];
 	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
 		error("Creating cfl file %s\n", name);
@@ -610,3 +610,173 @@ void unmap_cfl(int D, const long dims[D?:1], const complex float* x)
 		io_error("unmap cfl\n");
 }
 
+/**
+ * Create CFL file for multiple arrays
+ *
+ * @param name file name
+ * @param N number of arrays to store in file
+ * @param D[N] number of dimensions for each array
+ * @param dimensions[N] pointer to dimensions of each array
+ * @param args[N] pointer to the first element of each memory mapped array
+ */
+void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[N], _Complex float* args[N])
+{
+	io_register_output(name);
+
+#ifdef MEMONLY_CFL
+	error("multi cfl not supported with MEMONLY_CFL");
+#else
+	const char *p = strrchr(name, '.');
+
+	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".ra")))
+		error("multi cfl does not not support .ra");
+
+	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".coo")))
+		error("multi cfl does not not support .coo");
+
+#ifdef USE_MEM_CFL
+	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".mem")))
+		error("multi cfl does not not support .mem");
+#endif
+
+
+	char name_bdy[1024];
+	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
+		error("Creating cfl file %s\n", name);
+
+	char name_hdr[1024];
+	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
+		error("Creating cfl file %s\n", name);
+
+	int ofd;
+	if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)))
+		io_error("Creating cfl file %s\n", name);
+
+	long num_ele = 0;
+	for (int i = 0; i < N; i++)
+		num_ele += md_calc_size(D[i], dimensions[i]);
+
+	if (-1 == write_multi_cfl_header(ofd, NULL, num_ele, N, D, dimensions))
+		error("Creating cfl file %s\n", name);
+
+	if (-1 == close(ofd))
+		io_error("Creating cfl file %s\n", name);
+
+	args[0] = shared_cfl(1, &num_ele, name_bdy);
+	for (int i = 1; i < N; i++)
+		args[i] = args[i - 1] + md_calc_size(D[i - 1], dimensions[i - 1]);
+#endif /* MEMONLY_CFL */
+}
+
+static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D[__VLA(N_max)], long dimensions[__VLA(N_max)][D_max], _Complex float* args[__VLA(N_max)], bool priv)
+{
+	io_register_input(name);
+
+#ifdef MEMONLY_CFL
+	error("multi cfl not supported with MEMONLY_CFL");
+#else
+
+	char* filename = NULL;
+
+	const char *p = strrchr(name, '.');
+
+	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".ra")))
+		error("multi cfl does not not support .ra");
+
+	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".coo")))
+		error("multi cfl does not not support .coo");
+
+#ifdef USE_MEM_CFL
+	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".mem")))
+		error("multi cfl does not not support .mem");
+#endif
+
+
+	char name_bdy[1024];
+	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
+		error("Loading cfl file %s\n", name);
+
+	char name_hdr[1024];
+	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
+		error("Loading cfl file %s\n", name);
+
+	int ofd;
+	if (-1 == (ofd = open(name_hdr, O_RDONLY)))
+		io_error("Loading cfl file %s\n", name);
+
+	if (-1 == read_multi_cfl_header(ofd, &filename, N_max, D_max, D, dimensions))
+		error("Loading cfl file %s\n", name);
+
+	long num_ele = 0;
+	for (int i = 0; i < N_max; i++)
+		num_ele += 0 < D[i] ? md_calc_size(D[i], dimensions[i]) : 0;
+
+	if (-1 == close(ofd))
+		io_error("Loading cfl file %s\n", name);
+
+	args[0] = (priv ? private_cfl : shared_cfl)(1, &num_ele, name_bdy);
+
+	for (int i = 1; i < N_max; i++)
+		args[i] = (0 < D[i]) ? args[i - 1] + md_calc_size(D[i - 1], dimensions[i - 1]) : NULL;
+
+	int N = 0;
+	for (int i = 0; i < N_max; i++)
+		if (0 < D[i])
+			N++;
+
+	free(filename);
+
+	return N;
+#endif /* MEMONLY_CFL */
+}
+
+
+/**
+ * Load CFL with multiple arrays
+ *
+ * @param name file name
+ * @param N_max maximum number of arrays expected in file
+ * @param D_max maximum number dimensions per array
+ *
+ * @param D[N_max] number of dimensions for each array read from header
+ * @param dimensions[N_max][D_max] dimensions read from header
+ * @param args[N] returned pointer to the first element of each memory mapped array
+ */
+int load_multi_cfl(const char* name, int N_max, int D_max, int D[N_max], long dimensions[N_max][D_max], _Complex float* args[N_max])
+{
+	return load_multi_cfl_internal(name, N_max, D_max, D, dimensions, args, true);
+}
+
+/**
+ * Unmap CFL file for multiple arrays
+ *
+ * @param N number of arrays to store in file
+ * @param D[N] number of dimensions for each array
+ * @param dimensions[N] pointer to dimensions of each array
+ * @param args[N] pointer to the first element of each memory mapped array
+ */
+void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float* args[N])
+{
+#ifdef MEMONLY_CFL
+	error("multi cfl not supported with MEMONLY_CFL");
+#else
+
+#ifdef USE_MEM_CFL
+	error("multi cfl not supported with USE_MEM_CFL");
+#endif
+
+	long T = 0;
+
+	for (int i = 0; i < N; i++) {
+
+		if (args[i] != args[0] + T)
+			error("unmap multi cfl 1 %ld", T);
+
+		if (-1 == (T += md_calc_size(D[i], dimensions[i])))
+			error("unmap multi cfl 2");
+	}
+
+	if (-1 == munmap((void*)((uintptr_t)args[0] & ~4095UL), T))
+		io_error("unmap multi cfl 3");
+#endif
+}

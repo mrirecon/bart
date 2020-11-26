@@ -431,6 +431,241 @@ out:
 	return ok ? 0 : -1;
 }
 
+/**
+ * Writes a header for multiple md_arrays in one cfl file
+ *
+ * @param fd file to write in
+ * @param num_ele total number of elements in all arrays, used for backwards compability to load_cfl
+ * @param D number of arrays written in file
+ * @param n[D] number of dimensions per array
+ * @param dimensions[D] pointer to dimensions of each array
+ */
+int write_multi_cfl_header(int fd, const char* filename, long num_ele, int D, int n[D], const long* dimensions[D])
+{
+
+	xdprintf(fd, "# Dimensions\n%ld \n", num_ele);
+
+	xdprintf(fd, "# SizesDimensions\n");
+
+	for (int i = 0; i < D; i++)
+		xdprintf(fd, "%ld ", n[i]);
+
+	xdprintf(fd, "\n");
+
+	xdprintf(fd, "# MultiDimensions\n");
+
+	for (int i = 0; i < D; i++) {
+
+		for (int j = 0; j < n[i]; j++)
+			xdprintf(fd, "%ld ", dimensions[i][j]);
+
+		xdprintf(fd, "\n");
+	}
+
+	if (NULL != filename) {
+
+		xdprintf(fd, "# Data\n");
+		xdprintf(fd, "%s\n", filename);
+	}
+
+	if (NULL != command_line) {
+
+		xdprintf(fd, "# Command\n");
+		xdprintf(fd, "%s\n", command_line);
+	}
+
+	if (NULL != iofiles) {
+
+		struct iofile_s* in = iofiles;
+
+		xdprintf(fd, "# Files\n");
+
+		while (in) {
+
+			xdprintf(fd, " %s%s%s", in->input ? "<" : "", in->output ? ">" : "", in->name);
+			in = in->prev;
+		}
+
+		xdprintf(fd, "\n");
+	}
+
+	xdprintf(fd, "# Creator\nBART %s\n", bart_version);
+
+	return 0;
+}
+
+
+
+
+/**
+ * Reads a header for multiple md_arrays in one cfl file
+ *
+ * @param fd file to read from
+ * @param D_max maximal number of arrays expected in file
+ * @param n_max maximal number of dimension expected per array
+ * @param D number of arrays written in file
+ * @param n[D_max] number of dimensions per array read from header
+ * @param dimensions[D_max][n_max] dimensions read from header
+ *
+ * @return number of arrays in file
+ */
+int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max], long dimensions[D_max][n_max])
+{
+	*file = NULL;
+	char header[4097];
+	memset(header, 0, 4097);
+
+	int max;
+	if (0 > (max = read(fd, header, 4096)))
+		return -1;
+
+	int pos = 0;
+	int delta = 0;
+	bool ok = false;
+	bool multi_cfl = false;
+
+	int D = 0;
+	long num_ele = 0;
+	long num_ele_dims = 0;
+
+	while (true) {
+
+		// skip lines not starting with '#'
+
+		while ('#' != header[pos]) {
+
+			if ('\0' == header[pos])
+				goto out;
+
+			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
+				return -1;
+
+			if (0 == delta)
+				goto out;
+
+			pos += delta;
+		}
+
+		char keyword[32];
+
+
+
+		if (1 == sscanf(header + pos, "# %31s\n%n", keyword, &delta)) {
+
+			pos += delta;
+
+			if (0 == strcmp(keyword, "Dimensions")) {
+
+				if (1 != sscanf(header + pos, "%ld \n%n", &num_ele, &delta))
+					return -1;
+
+				pos += delta;
+			}
+
+			if (0 == strcmp(keyword, "SizesDimensions")) {
+
+				for (int i = 0; i < D_max; i++)
+					n[i] = 0;
+
+				long val;
+
+				while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
+
+					pos += delta;
+
+					if (D < D_max)
+						n[D] = val;
+					else
+						return -1;
+
+					D++;
+				}
+
+				if (0 != sscanf(header + pos, "\n%n", &delta))
+					return -1;
+
+				pos += delta;
+
+				if (multi_cfl)
+					return -1;
+
+				multi_cfl = true;
+			}
+
+			if (0 == strcmp(keyword, "MultiDimensions")) {
+
+				for (int i = 0; i < D; i++)
+					for (int j = 0; j < n_max; j++)
+						dimensions[i][j] = 1;
+
+				long val;
+				int i = 0;
+				int j = 0;
+				long size_tensor = 1;
+
+				while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
+
+					pos += delta;
+
+					if (j == n[i]) {
+
+						if (j != n[i])
+							return -1;
+
+						num_ele_dims += size_tensor;
+
+						size_tensor = 1;
+						j = 0;
+						i++;
+					}
+
+					dimensions[i][j] = val;
+					j++;
+					size_tensor *= val;
+				}
+
+				if (0 != sscanf(header + pos, "\n%n", &delta))
+					return -1;
+				pos += delta;
+
+				if (ok)
+					return -1;
+
+				ok = true;
+			}
+
+			if (0 == strcmp(keyword, "Data")) {
+
+				char filename[256];
+
+				if (1 != sscanf(header + pos, "%255s\n%n", filename, &delta))
+					return -1;
+
+				*file = strdup(filename);
+
+				pos += delta;
+			}
+
+		} else {
+
+			// skip this line
+
+			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
+				return -1;
+
+			if (0 == delta)
+				goto out;
+
+			pos += delta;
+		}
+	}
+
+	ok &= (num_ele == num_ele_dims);
+
+out:
+	return ok ? 0 : -1;
+}
+
 
 
 
@@ -617,7 +852,3 @@ int write_ra(int fd, int n, const long dimensions[n])
 
 	return 0;
 }
-
-
-
-
