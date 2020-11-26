@@ -208,6 +208,22 @@ extern const struct linop_s* linop_clone(const struct linop_s* x)
 	return PTR_PASS(lo);
 }
 
+/**
+ * Return the adjoint linop
+ * @param x linear operator
+ */
+extern const struct linop_s* linop_get_adjoint(const struct linop_s* x)
+{
+	PTR_ALLOC(struct linop_s, lo);
+
+	lo->forward = operator_ref(x->adjoint);
+	lo->adjoint = operator_ref(x->forward);
+	lo->normal = operator_chain(x->adjoint, x->forward);
+	lo->norm_inv = NULL;
+
+	return PTR_PASS(lo);
+}
+
 
 /**
  * Apply the forward operation of a linear operator: y = A x
