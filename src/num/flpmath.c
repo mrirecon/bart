@@ -1198,13 +1198,20 @@ void md_ztenmulc(unsigned int D, const long out_dims[D], complex float* out, con
 }
 
 
-static int calc_conv_geom(int N, unsigned long flags,
-			long mdims[2 * N], long ostrs2[2 * N], long kstrs2[2 * N], long istrs2[2 * N],
-			const long odims[N], const long ostrs[N],
-			const long kdims[N], const long kstrs[N],
-			const long idims[N], const long istrs[N])
-{
-	int shift = 0;
+
+/**
+ * Write strides for conv or corr into mdims, ostrs2, kstrs2 and istrs2
+ * Supports "strides" and dilation
+ * The flag conv decides if conv or corr
+ * The flag test_mode turns of all assertions for detecting strides
+ **/
+int calc_convcorr_geom_strs_dil(int N, unsigned long flags,
+				       long mdims[2 * N], long ostrs2[2 * N], long kstrs2[2 * N], long istrs2[2 * N],
+				       const long odims[N], const long ostrs[N], const long kdims[N], const long kstrs[N], const long idims[N], const long istrs[N],
+				       const long dilation[N], const long strides[N], bool conv, bool test_mode)
+ {
+
+ 	int shift = 0;
 
 	md_copy_strides(N, ostrs2, ostrs);
 	md_singleton_strides(N, ostrs2 + N);
@@ -1222,43 +1229,64 @@ static int calc_conv_geom(int N, unsigned long flags,
 
 		if (MD_IS_SET(flags, i)) {
 
-			assert(odims[i] == idims[i] - kdims[i] + 1);
+			if (!test_mode)
+				assert(idims[i] == ((NULL == strides) ? 1 : strides[i]) * (odims[i] - 1) + 1 + (kdims[i] - 1) * ((NULL == dilation) ? 1 : dilation[i]));
 
 			mdims[0 + i] = odims[i];
 			mdims[N + i] = kdims[i];
 
 			kstrs2[0 + i] = 0;
-			kstrs2[N + i] = -kstrs[i];
+			kstrs2[N + i] = (conv ? -kstrs[i] : kstrs[i]);
 
-			shift += (kdims[i] - 1) * kstrs[i];
+			if (conv)
+				shift += (kdims[i] - 1) * kstrs[i];
 
-			istrs2[0 + i] = istrs[i];
-			istrs2[N + i] = istrs[i];
+			istrs2[0 + i] = ((NULL == strides) ? 1 : strides[i]) * istrs[i];
+			istrs2[N + i] = ((NULL == dilation) ? 1 : dilation[i]) * istrs[i];
 
 		} else {
 
-			assert((1 == odims[i]) || (odims[i] == idims[i]) || (odims[i] == kdims[i]));
-			assert((1 == idims[i]) || (odims[i] == idims[i]) || (idims[i] == kdims[i]));
-			assert((1 == kdims[i]) || (kdims[i] == idims[i]) || (odims[i] == kdims[i]));
+			if (1 == mdims[i])
+				mdims[i] = idims[i];
+
+			if (1 == mdims[i])
+				mdims[i] = kdims[i];
+
+			if (1 == mdims[i])
+				mdims[i] = odims[i];
+
+			if (!test_mode) {
+
+				assert((1 == odims[i]) || (odims[i] == idims[i]) || (odims[i] == kdims[i]) || ((1 == kdims[i]) && (1 == idims[i])));
+				assert((1 == idims[i]) || (odims[i] == idims[i]) || (idims[i] == kdims[i]) || ((1 == kdims[i]) && (1 == odims[i])));
+				assert((1 == kdims[i]) || (kdims[i] == idims[i]) || (odims[i] == kdims[i]) || ((1 == odims[i]) && (1 == idims[i])));
+			}
 		}
 	}
 
 	return shift;
 }
 
+int calc_convcorr_geom(int N, unsigned long flags,
+		       long mdims[2 * N], long ostrs2[2 * N], long kstrs2[2 * N], long istrs2[2 * N],
+		       const long odims[N], const long ostrs[N], const long kdims[N], const long kstrs[N], const long idims[N], const long istrs[N], bool conv)
+{
+	return calc_convcorr_geom_strs_dil(N, flags, mdims, ostrs2, kstrs2, istrs2, odims, ostrs, kdims, kstrs, idims, istrs, MD_SINGLETON_DIMS(N), MD_SINGLETON_DIMS(N), conv, false);
+}
+
 
 void md_zconv2(int N, unsigned long flags,
-				const long odims[N], const long ostrs[N], complex float* out,
-				const long kdims[N], const long kstrs[N], const complex float* krn,
-				const long idims[N], const long istrs[N], const complex float* in)
+	       const long odims[N], const long ostrs[N], complex float* out,
+	       const long kdims[N], const long kstrs[N], const complex float* krn,
+	       const long idims[N], const long istrs[N], const complex float* in)
 {
 	long mdims[2 * N];
 	long ostrs2[2 * N];
 	long kstrs2[2 * N];
 	long istrs2[2 * N];
 
-	krn += calc_conv_geom(N, flags, mdims, ostrs2, kstrs2, istrs2,
-			odims, ostrs, kdims, kstrs, idims, istrs) / CFL_SIZE;
+	krn += calc_convcorr_geom(N, flags, mdims, ostrs2, kstrs2, istrs2,
+				  odims, ostrs, kdims, kstrs, idims, istrs, true) / CFL_SIZE;
 
 	md_ztenmul2(2 * N, mdims, ostrs2, out, kstrs2, krn, istrs2, in);
 }
@@ -1271,13 +1299,34 @@ void md_zconv(int N, unsigned long flags,
 	md_zconv2(N, flags, odims, MD_STRIDES(N, odims, CFL_SIZE), out, kdims, MD_STRIDES(N, kdims, CFL_SIZE), krn, idims, MD_STRIDES(N, idims, CFL_SIZE), in);
 }
 
+void md_zcorr2(int N, unsigned long flags,
+	       const long odims[N], const long ostrs[N], complex float* out,
+	       const long kdims[N], const long kstrs[N], const complex float* krn,
+	       const long idims[N], const long istrs[N], const complex float* in)
+{
+	long mdims[2 * N];
+	long ostrs2[2 * N];
+	long kstrs2[2 * N];
+	long istrs2[2 * N];
 
+	krn += calc_convcorr_geom(N, flags, mdims, ostrs2, kstrs2, istrs2,
+				  odims, ostrs, kdims, kstrs, idims, istrs, false) / CFL_SIZE;
+
+	md_ztenmul2(2 * N, mdims, ostrs2, out, kstrs2, krn, istrs2, in);
+}
+
+void md_zcorr(int N, unsigned long flags,
+	      const long odims[N], complex float* out,
+	      const long kdims[N], const complex float* krn,
+	      const long idims[N], const complex float* in)
+{
+	md_zcorr2(N, flags, odims, MD_STRIDES(N, odims, CFL_SIZE), out, kdims, MD_STRIDES(N, kdims, CFL_SIZE), krn, idims, MD_STRIDES(N, idims, CFL_SIZE), in);
+}
 
 
 /*
  * matmul family of functions is deprecated - use tenmul instead
  */
-
 static void md_zmatmul2_priv(unsigned int D, const long out_dims[D], const long out_strs[D], complex float* dst, const long mat_dims[D], const long mat_strs[D], const complex float* mat, const long in_dims[D], const long in_strs[D], const complex float* src, bool conj)
 {
 	long max_dims[D];
