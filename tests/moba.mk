@@ -148,13 +148,13 @@ tests/test-moba-meco-noncart: traj scale phantom signal fmac index extract moba 
 	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
 	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
 	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
-	$(TOOLDIR)/moba -G -m3 -rQ:1 -rS -rW:0:0:1 -i10 -C100 -u0.0001 -R3 -o1.5 -t _traj.ra data.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/moba -G -m3 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -o1.5 -k -t _traj.ra data.ra TE.ra reco.ra   ;\
 	$(TOOLDIR)/slice 6 1 reco.ra R2S.ra                               ;\
 	$(TOOLDIR)/resize -c 0 8 1 8 R2S.ra R2S_crop.ra                   ;\
 	$(TOOLDIR)/phantom -x8 -c circ.ra                                 ;\
 	$(TOOLDIR)/fmac R2S_crop.ra circ.ra masked.ra                     ;\
 	$(TOOLDIR)/scale -- 50 circ.ra ref.ra                             ;\
-	$(TOOLDIR)/nrmse -t 0.05 ref.ra masked.ra                         ;\
+	$(TOOLDIR)/nrmse -t 0.008 ref.ra masked.ra                         ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
