@@ -322,7 +322,7 @@ TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 TESTS += tests/test-pics-warmstart tests/test-pics-batch
 TESTS += tests/test-pics-tedim tests/test-pics-bp-noncart
 TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory
-TESTS += tests/test-pics-lowmem
+#TESTS += tests/test-pics-lowmem
 TESTS += tests/test-pics-noncart-sms
 
 
