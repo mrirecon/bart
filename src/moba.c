@@ -193,6 +193,13 @@ int main_moba(int argc, char* argv[argc])
 		conf.noncartesian = true;
 	}
 
+	if ((NULL == trajectory) && (NULL == psf)) {
+
+		grid_dims[READ_DIM] = grid_dims[PHS1_DIM];
+		grid_dims[PHS1_DIM] = grid_dims[PHS2_DIM];
+		grid_dims[PHS2_DIM] = 1L;
+	}
+
 	long img_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, img_dims, grid_dims);
 
@@ -336,7 +343,7 @@ int main_moba(int argc, char* argv[argc])
 
 	} else {
 
-		md_copy_dims(DIMS, pat_dims, img_dims);
+		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, grid_dims);
 		pattern = anon_cfl("", DIMS, pat_dims);
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace_data);
 		md_copy(DIMS, grid_dims, k_grid_data, kspace_data, CFL_SIZE);

@@ -235,13 +235,16 @@ void meco_recon(struct moba_conf* moba_conf,
 
 	// scaling of psf
 
-	ifft(DIMS, P_dims, FFT_FLAGS, P, P);
+	if (moba_conf->noncartesian) {
 
-	double scaling_P = 1. / cabsf(P[0]) / 10.;
+		ifft(DIMS, P_dims, FFT_FLAGS, P, P);
 
-	md_zsmul(DIMS, P_dims, P, P, scaling_P);
+		double scaling_P = 1. / cabsf(P[0]) / 10.;
 
-	fft(DIMS, P_dims, FFT_FLAGS, P, P);
+		md_zsmul(DIMS, P_dims, P, P, scaling_P);
+
+		fft(DIMS, P_dims, FFT_FLAGS, P, P);
+	}
 
 
 
