@@ -117,9 +117,6 @@ int main_traj(int argc, char* argv[argc])
 
 	dims[TE_DIM] = E;
 
-	if (conf.mems_traj)
-		conf.radial = true;
-
 	if (-1 == D)
 		D = X;
 
