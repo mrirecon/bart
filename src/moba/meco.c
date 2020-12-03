@@ -1017,6 +1017,12 @@ struct nlop_s* nlop_meco_create(const int N, const long y_dims[N], const long x_
 	for (int pind = 0; pind < x_dims[COEFF_DIM]; pind++)
 		scaling[pind] = 1.0;
 
+	long fB0_ind = x_dims[COEFF_DIM] - 1;
+	scaling[fB0_ind] = scale_fB0[1];
+
+	data->scaling = my_alloc(N, scaling_dims, CFL_SIZE);
+	md_copy(N, scaling_dims, data->scaling, scaling, CFL_SIZE);
+
 	nlop_fun_t meco_funs[] = {
 
 		[MECO_WF] = meco_fun_wf,
@@ -1027,12 +1033,6 @@ struct nlop_s* nlop_meco_create(const int N, const long y_dims[N], const long x_
 	};
 
 	data->real_pd = real_pd;
-
-	data->scaling = md_alloc(N, scaling_dims, CFL_SIZE);		// my_alloc ?
-	md_copy(N, scaling_dims, data->scaling, scaling, CFL_SIZE);
-
-	long fB0_ind = x_dims[COEFF_DIM] - 1;
-	data->scaling[fB0_ind] = scale_fB0[1];	// FIXME?
 
 	return nlop_create(N, y_dims, N, x_dims, CAST_UP(PTR_PASS(data)), meco_funs[sel_model], meco_der, meco_adj, NULL, NULL, meco_del);
 }
