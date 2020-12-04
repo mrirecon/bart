@@ -725,7 +725,7 @@ const struct operator_s* operator_bind2(const struct operator_s* op, unsigned in
 
 	bool n_flags[D + 1];
 
-	for (uint i = 0; i < D + 1; i++)
+	for (unsigned int i = 0; i < D + 1; i++)
 		n_flags[i] = false;
 
 	for (unsigned int i = 0, j = 0; i < D; i++) {
