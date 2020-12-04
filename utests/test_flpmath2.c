@@ -49,11 +49,13 @@ static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long
 	md_zfmac2(D, dims, ostr, optr1, istr1, iptr1, istr2, iptr2);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_zfmac(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
+	debug_printf(DP_DEBUG1, "%f\n", md_znrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_val > md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
 	md_free(iptr2);
+
 
 	return result;
 }
@@ -67,7 +69,7 @@ static bool test_optimized_md_zfmac2_gemm(void) { UT_ASSERT(test_optimized_md_zf
 static bool test_optimized_md_zfmac2_gemm2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(11ul, 14ul, 13ul, true, 1.e-6));}
 static bool test_optimized_md_zfmac2_ger(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 1ul, 2ul, true, 2.e-6)); }
 static bool test_optimized_md_zfmac2_ger2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(7ul, 5ul, 6ul, true, 1.e-6)); }
-static bool test_optimized_md_zfmac2_axpy(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(1ul, 1ul, 0ul, true, 2.e-6)); }
+static bool test_optimized_md_zfmac2_axpy(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(1ul, 1ul, 0ul, true, 3.e-6)); }
 static bool test_optimized_md_zfmac2_axpy2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 2ul, 3ul, true, 1.e-6));}
 
 UT_REGISTER_TEST(test_optimized_md_zfmac2_dot);
