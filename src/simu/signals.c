@@ -232,12 +232,14 @@ const struct signal_model signal_multi_grad_echo_defaults = {
 
 complex float calc_fat_modulation(float b0, float TE)
 {
-	/* refer to:
-	   ISMRM water/fat toolbox
+	/* 
+	 * Hamilton G, Yokoo T, Bydder M, Cruite I, Schroeder ME, Sirlin CB, Middleton MS. 
+	 * In vivo characterization of the liver fat 1H MR spectrum. 
+	 * NMR Biomed 24:784-790 (2011)
 	 */
 	enum { FATPEAKS = 6 };
-	float ppm[FATPEAKS] = { -3.80, -3.40, -2.60, -1.94, -0.39, +0.60 };
-	float amp[FATPEAKS] = { 0.087, 0.693, 0.128, 0.004, 0.039, 0.048 };
+	float ppm[FATPEAKS] = { -3.80, -3.40, -2.60, -1.95, -0.50, +0.60 };
+	float amp[FATPEAKS] = { 0.086, 0.537, 0.165, 0.046, 0.052, 0.114 };
 
 	complex float out = 0.;
 
