@@ -88,10 +88,6 @@ static bool test_op_p_stack_moba_nonneg(void)
 	operator_p_apply(p, 0., N, dims, out, N, dims, in);
 	operator_p_free(p);
 
-	dump_cfl("/scratch/ztan/out", N, dims, out);
-	dump_cfl("/scratch/ztan/in", N, dims, in);
-
-
 	long dims1[N];
 	md_select_dims(N, ~MD_BIT(s_dim), dims1, dims);
 
