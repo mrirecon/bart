@@ -9,13 +9,10 @@
 
 #include <stdbool.h>
 #include <complex.h>
-#include <math.h>
-#include <stdint.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops_p.h"
-#include "num/ops.h"
 #include "num/init.h"
 
 #include "misc/mri.h"
@@ -38,8 +35,9 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char usage_str[] = "<echo images> <TE> <parameters>";
-static const char help_str[] = "Pixel-wise fitting";
+
+static const char usage_str[] = "<TE> <echo images> <parameters>";
+static const char help_str[] = "Pixel-wise fitting of sequence models.";
 
 int main_pixelfit(int argc, char* argv[])
 {
@@ -50,20 +48,22 @@ int main_pixelfit(int argc, char* argv[])
 	unsigned int mgre_model = MECO_WFR2S;
 
 	bool use_gpu = false;
-	long patch_size[2] = { 1, 1 };
+	long patch_size[3] = { 1, 1, 1 };
 
 	unsigned int iter = 4;
 
 	const struct opt_s opts[] = {
 
+#if 0
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
 		OPT_SELECT('B', enum seq_type, &seq, BSSFP, "bSSFP"),
 		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
+#endif
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
-		OPT_UINT('i', &iter, "iter", "Number of Newton steps"),
-		OPT_VEC2('p', &patch_size, "px,py", "(patch size)"),
+		OPT_UINT('i', &iter, "iter", "Number of IRGNM steps"),
+		OPT_VEC3('p', &patch_size, "px,py,pz", "(patch size)"),
 		OPT_SET('g', &use_gpu, "use gpu"),
 	};
 
@@ -72,11 +72,11 @@ int main_pixelfit(int argc, char* argv[])
 	num_init();
 
 
-	long y_dims[DIMS];
-	complex float* y = load_cfl(argv[1], DIMS, y_dims);
-
 	long TE_dims[DIMS];
-	complex float* TE = load_cfl(argv[2], DIMS, TE_dims);
+	complex float* TE = load_cfl(argv[1], DIMS, TE_dims);
+
+	long y_dims[DIMS];
+	complex float* y = load_cfl(argv[2], DIMS, y_dims);
 
 	assert(y_dims[TE_DIM] == TE_dims[TE_DIM]);
 
@@ -84,20 +84,18 @@ int main_pixelfit(int argc, char* argv[])
 	md_select_dims(DIMS, ~TE_FLAG, x_dims, y_dims);
 	x_dims[COEFF_DIM] = set_num_of_coeff(mgre_model);
 
+
 	complex float* x = create_cfl(argv[3], DIMS, x_dims);
 
-	md_zfill(DIMS, x_dims, x, 0.);
 
 
 	long y_patch_dims[DIMS];
 	md_select_dims(DIMS, TE_FLAG, y_patch_dims, y_dims);
-	y_patch_dims[0] = patch_size[0];
-	y_patch_dims[1] = patch_size[1];
+	md_copy_dims(3, y_patch_dims, patch_size);
 
 	long x_patch_dims[DIMS];
 	md_select_dims(DIMS, COEFF_FLAG, x_patch_dims, x_dims);
-	x_patch_dims[0] = patch_size[0];
-	x_patch_dims[1] = patch_size[1];
+	md_copy_dims(3, x_patch_dims, patch_size);
 
 
 	// create signal model
@@ -105,40 +103,24 @@ int main_pixelfit(int argc, char* argv[])
 
 	switch (seq) {
 
-	case FLASH: break;
-	case BSSFP: break;
-	case TSE:   break;
-	case MOLLI: break;
-	case MGRE:  
-	{
+	case MGRE:  ;
+
 		float scale_fB0[2] = { 0., 1. };
 		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, TE, mgre_model, false, scale_fB0, use_gpu);
 		break;
+
+	default:
+
+		error("sequence type not supported");
 	}
 
-	default: error("sequence type not supported");
 
-	}
 
-	struct iter_admm_conf admm_conf = iter_admm_defaults;
-	admm_conf.rho = 1.E-5;
-
+	struct iter_conjgrad_conf conjgrad_conf = iter_conjgrad_defaults;
 	struct lsqr_conf lsqr_conf = lsqr_defaults;
 	lsqr_conf.it_gpu = false;
-	lsqr_conf.warmstart = true;
 
-	NESTED(void, lsqr_cont, (iter_conf* iconf))
-	{
-		auto aconf = CAST_DOWN(iter_admm_conf, iconf);
-
-		aconf->maxiter = MIN(admm_conf.maxiter, 10. * powf(2., logf(1. / iconf->alpha)));
-		aconf->cg_eps = admm_conf.cg_eps * iconf->alpha;
-	};
-
-	lsqr_conf.icont = lsqr_cont;
-
-
-	const struct operator_p_s* lsqr = lsqr2_create(&lsqr_conf, iter2_admm, CAST_UP(&admm_conf), NULL, &nlop->derivative[0][0], NULL, 0, NULL, NULL, NULL);
+	const struct operator_p_s* lsqr = lsqr2_create(&lsqr_conf, iter2_conjgrad, CAST_UP(&conjgrad_conf), NULL, &nlop->derivative[0][0], NULL, 0, NULL, NULL, NULL);
 
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
@@ -156,6 +138,12 @@ int main_pixelfit(int argc, char* argv[])
 		md_copy_block(DIMS, pos, y_patch_dims, y_patch, y_dims, y, CFL_SIZE);
 		md_copy_block(DIMS, pos, x_patch_dims, x_patch, x_dims, x, CFL_SIZE);
 
+		if (0. == md_znorm(DIMS, y_patch_dims, y_patch)) {
+
+			md_zfill(DIMS, x_patch_dims, x_patch, 0.);
+			continue;
+		}
+
 		iter4_irgnm2(CAST_UP(&irgnm_conf), nlop,
 				2 * md_calc_size(DIMS, x_patch_dims), (float*)x_patch, NULL,
 				2 * md_calc_size(DIMS, y_patch_dims), (const float*)y_patch, lsqr,
@@ -164,6 +152,9 @@ int main_pixelfit(int argc, char* argv[])
 		md_copy_block(DIMS, pos, x_dims, x, x_patch_dims, x_patch, CFL_SIZE);
 
 	} while(md_next(DIMS, y_dims, ~TE_FLAG, pos));
+
+	md_free(x_patch);
+	md_free(y_patch);
 
 
 	operator_p_free(lsqr);

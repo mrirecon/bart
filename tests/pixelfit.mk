@@ -7,7 +7,7 @@ tests/test-pixelfit-T2: scale phantom signal fmac index extract pixelfit slice n
 	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
 	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
 	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
-	$(TOOLDIR)/pixelfit -G -m3 echoes.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/pixelfit -G -m3 TE.ra echoes.ra reco.ra   ;\
 	$(TOOLDIR)/slice 6 1 reco.ra R2S.ra                               ;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra                                 ;\
 	$(TOOLDIR)/fmac R2S.ra circ.ra masked.ra                     ;\
