@@ -12,7 +12,7 @@ tests/test-mobafit-T2: phantom signal fmac index scale extract mobafit slice nrm
 	$(TOOLDIR)/phantom -x16 -c circ.ra				;\
 	$(TOOLDIR)/fmac R2S.ra circ.ra masked.ra			;\
 	$(TOOLDIR)/scale -- 0.05 circ.ra ref.ra				;\
-	$(TOOLDIR)/nrmse -t 0.005 ref.ra masked.ra			;\
+	$(TOOLDIR)/nrmse -t 0.000001 ref.ra masked.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

@@ -50,7 +50,7 @@ int main_mobafit(int argc, char* argv[])
 	bool use_gpu = false;
 	long patch_size[3] = { 1, 1, 1 };
 
-	unsigned int iter = 4;
+	unsigned int iter = 5;
 
 	const struct opt_s opts[] = {
 
