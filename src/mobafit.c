@@ -39,7 +39,7 @@
 static const char usage_str[] = "<TE> <echo images> <parameters>";
 static const char help_str[] = "Pixel-wise fitting of sequence models.";
 
-int main_pixelfit(int argc, char* argv[])
+int main_mobafit(int argc, char* argv[])
 {
 	double start_time = timestamp();
 
