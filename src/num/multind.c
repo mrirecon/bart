@@ -482,7 +482,7 @@ bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], co
 
 void md_merge_dims(unsigned int N, long out_dims[N], const long dims1[N], const long dims2[N])
 {
-	assert(md_check_compat(N, ~0, dims1, dims2));
+	assert(md_check_compat(N, ~0UL, dims1, dims2));
 
 	for (unsigned int i = 0; i < N; i++)
 		out_dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
