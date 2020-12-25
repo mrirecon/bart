@@ -3,7 +3,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2014-2017	Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2016-2019	Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
@@ -31,7 +31,7 @@
 #include "prox.h"
 
 
-/** 
+/**
  * Proximal function of f is defined as
  * (prox_f)(z) = arg min_x 0.5 || z - x ||_2^2 + f(x)
  *
@@ -40,7 +40,7 @@
 
 
 /**
- * Data for computing prox_normaleq_fun: 
+ * Data for computing prox_normaleq_fun:
  * Proximal function for f(z) = 0.5 || y - A z ||_2^2.
  *
  * @param op operator that applies A^H A
@@ -51,7 +51,7 @@
 struct prox_normaleq_data {
 
 	INTERFACE(operator_data_t);
-	
+
 	const struct linop_s* op;
 	void* cgconf;
 	float* adj;
@@ -83,7 +83,9 @@ static void prox_normaleq_fun(const operator_data_t* prox_data, float mu, float*
 	} else {
 
 		float rho = 1. / mu;
+
 		float* b = md_alloc_sameplace(1, MD_DIMS(pdata->size), FL_SIZE, x_plus_u);
+
 		md_copy(1, MD_DIMS(pdata->size), b, pdata->adj, FL_SIZE);
 		md_axpy(1, MD_DIMS(pdata->size), b, rho, x_plus_u);
 
@@ -131,17 +133,19 @@ const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const 
 	pdata->op = op;
 
 	pdata->size = 2 * md_calc_size(linop_domain(op)->N, linop_domain(op)->dims);
+
 	pdata->adj = md_alloc_sameplace(1, &(pdata->size), FL_SIZE, y);
+
 	linop_adjoint_unchecked(op, (complex float*)pdata->adj, y);
 
-	return operator_p_create(linop_domain(op)->N, linop_domain(op)->dims, 
-			linop_domain(op)->N, linop_domain(op)->dims, 
+	return operator_p_create(linop_domain(op)->N, linop_domain(op)->dims,
+			linop_domain(op)->N, linop_domain(op)->dims,
 			CAST_UP(PTR_PASS(pdata)), prox_normaleq_apply, prox_normaleq_del);
 }
 
 
 /**
- * Data for computing prox_leastsquares_fun: 
+ * Data for computing prox_leastsquares_fun:
  * Proximal function for f(z) = lambda / 2 || y - z ||_2^2.
  *
  * @param y
@@ -151,7 +155,7 @@ const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const 
 struct prox_leastsquares_data {
 
 	INTERFACE(operator_data_t);
-	
+
 	const float* y;
 	float lambda;
 
@@ -218,7 +222,7 @@ const struct operator_p_s* prox_leastsquares_create(unsigned int N, const long d
 struct prox_l2norm_data {
 
 	INTERFACE(operator_data_t);
-	
+
 	float lambda;
 	long size;
 };
@@ -276,7 +280,7 @@ const struct operator_p_s* prox_l2norm_create(unsigned int N, const long dims[N]
 
 
 /**
- * Data for computing prox_l2ball_fun: 
+ * Data for computing prox_l2ball_fun:
  * Proximal function for f(z) = Ind{ || y - z ||_2 < eps }
  *
  * @param y y
@@ -319,7 +323,7 @@ static const float* get_y(const struct prox_l2ball_data* data, bool gpu)
 /**
  * Proximal function for f(z) = Ind{ || y - z ||_2 < eps }
  * Solution is y + (x - y) * q, where q = eps / norm(x - y) if norm(x - y) > eps, 1 o.w.
- * 
+ *
  * @param prox_data should be of type prox_l2ball_data
  * @param mu proximal penalty
  * @param z output
@@ -386,7 +390,7 @@ const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N]
 
 #if 0
 /**
- * Data for computing prox_thresh_fun: 
+ * Data for computing prox_thresh_fun:
  * Proximal function for f(z) = lambda || z ||_1
  *
  * @param thresh function to apply SoftThresh
@@ -403,7 +407,7 @@ struct prox_thresh_data {
 /**
  * Proximal function for f(z) = lambda || z ||_1
  * Solution is z = SoftThresh(x_plus_u, lambda * mu)
- * 
+ *
  * @param prox_data should be of type prox_thresh_data
  */
 void prox_thresh_fun(void* prox_data, float mu, float* z, const float* x_plus_u)
@@ -456,7 +460,7 @@ static DEF_TYPEID(prox_zero_data);
 /**
  * Proximal function for f(z) = 0
  * Solution is z = x_plus_u
- * 
+ *
  * @param prox_data should be of type prox_zero_data
  * @param mu proximal penalty
  * @param z output
@@ -494,7 +498,7 @@ const struct operator_p_s* prox_zero_create(unsigned int N, const long dims[N])
 
 
 /**
- * Data for computing prox_lineq_fun: 
+ * Data for computing prox_lineq_fun:
  * Proximal function for f(z) = 1{ A z = y }
  * Assumes AA^T = I
  * Solution is z = x - A^T A x + A^T y
@@ -506,7 +510,7 @@ const struct operator_p_s* prox_zero_create(unsigned int N, const long dims[N])
 struct prox_lineq_data {
 
 	INTERFACE(operator_data_t);
-	
+
 	const struct linop_s* op;
 	complex float* adj;
 	complex float* tmp;
@@ -555,7 +559,7 @@ const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const com
 
 
 /**
- * Data for computing prox_ineq_fun: 
+ * Data for computing prox_ineq_fun:
  * Proximal function for f(z) = 1{ z <= b }
  *  and f(z) = 1{ z >= b }
  *
@@ -565,7 +569,7 @@ const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const com
 struct prox_ineq_data {
 
 	INTERFACE(operator_data_t);
-	
+
 	const float* b;
 	float a;
 	long size;
@@ -580,11 +584,11 @@ static void prox_ineq_fun(const operator_data_t* _data, float mu, float* dst, co
 	auto pdata = CAST_DOWN(prox_ineq_data, _data);
 
 	if (NULL == pdata->b) {
-		
+
 		if (0. == pdata->a) {
 
 			(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, 0.);
-			
+
 		} else {
 
 			(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, pdata->a);

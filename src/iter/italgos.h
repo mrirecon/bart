@@ -2,7 +2,7 @@
  * Copyright 2016-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- */ 
+ */
 
 #ifndef __ITALGOS_H
 #define __ITALGOS_H
@@ -64,7 +64,7 @@ inline void iter_op_p_call(struct iter_op_p_s op, float rho, float* dst, const f
 
 struct iter_monitor_s;
 
-float conjgrad(unsigned int maxiter, float l2lambda, float epsilon, 
+float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s linop,
@@ -81,7 +81,7 @@ void landweber(unsigned int maxiter, float epsilon, float alpha,
 	struct iter_op_s callback,
 	struct iter_monitor_s* monitor);
 
-void landweber_sym(unsigned int maxiter, float epsilon, float alpha,	
+void landweber_sym(unsigned int maxiter, float epsilon, float alpha,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
@@ -113,7 +113,7 @@ struct ist_data {
 typedef void CLOSURE_TYPE(ist_continuation_t)(struct ist_data* itrdata);
 
 
-void ist(unsigned int maxiter, float epsilon, float tau, 
+void ist(unsigned int maxiter, float epsilon, float tau,
 	long N,
 	const struct vec_iter_s* vops,
 	ist_continuation_t ist_continuation,
@@ -122,7 +122,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor);
 
-void fista(unsigned int maxiter, float epsilon, float tau, 
+void fista(unsigned int maxiter, float epsilon, float tau,
 	long N,
 	const struct vec_iter_s* vops,
 	ist_continuation_t ist_continuation,
@@ -130,7 +130,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 	struct iter_op_p_s thresh,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor);
-	
+
 
 void irgnm(unsigned int iter, float alpha, float alpha_min, float redu,
 	long N, long M,
@@ -172,7 +172,7 @@ double power(unsigned int maxiter,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	float* u);
-	   
+
 void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
 	long N, long M,
 	const struct vec_iter_s* vops,
@@ -186,5 +186,4 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 #include "misc/cppwrap.h"
 
 #endif // __ITALGOS_H
-
 

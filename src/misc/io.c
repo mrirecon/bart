@@ -375,7 +375,7 @@ int read_coo(int fd, unsigned int n, long dimensions[n])
 	pos += delta;
 
 	unsigned int dim;
-	
+
 	if (1 != sscanf(header + pos, "Dimensions: %d\n%n", &dim, &delta))
 		return -1;
 
@@ -383,19 +383,19 @@ int read_coo(int fd, unsigned int n, long dimensions[n])
 
 //	if (n != dim)
 //		return -1;
-	
+
 	for (unsigned int i = 0; i < n; i++)
 		dimensions[i] = 1;
 
 	for (unsigned int i = 0; i < dim; i++) {
 
 		long val;
-		
+
 		if (1 != sscanf(header + pos, "[%*d %*d %ld %*d]\n%n", &val, &delta))
 			return -1;
 
 		pos += delta;
-		
+
 		if (i < n)
 			dimensions[i] = val;
 		else

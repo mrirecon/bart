@@ -16,11 +16,11 @@
  * Nesterov Y. A method of solving a convex programming problem with
  * convergence rate O (1/k2). Soviet Mathematics Doklady 1983; 27(2):372-376
  *
- * Bakushinsky AB. Iterative methods for nonlinear operator equations without 
+ * Bakushinsky AB. Iterative methods for nonlinear operator equations without
  * regularity. New approach. In Dokl. Russian Acad. Sci 1993; 330:282-284.
  *
  * Daubechies I, Defrise M, De Mol C. An iterative thresholding algorithm for
- * linear inverse problems with a sparsity constraint. 
+ * linear inverse problems with a sparsity constraint.
  * Comm Pure Appl Math 2004; 57:1413-1457.
  *
  * Beck A, Teboulle M. A fast iterative shrinkage-thresholding algorithm for
@@ -156,7 +156,7 @@ void ist(unsigned int maxiter, float epsilon, float tau, long N,
 
 		if (NULL != ist_continuation)
 			ist_continuation(&itrdata);
-		
+
 		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
 
 
@@ -309,7 +309,7 @@ void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
  * @param x initial estimate
  * @param b observations
  */
-float conjgrad(unsigned int maxiter, float l2lambda, float epsilon, 
+float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s linop,
@@ -363,11 +363,11 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 
 		vops->axpy(N, x, +alpha, p);
 		vops->axpy(N, r, -alpha, Ap);
-	
+
 		rsnew = pow(vops->norm(N, r), 2.);
 
 		float beta = rsnew / rsold;
-		
+
 		rsold = rsnew;
 
 		if (rsnew <= eps_squared)

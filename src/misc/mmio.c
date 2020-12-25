@@ -56,7 +56,7 @@ static void io_error(const char* fmt, ...)
 	debug_vprintf_trace("error", __FILE__, __LINE__, DP_ERROR, fmt, ap);
 	va_end(ap);
 #else
-	vfprintf(stderr, fmt, ap);	
+	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 	fflush(stderr);
 	perror(" ");
@@ -197,7 +197,7 @@ complex float* create_zra(const char* name, unsigned int D, const long dims[D])
 
 
 float* create_coo(const char* name, unsigned int D, const long dims[D])
-{	
+{
 	int ofd;
 
 	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
@@ -232,7 +232,7 @@ complex float* create_zcoo(const char* name, unsigned int D, const long dimensio
 	long dims[D + 1];
 	dims[0] = 2; // complex
 	memcpy(dims + 1, dimensions, D * sizeof(long));
-	
+
 	return (complex float*)create_coo(name, D + 1, dims);
 }
 

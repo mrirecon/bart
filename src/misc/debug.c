@@ -37,7 +37,7 @@
 
 
 // Patrick Virtue's timing code
-double timestamp(void) 
+double timestamp(void)
 {
 	struct timeval tv;
 	gettimeofday(&tv, 0); // more accurate than <time.h>
@@ -150,7 +150,7 @@ void debug_vprintf_trace(const char* func_name,
 #else
 	char tmp[1024] = { 0 };
 	vsnprintf(tmp, 1023, fmt, ap);
-	
+
 	// take care of the trailing newline often present...
 	if ('\n' == tmp[strlen(tmp) - 1])
 		tmp[strlen(tmp) - 1] = '\0';
