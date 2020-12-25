@@ -169,7 +169,7 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 #
 TBASE=show slice crop resize join transpose squeeze flatten zeros ones flip circshift extract repmat bitmask reshape version delta copy casorati vec poly index
 TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexp
-TNUM=fft fftmod fftshift noise bench threshold conv rss filter mandelbrot wavelet window var std fftrot
+TNUM=fft fftmod fftshift noise bench threshold conv rss filter mandelbrot wavelet window var std fftrot roistat pol2mask
 TRECO=pics pocsense sqpics itsense nlinv moba nufft rof tgv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin
 TMRI=homodyne poisson twixread fakeksp looklocker upat
@@ -217,6 +217,7 @@ MODULES_wshfl = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart
 MODULES_ssa = -lcalib
 MODULES_bin = -lcalib
 MODULES_signal = -lsimu
+MODULES_pol2mask = -lgeom
 
 
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
