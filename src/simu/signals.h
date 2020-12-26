@@ -7,6 +7,7 @@ struct signal_model {
 	float m0;
 	float m0_water;
 	float m0_fat;
+	float ms;
 	float t1;
 	float t2;
 	float t2star;
@@ -34,6 +35,8 @@ extern void hsfp_simu(const struct signal_model* data, int N, const float pa[N],
 extern const struct signal_model signal_looklocker_defaults;
 
 extern void looklocker_model(const struct signal_model* data, int N, complex float out[N]);
+
+extern void looklocker_model2(const struct signal_model* data, int N, complex float out[N]);
 
 extern void MOLLI_model(const struct signal_model* data, int N, int Hbeats, float time_T1relax, complex float out[N]);
 

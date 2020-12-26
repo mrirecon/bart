@@ -45,8 +45,9 @@ int main_signal(int argc, char* argv[argc])
 	float time_T1relax = -1.; // second
 	long Hbeats = -1;
 
-	float T1[3] = { 500., 1500., 10 };
-	float T2[3] = {  50.,  150., 10 };
+	float T1[3] = { 0.5, 1.5, 1 };
+	float T2[3] = { 0.05, 0.15, 1 };
+	float Ms[3] = { 0.05, 1.0, 1 };
 
 	const struct opt_s opts[] = {
 
@@ -60,6 +61,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_SET('s', &IR_SS, "inversion recovery starting from steady state"),
 		OPT_FLVEC3('1', &T1, "min:max:N", "range of T1s"),
 		OPT_FLVEC3('2', &T2, "min:max:N", "range of T2s"),
+		OPT_FLVEC3('3', &Ms, "min:max:N", "range of Mss"),
 		OPT_FLOAT('r', &TR, "TR", "repetition time"),
 		OPT_FLOAT('e', &TE, "TE", "echo time"),
 		OPT_FLOAT('f', &FA, "FA", "flip ange"),
@@ -101,7 +103,7 @@ int main_signal(int argc, char* argv[argc])
 	// 	parm.te = TE;
 
 	dims[COEFF_DIM] = truncf(T1[2]);
-	dims[COEFF2_DIM] = truncf(T2[2]);
+	dims[COEFF2_DIM] = (1 != Ms[2]) ? truncf(Ms[2]) : truncf(T2[2]);
 
 	if ((dims[TE_DIM] < 1) || (dims[COEFF_DIM] < 1) || (dims[COEFF2_DIM] < 1))
 		error("invalid parameter range");
@@ -116,13 +118,17 @@ int main_signal(int argc, char* argv[argc])
 
 	do {
 		parm.t1 = T1[0] + (T1[1] - T1[0]) / T1[2] * (float)pos[COEFF_DIM];
-		parm.t2 = T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM];
+
+		if (1 != Ms[2])
+			parm.ms = Ms[0] + (Ms[1] - Ms[0]) / Ms[2] * (float)pos[COEFF2_DIM];
+		else
+			parm.t2 = T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM];
 
 		complex float out[N];
 
 		switch (seq) {
 
-		case FLASH: looklocker_model(&parm, N, out); break;
+		case FLASH: (1 != Ms[2]) ? looklocker_model2(&parm, N, out) : looklocker_model(&parm, N, out); break;
 		case MGRE:  multi_grad_echo_model(&parm, N, out); break;
 		case BSSFP: IR_bSSFP_model(&parm, N, out); break;
 		case TSE:   TSE_model(&parm, N, out); break;
