@@ -38,23 +38,6 @@ struct sum_data {
 
 static DEF_TYPEID(sum_data);
 
-static struct sum_data* sum_create_data(const long imgd_dims[DIMS], unsigned long flags);
-static void sum_free_data(const linop_data_t* _data);
-static void sum_apply(const linop_data_t* _data, complex float* _dst, const complex float* _src);
-static void sum_apply_adjoint(const linop_data_t* _data, complex float* _dst, const complex float* _src);
-static void sum_apply_normal(const linop_data_t* _data, complex float* _dst, const complex float* _src);
-static void sum_apply_pinverse(const linop_data_t* _data, float lambda, complex float* _dst, const complex float* _src);
-
-
-
-const struct linop_s* linop_sum_create(const long imgd_dims[DIMS], unsigned long flags)
-{
-	struct sum_data* data = sum_create_data(imgd_dims, flags);
-
-	return linop_create(DIMS, data->img_dims, DIMS, data->imgd_dims,
-			CAST_UP(data), sum_apply, sum_apply_adjoint, sum_apply_normal,
-			sum_apply_pinverse, sum_free_data);
-}
 
 
 static struct sum_data* sum_create_data(const long imgd_dims[DIMS], unsigned long flags)
@@ -80,7 +63,7 @@ static struct sum_data* sum_create_data(const long imgd_dims[DIMS], unsigned lon
 
 
 
-void sum_free_data(const linop_data_t* _data)
+static void sum_free_data(const linop_data_t* _data)
 {
         auto data = CAST_DOWN(sum_data, _data);
 
@@ -88,7 +71,7 @@ void sum_free_data(const linop_data_t* _data)
 }
 
 
-void sum_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
+static void sum_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
         auto data = CAST_DOWN(sum_data, _data);
 
@@ -97,7 +80,7 @@ void sum_apply(const linop_data_t* _data, complex float* dst, const complex floa
 }
 
 
-void sum_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
+static void sum_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
         auto data = CAST_DOWN(sum_data, _data);
 
@@ -106,13 +89,15 @@ void sum_apply_adjoint(const linop_data_t* _data, complex float* dst, const comp
 }
 
 
-void sum_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
+static void sum_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
         auto data = CAST_DOWN(sum_data, _data);
 
 	complex float* tmp = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, dst);
+
 	sum_apply(_data, tmp, src);
 	sum_apply_adjoint(_data, dst, tmp);
+
 	md_free(tmp);
 }
 
@@ -123,7 +108,7 @@ void sum_apply_normal(const linop_data_t* _data, complex float* dst, const compl
  * x = (ATA + uI)^-1 b
  * 
  */
-void sum_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst, const complex float* src)
+static void sum_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst, const complex float* src)
 {
         auto data = CAST_DOWN(sum_data, _data);
 
@@ -150,4 +135,25 @@ void sum_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst
 
 	md_free(tmp);
 }
+
+
+const struct linop_s* linop_sum_create(const long imgd_dims[DIMS], unsigned long flags)
+{
+	struct sum_data* data = sum_create_data(imgd_dims, flags);
+	data->levels = 1;
+
+	return linop_create(DIMS, data->img_dims, DIMS, data->imgd_dims,
+			CAST_UP(data), sum_apply, sum_apply_adjoint, sum_apply_normal,
+			sum_apply_pinverse, sum_free_data);
+}
+
+const struct linop_s* linop_avg_create(const long imgd_dims[DIMS], unsigned long flags)
+{
+	struct sum_data* data = sum_create_data(imgd_dims, flags);
+
+	return linop_create(DIMS, data->img_dims, DIMS, data->imgd_dims,
+			CAST_UP(data), sum_apply, sum_apply_adjoint, sum_apply_normal,
+			sum_apply_pinverse, sum_free_data);
+}
+
 
