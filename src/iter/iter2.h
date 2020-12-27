@@ -49,7 +49,7 @@ typedef struct iter_conf_s { TYPEID* TYPEID; float alpha; } iter_conf;
 
 struct iter_monitor_s;
 
-typedef void (italgo_fun2_f)(iter_conf* conf,
+typedef void (italgo_fun2_f)(const iter_conf* conf,
 		const struct operator_s* normaleq_op,
 		unsigned int D,
 		const struct operator_p_s* prox_ops[__VLA2(D)],
