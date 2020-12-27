@@ -38,7 +38,7 @@ struct sum_data {
 
 static DEF_TYPEID(sum_data);
 
-static struct sum_data* sum_create_data(const long imgd_dims[DIMS]);
+static struct sum_data* sum_create_data(const long imgd_dims[DIMS], unsigned long flags);
 static void sum_free_data(const linop_data_t* _data);
 static void sum_apply(const linop_data_t* _data, complex float* _dst, const complex float* _src);
 static void sum_apply_adjoint(const linop_data_t* _data, complex float* _dst, const complex float* _src);
@@ -47,9 +47,9 @@ static void sum_apply_pinverse(const linop_data_t* _data, float lambda, complex 
 
 
 
-const struct linop_s* linop_sum_create(const long imgd_dims[DIMS])
+const struct linop_s* linop_sum_create(const long imgd_dims[DIMS], unsigned long flags)
 {
-	struct sum_data* data = sum_create_data(imgd_dims);
+	struct sum_data* data = sum_create_data(imgd_dims, flags);
 
 	return linop_create(DIMS, data->img_dims, DIMS, data->imgd_dims,
 			CAST_UP(data), sum_apply, sum_apply_adjoint, sum_apply_normal,
@@ -57,7 +57,7 @@ const struct linop_s* linop_sum_create(const long imgd_dims[DIMS])
 }
 
 
-static struct sum_data* sum_create_data(const long imgd_dims[DIMS])
+static struct sum_data* sum_create_data(const long imgd_dims[DIMS], unsigned long flags)
 {
 	PTR_ALLOC(struct sum_data, data);
 	SET_TYPEID(sum_data, data);
@@ -66,10 +66,13 @@ static struct sum_data* sum_create_data(const long imgd_dims[DIMS])
 	md_copy_dims(DIMS, data->imgd_dims, imgd_dims);
 	md_calc_strides(DIMS, data->imgd_strs, imgd_dims, CFL_SIZE);
 
-	// image dimensions
-	data->levels = imgd_dims[LEVEL_DIM];
+	long level_dims[DIMS];
+	md_select_dims(DIMS, flags, level_dims, imgd_dims);
 
-	md_select_dims(DIMS, ~LEVEL_FLAG, data->img_dims, imgd_dims);
+	data->levels = md_calc_size(DIMS, level_dims);
+
+	// image dimensions
+	md_select_dims(DIMS, ~flags, data->img_dims, imgd_dims);
 	md_calc_strides(DIMS, data->img_strs, data->img_dims, CFL_SIZE);
 
 	return PTR_PASS(data);

@@ -174,7 +174,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 
 	// Initialize operators
 
-	const struct linop_s* sum_op = linop_sum_create(odims);
+	const struct linop_s* sum_op = linop_sum_create(odims, LEVEL_FLAG);
 	const struct linop_s* sampling_op = NULL;
 
         if (!decom) {
