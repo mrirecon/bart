@@ -452,7 +452,7 @@ int read_ra(int fd, int n, long dimensions[n])
 	err_assert(!(header.flags & RA_FLAG_BIG_ENDIAN));
 	err_assert(RA_TYPE_COMPLEX == header.eltype);
 	err_assert(sizeof(complex float) == header.elbyte);
-	err_assert((int)header.ndims <= n);
+	err_assert(header.ndims <= 100);
 
 	uint64_t dims[header.ndims];
 
@@ -461,8 +461,13 @@ int read_ra(int fd, int n, long dimensions[n])
 
 	md_singleton_dims(n, dimensions);
 
-	for (int i = 0; i < (int)header.ndims; i++)
-		dimensions[i] = dims[i];
+	for (int i = 0; i < (int)header.ndims; i++) {
+
+		if (i < n)
+			dimensions[i] = dims[i];
+		else
+			err_assert(1 == dims[i]);
+	}
 
 	// this can overflow, but we check in mmio
 	err_assert(header.size == md_calc_size(n, dimensions) * sizeof(complex float));
