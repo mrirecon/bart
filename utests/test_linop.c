@@ -160,3 +160,75 @@ static bool test_linop_null(void)
 
 UT_REGISTER_TEST(test_linop_null);
 
+
+
+static bool test_linop_extract(void)
+{
+	enum { N = 4 };
+	long dims[N] = { 8, 4, 6, 4};
+	long dims2[N] = { 8, 4, 2, 4};
+
+	complex float val1a = 2.;
+
+	long pos[N];
+
+	for (int i = 0; i < N; i++)
+		pos[i] = 0;
+	
+	struct linop_s* diaga = linop_cdiag_create(N, dims, 0, &val1a);
+	struct linop_s* extract = linop_extract_create(N, pos, dims2, dims);
+	struct linop_s* diaga1 = linop_chain_FF(diaga, extract);
+
+	complex float* in = md_alloc(N, dims, CFL_SIZE);
+	complex float* out = md_alloc(N, dims2, CFL_SIZE);
+
+	md_zfill(N, dims, in, 1.);
+
+	bool ok = true;
+	double n, n2, err;
+
+	linop_forward(diaga1, N, dims2, out, N, dims, in);
+
+	n = powf(md_znorm(N, dims2, out), 2);
+	n2 = powf(val1a, 2.) * md_calc_size(N, dims2);
+	err = fabs(n - n2);
+
+#ifdef  __clang__
+	ok &= (err < 100. * UT_TOL);
+#else
+	ok &= (err < UT_TOL);
+#endif
+	md_zfill(N, dims2, out, 1.);
+
+	linop_adjoint(diaga1, N, dims, in, N, dims2, out);
+
+	n = powf(md_znorm(N, dims, in), 2);
+	n2 = powf(val1a, 2.) * md_calc_size(N, dims2);
+	err = fabs(n - n2);
+
+#ifdef  __clang__
+	ok &= (err < 100. * UT_TOL);
+#else
+	ok &= (err < UT_TOL);
+#endif
+	md_zfill(N, dims, in, 1.);
+
+	linop_normal(diaga1, N, dims, in, in);
+
+	n = powf(md_znorm(N, dims, in), 2);
+	n2 = powf(val1a, 4.) * md_calc_size(N, dims2);
+	err = fabs(n - n2);
+
+	ok &= (err < 1.E-3);
+
+	linop_free(diaga1);
+
+	md_free(in);
+	md_free(out);
+
+	return ok;
+}
+
+
+UT_REGISTER_TEST(test_linop_extract);
+

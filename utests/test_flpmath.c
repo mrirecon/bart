@@ -297,6 +297,45 @@ static bool test_md_zconv(void)
 	return (err < 1.E-6);
 }
 
+static bool test_md_complex_real_conversion(void)
+{
+	enum { N = 1 };
+	long dims[N] = { 10 };
+
+	complex float* src_comp = md_alloc(N, dims, CFL_SIZE);
+	md_gaussian_rand(N, dims, src_comp);
+
+	float* real = md_alloc(N, dims, FL_SIZE);
+	float* imag = md_alloc(N, dims, FL_SIZE);
+
+	md_real(N, dims, real, src_comp);
+	md_imag(N, dims, imag, src_comp);
+
+	complex float* dst1 = md_alloc(N, dims, CFL_SIZE);
+	complex float* dst2 = md_alloc(N, dims, CFL_SIZE);
+
+	float err = 0;
+
+	md_zcmpl_real(N, dims, dst1, real);
+	md_zreal(N, dims, dst2, src_comp);
+	err += md_znrmse(N, dims, dst2, dst1);
+
+	md_zcmpl_imag(N, dims, dst1, imag);
+	md_zimag(N, dims, dst2, src_comp);
+	err += md_znrmse(N, dims, dst2, dst1);
+
+	md_zcmpl(N, dims, dst1, real, imag);
+	err += md_znrmse(N, dims, src_comp, dst1);
+	
+	md_free(src_comp);
+	md_free(real);
+	md_free(imag);
+	md_free(dst1);
+	md_free(dst2);
+
+	return (err < 1.E-8);
+}
+
 
 
 
@@ -312,4 +351,5 @@ UT_REGISTER_TEST(test_md_zvar);
 UT_REGISTER_TEST(test_md_zcovar);
 UT_REGISTER_TEST(test_md_zstd);
 UT_REGISTER_TEST(test_md_zconv);
+UT_REGISTER_TEST( test_md_complex_real_conversion);
 

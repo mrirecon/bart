@@ -37,4 +37,9 @@ typedef bool ut_test_f(void);
 
 #define UT_GPU_REGISTER_TEST(x) UT_REGISTER_TEST(x)
 
+#define UT_UNUSED_TEST(x) 				\
+	extern void unused_ ## x(void);			\
+	extern void unused_ ## x(void) { x(); };
+
+
 #endif

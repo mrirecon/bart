@@ -262,3 +262,56 @@ static bool test_op_stack(void)
 }
 
 UT_REGISTER_TEST(test_op_stack);
+
+static bool test_nonneg_stack(void)
+{
+	enum { N = 3 };
+	long dims[N] = { 2, 4, 7 };
+	long dims1[N] = { 2, 4, 2 };
+	long dims2[N] = { 2, 4, 1 };
+	long dims3[N] = { 2, 4, 4 };
+
+	long strs[N];
+	md_calc_strides(N, strs, dims, CFL_SIZE);
+
+	complex float* src = md_alloc(N, dims, CFL_SIZE);
+	complex float* dst = md_alloc(N, dims, CFL_SIZE);
+	complex float* ref = md_alloc(N, dims, CFL_SIZE);
+
+	md_zfill(N, dims, src, 6.);
+	md_clear(N, dims, dst, CFL_SIZE);
+
+	long dims_blk[N];
+	md_copy_dims(N, dims_blk, dims);
+	dims_blk[2] = 1;
+
+	for (int i = 0; i < dims[2]; i+=2)
+		md_zsmul2(N, dims_blk, strs, (void*)src + strs[2] * i, strs, (void*)src + strs[2] * i, -1.);
+
+	md_copy(N, dims, ref, src, CFL_SIZE);
+	md_zsmax(N, dims2, (void*)ref + strs[2] * dims1[2], (void*)ref + strs[2] * dims1[2], 0.);
+
+	auto p1 = prox_zero_create(N, dims1);
+	auto p2 = prox_nonneg_create(N, dims2);
+	auto p3 = prox_zero_create(N, dims3);
+
+	auto p4 = operator_p_stack(2, 2, p1, p2);
+	auto p  = operator_p_stack(2, 2, p4, p3);
+
+	operator_p_apply(p, 0.0, N, dims, dst, N, dims, src);
+	operator_p_free(p1);
+	operator_p_free(p2);
+	operator_p_free(p3);
+	operator_p_free(p4);
+	operator_p_free(p);
+
+	float err = md_znrmse(N, dims, ref, dst);
+
+	md_free(src);
+	md_free(dst);
+	md_free(ref);
+
+	UT_ASSERT(err < 1.E-10);
+}
+
+UT_REGISTER_TEST(test_nonneg_stack);

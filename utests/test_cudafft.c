@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/init.h"
 
 #include "misc/debug.h"
 #include "misc/misc.h"
@@ -53,6 +54,7 @@ static bool test_cuda_fft(void)
 	// TODO: detect if GPU works
 
 	num_rand_init(5);
+	num_init_gpu();
 
 	enum { test_cuda_fft_dims = 7 };
 
