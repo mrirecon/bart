@@ -144,7 +144,7 @@ CUDA_BASE ?= /usr/local/
 ACML_BASE ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
 
 # mkl
-MKL_BASE ?= /opt/intel/mkl/lib/intel64/ 
+MKL_BASE ?= /opt/intel/mkl/lib/intel64/
 
 # fftw
 
@@ -311,14 +311,14 @@ ifeq ($(BUILDTYPE), MacOSX)
 CUDA_L := -L$(CUDA_BASE)/lib -lcufft -lcudart -lcublas -m64 -lstdc++
 else
 CUDA_L := -L$(CUDA_BASE)/lib64 -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/lib64
-endif 
+endif
 else
 CUDA_H :=
-CUDA_L :=  
+CUDA_L :=
 endif
 
 # sm_20 no longer supported in CUDA 9
-GPUARCH_FLAGS ?= 
+GPUARCH_FLAGS ?=
 NVCCFLAGS = -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
 #NVCCFLAGS = -Xcompiler -fPIC -Xcompiler -fopenmp -O3  -I$(srcdir)/
 

@@ -133,7 +133,7 @@ static void fmac_normal(const linop_data_t* _data, complex float* dst, const com
 	md_free(tmp);
 }
 
-const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N], 
+const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N],
 		unsigned int oflags, unsigned int iflags, unsigned int tflags, const complex float* tensor)
 {
 	PTR_ALLOC(struct fmac_data, data);

@@ -54,7 +54,7 @@ static void shared_del(const operator_data_t* _data)
 	auto data = CAST_DOWN(shared_data_s, _data);
 
 	shared_ptr_destroy(&data->sptr);
-	
+
 	xfree(data);
 }
 
@@ -144,7 +144,7 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
 	if (NULL != norm_inv) {
 
 		lo->norm_inv = operator_p_create2(IN, idims, istrs, IN, idims, istrs, CAST_UP(shared_data[3]), shared_apply_p, shared_del);
-	
+
 	} else {
 
 		shared_ptr_destroy(&shared_data[3]->sptr);
@@ -182,7 +182,7 @@ struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int
 
 /**
  * Return the data associated with the linear operator
- * 
+ *
  * @param ptr linear operator
  */
 const linop_data_t* linop_get_data(const struct linop_s* ptr)
@@ -410,7 +410,7 @@ struct linop_s* linop_null_create(unsigned int NO, const long odims[NO], unsigne
 
 /**
  * Create chain of linear operators.
- * C = B A 
+ * C = B A
  * C^H = A^H B^H
  * C^H C = A^H B^H B A
  */

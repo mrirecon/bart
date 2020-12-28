@@ -189,7 +189,7 @@ static void identity_apply(const linop_data_t* _data, complex float* dst, const 
 }
 
 static void identity_free(const linop_data_t* _data)
-{	
+{
 	const auto data = CAST_DOWN(identity_data_s, _data);
 
 	iovec_free(data->domain);
@@ -921,7 +921,7 @@ struct fft_linop_s {
 
 	bool center;
 	float nscale;
-	
+
 	int N;
 	long* dims;
 	long* strs;
@@ -1232,9 +1232,9 @@ static void linop_conv_free(const linop_data_t* _data)
  * @param ctype
  * @param cmode
  * @param odims output dimensions
- * @param idims input dimensions 
+ * @param idims input dimensions
  * @param kdims kernel dimensions
- * @param krn convolution kernel 
+ * @param krn convolution kernel
  */
 struct linop_s* linop_conv_create(int N, unsigned int flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N],
                 const long idims[N], const long kdims[N], const complex float* krn)
