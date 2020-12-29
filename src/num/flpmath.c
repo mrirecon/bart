@@ -1951,6 +1951,32 @@ void md_zlessequal(unsigned int D, const long dims[D], complex float* optr, cons
 
 
 
+/**
+ * Elementwise less than or equal to scalar (with strides)
+ *
+ * optr = (iptr <= val)
+ */
+void md_zslessequal2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, float val)
+{
+	make_z3op_scalar(md_zlessequal2, D, dims, ostr, optr, istr, iptr, val);
+}
+
+
+
+/**
+ * Elementwise less than or equal to scalar (without strides)
+ *
+ * optr = (iptr <= val)
+ */
+void md_zslessequal(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr, float val)
+{
+	long strs[D];
+	md_calc_strides(D, strs, dims, CFL_SIZE);
+
+	md_zslessequal2(D, dims, strs, optr, strs, iptr, val);
+}
+
+
 
 /**
  * Elementwise less than or equal to (with strides)
