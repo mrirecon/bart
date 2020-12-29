@@ -302,6 +302,8 @@ int main_moba(int argc, char* argv[argc])
 		// Gridding sampling pattern
 
 #if USE_ESTIMATE_PATTERN == 1
+		
+		complex float* psf = NULL;
 
 		long wgh_dims[DIMS];
 		md_select_dims(DIMS, ~COIL_FLAG, wgh_dims, ksp_dims);
@@ -310,9 +312,9 @@ int main_moba(int argc, char* argv[argc])
 
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, wgh, kspace_data);
 
-		pattern = compute_psf(DIMS, pat_dims, traj_dims, traj, traj_dims, NULL, wgh_dims, wgh, false, false);
+		psf = compute_psf(DIMS, pat_dims, traj_dims, traj, traj_dims, NULL, wgh_dims, wgh, false, false);
 
-		fftuc(DIMS, pat_dims, FFT_FLAGS, pattern, pattern);
+		fftuc(DIMS, pat_dims, FFT_FLAGS, pattern, psf);
 
 		md_free(wgh);
 
