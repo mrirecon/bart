@@ -159,8 +159,43 @@ tests/test-moba-meco-noncart-r2s: traj scale phantom signal fmac index extract m
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-moba-meco-noncart-wfr2s: traj scale phantom signal fmac index extract moba slice resize saxpy cabs spow nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	                  ;\
+	$(TOOLDIR)/traj -x16 -y15 -r -D -E -e7 -c _traj.ra                ;\
+	$(TOOLDIR)/scale 0.5 _traj.ra traj.ra                             ;\
+	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra                 ;\
+	$(TOOLDIR)/signal -G -D -n8 -1 3:3:1 -2 0.02:0.02:1 signal_p1.ra  ;\
+	$(TOOLDIR)/extract 5 1 8 signal_p1.ra signal.ra                   ;\
+	$(TOOLDIR)/fmac -s 64 basis_geom.ra signal.ra data.ra             ;\
+	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
+	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
+	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
+	$(TOOLDIR)/moba -G -m1 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -o1.5 -k -t _traj.ra data.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/resize -c 0 8 1 8 reco.ra reco_crop.ra                 ;\
+	$(TOOLDIR)/slice 6 0 reco_crop.ra W.ra                            ;\
+	$(TOOLDIR)/slice 6 1 reco_crop.ra F.ra                            ;\
+	$(TOOLDIR)/slice 6 2 reco_crop.ra R2S.ra                          ;\
+	$(TOOLDIR)/slice 6 3 reco_crop.ra fB0.ra                          ;\
+	$(TOOLDIR)/saxpy 1 W.ra F.ra temp_inphase.ra                      ;\
+	$(TOOLDIR)/cabs temp_inphase.ra temp_inphase_abs.ra               ;\
+	$(TOOLDIR)/spow -- -1. temp_inphase_abs.ra temp_deno.ra           ;\
+	$(TOOLDIR)/cabs F.ra temp_F_abs.ra                                ;\
+	$(TOOLDIR)/fmac temp_F_abs.ra temp_deno.ra fatfrac.ra             ;\
+	$(TOOLDIR)/phantom -x8 -c circ.ra                                 ;\
+	$(TOOLDIR)/fmac fatfrac.ra circ.ra fatfrac_masked.ra              ;\
+	$(TOOLDIR)/scale -- 0.20 circ.ra fatfrac_ref.ra                   ;\
+	$(TOOLDIR)/nrmse -t 0.02 fatfrac_ref.ra fatfrac_masked.ra         ;\
+	$(TOOLDIR)/fmac R2S.ra circ.ra R2S_masked.ra                      ;\
+	$(TOOLDIR)/scale -- 50 circ.ra R2S_ref.ra                         ;\
+	$(TOOLDIR)/nrmse -t 0.008 R2S_ref.ra R2S_masked.ra                ;\
+	$(TOOLDIR)/fmac fB0.ra circ.ra fB0_masked.ra                      ;\
+	$(TOOLDIR)/scale -- 20 circ.ra fB0_ref.ra                         ;\
+	$(TOOLDIR)/nrmse -t 0.0003 fB0_ref.ra fB0_masked.ra               ;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS_SLOW += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
 TESTS_SLOW += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
 TESTS_SLOW += tests/test-moba-t2
-TESTS_SLOW += tests/test-moba-meco-noncart-r2s
+TESTS_SLOW += tests/test-moba-meco-noncart-r2s tests/test-moba-meco-noncart-wfr2s
 
