@@ -216,7 +216,7 @@ void IR_bSSFP_model(const struct signal_model* data, int N, complex float out[N]
 
 
 /*
- * multi gradient echo model (WFR2S)
+ * multi gradient echo model (R2S)
  */
 const struct signal_model signal_multi_grad_echo_defaults = {
 
@@ -224,6 +224,21 @@ const struct signal_model signal_multi_grad_echo_defaults = {
 	.m0_water = 1.,
 	.m0_fat = .0,
 	.t2star = .03, // s
+	.off_reson = 20, // Hz
+	.te = 1.6 * 1.E-3, // s
+	.b0 = 3., // Tesla
+};
+
+
+/*
+ * multi gradient echo model (WFR2S)
+ */
+const struct signal_model signal_multi_grad_echo_fat = {
+
+	.m0 = 1.,
+	.m0_water = 0.8,
+	.m0_fat = 0.2,
+	.t2star = .05, // s
 	.off_reson = 20, // Hz
 	.te = 1.6 * 1.E-3, // s
 	.b0 = 3., // Tesla
