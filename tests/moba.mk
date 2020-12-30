@@ -138,12 +138,13 @@ tests/test-moba-t2: phantom signal fmac fft ones index scale moba slice invert n
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-moba-meco-noncart: traj scale phantom signal fmac index extract moba slice resize nrmse
+tests/test-moba-meco-noncart-r2s: traj scale phantom signal fmac index extract moba slice resize nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	                  ;\
-	$(TOOLDIR)/traj -x16 -y15 -r -D -E -e7 -c _traj.ra		  ;\
+	$(TOOLDIR)/traj -x16 -y15 -r -D -E -e7 -c _traj.ra                ;\
 	$(TOOLDIR)/scale 0.5 _traj.ra traj.ra                             ;\
 	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra                 ;\
-	$(TOOLDIR)/signal -G -n7 -1 3:3:1 -2 0.02:0.02:1 signal.ra        ;\
+	$(TOOLDIR)/signal -G -n8 -1 3:3:1 -2 0.02:0.02:1 signal_p1.ra     ;\
+	$(TOOLDIR)/extract 5 1 8 signal_p1.ra signal.ra                   ;\
 	$(TOOLDIR)/fmac -s 64 basis_geom.ra signal.ra data.ra             ;\
 	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
 	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
@@ -154,12 +155,12 @@ tests/test-moba-meco-noncart: traj scale phantom signal fmac index extract moba 
 	$(TOOLDIR)/phantom -x8 -c circ.ra                                 ;\
 	$(TOOLDIR)/fmac R2S_crop.ra circ.ra masked.ra                     ;\
 	$(TOOLDIR)/scale -- 50 circ.ra ref.ra                             ;\
-	$(TOOLDIR)/nrmse -t 0.008 ref.ra masked.ra                         ;\
+	$(TOOLDIR)/nrmse -t 0.008 ref.ra masked.ra                        ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 TESTS_SLOW += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
 TESTS_SLOW += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
 TESTS_SLOW += tests/test-moba-t2
-TESTS_SLOW += tests/test-moba-meco-noncart
+TESTS_SLOW += tests/test-moba-meco-noncart-r2s
 
