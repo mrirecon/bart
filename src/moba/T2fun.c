@@ -4,7 +4,7 @@
  *
  * Authors:
  * 2018-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2018-2019 Xiaoqing Wang <xiaoqing.wang@med.uni-goettingen.de>
+ * 2018-2020 Xiaoqing Wang <xiaoqing.wang@med.uni-goettingen.de>
  */
 
 
@@ -79,9 +79,7 @@ static void T2_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	md_zsmul(data->N, data->map_dims, data->tmp_map, data->z, -1 * data->scaling_z);
 
 	// exp(-TE.*scaling_z.*z)
-	for(int k = 0; k < data->TE_dims[TE_DIM]; k++)
-		md_zsmul2(data->N, data->map_dims, data->out_strs, (void*)data->tmp_exp + data->out_strs[TE_DIM] * k, data->map_strs, (void*)data->tmp_map, data->TE[k]);
-
+	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_exp, data->map_strs, data->tmp_map, data->TE_strs, data->TE);
 	md_zexp(data->N, data->out_dims, data->tmp_exp, data->tmp_exp);
 
 	// Calculating derivatives
@@ -92,15 +90,9 @@ static void T2_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	// rho.*exp(-TE.*scaling_z.*z)
 	md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->rho, data->out_strs, data->tmp_exp);
 
-	long img_dims[data->N];
-	md_select_dims(data->N, FFT_FLAGS, img_dims, data->map_dims);
-
 	// dz: z' = -rho.*scaling_z.*TE.*exp(-TE.*scaling_z.*z)
 	// TE.*exp(-TE.*scaling_z.*z), 
-	for (int s = 0; s < data->out_dims[SLICE_DIM]; s++)
-		for(int k = 0; k < data->TE_dims[TE_DIM]; k++)
-			md_zsmul(data->N, img_dims, (void*)data->tmp_exp + data->out_strs[TE_DIM] * k + data->out_strs[SLICE_DIM] * s, (void*)data->tmp_exp + data->out_strs[TE_DIM] * k + data->out_strs[SLICE_DIM] * s, data->TE[k]);
-
+	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_exp, data->out_strs, data->tmp_exp, data->TE_strs, data->TE);
 	md_zsmul(data->N, data->out_dims, data->tmp_exp, data->tmp_exp, -1*data->scaling_z);
 	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_dz, data->map_strs, data->rho, data->out_strs, data->tmp_exp);
 }
@@ -155,7 +147,6 @@ static void T2_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	// sum (conj(z') * src, t)
 	md_clear(data->N, data->map_dims, data->tmp_map, CFL_SIZE);
 	md_zfmacc2(data->N, data->out_dims, data->map_strs, data->tmp_map, data->out_strs, src, data->out_strs, data->tmp_dz);
-
 	// md_zreal(data->N, data->map_dims, data->tmp_map, data->tmp_map);
 
 	// dst[1] = sum (conj(z') * src, t)
@@ -246,10 +237,9 @@ struct nlop_s* nlop_T2_create(int N, const long map_dims[N], const long out_dims
 	data->tmp_exp = my_alloc(N, out_dims, CFL_SIZE);
 	data->tmp_drho = my_alloc(N, out_dims, CFL_SIZE);
 	data->tmp_dz = my_alloc(N, out_dims, CFL_SIZE);
-	data->TE = md_alloc(N, TE_dims, CFL_SIZE);
+	data->TE = my_alloc(N, TE_dims, CFL_SIZE);
 
 	md_copy(N, TE_dims, data->TE, TE, CFL_SIZE);
-
 
 	data->scaling_z = 10.;
 
