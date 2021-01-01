@@ -74,14 +74,17 @@ static void normal(iter_op_data* _data, float* dst, const float* src)
 	long res = data->dims[0];
 	long parameters = data->dims[COEFF_DIM];
 	long coils = data->dims[COIL_DIM];
+	long time = data->dims[TIME_DIM];
+	long time2 = data->dims[TIME2_DIM];
 	long slices = data->dims[SLICE_DIM];
+ 
+        if (1 == data->conf->opt_reg) {
+ 
+                md_axpy(1, MD_DIMS(data->size_x * coils / (coils + parameters)),
+						dst + res * res * 2 * parameters * time * time2 * slices,
+                                                data->alpha,
+						src + res * res * 2 * parameters * time * time2 * slices);
 
-	if (1 == data->conf->opt_reg) {
-
-		md_axpy(1, MD_DIMS(data->size_x * coils / (coils + parameters)),
-	                                        dst + res * res * 2 * parameters * slices,
-						data->alpha,
-	                                        src + res * res * 2 * parameters * slices);
 	} else {
 
 		md_axpy(1, MD_DIMS(data->size_x), dst, data->alpha, src);
@@ -97,7 +100,7 @@ static void pos_value(iter_op_data* _data, float* dst, const float* src)
 
 	long dims1[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, dims1, data->dims);
-
+	
 	long pos[DIMS] = { 0 };
 
 	do {
@@ -160,7 +163,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
     
 	int maxiter = MIN(data->conf->c2->cgiter, 10 * powf(2, data->outer_iter));
     
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(data->size_y), FL_SIZE, src);
+	float* tmp = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
 
 	linop_adjoint_unchecked(nlop_get_derivative(data->nlop, 0, 0), (complex float*)tmp, (const complex float*)src);
 
@@ -227,6 +230,8 @@ static void T1inv_apply(const operator_data_t* _data, float alpha, complex float
 	inverse_fista(CAST_UP(data), alpha, (float*)dst, (const float*)src);
 }
 
+
+
 static void T1inv_del(const operator_data_t* _data)
 {
 	auto data = CAST_DOWN(T1inv2_s, _data);
@@ -267,7 +272,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
         img_dims[COEFF_DIM] = penalized_dims;
 
 	auto prox1 = create_prox(img_dims, COEFF_FLAG, 1.);
-	auto prox2 = op_p_auto_normalize(prox1, ~(COEFF_FLAG | SLICE_FLAG), NORM_L2);
+	auto prox2 = op_p_auto_normalize(prox1, ~(COEFF_FLAG | TIME_FLAG | TIME2_FLAG | SLICE_FLAG), NORM_L2);
 
         if (0 < conf->not_wav_maps) {
 

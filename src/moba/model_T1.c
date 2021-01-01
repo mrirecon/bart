@@ -47,10 +47,10 @@ struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const
 	long in_dims[DIMS];
 	long TI_dims[DIMS];
 
-	md_select_dims(DIMS, conf->fft_flags|TIME2_FLAG, map_dims, dims);
-	md_select_dims(DIMS, conf->fft_flags|TE_FLAG|TIME2_FLAG, out_dims, dims);
-	md_select_dims(DIMS, conf->fft_flags|COEFF_FLAG|TIME2_FLAG, in_dims, dims);
-	md_select_dims(DIMS, TE_FLAG|TIME2_FLAG, TI_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|TIME_FLAG|TIME2_FLAG, map_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|TE_FLAG|TIME_FLAG|TIME2_FLAG, out_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|COEFF_FLAG|TIME_FLAG|TIME2_FLAG, in_dims, dims);
+	md_select_dims(DIMS, TE_FLAG|TIME_FLAG|TIME2_FLAG, TI_dims, dims);
 
 
 #if 1
