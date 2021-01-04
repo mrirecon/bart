@@ -31,7 +31,7 @@ tests/test-roistat-var: zeros noise ones resize roistat var nrmse
 
 
 
-tests/test-roistat-mean: ones index noise resize roistat nrmse
+tests/test-roistat-mean: ones index fmac noise resize roistat nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/ones 3 100 100 1 o.ra						;\
 	$(TOOLDIR)/index 2 3 i.ra							;\

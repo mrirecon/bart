@@ -1,4 +1,5 @@
-tests/test-wave: wave wavepsf scale nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
+
+tests/test-wave: wavepsf fft resize fmac wave nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)                          ;\
 	$(TOOLDIR)/wavepsf -x 640 -y 128 wave_psf.ra                          ;\
 	$(TOOLDIR)/fft -iu 7 $(TESTS_OUT)/shepplogan_coil_ksp.ra img.ra       ;\
