@@ -151,7 +151,7 @@ int main_moba(int argc, char* argv[argc])
 		out_sens = true;
 
 
-	(use_gpu ? num_init_gpu_memopt : num_init)();
+	(use_gpu ? num_init_gpu : num_init)();
 	
 #ifdef USE_CUDA
 	cuda_use_global_memory();

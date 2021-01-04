@@ -158,7 +158,7 @@ int main_ecalib(int argc, char* argv[argc])
 
 	// FIXME: we should scale the data
 
-	(conf.usegpu ? num_init_gpu_memopt : num_init)();
+	(conf.usegpu ? num_init_gpu : num_init)();
 
         if ((conf.var < 0.) && (conf.weighting || (conf.crop < 0.)))
 		conf.var = estvar_calreg(conf.kdims, cal_dims, cal_data);

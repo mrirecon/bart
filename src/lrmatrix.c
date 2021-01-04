@@ -190,7 +190,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 	if (use_gpu)
 		error("GPU support not implemented yet!\n");
 
-	(use_gpu ? num_init_gpu_memopt : num_init)();
+	(use_gpu ? num_init_gpu : num_init)();
 
 	if (use_gpu)
 		debug_printf(DP_INFO, "GPU reconstruction\n");

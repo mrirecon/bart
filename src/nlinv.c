@@ -109,7 +109,7 @@ int main_nlinv(int argc, char* argv[argc])
 		out_sens = true;
 
 
-	(use_gpu ? num_init_gpu_memopt : num_init)();
+	(use_gpu ? num_init_gpu : num_init)();
 
 	long ksp_dims[DIMS];
 	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);

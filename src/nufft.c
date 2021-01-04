@@ -89,7 +89,7 @@ int main_nufft(int argc, char* argv[argc])
 	assert(3 == traj_dims[0]);
 
 
-	(use_gpu ? num_init_gpu_memopt : num_init)();
+	(use_gpu ? num_init_gpu : num_init)();
 
 	if (inverse || adjoint) {
 

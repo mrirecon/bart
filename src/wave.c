@@ -203,7 +203,7 @@ int main_wave(int argc, char* argv[argc])
 
 	debug_printf(DP_INFO, "Done.\n");
 
-	(use_gpu ? num_init_gpu_memopt : num_init)();
+	(use_gpu ? num_init_gpu : num_init)();
 
 	int wx = wave_dims[0];
 	int sx = maps_dims[0];

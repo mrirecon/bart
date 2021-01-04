@@ -129,7 +129,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 	if (4 == argc)
 		out_sens = true;
 
-	(use_gpu ? num_init_gpu_memopt : num_init)();
+	(use_gpu ? num_init_gpu : num_init)();
 
 	if ((NULL != psf) && (NULL != trajectory))	// FIXME: pattern makes sense with trajectory
 		error("Pass either trajectory (-t) or PSF (-p)!\n");
