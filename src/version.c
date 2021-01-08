@@ -30,39 +30,7 @@ static const char help_str[] =
 	"are local changes '-dirty' is added at the end.\n";
 
 
-static bool parse_version(const char* version, unsigned int v[5])
-{
-	int q, r, s;
 
-	int len = strlen(version);
-
-	v[3] = 0;	// patch level
-
-	// simple version string format, for when git describe fails
-	// This might happen if the .git directory exsits, but git is not installed on a system
-	int ret = sscanf(version, "v%u.%u.%u-dirty%n", &v[0], &v[1], &v[2], &s);
-
-	if ((3 == ret) && (len == s)) {
-		v[4] = 1; 	// dirty
-		return true;
-	}
-
-
-	ret = sscanf(version, "v%u.%u.%u%n-%u-g%*40[0-9a-f]%n-dirty%n", &v[0], &v[1], &v[2], &q, &v[3], &r, &s);
-
-	if (!(   ((3 == ret) && (len == q))
-	      || ((4 == ret) && (len == r))
-	      || ((4 == ret) && (len == s))))
-		return false;
-
-	for (int i = 0; i < 4; i++)
-		if (v[i] >= 1000000)
-			return false;
-
-	v[4] = (len == s) ? 1 : 0;	// dirty
-
-	return true;
-}
 			
 
 int main_version(int argc, char* argv[argc])
@@ -83,10 +51,10 @@ int main_version(int argc, char* argv[argc])
 		unsigned int va[5];
 		unsigned int vb[5];
 
-		if (!parse_version(bart_version, va))
+		if (!version_parse(va, bart_version))
 			assert(0);
 
-		if (!parse_version(version, vb))
+		if (!version_parse(vb, version))
 			error("Version number not recognized.\n");
 
 		if (0 < vb[4]) { // dirty
@@ -99,16 +67,8 @@ int main_version(int argc, char* argv[argc])
 			return 1;
 		}
 
-		for (int i = 0; i < 5; i++) { // lexicographical comparison
-
-			if (va[i] > vb[i])
-				return 0;
-
-			if (va[i] < vb[i])
-				return 1;
-		}
-
-		return 0;
+		// invert here, because unix interprets 0 as succesful exit
+		return !(version_compare(va, vb) >= 0);
 	}
 
 
