@@ -18,6 +18,8 @@ MAKEFLAGS += -R
 # use for parallel make
 AR=./ar_lock.sh
 
+# use for ppc64le HPC
+HPC?=0
 MKL?=0
 CUDA?=0
 ACML?=0
@@ -46,6 +48,10 @@ UNAME = $(shell uname -s)
 NNAME = $(shell uname -n)
 
 MYLINK=ln
+
+ifneq (,$(findstring ppc64le,$(shell uname -r)))
+	HPC = 1
+endif
 
 ifeq ($(UNAME),Darwin)
 	BUILDTYPE = MacOSX
@@ -343,7 +349,9 @@ endif
 
 
 # BLAS/LAPACK
-
+ifeq ($(HPC),1)
+BLAS_L :=  -lopenblas -lscalapack
+else
 ifeq ($(ACML),1)
 BLAS_H := -I$(ACML_BASE)/include
 BLAS_L := -L$(ACML_BASE)/lib -lgfortran -lacml_mp -Wl,-rpath $(ACML_BASE)/lib
@@ -358,6 +366,7 @@ BLAS_L := -L$(BLAS_BASE)/lib -llapack -lblas
 CPPFLAGS += -Isrc/lapacke
 else
 BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lblas
+endif
 endif
 endif
 endif
@@ -445,10 +454,14 @@ endif
 # change for static linking
 
 ifeq ($(SLINK),1)
+ifeq ($(HPC),1)
+BLAS_L += -lgfortran -lquadmath
+else
 # work around fortran problems with static linking
 LDFLAGS += -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -Wl,--allow-multiple-definition
 LIBS += -lmvec
 BLAS_L += -llapack -lblas -lgfortran -lquadmath
+endif
 endif
 
 
