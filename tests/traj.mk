@@ -24,6 +24,20 @@ tests/test-traj-custom: traj poly nrmse
 
 TESTS += tests/test-traj-custom
 
+
+tests/test-traj-rot: traj phantom estshift
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/traj -R0. -r -y360 -D t0.ra 				;\
+	$(TOOLDIR)/phantom -k -t t0.ra k0.ra 				;\
+	$(TOOLDIR)/traj -R30. -r -y360 -D t30.ra			;\
+	$(TOOLDIR)/phantom -k -t t30.ra k30.ra 				;\
+	$(TOOLDIR)/estshift 4 k0.ra k30.ra | grep "30.00000" 		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+TESTS += tests/test-traj-rot
+
+
 tests/test-traj-3D: traj ones scale slice rss nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/traj -3 -x128 -y128 -r traj.ra			;\
