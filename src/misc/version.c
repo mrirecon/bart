@@ -101,6 +101,6 @@ bool use_compat_to_version(const char* check_version)
 		assert(0);
 
 
-	return version_compare(check_compat_version, requested_compat_version);
+	return (version_compare(check_compat_version, requested_compat_version) >= 0);
 
 }
