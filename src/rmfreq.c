@@ -45,10 +45,12 @@ int main_rmfreq(int argc, char* argv[argc])
 	};
 
 	unsigned int n_harmonics = 5;
+	const char* mod_file = NULL;
 
 	const struct opt_s opts[] = {
 
 		OPT_UINT('N', &n_harmonics, "#", "Number of harmonics [Default: 5]"),
+		OPT_STRING('M', &mod_file, "file", "Contrast modulation file"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -70,6 +72,16 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	if (!md_check_equal_dims(DIMS, t_dims, k_dims, ~(READ_FLAG|PHS1_FLAG|COIL_FLAG)))
 		error("k-space and trajectory inconsistent!\n");
+
+	// Modulation file
+	long mod_dims[DIMS];
+	complex float* mod = NULL;
+	if (NULL != mod_file) {
+
+		mod = load_cfl(mod_file, DIMS, mod_dims);
+		assert(md_check_equal_dims(DIMS, k_dims, mod_dims, ~(COIL_FLAG)));
+		assert(mod_dims[COIL_DIM] == 1);
+	}
 
 
 	// Calculate angles from trajectory	
@@ -140,12 +152,24 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	complex float* k_singleton = md_alloc(DIMS, k_singleton_dims, CFL_SIZE);
 
-
 	long n_part_singleton_dims[DIMS];
 	md_select_dims(DIMS, ~SLICE_FLAG, n_part_singleton_dims, n_dims);
 
 	complex float* n_part_singleton = md_alloc(DIMS, n_part_singleton_dims, CFL_SIZE);
 
+	/* Account for contrast change */
+	if (mod_file != NULL) {
+		assert(md_check_equal_dims(DIMS, n_dims, mod_dims, ~(MD_BIT(LAST_DIM))));
+		
+		long n_strs[DIMS];
+		md_calc_strides(DIMS, n_strs, n_dims, CFL_SIZE);
+		long mod_strs[DIMS];
+		md_calc_strides(DIMS, mod_strs, mod_dims, CFL_SIZE);
+
+		md_zmul2(DIMS, n_dims, n_strs, n, n_strs, n, mod_strs, mod);
+
+		unmap_cfl(DIMS, mod_dims, CFL_SIZE);
+	}
 
 	long pinv_dims[DIMS];
 	md_transpose_dims(DIMS, TIME_DIM, LAST_DIM, pinv_dims, n_part_singleton_dims);
