@@ -81,8 +81,7 @@ int main_rmfreq(int argc, char* argv[argc])
 
 		mod = load_cfl(mod_file, DIMS, mod_dims);
 
-		assert(md_check_equal_dims(DIMS, k_dims, mod_dims, ~(COIL_FLAG)));
-		assert(1 == mod_dims[COIL_DIM]);
+		assert(md_check_equal_dims(DIMS, k_dims, mod_dims, ~0u));
 	}
 
 
@@ -160,9 +159,19 @@ int main_rmfreq(int argc, char* argv[argc])
 	complex float* n_part_singleton = md_alloc(DIMS, n_part_singleton_dims, CFL_SIZE);
 
 	/* Account for contrast change */
+
+	complex float* n_mod = NULL;
+
+	long n_mod_dims[DIMS];
+	md_copy_dims(DIMS, n_mod_dims, n_dims);
+	n_mod_dims[COIL_DIM] = mod_dims[COIL_DIM];
+
+	long n_mod_strs[DIMS];
+	md_calc_strides(DIMS, n_mod_strs, n_mod_dims, CFL_SIZE);
+
 	if (NULL != mod_file) {
 
-		assert(md_check_equal_dims(DIMS, n_dims, mod_dims, ~(MD_BIT(LAST_DIM))));
+		assert(md_check_equal_dims(DIMS, n_dims, mod_dims, ~(COIL_FLAG|(1u << LAST_DIM))));
 
 		long n_strs[DIMS];
 		md_calc_strides(DIMS, n_strs, n_dims, CFL_SIZE);
@@ -170,9 +179,11 @@ int main_rmfreq(int argc, char* argv[argc])
 		long mod_strs[DIMS];
 		md_calc_strides(DIMS, mod_strs, mod_dims, CFL_SIZE);
 
-		md_zmul2(DIMS, n_dims, n_strs, n, n_strs, n, mod_strs, mod);
+		n_mod = md_alloc(DIMS, n_mod_dims, CFL_SIZE);
 
-		unmap_cfl(DIMS, mod_dims, CFL_SIZE);
+		md_zmul2(DIMS, n_mod_dims, n_mod_strs, n_mod, n_strs, n, mod_strs, mod);
+
+		unmap_cfl(DIMS, mod_dims, mod);
 	}
 
 	long pinv_dims[DIMS];
@@ -203,7 +214,15 @@ int main_rmfreq(int argc, char* argv[argc])
 			pos1[SLICE_DIM] = p;
 			pos1[COIL_DIM] = 0;
 
-			md_copy_block(DIMS, pos1, n_part_singleton_dims, n_part_singleton, n_dims,  n, CFL_SIZE);
+			if (NULL != mod_file) {
+
+				pos1[COIL_DIM] = c;
+				md_copy_block(DIMS, pos1, n_part_singleton_dims, n_part_singleton, n_mod_dims, n_mod, CFL_SIZE);
+
+			} else {
+
+				md_copy_block(DIMS, pos1, n_part_singleton_dims, n_part_singleton, n_dims, n, CFL_SIZE);
+			}
 
 			pos1[COIL_DIM] = c;
 			md_copy_block(DIMS, pos1, k_singleton_dims, k_singleton, k_dims, k, CFL_SIZE);
@@ -239,6 +258,8 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, k_dims, k);
 	unmap_cfl(DIMS, k_dims, k_cor);
+
+	xfree(n_mod);
 
 	return 0;
 }
