@@ -82,13 +82,15 @@ void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float
 	irgnm_conf.cgiter = conf->inner_iter;
 	irgnm_conf.nlinv_legacy = true;
 
-	struct mdb_irgnm_l1_conf conf2 = { 
-		.c2 = &irgnm_conf, 
-		.opt_reg = conf->opt_reg, 
-		.step = conf->step, 
-		.lower_bound = conf->lower_bound, 
+	struct mdb_irgnm_l1_conf conf2 = {
+
+		.c2 = &irgnm_conf,
+		.opt_reg = conf->opt_reg,
+		.step = conf->step,
+		.lower_bound = conf->lower_bound,
 		.constrained_maps = 1,
-		.auto_norm_off = conf->auto_norm_off };
+		.auto_norm_off = conf->auto_norm_off
+	};
 
 	long irgnm_conf_dims[DIMS];
 	md_select_dims(DIMS, fft_flags|MAPS_FLAG|COEFF_FLAG|TIME2_FLAG, irgnm_conf_dims, imgs_dims);
