@@ -982,23 +982,23 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 
 	if (center) {
 
-		// FIXME: should only allocate flagged dims
-
-		complex float* fftmod_mat = md_alloc(N, dims, CFL_SIZE);
-		complex float* fftmodk_mat = md_alloc(N, dims, CFL_SIZE);
+		complex float* fftmod_mat = md_alloc(N, fft_dims, CFL_SIZE);
+		complex float* fftmodk_mat = md_alloc(N, fft_dims, CFL_SIZE);
 
 		// we need fftmodk only because we want to apply scaling only once
 
 		complex float one[1] = { 1. };
-		md_fill(N, dims, fftmod_mat, one, CFL_SIZE);
-		if (forward)
-			fftmod(N, dims, flags, fftmodk_mat, fftmod_mat);
-		else
-			ifftmod(N, dims, flags, fftmodk_mat, fftmod_mat);
-		fftscale(N, dims, flags, fftmod_mat, fftmodk_mat);
+		md_fill(N, fft_dims, fftmod_mat, one, CFL_SIZE);
 
-		struct linop_s* mod = linop_cdiag_create(N, dims, ~0u, fftmod_mat);
-		struct linop_s* modk = linop_cdiag_create(N, dims, ~0u, fftmodk_mat);
+		if (forward)
+			fftmod(N, fft_dims, flags, fftmodk_mat, fftmod_mat);
+		else
+			ifftmod(N, fft_dims, flags, fftmodk_mat, fftmod_mat);
+
+		fftscale(N, fft_dims, flags, fftmod_mat, fftmodk_mat);
+
+		struct linop_s* mod = linop_cdiag_create(N, dims, flags, fftmod_mat);
+		struct linop_s* modk = linop_cdiag_create(N, dims, flags, fftmodk_mat);
 
 		struct linop_s* tmp = linop_chain(mod, lop);
 
