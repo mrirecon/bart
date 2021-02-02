@@ -104,26 +104,20 @@ static void dfthresh(unsigned int D, const long dims[D], float lambda, complex f
 
 static void hard_thresh(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
-	long size = md_calc_size(DIMS, dims) * 2;
-
-	const float* inf = (const float*)in;
-	float* outf = (float*)out;
+	long size = md_calc_size(DIMS, dims);
 
 #pragma omp parallel for
 	for (long i = 0; i < size; i++)
-		outf[i] = inf[i] > lambda ? inf[i] : 0.;
+		out[i] = (cabsf(in[i]) > lambda) ? in[i] : 0.;
 }
 
 static void binary_thresh(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
-	long size = md_calc_size(DIMS, dims) * 2;
-
-	const float* inf = (const float*)in;
-	float* outf = (float*)out;
+	long size = md_calc_size(DIMS, dims);
 
 #pragma omp parallel for
 	for (long i = 0; i < size; i++)
-		outf[i] = inf[i] > lambda ? 1. : 0.;
+		out[i] = (cabsf(in[i]) > lambda) ? 1. : 0.;
 }
 
 
@@ -180,7 +174,7 @@ int main_threshold(int argc, char* argv[argc])
 		case HARD:
 			hard_thresh(N, dims, lambda, odata, idata);
 			break;
-		
+
 		case BINARY:
 			binary_thresh(N, dims, lambda, odata, idata);
 			break;
