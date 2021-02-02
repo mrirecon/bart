@@ -45,6 +45,7 @@ int main_signal(int argc, char* argv[argc])
 	float time_T1relax = -1.; // second
 	long Hbeats = -1;
 
+	float off_reson[3] = { 20., 20., 1 };
 	float T1[3] = { 0.5, 1.5, 1 };
 	float T2[3] = { 0.05, 0.15, 1 };
 	float Ms[3] = { 0.05, 1.0, 1 };
@@ -59,8 +60,9 @@ int main_signal(int argc, char* argv[argc])
 		OPTL_SET(0, "fat", &fat, "Simulate additional fat component."),
 		OPT_SET('I', &IR, "inversion recovery"),
 		OPT_SET('s', &IR_SS, "inversion recovery starting from steady state"),
-		OPT_FLVEC3('1', &T1, "min:max:N", "range of T1s"),
-		OPT_FLVEC3('2', &T2, "min:max:N", "range of T2s"),
+		OPT_FLVEC3('0', &off_reson, "min:max:N", "range of off-resonance frequency (Hz)"),
+		OPT_FLVEC3('1', &T1, "min:max:N", "range of T1s (s)"),
+		OPT_FLVEC3('2', &T2, "min:max:N", "range of T2s (s)"),
 		OPT_FLVEC3('3', &Ms, "min:max:N", "range of Mss"),
 		OPT_FLOAT('r', &TR, "TR", "repetition time"),
 		OPT_FLOAT('e', &TE, "TE", "echo time"),
@@ -99,11 +101,12 @@ int main_signal(int argc, char* argv[argc])
 
 	assert(!(parm.ir && parm.ir_ss));
 
-	// if (-1 != TE)
-	// 	parm.te = TE;
+	if (-1 != TE)
+		parm.te = TE;
 
 	dims[COEFF_DIM] = truncf(T1[2]);
 	dims[COEFF2_DIM] = (1 != Ms[2]) ? truncf(Ms[2]) : truncf(T2[2]);
+	dims[ITER_DIM] = truncf(off_reson[2]);
 
 	if ((dims[TE_DIM] < 1) || (dims[COEFF_DIM] < 1) || (dims[COEFF2_DIM] < 1))
 		error("invalid parameter range");
@@ -123,6 +126,8 @@ int main_signal(int argc, char* argv[argc])
 			parm.ms = Ms[0] + (Ms[1] - Ms[0]) / Ms[2] * (float)pos[COEFF2_DIM];
 		else
 			parm.t2 = T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM];
+
+		parm.off_reson = off_reson[0] + (off_reson[1] - off_reson[0]) / off_reson[2] * (float)pos[ITER_DIM];
 
 		complex float out[N];
 
