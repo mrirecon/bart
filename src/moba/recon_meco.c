@@ -294,8 +294,8 @@ void meco_recon(struct moba_conf* moba_conf,
 		struct noir_model_conf_s mconf = noir_model_conf_defaults;
 		mconf.noncart = moba_conf->noncartesian;
 		mconf.fft_flags = fft_flags;
-		mconf.a = 880;
-		mconf.b = 32.;
+		mconf.a = moba_conf->sobolev_a;
+		mconf.b = moba_conf->sobolev_b;
 		mconf.cnstcoil_flags = TE_FLAG;
 
 		struct meco_s nl = meco_create(Y_1s_dims, meco_1s_dims, maps_1s_dims, mask, TE, P_ptr, sel_model, real_pd, scale_fB0, use_gpu, &mconf);

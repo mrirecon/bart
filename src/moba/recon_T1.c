@@ -66,8 +66,8 @@ void T1_recon(const struct moba_conf* conf, const long dims[DIMS], complex float
 	mconf.rvc = false;
 	mconf.noncart = conf->noncartesian;
 	mconf.fft_flags = fft_flags;
-	mconf.a = 880.;
-	mconf.b = 32.;
+	mconf.a = conf->sobolev_a;
+	mconf.b = conf->sobolev_b;
 	mconf.cnstcoil_flags = TE_FLAG;
 
 	struct T1_s nl = T1_create(dims, mask, TI, pattern, &mconf, usegpu);
