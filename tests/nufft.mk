@@ -80,6 +80,35 @@ tests/test-nufft-adjoint: zeros noise reshape traj nufft fmac nrmse
 
 
 
+# test adjoint linearity
+tests/test-nufft-adj-lin: traj rss extract phantom fmac saxpy nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -y55 t.ra							;\
+	$(TOOLDIR)/rss 1 t.ra w.ra							;\
+	$(TOOLDIR)/extract 1  0  32 t.ra t0.ra						;\
+	$(TOOLDIR)/extract 1 32  64 t.ra t1.ra						;\
+	$(TOOLDIR)/extract 1 64  96 t.ra t2.ra						;\
+	$(TOOLDIR)/extract 1 96 128 t.ra t3.ra						;\
+	$(TOOLDIR)/phantom -t t.ra -k k.ra						;\
+	$(TOOLDIR)/fmac k.ra w.ra kw.ra							;\
+	$(TOOLDIR)/extract 1  0  32 kw.ra k0.ra						;\
+	$(TOOLDIR)/extract 1 32  64 kw.ra k1.ra						;\
+	$(TOOLDIR)/extract 1 64  96 kw.ra k2.ra						;\
+	$(TOOLDIR)/extract 1 96 128 kw.ra k3.ra						;\
+	$(TOOLDIR)/nufft -d128:128:1 -a t0.ra k0.ra x0.ra				;\
+	$(TOOLDIR)/nufft -d128:128:1 -a t1.ra k1.ra x1.ra				;\
+	$(TOOLDIR)/nufft -d128:128:1 -a t2.ra k2.ra x2.ra				;\
+	$(TOOLDIR)/nufft -d128:128:1 -a t3.ra k3.ra x3.ra				;\
+	$(TOOLDIR)/saxpy -- 1. x0.ra x1.ra xa.ra					;\
+	$(TOOLDIR)/saxpy -- 1. x2.ra x3.ra xb.ra					;\
+	$(TOOLDIR)/saxpy -- 1. xa.ra xb.ra x.ra						;\
+	$(TOOLDIR)/nufft -d128:128:1 -a t.ra kw.ra r.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 r.ra x.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
 # test inverse using definition
 
 tests/test-nufft-inverse: traj scale phantom nufft nrmse
@@ -186,9 +215,10 @@ tests/test-nufft-lowmem-inverse: traj scale phantom nufft nrmse
 
 
 TESTS += tests/test-nufft-forward tests/test-nufft-adjoint tests/test-nufft-inverse tests/test-nufft-toeplitz
-TESTS += tests/test-nufft-nudft tests/test-nudft-forward tests/test-nudft-adjoint
+TESTS += tests/test-nufft-nudft tests/test-nudft-forward tests/test-nudft-adjoint tests/test-nufft-adj-lin
 TESTS += tests/test-nufft-batch tests/test-nufft-over
 TESTS += tests/test-nufft-lowmem-adjoint tests/test-nufft-lowmem-inverse
 
 TESTS_GPU += tests/test-nufft-gpu
+
 
