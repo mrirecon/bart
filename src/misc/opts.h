@@ -72,6 +72,7 @@ typedef float opt_fvec3_t[3];
 // If the character in these macros is 0 (please note: NOT '0'), then it is only a long opt
 // Otherwise, it is both
 #define OPTL_SET(c, s, ptr, descr)			{ (c), (s), false, opt_set, TYPE_CHECK(bool*, (ptr)), "\t" descr }
+#define OPTL_CLEAR(c, s, ptr, descr)			{ (c), (s), false, opt_clear, TYPE_CHECK(bool*, (ptr)), "\t" descr }
 #define OPTL_ARG(c, s, _fun, T, ptr, argname, descr) { (c), (s), true, _fun, TYPE_CHECK(T*, (ptr)), " " argname "      \t" descr }
 #define OPTL_STRING(c, s, ptr, argname, descr)	OPTL_ARG(c, s, opt_string, const char*, ptr, argname, descr)
 #define OPTL_UINT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, opt_uint, unsigned int, ptr, argname, descr)
