@@ -36,6 +36,7 @@ bool version_parse(unsigned int v[5], const char* version)
 	int ret = sscanf(version, "v%u.%u.%u-dirty%n", &v[0], &v[1], &v[2], &s);
 
 	if ((3 == ret) && (len == s)) {
+
 		v[4] = 1; 	// dirty
 		return true;
 	}
@@ -74,7 +75,7 @@ int version_compare(const unsigned int va[5], const unsigned int vb[5])
 
 
 
-unsigned int requested_compat_version[5] = {UINT_MAX,0,0,0,0};
+unsigned int requested_compat_version[5] = { UINT_MAX, 0, 0, 0, 0 };
 
 bool use_compat_to_version(const char* check_version)
 {
@@ -82,6 +83,7 @@ bool use_compat_to_version(const char* check_version)
 	if (UINT_MAX == requested_compat_version[0]) {
 
 		char* str = getenv("BART_COMPAT_VERSION");
+
 		if (NULL == str)
 			return false;
 
@@ -102,5 +104,5 @@ bool use_compat_to_version(const char* check_version)
 
 
 	return (version_compare(check_compat_version, requested_compat_version) >= 0);
-
 }
+

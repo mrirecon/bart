@@ -152,28 +152,34 @@ void io_unlink_if_opened(const char* name)
 			enum file_types_e type = file_type(name);
 
 			switch (type) {
-				case FILE_TYPE_RA:
-				case FILE_TYPE_COO:
-					if (0 != unlink(name))
-						error("Failed to unlink file %s\n", name);
-					break;
 
-				case FILE_TYPE_CFL:
-				{
-					char name_bdy[1024];
-					if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
-						error("Failed to unlink cfl file %s\n", name);
+			case FILE_TYPE_RA:
+			case FILE_TYPE_COO:
 
-					if (0 != unlink(name_bdy))
-						error("Failed to unlink file %s\n", name);
+				if (0 != unlink(name))
+					error("Failed to unlink file %s\n", name);
 
-					char name_hdr[1024];
-					if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
-						error("Failed to unlink cfl file %s\n", name);
+				break;
 
-					if (0 != unlink(name_hdr))
-						error("Failed to unlink file %s\n", name);
-				}
+			case FILE_TYPE_CFL:
+
+				;
+
+				char name_bdy[1024];
+
+				if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
+					error("Failed to unlink cfl file %s\n", name);
+
+				if (0 != unlink(name_bdy))
+					error("Failed to unlink file %s\n", name);
+
+				char name_hdr[1024];
+
+				if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
+					error("Failed to unlink cfl file %s\n", name);
+
+				if (0 != unlink(name_hdr))
+					error("Failed to unlink file %s\n", name);
 			}
 
 			io_unregister(name);
@@ -183,7 +189,6 @@ void io_unlink_if_opened(const char* name)
 
 		iop = iop->prev;
 	}
-
 }
 
 
