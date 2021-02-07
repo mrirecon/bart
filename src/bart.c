@@ -1,11 +1,11 @@
 /* Copyright 2015. The Regents of the University of California.
- * Copyright 2015-2018. Martin Uecker.
+ * Copyright 2015-2021. Martin Uecker.
  + Copyright 2018. Damien Nguyen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2021 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdlib.h>
@@ -18,6 +18,7 @@
 
 #include "misc/io.h"
 #include "misc/misc.h"
+#include "misc/version.h"
 #include "misc/debug.h"
 #include "misc/cppmap.h"
 
@@ -135,11 +136,18 @@ int main_bart(int argc, char* argv[argc])
 		return main_bart(argc - 1, argv + 1);
 	}
 
+	unsigned int v[5];
+	version_parse(v, bart_version);
+
+	if (0 != v[4])
+		debug_printf(DP_WARN, "BART version is not reproducible.\n");
+
 	for (int i = 0; NULL != dispatch_table[i].name; i++)
 		if (0 == strcmp(bn, dispatch_table[i].name))
 			return dispatch_table[i].main_fun(argc, argv);
 
 	fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
+
 	return -1;
 }
 
