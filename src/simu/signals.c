@@ -254,19 +254,50 @@ const struct signal_model signal_multi_grad_echo_fat = {
 	.off_reson = 20, // Hz
 	.te = 1.6 * 1.E-3, // s
 	.b0 = 3., // Tesla
+	.fat_spec = FAT_SPEC_1,
 };
 
 
-complex float calc_fat_modulation(float b0, float TE)
+
+complex float calc_fat_modulation(float b0, float TE, enum fat_spec fs)
 {
-	/* 
-	 * Hamilton G, Yokoo T, Bydder M, Cruite I, Schroeder ME, Sirlin CB, Middleton MS. 
-	 * In vivo characterization of the liver fat 1H MR spectrum. 
-	 * NMR Biomed 24:784-790 (2011)
-	 */
 	enum { FATPEAKS = 6 };
-	float ppm[FATPEAKS] = { -3.80, -3.40, -2.60, -1.95, -0.50, +0.60 };
-	float amp[FATPEAKS] = { 0.086, 0.537, 0.165, 0.046, 0.052, 0.114 };
+
+	float ppm[FATPEAKS] = { 0. };
+	float amp[FATPEAKS] = { 0. };
+
+	switch (fs) {
+	
+	case FAT_SPEC_0:
+		/* 
+		 * ISMRM fat-water toolbox v1 (2012)
+		 * Hernando D.
+		 */
+		ppm[0] = -3.80; amp[0] = 0.087;
+		ppm[1] = -3.40; amp[1] = 0.693;
+		ppm[2] = -2.60; amp[2] = 0.128;
+		ppm[3] = -1.94; amp[3] = 0.004;
+		ppm[4] = -0.39; amp[4] = 0.039;
+		ppm[5] = +0.60; amp[5] = 0.048;
+
+		break;
+
+	case FAT_SPEC_1:
+		/* 
+		 * Hamilton G, Yokoo T, Bydder M, Cruite I, Schroeder ME, Sirlin CB, Middleton MS. 
+		 * In vivo characterization of the liver fat 1H MR spectrum. 
+		 * NMR Biomed 24:784-790 (2011)
+		 */
+		ppm[0] = -3.80; amp[0] = 0.086;
+		ppm[1] = -3.40; amp[1] = 0.537;
+		ppm[2] = -2.60; amp[2] = 0.165;
+		ppm[3] = -1.94; amp[3] = 0.046;
+		ppm[4] = -0.39; amp[4] = 0.052;
+		ppm[5] = +0.60; amp[5] = 0.114;
+
+		break;
+
+	}
 
 	complex float out = 0.;
 
@@ -288,7 +319,7 @@ static complex float signal_multi_grad_echo(const struct signal_model* data, int
 
 	float W = data->m0_water;
 	float F = data->m0_fat;
-	complex float cshift = calc_fat_modulation(data->b0, TE);
+	complex float cshift = calc_fat_modulation(data->b0, TE, data->fat_spec);
 
 	complex float z = -1. / data->t2 + 2.i * M_PI * data->off_reson;
 

@@ -43,6 +43,7 @@
 #include "moba/meco.h"
 #include "moba/recon_meco.h"
 
+#include "simu/signals.h"
 
 static const char usage_str[] = "<kspace> <TI/TE> <output> [<sensitivities>]";
 static const char help_str[] = "Model-based nonlinear inverse reconstruction\n";
@@ -109,6 +110,8 @@ int main_moba(int argc, char* argv[argc])
 	enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE } mode = { MDB_T1 };
 	enum edge_filter_t { EF1, EF2 } k_filter_type = EF1;
 
+	enum fat_spec fat_spec = FAT_SPEC_1;
+
 	opt_reg_init(&ropts);
 
 	const struct opt_s opts[] = {
@@ -146,6 +149,7 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_CLEAR(0, "no_alpha_min_exp_decay", &conf.alpha_min_exp_decay, "(Use hard minimum instead of exponentional decay towards alpha_min)"),
 		OPTL_FLOAT(0, "sobolev_a", &conf.sobolev_a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "sobolev_b", &conf.sobolev_b, "", "(b in 1 + a * \\Laplace^-b/2)"),
+		OPTL_SELECT(0, "fat_spec_0", enum fat_spec, &fat_spec, FAT_SPEC_0, "select fat spectrum from ISMRM fat-water tool"),
 	};
 
 	cmdline(&argc, argv, 2, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
@@ -444,7 +448,7 @@ int main_moba(int argc, char* argv[argc])
 			break;
 
 		case MDB_MGRE:
-			meco_recon(&conf, mgre_model, false, scale_fB0, true, out_origin_maps, img_dims, img, coil_dims, sens, init_dims, init, mask, TI, pat_dims, pattern, grid_dims, kspace_gpu);
+			meco_recon(&conf, mgre_model, false, fat_spec, scale_fB0, true, out_origin_maps, img_dims, img, coil_dims, sens, init_dims, init, mask, TI, pat_dims, pattern, grid_dims, kspace_gpu);
 			break;
 		};
 
@@ -464,7 +468,7 @@ int main_moba(int argc, char* argv[argc])
 		break;
 
 	case MDB_MGRE:
-		meco_recon(&conf, mgre_model, false, scale_fB0, true, out_origin_maps, img_dims, img, coil_dims, sens, init_dims, init, mask, TI, pat_dims, pattern, grid_dims, k_grid_data);
+		meco_recon(&conf, mgre_model, false, fat_spec, scale_fB0, true, out_origin_maps, img_dims, img, coil_dims, sens, init_dims, init, mask, TI, pat_dims, pattern, grid_dims, k_grid_data);
 		break;
 	};
 

@@ -41,6 +41,7 @@
 #include "nlops/nlop.h"
 
 #include "noir/model.h"
+#include "simu/signals.h"
 
 #include "wavelet/wavthresh.h"
 #include "lowrank/lrthresh.h"
@@ -139,7 +140,7 @@ static void rescale_maps(unsigned int model, double scaling_Y, const struct lino
 
 
 void meco_recon(struct moba_conf* moba_conf, 
-		enum meco_model sel_model, bool real_pd, 
+		enum meco_model sel_model, bool real_pd, enum fat_spec fat_spec, 
 		float* scale_fB0, bool warmstart, bool out_origin_maps, 
 		const long maps_dims[DIMS], complex float* maps, 
 		const long sens_dims[DIMS], complex float* sens, 
@@ -298,7 +299,7 @@ void meco_recon(struct moba_conf* moba_conf,
 		mconf.b = moba_conf->sobolev_b;
 		mconf.cnstcoil_flags = TE_FLAG;
 
-		struct meco_s nl = meco_create(Y_1s_dims, meco_1s_dims, maps_1s_dims, mask, TE, P_ptr, sel_model, real_pd, scale_fB0, use_gpu, &mconf);
+		struct meco_s nl = meco_create(Y_1s_dims, meco_1s_dims, maps_1s_dims, mask, TE, P_ptr, sel_model, real_pd, fat_spec, scale_fB0, use_gpu, &mconf);
 
 
 		struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;

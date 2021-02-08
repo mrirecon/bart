@@ -16,11 +16,12 @@
 #include "noir/recon.h"
 
 struct moba_conf;
+enum fat_spec;
 
 void init_meco_maps(const long maps_dims[DIMS], complex float* maps, unsigned int sel_model);
 
 void meco_recon(struct moba_conf* moba_conf, 
-		unsigned int sel_model, bool real_pd, 
+		unsigned int sel_model, bool real_pd, enum fat_spec fat_spec, 
 		float* scale_fB0, bool warmstart, bool out_origin_maps, 
 		const long maps_dims[DIMS], complex float* maps, 
 		const long sens_dims[DIMS], complex float* sens, 

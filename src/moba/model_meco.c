@@ -27,8 +27,9 @@
 
 #include "meco.h"
 
+#include "simu/signals.h"
 
-struct meco_s meco_create(const long dims[DIMS], const long y_dims[DIMS], const long x_dims[DIMS], const complex float* mask, const complex float* TE, const complex float* psf, enum meco_model sel_model, bool real_pd, float* scale_fB0, bool use_gpu, const struct noir_model_conf_s* conf)
+struct meco_s meco_create(const long dims[DIMS], const long y_dims[DIMS], const long x_dims[DIMS], const complex float* mask, const complex float* TE, const complex float* psf, enum meco_model sel_model, bool real_pd, enum fat_spec fat_spec, float* scale_fB0, bool use_gpu, const struct noir_model_conf_s* conf)
 {
 	struct meco_s ret;
 
@@ -42,7 +43,7 @@ struct meco_s meco_create(const long dims[DIMS], const long y_dims[DIMS], const 
 	} else {
 
 		// chain model
-		struct nlop_s* meco = nlop_meco_create(DIMS, y_dims, x_dims, TE, sel_model, real_pd, scale_fB0, use_gpu);
+		struct nlop_s* meco = nlop_meco_create(DIMS, y_dims, x_dims, TE, sel_model, real_pd, fat_spec, scale_fB0, use_gpu);
 		
 		struct noir_s nlinv = noir_create3(dims, mask, psf, conf);
 

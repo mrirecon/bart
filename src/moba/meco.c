@@ -175,7 +175,7 @@ long set_fB0_flag(enum meco_model sel_model)
 	return fB0_flag;
 }
 
-void meco_calc_fat_modu(int N, const long dims[N], const complex float TE[dims[TE_DIM]], complex float dst[dims[TE_DIM]])
+void meco_calc_fat_modu(int N, const long dims[N], const complex float TE[dims[TE_DIM]], complex float dst[dims[TE_DIM]], enum fat_spec fat_spec)
 {
 	md_clear(N, dims, dst, CFL_SIZE);
 
@@ -183,7 +183,7 @@ void meco_calc_fat_modu(int N, const long dims[N], const complex float TE[dims[T
 
 		assert(0. == cimagf(TE[eind]));
 
-		dst[eind] = calc_fat_modulation(3.0, crealf(TE[eind]) * 1.E-3);
+		dst[eind] = calc_fat_modulation(3.0, crealf(TE[eind]) * 1.E-3, fat_spec);
 	}
 }
 
@@ -921,7 +921,7 @@ static void meco_del(const nlop_data_t* _data)
 }
 
 
-struct nlop_s* nlop_meco_create(const int N, const long y_dims[N], const long x_dims[N], const complex float* TE, unsigned int sel_model, bool real_pd, float* scale_fB0, bool use_gpu)
+struct nlop_s* nlop_meco_create(const int N, const long y_dims[N], const long x_dims[N], const complex float* TE, unsigned int sel_model, bool real_pd, enum fat_spec fat_spec, float* scale_fB0, bool use_gpu)
 {
 #ifdef USE_CUDA
 	md_alloc_fun_t my_alloc = use_gpu ? md_alloc_gpu : md_alloc;
@@ -996,7 +996,7 @@ struct nlop_s* nlop_meco_create(const int N, const long y_dims[N], const long x_
 	// calculate cshift
 	complex float* cshift = md_alloc(N, TE_dims, CFL_SIZE);
 
-	meco_calc_fat_modu(N, TE_dims, TE, cshift);
+	meco_calc_fat_modu(N, TE_dims, TE, cshift, fat_spec);
 
 	data->cshift = my_alloc(N, TE_dims, CFL_SIZE);
 	md_copy(N, TE_dims, data->cshift, cshift, CFL_SIZE);
