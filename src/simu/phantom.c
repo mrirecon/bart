@@ -260,6 +260,10 @@ void calc_geo_phantom(const long dims[DIMS], complex float* out, bool kspace, in
 		md_zadd(DIMS, dims, out, round, angular);
 		break;
 
+	case 3:
+		sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, ARRAY_SIZE(phantom_geo5), phantom_geo5 }, krnX, kspace);
+		break;
+
 	default:
 		assert(0);
 	}

@@ -74,7 +74,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_INT('N', &N, "num", "Random tubes phantom and number"),
 		OPT_SELECT('B', enum ptype_e, &ptype, BART, "BART logo"),
 		OPT_INT('x', &xdim, "n", "dimensions in y and z"),
-		OPT_INT('g', &geo, "n=1,2", "select geometry for object phantom"),
+		OPT_INT('g', &geo, "n=1,2,3", "select geometry for object phantom"),
 		OPT_SET('3', &d3, "3D"),
 		OPT_SET('b', &basis, "basis functions for geometry"),
 		OPT_INT('r', &rinit, "seed", "random seed initialization"),
@@ -176,7 +176,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	case GEOM:
 
-		if ((geo < 1) || (geo > 2))
+		if ((geo < 1) || (geo > 3))
 			error("geometric phantom: invalid geometry");
 
 		if (d3)

@@ -89,6 +89,9 @@ const struct ellipsis_s phantom_geo4[1] = {
 	{	0.8,   { .1,   .7   }, { .6,     0  },	   0},
 };
 
+const struct ellipsis_s phantom_geo5[1] = {
+	{      1.,   { .5,   -.5   }, { 0.,     0.  },	   0  },
+};
 
 const struct ellipsis_bs phantom_tubes[21] = {
 	{{	1.,	{ .125,	.125	},	{ -0.13, -0.19 },	0.,	}, false },

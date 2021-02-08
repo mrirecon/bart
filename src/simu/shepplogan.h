@@ -47,6 +47,7 @@ extern const struct ellipsis_s phantom_geo1[3];
 extern const struct ellipsis_s phantom_geo2[2];
 extern const struct ellipsis_s phantom_geo3[7];
 extern const struct ellipsis_s phantom_geo4[1];
+extern const struct ellipsis_s phantom_geo5[1];
 
 extern const struct ellipsis_bs phantom_tubes[21];
 
