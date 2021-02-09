@@ -175,7 +175,7 @@ TNUM=fft fftmod fftshift noise bench threshold conv rss filter mandelbrot wavele
 TRECO=pics pocsense sqpics itsense nlinv moba nufft rof tgv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin
 TMRI=homodyne poisson twixread fakeksp looklocker upat
-TSIM=phantom traj signal
+TSIM=phantom traj signal epg
 TIO=toimg
 
 
@@ -220,6 +220,7 @@ MODULES_ssa = -lcalib
 MODULES_bin = -lcalib
 MODULES_signal = -lsimu
 MODULES_pol2mask = -lgeom
+MODULES_epg = -lsimu
 
 
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
@@ -523,10 +524,11 @@ UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2
 UTARGETS_GPU += test_cudafft test_cuda_flpmath
 
 # lib simu
-UTARGETS += test_ode_bloch test_biot_savart test_signals
+UTARGETS += test_ode_bloch test_biot_savart test_signals test_epg
 MODULES_test_ode_bloch += -lsimu
 MODULES_test_biot_savart += -lsimu
 MODULES_test_signals += -lsimu
+MODULES_test_epg += -lsimu
 
 # lib geom
 UTARGETS += test_geom
