@@ -30,7 +30,7 @@ static const char help_str[] = "Simulate MR pulse sequence based on Extended Pha
 int main_epg(int argc, char* argv[argc])
 {
 
-	enum seq_type {CPMG, FMSSFP, HYPER, FLASH, SPINECHO};
+	enum seq_type {CPMG, FMSSFP, HYPER, FLASH, SPINECHO, BSSFP};
 	enum seq_type seq = CPMG;
 
 	bool save_states = false;
@@ -55,6 +55,7 @@ int main_epg(int argc, char* argv[argc])
 		OPT_SELECT('H', enum seq_type, &seq, HYPER, "Hyperecho"),
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
 		OPT_SELECT('S', enum seq_type, &seq, SPINECHO, "Spinecho"),
+		OPT_SELECT('B', enum seq_type, &seq, BSSFP, "bSSFP"),
 		OPT_FLOAT('1', &T1, "T1", "T1"),
 		OPT_FLOAT('2', &T2, "T2", "T2"),
 		OPT_FLOAT('r', &TR, "TR", "repetition time"),
@@ -80,7 +81,7 @@ int main_epg(int argc, char* argv[argc])
 		save_statesder = true;
 
 	long M;	
-	if (FMSSFP == seq)
+	if ((FMSSFP == seq) | (BSSFP == seq))
 		M = 1;
 	else if (FLASH == seq)
 		M = N;
@@ -154,6 +155,12 @@ int main_epg(int argc, char* argv[argc])
 						 hahnspinecho_epg(N, M, out_signal, 
 								   save_states ? out_states : NULL,
 								   FA, TE, T1, T2, B1, offres); break;
+		
+		case BSSFP: bssfp_epg_der(N, M, out_signal,
+								   save_states ? out_states : NULL,
+								   save_sigder ? out_sigder : NULL,
+								   save_statesder ? out_statesder : NULL,
+								   FA, TR, T1, T2, B1, offres); break;
 
 		default: error("sequence type not supported yet");
 	}

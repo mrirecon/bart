@@ -518,7 +518,7 @@ void flash_epg_der(int N, int M, complex float signal[N], complex float states[3
 	create_relax_matrix_der(ee, dee, T1, T2, offres, TR);
 	
 	// initialize Z magnetization
-	state_current[2][0] = 1.0;
+	state_current[2][0] = -1.0;
 
     // initialize phase
     float rf_phase = 0.0;
@@ -607,3 +607,58 @@ void hahnspinecho_epg(int N, int M, complex float signal[N], complex float state
 
 	// ------------ end of sequence -------------
 }
+
+void bssfp_epg_der(int N, int M, complex float signal[N], complex float states[3][M][N], complex float dsignal[4][N], complex float dstates[4][3][M][N], float FA, float TR, float T1, float T2, float B1, float offres)
+{
+
+	complex float state_current[3][M];
+	memset(state_current, 0.0, CFL_SIZE*3*M);
+
+	complex float dstate_current[4][3][M];
+	memset(dstate_current, 0.0, CFL_SIZE*4*3*M);
+
+	complex float ee[3][3] = {{0.0}};
+	complex float dee[4][3][3] = {{{0.0}}};
+	complex float T_exc[3][3] = {{0.0}};
+	complex float dT_exc[4][3][3] = {{{0.0}}};
+	complex float Tah_exc[3][3] = {{0.0}};
+	complex float dTah_exc[4][3][3] = {{{0.0}}};
+
+    // initialize phase
+    float rf_phase = 0.0;
+
+	create_rf_pulse_matrix_der(Tah_exc, dTah_exc, B1 * FA / 2.0 * M_PI / 180.0, rf_phase);
+	create_relax_matrix_der(ee, dee, T1, T2, offres, TR / 2.0);
+	
+	// initialize Z magnetization
+	state_current[2][0] = -1.0;
+
+	//apply alpha/2 excitation pulse
+	epg_pulse_der(Tah_exc, M, state_current, dTah_exc, dstate_current);
+
+	//apply relaxation for half of TR
+	epg_relax_der(ee, M, state_current, dee, dstate_current);
+
+	// loop over excitations
+	for (int i = 0; i<N; i++) {
+	
+		rf_phase += M_PI;
+		rf_phase = fmodf(rf_phase, 2.0 * M_PI);
+		
+		// change phase of rf pulse
+		create_rf_pulse_matrix_der(T_exc, dT_exc, B1 * FA * M_PI / 180.0, rf_phase);
+
+		//apply excitation pulse
+		epg_pulse_der(T_exc, M, state_current, dT_exc, dstate_current);
+
+		//apply relaxation for first half of TR
+		epg_relax_der(ee, M, state_current, dee, dstate_current);
+		
+		//save signal after prep cycle
+		epg_adc_der(i, N, M, signal, states, dsignal, dstates, state_current, dstate_current, M_PI / 2 - rf_phase);
+
+		//apply relaxation for second half of TR
+		epg_relax_der(ee, M, state_current, dee, dstate_current);
+	}
+}
+

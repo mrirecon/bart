@@ -68,3 +68,5 @@ extern void flash_epg_der(int N, int M, complex float signal[N], complex float s
 
 extern void hahnspinecho_epg(int N, int M, complex float signal[N], complex float states[3][M][N],
         float FA, float TE, float T1, float T2, float B1, float offres);
+
+extern void bssfp_epg_der(int N, int M, complex float signal[N], complex float states[3][M][N], complex float dsignal[4][N], complex float dstates[4][3][M][N], float FA, float TR, float T1, float T2, float B1, float offres);
