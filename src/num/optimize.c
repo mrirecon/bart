@@ -161,6 +161,13 @@ unsigned int remove_empty_dims(unsigned int D, unsigned int N, long dims[N], lon
 		}
 	}
 
+	for (unsigned int i = o; i < N; i++) {
+
+		for (unsigned int j = 0; j < D; j++)
+			(*ostrs[j])[i] = 0;
+		dims[i] = 1;
+	}
+
 	return o;
 }
 
@@ -407,6 +414,8 @@ unsigned int optimize_dims_gpu(unsigned int D, unsigned int N, long dims[N], lon
 	reorder_long(ND, ord, dims);
 #endif
 
+	ND = simplify_dims(D, N, dims, strs);
+	
 	return ND;
 }
 
