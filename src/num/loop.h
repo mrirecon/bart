@@ -7,8 +7,9 @@
 #include <complex.h>
 
 #include "misc/cppwrap.h"
+#include "misc/nested.h"
 
-typedef complex float (*sample_fun_t)(const long pos[]);
+typedef complex float CLOSURE_TYPE(sample_fun_t)(const long pos[]);
 
 
 

@@ -6,7 +6,7 @@
 #else
 #define NESTED(RET, NAME, ARGS) \
 	RET NAME ARGS
-#define CLOSURE_TYPE(x) x
+#define CLOSURE_TYPE(x) (*x)
 #define __block
 #endif
 

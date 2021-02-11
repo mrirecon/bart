@@ -60,6 +60,8 @@ int main_pol2mask(int argc, char* argv[argc])
 	long pstrs[DIMS];
 	md_calc_strides(DIMS, pstrs, pdims, CFL_SIZE);
 
+	long *pstrs_p = pstrs; // clang workaround
+
 	md_copy_dims(DIMS, odims, pdims);
 	odims[0] = X;
 	odims[1] = Y;
@@ -82,14 +84,14 @@ int main_pol2mask(int argc, char* argv[argc])
 
 				pos2[1] = j;
 
-				pg[j][0] = crealf(MD_ACCESS(DIMS, pstrs, (pos2[0] = 0, pos2), pol));
-				pg[j][1] = crealf(MD_ACCESS(DIMS, pstrs, (pos2[0] = 1, pos2), pol));
+				pg[j][0] = crealf(MD_ACCESS(DIMS, pstrs_p, (pos2[0] = 0, pos2), pol));
+				pg[j][1] = crealf(MD_ACCESS(DIMS, pstrs_p, (pos2[0] = 1, pos2), pol));
 			}
 
 			sum += polygon_winding_number(N, pg, (double[2]){ pos[0], pos[1] });
 		}
 
-		return sum;
+		return (complex float)sum;	// cast required for clang
 	};
 
 	md_parallel_zsample(DIMS, odims, out, sample);

@@ -21,7 +21,7 @@ struct lsqr_conf {
 	float lambda;
 	_Bool it_gpu;
 	_Bool warmstart;
-	itop_continuation_t* icont;
+	itop_continuation_t icont;
 };
 
 struct iter_monitor_s;

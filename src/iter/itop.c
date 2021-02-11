@@ -32,7 +32,7 @@ struct itop_s {
 	italgo_fun2_t italgo;
 	iter_conf* iconf;
 	struct iter_monitor_s* monitor;
-	itop_continuation_t* icont;
+	itop_continuation_t icont;
 
 	const struct operator_s* op;
 	unsigned int num_funs;
