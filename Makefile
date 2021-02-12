@@ -19,7 +19,6 @@ MAKEFLAGS += -R
 AR=./ar_lock.sh
 
 # use for ppc64le HPC
-HPC?=0
 MKL?=0
 CUDA?=0
 ACML?=0
@@ -27,6 +26,7 @@ OMP?=1
 SLINK?=0
 DEBUG?=0
 FFTWTHREADS?=1
+SCALAPACK?=0
 ISMRMRD?=0
 NOEXEC_STACK?=0
 PARALLEL?=0
@@ -49,9 +49,6 @@ NNAME = $(shell uname -n)
 
 MYLINK=ln
 
-ifneq (,$(findstring ppc64le,$(shell uname -r)))
-	HPC = 1
-endif
 
 ifeq ($(UNAME),Darwin)
 	BUILDTYPE = MacOSX
@@ -349,7 +346,7 @@ endif
 
 
 # BLAS/LAPACK
-ifeq ($(HPC),1)
+ifeq ($(SCALAPACK),1)
 BLAS_L :=  -lopenblas -lscalapack
 else
 ifeq ($(ACML),1)
@@ -454,7 +451,7 @@ endif
 # change for static linking
 
 ifeq ($(SLINK),1)
-ifeq ($(HPC),1)
+ifeq ($(SCALAPACK),1)
 BLAS_L += -lgfortran -lquadmath
 else
 # work around fortran problems with static linking
