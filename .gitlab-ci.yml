@@ -1,9 +1,8 @@
 
-image: debian:stable
 
 before_script:
   - apt-get update -qq && apt-get install -y -qq
-  - apt-get install -y -qq make
+  - apt-get install -y -qq make git
   - apt-get install -y -qq libfftw3-dev libblas-dev libpng-dev
   - apt-get install -y -qq gcc liblapacke-dev
 
@@ -13,18 +12,164 @@ stages:
   - test2
 
 Build:
+  image: debian:stable
   stage: build
   script:
     - make
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+    expire_in: 45 minutes
+
+
+Build_Clang:
+  image: debian:stable
+  stage: build
+  script:
+    - apt-get install -y clang-6.0 libblocksruntime-dev
+    - CC=clang-6.0 OMP=0 make
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+    expire_in: 45 minutes
+
+
+Build_Static:
+  image: debian:stable
+  stage: build
+  script:
+    - apt-get install -y libgfortran-8-dev
+    - SLINK=1 make
+  artifacts:
+    paths:
+      - bart
+    expire_in: 45 minutes
+  allow_failure: true
+ 
+
+Build_UBSan:
+  image: debian:testing
+  stage: build
+  script:
+    - CFLAGS="-O3 -ffast-math -fsanitize=undefined" make
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+    expire_in: 45 minutes
+
+
+Build_GPU:
+  image: debian:stable
+  stage: build
+  script:
+    - echo -n "deb http://ftp.de.debian.org/debian/ stable non-free contrib" >> /etc/apt/sources.list
+    - apt-get update -qq && apt-get install -y -qq
+    - apt-get install -y nvidia-cuda-toolkit
+    - CUDA=1 make
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+    expire_in: 45 minutes
+
 
 Unit_Test:
+  image: debian:stable
   stage: test1
   script:
-    - make utest
+    - AUTOCLEAN=0 make utest
+  needs: [Build]
+  dependencies:
+     - Build
+
+ 
+Unit_Test_Clang:
+  image: debian:stable
+  stage: test1
+  script:
+    - apt-get install -y clang-6.0 libblocksruntime-dev
+    - AUTOCLEAN=0 CC=clang-6.0 OMP=0 make utest
+  needs: [Build_Clang]
+  dependencies:
+     - Build_Clang
+
+  
+Unit_Test_Valgrind:
+  image: debian:stable
+  stage: test1
+  script:
+    - apt-get install -y valgrind
+    - AUTOCLEAN=0 UTESTLEAK=1 make utest
+  needs: [Build]
+  dependencies:
+     - Build
+
+
+Unit_Test_UBSan:
+  image: debian:testing
+  stage: test1
+  script:
+    - AUTOCLEAN=0 CFLAGS="-O3 -ffast-math -fsanitize=undefined" make utest
+  needs: [Build_UBSan]
+  dependencies:
+     - Build_UBSan
+
+  
+.Unit_Test_GPU:
+  image: debian:stable
+  stage: test1
+  script:
+    - AUTOCLEAN=0 make utest_gpu
+  needs: [Build_GPU]
+  dependencies:
+    - Build_GPU
+
 
 Integration_Test:
+  image: debian:stable
   stage: test2
   script:
-    - make test
+    - AUTOCLEAN=0 make test
+  needs: [Build]
+  dependencies:
+    - Build
+
+
+Integration_Test_Python:
+  image: debian:stable
+  stage: test2
+  script:
+    - apt-get install -y python python-numpy
+    - AUTOCLEAN=0 make pythontest
+  needs: [Build]
+  dependencies:
+    - Build
+  allow_failure: true
+
+
+.Integration_Test_GPU:
+  image: debian:stable
+  stage: test2
+  script:
+    - AUTOCLEAN=0 make gputest
+  needs: [Build_GPU]
+  dependencies:
+    - Build_GPU
+
+
+Integration_Test_Clang:
+  image: debian:stable
+  stage: test2
+  script:
+    - apt-get install -y clang-6.0 libblocksruntime-dev
+    - AUTOCLEAN=0 CC=clang-6.0 OMP=0 make test
+  needs: [Build_Clang]
+  dependencies:
+    - Build_Clang
+
+
 
 
