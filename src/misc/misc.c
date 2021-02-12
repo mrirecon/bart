@@ -37,7 +37,7 @@
 
 
 #ifndef isnanf
-#define isnanf(X) isnan(X)  
+#define isnanf(X) isnan(X)
 #endif
 
 
@@ -229,7 +229,7 @@ int parse_cfl(complex float res[1], const char* str)
 	char* tail;
 	float re = strtof(str, &tail);
 	float im = 0.;
-	
+
 	if (str == tail)
 		return -1;
 
@@ -297,7 +297,7 @@ void quicksort(int N, int ord[N], quicksort_cmp_t cmp)
 
 
 /**
- * Quickselect adapted from §8.5 in Numerical Recipes in C, 
+ * Quickselect adapted from §8.5 in Numerical Recipes in C,
  * The Art of Scientific Computing
  * Second Edition, William H. Press, 1992.
  * Sort descending of an array of floats, stop at k largest element.
@@ -308,13 +308,13 @@ void quicksort(int N, int ord[N], quicksort_cmp_t cmp)
  *
  * @returns the k-th largest float in the array
  *
- * @note In-place sort. The input array contents are not preserved in their original order. 
+ * @note In-place sort. The input array contents are not preserved in their original order.
  */
 float quickselect(float *arr, int n, int k)
 {
 	long i, ir, j, l, mid;
 	float a;
-   
+
 	l = 0;
 	ir = n - 1;
 
@@ -379,7 +379,7 @@ float quickselect_complex(complex float* arr, int n, int k)
 	long i, ir, j, l, mid;
 	float a;
 	complex float ca;
-   
+
 	l = 0;
 	ir = n - 1;
 
@@ -617,4 +617,38 @@ long io_calc_size(int D, const long dims[D?:1], size_t size)
 	return a * b;
 }
 
+const char* ptr_vprintf(const char* fmt, va_list ap)
+{
+	va_list ap1;
+	va_copy(ap1, ap);
+	size_t len = vsnprintf(NULL, 0, fmt, ap1);
+	va_end(ap1);
+	PTR_ALLOC(char[len + 1], result);
+	vsprintf((*result), fmt, ap);
+	return *PTR_PASS(result);
+}
 
+const char* ptr_printf(const char* fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	auto result = ptr_vprintf(fmt, ap);
+	va_end(ap);
+	return result;
+}
+
+const char* ptr_print_dims(int D, const long dims[D])
+{
+	const char* result = ptr_printf("[");
+
+	for (int i = 0; i < D; i++) {
+
+		const char* tmp = ptr_printf("%s%3ld ", result, dims[i]);
+		xfree(result);
+		result = tmp;
+	}
+
+	const char* tmp = ptr_printf("%s]", result);
+	xfree(result);
+	return tmp;
+}
