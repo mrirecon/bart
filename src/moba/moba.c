@@ -13,6 +13,7 @@ struct moba_conf moba_defaults = {
 	.opt_reg = 1.,
 	.alpha = 1.,
 	.alpha_min = 0.,
+	.alpha_min_exp_decay = true,
 	.redu = 2.,
 	.step = 0.9,
 	.lower_bound = 0.,

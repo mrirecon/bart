@@ -304,7 +304,10 @@ void meco_recon(struct moba_conf* moba_conf,
 		struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 		irgnm_conf.iter = moba_conf->iter;
 		irgnm_conf.alpha = moba_conf->alpha;
-		irgnm_conf.alpha_min = moba_conf->alpha_min;
+		if (moba_conf->alpha_min_exp_decay)
+			irgnm_conf.alpha_min = moba_conf->alpha_min;
+		else
+			irgnm_conf.alpha_min0 = moba_conf->alpha_min;
 		irgnm_conf.redu = moba_conf->redu;
 		irgnm_conf.cgiter = moba_conf->inner_iter;
 		irgnm_conf.cgtol = 0.01;
