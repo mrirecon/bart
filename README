@@ -322,7 +322,7 @@ readable file that describes the dimensions of the data. The raw data
 file is a binary file containing a single contiguous block of array
 data of dimensions described in the header stored in column-major order
 (first index is sequential). The raw data file is complex float 
-(32 bit real + 32 bit imaginary, IEEE 747 binary32 little-endian).
+(32 bit real + 32 bit imaginary, IEEE 754 binary32 little-endian).
 
 Convenience methods to read and write our data files using Matlab may
 be found in the matlab/ directory (readcfl.m and writecfl.m). Similar
