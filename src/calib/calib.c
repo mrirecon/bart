@@ -462,7 +462,6 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 
 void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex float* out_data, complex float* emaps, const long in_dims[4], complex float* in_data, const long msk_dims[3], const bool* msk)
 {
-
 	long xx = out_dims[0];
 	long yy = out_dims[1];
 	long zz = out_dims[2];
