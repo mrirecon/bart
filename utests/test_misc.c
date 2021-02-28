@@ -11,17 +11,18 @@
 #include "utest.h"
 
 
-static int cmp(const void* _data, int a, int b)
-{
-	(void)_data;
-	return a - b;
-}
+
 
 static bool test_quicksort(void)
 {
 	int x[5] = { 0, 3, 2, 1, 4 };
 
-	quicksort(5, x, NULL, cmp);
+	NESTED(int, cmp, (int a, int b))
+	{
+		return a - b;
+	};
+
+	quicksort(5, x, cmp);
 
 	for (int i = 0; i < 5; i++)
 		if (i != x[i])
@@ -33,11 +34,7 @@ static bool test_quicksort(void)
 UT_REGISTER_TEST(test_quicksort);
 
 
-static int cmp2(const void* _data, int a, int b)
-{
-	const int* data = _data;
-	return data[a] - data[b];
-}
+
 
 static bool test_quicksort2(void)
 {
@@ -45,7 +42,12 @@ static bool test_quicksort2(void)
 	int d[6] = { 0, 4, 2, 2, 4, 2 };
 	int g[6] = { 0, 2, 2, 2, 4, 4 };
 
-	quicksort(6, x, d, cmp2);
+	NESTED(int, cmp2, (int a, int b))
+	{
+		return d[a] - d[b];
+	};
+
+	quicksort(6, x, cmp2);
 
 	for (int i = 0; i < 6; i++)
 		if (g[i] != d[x[i]])

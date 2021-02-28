@@ -103,16 +103,7 @@ static float angle_dist(float a, float b)
 	return fabsf(fmodf(fabsf(a - b), M_PI) - (float)(M_PI / 2.));
 }
 
-static int dist_compare(const void* _data, int a, int b)
-{
-	const float* dist = _data;
-	float d = dist[a] - dist[b];
 
-	if (d > 0.)
-		return 1;
-
-	return (0. == d) ? 0 : -1;
-}
 
 static void find_nearest_orthogonal_spokes(int N, int spokes[N], float ref_angle, const float angles[N])
 {
@@ -124,7 +115,17 @@ static void find_nearest_orthogonal_spokes(int N, int spokes[N], float ref_angle
 		dist[i] = angle_dist(ref_angle, angles[i]);
 	}
 
-	quicksort(N, spokes, dist, dist_compare);
+	NESTED(int, dist_compare, (int a, int b))
+	{
+		float d = dist[a] - dist[b];
+
+		if (d > 0.)
+			return 1;
+
+		return (0. == d) ? 0 : -1;
+	};
+
+	quicksort(N, spokes, dist_compare);
 }
 
 

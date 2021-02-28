@@ -254,7 +254,7 @@ ok:
 
 
 
-void quicksort(int N, int ord[N], const void* data, quicksort_cmp_t cmp)
+void quicksort(int N, int ord[N], quicksort_cmp_t cmp)
 {
 	if (N < 2)
 		return;
@@ -265,13 +265,13 @@ void quicksort(int N, int ord[N], const void* data, quicksort_cmp_t cmp)
 
 	while (l <= h) {
 
-		if (cmp(data, ord[l], pivot) < 0) {
+		if (cmp(ord[l], pivot) < 0) {
 
 			l++;
 			continue;
 		}
 
-		if (cmp(data, ord[h], pivot) > 0) {
+		if (cmp(ord[h], pivot) > 0) {
 
 			h--;
 			continue;
@@ -286,10 +286,10 @@ void quicksort(int N, int ord[N], const void* data, quicksort_cmp_t cmp)
 	}
 
 	if (h + 1 > 0)
-		quicksort(h + 1, ord, data, cmp);
+		quicksort(h + 1, ord, cmp);
 
 	if (N > l)
-		quicksort(N - l, ord + l, data, cmp);
+		quicksort(N - l, ord + l, cmp);
 }
 
 

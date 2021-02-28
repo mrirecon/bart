@@ -165,25 +165,26 @@ unsigned int remove_empty_dims(unsigned int D, unsigned int N, long dims[N], lon
 }
 
 
-static int cmp_strides(const void* _data, int a, int b)
-{
-	const long* strs = _data;
-	long d = strs[a] - strs[b];
 
-	if (d > 0)
-		return 1;
-	if (d < 0)
-		return -1;
-
-	return 0;
-}
 
 static void compute_permutation(unsigned int N, int ord[N], const long strs[N])
 {
 	for (unsigned int i = 0; i < N; i++)
 		ord[i] = i;
 
-	quicksort(N, ord, (const void*)strs, cmp_strides);
+	NESTED(int, cmp_strides, (int a, int b))
+	{
+		long d = strs[a] - strs[b];
+
+		if (d > 0)
+			return 1;
+		if (d < 0)
+			return -1;
+
+		return 0;
+	};
+
+	quicksort(N, ord, cmp_strides);
 }
 
 static void reorder_long(int N, int ord[N], long x[N])

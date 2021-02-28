@@ -83,9 +83,9 @@ extern void debug_print_dims_trace(const char* func_name,
 				   int D,
 				   const long dims[__VLA(D)]);
 
-typedef int (*quicksort_cmp_t)(const void* data, int a, int b);
+typedef int CLOSURE_TYPE(quicksort_cmp_t)(int a, int b);
 
-extern void quicksort(int N, int ord[__VLA(N)], const void* data, quicksort_cmp_t cmp);
+extern void quicksort(int N, int ord[__VLA(N)], quicksort_cmp_t cmp);
 
 extern float quickselect(float *arr, unsigned int n, unsigned int k);
 
