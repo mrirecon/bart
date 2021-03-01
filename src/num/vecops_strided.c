@@ -1007,8 +1007,10 @@ bool simple_mul(unsigned int N, const long dims[N], const long ostrs[N], float* 
 bool simple_zadd(unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
+#ifdef NON_DETERMINISTIC
 		{ check_reduce_outer,	reduce_zadd_outer_gpu, true, false, false, true },
 		{ check_reduce_inner,	reduce_zadd_inner_gpu, true, false, false, true },
+#endif
 		{ check_reduce_outer,	reduce_zadd_gemv, true, true, false, true },
 		{ check_reduce_inner,	reduce_zadd_gemv, true, true, false, true },
 	};
@@ -1020,8 +1022,10 @@ bool simple_zadd(unsigned int N, const long dims[N], const long ostrs[N], comple
 bool simple_add(unsigned int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
 {
 	struct simple_3op_check strided_calls[] = {
+#ifdef NON_DETERMINISTIC
 		{ check_reduce_outer,	reduce_add_outer_gpu, true, false, false, true },
 		{ check_reduce_inner,	reduce_add_inner_gpu, true, false, false, true },
+#endif
 		{ check_reduce_outer,	reduce_add_gemv, true, true, false, true },
 		{ check_reduce_inner,	reduce_add_gemv, true, true, false, true },
 	};

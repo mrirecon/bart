@@ -18,6 +18,9 @@ MAKEFLAGS += -R
 # use for parallel make
 AR=./ar_lock.sh
 
+# some operations might still be non deterministic 
+NON_DETERMINISTIC?=0
+
 # use for ppc64le HPC
 MKL?=0
 CUDA?=0
@@ -389,6 +392,11 @@ CPPFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex do
 CFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex double"
 endif
 
+
+ifeq ($(NON_DETERMINISTIC),1)
+CPPFLAGS += -DNON_DETERMINISTIC
+CFLAGS += -DNON_DETERMINISTIC
+endif
 
 
 CPPFLAGS += $(FFTW_H) $(BLAS_H)
