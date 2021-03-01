@@ -21,7 +21,11 @@ AR=./ar_lock.sh
 # some operations might still be non deterministic
 NON_DETERMINISTIC?=0
 
+# allow blas calls within omp regions (fails on Debian 9, openblas)
+BLAS_THREADSAFE?=0
+
 # use for ppc64le HPC
+OPENBLAS?=0
 MKL?=0
 CUDA?=0
 ACML?=0
@@ -366,6 +370,8 @@ endif
 # BLAS/LAPACK
 ifeq ($(SCALAPACK),1)
 BLAS_L :=  -lopenblas -lscalapack
+CPPFLAGS += -DUSE_OPENBLAS
+CFLAGS += -DUSE_OPENBLAS
 else
 ifeq ($(ACML),1)
 BLAS_H := -I$(ACML_BASE)/include
@@ -380,7 +386,13 @@ ifeq ($(NOLAPACKE),1)
 BLAS_L := -L$(BLAS_BASE)/lib -llapack -lblas
 CPPFLAGS += -Isrc/lapacke
 else
+ifeq ($(OPENBLAS), 1)
+BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lopenblas
+CPPFLAGS += -DUSE_OPENBLAS
+CFLAGS += -DUSE_OPENBLAS
+else
 BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lblas
+endif
 endif
 endif
 endif
@@ -393,6 +405,10 @@ CPPFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex do
 CFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex double"
 endif
 
+ifeq ($(BLAS_THREADSAFE),1)
+CPPFLAGS += -DBLAS_THREADSAFE
+CFLAGS += -DBLAS_THREADSAFE
+endif
 
 ifeq ($(NON_DETERMINISTIC),1)
 CPPFLAGS += -DNON_DETERMINISTIC
