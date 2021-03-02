@@ -34,6 +34,19 @@
 #include "iter/iter2.h"
 #include "iter/iter3.h"
 #include "iter/iter4.h"
+#include "iter/lsqr.h"
+#include "iter/prox.h"
+#include "iter/thresh.h"
+#include "iter/vec.h"
+#include "iter/admm.h"
+
+
+#include "linops/someops.h"
+
+#include "grecon/optreg.h"
+#include "grecon/italgo.h"
+#include "moba/optreg.h"
+#include "moba/T1fun.h"
 
 #include "iter_l1.h"
 
@@ -196,6 +209,103 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 	data->outer_iter++;
 }
 
+static void inverse_admm(iter_op_data* _data, float alpha, float* dst, const float* src)
+{
+	auto data = CAST_DOWN(T1inv_s, _data);
+
+	data->alpha = alpha;	// update alpha for normal operator
+
+	int maxiter = MIN(data->conf->c2->cgiter, 10 * powf(2, data->outer_iter));
+	
+	float* tmp = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
+
+	linop_adjoint_unchecked(nlop_get_derivative(data->nlop, 0, 0), (complex float*)tmp, (const complex float*)src);
+
+	// initialize prox functions
+
+	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
+	const struct linop_s* trafos[NUM_REGS] = { NULL };
+
+	debug_printf(DP_INFO, "##reg. alpha = %f\n", data->alpha);
+
+	struct optreg_conf optreg_conf = optreg_defaults;
+	optreg_conf.moba_model = IRLL;
+
+	opt_reg_moba_configure(DIMS, data->dims, data->conf->ropts, thresh_ops, trafos, &optreg_conf);
+
+	struct iter_admm_conf conf1 = iter_admm_defaults;
+
+	conf1.maxiter = maxiter;
+	conf1.rho = data->conf->rho;
+	conf1.cg_eps = 0.01 * alpha;
+
+	struct iter_admm_conf *conf = &conf1;
+	unsigned int D = data->conf->ropts->r;;
+
+	const struct operator_s* normaleq_op = NULL;
+
+	UNUSED(normaleq_op);
+
+	struct admm_plan_s admm_plan = {
+
+		.maxiter = conf->maxiter,
+		.maxitercg = conf->maxitercg,
+		.cg_eps = conf->cg_eps,
+		.rho = conf->rho,
+		.num_funs = D,
+		.do_warmstart = conf->do_warmstart,
+		.dynamic_rho = conf->dynamic_rho,
+		.dynamic_tau = conf->dynamic_tau,
+		.relative_norm = conf->relative_norm,
+		.hogwild = conf->hogwild,
+		.ABSTOL = conf->ABSTOL,
+		.RELTOL = conf->RELTOL,
+		.alpha = conf->alpha,
+		.lambda = alpha,
+		.tau = conf->tau,
+		.tau_max = conf->tau_max,
+		.mu = conf->mu,
+		.fast = conf->fast,
+		.biases = NULL,
+	};
+
+	struct admm_op a_ops[D ?:1];
+	struct iter_op_p_s a_prox_ops[D ?:1];
+
+
+	for (unsigned int i = 0; i < D; i++) {
+
+		a_ops[i].forward = OPERATOR2ITOP(trafos[i]->forward),
+		a_ops[i].normal = OPERATOR2ITOP(trafos[i]->normal);
+		a_ops[i].adjoint = OPERATOR2ITOP(trafos[i]->adjoint);
+
+		a_prox_ops[i] = OPERATOR_P2ITOP(thresh_ops[i]);
+	}
+
+	admm_plan.ops = a_ops;
+	admm_plan.prox_ops = a_prox_ops;
+
+
+	long z_dims[D ?: 1];
+
+	for (unsigned int i = 0; i < D; i++)
+		z_dims[i] = 2 * md_calc_size(linop_codomain(trafos[i])->N, linop_codomain(trafos[i])->dims);
+
+
+	admm(&admm_plan, admm_plan.num_funs,
+		z_dims, data->size_x, (float*)dst, tmp,
+		select_vecops(src),
+		(struct iter_op_s){ normal, CAST_UP(data) }, NULL);
+
+
+	opt_reg_free(data->conf->ropts, thresh_ops, trafos);
+
+
+	md_free(tmp);
+
+	data->outer_iter++;
+}
+
 
 static const struct operator_p_s* create_prox(const long img_dims[DIMS], unsigned long jflag, float lambda)
 {
@@ -232,9 +342,22 @@ DEF_TYPEID(T1inv2_s);
 static void T1inv_apply(const operator_data_t* _data, float alpha, complex float* dst, const complex float* src)
 {
 	const auto data = &CAST_DOWN(T1inv2_s, _data)->data;
-	inverse_fista(CAST_UP(data), alpha, (float*)dst, (const float*)src);
-}
 
+
+	switch (data->conf->algo) {
+	
+	case ALGO_FISTA:
+		inverse_fista(CAST_UP(data), alpha, (float*)dst, (const float*)src);
+		break;
+
+	case ALGO_ADMM:
+		inverse_admm(CAST_UP(data), alpha, (float*)dst, (const float*)src);
+		break;
+	
+	default:
+		break;
+	}
+}
 
 
 static void T1inv_del(const operator_data_t* _data)
@@ -319,12 +442,61 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 	assert(M * sizeof(float) == md_calc_size(cd->N, cd->dims) * cd->size);
 	assert(N * sizeof(float) == md_calc_size(dm->N, dm->dims) * dm->size);
 
-	const struct operator_p_s* inv_op = T1inv_p_create(conf, dims, nlop);
+	const struct operator_p_s* inv_op = NULL;
+
+	// initialize prox functions
+	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
+	const struct linop_s* trafos[NUM_REGS] = { NULL };
+
+	if (ALGO_FISTA == conf->algo) {
+
+		inv_op = T1inv_p_create(conf, dims, nlop);
+
+	} else if (ALGO_ADMM == conf->algo) {
+
+		debug_printf(DP_DEBUG3, " >> linearized problem solved by ADMM ");
+
+		/* use lsqr */
+		debug_printf(DP_DEBUG3, "in lsqr\n");
+
+		struct optreg_conf optreg_conf = optreg_defaults;
+
+		optreg_conf.moba_model = IRLL;
+
+		opt_reg_moba_configure(DIMS, dims, conf->ropts, thresh_ops, trafos, &optreg_conf);
+
+
+		struct iter_admm_conf iadmm_conf = iter_admm_defaults;
+		iadmm_conf.maxiter = conf->c2->cgiter;
+		iadmm_conf.cg_eps = conf->c2->cgtol;
+		iadmm_conf.rho = conf->rho;
+
+
+		struct lsqr_conf lsqr_conf = lsqr_defaults;
+		lsqr_conf.it_gpu = false;
+		lsqr_conf.warmstart = true;
+
+		NESTED(void, lsqr_cont, (iter_conf* iconf))
+		{
+			auto aconf = CAST_DOWN(iter_admm_conf, iconf);
+
+			aconf->maxiter = MIN(iadmm_conf.maxiter, 10. * powf(2., ceil(logf(1. / iconf->alpha) / logf(conf->c2->redu))));
+			aconf->cg_eps = iadmm_conf.cg_eps * iconf->alpha;
+		};
+
+		lsqr_conf.icont = lsqr_cont;
+
+		inv_op = lsqr2_create(&lsqr_conf, iter2_admm, CAST_UP(&iadmm_conf), NULL, &nlop->derivative[0][0],
+			 NULL, conf->ropts->r, thresh_ops, trafos, NULL);
+	}
 
 	iter4_irgnm2(CAST_UP(conf->c2), nlop,
 		N, dst, NULL, M, src, inv_op,
 		(struct iter_op_s){ NULL, NULL });
 
 	operator_p_free(inv_op);
+
+	if (ALGO_ADMM == conf->algo)
+		opt_reg_free(conf->ropts, thresh_ops, trafos);
 }
 
