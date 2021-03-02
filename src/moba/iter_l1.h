@@ -2,6 +2,7 @@
 
 struct iter3_irgnm_conf;
 struct nlop_s;
+struct opt_reg_s;
 
 
 #ifndef DIMS
@@ -18,7 +19,10 @@ struct mdb_irgnm_l1_conf {
 	int constrained_maps;
 	bool auto_norm_off;
 
-        int not_wav_maps;
+	int not_wav_maps;
+	unsigned int algo;
+	float rho;
+	struct opt_reg_s* ropts;
 };
 
 void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,

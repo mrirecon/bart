@@ -269,7 +269,10 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		.lower_bound = conf->lower_bound,
 		.constrained_maps = 1UL << (dims[COEFF_DIM] - 1), // Always constrain last parameter map as default
 		.auto_norm_off = conf->auto_norm_off,
-                .not_wav_maps = 0
+                .not_wav_maps = 0,
+		.algo = conf->algo,
+		.rho = conf->rho,
+		.ropts = conf->ropts
 	};
 
         set_bloch_conf(conf->mode, &conf2, data);
