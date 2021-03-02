@@ -38,6 +38,7 @@
 #include "lowrank/lrthresh.h"
 
 #include "moba/meco.h"
+#include "moba/T1fun.h"
 
 #include "optreg.h"
 
@@ -387,6 +388,137 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 	}
 }
 
+static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
+{
+	UNUSED(optreg_conf);
+	float lambda = ropts->lambda;
+#if 0
+	bool overlapping_blocks = shift_mode == 2;
+#endif
+
+	if (-1. == lambda)
+		lambda = 0.;
+
+	long img_dims[DIMS];
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);
+
+	long x_dims[DIMS];
+	md_copy_dims(DIMS, x_dims, img_dims);
+	x_dims[COEFF_DIM] = img_dims[COEFF_DIM] + dims[COIL_DIM]; //FIXME
+
+	long coil_dims[DIMS];
+	md_copy_dims(DIMS, coil_dims, x_dims);
+	coil_dims[COEFF_DIM] = dims[COIL_DIM];
+
+	long map_dims[DIMS];
+	md_copy_dims(DIMS, map_dims, img_dims);
+	map_dims[COEFF_DIM] = 1L;
+
+	long map2_dims[DIMS];
+	md_copy_dims(DIMS, map2_dims, img_dims);
+	map2_dims[COEFF_DIM] = map2_dims[COEFF_DIM] - 1L;
+
+	debug_print_dims(DP_INFO, DIMS, img_dims);
+	debug_print_dims(DP_INFO, DIMS, coil_dims);
+	debug_print_dims(DP_INFO, DIMS, x_dims);
+	debug_print_dims(DP_INFO, DIMS, map_dims);
+	debug_print_dims(DP_INFO, DIMS, map2_dims);
+
+	// if no penalities specified but regularization
+	// parameter is given, add a l2 penalty
+
+	struct reg_s* regs = ropts->regs;
+
+	if ((0 == ropts->r) && (lambda > 0.)) {
+
+		regs[0].xform = L2IMG;
+		regs[0].xflags = 0u;
+		regs[0].jflags = 0u;
+		regs[0].lambda = lambda;
+		ropts->r = 1;
+	}
+
+
+	int nr_penalties = ropts->r;
+#if 0
+	long blkdims[MAX_LEV][DIMS];
+	int levels;
+#endif
+
+
+	for (int nr = 0; nr < nr_penalties; nr++) {
+
+		// fix up regularization parameter
+		if (-1. == regs[nr].lambda)
+			regs[nr].lambda = lambda;
+
+		switch (regs[nr].xform) {
+
+		case L1WAV:
+
+			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
+
+			auto l1Wav_prox = create_wav_prox(img_dims, regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
+			auto zero_prox = prox_zero_create(DIMS, coil_dims);
+
+			trafos[nr] = linop_identity_create(DIMS, x_dims);
+			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(l1Wav_prox), operator_p_flatten_F(zero_prox));
+
+			break;
+
+		case TV:
+
+			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
+
+			auto extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, x_dims)));
+			extract = linop_reshape_out_F(extract, DIMS, img_dims);
+			
+			auto grad = linop_grad_create(DIMS, img_dims, DIMS, regs[nr].xflags);
+
+			trafos[nr] = linop_chain_FF(extract, grad);
+			prox_ops[nr] = prox_thresh_create(DIMS + 1,
+					linop_codomain(trafos[nr])->dims,
+					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
+
+			break;
+
+		case POS:
+
+			debug_printf(DP_INFO, "non-negative constraint: %f\n", regs[nr].lambda);
+
+			auto zsmax_prox = prox_zsmax_create(DIMS, map_dims, regs[nr].lambda);
+			auto zero_prox1 = prox_zero_create(DIMS, map2_dims);
+
+			auto stack0 = operator_p_stack_FF(COEFF_DIM, COEFF_DIM, zero_prox1, zsmax_prox);
+
+			trafos[nr] = linop_identity_create(DIMS, x_dims);;
+			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(stack0), 
+							operator_p_flatten_F(prox_zero_create(DIMS, coil_dims)));
+
+			break;
+
+		case L2IMG:
+
+			debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
+
+			trafos[nr] = linop_identity_create(DIMS, x_dims);;
+			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(prox_zero_create(DIMS, img_dims)), 
+							operator_p_flatten_F(prox_l2norm_create(DIMS, coil_dims, regs[nr].lambda)));
+
+			break;
+
+		default:
+
+			prox_ops[nr] = NULL;
+			trafos[nr] = NULL;
+
+			break;
+
+		}
+	}
+}
+
+
 
 void opt_reg_moba_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
 {
@@ -399,6 +531,11 @@ void opt_reg_moba_configure(unsigned int N, const long dims[N], struct opt_reg_s
 	case MECO_PHASEDIFF:
 
 		opt_reg_meco_configure(N, dims, ropts, prox_ops, trafos, optreg_conf);
+
+		break;
+	case IRLL:
+
+		opt_reg_IRLL_configure(N, dims, ropts, prox_ops, trafos, optreg_conf);
 
 		break;
 	}
