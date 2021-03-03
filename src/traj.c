@@ -82,6 +82,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_FLVEC3('Q', &gdelays[1], "delays", "(gradient delays: z, xz, yz)"),
 		OPT_SET('O', &conf.transverse, "correct transverse gradient error for radial tajectories"),
 		OPT_SET('3', &conf.d3d, "3D"),
+		OPT_SET('U', &conf.uniform3D, "Uniform 3D radial trajectory"),
 		OPT_SET('c', &conf.asym_traj, "asymmetric trajectory [DC sampled]"),
 		OPT_SET('E', &conf.mems_traj, "multi-echo multi-spoke trajectory"),
 		OPT_VEC2('z', &z_usamp, "Ref:Acel", "Undersampling in z-direction."),
@@ -216,6 +217,11 @@ int main_traj(int argc, char* argv[argc])
 
 	int p = 0;
 	long pos[DIMS] = { 0 };
+	int jtmp = -1;
+	double phin1 = 0;
+	double hn = 0;
+	double theta = 0;
+	double phi = 0;
 
 	do {
 		int i = pos[PHS1_DIM];
@@ -257,12 +263,44 @@ int main_traj(int argc, char* argv[argc])
 			double angle2 = 0.;
 
 			if (conf.d3d) {
-
 				int split = sqrtf(Y);
 				angle2 = s * M_PI / Y * (conf.full_circle ? 2 : 1) * split;
 
-				if (NULL != custom_angle_vals)
+				if (NULL != custom_angle_vals) // custom angle
+				{
 					angle2 = cimagf(custom_angle_vals[j]);
+				}	
+
+				if(conf.uniform3D) // DOI:10.1007/BF03024331
+				{
+					if(jtmp != j) 
+					{	
+						debug_printf(DP_INFO, "proj n° = %d || read pos = %d \n", j,i);
+						jtmp = j;
+
+						hn = -1.0 + (double)(2*j)/(Y-1);
+						theta = acos(hn);
+						
+						if(j+1 == Y || j == 0)
+						{
+							phi = 0;
+						}
+						else
+						{
+							phi = fmod(phin1 + 3.6/sqrt(Y * (1.0 - hn*hn)), 2*M_PI);
+						}	
+						phin1 = phi;
+						debug_printf(DP_INFO, "theta = %f || phi = %f  \n", theta,phi);
+
+						angle = phi;
+						angle2 = theta - M_PI/2;
+					}
+					else
+					{
+						angle  = phi;
+						angle2 = theta - M_PI/2;
+					}
+				}	
 			}
 
 
