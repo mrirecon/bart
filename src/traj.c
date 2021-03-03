@@ -265,14 +265,24 @@ int main_traj(int argc, char* argv[argc])
 					angle2 = cimagf(custom_angle_vals[j]);
 				}	
 
-				if(conf.uniform3D) // DOI:10.1007/BF03024331
+				if(conf.uniform3D) 
 				{
+				/* Saff, E.B., Kuijlaars, A.B.J. 
+				*  Distributing many points on a sphere. 
+				*  The Mathematical Intelligencer 19, 5?11 (1997). https://doi.org/10.1007/BF03024331
+				*/
+					int Y2 = Y;
+					if(conf.full_circle) // half sphere
+					{
+						Y2 = Y*2;
+						debug_printf(DP_INFO, "half sphere -> Y2 = %d\n", Y2);
+					}
+
 					if(jtmp != j) 
 					{	
-						debug_printf(DP_INFO, "proj n° = %d || read pos = %d \n", j,i);
 						jtmp = j;
-
-						hn = -1.0 + (double)(2*j)/(Y-1);
+						
+						hn = -1.0 + (double)(2*j)/(Y2-1);
 						theta = acos(hn);
 						
 						if(j+1 == Y || j == 0)
@@ -281,10 +291,9 @@ int main_traj(int argc, char* argv[argc])
 						}
 						else
 						{
-							phi = fmod(phin1 + 3.6/sqrt(Y * (1.0 - hn*hn)), 2*M_PI);
+							phi = fmod(phin1 + 3.6/sqrt(Y2 * (1.0 - hn*hn)), 2*M_PI);
 						}	
 						phin1 = phi;
-						debug_printf(DP_INFO, "theta = %f || phi = %f  \n", theta,phi);
 
 						angle = phi;
 						angle2 = theta - M_PI/2;
