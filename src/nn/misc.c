@@ -1,6 +1,7 @@
 
 #include <math.h>
 #include <complex.h>
+#include <stdio.h>
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -14,7 +15,7 @@
 void onehotenc_to_index(unsigned int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
 	int class_index = -1;
-	
+
 	for (unsigned int i = 0; i < N; i++) {
 
 		if (odims[i] != idims[i]) {
@@ -66,14 +67,14 @@ void onehotenc_to_index(unsigned int N, const long odims[N], complex float* dst,
 		}
 
 		MD_ACCESS(N, ostrs, pos, dst) = index;
-			
+
 	} while (md_next(N, odims, ~0, pos));
 }
 
 void index_to_onehotenc(unsigned int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
 	int class_index = -1;
-	
+
 	for (unsigned int i = 0; i < N; i++) {
 
 		if (odims[i] != idims[i]) {
@@ -106,7 +107,7 @@ void index_to_onehotenc(unsigned int N, const long odims[N], complex float* dst,
 		assert(0 <= tpos[class_index]);
 
 		MD_ACCESS(N, ostrs, tpos, dst) = 1.;
-	
+
 	} while (md_next(N, idims, ~0, pos));
 }
 
@@ -150,4 +151,108 @@ float onehotenc_accuracy(unsigned int N, const long dims[N], unsigned int class_
 	md_free(tmp_ref);
 
 	return 1. - result;
+}
+
+void onehotenc_confusion_matrix(unsigned int N, const long dims[N], unsigned int class_index, complex float* dst, const complex float* pred, const complex float* ref)
+{
+	long classes = dims[class_index];
+
+	complex float* tmp_pred = md_alloc_sameplace(N, dims, CFL_SIZE, pred);
+	complex float* tmp_ref = md_alloc_sameplace(N, dims, CFL_SIZE, ref);
+
+	onehotenc_set_max_to_one(N, dims, class_index, tmp_pred, pred);
+	onehotenc_set_max_to_one(N, dims, class_index, tmp_ref, ref);
+
+	long tdims[N + 2];
+	long ostrs[N + 2];
+	long pstrs[N + 2];
+	long rstrs[N + 2];
+
+	md_singleton_strides(N + 2, ostrs);
+	md_singleton_strides(N + 2, pstrs);
+	md_singleton_strides(N + 2, rstrs);
+
+	md_copy_dims(N, tdims + 2, dims);
+	tdims[0] = classes;
+	tdims[1] = classes;
+
+	md_calc_strides(2, ostrs, tdims, CFL_SIZE);
+	md_calc_strides(N, rstrs + 2, dims, CFL_SIZE);
+	md_calc_strides(N, pstrs + 2, dims, CFL_SIZE);
+
+	tdims[class_index + 2] = 1;
+	pstrs[0] = pstrs[class_index + 2];
+	rstrs[1] = pstrs[class_index + 2];
+
+	md_ztenmul2(2 + N, tdims, ostrs, dst, pstrs, tmp_pred, rstrs, tmp_ref);
+
+	md_free(tmp_pred);
+	md_free(tmp_ref);
+}
+
+
+extern void print_confusion_matrix(unsigned int N, const long dims[N], unsigned int class_index, const complex float* pred, const complex float* ref)
+{
+	long classes = dims[class_index];
+
+	complex float matrix[classes][classes];
+	onehotenc_confusion_matrix(N, dims, class_index, &(matrix[0][0]), pred, ref);
+
+	complex float* tmp_cmp = md_alloc_sameplace(N, dims, CFL_SIZE, pred);
+	complex float* tmp_ref = md_alloc_sameplace(N, dims, CFL_SIZE, ref);
+
+	onehotenc_set_max_to_one(N, dims, class_index, tmp_cmp, pred);
+	onehotenc_set_max_to_one(N, dims, class_index, tmp_ref, ref);
+
+	complex float pred_count[classes];
+	complex float ref_count[classes];
+
+	md_zsum(N, dims, ~MD_BIT(class_index), pred_count, tmp_cmp);
+	md_zsum(N, dims, ~MD_BIT(class_index), ref_count, tmp_ref);
+
+	md_free(tmp_cmp);
+	md_free(tmp_ref);
+
+	long N_pred = md_calc_size(N, dims) / classes;
+	int count_char = MAX(3, snprintf(NULL, 0, "%ld", N_pred));
+
+	printf("\npred \\ ref |");
+	for (int i = 0; i < classes; i++)
+		printf("%*d", count_char + 1, i);
+	printf("|%*s\n", (count_char + 1), "sum");
+
+	for (int i = 0; i < 11; i++)
+		printf("%c", '-');
+	printf("|");
+	for (int i = 0; i < (int)classes * (count_char + 1); i++)
+		printf("%c", '-');
+	printf("|");
+	for (int i = 0; i < (count_char + 1); i++)
+		printf("%c", '-');
+	printf("\n");
+
+	for (int i = 0; i < classes; i++) {
+
+		printf("%-11d|", i);
+
+		for (int j = 0; j < classes; j++)
+			printf("%*ld", count_char + 1, (long)crealf(matrix[j][i]));
+
+		printf("|%*ld\n", count_char + 1, (long)crealf(pred_count[i]));
+	}
+
+	for (int i = 0; i < 11; i++)
+		printf("%c", '-');
+	printf("|");
+	for (int i = 0; i < (int)classes * (count_char + 1); i++)
+		printf("%c", '-');
+	printf("|");
+	for (int i = 0; i < (count_char + 1); i++)
+		printf("%c", '-');
+	printf("\n");
+
+	printf("%-11s|", "sum");
+	for (int i = 0; i < classes; i++)
+		printf("%*ld", count_char + 1, (long)crealf(ref_count[i]));
+	printf("|%*ld\n", count_char + 1, N_pred);
 }

@@ -192,6 +192,7 @@ TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ss
 TMRI=homodyne poisson twixread fakeksp looklocker upat
 TSIM=phantom traj signal epg
 TIO=toimg
+TNN=reconet nnet
 
 
 
@@ -220,7 +221,7 @@ MODULES_rof = -liter -llinops
 MODULES_tgv = -liter -llinops
 MODULES_bench = -lwavelet -llinops
 MODULES_phantom = -lsimu -lgeom
-MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet -lnlops -lmoba -lgeom -lnn
+MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet -lnlops -lnetworks -lnn -liter -lmoba -lgeom -lnlops
 MODULES_sake = -lsake
 MODULES_traj = -lnoncart
 MODULES_wave = -liter -lwavelet -llinops -llowrank
@@ -236,6 +237,8 @@ MODULES_bin = -lcalib
 MODULES_signal = -lsimu
 MODULES_pol2mask = -lgeom
 MODULES_epg = -lsimu
+MODULES_reconet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
+MODULES_nnet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 
 
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
@@ -276,7 +279,7 @@ endif
 
 
 
-XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
+XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TNN)
 TARGETS = bart $(XTARGETS)
 
 
@@ -524,7 +527,7 @@ lib/lib$(1).a: lib$(1).a($$($(1)objs))
 
 endef
 
-ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba lapacke box geom nn
+ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba lapacke box geom nn networks
 ifeq ($(ISMRMRD),1)
 ALIBS += ismrm
 endif

@@ -1,0 +1,30 @@
+struct loss_config_s {
+
+	float weighting_mse_sa;
+	float weighting_mse;
+	float weighting_psnr;
+	float weighting_ssim;
+
+	float weighting_cce;
+	float weighting_weighted_cce;
+	float weighting_accuracy;
+
+	float weighting_dice0;
+	float weighting_dice1;
+	float weighting_dice2;
+
+	float weighting_dice_labels;
+
+	int label_index;
+	unsigned long image_flags;
+};
+
+extern struct loss_config_s val_loss_option;
+extern struct loss_config_s loss_option;
+
+extern struct loss_config_s loss_image_valid;
+extern struct loss_config_s loss_classification_valid;
+
+extern const struct nn_s* train_loss_create(const struct loss_config_s* config, unsigned int N, const long dims[N]);
+extern const struct nn_s* train_loss_multi_create(const struct loss_config_s* config, unsigned int N, const long dims[N], int M, float weighting_base);
+extern const struct nn_s* val_measure_create(const struct loss_config_s* config, unsigned int N, const long dims[N]);
