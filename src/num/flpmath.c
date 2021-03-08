@@ -2356,6 +2356,51 @@ void md_zcos(unsigned int D, const long dims[D], complex float* optr, const comp
 
 
 
+/**
+ * Complex hyperbolic sine
+ *
+ * optr = zsinh(iptr)
+ */
+void md_zsinh2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zsinh, D, dims, ostr, optr, istr, iptr);
+}
+
+
+/**
+ * Complex hyperbolic sine
+ *
+ * optr = zsinh(iptr)
+ */
+void md_zsinh(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zsinh2, D, dims, optr, iptr);
+}
+
+
+/**
+ * Complex hyperbolic cosine
+ *
+ * optr = zcosh(iptr)
+ */
+void md_zcosh2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zcosh, D, dims, ostr, optr, istr, iptr);
+}
+
+
+/**
+ * Complex hyperbolic cosine
+ *
+ * optr = zcosh(iptr)
+ */
+void md_zcosh(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zcosh2, D, dims, optr, iptr);
+}
+
+
+
 
 
 /**

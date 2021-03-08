@@ -445,6 +445,30 @@ __device__ cuFloatComplex zcos(cuFloatComplex x)
 	return make_cuFloatComplex(co * coh , -si * sih);
 }
 
+__device__ cuFloatComplex zsinh(cuFloatComplex x)
+{
+	float si_i;
+	float co_i;
+	float sih_r;
+	float coh_r;
+	sincosf(cuCimagf(x), &si_i, &co_i);
+	sih_r = sinhf(cuCrealf(x));
+	coh_r = coshf(cuCrealf(x));
+	return make_cuFloatComplex(sih_r * co_i , coh_r * si_i);
+}
+
+__device__ cuFloatComplex zcosh(cuFloatComplex x)
+{
+	float si_i;
+	float co_i;
+	float sih_r;
+	float coh_r;
+	sincosf(cuCimagf(x), &si_i, &co_i);
+	sih_r = sinhf(cuCrealf(x));
+	coh_r = coshf(cuCrealf(x));
+	return make_cuFloatComplex(coh_r * co_i , sih_r * si_i);
+}
+
 __device__ float zarg(cuFloatComplex x)
 {
 	return atan2(cuCimagf(x), cuCrealf(x));
@@ -649,6 +673,34 @@ __global__ void kern_zcos(long N, cuFloatComplex* dst, const cuFloatComplex* src
 extern "C" void cuda_zcos(long N, _Complex float* dst, const _Complex float* src)
 {
 	kern_zcos<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+}
+
+__global__ void kern_zsinh(long N, cuFloatComplex* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
+		dst[i] = zsinh(src[i]);
+}
+
+extern "C" void cuda_zsinh(long N, _Complex float* dst, const _Complex float* src)
+{
+	kern_zsinh<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+}
+
+__global__ void kern_zcosh(long N, cuFloatComplex* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
+		dst[i] = zcosh(src[i]);
+}
+
+extern "C" void cuda_zcosh(long N, _Complex float* dst, const _Complex float* src)
+{
+	kern_zcosh<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 

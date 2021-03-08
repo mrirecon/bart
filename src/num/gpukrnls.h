@@ -38,6 +38,8 @@ extern void cuda_zexpj(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zexp(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zsin(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zcos(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zsinh(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zcosh(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zlog(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zarg(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zabs(long N, _Complex float* dst, const _Complex float* src);
