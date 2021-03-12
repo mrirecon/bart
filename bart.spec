@@ -1,13 +1,13 @@
 Name:           bart
-Version:        {{{ bart_git_version_dots }}} 
-%define build_timestamp %{lua: print(os.date("%Y%m%d"))}
-Release:        %{build_timestamp}%{?dist}
+Version:        {{{ bart_version }}} 
+Release:        {{{ bart_release }}}%{?dist}
+Epoch:          1
 Summary:        tools for computational magnetic resonance imaging 
 
 License:        BSD
 URL:            https://mrirecon.github.io/bart
 VCS:            {{{ git_dir_vcs }}}
-Source0:        {{{ git_dir_pack source_name=bart dir_name=bart}}} 
+Source0:        {{{ git_dir_pack source_name=bart dir_name=bart }}}
 
 BuildRequires:  gcc, make, fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel
 Requires:       fftw, lapack, openblas, atlas, libpng
