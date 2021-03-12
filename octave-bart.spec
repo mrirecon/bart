@@ -1,14 +1,14 @@
 %global octpkg bart
 Name:           octave-%{octpkg}
-Version:        {{{ bart_git_version_dots }}} 
-%define build_timestamp %{lua: print(os.date("%Y%m%d"))}
-Release:        %{build_timestamp}%{?dist}
+Version:        {{{ bart_version }}}
+Release:        {{{ bart_release }}}%{?dist}
+Epoch:          1
 Summary:        Octave bindings for BART
 
 License:        BSD
 URL:            https://mrirecon.github.io/bart
 VCS:            {{{ git_dir_vcs }}}
-Source0:        {{{ git_dir_pack source_name=octave-bart dir_name=octave-bart }}} 
+Source0:        {{{ git_dir_pack source_name=octave-bart dir_name=octave-bart }}}
 BuildArch:      noarch
 
 BuildRequires:  octave-devel

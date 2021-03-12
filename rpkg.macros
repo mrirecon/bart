@@ -1,6 +1,20 @@
-function bart_git_version_dots() {
-    ./git-version.sh | tr - . | tr -d '\n'
+function bart_version() {
+    ./git-version.sh | cut -d'-' -f1 | tr -d 'v\n'
 }
+
+function bart_release() {
+    git describe --match "v*" --exact > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        release=$(($(./git-version.sh | cut -d'-' -f2) + 1))
+        date=$(date '+%Y%m%d')
+        commit=$(git rev-parse --short=7 HEAD)
+        release=$release"."$date"git"$commit
+    else
+        release=1
+    fi
+    echo -n $release
+}
+
 function bart_git_version() {
     ./git-version.sh | tr -d '\n'
 }

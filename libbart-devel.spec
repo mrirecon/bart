@@ -1,13 +1,13 @@
 Name:           libbart-devel
-Version:        {{{ bart_git_version_dots }}} 
-%define build_timestamp %{lua: print(os.date("%Y%m%d"))}
-Release:        %{build_timestamp}%{?dist}
+Version:        {{{ bart_version }}}
+Release:        {{{ bart_release }}}%{?dist}
+Epoch:          1
 Summary:        Development files for BART 
 
 License:        BSD
 URL:            https://mrirecon.github.io/bart
 VCS:            {{{ git_dir_vcs }}}
-Source0:        {{{ git_dir_pack source_name=libbart-devel dir_name=libbart-devel }}} 
+Source0:        {{{ git_dir_pack source_name=libbart-devel dir_name=libbart-devel }}}
 
 BuildRequires:  gcc, make, fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel
 
