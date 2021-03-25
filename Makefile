@@ -25,6 +25,7 @@ ACML?=0
 OMP?=1
 SLINK?=0
 DEBUG?=0
+UBSAN?=0
 FFTWTHREADS?=1
 SCALAPACK?=0
 ISMRMRD?=0
@@ -264,6 +265,10 @@ TARGETS = bart $(XTARGETS)
 ifeq ($(DEBUG),1)
 CPPFLAGS += -g
 CFLAGS += -g
+endif
+
+ifeq ($(UBSAN),1)
+CFLAGS += -fsanitize=undefined -fsanitize-undefined-trap-on-error
 endif
 
 ifeq ($(NOEXEC_STACK),1)

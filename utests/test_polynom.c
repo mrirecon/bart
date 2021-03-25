@@ -22,7 +22,7 @@ static bool test_polynom_eval(void)
 UT_REGISTER_TEST(test_polynom_eval);
 
 
-static bool array_eq(int N, const complex double c1[N], const complex double c2[N], double eps)
+static bool array_eq(int N, const complex double c1[N?:1], const complex double c2[N?:1], double eps)
 {
 	return (0 == N) ? true : ((cabs(c1[0] - c2[0]) <= eps) && array_eq(N - 1, c1 + 1, c2 + 1, eps));
 }
