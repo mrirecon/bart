@@ -194,7 +194,7 @@ static bool test_linop_extract(void)
 	err = fabs(n - n2);
 
 #ifdef  __clang__
-	ok &= (err < 100. * UT_TOL);
+	ok &= (err < 500. * UT_TOL);
 #else
 	ok &= (err < UT_TOL);
 #endif
@@ -207,7 +207,7 @@ static bool test_linop_extract(void)
 	err = fabs(n - n2);
 
 #ifdef  __clang__
-	ok &= (err < 100. * UT_TOL);
+	ok &= (err < 500. * UT_TOL);
 #else
 	ok &= (err < UT_TOL);
 #endif
