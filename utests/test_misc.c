@@ -42,9 +42,11 @@ static bool test_quicksort2(void)
 	int d[6] = { 0, 4, 2, 2, 4, 2 };
 	int g[6] = { 0, 2, 2, 2, 4, 4 };
 
+	__block const int* dp = d; // clang workaround
+
 	NESTED(int, cmp2, (int a, int b))
 	{
-		return d[a] - d[b];
+		return dp[a] - dp[b];
 	};
 
 	quicksort(6, x, cmp2);

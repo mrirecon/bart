@@ -169,15 +169,18 @@ unsigned int remove_empty_dims(unsigned int D, unsigned int N, long dims[N], lon
 
 static void compute_permutation(unsigned int N, int ord[N], const long strs[N])
 {
+	__block const long* strsp = strs; // clang workaround
+
 	for (unsigned int i = 0; i < N; i++)
 		ord[i] = i;
 
 	NESTED(int, cmp_strides, (int a, int b))
 	{
-		long d = strs[a] - strs[b];
+		long d = strsp[a] - strsp[b];
 
 		if (d > 0)
 			return 1;
+
 		if (d < 0)
 			return -1;
 

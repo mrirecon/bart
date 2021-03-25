@@ -108,6 +108,7 @@ static float angle_dist(float a, float b)
 static void find_nearest_orthogonal_spokes(int N, int spokes[N], float ref_angle, const float angles[N])
 {
 	float dist[N];
+	__block float* distp = dist; // clang workaround
 
 	for (int i = 0; i < N; i++) {
 
@@ -117,7 +118,7 @@ static void find_nearest_orthogonal_spokes(int N, int spokes[N], float ref_angle
 
 	NESTED(int, dist_compare, (int a, int b))
 	{
-		float d = dist[a] - dist[b];
+		float d = distp[a] - distp[b];
 
 		if (d > 0.)
 			return 1;
