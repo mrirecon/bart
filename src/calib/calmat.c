@@ -133,28 +133,28 @@ complex float* calibration_matrix_mask2(long calmat_dims[2], const long kdims[3]
 
 
 #if 0
-static void circular_patch_mask(const long kdims[3], unsigned int channels, complex float mask[channels * md_calc_size(3, kdims)])
+static void circular_patch_mask(const long kdims[3], int channels, complex float mask[channels * md_calc_size(3, kdims)])
 {
 	long kpos[3] = { 0 };
 	long kcen[3];
 
-	for (unsigned int i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		kcen[i] = (1 == kdims[i]) ? 0 : (kdims[i] - 1) / 2;
 
 	do {
 		float dist = 0.;
 
-		for (unsigned int i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 			dist += (float)labs(kpos[i] - kcen[i]) / (float)kdims[i];
 
-		for (unsigned int c = 0; c < channels; c++)
+		for (int c = 0; c < channels; c++)
 			mask[((c * kdims[2] + kpos[2]) * kdims[1] + kpos[1]) * kdims[0] + kpos[0]] = (dist <= 0.5) ? 1 : 0;
 
 	} while (md_next(3, kdims, 1 | 2 | 4, kpos));
 }
 #endif
 
-void covariance_function(const long kdims[3], unsigned int N, complex float cov[N][N], const long calreg_dims[4], const complex float* data)
+void covariance_function(const long kdims[3], int N, complex float cov[N][N], const long calreg_dims[4], const complex float* data)
 {
 	long calmat_dims[2];
 #if 1
@@ -165,7 +165,7 @@ void covariance_function(const long kdims[3], unsigned int N, complex float cov[
 	circular_patch_mask(kdims, channels, msk);
 	complex float* cm = calibration_matrix_mask2(calmat_dims, kdims, msk, calreg_dims, data);
 #endif
-	unsigned int L = calmat_dims[0];
+	int L = calmat_dims[0];
 	assert(N == calmat_dims[1]);
 
 	gram_matrix(N, cov, L, MD_CAST_ARRAY2(const complex float, 2, calmat_dims, cm, 0, 1));
@@ -175,18 +175,18 @@ void covariance_function(const long kdims[3], unsigned int N, complex float cov[
 
 
 
-void calmat_svd(const long kdims[3], unsigned int N, complex float cov[N][N], float* S, const long calreg_dims[4], const complex float* data)
+void calmat_svd(const long kdims[3], int N, complex float cov[N][N], float* S, const long calreg_dims[4], const complex float* data)
 {
 	long calmat_dims[2];
 	complex float* cm = calibration_matrix(calmat_dims, kdims, calreg_dims, data);
 
-	unsigned int L = calmat_dims[0];
+	int L = calmat_dims[0];
 	assert(N == calmat_dims[1]);
 
 	PTR_ALLOC(complex float[L][L], U);
 
 	// initialize to zero in case L < N not all written to
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		S[i] = 0.;
 
 	lapack_svd_econ(L, N, *U, cov, S, MD_CAST_ARRAY2(complex float, 2, calmat_dims, cm, 0, 1));

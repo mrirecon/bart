@@ -152,7 +152,7 @@ static void ssa_backprojection( const long N,
 
 	md_zfill(DIMS, norm_dims, norm, 1. / b);
 
-	for (unsigned int i = 0; i < b; i++) {
+	for (int i = 0; i < b; i++) {
 
 		norm[i] = 1. / (i + 1);
 		norm[cal_dims[0] -1 - i] = 1. / (i + 1);

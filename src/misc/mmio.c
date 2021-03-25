@@ -91,7 +91,7 @@ static bool long_mul_overflow_p(long a, long b)
 	return of;
 }
 
-static long io_calc_size(unsigned int D, const long dims[D], size_t size)
+static long io_calc_size(int D, const long dims[D?:1], size_t size)
 {
 	if (0 == D)
 		return size;
@@ -110,7 +110,7 @@ static long io_calc_size(unsigned int D, const long dims[D], size_t size)
 
 
 
-complex float* load_zra(const char* name, unsigned int D, long dims[D])
+complex float* load_zra(const char* name, int D, long dims[D])
 {
 	int fd;
 	if (-1 == (fd = open(name, O_RDONLY)))
@@ -165,7 +165,7 @@ static void* create_data(int ofd, size_t header_size, size_t size)
 	return (char*)addr + off;
 }
 
-complex float* create_zra(const char* name, unsigned int D, const long dims[D])
+complex float* create_zra(const char* name, int D, const long dims[D])
 {
 	int ofd;
 	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
@@ -196,7 +196,7 @@ complex float* create_zra(const char* name, unsigned int D, const long dims[D])
 
 
 
-float* create_coo(const char* name, unsigned int D, const long dims[D])
+float* create_coo(const char* name, int D, const long dims[D])
 {
 	int ofd;
 
@@ -227,7 +227,7 @@ float* create_coo(const char* name, unsigned int D, const long dims[D])
 
 
 
-complex float* create_zcoo(const char* name, unsigned int D, const long dimensions[D])
+complex float* create_zcoo(const char* name, int D, const long dimensions[D])
 {
 	long dims[D + 1];
 	dims[0] = 2; // complex
@@ -237,7 +237,7 @@ complex float* create_zcoo(const char* name, unsigned int D, const long dimensio
 }
 
 
-complex float* create_cfl(const char* name, unsigned int D, const long dimensions[D])
+complex float* create_cfl(const char* name, int D, const long dimensions[D])
 {
 	io_unlink_if_opened(name);
 	io_register_output(name);
@@ -289,7 +289,7 @@ complex float* create_cfl(const char* name, unsigned int D, const long dimension
 
 
 
-float* load_coo(const char* name, unsigned int D, long dims[D])
+float* load_coo(const char* name, int D, long dims[D])
 {
 	int fd;
 
@@ -323,7 +323,7 @@ float* load_coo(const char* name, unsigned int D, long dims[D])
 }
 
 
-complex float* load_zcoo(const char* name, unsigned int D, long dimensions[D])
+complex float* load_zcoo(const char* name, int D, long dimensions[D])
 {
 	long dims[D + 1];
 	float* data = load_coo(name, D + 1, dims);
@@ -337,7 +337,7 @@ complex float* load_zcoo(const char* name, unsigned int D, long dimensions[D])
 }
 
 
-static complex float* load_cfl_internal(const char* name, unsigned int D, long dimensions[D], bool priv)
+static complex float* load_cfl_internal(const char* name, int D, long dimensions[D], bool priv)
 {
 	io_register_input(name);
 
@@ -400,20 +400,20 @@ static complex float* load_cfl_internal(const char* name, unsigned int D, long d
 }
 
 
-complex float* load_cfl(const char* name, unsigned int D, long dimensions[D])
+complex float* load_cfl(const char* name, int D, long dimensions[D])
 {
 	return load_cfl_internal(name, D, dimensions, true);
 }
 
 
-complex float* load_shared_cfl(const char* name, unsigned int D, long dimensions[D])
+complex float* load_shared_cfl(const char* name, int D, long dimensions[D])
 {
 	return load_cfl_internal(name, D, dimensions, false);
 }
 
 
 #ifndef MEMONLY_CFL
-complex float* shared_cfl(unsigned int D, const long dims[D], const char* name)
+complex float* shared_cfl(int D, const long dims[D], const char* name)
 {
 //	struct stat st;
 	int fd;
@@ -445,7 +445,7 @@ complex float* shared_cfl(unsigned int D, const long dims[D], const char* name)
 #endif /* !MEMONLY_CFL */
 
 
-complex float* anon_cfl(const char* name, unsigned int D, const long dims[D])
+complex float* anon_cfl(const char* name, int D, const long dims[D])
 {
 	UNUSED(name);
 
@@ -494,7 +494,7 @@ void* private_raw(size_t* size, const char* name)
 
 
 #ifndef MEMONLY_CFL
-complex float* private_cfl(unsigned int D, const long dims[D], const char* name)
+complex float* private_cfl(int D, const long dims[D], const char* name)
 {
 	long T;
 
@@ -525,7 +525,7 @@ complex float* private_cfl(unsigned int D, const long dims[D], const char* name)
 #endif /* !MEMONLY_CFL */
 
 
-void unmap_cfl(unsigned int D, const long dims[D], const complex float* x)
+void unmap_cfl(int D, const long dims[D?:1], const complex float* x)
 {
 #ifdef MEMONLY_CFL
 	UNUSED(D); UNUSED(dims);

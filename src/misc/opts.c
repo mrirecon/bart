@@ -142,12 +142,14 @@ static void check_options(int n, const struct opt_s opts[n ?: 1])
 
 	for (int i = 0; i < n; i++) {
 
-		assert(256 > (unsigned int)opts[i].c);
+		int c = opts[i].c;
 
-		if (f[(unsigned int)opts[i].c])
+		assert(256 > c);
+
+		if (f[c])
 			error("duplicate option: %c\n", opts[i].c);
 
-		f[(unsigned int)opts[i].c] = true;
+		f[c] = true;
 	}
 }
 

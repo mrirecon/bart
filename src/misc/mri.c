@@ -58,7 +58,7 @@ void data_consistency(const long dims[DIMS], complex float* dst, const complex f
 
 
 
-void estimate_pattern(unsigned int D, const long dims[D], unsigned int flags, complex float* pattern, const complex float* kspace_data)
+void estimate_pattern(int D, const long dims[D], long flags, complex float* pattern, const complex float* kspace_data)
 {
 	md_zrss(D, dims, flags, pattern, kspace_data);
 
@@ -114,10 +114,10 @@ void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], co
 	complex float* pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
 	estimate_pattern(DIMS, in_dims, COIL_FLAG, pattern, in_data);
 
-	for (unsigned int i = 0; i < DIMS; i++)
+	for (int i = 0; i < DIMS; i++)
 		caldims[i] = 1;
 
-	for (unsigned int i = 0; i < DIMS; i++)
+	for (int i = 0; i < DIMS; i++)
 		calpos[i] = 0;
 
 	calpos[0] = (in_dims[0] - caldims[0]) / 2;
@@ -184,7 +184,7 @@ complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const l
 	md_copy_dims(DIMS, tmp_dims, in_dims);
 	md_set_dims(DIMS, tmp_pos, 0);
 
-	for (unsigned int i = 0; i < 3; i++) {
+	for (int i = 0; i < 3; i++) {
 
 		//tmp_dims[i] = MIN(calsize[i], in_dims[i]);
 		tmp_dims[i] = (READ_DIM == i) ? in_dims[i] : MIN(calsize[i], in_dims[i]);
@@ -202,7 +202,7 @@ complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const l
 
 	if (fixed) { // we should probably change calib_geom instead
 
-		for (unsigned int i = 0; i < 3; i++) {
+		for (int i = 0; i < 3; i++) {
 
 			caldims[i] = MIN(calsize[i], tmp_dims[i]);
 

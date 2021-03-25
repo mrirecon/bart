@@ -39,7 +39,6 @@
  */
 static void noise_calreg(long T, complex float* ncalreg)
 {
-
 	float spike = 1;
 	float stdev = 1.f/sqrtf(2.f);
 
@@ -47,6 +46,7 @@ static void noise_calreg(long T, complex float* ncalreg)
 		if (spike >= uniform_rand())
 			ncalreg[idx] = stdev * gaussian_rand();
 }
+
 
 /**
  * file_name - This returns the name of file to read

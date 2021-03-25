@@ -204,7 +204,7 @@ void debug_print_dims(int dblevel, int D, const long dims[D])
 
 void debug_print_dims_trace(const char* func_name,
 			    const char* file,
-			    unsigned int line,
+			    int line,
 			    int dblevel,
 			    int D,
 			    const long dims[D])
@@ -308,9 +308,9 @@ void quicksort(int N, int ord[N], quicksort_cmp_t cmp)
  *
  * @note In-place sort. The input array contents are not preserved in their original order. 
  */
-float quickselect(float *arr, unsigned int n, unsigned int k)
+float quickselect(float *arr, int n, int k)
 {
-	unsigned long i, ir, j, l, mid;
+	long i, ir, j, l, mid;
 	float a;
    
 	l = 0;
@@ -372,9 +372,9 @@ float quickselect(float *arr, unsigned int n, unsigned int k)
  * Possibly faster for application to complex arrays.
  *
  */
-float quickselect_complex(complex float* arr, unsigned int n, unsigned int k)
+float quickselect_complex(complex float* arr, int n, int k)
 {
-	unsigned long i, ir, j, l, mid;
+	long i, ir, j, l, mid;
 	float a;
 	complex float ca;
    
@@ -555,34 +555,34 @@ bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_ar
 }
 
 
-void print_long(unsigned int D, const long arr[D])
+void print_long(int D, const long arr[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		printf("arr[%i] = %ld\n", i, arr[i]);
 }
 
-void print_float(unsigned int D, const float arr[D])
+void print_float(int D, const float arr[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		printf("arr[%i] = %f\n", i, arr[i]);
 }
 
-void print_int(unsigned int D, const int arr[D])
+void print_int(int D, const int arr[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		printf("arr[%i] = %i\n", i, arr[i]);
 }
 
-void print_complex(unsigned int D, const complex float arr[D])
+void print_complex(int D, const complex float arr[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		printf("arr[%i]: real = %f, imag = %f\n", i, crealf(arr[i]), cimagf(arr[i]));
 }
 
 
-unsigned int bitcount(unsigned long flags)
+int bitcount(unsigned long flags)
 {
-	unsigned int N = 0;
+	int N = 0;
 
 	for (; flags > 0; N++)
 		flags &= (flags - 1);

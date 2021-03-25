@@ -78,7 +78,7 @@ extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
 
 extern void debug_print_dims_trace(const char* func_name,
 				   const char* file,
-				   unsigned int line,
+				   int line,
 				   int dblevel,
 				   int D,
 				   const long dims[__VLA(D)]);
@@ -87,19 +87,18 @@ typedef int CLOSURE_TYPE(quicksort_cmp_t)(int a, int b);
 
 extern void quicksort(int N, int ord[__VLA(N)], quicksort_cmp_t cmp);
 
-extern float quickselect(float *arr, unsigned int n, unsigned int k);
-
-extern float quickselect_complex(_Complex float *arr, unsigned int n, unsigned int k);
+extern float quickselect(float *arr, int n, int k);
+extern float quickselect_complex(_Complex float *arr, int n, int k);
 
 extern void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str);
 extern _Bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str);
 
-extern void print_long(unsigned int D, const long arr[__VLA(D)]);
-extern void print_float(unsigned int D, const float arr[__VLA(D)]);
-extern void print_int(unsigned int D, const int arr[__VLA(D)]);
-extern void print_complex(unsigned int D, const _Complex float arr[__VLA(D)]);
+extern void print_long(int D, const long arr[__VLA(D)]);
+extern void print_float(int D, const float arr[__VLA(D)]);
+extern void print_int(int D, const int arr[__VLA(D)]);
+extern void print_complex(int D, const _Complex float arr[__VLA(D)]);
 
-extern unsigned int bitcount(unsigned long flags);
+extern int bitcount(unsigned long flags);
 
 extern const char* command_line;
 extern void save_command_line(int argc, char* argv[__VLA(argc)]);

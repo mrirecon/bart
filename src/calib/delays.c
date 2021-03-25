@@ -45,8 +45,8 @@
 // [AC-Adaptive]
 void radial_self_delays(int N, float shifts[N], const float phi[N], const long dims[DIMS], const complex float* in)
 {
-	unsigned int d = 2;
-	unsigned int flags = (1 << d);
+	int d = 2;
+	int flags = (1 << d);
 
 	assert(N == dims[d]);
 

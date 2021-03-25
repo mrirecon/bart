@@ -138,7 +138,7 @@ void debug_printf(int level, const char* fmt, ...)
 
 void debug_vprintf_trace(const char* func_name,
 			 const char* file,
-			 unsigned int line,
+			 int line,
 			 int level,
 			 const char* fmt,
 			 va_list ap)
@@ -162,7 +162,7 @@ void debug_vprintf_trace(const char* func_name,
 
 void debug_printf_trace(const char* func_name,
 			const char* file,
-			unsigned int line,
+			int line,
 			int level,
 			const char* fmt,
 			...)
