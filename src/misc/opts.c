@@ -192,11 +192,10 @@ static bool show_option_p(const struct opt_s opt)
 }
 
 
-static const char* add_space(bool has_arg)
+static const char* add_sep(const char* sep, bool has_arg)
 {
-	return has_arg ? " " : "";
+	return has_arg ? sep : "";
 }
-
 
 static void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
 {
@@ -208,14 +207,46 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 
 			if (NULL == opts[i].s) {
 
-				fprintf(fp, "[-%c%s%s] ", opts[i].c, add_space(opts[i].arg), opt_arg_str(opts[i].type));
+				fprintf(fp, "[-%c%s%s] ", opts[i].c, add_sep(" ", opts[i].arg), opt_arg_str(opts[i].type));
 
 			} else {
 
 				if (!isprint(opts[i].c))
-					fprintf(fp, "[--%s%s%s] ", opts[i].s, add_space(opts[i].arg), opt_arg_str(opts[i].type));
+					fprintf(fp, "[--%s%s%s] ", opts[i].s, add_sep(" ", opts[i].arg), opt_arg_str(opts[i].type));
 				else
-					fprintf(fp, "[-%c,--%s%s%s] ", opts[i].c, opts[i].s, add_space(opts[i].arg), opt_arg_str(opts[i].type));
+					fprintf(fp, "[-%c,--%s%s%s] ", opts[i].c, opts[i].s, add_sep(" ", opts[i].arg), opt_arg_str(opts[i].type));
+			}
+		}
+	}
+
+	fprintf(fp, "%s\n", usage_str);
+}
+
+static void print_usage_subopts(FILE* fp, char c, const char* arg_name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
+{
+	fprintf(fp, "Usage of sub-option: ");
+
+	if (0 != c)
+		fprintf(fp, "-%c", c);
+
+	if (NULL != arg_name)
+		fprintf(fp, (0 == c) ? "--%s " : ",--%s ", arg_name);
+	else
+		fprintf(fp, " ");
+
+	for (int i = 0; i < n; i++) {
+
+		if (show_option_p(opts[i])) {
+
+			if (NULL == opts[i].s) {
+
+				fprintf(fp, "[%c%s%s]%s", opts[i].c, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), i < (n - 1) ? "," : "");
+			} else {
+
+				if (opts[i].c < (int) ' ')
+					fprintf(fp, "[%s%s%s]%s", opts[i].s, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), i < (n - 1) ? "," : "");
+				else
+					fprintf(fp, "[%c%s%s,%s%s%s]%s", opts[i].c, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), opts[i].s, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), i < (n - 1) ? "," : "");
 			}
 		}
 	}
@@ -225,9 +256,27 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 
 
 
-static void print_help(const char* help_str, int n, const struct opt_s opts[n ?: 1])
+static void print_help(const char* help_str_prefix, const char* help_str, bool dash_prefix, const char* sep, int n, const struct opt_s opts[n ?: 1])
 {
-	printf("\n%s\n\n",  help_str);
+	if (NULL != help_str)
+		printf("\n%s%s\n\n", help_str_prefix, help_str);
+	else
+		printf("\n");
+
+	const char* short_only_format = NULL;
+	const char* long_only_format = NULL;
+	const char* short_long_format = NULL;
+	if (dash_prefix) {
+
+		short_only_format = "-%c%s%s";
+		long_only_format = "--%s%s%s";
+		short_long_format = "-%c,--%s%s%s";
+	} else {
+
+		short_only_format = "%c%s%s";
+		long_only_format = "%s%s%s";
+		short_long_format = "%c,%s%s%s";
+	}
 
 	int max_len = 0;
 
@@ -240,14 +289,14 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 
 			if (NULL == opts[i].s) {
 
-				len = snprintf(NULL, 0, "-%c%s%s", opts[i].c, add_space(opts[i].arg), opts[i].argname);
+				len = snprintf(NULL, 0, short_only_format, opts[i].c, add_sep(sep, opts[i].arg), opts[i].argname);
 
 			} else {
 
 				if (!isprint(opts[i].c))
-					len = snprintf(NULL, 0, "--%s%s%s", opts[i].s, add_space(opts[i].arg), opts[i].argname);
+					len = snprintf(NULL, 0, long_only_format, opts[i].s, add_sep(sep, opts[i].arg), opts[i].argname);
 				else
-					len = snprintf(NULL, 0, "-%c,--%s%s%s", opts[i].c, opts[i].s, add_space(opts[i].arg), opts[i].argname);
+					len = snprintf(NULL, 0, short_long_format, opts[i].c, opts[i].s, add_sep(sep, opts[i].arg), opts[i].argname);
 			}
 
 			max_len = MAX(max_len, len);
@@ -265,14 +314,14 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 
 			if (NULL == opts[i].s) {
 
-				written = fprintf(stdout, "-%c%s%s", opts[i].c, add_space(opts[i].arg), opts[i].argname);
+				written = fprintf(stdout, short_only_format, opts[i].c, add_sep(sep, opts[i].arg), opts[i].argname);
 
 			} else {
 
 				if (!isprint(opts[i].c))
-					written = fprintf(stdout, "--%s%s%s", opts[i].s, add_space(opts[i].arg), opts[i].argname);
+					written = fprintf(stdout, long_only_format, opts[i].s, add_sep(sep, opts[i].arg), opts[i].argname);
 				else
-					written = fprintf(stdout, "-%c,--%s%s%s", opts[i].c, opts[i].s, add_space(opts[i].arg), opts[i].argname);
+					written = fprintf(stdout, short_long_format, opts[i].c, opts[i].s, add_sep(sep, opts[i].arg), opts[i].argname);
 			}
 
 			assert(pad_len > written);
@@ -281,7 +330,10 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 		}
 	}
 
-	printf("-h%*chelp\n", pad_len - 2, ' ');
+	if (dash_prefix)
+		printf("-h%*chelp\n", pad_len - 2, ' ');
+	else
+		printf("h%*chelp\n", pad_len - 1, ' ');
 }
 
 
@@ -366,7 +418,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 	if ('h' == c) {
 
 		print_usage(stdout, name, usage_str, n, opts);
-		print_help(help_str, n, opts);
+		print_help("", help_str, true, " ", n, opts);
 		exit(0);
 	}
 
@@ -404,7 +456,7 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 
 	struct opt_s wopts[n ?: 1];
 
-	if ((NULL != opts) && (0 < n))
+	if (NULL != opts)
 		memcpy(wopts, opts, sizeof wopts);
 
 
@@ -732,7 +784,69 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 	UNUSED(c);
 	struct opt_subopt_s* ptr = _ptr;
 
-	process_option(optarg[0], optarg + 1, "", "", "", ptr->n, ptr->opts, 0, NULL);
+	int n = ptr->n;
+	auto opts = ptr->opts;
+
+	struct opt_s wopts[n ?: 1];
+
+	if (NULL != opts)
+		memcpy(wopts, opts, sizeof wopts);
+
+	char lc = 1;
+	for (int i = 0; i < n; i++) {
+
+		if (NULL != wopts[i].s) {
+
+			// if it is only longopt, overwrite c with an unprintable char
+			if (0 == wopts[i].c)
+				wopts[i].c = lc++;
+
+			assert(lc < ' ');
+		}
+	}
+
+	const char* tokens[2 * ptr->n + 2];
+	for (int i = 0; i < ptr->n; i++) {
+
+		tokens[2 * i] = ptr_printf("%c", wopts[i].c);
+		if (NULL == wopts[i].s)
+			tokens[2 * i + 1] = ptr_printf("char_only_token_%c", wopts[i].c);
+		else
+			tokens[2 * i + 1] = ptr_printf("%s", wopts[i].s);
+	}
+
+	tokens[2 * ptr->n] = ptr_printf("h");
+	tokens[2 * ptr->n + 1] = NULL;
+
+
+	char* tmpoptionp = strdup(optarg);
+	char* option = tmpoptionp;
+	char* value = NULL;
+
+	int i = -1;
+	while('\0' != *option) {
+
+		i = getsubopt(&option, (char *const *)tokens, &value);
+		if ((i == 2 * n) || (-1 == i)) {
+
+			print_usage_subopts(stdout, ptr->calling_c, ptr->calling_s, "", n, opts);
+			print_help("Sub-options: ", ptr->calling_desc, false, "=", ptr->n, ptr->opts);
+		}
+
+		if (-1 == i)
+			error("Sub-option could not be parsed: %s", value);
+
+		if (i < 2 * n)
+			process_option(wopts[i / 2].c, value, "", "", "", n, wopts, 0, NULL);
+		else
+			exit(0);
+	}
+
+	xfree(tmpoptionp);
+
+	for (int i = 0; i < 2 * n + 1; i++)
+		xfree(tokens[i]);
+
 
 	return false;
 }
