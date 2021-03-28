@@ -179,6 +179,11 @@ static const char* add_space(bool has_arg)
 	return has_arg ? " " : "";
 }
 
+static const char* add_equal(bool has_arg)
+{
+	return has_arg ? "=" : "";
+}
+
 
 static void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
 {
@@ -196,6 +201,36 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 					fprintf(fp, "[--%s%s%s] ", opts[i].s, add_space(opts[i].arg), opt_arg_str(opts[i].type));
 				else
 					fprintf(fp, "[-%c,--%s%s%s] ", opts[i].c, opts[i].s, add_space(opts[i].arg), opt_arg_str(opts[i].type));
+			}
+		}
+
+	fprintf(fp, "%s\n", usage_str);
+}
+
+static void print_usage_subopts(FILE* fp, char c, const char* arg_name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
+{
+	fprintf(fp, "Usage of sub-option: ");
+
+	if (0 != c)
+		fprintf(fp, "-%c", c);
+
+	if (NULL != arg_name)
+		fprintf(fp, (0 == c) ? "--%s " : ",--%s ", arg_name);
+	else
+		fprintf(fp, " ");
+
+	for (int i = 0; i < n; i++)
+		if (show_option_p(opts[i])) {
+
+			if (NULL == opts[i].s) {
+
+				fprintf(fp, "[%c%s%s]%s", opts[i].c, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), i < (n - 1) ? "," : "");
+			} else {
+
+				if (opts[i].c < (int) ' ')
+					fprintf(fp, "[%s%s%s]%s", opts[i].s, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), i < (n - 1) ? "," : "");
+				else
+					fprintf(fp, "[%c%s%s,%s%s%s]%s", opts[i].c, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), opts[i].s, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), i < (n - 1) ? "," : "");
 			}
 		}
 
@@ -252,6 +287,60 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 		}
 
 	printf("-h%*chelp\n", pad_len - 2, ' ');
+}
+
+static void print_help_subopts(const char* descr, int n, const struct opt_s opts[n ?: 1])
+{
+
+	if (NULL != descr)
+		printf("\nSub-options: %s\n\n",  descr);
+	else
+		printf("\n");
+
+	int max_len = 0;
+
+	// get needed padding lengths
+	for (int i = 0; i < n; i++)
+		if (show_option_p(opts[i])) {
+
+			int len = 0;
+			if (NULL == opts[i].s) {
+
+				len = snprintf(NULL, 0, "%c%s%s", opts[i].c,add_equal(opts[i].arg), opts[i].argname);
+
+			} else {
+
+				if (!isprint(opts[i].c))
+					len = snprintf(NULL, 0, "%s%s%s", opts[i].s,add_equal(opts[i].arg), opts[i].argname);
+				else
+					len = snprintf(NULL, 0, "%c,%s%s%s", opts[i].c, opts[i].s,add_equal(opts[i].arg), opts[i].argname);
+			}
+
+			max_len = MAX(max_len, len);
+		}
+
+	const int pad_len = max_len + 4;
+
+	// print help
+	for (int i = 0; i < n; i++)
+		if (show_option_p(opts[i])) {
+
+			int written = 0;
+			if (NULL == opts[i].s) {
+
+				written = fprintf(stdout, "%c%s%s", opts[i].c,add_equal(opts[i].arg), opts[i].argname);
+
+			} else {
+
+				if (!isprint(opts[i].c))
+					written = fprintf(stdout, "%s%s%s", opts[i].s,add_equal(opts[i].arg), opts[i].argname);
+				else
+					written = fprintf(stdout, "%c,%s%s%s", opts[i].c, opts[i].s,add_equal(opts[i].arg), opts[i].argname);
+			}
+			fprintf(stdout, "%*c%s\n", pad_len - written, ' ', opts[i].descr);
+		}
+
+	printf("h%*chelp\n", pad_len - 1, ' ');
 }
 
 
@@ -614,7 +703,70 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 	UNUSED(c);
 	struct opt_subopt_s* ptr = _ptr;
 
-	process_option(optarg[0], optarg + 1, "", "", "", ptr->n, ptr->opts);
+	int n = ptr->n;
+	auto opts = ptr->opts;
+
+	struct opt_s wopts[n ?: 1];
+
+	if (NULL != opts)
+		memcpy(wopts, opts, sizeof wopts);
+
+	char lc = 1;
+	for (int i = 0; i < n; i++) {
+
+		if (NULL != wopts[i].s) {
+
+			// if it is only longopt, overwrite c with an unprintable char
+			if (0 == wopts[i].c)
+				wopts[i].c = lc++;
+
+			assert(lc < ' ');
+		}
+	}
+
+	const char* tokens[2 * ptr->n + 2];
+	for (int i = 0; i < ptr->n; i++) {
+
+		tokens[2 * i] = ptr_printf("%c", wopts[i].c);
+		if (NULL == wopts[i].s)
+			tokens[2 * i + 1] = ptr_printf("char_only_token_%c", wopts[i].c);
+		else
+			tokens[2 * i + 1] = ptr_printf("%s", wopts[i].s);
+	}
+
+	tokens[2 * ptr->n] = ptr_printf("h");
+	tokens[2 * ptr->n + 1] = NULL;
+
+
+	char* tmpoptionp = strdup(optarg);
+	char* option = tmpoptionp;
+	char* value = NULL;
+
+	int i = -1;
+	while('\0' != *option) {
+
+		i = getsubopt(&option, (char *const *)tokens, &value);
+		if ((i == 2 * n) || (-1 == i)) {
+
+			print_usage_subopts(stdout, ptr->calling_c, ptr->calling_s, "", n, opts);
+			print_help_subopts(ptr->calling_desc, ptr->n, ptr->opts);
+		}
+
+		if (-1 == i)
+			error("Sub-option could not be parsed: %s", value);
+
+		if (i < 2 * n)
+			process_option(wopts[i / 2].c, value, "", "", "", n, wopts);
+		else
+			exit(0);
+	}
+
+	xfree(tmpoptionp);
+
+	for (int i = 0; i < 2 * n + 1; i++)
+		xfree(tokens[i]);
+
+
 	return false;
 }
 
