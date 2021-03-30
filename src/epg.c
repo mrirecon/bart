@@ -24,7 +24,7 @@
 #endif
 
 
-static const char usage_str[] = "<signal intensity> [<configuration states> [<signal derivatives> [<configuration derivatives>]]]";
+static const char usage_str[] = "<signal intensity> [<configuration states> [<(rel.) signal derivatives> [<configuration derivatives>]]]";
 static const char help_str[] = "Simulate MR pulse sequence based on Extended Phase Graphs (EPG)";
 
 int main_epg(int argc, char* argv[argc])
@@ -56,16 +56,16 @@ int main_epg(int argc, char* argv[argc])
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
 		OPT_SELECT('S', enum seq_type, &seq, SPINECHO, "Spinecho"),
 		OPT_SELECT('B', enum seq_type, &seq, BSSFP, "bSSFP"),
-		OPT_FLOAT('1', &T1, "T1", "T1"),
-		OPT_FLOAT('2', &T2, "T2", "T2"),
-		OPT_FLOAT('r', &TR, "TR", "repetition time"),
-		OPT_FLOAT('e', &TE, "TE", "echo time"),
-		OPT_FLOAT('f', &FA, "FA", "flip angle"),
-		OPT_FLOAT('o', &offres, "OFF", "off-resonance"),
-		OPT_FLOAT('b', &B1, "B1", "relative B1"),
-		OPT_LONG('s', &SP, "SP", "Spoiling"),
+		OPT_FLOAT('1', &T1, "T1", "T1 [units of time]"),
+		OPT_FLOAT('2', &T2, "T2", "T2 [units of time]"),
+		OPT_FLOAT('b', &B1, "B1", "relative B1 [unitless]"),
+		OPT_FLOAT('o', &offres, "OFF", "off-resonance [units of inverse time]"),
+		OPT_FLOAT('r', &TR, "TR", "repetition time [units of time]"),
+		OPT_FLOAT('e', &TE, "TE", "echo time [units of time]"),
+		OPT_FLOAT('f', &FA, "FA", "flip angle [degrees]"),
+		OPT_LONG('s', &SP, "SP", "spoiling (0: ideal, 1: conventional RF, 2: random RF)"),
 		OPT_LONG('n',   &N, "N", "number of pulses"),
-		OPT_LONG('u',   &unknowns, "U", "unknowns as bitmask"),
+		OPT_LONG('u',   &unknowns, "U", "unknowns as bitmask (0: T1, 1: T2, 2: B1, 3: off-res)"),
 		OPT_LONG('v',   &verbose, "V", "verbosity level"),
 	};
 
