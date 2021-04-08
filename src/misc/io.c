@@ -61,7 +61,7 @@ enum file_types_e file_type(const char* name)
 
 #ifdef USE_MEM_CFL
 		if (0 == strcmp(p, ".mem"))
-			return MEM;
+			return FILE_TYPE_MEM;
 #endif
 	}
 
@@ -180,6 +180,13 @@ void io_unlink_if_opened(const char* name)
 
 				if (0 != unlink(name_hdr))
 					error("Failed to unlink file %s\n", name);
+
+				break;
+
+#ifdef USE_MEM_CFL
+			case FILE_TYPE_MEM:
+				break;
+#endif
 			}
 
 			io_unregister(name);

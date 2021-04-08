@@ -1,4 +1,6 @@
 
+#ifndef __cplusplus
+
 #include "misc/cppmap.h"
 
 
@@ -13,4 +15,7 @@ extern int main_bbox(int argc, char* argv[argc]);
 
 // for use as a library
 extern int bart_command(int len, char* buf, int argc, char* argv[]);
+
+
+#endif
 

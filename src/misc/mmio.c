@@ -255,7 +255,7 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 			return create_zcoo(name, D, dimensions);
 
 #ifdef USE_MEM_CFL
-		case MEM:
+		case FILE_TYPE_MEM:
 			return create_mem_cfl(name, D, dimensions);
 #endif
 
@@ -361,7 +361,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 			return load_zcoo(name, D, dimensions);
 
 #ifdef USE_MEM_CFL
-		case MEM:
+		case FILE_TYPE_MEM:
 		{
 			complex float* ptr = load_mem_cfl(name, D, dimensions);
 
