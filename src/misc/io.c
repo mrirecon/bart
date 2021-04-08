@@ -1,11 +1,11 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015-2018. Martin Uecker.
+ * Copyright 2015-2021. Martin Uecker.
  * Copyright 2017-2018. Damien Nguyen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2021 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017-2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
  */
 
@@ -16,6 +16,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <complex.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -58,6 +59,9 @@ enum file_types_e file_type(const char* name)
 
 		if (0 == strcmp(p, ".coo"))
 			return FILE_TYPE_COO;
+
+		if (0 == strcmp(p, ".shm"))
+			return FILE_TYPE_SHM;
 
 #ifdef USE_MEM_CFL
 		if (0 == strcmp(p, ".mem"))
@@ -183,6 +187,12 @@ void io_unlink_if_opened(const char* name)
 
 				break;
 
+			case FILE_TYPE_SHM:
+
+				if (0 != shm_unlink(name))
+					error("Failed to unlink shared memory segment %s\n", name);
+
+				break;
 #ifdef USE_MEM_CFL
 			case FILE_TYPE_MEM:
 				break;

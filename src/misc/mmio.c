@@ -1,10 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2021. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2017 Martin Uecker <uecker@martin.uecker@med.uni-goettingen.de>
+ * 2012-2021 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
@@ -110,12 +110,8 @@ static long io_calc_size(int D, const long dims[D?:1], size_t size)
 
 
 
-complex float* load_zra(const char* name, int D, long dims[D])
+static complex float* load_zra_internal(int fd, const char* name, int D, long dims[D])
 {
-	int fd;
-	if (-1 == (fd = open(name, O_RDONLY)))
-		io_error("Loading ra file %s\n", name);
-
 	if (-1 == read_ra(fd, D, dims))
 		error("Loading ra file %s\n", name);
 
@@ -150,6 +146,28 @@ complex float* load_zra(const char* name, int D, long dims[D])
 }
 
 
+complex float* load_zra(const char* name, int D, long dims[D])
+{
+	int fd;
+	if (-1 == (fd = open(name, O_RDONLY)))
+		io_error("Loading ra file %s\n", name);
+
+	return load_zra_internal(fd, name, D, dims);
+}
+
+complex float* load_zshm(const char* name, int D, long dims[D])
+{
+	if ('/' != name[0])
+		error("shm file name does not start with a slash.\n");
+
+	int fd;
+	if (-1 == (fd = shm_open(name, O_RDONLY, 0)))
+		io_error("Loading shm file %s\n", name);
+
+	return load_zra_internal(fd, name, D, dims);
+}
+
+
 static void* create_data(int ofd, size_t header_size, size_t size)
 {
 	if (-1 == (ftruncate(ofd, size + header_size)))
@@ -165,12 +183,9 @@ static void* create_data(int ofd, size_t header_size, size_t size)
 	return (char*)addr + off;
 }
 
-complex float* create_zra(const char* name, int D, const long dims[D])
-{
-	int ofd;
-	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
-		io_error("Creating ra file %s\n", name);
 
+static complex float* create_zra_internal(int ofd, const char* name, int D, const long dims[D])
+{
 	if (-1 == write_ra(ofd, D, dims))
 		error("Creating ra file %s\n", name);
 
@@ -192,6 +207,29 @@ complex float* create_zra(const char* name, int D, const long dims[D])
 		io_error("Creating ra file %s\n", name);
 
 	return (complex float*)data;
+}
+
+
+complex float* create_zra(const char* name, int D, const long dims[D])
+{
+	int ofd;
+	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
+		io_error("Creating ra file %s\n", name);
+
+	return create_zra_internal(ofd, name, D, dims);
+}
+
+
+complex float* create_zshm(const char* name, int D, const long dims[D])
+{
+	if ('/' != name[0])
+		error("shm file name does not start with a slash.\n");
+
+	int ofd;
+	if (-1 == (ofd = shm_open(name, O_RDWR /* |O_CREAT */, S_IRUSR|S_IWUSR)))
+		io_error("Creating shm file %s\n", name);
+
+	return create_zra_internal(ofd, name, D, dims);
 }
 
 
@@ -248,19 +286,23 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	enum file_types_e type = file_type(name);
 
 	switch (type) {
-		case FILE_TYPE_RA:
-			return create_zra(name, D, dimensions);
 
-		case FILE_TYPE_COO:
-			return create_zcoo(name, D, dimensions);
+	case FILE_TYPE_RA:
+		return create_zra(name, D, dimensions);
+
+	case FILE_TYPE_COO:
+		return create_zcoo(name, D, dimensions);
+
+	case FILE_TYPE_SHM:
+		return create_zshm(name, D, dimensions);
 
 #ifdef USE_MEM_CFL
-		case FILE_TYPE_MEM:
-			return create_mem_cfl(name, D, dimensions);
+	case FILE_TYPE_MEM:
+		return create_mem_cfl(name, D, dimensions);
 #endif
 
-		default:
-			; // handled in this function
+	default:
+		; // handled in this function
 	}
 
  
@@ -354,26 +396,30 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 	enum file_types_e type = file_type(name);
 
 	switch (type) {
-		case FILE_TYPE_RA:
-			return load_zra(name, D, dimensions);
 
-		case FILE_TYPE_COO:
-			return load_zcoo(name, D, dimensions);
+	case FILE_TYPE_RA:
+		return load_zra(name, D, dimensions);
+
+	case FILE_TYPE_COO:
+		return load_zcoo(name, D, dimensions);
+
+	case FILE_TYPE_SHM:
+		return load_zshm(name, D, dimensions);
 
 #ifdef USE_MEM_CFL
-		case FILE_TYPE_MEM:
-		{
-			complex float* ptr = load_mem_cfl(name, D, dimensions);
+	case FILE_TYPE_MEM:
+	{
+		complex float* ptr = load_mem_cfl(name, D, dimensions);
 
-			if (ptr == NULL)
-				io_error("failed loading memory cfl file \"%s\"\n", name);
-			else
-				return ptr;
-		}
+		if (ptr == NULL)
+			io_error("failed loading memory cfl file \"%s\"\n", name);
+		else
+			return ptr;
+	}
 #endif // USE_MEM_CFL
 
-		default:
-			; // handled in this function
+	default:
+		; // handled in this function
 	}
 
 

@@ -24,6 +24,9 @@ extern _Complex float* create_zcoo(const char* name, int D, const long dimension
 extern _Complex float* load_zcoo(const char* name, int D, long dimensions[__VLA(D)]);
 extern _Complex float* create_zra(const char* name, int D, const long dims[__VLA(D)]);
 extern _Complex float* load_zra(const char* name, int D, long dims[__VLA(D)]);
+extern _Complex float* create_zshm(const char* name, int D, const long dims[__VLA(D)]);
+extern _Complex float* load_zshm(const char* name, int D, long dims[__VLA(D)]);
+
 
 #include "misc/cppwrap.h"
 
