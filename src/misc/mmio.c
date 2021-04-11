@@ -291,6 +291,13 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 
 		;
 
+		static bool once_w = false;
+
+		if (once_w)
+			error("writing two inputs to pipe is not supported\n");
+
+		once_w = true;
+
 		const char* filename = tempnam(NULL, "bart-");
 
 		debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", filename);
@@ -415,6 +422,15 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 	switch (type) {
 
 	case FILE_TYPE_PIPE:
+
+		;
+
+		static bool once_r = false;
+
+		if (once_r)
+			error("reading two inputs from pipe is not supported\n");
+
+		once_r = true;
 
 		// read header from stdin
 
