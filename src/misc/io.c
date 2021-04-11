@@ -196,6 +196,10 @@ void io_unlink_if_opened(const char* name)
 					error("Failed to unlink shared memory segment %s\n", name);
 
 				break;
+
+			case FILE_TYPE_PIPE:
+				break;
+
 #ifdef USE_MEM_CFL
 			case FILE_TYPE_MEM:
 				break;
@@ -261,9 +265,20 @@ int read_cfl_header(int fd, char** file, int n, long dimensions[n])
 	char header[4097];
 	memset(header, 0, 4097);
 
-	int max;
-	if (0 > (max = read(fd, header, 4096)))
-		return -1;
+	int max = 0;
+
+	while (max < 4096) {
+
+		int rd;
+
+		if (0 > (rd = read(fd, header + max, 4096 - max)))
+			return -1;
+
+		if (0 == rd)
+			break;
+
+		max += rd;
+	}
 
 	int pos = 0;
 	int delta = 0;
