@@ -50,6 +50,9 @@ static void xdprintf(int fd, const char* fmt, ...)
 
 enum file_types_e file_type(const char* name)
 {
+	if (0 == strcmp("-", name))
+		return FILE_TYPE_PIPE;
+
 	const char *p = strrchr(name, '.');
 
 	if ((NULL != p) && (p != name)) {
@@ -209,7 +212,7 @@ void io_unlink_if_opened(const char* name)
 }
 
 
-int write_cfl_header(int fd, int n, const long dimensions[n])
+int write_cfl_header(int fd, const char* filename, int n, const long dimensions[n])
 {
 	xdprintf(fd, "# Dimensions\n");
 
@@ -217,6 +220,12 @@ int write_cfl_header(int fd, int n, const long dimensions[n])
 		xdprintf(fd, "%ld ", dimensions[i]);
 
 	xdprintf(fd, "\n");
+
+	if (NULL != filename) {
+
+		xdprintf(fd, "# Data\n");
+		xdprintf(fd, "%s\n", filename);
+	}
 
 	if (NULL != command_line) {
 
@@ -246,8 +255,9 @@ int write_cfl_header(int fd, int n, const long dimensions[n])
 
 
 
-int read_cfl_header(int fd, int n, long dimensions[n])
+int read_cfl_header(int fd, char** file, int n, long dimensions[n])
 {
+	*file = NULL;
 	char header[4097];
 	memset(header, 0, 4097);
 
@@ -313,6 +323,18 @@ int read_cfl_header(int fd, int n, long dimensions[n])
 					return -1;
 
 				ok = true;
+			}
+
+			if (0 == strcmp(keyword, "Data")) {
+
+				char filename[256];
+
+				if (1 != sscanf(header + pos, "%255s\n%n", filename, &delta))
+					return -1;
+
+				*file = strdup(filename);
+
+				pos += delta;
 			}
 
 		} else {

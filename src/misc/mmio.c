@@ -287,6 +287,9 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 
 	switch (type) {
 
+	case FILE_TYPE_PIPE:
+		error("stdout not supported\n");
+
 	case FILE_TYPE_RA:
 		return create_zra(name, D, dimensions);
 
@@ -318,7 +321,7 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)))
 		io_error("Creating cfl file %s\n", name);
 
-	if (-1 == write_cfl_header(ofd, D, dimensions))
+	if (-1 == write_cfl_header(ofd, NULL, D, dimensions))
 		error("Creating cfl file %s\n", name);
 
 	if (-1 == close(ofd))
@@ -381,8 +384,6 @@ complex float* load_zcoo(const char* name, int D, long dimensions[D])
 
 static complex float* load_cfl_internal(const char* name, int D, long dimensions[D], bool priv)
 {
-	io_register_input(name);
-
 #ifdef MEMONLY_CFL
 	UNUSED(priv);
 
@@ -393,9 +394,25 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 	return ptr;
 #else
+
+	io_register_input(name);
+
+	char* filename = NULL;
 	enum file_types_e type = file_type(name);
 
 	switch (type) {
+
+	case FILE_TYPE_PIPE:
+
+		// read header from stdin
+
+		if (-1 == read_cfl_header(0, &filename, D, dimensions))
+			error("Reading input\n");
+
+		if (NULL == filename)
+			error("No data.\n");
+
+		goto skip;
 
 	case FILE_TYPE_RA:
 		return load_zra(name, D, dimensions);
@@ -424,24 +441,32 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 
 	char name_bdy[1024];
+
 	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
 		error("Loading cfl file %s\n", name);
 
 	char name_hdr[1024];
+
 	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
 		error("Loading cfl file %s\n", name);
 
 	int ofd;
+
 	if (-1 == (ofd = open(name_hdr, O_RDONLY)))
 		io_error("Loading cfl file %s\n", name);
 
-	if (-1 == read_cfl_header(ofd, D, dimensions))
+	if (-1 == read_cfl_header(ofd, &filename, D, dimensions))
 		error("Loading cfl file %s\n", name);
 
 	if (-1 == close(ofd))
 		io_error("Loading cfl file %s\n", name);
 
-	return (priv ? private_cfl : shared_cfl)(D, dimensions, name_bdy);
+skip: ;
+	complex float* ret = (priv ? private_cfl : shared_cfl)(D, dimensions, filename ?: name_bdy);
+
+	free(filename);
+
+	return ret;
 #endif /* MEMONLY_CFL */
 }
 

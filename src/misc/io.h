@@ -3,7 +3,7 @@
 
 
 enum file_types_e {
-	FILE_TYPE_CFL, FILE_TYPE_RA, FILE_TYPE_COO, FILE_TYPE_SHM,
+	FILE_TYPE_CFL, FILE_TYPE_RA, FILE_TYPE_COO, FILE_TYPE_SHM, FILE_TYPE_PIPE,
 #ifdef USE_MEM_CFL
 	FILE_TYPE_MEM,
 #endif
@@ -17,8 +17,8 @@ extern int read_ra(int fd, int n, long dimensions[__VLA(n)]);
 extern int write_coo(int fd, int n, const long dimensions[__VLA(n)]);
 extern int read_coo(int fd, int n, long dimensions[__VLA(n)]);
 
-extern int write_cfl_header(int fd, int n, const long dimensions[__VLA(n)]);
-extern int read_cfl_header(int fd, int D, long dimensions[__VLA(D)]);
+extern int write_cfl_header(int fd, const char* filename, int n, const long dimensions[__VLA(n)]);
+extern int read_cfl_header(int fd, char** file, int D, long dimensions[__VLA(D)]);
 
 extern void io_register_input(const char* name);
 extern void io_register_output(const char* name);
