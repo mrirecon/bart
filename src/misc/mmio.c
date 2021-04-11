@@ -288,7 +288,19 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	switch (type) {
 
 	case FILE_TYPE_PIPE:
-		error("stdout not supported\n");
+
+		;
+
+		const char* filename = tempnam(NULL, "bart-");
+
+		debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", filename);
+
+		complex float* ptr = shared_cfl(D, dimensions, filename);
+
+		if (-1 == write_cfl_header(1, filename, D, dimensions))
+			error("Writing to stdout\n");
+
+		return ptr;
 
 	case FILE_TYPE_RA:
 		return create_zra(name, D, dimensions);
@@ -463,6 +475,10 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 skip: ;
 	complex float* ret = (priv ? private_cfl : shared_cfl)(D, dimensions, filename ?: name_bdy);
+
+	if (FILE_TYPE_PIPE == type)
+		if (0 != unlink(filename))
+			error("Error unlinking temporary file %s\n", filename);
 
 	free(filename);
 
