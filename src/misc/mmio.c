@@ -243,6 +243,44 @@ complex float* create_zcoo(const char* name, int D, const long dimensions[D])
 }
 
 
+static complex float* create_pipe(int pfd, int D, const long dimensions[D])
+{
+	static bool once_w = false;
+
+	if (once_w)
+		error("writing two inputs to pipe is not supported\n");
+
+	once_w = true;
+
+	char filename[] = "bart-XXXXXX";
+
+	int fd = mkstemp(filename);
+
+	debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", filename);
+
+	long T;
+
+	if (-1 == (T = io_calc_size(D, dimensions, sizeof(complex float))))
+		error("temp cfl %s\n", filename);
+
+	err_assert(T > 0);
+
+	complex float* ptr;
+
+	if (NULL == (ptr = create_data(fd, 0, T)))
+		error("temp cfl %s\n", filename);
+
+	if (-1 == close(fd))
+		io_error("temp cfl %s\n", filename);
+
+	if (-1 == write_cfl_header(pfd, filename, D, dimensions))
+		error("Writing to stdout\n");
+
+	return ptr;
+}
+
+
+
 complex float* create_cfl(const char* name, int D, const long dimensions[D])
 {
 	io_unlink_if_opened(name);
@@ -253,26 +291,7 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	switch (type) {
 
 	case FILE_TYPE_PIPE:
-
-		;
-
-		static bool once_w = false;
-
-		if (once_w)
-			error("writing two inputs to pipe is not supported\n");
-
-		once_w = true;
-
-		const char* filename = tempnam(NULL, "bart-");
-
-		debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", filename);
-
-		complex float* ptr = shared_cfl(D, dimensions, filename);
-
-		if (-1 == write_cfl_header(1, filename, D, dimensions))
-			error("Writing to stdout\n");
-
-		return ptr;
+		return create_pipe(1, D, dimensions);
 
 	case FILE_TYPE_RA:
 		return create_zra(name, D, dimensions);
