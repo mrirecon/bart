@@ -15,6 +15,7 @@
 
 #define _GNU_SOURCE
 #include <stdlib.h>
+#include <stddef.h>
 #include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
@@ -23,6 +24,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <limits.h>
 
 #ifdef BART_WITH_PYTHON
 #include <Python.h>
@@ -601,6 +603,36 @@ bool safe_isfinite(float x)
 {
 	return (!isnan(x) && !isinf(x));
 	// return isfinite(x); <- is sometimes true when x is NaN.
+}
+
+
+static bool long_mul_overflow_p(long a, long b)
+{
+	bool of = false;
+
+	of |= (a > 0) && (b > 0) && (a > LONG_MAX / b);
+	of |= (a > 0) && (b < 0) && (b < LONG_MIN / a);
+	of |= (a < 0) && (b > 0) && (a < LONG_MIN / b);
+	of |= (a < 0) && (b < 0) && (b < LONG_MAX / a);
+
+	return of;
+}
+
+long io_calc_size(int D, const long dims[D?:1], size_t size)
+{
+	if (0 == D)
+		return size;
+
+	long a = io_calc_size(D - 1, dims + 1, size);
+	long b = dims[0];
+
+	if ((a < 0) || (b < 0))
+		return -1;
+
+	if (long_mul_overflow_p(a, b))
+		return -1;
+
+	return a * b;
 }
 
 

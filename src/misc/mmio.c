@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdarg.h>
-#include <limits.h>
 
 #include <sys/mman.h>
 
@@ -30,11 +29,9 @@
 #include "misc/misc.h"
 #include "misc/io.h"
 #include "misc/debug.h"
+#include "misc/memcfl.h"
 
 #include "mmio.h"
-#if defined(USE_MEM_CFL) || defined(MEMONLY_CFL)
-#include "mmiocc.hh"
-#endif
 
 // for BSD compatibility
 #ifndef MAP_ANONYMOUS
@@ -78,35 +75,6 @@ static void io_error(const char* fmt, ...)
 
 
 #define err_assert(x)	({ if (!(x)) { debug_printf(DP_ERROR, "%s", #x); exit(EXIT_FAILURE); } })
-
-static bool long_mul_overflow_p(long a, long b)
-{
-	bool of = false;
-
-	of |= (a > 0) && (b > 0) && (a > LONG_MAX / b);
-	of |= (a > 0) && (b < 0) && (b < LONG_MIN / a);
-	of |= (a < 0) && (b > 0) && (a < LONG_MIN / b);
-	of |= (a < 0) && (b < 0) && (b < LONG_MAX / a);
-
-	return of;
-}
-
-static long io_calc_size(int D, const long dims[D?:1], size_t size)
-{
-	if (0 == D)
-		return size;
-
-	long a = io_calc_size(D - 1, dims + 1, size);
-	long b = dims[0];
-
-	if ((a < 0) || (b < 0))
-		return -1;
-
-	if (long_mul_overflow_p(a, b))
-		return -1;
-
-	return a * b;
-}
 
 
 
@@ -170,7 +138,7 @@ complex float* load_zshm(const char* name, int D, long dims[D])
 
 static void* create_data(int ofd, size_t header_size, size_t size)
 {
-	if (-1 == (ftruncate(ofd, size + header_size)))
+	if (-1 == ftruncate(ofd, size + header_size))
 		return NULL;
 
 	size_t skip = header_size & ~4095UL;
@@ -316,7 +284,7 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 		return create_zshm(name, D, dimensions);
 
 	case FILE_TYPE_MEM:
-		error("mem cfl not supported");
+		return memcfl_create(name, D, dimensions);
 
 	default:
 		; // handled in this function
@@ -437,7 +405,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 		return load_zshm(name, D, dimensions);
 
 	case FILE_TYPE_MEM:
-		error("mem clf not supported\n");
+		return memcfl_load(name, D, dimensions);
 
 	default:
 		; // handled in this function
@@ -597,6 +565,9 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 
 void unmap_cfl(int D, const long dims[D?:1], const complex float* x)
 {
+	if (memcfl_unmap(x))
+		return;
+
 	long T;
 
 	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
