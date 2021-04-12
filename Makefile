@@ -37,8 +37,6 @@ LOG_BACKEND?=0
 LOG_SIEMENS_BACKEND?=0
 LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
-ENABLE_MEM_CFL?=0
-MEMONLY_CFL?=0
 
 
 DESTDIR ?= /
@@ -424,21 +422,6 @@ ISMRM_H :=
 ISMRM_L :=
 endif
 
-# Enable in-memory CFL files
-
-ifeq ($(ENABLE_MEM_CFL),1)
-CPPFLAGS += -DUSE_MEM_CFL
-miscextracxxsrcs += $(srcdir)/misc/mmiocc.cc
-LDFLAGS += -lstdc++
-endif
-
-# Only allow in-memory CFL files (ie. disable support for all other files)
-
-ifeq ($(MEMONLY_CFL),1)
-CPPFLAGS += -DMEMONLY_CFL
-miscextracxxsrcs += $(srcdir)/misc/mmiocc.cc
-LDFLAGS += -lstdc++
-endif
 
 # Logging backends
 

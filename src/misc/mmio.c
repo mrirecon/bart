@@ -280,9 +280,6 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	io_unlink_if_opened(name);
 	io_register_output(name);
 
-#ifdef MEMONLY_CFL
-	return create_mem_cfl(name, D, dimensions);
-#else
 	enum file_types_e type = file_type(name);
 
 	switch (type) {
@@ -318,10 +315,8 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	case FILE_TYPE_SHM:
 		return create_zshm(name, D, dimensions);
 
-#ifdef USE_MEM_CFL
 	case FILE_TYPE_MEM:
-		return create_mem_cfl(name, D, dimensions);
-#endif
+		error("mem cfl not supported");
 
 	default:
 		; // handled in this function
@@ -347,7 +342,6 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 		io_error("Creating cfl file %s\n", name);
 
 	return shared_cfl(D, dimensions, name_bdy);
-#endif /* MEMONLY_CFL */
 }
 
 
@@ -403,16 +397,7 @@ complex float* load_zcoo(const char* name, int D, long dimensions[D])
 
 static complex float* load_cfl_internal(const char* name, int D, long dimensions[D], bool priv)
 {
-#ifdef MEMONLY_CFL
 	UNUSED(priv);
-
-	complex float* ptr = load_mem_cfl(name, D, dimensions);
-
-	if (NULL == ptr)
-		io_error("Loading in-memory cfl file %s\n", name);
-
-	return ptr;
-#else
 
 	io_register_input(name);
 
@@ -451,17 +436,8 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 	case FILE_TYPE_SHM:
 		return load_zshm(name, D, dimensions);
 
-#ifdef USE_MEM_CFL
 	case FILE_TYPE_MEM:
-	{
-		complex float* ptr = load_mem_cfl(name, D, dimensions);
-
-		if (ptr == NULL)
-			io_error("failed loading memory cfl file \"%s\"\n", name);
-		else
-			return ptr;
-	}
-#endif // USE_MEM_CFL
+		error("mem clf not supported\n");
 
 	default:
 		; // handled in this function
@@ -499,7 +475,6 @@ skip: ;
 	free(filename);
 
 	return ret;
-#endif /* MEMONLY_CFL */
 }
 
 
@@ -515,7 +490,6 @@ complex float* load_shared_cfl(const char* name, int D, long dimensions[D])
 }
 
 
-#ifndef MEMONLY_CFL
 complex float* shared_cfl(int D, const long dims[D], const char* name)
 {
 //	struct stat st;
@@ -545,14 +519,12 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 
 	return (complex float*)addr;
 }
-#endif /* !MEMONLY_CFL */
 
 
 complex float* anon_cfl(const char* name, int D, const long dims[D])
 {
 	UNUSED(name);
 
-#ifndef MEMONLY_CFL
 	void* addr;
 	long T;
 
@@ -563,9 +535,6 @@ complex float* anon_cfl(const char* name, int D, const long dims[D])
 		io_error("anon cfl\n");
 
 	return (complex float*)addr;
-#else
-	return create_anon_mem_cfl(D, dims);
-#endif
 }
 
 
@@ -596,7 +565,6 @@ void* private_raw(size_t* size, const char* name)
 #endif
 
 
-#ifndef MEMONLY_CFL
 complex float* private_cfl(int D, const long dims[D], const char* name)
 {
 	long T;
@@ -625,25 +593,10 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 
 	return (complex float*)addr;
 }
-#endif /* !MEMONLY_CFL */
 
 
 void unmap_cfl(int D, const long dims[D?:1], const complex float* x)
 {
-#ifdef MEMONLY_CFL
-	UNUSED(D); UNUSED(dims);
-	try_delete_mem_cfl(x);
-#else
-
-#ifdef USE_MEM_CFL
-	if (is_mem_cfl(x)) {
-
-		// only delete if the dirty flag has been set
-		try_delete_mem_cfl(x);
-		return;
-	}
-#endif
-
 	long T;
 
 	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
@@ -651,6 +604,5 @@ void unmap_cfl(int D, const long dims[D?:1], const complex float* x)
 
 	if (-1 == munmap((void*)((uintptr_t)x & ~4095UL), T))
 		io_error("unmap cfl\n");
-#endif
 }
 

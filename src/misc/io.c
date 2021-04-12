@@ -66,10 +66,8 @@ enum file_types_e file_type(const char* name)
 		if (0 == strcmp(p, ".shm"))
 			return FILE_TYPE_SHM;
 
-#ifdef USE_MEM_CFL
 		if (0 == strcmp(p, ".mem"))
 			return FILE_TYPE_MEM;
-#endif
 	}
 
 	return FILE_TYPE_CFL;
@@ -200,10 +198,8 @@ void io_unlink_if_opened(const char* name)
 			case FILE_TYPE_PIPE:
 				break;
 
-#ifdef USE_MEM_CFL
 			case FILE_TYPE_MEM:
 				break;
-#endif
 			}
 
 			io_unregister(name);
