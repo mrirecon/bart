@@ -29,8 +29,7 @@ static const char help_str[] = "Simulate MR pulse sequence based on Extended Pha
 
 int main_epg(int argc, char* argv[argc])
 {
-
-	enum seq_type {CPMG, FMSSFP, HYPER, FLASH, SPINECHO, BSSFP};
+	enum seq_type { CPMG, FMSSFP, HYPER, FLASH, SPINECHO, BSSFP };
 	enum seq_type seq = CPMG;
 
 	bool save_states = false;
@@ -48,6 +47,7 @@ int main_epg(int argc, char* argv[argc])
 	long   N =    10;
 	long unknowns = 3;
 	long verbose = 0;
+
 	const struct opt_s opts[] = {
 
 		OPT_SELECT('C', enum seq_type, &seq, CPMG, "CPMG"),
@@ -80,13 +80,14 @@ int main_epg(int argc, char* argv[argc])
 	if (4 < argc)
 		save_statesder = true;
 
-	long M;	
+	long M;
+
 	if ((FMSSFP == seq) | (BSSFP == seq))
 		M = 1;
 	else if (FLASH == seq)
 		M = N;
 	else
-		M = 2*N;
+		M = 2 * N;
 	
 	complex float out_signal[N];
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -94,75 +95,92 @@ int main_epg(int argc, char* argv[argc])
 
 	// allocate on HEAP	to avoid memory limitation
 	complex float (*out_states)[M][N];
-	out_states = malloc(3 * sizeof *out_states);
-    long dims_states[DIMS];
-   	md_copy_dims(DIMS, dims_states, dims);
+	out_states = xmalloc(3 * sizeof *out_states);
+
+	long dims_states[DIMS];
+	md_copy_dims(DIMS, dims_states, dims);
 	dims_states[COEFF_DIM] = M;
 	dims_states[COEFF2_DIM] = 3;
 
-    complex float out_sigder[4][N];
-    long dims_sigder[DIMS];
+	complex float out_sigder[4][N];
+	long dims_sigder[DIMS];
    	md_copy_dims(DIMS, dims_sigder, dims);
 	dims_sigder[ITER_DIM] = 4;
    
 	// allocate on HEAP	to avoid memory limitation
 	complex float (*out_statesder)[3][M][N];
-	out_statesder = malloc(4 * sizeof *out_statesder);
-    long dims_statesder[DIMS];
+	out_statesder = xmalloc(4 * sizeof *out_statesder);
+
+	long dims_statesder[DIMS];
    	md_copy_dims(DIMS, dims_statesder, dims_states);
 	dims_statesder[ITER_DIM] = 4;
 
 	complex float* signals = create_cfl(argv[1], DIMS, dims);
 
-	complex float* states = (save_states ? create_cfl : anon_cfl)
-								(save_states ? argv[2] : "", DIMS, dims_states);
+	complex float* states = (save_states ? create_cfl : anon_cfl)(save_states ? argv[2] : "", DIMS, dims_states);
 
-	complex float* sigder = (save_sigder ? create_cfl : anon_cfl)
-								(save_sigder ? argv[3] : "", DIMS, dims_sigder);
+	complex float* sigder = (save_sigder ? create_cfl : anon_cfl)(save_sigder ? argv[3] : "", DIMS, dims_sigder);
 
-	complex float* statesder = (save_statesder ? create_cfl : anon_cfl)
-								(save_statesder ? argv[4] : "", DIMS, dims_statesder);
+	complex float* statesder = (save_statesder ? create_cfl : anon_cfl)(save_statesder ? argv[4] : "", DIMS, dims_statesder);
 
 	switch (seq) {
 
-		case CPMG: cpmg_epg_der(N, M, out_signal, 
-								   save_states ? out_states : NULL,
-								   save_sigder ? out_sigder : NULL,
-								   save_statesder ? out_statesder : NULL,
-								   90.0, 180.0, TE, T1, T2, B1, offres); break;
-		case FMSSFP: fmssfp_epg_der(N, M, out_signal,
-								   save_states ? out_states : NULL,
-								   save_sigder ? out_sigder : NULL,
-								   save_statesder ? out_statesder : NULL,
-								   FA, TR, T1, T2, B1, offres); break;
+	case CPMG:
 
-		case HYPER:  if (save_sigder || save_statesder)
-							 error("No derivatives available for HYPER!");
-						 else
-							 hyperecho_epg(N, M, out_signal,
-								   save_states ? out_states : NULL,
-								   90.0, 180.0, TE, FA, T1, T2, B1, offres); break;
-					
-		case FLASH: flash_epg_der(N, M, out_signal,
-								   save_states ? out_states : NULL,
-								   save_sigder ? out_sigder : NULL,
-								   save_statesder ? out_statesder : NULL,
-								   FA, TR, T1, T2, B1, offres, SP); break;
+		cpmg_epg_der(N, M, out_signal, save_states ? out_states : NULL,
+						save_sigder ? out_sigder : NULL,
+						save_statesder ? out_statesder : NULL,
+						90.0, 180.0, TE, T1, T2, B1, offres);
+		break;
+
+	case FMSSFP:
+
+		fmssfp_epg_der(N, M, out_signal, save_states ? out_states : NULL,
+						save_sigder ? out_sigder : NULL,
+						save_statesder ? out_statesder : NULL,
+						FA, TR, T1, T2, B1, offres);
+		break;
+
+	case HYPER:
+
+		if (save_sigder || save_statesder)
+			error("No derivatives available for HYPER!");
+
+		hyperecho_epg(N, M, out_signal, save_states ? out_states : NULL,
+						90.0, 180.0, TE, FA, T1, T2, B1, offres);
+
+		break;
+
+	case FLASH:
+
+		flash_epg_der(N, M, out_signal, save_states ? out_states : NULL,
+						save_sigder ? out_sigder : NULL,
+						save_statesder ? out_statesder : NULL,
+					        FA, TR, T1, T2, B1, offres, SP);
+
+		break;
+
+	case SPINECHO:
+
+		if (save_sigder || save_statesder)
+			error("No derivatives available for Spinecho!");
+
+		hahnspinecho_epg(N, M, out_signal, save_states ? out_states : NULL,
+						FA, TE, T1, T2, B1, offres);
+
+		break;
 	
-		case SPINECHO:	 if (save_sigder || save_statesder)
-							 error("No derivatives available for Spinecho!");
-						 else
-						 hahnspinecho_epg(N, M, out_signal, 
-								   save_states ? out_states : NULL,
-								   FA, TE, T1, T2, B1, offres); break;
-		
-		case BSSFP: bssfp_epg_der(N, M, out_signal,
-								   save_states ? out_states : NULL,
-								   save_sigder ? out_sigder : NULL,
-								   save_statesder ? out_statesder : NULL,
-								   FA, TR, T1, T2, B1, offres); break;
+	case BSSFP:
 
-		default: error("sequence type not supported yet");
+		bssfp_epg_der(N, M, out_signal, save_states ? out_states : NULL,
+						   save_sigder ? out_sigder : NULL,
+						   save_statesder ? out_statesder : NULL,
+						   FA, TR, T1, T2, B1, offres);
+
+		break;
+
+	default:
+		error("sequence type not supported yet");
 	}
 
 	if (save_sigder) {
@@ -170,21 +188,25 @@ int main_epg(int argc, char* argv[argc])
 		if (0 < verbose) {
 
 			int Q = bitcount(unknowns); // selected unknowns
+
 			// determine indeces to unknowns in derivative
 			unsigned long idx_unknowns[Q];
 			getidxunknowns(Q, idx_unknowns, unknowns);
-			
+
 			int P = Q + 1; // selected unknowns + M0
 			complex float fisher[P][P];
 			float rCRB[P];
 
 			compute_crb(P, rCRB, fisher, 4,  N, out_sigder, out_signal, idx_unknowns);
+
 			normalize_crb(P, rCRB, N, TR, T1, T2, B1, offres, idx_unknowns);
+
 			display_crb(P, rCRB, fisher, idx_unknowns);
 		}
 
 		// normalize selected derivatives	
 		for (int n = 0; n < N; n++) {
+
 			out_sigder[0][n] *= T1;
 			out_sigder[1][n] *= T2;
 			out_sigder[2][n] *= B1;
@@ -210,4 +232,5 @@ int main_epg(int argc, char* argv[argc])
 	unmap_cfl(DIMS, dims_statesder, statesder);
 
 	return 0;
-	}
+}
+

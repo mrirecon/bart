@@ -1,21 +1,3 @@
-/* Copyright 2021. Uecker Lab. University Medical Center Göttingen.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2021 Volkert Roeloffs
- *
- * References:
- * Hennig, J., Weigel, M., & Scheffler, K. (2004). Calculation of flip angles for echo trains with predefined amplitudes with the extended phase graph (EPG)‐algorithm: principles and applications to hyperecho and TRAPS sequences. Magnetic Resonance in Medicine 51(1), 68-80.
- *
- * 	Mathias Weigel, Extended phase graphs: Dephasing, RF pulses, and echoes - pure and simple 
- * 	J. Magn. Reson. Imaging 2015;41:266–295
- *\d
- * Brian Hargreaves EPG simulator: http://web.stanford.edu/~bah/software/epg/
- *
- * code follows the logic of Eric Hughes' C++ implementation
- * Eric Hughes EPG simulator: https://github.com/EricHughesABC/EPG
- */
 
 #include <complex.h>
 
