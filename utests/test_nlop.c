@@ -819,3 +819,174 @@ static bool test_stack(void)
 UT_REGISTER_TEST(test_stack);
 
 
+
+static bool test_nlop_select_derivatives(void)
+{
+	long dim[1] = { 1 };
+
+	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
+
+	complex float ptr1[1] ={ 1. };
+	complex float ptr2[1] ={ 1. };
+	complex float ptr3[1] ={ 1. };
+
+	void* args[3] = {ptr1, ptr2, ptr3};
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_unchecked(tenmul1, 3, args);
+
+	assert(true == nlop_tenmul_der_available(tenmul1, 0));
+	assert(true == nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 1l, 3l);
+
+	assert(true == nlop_tenmul_der_available(tenmul1, 0));
+	assert(true == nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 0l, 0l);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_free(tenmul1);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_nlop_select_derivatives);
+
+static bool test_nlop_select_derivatives_dup(void)
+{
+	long dim[1] = { 1 };
+
+	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
+
+	complex float ptr1[1] ={ 1. };
+	complex float ptr2[1] ={ 1. };
+
+	void* args[2] = {ptr1, ptr2};
+
+	auto op = nlop_dup(tenmul1, 0, 1);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 1l, 1l);
+
+	assert(true == nlop_tenmul_der_available(tenmul1, 0));
+	assert(true == nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 0l, 0l);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_free(tenmul1);
+	nlop_free(op);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_nlop_select_derivatives_dup);
+
+static bool test_nlop_select_derivatives_combine(void)
+{
+	long dim[1] = { 1 };
+
+	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
+	auto tenmul2 = nlop_tenmul_create(1, dim, dim, dim);
+
+	complex float ptr1[1] ={ 1. };
+	complex float ptr2[1] ={ 1. };
+	complex float ptr3[1] ={ 1. };
+	complex float ptr4[1] ={ 1. };
+	complex float ptr5[1] ={ 1. };
+	complex float ptr6[1] ={ 1. };
+
+	void* args[6] = {ptr1, ptr2, ptr3, ptr4, ptr5, ptr6};
+
+	auto op = nlop_combine(tenmul1, tenmul2);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+	assert(false == nlop_tenmul_der_available(tenmul2, 0));
+	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 0l, 0l);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+	assert(false == nlop_tenmul_der_available(tenmul2, 0));
+	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 3l, 6l);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(true == nlop_tenmul_der_available(tenmul1, 1));
+	assert(true == nlop_tenmul_der_available(tenmul2, 0));
+	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_free(tenmul1);
+	nlop_free(tenmul2);
+	nlop_free(op);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_nlop_select_derivatives_combine);
+
+static bool test_nlop_select_derivatives_link(void)
+{
+	long dim[1] = { 1 };
+
+	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
+	auto tenmul2 = nlop_tenmul_create(1, dim, dim, dim);
+
+	complex float ptr1[1] ={ 1. };
+	complex float ptr2[1] ={ 1. };
+	complex float ptr3[1] ={ 1. };
+	complex float ptr4[1] ={ 1. };
+
+	void* args[4] = {ptr1, ptr2, ptr3, ptr4};
+
+	auto op = nlop_chain2(tenmul1, 0, tenmul2, 1);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+	assert(false == nlop_tenmul_der_available(tenmul2, 0));
+	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 0l, 0l);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+	assert(false == nlop_tenmul_der_available(tenmul2, 0));
+	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 4l);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(true == nlop_tenmul_der_available(tenmul1, 1));
+	assert(false == nlop_tenmul_der_available(tenmul2, 0));
+	assert(true == nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 1l);
+
+	assert(false == nlop_tenmul_der_available(tenmul1, 0));
+	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+	assert(true == nlop_tenmul_der_available(tenmul2, 0));
+	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_free(tenmul1);
+	nlop_free(tenmul2);
+	nlop_free(op);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_nlop_select_derivatives_link);
+
+
+
