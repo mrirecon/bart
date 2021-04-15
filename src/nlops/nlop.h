@@ -102,6 +102,8 @@ extern const struct nlop_s* nlop_reshape_in_F(const struct nlop_s* op, int i, in
 extern const struct nlop_s* nlop_append_singleton_dim_in_F(const struct nlop_s* op, int i);
 extern const struct nlop_s* nlop_append_singleton_dim_out_F(const struct nlop_s* op, int o);
 
+extern const struct nlop_s* nlop_no_der(const struct nlop_s* op, int o, int i);
+extern const struct nlop_s* nlop_no_der_F(const struct nlop_s* op, int o, int i);
 
 extern void nlop_export_graph(const char* filename, const struct nlop_s* op);
 
