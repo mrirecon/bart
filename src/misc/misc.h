@@ -106,7 +106,7 @@ extern void save_command_line(int argc, char* argv[__VLA(argc)]);
 extern _Bool safe_isnanf(float x);
 extern _Bool safe_isfinite(float x);
 
-extern long io_calc_size(int D, const long dims[D?:1], size_t size);
+extern long io_calc_size(int D, const long dims[__VLA(D?:1)], size_t size);
 
 
 #include "misc/cppwrap.h"
