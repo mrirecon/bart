@@ -2,6 +2,9 @@
 #include "misc/types.h"
 #include "misc/shrdptr.h"
 
+#ifndef GRAPH_H
+#define GRAPH_H
+
 struct node_s;
 struct graph_s;
 struct vertex_s;
@@ -73,3 +76,22 @@ extern const char* print_vertex(node_t node, int idx);
 extern const char* print_node(const struct node_s* node);
 extern const char* print_internl_graph(graph_t graph, _Bool get_ext_nodes, int N, const char* ext_nodes[N]);
 extern void export_graph_dot(const char* filename, graph_t graph);
+
+extern graph_t graph_topological_sort_F(graph_t graph);
+
+typedef _Bool (*node_is_t)(const struct node_s*);
+typedef _Bool (*node_cmp_t)(const struct node_s*, const struct node_s*);
+
+extern graph_t graph_identify_nodes_F(graph_t _graph, node_cmp_t cmp);
+extern graph_t graph_cluster_nodes_F(graph_t graph, list_t nodes, edge_separator_node_f get_separator_nodes);
+extern graph_t graph_reinsert_subgraph_FF(graph_t graph, graph_t subgraph);
+extern graph_t graph_bridge_node(graph_t _graph, node_t node);
+
+extern list_t graph_get_chains(graph_t graph);
+extern list_t graph_get_clusters(graph_t graph, _Bool simple_only);
+
+enum debug_levels;
+extern void debug_nodes(enum debug_levels dl, list_t nodes);
+extern void debug_edges(enum debug_levels dl, list_t nodes);
+
+#endif

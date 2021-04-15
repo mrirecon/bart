@@ -106,6 +106,7 @@ void operator_debug(enum debug_levels dl, const struct operator_s* x);
 extern operator_data_t* operator_get_data(const struct operator_s* op);
 extern const _Bool* operator_get_io_flags(const struct operator_s* op);
 
+extern _Bool check_simple_copy(const struct operator_s* op);
 
 extern const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[N], const struct operator_s* op);
 
@@ -135,9 +136,16 @@ extern const struct operator_s* operator_extract_create2(const struct operator_s
 extern const struct operator_s* operator_permute(const struct operator_s* op, int N, const int perm[N]);
 extern const struct operator_s* operator_reshape(const struct operator_s* op, unsigned int i, long N, const long dims[__VLA(N)]);
 
+extern const struct operator_s* operator_zadd_create(int N, const long dims[__VLA(N)]);
+extern _Bool operator_is_zadd(const struct operator_s* op);
+
+
+extern _Bool operator_identify(const struct operator_s* a, const struct operator_s* b);
 
 extern struct list_s* operator_get_list(const struct operator_s* op);
 extern const struct graph_s* operator_get_graph(const struct operator_s* op);
+
+extern const struct operator_s* graph_optimize_operator_F(const struct operator_s* op);
 
 extern _Bool operator_zero_or_null_p(const struct operator_s* op);
 
