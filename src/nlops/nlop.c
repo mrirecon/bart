@@ -695,6 +695,40 @@ const struct nlop_s* nlop_append_singleton_dim_out_F(const struct nlop_s* op, in
 }
 
 
+const struct nlop_s* nlop_no_der(const struct nlop_s* op, int o, int i)
+{
+	PTR_ALLOC(struct nlop_s, n);
+
+	int II = nlop_get_nr_in_args(op);
+	int OO = nlop_get_nr_out_args(op);
+
+	n->op = operator_ref(op->op);
+
+	const struct linop_s* (*der)[II][OO] = (void*)op->derivative;
+
+	PTR_ALLOC(const struct linop_s*[II][OO], nder);
+
+	for (int ii = 0; ii < II; ii++)
+		for (int oo = 0; oo < OO; oo++) {
+
+			auto cod = linop_codomain((*der)[ii][oo]);
+			auto dom = linop_domain((*der)[ii][oo]);
+
+			(*nder)[ii][oo] = ((i == ii) && (o == oo)) ? linop_null_create(cod->N, cod->dims, dom->N, dom->dims) : linop_clone((*der)[ii][oo]);
+		}
+
+
+	n->derivative = &(*PTR_PASS(nder))[0][0];
+	return PTR_PASS(n);
+}
+
+const struct nlop_s* nlop_no_der_F(const struct nlop_s* op, int o, int i)
+{
+	auto result = nlop_no_der(op, o, i);
+	nlop_free(op);
+	return result;
+}
+
 void nlop_debug(enum debug_levels dl, const struct nlop_s* x)
 {
 	int II = nlop_get_nr_in_args(x);
