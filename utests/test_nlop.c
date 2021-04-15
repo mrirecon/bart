@@ -23,6 +23,7 @@
 #include "linops/someops.h"
 
 #include "nlops/zexp.h"
+#include "nlops/someops.h"
 #include "nlops/tenmul.h"
 #include "nlops/nlop.h"
 #include "nlops/cast.h"
@@ -520,7 +521,7 @@ static bool test_nlop_comb_flat_der(void)
 	complex float* dst = md_alloc(N, dims, CFL_SIZE);
 
 
-	md_gaussian_rand(N, dims, in);
+	md_gaussian_rand(iov->N, iov->dims, in);
 
 	nlop_derivative(zexp1, N, dims, dst, N, dims, in);
 
@@ -989,4 +990,47 @@ static bool test_nlop_select_derivatives_link(void)
 UT_REGISTER_TEST(test_nlop_select_derivatives_link);
 
 
+static bool test_nlop_zinv(void)
+{
+	enum { N = 3 };
+	long dims[N] = { 5, 1, 3 };
 
+	auto nlop = nlop_zinv_create(N, dims);
+
+
+	float err_adj = nlop_test_adj_derivatives(nlop, false);
+	float err_der = nlop_test_derivatives(nlop);
+
+	nlop_free(nlop);
+
+	debug_printf(DP_DEBUG1, "zinv errors:, adj: %.8f, %.8f\n", err_der, err_adj);
+	UT_ASSERT((err_adj < UT_TOL) && (err_der < 2.E-2));
+}
+
+UT_REGISTER_TEST(test_nlop_zinv);
+
+static bool test_zmax(void)
+{
+	unsigned int N = 3;
+
+	long indims[] = {2, 2, 1};
+	long outdims[] = {2, 2, 4};
+
+	complex float stacked[] = {	1., 2., 3., 3.,
+					2., 2., 4., 2.,
+					2., 1., 4., 3.,
+					1., 1., 1., 1.};
+	complex float zmax[] = {2., 2., 4., 3.};
+
+	const struct nlop_s* zmax_op = nlop_zmax_create(N, outdims, 4);
+	complex float* output_zmax = md_alloc(N, indims, CFL_SIZE);
+	nlop_generic_apply_unchecked(zmax_op, 2, (void*[]){output_zmax, stacked}); //output, in, mask
+	nlop_free(zmax_op);
+
+	float err =  md_zrmse(N, indims, output_zmax, zmax);
+	md_free(output_zmax);
+
+	UT_ASSERT(0.01 > err);
+}
+
+UT_REGISTER_TEST(test_zmax);
