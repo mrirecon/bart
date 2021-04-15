@@ -33,6 +33,173 @@
 #endif
 
 
+struct nlop_der_array_s {
+
+	const struct iovec_s* iov;
+	void* data;
+
+	int OO;
+	int II;
+	const bool* required_for_der;
+};
+
+struct nlop_der_array_s* nlop_der_array_create(int N, const long dims[N], size_t size, int II, int OO, bool needed_for_der[II][OO]) {
+
+	struct nlop_der_array_s* result = TYPE_ALLOC(struct nlop_der_array_s);
+
+	result->iov = iovec_create(N, dims, size);
+
+	result->OO = OO;
+	result->II = II;
+	result->data = NULL;
+
+	bool (*needed_for_tmp)[II][OO] = TYPE_ALLOC(bool[II][OO]);
+	result->required_for_der = &(*needed_for_tmp)[0][0];
+
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++)
+			(*needed_for_tmp)[i][o] = needed_for_der[i][o];
+
+	return result;
+}
+
+static void nlop_der_array_alloc_memory(struct nlop_der_array_s* array, int II, int OO, bool der_needed[II][OO], const void* arg)
+{
+	bool array_needed = false;
+
+	bool (*needed_for)[II][OO] = (void*)array->required_for_der;
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++)
+			array_needed = array_needed || ((*needed_for)[i][o] && der_needed[i][o]);
+
+	if ((NULL == array->data) && array_needed)
+		array->data = md_alloc_sameplace(array->iov->N, array->iov->dims, array->iov->size, arg);
+
+	if (!array_needed) {
+
+		md_free(array->data);
+		array->data = NULL;
+	}
+}
+
+static void nlop_der_array_free_memory(struct nlop_der_array_s* array, int II, int OO, bool der_needed[II][OO], bool enforce)
+{
+	bool array_needed = false;
+
+	bool (*needed_for)[II][OO] = (void*)array->required_for_der;
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++)
+			array_needed = array_needed || ((*needed_for)[i][o] && der_needed[i][o]);
+
+	if (enforce || !array_needed) {
+
+		md_free(array->data);
+		array->data = NULL;
+	}
+}
+
+static void nlop_der_array_free(struct nlop_der_array_s* array)
+{
+	md_free(array->data);
+	iovec_free(array->iov);
+	xfree(array->required_for_der);
+	xfree(array);
+}
+
+struct nlop_data_der_s {
+
+	int OO;
+	int II;
+	bool* der_requested;
+
+	int N;
+	struct nlop_der_array_s** data;
+};
+
+static struct nlop_data_der_s* nlop_data_der_create(int N, struct nlop_der_array_s* der_array[N], int II, int OO) {
+
+	struct nlop_data_der_s* result = TYPE_ALLOC(struct nlop_data_der_s);
+
+	result->OO = OO;
+	result->II = II;
+
+	if (0 < OO * II) {
+
+		bool (*der_requested)[II][OO] = TYPE_ALLOC(bool[II][OO]);
+		result->der_requested = &(*der_requested)[0][0];
+
+		for (int i = 0; i < II; i++)
+			for (int o = 0; o < OO; o++)
+				(*der_requested)[i][o] = true;
+	} else {
+
+		result->der_requested = NULL;
+	}
+
+	result->N = N;
+
+	if (0 < N) {
+
+		result->data = *TYPE_ALLOC(struct nlop_der_array_s*[N]);
+		for (int i = 0; i < N; i++)
+			result->data[i] = der_array[i];
+	} else {
+
+		result->data = NULL;
+	}
+
+	return result;
+}
+
+static void nlop_data_der_free(const struct nlop_data_der_s* der_data)
+{
+	for (int i = 0; i < der_data->N; i++)
+		nlop_der_array_free(der_data->data[i]);
+
+	if (0 < der_data->N)
+		xfree(der_data->data);
+
+	if (0 < der_data->OO * der_data->II)
+		xfree(der_data->der_requested);
+
+	xfree(der_data);
+}
+
+void nlop_data_der_alloc_memory(const nlop_data_t* data, const void* arg)
+{
+	const struct nlop_data_der_s der_data = *data->data_der;
+
+	int II = der_data.II;
+	int OO = der_data.OO;
+
+	for (int i = 0; i < der_data.N; i++)
+		nlop_der_array_alloc_memory(der_data.data[i], II, OO, *(bool (*)[II][OO])der_data.der_requested, arg);
+}
+
+static void nlop_data_der_free_memory(const struct nlop_data_der_s* der_data, bool enforce)
+{
+	int II = der_data->II;
+	int OO = der_data->OO;
+
+	for (int i = 0; i < der_data->N; i++)
+		nlop_der_array_free_memory(der_data->data[i], II, OO, *(bool (*)[II][OO])der_data->der_requested, enforce);
+}
+
+
+bool nlop_der_requested(const nlop_data_t* data, int i, int o)
+{
+	int II = data->data_der->II;
+	int OO = data->data_der->OO;
+	return (*(bool (*)[II][OO])(data->data_der->der_requested))[i][o];
+}
+
+void nlop_get_der_array(const nlop_data_t* data, int N, void* arrays[N]){
+
+	assert(N == data->data_der->N);
+	for (int i = 0; i < N; i++)
+		arrays[i] = data->data_der->data[i]->data;
+}
+
 struct nlop_op_data_s {
 
 	INTERFACE(operator_data_t);
@@ -76,12 +243,16 @@ static void sptr_op_del(const struct shared_ptr_s* sptr)
 {
 	auto data = CONTAINER_OF(sptr, struct nlop_op_data_s, sptr);
 
+	nlop_data_der_free(data->data->data_der);
+
 	data->del(data->data);
 }
 
 static void sptr_linop_del(const struct shared_ptr_s* sptr)
 {
 	auto data = CONTAINER_OF(sptr, struct nlop_linop_data_s, sptr);
+
+	nlop_data_der_free(data->data->data_der);
 
 	data->del(data->data);
 }
@@ -194,9 +365,10 @@ static void adj_not_implemented(const nlop_data_t* _data, unsigned int o, unsign
 }
 
 
-struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], const long ostr[OO][ON], int II, int IN, const long idims[II][IN], const long istr[II][IN],
-					nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO],
-					nlop_del_fun_t del)
+struct nlop_s* nlop_generic_managed_create2(	int OO, int ON, const long odims[OO][ON], const long ostr[OO][ON], int II, int IN, const long idims[II][IN], const long istr[II][IN],
+						nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO],
+						nlop_del_fun_t del,
+						int N, struct nlop_der_array_s* der_arrays[N], nlop_graph_t get_graph)
 {
 	PTR_ALLOC(struct nlop_s, n);
 
@@ -206,8 +378,10 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 	d->data = data;
 	d->forward1 = NULL;
 	d->forward = forward;
-	d->get_graph = NULL;
+	d->get_graph = get_graph;
 	d->del = del;
+
+	d->data->data_der = nlop_data_der_create(N, der_arrays, II, OO);
 
 	shared_ptr_init(&d->sptr, sptr_op_del);
 
@@ -267,6 +441,27 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 	return PTR_PASS(n);
 }
 
+struct nlop_s* nlop_generic_managed_create(int OO, int ON, const long odims[OO][ON], int II, int IN, const long idims[II][IN],
+	nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO], nlop_del_fun_t del,
+	int N, struct nlop_der_array_s* der_arrays[N], nlop_graph_t get_graph)
+{
+	long istrs[II][IN];
+	for (int i = 0; i < II; i++)
+		md_calc_strides(IN, istrs[i], idims[i], CFL_SIZE);
+	long ostrs[OO][ON];
+	for (int o = 0; o < OO; o++)
+		md_calc_strides(ON, ostrs[o], odims[o], CFL_SIZE);
+
+	return nlop_generic_managed_create2(OO, ON, odims, ostrs, II, IN, idims, istrs, data, forward, deriv, adjoint, normal, norm_inv, del, N, der_arrays, get_graph);
+}
+
+
+struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], const long ostr[OO][ON], int II, int IN, const long idims[II][IN], const long istr[II][IN],
+					nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO],
+					nlop_del_fun_t del)
+{
+	return nlop_generic_managed_create2(OO, ON, odims, ostr, II, IN, idims, istr, data, forward, deriv, adjoint, normal, norm_inv, del, 0, NULL, NULL);
+}
 
 struct nlop_s* nlop_generic_create(int OO, int ON, const long odims[OO][ON], int II, int IN, const long idims[II][IN],
 	nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO], nlop_del_fun_t del)
@@ -401,6 +596,121 @@ void nlop_generic_apply_unchecked(const struct nlop_s* op, int N, void* args[N])
 	operator_generic_apply_unchecked(op->op, N, args);
 }
 
+void nlop_generic_apply_select_derivative_unchecked(const struct nlop_s* op, int N, void* args[N], unsigned long out_der_flag, unsigned long in_der_flag)
+{
+	unsigned int II = nlop_get_nr_in_args(op);
+	unsigned int OO = nlop_get_nr_out_args(op);
+
+	assert(II <= 8 *sizeof(out_der_flag));
+	assert(OO <= 8 *sizeof(in_der_flag));
+
+	bool select_der[II][OO];
+	bool select_all[II][OO];
+
+	for(uint o = 0; o < OO; o++)
+		for(uint i = 0; i < II; i++) {
+
+			select_der[i][o] = MD_IS_SET(out_der_flag, o) && MD_IS_SET(in_der_flag, i);
+			select_all[i][o] = true;
+		}
+
+
+	nlop_unset_derivatives(op);
+	nlop_set_derivatives(op, II, OO, select_der);
+	nlop_clear_derivatives(op, false);
+
+	nlop_generic_apply_unchecked(op, N, args);
+
+	nlop_set_derivatives(op, II, OO, select_all);
+}
+
+void nlop_clear_derivatives(const struct nlop_s* nlop, bool enforce)
+{
+	list_t operators = operator_get_list(nlop->op);
+
+	const struct operator_s* op = list_pop(operators);
+	while (NULL != op) {
+
+		auto data = CAST_MAYBE(nlop_op_data_s, operator_get_data(op));
+
+		if (NULL == data) {
+
+			op = list_pop(operators);
+			continue;
+		}
+
+		nlop_data_der_free_memory(data->data->data_der, enforce);
+
+		op = list_pop(operators);
+	}
+	list_free(operators);
+}
+
+void nlop_unset_derivatives(const struct nlop_s* nlop) {
+
+	list_t operators = operator_get_list(nlop->op);
+
+	const struct operator_s* op = list_pop(operators);
+	while (NULL != op) {
+
+		auto data = CAST_MAYBE(nlop_op_data_s, operator_get_data(op));
+
+		if (NULL == data) {
+
+			op = list_pop(operators);
+			continue;
+		}
+
+		int II = data->data->data_der->II;
+		int OO = data->data->data_der->OO;
+
+		for (int i = 0; i < II; i++)
+			for (int o = 0; o < OO; o++)
+				data->data->data_der->der_requested[o + OO * i] = false;
+
+		op = list_pop(operators);
+	}
+	list_free(operators);
+}
+
+void nlop_set_derivatives(const struct nlop_s* nlop, int II, int OO, bool der_requested[II][OO])
+{
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++) {
+
+			if (!der_requested[i][o])
+				continue;
+
+			list_t operators = operator_get_list(nlop_get_derivative(nlop, o, i)->adjoint);
+
+			const struct operator_s* op = list_pop(operators);
+			while (NULL != op) {
+
+				auto data = operator_get_linop_data(op);
+				if (NULL == data) {
+
+					op = list_pop(operators);
+					continue;
+				}
+
+				auto linop_der_data = CAST_MAYBE(nlop_linop_data_s, data);
+				if (NULL == linop_der_data) {
+
+					op = list_pop(operators);
+					continue;
+				}
+
+				int op_OO = linop_der_data->data->data_der->OO;
+				int op_o = linop_der_data->o;
+				int op_i = linop_der_data->i;
+
+				linop_der_data->data->data_der->der_requested[op_o + op_OO * op_i] = true;
+
+				op = list_pop(operators);
+			}
+			list_free(operators);
+		}
+}
 
 const struct linop_s* nlop_get_derivative(const struct nlop_s* op, int o, int i)
 {

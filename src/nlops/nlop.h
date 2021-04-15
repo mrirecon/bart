@@ -6,7 +6,9 @@
 #ifndef NLOP_H
 #define NLOP_H
 
-typedef struct nlop_data_s { TYPEID* TYPEID; } nlop_data_t;
+struct nlop_data_der_s;
+struct nlop_der_array_s;
+typedef struct nlop_data_s { TYPEID* TYPEID; const struct nlop_data_der_s* data_der; } nlop_data_t;
 
 typedef void (*nlop_fun_t)(const nlop_data_t* _data, complex float* dst, const complex float* src);
 typedef void (*nlop_p_fun_t)(const nlop_data_t* _data, unsigned int o, unsigned int i, float lambda, complex float* dst, const complex float* src);
@@ -27,6 +29,12 @@ struct nlop_s {
 	const struct linop_s** derivative;
 };
 
+extern struct nlop_s* nlop_generic_managed_create(	int OO, int ON, const long odims[OO][ON], int II, int IN, const long idims[II][IN],
+							nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO], nlop_del_fun_t del,
+							int N, struct nlop_der_array_s* der_arrays[N], nlop_graph_t get_graph);
+extern struct nlop_s* nlop_generic_managed_create2(	int OO, int NO, const long odims[OO][NO], const long ostr[OO][NO], int II, int IN, const long idims[II][IN], const long istr[II][IN],
+							nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO], nlop_del_fun_t del,
+							int N, struct nlop_der_array_s* der_arrays[N], nlop_graph_t get_graph);
 
 extern struct nlop_s* nlop_generic_create(	int OO, int ON, const long odims[OO][ON], int II, int IN, const long idims[II][IN],
 						nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO], nlop_del_fun_t del);
@@ -49,6 +57,9 @@ extern const struct nlop_s* nlop_clone(const struct nlop_s* op);
 extern void nlop_free(const struct nlop_s* op);
 
 extern nlop_data_t* nlop_get_data(const struct nlop_s* op);
+extern _Bool nlop_der_requested(const nlop_data_t* data, int i, int o);
+extern void nlop_get_der_array(const nlop_data_t* data, int N, void* arrays[N]);
+extern void nlop_data_der_alloc_memory(const nlop_data_t* data, const void* arg);
 
 extern int nlop_get_nr_in_args(const struct nlop_s* op);
 extern int nlop_get_nr_out_args(const struct nlop_s* op);
@@ -59,6 +70,11 @@ extern void nlop_derivative(const struct nlop_s* op, int ON, const long odims[ON
 extern void nlop_adjoint(const struct nlop_s* op, int ON, const long odims[ON], complex float* dst, int IN, const long idims[IN], const complex float* src);
 
 extern void nlop_generic_apply_unchecked(const struct nlop_s* op, int N, void* args[N]);
+extern void nlop_generic_apply_select_derivative_unchecked(const struct nlop_s* op, int N, void* args[N], unsigned long out_der_flag, unsigned long in_der_flag);
+extern void nlop_clear_derivatives(const struct nlop_s* op, _Bool enforce);
+extern void nlop_unset_derivatives(const struct nlop_s* nlop);
+extern void nlop_set_derivatives(const struct nlop_s* nlop, int II, int OO, bool der_requested[II][OO]);
+struct nlop_der_array_s* nlop_der_array_create(int N, const long dims[N], size_t size, int II, int OO, bool needed_for_der[II][OO]);
 
 extern const struct linop_s* nlop_get_derivative(const struct nlop_s* op, int o, int i);
 
