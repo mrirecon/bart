@@ -31,6 +31,7 @@
 #include "nlops/nltest.h"
 #include "nlops/stack.h"
 #include "nlops/const.h"
+#include "nlops/checkpointing.h"
 
 #include "utest.h"
 
@@ -1034,3 +1035,136 @@ static bool test_zmax(void)
 }
 
 UT_REGISTER_TEST(test_zmax);
+
+
+static const struct nlop_s* get_test_nlop(int N, const long dims[N])
+{
+	auto tenmul1 = nlop_tenmul_create(N, dims, dims, dims);
+	auto tenmul2 = nlop_tenmul_create(N, dims, dims, dims);
+	auto tenmul3 = nlop_tenmul_create(N, dims, dims, dims);
+	const struct nlop_s* result = nlop_chain2_FF(tenmul1, 0, tenmul2, 0);
+	result = nlop_combine_FF(result, tenmul3);
+	result = nlop_permute_inputs_F(result, 5, (int[5]){4, 2, 1, 0, 3});
+	return result;
+}
+
+static bool test_nlop_checkpointing(void)
+{
+	enum { N = 3 };
+	long dims[N] = { 3, 1, 3 };
+
+	auto nlop = get_test_nlop(N, dims);
+	auto nlop_cp = nlop_checkpoint_create_F(get_test_nlop(N, dims), true, true);
+
+	int OO = 2;
+	int II = 5;
+
+	void* args[OO + II];
+	void* args_cp[OO + II];
+	for(int i = 0; i < OO; i++) {
+
+		args[i] = md_alloc(N, dims, CFL_SIZE);
+		args_cp[i] = md_alloc(N, dims, CFL_SIZE);
+	}
+	for(int i = OO; i < OO + II; i++) {
+
+		args[i] = md_alloc(N, dims, CFL_SIZE);
+		md_gaussian_rand(N, dims, args[i]);
+		args_cp[i] = args[i];
+	}
+
+	unsigned long out_der_flag = MD_BIT(1) | MD_BIT(2);
+	unsigned long in_der_flag = MD_BIT(2) | MD_BIT(3) | MD_BIT(4);
+
+	nlop_generic_apply_select_derivative_unchecked(nlop, OO + II, args, out_der_flag, in_der_flag);
+	nlop_generic_apply_select_derivative_unchecked(nlop_cp, OO + II, args_cp, out_der_flag, in_der_flag);
+
+	float err = 0.;
+	for (int o = 0; o < OO; o++)
+		err += md_zrmse(N, dims, args[o], args_cp[o]);
+
+	nlop_generic_apply_select_derivative_unchecked(nlop, OO + II, args, out_der_flag, in_der_flag);
+	nlop_generic_apply_select_derivative_unchecked(nlop_cp, OO + II, args_cp, out_der_flag, in_der_flag);
+
+	for (int o = 0; o < OO; o++)
+		err += md_zrmse(N, dims, args[o], args_cp[o]);
+
+	for (int i = 0; i < II; i++) {
+
+		if (!MD_IS_SET(in_der_flag, i))
+				continue;
+
+		for (int o = 0; o < OO; o++) {
+
+			if (!MD_IS_SET(out_der_flag, o))
+				continue;
+
+			complex float* src = md_alloc(N, dims, CFL_SIZE);
+			md_gaussian_rand(N, dims, src);
+
+			complex float* dst = md_alloc(N, dims, CFL_SIZE);
+			complex float* dst_cp = md_alloc(N, dims, CFL_SIZE);
+
+			linop_forward(nlop_get_derivative(nlop, o, i), N, dims, dst, N, dims, src);
+			linop_forward(nlop_get_derivative(nlop_cp, o, i), N, dims, dst_cp, N, dims, src);
+
+			err += md_zrmse(N, dims, dst, dst_cp);
+
+			linop_adjoint(nlop_get_derivative(nlop, o, i), N, dims, dst, N, dims, src);
+			linop_adjoint(nlop_get_derivative(nlop_cp, o, i), N, dims, dst_cp, N, dims, src);
+
+			err += md_zrmse(N, dims, dst, dst_cp);
+
+			md_free(src);
+			md_free(dst);
+			md_free(dst_cp);
+		}
+	}
+
+	for (int i = 0; i < II; i++) {
+
+		if (!MD_IS_SET(in_der_flag, i))
+				continue;
+
+		for (int o = 0; o < OO; o++) {
+
+			if (!MD_IS_SET(out_der_flag, o))
+				continue;
+
+			complex float* src = md_alloc(N, dims, CFL_SIZE);
+			md_gaussian_rand(N, dims, src);
+
+			complex float* dst = md_alloc(N, dims, CFL_SIZE);
+			complex float* dst_cp = md_alloc(N, dims, CFL_SIZE);
+
+			linop_forward(nlop_get_derivative(nlop, o, i), N, dims, dst, N, dims, src);
+			linop_forward(nlop_get_derivative(nlop_cp, o, i), N, dims, dst_cp, N, dims, src);
+
+			err += md_zrmse(N, dims, dst, dst_cp);
+
+			linop_adjoint(nlop_get_derivative(nlop, o, i), N, dims, dst, N, dims, src);
+			linop_adjoint(nlop_get_derivative(nlop_cp, o, i), N, dims, dst_cp, N, dims, src);
+
+			err += md_zrmse(N, dims, dst, dst_cp);
+
+			md_free(src);
+			md_free(dst);
+			md_free(dst_cp);
+		}
+	}
+
+	for(int i = 0; i < OO; i++) {
+
+		md_free(args[i]);
+		md_free(args_cp[i]);
+	}
+	for(int i = OO; i < OO + II; i++)
+		md_free(args[i]);
+
+	nlop_free(nlop);
+	nlop_free(nlop_cp);
+
+	UT_ASSERT(err < UT_TOL);
+}
+
+UT_REGISTER_TEST(test_nlop_checkpointing);

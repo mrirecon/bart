@@ -25,6 +25,8 @@
 #include "misc/list.h"
 #include "misc/graph.h"
 
+#include "nlops/checkpointing.h"
+
 #include "nlop.h"
 
 
@@ -640,6 +642,8 @@ void nlop_clear_derivatives(const struct nlop_s* nlop, bool enforce)
 		}
 
 		nlop_data_der_free_memory(data->data->data_der, enforce);
+
+		nlop_clear_derivatives_checkpoint(data->data, enforce);
 
 		op = list_pop(operators);
 	}
