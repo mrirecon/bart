@@ -6,10 +6,14 @@
  */
 
 #include <limits.h>
+#include <string.h>
+#include <stdio.h>
+#include <assert.h>
 
 #include "num/multind.h"
 
 #include "num/ops.h"
+#include "num/ops_graph.h"
 #include "num/iovec.h"
 #include "num/flpmath.h"
 
@@ -19,6 +23,8 @@
 #include "misc/misc.h"
 #include "misc/types.h"
 #include "misc/debug.h"
+#include "misc/list.h"
+#include "misc/graph.h"
 
 #include "nlop.h"
 
@@ -39,6 +45,8 @@ struct nlop_op_data_s {
 
 	nlop_fun_t forward1;
 	nlop_gen_fun_t forward;
+
+	nlop_graph_t get_graph;
 };
 
 static DEF_TYPEID(nlop_op_data_s);
@@ -90,11 +98,36 @@ static void op_fun(const operator_data_t* _data, unsigned int N, void* args[__VL
 
 	} else {
 
+		assert(NULL != data->forward);
 		data->forward(data->data, N, *(complex float* (*)[N])args);
 	}
 }
 
+static const struct graph_s* nlop_get_graph_default(const struct operator_s* op, nlop_data_t* data)
+{
+	return create_graph_operator(op, data->TYPEID->name);
+}
 
+static const struct graph_s* operator_nlop_get_graph(const struct operator_s* op)
+{
+	auto data = CAST_DOWN(nlop_op_data_s, operator_get_data(op));
+
+	if (NULL != data->get_graph)
+		return data->get_graph(op, data->data);
+	else
+		return nlop_get_graph_default(op, data->data);
+}
+
+static const struct graph_s* operator_der_get_graph_default(const struct operator_s* op, const linop_data_t* _data, enum LINOP_TYPE lop_type)
+{
+	auto data = CAST_DOWN(nlop_linop_data_s, _data);
+	const char* lop_type_str = lop_get_type_str(lop_type);
+	const char* name = ptr_printf("der (%d, %d)\\n%s\\n%s", data->o, data->i, data->data->TYPEID->name, lop_type_str);
+	auto result = create_graph_operator(op, name);
+	xfree(lop_type_str);
+	xfree(name);
+	return result;
+}
 
 static void op_del(const operator_data_t* _data)
 {
@@ -174,6 +207,7 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 	d->data = data;
 	d->forward1 = NULL;
 	d->forward = forward;
+	d->get_graph = NULL;
 	d->del = del;
 
 	shared_ptr_init(&d->sptr, sptr_op_del);
@@ -219,8 +253,9 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 			shared_ptr_copy(&d2->sptr, &d->sptr);
 			d2->sptr.del = sptr_linop_del;
 
-			(*der)[i][o] = linop_create2(ON, odims[o], ostr[o], IN, idims[i], istr[i],
-						     CAST_UP(PTR_PASS(d2)), lop_der, lop_adj,  (NULL != normal) ? lop_nrm : NULL, (NULL != norm_inv) ? lop_nrm_inv : NULL, lop_del);
+			(*der)[i][o] = linop_with_graph_create2(ON, odims[o], ostr[o], IN, idims[i], istr[i],
+								CAST_UP(PTR_PASS(d2)), lop_der, lop_adj,  (NULL != normal) ? lop_nrm : NULL, (NULL != norm_inv) ? lop_nrm_inv : NULL, lop_del,
+								operator_der_get_graph_default);
 		}
 	}
 
@@ -228,7 +263,7 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 	for (int i = 0; i < OO + II; i++)
 		io_flags[i] = i < OO;
 
-	n->op = operator_generic_create2(OO + II, io_flags, D, dims, strs, CAST_UP(PTR_PASS(d)), op_fun, op_del);
+	n->op = operator_generic_create2(OO + II, io_flags, D, dims, strs, CAST_UP(PTR_PASS(d)), op_fun, op_del, operator_nlop_get_graph);
 
 	return PTR_PASS(n);
 }
@@ -942,3 +977,7 @@ void nlop_generic_apply_loop(const struct nlop_s* op, unsigned long loop_flags,
 	nlop_generic_apply_loop_sameplace(op, loop_flags, NO, DO, odims, dst, NI, DI, idims, src, NULL);
 }
 
+void nlop_export_graph(const char* filename, const struct nlop_s* op)
+{
+	operator_export_graph_dot(filename, op->op);
+}

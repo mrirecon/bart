@@ -26,6 +26,8 @@ struct operator_s {
 	void (*apply)(const operator_data_t* data, unsigned int N, void* args[N]);
 	void (*del)(const operator_data_t* data);
 
+	const struct graph_s* (*get_graph)(const struct operator_s* op);
+
 	struct shared_obj_s sptr;
 };
 
@@ -165,6 +167,7 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
 	o->domain = *PTR_PASS(dom);
 	o->data = CAST_UP(PTR_PASS(op));
 	o->apply = op_p_apply;
+	o->get_graph = NULL;
 	o->del = op_p_del;
 
 	shared_obj_init(&o->sptr, operator_del);

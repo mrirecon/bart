@@ -16,6 +16,7 @@ typedef void (*nlop_del_fun_t)(const nlop_data_t* _data);
 
 typedef void (*nlop_gen_fun_t)(const nlop_data_t* _data, int N, complex float* arg[N]);
 
+typedef const struct graph_s* (*nlop_graph_t)(const struct operator_s* op, const nlop_data_t* _data);
 
 struct operator_s;
 struct linop_s;
@@ -120,6 +121,7 @@ extern void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned 
 	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI],
 	const void* ref);
 
+extern void nlop_export_graph(const char* filename, const struct nlop_s* op);
 
 #endif
 
