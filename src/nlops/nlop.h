@@ -16,6 +16,7 @@ typedef void (*nlop_del_fun_t)(const nlop_data_t* _data);
 
 typedef void (*nlop_gen_fun_t)(const nlop_data_t* _data, int N, complex float* arg[N]);
 
+typedef const struct graph_s* (*nlop_graph_t)(const struct operator_s* op, const nlop_data_t* _data);
 
 struct operator_s;
 struct linop_s;
@@ -85,5 +86,7 @@ extern const struct nlop_s* nlop_reshape_in_F(const struct nlop_s* op, int i, in
 extern const struct nlop_s* nlop_append_singleton_dim_in_F(const struct nlop_s* op, int i);
 extern const struct nlop_s* nlop_append_singleton_dim_out_F(const struct nlop_s* op, int o);
 
+
+extern void nlop_export_graph(const char* filename, const struct nlop_s* op);
 
 #endif
