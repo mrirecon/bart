@@ -597,7 +597,7 @@ MODULES_test_moba += -lmoba -lnoir -llowrank -lwavelet -liter -lnlops -llinops -
 
 # lib nlop
 UTARGETS += test_nlop test_nlop_jacobian
-MODULES_test_nlop += -lnlops -llinops
+MODULES_test_nlop += -lnlops -lnoncart -llinops -liter
 MODULES_test_nlop_jacobian += -lnlops -llinops
 
 # lib noncart
