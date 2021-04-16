@@ -1164,6 +1164,12 @@ void md_ztenmul2(unsigned int D, const long max_dims[D], const long out_strs[D],
 	if (simple_matmul(D, max_dims, out_strs, out, in2_strs, in2, in1_strs, in1))
 		return;
 
+	if (D == md_calc_blockdim(D, max_dims, out_strs, CFL_SIZE)) {
+
+		md_zmul2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
+		return;
+	}
+
 	md_clear2(D, max_dims, out_strs, out, CFL_SIZE);
 	md_zfmac2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
 }
@@ -1171,6 +1177,12 @@ void md_ztenmul2(unsigned int D, const long max_dims[D], const long out_strs[D],
 
 void md_ztenmulc2(unsigned int D, const long max_dims[D], const long out_strs[D], complex float* out, const long in1_strs[D], const complex float* in1, const long in2_strs[D], const complex float* in2)
 {
+	if (D == md_calc_blockdim(D, max_dims, out_strs, CFL_SIZE)) {
+
+		md_zmulc2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
+		return;
+	}
+
 	md_clear2(D, max_dims, out_strs, out, CFL_SIZE);
 	md_zfmacc2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
 }
