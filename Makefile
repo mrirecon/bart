@@ -29,6 +29,7 @@ UBSAN?=0
 FFTWTHREADS?=1
 SCALAPACK?=0
 ISMRMRD?=0
+TENSORFLOW?=0
 NOEXEC_STACK?=0
 PARALLEL?=0
 PARALLEL_NJOBS?=
@@ -141,6 +142,8 @@ endif
 CUDA_BASE ?= /usr/
 CUDA_LIB ?= lib
 
+# tensorflow
+TENSORFLOW_BASE ?= /usr/local/
 
 # acml
 
@@ -148,6 +151,7 @@ ACML_BASE ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
 
 # mkl
 MKL_BASE ?= /opt/intel/mkl/lib/intel64/
+
 
 # fftw
 
@@ -253,6 +257,11 @@ endif
 ifeq ($(NOLAPACKE),1)
 CPPFLAGS += -DNOLAPACKE
 MODULES += -llapacke
+endif
+
+ifeq ($(TENSORFLOW),1)
+CPPFLAGS += -DTENSORFLOW -I$(TENSORFLOW_BASE)/include
+LIBS += -L$(TENSORFLOW_BASE)/lib -Wl,-rpath $(TENSORFLOW_BASE)/lib -ltensorflow_framework -ltensorflow
 endif
 
 
