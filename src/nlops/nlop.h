@@ -52,7 +52,7 @@ extern struct nlop_s* nlop_create2(	unsigned int ON, const long odims[__VLA(ON)]
 extern const struct nlop_s* nlop_clone(const struct nlop_s* op);
 extern void nlop_free(const struct nlop_s* op);
 
-extern nlop_data_t* nlop_get_data(struct nlop_s* op);
+extern nlop_data_t* nlop_get_data(const struct nlop_s* op);
 
 extern int nlop_get_nr_in_args(const struct nlop_s* op);
 extern int nlop_get_nr_out_args(const struct nlop_s* op);

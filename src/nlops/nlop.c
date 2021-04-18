@@ -301,7 +301,7 @@ const struct nlop_s* nlop_clone(const struct nlop_s* op)
 
 
 
-nlop_data_t* nlop_get_data(struct nlop_s* op)
+nlop_data_t* nlop_get_data(const struct nlop_s* op)
 {
 	auto data2 = CAST_MAYBE(nlop_op_data_s, operator_get_data(op->op));
 
