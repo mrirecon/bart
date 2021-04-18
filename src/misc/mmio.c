@@ -526,7 +526,13 @@ complex float* anon_cfl(const char* name, int D, const long dims[D])
 
 
 
-#if 0
+void unmap_raw(const void* data, size_t size)
+{
+	if (-1 == munmap((void*)data, size))
+		io_error("unmap raw");
+}
+
+
 void* private_raw(size_t* size, const char* name)
 {
 	int fd;
@@ -549,7 +555,6 @@ void* private_raw(size_t* size, const char* name)
 
 	return addr;
 }
-#endif
 
 
 complex float* private_cfl(int D, const long dims[D], const char* name)

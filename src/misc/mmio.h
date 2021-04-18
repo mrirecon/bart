@@ -5,7 +5,10 @@
 
 #include "misc/cppwrap.h"
 
-// extern void* private_raw(size_t* size, const char* name);
+#include <stddef.h>
+
+extern void* private_raw(size_t* size, const char* name);
+extern void unmap_raw(const void* data, size_t size);
 
 #ifndef MEMONLY_CFL
 extern _Complex float* shared_cfl(int D, const long dims[__VLA(D)], const char* name);
