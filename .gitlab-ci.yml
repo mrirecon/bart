@@ -146,6 +146,23 @@ Unit_Test_UBSan:
     - Build_GPU
 
 
+Unit_Test_Tensorflow:
+  image: debian:stable
+  stage: test1
+  script:
+    - echo -n "deb http://ftp.de.debian.org/debian/ stable non-free contrib" >> /etc/apt/sources.list
+    - apt-get update -qq && apt-get install -y -qq
+    - apt-get install -y nvidia-cuda-toolkit
+    - apt-get install -y wget
+    - wget https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
+    - mkdir tensorflow && tar -C tensorflow -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
+    - TENSORFLOW=1 TENSORFLOW_BASE=./tensorflow/ CUDA=1 make utest
+  needs: [Build_Tensorflow]
+  dependencies:
+    - Build_Tensorflow
+
+
+
 Integration_Test:
   image: debian:stable
   stage: test2
