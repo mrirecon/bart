@@ -841,8 +841,8 @@ void md_div(unsigned int D, const long dims[D], float* optr, const float* iptr1,
 void md_zpow2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 #ifdef USE_CUDA
-	// FIXME: something is broken with the cuda implementation of zpow
-	assert(!(cuda_ondevice(optr) || cuda_ondevice(iptr1) || cuda_ondevice(iptr2)));
+	// FIXME: something is broken with the cuda implementation of zpow -> comparision test on cpu and gpu does not fail
+	//assert(!(cuda_ondevice(optr) || cuda_ondevice(iptr1) || cuda_ondevice(iptr2)));
 #endif
 	MAKE_Z3OP(zpow, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }

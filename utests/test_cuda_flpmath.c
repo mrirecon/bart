@@ -86,8 +86,8 @@ UT_GPU_REGISTER_TEST(test_md_zdiv2);
 static bool test_md_zmulc2(void) { UT_ASSERT(test_md_z3op(md_zmulc2));}
 UT_GPU_REGISTER_TEST(test_md_zmulc2);
 
-//static bool test_md_zpow2(void) { UT_ASSERT(test_md_z3op(md_zpow2));}
-//U T_GPU_REGISTER_TEST(test_md_zpow2);
+static bool test_md_zpow2(void) { UT_ASSERT(test_md_z3op(md_zpow2));}
+UT_GPU_REGISTER_TEST(test_md_zpow2);
 
 static bool test_md_zfmac2(void) { UT_ASSERT(test_md_z3op(md_zfmac2));}
 UT_GPU_REGISTER_TEST(test_md_zfmac2);
@@ -161,8 +161,8 @@ static bool test_md_z2op(md_z2op_t function)
 	return (UT_TOL >= err);
 }
 
-//static bool test_md_zsqrt2(void) { UT_ASSERT(test_md_z2op(md_zsqrt2));}
-//UT_ GPU_REGISTER_TEST(test_md_zsqrt2);
+static bool test_md_zsqrt2(void) { UT_ASSERT(test_md_z2op(md_zsqrt2));}
+UT_GPU_REGISTER_TEST(test_md_zsqrt2);
 
 static bool test_md_zabs2(void) { UT_ASSERT(test_md_z2op(md_zabs2));}
 UT_GPU_REGISTER_TEST(test_md_zabs2);
