@@ -127,11 +127,31 @@ tests/test-nlinv-pics: traj scale phantom resize pics nlinv nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-nlinv-pf-vcc: nlinv conj nrmse zeros ones join flip circshift fmac $(TESTS_OUT)/shepplogan_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/zeros 2 128 56 z.ra 							;\
+	$(TOOLDIR)/ones 2 128 72 o.ra		 					;\
+	$(TOOLDIR)/join 1 o.ra z.ra pat.ra						;\
+	$(TOOLDIR)/fmac pat.ra $(TESTS_OUT)/shepplogan_ksp.ra pu.ra			;\
+	$(TOOLDIR)/nlinv -i10 -c -p pat.ra pu.ra nl.ra					;\
+	$(TOOLDIR)/flip 7 pat.ra tmp1.ra 						;\
+	$(TOOLDIR)/circshift 1 1 tmp1.ra pat_conj.ra					;\
+	$(TOOLDIR)/join 3 pat.ra pat_conj.ra pat_vcc.ra					;\
+	$(TOOLDIR)/flip 7 pu.ra tmp2.ra 						;\
+	$(TOOLDIR)/circshift 1 1 tmp2.ra tmp3.ra					;\
+	$(TOOLDIR)/circshift 0 1 tmp3.ra tmp4.ra					;\
+	$(TOOLDIR)/conj tmp4.ra pu_conj.ra						;\
+	$(TOOLDIR)/join 3 pu.ra pu_conj.ra pu_vcc.ra					;\
+	$(TOOLDIR)/nlinv -i10 -P -ppat_vcc.ra pu_vcc.ra nl_vcc.ra			;\
+	$(TOOLDIR)/nrmse -t 0.00001 nl.ra nl_vcc.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
 TESTS += tests/test-nlinv tests/test-nlinv-sms
 TESTS += tests/test-nlinv-batch tests/test-nlinv-batch2
 TESTS += tests/test-nlinv-noncart tests/test-nlinv-precomp
+TESTS += tests/test-nlinv-pf-vcc
 TESTS_GPU += tests/test-nlinv-gpu tests/test-nlinv-sms-gpu
 
 
