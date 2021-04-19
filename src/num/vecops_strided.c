@@ -75,6 +75,89 @@ typedef void (*md_3op_t)(unsigned int D, const long dims[D], const long ostrs[D]
 typedef void (*md_s2op_t)(unsigned int D, const long dims[D], const long ostrs[D], float* optr, const long istrs[D], const float* iptr, float val);
 typedef void (*md_z3op_t)(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1, const long istrs2[D], const complex float* iptr2);
 
+static void perm_z3op(	unsigned int D, const long dims[D], unsigned int order[D],
+			unsigned long oflag, complex float* out,
+			unsigned long iflag1, const complex float* in1,
+			unsigned long iflag2, const complex float* in2,
+			md_z3op_t fun, bool ignore_out)
+{
+	long dims_p[D];
+	md_permute_dims(D, order, dims_p, dims);
+
+	unsigned int order_p[D];
+
+	unsigned oflag_p = 0;
+	unsigned iflag1_p = 0;
+	unsigned iflag2_p = 0;
+
+	for (unsigned int i = 0; i < D; i++) {
+
+		order_p[order[i]] = i;
+
+		if (MD_IS_SET(oflag, i))
+			oflag_p = MD_SET(oflag_p, order[i]);
+		if (MD_IS_SET(iflag1, i))
+			iflag1_p = MD_SET(iflag1_p, order[i]);
+		if (MD_IS_SET(iflag2, i))
+			iflag2_p = MD_SET(iflag2_p, order[i]);
+	}
+
+	long odims[D];
+	long odims_p[D];
+	long idims1[D];
+	long idims1_p[D];
+	long idims2[D];
+	long idims2_p[D];
+
+	md_select_dims(D, oflag_p, odims_p, dims_p);
+	md_select_dims(D, oflag, odims, dims);
+	md_select_dims(D, iflag1_p, idims1_p, dims_p);
+	md_select_dims(D, iflag1, idims1, dims);
+	md_select_dims(D, iflag2_p, idims2_p, dims_p);
+	md_select_dims(D, iflag2, idims2, dims);
+
+	complex float* out_p = md_alloc_sameplace(D, odims_p, CFL_SIZE, out);
+	complex float* in1_p = md_alloc_sameplace(D, idims1_p, CFL_SIZE, in1);
+	complex float* in2_p = md_alloc_sameplace(D, idims2_p, CFL_SIZE, in2);
+
+	if (!ignore_out)
+		md_permute(D, order, odims_p, out_p, odims, out, CFL_SIZE);
+
+	md_permute(D, order, idims1_p, in1_p, idims1, in1, CFL_SIZE);
+	md_permute(D, order, idims2_p, in2_p, idims2, in2, CFL_SIZE);
+
+	fun(D, dims_p, MD_STRIDES(D, odims_p, CFL_SIZE), out_p, MD_STRIDES(D, idims1_p, CFL_SIZE), in1_p, MD_STRIDES(D, idims2_p, CFL_SIZE), in2_p);
+
+	md_free(in1_p);
+	md_free(in2_p);
+
+	md_permute(D, order_p, odims, out, odims_p, out_p, CFL_SIZE);
+
+	md_free(out_p);
+}
+
+static void md_zfmac_transp(unsigned int D, const long dims[D], const long ostr[D], complex float* out, const long istr1[D], const complex float* in1, const long istr2[D], const complex float* in2)
+{
+	assert(2 == D);
+
+	unsigned long oflag = 0;
+	unsigned long iflag1 = 0;
+	unsigned long iflag2 = 0;
+
+	for (unsigned int i = 0; i < D; i++) {
+
+		if (0 != ostr[i])
+			oflag = MD_SET(oflag, i);
+		if (0 != istr1[i])
+			iflag1 = MD_SET(iflag1, i);
+		if (0 != istr2[i])
+			iflag2 = MD_SET(iflag2, i);
+	}
+
+	perm_z3op( D, dims, (unsigned int[2]){1, 0}, oflag, out, iflag1, in1, iflag2, in2, md_zfmac2, false);
+}
+
+
 struct simple_z3op_check {
 
 	md_check_3op_t check_fun;
@@ -453,6 +536,54 @@ static long check_dot(unsigned long N, long ndims[N], long nostrs[N], long nistr
 	md_copy_strides(N, nistrs2, tistrs2);
 
 	return 1;
+}
+
+/**
+ * Output: 2 if outer dot, -1, else
+ *
+ * if successful, the out strides have the form:
+ * nostrs: (s, 0)
+ * the in strides have the form
+ * nistrs1: (s, s*dim[0])
+ * nistrs2: (s, s*dim[0])
+ */
+static long check_dot_outer(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+{
+	md_singleton_dims(N, ndims);
+	md_singleton_strides(N, nostrs);
+	md_singleton_strides(N, nistrs1);
+	md_singleton_strides(N, nistrs2);
+
+	long tdims[N];
+	long tostrs[N];
+	long tistrs1[N];
+	long tistrs2[N];
+
+	md_copy_dims(N, tdims, dims);
+	md_copy_strides(N, tostrs, ostrs);
+	md_copy_strides(N, tistrs1, istrs1);
+	md_copy_strides(N, tistrs2, istrs2);
+
+	long (*strs[3])[N] = { &tostrs, &tistrs1, &tistrs2 };
+
+	N = simplify_dims(3, N, tdims, strs);
+
+	if ((1 > N) || (   (size != tostrs[0])  || (0 != tostrs[1])
+			|| (size != tistrs1[0]) || (size * tdims[0] != tistrs1[1])
+			|| (size != tistrs2[0]) || (size * tdims[0] != tistrs2[1]) ))
+		return -1;
+
+	if (128 < tdims[0])
+		return -1;
+	if (128 * tdims[0] > tdims[1])
+		return -1;
+
+	md_copy_dims(N, ndims, tdims);
+	md_copy_strides(N, nostrs, tostrs);
+	md_copy_strides(N, nistrs1, tistrs1);
+	md_copy_strides(N, nistrs2, tistrs2);
+
+	return 2;
 }
 
 
@@ -962,7 +1093,8 @@ bool simple_zfmac(unsigned int N, const long dims[N], const long ostrs[N], compl
 		{ check_gemv,	blas_zfmac_cgemv, true, true, false, false, blas_threadsafe },
 		{ check_ger,	blas_zfmac_cgeru, true, true, false, false, blas_threadsafe },
 		{ check_axpy,	blas_zfmac_caxpy, true, true, false, false, blas_threadsafe },
-		{ check_dot,	blas_zfmac_cdotu, true, true, false, false, blas_threadsafe }
+		{ check_dot,	blas_zfmac_cdotu, true, true, false, false, blas_threadsafe },
+		{ check_dot_outer, md_zfmac_transp, true, false, false, false, blas_threadsafe }
 	};
 
 	return simple_z3op(	ARRAY_SIZE(strided_calls), strided_calls,
@@ -976,7 +1108,8 @@ bool simple_zfmacc(unsigned int N, const long dims[N], const long ostrs[N], comp
 		{ check_gemv,  blas_zfmac_cgemv, true, true, false, false, blas_threadsafe },
 		{ check_ger,   blas_zfmac_cgeru, true, true, false, false, blas_threadsafe },
 		{ check_axpy,  blas_zfmac_caxpy, true, true, false, false, blas_threadsafe },
-		{ check_dot,   blas_zfmac_cdotu, true, true, false, false, blas_threadsafe }
+		{ check_dot,   blas_zfmac_cdotu, true, true, false, false, blas_threadsafe },
+		{ check_dot_outer, md_zfmac_transp, true, false, false, false, blas_threadsafe }
 	};
 
 	return simple_z3op(	ARRAY_SIZE(strided_calls), strided_calls,

@@ -80,6 +80,7 @@ static bool test_optimized_md_zfmac2_ger(void) { UT_ASSERT(test_optimized_md_zfm
 static bool test_optimized_md_zfmac2_ger2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(7ul, 5ul, 6ul, true, 1.e-6)); }
 static bool test_optimized_md_zfmac2_axpy(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(1ul, 1ul, 0ul, true, 2.e-6)); }
 static bool test_optimized_md_zfmac2_axpy2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 2ul, 3ul, true, 1.e-6));}
+//static bool test_optimized_md_zfmac2_dot_transp(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(5ul, 7ul, 7ul, true, 1.e-6)); }
 
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmac2_dot);
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmac2_dot2);
@@ -92,6 +93,7 @@ UT_GPU_REGISTER_TEST(test_optimized_md_zfmac2_ger);
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmac2_ger2);
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmac2_axpy);
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmac2_axpy2);
+//UT _GPU_REGISTER_TEST(test_optimized_md_zfmac2_dot_transp); only activated for large arrays
 
 
 static bool test_optimized_md_zfmacc2_flags(unsigned long out_flag, unsigned long in1_flag, unsigned long in2_flag, bool optimization_expected, float err_val)
@@ -161,6 +163,7 @@ static bool test_optimized_md_zfmacc2_ger(void) { UT_ASSERT(test_optimized_md_zf
 static bool test_optimized_md_zfmacc2_ger2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(7ul, 5ul, 6ul, true, 1.e-6)); }
 static bool test_optimized_md_zfmacc2_axpy(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(1ul, 1ul, 0ul, true, 5.e-6)); }
 static bool test_optimized_md_zfmacc2_axpy2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(3ul, 2ul, 3ul, true, 1.e-6));}
+//static bool test_optimized_md_zfmacc2_dot_transp(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(5ul, 7ul, 7ul, true, 1.e-6)); }
 
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmacc2_dot);
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmacc2_dot2);
@@ -173,6 +176,7 @@ UT_GPU_REGISTER_TEST(test_optimized_md_zfmacc2_ger);
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmacc2_ger2);
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmacc2_axpy);
 UT_GPU_REGISTER_TEST(test_optimized_md_zfmacc2_axpy2);
+//UT _GPU_REGISTER_TEST(test_optimized_md_zfmacc2_dot_transp); only activated for large arrays
 
 static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long in1_flag, unsigned long in2_flag, bool optimization_expected, float err_val)
 {
@@ -218,8 +222,9 @@ static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long 
 	md_fmac2(D, dims, ostr, optr1, istr1, iptr1, istr2, iptr2);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_fmac(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
-	debug_printf(DP_DEBUG1, "%f\n", md_nrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_val > md_nrmse(D, odims, optr1, optr2));
+		if (!result)
+		debug_printf(DP_INFO, "%.10f", md_nrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -230,7 +235,7 @@ static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long 
 }
 
 static bool test_optimized_md_fmac2_dot(void) { UT_ASSERT(test_optimized_md_fmac2_flags(0ul, 1ul, 1ul, true, 2.e-5)); }
-static bool test_optimized_md_fmac2_dot2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(2ul, 3ul, 3ul, true, 1.e-6)); }
+static bool test_optimized_md_fmac2_dot2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(2ul, 3ul, 3ul, true, 2.e-6)); }
 static bool test_optimized_md_fmac2_gemv(void) { UT_ASSERT(test_optimized_md_fmac2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
 static bool test_optimized_md_fmac2_gemv2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(2ul, 1ul, 3ul, true, 2.e-6)); }
 static bool test_optimized_md_fmac2_gemv3(void) { UT_ASSERT(test_optimized_md_fmac2_flags(14ul, 13ul, 7ul, true, 1.e-6)); }
