@@ -18,6 +18,10 @@
 #include "misc/debug.h"
 #include "misc/types.h"
 
+#include "nlops/nlop.h"
+#include "nlops/tenmul.h"
+#include "nlops/chain.h"
+
 #include "iter/prox.h"
 #include "iter/thresh.h"
 
@@ -53,6 +57,44 @@ static bool test_thresh(void)
 
 UT_REGISTER_TEST(test_thresh);
 
+
+
+
+static bool test_nlgrad(void)
+{
+	enum { N = 1 };
+	long dims[N] = { 1 };
+
+	auto nlop = nlop_tenmul_create(N, dims, dims, dims);
+	auto sq = nlop_dup(nlop, 0, 1);
+
+	nlop_free(nlop);
+
+	complex float* src = md_alloc(N, dims, CFL_SIZE);
+	complex float* dst = md_alloc(N, dims, CFL_SIZE);
+
+	md_zfill(N, dims, src, 1.);
+
+	auto p = prox_nlgrad_create(sq, 30, 0.1);
+
+	nlop_free(sq);
+
+	// argmin_x 0.5 (x - 1)^2 + x^2 = 1.5 x^2 -1x + 0.5
+	operator_p_apply(p, 1., N, dims, dst, N, dims, src);
+
+	operator_p_free(p);
+
+	md_zfill(N, dims, src, 1. / 3.);
+
+	float err = md_znrmse(N, dims, dst, src);
+
+	md_free(src);
+	md_free(dst);
+
+	UT_ASSERT(err < 1.E-4);
+}
+
+UT_REGISTER_TEST(test_nlgrad);
 
 
 

@@ -23,10 +23,13 @@
 #endif
 
 #include "linops/linop.h"
+#include "nlops/nlop.h"
 
 #include "iter/iter.h"
 
 #include "misc/misc.h"
+#include "misc/mri.h"
+#include "misc/debug.h"
 
 #include "prox.h"
 
@@ -276,6 +279,79 @@ const struct operator_p_s* prox_l2norm_create(unsigned int N, const long dims[N]
 	pdata->size = md_calc_size(N, dims) * 2;
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_l2norm_apply, prox_l2norm_del);
+}
+
+
+/*
+ * proximal function for a differentiable f(x) given \grad f(x)
+ *
+ */
+struct prox_nlgrad_data {
+
+	INTERFACE(operator_data_t);
+
+	const struct nlop_s* op;
+
+	float step_size;
+	int steps;
+};
+
+DEF_TYPEID(prox_nlgrad_data);
+
+static void prox_nlgrad_apply(const operator_data_t* _data, float lambda, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(prox_nlgrad_data, _data);
+
+	auto dom = nlop_domain(data->op);
+	auto cod = nlop_codomain(data->op);
+
+	complex float* grd = md_alloc_sameplace(dom->N, dom->dims, dom->size, dst);
+
+	complex float out[1];
+	complex float grad_ys[1] = { 1. };
+
+	md_copy(dom->N, dom->dims, dst, src, dom->size);
+
+	for (int i = 0; i < data->steps; i++) {
+
+		nlop_apply(data->op, cod->N, cod->dims, out, dom->N, dom->dims, dst);
+
+		nlop_adjoint(data->op, dom->N, dom->dims, grd, cod->N, cod->dims, grad_ys);
+
+		md_zaxpy(dom->N, dom->dims, dst, -1. * data->step_size, dst);
+		md_zaxpy(dom->N, dom->dims, dst, +1. * data->step_size, src);
+		md_zaxpy(dom->N, dom->dims, dst, -1. * data->step_size * lambda, grd);		// xp <- x - s (x - y + l \grad f)
+	}
+
+	md_free(grd);
+}
+
+static void prox_nlgrad_del(const operator_data_t* _data)
+{
+	auto data = CAST_DOWN(prox_nlgrad_data, _data);
+
+	nlop_free(data->op);
+
+	xfree(data);
+}
+
+extern const struct operator_p_s* prox_nlgrad_create(const struct nlop_s* op, int steps, float step_size)
+{
+	PTR_ALLOC(struct prox_nlgrad_data, data);
+	SET_TYPEID(prox_nlgrad_data, data);
+
+	auto dom = nlop_domain(op);
+	auto cod = nlop_codomain(op);
+
+	assert(CFL_SIZE == dom->size);
+	assert(CFL_SIZE == cod->size);
+	assert(1 == md_calc_size(cod->N, cod->dims));
+
+	data->op = nlop_clone(op);
+	data->step_size = step_size;
+	data->steps = steps;
+
+	return operator_p_create(dom->N, dom->dims, dom->N, dom->dims, CAST_UP(PTR_PASS(data)), prox_nlgrad_apply, prox_nlgrad_del);
 }
 
 
