@@ -28,7 +28,7 @@
 
 #include "nlops/nlop.h"
 
-#include "iter/prox.h"
+#include "iter/prox2.h"
 #include "iter/vec.h"
 #include "iter/italgos.h"
 #include "iter/iter2.h"

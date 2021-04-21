@@ -216,7 +216,7 @@ MODULES_traj = -lnoncart
 MODULES_wave = -liter -lwavelet -llinops -llowrank
 MODULES_threshold = -llowrank -liter -ldfwavelet -llinops -lwavelet
 MODULES_fakeksp = -lsense -llinops
-MODULES_lrmatrix = -llowrank -liter -llinops
+MODULES_lrmatrix = -llowrank -liter -llinops -lnlops
 MODULES_estdims = -lnoncart -llinops
 MODULES_ismrmrd = -lismrm
 MODULES_wavelet = -llinops -lwavelet
@@ -546,9 +546,10 @@ UTARGETS += test_geom
 MODULES_test_geom += -lgeom
 
 # lib iter
-UTARGETS += test_iter test_prox
+UTARGETS += test_iter test_prox test_prox2
 MODULES_test_iter += -liter -lnlops -llinops
-MODULES_test_prox += -liter -llinops -lnlops
+MODULES_test_prox += -liter -llinops
+MODULES_test_prox2 += -liter -llinops -lnlops
 
 # lib nn
 ifeq ($(TENSORFLOW),1)
