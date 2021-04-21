@@ -168,13 +168,13 @@ int main_lrmatrix(int argc, char* argv[argc])
 	mmconf.rho = rho;
 	mmconf.hogwild = hogwild;
 	mmconf.fast = fast;
-	
+
 	iconf = CAST_UP(&mmconf);
 
 
 	// Initialize operators
 
-	const struct linop_s* sum_op = linop_avg_create(DIMS, odims, LEVEL_FLAG);
+	const struct linop_s* sum_op = linop_scaled_sum_create(DIMS, odims, LEVEL_FLAG);
 	const struct linop_s* sampling_op = NULL;
 
         if (!decom) {
@@ -182,7 +182,7 @@ int main_lrmatrix(int argc, char* argv[argc])
                 sampling_op = linop_sampling_create(idims, idims, pattern);
                 sum_op = linop_chain_FF(sum_op, sampling_op);
         }
-	
+
 	const struct operator_p_s* sum_prox = prox_lineq_create(sum_op, idata);
 	const struct operator_p_s* lr_prox = lrthresh_create(odims, randshift, mflags, (const long (*)[])blkdims, 1., noise, remove_mean, false);
 
@@ -208,7 +208,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 
 
 	// do recon
-	
+
 	iter2_admm( iconf,
 		    NULL,
 		    num_funs,
@@ -218,7 +218,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 		    sum_xupdate_op,
 		    size, (float*) odata, NULL,
 		    NULL);
-	
+
 
 	// Sum
 	if (sum_str) {
