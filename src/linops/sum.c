@@ -34,6 +34,8 @@ struct sum_data {
 
 	long *imgd_strs;
 	long *img_strs;
+
+	unsigned long flags;
 };
 
 static DEF_TYPEID(sum_data);
@@ -58,6 +60,7 @@ static struct sum_data* sum_create_data(int N, const long imgd_dims[N], unsigned
 	long level_dims[N];
 	md_select_dims(N, flags, level_dims, imgd_dims);
 
+	data->flags = flags;
 	data->levels = md_calc_size(N, level_dims);
 
 	// image dimensions
@@ -88,7 +91,8 @@ static void sum_apply(const linop_data_t* _data, complex float* dst, const compl
         auto data = CAST_DOWN(sum_data, _data);
 
 	md_clear(data->N, data->img_dims, dst, CFL_SIZE);
-	md_zaxpy2(data->N, data->imgd_dims, data->img_strs, dst, 1. / sqrtf(data->levels), data->imgd_strs, src);
+	md_zsum(data->N, data->imgd_dims, data->flags, dst, src);
+	md_zsmul(data->N, data->img_dims, dst, dst, 1. / sqrtf(data->levels));
 }
 
 
@@ -97,7 +101,8 @@ static void sum_apply_adjoint(const linop_data_t* _data, complex float* dst, con
         auto data = CAST_DOWN(sum_data, _data);
 
 	md_clear(data->N, data->imgd_dims, dst, CFL_SIZE);
-	md_zaxpy2(data->N, data->imgd_dims, data->imgd_strs, dst, 1. / sqrtf(data->levels), data->img_strs, src);
+	md_copy2(data->N, data->imgd_dims, data->imgd_strs, dst, data->img_strs, src, CFL_SIZE);
+	md_zsmul(data->N, data->imgd_dims, dst, dst, 1. / sqrtf(data->levels));
 }
 
 
