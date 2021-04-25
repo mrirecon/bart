@@ -69,6 +69,7 @@ static void operator_del(const struct shared_obj_s* sptr)
 		iovec_free(x->domain[i]);
 
 	xfree(x->domain);
+	xfree(x->io_flags);
 	xfree(x);
 }
 
