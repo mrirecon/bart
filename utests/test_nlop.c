@@ -44,10 +44,12 @@ static bool test_nlop_cast_pos(void)
 
 	struct linop_s* l = linop_identity_create(N, dims);
 	struct nlop_s* d = nlop_from_linop(l);
+	const struct linop_s* l2;
 
-	if (l == linop_from_nlop(d)) // maybe just require != NULL ?
+	if (l == (l2 = linop_from_nlop(d))) // maybe just require != NULL ?
 		ok = false;
 
+	linop_free(l2);
 	linop_free(l);
 	nlop_free(d);
 

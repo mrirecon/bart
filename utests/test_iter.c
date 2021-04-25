@@ -101,10 +101,14 @@ static bool test_iter_irgnm_lsqr0(bool ref)
 	conf.l2lambda = 1.;
 	conf.tol = 0.1;
 
+	auto der = linop_clone(&zexp->derivative[0][0]);
+
 	lsqr = lsqr2_create(&lsqr_defaults,
 				iter2_conjgrad, CAST_UP(&conf),
-				NULL, &zexp->derivative[0][0], NULL,
+				NULL, der, NULL,
 				0, NULL, NULL, NULL);
+
+	linop_free(der);
 
 	iter4_irgnm2(CAST_UP(&iter3_irgnm_defaults), zexp,
 		2 * md_calc_size(N, dims), (float*)src3, ref ? (const float*)src1 : NULL,
@@ -156,15 +160,21 @@ static bool test_iter_irgnm_lsqr1(bool ref, bool regu)
 	operator_p_free(p1);
 	operator_p_free(p2);
 
+	auto der = linop_clone(&zexp->derivative[0][0]);
+
 	const struct linop_s* trafos[1] = { linop_identity_create(3, dims) };
 
 	lsqr = lsqr2_create(&lsqr_defaults,
 				iter2_admm, CAST_UP(&conf),
-				NULL, &zexp->derivative[0][0], NULL,
+				NULL, der, NULL,
 				regu ? 1 : 0,
 				regu ? prox_ops : NULL,
 				regu ? trafos : NULL,
 				NULL);
+
+	linop_free(der);
+	linop_free(trafos[0]);
+	operator_p_free(prox_ops[0]);
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 	irgnm_conf.iter = 4;
