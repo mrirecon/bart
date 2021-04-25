@@ -72,13 +72,15 @@ static const struct operator_p_s* ops_p_stack_higher_dims(unsigned int N, const 
 	const struct operator_p_s* tmp = operator_p_ref(src);
 	const struct operator_p_s* dst = operator_p_ref(src);
 
-	for (long d = coeff_dim+1; d < N; d++) {
+	for (long d = coeff_dim + 1; d < N; d++) {
 
 		if (MD_IS_SET(higher_flag, d)) {
 
 			for (long p = 1; p < maps_dims[d]; p++)
-				dst = operator_p_stack(d, d, dst, tmp);
-			
+				dst = operator_p_stack_FF(d, d, dst, operator_p_ref(tmp));
+
+			operator_p_free(tmp);
+
 			tmp = operator_p_ref(dst);
 		}
 	}
@@ -92,11 +94,10 @@ static const struct operator_p_s* moba_joint_wavthresh_prox_create(unsigned int 
 {
 	// higher dimensions
 	long higher_flag = 0;
-	for (long d = coeff_dim+1; d < N; d++) {
 
+	for (long d = coeff_dim + 1; d < N; d++)
 		if (1 < maps_dims[d])
 			higher_flag = MD_SET(higher_flag, d);
-	}
 
 	long maps_j_dims[N];
 	md_select_dims(N, ~(MD_BIT(coeff_dim)|higher_flag), maps_j_dims, maps_dims);
@@ -112,10 +113,7 @@ static const struct operator_p_s* moba_joint_wavthresh_prox_create(unsigned int 
 
 		auto prox_z = prox_zero_create(N, maps_z_dims);
 
-		prox_j = operator_p_stack(coeff_dim, coeff_dim, prox_j, prox_z);
-
-		operator_p_free(prox_z);
-
+		prox_j = operator_p_stack_FF(coeff_dim, coeff_dim, prox_j, prox_z);
 	}
 
 	// stack higher dimensions
@@ -131,7 +129,8 @@ const struct operator_p_s* moba_nonneg_prox_create(unsigned int N, const long ma
 {
 	// higher dimensions
 	long higher_flag = 0;
-	for (long d = coeff_dim+1; d < N; d++) {
+
+	for (long d = coeff_dim + 1; d < N; d++) {
 
 		if (1 < maps_dims[d])
 			higher_flag = MD_SET(higher_flag, d);
@@ -150,12 +149,22 @@ const struct operator_p_s* moba_nonneg_prox_create(unsigned int N, const long ma
 	for (long m = 0; m < maps_dims[coeff_dim]; m++) {
 
 		p3 = MD_IS_SET(nonneg_flag, m) ? p1 : p2;
-		prox_j = (NULL == prox_j) ? p3 : operator_p_stack(coeff_dim, coeff_dim, prox_j, p3);
+
+		if (NULL == prox_j) {
+
+			prox_j = operator_p_ref(p3);
+
+		} else {
+
+			auto tmp = operator_p_stack(coeff_dim, coeff_dim, prox_j, p3);
+			operator_p_free(prox_j);
+			prox_j = tmp;
+		}
 	}
 
 	operator_p_free(p1);
 	operator_p_free(p2);
-	operator_p_free(p3);
+//	operator_p_free(p3);
 
 	// stack higher dimensions
 	auto prox_s = ops_p_stack_higher_dims(N, maps_dims, coeff_dim, higher_flag, prox_j);
@@ -297,10 +306,8 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 	// set number of coefficients for joint regularization
 	long nr_joint_coeff = set_num_of_coeff(optreg_conf->moba_model);
 
-	if (MECO_SOBOLEV == optreg_conf->weight_fB0_type) {
-
+	if (MECO_SOBOLEV == optreg_conf->weight_fB0_type)
 		nr_joint_coeff -= 1;
-	}
 
 	// set the flag for the position of the coefficient 
 	// which needs non-negativity constraint
