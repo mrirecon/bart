@@ -1163,18 +1163,26 @@ int main_wshfl(int argc, char* argv[argc])
 	debug_printf(DP_INFO, "Done.\nReconstruction time: %f seconds.\n", recon_end - recon_start);
 
 	debug_printf(DP_INFO, "Cleaning up and saving result... ");
+
 	operator_p_free(J);
+
+	italgo_config_free(it);
+
 	linop_free(A);
 	linop_free(A_sc);
+
 	md_free(kernel);
+
 	unmap_cfl(DIMS, maps_dims, maps);
 	unmap_cfl(DIMS, wave_dims, wave);
 	unmap_cfl(DIMS, phi_dims, phi);
 	unmap_cfl(DIMS, reorder_dims, reorder);
 	unmap_cfl(DIMS, table_dims, table);
 	unmap_cfl(DIMS, coeff_dims, recon);
+
 	if (x0 != NULL)
 		unmap_cfl(DIMS, coeff_dims, init);
+
 	debug_printf(DP_INFO, "Done.\n");
 
 	double end_time = timestamp();
