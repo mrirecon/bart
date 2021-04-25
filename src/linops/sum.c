@@ -73,6 +73,12 @@ static void sum_free_data(const linop_data_t* _data)
 {
         auto data = CAST_DOWN(sum_data, _data);
 
+	xfree(data->imgd_dims);
+	xfree(data->imgd_strs);
+
+	xfree(data->img_dims);
+	xfree(data->img_strs);
+
 	xfree(data);
 }
 
