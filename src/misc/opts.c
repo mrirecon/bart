@@ -190,7 +190,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 	struct opt_s wopts[n ?: 1];
 
-	if (NULL != opts)
+	if ((NULL != opts) && (0 < n))
 		memcpy(wopts, opts, sizeof wopts);
 
 
