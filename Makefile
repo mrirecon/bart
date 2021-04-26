@@ -139,6 +139,7 @@ endif
 # cuda
 
 CUDA_BASE ?= /usr/
+CUDA_LIB ?= lib
 
 
 # acml
@@ -317,9 +318,9 @@ ifeq ($(CUDA),1)
 CUDA_H := -I$(CUDA_BASE)/include
 CPPFLAGS += -DUSE_CUDA $(CUDA_H)
 ifeq ($(BUILDTYPE), MacOSX)
-CUDA_L := -L$(CUDA_BASE)/lib -lcufft -lcudart -lcublas -m64 -lstdc++
+CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -lcufft -lcudart -lcublas -m64 -lstdc++
 else
-CUDA_L := -L$(CUDA_BASE)/lib -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/lib
+CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/$(CUDA_LIB)
 endif
 else
 CUDA_H :=
