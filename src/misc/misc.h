@@ -117,6 +117,8 @@ extern const char* ptr_printf(const char* fmt, ...);
 extern const char* ptr_vprintf(const char* fmt, va_list ap);
 extern const char* ptr_print_dims(int D, const long dims[__VLA(D)]);
 
+extern char* construct_filename(unsigned int D, const long loopdims[__VLA(D)], const long pos[__VLA(D)], const char* prefix, const char* ext);
+
 
 #define DEG2RAD(d) ((d) * M_PI / 180.)
 #define RAD2DEG(r) ((r) / M_PI * 180.)
