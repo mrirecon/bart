@@ -78,7 +78,7 @@ static bool test_auto_norm(void)
 	md_zfill(N, dims, src, 3.);
 
 	auto p = prox_thresh_create(N, dims, 0.5, 0u);
-	auto n = op_p_auto_normalize(p, MD_BIT(1));
+	auto n = op_p_auto_normalize(p, MD_BIT(1), NORM_L2);
 
 	operator_p_free(p);
 

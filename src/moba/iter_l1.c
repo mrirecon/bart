@@ -257,7 +257,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 	debug_print_dims(DP_INFO, DIMS, img_dims);
 
 	auto prox1 = create_prox(img_dims, COEFF_FLAG, 1.);
-	auto prox2 = op_p_auto_normalize(prox1, ~(COEFF_FLAG | SLICE_FLAG));
+	auto prox2 = op_p_auto_normalize(prox1, ~(COEFF_FLAG | SLICE_FLAG), NORM_L2);
 
 	struct T1inv_s idata = {
 

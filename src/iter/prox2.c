@@ -274,6 +274,8 @@ struct auto_norm_s {
 
 	INTERFACE(operator_data_t);
 
+	enum norm norm;
+
 	long flags;
 	const struct operator_p_s* op;
 };
@@ -310,9 +312,14 @@ static void auto_norm_apply(const operator_data_t* _data, float mu, complex floa
 	complex float* scale = md_alloc(N, sdims, CFL_SIZE);
 
 
+	typeof(md_znorm2)* norm2[] = {
+		[NORM_L2] = md_znorm2,
+		[NORM_MAX] = md_zmaxnorm2,
+	};
+
 
 	do {
-		MD_ACCESS(N, sstrs, pos, scale) = md_znorm2(N, xdims, io->strs, &MD_ACCESS(N, io->strs, pos, x));
+		MD_ACCESS(N, sstrs, pos, scale) = norm2[data->norm](N, xdims, io->strs, &MD_ACCESS(N, io->strs, pos, x));
 
 		complex float val = MD_ACCESS(N, sstrs, pos, scale);
 
@@ -358,13 +365,14 @@ static void auto_norm_del(const operator_data_t* _data)
  * the normalization after application of the operator.
  *
  */
-const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s* op, long flags)
+const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s* op, long flags, enum norm norm)
 {
 	PTR_ALLOC(struct auto_norm_s, data);
 	SET_TYPEID(auto_norm_s, data);
 
 	data->flags = flags;
 	data->op = operator_p_ref(op);
+	data->norm = norm;
 
 	auto io_in = operator_p_domain(op);
 	auto io_out = operator_p_codomain(op);
