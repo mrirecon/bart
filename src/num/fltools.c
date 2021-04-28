@@ -5,8 +5,10 @@
  
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "misc/nested.h"
+#include "misc/misc.h"
 
 #include "fltools.h"
 
@@ -25,4 +27,18 @@ void zsort(int N, complex float tmp[N])
 	qsort(tmp, N, sizeof(complex float), compare);
 }
 
+complex float zselect(int N, int k, const complex float x[N])
+{
+	complex float (*p)[N] = xmalloc(sizeof(*p));
+
+	memcpy(*p, x, sizeof *p);
+
+	zsort(N, *p);
+
+	complex float val = (*p)[k];
+
+	xfree(p);
+
+	return val;
+}
 
