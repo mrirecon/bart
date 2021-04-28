@@ -391,3 +391,13 @@ const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s* op, lo
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), auto_norm_apply, auto_norm_del);
 }
+
+
+
+
+const struct operator_p_s* op_p_conjugate(const struct operator_p_s* op, const struct linop_s* lop)
+{
+	return operator_p_pst_chain(operator_p_pre_chain(lop->forward, op), lop->adjoint);
+}
+
+

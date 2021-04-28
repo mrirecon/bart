@@ -13,7 +13,8 @@ extern const struct operator_p_s* prox_lineq_create(const struct linop_s* op, co
 extern const struct operator_p_s* prox_nlgrad_create(const struct nlop_s* op, int steps, float lambda);
 
 enum norm { NORM_MAX, NORM_L2 };
-extern const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s*, long flags, enum norm norm);
+extern const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s* op, long flags, enum norm norm);
+extern const struct operator_p_s* op_p_conjugate(const struct operator_p_s* op, const struct linop_s* lop);
 
 #include "misc/cppwrap.h"
 
