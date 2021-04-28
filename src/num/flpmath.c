@@ -1,11 +1,11 @@
 /* Copyright 2013-2018 The Regents of the University of California.
- * Copyright 2016-2020. Martin Uecker.
+ * Copyright 2016-2021. Martin Uecker.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2021 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2018 Jonathan Tamir <jtamir@eecs.berkeley.edu>
@@ -39,6 +39,7 @@
 #include "num/optimize.h"
 #include "num/blas.h"
 #include "num/vecops_strided.h"
+#include "num/fltools.h"
 
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -4199,3 +4200,31 @@ void md_pdf_gauss(unsigned int D, const long dims[D], float* optr, const float* 
 {
 	md_pdf_gauss2(D, dims, MD_STRIDES(D, dims, FL_SIZE), optr, MD_STRIDES(D, dims, FL_SIZE), iptr, mu, sigma);
 }
+
+
+float md_zmaxnorm2(unsigned int D, const long dims[__VLA(D)], const long strs[__VLA(D)], const complex float* src)
+{
+	complex float* tmp = md_alloc(D, dims, CFL_SIZE);
+
+	long tstrs[D];
+	md_calc_strides(D, tstrs, dims, CFL_SIZE);
+
+	md_copy2(D, dims, tstrs, tmp, strs, src, CFL_SIZE);
+
+	long N = md_calc_size(D, dims);
+	zsort(N, tmp);	// FIXME:  should use quick_select
+
+	float val = cabsf(tmp[N - 1]);
+
+	md_free(tmp);
+
+	return val;
+}
+
+
+float md_zmaxnorm(unsigned int D, const long dims[__VLA(D)], const complex float* ptr)
+{
+	return md_zmaxnorm2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), ptr);
+}
+
+

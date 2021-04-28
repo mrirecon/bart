@@ -356,6 +356,10 @@ extern void md_zcmpl(unsigned int D, const long dims[__VLA(D)], _Complex float* 
 extern void md_pdf_gauss2(unsigned int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr, float mu, float sigma);
 extern void md_pdf_gauss(unsigned int D, const long dims[__VLA(D)], float* optr, const float* iptr, float mu, float sigma);
 
+extern float md_zmaxnorm2(unsigned int D, const long dims[__VLA(D)], const long strs[__VLA(D)], const _Complex float* ptr);
+extern float md_zmaxnorm(unsigned int D, const long dims[__VLA(D)], const _Complex float* ptr);
+
 #include "misc/cppwrap.h"
 
 #endif
+
