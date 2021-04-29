@@ -24,34 +24,95 @@
 
 #include "opts.h"
 
-enum OPT_ARG_TYPE { OPT_SPECIAL, OPT_SET, OPT_CLEAR, OPT_INT, OPT_UINT, OPT_LONG, OPT_FLOAT, OPT_STRING };
 
-static const char* opt_arg_types[] = { " ...", "", "", " d", " d", " d", " f", " <string>" };
+opt_conv_f opt_set;
+opt_conv_f opt_clear;
+opt_conv_f opt_int;
+opt_conv_f opt_uint;
+opt_conv_f opt_long;
+opt_conv_f opt_float;
+opt_conv_f opt_string;
+opt_conv_f opt_vec2;
+opt_conv_f opt_float_vec2;
+opt_conv_f opt_vec3;
+opt_conv_f opt_float_vec3;
+opt_conv_f opt_select;
+opt_conv_f opt_subopt;
 
-static enum OPT_ARG_TYPE opt_arg_type(opt_conv_f fun)
+static const char* opt_arg_str(enum OPT_ARG_TYPE type)
 {
-	if (opt_set == fun)
-		return OPT_SET;
+	switch(type) {
 
-	if (opt_clear == fun)
-		return OPT_CLEAR;
+	case OPT_SPECIAL:
+		return " ...";
 
-	if (opt_int == fun)
-		return OPT_INT;
+	case OPT_SET:
+	case OPT_CLEAR:
+		return "";
 
-	if (opt_uint == fun)
-		return OPT_UINT;
+	case OPT_INT:
+	case OPT_UINT:
+	case OPT_LONG:
+		return " d";
 
-	if (opt_long == fun)
-		return OPT_LONG;
+	case OPT_FLOAT:
+		return " f";
 
-	if (opt_float == fun)
-		return OPT_FLOAT;
+	case OPT_VEC2:
+	case OPT_VEC3:
+	case OPT_FLOAT_VEC2:
+	case OPT_FLOAT_VEC3:
+		return " ...";
 
-	if (opt_string == fun)
-		return OPT_STRING;
+	case OPT_STRING:
+		return " <string>";
 
-	return OPT_SPECIAL;
+	case OPT_SELECT:
+		return " ...";
+
+	case OPT_SUBOPT:
+		return " ...";
+
+	}
+	error("Invalid OPT_ARG_TYPE!\n");
+}
+
+
+
+static bool opt_dispatch (const struct opt_s opt, char c, const char*  optarg)
+{
+	switch(opt.type) {
+
+		case OPT_SPECIAL:
+			return opt.conv(opt.ptr, c, optarg);
+		case OPT_SET:
+			return opt_set(opt.ptr, c, optarg);
+		case OPT_CLEAR:
+			return opt_clear(opt.ptr, c, optarg);
+		case OPT_INT:
+			return opt_int(opt.ptr, c, optarg);
+		case OPT_UINT:
+			return opt_uint(opt.ptr, c, optarg);
+		case OPT_LONG:
+			return opt_long(opt.ptr, c, optarg);
+		case OPT_FLOAT:
+			return opt_float(opt.ptr, c, optarg);
+		case OPT_VEC2:
+			return opt_vec2(opt.ptr, c, optarg);
+		case OPT_VEC3:
+			return opt_vec3(opt.ptr, c, optarg);
+		case OPT_FLOAT_VEC2:
+			return opt_float_vec2(opt.ptr, c, optarg);
+		case OPT_FLOAT_VEC3:
+			return opt_float_vec3(opt.ptr, c, optarg);
+		case OPT_STRING:
+			return opt_string(opt.ptr, c, optarg);
+		case OPT_SELECT:
+			return opt_select(opt.ptr, c, optarg);
+		case OPT_SUBOPT:
+			return opt_subopt(opt.ptr, c, optarg);
+	}
+	error("Invalid OPT_ARG_TYPE!\n");
 }
 
 static const char* trim_space(const char* str)
@@ -78,13 +139,13 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 
 			if (NULL == opts[i].s) {
 
-				fprintf(fp, "[-%c%s] ", opts[i].c, opt_arg_types[opt_arg_type(opts[i].conv)]);
+				fprintf(fp, "[-%c%s] ", opts[i].c, opt_arg_str(opts[i].type));
 			} else {
 
 				if (opts[i].c < (int) ' ')
-					fprintf(fp, "[--%s%s] ", opts[i].s, opt_arg_types[opt_arg_type(opts[i].conv)]);
+					fprintf(fp, "[--%s%s] ", opts[i].s, opt_arg_str(opts[i].type));
 				else
-					fprintf(fp, "[-%c,--%s%s] ", opts[i].c, opts[i].s, opt_arg_types[opt_arg_type(opts[i].conv)]);
+					fprintf(fp, "[-%c,--%s%s] ", opts[i].c, opts[i].s, opt_arg_str(opts[i].type));
 			}
 		}
 
@@ -150,6 +211,9 @@ static void check_options(int n, const struct opt_s opts[n ?: 1])
 			error("duplicate option: %c\n", opts[i].c);
 
 		f[c] = true;
+
+		if ((OPT_SPECIAL != opts[i].type) && (NULL != opts[i].conv))
+			error("Custom conversion functions are only allowed in OPT_SPECIAL\n");
 	}
 }
 
@@ -167,7 +231,8 @@ static void process_option(char c, const char* optarg, const char* name, const c
 
 		if (opts[i].c == c) {
 
-			if (opts[i].conv(opts[i].ptr, c, optarg)) {
+
+			if (opt_dispatch(opts[i], c, optarg)) {
 
 				print_usage(stderr, name, usage_str, n, opts);
 				error("process_option: failed to convert value\n");
