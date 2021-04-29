@@ -280,13 +280,13 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 				wopts[i].c = lc++;
 
 			longopts[nlong++] = (struct option){ wopts[i].s, wopts[i].arg, NULL, wopts[i].c };
+
+			// Ensure that we only used unprintable characters
+			// and that the last entry of the array is only zeros
+			if (nlong >= max_num_long_opts)
+				error("Too many long options specified, aborting...");
 		}
 	}
-
-	// Ensure that we only used unprintable characters
-	// and that the last entry of the array is only zeros
-
-	assert(nlong < max_num_long_opts);
 
 #if 0
 	for (int i = 0; i < n; ++i)
