@@ -44,6 +44,8 @@ static const char* opt_arg_str(enum OPT_ARG_TYPE type)
 	switch(type) {
 
 	case OPT_SPECIAL:
+	case OPT_SELECT:
+	case OPT_SUBOPT:
 		return " ...";
 
 	case OPT_SET:
@@ -59,20 +61,19 @@ static const char* opt_arg_str(enum OPT_ARG_TYPE type)
 		return " f";
 
 	case OPT_VEC2:
+		return " d:d";
+
 	case OPT_VEC3:
+		return " d:d:d";
+
 	case OPT_FLOAT_VEC2:
+		return " f:f";
+
 	case OPT_FLOAT_VEC3:
-		return " ...";
+		return " f:f:f";
 
 	case OPT_STRING:
 		return " <string>";
-
-	case OPT_SELECT:
-		return " ...";
-
-	case OPT_SUBOPT:
-		return " ...";
-
 	}
 	error("Invalid OPT_ARG_TYPE!\n");
 }
