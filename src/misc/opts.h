@@ -79,7 +79,6 @@ typedef float opt_fvec3_t[3];
 #define OPTL_INT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, opt_int, int, ptr, argname, descr)
 #define OPTL_LONG(c, s, ptr, argname, descr)	OPTL_ARG(c, s, opt_long, long, ptr, argname, descr)
 #define OPTL_FLOAT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, opt_float, float, ptr, argname, descr)
-#define OPTL_CFLOAT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, opt_cfloat, complex float, ptr, argname, descr)
 #define OPTL_VEC2(c, s, ptr, argname, descr)	OPTL_ARG(c, s, opt_vec2, opt_vec2_t, ptr, argname, descr)
 #define OPTL_FLVEC2(c, s, ptr, argname, descr)	OPTL_ARG(c, s, opt_float_vec2, opt_fvec2_t, ptr, argname, descr)
 #define OPTL_VEC3(c, s, ptr, argname, descr)	OPTL_ARG(c, s, opt_vec3, opt_vec3_t, ptr, argname, descr)
