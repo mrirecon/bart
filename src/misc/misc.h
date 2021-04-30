@@ -91,7 +91,6 @@ extern float quickselect(float *arr, int n, int k);
 extern float quickselect_complex(_Complex float *arr, int n, int k);
 
 extern void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str);
-extern _Bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str);
 
 extern void print_long(int D, const long arr[__VLA(D)]);
 extern void print_float(int D, const float arr[__VLA(D)]);

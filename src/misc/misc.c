@@ -524,22 +524,6 @@ void save_command_line(int argc, char* argv[static argc])
 
 void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str)
 {
-	mini_cmdline_bool(argcp, argv, '\0', expected_args, usage_str, help_str);
-}
-
-
-bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str)
-{
-	bool flag = false;
-	struct opt_s opts[1] = { { flag_char, NULL, false, OPT_SET, NULL, &flag, NULL } };
-
-	char* help = strdup(help_str);
-
-	int hlen = strlen(help);
-
-	if ((hlen > 1) && ('\n' == help[hlen - 1]))
-		help[hlen - 1] = '\0';
-
 	int min_args = expected_args;
 	int max_args = expected_args;
 
@@ -549,11 +533,9 @@ bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_ar
 		max_args = 1000;
 	}
 
-	cmdline(argcp, argv, min_args, max_args, usage_str, help, 1, opts);
+	const struct opt_s opts[] = {};
 
-	xfree(help);
-
-	return flag;
+	cmdline(argcp, argv, min_args, max_args, usage_str, help_str, ARRAY_SIZE(opts), opts);
 }
 
 

@@ -18,6 +18,7 @@
 
 #include "misc/misc.h"
 #include "misc/mmio.h"
+#include "misc/opts.h"
 #include "misc/utils.h"
 
 
@@ -38,7 +39,12 @@ int main_normalize(int argc, char* argv[argc])
 {
 	bool l1 = false;
 
-	l1 = mini_cmdline_bool(&argc, argv, 'b', 3, usage_str, help_str);
+	const struct opt_s opts[] = {
+
+		OPT_SET('b', &l1, "l1"),
+	};
+
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 

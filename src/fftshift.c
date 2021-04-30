@@ -18,6 +18,7 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
@@ -31,7 +32,14 @@ static const char help_str[] =	"Apply fftshift along dimensions selected by the 
 
 int main_fftshift(int argc, char* argv[argc])
 {
-	bool b = mini_cmdline_bool(&argc, argv, 'b', 3, usage_str, help_str);
+	bool b = false;
+
+	const struct opt_s opts[] = {
+
+		OPT_SET('b', &b, "apply ifftshift"),
+	};
+
+	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
