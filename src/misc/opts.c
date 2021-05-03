@@ -78,6 +78,29 @@ static const char* opt_arg_str(enum OPT_ARG_TYPE type)
 	error("Invalid OPT_ARG_TYPE!\n");
 }
 
+#define OPT_ARG_TYPE_CASE(X) 	case X: return #X;
+static const char* opt_type_str(enum OPT_ARG_TYPE type)
+{
+	switch(type) {
+
+		OPT_ARG_TYPE_CASE(OPT_SPECIAL)
+		OPT_ARG_TYPE_CASE(OPT_SET)
+		OPT_ARG_TYPE_CASE(OPT_CLEAR)
+		OPT_ARG_TYPE_CASE(OPT_INT)
+		OPT_ARG_TYPE_CASE(OPT_UINT)
+		OPT_ARG_TYPE_CASE(OPT_LONG)
+		OPT_ARG_TYPE_CASE(OPT_FLOAT)
+		OPT_ARG_TYPE_CASE(OPT_VEC2)
+		OPT_ARG_TYPE_CASE(OPT_VEC3)
+		OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC2)
+		OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC3)
+		OPT_ARG_TYPE_CASE(OPT_STRING)
+		OPT_ARG_TYPE_CASE(OPT_SELECT)
+		OPT_ARG_TYPE_CASE(OPT_SUBOPT)
+	}
+	error("Invalid OPT_ARG_TYPE!\n");
+}
+#undef OPT_ARG_TYPE_CASE
 
 
 static bool opt_dispatch (const struct opt_s opt, char c, const char*  optarg)
@@ -198,6 +221,15 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 }
 
 
+static void print_interface(FILE* fp, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[static n ?: 1])
+{
+	for (int i = 0; i < n; i++) {
+
+		unsigned char c = isprint(opts[i].c) ? opts[i].c : 128; // should generate � for non-printing chars
+		printf("{%c, \"%s\", \"%s\", \"%s\", \"%s\", \"%s\"}\n", c, opts[i].s, opts[i].arg ? "true" : "false", opt_type_str(opts[i].type), opt_arg_str(opts[i].type), opts[i].descr);
+	}
+}
+
 static void check_options(int n, const struct opt_s opts[n ?: 1])
 {
 	bool f[256] = { false };
@@ -225,6 +257,12 @@ static void process_option(char c, const char* optarg, const char* name, const c
 
 		print_usage(stdout, name, usage_str, n, opts);
 		print_help(help_str, n, opts);
+		exit(0);
+	}
+
+	if (0 == c) {
+
+		print_interface(stdout, name, usage_str, help_str, n, opts);
 		exit(0);
 	}
 
@@ -269,8 +307,12 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 	memset(longopts, 0, sizeof longopts);
 
 
-	char lc = 1;
+	char lc = 0;
 	int nlong = 0;
+
+	// add (hidden) interface option
+	longopts[nlong++] = (struct option){ "interface", false, NULL, lc++ };
+
 	for (int i = 0; i < n; i++) {
 
 		if (NULL != wopts[i].s) {
