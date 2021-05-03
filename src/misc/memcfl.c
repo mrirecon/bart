@@ -17,14 +17,14 @@ struct memcfl {
 	complex float* data;
 
 	int refcount;
+	bool managed;
 
 	struct memcfl* next;
 };
 
 static struct memcfl* memcfl_list = NULL;
 
-
-complex float* memcfl_create(const char* name, int D, const long dims[D])
+void memcfl_register(const char* name, int D, const long dims[D], complex float* data, bool managed)
 {
 	PTR_ALLOC(struct memcfl, mem);
 
@@ -34,18 +34,21 @@ complex float* memcfl_create(const char* name, int D, const long dims[D])
 
 	long* ndims = *TYPE_ALLOC(long[D]);
 
-
 	for (int i = 0; i < D; i++)
 		ndims[i] = dims[i];
-
-	complex float* data = xmalloc(io_calc_size(D, dims, sizeof(complex float)));
 
 	mem->dims = ndims;
 	mem->data = data;
 	mem->refcount = 1;
+	mem->managed = managed;
 
 	memcfl_list = PTR_PASS(mem);
+}
 
+complex float* memcfl_create(const char* name, int D, const long dims[D])
+{
+	complex float* data = xmalloc(io_calc_size(D, dims, sizeof(complex float)));
+	memcfl_register(name, D, dims, data, true);
 	return data;
 }
 
@@ -123,9 +126,9 @@ void memcfl_unlink(const char* name)
 
 	xfree(o->name);
 	xfree(o->dims);
-	xfree(o->data);
+	if (o->managed)
+		xfree(o->data);
 	xfree(o);
 }
-
 
 
