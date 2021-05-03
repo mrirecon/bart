@@ -78,6 +78,7 @@ struct iofile_s {
 
 	const char* name;
 	bool out;
+	bool open;
 	struct iofile_s* prev;
 };
 
@@ -85,35 +86,63 @@ static struct iofile_s* iofiles = NULL;
 
 
 
-static void io_register(const char* name, bool out)
+static void io_register(const char* name, bool out, bool open)
 {
-	const struct iofile_s* iop = iofiles;
+	struct iofile_s* iop = iofiles;
+	bool new = true;
 
 	while (NULL != iop) {
 
-		if (0 == strcmp(name, iop->name) && (out || iop->out))
-			debug_printf(DP_WARN, "Overwriting file: %s\n", name);
+		if (0 == strcmp(name, iop->name)) {
+
+			if (iop->open) {
+
+				if (out || iop->out)
+					debug_printf(DP_WARN, "Overwriting file: %s\n", name);
+			} else {
+
+				if (out != iop->out)
+					error("%s: Input opened for writing or output opened for reading!\n", name);
+
+				iop->open = open;
+				new = false;
+			}
+		}
 
 		iop = iop->prev;
 	}
 
-	PTR_ALLOC(struct iofile_s, ion);
+	if (new) {
 
-	ion->name = strdup(name);
-	ion->out = out;
-	ion->prev = iofiles;
+		PTR_ALLOC(struct iofile_s, ion);
 
-	iofiles = PTR_PASS(ion);
+		ion->name = strdup(name);
+		ion->out = out;
+		ion->open = open;
+		ion->prev = iofiles;
+
+		iofiles = PTR_PASS(ion);
+	}
 }
 
 void io_register_input(const char* name)
 {
-	io_register(name, false);
+	io_register(name, false, true);
 }
 
 void io_register_output(const char* name)
 {
-	io_register(name, true);
+	io_register(name, true, true);
+}
+
+void io_reserve_input(const char* name)
+{
+	io_register(name, false, false);
+}
+
+void io_reserve_output(const char* name)
+{
+	io_register(name, true, false);
 }
 
 void io_unregister(const char* name)
@@ -152,7 +181,7 @@ void io_unlink_if_opened(const char* name)
 
 	while (NULL != iop) {
 
-		if (0 == strcmp(name, iop->name)) {
+		if ( (0 == strcmp(name, iop->name)) && iop->open ) {
 
 			enum file_types_e type = file_type(name);
 

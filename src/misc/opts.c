@@ -21,6 +21,7 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/io.h"
 
 #include "opts.h"
 
@@ -32,6 +33,8 @@ opt_conv_f opt_uint;
 opt_conv_f opt_long;
 opt_conv_f opt_float;
 opt_conv_f opt_string;
+opt_conv_f opt_infile;
+opt_conv_f opt_outfile;
 opt_conv_f opt_vec2;
 opt_conv_f opt_float_vec2;
 opt_conv_f opt_vec3;
@@ -138,10 +141,13 @@ static bool opt_dispatch (const struct opt_s opt, char c, const char*  optarg)
 		case OPT_FLOAT_VEC3:
 			return opt_float_vec3(opt.ptr, c, optarg);
 		case OPT_STRING:
-		case OPT_INFILE:
-		case OPT_OUTFILE:
-		case OPT_INOUTFILE:
 			return opt_string(opt.ptr, c, optarg);
+		case OPT_INFILE:
+			return opt_infile(opt.ptr, c, optarg);
+		case OPT_OUTFILE:
+			return opt_outfile(opt.ptr, c, optarg);
+		case OPT_INOUTFILE:
+			error("OPT_INOUTFILE not yet implemented!\n");
 		case OPT_SELECT:
 			return opt_select(opt.ptr, c, optarg);
 		case OPT_SUBOPT:
@@ -480,6 +486,25 @@ bool opt_string(void* ptr, char c, const char* optarg)
 	*(char**)ptr = strdup(optarg);
 	assert(NULL != ptr);
 	return false;
+}
+
+static bool opt_file(void* ptr, char c, const char* optarg, bool out)
+{
+	UNUSED(c);
+	*(char**)ptr = strdup(optarg);
+	(out ? io_reserve_output : io_reserve_input)(*(char**)ptr);
+	assert(NULL != ptr);
+	return false;
+}
+
+bool opt_infile(void* ptr, char c, const char* optarg)
+{
+	return opt_file(ptr, c, optarg, false);
+}
+
+bool opt_outfile(void* ptr, char c, const char* optarg)
+{
+	return opt_file(ptr, c, optarg, true);
 }
 
 bool opt_float_vec2(void* ptr, char c, const char* optarg)

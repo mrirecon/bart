@@ -19,6 +19,8 @@ extern int read_cfl_header(int fd, char** file, int D, long dimensions[__VLA(D)]
 
 extern void io_register_input(const char* name);
 extern void io_register_output(const char* name);
+extern void io_reserve_input(const char* name);
+extern void io_reserve_output(const char* name);
 extern void io_unregister(const char* name);
 
 extern void io_unlink_if_opened(const char* name);
