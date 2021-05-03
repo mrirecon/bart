@@ -3,6 +3,7 @@
 
 #include "utest.h"
 
+#include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/memcfl.h"
 
@@ -36,6 +37,41 @@ static bool test_memcfl_load(void)
 
 
 UT_REGISTER_TEST(test_memcfl_load);
+
+
+static bool test_memcfl_register(void)
+{
+	long dims[2] = { 10, 5 };
+	complex float* x = xmalloc(io_calc_size(2, dims, sizeof(complex float)));
+
+	for (int i = 0; i < 50; i++)
+		x[i] = i;
+
+	memcfl_register("test.mem", 2, dims, x, false);
+
+	unmap_cfl(2, dims, x);
+
+	long dims2[2];
+	complex float* y = load_cfl("test.mem", 2, dims2);
+
+	if (!((dims[0] == dims2[0]) && dims[1] == dims2[1]))
+		return false;
+
+	for (int i = 0; i < 50; i++)
+		if (x[i] != i)
+			return false;
+
+	unmap_cfl(2, dims, y);
+
+	memcfl_unlink("test.mem");
+
+	xfree(x);
+
+	return true;
+}
+
+
+UT_REGISTER_TEST(test_memcfl_register);
 
 
 static bool test_memcfl_write(void)
