@@ -305,7 +305,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 		memcpy(wopts, opts, sizeof wopts);
 
 
-	int max_num_long_opts = ' ';
+	int max_num_long_opts = 256;
 	struct option longopts[max_num_long_opts];
 
 	// According to documentation, the last element of the longopts array has to be filled with zeros.
@@ -325,14 +325,19 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 		if (NULL != wopts[i].s) {
 
 			// if it is only longopt, overwrite c with an unprintable char
-			if (0 == wopts[i].c)
-				wopts[i].c = lc++;
+			if (0 == wopts[i].c) {
+
+				while (isprint(++lc)) // increment and skip over printable chars
+					;
+
+				wopts[i].c = lc;
+			}
 
 			longopts[nlong++] = (struct option){ wopts[i].s, wopts[i].arg, NULL, wopts[i].c };
 
 			// Ensure that we only used unprintable characters
 			// and that the last entry of the array is only zeros
-			if (nlong >= max_num_long_opts)
+			if ( (nlong >= max_num_long_opts) || (lc >= max_num_long_opts) )
 				error("Too many long options specified, aborting...");
 		}
 	}
