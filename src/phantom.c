@@ -57,7 +57,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_INT('s', &sens, "nc", "nc sensitivities"),
 		OPT_INT('S', &osens, "nc", "Output nc sensitivities"),
 		OPT_SET('k', &kspace, "k-space"),
-		OPT_STRING('t', &traj, "file", "trajectory"),
+		OPT_INFILE('t', &traj, "file", "trajectory"),
 		OPT_SELECT('c', enum ptype_e, &ptype, CIRC, "()"),
 		OPT_SELECT('a', enum ptype_e, &ptype, STAR, "()"),
 		OPT_SELECT('m', enum ptype_e, &ptype, TIME, "()"),

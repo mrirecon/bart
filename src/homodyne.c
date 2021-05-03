@@ -125,7 +125,7 @@ int main_homodyne(int argc, char* argv[argc])
 		OPT_FLOAT('r', &alpha, "alpha", "Offset of ramp filter, between 0 and 1. alpha=0 is a full ramp, alpha=1 is a horizontal line"),
 		OPT_SET('I', &image, "Input is in image domain"),
 		OPT_SET('C', &clear, "Clear unacquired portion of kspace"),
-		OPT_STRING('P', &phase_ref, "phase_ref>", "Use <phase_ref> as phase reference"),
+		OPT_INFILE('P', &phase_ref, "phase_ref>", "Use <phase_ref> as phase reference"),
 		OPT_CLEAR('n', &center_fft, "use uncentered ffts"),
 	};
 

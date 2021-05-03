@@ -107,7 +107,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 		OPT_SET('N', &noise, "add noise scale to account for Gaussian noise."),
 		OPT_SET('s', &ls, "perform low rank + sparse matrix completion."),
 		OPT_LONG('l', &llrblk, "size", "perform locally low rank soft thresholding with specified block size."),
-		OPT_STRING('o', &sum_str, "out2", "summed over all non-noise scales to create a denoised output."),
+		OPT_OUTFILE('o', &sum_str, "out2", "summed over all non-noise scales to create a denoised output."),
 		OPT_SELECT('u', int, &remove_mean, 1, "()"),
 		OPT_SELECT('v', int, &remove_mean, 2, "()"),
 		OPT_SET('H', &hogwild, "(hogwild)"),

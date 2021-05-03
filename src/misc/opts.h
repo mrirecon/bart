@@ -14,6 +14,7 @@ enum OPT_ARG_TYPE {
 	OPT_VEC2, OPT_VEC3,
 	OPT_FLOAT_VEC2, OPT_FLOAT_VEC3,
 	OPT_STRING,
+	OPT_INFILE, OPT_OUTFILE, OPT_INOUTFILE,
 	OPT_SELECT,
 	OPT_SUBOPT,
 };
@@ -57,6 +58,9 @@ typedef float opt_fvec3_t[3];
 #define OPT_CLEAR(c, ptr, descr)		{ (c), NULL, false, OPT_CLEAR, NULL, TYPE_CHECK(bool*, (ptr)), "\t" descr }
 #define OPT_ARG(c, type, T, ptr, argname, descr) { (c), NULL, true, type, NULL, TYPE_CHECK(T*, (ptr)), " " argname "      \t" descr }
 #define OPT_STRING(c, ptr, argname, descr)	OPT_ARG(c, OPT_STRING, const char*, ptr, argname, descr)
+#define OPT_INFILE(c, ptr, argname, descr)	OPT_ARG(c, OPT_INFILE, const char*, ptr, argname, descr)
+#define OPT_OUTFILE(c, ptr, argname, descr)	OPT_ARG(c, OPT_OUTFILE, const char*, ptr, argname, descr)
+#define OPT_INOUTFILE(c, ptr, argname, descr)	OPT_ARG(c, OPT_INOUTFILE, const char*, ptr, argname, descr)
 #define OPT_UINT(c, ptr, argname, descr)	OPT_ARG(c, OPT_UINT, unsigned int, ptr, argname, descr)
 #define OPT_INT(c, ptr, argname, descr)		OPT_ARG(c, OPT_INT, int, ptr, argname, descr)
 #define OPT_LONG(c, ptr, argname, descr)	OPT_ARG(c, OPT_LONG, long, ptr, argname, descr)
@@ -74,6 +78,9 @@ typedef float opt_fvec3_t[3];
 #define OPTL_CLEAR(c, s, ptr, descr)			{ (c), (s), false, OPT_CLEAR, NULL, TYPE_CHECK(bool*, (ptr)), "\t" descr }
 #define OPTL_ARG(c, s, type, T, ptr, argname, descr) { (c), (s), true, type, NULL, TYPE_CHECK(T*, (ptr)), " " argname "      \t" descr }
 #define OPTL_STRING(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_STRING, const char*, ptr, argname, descr)
+#define OPTL_INFILE(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_INFILE, const char*, ptr, argname, descr)
+#define OPTL_OUTFILE(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_OUTFILE, const char*, ptr, argname, descr)
+#define OPTL_INOUTFILE(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_INOUTFILE, const char*, ptr, argname, descr)
 #define OPTL_UINT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_UINT, unsigned int, ptr, argname, descr)
 #define OPTL_INT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_INT, int, ptr, argname, descr)
 #define OPTL_LONG(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_LONG, long, ptr, argname, descr)

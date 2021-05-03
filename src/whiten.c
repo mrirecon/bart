@@ -85,8 +85,8 @@ int main_whiten(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_STRING('o', &optmat_file, "<optmat_in>", "use external whitening matrix <optmat_in>"),
-		OPT_STRING('c', &covar_file, "<covar_in>", "use external noise covariance matrix <covar_in>"),
+		OPT_INFILE('o', &optmat_file, "<optmat_in>", "use external whitening matrix <optmat_in>"),
+		OPT_INFILE('c', &covar_file, "<covar_in>", "use external noise covariance matrix <covar_in>"),
 		OPT_SET('n', &normalize, "normalize variance to 1 using noise data <ndata>"),
 	};
 

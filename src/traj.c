@@ -79,8 +79,8 @@ int main_traj(int argc, char* argv[argc])
 		OPT_SET('c', &conf.asym_traj, "asymmetric trajectory [DC sampled]"),
 		OPT_SET('E', &conf.mems_traj, "multi-echo multi-spoke trajectory"),
 		OPT_VEC2('z', &z_usamp, "Ref:Acel", "Undersampling in z-direction."),
-		OPT_STRING('C', &custom_angle_file, "file", "custom_angle file [phi + i * psi]"),
-		OPT_STRING('V', &gdelays_file, "file", "(custom_gdelays)"),
+		OPT_INFILE('C', &custom_angle_file, "file", "custom_angle file [phi + i * psi]"),
+		OPT_INFILE('V', &gdelays_file, "file", "(custom_gdelays)"),
 	};
 
 	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);

@@ -74,6 +74,11 @@ static const char* opt_arg_str(enum OPT_ARG_TYPE type)
 
 	case OPT_STRING:
 		return " <string>";
+
+	case OPT_INFILE:
+	case OPT_OUTFILE:
+	case OPT_INOUTFILE:
+		return " <file>";
 	}
 	error("Invalid OPT_ARG_TYPE!\n");
 }
@@ -95,6 +100,9 @@ static const char* opt_type_str(enum OPT_ARG_TYPE type)
 		OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC2)
 		OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC3)
 		OPT_ARG_TYPE_CASE(OPT_STRING)
+		OPT_ARG_TYPE_CASE(OPT_INFILE)
+		OPT_ARG_TYPE_CASE(OPT_OUTFILE)
+		OPT_ARG_TYPE_CASE(OPT_INOUTFILE)
 		OPT_ARG_TYPE_CASE(OPT_SELECT)
 		OPT_ARG_TYPE_CASE(OPT_SUBOPT)
 	}
@@ -130,6 +138,9 @@ static bool opt_dispatch (const struct opt_s opt, char c, const char*  optarg)
 		case OPT_FLOAT_VEC3:
 			return opt_float_vec3(opt.ptr, c, optarg);
 		case OPT_STRING:
+		case OPT_INFILE:
+		case OPT_OUTFILE:
+		case OPT_INOUTFILE:
 			return opt_string(opt.ptr, c, optarg);
 		case OPT_SELECT:
 			return opt_select(opt.ptr, c, optarg);

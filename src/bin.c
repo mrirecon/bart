@@ -157,7 +157,7 @@ int main_bin(int argc, char* argv[argc])
 		OPT_VEC2('c', &card_labels_idx, "x:y", "(Cardiac motion: Eigenvector index)"),
 		OPT_UINT('a', &mavg_window, "window", "Quadrature Binning: Moving average"),
 		OPT_UINT('A', &mavg_window_card, "window", "(Quadrature Binning: Cardiac moving average window)"),
-		OPT_STRING('x', &card_out, "file", "(Output filtered cardiac EOFs)"), // To reproduce SSA-FARY paper
+		OPT_OUTFILE('x', &card_out, "file", "(Output filtered cardiac EOFs)"), // To reproduce SSA-FARY paper
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
