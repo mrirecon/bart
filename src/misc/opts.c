@@ -233,6 +233,8 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 static void check_options(int n, const struct opt_s opts[n ?: 1])
 {
 	bool f[256] = { false };
+	f[0] = true; // interface
+	f['h'] = true; // help
 
 	for (int i = 0; i < n; i++) {
 
