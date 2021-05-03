@@ -82,7 +82,7 @@ int main_epg(int argc, char* argv[argc])
 
 	long M;
 
-	if ((FMSSFP == seq) | (BSSFP == seq))
+	if ((FMSSFP == seq) || (BSSFP == seq))
 		M = 1;
 	else if (FLASH == seq)
 		M = N;
