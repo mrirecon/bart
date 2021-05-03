@@ -225,8 +225,13 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 {
 	for (int i = 0; i < n; i++) {
 
-		unsigned char c = isprint(opts[i].c) ? opts[i].c : 128; // should generate � for non-printing chars
-		printf("{%c, \"%s\", \"%s\", \"%s\", \"%s\", \"%s\"}\n", c, opts[i].s, opts[i].arg ? "true" : "false", opt_type_str(opts[i].type), opt_arg_str(opts[i].type), opts[i].descr);
+		char cs[] =  "n/a";
+		if (isprint(opts[i].c)) {
+
+			cs[0] = opts[i].c;
+			cs[1] = '\0';
+		}
+		printf("{\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\"}\n", cs, opts[i].s, opts[i].arg ? "true" : "false", opt_type_str(opts[i].type), opt_arg_str(opts[i].type), opts[i].descr);
 	}
 }
 
