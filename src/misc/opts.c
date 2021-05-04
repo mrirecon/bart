@@ -183,7 +183,7 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 				fprintf(fp, "[-%c%s] ", opts[i].c, opt_arg_str(opts[i].type));
 			} else {
 
-				if (opts[i].c < (int) ' ')
+				if (!isprint(opts[i].c))
 					fprintf(fp, "[--%s%s] ", opts[i].s, opt_arg_str(opts[i].type));
 				else
 					fprintf(fp, "[-%c,--%s%s] ", opts[i].c, opts[i].s, opt_arg_str(opts[i].type));
@@ -222,7 +222,7 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 					add_space(opts[i].arg, isspace(opts[i].descr[0])),
 					trim_space(opts[i].descr));
 			} else {
-				if (opts[i].c < (int) ' ')
+				if (!isprint(opts[i].c))
 					printf("--%s%s%s\n", opts[i].s,
 						add_space(opts[i].arg, isspace(opts[i].descr[0])),
 						trim_space(opts[i].descr));
