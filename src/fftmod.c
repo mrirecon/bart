@@ -38,7 +38,7 @@ int main_fftmod(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_SET('b', &inv, "(deprecated)"),
-		OPT_SET('i', &inv, "\tinverse"),
+		OPT_SET('i', &inv, "inverse"),
 	};
 
 	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);

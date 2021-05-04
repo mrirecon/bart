@@ -47,9 +47,11 @@ static const char* opt_arg_str(enum OPT_ARG_TYPE type)
 	switch(type) {
 
 	case OPT_SPECIAL:
-	case OPT_SELECT:
 	case OPT_SUBOPT:
-		return " ...";
+		return "...";
+
+	case OPT_SELECT:
+		return "";
 
 	case OPT_SET:
 	case OPT_CLEAR:
@@ -58,30 +60,30 @@ static const char* opt_arg_str(enum OPT_ARG_TYPE type)
 	case OPT_INT:
 	case OPT_UINT:
 	case OPT_LONG:
-		return " d";
+		return "d";
 
 	case OPT_FLOAT:
-		return " f";
+		return "f";
 
 	case OPT_VEC2:
-		return " d:d";
+		return "d:d";
 
 	case OPT_VEC3:
-		return " d:d:d";
+		return "d:d:d";
 
 	case OPT_FLOAT_VEC2:
-		return " f:f";
+		return "f:f";
 
 	case OPT_FLOAT_VEC3:
-		return " f:f:f";
+		return "f:f:f";
 
 	case OPT_STRING:
-		return " <string>";
+		return "<string>";
 
 	case OPT_INFILE:
 	case OPT_OUTFILE:
 	case OPT_INOUTFILE:
-		return " <file>";
+		return "<file>";
 	}
 	error("Invalid OPT_ARG_TYPE!\n");
 }
@@ -171,6 +173,13 @@ static bool show_option_p(const struct opt_s opt)
 		     && (')' == opt.descr[strlen(opt.descr) - 1]));
 }
 
+
+static const char* add_space(bool has_arg)
+{
+	return has_arg ? " " : "";
+}
+
+
 static void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
 {
 	fprintf(fp, "Usage: %s ", name);
@@ -180,13 +189,13 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 
 			if (NULL == opts[i].s) {
 
-				fprintf(fp, "[-%c%s] ", opts[i].c, opt_arg_str(opts[i].type));
+				fprintf(fp, "[-%c%s%s] ", opts[i].c, add_space(opts[i].arg), opt_arg_str(opts[i].type));
 			} else {
 
 				if (!isprint(opts[i].c))
-					fprintf(fp, "[--%s%s] ", opts[i].s, opt_arg_str(opts[i].type));
+					fprintf(fp, "[--%s%s%s] ", opts[i].s, add_space(opts[i].arg), opt_arg_str(opts[i].type));
 				else
-					fprintf(fp, "[-%c,--%s%s] ", opts[i].c, opts[i].s, opt_arg_str(opts[i].type));
+					fprintf(fp, "[-%c,--%s%s%s] ", opts[i].c, opts[i].s, add_space(opts[i].arg), opt_arg_str(opts[i].type));
 			}
 		}
 
@@ -194,47 +203,55 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 }
 
 
-static const char* add_space(bool has_arg, bool has_space)
-{
-	const char* space = "\t\t";
-
-	if (has_arg)
-		space = " ";
-
-	if (!has_space)
-		space = "";
-
-	return space;
-}
-
 
 static void print_help(const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	printf("\n%s\n\n",  help_str);
 
+	int max_len = 0;
+
+	// get needed padding lengths
 	for (int i = 0; i < n; i++)
 		if (show_option_p(opts[i])) {
 
+			int len = 0;
 			if (NULL == opts[i].s) {
 
+				len = snprintf(NULL, 0, "-%c%s%s", opts[i].c, add_space(opts[i].arg), opts[i].argname);
 
-				printf("-%c%s%s\n", opts[i].c,
-					add_space(opts[i].arg, isspace(opts[i].descr[0])),
-					trim_space(opts[i].descr));
 			} else {
+
 				if (!isprint(opts[i].c))
-					printf("--%s%s%s\n", opts[i].s,
-						add_space(opts[i].arg, isspace(opts[i].descr[0])),
-						trim_space(opts[i].descr));
+					len = snprintf(NULL, 0, "--%s%s%s", opts[i].s, add_space(opts[i].arg), opts[i].argname);
 				else
-					printf("-%c,--%s%s%s\n", opts[i].c, opts[i].s,
-					       add_space(opts[i].arg, isspace(opts[i].descr[0])),
-					       trim_space(opts[i].descr));
+					len = snprintf(NULL, 0, "-%c,--%s%s%s", opts[i].c, opts[i].s, add_space(opts[i].arg), opts[i].argname);
 			}
+
+			max_len = MAX(max_len, len);
 		}
 
+	const int pad_len = max_len + 4;
 
-	printf("-h\t\thelp\n");
+	// print help
+	for (int i = 0; i < n; i++)
+		if (show_option_p(opts[i])) {
+
+			int written = 0;
+			if (NULL == opts[i].s) {
+
+				written = fprintf(stdout, "-%c%s%s", opts[i].c, add_space(opts[i].arg), opts[i].argname);
+
+			} else {
+
+				if (!isprint(opts[i].c))
+					written = fprintf(stdout, "--%s%s%s", opts[i].s, add_space(opts[i].arg), opts[i].argname);
+				else
+					written = fprintf(stdout, "-%c,--%s%s%s", opts[i].c, opts[i].s, add_space(opts[i].arg), opts[i].argname);
+			}
+			fprintf(stdout, "%*c%s\n", pad_len - written, ' ', opts[i].descr);
+		}
+
+	printf("-h%*chelp\n", pad_len - 2, ' ');
 }
 
 
