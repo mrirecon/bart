@@ -257,6 +257,8 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 
 static void print_interface(FILE* fp, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[static n ?: 1])
 {
+	fprintf(fp, "name: %s, usage_str: \"%s\", help_str: \"%s\"\n", name, usage_str, help_str);
+
 	for (int i = 0; i < n; i++) {
 
 		char cs[] =  "n/a";
@@ -265,7 +267,7 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 			cs[0] = opts[i].c;
 			cs[1] = '\0';
 		}
-		printf("{\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\"}\n", cs, opts[i].s, opts[i].arg ? "true" : "false", opt_type_str(opts[i].type), opt_arg_str(opts[i].type), opts[i].descr);
+		fprintf( fp, "{\"%s\", \"%s\", %s, %s, \"%s\", \"%s\"}\n", cs, opts[i].s, opts[i].arg ? "true" : "false", opt_type_str(opts[i].type), opt_arg_str(opts[i].type), opts[i].descr);
 	}
 }
 
