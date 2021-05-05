@@ -291,6 +291,13 @@ static void check_options(int n, const struct opt_s opts[n ?: 1])
 	}
 }
 
+static void add_argnames(int n, struct opt_s wopts[n ?: 1])
+{
+	for (int i = 0; i < n; i++)
+		if ((NULL == wopts[i].argname) || (0 == strlen(wopts[i].argname)))
+			wopts[i].argname = opt_arg_str(wopts[i].type);
+}
+
 
 static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
@@ -338,6 +345,8 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 	if ((NULL != opts) && (0 < n))
 		memcpy(wopts, opts, sizeof wopts);
 
+
+	add_argnames(n, wopts);
 
 	int max_num_long_opts = 256;
 	struct option longopts[max_num_long_opts];
