@@ -14,6 +14,11 @@ enum UNET_UPSAMPLING_METHOD {
 	//UNET_US_AVERAGE_POOL,
 	};
 
+enum UNET_COMBINE_METHOD {
+	UNET_COMBINE_ADD,
+	UNET_COMBINE_ATTENTION_SIGMOID,
+};
+
 struct network_unet_s {
 
 	INTERFACE(network_t);
@@ -57,6 +62,7 @@ struct network_unet_s {
 
 	enum UNET_DOWNSAMPLING_METHOD ds_method;
 	enum UNET_UPSAMPLING_METHOD us_method;
+	enum UNET_COMBINE_METHOD combine_method;
 
 	_Bool residual;
 

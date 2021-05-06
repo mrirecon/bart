@@ -101,6 +101,8 @@ struct opt_s unet_segm_opts[] = {
 	OPTL_SELECT_DEF(0, "ds-fft", enum UNET_DOWNSAMPLING_METHOD ,&(network_unet_default_segm.ds_method), UNET_DS_FFT, UNET_DS_STRIDED_CONV, "use high frequency cropping for down-sampling"),
 	OPTL_SELECT_DEF(0, "us-fft", enum UNET_UPSAMPLING_METHOD ,&(network_unet_default_segm.us_method), UNET_US_FFT, UNET_US_STRIDED_CONV, "use high frequency zero-filling for up-sampling"),
 
+	OPTL_SELECT_DEF(0, "combine-attention", enum UNET_COMBINE_METHOD ,&(network_unet_default_segm.combine_method), UNET_COMBINE_ATTENTION_SIGMOID, UNET_COMBINE_ADD, ""),
+
 	OPTL_SET(0, "batch-normalization", &(network_unet_default_segm.use_bn), "use batch normalization"),
 	OPTL_CLEAR(0, "no-bias", &(network_unet_default_segm.use_bias), "do not use bias"),
 };

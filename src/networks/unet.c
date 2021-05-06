@@ -96,6 +96,8 @@ struct network_unet_s network_unet_default_reco = {
 	.ds_method = UNET_DS_STRIDED_CONV,
 	.us_method = UNET_US_STRIDED_CONV,
 
+	.combine_method = UNET_COMBINE_ADD,
+
 	.INTERFACE.residual = true,
 
 	.adjoint = false,
@@ -146,6 +148,8 @@ struct network_unet_s network_unet_default_segm = {
 
 	.ds_method = UNET_DS_STRIDED_CONV,
 	.us_method = UNET_US_STRIDED_CONV,
+
+	.combine_method = UNET_COMBINE_ADD,
 
 	.INTERFACE.residual = false,
 
@@ -734,13 +738,28 @@ static nn_t unet_level_create(struct network_unet_s* unet, unsigned int N, const
 	auto lower_level = unet_level_create(unet, N, down_dims_out, down_dims_in, level + 1, status);
 	lower_level = nn_chain2_swap_FF(nn_ds, 0, NULL, lower_level, 0, NULL);
 	lower_level = nn_chain2_swap_FF(lower_level, 0, NULL, nn_us, 0, NULL);
-	auto sum = nn_from_nlop_F(nlop_zaxpbz_create(N, nn_generic_codomain(result, 0, NULL)->dims, 1, 1));
-	lower_level = nn_chain2_swap_FF(lower_level, 0, NULL, sum, 0, NULL);
+
+	long tdims[N];
+	md_copy_dims(N, tdims, nn_generic_codomain(result, 0, NULL)->dims);
+	const struct nlop_s* nlop_join = NULL;
+	if (UNET_COMBINE_ATTENTION_SIGMOID == unet->combine_method)
+		nlop_join = nlop_tenmul_create(N, tdims, tdims, tdims);
+	if (UNET_COMBINE_ADD == unet->combine_method)
+		nlop_join = nlop_zaxpbz_create(N, nn_generic_codomain(result, 0, NULL)->dims, 1, 1);
+
+	lower_level = nn_chain2_swap_FF(lower_level, 0, NULL, nn_from_nlop_F(nlop_join), 0, NULL);
 	lower_level = nn_dup_F(lower_level, 0, NULL, 1, NULL);
 
 	result = nn_chain2_swap_FF(result, 0, NULL, lower_level, 0, NULL);
 
-	enum ACTIVATION activation_last_layer = (0 == level) ? unet->activation_output : ACT_LIN;
+	enum ACTIVATION activation_last_layer = unet->activation_output;
+	if (0 != level) {
+
+		activation_last_layer = ACT_LIN;
+
+		if (UNET_COMBINE_ATTENTION_SIGMOID == unet->combine_method)
+			activation_last_layer = ACT_SIGMOID;
+	}
 
 	//create conv blocks after lower level
 	for (int i = 0; i < Nl_after; i++){
