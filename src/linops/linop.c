@@ -569,27 +569,7 @@ struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b)
 
 	c->forward = operator_plus_create(a->forward, b->forward);
 	c->adjoint = operator_plus_create(a->adjoint, b->adjoint);
-
-	if ((NULL != a->normal) && (NULL != b->normal))
-		c->normal = operator_plus_create(a->normal, b->normal);
-
-	if ((NULL != a->normal) && (NULL == b->normal)) {
-
-		auto tmp = operator_chain(b->forward, b->adjoint);
-		c->normal = operator_plus_create(a->normal, tmp);
-		operator_free(tmp);
-	}
-
-	if ((NULL == a->normal) && (NULL != b->normal)) {
-
-		auto tmp = operator_chain(a->forward, a->adjoint);
-		c->normal = operator_plus_create(tmp, b->normal);
-		operator_free(tmp);
-	}
-
-	if ((NULL == a->normal) && (NULL == b->normal))
-		c->normal = NULL;
-
+	c->normal = operator_chain(c->forward, c->adjoint);
 	c->norm_inv = NULL;
 
 	return PTR_PASS(c);
