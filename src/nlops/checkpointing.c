@@ -496,6 +496,11 @@ const struct nlop_s* nlop_checkpoint_create(const struct nlop_s* nlop, bool der_
 									checkpoint_fun, der_funs, adj_funs, NULL, NULL, checkpoint_del, checkpoint_clear_der, nlop_graph_checkpointing);
 
 
+	for(int i = 0; i < II; i++)
+		for(int o = 0; o < OO; o++)
+			if (linop_is_null(nlop_get_derivative(nlop, o, i)))
+				result = nlop_no_der_F(result, o, i);
+
 	for (int i = 0; i < II; i++) {
 
 		auto iov = nlop_generic_domain(nlop, i);
