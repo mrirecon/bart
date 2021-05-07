@@ -519,6 +519,11 @@ struct linop_s* linop_null_create2(unsigned int NO, const long odims[NO], const 
 	return PTR_PASS(c);
 }
 
+bool linop_is_null(const struct linop_s* lop)
+{
+	return operator_zero_or_null_p(lop->forward);
+}
+
 
 
 struct linop_s* linop_null_create(unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI])

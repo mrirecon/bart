@@ -104,6 +104,7 @@ extern struct linop_s* linop_copy_wrapper(unsigned int D, const long istrs[D], c
 
 extern struct linop_s* linop_null_create2(unsigned int NO, const long odims[NO], const long ostrs[NO], unsigned int NI, const long idims[NI], const long istrs[NI]);
 extern struct linop_s* linop_null_create(unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI]);
+extern _Bool linop_is_null(const struct linop_s* lop);
 
 extern struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b);
 extern struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b);
