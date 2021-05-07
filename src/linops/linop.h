@@ -116,6 +116,9 @@ extern struct linop_s* linop_reshape_in_F(const struct linop_s* op, unsigned int
 extern struct linop_s* linop_reshape_out_F(const struct linop_s* op, unsigned int NO, const long odims[NO]);
 
 
+extern struct linop_s* graph_optimize_linop(const struct linop_s* op);
+
+
 #include "misc/cppwrap.h"
 
 #endif // __LINOP_H

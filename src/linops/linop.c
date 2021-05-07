@@ -25,6 +25,7 @@
 #include "misc/shrdptr.h"
 #include "misc/debug.h"
 #include "misc/shrdptr.h"
+#include "misc/list.h"
 
 #include "linop.h"
 
@@ -697,7 +698,12 @@ struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b)
 	c->normal = operator_chain(c->forward, c->adjoint);
 	c->norm_inv = NULL;
 
-	return PTR_PASS(c);
+	auto result =  PTR_PASS(c);
+	auto result_optimized = graph_optimize_linop(result);
+	linop_free(result);
+
+	return result_optimized;
+
 }
 
 struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b)
@@ -770,4 +776,54 @@ const linop_data_t* operator_get_linop_data(const struct operator_s* op)
 		return NULL;
 	else
 		return data->data;
+}
+
+static enum node_identic node_identify_linop(const struct node_s* _a, const struct node_s* _b) {
+
+	auto a = get_operator_from_node(_a);
+	auto b = get_operator_from_node(_b);
+
+	if ((NULL == a) || (a != b) || (NULL == operator_get_linop_data(a)))
+		return NODE_NOT_IDENTICAL;
+
+	return NODE_IDENTICAL;
+}
+
+static const struct operator_s* graph_optimize_operator_linop(const struct operator_s* op)
+{
+	if (NULL == op)
+		return NULL;
+
+	assert(1 == operator_nr_out_args(op));
+	assert(1 == operator_nr_in_args(op));
+	assert(operator_get_io_flags(op)[0]);
+	assert(!operator_get_io_flags(op)[1]);
+
+	auto graph = operator_get_graph(op);
+
+	bool redo = false;
+	do {
+		int count = list_count(graph->nodes);
+		graph = operator_graph_optimize_identity_F(graph);
+		graph = operator_graph_sum_to_multi_sum_F(graph, false);
+		graph = operator_graph_optimize_identify_F(graph);
+		graph = operator_graph_optimize_linops_F(graph, node_identify_linop);
+		redo = count > list_count(graph->nodes);
+
+	} while (redo);
+
+	return graph_to_operator_F(graph);
+}
+
+
+struct linop_s* graph_optimize_linop(const struct linop_s* op)
+{
+	PTR_ALLOC(struct linop_s, c);
+
+	c->forward = graph_optimize_operator_linop(op->forward);
+	c->adjoint = graph_optimize_operator_linop(op->adjoint);
+	c->normal = graph_optimize_operator_linop(op->normal);
+	c->norm_inv = operator_p_ref(op->norm_inv);
+
+	return PTR_PASS(c);
 }
