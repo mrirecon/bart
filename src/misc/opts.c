@@ -93,23 +93,23 @@ static const char* opt_type_str(enum OPT_ARG_TYPE type)
 {
 	switch(type) {
 
-		OPT_ARG_TYPE_CASE(OPT_SPECIAL)
-		OPT_ARG_TYPE_CASE(OPT_SET)
-		OPT_ARG_TYPE_CASE(OPT_CLEAR)
-		OPT_ARG_TYPE_CASE(OPT_INT)
-		OPT_ARG_TYPE_CASE(OPT_UINT)
-		OPT_ARG_TYPE_CASE(OPT_LONG)
-		OPT_ARG_TYPE_CASE(OPT_FLOAT)
-		OPT_ARG_TYPE_CASE(OPT_VEC2)
-		OPT_ARG_TYPE_CASE(OPT_VEC3)
-		OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC2)
-		OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC3)
-		OPT_ARG_TYPE_CASE(OPT_STRING)
-		OPT_ARG_TYPE_CASE(OPT_INFILE)
-		OPT_ARG_TYPE_CASE(OPT_OUTFILE)
-		OPT_ARG_TYPE_CASE(OPT_INOUTFILE)
-		OPT_ARG_TYPE_CASE(OPT_SELECT)
-		OPT_ARG_TYPE_CASE(OPT_SUBOPT)
+	OPT_ARG_TYPE_CASE(OPT_SPECIAL)
+	OPT_ARG_TYPE_CASE(OPT_SET)
+	OPT_ARG_TYPE_CASE(OPT_CLEAR)
+	OPT_ARG_TYPE_CASE(OPT_INT)
+	OPT_ARG_TYPE_CASE(OPT_UINT)
+	OPT_ARG_TYPE_CASE(OPT_LONG)
+	OPT_ARG_TYPE_CASE(OPT_FLOAT)
+	OPT_ARG_TYPE_CASE(OPT_VEC2)
+	OPT_ARG_TYPE_CASE(OPT_VEC3)
+	OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC2)
+	OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC3)
+	OPT_ARG_TYPE_CASE(OPT_STRING)
+	OPT_ARG_TYPE_CASE(OPT_INFILE)
+	OPT_ARG_TYPE_CASE(OPT_OUTFILE)
+	OPT_ARG_TYPE_CASE(OPT_INOUTFILE)
+	OPT_ARG_TYPE_CASE(OPT_SELECT)
+	OPT_ARG_TYPE_CASE(OPT_SUBOPT)
 	}
 	error("Invalid OPT_ARG_TYPE!\n");
 }
@@ -120,40 +120,40 @@ static bool opt_dispatch (const struct opt_s opt, char c, const char*  optarg)
 {
 	switch(opt.type) {
 
-		case OPT_SPECIAL:
-			return opt.conv(opt.ptr, c, optarg);
-		case OPT_SET:
-			return opt_set(opt.ptr, c, optarg);
-		case OPT_CLEAR:
-			return opt_clear(opt.ptr, c, optarg);
-		case OPT_INT:
-			return opt_int(opt.ptr, c, optarg);
-		case OPT_UINT:
-			return opt_uint(opt.ptr, c, optarg);
-		case OPT_LONG:
-			return opt_long(opt.ptr, c, optarg);
-		case OPT_FLOAT:
-			return opt_float(opt.ptr, c, optarg);
-		case OPT_VEC2:
-			return opt_vec2(opt.ptr, c, optarg);
-		case OPT_VEC3:
-			return opt_vec3(opt.ptr, c, optarg);
-		case OPT_FLOAT_VEC2:
-			return opt_float_vec2(opt.ptr, c, optarg);
-		case OPT_FLOAT_VEC3:
-			return opt_float_vec3(opt.ptr, c, optarg);
-		case OPT_STRING:
-			return opt_string(opt.ptr, c, optarg);
-		case OPT_INFILE:
-			return opt_infile(opt.ptr, c, optarg);
-		case OPT_OUTFILE:
-			return opt_outfile(opt.ptr, c, optarg);
-		case OPT_INOUTFILE:
-			error("OPT_INOUTFILE not yet implemented!\n");
-		case OPT_SELECT:
-			return opt_select(opt.ptr, c, optarg);
-		case OPT_SUBOPT:
-			return opt_subopt(opt.ptr, c, optarg);
+	case OPT_SPECIAL:
+		return opt.conv(opt.ptr, c, optarg);
+	case OPT_SET:
+		return opt_set(opt.ptr, c, optarg);
+	case OPT_CLEAR:
+		return opt_clear(opt.ptr, c, optarg);
+	case OPT_INT:
+		return opt_int(opt.ptr, c, optarg);
+	case OPT_UINT:
+		return opt_uint(opt.ptr, c, optarg);
+	case OPT_LONG:
+		return opt_long(opt.ptr, c, optarg);
+	case OPT_FLOAT:
+		return opt_float(opt.ptr, c, optarg);
+	case OPT_VEC2:
+		return opt_vec2(opt.ptr, c, optarg);
+	case OPT_VEC3:
+		return opt_vec3(opt.ptr, c, optarg);
+	case OPT_FLOAT_VEC2:
+		return opt_float_vec2(opt.ptr, c, optarg);
+	case OPT_FLOAT_VEC3:
+		return opt_float_vec3(opt.ptr, c, optarg);
+	case OPT_STRING:
+		return opt_string(opt.ptr, c, optarg);
+	case OPT_INFILE:
+		return opt_infile(opt.ptr, c, optarg);
+	case OPT_OUTFILE:
+		return opt_outfile(opt.ptr, c, optarg);
+	case OPT_INOUTFILE:
+		error("OPT_INOUTFILE not yet implemented!\n");
+	case OPT_SELECT:
+		return opt_select(opt.ptr, c, optarg);
+	case OPT_SUBOPT:
+		return opt_subopt(opt.ptr, c, optarg);
 	}
 	error("Invalid OPT_ARG_TYPE!\n");
 }
@@ -382,7 +382,7 @@ void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* u
 
 			// Ensure that we only used unprintable characters
 			// and that the last entry of the array is only zeros
-			if ( (nlong >= max_num_long_opts) || (lc >= max_num_long_opts) )
+			if ((nlong >= max_num_long_opts) || (lc >= max_num_long_opts))
 				error("Too many long options specified, aborting...");
 		}
 	}
