@@ -6,7 +6,7 @@
 #include "utest.h"
 
 
-
+int cudnn = 1;
 
 
 static bool test_convcorr_cf_1D(void)
@@ -23,21 +23,21 @@ static bool test_convcorr_cf_1D(void)
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	test = test && test_zconvcorr_bwd_in(	N,
 						odims, MD_STRIDES(N, odims, CFL_SIZE),
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	test = test && test_zconvcorr_bwd_krn(	N,
 						odims, MD_STRIDES(N, odims, CFL_SIZE),
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	UT_ASSERT(test);
 }
@@ -58,21 +58,21 @@ static bool test_convcorr_cf_2D(void)
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	test = test && test_zconvcorr_bwd_in(	N,
 						odims, MD_STRIDES(N, odims, CFL_SIZE),
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	test = test && test_zconvcorr_bwd_krn(	N,
 						odims, MD_STRIDES(N, odims, CFL_SIZE),
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	UT_ASSERT(test);
 }
@@ -93,21 +93,21 @@ static bool test_convcorr_cf_3D(void)
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	test = test && test_zconvcorr_bwd_in(	N,
 						odims, MD_STRIDES(N, odims, CFL_SIZE),
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	test = test && test_zconvcorr_bwd_krn(	N,
 						odims, MD_STRIDES(N, odims, CFL_SIZE),
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	UT_ASSERT(test);
 }
@@ -128,21 +128,21 @@ static bool test_convcorr_rand_ord(void)
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 0);
+						1.e-6, true, 0 + cudnn);
 
 	test = test && test_zconvcorr_bwd_in(	N,
 						odims, MD_STRIDES(N, odims, CFL_SIZE),
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 0);
+						1.e-6, true, 0 + cudnn);
 
 	test = test && test_zconvcorr_bwd_krn(	N,
 						odims, MD_STRIDES(N, odims, CFL_SIZE),
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 0);
+						1.e-6, true, 0 + cudnn);
 
 	UT_ASSERT(test);
 }
@@ -164,7 +164,7 @@ static bool test_convcorr_cf_one_channel(void)
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	test = test && test_zconvcorr_bwd_in(	N,
 						odims, MD_STRIDES(N, odims, CFL_SIZE),
@@ -178,7 +178,7 @@ static bool test_convcorr_cf_one_channel(void)
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, NULL, NULL, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	UT_ASSERT(test);
 }
@@ -205,10 +205,10 @@ static bool test_convcorr_cf_dil_strs(void)
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, dilation, strides, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 #ifdef NON_DETERMINISTIC
-	int no_bwd_algo = 1;
+	int no_bwd_algo = 1 + cudnn;
 #else
 	int no_bwd_algo = 0;
 #endif
@@ -225,7 +225,7 @@ static bool test_convcorr_cf_dil_strs(void)
 						idims, MD_STRIDES(N, idims, CFL_SIZE),
 						kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 						28, dilation, strides, false,
-						1.e-6, true, 1);
+						1.e-6, true, 1 + cudnn);
 
 	UT_ASSERT(test);
 }
