@@ -729,3 +729,237 @@ graph_t operator_graph_optimize_identify_F(graph_t graph)
 {
 	return graph_identify_nodes_F(graph, node_cmp_operator);
 }
+
+
+static bool node_is_sum(const struct node_s* node)
+{
+	if (NULL == get_operator_from_node(node))
+		return false;
+	return operator_is_zadd(get_operator_from_node(node));
+}
+
+// optimizes Ax + Ay to A(x+y)
+static graph_t operator_graph_optimize_linops_F_internal(graph_t graph, node_cmp_t linop_identify)
+{
+	list_t linop_sum = graph_get_linop_sum(graph, linop_identify, node_is_sum, SUM_NODES_AND_TWO_IDENTICAL_LINOPS);
+
+	while (0 < list_count(linop_sum)) {
+
+		list_t sum_nodes = list_pop(linop_sum);
+
+		assert(3 <= list_count(sum_nodes));
+
+		node_t node_linop_1 = list_get_item(sum_nodes, list_count(sum_nodes) - 2);
+		node_t node_linop_2 = list_get_item(sum_nodes, list_count(sum_nodes) - 1);
+
+		graph_t subgraph = graph_cluster_nodes_F(graph, sum_nodes, edge_separator_node);
+
+		int additional_sums = list_count(subgraph->ext_nodes) - 3;
+		assert(0 <= additional_sums);
+
+		int out_index = -1; //output of sum
+		int in1_index = -1; //input of linop
+		int in2_index = -1; //input of linop
+		//other inputs are simply added to the result
+
+		for (int i = 0; i < list_count(subgraph->ext_nodes); i++) {
+
+			node_t ext_node = list_get_item(subgraph->ext_nodes, i);
+
+			if (!ext_node->io_flags[0]) {
+
+				assert(-1 == out_index);
+				out_index = i;
+			} else {
+
+				vertex_t vertex = list_get_item(ext_node->edges[0], 0);
+
+				if ((vertex->node == node_linop_1) || (vertex->node == node_linop_2)) {
+
+					if (-1 == in1_index)
+						in1_index = i;
+					else
+						in2_index = i;
+				}
+			}
+		}
+
+		assert(-1 != out_index);
+		assert(-1 != in1_index);
+		assert(-1 != in2_index);
+
+		const struct operator_s* op_linop = get_operator_from_node(node_linop_1);
+
+		auto dom = operator_domain(op_linop);
+		auto cod = operator_codomain(op_linop);
+
+		auto op_sum = operator_zadd_create(2, dom->N, dom->dims);
+		auto op_combi = operator_combi_create(2, (const struct operator_s*[2]){op_linop, op_sum});
+		auto op_chain = operator_link_create(op_combi, 2, 1);
+
+		operator_free(op_sum);
+		operator_free(op_combi);
+
+		if (0 < additional_sums) {
+
+			op_sum = operator_zadd_create(1 +  additional_sums, cod->N, cod->dims);
+			op_combi = operator_combi_create(2, (const struct operator_s*[2]){op_sum, op_chain});
+
+			operator_free(op_chain);
+			operator_free(op_sum);
+
+			op_chain = operator_link_create(op_combi, 2 + additional_sums, 1 + additional_sums);
+
+			operator_free(op_combi);
+		}
+
+		int perm[3 + additional_sums];
+		for (int i = 0, ip = 0; i < 3 + additional_sums; i++) {
+
+			if (i == out_index) {
+
+				perm[i] = 0;
+				continue;
+			}
+
+			if (i == in1_index) {
+
+				perm[i] = 1 + additional_sums;
+				continue;
+			}
+
+			if (i == in2_index) {
+
+				perm[i] = 2 + additional_sums;
+				continue;
+			}
+
+			perm[i] = 1 + (ip++);
+		}
+
+		auto op_result = operator_permute(op_chain, 3 + additional_sums, perm);
+		operator_free(op_chain);
+
+		graph_free(subgraph);
+		subgraph = operator_get_graph(op_result);
+		operator_free(op_result);
+
+		graph = graph_reinsert_subgraph_FF(graph, subgraph);
+
+		if (0 == list_count(linop_sum)) {
+
+			list_free(linop_sum);
+			linop_sum = graph_get_linop_sum(graph, linop_identify, node_is_sum, SUM_NODES_AND_TWO_IDENTICAL_LINOPS);
+		}
+	}
+
+	list_free(linop_sum);
+
+
+	return graph;
+}
+
+static graph_t create_sum_graph(bool multi_sum, int II, int out_index, int N, const long dims[N])
+{
+	const struct operator_s* sum_op = NULL;
+
+	if (multi_sum)
+		sum_op = operator_zadd_create(II, N, dims);
+	else {
+		sum_op = operator_zadd_create(2, N, dims);
+		for (int i = 2; i < II; i++) {
+
+			auto op_sum_tmp = operator_zadd_create(2, N, dims);
+			auto op_combi = operator_combi_create(2, (const struct operator_s*[2]){op_sum_tmp, sum_op});
+
+			operator_free(op_sum_tmp);
+			operator_free(sum_op);
+
+			sum_op = operator_link_create(op_combi, 3, 2);
+
+			operator_free(op_combi);
+		}
+	}
+
+	int perm[II + 1];
+	for (int i = 0, ip = 0; i < II + 1; i++)
+		perm[i] = (i == out_index) ? 0 : 1 + ip++;
+
+	auto op_result = operator_permute(sum_op, 1 + II, perm);
+	auto result = operator_get_graph(op_result);
+
+	operator_free(sum_op);
+	operator_free(op_result);
+
+	return result;
+}
+
+static enum node_identic node_cmp_false(const struct node_s* _a, const struct node_s* _b)
+{
+	UNUSED(_a);
+	UNUSED(_b);
+
+	return NODE_NOT_IDENTICAL;
+}
+
+// replace sum chained into a sum by multi sum (and inverse)
+graph_t operator_graph_sum_to_multi_sum_F(graph_t graph, bool inverse)
+{
+	list_t linop_sum = graph_get_linop_sum(graph, node_cmp_false, node_is_sum, inverse ? MULTI_SUM_NODES_ONLY : SUM_NODES_ONLY);
+
+	while (0 < list_count(linop_sum)) {
+
+		list_t sum_nodes = list_pop(linop_sum);
+
+		graph_t subgraph = graph_cluster_nodes_F(graph, sum_nodes, edge_separator_node);
+
+		int out_index = -1;
+		for (int i = 0; i < list_count(subgraph->ext_nodes); i++) {
+
+			node_t ext_node = list_get_item(subgraph->ext_nodes, i);
+
+			if (!ext_node->io_flags[0]) {
+
+				assert(-1 == out_index);
+				out_index = i;
+			}
+		}
+
+		auto iov = get_iovec_from_node(list_get_item(subgraph->nodes, 0), 0);
+		auto new_subgraph = create_sum_graph(!inverse, list_count(subgraph->ext_nodes) - 1, out_index, iov->N, iov->dims);
+
+		graph_free(subgraph);
+
+		graph = graph_reinsert_subgraph_FF(graph, new_subgraph);
+	}
+
+	list_free(linop_sum);
+
+	return graph;
+}
+
+graph_t operator_graph_optimize_linops_F(graph_t graph, node_cmp_t linop_identify)
+{
+	list_t linop_sum = graph_get_linop_sum(graph, linop_identify, node_is_sum, SUM_OPS_AND_OPS);
+
+	while (0 < list_count(linop_sum)) {
+
+		list_t sum_nodes = list_pop(linop_sum);
+
+		graph_t subgraph = graph_cluster_nodes_F(graph, sum_nodes, edge_separator_node);
+
+		subgraph = operator_graph_optimize_linops_F_internal(subgraph, linop_identify);
+
+		graph = graph_reinsert_subgraph_FF(graph, subgraph);
+
+		if (0 == list_count(linop_sum)) {
+
+			list_free(linop_sum);
+			linop_sum = graph_get_linop_sum(graph, linop_identify, node_is_sum, SUM_OPS_AND_OPS);
+		}
+	}
+
+	list_free(linop_sum);
+
+	return graph;
+}

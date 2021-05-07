@@ -1209,3 +1209,121 @@ list_t graph_get_clusters(graph_t graph, bool simple_only)
 
 	return result;
 }
+
+// extract nodes representing a sum (of sums) and operators having an edge to this sum
+static void get_sum_parents(node_t node_sum, list_t nodes_sum, list_t nodes_linops, node_is_t node_is_sum)
+{
+	node_sum->count = 1;
+	list_append(nodes_sum, node_sum);
+
+	for (int i = 0; i < node_sum->N_vertices; i++) {
+
+		if (node_sum->io_flags[i])
+			continue;
+
+		node_t node_in = ((vertex_t)list_get_item(node_sum->edges[i], 0))->node;
+
+		if (1 == list_count(node_in->edges[0])) {
+
+			if (node_is_sum(node_in))
+				get_sum_parents(node_in, nodes_sum, nodes_linops, node_is_sum);
+
+			if ((2 == node_in->N_vertices) && !node_in->io_flags[1])
+				list_append(nodes_linops, node_in);
+		}
+	}
+}
+
+
+//find clusters where the final output is a sum of linops
+list_t graph_get_linop_sum(graph_t graph, node_cmp_t linop_identify, node_is_t node_is_sum, enum SUM_GRAPH_TYPE sum_graph_type)
+{
+	list_t result = list_create();
+
+	graph_reset_count(graph);
+
+	for (int i = 0; i < list_count(graph->nodes); i++) {
+
+		node_t node_sum = list_get_item(graph->nodes, i);
+
+		if ((0 != node_sum->count) || !node_is_sum(node_sum))
+			continue;
+
+		while ((1 == list_count(node_sum->edges[0])) && node_is_sum(((vertex_t)list_get_item(node_sum->edges[0], 0))->node))
+			node_sum = ((vertex_t)list_get_item(node_sum->edges[0], 0))->node;
+
+		list_t nodes_sum = list_create();
+		list_t nodes_linops = list_create();
+
+		get_sum_parents(node_sum, nodes_sum, nodes_linops, node_is_sum);
+
+		bool found = false;
+
+		switch (sum_graph_type) {
+
+		case SUM_NODES_ONLY:
+
+			list_free(nodes_linops);
+
+			if (1 >= list_count(nodes_sum))
+				list_free(nodes_sum);
+			else
+				list_append(result, nodes_sum);
+
+			break;
+
+		case MULTI_SUM_NODES_ONLY:
+
+			list_free(nodes_linops);
+
+			bool multi_sum = false;
+			for (int j = 0; j < list_count(nodes_sum); j++)
+				multi_sum = multi_sum || (3 < nodes_get(nodes_sum, j)->N_vertices);
+
+			if (!multi_sum)
+				list_free(nodes_sum);
+			else
+				list_append(result, nodes_sum);
+
+			break;
+
+
+		case SUM_NODES_AND_TWO_IDENTICAL_LINOPS:
+		case SUM_OPS_AND_OPS:
+
+			for (int j = 0; !found && j < list_count(nodes_linops); j++) {
+
+				node_t node_linop_1 = list_get_item(nodes_linops, j);
+
+				for (int k = j + 1; !found && k < list_count(nodes_linops); k++) {
+
+					node_t node_linop_2 = list_get_item(nodes_linops, k);
+
+					if (!linop_identify(node_linop_1, node_linop_2))
+						continue;
+
+					found = true;
+
+					if (sum_graph_type == SUM_OPS_AND_OPS) {
+
+						list_merge(nodes_sum, nodes_linops, false);
+					} else {
+
+						list_append(nodes_sum, node_linop_1);
+						list_append(nodes_sum, node_linop_2);
+					}
+				}
+			}
+
+			list_free(nodes_linops);
+
+			if (found)
+				list_append(result, nodes_sum);
+			else
+				list_free(nodes_sum);
+
+		}
+	}
+
+	return result;
+}

@@ -92,6 +92,9 @@ extern graph_t graph_bridge_node(graph_t _graph, node_t node);
 extern list_t graph_get_chains(graph_t graph);
 extern list_t graph_get_clusters(graph_t graph, _Bool simple_only);
 
+enum SUM_GRAPH_TYPE {SUM_NODES_ONLY, MULTI_SUM_NODES_ONLY, SUM_NODES_AND_TWO_IDENTICAL_LINOPS, SUM_OPS_AND_OPS};
+extern list_t graph_get_linop_sum(graph_t graph, node_cmp_t linop_identify, node_is_t node_is_sum, enum SUM_GRAPH_TYPE sum_graph_type);
+
 enum debug_levels;
 extern void debug_nodes(enum debug_levels dl, list_t nodes);
 extern void debug_edges(enum debug_levels dl, list_t nodes);

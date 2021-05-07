@@ -1,3 +1,5 @@
+#include "misc/graph.h"
+
 struct operator_s;
 struct iovec_s;
 
@@ -25,5 +27,7 @@ extern graph_t operator_graph_optimize_chains_F(graph_t graph);
 extern graph_t operator_graph_optimize_clusters_F(graph_t graph, _Bool simple_only);
 extern graph_t operator_graph_optimize_identity_F(graph_t graph);
 extern graph_t operator_graph_optimize_identify_F(graph_t graph);
+extern graph_t operator_graph_optimize_linops_F(graph_t graph, node_cmp_t linop_identify);
+extern graph_t operator_graph_sum_to_multi_sum_F(graph_t graph, _Bool inverse);
 
 extern const struct operator_s* get_operator_from_node(const struct node_s* _node);
