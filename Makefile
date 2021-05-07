@@ -28,6 +28,7 @@ BLAS_THREADSAFE?=0
 OPENBLAS?=0
 MKL?=0
 CUDA?=0
+CUDNN?=0
 ACML?=0
 OMP?=1
 SLINK?=0
@@ -161,6 +162,8 @@ endif
 
 CUDA_BASE ?= /usr/
 CUDA_LIB ?= lib
+CUDNN_BASE ?= $(CUDA_BASE)
+CUDNN_LIB ?= lib64
 
 # tensorflow
 TENSORFLOW_BASE ?= /usr/local/
@@ -349,10 +352,18 @@ NVCC = $(CUDA_BASE)/bin/nvcc
 ifeq ($(CUDA),1)
 CUDA_H := -I$(CUDA_BASE)/include
 CPPFLAGS += -DUSE_CUDA $(CUDA_H)
+ifeq ($(CUDNN),1)
+CUDNN_H := -I$(CUDNN_BASE)/include
+CPPFLAGS += -DUSE_CUDNN $(CUDNN_H)
+endif
 ifeq ($(BUILDTYPE), MacOSX)
 CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -lcufft -lcudart -lcublas -m64 -lstdc++
 else
+ifeq ($(CUDNN),1)
+CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -L$(CUDNN_BASE)/$(CUDNN_LIB) -lcudnn -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/$(CUDA_LIB)
+else
 CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/$(CUDA_LIB)
+endif
 endif
 else
 CUDA_H :=
