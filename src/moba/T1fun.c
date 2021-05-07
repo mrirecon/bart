@@ -11,6 +11,7 @@
 #include "misc/misc.h"
 #include "misc/mri.h"
 #include "misc/debug.h"
+#include "misc/version.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -194,7 +195,9 @@ static void T1_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	// sum (conj(R1s') * src, t)
 	md_clear(data->N, data->map_dims, data->tmp_map, CFL_SIZE);
 	md_zfmacc2(data->N, data->out_dims, data->map_strs, data->tmp_map, data->out_strs, src, data->out_strs, data->tmp_dR1s);
-	//md_zreal(data->N, data->map_dims, data->tmp_map, data->tmp_map);
+
+        if (!use_compat_to_version("v0.7.00"))
+		md_zreal(data->N, data->map_dims, data->tmp_map, data->tmp_map);
 
 	// dst[2] = sum (conj(R1s') * src, t)
 	pos[COEFF_DIM] = 2;
