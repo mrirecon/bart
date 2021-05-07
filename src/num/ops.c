@@ -1943,6 +1943,8 @@ struct operator_sum_s {
 
 	INTERFACE(operator_data_t);
 
+	int II;
+
 	const struct iovec_s* iov;
 };
 
@@ -1952,13 +1954,17 @@ static void sum_apply(const operator_data_t* _data, unsigned int N, void* args[N
 {
 	auto d = CAST_DOWN(operator_sum_s, _data);
 
-	assert(3 == N);
+	assert(1 + d->II == (int)N);
+	assert(3 <= N);
 
 	void* dst = args[0];
 	void* src1 = args[1];
 	void* src2 = args[2];
 
 	md_zadd2(d->iov->N, d->iov->dims, d->iov->strs, dst, d->iov->strs, src1, d->iov->strs, src2);
+
+	for (int i = 2; i < d->II; i++)
+		md_zadd2(d->iov->N, d->iov->dims, d->iov->strs, dst, d->iov->strs, dst, d->iov->strs, args[1 + i]);
 }
 
 static void sum_free(const operator_data_t* _data)
@@ -1970,20 +1976,34 @@ static void sum_free(const operator_data_t* _data)
 	xfree(data);
 }
 
-const struct operator_s* operator_zadd_create(int N, const long dims[N])
+const struct operator_s* operator_zadd_create(int II, int N, const long dims[N])
 {
 	PTR_ALLOC(struct operator_sum_s, c);
 	SET_TYPEID(operator_sum_s, c);
 
 	c->iov = iovec_create(N, dims, CFL_SIZE);
+	c->II = II;
+	assert(2 <= II);
 
+	bool io_flags[1 + II];
+	unsigned int D [1 + II];
+	const long* dims_op[1 + II];
+	const long* strs_op[1 + II];
 
-	bool io_flags[3] = { true, false, false};
-	unsigned int D[] = { N, N, N };
-	const long* dims_op[] = { c->iov->dims, c->iov->dims, c->iov->dims };
-	const long* strs_op[] = { c->iov->strs, c->iov->strs, c->iov->strs };
+	io_flags[0] = true;
+	D[0] = N;
+	dims_op[0] = c->iov->dims;
+	strs_op[0] = c->iov->strs;
 
-	return operator_generic_create2(3, io_flags, D, dims_op, strs_op, CAST_UP(PTR_PASS(c)), sum_apply, sum_free, NULL);
+	for (int i = 0; i < II; i++) {
+
+		io_flags[i + 1] = false;
+		D[i + 1] = N;
+		dims_op[i + 1] = c->iov->dims;
+		strs_op[i + 1] = c->iov->strs;
+	}
+
+	return operator_generic_create2(1 + II, io_flags, D, dims_op, strs_op, CAST_UP(PTR_PASS(c)), sum_apply, sum_free, NULL);
 }
 
 bool operator_is_zadd(const struct operator_s* op)
@@ -2043,7 +2063,7 @@ static const struct graph_s* operator_plus_get_graph(const struct operator_s* op
 	auto graph_b = operator_get_graph(d->b);
 
 	auto iov = operator_codomain(d->a);
-	auto op_sum = operator_zadd_create(iov->N, iov->dims);
+	auto op_sum = operator_zadd_create(2, iov->N, iov->dims);
 	auto graph_sum = operator_get_graph(op_sum);
 	operator_free(op_sum);
 
