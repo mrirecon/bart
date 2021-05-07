@@ -684,6 +684,12 @@ static void identify_node_internal(graph_t graph, node_t a, node_t b)
 	graph_remove_node(graph, b);
 }
 
+static bool node_cmp_wrap(node_t a, node_t b, node_cmp_t cmp)
+{
+	enum node_identic test = cmp(a, b);
+	assert(test == NODE_NOT_IDENTICAL || test == NODE_IDENTICAL || test == NODE_IDENTICAL_SYMMETRIC);
+	return test != NODE_NOT_IDENTICAL;
+}
 
 //nodes can be identified when
 // 1.) they represent the same node (operator)
@@ -691,7 +697,7 @@ static void identify_node_internal(graph_t graph, node_t a, node_t b)
 // 3.) they have the same inputs
 static bool nodes_identifyable_internal(node_t a, node_t b, node_cmp_t cmp)
 {
-	if ( (a->N_vertices != b->N_vertices) || (!cmp(a, b)) )
+	if ( (a->N_vertices != b->N_vertices) || (!node_cmp_wrap(a, b, cmp)) )
 		return false;
 
 	for (int i = 0; i < a->N_vertices; i++) {
@@ -712,10 +718,30 @@ static bool nodes_identifyable_internal(node_t a, node_t b, node_cmp_t cmp)
 		} else {
 
 			vertex_t va = vertices_get(a->edges[i], 0);
-			vertex_t vb = vertices_get(b->edges[i], 0);
 
-			if ((va->idx != vb->idx) || (va->node != vb->node))
-				return false;
+			if (NODE_IDENTICAL == cmp(a, b)) {
+
+				vertex_t vb = vertices_get(b->edges[i], 0);
+				if ((va->idx != vb->idx) || (va->node != vb->node))
+					return false;
+			} else {
+
+				bool found = false;
+
+				for (int j = 0; j < a->N_vertices; j++){
+
+					if (b->io_flags[j])
+						continue;
+
+					vertex_t vb = vertices_get(b->edges[j], 0);
+
+					if ((va->idx == vb->idx) && (va->node == vb->node))
+						found = true;
+				}
+
+				if (!found)
+					return false;
+			}
 		}
 	}
 

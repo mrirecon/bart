@@ -698,18 +698,31 @@ graph_t operator_graph_optimize_clusters_F(graph_t graph, bool simple_only)
 	return graph;
 }
 
-static bool node_cmp_operator(const struct node_s* _a, const struct node_s* _b) {
+static enum node_identic node_cmp_operator(const struct node_s* _a, const struct node_s* _b) {
 
 	auto a = CAST_MAYBE(node_operator_s, _a);
 	auto b = CAST_MAYBE(node_operator_s, _b);
 
 	if (NULL == a)
-		return false;
+		return NODE_NOT_IDENTICAL;
 
 	if (NULL == b)
-		return false;
+		return NODE_NOT_IDENTICAL;
 
-	return operator_identify(a->op, b->op);
+	if (operator_nr_args(a->op) != operator_nr_args(a->op))
+		return NODE_NOT_IDENTICAL;
+
+
+	auto iova = operator_arg_domain(a->op, 0);
+	auto iovb = operator_arg_domain(b->op, 0);
+
+	if (operator_is_zadd(a->op) && operator_is_zadd(b->op) && iovec_check(iova, iovb->N, iovb->dims, iovb->strs))
+		return NODE_IDENTICAL_SYMMETRIC;
+
+	if (a->op == b->op)
+		return NODE_IDENTICAL;
+
+	return NODE_NOT_IDENTICAL;
 }
 
 graph_t operator_graph_optimize_identify_F(graph_t graph)

@@ -80,7 +80,9 @@ extern void export_graph_dot(const char* filename, graph_t graph);
 extern graph_t graph_topological_sort_F(graph_t graph);
 
 typedef _Bool (*node_is_t)(const struct node_s*);
-typedef _Bool (*node_cmp_t)(const struct node_s*, const struct node_s*);
+
+enum node_identic { NODE_NOT_IDENTICAL, NODE_IDENTICAL, NODE_IDENTICAL_SYMMETRIC };
+typedef enum node_identic (*node_cmp_t)(const struct node_s*, const struct node_s*);
 
 extern graph_t graph_identify_nodes_F(graph_t _graph, node_cmp_t cmp);
 extern graph_t graph_cluster_nodes_F(graph_t graph, list_t nodes, edge_separator_node_f get_separator_nodes);
