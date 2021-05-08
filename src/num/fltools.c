@@ -13,16 +13,15 @@
 #include "fltools.h"
 
 
-
+static int compare(const void* _a, const void* _b)
+{
+	const complex float* a = _a;
+	const complex float* b = _b;
+	return copysignf(1., (cabsf(*a) - cabsf(*b)));
+}
 
 void zsort(int N, complex float tmp[N])
 {
-	NESTED(int, compare, (const void* _a, const void* _b))
-	{
-		const complex float* a = _a;
-		const complex float* b = _b;
-		return copysignf(1., (cabsf(*a) - cabsf(*b)));
-	};
 
 	qsort(tmp, N, sizeof(complex float), compare);
 }
