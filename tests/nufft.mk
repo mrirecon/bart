@@ -148,7 +148,7 @@ tests/test-nufft-batch: traj phantom repmat nufft nrmse
 	$(TOOLDIR)/repmat 3 2 ksp.ra ksp2.ra						;\
 	$(TOOLDIR)/nufft -i -r traj.ra ksp2.ra reco2.ra					;\
 	$(TOOLDIR)/repmat 3 2 reco.ra reco1.ra						;\
-	$(TOOLDIR)/nrmse -t 0.001 reco1.ra reco2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.0015 reco1.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
