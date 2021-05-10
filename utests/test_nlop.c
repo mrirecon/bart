@@ -81,7 +81,7 @@ static bool test_nlop_cast_neg(void)
 
 	nlop_free(d);
 
-	return ok;
+	UT_ASSERT(ok);
 }
 
 
@@ -173,7 +173,7 @@ static bool test_nlop_tenmul2(bool permute)
 
 static bool test_nlop_tenmul(void)
 {
-	return test_nlop_tenmul2(false);
+	UT_ASSERT(test_nlop_tenmul2(false));
 }
 
 UT_REGISTER_TEST(test_nlop_tenmul);
@@ -182,7 +182,7 @@ UT_REGISTER_TEST(test_nlop_tenmul);
 
 static bool test_nlop_permute(void)
 {
-	return test_nlop_tenmul2(true);
+	UT_ASSERT(test_nlop_tenmul2(true));
 }
 
 UT_REGISTER_TEST(test_nlop_permute);
@@ -465,12 +465,12 @@ static bool test_nlop_combine_der1(void)
 	linop_forward(nlop_get_derivative(comb, 0, 1), N, dims, out1, N, dims, in1);
 
 	if (0. != md_znorm(N, dims, out1))
-		return false;
+		UT_ASSERT(false);
 
 	linop_forward(nlop_get_derivative(comb, 1, 0), N, dims, out1, N, dims, in1);
 
 	if (0. != md_znorm(N, dims, out1))
-		return false;
+		UT_ASSERT(false);
 
 	nlop_derivative(zexp, N, dims, out1, N, dims, in1);
 
@@ -493,7 +493,7 @@ static bool test_nlop_combine_der1(void)
 	nlop_free(id);
 	nlop_free(zexp);
 
-	return (0. == err);
+	 UT_ASSERT(0. == err);
 }
 
 
@@ -773,7 +773,7 @@ static bool test_nlop_parallel_derivatives(void)
 
 	linop_adjoint_unchecked(nlop_get_derivative(bridge, 0, 0), out1, in);
 
-	result = result && ((12 == counter) || (8 == counter));
+	result = result && ((12 == counter) || (8 == counter)); // 8 if linop sums are optimized
 
 	nlop_free(bridge);
 	nlop_free(tmp);
@@ -782,7 +782,7 @@ static bool test_nlop_parallel_derivatives(void)
 	linop_free(countop1);
 	linop_free(chain);
 
-	return result;
+	UT_ASSERT(result);
 }
 
 UT_REGISTER_TEST(test_nlop_parallel_derivatives);
@@ -845,23 +845,23 @@ static bool test_nlop_select_derivatives(void)
 
 	void* args[3] = { ptr1, ptr2, ptr3 };
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_unchecked(tenmul1, 3, args);
 
-	assert(nlop_tenmul_der_available(tenmul1, 0));
-	assert(nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 1l, 3l);
 
-	assert(nlop_tenmul_der_available(tenmul1, 0));
-	assert(nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 0l, 0l);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_free(tenmul1);
 
@@ -883,18 +883,18 @@ static bool test_nlop_select_derivatives_dup(void)
 
 	auto op = nlop_dup(tenmul1, 0, 1);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 1l, 1l);
 
-	assert(nlop_tenmul_der_available(tenmul1, 0));
-	assert(nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 0l, 0l);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_free(tenmul1);
 	nlop_free(op);
@@ -922,24 +922,24 @@ static bool test_nlop_select_derivatives_combine(void)
 
 	auto op = nlop_combine(tenmul1, tenmul2);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(!nlop_tenmul_der_available(tenmul1, 1));
-	assert(!nlop_tenmul_der_available(tenmul2, 0));
-	assert(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 0l, 0l);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(!nlop_tenmul_der_available(tenmul1, 1));
-	assert(!nlop_tenmul_der_available(tenmul2, 0));
-	assert(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 3l, 6l);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(nlop_tenmul_der_available(tenmul1, 1));
-	assert(nlop_tenmul_der_available(tenmul2, 0));
-	assert(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_free(tenmul1);
 	nlop_free(tenmul2);
@@ -966,31 +966,31 @@ static bool test_nlop_select_derivatives_link(void)
 
 	auto op = nlop_chain2(tenmul1, 0, tenmul2, 1);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(!nlop_tenmul_der_available(tenmul1, 1));
-	assert(!nlop_tenmul_der_available(tenmul2, 0));
-	assert(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 0l, 0l);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(!nlop_tenmul_der_available(tenmul1, 1));
-	assert(!nlop_tenmul_der_available(tenmul2, 0));
-	assert(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 4l);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(nlop_tenmul_der_available(tenmul1, 1));
-	assert(!nlop_tenmul_der_available(tenmul2, 0));
-	assert(nlop_tenmul_der_available(tenmul2, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 1l);
 
-	assert(!nlop_tenmul_der_available(tenmul1, 0));
-	assert(!nlop_tenmul_der_available(tenmul1, 1));
-	assert(nlop_tenmul_der_available(tenmul2, 0));
-	assert(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_free(tenmul1);
 	nlop_free(tenmul2);
