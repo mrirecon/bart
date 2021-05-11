@@ -13,6 +13,7 @@
 
 #include "misc/types.h"
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "num/ops.h"
 #include "num/ops_p.h"
@@ -206,14 +207,17 @@ struct prox_nlgrad_data {
 	const struct nlop_s* op;
 
 	float step_size;
+	float lambda;
 	int steps;
 };
 
 DEF_TYPEID(prox_nlgrad_data);
 
-static void prox_nlgrad_apply(const operator_data_t* _data, float lambda, complex float* dst, const complex float* src)
+static void prox_nlgrad_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(prox_nlgrad_data, _data);
+
+	mu *= data->lambda;
 
 	auto dom = nlop_domain(data->op);
 	auto cod = nlop_codomain(data->op);
@@ -229,11 +233,17 @@ static void prox_nlgrad_apply(const operator_data_t* _data, float lambda, comple
 
 		nlop_apply(data->op, cod->N, cod->dims, out, dom->N, dom->dims, dst);
 
+		debug_printf(DP_DEBUG1, "Loss: %f\n", crealf(out[0]));
+
 		nlop_adjoint(data->op, dom->N, dom->dims, grd, cod->N, cod->dims, grad_ys);
 
-		md_zaxpy(dom->N, dom->dims, dst, -1. * data->step_size, dst);
-		md_zaxpy(dom->N, dom->dims, dst, +1. * data->step_size, src);
-		md_zaxpy(dom->N, dom->dims, dst, -1. * data->step_size * lambda, grd);		// xp <- x - s (x - y + l \grad f)
+		if (0 < i) {
+
+			md_zaxpy(dom->N, dom->dims, dst, -1. * data->step_size, dst);
+			md_zaxpy(dom->N, dom->dims, dst, +1. * data->step_size, src);
+		}
+
+		md_zaxpy(dom->N, dom->dims, dst, -1. * data->step_size * mu, grd);		// xp <- x - s (x - y + l \grad f)
 	}
 
 	md_free(grd);
@@ -248,7 +258,7 @@ static void prox_nlgrad_del(const operator_data_t* _data)
 	xfree(data);
 }
 
-extern const struct operator_p_s* prox_nlgrad_create(const struct nlop_s* op, int steps, float step_size)
+extern const struct operator_p_s* prox_nlgrad_create(const struct nlop_s* op, int steps, float step_size, float lambda)
 {
 	PTR_ALLOC(struct prox_nlgrad_data, data);
 	SET_TYPEID(prox_nlgrad_data, data);
@@ -261,6 +271,7 @@ extern const struct operator_p_s* prox_nlgrad_create(const struct nlop_s* op, in
 	assert(1 == md_calc_size(cod->N, cod->dims));
 
 	data->op = nlop_clone(op);
+	data->lambda = lambda;
 	data->step_size = step_size;
 	data->steps = steps;
 
