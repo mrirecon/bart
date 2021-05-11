@@ -22,6 +22,7 @@
 #include "num/ops.h"
 
 #include "iter/prox.h"
+#include "iter/prox2.h"
 #include "iter/thresh.h"
 
 #include "linops/linop.h"
@@ -33,6 +34,8 @@
 #include "wavelet/wavthresh.h"
 
 #include "lowrank/lrthresh.h"
+
+#include "nn/tf_wrapper.h"
 
 #include "misc/mri.h"
 #include "misc/utils.h"
@@ -63,6 +66,7 @@ void help_reg(void)
 			"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
 			"-R L:7:7:.02\tLocally low rank with spatial decimation and 0.02 regularization.\n"
 			"-R M:7:7:.03\tMulti-scale low rank with spatial decimation and 0.03 regularization.\n"
+			"-R TF:{graph_path}:lambda\tTensorFlow loss\n"
 	      );
 }
 
@@ -179,6 +183,14 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].xform = FTL1;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
+		}
+		else if (strcmp(rt, "TF") == 0) {
+
+			regs[r].xform = TENFL;
+			int ret = sscanf(optarg, "%*[^:]:{%m[^}]}:%f", &regs[r].graph_file, &regs[r].lambda);
+			assert(2 == ret);
+			regs[r].xflags = 0u;
+			regs[r].jflags = 0u;
 		}
 		else if (strcmp(rt, "h") == 0) {
 
@@ -502,8 +514,24 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			trafos[nr] = linop_fft_create(DIMS, img_dims, regs[nr].xflags);
 			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
 			break;
-		}
 
+		case TENFL:
+			debug_printf(DP_INFO, "TensorFlow Loss: %f %s\n", regs[nr].lambda, regs[nr].graph_file);
+
+			trafos[nr] = linop_identity_create(DIMS, img_dims);
+
+			const struct nlop_s* tf_ops = nlop_tf_create(1, 1, regs[nr].graph_file, true);
+
+			// with one step, this only does one gradient descent step
+
+			auto prox_op = prox_nlgrad_create(tf_ops, 1, 1., regs[nr].lambda);
+
+			prox_ops[nr] = op_p_auto_normalize(prox_op, ~0LU, NORM_MAX);
+
+			operator_p_free(prox_op);
+
+			break;
+		}
 	}
 }
 
