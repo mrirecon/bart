@@ -6,7 +6,7 @@
 #include "misc/types.h"
 #include "misc/misc.h"
 
-enum OPT_ARG_TYPE {
+enum OPT_TYPE {
 	OPT_SPECIAL,
 	OPT_SET, OPT_CLEAR,
 	OPT_INT, OPT_UINT, OPT_LONG,
@@ -26,7 +26,7 @@ struct opt_s {
 	char c;
 	const char* s;
 	bool arg;
-	enum OPT_ARG_TYPE type;
+	enum OPT_TYPE type;
 	opt_conv_f* conv;
 	void* ptr;
 	const char* argname;

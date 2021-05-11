@@ -42,7 +42,7 @@ opt_conv_f opt_float_vec3;
 opt_conv_f opt_select;
 opt_conv_f opt_subopt;
 
-static const char* opt_arg_str(enum OPT_ARG_TYPE type)
+static const char* opt_arg_str(enum OPT_TYPE type)
 {
 	switch(type) {
 
@@ -89,7 +89,7 @@ static const char* opt_arg_str(enum OPT_ARG_TYPE type)
 }
 
 #define OPT_ARG_TYPE_CASE(X) 	case X: return #X;
-static const char* opt_type_str(enum OPT_ARG_TYPE type)
+static const char* opt_type_str(enum OPT_TYPE type)
 {
 	switch(type) {
 
