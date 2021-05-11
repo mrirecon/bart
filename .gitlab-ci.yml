@@ -15,7 +15,7 @@ Build:
   image: debian:stable
   stage: build
   script:
-    - make
+    - make all
   artifacts:
     paths:
       - bart
@@ -28,7 +28,7 @@ Build_Clang:
   stage: build
   script:
     - apt-get install -y clang-6.0 libblocksruntime-dev
-    - CC=clang-6.0 OMP=0 make
+    - CC=clang-6.0 OMP=0 make all
   artifacts:
     paths:
       - bart
@@ -68,7 +68,7 @@ Build_GPU:
     - echo -n "deb http://ftp.de.debian.org/debian/ stable non-free contrib" >> /etc/apt/sources.list
     - apt-get update -qq && apt-get install -y -qq
     - apt-get install -y nvidia-cuda-toolkit
-    - CUDA=1 make
+    - CUDA=1 make all
   artifacts:
     paths:
       - bart
