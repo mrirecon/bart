@@ -29,6 +29,7 @@
 
 
 
+#ifdef TENSORFLOW
 static int product(int n, const int64_t ar[n])
 {
     int64_t result = 1;
@@ -38,6 +39,7 @@ static int product(int n, const int64_t ar[n])
 
     return result;
 }
+#endif
 
 // function to read network/graph definition from binary protobuf file
 
@@ -168,6 +170,7 @@ typedef int TF_Tensor;
 static TF_Tensor* tensor_allocate(int N, const long dims[N])
 {
 	long dims2[N];
+	assert(0 < N);
 
 	for (int i = 0; i < N; i++)
 		dims2[i] = dims[N - i - 1];
@@ -175,8 +178,9 @@ static TF_Tensor* tensor_allocate(int N, const long dims[N])
 	assert(1 == dims2[N - 1]);
 	dims2[N - 1] = 2;
 
-	size_t size = product(N, dims2) * FL_SIZE;
 #ifdef TENSORFLOW
+	size_t size = product(N, dims2) * FL_SIZE;
+
 	return TF_AllocateTensor(TF_FLOAT, dims2, N, size);
 #else
 	return NULL;
@@ -435,6 +439,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	if (session)
 		restore_session(graph, status, sess, path);
 #else
+	UNUSED(session);
 	TF_Status* status;
 	TF_Graph* graph;
 #endif
@@ -498,7 +503,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	int IN_arr[II];
 
 	PTR_ALLOC(struct TF_Output[II], inputs_op);
-	PTR_ALLOC(struct TF_Tensor*[II], input_tensors);
+	PTR_ALLOC(TF_Tensor*[II], input_tensors);
 	PTR_ALLOC(int[II], nr_in_dim);
 	PTR_ALLOC(const int64_t *[II], in_dims_tf);
 	PTR_ALLOC(struct TF_Output[II], grad_op);
@@ -574,10 +579,5 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 }
 
 
-extern struct TF_Tensor* const* get_input_tensor(const struct nlop_s* op)
-{
-	nlop_data_t* data = nlop_get_data(op);
-	struct tf_s* tf_data = CAST_DOWN(tf_s, data);
-	return tf_data->input_tensors;
-}
+
 
