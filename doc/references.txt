@@ -41,9 +41,32 @@ https://github.com/mrirecon/ring
 
 Holme HCM, Rosenzweig S, Ong F, Wilke RN, Lustig M, Uecker M.
 ENLIVE: An Efficient Nonlinear Method for Calibrationless and Robust Parallel
-Imaging. Scientific Reports 2019; 9:3034.
+Imaging.
+Scientific Reports 2019; 9:3034.
 https://github.com/mrirecon/enlive
 
+Wang X, Kohler F, Unterberg-Buchwald C, Lotz J, Frahm J, Uecker M.
+Model-based myocardial T1 mapping with sparsity constraints using single-shot
+inversion-recovery radial FLASH cardiovascular magnetic resonance.
+J Cardioviasc Magn Reson 2019; 21:60.
+https://github.com/mrirecon/myocardial-t1-mapping
+
+Rosenzweig S, Scholand N, Holme HCM, Uecker M.
+Cardiac and Respiratory Self-Gating in Radial MRI using an Adapted Singular
+Spectrum Analysis (SSA-FARY).
+IEEE Trans Med Imag 2020; 39:3029-3041.
+https://github.com/mrirecon/SSA-FARY
+
+Wang X, Rosenzweig S, Scholand N, Holme HCM, Uecker M.
+Model-based Reconstruction for Simultaneous Multi-slice T1 Mapping using
+Single-shot Inversion-recovery Radial FLASH.
+Magn Reson Med 2021; 85:1258-1271.
+https://github.com/mrirecon/sms-t1-mapping
+
+Wang X, Tan Z, Scholand N, Roeloffs V, Uecker M.
+Physics-based Reconstruction Methods for Magnetic Resonance Imaging.
+Philos. Trans. R. Soc. A. 2021; 379:20200196.
+https://github.com/mrirecon/physics-recon
 
 
 
@@ -162,7 +185,8 @@ Magn Reson Med 2014; 72:959-970.
 
 Holme HCM, Rosenzweig S, Ong F, Wilke RN, Lustig M, Uecker M.
 ENLIVE: An Efficient Nonlinear Method for Calibrationless and Robust Parallel
-Imaging. Scientific Reports 2019; 9:3034.
+Imaging.
+Scientific Reports 2019; 9:3034.
 
 
 
@@ -236,6 +260,22 @@ Model-based T1 Mapping with Sparsity Constraints Using Single-Shot
 Inversion-Recovery Radial FLASH.
 Magn Reson Med 2018; 79:730-740.
 
+Wang X, Kohler F, Unterberg-Buchwald C, Lotz J, Frahm J, Uecker M.
+Model-based myocardial T1 mapping with sparsity constraints using single-shot
+inversion-recovery radial FLASH cardiovascular magnetic resonance.
+J Cardioviasc Magn Reson 2019; 21:60.
+
+Tan Z, Voit D, Kollmeier J, Uecker M, Frahm J.
+Dynamic Water/Fat Separation and B0 Inhomogeneity Mapping -- Joint Estimation
+Using Undersampled Triple-Echo Multi-Spoke Radial FLASH.
+Magn Reson Med 2019; 82:1000-1011.
+
+Wang X, Rosenzweig S, Scholand N, Holme HCM, Uecker M.
+Model-based Reconstruction for Simultaneous Multi-slice T1 Mapping using
+Single-shot Inversion-recovery Radial FLASH.
+Magn Reson Med 2021; 85:1258-1271.
+
+
 
 
 
@@ -262,6 +302,10 @@ IEEE J Sel Topics Signal Process 2016; 10:672-687.
 Bredies K, Kunisch K, Pock T.
 Total generalized variation.
 SIAM Journal on Imaging Sciences 2010; 3:492-526.
+
+Luo G, Zhao N, Jiang W, Hui ES, Cao P.
+MRI reconstruction using deep Bayesian estimation.
+Magn Reson Med 2020; 84:2246-2261.
 
 
 
@@ -327,8 +371,8 @@ IEEE Trans Med Imaging 2012; 31:1250-1262.
 
 
 
-- numerical phantoms -
-(command: phantom)
+- numerical phantoms and signals -
+(command: phantom, signal)
 
 
 Shepp LA, Logan BF.
@@ -343,5 +387,21 @@ Magn Reson Med 2007; 58:430-436.
 Guerquin-Kern M, Lejeune L, Pruessmann KP, M Unser M,
 Realistic Analytical Phantoms for Parallel Magnetic Resonance Imaging.
 IEEE Trans Med Imaging 2012; 31:626-636.
+
+Look DC, Locker DR.
+Time Saving in Measurement of NMR and EPR Relaxation Times.
+Review of Scientific Instruments 1970; 41:250.
+
+Schmitt P, Griswold MA, Jakob PM, Kotas M, Gulani V, Flentje M, Haase A.
+Inversion recovery TrueFISP: Quantification of T1, T2, and spin density.
+Magn Reson Med 2004; 51:661-667.
+
+Hamilton G, Yokoo T, Bydder M, Cruite I, Schroeder ME, Sirlin CB, Middleton MS.
+In vivo characterization of the liver fat 1H MR spectrum.
+NMR Biomed 2011; 24:784-790.
+
+Assländer J, Novikov DS, Lattanzi R, Sodickson DK, Cloos MA.
+Hybrid-state free precession in nuclear magnetic resonance.
+Communications Physics. 2019; 2:73.
 
 
