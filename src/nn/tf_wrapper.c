@@ -14,6 +14,10 @@
 
 #include "nlops/nlop.h"
 
+#ifdef _WIN32
+#include <stdint.h>
+#endif
+
 #ifdef TENSORFLOW
 #include "tensorflow/c/c_api.h"
 #include "tensorflow/c/tf_tensor.h"

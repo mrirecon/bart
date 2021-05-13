@@ -190,7 +190,7 @@ int main_itsense(int argc, char* argv[argc])
 	unmap_cfl(DIMS, data.imgs_dims, image);
 	unmap_cfl(DIMS, data.mask_dims, data.pattern);
 	unmap_cfl(DIMS, data.sens_dims, data.sens);
-	unmap_cfl(DIMS, data.data_dims, data.sens);
+	unmap_cfl(DIMS, data.data_dims, kspace);
 	md_free(data.tmp);
 
 	return 0;

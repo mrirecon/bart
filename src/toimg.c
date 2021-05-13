@@ -166,7 +166,7 @@ int main_toimg(int argc, char* argv[argc])
 
 	num_init();
 
-	char* ext = rindex(argv[2], '.');
+	char* ext = strrchr(argv[2], '.');
 
 	if (NULL != ext) {
 

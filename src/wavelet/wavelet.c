@@ -45,7 +45,9 @@
 
 #include "wavelet.h"
 
-
+#ifdef __MINGW32__
+#define ffs __builtin_ffs
+#endif
 
 // layer 1 - 1-dimensional wavelet transform
 

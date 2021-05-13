@@ -22,7 +22,12 @@
 #include <unistd.h>
 #include <stdarg.h>
 
+#ifdef _WIN32
+#include "win/mman.h"
+#include "win/open_patch.h"
+#else
 #include <sys/mman.h>
+#endif
 
 #include "num/multind.h"
 
@@ -597,7 +602,11 @@ void unmap_cfl(int D, const long dims[D?:1], const complex float* x)
 	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
 		error("unmap cfl\n");
 
+#ifdef _WIN32
+	if (-1 == munmap((void*)x, T))
+#else
 	if (-1 == munmap((void*)((uintptr_t)x & ~4095UL), T))
+#endif
 		io_error("unmap cfl\n");
 }
 

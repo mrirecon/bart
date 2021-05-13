@@ -23,6 +23,9 @@
 
 #include "filter.h"
 
+#ifdef __MINGW32__
+#define ffs __builtin_ffs
+#endif
 
 static int cmp_float(const void* a, const void* b)
 {

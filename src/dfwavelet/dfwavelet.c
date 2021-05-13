@@ -19,6 +19,10 @@
 #include <assert.h>
 #include <complex.h>
 
+#ifdef _WIN32
+#include "win/rand_r.h"
+#endif
+
 #include "num/multind.h"
 #include "misc/misc.h"
 

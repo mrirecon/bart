@@ -20,7 +20,9 @@
 
 #include "grad.h"
 
-
+#ifdef __MINGW32__
+#define ffs __builtin_ffs
+#endif
 
 static void grad_dims(unsigned int D, long dims2[D], int d, unsigned int flags, const long dims[D])
 {

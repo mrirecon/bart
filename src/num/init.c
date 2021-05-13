@@ -13,7 +13,9 @@
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <fenv.h>
+#if 0
 #include <sys/resource.h>
+#endif
 
 #ifdef _OPENMP
 #include <omp.h>
