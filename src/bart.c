@@ -16,6 +16,11 @@
 #include <unistd.h>
 #include <errno.h>
 
+#ifdef _WIN32
+#include "win/fmemopen.h"
+#include "win/basename_patch.h"
+#endif
+
 #include "misc/io.h"
 #include "misc/misc.h"
 #include "misc/version.h"
@@ -90,7 +95,7 @@ int main_bart(int argc, char* argv[argc])
 {
 	char* bn = basename(argv[0]);
 
-	if (0 == strcmp(bn, "bart")) {
+	if (0 == strcmp(bn, "bart") || 0 == strcmp(bn, "bart.exe")) {
 
 		if (1 == argc) {
 
@@ -170,6 +175,11 @@ int bart_command(int len, char* buf, int argc, char* argv[])
 	debug_level = save;
 
 	if (NULL != bart_output) {
+
+		#ifdef _WIN32
+		rewind(bart_output);
+		fread(buf, 1, len, bart_output);
+		#endif
 
 		fclose(bart_output);	// write final nul
 		bart_output = NULL;

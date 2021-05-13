@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(_WIN32)
 #include <execinfo.h>
 #endif
 
@@ -176,7 +176,7 @@ void debug_printf_trace(const char* func_name,
 
 void debug_backtrace(size_t n)
 {
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(_WIN32)
 	void* ptrs[n + 1];
 	size_t l = backtrace(ptrs, n + 1);
 

@@ -16,7 +16,12 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+
+#ifdef _WIN32
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
 
 #include "num/multind.h"
 #include "num/iovec.h"

@@ -14,6 +14,10 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+#include "win/rand_r.h"
+#endif
+
 #include "misc/misc.h"
 #include "misc/types.h"
 

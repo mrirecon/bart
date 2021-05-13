@@ -16,7 +16,12 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include "win/mman.h"
+#include "win/vdprintf.h"
+#else
 #include <sys/mman.h>
+#endif
 #include <complex.h>
 #include <stdbool.h>
 #include <stdint.h>

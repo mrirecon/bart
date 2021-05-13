@@ -25,7 +25,12 @@
 #include <stdio.h>
 
 #include <sys/types.h>
+#ifdef _WIN32
+#include "win/mman.h"
+#include "win/open_patch.h"
+#else
 #include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 
 #include "misc/misc.h" // for error

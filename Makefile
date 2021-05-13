@@ -86,6 +86,13 @@ ifeq ($(UNAME),CYGWIN_NT-10.0)
 endif
 
 
+ifneq (,$(findstring MSYS,$(UNAME)))
+	BUILDTYPE = MSYS
+	#LDFLAGS += -lucrtbase # support for %F, %T formatting codes in strftime()
+	#LDFLAGS += -static-libgomp
+	NOLAPACKE ?= 1
+	SLINK = 1
+endif
 
 
 # Paths
@@ -118,8 +125,10 @@ ifeq ($(BUILDTYPE), MacOSX)
 	CC ?= gcc-mp-6
 else
 	CC ?= gcc
+	ifneq ($(BUILDTYPE), MSYS)
 	# for symbols in backtraces
 	LDFLAGS += -rdynamic
+	endif
 endif
 
 
@@ -127,6 +136,9 @@ endif
 
 # openblas
 
+ifeq ($(BUILDTYPE), MSYS)
+BLAS_BASE ?= /mingw64/include/OpenBLAS/
+else
 ifneq ($(BUILDTYPE), MacOSX)
 BLAS_BASE ?= /usr/
 else
@@ -135,6 +147,7 @@ BLAS_BASE ?= /opt/local/
 CPPFLAGS += -DUSE_MACPORTS
 endif
 BLAS_BASE ?= /usr/local/opt/openblas/
+endif
 endif
 
 # cuda
@@ -186,6 +199,9 @@ TIO=toimg
 
 
 MODULES = -lnum -lmisc -lnum -lmisc
+ifeq ($(BUILDTYPE), MSYS)
+MODULES += -lwin
+endif
 
 MODULES_pics = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
 MODULES_sqpics = -lsense -liter -llinops -lwavelet -llowrank -lnoncart
@@ -368,15 +384,23 @@ BLAS_H := -I$(ACML_BASE)/include
 BLAS_L := -L$(ACML_BASE)/lib -lgfortran -lacml_mp -Wl,-rpath $(ACML_BASE)/lib
 CPPFLAGS += -DUSE_ACML
 else
+ifeq ($(BUILDTYPE), MSYS)
+BLAS_H := -I$(BLAS_BASE)
+else
 BLAS_H := -I$(BLAS_BASE)/include
+endif
 ifeq ($(BUILDTYPE), MacOSX)
 BLAS_L := -L$(BLAS_BASE)/lib -lopenblas
+else
+ifeq ($(BUILDTYPE), MSYS)
+	BLAS_L := -L/mingw64/lib -lopenblas
 else
 ifeq ($(NOLAPACKE),1)
 BLAS_L := -L$(BLAS_BASE)/lib -llapack -lblas
 CPPFLAGS += -Isrc/lapacke
 else
 BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lblas
+endif
 endif
 endif
 endif
@@ -414,8 +438,10 @@ FFTW_H := -I$(FFTW_BASE)/include/
 FFTW_L := -L$(FFTW_BASE)/lib -lfftw3f
 
 ifeq ($(FFTWTHREADS),1)
+ifneq ($(BUILDTYPE), MSYS)
 	FFTW_L += -lfftw3f_threads
 	CPPFLAGS += -DFFTWTHREADS
+endif
 endif
 
 # Matlab
@@ -455,8 +481,11 @@ BLAS_L += -lgfortran -lquadmath
 else
 # work around fortran problems with static linking
 LDFLAGS += -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -Wl,--allow-multiple-definition
+ifneq ($(BUILDTYPE), MSYS)
 LIBS += -lmvec
-BLAS_L += -llapack -lblas -lgfortran -lquadmath
+BLAS_L += -llapack -lblas
+endif
+BLAS_L += -lgfortran -lquadmath
 endif
 endif
 
@@ -490,6 +519,9 @@ endef
 ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba lapacke box geom nn
 ifeq ($(ISMRMRD),1)
 ALIBS += ismrm
+endif
+ifeq ($(BUILDTYPE), MSYS)
+ALIBS += win
 endif
 $(eval $(foreach t,$(ALIBS),$(eval $(call alib,$(t)))))
 
@@ -689,6 +721,12 @@ TESTS_OUT=$(root)/tests/out/
 
 
 include $(root)/tests/*.mk
+
+ifeq ($(BUILDTYPE), MSYS)
+TMP_TESTS := $(TESTS)
+NOT_SUPPORTED=tests/test-io tests/test-io2 tests/test-join-append tests/test-join-append-one tests/test-whiten
+TESTS = $(filter-out $(NOT_SUPPORTED),$(TMP_TESTS))
+endif
 
 test:	${TESTS}
 

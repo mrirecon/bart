@@ -25,6 +25,10 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
+#ifdef _WIN32
+#include "win/open_patch.h"
+#endif
+
 
 /* Information about twix files can be found here:
  * (Matlab code by Philipp Ehses and others, Yarra by Tobias Block)
