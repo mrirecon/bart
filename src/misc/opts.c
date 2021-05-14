@@ -490,7 +490,10 @@ bool opt_int(void* ptr, char c, const char* optarg)
 bool opt_uint(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	*(unsigned int*)ptr = atoi(optarg);
+	int val = atoi(optarg);
+	if (0 > val)
+		error("Argument to opt_uint must be unsigned");
+	*(unsigned int*)ptr = (unsigned int) val;
 	return false;
 }
 
