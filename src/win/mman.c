@@ -1,5 +1,27 @@
-/* Authors:
- * 2021 Tamás Hakkel <hakkelt@gmail.com>
+/*
+MIT licence
+
+Copyright (c) 2021 Tamás Hakkel <hakkelt@gmail.com>
+Copyright (c) 2013-2019 Steven Lee
+Copyright (c) 2010-2012 Kutuzov Viktor
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
  */
 
 #include <windows.h>
@@ -53,289 +75,14 @@ int shm_unlink(const char *name)
 #define FILE_MAP_EXECUTE    0x0020
 #endif /* FILE_MAP_EXECUTE */
 
-#ifndef EBADRQC
-#define EBADRQC 54	    /* Invalid request code */
-#endif /* EBADRQC */
-#ifndef ENONET
-#define ENONET 64	    /* Machine is not on the network */
-#endif /* ENONET */
-#ifndef ECOMM
-#define	ECOMM 70	    /* Communication error on send */
-#endif /* ECOMM */
-#ifndef ENOTUNIQ
-#define ENOTUNIQ 80	    /* Given log. name not unique */
-#endif /* ENOTUNIQ */
-#ifndef ELIBBAD
-#define ELIBBAD 84	    /* Accessing a corrupted shared lib */
-#endif /* ELIBBAD */
-#ifndef ENMFILE
-#define ENMFILE 89      /* No more files */
-#endif /* ENMFILE */
-#ifndef ENOMEDIUM
-#define ENOMEDIUM 135   /* No medium (in tape drive) */
-#endif /* ENOMEDIUM */
-
 // Map Windows error codes (https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes)
 // to POSIX error codes (https://man7.org/linux/man-pages/man3/errno.3.html)
 static int __map_mman_error(const DWORD err, const int deferr)
 {
-	if (err == 0)
-		return 0;
-
-	// That mapping is adapted from the Newlib-Cygwin project:
-	// https://github.com/mirror/newlib-cygwin/blob/70782484855f3ecedfc9c3caf5397b380c0328b8/winsup/cygwin/errno.cc
-	switch (err) {
- 		case ERROR_ACCESS_DENIED:
-			return EACCES;
- 		case ERROR_ACTIVE_CONNECTIONS:
-			return EAGAIN;
- 		case ERROR_ALREADY_EXISTS:
-			return EEXIST;
- 		case ERROR_BAD_DEVICE:
-			return ENODEV;
- 		case ERROR_BAD_EXE_FORMAT:
-			return ENOEXEC;
- 		case ERROR_BAD_NETPATH:
-			return ENOENT;
- 		case ERROR_BAD_NET_NAME:
-			return ENOENT;
- 		case ERROR_BAD_NET_RESP:
-			return ENOSYS;
- 		case ERROR_BAD_PATHNAME:
-			return ENOENT;
- 		case ERROR_BAD_PIPE:
-			return EINVAL;
- 		case ERROR_BAD_UNIT:
-			return ENODEV;
- 		case ERROR_BAD_USERNAME:
-			return EINVAL;
- 		case ERROR_BEGINNING_OF_MEDIA:
-			return EIO;
- 		case ERROR_BROKEN_PIPE:
-			return EPIPE;
- 		case ERROR_BUSY:
-			return EBUSY;
- 		case ERROR_BUS_RESET:
-			return EIO;
- 		case ERROR_CALL_NOT_IMPLEMENTED:
-			return ENOSYS;
- 		case ERROR_CANCELLED:
-			return EINTR;
- 		case ERROR_CANNOT_MAKE:
-			return EPERM;
- 		case ERROR_CHILD_NOT_COMPLETE:
-			return EBUSY;
- 		case ERROR_COMMITMENT_LIMIT:
-			return EAGAIN;
- 		case ERROR_CONNECTION_REFUSED:
-			return ECONNREFUSED;
- 		case ERROR_CRC:
-			return EIO;
- 		case ERROR_DEVICE_DOOR_OPEN:
-			return EIO;
- 		case ERROR_DEVICE_IN_USE:
-			return EAGAIN;
- 		case ERROR_DEVICE_REQUIRES_CLEANING:
-			return EIO;
- 		case ERROR_DEV_NOT_EXIST:
-			return ENOENT;
- 		case ERROR_DIRECTORY:
-			return ENOTDIR;
- 		case ERROR_DIR_NOT_EMPTY:
-			return ENOTEMPTY;
- 		case ERROR_DISK_CORRUPT:
-			return EIO;
- 		case ERROR_DISK_FULL:
-			return ENOSPC;
- 		case ERROR_DS_GENERIC_ERROR:
-			return EIO;
- 		case ERROR_DUP_NAME:
-			return ENOTUNIQ;
- 		case ERROR_EAS_DIDNT_FIT:
-			return ENOSPC;
- 		case ERROR_EAS_NOT_SUPPORTED:
-			return ENOTSUP;
- 		case ERROR_EA_LIST_INCONSISTENT:
-			return EINVAL;
- 		case ERROR_EA_TABLE_FULL:
-			return ENOSPC;
- 		case ERROR_END_OF_MEDIA:
-			return ENOSPC;
- 		case ERROR_EOM_OVERFLOW:
-			return EIO;
- 		case ERROR_EXE_MACHINE_TYPE_MISMATCH:
-			return ENOEXEC;
- 		case ERROR_EXE_MARKED_INVALID:
-			return ENOEXEC;
- 		case ERROR_FILEMARK_DETECTED:
-			return EIO;
- 		case ERROR_FILENAME_EXCED_RANGE:
-			return ENAMETOOLONG;
- 		case ERROR_FILE_CORRUPT:
-			return EEXIST;
- 		case ERROR_FILE_EXISTS:
-			return EEXIST;
- 		case ERROR_FILE_INVALID:
-			return ENXIO;
- 		case ERROR_FILE_NOT_FOUND:
-			return ENOENT;
- 		case ERROR_HANDLE_DISK_FULL:
-			return ENOSPC;
- 		case ERROR_HANDLE_EOF:
-			return ENODATA;
- 		case ERROR_INVALID_ADDRESS:
-			return EINVAL;
- 		case ERROR_INVALID_AT_INTERRUPT_TIME:
-			return EINTR;
- 		case ERROR_INVALID_BLOCK_LENGTH:
-			return EIO;
- 		case ERROR_INVALID_DATA:
-			return EINVAL;
- 		case ERROR_INVALID_DRIVE:
-			return ENODEV;
- 		case ERROR_INVALID_EA_NAME:
-			return EINVAL;
- 		case ERROR_INVALID_EXE_SIGNATURE:
-			return ENOEXEC;
- 		case ERROR_INVALID_FUNCTION:
-			return EBADRQC;
- 		case ERROR_INVALID_HANDLE:
-			return EBADF;
- 		case ERROR_INVALID_NAME:
-			return ENOENT;
- 		case ERROR_INVALID_PARAMETER:
-			return EINVAL;
- 		case ERROR_INVALID_SIGNAL_NUMBER:
-			return EINVAL;
- 		case ERROR_IOPL_NOT_ENABLED:
-			return ENOEXEC;
- 		case ERROR_IO_DEVICE:
-			return EIO;
- 		case ERROR_IO_INCOMPLETE:
-			return EAGAIN;
- 		case ERROR_IO_PENDING:
-			return EAGAIN;
- 		case ERROR_LOCK_VIOLATION:
-			return EBUSY;
- 		case ERROR_MAX_THRDS_REACHED:
-			return EAGAIN;
- 		case ERROR_META_EXPANSION_TOO_LONG:
-			return EINVAL;
- 		case ERROR_MOD_NOT_FOUND:
-			return ENOENT;
- 		case ERROR_MORE_DATA:
-			return EMSGSIZE;
- 		case ERROR_NEGATIVE_SEEK:
-			return EINVAL;
- 		case ERROR_NETNAME_DELETED:
-			return ENOENT;
- 		case ERROR_NOACCESS:
-			return EFAULT;
- 		case ERROR_NONE_MAPPED:
-			return EINVAL;
- 		case ERROR_NONPAGED_SYSTEM_RESOURCES:
-			return EAGAIN;
- 		case ERROR_NOT_CONNECTED:
-			return ENOLINK;
- 		case ERROR_NOT_ENOUGH_MEMORY:
-			return ENOMEM;
- 		case ERROR_NOT_ENOUGH_QUOTA:
-			return EIO;
- 		case ERROR_NOT_OWNER:
-			return EPERM;
- 		case ERROR_NOT_READY:
-			return ENOMEDIUM;
- 		case ERROR_NOT_SAME_DEVICE:
-			return EXDEV;
- 		case ERROR_NOT_SUPPORTED:
-			return ENOSYS;
- 		case ERROR_NO_DATA:
-			return EPIPE;
- 		case ERROR_NO_DATA_DETECTED:
-			return EIO;
- 		case ERROR_NO_MEDIA_IN_DRIVE:
-			return ENOMEDIUM;
- 		case ERROR_NO_MORE_FILES:
-			return ENMFILE;
- 		case ERROR_NO_MORE_ITEMS:
-			return ENMFILE;
- 		case ERROR_NO_MORE_SEARCH_HANDLES:
-			return ENFILE;
- 		case ERROR_NO_PROC_SLOTS:
-			return EAGAIN;
- 		case ERROR_NO_SIGNAL_SENT:
-			return EIO;
- 		case ERROR_NO_SYSTEM_RESOURCES:
-			return EFBIG;
- 		case ERROR_NO_TOKEN:
-			return EINVAL;
- 		case ERROR_OPEN_FAILED:
-			return EIO;
- 		case ERROR_OPEN_FILES:
-			return EAGAIN;
- 		case ERROR_OUTOFMEMORY:
-			return ENOMEM;
- 		case ERROR_PAGED_SYSTEM_RESOURCES:
-			return EAGAIN;
- 		case ERROR_PAGEFILE_QUOTA:
-			return EAGAIN;
- 		case ERROR_PATH_NOT_FOUND:
-			return ENOENT;
- 		case ERROR_PIPE_BUSY:
-			return EBUSY;
- 		case ERROR_PIPE_CONNECTED:
-			return EBUSY;
- 		case ERROR_PIPE_LISTENING:
-			return ECOMM;
- 		case ERROR_PIPE_NOT_CONNECTED:
-			return ECOMM;
- 		case ERROR_POSSIBLE_DEADLOCK:
-			return EDEADLOCK;
- 		case ERROR_PRIVILEGE_NOT_HELD:
-			return EPERM;
- 		case ERROR_PROCESS_ABORTED:
-			return EFAULT;
- 		case ERROR_PROC_NOT_FOUND:
-			return ESRCH;
- 		case ERROR_REM_NOT_LIST:
-			return ENONET;
- 		case ERROR_SECTOR_NOT_FOUND:
-			return EINVAL;
- 		case ERROR_SEEK:
-			return EINVAL;
- 		case ERROR_SERVICE_REQUEST_TIMEOUT:
-			return EBUSY;
- 		case ERROR_SETMARK_DETECTED:
-			return EIO;
- 		case ERROR_SHARING_BUFFER_EXCEEDED:
-			return ENOLCK;
- 		case ERROR_SHARING_VIOLATION:
-			return EBUSY;
- 		case ERROR_SIGNAL_PENDING:
-			return EBUSY;
- 		case ERROR_SIGNAL_REFUSED:
-			return EIO;
- 		case ERROR_SXS_CANT_GEN_ACTCTX:
-			return ELIBBAD;
- 		case ERROR_THREAD_1_INACTIVE:
-			return EINVAL;
- 		case ERROR_TIMEOUT:
-			return EBUSY;
- 		case ERROR_TOO_MANY_LINKS:
-			return EMLINK;
- 		case ERROR_TOO_MANY_OPEN_FILES:
-			return EMFILE;
- 		case ERROR_UNEXP_NET_ERR:
-			return EIO;
- 		case ERROR_WAIT_NO_CHILDREN:
-			return ECHILD;
- 		case ERROR_WORKING_SET_QUOTA:
-			return EAGAIN;
- 		case ERROR_WRITE_PROTECT:
-			return EROFS;
-		default:
-			return deferr;
-	}
+    if (err == 0)
+        return 0;
+    //TODO: implement
+    return err;
 }
 
 static DWORD __map_mmap_prot_page(const int prot, const bool write_copy)

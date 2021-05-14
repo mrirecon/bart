@@ -1,44 +1,36 @@
-/* This code was adapted from GitHub: https://github.com/Arryboom/fmemopen_windows */
+/* Copyright 2021. Tamás Hakkel
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ *
+ * Authors:
+ * 2021 Tamás Hakkel <hakkelt@gmail.com>
+ */
 
-#include <stdio.h>
 #include <windows.h>
-#include <share.h>
-#include <io.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-
+#include <stdio.h>
+#include "misc/misc.h"
 #include "win/fmemopen.h"
 
 FILE *fmemopen(void *buf, size_t len, const char *type)
 {
-	int fd;
-	FILE *fp;
-	char tp[MAX_PATH - 13];
-	char fn[MAX_PATH + 1];
-	int * pfd = &fd;
-	int retner = -1;
-	char tfname[] = "MemTF_";
+    TCHAR temp_path[MAX_PATH];
+    TCHAR temp_file_name[MAX_PATH];
+	FILE *stream;
+	
+	DWORD dwRetVal = GetTempPath(MAX_PATH, temp_path);
+	if (dwRetVal > MAX_PATH || (dwRetVal == 0))
+        error("Failed to get temp dir");
+    if (!GetTempFileName(temp_path, TEXT("bart_"), 0, temp_file_name))
+		error("Failed to get temporary file name");
 
-	if (!GetTempPathA(sizeof(tp), tp))
-		return NULL;
-	if (!GetTempFileNameA(tp, tfname, 0, fn))
-		return NULL;
-	retner = _sopen_s(pfd, fn, _O_CREAT | _O_SHORT_LIVED | _O_TEMPORARY | _O_RDWR | _O_BINARY | _O_NOINHERIT, _SH_DENYRW, _S_IREAD | _S_IWRITE);
-	if (retner != 0)
-		return NULL;
-	if (fd == -1)
-		return NULL;
-	fp = _fdopen(fd, "wb+");
-	if (!fp) {
-		_close(fd);
-		return NULL;
-	}
+	char ext_type[strlen(type) + 2];
+	strcat(ext_type, type);
+	// "T": Specifies a file as temporary. If possible, it isn't flushed to disk.
+	// "D": Specifies a file as temporary. It's deleted when the last file pointer is closed.
+	strcat(ext_type, "TD");
 
-	/*File descriptors passed into _fdopen are owned by the returned FILE * stream.
-	If _fdopen is successful, do not call _close on the file descriptor.
-	Calling fclose on the returned FILE * also closes the file descriptor.*/
-	fwrite(buf, len, 1, fp);
-	rewind(fp);
+	if (fopen_s( &stream, temp_file_name, ext_type))
+        error("Failed to open temp file as output buffer");
 
-	return fp;
+	return stream;
 }
