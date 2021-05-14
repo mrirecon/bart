@@ -19,6 +19,8 @@
 #include <stdbool.h>
 #include <ctype.h>
 
+#include <complex.h>
+
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/io.h"
@@ -32,6 +34,7 @@ opt_conv_f opt_int;
 opt_conv_f opt_uint;
 opt_conv_f opt_long;
 opt_conv_f opt_float;
+opt_conv_f opt_cfl;
 opt_conv_f opt_string;
 opt_conv_f opt_infile;
 opt_conv_f opt_outfile;
@@ -64,6 +67,9 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 
 	case OPT_FLOAT:
 		return "f";
+
+	case OPT_CFL:
+		return "cfl";
 
 	case OPT_VEC2:
 		return "d:d";
@@ -100,6 +106,7 @@ static const char* opt_type_str(enum OPT_TYPE type)
 	OPT_ARG_TYPE_CASE(OPT_UINT)
 	OPT_ARG_TYPE_CASE(OPT_LONG)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT)
+	OPT_ARG_TYPE_CASE(OPT_CFL)
 	OPT_ARG_TYPE_CASE(OPT_VEC2)
 	OPT_ARG_TYPE_CASE(OPT_VEC3)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC2)
@@ -134,6 +141,8 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 		return opt_long(ptr, c, optarg);
 	case OPT_FLOAT:
 		return opt_float(ptr, c, optarg);
+	case OPT_CFL:
+		return opt_cfl(ptr, c, optarg);
 	case OPT_VEC2:
 		return opt_vec2(ptr, c, optarg);
 	case OPT_VEC3:
@@ -508,6 +517,13 @@ bool opt_float(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	*(float*)ptr = atof(optarg);
+	return false;
+}
+
+bool opt_cfl(void* ptr, char c, const char* optarg)
+{
+	UNUSED(c);
+	parse_cfl((complex float*) ptr, optarg);
 	return false;
 }
 
