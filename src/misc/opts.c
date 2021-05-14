@@ -116,44 +116,44 @@ static const char* opt_type_str(enum OPT_TYPE type)
 #undef OPT_ARG_TYPE_CASE
 
 
-static bool opt_dispatch (const struct opt_s opt, char c, const char*  optarg)
+static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c, const char*  optarg)
 {
-	switch(opt.type) {
+	switch(type) {
 
 	case OPT_SPECIAL:
-		return opt.conv(opt.ptr, c, optarg);
+		return conv(ptr, c, optarg);
 	case OPT_SET:
-		return opt_set(opt.ptr, c, optarg);
+		return opt_set(ptr, c, optarg);
 	case OPT_CLEAR:
-		return opt_clear(opt.ptr, c, optarg);
+		return opt_clear(ptr, c, optarg);
 	case OPT_INT:
-		return opt_int(opt.ptr, c, optarg);
+		return opt_int(ptr, c, optarg);
 	case OPT_UINT:
-		return opt_uint(opt.ptr, c, optarg);
+		return opt_uint(ptr, c, optarg);
 	case OPT_LONG:
-		return opt_long(opt.ptr, c, optarg);
+		return opt_long(ptr, c, optarg);
 	case OPT_FLOAT:
-		return opt_float(opt.ptr, c, optarg);
+		return opt_float(ptr, c, optarg);
 	case OPT_VEC2:
-		return opt_vec2(opt.ptr, c, optarg);
+		return opt_vec2(ptr, c, optarg);
 	case OPT_VEC3:
-		return opt_vec3(opt.ptr, c, optarg);
+		return opt_vec3(ptr, c, optarg);
 	case OPT_FLOAT_VEC2:
-		return opt_float_vec2(opt.ptr, c, optarg);
+		return opt_float_vec2(ptr, c, optarg);
 	case OPT_FLOAT_VEC3:
-		return opt_float_vec3(opt.ptr, c, optarg);
+		return opt_float_vec3(ptr, c, optarg);
 	case OPT_STRING:
-		return opt_string(opt.ptr, c, optarg);
+		return opt_string(ptr, c, optarg);
 	case OPT_INFILE:
-		return opt_infile(opt.ptr, c, optarg);
+		return opt_infile(ptr, c, optarg);
 	case OPT_OUTFILE:
-		return opt_outfile(opt.ptr, c, optarg);
+		return opt_outfile(ptr, c, optarg);
 	case OPT_INOUTFILE:
 		error("OPT_INOUTFILE not yet implemented!\n");
 	case OPT_SELECT:
-		return opt_select(opt.ptr, c, optarg);
+		return opt_select(ptr, c, optarg);
 	case OPT_SUBOPT:
-		return opt_subopt(opt.ptr, c, optarg);
+		return opt_subopt(ptr, c, optarg);
 	}
 	error("Invalid OPT_ARG_TYPE!\n");
 }
@@ -321,7 +321,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 		if (opts[i].c == c) {
 
 
-			if (opt_dispatch(opts[i], c, optarg)) {
+			if (opt_dispatch(opts[i].type, opts[i].ptr, opts[i].conv, c, optarg)) {
 
 				print_usage(stderr, name, usage_str, n, opts);
 				error("process_option: failed to convert value\n");
