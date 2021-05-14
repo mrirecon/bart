@@ -497,7 +497,7 @@ bool opt_uint(void* ptr, char c, const char* optarg)
 bool opt_long(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	*(long*)ptr = atoi(optarg);
+	*(long*)ptr = atol(optarg);
 	return false;
 }
 
