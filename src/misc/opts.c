@@ -523,8 +523,7 @@ bool opt_float(void* ptr, char c, const char* optarg)
 bool opt_cfl(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	parse_cfl((complex float*) ptr, optarg);
-	return false;
+	return 0 != parse_cfl((complex float*) ptr, optarg);
 }
 
 bool opt_string(void* ptr, char c, const char* optarg)
