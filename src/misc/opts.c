@@ -637,3 +637,199 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 }
 
 
+
+
+void *parse_arg_tuple(int n, ...)
+{
+
+	struct arg_single_s* args = calloc(n, sizeof *args);
+
+	va_list ap;
+	va_start(ap, n);
+	for (int i = 0; i < n; ++i) {
+
+		args[i] = (struct arg_single_s) {va_arg(ap, enum OPT_TYPE), va_arg(ap, size_t), va_arg(ap, void*), va_arg(ap, const char*)};
+	}
+
+	va_end(ap);
+	return PTR_PASS(args);
+}
+
+
+
+
+
+
+static void check_args(int n, const struct arg_s args[n])
+{
+	bool end_required = false;
+	int num_tuples = 0;
+
+	for (int i = 0; i < n; ++i) {
+
+		if (ARG_TUPLE == args[i].arg_type)
+			num_tuples++;
+
+		if (args[i].optional && (ARG_TUPLE != args[i].arg_type))
+			end_required = true;
+
+		if (end_required && (!args[i].optional))
+			error("Cannot have a required argument after the first optional argument!\n");
+	}
+
+	if (num_tuples > 1)
+		error("Cannot have more than one tuple argument!\n");
+}
+
+static int add_arg(char* out, int bufsize, const char* argname, bool optional, bool file)
+{
+	const char* fstring;
+	if (file)
+		fstring = optional ? "[<%s>]" : "<%s>";
+	else
+		fstring = optional ? "[%s]c" : "%s";
+
+	return snprintf(out, bufsize, fstring, argname);
+}
+
+
+static int add_tuple_args(char* cur, int bufsize, const struct arg_s* arg, bool file)
+{
+	const char * start = cur;
+	char* end = cur + bufsize;
+	if (arg->optional)
+		cur += snprintf(cur, end - cur, "[");
+
+	for (int k = 0; k < arg->nargs; ++k ) {
+
+		cur += add_arg(cur, end - cur, arg->arg[k].argname, false, file);
+
+		if (file)
+			cur += snprintf(cur, end - cur, "%c", '\b');
+
+		cur += snprintf(cur, end - cur, "1");
+
+		if (file)
+			cur += snprintf(cur, end - cur, "%c", '>');
+
+		cur += snprintf(cur, end - cur, " ");
+	}
+
+	cur += snprintf(cur, end - cur, "... ");
+
+	for (int k = 0; k < arg->nargs; ++k ) {
+
+		cur += add_arg(cur, end - cur, arg->arg[k].argname, false, file);
+
+		if (file)
+			cur += snprintf(cur, end - cur, "%c", '\b');
+
+		cur += snprintf(cur, end - cur, "N");
+
+		if (file)
+			cur += snprintf(cur, end - cur, "%c", '>');
+
+		cur += snprintf(cur, end - cur, " ");
+	}
+
+	if (arg->optional)
+		cur += snprintf(cur, end - cur, "\b] ");
+
+	return (cur - start);
+}
+
+
+
+
+void cmdline_new(int* argc, char* argv[], int n, struct arg_s args[n], const char* help_str, int m, const struct opt_s opts[m])
+{
+
+	check_args(n, args);
+
+	long min_args = 0;
+	long max_args = 0;
+
+	int bufsize = 1024;
+	char usage_str[bufsize+1];
+	usage_str[bufsize] = '\0';
+	char* cur = usage_str;
+	char* end = usage_str + bufsize;
+
+	for (int i = 0; i < n; ++i) {
+
+		if (ARG_TUPLE == args[i].arg_type)
+			max_args = 1e9; // should be plenty for most use cases, but not overflow long
+		else
+			max_args += args[i].nargs;
+
+		if (!args[i].optional)
+			min_args += args[i].nargs;
+
+		bool file = false;
+
+		switch (args[i].arg->opt_type) {
+		case OPT_INFILE:
+		case OPT_OUTFILE:
+		case OPT_INOUTFILE:
+			file = true;
+			break;
+
+		default:
+			file = false;
+			break;
+
+		}
+
+		switch (args[i].arg_type) {
+		case ARG:
+			cur += add_arg(cur, end - cur, args[i].arg->argname, args[i].optional, file);
+			cur += snprintf(cur, end - cur, " ");
+			break;
+		case ARG_TUPLE:
+			cur += add_tuple_args(cur, end - cur, &args[i], file);
+			break;
+		}
+	}
+
+	cmdline(argc, argv, min_args, max_args, usage_str, help_str, m, opts);
+
+	for (int i = 0, j = 1; (i < n) && (j < *argc); ++i) {
+
+		switch (args[i].arg_type) {
+		case ARG:
+			if (opt_dispatch(args[i].arg->opt_type, args[i].arg->ptr, NULL, '\0', argv[j++]))
+				error("failed to convert value\n");
+			break;
+		case ARG_TUPLE:
+		{ // consume as many arguments as possible, except for possible args following the tuple
+			int n_following = n - i - 1;
+			int n_tuple_end = *argc - n_following;
+			int n_tuple_args = n_tuple_end - j;
+			if (0 != (n_tuple_args % args[i].nargs))
+				error("Incorrect number of arguments!\n");
+
+			*args[i].count = n_tuple_args / args[i].nargs;
+
+			debug_printf(DP_INFO, "n_following: %d, count: %d, n_tuple_args: %d\n", n_following, *args[i].count, n_tuple_args);
+
+			for (int k = 0; k < args[i].nargs; ++k)
+				*(void**)args[i].arg[k].ptr = calloc(args[i].arg[k].sz, *args[i].count);
+
+			int c = 0;
+			while (j < n_tuple_end) {
+
+				for (int k = 0; k < args[i].nargs; ++k) {
+
+					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * args[i].arg[k].sz, NULL, '\0', argv[j]))
+						error("failed to convert value\n");
+					j++;
+				}
+				c++;
+			}
+
+		}
+			break;
+		}
+
+	}
+}

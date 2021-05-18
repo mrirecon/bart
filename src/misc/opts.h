@@ -96,5 +96,48 @@ typedef float opt_fvec3_t[3];
 
 extern void cmdline(int* argc, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n]);
 
-#include "misc/cppwrap.h"
 
+enum ARG_TYPE {
+	ARG,
+	ARG_TUPLE,
+};
+
+struct arg_single_s {
+
+	enum OPT_TYPE opt_type;
+	size_t sz;
+	void* ptr;
+	const char* argname;
+};
+
+
+struct arg_s {
+
+	bool optional;
+	enum ARG_TYPE arg_type;
+	long* count;
+	int nargs;
+	struct arg_single_s* arg;
+};
+
+
+extern void *parse_arg_tuple(int n, ...);
+
+#define ARG_SINGLE(type, T, ptr, argname)			&(struct arg_single_s){ (type), sizeof(T), (ptr), (argname) }
+
+#define ARG_CHECKED(optional, type, T, ptr, argname)		{ optional, ARG, NULL, 1, ARG_SINGLE(type, T, TYPE_CHECK(T*, ptr), argname) }
+
+#define ARG_INT(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_INT,  int, ptr, argname)
+#define ARG_LONG(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_LONG,  long, ptr, argname)
+#define ARG_CFL(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_CFL,  _Complex float, ptr, argname)
+#define ARG_INFILE(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_INFILE, const char*, ptr, argname)
+#define ARG_OUTFILE(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_OUTFILE,  const char*, ptr, argname)
+#define ARG_INOUTFILE(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_INOUTFILE,  const char*, ptr, argname)
+// FIXME: add all possible argument types
+
+#define ARG_TUPLE(optional, count, n, ...)				{ (optional), ARG_TUPLE, (count), (n), parse_arg_tuple( (n), __VA_ARGS__) }
+
+// FIXME: rename to something sensible
+extern void cmdline_new(int* argc, char* argv[], int n, struct arg_s args[n], const char* help_str, int m, const struct opt_s opts[m]);
+
+#include "misc/cppwrap.h"
