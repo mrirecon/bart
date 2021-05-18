@@ -158,7 +158,7 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 	case OPT_OUTFILE:
 		return opt_outfile(ptr, c, optarg);
 	case OPT_INOUTFILE:
-		error("OPT_INOUTFILE not yet implemented!\n");
+		return opt_string(ptr, c, optarg); // FIXME: use something more proper here
 	case OPT_SELECT:
 		return opt_select(ptr, c, optarg);
 	case OPT_SUBOPT:
