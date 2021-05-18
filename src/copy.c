@@ -27,32 +27,44 @@
 #endif
 
 
-static const char usage_str[] = "[dim1 pos1 ... dimn posn] <input> <output>";
 static const char help_str[] = "Copy an array (to a given position in the output file - which then must exist).";
 
 
 int main_copy(int argc, char* argv[argc])
 {
+	long count = 0;
+	long* dims = NULL;
+	long* poss = NULL;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_TUPLE(true, &count, 2, OPT_LONG, sizeof(long), &dims, "dim", OPT_LONG, sizeof(long), &poss, "pos"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_INOUTFILE(false, &out_file, "output"),
+	};
+
+
 	const struct opt_s opts[] = { };
-	cmdline(&argc, argv, 2, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline_new(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 
 	unsigned int N = DIMS;
 
-	int count = argc - 3;
-	assert((count >= 0) && (count % 2 == 0));
+	assert(count >= 0);
 
 	long in_dims[N];
 	long out_dims[N];
 
-	void* in_data = load_cfl(argv[argc - 2], N, in_dims);
+	void* in_data = load_cfl(in_file, N, in_dims);
 
 	if (count > 0) {
 
 		// get dimensions
-		void* out_data = load_cfl(argv[argc - 1], N, out_dims);
+		void* out_data = load_cfl(out_file, N, out_dims);
 
 		unmap_cfl(N, out_dims, out_data);
 
@@ -61,17 +73,17 @@ int main_copy(int argc, char* argv[argc])
 		md_copy_dims(N, out_dims, in_dims);
 	}
 
-	void* out_data = create_cfl(argv[argc - 1], N, out_dims);
+	void* out_data = create_cfl(out_file, N, out_dims);
 
 	long position[N];
 
 	for (unsigned int i = 0; i < N; i++)
 		position[i] = 0;
 
-	for (int i = 0; i < count; i += 2) {
+	for (int i = 0; i < count; i++) {
 
-		unsigned int dim = atoi(argv[i + 1]);
-		long pos = atol(argv[i + 2]);
+		long dim = dims[i];
+		long pos = poss[i];
 
 		assert(dim < N);
 		assert((0 <= pos) && (pos < out_dims[dim]));

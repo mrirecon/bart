@@ -25,7 +25,6 @@
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "bitmask <input> <output>";
 static const char help_str[] =	"Apply 1 -1 modulation along dimensions selected by the {bitmask}.\n";
 
 
@@ -33,6 +32,19 @@ static const char help_str[] =	"Apply 1 -1 modulation along dimensions selected 
 
 int main_fftmod(int argc, char* argv[argc])
 {
+
+	long sflags = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_LONG(false, &sflags, "bitmask"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
+
 	bool inv = false;
 
 	const struct opt_s opts[] = {
@@ -41,12 +53,12 @@ int main_fftmod(int argc, char* argv[argc])
 		OPT_SET('i', &inv, "inverse"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline_new(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-
-	unsigned long flags = labs(atol(argv[1]));
+	assert(0 <= sflags);
+	unsigned long flags = sflags;
 
 	int N = DIMS;
 	long dims[N];

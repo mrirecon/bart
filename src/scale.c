@@ -18,33 +18,38 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "factor <input> <output>";
 static const char help_str[] = "Scale array by {factor}. The scale factor can be a complex number.\n";
 
 
 int main_scale(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 3, usage_str, help_str);
+
+	complex float scale = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_CFL(false, &scale, "factor"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline_new(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	complex float scale;
-	// = atof(argv[1]);
-	if (0 != parse_cfl(&scale, argv[1])) {
-
-		fprintf(stderr, "ERROR: scale factor %s is not a number.\n", argv[1]);
-		return 1;
-	}
-
 	const int N = DIMS;
 	long dims[N];
-	complex float* idata = load_cfl(argv[2], N, dims);
-	complex float* odata = create_cfl(argv[3], N, dims);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* odata = create_cfl(out_file, N, dims);
 		
 	md_zsmul(N, dims, odata, idata, scale);
 
