@@ -107,7 +107,7 @@ static void io_register(const char* name, bool out, bool open)
 			} else {
 
 				if (out != iop->out)
-					error("%s: Input opened for writing or output opened for reading!\n", name);
+					debug_printf(DP_WARN, "%s: Input opened for writing or output opened for reading (or overwriting file)!\n", name);
 
 				iop->open = open;
 				new = false;
