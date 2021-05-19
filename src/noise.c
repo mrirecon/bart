@@ -26,13 +26,22 @@
 
 
 
-static const char usage_str[] = "<input> <output>";
 static const char help_str[] = "Add noise with selected variance to input.";
 
 
 
 int main_noise(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	float var = 1.;
 	float spike = 1.;
 	bool rvc = false;
@@ -46,7 +55,7 @@ int main_noise(int argc, char* argv[argc])
 		OPT_FLOAT('n', &var, "variance", "DEFAULT: 1.0"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -57,9 +66,9 @@ int main_noise(int argc, char* argv[argc])
 	unsigned int N = DIMS;
 	long dims[N];
 
-	complex float* y = load_cfl(argv[1], N, dims);
+	complex float* y = load_cfl(in_file, N, dims);
 
-	complex float* x = create_cfl(argv[2], N, dims);
+	complex float* x = create_cfl(out_file, N, dims);
 
 	long T = md_calc_size(N, dims);
 

@@ -41,8 +41,8 @@ int main_slice(int argc, char* argv[argc])
 	long* dims = NULL;
 	long* poss = NULL;
 
-	const char* in_file;
-	const char* out_file;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
 
 
 	struct arg_s args[] = {

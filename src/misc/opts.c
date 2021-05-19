@@ -680,7 +680,12 @@ void *parse_arg_tuple(int n, ...)
 
 static void check_args(int n, const struct arg_s args[n])
 {
-	bool end_required = false;
+// FIXME: because fmac has an optional argument in the middle, it is not true
+// that there cannot be required arguments after the first optional.
+// This will probably be ugly in the future, but this is the only way I can see
+// to support fmac.
+
+// 	bool end_required = false;
 	int num_tuples = 0;
 
 	for (int i = 0; i < n; ++i) {
@@ -688,11 +693,11 @@ static void check_args(int n, const struct arg_s args[n])
 		if (ARG_TUPLE == args[i].arg_type)
 			num_tuples++;
 
-		if (args[i].optional && (ARG_TUPLE != args[i].arg_type))
-			end_required = true;
-
-		if (end_required && (!args[i].optional))
-			error("Cannot have a required argument after the first optional argument!\n");
+// 		if (args[i].optional && (ARG_TUPLE != args[i].arg_type))
+// 			end_required = true;
+//
+// 		if (end_required && (!args[i].optional))
+// 			error("Cannot have a required argument after the first optional argument!\n");
 	}
 
 	if (num_tuples > 1)
@@ -811,10 +816,18 @@ void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* h
 
 	options(argc, argv, min_args, max_args, usage_str, help_str, m, opts);
 
+	int n_args = *argc - 1;
+
 	for (int i = 0, j = 1; (i < n) && (j < *argc); ++i) {
 
 		switch (args[i].arg_type) {
 		case ARG:
+			// skip optional arguments if we did not get the maximum number of args. This is just for fmac, which
+			// has an optional arg in the middle
+			debug_printf(DP_INFO, "%s: max %d, n %d\n", argv[0], max_args, n_args);
+			if (args[i].optional && (max_args != n_args))
+				continue;
+
 			if (opt_dispatch(args[i].arg->opt_type, args[i].arg->ptr, NULL, '\0', argv[j++]))
 				error("failed to convert value\n");
 			break;
@@ -829,6 +842,9 @@ void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* h
 			*args[i].count = n_tuple_args / args[i].nargs;
 
 			debug_printf(DP_INFO, "n_following: %d, count: %d, n_tuple_args: %d\n", n_following, *args[i].count, n_tuple_args);
+
+			if (0 == *args[i].count)
+				continue;
 
 			for (int k = 0; k < args[i].nargs; ++k)
 				*(void**)args[i].arg[k].ptr = calloc(args[i].arg[k].sz, *args[i].count);

@@ -29,12 +29,25 @@
 #endif
 
 
-static const char usage_str[] = "dim1 size1 ... dimn sizen <input> <output>";
 static const char help_str[] = "Resizes an array along dimensions to sizes by truncating or zero-padding.";
 
 
 int main_resize(int argc, char* argv[argc])
 {
+	long count = 0;
+	unsigned int* dims = NULL;
+	unsigned int* sizes = NULL;
+
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_TUPLE(false, &count, 2, OPT_UINT, sizeof(*dims), &dims, "dim", OPT_UINT, sizeof(*sizes), &sizes, "size"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	bool center = false;
 
 	const struct opt_s opts[] = {
@@ -42,26 +55,23 @@ int main_resize(int argc, char* argv[argc])
 		OPT_SET('c', &center, "center"),
 	};
 
-	cmdline(&argc, argv, 4, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 
 	unsigned int N = DIMS;
 
-	int count = argc - 3;
-	assert((count > 0) && (count % 2 == 0));
-
 	long in_dims[N];
 	long out_dims[N];
 
-	void* in_data = load_cfl(argv[argc - 2], N, in_dims);
+	void* in_data = load_cfl(in_file, N, in_dims);
 	md_copy_dims(N, out_dims, in_dims);
 	
-	for (int i = 0; i < count; i += 2) {
+	for (int i = 0; i < count; i++) {
 
-		unsigned int dim = atoi(argv[i + 1]);
-		unsigned int size = atoi(argv[i + 2]);
+		unsigned int dim = dims[i];
+		unsigned int size = sizes[i];
 
 		assert(dim < N);
 		assert(size >= 1);
@@ -69,7 +79,7 @@ int main_resize(int argc, char* argv[argc])
 		out_dims[dim] = size;
 	}
 
-	void* out_data = create_cfl(argv[argc - 1], N, out_dims);
+	void* out_data = create_cfl(out_file, N, out_dims);
 
 	(center ? md_resize_center : md_resize)(N, out_dims, out_data, in_dims, in_data, CFL_SIZE);
 
