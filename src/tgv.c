@@ -34,6 +34,7 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #include "iter/prox.h"
 #include "iter/thresh.h"
@@ -46,8 +47,7 @@
 #endif
 
 
-static const char usage_str[] = "<lambda> <flags> <input> <output>";
-static const char help_str[] = "Perform total generalized variation denoising along dims <flags>.\n";
+static const char help_str[] = "Perform total generalized variation denoising along dims specified by flags.\n";
 
 
 /* TGV
@@ -59,16 +59,26 @@ static const char help_str[] = "Perform total generalized variation denoising al
 	
 int main_tgv(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 4, usage_str, help_str);
+	float lambda = 0.;
+	int flags = -1;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_FLOAT(false, &lambda, "lambda"),
+		ARG_INT(false, &flags, "flags"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	float lambda = atof(argv[1]);
-	int flags = atoi(argv[2]);
 	
 	long in_dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[3], DIMS, in_dims);
+	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 
 	assert(1 == in_dims[DIMS - 1]);
 
@@ -89,7 +99,7 @@ int main_tgv(int argc, char* argv[argc])
 	md_copy_dims(DIMS, out_dims, grd_dims);
 	out_dims[DIMS - 1]++;
 
-	complex float* out_data = create_cfl(argv[4], DIMS, out_dims);
+	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
 
 	long pos1[DIMS] = { [DIMS - 1] = 0 };

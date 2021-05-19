@@ -28,12 +28,18 @@
 
 #include "noncart/traj.h"
 
-static const char usage_str[] = "<output>";
 static const char help_str[] = "Computes k-space trajectories.";
 
 
 int main_traj(int argc, char* argv[argc])
 {
+	const char* out_file= NULL;
+
+	struct arg_s args[] = {
+
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	int X = 128;
 	int Y = 128;
 	int D = -1;
@@ -83,7 +89,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_INFILE('V', &gdelays_file, "file", "(custom_gdelays)"),
 	};
 
-	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -198,7 +204,7 @@ int main_traj(int argc, char* argv[argc])
 	}
 
 
-	complex float* samples = create_cfl(argv[1], DIMS, dims);
+	complex float* samples = create_cfl(out_file, DIMS, dims);
 
 	md_clear(DIMS, dims, samples, CFL_SIZE);
 

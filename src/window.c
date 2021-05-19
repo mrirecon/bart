@@ -22,12 +22,22 @@
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "flags <input> <output>";
 static const char help_str[] = "Apply Hamming (Hann) window to <input> along dimensions specified by flags";
 
 
 int main_window(int argc, char* argv[argc])
 {
+	long flags = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_LONG(false, &flags, "flags"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	bool hamming = true;
 
 	const struct opt_s opts[] = {
@@ -35,15 +45,14 @@ int main_window(int argc, char* argv[argc])
 		OPT_CLEAR('H', &hamming, "Hann window"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long dims[DIMS];
 	
-	long flags = atoi(argv[1]);
-	complex float* in_data = load_cfl(argv[2], DIMS, dims);
-	complex float* out_data = create_cfl(argv[3], DIMS, dims);
+	complex float* in_data = load_cfl(in_file, DIMS, dims);
+	complex float* out_data = create_cfl(out_file, DIMS, dims);
 
 	(hamming ? md_zhamming : md_zhann)(DIMS, dims, flags, out_data, in_data);
 

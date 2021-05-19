@@ -53,12 +53,18 @@ static float maxn(int D, const float a[static D], const float b[static D])
 
 
 
-static const char usage_str[] = "<outfile>";
 static const char help_str[] = "Computes Poisson-disc sampling pattern.";
 
 
 int main_poisson(int argc, char* argv[argc])
 {
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	int yy = 128;
 	int zz = 128;
 	bool cutcorners = false;
@@ -91,7 +97,7 @@ int main_poisson(int argc, char* argv[argc])
 		OPT_INT('s', &randseed, "seed", "random seed"),
 	};
 
-	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 	num_rand_init(randseed);
@@ -126,7 +132,7 @@ int main_poisson(int argc, char* argv[argc])
 
 	if (msk) {
 		
-		mask = MD_CAST_ARRAY3_PTR(complex float, 5, dims, create_cfl(argv[1], 5, dims), 1, 2, 3);
+		mask = MD_CAST_ARRAY3_PTR(complex float, 5, dims, create_cfl(out_file, 5, dims), 1, 2, 3);
 		md_clear(5, dims, &(*mask)[0][0][0], sizeof(complex float));
 	}
 
@@ -217,7 +223,7 @@ int main_poisson(int argc, char* argv[argc])
 				long sdims[2] = { 3, P };
 				//complex float (*samples)[P][3] = (void*)create_cfl(argv[1], 2, sdims);
 				complex float (*samples)[P][3] =
-					MD_CAST_ARRAY2_PTR(complex float, 2, sdims, create_cfl(argv[1], 2, sdims), 0, 1);
+					MD_CAST_ARRAY2_PTR(complex float, 2, sdims, create_cfl(out_file, 2, sdims), 0, 1);
 
 				for (int i = 0; i < P; i++) {
 

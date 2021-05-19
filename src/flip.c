@@ -41,7 +41,7 @@ int main_flip(int argc, char* argv[argc])
 		ARG_OUTFILE(false, &out_file, "output"),
 	};
 
-	const struct opt_s opts = {};
+	const struct opt_s opts[] = {};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();

@@ -23,12 +23,19 @@
 
 
 
-static const char usage_str[] = "<kspace> <pattern>";
 static const char help_str[] = "Compute sampling pattern from kspace\n";
 
 
 int main_pattern(int argc, char* argv[argc])
 {
+	const char* ksp_file = NULL;
+	const char* pat_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &ksp_file, "kspace"),
+		ARG_OUTFILE(false, &pat_file, "pattern"),
+	};
 
 	unsigned int flags = COIL_FLAG;
 
@@ -37,7 +44,7 @@ int main_pattern(int argc, char* argv[argc])
 		OPT_UINT('s', &flags, "bitmask", "Squash dimensions selected by bitmask"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -45,11 +52,11 @@ int main_pattern(int argc, char* argv[argc])
 	long in_dims[N];
 	long out_dims[N];
 
-	complex float* kspace = load_cfl(argv[1], N, in_dims);
+	complex float* kspace = load_cfl(ksp_file, N, in_dims);
 
 	md_select_dims(N, ~flags, out_dims, in_dims);
 	
-	complex float* pattern = create_cfl(argv[2], N, out_dims);
+	complex float* pattern = create_cfl(pat_file, N, out_dims);
 
 	estimate_pattern(N, in_dims, flags, pattern, kspace);
 

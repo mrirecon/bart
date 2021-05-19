@@ -16,23 +16,32 @@
 #include "misc/misc.h" 
 #include "misc/mmio.h"
 #include "misc/mri.h"
+#include "misc/opts.h"
 
 #include "ismrm/read.h"
 
 
-static const char usage_str[] = "<ismrm-file> <output>";
 static const char help_str[] = "Import ISMRM raw data files.\n";
 
 
 int main_ismrmrd(int argc, char* argv[])
 {
-        mini_cmdline(&argc, argv, 2, usage_str, help_str);
+	const char* ismrm_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_STRING(false, &ismrm_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	long dims[DIMS];
 
 	printf("Reading headers... "); fflush(stdout);
 
-	if (-1 == ismrm_read(argv[1], dims, NULL)) {
+	if (-1 == ismrm_read(ismrm_file, dims, NULL)) {
 
 		fprintf(stderr, "Reading headers failed.\n");
 		return 1;
@@ -47,12 +56,12 @@ int main_ismrmrd(int argc, char* argv[])
 
 	printf("\n");
 
-	complex float* out = create_cfl(argv[2], DIMS, dims);
+	complex float* out = create_cfl(out_file, DIMS, dims);
 	md_clear(DIMS, dims, out, CFL_SIZE);
 
 	printf("Reading data... "); fflush(stdout);
 
-	if (-1 == ismrm_read(argv[1], dims, out)) {
+	if (-1 == ismrm_read(ismrm_file, dims, out)) {
 
 		fprintf(stderr, "Reading data failed.\n");
 		return 1;

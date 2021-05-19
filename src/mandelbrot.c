@@ -23,13 +23,19 @@
 #include "misc/opts.h"
 
 
-static const char usage_str[] = "output";
 static const char help_str[] = "Compute mandelbrot set.\n";
 
 
 
 int main_mandelbrot(int argc, char* argv[argc])
 {
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	unsigned int size = 512;
 	unsigned int iter = 20;
 	float zoom = .20; // 0.3
@@ -47,7 +53,7 @@ int main_mandelbrot(int argc, char* argv[argc])
 		OPT_FLOAT('i', &offi, "i", "offset imag"),
 	};
 
-	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 	
@@ -55,7 +61,7 @@ int main_mandelbrot(int argc, char* argv[argc])
 
 	long dims[2] = { size, size };
 
-	complex float* o = create_cfl(argv[1], 2, dims);
+	complex float* o = create_cfl(out_file, 2, dims);
 	md_zfill(2, dims, o, iter);
 
 	complex float* x = md_calloc(2, dims, CFL_SIZE);

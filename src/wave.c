@@ -49,7 +49,6 @@
 #include "wavelet/wavthresh.h"
 #include "lowrank/lrthresh.h"
 
-static const char usage_str[] = "<maps> <wave> <kspace> <output>";
 static const char help_str[]  = 
 	"Perform a wave-caipi reconstruction.\n\n"
 	"Conventions:\n"
@@ -158,6 +157,19 @@ int main_wave(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 
+	const char* maps_file = NULL;
+	const char* wave_file = NULL;
+	const char* ksp_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &maps_file, "maps"),
+		ARG_INFILE(false, &wave_file, "wave"),
+		ARG_INFILE(false, &ksp_file, "kspace"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	float lambda    = 1E-5;
 	int   blksize   = 8;
 	int   maxiter   = 300;
@@ -169,7 +181,7 @@ int main_wave(int argc, char* argv[argc])
 	bool  hgwld     = false;
 	float cont      = 1;
 	float eval      = -1;
-	bool  use_gpu       = false;
+	bool  use_gpu   = false;
 	bool  dcx       = false;
 
 	const struct opt_s opts[] = {
@@ -188,18 +200,18 @@ int main_wave(int argc, char* argv[argc])
 		OPT_SET(   'l', &llr,               "Use locally low rank across the real and imaginary components."),
 	};
 
-	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	debug_printf(DP_INFO, "Loading data... ");
 
 	long maps_dims[DIMS];
-	complex float* maps = load_cfl(argv[1], DIMS, maps_dims);
+	complex float* maps = load_cfl(maps_file, DIMS, maps_dims);
 
 	long wave_dims[DIMS];
-	complex float* wave = load_cfl(argv[2], DIMS, wave_dims);
+	complex float* wave = load_cfl(wave_file, DIMS, wave_dims);
 
 	long kspc_dims[DIMS];
-	complex float* kspc = load_cfl(argv[3], DIMS, kspc_dims);
+	complex float* kspc = load_cfl(ksp_file, DIMS, kspc_dims);
 
 	debug_printf(DP_INFO, "Done.\n");
 
@@ -394,7 +406,7 @@ int main_wave(int argc, char* argv[argc])
 	}
 
 	debug_printf(DP_INFO, "Reconstruction... ");
-	complex float* recon = create_cfl(argv[4], DIMS, recon_dims);
+	complex float* recon = create_cfl(out_file, DIMS, recon_dims);
 	struct lsqr_conf lsqr_conf = lsqr_defaults;
 	lsqr_conf.lambda = 0.;
 	lsqr_conf.it_gpu = use_gpu;

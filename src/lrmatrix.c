@@ -64,7 +64,6 @@ static void sum_xupdate_free(const operator_data_t* data)
 
 
 
-static const char usage_str[] = "<input> <output>";
 static const char help_str[] =
 		"Perform (multi-scale) low rank matrix completion";
 
@@ -73,6 +72,15 @@ static const char help_str[] =
 int main_lrmatrix(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
+
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
 
 	bool use_gpu = false;
 
@@ -116,7 +124,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 		OPT_SET('g', &use_gpu, "(use GPU)"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (-1 != llrblk)
 		llr = true;
@@ -126,7 +134,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 	long odims[DIMS];
 
 	// Load input
-	complex float* idata = load_cfl(argv[1], DIMS, idims);
+	complex float* idata = load_cfl(in_file, DIMS, idims);
 
 	// Get levels and block dimensions
 	long blkdims[MAX_LEV][DIMS];
@@ -147,7 +155,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 	// Get outdims
 	md_copy_dims(DIMS, odims, idims);
 	odims[LEVEL_DIM] = levels;
-	complex float* odata = create_cfl(argv[2], DIMS, odims);
+	complex float* odata = create_cfl(out_file, DIMS, odims);
 	md_clear(DIMS, odims, odata, sizeof(complex float));
 
 	// Get pattern

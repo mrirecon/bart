@@ -17,6 +17,7 @@
 #include "misc/mmio.h"
 #include "misc/io.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #include "noncart/nufft.h"
 

@@ -24,27 +24,35 @@
 
 
 
-static const char usage_str[] = "bitmask <input> <output>";
 static const char help_str[] = "Compute standard deviation along selected dimensions specified by the {bitmask}";
 
 
 
 int main_std(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 3, usage_str, help_str);
+	long flags = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_LONG(false, &flags, "bitmask"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	long flags = atoi(argv[1]);
 
 	long idims[DIMS];
 	long odims[DIMS];
 
-	complex float* in = load_cfl(argv[2], DIMS, idims);
+	complex float* in = load_cfl(in_file, DIMS, idims);
 
 	md_select_dims(DIMS, ~flags, odims, idims);
 
-	complex float* out = create_cfl(argv[3], DIMS, odims);
+	complex float* out = create_cfl(out_file, DIMS, odims);
 
 	md_zstd(DIMS, idims, flags, out, in);
 

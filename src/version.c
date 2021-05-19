@@ -20,7 +20,6 @@
 #include "misc/debug.h"
 
 
-static const char usage_str[] = "[-h]";
 static const char help_str[] = 
 	"Print BART version. The version string is of the form\n"
 	"TAG or TAG-COMMITS-SHA as produced by 'git describe'. It\n"
@@ -35,6 +34,9 @@ static const char help_str[] =
 
 int main_version(int argc, char* argv[argc])
 {
+	struct arg_s args[] = {};
+
+
 	bool verbose = false;
 	const char* version = NULL;
 
@@ -44,7 +46,7 @@ int main_version(int argc, char* argv[argc])
 		OPT_SET('V', &verbose, "Output verbose info"),
 	};
 
-	cmdline(&argc, argv, 0, 0, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (NULL != version) {
 

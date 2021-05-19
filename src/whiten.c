@@ -27,7 +27,6 @@
 
 
 
-static const char usage_str[] = "<input> <ndata> <output> [<optmat_out>] [<covar_out>]";
 static const char help_str[] = "Apply multi-channel noise pre-whitening on <input> using noise data <ndata>.\n"
 				"Optionally output whitening matrix and noise covariance matrix";
 
@@ -78,21 +77,34 @@ static void calc_optmat(const long mat_dims[DIMS], complex float* optmat, const 
 
 int main_whiten(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* ndata_file = NULL;
+	const char* out_file = NULL;
+	const char* optmat_ofile = NULL;
+	const char* covar_ofile = NULL;
 
-	const char* optmat_file = NULL;
-	const char* covar_file = NULL;
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_INFILE(false, &ndata_file, "ndata"),
+		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_OUTFILE(true, &optmat_ofile, "optmat_out"),
+		ARG_OUTFILE(true, &covar_ofile, "covar_out"),
+	};
+
+
+	const char* optmat_ifile = NULL;
+	const char* covar_ifile = NULL;
 	bool normalize = false;
 
 	const struct opt_s opts[] = {
 
-		OPT_INFILE('o', &optmat_file, "<optmat_in>", "use external whitening matrix <optmat_in>"),
-		OPT_INFILE('c', &covar_file, "<covar_in>", "use external noise covariance matrix <covar_in>"),
+		OPT_INFILE('o', &optmat_ifile, "<optmat_in>", "use external whitening matrix <optmat_in>"),
+		OPT_INFILE('c', &covar_ifile, "<covar_in>", "use external noise covariance matrix <covar_in>"),
 		OPT_SET('n', &normalize, "normalize variance to 1 using noise data <ndata>"),
 	};
 
-	cmdline(&argc, argv, 3, 5, usage_str, help_str, ARRAY_SIZE(opts), opts);
-
-	int num_args = argc - 1;
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -100,9 +112,9 @@ int main_whiten(int argc, char* argv[argc])
 	long noise_dims[DIMS];
 	long mat_dims[DIMS];
 
-	complex float* idata = load_cfl(argv[1], DIMS, dims);
-	complex float* ndata = load_cfl(argv[2], DIMS, noise_dims);
-	complex float* odata = create_cfl(argv[3], DIMS, dims);
+	complex float* idata = load_cfl(in_file, DIMS, dims);
+	complex float* ndata = load_cfl(ndata_file, DIMS, noise_dims);
+	complex float* odata = create_cfl(out_file, DIMS, dims);
 
 	md_select_dims(DIMS, COIL_FLAG, mat_dims, noise_dims);
 	mat_dims[MAPS_DIM] = mat_dims[COIL_DIM];
@@ -114,19 +126,19 @@ int main_whiten(int argc, char* argv[argc])
 	complex float* covar_out = NULL;
 
 
-	if (num_args > 3)
-		optmat_out = create_cfl(argv[4], DIMS, mat_dims);
+	if (NULL != optmat_ofile)
+		optmat_out = create_cfl(optmat_ofile, DIMS, mat_dims);
 	else
 		optmat_out = anon_cfl(NULL, DIMS, mat_dims);
 
-	if (num_args > 4)
-		covar_out = create_cfl(argv[5], DIMS, mat_dims);
+	if (NULL != covar_ofile)
+		covar_out = create_cfl(covar_ofile, DIMS, mat_dims);
 	else
 		covar_out = anon_cfl(NULL, DIMS, mat_dims);
 
-	if (NULL != covar_file) {
+	if (NULL != covar_ifile) {
 
-		covar_in = load_cfl(covar_file, DIMS, mat_dims);
+		covar_in = load_cfl(covar_ifile, DIMS, mat_dims);
 		md_copy(DIMS, mat_dims, covar_out, covar_in, CFL_SIZE);
 		unmap_cfl(DIMS, mat_dims, covar_in);
 	}
@@ -134,9 +146,9 @@ int main_whiten(int argc, char* argv[argc])
 		calc_covar(mat_dims, covar_out, noise_dims, ndata);
 
 
-	if (NULL != optmat_file) {
+	if (NULL != optmat_ifile) {
 
-		optmat_in = load_cfl(optmat_file, DIMS, mat_dims);
+		optmat_in = load_cfl(optmat_ifile, DIMS, mat_dims);
 		md_copy(DIMS, mat_dims, optmat_out, optmat_in, CFL_SIZE);
 		unmap_cfl(DIMS, mat_dims, optmat_in);
 	}

@@ -27,13 +27,21 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char usage_str[] = "<poly> <output>";
 static const char help_str[] = "Compute masks from polygons.";
 
 
 
 int main_pol2mask(int argc, char* argv[argc])
 {
+	const char* poly_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &poly_file, "poly"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	int X = 100;
 	int Y = 100;
 
@@ -43,14 +51,14 @@ int main_pol2mask(int argc, char* argv[argc])
 		OPT_INT('Y', &Y, "size", "size dimension 1"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long pdims[DIMS];
 	long odims[DIMS];
 
-	complex float* pol = load_cfl(argv[1], DIMS, pdims);
+	complex float* pol = load_cfl(poly_file, DIMS, pdims);
 
 	assert(2 == pdims[0]);
 
@@ -67,7 +75,7 @@ int main_pol2mask(int argc, char* argv[argc])
 	odims[1] = Y;
 	odims[2] = 1;
 
-	complex float* out = create_cfl(argv[2], DIMS, odims);
+	complex float* out = create_cfl(out_file, DIMS, odims);
 
 	NESTED(complex float, sample, (const long pos[]))
 	{

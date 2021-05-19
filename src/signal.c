@@ -21,7 +21,6 @@
 #endif
 
 
-static const char usage_str[] = "<basis-functions>";
 static const char help_str[] = "Analytical simulation tool.";
 
 
@@ -30,6 +29,13 @@ static const char help_str[] = "Analytical simulation tool.";
 
 int main_signal(int argc, char* argv[argc])
 {
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_OUTFILE(false, &out_file, "basis-functions"),
+	};
+
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[TE_DIM] = 100;
 
@@ -72,7 +78,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_LONG('b', &Hbeats, "heart beats", "number of heart beats for MOLLI"),
 	};
 
-	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	struct signal_model parm;
 
@@ -111,7 +117,7 @@ int main_signal(int argc, char* argv[argc])
 	if ((dims[TE_DIM] < 1) || (dims[COEFF_DIM] < 1) || (dims[COEFF2_DIM] < 1))
 		error("invalid parameter range");
 
-	complex float* signals = create_cfl(argv[1], DIMS, dims);
+	complex float* signals = create_cfl(out_file, DIMS, dims);
 
 	long dims1[DIMS];
 	md_select_dims(DIMS, TE_FLAG, dims1, dims);

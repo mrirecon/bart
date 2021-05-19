@@ -31,10 +31,6 @@
 static const char help_str[] = "Performs coil compression.";
 
 
-
-
-
-
 int main_cc(int argc, char* argv[argc])
 {
 	const char* in_file = NULL;
@@ -131,7 +127,7 @@ int main_cc(int argc, char* argv[argc])
 		md_copy_dims(DIMS, trans_dims, in_dims);
 		trans_dims[COIL_DIM] = P;
 
-		complex float* trans_data = create_cfl(argv[2], DIMS, trans_dims);
+		complex float* trans_data = create_cfl(out_file, DIMS, trans_dims);
 
 		long fake_trans_dims[DIMS];
 		md_select_dims(DIMS, ~COIL_FLAG, fake_trans_dims, in_dims);

@@ -25,7 +25,6 @@
 
 
 
-static const char usage_str[] = "dim fraction <input> <output>";
 static const char help_str[] = "Perform homodyne reconstruction along dimension dim.";
 
 
@@ -111,6 +110,19 @@ static void homodyne(struct wdata wdata, unsigned int flags, unsigned int N, con
 
 int main_homodyne(int argc, char* argv[argc])
 {
+	int pfdim = -1;
+	float frac = 0.f;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(false, &pfdim, "dim"),
+		ARG_FLOAT(false, &frac, "fraction"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	bool clear = false;
 	bool image = false;
 	bool center_fft = true;
@@ -129,16 +141,13 @@ int main_homodyne(int argc, char* argv[argc])
 		OPT_CLEAR('n', &center_fft, "use uncentered ffts"),
 	};
 
-	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
 	const int N = DIMS;
 	long dims[N];
-	complex float* idata = load_cfl(argv[3], N, dims);
-	complex float* data = create_cfl(argv[4], N, dims);
-
-	int pfdim = atoi(argv[1]);
-	float frac = atof(argv[2]);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* data = create_cfl(out_file, N, dims);
 
 	assert((0 <= pfdim) && (pfdim < N));
 	assert(frac > 0.);

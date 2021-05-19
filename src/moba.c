@@ -45,7 +45,6 @@
 
 #include "simu/signals.h"
 
-static const char usage_str[] = "<kspace> <TI/TE> <output> [<sensitivities>]";
 static const char help_str[] = "Model-based nonlinear inverse reconstruction\n";
 
 
@@ -86,6 +85,19 @@ int main_moba(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 
+	const char* ksp_file = NULL;
+	const char* TI_file = NULL;
+	const char* out_file = NULL;
+	const char* sens_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &ksp_file, "kspace"),
+		ARG_INFILE(false, &TI_file, "TI/TE"),
+		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_OUTFILE(true, &sens_file, "sensitivities"),
+	};
+
 	float restrict_fov = -1.;
 	float oversampling = 1.25f;
 
@@ -104,7 +116,6 @@ int main_moba(int argc, char* argv[argc])
 	conf.ropts = &ropts;
 
 	bool out_origin_maps = false;
-	bool out_sens = false;
 	bool use_gpu = false;
 	bool unused = false;
 	enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE } mode = { MDB_T1 };
@@ -152,10 +163,7 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_SELECT(0, "fat_spec_0", enum fat_spec, &fat_spec, FAT_SPEC_0, "select fat spectrum from ISMRM fat-water tool"),
 	};
 
-	cmdline(&argc, argv, 2, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
-
-	if (5 == argc)
-		out_sens = true;
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
 	(use_gpu ? num_init_gpu : num_init)();
@@ -169,10 +177,10 @@ int main_moba(int argc, char* argv[argc])
 		conf.algo = ALGO_ADMM;
 
 	long ksp_dims[DIMS];
-	complex float* kspace_data = load_cfl(argv[1], DIMS, ksp_dims);
+	complex float* kspace_data = load_cfl(ksp_file, DIMS, ksp_dims);
 
 	long TI_dims[DIMS];
-	complex float* TI = load_cfl(argv[2], DIMS, TI_dims);
+	complex float* TI = load_cfl(TI_file, DIMS, TI_dims);
 
 	assert(TI_dims[TE_DIM] == ksp_dims[TE_DIM]);
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -233,7 +241,7 @@ int main_moba(int argc, char* argv[argc])
 	long coil_strs[DIMS];
 	md_calc_strides(DIMS, coil_strs, coil_dims, CFL_SIZE);
 
-	complex float* img = create_cfl(argv[3], DIMS, img_dims);
+	complex float* img = create_cfl(out_file, DIMS, img_dims);
 	complex float* single_map = anon_cfl("", DIMS, single_map_dims);
 
 	long dims[DIMS];
@@ -248,7 +256,7 @@ int main_moba(int argc, char* argv[argc])
 	md_calc_strides(DIMS, msk_strs, msk_dims, CFL_SIZE);
 
 	complex float* mask = NULL;
-	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[4] : "", DIMS, coil_dims);
+	complex float* sens = ((NULL == sens_file) ? create_cfl : anon_cfl)((NULL == sens_file) ? sens_file : "", DIMS, coil_dims);
 
 
 	md_zfill(DIMS, img_dims, img, 1.0);

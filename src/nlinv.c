@@ -63,6 +63,17 @@ int main_nlinv(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 
+	const char* ksp_file = NULL;
+	const char* img_file = NULL;
+	const char* sens_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &ksp_file, "kspace"),
+		ARG_OUTFILE(false, &img_file, "output"),
+		ARG_OUTFILE(true, &sens_file, "sensitivities"),
+	};
+
 	bool normalize = true;
 	bool combine = true;
 	unsigned int nmaps = 1;
@@ -75,17 +86,6 @@ int main_nlinv(int argc, char* argv[argc])
 	bool use_gpu = false;
 	float scaling = -1.;
 	bool nufft_lowmem = false;
-
-	const char* ksp_file = NULL;
-	const char* img_file = NULL;
-	const char* sens_file = NULL;
-
-	struct arg_s args[] = {
-
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_OUTFILE(false, &img_file, "output"),
-		ARG_OUTFILE(true, &sens_file, "sensitivities"),
-	};
 
 	const struct opt_s opts[] = {
 

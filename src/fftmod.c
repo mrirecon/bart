@@ -60,8 +60,8 @@ int main_fftmod(int argc, char* argv[argc])
 	int N = DIMS;
 	long dims[N];
 
-	complex float* idata = load_cfl(argv[2], N, dims);
-	complex float* odata = create_cfl(argv[3], N, dims);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* odata = create_cfl(out_file, N, dims);
 
 	(inv ? ifftmod : fftmod)(N, dims, flags, odata, idata);
 

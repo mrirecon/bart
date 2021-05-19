@@ -18,33 +18,36 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "exponent <input> <output>";
 static const char help_str[] = "Raise array to the power of {exponent}. The exponent can be a complex number.\n";
 
 
 int main_spow(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 3, usage_str, help_str);
+	complex float expo = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_CFL(false, &expo, "exponent"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	complex float expo;
-
-	if (0 != parse_cfl(&expo, argv[1])) {
-
-		fprintf(stderr, "ERROR: exponent %s is not a number.\n", argv[1]);
-		return 1;
-	}
-
 	const int N = DIMS;
 	long dims[N];
-	complex float* idata = load_cfl(argv[2], N, dims);
-	complex float* odata = create_cfl(argv[3], N, dims);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* odata = create_cfl(out_file, N, dims);
 		
 	md_zspow(N, dims, odata, idata, expo);
 

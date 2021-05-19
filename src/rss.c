@@ -19,6 +19,7 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
@@ -26,27 +27,36 @@
 
 
 
-static const char usage_str[] = "bitmask <input> <output>";
 static const char help_str[] = "Calculates root of sum of squares along selected dimensions.\n";
 
 
 int main_rss(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 3, usage_str, help_str);
+	int flags = -1;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(false, &flags, "bitmask"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long dims[DIMS];
-	complex float* data = load_cfl(argv[2], DIMS, dims);
-
-	int flags = atoi(argv[1]);
+	complex float* data = load_cfl(in_file, DIMS, dims);
 
 	assert(0 <= flags);
 
 	long odims[DIMS];
 	md_select_dims(DIMS, ~flags, odims, dims);
 
-	complex float* out = create_cfl(argv[3], DIMS, odims);
+	complex float* out = create_cfl(out_file, DIMS, odims);
 
 	md_zrss(DIMS, dims, flags, out, data);
 

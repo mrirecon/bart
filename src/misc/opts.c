@@ -710,7 +710,7 @@ static int add_arg(char* out, int bufsize, const char* argname, bool optional, b
 	if (file)
 		fstring = optional ? "[<%s>]" : "<%s>";
 	else
-		fstring = optional ? "[%s]c" : "%s";
+		fstring = optional ? "[%s]" : "%s";
 
 	return snprintf(out, bufsize, fstring, argname);
 }
@@ -824,7 +824,6 @@ void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* h
 		case ARG:
 			// skip optional arguments if we did not get the maximum number of args. This is just for fmac, which
 			// has an optional arg in the middle
-			debug_printf(DP_INFO, "%s: max %d, n %d\n", argv[0], max_args, n_args);
 			if (args[i].optional && (max_args != n_args))
 				continue;
 
@@ -840,8 +839,6 @@ void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* h
 				error("Incorrect number of arguments!\n");
 
 			*args[i].count = n_tuple_args / args[i].nargs;
-
-			debug_printf(DP_INFO, "n_following: %d, count: %d, n_tuple_args: %d\n", n_following, *args[i].count, n_tuple_args);
 
 			if (0 == *args[i].count)
 				continue;
@@ -866,4 +863,9 @@ void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* h
 		}
 
 	}
+#if 1
+	// for debug, make argv inaccesible
+	for (int i = 0; i < *argc; ++i)
+		argv[i] = NULL;
+#endif
 }
