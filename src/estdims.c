@@ -23,15 +23,22 @@
 
 #define FFT_DIMS (MD_BIT(0)|MD_BIT(1)|MD_BIT(2))
 
-static const char usage_str[] = "<traj>";
 static const char help_str[] = "Estimate image dimension from non-Cartesian trajectory.\n"
-			"Assume trajectory scaled to -DIM/2 to DIM/2 (ie dk=1/FOV=1)\n";
+			"Assume trajectory scaled to -DIM/2 to DIM/2 (ie dk=1/FOV=1)";
 
 
 
 int main_estdims(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 1, usage_str, help_str);
+	const char* traj_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &traj_file, "traj"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -39,7 +46,7 @@ int main_estdims(int argc, char* argv[argc])
 
 	long traj_dims[N];
 	
-	complex float* traj = load_cfl(argv[1], N, traj_dims);
+	complex float* traj = load_cfl(traj_file, N, traj_dims);
 
 	long im_dims[N];
 	

@@ -16,25 +16,34 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "<input> <output>";
 static const char help_str[] = "Absolute value of array (|<input>|).\n";
 
 
 int main_cabs(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 2, usage_str, help_str);
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long dims[DIMS];
 
-	complex float* idata = load_cfl(argv[1], DIMS, dims);
-	complex float* odata = create_cfl(argv[2], DIMS, dims);
+	complex float* idata = load_cfl(in_file, DIMS, dims);
+	complex float* odata = create_cfl(out_file, DIMS, dims);
 		
         md_zabs(DIMS, dims, odata, idata);
 

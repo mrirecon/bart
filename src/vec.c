@@ -40,7 +40,7 @@ int main_vec(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {};
 
-	cmdline_new(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 

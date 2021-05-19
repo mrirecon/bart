@@ -90,8 +90,6 @@ extern void quicksort(int N, int ord[__VLA(N)], quicksort_cmp_t cmp);
 extern float quickselect(float *arr, int n, int k);
 extern float quickselect_complex(_Complex float *arr, int n, int k);
 
-extern void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str);
-
 extern void print_long(int D, const long arr[__VLA(D)]);
 extern void print_float(int D, const float arr[__VLA(D)]);
 extern void print_int(int D, const int arr[__VLA(D)]);

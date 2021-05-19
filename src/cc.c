@@ -28,7 +28,6 @@
 
 
 
-static const char usage_str[] = "<kspace> <coeff>|<proj_kspace>";
 static const char help_str[] = "Performs coil compression.";
 
 
@@ -38,6 +37,15 @@ static const char help_str[] = "Performs coil compression.";
 
 int main_cc(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &in_file, "kspace"),
+		ARG_OUTFILE(false, &out_file, "coeff|proj_kspace"),
+	};
+
 	long calsize[3] = { 24, 24, 24 };
 	bool proj = true;
 	long P = -1;
@@ -56,7 +64,7 @@ int main_cc(int argc, char* argv[argc])
 		OPT_SELECT('E', enum cc_type, &cc_type, ECC, "type: ESPIRiT"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -68,7 +76,7 @@ int main_cc(int argc, char* argv[argc])
 
 	long in_dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[1], DIMS, in_dims);
+	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 
 	assert(1 == in_dims[MAPS_DIM]);
 	long channels = in_dims[COIL_DIM];
@@ -81,7 +89,7 @@ int main_cc(int argc, char* argv[argc])
 	out_dims[MAPS_DIM] = channels;
 	out_dims[READ_DIM] = (SCC == cc_type) ? 1 : in_dims[READ_DIM];
 
-	complex float* out_data = (proj ? anon_cfl : create_cfl)(argv[2], DIMS, out_dims);
+	complex float* out_data = (proj ? anon_cfl : create_cfl)(out_file, DIMS, out_dims);
 
 
 	long caldims[DIMS];

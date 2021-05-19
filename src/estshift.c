@@ -13,6 +13,7 @@
 
 #include "misc/misc.h"
 #include "misc/mmio.h"
+#include "misc/opts.h"
 #include "misc/subpixel.h"
 
 
@@ -21,7 +22,6 @@
 #endif
 
 
-static const char usage_str[] = "flags <arg1> <arg2>";
 static const char help_str[] = "Estimate sub-pixel shift.";
 
 
@@ -29,15 +29,25 @@ static const char help_str[] = "Estimate sub-pixel shift.";
 
 int main_estshift(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 3, usage_str, help_str);
+	unsigned int flags = 0;
+	const char* arg1_file = NULL;
+	const char* arg2_file = NULL;
 
-	unsigned int flags = atoi(argv[1]);
+	struct arg_s args[] = {
+
+		ARG_UINT(false, &flags, "flags"),
+		ARG_INFILE(false, &arg1_file, "arg1"),
+		ARG_INFILE(false, &arg2_file, "arg2"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	long dims1[DIMS];
 	long dims2[DIMS];
 
-	const complex float* in1 = load_cfl(argv[2], DIMS, dims1);
-	const complex float* in2 = load_cfl(argv[3], DIMS, dims2);
+	const complex float* in1 = load_cfl(arg1_file, DIMS, dims1);
+	const complex float* in2 = load_cfl(arg2_file, DIMS, dims2);
 
 	assert(md_check_compat(DIMS, ~0u, dims1, dims2));
 

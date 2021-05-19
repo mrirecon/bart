@@ -24,7 +24,6 @@
 #endif
 
 
-static const char usage_str[] = "<signal intensity> [<configuration states> [<(rel.) signal derivatives> [<configuration derivatives>]]]";
 static const char help_str[] = "Simulate MR pulse sequence based on Extended Phase Graphs (EPG)";
 
 int main_epg(int argc, char* argv[argc])
@@ -32,9 +31,18 @@ int main_epg(int argc, char* argv[argc])
 	enum seq_type { CPMG, FMSSFP, HYPER, FLASH, SPINECHO, BSSFP };
 	enum seq_type seq = CPMG;
 
-	bool save_states = false;
-	bool save_sigder = false;
-	bool save_statesder = false;
+	const char* signal_file = NULL;
+	const char* states_file = NULL;
+	const char* sigder_file = NULL;
+	const char* statesder_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_OUTFILE(false, &signal_file, "signal intensity"),
+		ARG_OUTFILE(true, &states_file, "configuration states"),
+		ARG_OUTFILE(true, &sigder_file, "(rel.) signal derivatives"),
+		ARG_OUTFILE(true, &statesder_file, "configuration derivatives"),
+	};
 
 	float T1 =  0.800;
 	float T2 =  0.050;
@@ -69,16 +77,8 @@ int main_epg(int argc, char* argv[argc])
 		OPT_LONG('v',   &verbose, "V", "verbosity level"),
 	};
 
-	cmdline(&argc, argv, 1, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	if (2 < argc)
-		save_states = true;
-	
-	if (3 < argc)
-		save_sigder = true;
-
-	if (4 < argc)
-		save_statesder = true;
 
 	long M;
 
@@ -115,66 +115,66 @@ int main_epg(int argc, char* argv[argc])
    	md_copy_dims(DIMS, dims_statesder, dims_states);
 	dims_statesder[ITER_DIM] = 4;
 
-	complex float* signals = create_cfl(argv[1], DIMS, dims);
+	complex float* signals = create_cfl(signal_file, DIMS, dims);
 
-	complex float* states = (save_states ? create_cfl : anon_cfl)(save_states ? argv[2] : "", DIMS, dims_states);
+	complex float* states = ((NULL != states_file) ? create_cfl : anon_cfl)((NULL != states_file) ? states_file : "", DIMS, dims_states);
 
-	complex float* sigder = (save_sigder ? create_cfl : anon_cfl)(save_sigder ? argv[3] : "", DIMS, dims_sigder);
+	complex float* sigder = ((NULL != sigder_file) ? create_cfl : anon_cfl)((NULL != sigder_file) ? sigder_file : "", DIMS, dims_sigder);
 
-	complex float* statesder = (save_statesder ? create_cfl : anon_cfl)(save_statesder ? argv[4] : "", DIMS, dims_statesder);
+	complex float* statesder = ((NULL != statesder_file) ? create_cfl : anon_cfl)((NULL != statesder_file) ? statesder_file : "", DIMS, dims_statesder);
 
 	switch (seq) {
 
 	case CPMG:
 
-		cpmg_epg_der(N, M, out_signal, save_states ? out_states : NULL,
-						save_sigder ? out_sigder : NULL,
-						save_statesder ? out_statesder : NULL,
+		cpmg_epg_der(N, M, out_signal, (NULL != states_file) ? out_states : NULL,
+						(NULL != sigder_file) ? out_sigder : NULL,
+						(NULL != statesder_file) ? out_statesder : NULL,
 						90.0, 180.0, TE, T1, T2, B1, offres);
 		break;
 
 	case FMSSFP:
 
-		fmssfp_epg_der(N, M, out_signal, save_states ? out_states : NULL,
-						save_sigder ? out_sigder : NULL,
-						save_statesder ? out_statesder : NULL,
+		fmssfp_epg_der(N, M, out_signal, (NULL != states_file) ? out_states : NULL,
+						(NULL != sigder_file) ? out_sigder : NULL,
+						(NULL != statesder_file) ? out_statesder : NULL,
 						FA, TR, T1, T2, B1, offres);
 		break;
 
 	case HYPER:
 
-		if (save_sigder || save_statesder)
+		if ((NULL != sigder_file) || (NULL != statesder_file))
 			error("No derivatives available for HYPER!");
 
-		hyperecho_epg(N, M, out_signal, save_states ? out_states : NULL,
+		hyperecho_epg(N, M, out_signal, (NULL != states_file) ? out_states : NULL,
 						90.0, 180.0, TE, FA, T1, T2, B1, offres);
 
 		break;
 
 	case FLASH:
 
-		flash_epg_der(N, M, out_signal, save_states ? out_states : NULL,
-						save_sigder ? out_sigder : NULL,
-						save_statesder ? out_statesder : NULL,
+		flash_epg_der(N, M, out_signal, (NULL != states_file) ? out_states : NULL,
+						(NULL != sigder_file) ? out_sigder : NULL,
+						(NULL != statesder_file) ? out_statesder : NULL,
 					        FA, TR, T1, T2, B1, offres, SP);
 
 		break;
 
 	case SPINECHO:
 
-		if (save_sigder || save_statesder)
+		if ((NULL != sigder_file) || (NULL != statesder_file))
 			error("No derivatives available for Spinecho!");
 
-		hahnspinecho_epg(N, M, out_signal, save_states ? out_states : NULL,
+		hahnspinecho_epg(N, M, out_signal, (NULL != states_file) ? out_states : NULL,
 						FA, TE, T1, T2, B1, offres);
 
 		break;
 	
 	case BSSFP:
 
-		bssfp_epg_der(N, M, out_signal, save_states ? out_states : NULL,
-						   save_sigder ? out_sigder : NULL,
-						   save_statesder ? out_statesder : NULL,
+		bssfp_epg_der(N, M, out_signal, (NULL != states_file) ? out_states : NULL,
+						   (NULL != sigder_file) ? out_sigder : NULL,
+						   (NULL != statesder_file) ? out_statesder : NULL,
 						   FA, TR, T1, T2, B1, offres);
 
 		break;
@@ -183,7 +183,7 @@ int main_epg(int argc, char* argv[argc])
 		error("sequence type not supported yet");
 	}
 
-	if (save_sigder) {
+	if ((NULL != sigder_file)) {
 
 		if (0 < verbose) {
 
@@ -217,13 +217,13 @@ int main_epg(int argc, char* argv[argc])
 	long pos[DIMS] = {0};
 	md_copy_block(DIMS, pos, dims, signals, dims, out_signal, CFL_SIZE);
 
-	if (save_states)
+	if (NULL != states_file)
 		md_copy_block(DIMS, pos, dims_states, states, dims_states, out_states, CFL_SIZE);
 
-	if (save_sigder)
+	if (NULL != sigder_file)
 		md_copy_block(DIMS, pos, dims_sigder, sigder, dims_sigder, out_sigder, CFL_SIZE);
 
-	if (save_statesder)
+	if (NULL != statesder_file)
 		md_copy_block(DIMS, pos, dims_statesder, statesder, dims_statesder, out_statesder, CFL_SIZE);
 
 	unmap_cfl(DIMS, dims, signals);

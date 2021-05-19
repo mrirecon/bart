@@ -33,13 +33,13 @@ static const char help_str[] =	"Apply 1 -1 modulation along dimensions selected 
 int main_fftmod(int argc, char* argv[argc])
 {
 
-	long sflags = 0;
+	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_LONG(false, &sflags, "bitmask"),
+		ARG_ULONG(false, &flags, "bitmask"),
 		ARG_INFILE(false, &in_file, "input"),
 		ARG_OUTFILE(false, &out_file, "output"),
 	};
@@ -53,12 +53,9 @@ int main_fftmod(int argc, char* argv[argc])
 		OPT_SET('i', &inv, "inverse"),
 	};
 
-	cmdline_new(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	assert(0 <= sflags);
-	unsigned long flags = sflags;
 
 	int N = DIMS;
 	long dims[N];

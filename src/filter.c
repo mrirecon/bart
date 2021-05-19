@@ -30,12 +30,20 @@
 #endif
 
 
-static const char usage_str[] = "<input> <output>";
-static const char help_str[] = "Apply filter.\n";
+static const char help_str[] = "Apply filter.";
 
 
 int main_filter(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	int len = -1;
 	int dim = -1;
 
@@ -45,14 +53,14 @@ int main_filter(int argc, char* argv[argc])
 		OPT_INT('l', &len, "len", "length of filter"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 
 	long in_dims[DIMS];
 	
-	complex float* in_data = load_cfl(argv[1], DIMS, in_dims);
+	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 
 	assert(dim >= 0);
 	assert(dim < DIMS);
@@ -77,7 +85,7 @@ int main_filter(int argc, char* argv[argc])
 	long out_dims[DIMS];
 	md_copy_dims(DIMS, out_dims, tmp_dims);
 
-	complex float* out_data = create_cfl(argv[2], DIMS, out_dims);
+	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
 	md_medianz2(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
 

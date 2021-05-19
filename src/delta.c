@@ -19,22 +19,33 @@
 #include "misc/mmio.h"
 #include "misc/io.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
-static const char usage_str[] = "dims flags size out";
+// static const char usage_str[] = "dims flags size out";
 static const char help_str[] = "Kronecker delta.\n";
 
 
 
 int main_delta(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 4, usage_str, help_str);
+	int N = 0;
+	unsigned int flags= 0;
+	long len = 0;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(false, &N, "dims"),
+		ARG_UINT(false, &flags, "flags"),
+		ARG_LONG(false, &len, "size"),
+		ARG_OUTFILE(false, &out_file, "out"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	int N = atoi(argv[1]);
-	long len = atoi(argv[3]);
-	unsigned int flags = atoi(argv[2]);
 
 	assert(N >= 0);
 
@@ -43,7 +54,7 @@ int main_delta(int argc, char* argv[argc])
 	for (int i = 0; i < N; i++)
 		dims[i] = MD_IS_SET(flags, i) ? len : 1;
 
-	complex float* x = create_cfl(argv[4], N, dims);
+	complex float* x = create_cfl(out_file, N, dims);
 
 	md_clear(N, dims, x, CFL_SIZE);
 	md_fill_diag(N, dims, flags, x, &(complex float){ 1. }, CFL_SIZE); 

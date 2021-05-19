@@ -30,8 +30,9 @@
 
 opt_conv_f opt_set;
 opt_conv_f opt_clear;
-opt_conv_f opt_int;
 opt_conv_f opt_uint;
+opt_conv_f opt_int;
+opt_conv_f opt_ulong;
 opt_conv_f opt_long;
 opt_conv_f opt_float;
 opt_conv_f opt_cfl;
@@ -62,6 +63,7 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 
 	case OPT_INT:
 	case OPT_UINT:
+	case OPT_ULONG:
 	case OPT_LONG:
 		return "d";
 
@@ -104,6 +106,7 @@ static const char* opt_type_str(enum OPT_TYPE type)
 	OPT_ARG_TYPE_CASE(OPT_CLEAR)
 	OPT_ARG_TYPE_CASE(OPT_INT)
 	OPT_ARG_TYPE_CASE(OPT_UINT)
+	OPT_ARG_TYPE_CASE(OPT_ULONG)
 	OPT_ARG_TYPE_CASE(OPT_LONG)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT)
 	OPT_ARG_TYPE_CASE(OPT_CFL)
@@ -137,6 +140,8 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 		return opt_int(ptr, c, optarg);
 	case OPT_UINT:
 		return opt_uint(ptr, c, optarg);
+	case OPT_ULONG:
+		return opt_ulong(ptr, c, optarg);
 	case OPT_LONG:
 		return opt_long(ptr, c, optarg);
 	case OPT_FLOAT:
@@ -299,6 +304,9 @@ static void check_options(int n, const struct opt_s opts[n ?: 1])
 
 		if ((OPT_SPECIAL != opts[i].type) && (NULL != opts[i].conv))
 			error("Custom conversion functions are only allowed in OPT_SPECIAL\n");
+
+		if ((OPT_SPECIAL == opts[i].type) && (NULL == opts[i].conv))
+			error("Custom conversion function is required for OPT_SPECIAL\n");
 	}
 }
 
@@ -345,7 +353,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 }
 
 
-void cmdline(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
+static void options(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
 {
 	int argc = *argcp;
 
@@ -510,6 +518,16 @@ bool opt_long(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	*(long*)ptr = atol(optarg);
+	return false;
+}
+
+bool opt_ulong(void* ptr, char c, const char* optarg)
+{
+	UNUSED(c);
+	long val = atol(optarg);
+	if (0 > val)
+		error("Argument to opt_ulong must be unsigned");
+	*(unsigned long*)ptr = (unsigned long) val;
 	return false;
 }
 
@@ -741,7 +759,7 @@ static int add_tuple_args(char* cur, int bufsize, const struct arg_s* arg, bool 
 
 
 
-void cmdline_new(int* argc, char* argv[], int n, struct arg_s args[n], const char* help_str, int m, const struct opt_s opts[m])
+void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* help_str, int m, const struct opt_s opts[m])
 {
 
 	check_args(n, args);
@@ -791,7 +809,7 @@ void cmdline_new(int* argc, char* argv[], int n, struct arg_s args[n], const cha
 		}
 	}
 
-	cmdline(argc, argv, min_args, max_args, usage_str, help_str, m, opts);
+	options(argc, argv, min_args, max_args, usage_str, help_str, m, opts);
 
 	for (int i = 0, j = 1; (i < n) && (j < *argc); ++i) {
 

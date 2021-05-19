@@ -35,6 +35,19 @@ static const char help_str[] = "Recreate k-space from image and sensitivities.";
 
 int main_fakeksp(int argc, char* argv[argc])
 {
+	const char* im_file = NULL;
+	const char* ksp_file = NULL;
+	const char* sens_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &im_file, "image"),
+		ARG_INFILE(false, &ksp_file, "kspace"),
+		ARG_INFILE(false, &sens_file, "sens"),
+		ARG_INFILE(false, &out_file, "output"),
+	};
+
 	bool rplksp = false;
 
 	const struct opt_s opts[] = {
@@ -42,7 +55,7 @@ int main_fakeksp(int argc, char* argv[argc])
 		OPT_SET('r', &rplksp, "replace measured samples with original values"),
 	};
 
-	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
 	const int N = DIMS;
@@ -50,9 +63,9 @@ int main_fakeksp(int argc, char* argv[argc])
 	long dims[N];
 	long img_dims[N];
 
-	complex float* kspace_data = load_cfl(argv[2], N, ksp_dims);
-	complex float* sens_maps = load_cfl(argv[3], N, dims);
-	complex float* image = load_cfl(argv[1], N, img_dims);
+	complex float* kspace_data = load_cfl(ksp_file, N, ksp_dims);
+	complex float* sens_maps = load_cfl(sens_file, N, dims);
+	complex float* image = load_cfl(im_file, N, img_dims);
 	
 
 	for (int i = 0; i < 4; i++)
@@ -83,7 +96,7 @@ int main_fakeksp(int argc, char* argv[argc])
 	md_zsmul(N, ksp_dims, kspace_data, kspace_data, 1. / scaling);
 #endif
 
-	complex float* out = create_cfl(argv[4], N, ksp_dims);
+	complex float* out = create_cfl(out_file, N, ksp_dims);
 	
 	fftmod(N, ksp_dims, FFT_FLAGS, kspace_data, kspace_data);
 	fftmod(N, dims, FFT_FLAGS, sens_maps, sens_maps);

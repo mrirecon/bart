@@ -24,7 +24,6 @@
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "bitmask <input> <output>";
 static const char help_str[] =	"Apply fftshift along dimensions selected by the {bitmask}.\n";
 
 
@@ -32,6 +31,17 @@ static const char help_str[] =	"Apply fftshift along dimensions selected by the 
 
 int main_fftshift(int argc, char* argv[argc])
 {
+	unsigned long flags = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_ULONG(false, &flags, "bitmask"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	bool b = false;
 
 	const struct opt_s opts[] = {
@@ -39,17 +49,15 @@ int main_fftshift(int argc, char* argv[argc])
 		OPT_SET('b', &b, "apply ifftshift"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	unsigned long flags = labs(atol(argv[1]));
 
 	int N = DIMS;
 	long dims[N];
 
-	complex float* idata = load_cfl(argv[2], N, dims);
-	complex float* odata = create_cfl(argv[3], N, dims);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* odata = create_cfl(out_file, N, dims);
 
 	(b ? ifftshift : fftshift)(N, dims, flags, odata, idata);
 

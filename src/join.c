@@ -61,7 +61,7 @@ int main_join(int argc, char* argv[argc])
 		OPT_SET('a', &append, "append - only works for cfl files!"),
 	};
 
-	cmdline_new(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 

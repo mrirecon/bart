@@ -16,6 +16,7 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/mri.h"
+#include "misc/opts.h"
 
 #include "num/multind.h"
 #include "num/fft.h"
@@ -23,7 +24,6 @@
 #include "calib/direct.h"
 
 
-static const char usage_str[] = "cal_size <input> <output>";
 static const char help_str[] =
 	"Estimates coil sensitivities from the k-space center using\n"
 	"a direct method (McKenzie et al.). The size of the fully-sampled\n"
@@ -34,19 +34,29 @@ static const char help_str[] =
 
 int main_caldir(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 3, usage_str, help_str);
+	int calsize_ro = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(false, &calsize_ro, "cal_size"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	long dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[2], DIMS, dims);
+	complex float* in_data = load_cfl(in_file, DIMS, dims);
 
-	int calsize_ro = atoi(argv[1]);
 	long calsize[3] = { calsize_ro, calsize_ro, calsize_ro };
 
 	assert((dims[0] == 1) || (calsize_ro < dims[0]));
 	assert(1 == dims[4]);
 	
-	complex float* out_data = create_cfl(argv[3], DIMS, dims);
+	complex float* out_data = create_cfl(out_file, DIMS, dims);
 
 
 	long caldims[DIMS];

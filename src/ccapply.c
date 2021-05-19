@@ -33,6 +33,17 @@ static const char help_str[] = "Apply coil compression forward/inverse operation
 
 int main_ccapply(int argc, char* argv[argc])
 {
+	const char* ksp_file = NULL;
+	const char* cc_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &ksp_file, "kspace"),
+		ARG_INFILE(false, &cc_file, "cc_matrix"),
+		ARG_OUTFILE(false, &out_file, "proj_kspace"),
+	};
+
 	bool forward = true;
 	bool do_fft = true;
 	long P = -1;
@@ -48,15 +59,15 @@ int main_ccapply(int argc, char* argv[argc])
 		OPT_SELECT('E', enum cc_type, &cc_type, ECC, "type: ESPIRiT"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long in_dims[DIMS];
 	long cc_dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[1], DIMS, in_dims);
-	complex float* cc_data = load_cfl(argv[2], DIMS, cc_dims);
+	complex float* in_data = load_cfl(ksp_file, DIMS, in_dims);
+	complex float* cc_data = load_cfl(cc_file, DIMS, cc_dims);
 
 	assert(1 == in_dims[MAPS_DIM]);
 	const long channels = cc_dims[COIL_DIM];
@@ -71,7 +82,7 @@ int main_ccapply(int argc, char* argv[argc])
 	md_select_dims(DIMS, ~COIL_FLAG, out_dims, in_dims);
 	out_dims[COIL_DIM] = forward ? P : channels;
 	
-	complex float* out_data = create_cfl(argv[3], DIMS, out_dims);
+	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
 	// transpose for the matrix multiplication
 	long trp_dims[DIMS];

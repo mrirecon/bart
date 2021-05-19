@@ -522,23 +522,6 @@ void save_command_line(int argc, char* argv[static argc])
 
 
 
-void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str)
-{
-	int min_args = expected_args;
-	int max_args = expected_args;
-
-	if (expected_args < 0) {
-
-		min_args = -expected_args;
-		max_args = 1000;
-	}
-
-	const struct opt_s opts[] = {};
-
-	cmdline(argcp, argv, min_args, max_args, usage_str, help_str, ARRAY_SIZE(opts), opts);
-}
-
-
 void print_long(int D, const long arr[D])
 {
 	for (int i = 0; i < D; i++)

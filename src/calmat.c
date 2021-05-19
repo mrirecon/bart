@@ -22,7 +22,6 @@
 #include "calib/calmat.h"
 
 
-static const char usage_str[] = "<kspace> <calibration matrix>";
 static const char help_str[] = "Compute calibration matrix.";
 
 
@@ -31,6 +30,16 @@ static const char help_str[] = "Compute calibration matrix.";
 
 int main_calmat(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &in_file, "kspace"),
+		ARG_OUTFILE(false, &out_file, "calibration_matrix"),
+	};
+
+
 	long calsize[3] = { 24, 24, 24 };
 	long kdims[3] = { 5, 5, 5 };
 	bool calcen = false;
@@ -44,13 +53,13 @@ int main_calmat(int argc, char* argv[argc])
 		OPT_SET('C', &calcen, "()"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
 	int N = DIMS;
 	long ksp_dims[N];
 
-	complex float* in_data = load_cfl(argv[1], N, ksp_dims);
+	complex float* in_data = load_cfl(in_file, N, ksp_dims);
 
 
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -97,7 +106,7 @@ int main_calmat(int argc, char* argv[argc])
 	complex float* cm = calibration_matrix(calmat_dims, kdims, cal_dims, cal_data);
 	md_free(cal_data);
 
-	complex float* out_data = create_cfl(argv[2], N, calmat_dims);
+	complex float* out_data = create_cfl(out_file, N, calmat_dims);
 	md_copy(N, calmat_dims, out_data, cm, CFL_SIZE);
 	md_free(cm);
 

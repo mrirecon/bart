@@ -31,7 +31,7 @@
 #endif
 
 
-static const char help_str[] = "Extracts a slice from positions along dimensions.\n";
+static const char help_str[] = "Extracts a slice from positions along dimensions.";
 
 
 int main_slice(int argc, char* argv[argc])
@@ -54,7 +54,7 @@ int main_slice(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {};
 
-	cmdline_new(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 

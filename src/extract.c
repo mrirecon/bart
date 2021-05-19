@@ -28,35 +28,45 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char usage_str[] = "dim1 start1 end1 ... dimn startn endn <input> <output>";
 static const char help_str[] = "Extracts a sub-array along dims from index start to (not including) end.\n";
 
 
 int main_extract(int argc, char* argv[argc])
 {
-	const struct opt_s opts[] = {};
+	long count = 0;
+	long* dims = NULL;
+	long* starts = NULL;
+	long* ends = NULL;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
 
-	cmdline(&argc, argv, 5, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	struct arg_s args[] = {
+
+		ARG_TUPLE(false, &count, 3, OPT_LONG, sizeof(long), &dims, "dim", OPT_LONG, sizeof(long), &starts, "start", OPT_LONG, sizeof(long), &ends, "end"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_INOUTFILE(false, &out_file, "output"),
+	};
+
+
+	const struct opt_s opts[] = { };
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long in_dims[DIMS];
 	long out_dims[DIMS];
 	
-	complex float* in_data = load_cfl(argv[argc - 2], DIMS, in_dims);
+	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 	md_copy_dims(DIMS, out_dims, in_dims);
-
-	int count = argc - 3;
-	assert((count > 0) && (count % 3 == 0));
 
 
 	long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-	for (int i = 0; i < count; i += 3) {
+	for (long i = 0; i < count; i++) {
 
-		int dim = atoi(argv[i + 1]);
-		int start = atoi(argv[i + 2]);
-		int end = atoi(argv[i + 3]);
+		long dim = dims[i];
+		long start = starts[i];
+		long end = ends[i];
 
 		assert((0 <= dim) && (dim < DIMS));
 		assert(start >= 0);
@@ -68,7 +78,7 @@ int main_extract(int argc, char* argv[argc])
 	}
 
 
-	complex float* out_data = create_cfl(argv[argc - 1], DIMS, out_dims);
+	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
 	md_copy_block(DIMS, pos2, out_dims, out_data, in_dims, in_data, CFL_SIZE);
 

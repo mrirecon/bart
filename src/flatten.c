@@ -17,6 +17,7 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
@@ -29,18 +30,28 @@ static const char help_str[] = "Flatten array to one dimension.\n";
 
 int main_flatten(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 2, usage_str, help_str);
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long idims[DIMS];
 
-	complex float* idata = load_cfl(argv[1], DIMS, idims);
+	complex float* idata = load_cfl(in_file, DIMS, idims);
 
 	long odims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
 	odims[0] = md_calc_size(DIMS, idims);
 
-	complex float* odata = create_cfl(argv[2], DIMS, odims);
+	complex float* odata = create_cfl(out_file, DIMS, odims);
 
 	md_copy(DIMS, idims, odata, idata, CFL_SIZE);
 

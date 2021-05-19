@@ -29,7 +29,6 @@
 
 
 
-static const char usage_str[] = "x y z <input> <sensitivities> [<ev_maps>]";
 static const char help_str[] =
 		"Second part of ESPIRiT calibration.\n"
 		"Optionally outputs the eigenvalue maps.";
@@ -40,6 +39,23 @@ static const char help_str[] =
 
 int main_ecaltwo(int argc, char* argv[argc])
 {
+	long x = 0;
+	long y = 0;
+	long z = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+	const char* emaps_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_LONG(false, &x, "x"),
+		ARG_LONG(false, &y, "y"),
+		ARG_LONG(false, &z, "z"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "sensitivities"),
+		ARG_OUTFILE(true, &emaps_file, "ev-maps"),
+	};
+
 	long maps = 2; // channels;
 	struct ecalib_conf conf = ecalib_defaults;
 
@@ -53,13 +69,13 @@ int main_ecaltwo(int argc, char* argv[argc])
 		OPT_SET('g', &conf.usegpu, "()"),
 	};
 
-	cmdline(&argc, argv, 5, 6, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	(conf.usegpu ? num_init_gpu : num_init)();
 
 	long in_dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[4], DIMS, in_dims);
+	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 
 	int channels = 0;
 
@@ -74,9 +90,9 @@ int main_ecaltwo(int argc, char* argv[argc])
 	long out_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	long map_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	
-	out_dims[0] = atoi(argv[1]);
-	out_dims[1] = atoi(argv[2]);
-	out_dims[2] = atoi(argv[3]);
+	out_dims[0] = x;
+	out_dims[1] = y;
+	out_dims[2] = z;
 	out_dims[3] = channels;
 	out_dims[4] = maps;
 
@@ -92,11 +108,11 @@ int main_ecaltwo(int argc, char* argv[argc])
 	map_dims[4] = maps;
 
 
-	complex float* out_data = create_cfl(argv[5], DIMS, out_dims);
+	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 	complex float* emaps;
 
-	if (7 == argc)
-		emaps = create_cfl(argv[6], DIMS, map_dims);
+	if (emaps_file)
+		emaps = create_cfl(emaps_file, DIMS, map_dims);
 	else
 		emaps = md_alloc(DIMS, map_dims, CFL_SIZE);
 

@@ -26,12 +26,20 @@
 #include "calib/estvar.h"
 
 
-static const char usage_str[] = "<kspace>";
 static const char help_str[] = "Estimate the noise variance assuming white Gaussian noise.";
 
 
 int main_estvar(int argc, char* argv[argc])
 {
+	const char* ksp_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &ksp_file, "kspace"),
+	};
+
+
+
 	long calsize_dims[3]  = { 24, 24, 24};
 	long kernel_dims[3]   = {  6,  6,  6};
 
@@ -43,14 +51,14 @@ int main_estvar(int argc, char* argv[argc])
 		OPT_VEC3('R', &calsize_dims, "", "()"),
 	};
 
-	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	int N = DIMS;
 	long kspace_dims[N];
 
-	complex float* kspace = load_cfl(argv[1], N, kspace_dims);
+	complex float* kspace = load_cfl(ksp_file, N, kspace_dims);
 
 	for (int idx = 0; idx < 3; idx++) {
 

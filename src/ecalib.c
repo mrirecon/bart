@@ -33,7 +33,6 @@
 
 
 
-static const char usage_str[] = "<kspace> <sensitivites> [<ev-maps>]";
 static const char help_str[] =
 		"Estimate coil sensitivities using ESPIRiT calibration.\n"
 		"Optionally outputs the eigenvalue maps.";
@@ -44,7 +43,18 @@ static const char help_str[] =
 
 int main_ecalib(int argc, char* argv[argc])
 {
-	long calsize[3] = { 24, 24, 24 }; 
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+	const char* emaps_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(false, &in_file, "kspace"),
+		ARG_OUTFILE(false, &out_file, "sensitivities"),
+		ARG_OUTFILE(true, &emaps_file, "ev-maps"),
+	};
+
+	long calsize[3] = { 24, 24, 24 };
 	int maps = 2;
 	bool one = false;
 	bool calcen = false;
@@ -78,7 +88,7 @@ int main_ecalib(int argc, char* argv[argc])
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 	};
 
-	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (-1. != conf.percentsv)
 		conf.threshold = -1.;
@@ -103,7 +113,7 @@ int main_ecalib(int argc, char* argv[argc])
 	int N = DIMS;
 	long ksp_dims[N];
 
-	complex float* in_data = load_cfl(argv[1], N, ksp_dims);
+	complex float* in_data = load_cfl(in_file, N, ksp_dims);
 
 	
 	// assert((kdims[0] < calsize_ro) && (kdims[1] < calsize_ro) && (kdims[2] < calsize_ro));
@@ -179,7 +189,7 @@ int main_ecalib(int argc, char* argv[argc])
 
 		calone(&conf, cov_dims, imgcov, K, svals, cal_dims, cal_data);
 
-		complex float* out = create_cfl(argv[2], 4, cov_dims);
+		complex float* out = create_cfl(out_file, 4, cov_dims);
 		md_copy(4, cov_dims, out, imgcov, CFL_SIZE);
 		unmap_cfl(4, cov_dims, out);
 
@@ -213,12 +223,7 @@ int main_ecalib(int argc, char* argv[argc])
 		map_dims[COIL_DIM] = 1;
 		map_dims[MAPS_DIM] = maps;
 
-		const char* emaps_file = NULL;
-
-		if (4 == argc)
-			emaps_file = argv[3];
-
-		complex float* out_data = create_cfl(argv[2], N, out_dims);
+		complex float* out_data = create_cfl(out_file, N, out_dims);
 		complex float* emaps = (emaps_file ? create_cfl : anon_cfl)(emaps_file, N, map_dims);
 
 		calib(&conf, out_dims, out_data, emaps, K, svals, cal_dims, cal_data); 

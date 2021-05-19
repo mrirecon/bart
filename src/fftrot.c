@@ -27,29 +27,39 @@
 
 
 
-static const char usage_str[] = "dim1 dim2 theta <input> <output>";
 static const char help_str[] = "Performs a rotation using Fourier transform (FFT) along selected dimensions.";
 
 
 
 int main_fftrot(int argc, char* argv[argc])
 {
-	const struct opt_s opts[] = {
+	int dim1 = -1;
+	int dim2 = -1;
+	float theta = 0.f;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
 
+	struct arg_s args[] = {
+
+		ARG_INT(false, &dim1, "dim1"),
+		ARG_INT(false, &dim2, "dim2"),
+		ARG_FLOAT(false, &theta, "theta"),
+		ARG_INFILE(false, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
 	};
 
-	cmdline(&argc, argv, 5, 5, usage_str, help_str, ARRAY_SIZE(opts), opts);
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	int N = DIMS;
 	long dims[N];
 
-	complex float* idata = load_cfl(argv[4], N, dims);
-	complex float* odata = create_cfl(argv[5], N, dims);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* odata = create_cfl(out_file, N, dims);
 
-	int dim1 = atoi(argv[1]);
-	int dim2 = atoi(argv[2]);
 
 	assert(dim1 != dim2);
 
@@ -59,8 +69,6 @@ int main_fftrot(int argc, char* argv[argc])
 		dim1 = dim2;
 		dim2 = tmp;
 	}
-
-	float theta = atof(argv[3]);
 
 	float alpha = -tanf(theta / 2.);
 	float beta = sinf(theta);

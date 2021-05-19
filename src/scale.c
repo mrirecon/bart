@@ -24,7 +24,7 @@
 #define DIMS 16
 #endif
 
-static const char help_str[] = "Scale array by {factor}. The scale factor can be a complex number.\n";
+static const char help_str[] = "Scale array by {factor}. The scale factor can be a complex number.";
 
 
 int main_scale(int argc, char* argv[argc])
@@ -42,7 +42,7 @@ int main_scale(int argc, char* argv[argc])
 	};
 
 	const struct opt_s opts[] = {};
-	cmdline_new(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
