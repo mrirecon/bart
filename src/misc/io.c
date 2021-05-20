@@ -110,9 +110,9 @@ static void io_register(const char* name, bool output, bool input, bool open)
 
 				if (open) {
 
-					if (output > iop->output)
+					if (output && !iop->output)
 						error("%s: Input opened for writing!\n", name);
-					if (input > iop->input)
+					if (input &&  !iop->input)
 						error("%s: Output opened for reading!\n", name);
 				}
 
