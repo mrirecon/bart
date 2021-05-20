@@ -269,10 +269,29 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 }
 
 
-static void print_interface(FILE* fp, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[static n ?: 1])
+static const char* arg_type_str(enum ARG_TYPE type);
+
+static void print_interface(FILE* fp, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[static n ?: 1], int m, struct arg_s args[m ?: 1])
 {
 	fprintf(fp, "name: %s, usage_str: \"%s\", help_str: \"%s\"\n", name, usage_str, help_str);
 
+	fprintf(fp, "positional arguments:\n");
+	for (int i = 0; i < m; i++) {
+
+		fprintf( fp, "{%s, \"%s\", %d, ", args[i].optional ? "true" : "false", arg_type_str(args[i].arg_type), args[i].nargs);
+
+		for (int j = 0; j < args[i].nargs; j++) {
+
+			if (1 != args[i].nargs)
+				fprintf( fp, "\n\t");
+			fprintf( fp, "{%s, %zd, \"%s\"}", opt_type_str(args[i].arg[j].opt_type), args[i].arg[j].sz, args[i].arg[j].argname);
+		}
+		if (1 != args[i].nargs)
+			fprintf( fp, "\n");
+		fprintf( fp, "}\n");
+	}
+
+	fprintf(fp, "options:\n");
 	for (int i = 0; i < n; i++) {
 
 		char cs[] =  "n/a";
@@ -318,7 +337,7 @@ static void add_argnames(int n, struct opt_s wopts[n ?: 1])
 }
 
 
-static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
+static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1], int m, struct arg_s args[m ?: 1])
 {
 	if ('h' == c) {
 
@@ -329,7 +348,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 
 	if (0 == c) {
 
-		print_interface(stdout, name, usage_str, help_str, n, opts);
+		print_interface(stdout, name, usage_str, help_str, n, opts, m, args);
 		exit(0);
 	}
 
@@ -353,7 +372,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 }
 
 
-static void options(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1])
+static void options(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1], int m, struct arg_s args[m ?: 1])
 {
 	int argc = *argcp;
 
@@ -463,7 +482,7 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 
 	out:	continue;
 #else
-		process_option(c, optarg, argv[0], usage_str, help_str, n, wopts);
+		process_option(c, optarg, argv[0], usage_str, help_str, n, wopts, m, args);
 #endif
 	}
 
@@ -650,11 +669,20 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 	UNUSED(c);
 	struct opt_subopt_s* ptr = _ptr;
 
-	process_option(optarg[0], optarg + 1, "", "", "", ptr->n, ptr->opts);
+	process_option(optarg[0], optarg + 1, "", "", "", ptr->n, ptr->opts, 0, NULL);
 	return false;
 }
 
 
+static const char* arg_type_str(enum ARG_TYPE type)
+{
+	switch (type)
+	{
+	case ARG: return "ARG";
+	case ARG_TUPLE: return "ARG_TUPLE";
+	}
+	error("Invalid ARG_TYPE!\n");
+}
 
 
 void *parse_arg_tuple(int n, ...)
@@ -690,8 +718,14 @@ static void check_args(int n, const struct arg_s args[n])
 
 	for (int i = 0; i < n; ++i) {
 
-		if (ARG_TUPLE == args[i].arg_type)
+		if (ARG_TUPLE == args[i].arg_type) {
+
 			num_tuples++;
+		} else if (ARG == args[i].arg_type) {
+
+			assert(1 == args[i].nargs);
+		}
+
 
 // 		if (args[i].optional && (ARG_TUPLE != args[i].arg_type))
 // 			end_required = true;
@@ -764,10 +798,10 @@ static int add_tuple_args(char* cur, int bufsize, const struct arg_s* arg, bool 
 
 
 
-void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* help_str, int m, const struct opt_s opts[m])
+void cmdline(int* argc, char* argv[], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n])
 {
 
-	check_args(n, args);
+	check_args(m, args);
 
 	long min_args = 0;
 	long max_args = 0;
@@ -778,7 +812,7 @@ void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* h
 	char* cur = usage_str;
 	char* end = usage_str + bufsize;
 
-	for (int i = 0; i < n; ++i) {
+	for (int i = 0; i < m; ++i) {
 
 		if (ARG_TUPLE == args[i].arg_type)
 			max_args = 1e9; // should be plenty for most use cases, but not overflow long
@@ -814,11 +848,11 @@ void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* h
 		}
 	}
 
-	options(argc, argv, min_args, max_args, usage_str, help_str, m, opts);
+	options(argc, argv, min_args, max_args, usage_str, help_str, n, opts, m, args);
 
 	int n_args = *argc - 1;
 
-	for (int i = 0, j = 1; (i < n) && (j < *argc); ++i) {
+	for (int i = 0, j = 1; (i < m) && (j < *argc); ++i) {
 
 		switch (args[i].arg_type) {
 		case ARG:
@@ -832,7 +866,7 @@ void cmdline(int* argc, char* argv[], int n, struct arg_s args[n], const char* h
 			break;
 		case ARG_TUPLE:
 		{ // consume as many arguments as possible, except for possible args following the tuple
-			int n_following = n - i - 1;
+			int n_following = m - i - 1;
 			int n_tuple_end = *argc - n_following;
 			int n_tuple_args = n_tuple_end - j;
 			if (0 != (n_tuple_args % args[i].nargs))
