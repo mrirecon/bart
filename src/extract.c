@@ -44,7 +44,7 @@ int main_extract(int argc, char* argv[argc])
 
 		ARG_TUPLE(true, &count, 3, OPT_LONG, sizeof(long), &dims, "dim", OPT_LONG, sizeof(long), &starts, "start", OPT_LONG, sizeof(long), &ends, "end"),
 		ARG_INFILE(true, &in_file, "input"),
-		ARG_INOUTFILE(true, &out_file, "output"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 
