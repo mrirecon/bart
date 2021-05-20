@@ -35,9 +35,9 @@ int main_estshift(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_UINT(false, &flags, "flags"),
-		ARG_INFILE(false, &arg1_file, "arg1"),
-		ARG_INFILE(false, &arg2_file, "arg2"),
+		ARG_UINT(true, &flags, "flags"),
+		ARG_INFILE(true, &arg1_file, "arg1"),
+		ARG_INFILE(true, &arg2_file, "arg2"),
 	};
 
 	const struct opt_s opts[] = {};

@@ -48,12 +48,12 @@ int main_ecaltwo(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_LONG(false, &x, "x"),
-		ARG_LONG(false, &y, "y"),
-		ARG_LONG(false, &z, "z"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "sensitivities"),
-		ARG_OUTFILE(true, &emaps_file, "ev-maps"),
+		ARG_LONG(true, &x, "x"),
+		ARG_LONG(true, &y, "y"),
+		ARG_LONG(true, &z, "z"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "sensitivities"),
+		ARG_OUTFILE(false, &emaps_file, "ev-maps"),
 	};
 
 	long maps = 2; // channels;

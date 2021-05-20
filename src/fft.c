@@ -37,9 +37,9 @@ int main_fft(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_ULONG(false, &flags, "bitmask"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_INFILE(false, &out_file, "output"),
+		ARG_ULONG(true, &flags, "bitmask"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_INFILE(true, &out_file, "output"),
 	};
 
 	bool unitary = false;

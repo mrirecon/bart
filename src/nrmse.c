@@ -41,8 +41,8 @@ int main_nrmse(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &ref_file, "reference"),
-		ARG_INFILE(false, &in_file, "input"),
+		ARG_INFILE(true, &ref_file, "reference"),
+		ARG_INFILE(true, &in_file, "input"),
 	};
 
 	float test = -1.;

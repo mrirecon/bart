@@ -33,8 +33,8 @@ int main_pattern(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_OUTFILE(false, &pat_file, "pattern"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_OUTFILE(true, &pat_file, "pattern"),
 	};
 
 	unsigned int flags = COIL_FLAG;

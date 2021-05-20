@@ -165,11 +165,11 @@ int main_itsense(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_FLOAT(false, &alpha, "alpha"),
-		ARG_INFILE(false, &sens_file, "sensitivities"),
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_INFILE(false, &pat_file, "pattern"),
-		ARG_OUTFILE(false, &im_file, "output"),
+		ARG_FLOAT(true, &alpha, "alpha"),
+		ARG_INFILE(true, &sens_file, "sensitivities"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &pat_file, "pattern"),
+		ARG_OUTFILE(true, &im_file, "output"),
 	};
 	const struct opt_s opts[] = {};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

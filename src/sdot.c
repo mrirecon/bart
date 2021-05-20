@@ -32,8 +32,8 @@ int main_sdot(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &in1_file, "input1"),
-		ARG_INFILE(false, &in2_file, "input2"),
+		ARG_INFILE(true, &in1_file, "input1"),
+		ARG_INFILE(true, &in2_file, "input2"),
 	};
 	const struct opt_s opts[] = {};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

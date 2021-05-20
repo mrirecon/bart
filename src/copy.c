@@ -40,9 +40,9 @@ int main_copy(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(true, &count, 2, OPT_LONG, sizeof(long), &dims, "dim", OPT_LONG, sizeof(long), &poss, "pos"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_INOUTFILE(false, &out_file, "output"),
+		ARG_TUPLE(false, &count, 2, OPT_LONG, sizeof(long), &dims, "dim", OPT_LONG, sizeof(long), &poss, "pos"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_INOUTFILE(true, &out_file, "output"),
 	};
 
 

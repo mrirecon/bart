@@ -38,8 +38,8 @@ int main_pol2mask(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &poly_file, "poly"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INFILE(true, &poly_file, "poly"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	int X = 100;

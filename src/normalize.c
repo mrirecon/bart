@@ -42,9 +42,9 @@ int main_normalize(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INT(false, &flags, "flags"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INT(true, &flags, "flags"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	bool l1 = false;

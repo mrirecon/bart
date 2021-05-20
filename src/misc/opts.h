@@ -113,7 +113,7 @@ struct arg_single_s {
 
 struct arg_s {
 
-	bool optional;
+	bool required;
 	enum ARG_TYPE arg_type;
 	long* count;
 	int nargs;
@@ -125,24 +125,24 @@ extern void *parse_arg_tuple(int n, ...);
 
 #define ARG_SINGLE(type, T, ptr, argname)			&(struct arg_single_s){ (type), sizeof(T), (ptr), (argname) }
 
-#define ARG_CHECKED(optional, type, T, ptr, argname)		{ optional, ARG, NULL, 1, ARG_SINGLE(type, T, TYPE_CHECK(T*, ptr), argname) }
+#define ARG_CHECKED(required, type, T, ptr, argname)		{ required, ARG, NULL, 1, ARG_SINGLE(type, T, TYPE_CHECK(T*, ptr), argname) }
 
-#define ARG_UINT(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_UINT,  unsigned int, ptr, argname)
-#define ARG_INT(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_INT,  int, ptr, argname)
-#define ARG_ULONG(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_ULONG, unsigned long, ptr, argname)
-#define ARG_LONG(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_LONG,  long, ptr, argname)
-#define ARG_CFL(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_CFL,  _Complex float, ptr, argname)
-#define ARG_INFILE(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_INFILE, const char*, ptr, argname)
-#define ARG_OUTFILE(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_OUTFILE,  const char*, ptr, argname)
-#define ARG_INOUTFILE(optional, ptr, argname) 		ARG_CHECKED(optional, OPT_INOUTFILE,  const char*, ptr, argname)
-#define ARG_STRING(optional, ptr, argname)		ARG_CHECKED(optional, OPT_STRING,  const char*, ptr, argname)
-#define ARG_FLOAT(optional, ptr, argname)		ARG_CHECKED(optional, OPT_FLOAT,  float, ptr, argname)
-#define ARG_VEC2(optional, ptr, argname)		ARG_CHECKED(optional, OPT_VEC2,  opt_vec2_t, ptr, argname)
-#define ARG_FLVEC2(optional, ptr, argname)		ARG_CHECKED(optional, OPT_FLOAT_VEC2,  opt_fvec2_t, ptr, argname)
-#define ARG_VEC3(optional, ptr, argname)		ARG_CHECKED(optional, OPT_VEC3,  opt_vec3_t, ptr, argname)
-#define ARG_FLVEC3(optional, ptr, argname)		ARG_CHECKED(optional, OPT_FLOAT_VEC3,  opt_fvec3_t, ptr, argname)
+#define ARG_UINT(required, ptr, argname) 		ARG_CHECKED(required, OPT_UINT,  unsigned int, ptr, argname)
+#define ARG_INT(required, ptr, argname) 		ARG_CHECKED(required, OPT_INT,  int, ptr, argname)
+#define ARG_ULONG(required, ptr, argname) 		ARG_CHECKED(required, OPT_ULONG, unsigned long, ptr, argname)
+#define ARG_LONG(required, ptr, argname) 		ARG_CHECKED(required, OPT_LONG,  long, ptr, argname)
+#define ARG_CFL(required, ptr, argname) 		ARG_CHECKED(required, OPT_CFL,  _Complex float, ptr, argname)
+#define ARG_INFILE(required, ptr, argname) 		ARG_CHECKED(required, OPT_INFILE, const char*, ptr, argname)
+#define ARG_OUTFILE(required, ptr, argname) 		ARG_CHECKED(required, OPT_OUTFILE,  const char*, ptr, argname)
+#define ARG_INOUTFILE(required, ptr, argname) 		ARG_CHECKED(required, OPT_INOUTFILE,  const char*, ptr, argname)
+#define ARG_STRING(required, ptr, argname)		ARG_CHECKED(required, OPT_STRING,  const char*, ptr, argname)
+#define ARG_FLOAT(required, ptr, argname)		ARG_CHECKED(required, OPT_FLOAT,  float, ptr, argname)
+#define ARG_VEC2(required, ptr, argname)		ARG_CHECKED(required, OPT_VEC2,  opt_vec2_t, ptr, argname)
+#define ARG_FLVEC2(required, ptr, argname)		ARG_CHECKED(required, OPT_FLOAT_VEC2,  opt_fvec2_t, ptr, argname)
+#define ARG_VEC3(required, ptr, argname)		ARG_CHECKED(required, OPT_VEC3,  opt_vec3_t, ptr, argname)
+#define ARG_FLVEC3(required, ptr, argname)		ARG_CHECKED(required, OPT_FLOAT_VEC3,  opt_fvec3_t, ptr, argname)
 
-#define ARG_TUPLE(optional, count, n, ...)				{ (optional), ARG_TUPLE, (count), (n), parse_arg_tuple( (n), __VA_ARGS__) }
+#define ARG_TUPLE(required, count, n, ...)				{ (required), ARG_TUPLE, (count), (n), parse_arg_tuple( (n), __VA_ARGS__) }
 
 extern void cmdline(int* argc, char* argv[], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
 

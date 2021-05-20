@@ -35,10 +35,10 @@ int main_repmat(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INT(false, &dim, "dimension"),
-		ARG_INT(false, &rep, "repetitions"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INT(true, &dim, "dimension"),
+		ARG_INT(true, &rep, "repetitions"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 	const struct opt_s opts[] = {};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

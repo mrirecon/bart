@@ -39,9 +39,9 @@ int main_ccapply(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_INFILE(false, &cc_file, "cc_matrix"),
-		ARG_OUTFILE(false, &out_file, "proj_kspace"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &cc_file, "cc_matrix"),
+		ARG_OUTFILE(true, &out_file, "proj_kspace"),
 	};
 
 	bool forward = true;

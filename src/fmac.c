@@ -36,9 +36,9 @@ int main_fmac(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &in1_file, "input1"),
-		ARG_INFILE(true, &in2_file, "input2"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INFILE(true, &in1_file, "input1"),
+		ARG_INFILE(false, &in2_file, "input2"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	bool clear = true;

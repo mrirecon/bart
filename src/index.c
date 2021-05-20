@@ -34,9 +34,9 @@ int main_index(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INT(false, &N, "dim"),
-		ARG_INT(false, &s, "size"),
-		ARG_OUTFILE(false, &out_file, "name"),
+		ARG_INT(true, &N, "dim"),
+		ARG_INT(true, &s, "size"),
+		ARG_OUTFILE(true, &out_file, "name"),
 	};
 
 	const struct opt_s opts[] = {};

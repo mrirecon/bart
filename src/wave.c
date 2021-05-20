@@ -164,10 +164,10 @@ int main_wave(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &maps_file, "maps"),
-		ARG_INFILE(false, &wave_file, "wave"),
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INFILE(true, &maps_file, "maps"),
+		ARG_INFILE(true, &wave_file, "wave"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	float lambda    = 1E-5;

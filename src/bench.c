@@ -655,7 +655,7 @@ int main_bench(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_OUTFILE(true, &out_file, "output"),
+		ARG_OUTFILE(false, &out_file, "output"),
 	};
 
 	bool threads = false;

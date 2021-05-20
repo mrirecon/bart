@@ -33,7 +33,7 @@ int main_mandelbrot(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	unsigned int size = 512;

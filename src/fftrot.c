@@ -41,11 +41,11 @@ int main_fftrot(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INT(false, &dim1, "dim1"),
-		ARG_INT(false, &dim2, "dim2"),
-		ARG_FLOAT(false, &theta, "theta"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INT(true, &dim1, "dim1"),
+		ARG_INT(true, &dim2, "dim2"),
+		ARG_FLOAT(true, &theta, "theta"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 

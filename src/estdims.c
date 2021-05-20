@@ -35,7 +35,7 @@ int main_estdims(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &traj_file, "traj"),
+		ARG_INFILE(true, &traj_file, "traj"),
 	};
 
 	const struct opt_s opts[] = {};

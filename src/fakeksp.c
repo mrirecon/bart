@@ -42,10 +42,10 @@ int main_fakeksp(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &im_file, "image"),
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_INFILE(false, &sens_file, "sens"),
-		ARG_INFILE(false, &out_file, "output"),
+		ARG_INFILE(true, &im_file, "image"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &sens_file, "sens"),
+		ARG_INFILE(true, &out_file, "output"),
 	};
 
 	bool rplksp = false;

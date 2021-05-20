@@ -50,9 +50,9 @@ int main_mobafit(int argc, char* argv[])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &TE_file, "TE"),
-		ARG_INFILE(false, &echo_file, "echo images"),
-		ARG_OUTFILE(true, &param_file, "paramters"),
+		ARG_INFILE(true, &TE_file, "TE"),
+		ARG_INFILE(true, &echo_file, "echo images"),
+		ARG_OUTFILE(false, &param_file, "paramters"),
 	};
 
 

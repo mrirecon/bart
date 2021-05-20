@@ -48,9 +48,9 @@ int main_join(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INT(false, &dim, "dimension"),
-		ARG_TUPLE(false, &count, 1, OPT_INFILE, sizeof(char*), &in_files, "input"),
-		ARG_INOUTFILE(false, &out_file, "output"),
+		ARG_INT(true, &dim, "dimension"),
+		ARG_TUPLE(true, &count, 1, OPT_INFILE, sizeof(char*), &in_files, "input"),
+		ARG_INOUTFILE(true, &out_file, "output"),
 	};
 
 

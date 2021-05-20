@@ -117,10 +117,10 @@ int main_homodyne(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INT(false, &pfdim, "dim"),
-		ARG_FLOAT(false, &frac, "fraction"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INT(true, &pfdim, "dim"),
+		ARG_FLOAT(true, &frac, "fraction"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	bool clear = false;

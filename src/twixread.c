@@ -238,8 +238,8 @@ int main_twixread(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &dat_file, "dat file"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INFILE(true, &dat_file, "dat file"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	long adcs = 0;

@@ -47,9 +47,9 @@ int main_nufft(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &traj_file, "traj"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INFILE(true, &traj_file, "traj"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	bool adjoint = false;

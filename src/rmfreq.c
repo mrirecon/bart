@@ -40,9 +40,9 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &traj_file, "traj"),
-		ARG_INFILE(false, &k_file, "k"),
-		ARG_OUTFILE(false, &kcor_file, "k_cor"),
+		ARG_INFILE(true, &traj_file, "traj"),
+		ARG_INFILE(true, &k_file, "k"),
+		ARG_OUTFILE(true, &kcor_file, "k_cor"),
 	};
 
 	unsigned int n_harmonics = 5;

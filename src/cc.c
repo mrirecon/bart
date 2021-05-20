@@ -38,8 +38,8 @@ int main_cc(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &in_file, "kspace"),
-		ARG_OUTFILE(false, &out_file, "coeff|proj_kspace"),
+		ARG_INFILE(true, &in_file, "kspace"),
+		ARG_OUTFILE(true, &out_file, "coeff|proj_kspace"),
 	};
 
 	long calsize[3] = { 24, 24, 24 };

@@ -37,10 +37,10 @@ int main_poly(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INT(false, &L, "L"),
-		ARG_INT(false, &N, "N"),
-		ARG_TUPLE(false, &count, 1, OPT_FLOAT, sizeof(*as), &as, "a_"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INT(true, &L, "L"),
+		ARG_INT(true, &N, "N"),
+		ARG_TUPLE(true, &count, 1, OPT_FLOAT, sizeof(*as), &as, "a_"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 	const struct opt_s opts[] = {};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

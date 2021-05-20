@@ -36,9 +36,9 @@ int main_zeros(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_LONG(false, &N, "dims"),
-		ARG_TUPLE(false, &count, 1, OPT_LONG, sizeof(long), &dims, "dim"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_LONG(true, &N, "dims"),
+		ARG_TUPLE(true, &count, 1, OPT_LONG, sizeof(long), &dims, "dim"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	const struct opt_s opts[] = {};

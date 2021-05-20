@@ -35,10 +35,10 @@ int main_conv(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_UINT(false, &flags, "bitmask"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_INFILE(false, &kern_file, "kernel"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_UINT(true, &flags, "bitmask"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_INFILE(true, &kern_file, "kernel"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 	const struct opt_s opts[] = {};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

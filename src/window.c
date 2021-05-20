@@ -33,9 +33,9 @@ int main_window(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_LONG(false, &flags, "flags"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_LONG(true, &flags, "flags"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	bool hamming = true;

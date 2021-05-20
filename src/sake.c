@@ -47,8 +47,8 @@ int main_sake(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	float alpha = 0.22;

@@ -44,10 +44,10 @@ int main_wavelet(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_UINT(false, &flags, "bitmask"),
-		ARG_TUPLE(true, &count, 1, OPT_LONG, sizeof(*adims), &adims, "dim"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_UINT(true, &flags, "bitmask"),
+		ARG_TUPLE(false, &count, 1, OPT_LONG, sizeof(*adims), &adims, "dim"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	bool adj = false;

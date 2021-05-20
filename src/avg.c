@@ -32,9 +32,9 @@ int main_avg(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_UINT(false, &flags, "bitmask"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_UINT(true, &flags, "bitmask"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 

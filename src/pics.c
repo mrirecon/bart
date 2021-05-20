@@ -86,9 +86,9 @@ int main_pics(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_INFILE(false, &sens_file, "sensitivities"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &sens_file, "sensitivities"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	// Initialize default parameters

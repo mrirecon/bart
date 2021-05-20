@@ -49,9 +49,9 @@ int main_ecalib(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &in_file, "kspace"),
-		ARG_OUTFILE(false, &out_file, "sensitivities"),
-		ARG_OUTFILE(true, &emaps_file, "ev-maps"),
+		ARG_INFILE(true, &in_file, "kspace"),
+		ARG_OUTFILE(true, &out_file, "sensitivities"),
+		ARG_OUTFILE(false, &emaps_file, "ev-maps"),
 	};
 
 	long calsize[3] = { 24, 24, 24 };

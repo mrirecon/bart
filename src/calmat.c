@@ -35,8 +35,8 @@ int main_calmat(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &in_file, "kspace"),
-		ARG_OUTFILE(false, &out_file, "calibration_matrix"),
+		ARG_INFILE(true, &in_file, "kspace"),
+		ARG_OUTFILE(true, &out_file, "calibration_matrix"),
 	};
 
 

@@ -92,10 +92,10 @@ int main_moba(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_INFILE(false, &TI_file, "TI/TE"),
-		ARG_OUTFILE(false, &out_file, "output"),
-		ARG_OUTFILE(true, &sens_file, "sensitivities"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &TI_file, "TI/TE"),
+		ARG_OUTFILE(true, &out_file, "output"),
+		ARG_OUTFILE(false, &sens_file, "sensitivities"),
 	};
 
 	float restrict_fov = -1.;

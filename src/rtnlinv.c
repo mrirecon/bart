@@ -78,9 +78,9 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &ksp_file, "kspace"),
-		ARG_OUTFILE(false, &img_file, "output"),
-		ARG_OUTFILE(true, &sens_file, "sensitivities"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_OUTFILE(true, &img_file, "output"),
+		ARG_OUTFILE(false, &sens_file, "sensitivities"),
 	};
 
 	struct nufft_conf_s nufft_conf = nufft_conf_defaults;

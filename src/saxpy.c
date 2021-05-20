@@ -35,10 +35,10 @@ int main_saxpy(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_CFL(false, &scale, "scale"),
-		ARG_INFILE(false, &in1_file, "input1"),
-		ARG_INFILE(false, &in2_file, "input2"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_CFL(true, &scale, "scale"),
+		ARG_INFILE(true, &in1_file, "input1"),
+		ARG_INFILE(true, &in2_file, "input2"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 	const struct opt_s opts[] = {};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

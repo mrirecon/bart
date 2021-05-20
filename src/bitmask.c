@@ -28,7 +28,7 @@ int main_bitmask(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(false, &count, 1, OPT_LONG, sizeof(*dims), &dims, "dim"),
+		ARG_TUPLE(true, &count, 1, OPT_LONG, sizeof(*dims), &dims, "dim"),
 	};
 
 	bool inverse = false;

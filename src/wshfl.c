@@ -891,12 +891,12 @@ int main_wshfl(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &maps_file, "maps"),
-		ARG_INFILE(false, &wave_file, "wave"),
-		ARG_INFILE(false, &phi_file, "phi"),
-		ARG_INFILE(false, &reorder_file, "reorder"),
-		ARG_INFILE(false, &table_file, "table"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_INFILE(true, &maps_file, "maps"),
+		ARG_INFILE(true, &wave_file, "wave"),
+		ARG_INFILE(true, &phi_file, "phi"),
+		ARG_INFILE(true, &reorder_file, "reorder"),
+		ARG_INFILE(true, &table_file, "table"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	struct opt_reg_s ropts;

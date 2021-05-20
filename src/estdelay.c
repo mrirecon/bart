@@ -56,9 +56,9 @@ int main_estdelay(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &traj_file, "trajectory"),
-		ARG_INFILE(false, &data_file, "data"),
-		ARG_OUTFILE(true, &qf_file, "qf"),
+		ARG_INFILE(true, &traj_file, "trajectory"),
+		ARG_INFILE(true, &data_file, "data"),
+		ARG_OUTFILE(false, &qf_file, "qf"),
 	};
 
 	bool do_ring = false;

@@ -36,10 +36,10 @@ int main_reshape(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_LONG(false, &flags, "flags"),
-		ARG_TUPLE(false, &count, 1, OPT_LONG, sizeof(*dims), &dims, "dim"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_LONG(true, &flags, "flags"),
+		ARG_TUPLE(true, &count, 1, OPT_LONG, sizeof(*dims), &dims, "dim"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 	const struct opt_s opts[] = {};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

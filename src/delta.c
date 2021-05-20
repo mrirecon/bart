@@ -36,10 +36,10 @@ int main_delta(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INT(false, &N, "dims"),
-		ARG_UINT(false, &flags, "flags"),
-		ARG_LONG(false, &len, "size"),
-		ARG_OUTFILE(false, &out_file, "out"),
+		ARG_INT(true, &N, "dims"),
+		ARG_UINT(true, &flags, "flags"),
+		ARG_LONG(true, &len, "size"),
+		ARG_OUTFILE(true, &out_file, "out"),
 	};
 
 	const struct opt_s opts[] = {};

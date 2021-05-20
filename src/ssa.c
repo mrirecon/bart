@@ -37,10 +37,10 @@ int main_ssa(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &src_file, "src"),
-		ARG_OUTFILE(false, &EOF_file, "EOF"),
-		ARG_OUTFILE(true, &S_file, "S"),
-		ARG_OUTFILE(true, &backproj_file, "backprojection"),
+		ARG_INFILE(true, &src_file, "src"),
+		ARG_OUTFILE(true, &EOF_file, "EOF"),
+		ARG_OUTFILE(false, &S_file, "S"),
+		ARG_OUTFILE(false, &backproj_file, "backprojection"),
 	};
 
 	int window = -1;

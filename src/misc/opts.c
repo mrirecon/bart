@@ -278,7 +278,7 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 	fprintf(fp, "positional arguments:\n");
 	for (int i = 0; i < m; i++) {
 
-		fprintf( fp, "{%s, \"%s\", %d, ", args[i].optional ? "true" : "false", arg_type_str(args[i].arg_type), args[i].nargs);
+		fprintf( fp, "{%s, \"%s\", %d, ", args[i].required ? "true" : "false", arg_type_str(args[i].arg_type), args[i].nargs);
 
 		for (int j = 0; j < args[i].nargs; j++) {
 
@@ -738,13 +738,13 @@ static void check_args(int n, const struct arg_s args[n])
 		error("Cannot have more than one tuple argument!\n");
 }
 
-static int add_arg(char* out, int bufsize, const char* argname, bool optional, bool file)
+static int add_arg(char* out, int bufsize, const char* argname, bool required, bool file)
 {
 	const char* fstring;
 	if (file)
-		fstring = optional ? "[<%s>]" : "<%s>";
+		fstring = required ? "<%s>" : "[<%s>]";
 	else
-		fstring = optional ? "[%s]" : "%s";
+		fstring = required ? "%s" : "[%s]";
 
 	return snprintf(out, bufsize, fstring, argname);
 }
@@ -754,12 +754,12 @@ static int add_tuple_args(char* cur, int bufsize, const struct arg_s* arg, bool 
 {
 	const char * start = cur;
 	char* end = cur + bufsize;
-	if (arg->optional)
+	if (!arg->required)
 		cur += snprintf(cur, end - cur, "[");
 
 	for (int k = 0; k < arg->nargs; ++k ) {
 
-		cur += add_arg(cur, end - cur, arg->arg[k].argname, false, file);
+		cur += add_arg(cur, end - cur, arg->arg[k].argname, true, file);
 
 		if (file)
 			cur += snprintf(cur, end - cur, "%c", '\b');
@@ -776,7 +776,7 @@ static int add_tuple_args(char* cur, int bufsize, const struct arg_s* arg, bool 
 
 	for (int k = 0; k < arg->nargs; ++k ) {
 
-		cur += add_arg(cur, end - cur, arg->arg[k].argname, false, file);
+		cur += add_arg(cur, end - cur, arg->arg[k].argname, true, file);
 
 		if (file)
 			cur += snprintf(cur, end - cur, "%c", '\b');
@@ -789,7 +789,7 @@ static int add_tuple_args(char* cur, int bufsize, const struct arg_s* arg, bool 
 		cur += snprintf(cur, end - cur, " ");
 	}
 
-	if (arg->optional)
+	if (!arg->required)
 		cur += snprintf(cur, end - cur, "\b] ");
 
 	return (cur - start);
@@ -819,7 +819,7 @@ void cmdline(int* argc, char* argv[], int m, struct arg_s args[m], const char* h
 		else
 			max_args += args[i].nargs;
 
-		if (!args[i].optional)
+		if (!args[i].required)
 			min_args += args[i].nargs;
 
 		bool file = false;
@@ -839,7 +839,7 @@ void cmdline(int* argc, char* argv[], int m, struct arg_s args[m], const char* h
 
 		switch (args[i].arg_type) {
 		case ARG:
-			cur += add_arg(cur, end - cur, args[i].arg->argname, args[i].optional, file);
+			cur += add_arg(cur, end - cur, args[i].arg->argname, args[i].required, file);
 			cur += snprintf(cur, end - cur, " ");
 			break;
 		case ARG_TUPLE:
@@ -858,7 +858,7 @@ void cmdline(int* argc, char* argv[], int m, struct arg_s args[m], const char* h
 		case ARG:
 			// skip optional arguments if we did not get the maximum number of args. This is just for fmac, which
 			// has an optional arg in the middle
-			if (args[i].optional && (max_args != n_args))
+			if (!args[i].required && (max_args != n_args))
 				continue;
 
 			if (opt_dispatch(args[i].arg->opt_type, args[i].arg->ptr, NULL, '\0', argv[j++]))

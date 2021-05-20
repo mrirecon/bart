@@ -47,9 +47,9 @@ int main_slice(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(false, &count, 2, OPT_LONG, sizeof(long), &dims, "dim", OPT_LONG, sizeof(long), &poss, "pos"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_TUPLE(true, &count, 2, OPT_LONG, sizeof(long), &dims, "dim", OPT_LONG, sizeof(long), &poss, "pos"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	const struct opt_s opts[] = {};

@@ -35,9 +35,9 @@ int main_roistat(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &roi_file, "roi"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(true, &out_file, "output"),
+		ARG_INFILE(true, &roi_file, "roi"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
 	};
 
 	bool bessel = false;

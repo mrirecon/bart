@@ -38,10 +38,10 @@ int main_epg(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_OUTFILE(false, &signal_file, "signal intensity"),
-		ARG_OUTFILE(true, &states_file, "configuration states"),
-		ARG_OUTFILE(true, &sigder_file, "(rel.) signal derivatives"),
-		ARG_OUTFILE(true, &statesder_file, "configuration derivatives"),
+		ARG_OUTFILE(true, &signal_file, "signal intensity"),
+		ARG_OUTFILE(false, &states_file, "configuration states"),
+		ARG_OUTFILE(false, &sigder_file, "(rel.) signal derivatives"),
+		ARG_OUTFILE(false, &statesder_file, "configuration derivatives"),
 	};
 
 	float T1 =  0.800;

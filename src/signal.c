@@ -33,7 +33,7 @@ int main_signal(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_OUTFILE(false, &out_file, "basis-functions"),
+		ARG_OUTFILE(true, &out_file, "basis-functions"),
 	};
 
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };

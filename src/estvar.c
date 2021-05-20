@@ -35,7 +35,7 @@ int main_estvar(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &ksp_file, "kspace"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
 	};
 
 

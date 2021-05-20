@@ -149,8 +149,8 @@ int main_toimg(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_prefix, "output prefix"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_prefix, "output prefix"),
 	};
 
 	float gamma = 1.;

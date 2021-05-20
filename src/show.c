@@ -74,7 +74,7 @@ int main_show(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &in_file, "input"),
+		ARG_INFILE(true, &in_file, "input"),
 	};
 
 

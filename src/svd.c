@@ -32,10 +32,10 @@ int main_svd(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &U_file, "U"),
-		ARG_OUTFILE(false, &S_file, "S"),
-		ARG_OUTFILE(false, &VH_file, "VH"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &U_file, "U"),
+		ARG_OUTFILE(true, &S_file, "S"),
+		ARG_OUTFILE(true, &VH_file, "VH"),
 	};
 
 	bool econ = false;

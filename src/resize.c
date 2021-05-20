@@ -43,9 +43,9 @@ int main_resize(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(false, &count, 2, OPT_UINT, sizeof(*dims), &dims, "dim", OPT_UINT, sizeof(*sizes), &sizes, "size"),
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_TUPLE(true, &count, 2, OPT_UINT, sizeof(*dims), &dims, "dim", OPT_UINT, sizeof(*sizes), &sizes, "size"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	bool center = false;

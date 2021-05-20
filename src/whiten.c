@@ -85,11 +85,11 @@ int main_whiten(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &in_file, "input"),
-		ARG_INFILE(false, &ndata_file, "ndata"),
-		ARG_OUTFILE(false, &out_file, "output"),
-		ARG_OUTFILE(true, &optmat_ofile, "optmat_out"),
-		ARG_OUTFILE(true, &covar_ofile, "covar_out"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_INFILE(true, &ndata_file, "ndata"),
+		ARG_OUTFILE(true, &out_file, "output"),
+		ARG_OUTFILE(false, &optmat_ofile, "optmat_out"),
+		ARG_OUTFILE(false, &covar_ofile, "covar_out"),
 	};
 
 

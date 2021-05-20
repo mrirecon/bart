@@ -139,9 +139,9 @@ int main_bin(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &label_file, "label"),
-		ARG_INFILE(false, &src_file, "src"),
-		ARG_OUTFILE(false, &dst_file, "dst"),
+		ARG_INFILE(true, &label_file, "label"),
+		ARG_INFILE(true, &src_file, "src"),
+		ARG_OUTFILE(true, &dst_file, "dst"),
 	};
 
 	unsigned int n_resp = 0;

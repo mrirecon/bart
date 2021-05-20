@@ -31,8 +31,8 @@ int main_ismrmrd(int argc, char* argv[])
 
 	struct arg_s args[] = {
 
-		ARG_STRING(false, &ismrm_file, "input"),
-		ARG_OUTFILE(false, &out_file, "output"),
+		ARG_STRING(true, &ismrm_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 	const struct opt_s opts[] = {};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
