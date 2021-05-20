@@ -140,7 +140,7 @@ int main_join(int argc, char* argv[argc])
 
 		// Here, we need to trick the IO subsystem into absolutely NOT
 		// unlinking our input, as the same file is also an output here.
-		io_unregister(out_file);
+		io_close(out_file);
 	}
 
 	complex float* out_data = create_cfl(out_file, N, out_dims);

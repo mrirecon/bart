@@ -39,6 +39,7 @@ opt_conv_f opt_cfl;
 opt_conv_f opt_string;
 opt_conv_f opt_infile;
 opt_conv_f opt_outfile;
+opt_conv_f opt_inoutfile;
 opt_conv_f opt_vec2;
 opt_conv_f opt_float_vec2;
 opt_conv_f opt_vec3;
@@ -163,7 +164,7 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 	case OPT_OUTFILE:
 		return opt_outfile(ptr, c, optarg);
 	case OPT_INOUTFILE:
-		return opt_string(ptr, c, optarg); // FIXME: use something more proper here
+		return opt_inoutfile(ptr, c, optarg); // FIXME: use something more proper here
 	case OPT_SELECT:
 		return opt_select(ptr, c, optarg);
 	case OPT_SUBOPT:
@@ -571,23 +572,31 @@ bool opt_string(void* ptr, char c, const char* optarg)
 	return false;
 }
 
-static bool opt_file(void* ptr, char c, const char* optarg, bool out)
+static bool opt_file(void* ptr, char c, const char* optarg, bool out, bool in)
 {
 	UNUSED(c);
 	*(char**)ptr = strdup(optarg);
-	(out ? io_reserve_output : io_reserve_input)(*(char**)ptr);
+	if (out)
+		io_reserve_output(*(char**)ptr);
+	if (in)
+		io_reserve_input(*(char**)ptr);
 	assert(NULL != ptr);
 	return false;
 }
 
 bool opt_infile(void* ptr, char c, const char* optarg)
 {
-	return opt_file(ptr, c, optarg, false);
+	return opt_file(ptr, c, optarg, false, true);
 }
 
 bool opt_outfile(void* ptr, char c, const char* optarg)
 {
-	return opt_file(ptr, c, optarg, true);
+	return opt_file(ptr, c, optarg, true, false);
+}
+
+bool opt_inoutfile(void* ptr, char c, const char* optarg)
+{
+	return opt_file(ptr, c, optarg, true, true);
 }
 
 bool opt_float_vec2(void* ptr, char c, const char* optarg)

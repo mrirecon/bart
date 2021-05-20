@@ -27,6 +27,7 @@
 
 #include "num/multind.h"
 
+#include "misc/io.h"
 #include "misc/mmio.h"
 #include "misc/cppmap.h"
 #include "misc/misc.h"
@@ -48,6 +49,7 @@ double timestamp(void)
 
 void dump_cfl(const char* name, int D, const long dimensions[D], const complex float* src)
 {
+	io_reserve_output(name);
 	complex float* out = create_cfl(name, D, dimensions);
 
 	md_copy(D, dimensions, out, src, sizeof(complex float));
