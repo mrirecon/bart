@@ -26,7 +26,7 @@
 #endif
 
 
-static const char help_str[] = "Copy phase from <input> to <output>.\n";
+static const char help_str[] = "Copy phase from <input> to <output>.";
 
 
 int main_cpyphs(int argc, char* argv[argc])

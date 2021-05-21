@@ -23,7 +23,7 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char help_str[] = "Reshape selected dimensions.\n";
+static const char help_str[] = "Reshape selected dimensions.";
 
 
 int main_reshape(int argc, char* argv[argc])

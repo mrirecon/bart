@@ -26,7 +26,6 @@
 
 
 
-static const char usage_str[] = "<kspace> <cc_matrix> <proj_kspace>";
 static const char help_str[] = "Apply coil compression forward/inverse operation.";
 
 

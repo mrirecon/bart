@@ -27,7 +27,7 @@
 
 
 
-static const char help_str[] = "Calculates root of sum of squares along selected dimensions.\n";
+static const char help_str[] = "Calculates root of sum of squares along selected dimensions.";
 
 
 int main_rss(int argc, char* argv[argc])

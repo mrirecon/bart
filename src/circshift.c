@@ -25,7 +25,7 @@
 #define DIMS 16
 #endif
 
-static const char help_str[] = "Perform circular shift along {dim} by {shift} elements.\n";
+static const char help_str[] = "Perform circular shift along {dim} by {shift} elements.";
 
 
 

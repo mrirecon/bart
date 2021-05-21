@@ -24,8 +24,7 @@
 #endif
 
 
-static const char usage_str[] = "<input> <output>";
-static const char help_str[] = "Flatten array to one dimension.\n";
+static const char help_str[] = "Flatten array to one dimension.";
 
 
 int main_flatten(int argc, char* argv[argc])

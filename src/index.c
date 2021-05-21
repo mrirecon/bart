@@ -22,7 +22,7 @@
 #include "misc/opts.h"
 
 
-static const char help_str[] = "Create an array counting from 0 to {size-1} in dimensions {dim}.\n";
+static const char help_str[] = "Create an array counting from 0 to {size-1} in dimensions {dim}.";
 
 
 

@@ -22,7 +22,7 @@
 #include "misc/opts.h"
 
 
-static const char help_str[] = "Create an array filled with ones with {dims} dimensions of size {dim1} to {dimn}.\n";
+static const char help_str[] = "Create an array filled with ones with {dims} dimensions of size {dim1} to {dimn}.";
 
 
 

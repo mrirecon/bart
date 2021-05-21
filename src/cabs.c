@@ -22,7 +22,7 @@
 #define DIMS 16
 #endif
 
-static const char help_str[] = "Absolute value of array (|<input>|).\n";
+static const char help_str[] = "Absolute value of array (|<input>|).";
 
 
 int main_cabs(int argc, char* argv[argc])

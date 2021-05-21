@@ -127,7 +127,7 @@ static int find_dim(int N, long dims[N])
 
 
 
-static const char help_str[] = "Binning\n";
+static const char help_str[] = "Binning";
 
 
 

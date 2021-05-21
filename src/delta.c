@@ -22,8 +22,7 @@
 #include "misc/opts.h"
 
 
-// static const char usage_str[] = "dims flags size out";
-static const char help_str[] = "Kronecker delta.\n";
+static const char help_str[] = "Kronecker delta.";
 
 
 

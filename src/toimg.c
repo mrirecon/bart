@@ -39,7 +39,7 @@
 static const char help_str[] = "Create magnitude images as png or proto-dicom.\n"
 				"The first two non-singleton dimensions will\n"
 				"be used for the image, and the other dimensions\n"
-				"will be looped over.\n";
+				"will be looped over.";
 
 // from view:src/draw.c
 static double clamp(double a, double b, double x)

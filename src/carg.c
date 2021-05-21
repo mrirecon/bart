@@ -27,8 +27,7 @@
 #endif
 
 
-static const char usage_str[] = "<input> <output>";
-static const char help_str[] = "Argument (phase angle).\n";
+static const char help_str[] = "Argument (phase angle).";
 
 
 int main_carg(int argc, char* argv[argc])

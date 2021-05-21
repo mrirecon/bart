@@ -27,7 +27,6 @@
 
 
 
-static const char usage_str[] = "<image> <kspace> <sens> <output>";
 static const char help_str[] = "Recreate k-space from image and sensitivities.";
 
 

@@ -21,7 +21,7 @@
 #include "misc/opts.h"
 
 
-static const char help_str[] = "Create a zero-filled array with {dims} dimensions of size {dim1} to {dimn}.\n";
+static const char help_str[] = "Create a zero-filled array with {dims} dimensions of size {dim1} to {dimn}.";
 
 
 

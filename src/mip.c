@@ -29,7 +29,7 @@
 
 
 
-static const char help_str[] = "Maximum (minimum) intensity projection (MIP) along dimensions specified by bitmask.\n"; 
+static const char help_str[] = "Maximum (minimum) intensity projection (MIP) along dimensions specified by bitmask.";
 
 
 int main_mip(int argc, char* argv[argc])

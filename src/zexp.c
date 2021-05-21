@@ -28,7 +28,7 @@
 #endif
 
 
-static const char help_str[] = "Point-wise complex exponential.\n";
+static const char help_str[] = "Point-wise complex exponential.";
 
 
 int main_zexp(int argc, char* argv[argc])

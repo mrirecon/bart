@@ -19,7 +19,7 @@
 #include "misc/opts.h"
 
 
-static const char help_str[] = "Conway's game of life.\n";
+static const char help_str[] = "Conway's game of life.";
 
 
 

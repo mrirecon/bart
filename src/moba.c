@@ -45,7 +45,7 @@
 
 #include "simu/signals.h"
 
-static const char help_str[] = "Model-based nonlinear inverse reconstruction\n";
+static const char help_str[] = "Model-based nonlinear inverse reconstruction";
 
 
 static void edge_filter1(const long map_dims[DIMS], complex float* dst)

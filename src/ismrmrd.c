@@ -21,7 +21,7 @@
 #include "ismrm/read.h"
 
 
-static const char help_str[] = "Import ISMRM raw data files.\n";
+static const char help_str[] = "Import ISMRM raw data files.";
 
 
 int main_ismrmrd(int argc, char* argv[])

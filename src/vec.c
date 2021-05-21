@@ -21,7 +21,7 @@
 #include "misc/opts.h"
 
 
-static const char help_str[] = "Create a vector of values.\n";
+static const char help_str[] = "Create a vector of values.";
 
 
 

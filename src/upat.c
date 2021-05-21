@@ -22,7 +22,7 @@
 #include "misc/opts.h"
 
 
-static const char help_str[] = "Create a sampling pattern.\n";
+static const char help_str[] = "Create a sampling pattern.";
 
 
 

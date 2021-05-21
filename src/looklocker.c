@@ -26,7 +26,7 @@
 #endif
 
 
-static const char help_str[] = "Compute T1 map from M_0, M_ss, and R_1*.\n";
+static const char help_str[] = "Compute T1 map from M_0, M_ss, and R_1*.";
 
 
 int main_looklocker(int argc, char* argv[argc])

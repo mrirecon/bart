@@ -22,7 +22,6 @@
 #endif
 
 
-static const char usage_str[] = "bitmask <input> <kernel> <output>";
 static const char help_str[] = "Performs a convolution along selected dimensions.";
 
 

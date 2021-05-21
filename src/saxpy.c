@@ -23,7 +23,7 @@
 #define DIMS 16
 #endif
 
-static const char help_str[] = "Multiply input1 with scale factor and add input2.\n";
+static const char help_str[] = "Multiply input1 with scale factor and add input2.";
 
 
 int main_saxpy(int argc, char* argv[argc])

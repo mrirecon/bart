@@ -28,7 +28,7 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char help_str[] = "Extracts a sub-array along dims from index start to (not including) end.\n";
+static const char help_str[] = "Extracts a sub-array along dims from index start to (not including) end.";
 
 
 int main_extract(int argc, char* argv[argc])

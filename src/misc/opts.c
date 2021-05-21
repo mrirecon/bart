@@ -292,11 +292,11 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 
 			if (1 != args[i].nargs)
 				fprintf( fp, "\n\t");
-			fprintf( fp, "{ %s, %zd, \"%s\" }", opt_type_str(args[i].arg[j].opt_type), args[i].arg[j].sz, args[i].arg[j].argname);
+			fprintf( fp, "{ %s, %zd, \"%s\" } ", opt_type_str(args[i].arg[j].opt_type), args[i].arg[j].sz, args[i].arg[j].argname);
 		}
 		if (1 != args[i].nargs)
 			fprintf( fp, "\n");
-		fprintf( fp, " }\n");
+		fprintf( fp, "}\n");
 	}
 
 	fprintf(fp, "options:\n");

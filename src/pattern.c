@@ -23,7 +23,7 @@
 
 
 
-static const char help_str[] = "Compute sampling pattern from kspace\n";
+static const char help_str[] = "Compute sampling pattern from kspace";
 
 
 int main_pattern(int argc, char* argv[argc])

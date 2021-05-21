@@ -47,7 +47,7 @@
 #endif
 
 
-static const char help_str[] = "Perform total generalized variation denoising along dims specified by flags.\n";
+static const char help_str[] = "Perform total generalized variation denoising along dims specified by flags.";
 
 
 /* TGV

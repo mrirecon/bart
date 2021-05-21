@@ -20,7 +20,7 @@
 
 
 
-static const char help_str[] = "Compute singular-value-decomposition (SVD).\n";
+static const char help_str[] = "Compute singular-value-decomposition (SVD).";
 
 
 int main_svd(int argc, char* argv[argc])

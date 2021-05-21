@@ -27,7 +27,7 @@
 #define CFL_SIZE	sizeof(complex float)
 #endif
 
-static const char help_str[] = "Casorati matrix with kernel (kern1, ..., kernN) along dimensions (dim1, ..., dimN).\n";
+static const char help_str[] = "Casorati matrix with kernel (kern1, ..., kernN) along dimensions (dim1, ..., dimN).";
 
 
 int main_casorati(int argc, char* argv[argc])

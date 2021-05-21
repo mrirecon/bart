@@ -23,7 +23,7 @@
 
 #define DIMS 16
 
-static const char help_str[] = "Repeat input array multiple times along a certain dimension.\n";
+static const char help_str[] = "Repeat input array multiple times along a certain dimension.";
 
 
 int main_repmat(int argc, char* argv[argc])

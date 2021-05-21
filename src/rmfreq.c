@@ -27,8 +27,7 @@
 #include "misc/debug.h"
 
 
-static const char usage_str[] = "<traj> <k> <k_cor>";
-static const char help_str[] = "Remove angle-dependent frequency\n";
+static const char help_str[] = "Remove angle-dependent frequency";
 
 
 

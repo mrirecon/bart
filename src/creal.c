@@ -27,7 +27,7 @@
 #endif
 
 
-static const char help_str[] = "Real value.\n";
+static const char help_str[] = "Real value.";
 
 
 int main_creal(int argc, char* argv[argc])

@@ -24,7 +24,7 @@
 #endif
 
 
-static const char help_str[] = "Remove singleton dimensions of array.\n";
+static const char help_str[] = "Remove singleton dimensions of array.";
 
 
 int main_squeeze(int argc, char* argv[argc])

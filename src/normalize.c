@@ -30,7 +30,7 @@
 
 
 
-static const char help_str[] = "Normalize along selected dimensions.\n";
+static const char help_str[] = "Normalize along selected dimensions.";
 
 
 

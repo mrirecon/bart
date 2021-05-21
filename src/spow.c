@@ -24,7 +24,7 @@
 #define DIMS 16
 #endif
 
-static const char help_str[] = "Raise array to the power of {exponent}. The exponent can be a complex number.\n";
+static const char help_str[] = "Raise array to the power of {exponent}. The exponent can be a complex number.";
 
 
 int main_spow(int argc, char* argv[argc])

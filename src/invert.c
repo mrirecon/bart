@@ -22,7 +22,7 @@
 #define DIMS 16
 #endif
 
-static const char help_str[] = "Invert array (1 / <input>). The output is set to zero in case of divide by zero.\n";
+static const char help_str[] = "Invert array (1 / <input>). The output is set to zero in case of divide by zero.";
 
 
 int main_invert(int argc, char* argv[argc])

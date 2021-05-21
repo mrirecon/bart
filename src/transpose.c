@@ -21,7 +21,7 @@
 #include "misc/opts.h"
 
 
-static const char help_str[] = "Transpose dimensions {dim1} and {dim2}.\n";
+static const char help_str[] = "Transpose dimensions {dim1} and {dim2}.";
 
 int main_transpose(int argc, char* argv[argc])
 {

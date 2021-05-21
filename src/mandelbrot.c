@@ -23,7 +23,7 @@
 #include "misc/opts.h"
 
 
-static const char help_str[] = "Compute mandelbrot set.\n";
+static const char help_str[] = "Compute mandelbrot set.";
 
 
 

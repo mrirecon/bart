@@ -31,7 +31,6 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-// static const char usage_str[] = "dimension <input1> ... <inputn> <output>";
 static const char help_str[] =
 	"Join input files along {dimensions}. All other dimensions must have the same size.\n"
 	"\t Example 1: join 0 slice_001 slice_002 slice_003 full_data\n"

@@ -25,7 +25,7 @@
 #endif
 
 
-static const char help_str[] = "Perform a wavelet (cdf97) transform.\n";
+static const char help_str[] = "Perform a wavelet (cdf97) transform.";
 
 
 

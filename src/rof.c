@@ -44,7 +44,7 @@
 #endif
 
 
-static const char help_str[] = "Perform total variation denoising along dims <flags>.\n";
+static const char help_str[] = "Perform total variation denoising along dims <flags>.";
 
 	
 int main_rof(int argc, char* argv[argc])
