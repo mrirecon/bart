@@ -130,7 +130,7 @@ int main_nlinv(int argc, char* argv[argc])
 	}
 
 	// The only multimap we understand with is the one we do ourselves, where
-	// we allow multiple images and sensitivities during the reconsctruction
+	// we allow multiple images and sensitivities during the reconstruction
 	assert(1 == ksp_dims[MAPS_DIM]);
 
 	long ksp_strs[DIMS];
