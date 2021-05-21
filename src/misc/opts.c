@@ -164,7 +164,7 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 	case OPT_OUTFILE:
 		return opt_outfile(ptr, c, optarg);
 	case OPT_INOUTFILE:
-		return opt_inoutfile(ptr, c, optarg); // FIXME: use something more proper here
+		return opt_inoutfile(ptr, c, optarg);
 	case OPT_SELECT:
 		return opt_select(ptr, c, optarg);
 	case OPT_SUBOPT:
@@ -199,7 +199,8 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 {
 	fprintf(fp, "Usage: %s ", name);
 
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < n; i++) {
+
 		if (show_option_p(opts[i])) {
 
 			if (NULL == opts[i].s) {
@@ -213,6 +214,7 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 					fprintf(fp, "[-%c,--%s%s%s] ", opts[i].c, opts[i].s, add_space(opts[i].arg), opt_arg_str(opts[i].type));
 			}
 		}
+	}
 
 	fprintf(fp, "%s\n", usage_str);
 }
@@ -226,7 +228,8 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 	int max_len = 0;
 
 	// get needed padding lengths
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < n; i++) {
+
 		if (show_option_p(opts[i])) {
 
 			int len = 0;
@@ -244,11 +247,13 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 
 			max_len = MAX(max_len, len);
 		}
+	}
 
 	const int pad_len = max_len + 4;
 
 	// print help
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < n; i++) {
+
 		if (show_option_p(opts[i])) {
 
 			int written = 0;
@@ -265,6 +270,7 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 			}
 			fprintf(stdout, "%*c%s\n", pad_len - written, ' ', opts[i].descr);
 		}
+	}
 
 	printf("-h%*chelp\n", pad_len - 2, ' ');
 }
@@ -277,22 +283,24 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 	fprintf(fp, "name: %s, usage_str: \"%s\", help_str: \"%s\"\n", name, usage_str, help_str);
 
 	fprintf(fp, "positional arguments:\n");
+
 	for (int i = 0; i < m; i++) {
 
-		fprintf( fp, "{%s, \"%s\", %d, ", args[i].required ? "true" : "false", arg_type_str(args[i].arg_type), args[i].nargs);
+		fprintf( fp, "{ %s, \"%s\", %d, ", args[i].required ? "true" : "false", arg_type_str(args[i].arg_type), args[i].nargs);
 
 		for (int j = 0; j < args[i].nargs; j++) {
 
 			if (1 != args[i].nargs)
 				fprintf( fp, "\n\t");
-			fprintf( fp, "{%s, %zd, \"%s\"}", opt_type_str(args[i].arg[j].opt_type), args[i].arg[j].sz, args[i].arg[j].argname);
+			fprintf( fp, "{ %s, %zd, \"%s\" }", opt_type_str(args[i].arg[j].opt_type), args[i].arg[j].sz, args[i].arg[j].argname);
 		}
 		if (1 != args[i].nargs)
 			fprintf( fp, "\n");
-		fprintf( fp, "}\n");
+		fprintf( fp, " }\n");
 	}
 
 	fprintf(fp, "options:\n");
+
 	for (int i = 0; i < n; i++) {
 
 		char cs[] =  "n/a";
@@ -301,7 +309,7 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 			cs[0] = opts[i].c;
 			cs[1] = '\0';
 		}
-		fprintf( fp, "{\"%s\", \"%s\", %s, %s, \"%s\", \"%s\"}\n", cs, opts[i].s, opts[i].arg ? "true" : "false", opt_type_str(opts[i].type), opt_arg_str(opts[i].type), opts[i].descr);
+		fprintf( fp, "{ \"%s\", \"%s\", %s, %s, \"%s\", \"%s\" }\n", cs, opts[i].s, opts[i].arg ? "true" : "false", opt_type_str(opts[i].type), opt_arg_str(opts[i].type), opts[i].descr);
 	}
 }
 
@@ -685,8 +693,7 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 
 static const char* arg_type_str(enum ARG_TYPE type)
 {
-	switch (type)
-	{
+	switch (type) {
 	case ARG: return "ARG";
 	case ARG_TUPLE: return "ARG_TUPLE";
 	}
@@ -701,10 +708,8 @@ void *parse_arg_tuple(int n, ...)
 
 	va_list ap;
 	va_start(ap, n);
-	for (int i = 0; i < n; ++i) {
-
+	for (int i = 0; i < n; ++i)
 		args[i] = (struct arg_single_s) {va_arg(ap, enum OPT_TYPE), va_arg(ap, size_t), va_arg(ap, void*), va_arg(ap, const char*)};
-	}
 
 	va_end(ap);
 	return PTR_PASS(args);
@@ -727,14 +732,10 @@ static void check_args(int n, const struct arg_s args[n])
 
 	for (int i = 0; i < n; ++i) {
 
-		if (ARG_TUPLE == args[i].arg_type) {
-
+		if (ARG_TUPLE == args[i].arg_type)
 			num_tuples++;
-		} else if (ARG == args[i].arg_type) {
-
+		else if (ARG == args[i].arg_type)
 			assert(1 == args[i].nargs);
-		}
-
 
 // 		if (args[i].optional && (ARG_TUPLE != args[i].arg_type))
 // 			end_required = true;
@@ -872,9 +873,11 @@ void cmdline(int* argc, char* argv[], int m, struct arg_s args[m], const char* h
 
 			if (opt_dispatch(args[i].arg->opt_type, args[i].arg->ptr, NULL, '\0', argv[j++]))
 				error("failed to convert value\n");
+
 			break;
 		case ARG_TUPLE:
-		{ // consume as many arguments as possible, except for possible args following the tuple
+		{
+			// consume as many arguments as possible, except for possible args following the tuple
 			int n_following = m - i - 1;
 			int n_tuple_end = *argc - n_following;
 			int n_tuple_args = n_tuple_end - j;
@@ -890,23 +893,21 @@ void cmdline(int* argc, char* argv[], int m, struct arg_s args[m], const char* h
 				*(void**)args[i].arg[k].ptr = calloc(args[i].arg[k].sz, *args[i].count);
 
 			int c = 0;
+
 			while (j < n_tuple_end) {
 
-				for (int k = 0; k < args[i].nargs; ++k) {
-
-					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * args[i].arg[k].sz, NULL, '\0', argv[j]))
+				for (int k = 0; k < args[i].nargs; ++k)
+					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * args[i].arg[k].sz, NULL, '\0', argv[j++]))
 						error("failed to convert value\n");
-					j++;
-				}
+
 				c++;
 			}
-
-		}
 			break;
+		}
 		}
 
 	}
-#if 1
+#if 0
 	// for debug, make argv inaccesible
 	for (int i = 0; i < *argc; ++i)
 		argv[i] = NULL;
