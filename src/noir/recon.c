@@ -132,7 +132,7 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 		xref = md_alloc_sameplace(1, d1, CFL_SIZE, kspace_data);
 
-		if (conf->img_space_coils == true) { // transform coils back to k-space
+		if (conf->img_space_coils) { // transform coils back to k-space
 
 			complex float* ref_buf = md_alloc(1, d1, CFL_SIZE);
 
