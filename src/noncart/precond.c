@@ -21,6 +21,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/multiplace.h"
 #include "num/fft.h"
 #include "num/ops.h"
 
@@ -147,7 +148,10 @@ const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op)
 	md_calc_strides(ND, pdata->cim_strs, pdata->cim_dims, CFL_SIZE);
 	md_calc_strides(ND, pdata->pre_strs, pdata->pre_dims, CFL_SIZE);
 
-	pdata->pre = compute_precond(pdata->N, pdata->pre_dims, pdata->pre_strs, data->psf_dims, data->psf_strs, data->psf, data->linphase);
+	int cpu_ptr = 0;
+	pdata->pre = compute_precond(pdata->N, pdata->pre_dims, pdata->pre_strs,
+					data->psf_dims, data->psf_strs, multiplace_read(data->psf, &cpu_ptr),
+					multiplace_read(data->linphase, &cpu_ptr));
 
 	pdata->fft_op = linop_fft_create(pdata->N, pdata->cim_dims, data->flags);
 

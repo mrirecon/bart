@@ -67,7 +67,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	debug_print_dims(DP_INFO, DIMS, ksp_dims2);
 	debug_print_dims(DP_INFO, DIMS, coilim_dims);
 
-	const struct linop_s* fft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, wgs_dims, weights, basis_dims, basis, conf);
+	const struct linop_s* fft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, (weights ? wgs_dims : NULL), weights, (basis ? basis_dims : NULL), basis, conf);
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
 	const struct linop_s* lop = linop_chain_FF(maps_op, fft_op);
 
