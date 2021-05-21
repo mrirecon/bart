@@ -128,7 +128,7 @@ static void io_register(const char* name, bool output, bool input, bool open)
 	if (new) {
 
 		if (open)
-			error("%s: Cannot open file which was not previously reserved for in- or output!\n", name);
+			debug_printf(DP_WARN, "%s: Opening file which was not previously reserved for in- or output!\n", name);
 
 		PTR_ALLOC(struct iofile_s, ion);
 
