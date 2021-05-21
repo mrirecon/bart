@@ -137,6 +137,9 @@ extern unsigned long md_nontriv_strides(unsigned int D, const long dims[__VLA(D)
 #define MD_CLEAR(x, y) ((x) & ~MD_BIT(y))
 #define MD_SET(x, y)	((x) | MD_BIT(y))
 
+extern int md_max_idx(unsigned long flags);
+extern int md_min_idx(unsigned long flags);
+
 #define MD_CAST_ARRAY2_PTR(T, N, dims, x, a, b) \
 	(assert(((a) < (b)) && !md_check_dimensions((N), (dims), (1 << (a)) | (1 << (b)))), \
 					(T (*)[(dims)[b]][(dims)[a]])(x))

@@ -2010,3 +2010,19 @@ void md_free(const void* ptr)
 	xfree(ptr);
 }
 
+
+int md_max_idx(unsigned long flags)
+{
+	int i = -1;
+
+	for ( ; 0 != flags; i++)
+		flags /= 2;
+
+	return i;
+}
+
+int md_min_idx(unsigned long flags)
+{
+	return ffsl(flags) - 1;
+}
+
