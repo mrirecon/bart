@@ -7,6 +7,7 @@
 #include "misc/misc.h"
 
 enum OPT_TYPE {
+
 	OPT_SPECIAL,
 	OPT_SET, OPT_CLEAR,
 	OPT_INT, OPT_UINT, OPT_LONG, OPT_ULONG,
@@ -98,6 +99,7 @@ typedef float opt_fvec3_t[3];
 
 
 enum ARG_TYPE {
+
 	ARG,
 	ARG_TUPLE,
 };
@@ -121,7 +123,7 @@ struct arg_s {
 };
 
 
-extern void *parse_arg_tuple(int n, ...);
+extern void* parse_arg_tuple(int n, ...);
 
 #define ARG_SINGLE(type, T, ptr, argname)			&(struct arg_single_s){ (type), sizeof(T), (ptr), (argname) }
 
@@ -144,6 +146,6 @@ extern void *parse_arg_tuple(int n, ...);
 
 #define ARG_TUPLE(required, count, n, ...)				{ (required), ARG_TUPLE, (count), (n), parse_arg_tuple( (n), __VA_ARGS__) }
 
-extern void cmdline(int* argc, char* argv[], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
+extern void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
 
 #include "misc/cppwrap.h"
