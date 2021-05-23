@@ -118,11 +118,16 @@ int main_bart(int argc, char* argv[argc])
 
 			size_t len = strlen(tpath[i]) + strlen(argv[1]) + 2;
 
-			char cmd[len];
-			size_t r = snprintf(cmd, len, "%s/%s", tpath[i], argv[1]);
-			assert(r < len);
+			char (*cmd)[len] = xmalloc(sizeof *cmd);
+			size_t r = snprintf(*cmd, len, "%s/%s", tpath[i], argv[1]);
 
-			if (-1 == execv(cmd, argv + 1)) {
+			if (r >= len) {
+
+				perror("Commandline too long");
+				return 1;
+			}
+
+			if (-1 == execv(*cmd, argv + 1)) {
 
 				// only if it doesn't exist - try builtin
 
@@ -136,6 +141,8 @@ int main_bart(int argc, char* argv[argc])
 
 				assert(0);
 			}
+
+			xfree(cmd);
 		}
 
 		return main_bart(argc - 1, argv + 1);
@@ -176,10 +183,10 @@ int bart_command(int len, char* buf, int argc, char* argv[])
 
 	if (NULL != bart_output) {
 
-		#ifdef _WIN32
+#ifdef _WIN32
 		rewind(bart_output);
 		fread(buf, 1, len, bart_output);
-		#endif
+#endif
 
 		fclose(bart_output);	// write final nul
 		bart_output = NULL;

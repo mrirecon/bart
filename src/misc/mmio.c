@@ -67,9 +67,9 @@ static void io_error(const char* fmt, ...)
 	if (NULL == PyErr_Occurred()) {
 
 		char err[1024] = { 0 };
-	     vsnprintf(err, 1023, fmt, ap);
-	     va_end(ap);
-	     PyErr_SetString(PyExc_RuntimeError, err);
+		vsnprintf(err, 1023, fmt, ap);
+		va_end(ap);
+		PyErr_SetString(PyExc_RuntimeError, err);
 	}
 	// No else required as the error indicator has already been set elsewhere
 

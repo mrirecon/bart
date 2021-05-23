@@ -783,7 +783,21 @@ static void check_args(int n, const struct arg_s args[n])
 		error("Cannot have more than one tuple argument!\n");
 }
 
-static int add_arg(int bufsize, char buf[bufsize], const char* argname, bool required, bool file)
+
+
+static int xsnprintf(int size, char buf[static size], const char* fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	int rv = vsnprintf((size > 0) ? buf : NULL, size, fmt, ap);
+
+	va_end(ap);
+
+	return rv;
+}
+
+static int add_arg(int bufsize, char buf[static bufsize], const char* argname, bool required, bool file)
 {
 	const char* fstring;
 
@@ -792,30 +806,30 @@ static int add_arg(int bufsize, char buf[bufsize], const char* argname, bool req
 	else
 		fstring = required ? "%s" : "[%s]";
 
-	return snprintf(buf, bufsize, fstring, argname);
+	return xsnprintf(bufsize, buf, fstring, argname);
 }
 
 
-static int add_tuple_args(int bufsize, char buf[bufsize], const struct arg_s* arg, bool file)
+static int add_tuple_args(int bufsize, char buf[static bufsize], const struct arg_s* arg, bool file)
 {
 	int pos = 0;
 
 	if (!arg->required)
-		pos += snprintf(buf + pos, pos, "[");
+		pos += xsnprintf(bufsize - pos, buf + pos, "[");
 
 	for (int k = 0; k < arg->nargs; ++k ) {
 
 		pos += add_arg(bufsize - pos, buf + pos, arg->arg[k].argname, true, file);
 
 		if (file)
-			pos += snprintf(buf + pos, bufsize - pos, "%c", '\b');
+			pos += xsnprintf(bufsize - pos, buf + pos, "%c", '\b');
 
-		pos += snprintf(buf + pos, bufsize - pos, "1");
+		pos += xsnprintf(bufsize - pos, buf + pos, "1");
 
 		if (file)
-			pos += snprintf(buf + pos, bufsize - pos, "%c", '>');
+			pos += xsnprintf(bufsize - pos, buf + pos, "%c", '>');
 
-		pos += snprintf(buf + pos, bufsize - pos, " ");
+		pos += xsnprintf(bufsize - pos, buf + pos, " ");
 	}
 
 	pos += snprintf(buf + pos, pos, "... ");
@@ -825,18 +839,18 @@ static int add_tuple_args(int bufsize, char buf[bufsize], const struct arg_s* ar
 		pos += add_arg(bufsize - pos, buf + pos, arg->arg[k].argname, true, file);
 
 		if (file)
-			pos += snprintf(buf + pos, bufsize - pos, "%c", '\b');
+			pos += xsnprintf(bufsize - pos, buf + pos, "%c", '\b');
 
-		pos += snprintf(buf + pos, bufsize - pos, "N");
+		pos += xsnprintf(bufsize - pos, buf + pos, "N");
 
 		if (file)
-			pos += snprintf(buf + pos, bufsize - pos, "%c", '>');
+			pos += xsnprintf(bufsize - pos, buf + pos, "%c", '>');
 
-		pos += snprintf(buf + pos, bufsize - pos, " ");
+		pos += xsnprintf(bufsize - pos, buf + pos, " ");
 	}
 
 	if (!arg->required)
-		pos += snprintf(buf + pos, bufsize - pos, "\b] ");
+		pos += xsnprintf(bufsize - pos, buf + pos, "\b] ");
 
 	return pos;
 }
@@ -885,7 +899,7 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 
 		case ARG:
 			pos += add_arg(bufsize - pos, buf + pos, args[i].arg->argname, args[i].required, file);
-			pos += snprintf(buf + pos, bufsize - pos, " ");
+			pos += xsnprintf(bufsize - pos, buf + pos, " ");
 			break;
 
 		case ARG_TUPLE:
