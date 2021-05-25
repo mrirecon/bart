@@ -100,13 +100,13 @@ static TF_Session* create_session(TF_Graph* graph, TF_Status* status)
 
 #if 0
 static void deallocator(void* ptr, size_t len, void* arg)
-{ 	
+{
 	xfree(ptr);
 	UNUSED(len); UNUSED(arg);
 }
 #else
 static void deallocator(void* ptr, size_t len, void* arg)
-{ 	
+{
 	TF_TString_Dealloc(ptr);
 	UNUSED(len); UNUSED(arg);
 }
@@ -233,7 +233,7 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 
 	for (int i = 0; i < data->nr_inputs; i++)
 		md_copy(data->nr_in_dim[i], data->in_dims_tf[i], TF_TensorData(data->input_tensors[i]), args[i + data->nr_outputs], CFL_SIZE);
-		
+
 	TF_SessionRun(data->sess,
 				/* RunOptions */ NULL,
 				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs,
@@ -285,17 +285,17 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 		inp_tensors[j] = data->input_tensors[j];
 	}
 
-	inp_ops[data->nr_inputs] = data->grad_ys_op[i];
-	inp_tensors[data->nr_inputs] = tensor_allocate(data->nr_grad_ys_dim[i], data->grad_ys_dims_tf[i]);
+	inp_ops[data->nr_inputs] = data->grad_ys_op[o];
+	inp_tensors[data->nr_inputs] = tensor_allocate(data->nr_grad_ys_dim[o], data->grad_ys_dims_tf[o]);
 
-	md_copy(data->nr_grad_ys_dim[i], data->grad_ys_dims_tf[i], TF_TensorData(inp_tensors[1]), src, CFL_SIZE);
+	md_copy(data->nr_grad_ys_dim[o], data->grad_ys_dims_tf[o], TF_TensorData(inp_tensors[data->nr_inputs]), src, CFL_SIZE);
 
 	struct TF_Tensor* out_tensor[1];
 
 	TF_SessionRun(data->sess,
 				/* RunOptions */ NULL,
 				/* Input tensors */ inp_ops, inp_tensors, data->nr_inputs + 1,
-				/* Output tensors */ &(data->grad_op[o]), out_tensor, 1,
+				/* Output tensors */ &(data->grad_op[i]), out_tensor, 1,
 				/* Target operations */ NULL, 0,
 				/* RunMetadata */ NULL,
 				/* Output status */ data->status);
@@ -305,7 +305,7 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 
 	TF_DeleteTensor(inp_tensors[data->nr_inputs]);
 
-	md_copy(data->nr_grad_dim[o], data->grad_dims_tf[o], dst, TF_TensorData(out_tensor[0]), CFL_SIZE);
+	md_copy(data->nr_grad_dim[i], data->grad_dims_tf[i], dst, TF_TensorData(out_tensor[0]), CFL_SIZE);
 
 	TF_DeleteTensor(out_tensor[0]);
 #else
@@ -475,7 +475,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 		(*out_dims_tf)[i] = arg.dims;
 
 		char grad_ys_name[20];
-		sprintf(grad_ys_name, "grad_ys_%d", i); 
+		sprintf(grad_ys_name, "grad_ys_%d", i);
 
 		arg = process_arg(graph, grad_ys_name, status);
 
