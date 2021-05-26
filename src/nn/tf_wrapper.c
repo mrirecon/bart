@@ -30,7 +30,9 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-
+//#define TF_AUTOGRAD 1
+// The TensorFlow C API does not support all gradients
+// Thus we require that the TensorFlow graph is annotated with gradients
 
 
 #ifdef TENSORFLOW
@@ -427,6 +429,41 @@ static bool cmp_arg(struct tf_arg arg1, struct tf_arg arg2)
 	return result;
 }
 
+#ifdef TF_AUTOGRAD
+
+static void tf_add_placeholder_same_shape(TF_Graph* graph, const char* name, TF_Status* status, struct TF_Output out)
+{
+#ifdef TENSORFLOW
+	TF_OperationDescription* desc = TF_NewOperation(graph, "Placeholder", name);
+
+	int N = TF_GraphGetTensorNumDims(graph, out, status);
+
+	if (TF_GetCode(status) != TF_OK)
+		error("Add Tensorflow Placeholder failed: %s\n", TF_Message(status));
+
+	long tdims[N ?: 1];
+	TF_GraphGetTensorShape(graph, out, tdims, N, status);
+
+	if (TF_GetCode(status) != TF_OK)
+		error("Add Tensorflow Placeholder failed: %s\n", TF_Message(status));
+
+	TF_DataType type = TF_OperationOutputType(out);
+
+	TF_SetAttrType(desc, "dtype", type);
+	TF_SetAttrShape(desc, "shape", tdims, N);
+	TF_FinishOperation(desc, status);
+
+	if (TF_GetCode(status) != TF_OK)
+		error("Add Tensorflow Placeholder failed: %s\n", TF_Message(status));
+#else
+	UNUSED(graph);
+	UNUSED(name);
+	UNUSED(status);
+	UNUSED(out);
+#endif
+}
+#endif
+
 const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool session)
 {
 	assert(1 == OO);
@@ -477,8 +514,15 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 		(*nr_out_dim)[i] = arg.N;
 		(*out_dims_tf)[i] = arg.dims;
 
+#ifdef TF_AUTOGRAD
+		char grad_ys_name[20];
+		sprintf(grad_ys_name, "grad_ys_bart_%d", i);
+
+		tf_add_placeholder_same_shape(graph, grad_ys_name, status, arg.out);
+#else
 		char grad_ys_name[20];
 		sprintf(grad_ys_name, "grad_ys_%d", i);
+#endif
 
 		struct tf_arg arg_grad_y = process_arg(graph, grad_ys_name, status);
 
@@ -528,6 +572,13 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 		(*nr_in_dim)[i] = arg.N;
 		(*in_dims_tf)[i] = arg.dims;
 
+#ifdef TF_AUTOGRAD
+#ifdef TENSORFLOW
+		TF_AddGradients(graph, data->outputs_op, 1, (*inputs_op) + i, 1, data->grad_ys_op, data->status, (*grad_op) + i);
+		if (TF_GetCode(status) != TF_OK)
+			error("Add Tensorflow Gradient failed: %s\n", TF_Message(status));
+#endif
+#else
 
 		char grad_name[20];
 		sprintf(grad_name, "grad_%d", i);
@@ -538,6 +589,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 			error("Tensorflow input and corresponding gradient do not have the same shape!");
 
 		(*grad_op)[i] = arg_grad.out;
+#endif
 	}
 
 	data->inputs_op = *PTR_PASS(inputs_op);
