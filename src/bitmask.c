@@ -47,7 +47,7 @@ int main_bitmask(int argc, char* argv[argc])
 
 	if (!inverse) {
 
-		for (int i = 1; i < argc; i++) {
+		for (int i = 0; i < count; i++) {
 
 			long d = dims[i];
 			assert(d >= 0);
