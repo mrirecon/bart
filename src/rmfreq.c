@@ -27,13 +27,23 @@
 #include "misc/debug.h"
 
 
-static const char usage_str[] = "<traj> <k> <k_cor>";
-static const char help_str[] = "Remove angle-dependent frequency\n";
+static const char help_str[] = "Remove angle-dependent frequency";
 
 
 
 int main_rmfreq(int argc, char* argv[argc])
 {
+	const char* traj_file = NULL;
+	const char* k_file = NULL;
+	const char* kcor_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &traj_file, "traj"),
+		ARG_INFILE(true, &k_file, "k"),
+		ARG_OUTFILE(true, &kcor_file, "k_cor"),
+	};
+
 	unsigned int n_harmonics = 5;
 
 	const struct opt_s opts[] = {
@@ -41,7 +51,7 @@ int main_rmfreq(int argc, char* argv[argc])
 		OPT_UINT('N', &n_harmonics, "#", "Number of harmonics [Default: 5]"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -49,14 +59,14 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	// Read k-space
 	long k_dims[DIMS];
-	complex float* k = load_cfl(argv[2], DIMS, k_dims);
+	complex float* k = load_cfl(k_file, DIMS, k_dims);
 
 	if (md_check_dimensions(DIMS, k_dims, COIL_FLAG|TIME_FLAG|SLICE_FLAG))
 		error("Only COIL_DIM, TIME_DIM and SLICE_DIM may have entries!\n");
 
 	// Read trajectory
 	long t_dims[DIMS];
-	complex float* t = load_cfl(argv[1], DIMS, t_dims);
+	complex float* t = load_cfl(traj_file, DIMS, t_dims);
 
 	if (!md_check_equal_dims(DIMS, t_dims, k_dims, ~(READ_FLAG|PHS1_FLAG|COIL_FLAG)))
 		error("k-space and trajectory inconsistent!\n");
@@ -152,7 +162,7 @@ int main_rmfreq(int argc, char* argv[argc])
 	complex float* proj_singleton = md_alloc(DIMS, k_singleton_dims, CFL_SIZE);
 	complex float* k_cor_singleton = md_alloc(DIMS, k_singleton_dims, CFL_SIZE);
 
-	complex float* k_cor = create_cfl(argv[3], DIMS, k_dims);
+	complex float* k_cor = create_cfl(kcor_file, DIMS, k_dims);
 
 	long pos1[DIMS] = { 0 };
 

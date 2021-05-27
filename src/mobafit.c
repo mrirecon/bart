@@ -38,12 +38,23 @@
 #endif
 
 
-static const char usage_str[] = "<TE> <echo images> <parameters>";
 static const char help_str[] = "Pixel-wise fitting of sequence models.";
 
 int main_mobafit(int argc, char* argv[])
 {
 	double start_time = timestamp();
+
+	const char* TE_file = NULL;
+	const char* echo_file = NULL;
+	const char* param_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &TE_file, "TE"),
+		ARG_INFILE(true, &echo_file, "echo images"),
+		ARG_OUTFILE(false, &param_file, "paramters"),
+	};
+
 
 	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE } seq = MGRE;
 
@@ -69,16 +80,16 @@ int main_mobafit(int argc, char* argv[])
 		OPT_SET('g', &use_gpu, "use gpu"),
 	};
 
-	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 
 	long TE_dims[DIMS];
-	complex float* TE = load_cfl(argv[1], DIMS, TE_dims);
+	complex float* TE = load_cfl(TE_file, DIMS, TE_dims);
 
 	long y_dims[DIMS];
-	complex float* y = load_cfl(argv[2], DIMS, y_dims);
+	complex float* y = load_cfl(echo_file, DIMS, y_dims);
 
 	assert(y_dims[TE_DIM] == TE_dims[TE_DIM]);
 
@@ -87,7 +98,9 @@ int main_mobafit(int argc, char* argv[])
 	x_dims[COEFF_DIM] = set_num_of_coeff(mgre_model);
 
 
-	complex float* x = create_cfl(argv[3], DIMS, x_dims);
+	complex float* x = create_cfl(param_file, DIMS, x_dims);
+
+	md_clear(DIMS, x_dims, x, CFL_SIZE);
 
 
 

@@ -24,13 +24,19 @@
 
 
 
-static const char usage_str[] = "<output>";
 static const char help_str[] = "Image and k-space domain phantoms.";
 
 
 
 int main_phantom(int argc, char* argv[argc])
 {
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	bool kspace = false;
 	bool d3 = false;
 	int sens = 0;
@@ -72,7 +78,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_INT('r', &rinit, "seed", "random seed initialization"),
 	};
 
-	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -149,7 +155,7 @@ int main_phantom(int argc, char* argv[argc])
 	}
 
 
-	complex float* out = create_cfl(argv[1], DIMS, dims);
+	complex float* out = create_cfl(out_file, DIMS, dims);
 
 	md_clear(DIMS, dims, out, sizeof(complex float));
 

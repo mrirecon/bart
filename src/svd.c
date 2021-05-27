@@ -20,12 +20,24 @@
 
 
 
-static const char usage_str[] = "<input> <U> <S> <VH>";
-static const char help_str[] = "Compute singular-value-decomposition (SVD).\n";
+static const char help_str[] = "Compute singular-value-decomposition (SVD).";
 
 
 int main_svd(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* U_file = NULL;
+	const char* S_file = NULL;
+	const char* VH_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &U_file, "U"),
+		ARG_OUTFILE(true, &S_file, "S"),
+		ARG_OUTFILE(true, &VH_file, "VH"),
+	};
+
 	bool econ = false;
 
 	const struct opt_s opts[] = {
@@ -33,21 +45,21 @@ int main_svd(int argc, char* argv[argc])
 		OPT_SET('e', &econ, "econ"),
 	};
 
-	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
 	int N = 2;
 	long dims[N];
 
-	complex float* in = load_cfl(argv[1], N, dims);
+	complex float* in = load_cfl(in_file, N, dims);
 
 	long dimsU[2] = { dims[0], econ ? MIN(dims[0], dims[1]) : dims[0] };
 	long dimsS[2] = { MIN(dims[0], dims[1]), 1 };
 	long dimsVH[2] = { econ ? MIN(dims[0], dims[1]) : dims[1], dims[1] };
 
-	complex float* U = create_cfl(argv[2], N, dimsU);
-	complex float* S = create_cfl(argv[3], N, dimsS);
-	complex float* VH = create_cfl(argv[4], N, dimsVH);
+	complex float* U = create_cfl(U_file, N, dimsU);
+	complex float* S = create_cfl(S_file, N, dimsS);
+	complex float* VH = create_cfl(VH_file, N, dimsVH);
 
 	float* SF = md_alloc(2, dimsS, FL_SIZE);
 

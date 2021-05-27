@@ -60,7 +60,6 @@
 #include "grecon/italgo.h"
 
 
-static const char usage_str[] = "<maps> <wave> <phi> <reorder> <table> <output>";
 static const char help_str[]  = 
 	"Perform a wave-shuffling reconstruction.\n\n"
 	"Conventions:\n"
@@ -883,6 +882,23 @@ int main_wshfl(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 
+	const char* maps_file = NULL;
+	const char* wave_file = NULL;
+	const char* phi_file = NULL;
+	const char* reorder_file = NULL;
+	const char* table_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &maps_file, "maps"),
+		ARG_INFILE(true, &wave_file, "wave"),
+		ARG_INFILE(true, &phi_file, "phi"),
+		ARG_INFILE(true, &reorder_file, "reorder"),
+		ARG_INFILE(true, &table_file, "table"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	struct opt_reg_s ropts;
 	opt_reg_init(&ropts);
 
@@ -915,26 +931,26 @@ int main_wshfl(int argc, char* argv[argc])
 		OPT_SET(    'v', &dcx,                  "Split coefficients to real and imaginary components."),
 	};
 
-	cmdline(&argc, argv, 6, 6, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	struct admm_conf admm = { false, false, false, rho, cgiter };
 
 	debug_printf(DP_INFO, "Loading data... ");
 
 	long maps_dims[DIMS];
-	complex float* maps = load_cfl(argv[1], DIMS, maps_dims);
+	complex float* maps = load_cfl(maps_file, DIMS, maps_dims);
 
 	long wave_dims[DIMS];
-	complex float* wave = load_cfl(argv[2], DIMS, wave_dims);
+	complex float* wave = load_cfl(wave_file, DIMS, wave_dims);
 
 	long phi_dims[DIMS];
-	complex float* phi = load_cfl(argv[3], DIMS, phi_dims);
+	complex float* phi = load_cfl(phi_file, DIMS, phi_dims);
 
 	long reorder_dims[DIMS];
-	complex float* reorder = load_cfl(argv[4], DIMS, reorder_dims);
+	complex float* reorder = load_cfl(reorder_file, DIMS, reorder_dims);
 
 	long table_dims[DIMS];
-	complex float* table = load_cfl(argv[5], DIMS, table_dims);
+	complex float* table = load_cfl(table_file, DIMS, table_dims);
 
 	debug_printf(DP_INFO, "Done.\n");
 
@@ -978,6 +994,7 @@ int main_wshfl(int argc, char* argv[argc])
 	coeff_dims[8] = dcx ? 2 : 1;
 
 	if (ksp == true) {
+
 		const struct linop_s* Knc = linop_kern_create(use_gpu, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, table_dims);
 		long ksp_dims[] = { [0 ... DIMS - 1] = 1 };
 		ksp_dims[0] = wx;
@@ -985,7 +1002,7 @@ int main_wshfl(int argc, char* argv[argc])
 		ksp_dims[2] = sz;
 		ksp_dims[3] = nc;
 		ksp_dims[6] = tk;
-		complex float* res = create_cfl(argv[6], DIMS, ksp_dims);
+		complex float* res = create_cfl(out_file, DIMS, ksp_dims);
 
 		operator_apply(Knc->adjoint, DIMS, ksp_dims, res, DIMS, table_dims, table);
 
@@ -1048,7 +1065,7 @@ int main_wshfl(int argc, char* argv[argc])
 
 		debug_printf(DP_INFO, "Going from coefficients to data table... ");
 		complex float* coeffs_to_fwd = load_cfl(fwd, DIMS, coeff_dims);
-		complex float* table_forward = create_cfl(argv[6], DIMS, table_dims);
+		complex float* table_forward = create_cfl(out_file, DIMS, table_dims);
 		const struct linop_s* R      = linop_wavereshape_create(wx, sx, sy, sz, 1, tk);
 		const struct linop_s* CFx    = linop_fx_create( wx, sy, sz, 1, tk, true);
 		const struct linop_s* W      = linop_wave_create(wx, sy, sz, 1, tk, wave_dims[COEFF_DIM], wave);
@@ -1149,7 +1166,7 @@ int main_wshfl(int argc, char* argv[argc])
 	}
 
 	debug_printf(DP_INFO, "Reconstruction... ");
-	complex float* recon = create_cfl(argv[6], DIMS, coeff_dims);
+	complex float* recon = create_cfl(out_file, DIMS, coeff_dims);
 	struct lsqr_conf lsqr_conf = lsqr_defaults;
 	lsqr_conf.lambda = 0.;
 	lsqr_conf.it_gpu = use_gpu;

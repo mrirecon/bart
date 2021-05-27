@@ -52,7 +52,6 @@
 
 
 
-static const char usage_str[] = "<kspace> <output> [<sensitivities>]";
 static const char help_str[] =
 		"Jointly estimate image and sensitivities with nonlinear\n"
 		"inversion using {iter} iteration steps. Optionally outputs\n"
@@ -64,6 +63,17 @@ int main_nlinv(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 
+	const char* ksp_file = NULL;
+	const char* img_file = NULL;
+	const char* sens_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_OUTFILE(true, &img_file, "output"),
+		ARG_OUTFILE(false, &sens_file, "sensitivities"),
+	};
+
 	bool normalize = true;
 	bool combine = true;
 	unsigned int nmaps = 1;
@@ -72,7 +82,6 @@ int main_nlinv(int argc, char* argv[argc])
 	const char* trajectory = NULL;
 	const char* init_file = NULL;
 	struct noir_conf_s conf = noir_defaults;
-	bool out_sens = false;
 	bool scale_im = false;
 	bool use_gpu = false;
 	float scaling = -1.;
@@ -103,16 +112,13 @@ int main_nlinv(int argc, char* argv[argc])
 		OPTL_SET(0, "lowmem", &nufft_lowmem, "Use low-mem mode of the nuFFT"),
 	};
 
-	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
-
-	if (4 == argc)
-		out_sens = true;
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
 	(use_gpu ? num_init_gpu : num_init)();
 
 	long ksp_dims[DIMS];
-	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
+	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
 	// FIXME: SMS should not be the default
 
@@ -124,7 +130,7 @@ int main_nlinv(int argc, char* argv[argc])
 	}
 
 	// The only multimap we understand with is the one we do ourselves, where
-	// we allow multiple images and sensitivities during the reconsctruction
+	// we allow multiple images and sensitivities during the reconstruction
 	assert(1 == ksp_dims[MAPS_DIM]);
 
 	long ksp_strs[DIMS];
@@ -186,7 +192,7 @@ int main_nlinv(int argc, char* argv[argc])
 	long img_output_strs[DIMS];
 	md_calc_strides(DIMS, img_output_strs, img_output_dims, CFL_SIZE);
 
-	complex float* img_output = create_cfl(argv[2], DIMS, img_output_dims);
+	complex float* img_output = create_cfl(img_file, DIMS, img_output_dims);
 	md_clear(DIMS, img_output_dims, img_output, CFL_SIZE);
 
 
@@ -201,7 +207,7 @@ int main_nlinv(int argc, char* argv[argc])
 	complex float* mask = NULL;
 
 	complex float* ksens = md_alloc(DIMS, sens_dims, CFL_SIZE);
-	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, sens_dims);
+	complex float* sens = ((NULL != sens_file) ? create_cfl : anon_cfl)((NULL != sens_file) ? sens_file : "", DIMS, sens_dims);
 
 	// initialization
 	if (NULL != init_file) {

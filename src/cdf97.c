@@ -25,14 +25,24 @@
 #endif
 
 
-static const char usage_str[] = "bitmask <input> <output>";
-static const char help_str[] = "Perform a wavelet (cdf97) transform.\n";
+static const char help_str[] = "Perform a wavelet (cdf97) transform.";
 
 
 
 
 int main_cdf97(int argc, char* argv[argc])
 {
+	unsigned int flags = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_UINT(true, &flags, "bitmask"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	bool inv = false;
 
 	const struct opt_s opts[] = {
@@ -40,15 +50,13 @@ int main_cdf97(int argc, char* argv[argc])
 		OPT_SET('i', &inv, "inverse"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	unsigned int flags = atoi(argv[1]);
-
 	long dims[DIMS];
-	complex float* idata = load_cfl(argv[2], DIMS, dims);
-	complex float* odata = create_cfl(argv[3], DIMS, dims);
+	complex float* idata = load_cfl(in_file, DIMS, dims);
+	complex float* odata = create_cfl(out_file, DIMS, dims);
 
 	md_copy(DIMS, dims, odata, idata, CFL_SIZE);
 	unmap_cfl(DIMS, dims, idata);

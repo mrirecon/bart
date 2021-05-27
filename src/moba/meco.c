@@ -1012,16 +1012,13 @@ struct nlop_s* nlop_meco_create(const int N, const long y_dims[N], const long x_
 	meco_calc_weights(CAST_UP(data), N, w_dims, scale_fB0[0]);
 
 	// scaling
-	complex float scaling[x_dims[COEFF_DIM]];
+	data->scaling = md_alloc(N, scaling_dims, CFL_SIZE);
 
 	for (int pind = 0; pind < x_dims[COEFF_DIM]; pind++)
-		scaling[pind] = 1.0;
+		data->scaling[pind] = 1.0;
 
 	long fB0_ind = x_dims[COEFF_DIM] - 1;
-	scaling[fB0_ind] = scale_fB0[1];
-
-	data->scaling = my_alloc(N, scaling_dims, CFL_SIZE);
-	md_copy(N, scaling_dims, data->scaling, scaling, CFL_SIZE);
+	data->scaling[fB0_ind] = scale_fB0[1];
 
 	nlop_fun_t meco_funs[] = {
 

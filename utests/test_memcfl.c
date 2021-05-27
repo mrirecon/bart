@@ -3,9 +3,11 @@
 
 #include "utest.h"
 
+#include "misc/io.h"
 #include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/memcfl.h"
+
 
 
 static bool test_memcfl_load(void)
@@ -17,6 +19,8 @@ static bool test_memcfl_load(void)
 		x[i] = i;
 
 	unmap_cfl(2, dims, x);
+
+	io_reserve_input("test.mem");
 
 	long dims2[2];
 	complex float* y = load_cfl("test.mem", 2, dims2);
@@ -31,6 +35,8 @@ static bool test_memcfl_load(void)
 	unmap_cfl(2, dims, y);
 
 	memcfl_unlink("test.mem");
+
+	io_memory_cleanup();
 
 	return true;
 }
@@ -51,6 +57,8 @@ static bool test_memcfl_register(void)
 
 	unmap_cfl(2, dims, x);
 
+	io_reserve_input("test.mem");
+
 	long dims2[2];
 	complex float* y = load_cfl("test.mem", 2, dims2);
 
@@ -66,6 +74,7 @@ static bool test_memcfl_register(void)
 	memcfl_unlink("test.mem");
 
 	xfree(x);
+	io_memory_cleanup();
 
 	return true;
 }
@@ -76,6 +85,8 @@ UT_REGISTER_TEST(test_memcfl_register);
 
 static bool test_memcfl_write(void)
 {
+	io_reserve_output("test.mem");
+
 	long dims[2] = { 10, 5 };
 	complex float* x = create_cfl("test.mem", 2, dims);
 
@@ -97,6 +108,8 @@ static bool test_memcfl_write(void)
 	unmap_cfl(2, dims, y);
 
 	memcfl_unlink("test.mem");
+
+	io_memory_cleanup();
 
 	return true;
 }

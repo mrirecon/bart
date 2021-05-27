@@ -23,25 +23,37 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char usage_str[] = "flags dim1 ... dimN <input> <output>";
-static const char help_str[] = "Reshape selected dimensions.\n";
+static const char help_str[] = "Reshape selected dimensions.";
 
 
 int main_reshape(int argc, char* argv[argc])
 {
-	cmdline(&argc, argv, 3, 100, usage_str, help_str, 0, NULL);
+	long flags = -1;
+	long count = 0;
+	long* dims = NULL;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_LONG(true, &flags, "flags"),
+		ARG_TUPLE(true, &count, 1, OPT_LONG, sizeof(*dims), &dims, "dim"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	unsigned long flags = atol(argv[1]);
 	unsigned int n = bitcount(flags);
 
-	assert((int)n + 3 == argc - 1);
+	assert((int)n == count);
 
 	long in_dims[DIMS];
 	long out_dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[n + 2], DIMS, in_dims);
+	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 
 	md_copy_dims(DIMS, out_dims, in_dims);
 	
@@ -49,11 +61,11 @@ int main_reshape(int argc, char* argv[argc])
 
 	for (unsigned int i = 0; i < DIMS; i++)
 		if (MD_IS_SET(flags, i))
-			out_dims[i] = atoi(argv[j++ + 2]);
+			out_dims[i] = dims[j++];
 
 	assert(j == n);
 
-	complex float* out_data = create_cfl(argv[n + 3], DIMS, out_dims);
+	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
 	md_reshape(DIMS, flags, out_dims, out_data, in_dims, in_data, CFL_SIZE);
 

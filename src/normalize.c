@@ -30,13 +30,23 @@
 
 
 
-static const char usage_str[] = "flags <input> <output>";
-static const char help_str[] = "Normalize along selected dimensions.\n";
+static const char help_str[] = "Normalize along selected dimensions.";
 
 
 
 int main_normalize(int argc, char* argv[argc])
 {
+	int flags = -1;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(true, &flags, "flags"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	bool l1 = false;
 
 	const struct opt_s opts[] = {
@@ -44,19 +54,17 @@ int main_normalize(int argc, char* argv[argc])
 		OPT_SET('b', &l1, "l1"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	int N = DIMS;
 	long dims[N];
-	complex float* data = load_cfl(argv[2], N, dims);
-
-	int flags = atoi(argv[1]);
+	complex float* data = load_cfl(in_file, N, dims);
 
 	assert(flags >= 0);
 
-	complex float* out = create_cfl(argv[3], N, dims);
+	complex float* out = create_cfl(out_file, N, dims);
 	md_copy(N, dims, out, data, CFL_SIZE);
 
 	(l1 ? normalizel1 : normalize)(N, flags, dims, out);

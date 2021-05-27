@@ -48,7 +48,6 @@
 #include "num/iovec.h"
 #include "num/ops.h"
 
-static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
 
@@ -81,6 +80,17 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 
 int main_pics(int argc, char* argv[argc])
 {
+	const char* ksp_file = NULL;
+	const char* sens_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &sens_file, "sensitivities"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	// Initialize default parameters
 
 	struct sense_conf conf = sense_defaults;
@@ -179,7 +189,7 @@ int main_pics(int argc, char* argv[argc])
 	};
 
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (NULL != image_truth_file)
 		im_truth = true;
@@ -207,7 +217,7 @@ int main_pics(int argc, char* argv[argc])
 
 	// load kspace and maps and get dimensions
 
-	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
+	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
         if (sms) {
 
@@ -219,7 +229,7 @@ int main_pics(int argc, char* argv[argc])
                 debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
         }
 
-	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
+	complex float* maps = load_cfl(sens_file, DIMS, map_dims);
 
 	unsigned int map_flags = md_nontriv_dims(DIMS, map_dims);
 
@@ -453,7 +463,7 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 
-	complex float* image = create_cfl(argv[3], DIMS, img_dims);
+	complex float* image = create_cfl(out_file, DIMS, img_dims);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
 

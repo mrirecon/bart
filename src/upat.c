@@ -22,13 +22,19 @@
 #include "misc/opts.h"
 
 
-static const char usage_str[] = "output";
-static const char help_str[] = "Create a sampling pattern.\n";
+static const char help_str[] = "Create a sampling pattern.";
 
 
 
 int main_upat(int argc, char* argv[argc])
 {
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
         dims[PHS1_DIM] = 128;
 	dims[PHS2_DIM] = 128;
@@ -46,11 +52,11 @@ int main_upat(int argc, char* argv[argc])
 		OPT_UINT('c', &center, "cen", "size of k-space center"),
 	};
 
-	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	complex float* pat = create_cfl(argv[1], DIMS, dims);
+	complex float* pat = create_cfl(out_file, DIMS, dims);
 
 	long Y = dims[PHS1_DIM];
 	long Z = dims[PHS2_DIM];

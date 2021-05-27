@@ -56,7 +56,6 @@
 
 #define NUM_REGS 10
 
-static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
 static void help_reg(void)
@@ -245,6 +244,17 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 
 int main_sqpics(int argc, char* argv[argc])
 {
+	const char* ksp_file = NULL;
+	const char* sens_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &sens_file, "sensitivities"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	// Initialize default parameters
 
 
@@ -316,7 +326,7 @@ int main_sqpics(int argc, char* argv[argc])
 		OPT_SET('S', &scale_im, "Re-scale the image after reconstruction"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (NULL != image_truth_file)
 		im_truth = true;
@@ -337,8 +347,8 @@ int main_sqpics(int argc, char* argv[argc])
 
 	// load kspace and maps and get dimensions
 
-	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
-	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
+	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
+	complex float* maps = load_cfl(sens_file, DIMS, map_dims);
 
 
 	complex float* traj = NULL;
@@ -626,7 +636,7 @@ int main_sqpics(int argc, char* argv[argc])
 
 
 
-	complex float* image = create_cfl(argv[3], DIMS, img_dims);
+	complex float* image = create_cfl(out_file, DIMS, img_dims);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
 

@@ -37,6 +37,7 @@ echo {{{ bart_git_version }}} > version.txt
 %endif
 
 make PARALLEL=1
+make doc/commands.txt
 
 %install
 rm -rf $RPM_BUILD_ROOT

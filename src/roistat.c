@@ -23,13 +23,23 @@
 
 
 
-static const char usage_str[] = "<roi> <input> [<output>]";
 static const char help_str[] = "Compute ROI statistics.";
 
 
 
 int main_roistat(int argc, char* argv[argc])
 {
+	const char* roi_file = NULL;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &roi_file, "roi"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(false, &out_file, "output"),
+	};
+
 	bool bessel = false;
 
 	enum stat { ALL, COUNT, SUM, MEAN, STD, VAR, ENERGY } stat = ALL;
@@ -45,7 +55,7 @@ int main_roistat(int argc, char* argv[argc])
 		OPT_SELECT('V', enum stat, &stat, VAR, "variance"),
 	};
 
-	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (bessel && !((STD == stat) || (VAR == stat)))
 		error("Bessel's correction makes sense only for variance or standard deviation");
@@ -56,31 +66,31 @@ int main_roistat(int argc, char* argv[argc])
 	long rdims[DIMS];
 	long idims[DIMS];
 
-	complex float* roi = load_cfl(argv[1], DIMS, rdims);
-	complex float* in = load_cfl(argv[2], DIMS, idims);
+	complex float* roi = load_cfl(roi_file, DIMS, rdims);
+	complex float* in = load_cfl(in_file, DIMS, idims);
 
 
 	const char* pat_name = NULL;
 	const char* avg_name = NULL;
 	const char* var_name = NULL;
 
-	if (4 == argc) {
+	if (NULL != out_file) {
 
 		switch (stat) {
 
 		case COUNT:
-			pat_name = argv[3];
+			pat_name = out_file;
 			break;
 
 		case SUM:
 		case MEAN:
-			avg_name = argv[3];
+			avg_name = out_file;
 			break;
 
 		case STD:
 		case VAR:
 		case ENERGY:
-			var_name = argv[3];
+			var_name = out_file;
 			break;
 
 		case ALL:

@@ -383,7 +383,9 @@ be performed with the following command:
     $ bart fft -i 7 kspace volume
 
 
-More information about each command can be found in 'doc/commands.txt'.
+More information about each command can be found using the
+help option '-h' or in the 'doc/commands.txt' file that can
+be generated using 'make doc/commands.txt'.
 
 
 

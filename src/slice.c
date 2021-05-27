@@ -18,6 +18,7 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
+#include "misc/debug.h"
 
 
 
@@ -30,50 +31,62 @@
 #endif
 
 
-static const char usage_str[] = "dim1 pos1 ... dimn posn <input> <output>";
-static const char help_str[] = "Extracts a slice from positions along dimensions.\n";
+static const char help_str[] = "Extracts a slice from positions along dimensions.";
 
 
 int main_slice(int argc, char* argv[argc])
 {
+
+	long count = 0;
+	long* dims = NULL;
+	long* poss = NULL;
+
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+
+	struct arg_s args[] = {
+
+		ARG_TUPLE(true, &count, 2, OPT_LONG, sizeof(long), &dims, "dim", OPT_LONG, sizeof(long), &poss, "pos"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	const struct opt_s opts[] = {};
 
-	cmdline(&argc, argv, 4, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	int count = argc - 3;
-	assert((count > 0) && (count % 2 == 0));
 
 	long in_dims[DIMS];
 	long out_dims[DIMS];
 	
-	complex float* in_data = load_cfl(argv[argc - 2], DIMS, in_dims);
+	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 	md_copy_dims(DIMS, out_dims, in_dims);
 
 	long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
 	unsigned long flags = 0L;
 
-	for (int i = 0; i < count; i += 2) {
+	for (int i = 0; i < count; i++) {
 
-		unsigned int dim = atoi(argv[i + 1]);
-		unsigned int pos = atoi(argv[i + 2]);
+		assert(dims[i] < DIMS);
+		assert(poss[i] < in_dims[dims[i]]);
 
-		assert(dim < DIMS);
-		assert(pos < in_dims[dim]);
-
-		out_dims[dim] = 1;
-		flags = MD_SET(flags, dim);
-		pos2[dim] = pos;
+		out_dims[dims[i]] = 1;
+		flags = MD_SET(flags, dims[i]);
+		pos2[dims[i]] = poss[i];
 	}
 
 
-	complex float* out_data = create_cfl(argv[argc - 1], DIMS, out_dims);
+	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
 	md_slice(DIMS, flags, pos2, in_dims, out_data, in_data, CFL_SIZE);
 
 	unmap_cfl(DIMS, out_dims, out_data);
 	unmap_cfl(DIMS, in_dims, in_data);
+
+	xfree(dims);
+	xfree(poss);
 	return 0;
 }
 

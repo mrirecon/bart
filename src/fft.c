@@ -24,7 +24,6 @@
 #endif
 
 
-static const char usage_str[] = "bitmask <input> <output>";
 static const char help_str[] = "Performs a fast Fourier transform (FFT) along selected dimensions.";
 
 
@@ -32,6 +31,17 @@ static const char help_str[] = "Performs a fast Fourier transform (FFT) along se
 
 int main_fft(int argc, char* argv[argc])
 {
+	unsigned long flags = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_ULONG(true, &flags, "bitmask"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	bool unitary = false;
 	bool inv = false;
 	bool center = true;
@@ -43,15 +53,13 @@ int main_fft(int argc, char* argv[argc])
 		OPT_CLEAR('n', &center, "un-centered"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long dims[DIMS];
-	complex float* idata = load_cfl(argv[2], DIMS, dims);
-	complex float* data = create_cfl(argv[3], DIMS, dims);
-
-	unsigned long flags = labs(atol(argv[1]));
+	complex float* idata = load_cfl(in_file, DIMS, dims);
+	complex float* data = create_cfl(out_file, DIMS, dims);
 
 
 	md_copy(DIMS, dims, data, idata, sizeof(complex float));

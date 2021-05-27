@@ -26,12 +26,20 @@
 #endif
 
 
-static const char usage_str[] = "<input> <output>";
-static const char help_str[] = "Compute T1 map from M_0, M_ss, and R_1*.\n";
+static const char help_str[] = "Compute T1 map from M_0, M_ss, and R_1*.";
 
 
 int main_looklocker(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	float threshold = 0.2;
 	float scaling_M0 = 2.0;
 	float Td = 0.;
@@ -42,18 +50,18 @@ int main_looklocker(int argc, char* argv[argc])
 		OPT_FLOAT('D', &Td, "delay", "Time between the middle of inversion pulse and the first excitation."),
 	};
 
-	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long idims[DIMS];
 	
-	complex float* in_data = load_cfl(argv[1], DIMS, idims);
+	complex float* in_data = load_cfl(in_file, DIMS, idims);
 
 	long odims[DIMS];
 	md_select_dims(DIMS, ~COEFF_FLAG, odims, idims);
 
-	complex float* out_data = create_cfl(argv[2], DIMS, odims);
+	complex float* out_data = create_cfl(out_file, DIMS, odims);
 
 	long istrs[DIMS];
 	md_calc_strides(DIMS, istrs, idims, CFL_SIZE);

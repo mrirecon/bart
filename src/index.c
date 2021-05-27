@@ -19,21 +19,30 @@
 #include "misc/mmio.h"
 #include "misc/io.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
-static const char usage_str[] = "dim size name";
-static const char help_str[] = "Create an array counting from 0 to {size-1} in dimensions {dim}.\n";
+static const char help_str[] = "Create an array counting from 0 to {size-1} in dimensions {dim}.";
 
 
 
 int main_index(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 3, usage_str, help_str);
+	int N = -1;
+	int s = -1;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(true, &N, "dim"),
+		ARG_INT(true, &s, "size"),
+		ARG_OUTFILE(true, &out_file, "name"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	int N = atoi(argv[1]);
-	int s = atoi(argv[2]);
 
 	assert(N >= 0);
 	assert(s >= 0);
@@ -45,7 +54,7 @@ int main_index(int argc, char* argv[argc])
 
 	dims[N] = s;
 
-	complex float* x = create_cfl(argv[3], N + 1, dims);
+	complex float* x = create_cfl(out_file, N + 1, dims);
 
 	for (int i = 0; i < s; i++)
 		x[i] = i;

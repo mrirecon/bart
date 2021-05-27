@@ -82,7 +82,8 @@ enum file_types_e file_type(const char* name)
 struct iofile_s {
 
 	const char* name;
-	bool out;
+	bool output;
+	bool input;
 	bool open;
 	struct iofile_s* prev;
 };
@@ -91,7 +92,7 @@ static struct iofile_s* iofiles = NULL;
 
 
 
-static void io_register(const char* name, bool out, bool open)
+static void io_register(const char* name, bool output, bool input, bool open)
 {
 	struct iofile_s* iop = iofiles;
 	bool new = true;
@@ -100,17 +101,24 @@ static void io_register(const char* name, bool out, bool open)
 
 		if (0 == strcmp(name, iop->name)) {
 
+			new = false;
 			if (iop->open) {
 
-				if (out || iop->out)
+				if (output || iop->output)
 					debug_printf(DP_WARN, "Overwriting file: %s\n", name);
 			} else {
 
-				if (out != iop->out)
-					error("%s: Input opened for writing or output opened for reading!\n", name);
+				if (open) {
+
+					if (output && !iop->output)
+						error("%s: Input opened for writing!\n", name);
+					if (input &&  !iop->input)
+						error("%s: Output opened for reading!\n", name);
+				}
 
 				iop->open = open;
-				new = false;
+				iop->output = output || iop->output;
+				iop->input = input || iop->input;
 			}
 		}
 
@@ -119,10 +127,14 @@ static void io_register(const char* name, bool out, bool open)
 
 	if (new) {
 
+		if (open)
+			debug_printf(DP_WARN, "%s: Opening file which was not previously reserved for in- or output!\n", name);
+
 		PTR_ALLOC(struct iofile_s, ion);
 
 		ion->name = strdup(name);
-		ion->out = out;
+		ion->output = output;
+		ion->input = input;
 		ion->open = open;
 		ion->prev = iofiles;
 
@@ -132,22 +144,27 @@ static void io_register(const char* name, bool out, bool open)
 
 void io_register_input(const char* name)
 {
-	io_register(name, false, true);
+	io_register(name, false, true, true);
 }
 
 void io_register_output(const char* name)
 {
-	io_register(name, true, true);
+	io_register(name, true, false, true);
 }
 
 void io_reserve_input(const char* name)
 {
-	io_register(name, false, false);
+	io_register(name, false, true, false);
 }
 
 void io_reserve_output(const char* name)
 {
-	io_register(name, true, false);
+	io_register(name, true, false, false);
+}
+
+void io_reserve_inout(const char* name)
+{
+	io_register(name, true, true, false);
 }
 
 void io_unregister(const char* name)
@@ -168,6 +185,20 @@ void io_unregister(const char* name)
 		}
 
 		iop = &io->prev;
+	}
+}
+
+void io_close(const char* name)
+{
+	struct iofile_s* iop = iofiles;
+
+
+	while (NULL != iop) {
+
+		if (0 == strcmp(name, iop->name))
+			iop->open = false;
+
+		iop = iop->prev;
 	}
 }
 
@@ -236,7 +267,7 @@ void io_unlink_if_opened(const char* name)
 				break;
 			}
 
-			io_unregister(name);
+			io_close(name);
 
 			break;
 		}
@@ -275,7 +306,7 @@ int write_cfl_header(int fd, const char* filename, int n, const long dimensions[
 
 		while (in) {
 
-			xdprintf(fd, " %c%s", in->out ? '>' : '<', in->name);
+			xdprintf(fd, " %s%s%s", in->input ? "<" : "", in->output ? ">" : "", in->name);
 			in = in->prev;
 		}
 

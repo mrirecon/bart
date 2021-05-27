@@ -30,13 +30,26 @@
 
 
 
-static const char usage_str[] = "flags [dims] <input> <output>";
 static const char help_str[] = "Perform wavelet transform.";
 
 
 
 int main_wavelet(int argc, char* argv[argc])
 {
+	unsigned int flags = 0;
+	long count = 0;
+	long* adims = NULL;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_UINT(true, &flags, "bitmask"),
+		ARG_TUPLE(false, &count, 1, OPT_LONG, sizeof(*adims), &adims, "dim"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	bool adj = false;
         
 	const struct opt_s opts[] = {
@@ -44,20 +57,22 @@ int main_wavelet(int argc, char* argv[argc])
 		OPT_SET('a', &adj, "adjoint (specify dims)"),
 	};
 
-	cmdline(&argc, argv, 3, 100, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
+	if (NULL != adims)
+		adj = true;
 
 	num_init();
 
-	unsigned int flags = atof(argv[1]);
 	unsigned int n = adj ? bitcount(flags) : 0;
 
-	assert((int)n + 3 == argc - 1);
+	assert((int)n == count);
 
 
 	const unsigned int N = DIMS;
 	long idims[N];
 
-	complex float* idata = load_cfl(argv[n + 2], N, idims);
+	complex float* idata = load_cfl(in_file, N, idims);
 
 	long dims[N];
 	md_copy_dims(N, dims, idims);
@@ -68,7 +83,7 @@ int main_wavelet(int argc, char* argv[argc])
 
 		for (unsigned int i = 0; i < N; i++)
 			if (MD_IS_SET(flags, i))
-				dims[i] = atoi(argv[j++ + 2]);
+				dims[i] = adims[j++];
 
 		assert(j == n);
 	}
@@ -86,7 +101,7 @@ int main_wavelet(int argc, char* argv[argc])
 	long odims[N];
 	md_copy_dims(N, odims, (adj ? linop_domain : linop_codomain)(w)->dims);
 
-	complex float* odata = create_cfl(argv[n + 3], N, odims);
+	complex float* odata = create_cfl(out_file, N, odims);
 
 	(adj ? linop_adjoint : linop_forward)(w, N, odims, odata, N, idims, idata);
 	

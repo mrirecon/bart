@@ -31,7 +31,6 @@
 #define LARMOR 4257.56
 #endif
 
-static const char usage_str[] = "<output>";
 static const char help_str[] = "Generate a wave PSF in hybrid space.\n"
 															 "- Assumes the first dimension is the readout dimension.\n"
 															 "- Only generates a 2 dimensional PSF.\n"
@@ -44,7 +43,13 @@ static const char help_str[] = "Generate a wave PSF in hybrid space.\n"
 
 int main_wavepsf(int argc, char* argv[argc])
 {
-	
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	// Spatial dimensions.
 	int sx = 512;				// Number of readout points.
 	int sy = 128;				// Number of phase encode points.
@@ -76,7 +81,7 @@ int main_wavepsf(int argc, char* argv[argc])
 		OPT_INT(	'n', &ncyc, "ncyc",		"Number of cycles in the gradient wave"),
 	};
 
-	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -137,7 +142,7 @@ int main_wavepsf(int argc, char* argv[argc])
 	}
 
 	const long psf_dims[3] = {sx, sy, 1};
-	complex float* psf_cfl = create_cfl(argv[1], 3, psf_dims);
+	complex float* psf_cfl = create_cfl(out_file, 3, psf_dims);
 	md_copy(3, psf_dims, psf_cfl, psf, sizeof(complex float));
 	unmap_cfl(3, psf_dims, psf_cfl);
 

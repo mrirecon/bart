@@ -326,7 +326,7 @@ CXXFLAGS += -std=c++14
 
 
 
-default: bart doc/commands.txt .gitignore
+default: bart .gitignore
 
 
 -include $(ALLDEPS)

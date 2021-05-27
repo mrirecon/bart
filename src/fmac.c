@@ -23,7 +23,6 @@
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "<input1> [<input2>] <output>";
 static const char help_str[] =
 		"Multiply <input1> and <input2> and accumulate in <output>.\n"
 		"If <input2> is not specified, assume all-ones.";
@@ -31,6 +30,17 @@ static const char help_str[] =
 
 int main_fmac(int argc, char* argv[argc])
 {
+	const char* in1_file = NULL;
+	const char* in2_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in1_file, "input1"),
+		ARG_INFILE(false, &in2_file, "input2"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	bool clear = true;
 	bool conj = false;
 	long squash = 0;
@@ -42,8 +52,7 @@ int main_fmac(int argc, char* argv[argc])
 		OPT_LONG('s', &squash, "b", "squash dimensions selected by bitmask b"),
 	};
 
-	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
-	int num_args = argc - 1;
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -53,13 +62,14 @@ int main_fmac(int argc, char* argv[argc])
 	long dims1[N];
 	long dims2[N];
 
-	complex float* data1 = load_cfl(argv[1], N, dims1);
+	complex float* data1 = load_cfl(in1_file, N, dims1);
 
 	complex float* data2 = NULL;
 	
-	if (3 == num_args)
-		data2 = load_cfl(argv[2], N, dims2);
-	else {
+	if (NULL != in2_file) {
+
+		data2 = load_cfl(in2_file, N, dims2);
+	} else {
 
 		md_singleton_dims(N, dims2);
 		data2 = md_alloc(N, dims2, CFL_SIZE);
@@ -72,7 +82,7 @@ int main_fmac(int argc, char* argv[argc])
 	long dimso[N];
 	md_select_dims(N, ~squash, dimso, dims);
 
-	complex float* out = create_cfl((3 == num_args) ? argv[3] : argv[2], N, dimso);
+	complex float* out = create_cfl(out_file, N, dimso);
 
 	if (clear) {
 
@@ -92,7 +102,7 @@ int main_fmac(int argc, char* argv[argc])
 	unmap_cfl(N, dims1, data1);
 	unmap_cfl(N, dimso, out);
 
-	if (3 == num_args)
+	if (NULL != in2_file)
 		unmap_cfl(N, dims2, data2);
 	else
 		md_free(data2);
