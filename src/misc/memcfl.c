@@ -138,7 +138,7 @@ void memcfl_unlink(const char* name)
 	// for regular files this is not a problem
 
 	if (0 < o->refcount)
-		error("Error unlinkin mem cfl\n");
+		error("Error unlinking mem cfl\n");
 
 	xfree(o->name);
 	xfree(o->dims);
