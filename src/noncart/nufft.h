@@ -41,6 +41,8 @@ extern struct linop_s* nufft_create2(unsigned int N,
 			     const complex float* weights,
 			     const long bas_dims[N],
 			     const complex float* basis,
+			     const long nupsf_dims[N],
+			     complex float** nupsf,
 			     struct nufft_conf_s conf);
 
 extern _Complex float* compute_psf(unsigned int N,
