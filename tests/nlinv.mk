@@ -15,14 +15,26 @@ tests/test-nlinv-sms: repmat fft nlinv nrmse scale $(TESTS_OUT)/shepplogan_coil_
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/repmat 13 4 $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp.ra		;\
 	$(TOOLDIR)/fft 8192 ksp.ra ksp2.ra						;\
-	$(TOOLDIR)/nlinv $(TESTS_OUT)/shepplogan_coil_ksp.ra r.ra			;\
-	$(TOOLDIR)/nlinv ksp2.ra r2.ra							;\
+	$(TOOLDIR)/nlinv -S $(TESTS_OUT)/shepplogan_coil_ksp.ra r.ra			;\
+	$(TOOLDIR)/nlinv -S ksp2.ra r2.ra						;\
 	$(TOOLDIR)/repmat 13 4 r.ra r3.ra						;\
-	$(TOOLDIR)/scale 2. r2.ra r4.ra							;\
-	$(TOOLDIR)/nrmse -s -t 0.1 r3.ra r4.ra						;\
+	$(TOOLDIR)/nrmse -t 0.1 r3.ra r2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-nlinv-sms-noncart: repmat fft nlinv nrmse scale traj phantom
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y21 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra					;\
+	$(TOOLDIR)/repmat 13 4 ksp.ra ksp_rep.ra					;\
+	$(TOOLDIR)/fft 8192 ksp_rep.ra ksp2.ra						;\
+	$(TOOLDIR)/nlinv -S -i10 -t traj2.ra ksp.ra r.ra					;\
+	$(TOOLDIR)/nlinv -S -i10 -t traj2.ra ksp2.ra r2.ra					;\
+	$(TOOLDIR)/repmat 13 4 r.ra r3.ra						;\
+	$(TOOLDIR)/nrmse -t 0.1 r3.ra r2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 tests/test-nlinv-norm: nlinv rss fmac nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -188,7 +200,7 @@ tests/test-nlinv-noncart-maps-dims: traj phantom nlinv show
 
 
 
-TESTS += tests/test-nlinv tests/test-nlinv-sms
+TESTS += tests/test-nlinv tests/test-nlinv-sms tests/test-nlinv-sms-noncart
 TESTS += tests/test-nlinv-batch tests/test-nlinv-batch2
 TESTS += tests/test-nlinv-noncart tests/test-nlinv-precomp
 TESTS += tests/test-nlinv-maps-dims tests/test-nlinv-noncart-maps-dims
