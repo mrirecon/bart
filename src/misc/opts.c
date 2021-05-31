@@ -832,7 +832,7 @@ static int add_tuple_args(int bufsize, char buf[static bufsize], const struct ar
 		pos += xsnprintf(bufsize - pos, buf + pos, " ");
 	}
 
-	pos += snprintf(buf + pos, pos, "... ");
+	pos += xsnprintf(bufsize - pos, buf + pos, "... ");
 
 	for (int k = 0; k < arg->nargs; ++k ) {
 
