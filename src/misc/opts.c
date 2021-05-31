@@ -877,7 +877,7 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 		else
 			max_args += args[i].nargs;
 
-		if (!args[i].required)
+		if (args[i].required)
 			min_args += args[i].nargs;
 
 		bool file = false;
