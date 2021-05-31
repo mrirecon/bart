@@ -256,7 +256,8 @@ int main_moba(int argc, char* argv[argc])
 	md_calc_strides(DIMS, msk_strs, msk_dims, CFL_SIZE);
 
 	complex float* mask = NULL;
-	complex float* sens = ((NULL == sens_file) ? create_cfl : anon_cfl)((NULL == sens_file) ? sens_file : "", DIMS, coil_dims);
+	bool sensout = (NULL != sens_file);
+	complex float* sens = (sensout ? create_cfl : anon_cfl)(sensout ? sens_file : "", DIMS, coil_dims);
 
 
 	md_zfill(DIMS, img_dims, img, 1.0);
