@@ -74,6 +74,8 @@ int main_bitmask(int argc, char* argv[argc])
 		bart_printf("\n");
 	}
 
+	xfree(dims);
+
 	return 0;
 }
 

@@ -66,6 +66,7 @@ int main_poly(int argc, char* argv[argc])
 	}
 
 	unmap_cfl(N, p_dims, p);
+	xfree(as);
 
 	return 0;
 }
