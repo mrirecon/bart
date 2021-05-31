@@ -51,7 +51,7 @@ int main_poly(int argc, char* argv[argc])
 	assert(L <= 256 * 256);
 	assert(N >= 0);
 	assert(N + 1 <= L);
-	assert(argc == 5 + N);
+	assert(N + 1 == count);
 
 	long p_dims[] = { [0 ... DIMS - 1] = 1 };
 	p_dims[0] = L;
@@ -59,8 +59,11 @@ int main_poly(int argc, char* argv[argc])
 	md_clear(DIMS, p_dims, p, CFL_SIZE);
 
 	for (int x = 0; x < L; x++) {
+
 		p[x] = (complex float) as[0];
+
 		for (int n = 1; n < N + 1; n++) {
+
 			p[x] += ((complex float) as[n]) * cpowf(x, n);
 		}
 	}
