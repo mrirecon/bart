@@ -146,6 +146,81 @@ int main_nlinv(int argc, char* argv[argc])
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 	}
 
+	if (NULL != trajectory) {
+
+		assert(NULL == psf_file);
+
+		conf.noncart = true;
+
+		long dims[DIMS];
+		long trj_dims[DIMS];
+		long psf_dims[DIMS];
+
+		complex float* traj = load_cfl(trajectory, DIMS, trj_dims);
+
+		if (0 == md_calc_size(3, my_img_dims)) {
+
+			estimate_im_dims(DIMS, FFT_FLAGS, dims, trj_dims, traj);
+			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", dims[0], dims[1], dims[2]);
+		} else 
+			md_copy_dims(3, dims, my_img_dims);
+
+		md_zsmul(DIMS, trj_dims, traj, traj, 2.);
+
+		for (unsigned int i = 0; i < DIMS; i++)
+			if (MD_IS_SET(FFT_FLAGS, i) && (1 < dims[i]))
+				dims[i] *= 2;
+		md_copy_dims(DIMS - 3, dims + 3, ksp_dims + 3);
+
+		debug_printf(DP_DEBUG3, "Start gridding psf ...");
+		md_select_dims(DIMS, ~(COIL_FLAG|MAPS_FLAG), psf_dims, dims);
+		complex float* psf = compute_psf(DIMS, psf_dims, trj_dims, traj, trj_dims, NULL, pat_dims, pattern, false, nufft_lowmem);
+		fftuc(DIMS, psf_dims, FFT_FLAGS, psf, psf);
+		float psf_sc = 1.;
+		for (int i = 0; i < 3; i++)
+			if (1 != psf_dims[i])
+				psf_sc *= 2.;
+		md_zsmul(DIMS, psf_dims, psf, psf, psf_sc);
+
+		unmap_cfl(DIMS, pat_dims, pattern);
+		md_copy_dims(DIMS, pat_dims, psf_dims);
+		pattern = anon_cfl("", DIMS, pat_dims);
+		md_copy(DIMS, pat_dims, pattern, psf, CFL_SIZE);
+		md_free(psf);
+		debug_printf(DP_DEBUG3, "finished\n");
+
+
+		debug_printf(DP_DEBUG3, "Start creating nufft-objects...");
+		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
+		nufft_conf.toeplitz = false;
+		nufft_conf.lowmem = nufft_lowmem;
+		const struct linop_s* nufft_op = nufft_create(DIMS, ksp_dims, dims, trj_dims, traj, NULL, nufft_conf);
+		debug_printf(DP_DEBUG3, "finished\n");
+
+		complex float* kgrid = anon_cfl("", DIMS, dims);
+		linop_adjoint(nufft_op, DIMS, dims, kgrid, DIMS, ksp_dims, kspace);
+		linop_free(nufft_op);
+		fftuc(DIMS, dims, FFT_FLAGS, kgrid, kgrid);
+
+		if (!use_compat_to_version("v0.7.00")) {
+
+			float sc = 1.;
+			for (int i = 0; i < 3; i++)
+				if (1 != dims[i])
+					sc *= 2.;
+
+			md_zsmul(DIMS, dims, kgrid, kgrid, sqrtf(sc));
+		}
+
+		unmap_cfl(DIMS, ksp_dims, kspace);
+		kspace = kgrid;
+
+		md_copy_dims(DIMS, ksp_dims, dims);
+
+		unmap_cfl(DIMS, trj_dims, traj);
+		trajectory = NULL;
+	}
+
 	// The only multimap we understand with is the one we do ourselves, where
 	// we allow multiple images and sensitivities during the reconstruction
 	assert(1 == ksp_dims[MAPS_DIM]);
