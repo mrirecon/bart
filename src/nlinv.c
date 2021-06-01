@@ -231,35 +231,6 @@ int main_nlinv(int argc, char* argv[argc])
 	long dims[DIMS];
 	md_copy_dims(DIMS, dims, ksp_dims);
 
-	complex float* traj = NULL;
-	long trj_dims[DIMS];
-
-	if (NULL != trajectory) {
-
-		conf.noncart = true;
-
-		traj = load_cfl(trajectory, DIMS, trj_dims);
-
-		debug_print_dims(DP_INFO, 3, my_img_dims);
-
-		const float oversampling = 2;
-
-		md_zsmul(DIMS, trj_dims, traj, traj, oversampling);
-
-		if (0 == my_img_dims[0] + my_img_dims[1] + my_img_dims[2]) {
-
-			estimate_fast_sq_im_dims(3, dims, trj_dims, traj);
-
-		} else {
-
-			md_copy_dims(3, dims, my_img_dims);
-
-			for (int i = 0; i < 3; i++)
-				if (1 != dims[i])
-					dims[i] *= oversampling;
-		}
-	}
-
 	// for ENLIVE maps
 	dims[MAPS_DIM] = nmaps;
 
@@ -332,85 +303,8 @@ int main_nlinv(int argc, char* argv[argc])
 		md_clear(DIMS, sens_dims, ksens, CFL_SIZE);
 	}
 
-
-
-	complex float* psf = NULL;
-	long psf_dims[DIMS];
-
-	complex float* kgrid = NULL;
-	long kgrid_dims[DIMS];
-	struct linop_s* nufft_op;
-
-
 	if ((-1 == restrict_fov) && conf.noncart)
 		restrict_fov = 0.5;
-
-
-
-	if (NULL != trajectory) {
-
-		debug_printf(DP_DEBUG3, "Start gridding psf ...");
-
-		md_select_dims(DIMS, ~(COIL_FLAG|MAPS_FLAG), psf_dims, sens_dims);
-
-		psf = compute_psf(DIMS, psf_dims, trj_dims, traj, trj_dims, NULL, pat_dims, pattern, false, nufft_lowmem);
-
-		fftuc(DIMS, psf_dims, FFT_FLAGS, psf, psf);
-
-		float psf_sc = 1.;
-
-		for (int i = 0; i < 3; i++)
-			if (1 != psf_dims[i])
-				psf_sc *= 2.;
-
-		md_zsmul(DIMS, psf_dims, psf, psf, psf_sc);
-		debug_printf(DP_DEBUG3, "finished\n");
-
-
-		debug_printf(DP_DEBUG3, "Start creating nufft-objects...");
-
-		md_select_dims(DIMS, ~MAPS_FLAG, kgrid_dims, sens_dims);
-
-		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
-		nufft_conf.toeplitz = false;
-		nufft_conf.lowmem = nufft_lowmem;
-
-		nufft_op = nufft_create(DIMS, ksp_dims, kgrid_dims, trj_dims, traj, NULL, nufft_conf);
-
-		debug_printf(DP_DEBUG3, "finished\n");
-
-		kgrid = anon_cfl("", DIMS, kgrid_dims);
-
-		linop_adjoint(nufft_op, DIMS, kgrid_dims, kgrid, DIMS, ksp_dims, kspace);
-		linop_free(nufft_op);
-
-		unmap_cfl(DIMS, ksp_dims, kspace);
-
-		fftuc(DIMS, kgrid_dims, FFT_FLAGS, kgrid, kgrid);
-
-		if (!use_compat_to_version("v0.7.00")) {
-
-			float sc = 1.;
-
-			for (int i = 0; i < 3; i++)
-				if (1 != dims[i])
-					sc *= 2.;
-
-			md_zsmul(DIMS, kgrid_dims, kgrid, kgrid, sqrtf(sc));
-		}
-
-	} else {
-
-		md_copy_dims(DIMS, kgrid_dims, ksp_dims);
-		md_copy_dims(DIMS, psf_dims, pat_dims);
-
-		kgrid = kspace;
-		psf = pattern;
-	}
-
-
-
-
 
 	if (-1. == restrict_fov) {
 
@@ -434,21 +328,19 @@ int main_nlinv(int argc, char* argv[argc])
 			img_dims, img, ref_img,
 			sens_dims, sens,
 			sens_dims, ksens, ref_sens,
-			kgrid_dims, kgrid,
-			psf_dims, psf,
+			ksp_dims, kspace,
+			pat_dims, pattern,
 			MD_SINGLETON_DIMS(DIMS), NULL,
 			msk_dims, mask,
-			kgrid_dims);
+			ksp_dims);
 
-	unmap_cfl(DIMS, kgrid_dims, kgrid);
+	unmap_cfl(DIMS, ksp_dims, kspace);
 
 	postprocess(dims, normalize, sens_strs, sens, img_strs, img,
 			img_output_dims, img_output_strs, img_output);
 
 
 
-	if (NULL != trajectory)
-		md_free(psf);
 
 	md_free(mask);
 	md_free(img);
