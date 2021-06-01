@@ -132,6 +132,20 @@ int main_nlinv(int argc, char* argv[argc])
 		conf.sms = true;
 	}
 
+
+	complex float* pattern = NULL;
+	long pat_dims[DIMS];
+
+	if (NULL != psf_file) {
+
+		pattern = load_cfl(psf_file, DIMS, pat_dims);
+	} else {
+
+		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
+		pattern = anon_cfl("", DIMS, pat_dims);
+		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
+	}
+
 	// The only multimap we understand with is the one we do ourselves, where
 	// we allow multiple images and sensitivities during the reconstruction
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -243,29 +257,6 @@ int main_nlinv(int argc, char* argv[argc])
 		md_clear(DIMS, sens_dims, ksens, CFL_SIZE);
 	}
 
-
-	complex float* pattern = NULL;
-	long pat_dims[DIMS];
-
-	if (NULL != psf_file) {
-
-		pattern = load_cfl(psf_file, DIMS, pat_dims);
-
-		// FIXME: check compatibility
-
-		if (pattern_for_each_coil) {
-
-			assert(sens_dims[COIL_DIM] == pat_dims[COIL_DIM]);
-		}
-
-	} else {
-
-		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
-
-		pattern = anon_cfl("", DIMS, pat_dims);
-
-		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
-	}
 
 
 	complex float* psf = NULL;
