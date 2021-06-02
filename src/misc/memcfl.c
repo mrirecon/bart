@@ -53,6 +53,22 @@ complex float* memcfl_create(const char* name, int D, const long dims[D])
 }
 
 
+bool memcfl_exists(const char* name)
+{
+	struct memcfl* mem = memcfl_list;
+
+	while (NULL != mem) {
+
+		if (0 == strcmp(mem->name, name))
+			return true;
+
+		mem = mem->next;
+	}
+
+	return false;
+}
+
+
 complex float* memcfl_load(const char* name, int D, long dims[D])
 {
 	struct memcfl* mem = memcfl_list;
