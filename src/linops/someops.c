@@ -1559,8 +1559,14 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
 	md_zsmul(data->N, data->dims, out, in, data->nscale);
 }
 
-
-static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool forward, bool center)
+/**
+ * Uncentered forward Fourier transform linear operator
+ *
+ * @param N number of dimensions
+ * @param dims dimensions of input
+ * @param flags bitmask of the dimensions to apply the Fourier transform
+ */
+struct linop_s* linop_fft_create(int N, const long dims[N], unsigned long flags)
 {
 	const struct operator_s* plan = NULL;
 	const struct operator_s* iplan = NULL;
@@ -1597,59 +1603,68 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 	md_select_dims(N, flags, fft_dims, dims);
 	data->nscale = (float)md_calc_size(N, fft_dims);
 
-	lop_fun_t apply = forward ? fft_linop_apply : fft_linop_adjoint;
-	lop_fun_t adjoint = forward ? fft_linop_adjoint : fft_linop_apply;
+	return linop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), fft_linop_apply, fft_linop_adjoint, fft_linop_normal, NULL, fft_linop_free);
+}
 
-	struct linop_s* lop =  linop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), apply, adjoint, fft_linop_normal, NULL, fft_linop_free);
+/**
+ * Uncentered backward Fourier transform linear operator
+ *
+ * @param N number of dimensions
+ * @param dims dimensions of input
+ * @param flags bitmask of the dimensions to apply the Fourier transform
+ */
+struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned long flags)
+{
+	struct linop_s* lop_fft = linop_fft_create(N, dims, flags);
+	struct linop_s* lop_ifft = (struct linop_s*)linop_get_adjoint(lop_fft);
 
-	if (center) {
+	linop_free(lop_fft);
+	return lop_ifft;
+}
 
-		complex float* fftmod_mat = md_alloc(N, fft_dims, CFL_SIZE);
 
-		float scale = sqrt(md_calc_size(N, fft_dims));
-		md_zfill(N, fft_dims, fftmod_mat, 1. / sqrt(scale));
+static struct linop_s* linop_fft_create_priv(	int N, const long dims[N], unsigned long flags,
+						bool forward, unsigned long center_flags, unsigned long unitary_flags,
+						unsigned long pre_flags, const complex float* pre_diag,
+						unsigned long post_flags, const complex float* post_diag)
+{
+	flags = flags & md_nontriv_dims(N, dims);
+	center_flags = center_flags & flags;
+	unitary_flags = unitary_flags & flags;
 
-		(forward ? fftmod : ifftmod)(N, fft_dims, flags, fftmod_mat, fftmod_mat);
-		
-		struct linop_s* mod = linop_cdiag_create(N, dims, flags, fftmod_mat);
-		
-		struct linop_s* tmp = linop_chain(mod, lop);
+	struct linop_s* lop = (forward ? linop_fft_create : linop_ifft_create)(N, dims, flags);
 
-		linop_free(lop);
+	if (0 != (center_flags | unitary_flags)) {
 
-		lop = linop_chain_FF(tmp, mod);
+		long fft_mod_dims[N];
+		md_select_dims(N, center_flags, fft_mod_dims, dims);
 
-		md_free(fftmod_mat);
+		complex float* fftmod_a = md_alloc(N, fft_mod_dims, CFL_SIZE);
+
+		long fft_scale_dims[N];
+		md_select_dims(N, unitary_flags, fft_scale_dims, dims);
+		md_zfill(N, fft_mod_dims, fftmod_a, 1. / sqrtf(sqrtf(md_calc_size(N, fft_scale_dims))));
+
+		(forward ? fftmod : ifftmod)(N, fft_mod_dims, center_flags & flags, fftmod_a, fftmod_a);
+
+		struct linop_s* lop_fftmod = linop_cdiag_create(N, dims, center_flags, fftmod_a);
+		md_free(fftmod_a);
+
+		lop = linop_chain_FF(lop, linop_clone(lop_fftmod));
+		lop = linop_chain_FF(lop_fftmod, lop);
+	}
+
+	if (NULL != post_diag) {
+
+		lop = linop_chain_FF(lop, linop_cdiag_create(N, dims, post_flags, post_diag));
+	}
+
+	if (NULL != pre_diag) {
+
+		lop = linop_chain_FF(linop_cdiag_create(N, dims, pre_flags, pre_diag), lop);
 	}
 
 	return lop;
-}
-
-
-/**
- * Uncentered forward Fourier transform linear operator
- *
- * @param N number of dimensions
- * @param dims dimensions of input
- * @param flags bitmask of the dimensions to apply the Fourier transform
- * @param gpu use gpu
- */
-struct linop_s* linop_fft_create(int N, const long dims[N], unsigned int flags)
-{
-	return linop_fft_create_priv(N, dims, flags, true, false);
-}
-
-
-/**
- * Uncentered inverse Fourier transform linear operator
- *
- * @param N number of dimensions
- * @param dims dimensions of input
- * @param flags bitmask of the dimensions to apply the Fourier transform
- */
-struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned int flags)
-{
-	return linop_fft_create_priv(N, dims, flags, false, false);
 }
 
 
@@ -1662,7 +1677,7 @@ struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned int flags)
  */
 struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, true, true);
+	return linop_fft_create_priv(N, dims, flags, true, flags, flags, 0, NULL, 0, NULL);
 }
 
 
@@ -1675,9 +1690,47 @@ struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags)
  */
 struct linop_s* linop_ifftc_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, false, true);
+	return linop_fft_create_priv(N, dims, flags, false, flags, flags, 0, NULL, 0, NULL);
 }
 
+/**
+ * Centered forward Fourier transform linear operator chained with cdiag operator from both sides
+ *
+ * @param N number of dimensions
+ * @param dims dimensions of input
+ * @param flags bitmask of the dimensions to apply the Fourier transform
+ * @param center_flags bitmask for centerd fft
+ * @param unitary_flags bitmask for unitary scaling
+ * @param pre_flags bitmask of the dimensions of the pre-chained diag operator
+ * @param pre_diag diagonal of the pre-chained diag operator
+ * @param post_flags bitmask of the dimensions of the post-chained diag operator
+ * @param post_diag diagonal of the post-chained diag operator
+ */
+struct linop_s* linop_fft_generic_create(int N, const long dims[N], unsigned long flags, unsigned long center_flags, unsigned long unitary_flags,
+					   unsigned long pre_flag, const complex float* pre_diag, unsigned long post_flag, const complex float* post_diag)
+{
+	return linop_fft_create_priv(N, dims, flags, true, center_flags, unitary_flags, pre_flag, pre_diag, post_flag, post_diag);
+}
+
+
+/**
+ * Centered inverse Fourier transform linear operator chained with cdiag operator from both sides
+ *
+ * @param N number of dimensions
+ * @param dims dimensions of input
+ * @param flags bitmask of the dimensions to apply the Fourier transform
+ * @param center_flags bitmask for centerd fft
+ * @param unitary_flags bitmask for unitary scaling
+ * @param pre_flags bitmask of the dimensions of the pre-chained diag operator
+ * @param pre_diag diagonal of the pre-chained diag operator
+ * @param post_flags bitmask of the dimensions of the post-chained diag operator
+ * @param post_diag diagonal of the post-chained diag operator
+ */
+struct linop_s* linop_ifft_generic_create(int N, const long dims[N], unsigned long flags, unsigned long center_flags, unsigned long unitary_flags,
+					    unsigned long pre_flag, const complex float* pre_diag, unsigned long post_flag, const complex float* post_diag)
+{
+	return linop_fft_create_priv(N, dims, flags, false, center_flags, unitary_flags, pre_flag, pre_diag, post_flag, post_diag);
+}
 
 
 struct linop_cdf97_s {
