@@ -154,9 +154,9 @@ Unit_Test_Tensorflow:
     - apt-get update -qq && apt-get install -y -qq
     - apt-get install -y nvidia-cuda-toolkit
     - apt-get install -y wget
-    - wget https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
-    - mkdir tensorflow && tar -C tensorflow -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
-    - TENSORFLOW=1 TENSORFLOW_BASE=./tensorflow/ CUDA=1 make utest
+    - wget https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-2.4.0.tar.gz
+    - mkdir tensorflow && tar -C tensorflow -xvzf libtensorflow-cpu-linux-x86_64-2.4.0.tar.gz
+    - TENSORFLOW=1 TENSORFLOW_BASE=./tensorflow/ CUDA=0 make utest
   needs: [Build_Tensorflow]
   dependencies:
     - Build_Tensorflow
