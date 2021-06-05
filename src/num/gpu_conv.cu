@@ -348,8 +348,8 @@ __global__ static void kern_im2col_valid(struct im2col_descriptor_uint32 config,
 
 	for (long i = start; i < config.N_out_elements; i += stride) {
 
-
 		uint32_t i_new = i;
+		uint32_t i_cur = i;
 		long in_index = 0;
 
 		if (1 < config.NC) {
