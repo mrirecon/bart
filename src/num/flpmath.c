@@ -1825,6 +1825,7 @@ void md_add2(unsigned int D, const long dims[D], const long ostr[D], float* optr
 {
 	if (simple_add(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
 		return;
+
 	MAKE_3OP(add, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
