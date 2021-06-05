@@ -767,7 +767,7 @@ utest_gpu: utests_gpu-all
 endif	# MAKESTAGE
 
 
-install: bart $(root)/doc/commands.txt
+install: bart
 	install -d $(DESTDIR)/$(PREFIX)/bin/
 	install bart $(DESTDIR)/$(PREFIX)/bin/
 	install -d $(DESTDIR)/$(PREFIX)/share/doc/bart/
