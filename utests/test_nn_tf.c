@@ -29,8 +29,8 @@ static bool test_nn_tf_forward(void)
 	complex float* in0 = md_alloc(dom0->N, dom0->dims, dom0->size);
 	complex float* in1 = md_alloc(dom1->N, dom1->dims, dom1->size);
 
-	md_zfill(dom0->N, dom0->dims, in0,  1.0);
-	md_zfill(dom1->N, dom1->dims, in1, +1.0i);
+	md_zfill(dom0->N, dom0->dims, in0, 1.);
+	md_zfill(dom1->N, dom1->dims, in1, 0. + 1.i);
 
 	auto cod = nlop_generic_codomain(nlop, 0);
 
@@ -86,7 +86,7 @@ static bool test_nn_tf_adjoint(void)
 	complex float* grad1 = md_alloc(dom0->N, dom0->dims, dom0->size);
 	complex float* grad2 = md_alloc(dom0->N, dom0->dims, dom0->size);
 
-	complex float grad_ys[1] = { 1. + 0.0i};
+	complex float grad_ys[1] = { 1. + 0.i };
 
 	auto gradop_1 = nlop_get_derivative(nlop, 0, 0);
 	linop_adjoint(gradop_1, dom0->N, dom0->dims, grad1, cod->N, cod->dims, grad_ys);
@@ -99,7 +99,7 @@ static bool test_nn_tf_adjoint(void)
 	// y = (x_1 - x_2)^2 -> dx/dx1 = - dy/dx2
 	// factor of 0.5 for grad_ys[0] = 2 (test linearity)
 
-	md_zaxpy( dom0->N, dom0->dims, grad1, 0.5, grad2);
+	md_zaxpy(dom0->N, dom0->dims, grad1, 0.5, grad2);
 
 	if (UT_TOL < md_zrms(dom0->N, dom0->dims, grad1))
 		UT_ASSERT(false);

@@ -574,8 +574,9 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 
 #ifdef TF_AUTOGRAD
 #ifdef TENSORFLOW
-		TF_AddGradients(graph, data->outputs_op, 1, (*inputs_op) + i, 1, data->grad_ys_op, data->status, (*grad_op) + i);
-		if (TF_GetCode(status) != TF_OK)
+		TF_AddGradients(graph, data->outputs_op, 1, &(*inputs_op)[i], 1, data->grad_ys_op, data->status, &(*grad_op)[i]);
+
+		if (TF_OK != TF_GetCode(status))
 			error("Add Tensorflow Gradient failed: %s\n", TF_Message(status));
 #endif
 #else
