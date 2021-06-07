@@ -28,9 +28,10 @@ typedef void (*md_z3opd_t)(unsigned int D, const long dims[D], const long ostrs[
 
 static bool test_md_z3op(md_z3op_t function)
 {
-	const long dims[] = {2, 5, 3};
-	const int N = ARRAY_SIZE(dims);
+	enum { N = 3 };
+	const long dims[N] = { 2, 5, 3 };
 	long strs[N];
+
 	md_calc_strides(N, strs, dims, CFL_SIZE);
 
 	complex float* optr_cpu = md_alloc(N, dims, CFL_SIZE);
@@ -68,8 +69,7 @@ static bool test_md_z3op(md_z3op_t function)
 	md_free(iptr1_gpu);
 	md_free(iptr2_gpu);
 
-	if (err > 0)
-		debug_printf(DP_WARN, "err: %e\n", err);
+	debug_printf(DP_DEBUG1, "cuda md_z3op err: %e\n", err);
 
 	return (UT_TOL >= err);
 }
@@ -121,8 +121,8 @@ UT_GPU_REGISTER_TEST(test_md_zgreatequal2);
 
 static bool test_md_z2op(md_z2op_t function)
 {
-	const long dims[] = {2, 5, 3};
-	const int N = ARRAY_SIZE(dims);
+	enum { N = 3 };
+	const long dims[N] = { 2, 5, 3 };
 	long strs[N];
 	md_calc_strides(N, strs, dims, CFL_SIZE);
 
@@ -155,8 +155,7 @@ static bool test_md_z2op(md_z2op_t function)
 	md_free(optr_gpu);
 	md_free(iptr1_gpu);
 
-	if (err > 0)
-		debug_printf(DP_WARN, "err: %e\n", err);
+	debug_printf(DP_DEBUG1, "cuda md_z2op err: %e\n", err);
 
 	return (UT_TOL >= err);
 }
