@@ -5,9 +5,11 @@
 
 #include "utest.h"
 
-
+#ifdef USE_CUDNN
 int cudnn = 1;
-
+#else
+int cudnn = 0;
+#endif
 
 static bool test_convcorr_cf_1D(void)
 {
