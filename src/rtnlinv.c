@@ -551,7 +551,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 	debug_printf(DP_DEBUG2, "Total time: %.2f s\n", recosecs);
 
-	exit(0);
+	return 0;
 }
 
 

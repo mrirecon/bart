@@ -389,6 +389,6 @@ int main_bin(int argc, char* argv[argc])
 	unmap_cfl(DIMS, labels_dims, labels);
 	unmap_cfl(DIMS, src_dims, src);
 
-	exit(0);
+	return 0;
 }
 

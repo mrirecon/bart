@@ -60,7 +60,7 @@ int main_index(int argc, char* argv[argc])
 		x[i] = i;
 
 	unmap_cfl(N + 1, dims, x);
-	exit(0);
+	return 0;
 }
 
 

@@ -211,5 +211,5 @@ int main_rmfreq(int argc, char* argv[argc])
 	unmap_cfl(DIMS, k_dims, k);
 	unmap_cfl(DIMS, k_dims, k_cor);
 
-	exit(0);
+	return 0;
 }
