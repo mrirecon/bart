@@ -106,7 +106,7 @@ void reduce_zadd_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr
 	assert(optr == iptr1);
 
 	assert((2 == N) || (1 == N));
-	for (uint i = 0; i < N; i++)
+	for (unsigned int i = 0; i < N; i++)
 		assert(ostr[i] == istr1[i]);
 	
 	if (1 == N) {
@@ -234,7 +234,7 @@ void reduce_add_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr[
 	assert(optr == iptr1);
 
 	assert((2 == N) || (1 == N));
-	for (uint i = 0; i < N; i++)
+	for (unsigned int i = 0; i < N; i++)
 		assert(ostr[i] == istr1[i]);
 	
 	if (1 == N) {

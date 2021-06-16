@@ -159,7 +159,7 @@ static bool detect_convcorr(	int N,
 			long test_strides[] = { istrs[i] / istrs_triv, 1, 2, 3, 4, 5, 6, 7, 8 };
 			bool found = false;
 
-			for (uint j = 0; !found && j < ARRAY_SIZE(test_strides); j++) {
+			for (unsigned int j = 0; !found && j < ARRAY_SIZE(test_strides); j++) {
 
 				strides[i] = test_strides[j];
 
@@ -582,13 +582,13 @@ static bool check_trivial_cf(	int N,
 		return false;
 
 	// check contiguous memory
-	if ((uint)N > md_calc_blockdim(N, odims, ostrs, size))
+	if ((unsigned int)N > md_calc_blockdim(N, odims, ostrs, size))
 		return false;
 
-	if ((uint)N > md_calc_blockdim(N, idims, istrs, size))
+	if ((unsigned int)N > md_calc_blockdim(N, idims, istrs, size))
 		return false;
 
-	if ((uint)N > md_calc_blockdim(N, kdims, kstrs, size))
+	if ((unsigned int)N > md_calc_blockdim(N, kdims, kstrs, size))
 		return false;
 
 	return true;
