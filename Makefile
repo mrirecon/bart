@@ -18,9 +18,17 @@ MAKEFLAGS += -R
 # use for parallel make
 AR=./ar_lock.sh
 
+# some operations might still be non deterministic 
+NON_DETERMINISTIC?=0
+
+# allow blas calls within omp regions (fails on Debian 9, openblas)
+BLAS_THREADSAFE?=0
+
 # use for ppc64le HPC
+OPENBLAS?=0
 MKL?=0
 CUDA?=0
+CUDNN?=0
 ACML?=0
 OMP?=1
 SLINK?=0
@@ -159,6 +167,8 @@ endif
 
 CUDA_BASE ?= /usr/
 CUDA_LIB ?= lib
+CUDNN_BASE ?= $(CUDA_BASE)
+CUDNN_LIB ?= lib64
 
 # tensorflow
 TENSORFLOW_BASE ?= /usr/local/
@@ -347,10 +357,18 @@ NVCC = $(CUDA_BASE)/bin/nvcc
 ifeq ($(CUDA),1)
 CUDA_H := -I$(CUDA_BASE)/include
 CPPFLAGS += -DUSE_CUDA $(CUDA_H)
+ifeq ($(CUDNN),1)
+CUDNN_H := -I$(CUDNN_BASE)/include
+CPPFLAGS += -DUSE_CUDNN $(CUDNN_H)
+endif
 ifeq ($(BUILDTYPE), MacOSX)
 CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -lcufft -lcudart -lcublas -m64 -lstdc++
 else
+ifeq ($(CUDNN),1)
+CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -L$(CUDNN_BASE)/$(CUDNN_LIB) -lcudnn -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/$(CUDA_LIB)
+else
 CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/$(CUDA_LIB)
+endif
 endif
 else
 CUDA_H :=
@@ -383,6 +401,8 @@ endif
 # BLAS/LAPACK
 ifeq ($(SCALAPACK),1)
 BLAS_L :=  -lopenblas -lscalapack
+CPPFLAGS += -DUSE_OPENBLAS
+CFLAGS += -DUSE_OPENBLAS
 else
 ifeq ($(ACML),1)
 BLAS_H := -I$(ACML_BASE)/include
@@ -404,7 +424,13 @@ ifeq ($(NOLAPACKE),1)
 BLAS_L := -L$(BLAS_BASE)/lib -llapack -lblas
 CPPFLAGS += -Isrc/lapacke
 else
+ifeq ($(OPENBLAS), 1)
+BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lopenblas
+CPPFLAGS += -DUSE_OPENBLAS
+CFLAGS += -DUSE_OPENBLAS
+else
 BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lblas
+endif
 endif
 endif
 endif
@@ -418,6 +444,15 @@ CPPFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex do
 CFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex double"
 endif
 
+ifeq ($(BLAS_THREADSAFE),1)
+CPPFLAGS += -DBLAS_THREADSAFE
+CFLAGS += -DBLAS_THREADSAFE
+endif
+
+ifeq ($(NON_DETERMINISTIC),1)
+CPPFLAGS += -DNON_DETERMINISTIC
+CFLAGS += -DNON_DETERMINISTIC
+endif
 
 
 CPPFLAGS += $(FFTW_H) $(BLAS_H)
@@ -568,8 +603,8 @@ MODULES_test_nufft += -lnoncart -llinops
 
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv
-UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2
-UTARGETS_GPU += test_cudafft test_cuda_flpmath
+UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr
+UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls
 
 # lib simu
 UTARGETS += test_ode_bloch test_biot_savart test_signals test_epg
@@ -772,7 +807,7 @@ utest_gpu: utests_gpu-all
 endif	# MAKESTAGE
 
 
-install: bart $(root)/doc/commands.txt
+install: bart
 	install -d $(DESTDIR)/$(PREFIX)/bin/
 	install bart $(DESTDIR)/$(PREFIX)/bin/
 	install -d $(DESTDIR)/$(PREFIX)/share/doc/bart/

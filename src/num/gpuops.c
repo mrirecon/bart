@@ -149,7 +149,7 @@ void cuda_memcache_off(void)
 void cuda_clear(long size, void* dst)
 {
 //	printf("CLEAR %x %ld\n", dst, size);
-	CUDA_ERROR(cudaMemset(dst, 0, size));
+	CUDA_ERROR(cudaMemsetAsync(dst, 0, size, cudaStreamLegacy));
 }
 
 static void cuda_float_clear(long size, float* dst)
@@ -160,13 +160,13 @@ static void cuda_float_clear(long size, float* dst)
 void cuda_memcpy(long size, void* dst, const void* src)
 {
 //	printf("COPY %x %x %ld\n", dst, src, size);
-	CUDA_ERROR(cudaMemcpy(dst, src, size, cudaMemcpyDefault));
+	CUDA_ERROR(cudaMemcpyAsync(dst, src, size, cudaMemcpyDefault, cudaStreamLegacy));
 }
 
 
 void cuda_memcpy_strided(const long dims[2], long ostr, void* dst, long istr, const void* src)
 {
-	CUDA_ERROR(cudaMemcpy2D(dst, ostr, src, istr, dims[0], dims[1], cudaMemcpyDefault));
+	CUDA_ERROR(cudaMemcpy2DAsync(dst, ostr, src, istr, dims[0], dims[1], cudaMemcpyDefault, cudaStreamLegacy));
 }
 
 static void cuda_float_copy(long size, float* dst, const float* src)

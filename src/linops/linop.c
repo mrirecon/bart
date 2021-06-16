@@ -208,6 +208,22 @@ extern const struct linop_s* linop_clone(const struct linop_s* x)
 	return PTR_PASS(lo);
 }
 
+/**
+ * Return the adjoint linop
+ * @param x linear operator
+ */
+extern const struct linop_s* linop_get_adjoint(const struct linop_s* x)
+{
+	PTR_ALLOC(struct linop_s, lo);
+
+	lo->forward = operator_ref(x->adjoint);
+	lo->adjoint = operator_ref(x->forward);
+	lo->normal = operator_chain(x->adjoint, x->forward);
+	lo->norm_inv = NULL;
+
+	return PTR_PASS(lo);
+}
+
 
 /**
  * Apply the forward operation of a linear operator: y = A x
@@ -569,27 +585,7 @@ struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b)
 
 	c->forward = operator_plus_create(a->forward, b->forward);
 	c->adjoint = operator_plus_create(a->adjoint, b->adjoint);
-
-	if ((NULL != a->normal) && (NULL != b->normal))
-		c->normal = operator_plus_create(a->normal, b->normal);
-
-	if ((NULL != a->normal) && (NULL == b->normal)) {
-
-		auto tmp = operator_chain(b->forward, b->adjoint);
-		c->normal = operator_plus_create(a->normal, tmp);
-		operator_free(tmp);
-	}
-
-	if ((NULL == a->normal) && (NULL != b->normal)) {
-
-		auto tmp = operator_chain(a->forward, a->adjoint);
-		c->normal = operator_plus_create(tmp, b->normal);
-		operator_free(tmp);
-	}
-
-	if ((NULL == a->normal) && (NULL == b->normal))
-		c->normal = NULL;
-
+	c->normal = operator_chain(c->forward, c->adjoint);
 	c->norm_inv = NULL;
 
 	return PTR_PASS(c);

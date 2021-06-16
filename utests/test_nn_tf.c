@@ -29,8 +29,8 @@ static bool test_nn_tf_forward(void)
 	complex float* in0 = md_alloc(dom0->N, dom0->dims, dom0->size);
 	complex float* in1 = md_alloc(dom1->N, dom1->dims, dom1->size);
 
-	md_zfill(dom0->N, dom0->dims, in0,  1.0);
-	md_zfill(dom1->N, dom1->dims, in1, +1.0i);
+	md_zfill(dom0->N, dom0->dims, in0, 1.);
+	md_zfill(dom1->N, dom1->dims, in1, 0. + 1.i);
 
 	auto cod = nlop_generic_codomain(nlop, 0);
 
@@ -83,13 +83,29 @@ static bool test_nn_tf_adjoint(void)
 	debug_printf(DP_DEBUG1, "Loss: %f + %f i\n", crealf(out[0]), cimagf(out[0]));
 
 #if 1
-	complex float* grad = md_alloc(dom0->N, dom0->dims, dom0->size);
-	complex float grad_ys[1] = { 1. + 1.i };
+	complex float* grad1 = md_alloc(dom0->N, dom0->dims, dom0->size);
+	complex float* grad2 = md_alloc(dom0->N, dom0->dims, dom0->size);
 
-	auto gradop = nlop_get_derivative(nlop, 0, 0);
-	linop_adjoint(gradop, dom0->N, dom0->dims, grad, cod->N, cod->dims, grad_ys);
+	complex float grad_ys[1] = { 1. + 0.i };
 
-	md_free(grad);
+	auto gradop_1 = nlop_get_derivative(nlop, 0, 0);
+	linop_adjoint(gradop_1, dom0->N, dom0->dims, grad1, cod->N, cod->dims, grad_ys);
+
+	grad_ys[0] = 2;
+
+	auto gradop_2 = nlop_get_derivative(nlop, 0, 1);
+	linop_adjoint(gradop_2, dom0->N, dom0->dims, grad2, cod->N, cod->dims, grad_ys);
+
+	// y = (x_1 - x_2)^2 -> dx/dx1 = - dy/dx2
+	// factor of 0.5 for grad_ys[0] = 2 (test linearity)
+
+	md_zaxpy(dom0->N, dom0->dims, grad1, 0.5, grad2);
+
+	if (UT_TOL < md_zrms(dom0->N, dom0->dims, grad1))
+		UT_ASSERT(false);
+
+	md_free(grad1);
+	md_free(grad2);
 #endif
 	md_free(out);
 	md_free(in0);

@@ -186,7 +186,7 @@ int main_ssa(int argc, char* argv[argc])
 
 	md_free(cal);
 
-	exit(0);
+	return 0;
 }
 
 

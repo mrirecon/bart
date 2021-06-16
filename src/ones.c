@@ -56,6 +56,8 @@ int main_ones(int argc, char* argv[argc])
 	complex float* x = create_cfl(out_file, N, dims);
 	md_zfill(N, dims, x, 1.);
 	unmap_cfl(N, dims, x);
+	xfree(dims);
+
 	return 0;
 }
 

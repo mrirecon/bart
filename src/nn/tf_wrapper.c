@@ -30,7 +30,9 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-
+//#define TF_AUTOGRAD 1
+// The TensorFlow C API does not support all gradients
+// Thus we require that the TensorFlow graph is annotated with gradients
 
 
 #ifdef TENSORFLOW
@@ -100,13 +102,13 @@ static TF_Session* create_session(TF_Graph* graph, TF_Status* status)
 
 #if 0
 static void deallocator(void* ptr, size_t len, void* arg)
-{ 	
+{
 	xfree(ptr);
 	UNUSED(len); UNUSED(arg);
 }
 #else
 static void deallocator(void* ptr, size_t len, void* arg)
-{ 	
+{
 	TF_TString_Dealloc(ptr);
 	UNUSED(len); UNUSED(arg);
 }
@@ -212,13 +214,9 @@ struct tf_s {
 
 	int *nr_out_dim;
 	int *nr_in_dim;
-	int *nr_grad_dim;
-	int *nr_grad_ys_dim;
 
 	const int64_t **out_dims_tf;
 	const int64_t **in_dims_tf;
-	const int64_t **grad_dims_tf;
-	const int64_t **grad_ys_dims_tf;
 };
 
 DEF_TYPEID(tf_s);
@@ -233,7 +231,7 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 
 	for (int i = 0; i < data->nr_inputs; i++)
 		md_copy(data->nr_in_dim[i], data->in_dims_tf[i], TF_TensorData(data->input_tensors[i]), args[i + data->nr_outputs], CFL_SIZE);
-		
+
 	TF_SessionRun(data->sess,
 				/* RunOptions */ NULL,
 				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs,
@@ -285,17 +283,17 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 		inp_tensors[j] = data->input_tensors[j];
 	}
 
-	inp_ops[data->nr_inputs] = data->grad_ys_op[i];
-	inp_tensors[data->nr_inputs] = tensor_allocate(data->nr_grad_ys_dim[i], data->grad_ys_dims_tf[i]);
+	inp_ops[data->nr_inputs] = data->grad_ys_op[o];
+	inp_tensors[data->nr_inputs] = tensor_allocate(data->nr_out_dim[o], data->out_dims_tf[o]);
 
-	md_copy(data->nr_grad_ys_dim[i], data->grad_ys_dims_tf[i], TF_TensorData(inp_tensors[1]), src, CFL_SIZE);
+	md_copy(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(inp_tensors[data->nr_inputs]), src, CFL_SIZE);
 
 	struct TF_Tensor* out_tensor[1];
 
 	TF_SessionRun(data->sess,
 				/* RunOptions */ NULL,
 				/* Input tensors */ inp_ops, inp_tensors, data->nr_inputs + 1,
-				/* Output tensors */ &(data->grad_op[o]), out_tensor, 1,
+				/* Output tensors */ &(data->grad_op[i]), out_tensor, 1,
 				/* Target operations */ NULL, 0,
 				/* RunMetadata */ NULL,
 				/* Output status */ data->status);
@@ -305,7 +303,7 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 
 	TF_DeleteTensor(inp_tensors[data->nr_inputs]);
 
-	md_copy(data->nr_grad_dim[o], data->grad_dims_tf[o], dst, TF_TensorData(out_tensor[0]), CFL_SIZE);
+	md_copy(data->nr_in_dim[i], data->in_dims_tf[i], dst, TF_TensorData(out_tensor[0]), CFL_SIZE);
 
 	TF_DeleteTensor(out_tensor[0]);
 #else
@@ -336,26 +334,16 @@ static void tf_del(const nlop_data_t* _data)
 
 	xfree(data->nr_out_dim);
 	xfree(data->nr_in_dim);
-	xfree(data->nr_grad_dim);
-	xfree(data->nr_grad_ys_dim);
 
-	for (int i = 0; i < data->nr_inputs; i++) {
-
+	for (int i = 0; i < data->nr_inputs; i++)
 		xfree(data->in_dims_tf[i]);
-		xfree(data->grad_dims_tf[i]);
-	}
 
 	xfree(data->in_dims_tf);
-	xfree(data->grad_dims_tf);
 
-	for (int i = 0; i < data->nr_outputs; i++) {
-
+	for (int i = 0; i < data->nr_outputs; i++)
 		xfree(data->out_dims_tf[i]);
-		xfree(data->grad_ys_dims_tf[i]);
-	}
 
 	xfree(data->out_dims_tf);
-	xfree(data->grad_ys_dims_tf);
 
 	xfree(data);
 };
@@ -398,6 +386,7 @@ static struct tf_arg process_arg(TF_Graph* graph, const char* name, TF_Status* s
 
 	if (0 == arg.N) {	// create a scalar
 
+		error("TensorFlow: Real scalar arguments are not supported! Stack with zero_like to construct complex argument!");
 		arg.N = 1;
 		tdims[0] = 2;
 	}
@@ -407,7 +396,9 @@ static struct tf_arg process_arg(TF_Graph* graph, const char* name, TF_Status* s
 	for (int i = 0; i < arg.N; i++) // convert to Fortran order
 		(*dims)[i] = tdims[arg.N - i - 1];
 
-	assert(2 == (*dims)[0]);
+	if (2 != (*dims)[0])
+		error("TensorFlow: Last dimension must have size 2 for real and imaginary part!\nStack with zero_like to construct complex argument!");
+
 	(*dims)[0] = 1;
 
 
@@ -421,6 +412,57 @@ static struct tf_arg process_arg(TF_Graph* graph, const char* name, TF_Status* s
 	return arg;
 }
 
+static bool cmp_arg(struct tf_arg arg1, struct tf_arg arg2)
+{
+
+	bool result = true;
+
+	for (int i = 0; i < MIN(arg1.N, arg2.N); i++)
+		result = result && (arg1.dims[i] == arg2.dims[i]);
+
+	for (int i = MIN(arg1.N, arg2.N); i < arg1.N; i++)
+		result = result && (1 == arg1.dims[i]);
+
+	for (int i = MIN(arg1.N, arg2.N); i < arg2.N; i++)
+		result = result && (1 == arg2.dims[i]);
+
+	return result;
+}
+
+#ifdef TF_AUTOGRAD
+
+static void tf_add_placeholder_same_shape(TF_Graph* graph, const char* name, TF_Status* status, struct TF_Output out)
+{
+#ifdef TENSORFLOW
+	TF_OperationDescription* desc = TF_NewOperation(graph, "Placeholder", name);
+
+	int N = TF_GraphGetTensorNumDims(graph, out, status);
+
+	if (TF_GetCode(status) != TF_OK)
+		error("Add Tensorflow Placeholder failed: %s\n", TF_Message(status));
+
+	long tdims[N ?: 1];
+	TF_GraphGetTensorShape(graph, out, tdims, N, status);
+
+	if (TF_GetCode(status) != TF_OK)
+		error("Add Tensorflow Placeholder failed: %s\n", TF_Message(status));
+
+	TF_DataType type = TF_OperationOutputType(out);
+
+	TF_SetAttrType(desc, "dtype", type);
+	TF_SetAttrShape(desc, "shape", tdims, N);
+	TF_FinishOperation(desc, status);
+
+	if (TF_GetCode(status) != TF_OK)
+		error("Add Tensorflow Placeholder failed: %s\n", TF_Message(status));
+#else
+	UNUSED(graph);
+	UNUSED(name);
+	UNUSED(status);
+	UNUSED(out);
+#endif
+}
+#endif
 
 const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool session)
 {
@@ -458,8 +500,6 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	PTR_ALLOC(int[OO], nr_out_dim);
 	PTR_ALLOC(const int64_t*[OO], out_dims_tf);
 	PTR_ALLOC(struct TF_Output[OO], grad_ys_op);
-	PTR_ALLOC(int[OO], nr_grad_ys_dim);
-	PTR_ALLOC(const int64_t*[OO], grad_ys_dims_tf);
 
 	for (int i = 0; i < OO; i++) {
 
@@ -474,14 +514,22 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 		(*nr_out_dim)[i] = arg.N;
 		(*out_dims_tf)[i] = arg.dims;
 
+#ifdef TF_AUTOGRAD
 		char grad_ys_name[20];
-		sprintf(grad_ys_name, "grad_ys_%d", i); 
+		sprintf(grad_ys_name, "grad_ys_bart_%d", i);
 
-		arg = process_arg(graph, grad_ys_name, status);
+		tf_add_placeholder_same_shape(graph, grad_ys_name, status, arg.out);
+#else
+		char grad_ys_name[20];
+		sprintf(grad_ys_name, "grad_ys_%d", i);
+#endif
 
-		(*grad_ys_op)[i] = arg.out;
-		(*nr_grad_ys_dim)[i] = arg.N;
-		(*grad_ys_dims_tf)[i] = arg.dims;
+		struct tf_arg arg_grad_y = process_arg(graph, grad_ys_name, status);
+
+		if (!cmp_arg(arg, arg_grad_y) || (arg.N != arg_grad_y.N))
+			error("Tensorflow output and corresponding gradient input do not have the same shape!");
+
+		(*grad_ys_op)[i] = arg_grad_y.out;
 	}
 
 	PTR_ALLOC(struct tf_s, data);
@@ -498,9 +546,6 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	data->nr_out_dim = *PTR_PASS(nr_out_dim);
 	data->out_dims_tf = *PTR_PASS(out_dims_tf);
 	data->grad_ys_op = *PTR_PASS(grad_ys_op);
-	data->nr_grad_ys_dim = *PTR_PASS(nr_grad_ys_dim);
-	data->grad_ys_dims_tf = *PTR_PASS(grad_ys_dims_tf);
-
 
 	// handle inputs and grad
 	int IN = 1;
@@ -511,8 +556,6 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	PTR_ALLOC(int[II], nr_in_dim);
 	PTR_ALLOC(const int64_t *[II], in_dims_tf);
 	PTR_ALLOC(struct TF_Output[II], grad_op);
-	PTR_ALLOC(int[II], nr_grad_dim);
-	PTR_ALLOC(const int64_t *[II], grad_dims_tf);
 
 	for (int i = 0; i < II; i++) {
 
@@ -529,15 +572,25 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 		(*nr_in_dim)[i] = arg.N;
 		(*in_dims_tf)[i] = arg.dims;
 
+#ifdef TF_AUTOGRAD
+#ifdef TENSORFLOW
+		TF_AddGradients(graph, data->outputs_op, 1, &(*inputs_op)[i], 1, data->grad_ys_op, data->status, &(*grad_op)[i]);
+
+		if (TF_OK != TF_GetCode(status))
+			error("Add Tensorflow Gradient failed: %s\n", TF_Message(status));
+#endif
+#else
 
 		char grad_name[20];
 		sprintf(grad_name, "grad_%d", i);
 
-		arg = process_arg(graph, grad_name, status);
+		struct tf_arg arg_grad = process_arg(graph, grad_name, status);
 
-		(*grad_op)[i] = arg.out;
-		(*nr_grad_dim)[i] = arg.N;
-		(*grad_dims_tf)[i] = arg.dims;
+		if (!cmp_arg(arg, arg_grad))
+			error("Tensorflow input and corresponding gradient do not have the same shape!");
+
+		(*grad_op)[i] = arg_grad.out;
+#endif
 	}
 
 	data->inputs_op = *PTR_PASS(inputs_op);
@@ -545,8 +598,6 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	data->nr_in_dim = *PTR_PASS(nr_in_dim);
 	data->in_dims_tf = *PTR_PASS(in_dims_tf);
 	data->grad_op = *PTR_PASS(grad_op);
-	data->nr_grad_dim = *PTR_PASS(nr_grad_dim);
-	data->grad_dims_tf = *PTR_PASS(grad_dims_tf);
 
 
 

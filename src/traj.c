@@ -328,7 +328,7 @@ int main_traj(int argc, char* argv[argc])
 
 	unmap_cfl(3, dims, samples);
 
-	exit(0);
+	return 0;
 }
 
 

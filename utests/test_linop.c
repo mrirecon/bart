@@ -16,6 +16,7 @@
 
 #include "linops/someops.h"
 #include "linops/linop.h"
+#include "linops/lintest.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -231,4 +232,46 @@ static bool test_linop_extract(void)
 
 
 UT_REGISTER_TEST(test_linop_extract);
+
+
+static bool test_linop_permute(void)
+{
+	enum { N = 4 };
+	long idims[N] = { 8, 4, 6, 3};
+	unsigned int perm[N] = {0, 3, 2, 1};
+	long odims[N];
+	md_permute_dims(N, perm, odims, idims);
+
+	complex float* src = md_alloc(N, idims, CFL_SIZE);
+	complex float* src2 = md_alloc(N, idims, CFL_SIZE);
+	complex float* dst1 = md_alloc(N, idims, CFL_SIZE);
+	complex float* dst2 = md_alloc(N, idims, CFL_SIZE);
+
+	md_gaussian_rand(N, idims, src);
+
+	md_permute(N, perm, odims, dst1, idims, src, CFL_SIZE);
+
+	auto lop = linop_permute_create(N, perm, idims); 
+
+	linop_forward(lop, N, odims, dst2, N, idims, src);
+
+	bool ok = (0 == md_zrmse(N, odims, dst1, dst2));
+
+	linop_adjoint(lop, N, idims, src2, N, odims, dst2);
+
+	ok = ok && (0 == md_zrmse(N, idims, src, src2));
+
+	ok = ok && (UT_TOL > linop_test_adjoint(lop));
+
+	md_free(dst1);
+	md_free(dst2);
+	md_free(src);
+
+	linop_free(lop);
+
+	UT_ASSERT(ok);
+}
+
+
+UT_REGISTER_TEST(test_linop_permute);
 

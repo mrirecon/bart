@@ -376,6 +376,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 	md_free(mask);
 	md_free(img);
+	md_free(ksens);
 
 	unmap_cfl(DIMS, sens_dims, sens);
 	unmap_cfl(DIMS, pat_dims, pattern);
@@ -386,7 +387,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 	debug_printf(DP_DEBUG2, "Total time: %.2f s\n", recosecs);
 
-	exit(0);
+	return 0;
 }
 
 

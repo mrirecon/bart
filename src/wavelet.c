@@ -109,6 +109,7 @@ int main_wavelet(int argc, char* argv[argc])
 
 	unmap_cfl(N, idims, idata);
 	unmap_cfl(N, odims, odata);
+	xfree(adims);
 
 	return 0;
 }

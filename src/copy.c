@@ -95,6 +95,8 @@ int main_copy(int argc, char* argv[argc])
 
 	unmap_cfl(N, in_dims, in_data);
 	unmap_cfl(N, out_dims, out_data);
+	xfree(dims);
+	xfree(poss);
 
 	return 0;
 }

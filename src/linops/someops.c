@@ -603,6 +603,9 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 	long strs_in[N];
 	md_calc_strides(N, strs_in, dims, CFL_SIZE);
 
+	if ((0 > pad_for) || (0 > pad_after)) // reduction will always be valid type
+		pad_type = PAD_VALID;
+
 	switch (pad_type) {
 
 	case PAD_VALID:
@@ -745,9 +748,12 @@ struct linop_s* linop_padding_create(int N, const long dims[N], enum PADDING pad
 
 	long odims[N];
 
-	for (int i = 0; i < N; i++) {
+	for(int i = 0; i < N; i++) {
 
-		resc = resc && (pad_for[i] == pad_after[i]);
+		resc = resc && ( (pad_for[i] == pad_after[i])
+				 || ((pad_for[i] + 1 == pad_after[i]) && (pad_for[i] < 0))
+				 || ((pad_for[i] - 1 == pad_after[i]) && (pad_for[i] > 0))
+				);
 
 		res = res && (0 == pad_for[i]);
 
@@ -923,7 +929,7 @@ struct linop_s* linop_permute_create(unsigned int N, const unsigned int order[N]
 
 	md_copy_dims(N, tidims, idims);
 	md_copy_dims(N, todims, odims);
-	
+
 	data->idims = tidims;
 	data->odims = todims;
 

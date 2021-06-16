@@ -757,26 +757,17 @@ void* parse_arg_tuple(int n, ...)
 
 static void check_args(int n, const struct arg_s args[n])
 {
-// FIXME: because fmac has an optional argument in the middle, it is not true
-// that there cannot be required arguments after the first optional.
-// This will probably be ugly in the future, but this is the only way I can see
-// to support fmac.
-
-// 	bool end_required = false;
 	int num_tuples = 0;
 
 	for (int i = 0; i < n; ++i) {
+
+		if ((0 < num_tuples) && !args[i].required)
+			error("Cannot have an optional argument after a tuple!\n");
 
 		if (ARG_TUPLE == args[i].arg_type)
 			num_tuples++;
 		else if (ARG == args[i].arg_type)
 			assert(1 == args[i].nargs);
-
-// 		if (args[i].optional && (ARG_TUPLE != args[i].arg_type))
-// 			end_required = true;
-//
-// 		if (end_required && (!args[i].optional))
-// 			error("Cannot have a required argument after the first optional argument!\n");
 	}
 
 	if (num_tuples > 1)
@@ -832,7 +823,7 @@ static int add_tuple_args(int bufsize, char buf[static bufsize], const struct ar
 		pos += xsnprintf(bufsize - pos, buf + pos, " ");
 	}
 
-	pos += snprintf(buf + pos, pos, "... ");
+	pos += xsnprintf(bufsize - pos, buf + pos, "... ");
 
 	for (int k = 0; k < arg->nargs; ++k ) {
 
@@ -877,7 +868,7 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 		else
 			max_args += args[i].nargs;
 
-		if (!args[i].required)
+		if (args[i].required)
 			min_args += args[i].nargs;
 
 		bool file = false;
@@ -910,16 +901,26 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 
 	options(argc, argv, min_args, max_args, buf, help_str, n, opts, m, args);
 
-	int n_args = *argc - 1;
+	int req_args_remaining = min_args;
 
 	for (int i = 0, j = 1; (i < m) && (j < *argc); ++i) {
+
+
+		int given_args_following = *argc - j; // number of following args given on the command line, NOT in the args-array
+		int declared_args_following = m - i - 1; // number of following arguments in args-array, NOT on the command line
+
+#if 0
+		debug_printf(DP_INFO, "j: %d, arg: %d, given_args_following: %d, req_args_remaining: %d, argstr: %s\n", j, i, given_args_following, req_args_remaining, argv[j]);
+#endif
 
 		switch (args[i].arg_type) {
 
 		case ARG:
-			// skip optional arguments if we did not get the maximum number of args. This is just for fmac, which
-			// has an optional arg in the middle
-			if (!args[i].required && (max_args != n_args))
+
+			// Skip optional arguments if the number of given command-line arguments is the number of still required arguments.
+			// This is just for fmac, which has an optional arg in the middle
+
+			if (!args[i].required && (given_args_following == req_args_remaining))
 				continue;
 
 			if (opt_dispatch(args[i].arg->opt_type, args[i].arg->ptr, NULL, '\0', argv[j++]))
@@ -931,15 +932,17 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 
 			;
 
-			// consume as many arguments as possible, except for possible args following the tuple
-			int n_following = m - i - 1;
-			int n_tuple_end = *argc - n_following;
-			int n_tuple_args = n_tuple_end - j;
+			// Consume as many arguments as possible, except for possible args following the tuple
+			// As we can only have one tuple, a tuple consuming multiple arguments cannot follow.
+			// Further, as we cannot have an optional arg following, all declared args afer the tuple
+			// are required and take exactly one argument.
+			int tuple_end = *argc - declared_args_following;
+			int num_tuple_args = tuple_end - j;
 
-			if (0 != (n_tuple_args % args[i].nargs))
+			if (0 != (num_tuple_args % args[i].nargs))
 				error("Incorrect number of arguments!\n");
 
-			*args[i].count = n_tuple_args / args[i].nargs;
+			*args[i].count = num_tuple_args / args[i].nargs;
 
 			if (0 == *args[i].count)
 				continue;
@@ -949,7 +952,7 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 
 			int c = 0;
 
-			while (j < n_tuple_end) {
+			while (j < tuple_end) {
 
 				for (int k = 0; k < args[i].nargs; ++k)
 					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * args[i].arg[k].sz, NULL, '\0', argv[j++]))
@@ -961,10 +964,20 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 			break;
 		}
 
+		// This does not accurately count how many arguments are consumed, but does accurately count
+		// how many required arguments are, at minimum, still needed.
+		if (args[i].required)
+			req_args_remaining -= args[i].nargs;
+
 	}
+
+	assert(0 == req_args_remaining);
+
 #if 0
 	// for debug, make argv inaccessible
 	for (int i = 0; i < *argc; ++i)
 		argv[i] = NULL;
+	// and set argc to something that is likely to break anything relying on it
+	*argc = -1;
 #endif
 }

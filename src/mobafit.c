@@ -183,5 +183,5 @@ int main_mobafit(int argc, char* argv[])
 
 	debug_printf(DP_DEBUG2, "Total Time: %.2f s\n", recosecs);
 
-	exit(0);
+	return 0;
 }
