@@ -672,6 +672,18 @@ const struct nlop_s* nlop_reshape_out_F(const struct nlop_s* op, int o, int NO, 
 	return result;
 }
 
+const struct nlop_s* nlop_flatten_in_F(const struct nlop_s* op, int i)
+{
+	auto dom = nlop_generic_domain(op, i);
+	return nlop_reshape_in(op, i, 1, MD_DIMS(md_calc_size(dom->N, dom->dims)));
+}
+
+const struct nlop_s* nlop_flatten_out_F(const struct nlop_s* op, int o)
+{
+	auto cod = nlop_generic_codomain(op, o);
+	return nlop_reshape_out(op, o, 1, MD_DIMS(md_calc_size(cod->N, cod->dims)));
+}
+
 const struct nlop_s* nlop_append_singleton_dim_in_F(const struct nlop_s* op, int i)
 {
 	long N = nlop_generic_domain(op, i)->N;
