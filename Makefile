@@ -820,3 +820,12 @@ install: bart
 bart.syms: bart
 	rules/make_symbol_table.sh bart bart.syms
 
+
+# shared library
+shared-lib:
+	make allclean
+	CFLAGS=-fPIC make
+	gcc -shared -fopenmp -o libbart.so src/bart.o -Wl,-whole-archive lib/lib*.a -Wl,-no-whole-archive -Wl,-Bdynamic $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm -lrt
+	make allclean
+
+
