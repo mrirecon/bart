@@ -666,11 +666,23 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		calc_phantom_arb(dims2[COEFF_DIM], tubes_bkgrd, dims2, bkgrd, kspace, tstrs, traj);
 
-		// Save background to output
+		// Sum up all spatial coefficients
 
-		md_zsum(DIMS, dims2, COEFF_FLAG, out, bkgrd);
+		long dims3[DIMS];
+		md_select_dims(DIMS, ~COEFF_FLAG, dims3, dims);
+
+		complex float* tmp = md_alloc(DIMS, dims3, CFL_SIZE);
+
+		md_zsum(DIMS, dims2, COEFF_FLAG, tmp, bkgrd);
+
+		// Save summed up coefficients to out
+
+		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
+
+		md_copy_block(DIMS, pos, dims2, out, dims3, tmp, CFL_SIZE);
 
 		md_free(bkgrd);
+		md_free(tmp);
 
 		// Determine basis functions of the foreground
 
@@ -682,7 +694,6 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		// Add foreground basis functions to out
 
-		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 		pos[COEFF_DIM] = 1;
 
 		md_copy_block(DIMS, pos, dims, out, dims2, frgrd, CFL_SIZE);
