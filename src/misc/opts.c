@@ -543,17 +543,22 @@ bool opt_clear(void* ptr, char c, const char* optarg)
 bool opt_int(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	*(int*)ptr = atoi(optarg);
+	int val;
+	if (0 != parse_int(&val, optarg))
+		error("Could not parse argument to opt_int: %s!\n", optarg);
+	*(int*)ptr = val;
 	return false;
 }
 
 bool opt_uint(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	int val = atoi(optarg);
+	int val;
+	if (0 != parse_int(&val, optarg))
+		error("Could not parse argument to opt_uint: %s!\n", optarg);
 
 	if (0 > val)
-		error("Argument to opt_uint must be unsigned");
+		error("Argument \"%s\" to opt_uint is not unsigned!\n", optarg);
 
 	*(unsigned int*)ptr = (unsigned int) val;
 	return false;
@@ -562,17 +567,22 @@ bool opt_uint(void* ptr, char c, const char* optarg)
 bool opt_long(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	*(long*)ptr = atol(optarg);
+	long val;
+	if (0 != parse_long(&val, optarg))
+		error("Could not parse argument to opt_long: %s!\n", optarg);
+	*(long*)ptr = val;
 	return false;
 }
 
 bool opt_ulong(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	long val = atol(optarg);
+	long val;
+	if (0 != parse_long(&val, optarg))
+		error("Could not parse argument to opt_ulong: %s!\n", optarg);
 
 	if (0 > val)
-		error("Argument to opt_ulong must be unsigned");
+		error("Argument \"%s\" to opt_ulong is not unsigned!\n", optarg);
 
 	*(unsigned long*)ptr = (unsigned long) val;
 	return false;
@@ -581,7 +591,13 @@ bool opt_ulong(void* ptr, char c, const char* optarg)
 bool opt_float(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	*(float*)ptr = atof(optarg);
+	complex float val;
+	if (0 != parse_cfl(&val, optarg))
+		error("Could not parse argument to opt_float: %s!\n", optarg);
+
+	if (0.f != cimagf(val))
+		error("Argument \"%s\" to opt_float is not real\n", optarg);
+	*(float*)ptr = crealf(val);
 	return false;
 }
 
