@@ -475,7 +475,30 @@ static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct op
 			
 			auto grad = linop_grad_create(DIMS, img_dims, DIMS, regs[nr].xflags);
 
-			trafos[nr] = linop_chain_FF(extract, grad);
+			unsigned int flag_READ  = (regs[nr].xflags & 1);
+			unsigned int flag_TIME  = ((regs[nr].xflags >> 10) & 1);
+			unsigned int flag_TIME2 = ((regs[nr].xflags >> 11) & 1);
+
+
+			// fixme: hard-coded weighting values
+			if ((flag_TIME && flag_TIME2) || (flag_READ && flag_TIME)) {
+
+				complex float diag[4] = {0.4, 0.4, 1.0, 0.2};
+				
+				if (0 == flag_READ) {
+
+					diag[0] = diag[2];
+					diag[1] = diag[3];
+				}
+
+				trafos[nr] = linop_chain_FF(linop_chain_FF(extract, grad), 
+					linop_cdiag_create(DIMS + 1, linop_codomain(grad)->dims, MD_BIT(DIMS), diag));
+					
+			} else {
+
+				trafos[nr] = linop_chain_FF(extract, grad);
+			}
+			
 			prox_ops[nr] = prox_thresh_create(DIMS + 1,
 					linop_codomain(trafos[nr])->dims,
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
