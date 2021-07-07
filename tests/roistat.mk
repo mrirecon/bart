@@ -40,7 +40,7 @@ tests/test-roistat-mean: ones index fmac noise resize roistat nrmse
 	$(TOOLDIR)/ones 3 50 50 1 oy.ra							;\
 	$(TOOLDIR)/resize -c 0 100 1 100 oy.ra oy2.ra					;\
 	$(TOOLDIR)/roistat -M oy2.ra n.ra dy.ra						;\
-	$(TOOLDIR)/nrmse -t 0.005 i.ra dy.ra 						;\
+	$(TOOLDIR)/nrmse -t 0.006 i.ra dy.ra 						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
