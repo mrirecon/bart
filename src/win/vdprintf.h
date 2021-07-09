@@ -10,13 +10,9 @@
 #define VDPRINTF_WINDOWS
 
 #include <stdio.h>
-
-#include "win/vdprintf.h"
 #include "misc/misc.h"
 
-#include <stdio.h>
-
-int vdprintf(int fd, const char *format, va_list ap);
+int vdprintf(int, const char*, va_list);
 
 int vdprintf(int fd, const char *format, va_list ap)
 {
@@ -26,6 +22,7 @@ int vdprintf(int fd, const char *format, va_list ap)
 	int err = vfprintf(stream, format, ap);
 	if (err == -1)
 		error("Unable to write to file.\n");
+    fflush(stream);
 	return err;
 }
 

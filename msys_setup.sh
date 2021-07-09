@@ -1,15 +1,12 @@
 #!/bin/bash
 
-pacman --noconfirm -S git
-pacman --noconfirm -S mingw-w64-x86_64-fftw
-pacman --noconfirm -S mingw-w64-x86_64-openblas
-pacman --noconfirm -S mingw-w64-x86_64-libpng
+pacman --sync --noconfirm --needed base-devel mingw-w64-x86_64-toolchain git mingw-w64-x86_64-fftw mingw-w64-x86_64-openblas mingw-w64-x86_64-libpng
 
+echo "Installing /usr/lib/librt.a"
+CURRENT_PATH=$(pwd)
 cd /
-echo "Downloading POSIX.1b Realtime Extensions library (librt)"
-wget --quiet https://repo.msys2.org/msys/x86_64/msys2-runtime-devel-3.2.0-3-x86_64.pkg.tar.zst
-echo "Installing `tar -I zstd -xvf msys2-runtime-devel-3.2.0-3-x86_64.pkg.tar.zst usr/lib/librt.a`"
-rm msys2-runtime-devel-3.2.0-3-x86_64.pkg.tar.zst
+curl https://repo.msys2.org/msys/x86_64/msys2-runtime-devel-3.2.0-3-x86_64.pkg.tar.zst | tar -I zstd -x usr/lib/librt.a
+cd $CURRENT_PATH
 
 GCC_PATH="/mingw64/bin"
 if [ -d "$GCC_PATH" ] && [[ ":$PATH:" != *":$GCC_PATH:"* ]]; then

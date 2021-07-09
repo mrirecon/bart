@@ -593,7 +593,7 @@ __global__ static void kern_im2col_valid_no_dil_str_transp(struct im2col_descrip
 
 		cuFloatComplex result = dst[i];
 
-		for (uint kz = 0; kz < config.kdims[2]; kz++) {
+		for (unsigned int kz = 0; kz < config.kdims[2]; kz++) {
 
 			int oz = iz - kz;
 
@@ -602,7 +602,7 @@ __global__ static void kern_im2col_valid_no_dil_str_transp(struct im2col_descrip
 
 			long offset_z = config.N_out_elements_k_only * config.odims[0] * config.odims[1] * oz + config.NC * config.kdims[0] * config.kdims[1] * kz;
 
-			for (uint ky = 0; ky < config.kdims[1]; ky++) {
+			for (unsigned int ky = 0; ky < config.kdims[1]; ky++) {
 
 				int oy = iy - ky;
 
@@ -611,7 +611,7 @@ __global__ static void kern_im2col_valid_no_dil_str_transp(struct im2col_descrip
 
 				long offset_y = config.N_out_elements_k_only * config.odims[0] * oy + config.NC * config.kdims[0] * ky;
 
-				for (uint kx = 0; kx < config.kdims[0]; kx++) {
+				for (unsigned int kx = 0; kx < config.kdims[0]; kx++) {
 
 					int ox = ix - kx;
 					long offset_x = config.N_out_elements_k_only * ox + config.NC * kx;
