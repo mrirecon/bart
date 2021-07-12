@@ -52,7 +52,20 @@ static const char help_str[] = "Parallel-imaging compressed-sensing reconstructi
 
 
 
-static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const long wgs_dims[DIMS], const complex float* weights, const long basis_dims[DIMS], const complex float* basis, struct operator_s** precond_op)
+static const struct linop_s* sense_nc_init(const long max_dims[DIMS],
+                                           const long map_dims[DIMS],
+                                           const complex float* maps,
+                                           const long ksp_dims[DIMS],
+                                           const long traj_dims[DIMS],
+                                           const complex float* traj,
+                                           struct nufft_conf_s conf,
+                                           const long wgs_dims[DIMS],
+                                           const complex float* weights,
+                                           const long basis_dims[DIMS],
+                                           const complex float* basis,
+                                           long nupsf_dims[DIMS + 1],
+                                           complex float** nupsf,
+                                           struct operator_s** precond_op)
 {
 	long coilim_dims[DIMS];
 	long img_dims[DIMS];
@@ -67,7 +80,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	debug_print_dims(DP_INFO, DIMS, ksp_dims2);
 	debug_print_dims(DP_INFO, DIMS, coilim_dims);
 
-	const struct linop_s* fft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, wgs_dims, weights, basis_dims, basis, conf);
+	const struct linop_s* fft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, wgs_dims, weights, basis_dims, basis, nupsf_dims, nupsf, conf);
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
 	const struct linop_s* lop = linop_chain_FF(maps_op, fft_op);
 
@@ -119,8 +132,8 @@ int main_pics(int argc, char* argv[argc])
 	bool eigen = false;
 	float scaling = 0.;
 
-        // Simultaneous Multi-Slice
-        bool sms = false;
+	// Simultaneous Multi-Slice
+	bool sms = false;
 
 	unsigned int llr_blk = 8;
 
@@ -131,6 +144,8 @@ int main_pics(int argc, char* argv[argc])
 	bool warm_start = false;
 
 	const char* basis_file = NULL;
+	const char* save_psf_file = NULL;
+	const char* load_psf_file = NULL;
 
 	struct admm_conf admm = { false, false, false, iter_admm_defaults.rho, iter_admm_defaults.maxitercg };
 
@@ -186,6 +201,8 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SELECT('a', enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 		OPTL_SET('U', "lowmem", &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
+		OPT_OUTFILE('X', &save_psf_file, "", "Path to save non-cartesian PSF"),
+		OPT_INFILE('x', &load_psf_file, "", "Load non-cartesian PSF"),
 	};
 
 
@@ -216,18 +233,14 @@ int main_pics(int argc, char* argv[argc])
 
 
 	// load kspace and maps and get dimensions
-
 	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
-        if (sms) {
-
+	if (sms) {
 		if (NULL == traj_file)
 			error("SMS is only supported for non-Cartesian trajectories.\n");
-
 		nuconf.cfft |= SLICE_FLAG;
-
-                debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
-        }
+		debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
+	}
 
 	complex float* maps = load_cfl(sens_file, DIMS, map_dims);
 
@@ -235,23 +248,26 @@ int main_pics(int argc, char* argv[argc])
 
 	map_flags |= FFT_FLAGS | SENS_FLAGS;
 
-
-
 	long basis_dims[DIMS];
 	complex float* basis = NULL;
 
-	if (NULL != basis_file) {
+	assert(save_psf_file == NULL || load_psf_file == NULL);
 
+	if (NULL != basis_file) {
 		basis = load_cfl(basis_file, DIMS, basis_dims);
 		assert(!md_check_dimensions(DIMS, basis_dims, COEFF_FLAG | TE_FLAG));
 	}
-
 
 	complex float* traj = NULL;
 
 	if (NULL != traj_file)
 		traj = load_cfl(traj_file, DIMS, traj_dims);
 
+	long nupsf_dims[DIMS + 1];
+	md_set_dims(DIMS + 1, nupsf_dims, 1);
+	complex float* nupsf = NULL;
+	if (NULL != load_psf_file && NULL != traj_file)
+		nupsf = load_cfl(load_psf_file, DIMS + 1, nupsf_dims);
 
 	md_copy_dims(DIMS, max_dims, ksp_dims);
 	md_copy_dims(5, max_dims, map_dims);
@@ -259,9 +275,7 @@ int main_pics(int argc, char* argv[argc])
 	long bmx_dims[DIMS];
 
 	if (NULL != basis_file) {
-
 		assert(1 == ksp_dims[COEFF_DIM]);
-
 		assert(basis_dims[TE_DIM] == ksp_dims[TE_DIM]);
 
 		max_dims[COEFF_DIM] = basis_dims[COEFF_DIM];
@@ -276,7 +290,6 @@ int main_pics(int argc, char* argv[argc])
 		debug_print_dims(DP_INFO, DIMS, max_dims);
 	}
 
-
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
 	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
 
@@ -286,10 +299,7 @@ int main_pics(int argc, char* argv[argc])
 	if ((NULL != traj_file) && (!md_check_compat(DIMS, ~0, ksp_dims, traj_dims)))
 		error("Dimensions of data and trajectory do not match!\n");
 
-
-
 	assert(1 == ksp_dims[MAPS_DIM]);
-
 
 	if (conf.gpu)
 		num_init_gpu_device(gpun);
@@ -422,9 +432,14 @@ int main_pics(int argc, char* argv[argc])
 	} else {
 
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf,
-				pat_dims, pattern, basis_dims, basis, (struct operator_s**)&precond_op);
+				pat_dims, pattern, basis_dims, basis, nupsf_dims, &nupsf, (struct operator_s**)&precond_op);
 	}
 
+	if (NULL != save_psf_file && NULL != traj_file) {
+		complex float* save_nupsf = create_cfl(save_psf_file, DIMS + 1, nupsf_dims);
+		md_copy(DIMS + 1, nupsf_dims, save_nupsf, nupsf, CFL_SIZE);
+		unmap_cfl(DIMS + 1, nupsf_dims, save_nupsf);
+	}
 
 	// apply scaling
 
@@ -691,6 +706,9 @@ int main_pics(int argc, char* argv[argc])
 	if (NULL != traj)
 		unmap_cfl(DIMS, traj_dims, traj);
 
+	if (NULL != load_psf_file)
+		unmap_cfl(DIMS + 1, nupsf_dims, nupsf);
+
 	if (im_truth) {
 
 #ifdef USE_CUDA
@@ -707,6 +725,8 @@ int main_pics(int argc, char* argv[argc])
 	xfree(pat_file);
 	xfree(traj_file);
 	xfree(basis_file);
+	xfree(save_psf_file);
+	xfree(load_psf_file);
 
 	double end_time = timestamp();
 

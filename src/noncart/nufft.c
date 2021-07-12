@@ -408,6 +408,8 @@ static struct linop_s* nufft_create3(unsigned int N,
 			     const complex float* weights,
 			     const long bas_dims[N],
 			     const complex float* basis,
+			     const long nupsf_dims[N],
+			     complex float** nupsf,
 			     struct nufft_conf_s conf)
 {
 	PTR_ALLOC(struct nufft_data, data);
@@ -637,10 +639,16 @@ static struct linop_s* nufft_create3(unsigned int N,
 		}
 
 		md_calc_strides(ND, data->psf_strs, data->psf_dims, CFL_SIZE);
-
-		data->psf = compute_psf2(N, data->psf_dims, data->flags, data->trj_dims, data->traj,
-					data->bas_dims, data->basis, data->wgh_dims, data->weights,
-					true /*conf.periodic*/, conf.lowmem);
+		if (1 == md_calc_size(3, nupsf_dims)) {
+			data->psf = compute_psf2(N, data->psf_dims, data->flags, data->trj_dims, data->traj,
+			                         data->bas_dims, data->basis, data->wgh_dims, data->weights,
+			                         true /*conf.periodic*/, conf.lowmem);
+			*nupsf = (complex float*) data->psf;
+			md_copy_dims(ND, (long*) nupsf_dims, data->psf_dims);
+		} else {
+			data->psf = md_calloc(ND, data->psf_dims, CFL_SIZE);
+			md_copy(ND, data->psf_dims, (complex float*) data->psf, *nupsf, CFL_SIZE);
+		}
 	}
 
 
@@ -700,6 +708,8 @@ struct linop_s* nufft_create2(unsigned int N,
 			     const complex float* weights,
 			     const long bas_dims[N],
 			     const complex float* basis,
+			     const long nupsf_dims[N],
+			     complex float** nupsf,
 			     struct nufft_conf_s conf)
 {
 	if (0 <= conf.loopdim) {
@@ -723,7 +733,7 @@ struct linop_s* nufft_create2(unsigned int N,
 			long cim1_dims[N];
 			md_select_dims(N, ~MD_BIT(d), cim1_dims, cim_dims);
 
-			auto nu = nufft_create2(N, ksp1_dims, cim1_dims, traj_dims, traj, wgh_dims, weights, bas_dims, basis, conf);
+			auto nu = nufft_create2(N, ksp1_dims, cim1_dims, traj_dims, traj, wgh_dims, weights, bas_dims, basis, nupsf_dims, nupsf, conf);
 
 			long out_dims[N];
 			md_copy_dims(N, out_dims, ksp_dims);
@@ -756,7 +766,7 @@ struct linop_s* nufft_create2(unsigned int N,
 
 	return nufft_create3(N, ksp_dims, cim_dims,
 			traj_dims, traj, wgh_dims, weights,
-			bas_dims, basis, conf);
+			bas_dims, basis, nupsf_dims, nupsf, conf);
 }
 
 
@@ -772,7 +782,7 @@ struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 	long wgh_dims[N];
 	md_select_dims(N, ~MD_BIT(0), wgh_dims, traj_dims);
 
-	return nufft_create2(N, ksp_dims, cim_dims, traj_dims, traj, wgh_dims, weights, NULL, NULL, conf);
+	return nufft_create2(N, ksp_dims, cim_dims, traj_dims, traj, wgh_dims, weights, NULL, NULL, NULL, NULL, conf);
 }
 
 
