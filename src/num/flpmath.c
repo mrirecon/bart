@@ -1198,6 +1198,30 @@ void md_ztenmulc(unsigned int D, const long out_dims[D], complex float* out, con
 				  MD_STRIDES(D, in2_dims, CFL_SIZE), in2);
 }
 
+void md_tenmul2(unsigned int D, const long max_dims[D], const long out_strs[D], float* out, const long in1_strs[D], const float* in1, const long in2_strs[D], const float* in2)
+{
+
+	if (D == md_calc_blockdim(D, max_dims, out_strs, FL_SIZE)) {
+
+		md_mul2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
+		return;
+	}
+
+	md_clear2(D, max_dims, out_strs, out, FL_SIZE);
+	md_fmac2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
+}
+
+
+void md_tenmul(unsigned int D, const long out_dims[D], float* out, const long in1_dims[D], const float* in1, const long in2_dims[D], const float* in2)
+{
+	long max_dims[D];
+	md_tenmul_dims(D, max_dims, out_dims, in1_dims, in2_dims);
+
+	md_tenmul2(D, max_dims, MD_STRIDES(D, out_dims, FL_SIZE), out,
+				MD_STRIDES(D, in1_dims, FL_SIZE), in1,
+				MD_STRIDES(D, in2_dims, FL_SIZE), in2);
+}
+
 
 
 /**
