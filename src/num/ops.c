@@ -1071,9 +1071,7 @@ const struct operator_s* operator_copy_wrapper_sameplace(unsigned int N, const l
 
 const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[N], const struct operator_s* op)
 {
-	int cpu = 0;
-
-	return operator_copy_wrapper_sameplace(N, strs, op, &cpu);
+	return operator_copy_wrapper_sameplace(N, strs, op, NULL);
 }
 
 
