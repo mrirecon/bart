@@ -109,7 +109,7 @@ extern const _Bool* operator_get_io_flags(const struct operator_s* op);
 extern _Bool check_simple_copy(const struct operator_s* op);
 
 extern const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[N], const struct operator_s* op);
-
+extern const struct operator_s* operator_copy_wrapper_sameplace(unsigned int N, const long* strs[N], const struct operator_s* op, const void* ref);
 
 extern const struct operator_s* operator_gpu_wrapper2(const struct operator_s* op, long move_flags);
 extern const struct operator_s* operator_gpu_wrapper(const struct operator_s* op);

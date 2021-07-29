@@ -966,6 +966,8 @@ struct copy_data_s {
 
 	const struct operator_s* op;
 
+	const void* ref;
+
 	unsigned int N;
 	const long** strs;
 };
@@ -977,6 +979,7 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 	const auto data = CAST_DOWN(copy_data_s, _data);
 	const struct operator_s* op = data->op;
 	void* ptr[N];
+	bool allocated[N];
 
 	assert(N == operator_nr_args(op));
 
@@ -984,10 +987,18 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 
 		const struct iovec_s* io = operator_arg_domain(op, i);
 
-		ptr[i] = md_alloc(io->N, io->dims, io->size);
+		allocated[i] = (!md_check_equal_dims(io->N, io->strs, data->strs[i], ~0) || ((NULL != data->ref) && !md_is_sameplace(data->ref, args[i])));
 
-		if (!op->io_flags[i])
-			md_copy2(io->N, io->dims, io->strs, ptr[i], data->strs[i], args[i], io->size);
+		if (allocated[i]) {
+
+			ptr[i] = md_alloc_sameplace(io->N, io->dims, io->size, NULL == data->ref ? args[i] : data->ref);
+
+			if (!op->io_flags[i])
+				md_copy2(io->N, io->dims, io->strs, ptr[i], data->strs[i], args[i], io->size);
+		} else {
+
+			ptr[i] = args[i];
+		}
 	}
 
 	operator_generic_apply_unchecked(op, N, ptr);
@@ -996,10 +1007,11 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 
 		const struct iovec_s* io = operator_arg_domain(op, i);
 
-		if (op->io_flags[i])
+		if (op->io_flags[i] && allocated[i])
 			md_copy2(io->N, io->dims, data->strs[i], args[i], io->strs, ptr[i], io->size);
 
-		md_free(ptr[i]);
+		if (allocated[i])
+			md_free(ptr[i]);
 	}
 }
 
@@ -1008,6 +1020,7 @@ static void copy_del(const operator_data_t* _data)
 	const auto data = CAST_DOWN(copy_data_s, _data);
 
 	operator_free(data->op);
+	md_free(data->ref);
 
 	for (unsigned int i = 0; i < data->N; i++)
 		xfree(data->strs[i]);
@@ -1016,11 +1029,10 @@ static void copy_del(const operator_data_t* _data)
 	xfree(data);
 }
 
-const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[N], const struct operator_s* op)
+const struct operator_s* operator_copy_wrapper_sameplace(unsigned int N, const long* strs[N], const struct operator_s* op, const void* ref)
 {
 	assert(N == operator_nr_args(op));
 
-	// op = operator_ref(op);
 	PTR_ALLOC(struct copy_data_s, data);
 	SET_TYPEID(copy_data_s, data);
 	data->op = operator_ref(op);
@@ -1046,13 +1058,22 @@ const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[
 		md_calc_strides(io->N, tstrs, io->dims, CFL_SIZE);
 
 		for (unsigned int i = 0; i < io->N; i++)
-			assert(io->strs[i] == tstrs[i]);
+			if (1 != io->dims[i])
+				assert(io->strs[i] == tstrs[i]);
 	}
 
 	data->N = N;
 	data->strs = *strs2;
+	data->ref = (NULL == ref) ? NULL : md_alloc_sameplace(1, MD_DIMS(1), FL_SIZE, ref);
 
 	return operator_generic_create2(N, op->io_flags, D, dims, *strs2, CAST_UP(PTR_PASS(data)), copy_fun, copy_del, NULL);
+}
+
+const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[N], const struct operator_s* op)
+{
+	int cpu = 0;
+
+	return operator_copy_wrapper_sameplace(N, strs, op, &cpu);
 }
 
 
@@ -2309,6 +2330,7 @@ list_t operator_get_list(const struct operator_s* op) {
 	auto data_chain = CAST_MAYBE(operator_chain_s, op->data);
 	auto data_perm = CAST_MAYBE(permute_data_s, op->data);
 	auto data_plus = CAST_MAYBE(operator_plus_s, op->data);
+	auto data_copy = CAST_MAYBE(copy_data_s, op->data);
 
 	if (NULL != data_combi) {
 
@@ -2356,6 +2378,11 @@ list_t operator_get_list(const struct operator_s* op) {
 		list_t result = operator_get_list(data_plus->a);
 		list_merge(result, operator_get_list(data_plus->b), true);
 		return result;
+	}
+
+	if (NULL != data_copy) {
+
+		return operator_get_list(data_copy->op);
 	}
 
 	list_t result = list_create();
