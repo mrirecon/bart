@@ -1971,6 +1971,19 @@ void* md_alloc_sameplace(unsigned int D, const long dimensions[D], size_t size, 
 #endif
 }
 
+/**
+ * Allocate memory is at sameplace
+ */
+bool md_is_sameplace(const void* ptr1, const void* ptr2)
+{
+	assert(NULL != ptr1);
+	assert(NULL != ptr2);
+#ifdef USE_CUDA
+	return cuda_ondevice(ptr1) == cuda_ondevice(ptr2);
+#else
+	return true;
+#endif
+}
 
 
 /**

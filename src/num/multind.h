@@ -99,6 +99,7 @@ extern void* md_alloc_gpu(unsigned int D, const long dimensions[__VLA(D)], size_
 extern void* md_gpu_move(unsigned int D, const long dims[__VLA(D)], const void* ptr, size_t size);
 #endif
 extern void* md_alloc_sameplace(unsigned int D, const long dimensions[__VLA(D)], size_t size, const void* ptr);
+extern _Bool md_is_sameplace(const void* ptr1, const void* ptr2);
 extern void md_free(const void* p);
 
 
