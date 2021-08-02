@@ -794,10 +794,10 @@ static const struct operator_s* graph_optimize_operator_linop(const struct opera
 	if (NULL == op)
 		return NULL;
 
-	assert(1 == operator_nr_out_args(op));
-	assert(1 == operator_nr_in_args(op));
-	assert(operator_get_io_flags(op)[0]);
-	assert(!operator_get_io_flags(op)[1]);
+	//assert(1 == operator_nr_out_args(op));
+	//assert(1 == operator_nr_in_args(op));
+	//assert(operator_get_io_flags(op)[0]);
+	//assert(!operator_get_io_flags(op)[1]);
 
 	auto graph = operator_get_graph(op);
 
@@ -826,4 +826,43 @@ struct linop_s* graph_optimize_linop(const struct linop_s* op)
 	c->norm_inv = operator_p_ref(op->norm_inv);
 
 	return PTR_PASS(c);
+}
+
+
+//FIXME: This is not optimal as it should be part of the operator framework only.
+//However, to optimize using Ax + Ay = A(x+y) the information of the linop framework is necessary.
+void operator_linops_apply_parallel_unchecked(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
+{
+	auto combi = operator_combi_create(N, op);
+
+	int perm[2 * N];
+	for (unsigned int i = 0; i < N; i++) {
+
+		perm[i] = 2 * i;
+		perm[i + N] = 2 * i + 1;
+	}
+
+	auto dup = operator_permute(combi, 2 * N, perm);
+	operator_free(combi);
+
+	for (unsigned int i = 0; i < N - 1; i++) {
+
+		auto tmp = operator_dup_create(dup, N, N + 1);
+		operator_free(dup);
+		dup = tmp;
+	}
+
+	void* args[N + 1];
+	for (unsigned int i = 0; i < N; i++)
+		args[i] = dst[i];
+	args[N] = (void*)src;
+
+
+	auto op_optimized = graph_optimize_operator_linop(dup);
+	operator_free(dup);
+
+	operator_generic_apply_unchecked(op_optimized, N + 1, args);
+
+	operator_free(op_optimized);
+
 }

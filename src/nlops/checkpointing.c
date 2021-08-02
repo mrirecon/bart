@@ -213,7 +213,7 @@ static void checkpoint_der(const nlop_data_t* _data, unsigned int o, unsigned in
 		der_out_tmp[num_ops_par++] = d->der_out[i + d->II * j];
 	}
 
-	operator_apply_parallel_unchecked(num_ops_par, der_ops, (complex float**)der_out_tmp, src);
+	operator_linops_apply_parallel_unchecked(num_ops_par, der_ops, (complex float**)der_out_tmp, src);
 	if (d->clear_mem)
 		nlop_clear_derivatives(d->nlop);
 
@@ -299,7 +299,7 @@ static void checkpoint_adj(const nlop_data_t* _data, unsigned int o, unsigned in
 		adj_out_tmp[num_ops_par++] = d->adj_out[j + d->II * o];
 	}
 
-	operator_apply_parallel_unchecked(num_ops_par, adj_ops, (complex float**)adj_out_tmp, src);
+	operator_linops_apply_parallel_unchecked(num_ops_par, adj_ops, (complex float**)adj_out_tmp, src);
 	if (d->clear_mem)
 		nlop_clear_derivatives(d->nlop);
 
