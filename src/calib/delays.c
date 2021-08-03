@@ -38,6 +38,7 @@
 #include "misc/subpixel.h"
 #include "misc/mri.h"
 #include "misc/misc.h"
+#include "misc/version.h"
 
 #include "delays.h"
 
@@ -130,6 +131,45 @@ static void find_nearest_orthogonal_spokes(int N, int spokes[N], float ref_angle
 }
 
 
+
+// [RING] Find (nearly) orthogonal spokes
+static void find_intersec_sp(const unsigned int no_intersec_sp, int intersec_sp[no_intersec_sp], const unsigned int cur_idx, const unsigned int N, const float angles[N])
+{
+	float intersec_angles[no_intersec_sp];
+
+	for (unsigned int i = 0; i < no_intersec_sp; i++) {
+
+		intersec_sp[i] = -1;
+		intersec_angles[i] = FLT_MAX;
+	}
+
+	for (unsigned int i = 0; i < N; i++) { // Iterate through angles
+
+		for (unsigned int j = 0; j < no_intersec_sp; j++) { // Iterate through intersec array
+
+			// If angle difference of spoke 'i' and current spoke is greater than intersection angle 'j'
+
+			if (fabs(fmod(fabs(angles[cur_idx] - angles[i]), M_PI) - M_PI / 2.) < intersec_angles[j]) {
+
+				// Shift smaller intersec_angles to higher indices
+
+				for (unsigned int k = no_intersec_sp; k > j + 1; k--) {
+
+					intersec_sp[k - 1] = intersec_sp[k - 2]; // Spoke index
+					intersec_angles[k - 1] = intersec_angles[k - 2]; // Angle value
+				}
+
+				// Assign current value
+				intersec_sp[j] = i;
+				intersec_angles[j] = fabs(fmod(fabs(angles[cur_idx]-angles[i]), M_PI) - M_PI / 2.); // Weight value
+				break;
+			}
+		}
+	}
+}
+
+
+
 // [RING] Test that hints if the chosen region (-r) is too small
 static void check_intersections(const int Nint, const int N, const float S[3], const float angles[N], const long idx[Nint][2], const int c_region)
 {
@@ -187,6 +227,9 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[N
 
 		int intersec_sp[N];
 		find_nearest_orthogonal_spokes(N, intersec_sp, angles[i], angles);
+
+		if (use_compat_to_version("v0.4.00")) // for RING reproducibility
+			find_intersec_sp(no_intersec_sp, intersec_sp, i, N, angles);
 
 		for (int j = 0; j < no_intersec_sp; j++) {
 
