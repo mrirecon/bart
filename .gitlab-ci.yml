@@ -27,8 +27,8 @@ Build_Clang:
   image: debian:stable
   stage: build
   script:
-    - apt-get install -y clang-6.0 libblocksruntime-dev
-    - CC=clang-6.0 OMP=0 make all
+    - apt-get install -y clang-11 libblocksruntime-dev
+    - CC=clang-11 OMP=0 make all
   artifacts:
     paths:
       - bart
@@ -40,7 +40,7 @@ Build_Static:
   image: debian:stable
   stage: build
   script:
-    - apt-get install -y libgfortran-8-dev
+    - apt-get install -y libgfortran-10-dev
     - SLINK=1 make
   artifacts:
     paths:
@@ -108,8 +108,8 @@ Unit_Test_Clang:
   image: debian:stable
   stage: test1
   script:
-    - apt-get install -y clang-6.0 libblocksruntime-dev
-    - AUTOCLEAN=0 CC=clang-6.0 OMP=0 make utest
+    - apt-get install -y clang-11 libblocksruntime-dev
+    - AUTOCLEAN=0 CC=clang-11 OMP=0 make utest
   needs: [Build_Clang]
   dependencies:
      - Build_Clang
@@ -177,7 +177,7 @@ Integration_Test_Python:
   image: debian:stable
   stage: test2
   script:
-    - apt-get install -y python python-numpy
+    - apt-get install -y python3 python3-numpy
     - AUTOCLEAN=0 make pythontest
   needs: [Build]
   dependencies:
@@ -199,8 +199,8 @@ Integration_Test_Clang:
   image: debian:stable
   stage: test2
   script:
-    - apt-get install -y clang-6.0 libblocksruntime-dev
-    - AUTOCLEAN=0 CC=clang-6.0 OMP=0 make test
+    - apt-get install -y clang-11 libblocksruntime-dev
+    - AUTOCLEAN=0 CC=clang-11 OMP=0 make test
   needs: [Build_Clang]
   dependencies:
     - Build_Clang

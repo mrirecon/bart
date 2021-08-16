@@ -272,7 +272,7 @@ with Matlab. Go to the examples directory and run:
 You can set the TOOLBOX_PATH to the base directory and start a
 Python interactively as follows:
 
-    $ python -i startup.py
+    $ python3 -i startup.py
 
 To avoid doing the above everytime, it is recommended to update your
 PYTHONPATH environment. For example, in Linux, assuming your 
