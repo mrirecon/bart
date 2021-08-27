@@ -23,6 +23,9 @@
 
 #include "filter.h"
 
+#ifdef __MINGW32__
+#define ffs __builtin_ffs
+#endif
 
 static int cmp_float(const void* a, const void* b)
 {
@@ -146,21 +149,21 @@ void linear_phase(unsigned int N, const long dims[N], const float pos[N], comple
 }
 
 
-void klaplace_scaled(unsigned int N, const long dims[N], unsigned int flags, const float sc[N], complex float* out)
+void klaplace_scaled(int N, const long dims[N], long flags, const float sc[N], complex float* out)
 {
-	unsigned int flags2 = flags;
+	long flags2 = flags;
 
 	complex float* tmp = md_alloc(N, dims, CFL_SIZE);
 
 	md_clear(N, dims, out, CFL_SIZE);
 
-	for (unsigned int i = 0; i < bitcount(flags); i++) {
+	for (int i = 0; i < bitcount(flags); i++) {
 
 		unsigned int lsb = ffs(flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
 		complex float grad[N];
-		for (unsigned int j = 0; j < N; j++)
+		for (int j = 0; j < N; j++)
 			grad[j] = 0.;
 
 		grad[lsb] = sc[lsb];
@@ -173,10 +176,10 @@ void klaplace_scaled(unsigned int N, const long dims[N], unsigned int flags, con
 }
 
 
-void klaplace(unsigned int N, const long dims[N], unsigned int flags, complex float* out)
+void klaplace(int N, const long dims[N], long flags, complex float* out)
 {
 	float sc[N];
-	for (unsigned int j = 0; j < N; j++)
+	for (int j = 0; j < N; j++)
 		sc[j] = 1. / (float)dims[j];
 
 	klaplace_scaled(N, dims, flags, sc, out);

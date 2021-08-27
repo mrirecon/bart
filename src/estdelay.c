@@ -45,12 +45,22 @@
 
 
 
-static const char usage_str[] = "<trajectory> <data> [<qf>]";
 static const char help_str[] = "Estimate gradient delays from radial data.";
 
 
 int main_estdelay(int argc, char* argv[argc])
 {
+	const char* traj_file = NULL;
+	const char* data_file = NULL;
+	const char* qf_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &traj_file, "trajectory"),
+		ARG_INFILE(true, &data_file, "data"),
+		ARG_OUTFILE(false, &qf_file, "qf"),
+	};
+
 	bool do_ring = false;
 	struct ring_conf conf = ring_defaults;
 
@@ -62,7 +72,7 @@ int main_estdelay(int argc, char* argv[argc])
 		OPT_FLOAT('r', &conf.size, "r", "[RING] Central region size"),
 	};
 
-	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -71,7 +81,7 @@ int main_estdelay(int argc, char* argv[argc])
 
 
 	long tdims[DIMS];
-	const complex float* traj = load_cfl(argv[1], DIMS, tdims);
+	const complex float* traj = load_cfl(traj_file, DIMS, tdims);
 
 	long tdims1[DIMS];
 	md_select_dims(DIMS, ~MD_BIT(1), tdims1, tdims);
@@ -102,7 +112,7 @@ int main_estdelay(int argc, char* argv[argc])
 
 
 	long full_dims[DIMS];
-	const complex float* full_in = load_cfl(argv[2], DIMS, full_dims);
+	const complex float* full_in = load_cfl(data_file, DIMS, full_dims);
 
 	// Remove not needed dimensions
 	long dims[DIMS];
@@ -144,11 +154,11 @@ int main_estdelay(int argc, char* argv[argc])
 
 	bart_printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
 
-	if (NULL != argv[3]) {
+	if (NULL != qf_file) {
 
 		long qf_dims[1] = { 3 };
 
-		complex float* oqf = create_cfl(argv[3], 1, qf_dims);
+		complex float* oqf = create_cfl(qf_file, 1, qf_dims);
 
 		for (int i = 0; i < 3; i++)
 			oqf[i] = qf[i];

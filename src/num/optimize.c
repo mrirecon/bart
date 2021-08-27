@@ -31,6 +31,10 @@
 
 #include "optimize.h"
 
+#ifdef __MINGW32__
+#define ffs __builtin_ffs
+#endif
+
 /*
  * Helper functions:
  *
@@ -161,29 +165,40 @@ unsigned int remove_empty_dims(unsigned int D, unsigned int N, long dims[N], lon
 		}
 	}
 
+	for (unsigned int i = o; i < N; i++) {
+
+		for (unsigned int j = 0; j < D; j++)
+			(*ostrs[j])[i] = 0;
+		dims[i] = 1;
+	}
+
 	return o;
 }
 
 
-static int cmp_strides(const void* _data, int a, int b)
-{
-	const long* strs = _data;
-	long d = strs[a] - strs[b];
 
-	if (d > 0)
-		return 1;
-	if (d < 0)
-		return -1;
-
-	return 0;
-}
 
 static void compute_permutation(unsigned int N, int ord[N], const long strs[N])
 {
+	__block const long* strsp = strs; // clang workaround
+
 	for (unsigned int i = 0; i < N; i++)
 		ord[i] = i;
 
-	quicksort(N, ord, (const void*)strs, cmp_strides);
+	NESTED(int, cmp_strides, (int a, int b))
+	{
+		long d = strsp[a] - strsp[b];
+
+		if (d > 0)
+			return 1;
+
+		if (d < 0)
+			return -1;
+
+		return 0;
+	};
+
+	quicksort(N, ord, cmp_strides);
 }
 
 static void reorder_long(int N, int ord[N], long x[N])
@@ -403,6 +418,8 @@ unsigned int optimize_dims_gpu(unsigned int D, unsigned int N, long dims[N], lon
 	reorder_long(ND, ord, dims);
 #endif
 
+	ND = simplify_dims(D, N, dims, strs);
+	
 	return ND;
 }
 
@@ -539,10 +556,10 @@ static bool use_gpu(int p, void* ptr[p])
 	bool gpu = false;
 
 	for (int i = 0; i < p; i++)
-		gpu |= cuda_ondevice(ptr[i]);
+		gpu = gpu || cuda_ondevice(ptr[i]);
 
 	for (int i = 0; i < p; i++)
-		gpu &= cuda_accessible(ptr[i]);
+		gpu = gpu && cuda_accessible(ptr[i]);
 
 #if 0
 	// FIXME: fails for copy
@@ -559,7 +576,7 @@ static bool one_on_gpu(int p, void* ptr[p])
 {
 	bool gpu = false;
 
-	for (int i = 0; i < p; i++)
+	for (int i = 0; !gpu && (i < p); i++)
 		gpu |= cuda_ondevice(ptr[i]);
 
 	return gpu;
@@ -628,7 +645,8 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 	}
 
 #ifdef USE_CUDA
-	int ND = (use_gpu(N, nptr1) ? optimize_dims_gpu : optimize_dims)(N, D, tdims, nstr1);
+	bool gpu = use_gpu(N, nptr1);
+	int ND = (gpu ? optimize_dims_gpu : optimize_dims)(N, D, tdims, nstr1);
 #else
 	int ND = optimize_dims(N, D, tdims, nstr1);
 #endif
@@ -676,7 +694,7 @@ out:
 		cnst_ok = false;
 
 #ifdef USE_CUDA
-	if (use_gpu(N, nptr1))	// not implemented yet
+	if (gpu)	// not implemented yet
 		cnst_ok = false;
 #endif
 
@@ -709,7 +727,7 @@ out:
 	debug_print_dims(DP_DEBUG4, D, dim);
 
 #ifdef USE_CUDA
-	if (num_auto_parallelize && !use_gpu(N, nptr1) && !one_on_gpu(N, nptr1)) {
+	if (num_auto_parallelize && !gpu && !one_on_gpu(N, nptr1)) {
 #else
 	if (num_auto_parallelize) {
 #endif
@@ -727,9 +745,9 @@ out:
 		nstr2[i] = *nstr1[i] + skip;
 
 #ifdef USE_CUDA
-	debug_printf(DP_DEBUG4, "This is a %s call\n.", use_gpu(N, nptr1) ? "gpu" : "cpu");
+	debug_printf(DP_DEBUG4, "This is a %s call\n.", gpu ? "gpu" : "cpu");
 
-	__block struct nary_opt_data_s data = { md_calc_size(skip, tdims), use_gpu(N, nptr1) ? &gpu_ops : &cpu_ops };
+	__block struct nary_opt_data_s data = { md_calc_size(skip, tdims), gpu ? &gpu_ops : &cpu_ops };
 #else
 	__block struct nary_opt_data_s data = { md_calc_size(skip, tdims), &cpu_ops };
 #endif

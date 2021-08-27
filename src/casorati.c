@@ -27,32 +27,40 @@
 #define CFL_SIZE	sizeof(complex float)
 #endif
 
-static const char usage_str[] = "dim1 kern1 dim2 kern2 ... dimn kernn <input> <output>";
-static const char help_str[] = "Casorati matrix with kernel (kern1, ..., kernn) along dimensions (dim1, ..., dimn).\n";
+static const char help_str[] = "Casorati matrix with kernel (kern1, ..., kernN) along dimensions (dim1, ..., dimN).";
 
 
 int main_casorati(int argc, char* argv[argc])
 {
-	cmdline(&argc, argv, 4, 100, usage_str, help_str, 0, NULL);
+	long count = 0;
+	unsigned int* dims = NULL;
+	unsigned int* kerns = NULL;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_TUPLE(true, &count, 2, OPT_UINT, sizeof(*dims), &dims, "dim", OPT_UINT, sizeof(*kerns), &kerns, "kern"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	int count = argc - 3;
-	
-	assert((count > 0) && (count % 2 == 0));
 
 	long idims[DIMS];
 	long kdims[DIMS];
 	long odims[2];
 
-	complex float* idata = load_cfl(argv[argc - 2], DIMS, idims);
+	complex float* idata = load_cfl(in_file, DIMS, idims);
 
 	md_copy_dims(DIMS, kdims, idims);
 
-	for (int i = 0; i < count; i += 2) {
+	for (int i = 0; i < count; i++) {
 
-		unsigned int kdim = atoi(argv[i + 1]);
-		unsigned int ksize = atoi(argv[i + 2]);
+		unsigned int kdim = dims[i];
+		unsigned int ksize = kerns[i];
 
 		assert(kdim < DIMS);
 		assert(ksize >= 1);
@@ -63,7 +71,7 @@ int main_casorati(int argc, char* argv[argc])
 
 	casorati_dims(DIMS, odims, kdims, idims);
 
-	complex float* odata = create_cfl(argv[argc - 1], 2, odims);
+	complex float* odata = create_cfl(out_file, 2, odims);
 
 	long istrs[DIMS];
 	md_calc_strides(DIMS, istrs, idims, CFL_SIZE);

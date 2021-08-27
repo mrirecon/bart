@@ -18,16 +18,26 @@ MAKEFLAGS += -R
 # use for parallel make
 AR=./ar_lock.sh
 
+# some operations might still be non deterministic 
+NON_DETERMINISTIC?=0
+
+# allow blas calls within omp regions (fails on Debian 9, openblas)
+BLAS_THREADSAFE?=0
+
 # use for ppc64le HPC
+OPENBLAS?=0
 MKL?=0
 CUDA?=0
+CUDNN?=0
 ACML?=0
 OMP?=1
 SLINK?=0
 DEBUG?=0
+UBSAN?=0
 FFTWTHREADS?=1
 SCALAPACK?=0
 ISMRMRD?=0
+TENSORFLOW?=0
 NOEXEC_STACK?=0
 PARALLEL?=0
 PARALLEL_NJOBS?=
@@ -36,8 +46,6 @@ LOG_BACKEND?=0
 LOG_SIEMENS_BACKEND?=0
 LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
-ENABLE_MEM_CFL?=0
-MEMONLY_CFL?=0
 
 
 DESTDIR ?= /
@@ -86,6 +94,13 @@ ifeq ($(UNAME),CYGWIN_NT-10.0)
 endif
 
 
+ifneq (,$(findstring MSYS,$(UNAME)))
+	BUILDTYPE = MSYS
+	#LDFLAGS += -lucrtbase # support for %F, %T formatting codes in strftime()
+	#LDFLAGS += -static-libgomp
+	NOLAPACKE ?= 1
+	SLINK = 1
+endif
 
 
 # Paths
@@ -115,11 +130,13 @@ CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
 
 ifeq ($(BUILDTYPE), MacOSX)
-	CC ?= gcc-mp-6
+	CC ?= gcc-mp-10
 else
 	CC ?= gcc
+	ifneq ($(BUILDTYPE), MSYS)
 	# for symbols in backtraces
 	LDFLAGS += -rdynamic
+	endif
 endif
 
 
@@ -127,6 +144,9 @@ endif
 
 # openblas
 
+ifeq ($(BUILDTYPE), MSYS)
+BLAS_BASE ?= /mingw64/include/OpenBLAS/
+else
 ifneq ($(BUILDTYPE), MacOSX)
 BLAS_BASE ?= /usr/
 else
@@ -136,11 +156,17 @@ CPPFLAGS += -DUSE_MACPORTS
 endif
 BLAS_BASE ?= /usr/local/opt/openblas/
 endif
+endif
 
 # cuda
 
 CUDA_BASE ?= /usr/
+CUDA_LIB ?= lib
+CUDNN_BASE ?= $(CUDA_BASE)
+CUDNN_LIB ?= lib64
 
+# tensorflow
+TENSORFLOW_BASE ?= /usr/local/
 
 # acml
 
@@ -148,6 +174,7 @@ ACML_BASE ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
 
 # mkl
 MKL_BASE ?= /opt/intel/mkl/lib/intel64/
+
 
 # fftw
 
@@ -176,19 +203,22 @@ TNUM=fft fftmod fftshift noise bench threshold conv rss filter mandelbrot wavele
 TRECO=pics pocsense sqpics itsense nlinv moba nufft rof tgv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin
 TMRI=homodyne poisson twixread fakeksp looklocker upat
-TSIM=phantom traj signal
+TSIM=phantom traj signal epg
 TIO=toimg
 
 
 
 MODULES = -lnum -lmisc -lnum -lmisc
+ifeq ($(BUILDTYPE), MSYS)
+MODULES += -lwin
+endif
 
-MODULES_pics = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart
+MODULES_pics = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
 MODULES_sqpics = -lsense -liter -llinops -lwavelet -llowrank -lnoncart
 MODULES_pocsense = -lsense -liter -llinops -lwavelet
 MODULES_nlinv = -lnoir -liter -lnlops -llinops -lnoncart
 MODULES_rtnlinv = -lnoir -liter -lnlops -llinops -lnoncart
-MODULES_moba = -lmoba -lnoir -lnlops -llinops -lwavelet -lnoncart -lsimu -lgrecon -llowrank -llinops -liter
+MODULES_moba = -lmoba -lnoir -lnlops -llinops -lwavelet -lnoncart -lsimu -lgrecon -llowrank -llinops -liter -lnn
 MODULES_mobafit = -lmoba -lnlops -llinops -lsimu -liter
 MODULES_bpsense = -lsense -lnoncart -liter -llinops -lwavelet
 MODULES_itsense = -liter -llinops
@@ -206,21 +236,22 @@ MODULES_rof = -liter -llinops
 MODULES_tgv = -liter -llinops
 MODULES_bench = -lwavelet -llinops
 MODULES_phantom = -lsimu -lgeom
-MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet -lnlops -lmoba -lgeom
+MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -ldfwavelet -lnlops -lmoba -lgeom -lnn
 MODULES_sake = -lsake
 MODULES_traj = -lnoncart
 MODULES_wave = -liter -lwavelet -llinops -llowrank
 MODULES_threshold = -llowrank -liter -ldfwavelet -llinops -lwavelet
 MODULES_fakeksp = -lsense -llinops
-MODULES_lrmatrix = -llowrank -liter -llinops
+MODULES_lrmatrix = -llowrank -liter -llinops -lnlops
 MODULES_estdims = -lnoncart -llinops
 MODULES_ismrmrd = -lismrm
 MODULES_wavelet = -llinops -lwavelet
-MODULES_wshfl = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart
+MODULES_wshfl = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
 MODULES_ssa = -lcalib
 MODULES_bin = -lcalib
 MODULES_signal = -lsimu
 MODULES_pol2mask = -lgeom
+MODULES_epg = -lsimu
 
 
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
@@ -254,6 +285,11 @@ CPPFLAGS += -DNOLAPACKE
 MODULES += -llapacke
 endif
 
+ifeq ($(TENSORFLOW),1)
+CPPFLAGS += -DTENSORFLOW -I$(TENSORFLOW_BASE)/include
+LIBS += -L$(TENSORFLOW_BASE)/lib -Wl,-rpath $(TENSORFLOW_BASE)/lib -ltensorflow_framework -ltensorflow
+endif
+
 
 
 XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
@@ -264,6 +300,10 @@ TARGETS = bart $(XTARGETS)
 ifeq ($(DEBUG),1)
 CPPFLAGS += -g
 CFLAGS += -g
+endif
+
+ifeq ($(UBSAN),1)
+CFLAGS += -fsanitize=undefined -fsanitize-undefined-trap-on-error
 endif
 
 ifeq ($(NOEXEC_STACK),1)
@@ -296,7 +336,7 @@ CXXFLAGS += -std=c++14
 
 
 
-default: bart doc/commands.txt .gitignore
+default: bart .gitignore
 
 
 -include $(ALLDEPS)
@@ -312,10 +352,18 @@ NVCC = $(CUDA_BASE)/bin/nvcc
 ifeq ($(CUDA),1)
 CUDA_H := -I$(CUDA_BASE)/include
 CPPFLAGS += -DUSE_CUDA $(CUDA_H)
+ifeq ($(CUDNN),1)
+CUDNN_H := -I$(CUDNN_BASE)/include
+CPPFLAGS += -DUSE_CUDNN $(CUDNN_H)
+endif
 ifeq ($(BUILDTYPE), MacOSX)
-CUDA_L := -L$(CUDA_BASE)/lib -lcufft -lcudart -lcublas -m64 -lstdc++
+CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -lcufft -lcudart -lcublas -m64 -lstdc++
 else
-CUDA_L := -L$(CUDA_BASE)/lib -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/lib
+ifeq ($(CUDNN),1)
+CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -L$(CUDNN_BASE)/$(CUDNN_LIB) -lcudnn -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/$(CUDA_LIB)
+else
+CUDA_L := -L$(CUDA_BASE)/$(CUDA_LIB) -lcufft -lcudart -lcublas -lstdc++ -Wl,-rpath $(CUDA_BASE)/$(CUDA_LIB)
+endif
 endif
 else
 CUDA_H :=
@@ -348,21 +396,37 @@ endif
 # BLAS/LAPACK
 ifeq ($(SCALAPACK),1)
 BLAS_L :=  -lopenblas -lscalapack
+CPPFLAGS += -DUSE_OPENBLAS
+CFLAGS += -DUSE_OPENBLAS
 else
 ifeq ($(ACML),1)
 BLAS_H := -I$(ACML_BASE)/include
 BLAS_L := -L$(ACML_BASE)/lib -lgfortran -lacml_mp -Wl,-rpath $(ACML_BASE)/lib
 CPPFLAGS += -DUSE_ACML
 else
+ifeq ($(BUILDTYPE), MSYS)
+BLAS_H := -I$(BLAS_BASE)
+else
 BLAS_H := -I$(BLAS_BASE)/include
+endif
 ifeq ($(BUILDTYPE), MacOSX)
 BLAS_L := -L$(BLAS_BASE)/lib -lopenblas
+else
+ifeq ($(BUILDTYPE), MSYS)
+	BLAS_L := -L/mingw64/lib -lopenblas
 else
 ifeq ($(NOLAPACKE),1)
 BLAS_L := -L$(BLAS_BASE)/lib -llapack -lblas
 CPPFLAGS += -Isrc/lapacke
 else
+ifeq ($(OPENBLAS), 1)
+BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lopenblas
+CPPFLAGS += -DUSE_OPENBLAS
+CFLAGS += -DUSE_OPENBLAS
+else
 BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lblas
+endif
+endif
 endif
 endif
 endif
@@ -375,11 +439,25 @@ CPPFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex do
 CFLAGS += -DUSE_MKL -DMKL_Complex8="complex float" -DMKL_Complex16="complex double"
 endif
 
+ifeq ($(BLAS_THREADSAFE),1)
+CPPFLAGS += -DBLAS_THREADSAFE
+CFLAGS += -DBLAS_THREADSAFE
+endif
+
+ifeq ($(NON_DETERMINISTIC),1)
+CPPFLAGS += -DNON_DETERMINISTIC
+CFLAGS += -DNON_DETERMINISTIC
+endif
 
 
 CPPFLAGS += $(FFTW_H) $(BLAS_H)
 
-
+# librt
+ifeq ($(BUILDTYPE), MacOSX)
+	LIBRT :=
+else
+	LIBRT := -lrt
+endif
 
 # png
 PNG_L := -lpng
@@ -400,8 +478,10 @@ FFTW_H := -I$(FFTW_BASE)/include/
 FFTW_L := -L$(FFTW_BASE)/lib -lfftw3f
 
 ifeq ($(FFTWTHREADS),1)
+ifneq ($(BUILDTYPE), MSYS)
 	FFTW_L += -lfftw3f_threads
 	CPPFLAGS += -DFFTWTHREADS
+endif
 endif
 
 # Matlab
@@ -419,21 +499,6 @@ ISMRM_H :=
 ISMRM_L :=
 endif
 
-# Enable in-memory CFL files
-
-ifeq ($(ENABLE_MEM_CFL),1)
-CPPFLAGS += -DUSE_MEM_CFL
-miscextracxxsrcs += $(srcdir)/misc/mmiocc.cc
-LDFLAGS += -lstdc++
-endif
-
-# Only allow in-memory CFL files (ie. disable support for all other files)
-
-ifeq ($(MEMONLY_CFL),1)
-CPPFLAGS += -DMEMONLY_CFL
-miscextracxxsrcs += $(srcdir)/misc/mmiocc.cc
-LDFLAGS += -lstdc++
-endif
 
 # Logging backends
 
@@ -456,8 +521,11 @@ BLAS_L += -lgfortran -lquadmath
 else
 # work around fortran problems with static linking
 LDFLAGS += -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -Wl,--allow-multiple-definition
+ifneq ($(BUILDTYPE), MSYS)
 LIBS += -lmvec
-BLAS_L += -llapack -lblas -lgfortran -lquadmath
+BLAS_L += -llapack -lblas
+endif
+BLAS_L += -lgfortran -lquadmath
 endif
 endif
 
@@ -488,9 +556,12 @@ lib/lib$(1).a: lib$(1).a($$($(1)objs))
 
 endef
 
-ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba lapacke box geom
+ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake dfwavelet nlops moba lapacke box geom nn
 ifeq ($(ISMRMRD),1)
 ALIBS += ismrm
+endif
+ifeq ($(BUILDTYPE), MSYS)
+ALIBS += win
 endif
 $(eval $(foreach t,$(ALIBS),$(eval $(call alib,$(t)))))
 
@@ -506,16 +577,17 @@ lib/libismrm.a: CPPFLAGS += $(ISMRM_H)
 
 
 # lib linop
-UTARGETS += test_linop_matrix test_linop
+UTARGETS += test_linop_matrix test_linop test_padding
 MODULES_test_linop += -llinops
 MODULES_test_linop_matrix += -llinops
+MODULES_test_padding += -llinops
 
 # lib lowrank
 UTARGETS += test_batchsvd
 MODULES_test_batchsvd = -llowrank
 
 # lib misc
-UTARGETS += test_pattern test_types test_misc
+UTARGETS += test_pattern test_types test_misc test_memcfl
 
 # lib moba
 UTARGETS += test_moba
@@ -531,24 +603,31 @@ MODULES_test_nufft += -lnoncart -llinops
 
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv
-UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2
-UTARGETS_GPU += test_cudafft
+UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr
+UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls
 
 # lib simu
-UTARGETS += test_ode_bloch test_biot_savart test_signals
+UTARGETS += test_ode_bloch test_biot_savart test_signals test_epg
 MODULES_test_ode_bloch += -lsimu
 MODULES_test_biot_savart += -lsimu
 MODULES_test_signals += -lsimu
+MODULES_test_epg += -lsimu
 
 # lib geom
 UTARGETS += test_geom
 MODULES_test_geom += -lgeom
 
 # lib iter
-UTARGETS += test_iter test_prox
+UTARGETS += test_iter test_prox test_prox2
 MODULES_test_iter += -liter -lnlops -llinops
 MODULES_test_prox += -liter -llinops
+MODULES_test_prox2 += -liter -llinops -lnlops
 
+# lib nn
+ifeq ($(TENSORFLOW),1)
+UTARGETS += test_nn_tf
+MODULES_test_nn_tf += -lnn -lnlops -llinops
+endif
 
 
 
@@ -617,25 +696,25 @@ endif
 
 .SECONDEXPANSION:
 $(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
-	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm
+	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
 #	rm $(srcdir)/$@.o
 
 UTESTS=$(shell $(root)/utests/utests-collect.sh ./utests/$@.c)
 
 .SECONDEXPANSION:
 $(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT)
 
 UTESTS_GPU=$(shell $(root)/utests/utests_gpu-collect.sh ./utests/$@.c)
 
 .SECONDEXPANSION:
 $(UTARGETS_GPU): % : utests/utest_gpu.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS_GPU="$(UTESTS_GPU)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS_GPU="$(UTESTS_GPU)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT)
 
 
 
 # linker script version - does not work on MacOS X
-#	$(CC) $(LDFLAGS) -Wl,-Tutests/utests.ld $(CFLAGS) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm
+#	$(CC) $(LDFLAGS) -Wl,-Tutests/utests.ld $(CFLAGS) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm -rt
 
 clean:
 	rm -f `find $(srcdir) -name "*.o"`
@@ -683,6 +762,12 @@ TESTS_OUT=$(root)/tests/out/
 
 include $(root)/tests/*.mk
 
+ifeq ($(BUILDTYPE), MSYS)
+TMP_TESTS := $(TESTS)
+NOT_SUPPORTED=tests/test-io tests/test-io2 tests/test-join-append tests/test-join-append-one tests/test-whiten
+TESTS = $(filter-out $(NOT_SUPPORTED),$(TMP_TESTS))
+endif
+
 test:	${TESTS}
 
 gputest: ${TESTS_GPU}
@@ -722,7 +807,7 @@ utest_gpu: utests_gpu-all
 endif	# MAKESTAGE
 
 
-install: bart $(root)/doc/commands.txt
+install: bart
 	install -d $(DESTDIR)/$(PREFIX)/bin/
 	install bart $(DESTDIR)/$(PREFIX)/bin/
 	install -d $(DESTDIR)/$(PREFIX)/share/doc/bart/
@@ -739,4 +824,13 @@ install: bart $(root)/doc/commands.txt
 # symbol table
 bart.syms: bart
 	rules/make_symbol_table.sh bart bart.syms
+
+
+# shared library
+shared-lib:
+	make allclean
+	CFLAGS=-fPIC make
+	gcc -shared -fopenmp -o libbart.so src/bart.o -Wl,-whole-archive lib/lib*.a -Wl,-no-whole-archive -Wl,-Bdynamic $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm -lrt
+	make allclean
+
 

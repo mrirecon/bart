@@ -9,7 +9,11 @@
 
 #include <string.h>
 #include <assert.h>
+#ifdef _WIN32
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
 
 #include <stdbool.h>
 

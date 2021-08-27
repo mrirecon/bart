@@ -48,7 +48,6 @@
 #include "num/iovec.h"
 #include "num/ops.h"
 
-static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
 
@@ -81,6 +80,17 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 
 int main_pics(int argc, char* argv[argc])
 {
+	const char* ksp_file = NULL;
+	const char* sens_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &sens_file, "sensitivities"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	// Initialize default parameters
 
 	struct sense_conf conf = sense_defaults;
@@ -138,18 +148,18 @@ int main_pics(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		{ 'l', NULL, true, opt_reg, &ropts, "1/-l2\t\ttoggle l1-wavelet or l2 regularization." },
+		{ 'l', NULL, true, OPT_SPECIAL, opt_reg, &ropts, "\b1/-l2", "  toggle l1-wavelet or l2 regularization." },
 		OPT_FLOAT('r', &ropts.lambda, "lambda", "regularization parameter"),
-		{ 'R', NULL, true, opt_reg, &ropts, " <T>:A:B:C\tgeneralized regularization options (-Rh for help)" },
+		{ 'R', NULL, true, OPT_SPECIAL, opt_reg, &ropts, "<T>:A:B:C", "generalized regularization options (-Rh for help)" },
 		OPT_SET('c', &conf.rvc, "real-value constraint"),
 		OPT_FLOAT('s', &step, "step", "iteration stepsize"),
 		OPT_UINT('i', &maxiter, "iter", "max. number of iterations"),
-		OPT_STRING('t', &traj_file, "file", "k-space trajectory"),
+		OPT_INFILE('t', &traj_file, "file", "k-space trajectory"),
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('N', &overlapping_blocks, "do fully overlapping LLR blocks"),
 		OPT_SET('g', &conf.gpu, "use GPU"),
 		OPT_UINT('G', &gpun, "gpun", "use GPU device gpun"),
-		OPT_STRING('p', &pat_file, "file", "pattern or weights"),
+		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &algo, ALGO_IST, "select IST"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
@@ -157,8 +167,8 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SET('D', &admm.dynamic_rho, "(ADMM dynamic step size)"),
 		OPT_SET('F', &fast, "(fast)"),
 		OPT_SET('J', &admm.relative_norm, "(ADMM residual balancing)"),
-		OPT_STRING('T', &image_truth_file, "file", "(truth file)"),
-		OPT_STRING('W', &image_start_file, "<img>", "Warm start with <img>"),
+		OPT_INFILE('T', &image_truth_file, "file", "(truth file)"),
+		OPT_INFILE('W', &image_start_file, "<img>", "Warm start with <img>"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_INT('O', &conf.rwiter, "rwiter", "(reweighting)"),
 		OPT_FLOAT('o', &conf.gamma, "gamma", "(reweighting)"),
@@ -167,11 +177,11 @@ int main_pics(int argc, char* argv[argc])
 		OPT_FLOAT('q', &conf.cclambda, "cclambda", "(cclambda)"),
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
 		OPT_SELECT('m', enum algo_t, &algo, ALGO_ADMM, "select ADMM"),
-		OPT_FLOAT('w', &scaling, "val", "inverse scaling of the data"),
+		OPT_FLOAT('w', &scaling, "", "inverse scaling of the data"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_UINT('L', &loop_flags, "flags", "batch-mode"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
-		OPT_STRING('B', &basis_file, "file", "temporal (or other) basis"),
+		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
 		OPT_SELECT('a', enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
@@ -179,7 +189,7 @@ int main_pics(int argc, char* argv[argc])
 	};
 
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (NULL != image_truth_file)
 		im_truth = true;
@@ -207,7 +217,7 @@ int main_pics(int argc, char* argv[argc])
 
 	// load kspace and maps and get dimensions
 
-	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
+	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
         if (sms) {
 
@@ -219,7 +229,7 @@ int main_pics(int argc, char* argv[argc])
                 debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
         }
 
-	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
+	complex float* maps = load_cfl(sens_file, DIMS, map_dims);
 
 	unsigned int map_flags = md_nontriv_dims(DIMS, map_dims);
 
@@ -453,7 +463,7 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 
-	complex float* image = create_cfl(argv[3], DIMS, img_dims);
+	complex float* image = create_cfl(out_file, DIMS, img_dims);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
 

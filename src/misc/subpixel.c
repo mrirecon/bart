@@ -11,7 +11,7 @@
 
 
 
-void est_subpixel_shift(unsigned int N, float shifts[N], const long dims[N], unsigned int flags, const complex float* in1, const complex float* in2)
+void est_subpixel_shift(int N, float shifts[N], const long dims[N], long flags, const complex float* in1, const complex float* in2)
 {
 	complex float* tmp1 = md_alloc(N, dims, CFL_SIZE);
 	complex float* tmp2 = md_alloc(N, dims, CFL_SIZE);
@@ -21,7 +21,7 @@ void est_subpixel_shift(unsigned int N, float shifts[N], const long dims[N], uns
 
 	md_zmulc(N, dims, tmp1, tmp1, tmp2);
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		shifts[i] = 0.;
 
@@ -29,7 +29,7 @@ void est_subpixel_shift(unsigned int N, float shifts[N], const long dims[N], uns
 			continue;
 
 		long shift[N];
-		for (unsigned int j = 0; j < N; j++)
+		for (int j = 0; j < N; j++)
 			shift[j] = 0;
 
 		shift[i] = 1;

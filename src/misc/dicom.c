@@ -25,7 +25,12 @@
 #include <stdio.h>
 
 #include <sys/types.h>
+#ifdef _WIN32
+#include "win/mman.h"
+#include "win/open_patch.h"
+#else
 #include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 
 #include "misc/misc.h" // for error
@@ -97,7 +102,7 @@ struct element {
 	uint16_t element;
 	char vr[2];
 
-	unsigned int len;
+	int len;
 	const void* data;
 };
 
@@ -123,16 +128,16 @@ struct element dicom_elements_default[EOFF_END] = {
 
 
 
-static bool vr_oneof(const char a[2], unsigned int N, const char b[N][2])
+static bool vr_oneof(const char a[2], int N, const char b[N][2])
 {
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		if ((a[0] == b[i][0]) && (a[1] == b[i][1]))
 			return true;
 
 	return false;
 }
 
-static int dicom_write_element(unsigned int len, char buf[static 8 + len], struct element e)
+static int dicom_write_element(int len, char buf[static 8 + len], struct element e)
 {
 	assert((((union { uint16_t s; uint8_t b; }){ 1 }).b));	// little endian
 
@@ -172,7 +177,7 @@ static int dicom_write_element(unsigned int len, char buf[static 8 + len], struc
 
 
 
-int dicom_write(const char* name, unsigned int cols, unsigned int rows, long inum, const unsigned char* img)
+int dicom_write(const char* name, int cols, int rows, long inum, const unsigned char* img)
 {
 	int fd;
 	void* addr;

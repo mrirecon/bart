@@ -45,8 +45,7 @@
 
 #include "simu/signals.h"
 
-static const char usage_str[] = "<kspace> <TI/TE> <output> [<sensitivities>]";
-static const char help_str[] = "Model-based nonlinear inverse reconstruction\n";
+static const char help_str[] = "Model-based nonlinear inverse reconstruction";
 
 
 static void edge_filter1(const long map_dims[DIMS], complex float* dst)
@@ -86,6 +85,19 @@ int main_moba(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 
+	const char* ksp_file = NULL;
+	const char* TI_file = NULL;
+	const char* out_file = NULL;
+	const char* sens_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &TI_file, "TI/TE"),
+		ARG_OUTFILE(true, &out_file, "output"),
+		ARG_OUTFILE(false, &sens_file, "sensitivities"),
+	};
+
 	float restrict_fov = -1.;
 	float oversampling = 1.25f;
 
@@ -104,7 +116,6 @@ int main_moba(int argc, char* argv[argc])
 	conf.ropts = &ropts;
 
 	bool out_origin_maps = false;
-	bool out_sens = false;
 	bool use_gpu = false;
 	bool unused = false;
 	enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE } mode = { MDB_T1 };
@@ -116,12 +127,12 @@ int main_moba(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		{ 'r', NULL, true, opt_reg_moba, &ropts, " <T>:A:B:C\tgeneralized regularization options (-rh for help)" },
+		{ 'r', NULL, true, OPT_SPECIAL, opt_reg_moba, &ropts, "<T>:A:B:C", "generalized regularization options (-rh for help)" },
 		OPT_SELECT('L', enum mdb_t, &mode, MDB_T1, "T1 mapping using model-based look-locker"),
 		OPT_SELECT('F', enum mdb_t, &mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
 		OPT_SELECT('G', enum mdb_t, &mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
 		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
-		OPT_UINT('l', &conf.opt_reg, "reg", "1/-l2\ttoggle l1-wavelet or l2 regularization."),
+		OPT_UINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backsapce \b earlier
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPT_FLOAT('R', &conf.redu, "redu", "reduction factor"),
 		OPT_FLOAT('T', &conf.damping, "damp", "damping on temporal frames"),
@@ -134,13 +145,13 @@ int main_moba(int argc, char* argv[argc])
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('N', &unused, "(normalize)"), // no-op
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
-		OPT_STRING('p', &psf, "PSF", ""),
+		OPT_INFILE('p', &psf, "PSF", ""),
 		OPT_SET('J', &conf.stack_frames, "Stack frames for joint recon"),
 		OPT_SET('M', &conf.sms, "Simultaneous Multi-Slice reconstruction"),
 		OPT_SET('O', &out_origin_maps, "(Output original maps from reconstruction without post processing)"),
 		OPT_SET('g', &use_gpu, "use gpu"),
-		OPT_STRING('I', &init_file, "init", "File for initialization"),
-		OPT_STRING('t', &trajectory, "Traj", ""),
+		OPT_INFILE('I', &init_file, "init", "File for initialization"),
+		OPT_INFILE('t', &trajectory, "Traj", ""),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.25]"),
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
 		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &k_filter_type, EF1, "k-space edge filter 1"),
@@ -152,10 +163,7 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_SELECT(0, "fat_spec_0", enum fat_spec, &fat_spec, FAT_SPEC_0, "select fat spectrum from ISMRM fat-water tool"),
 	};
 
-	cmdline(&argc, argv, 2, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
-
-	if (5 == argc)
-		out_sens = true;
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
 	(use_gpu ? num_init_gpu : num_init)();
@@ -169,10 +177,10 @@ int main_moba(int argc, char* argv[argc])
 		conf.algo = ALGO_ADMM;
 
 	long ksp_dims[DIMS];
-	complex float* kspace_data = load_cfl(argv[1], DIMS, ksp_dims);
+	complex float* kspace_data = load_cfl(ksp_file, DIMS, ksp_dims);
 
 	long TI_dims[DIMS];
-	complex float* TI = load_cfl(argv[2], DIMS, TI_dims);
+	complex float* TI = load_cfl(TI_file, DIMS, TI_dims);
 
 	assert(TI_dims[TE_DIM] == ksp_dims[TE_DIM]);
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -233,7 +241,7 @@ int main_moba(int argc, char* argv[argc])
 	long coil_strs[DIMS];
 	md_calc_strides(DIMS, coil_strs, coil_dims, CFL_SIZE);
 
-	complex float* img = create_cfl(argv[3], DIMS, img_dims);
+	complex float* img = create_cfl(out_file, DIMS, img_dims);
 	complex float* single_map = anon_cfl("", DIMS, single_map_dims);
 
 	long dims[DIMS];
@@ -248,7 +256,8 @@ int main_moba(int argc, char* argv[argc])
 	md_calc_strides(DIMS, msk_strs, msk_dims, CFL_SIZE);
 
 	complex float* mask = NULL;
-	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[4] : "", DIMS, coil_dims);
+	bool sensout = (NULL != sens_file);
+	complex float* sens = (sensout ? create_cfl : anon_cfl)(sensout ? sens_file : "", DIMS, coil_dims);
 
 
 	md_zfill(DIMS, img_dims, img, 1.0);
@@ -488,6 +497,6 @@ int main_moba(int argc, char* argv[argc])
 
 	debug_printf(DP_DEBUG2, "Total Time: %.2f s\n", recosecs);
 
-	exit(0);
+	return 0;
 }
 

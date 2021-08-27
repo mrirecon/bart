@@ -28,12 +28,20 @@
 #endif
 
 
-static const char usage_str[] = "<input> <output>";
-static const char help_str[] = "Point-wise complex exponential.\n";
+static const char help_str[] = "Point-wise complex exponential.";
 
 
 int main_zexp(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	bool img = false;
 
 	const struct opt_s opts[] = {
@@ -41,15 +49,15 @@ int main_zexp(int argc, char* argv[argc])
 		OPT_SET('i', &img, "imaginary"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	
 	num_init();
 
 	long dims[DIMS];
 	
-	complex float* in_data = load_cfl(argv[1], DIMS, dims);
-	complex float* out_data = create_cfl(argv[2], DIMS, dims);
+	complex float* in_data = load_cfl(in_file, DIMS, dims);
+	complex float* out_data = create_cfl(out_file, DIMS, dims);
 
 	(img ? md_zexpj : md_zexp)(DIMS, dims, out_data, in_data);
 

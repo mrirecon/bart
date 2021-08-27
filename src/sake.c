@@ -36,25 +36,33 @@
 #endif
 
 
-static const char usage_str[] = "<kspace> <output>";
 static const char help_str[] =
 		"Use SAKE algorithm to recover a full k-space from undersampled\n"
 		"data using low-rank matrix completion.";
 
 int main_sake(int argc, char* argv[argc])
 {
+	const char* ksp_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	float alpha = 0.22;
 	int iter = 50;
 	float lambda = 1.;
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('i', &iter, "iter", "tnumber of iterations"),
+		OPT_INT('i', &iter, "iter", "number of iterations"),
 		OPT_FLOAT('s', &alpha, "size", "rel. size of the signal subspace"),
 		OPT_FLOAT('o', &lambda, "", "()"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	assert((0. <= alpha) && (alpha <= 1.));
 	assert(iter >= 0);
@@ -64,8 +72,8 @@ int main_sake(int argc, char* argv[argc])
 
 	num_init();
 	
-	complex float* in_data = load_cfl(argv[1], DIMS, dims);
-	complex float* out_data = create_cfl(argv[2], DIMS, dims);
+	complex float* in_data = load_cfl(ksp_file, DIMS, dims);
+	complex float* out_data = create_cfl(out_file, DIMS, dims);
 
 	lrmc(alpha, iter, lambda, DIMS, dims, out_data, in_data);
 

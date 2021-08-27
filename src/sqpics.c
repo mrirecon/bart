@@ -56,7 +56,6 @@
 
 #define NUM_REGS 10
 
-static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
 
 static void help_reg(void)
@@ -76,7 +75,7 @@ static void help_reg(void)
 	);
 }
 
- 
+
 static
 const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, struct operator_s** precond_op)
 {
@@ -245,6 +244,17 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 
 int main_sqpics(int argc, char* argv[argc])
 {
+	const char* ksp_file = NULL;
+	const char* sens_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &sens_file, "sensitivities"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	// Initialize default parameters
 
 
@@ -290,23 +300,23 @@ int main_sqpics(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		{ 'l', NULL, true, opt_reg, &ropts, "1/-l2\t\ttoggle l1-wavelet or l2 regularization." },
+		{ 'l', NULL, true, OPT_SPECIAL, opt_reg, &ropts, "\b1/-l2", "  toggle l1-wavelet or l2 regularization." },
 		OPT_FLOAT('r', &ropts.lambda, "lambda", "regularization parameter"),
-		{ 'R', NULL, true, opt_reg, &ropts, " <T>:A:B:C\tgeneralized regularization options (-Rh for help)" },
+		{ 'R', NULL, true, OPT_SPECIAL, opt_reg, &ropts, "<T>:A:B:C", "generalized regularization options (-Rh for help)" },
 		//OPT_SET('c', &conf.rvc, "real-value constraint"),
 		OPT_FLOAT('s', &step, "step", "iteration stepsize"),
 		OPT_UINT('i', &maxiter, "iter", "max. number of iterations"),
-		OPT_STRING('t', &traj_file, "file", "k-space trajectory"),
+		OPT_INFILE('t', &traj_file, "file", "k-space trajectory"),
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('g', &use_gpu, "use GPU"),
-		OPT_STRING('p', &pat_file, "file", "pattern or weights"),
+		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "(select IST)"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_SET('F', &fast, "(fast)"),
-		OPT_STRING('T', &image_truth_file, "file", "(truth file)"),
-		OPT_STRING('W', &image_start_file, "<img>", "Warm start with <img>"),
+		OPT_INFILE('T', &image_truth_file, "file", "(truth file)"),
+		OPT_INFILE('W', &image_start_file, "<img>", "Warm start with <img>"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_FLOAT('u', &admm_rho, "rho", "ADMM rho"),
 		OPT_UINT('C', &admm_maxitercg, "iter", "ADMM max. CG iterations"),
@@ -316,7 +326,7 @@ int main_sqpics(int argc, char* argv[argc])
 		OPT_SET('S', &scale_im, "Re-scale the image after reconstruction"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (NULL != image_truth_file)
 		im_truth = true;
@@ -337,8 +347,8 @@ int main_sqpics(int argc, char* argv[argc])
 
 	// load kspace and maps and get dimensions
 
-	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
-	complex float* maps = load_cfl(argv[2], DIMS, map_dims);
+	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
+	complex float* maps = load_cfl(sens_file, DIMS, map_dims);
 
 
 	complex float* traj = NULL;
@@ -366,7 +376,7 @@ int main_sqpics(int argc, char* argv[argc])
 	if (use_gpu)
 		debug_printf(DP_INFO, "GPU reconstruction\n");
 
-	if (map_dims[MAPS_DIM] > 1) 
+	if (map_dims[MAPS_DIM] > 1)
 		debug_printf(DP_INFO, "%ld maps.\nESPIRiT reconstruction.\n", map_dims[MAPS_DIM]);
 
 	if (hogwild)
@@ -554,7 +564,7 @@ int main_sqpics(int argc, char* argv[argc])
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			thresh_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, false);
 			break;
-       
+
 		case MLR:
 			debug_printf(DP_INFO, "multi-scale lowrank regularization: %f\n", regs[nr].lambda);
 
@@ -569,7 +579,7 @@ int main_sqpics(int argc, char* argv[argc])
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			thresh_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, 0, false);
 
-			const struct linop_s* decom_op = linop_avg_create(DIMS, img_dims, LEVEL_FLAG);
+			const struct linop_s* decom_op = linop_scaled_sum_create(DIMS, img_dims, LEVEL_FLAG);
 			const struct linop_s* tmp_op = forward_op;
 			forward_op = linop_chain(decom_op, forward_op);
 
@@ -626,7 +636,7 @@ int main_sqpics(int argc, char* argv[argc])
 
 
 
-	complex float* image = create_cfl(argv[3], DIMS, img_dims);
+	complex float* image = create_cfl(out_file, DIMS, img_dims);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
 
@@ -642,7 +652,7 @@ int main_sqpics(int argc, char* argv[argc])
 	long img_start_dims[DIMS];
 	complex float* image_start = NULL;
 
-	if (warm_start) { 
+	if (warm_start) {
 
 		debug_printf(DP_DEBUG1, "Warm start: %s\n", image_start_file);
 		image_start = load_cfl(image_start_file, DIMS, img_start_dims);
@@ -681,7 +691,7 @@ int main_sqpics(int argc, char* argv[argc])
 
 
 #if 0
-	if (use_gpu) 
+	if (use_gpu)
 #ifdef USE_CUDA
 		sqpics_recon2_gpu(&conf, max_dims, image, forward_op, pat_dims, pattern,
 				 italgo, iconf, nr_penalties, thresh_ops,

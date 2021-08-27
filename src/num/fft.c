@@ -204,44 +204,49 @@ struct fft_plan_s {
 
 static DEF_TYPEID(fft_plan_s);
 
-static char* fftw_wisdom_name(unsigned int N, bool backwards, unsigned int flags, const long dims[N])
+static char* fftw_wisdom_name(int N, bool backwards, unsigned int flags, const long dims[N])
 {
 	char* tbpath = getenv("TOOLBOX_PATH");
 
 	if (NULL == tbpath)
 		return NULL;
 
-	char* loc  = NULL;
-
 	// Space for path and null terminator.
-	size_t space = snprintf(loc, 0, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
+	int space = snprintf(NULL, 0, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
 
 	// Space for dimensions.
-	for (size_t idx = 0; idx < N; idx ++)
-		space += snprintf(loc, 0, "_%lu", dims[idx]);
+	for (int idx = 0; idx < N; idx ++)
+		space += snprintf(NULL, 0, "_%lu", dims[idx]);
 
 	// Space for extension.
-	space += snprintf(loc, 0, ".fftw");
+	space += snprintf(NULL, 0, ".fftw");
 	// Space for null terminator.
 	space += 1;
 
-	loc = calloc(space, sizeof(char));
+	int len = space;
+	char* loc = calloc(space, sizeof(char));
 
 	if (NULL == loc)
 		error("memory out");
 
-	sprintf(loc , "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
+	int ret = snprintf(loc, len, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
 
-	char tmp[64];
-	for (size_t idx = 0; idx < N; idx++) {
+	assert(ret < len);
+	len -= ret;
 
-		sprintf(tmp, "_%lu", dims[idx]);
+	for (int idx = 0; idx < N; idx++) {
+
+		char tmp[64];
+		ret = sprintf(tmp, "_%lu", dims[idx]);
+		assert(ret < 64);
+		len -= ret;
 		strcat(loc, tmp);
 	}
 
-	sprintf(tmp, ".fftw");
-	strcat(loc, tmp);
-	loc[space - 1] = '\0';
+	strcat(loc, ".fftw");
+	len -= 5;
+	assert(1 == len);
+	assert('\0' == loc[space - 1]);
 
 	return loc;
 }

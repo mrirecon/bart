@@ -400,6 +400,18 @@ static void zcos(long N, complex float* dst, const complex float* src)
 		dst[i] = ccosf(src[i]);
 }
 
+static void zsinh(long N, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = csinhf(src[i]);
+}
+
+static void zcosh(long N, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = ccoshf(src[i]);
+}
+
 static void zacos(long N, complex float* dst, const complex float* src)
 {
 	for (long i = 0; i < N; i++)
@@ -409,7 +421,7 @@ static void zacos(long N, complex float* dst, const complex float* src)
 static void zmax(long N, complex float* dst, const complex float* src1, const complex float* src2)
 {
 	for (long i = 0; i < N; i++)
-		dst[i] = (crealf(src1[i]) > crealf(src2[i])) ? src1[i] : src2[i];
+		dst[i] = MAX(crealf(src1[i]), crealf(src2[i]));
 }
 
 
@@ -657,6 +669,14 @@ static void zfftmod(long N, complex float* dst, const complex float* src, unsign
 			dst[i * n + j] = src[i * n + j] * fftmod_phase2(n, j, inv, phase);
 }
 
+
+static void pdf_gauss(long N, float mu, float sig, float* dst, const float* src)
+{
+	for (int i = 0; i < N; i ++)
+		dst[i] = expf(- (src[i] - mu) * (src[i] - mu) / (2 * sig * sig)) / (sqrtf(2 * M_PI) * sig);
+}
+
+
 static void vec_real(long N, float* dst, const _Complex float* src)
 {
 	for (int i = 0; i < N; i ++)
@@ -685,6 +705,12 @@ static void vec_zcmpl(long N, _Complex float* dst, const float* real_src, const 
 {
 	for (int i = 0; i < N; i ++)
 		dst[i] = real_src[i] + imag_src[i] * I;
+}
+
+static void vec_zfill(long N, _Complex float val, _Complex float* dst)
+{
+	for (int i = 0; i < N; i ++)
+		dst[i] = val;
 }
 
 /*
@@ -743,6 +769,9 @@ const struct vec_ops cpu_ops = {
 	.zcos = zcos,
 	.zacos = zacos,
 
+	.zsinh = zsinh,
+	.zcosh = zcosh,
+
 	.zcmp = zcmp,
 	.zdiv_reg = zdiv_reg,
 	.zfftmod = zfftmod,
@@ -763,11 +792,15 @@ const struct vec_ops cpu_ops = {
 	.exp = vec_exp,
 	.log = vec_log,
 
+	.pdf_gauss=pdf_gauss,
+
 	.real = vec_real,
 	.imag = vec_imag,
 	.zcmpl_real = vec_zcmpl_real,
 	.zcmpl_imag = vec_zcmpl_imag,
 	.zcmpl = vec_zcmpl,
+
+	.zfill = vec_zfill,
 };
 
 

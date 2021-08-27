@@ -22,7 +22,7 @@
 
 // FIXME: implement inverse, adjoint, etc..
 
-static void fft_xzeropad2(unsigned int N, const long dims[N], unsigned int d, unsigned int x, const long ostr[N], complex float* dst, const long istr[N], const complex float* src)
+static void fft_xzeropad2(int N, const long dims[N], int d, int x, const long ostr[N], complex float* dst, const long istr[N], const complex float* src)
 {
 	assert(d < N);
 
@@ -44,10 +44,10 @@ static void fft_xzeropad2(unsigned int N, const long dims[N], unsigned int d, un
 	complex float* shift = md_alloc_sameplace(N + 1, pdims, CFL_SIZE, src);
 
 	float pos[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		pos[i] = 0.;
 
-	for (unsigned int i = 0; i < x; i++) {
+	for (int i = 0; i < x; i++) {
 
 		pos[d] = -(1. / (float)x) * i;
 		linear_phase(N, pdims, pos, (void*)shift + i * pstr[N]);
@@ -64,7 +64,7 @@ static void fft_xzeropad2(unsigned int N, const long dims[N], unsigned int d, un
 	fftc2(N + 1, tdims, MD_BIT(d), tostr, dst, tostr, dst);
 }
 
-static void fft_xzeropad(unsigned int N, const long dims[N], unsigned int d, unsigned int x, complex float* dst, const complex float* src)
+static void fft_xzeropad(int N, const long dims[N], int d, int x, complex float* dst, const complex float* src)
 {
 	long odims[N];
 	long ostrs[N];
@@ -80,14 +80,14 @@ static void fft_xzeropad(unsigned int N, const long dims[N], unsigned int d, uns
 }
 
 
-static void fft_zeropad_simple(unsigned int N, unsigned int flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+static void fft_zeropad_simple(int N, long flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
 	md_resize_center(N, odims, dst, idims, src, CFL_SIZE);
 	fftc(N, odims, flags, dst, dst);
 }
 
 #if 0
-static void fft_zeropad_simpleH(unsigned int N, unsigned int flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+static void fft_zeropad_simpleH(int N, int flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
 	complex float* tmp = md_alloc_sameplace(N, idims, CFL_SIZE, src);
 	ifftc(N, idims, flags, tmp, src);
@@ -96,7 +96,7 @@ static void fft_zeropad_simpleH(unsigned int N, unsigned int flags, const long o
 }
 #endif
 
-static void fft_zeropad_r(unsigned int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+static void fft_zeropad_r(int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
 	int i = N - 1;
 
@@ -145,19 +145,19 @@ static void fft_zeropad_r(unsigned int N, const long odims[N], complex float* ds
  * perform zero-padded FFT
  *
  */
-void fft_zeropad(unsigned int N, unsigned int flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+void fft_zeropad(int N, long flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
-	unsigned int lflags = 0;
+	long lflags = 0;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		if (odims[i] > idims[i])
 			lflags = MD_SET(lflags, i);
 
 	assert(flags == lflags);
 
-	unsigned int sflags = 0;
+	long sflags = 0;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		if (odims[i] < idims[i])
 			sflags = MD_SET(sflags, i);
 
@@ -168,7 +168,7 @@ void fft_zeropad(unsigned int N, unsigned int flags, const long odims[N], comple
 
 
 
-static void fft_zeropadH_r(unsigned int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+static void fft_zeropadH_r(int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
 	int i = N - 1;
 
@@ -205,19 +205,19 @@ static void fft_zeropadH_r(unsigned int N, const long odims[N], complex float* d
  * perform zero-padded FFT
  *
  */
-void fft_zeropadH(unsigned int N, unsigned int flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+void fft_zeropadH(int N, long flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
-	unsigned int lflags = 0;
+	long lflags = 0;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		if (odims[i] > idims[i])
 			lflags = MD_SET(lflags, i);
 
 	assert(0 == lflags);
 
-	unsigned int sflags = 0;
+	long sflags = 0;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		if (odims[i] < idims[i])
 			sflags = MD_SET(sflags, i);
 
@@ -232,13 +232,13 @@ void fft_zeropadH(unsigned int N, unsigned int flags, const long odims[N], compl
  *
  */
 
-void sinc_resize(unsigned int D, const long out_dims[D], complex float* out, const long in_dims[D], const complex float* in)
+void sinc_resize(int D, const long out_dims[D], complex float* out, const long in_dims[D], const complex float* in)
 {
 	complex float* tmp = md_alloc_sameplace(D, in_dims, CFL_SIZE, in);
 
-	unsigned int flags = 0;
+	long flags = 0;
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (out_dims[i] != in_dims[i])
 			flags = MD_SET(flags, i);
 
@@ -267,9 +267,9 @@ void sinc_resize(unsigned int D, const long out_dims[D], complex float* out, con
 /* scale using zero-padding in the Fourier domain - scale each dimensions in sequence (faster)
  *
  */
-void sinc_zeropad(unsigned int D, const long out_dims[D], complex float* out, const long in_dims[D], const complex float* in)
+void sinc_zeropad(int D, const long out_dims[D], complex float* out, const long in_dims[D], const complex float* in)
 {
-	unsigned int i = D - 1;
+	int i = D - 1;
 
 	while (out_dims[i] == in_dims[i]) {
 
@@ -287,7 +287,7 @@ void sinc_zeropad(unsigned int D, const long out_dims[D], complex float* out, co
 	assert(out_dims[i] > in_dims[i]);
 
 	long tmp_dims[D];
-	for (unsigned int l = 0; l < D; l++)
+	for (int l = 0; l < D; l++)
 		tmp_dims[l] = in_dims[l];
 
 	tmp_dims[i] = out_dims[i];

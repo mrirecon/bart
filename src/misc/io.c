@@ -1,11 +1,11 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2015-2018. Martin Uecker.
+ * Copyright 2015-2021. Martin Uecker.
  * Copyright 2017-2018. Damien Nguyen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2021 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2017-2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
  */
 
@@ -16,6 +16,12 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include "win/mman.h"
+#include "win/vdprintf.h"
+#else
+#include <sys/mman.h>
+#endif
 #include <complex.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -49,6 +55,9 @@ static void xdprintf(int fd, const char* fmt, ...)
 
 enum file_types_e file_type(const char* name)
 {
+	if (0 == strcmp("-", name))
+		return FILE_TYPE_PIPE;
+
 	const char *p = strrchr(name, '.');
 
 	if ((NULL != p) && (p != name)) {
@@ -59,10 +68,11 @@ enum file_types_e file_type(const char* name)
 		if (0 == strcmp(p, ".coo"))
 			return FILE_TYPE_COO;
 
-#ifdef USE_MEM_CFL
+		if (0 == strcmp(p, ".shm"))
+			return FILE_TYPE_SHM;
+
 		if (0 == strcmp(p, ".mem"))
-			return MEM;
-#endif
+			return FILE_TYPE_MEM;
 	}
 
 	return FILE_TYPE_CFL;
@@ -72,7 +82,9 @@ enum file_types_e file_type(const char* name)
 struct iofile_s {
 
 	const char* name;
-	bool out;
+	bool output;
+	bool input;
+	bool open;
 	struct iofile_s* prev;
 };
 
@@ -80,35 +92,79 @@ static struct iofile_s* iofiles = NULL;
 
 
 
-static void io_register(const char* name, bool out)
+static void io_register(const char* name, bool output, bool input, bool open)
 {
-	const struct iofile_s* iop = iofiles;
+	struct iofile_s* iop = iofiles;
+	bool new = true;
 
 	while (NULL != iop) {
 
-		if (0 == strcmp(name, iop->name) && (out || iop->out))
-			debug_printf(DP_WARN, "Overwriting file: %s\n", name);
+		if (0 == strcmp(name, iop->name)) {
+
+			new = false;
+			if (iop->open) {
+
+				if (output || iop->output)
+					debug_printf(DP_WARN, "Overwriting file: %s\n", name);
+			} else {
+
+				if (open) {
+
+					if (output && !iop->output)
+						error("%s: Input opened for writing!\n", name);
+					if (input &&  !iop->input)
+						error("%s: Output opened for reading!\n", name);
+				}
+
+				iop->open = open;
+				iop->output = output || iop->output;
+				iop->input = input || iop->input;
+			}
+		}
 
 		iop = iop->prev;
 	}
 
-	PTR_ALLOC(struct iofile_s, ion);
+	if (new) {
 
-	ion->name = strdup(name);
-	ion->out = out;
-	ion->prev = iofiles;
+		if (open)
+			debug_printf(DP_WARN, "%s: Opening file which was not previously reserved for in- or output!\n", name);
 
-	iofiles = PTR_PASS(ion);
+		PTR_ALLOC(struct iofile_s, ion);
+
+		ion->name = strdup(name);
+		ion->output = output;
+		ion->input = input;
+		ion->open = open;
+		ion->prev = iofiles;
+
+		iofiles = PTR_PASS(ion);
+	}
 }
 
 void io_register_input(const char* name)
 {
-	io_register(name, false);
+	io_register(name, false, true, true);
 }
 
 void io_register_output(const char* name)
 {
-	io_register(name, true);
+	io_register(name, true, false, true);
+}
+
+void io_reserve_input(const char* name)
+{
+	io_register(name, false, true, false);
+}
+
+void io_reserve_output(const char* name)
+{
+	io_register(name, true, false, false);
+}
+
+void io_reserve_inout(const char* name)
+{
+	io_register(name, true, true, false);
 }
 
 void io_unregister(const char* name)
@@ -125,10 +181,24 @@ void io_unregister(const char* name)
 			xfree(io->name);
 			xfree(io);
 
-			continue;
+			return;
 		}
 
 		iop = &io->prev;
+	}
+}
+
+void io_close(const char* name)
+{
+	struct iofile_s* iop = iofiles;
+
+
+	while (NULL != iop) {
+
+		if (0 == strcmp(name, iop->name))
+			iop->open = false;
+
+		iop = iop->prev;
 	}
 }
 
@@ -147,7 +217,7 @@ void io_unlink_if_opened(const char* name)
 
 	while (NULL != iop) {
 
-		if (0 == strcmp(name, iop->name)) {
+		if ( (0 == strcmp(name, iop->name)) && iop->open ) {
 
 			enum file_types_e type = file_type(name);
 
@@ -180,9 +250,24 @@ void io_unlink_if_opened(const char* name)
 
 				if (0 != unlink(name_hdr))
 					error("Failed to unlink file %s\n", name);
+
+				break;
+
+			case FILE_TYPE_SHM:
+
+				if (0 != shm_unlink(name))
+					error("Failed to unlink shared memory segment %s\n", name);
+
+				break;
+
+			case FILE_TYPE_PIPE:
+				break;
+
+			case FILE_TYPE_MEM:
+				break;
 			}
 
-			io_unregister(name);
+			io_close(name);
 
 			break;
 		}
@@ -192,14 +277,20 @@ void io_unlink_if_opened(const char* name)
 }
 
 
-int write_cfl_header(int fd, unsigned int n, const long dimensions[n])
+int write_cfl_header(int fd, const char* filename, int n, const long dimensions[n])
 {
 	xdprintf(fd, "# Dimensions\n");
 
-	for (unsigned int i = 0; i < n; i++)
+	for (int i = 0; i < n; i++)
 		xdprintf(fd, "%ld ", dimensions[i]);
 
 	xdprintf(fd, "\n");
+
+	if (NULL != filename) {
+
+		xdprintf(fd, "# Data\n");
+		xdprintf(fd, "%s\n", filename);
+	}
 
 	if (NULL != command_line) {
 
@@ -215,7 +306,7 @@ int write_cfl_header(int fd, unsigned int n, const long dimensions[n])
 
 		while (in) {
 
-			xdprintf(fd, " %c%s", in->out ? '>' : '<', in->name);
+			xdprintf(fd, " %s%s%s", in->input ? "<" : "", in->output ? ">" : "", in->name);
 			in = in->prev;
 		}
 
@@ -229,14 +320,26 @@ int write_cfl_header(int fd, unsigned int n, const long dimensions[n])
 
 
 
-int read_cfl_header(int fd, unsigned int n, long dimensions[n])
+int read_cfl_header(int fd, char** file, int n, long dimensions[n])
 {
+	*file = NULL;
 	char header[4097];
 	memset(header, 0, 4097);
 
-	int max;
-	if (0 > (max = read(fd, header, 4096)))
-		return -1;
+	int max = 0;
+
+	while (max < 4096) {
+
+		int rd;
+
+		if (0 > (rd = read(fd, header + max, 4096 - max)))
+			return -1;
+
+		if (0 == rd)
+			break;
+
+		max += rd;
+	}
 
 	int pos = 0;
 	int delta = 0;
@@ -268,11 +371,11 @@ int read_cfl_header(int fd, unsigned int n, long dimensions[n])
 
 			if (0 == strcmp(keyword, "Dimensions")) {
 
-				for (unsigned int i = 0; i < n; i++)
+				for (int i = 0; i < n; i++)
 					dimensions[i] = 1;
 
 				long val;
-				unsigned int i = 0;
+				int i = 0;
 
 				while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
 
@@ -298,6 +401,18 @@ int read_cfl_header(int fd, unsigned int n, long dimensions[n])
 				ok = true;
 			}
 
+			if (0 == strcmp(keyword, "Data")) {
+
+				char filename[256];
+
+				if (1 != sscanf(header + pos, "%255s\n%n", filename, &delta))
+					return -1;
+
+				*file = strdup(filename);
+
+				pos += delta;
+			}
+
 		} else {
 
 			// skip this line
@@ -319,7 +434,7 @@ out:
 
 
 
-int write_coo(int fd, unsigned int n, const long dimensions[n])
+int write_coo(int fd, int n, const long dimensions[n])
 {
 	char header[4096];
 	size_t len = ARRAY_SIZE(header);
@@ -330,7 +445,7 @@ int write_coo(int fd, unsigned int n, const long dimensions[n])
 
 	ret = snprintf(header + pos, len, "Type: float\nDimensions: %d\n", n);
 
-	if ((ret < 0) || ((unsigned int)ret >= len))
+	if ((ret < 0) || (ret >= (int)len))
 		return -1;
 
 	pos += ret;
@@ -339,13 +454,13 @@ int write_coo(int fd, unsigned int n, const long dimensions[n])
 	long start = 0;
 	long stride = 1;
 
-	for (unsigned int i = 0; i < n; i++) {
+	for (int i = 0; i < n; i++) {
 
 		long size = dimensions[i];
 
 		ret = snprintf(header + pos, len, "[%ld\t%ld\t%ld\t%ld]\n", start, stride * size, size, stride);
 
-		if ((ret < 0) || ((unsigned int)ret >= len))
+		if ((ret < 0) || (ret >= (int)len))
 			return -1;
 
 		pos += ret;
@@ -361,7 +476,7 @@ int write_coo(int fd, unsigned int n, const long dimensions[n])
 }
 
 
-int read_coo(int fd, unsigned int n, long dimensions[n])
+int read_coo(int fd, int n, long dimensions[n])
 {
 	char header[4096];
 
@@ -379,7 +494,7 @@ int read_coo(int fd, unsigned int n, long dimensions[n])
 
 	pos += delta;
 
-	unsigned int dim;
+	int dim;
 
 	if (1 != sscanf(header + pos, "Dimensions: %d\n%n", &dim, &delta))
 		return -1;
@@ -389,10 +504,10 @@ int read_coo(int fd, unsigned int n, long dimensions[n])
 //	if (n != dim)
 //		return -1;
 
-	for (unsigned int i = 0; i < n; i++)
+	for (int i = 0; i < n; i++)
 		dimensions[i] = 1;
 
-	for (unsigned int i = 0; i < dim; i++) {
+	for (int i = 0; i < dim; i++) {
 
 		long val;
 
@@ -441,7 +556,7 @@ enum ra_types {
 #define err_assert(x)	({ if (!(x)) { debug_printf(DP_ERROR, "%s", #x); return -1; } })
 
 
-int read_ra(int fd, unsigned int n, long dimensions[n])
+int read_ra(int fd, int n, long dimensions[n])
 {
 	struct ra_hdr_s header;
 
@@ -452,7 +567,7 @@ int read_ra(int fd, unsigned int n, long dimensions[n])
 	err_assert(!(header.flags & RA_FLAG_BIG_ENDIAN));
 	err_assert(RA_TYPE_COMPLEX == header.eltype);
 	err_assert(sizeof(complex float) == header.elbyte);
-	err_assert(header.ndims <= n);
+	err_assert(header.ndims <= 100);
 
 	uint64_t dims[header.ndims];
 
@@ -461,8 +576,13 @@ int read_ra(int fd, unsigned int n, long dimensions[n])
 
 	md_singleton_dims(n, dimensions);
 
-	for (unsigned int i = 0; i < header.ndims; i++)
-		dimensions[i] = dims[i];
+	for (int i = 0; i < (int)header.ndims; i++) {
+
+		if (i < n)
+			dimensions[i] = dims[i];
+		else
+			err_assert(1 == dims[i]);
+	}
 
 	// this can overflow, but we check in mmio
 	err_assert(header.size == md_calc_size(n, dimensions) * sizeof(complex float));
@@ -472,7 +592,7 @@ int read_ra(int fd, unsigned int n, long dimensions[n])
 
 
 
-int write_ra(int fd, unsigned int n, const long dimensions[n])
+int write_ra(int fd, int n, const long dimensions[n])
 {
 	struct ra_hdr_s header = {
 
@@ -489,7 +609,7 @@ int write_ra(int fd, unsigned int n, const long dimensions[n])
 
 	uint64_t dims[n];
 
-	for (unsigned int i = 0; i < n; i++)
+	for (int i = 0; i < n; i++)
 		dims[i] = dimensions[i];
 
 	if ((int)sizeof(dims) != write(fd, &dims, sizeof(dims)))

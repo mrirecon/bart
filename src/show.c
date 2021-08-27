@@ -28,7 +28,6 @@
 #endif
 
 
-static const char usage_str[] = "<input>";
 static const char help_str[] = "Outputs values or meta data.";
 
 
@@ -71,6 +70,14 @@ ok:
 
 int main_show(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in_file, "input"),
+	};
+
+
 	bool meta = false;
 	int showdim = -1;
 	const char* sep = strdup("\t");
@@ -83,12 +90,12 @@ int main_show(int argc, char* argv[argc])
 		OPT_STRING('f', &fmt, "format", "use <format> as the format. Default: \"%%+.6e%%+.6ei\""),
 	};
 
-	cmdline(&argc, argv, 1, 1, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	unsigned int N = DIMS;
 
 	long dims[N];
-	complex float* data = load_cfl(argv[1], N, dims);
+	complex float* data = load_cfl(in_file, N, dims);
 
 	if (-1 != showdim) {
 

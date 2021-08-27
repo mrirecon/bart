@@ -5,25 +5,31 @@
 
 #include "misc/cppwrap.h"
 
-// extern void* private_raw(size_t* size, const char* name);
+#include <stddef.h>
+
+extern void* private_raw(size_t* size, const char* name);
+extern void unmap_raw(const void* data, size_t size);
 
 #ifndef MEMONLY_CFL
-extern _Complex float* shared_cfl(unsigned int D, const long dims[__VLA(D)], const char* name);
-extern _Complex float* private_cfl(unsigned int D, const long dims[__VLA(D)], const char* name);
+extern _Complex float* shared_cfl(int D, const long dims[__VLA(D)], const char* name);
+extern _Complex float* private_cfl(int D, const long dims[__VLA(D)], const char* name);
 #endif /* !MEMONLY_CFL */
-extern void unmap_cfl(unsigned int D, const long dims[__VLA(D)], const _Complex float* x);
+extern void unmap_cfl(int D, const long dims[__VLA(D)], const _Complex float* x);
 
-extern _Complex float* anon_cfl(const char* name, unsigned int D, const long dims[__VLA(D)]);
-extern _Complex float* create_cfl(const char* name, unsigned int D, const long dimensions[__VLA(D)]);
-extern _Complex float* load_cfl(const char* name, unsigned int D, long dimensions[__VLA(D)]);
-extern _Complex float* load_shared_cfl(const char* name, unsigned int D, long dimensions[__VLA(D)]);
+extern _Complex float* anon_cfl(const char* name, int D, const long dims[__VLA(D)]);
+extern _Complex float* create_cfl(const char* name, int D, const long dimensions[__VLA(D)]);
+extern _Complex float* load_cfl(const char* name, int D, long dimensions[__VLA(D)]);
+extern _Complex float* load_shared_cfl(const char* name, int D, long dimensions[__VLA(D)]);
 
-extern float* create_coo(const char* name, unsigned int D, const long dimensions[__VLA(D)]);
-extern float* load_coo(const char* name, unsigned int D, long dimensions[__VLA(D)]);
-extern _Complex float* create_zcoo(const char* name, unsigned int D, const long dimensions[__VLA(D)]);
-extern _Complex float* load_zcoo(const char* name, unsigned int D, long dimensions[__VLA(D)]);
-extern _Complex float* create_zra(const char* name, unsigned int D, const long dims[__VLA(D)]);
-extern _Complex float* load_zra(const char* name, unsigned int D, long dims[__VLA(D)]);
+extern float* create_coo(const char* name, int D, const long dimensions[__VLA(D)]);
+extern float* load_coo(const char* name, int D, long dimensions[__VLA(D)]);
+extern _Complex float* create_zcoo(const char* name, int D, const long dimensions[__VLA(D)]);
+extern _Complex float* load_zcoo(const char* name, int D, long dimensions[__VLA(D)]);
+extern _Complex float* create_zra(const char* name, int D, const long dims[__VLA(D)]);
+extern _Complex float* load_zra(const char* name, int D, long dims[__VLA(D)]);
+extern _Complex float* create_zshm(const char* name, int D, const long dims[__VLA(D)]);
+extern _Complex float* load_zshm(const char* name, int D, long dims[__VLA(D)]);
+
 
 #include "misc/cppwrap.h"
 

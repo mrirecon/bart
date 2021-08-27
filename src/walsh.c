@@ -22,12 +22,20 @@
 #include "calib/walsh.h"
 
 
-static const char usage_str[] = "<input> <output>";
 static const char help_str[] = "Estimate coil sensitivities using walsh method (use with ecaltwo).";
 
 
 int main_walsh(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	long bsize[3] = { 20, 20, 20 };
 	long calsize[3] = { 24, 24, 24 };
 
@@ -39,12 +47,12 @@ int main_walsh(int argc, char* argv[argc])
 		OPT_VEC3('B', &bsize, "", "()"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
 	long dims[DIMS];
 
-	complex float* in_data = load_cfl(argv[1], DIMS, dims);
+	complex float* in_data = load_cfl(in_file, DIMS, dims);
 
 	assert((dims[0] == 1) || (calsize[0] < dims[0]));
 	assert((dims[1] == 1) || (calsize[1] < dims[1]));
@@ -58,7 +66,7 @@ int main_walsh(int argc, char* argv[argc])
 	debug_printf(DP_INFO, "Calibration region %ldx%ldx%ld\n", caldims[0], caldims[1], caldims[2]);
 
 	dims[COIL_DIM] = dims[COIL_DIM] * (dims[COIL_DIM] + 1) / 2;
-	complex float* out_data = create_cfl(argv[2], DIMS, dims);
+	complex float* out_data = create_cfl(out_file, DIMS, dims);
 
 	walsh(bsize, dims, out_data, caldims, cal_data);
 

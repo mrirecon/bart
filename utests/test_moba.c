@@ -93,7 +93,10 @@ static bool test_op_p_stack_moba_nonneg(void)
 
 	complex float* in1 = md_alloc(N, dims1, CFL_SIZE);
 
-	long* pos = calloc(N, sizeof(long));
+	long pos[N];
+	for (int i = 0; i < N; i++)
+		pos[i] = 0;
+
 	pos[s_dim] = p_pos;
 
 	md_copy_block(N, pos, dims1, in1, dims, in, CFL_SIZE);

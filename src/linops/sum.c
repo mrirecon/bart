@@ -3,7 +3,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2016-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
@@ -73,6 +73,12 @@ static void sum_free_data(const linop_data_t* _data)
 {
         auto data = CAST_DOWN(sum_data, _data);
 
+	xfree(data->imgd_dims);
+	xfree(data->imgd_strs);
+
+	xfree(data->img_dims);
+	xfree(data->img_strs);
+
 	xfree(data);
 }
 
@@ -110,9 +116,9 @@ static void sum_apply_normal(const linop_data_t* _data, complex float* dst, cons
 
 
 /**
- * 
+ *
  * x = (ATA + uI)^-1 b
- * 
+ *
  */
 static void sum_apply_pinverse(const linop_data_t* _data, float rho, complex float* dst, const complex float* src)
 {
@@ -154,13 +160,23 @@ const struct linop_s* linop_sum_create(int N, const long imgd_dims[N], unsigned 
 			sum_apply_pinverse, sum_free_data);
 }
 
-const struct linop_s* linop_avg_create(int N, const long imgd_dims[N], unsigned long flags)
+const struct linop_s* linop_scaled_sum_create(int N, const long imgd_dims[N], unsigned long flags)
 {
 	struct sum_data* data = sum_create_data(N, imgd_dims, flags);
 
 	return linop_create(N, data->img_dims, N, data->imgd_dims,
 			CAST_UP(data), sum_apply, sum_apply_adjoint, sum_apply_normal,
 			sum_apply_pinverse, sum_free_data);
+}
+
+const struct linop_s* linop_avg_create(int N, const long imgd_dims[N], unsigned long flags)
+{
+	struct sum_data* data = sum_create_data(N, imgd_dims, flags);
+	data->levels = data->levels * data->levels;
+
+	return linop_create(N, data->img_dims, N, data->imgd_dims,
+			CAST_UP(data), sum_apply, sum_apply_adjoint, sum_apply_normal,
+			NULL, sum_free_data);
 }
 
 

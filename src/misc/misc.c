@@ -15,6 +15,7 @@
 
 #define _GNU_SOURCE
 #include <stdlib.h>
+#include <stddef.h>
 #include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
@@ -23,6 +24,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <limits.h>
 
 #ifdef BART_WITH_PYTHON
 #include <Python.h>
@@ -204,7 +206,7 @@ void debug_print_dims(int dblevel, int D, const long dims[D])
 
 void debug_print_dims_trace(const char* func_name,
 			    const char* file,
-			    unsigned int line,
+			    int line,
 			    int dblevel,
 			    int D,
 			    const long dims[D])
@@ -252,9 +254,32 @@ ok:
 }
 
 
+int parse_long(long res[1], const char* str)
+{
+	char* tail;
+	long l = strtol(str, &tail, 10);
+
+	if ('\0' != tail[0])
+		return -1;
+	res[0] = l;
+	return 0;
+}
 
 
-void quicksort(int N, int ord[N], const void* data, quicksort_cmp_t cmp)
+int parse_int(int res[1], const char* str)
+{
+	long val;
+	if (0 != parse_long(&val, str))
+		return -1;
+
+	if (val < INT_MIN || val > INT_MAX)
+		error("Value %ld too large for int!\n", val);
+
+	res[0] = (int) val;
+	return 0;
+}
+
+void quicksort(int N, int ord[N], quicksort_cmp_t cmp)
 {
 	if (N < 2)
 		return;
@@ -265,13 +290,13 @@ void quicksort(int N, int ord[N], const void* data, quicksort_cmp_t cmp)
 
 	while (l <= h) {
 
-		if (cmp(data, ord[l], pivot) < 0) {
+		if (cmp(ord[l], pivot) < 0) {
 
 			l++;
 			continue;
 		}
 
-		if (cmp(data, ord[h], pivot) > 0) {
+		if (cmp(ord[h], pivot) > 0) {
 
 			h--;
 			continue;
@@ -286,10 +311,10 @@ void quicksort(int N, int ord[N], const void* data, quicksort_cmp_t cmp)
 	}
 
 	if (h + 1 > 0)
-		quicksort(h + 1, ord, data, cmp);
+		quicksort(h + 1, ord, cmp);
 
 	if (N > l)
-		quicksort(N - l, ord + l, data, cmp);
+		quicksort(N - l, ord + l, cmp);
 }
 
 
@@ -308,9 +333,9 @@ void quicksort(int N, int ord[N], const void* data, quicksort_cmp_t cmp)
  *
  * @note In-place sort. The input array contents are not preserved in their original order. 
  */
-float quickselect(float *arr, unsigned int n, unsigned int k)
+float quickselect(float *arr, int n, int k)
 {
-	unsigned long i, ir, j, l, mid;
+	long i, ir, j, l, mid;
 	float a;
    
 	l = 0;
@@ -372,9 +397,9 @@ float quickselect(float *arr, unsigned int n, unsigned int k)
  * Possibly faster for application to complex arrays.
  *
  */
-float quickselect_complex(complex float* arr, unsigned int n, unsigned int k)
+float quickselect_complex(complex float* arr, int n, int k)
 {
-	unsigned long i, ir, j, l, mid;
+	long i, ir, j, l, mid;
 	float a;
 	complex float ca;
    
@@ -520,69 +545,34 @@ void save_command_line(int argc, char* argv[static argc])
 
 
 
-void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str)
+void print_long(int D, const long arr[D])
 {
-	mini_cmdline_bool(argcp, argv, '\0', expected_args, usage_str, help_str);
-}
-
-
-bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str)
-{
-	bool flag = false;
-	struct opt_s opts[1] = { { flag_char, NULL, false, opt_set, &flag, NULL } };
-
-	char* help = strdup(help_str);
-
-	int hlen = strlen(help);
-
-	if ((hlen > 1) && ('\n' == help[hlen - 1]))
-		help[hlen - 1] = '\0';
-
-	int min_args = expected_args;
-	int max_args = expected_args;
-
-	if (expected_args < 0) {
-
-		min_args = -expected_args;
-		max_args = 1000;
-	}
-
-	cmdline(argcp, argv, min_args, max_args, usage_str, help, 1, opts);
-
-	xfree(help);
-
-	return flag;
-}
-
-
-void print_long(unsigned int D, const long arr[D])
-{
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		printf("arr[%i] = %ld\n", i, arr[i]);
 }
 
-void print_float(unsigned int D, const float arr[D])
+void print_float(int D, const float arr[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		printf("arr[%i] = %f\n", i, arr[i]);
 }
 
-void print_int(unsigned int D, const int arr[D])
+void print_int(int D, const int arr[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		printf("arr[%i] = %i\n", i, arr[i]);
 }
 
-void print_complex(unsigned int D, const complex float arr[D])
+void print_complex(int D, const complex float arr[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		printf("arr[%i]: real = %f, imag = %f\n", i, crealf(arr[i]), cimagf(arr[i]));
 }
 
 
-unsigned int bitcount(unsigned long flags)
+int bitcount(unsigned long flags)
 {
-	unsigned int N = 0;
+	int N = 0;
 
 	for (; flags > 0; N++)
 		flags &= (flags - 1);
@@ -601,6 +591,36 @@ bool safe_isfinite(float x)
 {
 	return (!isnan(x) && !isinf(x));
 	// return isfinite(x); <- is sometimes true when x is NaN.
+}
+
+
+static bool long_mul_overflow_p(long a, long b)
+{
+	bool of = false;
+
+	of |= (a > 0) && (b > 0) && (a > LONG_MAX / b);
+	of |= (a > 0) && (b < 0) && (b < LONG_MIN / a);
+	of |= (a < 0) && (b > 0) && (a < LONG_MIN / b);
+	of |= (a < 0) && (b < 0) && (b < LONG_MAX / a);
+
+	return of;
+}
+
+long io_calc_size(int D, const long dims[D?:1], size_t size)
+{
+	if (0 == D)
+		return size;
+
+	long a = io_calc_size(D - 1, dims + 1, size);
+	long b = dims[0];
+
+	if ((a < 0) || (b < 0))
+		return -1;
+
+	if (long_mul_overflow_p(a, b))
+		return -1;
+
+	return a * b;
 }
 
 

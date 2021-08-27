@@ -227,7 +227,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 	long tdims_ip[5];
 	long tdims_proj[5];
 
-	for (unsigned int i = 0; i < 5; i++) {
+	for (int i = 0; i < 5; i++) {
 
 		assert((im_dims[i] == evec_dims[i]) || (1 == im_dims[i]) || (1 == evec_dims[i]));
 		assert((W_dims[i] == evec_dims[i]) || (1 == W_dims[i]) || (1 == evec_dims[i]));
@@ -335,7 +335,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 
 
 
-void calone(const struct ecalib_conf* conf, const long cov_dims[4], complex float* imgcov, unsigned int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data)
+void calone(const struct ecalib_conf* conf, const long cov_dims[4], complex float* imgcov, int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data)
 {
 	assert(1 == md_calc_size(DIMS - 5, calreg_dims + 5));
 
@@ -462,7 +462,6 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 
 void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex float* out_data, complex float* emaps, const long in_dims[4], complex float* in_data, const long msk_dims[3], const bool* msk)
 {
-
 	long xx = out_dims[0];
 	long yy = out_dims[1];
 	long zz = out_dims[2];
@@ -526,7 +525,7 @@ const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false,
 
 
 
-void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex float* out_data, complex float* eptr, unsigned int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data, const long msk_dims[3], const bool* msk)
+void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex float* out_data, complex float* eptr, int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data, const long msk_dims[3], const bool* msk)
 {
 	long channels = calreg_dims[3];
 	long maps = out_dims[4];
@@ -549,8 +548,8 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 	} else {
 
-		for (unsigned int i = 0; i < channels; i++)
-			for (unsigned int j = 0; j < channels; j++)
+		for (int i = 0; i < channels; i++)
+			for (int j = 0; j < channels; j++)
 				rot[i][j] = (i == j) ? 1. : 0.;
 	}
 
@@ -599,7 +598,7 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 
 
-void calib(const struct ecalib_conf* conf, const long out_dims[DIMS], complex float* out_data, complex float* eptr, unsigned int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data)
+void calib(const struct ecalib_conf* conf, const long out_dims[DIMS], complex float* out_data, complex float* eptr, int SN, float svals[SN], const long calreg_dims[DIMS], const complex float* data)
 {
 	calib2(conf, out_dims, out_data, eptr, SN, svals, calreg_dims, data, NULL, NULL);
 }
@@ -633,9 +632,10 @@ static void perturb(const long dims[2], complex float* vecs, float amt)
 }
 
 
-static int number_of_kernels(const struct ecalib_conf* conf, unsigned int N, const float val[N])
+static int number_of_kernels(const struct ecalib_conf* conf, int N, const float val[N])
 {
-	unsigned int n = 0;
+	int n = 0;
+
 	if (-1 != conf->numsv) {
 
 		n = conf->numsv;
@@ -644,7 +644,7 @@ static int number_of_kernels(const struct ecalib_conf* conf, unsigned int N, con
 
 	} else if (conf->percentsv != -1.) {
 
-		n = (unsigned int)(N * conf->percentsv / 100.);
+		n = N * conf->percentsv / 100.;
 		assert(-1 == conf->numsv);
 		assert(-1. == conf->threshold);
 
@@ -653,11 +653,9 @@ static int number_of_kernels(const struct ecalib_conf* conf, unsigned int N, con
 		assert(-1 == conf->numsv);
 		assert(-1. == conf->percentsv);
 
-		for (unsigned int i = 0; i < N; i++) {
-
+		for (int i = 0; i < N; i++)
 			if (val[i] / val[0] > sqrtf(conf->threshold))
 				n++;
-		}
 	}
 
 	if (val[0] <= 0.)
@@ -666,9 +664,11 @@ static int number_of_kernels(const struct ecalib_conf* conf, unsigned int N, con
 	debug_printf(DP_DEBUG1, "Using %d/%ld kernels (%.2f%%, last SV: %f%s).\n", n, N, (float)n / (float)N * 100., (n > 0) ? (val[n - 1] / val[0]) : 1., conf->weighting ? ", weighted" : "");
 
 	float tr = 0.;
-	for (unsigned int i = 0; i < N; i++) {
+
+	for (int i = 0; i < N; i++) {
 
 		tr += powf(val[i], 2.);
+
 		debug_printf(DP_DEBUG3, "SVALS %f (%f)\n", val[i], val[i] / val[0]);
 	}
 
@@ -679,7 +679,7 @@ static int number_of_kernels(const struct ecalib_conf* conf, unsigned int N, con
 }
 
 
-void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], complex float** nskerns_ptr, unsigned int SN, float val[SN], const long caldims[DIMS], const complex float* caldata)
+void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], complex float** nskerns_ptr, int SN, float val[SN], const long caldims[DIMS], const complex float* caldata)
 {
 	assert(1 == md_calc_size(DIMS - 5, caldims + 5));
 

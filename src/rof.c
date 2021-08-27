@@ -31,6 +31,7 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #include "iter/prox.h"
 #include "iter/thresh.h"
@@ -43,23 +44,32 @@
 #endif
 
 
-static const char usage_str[] = "<lambda> <flags> <input> <output>";
-static const char help_str[] = "Perform total variation denoising along dims <flags>.\n";
+static const char help_str[] = "Perform total variation denoising along dims <flags>.";
 
 	
 int main_rof(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 4, usage_str, help_str);
+	float lambda = 0.;
+	int flags = -1;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_FLOAT(true, &lambda, "lambda"),
+		ARG_INT(true, &flags, "flags"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long dims[DIMS];
-
-	float lambda = atof(argv[1]);
-	int flags = atoi(argv[2]);
 	
-	complex float* in_data = load_cfl(argv[3], DIMS, dims);
-	complex float* out_data = create_cfl(argv[4], DIMS, dims);
+	complex float* in_data = load_cfl(in_file, DIMS, dims);
+	complex float* out_data = create_cfl(out_file, DIMS, dims);
 
 	auto id_op  = linop_identity_create(DIMS, dims);
 	const struct linop_s* grad_op = linop_grad_create(DIMS, dims, DIMS, flags);

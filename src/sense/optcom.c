@@ -1,9 +1,7 @@
 /* Copyright 2013. The Regents of the University of California.
+ * Copyright 2021. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Author:
- * 2012 Martin Uecker <uecker@eecs.berkeley.edu>
  */
  
 #include <complex.h>
@@ -17,6 +15,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
+#include "num/fltools.h"
 
 #include "misc/mri.h"
 #include "misc/misc.h"
@@ -73,15 +72,9 @@ void rss_combine(const long dims[DIMS], complex float* image, const complex floa
 
 
 
-static int compare_cmpl_magn(const void* a, const void* b)
-{
-	return (int)copysignf(1., (cabsf(*(complex float*)a) - cabsf(*(complex float*)b)));
-}
-
-
 float estimate_scaling_norm(float rescale, long imsize, complex float* tmpnorm, bool compat)
 {
-	qsort(tmpnorm, (size_t)imsize, sizeof(complex float), compare_cmpl_magn);
+	zsort(imsize, tmpnorm);
 
 	float median = cabsf(tmpnorm[imsize / 2]) / rescale; //median
 	float p90 = cabsf(tmpnorm[(int)trunc(imsize * 0.9)]) / rescale;

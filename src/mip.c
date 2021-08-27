@@ -29,12 +29,22 @@
 
 
 
-static const char usage_str[] = "bitmask <input> <output>";
-static const char help_str[] = "Maximum (minimum) intensity projection (MIP) along dimensions specified by bitmask.\n"; 
+static const char help_str[] = "Maximum (minimum) intensity projection (MIP) along dimensions specified by bitmask.";
 
 
 int main_mip(int argc, char* argv[argc])
 {
+	unsigned int flags = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_UINT(true, &flags, "bitmask"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 
 	bool do_abs = false;
 	bool mIP = false;
@@ -45,20 +55,17 @@ int main_mip(int argc, char* argv[argc])
 		OPT_SET('a', &do_abs, "do absolute value first" ),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-
-	unsigned int flags = atoi(argv[1]);
-
 	long idims[DIMS];
-	complex float* in = load_cfl(argv[2], DIMS, idims);
+	complex float* in = load_cfl(in_file, DIMS, idims);
 
 	long odims[DIMS];
 	md_select_dims(DIMS, ~flags, odims, idims);
 
-	complex float* out = create_cfl(argv[3], DIMS, odims);
+	complex float* out = create_cfl(out_file, DIMS, odims);
 
 	complex float* tmp = md_alloc(DIMS, idims, CFL_SIZE);
 

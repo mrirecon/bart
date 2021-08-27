@@ -36,6 +36,10 @@ extern void cuda_zconj(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zphsr(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zexpj(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zexp(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zsin(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zcos(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zsinh(long N, _Complex float* dst, const _Complex float* src);
+extern void cuda_zcosh(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zlog(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zarg(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zabs(long N, _Complex float* dst, const _Complex float* src);
@@ -59,11 +63,13 @@ extern void cuda_max(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_min(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_zsum(long N, _Complex float* dst);
 extern void cuda_zsmax(long N, float alpha, _Complex float* dst, const _Complex float* src);
+extern void cuda_pdf_gauss(long N, float mu, float sig, float* dst, const float* src);
 extern void cuda_real(long N, float* dst, const _Complex float* src);
 extern void cuda_imag(long N, float* dst, const _Complex float* src);
 extern void cuda_zcmpl_real(long N, _Complex float* dst, const float* src);
 extern void cuda_zcmpl_imag(long N, _Complex float* dst, const float* src);
 extern void cuda_zcmpl(long N, _Complex float* dst, const float* real_src, const float* imag_src);
+extern void cuda_zfill(long N, _Complex float val, _Complex float* dst);
 
 #ifdef __cplusplus
 }

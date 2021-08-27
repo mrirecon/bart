@@ -31,7 +31,13 @@
 #include <string.h>
 #include <assert.h>
 #include <stdbool.h>
+
+#ifdef _WIN32
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
+
 #include <strings.h>
 
 #include "misc/misc.h"
@@ -1525,7 +1531,7 @@ bool md_compare2(unsigned int D, const long dims[D], const long str1[D], const v
 
 		bool eq2 = (0 == memcmp(ptrs[0], ptrs[1], size2));
 
-		#pragma omp critical
+		#pragma omp atomic
 		eq &= eq2;
 	};
 

@@ -23,12 +23,20 @@
 #endif
 
 
-static const char usage_str[] = "<input1> <input2>";
 static const char help_str[] = "Compute dot product along selected dimensions.";
 
 int main_sdot(int argc, char* argv[argc])
 {
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, 0, NULL);
+	const char* in1_file = NULL;
+	const char* in2_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in1_file, "input1"),
+		ARG_INFILE(true, &in2_file, "input2"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -36,8 +44,8 @@ int main_sdot(int argc, char* argv[argc])
 	long in1_dims[N];
 	long in2_dims[N];
 
-	complex float* in1_data = load_cfl(argv[1], N, in1_dims);
-	complex float* in2_data = load_cfl(argv[2], N, in2_dims);
+	complex float* in1_data = load_cfl(in1_file, N, in1_dims);
+	complex float* in2_data = load_cfl(in2_file, N, in2_dims);
 
 
 	for (int i = 0; i < N; i++)

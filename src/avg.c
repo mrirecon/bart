@@ -21,34 +21,42 @@
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "<bitmask> <input> <output>";
 static const char help_str[] = "Calculates (weighted) average along dimensions specified by bitmask.";
 
 
 int main_avg(int argc, char* argv[argc])
 {
-	bool wavg = false;
+	unsigned int flags = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
 
+	struct arg_s args[] = {
+
+		ARG_UINT(true, &flags, "bitmask"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
+
+	bool wavg = false;
 	const struct opt_s opts[] = {
 
 		OPT_SET('w', &wavg, "weighted average"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	int N = DIMS;
 
-	unsigned int flags = atoi(argv[1]);
-
 	long idims[N];
-	complex float* data = load_cfl(argv[2], N, idims);
+	complex float* data = load_cfl(in_file, N, idims);
 
 	long odims[N];
 	md_select_dims(N, ~flags, odims, idims);
 
-	complex float* out = create_cfl(argv[3], N, odims);
+	complex float* out = create_cfl(out_file, N, odims);
 
 	(wavg ? md_zwavg : md_zavg)(N, idims, flags, out, data);
 

@@ -36,11 +36,10 @@
 #endif
 
 
-static const char usage_str[] = "[-h] <input> <output_prefix>";
 static const char help_str[] = "Create magnitude images as png or proto-dicom.\n"
 				"The first two non-singleton dimensions will\n"
 				"be used for the image, and the other dimensions\n"
-				"will be looped over.\n";
+				"will be looped over.";
 
 // from view:src/draw.c
 static double clamp(double a, double b, double x)
@@ -145,6 +144,15 @@ static void toimg_stack(const char* name, bool dicom, bool single_scale, bool us
 
 int main_toimg(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* out_prefix = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_prefix, "output prefix"),
+	};
+
 	float gamma = 1.;
 	float contrast = 0.;
 	float window = 750.;
@@ -162,11 +170,11 @@ int main_toimg(int argc, char* argv[argc])
 		OPT_SET('W', &use_windowing, "use dynamic windowing"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	char* ext = rindex(argv[2], '.');
+	char* ext = strrchr(out_prefix, '.');
 
 	if (NULL != ext) {
 
@@ -182,9 +190,9 @@ int main_toimg(int argc, char* argv[argc])
 	}
 
 	long dims[DIMS];
-	complex float* data = load_cfl(argv[1], DIMS, dims);
+	complex float* data = load_cfl(in_file, DIMS, dims);
 
-	toimg_stack(argv[2], dicom, single_scale, use_windowing, gamma, contrast, window, dims, data);
+	toimg_stack(out_prefix, dicom, single_scale, use_windowing, gamma, contrast, window, dims, data);
 
 	unmap_cfl(DIMS, dims, data);
 

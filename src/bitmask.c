@@ -16,7 +16,6 @@
 #include "misc/opts.h"
 
 
-static const char usage_str[] = "-b <bitmask> | <dim1> ... <dimN>";
 static const char help_str[] = "Convert between a bitmask and set of dimensions.";
 
 
@@ -24,25 +23,33 @@ static const char help_str[] = "Convert between a bitmask and set of dimensions.
 
 int main_bitmask(int argc, char* argv[argc])
 {
+	long count = 0;
+	long* dims = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_TUPLE(false, &count, 1, OPT_LONG, sizeof(*dims), &dims, "dim"),
+	};
+
 	bool inverse = false;
-	long flags = 0;
 
 	const struct opt_s opts[] = {
 
-		OPT_SET('b', &inverse, "dimensions from bitmask"),
+		OPT_SET('b', &inverse, "dimensions from bitmask, use with exaclty one argument"),
 	};
 
-	cmdline(&argc, argv, 0, 1000, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	if ((2 != argc) && inverse)
+	if ((1 != count) && inverse)
 		error("exactly one argument needed.\n");
 
+	long flags = 0;
 
 	if (!inverse) {
 
-		for (int i = 1; i < argc; i++) {
+		for (int i = 0; i < count; i++) {
 
-			int d = atoi(argv[i]);
+			long d = dims[i];
 			assert(d >= 0);
 
 			flags = MD_SET(flags, d);
@@ -53,7 +60,7 @@ int main_bitmask(int argc, char* argv[argc])
 	} else {
 
 		int i = 0;
-		flags = atoi(argv[1]);
+		flags = dims[0];
 
 		while (flags) {
 
@@ -66,6 +73,8 @@ int main_bitmask(int argc, char* argv[argc])
 
 		bart_printf("\n");
 	}
+
+	xfree(dims);
 
 	return 0;
 }

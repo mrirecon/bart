@@ -18,28 +18,41 @@
 #include "misc/mmio.h"
 #include "misc/io.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
-static const char usage_str[] = "val1 val2 ... valN name";
-static const char help_str[] = "Create a vector of values.\n";
+static const char help_str[] = "Create a vector of values.";
 
 
 
 int main_vec(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, -1, usage_str, help_str);
+
+	long count = 0;
+	complex float* vals = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_TUPLE(true, &count, 1, OPT_CFL, sizeof(complex float), &vals, "val"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
+	const struct opt_s opts[] = {};
+
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	long dims[1] = { argc - 2 };
+	long dims[1] = { count };
 
-	complex float* x = create_cfl(argv[argc - 1], 1, dims);
+	complex float* x = create_cfl(out_file, 1, dims);
 
-	for (int i = 0; i < argc - 2; i++)
-		if (0 != parse_cfl(&x[i], argv[1 + i]))
-			error("argument %d/%d is not a number: %s", i, argc - 2, argv[1 + i]);
+	for (int i = 0; i < count; i++)
+		x[i] = vals[i];
 
 	unmap_cfl(1, dims, x);
+	xfree(vals);
 	return 0;
 }
 

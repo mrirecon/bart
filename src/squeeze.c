@@ -17,26 +17,35 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 32
 #endif
 
 
-static const char usage_str[] = "<input> <output>";
-static const char help_str[] = "Remove singleton dimensions of array.\n";
+static const char help_str[] = "Remove singleton dimensions of array.";
 
 
 int main_squeeze(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 2, usage_str, help_str);
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long idims[DIMS];
 	long odims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
 
-	complex float* idata = load_cfl(argv[1], DIMS, idims);
+	complex float* idata = load_cfl(in_file, DIMS, idims);
 		
 	unsigned int j = 0;
 
@@ -47,7 +56,7 @@ int main_squeeze(int argc, char* argv[argc])
 	if (0 == j)
 		j = 1;
 
-	complex float* odata = create_cfl(argv[2], j, odims);
+	complex float* odata = create_cfl(out_file, j, odims);
 
 	md_copy(DIMS, idims, odata, idata, CFL_SIZE);
 

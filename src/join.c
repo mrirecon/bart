@@ -31,16 +31,28 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char usage_str[] = "dimension <input1> ... <inputn> <output>";
 static const char help_str[] =
 	"Join input files along {dimensions}. All other dimensions must have the same size.\n"
 	"\t Example 1: join 0 slice_001 slice_002 slice_003 full_data\n"
-	"\t Example 2: join 0 `seq -f \"slice_%%03g\" 0 255` full_data\n";
+	"\t Example 2: join 0 `seq -f \"slice_%%03g\" 0 255` full_data";
 
 
 
 int main_join(int argc, char* argv[argc])
 {
+	long count = 0;
+	int dim = -1;
+	const char** in_files = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(true, &dim, "dimension"),
+		ARG_TUPLE(true, &count, 1, OPT_INFILE, sizeof(char*), &in_files, "input"),
+		ARG_INOUTFILE(true, &out_file, "output"),
+	};
+
+
 	bool append = false;
 
 	const struct opt_s opts[] = {
@@ -48,16 +60,13 @@ int main_join(int argc, char* argv[argc])
 		OPT_SET('a', &append, "append - only works for cfl files!"),
 	};
 
-	cmdline(&argc, argv, 3, 10000, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	int N = DIMS;
 
-	int dim = atoi(argv[1]);
 	assert(dim < N);
-
-	int count = argc - 3;
 
 	if (append) {
 
@@ -65,20 +74,20 @@ int main_join(int argc, char* argv[argc])
 
 		assert(count > 1);
 
-		int len = strlen(argv[argc - 1]);
+		int len = strlen(out_file);
 		char buf[len + 5];
-		strcpy(buf, argv[argc - 1]);
+		strcpy(buf, out_file);
 		strcat(buf, ".cfl");
 
 		if (-1 == access(buf, F_OK)) {
 
 			// make sure we do not have any other file format
 
-			strcpy(buf, argv[argc - 1]);
+			strcpy(buf, out_file);
 			strcat(buf, ".coo");
 			assert(-1 == access(buf, F_OK));
 
-			strcpy(buf, argv[argc - 1]);
+			strcpy(buf, out_file);
 			strcat(buf, ".ra");
 			assert(-1 == access(buf, F_OK));
 
@@ -99,10 +108,10 @@ int main_join(int argc, char* argv[argc])
 
 		if (append && (i == 0)) {
 
-			name = argv[argc - 1];
+			name = out_file;
 		} else {
 
-			name = argv[2 + l++];
+			name = in_files[l++];
 		}
 
 		debug_printf(DP_DEBUG1, "loading %s\n", name);
@@ -130,10 +139,10 @@ int main_join(int argc, char* argv[argc])
 
 		// Here, we need to trick the IO subsystem into absolutely NOT
 		// unlinking our input, as the same file is also an output here.
-		io_unregister(argv[argc - 1]);
+		io_close(out_file);
 	}
 
-	complex float* out_data = create_cfl(argv[argc - 1], N, out_dims);
+	complex float* out_data = create_cfl(out_file, N, out_dims);
 
 	long ostr[N];
 	md_calc_strides(N, ostr, out_dims, CFL_SIZE);
@@ -158,6 +167,7 @@ int main_join(int argc, char* argv[argc])
 	}
 
 	unmap_cfl(N, out_dims, out_data);
+	xfree(in_files);
 
 	return 0;
 }

@@ -22,25 +22,35 @@
 #endif
 
 
-static const char usage_str[] = "bitmask <input> <kernel> <output>";
 static const char help_str[] = "Performs a convolution along selected dimensions.";
 
 
 int main_conv(int argc, char* argv[argc])
 {
-	cmdline(&argc, argv, 4, 4, usage_str, help_str, 0, NULL);
+	unsigned int flags = 0;
+	const char* in_file = NULL;
+	const char* kern_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_UINT(true, &flags, "bitmask"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_INFILE(true, &kern_file, "kernel"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	unsigned int flags = atoi(argv[1]);
-
 	unsigned int N = DIMS;
 	long dims[N];
-	const complex float* in = load_cfl(argv[2], N, dims);
+	const complex float* in = load_cfl(in_file, N, dims);
 
 	long krn_dims[N];
-	const complex float* krn = load_cfl(argv[3], N, krn_dims);
-	complex float* out = create_cfl(argv[4], N, dims);
+	const complex float* krn = load_cfl(kern_file, N, krn_dims);
+	complex float* out = create_cfl(out_file, N, dims);
 
 	struct conv_plan* plan = conv_plan(N, flags, CONV_CYCLIC, CONV_SYMMETRIC, dims, dims, krn_dims, krn);
 	conv_exec(plan, out, in);

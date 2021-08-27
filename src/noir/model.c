@@ -144,7 +144,7 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 	md_copy(DIMS, ptrn_dims, data->ptr, psf, CFL_SIZE);
 	fftmod(DIMS, ptrn_dims, conf->fft_flags, data->ptr, data->ptr);
 
-	const struct linop_s* lop_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, COIL_FLAG, data->ptr);
+	const struct linop_s* lop_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, ~conf->ptrn_flags, data->ptr);
 
 	const struct linop_s* lop_adj_pattern;
 
@@ -161,7 +161,7 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 
 		fftmod(DIMS, ptrn_dims, conf->fft_flags, data->adj_ptr, data->adj_ptr);
 
-		lop_adj_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, COIL_FLAG, data->adj_ptr);
+		lop_adj_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, ~conf->ptrn_flags, data->adj_ptr);
 	}
 
 	data->msk = md_alloc(DIMS, mask_dims, CFL_SIZE);

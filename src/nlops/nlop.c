@@ -1,11 +1,9 @@
-/* Copyright 2018. Martin Uecker.
+/* Copyright 2018-2021. Uecker Lab. University Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors:
- * 2017-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * Authors: Martin Uecker, Moritz Blumenthal
  */
-
 
 #include "num/multind.h"
 
@@ -21,6 +19,7 @@
 #include "misc/debug.h"
 
 #include "nlop.h"
+
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
@@ -67,12 +66,14 @@ static DEF_TYPEID(nlop_linop_data_s);
 static void sptr_op_del(const struct shared_ptr_s* sptr)
 {
 	auto data = CONTAINER_OF(sptr, struct nlop_op_data_s, sptr);
+
 	data->del(data->data);
 }
 
 static void sptr_linop_del(const struct shared_ptr_s* sptr)
 {
 	auto data = CONTAINER_OF(sptr, struct nlop_linop_data_s, sptr);
+
 	data->del(data->data);
 }
 
@@ -90,6 +91,8 @@ static void op_fun(const operator_data_t* _data, unsigned int N, void* args[__VL
 		data->forward(data->data, N, *(complex float* (*)[N])args);
 	}
 }
+
+
 
 static void op_del(const operator_data_t* _data)
 {
@@ -136,6 +139,27 @@ static void lop_del(const linop_data_t* _data)
 	xfree(data);
 }
 
+static void der_not_implemented(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+{
+	UNUSED(o);
+	UNUSED(i);
+	UNUSED(dst);
+	UNUSED(src);
+
+	error("Derivative o=%d, i=%d of %s is not implemented!\n", o, i, _data->TYPEID->name);
+}
+
+static void adj_not_implemented(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+{
+	UNUSED(o);
+	UNUSED(i);
+	UNUSED(dst);
+	UNUSED(src);
+
+	error("Adjoint derivative o=%d, i=%d of %s is not implemented!\n", o, i, _data->TYPEID->name);
+}
+
+
 struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], const long ostr[OO][ON], int II, int IN, const long idims[II][IN], const long istr[II][IN],
 					nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO],
 					nlop_del_fun_t del)
@@ -151,7 +175,6 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 	d->del = del;
 
 	shared_ptr_init(&d->sptr, sptr_op_del);
-
 
 
 //	n->op = operator_create2(ON, odims, ostrs, IN, idims, istrs, CAST_UP(PTR_PASS(d)), op_fun, op_del);
@@ -183,8 +206,8 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 
 			d2->data = data;
 			d2->del = del;
-			d2->deriv = deriv[i][o];
-			d2->adjoint = adjoint[i][o];
+			d2->deriv = (NULL != deriv) ? ((NULL != deriv[i][o]) ? deriv[i][o] : der_not_implemented) : der_not_implemented;
+			d2->adjoint = (NULL != adjoint) ? ((NULL != adjoint[i][o]) ? adjoint[i][o] : adj_not_implemented) : adj_not_implemented;
 			d2->normal = (NULL != normal) ? normal[i][o] : NULL;
 			d2->norm_inv = (NULL != norm_inv) ? norm_inv[i][o] : NULL;
 
@@ -205,7 +228,6 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 
 	n->op = operator_generic_create2(OO + II, io_flags, D, dims, strs, CAST_UP(PTR_PASS(d)), op_fun, op_del);
 
-
 	return PTR_PASS(n);
 }
 
@@ -222,6 +244,7 @@ struct nlop_s* nlop_generic_create(int OO, int ON, const long odims[OO][ON], int
 
 	return nlop_generic_create2(OO, ON, odims, ostrs, II, IN, idims, istrs, data, forward, deriv, adjoint, normal, norm_inv, del);
 }
+
 
 
 struct nlop_s* nlop_create2(unsigned int ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)],
@@ -301,7 +324,7 @@ const struct nlop_s* nlop_clone(const struct nlop_s* op)
 
 
 
-nlop_data_t* nlop_get_data(struct nlop_s* op)
+nlop_data_t* nlop_get_data(const struct nlop_s* op)
 {
 	auto data2 = CAST_MAYBE(nlop_op_data_s, operator_get_data(op->op));
 
@@ -341,6 +364,7 @@ void nlop_generic_apply_unchecked(const struct nlop_s* op, int N, void* args[N])
 {
 	operator_generic_apply_unchecked(op->op, N, args);
 }
+
 
 const struct linop_s* nlop_get_derivative(const struct nlop_s* op, int o, int i)
 {
@@ -552,6 +576,124 @@ const struct nlop_s* nlop_flatten_get_op(struct nlop_s* op)
 	return (NULL == data) ? NULL : data->op;
 }
 
+const struct nlop_s* nlop_reshape_in(const struct nlop_s* op, int i, int NI, const long idims[NI])
+{
+	int II = nlop_get_nr_in_args(op);
+	int OO = nlop_get_nr_out_args(op);
+
+	int oNI = nlop_generic_domain(op, i)->N;
+	const long* oidims = nlop_generic_domain(op, i)->dims;
+
+	debug_printf(DP_DEBUG4, "nlop_reshape_in %d:\t", i);
+	debug_print_dims(DP_DEBUG4, oNI, oidims);
+	debug_printf(DP_DEBUG4, "to:\t\t\t");
+	debug_print_dims(DP_DEBUG4, NI, idims);
+
+	PTR_ALLOC(struct nlop_s, n);
+
+	n->op = operator_reshape(op->op, OO + i, NI, idims);
+
+	const struct linop_s* (*der)[II][OO] = TYPE_ALLOC(const struct linop_s*[II][OO]);
+
+	n->derivative = &(*der)[0][0];
+
+	//derivatives are not put into an operator-reshape-container but linked with an reshaping copy operator
+	//	-> operators can be compared in operator chain to only evaluate them once (for parallel application)
+	PTR_ALLOC(struct linop_s, resh_t);
+
+	resh_t->forward = operator_reshape_create(oNI, oidims, NI, idims);
+	resh_t->adjoint = operator_reshape_create(NI, idims, oNI, oidims);
+	resh_t->normal = operator_reshape_create(NI, idims, NI, idims);
+	resh_t->norm_inv = NULL;
+
+	auto resh = PTR_PASS(resh_t);
+
+	for (int ii = 0; ii < II; ii++)
+		for (int io = 0; io < OO; io++)
+			(*der)[ii][io] = (ii == i) ? linop_chain(resh, nlop_get_derivative(op, io, ii)) : linop_clone(nlop_get_derivative(op, io, ii));
+
+	linop_free(resh);
+
+	return PTR_PASS(n);
+}
+
+const struct nlop_s* nlop_reshape_out(const struct nlop_s* op, int o, int NO, const long odims[NO])
+{
+	int II = nlop_get_nr_in_args(op);
+	int OO = nlop_get_nr_out_args(op);
+
+	int oNO = nlop_generic_codomain(op, o)->N;
+	const long* oodims = nlop_generic_codomain(op, o)->dims;
+
+	debug_printf(DP_DEBUG4, "nlop_reshape_out %d:\t", o);
+	debug_print_dims(DP_DEBUG4, oNO, oodims);
+	debug_printf(DP_DEBUG4, "to:\t\t\t");
+	debug_print_dims(DP_DEBUG4, NO, odims);
+
+	PTR_ALLOC(struct nlop_s, n);
+
+	n->op = operator_reshape(op->op, o, NO, odims);
+
+	const struct linop_s* (*der)[II][OO] = TYPE_ALLOC(const struct linop_s*[II][OO]);
+	n->derivative = &(*der)[0][0];
+
+	//derivatives are not put into an operator-reshape-container but linked with an reshaping copy operator
+	//	-> operators can be compared in operator chain to only evaluate them once (for parallel application)
+	PTR_ALLOC(struct linop_s, resh_t);
+
+	resh_t->forward = operator_reshape_create(NO, odims, oNO, oodims);
+	resh_t->adjoint = operator_reshape_create(oNO, oodims, NO, odims);
+	resh_t->normal= operator_reshape_create(oNO, oodims, oNO, oodims);
+	resh_t->norm_inv = NULL;
+
+	auto resh = PTR_PASS(resh_t);
+
+	for (int ii = 0; ii < II; ii++)
+		for (int io = 0; io < OO; io++)
+			(*der)[ii][io] = (io == o) ? linop_chain(nlop_get_derivative(op, io, ii), resh) : linop_clone(nlop_get_derivative(op, io, ii));
+
+	linop_free(resh);
+
+	return PTR_PASS(n);
+}
+
+
+const struct nlop_s* nlop_reshape_in_F(const struct nlop_s* op, int i, int NI, const long idims[NI])
+{
+	auto result = nlop_reshape_in(op, i, NI,idims);
+	nlop_free(op);
+	return result;
+}
+
+const struct nlop_s* nlop_reshape_out_F(const struct nlop_s* op, int o, int NO, const long odims[NO])
+{
+	auto result = nlop_reshape_out(op, o, NO,odims);
+	nlop_free(op);
+	return result;
+}
+
+const struct nlop_s* nlop_append_singleton_dim_in_F(const struct nlop_s* op, int i)
+{
+	long N = nlop_generic_domain(op, i)->N;
+
+	long dims[N + 1];
+	md_copy_dims(N, dims, nlop_generic_domain(op, i)->dims);
+	dims[N] = 1;
+
+	return nlop_reshape_in_F(op, i, N + 1, dims);
+}
+
+const struct nlop_s* nlop_append_singleton_dim_out_F(const struct nlop_s* op, int o)
+{
+	long N = nlop_generic_codomain(op, o)->N;
+
+	long dims[N + 1];
+	md_copy_dims(N, dims, nlop_generic_codomain(op, o)->dims);
+	dims[N] = 1;
+
+	return nlop_reshape_out_F(op, o, N + 1, dims);
+}
+
 
 void nlop_debug(enum debug_levels dl, const struct nlop_s* x)
 {
@@ -575,3 +717,5 @@ void nlop_debug(enum debug_levels dl, const struct nlop_s* x)
 		debug_print_dims(dl, io->N, io->dims);
 	}
 }
+
+

@@ -20,14 +20,13 @@
 #include "misc/debug.h"
 
 
-static const char usage_str[] = "[-h]";
 static const char help_str[] = 
 	"Print BART version. The version string is of the form\n"
 	"TAG or TAG-COMMITS-SHA as produced by 'git describe'. It\n"
 	"specifies the last release (TAG), and (if git is used)\n"
 	"the number of commits (COMMITS) since this release and\n"
 	"the abbreviated hash of the last commit (SHA). If there\n"
-	"are local changes '-dirty' is added at the end.\n";
+	"are local changes '-dirty' is added at the end.";
 
 
 
@@ -35,6 +34,9 @@ static const char help_str[] =
 
 int main_version(int argc, char* argv[argc])
 {
+	struct arg_s args[] = {};
+
+
 	bool verbose = false;
 	const char* version = NULL;
 
@@ -44,7 +46,7 @@ int main_version(int argc, char* argv[argc])
 		OPT_SET('V', &verbose, "Output verbose info"),
 	};
 
-	cmdline(&argc, argv, 0, 0, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (NULL != version) {
 
@@ -66,6 +68,8 @@ int main_version(int argc, char* argv[argc])
 
 			return 1;
 		}
+
+		xfree(version);
 
 		// invert here, because unix interprets 0 as succesful exit
 		return !(version_compare(va, vb) >= 0);
@@ -108,6 +112,8 @@ int main_version(int argc, char* argv[argc])
 			bart_printf("0\n");
 #endif
 	}
+
+	xfree(version);
 
 	return 0;
 }

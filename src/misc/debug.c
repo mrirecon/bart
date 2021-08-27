@@ -21,12 +21,13 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(_WIN32)
 #include <execinfo.h>
 #endif
 
 #include "num/multind.h"
 
+#include "misc/io.h"
 #include "misc/mmio.h"
 #include "misc/cppmap.h"
 #include "misc/misc.h"
@@ -48,6 +49,7 @@ double timestamp(void)
 
 void dump_cfl(const char* name, int D, const long dimensions[D], const complex float* src)
 {
+	io_reserve_output(name);
 	complex float* out = create_cfl(name, D, dimensions);
 
 	md_copy(D, dimensions, out, src, sizeof(complex float));
@@ -138,7 +140,7 @@ void debug_printf(int level, const char* fmt, ...)
 
 void debug_vprintf_trace(const char* func_name,
 			 const char* file,
-			 unsigned int line,
+			 int line,
 			 int level,
 			 const char* fmt,
 			 va_list ap)
@@ -162,7 +164,7 @@ void debug_vprintf_trace(const char* func_name,
 
 void debug_printf_trace(const char* func_name,
 			const char* file,
-			unsigned int line,
+			int line,
 			int level,
 			const char* fmt,
 			...)
@@ -176,7 +178,7 @@ void debug_printf_trace(const char* func_name,
 
 void debug_backtrace(size_t n)
 {
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(_WIN32)
 	void* ptrs[n + 1];
 	size_t l = backtrace(ptrs, n + 1);
 

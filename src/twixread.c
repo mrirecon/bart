@@ -25,6 +25,10 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
+#ifdef _WIN32
+#include "win/open_patch.h"
+#endif
+
 
 /* Information about twix files can be found here:
  * (Matlab code by Philipp Ehses and others, Yarra by Tobias Block)
@@ -222,7 +226,6 @@ static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const l
 
 
 
-static const char usage_str[] = "<dat file> <output>";
 //	fprintf(fd, "Usage: %s [...] [-a A] <dat file> <output>\n", name);
 
 static const char help_str[] = "Read data from Siemens twix (.dat) files.";
@@ -230,6 +233,15 @@ static const char help_str[] = "Read data from Siemens twix (.dat) files.";
 
 int main_twixread(int argc, char* argv[argc])
 {
+	const char* dat_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &dat_file, "dat file"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	long adcs = 0;
 	long radial_lines = -1;
 
@@ -258,7 +270,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('M', &mpi, "MPI mode"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (-1 != radial_lines)
 		dims[PHS1_DIM] = radial_lines;
@@ -269,7 +281,7 @@ int main_twixread(int argc, char* argv[argc])
 	debug_print_dims(DP_DEBUG1, DIMS, dims);
 
         int ifd;
-        if (-1 == (ifd = open(argv[1], O_RDONLY)))
+        if (-1 == (ifd = open(dat_file, O_RDONLY)))
                 error("error opening file.");
 
 	struct hdr_s hdr;
@@ -320,7 +332,7 @@ int main_twixread(int argc, char* argv[argc])
 		assert(1 == dims[2]);
 	}
 
-	complex float* out = create_cfl(argv[2], DIMS, odims);
+	complex float* out = create_cfl(out_file, DIMS, odims);
 	md_clear(DIMS, odims, out, CFL_SIZE);
 
 

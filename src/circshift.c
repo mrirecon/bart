@@ -18,28 +18,39 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "dim shift <input> <output>";
-static const char help_str[] = "Perform circular shift along {dim} by {shift} elements.\n";
+static const char help_str[] = "Perform circular shift along {dim} by {shift} elements.";
 
 
 
 int main_circshift(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 4, usage_str, help_str);
+	int dim = 0;
+	int shift = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(true, &dim, "dim"),
+		ARG_INT(true, &shift, "shift"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	const int N = DIMS;
 	long dims[N];
-
-	int dim = atoi(argv[1]);
-	int shift = atoi(argv[2]);
 
 	assert((0 <= dim) && (dim < N));
 
@@ -47,8 +58,8 @@ int main_circshift(int argc, char* argv[argc])
 	memset(center, 0, N * sizeof(long));
 	center[dim] = shift;
 
-	complex float* idata = load_cfl(argv[3], N, dims);
-	complex float* odata = create_cfl(argv[4], N, dims);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* odata = create_cfl(out_file, N, dims);
 
 	md_circ_shift(N, dims, center, odata, idata, sizeof(complex float));
 

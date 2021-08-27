@@ -16,7 +16,12 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+
+#ifdef _WIN32
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
 
 #include "num/multind.h"
 #include "num/iovec.h"
@@ -69,6 +74,7 @@ static void operator_del(const struct shared_obj_s* sptr)
 		iovec_free(x->domain[i]);
 
 	xfree(x->domain);
+	xfree(x->io_flags);
 	xfree(x);
 }
 
@@ -1395,7 +1401,7 @@ static void link_apply(const operator_data_t* _data, unsigned int N, void* args[
 	bool gpu = false;
 
 	for (unsigned int i = 0; i < N; i++)
-		gpu |= cuda_ondevice(args[i]);
+		gpu = gpu || cuda_ondevice(args[i]);
 
 	void* tmp = (gpu ? md_alloc_gpu : md_alloc)(iov->N, iov->dims, iov->size);
 #else

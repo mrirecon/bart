@@ -183,6 +183,16 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 			debug_printf(DP_INFO, "Trajectory generation to reproduce SSA-FARY Paper!\n");
 		}
 #endif
+		if (use_compat_to_version("v0.4.00")) {
+
+			// since the traj rewrite (commit d4e6e2e3a2313) we do not apply
+			// full circle to golden angle anymore. However, this is needed for
+			// reproducing the RING paper
+			angle_s *= (conf.full_circle ? 2. : 1.);
+			angle_m *= (conf.full_circle ? 2. : 1.);
+			angle_t *= (conf.full_circle ? 2. : 1.);
+		}
+
 	}
 
 	base_angle[PHS2_DIM] = angle_s;

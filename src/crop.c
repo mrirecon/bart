@@ -17,19 +17,33 @@
 
 #include "misc/mmio.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 #ifndef DIMS
 #define DIMS 16
 #endif
 
 
-static const char usage_str[] = "dimension size <input> <output>";
-static const char help_str[] = "Extracts a sub-array corresponding to the central part of {size} along {dimension}\n";
+static const char help_str[] = "Extracts a sub-array corresponding to the central part of {size} along {dimension}";
 
 
 int main_crop(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 4, usage_str, help_str);
+	int dim = 0;
+	int count = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(true, &dim, "dimension"),
+		ARG_INT(true, &count, "size"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -37,10 +51,7 @@ int main_crop(int argc, char* argv[argc])
 	long in_dims[N];
 	long out_dims[N];
 	
-	complex float* in_data = load_cfl(argv[3], N, in_dims);
-
-	int dim = atoi(argv[1]);
-	int count = atoi(argv[2]);
+	complex float* in_data = load_cfl(in_file, N, in_dims);
 
 	assert(dim < N);
 	assert(count >= 1);
@@ -50,7 +61,7 @@ int main_crop(int argc, char* argv[argc])
 
 	out_dims[dim] = count;
 
-	complex float* out_data = create_cfl(argv[4], N, out_dims);
+	complex float* out_data = create_cfl(out_file, N, out_dims);
 
 	md_resize_center(N, out_dims, out_data, in_dims, in_data, sizeof(complex float));
 

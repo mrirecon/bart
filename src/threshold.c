@@ -122,13 +122,23 @@ static void binary_thresh(unsigned int D, const long dims[D], float lambda, comp
 
 
 
-static const char usage_str[] = "lambda <input> <output>";
 static const char help_str[] = "Perform (soft) thresholding with parameter lambda.";
 
 
 
 int main_threshold(int argc, char* argv[argc])
 {
+	float lambda = 0.;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_FLOAT(true, &lambda, "lambda"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	unsigned int flags = 0;
         
 	enum th_type { NONE, WAV, LLR, DFW, MPDFW, HARD, BINARY } th_type = NONE;
@@ -146,16 +156,14 @@ int main_threshold(int argc, char* argv[argc])
 		OPT_INT('b', &llrblk, "blocksize", "locally low rank block size"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	const int N = DIMS;
 	long dims[N];
-	complex float* idata = load_cfl(argv[2], N, dims);
-	complex float* odata = create_cfl(argv[3], N, dims);
-
-	float lambda = atof(argv[1]);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* odata = create_cfl(out_file, N, dims);
 
 	switch (th_type) {
 

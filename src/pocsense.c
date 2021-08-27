@@ -42,13 +42,23 @@
 
 
 
-static const char usage_str[] = "<kspace> <sensitivities> <output>";
 static const char help_str[] = "Perform POCSENSE reconstruction.";
 
 	
 
 int main_pocsense(int argc, char* argv[argc])
 {
+	const char* ksp_file = NULL;
+	const char* sens_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &sens_file, "sensitivities"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	float alpha = 0.;
 	int maxiter = 50;
 	bool l1wav = false;
@@ -68,7 +78,7 @@ int main_pocsense(int argc, char* argv[argc])
 		OPT_FLOAT('m', &admm_rho, "", "()"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (1 == l1type)
 		l1wav = true;
@@ -84,8 +94,8 @@ int main_pocsense(int argc, char* argv[argc])
 	long dims[N];
 	long ksp_dims[N];
 
-	complex float* kspace_data = load_cfl(argv[1], N, ksp_dims);
-	complex float* sens_maps = load_cfl(argv[2], N, dims);
+	complex float* kspace_data = load_cfl(ksp_file, N, ksp_dims);
+	complex float* sens_maps = load_cfl(sens_file, N, dims);
 
 
 	for (int i = 0; i < 4; i++)	// sizes2[4] may be > 1
@@ -106,7 +116,7 @@ int main_pocsense(int argc, char* argv[argc])
 	// -----------------------------------------------------------
 	// memory allocation
 	
-	complex float* result = create_cfl(argv[3], N, ksp_dims);
+	complex float* result = create_cfl(out_file, N, ksp_dims);
 	complex float* pattern = md_alloc(N, dims1, CFL_SIZE);
 
 

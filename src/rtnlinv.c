@@ -59,7 +59,6 @@
 
 
 
-static const char usage_str[] = "<kspace> <output> [<sensitivities>]";
 static const char help_str[] =
 		"Jointly estimate a time-series of images and sensitivities with nonlinear\n"
 		"inversion using {iter} iteration steps. Optionally outputs\n"
@@ -72,6 +71,17 @@ static const char help_str[] =
 int main_rtnlinv(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
+
+	const char* ksp_file = NULL;
+	const char* img_file = NULL;
+	const char* sens_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_OUTFILE(true, &img_file, "output"),
+		ARG_OUTFILE(false, &sens_file, "sensitivities"),
+	};
 
 	struct nufft_conf_s nufft_conf = nufft_conf_defaults;
 	nufft_conf.toeplitz = false;
@@ -109,10 +119,10 @@ int main_rtnlinv(int argc, char* argv[argc])
 		OPT_UINT('m', &nmaps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),
 		OPT_CLEAR('U', &combine, "Do not combine ENLIVE maps in output"),
 		OPT_FLOAT('f', &restrict_fov, "FOV", "restrict FOV"),
-		OPT_STRING('p', &psf, "file", "pattern / transfer function"),
-		OPT_STRING('t', &trajectory, "file", "kspace trajectory"),
-		OPT_STRING('I', &init_file, "file", "File for initialization"),
-		OPT_STRING('C', &init_file_im, "", "(File for initialization with image space sensitivities)"),
+		OPT_INFILE('p', &psf, "file", "pattern / transfer function"),
+		OPT_INFILE('t', &trajectory, "file", "kspace trajectory"),
+		OPT_INFILE('I', &init_file, "file", "File for initialization"),
+		OPT_INFILE('C', &init_file_im, "", "(File for initialization with image space sensitivities)"),
 		OPT_SET('g', &use_gpu, "use gpu"),
 		OPT_SET('S', &scale_im, "Re-scale image after reconstruction"),
 		OPT_FLOAT('a', &conf.a, "", "(a in 1 + a * \\Laplace^-b/2)"),
@@ -124,9 +134,9 @@ int main_rtnlinv(int argc, char* argv[argc])
  		OPT_SET('s', &conf.sms, "(Simultaneous Multi-Slice reconstruction)")
 	};
 
-	cmdline(&argc, argv, 2, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	if (4 == argc)
+	if (NULL != sens_file)
 		out_sens = true;
 
 	(use_gpu ? num_init_gpu : num_init)();
@@ -136,7 +146,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 
 	long ksp_dims[DIMS];
-	complex float* kspace = load_cfl(argv[1], DIMS, ksp_dims);
+	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
 	long frames = ksp_dims[TIME_DIM];
 
@@ -239,7 +249,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 		img_output1_dims[MAPS_DIM] = nmaps;
 	}
 
-	complex float* img_output = create_cfl(argv[2], DIMS, img_output_dims);
+	complex float* img_output = create_cfl(img_file, DIMS, img_output_dims);
 	md_clear(DIMS, img_output_dims, img_output, CFL_SIZE);
 
 	complex float* img1 = md_alloc(DIMS, img1_dims, CFL_SIZE);
@@ -251,7 +261,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 	complex float* mask = NULL;
 
 	// Full output sensitivities
-	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? argv[3] : "", DIMS, sens_dims);
+	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? sens_file : "", DIMS, sens_dims);
 
 	// Sensitivities in image domain (relevant for output and normalization)
 	complex float* sens1 = md_calloc(DIMS, sens1_dims, CFL_SIZE);
@@ -541,7 +551,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 	debug_printf(DP_DEBUG2, "Total time: %.2f s\n", recosecs);
 
-	exit(0);
+	return 0;
 }
 
 

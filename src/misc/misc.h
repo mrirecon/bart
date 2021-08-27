@@ -55,6 +55,8 @@ extern void warn_nonnull_ptr(void*);
 #define ARR_CLONE(T, x)		({ PTR_ALLOC(T, __tmp2); memcpy(*__tmp2, x, sizeof(T)); *PTR_PASS(__tmp2); })
 
 extern int parse_cfl(_Complex float res[1], const char* str);
+extern int parse_long(long res[1], const char* str);
+extern int parse_int(int res[1], const char* str);
 #ifndef __cplusplus
 extern noreturn void error(const char* str, ...);
 #else
@@ -78,34 +80,33 @@ extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
 
 extern void debug_print_dims_trace(const char* func_name,
 				   const char* file,
-				   unsigned int line,
+				   int line,
 				   int dblevel,
 				   int D,
 				   const long dims[__VLA(D)]);
 
-typedef int (*quicksort_cmp_t)(const void* data, int a, int b);
+typedef int CLOSURE_TYPE(quicksort_cmp_t)(int a, int b);
 
-extern void quicksort(int N, int ord[__VLA(N)], const void* data, quicksort_cmp_t cmp);
+extern void quicksort(int N, int ord[__VLA(N)], quicksort_cmp_t cmp);
 
-extern float quickselect(float *arr, unsigned int n, unsigned int k);
+extern float quickselect(float *arr, int n, int k);
+extern float quickselect_complex(_Complex float *arr, int n, int k);
 
-extern float quickselect_complex(_Complex float *arr, unsigned int n, unsigned int k);
+extern void print_long(int D, const long arr[__VLA(D)]);
+extern void print_float(int D, const float arr[__VLA(D)]);
+extern void print_int(int D, const int arr[__VLA(D)]);
+extern void print_complex(int D, const _Complex float arr[__VLA(D)]);
 
-extern void mini_cmdline(int* argcp, char* argv[], int expected_args, const char* usage_str, const char* help_str);
-extern _Bool mini_cmdline_bool(int* argcp, char* argv[], char flag_char, int expected_args, const char* usage_str, const char* help_str);
-
-extern void print_long(unsigned int D, const long arr[__VLA(D)]);
-extern void print_float(unsigned int D, const float arr[__VLA(D)]);
-extern void print_int(unsigned int D, const int arr[__VLA(D)]);
-extern void print_complex(unsigned int D, const _Complex float arr[__VLA(D)]);
-
-extern unsigned int bitcount(unsigned long flags);
+extern int bitcount(unsigned long flags);
 
 extern const char* command_line;
 extern void save_command_line(int argc, char* argv[__VLA(argc)]);
 
 extern _Bool safe_isnanf(float x);
 extern _Bool safe_isfinite(float x);
+
+extern long io_calc_size(int D, const long dims[__VLA(D?:1)], size_t size);
+
 
 #include "misc/cppwrap.h"
 

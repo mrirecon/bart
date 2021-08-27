@@ -18,35 +18,45 @@
 #include "misc/mmio.h"
 #include "misc/io.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 
 
-static const char usage_str[] = "dims dim1 ... dimn name";
-static const char help_str[] = "Create a zero-filled array with {dims} dimensions of size {dim1} to {dimn}.\n";
+static const char help_str[] = "Create a zero-filled array with {dims} dimensions of size {dim1} to {dimn}.";
 
 
 
 int main_zeros(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, -3, usage_str, help_str);
+	long count = 0;
+	long N = -1;
+	long* dims = NULL;
+
+	const char* out_file = NULL;
+
+
+	struct arg_s args[] = {
+
+		ARG_LONG(true, &N, "dims"),
+		ARG_TUPLE(true, &count, 1, OPT_LONG, sizeof(long), &dims, "dim"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	int N = atoi(argv[1]);
-
 	assert(N >= 0);
-	assert(argc == 3 + N);
+	assert(count == N);
 
-	long dims[N];
-
-	for (int i = 0; i < N; i++) {
-
-		dims[i] = atoi(argv[2 + i]);
+	for (int i = 0; i < N; i++)
 		assert(dims[i] >= 1);
-	}
 
-	complex float* x = create_cfl(argv[2 + N], N, dims);
+	complex float* x = create_cfl(out_file, N, dims);
 	md_clear(N, dims, x, sizeof(complex float));
 	unmap_cfl(N, dims, x);
+	xfree(dims);
+
 	return 0;
 }
 

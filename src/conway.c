@@ -19,13 +19,21 @@
 #include "misc/opts.h"
 
 
-static const char usage_str[] = "<input> <output>";
-static const char help_str[] = "Conway's game of life.\n";
+static const char help_str[] = "Conway's game of life.";
 
 
 
 int main_conway(int argc, char* argv[argc])
 {
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	int iter = 20;
 	bool periodic = false;
 
@@ -35,13 +43,13 @@ int main_conway(int argc, char* argv[argc])
 		OPT_INT('n', &iter, "#", "nr. of iterations"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long dims[2];
 
-	complex float* init = load_cfl(argv[1], 2, dims);
+	complex float* init = load_cfl(in_file, 2, dims);
 
 	complex float* world = md_alloc(2, dims, CFL_SIZE);
 
@@ -57,7 +65,7 @@ int main_conway(int argc, char* argv[argc])
 	md_copy_dims(2, odims, dims);
 	odims[2] = iter;
 
-	complex float* out = create_cfl(argv[2], 3, odims);
+	complex float* out = create_cfl(out_file, 3, odims);
 
 	long mdims[2] = { 3, 3 };
 

@@ -15,7 +15,7 @@ Build:
   image: debian:stable
   stage: build
   script:
-    - make
+    - make all
   artifacts:
     paths:
       - bart
@@ -27,8 +27,8 @@ Build_Clang:
   image: debian:stable
   stage: build
   script:
-    - apt-get install -y clang-6.0 libblocksruntime-dev
-    - CC=clang-6.0 OMP=0 make
+    - apt-get install -y clang-11 libblocksruntime-dev
+    - CC=clang-11 OMP=0 make all
   artifacts:
     paths:
       - bart
@@ -40,7 +40,7 @@ Build_Static:
   image: debian:stable
   stage: build
   script:
-    - apt-get install -y libgfortran-8-dev
+    - apt-get install -y libgfortran-10-dev
     - SLINK=1 make
   artifacts:
     paths:
@@ -68,7 +68,25 @@ Build_GPU:
     - echo -n "deb http://ftp.de.debian.org/debian/ stable non-free contrib" >> /etc/apt/sources.list
     - apt-get update -qq && apt-get install -y -qq
     - apt-get install -y nvidia-cuda-toolkit
-    - CUDA=1 make
+    - CUDA=1 make all
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+    expire_in: 45 minutes
+
+
+Build_Tensorflow:
+  image: debian:stable
+  stage: build
+  script:
+    - echo -n "deb http://ftp.de.debian.org/debian/ stable non-free contrib" >> /etc/apt/sources.list
+    - apt-get update -qq && apt-get install -y -qq
+    - apt-get install -y nvidia-cuda-toolkit
+    - apt-get install -y wget
+    - wget https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
+    - mkdir tensorflow && tar -C tensorflow -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
+    - TENSORFLOW=1 TENSORFLOW_BASE=./tensorflow/ CUDA=1 make
   artifacts:
     paths:
       - bart
@@ -90,8 +108,8 @@ Unit_Test_Clang:
   image: debian:stable
   stage: test1
   script:
-    - apt-get install -y clang-6.0 libblocksruntime-dev
-    - AUTOCLEAN=0 CC=clang-6.0 OMP=0 make utest
+    - apt-get install -y clang-11 libblocksruntime-dev
+    - AUTOCLEAN=0 CC=clang-11 OMP=0 make utest
   needs: [Build_Clang]
   dependencies:
      - Build_Clang
@@ -128,6 +146,23 @@ Unit_Test_UBSan:
     - Build_GPU
 
 
+Unit_Test_Tensorflow:
+  image: debian:stable
+  stage: test1
+  script:
+    - echo -n "deb http://ftp.de.debian.org/debian/ stable non-free contrib" >> /etc/apt/sources.list
+    - apt-get update -qq && apt-get install -y -qq
+    - apt-get install -y nvidia-cuda-toolkit
+    - apt-get install -y wget
+    - wget https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-2.4.0.tar.gz
+    - mkdir tensorflow && tar -C tensorflow -xvzf libtensorflow-cpu-linux-x86_64-2.4.0.tar.gz
+    - TENSORFLOW=1 TENSORFLOW_BASE=./tensorflow/ CUDA=0 make utest
+  needs: [Build_Tensorflow]
+  dependencies:
+    - Build_Tensorflow
+
+
+
 Integration_Test:
   image: debian:stable
   stage: test2
@@ -142,7 +177,7 @@ Integration_Test_Python:
   image: debian:stable
   stage: test2
   script:
-    - apt-get install -y python python-numpy
+    - apt-get install -y python3 python3-numpy
     - AUTOCLEAN=0 make pythontest
   needs: [Build]
   dependencies:
@@ -164,8 +199,8 @@ Integration_Test_Clang:
   image: debian:stable
   stage: test2
   script:
-    - apt-get install -y clang-6.0 libblocksruntime-dev
-    - AUTOCLEAN=0 CC=clang-6.0 OMP=0 make test
+    - apt-get install -y clang-11 libblocksruntime-dev
+    - AUTOCLEAN=0 CC=clang-11 OMP=0 make test
   needs: [Build_Clang]
   dependencies:
     - Build_Clang

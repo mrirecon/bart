@@ -1,15 +1,10 @@
-/* Copyright 2017. Martin Uecker.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- */
-
 
 #include <stdbool.h>
 
 #include "linops/linop.h"
+
+#ifndef NLOP_H
+#define NLOP_H
 
 typedef struct nlop_data_s { TYPEID* TYPEID; } nlop_data_t;
 
@@ -52,7 +47,7 @@ extern struct nlop_s* nlop_create2(	unsigned int ON, const long odims[__VLA(ON)]
 extern const struct nlop_s* nlop_clone(const struct nlop_s* op);
 extern void nlop_free(const struct nlop_s* op);
 
-extern nlop_data_t* nlop_get_data(struct nlop_s* op);
+extern nlop_data_t* nlop_get_data(const struct nlop_s* op);
 
 extern int nlop_get_nr_in_args(const struct nlop_s* op);
 extern int nlop_get_nr_out_args(const struct nlop_s* op);
@@ -63,7 +58,6 @@ extern void nlop_derivative(const struct nlop_s* op, int ON, const long odims[ON
 extern void nlop_adjoint(const struct nlop_s* op, int ON, const long odims[ON], complex float* dst, int IN, const long idims[IN], const complex float* src);
 
 extern void nlop_generic_apply_unchecked(const struct nlop_s* op, int N, void* args[N]);
-
 
 extern const struct linop_s* nlop_get_derivative(const struct nlop_s* op, int o, int i);
 
@@ -82,3 +76,14 @@ extern const struct nlop_s* nlop_flatten_get_op(struct nlop_s* op);
 
 enum debug_levels;
 extern void nlop_debug(enum debug_levels dl, const struct nlop_s* x);
+
+extern const struct nlop_s* nlop_reshape_out(const struct nlop_s* op, int o, int NO, const long odims[NO]);
+extern const struct nlop_s* nlop_reshape_in(const struct nlop_s* op, int i, int NI, const long idims[NI]);
+extern const struct nlop_s* nlop_reshape_out_F(const struct nlop_s* op, int o, int NO, const long odims[NO]);
+extern const struct nlop_s* nlop_reshape_in_F(const struct nlop_s* op, int i, int NI, const long idims[NI]);
+
+extern const struct nlop_s* nlop_append_singleton_dim_in_F(const struct nlop_s* op, int i);
+extern const struct nlop_s* nlop_append_singleton_dim_out_F(const struct nlop_s* op, int o);
+
+
+#endif

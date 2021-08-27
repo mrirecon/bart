@@ -19,13 +19,13 @@
 
 
 
-complex float* compute_mask(unsigned int N, const long msk_dims[N], const float restrict_fov[N])
+complex float* compute_mask(int N, const long msk_dims[N], const float restrict_fov[N])
 {
 	complex float* mask = md_alloc(N, msk_dims, CFL_SIZE);
 
 	long small_dims[N];
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		small_dims[i] = (1 == msk_dims[i]) ? 1 : (msk_dims[i] * restrict_fov[i]);
 
 	complex float* small_mask = md_alloc(N, small_dims, CFL_SIZE);
@@ -39,10 +39,11 @@ complex float* compute_mask(unsigned int N, const long msk_dims[N], const float 
 }
 
 
-void apply_mask(unsigned int N, const long dims[N], complex float* x, const float restrict_fov[N])
+void apply_mask(int N, const long dims[N], complex float* x, const float restrict_fov[N])
 {
-	unsigned int flags = 0;
-	for (unsigned int i = 0; i < N; i++)
+	long flags = 0;
+
+	for (int i = 0; i < N; i++)
 		if (1. != restrict_fov[i])
 			flags = MD_SET(flags, i);
 
@@ -61,7 +62,7 @@ void apply_mask(unsigned int N, const long dims[N], complex float* x, const floa
 }
 
 
-void normalize(int N, unsigned int flags, const long dims[N], complex float* maps)
+void normalize(int N, long flags, const long dims[N], complex float* maps)
 {
 	long dims_img[N];
 	md_select_dims(N, ~flags, dims_img, dims);
@@ -81,7 +82,7 @@ void normalize(int N, unsigned int flags, const long dims[N], complex float* map
 }
 
 
-void normalizel1(int N, unsigned int flags, const long dims[N], complex float* maps)
+void normalizel1(int N, long flags, const long dims[N], complex float* maps)
 {
 	long dims_img[N];
 	md_select_dims(N, ~flags, dims_img, dims);
@@ -118,7 +119,7 @@ void normalizel1(int N, unsigned int flags, const long dims[N], complex float* m
  * rotate phase jointly along dim so that the 0-th slice along dim has phase = 0
  *
  */
-void fixphase(unsigned int N, const long dims[N], unsigned int dim, complex float* out, const complex float* in)
+void fixphase(int N, const long dims[N], int dim, complex float* out, const complex float* in)
 {
 	assert(dim < N);
 
@@ -128,7 +129,7 @@ void fixphase(unsigned int N, const long dims[N], unsigned int dim, complex floa
 	complex float* tmp = md_alloc_sameplace(N, dims2, CFL_SIZE, in);
 
 	long pos[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		pos[i] = 0;
 
 	md_slice(N, MD_BIT(dim), pos, dims, tmp, in, CFL_SIZE);
@@ -146,7 +147,7 @@ void fixphase(unsigned int N, const long dims[N], unsigned int dim, complex floa
 	md_free(tmp);
 }
 
-void fixphase2(unsigned int N, const long dims[N], unsigned int dim, const complex float rot[dims[dim]], complex float* out, const complex float* in)
+void fixphase2(int N, const long dims[N], int dim, const complex float rot[dims[dim]], complex float* out, const complex float* in)
 {
 	assert(dim < N);
 

@@ -8,6 +8,9 @@
 # object files
 *.o
 
+# Windows executables
+*.exe
+
 # mac debug files
 *.dSYM
 

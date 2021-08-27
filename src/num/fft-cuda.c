@@ -17,6 +17,7 @@
 #include <limits.h>
 
 #include "misc/misc.h"
+#include "misc/debug.h"
 #include "num/multind.h"
 
 #include "fft-cuda.h"
@@ -29,10 +30,15 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
+#define CUFFT_MEMCACHE
 
 struct fft_cuda_plan_s {
 
 	cufftHandle cufft;
+#ifdef CUFFT_MEMCACHE
+	size_t workspace_size;
+	void* workspace;
+#endif
 	struct fft_cuda_plan_s* chain;
 
 	bool backwards;
@@ -92,6 +98,11 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(unsigned int D, const long dimensi
 	plan->idist = 0;
 	plan->backwards = backwards;
 	plan->chain = NULL;
+
+#ifdef CUFFT_MEMCACHE
+	plan->workspace_size = 0;
+	plan->workspace = NULL;
+#endif
 
 	struct iovec dims[N];
 	struct iovec hmdims[N];
@@ -199,15 +210,39 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(unsigned int D, const long dimensi
 
 	assert(k <= 3);
 
-	int err;
+#ifdef CUFFT_MEMCACHE
+	int err1;
+	int err2;
+	int err3;
 
+	#pragma omp critical
+	err1 = cufftCreate(&plan->cufft);
+	#pragma omp critical
+	err2 = cufftSetAutoAllocation(plan->cufft, 0);
+	#pragma omp critical
+	err3 = cufftMakePlanMany(plan->cufft, k,
+				cudims, cuiemb, istride, idist,
+				cuoemb, ostride, odist, CUFFT_C2C, cubs, &plan->workspace_size);
+
+	if ((CUFFT_SUCCESS != err1) || (CUFFT_SUCCESS != err2) || (CUFFT_SUCCESS != err3)) {
+
+		debug_printf(DP_WARN, "CUFFT Plan error: %d %d %d\n", err1, err2, err3);
+		goto errout;
+	}
+
+#else
+	int err;
 	#pragma omp critical
 	err = cufftPlanMany(&plan->cufft, k,
 				cudims, cuiemb, istride, idist,
 				        cuoemb, ostride, odist, CUFFT_C2C, cubs);
 
-	if (CUFFT_SUCCESS != err)
+	if (CUFFT_SUCCESS != err) {
+
+		debug_printf(DP_WARN, "CUFFT Plan error: %d\n", err);
 		goto errout;
+	}
+#endif
 
 	return PTR_PASS(plan);
 
@@ -266,6 +301,9 @@ void fft_cuda_free_plan(struct fft_cuda_plan_s* cuplan)
 		fft_cuda_free_plan(cuplan->chain);
 
 	cufftDestroy(cuplan->cufft);
+#ifdef CUFFT_MEMCACHE
+	md_free(cuplan->workspace);
+#endif
 	xfree(cuplan);
 }
 
@@ -280,11 +318,21 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 
 	for (int i = 0; i < cuplan->batch; i++) {
 
+		#ifdef CUFFT_MEMCACHE
+			cuplan->workspace = md_alloc_gpu(1, MAKE_ARRAY(1l), cuplan->workspace_size);
+			cufftSetWorkArea(cuplan->cufft, cuplan->workspace);
+		#endif
+
 		if (CUFFT_SUCCESS != (err = cufftExecC2C(cuplan->cufft,
 							(cufftComplex*)src + i * cuplan->idist,
 							(cufftComplex*)dst + i * cuplan->odist,
 							(!cuplan->backwards) ? CUFFT_FORWARD : CUFFT_INVERSE)))
 			error("CUFFT: %d\n", err);
+
+		#ifdef CUFFT_MEMCACHE
+			md_free(cuplan->workspace);
+			cuplan->workspace = NULL;
+		#endif
 	}
 
 	if (NULL != cuplan->chain)

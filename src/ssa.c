@@ -24,21 +24,31 @@
 #include "calib/ssa.h"
 
 
-static const char usage_str[] = "<src> <EOF> [<S>] [<backprojection>]";
 static const char help_str[] =
-		"Perform SSA-FARY or Singular Spectrum Analysis. <src>: [samples, coordinates]\n";
+		"Perform SSA-FARY or Singular Spectrum Analysis. <src>: [samples, coordinates]";
 
 
 int main_ssa(int argc, char* argv[argc])
 {
+	const char* src_file = NULL;
+	const char* EOF_file = NULL;
+	const char* S_file = NULL;
+	const char* backproj_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &src_file, "src"),
+		ARG_OUTFILE(true, &EOF_file, "EOF"),
+		ARG_OUTFILE(false, &S_file, "S"),
+		ARG_OUTFILE(false, &backproj_file, "backprojection"),
+	};
+
 	int window = -1;
 	int normalize = 0;
 	int rm_mean = 1;
 	int rank = 0;
 	bool zeropad = true;
 	long kernel_dims[3] = { 1, 1, 1 };
-	char* name_S = NULL;
-	char* backproj = NULL;
 	long group = 0;
 
 	const struct opt_s opts[] = {
@@ -51,7 +61,7 @@ int main_ssa(int argc, char* argv[argc])
 		OPT_LONG('g', &group, "bitmask", "Bitmask for Grouping (long value!)"),
 	};
 
-	cmdline(&argc, argv, 2, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
@@ -60,14 +70,7 @@ int main_ssa(int argc, char* argv[argc])
 
 	kernel_dims[0] = window;
 
-	char* name_EOF = argv[2];
-
-	if (4 <= argc)
-		name_S = argv[3];
-
-	if (5 == argc) {
-
-		backproj = argv[4];
+	if (NULL != backproj_file) {
 
 		if (zeropad) {
 
@@ -88,7 +91,7 @@ int main_ssa(int argc, char* argv[argc])
 
 
 	long in_dims[DIMS];
-	complex float* in = load_cfl(argv[1], DIMS, in_dims);
+	complex float* in = load_cfl(src_file, DIMS, in_dims);
 
 	if (!md_check_dimensions(DIMS, in_dims, ~(READ_FLAG|PHS1_FLAG)))
 		error("Only first two dimensions must be filled!");
@@ -141,7 +144,7 @@ int main_ssa(int argc, char* argv[argc])
 	md_transpose_dims(DIMS, 1, 3, cal_dims, cal0_dims);
 
 
-	debug_printf(DP_INFO, backproj ? "Performing SSA\n" : "Performing SSA-FARY\n");
+	debug_printf(DP_INFO, backproj_file ? "Performing SSA\n" : "Performing SSA-FARY\n");
 
 	long A_dims[2];
 	complex float* A = calibration_matrix(A_dims, kernel_dims, cal_dims, cal);
@@ -149,26 +152,26 @@ int main_ssa(int argc, char* argv[argc])
 	long N = A_dims[0];
 
 	long U_dims[2] = { N, N };
-	complex float* U = create_cfl(name_EOF, 2, U_dims);
+	complex float* U = create_cfl(EOF_file, 2, U_dims);
 
 	complex float* back = NULL;
 
-	if (NULL != backproj) {
+	if (NULL != backproj_file) {
 
 		long back_dims[DIMS];
 		md_transpose_dims(DIMS, 3, 1, back_dims, cal_dims);
 
-		back = create_cfl(backproj, DIMS, back_dims);
+		back = create_cfl(backproj_file, DIMS, back_dims);
 	}
 
 	float* S_square = xmalloc(N * sizeof(float));
 
 	ssa_fary(kernel_dims, cal_dims, A_dims, A, U, S_square, back, rank, group);
 
-	if (NULL != name_S) {
+	if (NULL != S_file) {
 
 		long S_dims[1] = { N };
-		complex float* S = create_cfl(name_S, 1, S_dims);
+		complex float* S = create_cfl(S_file, 1, S_dims);
 
 		for (int i = 0; i < N; i++)
 			S[i] = sqrt(S_square[i]) + 0.i;
@@ -183,7 +186,7 @@ int main_ssa(int argc, char* argv[argc])
 
 	md_free(cal);
 
-	exit(0);
+	return 0;
 }
 
 

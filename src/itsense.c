@@ -29,6 +29,7 @@
 #include "misc/types.h"
 #include "misc/mmio.h"
 #include "misc/mri.h"
+#include "misc/opts.h"
 #include "misc/types.h"
 
 
@@ -149,32 +150,46 @@ static bool check_dimensions(struct sense_data* data)
 
 
 
-static const char usage_str[] = "alpha <sensitivities> <kspace> <pattern> <image>";
 static const char help_str[] = "A simplified implementation of iterative sense reconstruction\n"
-				"with l2-regularization.\n";
+				"with l2-regularization.";
 
 
 
 int main_itsense(int argc, char* argv[argc])
 {
-	mini_cmdline(&argc, argv, 5, usage_str, help_str);
+	float alpha = 0.;
+	const char* sens_file = NULL;
+	const char* ksp_file = NULL;
+	const char* pat_file = NULL;
+	const char* im_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_FLOAT(true, &alpha, "alpha"),
+		ARG_INFILE(true, &sens_file, "sensitivities"),
+		ARG_INFILE(true, &ksp_file, "kspace"),
+		ARG_INFILE(true, &pat_file, "pattern"),
+		ARG_OUTFILE(true, &im_file, "output"),
+	};
+	const struct opt_s opts[] = {};
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	struct sense_data data;
 	SET_TYPEID(sense_data, &data);
 
-	data.alpha = atof(argv[1]);
+	data.alpha = alpha;
 
-	complex float* kspace = load_cfl(argv[3], DIMS, data.data_dims);
+	complex float* kspace = load_cfl(ksp_file, DIMS, data.data_dims);
 
-	data.sens = load_cfl(argv[2], DIMS, data.sens_dims);
-	data.pattern = load_cfl(argv[4], DIMS, data.mask_dims);
+	data.sens = load_cfl(sens_file, DIMS, data.sens_dims);
+	data.pattern = load_cfl(pat_file, DIMS, data.mask_dims);
 
 	// 1 2 4 8
 	md_select_dims(DIMS, ~COIL_FLAG, data.imgs_dims, data.sens_dims);
 
 	assert(check_dimensions(&data));
 
-	complex float* image = create_cfl(argv[5], DIMS, data.imgs_dims);
+	complex float* image = create_cfl(im_file, DIMS, data.imgs_dims);
 
 	md_calc_strides(DIMS, data.sens_strs, data.sens_dims, CFL_SIZE);
 	md_calc_strides(DIMS, data.imgs_strs, data.imgs_dims, CFL_SIZE);
@@ -190,7 +205,7 @@ int main_itsense(int argc, char* argv[argc])
 	unmap_cfl(DIMS, data.imgs_dims, image);
 	unmap_cfl(DIMS, data.mask_dims, data.pattern);
 	unmap_cfl(DIMS, data.sens_dims, data.sens);
-	unmap_cfl(DIMS, data.data_dims, data.sens);
+	unmap_cfl(DIMS, data.data_dims, kspace);
 	md_free(data.tmp);
 
 	return 0;

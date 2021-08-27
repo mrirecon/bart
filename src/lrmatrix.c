@@ -26,7 +26,7 @@
 #include "iter/iter.h"
 #include "iter/lsqr.h"
 #include "iter/thresh.h"
-#include "iter/prox.h"
+#include "iter/prox2.h"
 
 #include "lowrank/lrthresh.h"
 
@@ -64,7 +64,6 @@ static void sum_xupdate_free(const operator_data_t* data)
 
 
 
-static const char usage_str[] = "<input> <output>";
 static const char help_str[] =
 		"Perform (multi-scale) low rank matrix completion";
 
@@ -73,6 +72,15 @@ static const char help_str[] =
 int main_lrmatrix(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
+
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
 
 	bool use_gpu = false;
 
@@ -107,7 +115,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 		OPT_SET('N', &noise, "add noise scale to account for Gaussian noise."),
 		OPT_SET('s', &ls, "perform low rank + sparse matrix completion."),
 		OPT_LONG('l', &llrblk, "size", "perform locally low rank soft thresholding with specified block size."),
-		OPT_STRING('o', &sum_str, "out2", "summed over all non-noise scales to create a denoised output."),
+		OPT_OUTFILE('o', &sum_str, "out2", "summed over all non-noise scales to create a denoised output."),
 		OPT_SELECT('u', int, &remove_mean, 1, "()"),
 		OPT_SELECT('v', int, &remove_mean, 2, "()"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
@@ -116,7 +124,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 		OPT_SET('g', &use_gpu, "(use GPU)"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (-1 != llrblk)
 		llr = true;
@@ -126,7 +134,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 	long odims[DIMS];
 
 	// Load input
-	complex float* idata = load_cfl(argv[1], DIMS, idims);
+	complex float* idata = load_cfl(in_file, DIMS, idims);
 
 	// Get levels and block dimensions
 	long blkdims[MAX_LEV][DIMS];
@@ -147,7 +155,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 	// Get outdims
 	md_copy_dims(DIMS, odims, idims);
 	odims[LEVEL_DIM] = levels;
-	complex float* odata = create_cfl(argv[2], DIMS, odims);
+	complex float* odata = create_cfl(out_file, DIMS, odims);
 	md_clear(DIMS, odims, odata, sizeof(complex float));
 
 	// Get pattern
@@ -168,23 +176,22 @@ int main_lrmatrix(int argc, char* argv[argc])
 	mmconf.rho = rho;
 	mmconf.hogwild = hogwild;
 	mmconf.fast = fast;
-	
+
 	iconf = CAST_UP(&mmconf);
 
 
 	// Initialize operators
 
-	const struct linop_s* sum_op = linop_avg_create(DIMS, odims, LEVEL_FLAG);
+	const struct linop_s* sum_op = linop_scaled_sum_create(DIMS, odims, LEVEL_FLAG);
 	const struct linop_s* sampling_op = NULL;
 
         if (!decom) {
 
                 sampling_op = linop_sampling_create(idims, idims, pattern);
-                sum_op = linop_chain(sum_op, sampling_op);
-                linop_free(sampling_op);
+                sum_op = linop_chain_FF(sum_op, sampling_op);
         }
-	
-	const struct operator_p_s* sum_prox = prox_lineq_create( sum_op, idata );
+
+	const struct operator_p_s* sum_prox = prox_lineq_create(sum_op, idata);
 	const struct operator_p_s* lr_prox = lrthresh_create(odims, randshift, mflags, (const long (*)[])blkdims, 1., noise, remove_mean, false);
 
 	if (use_gpu)
@@ -201,13 +208,15 @@ int main_lrmatrix(int argc, char* argv[argc])
 	const struct linop_s* ops[2] = { eye_op, eye_op };
 	const struct operator_p_s* prox_ops[2] = { sum_prox, lr_prox };
 	long size = 2 * md_calc_size(DIMS, odims);
-	struct s_data s_data = { { &TYPEID(s_data) }, size / 2 };
 
-	const struct operator_p_s* sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims, CAST_UP(&s_data), sum_xupdate, sum_xupdate_free);
+	struct s_data* s_data = xmalloc(sizeof(struct s_data));
+	*s_data = (struct s_data){ { &TYPEID(s_data) }, size / 2 };
+
+	const struct operator_p_s* sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims, CAST_UP(s_data), sum_xupdate, sum_xupdate_free);
 
 
 	// do recon
-	
+
 	iter2_admm( iconf,
 		    NULL,
 		    num_funs,
@@ -217,7 +226,6 @@ int main_lrmatrix(int argc, char* argv[argc])
 		    sum_xupdate_op,
 		    size, (float*) odata, NULL,
 		    NULL);
-	
 
 
 	// Sum
@@ -241,9 +249,17 @@ int main_lrmatrix(int argc, char* argv[argc])
 	// Clean up
 	unmap_cfl(DIMS, idims, idata);
 	unmap_cfl(DIMS, odims, odata);
+
 	linop_free(sum_op);
+	linop_free(eye_op);
+
+	operator_p_free(sum_xupdate_op);
 	operator_p_free(sum_prox);
 	operator_p_free(lr_prox);
+
+	md_free(pattern);
+
+	xfree(sum_str);
 
 
 	double end_time = timestamp();

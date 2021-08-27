@@ -28,7 +28,6 @@
 #endif
 
 
-static const char usage_str[] = "<reference> <input>";
 static const char help_str[] = 
 	"Output normalized root mean square error (NRMSE),\n"
 	"i.e. norm(input - ref) / norm(ref)";
@@ -37,6 +36,15 @@ static const char help_str[] =
 
 int main_nrmse(int argc, char* argv[argc])
 {
+	const char* ref_file = NULL;
+	const char* in_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INFILE(true, &ref_file, "reference"),
+		ARG_INFILE(true, &in_file, "input"),
+	};
+
 	float test = -1.;
 	bool auto_scale = false;
 
@@ -46,15 +54,15 @@ int main_nrmse(int argc, char* argv[argc])
 		OPT_SET('s', &auto_scale, "automatic (complex) scaling"),
 	};
 
-	cmdline(&argc, argv, 2, 2, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 	long ref_dims[DIMS];
 	long in_dims[DIMS];
 
-	complex float* ref = load_cfl(argv[1], DIMS, ref_dims);
-	complex float* in = load_cfl(argv[2], DIMS, in_dims);
+	complex float* ref = load_cfl(ref_file, DIMS, ref_dims);
+	complex float* in = load_cfl(in_file, DIMS, in_dims);
 
 	assert(md_check_compat(DIMS, 0u, in_dims, ref_dims));
 

@@ -25,34 +25,43 @@
 #define DIMS 16
 #endif
 
-static const char usage_str[] = "bitmask <input> <output>";
-static const char help_str[] =	"Apply 1 -1 modulation along dimensions selected by the {bitmask}.\n";
+static const char help_str[] =	"Apply 1 -1 modulation along dimensions selected by the {bitmask}.";
 
 
 
 
 int main_fftmod(int argc, char* argv[argc])
 {
+
+	unsigned long flags = 0;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_ULONG(true, &flags, "bitmask"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
+
 	bool inv = false;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('b', &inv, "(deprecated)"),
-		OPT_SET('i', &inv, "\tinverse"),
+		OPT_SET('i', &inv, "inverse"),
 	};
 
-	cmdline(&argc, argv, 3, 3, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-
-	unsigned long flags = labs(atol(argv[1]));
 
 	int N = DIMS;
 	long dims[N];
 
-	complex float* idata = load_cfl(argv[2], N, dims);
-	complex float* odata = create_cfl(argv[3], N, dims);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* odata = create_cfl(out_file, N, dims);
 
 	(inv ? ifftmod : fftmod)(N, dims, flags, odata, idata);
 

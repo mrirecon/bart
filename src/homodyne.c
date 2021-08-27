@@ -25,7 +25,6 @@
 
 
 
-static const char usage_str[] = "dim fraction <input> <output>";
 static const char help_str[] = "Perform homodyne reconstruction along dimension dim.";
 
 
@@ -111,6 +110,19 @@ static void homodyne(struct wdata wdata, unsigned int flags, unsigned int N, con
 
 int main_homodyne(int argc, char* argv[argc])
 {
+	int pfdim = -1;
+	float frac = 0.f;
+	const char* in_file = NULL;
+	const char* out_file = NULL;
+
+	struct arg_s args[] = {
+
+		ARG_INT(true, &pfdim, "dim"),
+		ARG_FLOAT(true, &frac, "fraction"),
+		ARG_INFILE(true, &in_file, "input"),
+		ARG_OUTFILE(true, &out_file, "output"),
+	};
+
 	bool clear = false;
 	bool image = false;
 	bool center_fft = true;
@@ -125,20 +137,17 @@ int main_homodyne(int argc, char* argv[argc])
 		OPT_FLOAT('r', &alpha, "alpha", "Offset of ramp filter, between 0 and 1. alpha=0 is a full ramp, alpha=1 is a horizontal line"),
 		OPT_SET('I', &image, "Input is in image domain"),
 		OPT_SET('C', &clear, "Clear unacquired portion of kspace"),
-		OPT_STRING('P', &phase_ref, "phase_ref>", "Use <phase_ref> as phase reference"),
+		OPT_INFILE('P', &phase_ref, "phase_ref>", "Use <phase_ref> as phase reference"),
 		OPT_CLEAR('n', &center_fft, "use uncentered ffts"),
 	};
 
-	cmdline(&argc, argv, 4, 4, usage_str, help_str, ARRAY_SIZE(opts), opts);
+	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
 	const int N = DIMS;
 	long dims[N];
-	complex float* idata = load_cfl(argv[3], N, dims);
-	complex float* data = create_cfl(argv[4], N, dims);
-
-	int pfdim = atoi(argv[1]);
-	float frac = atof(argv[2]);
+	complex float* idata = load_cfl(in_file, N, dims);
+	complex float* data = create_cfl(out_file, N, dims);
 
 	assert((0 <= pfdim) && (pfdim < N));
 	assert(frac > 0.);
