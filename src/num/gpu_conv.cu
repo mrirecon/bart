@@ -186,7 +186,7 @@ static struct im2col_descriptor_uint64 get_im2col_descriptor_uint64(const long o
 		config.N_out_elements_k_only *= kdims[i];
 		config.N_out_elements *= odims[i] * kdims[i];
 
-		config.triv_strides_dilation &= 
+		config.triv_strides_dilation &=
 				(   (config.istrs_odims[j] == istrs[i])
 				 && (config.istrs_kdims[j] == istrs[i]));
 
@@ -433,13 +433,13 @@ __global__ static void kern_im2col_valid_no_dil_str(struct im2col_descriptor_uin
 
 		cuFloatComplex tmp = src[i];
 
-		for (int kz = 0; kz < config.kdims[2]; kz++)
-		for (int ky = 0; ky < config.kdims[1]; ky++)
-		for (int kx = 0; kx < config.kdims[0]; kx++) {
+		for (long kz = 0; kz < (long)config.kdims[2]; kz++)
+		for (long ky = 0; ky < (long)config.kdims[1]; ky++)
+		for (long kx = 0; kx < (long)config.kdims[0]; kx++) {
 
-			int oz = iz - kz;
-			int oy = iy - ky;
-			int ox = ix - kx;
+			long oz = (long)iz - kz;
+			long oy = (long)iy - ky;
+			long ox = (long)ix - kx;
 
 			long offset_z = config.N_out_elements_k_only * config.odims[0] * config.odims[1] * oz + config.NC * config.kdims[0] * config.kdims[1] * kz;
 			long offset_y = config.N_out_elements_k_only * config.odims[0] * oy + config.NC * config.kdims[0] * ky;
@@ -497,13 +497,13 @@ __global__ static void kern_im2col_valid_no_dil_str(struct im2col_descriptor_uin
 
 		cuFloatComplex tmp = src[i];
 
-		for (int kz = 0; kz < config.kdims[2]; kz++)
-		for (int ky = 0; ky < config.kdims[1]; ky++)
-		for (int kx = 0; kx < config.kdims[0]; kx++) {
+		for (int kz = 0; kz < (int)config.kdims[2]; kz++)
+		for (int ky = 0; ky < (int)config.kdims[1]; ky++)
+		for (int kx = 0; kx < (int)config.kdims[0]; kx++) {
 
-			int oz = iz - kz;
-			int oy = iy - ky;
-			int ox = ix - kx;
+			int oz = (int)iz - kz;
+			int oy = (int)iy - ky;
+			int ox = (int)ix - kx;
 
 			long offset_z = config.N_out_elements_k_only * config.odims[0] * config.odims[1] * oz + config.NC * config.kdims[0] * config.kdims[1] * kz;
 			long offset_y = config.N_out_elements_k_only * config.odims[0] * oy + config.NC * config.kdims[0] * ky;
@@ -593,27 +593,27 @@ __global__ static void kern_im2col_valid_no_dil_str_transp(struct im2col_descrip
 
 		cuFloatComplex result = dst[i];
 
-		for (uint kz = 0; kz < config.kdims[2]; kz++) {
+		for (long kz = 0; kz < (long)config.kdims[2]; kz++) {
 
-			int oz = iz - kz;
+			long oz = (long)iz - kz;
 
 			if ((0 > oz) || ((int)config.odims[2] <= oz))
 				continue;
 
 			long offset_z = config.N_out_elements_k_only * config.odims[0] * config.odims[1] * oz + config.NC * config.kdims[0] * config.kdims[1] * kz;
 
-			for (uint ky = 0; ky < config.kdims[1]; ky++) {
+			for (long ky = 0; ky < (long)config.kdims[1]; ky++) {
 
-				int oy = iy - ky;
+				long oy = (long)iy - ky;
 
 				if ((0 > oy) || ((int)config.odims[1] <= oy))
 					continue;
 
 				long offset_y = config.N_out_elements_k_only * config.odims[0] * oy + config.NC * config.kdims[0] * ky;
 
-				for (uint kx = 0; kx < config.kdims[0]; kx++) {
+				for (long kx = 0; kx < (long)config.kdims[0]; kx++) {
 
-					int ox = ix - kx;
+					long ox = (long)ix - kx;
 					long offset_x = config.N_out_elements_k_only * ox + config.NC * kx;
 					long index = c 	+ offset_x + offset_y + offset_z;
 
@@ -666,27 +666,27 @@ __global__ static void kern_im2col_valid_no_dil_str_transp(struct im2col_descrip
 
 		cuFloatComplex result = dst[i];
 
-		for (int kz = 0; kz < config.kdims[2]; kz++) {
+		for (int kz = 0; kz < (int)config.kdims[2]; kz++) {
 
-			int oz = iz - kz;
+			int oz = (int)iz - kz;
 
 			if ((0 > oz) || ((int)config.odims[2] <= oz))
 				continue;
 
 			long offset_z = config.N_out_elements_k_only * config.odims[0] * config.odims[1] * oz + config.NC * config.kdims[0] * config.kdims[1] * kz;
 
-			for(int ky = 0; ky < config.kdims[1]; ky++) {
+			for(int ky = 0; ky < (int)config.kdims[1]; ky++) {
 
-				int oy = iy - ky;
+				int oy = (int)iy - ky;
 
 				if ((0 > oy) || ((int)config.odims[1] <= oy))
 					continue;
 
 				long offset_y = config.N_out_elements_k_only * config.odims[0] * oy + config.NC * config.kdims[0] * ky;
 
-				for (int kx = 0; kx < config.kdims[0]; kx++) {
+				for (int kx = 0; kx < (int)config.kdims[0]; kx++) {
 
-					int ox = ix - kx;
+					int ox = (int)ix - kx;
 
 					long offset_x = config.N_out_elements_k_only * ox + config.NC * kx;
 
