@@ -18,7 +18,7 @@ MAKEFLAGS += -R
 # use for parallel make
 AR=./ar_lock.sh
 
-# some operations might still be non deterministic 
+# some operations might still be non deterministic
 NON_DETERMINISTIC?=0
 
 # allow blas calls within omp regions (fails on Debian 9, openblas)
@@ -596,8 +596,9 @@ UTARGETS += test_moba
 MODULES_test_moba += -lmoba -lnoir -llowrank -lwavelet -liter -lnlops -llinops -lsimu
 
 # lib nlop
-UTARGETS += test_nlop
+UTARGETS += test_nlop test_nlop_jacobian
 MODULES_test_nlop += -lnlops -llinops
+MODULES_test_nlop_jacobian += -lnlops -llinops
 
 # lib noncart
 UTARGETS += test_nufft
