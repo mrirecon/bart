@@ -488,6 +488,12 @@ __device__ cuFloatComplex zlog(cuFloatComplex x)
 // x^y = e^{y ln(x)} = e^{y
 __device__ cuFloatComplex zpow(cuFloatComplex x, cuFloatComplex y)
 {
+	if ((0 == y.x) && (0 == y.y))
+		return make_cuFloatComplex(1., 0.);
+
+	if (((0 == x.x) && (0 == x.y)) && (0. < y.x))
+		return make_cuFloatComplex(0., 0.);
+
 	return zexp(cuCmulf(y, zlog(x)));
 }
 
