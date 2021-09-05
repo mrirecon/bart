@@ -655,63 +655,6 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	bool use_gpu = cuda_ondevice(optr) || cuda_ondevice(iptr);
 
 #if 1
-	//less calls for filling-like copies
-	long tostr_fill[D];
-	long tistr_fill[D];
-	long tdims_fill[D];
-
-	md_copy_strides(D, tostr_fill, ostr);
-	md_copy_strides(D, tistr_fill, istr);
-	md_copy_dims(D, tdims_fill, dim);
-
-	long (*nstr2_fill[2])[D] = { &tostr_fill, &tistr_fill };
-	int ND_fill = simplify_dims(2, D, tdims_fill, nstr2_fill);
-
-	bool fill = (2 == ND_fill) || (1 == ND_fill);
-
-	size_t cp_size = 0;
-	unsigned long repetitions = 0;
-
-	if (2 == ND_fill) {
-
-		fill = fill && ((*nstr2_fill[0])[0] == (signed)size);
-		fill = fill && ((*nstr2_fill[1])[0] == (signed)size);
-
-		cp_size = tdims_fill[0] * size;
-		repetitions = tdims_fill[1];
-
-		fill = fill && ((*nstr2_fill[0])[1] == (signed)cp_size);
-		fill = fill && ((*nstr2_fill[1])[1] == 0);
-	}
-
-	if (1 == ND_fill) {
-
-		fill = fill && ((*nstr2_fill[0])[0] == (signed)size);
-		fill = fill && ((*nstr2_fill[1])[0] == 0);
-
-		cp_size = size;
-		repetitions = tdims_fill[0];
-	}
-
-	if (use_gpu && fill) {
-
-		cuda_memcpy(cp_size, optr, iptr);
-
-		unsigned int i = 1;
-		while (2 * i <= repetitions) {
-
-			cuda_memcpy(cp_size * i, optr + i * cp_size, optr);
-			i = i * 2;
-		}
-
-		if (0 < repetitions - i)
-			cuda_memcpy(cp_size * (repetitions - i), optr + i * cp_size, optr);
-
-		return;
-	}
-#endif
-
-#if 1
 	long tostr[D];
 	long tistr[D];
 	long tdims[D];
@@ -755,6 +698,37 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 
 	md_permute_dims(ND, perm, tmp, tistr);
 	md_copy_dims(ND, tistr, tmp);
+#endif
+
+#if 1
+	//fill like copies
+
+	unsigned long fill_flags =  md_nontriv_dims(D, tdims)
+				 & ~md_nontriv_strides(D, tistr)
+				 & md_nontriv_strides(D, tostr);
+
+	if (use_gpu && 0 != fill_flags) {
+
+		int idx = md_min_idx(fill_flags);
+
+		long tdims2[ND];
+		long pos[ND];
+
+		md_select_dims(ND, ~MD_BIT(idx), tdims2, tdims);
+		md_singleton_strides(ND, pos);
+
+		md_copy2(ND, tdims2, tostr, optr, tistr, iptr, size);
+
+		pos[idx] = 1;
+		while (pos[idx] < tdims[idx]) {
+
+			tdims2[idx] = MIN(pos[idx], tdims[idx] - pos[idx]);
+			md_copy2(ND, tdims2, tostr, optr + md_calc_offset(ND, tostr, pos), tostr, optr, size);
+			pos[idx] += tdims2[idx];
+		}
+
+		return;
+	}
 #endif
 
 	size_t sizes[2] = { size, size };
