@@ -177,7 +177,7 @@ static int flag_to_index(unsigned long flag)
 	if (1 != bitcount(flag))
 		return -1;
 
-	for (uint i = 0; i < 8 * sizeof(flag); i++)
+	for (unsigned int i = 0; i < 8 * sizeof(flag); i++)
 		if (MD_IS_SET(flag, i))
 			return i;
 	return -1;
@@ -305,7 +305,7 @@ static struct cudnn_filter_s get_filter_descriptor(struct conv_desc_s conv_desc,
 	int in_channel_index = -1;
 	int out_channel_index = -1;
 
-	for (uint i = 0; i < conv_desc.N; i++) {
+	for (unsigned int i = 0; i < conv_desc.N; i++) {
 
 		if (MD_IS_SET(conv_desc.channel_in_flags, i))
 			in_channel_index = i;
@@ -413,7 +413,7 @@ static struct cudnn_tensor_s get_tensor_descriptor(struct conv_desc_s conv_desc,
 	int channel_index = -1;
 	int batch_index = -1;
 
-	for (uint i = 0; i < conv_desc.N; i++) {
+	for (unsigned int i = 0; i < conv_desc.N; i++) {
 
 		if (MD_IS_SET(channel_flags, i))
 			channel_index = i;
