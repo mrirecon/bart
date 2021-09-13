@@ -51,10 +51,8 @@
 static const char help_str[] = "Model-based nonlinear inverse reconstruction";
 
 
-static void edge_filter1(const long map_dims[DIMS], complex float* dst)
+static void edge_filter1(const long map_dims[DIMS], complex float* dst, float lambda)
 {
-	float lambda = 2e-3;
-
 	klaplace(DIMS, map_dims, READ_FLAG|PHS1_FLAG, dst);
 	md_zreal(DIMS, map_dims, dst, dst);
 	md_zsqrt(DIMS, map_dims, dst, dst);
@@ -64,11 +62,11 @@ static void edge_filter1(const long map_dims[DIMS], complex float* dst)
 	md_zatanr(DIMS, map_dims, dst, dst);
 
 	md_zsmul(DIMS, map_dims, dst, dst, -1. / M_PI);
-	md_zsadd(DIMS, map_dims, dst, dst, 1.0);
+	md_zsadd(DIMS, map_dims, dst, dst, 1.);
 	md_zsmul(DIMS, map_dims, dst, dst, lambda);
 }
 
-static void edge_filter2(const long map_dims[DIMS], complex float* dst)
+static void edge_filter2(const long map_dims[DIMS], complex float* dst, float lambda)
 {
 	float beta = 100.;
 
@@ -79,8 +77,8 @@ static void edge_filter2(const long map_dims[DIMS], complex float* dst)
 	md_zsadd(DIMS, map_dims, dst, dst, beta);
 
 	md_zatanr(DIMS, map_dims, dst, dst);
-	md_zsmul(DIMS, map_dims, dst, dst, -0.1 / M_PI);
-	md_zsadd(DIMS, map_dims, dst, dst, 0.05);
+	md_zsmul(DIMS, map_dims, dst, dst, -(50. * lambda) / M_PI);
+	md_zsadd(DIMS, map_dims, dst, dst, 25. * lambda);
 }
 
 
@@ -104,6 +102,7 @@ int main_moba(int argc, char* argv[argc])
 	float restrict_fov = -1.;
 	float oversampling = 1.f;
 
+	float kfilter_strength = 2e-3;
 
 	const char* psf_file = NULL;
 	const char* traj_file = NULL;
@@ -213,6 +212,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
 		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &conf.k_filter_type, EF1, "k-space edge filter 1"),
 		OPTL_SELECT(0, "kfilter-2", enum edge_filter_t, &conf.k_filter_type, EF2, "k-space edge filter 2"),
+		OPT_FLOAT('e', &kfilter_strength, "kfilter_strength", "strength for k-space edge filter [default: 2e-3]"),
 		OPT_SET('n', &conf.auto_norm_off, "disable normalization of parameter maps for thresholding"),
 		OPTL_CLEAR(0, "no_alpha_min_exp_decay", &conf.alpha_min_exp_decay, "(Use hard minimum instead of exponential decay towards alpha_min)"),
 		OPTL_FLOAT(0, "sobolev_a", &conf.sobolev_a, "", "(a in 1 + a * \\Laplace^-b/2)"),
@@ -449,11 +449,11 @@ int main_moba(int argc, char* argv[argc])
 		switch (conf.k_filter_type) {
 
 		case EF1:
-			edge_filter1(map_dims, filter);
+			edge_filter1(map_dims, filter, kfilter_strength);
 			break;
 
 		case EF2:
-			edge_filter2(map_dims, filter);
+			edge_filter2(map_dims, filter, kfilter_strength);
 			break;
 		}
 
