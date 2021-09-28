@@ -113,8 +113,8 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	// t*exp(-t.*scaling_R1s*R1s):
 	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_exp, data->out_strs, data->tmp_exp, data->TI_strs, data->TI);
 
-	// scaling_M0:*exp(-t.*scaling_R1s.*R1s).*t
-	md_zsmul(data->N, data->out_dims, data->tmp_exp, data->tmp_exp, data->scaling_M0);
+	// scaling_R1s.*exp(-t.*scaling_R1s.*R1s).*t
+	md_zsmul(data->N, data->out_dims, data->tmp_exp, data->tmp_exp, data->scaling_R1s);
 
 	// scaling_M0.*M0
 	md_zsmul2(data->N, data->map_dims, data->map_strs, data->tmp_map, data->map_strs, data->M0, data->scaling_M0);
@@ -122,7 +122,7 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	// Mss + scaling_M0*M0
 	md_zadd(data->N, data->map_dims, data->tmp_ones, data->Mss, data->tmp_map);
 
-	// R1s' = (Mss + scaling_M0*M0) * scaling_M0.*exp(-t.*scaling_R1s.*R1s) * t
+	// R1s' = (Mss + scaling_M0*M0) * scaling_R1s.*exp(-t.*scaling_R1s.*R1s) * t
 	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_dR1s, data->map_strs, data->tmp_ones, data->out_strs, data->tmp_exp);
 }
 
