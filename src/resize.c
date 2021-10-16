@@ -91,4 +91,31 @@ int main_resize(int argc, char* argv[argc])
 	return 0;
 }
 
+/* A simple example to understand bart resize usage using python interface
+* # python code
+* x = np.array([[1, 2, 3], [4, 5, 6]]) #intialize the array
+* print('x =\n',x)
+* x_bart_centered  = np.real(bart(1,'resize -c 0 6 1 5', x)) # bart resize with centering
+* print('x_bart_centered = \n',x_bart_centered)
+* x_bart_not_centered  = np.real(bart(1,'resize 0 6 1 5', x))  # bart resize without centering
+* print('x_bart_not_centered = \n',x_bart_not_centered)
+* # the output looks like this 
+* x =
+* [[1 2 3]
+* [4 5 6]]
+* x_bart_centered = 
+* [[0. 0. 0. 0. 0.]
+* [0. 0. 0. 0. 0.]
+* [0. 1. 2. 3. 0.]
+* [0. 4. 5. 6. 0.]
+* [0. 0. 0. 0. 0.]
+* [0. 0. 0. 0. 0.]]
+* x_bart_not_centered = 
+* [[1. 2. 3. 0. 0.]
+* [4. 5. 6. 0. 0.]
+* [0. 0. 0. 0. 0.]
+* [0. 0. 0. 0. 0.]
+* [0. 0. 0. 0. 0.]
+* [0. 0. 0. 0. 0.]]
+*/
 
