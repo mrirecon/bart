@@ -28,8 +28,7 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-
-static const char help_str[] = "Resizes an array along dimensions to sizes by truncating or zero-padding.";
+static const char help_str[] = "Resizes an array along dimensions to sizes by truncating or zero-padding. Please see doc/resize.txt for examples.";
 
 
 int main_resize(int argc, char* argv[argc])
@@ -90,5 +89,3 @@ int main_resize(int argc, char* argv[argc])
 
 	return 0;
 }
-
-
