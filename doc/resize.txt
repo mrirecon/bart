@@ -1,0 +1,28 @@
+bart resize help 
+-------------------
+If the input looks like this:
+[[1 2 3] 
+ [4 5 6]] 
+ 
+bart resize -c 0 6 1 5 input output
+[[0. 0. 0. 0. 0.]
+ [0. 0. 0. 0. 0.]
+ [0. 1. 2. 3. 0.]
+ [0. 4. 5. 6. 0.]
+ [0. 0. 0. 0. 0.]
+ [0. 0. 0. 0. 0.]]  
+
+bart resize 0 6 1 5 input output
+[[1. 2. 3. 0. 0.] 
+ [4. 5. 6. 0. 0.] 
+ [0. 0. 0. 0. 0.] 
+ [0. 0. 0. 0. 0.] 
+ [0. 0. 0. 0. 0.] 
+ [0. 0. 0. 0. 0.]] 
+
+
+bart resize -c 0 1 1 2 input output
+[[4. 5.]]
+
+bart resize 0 1 1 2 input output
+[[1. 2.]]
