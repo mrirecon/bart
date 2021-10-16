@@ -28,25 +28,7 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char help_str[] = "Resizes an array along dimensions to sizes by truncating or zero-padding.\n\
-If the input looks like this:\n\
-[[1 2 3] \n\
- [4 5 6]] \n\
-then bart resize -c 0 6 1 5 will look like \n\
-[[0. 0. 0. 0. 0.] \n\
- [0. 0. 0. 0. 0.] \n\
- [0. 1. 2. 3. 0.] \n\
- [0. 4. 5. 6. 0.] \n\
- [0. 0. 0. 0. 0.] \n\
- [0. 0. 0. 0. 0.]] \n\
- whereas bart resize 0 6 1 5 without -c flag will look like \n\
-[[1. 2. 3. 0. 0.] \n\
- [4. 5. 6. 0. 0.] \n\
- [0. 0. 0. 0. 0.] \n\
- [0. 0. 0. 0. 0.] \n\
- [0. 0. 0. 0. 0.] \n\
- [0. 0. 0. 0. 0.]] \n\
- ";
+static const char help_str[] = "Resizes an array along dimensions to sizes by truncating or zero-padding. Please see doc/resize.txt for examples.";
 
 
 int main_resize(int argc, char* argv[argc])
