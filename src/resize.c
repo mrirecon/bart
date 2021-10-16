@@ -28,8 +28,25 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-
-static const char help_str[] = "Resizes an array along dimensions to sizes by truncating or zero-padding.";
+static const char help_str[] = "Resizes an array along dimensions to sizes by truncating or zero-padding.\n\
+If the input looks like this:\n\
+[[1 2 3] \n\
+ [4 5 6]] \n\
+then bart resize -c 0 6 1 5 will look like \n\
+[[0. 0. 0. 0. 0.] \n\
+ [0. 0. 0. 0. 0.] \n\
+ [0. 1. 2. 3. 0.] \n\
+ [0. 4. 5. 6. 0.] \n\
+ [0. 0. 0. 0. 0.] \n\
+ [0. 0. 0. 0. 0.]] \n\
+ whereas bart resize 0 6 1 5 without -c flag will look like \n\
+[[1. 2. 3. 0. 0.] \n\
+ [4. 5. 6. 0. 0.] \n\
+ [0. 0. 0. 0. 0.] \n\
+ [0. 0. 0. 0. 0.] \n\
+ [0. 0. 0. 0. 0.] \n\
+ [0. 0. 0. 0. 0.]] \n\
+ ";
 
 
 int main_resize(int argc, char* argv[argc])
@@ -90,32 +107,3 @@ int main_resize(int argc, char* argv[argc])
 
 	return 0;
 }
-
-/* A simple example to understand bart resize usage using python interface
-* # python code
-* x = np.array([[1, 2, 3], [4, 5, 6]]) #intialize the array
-* print('x =\n',x)
-* x_bart_centered  = np.real(bart(1,'resize -c 0 6 1 5', x)) # bart resize with centering
-* print('x_bart_centered = \n',x_bart_centered)
-* x_bart_not_centered  = np.real(bart(1,'resize 0 6 1 5', x))  # bart resize without centering
-* print('x_bart_not_centered = \n',x_bart_not_centered)
-* # the output looks like this 
-* x =
-* [[1 2 3]
-* [4 5 6]]
-* x_bart_centered = 
-* [[0. 0. 0. 0. 0.]
-* [0. 0. 0. 0. 0.]
-* [0. 1. 2. 3. 0.]
-* [0. 4. 5. 6. 0.]
-* [0. 0. 0. 0. 0.]
-* [0. 0. 0. 0. 0.]]
-* x_bart_not_centered = 
-* [[1. 2. 3. 0. 0.]
-* [4. 5. 6. 0. 0.]
-* [0. 0. 0. 0. 0.]
-* [0. 0. 0. 0. 0.]
-* [0. 0. 0. 0. 0.]
-* [0. 0. 0. 0. 0.]]
-*/
-
