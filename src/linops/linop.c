@@ -506,7 +506,7 @@ struct linop_s* linop_stack(int D, int E, const struct linop_s* a, const struct 
 	if (NULL == bn)
 		bn = operator_chain(b->forward, b->adjoint);
 
-	c->normal = operator_stack(D, D, an, bn);
+	c->normal = operator_stack(E, E, an, bn);
 
 	c->norm_inv = NULL;
 
