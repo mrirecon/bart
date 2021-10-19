@@ -2009,3 +2009,140 @@ void md_free(const void* ptr)
 #endif
 	xfree(ptr);
 }
+
+struct multiplace_array_s {
+
+	unsigned int N;
+	const long* dims;
+	size_t size;
+
+	void* ptr_ref;
+
+	void* ptr_cpu;
+
+#ifdef USE_CUDA
+	void* ptr_gpu;
+#endif
+};
+
+static struct multiplace_array_s* md_alloc_multiplace(unsigned int D, const long dimensions[D], size_t size)
+{
+	PTR_ALLOC(struct multiplace_array_s, result);
+
+	result->N = D;
+	result->size = size;
+
+	PTR_ALLOC(long[D], dims);
+	md_copy_dims(D, *dims, dimensions);
+	result->dims =*PTR_PASS(dims);
+
+	result->ptr_cpu = NULL;
+
+#ifdef USE_CUDA
+	result->ptr_gpu = NULL;
+#endif
+
+
+	return PTR_PASS(result);
+}
+
+static void md_free_multiplace_data(struct multiplace_array_s* ptr)
+{
+	md_free(ptr->ptr_cpu);
+	ptr->ptr_cpu = NULL;
+
+#ifdef USE_CUDA
+
+	md_free(ptr->ptr_gpu);
+	ptr->ptr_gpu = NULL;
+#endif
+}
+
+void md_free_multiplace(const struct multiplace_array_s* ptr)
+{
+	if (NULL == ptr)
+		return;
+
+	md_free_multiplace_data((struct multiplace_array_s*)ptr);
+
+	xfree(ptr->dims);
+	xfree(ptr);
+}
+
+const void* md_multiplace_read(struct multiplace_array_s* ptr, const void* ref)
+{
+	if (NULL == ptr)
+		return NULL;
+
+#ifdef USE_CUDA
+
+	if (cuda_ondevice(ref)) {
+		if (NULL == ptr->ptr_gpu)
+			ptr->ptr_gpu = md_gpu_move(ptr->N, ptr->dims, ptr->ptr_cpu, ptr->size);
+
+		return ptr->ptr_gpu;
+	}
+
+#else
+	UNUSED(ref);
+#endif
+	if (NULL == ptr->ptr_cpu) {
+
+		ptr->ptr_cpu = md_alloc(ptr->N, ptr->dims, ptr->size);
+		md_copy(ptr->N, ptr->dims, ptr->ptr_cpu, ptr->ptr_ref, ptr->size);
+	}
+
+	return ptr->ptr_cpu;
+}
+
+struct multiplace_array_s* md_move_multiplace2(unsigned int D, const long dimensions[D], const long strides[D], size_t size, const void* ptr)
+{
+	auto result = md_alloc_multiplace(D, dimensions, size);
+	void* tmp = md_alloc_sameplace(D, dimensions, size, ptr);
+	md_copy2(D, dimensions, MD_STRIDES(D, dimensions, size), tmp, strides, ptr, size);
+
+	result->ptr_ref = tmp;
+
+#ifdef USE_CUDA
+
+	if (cuda_ondevice(tmp)) {
+
+		result->ptr_gpu = tmp;
+	} else
+#endif
+	result->ptr_cpu = tmp;
+
+	return result;
+}
+
+struct multiplace_array_s* md_move_multiplace(unsigned int D, const long dimensions[D], size_t size, const void* ptr)
+{
+	return md_move_multiplace2(D, dimensions, MD_STRIDES(D, dimensions, size), size, ptr);
+}
+
+
+int md_max_idx(unsigned long flags)
+{
+	int i = -1;
+
+	for ( ; 0 != flags; i++)
+		flags /= 2;
+
+	return i;
+}
+
+int md_min_idx(unsigned long flags)
+{
+	if (0 == flags)
+		return -1;
+
+	int i = 0;
+
+	for ( ; !(MD_IS_SET(flags, 0)); i++)
+		flags /= 2;
+
+	return i;
+}
+
+
+extern int md_min_idx(unsigned long flags);
