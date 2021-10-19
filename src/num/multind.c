@@ -89,6 +89,8 @@ void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[
  */
 void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigned long flags, const long* str[C], void* ptr[C], md_nary_fun_t fun)
 {
+	flags = flags & md_nontriv_dims(D, dim);
+
 	if (0 == flags) {
 
 		md_nary(C, D, dim, str, ptr, fun);
