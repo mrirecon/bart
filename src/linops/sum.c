@@ -1,12 +1,12 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016-2020. Martin Uecker.
+ * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014 Frank Ong <frankong@berkeley.edu>
- * 2016-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- *
+ * 2014 Frank Ong
+ * 2016-2020 Martin Uecker
+ * 2021 Moritz Blumenthal
  */
 
 #include <complex.h>
@@ -251,3 +251,4 @@ const struct linop_s* linop_repmat_create(int N, const long odims[N], unsigned l
 	return linop_create(N, data->odims, N, data->idims,
 			CAST_UP(data), repmat_apply, repmat_apply_adjoint, NULL, NULL, repmat_free_data);
 }
+
