@@ -1,3 +1,8 @@
+/* Copyright 2021. Uecker Lab. University Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+
 #include <complex.h>
 
 #include "misc/types.h"
@@ -12,10 +17,6 @@
 #include "nlops/chain.h"
 #include "nlops/cast.h"
 #include "nlops/const.h"
-
-#ifdef USE_CUDA
-#include "num/gpuops.h"
-#endif
 
 #include "stack.h"
 
@@ -130,12 +131,14 @@ struct nlop_s* nlop_stack_generic_create(int II, int N, const long odims[N], con
 	nlop_der_fun_t der [II][1];
 	nlop_der_fun_t adj [II][1];
 
-	for (int i = 0; i < II; i++)
-	{
+	for (int i = 0; i < II; i++) {
+
 		md_copy_dims(N, (*tidims)[i], idims[i]);
 		md_calc_strides(N, (*tistrs)[i], idims[i], CFL_SIZE);
 		md_singleton_strides(N, (*tpos)[i]);
+
 		(*tpos)[i][stack_dim] = stack_size;
+
 		stack_size += (*tidims)[i][stack_dim];
 
 		assert(md_check_equal_dims(N, odims, idims[i], ~MD_BIT(stack_dim)));
@@ -152,6 +155,7 @@ struct nlop_s* nlop_stack_generic_create(int II, int N, const long odims[N], con
 	return nlop_generic_create(1, N, nl_odims, II, N, idims, CAST_UP(PTR_PASS(data)), stack_fun, der, adj, NULL, NULL, stack_del);
 }
 
+
 struct nlop_s* nlop_stack_create(int N, const long odims[N], const long idims1[N], const long idims2[N], int stack_dim)
 {
 	long idims[2][N];
@@ -160,6 +164,8 @@ struct nlop_s* nlop_stack_create(int N, const long odims[N], const long idims1[N
 
 	return nlop_stack_generic_create(2, N, odims, idims, stack_dim);
 }
+
+
 
 struct nlop_s* nlop_destack_generic_create(int OO, int N, const long odims[OO][N], const long idims[N], int stack_dim)
 {
@@ -175,7 +181,9 @@ struct nlop_s* nlop_destack_generic_create(int OO, int N, const long odims[OO][N
 
 		result = nlop_combine_FF(result, nlop_from_linop_F(linop_extract_create(N, pos, odims[i], idims)));
 		result = nlop_dup_F(result, 0, 1);
+
 		pos[stack_dim] += odims[i][stack_dim];
+
 		assert(md_check_equal_dims(N, odims[i], idims, ~MD_BIT(stack_dim)));
 	}
 
@@ -193,3 +201,4 @@ struct nlop_s* nlop_destack_create(int N, const long odims1[N], const long odims
 
 	return nlop_destack_generic_create(2, N, odims, idims, stack_dim);
 }
+

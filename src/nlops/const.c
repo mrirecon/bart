@@ -1,7 +1,13 @@
+/* Copyright 2021. Uecker Lab. University Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+
 #include <complex.h>
 
 #include "misc/types.h"
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -12,7 +18,6 @@
 #include "nlops/chain.h"
 
 #include "const.h"
-#include "misc/debug.h"
 
 
 struct const_s {
@@ -45,10 +50,12 @@ static void const_del(const nlop_data_t* _data)
 	const auto data = CAST_DOWN(const_s, _data);
 
 	multiplace_free(data->xn_cop);
+
 	xfree(data->dims);
 	xfree(data->strs);
 	xfree(data);
 }
+
 
 /**
  * Create operator with constant output (zero inputs, one output)
@@ -73,15 +80,19 @@ struct nlop_s* nlop_const_create2(int N, const long dims[N], const long strs[N],
 	data->copied = copy;
 
 	PTR_ALLOC(long[N], nstrs);
+
 	if (copy) {
 
 		data->xn_cop = multiplace_move2(N, dims, strs, CFL_SIZE, in);
 		data->xn_ref = NULL;
+
 		md_calc_strides(N, *nstrs, dims, CFL_SIZE);
+
 	} else {
 
 		data->xn_cop = NULL;
 		data->xn_ref = in;
+
 		md_copy_dims(N, *nstrs, strs);
 	}
 
@@ -96,6 +107,7 @@ struct nlop_s* nlop_const_create2(int N, const long dims[N], const long strs[N],
 
 	return nlop_generic_create(1, N, tdims, 0, 0, NULL, CAST_UP(PTR_PASS(data)), const_fun, NULL, NULL, NULL,NULL, const_del);
 }
+
 
 /**
  * Create operator with constant output (zero inputs, one output)
@@ -123,13 +135,16 @@ struct nlop_s* nlop_const_create(int N, const long dims[N], bool copy, const com
 struct nlop_s* nlop_set_input_const2(const struct nlop_s* a, int i, int N, const long dims[N], const long strs[N], bool copy, const complex float* in)
 {
 	int ai = nlop_get_nr_in_args(a);
+
 	assert(i < ai);
 
 	auto iov = nlop_generic_domain(a, i);
+
 	int N_min = (N < (int)(iov->N)) ? N : (int)(iov->N);
 	int N_max = (N > (int)(iov->N)) ? N : (int)(iov->N);
 	long ndims[N_max];
 	long nstrs[N_max];
+
 	md_singleton_dims(N_max, ndims);
 	md_singleton_strides(N_max, nstrs);
 	md_copy_dims(N_min, ndims, dims);
@@ -137,15 +152,18 @@ struct nlop_s* nlop_set_input_const2(const struct nlop_s* a, int i, int N, const
 
 	for (unsigned int i = N_min; i < iov->N; i++)
 		assert(1 == iov->dims[i]);
+
 	for (int i = N_min; i < N; i++)
 		assert(1 == dims[i]);
 
 	struct nlop_s* nlop_const = nlop_const_create2(iov->N, ndims, nstrs, copy, in);
 	struct nlop_s* result = nlop_chain2(nlop_const, 0,  a,  i);
+
 	nlop_free(nlop_const);
 
 	return result;
 }
+
 
 /**
  * Chain operator with a constant operator
@@ -161,6 +179,7 @@ struct nlop_s* nlop_set_input_const(const struct nlop_s* a, int i, int N, const 
 	return nlop_set_input_const2(a, i, N, dims, MD_STRIDES(N, dims, CFL_SIZE), copy, in);
 }
 
+
 /**
  * Chain operator with a constant operator and free the input operator
  * @param a operator whose input should be set constant
@@ -174,9 +193,12 @@ struct nlop_s* nlop_set_input_const(const struct nlop_s* a, int i, int N, const 
 struct nlop_s* nlop_set_input_const_F2(const struct nlop_s* a, int i, int N, const long dims[N], const long strs[N], bool copy, const complex float* in)
 {
 	struct nlop_s* result = nlop_set_input_const2(a, i, N, dims, strs, copy, in);
+
 	nlop_free(a);
+
 	return result;
 }
+
 
 /**
  * Chain operator with a constant operator and free the input operator
@@ -189,10 +211,14 @@ struct nlop_s* nlop_set_input_const_F2(const struct nlop_s* a, int i, int N, con
  */
 struct nlop_s* nlop_set_input_const_F(const struct nlop_s* a, int i, int N, const long dims[N], bool copy, const complex float* in)
 {
-    struct nlop_s* result = nlop_set_input_const(a, i, N, dims, copy, in);
-    nlop_free(a);
+	struct nlop_s* result = nlop_set_input_const(a, i, N, dims, copy, in);
+
+	nlop_free(a);
+
 	return result;
 }
+
+
 
 struct del_out_s {
 
@@ -211,8 +237,10 @@ static void del_out_fun(const nlop_data_t* _data, int N, complex float** in)
 static void del_out_del(const nlop_data_t* _data)
 {
 	const auto data = CAST_DOWN(del_out_s, _data);
+
 	xfree(data);
 }
+
 
 /**
  * Create operator with one input and zero outputs
@@ -230,6 +258,7 @@ struct nlop_s* nlop_del_out_create(int N, const long dims[N])
 	return nlop_generic_create(0, 0, NULL, 1, N, tdims, CAST_UP(PTR_PASS(data)), del_out_fun, NULL, NULL, NULL,NULL, del_out_del);
 }
 
+
 /**
  * Returns a new operator without the output o
  * @param a operator
@@ -244,10 +273,12 @@ struct nlop_s* nlop_del_out(const struct nlop_s* a, int o)
 
 	struct nlop_s* nlop_del_out_op = nlop_del_out_create(codomain->N, codomain->dims);
 	struct nlop_s* result = nlop_chain2(a, o,  nlop_del_out_op,  0);
+
 	nlop_free(nlop_del_out_op);
 
 	return result;
 }
+
 
 /**
  * Returns a new operator without the output o
@@ -257,7 +288,9 @@ struct nlop_s* nlop_del_out(const struct nlop_s* a, int o)
 struct nlop_s* nlop_del_out_F(const struct nlop_s* a, int o)
 {
 	auto result = nlop_del_out(a, o);
+
 	nlop_free(a);
 
 	return result;
 }
+

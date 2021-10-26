@@ -743,6 +743,7 @@ static bool test_nlop_parallel_derivatives(void)
 	result = result && (2 == counter);
 
 	auto tenmul_op = nlop_tenmul_create(1, dim, dim ,dim);
+
 	const struct nlop_s* tenmul_chain = nlop_chain2_FF(tenmul_op, 0, nlop_from_linop(chain), 0);
 	tenmul_chain = nlop_chain2_FF(nlop_from_linop(chain), 0, tenmul_chain, 0);
 	tenmul_chain = nlop_chain2_FF(nlop_from_linop(chain), 0, tenmul_chain, 0);
@@ -792,6 +793,7 @@ static bool test_stack(void)
 
 	complex float* in = md_alloc(N, dims, CFL_SIZE);
 	complex float* out = md_alloc(N, dims, CFL_SIZE);
+
 	md_gaussian_rand(N, dims, in);
 
 	float err = 0;
@@ -799,15 +801,21 @@ static bool test_stack(void)
 
 	nlop_test = nlop_stack_create(N, dims, dims1, dims2, 1);
 	nlop_test = nlop_stack_inputs_F(nlop_test, 0, 1, 1);
+
 	nlop_apply(nlop_test, N, dims, out, N, dims, in);
+
 	err += md_zrmse(N, dims, in, out);
+
 	nlop_free(nlop_test);
 
 	nlop_test = nlop_stack_create(N, dims, dims1, dims2, 1);
 	nlop_test = nlop_permute_inputs_F(nlop_test, 2, MAKE_ARRAY(1, 0));
 	nlop_test = nlop_stack_inputs_F(nlop_test, 1, 0, 1);
+
 	nlop_apply(nlop_test, N, dims, out, N, dims, in);
+
 	err += md_zrmse(N, dims, in, out);
+
 	nlop_free(nlop_test);
 
 	md_free(in);
@@ -817,5 +825,4 @@ static bool test_stack(void)
 }
 
 UT_REGISTER_TEST(test_stack);
-
 
