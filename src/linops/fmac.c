@@ -16,10 +16,6 @@
 #include "num/flpmath.h"
 #include "num/ops.h"
 #include "num/multiplace.h"
-#ifdef USE_CUDA
-#include "num/gpuops.h"
-#endif
-//#include "num/iovec.h"
 
 #include "linops/linop.h"
 
