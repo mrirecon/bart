@@ -101,12 +101,6 @@ extern void* md_gpu_move(unsigned int D, const long dims[__VLA(D)], const void* 
 extern void* md_alloc_sameplace(unsigned int D, const long dimensions[__VLA(D)], size_t size, const void* ptr);
 extern void md_free(const void* p);
 
-struct multiplace_array_s;
-extern void md_free_multiplace(const struct multiplace_array_s* ptr);
-extern const void* md_multiplace_read(struct multiplace_array_s* ptr, const void* ref);
-extern struct multiplace_array_s* md_move_multiplace2(unsigned int D, const long dimensions[__VLA(D)], const long strides[__VLA(D)], size_t size, const void* ptr);
-extern struct multiplace_array_s* md_move_multiplace(unsigned int D, const long dimensions[__VLA(D)], size_t size, const void* ptr);
-
 
 extern long md_calc_size(unsigned int D, const long dimensions[__VLA(D)]);
 extern long* md_calc_strides(unsigned int D, long str[__VLA(D)], const long dim[__VLA(D)], size_t size);

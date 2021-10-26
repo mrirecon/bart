@@ -15,6 +15,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
+#include "num/multiplace.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -56,7 +57,7 @@ static void fmac_free_data(const linop_data_t* _data)
 {
 	auto data = CAST_DOWN(fmac_data, _data);
 
-	md_free_multiplace(data->tensor);
+	multiplace_free(data->tensor);
 
 	xfree(data->dims);
 	xfree(data->idims);
@@ -75,7 +76,7 @@ static void fmac_apply(const linop_data_t* _data, complex float* dst, const comp
 	auto data = CAST_DOWN(fmac_data, _data);
 
 	md_clear2(data->N, data->odims, data->ostrs, dst, CFL_SIZE);
-	md_zfmac2(data->N, data->dims, data->ostrs, dst, data->istrs, src, data->tstrs, md_multiplace_read(data->tensor, dst));
+	md_zfmac2(data->N, data->dims, data->ostrs, dst, data->istrs, src, data->tstrs, multiplace_read(data->tensor, dst));
 }
 
 static void fmac_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
@@ -83,7 +84,7 @@ static void fmac_adjoint(const linop_data_t* _data, complex float* dst, const co
 	auto data = CAST_DOWN(fmac_data, _data);
 
 	md_clear2(data->N, data->idims, data->istrs, dst, CFL_SIZE);
-	md_zfmacc2(data->N, data->dims, data->istrs, dst, data->ostrs, src, data->tstrs, md_multiplace_read(data->tensor, dst));
+	md_zfmacc2(data->N, data->dims, data->istrs, dst, data->ostrs, src, data->tstrs, multiplace_read(data->tensor, dst));
 }
 
 static void fmac_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
@@ -125,7 +126,7 @@ const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N],
 	md_select_dims(N, ~tflags, data->tdims, dims);
 	md_calc_strides(N, data->tstrs, data->tdims, CFL_SIZE);
 
-	data->tensor = (NULL == tensor) ? NULL : md_move_multiplace(N, data->tdims, CFL_SIZE, tensor);
+	data->tensor = (NULL == tensor) ? NULL : multiplace_move(N, data->tdims, CFL_SIZE, tensor);
 
 	long odims[N];
 	md_copy_dims(N, odims, data->odims);
@@ -145,6 +146,9 @@ void linop_fmac_set_tensor(const struct linop_s* lop, int N, const long tdims[N]
 
 	assert(data->N == (unsigned int)N);
 	assert(md_check_equal_dims(N, tdims, data->tdims, ~0));
-	md_free_multiplace(data->tensor);
-	data->tensor = md_move_multiplace(N, data->tdims, CFL_SIZE, tensor);
+
+	multiplace_free(data->tensor);
+
+	data->tensor = multiplace_move(N, data->tdims, CFL_SIZE, tensor);
 }
+
