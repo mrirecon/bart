@@ -707,7 +707,7 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 				 & ~md_nontriv_strides(D, tistr)
 				 & md_nontriv_strides(D, tostr);
 
-	if (use_gpu && 0 != fill_flags) {
+	if (use_gpu && (0 != fill_flags)) {
 
 		int idx = md_min_idx(fill_flags);
 
@@ -720,10 +720,13 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		md_copy2(ND, tdims2, tostr, optr, tistr, iptr, size);
 
 		pos[idx] = 1;
+
 		while (pos[idx] < tdims[idx]) {
 
 			tdims2[idx] = MIN(pos[idx], tdims[idx] - pos[idx]);
+
 			md_copy2(ND, tdims2, tostr, optr + md_calc_offset(ND, tostr, pos), tostr, optr, size);
+
 			pos[idx] += tdims2[idx];
 		}
 
