@@ -319,7 +319,7 @@ endif
 
 ifeq ($(MAKESTAGE),1)
 .PHONY: doc/commands.txt $(TARGETS)
-default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest pythontest $(TARGETS):
+default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest pythontest shared-lib $(TARGETS):
 	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
 
 tests/test-%: force
@@ -804,7 +804,12 @@ utests_gpu-all: $(UTARGETS_GPU)
 utest_gpu: utests_gpu-all
 	@echo ALL GPU UNIT TESTS PASSED.
 
-
+# shared library
+shared-lib:
+	make allclean
+	CFLAGS="-fPIC $(OPT) -Wmissing-prototypes" make
+	gcc -shared -fopenmp -o libbart.so src/bart.o -Wl,-whole-archive lib/lib*.a -Wl,-no-whole-archive -Wl,-Bdynamic $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm -lrt
+	make allclean
 
 endif	# MAKESTAGE
 
@@ -827,12 +832,5 @@ install: bart
 bart.syms: bart
 	rules/make_symbol_table.sh bart bart.syms
 
-
-# shared library
-shared-lib:
-	make allclean
-	CFLAGS=-fPIC make
-	gcc -shared -fopenmp -o libbart.so src/bart.o -Wl,-whole-archive lib/lib*.a -Wl,-no-whole-archive -Wl,-Bdynamic $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm -lrt
-	make allclean
 
 
