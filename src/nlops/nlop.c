@@ -196,7 +196,7 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 		strs[i] = (i < OO) ? ostr[i] : istr[i - OO];
 
 
-	const struct linop_s* (*der)[II][OO] = TYPE_ALLOC(const struct linop_s*[II][OO]);
+	const struct linop_s* (*der)[II?:1][OO?:1] = TYPE_ALLOC(const struct linop_s*[II?:1][OO?:1]);
 
 	n->derivative = &(*der)[0][0];
 
@@ -240,7 +240,7 @@ struct nlop_s* nlop_generic_create(int OO, int ON, const long odims[OO][ON], int
 	long istrs[II][IN];
 	for (int i = 0; i < II; i++)
 		md_calc_strides(IN, istrs[i], idims[i], CFL_SIZE);
-	long ostrs[OO][ON];
+	long ostrs[OO?:1][ON?:1];
 	for (int o = 0; o < OO; o++)
 		md_calc_strides(ON, ostrs[o], odims[o], CFL_SIZE);
 
@@ -292,7 +292,7 @@ void nlop_free(const struct nlop_s* op)
 
 	operator_free(op->op);
 
-	const struct linop_s* (*der)[II][OO] = (void*)op->derivative;
+	const struct linop_s* (*der)[II?:1][OO?:1] = (void*)op->derivative;
 
 	for (int i = 0; i < II; i++)
 		for (int o = 0; o < OO; o++)
