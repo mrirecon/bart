@@ -117,9 +117,6 @@ int main_reconet(int argc, char* argv[])
 		OPTL_SET(0, "varnet", &(varnet_default), "use Variational Network (also sets train and data-consistency default values)"),
 		//OPTL_SET(0, "unet", &(unet_default), "use U-Net (also sets train and data-consistency default values)"),
 
-		OPTL_SET(0, "kspace", &(config.kspace), "network acting in kspace"),
-		OPTL_SET(0, "reinsert-init", &(config.reinsert), "reinsert initial reconstruction at each iteration"),
-
 		//OPTL_SELECT(0, "resnet-block", enum NETWORK_SELECT, &net, NETWORK_RESBLOCK, "use residual block (overwrite default)"),
 		//OPTL_SELECT(0, "varnet-block", enum NETWORK_SELECT, &net, NETWORK_VARNET, "use variational block (overwrite default)"),
 	};
@@ -151,7 +148,6 @@ int main_reconet(int argc, char* argv[])
 		OPTL_SELECT(0, "no-shared-weights", enum BOOL_SELECT, &(config.share_weights_select), BOOL_FALSE, "share weights across iterations"),
 		OPTL_SELECT(0, "shared-lambda", enum BOOL_SELECT, &(config.share_lambda_select), BOOL_TRUE, "share lambda across iterations"),
 		OPTL_SELECT(0, "no-shared-lambda", enum BOOL_SELECT, &(config.share_lambda_select), BOOL_FALSE, "share lambda across iterations"),
-		OPTL_SET(0, "rss-weighting", &(config.rss_scale), "weight loss with rss scaling"),
 
 		OPTL_SET(0, "rss-norm", &(config.normalize_rss), "scale output image to rss normalization"),
 
@@ -165,8 +161,6 @@ int main_reconet(int argc, char* argv[])
 
 		OPTL_SUBOPT(0, "train-loss", "...", "configure the training loss", N_loss_opts, loss_opts),
 		OPTL_SUBOPT(0, "valid-loss", "...", "configure the validation loss", N_val_loss_opts, val_loss_opts),
-
-		OPTL_FLOAT(0, "multi-loss", &(config.multi_loss), "f", "include loss of previous iterations weighted by f^(I-1)"),
 
 		OPTL_SUBOPT('T', "train-algo", "...", "configure general training parmeters", N_iter6_opts, iter6_opts),
 		OPTL_SUBOPT(0, "adam", "...", "configure Adam", N_iter6_adam_opts, iter6_adam_opts),

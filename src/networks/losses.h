@@ -35,5 +35,4 @@ extern struct loss_config_s loss_image_valid;
 extern struct loss_config_s loss_classification_valid;
 
 extern const struct nn_s* train_loss_create(const struct loss_config_s* config, unsigned int N, const long dims[N]);
-extern const struct nn_s* train_loss_multi_create(const struct loss_config_s* config, unsigned int N, const long dims[N], int M, float weighting_base);
 extern const struct nn_s* val_measure_create(const struct loss_config_s* config, unsigned int N, const long dims[N]);

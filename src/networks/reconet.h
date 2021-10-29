@@ -8,16 +8,12 @@ enum BOOL_SELECT {BOOL_DEFAULT, BOOL_TRUE, BOOL_FALSE};
 struct reconet_s {
 
 	struct network_s* network;
-	_Bool kspace;
-
 	long Nt;
 
 	enum BOOL_SELECT share_weights_select;
 	enum BOOL_SELECT share_lambda_select;
 	_Bool share_weights;
 	_Bool share_lambda;
-
-	_Bool reinsert;
 
 	struct config_nlop_mri_s* mri_config;
 
@@ -28,8 +24,6 @@ struct reconet_s {
 	_Bool dc_scale_max_eigen;
 	_Bool dc_tickhonov;
 	int dc_max_iter;
-	_Bool no_dc_last_iter;
-
 
 	//network initialization
 	_Bool normalize;
@@ -43,7 +37,6 @@ struct reconet_s {
 
 	struct loss_config_s* train_loss;
 	struct loss_config_s* valid_loss;
-	float multi_loss;
 
 	_Bool low_mem;
 	_Bool gpu;
@@ -52,7 +45,6 @@ struct reconet_s {
 
 	_Bool coil_image;
 
-	_Bool rss_scale;
 	_Bool normalize_rss;
 };
 
