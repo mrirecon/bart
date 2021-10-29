@@ -53,7 +53,7 @@ nn_t network_create(const struct network_s* config, unsigned int NO, const long 
 		auto nn_scale = nn_from_nlop_F(nlop_tenmul_create(NO, odims, odims, sodims));
 
 		result = nn_chain2_FF(result, 1, NULL, nn_scale, 1, NULL);
-		result = nn_link_F(result, 0, NULL, 0, NULL);
+		result = nn_link_F(result, 1, NULL, 0, NULL);
 	}
 
 	return result;
