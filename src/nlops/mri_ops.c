@@ -317,11 +317,13 @@ static const struct nlop_s* nlop_mri_normal_slice_create(int N, const long max_d
 	assert(NULL != conf);
 
 	struct sense_model_s* model = NULL;
+	struct config_nlop_mri_s conf2 = *conf;
+	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims);
 
 	if (conf->noncart)
-		model = sense_noncart_normal_create(N, max_dims, conf);
+		model = sense_noncart_normal_create(N, max_dims, &conf2);
 	else
-		model = sense_cart_create(N, max_dims, conf);
+		model = sense_cart_create(N, max_dims, &conf2);
 
 	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0));
 
@@ -401,10 +403,13 @@ static const struct nlop_s* nlop_mri_normal_inv_slice_create(int N, const long m
 
 	struct sense_model_s* model = NULL;
 
+	struct config_nlop_mri_s conf2 = *conf;
+	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims);
+
 	if (conf->noncart)
-		model = sense_noncart_normal_create(N, max_dims, conf);
+		model = sense_noncart_normal_create(N, max_dims, &conf2);
 	else
-		model = sense_cart_create(N, max_dims, conf);
+		model = sense_cart_create(N, max_dims, &conf2);
 
 
 	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0));
@@ -532,18 +537,19 @@ const struct nlop_s* nlop_mri_dc_prox_create(int N, const long max_dims[N], cons
 
 
 
-
-
 static const struct nlop_s* nlop_mri_normal_max_eigen_slice_create(int N, const long max_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf)
 {
 	assert(NULL != conf);
 
 	struct sense_model_s* model = NULL;
 
+	struct config_nlop_mri_s conf2 = *conf;
+	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims);
+
 	if (conf->noncart)
-		model = sense_noncart_normal_create(N, max_dims, conf);
+		model = sense_noncart_normal_create(N, max_dims, &conf2);
 	else
-		model = sense_cart_create(N, max_dims, conf);
+		model = sense_cart_create(N, max_dims, &conf2);
 
 	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0));
 
