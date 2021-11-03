@@ -1,5 +1,5 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2016-2021. Martin Uecker.
+ * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
