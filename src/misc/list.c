@@ -1,9 +1,15 @@
+/* Copyright 2021. Uecker Lab, University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ * */
+
 #include <assert.h>
 #include <stdbool.h>
 
 #include "misc/misc.h"
 #include "misc/types.h"
-#include "misc/list.h"
+
+#include "list.h"
 
 
 struct node_s {
@@ -26,12 +32,15 @@ struct list_s {
 typedef struct node_s* node_t;
 typedef struct list_s* list_t;
 
+
 static node_t create_node(void* item)
 {
 	PTR_ALLOC(struct node_s, result);
+
 	result->item = item;
 	result->next = NULL;
 	result->prev = NULL;
+
 	return PTR_PASS(result);
 }
 
@@ -55,6 +64,7 @@ static void free_node(node_t node)
 {
 	xfree(node);
 }
+
 
 /**
  * Free a list and all its nodes (item in nodes must be freed manually)
@@ -376,6 +386,7 @@ list_t list_pop_sublist(list_t list, const void* ref, list_cmp_t cmp)
 	list->current_index = -1;
 
 	auto node = list->head;
+
 	while (NULL != node) {
 
 		if (cmp_wrappper(cmp, node->item, ref)) {
@@ -388,8 +399,11 @@ list_t list_pop_sublist(list_t list, const void* ref, list_cmp_t cmp)
 			node = tmp;
 
 			list_append(result, item);
-		} else
+
+		} else {
+
 			node = node->next;
+		}
 	}
 
 	return result;
@@ -439,6 +453,7 @@ list_t list_copy(list_t list) {
 	list_t result = list_create();
 
 	auto node = list->head;
+
 	while (NULL != node) {
 
 		list_append(result, node->item);

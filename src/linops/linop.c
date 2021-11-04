@@ -1,5 +1,5 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016-2019. Martin Uecker.
+ * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -91,30 +91,22 @@ static void sptr_del(const struct shared_ptr_s* p)
 	data->del(data->data);
 }
 
-const char* lop_get_type_str(enum LINOP_TYPE lop_type) {
+const char* lop_type_str[] = {
 
-	switch (lop_type){
-
-		case LOP_FORWARD:
-			return ptr_printf("forward");
-		case LOP_ADJOINT:
-			return ptr_printf("adjoint");
-		case LOP_NORMAL:
-			return ptr_printf("normal");
-		case LOP_NORMAL_INV:
-			return ptr_printf("normal inversion");
-	}
-	assert(0);
-	return NULL;
-}
+	[LOP_FORWARD] = "forward",
+	[LOP_ADJOINT] = "adjoint",
+	[LOP_NORMAL] = "normal",
+	[LOP_NORMAL_INV] = "normal inversion",
+};
 
 static const struct graph_s* lop_get_graph_default(const struct operator_s* op, linop_data_t* data, enum LINOP_TYPE lop_type)
 {
-	const char* lop_type_str = lop_get_type_str(lop_type);
-	const char* name = ptr_printf("linop\\n%s\\n%s", data->TYPEID->name, lop_type_str);
+	const char* name = ptr_printf("linop\\n%s\\n%s", data->TYPEID->name, lop_type_str[lop_type]);
+
 	auto result = create_graph_operator(op, name);
-	xfree(lop_type_str);
+
 	xfree(name);
+
 	return result;
 }
 

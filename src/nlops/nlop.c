@@ -195,11 +195,13 @@ static const struct graph_s* operator_nlop_get_graph(const struct operator_s* op
 static const struct graph_s* operator_der_get_graph_default(const struct operator_s* op, const linop_data_t* _data, enum LINOP_TYPE lop_type)
 {
 	auto data = CAST_DOWN(nlop_linop_data_s, _data);
-	const char* lop_type_str = lop_get_type_str(lop_type);
-	const char* name = ptr_printf("der (%d, %d)\\n%s\\n%s", data->o, data->i, data->data->TYPEID->name, lop_type_str);
+
+	const char* name = ptr_printf("der (%d, %d)\\n%s\\n%s", data->o, data->i, data->data->TYPEID->name, lop_type_str[lop_type]);
+
 	auto result = create_graph_operator(op, name);
-	xfree(lop_type_str);
+
 	xfree(name);
+
 	return result;
 }
 
@@ -338,6 +340,7 @@ struct nlop_s* nlop_generic_managed_create2(	int OO, int ON, const long odims[OO
 	}
 
 	bool io_flags[OO + II];
+
 	for (int i = 0; i < OO + II; i++)
 		io_flags[i] = i < OO;
 
@@ -371,10 +374,13 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 struct nlop_s* nlop_generic_create(int OO, int ON, const long odims[OO][ON], int II, int IN, const long idims[II][IN],
 	nlop_data_t* data, nlop_gen_fun_t forward, nlop_der_fun_t deriv[II][OO], nlop_der_fun_t adjoint[II][OO], nlop_der_fun_t normal[II][OO], nlop_p_fun_t norm_inv[II][OO], nlop_del_fun_t del)
 {
-	long istrs[II][IN];
+	long istrs[II?:1][IN?:1];
+
 	for (int i = 0; i < II; i++)
 		md_calc_strides(IN, istrs[i], idims[i], CFL_SIZE);
+
 	long ostrs[OO?:1][ON?:1];
+
 	for (int o = 0; o < OO; o++)
 		md_calc_strides(ON, ostrs[o], odims[o], CFL_SIZE);
 
@@ -506,18 +512,19 @@ void nlop_generic_apply_select_derivative_unchecked(const struct nlop_s* op, int
 	int II = nlop_get_nr_in_args(op);
 	int OO = nlop_get_nr_out_args(op);
 
-	assert((unsigned int )II <= 8 *sizeof(out_der_flag));
-	assert((unsigned int )OO <= 8 *sizeof(in_der_flag));
+	assert((unsigned int)II <= CHAR_BIT * sizeof(out_der_flag));
+	assert((unsigned int)OO <= CHAR_BIT * sizeof(in_der_flag));
 
-	bool select_der[II][OO];
-	bool select_all[II][OO];
+	bool select_der[II?:1][OO?:1];
+	bool select_all[II?:1][OO?:1];
 
-	for(int o = 0; o < OO; o++)
+	for(int o = 0; o < OO; o++) {
 		for(int i = 0; i < II; i++) {
 
 			select_der[i][o] = MD_IS_SET(out_der_flag, o) && MD_IS_SET(in_der_flag, i);
 			select_all[i][o] = true;
 		}
+	}
 
 	nlop_clear_derivatives(op);
 	nlop_unset_derivatives(op);
@@ -587,9 +594,11 @@ void nlop_set_derivatives(const struct nlop_s* nlop, int II, int OO, bool der_re
 			list_t operators = operator_get_list(nlop_get_derivative(nlop, o, i)->adjoint);
 
 			const struct operator_s* op = list_pop(operators);
+
 			while (NULL != op) {
 
 				auto data = operator_get_linop_data(op);
+
 				if (NULL == data) {
 
 					op = list_pop(operators);
@@ -597,6 +606,7 @@ void nlop_set_derivatives(const struct nlop_s* nlop, int II, int OO, bool der_re
 				}
 
 				auto linop_der_data = CAST_MAYBE(nlop_linop_data_s, data);
+
 				if (NULL == linop_der_data) {
 
 					op = list_pop(operators);
@@ -610,6 +620,7 @@ void nlop_set_derivatives(const struct nlop_s* nlop, int II, int OO, bool der_re
 
 				op = list_pop(operators);
 			}
+
 			list_free(operators);
 		}
 }
@@ -759,6 +770,7 @@ static void flatten_del(const nlop_data_t* _data)
 	auto data = CAST_DOWN(flatten_s, _data);
 
 	nlop_free(data->op);
+
 	xfree(data->off);
 
 	xfree(data);
@@ -841,7 +853,7 @@ const struct nlop_s* nlop_reshape_in(const struct nlop_s* op, int i, int NI, con
 
 	n->op = operator_reshape(op->op, OO + i, NI, idims);
 
-	const struct linop_s* (*der)[II][OO] = TYPE_ALLOC(const struct linop_s*[II][OO]);
+	auto der = TYPE_ALLOC(const struct linop_s*[II?:1][OO?:1]);
 
 	n->derivative = &(*der)[0][0];
 
@@ -882,7 +894,7 @@ const struct nlop_s* nlop_reshape_out(const struct nlop_s* op, int o, int NO, co
 
 	n->op = operator_reshape(op->op, o, NO, odims);
 
-	const struct linop_s* (*der)[II][OO] = TYPE_ALLOC(const struct linop_s*[II][OO]);
+	auto der = TYPE_ALLOC(const struct linop_s*[II?:1][OO?:1]);
 	n->derivative = &(*der)[0][0];
 
 	//derivatives are not put into an operator-reshape-container but linked with an reshaping copy operator

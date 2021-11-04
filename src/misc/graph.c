@@ -1,13 +1,17 @@
+/* Copyright 2021. Uecker Lab, University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ * */
 
+#define _GNU_SOURCE
 #include <stdbool.h>
 #include <assert.h>
+#include <string.h>
 #include <stdio.h>
 
 #include "misc/misc.h"
 #include "misc/types.h"
 #include "misc/debug.h"
-#include "misc/shrdptr.h"
-#include "misc/nested.h"
 #include "misc/list.h"
 
 #include "graph.h"
@@ -43,8 +47,10 @@ void node_free(node_t x)
 
 	if (NULL != x->node_del)
 		x->node_del(x);
+
 	if (NULL != x->name)
 		xfree(x->name);
+
 	if (NULL != x->subgraph)
 		graph_free(x->subgraph);
 
@@ -53,14 +59,16 @@ void node_free(node_t x)
 
 void node_init(struct node_s* x, int N_vertices, const bool io_flags[N_vertices], const char* name, bool external, graph_t subgraph)
 {
-	x->name = (NULL != name) ? ptr_printf("%s", name) : NULL;
+	x->name = (NULL != name) ? strdup(name) : NULL;
 
 	x->N_vertices = N_vertices;
 	x->edges = *TYPE_ALLOC(list_t[N_vertices]);
+
 	for (int i = 0; i < N_vertices; i++)
 		x->edges[i] = list_create();
 
 	x->io_flags = *TYPE_ALLOC(bool[N_vertices]);
+
 	for (int i = 0; i < N_vertices; i++)
 		x->io_flags[i] = io_flags[i];
 
@@ -89,8 +97,10 @@ void graph_free(graph_t x)
 {
 	while (0 < list_count(x->nodes))
 		graph_remove_node(x, nodes_get(x->nodes, 0));
+
 	while (0 < list_count(x->ext_nodes))
 		graph_remove_node(x, nodes_get(x->ext_nodes, 0));
+
 	list_free(x->nodes);
 	list_free(x->ext_nodes);
 
@@ -123,6 +133,7 @@ void graph_remove_node(graph_t graph, node_t node)
 
 		int i = nodes_index(graph->ext_nodes, node);
 		node_free(list_remove_item(graph->ext_nodes, i));
+
 	} else {
 
 		int i = nodes_index(graph->nodes, node);
@@ -177,6 +188,7 @@ void graph_redirect_edge(struct vertex_s new, struct vertex_s old)
 
 			graph_remove_edge(old, va);
 			graph_add_edge(new, va);
+
 		} else {
 
 			graph_remove_edge(va, old);
@@ -262,7 +274,7 @@ graph_t perm_ext_graphs_F(graph_t graph, int N, const int perm[N])
 
 graph_t dup_graphs_F(graph_t graph, int a, int b)
 {
-	assert (a < b);
+	assert(a < b);
 
 	node_t anode = nodes_get(graph->ext_nodes, a);
 	node_t bnode = list_remove_item(graph->ext_nodes, b);
@@ -272,8 +284,8 @@ graph_t dup_graphs_F(graph_t graph, int a, int b)
 
 	while (0 < list_count(bnode->edges[0])) {
 
-		struct vertex_s a = {.node = anode, .idx = 0};
-		struct vertex_s b = {.node = bnode, .idx = 0};
+		struct vertex_s a = { .node = anode, .idx = 0 };
+		struct vertex_s b = { .node = bnode, .idx = 0 };
 
 		struct vertex_s n = *(vertices_get(bnode->edges[0], 0));
 
@@ -286,8 +298,8 @@ graph_t dup_graphs_F(graph_t graph, int a, int b)
 	return graph;
 }
 
-const char* print_node(const struct node_s* node) {
-
+const char* print_node(const struct node_s* node)
+{
 	if (NULL != node->node_print)
 		return node->node_print(node);
 
@@ -295,11 +307,12 @@ const char* print_node(const struct node_s* node) {
 		return ptr_printf("node_%p [label=\"%s\"];\n", node, (NULL == node->name) ? node->TYPEID->name : node->name);
 
 	const char* result = print_internl_graph(node->subgraph, false, 0, NULL);
-	auto tmp = result;
-	result = ptr_printf("subgraph cluster_subgraph_%p{\nlabel=\"%s\"\n%s}\n", node->subgraph, node->name, tmp);
-	xfree(tmp);
 
-	return result;
+	const char* str = ptr_printf("subgraph cluster_subgraph_%p{\nlabel=\"%s\"\n%s}\n", node->subgraph, node->name, result);
+
+	xfree(result);
+
+	return str;
 }
 
 const char* print_vertex(node_t node, int idx)
@@ -341,8 +354,10 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 	if (get_ext_nodes) {
 
 		assert (N == list_count(graph->ext_nodes));
+
 		for (int i = 0; i < N; i++)
 			ext_nodes[i] = print_vertex(nodes_get(graph->ext_nodes, i), 0);
+
 	} else {
 
 		auto tmp = result;
@@ -361,6 +376,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 			auto str_node = print_node(node);
 			auto tmp = result;
 			result = ptr_printf("%s%s", tmp, str_node);
+
 			xfree(tmp);
 			xfree(str_node);
 
@@ -372,6 +388,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 				xfree(tmp);
 				xfree(prev_node);
 				prev_node = tmp_node_id;
+
 			} else {
 				prev_node = print_vertex(node, 0);
 			}
@@ -431,6 +448,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 			a.idx = i;
 
 			list_t overtices = node->edges[i];
+
 			for (int j = 0; j < list_count(overtices); j++) {
 
 				vertex_t b = vertices_get(overtices, j);
@@ -447,7 +465,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 	for (int i = 0; i < list_count(graph->ext_nodes); i++) {
 
 		auto node = (node_t)nodes_get(graph->ext_nodes, i);
-		struct vertex_s a = {.node = node, .idx = 0};
+		struct vertex_s a = { .node = node, .idx = 0 };
 
 		for (int i = 0; i < node->N_vertices; i++) {
 
@@ -497,3 +515,4 @@ void export_graph_dot(const char* filename, graph_t graph)
 
 	fclose(fp);
 }
+

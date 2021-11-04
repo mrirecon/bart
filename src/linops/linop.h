@@ -21,9 +21,9 @@ typedef void (*lop_fun_t)(const linop_data_t* _data, complex float* dst, const c
 typedef void (*lop_p_fun_t)(const linop_data_t* _data, float lambda, complex float* dst, const complex float* src);
 typedef void (*del_fun_t)(const linop_data_t* _data);
 
-enum LINOP_TYPE {LOP_FORWARD, LOP_ADJOINT, LOP_NORMAL, LOP_NORMAL_INV};
+enum LINOP_TYPE { LOP_FORWARD, LOP_ADJOINT, LOP_NORMAL, LOP_NORMAL_INV };
 typedef const struct graph_s* (*lop_graph_t)(const struct operator_s*, const linop_data_t*, enum LINOP_TYPE);
-const char* lop_get_type_str(enum LINOP_TYPE lop_type);
+extern const char* lop_type_str[];
 
 struct operator_s;
 struct operator_p_s;
