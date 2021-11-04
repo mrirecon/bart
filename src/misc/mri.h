@@ -31,6 +31,7 @@ enum mri_dims {
 	LEVEL_DIM,
 	SLICE_DIM,
 	AVG_DIM,
+	BATCH_DIM,
 };
 
 #ifdef BERKELEY_SVN
@@ -59,6 +60,7 @@ enum mri_dims {
 #define SENS_FLAGS (COIL_FLAG|MAPS_FLAG)
 #define SLICE_FLAG (1u << SLICE_DIM)
 #define AVG_FLAG (1u << AVG_DIM)
+#define BATCH_FLAG (1u << BATCH_DIM)
 
 
 

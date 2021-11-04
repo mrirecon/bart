@@ -72,25 +72,25 @@ zconvcorr_bwd_in_algo_f* algos_bwd_in_cpu[] = {	zconvcorr_bwd_in_im2col_cf_cpu, 
 
 #ifdef USE_CUDA
 zconvcorr_bwd_krn_algo_f* algos_bwd_krn_gpu[] = {
-#ifdef USE_CUDNN
-						zconvcorr_bwd_krn_cudnn,
-#endif
-						zconvcorr_bwd_krn_im2col_cf_gpu,
-};
+						#ifdef USE_CUDNN
+							zconvcorr_bwd_krn_cudnn,
+						#endif
+							zconvcorr_bwd_krn_im2col_cf_gpu,
+							};
 
 zconvcorr_fwd_algo_f* algos_fwd_gpu[] = {
-#ifdef USE_CUDNN
+					#ifdef USE_CUDNN
 						zconvcorr_fwd_cudnn,
-#endif
+					#endif
 						zconvcorr_fwd_im2col_cf_gpu,
-};
+					};
 
 zconvcorr_bwd_in_algo_f* algos_bwd_in_gpu[] = {
-#ifdef USE_CUDNN
+					#ifdef USE_CUDNN
 						zconvcorr_bwd_in_cudnn,
-#endif
+					#endif
 						zconvcorr_bwd_in_im2col_cf_gpu,
-};
+					};
 #endif
 
 
@@ -448,13 +448,13 @@ static bool simple_zconvcorr_bwd_in(	unsigned int N, const long dims[N],
 #else
 	if (true)
 #endif
-		for(int i = 0; (unsigned long)i < sizeof(algos_bwd_in_cpu) / sizeof(algos_bwd_in_cpu[0]); i++)
-			if (algos_bwd_in_cpu[i](	N,
+	for(int i = 0; (unsigned long)i < sizeof(algos_bwd_in_cpu) / sizeof(algos_bwd_in_cpu[0]); i++)
+		if (algos_bwd_in_cpu[i](	N,
 						nodims, nostrs, out,
 						nidims, nistrs, in,
 						nkdims, nkstrs, krn,
 						flags, dilation, strides, conv))
-				return true;
+			return true;
 
 	return false;
 }
@@ -491,7 +491,7 @@ static bool simple_zconvcorr_bwd_krn(	unsigned int N, const long dims[N],
 
 	bool result = false;
 
-	if (detect_convcorr(	N,
+		if (detect_convcorr(	N,
 				nodims, nidims, nkdims,
 				nostrs, nistrs, nkstrs,
 				dilation, strides,
@@ -1129,25 +1129,13 @@ bool zconvcorr_bwd_in_im2col_cf_gpu(int N,
 }
 #endif
 
-
-bool test_zconvcorr_fwd(	int N, long odims[N], long ostrs[N], long idims[N], long istrs[N], long kdims[N], long kstrs[N],
-				unsigned long flags, const long dilation[N], const long strides[N], bool conv,
-				float max_nrmse, long exp_nr_cpu, long exp_nr_gpu)
+static void test_zconvcorr_fwd_ref(	int N,
+					long odims[N], long ostrs[N], complex float* optr,
+					long idims[N], long istrs[N], const complex float* iptr,
+					long kdims[N], long kstrs[N], const complex float* kptr,
+					unsigned long flags, const long dilation[N], const long strides[N], bool conv
+				)
 {
-	bool result = true;
-
-	complex float* optr_ref = md_alloc(N, odims, CFL_SIZE);
-
-	complex float* optr = md_alloc(N, odims, CFL_SIZE);
-	complex float* iptr = md_alloc(N, idims, CFL_SIZE);
-	complex float* kptr = md_alloc(N, kdims, CFL_SIZE);
-
-	md_gaussian_rand(N, idims, iptr);
-	md_gaussian_rand(N, kdims, kptr);
-
-	md_clear(N, odims, optr, CFL_SIZE);
-	md_clear(N, odims, optr_ref, CFL_SIZE);
-
 	long tdims[2 * N];
 	long tostrs[2 * N];
 	long tistrs[2 * N];
@@ -1160,301 +1148,267 @@ bool test_zconvcorr_fwd(	int N, long odims[N], long ostrs[N], long idims[N], lon
 						dilation, strides, conv, false);
 
 	deactivate_strided_vecops();
-
-	md_zfmac2(2 * N, tdims, tostrs, optr_ref, tistrs, iptr, tkstrs, kptr + shift);
-
+	md_zfmac2(2 * N, tdims, tostrs, optr, tistrs, iptr, tkstrs, kptr + shift);
 	activate_strided_vecops();
+}
 
-	long counter_cpu = 0;
-	long counter_gpu = 0;
+static void test_zconvcorr_bwd_krn_ref(	int N,
+					long odims[N], long ostrs[N], const complex float* optr,
+					long idims[N], long istrs[N], const complex float* iptr,
+					long kdims[N], long kstrs[N], complex float* kptr,
+					unsigned long flags, const long dilation[N], const long strides[N], bool conv
+				)
+{
+	long tdims[2 * N];
+	long tostrs[2 * N];
+	long tistrs[2 * N];
+	long tkstrs[2 * N];
 
-	for (int i = 0; (unsigned long)i < sizeof(algos_fwd_cpu) / sizeof(algos_fwd_cpu[0]); i++) {
+	int shift = calc_convcorr_geom_strs_dil(N, flags, tdims, tostrs, tkstrs, tistrs,
+						odims, ostrs,
+						kdims, kstrs,
+						idims, istrs,
+						dilation, strides, conv, false);
 
-		if (algos_fwd_cpu[i](N, odims, ostrs, optr, idims, istrs, iptr, kdims, kstrs, kptr, flags, dilation, strides, conv)) {
+	deactivate_strided_vecops();
+	md_zfmac2(2 * N, tdims, tkstrs, kptr + shift, tostrs, optr, tistrs, iptr);
+	activate_strided_vecops();
+}
 
-			float err = md_znrmse(N, odims, optr_ref, optr);
+static void test_zconvcorr_bwd_in_ref(	int N,
+					long odims[N], long ostrs[N], const complex float* optr,
+					long idims[N], long istrs[N], complex float* iptr,
+					long kdims[N], long kstrs[N], const complex float* kptr,
+					unsigned long flags, const long dilation[N], const long strides[N], bool conv
+				)
+{
+	long tdims[2 * N];
+	long tostrs[2 * N];
+	long tistrs[2 * N];
+	long tkstrs[2 * N];
 
-			debug_printf(DP_DEBUG1, "error zconvcorr_fwd cpu algo %d: %.8f\n", i, err);
+	int shift = calc_convcorr_geom_strs_dil(N, flags, tdims, tostrs, tkstrs, tistrs,
+						odims, ostrs,
+						kdims, kstrs,
+						idims, istrs,
+						dilation, strides, conv, false);
 
-			md_clear(N, odims, optr, CFL_SIZE);
+	deactivate_strided_vecops();
+	md_zfmac2(2 * N, tdims, tistrs, iptr, tostrs, optr, tkstrs, kptr + shift);
+	activate_strided_vecops();
+}
 
-			counter_cpu += 1;
 
-			result = result && (max_nrmse > err);
-		}
-	}
+bool test_zconvcorr_fwd(	int N,
+				long odims[N], long ostrs[N],
+				long idims[N], long istrs[N],
+				long kdims[N], long kstrs[N],
+				unsigned long flags, const long dilation[N], const long strides[N], bool conv,
+				float max_nrmse, bool gpu, long min_no_algos)
+{
+	bool result = true;
 
 #ifdef USE_CUDA
-	num_init_gpu();
+	void* ref_ptr = gpu ? md_alloc_gpu(1, MD_DIMS(1), CFL_SIZE) : md_alloc(1, MD_DIMS(1), CFL_SIZE);
+#else
+	assert(!gpu);
+	void* ref_ptr = md_alloc(1, MD_DIMS(1), CFL_SIZE);
+#endif
 
-	complex float* optr_gpu = md_alloc_gpu(N, odims, CFL_SIZE);
-	complex float* iptr_gpu = md_alloc_gpu(N, idims, CFL_SIZE);
-	complex float* kptr_gpu = md_alloc_gpu(N, kdims, CFL_SIZE);
+	complex float* optr_ref = md_alloc_sameplace(N, odims, CFL_SIZE, ref_ptr);
+	complex float* optr_tst = md_alloc_sameplace(N, odims, CFL_SIZE, ref_ptr);
+	complex float* optr_ini = md_alloc_sameplace(N, odims, CFL_SIZE, ref_ptr);
 
-	md_copy(N, idims, iptr_gpu, iptr, CFL_SIZE);
-	md_copy(N, kdims, kptr_gpu, kptr, CFL_SIZE);
-	md_clear(N, odims, optr_gpu, CFL_SIZE);
+	complex float* iptr = md_alloc_sameplace(N, idims, CFL_SIZE, ref_ptr);
+	complex float* kptr = md_alloc_sameplace(N, kdims, CFL_SIZE, ref_ptr);
 
-	for (int i = 0; (unsigned long)i < sizeof(algos_fwd_gpu) / sizeof(algos_fwd_gpu[0]); i++) {
+	md_gaussian_rand(N, odims, optr_ini);
+	md_gaussian_rand(N, idims, iptr);
+	md_gaussian_rand(N, kdims, kptr);
 
-		if (algos_fwd_gpu[i](N, odims, ostrs, optr_gpu, idims, istrs, iptr_gpu, kdims, kstrs, kptr_gpu, flags, dilation, strides, conv)) {
+	md_copy(N, odims, optr_ref, optr_ini, CFL_SIZE);
 
-			md_copy(N, odims, optr, optr_gpu, CFL_SIZE);
-			md_clear(N, odims, optr_gpu, CFL_SIZE);
+	test_zconvcorr_fwd_ref(N, odims, ostrs, optr_ref, idims, istrs, iptr, kdims, kstrs, kptr, flags, dilation, strides, conv);
 
-			float err = md_znrmse(N, odims, optr_ref, optr);
-			debug_printf(DP_DEBUG1, "error zconvcorr_fwd gpu algo %d: %.8f\n", i, err);
-			counter_gpu += 1;
+	long counter = 0;
 
+#ifdef USE_CUDA
+	int nr_algos = gpu ? ARRAY_SIZE(algos_fwd_gpu) : ARRAY_SIZE(algos_fwd_cpu);
+#else
+	int nr_algos = ARRAY_SIZE(algos_fwd_cpu);
+#endif
+
+	for(int i = 0; i < nr_algos; i++) {
+
+#ifdef USE_CUDA
+		zconvcorr_fwd_algo_f* algo = gpu ? algos_fwd_gpu[i] : algos_fwd_cpu[i];
+#else
+		zconvcorr_fwd_algo_f* algo = algos_fwd_cpu[i];
+#endif
+
+		md_copy(N, odims, optr_tst, optr_ini, CFL_SIZE);
+
+		if (algo(N, odims, ostrs, optr_tst, idims, istrs, iptr, kdims, kstrs, kptr, flags, dilation, strides, conv)) {
+
+			float err = md_znrmse(N, odims, optr_ref, optr_tst);
+			debug_printf((err >= max_nrmse) ? DP_WARN : DP_DEBUG1, "error zconvcorr_fwd algo %d: %.8f\n", i, err);
+
+			counter += 1;
 			result = result && (max_nrmse > err);
 		}
 	}
 
-	md_free(optr_gpu);
-	md_free(iptr_gpu);
-	md_free(kptr_gpu);
-
-	if (counter_gpu < exp_nr_gpu) {
-
-		debug_printf(DP_INFO, "zconvcorr_fwd only %d algorithms available on gpu(%d expected)\n", counter_gpu, exp_nr_gpu);
-		result = false;
-	}
-#else
-	UNUSED(exp_nr_gpu);
-	UNUSED(counter_gpu);
-#endif
-	md_free(optr);
+	md_free(optr_tst);
+	md_free(optr_ini);
 	md_free(optr_ref);
+
+
 	md_free(iptr);
 	md_free(kptr);
 
-	if (counter_cpu < exp_nr_cpu) {
+	md_free(ref_ptr);
 
-		debug_printf(DP_INFO, "zconvcorr_fwd only %d algorithms available on cpu(%d expected)\n", counter_cpu, exp_nr_cpu);
-		result = false;
-	}
-
-	return result;
+	return result && (counter >= min_no_algos);
 }
 
-
-bool test_zconvcorr_bwd_in(	int N, long odims[N], long ostrs[N], long idims[N], long istrs[N], long kdims[N], long kstrs[N],
+bool test_zconvcorr_bwd_in(	int N,
+				long odims[N], long ostrs[N],
+				long idims[N], long istrs[N],
+				long kdims[N], long kstrs[N],
 				unsigned long flags, const long dilation[N], const long strides[N], bool conv,
-				float max_nrmse, long exp_nr_cpu, long exp_nr_gpu)
+				float max_nrmse, bool gpu, long min_no_algos)
 {
 	bool result = true;
 
-	complex float* iptr_ref = md_alloc(N, idims, CFL_SIZE);
+#ifdef USE_CUDA
+	void* ref_ptr = gpu ? md_alloc_gpu(1, MD_DIMS(1), CFL_SIZE) : md_alloc(1, MD_DIMS(1), CFL_SIZE);
+#else
+	assert(!gpu);
+	void* ref_ptr = md_alloc(1, MD_DIMS(1), CFL_SIZE);
+#endif
 
-	complex float* optr = md_alloc(N, odims, CFL_SIZE);
-	complex float* iptr = md_alloc(N, idims, CFL_SIZE);
-	complex float* kptr = md_alloc(N, kdims, CFL_SIZE);
+	complex float* iptr_ref = md_alloc_sameplace(N, idims, CFL_SIZE, ref_ptr);
+	complex float* iptr_tst = md_alloc_sameplace(N, idims, CFL_SIZE, ref_ptr);
+	complex float* iptr_ini = md_alloc_sameplace(N, idims, CFL_SIZE, ref_ptr);
 
+	complex float* optr = md_alloc_sameplace(N, odims, CFL_SIZE, ref_ptr);
+	complex float* kptr = md_alloc_sameplace(N, kdims, CFL_SIZE, ref_ptr);
+
+	md_gaussian_rand(N, idims, iptr_ini);
 	md_gaussian_rand(N, odims, optr);
 	md_gaussian_rand(N, kdims, kptr);
 
-	md_clear(N, idims, iptr, CFL_SIZE);
-	md_clear(N, idims, iptr_ref, CFL_SIZE);
+	md_copy(N, idims, iptr_ref, iptr_ini, CFL_SIZE);
 
-	long tdims[2 * N];
-	long tostrs[2 * N];
-	long tistrs[2 * N];
-	long tkstrs[2 * N];
+	test_zconvcorr_bwd_in_ref(N, odims, ostrs, optr, idims, istrs, iptr_ref, kdims, kstrs, kptr, flags, dilation, strides, conv);
 
-	int shift = calc_convcorr_geom_strs_dil(N, flags, tdims, tostrs, tkstrs, tistrs,
-						odims, ostrs,
-						kdims, kstrs,
-						idims, istrs,
-						dilation, strides, conv, false);
-
-
-
-	deactivate_strided_vecops();
-
-	md_zfmac2(2 * N, tdims, tistrs, iptr_ref, tkstrs, kptr + shift, tostrs, optr);
-
-	activate_strided_vecops();
-
-
-	long counter_cpu = 0;
-	long counter_gpu = 0;
-
-	for (int i = 0; (unsigned long)i < sizeof(algos_bwd_in_cpu) / sizeof(algos_bwd_in_cpu[0]); i++) {
-
-		if (algos_bwd_in_cpu[i](N, odims, ostrs, optr, idims, istrs, iptr, kdims, kstrs, kptr, flags, dilation, strides, conv)) {
-
-			float err = md_znrmse(N, idims, iptr_ref, iptr);
-
-			debug_printf(DP_DEBUG1, "error zconvcorr_bwd_in cpu algo %d: %.8f\n", i, err);
-
-			md_clear(N, idims, iptr, CFL_SIZE);
-
-			counter_cpu += 1;
-
-			result = result && (max_nrmse > err);
-		}
-	}
+	long counter = 0;
 
 #ifdef USE_CUDA
-	num_init_gpu();
+	int nr_algos = gpu ? ARRAY_SIZE(algos_bwd_in_gpu) : ARRAY_SIZE(algos_bwd_in_cpu);
+#else
+	int nr_algos = ARRAY_SIZE(algos_bwd_in_cpu);
+#endif
 
-	complex float* optr_gpu = md_alloc_gpu(N, odims, CFL_SIZE);
-	complex float* iptr_gpu = md_alloc_gpu(N, idims, CFL_SIZE);
-	complex float* kptr_gpu = md_alloc_gpu(N, kdims, CFL_SIZE);
+	for(int i = 0; i < nr_algos; i++) {
 
-	md_copy(N, odims, optr_gpu, optr, CFL_SIZE);
-	md_copy(N, kdims, kptr_gpu, kptr, CFL_SIZE);
-	md_clear(N, idims, iptr_gpu, CFL_SIZE);
+#ifdef USE_CUDA
+		zconvcorr_bwd_in_algo_f* algo = gpu ? algos_bwd_in_gpu[i] : algos_bwd_in_cpu[i];
+#else
+		zconvcorr_bwd_in_algo_f* algo = algos_bwd_in_cpu[i];
+#endif
 
-	for (int i = 0; (unsigned long)i < sizeof(algos_bwd_in_gpu) / sizeof(algos_bwd_in_gpu[0]); i++) {
+		md_copy(N, idims, iptr_tst, iptr_ini, CFL_SIZE);
 
-		if (algos_bwd_in_gpu[i](N, odims, ostrs, optr_gpu, idims, istrs, iptr_gpu, kdims, kstrs, kptr_gpu, flags, dilation, strides, conv)) {
+		if (algo(N, odims, ostrs, optr, idims, istrs, iptr_tst, kdims, kstrs, kptr, flags, dilation, strides, conv)) {
 
-			md_copy(N, idims, iptr, iptr_gpu, CFL_SIZE);
-			md_clear(N, idims, iptr_gpu, CFL_SIZE);
+			float err = md_znrmse(N, idims, iptr_ref, iptr_tst);
+			debug_printf((err >= max_nrmse) ? DP_WARN : DP_DEBUG1, "error zconvcorr_bwd_in algo %d: %.8f\n", i, err);
 
-			float err = md_znrmse(N, idims, iptr_ref, iptr);
-
-			debug_printf(DP_DEBUG1, "error zconvcorr_bwd_in gpu algo %d: %.8f\n", i, err);
-
-			counter_gpu += 1;
-
+			counter += 1;
 			result = result && (max_nrmse > err);
 		}
 	}
 
-	md_free(optr_gpu);
-	md_free(iptr_gpu);
-	md_free(kptr_gpu);
-
-	if (counter_gpu < exp_nr_gpu) {
-
-		debug_printf(DP_INFO, "zconvcorr_bwd_in only %d algorithms available on gpu(%d expected)\n", counter_gpu, exp_nr_gpu);
-		result = false;
-	}
-#else
-	UNUSED(exp_nr_gpu);
-	UNUSED(counter_gpu);
-#endif
-	md_free(optr);
+	md_free(iptr_tst);
+	md_free(iptr_ini);
 	md_free(iptr_ref);
-	md_free(iptr);
+
+	md_free(optr);
 	md_free(kptr);
 
-	if (counter_cpu < exp_nr_cpu) {
+	md_free(ref_ptr);
 
-		debug_printf(DP_INFO, "zconvcorr_bwd_in only %d algorithms available on cpu(%d expected)\n", counter_cpu, exp_nr_cpu);
-		result = false;
-	}
-
-	return result;
+	return result && (counter >= min_no_algos);
 }
 
-
-bool test_zconvcorr_bwd_krn(	int N, long odims[N], long ostrs[N], long idims[N], long istrs[N], long kdims[N], long kstrs[N],
+bool test_zconvcorr_bwd_krn(	int N,
+				long odims[N], long ostrs[N],
+				long idims[N], long istrs[N],
+				long kdims[N], long kstrs[N],
 				unsigned long flags, const long dilation[N], const long strides[N], bool conv,
-				float max_nrmse, long exp_nr_cpu, long exp_nr_gpu)
+				float max_nrmse, bool gpu, long min_no_algos)
 {
 	bool result = true;
 
-	complex float* kptr_ref = md_alloc(N, kdims, CFL_SIZE);
+#ifdef USE_CUDA
+	void* ref_ptr = gpu ? md_alloc_gpu(1, MD_DIMS(1), CFL_SIZE) : md_alloc(1, MD_DIMS(1), CFL_SIZE);
+#else
+	assert(!gpu);
+	void* ref_ptr = md_alloc(1, MD_DIMS(1), CFL_SIZE);
+#endif
 
-	complex float* optr = md_alloc(N, odims, CFL_SIZE);
-	complex float* iptr = md_alloc(N, idims, CFL_SIZE);
-	complex float* kptr = md_alloc(N, kdims, CFL_SIZE);
+	complex float* kptr_ref = md_alloc_sameplace(N, kdims, CFL_SIZE, ref_ptr);
+	complex float* kptr_tst = md_alloc_sameplace(N, kdims, CFL_SIZE, ref_ptr);
+	complex float* kptr_ini = md_alloc_sameplace(N, kdims, CFL_SIZE, ref_ptr);
 
+	complex float* optr = md_alloc_sameplace(N, odims, CFL_SIZE, ref_ptr);
+	complex float* iptr = md_alloc_sameplace(N, idims, CFL_SIZE, ref_ptr);
+
+	md_gaussian_rand(N, kdims, kptr_ini);
 	md_gaussian_rand(N, odims, optr);
 	md_gaussian_rand(N, idims, iptr);
 
-	md_clear(N, kdims, kptr, CFL_SIZE);
-	md_clear(N, kdims, kptr_ref, CFL_SIZE);
+	md_copy(N, kdims, kptr_ref, kptr_ini, CFL_SIZE);
 
-	long tdims[2 * N];
-	long tostrs[2 * N];
-	long tistrs[2 * N];
-	long tkstrs[2 * N];
+	test_zconvcorr_bwd_krn_ref(N, odims, ostrs, optr, idims, istrs, iptr, kdims, kstrs, kptr_ref, flags, dilation, strides, conv);
 
-	int shift = calc_convcorr_geom_strs_dil(N, flags, tdims, tostrs, tkstrs, tistrs,
-						odims, ostrs,
-						kdims, kstrs,
-						idims, istrs,
-						dilation, strides, conv, false);
-
-	deactivate_strided_vecops();
-
-	md_zfmac2(2 * N, tdims, tkstrs, kptr_ref + shift, tostrs, optr, tistrs, iptr);
-
-	activate_strided_vecops();
-
-	long counter_cpu = 0;
-	long counter_gpu = 0;
-
-	for (int i = 0; (unsigned long)i < sizeof(algos_bwd_krn_cpu) / sizeof(algos_bwd_krn_cpu[0]); i++) {
-
-		if (algos_bwd_krn_cpu[i](N, odims, ostrs, optr, idims, istrs, iptr, kdims, kstrs, kptr, flags, dilation, strides, conv)) {
-
-			float err = md_znrmse(N, kdims, kptr_ref, kptr);
-
-			debug_printf(DP_DEBUG1, "error zconvcorr_bwd_krn cpu algo %d: %.8f\n", i, err);
-
-			md_clear(N, kdims, kptr, CFL_SIZE);
-
-			counter_cpu += 1;
-
-			result = result && (max_nrmse > err);
-		}
-	}
+	long counter = 0;
 
 #ifdef USE_CUDA
-	num_init_gpu();
-	complex float* optr_gpu = md_alloc_gpu(N, odims, CFL_SIZE);
-	complex float* iptr_gpu = md_alloc_gpu(N, idims, CFL_SIZE);
-	complex float* kptr_gpu = md_alloc_gpu(N, kdims, CFL_SIZE);
+	int nr_algos = gpu ? ARRAY_SIZE(algos_bwd_krn_gpu) : ARRAY_SIZE(algos_bwd_krn_cpu);
+#else
+	int nr_algos = ARRAY_SIZE(algos_bwd_krn_cpu);
+#endif
 
-	md_copy(N, odims, optr_gpu, optr, CFL_SIZE);
-	md_copy(N, idims, iptr_gpu, iptr, CFL_SIZE);
-	md_clear(N, kdims, kptr_gpu, CFL_SIZE);
+	for(int i = 0; i < nr_algos; i++) {
 
-	for (int i = 0; (unsigned long)i < sizeof(algos_bwd_krn_gpu) / sizeof(algos_bwd_krn_gpu[0]); i++) {
+#ifdef USE_CUDA
+		zconvcorr_bwd_krn_algo_f* algo = gpu ? algos_bwd_krn_gpu[i] : algos_bwd_krn_cpu[i];
+#else
+		zconvcorr_bwd_krn_algo_f* algo = algos_bwd_krn_cpu[i];
+#endif
 
-		if (algos_bwd_krn_gpu[i](N, odims, ostrs, optr_gpu, idims, istrs, iptr_gpu, kdims, kstrs, kptr_gpu, flags, dilation, strides, conv)) {
+		md_copy(N, kdims, kptr_tst, kptr_ini, CFL_SIZE);
 
-			md_copy(N, kdims, kptr, kptr_gpu, CFL_SIZE);
-			md_clear(N, kdims, kptr_gpu, CFL_SIZE);
+		if (algo(N, odims, ostrs, optr, idims, istrs, iptr, kdims, kstrs, kptr_tst, flags, dilation, strides, conv)) {
 
-			float err = md_znrmse(N, kdims, kptr_ref, kptr);
+			float err = md_znrmse(N, kdims, kptr_ref, kptr_tst);
+			debug_printf((err >= max_nrmse) ? DP_WARN : DP_DEBUG1, "error zconvcorr_bwd_krn algo %d: %.8f\n", i, err);
 
-			debug_printf(DP_DEBUG1, "error zconvcorr_bwd_krn gpu algo %d: %.8f\n", i, err);
-
-			counter_gpu += 1;
-
+			counter += 1;
 			result = result && (max_nrmse > err);
 		}
 	}
 
-	md_free(optr_gpu);
-	md_free(iptr_gpu);
-	md_free(kptr_gpu);
-
-	if (counter_gpu < exp_nr_gpu) {
-
-		debug_printf(DP_INFO, "zconvcorr_bwd_krn only %d algorithms available on gpu(%d expected)\n", counter_gpu, exp_nr_gpu);
-		result = false;
-	}
-#else
-	UNUSED(exp_nr_gpu);
-	UNUSED(counter_gpu);
-#endif
-	md_free(optr);
+	md_free(kptr_tst);
+	md_free(kptr_ini);
 	md_free(kptr_ref);
+
+	md_free(optr);
 	md_free(iptr);
-	md_free(kptr);
 
-	if (counter_cpu < exp_nr_cpu) {
+	md_free(ref_ptr);
 
-		debug_printf(DP_INFO, "zconvcorr_bwd_krn only %d algorithms available on cpu(%d expected)\n", counter_cpu, exp_nr_cpu);
-		result = false;
-	}
-
-	return result;
+	return result && (counter >= min_no_algos);
 }

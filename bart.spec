@@ -61,6 +61,7 @@ install -D doc/bart.1 %{buildroot}/%{_mandir}/man1/bart.1
 /usr/share/doc/bart/dimensions-and-strides.txt
 /usr/share/doc/bart/fft.txt
 /usr/share/doc/bart/references.txt
+/usr/share/doc/bart/resize.txt
 /usr/share/doc/bart/style.txt
 /usr/share/bash-completion/completions/bart_completion.sh
 

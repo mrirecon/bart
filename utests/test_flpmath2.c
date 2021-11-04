@@ -70,7 +70,7 @@ static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long
 static bool test_optimized_md_zfmac2_dot(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(0ul, 1ul, 1ul, blas_threadsafe2, 5.e-6)); }
 static bool test_optimized_md_zfmac2_dot2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(2ul, 3ul, 3ul, blas_threadsafe2, 1.e-6)); }
 static bool test_optimized_md_zfmac2_gemv(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(1ul, 3ul, 2ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_zfmac2_gemv2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(2ul, 1ul, 3ul, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_zfmac2_gemv2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(2ul, 1ul, 3ul, blas_threadsafe2, 5.e-6)); }
 static bool test_optimized_md_zfmac2_gemv3(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(14ul, 13ul, 7ul, blas_threadsafe2, 1.e-6)); }
 static bool test_optimized_md_zfmac2_gemm(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 6ul, 5ul, blas_threadsafe2, 2.e-6)); }
 static bool test_optimized_md_zfmac2_gemm2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(11ul, 14ul, 13ul, blas_threadsafe2, 1.e-6));}
@@ -137,7 +137,7 @@ static bool test_optimized_md_zfmacc2_flags(unsigned long out_flag, unsigned lon
 	return result;
 }
 
-static bool test_optimized_md_zfmacc2_dot(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(0ul, 1ul, 1ul, blas_threadsafe2, 5.e-6)); }
+static bool test_optimized_md_zfmacc2_dot(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(0ul, 1ul, 1ul, blas_threadsafe2, 8.e-6)); }
 static bool test_optimized_md_zfmacc2_dot2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(2ul, 3ul, 3ul, blas_threadsafe2, 5.e-6)); }
 static bool test_optimized_md_zfmacc2_gemv(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(1ul, 3ul, 2ul, blas_threadsafe2, 2.e-6)); }
 static bool test_optimized_md_zfmacc2_gemv2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(2ul, 1ul, 3ul, blas_threadsafe2, 5.e-6)); }
@@ -677,7 +677,7 @@ static bool test_blas_threadsave_gemm2(void) {
 UT_REGISTER_TEST(test_blas_threadsave_gemm2);
 
 static bool test_blas_threadsave_gemv1(void) {
-	
+
 	long mdims[4] = {2, 10000, 1, 2};
 	long idims[4] = {1, 10000, 1, 2};
 	long odims[4] = {2, 1, 1, 2};
@@ -713,7 +713,7 @@ static bool test_blas_threadsave_gemv1(void) {
 UT_REGISTER_TEST(test_blas_threadsave_gemv1);
 
 static bool test_blas_threadsave_gemv2(void) {
-	
+
 	long mdims[4] = {10000, 2, 1, 2};
 	long idims[4] = {10000, 1, 1, 2};
 	long odims[4] = {1, 2, 1, 2};
@@ -749,7 +749,7 @@ static bool test_blas_threadsave_gemv2(void) {
 UT_REGISTER_TEST(test_blas_threadsave_gemv2);
 
 static bool test_blas_threadsave_gemv3(void) {
-	
+
 	long mdims[4] = {1000, 1000, 1, 2};
 	long idims[4] = {1000, 1, 1, 2};
 	long odims[4] = {1, 1000, 1, 2};

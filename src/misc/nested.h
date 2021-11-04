@@ -17,7 +17,7 @@
 #error NOEXEC_STACK only supported on x86_64
 #endif
 #include <stdio.h>
-#if __GNUC__ >= 10
+#if __GNUC__ >= 5
 #define NESTED_CALL(p, args) ({												\
 		__auto_type __p = (p);											\
 		struct { unsigned short mov1; unsigned int addr; unsigned short mov2; void* chain; unsigned int jmp; } 	\

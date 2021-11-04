@@ -85,5 +85,41 @@ extern const struct nlop_s* nlop_reshape_in_F(const struct nlop_s* op, int i, in
 extern const struct nlop_s* nlop_append_singleton_dim_in_F(const struct nlop_s* op, int i);
 extern const struct nlop_s* nlop_append_singleton_dim_out_F(const struct nlop_s* op, int o);
 
+extern const struct nlop_s* nlop_flatten_in_F(const struct nlop_s* op, int i);
+extern const struct nlop_s* nlop_flatten_out_F(const struct nlop_s* op, int o);
+
+extern const struct nlop_s* nlop_no_der(const struct nlop_s* op, int o, int i);
+extern const struct nlop_s* nlop_no_der_F(const struct nlop_s* op, int o, int i);
+
+
+
+extern void nlop_generic_apply(const struct nlop_s* op,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI]);
+
+extern void nlop_generic_apply2(const struct nlop_s* op,
+	int NO, int DO[NO], const long* odims[NO], const long* ostrs[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const long* istrs[NO], const complex float* src[NI]);
+
+extern void nlop_generic_apply_loop(const struct nlop_s* op, unsigned long loop_flags,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI]);
+
+extern void nlop_generic_apply2_sameplace(const struct nlop_s* op,
+	int NO, int DO[NO], const long* odims[NO], const long* ostrs[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const long* istrs[NO], const complex float* src[NI],
+	const void* ref);
+
+extern void nlop_generic_apply_sameplace(const struct nlop_s* op,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI],
+	const void* ref);
+
+extern void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned long loop_flags,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI],
+	const void* ref);
+
 
 #endif
+

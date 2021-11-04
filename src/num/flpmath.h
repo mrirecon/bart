@@ -76,6 +76,9 @@ extern void md_ztenmul(unsigned int D, const long out_dims[__VLA(D)], _Complex f
 extern void md_ztenmulc2(unsigned int D, const long max_dims[__VLA(D)], const long out_strs[__VLA(D)], _Complex float* out, const long in1_strs[__VLA(D)], const _Complex float* in1, const long in2_strs[__VLA(D)], const _Complex float* in2);
 extern void md_ztenmulc(unsigned int D, const long out_dims[__VLA(D)], _Complex float* out, const long in1_dims[__VLA(D)], const _Complex float* in1, const long in2_dims[__VLA(D)], const _Complex float* int2);
 
+extern void md_tenmul2(unsigned int D, const long max_dims[__VLA(D)], const long out_strs[__VLA(D)], float* out, const long in1_strs[__VLA(D)], const float* in1, const long in2_strs[__VLA(D)], const float* in2);
+extern void md_tenmul(unsigned int D, const long out_dims[__VLA(D)], float* out, const long in1_dims[__VLA(D)], const float* in1, const long in2_dims[__VLA(D)], const float* in2);
+
 extern void md_zcorr2(	int N, unsigned long flags,
 			const long odims[__VLA(N)], const long ostrs[__VLA(N)], _Complex float* out,
 			const long kdims[__VLA(N)], const long kstrs[__VLA(N)], const _Complex float* krn,

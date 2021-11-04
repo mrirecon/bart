@@ -135,7 +135,7 @@ CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
 
 ifeq ($(BUILDTYPE), MacOSX)
-	CC ?= gcc-mp-6
+	CC ?= gcc-mp-10
 else
 	CC ?= gcc
 	ifneq ($(BUILDTYPE), MSYS)
@@ -305,6 +305,7 @@ TARGETS = bart $(XTARGETS)
 ifeq ($(DEBUG),1)
 CPPFLAGS += -g
 CFLAGS += -g
+NVCCFLAGS += -g
 endif
 
 ifeq ($(UBSAN),1)
@@ -323,7 +324,7 @@ endif
 
 ifeq ($(MAKESTAGE),1)
 .PHONY: doc/commands.txt $(TARGETS)
-default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest pythontest $(TARGETS):
+default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest pythontest shared-lib $(TARGETS):
 	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
 
 tests/test-%: force
@@ -377,7 +378,7 @@ endif
 
 # sm_20 no longer supported in CUDA 9
 GPUARCH_FLAGS ?=
-NVCCFLAGS = -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
+NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
 #NVCCFLAGS = -Xcompiler -fPIC -Xcompiler -fopenmp -O3  -I$(srcdir)/
 
 
@@ -452,12 +453,18 @@ endif
 ifeq ($(NON_DETERMINISTIC),1)
 CPPFLAGS += -DNON_DETERMINISTIC
 CFLAGS += -DNON_DETERMINISTIC
+NVCCFLAGS += -DNON_DETERMINISTIC
 endif
 
 
 CPPFLAGS += $(FFTW_H) $(BLAS_H)
 
-
+# librt
+ifeq ($(BUILDTYPE), MacOSX)
+	LIBRT :=
+else
+	LIBRT := -lrt
+endif
 
 # png
 PNG_L := -lpng
@@ -604,7 +611,7 @@ MODULES_test_nufft += -lnoncart -llinops
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv
 UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr
-UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls
+UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr
 
 # lib simu
 UTARGETS += test_ode_bloch test_biot_savart test_signals test_epg
@@ -696,20 +703,20 @@ endif
 
 .SECONDEXPANSION:
 $(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
-	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm -lrt
+	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
 #	rm $(srcdir)/$@.o
 
 UTESTS=$(shell $(root)/utests/utests-collect.sh ./utests/$@.c)
 
 .SECONDEXPANSION:
 $(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm -lrt
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT)
 
 UTESTS_GPU=$(shell $(root)/utests/utests_gpu-collect.sh ./utests/$@.c)
 
 .SECONDEXPANSION:
 $(UTARGETS_GPU): % : utests/utest_gpu.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS_GPU="$(UTESTS_GPU)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm -lrt
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS_GPU="$(UTESTS_GPU)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT)
 
 
 
@@ -802,7 +809,12 @@ utests_gpu-all: $(UTARGETS_GPU)
 utest_gpu: utests_gpu-all
 	@echo ALL GPU UNIT TESTS PASSED.
 
-
+# shared library
+shared-lib:
+	make allclean
+	CFLAGS="-fPIC $(OPT) -Wmissing-prototypes" make
+	gcc -shared -fopenmp -o libbart.so src/bart.o -Wl,-whole-archive lib/lib*.a -Wl,-no-whole-archive -Wl,-Bdynamic $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm -lrt
+	make allclean
 
 endif	# MAKESTAGE
 
@@ -824,4 +836,6 @@ install: bart
 # symbol table
 bart.syms: bart
 	rules/make_symbol_table.sh bart bart.syms
+
+
 

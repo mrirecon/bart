@@ -5,6 +5,8 @@
  * Authors: Martin Uecker, Moritz Blumenthal
  */
 
+#include <limits.h>
+
 #include "num/multind.h"
 
 #include "num/ops.h"
@@ -194,7 +196,7 @@ struct nlop_s* nlop_generic_create2(	int OO, int ON, const long odims[OO][ON], c
 		strs[i] = (i < OO) ? ostr[i] : istr[i - OO];
 
 
-	const struct linop_s* (*der)[II][OO] = TYPE_ALLOC(const struct linop_s*[II][OO]);
+	const struct linop_s* (*der)[II?:1][OO?:1] = TYPE_ALLOC(const struct linop_s*[II?:1][OO?:1]);
 
 	n->derivative = &(*der)[0][0];
 
@@ -238,7 +240,7 @@ struct nlop_s* nlop_generic_create(int OO, int ON, const long odims[OO][ON], int
 	long istrs[II][IN];
 	for (int i = 0; i < II; i++)
 		md_calc_strides(IN, istrs[i], idims[i], CFL_SIZE);
-	long ostrs[OO][ON];
+	long ostrs[OO?:1][ON?:1];
 	for (int o = 0; o < OO; o++)
 		md_calc_strides(ON, ostrs[o], odims[o], CFL_SIZE);
 
@@ -290,7 +292,7 @@ void nlop_free(const struct nlop_s* op)
 
 	operator_free(op->op);
 
-	const struct linop_s* (*der)[II][OO] = (void*)op->derivative;
+	const struct linop_s* (*der)[II?:1][OO?:1] = (void*)op->derivative;
 
 	for (int i = 0; i < II; i++)
 		for (int o = 0; o < OO; o++)
@@ -672,6 +674,18 @@ const struct nlop_s* nlop_reshape_out_F(const struct nlop_s* op, int o, int NO, 
 	return result;
 }
 
+const struct nlop_s* nlop_flatten_in_F(const struct nlop_s* op, int i)
+{
+	auto dom = nlop_generic_domain(op, i);
+	return nlop_reshape_in(op, i, 1, MD_DIMS(md_calc_size(dom->N, dom->dims)));
+}
+
+const struct nlop_s* nlop_flatten_out_F(const struct nlop_s* op, int o)
+{
+	auto cod = nlop_generic_codomain(op, o);
+	return nlop_reshape_out(op, o, 1, MD_DIMS(md_calc_size(cod->N, cod->dims)));
+}
+
 const struct nlop_s* nlop_append_singleton_dim_in_F(const struct nlop_s* op, int i)
 {
 	long N = nlop_generic_domain(op, i)->N;
@@ -694,6 +708,40 @@ const struct nlop_s* nlop_append_singleton_dim_out_F(const struct nlop_s* op, in
 	return nlop_reshape_out_F(op, o, N + 1, dims);
 }
 
+
+const struct nlop_s* nlop_no_der(const struct nlop_s* op, int o, int i)
+{
+	PTR_ALLOC(struct nlop_s, n);
+
+	int II = nlop_get_nr_in_args(op);
+	int OO = nlop_get_nr_out_args(op);
+
+	n->op = operator_ref(op->op);
+
+	const struct linop_s* (*der)[II][OO] = (void*)op->derivative;
+
+	PTR_ALLOC(const struct linop_s*[II][OO], nder);
+
+	for (int ii = 0; ii < II; ii++)
+		for (int oo = 0; oo < OO; oo++) {
+
+			auto cod = linop_codomain((*der)[ii][oo]);
+			auto dom = linop_domain((*der)[ii][oo]);
+
+			(*nder)[ii][oo] = ((i == ii) && (o == oo)) ? linop_null_create(cod->N, cod->dims, dom->N, dom->dims) : linop_clone((*der)[ii][oo]);
+		}
+
+
+	n->derivative = &(*PTR_PASS(nder))[0][0];
+	return PTR_PASS(n);
+}
+
+const struct nlop_s* nlop_no_der_F(const struct nlop_s* op, int o, int i)
+{
+	auto result = nlop_no_der(op, o, i);
+	nlop_free(op);
+	return result;
+}
 
 void nlop_debug(enum debug_levels dl, const struct nlop_s* x)
 {
@@ -718,4 +766,179 @@ void nlop_debug(enum debug_levels dl, const struct nlop_s* x)
 	}
 }
 
+
+
+
+void nlop_generic_apply2_sameplace(const struct nlop_s* op,
+	int NO, int DO[NO], const long* odims[NO], const long* ostrs[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const long* istrs[NO], const complex float* src[NI],
+	const void* ref)
+{
+	int N = NO + NI;
+	void* args[N];
+
+	for (int i = 0; i < NO; i++) {
+
+		assert(iovec_check(nlop_generic_codomain(op, i), DO[i], odims[i], MD_STRIDES(DO[i], odims[i], CFL_SIZE)));
+
+		args[i] = md_alloc_sameplace(DO[i], odims[i], CFL_SIZE, (NULL == ref) ? dst[i] : ref);
+	}
+
+	for (int i = 0; i < NI; i++) {
+
+		assert(iovec_check(nlop_generic_domain(op, i), DI[i], idims[i], MD_STRIDES(DI[i], idims[i], CFL_SIZE)));
+
+		args[NO + i] = md_alloc_sameplace(DI[i], idims[i], CFL_SIZE, (NULL == ref) ? src[i] : ref);
+
+		md_copy2(DI[i], idims[i], MD_STRIDES(DI[i], idims[i], CFL_SIZE), args[NO + i], istrs[i], src[i], CFL_SIZE);
+	}
+
+	operator_generic_apply_unchecked(op->op, N, args);
+
+	for (int i = 0; i < NO; i++)
+		md_copy2(DO[i], odims[i], ostrs[i], dst[i], MD_STRIDES(DO[i], odims[i], CFL_SIZE), args[i], CFL_SIZE);
+
+	for (int i = 0; i < N; i++)
+		md_free(args[i]);
+}
+
+void nlop_generic_apply_sameplace(const struct nlop_s* op,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI],
+	const void* ref)
+{
+	const long* ostrs[NO];
+	const long* istrs[NI];
+
+	for (int i = 0; i < NO; i++) {
+
+		ostrs[i] = *TYPE_ALLOC(long[DO[i]]);
+
+		md_calc_strides(DO[i], (long*)ostrs[i], odims[i], CFL_SIZE);
+	}
+
+	for (int i = 0; i < NI; i++) {
+
+		istrs[i] = *TYPE_ALLOC(long[DI[i]]);
+
+		md_calc_strides(DI[i], (long*)istrs[i], idims[i], CFL_SIZE);
+	}
+
+	nlop_generic_apply2_sameplace(op, NO, DO, odims, ostrs, dst, NI, DI, idims, istrs, src, ref);
+
+	for (int i = 0; i < NO; i++)
+		xfree(ostrs[i]);
+
+	for (int i = 0; i < NI; i++)
+		xfree(istrs[i]);
+}
+
+void nlop_generic_apply(const struct nlop_s* op,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI])
+{
+	nlop_generic_apply_sameplace(op, NO, DO, odims, dst, NI, DI, idims, src, NULL);
+}
+
+void nlop_generic_apply2(const struct nlop_s* op,
+	int NO, int DO[NO], const long* odims[NO], const long* ostrs[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const long* istrs[NO], const complex float* src[NI])
+{
+	nlop_generic_apply2_sameplace(op, NO, DO, odims, ostrs, dst, NI, DI, idims, istrs, src, NULL);
+}
+
+
+
+void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned long loop_flags,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI],
+	const void* ref)
+{
+	int D = 0;
+
+	for (int i = 0; i < NO; i++)
+		D = MAX(D, DO[i]);
+
+	for (int i = 0; i < NI; i++)
+		D = MAX(D, DI[i]);
+
+	assert(D < (int)sizeof(loop_flags) * CHAR_BIT);
+
+	long loop_dims[D];
+	md_singleton_dims(D, loop_dims);
+
+	const long* nodims[NO];
+	const long* nidims[NI];
+	const long* ostrs[NO];
+	const long* istrs[NI];
+
+	for (int i = 0; i < NO; i++) {
+
+		nodims[i] = *TYPE_ALLOC(long[DO[i]]);
+		ostrs[i] = *TYPE_ALLOC(long[DO[i]]);
+
+		md_select_dims(DO[i], ~loop_flags, (long*)nodims[i], odims[i]);
+		md_calc_strides(DO[i], (long*)ostrs[i], odims[i], CFL_SIZE);
+
+		long tloop_dims[DO[i]];
+		md_select_dims(DO[i], loop_flags, tloop_dims, odims[i]);
+
+		assert(md_check_compat(DO[i], ~0ul, loop_dims, tloop_dims));
+		md_max_dims(DO[i], ~0ul, loop_dims, loop_dims, tloop_dims);
+	}
+
+	for (int i = 0; i < NI; i++) {
+
+		nidims[i] = *TYPE_ALLOC(long[DI[i]]);
+		istrs[i] = *TYPE_ALLOC(long[DI[i]]);
+
+		md_select_dims(DI[i], ~loop_flags, (long*)nidims[i], idims[i]);
+		md_calc_strides(DI[i], (long*)istrs[i], idims[i], CFL_SIZE);
+
+		long tloop_dims[DI[i]];
+		md_select_dims(DI[i], loop_flags, tloop_dims, idims[i]);
+
+		assert(md_check_compat(DI[i], ~0ul, loop_dims, tloop_dims));
+		md_max_dims(DI[i], ~0ul, loop_dims, loop_dims, tloop_dims);
+	}
+
+	long pos[D];
+	md_singleton_strides(D, pos);
+
+	do {
+		complex float* ndst[NO];
+		const complex float* nsrc[NI];
+
+		for (int i = 0; i < NO; i++)
+			ndst[i] = &(MD_ACCESS(DO[i], ostrs[i], pos, dst[i]));
+
+		for (int i = 0; i < NI; i++)
+			nsrc[i] = &(MD_ACCESS(DI[i], istrs[i], pos, src[i]));
+
+		nlop_generic_apply2_sameplace(op,
+			NO, DO, nodims, ostrs, ndst,
+			NI, DI, nidims, istrs, nsrc,
+			ref);
+
+	} while (md_next(D, loop_dims, loop_flags, pos));
+
+	for (int i = 0; i < NO; i++) {
+
+		xfree(nodims[i]);
+		xfree(ostrs[i]);
+	}
+
+	for (int i = 0; i < NI; i++) {
+
+		xfree(nidims[i]);
+		xfree(istrs[i]);
+	}
+}
+
+void nlop_generic_apply_loop(const struct nlop_s* op, unsigned long loop_flags,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI])
+{
+	nlop_generic_apply_loop_sameplace(op, loop_flags, NO, DO, odims, dst, NI, DI, idims, src, NULL);
+}
 

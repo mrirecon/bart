@@ -30,7 +30,7 @@
  * @param istr1 must be of the form {0, 1} or {0}
  * @param iptr1 must equal optr
  * @param istr1 must be of the form {1, dim[0]} or {1}
- * @param iptr1 
+ * @param iptr1
  **/
 void reduce_zadd_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
 {
@@ -67,7 +67,7 @@ void reduce_zadd_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long
  * @param istr1 must be of the form {1, 0}
  * @param iptr1 must equal optr
  * @param istr1 must be of the form {1, dim[0]}
- * @param iptr1 
+ * @param iptr1
  **/
 void reduce_zadd_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
 {
@@ -97,57 +97,25 @@ void reduce_zadd_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long
  * @param istr1 must be of the form {0, 1} or {0}
  * @param iptr1 must equal optr
  * @param istr1 must be of the form {1, dim[0]} or {1}
- * @param iptr1 
+ * @param iptr1
  **/
 void reduce_zadd_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
 {
 	long size = 8;
 
 	assert(optr == iptr1);
-
-	assert((2 == N) || (1 == N));
 	for (unsigned int i = 0; i < N; i++)
 		assert(ostr[i] == istr1[i]);
-	
-	if (1 == N) {
-		assert(0 == ostr[0]);
-		assert(size == istr2[0]);
 
-		complex float* ones = md_alloc_sameplace(1, dims, size, optr);
-		md_zfill(1, dims, ones, 1.);
+	long one_dims[N];
+	long one_strs[N];
+	md_select_dims(N, ~md_nontriv_strides(N, ostr) & md_nontriv_strides(N, istr2), one_dims, dims);
+	md_calc_strides(N, one_strs, one_dims, size);
 
-		blas_zfmac_cdotu(1, dims, ostr, optr, istr2, ones, istr2, iptr2);
-
-		md_free(ones);
-	} else {
-
-		assert((0 == ostr[0]) || (0 == ostr[1]));
-		assert((size == ostr[0]) || (size == ostr[1]));
-		assert((size == istr2[0]) && (size * dims[0] == istr2[1]));
-
-		long dim_batch = dims[(0 == ostr[0]) ? 1 : 0];
-		long dim_reduce = dims[(0 == ostr[0]) ? 0 : 1];
-
-		long ndims[2] = {dim_batch, dim_reduce};
-		long nstrs[2] = {size, size};
-		if(0 == ostr[0])
-			nstrs[0] *= dim_reduce;
-		else
-			nstrs[1] *= dim_batch;
-
-		long rdims[2] = {dim_batch, 1};
-		long odims[2] = {1, dim_reduce};
-
-		complex float* ones = md_alloc_sameplace(2, dims, size, optr);
-		md_zfill(2, odims, ones, 1.);
-
-		blas_zfmac_cgemv(2, ndims,
-			MD_STRIDES(2, rdims, size), optr,
-			nstrs, iptr2,
-			MD_STRIDES(2, odims, size), ones);
-
-		md_free(ones);
-	}
+	complex float* ones = md_alloc_sameplace(N, one_dims, size, optr);
+	md_zfill(N, one_dims, ones, 1.);
+	md_zfmac2(N, dims, ostr, optr, istr2, iptr2, one_strs, ones);
+	md_free(ones);
 }
 
 /**
@@ -158,7 +126,7 @@ void reduce_zadd_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr
  * @param istr1 must be of the form {0, 1} or {0}
  * @param iptr1 must equal optr
  * @param istr1 must be of the form {1, dim[0]} or {1}
- * @param iptr1 
+ * @param iptr1
  **/
 void reduce_add_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], float* optr, const long istr1[__VLA(N)], const float* iptr1, const long istr2[__VLA(N)], const float* iptr2)
 {
@@ -195,7 +163,7 @@ void reduce_add_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long 
  * @param istr1 must be of the form {1, 0}
  * @param iptr1 must equal optr
  * @param istr1 must be of the form {1, dim[0]}
- * @param iptr1 
+ * @param iptr1
  **/
 void reduce_add_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], float* optr, const long istr1[__VLA(N)], const float* iptr1, const long istr2[__VLA(N)], const float* iptr2)
 {
@@ -225,59 +193,26 @@ void reduce_add_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long 
  * @param istr1 must be of the form {0, 1} or {0}
  * @param iptr1 must equal optr
  * @param istr1 must be of the form {1, dim[0]} or {1}
- * @param iptr1 
+ * @param iptr1
  **/
 void reduce_add_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], float* optr, const long istr1[__VLA(N)], const float* iptr1, const long istr2[__VLA(N)], const float* iptr2)
 {
 	long size = 4;
 
 	assert(optr == iptr1);
-
-	assert((2 == N) || (1 == N));
 	for (unsigned int i = 0; i < N; i++)
 		assert(ostr[i] == istr1[i]);
-	
-	if (1 == N) {
-		assert(0 == ostr[0]);
-		assert(size == istr2[0]);
 
-		float* ones = md_alloc_sameplace(1, dims, size, optr);
-		float one = 1.;
-		md_fill(1, dims, ones, &one, 4);
+	long one_dims[N];
+	long one_strs[N];
+	md_select_dims(N, ~md_nontriv_strides(N, ostr) & md_nontriv_strides(N, istr2), one_dims, dims);
+	md_calc_strides(N, one_strs, one_dims, size);
 
-		blas_fmac_sdot(1, dims, ostr, optr, istr2, ones, istr2, iptr2);
-
-		md_free(ones);
-	} else {
-
-		assert((0 == ostr[0]) || (0 == ostr[1]));
-		assert((size == ostr[0]) || (size == ostr[1]));
-		assert((size == istr2[0]) && (size * dims[0] == istr2[1]));
-
-		long dim_batch = dims[(0 == ostr[0]) ? 1 : 0];
-		long dim_reduce = dims[(0 == ostr[0]) ? 0 : 1];
-
-		long ndims[2] = {dim_batch, dim_reduce};
-		long nstrs[2] = {size, size};
-		if(0 == ostr[0])
-			nstrs[0] *= dim_reduce;
-		else
-			nstrs[1] *= dim_batch;
-
-		long rdims[2] = {dim_batch, 1};
-		long odims[2] = {1, dim_reduce};
-
-		float* ones = md_alloc_sameplace(2, dims, size, optr);
-		float one = 1.;
-		md_fill(2, odims, ones, &one, 4);
-
-		blas_fmac_sgemv(2, ndims,
-			MD_STRIDES(2, rdims, size), optr,
-			nstrs, iptr2,
-			MD_STRIDES(2, odims, size), ones);
-
-		md_free(ones);
-	}
+	float* ones = md_alloc_sameplace(N, one_dims, size, optr);
+	float one = 1.;
+	md_fill(N, one_dims, ones, &one, size);
+	md_fmac2(N, dims, ostr, optr, istr2, iptr2, one_strs, ones);
+	md_free(ones);
 }
 
 /**
@@ -288,7 +223,7 @@ void reduce_add_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr[
  * @param istr1 must be of the form {0, 1} or {0}
  * @param iptr1 must equal optr
  * @param istr1 must be of the form {1, dim[0]} or {1}
- * @param iptr1 
+ * @param iptr1
  **/
 void reduce_zmax_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
 {
@@ -325,7 +260,7 @@ void reduce_zmax_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long
  * @param istr1 must be of the form {1, 0}
  * @param iptr1 must equal optr
  * @param istr1 must be of the form {1, dim[0]}
- * @param iptr1 
+ * @param iptr1
  **/
 void reduce_zmax_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
 {

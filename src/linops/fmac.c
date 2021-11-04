@@ -15,10 +15,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
-#ifdef USE_CUDA
-#include "num/gpuops.h"
-#endif
-//#include "num/iovec.h"
+#include "num/multiplace.h"
 
 #include "linops/linop.h"
 
@@ -47,41 +44,16 @@ struct fmac_data {
 	long *tdims;
 	long *tstrs;
 
-	const complex float* tensor;
-#ifdef USE_CUDA
-	const complex float* gpu_tensor;
-#endif
+	struct multiplace_array_s* tensor;
 };
 
 static DEF_TYPEID(fmac_data);
 
-#ifdef USE_CUDA
-static const complex float* get_tensor(const struct fmac_data* data, bool gpu)
-{
-	const complex float* tensor = data->tensor;
-
-	if (gpu) {
-
-		if (NULL == data->gpu_tensor)
-			((struct fmac_data*)data)->gpu_tensor = md_gpu_move(data->N, data->tdims, data->tensor, CFL_SIZE);
-
-		tensor = data->gpu_tensor;
-	}
-
-	return tensor;
-}
-#endif
-
-
-
 static void fmac_free_data(const linop_data_t* _data)
 {
-        auto data = CAST_DOWN(fmac_data, _data);
+	auto data = CAST_DOWN(fmac_data, _data);
 
-#ifdef USE_CUDA
-	if (NULL != data->gpu_tensor && data->tensor != data->gpu_tensor)
-		md_free((void*)data->gpu_tensor);
-#endif
+	multiplace_free(data->tensor);
 
 	xfree(data->dims);
 	xfree(data->idims);
@@ -97,35 +69,23 @@ static void fmac_free_data(const linop_data_t* _data)
 
 static void fmac_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        auto data = CAST_DOWN(fmac_data, _data);
-
-#ifdef USE_CUDA
-	const complex float* tensor = get_tensor(data, cuda_ondevice(src));
-#else
-	const complex float* tensor = data->tensor;
-#endif
+	auto data = CAST_DOWN(fmac_data, _data);
 
 	md_clear2(data->N, data->odims, data->ostrs, dst, CFL_SIZE);
-	md_zfmac2(data->N, data->dims, data->ostrs, dst, data->istrs, src, data->tstrs, tensor);
+	md_zfmac2(data->N, data->dims, data->ostrs, dst, data->istrs, src, data->tstrs, multiplace_read(data->tensor, dst));
 }
 
 static void fmac_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        auto data = CAST_DOWN(fmac_data, _data);
-
-#ifdef USE_CUDA
-	const complex float* tensor = get_tensor(data, cuda_ondevice(src));
-#else
-	const complex float* tensor = data->tensor;
-#endif
+	auto data = CAST_DOWN(fmac_data, _data);
 
 	md_clear2(data->N, data->idims, data->istrs, dst, CFL_SIZE);
-	md_zfmacc2(data->N, data->dims, data->istrs, dst, data->ostrs, src, data->tstrs, tensor);
+	md_zfmacc2(data->N, data->dims, data->istrs, dst, data->ostrs, src, data->tstrs, multiplace_read(data->tensor, dst));
 }
 
 static void fmac_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-        struct fmac_data* data = CAST_DOWN(fmac_data, _data);
+	struct fmac_data* data = CAST_DOWN(fmac_data, _data);
 
 	complex float* tmp = md_alloc_sameplace(data->N, data->odims, CFL_SIZE, dst);
 	fmac_apply(_data, tmp, src);
@@ -162,12 +122,7 @@ const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N],
 	md_select_dims(N, ~tflags, data->tdims, dims);
 	md_calc_strides(N, data->tstrs, data->tdims, CFL_SIZE);
 
-	data->tensor = tensor;
-#ifdef USE_CUDA
-	data->gpu_tensor = NULL;
-	if (cuda_ondevice(data->tensor))
-		data->gpu_tensor = data->tensor;
-#endif
+	data->tensor = (NULL == tensor) ? NULL : multiplace_move(N, data->tdims, CFL_SIZE, tensor);
 
 	long odims[N];
 	md_copy_dims(N, odims, data->odims);
@@ -179,3 +134,17 @@ const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N],
 			CAST_UP(PTR_PASS(data)), fmac_apply, fmac_adjoint, fmac_normal,
 			NULL, fmac_free_data);
 }
+
+void linop_fmac_set_tensor(const struct linop_s* lop, int N, const long tdims[N], const complex float* tensor)
+{
+	auto _data = linop_get_data(lop);
+	auto data = CAST_DOWN(fmac_data, _data);
+
+	assert(data->N == (unsigned int)N);
+	assert(md_check_equal_dims(N, tdims, data->tdims, ~0));
+
+	multiplace_free(data->tensor);
+
+	data->tensor = multiplace_move(N, data->tdims, CFL_SIZE, tensor);
+}
+

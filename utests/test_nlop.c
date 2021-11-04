@@ -12,6 +12,7 @@
 #include "num/flpmath.h"
 #include "num/rand.h"
 #include "num/iovec.h"
+#include "num/ops.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -27,6 +28,8 @@
 #include "nlops/cast.h"
 #include "nlops/chain.h"
 #include "nlops/nltest.h"
+#include "nlops/stack.h"
+#include "nlops/const.h"
 
 #include "utest.h"
 
@@ -118,7 +121,7 @@ UT_REGISTER_TEST(test_nlop_chain);
 
 
 
-static bool test_nlop_tenmul(void)
+static bool test_nlop_tenmul2(bool permute)
 {
 	enum { N = 3 };
 	long odims[N] = { 10, 1, 3 };
@@ -133,7 +136,20 @@ static bool test_nlop_tenmul(void)
 	md_gaussian_rand(N, idims1, src1);
 	md_gaussian_rand(N, idims2, src2);
 
-	struct nlop_s* tenmul = nlop_tenmul_create(N, odims, idims1, idims2);
+	struct nlop_s* tenmul = NULL;
+
+	if (!permute) {
+
+		tenmul = nlop_tenmul_create(N, odims, idims1, idims2);
+
+	} else {
+
+		struct nlop_s* tmp = nlop_tenmul_create(N, odims, idims2, idims1);
+
+		tenmul = nlop_permute_inputs(tmp, 2, (int[]){ 1, 0 });
+
+		nlop_free(tmp);
+	}
 
 	md_ztenmul(N, odims, dst1, idims1, src1, idims2, src2);
 
@@ -152,9 +168,21 @@ static bool test_nlop_tenmul(void)
 }
 
 
+static bool test_nlop_tenmul(void)
+{
+	return test_nlop_tenmul2(false);
+}
 
 UT_REGISTER_TEST(test_nlop_tenmul);
 
+
+
+static bool test_nlop_permute(void)
+{
+	return test_nlop_tenmul2(true);
+}
+
+UT_REGISTER_TEST(test_nlop_permute);
 
 
 
@@ -184,7 +212,7 @@ static bool test_nlop_tenmul_der(void)
 
 	linop_forward(der1, N, odims, dst2, N, idims1, src1);
 	linop_forward(der2, N, odims, dst3, N, idims2, src2);
-	
+
 
 	double err = md_znrmse(N, odims, dst2, dst1)
 		   + md_znrmse(N, odims, dst3, dst1);
@@ -590,4 +618,211 @@ static bool test_nlop_link(void)
 UT_REGISTER_TEST(test_nlop_link);
 
 
+static bool test_nlop_reshape(void)
+{
+	enum { N = 3 };
+	long odims[N] = { 10, 1, 3 };
+	long idims1[N] = { 1, 7, 3 };
+	long idims2[N] = { 10, 7, 1 };
+
+	complex float* dst1 = md_alloc(N, odims, CFL_SIZE);
+	complex float* dst2 = md_alloc(N, odims, CFL_SIZE);
+	complex float* src1 = md_alloc(N, idims1, CFL_SIZE);
+	complex float* src2 = md_alloc(N, idims2, CFL_SIZE);
+
+	md_gaussian_rand(N, idims1, src1);
+	md_gaussian_rand(N, idims2, src2);
+
+	auto op = nlop_tenmul_create(N, odims, idims1, idims2);
+
+	long nodims[1] = { md_calc_size(N, odims) };
+	long nidims1[3] = { 1, 1, md_calc_size(N, idims1) };
+	long nidims2[2] = { md_calc_size(N, idims2), 1 };
+
+	auto op_reshape = nlop_reshape_out(op, 0, 1, nodims);
+	op_reshape = nlop_reshape_in_F(op_reshape, 0, 3, nidims1);
+	op_reshape = nlop_reshape_in_F(op_reshape, 1, 2, nidims2);
+
+	nlop_generic_apply_unchecked(op, 3, (void*[]){ dst1, src1, src2 });
+	nlop_generic_apply_unchecked(op_reshape, 3, (void*[]){ dst2, src1, src2 });
+
+	double err = md_znrmse(N, odims, dst2, dst1);
+
+	auto der1 = nlop_get_derivative(op, 0, 0);
+	auto der1_resh = nlop_get_derivative(op_reshape, 0, 0);
+
+	linop_forward_unchecked(der1, dst1, src1);
+	linop_forward_unchecked(der1_resh, dst2, src1);
+
+	err += md_znrmse(N, odims, dst2, dst1);
+
+	auto der2 = nlop_get_derivative(op, 0, 1);
+	auto der2_resh = nlop_get_derivative(op_reshape, 0, 1);
+
+	linop_forward_unchecked(der2, dst1, src2);
+	linop_forward_unchecked(der2_resh, dst2, src2);
+
+	err += md_znrmse(N, odims, dst2, dst1);
+
+	nlop_free(op_reshape);
+	nlop_free(op);
+
+	md_free(src1);
+	md_free(src2);
+	md_free(dst1);
+	md_free(dst2);
+
+	UT_ASSERT(err < UT_TOL);
+}
+
+UT_REGISTER_TEST(test_nlop_reshape);
+
+
+
+struct count_op_s {
+
+	INTERFACE(linop_data_t);
+	int* counter;
+};
+
+static DEF_TYPEID(count_op_s);
+
+static void count_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	const struct count_op_s* data = CAST_DOWN(count_op_s, _data);
+
+	(*data->counter)++;
+
+	long dim[2] = { 1 };
+	md_copy(1, dim, dst, src, CFL_SIZE);
+}
+
+static void count_free(const linop_data_t* _data)
+{
+	const struct count_op_s* data = CAST_DOWN(count_op_s, _data);
+	xfree(data);
+}
+
+static struct linop_s* linop_counter_create(int* counter)
+{
+	PTR_ALLOC(struct count_op_s, data);
+	SET_TYPEID(count_op_s, data);
+
+	data->counter = counter;
+
+	long dim[1] = { 1 };
+
+	return linop_create(1, dim, 1, dim, CAST_UP(PTR_PASS(data)), count_forward, count_forward, count_forward, NULL, count_free);
+}
+
+static bool test_nlop_parallel_derivatives(void)
+{
+	long dim[1] = { 1 };
+	int counter = 0;
+
+	complex float in[1] ={ 1. };
+	complex float out1[1] ={ 1. };
+	complex float out2[1] ={ 1. };
+	complex float* outs[2] = { out1, out2 };
+
+	auto countop1 = linop_counter_create(&counter);
+	auto chain = linop_chain(countop1, countop1);
+
+	operator_apply_parallel_unchecked(2, MAKE_ARRAY(chain->forward, chain->forward), outs, in);
+
+	bool result = (2 == counter);
+
+	counter = 0;
+
+	auto plus_op = linop_plus(chain, chain);
+
+	linop_forward_unchecked(plus_op, out1, in);
+
+	linop_free(plus_op);
+
+	result = result && (2 == counter);
+
+	auto tenmul_op = nlop_tenmul_create(1, dim, dim ,dim);
+
+	const struct nlop_s* tenmul_chain = nlop_chain2_FF(tenmul_op, 0, nlop_from_linop(chain), 0);
+	tenmul_chain = nlop_chain2_FF(nlop_from_linop(chain), 0, tenmul_chain, 0);
+	tenmul_chain = nlop_chain2_FF(nlop_from_linop(chain), 0, tenmul_chain, 0);
+	tenmul_chain = nlop_reshape_in_F(tenmul_chain, 0, 1, dim);
+
+	nlop_generic_apply_unchecked(tenmul_chain, 3, (void*[]){ out1, out2, in });
+
+	counter = 0;
+
+	const struct operator_s* op1 = nlop_get_derivative(tenmul_chain, 0, 0)->adjoint;
+	const struct operator_s* op2 = nlop_get_derivative(tenmul_chain, 0, 1)->adjoint;
+
+	operator_apply_parallel_unchecked(2, MAKE_ARRAY(op1, op2), outs, in);
+
+	result = result && (6 == counter);
+
+	auto tmp = nlop_reshape_in(tenmul_chain, 0, 1, dim);
+	const struct nlop_s* bridge = nlop_chain2(tmp, 0, tenmul_chain, 0);
+	bridge = nlop_dup_F(bridge, 0, 1);
+	bridge = nlop_dup_F(bridge, 0, 1);
+
+	counter = 0;
+
+	linop_adjoint_unchecked(nlop_get_derivative(bridge, 0, 0), out1, in);
+
+	result = result && (12 == counter);
+
+	nlop_free(bridge);
+	nlop_free(tmp);
+	nlop_free(tenmul_chain);
+	linop_free(countop1);
+	linop_free(chain);
+
+	return result;
+}
+
+UT_REGISTER_TEST(test_nlop_parallel_derivatives);
+
+
+
+static bool test_stack(void)
+{
+	enum { N = 3 };
+	long dims1[N] = { 3, 2, 7};
+	long dims2[N] = { 3, 5, 7};
+	long dims[N] = { 3, 7, 7};
+
+	complex float* in = md_alloc(N, dims, CFL_SIZE);
+	complex float* out = md_alloc(N, dims, CFL_SIZE);
+
+	md_gaussian_rand(N, dims, in);
+
+	float err = 0;
+	const struct nlop_s* nlop_test;
+
+	nlop_test = nlop_stack_create(N, dims, dims1, dims2, 1);
+	nlop_test = nlop_stack_inputs_F(nlop_test, 0, 1, 1);
+
+	nlop_apply(nlop_test, N, dims, out, N, dims, in);
+
+	err += md_zrmse(N, dims, in, out);
+
+	nlop_free(nlop_test);
+
+	nlop_test = nlop_stack_create(N, dims, dims1, dims2, 1);
+	nlop_test = nlop_permute_inputs_F(nlop_test, 2, MAKE_ARRAY(1, 0));
+	nlop_test = nlop_stack_inputs_F(nlop_test, 1, 0, 1);
+
+	nlop_apply(nlop_test, N, dims, out, N, dims, in);
+
+	err += md_zrmse(N, dims, in, out);
+
+	nlop_free(nlop_test);
+
+	md_free(in);
+	md_free(out);
+
+	UT_ASSERT(1.e-7 > err);
+}
+
+UT_REGISTER_TEST(test_stack);
 

@@ -20,6 +20,7 @@
 #include "num/conv.h"
 #include "num/ops.h"
 #include "num/iovec.h"
+#include "num/multiplace.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -38,29 +39,20 @@ struct cdiag_s {
 	const long* strs;
 	const long* ddims;
 	const long* dstrs;
-	const complex float* diag;
-#ifdef USE_CUDA
-	const complex float* gpu_diag;
-#endif
+
+	struct multiplace_array_s* diag;
 	bool rmul;
 };
 
 static DEF_TYPEID(cdiag_s);
 
+
 static void cdiag_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(cdiag_s, _data);
 
-	const complex float* diag = data->diag;
-#ifdef USE_CUDA
-	if (cuda_ondevice(src)) {
+	const complex float* diag = multiplace_read(data->diag, src);
 
-		if (NULL == data->gpu_diag)
-			((struct cdiag_s*)data)->gpu_diag = md_gpu_move(data->N, data->ddims, data->diag, CFL_SIZE);
-
-		diag = data->gpu_diag;
-	}
-#endif
 	(data->rmul ? md_zrmul2 : md_zmul2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, diag);
 }
 
@@ -68,16 +60,8 @@ static void cdiag_adjoint(const linop_data_t* _data, complex float* dst, const c
 {
 	const auto data = CAST_DOWN(cdiag_s, _data);
 
-	const complex float* diag = data->diag;
-#ifdef USE_CUDA
-	if (cuda_ondevice(src)) {
+	const complex float* diag = multiplace_read(data->diag, src);
 
-		if (NULL == data->gpu_diag)
-			((struct cdiag_s*)data)->gpu_diag = md_gpu_move(data->N, data->ddims, data->diag, CFL_SIZE);
-
-		diag = data->gpu_diag;
-	}
-#endif
 	(data->rmul ? md_zrmul2 : md_zmulc2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, diag);
 }
 
@@ -91,10 +75,7 @@ static void cdiag_free(const linop_data_t* _data)
 {
 	const auto data = CAST_DOWN(cdiag_s, _data);
 
-	md_free(data->diag);
-#ifdef USE_CUDA
-	md_free(data->gpu_diag);
-#endif
+	multiplace_free(data->diag);
 	xfree(data->ddims);
 	xfree(data->dims);
 	xfree(data->dstrs);
@@ -127,13 +108,7 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
 	data->ddims = *PTR_PASS(ddims);
 	data->dstrs = *PTR_PASS(dstrs);
 
-	complex float* tmp = md_alloc(N, data->ddims, CFL_SIZE);
-	md_copy(N, data->ddims, tmp, diag, CFL_SIZE);
-	data->diag = tmp;
-
-#ifdef USE_CUDA
-	data->gpu_diag = NULL;
-#endif
+	data->diag = (NULL == diag) ? NULL : multiplace_move(N, data->ddims, CFL_SIZE, diag);
 
 	return linop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
 }
@@ -167,7 +142,18 @@ struct linop_s* linop_rdiag_create(unsigned int N, const long dims[N], unsigned 
 	return linop_gdiag_create(N, dims, flags, diag, true);
 }
 
+void linop_gdiag_set_diag(const struct linop_s* lop, int N, const long ddims[N], const complex float* diag)
+{
+	auto _data = linop_get_data(lop);
+	auto data = CAST_DOWN(cdiag_s, _data);
 
+	assert(data->N == (unsigned int)N);
+	assert(md_check_equal_dims(N, ddims, data->ddims, ~0));
+
+	multiplace_free(data->diag);
+
+	data->diag = multiplace_move(N, data->ddims, CFL_SIZE, diag);
+}
 
 struct scale_s {
 
