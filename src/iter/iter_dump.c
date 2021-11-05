@@ -9,15 +9,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <string.h>
 
 #include "misc/debug.h"
 #include "misc/types.h"
 #include "misc/misc.h"
 #include "misc/mmio.h"
 
-
-#include "num/flpmath.h"
+//#include "num/flpmath.h"
 #include "num/multind.h"
 
 #include "iter_dump.h"
@@ -35,7 +33,7 @@ void iter_dump(const struct iter_dump_s* data, long epoch, long NI, const float*
 
 struct iter_dump_default_s {
 
-	INTERFACE(iter_dump_t);
+	INTERFACE(struct iter_dump_s);
 
 	unsigned long save_flag;
 
@@ -56,14 +54,16 @@ static void iter_dump_default_fun(const struct iter_dump_s* _data, long epoch, l
 		return;
 
 	const complex float* args[data->N];
+
 	for (int i = 0, ip = 0; i < NI; i++)
 		if (MD_IS_SET(data->save_flag, i))
 			args[ip++] = (const complex float*)x[i];
 
-	char file[strlen(data->INTERFACE.base_filename) + 21];
-	sprintf(file, "%s_%ld", data->INTERFACE.base_filename, epoch);
+	const char* file = ptr_printf("%s_%ld", data->INTERFACE.base_filename, epoch);
 
 	dump_multi_cfl(file, data->N, data->D, data->dims, args);
+
+	xfree(file);
 }
 
 static void iter_dump_default_free(const struct iter_dump_s* _data)

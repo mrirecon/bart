@@ -9,8 +9,9 @@
 
 #include "misc/cppwrap.h"
 
-enum IN_TYPE {IN_UNDEFINED, IN_STATIC, IN_BATCH, IN_OPTIMIZE, IN_BATCH_GENERATOR, IN_BATCHNORM};
-enum OUT_TYPE {OUT_UNDEFINED, OUT_STATIC, OUT_OPTIMIZE, OUT_BATCHNORM};
+enum IN_TYPE { IN_UNDEFINED, IN_STATIC, IN_BATCH, IN_OPTIMIZE, IN_BATCH_GENERATOR, IN_BATCHNORM };
+enum OUT_TYPE { OUT_UNDEFINED, OUT_STATIC, OUT_OPTIMIZE, OUT_BATCHNORM };
+
 #ifndef NUM_INTERNAL
 // #warning "Use of private interfaces"
 #endif
@@ -236,6 +237,7 @@ void iPALM(	long NI, long isize[__VLA(NI)], enum IN_TYPE in_type[__VLA(NI)], flo
 		float batchnorm_momentum,
 		struct iter_nlop_s nlop_batch_gen,
 		struct iter_op_s callback, struct monitor_iter6_s* monitor, const struct iter_dump_s* dump);
+
 #include "misc/cppwrap.h"
 
 #endif // __ITALGOS_H

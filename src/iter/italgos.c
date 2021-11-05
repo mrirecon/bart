@@ -1,5 +1,5 @@
 /* Copyright 2013-2017. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -33,6 +33,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+
 #include <stdio.h>
 #include <string.h>
 
@@ -42,6 +43,8 @@
 #include "iter/vec.h"
 #include "iter/monitor.h"
 #include "iter/monitor_iter6.h"
+
+// FIXME: shouldn't this be a monitor?
 #include "iter/iter_dump.h"
 
 #include "italgos.h"
@@ -777,8 +780,9 @@ static void getgrad(int NI, unsigned long in_optimize_flag, long isize[NI], floa
 {
 	float* one = vops->allocate(2);
 	_Complex float one_var = 1.;
+	const float* one_arr[] = { one };
+
 	vops->copy(2, one, (float*)&one_var);
-	const float* one_arr[] = {one};
 
 	float* tmp_grad[NI];
 
@@ -866,48 +870,54 @@ void sgd(	unsigned int epochs, unsigned int batches,
 
 		switch(in_type[i]){
 
-			case IN_STATIC:
+		case IN_STATIC:
 
-				grad[i] = NULL;
-				dxs[i] = NULL;
-				break;
-			case IN_BATCH:
+			grad[i] = NULL;
+			dxs[i] = NULL;
+			break;
 
-				grad[i] = NULL;
-				dxs[i] = NULL;
-				break;
+		case IN_BATCH:
 
-			case IN_OPTIMIZE:
+			grad[i] = NULL;
+			dxs[i] = NULL;
+			break;
 
-				grad[i] = vops->allocate(isize[i]);
-				dxs[i] = vops->allocate(isize[i]);
-				in_optimize_flag = MD_SET(in_optimize_flag, i);
-				if (NULL != prox[i].fun)
-					iter_op_p_call(prox[i], 0, x[i], x[i]); //project to constraint
-				break;
+		case IN_OPTIMIZE:
 
-			case IN_BATCH_GENERATOR:
+			grad[i] = vops->allocate(isize[i]);
+			dxs[i] = vops->allocate(isize[i]);
 
-				grad[i] = NULL;
-				dxs[i] = NULL;
+			in_optimize_flag = MD_SET(in_optimize_flag, i);
 
-				if (NULL != x[i])
-					error("NULL != x[%d] for batch generator\n", i);
-				x[i] = vops->allocate(isize[i]);
-				x_batch_gen[N_batch_gen] = x[i];
-				N_batch_gen += 1;
-				break;
+			if (NULL != prox[i].fun)
+				iter_op_p_call(prox[i], 0, x[i], x[i]); //project to constraint
 
-			case IN_BATCHNORM:
+			break;
 
-				grad[i] = NULL;
-				dxs[i] = NULL;
-				break;
+		case IN_BATCH_GENERATOR:
 
-			default:
+			grad[i] = NULL;
+			dxs[i] = NULL;
 
-				error("unknown flag\n");
-				break;
+			if (NULL != x[i])
+				error("NULL != x[%d] for batch generator\n", i);
+
+			x[i] = vops->allocate(isize[i]);
+
+			x_batch_gen[N_batch_gen] = x[i];
+			N_batch_gen += 1;
+			break;
+
+		case IN_BATCHNORM:
+
+			grad[i] = NULL;
+			dxs[i] = NULL;
+			break;
+
+		default:
+
+			error("unknown flag\n");
+			break;
 		}
 
 		args[NO + i] = x[i];
@@ -916,6 +926,7 @@ void sgd(	unsigned int epochs, unsigned int batches,
 	for (int o = 0; o < NO; o++){
 
 		args[o] = vops->allocate(osize[o]);
+
 		if (OUT_OPTIMIZE == out_type[o])
 			out_optimize_flag = MD_SET(out_optimize_flag, o);
 	}
@@ -930,6 +941,7 @@ void sgd(	unsigned int epochs, unsigned int batches,
 				iter_nlop_call(nlop_batch_gen, N_batch_gen, x_batch_gen);
 
 			float r0 = compute_objective(NO, NI, nlop, args, out_optimize_flag, in_optimize_flag, vops); // update graph and compute loss
+
 			getgrad(NI, in_optimize_flag, isize, grad, NO, out_optimize_flag, adj, vops);
 
 			int batchnorm_counter = 0;
@@ -967,7 +979,6 @@ void sgd(	unsigned int epochs, unsigned int batches,
 					vops->smul(isize[i], batchnorm_momentum, x[i], x[i]);
 					vops->axpy(isize[i], x[i],  1. - batchnorm_momentum, args[o]);
 
-
 					batchnorm_counter++;
 				}
 			}
@@ -984,6 +995,7 @@ void sgd(	unsigned int epochs, unsigned int batches,
 
 		if(NULL != grad[i])
 			vops->del(grad[i]);
+
 		if(NULL != dxs[i])
 			vops->del(dxs[i]);
 
@@ -1065,7 +1077,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 
 	unsigned long out_optimize_flag = 0;
 
-	for (int i = 0; i< NI; i++){
+	for (int i = 0; i < NI; i++) {
 
 		x_batch_gen[i] = NULL;
 
@@ -1075,48 +1087,54 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 		tmp[i] = NULL;
 		grad[i] = NULL;
 
-		switch(in_type[i]){
+		switch (in_type[i]){
 
-			case IN_STATIC:
+		case IN_STATIC:
+			break;
 
-				break;
-			case IN_BATCH:
+		case IN_BATCH:
 
-				error("flag IN_BATCH not supported\n");
-				break;
+			error("flag IN_BATCH not supported\n");
+			break;
 
-			case IN_OPTIMIZE:
+		case IN_OPTIMIZE:
 
-				if (0 == epoch_start) {
-
-					if (NULL != prox[i].fun) {
-
-						iter_op_p_call(prox[i], 0., x_old[i], x[i]); // if prox is a projection, we apply it, else it is just a copy (mu = 0)
-						vops->copy(isize[i], x[i], x_old[i]);
-					} else {
-
-						vops->copy(isize[i], x_old[i], x[i]);
-					}
-				}
+			if (0 != epoch_start)
 				break;
 
-			case IN_BATCH_GENERATOR:
+			if (NULL != prox[i].fun) {
 
-				if (NULL != x[i])
-					error("NULL != x[%d] for batch generator\n", i);
-				x[i] = vops->allocate(isize[i]);
-				x_batch_gen[N_batch_gen] = x[i];
-				N_batch_gen += 1;
-				break;
+				iter_op_p_call(prox[i], 0., x_old[i], x[i]); // if prox is a projection, we apply it, else it is just a copy (mu = 0)
 
-			case IN_BATCHNORM:
+				vops->copy(isize[i], x[i], x_old[i]);
 
-				break;
+			} else {
 
-			default:
+				vops->copy(isize[i], x_old[i], x[i]);
+			}
 
-				error("unknown flag\n");
-				break;
+			break;
+
+		case IN_BATCH_GENERATOR:
+
+			if (NULL != x[i])
+				error("NULL != x[%d] for batch generator\n", i);
+
+			x[i] = vops->allocate(isize[i]);
+
+			x_batch_gen[N_batch_gen] = x[i];
+			N_batch_gen += 1;
+
+			break;
+
+		case IN_BATCHNORM:
+
+			break;
+
+		default:
+
+			error("unknown flag\n");
+			break;
 		}
 
 		args[NO + i] = x[i];
@@ -1125,6 +1143,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 	for (int o = 0; o < NO; o++) {
 
 		args[o] = vops->allocate(osize[o]);
+
 		if (OUT_OPTIMIZE == out_type[o])
 			out_optimize_flag = MD_SET(out_optimize_flag, o);
 	}
@@ -1162,35 +1181,47 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 
 					//Compute gradient at z = x^n + alpha * (x^n - x^(n-1))
 					z[i] = vops->allocate(isize[i]);
+
 					vops->axpbz(isize[i], z[i], 1 + betai, x[i], -betai, x_old[i]); // tmp1 = z = x^n + alpha * (x^n - x^(n-1))
+
 					args[NO + i] = z[i];
+
 					r_z = compute_objective(NO, NI, nlop, args, out_optimize_flag, MD_BIT(i), vops);
+
 					vops->del(z[i]);
+
 					getgrad(NI, MD_BIT(i), isize, grad, NO, out_optimize_flag, adj, vops);
 				}
 
 				//backtracking
 				bool lipshitz_condition = false;
 				float reduce_momentum_scale = 1;
+
 				while (!lipshitz_condition) {
 
 					if (reduce_momentum) {
 
 						//Compute gradient at z = x^n + alpha * (x^n - x^(n-1))
 						z[i] = vops->allocate(isize[i]);
+
 						vops->axpbz(isize[i], z[i], 1 + reduce_momentum_scale * betai, x[i], -(reduce_momentum_scale * betai), x_old[i]); // tmp1 = z = x^n + alpha * (x^n - x^(n-1))
+
 						args[NO + i] = z[i];
+
 						r_z = compute_objective(NO, NI, nlop, args, out_optimize_flag, MD_BIT(i), vops);
+
 						vops->del(z[i]);
+
 						getgrad(NI, MD_BIT(i), isize, grad, NO, out_optimize_flag, adj, vops);
 					}
 
 
 					float tau = convex[i] ? (1. + 2. * betai) / (2. - 2. * alphai) * L[i] : (1. + 2. * betai) / (1. - 2. * alphai) * L[i];
+
 					if (trivial_stepsize || (-1. == beta[i]) || (-1. == alpha[i]))
 						tau = L[i];
 
-					if((0 > betai) || ( 0 > alphai) || ( 0 > tau))
+					if ((0 > betai) || ( 0 > alphai) || ( 0 > tau))
 						error("invalid parameters alpha[%d]=%f, beta[%d]=%f, tau=%f\n", i, alphai, i, betai, tau);
 
 					//compute new weights
@@ -1204,11 +1235,14 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 
 					//compute new residual
 					args[NO + i] = x_new[i];
+
 					float r_new = compute_objective(NO, NI, nlop, args, out_optimize_flag, 0, vops);
 
 					//compute Lipschitz condition at z
 					float r_lip_z = r_z;
+
 					vops->sub(isize[i], tmp[i], x_new[i], y[i]); // tmp = x^(n+1) - y^n
+
 					r_lip_z += vops->dot(isize[i], grad[i], tmp[i]);
 					r_lip_z += L[i] / 2. * vops->dot(isize[i], tmp[i], tmp[i]);
 
@@ -1244,6 +1278,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 				x_new[i] = NULL;
 
 				int batchnorm_counter = 0;
+
 				for (int i = 0; i < NI; i++) {
 
 					if (in_type[i] == IN_BATCHNORM) {
@@ -1266,8 +1301,9 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 				}
 			}
 
+			// FIXME:
 			char post_string[20 * NI];
-			sprintf (post_string, " ");
+			sprintf(post_string, " ");
 
 			for (int i = 0; i < NI; i++)
 				if (IN_OPTIMIZE == in_type[i])
@@ -1278,13 +1314,14 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 	}
 
 
-	for (int i = 0; i< NI; i++)
-		if(IN_BATCH_GENERATOR == in_type[i]) {
+	for (int i = 0; i < NI; i++) {
+
+		if (IN_BATCH_GENERATOR == in_type[i]) {
 
 			vops->del(x[i]);
 			x[i] = NULL;
 		}
-
+	}
 
 	for (int o = 0; o < NO; o++)
 		if(NULL != args[o])

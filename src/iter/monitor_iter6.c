@@ -5,28 +5,23 @@
  * Authors: Moritz Blumenthal
  */
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <string.h>
 
-#include "iter/italgos.h"
 #include "misc/debug.h"
 #include "misc/types.h"
 #include "misc/misc.h"
 #include "misc/mmio.h"
 
-#include "iter/vec.h"
+#include "num/iovec.h"
+#include "num/flpmath.h"
+#include "num/multind.h"
 
 #include "nlops/nlop.h"
 
 #include "monitor_iter6.h"
 #include "monitor.h"
-#include "nn/layers.h"
-#include "num/flpmath.h"
-#include "num/multind.h"
-#include "num/iovec.h"
+
 
 
 
@@ -86,12 +81,16 @@ static const char* print_progress_bar(int length, int done, int total)
 	for (int i = 0; i < length; i++) {
 
 		auto tmp = result;
+
 		result = ptr_printf("%s%c", tmp, ((float)i <= (float)(done * length) / (float)(total)) ? '=' : ' ');
+
 		xfree(tmp);
 	}
 
 	auto tmp = result;
+
 	result = ptr_printf("%s];", tmp);
+
 	xfree(tmp);
 
 	return result;
@@ -190,6 +189,7 @@ static const char* compute_val_monitors(struct monitor_iter6_default_s* monitor,
 
 				const char* tmp2 = result;
 				result = ptr_printf("%s%s", tmp2, tmp);
+
 				xfree(tmp);
 				xfree(tmp2);
 			}
@@ -231,6 +231,7 @@ static void monitor6_default_fun(struct monitor_iter6_s* _monitor, long epoch, l
 	const char* str_time = (print_time) ? print_time_string(time, est_time) : ptr_printf("");
 
 	monitor->average_obj = ((batch) * monitor->average_obj + objective) / (batch + 1);
+
 	const char* str_loss = (print_loss) ? ptr_printf(" loss: %e;", monitor->print_average_obj ? monitor->average_obj: objective) :  ptr_printf("");
 
 	const char* str_val_monitor = compute_val_monitors(monitor, epoch, batch, numbatches, NI, x);
@@ -492,6 +493,7 @@ struct monitor_iter6_function_s {
 	INTERFACE(monitor_iter6_value_data_t);
 
 	monitor_iter6_value_by_function_t fun;
+
 	bool eval_each_batch;
 	const char* name;
 	complex float last_result;
@@ -501,7 +503,7 @@ static DEF_TYPEID(monitor_iter6_function_s);
 
 static void monitor_iter6_function_fun(const monitor_iter6_value_data_t* data, unsigned int N, complex float vals[N], long NI, const float* args[NI])
 {
-    const auto d = CAST_DOWN(monitor_iter6_function_s, data);
+	const auto d = CAST_DOWN(monitor_iter6_function_s, data);
 	assert(1 == N);
 
 	d->last_result = d->fun(NI, args);
@@ -569,5 +571,4 @@ struct monitor_value_s* monitor_iter6_function_create(monitor_iter6_value_by_fun
 
 	return PTR_PASS(monitor);
 }
-
 

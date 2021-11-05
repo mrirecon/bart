@@ -1,4 +1,4 @@
-/* Copyright 2020. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2021. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -103,29 +103,29 @@ static void get_indices(struct batch_gen_data_s* data)
 
 	switch (data->type) {
 
-		case BATCH_GEN_SAME:
+	case BATCH_GEN_SAME:
 
-			for (long i = 0; i < data->Nt; i++)
-				data->perm[i] = i;
-			break;
+		for (long i = 0; i < data->Nt; i++)
+			data->perm[i] = i;
+		break;
 
-		case BATCH_GEN_SHUFFLE_BATCHES:
+	case BATCH_GEN_SHUFFLE_BATCHES:
 
-			rand_perm_batches(&(data->rand_seed), data->Nt, data->perm, data->Nb);
-			break;
+		rand_perm_batches(&(data->rand_seed), data->Nt, data->perm, data->Nb);
+		break;
 
-		case BATCH_GEN_SHUFFLE_DATA:
+	case BATCH_GEN_SHUFFLE_DATA:
 
-			rand_perm_data(&(data->rand_seed), data->Nt, data->perm, data->Nb);
-			break;
+		rand_perm_data(&(data->rand_seed), data->Nt, data->perm, data->Nb);
+		break;
 
-		case BATCH_GEN_RANDOM_DATA:
+	case BATCH_GEN_RANDOM_DATA:
 
-			rand_draw_data(&(data->rand_seed), data->Nt, data->perm, data->Nb);
-			break;
+		rand_draw_data(&(data->rand_seed), data->Nt, data->perm, data->Nb);
+		break;
 
-		default:
-			assert(0);
+	default:
+		assert(0);
 	}
 
 	data->start = 0;
@@ -164,12 +164,10 @@ static void batch_gen_fun(const struct nlop_data_s* _data, int N_args, complex f
 			ipos[data->bat_idx[j]] = data->perm[(data->start + i)];
 			opos[data->bat_idx[j]] = i;
 
-			md_copy2(
-				N, data->dims[j],
-				data->ostrs[j], &MD_ACCESS(N, data->ostrs[j], opos, args[j]),
-				data->istrs[j], &MD_ACCESS(N, data->istrs[j], ipos, data->data[j]),
-				CFL_SIZE
-			);
+			md_copy2(	N, data->dims[j],
+					data->ostrs[j], &MD_ACCESS(N, data->ostrs[j], opos, args[j]),
+					data->istrs[j], &MD_ACCESS(N, data->istrs[j], ipos, data->data[j]),
+					CFL_SIZE);
 		}
 	}
 
@@ -324,3 +322,4 @@ const struct nlop_s* batch_gen_create_from_iter(struct iter6_conf_s* iter_conf, 
 {
 	return batch_gen_create(D, Ns, bat_dims, tot_dims, data, Nc, iter_conf->batchgen_type, iter_conf->batch_seed);
 }
+

@@ -1,3 +1,4 @@
+
 tests/test-multicfl: multicfl ones nrmse $(TESTS_OUT)/shepplogan_coil.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
 	$(TOOLDIR)/ones 7 3 5 1 1 2 1 5 o.ra									;\

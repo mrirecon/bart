@@ -1,4 +1,4 @@
-/* Copyright 2018. Martin Uecker.
+/* Copyright 2018-2021. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -722,9 +722,9 @@ static bool test_nlop_parallel_derivatives(void)
 	long dim[1] = { 1 };
 	int counter = 0;
 
-	complex float in[1] ={ 1. };
-	complex float out1[1] ={ 1. };
-	complex float out2[1] ={ 1. };
+	complex float in[1] = { 1. };
+	complex float out1[1] = { 1. };
+	complex float out2[1] = { 1. };
 	complex float* outs[2] = { out1, out2 };
 
 	auto countop1 = linop_counter_create(&counter);
@@ -747,6 +747,7 @@ static bool test_nlop_parallel_derivatives(void)
 	auto tenmul_op = nlop_tenmul_create(1, dim, dim ,dim);
 
 	const struct nlop_s* tenmul_chain = nlop_chain2_FF(tenmul_op, 0, nlop_from_linop(chain), 0);
+
 	tenmul_chain = nlop_chain2_FF(nlop_from_linop(chain), 0, tenmul_chain, 0);
 	tenmul_chain = nlop_chain2_FF(nlop_from_linop(chain), 0, tenmul_chain, 0);
 	tenmul_chain = nlop_reshape_in_F(tenmul_chain, 0, 1, dim);
@@ -776,6 +777,7 @@ static bool test_nlop_parallel_derivatives(void)
 	nlop_free(bridge);
 	nlop_free(tmp);
 	nlop_free(tenmul_chain);
+
 	linop_free(countop1);
 	linop_free(chain);
 
@@ -789,9 +791,9 @@ UT_REGISTER_TEST(test_nlop_parallel_derivatives);
 static bool test_stack(void)
 {
 	enum { N = 3 };
-	long dims1[N] = { 3, 2, 7};
-	long dims2[N] = { 3, 5, 7};
-	long dims[N] = { 3, 7, 7};
+	long dims1[N] = { 3, 2, 7 };
+	long dims2[N] = { 3, 5, 7 };
+	long dims[N] = { 3, 7, 7 };
 
 	complex float* in = md_alloc(N, dims, CFL_SIZE);
 	complex float* out = md_alloc(N, dims, CFL_SIZE);
@@ -836,29 +838,29 @@ static bool test_nlop_select_derivatives(void)
 
 	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
 
-	complex float ptr1[1] ={ 1. };
-	complex float ptr2[1] ={ 1. };
-	complex float ptr3[1] ={ 1. };
+	complex float ptr1[1] = { 1. };
+	complex float ptr2[1] = { 1. };
+	complex float ptr3[1] = { 1. };
 
-	void* args[3] = {ptr1, ptr2, ptr3};
+	void* args[3] = { ptr1, ptr2, ptr3 };
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_unchecked(tenmul1, 3, args);
 
-	assert(true == nlop_tenmul_der_available(tenmul1, 0));
-	assert(true == nlop_tenmul_der_available(tenmul1, 1));
+	assert(nlop_tenmul_der_available(tenmul1, 0));
+	assert(nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 1l, 3l);
 
-	assert(true == nlop_tenmul_der_available(tenmul1, 0));
-	assert(true == nlop_tenmul_der_available(tenmul1, 1));
+	assert(nlop_tenmul_der_available(tenmul1, 0));
+	assert(nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 0l, 0l);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_free(tenmul1);
 
@@ -873,25 +875,25 @@ static bool test_nlop_select_derivatives_dup(void)
 
 	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
 
-	complex float ptr1[1] ={ 1. };
-	complex float ptr2[1] ={ 1. };
+	complex float ptr1[1] = { 1. };
+	complex float ptr2[1] = { 1. };
 
-	void* args[2] = {ptr1, ptr2};
+	void* args[2] = { ptr1, ptr2 };
 
 	auto op = nlop_dup(tenmul1, 0, 1);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 1l, 1l);
 
-	assert(true == nlop_tenmul_der_available(tenmul1, 0));
-	assert(true == nlop_tenmul_der_available(tenmul1, 1));
+	assert(nlop_tenmul_der_available(tenmul1, 0));
+	assert(nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 0l, 0l);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(false == nlop_tenmul_der_available(tenmul1, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_free(tenmul1);
 	nlop_free(op);
@@ -915,28 +917,28 @@ static bool test_nlop_select_derivatives_combine(void)
 	complex float ptr5[1] ={ 1. };
 	complex float ptr6[1] ={ 1. };
 
-	void* args[6] = {ptr1, ptr2, ptr3, ptr4, ptr5, ptr6};
+	void* args[6] = { ptr1, ptr2, ptr3, ptr4, ptr5, ptr6 };
 
 	auto op = nlop_combine(tenmul1, tenmul2);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(false == nlop_tenmul_der_available(tenmul1, 1));
-	assert(false == nlop_tenmul_der_available(tenmul2, 0));
-	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(!nlop_tenmul_der_available(tenmul1, 1));
+	assert(!nlop_tenmul_der_available(tenmul2, 0));
+	assert(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 0l, 0l);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(false == nlop_tenmul_der_available(tenmul1, 1));
-	assert(false == nlop_tenmul_der_available(tenmul2, 0));
-	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(!nlop_tenmul_der_available(tenmul1, 1));
+	assert(!nlop_tenmul_der_available(tenmul2, 0));
+	assert(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 3l, 6l);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(true == nlop_tenmul_der_available(tenmul1, 1));
-	assert(true == nlop_tenmul_der_available(tenmul2, 0));
-	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(nlop_tenmul_der_available(tenmul1, 1));
+	assert(nlop_tenmul_der_available(tenmul2, 0));
+	assert(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_free(tenmul1);
 	nlop_free(tenmul2);
@@ -963,31 +965,31 @@ static bool test_nlop_select_derivatives_link(void)
 
 	auto op = nlop_chain2(tenmul1, 0, tenmul2, 1);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(false == nlop_tenmul_der_available(tenmul1, 1));
-	assert(false == nlop_tenmul_der_available(tenmul2, 0));
-	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(!nlop_tenmul_der_available(tenmul1, 1));
+	assert(!nlop_tenmul_der_available(tenmul2, 0));
+	assert(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 0l, 0l);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(false == nlop_tenmul_der_available(tenmul1, 1));
-	assert(false == nlop_tenmul_der_available(tenmul2, 0));
-	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(!nlop_tenmul_der_available(tenmul1, 1));
+	assert(!nlop_tenmul_der_available(tenmul2, 0));
+	assert(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 4l);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(true == nlop_tenmul_der_available(tenmul1, 1));
-	assert(false == nlop_tenmul_der_available(tenmul2, 0));
-	assert(true == nlop_tenmul_der_available(tenmul2, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(nlop_tenmul_der_available(tenmul1, 1));
+	assert(!nlop_tenmul_der_available(tenmul2, 0));
+	assert(nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 1l);
 
-	assert(false == nlop_tenmul_der_available(tenmul1, 0));
-	assert(false == nlop_tenmul_der_available(tenmul1, 1));
-	assert(true == nlop_tenmul_der_available(tenmul2, 0));
-	assert(false == nlop_tenmul_der_available(tenmul2, 1));
+	assert(!nlop_tenmul_der_available(tenmul1, 0));
+	assert(!nlop_tenmul_der_available(tenmul1, 1));
+	assert(nlop_tenmul_der_available(tenmul2, 0));
+	assert(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_free(tenmul1);
 	nlop_free(tenmul2);
@@ -1006,13 +1008,13 @@ static bool test_nlop_zinv(void)
 
 	auto nlop = nlop_zinv_create(N, dims);
 
-
 	float err_adj = nlop_test_adj_derivatives(nlop, false);
 	float err_der = nlop_test_derivatives(nlop);
 
 	nlop_free(nlop);
 
 	debug_printf(DP_DEBUG1, "zinv errors:, adj: %.8f, %.8f\n", err_der, err_adj);
+
 	UT_ASSERT((err_adj < UT_TOL) && (err_der < 2.E-2));
 }
 
@@ -1033,10 +1035,12 @@ static bool test_zmax(void)
 
 	const struct nlop_s* zmax_op = nlop_zmax_create(N, outdims, 4);
 	complex float* output_zmax = md_alloc(N, indims, CFL_SIZE);
+
 	nlop_generic_apply_unchecked(zmax_op, 2, (void*[]){output_zmax, stacked}); //output, in, mask
 	nlop_free(zmax_op);
 
 	float err =  md_zrmse(N, indims, output_zmax, zmax);
+
 	md_free(output_zmax);
 
 	UT_ASSERT(0.01 > err);
@@ -1050,9 +1054,12 @@ static const struct nlop_s* get_test_nlop(int N, const long dims[N])
 	auto tenmul1 = nlop_tenmul_create(N, dims, dims, dims);
 	auto tenmul2 = nlop_tenmul_create(N, dims, dims, dims);
 	auto tenmul3 = nlop_tenmul_create(N, dims, dims, dims);
+
 	const struct nlop_s* result = nlop_chain2_FF(tenmul1, 0, tenmul2, 0);
+
 	result = nlop_combine_FF(result, tenmul3);
 	result = nlop_permute_inputs_F(result, 5, (int[5]){4, 2, 1, 0, 3});
+
 	return result;
 }
 
@@ -1069,15 +1076,19 @@ static bool test_nlop_checkpointing(void)
 
 	void* args[OO + II];
 	void* args_cp[OO + II];
+
 	for(int i = 0; i < OO; i++) {
 
 		args[i] = md_alloc(N, dims, CFL_SIZE);
 		args_cp[i] = md_alloc(N, dims, CFL_SIZE);
 	}
+
 	for(int i = OO; i < OO + II; i++) {
 
 		args[i] = md_alloc(N, dims, CFL_SIZE);
+
 		md_gaussian_rand(N, dims, args[i]);
+
 		args_cp[i] = args[i];
 	}
 
@@ -1088,6 +1099,7 @@ static bool test_nlop_checkpointing(void)
 	nlop_generic_apply_select_derivative_unchecked(nlop_cp, OO + II, args_cp, out_der_flag, in_der_flag);
 
 	float err = 0.;
+
 	for (int o = 0; o < OO; o++)
 		err += md_zrmse(N, dims, args[o], args_cp[o]);
 
@@ -1108,6 +1120,7 @@ static bool test_nlop_checkpointing(void)
 				continue;
 
 			complex float* src = md_alloc(N, dims, CFL_SIZE);
+
 			md_gaussian_rand(N, dims, src);
 
 			complex float* dst = md_alloc(N, dims, CFL_SIZE);
@@ -1140,6 +1153,7 @@ static bool test_nlop_checkpointing(void)
 				continue;
 
 			complex float* src = md_alloc(N, dims, CFL_SIZE);
+
 			md_gaussian_rand(N, dims, src);
 
 			complex float* dst = md_alloc(N, dims, CFL_SIZE);
@@ -1166,6 +1180,7 @@ static bool test_nlop_checkpointing(void)
 		md_free(args[i]);
 		md_free(args_cp[i]);
 	}
+
 	for(int i = OO; i < OO + II; i++)
 		md_free(args[i]);
 
