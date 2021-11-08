@@ -19,7 +19,9 @@
 #endif
 
 
-static const char help_str[] = "Combine/Split multiple cfl files to one multi-cfl file.\n";
+static const char help_str[] = 	"Combine/Split multiple cfl files to one multi-cfl file.\n"
+				"In normal usage, the last argument is the combined multi-cfl,\n"
+				"with '-s', the first argument is the multi-cfl that is split up";
 
 
 int main_multicfl(int argc, char* argv[argc])
@@ -32,56 +34,60 @@ int main_multicfl(int argc, char* argv[argc])
 	};
 
 	long count = 0;
-	const char** single_files = NULL;
-	const char* multi_file = NULL;
+	const char** cfl_files = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(true, &count, 1, OPT_INOUTFILE, sizeof(char*), &single_files, "single cfl"),
-		ARG_INOUTFILE(true, &multi_file, "multi cfl"),
+		ARG_TUPLE(true, &count, 1, OPT_INOUTFILE, sizeof(char*), &cfl_files, "cfl"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
+	const int n_single_cfls = count - 1 ;
+
 	if (!separate) {
 
-		int D[count];
-		long dims_load[count][DIMS];
-		const long* dims_store[count];
-		const complex float* args[count];
+		const char* multi_file = cfl_files[n_single_cfls];
+		const char** single_files = cfl_files;
+		int D[n_single_cfls];
+		long dims_load[n_single_cfls][DIMS];
+		const long* dims_store[n_single_cfls];
+		const complex float* x[n_single_cfls];
 
-		for (int i = 0; i < count; i++) {
+		for (int i = 0; i < n_single_cfls; i++) {
 
 			D[i] = DIMS;
-			args[i] = load_cfl(single_files[i], D[i], dims_load[i]);
+			x[i] = load_cfl(single_files[i], D[i], dims_load[i]);
 			dims_store[i] = dims_load[i];
 		}
 
-		dump_multi_cfl(multi_file, count, D, dims_store, args);
+		dump_multi_cfl(multi_file, n_single_cfls, D, dims_store, x);
 
-		for (int i = 0; i < count; i++)
-			unmap_cfl(D[i], dims_load[i], args[i]);
+		for (int i = 0; i < n_single_cfls; i++)
+			unmap_cfl(D[i], dims_load[i], x[i]);
 
 	} else {
 
+		const char* multi_file = cfl_files[0];
+		const char** single_files = cfl_files + 1;
 		int D_max = DIMS;
-		int D[count];
-		long dims_load[count][D_max];
-		const long* dims_store[count];
-		complex float* args[count];
+		int D[n_single_cfls];
+		long dims_load[n_single_cfls][D_max];
+		const long* dims_store[n_single_cfls];
+		complex float* x[n_single_cfls];
 
-		int N = load_multi_cfl(multi_file, count, D_max, D, dims_load, args);
+		int N = load_multi_cfl(multi_file, n_single_cfls, D_max, D, dims_load, x);
 
-		if (N != count)
+		if (N != n_single_cfls)
 			error("Number of cfls in input does not match no of outputs!");
 
 		for (int i = 0; i < N; i++) {
 
-			dump_cfl(single_files[i], D[i], dims_load[i], args[i]);
+			dump_cfl(single_files[i], D[i], dims_load[i], x[i]);
 			dims_store[i] = dims_load[i];
 		}
 
-		unmap_multi_cfl(N, D, dims_store, args);
+		unmap_multi_cfl(N, D, dims_store, x);
 	}
 
 	return 0;
