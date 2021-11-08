@@ -1972,7 +1972,7 @@ void* md_alloc_sameplace(unsigned int D, const long dimensions[D], size_t size, 
 }
 
 /**
- * Allocate memory is at sameplace
+ * Check whether memory is at sameplace
  */
 bool md_is_sameplace(const void* ptr1, const void* ptr2)
 {
