@@ -772,7 +772,7 @@ static bool test_nlop_parallel_derivatives(void)
 
 	linop_adjoint_unchecked(nlop_get_derivative(bridge, 0, 0), out1, in);
 
-	result = result && (12 == counter);
+	result = result && ((12 == counter) || (8 == counter));
 
 	nlop_free(bridge);
 	nlop_free(tmp);
