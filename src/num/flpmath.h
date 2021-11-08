@@ -16,6 +16,24 @@
 #define CDL_SIZE	sizeof(_Complex double)
 #define  DL_SIZE	sizeof(double)
 
+#define MD_REAL_DIMS(N, dims)				\
+({							\
+	unsigned int _N = (N);				\
+	long* _dims = alloca((_N + 1) * sizeof(long));	\
+	md_copy_dims(_N, _dims + 1, dims);		\
+	_dims[0] = 2;					\
+	_dims;						\
+})
+
+#define MD_REAL_STRS(N, strs, size)			\
+({							\
+	unsigned int _N = (N);				\
+	long* _strs = alloca((_N + 1) * sizeof(long));	\
+	md_copy_dims(_N, _strs + 1, strs);		\
+	_strs[0] = (size);				\
+	_strs;						\
+})
+
 
 extern void md_mul2(unsigned int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
 extern void md_mul(unsigned int D, const long dim[__VLA(D)], float* optr, const float* iptr1, const float* iptr2);
