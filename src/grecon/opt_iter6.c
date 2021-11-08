@@ -1,3 +1,7 @@
+/* Copyright 2021. Uecker Lab. University Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
 
 #include <assert.h>
 
@@ -178,29 +182,30 @@ struct iter6_conf_s* iter6_get_conf_from_opts(void)
 
 	switch (iter_6_select_algo) {
 
-		case ITER6_NONE:
-			debug_printf(DP_INFO, "No training algorithm selected! Fallback to default settings.\n");
-			return result;
-			break;
+	case ITER6_NONE:
+		debug_printf(DP_INFO, "No training algorithm selected! Fallback to default settings.\n");
+		return result;
+		break;
 
-		case ITER6_SGD:
-			result = CAST_UP(&iter6_sgd_conf_opts);
-			break;
+	case ITER6_SGD:
+		result = CAST_UP(&iter6_sgd_conf_opts);
+		break;
 
-		case ITER6_ADAM:
-			result = CAST_UP(&iter6_adam_conf_opts);
-			break;
+	case ITER6_ADAM:
+		result = CAST_UP(&iter6_adam_conf_opts);
+		break;
 
-		case ITER6_ADADELTA:
-			result = CAST_UP(&iter6_adam_conf_opts);
-			break;
+	case ITER6_ADADELTA:
+		result = CAST_UP(&iter6_adam_conf_opts);
+		break;
 
-		case ITER6_IPALM:
-			result = CAST_UP(&iter6_adam_conf_opts);
-			break;
+	case ITER6_IPALM:
+		result = CAST_UP(&iter6_adam_conf_opts);
+		break;
 	}
 
 	iter6_copy_config_from_opts(result);
 
 	return result;
 }
+
