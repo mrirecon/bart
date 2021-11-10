@@ -255,8 +255,8 @@ int main_poisson(int argc, char* argv[argc])
 	for (unsigned int i = 0; i < calreg; i++) {
 		for (unsigned int j = 0; j < calreg; j++) {
 
-			int y = (dims[1] - calreg) / 2 + i;
-			int z = (dims[2] - calreg) / 2 + j;
+			int y = dims[1] / 2 - calreg / 2 + i;
+			int z = dims[2] / 2 - calreg / 2 + j;
 
 			for (int k = 0; k < T; k++) {
 
