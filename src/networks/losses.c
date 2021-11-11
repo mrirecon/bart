@@ -19,6 +19,7 @@
 #include "nlops/cast.h"
 #include "nlops/const.h"
 #include "nlops/someops.h"
+#include "nlops/tenmul.h"
 #include "nlops/stack.h"
 
 #include "nn/nn.h"
@@ -41,6 +42,7 @@ struct loss_config_s loss_option = {
 	.weighting_nmse = 0.,
 	.weighting_nmse_rss = 0.,
 
+
 	.weighting_cce = 0.,
 	.weighting_weighted_cce = 0.,
 	.weighting_accuracy = 0.,
@@ -53,6 +55,8 @@ struct loss_config_s loss_option = {
 	.image_flags = FFT_FLAGS,
 	.rss_flags = COIL_FLAG,
 	.mse_mean_flags = ~0ul,
+
+	.mask_flags = 0,
 };
 
 struct loss_config_s val_loss_option = {
@@ -80,6 +84,8 @@ struct loss_config_s val_loss_option = {
 	.image_flags = FFT_FLAGS,
 	.rss_flags = COIL_FLAG,
 	.mse_mean_flags = ~0ul,
+
+	.mask_flags = 0,
 };
 
 struct loss_config_s loss_image_valid = {
@@ -109,6 +115,8 @@ struct loss_config_s loss_image_valid = {
 	.image_flags = FFT_FLAGS,
 	.rss_flags = COIL_FLAG,
 	.mse_mean_flags = ~0ul,
+
+	.mask_flags = 0,
 };
 
 struct loss_config_s loss_classification_valid = {
@@ -138,6 +146,8 @@ struct loss_config_s loss_classification_valid = {
 	.image_flags = FFT_FLAGS,
 	.rss_flags = COIL_FLAG,
 	.mse_mean_flags = ~0ul,
+
+	.mask_flags = 0,
 };
 
 
@@ -436,6 +446,25 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 
 		result = add_loss(result, nlop_loss_to_nn_F(nlop, rss ? "nmse rss" : "nmse mag", config->weighting_nmse_rss, measure), combine);
 	}
+
+
+	if (0 != config->mask_flags) {
+
+		long mask_dims[N];
+		md_select_dims(N, config->mask_flags, mask_dims, dims);
+
+		auto nlop_tenmuls = nlop_combine_FF(nlop_tenmul_create(N, dims, dims, mask_dims), nlop_tenmul_create(N, dims, dims, mask_dims));
+		nlop_tenmuls = nlop_dup_F(nlop_tenmuls, 1, 3);
+		auto nn_tenmuls = nn_from_nlop_F(nlop_tenmuls);
+		nn_tenmuls = nn_set_input_name_F(nn_tenmuls, 1, "loss_mask");
+
+		int OO = nn_get_nr_unnamed_out_args(result);
+
+		result = nn_combine_FF(result, nn_tenmuls);
+		result = nn_link_F(result, OO, NULL, 0, NULL);
+		result = nn_link_F(result, OO, NULL, 0, NULL);
+	}
+
 
 	return result;
 }
