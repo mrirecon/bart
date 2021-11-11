@@ -893,6 +893,7 @@ static void nufft_free_data(const linop_data_t* _data)
 	multiplace_free(data->weights);
 	multiplace_free(data->roll);
 	multiplace_free(data->basis);
+	multiplace_free(data->traj);
 
 	linop_free(data->fft_op);
 
