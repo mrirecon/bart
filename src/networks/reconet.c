@@ -352,10 +352,6 @@ static nn_t data_consistency_gradientstep_create(const struct reconet_s* config,
  */
 static nn_t data_consistency_dummy_create(const struct reconet_s* config, unsigned int N, const long max_dims[N], unsigned int ND, const long psf_dims[ND])
 {
-	struct iter_conjgrad_conf iter_conf = iter_conjgrad_defaults;
-	iter_conf.l2lambda = 0.;
-	iter_conf.maxiter = config->dc_max_iter;
-
 	long lam_dims[N];
 	long img_dims[N];
 	long col_dims[N];
@@ -578,8 +574,8 @@ static nn_t network_block_create(const struct reconet_s* config, unsigned int N,
 	int N_in_names = nn_get_nr_named_in_args(result);
 	int N_out_names = nn_get_nr_named_out_args(result);
 
-	const char* in_names[N_in_names];
-	const char* out_names[N_out_names];
+	const char* in_names[N_in_names?:1];
+	const char* out_names[N_out_names?:1];
 
 	nn_get_in_names_copy(N_in_names, in_names, result);
 	nn_get_out_names_copy(N_out_names, out_names, result);
@@ -630,7 +626,7 @@ static nn_t reconet_cell_create(const struct reconet_s* config, unsigned int N, 
 	int N_out_names = nn_get_nr_named_out_args(result);
 
 	const char* sorted_in_names[6 + N_in_names];
-	const char* sorted_out_names[N_out_names];
+	const char* sorted_out_names[N_out_names?:1];
 
 	sorted_in_names[0] = "kspace";
 	sorted_in_names[1] = "adjoint";
@@ -685,8 +681,8 @@ static nn_t reconet_iterations_create(const struct reconet_s* config, int N, con
 	int N_in_names = nn_get_nr_named_in_args(result);
 	int N_out_names = nn_get_nr_named_out_args(result);
 
-	const char* in_names[N_in_names];
-	const char* out_names[N_out_names];
+	const char* in_names[N_in_names?:1];
+	const char* out_names[N_out_names?:1];
 
 	nn_get_in_names_copy(N_in_names, in_names, result);
 	nn_get_out_names_copy(N_out_names, out_names, result);
