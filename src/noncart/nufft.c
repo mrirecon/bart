@@ -615,7 +615,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 	if ((NULL != bas_dims) && (1 != md_calc_size(N, bas_dims))) {
 
 		//	conf.toeplitz = false;
-		debug_print_dims(DP_INFO, N, bas_dims);
+		debug_print_dims(DP_DEBUG1, N, bas_dims);
 
 		assert(!md_check_dimensions(N, bas_dims, (1 << 5) | (1 << 6)));
 
