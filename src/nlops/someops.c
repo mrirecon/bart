@@ -409,6 +409,8 @@ static void zinv_reg_fun(const nlop_data_t* _data, int N, const long dims[N], co
 	md_zfill(N, dims, tmp, 1.);
 	md_zdiv_reg(N, dims, dst, tmp, src, data->epsilon);
 
+	md_free(tmp);
+
 	if (NULL != der) {
 
 		md_zmul(N, dims, der, dst, dst);
