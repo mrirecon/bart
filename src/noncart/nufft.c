@@ -17,8 +17,8 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
-
 #include "misc/types.h"
+
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/filter.h"
@@ -26,9 +26,6 @@
 #include "num/shuffle.h"
 #include "num/ops.h"
 #include "num/multiplace.h"
-#ifdef USE_CUDA
-#include "num/gpuops.h"
-#endif
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -400,6 +397,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 	return psf;
 }
 
+
 static struct nufft_data* nufft_create_data(unsigned int N)
 {
 	PTR_ALLOC(struct nufft_data, data);
@@ -422,21 +420,9 @@ static struct nufft_data* nufft_create_data(unsigned int N)
 	data->ciT_dims = *TYPE_ALLOC(long[ND]);
 	data->cmT_dims = *TYPE_ALLOC(long[ND]);
 	data->cm2_dims = *TYPE_ALLOC(long[ND]);
+
 	data->factors = *TYPE_ALLOC(long[ND]);
 
-	md_singleton_dims(ND, data->ksp_dims);
-	md_singleton_dims(ND, data->cim_dims);
-	md_singleton_dims(ND, data->cml_dims);
-	md_singleton_dims(ND, data->img_dims);
-	md_singleton_dims(ND, data->trj_dims);
-	md_singleton_dims(ND, data->lph_dims);
-	md_singleton_dims(ND, data->psf_dims);
-	md_singleton_dims(ND, data->wgh_dims);
-	md_singleton_dims(ND, data->bas_dims);
-	md_singleton_dims(ND, data->out_dims);
-	md_singleton_dims(ND, data->ciT_dims);
-	md_singleton_dims(ND, data->cmT_dims);
-	md_singleton_dims(ND, data->cm2_dims);
 	md_singleton_dims(ND, data->factors);
 
 	data->ksp_strs = *TYPE_ALLOC(long[ND]);
@@ -450,17 +436,6 @@ static struct nufft_data* nufft_create_data(unsigned int N)
 	data->bas_strs = *TYPE_ALLOC(long[ND]);
 	data->out_strs = *TYPE_ALLOC(long[ND]);
 
-	md_singleton_strides(ND, data->ksp_strs);
-	md_singleton_strides(ND, data->cim_strs);
-	md_singleton_strides(ND, data->cml_strs);
-	md_singleton_strides(ND, data->img_strs);
-	md_singleton_strides(ND, data->trj_strs);
-	md_singleton_strides(ND, data->lph_strs);
-	md_singleton_strides(ND, data->psf_strs);
-	md_singleton_strides(ND, data->wgh_strs);
-	md_singleton_strides(ND, data->bas_strs);
-	md_singleton_strides(ND, data->out_strs);
-
 	data->linphase = NULL;
 	data->traj = NULL;
 	data->roll = NULL;
@@ -470,9 +445,9 @@ static struct nufft_data* nufft_create_data(unsigned int N)
 	data->basis = NULL;
 	data->grid = NULL;
 
-
 	return PTR_PASS(data);
 }
+
 
 static void nufft_set_data(struct nufft_data* data,
 			   unsigned int N, const long cim_dims[N],
@@ -657,6 +632,8 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 		md_calc_strides(ND, data->ksp_strs, data->ksp_dims, CFL_SIZE);
 
 		md_copy_dims(N, data->bas_dims, bas_dims);
+		data->bas_dims[N] = 1;
+
 		md_calc_strides(ND, data->bas_strs, data->bas_dims, CFL_SIZE);
 	}
 
@@ -670,6 +647,8 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 	if (NULL != wgh_dims){
 
 		md_copy_dims(N, data->wgh_dims, wgh_dims);
+		data->wgh_dims[N] = 1;
+
 		md_calc_strides(ND, data->wgh_strs, data->wgh_dims, CFL_SIZE);
 	}
 
@@ -690,10 +669,11 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 			if (!MD_IS_SET(data->flags, i))
 				data->psf_dims[i] = MAX(data->trj_dims[i], ((NULL != weights) ? data->wgh_dims[i] : 0));
 
-		if (1 != md_calc_size(N, data->bas_dims)) {
+		if (NULL != data->basis) {
 
 			debug_printf(DP_DEBUG3, "psf_dims: ");
 			debug_print_dims(DP_DEBUG3, N, data->psf_dims);
+
 			data->psf_dims[6] = data->bas_dims[6];
 			data->psf_dims[5] = data->bas_dims[6];
 		}
@@ -765,8 +745,13 @@ static struct linop_s* nufft_create3(unsigned int N,
 	nufft_set_data(data, N, cim_dims, (NULL != bas_dims) && (1 != md_calc_size(N, bas_dims)), conf);
 
 	md_copy_dims(N, data->ksp_dims, ksp_dims);
+	data->ksp_dims[N] = 1;
+
 	md_copy_dims(N, data->out_dims, ksp_dims);
+	data->out_dims[N] = 1;
+
 	md_copy_dims(N, data->trj_dims, traj_dims);
+	data->trj_dims[N] = 1;
 
 	md_calc_strides(ND, data->trj_strs, data->trj_dims, CFL_SIZE);
 	md_calc_strides(ND, data->ksp_strs, data->ksp_dims, CFL_SIZE);
@@ -968,7 +953,7 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 }
 
 
-static void split_nufft_adjoint (const struct nufft_data* data, int ND, complex float* grid, const complex float* src)
+static void split_nufft_adjoint(const struct nufft_data* data, int ND, complex float* grid, const complex float* src)
 {
 	debug_printf(DP_DEBUG1, "nufft_adj split calculation for lowmem\n");
 
