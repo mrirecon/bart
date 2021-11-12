@@ -499,8 +499,6 @@ int main_pics(int argc, char* argv[argc])
 
 		assert(md_check_compat(DIMS, 0u, img_start_dims, img_dims));
 
-		xfree(image_start_file);
-
 		// if rescaling at the end, assume the input has also been rescaled
 		if (scale_im && (scaling != 0.))
 			md_zsmul(DIMS, img_dims, image_start, image_start, 1. / scaling);
@@ -703,10 +701,6 @@ int main_pics(int argc, char* argv[argc])
 
 	if (image_start)
 		unmap_cfl(DIMS, img_dims, image_start);
-
-	xfree(pat_file);
-	xfree(traj_file);
-	xfree(basis_file);
 
 	double end_time = timestamp();
 

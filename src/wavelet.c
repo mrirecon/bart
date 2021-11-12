@@ -45,7 +45,7 @@ int main_wavelet(int argc, char* argv[argc])
 	struct arg_s args[] = {
 
 		ARG_UINT(true, &flags, "bitmask"),
-		ARG_TUPLE(false, &count, 1, OPT_LONG, sizeof(*adims), &adims, "dim"),
+		ARG_TUPLE(false, &count, 1, TUPLE_LONG(&adims, "dim")),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};

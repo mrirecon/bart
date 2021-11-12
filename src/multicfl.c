@@ -38,7 +38,7 @@ int main_multicfl(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(true, &count, 1, OPT_INOUTFILE, sizeof(char*), &cfl_files, "cfl"),
+		ARG_TUPLE(true, &count, 1, { OPT_INOUTFILE, sizeof(char*), &cfl_files, "cfl" }),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -89,6 +89,8 @@ int main_multicfl(int argc, char* argv[argc])
 
 		unmap_multi_cfl(N, D, dims_store, x);
 	}
+
+	xfree(cfl_files);
 
 	return 0;
 }

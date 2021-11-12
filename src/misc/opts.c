@@ -354,7 +354,7 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 			if (1 != args[i].nargs)
 				fprintf(fp, "\n\t");
 
-			fprintf(fp, "{ %s, %zd, \"%s\" } ", opt_type_str(args[i].arg[j].opt_type), args[i].arg[j].sz, args[i].arg[j].argname);
+			fprintf(fp, "{ %s, %zd, \"%s\" } ", opt_type_str(args[i].arg[j].opt_type), args[i].arg[j].size, args[i].arg[j].argname);
 		}
 
 		if (1 != args[i].nargs)
@@ -456,7 +456,7 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 
 	struct opt_s wopts[n ?: 1];
 
-	if (NULL != opts)
+	if ((n > 0) && (NULL != opts))
 		memcpy(wopts, opts, sizeof wopts);
 
 
@@ -596,8 +596,10 @@ bool opt_int(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	int val;
+
 	if (0 != parse_int(&val, optarg))
 		error("Could not parse argument to opt_int: %s!\n", optarg);
+
 	*(int*)ptr = val;
 	return false;
 }
@@ -620,9 +622,12 @@ bool opt_long(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	long val;
+
 	if (0 != parse_long(&val, optarg))
 		error("Could not parse argument to opt_long: %s!\n", optarg);
+
 	*(long*)ptr = val;
+
 	return false;
 }
 
@@ -644,14 +649,18 @@ bool opt_float(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	complex float val;
+
 	if (0 != parse_cfl(&val, optarg))
 		error("Could not parse argument to opt_float: %s!\n", optarg);
 
 	if (0.f != cimagf(val))
 		error("Argument \"%s\" to opt_float is not real\n", optarg);
+
 	*(float*)ptr = crealf(val);
+
 	return false;
 }
+
 
 bool opt_cfl(void* ptr, char c, const char* optarg)
 {
@@ -659,20 +668,23 @@ bool opt_cfl(void* ptr, char c, const char* optarg)
 	return 0 != parse_cfl((complex float*) ptr, optarg);
 }
 
+
 bool opt_string(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	*(char**)ptr = strdup(optarg);
+	*(const char**)ptr = optarg;
 
 	assert(NULL != ptr);
 
 	return false;
 }
 
+
 static bool opt_file(void* ptr, char c, const char* optarg, bool out, bool in)
 {
 	UNUSED(c);
-	*(char**)ptr = strdup(optarg);
+
+	*(const char**)ptr = optarg;
 
 	if (out)
 		io_reserve_output(*(char**)ptr);
@@ -765,6 +777,7 @@ bool opt_vec3(void* ptr, char c, const char* optarg)
 	return false;
 }
 
+
 bool opt_select(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c); UNUSED(optarg);
@@ -779,9 +792,11 @@ bool opt_select(void* ptr, char c, const char* optarg)
 	return false;
 }
 
+
 bool opt_subopt(void* _ptr, char c, const char* optarg)
 {
 	UNUSED(c);
+
 	struct opt_subopt_s* ptr = _ptr;
 
 	int n = ptr->n;
@@ -789,10 +804,11 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 
 	struct opt_s wopts[n ?: 1];
 
-	if (NULL != opts)
+	if ((n > 0) && (NULL != opts))
 		memcpy(wopts, opts, sizeof wopts);
 
 	char lc = 1;
+
 	for (int i = 0; i < n; i++) {
 
 		if (NULL != wopts[i].s) {
@@ -806,9 +822,11 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 	}
 
 	const char* tokens[2 * ptr->n + 2];
+
 	for (int i = 0; i < ptr->n; i++) {
 
 		tokens[2 * i] = ptr_printf("%c", wopts[i].c);
+
 		if (NULL == wopts[i].s)
 			tokens[2 * i + 1] = ptr_printf("char_only_token_%c", wopts[i].c);
 		else
@@ -819,14 +837,16 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 	tokens[2 * ptr->n + 1] = NULL;
 
 
-	char* tmpoptionp = strdup(optarg);
-	char* option = tmpoptionp;
+	const char* tmpoptionp = optarg;
+	char* option = strdup(tmpoptionp);
 	char* value = NULL;
 
 	int i = -1;
-	while('\0' != *option) {
+
+	while ('\0' != *option) {
 
 		i = getsubopt(&option, (char *const *)tokens, &value);
+
 		if ((i == 2 * n) || (-1 == i)) {
 
 			print_usage_subopts(stdout, ptr->calling_c, ptr->calling_s, "", n, opts);
@@ -836,17 +856,15 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 		if (-1 == i)
 			error("Sub-option could not be parsed: %s", value);
 
-		if (i < 2 * n)
-			process_option(wopts[i / 2].c, value, "", "", "", n, wopts, 0, NULL);
-		else
-			exit(0);
-	}
+		assert(i < 2 * n);
 
-	xfree(tmpoptionp);
+		process_option(wopts[i / 2].c, value, "", "", "", n, wopts, 0, NULL);
+	}
 
 	for (int i = 0; i < 2 * n + 1; i++)
 		xfree(tokens[i]);
 
+	//xfree(option);
 
 	return false;
 }
@@ -865,31 +883,14 @@ static const char* arg_type_str(enum ARG_TYPE type)
 }
 
 
-void* parse_arg_tuple(int n, ...)
-{
-	struct arg_single_s* args = calloc(n, sizeof *args);
-
-	va_list ap;
-	va_start(ap, n);
-
-	for (int i = 0; i < n; ++i)
-		args[i] = (struct arg_single_s) {va_arg(ap, enum OPT_TYPE), va_arg(ap, size_t), va_arg(ap, void*), va_arg(ap, const char*)};
-
-	va_end(ap);
-
-	return PTR_PASS(args);
-}
 
 
 
-
-
-
-static void check_args(int n, const struct arg_s args[n])
+static void check_args(int N, const struct arg_s args[N])
 {
 	int num_tuples = 0;
 
-	for (int i = 0; i < n; ++i) {
+	for (int i = 0; i < N; ++i) {
 
 		if ((0 < num_tuples) && !args[i].required)
 			error("Cannot have an optional argument after a tuple!\n");
@@ -938,7 +939,7 @@ static int add_tuple_args(int bufsize, char buf[static bufsize], const struct ar
 	if (!arg->required)
 		pos += xsnprintf(bufsize - pos, buf + pos, "[");
 
-	for (int k = 0; k < arg->nargs; ++k ) {
+	for (int k = 0; k < arg->nargs; ++k) {
 
 		pos += add_arg(bufsize - pos, buf + pos, arg->arg[k].argname, true, file);
 
@@ -955,7 +956,7 @@ static int add_tuple_args(int bufsize, char buf[static bufsize], const struct ar
 
 	pos += xsnprintf(bufsize - pos, buf + pos, "... ");
 
-	for (int k = 0; k < arg->nargs; ++k ) {
+	for (int k = 0; k < arg->nargs; ++k) {
 
 		pos += add_arg(bufsize - pos, buf + pos, arg->arg[k].argname, true, file);
 
@@ -994,7 +995,7 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 	for (int i = 0; i < m; ++i) {
 
 		if (ARG_TUPLE == args[i].arg_type)
-			max_args = 1e9; // should be plenty for most use cases, but not overflow long
+			max_args = 1000; // should be plenty for most use cases, but not overflow long
 		else
 			max_args += args[i].nargs;
 
@@ -1008,6 +1009,7 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 		case OPT_INFILE:
 		case OPT_OUTFILE:
 		case OPT_INOUTFILE:
+
 			file = true;
 			break;
 
@@ -1076,16 +1078,16 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 
 			if (0 == *args[i].count)
 				continue;
-
+#if 1
 			for (int k = 0; k < args[i].nargs; ++k)
-				*(void**)args[i].arg[k].ptr = calloc(args[i].arg[k].sz, *args[i].count);
-
+				*(void**)args[i].arg[k].ptr = calloc(args[i].arg[k].size, *args[i].count);
+#endif
 			int c = 0;
 
 			while (j < tuple_end) {
 
-				for (int k = 0; k < args[i].nargs; ++k)
-					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * args[i].arg[k].sz, NULL, '\0', argv[j++]))
+				for (int k = 0; k < args[i].nargs; ++k)	// FIXME ????
+					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * args[i].arg[k].size, NULL, '\0', argv[j++]))
 						error("failed to convert value\n");
 
 				c++;

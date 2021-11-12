@@ -34,7 +34,7 @@ int main_vec(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(true, &count, 1, OPT_CFL, sizeof(complex float), &vals, "val"),
+		ARG_TUPLE(true, &count, 1, { OPT_CFL, sizeof(complex float), &vals, "val" }),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 

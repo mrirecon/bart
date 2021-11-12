@@ -114,7 +114,7 @@ enum ARG_TYPE {
 struct arg_single_s {
 
 	enum OPT_TYPE opt_type;
-	size_t sz;
+	size_t size;
 	void* ptr;
 	const char* argname;
 };
@@ -151,7 +151,8 @@ extern void* parse_arg_tuple(int n, ...);
 #define ARG_VEC3(required, ptr, argname)		ARG_CHECKED(required, OPT_VEC3,  opt_vec3_t, ptr, argname)
 #define ARG_FLVEC3(required, ptr, argname)		ARG_CHECKED(required, OPT_FLOAT_VEC3,  opt_fvec3_t, ptr, argname)
 
-#define ARG_TUPLE(required, count, n, ...)				{ (required), ARG_TUPLE, (count), (n), parse_arg_tuple( (n), __VA_ARGS__) }
+#define ARG_TUPLE(required, count, n, ...)		{ (required), ARG_TUPLE, (count), (n), (struct arg_single_s[(n)]){ __VA_ARGS__ } }
+#define TUPLE_LONG(ptr, argname)			(struct arg_single_s){ OPT_LONG, sizeof(long), TYPE_CHECK(long**, ptr), argname }
 
 extern void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
 
