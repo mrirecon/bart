@@ -434,7 +434,8 @@ static bool test_optimized_md_zadd(unsigned long out_flag, unsigned long in1_fla
 	md_copy(D, odims, optr2, optr1, size);
 
 	deactivate_strided_vecops();
-	md_zadd2(D, dims, ostr, optr1, istr1, !in1_same ? iptr1 : optr1, istr2, !in2_same ? iptr2 : optr1);
+	if (optimization_expected)
+		md_zadd2(D, dims, ostr, optr1, istr1, !in1_same ? iptr1 : optr1, istr2, !in2_same ? iptr2 : optr1);
 	activate_strided_vecops();
 
 	bool result = (optimization_expected == simple_zadd(D, dims, ostr, optr2, istr1, !in1_same ? iptr1 : optr2, istr2, !in2_same ? iptr2 : optr2));
@@ -459,7 +460,7 @@ static bool test_optimized_md_zadd2_reduce_inner5(void) { UT_ASSERT(test_optimiz
 
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner1);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner2);
-//UXT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner3);	//FIXME
+UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner3);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner4);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner5);
 
@@ -470,7 +471,7 @@ static bool test_optimized_md_zadd2_reduce_outer4(void) { UT_ASSERT(test_optimiz
 
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_outer1);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_outer2);
-//UXT_REGISTER_TEST(test_optimized_md_zadd2_reduce_outer3);	// FIXME
+UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_outer3);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_outer4);
 
 
@@ -507,7 +508,8 @@ static bool test_optimized_md_add(unsigned long out_flag, unsigned long in1_flag
 	md_copy(D, odims, optr2, optr1, size);
 
 	deactivate_strided_vecops();
-	md_add2(D, dims, ostr, optr1, istr1, !in1_same ? iptr1 : optr1, istr2, !in2_same ? iptr2 : optr1);
+	if (optimization_expected)
+		md_add2(D, dims, ostr, optr1, istr1, !in1_same ? iptr1 : optr1, istr2, !in2_same ? iptr2 : optr1);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_add(D, dims, ostr, optr2, istr1, !in1_same ? iptr1 : optr2, istr2, !in2_same ? iptr2 : optr2));
 	debug_printf(DP_DEBUG1, "%d %d %.10f\n", result, optimization_expected, md_nrmse(D, odims, optr1, optr2));
@@ -528,7 +530,7 @@ static bool test_optimized_md_add2_reduce_inner5(void) { UT_ASSERT(test_optimize
 
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner1);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner2);
-//UXT_REGISTER_TEST(test_optimized_md_add2_reduce_inner3);	// FIXME
+UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner3);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner4);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner5);
 
@@ -539,7 +541,7 @@ static bool test_optimized_md_add2_reduce_outer4(void) { UT_ASSERT(test_optimize
 
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_outer1);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_outer2);
-//UXT_REGISTER_TEST(test_optimized_md_add2_reduce_outer3);	// FIXME
+UT_REGISTER_TEST(test_optimized_md_add2_reduce_outer3);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_outer4);
 
 
@@ -576,7 +578,8 @@ static bool test_optimized_md_zmax(unsigned long out_flag, unsigned long in1_fla
 	md_copy(D, odims, optr2, optr1, size);
 
 	deactivate_strided_vecops();
-	md_zmax2(D, dims, ostr, optr1, istr1, !in1_same ? iptr1 : optr1, istr2, !in2_same ? iptr2 : optr1);
+	if (optimization_expected)
+		md_zmax2(D, dims, ostr, optr1, istr1, !in1_same ? iptr1 : optr1, istr2, !in2_same ? iptr2 : optr1);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_zmax(D, dims, ostr, optr2, istr1, !in1_same ? iptr1 : optr2, istr2, !in2_same ? iptr2 : optr2));
 	debug_printf(DP_DEBUG1, "%d %.10f\n", optimization_expected, md_znrmse(D, odims, optr1, optr2));
@@ -597,7 +600,7 @@ static bool test_optimized_md_zmax2_reduce_inner5(void) { UT_ASSERT(test_optimiz
 
 UT_REGISTER_TEST(test_optimized_md_zmax2_reduce_inner1);
 UT_REGISTER_TEST(test_optimized_md_zmax2_reduce_inner2);
-//UXT_REGISTER_TEST(test_optimized_md_zmax2_reduce_inner3);	// FIXME
+UT_REGISTER_TEST(test_optimized_md_zmax2_reduce_inner3);	// FIXME
 UT_REGISTER_TEST(test_optimized_md_zmax2_reduce_inner4);
 UT_REGISTER_TEST(test_optimized_md_zmax2_reduce_inner5);
 
@@ -608,7 +611,7 @@ static bool test_optimized_md_zmax2_reduce_outer4(void) { UT_ASSERT(test_optimiz
 
 UT_REGISTER_TEST(test_optimized_md_zmax2_reduce_outer1);
 UT_REGISTER_TEST(test_optimized_md_zmax2_reduce_outer2);
-// UXT_REGISTER_TEST(test_optimized_md_zmax2_reduce_outer3);	// FIXME
+UT_REGISTER_TEST(test_optimized_md_zmax2_reduce_outer3);
 UT_REGISTER_TEST(test_optimized_md_zmax2_reduce_outer4);
 
 
