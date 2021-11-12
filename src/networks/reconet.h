@@ -50,7 +50,7 @@ struct reconet_s {
 
 extern struct reconet_s reconet_config_opts;
 
-struct network_data_s;
+struct named_data_list_s;
 
 extern void reconet_init_modl_default(struct reconet_s* reconet);
 extern void reconet_init_varnet_default(struct reconet_s* reconet);
@@ -66,12 +66,11 @@ extern void apply_reconet(	struct reconet_s* reconet, unsigned int N, const long
 				const long col_dims[N], const _Complex float* coil,
 				int ND, const long psf_dims[ND], const _Complex float* psf);
 
-extern void train_reconet(	struct reconet_s* reconet, unsigned int N, const long max_dims[N],
-				const long out_dims[N], _Complex float* ref,
-				const long img_dims[N], const _Complex float* adjoint,
-				const long col_dims[N], const _Complex float* coil,
-				int ND, const long psf_dims[ND], const _Complex float* psf,
-				long Nb, struct network_data_s* valid_files);
+extern void train_reconet(	struct reconet_s* config,
+				int N, const long max_dims[N],
+				int ND, const long psf_dims[ND],
+				long Nb_train, struct named_data_list_s* train_data,
+				long Nb_valid, struct named_data_list_s* valid_data);
 
 extern void eval_reconet(	struct reconet_s* reconet, unsigned int N, const long max_dims[N],
 				const long out_dims[N], const _Complex float* ref,

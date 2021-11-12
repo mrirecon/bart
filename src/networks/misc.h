@@ -13,6 +13,9 @@ struct network_data_s {
 	long max_dims[DIMS];
 	long cim_dims[DIMS];
 	long out_dims[DIMS];
+	long pat_dims[DIMS];
+	long trj_dims[DIMS];
+	long bas_dims[DIMS];
 
 	const char* filename_trajectory;
 	const char* filename_pattern;
@@ -30,12 +33,14 @@ struct network_data_s {
 	_Complex float* coil;
 	_Complex float* psf;
 	_Complex float* out;
+	_Complex float* pattern;
+	_Complex float* trajectory;
+	_Complex float* basis;
 
 	struct nufft_conf_s* nufft_conf;
 
 	_Bool create_out;
 	_Bool load_mem;
-	_Bool basis;
 };
 
 extern struct network_data_s network_data_empty;

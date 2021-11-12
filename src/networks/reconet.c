@@ -33,6 +33,7 @@
 
 #include "linops/linop.h"
 #include "linops/someops.h"
+#include "linops/sum.h"
 
 #include "iter/iter.h"
 #include "iter/iter6.h"
@@ -52,6 +53,7 @@
 #include "nn/layers.h"
 #include "nn/losses.h"
 #include "nn/init.h"
+#include "nn/data_list.h"
 
 #include "nn/init.h"
 
@@ -226,6 +228,42 @@ void reconet_init_unet_test_default(struct reconet_s* reconet)
 	CAST_DOWN(network_unet_s, reconet->network)->N_level = 2;
 }
 
+
+static nn_t reconet_sort_args(nn_t reconet)
+{
+	const char* data_names[] =
+		{
+			"reference",
+			"kspace",
+			"adjoint",
+			"coil",
+			"psf",
+			"pattern",
+			"trajectory",
+			"loss_mask"
+		};
+
+	int N = nn_get_nr_named_in_args(reconet);
+	const char* sorted_names[N + ARRAY_SIZE(data_names) + 2];
+
+	nn_get_in_names_copy(N, sorted_names + ARRAY_SIZE(data_names) + 2, reconet);
+	for (int i = 0; i < (int)ARRAY_SIZE(data_names); i++)
+		sorted_names[i] = data_names[i];
+
+	sorted_names[ARRAY_SIZE(data_names)] = "lambda_init";
+	sorted_names[ARRAY_SIZE(data_names) + 1] = "lambda";
+
+	reconet = nn_sort_inputs_by_list_F(reconet, N + ARRAY_SIZE(data_names) + 2, sorted_names);
+	for (int i = 0; i < N; i++)
+		xfree(sorted_names[i + ARRAY_SIZE(data_names) + 2]);
+
+	for (int i = 0; i < (int)ARRAY_SIZE(data_names); i++)
+		if (nn_is_name_in_in_args(reconet, data_names[i]))
+			reconet = nn_set_in_type_F(reconet, 0, data_names[i], IN_BATCH_GENERATOR);
+
+	return reconet;
+}
+
 /**
  * Returns dataconsistency block using Tickhonov regularization
  *
@@ -244,24 +282,16 @@ void reconet_init_unet_test_default(struct reconet_s* reconet)
  *
  * INDEX_0:	idims
  */
-static nn_t data_consistency_tickhonov_create(const struct reconet_s* config, unsigned int N, const long max_dims[N], unsigned int ND, const long psf_dims[ND])
+static nn_t data_consistency_tickhonov_create(const struct reconet_s* config, int Nb, struct sense_model_s* models[Nb])
 {
 	struct iter_conjgrad_conf iter_conf = iter_conjgrad_defaults;
 	iter_conf.l2lambda = 0.;
 	iter_conf.maxiter = config->dc_max_iter;
 
-	long ldims[N];
-	md_select_dims(N, config->mri_config->batch_flags, ldims, max_dims);
-
-	long img_dims[N];
-	md_select_dims(N, config->mri_config->image_flags, img_dims, max_dims);
-
-	const struct nlop_s* nlop_dc = nlop_mri_dc_prox_create(N, max_dims, ldims, ND, psf_dims, config->mri_config, &iter_conf); // in: input, adjoint, coil, pattern, lambda; out: output
+	const struct nlop_s* nlop_dc = nlop_dc = nlop_sense_dc_prox_create(Nb, models, &iter_conf, BATCH_FLAG); // in: input, adjoint, lambda; out: output
 
 	auto result = nn_from_nlop_F(nlop_dc);
 	result = nn_set_input_name_F(result, 1, "adjoint");
-	result = nn_set_input_name_F(result, 1, "coil");
-	result = nn_set_input_name_F(result, 1, "psf");
 
 	result = nn_set_input_name_F(result, 1, "lambda");
 	result = nn_set_in_type_F(result, 0, "lambda", IN_OPTIMIZE);
@@ -271,9 +301,7 @@ static nn_t data_consistency_tickhonov_create(const struct reconet_s* config, un
 	auto prox_conv = operator_project_pos_real_create(iov->N, iov->dims);
 	result = nn_set_prox_op_F(result, 0, "lambda", prox_conv);
 
-	nn_debug(DP_DEBUG3, result);
-
-	return result;// in:  input, adjoint, coil, pattern, lambda; out: output
+	return result;// in:  input, adjoint, lambda; out: output
 }
 
 
@@ -285,35 +313,18 @@ static nn_t data_consistency_tickhonov_create(const struct reconet_s* config, un
  * Input tensors:
  * INDEX_0	idims
  * adjoint:	idims
- * coil:	dims
- * pattern:	pdims
  * lambda:	ldims
  *
  * Output tensors:
  *
  * INDEX_0	idims
  */
-static nn_t data_consistency_gradientstep_create(const struct reconet_s* config, unsigned int N, const long max_dims[N], unsigned int ND, const long psf_dims[ND])
+static nn_t data_consistency_gradientstep_create(const struct reconet_s* config, int Nb, struct sense_model_s* models[Nb])
 {
-	long img_dims[N];
-	long ldims[N];
 
-	md_select_dims(N, config->mri_config->image_flags, img_dims, max_dims);
-	md_select_dims(N, config->mri_config->batch_flags, ldims, img_dims);
+	nn_t result = nn_from_nlop_F(nlop_sense_dc_grad_create(Nb, models, BATCH_FLAG));
 
-
-	const struct nlop_s* nlop_result = nlop_mri_normal_create(N, max_dims, ND, psf_dims, config->mri_config);
-	nlop_result = nlop_chain2_FF(nlop_result, 0, nlop_zaxpbz_create(N, img_dims, 1, -1.), 0);
-
-	const struct nlop_s* nlop_scale = nlop_tenmul_create(N, img_dims, img_dims, ldims);
-	nlop_result = nlop_chain2_swap_FF(nlop_result, 0, nlop_scale, 0);
-
-	nn_t result = nn_from_nlop_F(nlop_result);
-
-	result = nn_set_input_name_F(result, 0, "adjoint");
-	result = nn_set_input_name_F(result, 1, "coil");
-	result = nn_set_input_name_F(result, 1, "psf");
-
+	result = nn_set_input_name_F(result, 1, "adjoint");
 	result = nn_set_input_name_F(result, 1, "lambda");
 	result = nn_set_initializer_F(result, 0, "lambda", init_const_create(config->dc_lambda_init));
 	result = nn_set_in_type_F(result, 0, "lambda", IN_OPTIMIZE);
@@ -357,12 +368,16 @@ static nn_t data_consistency_gradientstep_create(const struct reconet_s* config,
  * init		idims;
  * [scale: 	sdims]
  */
-static nn_t nn_init_create(const struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[N])
+static nn_t nn_init_create(const struct reconet_s* config, int Nb, struct sense_model_s* models[Nb])
 {
+	int N = sense_model_get_N(models[0]);
+
 	long img_dims[N];
 	long scl_dims[N];
 
-	md_select_dims(N, config->mri_config->image_flags, img_dims, max_dims);
+	sense_model_get_img_dims(models[0], N, img_dims);
+	img_dims[BATCH_DIM] = Nb;
+
 	md_select_dims(N, config->mri_config->batch_flags, scl_dims, img_dims);
 
 	if (!config->tickhonov_init) {
@@ -390,13 +405,11 @@ static nn_t nn_init_create(const struct reconet_s* config, int N, const long max
 	iter_conf.l2lambda = 0.;
 	iter_conf.maxiter = config->init_max_iter;
 
-	auto nlop_result = nlop_mri_normal_inv_create(N, max_dims, scl_dims, ND, psf_dims, config->mri_config, &iter_conf); //in: adjoint, coil, pattern, lambda; out: (A^HA + l)^-1 adjoint
+	auto nlop_result = nlop_sense_normal_inv_create(Nb, models, &iter_conf, BATCH_FLAG); //in: adjoint, lambda; out: (A^HA + l)^-1 adjoint
 	nlop_result = nlop_combine_FF(nlop_from_linop_F(linop_identity_create(N, img_dims)),  nlop_result);
-	nlop_result = nlop_dup_F(nlop_result, 0, 1); //in: adjoint, coil, pattern, lambda; out: adjoint, (A^HA + l)^-1 adjoint
+	nlop_result = nlop_dup_F(nlop_result, 0, 1); //in: adjoint, lambda; out: adjoint, (A^HA + l)^-1 adjoint
 
 	auto nn_result = nn_from_nlop_F(nlop_result);
-	nn_result = nn_set_input_name_F(nn_result, 1, "coil");
-	nn_result = nn_set_input_name_F(nn_result, 1, "psf");
 
 	bool same_lambda = config->dc_tickhonov;
 	same_lambda = same_lambda && (config->dc_lambda_init == config->init_lambda_init);
@@ -539,38 +552,25 @@ static nn_t network_block_create(const struct reconet_s* config, unsigned int N,
  * INDEX_0:	idims
  * [batchnorm output]
  */
-static nn_t reconet_cell_create(const struct reconet_s* config, unsigned int N, const long max_dims[N], int ND, const long psf_dims[ND], enum NETWORK_STATUS status)
+static nn_t reconet_cell_create(const struct reconet_s* config, int Nb, struct sense_model_s* models[Nb], enum NETWORK_STATUS status)
 {
+	int N = sense_model_get_N(models[0]);
+
 	long img_dims[N];
-	md_select_dims(N, config->mri_config->image_flags, img_dims, max_dims);
+	sense_model_get_img_dims(models[0], N, img_dims);
+	img_dims[BATCH_DIM] = Nb;
 
 	auto result = network_block_create(config, N, img_dims, status);
 
-	int N_in_names = nn_get_nr_named_in_args(result);
-	int N_out_names = nn_get_nr_named_out_args(result);
-
-	const char* sorted_in_names[6 + N_in_names];
-	const char* sorted_out_names[N_out_names?:1];
-
-	sorted_in_names[0] = "kspace";
-	sorted_in_names[1] = "adjoint";
-	sorted_in_names[2] = "coils";
-	sorted_in_names[3] = "psf";
-	sorted_in_names[4] = "lambda_init";
-	sorted_in_names[5] = "lambda";
-	nn_get_in_names_copy(N_in_names, sorted_in_names + 6, result);
-	nn_get_out_names_copy(N_out_names, sorted_out_names, result);
-
-
 	if (config->dc_tickhonov) {
 
-		auto dc = data_consistency_tickhonov_create(config, N, max_dims, ND, psf_dims);
+		auto dc = data_consistency_tickhonov_create(config, Nb, models);
 		result = nn_chain2_FF(result, 0, NULL, dc, 0, NULL);
 	}
 
 	if (config->dc_gradient) {
 
-		auto dc = data_consistency_gradientstep_create(config, N, max_dims, ND, psf_dims);
+		auto dc = data_consistency_gradientstep_create(config, Nb, models);
 		result = nn_combine_FF(dc, result);
 		result = nn_dup_F(result, 0, NULL, 1, NULL);
 		result = nn_combine_FF(nn_from_nlop_F(nlop_zaxpbz_create(N, img_dims, -1., 1)),result);
@@ -578,13 +578,6 @@ static nn_t reconet_cell_create(const struct reconet_s* config, unsigned int N, 
 		result = nn_link_F(result, 1, NULL, 0, NULL);
 	}
 
-	result = nn_sort_inputs_by_list_F(result, N_in_names + 6, sorted_in_names);
-	result = nn_sort_outputs_by_list_F(result, N_out_names, sorted_out_names);
-
-	for (int i = 6; i < N_in_names + 6; i++)
-		xfree(sorted_in_names[i]);
-	for (int i = 0; i < N_out_names; i++)
-		xfree(sorted_out_names[i]);
 
 	if (nn_is_name_in_in_args(result, "lambda"))
 		result = nn_append_singleton_dim_in_F(result, 0, "lambda");
@@ -593,9 +586,9 @@ static nn_t reconet_cell_create(const struct reconet_s* config, unsigned int N, 
 }
 
 
-static nn_t reconet_iterations_create(const struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[N], enum NETWORK_STATUS status)
+static nn_t reconet_iterations_create(const struct reconet_s* config, int Nb, struct sense_model_s* models[Nb], enum NETWORK_STATUS status)
 {
-	auto result = reconet_cell_create(config, N, max_dims, ND, psf_dims, status);
+	auto result = reconet_cell_create(config, Nb, models, status);
 
 	int N_in_names = nn_get_nr_named_in_args(result);
 	int N_out_names = nn_get_nr_named_out_args(result);
@@ -608,7 +601,7 @@ static nn_t reconet_iterations_create(const struct reconet_s* config, int N, con
 
 	for (int i = 1; i < config->Nt; i++) {
 
-		auto tmp = reconet_cell_create(config, N, max_dims, ND, psf_dims, status);
+		auto tmp = reconet_cell_create(config, Nb, models, status);
 
 		tmp = nn_mark_dup_if_exists_F(tmp, "adjoint");
 		tmp = nn_mark_dup_if_exists_F(tmp, "coil");
@@ -652,42 +645,32 @@ static nn_t reconet_iterations_create(const struct reconet_s* config, int N, con
 	return result;
 }
 
-static bool is_name_in_list(int N, const char* names[N], const char* name)
-{
-	bool result = false;
-	for (int i = 0; i < N; i++)
-		result |= (NULL == names[i]) ? false : (0 == strcmp(names[i], name));
-	return result;
-}
 
 static nn_t reconet_create(const struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[N], enum NETWORK_STATUS status)
 {
-	auto network = reconet_iterations_create(config, N, max_dims, ND, psf_dims, status);
 
-	int N_in_names = nn_get_nr_named_in_args(network);
-	const char* in_names[N_in_names + 6];
+	int Nb = max_dims[BATCH_DIM];
+	struct sense_model_s* models[Nb];
 
-	int i = 0;
-	in_names[i++] = "kspace";
-	in_names[i++] = "adjoint";
-	in_names[i++] = "coil";
-	in_names[i++] = "psf";
-	in_names[i++] = "lambda_init";
-	in_names[i++] = "lambda";
+	for (int i = 0; i < Nb; i++) {
 
-	const char* tnames[N_in_names];
-	nn_get_in_names_copy(N_in_names, tnames, network);
-	for (int j = 0; j < N_in_names; j++)
-		if (!is_name_in_list(i, in_names, tnames[j]))
-			in_names[i++] = tnames[j];
+		long max_dims2[N];
+		long psf_dims2[N];
 
-	auto nn_init = nn_init_create(config, N, max_dims, ND, psf_dims);
+		md_select_dims(N, ~BATCH_FLAG, max_dims2, max_dims);
+		md_select_dims(N, ~BATCH_FLAG, psf_dims2, psf_dims);
 
-	if (nn_is_name_in_in_args(network, "coil"))
-		nn_init = nn_mark_dup_if_exists_F(nn_init, "coil");
+		struct config_nlop_mri_s conf2 = *(config->mri_config);
+		conf2.pattern_flags = md_nontriv_dims(ND, psf_dims2);
 
-	if (nn_is_name_in_in_args(network, "psf"))
-		nn_init = nn_mark_dup_if_exists_F(nn_init, "psf");
+		if (conf2.noncart)
+			models[i] = sense_noncart_normal_create(N, max_dims2, &conf2);
+		else
+			models[i] = sense_cart_normal_create(N, max_dims2, &conf2);
+	}
+
+	auto network = reconet_iterations_create(config, Nb, models, status);
+	auto nn_init = nn_init_create(config, Nb, models);
 
 	if (nn_is_name_in_in_args(nn_init, "lambda")) {
 
@@ -701,19 +684,31 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 
 	if (nn_is_name_in_in_args(result, "lambda")) {
 
-		long out_dims[N + 1]; // N + 1 for stacking
-		long bat_dims[N + 1]; // different scalings for different batches
+		long out_dims[N + 1];
 		long lam_dims[N + 1]; // different lambda for different iteration
 
 		md_copy_dims(N + 1, out_dims, nn_generic_domain(result, 0, "lambda")->dims);
-		md_select_dims(N + 1, config->mri_config->batch_flags, bat_dims, out_dims);
-		md_select_dims(N + 1, ~config->mri_config->batch_flags, lam_dims, out_dims);
+		md_select_dims(N + 1, MD_BIT(N), lam_dims, out_dims);
 
-		auto scale_lambda = nn_from_nlop_F(nlop_tenmul_create(N + 1, out_dims, lam_dims, bat_dims));
-		result = nn_chain2_swap_FF(scale_lambda, 0, NULL, result, 0, "lambda");
+		if (config->dc_gradient && config->dc_scale_max_eigen) {
 
-		result = nn_set_input_name_F(result, 0, "lambda");
-		result = nn_set_input_name_F(result, 0, "lambda_scale");
+			result = nn_chain2_swap_FF(nn_from_nlop_F(nlop_sense_scale_maxeigen_create(Nb, models, N + 1, out_dims)), 0, NULL, result, 0, "lambda");
+
+			auto nn_set_data = nn_from_nlop_F(nlop_sense_model_set_data_batch_create(N + 1, out_dims, Nb, models));
+			nn_set_data = nn_set_input_name_F(nn_set_data, 1, "coil");
+			nn_set_data = nn_set_input_name_F(nn_set_data, 1, "psf");
+			result = nn_chain2_swap_FF(nn_set_data, 0, NULL, result, 0, NULL);
+			result = nn_set_input_name_F(result, 0, "lambda");
+
+			result = nn_mark_dup_F(result, "coil");
+			result = nn_mark_dup_F(result, "psf");
+		}
+
+		if (!md_check_equal_dims(N + 1, lam_dims, out_dims, ~0)) {
+
+			result = nn_chain2_swap_FF(nn_from_nlop_F(nlop_from_linop_F(linop_repmat_create(N + 1, out_dims, ~MD_BIT(N)))), 0, NULL, result, 0, "lambda");
+			result = nn_set_input_name_F(result, 0, "lambda");
+		}
 
 		if (-1 != config->dc_lambda_fixed) {
 
@@ -726,29 +721,6 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 			result = nn_set_initializer_F(result, 0, "lambda", init_const_create(config->dc_lambda_init));
 
 			result = nn_reshape_in_F(result, 0, "lambda", 1, lam_dims + N);
-		}
-
-		if (config->dc_gradient && config->dc_scale_max_eigen) {
-
-			auto nlop_max_eigen = nlop_mri_normal_max_eigen_create(N, max_dims, ND, psf_dims, config->mri_config);
-			nlop_max_eigen = nlop_reshape_out_F(nlop_max_eigen, 0, N + 1, bat_dims);
-			nlop_max_eigen = nlop_chain2_FF(nlop_max_eigen, 0, nlop_zinv_create(N + 1, bat_dims), 0);
-
-			auto nn_max_eigen = nn_from_nlop_F(nlop_max_eigen);
-			nn_max_eigen = nn_set_input_name_F(nn_max_eigen, 0, "coil");
-			nn_max_eigen = nn_set_input_name_F(nn_max_eigen, 0, "psf");
-
-			nn_max_eigen = nn_mark_dup_F(nn_max_eigen, "coil");
-			nn_max_eigen = nn_mark_dup_F(nn_max_eigen, "psf");
-
-			result = nn_chain2_FF(nn_max_eigen, 0, NULL, result, 0, "lambda_scale");
-
-			result = nn_stack_dup_by_name_F(result);
-
-		} else {
-
-			complex float one = 1;
-			result = nn_set_input_const_F2(result, 0, "lambda_scale", N + 1, bat_dims, MD_SINGLETON_STRS(N + 1), true, &one);
 		}
 	}
 
@@ -772,23 +744,36 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 		result = nn_reshape_in_F(result, 0, "lambda_init", 1, MD_SINGLETON_DIMS(1));
 	}
 
+	long img_dims[N];
+	md_select_dims(N, config->mri_config->image_flags, img_dims, max_dims);
+	auto nn_set_data = nn_from_nlop_F(nlop_sense_model_set_data_batch_create(N, img_dims, Nb, models));
+	nn_set_data = nn_set_input_name_F(nn_set_data, 1, "coil");
+	nn_set_data = nn_set_input_name_F(nn_set_data, 1, "psf");
+	result = nn_chain2_swap_FF(nn_set_data, 0, NULL, result, 0, "adjoint");
+	result = nn_set_input_name_F(result, 0, "adjoint");
+
 	if (config->coil_image) {
 
 		long cim_dims[N];
 		long img_dims[N];
 		long col_dims[N];
 
-		md_select_dims(N, config->mri_config->coil_image_flags, cim_dims, max_dims);
-		md_select_dims(N, config->mri_config->image_flags, img_dims, max_dims);
-		md_select_dims(N, config->mri_config->coil_flags, col_dims, max_dims);
+		sense_model_get_img_dims(models[0], N, img_dims);
+		sense_model_get_col_dims(models[0], N, col_dims);
+		sense_model_get_cim_dims(models[0], N, cim_dims);
+
+		cim_dims[BATCH_DIM] = Nb;
+		img_dims[BATCH_DIM] = Nb;
+		col_dims[BATCH_DIM] = Nb;
 
 		result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(nlop_tenmul_create(N, cim_dims, img_dims, col_dims)), 0, NULL);
 		result = nn_dup_F(result, 0, "coil", 0, NULL);
 	}
 
-	result = nn_sort_inputs_by_list_F(result, i, in_names);
-	for (int j = 0; j < N_in_names; j++)
-		xfree(tnames[j]);
+	for (int i = 0; i < Nb; i++)
+		sense_model_free(models[i]);
+
+	result = reconet_sort_args(result);
 
 	return result;
 }
@@ -827,26 +812,25 @@ static nn_t reconet_train_create(const struct reconet_s* config, int N, const lo
 		train_op = nn_link_F(train_op, 0, NULL, 0, NULL);
 	}
 
+	train_op = nn_set_input_name_F(train_op, 0, "reference");
+	train_op = reconet_sort_args(train_op);
+
 	return train_op;
 }
 
-static nn_t reconet_valid_create(struct reconet_s* config, struct network_data_s* vf)
+static nn_t reconet_valid_create(struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[ND], struct named_data_list_s* valid_data)
 {
-	load_network_data(vf);
 
-	config->mri_config->pattern_flags = md_nontriv_dims(vf->ND, vf->psf_dims);
-	config->coil_image = (1 != vf->out_dims[COIL_DIM]);
+	config->mri_config->pattern_flags = md_nontriv_dims(ND, psf_dims);
 
-	auto valid_loss = reconet_train_create(config, vf->N, vf->max_dims, vf->ND, vf->psf_dims, true);
+	auto ref_iov = named_data_list_get_iovec(valid_data, "reference");
+	config->coil_image = (1 != ref_iov->dims[COIL_DIM]);
+	iovec_free(ref_iov);
 
-	valid_loss = nn_ignore_input_F(valid_loss, 0, NULL,vf-> N, vf->out_dims, true, vf->out);
-	valid_loss = nn_ignore_input_F(valid_loss, 0, "adjoint", vf->N, vf->img_dims, true, vf->adjoint);
-	valid_loss = nn_ignore_input_F(valid_loss, 0, "coil", vf->N, vf->col_dims, true, vf->coil);
-	valid_loss = nn_ignore_input_F(valid_loss, 0, "psf", vf->ND, vf->psf_dims, true, vf->psf);
 
-	free_network_data(vf);
+	auto valid_loss = reconet_train_create(config, N, max_dims, ND, psf_dims, true);
 
-	return valid_loss;
+	return nn_valid_create(valid_loss, valid_data);
 }
 
 
@@ -876,42 +860,31 @@ static nn_t reconet_apply_op_create(const struct reconet_s* config, int N, const
 
 
 
-void train_reconet(	struct reconet_s* config, unsigned int N, const long max_dims[N],
-			const long out_dims[N], _Complex float* ref,
-			const long img_dims[N], const complex float* adjoint,
-			const long col_dims[N], const _Complex float* coil,
-			int ND, const long psf_dims[ND], const _Complex float* pattern,
-			long Nb, struct network_data_s* valid_files)
+void train_reconet(	struct reconet_s* config,
+			int N, const long max_dims[N],
+			int ND, const long psf_dims[ND],
+			long Nb_train, struct named_data_list_s* train_data,
+			long Nb_valid, struct named_data_list_s* valid_data)
 {
 	assert(1 == bitcount(config->mri_config->batch_flags));
 	int bat_dim = md_max_idx(config->mri_config->batch_flags);
 
-	long Nt = max_dims[bat_dim]; // number datasets
-	Nb = MIN(Nb, Nt);
+	long max_dims_trn[N];
+	long psf_dims_trn[ND];
 
-	long bat_max_dims[N];
-	long bat_out_dims[N];
-	long bat_img_dims[N];
-	long bat_col_dims[N];
-	long bat_psf_dims[ND];
+	md_copy_dims(N, max_dims_trn, max_dims);
+	md_copy_dims(ND, psf_dims_trn, psf_dims);
 
-	md_copy_dims(N, bat_max_dims, max_dims);
-	md_copy_dims(N, bat_out_dims, out_dims);
-	md_copy_dims(N, bat_img_dims, img_dims);
-	md_copy_dims(N, bat_col_dims, col_dims);
-	md_copy_dims(ND, bat_psf_dims, psf_dims);
+	max_dims_trn[bat_dim] = Nb_train;
+	psf_dims_trn[bat_dim] = Nb_train;
 
-	bat_max_dims[bat_dim] = Nb;
-	bat_out_dims[bat_dim] = Nb;
-	bat_img_dims[bat_dim] = Nb;
-	bat_col_dims[bat_dim] = Nb;
-	bat_psf_dims[bat_dim] = (1 == psf_dims[bat_dim]) ? 1 : Nb;
+	auto ref_iov = named_data_list_get_iovec(train_data, "reference");
+	config->coil_image = (1 != ref_iov->dims[COIL_DIM]);
+	iovec_free(ref_iov);
 
+	config->mri_config->pattern_flags = md_nontriv_dims(ND, psf_dims_trn);
 
-	config->mri_config->pattern_flags = md_nontriv_dims(ND, psf_dims);
-	config->coil_image = (1 != out_dims[COIL_DIM]);
-
-	auto nn_train = reconet_train_create(config, N, bat_max_dims, ND, bat_psf_dims, false);
+	auto nn_train = reconet_train_create(config, N, max_dims_trn, ND, psf_dims_trn, false);
 
 	debug_printf(DP_INFO, "Train Reconet\n");
 	nn_debug(DP_INFO, nn_train);
@@ -932,11 +905,7 @@ void train_reconet(	struct reconet_s* config, unsigned int N, const long max_dim
 		move_gpu_nn_weights(config->weights);
 
 	//create batch generator
-	const complex float* train_data[] = {ref, adjoint, coil, pattern};
-	const long* bat_dims[] = { bat_out_dims, bat_img_dims, bat_col_dims, bat_psf_dims };
-	const long* tot_dims[] = { out_dims, img_dims, col_dims, psf_dims };
-
-	auto batch_generator = batch_gen_create_from_iter(config->train_conf, 4, (const int[4]){ N, N ,N , ND }, bat_dims, tot_dims, train_data, 0);
+	auto batch_generator = nn_batchgen_create(nn_train, train_data, config->train_conf->batchgen_type, config->train_conf->batch_seed);
 
 	//setup for iter algorithm
 	int NI = nn_get_nr_in_args(nn_train);
@@ -944,36 +913,59 @@ void train_reconet(	struct reconet_s* config, unsigned int N, const long max_dim
 
 	float* src[NI];
 
-	for (int i = 0; i < config->weights->N; i++) {
-
-		auto iov_weight = config->weights->iovs[i];
-		auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i + 4);
-		assert(md_check_equal_dims(iov_weight->N, iov_weight->dims, iov_train_op->dims, ~0));
-		src[i + 4] = (float*)config->weights->tensors[i];
-	}
-
 	enum IN_TYPE in_type[NI];
-	const struct operator_p_s* projections[NI];
-	enum OUT_TYPE out_type[NO];
-
 	nn_get_in_types(nn_train, NI, in_type);
+
+	const struct operator_p_s* projections[NI];
+	nn_get_prox_ops(nn_train, NI, projections);
+
+	enum OUT_TYPE out_type[NO];
 	nn_get_out_types(nn_train, NO, out_type);
 
-	for (int i = 0; i < 4; i++) {
+	int weight_index = 0;
 
-		src[i] = NULL;
-		in_type[i] = IN_BATCH_GENERATOR;
+	for (int i = 0; i < NI; i++) {
+
+		switch (in_type[i]) {
+
+			case IN_BATCH_GENERATOR:
+
+				src[i] = NULL;
+				break;
+
+			case IN_BATCH:
+			case IN_UNDEFINED:
+			case IN_STATIC:
+				assert(0);
+				break;
+
+			case IN_OPTIMIZE:
+			case IN_BATCHNORM:
+			{
+				auto iov_weight = config->weights->iovs[weight_index];
+				auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i);
+				assert(md_check_equal_dims(iov_weight->N, iov_weight->dims, iov_train_op->dims, ~0));
+				src[i] = (float*)config->weights->tensors[weight_index];
+				weight_index++;
+			}
+		}
 	}
-
-	for (int i = 0; i < NI; i++)
-		projections[i] = nn_get_prox_op_arg_index(nn_train, i);
 
 	int num_monitors = 0;
 	const struct monitor_value_s* value_monitors[3];
 
-	if (NULL != valid_files) {
+	if (NULL != valid_data) {
 
-		auto nn_validation_loss = reconet_valid_create(config, valid_files);
+		long max_dims_val[N];
+		long psf_dims_val[ND];
+
+		md_copy_dims(N, max_dims_val, max_dims);
+		md_copy_dims(ND, psf_dims_val, psf_dims);
+
+		max_dims_val[bat_dim] = Nb_valid;
+		psf_dims_val[bat_dim] = Nb_valid;
+
+		auto nn_validation_loss = reconet_valid_create(config, N, max_dims_val, ND, psf_dims_val, valid_data);
 		const char* val_names[nn_get_nr_out_args(nn_validation_loss)];
 		for (int i = 0; i < nn_get_nr_out_args(nn_validation_loss); i++)
 			val_names[i] = nn_get_out_name_from_arg_index(nn_validation_loss, i, false);
@@ -1030,7 +1022,7 @@ void train_reconet(	struct reconet_s* config, unsigned int N, const long max_dim
 
 	struct monitor_iter6_s* monitor = monitor_iter6_create(true, true, num_monitors, value_monitors);
 
-	iter6_by_conf(config->train_conf, nn_get_nlop(nn_train), NI, in_type, projections, src, NO, out_type, Nb, Nt / Nb, batch_generator, monitor);
+	iter6_by_conf(config->train_conf, nn_get_nlop(nn_train), NI, in_type, projections, src, NO, out_type, Nb_train, max_dims[BATCH_DIM] / Nb_train, batch_generator, monitor);
 
 	nn_free(nn_train);
 	nlop_free(batch_generator);
