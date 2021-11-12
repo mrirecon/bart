@@ -1221,6 +1221,15 @@ static bool is_name_in_list(int N, const char* names[N], const char* name)
 	return result;
 }
 
+static int names_remove_double(int N, const char* dst_names[N], const char* src_names[N])
+{
+	int NN = 0;
+	for (int i = 0; i < N; i++)
+		if (!is_name_in_list(NN, dst_names, src_names[i]))
+			dst_names[NN++] = src_names[i];
+	return NN;
+}
+
 /**
  * Permute inputs of nn_t such that all inputs with a name contained in the provided list are in the same order as in the list and free nn_t
  *
@@ -1239,14 +1248,17 @@ nn_t nn_sort_inputs_by_list_F(nn_t x, int N, const char* sorted_names[N])
 
 	int index = 0;
 
+	const char* nnames[N];
+	int NN = names_remove_double(N, nnames, sorted_names);
+
 	for (int i = 0; i < II; i++){
 
-		if (is_name_in_list(N, sorted_names, nn_get_in_name_from_arg_index(x, i, false))) {
+		if (is_name_in_list(NN, nnames, nn_get_in_name_from_arg_index(x, i, false))) {
 
-			while (! nn_is_name_in_in_args(x, sorted_names[index]))
+			while (! nn_is_name_in_in_args(x, nnames[index]))
 				index++;
 
-			nperm[i] = nn_get_in_arg_index(x, 0, sorted_names[index]);
+			nperm[i] = nn_get_in_arg_index(x, 0, nnames[index]);
 			index++;
 		} else {
 
@@ -1275,14 +1287,17 @@ nn_t nn_sort_outputs_by_list_F(nn_t x, int N, const char* sorted_names[N])
 
 	int index = 0;
 
+	const char* nnames[N];
+	int NN = names_remove_double(N, nnames, sorted_names);
+
 	for (int i = 0; i < OO; i++){
 
-		if (is_name_in_list(N, sorted_names, nn_get_out_name_from_arg_index(x, i, false))) {
+		if (is_name_in_list(NN, nnames, nn_get_out_name_from_arg_index(x, i, false))) {
 
-			while (! nn_is_name_in_out_args(x, sorted_names[index]))
+			while (! nn_is_name_in_out_args(x, nnames[index]))
 				index++;
 
-			nperm[i] = nn_get_out_arg_index(x, 0, sorted_names[index]);
+			nperm[i] = nn_get_out_arg_index(x, 0, nnames[index]);
 			index++;
 		} else {
 

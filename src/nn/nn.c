@@ -542,6 +542,21 @@ void nn_get_out_names_copy(int N, const char* names[N], nn_t op)
 
 }
 
+void nn_get_in_args_names(nn_t op, int II, const char* names[II], _Bool copy)
+{
+	assert(II == nn_get_nr_in_args(op));
+	for (int i = 0; i < II; i++)
+		names[i] = (NULL != op->in_names[i]) && copy ? strdup(op->in_names[i]) : op->in_names[i];
+}
+
+void nn_get_out_args_names(nn_t op, int OO, const char* names[OO], _Bool copy)
+{
+	assert(OO == nn_get_nr_out_args(op));
+	for (int i = 0; i < OO; i++)
+		names[i] = (NULL != op->out_names[i]) && copy ? strdup(op->out_names[i]) : op->out_names[i];
+}
+
+
 nn_t nn_set_initializer_F(nn_t op, int i, const char* iname, const struct initializer_s* ini)
 {
 	auto result = nn_clone(op);
@@ -555,7 +570,8 @@ nn_t nn_set_prox_op_F(nn_t op, int i, const char* iname, const struct operator_p
 {
 	auto result = nn_clone(op);
 	i = nn_get_in_arg_index(result, i, iname);
-	assert(NULL == result->prox_ops[i]);
+	if (NULL != result->prox_ops[i])
+		operator_p_free(result->prox_ops[i]);
 	auto iov = operator_p_domain(opp);
 	assert(iovec_check(nlop_generic_domain(op->nlop, i), iov->N, iov->dims, iov->strs));
 	result->prox_ops[i] = opp;
@@ -572,6 +588,13 @@ const struct operator_p_s* nn_get_prox_op(nn_t op, int i, const char* iname)
 const struct operator_p_s* nn_get_prox_op_arg_index(nn_t op, int i)
 {
 	return op->prox_ops[i];
+}
+
+void nn_get_prox_ops(nn_t op, int N, const struct operator_p_s* prox_ops[N])
+{
+	assert(N == nn_get_nr_in_args(op));
+	for (int i = 0; i < N; i++)
+		prox_ops[i] = op->prox_ops[i];
 }
 
 nn_t nn_set_dup_F(nn_t op, int i, const char* iname, bool dup)

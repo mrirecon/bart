@@ -152,8 +152,14 @@ nn_t nn_del_out_bn_F(nn_t op)
 nn_t nn_ignore_input_F(nn_t op, int i, const char* iname, int N, const long dims[N], _Bool copy, const _Complex float* in)
 {
 	i = nn_get_in_arg_index(op, i, iname);
-	auto nlop = nlop_set_input_const(nn_get_nlop(op), i, N, dims, copy, in);
-	nlop = nlop_combine_FF(nlop_del_out_create(N, dims), nlop);
+
+	long dims2[N];
+	md_copy_dims(N, dims2, nlop_generic_domain(nn_get_nlop(op), i)->dims);
+
+	assert(md_check_equal_dims(N, dims2, dims, md_nontriv_dims(N, dims)));
+
+	auto nlop = nlop_set_input_const2(nn_get_nlop(op), i, N, dims2, MD_STRIDES(N, dims, sizeof(complex float)), copy, in);
+	nlop = nlop_combine_FF(nlop_del_out_create(N, dims2), nlop);
 	nlop = nlop_shift_input_F(nlop, i, 0);
 	auto result = nn_from_nlop_F(nlop);
 

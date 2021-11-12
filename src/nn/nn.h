@@ -80,8 +80,8 @@ extern int nn_get_in_arg_index(nn_t op, int i, const char* iname);
 extern _Bool nn_is_num_in_index(nn_t op, int i);
 extern _Bool nn_is_num_out_index(nn_t op, int o);
 
-extern void nn_get_in_args_names(nn_t op, int nII, const char* inames[nII]);
-extern void nn_get_out_args_names(nn_t op, int nOO, const char* onames[nOO]);
+extern void nn_get_in_args_names(nn_t op, int nII, const char* inames[nII], _Bool copy);
+extern void nn_get_out_args_names(nn_t op, int nOO, const char* onames[nOO], _Bool copy);
 
 extern const char* nn_get_in_name_from_arg_index(nn_t op, int i, _Bool clone);
 extern const char* nn_get_out_name_from_arg_index(nn_t op, int o, _Bool clone);
@@ -106,6 +106,7 @@ extern nn_t nn_set_out_type_F(nn_t op, int o, const char* oname, enum OUT_TYPE o
 extern nn_t nn_set_prox_op_F(nn_t op, int i, const char* iname, const struct operator_p_s* opp);
 extern const struct operator_p_s* nn_get_prox_op(nn_t op, int i, const char* iname);
 extern const struct operator_p_s* nn_get_prox_op_arg_index(nn_t op, int i);
+extern void nn_get_prox_ops(nn_t op, int N, const struct operator_p_s* prox_ops[N]);
 
 extern nn_t nn_set_dup_F(nn_t op, int i, const char* iname, bool dup);
 extern _Bool nn_get_dup(nn_t op, int i, const char* iname);
