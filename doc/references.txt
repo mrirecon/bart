@@ -17,6 +17,27 @@ Resonance Image Reconstruction using The Berkeley Advanced
 Reconstruction Toolbox,
 ISMRM Workshop on Data Sampling and Image Reconstruction, Sedona 2016.
 
+Uecker M.
+Machine Learning Using the BART Toolbox - Implementation of
+a Deep Convolutional Neural Network for Denoising.
+Joint Annual Meeting ISMRM-ESMRMB, Paris 2018,
+In: Proc. Intl. Soc. Mag. Reson. Med. 2018; 26:2802.
+
+Blumenthal M. and Uecker M.
+Deep Deep Learning with BART.
+ISMRM Annual Meeting 2021,
+In: Proc. Intl. Soc. Mag. Reson. Med. 2021; 29:1754.
+
+Luo G, Blumenthal M, Uecker M.
+Using data-driven image priors for image reconstruction with BART.
+ISMRM Annual Meeting 2021,
+In: Proc. Intl. Soc. Mag. Reson. Med. 2021; 29:1756.
+
+Holme HCM and Uecker M.
+Reproducibility meets Software Testing: Automatic Tests
+of Reproducible Publications Using BART.
+ISMRM Annual Meeting 2021,
+In: Proc. Intl. Soc. Mag. Reson. Med. 2021; 29:3768.
 
 
 
