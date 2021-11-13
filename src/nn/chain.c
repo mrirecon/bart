@@ -1287,7 +1287,7 @@ nn_t nn_sort_outputs_by_list_F(nn_t x, int N, const char* sorted_names[N])
 
 	int index = 0;
 
-	const char* nnames[N];
+	const char* nnames[N?:1];
 	int NN = names_remove_double(N, nnames, sorted_names);
 
 	for (int i = 0; i < OO; i++){
