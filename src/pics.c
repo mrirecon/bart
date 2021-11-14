@@ -48,15 +48,8 @@
 #include "num/iovec.h"
 #include "num/ops.h"
 
-static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.\n"
-                 "Returns the coil-combined images in image domain. For Cartesian imaging, 3D k-space (kz along z dim) must be provided. By default, pics assumes a 3D reconstruction. "
-                 "For a slice-by-slice 2D reconstruction, pics can be called in a loop.\n"
-		 "If no scaling factor is provided, pics will scale the data prior to reconstruction. The scaling factor is calculated using the center k-space region. This scaling will be undone before returning if the -S flag is provided which may be important for computing quantitative parameters.\n"
-		 "Additional dimensions such as coils, maps, and time must follow the dimension order specified in mri.h, otherwise regularizers may be applied on the wrong dimensions and the forward sense operator may be inaccurate.\n"
-		 "The sampling mask is determined automatically from the provided k-space. For the sampling mask to be calculated correctly, missing samples must be exactly zero.\n"
-		 "Small values in k-space, perhaps from numerical errors, will cause the sampling mask (reflected in logged acceleration factor), and the data consistency step to be incorrect.";
-
-
+static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.\n";
+                 
 
 static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const long wgs_dims[DIMS], const complex float* weights, const long basis_dims[DIMS], const complex float* basis, struct operator_s** precond_op)
 {
