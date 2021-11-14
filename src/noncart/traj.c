@@ -30,24 +30,6 @@ const struct traj_conf traj_defaults = {
 	.half_circle_gold = false,
 	.golden_partition = false,
 	.d3d = false,
-	.uniform3D = false,
-	.transverse = false,
-	.asym_traj = false,
-	.mems_traj = false,
-	.accel = 1,
-	.tiny_gold = 0,
-};
-
-const struct traj_conf rmfreq_defaults = {
-
-	.radial = true,
-	.golden = false,
-	.aligned = false,
-	.full_circle = false,
-	.half_circle_gold = false,
-	.golden_partition = false,
-	.d3d = false,
-	.uniform3D = false,
 	.transverse = false,
 	.asym_traj = false,
 	.mems_traj = false,
