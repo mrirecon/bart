@@ -28,7 +28,7 @@ extern struct sense_model_s* sense_noncart_create(int N,
 	struct nufft_conf_s conf);
 
 extern struct sense_model_s* sense_cart_normal_create(int N, const long max_dims[N], const struct config_nlop_mri_s* conf);
-extern struct sense_model_s* sense_noncart_normal_create(int N, const long max_dims[N], const struct config_nlop_mri_s* conf);
+extern struct sense_model_s* sense_noncart_normal_create(int N, const long max_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf);
 
 extern const struct nlop_s* nlop_sense_model_set_data_batch_create(int N, const long dims[N], int Nb, struct sense_model_s* models[Nb]);
 

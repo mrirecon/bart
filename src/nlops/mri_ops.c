@@ -218,7 +218,7 @@ struct sense_model_s* sense_noncart_create(int N,
 	md_max_dims(N, ~0, max_dims, col_dims, max_dims);
 
 	result->coils = linop_fmac_create(N, max_dims, ~(md_nontriv_dims(N, cim_dims)), ~(md_nontriv_dims(N, img_dims)), ~(md_nontriv_dims(N, col_dims)), NULL);
-	result->nufft = nufft_create2(DIMS, ksp_dims, cim_dims, trj_dims, NULL, wgh_dims, NULL, basis ? bas_dims : NULL, basis, conf);
+	result->nufft = nufft_create2(DIMS, ksp_dims, cim_dims, trj_dims, NULL, wgh_dims, NULL, bas_dims, basis, conf);
 
 	result->sense = linop_chain(result->coils, result->nufft);
 
@@ -256,7 +256,7 @@ struct sense_model_s* sense_cart_normal_create(int N, const long max_dims[N], co
 	return result;
 }
 
-struct sense_model_s* sense_noncart_normal_create(int N, const long max_dims[N], const struct config_nlop_mri_s* conf)
+struct sense_model_s* sense_noncart_normal_create(int N, const long max_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf)
 {
 	struct sense_model_s* result = mri_sense_init(N, N + 1);
 
@@ -269,7 +269,7 @@ struct sense_model_s* sense_noncart_normal_create(int N, const long max_dims[N],
 	md_select_dims(N, conf->image_flags| conf->coil_flags | conf->coil_image_flags, max_dims2, max_dims);
 
 	result->coils = linop_fmac_create(N, max_dims2, ~(conf->coil_image_flags), ~(conf->image_flags), ~(conf->coil_flags), NULL);
-	result->nufft = nufft_create2(N, result->ksp_dims, result->cim_dims, result->trj_dims, NULL, result->pat_dims, NULL, result->bas_dims, NULL, *(conf->nufft_conf));
+	result->nufft = nufft_create_normal(N, result->cim_dims, ND, psf_dims, NULL, 0 != conf->basis_flags, *(conf->nufft_conf));
 	nufft_get_psf_dims(result->nufft, result->ND, result->psf_dims);
 
 	result->sense = linop_chain(result->coils, result->nufft);
@@ -720,7 +720,7 @@ static const struct nlop_s* nlop_mri_normal_slice_create(int N, const long max_d
 	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims);
 
 	if (conf->noncart)
-		model = sense_noncart_normal_create(N, max_dims, &conf2);
+		model = sense_noncart_normal_create(N, max_dims, ND, psf_dims, &conf2);
 	else
 		model = sense_cart_normal_create(N, max_dims, &conf2);
 
@@ -806,7 +806,7 @@ static const struct nlop_s* nlop_mri_normal_inv_slice_create(int N, const long m
 	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims);
 
 	if (conf->noncart)
-		model = sense_noncart_normal_create(N, max_dims, &conf2);
+		model = sense_noncart_normal_create(N, max_dims, ND, psf_dims, &conf2);
 	else
 		model = sense_cart_normal_create(N, max_dims, &conf2);
 
@@ -946,7 +946,7 @@ static const struct nlop_s* nlop_mri_normal_max_eigen_slice_create(int N, const 
 	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims);
 
 	if (conf->noncart)
-		model = sense_noncart_normal_create(N, max_dims, &conf2);
+		model = sense_noncart_normal_create(N, max_dims, ND, psf_dims, &conf2);
 	else
 		model = sense_cart_normal_create(N, max_dims, &conf2);
 
