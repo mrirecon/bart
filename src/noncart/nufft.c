@@ -612,7 +612,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 		data->traj = multiplace_move(N, trj_dims, CFL_SIZE, traj);
 	}
 
-	if ((NULL != bas_dims) && (1 != md_calc_size(N, bas_dims))) {
+	if (NULL != basis) {
 
 		//	conf.toeplitz = false;
 		debug_print_dims(DP_DEBUG1, N, bas_dims);
@@ -635,24 +635,18 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 		data->bas_dims[N] = 1;
 
 		md_calc_strides(ND, data->bas_strs, data->bas_dims, CFL_SIZE);
-	}
-
-	if (NULL != basis) {
 
 		multiplace_free(data->basis);
 
 		data->basis = multiplace_move(ND, data->bas_dims, CFL_SIZE, basis);
 	}
 
-	if (NULL != wgh_dims){
+	if (NULL != weights){
 
 		md_copy_dims(N, data->wgh_dims, wgh_dims);
 		data->wgh_dims[N] = 1;
 
 		md_calc_strides(ND, data->wgh_strs, data->wgh_dims, CFL_SIZE);
-	}
-
-	if (NULL != weights) {
 
 		multiplace_free(data->weights);
 
@@ -669,7 +663,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 			if (!MD_IS_SET(data->flags, i))
 				data->psf_dims[i] = MAX(data->trj_dims[i], ((NULL != weights) ? data->wgh_dims[i] : 0));
 
-		if (NULL != data->basis) {
+		if (NULL != basis) {
 
 			debug_printf(DP_DEBUG3, "psf_dims: ");
 			debug_print_dims(DP_DEBUG3, N, data->psf_dims);
@@ -742,7 +736,7 @@ static struct linop_s* nufft_create3(unsigned int N,
 
 
 	auto data = nufft_create_data(N);
-	nufft_set_data(data, N, cim_dims, (NULL != bas_dims) && (1 != md_calc_size(N, bas_dims)), conf);
+	nufft_set_data(data, N, cim_dims, NULL != basis, conf);
 
 	md_copy_dims(N, data->ksp_dims, ksp_dims);
 	data->ksp_dims[N] = 1;
@@ -835,7 +829,43 @@ struct linop_s* nufft_create2(unsigned int N,
 			bas_dims, basis, conf);
 }
 
+static void nufft_normal_only(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	UNUSED(_data);
+	UNUSED(src);
+	UNUSED(dst);
 
+	error("NuFFT with normal operator only!");
+}
+
+struct linop_s* nufft_create_normal(int N, const long cim_dims[N],
+				    int ND, const long psf_dims[ND], const complex float* psf,
+				    bool basis, struct nufft_conf_s conf)
+{
+	debug_printf(DP_DEBUG1, "cim : ");
+	debug_print_dims(DP_DEBUG1, N, cim_dims);
+
+	debug_printf(DP_DEBUG1, "psf : ");
+	debug_print_dims(DP_DEBUG1, ND, psf_dims);
+
+	auto data = nufft_create_data(N);
+	nufft_set_data(data, N, cim_dims, basis, conf);
+	md_copy_dims(ND, data->psf_dims, psf_dims);
+
+	assert(md_check_equal_dims(ND, data->psf_dims, data->lph_dims, data->flags));
+	assert(conf.toeplitz);
+
+	long out_dims[N];
+	md_singleton_dims(N, out_dims);
+
+	auto result = linop_create(N, out_dims, N, cim_dims,
+			CAST_UP(data), nufft_normal_only, nufft_normal_only, nufft_apply_normal, NULL, nufft_free_data);
+
+	if (NULL != psf)
+		nufft_update_psf(result, ND, psf_dims, psf);
+
+	return result;
+}
 
 struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
 			     const long ksp_dims[N],		///< kspace dimension

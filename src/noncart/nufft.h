@@ -62,6 +62,9 @@ extern void estimate_fast_sq_im_dims(unsigned int N, 		///< Number of dimensions
 			      const long tdims[N], 		///< Trajectory dimesion
 			      const complex float* traj);	///< Trajectory
 
+extern struct linop_s* nufft_create_normal(int N, const long cim_dims[__VLA(N)],
+					   int ND, const long psf_dims[__VLA(ND)], const _Complex float* psf,
+					   _Bool basis, struct nufft_conf_s conf);
 
 extern void nufft_update_traj(	const struct linop_s* nufft, int N,
 			const long trj_dims[__VLA(N)], const _Complex float* traj,
