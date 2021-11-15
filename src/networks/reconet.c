@@ -646,7 +646,7 @@ static nn_t reconet_iterations_create(const struct reconet_s* config, int Nb, st
 }
 
 
-static nn_t reconet_create(const struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[N], enum NETWORK_STATUS status)
+static nn_t reconet_create(const struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[ND], enum NETWORK_STATUS status)
 {
 
 	int Nb = max_dims[BATCH_DIM];
@@ -655,10 +655,10 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 	for (int i = 0; i < Nb; i++) {
 
 		long max_dims2[N];
-		long psf_dims2[N];
+		long psf_dims2[ND];
 
 		md_select_dims(N, ~BATCH_FLAG, max_dims2, max_dims);
-		md_select_dims(N, ~BATCH_FLAG, psf_dims2, psf_dims);
+		md_select_dims(ND, ~BATCH_FLAG, psf_dims2, psf_dims);
 
 		struct config_nlop_mri_s conf2 = *(config->mri_config);
 		conf2.pattern_flags = md_nontriv_dims(ND, psf_dims2);
