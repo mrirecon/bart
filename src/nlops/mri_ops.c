@@ -218,7 +218,7 @@ struct sense_model_s* sense_noncart_create(int N,
 	md_max_dims(N, ~0, max_dims, col_dims, max_dims);
 
 	result->coils = linop_fmac_create(N, max_dims, ~(md_nontriv_dims(N, cim_dims)), ~(md_nontriv_dims(N, img_dims)), ~(md_nontriv_dims(N, col_dims)), NULL);
-	result->nufft = nufft_create2(DIMS, ksp_dims, cim_dims, trj_dims, NULL, wgh_dims, NULL, basis ? NULL : bas_dims, basis, conf);
+	result->nufft = nufft_create2(DIMS, ksp_dims, cim_dims, trj_dims, NULL, wgh_dims, NULL, basis ? bas_dims : NULL, basis, conf);
 
 	result->sense = linop_chain(result->coils, result->nufft);
 
