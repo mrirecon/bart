@@ -22,6 +22,7 @@
 #include <cuComplex.h>
 
 #include "num/gpukrnls.h"
+#include "num/multind.h"
 
 #if 1
 // see Dara's src/calib/calibcu.cu for how to get
@@ -387,6 +388,110 @@ extern "C" void cuda_zfmacc2(long N, _Complex double* dst, const _Complex float*
 {
 	kern_zfmacc2<<<gridsize(N), blocksize(N)>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
+
+
+#define MAX_DIMS 3
+struct stride_desc {
+
+	long dims[MAX_DIMS];
+	long ostrs[MAX_DIMS];
+	long istrs1[MAX_DIMS];
+	long istrs2[MAX_DIMS];
+};
+
+__global__ void kern_zfmac_strides(stride_desc strides, long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride) {
+
+		for (long z = 0; z < strides.dims[2]; z++) {
+
+			for (long y = 0; y < strides.dims[1]; y++) {
+
+				for (long x = 0; x < strides.dims[0]; x++) {
+
+					long o_offset = x * strides.ostrs[0] + y * strides.ostrs[1] + z * strides.ostrs[2];
+					long i1_offset = x * strides.istrs1[0] + y * strides.istrs1[1] + z * strides.istrs1[2];
+					long i2_offset = x * strides.istrs2[0] + y * strides.istrs2[1] + z * strides.istrs2[2];
+
+					dst[i + o_offset] = cuCaddf(dst[i + o_offset], cuCmulf(src1[i + i1_offset], src2[i + i2_offset]));
+				}
+			}
+		}
+	}
+}
+
+//this version needs to start less kernels
+extern "C" void cuda_zfmac_strided(long N, long dims[3], unsigned long oflags, unsigned long iflags1, unsigned long iflags2, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
+{
+	struct stride_desc s;
+
+	md_copy_dims(3, s.dims, dims);
+
+	long odims[3];
+	long idims1[3];
+	long idims2[3];
+
+	md_select_dims(3, oflags, odims, dims);
+	md_select_dims(3, iflags1, idims1, dims);
+	md_select_dims(3, iflags2, idims2, dims);
+
+	md_calc_strides(3, s.ostrs, odims, N);
+	md_calc_strides(3, s.istrs1, idims1, N);
+	md_calc_strides(3, s.istrs2, idims2, N);
+
+	kern_zfmac_strides<<<gridsize(N), blocksize(N)>>>(s, N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+}
+
+
+__global__ void kern_zfmacc_strides(stride_desc strides, long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride) {
+
+		for (long z = 0; z < strides.dims[2]; z++) {
+
+			for (long y = 0; y < strides.dims[1]; y++) {
+
+				for (long x = 0; x < strides.dims[0]; x++) {
+
+					long o_offset = x * strides.ostrs[0] + y * strides.ostrs[1] + z * strides.ostrs[2];
+					long i1_offset = x * strides.istrs1[0] + y * strides.istrs1[1] + z * strides.istrs1[2];
+					long i2_offset = x * strides.istrs2[0] + y * strides.istrs2[1] + z * strides.istrs2[2];
+
+					dst[i + o_offset] = cuCaddf(dst[i + o_offset], cuCmulf(src1[i + i1_offset],  cuConjf(src2[i + i2_offset])));
+				}
+			}
+		}
+	}
+}
+
+
+extern "C" void cuda_zfmacc_strided(long N, long dims[3], unsigned long oflags, unsigned long iflags1, unsigned long iflags2, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
+{
+	struct stride_desc s;
+
+	md_copy_dims(3, s.dims, dims);
+
+	long odims[3];
+	long idims1[3];
+	long idims2[3];
+
+	md_select_dims(3, oflags, odims, dims);
+	md_select_dims(3, iflags1, idims1, dims);
+	md_select_dims(3, iflags2, idims2, dims);
+
+	md_calc_strides(3, s.ostrs, odims, N);
+	md_calc_strides(3, s.istrs1, idims1, N);
+	md_calc_strides(3, s.istrs2, idims2, N);
+
+	kern_zfmacc_strides<<<gridsize(N), blocksize(N)>>>(s, N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+}
+
 
 
 __global__ void kern_pow(long N, float* dst, const float* src1, const float* src2)
@@ -1085,6 +1190,7 @@ extern "C" void cuda_zsum(long N, _Complex float* dst)
 		B /= 32;
 	}
 }
+
 
 __global__ void kern_pdf_gauss(long N, float mu, float sig, float* dst, const float* src)
 {
