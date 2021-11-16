@@ -178,7 +178,13 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 		conf.noncart = true;
 
-		pattern = load_cfl(psf, DIMS, pat_dims);
+		// copy here so that pattern is only ever a pointer allocated by md_alloc
+		complex float* tmp_pattern = load_cfl(psf, DIMS, pat_dims);
+
+		pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
+		md_copy(DIMS, pat_dims, pattern, tmp_pattern, CFL_SIZE);
+
+		unmap_cfl(DIMS, pat_dims, tmp_pattern);
 
 		turns = pat_dims[TIME_DIM];
 
@@ -531,6 +537,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 	md_free(sens1);
 	md_free(ksens1);
 	md_free(ref);
+	md_free(pattern);
 
 	if (NULL != trajectory) {
 
@@ -542,7 +549,6 @@ int main_rtnlinv(int argc, char* argv[argc])
 	}
 
 	unmap_cfl(DIMS, sens_dims, sens);
-	unmap_cfl(DIMS, pat_dims, pattern);
 	unmap_cfl(DIMS, img_output_dims, img_output);
 	unmap_cfl(DIMS, ksp_dims, kspace);
 
