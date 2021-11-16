@@ -18,3 +18,7 @@ function bart_release() {
 function bart_git_version() {
     ./git-version.sh | tr -d '\n'
 }
+
+function bart_static_docs() {
+    find doc/ -type f -name "*.txt" | sed "s/^doc\/\(.*\)\$/\/usr\/share\/doc\/bart\/\1/g"
+}
