@@ -411,14 +411,14 @@ const struct nlop_s* norm_inv_lop_lambda_create(struct nlop_norm_inv_conf* conf,
 static void normal_power_iter_fun(const nlop_data_t* _data, int Narg, complex float* args[Narg])
 {
 	const auto d = CAST_DOWN(norm_inv_s, _data);
-	assert(1 + d->II == Narg);
+	assert(d->II == Narg);
 
 	complex float* dst = args[0];
 
 	norm_inv_alloc(d, dst);
 
 	for (int i = 1; i < d->II; i++)
-		md_copy(d->dom[i]->N, d->dom[i]->dims, d->in_args[i], args[i + 1], CFL_SIZE);
+		md_copy(d->dom[i]->N, d->dom[i]->dims, d->in_args[i], args[i], CFL_SIZE);
 
 	norm_inv_set_ops(d, MD_BIT(0));
 
@@ -454,7 +454,7 @@ const struct nlop_s* nlop_maxeigen_create(const struct nlop_s* normal_op)
 	unsigned int NI = nlop_generic_domain(normal_op, 0)->N;
 
 	for (int i = 0; i < II; i++)
-		NI = MAX(NI, nlop_generic_domain(normal_op, i)->N);
+		NI = MAX(NI, nlop_generic_domain(normal_op, i + 1)->N);
 
 
 	long nl_odims[OO][NO];

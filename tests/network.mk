@@ -156,6 +156,22 @@ tests/test-reconet-nnmodl-train-noncart: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-reconet-nnvn-train-max-eigen: nrmse $(TESTS_OUT)/pattern.ra reconet \
+	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 													;\
+	$(TOOLDIR)/reconet --network varnet --test -n -t --data-consistency=gradient-max-eigen --train-algo e=1 -b2 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra		;\
+	$(TOOLDIR)/reconet --network varnet --test -n -t --data-consistency=gradient-max-eigen --train-algo e=20 -b2 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/reconet --network varnet --test -a -n --data-consistency=gradient-max-eigen --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra weights0 out0.ra					;\
+	$(TOOLDIR)/reconet --network varnet --test -a -n --data-consistency=gradient-max-eigen --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra weights1 out1.ra					;\
+	if [ 1 == $$( echo "`$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref.ra` <= 1.3 * `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref.ra`" | bc ) ] ; then \
+		echo "untrained error: `$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref.ra`"		;\
+		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref.ra`"		;\
+		false									;\
+	fi							;\
+	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-reconet-nnunet-train: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
 	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
@@ -207,6 +223,7 @@ tests/test-reconet-nnmodl-train-gpu: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	touch $@
 
 TESTS += tests/test-reconet-nnvn-train
+TESTS += tests/test-reconet-nnvn-train-max-eigen
 TESTS += tests/test-reconet-nnmodl-train
 TESTS += tests/test-reconet-nnmodl-train-noncart
 

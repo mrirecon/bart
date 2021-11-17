@@ -751,6 +751,7 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 	nn_set_data = nn_set_input_name_F(nn_set_data, 1, "psf");
 	result = nn_chain2_swap_FF(nn_set_data, 0, NULL, result, 0, "adjoint");
 	result = nn_set_input_name_F(result, 0, "adjoint");
+	result = nn_stack_dup_by_name_F(result);
 
 	if (config->coil_image) {
 

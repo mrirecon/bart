@@ -688,6 +688,8 @@ const struct nlop_s* nlop_sense_scale_maxeigen_create(int Nb, struct sense_model
 		auto normal_op = nlop_from_linop_F(linop_get_normal(models[i]->sense));
 		normal_op = nlop_combine_FF(normal_op, nlop_del_out_create(N, dims_scl)); // that is necessary to apply operators in corect order
 		nlops[i] = nlop_maxeigen_create(normal_op);
+		nlops[i] = nlop_no_der_F(nlops[i], 0, 0);
+		nlop_free(normal_op);
 	}
 
 	int ostack_dim[] = { BATCH_DIM };
