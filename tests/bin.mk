@@ -120,7 +120,7 @@ tests/test-bin-quadrature-offset: ones scale reshape transpose join bin nrmse
 		$(TOOLDIR)/join 11 r1.ra r2.ra ref.ra						;\
 		$(TOOLDIR)/transpose 0 2 ref.ra ref1.ra						;\
 		$(TOOLDIR)/nrmse -t 0.00001 ref1.ra qbin.ra					;\
-	#rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@	
 
 
@@ -152,7 +152,7 @@ tests/test-bin-amplitude: ones scale reshape transpose join bin nrmse
 		$(TOOLDIR)/join 10 o4.ra o1.ra o0.ra o0.ra kb2.ra	;\
 		$(TOOLDIR)/join 11 kb0.ra kb1.ra kb2.ra kj.ra		;\
 		$(TOOLDIR)/nrmse -t 0.00001 kj.ra qbin.ra 			;\
-	#rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@	
 
 TESTS += tests/test-bin-label tests/test-bin-reorder tests/test-bin-quadrature tests/test-bin-quadrature-offset tests/test-bin-amplitude
