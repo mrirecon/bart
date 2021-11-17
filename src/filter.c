@@ -57,7 +57,6 @@ int main_filter(int argc, char* argv[argc])
 		OPT_INT('l', &len, "len", "length of filter"),
 		OPT_SET('G', &geom, "geometric median"),
 		OPT_INT('a', &mavg, "dim", "Moving average filter along dimension dim"),
-		
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -77,11 +76,10 @@ int main_filter(int argc, char* argv[argc])
 
 		dim = mavg;
 		filter_type = 'a';
-
 	}
 
 	long in_dims[DIMS];
-	
+
 	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 
 	assert(dim >= 0);
@@ -111,19 +109,15 @@ int main_filter(int argc, char* argv[argc])
 
 	switch (filter_type) {
 
-		case 'm': {
-	
-			(geom ? md_geometric_medianz2 : md_medianz2)(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
-			break;
+	case 'm':
 
-		}
+		(geom ? md_geometric_medianz2 : md_medianz2)(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
+		break;
 
-		case 'a': {
+	case 'a':
 
-			md_moving_avgz2(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
-			break;
-			
-		}
+		md_moving_avgz2(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
+		break;
 	}
 
 	unmap_cfl(DIMS, in_dims, in_data);
