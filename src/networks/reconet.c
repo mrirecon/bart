@@ -1079,42 +1079,50 @@ void eval_reconet(	struct reconet_s* config, unsigned int N, const long max_dims
 			const long col_dims[N], const complex float* coil,
 			int ND, const long psf_dims[ND], const complex float* psf)
 {
-	complex float* tmp_out = md_alloc(N, out_dims, CFL_SIZE);
+	assert(DIMS == N);
 
-	auto loss = val_measure_create(config->valid_loss, N, out_dims);
-	int NL = nn_get_nr_out_args(loss);
-	complex float losses[NL];
-	md_clear(1, MD_DIMS(NL), losses, CFL_SIZE);
+	complex float* tmp_out = md_alloc(N, out_dims, CFL_SIZE);
 
 	apply_reconet(config, N, max_dims, out_dims, tmp_out, img_dims, adjoint, col_dims, coil, ND, psf_dims, psf);
 
-	complex float* args[NL + 2];
-	for (int i = 0; i < NL; i++)
-		args[i] = losses + i;
+	long tout_dims[N];
+	md_select_dims(N, ~BATCH_FLAG, tout_dims, out_dims);
+	auto loss = val_measure_create(config->valid_loss, N, tout_dims);
+	int NL = nn_get_nr_out_args(loss);
 
-	complex float* tmp_ref = md_alloc_sameplace(N, out_dims, CFL_SIZE, out);
+	auto loss_op = nlop_clone(nn_get_nlop(loss));
+	for (int i = 1; i < NL; i++)
+		loss_op = nlop_stack_outputs_F(loss_op, 0, 1, 0);
 
-	md_copy(N, out_dims, tmp_ref, out, CFL_SIZE);
+	for (int i = 0; i < (int)N - 1; i++)
+		loss_op = nlop_append_singleton_dim_out_F(loss_op, 0);
 
-	if (config->normalize_rss) {
+	long tloss_dims[N];
+	md_select_dims(N, BATCH_FLAG, tloss_dims, out_dims);
+	tloss_dims[0] = NL;
 
-		assert(md_check_equal_dims(N, img_dims, out_dims, ~0));
+	complex float* tloss = md_alloc(N, tloss_dims, CFL_SIZE);
 
-		complex float* tmp = md_alloc_sameplace(N, img_dims, CFL_SIZE, out);
-		md_zrss(N, col_dims, COIL_FLAG, tmp, coil);
-		md_zmul(N, img_dims, tmp_ref, tmp_ref, tmp);
+	int DO[1] = { N };
+	const long* odims[1] = { tloss_dims };
+	complex float* loss_arr[1] = { tloss };
 
-		md_free(tmp);
-	}
+	int DI[] = { N, N };
+	const long* idims[2] = { out_dims, out_dims };
+	const complex float* input_arr[2] = { tmp_out, out };
 
-	args[NL] = tmp_out;
-	args[NL + 1] = tmp_ref;
+	nlop_generic_apply_loop(loss_op, BATCH_FLAG, 1, DO , odims, loss_arr, 2, DI, idims, input_arr);
+	nlop_free(loss_op);
 
-	nlop_generic_apply_select_derivative_unchecked(nn_get_nlop(loss), NL + 2, (void**)args, 0, 0);
+	complex float losses[NL];
+	md_zavg(N, tloss_dims, ~1, losses, tloss);
+
 	for (int i = 0; i < NL ; i++)
 		debug_printf(DP_INFO, "%s: %e\n", nn_get_out_name_from_arg_index(loss, i, false), crealf(losses[i]));
 
 	nn_free(loss);
+
+	md_free(tloss);
 	md_free(tmp_out);
-	md_free(tmp_ref);
+
 }
