@@ -87,6 +87,8 @@ static void det_bins_amp(const long state_dims[DIMS], const complex float* state
 		amp = s[t];
 		bins[idx * T + t] = floorf(amp * 0.99 / delta);
 	}
+
+	md_free(s);
 }
 
 
