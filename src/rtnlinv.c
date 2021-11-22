@@ -407,11 +407,11 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 		debug_printf(DP_DEBUG3, "Start creating nufft-objects...");
 
+		traj1 = md_alloc(DIMS, trj1_dims, CFL_SIZE);
+
 		for (unsigned int i = 0; i < turns; ++i) {
 
 			// pick trajectory for current frame
-			traj1 = md_alloc(DIMS, trj1_dims, CFL_SIZE);
-
 			long pos[DIMS] = { 0 };
 			pos[TIME_DIM] = i;
 			md_slice(DIMS, TIME_FLAG, pos, trj_dims, traj1, traj, CFL_SIZE);
@@ -546,6 +546,11 @@ int main_rtnlinv(int argc, char* argv[argc])
 		md_free(fftc_mod);
 
 		unmap_cfl(DIMS, trj_dims, traj);
+
+		operator_free(fftc);
+
+		for (unsigned int i = 0; i < turns; ++i)
+			linop_free(nufft_ops[i]);
 	}
 
 	unmap_cfl(DIMS, sens_dims, sens);
