@@ -561,6 +561,8 @@ nn_t nn_set_initializer_F(nn_t op, int i, const char* iname, const struct initia
 {
 	auto result = nn_clone(op);
 	i = nn_get_in_arg_index(result, i, iname);
+	if (NULL != result->initializers[i])
+		initializer_free(result->initializers[i]);
 	result->initializers[i] = ini;
 	nn_free(op);
 	return result;
