@@ -228,6 +228,7 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 
 
 	nlop_free(sense_adjoint);
+	sense_model_free(model);
 }
 
 void load_network_data(struct network_data_s* nd) {
