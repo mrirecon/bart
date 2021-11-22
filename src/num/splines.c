@@ -73,7 +73,7 @@ static void de_casteljau_split(double t, unsigned int N, double coeffA[static N 
 	double coeff2[N];
 	de_casteljau_step(N, coeff2, t, coeff);
 
-	de_casteljau_split(t, N - 1, coeffA + 1, coeffB, coeff2);	
+	de_casteljau_split(t, N - 1, coeffA + 1, coeffB, coeff2);
 }
 
 
@@ -99,7 +99,7 @@ void bezier_increase_degree(unsigned int N, double coeff2[static N + 2], const d
 	coeff2[N + 1] = coeff[N];
 }
 
-	
+
 double bezier_surface(double u, double v, unsigned int N, unsigned int M, const double k[static N + 1][M + 1])
 {
 	double coeff[N + 1];
@@ -316,7 +316,7 @@ void bspline_coeff_derivative_n(unsigned int k, unsigned int n, unsigned int p, 
 		double v1[n - p - 1];
 
 		bspline_coeff_derivative(n, p, t1, v1, t, v);
-		bspline_coeff_derivative_n(k - 1, n - 1, p - 1, t2, v2, t1, v1);
+		bspline_coeff_derivative_n(k - 1, n - 2, p - 1, t2, v2, t1, v1);
 	}
 }
 
