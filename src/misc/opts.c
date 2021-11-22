@@ -856,6 +856,9 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 		if (-1 == i)
 			error("Sub-option could not be parsed: %s", value);
 
+		if (i == 2 * n)
+			exit(0);
+
 		assert(i < 2 * n);
 
 		process_option(wopts[i / 2].c, value, "", "", "", n, wopts, 0, NULL);
