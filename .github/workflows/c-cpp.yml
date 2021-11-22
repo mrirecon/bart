@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: update
-      run: apt-get install gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
+      run: sudo apt-get install gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
     - name: make
       run: make
     - name: make utest
