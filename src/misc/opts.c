@@ -25,9 +25,27 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/io.h"
+#include "misc/list.h"
 
 #include "opts.h"
 
+list_t str_list = NULL;
+
+void opt_free_strdup(void)
+{
+	if (NULL == str_list)
+		return;
+
+	const char* str = list_pop(str_list);
+	while (NULL != str) {
+
+		xfree(str);
+		str = list_pop(str_list);
+	}
+
+	list_free(str_list);
+	str_list = NULL;
+}
 
 opt_conv_f opt_set;
 opt_conv_f opt_clear;
@@ -672,7 +690,8 @@ bool opt_cfl(void* ptr, char c, const char* optarg)
 bool opt_string(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	*(const char**)ptr = optarg;
+	*(const char**)ptr = strdup(optarg);
+	list_append(str_list, *(char**)ptr);
 
 	assert(NULL != ptr);
 
@@ -684,7 +703,8 @@ static bool opt_file(void* ptr, char c, const char* optarg, bool out, bool in)
 {
 	UNUSED(c);
 
-	*(const char**)ptr = optarg;
+	*(const char**)ptr = strdup(optarg);
+	list_append(str_list, *(char**) ptr);
 
 	if (out)
 		io_reserve_output(*(char**)ptr);
@@ -837,8 +857,8 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 	tokens[2 * ptr->n + 1] = NULL;
 
 
-	const char* tmpoptionp = optarg;
-	char* option = strdup(tmpoptionp);
+	char* tmpoptionp = strdup(optarg);
+	char* option = tmpoptionp;
 	char* value = NULL;
 
 	int i = -1;
@@ -867,7 +887,7 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 	for (int i = 0; i < 2 * n + 1; i++)
 		xfree(tokens[i]);
 
-	//xfree(option);
+	xfree(tmpoptionp);
 
 	return false;
 }
@@ -986,6 +1006,9 @@ static int add_tuple_args(int bufsize, char buf[static bufsize], const struct ar
 void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n])
 {
 	check_args(m, args);
+
+	if (NULL == str_list)
+		str_list = list_create();
 
 	long min_args = 0;
 	long max_args = 0;

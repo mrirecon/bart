@@ -23,6 +23,7 @@
 
 #include "misc/io.h"
 #include "misc/misc.h"
+#include "misc/opts.h"
 #include "misc/version.h"
 #include "misc/debug.h"
 #include "misc/cppmap.h"
@@ -53,6 +54,8 @@ static void bart_exit_cleanup(void)
 
 	io_memory_cleanup();
 
+	opt_free_strdup();
+
 #ifdef FFTWTHREADS
 	MANGLE(fftwf_cleanup_threads)();
 #endif
@@ -64,7 +67,7 @@ static void bart_exit_cleanup(void)
 
 
 struct {
-	
+
 	int (*main_fun)(int argc, char* argv[]);
 	const char* name;
 

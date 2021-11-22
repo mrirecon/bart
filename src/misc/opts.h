@@ -155,6 +155,7 @@ extern void* parse_arg_tuple(int n, ...);
 #define TUPLE_LONG(ptr, argname)			(struct arg_single_s){ OPT_LONG, sizeof(long), TYPE_CHECK(long**, ptr), argname }
 
 extern void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
+extern void opt_free_strdup(void);
 
 #include "misc/cppwrap.h"
 #endif //OPTS_H
