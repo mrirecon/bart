@@ -675,7 +675,10 @@ void iwt(unsigned int N, unsigned int flags, const long shifts[N], const long od
 }
 
 
-
+// 1D Wavelet coefficeints. 
+// The first dimension indexes along forward wavelet decomposition and reconstruction filters for fwt and iwt
+// The second dimension indexes along low-pass and high-pass filters
+// The third dimension is the number of filter taps. 
 const float wavelet_haar[2][2][2] = {
 	{ { +0.7071067811865475, +0.7071067811865475 },
 	  { -0.7071067811865475, +0.7071067811865475 }, },
@@ -690,6 +693,7 @@ const float wavelet_dau2[2][2][4] = {
 	  { -0.1294095225512603, -0.2241438680420134, +0.8365163037378077, -0.4829629131445341 }, },
 };
 
+// Cohen-Daubechies-Feaveau wavelet
 const float wavelet_cdf44[2][2][10] = {
 	{ { +0.00000000000000000, +0.03782845550726404 , -0.023849465019556843, -0.11062440441843718 , +0.37740285561283066, 
 	    +0.85269867900889385, +0.37740285561283066 , -0.11062440441843718 , -0.023849465019556843, +0.03782845550726404 },

@@ -1,5 +1,5 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
 
@@ -21,6 +21,10 @@ extern _Complex float* create_cfl(const char* name, int D, const long dimensions
 extern _Complex float* load_cfl(const char* name, int D, long dimensions[__VLA(D)]);
 extern _Complex float* load_shared_cfl(const char* name, int D, long dimensions[__VLA(D)]);
 
+extern void create_multi_cfl(const char* name, int N, int D[__VLA(N)], const long* dimensions[__VLA(N)], _Complex float* args[__VLA(N)]);
+extern int load_multi_cfl(const char* name, int N_max, int D_max, int D[__VLA(N_max)], long dimensions[__VLA(N_max)][D_max], _Complex float* args[__VLA(N_max)]);
+extern void unmap_multi_cfl(int N, int D[__VLA(N)], const long* dimensions[__VLA(N)], _Complex float* args[__VLA(N)]);
+
 extern float* create_coo(const char* name, int D, const long dimensions[__VLA(D)]);
 extern float* load_coo(const char* name, int D, long dimensions[__VLA(D)]);
 extern _Complex float* create_zcoo(const char* name, int D, const long dimensions[__VLA(D)]);
@@ -32,5 +36,3 @@ extern _Complex float* load_zshm(const char* name, int D, long dims[__VLA(D)]);
 
 
 #include "misc/cppwrap.h"
-
-

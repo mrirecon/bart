@@ -42,18 +42,21 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 
 	const char* allowed_fmts[] = {
 
-	 	"%%+%[0-9.]f%%+%[0-9.]fi",
-		"%%+%[0-9.]e%%+%[0-9.]ei"
+		"%%+%*[0-9.]f%%+%*[0-9.]fi%n",
+		"%%+%*[0-9.]e%%+%*[0-9.]ei%n",
+		"%%+%*[0-9.]f,%%+%*[0-9.]f%n",
+		"%%+%*[0-9.]e,%%+%*[0-9.]e%n",
 	};
 
-	// declare buffers for the real and imaginary format values
-	char fmt_re[strlen(fmt)];
-	char fmt_im[strlen(fmt)];
-
 	// ensure that the input format string matches one of the valid format templates
-	for (unsigned int i = 0; i < ARRAY_SIZE(allowed_fmts); i++)
-		if (2 == sscanf(fmt, allowed_fmts[i], &fmt_re, &fmt_im))
-			goto ok;
+	for (unsigned int i = 0; i < ARRAY_SIZE(allowed_fmts); i++) {
+
+		size_t rd = 0;
+
+		if (0 == sscanf(fmt, allowed_fmts[i], &rd))
+			if (strlen(fmt) == rd)
+				goto ok;
+	}
 
 	debug_printf(DP_ERROR, "Invalid format string.\n");
 	return;
@@ -77,13 +80,13 @@ int main_show(int argc, char* argv[argc])
 		ARG_INFILE(true, &in_file, "input"),
 	};
 
-
 	bool meta = false;
 	int showdim = -1;
-	const char* sep = strdup("\t");
-	const char* fmt = strdup("%+.6e%+.6ei");
+	const char* sep = "\t";
+	const char* fmt = "%+.6e%+.6ei";
 
 	const struct opt_s opts[] = {
+
 		OPT_SET('m', &meta, "show meta data"),
 		OPT_INT('d', &showdim, "dim", "show size of dimension"),
 		OPT_STRING('s', &sep, "sep", "use <sep> as the separator"),
@@ -101,6 +104,7 @@ int main_show(int argc, char* argv[argc])
 
 		assert((showdim >= 0) && (showdim < (int)N));
 		bart_printf("%ld\n", dims[showdim]);
+
 		goto out;
 	}
 
@@ -122,7 +126,5 @@ int main_show(int argc, char* argv[argc])
 
 out:
 	unmap_cfl(N, dims, data);
-	xfree(sep);
-	xfree(fmt);
 	return 0;
 }

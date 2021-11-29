@@ -36,8 +36,10 @@ static struct multiplace_array_s* multiplace_alloc(int D, const long dimensions[
 	result->size = size;
 
 	PTR_ALLOC(long[D], dims);
+
 	md_copy_dims(D, *dims, dimensions);
-	result->dims =*PTR_PASS(dims);
+
+	result->dims = *PTR_PASS(dims);
 
 	result->ptr_cpu = NULL;
 
@@ -49,24 +51,16 @@ static struct multiplace_array_s* multiplace_alloc(int D, const long dimensions[
 }
 
 
-static void multiplace_free_data(struct multiplace_array_s* ptr)
-{
-	md_free(ptr->ptr_cpu);
-	ptr->ptr_cpu = NULL;
-
-#ifdef USE_CUDA
-	md_free(ptr->ptr_gpu);
-	ptr->ptr_gpu = NULL;
-#endif
-}
-
 
 void multiplace_free(const struct multiplace_array_s* ptr)
 {
 	if (NULL == ptr)
 		return;
 
-	multiplace_free_data((struct multiplace_array_s*)ptr);
+	md_free(ptr->ptr_cpu);
+#ifdef USE_CUDA
+	md_free(ptr->ptr_gpu);
+#endif
 
 	xfree(ptr->dims);
 	xfree(ptr);
@@ -92,6 +86,7 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 	if (NULL == ptr->ptr_cpu) {
 
 		ptr->ptr_cpu = md_alloc(ptr->N, ptr->dims, ptr->size);
+
 		md_copy(ptr->N, ptr->dims, ptr->ptr_cpu, ptr->ptr_ref, ptr->size);
 	}
 

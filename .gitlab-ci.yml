@@ -47,13 +47,13 @@ Build_Static:
       - bart
     expire_in: 45 minutes
   allow_failure: true
- 
+
 
 Build_UBSan:
   image: debian:testing
   stage: build
   script:
-    - CFLAGS="-O3 -ffast-math -fsanitize=undefined" make
+    - CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make
   artifacts:
     paths:
       - bart
@@ -103,7 +103,7 @@ Unit_Test:
   dependencies:
      - Build
 
- 
+
 Unit_Test_Clang:
   image: debian:stable
   stage: test1
@@ -114,7 +114,7 @@ Unit_Test_Clang:
   dependencies:
      - Build_Clang
 
-  
+
 Unit_Test_Valgrind:
   image: debian:stable
   stage: test1
@@ -130,12 +130,12 @@ Unit_Test_UBSan:
   image: debian:testing
   stage: test1
   script:
-    - AUTOCLEAN=0 CFLAGS="-O3 -ffast-math -fsanitize=undefined" make utest
+    - AUTOCLEAN=0 CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make utest
   needs: [Build_UBSan]
   dependencies:
      - Build_UBSan
 
-  
+
 .Unit_Test_GPU:
   image: debian:stable
   stage: test1
@@ -205,6 +205,15 @@ Integration_Test_Clang:
   dependencies:
     - Build_Clang
 
+
+Integration_Test_UBSan:
+  image: debian:stable
+  stage: test2
+  script:
+    - AUTOCLEAN=0 CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make test
+  needs: [Build]
+  dependencies:
+    - Build
 
 
 

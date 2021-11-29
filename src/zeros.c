@@ -37,7 +37,7 @@ int main_zeros(int argc, char* argv[argc])
 	struct arg_s args[] = {
 
 		ARG_LONG(true, &N, "dims"),
-		ARG_TUPLE(true, &count, 1, OPT_LONG, sizeof(long), &dims, "dim"),
+		ARG_TUPLE(true, &count, 1, TUPLE_LONG(&dims, "dim")),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 

@@ -42,7 +42,8 @@ int main_resize(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(true, &count, 2, OPT_UINT, sizeof(*dims), &dims, "dim", OPT_UINT, sizeof(*sizes), &sizes, "size"),
+		ARG_TUPLE(true, &count, 2, { OPT_UINT, sizeof(*dims), &dims, "dim" },
+					   { OPT_UINT, sizeof(*sizes), &sizes, "size" }),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
@@ -84,6 +85,7 @@ int main_resize(int argc, char* argv[argc])
 
 	unmap_cfl(N, in_dims, in_data);
 	unmap_cfl(N, out_dims, out_data);
+
 	xfree(dims);
 	xfree(sizes);
 

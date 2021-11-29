@@ -62,5 +62,20 @@ extern void estimate_fast_sq_im_dims(unsigned int N, 		///< Number of dimensions
 			      const long tdims[N], 		///< Trajectory dimesion
 			      const complex float* traj);	///< Trajectory
 
+extern struct linop_s* nufft_create_normal(int N, const long cim_dims[__VLA(N)],
+					   int ND, const long psf_dims[__VLA(ND)], const _Complex float* psf,
+					   _Bool basis, struct nufft_conf_s conf);
+
+extern void nufft_update_traj(	const struct linop_s* nufft, int N,
+			const long trj_dims[__VLA(N)], const _Complex float* traj,
+			const long wgh_dims[__VLA(N)], const _Complex float* weights,
+			const long bas_dims[__VLA(N)], const _Complex float* basis);
+extern void nufft_update_psf(	const struct linop_s* nufft, unsigned int ND, const long psf_dims[__VLA(ND)], const _Complex float* psf);
+extern void nufft_update_psf2(	const struct linop_s* nufft, unsigned int ND, const long psf_dims[__VLA(ND)], const long psf_strs[__VLA(ND)], const _Complex float* psf);
+
+extern unsigned int nufft_get_psf_dims(const struct linop_s* nufft, unsigned int N, long psf_dims[N]);
+extern void nufft_get_psf2(const struct linop_s* nufft, unsigned int N, const long psf_dims[N], const long psf_strs[N], _Complex float* psf);
+extern void nufft_get_psf(const struct linop_s* nufft, unsigned int N, const long psf_dims[N], _Complex float* psf);
+
 #include "misc/cppwrap.h"
 

@@ -38,11 +38,12 @@ int main_ones(int argc, char* argv[argc])
 	struct arg_s args[] = {
 
 		ARG_LONG(true, &N, "dims"),
-		ARG_TUPLE(true, &count, 1, OPT_LONG, sizeof(long), &dims, "dim"),
+		ARG_TUPLE(true, &count, 1, TUPLE_LONG(&dims, "dim")),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	const struct opt_s opts[] = {};
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -54,8 +55,11 @@ int main_ones(int argc, char* argv[argc])
 		assert(dims[i] >= 1);
 
 	complex float* x = create_cfl(out_file, N, dims);
+
 	md_zfill(N, dims, x, 1.);
+
 	unmap_cfl(N, dims, x);
+
 	xfree(dims);
 
 	return 0;

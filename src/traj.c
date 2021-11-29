@@ -216,6 +216,7 @@ int main_traj(int argc, char* argv[argc])
 
 	int p = 0;
 	long pos[DIMS] = { 0 };
+	double phin1 = 0;
 
 	do {
 		int i = pos[PHS1_DIM];
@@ -224,8 +225,6 @@ int main_traj(int argc, char* argv[argc])
 		int m = pos[SLICE_DIM];
 
 		if (conf.radial) {
-
-			int s = j;
 
 			/* Calculate read-out samples
 			 * for symmetric trajectory [DC between between sample no. X/2-1 and X/2, zero-based indexing]
@@ -258,8 +257,28 @@ int main_traj(int argc, char* argv[argc])
 
 			if (conf.d3d) {
 
-				int split = sqrtf(Y);
-				angle2 = s * M_PI / Y * (conf.full_circle ? 2 : 1) * split;
+				/* Saff EB., Kuijlaars ABJ.
+				 * Distributing many points on a sphere.
+				 * The Mathematical Intelligencer 1997;19:11.
+				 * DOI:10.1007/BF03024331
+				 */
+
+				int Y2 = Y;
+
+				if (!conf.full_circle) // half sphere
+					Y2 = Y * 2;
+
+				double hn = -1.0 + (double)(2 * j) / (Y2 - 1);
+
+				if ((j + 1 == Y) || (j == 0))
+					angle = 0;
+				else
+					angle = fmod(phin1 + 3.6 / sqrt(Y2 * (1.0 - hn * hn)), 2. * M_PI);
+
+				if (i + 1 == X)	// FIXME: a non-recursive formula?
+					phin1 = angle;
+
+				angle2 = acos(hn) - M_PI / 2.;
 
 				if (NULL != custom_angle_vals)
 					angle2 = cimagf(custom_angle_vals[j]);

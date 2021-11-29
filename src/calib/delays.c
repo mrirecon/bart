@@ -25,9 +25,6 @@
 #include <math.h>
 #include <assert.h>
 #include <float.h>
-#ifdef RING_PAPER
-#include <stdio.h>
-#endif
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -268,27 +265,23 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[N
 		}
 	}
 
-#ifdef RING_PAPER
-	// Print projection angles and corresponding offsets to files
 
-	const char* idx_out = "projangle.txt";
-	FILE* fp = fopen(idx_out, "w");
+	// Print projection angles and corresponding offsets, for RING paper reproduction
+	{
+		char* str = getenv("RING_PAPER");
 
-	const char* d_out = "offset.txt";
-	FILE* fp1 = fopen(d_out, "w");
+		if ( (NULL != str) && (1 == atoi(str))) {
 
-	for (int i = 0; i < N; i++) {
+			for (int i = 0; i < N; i++) {
 
-		for (int j = 0; j < no_intersec_sp; j++) {
+				for (int j = 0; j < no_intersec_sp; j++) {
 
-			fprintf(fp, "%f \t %f\n", angles[idx[i * no_intersec_sp + j][0]], angles[idx[i * no_intersec_sp + j][1]]);
-			fprintf(fp1, "%f \t %f\n", dist[i * no_intersec_sp + j][0], dist[i * no_intersec_sp + j][1]);
+					bart_printf("projangle: %f \t %f\n", angles[idx[i * no_intersec_sp + j][0]], angles[idx[i * no_intersec_sp + j][1]]);
+					bart_printf("offset: %f \t %f\n", dist[i * no_intersec_sp + j][0], dist[i * no_intersec_sp + j][1]);
+				}
+			}
 		}
 	}
-
-	fclose(fp);
-	fclose(fp1);
-#endif
 
 	md_free(spoke_i);
 	md_free(spoke_j);

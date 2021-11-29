@@ -46,7 +46,7 @@ int main_phantom(int argc, char* argv[argc])
 	int geo = -1;
 	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, TUBES, RAND_TUBES } ptype = SHEPPLOGAN;
 
-	const char* traj = NULL;
+	const char* traj_file = NULL;
 	bool basis = false;
 
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -63,7 +63,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_INT('s', &sens, "nc", "nc sensitivities"),
 		OPT_INT('S', &osens, "nc", "Output nc sensitivities"),
 		OPT_SET('k', &kspace, "k-space"),
-		OPT_INFILE('t', &traj, "file", "trajectory"),
+		OPT_INFILE('t', &traj_file, "file", "trajectory"),
 		OPT_SELECT('c', enum ptype_e, &ptype, CIRC, "()"),
 		OPT_SELECT('a', enum ptype_e, &ptype, STAR, "()"),
 		OPT_SELECT('m', enum ptype_e, &ptype, TIME, "()"),
@@ -125,14 +125,14 @@ int main_phantom(int argc, char* argv[argc])
 	long sstrs[DIMS] = { 0 };
 	complex float* samples = NULL;
 
-	if (NULL != traj) {
+	if (NULL != traj_file) {
 
 		if (-1 != xdim)
 			debug_printf(DP_WARN, "size ignored.\n");
 
 		kspace = true;
 
-		samples = load_cfl(traj, DIMS, sdims);
+		samples = load_cfl(traj_file, DIMS, sdims);
 
 		md_calc_strides(DIMS, sstrs, sdims, sizeof(complex float));
 
@@ -164,7 +164,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	case SENS:
 
-		assert(NULL == traj);
+		assert(NULL == traj_file);
 		assert(!kspace);
 
 		calc_sens(dims, out);
@@ -219,8 +219,6 @@ int main_phantom(int argc, char* argv[argc])
 		calc_bart(dims, out, kspace, sstrs, samples);
 		break;
 	}
-
-	xfree(traj);
 
 	if (NULL != samples)
 		unmap_cfl(3, sdims, samples);

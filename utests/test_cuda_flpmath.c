@@ -69,9 +69,10 @@ static bool test_md_z3op(md_z3op_t function)
 	md_free(iptr1_gpu);
 	md_free(iptr2_gpu);
 
-	debug_printf(DP_DEBUG1, "cuda md_z3op err: %e\n", err);
+	if ((UT_TOL < err) || (!safe_isfinite(err)))
+		debug_printf(DP_WARN, "err: %e\n", err);
 
-	return (UT_TOL >= err);
+	return (UT_TOL >= err) && safe_isfinite(err);
 }
 
 static bool test_md_zrmul2(void) { UT_ASSERT(test_md_z3op(md_zrmul2));}
@@ -155,9 +156,10 @@ static bool test_md_z2op(md_z2op_t function)
 	md_free(optr_gpu);
 	md_free(iptr1_gpu);
 
-	debug_printf(DP_DEBUG1, "cuda md_z2op err: %e\n", err);
+	if ((UT_TOL < err) || (!safe_isfinite(err)))
+		debug_printf(DP_WARN, "err: %e\n", err);
 
-	return (UT_TOL >= err);
+	return (UT_TOL >= err) && safe_isfinite(err);
 }
 
 static bool test_md_zsqrt2(void) { UT_ASSERT(test_md_z2op(md_zsqrt2));}

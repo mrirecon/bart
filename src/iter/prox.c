@@ -73,7 +73,8 @@ static void prox_leastsquares_fun(const operator_data_t* prox_data, float mu, fl
 {
 	auto pdata = CAST_DOWN(prox_leastsquares_data, prox_data);
 
-	md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
+	if (z != x_plus_u)
+		md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
 
 	if (0 != mu) {
 

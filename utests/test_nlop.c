@@ -1,4 +1,4 @@
-/* Copyright 2018. Martin Uecker.
+/* Copyright 2018-2021. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -23,6 +23,7 @@
 #include "linops/someops.h"
 
 #include "nlops/zexp.h"
+#include "nlops/someops.h"
 #include "nlops/tenmul.h"
 #include "nlops/nlop.h"
 #include "nlops/cast.h"
@@ -30,6 +31,8 @@
 #include "nlops/nltest.h"
 #include "nlops/stack.h"
 #include "nlops/const.h"
+#include "nlops/checkpointing.h"
+#include "nlops/mri_ops.h"
 
 #include "utest.h"
 
@@ -78,7 +81,7 @@ static bool test_nlop_cast_neg(void)
 
 	nlop_free(d);
 
-	return ok;
+	UT_ASSERT(ok);
 }
 
 
@@ -170,7 +173,7 @@ static bool test_nlop_tenmul2(bool permute)
 
 static bool test_nlop_tenmul(void)
 {
-	return test_nlop_tenmul2(false);
+	UT_ASSERT(test_nlop_tenmul2(false));
 }
 
 UT_REGISTER_TEST(test_nlop_tenmul);
@@ -179,7 +182,7 @@ UT_REGISTER_TEST(test_nlop_tenmul);
 
 static bool test_nlop_permute(void)
 {
-	return test_nlop_tenmul2(true);
+	UT_ASSERT(test_nlop_tenmul2(true));
 }
 
 UT_REGISTER_TEST(test_nlop_permute);
@@ -462,12 +465,12 @@ static bool test_nlop_combine_der1(void)
 	linop_forward(nlop_get_derivative(comb, 0, 1), N, dims, out1, N, dims, in1);
 
 	if (0. != md_znorm(N, dims, out1))
-		return false;
+		UT_ASSERT(false);
 
 	linop_forward(nlop_get_derivative(comb, 1, 0), N, dims, out1, N, dims, in1);
 
 	if (0. != md_znorm(N, dims, out1))
-		return false;
+		UT_ASSERT(false);
 
 	nlop_derivative(zexp, N, dims, out1, N, dims, in1);
 
@@ -490,7 +493,7 @@ static bool test_nlop_combine_der1(void)
 	nlop_free(id);
 	nlop_free(zexp);
 
-	return (0. == err);
+	 UT_ASSERT(0. == err);
 }
 
 
@@ -520,7 +523,7 @@ static bool test_nlop_comb_flat_der(void)
 	complex float* dst = md_alloc(N, dims, CFL_SIZE);
 
 
-	md_gaussian_rand(N, dims, in);
+	md_gaussian_rand(iov->N, iov->dims, in);
 
 	nlop_derivative(zexp1, N, dims, dst, N, dims, in);
 
@@ -720,9 +723,9 @@ static bool test_nlop_parallel_derivatives(void)
 	long dim[1] = { 1 };
 	int counter = 0;
 
-	complex float in[1] ={ 1. };
-	complex float out1[1] ={ 1. };
-	complex float out2[1] ={ 1. };
+	complex float in[1] = { 1. };
+	complex float out1[1] = { 1. };
+	complex float out2[1] = { 1. };
 	complex float* outs[2] = { out1, out2 };
 
 	auto countop1 = linop_counter_create(&counter);
@@ -745,6 +748,7 @@ static bool test_nlop_parallel_derivatives(void)
 	auto tenmul_op = nlop_tenmul_create(1, dim, dim ,dim);
 
 	const struct nlop_s* tenmul_chain = nlop_chain2_FF(tenmul_op, 0, nlop_from_linop(chain), 0);
+
 	tenmul_chain = nlop_chain2_FF(nlop_from_linop(chain), 0, tenmul_chain, 0);
 	tenmul_chain = nlop_chain2_FF(nlop_from_linop(chain), 0, tenmul_chain, 0);
 	tenmul_chain = nlop_reshape_in_F(tenmul_chain, 0, 1, dim);
@@ -769,15 +773,16 @@ static bool test_nlop_parallel_derivatives(void)
 
 	linop_adjoint_unchecked(nlop_get_derivative(bridge, 0, 0), out1, in);
 
-	result = result && (12 == counter);
+	result = result && ((12 == counter) || (8 == counter)); // 8 if linop sums are optimized
 
 	nlop_free(bridge);
 	nlop_free(tmp);
 	nlop_free(tenmul_chain);
+
 	linop_free(countop1);
 	linop_free(chain);
 
-	return result;
+	UT_ASSERT(result);
 }
 
 UT_REGISTER_TEST(test_nlop_parallel_derivatives);
@@ -787,9 +792,9 @@ UT_REGISTER_TEST(test_nlop_parallel_derivatives);
 static bool test_stack(void)
 {
 	enum { N = 3 };
-	long dims1[N] = { 3, 2, 7};
-	long dims2[N] = { 3, 5, 7};
-	long dims[N] = { 3, 7, 7};
+	long dims1[N] = { 3, 2, 7 };
+	long dims2[N] = { 3, 5, 7 };
+	long dims[N] = { 3, 7, 7 };
 
 	complex float* in = md_alloc(N, dims, CFL_SIZE);
 	complex float* out = md_alloc(N, dims, CFL_SIZE);
@@ -825,4 +830,455 @@ static bool test_stack(void)
 }
 
 UT_REGISTER_TEST(test_stack);
+
+
+
+static bool test_nlop_select_derivatives(void)
+{
+	long dim[1] = { 1 };
+
+	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
+
+	complex float ptr1[1] = { 1. };
+	complex float ptr2[1] = { 1. };
+	complex float ptr3[1] = { 1. };
+
+	void* args[3] = { ptr1, ptr2, ptr3 };
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_unchecked(tenmul1, 3, args);
+
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 1l, 3l);
+
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 0l, 0l);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_free(tenmul1);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_nlop_select_derivatives);
+
+static bool test_nlop_select_derivatives_dup(void)
+{
+	long dim[1] = { 1 };
+
+	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
+
+	complex float ptr1[1] = { 1. };
+	complex float ptr2[1] = { 1. };
+
+	void* args[2] = { ptr1, ptr2 };
+
+	auto op = nlop_dup(tenmul1, 0, 1);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 1l, 1l);
+
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 0l, 0l);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+
+	nlop_free(tenmul1);
+	nlop_free(op);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_nlop_select_derivatives_dup);
+
+static bool test_nlop_select_derivatives_combine(void)
+{
+	long dim[1] = { 1 };
+
+	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
+	auto tenmul2 = nlop_tenmul_create(1, dim, dim, dim);
+
+	complex float ptr1[1] ={ 1. };
+	complex float ptr2[1] ={ 1. };
+	complex float ptr3[1] ={ 1. };
+	complex float ptr4[1] ={ 1. };
+	complex float ptr5[1] ={ 1. };
+	complex float ptr6[1] ={ 1. };
+
+	void* args[6] = { ptr1, ptr2, ptr3, ptr4, ptr5, ptr6 };
+
+	auto op = nlop_combine(tenmul1, tenmul2);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 0l, 0l);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 3l, 6l);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_free(tenmul1);
+	nlop_free(tenmul2);
+	nlop_free(op);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_nlop_select_derivatives_combine);
+
+static bool test_nlop_select_derivatives_link(void)
+{
+	long dim[1] = { 1 };
+
+	auto tenmul1 = nlop_tenmul_create(1, dim, dim, dim);
+	auto tenmul2 = nlop_tenmul_create(1, dim, dim, dim);
+
+	complex float ptr1[1] ={ 1. };
+	complex float ptr2[1] ={ 1. };
+	complex float ptr3[1] ={ 1. };
+	complex float ptr4[1] ={ 1. };
+
+	void* args[4] = {ptr1, ptr2, ptr3, ptr4};
+
+	auto op = nlop_chain2(tenmul1, 0, tenmul2, 1);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 0l, 0l);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 4l);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 1l);
+
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_ASSERT2(nlop_tenmul_der_available(tenmul2, 0));
+	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+
+	nlop_free(tenmul1);
+	nlop_free(tenmul2);
+	nlop_free(op);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_nlop_select_derivatives_link);
+
+
+static bool test_nlop_zinv(void)
+{
+	enum { N = 3 };
+	long dims[N] = { 5, 1, 3 };
+
+	auto nlop = nlop_zinv_create(N, dims);
+
+	float err_adj = nlop_test_adj_derivatives(nlop, false);
+	float err_der = nlop_test_derivatives(nlop);
+
+	nlop_free(nlop);
+
+	debug_printf(DP_DEBUG1, "zinv errors:, adj: %.8f, %.8f\n", err_der, err_adj);
+
+	UT_ASSERT((err_adj < UT_TOL) && (err_der < 2.E-2));
+}
+
+UT_REGISTER_TEST(test_nlop_zinv);
+
+static bool test_zmax(void)
+{
+	unsigned int N = 3;
+
+	long indims[] = {2, 2, 1};
+	long outdims[] = {2, 2, 4};
+
+	complex float stacked[] = {	1., 2., 3., 3.,
+					2., 2., 4., 2.,
+					2., 1., 4., 3.,
+					1., 1., 1., 1.};
+	complex float zmax[] = {2., 2., 4., 3.};
+
+	const struct nlop_s* zmax_op = nlop_zmax_create(N, outdims, 4);
+	complex float* output_zmax = md_alloc(N, indims, CFL_SIZE);
+
+	nlop_generic_apply_unchecked(zmax_op, 2, (void*[]){output_zmax, stacked}); //output, in, mask
+	nlop_free(zmax_op);
+
+	float err =  md_zrmse(N, indims, output_zmax, zmax);
+
+	md_free(output_zmax);
+
+	UT_ASSERT(0.01 > err);
+}
+
+UT_REGISTER_TEST(test_zmax);
+
+
+static const struct nlop_s* get_test_nlop(int N, const long dims[N])
+{
+	auto tenmul1 = nlop_tenmul_create(N, dims, dims, dims);
+	auto tenmul2 = nlop_tenmul_create(N, dims, dims, dims);
+	auto tenmul3 = nlop_tenmul_create(N, dims, dims, dims);
+
+	const struct nlop_s* result = nlop_chain2_FF(tenmul1, 0, tenmul2, 0);
+
+	result = nlop_combine_FF(result, tenmul3);
+	result = nlop_permute_inputs_F(result, 5, (int[5]){4, 2, 1, 0, 3});
+
+	return result;
+}
+
+static bool test_nlop_checkpointing(void)
+{
+	enum { N = 3 };
+	long dims[N] = { 3, 1, 3 };
+
+	auto nlop = get_test_nlop(N, dims);
+	auto nlop_cp = nlop_checkpoint_create_F(get_test_nlop(N, dims), true, true);
+
+	int OO = 2;
+	int II = 5;
+
+	void* args[OO + II];
+	void* args_cp[OO + II];
+
+	for(int i = 0; i < OO; i++) {
+
+		args[i] = md_alloc(N, dims, CFL_SIZE);
+		args_cp[i] = md_alloc(N, dims, CFL_SIZE);
+	}
+
+	for(int i = OO; i < OO + II; i++) {
+
+		args[i] = md_alloc(N, dims, CFL_SIZE);
+
+		md_gaussian_rand(N, dims, args[i]);
+
+		args_cp[i] = args[i];
+	}
+
+	unsigned long out_der_flag = MD_BIT(1) | MD_BIT(2);
+	unsigned long in_der_flag = MD_BIT(2) | MD_BIT(3) | MD_BIT(4);
+
+	nlop_generic_apply_select_derivative_unchecked(nlop, OO + II, args, out_der_flag, in_der_flag);
+	nlop_generic_apply_select_derivative_unchecked(nlop_cp, OO + II, args_cp, out_der_flag, in_der_flag);
+
+	float err = 0.;
+
+	for (int o = 0; o < OO; o++)
+		err += md_zrmse(N, dims, args[o], args_cp[o]);
+
+	nlop_generic_apply_select_derivative_unchecked(nlop, OO + II, args, out_der_flag, in_der_flag);
+	nlop_generic_apply_select_derivative_unchecked(nlop_cp, OO + II, args_cp, out_der_flag, in_der_flag);
+
+	for (int o = 0; o < OO; o++)
+		err += md_zrmse(N, dims, args[o], args_cp[o]);
+
+	for (int i = 0; i < II; i++) {
+
+		if (!MD_IS_SET(in_der_flag, i))
+				continue;
+
+		for (int o = 0; o < OO; o++) {
+
+			if (!MD_IS_SET(out_der_flag, o))
+				continue;
+
+			complex float* src = md_alloc(N, dims, CFL_SIZE);
+
+			md_gaussian_rand(N, dims, src);
+
+			complex float* dst = md_alloc(N, dims, CFL_SIZE);
+			complex float* dst_cp = md_alloc(N, dims, CFL_SIZE);
+
+			linop_forward(nlop_get_derivative(nlop, o, i), N, dims, dst, N, dims, src);
+			linop_forward(nlop_get_derivative(nlop_cp, o, i), N, dims, dst_cp, N, dims, src);
+
+			err += md_zrmse(N, dims, dst, dst_cp);
+
+			linop_adjoint(nlop_get_derivative(nlop, o, i), N, dims, dst, N, dims, src);
+			linop_adjoint(nlop_get_derivative(nlop_cp, o, i), N, dims, dst_cp, N, dims, src);
+
+			err += md_zrmse(N, dims, dst, dst_cp);
+
+			md_free(src);
+			md_free(dst);
+			md_free(dst_cp);
+		}
+	}
+
+	for (int i = 0; i < II; i++) {
+
+		if (!MD_IS_SET(in_der_flag, i))
+				continue;
+
+		for (int o = 0; o < OO; o++) {
+
+			if (!MD_IS_SET(out_der_flag, o))
+				continue;
+
+			complex float* src = md_alloc(N, dims, CFL_SIZE);
+
+			md_gaussian_rand(N, dims, src);
+
+			complex float* dst = md_alloc(N, dims, CFL_SIZE);
+			complex float* dst_cp = md_alloc(N, dims, CFL_SIZE);
+
+			linop_forward(nlop_get_derivative(nlop, o, i), N, dims, dst, N, dims, src);
+			linop_forward(nlop_get_derivative(nlop_cp, o, i), N, dims, dst_cp, N, dims, src);
+
+			err += md_zrmse(N, dims, dst, dst_cp);
+
+			linop_adjoint(nlop_get_derivative(nlop, o, i), N, dims, dst, N, dims, src);
+			linop_adjoint(nlop_get_derivative(nlop_cp, o, i), N, dims, dst_cp, N, dims, src);
+
+			err += md_zrmse(N, dims, dst, dst_cp);
+
+			md_free(src);
+			md_free(dst);
+			md_free(dst_cp);
+		}
+	}
+
+	for(int i = 0; i < OO; i++) {
+
+		md_free(args[i]);
+		md_free(args_cp[i]);
+	}
+
+	for(int i = OO; i < OO + II; i++)
+		md_free(args[i]);
+
+	nlop_free(nlop);
+	nlop_free(nlop_cp);
+
+	UT_ASSERT(err < UT_TOL);
+}
+
+UT_REGISTER_TEST(test_nlop_checkpointing);
+
+
+static bool test_mriop_normalinv_config(bool batch_independent, bool share_pattern)
+{
+	// Here we test the basic case of a fully sampled k-space
+	// => The normal operator is the identity
+	// => out = in / (1+lambda)
+	enum { N = 16 };
+	long dims[N] = { 8, 8, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3};
+
+	struct config_nlop_mri_s mri_conf = conf_nlop_mri_simple;
+	if (!share_pattern)
+		mri_conf.pattern_flags = MD_CLEAR(mri_conf.pattern_flags, 15);
+	if (!batch_independent)
+		mri_conf.batch_flags = 0;
+
+	long pdims[N];
+	long idims[N];
+	long ldims[N];
+
+	md_select_dims(N, mri_conf.pattern_flags, pdims, dims);
+	md_select_dims(N, mri_conf.image_flags, idims, dims);
+	md_select_dims(N, MD_BIT(15), ldims, dims);
+
+
+	auto nlop_inv = nlop_mri_normal_inv_create(N, dims, ldims, N, pdims, &mri_conf, NULL); // in: x0, coil, pattern, lambda; out:
+
+	complex float* pattern = md_alloc(N, pdims, CFL_SIZE);
+	md_zfill(N, pdims, pattern, 1.);
+
+	complex float* coils = md_alloc(N, dims, CFL_SIZE);
+	md_gaussian_rand(N, dims, coils);
+
+	complex float* coils_scale = md_alloc(N, idims, CFL_SIZE);
+	md_zrss(N, dims, MD_BIT(3), coils_scale, coils);
+	md_zdiv2(N, dims, MD_STRIDES(N, dims, CFL_SIZE), coils, MD_STRIDES(N, dims, CFL_SIZE), coils, MD_STRIDES(N, idims, CFL_SIZE), coils_scale);
+	md_free(coils_scale);
+
+	nlop_inv = nlop_set_input_const_F(nlop_inv, 1, N, dims, true, coils);
+	nlop_inv = nlop_set_input_const_F(nlop_inv, 1, N, pdims, true, pattern);
+
+	md_free(coils);
+	md_free(pattern);
+
+	complex float* lambda = md_alloc(N, ldims, CFL_SIZE);
+	md_zfill(N, ldims, lambda, 3.);
+
+	complex float* in = md_alloc(N, idims, CFL_SIZE);
+	complex float* out = md_alloc(N, idims, CFL_SIZE);
+
+	md_gaussian_rand(N, idims, in);
+
+	nlop_generic_apply_unchecked(nlop_inv, 3, MAKE_ARRAY((void*)out, (void*)in, (void*)lambda));
+	md_zdiv(N, idims, out, out, in);
+	md_zsmul(N, idims, out, out, 4);
+
+	complex float* ones = md_alloc(N, idims, CFL_SIZE);
+	md_zfill(N, idims, ones, 1.);
+
+	float err = md_znrmse(N, idims, ones, out);
+
+	linop_forward_unchecked(nlop_get_derivative(nlop_inv, 0, 0), out, in);
+	md_zdiv(N, idims, out, out, in);
+	md_zsmul(N, idims, out, out, 4);
+	err += md_znrmse(N, idims, ones, out);
+
+	linop_forward_unchecked(nlop_get_derivative(nlop_inv, 0, 1), out, ones);
+	md_zdiv(N, idims, out, out, in);
+	md_zsmul(N, idims, out, out, -16);
+	err += md_znrmse(N, idims, ones, out);
+
+	md_free(ones);
+	md_free(in);
+	md_free(out);
+	nlop_free(nlop_inv);
+	md_free(lambda);
+
+	UT_ASSERT(1.e-5 > err);
+}
+
+static bool test_mriop_normalinv(void)
+{
+	return test_mriop_normalinv_config(true, true)
+	    && test_mriop_normalinv_config(true, false)
+	    && test_mriop_normalinv_config(false, true)
+	    && test_mriop_normalinv_config(false, false);
+}
+
+UT_REGISTER_TEST(test_mriop_normalinv);
 

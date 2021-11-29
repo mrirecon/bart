@@ -48,9 +48,8 @@
 #include "num/iovec.h"
 #include "num/ops.h"
 
-static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.";
-
-
+static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.\n";
+                 
 
 static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const long wgs_dims[DIMS], const complex float* weights, const long basis_dims[DIMS], const complex float* basis, struct operator_s** precond_op)
 {
@@ -67,7 +66,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	debug_print_dims(DP_INFO, DIMS, ksp_dims2);
 	debug_print_dims(DP_INFO, DIMS, coilim_dims);
 
-	const struct linop_s* fft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, wgs_dims, weights, basis_dims, basis, conf);
+	const struct linop_s* fft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, (weights ? wgs_dims : NULL), weights, (basis ? basis_dims : NULL), basis, conf);
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
 	const struct linop_s* lop = linop_chain_FF(maps_op, fft_op);
 
@@ -499,8 +498,6 @@ int main_pics(int argc, char* argv[argc])
 
 		assert(md_check_compat(DIMS, 0u, img_start_dims, img_dims));
 
-		xfree(image_start_file);
-
 		// if rescaling at the end, assume the input has also been rescaled
 		if (scale_im && (scaling != 0.))
 			md_zsmul(DIMS, img_dims, image_start, image_start, 1. / scaling);
@@ -703,10 +700,6 @@ int main_pics(int argc, char* argv[argc])
 
 	if (image_start)
 		unmap_cfl(DIMS, img_dims, image_start);
-
-	xfree(pat_file);
-	xfree(traj_file);
-	xfree(basis_file);
 
 	double end_time = timestamp();
 

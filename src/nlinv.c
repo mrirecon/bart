@@ -300,12 +300,15 @@ int main_nlinv(int argc, char* argv[argc])
 
 		debug_printf(DP_DEBUG3, "finished\n");
 
-		kgrid = md_alloc(DIMS, kgrid_dims, CFL_SIZE);
+		kgrid = anon_cfl("", DIMS, kgrid_dims);
 
 		linop_adjoint(nufft_op, DIMS, kgrid_dims, kgrid, DIMS, ksp_dims, kspace);
 		linop_free(nufft_op);
 
+		unmap_cfl(DIMS, ksp_dims, kspace);
+
 		fftuc(DIMS, kgrid_dims, FFT_FLAGS, kgrid, kgrid);
+
 	} else {
 
 		md_copy_dims(DIMS, kgrid_dims, ksp_dims);
@@ -366,6 +369,7 @@ int main_nlinv(int argc, char* argv[argc])
 		noir_recon(&conf, dims, img, sens, ksens, ref, psf, mask, kgrid);
 
 
+	unmap_cfl(DIMS, kgrid_dims, kgrid);
 
 	postprocess(dims, normalize, sens_strs, sens, img_strs, img,
 			img_output_dims, img_output_strs, img_output);
@@ -374,6 +378,9 @@ int main_nlinv(int argc, char* argv[argc])
 		md_zsmul(DIMS, img_output_dims, img_output, img_output, 1. / scaling);
 
 
+	if (NULL != trajectory)
+		md_free(psf);
+
 	md_free(mask);
 	md_free(img);
 	md_free(ksens);
@@ -381,7 +388,6 @@ int main_nlinv(int argc, char* argv[argc])
 	unmap_cfl(DIMS, sens_dims, sens);
 	unmap_cfl(DIMS, pat_dims, pattern);
 	unmap_cfl(DIMS, img_output_dims, img_output);
-	unmap_cfl(DIMS, ksp_dims, kspace);
 
 	double recosecs = timestamp() - start_time;
 

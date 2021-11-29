@@ -178,7 +178,13 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 		conf.noncart = true;
 
-		pattern = load_cfl(psf, DIMS, pat_dims);
+		// copy here so that pattern is only ever a pointer allocated by md_alloc
+		complex float* tmp_pattern = load_cfl(psf, DIMS, pat_dims);
+
+		pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
+		md_copy(DIMS, pat_dims, pattern, tmp_pattern, CFL_SIZE);
+
+		unmap_cfl(DIMS, pat_dims, tmp_pattern);
 
 		turns = pat_dims[TIME_DIM];
 
@@ -401,11 +407,11 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 		debug_printf(DP_DEBUG3, "Start creating nufft-objects...");
 
+		traj1 = md_alloc(DIMS, trj1_dims, CFL_SIZE);
+
 		for (unsigned int i = 0; i < turns; ++i) {
 
 			// pick trajectory for current frame
-			traj1 = md_alloc(DIMS, trj1_dims, CFL_SIZE);
-
 			long pos[DIMS] = { 0 };
 			pos[TIME_DIM] = i;
 			md_slice(DIMS, TIME_FLAG, pos, trj_dims, traj1, traj, CFL_SIZE);
@@ -531,6 +537,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 	md_free(sens1);
 	md_free(ksens1);
 	md_free(ref);
+	md_free(pattern);
 
 	if (NULL != trajectory) {
 
@@ -539,10 +546,14 @@ int main_rtnlinv(int argc, char* argv[argc])
 		md_free(fftc_mod);
 
 		unmap_cfl(DIMS, trj_dims, traj);
+
+		operator_free(fftc);
+
+		for (unsigned int i = 0; i < turns; ++i)
+			linop_free(nufft_ops[i]);
 	}
 
 	unmap_cfl(DIMS, sens_dims, sens);
-	unmap_cfl(DIMS, pat_dims, pattern);
 	unmap_cfl(DIMS, img_output_dims, img_output);
 	unmap_cfl(DIMS, ksp_dims, kspace);
 

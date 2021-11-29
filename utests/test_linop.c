@@ -266,6 +266,7 @@ static bool test_linop_permute(void)
 	md_free(dst1);
 	md_free(dst2);
 	md_free(src);
+	md_free(src2);
 
 	linop_free(lop);
 

@@ -40,7 +40,8 @@ int main_copy(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(false, &count, 2, OPT_LONG, sizeof(long), &dims, "dim", OPT_LONG, sizeof(long), &poss, "pos"),
+		ARG_TUPLE(false, &count, 2, TUPLE_LONG(&dims, "dim"),
+					    TUPLE_LONG(&poss, "pos")),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_INOUTFILE(true, &out_file, "output"),
 	};
@@ -95,6 +96,7 @@ int main_copy(int argc, char* argv[argc])
 
 	unmap_cfl(N, in_dims, in_data);
 	unmap_cfl(N, out_dims, out_data);
+
 	xfree(dims);
 	xfree(poss);
 

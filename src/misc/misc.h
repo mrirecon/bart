@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdnoreturn.h>
 
 #include "misc/nested.h"
@@ -107,6 +108,9 @@ extern _Bool safe_isfinite(float x);
 
 extern long io_calc_size(int D, const long dims[__VLA(D?:1)], size_t size);
 
+extern const char* ptr_printf(const char* fmt, ...);
+extern const char* ptr_vprintf(const char* fmt, va_list ap);
+extern const char* ptr_print_dims(int D, const long dims[__VLA(D)]);
 
 #include "misc/cppwrap.h"
 

@@ -53,16 +53,8 @@ install -D doc/bart.1 %{buildroot}/%{_mandir}/man1/bart.1
 %{_mandir}/man1/bart.1*
 %doc
 /usr/share/doc/bart/README
-/usr/share/doc/bart/applications.txt
-/usr/share/doc/bart/bitmasks.txt
-/usr/share/doc/bart/building.txt
 /usr/share/doc/bart/commands.txt
-/usr/share/doc/bart/debugging.txt
-/usr/share/doc/bart/dimensions-and-strides.txt
-/usr/share/doc/bart/fft.txt
-/usr/share/doc/bart/references.txt
-/usr/share/doc/bart/resize.txt
-/usr/share/doc/bart/style.txt
+{{{ bart_static_docs }}}
 /usr/share/bash-completion/completions/bart_completion.sh
 
 %changelog

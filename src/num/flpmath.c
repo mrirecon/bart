@@ -492,6 +492,12 @@ static void real_from_complex_strides(unsigned int D, long ostrs[D + 1], const l
 	md_copy_dims(D, ostrs + 1, istrs);	// works for strides too
 }
 
+static void real_from_complex_stridesD(unsigned int D, long ostrs[D + 1], const long istrs[D])
+{
+	ostrs[0] = DL_SIZE;
+	md_copy_dims(D, ostrs + 1, istrs);	// works for strides too
+}
+
 static void make_z3op_from_real(size_t offset, unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 	long rdims[D + 1];
@@ -514,7 +520,7 @@ static void make_z2opd_from_real(size_t offset, unsigned int D, const long dims[
 	long ristr1[D + 1];
 
 	real_from_complex_dims(D, rdims, dims);
-	real_from_complex_strides(D, rostr, ostr);
+	real_from_complex_stridesD(D, rostr, ostr);
 	real_from_complex_strides(D, ristr1, istr1);
 
 	make_2opd(offset, D + 1, rdims, rostr, (double*)optr, ristr1, (const float*)iptr1);
@@ -528,7 +534,7 @@ static void make_z2opf_from_real(size_t offset, unsigned int D, const long dims[
 
 	real_from_complex_dims(D, rdims, dims);
 	real_from_complex_strides(D, rostr, ostr);
-	real_from_complex_strides(D, ristr1, istr1);
+	real_from_complex_stridesD(D, ristr1, istr1);
 
 	make_2opf(offset, D + 1, rdims, rostr, (float*)optr, ristr1, (const double*)iptr1);
 }

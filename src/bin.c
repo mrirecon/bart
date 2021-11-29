@@ -133,6 +133,10 @@ static const char help_str[] = "Binning";
 
 int main_bin(int argc, char* argv[argc])
 {
+	bool reorder = false;
+	bool amplitude = false;
+	struct bin_conf_s conf = bin_defaults;
+	
 	const char* label_file = NULL;
 	const char* src_file = NULL;
 	const char* dst_file = NULL;
@@ -144,30 +148,21 @@ int main_bin(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &dst_file, "dst"),
 	};
 
-	unsigned int n_resp = 0;
-	unsigned int n_card = 0;
-	unsigned int mavg_window = 0;
-	unsigned int mavg_window_card = 0;
-	int cluster_dim = -1;
-
-	long resp_labels_idx[2] = { 0, 1 };
-	long card_labels_idx[2] = { 2, 3 };
-
-	bool reorder = false;
-	const char* card_out = NULL;
-
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('l', &cluster_dim, "dim", "Bin according to labels: Specify cluster dimension"),
+		OPT_INT('l', &conf.cluster_dim, "dim", "Bin according to labels: Specify cluster dimension"),
 		OPT_SET('o', &reorder, "Reorder according to labels"),
-		OPT_UINT('R', &n_resp, "n_resp", "Quadrature Binning: Number of respiratory labels"),
-		OPT_UINT('C', &n_card, "n_card", "Quadrature Binning: Number of cardiac labels"),
-		OPT_VEC2('r', &resp_labels_idx, "x:y", "(Respiration: Eigenvector index)"),
-		OPT_VEC2('c', &card_labels_idx, "x:y", "(Cardiac motion: Eigenvector index)"),
-		OPT_UINT('a', &mavg_window, "window", "Quadrature Binning: Moving average"),
-		OPT_UINT('A', &mavg_window_card, "window", "(Quadrature Binning: Cardiac moving average window)"),
-		OPT_OUTFILE('x', &card_out, "file", "(Output filtered cardiac EOFs)"), // To reproduce SSA-FARY paper
+		OPT_UINT('R', &conf.n_resp, "n_resp", "Quadrature Binning: Number of respiratory labels"),
+		OPT_UINT('C', &conf.n_card, "n_card", "Quadrature Binning: Number of cardiac labels"),
+		OPT_VEC2('r', &conf.resp_labels_idx, "x:y", "(Respiration: Eigenvector index)"),
+		OPT_VEC2('c', &conf.card_labels_idx, "x:y", "(Cardiac motion: Eigenvector index)"),
+		OPT_UINT('a', &conf.mavg_window, "window", "Quadrature Binning: Moving average"),
+		OPT_UINT('A', &conf.mavg_window_card, "window", "(Quadrature Binning: Cardiac moving average window)"),
+		OPT_FLVEC2('O', &conf.offset_angle, "[r:c]deg", "Quadrature Binning: Angle offset for resp and card."),
+		OPT_STRING('x', &conf.card_out, "file", "(Output filtered cardiac EOFs)"), // To reproduce SSA-FARY paper
+		OPT_SET('M', &conf.amplitude, "Amplitude binning"),
+
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -183,43 +178,55 @@ int main_bin(int argc, char* argv[argc])
 
 	enum { BIN_QUADRATURE, BIN_LABEL, BIN_REORDER } bin_type;
 
+	if (amplitude) {
+		
+		assert(conf.cluster_dim != -1);
+		assert(conf.mavg_window == 0);
+	}
+
 	// Identify binning type
-	if ((n_resp > 0) || (n_card > 0)) {
+	if ((conf.n_resp > 0) || (conf.n_card > 0)) {
+
+		debug_printf(DP_INFO, "Quadrature binning...\n");
 
 		bin_type = BIN_QUADRATURE;
 
-		assert((n_resp > 0) && (n_card > 0));
-		assert(cluster_dim == -1);
+		assert((conf.n_resp > 0) && (conf.n_card > 0));
+		assert(conf.cluster_dim == -1);
 		assert(!reorder);
 
-	} else if (cluster_dim != -1) {
+	} else if (conf.cluster_dim != -1) {
+
+		debug_printf(DP_INFO, "Label binning...\n");
 
 		bin_type = BIN_LABEL;;
 
-		if ((cluster_dim < 0) || (src_dims[cluster_dim] != 1)) // Dimension to store data for each cluster must be empty
+		if ((conf.cluster_dim < 0) || (src_dims[conf.cluster_dim] != 1)) // Dimension to store data for each cluster must be empty
 			error("Choose empty cluster dimension!");
 
+		assert((conf.n_resp == 0) && (conf.n_card == 0));
 		assert(!reorder);
-		assert((n_resp == 0) && (n_card == 0));
 
 	} else if (reorder) {
 
+		debug_printf(DP_INFO, "Reorder binning...\n");
+
 		bin_type = BIN_REORDER;
 
-		assert((n_resp == 0) && (n_card == 0));
-		assert(cluster_dim == -1);
+		assert((conf.n_resp == 0) && (conf.n_card == 0));
+		assert(conf.cluster_dim == -1);
+		assert(reorder);
 
 	} else {
 
-		error("Specify binning type!");
+		error("No bin type specified!");
 	}
+
 
 
 	switch (bin_type) {
 
-	case BIN_QUADRATURE: // Quadrature binning
-
-		debug_printf(DP_INFO, "Quadrature binning...\n");
+	case BIN_QUADRATURE:
 
 		if (labels_dims[TIME_DIM] < 2)
 			error("Check dimensions of labels array!");
@@ -231,20 +238,18 @@ int main_bin(int argc, char* argv[argc])
 
 		float* bins = md_alloc(DIMS, bins_dims, FL_SIZE);
 
-		int binsize_max = bin_quadrature(bins_dims, bins, labels_dims, labels,
-				resp_labels_idx, card_labels_idx, n_resp, n_card,
-				mavg_window, mavg_window_card, card_out);
+		int binsize_max = bin_quadrature(bins_dims, bins, labels_dims, labels, conf);
 
 		long binned_dims[DIMS];
 		md_copy_dims(DIMS, binned_dims, src_dims);
-		binned_dims[TIME_DIM] = n_card;
-		binned_dims[TIME2_DIM] = n_resp;
+		binned_dims[TIME_DIM] = conf.n_card;
+		binned_dims[TIME2_DIM] = conf.n_resp;
 		binned_dims[PHS2_DIM] = binsize_max;
 
 		complex float* binned = create_cfl(dst_file, DIMS, binned_dims);
 		md_clear(DIMS, binned_dims, binned, CFL_SIZE);
 
-		asgn_bins(bins_dims, bins, binned_dims, binned, src_dims, src, n_card, n_resp);
+		asgn_bins(bins_dims, bins, binned_dims, binned, src_dims, src, conf.n_card, conf.n_resp);
 
 		md_free(bins);
 
@@ -252,9 +257,8 @@ int main_bin(int argc, char* argv[argc])
 
 		break;
 
-	case BIN_LABEL: { // Label binning: Bin elements from src according to labels
-
-		debug_printf(DP_INFO, "Label binning...\n");
+	case BIN_REORDER: // Reorder: Assign to dst from src according to labels
+	case BIN_LABEL: // Label binning: Bin elements from src according to labels
 
 		md_check_compat(DIMS, ~0u, src_dims, labels_dims);
 		md_check_bounds(DIMS, ~0u, labels_dims, src_dims);
@@ -265,11 +269,17 @@ int main_bin(int argc, char* argv[argc])
 		// Determine number of clusters
 		int n_clusters = 0;
 
-		for (int i = 0; i < N; i++)
-			if (n_clusters < (long)crealf(labels[i]))
-				n_clusters = (long)crealf(labels[i]);
+		for (int i = 0; i < N; i++) {
 
-		n_clusters += 1; // Account for zero-based indexing
+			int label = (int)crealf(labels[i]);
+
+			assert(0 <= label);
+
+			n_clusters = MAX(n_clusters, label);
+		}
+
+		n_clusters++; // Account for zero-based indexing
+
 
 		// Determine all cluster sizes
 		int cluster_size[n_clusters];
@@ -284,20 +294,30 @@ int main_bin(int argc, char* argv[argc])
 		int cluster_max = 0;
 
 		for (int i = 0; i < n_clusters; i++)
-			cluster_max = (cluster_size[i] > cluster_max) ? cluster_size[i] : cluster_max;
+			cluster_max = MAX(cluster_max, cluster_size[i]);
 
 		// Initialize output
 		long dst_dims[DIMS];
 		md_copy_dims(DIMS, dst_dims, src_dims);
-		dst_dims[cluster_dim] = cluster_max;
-		dst_dims[dim] = n_clusters;
+
+		if (BIN_REORDER != bin_type) {
+
+			dst_dims[conf.cluster_dim] = cluster_max;
+			dst_dims[dim] = n_clusters;
+
+		} else {
+
+			dst_dims[dim] = labels_dims[dim];
+			assert(-1 == conf.cluster_dim);
+			assert(n_clusters <= src_dims[dim]);
+		}
+
 
 		complex float* dst = create_cfl(dst_file, DIMS, dst_dims);
 
 		md_clear(DIMS, dst_dims, dst, CFL_SIZE);
 
 
-		// Do binning
 		long singleton_dims[DIMS];
 		md_select_dims(DIMS, ~MD_BIT(dim), singleton_dims, src_dims);
 
@@ -313,74 +333,32 @@ int main_bin(int argc, char* argv[argc])
 
 		for (int i = 0; i < N; i++) { // TODO: Speed but by direct copying
 
-			pos_src[dim] = i;
-			md_copy_block(DIMS, pos_src, singleton_dims, singleton, src_dims, src, CFL_SIZE);
-
 			int label = (int)crealf(labels[i]);
-			pos_dst[dim] = label;
-			pos_dst[cluster_dim] = idx[label]; // Next empty singleton index for i-th cluster
 
+			if (BIN_REORDER != bin_type) {
+
+				pos_src[dim] = i;
+				pos_dst[dim] = label;
+
+				pos_dst[conf.cluster_dim] = idx[label]; // Next empty singleton index for i-th cluster
+				idx[label]++;
+
+			} else {
+
+				pos_src[dim] = label;	// switched!
+				pos_dst[dim] = i;
+			}
+
+			md_copy_block(DIMS, pos_src, singleton_dims, singleton, src_dims, src, CFL_SIZE);
 			md_copy_block(DIMS, pos_dst, dst_dims, dst, singleton_dims, singleton, CFL_SIZE);
 
-			idx[label]++;
-
-			// Debug output
-			if (i % (long)(0.1 * N) == 0)
-				debug_printf(DP_DEBUG3, "Binning: %f%\n", i * 1. / N * 100);
+			if (0 == i % (N / 10))
+				debug_printf(DP_DEBUG3, "Binning: %f%\n", 100. * i / N);
 		}
 
 		md_free(singleton);
-	
-		break;
-	}
 
-	case BIN_REORDER: // Reorder: Reorder elements from src according to label
-
-		debug_printf(DP_INFO, "Reordering...\n");
-
-		// Find dimension of interest
-		int dim = find_dim(DIMS, labels_dims); // Dimension to be binned
-		int N = labels_dims[dim];
-
-		// Check labels and find maximum
-		float max = 0;
-
-		for (int i = 0; i < N; i++) {
-
-			float label = crealf(labels[i]);
-
-			assert(label >= 0); // Only positive labels allowed!
-
-			max = MAX(label, max);
-		}
-
-		assert(src_dims[dim] > max); 
-
-		// Output
-		long reorder_dims[DIMS];
-		md_copy_dims(DIMS, reorder_dims, src_dims);
-		reorder_dims[dim] = labels_dims[dim];
-
-		complex float* reorder = create_cfl(dst_file, DIMS, reorder_dims);
-
-		long singleton_dims[DIMS];
-		md_select_dims(DIMS, ~(1u << dim), singleton_dims, src_dims);
-
-		complex float* singleton = md_alloc(DIMS, singleton_dims, CFL_SIZE);
-
-		long pos[DIMS] = { 0 };
-
-		for (int i = 0; i < N; i++) {
-
-			pos[dim] = crealf(labels[i]);
-			md_copy_block(DIMS, pos, singleton_dims, singleton, src_dims, src, CFL_SIZE);
-
-			pos[dim] = i;
-			md_copy_block(DIMS, pos, reorder_dims, reorder, singleton_dims, singleton, CFL_SIZE);
-		}
-
-		unmap_cfl(DIMS, reorder_dims, reorder);
-		md_free(singleton);
+		unmap_cfl(DIMS, dst_dims, dst);
 
 		break;
 

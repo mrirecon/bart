@@ -327,7 +327,7 @@ struct nlop_s* nlop_combine(const struct nlop_s* a, const struct nlop_s* b)
 	int II = ai + bi;
 	int OO = ao + bo;
 
-	const struct linop_s* (*der)[II][OO] = TYPE_ALLOC(const struct linop_s*[II][OO]);
+	auto der = TYPE_ALLOC(const struct linop_s*[II?:1][OO?:1]);
 	n->derivative = &(*der)[0][0];
 
 	for (int i = 0; i < II; i++) {

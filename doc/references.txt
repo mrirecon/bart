@@ -17,6 +17,27 @@ Resonance Image Reconstruction using The Berkeley Advanced
 Reconstruction Toolbox,
 ISMRM Workshop on Data Sampling and Image Reconstruction, Sedona 2016.
 
+Uecker M.
+Machine Learning Using the BART Toolbox - Implementation of
+a Deep Convolutional Neural Network for Denoising.
+Joint Annual Meeting ISMRM-ESMRMB, Paris 2018,
+In: Proc. Intl. Soc. Mag. Reson. Med. 2018; 26:2802.
+
+Blumenthal M. and Uecker M.
+Deep Deep Learning with BART.
+ISMRM Annual Meeting 2021,
+In: Proc. Intl. Soc. Mag. Reson. Med. 2021; 29:1754.
+
+Luo G, Blumenthal M, Uecker M.
+Using data-driven image priors for image reconstruction with BART.
+ISMRM Annual Meeting 2021,
+In: Proc. Intl. Soc. Mag. Reson. Med. 2021; 29:1756.
+
+Holme HCM and Uecker M.
+Reproducibility meets Software Testing: Automatic Tests
+of Reproducible Publications Using BART.
+ISMRM Annual Meeting 2021,
+In: Proc. Intl. Soc. Mag. Reson. Med. 2021; 29:3768.
 
 
 
@@ -372,7 +393,7 @@ IEEE Trans Med Imaging 2012; 31:1250-1262.
 
 
 - numerical phantoms and signals -
-(command: phantom, signal)
+(commands: phantom, signal)
 
 
 Shepp LA, Logan BF.
@@ -404,4 +425,26 @@ Assländer J, Novikov DS, Lattanzi R, Sodickson DK, Cloos MA.
 Hybrid-state free precession in nuclear magnetic resonance.
 Communications Physics. 2019; 2:73.
 
+
+
+- machine learning -
+(command: reconet)
+
+
+Hammernik Km Klatzer T, Kobler E, Recht MP, Sodickson DK, Pock T, Knoll F.
+Learning a variational network for reconstruction of accelerated MRI data.
+Magn Reson Med 2018; 79:3055-3071.
+
+Aggarwal HK, Mani MP, Jacob M.
+MoDL: Model-Based Deep Learning Architecture for Inverse Problems.
+IEEE Trans Med Imaging 2019; 38:394--405.
+
+Pock T and Sabach S.
+Inertial Proximal Alternating Linearized Minimization (iPALM) for Nonconvex
+and Nonsmooth Problems.
+SIAM J Imaging Sci 2016; 9:1756--1787.
+
+Kingma DP and Ba J.
+Adam: A Method for Stochastic Optimization.
+arXiv preprint 2014, arXiv:1412.6980
 

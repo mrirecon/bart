@@ -25,9 +25,27 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/io.h"
+#include "misc/list.h"
 
 #include "opts.h"
 
+list_t str_list = NULL;
+
+void opt_free_strdup(void)
+{
+	if (NULL == str_list)
+		return;
+
+	const char* str = list_pop(str_list);
+	while (NULL != str) {
+
+		xfree(str);
+		str = list_pop(str_list);
+	}
+
+	list_free(str_list);
+	str_list = NULL;
+}
 
 opt_conv_f opt_set;
 opt_conv_f opt_clear;
@@ -192,11 +210,10 @@ static bool show_option_p(const struct opt_s opt)
 }
 
 
-static const char* add_space(bool has_arg)
+static const char* add_sep(const char* sep, bool has_arg)
 {
-	return has_arg ? " " : "";
+	return has_arg ? sep : "";
 }
-
 
 static void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
 {
@@ -208,14 +225,46 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 
 			if (NULL == opts[i].s) {
 
-				fprintf(fp, "[-%c%s%s] ", opts[i].c, add_space(opts[i].arg), opt_arg_str(opts[i].type));
+				fprintf(fp, "[-%c%s%s] ", opts[i].c, add_sep(" ", opts[i].arg), opt_arg_str(opts[i].type));
 
 			} else {
 
 				if (!isprint(opts[i].c))
-					fprintf(fp, "[--%s%s%s] ", opts[i].s, add_space(opts[i].arg), opt_arg_str(opts[i].type));
+					fprintf(fp, "[--%s%s%s] ", opts[i].s, add_sep(" ", opts[i].arg), opt_arg_str(opts[i].type));
 				else
-					fprintf(fp, "[-%c,--%s%s%s] ", opts[i].c, opts[i].s, add_space(opts[i].arg), opt_arg_str(opts[i].type));
+					fprintf(fp, "[-%c,--%s%s%s] ", opts[i].c, opts[i].s, add_sep(" ", opts[i].arg), opt_arg_str(opts[i].type));
+			}
+		}
+	}
+
+	fprintf(fp, "%s\n", usage_str);
+}
+
+static void print_usage_subopts(FILE* fp, char c, const char* arg_name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
+{
+	fprintf(fp, "Usage of sub-option: ");
+
+	if (0 != c)
+		fprintf(fp, "-%c", c);
+
+	if (NULL != arg_name)
+		fprintf(fp, (0 == c) ? "--%s " : ",--%s ", arg_name);
+	else
+		fprintf(fp, " ");
+
+	for (int i = 0; i < n; i++) {
+
+		if (show_option_p(opts[i])) {
+
+			if (NULL == opts[i].s) {
+
+				fprintf(fp, "[%c%s%s]%s", opts[i].c, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), i < (n - 1) ? "," : "");
+			} else {
+
+				if (opts[i].c < (int) ' ')
+					fprintf(fp, "[%s%s%s]%s", opts[i].s, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), i < (n - 1) ? "," : "");
+				else
+					fprintf(fp, "[%c%s%s,%s%s%s]%s", opts[i].c, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), opts[i].s, strlen(opt_arg_str(opts[i].type)) ? "=" : "", opt_arg_str(opts[i].type), i < (n - 1) ? "," : "");
 			}
 		}
 	}
@@ -225,9 +274,27 @@ static void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 
 
 
-static void print_help(const char* help_str, int n, const struct opt_s opts[n ?: 1])
+static void print_help(const char* help_str_prefix, const char* help_str, bool dash_prefix, const char* sep, int n, const struct opt_s opts[n ?: 1])
 {
-	printf("\n%s\n\n",  help_str);
+	if (NULL != help_str)
+		printf("\n%s%s\n\n", help_str_prefix, help_str);
+	else
+		printf("\n");
+
+	const char* short_only_format = NULL;
+	const char* long_only_format = NULL;
+	const char* short_long_format = NULL;
+	if (dash_prefix) {
+
+		short_only_format = "-%c%s%s";
+		long_only_format = "--%s%s%s";
+		short_long_format = "-%c,--%s%s%s";
+	} else {
+
+		short_only_format = "%c%s%s";
+		long_only_format = "%s%s%s";
+		short_long_format = "%c,%s%s%s";
+	}
 
 	int max_len = 0;
 
@@ -240,14 +307,14 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 
 			if (NULL == opts[i].s) {
 
-				len = snprintf(NULL, 0, "-%c%s%s", opts[i].c, add_space(opts[i].arg), opts[i].argname);
+				len = snprintf(NULL, 0, short_only_format, opts[i].c, add_sep(sep, opts[i].arg), opts[i].argname);
 
 			} else {
 
 				if (!isprint(opts[i].c))
-					len = snprintf(NULL, 0, "--%s%s%s", opts[i].s, add_space(opts[i].arg), opts[i].argname);
+					len = snprintf(NULL, 0, long_only_format, opts[i].s, add_sep(sep, opts[i].arg), opts[i].argname);
 				else
-					len = snprintf(NULL, 0, "-%c,--%s%s%s", opts[i].c, opts[i].s, add_space(opts[i].arg), opts[i].argname);
+					len = snprintf(NULL, 0, short_long_format, opts[i].c, opts[i].s, add_sep(sep, opts[i].arg), opts[i].argname);
 			}
 
 			max_len = MAX(max_len, len);
@@ -265,14 +332,14 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 
 			if (NULL == opts[i].s) {
 
-				written = fprintf(stdout, "-%c%s%s", opts[i].c, add_space(opts[i].arg), opts[i].argname);
+				written = fprintf(stdout, short_only_format, opts[i].c, add_sep(sep, opts[i].arg), opts[i].argname);
 
 			} else {
 
 				if (!isprint(opts[i].c))
-					written = fprintf(stdout, "--%s%s%s", opts[i].s, add_space(opts[i].arg), opts[i].argname);
+					written = fprintf(stdout, long_only_format, opts[i].s, add_sep(sep, opts[i].arg), opts[i].argname);
 				else
-					written = fprintf(stdout, "-%c,--%s%s%s", opts[i].c, opts[i].s, add_space(opts[i].arg), opts[i].argname);
+					written = fprintf(stdout, short_long_format, opts[i].c, opts[i].s, add_sep(sep, opts[i].arg), opts[i].argname);
 			}
 
 			assert(pad_len > written);
@@ -281,7 +348,10 @@ static void print_help(const char* help_str, int n, const struct opt_s opts[n ?:
 		}
 	}
 
-	printf("-h%*chelp\n", pad_len - 2, ' ');
+	if (dash_prefix)
+		printf("-h%*chelp\n", pad_len - 2, ' ');
+	else
+		printf("h%*chelp\n", pad_len - 1, ' ');
 }
 
 
@@ -302,7 +372,7 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 			if (1 != args[i].nargs)
 				fprintf(fp, "\n\t");
 
-			fprintf(fp, "{ %s, %zd, \"%s\" } ", opt_type_str(args[i].arg[j].opt_type), args[i].arg[j].sz, args[i].arg[j].argname);
+			fprintf(fp, "{ %s, %zd, \"%s\" } ", opt_type_str(args[i].arg[j].opt_type), args[i].arg[j].size, args[i].arg[j].argname);
 		}
 
 		if (1 != args[i].nargs)
@@ -366,7 +436,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 	if ('h' == c) {
 
 		print_usage(stdout, name, usage_str, n, opts);
-		print_help(help_str, n, opts);
+		print_help("", help_str, true, " ", n, opts);
 		exit(0);
 	}
 
@@ -404,7 +474,7 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 
 	struct opt_s wopts[n ?: 1];
 
-	if ((NULL != opts) && (0 < n))
+	if ((n > 0) && (NULL != opts))
 		memcpy(wopts, opts, sizeof wopts);
 
 
@@ -544,8 +614,10 @@ bool opt_int(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	int val;
+
 	if (0 != parse_int(&val, optarg))
 		error("Could not parse argument to opt_int: %s!\n", optarg);
+
 	*(int*)ptr = val;
 	return false;
 }
@@ -568,9 +640,12 @@ bool opt_long(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	long val;
+
 	if (0 != parse_long(&val, optarg))
 		error("Could not parse argument to opt_long: %s!\n", optarg);
+
 	*(long*)ptr = val;
+
 	return false;
 }
 
@@ -592,14 +667,18 @@ bool opt_float(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	complex float val;
+
 	if (0 != parse_cfl(&val, optarg))
 		error("Could not parse argument to opt_float: %s!\n", optarg);
 
 	if (0.f != cimagf(val))
 		error("Argument \"%s\" to opt_float is not real\n", optarg);
+
 	*(float*)ptr = crealf(val);
+
 	return false;
 }
+
 
 bool opt_cfl(void* ptr, char c, const char* optarg)
 {
@@ -607,20 +686,25 @@ bool opt_cfl(void* ptr, char c, const char* optarg)
 	return 0 != parse_cfl((complex float*) ptr, optarg);
 }
 
+
 bool opt_string(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	*(char**)ptr = strdup(optarg);
+	*(const char**)ptr = strdup(optarg);
+	list_append(str_list, *(char**)ptr);
 
 	assert(NULL != ptr);
 
 	return false;
 }
 
+
 static bool opt_file(void* ptr, char c, const char* optarg, bool out, bool in)
 {
 	UNUSED(c);
-	*(char**)ptr = strdup(optarg);
+
+	*(const char**)ptr = strdup(optarg);
+	list_append(str_list, *(char**) ptr);
 
 	if (out)
 		io_reserve_output(*(char**)ptr);
@@ -713,6 +797,7 @@ bool opt_vec3(void* ptr, char c, const char* optarg)
 	return false;
 }
 
+
 bool opt_select(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c); UNUSED(optarg);
@@ -727,12 +812,82 @@ bool opt_select(void* ptr, char c, const char* optarg)
 	return false;
 }
 
+
 bool opt_subopt(void* _ptr, char c, const char* optarg)
 {
 	UNUSED(c);
+
 	struct opt_subopt_s* ptr = _ptr;
 
-	process_option(optarg[0], optarg + 1, "", "", "", ptr->n, ptr->opts, 0, NULL);
+	int n = ptr->n;
+	auto opts = ptr->opts;
+
+	struct opt_s wopts[n ?: 1];
+
+	if ((n > 0) && (NULL != opts))
+		memcpy(wopts, opts, sizeof wopts);
+
+	char lc = 1;
+
+	for (int i = 0; i < n; i++) {
+
+		if (NULL != wopts[i].s) {
+
+			// if it is only longopt, overwrite c with an unprintable char
+			if (0 == wopts[i].c)
+				wopts[i].c = lc++;
+
+			assert(lc < ' ');
+		}
+	}
+
+	const char* tokens[2 * ptr->n + 2];
+
+	for (int i = 0; i < ptr->n; i++) {
+
+		tokens[2 * i] = ptr_printf("%c", wopts[i].c);
+
+		if (NULL == wopts[i].s)
+			tokens[2 * i + 1] = ptr_printf("char_only_token_%c", wopts[i].c);
+		else
+			tokens[2 * i + 1] = ptr_printf("%s", wopts[i].s);
+	}
+
+	tokens[2 * ptr->n] = ptr_printf("h");
+	tokens[2 * ptr->n + 1] = NULL;
+
+
+	char* tmpoptionp = strdup(optarg);
+	char* option = tmpoptionp;
+	char* value = NULL;
+
+	int i = -1;
+
+	while ('\0' != *option) {
+
+		i = getsubopt(&option, (char *const *)tokens, &value);
+
+		if ((i == 2 * n) || (-1 == i)) {
+
+			print_usage_subopts(stdout, ptr->calling_c, ptr->calling_s, "", n, opts);
+			print_help("Sub-options: ", ptr->calling_desc, false, "=", ptr->n, ptr->opts);
+		}
+
+		if (-1 == i)
+			error("Sub-option could not be parsed: %s", value);
+
+		if (i == 2 * n)
+			exit(0);
+
+		assert(i < 2 * n);
+
+		process_option(wopts[i / 2].c, value, "", "", "", n, wopts, 0, NULL);
+	}
+
+	for (int i = 0; i < 2 * n + 1; i++)
+		xfree(tokens[i]);
+
+	xfree(tmpoptionp);
 
 	return false;
 }
@@ -751,31 +906,14 @@ static const char* arg_type_str(enum ARG_TYPE type)
 }
 
 
-void* parse_arg_tuple(int n, ...)
-{
-	struct arg_single_s* args = calloc(n, sizeof *args);
-
-	va_list ap;
-	va_start(ap, n);
-
-	for (int i = 0; i < n; ++i)
-		args[i] = (struct arg_single_s) {va_arg(ap, enum OPT_TYPE), va_arg(ap, size_t), va_arg(ap, void*), va_arg(ap, const char*)};
-
-	va_end(ap);
-
-	return PTR_PASS(args);
-}
 
 
 
-
-
-
-static void check_args(int n, const struct arg_s args[n])
+static void check_args(int N, const struct arg_s args[N])
 {
 	int num_tuples = 0;
 
-	for (int i = 0; i < n; ++i) {
+	for (int i = 0; i < N; ++i) {
 
 		if ((0 < num_tuples) && !args[i].required)
 			error("Cannot have an optional argument after a tuple!\n");
@@ -824,7 +962,7 @@ static int add_tuple_args(int bufsize, char buf[static bufsize], const struct ar
 	if (!arg->required)
 		pos += xsnprintf(bufsize - pos, buf + pos, "[");
 
-	for (int k = 0; k < arg->nargs; ++k ) {
+	for (int k = 0; k < arg->nargs; ++k) {
 
 		pos += add_arg(bufsize - pos, buf + pos, arg->arg[k].argname, true, file);
 
@@ -841,7 +979,7 @@ static int add_tuple_args(int bufsize, char buf[static bufsize], const struct ar
 
 	pos += xsnprintf(bufsize - pos, buf + pos, "... ");
 
-	for (int k = 0; k < arg->nargs; ++k ) {
+	for (int k = 0; k < arg->nargs; ++k) {
 
 		pos += add_arg(bufsize - pos, buf + pos, arg->arg[k].argname, true, file);
 
@@ -869,6 +1007,9 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 {
 	check_args(m, args);
 
+	if (NULL == str_list)
+		str_list = list_create();
+
 	long min_args = 0;
 	long max_args = 0;
 
@@ -880,7 +1021,7 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 	for (int i = 0; i < m; ++i) {
 
 		if (ARG_TUPLE == args[i].arg_type)
-			max_args = 1e9; // should be plenty for most use cases, but not overflow long
+			max_args = 1000; // should be plenty for most use cases, but not overflow long
 		else
 			max_args += args[i].nargs;
 
@@ -894,6 +1035,7 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 		case OPT_INFILE:
 		case OPT_OUTFILE:
 		case OPT_INOUTFILE:
+
 			file = true;
 			break;
 
@@ -962,16 +1104,16 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 
 			if (0 == *args[i].count)
 				continue;
-
+#if 1
 			for (int k = 0; k < args[i].nargs; ++k)
-				*(void**)args[i].arg[k].ptr = calloc(args[i].arg[k].sz, *args[i].count);
-
+				*(void**)args[i].arg[k].ptr = calloc(args[i].arg[k].size, *args[i].count);
+#endif
 			int c = 0;
 
 			while (j < tuple_end) {
 
-				for (int k = 0; k < args[i].nargs; ++k)
-					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * args[i].arg[k].sz, NULL, '\0', argv[j++]))
+				for (int k = 0; k < args[i].nargs; ++k)	// FIXME ????
+					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * args[i].arg[k].size, NULL, '\0', argv[j++]))
 						error("failed to convert value\n");
 
 				c++;

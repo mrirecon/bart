@@ -1,4 +1,5 @@
 /* Copyright 2013-2015. The Regents of the University of California.
+ * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
  * Copyright 2016. Martin Uecker.
  * Copyright 2018. Damien Nguyen.
  * All rights reserved. Use of this source code is governed by
@@ -55,6 +56,17 @@ void dump_cfl(const char* name, int D, const long dimensions[D], const complex f
 	md_copy(D, dimensions, out, src, sizeof(complex float));
 
 	unmap_cfl(D, dimensions, out);
+}
+
+void dump_multi_cfl(const char* name, int N, int D[N], const long* dimensions[N], const _Complex float* x[N])
+{
+	complex float* args[N];
+	create_multi_cfl(name, N, D, dimensions, args);
+
+	for (int i = 0; i < N; i++)
+		md_copy(D[i], dimensions[i], args[i], x[i], sizeof(complex float));
+
+	unmap_multi_cfl(N, D, dimensions, args);
 }
 
 

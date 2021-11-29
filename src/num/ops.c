@@ -26,12 +26,15 @@
 #include "num/multind.h"
 #include "num/iovec.h"
 #include "num/flpmath.h"
+#include "num/ops_graph.h"
 
 #include "misc/misc.h"
 #include "misc/types.h"
 #include "misc/debug.h"
 #include "misc/shrdptr.h"
 #include "misc/nested.h"
+#include "misc/list.h"
+#include "misc/graph.h"
 
 #ifdef USE_CUDA
 #ifdef _OPENMP
@@ -59,6 +62,8 @@ struct operator_s {
 	void (*apply)(const operator_data_t* data, unsigned int N, void* args[N]);
 	void (*del)(const operator_data_t* data);
 
+	const struct graph_s* (*get_graph)(const struct operator_s* op);
+
 	struct shared_obj_s sptr;
 };
 
@@ -85,7 +90,7 @@ static void operator_del(const struct shared_obj_s* sptr)
  */
 const struct operator_s* operator_generic_create2(unsigned int N, const bool io_flags[N],
 			const unsigned int D[N], const long* dims[N], const long* strs[N],
-			operator_data_t* data, operator_fun_t apply, operator_del_t del)
+			operator_data_t* data, operator_fun_t apply, operator_del_t del, operator_get_graph_t get_graph)
 {
 	PTR_ALLOC(struct operator_s, op);
 	PTR_ALLOC(const struct iovec_s*[N], dom);
@@ -99,6 +104,7 @@ const struct operator_s* operator_generic_create2(unsigned int N, const bool io_
 	op->data = data;
 	op->apply = apply;
 	op->del = del;
+	op->get_graph = get_graph;
 
 	shared_obj_init(&op->sptr, operator_del);
 
@@ -112,14 +118,14 @@ const struct operator_s* operator_generic_create2(unsigned int N, const bool io_
  */
 const struct operator_s* operator_generic_create(unsigned int N, const bool io_flags[N],
 			const unsigned int D[N], const long* dims[N],
-			operator_data_t* data, operator_fun_t apply, operator_del_t del)
+			operator_data_t* data, operator_fun_t apply, operator_del_t del, operator_get_graph_t get_graph)
 {
 	const long* strs[N];
 
 	for (unsigned int i = 0; i < N; i++)
 		strs[i] = MD_STRIDES(D[i], dims[i], CFL_SIZE);
 
-	return operator_generic_create2(N, io_flags, D, dims, strs, data, apply, del);
+	return operator_generic_create2(N, io_flags, D, dims, strs, data, apply, del, get_graph);
 }
 
 
@@ -133,8 +139,9 @@ const struct operator_s* operator_create2(unsigned int ON, const long out_dims[O
 {
 	return operator_generic_create2(2, (bool[2]){ true, false }, (unsigned int[2]){ ON, IN },
 				(const long* [2]){ out_dims, in_dims }, (const long* [2]){ out_strs, in_strs },
-				data, apply, del);
+				data, apply, del, NULL);
 }
+
 
 /**
  * Create an operator (without strides)
@@ -186,7 +193,19 @@ const struct operator_s* operator_unref(const struct operator_s* x)
 }
 
 
+void operator_debug(enum debug_levels dl, const struct operator_s* x)
+{
+	int N = operator_nr_args(x);
 
+	debug_printf(dl, "OPERATOR\n");
+
+	for (int i = 0; i < N; i++) {
+
+		debug_printf(dl, "%d : ", x->io_flags[i]);
+		auto io = x->domain[i];
+		debug_print_dims(dl, io->N, io->dims);
+	}
+}
 
 /**
  * Return the data of the associated operator
@@ -441,13 +460,20 @@ static void reshape_apply(const operator_data_t* _data, unsigned int N, void* ar
 	operator_generic_apply_unchecked(d->x, N, args);
 }
 
-
-
 static void reshape_free(const operator_data_t* _data)
 {
 	const auto d = CAST_DOWN(op_reshape_s, _data);
 	operator_free(d->x);
 	xfree(d);
+}
+
+static const struct graph_s* operator_reshape_get_graph(const struct operator_s* op)
+{
+	const auto d = CAST_DOWN(op_reshape_s, op->data);
+	auto result = operator_get_graph(d->x);
+	for (unsigned int i = 0; i < op->N; i++)
+		result = operator_graph_reshape_F(result, i, op->domain[i]->N, op->domain[i]->dims);
+	return result;
 }
 
 const struct operator_s* operator_reshape(const struct operator_s* op, unsigned int i, long N, const long dims[N])
@@ -483,11 +509,11 @@ const struct operator_s* operator_reshape(const struct operator_s* op, unsigned 
 	op_dims[i] = dims;
 	op_strs[i] = strs;
 
-	return operator_generic_create2(A, op->io_flags, D, op_dims, op_strs, CAST_UP(PTR_PASS(data)), reshape_apply, reshape_free);
+	return operator_generic_create2(A, op->io_flags, D, op_dims, op_strs, CAST_UP(PTR_PASS(data)), reshape_apply, reshape_free, operator_reshape_get_graph);
 }
 
 
-static bool check_simple_copy(const struct operator_s* op)
+bool check_simple_copy(const struct operator_s* op)
 {
 	if (NULL != get_identity_data(op))
 		return true;
@@ -532,7 +558,7 @@ const struct operator_s* operator_zero_create2(unsigned int N, const long dims[N
 
 	return operator_generic_create2(1, (bool[1]){ true }, (unsigned int[1]){ N },
 			(const long*[1]){ dims },
-			(const long*[2]){ strs }, CAST_UP(PTR_PASS(data)), zero_apply, zero_free);
+			(const long*[2]){ strs }, CAST_UP(PTR_PASS(data)), zero_apply, zero_free, NULL);
 }
 
 const struct operator_s* operator_zero_create(unsigned int N, const long dims[N])
@@ -569,7 +595,7 @@ const struct operator_s* operator_null_create2(unsigned int N, const long dims[N
 
 	return operator_generic_create2(1, (bool[1]){ false }, (unsigned int[1]){ N },
 			(const long*[1]){ dims },
-			(const long*[2]){ strs }, CAST_UP(PTR_PASS(data)), null_apply, null_free);
+			(const long*[2]){ strs }, CAST_UP(PTR_PASS(data)), null_apply, null_free, NULL);
 }
 
 const struct operator_s* operator_null_create(unsigned int N, const long dims[N])
@@ -667,7 +693,7 @@ const struct operator_s* operator_attach(const struct operator_s* op, void* ptr,
 	data->ptr = ptr;
 	data->del = del;
 
-	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), attach_fun, attach_del);
+	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), attach_fun, attach_del, NULL);
 }
 
 
@@ -759,7 +785,7 @@ const struct operator_s* operator_bind2(const struct operator_s* op, unsigned in
 
 	return operator_generic_create2(D - 1, n_flags,
 		nn, ndims, nstrs,
-		CAST_UP(PTR_PASS(data)), op_bind_apply, op_bind_del);
+		CAST_UP(PTR_PASS(data)), op_bind_apply, op_bind_del, NULL);
 }
 
 
@@ -897,7 +923,7 @@ const struct operator_s* (operator_loop_parallel2)(unsigned int N, const unsigne
 	data->parallel = flags;
 	data->gpu = gpu;
 
-	const struct operator_s* rop = operator_generic_create2(N, op->io_flags, D2, *dims2, *strs2, CAST_UP(PTR_PASS(data)), op_loop_fun, op_loop_del);
+	const struct operator_s* rop = operator_generic_create2(N, op->io_flags, D2, *dims2, *strs2, CAST_UP(PTR_PASS(data)), op_loop_fun, op_loop_del, NULL);
 
 	PTR_PASS(dims2);
 	PTR_PASS(strs2);
@@ -940,6 +966,8 @@ struct copy_data_s {
 
 	const struct operator_s* op;
 
+	const void* ref;
+
 	unsigned int N;
 	const long** strs;
 };
@@ -951,6 +979,7 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 	const auto data = CAST_DOWN(copy_data_s, _data);
 	const struct operator_s* op = data->op;
 	void* ptr[N];
+	bool allocated[N];
 
 	assert(N == operator_nr_args(op));
 
@@ -958,10 +987,18 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 
 		const struct iovec_s* io = operator_arg_domain(op, i);
 
-		ptr[i] = md_alloc(io->N, io->dims, io->size);
+		allocated[i] = (!md_check_equal_dims(io->N, io->strs, data->strs[i], ~0) || ((NULL != data->ref) && !md_is_sameplace(data->ref, args[i])));
 
-		if (!op->io_flags[i])
-			md_copy2(io->N, io->dims, io->strs, ptr[i], data->strs[i], args[i], io->size);
+		if (allocated[i]) {
+
+			ptr[i] = md_alloc_sameplace(io->N, io->dims, io->size, NULL == data->ref ? args[i] : data->ref);
+
+			if (!op->io_flags[i])
+				md_copy2(io->N, io->dims, io->strs, ptr[i], data->strs[i], args[i], io->size);
+		} else {
+
+			ptr[i] = args[i];
+		}
 	}
 
 	operator_generic_apply_unchecked(op, N, ptr);
@@ -970,10 +1007,11 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 
 		const struct iovec_s* io = operator_arg_domain(op, i);
 
-		if (op->io_flags[i])
+		if (op->io_flags[i] && allocated[i])
 			md_copy2(io->N, io->dims, data->strs[i], args[i], io->strs, ptr[i], io->size);
 
-		md_free(ptr[i]);
+		if (allocated[i])
+			md_free(ptr[i]);
 	}
 }
 
@@ -982,6 +1020,7 @@ static void copy_del(const operator_data_t* _data)
 	const auto data = CAST_DOWN(copy_data_s, _data);
 
 	operator_free(data->op);
+	md_free(data->ref);
 
 	for (unsigned int i = 0; i < data->N; i++)
 		xfree(data->strs[i]);
@@ -990,11 +1029,10 @@ static void copy_del(const operator_data_t* _data)
 	xfree(data);
 }
 
-const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[N], const struct operator_s* op)
+const struct operator_s* operator_copy_wrapper_sameplace(unsigned int N, const long* strs[N], const struct operator_s* op, const void* ref)
 {
 	assert(N == operator_nr_args(op));
 
-	// op = operator_ref(op);
 	PTR_ALLOC(struct copy_data_s, data);
 	SET_TYPEID(copy_data_s, data);
 	data->op = operator_ref(op);
@@ -1020,13 +1058,20 @@ const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[
 		md_calc_strides(io->N, tstrs, io->dims, CFL_SIZE);
 
 		for (unsigned int i = 0; i < io->N; i++)
-			assert(io->strs[i] == tstrs[i]);
+			if (1 != io->dims[i])
+				assert(io->strs[i] == tstrs[i]);
 	}
 
 	data->N = N;
 	data->strs = *strs2;
+	data->ref = (NULL == ref) ? NULL : md_alloc_sameplace(1, MD_DIMS(1), FL_SIZE, ref);
 
-	return operator_generic_create2(N, op->io_flags, D, dims, *strs2, CAST_UP(PTR_PASS(data)), copy_fun, copy_del);
+	return operator_generic_create2(N, op->io_flags, D, dims, *strs2, CAST_UP(PTR_PASS(data)), copy_fun, copy_del, NULL);
+}
+
+const struct operator_s* operator_copy_wrapper(unsigned int N, const long* strs[N], const struct operator_s* op)
+{
+	return operator_copy_wrapper_sameplace(N, strs, op, NULL);
 }
 
 
@@ -1142,7 +1187,7 @@ const struct operator_s* operator_gpu_wrapper2(const struct operator_s* op, long
 	data->move_flags = move_flags;
 	data->op = operator_ref(op);
 
-	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), gpuwrp_fun, gpuwrp_del);
+	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), gpuwrp_fun, gpuwrp_del, NULL);
 }
 
 
@@ -1200,6 +1245,14 @@ static void combi_free(const operator_data_t* _data)
 	xfree(data);
 }
 
+static const struct graph_s* operator_combi_get_graph(const struct operator_s* op)
+{
+	const auto d = CAST_DOWN(operator_combi_s, op->data);
+	const struct graph_s* tmp_graphs[d->N];
+	for (int i = 0; i < d->N; i++)
+		tmp_graphs[i] = operator_get_graph(d->x[i]);
+	return operator_graph_combine_F(d->N, tmp_graphs);
+}
 
 
 /**
@@ -1245,7 +1298,7 @@ const struct operator_s* operator_combi_create(int N, const struct operator_s* x
 		}
 	}
 
-	return operator_generic_create2(A, io_flags, D, dims, strs, CAST_UP(PTR_PASS(c)), combi_apply, combi_free);
+	return operator_generic_create2(A, io_flags, D, dims, strs, CAST_UP(PTR_PASS(c)), combi_apply, combi_free, operator_combi_get_graph);
 }
 
 
@@ -1302,6 +1355,12 @@ static void dup_del(const operator_data_t* _data)
 	xfree(data);
 }
 
+static const struct graph_s* operator_dup_get_graph(const struct operator_s* op)
+{
+	const auto d = CAST_DOWN(operator_dup_s, op->data);
+	return operator_graph_dup_F(operator_get_graph(d->x), d->a, d->b);
+}
+
 const struct operator_s* operator_dup_create(const struct operator_s* op, unsigned int a, unsigned int b)
 {
 	unsigned int N = operator_nr_args(op);
@@ -1347,13 +1406,13 @@ const struct operator_s* operator_dup_create(const struct operator_s* op, unsign
 	data->b = b;
 	data->x = operator_ref(op);
 
-	return operator_generic_create2(N - 1, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), dup_apply, dup_del);
+	return operator_generic_create2(N - 1, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), dup_apply, dup_del, operator_dup_get_graph);
 }
 
 
 
 
-// FIXME: we should reimplement link in terms of dup and bind (caveat: gpu)
+// FIXME: we should reimplement link in terms of dup and bind (caveat: gpu; io_flags)
 struct operator_link_s {
 
 	INTERFACE(operator_data_t);
@@ -1432,6 +1491,12 @@ static void link_del(const operator_data_t* _data)
 	xfree(data);
 }
 
+static const struct graph_s* operator_link_get_graph(const struct operator_s* op)
+{
+	const auto d = CAST_DOWN(operator_link_s, op->data);
+	return operator_graph_link_F(operator_get_graph(d->x), d->b, d->a);
+}
+
 const struct operator_s* operator_link_create(const struct operator_s* op, unsigned int o, unsigned int i)
 {
 	unsigned int N = operator_nr_args(op);
@@ -1442,6 +1507,11 @@ const struct operator_s* operator_link_create(const struct operator_s* op, unsig
 
 	assert( op->io_flags[o]);
 	assert(!op->io_flags[i]);
+
+	auto iov = operator_arg_domain(op, i);
+	auto iovb = operator_arg_domain(op, o);
+
+	assert(iovec_check(iovb, iov->N, iov->dims, iov->strs));
 
 	bool io_flags[N - 2];
 	unsigned int D[N - 2];
@@ -1480,7 +1550,7 @@ const struct operator_s* operator_link_create(const struct operator_s* op, unsig
 	data->b = o;
 	data->x = operator_ref(op);
 
-	return operator_generic_create2(N - 2, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), link_apply, link_del);
+	return operator_generic_create2(N - 2, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), link_apply, link_del, operator_link_get_graph);
 }
 
 
@@ -1517,6 +1587,11 @@ static void permute_fun(const operator_data_t* _data, unsigned int N, void* args
 	operator_generic_apply_unchecked(data->op, N, ptr);
 }
 
+static const struct graph_s* operator_permute_get_graph(const struct operator_s* op)
+{
+	const auto d = CAST_DOWN(permute_data_s, op->data);
+	return operator_graph_permute_F(operator_get_graph(d->op), d->op->N, d->perm);
+}
 
 static void permute_del(const operator_data_t* _data)
 {
@@ -1558,14 +1633,24 @@ const struct operator_s* operator_permute(const struct operator_s* op, int N, co
 	// op = operator_ref(op);
 	PTR_ALLOC(struct permute_data_s, data);
 	SET_TYPEID(permute_data_s, data);
-	data->op = operator_ref(op);
 
 	int* nperm = *TYPE_ALLOC(int[N]);
-	memcpy(nperm, perm, sizeof(int[N]));
 
+	auto opdata_test = CAST_MAYBE(permute_data_s, op->data);
+	if (NULL != opdata_test) {
+
+		data->op = operator_ref(opdata_test->op);
+		for (int i = 0; i < N; i++)
+			nperm[i] = opdata_test->perm[perm[i]];
+
+	} else {
+
+		data->op = operator_ref(op);
+		memcpy(nperm, perm, sizeof(int[N]));
+	}
 	data->perm = nperm;
 
-	return operator_generic_create2(N, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), permute_fun, permute_del);
+	return operator_generic_create2(N, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), permute_fun, permute_del, operator_permute_get_graph);
 }
 
 
@@ -1685,7 +1770,7 @@ const struct operator_s* operator_extract_create2(const struct operator_s* op, i
 	md_copy_strides(Da, *nstrs, strsa);
 	data->strs = *PTR_PASS(nstrs);
 
-	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), copy_needed ? extract_copy_fun : extract_fun, extract_del);
+	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), copy_needed ? extract_copy_fun : extract_fun, extract_del, NULL);
 }
 
 
@@ -1873,6 +1958,78 @@ bool operator_zero_or_null_p(const struct operator_s* op)
 	return false;
 }
 
+struct operator_sum_s {
+
+	INTERFACE(operator_data_t);
+
+	int II;
+
+	const struct iovec_s* iov;
+};
+
+static DEF_TYPEID(operator_sum_s);
+
+static void sum_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+{
+	auto d = CAST_DOWN(operator_sum_s, _data);
+
+	assert(1 + d->II == (int)N);
+	assert(3 <= N);
+
+	void* dst = args[0];
+	void* src1 = args[1];
+	void* src2 = args[2];
+
+	md_zadd2(d->iov->N, d->iov->dims, d->iov->strs, dst, d->iov->strs, src1, d->iov->strs, src2);
+
+	for (int i = 2; i < d->II; i++)
+		md_zadd2(d->iov->N, d->iov->dims, d->iov->strs, dst, d->iov->strs, dst, d->iov->strs, args[1 + i]);
+}
+
+static void sum_free(const operator_data_t* _data)
+{
+	auto data = CAST_DOWN(operator_sum_s, _data);
+
+	iovec_free(data->iov);
+
+	xfree(data);
+}
+
+const struct operator_s* operator_zadd_create(int II, int N, const long dims[N])
+{
+	PTR_ALLOC(struct operator_sum_s, c);
+	SET_TYPEID(operator_sum_s, c);
+
+	c->iov = iovec_create(N, dims, CFL_SIZE);
+	c->II = II;
+	assert(2 <= II);
+
+	bool io_flags[1 + II];
+	unsigned int D [1 + II];
+	const long* dims_op[1 + II];
+	const long* strs_op[1 + II];
+
+	io_flags[0] = true;
+	D[0] = N;
+	dims_op[0] = c->iov->dims;
+	strs_op[0] = c->iov->strs;
+
+	for (int i = 0; i < II; i++) {
+
+		io_flags[i + 1] = false;
+		D[i + 1] = N;
+		dims_op[i + 1] = c->iov->dims;
+		strs_op[i + 1] = c->iov->strs;
+	}
+
+	return operator_generic_create2(1 + II, io_flags, D, dims_op, strs_op, CAST_UP(PTR_PASS(c)), sum_apply, sum_free, NULL);
+}
+
+bool operator_is_zadd(const struct operator_s* op)
+{
+	return (NULL != CAST_MAYBE(operator_sum_s, op->data));
+}
+
 /**
  * For simple operators with one in and one output, we provide "flat containers".
  * These operators can be optimized (simultaneous application) easily.
@@ -1917,6 +2074,27 @@ static void plus_free(const operator_data_t* _data)
 	xfree(data);
 }
 
+static const struct graph_s* operator_plus_get_graph(const struct operator_s* op)
+{
+	const auto d = CAST_DOWN(operator_plus_s, op->data);
+
+	auto graph_a = operator_get_graph(d->a);
+	auto graph_b = operator_get_graph(d->b);
+
+	auto iov = operator_codomain(d->a);
+	auto op_sum = operator_zadd_create(2, iov->N, iov->dims);
+	auto graph_sum = operator_get_graph(op_sum);
+	operator_free(op_sum);
+
+	auto graph_combi = operator_graph_combine_F(3, (const struct graph_s*[3]){graph_sum, graph_a, graph_b});
+
+	graph_combi = operator_graph_link_F(graph_combi, 5, 2);
+	graph_combi = operator_graph_link_F(graph_combi, 2, 1);
+	graph_combi = operator_graph_dup_F(graph_combi, 1, 2);
+
+	return graph_combi;
+}
+
 /**
  * Create a new operator that adds the output of two
  */
@@ -1953,7 +2131,7 @@ const struct operator_s* operator_plus_create(const struct operator_s* a, const 
 	const long* dims[] = { codoma->dims, doma->dims };
 	const long* strs[] = { codoma->strs, doma->strs };
 
-	return operator_generic_create2(2, io_flags, D, dims, strs, CAST_UP(PTR_PASS(c)), plus_apply, plus_free);
+	return operator_generic_create2(2, io_flags, D, dims, strs, CAST_UP(PTR_PASS(c)), plus_apply, plus_free, operator_plus_get_graph);
 }
 
 
@@ -2010,6 +2188,15 @@ static void chain_free(const operator_data_t* _data)
 	xfree(data);
 }
 
+static const struct graph_s* operator_chain_get_graph(const struct operator_s* op)
+{
+	const auto d = CAST_DOWN(operator_chain_s, op->data);
+	const struct graph_s* tmp_graphs[d->N];
+	for (unsigned int i = 0; i < d->N; i++)
+		tmp_graphs[i] = operator_get_graph(d->x[i]);
+	return operator_graph_chain_F(d->N, tmp_graphs);
+}
+
 /**
  * Create a new operator that chaines several others
  */
@@ -2050,9 +2237,10 @@ const struct operator_s* operator_chainN(unsigned int N, const struct operator_s
 	c->x = *PTR_PASS(xp);
 	c->N = N;
 
-	return operator_create2(operator_codomain(x[N - 1])->N, operator_codomain(x[N - 1])->dims, operator_codomain(x[N - 1])->strs,
-				operator_domain(x[0])->N, operator_domain(x[0])->dims, operator_domain(x[0])->strs,
-				CAST_UP(PTR_PASS(c)), chain_apply, chain_free);
+	return operator_generic_create2(2, (bool[2]){true, false}, (unsigned int[2]){ operator_codomain(x[N - 1])->N, operator_domain(x[0])->N},
+						(const long*[2]){ operator_codomain(x[N - 1])->dims, operator_domain(x[0])->dims},
+						(const long*[2]){ operator_codomain(x[N - 1])->strs, operator_domain(x[0])->strs},
+						CAST_UP(PTR_PASS(c)), chain_apply, chain_free, operator_chain_get_graph);
 }
 
 static const struct operator_chain_s* get_chain_data(const struct operator_s* chain_op)
@@ -2128,374 +2316,168 @@ const struct operator_s* operator_chain(const struct operator_s* a, const struct
 }
 
 
-//this function should not be applied on chains which should be optimized later
-static const struct operator_s* operator_chain_optimized(const struct operator_s* op)
-{
-	assert(NULL != get_chain_data(op));
 
-	auto chain = get_chain_data(op);
 
-	const struct operator_s* ops_tmp[chain->N];
+//get list of all operators applied in one operator
+list_t operator_get_list(const struct operator_s* op) {
 
-	unsigned int nN = 1;
+	auto data_combi = CAST_MAYBE(operator_combi_s, op->data);
+	auto data_link = CAST_MAYBE(operator_link_s, op->data);
+	auto data_dup = CAST_MAYBE(operator_dup_s, op->data);
+	auto data_reshape = CAST_MAYBE(op_reshape_s, op->data);
+	auto data_chain = CAST_MAYBE(operator_chain_s, op->data);
+	auto data_perm = CAST_MAYBE(permute_data_s, op->data);
+	auto data_plus = CAST_MAYBE(operator_plus_s, op->data);
+	auto data_copy = CAST_MAYBE(copy_data_s, op->data);
 
-	ops_tmp[0] = operator_ref(chain->x[0]);
+	if (NULL != data_combi) {
 
-	for (unsigned int i = 1; i < chain->N; i++){
-
-		if (check_simple_copy(chain->x[i])){
-
-			auto tmp = operator_reshape(ops_tmp[nN - 1], 0, operator_codomain(chain->x[i])->N, operator_codomain(chain->x[i])->dims);
-
-			operator_free(ops_tmp[nN - 1]);
-
-			ops_tmp[nN - 1] = tmp;
-
-		} else {
-
-			ops_tmp[nN] = operator_ref(chain->x[i]);
-			nN += 1;
-		}
+		list_t result = list_create();
+		for (int i = 0; i < data_combi->N; i++)
+			list_merge(result, operator_get_list(data_combi->x[i]), true);
+		return result;
 	}
 
-	auto result = operator_chainN(nN, ops_tmp);
+	if (NULL != data_chain) {
 
-	for (unsigned int i = 0; i < nN; i++)
-		operator_free(ops_tmp[i]);
+		list_t result = list_create();
+		for (unsigned int i = 0; i < data_chain->N; i++)
+			list_merge(result, operator_get_list(data_chain->x[i]), true);
+		return result;
+	}
+
+	if (NULL != data_link) {
+
+		return operator_get_list(data_link->x);
+	}
+
+	if (NULL != data_dup) {
+
+		return operator_get_list(data_dup->x);
+	}
+
+	if (NULL != data_reshape) {
+
+		return operator_get_list(data_reshape->x);
+	}
+
+	if (NULL != data_perm) {
+
+		return operator_get_list(data_perm->op);
+	}
+
+	if (NULL != data_perm) {
+
+		return operator_get_list(data_perm->op);
+	}
+
+	if (NULL != data_plus) {
+
+		list_t result = operator_get_list(data_plus->a);
+		list_merge(result, operator_get_list(data_plus->b), true);
+		return result;
+	}
+
+	if (NULL != data_copy) {
+
+		return operator_get_list(data_copy->op);
+	}
+
+	list_t result = list_create();
+	list_append(result, (void*)op);
 
 	return result;
 }
 
-static const struct operator_s* operator_chain_optimized_F(const struct operator_s* op)
-{
-	auto result = operator_chain_optimized(op);
 
+const struct graph_s* operator_get_graph(const struct operator_s* op)
+{
+	if (NULL != op->get_graph)
+		return op->get_graph(op);
+
+	return create_graph_operator(op, op->data->TYPEID->name);
+}
+
+
+
+const struct operator_s* graph_optimize_operator_F(const struct operator_s* op)
+{
+
+	int N = operator_nr_out_args(op);
+
+	auto tmp = operator_ref(op);
+
+	bool sorted = true;
+	for (int i = 0; i < N; i++)
+		sorted = sorted && op->io_flags[i];
+
+	for (int i = 0; sorted && i < N; i++) {
+
+		auto iov = tmp->domain[N-1];
+		auto id = operator_identity_create(iov->N, iov->dims);
+		auto ttmp = operator_combi_create(2, (const struct operator_s*[2]){id, tmp});
+		operator_free(tmp);
+		operator_free(id);
+		tmp = operator_link_create(ttmp, N + 1, 1);
+		operator_free(ttmp);
+	}
+
+	auto graph = operator_get_graph(tmp);
+	operator_free(tmp);
 	operator_free(op);
 
-	return result;
+	return graph_to_operator_F(graph);
 }
 
-
-/**
- * Strategy for applying operators with mututal operations parallel:
- *
- * 1.) Check for operators which are no plus-/chain-container
- * 	1.a) Apply directly all those operators
- * 	2.b) Rerun "operator_apply_parallel" on the remaining operators
- * 2.) Check for plus containers
- * 	2.a) Run "operator_apply_parallel" on all other operators and the two operators in the plus-container
- * 	2.b) Add the outputs of the two additional operators manually
- * 3.) Check for chain containers which start with plus containers
- * 	3.a) Run "operator_apply_parallel" on all other operators and the two operators in the plus-container
- * 	3.b) Add the outputs of the two additional operators manually
- * 	3.b) Run remaining chain on the sum
- * 4.) Check if only one chain operator remains
- * 	4.a) run this chain directly
- * 5.) Check if all operator chains start with the same operator(s)
- * 	5.a) Run the mutual operator chain to temporary dst
- * 	5.b) Run "operator_apply_parallel" from the temporary dst
- * 6.) The remaining chain do not have a mutual starting operator
- * 	6.a) Sort the remaining operators by pairwise mututal starting operators
- * 	6.b) Run "operator_apply_parallel" for all sets of mutual starting operators
- * */
-
-static bool check_direct(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
+bool operator_identify(const struct operator_s* a, const struct operator_s* b)
 {
-	bool rerun = false;
+	if (a == b)
+		return true;
+	if (a->data->TYPEID != b->data->TYPEID)
+		return false;
 
-	unsigned int nN = 0;
-	const struct operator_s* nop[N];
-	complex float* ndst[N];
+	if (NULL != CAST_MAYBE(operator_sum_s, a->data)) {
 
-	for (unsigned int i = 0, j = 0; i < N; i++) {
+		auto iova = CAST_DOWN(operator_sum_s, a->data)->iov;
+		auto iovb = CAST_DOWN(operator_sum_s, b->data)->iov;
 
-		assert(2 == op[i]->N);
-		assert(op[i]->io_flags[0]);
-		assert(!op[i]->io_flags[1]);
-
-		if ((NULL == get_plus_data(op[i])) && (NULL == get_chain_data(op[i]))) {
-
-			rerun = true;
-			operator_apply_unchecked(op[i], dst[i], src);
-			continue;
-		}
-
-		nN += 1;
-
-		ndst[j] = dst[i];
-		nop[j] = op[i];
-
-		j += 1;
-	}
-
-	if (rerun)
-		operator_apply_parallel_unchecked(nN, nop, ndst, src);
-
-	return rerun;
-}
-
-
-static bool check_plus(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
-{
-	const struct operator_s* nop[N + 1];
-	complex float* ndst[N + 1];
-
-	for (unsigned int i = 0; i < N; i++) {
-
-		ndst[i] = dst[i];
-		nop[i] = op[i];
-	}
-
-	for (unsigned int i = 0; i < N; i++) {
-
-		if (NULL != get_plus_data(op[i])) {
-
-			auto op_plus = get_plus_data(op[i]);
-			auto iov = operator_codomain(op[i]);
-
-			ndst[N] = md_alloc_sameplace(iov->N, iov->dims, iov->size, dst[i]);
-
-			nop[N] = op_plus->b;
-			nop[i] = op_plus->a;
-
-			operator_apply_parallel_unchecked(N + 1, nop, ndst, src);
-
-			md_zadd(iov->N, iov->dims, ndst[i], ndst[i], ndst[N]);
-			md_free(ndst[N]);
-
-			return true;
-		}
+		return iovec_check(iova, iovb->N, iovb->dims, iovb->strs);
 	}
 
 	return false;
 }
 
-static bool check_start_plus(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
-{
-	const struct operator_s* nop1[N + 1];
-	complex float* ndst1[N + 1];
-
-	const struct operator_s* nop2[N + 1];
-	complex float* ndst2[N + 1];
-
-	unsigned int N1 = 0;
-	unsigned int N2 = 0;
-
-	unsigned int plus_index = 0;
-
-	const struct operator_s* opened_plus_op = NULL;
-	const struct iovec_s* iov = NULL;
-
-	for (unsigned int i = 0; i < N; i++) {
-
-		auto op_chain_data = get_chain_data(op[i]);
-
-		if ((NULL == opened_plus_op) && (NULL != get_plus_data(op_chain_data->x[0]))) {
-
-			auto op_plus_data = get_plus_data(op_chain_data->x[0]);
-
-			iov = operator_codomain(op_plus_data->a);
-
-			ndst1[N1] = md_alloc_sameplace(iov->N, iov->dims, iov->size, dst[i]);
-			nop1[N1] = op_plus_data->b;
-			plus_index = N1;
-			N1++;
-
-			ndst1[N1] = md_alloc_sameplace(iov->N, iov->dims, iov->size, dst[i]);
-			nop1[N1] = op_plus_data->a;
-			N1++;
-
-			nop2[N2] = (1 < op_chain_data->N) ? operator_chainN(op_chain_data->N - 1, op_chain_data->x + 1) : operator_identity_create(iov->N, iov->dims);
-			ndst2[N2] = dst[i];
-			N2++;
-
-			opened_plus_op = op_chain_data->x[0];
-			continue;
-		}
-
-		if (opened_plus_op == op_chain_data->x[0]) {
-
-			nop2[N2] = (1 < op_chain_data->N) ? operator_chainN(op_chain_data->N - 1, op_chain_data->x + 1) : operator_identity_create(iov->N, iov->dims);
-			ndst2[N2] = dst[i];
-			N2++;
-			continue;
-		}
-
-		nop1[N1] = op[i];
-		ndst1[N1] = dst[i];
-		N1++;
-	}
-
-	if (NULL == opened_plus_op)
-		return false;
-
-	operator_apply_parallel_unchecked(N1, nop1, ndst1, src);
-
-	md_zadd(iov->N, iov->dims, ndst1[plus_index], ndst1[plus_index], ndst1[plus_index + 1]);
-
-	md_free(ndst1[plus_index + 1]);
-
-	operator_apply_parallel_unchecked(N2, nop2, ndst2, ndst1[plus_index]);
-
-	md_free(ndst1[plus_index]);
-
-	for (unsigned int i = 0; i < N2; i++)
-		operator_free(nop2[i]);
-
-	return true;
-}
-
-
-static bool check_mututal_start(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
-{
-	//at this point all operators are non trivial chain operators
-	//get the length of the shortest chain
-
-	unsigned int min_length = 0;
-	unsigned int nr_min_length = 0;
-
-	for (unsigned int i = 0; i < N; i++) {
-
-		assert(NULL != get_chain_data(op[i]));
-
-		auto op_chain_data = get_chain_data(op[i]);
-
-		if (0 == min_length)
-			min_length = op_chain_data->N;
-
-		if (min_length > op_chain_data->N) {
-
-			nr_min_length = 0;
-			min_length = op_chain_data->N;
-		}
-
-		if (min_length == op_chain_data->N)
-			nr_min_length += 1;
-	}
-
-	bool same = true;
-	unsigned int nr_same = 0;
-
-	for (unsigned int i = 0; i < min_length; i++) {
-
-		for (unsigned int j = 1; j < N; j++)
-			same = same && (get_chain_data(op[j])->x[i] == get_chain_data(op[j-1])->x[i]);
-
-		if (same)
-			nr_same += 1;
-	}
-
-	if (0 < nr_same) {
-
-		unsigned int nN = 0;
-		const struct operator_s* nop[N];
-		complex float* ndst[N];
-
-		auto same_op = operator_chain_optimized_F(operator_chainN(nr_same, get_chain_data(op[0])->x));
-		auto iov = operator_codomain(same_op);
-
-		complex float* tmp = md_alloc_sameplace(iov->N, iov->dims, iov->size, src);
-
-		operator_apply_unchecked(same_op, tmp, src);
-
-		for (unsigned int i = 0; i < N; i++) {
-
-			auto current_chain = get_chain_data(op[i]);
-
-			if (nr_same < current_chain->N) {
-
-				nop[nN] = operator_chainN(current_chain->N - nr_same, current_chain->x + nr_same);
-				ndst[nN] = dst[i];
-				nN += 1;
-
-			} else {
-
-				md_copy(iov->N, iov->dims, dst[i], tmp, iov->size);
-			}
-		}
-		operator_free(same_op);
-
-		operator_apply_parallel_unchecked(nN, nop, ndst, tmp);
-
-		for (unsigned int i = 0; i < nN; i++)
-			operator_free(nop[i]);
-
-		md_free(tmp);
-	}
-
-	return (0 < nr_same);
-}
-
-static void reorder_operators(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
-{
-	unsigned int nr_diff_first_ops = 1;
-
-	unsigned int nNs[N];
-	const struct operator_s* nops[N][N];
-	complex float* ndsts[N][N];
-
-	const struct operator_s* first_ops[N];
-
-	nops[0][0] = op[0];
-	ndsts[0][0] = dst[0];
-	nNs[0] = 1;
-	first_ops[0] = get_chain_data(op[0])->x[0];
-
-	for (unsigned int i = 1; i < N; i++){
-
-		bool found = false;
-		for (unsigned int j = 0; j < nr_diff_first_ops; j ++) {
-
-			if (found || (first_ops[j] != get_chain_data(op[i])->x[0]))
-				continue;
-
-			nops[j][nNs[j]] = op[i];
-			ndsts[j][nNs[j]] = dst[i];
-			nNs[j] += 1;
-
-			found = true;
-		}
-
-		if (found)
-			continue;
-
-		nops[nr_diff_first_ops][0] = op[i];
-		ndsts[nr_diff_first_ops][0] = dst[i];
-		nNs[nr_diff_first_ops] = 1;
-
-		first_ops[nr_diff_first_ops] = get_chain_data(op[i])->x[0];
-		nr_diff_first_ops += 1;
-	}
-
-	for (unsigned int i = 0; i < nr_diff_first_ops; i++)
-		operator_apply_parallel_unchecked(nNs[i], nops[i], ndsts[i], src);
-
-}
-
 void operator_apply_parallel_unchecked(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
 {
-	if (1 > N)
-		return;
+	auto combi = operator_combi_create(N, op);
 
-	if (check_direct(N, op, dst, src))
-		return;
+	int perm[2 * N];
+	for (unsigned int i = 0; i < N; i++) {
 
-	if (check_plus(N, op, dst, src))
-		return;
-
-	if (check_start_plus(N, op, dst, src))
-		return;
-
-	if (1 == N) {
-
-		auto tmp = operator_chain_optimized(op[0]);
-		operator_apply_unchecked(tmp, dst[0], src);
-		operator_free(tmp);
-		return;
+		perm[i] = 2 * i;
+		perm[i + N] = 2 * i + 1;
 	}
 
-	if (check_mututal_start(N, op, dst, src))
-		return;
+	auto dup = operator_permute(combi, 2 * N, perm);
+	operator_free(combi);
 
-	reorder_operators(N, op, dst, src);
+	for (unsigned int i = 0; i < N - 1; i++) {
+
+		auto tmp = operator_dup_create(dup, N, N + 1);
+		operator_free(dup);
+		dup = tmp;
+	}
+
+	void* args[N + 1];
+	for (unsigned int i = 0; i < N; i++)
+		args[i] = dst[i];
+	args[N] = (void*)src;
+
+
+	auto op_optimized = graph_optimize_operator_F(dup);
+
+	operator_generic_apply_unchecked(op_optimized, N + 1, args);
+
+	operator_free(op_optimized);
+
 }
