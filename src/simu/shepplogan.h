@@ -50,6 +50,8 @@ extern const struct ellipsis_s phantom_geo4[1];
 
 extern const struct ellipsis_bs phantom_tubes[21];
 
+extern const struct ellipsis_bs nist_phantom_t2[29];
+
 
 extern complex double xellipsis(const double center[2], const double axis[2], double angle, const double p[2]);
 extern complex double kellipsis(const double center[2], const double axis[2], double angle, const double p[2]);
