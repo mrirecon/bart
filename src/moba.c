@@ -1,5 +1,6 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2019-2020. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2019-2021. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2021. Institute of Medical Engineering. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -22,6 +23,7 @@
 #include "misc/utils.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
+#include "misc/version.h"
 
 #include "noncart/nufft.h"
 
@@ -103,8 +105,6 @@ int main_moba(int argc, char* argv[argc])
 
 	float scale_fB0[2] = { 222., 1. }; // { spatial smoothness, scaling }
 
-	unsigned int sample_size = 0;
-	unsigned int grid_size = 0;
 	unsigned int mgre_model = MECO_WFR2S;
 
 	const char* psf_file = NULL;
@@ -122,6 +122,9 @@ int main_moba(int argc, char* argv[argc])
 	enum edge_filter_t { EF1, EF2 } k_filter_type = EF1;
 
 	enum fat_spec fat_spec = FAT_SPEC_1;
+
+	long img_vec[3] = { 0 };
+
 
 	opt_reg_init(&ropts);
 
@@ -153,6 +156,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
 		OPT_INFILE('t', &traj_file, "Traj", ""),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.25]"),
+		OPTL_VEC3(0, "img_dims", &img_vec, "x:y:z", "dimensions"),
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
 		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &k_filter_type, EF1, "k-space edge filter 1"),
 		OPTL_SELECT(0, "kfilter-2", enum edge_filter_t, &k_filter_type, EF2, "k-space edge filter 2"),
@@ -194,20 +198,6 @@ int main_moba(int argc, char* argv[argc])
 	long grid_dims[DIMS];
 	md_copy_dims(DIMS, grid_dims, ksp_dims);
 
-	if (NULL != traj_file) {
-
-		sample_size = ksp_dims[1];
-		grid_size = sample_size * oversampling;
-		grid_dims[READ_DIM] = grid_size;
-		grid_dims[PHS1_DIM] = grid_size;
-		grid_dims[PHS2_DIM] = 1L;
-				
-		if (-1 == restrict_fov)
-			restrict_fov = 0.5;
-
-		conf.noncartesian = true;
-	}
-
 	long traj_dims[DIMS];
 	long traj_strs[DIMS];
 	complex float* traj = NULL;
@@ -219,11 +209,38 @@ int main_moba(int argc, char* argv[argc])
 		md_calc_strides(DIMS, traj_strs, traj_dims, CFL_SIZE);
 
 		md_zsmul(DIMS, traj_dims, traj, traj, oversampling);
-	}
 
+		if (0 == md_calc_size(3, img_vec)) {
+
+			estimate_im_dims(DIMS, FFT_FLAGS, img_vec, traj_dims, traj);
+			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", img_vec[0], img_vec[1], img_vec[2]);
+		}
+
+		md_zsmul(DIMS, traj_dims, traj, traj, 2.);
+
+		long dbl(long x) { return (x > 1) ? (2 * x) : 1; }
+
+		grid_dims[READ_DIM] = dbl(img_vec[0]);
+		grid_dims[PHS1_DIM] = dbl(img_vec[1]);
+		grid_dims[PHS2_DIM] = dbl(img_vec[2]);
+
+		if (use_compat_to_version("v0.7.00")) {
+
+			long grid_size = ksp_dims[1] * oversampling;
+			grid_dims[READ_DIM] = grid_size;
+			grid_dims[PHS1_DIM] = grid_size;
+			grid_dims[PHS2_DIM] = 1L;
+		}
+
+		if (-1 == restrict_fov)
+			restrict_fov = 0.5;
+
+		conf.noncartesian = true;
+	}
 
 	long img_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, img_dims, grid_dims);
+
 
 	switch (mode) {
 
