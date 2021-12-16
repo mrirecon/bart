@@ -431,7 +431,7 @@ Communications Physics. 2019; 2:73.
 (command: reconet)
 
 
-Hammernik Km Klatzer T, Kobler E, Recht MP, Sodickson DK, Pock T, Knoll F.
+Hammernik K, Klatzer T, Kobler E, Recht MP, Sodickson DK, Pock T, Knoll F.
 Learning a variational network for reconstruction of accelerated MRI data.
 Magn Reson Med 2018; 79:3055-3071.
 
