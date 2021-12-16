@@ -323,7 +323,7 @@ endif
 
 ifeq ($(MAKESTAGE),1)
 .PHONY: doc/commands.txt $(TARGETS)
-default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest pythontest shared-lib $(TARGETS):
+default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest testslow pythontest shared-lib $(TARGETS):
 	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
 
 tests/test-%: force
@@ -780,6 +780,8 @@ TESTS = $(filter-out $(NOT_SUPPORTED),$(TMP_TESTS))
 endif
 
 test:	${TESTS}
+
+testslow: ${TESTS_SLOW}
 
 gputest: ${TESTS_GPU}
 
