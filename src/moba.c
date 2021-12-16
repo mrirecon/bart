@@ -155,7 +155,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('g', &use_gpu, "use gpu"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
 		OPT_INFILE('t', &traj_file, "Traj", ""),
-		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.25]"),
+		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.]"),
 		OPTL_VEC3(0, "img_dims", &img_vec, "x:y:z", "dimensions"),
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
 		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &k_filter_type, EF1, "k-space edge filter 1"),
