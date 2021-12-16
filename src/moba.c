@@ -107,8 +107,8 @@ int main_moba(int argc, char* argv[argc])
 	unsigned int grid_size = 0;
 	unsigned int mgre_model = MECO_WFR2S;
 
-	const char* psf = NULL;
-	const char* trajectory = NULL;
+	const char* psf_file = NULL;
+	const char* traj_file = NULL;
 	const char* init_file = NULL;
 
 	struct moba_conf conf = moba_defaults;
@@ -145,13 +145,13 @@ int main_moba(int argc, char* argv[argc])
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('N', &unused, "(normalize)"), // no-op
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
-		OPT_INFILE('p', &psf, "PSF", ""),
+		OPT_INFILE('p', &psf_file, "PSF", ""),
 		OPT_SET('J', &conf.stack_frames, "Stack frames for joint recon"),
 		OPT_SET('M', &conf.sms, "Simultaneous Multi-Slice reconstruction"),
 		OPT_SET('O', &out_origin_maps, "(Output original maps from reconstruction without post processing)"),
 		OPT_SET('g', &use_gpu, "use gpu"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
-		OPT_INFILE('t', &trajectory, "Traj", ""),
+		OPT_INFILE('t', &traj_file, "Traj", ""),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.25]"),
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
 		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &k_filter_type, EF1, "k-space edge filter 1"),
@@ -194,7 +194,7 @@ int main_moba(int argc, char* argv[argc])
 	long grid_dims[DIMS];
 	md_copy_dims(DIMS, grid_dims, ksp_dims);
 
-	if (NULL != trajectory) {
+	if (NULL != traj_file) {
 
 		sample_size = ksp_dims[1];
 		grid_size = sample_size * oversampling;
@@ -207,6 +207,20 @@ int main_moba(int argc, char* argv[argc])
 
 		conf.noncartesian = true;
 	}
+
+	long traj_dims[DIMS];
+	long traj_strs[DIMS];
+	complex float* traj = NULL;
+
+	if (NULL != traj_file) {
+
+		traj = load_cfl(traj_file, DIMS, traj_dims);
+
+		md_calc_strides(DIMS, traj_strs, traj_dims, CFL_SIZE);
+
+		md_zsmul(DIMS, traj_dims, traj, traj, oversampling);
+	}
+
 
 	long img_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, img_dims, grid_dims);
@@ -270,15 +284,18 @@ int main_moba(int argc, char* argv[argc])
 	long pat_dims[DIMS];
 	
 
-	if (NULL != psf) {
+	if (NULL != psf_file) {
 
-		complex float* tmp_psf =load_cfl(psf, DIMS, pat_dims);
+		complex float* tmp_psf = load_cfl(psf_file, DIMS, pat_dims);
+
 		pattern = anon_cfl("", DIMS, pat_dims);
 
 		md_copy(DIMS, pat_dims, pattern, tmp_psf, CFL_SIZE);
+
 		unmap_cfl(DIMS, pat_dims, tmp_psf);
 
 		md_copy(DIMS, grid_dims, k_grid_data, kspace_data, CFL_SIZE);
+
 		unmap_cfl(DIMS, ksp_dims, kspace_data);
 
 		if (0 == md_check_compat(DIMS, COIL_FLAG, ksp_dims, pat_dims))
@@ -289,20 +306,12 @@ int main_moba(int argc, char* argv[argc])
 
 		conf.noncartesian = true;
 
-	} else if (NULL != trajectory) {
+	} else if (NULL != traj_file) {
 
 		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
 		nufft_conf.toeplitz = false;
 
 		struct linop_s* nufft_op_k = NULL;
-
-		long traj_dims[DIMS];
-		long traj_strs[DIMS];
-
-		complex float* traj = load_cfl(trajectory, DIMS, traj_dims);
-		md_calc_strides(DIMS, traj_strs, traj_dims, CFL_SIZE);
-
-		md_zsmul(DIMS, traj_dims, traj, traj, oversampling);
 
 		md_select_dims(DIMS, FFT_FLAGS|TE_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, pat_dims, grid_dims);
 		pattern = anon_cfl("", DIMS, pat_dims);
@@ -338,9 +347,13 @@ int main_moba(int argc, char* argv[argc])
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, grid_dims);
+
 		pattern = anon_cfl("", DIMS, pat_dims);
+
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace_data);
+
 		md_copy(DIMS, grid_dims, k_grid_data, kspace_data, CFL_SIZE);
+
 		unmap_cfl(DIMS, ksp_dims, kspace_data);
 	}
 
@@ -489,6 +502,9 @@ int main_moba(int argc, char* argv[argc])
 	unmap_cfl(DIMS, img_dims, img);
 	unmap_cfl(DIMS, single_map_dims, single_map);
 	unmap_cfl(DIMS, TI_dims, TI);
+
+	if (NULL != traj_file)
+		unmap_cfl(DIMS, traj_dims, traj);
 
 	if (NULL != init_file)
 		unmap_cfl(DIMS, init_dims, init);
