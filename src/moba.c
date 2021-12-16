@@ -218,7 +218,7 @@ int main_moba(int argc, char* argv[argc])
 
 		md_zsmul(DIMS, traj_dims, traj, traj, 2.);
 
-		long dbl(long x) { return (x > 1) ? (2 * x) : 1; }
+		NESTED(long, dbl, (long x)) { return (x > 1) ? (2 * x) : 1; };
 
 		grid_dims[READ_DIM] = dbl(img_vec[0]);
 		grid_dims[PHS1_DIM] = dbl(img_vec[1]);
