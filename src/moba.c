@@ -101,7 +101,7 @@ int main_moba(int argc, char* argv[argc])
 	};
 
 	float restrict_fov = -1.;
-	float oversampling = 1.25f;
+	float oversampling = 1.f;
 
 	float scale_fB0[2] = { 222., 1. }; // { spatial smoothness, scaling }
 
