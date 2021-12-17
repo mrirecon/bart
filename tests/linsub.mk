@@ -62,10 +62,11 @@ tests/test-pics-linsub-noncart: traj scale nufft reshape ones delta repmat resha
 	$(TOOLDIR)/reshape 96 32 1 p4.ra p5.ra								;\
 	$(TOOLDIR)/fmac xek2.ra p5.ra xek3.ra								;\
 	$(TOOLDIR)/repmat 1 256 p5.ra p6.ra								;\
-	$(TOOLDIR)/pics -S -RT:7:0:0.02 -i100 -e -w1. -B$(TESTS_OUT)/expon-basis.ra -pp6.ra -t t2.ra xek3.ra o.ra x2.ra	;\
+	$(TOOLDIR)/scale 2 $(TESTS_OUT)/expon-basis.ra basis.ra						;\
+	$(TOOLDIR)/pics -S -RT:7:0:0.02 -i100 -e -w1. -Bbasis.ra -pp6.ra -t t2.ra xek3.ra o.ra x2.ra	;\
 	$(TOOLDIR)/fmac -s 64 x2.ra $(TESTS_OUT)/expon-basis.ra xx.ra					;\
 	$(TOOLDIR)/transpose 5 6 xx.ra xxT.ra								;\
-	$(TOOLDIR)/scale 4. xxT.ra xxS.ra								;\
+	$(TOOLDIR)/scale 2. xxT.ra xxS.ra								;\
 	$(TOOLDIR)/nrmse -t 0.05 $(TESTS_OUT)/phantom-exp.ra xxS.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@

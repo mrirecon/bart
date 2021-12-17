@@ -216,26 +216,43 @@ tests/test-pics-basis-noncart: traj scale phantom delta fmac ones repmat pics sl
 	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
 	$(TOOLDIR)/pics -r0.001 -t traj2.ra -pp2.ra -Bo2.ra pk.ra coils.ra reco1.ra	;\
 	$(TOOLDIR)/pics -r0.001 -t traj2.ra ksp.ra coils.ra reco.ra			;\
-	$(TOOLDIR)/scale 4. reco1.ra reco2.ra						;\
+	$(TOOLDIR)/scale 2. reco1.ra reco2.ra						;\
 	$(TOOLDIR)/slice 6 0 reco2.ra reco20.ra						;\
 	$(TOOLDIR)/nrmse -t 0.002 reco.ra reco20.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
+tests/test-pics-basis-noncart2: traj scale phantom delta fmac ones repmat pics slice nrmse bitmask
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -D -y31 traj.ra					;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/delta 16 36 31 p.ra 							;\
+	$(TOOLDIR)/fmac ksp.ra p.ra pk.ra						;\
+	$(TOOLDIR)/repmat 1 256 p.ra p2.ra						;\
+	$(TOOLDIR)/ones 7 1 1 1 1 1 31 2 o.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
+	$(TOOLDIR)/pics -S -r0.001 -t traj2.ra -pp2.ra -Bo.ra pk.ra coils.ra reco.ra	;\
+	$(TOOLDIR)/fmac -s $$($(TOOLDIR)/bitmask 6) reco.ra o.ra reco2.ra		;\
+	$(TOOLDIR)/nufft traj2.ra reco2.ra k2.ra					;\
+	$(TOOLDIR)/fmac k2.ra p2.ra pk2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.003 pk.ra pk2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 tests/test-pics-basis-noncart-memory: traj scale phantom ones join transpose pics slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x256 -D -y31 traj.ra					;\
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
 	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
-	$(TOOLDIR)/ones 6 1 1 1 1 1 31 o.ra						;\
-	$(TOOLDIR)/scale 1. o.ra o1.ra							;\
-	$(TOOLDIR)/join 6 o.ra o1.ra o2.ra						;\
+	$(TOOLDIR)/ones 7 1 1 1 1 1 31 2 o.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
 	$(TOOLDIR)/transpose 2 5 traj2.ra traj3.ra					;\
 	$(TOOLDIR)/transpose 2 5 ksp.ra ksp1.ra						;\
-	$(TOOLDIR)/pics -r0.001 -t traj3.ra -Bo2.ra ksp1.ra coils.ra reco1.ra		;\
+	$(TOOLDIR)/pics -r0.001 -t traj3.ra -Bo.ra ksp1.ra coils.ra reco1.ra		;\
 	$(TOOLDIR)/pics -r0.001 -t traj2.ra ksp.ra coils.ra reco.ra			;\
-	$(TOOLDIR)/scale 4. reco1.ra reco2.ra						;\
+	$(TOOLDIR)/scale 2. reco1.ra reco2.ra						;\
 	$(TOOLDIR)/slice 6 0 reco2.ra reco20.ra						;\
 	$(TOOLDIR)/nrmse -t 0.002 reco.ra reco20.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -321,7 +338,7 @@ TESTS += tests/test-pics-wavl1 tests/test-pics-poisson-wavl1 tests/test-pics-joi
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 TESTS += tests/test-pics-warmstart tests/test-pics-batch
 TESTS += tests/test-pics-tedim tests/test-pics-bp-noncart
-TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory
+TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory tests/test-pics-basis-noncart2
 #TESTS += tests/test-pics-lowmem
 TESTS += tests/test-pics-noncart-sms
 
