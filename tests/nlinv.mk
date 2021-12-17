@@ -67,8 +67,7 @@ tests/test-nlinv-noncart: traj scale phantom nufft resize nlinv fmac nrmse
 	$(TOOLDIR)/resize -c 0 128 1 128 c.ra c2.ra			;\
 	$(TOOLDIR)/fmac r.ra c2.ra x.ra					;\
 	$(TOOLDIR)/nufft traj2.ra x.ra k2.ra				;\
-	$(TOOLDIR)/scale 2. k2.ra k3.ra					;\
-	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k3.ra				;\
+	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k2.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -103,7 +102,8 @@ tests/test-nlinv-precomp: traj scale phantom ones repmat fft nufft nlinv nrmse
 	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra				;\
 	$(TOOLDIR)/ones 3 1 256 55 o.ra						;\
 	$(TOOLDIR)/nufft -a traj.ra o.ra psf.ra					;\
-	$(TOOLDIR)/nufft -a traj.ra ksp.ra adj.ra				;\
+	$(TOOLDIR)/nufft -a traj.ra ksp.ra _adj.ra				;\
+	$(TOOLDIR)/scale 2 _adj.ra adj.ra					;\
 	$(TOOLDIR)/fft -u 7 psf.ra mtf.ra					;\
 	$(TOOLDIR)/fft -u 7 adj.ra ksp2.ra					;\
 	$(TOOLDIR)/scale 4. mtf.ra mtf2.ra					;\
@@ -152,6 +152,7 @@ TESTS += tests/test-nlinv tests/test-nlinv-sms
 TESTS += tests/test-nlinv-batch tests/test-nlinv-batch2
 TESTS += tests/test-nlinv-noncart tests/test-nlinv-precomp
 TESTS += tests/test-nlinv-pf-vcc
+TESTS += tests/test-nlinv-pics
 TESTS_GPU += tests/test-nlinv-gpu tests/test-nlinv-sms-gpu
 
 

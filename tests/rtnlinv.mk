@@ -10,8 +10,7 @@ tests/test-rtnlinv: traj scale phantom nufft resize rtnlinv fmac nrmse
 	$(TOOLDIR)/resize -c 0 64 1 64 c.ra c2.ra			;\
 	$(TOOLDIR)/fmac r.ra c2.ra x.ra					;\
 	$(TOOLDIR)/nufft traj2.ra x.ra k2.ra				;\
-	$(TOOLDIR)/scale 2. k2.ra k3.ra					;\
-	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k3.ra				;\
+	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k2.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -24,7 +23,8 @@ tests/test-rtnlinv-precomp: traj scale phantom ones repmat fft nufft rtnlinv fma
 	$(TOOLDIR)/ones 3 1 128 21 o.ra						;\
 	$(TOOLDIR)/repmat 10 5 o.ra o2.ra					;\
 	$(TOOLDIR)/nufft -a traj.ra o2.ra psf.ra				;\
-	$(TOOLDIR)/nufft -a traj.ra ksp.ra adj.ra				;\
+	$(TOOLDIR)/nufft -a traj.ra ksp.ra _adj.ra				;\
+	$(TOOLDIR)/scale 2 _adj.ra adj.ra					;\
 	$(TOOLDIR)/fft -u 7 psf.ra mtf.ra					;\
 	$(TOOLDIR)/fft -u 7 adj.ra ksp2.ra					;\
 	$(TOOLDIR)/scale 4. mtf.ra mtf2.ra					;\
