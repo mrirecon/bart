@@ -124,7 +124,7 @@ ALLDEPS = $(shell find $(srcdir) utests -name ".*.d")
 
 # Compilation flags
 
-OPT = -O3 -ffast-math
+OPT = -O2
 CPPFLAGS ?= -Wall -Wextra
 CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
