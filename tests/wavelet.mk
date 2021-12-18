@@ -32,7 +32,7 @@ tests/test-wavelet-batch1: ones resize circshift fft fmac wavelet slice nrmse $(
 	$(TOOLDIR)/slice 2 80 w.ra w1.ra						;\
 	$(TOOLDIR)/slice 2 80 ph2.ra ph1.ra						;\
 	$(TOOLDIR)/wavelet 3 ph1.ra a.ra						;\
-	$(TOOLDIR)/nrmse -t 0.000001 w1.ra a.ra						;\
+	$(TOOLDIR)/nrmse -t 0. w1.ra a.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

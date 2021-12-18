@@ -167,7 +167,7 @@ tests/test-pics-batch: pics repmat nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(T
 	$(TOOLDIR)/repmat 5 32 $(TESTS_OUT)/shepplogan_coil_ksp.ra kspaces.ra		;\
 	$(TOOLDIR)/pics -r0.01 -L32 kspaces.ra $(TESTS_OUT)/coils.ra reco1.ra		;\
 	$(TOOLDIR)/pics -r0.01      kspaces.ra $(TESTS_OUT)/coils.ra reco2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.00001 reco1.ra reco2.ra					;\
+	$(TOOLDIR)/nrmse -t 0. reco1.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
