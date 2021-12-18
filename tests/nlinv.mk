@@ -109,8 +109,8 @@ tests/test-nlinv-precomp: traj scale phantom ones repmat fft nufft nlinv nrmse
 	$(TOOLDIR)/scale 4. mtf.ra mtf2.ra					;\
 	$(TOOLDIR)/nlinv -w1. -n -N -i7 -p mtf2.ra ksp2.ra r1.ra c1.ra		;\
 	$(TOOLDIR)/nlinv -w1. -N -i7 -t traj2.ra ksp.ra r2.ra c2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.0002 r2.ra r1.ra					;\
-	$(TOOLDIR)/nrmse -t 0.0002 c2.ra c1.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 r2.ra r1.ra				;\
+	$(TOOLDIR)/nrmse -t 0.000001 c2.ra c1.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -126,6 +126,7 @@ tests/test-nlinv-pics: traj scale phantom resize pics nlinv nrmse
 	$(TOOLDIR)/nrmse -t 0.05 x2.ra r.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-nlinv-pf-vcc: nlinv conj nrmse zeros ones join flip circshift fmac $(TESTS_OUT)/shepplogan_ksp.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\

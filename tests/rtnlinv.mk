@@ -30,31 +30,33 @@ tests/test-rtnlinv-precomp: traj scale phantom ones repmat fft nufft rtnlinv fma
 	$(TOOLDIR)/scale 4. mtf.ra mtf2.ra					;\
 	$(TOOLDIR)/rtnlinv -w1. -N -i9 -p mtf2.ra ksp2.ra r1.ra c1.ra		;\
 	$(TOOLDIR)/rtnlinv -w1. -N -i9 -t traj2.ra ksp.ra r2.ra c2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.00001 r2.ra r1.ra					;\
-	$(TOOLDIR)/nrmse -t 0.00001 c2.ra c1.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 r2.ra r1.ra				;\
+	$(TOOLDIR)/nrmse -t 0.000001 c2.ra c1.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-rtnlinv-nlinv-noncart: traj scale phantom rtnlinv nlinv nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
-	$(TOOLDIR)/traj -r -x128 -y21 traj.ra				;\
+	$(TOOLDIR)/traj -r -x128 -y21 traj.ra					;\
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra					;\
 	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra				;\
 	$(TOOLDIR)/nlinv -w1. -N -i9 -t traj2.ra ksp.ra r1.ra c1.ra		;\
 	$(TOOLDIR)/rtnlinv -w1. -N -i9 -t traj2.ra ksp.ra r2.ra c2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.00001 r2.ra r1.ra					;\
-	$(TOOLDIR)/nrmse -t 0.00001 c2.ra c1.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 r2.ra r1.ra				;\
+	$(TOOLDIR)/nrmse -t 0.000001 c2.ra c1.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-rtnlinv-nlinv-pseudocart: scale phantom ones rtnlinv nlinv nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/phantom -s8 -k -x 128  ksp.ra				;\
-	$(TOOLDIR)/ones 2 128 128 psf.ra				;\
-	$(TOOLDIR)/nlinv -w1. -N -i9 -f1. -n ksp.ra r1.ra c1.ra		;\
-	$(TOOLDIR)/rtnlinv -w1. -N -i9 -f1. -p psf.ra ksp.ra r2.ra c2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.00001 r2.ra r1.ra					;\
-	$(TOOLDIR)/nrmse -t 0.00001 c2.ra c1.ra					;\
+	$(TOOLDIR)/ones 2 128 128 psf.ra					;\
+	$(TOOLDIR)/nlinv -w1. -N -i9 -f1. -n ksp.ra r1.ra c1.ra			;\
+	$(TOOLDIR)/rtnlinv -w1. -N -i9 -f1. -p psf.ra ksp.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -t 0. r2.ra r1.ra					;\
+	$(TOOLDIR)/nrmse -t 0. c2.ra c1.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

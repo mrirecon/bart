@@ -25,7 +25,7 @@ tests/test-roistat-var: zeros noise ones resize roistat var nrmse
 	$(TOOLDIR)/roistat -b -V oy2.ra n.ra dy.ra					;\
 	$(TOOLDIR)/resize -c 0 50 1 50 n.ra ny2.ra					;\
 	$(TOOLDIR)/var 3 ny2.ra dy2.ra							;\
-	$(TOOLDIR)/nrmse -t 0.000001 dy2.ra dy.ra 					;\
+	$(TOOLDIR)/nrmse -t 0.0000001 dy2.ra dy.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

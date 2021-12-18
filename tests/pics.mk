@@ -107,8 +107,6 @@ tests/test-pics-joint-wavl1: poisson reshape fft fmac ones pics slice nrmse $(TE
 	touch $@
 
 
-
-
 tests/test-pics-pics: traj scale phantom pics nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x256 -y32 traj.ra						;\
@@ -121,7 +119,6 @@ tests/test-pics-pics: traj scale phantom pics nrmse $(TESTS_OUT)/shepplogan.ra $
 	touch $@
 
 
-
 # test that weights =0.5 have no effect
 tests/test-pics-weights: pics ones nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -132,7 +129,6 @@ tests/test-pics-weights: pics ones nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)
 	$(TOOLDIR)/nrmse -t 0.000001 reco2.ra reco1.ra				 	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
-
 
 
 # test that weights =0.5 have no effect
@@ -151,7 +147,6 @@ tests/test-pics-noncart-weights: traj scale ones phantom pics nrmse $(TESTS_OUT)
 	touch $@
 
 
-
 tests/test-pics-warmstart: pics scale nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
@@ -159,7 +154,6 @@ tests/test-pics-warmstart: pics scale nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra 
 	$(TOOLDIR)/nrmse -t 0. o.ra reco.ra 						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
-
 
 
 tests/test-pics-batch: pics repmat nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
@@ -196,7 +190,7 @@ tests/test-pics-basis: ones delta fmac pics nrmse repmat scale slice $(TESTS_OUT
 	$(TOOLDIR)/pics -S -Bo2.ra pk.ra $(TESTS_OUT)/coils.ra reco.ra			;\
 	$(TOOLDIR)/scale 2. reco.ra reco2.ra						;\
 	$(TOOLDIR)/slice 6 0 reco2.ra reco20.ra						;\
-	$(TOOLDIR)/nrmse -t 0.00001 gold.ra reco20.ra	 				;\
+	$(TOOLDIR)/nrmse -t 0.000001 gold.ra reco20.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

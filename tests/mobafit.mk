@@ -13,7 +13,7 @@ tests/test-mobafit-r2s: phantom signal fmac index scale extract mobafit slice nr
 	$(TOOLDIR)/phantom -x16 -c circ.ra				;\
 	$(TOOLDIR)/fmac R2S.ra circ.ra masked.ra			;\
 	$(TOOLDIR)/scale -- 0.05 circ.ra ref.ra				;\
-	$(TOOLDIR)/nrmse -t 0.000003 ref.ra masked.ra			;\
+	$(TOOLDIR)/nrmse -t 0.00001 ref.ra masked.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -42,13 +42,13 @@ tests/test-mobafit-wfr2s: phantom signal fmac index scale extract mobafit saxpy 
 	$(TOOLDIR)/phantom -x16 -c circ.ra                                ;\
 	$(TOOLDIR)/fmac fatfrac.ra circ.ra fatfrac_masked.ra              ;\
 	$(TOOLDIR)/scale -- 0.2 circ.ra fatfrac_ref.ra                    ;\
-	$(TOOLDIR)/nrmse -t 0.000003 fatfrac_ref.ra fatfrac_masked.ra     ;\
+	$(TOOLDIR)/nrmse -t 0.00001 fatfrac_ref.ra fatfrac_masked.ra      ;\
 	$(TOOLDIR)/fmac R2S.ra circ.ra R2S_masked.ra                      ;\
 	$(TOOLDIR)/scale -- 0.05 circ.ra R2S_ref.ra                       ;\
-	$(TOOLDIR)/nrmse -t 0.000003 R2S_ref.ra R2S_masked.ra             ;\
+	$(TOOLDIR)/nrmse -t 0.00001 R2S_ref.ra R2S_masked.ra         	  ;\
 	$(TOOLDIR)/fmac fB0.ra circ.ra fB0_masked.ra                      ;\
 	$(TOOLDIR)/scale -- 0.02 circ.ra fB0_ref.ra                       ;\
-	$(TOOLDIR)/nrmse -t 0.000003 fB0_ref.ra fB0_masked.ra             ;\
+	$(TOOLDIR)/nrmse -t 0.000001 fB0_ref.ra fB0_masked.ra            ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
