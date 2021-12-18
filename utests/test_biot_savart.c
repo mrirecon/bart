@@ -32,7 +32,7 @@ static bool test_vec3_ring(void)
 		ok &= (1.E-6 > fabs(0.33 - vec3_norm(r[i])));
 
 	for (unsigned int i = 0; i < N; i++)
-		ok &= (0. == vec3_sdot(r[i], n));
+		ok &= (1.E-9 > fabsf(vec3_sdot(r[i], n)));
 
 	return ok;
 }
@@ -46,11 +46,11 @@ static bool test_biot_savart(void)
 	vec3_t n = { 1., 0., 0. };
 	vec3_ring(N, r, c, n, 0.5);
 	vec3_t x;
-	biot_savart(x, c, N, (const vec3_t*)r);
+	biot_savart(x, c, N, r);
 
 	vec3_t d;
 	vec3_sub(d, x, n);
-	return (1.E-3 > vec3_norm(d)); 
+	return (1.E-3 > vec3_norm(d));
 }
 
 

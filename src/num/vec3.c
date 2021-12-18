@@ -30,12 +30,13 @@ void vec3_add(vec3_t dst, const vec3_t src1, const vec3_t src2)
 
 void vec3_copy(vec3_t dst, const vec3_t src)
 {
-	vec3_saxpy(dst, src, 0., src);
+	for (int i = 0; i < 3; i++)
+		dst[i] = src[i];
 }
 
 void vec3_clear(vec3_t dst)
 {
-	vec3_saxpy(dst, dst, -1., dst);
+	vec3_copy(dst, (vec3_t){ 0. });
 }
 
 float vec3_sdot(const vec3_t a, const vec3_t b)
