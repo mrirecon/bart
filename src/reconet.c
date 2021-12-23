@@ -1,8 +1,11 @@
+/* Copyright 2021. Uecker Lab. University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+
 #include <math.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <complex.h>
-#include <libgen.h>
 #include <string.h>
 
 #include "grecon/opt_iter6.h"
@@ -11,10 +14,8 @@
 
 #include "noncart/nufft.h"
 
-#include "misc/io.h"
 #include "misc/misc.h"
 #include "misc/mri.h"
-#include "misc/types.h"
 #include "misc/debug.h"
 #include "misc/opts.h"
 #include "misc/mmio.h"
@@ -30,7 +31,6 @@
 
 #include "iter/iter6.h"
 #include "iter/iter.h"
-
 
 #include "nn/data_list.h"
 #include "nn/weights.h"
@@ -209,8 +209,10 @@ int main_reconet(int argc, char* argv[])
 
 		if (modl_default)
 			reconet_init_modl_test_default(&config);
+
 		if (varnet_default)
 			reconet_init_varnet_test_default(&config);
+
 		if (unet_default)
 			reconet_init_unet_test_default(&config);
 
@@ -218,8 +220,10 @@ int main_reconet(int argc, char* argv[])
 
 		if (modl_default)
 			reconet_init_modl_default(&config);
+
 		if (varnet_default)
 			reconet_init_varnet_default(&config);
+
 		if (unet_default)
 			reconet_init_unet_default(&config);
 	}
@@ -232,8 +236,10 @@ int main_reconet(int argc, char* argv[])
 			iter_6_select_algo = ITER6_ADAM;
 			config.train_conf = iter6_get_conf_from_opts();
 
-		} else
+		} else {
+
 			iter6_copy_config_from_opts(config.train_conf);
+		}
 	}
 
 	if (NULL == config.network)
@@ -262,9 +268,8 @@ int main_reconet(int argc, char* argv[])
 
 		num_init_gpu();
 		cuda_use_global_memory();
-	}
 
-	else
+	} else
 #endif
 		num_init();
 
@@ -313,6 +318,7 @@ int main_reconet(int argc, char* argv[])
 		long mask_dims_val[DIMS];
 
 		struct named_data_list_s* valid_data_list = NULL;
+
 		if (use_valid_data) {
 
 			load_network_data(&valid_data);
@@ -335,11 +341,13 @@ int main_reconet(int argc, char* argv[])
 		dump_nn_weights(filename_weights, config.weights);
 
 		named_data_list_free(train_data_list);
+
 		if (NULL != valid_data_list)
 			named_data_list_free(valid_data_list);
 
 		if (NULL != mask)
 			unmap_cfl(DIMS, mask_dims, mask);
+
 		if (NULL != mask_val)
 			unmap_cfl(DIMS, mask_dims_val, mask_val);
 	}
@@ -360,7 +368,6 @@ int main_reconet(int argc, char* argv[])
 	nn_weights_free(config.weights);
 
 	free_network_data(&data);
-
 
 	exit(0);
 }

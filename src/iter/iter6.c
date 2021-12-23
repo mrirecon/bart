@@ -175,24 +175,30 @@ static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, unsigned long ofla
 	assert(1 == NI);
 	int i_index = -1;
 
-	for (unsigned int i = 0; i < data->NI; i++)
+	for (int i = 0; i < data->NI; i++) {
+
 		if (MD_IS_SET(iflags, i)) {
+
 			assert(-1 == i_index);
 			i_index = i;
 		}
+	}
+
 	assert(-1 != i_index);
 
 	const struct operator_s* op_arr[NO];
 	float* dst_t[NO];
 	int NO_t = 0;
 
-	for (int o = 0; o < NO; o++)
+	for (int o = 0; o < NO; o++) {
+
 		if (MD_IS_SET(oflags, o)) {
 
 			op_arr[NO_t] = data->ops[o * data->NI + i_index];
 			dst_t[NO_t] = dst[o];
 			NO_t += 1;
 		}
+	}
 #if 0
 	for (int i = 0; i < NO_t; i++)
 		operator_apply_unchecked(op_arr[i], ((complex float**)dst_t)[i], (const complex float*)(src[0]));
@@ -212,6 +218,7 @@ static const struct iter_dump_s* iter6_dump_default_create(const char* base_file
 
 		D[i] = nlop_generic_domain(nlop, i)->N;
 		dims[i] = nlop_generic_domain(nlop, i)->dims;
+
 		if ((guess_save_flag) && ((IN_OPTIMIZE == in_type[i]) || (IN_BATCHNORM == in_type[i])))
 			save_flag = MD_SET(save_flag, i);
 	}
@@ -222,14 +229,17 @@ static const struct iter_dump_s* iter6_dump_default_create(const char* base_file
 static const struct operator_p_s* get_update_operator(iter6_conf* conf, int N, const long dims[N], long numbatches)
 {
 	auto conf_adadelta = CAST_MAYBE(iter6_adadelta_conf, conf);
+
 	if (NULL != conf_adadelta)
 		return operator_adadelta_update_create(N, dims, conf_adadelta->rho, 1.e-7);
 
 	auto conf_sgd = CAST_MAYBE(iter6_sgd_conf, conf);
+
 	if (NULL != conf_sgd)
 		return operator_sgd_update_create(N, dims);
 
 	auto conf_adam = CAST_MAYBE(iter6_adam_conf, conf);
+
 	if (NULL != conf_adam)
 		return operator_adam_update_create(N, dims, conf_adam->beta1, conf_adam->beta2, conf_adam->epsilon, numbatches * conf_adam->reset_epoch);
 
@@ -266,18 +276,23 @@ void iter6_sgd_like(	iter6_conf* conf,
 	struct iter_nlop_s nlop_batch_gen_iter = NLOP2ITNLOP(nlop_batch_gen);
 
 	const struct operator_p_s* prox_ops_weight_decay[NI];
+
 	for (int i = 0; i < NI; i++) {
 
-		if ( (0 != conf->weight_decay) && (NULL == prox_ops[i]) && (IN_OPTIMIZE == in_type[i])) {
+		if ((0 != conf->weight_decay) && (NULL == prox_ops[i]) && (IN_OPTIMIZE == in_type[i])) {
 
 			prox_ops_weight_decay[i] = prox_leastsquares_create(nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims, conf->weight_decay, NULL);
 			prox_ops[i] = prox_ops_weight_decay[i];
-		} else
+
+		} else {
+
 			prox_ops_weight_decay[i] = NULL;
+		}
 	}
 
 	struct iter_op_p_s prox_iter[NI];
-	for (unsigned int i = 0; i < NI; i++)
+
+	for (int i = 0; i < NI; i++)
 		prox_iter[i] = OPERATOR_P2ITOP((NULL == prox_ops ? NULL : prox_ops[i]));
 
 	long isize[NI];
@@ -285,9 +300,11 @@ void iter6_sgd_like(	iter6_conf* conf,
 
 	//array of update operators
 	const struct operator_p_s* upd_ops[NI];
+
 	for (int i = 0; i < NI; i++) {
 
 		upd_ops[i] = NULL;
+
 		if (IN_OPTIMIZE != in_type[i])
 			continue;
 
@@ -304,12 +321,13 @@ void iter6_sgd_like(	iter6_conf* conf,
 	}
 
 	struct iter_op_p_s upd_iter_ops[NI];
+
 	for (unsigned int i = 0; i < NI; i++)
 		upd_iter_ops[i] = OPERATOR_P2ITOP(upd_ops[i]);
 
-
 	for (int i = 0; i < NI; i++)
 		isize[i] = 2 * md_calc_size(nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims);
+
 	for (int o = 0; o < NO; o++)
 		osize[o] = 2 * md_calc_size(nlop_generic_codomain(nlop, o)->N, nlop_generic_codomain(nlop, o)->dims);
 
@@ -318,9 +336,11 @@ void iter6_sgd_like(	iter6_conf* conf,
 	for (int i = 0; i < NI; i++)
 		if (IN_OPTIMIZE == in_type[i])
 			gpu_ref = dst[i];
+
 	assert(NULL != gpu_ref);
 
 	bool free_monitor = (NULL == monitor);
+
 	if (free_monitor)
 		monitor = monitor_iter6_create(true, false, 0, NULL);
 
@@ -328,6 +348,7 @@ void iter6_sgd_like(	iter6_conf* conf,
 		monitor6_average_objective(monitor);
 
 	bool free_dump = ((NULL == conf->dump) && (NULL != conf->dump_filename) && (0 < conf->dump_mod));
+
 	if (free_dump)
 		conf->dump = iter6_dump_default_create(conf->dump_filename, conf->dump_mod, nlop, conf->dump_flag, NI, in_type);
 
@@ -356,16 +377,19 @@ void iter6_sgd_like(	iter6_conf* conf,
 		monitor_iter6_free(monitor);
 
 	if (free_dump) {
+
 		iter_dump_free(conf->dump);
 		conf->dump = NULL;
 	}
 
-	for (int i = 0; i < NI; i++)
+	for (int i = 0; i < NI; i++) {
+
 		if (NULL != prox_ops_weight_decay[i]) {
 
 			operator_p_free(prox_ops_weight_decay[i]);
 			prox_ops[i] = NULL;
 		}
+	}
 }
 
 
@@ -385,6 +409,7 @@ void iter6_adadelta(	iter6_conf* _conf,
 			batchsize, numbatches, nlop_batch_gen, monitor);
 }
 
+
 void iter6_adam(iter6_conf* _conf,
 		const struct nlop_s* nlop,
 		long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
@@ -401,7 +426,8 @@ void iter6_adam(iter6_conf* _conf,
 			batchsize, numbatches, nlop_batch_gen, monitor);
 }
 
-void iter6_sgd(	iter6_conf* _conf,
+
+void iter6_sgd(		iter6_conf* _conf,
 			const struct nlop_s* nlop,
 			long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
 			long NO, enum OUT_TYPE out_type[NO],
@@ -417,6 +443,7 @@ void iter6_sgd(	iter6_conf* _conf,
 			batchsize, numbatches, nlop_batch_gen, monitor);
 }
 
+
 void iter6_iPALM(	iter6_conf* _conf,
 			const struct nlop_s* nlop,
 			long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
@@ -430,8 +457,10 @@ void iter6_iPALM(	iter6_conf* _conf,
 	//Compute sizes
 	long isize[NI];
 	long osize[NO];
+
 	for (int i = 0; i < NI; i++)
 		isize[i] = 2 * md_calc_size(nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims);
+
 	for (int o = 0; o < NO; o++)
 		osize[o] = 2 * md_calc_size(nlop_generic_codomain(nlop, o)->N, nlop_generic_codomain(nlop, o)->dims);
 
@@ -441,18 +470,23 @@ void iter6_iPALM(	iter6_conf* _conf,
 	struct iter_nlop_s nlop_batch_gen_iter = NLOP2ITNLOP(nlop_batch_gen);
 
 	const struct operator_p_s* prox_ops_weight_decay[NI];
+
 	for (int i = 0; i < NI; i++) {
 
-		if ( (0 != conf->INTERFACE.weight_decay) && (NULL == prox_ops[i]) && (IN_OPTIMIZE == in_type[i])) {
+		if ((0 != conf->INTERFACE.weight_decay) && (NULL == prox_ops[i]) && (IN_OPTIMIZE == in_type[i])) {
 
 			prox_ops_weight_decay[i] = prox_leastsquares_create(nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims, conf->INTERFACE.weight_decay, NULL);
 			prox_ops[i] = prox_ops_weight_decay[i];
-		} else
+
+		} else {
+
 			prox_ops_weight_decay[i] = NULL;
+		}
 	}
 
 	struct iter_op_p_s prox_iter[NI];
-	for (unsigned int i = 0; i < NI; i++)
+
+	for (int i = 0; i < NI; i++)
 		prox_iter[i] = OPERATOR_P2ITOP(prox_ops[i]);
 
 	//compute parameter arrays
@@ -469,24 +503,31 @@ void iter6_iPALM(	iter6_conf* _conf,
 
 	//gpu ref (dst[i] can be null if batch_gen)
 	float* gpu_ref = NULL;
+
 	for (int i = 0; i < NI; i++)
 		if (IN_OPTIMIZE == in_type[i])
 			gpu_ref = dst[i];
+
 	assert(NULL != gpu_ref);
 
 	float* x_old[NI];
-	for (int i = 0; i < NI; i++)
+
+	for (int i = 0; i < NI; i++) {
+
 		if (IN_OPTIMIZE == in_type[i])
 			x_old[i] = md_alloc_sameplace(1, isize + i, FL_SIZE, gpu_ref);
 		else
 			x_old[i] = NULL;
+	}
 
 
 	float lipshitz_constants[NI];
+
 	for (int i = 0; i < NI; i++)
 		lipshitz_constants[i] = 1. / conf->INTERFACE.learning_rate;
 
 	bool free_monitor = (NULL == monitor);
+
 	if (free_monitor)
 		monitor = monitor_iter6_create(true, false, 0, NULL);
 
@@ -494,6 +535,7 @@ void iter6_iPALM(	iter6_conf* _conf,
 		monitor6_average_objective(monitor);
 
 	bool free_dump = ((NULL == conf->INTERFACE.dump) && (NULL != conf->INTERFACE.dump_filename) && (0 < conf->INTERFACE.dump_mod));
+
 	if (free_dump)
 		conf->INTERFACE.dump = iter6_dump_default_create(conf->INTERFACE.dump_filename,conf->INTERFACE.dump_mod, nlop, conf->INTERFACE.dump_flag, NI, in_type);
 
@@ -520,16 +562,19 @@ void iter6_iPALM(	iter6_conf* _conf,
 			md_free(x_old[i]);
 
 	if (free_dump) {
+
 		iter_dump_free(conf->INTERFACE.dump);
 		conf->INTERFACE.dump = NULL;
 	}
 
-	for (int i = 0; i < NI; i++)
+	for (int i = 0; i < NI; i++) {
+
 		if (NULL != prox_ops_weight_decay[i]) {
 
 			operator_p_free(prox_ops_weight_decay[i]);
 			prox_ops[i] = NULL;
 		}
+	}
 }
 
 void iter6_by_conf(	iter6_conf* _conf,
