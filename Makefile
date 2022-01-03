@@ -740,6 +740,8 @@ allclean: clean
 	rm -rf $(root)/tests/tmp/*/
 	rm -rf $(root)/doc/dx
 	rm -f $(root)/doc/commands.txt
+	rm -f $(root)/save/fftw/*.fftw
+	rm -f $(root)/save/nsv/*.dat
 	touch isclean
 
 distclean: allclean
