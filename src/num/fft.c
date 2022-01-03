@@ -204,6 +204,8 @@ struct fft_plan_s {
 
 static DEF_TYPEID(fft_plan_s);
 
+
+#ifdef USE_FFTW_WISDOM
 static char* fftw_wisdom_name(int N, bool backwards, unsigned int flags, const long dims[N])
 {
 	char* tbpath = getenv("TOOLBOX_PATH");
@@ -250,6 +252,7 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned int flags, const l
 
 	return loc;
 }
+#endif //USE_FFTW_WISDOM
 
 static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
@@ -261,10 +264,13 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 	unsigned int k = 0;
 	unsigned int l = 0;
 
+#ifdef USE_FFTW_WISDOM
 	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
 
 	if (NULL != wisdom)
 		fftwf_import_wisdom_from_filename(wisdom);
+
+#endif //USE_FFTW_WISDOM
 
 	//FFTW seems to be fine with this
 	//assert(0 != flags); 
@@ -291,10 +297,12 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 	fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
 				backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
 
+#ifdef USE_FFTW_WISDOM
 	if (NULL != wisdom)
 		fftwf_export_wisdom_to_filename(wisdom);
 
 	md_free(wisdom);
+#endif //USE_FFTW_WISDOM
 
 	return fftwf;
 }
