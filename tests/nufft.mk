@@ -81,7 +81,7 @@ tests/test-nufft-adjoint: zeros noise reshape traj nufft fmac nrmse
 
 
 # test adjoint linearity
-tests/test-nufft-adj-lin: traj rss extract phantom fmac saxpy nrmse
+tests/test-nufft-adj-lin: traj rss extract phantom fmac saxpy nrmse nufft
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -y55 t.ra							;\
 	$(TOOLDIR)/rss 1 t.ra w.ra							;\
