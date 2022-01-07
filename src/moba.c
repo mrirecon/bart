@@ -211,6 +211,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('M', &conf.sms, "Simultaneous Multi-Slice reconstruction"),
 		OPT_SET('O', &conf.out_origin_maps, "(Output original maps from reconstruction without post processing)"),
 		OPT_SET('g', &conf.use_gpu, "use gpu"),
+		OPTL_INT(0, "multi-gpu", &conf.num_gpu, "num", "number of gpus to use"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
 		OPT_INFILE('t', &traj_file, "traj", "K-space trajectory"),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.]"),
@@ -234,8 +235,14 @@ int main_moba(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
+	if (conf.use_gpu || (0 < conf.num_gpu)) {
+		
+		num_init_multigpu(MAX(1, conf.num_gpu));
 
-	(conf.use_gpu ? num_init_gpu : num_init)();
+	} else {
+
+		num_init();
+	}
 	
 #ifdef USE_CUDA
 	cuda_use_global_memory();

@@ -62,6 +62,7 @@ struct moba_conf {
 	bool out_origin_maps;
 
 	bool use_gpu;
+	int num_gpu;
 };
 
 extern struct moba_conf moba_defaults;
