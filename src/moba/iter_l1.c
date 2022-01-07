@@ -22,6 +22,9 @@
 
 #include "num/ops.h"
 #include "num/iovec.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 #include "wavelet/wavthresh.h"
 
@@ -180,12 +183,9 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 	wavthresh_rand_state_set(data->prox1, 1);
     
 	int maxiter = MIN(data->conf->c2->cgiter, 10 * powf(2, data->outer_iter));
-    
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
 
-	linop_adjoint_unchecked(nlop_get_derivative(data->nlop, 0, 0), (complex float*)tmp, (const complex float*)src);
 
-	float eps = md_norm(1, MD_DIMS(data->size_x), tmp);
+	float eps = md_norm(1, MD_DIMS(data->size_x), src);
 
 	data->first_iter = true;
 
@@ -200,11 +200,9 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 		continuation,
 		(struct iter_op_s){ normal, CAST_UP(data) },
 		(struct iter_op_p_s){ combined_prox, CAST_UP(data) },
-		dst, tmp, NULL);
+		dst, src, NULL);
 
 	pos_value(CAST_UP(data), dst, dst);
-
-	md_free(tmp);
 
 	data->outer_iter++;
 }
@@ -216,10 +214,6 @@ static void inverse_admm(iter_op_data* _data, float alpha, float* dst, const flo
 	data->alpha = alpha;	// update alpha for normal operator
 
 	int maxiter = MIN(data->conf->c2->cgiter, 10 * powf(2, data->outer_iter));
-	
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
-
-	linop_adjoint_unchecked(nlop_get_derivative(data->nlop, 0, 0), (complex float*)tmp, (const complex float*)src);
 
 	// initialize prox functions
 
@@ -293,15 +287,12 @@ static void inverse_admm(iter_op_data* _data, float alpha, float* dst, const flo
 
 
 	admm(&admm_plan, admm_plan.num_funs,
-		z_dims, data->size_x, (float*)dst, tmp,
+		z_dims, data->size_x, (float*)dst, src,
 		select_vecops(src),
 		(struct iter_op_s){ normal, CAST_UP(data) }, NULL);
 
 
 	opt_reg_free(data->conf->ropts, thresh_ops, trafos);
-
-
-	md_free(tmp);
 
 	data->outer_iter++;
 }
@@ -424,7 +415,23 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 
 	data->data = idata;
 
-	return operator_p_create(dm->N, dm->dims, cd->N, cd->dims, CAST_UP(PTR_PASS(data)), T1inv_apply, T1inv_del);
+	auto tmp = operator_p_create(dm->N, dm->dims, dm->N, dm->dims, CAST_UP(PTR_PASS(data)), T1inv_apply, T1inv_del);
+
+#ifdef USE_CUDA
+	if (0 < cuda_num_devices()) {
+
+		auto tmp2 = tmp;
+
+		tmp = operator_p_gpu_wrapper(tmp2);
+
+		operator_p_free(tmp2);
+	}
+#endif
+
+	auto result = operator_p_pre_chain(nlop_get_derivative(nlop, 0, 0)->adjoint, tmp);
+	operator_p_free(tmp);
+
+	return result;
 }
 
 
@@ -474,6 +481,10 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 
 		struct lsqr_conf lsqr_conf = lsqr_defaults;
 		lsqr_conf.it_gpu = false;
+#ifdef USE_CUDA
+		if (0 < cuda_num_devices())
+			lsqr_conf.it_gpu = true;
+#endif
 		lsqr_conf.warmstart = true;
 
 		NESTED(void, lsqr_cont, (iter_conf* iconf))
