@@ -250,6 +250,7 @@ static void cuda_deactivate_p2p(void)
 
 static void cuda_libraries_init(void)
 {
+	memcache_init();
 	cuda_activate_p2p();
 	cublas_init();
 #ifdef USE_CUDNN
@@ -259,6 +260,7 @@ static void cuda_libraries_init(void)
 
 static void cuda_libraries_deinit(void)
 {
+	memcache_destroy();
 	cuda_deactivate_p2p();
 	cublas_deinit();
 #ifdef USE_CUDNN
@@ -451,6 +453,11 @@ cudaStream_t cuda_get_stream(void)
 	return cudaStreamLegacy;
 }
 
+int cuda_get_stream_id(void)
+{
+	return 0;
+}
+
 
 
 //*************************************** Host Synchonization ********************************************* 
@@ -511,7 +518,7 @@ void cuda_free(void* ptr)
 
 void* cuda_malloc(long size)
 {
-	return mem_device_malloc(cuda_get_device_internal(), size, cuda_malloc_wrapper);
+	return mem_device_malloc(cuda_get_device_internal(), cuda_get_stream_id(), size, cuda_malloc_wrapper);
 }
 
 void cuda_use_global_memory(void)
@@ -529,8 +536,15 @@ void cuda_memcache_clear(void)
 	if (!cuda_memcache)
 		return;
 
-	memcache_clear(cuda_get_device_internal(), cuda_free_wrapper);
+	for (int d = 0; d < n_reserved_gpus; d++) {
+
+		cuda_set_device(d);
+
+		for (int i = 0; i < MAX_CUDA_STREAMS; i++)
+			memcache_clear(gpu_map[d], i, cuda_free_wrapper);
+	}
 }
+
 
 #if 0
 // We still don use this because it is slow. Why? Nivida, why?
@@ -555,14 +569,14 @@ static bool cuda_cuda_ondevice(const void* ptr)
 }
 #endif
 
-bool cuda_accessible(const void* ptr)
-{
-	return mem_device_accessible(ptr);
-}
-
 bool cuda_ondevice(const void* ptr)
 {
 	return mem_ondevice(ptr);
+}
+
+bool cuda_accessible(const void* ptr)
+{
+	return cuda_ondevice(ptr);
 }
 
 

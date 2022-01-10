@@ -1,28 +1,34 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
+ * Copyright 2023. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors:
- * 2012-2016	Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * Authors: Martin Uecker, Moritz Blumenthal
  *
 */
 
 #include <stdbool.h>
 #include <assert.h>
+#include <stdint.h>
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
 
+#include "misc/tree.h"
 #include "misc/misc.h"
 #include "misc/debug.h"
 
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#else
+#define MAX_CUDA_DEVICES 1
+#define MAX_CUDA_STREAMS 1
+#endif
+
+
 #include "mem.h"
-
-
-
-
 
 bool memcache = true;
 
@@ -35,217 +41,221 @@ struct mem_s {
 
 	const void* ptr;
 	size_t len;
-	bool device;
-	bool free;
+	size_t len_used;
+
 	int device_id;
-	int thread_id;
-	struct mem_s* next;
+	int stream_id;
 };
 
-static struct mem_s* mem_list = NULL;
 
-
-//sorted list of free memory->use smallest possible mem_s for new allocation
-static struct mem_s* mem_list_free = NULL;
-
-// search can stop early if not min_ptr<=ptr<=max_ptr
-void* min_ptr = NULL;
-void* max_ptr = NULL;
-
-static bool inside_p(const struct mem_s* rptr, const void* ptr)
+static int ptr_cmp(const void* _a, const void* _b)
 {
-	return (ptr >= rptr->ptr) && (ptr < rptr->ptr + rptr->len);
+	const struct mem_s* a = _a;
+	const struct mem_s* b = _b;
+
+	if (a->ptr == b->ptr)
+		return 0;
+	
+	return (a->ptr > b->ptr) ? 1 : -1;
 }
+
+static int size_cmp(const void* _a, const void* _b)
+{
+	const struct mem_s* a = _a;
+	const struct mem_s* b = _b;
+
+	if (a->len == b->len)
+		return 0;
+	
+	return (a->len > b->len) ? 1 : -1;
+}
+
+static long unused_memory = 0;
+static long used_memory = 0;
+
+static bool mem_init = false;
+
+static tree_t mem_pool = NULL;
+static tree_t mem_cache[MAX_CUDA_DEVICES][MAX_CUDA_STREAMS];
+
+void memcache_init(void)
+{
+	if (mem_init)
+		return;
+	
+	#pragma omp critical(bart_memcache)
+	{
+		if (!mem_init) {
+
+			for (int i = 0; i < MAX_CUDA_DEVICES; i++)
+				for (int j = 0; j < MAX_CUDA_STREAMS; j++)
+					mem_cache[i][j] = tree_create(size_cmp);
+			
+			mem_pool = tree_create(ptr_cmp); 
+		}
+	
+		mem_init = true;
+	}
+}
+
+bool memcache_is_empty(void)
+{
+	if (!mem_init)
+		return true;
+
+	for (int i = 0; i < MAX_CUDA_DEVICES; i++)
+		for (int j = 0; j < MAX_CUDA_STREAMS; j++)
+			if (0 != tree_count(mem_cache[i][j]))
+				return false;
+	
+	return (0 == tree_count(mem_pool));
+}
+
+void memcache_destroy(void)
+{
+	if (!mem_init)
+		return;
+
+	#pragma omp critical(bart_memcache)
+	{
+		assert(memcache_is_empty());
+
+		for (int i = 0; i < MAX_CUDA_DEVICES; i++)
+			for (int j = 0; j < MAX_CUDA_STREAMS; j++)
+				tree_free(mem_cache[i][j]);
+		
+		tree_free(mem_pool);
+
+		mem_init = false;
+	}
+}
+
+
+static void print_mem_tree(int dl, tree_t tree)
+{
+	int N = tree_count(tree);
+	
+	struct mem_s* m[N];
+	tree_to_array(tree, N, (void**)m);
+
+	for (int j = 0; j < N; j++) 
+		debug_printf(dl, "ptr: %p, len: %zd, device_id: %d\n", m[j]->ptr, m[j]->len, m[j]->device_id);
+}
+
+void debug_print_memcache(int dl)
+{
+	debug_printf(dl, "%ld allocated on gpu (%ld used / %ld unused)\n", unused_memory + used_memory, used_memory, unused_memory);
+
+	#pragma omp critical(bart_memcache)
+	{
+		for (int i = 0; i < MAX_CUDA_DEVICES; i++)
+			for (int j = 0; j < MAX_CUDA_STREAMS; j++)
+				print_mem_tree(dl, mem_cache[i][j]);
+		
+		print_mem_tree(dl, mem_pool);
+	}
+}
+
+static int inside_p(const void* _rptr, const void* ptr)
+{
+	const struct mem_s* rptr = _rptr;
+	if ((ptr >= rptr->ptr) && (ptr < rptr->ptr + rptr->len))
+		return 0;
+	
+	return (rptr->ptr > ptr) ? 1 : -1;
+}
+
 
 static struct mem_s* search(const void* ptr, bool remove)
 {
-	struct mem_s* rptr = NULL;
-	if ((NULL == min_ptr) || (ptr < min_ptr) || (ptr > max_ptr))
-		return rptr;
+	if (!mem_init)
+		return NULL;
 
-	#pragma omp critical
-	{
-		struct mem_s** nptr = &mem_list;
-
-		while (true) {
-
-			rptr = *nptr;
-
-			if (NULL == rptr)
-				break;
-
-			if (inside_p(rptr, ptr)) {
-
-				*nptr = rptr->next;
-
-				break;
-			}
-
-			nptr = &(rptr->next);
-		}
-
-		if ((NULL != rptr) && (!remove)) {
-
-			rptr->next = mem_list;
-			mem_list = rptr;
-		}
-	}
-
-	return rptr;
+	return tree_find(mem_pool, ptr, inside_p, remove);
 }
 
-static bool free_check_p(const struct mem_s* rptr, size_t size, int dev, int tid)
+
+
+static int find_free_p(const void* _rptr, const void* _cmp)
 {
-	return (rptr->free
-		&& (rptr->device_id == dev)
-		&& (rptr->len >= size)
-		&& (( 0 == size) || (rptr->len <= 4 * size)) // small allocations shall not occupy large memory areas (turned of if requested size is 0)
-		&& ((-1 == tid) || (rptr->thread_id == tid)));
+	const struct mem_s* rptr = _rptr;
+	const long* cmp = _cmp;
+
+	size_t min = cmp[0];
+	size_t max = cmp[1];
+
+	if ((rptr->len >= min) && (rptr->len <= max))
+		return 0;
+	
+	return (rptr->len > max) ? 1 : -1;
 }
 
-static struct mem_s** find_free_unsafe(size_t size, int dev, int tid)
+
+static struct mem_s* find_free(size_t size, int dev, int stream)
 {
-	struct mem_s* rptr = NULL;
-	struct mem_s** nptr = &mem_list_free;
+	if (!mem_init)
+		return NULL;
 
-	while (true) {
+	size_t cmp[2] = { size, (0 == size) ? UINT64_MAX : 4 * size };
 
-		rptr = *nptr;
-
-		if (NULL == rptr)
-			break;
-
-		if (free_check_p(rptr, size, dev, tid))
-			break;
-
-		nptr = &(rptr->next);
-	}
-
-	return nptr;
+	return tree_find_min(mem_cache[dev][stream], &cmp, find_free_p, true);
 }
 
-static struct mem_s* find_free(size_t size, int dev)
+
+void memcache_clear(int dev, int stream, void (*device_free)(const void*x))
 {
-	struct mem_s* rptr = NULL;
-
-	#pragma omp critical
-	{
-		struct mem_s** nrptr = find_free_unsafe(size, dev, -1);
-
-		if (NULL != *nrptr) {
-
-			rptr = *nrptr;
-			*nrptr = rptr->next;
-
-			rptr->free = false;
-		}
-	}
-
-	return rptr;
-}
-
-static void insert(const void* ptr, size_t len, bool device, int dev)
-{
-	PTR_ALLOC(struct mem_s, nptr);
-	nptr->ptr = ptr;
-	nptr->len = len;
-	nptr->device = device;
-	nptr->device_id = dev;
-#ifdef _OPENMP
-	nptr->thread_id = omp_get_thread_num();
-#else
-	nptr->thread_id = -1;
-#endif
-	nptr->free = false;
-
-	#pragma omp critical
-	{
-		nptr->next = mem_list;
-		mem_list = PTR_PASS(nptr);
-	}
-}
-
-void memcache_clear(int dev, void (*device_free)(const void*x))
-{
-	struct mem_s* nptr = NULL;
-
 	if (!memcache)
 		return;
 
-	do {
-		#pragma omp critical
-		{
-#ifdef _OPENMP
-			int tid = omp_get_thread_num();
-#else
-			int tid = -1;
-#endif
-			struct mem_s** rptr = find_free_unsafe(0, dev, tid);
-			nptr = *rptr;
+	struct mem_s* nptr = find_free(0, dev, stream);
+	
+	while (NULL != nptr) {
 
-			// remove from list
+		debug_printf(DP_DEBUG3, "Freeing %ld bytes. (DID: %d)\n\n", nptr->len, nptr->device_id);
 
-			if (NULL != nptr)
-				*rptr = nptr->next;
-		}
+		device_free(nptr->ptr);
+		xfree(nptr);
 
-		if (NULL != nptr) {
+		nptr = find_free(0, dev, stream);
+	}
+}
 
-			assert(nptr->device);
+int mem_device_num(const void* ptr)
+{
+	if (NULL == ptr)
+		return -1;
 
-			debug_printf(DP_DEBUG3, "Freeing %ld bytes. (DID: %d TID: %d)\n\n",
-					nptr->len, nptr->device_id, nptr->thread_id);
-
-			device_free(nptr->ptr);
-			xfree(nptr);
-		}
-
-	} while (NULL != nptr);
+	struct mem_s* p = search(ptr, false);
+	return (NULL == p) ? -1 : p->device_id;
 }
 
 
 bool mem_ondevice(const void* ptr)
 {
-	if (NULL == ptr)
-		return false;
-
-	struct mem_s* p = search(ptr, false);
-	bool r = ((NULL != p) && p->device);
-
-	return r;
+	return 0 <= mem_device_num(ptr);
 }
-
-bool mem_device_accessible(const void* ptr)
-{
-	struct mem_s* p = search(ptr, false);
-	return (NULL != p);
-}
-
-
 
 void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
 {
+	assert(mem_init);
+
 	struct mem_s* nptr = search(ptr, true);
 
 	assert(NULL != nptr);
 	assert(nptr->ptr == ptr);
-	assert(nptr->device);
 
 	if (memcache) {
+		
+		tree_insert(mem_cache[nptr->device_id][nptr->stream_id], nptr);
 
-		assert(!nptr->free);
-		nptr->free = true;
-
-		#pragma omp critical
-		{
-			struct mem_s** pos_ins = &mem_list_free;
-			while ((NULL != *pos_ins) && (nptr->len > (*pos_ins)->len))
-				pos_ins = &((*pos_ins)->next);
-			nptr->next = *pos_ins;
-			*pos_ins = nptr;
-		}
+		#pragma omp atomic
+		unused_memory += nptr->len_used;
+		#pragma omp atomic
+		used_memory -= nptr->len_used;
 
 	} else {
+		#pragma omp atomic
+		used_memory -= nptr->len_used;
 
 		device_free(ptr);
 		xfree(nptr);
@@ -253,41 +263,39 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
 }
 
 
-void* mem_device_malloc(int device, long size, void* (*device_alloc)(size_t))
+
+void* mem_device_malloc(int device, int stream, long size, void* (*device_alloc)(size_t))
 {
-	if (memcache) {
+	assert(mem_init);
 
-		struct mem_s* nptr = find_free(size, device);
+	#pragma omp atomic
+	used_memory += size;
 
-		if (NULL != nptr) {
+	struct mem_s* nptr = find_free(size, device, stream);
 
-			assert(nptr->device);
-			assert(!nptr->free);
-#ifdef _OPENMP
-			nptr->thread_id = omp_get_thread_num();
-#else
-			nptr->thread_id = -1;
-#endif
+	if (NULL != nptr) {
 
-			#pragma omp critical
-			{
-				nptr->next = mem_list;
-				mem_list = nptr;
-			}
-			return (void*)(nptr->ptr);
-		}
+		#pragma omp atomic
+		unused_memory -= size;
+
+		nptr->len_used = size;
+
+	} else {
+
+		void* ptr = device_alloc(size);
+
+		PTR_ALLOC(struct mem_s, _nptr);
+		_nptr->ptr = ptr;
+		_nptr->len = size;
+		_nptr->len_used = size;
+		_nptr->device_id = device;
+		_nptr->stream_id = stream;
+
+		nptr = PTR_PASS(_nptr);
 	}
 
-	void* ptr = device_alloc(size);
-
-	if ((NULL == min_ptr) || (ptr < min_ptr))
-		min_ptr = ptr;
-	if ((NULL == max_ptr) || (ptr + size > max_ptr))
-		max_ptr = ptr + size;
-
-	insert(ptr, size, true, device);
-
-	return ptr;
+	tree_insert(mem_pool, nptr);
+	return (void*)(nptr->ptr);
 }
 
 
