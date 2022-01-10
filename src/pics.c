@@ -152,7 +152,7 @@ int main_pics(int argc, char* argv[argc])
 	bool hogwild = false;
 	bool fast = false;
 
-	unsigned int gpun = 0;
+	int gpun = -1;
 
 	struct opt_reg_s ropts;
 	opt_reg_init(&ropts);
@@ -171,7 +171,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('N', &overlapping_blocks, "do fully overlapping LLR blocks"),
 		OPT_SET('g', &conf.gpu, "use GPU"),
-		OPT_UINT('G', &gpun, "gpun", "use GPU device gpun"),
+		OPT_INT('G', &gpun, "gpun", "use GPU device gpun"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &algo, ALGO_IST, "select IST"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
@@ -311,7 +311,10 @@ int main_pics(int argc, char* argv[argc])
 
 
 	if (conf.gpu)
-		num_init_gpu_device(gpun);
+		if (-1 == gpun)
+			num_init_gpu();
+		else
+			num_init_gpu_device(gpun);
 	else
 		num_init();
 

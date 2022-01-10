@@ -833,7 +833,7 @@ static void op_loop_fun(const operator_data_t* _data, unsigned int N, void* args
 
 	if (data->gpu) {
 #if defined(USE_CUDA) && defined(_OPENMP)
-		int nr_cuda_devices = cuda_devices();
+		int nr_cuda_devices = cuda_num_devices();
 		omp_set_num_threads(nr_cuda_devices * 2);
 //		fft_set_num_threads(1);
 #else
@@ -1107,10 +1107,10 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 	debug_printf(DP_DEBUG1, "GPU start.\n");
 
-	int nr_cuda_devices = MIN(cuda_devices(), MAX_CUDA_DEVICES);
+	int nr_cuda_devices = MIN(cuda_num_devices(), MAX_CUDA_DEVICES);
 	int gpun = omp_get_thread_num() % nr_cuda_devices;
 
-	cuda_init(gpun);
+	cuda_set_device(gpun);
 
 	for (unsigned int i = 0; i < N; i++) {
 
