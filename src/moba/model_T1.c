@@ -98,11 +98,9 @@ static struct mobamod T1_create_internal(const long dims[DIMS], const complex fl
 	nlop_debug(DP_INFO, nlinv.nlop);
 
 	const struct nlop_s* b = nlinv.nlop;
-	const struct nlop_s* c = nlop_chain2(T1, 0, b, 0);
-	nlop_free(b);
+	const struct nlop_s* c = nlop_chain2_FF(T1, 0, b, 0);
 
-	nlinv.nlop = nlop_permute_inputs(c, 2, (const int[2]){ 1, 0 });
-	nlop_free(c);
+	nlinv.nlop = nlop_permute_inputs_F(c, 2, (const int[2]){ 1, 0 });
 #endif
 	ret.nlop = nlinv.nlop;
 	ret.linop = nlinv.linop;
