@@ -35,6 +35,7 @@ SLINK?=0
 DEBUG?=0
 UBSAN?=0
 FFTWTHREADS?=1
+FFTW_WISDOM?=0
 SCALAPACK?=0
 ISMRMRD?=0
 TENSORFLOW?=0
@@ -125,11 +126,10 @@ ALLDEPS = $(shell find $(srcdir) utests -name ".*.d")
 # Compilation flags
 
 ifneq ($(DEBUG),1)
-OPT = -O3 
+OPT = -O2
 else
 OPT = -Og
 endif
-OPT += -ffast-math
 CPPFLAGS ?= -Wall -Wextra
 CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
@@ -328,7 +328,7 @@ endif
 
 ifeq ($(MAKESTAGE),1)
 .PHONY: doc/commands.txt $(TARGETS)
-default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest pythontest shared-lib $(TARGETS):
+default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest testslow pythontest shared-lib $(TARGETS):
 	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
 
 tests/test-%: force
@@ -494,6 +494,11 @@ ifneq ($(BUILDTYPE), MSYS)
 	CPPFLAGS += -DFFTWTHREADS
 endif
 endif
+
+ifeq ($(FFTW_WISDOM),1)
+	CPPFLAGS += -DUSE_FFTW_WISDOM
+endif
+
 
 # Matlab
 
@@ -745,6 +750,8 @@ allclean: clean
 	rm -rf $(root)/tests/tmp/*/
 	rm -rf $(root)/doc/dx
 	rm -f $(root)/doc/commands.txt
+	rm -f $(root)/save/fftw/*.fftw
+	rm -f $(root)/save/nsv/*.dat
 	touch isclean
 
 distclean: allclean
@@ -785,6 +792,8 @@ TESTS = $(filter-out $(NOT_SUPPORTED),$(TMP_TESTS))
 endif
 
 test:	${TESTS}
+
+testslow: ${TESTS_SLOW}
 
 gputest: ${TESTS_GPU}
 

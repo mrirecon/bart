@@ -100,21 +100,21 @@ tests/test-moba-t1-nonCartesian: traj transpose phantom signal nufft fft ones in
 
 tests/test-moba-t1-nufft: traj transpose phantom signal nufft fft ones index scale moba fmac nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
-	$(TOOLDIR)/traj -x16 -y1 -r -D -G -s7 -t300 _traj.ra  		                ;\
-	$(TOOLDIR)/transpose 5 10 _traj.ra _traj2.ra    		                ;\
-	$(TOOLDIR)/scale 0.5 _traj2.ra traj.ra   	    		                ;\
+	$(TOOLDIR)/traj -x16 -y1 -r -D -G -s7 -t300 traj2.ra  		                ;\
+	$(TOOLDIR)/transpose 5 10 traj2.ra traj2T.ra    		                ;\
+	$(TOOLDIR)/scale 0.5 traj2T.ra traj.ra   	    		                ;\
 	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra    	    		        ;\
 	$(TOOLDIR)/signal -F -I -r0.005 -n300 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac -s 64 basis_geom.ra signal.ra data.ra				;\
  	$(TOOLDIR)/ones 16 1 16 1 1 1 300 1 1 1 1 1 1 1 1 1 1 ones.ra	   		;\
-	$(TOOLDIR)/nufft -d 16:16:1 -a _traj2.ra ones.ra pattern.ra	   		;\
+	$(TOOLDIR)/nufft -d 16:16:1 -a traj2T.ra ones.ra pattern.ra	   		;\
 	$(TOOLDIR)/fft -u 3 pattern.ra psf.ra				   		;\
-	$(TOOLDIR)/nufft -d 16:16:1 -a _traj2.ra data.ra zerofill_reco.ra  		;\
+	$(TOOLDIR)/nufft -d 16:16:1 -a traj2T.ra data.ra zerofill_reco.ra  		;\
 	$(TOOLDIR)/fft -u 3 zerofill_reco.ra k_space.ra					;\
 	$(TOOLDIR)/index 5 300 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
 	$(TOOLDIR)/moba -L -l1 -i11 -C200 -j0.01 -p psf.ra k_space.ra TI.ra reco.ra	;\
-	$(TOOLDIR)/moba -L -l1 -i11 -C200 -j0.01 -o1.0 -t _traj2.ra data.ra TI.ra reco2.ra ;\
+	$(TOOLDIR)/moba -L -l1 -i11 -C200 -j0.01 -o1.0 -t traj.ra data.ra TI.ra reco2.ra ;\
 	$(TOOLDIR)/nrmse -t 0.00003 reco.ra reco2.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -140,8 +140,8 @@ tests/test-moba-t2: phantom signal fmac fft ones index scale moba slice invert n
 
 tests/test-moba-meco-noncart-r2s: traj scale phantom signal fmac index extract moba slice resize nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	                  ;\
-	$(TOOLDIR)/traj -x16 -y15 -r -D -E -e7 -c _traj.ra                ;\
-	$(TOOLDIR)/scale 0.5 _traj.ra traj.ra                             ;\
+	$(TOOLDIR)/traj -x16 -y15 -r -D -E -e7 -c traj2.ra                ;\
+	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra                             ;\
 	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra                 ;\
 	$(TOOLDIR)/signal -G -n8 -1 3:3:1 -2 0.02:0.02:1 signal_p1.ra     ;\
 	$(TOOLDIR)/extract 5 1 8 signal_p1.ra signal.ra                   ;\
@@ -149,7 +149,7 @@ tests/test-moba-meco-noncart-r2s: traj scale phantom signal fmac index extract m
 	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
 	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
 	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
-	$(TOOLDIR)/moba -G -m3 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -o1.5 -k --kfilter-2 -t _traj.ra data.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/moba -G -m3 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
 	$(TOOLDIR)/slice 6 1 reco.ra R2S.ra                               ;\
 	$(TOOLDIR)/resize -c 0 8 1 8 R2S.ra R2S_crop.ra                   ;\
 	$(TOOLDIR)/phantom -x8 -c circ.ra                                 ;\
@@ -161,8 +161,8 @@ tests/test-moba-meco-noncart-r2s: traj scale phantom signal fmac index extract m
 
 tests/test-moba-meco-noncart-wfr2s: traj scale phantom signal fmac index extract moba slice resize saxpy cabs spow nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	                  ;\
-	$(TOOLDIR)/traj -x16 -y15 -r -D -E -e7 -c _traj.ra                ;\
-	$(TOOLDIR)/scale 0.5 _traj.ra traj.ra                             ;\
+	$(TOOLDIR)/traj -x16 -y15 -r -D -E -e7 -c traj2.ra                ;\
+	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra                             ;\
 	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra                 ;\
 	$(TOOLDIR)/signal -G --fat -n8 -1 3:3:1 -2 0.02:0.02:1 signal_p1.ra  ;\
 	$(TOOLDIR)/extract 5 1 8 signal_p1.ra signal.ra                   ;\
@@ -170,7 +170,7 @@ tests/test-moba-meco-noncart-wfr2s: traj scale phantom signal fmac index extract
 	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
 	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
 	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
-	$(TOOLDIR)/moba -G -m1 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -o1.5 -k --kfilter-2 -t _traj.ra data.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/moba -G -m1 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
 	$(TOOLDIR)/resize -c 0 8 1 8 reco.ra reco_crop.ra                 ;\
 	$(TOOLDIR)/slice 6 0 reco_crop.ra W.ra                            ;\
 	$(TOOLDIR)/slice 6 1 reco_crop.ra F.ra                            ;\

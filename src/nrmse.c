@@ -89,7 +89,13 @@ int main_nrmse(int argc, char* argv[argc])
 	unmap_cfl(DIMS, ref_dims, ref);
 	unmap_cfl(DIMS, in_dims, in);
 
-	return ((test == -1.) || (err <= test)) ? 0 : 1;
+	if (test == -1.)
+		test = err;
+
+	if (err < test * 0.1)
+		debug_printf(DP_DEBUG2, "Loose test: %f <= %f x %f\n", err, 0.1, test);
+
+	return (err <= test) ? 0 : 1;
 }
 
 

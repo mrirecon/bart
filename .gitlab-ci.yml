@@ -167,7 +167,7 @@ Integration_Test:
   image: debian:stable
   stage: test2
   script:
-    - AUTOCLEAN=0 make test
+    - AUTOCLEAN=0 make test testslow
   needs: [Build]
   dependencies:
     - Build

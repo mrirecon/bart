@@ -46,7 +46,7 @@ tests/test-nufft-nudft: traj nufft reshape nrmse $(TESTS_OUT)/shepplogan.ra
 
 tests/test-nudft-adjoint: zeros noise reshape traj nufft fmac nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/zeros 3 64 64 1 z.ra						;\
+	$(TOOLDIR)/zeros 3 64 64 1 z.ra							;\
 	$(TOOLDIR)/noise -s123 z.ra n1.ra						;\
 	$(TOOLDIR)/noise -s321 z.ra n2b.ra						;\
 	$(TOOLDIR)/reshape 7 1 64 64 n2b.ra n2.ra					;\

@@ -18,6 +18,7 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/types.h"
+#include "misc/version.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -182,7 +183,8 @@ static void compute_kern_basis(unsigned int N, unsigned int flags, const long po
 	long tmp_off = md_calc_offset(N, max_strs, pos);
 	long bas_off = md_calc_offset(N, baT_strs, pos);
 
-	md_zsmul(N, max_dims, tmp, tmp, (double)bas_dims[6]);	// FIXME: Why?
+	if (use_compat_to_version("v0.7.00"))
+		md_zsmul(N, max_dims, tmp, tmp, (double)bas_dims[6]);
 
 	md_ztenmulc2(N, ma3_dims, krn_strs, krn,
 			max_strs, (void*)tmp + tmp_off,

@@ -1,5 +1,6 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2019-2020. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2019-2021. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2021. Institute of Medical Engineering. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -22,6 +23,7 @@
 #include "misc/utils.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
+#include "misc/version.h"
 
 #include "noncart/nufft.h"
 
@@ -99,16 +101,14 @@ int main_moba(int argc, char* argv[argc])
 	};
 
 	float restrict_fov = -1.;
-	float oversampling = 1.25f;
+	float oversampling = 1.f;
 
 	float scale_fB0[2] = { 222., 1. }; // { spatial smoothness, scaling }
 
-	unsigned int sample_size = 0;
-	unsigned int grid_size = 0;
 	unsigned int mgre_model = MECO_WFR2S;
 
-	const char* psf = NULL;
-	const char* trajectory = NULL;
+	const char* psf_file = NULL;
+	const char* traj_file = NULL;
 	const char* init_file = NULL;
 
 	struct moba_conf conf = moba_defaults;
@@ -122,6 +122,9 @@ int main_moba(int argc, char* argv[argc])
 	enum edge_filter_t { EF1, EF2 } k_filter_type = EF1;
 
 	enum fat_spec fat_spec = FAT_SPEC_1;
+
+	long img_vec[3] = { 0 };
+
 
 	opt_reg_init(&ropts);
 
@@ -145,14 +148,15 @@ int main_moba(int argc, char* argv[argc])
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('N', &unused, "(normalize)"), // no-op
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
-		OPT_INFILE('p', &psf, "PSF", ""),
+		OPT_INFILE('p', &psf_file, "PSF", ""),
 		OPT_SET('J', &conf.stack_frames, "Stack frames for joint recon"),
 		OPT_SET('M', &conf.sms, "Simultaneous Multi-Slice reconstruction"),
 		OPT_SET('O', &out_origin_maps, "(Output original maps from reconstruction without post processing)"),
 		OPT_SET('g', &use_gpu, "use gpu"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
-		OPT_INFILE('t', &trajectory, "Traj", ""),
-		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.25]"),
+		OPT_INFILE('t', &traj_file, "Traj", ""),
+		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.]"),
+		OPTL_VEC3(0, "img_dims", &img_vec, "x:y:z", "dimensions"),
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
 		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &k_filter_type, EF1, "k-space edge filter 1"),
 		OPTL_SELECT(0, "kfilter-2", enum edge_filter_t, &k_filter_type, EF2, "k-space edge filter 2"),
@@ -194,14 +198,40 @@ int main_moba(int argc, char* argv[argc])
 	long grid_dims[DIMS];
 	md_copy_dims(DIMS, grid_dims, ksp_dims);
 
-	if (NULL != trajectory) {
+	long traj_dims[DIMS];
+	long traj_strs[DIMS];
+	complex float* traj = NULL;
 
-		sample_size = ksp_dims[1];
-		grid_size = sample_size * oversampling;
-		grid_dims[READ_DIM] = grid_size;
-		grid_dims[PHS1_DIM] = grid_size;
-		grid_dims[PHS2_DIM] = 1L;
-				
+	if (NULL != traj_file) {
+
+		traj = load_cfl(traj_file, DIMS, traj_dims);
+
+		md_calc_strides(DIMS, traj_strs, traj_dims, CFL_SIZE);
+
+		md_zsmul(DIMS, traj_dims, traj, traj, oversampling);
+
+		if (0 == md_calc_size(3, img_vec)) {
+
+			estimate_im_dims(DIMS, FFT_FLAGS, img_vec, traj_dims, traj);
+			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", img_vec[0], img_vec[1], img_vec[2]);
+		}
+
+		md_zsmul(DIMS, traj_dims, traj, traj, 2.);
+
+		NESTED(long, dbl, (long x)) { return (x > 1) ? (2 * x) : 1; };
+
+		grid_dims[READ_DIM] = dbl(img_vec[0]);
+		grid_dims[PHS1_DIM] = dbl(img_vec[1]);
+		grid_dims[PHS2_DIM] = dbl(img_vec[2]);
+
+		if (use_compat_to_version("v0.7.00")) {
+
+			long grid_size = ksp_dims[1] * oversampling;
+			grid_dims[READ_DIM] = grid_size;
+			grid_dims[PHS1_DIM] = grid_size;
+			grid_dims[PHS2_DIM] = 1L;
+		}
+
 		if (-1 == restrict_fov)
 			restrict_fov = 0.5;
 
@@ -210,6 +240,7 @@ int main_moba(int argc, char* argv[argc])
 
 	long img_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, img_dims, grid_dims);
+
 
 	switch (mode) {
 
@@ -270,15 +301,18 @@ int main_moba(int argc, char* argv[argc])
 	long pat_dims[DIMS];
 	
 
-	if (NULL != psf) {
+	if (NULL != psf_file) {
 
-		complex float* tmp_psf =load_cfl(psf, DIMS, pat_dims);
+		complex float* tmp_psf = load_cfl(psf_file, DIMS, pat_dims);
+
 		pattern = anon_cfl("", DIMS, pat_dims);
 
 		md_copy(DIMS, pat_dims, pattern, tmp_psf, CFL_SIZE);
+
 		unmap_cfl(DIMS, pat_dims, tmp_psf);
 
 		md_copy(DIMS, grid_dims, k_grid_data, kspace_data, CFL_SIZE);
+
 		unmap_cfl(DIMS, ksp_dims, kspace_data);
 
 		if (0 == md_check_compat(DIMS, COIL_FLAG, ksp_dims, pat_dims))
@@ -289,20 +323,12 @@ int main_moba(int argc, char* argv[argc])
 
 		conf.noncartesian = true;
 
-	} else if (NULL != trajectory) {
+	} else if (NULL != traj_file) {
 
 		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
 		nufft_conf.toeplitz = false;
 
 		struct linop_s* nufft_op_k = NULL;
-
-		long traj_dims[DIMS];
-		long traj_strs[DIMS];
-
-		complex float* traj = load_cfl(trajectory, DIMS, traj_dims);
-		md_calc_strides(DIMS, traj_strs, traj_dims, CFL_SIZE);
-
-		md_zsmul(DIMS, traj_dims, traj, traj, oversampling);
 
 		md_select_dims(DIMS, FFT_FLAGS|TE_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, pat_dims, grid_dims);
 		pattern = anon_cfl("", DIMS, pat_dims);
@@ -338,9 +364,13 @@ int main_moba(int argc, char* argv[argc])
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, grid_dims);
+
 		pattern = anon_cfl("", DIMS, pat_dims);
+
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace_data);
+
 		md_copy(DIMS, grid_dims, k_grid_data, kspace_data, CFL_SIZE);
+
 		unmap_cfl(DIMS, ksp_dims, kspace_data);
 	}
 
@@ -489,6 +519,9 @@ int main_moba(int argc, char* argv[argc])
 	unmap_cfl(DIMS, img_dims, img);
 	unmap_cfl(DIMS, single_map_dims, single_map);
 	unmap_cfl(DIMS, TI_dims, TI);
+
+	if (NULL != traj_file)
+		unmap_cfl(DIMS, traj_dims, traj);
 
 	if (NULL != init_file)
 		unmap_cfl(DIMS, init_dims, init);

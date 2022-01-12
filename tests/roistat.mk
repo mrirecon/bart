@@ -10,7 +10,7 @@ tests/test-roistat-std: zeros noise ones resize roistat std nrmse
 	$(TOOLDIR)/roistat -b -D oy2.ra n.ra dy.ra					;\
 	$(TOOLDIR)/resize -c 0 50 1 50 n.ra ny2.ra					;\
 	$(TOOLDIR)/std 3 ny2.ra dy2.ra							;\
-	$(TOOLDIR)/nrmse -t 0.000001 dy2.ra dy.ra 					;\
+	$(TOOLDIR)/nrmse -t 0. dy2.ra dy.ra 						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -25,7 +25,7 @@ tests/test-roistat-var: zeros noise ones resize roistat var nrmse
 	$(TOOLDIR)/roistat -b -V oy2.ra n.ra dy.ra					;\
 	$(TOOLDIR)/resize -c 0 50 1 50 n.ra ny2.ra					;\
 	$(TOOLDIR)/var 3 ny2.ra dy2.ra							;\
-	$(TOOLDIR)/nrmse -t 0.000001 dy2.ra dy.ra 					;\
+	$(TOOLDIR)/nrmse -t 0.0000001 dy2.ra dy.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -59,7 +59,7 @@ tests/test-roistat-mult: zeros noise ones resize roistat join nrmse
 	$(TOOLDIR)/join 4 dy.ra dx.ra d2.ra 						;\
 	$(TOOLDIR)/join 4 oy2.ra ox2.ra o2.ra 						;\
 	$(TOOLDIR)/roistat -b -D o2.ra n.ra d.ra					;\
-	$(TOOLDIR)/nrmse -t 0.000001 d2.ra d.ra 					;\
+	$(TOOLDIR)/nrmse -t 0. d2.ra d.ra 						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

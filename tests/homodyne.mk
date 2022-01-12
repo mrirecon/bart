@@ -26,7 +26,7 @@ tests/test-homodyne-fftu: ones zeros join fmac homodyne rss fft fftmod nrmse $(T
 	$(TOOLDIR)/fftmod 3 c1.ra c1f.ra							;\
 	$(TOOLDIR)/homodyne -n -I -C 1 .75 c1f.ra c1h.ra					;\
 	$(TOOLDIR)/rss 8 c1h.ra r2.ra								;\
-	$(TOOLDIR)/nrmse -t 0.001 r1.ra r2.ra							;\
+	$(TOOLDIR)/nrmse -t 0.000001 r1.ra r2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

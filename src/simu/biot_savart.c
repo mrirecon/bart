@@ -39,8 +39,7 @@ void biot_savart(vec3_t b, const vec3_t r, unsigned int N, const vec3_t curve[st
 
 		vec3_t x;
 		vec3_rot(x, l, d);
-		vec3_smul(x, x, c / pow(n, 3.));	//saxpy
-		vec3_add(b, b, x);
+		vec3_saxpy(b, b, c / pow(n, 3.), x);
 	}
 }
 

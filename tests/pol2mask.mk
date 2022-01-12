@@ -36,7 +36,7 @@ tests/test-pol2mask2: index zexp creal scale ones saxpy join pol2mask resize nrm
 	$(TOOLDIR)/pol2mask -X50 -Y50 i3.ra i5.ra					;\
 	$(TOOLDIR)/ones 1 1 o.ra							;\
 	$(TOOLDIR)/resize -c 0 50 1 50 o.ra r.ra					;\
-	$(TOOLDIR)/nrmse -t 0.05 r.ra i5.ra 						;\
+	$(TOOLDIR)/nrmse -t 0. r.ra i5.ra 						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

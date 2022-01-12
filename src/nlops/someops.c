@@ -68,6 +68,7 @@ static void zaxpbz_fun(const nlop_data_t* _data, int N, complex float* args[N])
 
 	src1 = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, args[1]);
 	src2 = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, args[2]);
+
 	md_copy2(data->N, data->dims, data->ostrs, src1, data->istrs1, args[1], CFL_SIZE);
 	md_copy2(data->N, data->dims, data->ostrs, src2, data->istrs2, args[2], CFL_SIZE);
 
@@ -101,6 +102,7 @@ cleanup:
 
 	if (args[1] != src1)
 		md_free(src1);
+
 	if (args[2] != src2)
 		md_free(src2);
 }
@@ -110,6 +112,7 @@ static void scale_apply(const nlop_data_t* _data, unsigned int o, unsigned int i
 	assert(0 == o);
 	const auto data = CAST_DOWN(zaxpbz_s, _data);
 	const complex float scale = (i == 0) ? data->scale1 : data->scale2;
+
 	md_zsmul2(data->N, data->dims, data->ostrs, dst, (i == 0) ? data->istrs1 : data->istrs2, src, scale);
 }
 
@@ -118,6 +121,7 @@ static void scale_adjoint(const nlop_data_t* _data, unsigned int o, unsigned int
 	assert(0 == o);
 	const auto data = CAST_DOWN(zaxpbz_s, _data);
 	const complex float scale = (i == 0) ? data->scale1 : data->scale2;
+
 	md_clear2(data->N, data->dims, (i == 0) ? data->istrs1 : data->istrs2, dst, CFL_SIZE); //FIXME: compute size and use md_clear
 	md_zaxpy2(data->N, data->dims, (i == 0) ? data->istrs1 : data->istrs2, dst, conjf(scale), data->ostrs, src);
 }
@@ -137,7 +141,6 @@ static void zaxpbz_del(const nlop_data_t* _data)
 
 const struct nlop_s* nlop_zaxpbz2_create(int N, const long dims[N], unsigned long flags1, complex float scale1, unsigned long flags2, complex float scale2)
 {
-
 	PTR_ALLOC(struct zaxpbz_s, data);
 	SET_TYPEID(zaxpbz_s, data);
 
@@ -218,9 +221,8 @@ static void smo_abs_fun(const nlop_data_t* _data, complex float* dst, const comp
 	md_zmulc(data->N, data->dims, dst, src, src);//dst=[r0^2 + i0^2 + 0i, r1^2 + i1^2 + 0i, ...]
 	md_zreal(data->N, data->dims, dst, dst); //zmulc does not gurantee vanishing imag on gpu
 	md_zsadd(data->N, data->dims, dst, dst, data->epsilon);
-	md_sqrt(data->N+1, rdims, (float*)dst, (float*)dst);
+	md_sqrt(data->N + 1, rdims, (float*)dst, (float*)dst);
 	md_zdiv(data->N, data->dims, data->tmp, src, dst);
-
 }
 
 
@@ -255,6 +257,7 @@ static void smo_abs_del(const nlop_data_t* _data)
 	const auto data = CAST_DOWN(smo_abs_s, _data);
 
 	md_free(data->tmp);
+
 	xfree(data->dims);
 	xfree(data);
 }
@@ -269,8 +272,10 @@ const struct nlop_s* nlop_smo_abs_create(int N, const long dims[N], float epsilo
 	SET_TYPEID(smo_abs_s, data);
 
 	data->N = N;
+
 	PTR_ALLOC(long[N], ndims);
 	md_copy_dims(N, *ndims, dims);
+
 	data->dims = *PTR_PASS(ndims);
 	data->epsilon = epsilon;
 
@@ -373,6 +378,7 @@ const struct nlop_s* nlop_dump_create(int N, const long dims[N], const char* fil
 	SET_TYPEID(dump_s, data);
 
 	data->N = N;
+
 	PTR_ALLOC(long[N], ndims);
 	md_copy_dims(N, *ndims, dims);
 	data->dims = *PTR_PASS(ndims);
@@ -543,11 +549,13 @@ const struct nlop_s* nlop_zmax_create(int N, const long dims[N], unsigned long f
 
 	PTR_ALLOC(long[N], outdims);
 	md_select_dims(N, ~flags, *outdims, dims);
+
 	PTR_ALLOC(long[N], dims_tmp);
 	md_copy_dims(N, *dims_tmp, dims);
 
 	PTR_ALLOC(long[N], strides);
 	md_calc_strides(N, *strides, dims, CFL_SIZE);
+
 	PTR_ALLOC(long[N], out_strides);
 	md_calc_strides(N, *out_strides, *outdims, CFL_SIZE);
 
@@ -638,11 +646,11 @@ const struct nlop_s* nlop_zsqrt_create(int N, const long dims[N])
  **/
 const struct nlop_s* nlop_zss_create(int N, const long dims[N], unsigned long flags)
 {
-
 	long odims[N];
 	md_select_dims(N, ~flags, odims, dims);
 
 	auto result = nlop_tenmul_create(N, odims, dims, dims);
+
 	result = nlop_chain2_FF(nlop_from_linop_F(linop_zconj_create(N, dims)), 0, result, 0);
 	result = nlop_dup_F(result, 0, 1);
 
@@ -656,7 +664,6 @@ const struct nlop_s* nlop_zss_create(int N, const long dims[N], unsigned long fl
  **/
 const struct nlop_s* nlop_zrss_reg_create(int N, const long dims[N], unsigned long flags, float epsilon)
 {
-
 	long odims[N];
 	md_select_dims(N, ~flags, odims, dims);
 
@@ -665,8 +672,10 @@ const struct nlop_s* nlop_zrss_reg_create(int N, const long dims[N], unsigned lo
 	result = nlop_dup_F(result, 0, 1);
 
 	result = nlop_chain_FF(result, nlop_from_linop_F(linop_zreal_create(N, odims)));
+
 	if (0 != epsilon)
 		result = nlop_chain_FF(result, nlop_zsadd_create(N, odims, epsilon));
+
 	result = nlop_chain_FF(result, nlop_zsqrt_create(N, odims));
 	result = nlop_chain_FF(result, nlop_from_linop_F(linop_zreal_create(N, odims)));
 

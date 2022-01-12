@@ -43,6 +43,7 @@
 
 #include "misc/mri.h"
 #include "misc/misc.h"
+#include "misc/version.h"
 #include "misc/mmio.h"
 #include "misc/utils.h"
 #include "misc/opts.h"
@@ -468,6 +469,15 @@ int main_rtnlinv(int argc, char* argv[argc])
 #else
 			fftuc(DIMS, kgrid1_dims, FFT_FLAGS, kgrid1, kgrid1);
 #endif
+			if (!use_compat_to_version("v0.7.00")) {
+
+				float sc = 1.;
+				for (int i = 0; i < 3; i++)
+					if (1 != kgrid1_dims[i])
+						sc *= 2.;
+
+				md_zsmul(DIMS, kgrid1_dims, kgrid1, kgrid1, sqrtf(sc));
+			}
 		} else {
 
 			kgrid1 = kspace1;

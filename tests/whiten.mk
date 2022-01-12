@@ -16,7 +16,7 @@ tests/test-whiten: zeros ones noise join whiten std nrmse show
 	$(TOOLDIR)/whiten s.ra n.ra w.ra						;\
 	$(TOOLDIR)/std 7 w.ra d.ra							;\
 	$(TOOLDIR)/ones 4 1 1 1 3 o.ra							;\
-	$(TOOLDIR)/nrmse -t 0.001 d.ra o.ra						;\
+	$(TOOLDIR)/nrmse -t 0.00005 d.ra o.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
