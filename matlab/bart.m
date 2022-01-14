@@ -39,7 +39,8 @@ function [varargout] = bart(cmd, varargin)
 			% Try to execute bart inside wsl, if it works, then it returns status 0
 			[bartstatus, ~] = system('wsl bart version -V');
 			if bartstatus==0
-				bart_path = '/usr/bin';
+				[~, bart_path] = system('wsl dirname $(which bart)');
+				bart_path = strip(bart_path);
 				isWSL = true;
 			else
 				error('Environment variable TOOLBOX_PATH is not set.');
@@ -91,7 +92,8 @@ function [varargout] = bart(cmd, varargin)
 			cmdWSL = wslPathCorrection(cmd);
 			in_strWSL = wslPathCorrection(in_str);
 			out_strWSL =  wslPathCorrection(out_str);
-			ERR = system(['wsl ', bart_path, '/bart ', cmdWSL, ' ', in_strWSL, ' ', out_strWSL]);
+			final_strWSL = ['wsl ', bart_path, '/bart ', cmdWSL, ' ', in_strWSL, ' ', out_strWSL];
+			ERR = system(final_strWSL);
         else
 			% For cygwin use bash and modify paths
 			ERR = system(['bash.exe --login -c ', ...
@@ -142,3 +144,4 @@ function [varargout] = bart(cmd, varargin)
         error('command exited with an error');
     end
 end
+

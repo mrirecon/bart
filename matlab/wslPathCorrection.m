@@ -1,6 +1,6 @@
 %Soumick Chatterjee <soumick.chatterjee@ovgu.de>
 
-function [outData] = WSLPathCorrection(inData)
+function [outData] = wslPathCorrection(inData)
     outData=inData;
     for i = 'a':'z' %Replace drive letters with /mnt/
         outData=strrep(outData,[i,':'],['/mnt/',i]); %if drive letter is supplied in lowercase
