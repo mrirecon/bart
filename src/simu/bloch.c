@@ -86,6 +86,16 @@ void bloch_excitation(float out[3], float t, const float in[3], float r1, float 
 
 	rotx(out, in, gb[0]*t);
 }
+
+// Rotation effects of RF fields only
+void bloch_excitation2(float out[3], const float in[3], float angle, float phase)
+{
+	float tmp[3] = { 0. };
+	float tmp2[3] = { 0. };
+
+	rotz(tmp, in, -phase);
+	rotx(tmp2, tmp, angle);
+	rotz(out, tmp2, phase);
 }
 
 
