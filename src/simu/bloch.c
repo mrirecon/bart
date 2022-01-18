@@ -71,9 +71,11 @@ void bloch_relaxation(float out[3], float t, const float in[3], float r1, float 
 	float m0 = 1.;
 	assert((0. == gb[0]) && (0. == gb[1])); // no B1(t)
 
-	out[0] =  (in[0] * cosf(gb[2] * t) - in[1] * sinf(gb[2] * t)) * expf(-t * r2);
-	out[1] = -(in[0] * sinf(gb[2] * t) + in[1] * cosf(gb[2] * t)) * expf(-t * r2);
-	out[2] = in[2] + (m0 - in[2]) * (1. - expf(-t * r1));
+        rotz(out, in, gb[2]*t);
+
+	out[0] *= expf(-t * r2);
+	out[1] *= expf(-t * r2);
+	out[2] += (m0 - in[2]) * (1. - expf(-t * r1));
 }
 
 
@@ -82,9 +84,8 @@ void bloch_excitation(float out[3], float t, const float in[3], float r1, float 
 	(void)r1; (void)r2;
 	assert(0. == gb[2]); // no gradient, rotating frame
 
-	out[0] = in[0];
-	out[1] = (in[2] * sinf(gb[0] * t) + in[0] * cosf(gb[0] * t));
-	out[2] = (in[2] * cosf(gb[0] * t) - in[0] * sinf(gb[0] * t));
+	rotx(out, in, gb[0]*t);
+}
 }
 
 

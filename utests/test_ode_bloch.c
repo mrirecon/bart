@@ -9,6 +9,8 @@
 
 #include <math.h>
 
+#include "misc/mri.h"
+
 #include "num/ode.h"
 
 #include "simu/bloch.h"
@@ -347,3 +349,56 @@ static bool test_ode_sa_bloch(void)
 
 
 UT_REGISTER_TEST(test_ode_sa_bloch);
+static bool test_bloch_relaxation(void)
+{
+	float x0[3] = { 0., 1., 0. };
+	float x[3] = { 0. };
+	float ref[3] = { 0., 1./M_E, 1-1./M_E };
+
+        struct bloch_s data = { 1., 1., { 0., 0., 0. } };
+
+        bloch_relaxation(x, 1., x0, data.r1, data.r2, data.gb);
+
+#if 0
+	printf("test_bloch_relaxation\n");
+	printf("x_init: %f,\t%f,\t%f\n", x0[0], x0[1], x0[2]);
+	printf("x_out: %f,\t%f,\t%f\n", x[0], x[1], x[2]);
+#endif
+	float err2 = 0.;
+
+	for (int i = 0; i < 3; i++)
+		err2 += powf(x[i] - ref[i], 2.);
+
+	UT_ASSERT(err2 < 1.E-6);
+}
+
+UT_REGISTER_TEST(test_bloch_relaxation);
+
+
+
+
+static bool test_bloch_excitation(void)
+{
+	float x0[3] = { 0., 0., 1. };
+	float x[3] = { 0. };
+	float ref[3] = { 0., 1., 0. };
+
+        struct bloch_s data = { 1., 1., { M_PI/2., 0., 0. } };
+
+        bloch_excitation(x, 1., x0, data.r1, data.r2, data.gb);
+
+#if 0
+	printf("test_bloch_excitation\n");
+	printf("x_init: %f,\t%f,\t%f\n", x0[0], x0[1], x0[2]);
+	printf("x_out: %f,\t%f,\t%f\n", x[0], x[1], x[2]);
+#endif
+	float err2 = 0.;
+
+	for (int i = 0; i < 3; i++)
+		err2 += powf(x[i] - ref[i], 2.);
+
+	UT_ASSERT(err2 < 1.E-6);
+}
+
+UT_REGISTER_TEST(test_bloch_excitation);
+
