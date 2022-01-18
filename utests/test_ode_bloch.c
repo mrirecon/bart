@@ -429,3 +429,236 @@ static bool test_bloch_excitation2_phase(void)
 }
 
 UT_REGISTER_TEST(test_bloch_excitation2_phase);
+
+
+// Test if bloch_b1_pdp performs as expected
+static bool test_bloch_b1_pdp(void)
+{
+	float gb[3] = { 0. };
+
+	float in[3] = { 0., 0., 1. };
+	float out[3][3] = { { 0., 0., 1. }, { 0. }, { 0. } };
+
+	// M_z == 1
+
+	bloch_b1_pdp(out, in, 0., 0., gb, 0., 1.);
+
+	if (1 != out[2][1])
+		return false;
+
+	bloch_b1_pdp(out, in, 0., 0., gb, M_PI/2., 1.);
+
+	if (-1 != out[2][0])
+		return false;
+
+	bloch_b1_pdp(out, in, 0., 0., gb, M_PI/2., 2.);
+
+	if (-2 != out[2][0])
+		return false;
+
+	// M_y == 1
+
+	in[1] = 1.;
+	in[2] = 0.;
+
+	bloch_b1_pdp(out, in, 0., 0., gb, 0., 1.);
+
+	if ((1 != out[0][2]) || (-1 != out[1][1]) || (-1 != out[2][2]))
+		return false;
+
+
+	// M_x == 1
+
+	in[0] = 1.;
+	in[1] = 0.;
+
+	bloch_b1_pdp(out, in, 0., 0., gb, 0., 1.);
+
+	if ((1 != out[0][2]) || (-1 != out[1][0]))
+		return false;
+
+	bloch_b1_pdp(out, in, 0., 0., gb, M_PI/2., 1.);
+
+	if ((1 != out[0][2]) || (-1 != out[1][0]) || (1 != out[2][2]))
+		return false;
+
+#if 0
+	bart_printf("out\n");
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+
+			bart_printf("%f ", out[i][j]);
+		}
+		bart_printf("\n");
+	}
+#endif
+	return true;
+
+}
+
+UT_REGISTER_TEST(test_bloch_b1_pdp);
+
+
+// SA tests including B1
+
+// dB1
+static void bloch_wrap_pdp(void* _data, float* out, float t, const float* in)
+{
+	struct bloch_s* data = _data;
+	(void)t;
+
+	bloch_b1_pdp((float(*)[3])out, in, data->r1, data->r2, data->gb, 0., M_PI / (2 * 0.2));
+}
+
+// dFA
+static void bloch_wrap_pdp2(void* _data, float* out, float t, const float* in)
+{
+	struct bloch_s* data = _data;
+	(void)t;
+
+	bloch_b1_pdp((float(*)[3])out, in, data->r1, data->r2, data->gb, 0., 1.);
+}
+
+// dFA + phase of PI/2
+static void bloch_wrap_pdp3(void* _data, float* out, float t, const float* in)
+{
+	struct bloch_s* data = _data;
+	(void)t;
+
+	bloch_b1_pdp((float(*)[3])out, in, data->r1, data->r2, data->gb, M_PI/2., 1.);
+}
+
+
+// Test B1 gradient
+static bool test_ode_sa_bloch_b1(void)
+{
+	int N = 3;
+	int P = 3;
+
+	float end = 0.2;
+
+	// FA 90 degree:	a = gamma * b1 * time
+	float fa = M_PI / (2 * end);
+
+	struct bloch_s data = { 0. , 0., { fa, 0, 0. } };
+
+	float xp[4][3] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
+	float x0[3] = { 0., 0., 1. };
+	float x2[3] = { 0., 0., 0. };
+	float x2b1[3] = { 0., 0., 0. };
+
+	float h = 0.1;
+	float tol = 0.000001;
+
+	float q = 1.E-3;
+	ode_direct_sa(h, tol, N, P, xp, 0., end, &data, bloch_fun, bloch_pdy2, bloch_wrap_pdp);
+
+	bloch_excitation(x2, end, x0, data.r1, data.r2, data.gb);
+
+	data.gb[0] += q;
+	bloch_excitation(x2b1, end, x0, data.r1, data.r2, data.gb);
+
+	for (int i = 0; i < N; i++) {
+
+                // dm/dfa = dm/db1*db1/dfa = dm/db1*1/(nom.FA)
+		float err = fabsf(q * xp[3][i]/fa - (x2b1[i] - x2[i]));
+
+		if (err > 1.E-7)
+			return false;
+	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_ode_sa_bloch_b1);
+
+
+// Test FA gradient
+static bool test_ode_sa_bloch_fa(void)
+{
+	int N = 3;
+	int P = 3;
+
+	float end = 0.2;
+
+	// FA 90 degree:	a = gamma * b1 * time
+	float fa = M_PI / (2 * end);
+
+	struct bloch_s data = { 0. , 0., { fa, 0., 0. } };
+
+	float xp[4][3] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
+	float x0[3] = { 0., 0., 1. };
+	float x2[3] = { 0., 0., 0. };
+	float x2b1[3] = { 0., 0., 0. };
+
+	float h = 0.1;
+	float tol = 0.000001;
+
+	float q = 1.E-3;
+	ode_direct_sa(h, tol, N, P, xp, 0., end, &data, bloch_fun, bloch_pdy2, bloch_wrap_pdp2);
+
+	bloch_excitation(x2, end, x0, data.r1, data.r2, data.gb);
+
+	data.gb[0] += q;
+	bloch_excitation(x2b1, end, x0, data.r1, data.r2, data.gb);
+
+	for (int i = 0; i < N; i++) {
+
+                // dm/dfa = dm/db1*db1/dfa = dm/db1*1/(nom.FA)
+		float err = fabsf(q * xp[3][i] - (x2b1[i] - x2[i]));
+
+		if (err > 1.E-7)
+			return false;
+	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_ode_sa_bloch_fa);
+
+
+// Test FA gradient with included RF phase
+static bool test_ode_sa_bloch_fa_with_phase(void)
+{
+	int N = 3;
+	int P = 3;
+
+	float end = 0.2;
+
+	// FA 90 degree:	a = gamma * b1 * time
+	float fa = M_PI / 2. / end;
+	float phase = M_PI/2.;
+
+	struct bloch_s data = { 0. , 0., { cosf(phase)*fa, sinf(phase)*fa, 0. } };
+
+	float xp[4][3] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
+	float x0[3] = { 0., 0., 1. };
+	float x2[3] = { 0., 0., 0. };
+	float x2b1[3] = { 0., 0., 0. };
+
+	float h = 0.1;
+	float tol = 0.000001;
+
+	float q = 1.E-3;
+
+	// phase == M_PI/2. requires bloch_wrap_pdp3!
+	ode_direct_sa(h, tol, N, P, xp, 0., end, &data, bloch_fun, bloch_pdy2, bloch_wrap_pdp3);
+
+	bloch_excitation2(x2, x0, fa*end, phase);
+
+	fa += q;
+	bloch_excitation2(x2b1, x0, fa*end, phase);
+
+	for (int i = 0; i < N; i++) {
+
+                // dm/dfa = dm/db1*db1/dfa = dm/db1*1/(nom.FA)
+		float err = fabsf(q * xp[3][i] - (x2b1[i] - x2[i]));
+
+		if (err > 1.E-7)
+			return false;
+	}
+	return true;
+}
+
+UT_REGISTER_TEST(test_ode_sa_bloch_fa_with_phase);
+
