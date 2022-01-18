@@ -347,8 +347,10 @@ static bool test_ode_sa_bloch(void)
 	return true;
 }
 
-
 UT_REGISTER_TEST(test_ode_sa_bloch);
+
+
+
 static bool test_bloch_relaxation(void)
 {
 	float x0[3] = { 0., 1., 0. };
@@ -402,3 +404,28 @@ static bool test_bloch_excitation(void)
 
 UT_REGISTER_TEST(test_bloch_excitation);
 
+
+
+static bool test_bloch_excitation2_phase(void)
+{
+	float x0[3] = { 0., 0., 1. };
+	float x[3] = { 0. };
+	float ref[3] = { 1., 0., 0. };
+
+	bloch_excitation2(x, x0, M_PI/2., M_PI/2.);
+
+#if 0
+	printf("test_bloch_excitation2_phase\n");
+	printf("x_init: %f,\t%f,\t%f\n", x0[0], x0[1], x0[2]);
+	printf("x_out: %f,\t%f,\t%f\n", x[0], x[1], x[2]);
+#endif
+
+	float err2 = 0.;
+
+	for (int i = 0; i < 3; i++)
+		err2 += powf(x[i] - ref[i], 2.);
+
+	UT_ASSERT(err2 < 1.E-6);
+}
+
+UT_REGISTER_TEST(test_bloch_excitation2_phase);
