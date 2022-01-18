@@ -14,6 +14,10 @@
 // T/m/s
 #define SKYRA_RAMP 200.
 
+extern void rotx(float out[3], const float in[3], float angle);
+extern void roty(float out[3], const float in[3], float angle);
+extern void rotz(float out[3], const float in[3], float angle);
+
 extern void bloch_ode(float out[3], const float in[3], float r1, float r2, const float gb[3]);
 extern void bloch_relaxation(float out[3], float t, const float in[3], float r1, float r2, const float gb[3]);
 extern void bloch_excitation(float out[3], float t, const float in[3], float r1, float r2, const float gb[3]);
