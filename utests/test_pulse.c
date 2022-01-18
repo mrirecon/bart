@@ -9,8 +9,10 @@
 #include <math.h>
 
 #include "misc/misc.h"
+#include "misc/mri.h"
 
 #include "simu/pulse.h"
+#include "simu/simulation.h"
 
 #include "utest.h"
 
@@ -65,3 +67,100 @@ static bool test_sinc_integral2(void)
 }
 
 UT_REGISTER_TEST(test_sinc_integral2);
+
+
+// Test Accuracy of on-resonant pulse
+//      1. Execute pulse for various angles and durations
+//      2. Compare final magnetization to nominal angle set for the pulse
+static bool test_rf_pulse_ode(void)
+{
+	long dim[DIMS] = { [0 ... DIMS - 1] = 1 };
+
+        enum { N = 3 };              // Number of dimensions (x, y, z)
+	enum { P = 4 };              // Number of parameters with estimated derivative (Mxy, R1, R2, B1)
+
+	dim[READ_DIM] = 10;
+	dim[PHS1_DIM] = 10;
+
+        // RF duration
+	float tmin = 0.0001;
+	float tmax = 0.1;
+
+        // Nominal FA
+	float amin = 0.;
+	float amax = 180.;
+
+	for (int i = 0; i < dim[READ_DIM]; i++ )
+		for (int j = 0; j < dim[PHS1_DIM]; j++ ) {
+
+			float trf = (tmin + (float)i/((float)dim[READ_DIM] - 1.) * (tmax - tmin));
+			float angle = (amin + (float)j/((float)dim[PHS1_DIM] - 1.) * (amax - amin));
+
+                        // Define sequence characteristics
+			struct sim_data data;
+
+			data.seq = simdata_seq_defaults;
+			data.seq.seq_type = 1;
+			data.seq.tr = 10;
+			data.seq.te = 5;
+			data.seq.rep_num = 1;
+			data.seq.spin_num = 1;
+
+			data.voxel = simdata_voxel_defaults;
+			data.voxel.r1 = 0.;
+			data.voxel.r2 = 0.;
+			data.voxel.m0 = 1;
+			data.voxel.w = 0;
+
+			data.pulse = simdata_pulse_defaults;
+			data.pulse.flipangle = angle;
+			data.pulse.rf_end = trf;
+
+			data.grad = simdata_grad_defaults;
+			data.tmp = simdata_tmp_defaults;
+
+
+                        // Prepare pulse
+			pulse_create(&data.pulse, 0., trf, angle, 0., 4., 0.46);
+
+			float xp[4][3] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
+
+			float h = 10E-5;
+			float tol = 10E-6;
+
+                        // Run pulse
+			start_rf_pulse(&data, h, tol, N, P, xp);
+
+
+                        // Compare result to nominal FA
+			float sim_angle = 0.;
+
+                        // FA <= 90°
+			if (xp[0][2] >= 0) {
+
+				if (data.voxel.r1 != 0 && data.voxel.r2 != 0)   // relaxation case
+					sim_angle = asinf(xp[0][1] / data.voxel.m0) / M_PI * 180.;
+				else
+					sim_angle = asinf(xp[0][1] / sqrtf(xp[0][0]*xp[0][0]+xp[0][1]*xp[0][1]+xp[0][2]*xp[0][2])) / M_PI * 180.;
+			}
+                        // FA > 90°
+			else {
+				if (data.voxel.r1 != 0 && data.voxel.r2 != 0)   // relaxation case
+					sim_angle = acosf(fabs(xp[0][1]) / data.voxel.m0) / M_PI * 180. + 90.;
+				else
+					sim_angle = acosf(fabs(xp[0][1]) / sqrtf(xp[0][0]*xp[0][0]+xp[0][1]*xp[0][1]+xp[0][2]*xp[0][2])) / M_PI * 180. + 90.;
+			}
+
+			float err = fabs(data.pulse.flipangle - sim_angle);
+
+			if (err > 10E-4) {
+
+				debug_printf(DP_WARN, "Error for test_rf_pulse_ode\n see -> utests/test_pulse.c\n");
+				return 0;
+			}
+		}
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_rf_pulse_ode);

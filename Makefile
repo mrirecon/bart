@@ -635,8 +635,9 @@ UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr
 UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr
 
 # lib simu
-UTARGETS += test_ode_bloch test_biot_savart test_signals test_epg test_pulse
+UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse
 MODULES_test_ode_bloch += -lsimu
+MODULES_test_ode_simu += -lsimu
 MODULES_test_biot_savart += -lsimu
 MODULES_test_signals += -lsimu
 MODULES_test_epg += -lsimu
