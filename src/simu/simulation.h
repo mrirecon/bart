@@ -25,7 +25,6 @@ struct simdata_seq {
 	float te;
 	int rep_num;
 	int spin_num;
-	int num_average_rep;
 
 	float inversion_pulse_length;
 	float prep_pulse_length;

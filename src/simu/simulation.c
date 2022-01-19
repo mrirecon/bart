@@ -49,7 +49,6 @@ const struct simdata_seq simdata_seq_defaults = {
 	.te = 0.002,
 	.rep_num = 1,
 	.spin_num = 1,
-	.num_average_rep = 1,
 
 	.inversion_pulse_length = 0.01,
 	.prep_pulse_length = 0.001,
