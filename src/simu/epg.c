@@ -559,7 +559,7 @@ void flash_epg_der(int N, int M, complex float signal[N], complex float states[3
 	
 		if (1 == spoiling)
 			rf_phase += i * 50.0 / 180.0 * M_PI;
-		else
+		if (2 == spoiling)
 			rf_phase += 2 * M_PI * rand() / RAND_MAX;
 
 		rf_phase = fmodf(rf_phase, 2.0 * M_PI);
