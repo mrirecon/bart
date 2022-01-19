@@ -252,3 +252,125 @@ static bool test_ode_irbssfp_simulation(void)
 }
 
 UT_REGISTER_TEST(test_ode_irbssfp_simulation);
+
+
+// Test off-resonance effect in ODE simulation
+//      - Set off-resonance so that magnetization is rotated by 90 degree within TE
+//      - for w == 0 -> Mxy = 0+1*I
+//      - Goal: Mxy = 1+0*I
+static bool test_ode_simu_offresonance(void)
+{
+	struct sim_data sim_data;
+
+	sim_data.seq = simdata_seq_defaults;
+	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+	sim_data.seq.tr = 0.003;
+	sim_data.seq.te = 0.001;
+	sim_data.seq.rep_num = 1;
+	sim_data.seq.spin_num = 1;
+	sim_data.seq.inversion_pulse_length = 0.;
+	sim_data.seq.prep_pulse_length = 0.;
+
+	sim_data.voxel = simdata_voxel_defaults;
+	sim_data.voxel.r1 = 0.;	// Turn off relaxation
+	sim_data.voxel.r2 = 0.;	// Turn off relaxation
+	sim_data.voxel.m0 = 1.;
+
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.flipangle = 90.;
+	sim_data.pulse.rf_end = 10E-9;	// Close to Hard-Pulses
+
+        sim_data.grad = simdata_grad_defaults;
+	sim_data.tmp = simdata_tmp_defaults;
+
+	sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
+
+	float mxySig_ode[sim_data.seq.rep_num][3];
+	float saR1Sig_ode[sim_data.seq.rep_num][3];
+	float saR2Sig_ode[sim_data.seq.rep_num][3];
+	float saDensSig_ode[sim_data.seq.rep_num][3];
+	float sa_b1_ode[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxySig_ode, saR1Sig_ode, saR2Sig_ode, saDensSig_ode, sa_b1_ode);
+
+#if 0
+	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[0][0], mxySig_ode[0][0]
+								, mxySig_ode[0][1], mxySig_ode[0][1]
+								, mxySig_ode[0][2], mxySig_ode[0][2] );
+
+	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[0][0] - 1.),
+							fabs(mxySig_ode[0][1] - 0.),
+							fabs(mxySig_ode[0][2] - 0.) );
+#endif
+	float tol = 10E-5;
+
+	UT_ASSERT(	(fabs(mxySig_ode[0][0] - 1.) < tol) &&
+			(fabs(mxySig_ode[0][1] - 0.) < tol) &&
+			(fabs(mxySig_ode[0][2] - 0.) < tol) );
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_ode_simu_offresonance);
+
+
+// Test gradient during relaxation
+//      - Simulate gradient dephasing by PI/2 between RF_end and TE of first repetition
+//      - This should turn the magnetization from 0,1,0 to 1,0,0
+static bool test_ode_simu_gradient(void)
+{
+	struct sim_data sim_data;
+
+	sim_data.seq = simdata_seq_defaults;
+	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+	sim_data.seq.tr = 0.003;
+	sim_data.seq.te = 0.001;
+	sim_data.seq.rep_num = 1;
+	sim_data.seq.spin_num = 1;
+	sim_data.seq.inversion_pulse_length = 0.;
+	sim_data.seq.prep_pulse_length = 0.;
+
+	sim_data.voxel = simdata_voxel_defaults;
+	sim_data.voxel.r1 = 0.;	// Turn off relaxation
+	sim_data.voxel.r2 = 0.;	// Turn off relaxation
+	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.w = 0.;
+
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.flipangle = 90.;
+	sim_data.pulse.rf_end = 10E-9;	// Close to Hard-Pulses
+
+	sim_data.grad = simdata_grad_defaults;
+	sim_data.grad.mom =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
+
+	sim_data.tmp = simdata_tmp_defaults;
+
+	float mxySig_ode[sim_data.seq.rep_num][3];
+	float saR1Sig_ode[sim_data.seq.rep_num][3];
+	float saR2Sig_ode[sim_data.seq.rep_num][3];
+	float saDensSig_ode[sim_data.seq.rep_num][3];
+	float sa_b1_ode[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxySig_ode, saR1Sig_ode, saR2Sig_ode, saDensSig_ode, sa_b1_ode);
+
+#if 0
+	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[sim_data.seq.rep_num-1][0], mxySig_ode[sim_data.seq.rep_num-1][0]
+								, mxySig_ode[sim_data.seq.rep_num-1][1], mxySig_ode[sim_data.seq.rep_num-1][1]
+								, mxySig_ode[sim_data.seq.rep_num-1][2], mxySig_ode[sim_data.seq.rep_num-1][2] );
+
+	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.),
+							fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.),
+							fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) );
+
+#endif
+	float tol = 10E-5;
+
+	UT_ASSERT(	(fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.) < tol) &&
+			(fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.) < tol) &&
+			(fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) < tol) );
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_ode_simu_gradient);
+
