@@ -85,6 +85,10 @@ int main_sim(int argc, char* argv[argc])
 
                 /* Voxel Specific Parameters */
                 OPTL_FLOAT(0, "off", &(data.voxel.w), "float", "Off-Resonance [rad/s]"),
+
+                /* Gradient Specific Parameters */
+                OPTL_FLOAT(0, "mom-sl", &(data.grad.mom_sl), "float", "Slice Selection Gradient Moment [rad/s]"),
+
         };
         const int N_sim_opts = ARRAY_SIZE(sim_opts);
 
