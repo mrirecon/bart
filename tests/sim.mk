@@ -64,7 +64,17 @@ tests/test-sim-ode-hp-bssfp: sim nrmse
 	touch $@
 
 
+tests/test-sim-multi-relaxation: sim slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --sim bssfp,tr=0.0045,te=0.00225,nrep=1000,ipl=0.0001,ppl=0,trf=0,fa=45,bwtp=4 -1 3:3:4 -2 1:1:5 simu.ra ;\
+	$(TOOLDIR)/slice 6 0 7 0 simu.ra slice1.ra				;\
+	$(TOOLDIR)/slice 6 3 7 4 simu.ra slice2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.000001 slice1.ra slice2.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
 TESTS += tests/test-sim-ode-hp-irflash tests/test-sim-ode-hp-flash
 TESTS += tests/test-sim-ode-hp-irbssfp tests/test-sim-ode-hp-bssfp
+TESTS += tests/test-sim-multi-relaxation
