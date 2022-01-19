@@ -196,6 +196,7 @@ static void sum_up_signal(struct sim_data* data, float *mxy,  float *sa_r1, floa
 				sum_sa_b1 += sa_b1[ind];
 			}
 
+                        // Mean
                         mxy_sig[r][dim] = sum_mxy * data->voxel.m0 / (float)data->seq.spin_num;
                         sa_r1_sig[r][dim] = sum_sa_r1 * data->voxel.m0 / (float)data->seq.spin_num;
                         sa_r2_sig[r][dim] = sum_sa_r2 * data->voxel.m0 / (float)data->seq.spin_num;
@@ -255,7 +256,7 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
 }
 
 
-/* ------------ Sequence Structure -------------- */
+/* ------------ Structural Elements -------------- */
 
 static void prepare_sim(struct sim_data* data)
 {
@@ -273,7 +274,8 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 		collect_signal(data, N, P, mxy, sa_r1, sa_r2, sa_b1, xp);
 
 #if 1	// Smooth spoiling for FLASH sequences
-	if ((FLASH == data->seq.seq_type) || (IRFLASH == data->seq.seq_type))
+	if (    (FLASH == data->seq.seq_type) ||
+                (IRFLASH == data->seq.seq_type))
 		data->tmp.r2spoil = 10000.;
 #endif
 
@@ -283,14 +285,45 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 }
 
 
+/* ------------ Sequence Specific Blocks -------------- */
+
+static void inversion(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end)
+{
+	struct sim_data inv_data = *data;
+
+        // Perfect inversion
+        for (int p = 0; p < P; p++)
+                bloch_excitation2(xp[p], xp[p], M_PI, 0.);
+
+        relaxation2(&inv_data, h, tol, N, P, xp, st, end);
+}
+
+
+static void alpha_half_preparation(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N])
+{
+	struct sim_data prep_data = *data;
+
+        prep_data.pulse.flipangle = data->pulse.flipangle / 2.;
+        prep_data.pulse.phase = M_PI;
+        prep_data.seq.te = data->seq.prep_pulse_length;
+        prep_data.seq.tr = data->seq.prep_pulse_length;
+
+        assert(prep_data.pulse.rf_end <= prep_data.seq.prep_pulse_length);
+
+        prepare_sim(&prep_data);
+
+        run_sim(&prep_data, NULL, NULL, NULL, NULL, h, tol, N, P, xp, false);
+}
+
+
 /* ------------ Main Simulation -------------- */
 
 void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_sig)[3], float (*sa_r2_sig)[3], float (*sa_m0_sig)[3], float (*sa_b1_sig)[3])
 {
 	float tol = 10E-6;      // Tolerance of ODE solver
 
-        enum { N = 3 };              // Number of dimensions (x, y, z)
-	enum { P = 4 };              // Number of parameters with estimated derivative (Mxy, R1, R2, B1)
+        enum { N = 3 };         // Number of dimensions (x, y, z)
+	enum { P = 4 };         // Number of parameters with estimated derivative (Mxy, R1, R2, B1)
 
 
         long storage_size = data->seq.spin_num * data->seq.rep_num * 3 * sizeof(float);
@@ -311,7 +344,8 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
 		//      - Calculate slice profile by looping over spins with z-gradient
 		if (1 != data->seq.spin_num) {
 
-			assert(1 == data->seq.spin_num % 2); // ODD! Otherwise not all spins gradient steps are covered
+                        // Ensures central spin on main lope is set
+			assert(1 == data->seq.spin_num % 2);
 
 			data->grad.mom_sl = zgradient_max/(data->seq.spin_num-1) * (data->tmp.spin_counter - (int)(data->seq.spin_num/2));
 		}
@@ -330,46 +364,30 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
 
                 // Apply perfect inversion
 
-                if ((IRBSSFP == data->seq.seq_type) || (IRFLASH == data->seq.seq_type)) {
-
-                        struct sim_data inv_data = *data;
-
-                        xp[0][2] = -1.;
-
-                        relaxation2(&inv_data, h, tol, N, P, xp, 0., inv_data.pulse.rf_end);
-                }
+                if (    (IRBSSFP == data->seq.seq_type) ||
+                        (IRFLASH == data->seq.seq_type))
+                        inversion(data, h, tol, N, P, xp, 0., data->seq.inversion_pulse_length);
 
 
                 // Alpha/2 and TR/2 signal preparation
 
-                if ((BSSFP == data->seq.seq_type) || (IRBSSFP == data->seq.seq_type)) {
+                if (    (BSSFP == data->seq.seq_type) ||
+                        (IRBSSFP == data->seq.seq_type))
+                        alpha_half_preparation(data, h, tol, N, P, xp);
 
-                        struct sim_data prep_data = *data;
 
-                        prep_data.pulse.flipangle = data->pulse.flipangle / 2.;
-                        prep_data.pulse.phase = M_PI;
-                        prep_data.seq.te = data->seq.prep_pulse_length;
-                        prep_data.seq.tr = data->seq.prep_pulse_length;
-
-                        assert(prep_data.pulse.rf_end <= data->seq.prep_pulse_length);
-
-                        prepare_sim(&prep_data);
-
-                        run_sim(&prep_data, NULL, NULL, NULL, NULL, h, tol, N, P, xp, false);
-                }
-                else if (IRFLASH == data->seq.seq_type)
-                        relaxation2(data, h, tol, N, P, xp, 0., data->seq.prep_pulse_length);
+                prepare_sim(data);
 
 
                 // Loop over Pulse Blocks
 
                 data->tmp.t = 0;
 
-                prepare_sim(data);
-
                 while (data->tmp.rep_counter < data->seq.rep_num) {
 
-                        if ((BSSFP == data->seq.seq_type) || (IRBSSFP == data->seq.seq_type))
+                        // Change phase of bSSFP sequence in each repetition block
+                        if (    (BSSFP == data->seq.seq_type) ||
+                                (IRBSSFP == data->seq.seq_type))
                                 data->pulse.phase = M_PI * (float)(data->tmp.rep_counter);
 
                         run_sim(data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, true);

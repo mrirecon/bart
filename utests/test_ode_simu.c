@@ -40,6 +40,8 @@ static bool test_ode_bloch_simulation_gradients(void)
 	sim_data.seq.te = 0.0015;
 	sim_data.seq.rep_num = 500;
 	sim_data.seq.spin_num = 1;
+        sim_data.seq.inversion_pulse_length = 0.;
+	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
 	sim_data.voxel.r1 = 1. / WATER_T1;
