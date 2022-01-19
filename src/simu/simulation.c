@@ -31,6 +31,44 @@
 #include "simulation.h"
 
 
+void debug_sim(struct sim_data* data)
+{
+        debug_printf(DP_WARN, "Simulation-Debug-Output\n\n");
+        debug_printf(DP_WARN, "Voxel-Parameter:\n");
+        debug_printf(DP_INFO, "\tR1:%f\n", data->voxel.r1);
+        debug_printf(DP_INFO, "\tR2:%f\n", data->voxel.r2);
+        debug_printf(DP_INFO, "\tM0:%f\n", data->voxel.m0);
+        debug_printf(DP_INFO, "\tw:%f\n", data->voxel.w);
+        debug_printf(DP_INFO, "\tB1:%f\n\n", data->voxel.b1);
+
+        debug_printf(DP_WARN, "Seq-Parameter:\n");
+        debug_printf(DP_INFO, "\tSequence:%d\n", data->seq.seq_type);
+        debug_printf(DP_INFO, "\tTR:%f\n", data->seq.tr);
+        debug_printf(DP_INFO, "\tTE:%f\n", data->seq.te);
+        debug_printf(DP_INFO, "\t#Rep:%d\n", data->seq.rep_num);
+        debug_printf(DP_INFO, "\t#Spins:%d\n", data->seq.spin_num);
+        debug_printf(DP_INFO, "\tIPL:%f\n", data->seq.inversion_pulse_length);
+        debug_printf(DP_INFO, "\tPPL:%f\n", data->seq.prep_pulse_length);
+        debug_printf(DP_INFO, "\tPulse Applied?:%d\n\n", data->seq.pulse_applied);
+
+        debug_printf(DP_WARN, "Gradient-Parameter:\n");
+        debug_printf(DP_INFO, "\tMoment:%f\n", data->grad.mom);
+        debug_printf(DP_INFO, "\tMoment SL:%f\n\n", data->grad.mom_sl);
+
+        debug_printf(DP_WARN, "Pulse-Parameter:\n");
+        debug_printf(DP_INFO, "\tRF-Start:%f\n", data->pulse.rf_start);
+        debug_printf(DP_INFO, "\tRF-End:%f\n", data->pulse.rf_end);
+        debug_printf(DP_INFO, "\tFlipangle:%f\n", data->pulse.flipangle);
+        debug_printf(DP_INFO, "\tPhase:%f\n", data->pulse.phase);
+        debug_printf(DP_INFO, "\tBWTP:%f\n", data->pulse.bwtp);
+        debug_printf(DP_INFO, "\tNL:%f\n", data->pulse.nl);
+        debug_printf(DP_INFO, "\tNR:%f\n", data->pulse.nr);
+        debug_printf(DP_INFO, "\tN:%f\n", data->pulse.n);
+        debug_printf(DP_INFO, "\tt0:%f\n", data->pulse.t0);
+        debug_printf(DP_INFO, "\tAlpha:%f\n", data->pulse.alpha);
+        debug_printf(DP_INFO, "\tA:%f\n\n", data->pulse.A);
+}
+
 
 const struct simdata_voxel simdata_voxel_defaults = {
 
