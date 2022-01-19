@@ -261,7 +261,7 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 		xp2[1] = xp[i][1];
 		xp2[2] = xp[i][2];
 
-		bloch_relaxation(xp[i], end-st, xp2, data->voxel.r1, data->voxel.r2, data->grad.gb);
+		bloch_relaxation(xp[i], end-st, xp2, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb);
 	}
 
 	data->grad.gb[2] = 0.;
