@@ -334,7 +334,8 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
 
 static void prepare_sim(struct sim_data* data)
 {
-	pulse_create(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
+        if (0. != data->pulse.rf_end)
+        	pulse_create(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
 }
 
 
