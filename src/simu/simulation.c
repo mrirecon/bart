@@ -213,6 +213,18 @@ static void sum_up_signal(struct sim_data* data, float *mxy,  float *sa_r1, floa
 
 /* ------------ RF-Pulse -------------- */
 
+// Single hard pulse without discrete sampling
+static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
+{
+	data->grad.gb[2] = (data->grad.mom_sl + data->voxel.w);	//[rad/s]
+
+        for (int i = 0; i < P; i++)
+                bloch_excitation2(xp[i], xp[i], data->pulse.flipangle/180.*M_PI, data->pulse.phase);
+
+        data->grad.gb[2] = 0.;
+}
+
+
 static void ode_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N])
 {
 	// Turn on potential slice-selection gradient
@@ -229,17 +241,39 @@ void start_rf_pulse(struct sim_data* data, float h, float tol, int N, int P, flo
 {
 	data->seq.pulse_applied = true;
 
-	ode_pulse(data, h, tol, N, P, xp);
+	if (0. == data->pulse.rf_end)
+		hard_pulse(data, N, P, xp);
+	else
+		ode_pulse(data, h, tol, N, P, xp);
 }
 
 
 /* ------------ Relaxation -------------- */
 
+static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N], float st, float end)
+{
+	float xp2[3] = { 0. };
+
+	data->grad.gb[2] = (data->grad.mom + data->voxel.w); // [rad/s]
+
+	for (int i = 0; i < P; i++) {
+
+		xp2[0] = xp[i][0];
+		xp2[1] = xp[i][1];
+		xp2[2] = xp[i][2];
+
+		bloch_relaxation(xp[i], end-st, xp2, data->voxel.r1, data->voxel.r2, data->grad.gb);
+	}
+
+	data->grad.gb[2] = 0.;
+}
+
+
 static void ode_relaxation(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end)
 {
 	data->seq.pulse_applied = false;
 
-	data->grad.gb[2] = data->grad.mom;	// [rad/s]
+	data->grad.gb[2] = data->grad.mom; // [rad/s], offresonance w appears in Bloch equation and can be skipped here
 
         // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
 	ode_direct_sa(h, tol, N, P-1, xp, st, end, data, bloch_simu_fun, bloch_pdy2, bloch_pdp2);
@@ -252,7 +286,10 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
 {
 	data->seq.pulse_applied = false;
 
-	ode_relaxation(data, h, tol, N, P, xp, st, end);
+        if (0. == data->pulse.rf_end)
+		hard_relaxation(data, N, P, xp, st, end);
+	else
+		ode_relaxation(data, h, tol, N, P, xp, st, end);
 }
 
 
