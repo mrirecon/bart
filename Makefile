@@ -208,7 +208,7 @@ TNUM=fft fftmod fftshift noise bench threshold conv rss filter mandelbrot wavele
 TRECO=pics pocsense sqpics itsense nlinv moba nufft rof tgv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
-TSIM=phantom traj signal epg
+TSIM=phantom traj signal epg sim
 TIO=toimg
 TNN=reconet nnet onehotenc measure
 
@@ -262,7 +262,7 @@ MODULES_reconet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_nnet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_measure = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_onehotenc = -lnn
-
+MODULES_sim = -lsimu
 
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
 ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(root)/rules/*.mk $(root)/Makefiles/Makefile.*)
