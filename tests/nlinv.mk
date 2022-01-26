@@ -148,10 +148,50 @@ tests/test-nlinv-pf-vcc: nlinv conj nrmse zeros ones join flip circshift fmac $(
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-nlinv-maps-dims: phantom nlinv show
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/phantom -s1 -k ksp.ra					;\
+	$(TOOLDIR)/nlinv -m4       -S -i1 ksp.ra r.ra c.ra			;\
+	$(TOOLDIR)/nlinv -m4    -U -S -i1 ksp.ra rU.ra cU.ra			;\
+	$(TOOLDIR)/nlinv -m4 -N    -S -i1 ksp.ra rN.ra cN.ra			;\
+	$(TOOLDIR)/nlinv -m4 -N -U -S -i1 ksp.ra rNU.ra cNU.ra			;\
+	[ 1 -eq `$(TOOLDIR)/show -d 4 r.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 c.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 rU.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cU.ra` ] 					&&\
+	[ 1 -eq `$(TOOLDIR)/show -d 4 rN.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cN.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 rNU.ra` ] 				&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cNU.ra` ] 				&&\
+	true
+	touch $@
+
+
+tests/test-nlinv-noncart-maps-dims: traj phantom nlinv show
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/traj -r -y21 traj.ra						;\
+	$(TOOLDIR)/phantom -s1 -k -ttraj.ra ksp.ra				;\
+	$(TOOLDIR)/nlinv -m4       -S -i1 -ttraj.ra  ksp.ra r.ra c.ra		;\
+	$(TOOLDIR)/nlinv -m4    -U -S -i1 -ttraj.ra  ksp.ra rU.ra cU.ra		;\
+	$(TOOLDIR)/nlinv -m4 -N    -S -i1 -ttraj.ra  ksp.ra rN.ra cN.ra		;\
+	$(TOOLDIR)/nlinv -m4 -N -U -S -i1 -ttraj.ra  ksp.ra rNU.ra cNU.ra	;\
+	[ 1 -eq `$(TOOLDIR)/show -d 4 r.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 c.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 rU.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cU.ra` ] 					&&\
+	[ 1 -eq `$(TOOLDIR)/show -d 4 rN.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cN.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 rNU.ra` ] 				&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cNU.ra` ] 				&&\
+	true
+	touch $@
+
+
 
 TESTS += tests/test-nlinv tests/test-nlinv-sms
 TESTS += tests/test-nlinv-batch tests/test-nlinv-batch2
 TESTS += tests/test-nlinv-noncart tests/test-nlinv-precomp
+TESTS += tests/test-nlinv-maps-dims tests/test-nlinv-noncart-maps-dims
 TESTS += tests/test-nlinv-pf-vcc
 TESTS += tests/test-nlinv-pics
 TESTS_GPU += tests/test-nlinv-gpu tests/test-nlinv-sms-gpu
