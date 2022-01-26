@@ -139,7 +139,6 @@ int main_nlinv(int argc, char* argv[argc])
 
 	long dims[DIMS];
 	md_copy_dims(DIMS, dims, ksp_dims);
-	dims[MAPS_DIM] = nmaps;
 
 	complex float* traj = NULL;
 	long trj_dims[DIMS];
@@ -161,6 +160,9 @@ int main_nlinv(int argc, char* argv[argc])
 
 		md_copy_dims(DIMS - 3, dims + 3, ksp_dims + 3);
 	}	
+
+	// for ENLIVE maps
+	dims[MAPS_DIM] = nmaps;
 
 	long strs[DIMS];
 	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
