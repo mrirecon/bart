@@ -518,7 +518,7 @@ void calone_dims(const struct ecalib_conf* conf, long cov_dims[4], long channels
 
 
 
-const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1., false, true, -1., false};
+const struct ecalib_conf ecalib_defaults = { { 6, 6, 6 }, 0.001, -1, -1., false, false, 0.8, true, false, -1., false, true, -1., false };
 
 
 

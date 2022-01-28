@@ -66,6 +66,7 @@ static void convcorr_init(struct convcorr_geom_s* data, const complex float* ref
 
 		if (NULL == data->der2)
 			data->der2 = md_alloc_sameplace(data->N, data->idims2, CFL_SIZE, ref);
+
 	} else {
 
 		md_free(data->der2);
@@ -76,6 +77,7 @@ static void convcorr_init(struct convcorr_geom_s* data, const complex float* ref
 
 		if (NULL == data->der1)
 			data->der1 = md_alloc_sameplace(data->N, data->idims1, CFL_SIZE, ref);
+
 	} else {
 
 		md_free(data->der1);
@@ -96,7 +98,6 @@ static void convcorr_clear_der(const nlop_data_t* _data)
 
 static void convcorr_geom_fun(const nlop_data_t* _data, int N, complex float* args[N])
 {
-
 	const auto data = CAST_DOWN(convcorr_geom_s, _data);
 	assert(3 == N);
 
@@ -110,10 +111,12 @@ static void convcorr_geom_fun(const nlop_data_t* _data, int N, complex float* ar
 	assert((cuda_ondevice(dst) == cuda_ondevice(src1)) && (cuda_ondevice(src1) == cuda_ondevice(src2)));
 #endif
 
-	//conj to have benefits of fmac optimization in adjoints
-	if(nlop_der_requested(_data, 1, 0))
+	// conj to have benefits of fmac optimization in adjoints
+
+	if (nlop_der_requested(_data, 1, 0))
 		md_zconj(data->N, data->idims1, data->der1, src1);
-	if(nlop_der_requested(_data, 0, 0))
+
+	if (nlop_der_requested(_data, 0, 0))
 		md_zconj(data->N, data->idims2, data->der2, src2);
 
 	md_clear(data->N, data->odims, dst, CFL_SIZE);
@@ -149,7 +152,6 @@ static void convcorr_geom_adj2(const nlop_data_t* _data, unsigned int o, unsigne
 
 	md_clear(data->N, data->idims2, dst, CFL_SIZE);
 	md_zfmac2(2 * data->N, data->mdims, data->istrs2, dst + data->shift, data->ostrs, src, data->istrs1, x1);
-
 }
 
 static void convcorr_geom_der1(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -165,7 +167,6 @@ static void convcorr_geom_der1(const nlop_data_t* _data, unsigned int o, unsigne
 
 	md_clear(data->N, data->odims, dst, CFL_SIZE);
 	md_zfmacc2(2 * data->N, data->mdims, data->ostrs, dst, data->istrs1, src, data->istrs2, x2 + data->shift);
-
 }
 
 static void convcorr_geom_adj1(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -181,7 +182,6 @@ static void convcorr_geom_adj1(const nlop_data_t* _data, unsigned int o, unsigne
 
 	md_clear(data->N, data->idims1, dst, CFL_SIZE);
 	md_zfmac2(2 * data->N, data->mdims, data->istrs1, dst, data->ostrs, src, data->istrs2, x2 + data->shift);
-
 }
 
 
@@ -207,9 +207,13 @@ static void convcorr_geom_del(const nlop_data_t* _data)
 static struct nlop_s* nlop_convcorr_geom_valid_create(long N, unsigned int flags, const long odims[N], const long idims[N], const long kdims[N],
 							bool conv, const long strides[N], const long dilations[N], bool transp)
 {
-	for (int i = 0; i < N; i++)
-		if MD_IS_SET(flags, i)
+	for (int i = 0; i < N; i++) {
+
+		if (MD_IS_SET(flags, i)) {
+
 			assert(idims[i] == strides[i] * (odims[i] - 1) + 1 + (kdims[i] - 1) * dilations[i]);
+		}
+	}
 
 	PTR_ALLOC(struct convcorr_geom_s, data);
 	SET_TYPEID(convcorr_geom_s, data);
@@ -279,6 +283,7 @@ struct nlop_s* nlop_convcorr_geom_create(long N, unsigned int flags, const long 
 
 	if (NULL == strides)
 		strides = ones;
+
 	if (NULL == dilations)
 		dilations = ones;
 
@@ -296,15 +301,18 @@ struct nlop_s* nlop_convcorr_geom_create(long N, unsigned int flags, const long 
 	if (PAD_VALID == conv_pad) {
 
 		result = nlop_convcorr_geom_valid_create(N, flags, odims, idims, kdims, conv, strides, dilations, transp);
+
 	} else {
 
 		long nidims[N];
+
 		for (int i = 0; i < N; i++) {
 
-			if(MD_IS_SET(flags, i)) {
+			if (MD_IS_SET(flags, i)) {
 
 				assert(idims[i] == strides[i] * odims[i]);
 				nidims[i] = strides[i] * (odims[i] - 1) + 1 + (kdims[i] - 1) * dilations[i];
+
 			} else {
 
 				nidims[i] = idims[i];
@@ -328,6 +336,7 @@ struct nlop_s* nlop_convcorr_geom_create(long N, unsigned int flags, const long 
 
 			result = nlop_chain2_FF(result, 0, nlop_from_linop_F(linop_get_adjoint(pad_op)), 0);
 			linop_free(pad_op);
+
 		} else {
 
 			result = nlop_chain2_FF(nlop_from_linop_F(pad_op), 0, result, 0);
@@ -340,3 +349,4 @@ struct nlop_s* nlop_convcorr_geom_create(long N, unsigned int flags, const long 
 
 	return result;
 }
+
