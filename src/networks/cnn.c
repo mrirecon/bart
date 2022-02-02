@@ -372,13 +372,13 @@ static nn_t network_varnet_create(const struct network_s* _config, unsigned int 
 
 	assert(5 == N);
 	assert(md_check_equal_dims(N, idims, odims, ~0));
-	assert(1 == idims[0]);
 
 	//Padding
 	long pad_up[5] = {0, (config->Kx - 1), (config->Ky - 1), (config->Kz - 1), 0};
 	long pad_down[5] = {0, -(config->Kx - 1), -(config->Ky - 1), -(config->Kz - 1), 0};
 	long ker_size[3] = {config->Kx, config->Ky, config->Kz};
 
+	long Nc = idims[0];
 	long Ux = idims[1];
 	long Uy = idims[2];
 	long Uz = idims[3];
@@ -401,7 +401,7 @@ static nn_t network_varnet_create(const struct network_s* _config, unsigned int 
 	rbf = nlop_reshape_out_F(rbf, 0, 5, zdimsw);
 	nlop_result = nlop_chain2_FF(nlop_result, 0, rbf, 0); //in: rbf_w, in, conv_w
 
-	nlop_result = append_transposed_convcorr_layer(nlop_result, 0, 1, ker_size, false, true, PAD_SAME, true, NULL, NULL); //in: rbf_w, u, conv_w, conv_w
+	nlop_result = append_transposed_convcorr_layer(nlop_result, 0, Nc, ker_size, false, true, PAD_SAME, true, NULL, NULL); //in: rbf_w, u, conv_w, conv_w
 	nlop_result = append_padding_layer(nlop_result, 0, 5, pad_down, pad_down, PAD_VALID);
 	nlop_result = nlop_dup_F(nlop_result, 2, 3); //in: rbf_w, u, conv_w
 
