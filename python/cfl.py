@@ -72,7 +72,9 @@ def writecfl(name, array):
     with open(name + ".cfl", "a+b") as d:
         os.ftruncate(d.fileno(), size)
         mm = mmap.mmap(d.fileno(), size, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE)
-        mm.write(array.astype(np.complex64).tobytes(order='F'))
+        if array.dtype != np.complex64:
+            array = array.astype(np.complex64)
+        mm.write(np.ascontiguousarray(array.T))
         mm.close()
         #with mmap.mmap(d.fileno(), size, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE) as mm:
         #    mm.write(array.astype(np.complex64).tobytes(order='F'))
@@ -106,5 +108,7 @@ def writemulticfl(name, arrays):
         os.ftruncate(d.fileno(), size)
         mm = mmap.mmap(d.fileno(), size, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE)
         for array in arrays:
-            mm.write(array.astype(np.complex64).tobytes(order='F'))
+            if array.dtype != np.complex64:
+                array = array.astype(np.complex64)
+            mm.write(np.ascontiguousarray(array.T))
         mm.close()
