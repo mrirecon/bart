@@ -7,7 +7,7 @@ Summary:        Development files for BART
 License:        BSD
 URL:            https://mrirecon.github.io/bart
 VCS:            {{{ git_dir_vcs }}}
-Source0:        {{{ git_dir_pack source_name=libbart-devel dir_name=libbart-devel }}}
+Source0:        {{{ git_archive path=. source_name=libbart-devel dir_name=libbart-devel }}}
 
 BuildRequires:  gcc, make, fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel
 
@@ -20,7 +20,7 @@ This package provides headers and static libraries.
 %global debug_package %{nil}
 
 %prep
-{{{ git_dir_setup_macro dir_name=libbart-devel }}}
+{{{ git_setup_macro dir_name=libbart-devel }}}
 
 %build
 make PARALLEL=1

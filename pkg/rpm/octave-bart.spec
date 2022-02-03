@@ -8,7 +8,7 @@ Summary:        Octave bindings for BART
 License:        BSD
 URL:            https://mrirecon.github.io/bart
 VCS:            {{{ git_dir_vcs }}}
-Source0:        {{{ git_dir_pack source_name=octave-bart dir_name=octave-bart }}}
+Source0:        {{{ git_archive path=. source_name=octave-bart dir_name=octave-bart }}}
 BuildArch:      noarch
 
 BuildRequires:  octave-devel
@@ -23,7 +23,7 @@ The Berkeley Advanced Reconstruction Toolbox (BART) is a free and open-source im
 This package provides Octave bindings for BART. 
 
 %prep
-{{{ git_dir_setup_macro dir_name=octave-bart }}}
+{{{ git_setup_macro dir_name=octave-bart }}}
 # files that belong inside an octave pkg according to https://octave.org/doc/v4.4.0/Creating-Packages.html
 mkdir matlab/inst
 mv matlab/*.m matlab/inst

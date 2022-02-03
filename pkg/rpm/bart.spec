@@ -6,8 +6,8 @@ Summary:        tools for computational magnetic resonance imaging
 
 License:        BSD
 URL:            https://mrirecon.github.io/bart
-VCS:            {{{ git_dir_vcs }}}
-Source0:        {{{ git_dir_pack source_name=bart dir_name=bart }}}
+VCS:            {{{ git_repo_vcs }}}
+Source0:        {{{ git_archive path=. source_name=bart dir_name=bart }}}
 
 %if 0%{?rhel} == 07
 BuildRequires:  fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel, devtoolset-7-toolchain, devtoolset-7-libatomic-devel
@@ -25,7 +25,7 @@ The Berkeley Advanced Reconstruction Toolbox (BART) is a free and open-source im
 
 
 %prep
-{{{ git_dir_setup_macro dir_name=bart }}}
+{{{ git_setup_macro dir_name=bart }}}
 # transfer .git-version information from rpkg-macro-expansion time to build time
 echo {{{ bart_git_version }}} > version.txt
 
