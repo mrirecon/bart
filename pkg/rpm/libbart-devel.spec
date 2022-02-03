@@ -32,7 +32,7 @@ src=$(cut -d' ' -f1 <<<"$line")
 dst=%{buildroot}/$(cut -d' ' -f2 <<<"$line")
 install -d "$dst"
 install "$src" "$dst"
-done < libbart-dev.install
+done < pkg/rpm/libbart-dev.install
 # ^ Contents of https://salsa.debian.org/med-team/bart/-/blob/master/debian/libbart-dev.install
 
 %files
