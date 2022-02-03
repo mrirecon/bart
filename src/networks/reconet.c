@@ -1001,11 +1001,9 @@ void train_reconet(	struct reconet_s* config,
 		int index_lambda = nn_get_in_arg_index(nn_train, 0, "lambda");
 		int num_lambda = nn_generic_domain(nn_train, 0, "lambda")->dims[0];
 
-		const char* lam = "l";
 		const char* lams[num_lambda];
-
 		for (int i = 0; i < num_lambda; i++)
-			lams[i] = lam;
+			lams[i] = ptr_printf("l%d", i);
 
 		auto destack_lambda = nlop_from_linop_F(linop_identity_create(2, MD_DIMS(1, num_lambda)));
 		for (int i = num_lambda - 1; 0 < i; i--)
@@ -1018,6 +1016,10 @@ void train_reconet(	struct reconet_s* config,
 
 		value_monitors[num_monitors] = monitor_iter6_nlop_create(destack_lambda, true, num_lambda, lams);
 		nlop_free(destack_lambda);
+
+		for (int i = 0; i < num_lambda; i++)
+			xfree(lams[i]);
+
 		num_monitors += 1;
 	}
 
