@@ -1,5 +1,6 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022. Insitute of Biomedical Imaging. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -19,6 +20,7 @@
 
 #include "misc/cppwrap.h"
 #include "misc/nested.h"
+#include "misc/types.h"
 
 typedef void CLOSURE_TYPE(md_nary_fun_t)(void* ptr[]);
 typedef void CLOSURE_TYPE(md_trafo_fun_t)(long N, long str, void* ptr);
@@ -142,23 +144,33 @@ extern int md_max_idx(unsigned long flags);
 extern int md_min_idx(unsigned long flags);
 
 #define MD_CAST_ARRAY2_PTR(T, N, dims, x, a, b) \
-	(assert(((a) < (b)) && !md_check_dimensions((N), (dims), (1 << (a)) | (1 << (b)))), \
-					(T (*)[(dims)[b]][(dims)[a]])(x))
+({						\
+	int _a = (a), _b = (b);			\
+	const long* _dims = dims;		\
+	assert(_a < _b);			\
+	assert(!md_check_dimensions((N), _dims, (1 << _a) | (1 << _b))); \
+	(T (*)[_dims[_b]][_dims[_a]])(x);	\
+})
 #define MD_CAST_ARRAY3_PTR(T, N, dims, x, a, b, c) \
-	(assert(((a) < (b)) && ((b) < (c)) && !md_check_dimensions((N), (dims), (1 << (a)) | (1 << (b) | (1 << (c))))), \
-					(T (*)[(dims)[c]][(dims)[b]][(dims)[a]])(x))
+({						\
+	int _a = (a), _b = (b), _c = (c);	\
+	const long* _dims = dims;		\
+	assert((_a < _b) && (_b < _c));		\
+	assert(!md_check_dimensions((N), _dims, (1 << _a) | (1 << _b | (1 << _c)))); \
+	(T (*)[_dims[_c]][_dims[_b]][_dims[_a]])(x); \
+})
 
 #define MD_CAST_ARRAY2(T, N, dims, x, a, b) (*MD_CAST_ARRAY2_PTR(T, N, dims, x, a, b))
 #define MD_CAST_ARRAY3(T, N, dims, x, a, b, c) (*MD_CAST_ARRAY3_PTR(T, N, dims, x, a, b, c))
 
 
-#define MD_ACCESS(N, strs, pos, x)	((x)[md_calc_offset((N), (strs), (pos)) / sizeof((x)[0])])
+#define MD_ACCESS(N, strs, pos, x)	(*({ auto _x = (x); &((_x)[md_calc_offset((N), (strs), (pos)) / sizeof((_x)[0])]); }))
 
 #define MD_STRIDES(N, dims, elsize)	(md_calc_strides(N, alloca(N * sizeof(long)), dims, elsize))
 
 #define MD_SINGLETON_DIMS(N)				\
 ({							\
-	unsigned int _N = (N);				\
+	int _N = (N);					\
 	long* _dims = alloca(_N * sizeof(long));	\
 	md_singleton_dims(_N, _dims);			\
 	_dims;						\
@@ -166,7 +178,7 @@ extern int md_min_idx(unsigned long flags);
 
 #define MD_SINGLETON_STRS(N)				\
 ({							\
-	unsigned int _N = (N);				\
+	int _N = (N);					\
 	long* _dims = alloca(_N * sizeof(long)); 	\
 	md_singleton_strides(_N, _dims); 		\
 	_dims; 						\
