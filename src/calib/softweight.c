@@ -15,16 +15,10 @@
  *
  */
 
-#include <assert.h>
-#include <complex.h>
-#include <math.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
 
 #include "num/rand.h"
 #include "num/multind.h"
-#include "num/lapack.h"
 
 #include "misc/debug.h"
 
@@ -42,82 +36,96 @@
  *  calmat_dims  - Dimension of the calibration matrix.
  *  lambda       - Soft-threshold to test.
  */
-static float divergence(long N, const float S[N], const long calmat_dims[2], float lambda) {
+static float divergence(long N, const float S[N], const long calmat_dims[2], float lambda)
+{
+	int idx, jdx;
 
-    int idx, jdx;
+	float div = 0;
+	float abs_diff_bw_calmat_dims = labs(calmat_dims[0] - calmat_dims[1]);
 
-    float div = 0;
-    float abs_diff_bw_calmat_dims = labs(calmat_dims[0] - calmat_dims[1]);
+	float s, s1, s2, t;
 
-    float s, s1, s2, t;
-    for (idx = 0; idx < N; idx ++) {
-        s  = S[idx];
+	for (idx = 0; idx < N; idx++) {
 
-	if (s == 0)
-		continue;
+		s = S[idx];
 
-        t  = 1 - lambda/s;
-        s1 = (s > lambda ? 1: 0) + 2 * abs_diff_bw_calmat_dims * (t > 0? t: 0);
-        s2 = 0;
-        for (jdx = 0; jdx < N; jdx++) {
-            if (idx == jdx)
-                continue;
-            t = s - lambda;
-            s2 += s * (t > 0? t: 0)/(s * s - S[jdx] * S[jdx]);
-        }
-        div += s1 + 4 * s2;
-    }
+		if (s == 0)
+			continue;
 
-    return div;
+		t = 1 - lambda / s;
+		s1 = ((s > lambda) ? 1 : 0) + 2 * abs_diff_bw_calmat_dims * ((t > 0) ? t : 0);
 
+		s2 = 0;
+
+		for (jdx = 0; jdx < N; jdx++) {
+
+			if (idx == jdx)
+				continue;
+
+			t = s - lambda;
+			s2 += s * ((t > 0) ? t : 0) / (s * s - S[jdx] * S[jdx]);
+		}
+
+		div += s1 + 4 * s2;
+	}
+
+	return div;
 }
 
-extern void soft_weight_singular_vectors(long N, float variance, const long kernel_dims[3], const long calreg_dims[4], const float S[N], float W[N]) {
 
-    int idx = 0, jdx = 0;
+extern void soft_weight_singular_vectors(long N, float variance, const long kernel_dims[3], const long calreg_dims[4], const float S[N], float W[N])
+{
+	int idx = 0, jdx = 0;
 
-    float t;
+	float t;
 
-    long calmat_dims[2] = {(calreg_dims[0] - kernel_dims[0] + 1) * (calreg_dims[1] - kernel_dims[1] + 1) * 
-                (calreg_dims[2] - kernel_dims[2] + 1),
-            kernel_dims[0] * kernel_dims[1] * kernel_dims[2] * calreg_dims[3]};
+	long calmat_dims[2] = {
 
-    float Y = calmat_dims[0] * calmat_dims[1] * variance;
-    float G = 0;
-    for (jdx = 0; jdx < N; jdx++) {
-        G += S[jdx] * S[jdx];
-    }
+		  (calreg_dims[0] - kernel_dims[0] + 1)
+		* (calreg_dims[1] - kernel_dims[1] + 1)
+                * (calreg_dims[2] - kernel_dims[2] + 1),
+		kernel_dims[0] * kernel_dims[1] * kernel_dims[2] * calreg_dims[3]
+	};
 
-    debug_printf(DP_DEBUG1, "Using estimated variance: : %f\n", variance);
+	float Y = calmat_dims[0] * calmat_dims[1] * variance;
+	float G = 0;
 
-    float lambda = S[N-1];
-    float testMSE = 0;
-    float testLambda = 0;
-    float MSE = -Y + G + variance * divergence(N, S, calmat_dims, lambda);
+	for (jdx = 0; jdx < N; jdx++)
+		G += S[jdx] * S[jdx];
 
-    for (idx = 1; idx < N; idx++) {
+	debug_printf(DP_DEBUG1, "Using estimated variance: : %f\n", variance);
 
-        G = 0;
-        testLambda = S[N-idx-1];
-        for (jdx = 0; jdx < N; jdx++) {
-            t = S[jdx];
-            G += (t < testLambda? t * t : testLambda * testLambda);
-        }
+	float lambda = S[N - 1];
+	float testMSE = 0;
+	float testLambda = 0;
+	float MSE = -Y + G + variance * divergence(N, S, calmat_dims, lambda);
 
-        testMSE = -Y + G + variance * divergence(N, S, calmat_dims, testLambda);
+	for (idx = 1; idx < N; idx++) {
 
-        if (testMSE < MSE) {
-            MSE    = testMSE;
-            lambda = testLambda;
-        }
+		G = 0;
+		testLambda = S[N - idx -1];
 
-    }
+		for (jdx = 0; jdx < N; jdx++) {
 
-    debug_printf(DP_DEBUG1, "Soft threshold (Lambda): %f\n", lambda);
+			t = S[jdx];
+			G += ((t < testLambda) ? t * t : testLambda * testLambda);
+		}
 
-    for (int idx = 0; idx < N; idx++) {
-        t = (S[idx] > 0) ?(S[idx] - lambda)/S[idx] : 0;
-        W[idx] = (t > 0)? t : 0;
-    }
+		testMSE = -Y + G + variance * divergence(N, S, calmat_dims, testLambda);
 
+		if (testMSE < MSE) {
+
+			MSE = testMSE;
+			lambda = testLambda;
+		}
+	}
+
+	debug_printf(DP_DEBUG1, "Soft threshold (Lambda): %f\n", lambda);
+
+	for (int idx = 0; idx < N; idx++) {
+
+		t = (S[idx] > 0) ? (S[idx] - lambda) / S[idx] : 0;
+		W[idx] = (t > 0) ? t : 0;
+	}
 }
+

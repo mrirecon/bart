@@ -1,10 +1,10 @@
 /* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2015-2021. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2021 Martin Uecker <uecker@tugraz.at>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2015 Siddharth Iyer <sid8795@gmail.com>
  */
@@ -125,14 +125,13 @@ int main_ecalib(int argc, char* argv[argc])
 	long cal_dims[N];
 	complex float* cal_data = NULL;
 
-	 if (!calcen) {
+	if (!calcen) {
 
 #ifdef USE_CC_EXTRACT_CALIB
 		cal_data = cc_extract_calib(cal_dims, calsize, ksp_dims, in_data);
 #else
 		cal_data = extract_calib(cal_dims, calsize, ksp_dims, in_data, false);
 #endif
-
 	} else {
 	
 		for (int i = 0; i < 3; i++)
@@ -142,6 +141,7 @@ int main_ecalib(int argc, char* argv[argc])
 			cal_dims[i] = ksp_dims[i];
 
 		cal_data = md_alloc(5, cal_dims, CFL_SIZE);
+
 		md_resize_center(5, cal_dims, cal_data, ksp_dims, in_data, CFL_SIZE);
 	 }
 
@@ -153,11 +153,11 @@ int main_ecalib(int argc, char* argv[argc])
 
 
 	 long channels = cal_dims[3];
-	 unsigned int K = conf.kdims[0] * conf.kdims[1] * conf.kdims[2] * channels;
+	 int K = conf.kdims[0] * conf.kdims[1] * conf.kdims[2] * channels;
+
 	 float svals[K];
 
-
-	 for (unsigned int i = 0; i < 3; i++)
+	 for (int i = 0; i < 3; i++)
 		if ((1 == cal_dims[i]) && (1 != ksp_dims[i]))
 			error("Calibration region not found!\n");
 
@@ -170,8 +170,12 @@ int main_ecalib(int argc, char* argv[argc])
 
 	(conf.usegpu ? num_init_gpu : num_init)();
 
-        if ((conf.var < 0.) && (conf.weighting || (conf.crop < 0.)))
-		conf.var = estvar_calreg(conf.kdims, cal_dims, cal_data);
+        if ((conf.var < 0.) && (conf.weighting || (conf.crop < 0.))) {
+
+		const char* toolbox = getenv("TOOLBOX_PATH");
+
+		conf.var = estvar_calreg(toolbox, conf.kdims, cal_dims, cal_data);
+	}
 
 	if (one) {
 
@@ -233,11 +237,9 @@ int main_ecalib(int argc, char* argv[argc])
 	}
 
 
-	if (print_svals) {
-
-		for (unsigned int i = 0; i < K; i++)
+	if (print_svals)
+		for (int i = 0; i < K; i++)
 			printf("SVALS %d %f\n", i, svals[i]);
-	}
 
 	printf("Done.\n");
 

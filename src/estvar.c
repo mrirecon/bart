@@ -66,7 +66,9 @@ int main_estvar(int argc, char* argv[argc])
 		calsize_dims[idx] = (kspace_dims[idx] == 1) ? 1 : calsize_dims[idx];
 	}
 
-	float variance = estvar_kspace(N, kernel_dims, calsize_dims, kspace_dims, kspace);
+	const char* toolbox = getenv("TOOLBOX_PATH");
+
+	float variance = estvar_kspace(toolbox, N, kernel_dims, calsize_dims, kspace_dims, kspace);
 
 	unmap_cfl(N, kspace_dims, kspace);
 

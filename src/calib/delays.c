@@ -130,19 +130,19 @@ static void find_nearest_orthogonal_spokes(int N, int spokes[N], float ref_angle
 
 
 // [RING] Find (nearly) orthogonal spokes
-static void find_intersec_sp(const unsigned int no_intersec_sp, int intersec_sp[no_intersec_sp], const unsigned int cur_idx, const unsigned int N, const float angles[N])
+static void find_intersec_sp(const int no_intersec_sp, int intersec_sp[no_intersec_sp], const int cur_idx, const int N, const float angles[N])
 {
 	float intersec_angles[no_intersec_sp];
 
-	for (unsigned int i = 0; i < no_intersec_sp; i++) {
+	for (int i = 0; i < no_intersec_sp; i++) {
 
 		intersec_sp[i] = -1;
 		intersec_angles[i] = FLT_MAX;
 	}
 
-	for (unsigned int i = 0; i < N; i++) { // Iterate through angles
+	for (int i = 0; i < N; i++) { // Iterate through angles
 
-		for (unsigned int j = 0; j < no_intersec_sp; j++) { // Iterate through intersec array
+		for (int j = 0; j < no_intersec_sp; j++) { // Iterate through intersec array
 
 			// If angle difference of spoke 'i' and current spoke is greater than intersection angle 'j'
 
@@ -150,7 +150,7 @@ static void find_intersec_sp(const unsigned int no_intersec_sp, int intersec_sp[
 
 				// Shift smaller intersec_angles to higher indices
 
-				for (unsigned int k = no_intersec_sp; k > j + 1; k--) {
+				for (int k = no_intersec_sp; k > j + 1; k--) {
 
 					intersec_sp[k - 1] = intersec_sp[k - 2]; // Spoke index
 					intersec_angles[k - 1] = intersec_angles[k - 2]; // Angle value
