@@ -837,17 +837,14 @@ static nn_t reconet_valid_create(struct reconet_s* config, int N, const long max
 
 static nn_t reconet_apply_op_create(const struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[N])
 {
-	long img_dims[N];
-	long scl_dims[N];
-
-	md_select_dims(N, config->mri_config->image_flags, img_dims, max_dims);
-	md_select_dims(N, config->mri_config->batch_flags, scl_dims, img_dims);
-
 	auto nn_apply = reconet_create(config, N, max_dims, ND, psf_dims, STAT_TEST);
 
 	if(config->normalize) {
 
-		auto nn_norm_ref = nn_from_nlop_F(nlop_tenmul_create(N, img_dims, img_dims, scl_dims));
+		auto iov_out = nn_generic_codomain(nn_apply, 0, NULL);
+		auto iov_scl = nn_generic_codomain(nn_apply, 0, "scale");
+
+		auto nn_norm_ref = nn_from_nlop_F(nlop_tenmul_create(iov_out->N, iov_out->dims, iov_out->dims, iov_scl->dims));
 
 		nn_apply = nn_chain2_FF(nn_apply, 0, NULL, nn_norm_ref, 0, NULL);
 		nn_apply = nn_link_F(nn_apply, 0, "scale", 0, NULL);
