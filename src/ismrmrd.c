@@ -14,6 +14,7 @@
 #include "num/flpmath.h"
 
 #include "misc/misc.h" 
+#include "misc/debug.h" 
 #include "misc/mmio.h"
 #include "misc/mri.h"
 #include "misc/opts.h"
@@ -32,42 +33,43 @@ int main_ismrmrd(int argc, char* argv[argc])
 	struct arg_s args[] = {
 
 		ARG_STRING(true, &ismrm_file, "input"),
-		ARG_OUTFILE(true, &out_file, "output"),
+		ARG_OUTFILE(false, &out_file, "output"),
 	};
-	const struct opt_s opts[] = {};
+
+	struct isrmrm_config_s config = ismrm_default_config;
+
+	const struct opt_s opts[] = {
+		
+		OPTL_INT('m', "measurement", &(config.measurement), "", "select specific measurement (split by flag)"),
+		OPTL_INT('o', "overwrite", &(config.overwriting_idx), "idx", "overwrite data idx times"),
+
+		//OPTL_SELECT(0, "interleaved",enum ISMRMRD_SLICE_ORDERING, &(config.slice_ord),ISMRMRD_SLICE_INTERLEAVED, "interleaved slice ordering (1, 3, 5, 2, 4) / (1, 3, 2, 4)"),
+		OPTL_SELECT(0, "interleaved-siemens",enum ISMRMRD_SLICE_ORDERING, &(config.slice_ord),ISMRMRD_SLICE_INTERLEAVED_SIEMENS, "interleaved slice ordering (1, 3, 5, 2, 4) / (2, 4, 1, 3)"),
+
+	};
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
+	if (NULL == out_file) {
+
+		ismrm_print_xml(ismrm_file);
+		return 0;
+	}
 
 	long dims[DIMS];
 
-	printf("Reading headers... "); fflush(stdout);
-
-	if (-1 == ismrm_read(ismrm_file, dims, NULL)) {
-
-		fprintf(stderr, "Reading headers failed.\n");
-		return 1;
-	}
-
-	printf("done.\n");
-
-	printf("Dimensions:");
-	unsigned int i;
-	for (i = 0; i < DIMS; i++)
-		printf(" %ld", dims[i]);
-
-	printf("\n");
+	debug_printf(DP_INFO, "Reading dims ...\n");
+	ismrm_read_dims(ismrm_file, &config, DIMS, dims);
+	debug_printf(DP_INFO, "done.\nDIMS: ");
+	debug_print_dims(DP_INFO, DIMS, dims);
+	
 
 	complex float* out = create_cfl(out_file, DIMS, dims);
 	md_clear(DIMS, dims, out, CFL_SIZE);
 
-	printf("Reading data... "); fflush(stdout);
+	debug_printf(DP_INFO, "Reading data ...\n");
 
-	if (-1 == ismrm_read(ismrm_file, dims, out)) {
-
-		fprintf(stderr, "Reading data failed.\n");
-		return 1;
-	}
-
-	printf("done.\n");
+	ismrm_read(ismrm_file, &config, DIMS, dims, out);
+	debug_printf(DP_INFO, "done.\n");
 
 	unmap_cfl(DIMS, dims, out);
 	return 0;

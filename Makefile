@@ -281,6 +281,7 @@ LINKER ?= $(CC)
 
 
 ifeq ($(ISMRMRD),1)
+
 TMRI += ismrmrd
 MODULES_bart += -lismrm
 endif
@@ -506,6 +507,7 @@ MATLAB_L := -Wl,-rpath $(MATLAB_BASE)/bin/glnxa64 -L$(MATLAB_BASE)/bin/glnxa64 -
 ifeq ($(ISMRMRD),1)
 ISMRM_H := -I$(ISMRM_BASE)/include
 ISMRM_L := -L$(ISMRM_BASE)/lib -lismrmrd
+ISMRM_H += -I /usr/include/hdf5/serial/
 else
 ISMRM_H :=
 ISMRM_L :=
@@ -522,6 +524,13 @@ endif
 ifeq ($(LOG_ORCHESTRA_BACKEND),1)
 miscextracxxsrcs += $(srcdir)/misc/Orchestra.cc
 endif
+endif
+
+
+ifeq ($(ISMRMRD),1)
+miscextracxxsrcs += $(srcdir)/ismrm/xml_wrapper.cc
+CPPFLAGS += $(ISMRM_H)
+LIBS += -lstdc++
 endif
 
 
