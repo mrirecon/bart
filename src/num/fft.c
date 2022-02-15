@@ -328,7 +328,9 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 		if (NULL == plan->cuplan)
 			((struct fft_plan_s*)plan)->cuplan = fft_cuda_plan(plan->D, plan->dims, plan->flags, plan->ostrs, plan->istrs, plan->backwards);
 #endif
-		assert(NULL != plan->cuplan);
+		if (NULL == plan->cuplan)
+			error("Failed to plan a GPU FFT (too large?)\n");
+
 		fft_cuda_exec(plan->cuplan, dst, src);
 
 	} else 
