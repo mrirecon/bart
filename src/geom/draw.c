@@ -228,7 +228,7 @@ static double csplineX(double t, const double coeff[4])
 
 static void draw_cspline(int X, int Y, pixel_f out, const double coeff[2][4])
 {
-	int old[2];
+	int old[2] = { 0 };
 
 	for (double t = 0.; t <= 1.; t += 0.1) {	// FIXME
 

@@ -202,6 +202,8 @@ int main_moba(int argc, char* argv[argc])
 	long traj_strs[DIMS];
 	complex float* traj = NULL;
 
+	long img_dims[DIMS];
+
 	if (NULL != traj_file) {
 
 		traj = load_cfl(traj_file, DIMS, traj_dims);
@@ -212,7 +214,8 @@ int main_moba(int argc, char* argv[argc])
 
 		if (0 == md_calc_size(3, img_vec)) {
 
-			estimate_im_dims(DIMS, FFT_FLAGS, img_vec, traj_dims, traj);
+			estimate_im_dims(DIMS, FFT_FLAGS, img_dims, traj_dims, traj);
+			md_copy_dims(3, img_vec, img_dims);
 			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", img_vec[0], img_vec[1], img_vec[2]);
 		}
 
@@ -238,7 +241,6 @@ int main_moba(int argc, char* argv[argc])
 		conf.noncartesian = true;
 	}
 
-	long img_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, img_dims, grid_dims);
 
 

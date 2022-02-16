@@ -60,7 +60,7 @@ static void get_noise_amp (struct dfwavelet_plan_s* plan);
 
 
 
-struct dfwavelet_plan_s* prepare_dfwavelet_plan(int numdims, long* imSize, long* minSize, data_t* res,int use_gpu)
+struct dfwavelet_plan_s* prepare_dfwavelet_plan(int numdims, long* imSize, const long* minSize, data_t* res,int use_gpu)
 {
   struct dfwavelet_plan_s* plan = (struct dfwavelet_plan_s*) malloc(sizeof(struct dfwavelet_plan_s));
   plan->use_gpu = use_gpu;

@@ -268,7 +268,7 @@ void calc_geo_phantom(const long dims[DIMS], complex float* out, bool kspace, in
 	md_free(angular);
 }
 
-static complex float cnst_one(void* _data, int s, const double mpos[2])
+static complex float cnst_one(void* _data, int s, const double mpos[3])
 {
 	UNUSED(_data);
 	UNUSED(mpos);

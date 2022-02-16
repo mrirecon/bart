@@ -101,7 +101,7 @@ static float crop_thresh_function(float crth, float val)
 
 typedef float (*weight_function)(float crth, float val);
 
-static void crop_weight(const long dims[DIMS], complex float* ptr, weight_function fun, float crth, const complex float* map)
+static void crop_weight(int N, const long dims[N], complex float* ptr, weight_function fun, float crth, const complex float* map)
 {
 	long xx = dims[0];
 	long yy = dims[1];
@@ -109,8 +109,8 @@ static void crop_weight(const long dims[DIMS], complex float* ptr, weight_functi
 	long cc = dims[3];
 	long mm = dims[4];
 
-	assert(DIMS > 5);
-	assert(1 == md_calc_size(DIMS - 5, dims + 5));
+	assert(N >= 5);
+	assert(1 == md_calc_size(N - 5, dims + 5));
 
 	for (long m = 0; m < mm; m++) {
 #pragma omp parallel for
@@ -131,7 +131,7 @@ static void crop_weight(const long dims[DIMS], complex float* ptr, weight_functi
 
 void crop_sens(const long dims[DIMS], complex float* ptr, bool soft, float crth, const complex float* map)
 {
-	crop_weight(dims, ptr, soft ? crop_weight_function : crop_thresh_function, crth, map);
+	crop_weight(DIMS, dims, ptr, soft ? crop_weight_function : crop_thresh_function, crth, map);
 }
 
 
@@ -148,8 +148,11 @@ void crop_sens(const long dims[DIMS], complex float* ptr, bool soft, float crth,
  *	calreg_dims     - Dimension of the calibration region.
  *	calreg	        - Calibration data.
  */
-static float sure_crop(float var, const long evec_dims[5], complex float* evec_data, complex float* eptr, const long calreg_dims[5], const complex float* calreg)
+static float sure_crop(float var, const long evec_dims[DIMS], complex float* evec_data, complex float* eptr, const long calreg_dims[DIMS], const complex float* calreg)
 {
+	assert(1 == md_calc_size(DIMS - 5, evec_dims + 5));
+	assert(1 == md_calc_size(DIMS - 5, calreg_dims + 5));
+
 	long num_maps = evec_dims[4];
 
 	// Construct low-resolution image
@@ -273,7 +276,7 @@ static float sure_crop(float var, const long evec_dims[5], complex float* evec_d
 			old_mse = mse;
 			mse = 0.;
 
-			crop_weight(evec_dims, M, crop_thresh_function, c, W);
+			crop_weight(5, evec_dims, M, crop_thresh_function, c, W);
 
 			md_zfmacc2(5, tdims_ip, stro_ip, ip, str1_ip, im, str2_ip, M); // Projection.
 			md_zfmac2(5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);

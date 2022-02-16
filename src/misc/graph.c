@@ -632,7 +632,7 @@ graph_t graph_bridge_node(graph_t graph, node_t node)
 
 	for (int i = 0; i < list_count(node->edges[0]); i++)
 		if ((vertices_get(node->edges[0], i))->node->external)
-			return false;
+			return NULL;
 
 	list_t in = node->edges[1];
 	list_t out = node->edges[0];

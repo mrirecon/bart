@@ -82,8 +82,8 @@ static void lrthresh(unsigned int D, const long dims[D], int llrblk, float lambd
 
 static void dfthresh(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
-	long minsize[3];
-	md_singleton_dims(3, minsize);
+	long minsize[D];
+	md_singleton_dims(D, minsize);
 
 	long coarse_scale[3] = MD_INIT_ARRAY(3, 16);
 	md_min_dims(3, ~0u, minsize, dims, coarse_scale);
