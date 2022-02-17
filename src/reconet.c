@@ -53,7 +53,7 @@
 
 static const char help_str[] = "Trains or appplies a neural network for reconstruction.";
 
-int main_reconet(int argc, char* argv[])
+int main_reconet(int argc, char* argv[argc])
 {
 	opts_iter6_init();
 

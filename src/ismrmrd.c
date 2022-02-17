@@ -24,7 +24,7 @@
 static const char help_str[] = "Import ISMRM raw data files.";
 
 
-int main_ismrmrd(int argc, char* argv[])
+int main_ismrmrd(int argc, char* argv[argc])
 {
 	const char* ismrm_file = NULL;
 	const char* out_file = NULL;

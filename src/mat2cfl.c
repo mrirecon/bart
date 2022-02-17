@@ -27,7 +27,7 @@
 
 
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[argc])
 {
 	MATFile *mat;
 	const char* name = NULL;

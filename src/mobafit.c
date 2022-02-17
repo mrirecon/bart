@@ -40,7 +40,7 @@
 
 static const char help_str[] = "Pixel-wise fitting of sequence models.";
 
-int main_mobafit(int argc, char* argv[])
+int main_mobafit(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 

@@ -61,7 +61,7 @@ static const struct nn_weights_s* get_validation_files(int NO, const char* out_n
 }
 
 
-int main_nnet(int argc, char* argv[])
+int main_nnet(int argc, char* argv[argc])
 {
 	opts_iter6_init();
 
