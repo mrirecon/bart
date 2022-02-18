@@ -138,14 +138,21 @@ int main_pocsense(int argc, char* argv[argc])
 	if (l1wav) {
 
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-		minsize[0] = MIN(ksp_dims[0], 16);
-		minsize[1] = MIN(ksp_dims[1], 16);
-		minsize[2] = MIN(ksp_dims[2], 16);
+
+		unsigned int flags = 0;
+		for (unsigned int i = 0; i < DIMS; i++) {
+
+			if ((1 < ksp_dims[i]) && MD_IS_SET(FFT_FLAGS, i)) {
+
+				flags = MD_SET(flags, i);
+				minsize[i] = MIN(ksp_dims[i], 16);
+			}
+		}
 
 		long strs[DIMS];
 		md_calc_strides(DIMS, strs, ksp_dims, CFL_SIZE);
 
-		wave_op = linop_wavelet_create(DIMS, FFT_FLAGS, ksp_dims, strs, minsize, false);
+		wave_op = linop_wavelet_create(DIMS, flags, ksp_dims, strs, minsize, false);
 		thresh_op = prox_unithresh_create(DIMS, wave_op, alpha, COIL_FLAG);
 	}
 #if 0
