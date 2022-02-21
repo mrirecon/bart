@@ -148,7 +148,7 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComple
         
 void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr, const _Complex float* imgcov2)
 {
-	const int iter = 30;
+	const int iter = 300;
 	const int x = (int) dims[0];
 	const int y = (int) dims[1];
 	const int z = (int) dims[2];
