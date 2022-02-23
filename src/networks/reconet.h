@@ -16,6 +16,7 @@ struct reconet_s {
 	_Bool share_lambda;
 
 	struct config_nlop_mri_s* mri_config;
+	_Bool one_channel_per_map;
 
 	//data consistency config
 	float dc_lambda_fixed;

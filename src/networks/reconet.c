@@ -83,6 +83,7 @@ struct reconet_s reconet_config_opts = {
 	.share_lambda = false,
 
 	.mri_config = NULL,
+	.one_channel_per_map = false,
 
 	//data consistency config
 	.dc_lambda_fixed = -1.,
@@ -478,19 +479,25 @@ static nn_t nn_init_create(const struct reconet_s* config, int Nb, struct sense_
  */
 static nn_t network_block_create(const struct reconet_s* config, unsigned int N, const long img_dims[N], enum NETWORK_STATUS status)
 {
+	long timg_dims[N];
+	md_copy_dims(N, timg_dims, img_dims);
+	
+	if (!config->one_channel_per_map)
+		timg_dims[MAPS_DIM] = 1;
+
 
 	assert(1 == bitcount(config->mri_config->batch_flags));
 	int bat_dim = md_max_idx(config->mri_config->batch_flags);
 
-	unsigned long channel_flag = (~(FFT_FLAGS | config->mri_config->batch_flags)) & (md_nontriv_dims(N, img_dims));
+	unsigned long channel_flag = (~(FFT_FLAGS | config->mri_config->batch_flags)) & (md_nontriv_dims(N, timg_dims));
 	assert(config->mri_config->batch_flags > channel_flag);
 
 	long chn_dims[N];
-	md_select_dims(N, channel_flag, chn_dims, img_dims);
+	md_select_dims(N, channel_flag, chn_dims, timg_dims);
 	long channel = md_calc_size(N, chn_dims);
 
-	long dims[5] = {img_dims[0], img_dims[1], img_dims[2], channel, img_dims[bat_dim]};
-	long dims_net[5] = {channel, img_dims[0], img_dims[1], img_dims[2], img_dims[bat_dim]};
+	long dims[5] = {timg_dims[0], timg_dims[1], timg_dims[2], channel, timg_dims[bat_dim]};
+	long dims_net[5] = {channel, timg_dims[0], timg_dims[1], timg_dims[2], timg_dims[bat_dim]};
 
 	nn_t result = NULL;
 
@@ -506,8 +513,8 @@ static nn_t network_block_create(const struct reconet_s* config, unsigned int N,
 	}
 
 
-	result = nn_reshape_in_F(result, 0, NULL, N, img_dims);
-	result = nn_reshape_out_F(result, 0, NULL, N, img_dims);
+	result = nn_reshape_in_F(result, 0, NULL, N, timg_dims);
+	result = nn_reshape_out_F(result, 0, NULL, N, timg_dims);
 
 	int N_in_names = nn_get_nr_named_in_args(result);
 	int N_out_names = nn_get_nr_named_out_args(result);
@@ -528,6 +535,33 @@ static nn_t network_block_create(const struct reconet_s* config, unsigned int N,
 
 		result = nn_append_singleton_dim_out_F(result, 0, out_names[i]);
 		xfree(out_names[i]);
+	}
+
+	if (timg_dims[MAPS_DIM] != img_dims[MAPS_DIM]) {
+
+		result = nn_chain2_FF(nn_from_nlop_F(nlop_from_linop_F(linop_expand_create(N, timg_dims, img_dims))), 0, NULL, result, 0, NULL);
+
+		if (config->network->residual) {
+
+			long pos[N];
+			long res_dims[N];
+
+			for (int i = 0; i < (int)N; i++)
+				pos[i] = 0;
+			
+			pos[MAPS_DIM] = 1;
+
+			md_copy_dims(N, res_dims, img_dims);
+			res_dims[MAPS_DIM] -= 1;
+
+			auto lop = linop_extract_create(N, pos, res_dims, img_dims);
+			result = nn_combine_FF(result, nn_from_nlop_F(nlop_from_linop_F(lop)));
+			result = nn_dup_F(result, 0, NULL, 1, NULL);
+			result = nn_stack_outputs_F(result, 0, NULL, 1, NULL, MAPS_DIM);
+		} else {
+
+			result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(nlop_from_linop_F(linop_expand_create(N, img_dims, timg_dims))), 0, NULL);
+		}
 	}
 
 	return nn_checkpoint_F(result, true, (1 < config->Nt) && config->low_mem);
