@@ -210,7 +210,7 @@ TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ss
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
 TSIM=phantom traj signal epg
 TIO=toimg
-TNN=reconet nnet onehotenc
+TNN=reconet nnet onehotenc measure
 
 
 
@@ -260,6 +260,7 @@ MODULES_pol2mask = -lgeom
 MODULES_epg = -lsimu
 MODULES_reconet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_nnet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
+MODULES_measure = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_onehotenc = -lnn
 
 
