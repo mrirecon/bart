@@ -771,11 +771,11 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 		result = nn_chain2_swap_FF(scale_lambda, 0, NULL, result, 0, "lambda_init");
 		result = nn_set_input_name_F(result, 0, "lambda_init");
 
-		result = nn_set_prox_op_F(result, 0, "lambda_init", operator_project_pos_real_create(N + 1, ldims));
+		result = nn_reshape_in_F(result, 0, "lambda_init", 1, MD_SINGLETON_DIMS(1));
+
+		result = nn_set_prox_op_F(result, 0, "lambda_init", operator_project_pos_real_create(1, MD_SINGLETON_DIMS(1)));
 		result = nn_set_in_type_F(result, 0, "lambda_init", IN_OPTIMIZE);
 		result = nn_set_initializer_F(result, 0, "lambda_init", init_const_create(config->init_lambda_init));
-
-		result = nn_reshape_in_F(result, 0, "lambda_init", 1, MD_SINGLETON_DIMS(1));
 	}
 
 	long img_dims[N];
