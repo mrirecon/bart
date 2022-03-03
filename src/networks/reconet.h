@@ -18,6 +18,8 @@ struct reconet_s {
 	struct config_nlop_mri_s* mri_config;
 	_Bool one_channel_per_map;
 
+	_Bool external_initialization;	//initialize network with precomputed reconstruction
+
 	//data consistency config
 	float dc_lambda_fixed;
 	float dc_lambda_init;

@@ -279,8 +279,43 @@ int main_reconet(int argc, char* argv[argc])
 	data.load_mem = load_mem;
 	load_network_data(&data);
 
-	valid_data.filename_basis = data.filename_basis;
-	bool use_valid_data = (NULL != valid_data.filename_coil) && (NULL != valid_data.filename_kspace) && (NULL != valid_data.filename_out);
+	Nb = MIN(Nb, network_data_get_tot(&data));
+
+	if (config.tickhonov_init && (-1. != config.init_lambda_fixed)) {
+
+		network_data_compute_init(&data, config.init_lambda_fixed, config.init_max_iter);
+		config.external_initialization = true;
+	}
+
+	if (config.normalize)
+		network_data_normalize(&data);
+	
+	network_data_slice_dim_to_batch_dim(&data);
+
+
+	bool use_valid_data = false;
+	long Nt_val = 0;
+
+	if (   (NULL != valid_data.filename_coil)
+	    && (NULL != valid_data.filename_kspace)
+	    && (NULL != valid_data.filename_out)   ) {
+
+		assert(train);
+
+		use_valid_data = true;
+		valid_data.filename_basis = data.filename_basis;
+		
+		load_network_data(&valid_data);
+		network_data_slice_dim_to_batch_dim(&valid_data);
+		
+		if (config.tickhonov_init && (-1. != config.init_lambda_fixed))
+			network_data_compute_init(&valid_data, config.init_lambda_fixed, config.init_max_iter);
+
+		if (config.normalize)
+			network_data_normalize(&valid_data);
+
+		Nt_val = network_data_get_tot(&valid_data);
+	}
 
 	config.graph_file = graph_filename;
 
@@ -298,11 +333,7 @@ int main_reconet(int argc, char* argv[argc])
 
 	if (train) {
 
-		auto train_data_list = named_data_list_create();
-		named_data_list_append(train_data_list, data.N, data.img_dims, data.adjoint, "adjoint");
-		named_data_list_append(train_data_list, data.N, data.col_dims, data.coil, "coil");
-		named_data_list_append(train_data_list, data.ND, data.psf_dims, data.psf, "psf");
-		named_data_list_append(train_data_list, data.N, data.out_dims, data.out, "reference");
+		auto train_data_list = network_data_get_named_list(&data);
 
 		complex float* mask = NULL;
 		long mask_dims[DIMS];
@@ -321,13 +352,7 @@ int main_reconet(int argc, char* argv[argc])
 
 		if (use_valid_data) {
 
-			load_network_data(&valid_data);
-
-			valid_data_list = named_data_list_create();
-			named_data_list_append(valid_data_list, valid_data.N, valid_data.img_dims, valid_data.adjoint, "adjoint");
-			named_data_list_append(valid_data_list, valid_data.N, valid_data.col_dims, valid_data.coil, "coil");
-			named_data_list_append(valid_data_list, valid_data.ND, valid_data.psf_dims, valid_data.psf, "psf");
-			named_data_list_append(valid_data_list, valid_data.N, valid_data.out_dims, valid_data.out, "reference");
+			valid_data_list = network_data_get_named_list(&valid_data);
 
 			if (NULL != filename_mask_val) {
 
@@ -337,7 +362,7 @@ int main_reconet(int argc, char* argv[argc])
 			}
 		}
 
-		train_reconet(&config, data.N, data.max_dims, data.ND, data.psf_dims, MIN(Nb, data.max_dims[BATCH_DIM]), train_data_list, use_valid_data ? valid_data.max_dims[BATCH_DIM] : 0, valid_data_list);
+		train_reconet(&config, data.N, data.max_dims, data.ND, data.psf_dims, Nb, train_data_list, Nt_val, valid_data_list);
 		dump_nn_weights(filename_weights, config.weights);
 
 		named_data_list_free(train_data_list);
