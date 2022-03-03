@@ -808,9 +808,10 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 	for (int i = 0; i < Nb; i++)
 		sense_model_free(models[i]);
 
-	result = reconet_sort_args(result);
+	network = nn_set_output_name_F(result, 0 , "reconstruction");
+	network = reconet_sort_args(network);
 
-	return result;
+	return network;
 }
 
 static nn_t reconet_train_create(const struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[N], bool valid)
@@ -836,14 +837,14 @@ static nn_t reconet_train_create(const struct reconet_s* config, int N, const lo
 
 		auto loss = val_measure_create(config->valid_loss, N, out_dims);
 
-		train_op = nn_chain2_FF(train_op, 1, NULL, loss, 0, NULL);
+		train_op = nn_chain2_FF(train_op, 0, "reconstruction", loss, 0, NULL);
 		train_op = nn_link_F(train_op, 0, NULL, 0, NULL);
 		train_op = nn_del_out_bn_F(train_op);
 	} else {
 
 
 		auto loss = train_loss_create(config->train_loss, N, out_dims);
-		train_op = nn_chain2_FF(train_op, 1, NULL, loss, 0, NULL);
+		train_op = nn_chain2_FF(train_op, 0, "reconstruction", loss, 0, NULL);
 		train_op = nn_link_F(train_op, 0, NULL, 0, NULL);
 	}
 
@@ -875,12 +876,13 @@ static nn_t reconet_apply_op_create(const struct reconet_s* config, int N, const
 
 	if(config->normalize) {
 
-		auto iov_out = nn_generic_codomain(nn_apply, 0, NULL);
+		auto iov_out = nn_generic_codomain(nn_apply, 0, "reconstruction");
 		auto iov_scl = nn_generic_codomain(nn_apply, 0, "scale");
 
 		auto nn_norm_ref = nn_from_nlop_F(nlop_tenmul_create(iov_out->N, iov_out->dims, iov_out->dims, iov_scl->dims));
+		nn_norm_ref = nn_set_output_name_F(nn_norm_ref, 0, "reconstruction");
 
-		nn_apply = nn_chain2_FF(nn_apply, 0, NULL, nn_norm_ref, 0, NULL);
+		nn_apply = nn_chain2_FF(nn_apply, 0, "reconstruction", nn_norm_ref, 0, NULL);
 		nn_apply = nn_link_F(nn_apply, 0, "scale", 0, NULL);
 	}
 
