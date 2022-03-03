@@ -12,7 +12,7 @@ extern void named_data_list_free(struct named_data_list_s* data_list);
 extern void named_data_list_append(struct named_data_list_s* data_list, int N, const long dims[N], _Complex float* data, const char* name);
 
 extern const struct iovec_s* named_data_list_get_iovec(struct named_data_list_s* data_list, const char* name);
-extern const struct nlop_s* nn_batchgen_create(nn_t network, struct named_data_list_s* train_data, enum BATCH_GEN_TYPE type, unsigned int seed);
+extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn_t network, struct named_data_list_s* train_data);
 extern nn_t nn_valid_create(nn_t network, struct named_data_list_s* valid_data);
 
 #endif

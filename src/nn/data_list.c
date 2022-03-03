@@ -94,8 +94,7 @@ const struct iovec_s* named_data_list_get_iovec(struct named_data_list_s* data_l
 	return iovec_create(tensor->N, tensor->dims, sizeof(complex float));
 }
 
-
-const struct nlop_s* nn_batchgen_create(nn_t network, struct named_data_list_s* train_data, enum BATCH_GEN_TYPE type, unsigned int seed)
+extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn_t network, struct named_data_list_s* train_data)
 {
 	int II = nn_get_nr_in_args(network);
 
@@ -106,13 +105,19 @@ const struct nlop_s* nn_batchgen_create(nn_t network, struct named_data_list_s* 
 	nn_get_in_types(network, II, in_types);
 
 	int D = 0;
-	for (int i = 0; i < II; i ++)
-		if (IN_BATCH_GENERATOR == in_types[i])
-			D++;
+	int N = 0;
 
-	int N[D];
-	const long* bat_dims[D];
-	const long* tot_dims[D];
+	for (int i = 0; i < II; i ++)
+		if (IN_BATCH_GENERATOR == in_types[i]) {
+
+			assert(0 != names[i]);
+
+			N = MAX(N, (int)nn_generic_domain(network, 0, names[i])->N);
+			D++;
+		}
+
+	long bat_dims[D][N];
+	long tot_dims[D][N];
 	const complex float* data[D];
 
 	D = 0;
@@ -125,15 +130,17 @@ const struct nlop_s* nn_batchgen_create(nn_t network, struct named_data_list_s* 
 
 			assert(tensor->N == (int)(iov->N));
 
-			N[D] = tensor->N;
-			bat_dims[D] = iov->dims;
-			tot_dims[D] = tensor->dims;
+			md_singleton_dims(N, bat_dims[D]);
+			md_singleton_dims(N, tot_dims[D]);
+			
+			md_copy_dims(iov->N, bat_dims[D], iov->dims);
+			md_copy_dims(tensor->N, tot_dims[D], tensor->dims);
 			data[D] = tensor->data;
 
 			D++;
 		}
 
-	return batch_gen_create(D, N, bat_dims, tot_dims, data, 0, type, seed);
+	return batch_generator_create(config, D, N, bat_dims, tot_dims, data);
 }
 
 

@@ -898,8 +898,9 @@ void train_reconet(	struct reconet_s* config,
 			long Nb_train, struct named_data_list_s* train_data,
 			long Nb_valid, struct named_data_list_s* valid_data)
 {
-	assert(1 == bitcount(config->mri_config->batch_flags));
-	int bat_dim = md_max_idx(config->mri_config->batch_flags);
+	unsigned long bat_flags = config->mri_config->batch_flags & md_nontriv_dims(N,max_dims);
+	assert(1 == bitcount(bat_flags));
+	int bat_dim = md_max_idx(bat_flags);
 
 	long max_dims_trn[N];
 	long psf_dims_trn[ND];
@@ -937,7 +938,12 @@ void train_reconet(	struct reconet_s* config,
 		move_gpu_nn_weights(config->weights);
 
 	//create batch generator
-	auto batch_generator = nn_batchgen_create(nn_train, train_data, config->train_conf->batchgen_type, config->train_conf->batch_seed);
+	struct bat_gen_conf_s batgen_config = bat_gen_conf_default;
+	batgen_config.bat_flags = bat_flags;
+	batgen_config.seed = config->train_conf->batch_seed;
+	batgen_config.type = config->train_conf->batchgen_type;
+	
+	auto batch_generator = nn_batchgen_create(&batgen_config, nn_train, train_data);
 
 	//setup for iter algorithm
 	int NI = nn_get_nr_in_args(nn_train);
@@ -1056,7 +1062,7 @@ void train_reconet(	struct reconet_s* config,
 
 	struct monitor_iter6_s* monitor = monitor_iter6_create(true, true, num_monitors, value_monitors);
 
-	iter6_by_conf(config->train_conf, nn_get_nlop(nn_train), NI, in_type, projections, src, NO, out_type, Nb_train, max_dims[BATCH_DIM] / Nb_train, batch_generator, monitor);
+	iter6_by_conf(config->train_conf, nn_get_nlop(nn_train), NI, in_type, projections, src, NO, out_type, Nb_train, max_dims[bat_dim] / Nb_train, batch_generator, monitor);
 
 	nn_free(nn_train);
 	nlop_free(batch_generator);
