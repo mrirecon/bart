@@ -20,6 +20,13 @@
 
 #include "batch_gen.h"
 
+struct bat_gen_conf_s bat_gen_conf_default = {
+
+	.Nc = 0,
+	.type = BATCH_GEN_SHUFFLE_DATA,
+	.seed = 123,
+	.bat_flags = 0,
+};
 
 static void rand_draw_data(unsigned int* rand_seed, long N, long perm[N], long Nb)
 {
@@ -72,25 +79,24 @@ struct batch_gen_data_s {
 	INTERFACE(nlop_data_t);
 
 	long D; //number of arrays
+	long N;	//rank of arrays
 
-	long N;
-	const long** dims;
-
-	const long** ostrs;
-	const long** istrs;
-
-	const int* bat_idx;
+	const long* bat_dims_bat;	// used to unravel pos of current batch
+	const long* bat_dims_tot;	// used to unravel pos of current batch
 
 	long Nb;
 	long Nt;
+
+	const long** dims;		// dims to copy batch (not containing the batch dimensions)
+	const long** bat_strs;		// strides
+	const long** tot_strs;		// strides
+
 	const complex float** data;
 
 	long start;
-
 	long* perm;
 
 	enum BATCH_GEN_TYPE type;
-
 	unsigned int rand_seed;
 };
 
@@ -131,6 +137,25 @@ static void get_indices(struct batch_gen_data_s* data)
 	data->start = 0;
 }
 
+/**
+ * Convert flat index to pos
+ *
+ */
+static void unravel_index(int N, long pos[N], const long dims[N], long index)
+{
+	for (int d = 0; d < N; ++d) {
+
+		pos[d] = 0;
+		if (1 == dims[d])
+			continue;
+
+		pos[d] = index % dims[d];
+		index /= dims[d];
+	}
+
+	assert(0 == index);
+}
+
 
 static void batch_gen_fun(const struct nlop_data_s* _data, int N_args, complex float* args[N_args])
 {
@@ -144,29 +169,17 @@ static void batch_gen_fun(const struct nlop_data_s* _data, int N_args, complex f
 
 	for (long j = 0; j < data->D; j++) {
 
-		if (-1 == data->bat_idx[j]) {
-
-			md_copy(N, data->dims[j], args[j], data->data[j], CFL_SIZE);
-			continue;
-		}
-
 		long ipos[N];
 		long opos[N];
 
-		for (int i = 0; i < N; i++) {
-
-			ipos[i] = 0;
-			opos[i] = 0;
-		}
-
 		for (int i = 0; i < data->Nb; i++) {
 
-			ipos[data->bat_idx[j]] = data->perm[(data->start + i)];
-			opos[data->bat_idx[j]] = i;
+			unravel_index(N, ipos, data->bat_dims_tot, data->perm[(data->start + i)]);
+			unravel_index(N, opos, data->bat_dims_bat, i);
 
 			md_copy2(	N, data->dims[j],
-					data->ostrs[j], &MD_ACCESS(N, data->ostrs[j], opos, args[j]),
-					data->istrs[j], &MD_ACCESS(N, data->istrs[j], ipos, data->data[j]),
+					data->bat_strs[j], &MD_ACCESS(N, data->bat_strs[j], opos, args[j]),
+					data->tot_strs[j], &MD_ACCESS(N, data->tot_strs[j], ipos, data->data[j]),
 					CFL_SIZE);
 		}
 	}
@@ -181,14 +194,15 @@ static void batch_gen_del(const nlop_data_t* _data)
 	for(long i = 0; i < data->D; i ++) {
 
 		xfree(data->dims[i]);
-		xfree(data->ostrs[i]);
-		xfree(data->istrs[i]);
+		xfree(data->tot_strs[i]);
+		xfree(data->bat_strs[i]);
 	}
 
 	xfree(data->dims);
-	xfree(data->ostrs);
-	xfree(data->istrs);
-	xfree(data->bat_idx);
+	xfree(data->tot_strs);
+	xfree(data->bat_strs);
+	xfree(data->bat_dims_bat);
+	xfree(data->bat_dims_tot);
 	xfree(data->data);
 	xfree(data->perm);
 	xfree(data);
@@ -205,20 +219,16 @@ static void batch_gen_del(const nlop_data_t* _data)
  * @param tot_dims total dims of dataset
  * @param data pointers to data
  * @param Nb batch size
- * @param Nc number of calls (initializes the nlop as it had been applied Nc times) -> reproducible warm start
  * @param type methode to compose new batches
  * @param seed seed for random reshuffeling of batches
  */
 const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_dims[D], const long* tot_dims[D], const _Complex float* data[D], long Nc, enum BATCH_GEN_TYPE type, unsigned int seed)
 {
-	PTR_ALLOC(struct batch_gen_data_s, d);
-	SET_TYPEID(batch_gen_data_s, d);
-
-	d->D = D;
-	d->Nb = 1;
-	d->Nt = 1;
 
 	int N = 0;
+
+	long Nt = 1;
+	long Nb = 1;
 
 	int bat_idx[D];
 
@@ -233,86 +243,54 @@ const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_di
 				assert(-1 == bat_idx[j]);
 				bat_idx[j] = i;
 
-				assert((d->Nt == tot_dims[j][i]) || (1 == d->Nt) || (1 == tot_dims[j][i]));
-				d->Nt = MAX(d->Nt, tot_dims[j][i]);
+				assert((Nt == tot_dims[j][i]) || (1 == Nt) || (1 == tot_dims[j][i]));
+				Nt = MAX(Nt, tot_dims[j][i]);
 
-				assert((d->Nb == bat_dims[j][i]) || (1 == d->Nb));
-				d->Nb = MAX(d->Nb, bat_dims[j][i]);
+				assert((Nb == bat_dims[j][i]) || (1 == Nb));
+				Nb = MAX(Nb, bat_dims[j][i]);
 			}
 		}
 
 		N = MAX(N, Ns[j]);
 	}
 
-	long nl_odims[D][N];
-	for(long i = 0; i < D; i++)
-		md_singleton_dims(N, nl_odims[i]);
+	N += 1;
 
-	PTR_ALLOC(const long*[D], sdims);
-	PTR_ALLOC(const long*[D], ostrs);
-	PTR_ALLOC(const long*[D], istrs);
+	long nbat_dims[D][N];
+	long ntot_dims[D][N];
 
-	PTR_ALLOC(int[D], n_bat_idx);
+	for(long i = 0; i < D; i++) {
 
-	PTR_ALLOC(const complex float*[D], ndata);
+		md_singleton_dims(N, nbat_dims[i]);
+		md_singleton_dims(N, ntot_dims[i]);
 
-	for (long j = 0; j < D; j++) {
+		md_copy_dims(Ns[i], nbat_dims[i], bat_dims[i]);
+		md_copy_dims(Ns[i], ntot_dims[i], tot_dims[i]);
 
-		md_copy_dims(Ns[j], nl_odims[j], bat_dims[j]);
+		if (-1 < bat_idx[i]) {
 
-		PTR_ALLOC(long [N], slice_dims);
-		md_singleton_dims(N, *slice_dims);
-		md_copy_dims(Ns[j], *slice_dims, bat_dims[j]);
+			assert(1 == md_calc_size(N - bat_idx[i] - 1, nbat_dims[i] + bat_idx[i] + 1));
+			assert(1 == md_calc_size(N - bat_idx[i] - 1, ntot_dims[i] + bat_idx[i] + 1));
 
-		if (-1 != bat_idx[j])
-			(*slice_dims)[bat_idx[j]] = 1;
+			nbat_dims[i][N - 1] = nbat_dims[i][bat_idx[i]];
+			ntot_dims[i][N - 1] = ntot_dims[i][bat_idx[i]];
 
-		PTR_ALLOC(long [N], ostr);
-		PTR_ALLOC(long [N], istr);
-
-		md_calc_strides(N, *ostr, nl_odims[j], CFL_SIZE);
-
-		md_singleton_strides(N, *istr);
-		md_calc_strides(Ns[j], *istr, tot_dims[j], CFL_SIZE);
-
-		(*sdims)[j] = *PTR_PASS(slice_dims);
-		(*ostrs)[j] = *PTR_PASS(ostr);
-		(*istrs)[j] = *PTR_PASS(istr);
-
-		(*ndata)[j] = data[j];
-
-		(*n_bat_idx)[j] = bat_idx[j];
+			nbat_dims[i][bat_idx[i]] = 1;
+			ntot_dims[i][bat_idx[i]] = 1;
+		}
 	}
 
-	d->N = N;
-	d->data = *PTR_PASS(ndata);
-	d->dims = *PTR_PASS(sdims);
-	d->ostrs = *PTR_PASS(ostrs);
-	d->istrs = *PTR_PASS(istrs);
+	struct bat_gen_conf_s conf = bat_gen_conf_default;
+	conf.bat_flags = MD_BIT(N - 1);
+	conf.type = type;
+	conf.seed = seed;
+	conf.Nc = Nc;
 
-	d->bat_idx = *PTR_PASS(n_bat_idx);
 
-	d->rand_seed = seed;
-	d->type = type;
-
-	PTR_ALLOC(long[d->Nt], perm);
-	d->perm = *PTR_PASS(perm);
-
-	d->start = d->Nt + 1; //enforce drwaing new permutation
-	get_indices(d);
-
-	for (int i = 0; i < Nc; i++) { //initializing the state after Nc calls to batchnorm
-
-		get_indices(d);
-		d->start = (d->start + d->Nb);
-	}
-
-	assert(d->Nb <= d->Nt);
-
-	const struct nlop_s* result = nlop_generic_create(D, N, nl_odims, 0, 0, NULL, CAST_UP(PTR_PASS(d)), batch_gen_fun, NULL, NULL, NULL, NULL, batch_gen_del);
+	const struct nlop_s* result = batch_generator_create(&conf, D, N, nbat_dims, ntot_dims, data);
 
 	for (int i = 0; i < D; i ++)
-		result = nlop_reshape_out_F(result, i, Ns[i], nl_odims[i]);
+		result = nlop_reshape_out_F(result, i, Ns[i], bat_dims[i]);
 
 	return result;
 
@@ -323,3 +301,101 @@ const struct nlop_s* batch_gen_create_from_iter(struct iter6_conf_s* iter_conf, 
 	return batch_gen_create(D, Ns, bat_dims, tot_dims, data, Nc, iter_conf->batchgen_type, iter_conf->batch_seed);
 }
 
+
+const struct nlop_s* batch_generator_create2(struct bat_gen_conf_s* config, int D, int N, const long bat_dims[D][N], const long tot_dims[D][N], const long tot_strs[D][N], const complex float* data[D])
+{
+	PTR_ALLOC(struct batch_gen_data_s, d);
+	SET_TYPEID(batch_gen_data_s, d);
+
+	unsigned long bat_flags = config->bat_flags;
+	if (0 == bat_flags) {
+
+		for (int i = 0; i < N; i++)
+			for (int j = 0; (j < D) && !MD_IS_SET(bat_flags, i) ; j++)
+				if (tot_dims[j][i] > bat_dims[j][i]) {
+
+					debug_printf(DP_INFO, "Batch dimension detected: %d\n", i);
+					bat_flags = MD_SET(bat_flags, i);
+				}
+	}
+
+	d->D = D;
+	d->N = N;
+
+	PTR_ALLOC(const long*[D], sdims);
+	PTR_ALLOC(const long*[D], ostrs);
+	PTR_ALLOC(const long*[D], istrs);
+
+	long bat_dims_bat[N];
+	long bat_dims_tot[N];
+
+	md_singleton_dims(N, bat_dims_bat);
+	md_singleton_dims(N, bat_dims_tot);
+
+	for (int i = 0; i < D; i++) {
+
+		(*istrs)[i] = ARR_CLONE(long[N], tot_strs[i]);
+
+		long tmp1[N];
+		long tmp2[N];
+
+		md_calc_strides(N, tmp1, bat_dims[i], CFL_SIZE);
+		(*ostrs)[i] = ARR_CLONE(long[N], tmp1);
+
+		md_select_dims(N, bat_flags, tmp1, bat_dims[i]);
+		assert(md_check_compat(N, bat_flags, tmp1, bat_dims_bat));
+		md_max_dims(N, bat_flags, bat_dims_bat, bat_dims_bat, tmp1);
+
+		md_select_dims(N, bat_flags, tmp1, tot_dims[i]);
+		assert(md_check_compat(N, bat_flags, tmp1, bat_dims_tot));
+		md_max_dims(N, bat_flags, bat_dims_tot, bat_dims_tot, tmp1);
+
+		md_select_dims(N, ~bat_flags, tmp1, bat_dims[i]);
+		md_select_dims(N, ~bat_flags, tmp2, tot_dims[i]);
+
+		assert(md_check_compat(N, md_nontriv_dims(N, tmp1), tmp1, tmp2));
+
+		(*sdims)[i] = ARR_CLONE(long[N], tmp1);
+	}
+
+	d->bat_dims_bat = ARR_CLONE(long[N], bat_dims_bat);
+	d->bat_dims_tot = ARR_CLONE(long[N], bat_dims_tot);
+	
+	d->Nb = md_calc_size(N, bat_dims_bat);
+	d->Nt = md_calc_size(N, bat_dims_tot);
+
+	d->dims = *PTR_PASS(sdims);
+	d->bat_strs = *PTR_PASS(ostrs);
+	d->tot_strs = *PTR_PASS(istrs);
+
+	d->data = ARR_CLONE(const complex float*[D], data);
+
+	d->rand_seed = config->seed;
+	d->type = config->type;
+
+	d->perm = *TYPE_ALLOC(long[d->Nt]);
+
+	d->start = d->Nt + 1; //enforce drawing new permutation
+	get_indices(d);
+
+	for (int i = 0; i < config->Nc; i++) { //initializing the state after Nc calls to batchnorm
+
+		get_indices(d);
+		d->start = (d->start + d->Nb);
+	}
+
+	assert(d->Nb <= d->Nt);
+
+	const struct nlop_s* result = nlop_generic_create(D, N, bat_dims, 0, 0, NULL, CAST_UP(PTR_PASS(d)), batch_gen_fun, NULL, NULL, NULL, NULL, batch_gen_del);
+
+	return result;
+}
+
+const struct nlop_s* batch_generator_create(struct bat_gen_conf_s* config, int D, int N, const long bat_dims[D][N], const long tot_dims[D][N], const complex float* data[D])
+{
+	long tot_strs[D][N];
+	for (int i = 0; i < D; i++)
+		md_calc_strides(N, tot_strs[i], tot_dims[i], CFL_SIZE);
+
+	return batch_generator_create2(config, D, N, bat_dims, tot_dims, tot_strs, data);
+}
