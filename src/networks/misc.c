@@ -1,25 +1,29 @@
 #include <complex.h>
 #include <math.h>
 
-#include "linops/fmac.h"
-#include "linops/someops.h"
 #include "misc/debug.h"
 #include "misc/misc.h"
 #include "misc/mmio.h"
-
 #include "misc/mri.h"
+
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/iovec.h"
 
+#include "iter/iter.h"
+
 #include "noncart/nufft.h"
 
 #include "linops/linop.h"
 #include "linops/fmac.h"
+#include "linops/someops.h"
 
 #include "nlops/nlop.h"
 #include "nlops/mri_ops.h"
+#include "nlops/const.h"
+
+#include "nn/data_list.h"
 
 #include "misc.h"
 
@@ -36,6 +40,7 @@ struct network_data_s network_data_empty = {
 	.pat_dims = { 0 },
 	.trj_dims = { 0 },
 	.bas_dims = { 0 },
+	.scl_dims = { 0 },
 
 	.filename_trajectory = NULL,
 	.filename_pattern = NULL,
@@ -53,12 +58,15 @@ struct network_data_s network_data_empty = {
 	.psf = NULL,
 	.pattern = NULL,
 	.adjoint = NULL,
+	.initialization = NULL,
 	.out = NULL,
 	.trajectory = NULL,
 	.basis = NULL,
+	.scale = NULL,
 
 	.create_out = false,
 	.load_mem = false,
+	.batch_flags = SLICE_FLAG | AVG_FLAG | BATCH_FLAG,
 
 	.nufft_conf = &nufft_conf_defaults,
 };
@@ -141,10 +149,10 @@ static void compute_adjoint_cart(struct network_data_s* nd)
 	long col_dims_s[DIMS];
 	long pat_dims_s[DIMS];
 
-	md_select_dims(DIMS, ~BATCH_FLAG, ksp_dims_s, nd->ksp_dims);
-	md_select_dims(DIMS, ~BATCH_FLAG, img_dims_s, nd->img_dims);
-	md_select_dims(DIMS, ~BATCH_FLAG, col_dims_s, nd->col_dims);
-	md_select_dims(DIMS, ~BATCH_FLAG, pat_dims_s, nd->pat_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, ksp_dims_s, nd->ksp_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, img_dims_s, nd->img_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, col_dims_s, nd->col_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, pat_dims_s, nd->pat_dims);
 
 	auto model = sense_cart_create(nd->N, ksp_dims_s, img_dims_s, col_dims_s, pat_dims_s);
 	auto sense_adjoint = nlop_sense_adjoint_create(1, &model, false);
@@ -158,7 +166,7 @@ static void compute_adjoint_cart(struct network_data_s* nd)
 	complex float* dst[1] = { nd->adjoint };
 	const complex float* src[3] = { nd->kspace, nd->coil, nd->pattern };
 
-	nlop_generic_apply_loop_sameplace(sense_adjoint, BATCH_FLAG, 1, DO, odims, dst, 3, DI, idims, src, nd->adjoint);
+	nlop_generic_apply_loop_sameplace(sense_adjoint, nd->batch_flags, 1, DO, odims, dst, 3, DI, idims, src, nd->adjoint);
 
 	nlop_free(sense_adjoint);
 	sense_model_free(model);
@@ -199,13 +207,13 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 	long pat_dims_s[DIMS];
 	long col_dims_s[DIMS];
 
-	md_select_dims(DIMS, ~BATCH_FLAG, max_dims_s, nd->max_dims);
-	md_select_dims(DIMS, ~BATCH_FLAG, ksp_dims_s, nd->ksp_dims);
-	md_select_dims(DIMS, ~BATCH_FLAG, img_dims_s, nd->img_dims);
-	md_select_dims(DIMS, ~BATCH_FLAG, cim_dims_s, nd->cim_dims);
-	md_select_dims(DIMS, ~BATCH_FLAG, trj_dims_s, nd->trj_dims);
-	md_select_dims(DIMS, ~BATCH_FLAG, pat_dims_s, nd->pat_dims);
-	md_select_dims(DIMS, ~BATCH_FLAG, col_dims_s, nd->col_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, max_dims_s, nd->max_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, ksp_dims_s, nd->ksp_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, img_dims_s, nd->img_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, cim_dims_s, nd->cim_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, trj_dims_s, nd->trj_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, pat_dims_s, nd->pat_dims);
+	md_select_dims(DIMS, ~nd->batch_flags, col_dims_s, nd->col_dims);
 
 	auto model = sense_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, *(nd->nufft_conf));
 	auto sense_adjoint = nlop_sense_adjoint_create(1, &model, true);
@@ -224,7 +232,7 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 	complex float* dst[2] = { nd->adjoint, nd->psf };
 	const complex float* src[4] = { nd->kspace, nd->coil, nd->pattern, nd->trajectory };
 
-	nlop_generic_apply_loop_sameplace(sense_adjoint, BATCH_FLAG, 2, DO, odims, dst, 4, DI, idims, src, nd->adjoint);
+	nlop_generic_apply_loop_sameplace(sense_adjoint, nd->batch_flags, 2, DO, odims, dst, 4, DI, idims, src, nd->adjoint);
 
 
 	nlop_free(sense_adjoint);
@@ -337,6 +345,75 @@ void load_network_data(struct network_data_s* nd) {
 }
 
 
+void network_data_compute_init(struct network_data_s* nd, complex float lambda, int cg_iter)
+{
+	assert(NULL == nd->initialization);
+	nd->initialization = anon_cfl("", nd->N, nd->img_dims);
+
+	int N = nd->N;
+	int ND = nd->ND;
+
+	long max_dims2[N];
+	long psf_dims2[ND];
+
+	unsigned long loop_flags = nd->batch_flags;
+
+	md_select_dims(N, ~loop_flags, max_dims2, nd->max_dims);
+	md_select_dims(ND, ~loop_flags, psf_dims2, nd->psf_dims);
+
+	struct config_nlop_mri_s conf2 = conf_nlop_mri_simple;
+	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims2);
+	conf2.noncart = nd->N != nd->ND;
+	conf2.nufft_conf = nd->nufft_conf;
+
+	if (NULL != nd->basis)
+		conf2.basis_flags = COEFF_FLAG | TE_FLAG;
+
+	struct iter_conjgrad_conf iter_conf = iter_conjgrad_defaults;
+	iter_conf.l2lambda = 0;
+	iter_conf.maxiter = cg_iter;
+
+	auto nlop_normal_inv = nlop_mri_normal_inv_create(N, max_dims2, MD_SINGLETON_DIMS(N), ND, psf_dims2, &conf2, &iter_conf);
+	nlop_normal_inv = nlop_set_input_const_F(nlop_normal_inv, 3, N, MD_SINGLETON_DIMS(N), true, &lambda);
+
+	int DO[1] = { nd->N };
+	int DI[3] = { nd->N, nd->N, nd->ND };
+
+	const long* odims[1] = { nd->img_dims };
+	const long* idims[3] = { nd->img_dims, nd->col_dims, nd->psf_dims};
+
+	complex float* dst[1] = { nd->initialization };
+	const complex float* src[3] = { nd->adjoint, nd->coil, nd->psf };
+
+	nlop_generic_apply_loop_sameplace(nlop_normal_inv, loop_flags, 1, DO, odims, dst, 3, DI, idims, src, nd->adjoint);
+
+	nlop_free(nlop_normal_inv);
+}
+
+void network_data_normalize(struct network_data_s* nd)
+{
+	int N = nd->N;
+
+	long sstrs[N];
+	long istrs[N];
+
+	md_select_dims(N, nd->batch_flags & ~SLICE_FLAG, nd->scl_dims, nd->img_dims);
+	md_calc_strides(N, sstrs, nd->scl_dims, CFL_SIZE);
+	md_calc_strides(N, istrs, nd->img_dims, CFL_SIZE);
+
+	complex float* tmp = md_alloc(N, nd->img_dims, CFL_SIZE);
+	md_zabs(N, nd->img_dims, tmp, nd->initialization ? nd->initialization : nd->adjoint);
+
+	assert(NULL == nd->scale);
+	nd->scale = anon_cfl("", N, nd->scl_dims);
+	md_clear(N, nd->scl_dims, nd->scale, CFL_SIZE);
+	md_zmax2(N, nd->img_dims, sstrs, nd->scale, sstrs, nd->scale, istrs, tmp);
+	md_free(tmp);
+
+	md_zspow(N, nd->scl_dims, nd->scale, nd->scale, -1);
+}
+
+
 
 void free_network_data(struct network_data_s* nd)
 {
@@ -350,4 +427,104 @@ void free_network_data(struct network_data_s* nd)
 		unmap_cfl(DIMS, nd->pat_dims, nd->pattern);
 	if(NULL != nd->basis)
 		unmap_cfl(DIMS, nd->bas_dims, nd->basis);
+	if(NULL != nd->scale)
+		unmap_cfl(DIMS, nd->scl_dims, nd->scale);
+	if(NULL != nd->initialization)
+		unmap_cfl(DIMS, nd->img_dims, nd->initialization);
+}
+
+//move all batch dimensions to the last one, unfold dimensions if necessary
+static void merge_slice_to_batch_dim(int N, const long bat_dims[N], long dims[N], complex float** data)
+{
+	unsigned long bat_flags = md_nontriv_dims(N, bat_dims);
+	
+	long tbat_dims[N];
+	long tdims[N];
+
+	md_select_dims(N, bat_flags, tbat_dims, dims);
+	md_copy_dims(N, tdims, dims);
+
+	if ((NULL != data) && (NULL != *data) && (0 != md_nontriv_dims(N, tbat_dims)) && !md_check_equal_dims(N, tbat_dims, bat_dims, ~0)){
+
+		for (int i = 0; i < N; i++)
+			if (MD_IS_SET(bat_flags, i))
+				tdims[i] = bat_dims[i];
+		
+		complex float* tdata = anon_cfl("", N, tdims);
+		md_copy2(N, tdims, MD_STRIDES(N, tdims, CFL_SIZE), tdata, MD_STRIDES(N, dims, CFL_SIZE), *data, CFL_SIZE);
+		unmap_cfl(N, dims, *data);
+		*data = tdata;
+	}
+
+	md_select_dims(N, bat_flags, tbat_dims, tdims);
+	md_select_dims(N, ~bat_flags, dims, tdims);
+
+	dims[BATCH_DIM] = md_calc_size(N, tbat_dims);
+}
+
+void network_data_slice_dim_to_batch_dim(struct network_data_s* nd)
+{
+	long bat_dims[nd->ND];
+	md_singleton_dims(nd->ND, bat_dims);
+	md_select_dims(nd->N, nd->batch_flags, bat_dims, nd->img_dims);
+
+	long img_dims[nd->N];
+	md_copy_dims(nd->N, img_dims, nd->img_dims);
+
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->scl_dims, &(nd->scale));
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->ksp_dims, &(nd->kspace));
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->col_dims, &(nd->coil));
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->psf_dims, &(nd->psf));
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->img_dims, &(nd->adjoint));
+	merge_slice_to_batch_dim(nd->N, bat_dims, img_dims, &(nd->initialization));
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->max_dims, NULL);
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->cim_dims, NULL);
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->out_dims, &(nd->out));
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->pat_dims, &(nd->pattern));
+	merge_slice_to_batch_dim(nd->N, bat_dims, nd->trj_dims, &(nd->trajectory));
+
+}
+
+struct named_data_list_s* network_data_get_named_list(struct network_data_s* nd)
+{
+	auto train_data_list = named_data_list_create();
+	
+	if (NULL != nd->kspace)
+		named_data_list_append(train_data_list, nd->N, nd->ksp_dims, nd->kspace, "kspace");
+	
+	if (NULL != nd->coil)
+		named_data_list_append(train_data_list, nd->N, nd->col_dims, nd->coil, "coil");
+	
+	if (NULL != nd->psf)
+		named_data_list_append(train_data_list, nd->ND, nd->psf_dims, nd->psf, "psf");
+	
+	if (NULL != nd->pattern)
+		named_data_list_append(train_data_list, nd->N, nd->pat_dims, nd->pattern, "pattern");
+		
+	if (NULL != nd->adjoint)
+		named_data_list_append(train_data_list, nd->N, nd->img_dims, nd->adjoint, "adjoint");
+
+	if (NULL != nd->initialization)
+		named_data_list_append(train_data_list, nd->N, nd->img_dims, nd->initialization, "initialization");
+
+	if (NULL != nd->out)
+		named_data_list_append(train_data_list, nd->N, nd->out_dims, nd->out, nd->create_out ? "reconstruction" : "reference");
+
+	if (NULL != nd->trajectory)
+		named_data_list_append(train_data_list, nd->N, nd->trj_dims, nd->trajectory, "trajectory");
+
+	if (NULL != nd->basis)
+		named_data_list_append(train_data_list, nd->N, nd->bas_dims, nd->basis, "basis");
+
+	if (NULL != nd->scale)
+		named_data_list_append(train_data_list, nd->N, nd->scl_dims, nd->scale, "scale");
+
+	return train_data_list;
+}
+
+long network_data_get_tot(struct network_data_s* nd)
+{
+	long bat_dims[nd->N];
+	md_select_dims(nd->N, nd->batch_flags, bat_dims, nd->img_dims);
+	return md_calc_size(nd->N, bat_dims);
 }
