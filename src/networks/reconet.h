@@ -25,12 +25,12 @@ struct reconet_s {
 	float dc_lambda_init;
 	_Bool dc_gradient;
 	_Bool dc_scale_max_eigen;
-	_Bool dc_tickhonov;
+	_Bool dc_proxmap;
 	int dc_max_iter;
 
 	//network initialization
 	_Bool normalize;
-	_Bool tickhonov_init;
+	_Bool sense_init;
 	int init_max_iter;
 	float init_lambda_fixed;
 	float init_lambda_init;

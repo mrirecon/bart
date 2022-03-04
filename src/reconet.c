@@ -94,14 +94,15 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "lambda-init", &(config.dc_lambda_init), "f", "initialize lambda with specified value"),
 		OPTL_SET(0, "gradient-step", &(config.dc_gradient), "use gradient steps for data-consistency"),
 		OPTL_SET(0, "gradient-max-eigen", &(config.dc_scale_max_eigen), "scale stepsize by inverse max eigen value of A^HA"),
-		OPTL_SET(0, "proximal-mapping", &(config.dc_tickhonov), "use proximal mapping for data-consistency"),
+		OPTL_SET(0, "proximal-mapping", &(config.dc_proxmap), "use proximal mapping for data-consistency"),
 		OPTL_INT(0, "max-cg-iter", &(config.dc_max_iter), "d", "number of cg steps for proximal mapping"),
 	};
 
 	struct opt_s init_opts[] = {
 
-		OPTL_SET(0, "tickhonov", &(config.tickhonov_init), "init network with Tickhonov regularized reconstruction instead of adjoint reconstruction"),
-		OPTL_INT(0, "max-cg-iter", &(config.init_max_iter), "d", "number of cg steps for Tickhonov regularized reconstruction"),
+		OPTL_SET(0, "tickhonov", &(config.sense_init), "(init network with l2 regularized SENSE reconstruction instead of adjoint reconstruction)"), //used in webinar
+		OPTL_SET(0, "sense", &(config.sense_init), "init network with l2 regularized SENSE reconstruction instead of adjoint reconstruction"),
+		OPTL_INT(0, "max-cg-iter", &(config.init_max_iter), "d", "number of cg steps for Tikhonov regularized reconstruction"),
 		OPTL_FLOAT(0, "fix-lambda", &(config.init_lambda_fixed), "f", "fix lambda to specified value (-1 means train lambda)"),
 		OPTL_FLOAT(0, "lambda-init", &(config.init_lambda_init), "f", "initialize lambda with specified value"),
 	};
@@ -281,7 +282,7 @@ int main_reconet(int argc, char* argv[argc])
 
 	Nb = MIN(Nb, network_data_get_tot(&data));
 
-	if (config.tickhonov_init && (-1. != config.init_lambda_fixed)) {
+	if (config.sense_init && (-1. != config.init_lambda_fixed)) {
 
 		network_data_compute_init(&data, config.init_lambda_fixed, config.init_max_iter);
 		config.external_initialization = true;
@@ -308,7 +309,7 @@ int main_reconet(int argc, char* argv[argc])
 		load_network_data(&valid_data);
 		network_data_slice_dim_to_batch_dim(&valid_data);
 		
-		if (config.tickhonov_init && (-1. != config.init_lambda_fixed))
+		if (config.sense_init && (-1. != config.init_lambda_fixed))
 			network_data_compute_init(&valid_data, config.init_lambda_fixed, config.init_max_iter);
 
 		if (config.normalize)

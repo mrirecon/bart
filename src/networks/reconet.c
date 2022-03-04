@@ -91,12 +91,12 @@ struct reconet_s reconet_config_opts = {
 	.dc_lambda_init = -1.,
 	.dc_gradient = false,
 	.dc_scale_max_eigen = false,
-	.dc_tickhonov = false,
+	.dc_proxmap = false,
 	.dc_max_iter = 10,
 
 	//network initialization
 	.normalize = false,
-	.tickhonov_init = false,
+	.sense_init = false,
 	.init_max_iter = -1,
 	.init_lambda_fixed = -2,
 	.init_lambda_init = -1,
@@ -120,9 +120,9 @@ struct reconet_s reconet_config_opts = {
 static void reconet_init_default(struct reconet_s* reconet) {
 
 	//network initialization
-	reconet->init_max_iter = (-1 == reconet->init_max_iter) ? (reconet->dc_tickhonov ? reconet->dc_max_iter : 30) : reconet->init_max_iter;
-	reconet->init_lambda_fixed = (-2 == reconet->init_lambda_fixed) ? (reconet->dc_tickhonov ? reconet->dc_lambda_fixed : 0) : reconet->init_lambda_fixed;
-	reconet->init_lambda_init = (-1 == reconet->init_lambda_init) ? (reconet->dc_tickhonov ? reconet->dc_lambda_init : 0.1) : reconet->init_lambda_init;
+	reconet->init_max_iter = (-1 == reconet->init_max_iter) ? (reconet->dc_proxmap ? reconet->dc_max_iter : 30) : reconet->init_max_iter;
+	reconet->init_lambda_fixed = (-2 == reconet->init_lambda_fixed) ? (reconet->dc_proxmap ? reconet->dc_lambda_fixed : 0) : reconet->init_lambda_fixed;
+	reconet->init_lambda_init = (-1 == reconet->init_lambda_init) ? (reconet->dc_proxmap ? reconet->dc_lambda_init : 0.1) : reconet->init_lambda_init;
 }
 
 void reconet_init_modl_default(struct reconet_s* reconet)
@@ -144,8 +144,8 @@ void reconet_init_modl_default(struct reconet_s* reconet)
 
 	//data consistency config
 	reconet->dc_lambda_init = (-1 == reconet->dc_lambda_init) ? 0.05 : reconet->dc_lambda_init;
-	if (!reconet->dc_tickhonov && !reconet->dc_gradient)
-		reconet->dc_tickhonov = true;
+	if (!reconet->dc_proxmap && !reconet->dc_gradient)
+		reconet->dc_proxmap = true;
 
 	if (NULL == reconet->train_loss) {
 
@@ -178,7 +178,7 @@ void reconet_init_varnet_default(struct reconet_s* reconet)
 
 	//data consistency config
 	reconet->dc_lambda_init = (-1 == reconet->dc_lambda_init) ? 0.2 : reconet->dc_lambda_init;
-	if (!reconet->dc_tickhonov && !reconet->dc_gradient)
+	if (!reconet->dc_proxmap && !reconet->dc_gradient)
 		reconet->dc_gradient = true;
 
 	if (NULL == reconet->train_loss) {
@@ -344,7 +344,7 @@ static nn_t reconet_normalization(const struct reconet_s* config, nn_t network)
 
 
 /**
- * Returns dataconsistency block using Tickhonov regularization
+ * Returns dataconsistency block using Tikhonov regularization
  *
  * Out	= argmin_x ||Ax - y||^2 + Lambda||x - In||^2
  *	= (A^HA + Lambda)^-1[A^Hy + Lambda In]
@@ -361,7 +361,7 @@ static nn_t reconet_normalization(const struct reconet_s* config, nn_t network)
  *
  * INDEX_0:	idims
  */
-static nn_t data_consistency_tickhonov_create(const struct reconet_s* config, int Nb, struct sense_model_s* models[Nb])
+static nn_t data_consistency_tikhonov_create(const struct reconet_s* config, int Nb, struct sense_model_s* models[Nb])
 {
 	struct iter_conjgrad_conf iter_conf = iter_conjgrad_defaults;
 	iter_conf.l2lambda = 0.;
@@ -440,7 +440,7 @@ static nn_t data_consistency_gradientstep_create(const struct reconet_s* config,
  */
 static nn_t nn_init_create(const struct reconet_s* config, int Nb, struct sense_model_s* models[Nb])
 {
-	assert(config->tickhonov_init);
+	assert(config->sense_init);
 	assert(-1. == config->init_lambda_fixed);
 
 	int N = sense_model_get_N(models[0]);
@@ -461,7 +461,7 @@ static nn_t nn_init_create(const struct reconet_s* config, int Nb, struct sense_
 	auto nlop_result = nlop_sense_normal_inv_create(Nb, models, &iter_conf, BATCH_FLAG); //in: adjoint, lambda; out: (A^HA + l)^-1 adjoint
 	auto nn_result = nn_from_nlop_F(nlop_result);
 
-	bool same_lambda = config->dc_tickhonov;
+	bool same_lambda = config->dc_proxmap;
 	same_lambda = same_lambda && (config->dc_lambda_init == config->init_lambda_init);
 	same_lambda = same_lambda && (config->dc_lambda_fixed == config->init_lambda_fixed);
 	same_lambda = same_lambda && (config->dc_max_iter == config->init_max_iter);
@@ -608,9 +608,9 @@ static nn_t reconet_cell_create(const struct reconet_s* config, int Nb, struct s
 
 	auto result = network_block_create(config, N, img_dims, status);
 
-	if (config->dc_tickhonov) {
+	if (config->dc_proxmap) {
 
-		auto dc = data_consistency_tickhonov_create(config, Nb, models);
+		auto dc = data_consistency_tikhonov_create(config, Nb, models);
 		result = nn_chain2_FF(result, 0, NULL, dc, 0, NULL);
 	}
 
@@ -714,7 +714,7 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 
 	if (!config->external_initialization) {
 
-		if (config->tickhonov_init) {
+		if (config->sense_init) {
 
 			auto nn_init = nn_init_create(config, Nb, models);
 			nn_init = nn_mark_dup_F(nn_init, "adjoint");
