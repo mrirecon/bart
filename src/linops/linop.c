@@ -135,13 +135,13 @@ struct linop_s* linop_with_graph_create2(unsigned int ON, const long odims[ON], 
 
 	struct shared_data_s* shared_data[4];
 
-	for (unsigned int i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 
 		shared_data[i] = TYPE_ALLOC(struct shared_data_s);
 		SET_TYPEID(shared_data_s, shared_data[i]);
 	}
 
-	for (unsigned int i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 
 		shared_data[i]->data = data;
 		shared_data[i]->del = del;
@@ -167,18 +167,18 @@ struct linop_s* linop_with_graph_create2(unsigned int ON, const long odims[ON], 
 	assert((NULL != forward));
 	assert((NULL != adjoint));
 
-	lo->forward = operator_generic_create2(	2, (bool[2]){ true, false},
-						(unsigned int[2]){ ON, IN}, (const long* [2]){ odims, idims }, (const long* [2]){ ostrs, istrs },
+	lo->forward = operator_generic_create2(	2, (bool[2]){ true, false },
+						(unsigned int[2]){ ON, IN }, (const long* [2]){ odims, idims }, (const long* [2]){ ostrs, istrs },
 						CAST_UP(shared_data[0]), shared_apply, shared_del, operator_linop_get_graph);
 
-	lo->adjoint = operator_generic_create2(	2, (bool[2]){ true, false},
-						(unsigned int[2]){ IN, ON}, (const long* [2]){ idims, odims }, (const long* [2]){ istrs, ostrs },
+	lo->adjoint = operator_generic_create2(	2, (bool[2]){ true, false },
+						(unsigned int[2]){ IN, ON }, (const long* [2]){ idims, odims }, (const long* [2]){ istrs, ostrs },
 						CAST_UP(shared_data[1]), shared_apply, shared_del, operator_linop_get_graph);
 
 	if (NULL != normal) {
 
-		lo->normal = operator_generic_create2(	2, (bool[2]){ true, false},
-							(unsigned int[2]){ IN, IN}, (const long* [2]){ idims, idims }, (const long* [2]){ istrs, istrs },
+		lo->normal = operator_generic_create2(	2, (bool[2]){ true, false },
+							(unsigned int[2]){ IN, IN }, (const long* [2]){ idims, idims }, (const long* [2]){ istrs, istrs },
 							CAST_UP(shared_data[2]), shared_apply, shared_del, operator_linop_get_graph);
 
 	} else {
@@ -233,7 +233,7 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
  * @param
  * @param
  */
-struct linop_s* linop_with_graph_create(	unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], linop_data_t* data,
+struct linop_s* linop_with_graph_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], linop_data_t* data,
 					lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t del,
 					lop_graph_t get_graph)
 {
@@ -277,6 +277,7 @@ struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int
 const linop_data_t* linop_get_data(const struct linop_s* ptr)
 {
 	auto sdata = CAST_MAYBE(shared_data_s, operator_get_data(ptr->forward));
+
 	return sdata == NULL ? NULL : sdata->data;
 }
 
@@ -388,10 +389,12 @@ void linop_pseudo_inv(const struct linop_s* op, float lambda,
 			unsigned int SN, const long sdims[SN], const complex float* src)
 {
 	complex float* adj = md_alloc_sameplace(DN, ddims, CFL_SIZE, dst);
+
 	linop_adjoint(op, DN, ddims, adj, SN, sdims, src);
 
 	assert(op->norm_inv);
 	operator_p_apply(op->norm_inv, lambda, DN, ddims, dst, DN, ddims, adj);
+
 	md_free(adj);
 }
 
@@ -671,10 +674,12 @@ void linop_free(const struct linop_s* op)
 {
 	if (NULL == op)
 		return;
+
 	operator_free(op->forward);
 	operator_free(op->adjoint);
 	operator_free(op->normal);
 	operator_p_free(op->norm_inv);
+
 	xfree(op);
 }
 
@@ -698,13 +703,14 @@ struct linop_s* linop_plus(const struct linop_s* a, const struct linop_s* b)
 	c->normal = operator_chain(c->forward, c->adjoint);
 	c->norm_inv = NULL;
 
-	auto result =  PTR_PASS(c);
+	auto result = PTR_PASS(c);
 	auto result_optimized = graph_optimize_linop(result);
+
 	linop_free(result);
 
 	return result_optimized;
-
 }
+
 
 struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b)
 {
@@ -717,27 +723,26 @@ struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b)
 }
 
 
-struct linop_s* linop_reshape_in(const struct linop_s* op, unsigned int NI, const long idims[NI]) {
-
+struct linop_s* linop_reshape_in(const struct linop_s* op, unsigned int NI, const long idims[NI])
+{
 	PTR_ALLOC(struct linop_s, c);
 
 	c->forward = operator_reshape(op->forward, 1, NI, idims);
 	c->adjoint = operator_reshape(op->adjoint, 0, NI, idims);
+	c->normal = NULL;
+	c->norm_inv = NULL;
 
 	if (NULL != op->normal) {
 
 		auto tmp = operator_reshape(op->normal, 1, NI, idims);
-		c->normal = operator_reshape(tmp, 0, NI, idims);
-		operator_free(tmp);
-	} else {
 
-		c->normal = NULL;
+		c->normal = operator_reshape(tmp, 0, NI, idims);
+
+		operator_free(tmp);
 	}
 
 	if (NULL != op->norm_inv)
 		c->norm_inv = operator_p_reshape_out_F(operator_p_reshape_in(op->norm_inv, NI, idims), NI, idims);
-	else
-		c->norm_inv = NULL;
 
 	return PTR_PASS(c);
 }
@@ -757,14 +762,18 @@ struct linop_s* linop_reshape_out(const struct linop_s* op, unsigned int NO, con
 struct linop_s* linop_reshape_in_F(const struct linop_s* op, unsigned int NI, const long idims[NI])
 {
 	auto result = linop_reshape_in(op, NI, idims);
+
 	linop_free(op);
+
 	return result;
 }
 
 struct linop_s* linop_reshape_out_F(const struct linop_s* op, unsigned int NO, const long odims[NO])
 {
 	auto result = linop_reshape_out(op, NO, odims);
+
 	linop_free(op);
+
 	return result;
 }
 
@@ -778,8 +787,9 @@ const linop_data_t* operator_get_linop_data(const struct operator_s* op)
 		return data->data;
 }
 
-static enum node_identic node_identify_linop(const struct node_s* _a, const struct node_s* _b) {
 
+static enum node_identic node_identify_linop(const struct node_s* _a, const struct node_s* _b)
+{
 	auto a = get_operator_from_node(_a);
 	auto b = get_operator_from_node(_b);
 
@@ -788,6 +798,7 @@ static enum node_identic node_identify_linop(const struct node_s* _a, const stru
 
 	return NODE_IDENTICAL;
 }
+
 
 static const struct operator_s* graph_optimize_operator_linop(const struct operator_s* op)
 {
@@ -801,16 +812,20 @@ static const struct operator_s* graph_optimize_operator_linop(const struct opera
 
 	auto graph = operator_get_graph(op);
 
-	bool redo = false;
+	int count1;
+	int count2 = list_count(graph->nodes);
+
 	do {
-		int count = list_count(graph->nodes);
+		count1 = count2;
+
 		graph = operator_graph_optimize_identity_F(graph);
 		graph = operator_graph_sum_to_multi_sum_F(graph, false);
 		graph = operator_graph_optimize_identify_F(graph);
 		graph = operator_graph_optimize_linops_F(graph, node_identify_linop);
-		redo = count > list_count(graph->nodes);
 
-	} while (redo);
+		count2 = list_count(graph->nodes);
+
+	} while(count1 > count2);
 
 	return graph_to_operator_F(graph);
 }
@@ -836,33 +851,39 @@ void operator_linops_apply_parallel_unchecked(unsigned int N, const struct opera
 	auto combi = operator_combi_create(N, op);
 
 	int perm[2 * N];
-	for (unsigned int i = 0; i < N; i++) {
+
+	for (int i = 0; i < (int)N; i++) {
 
 		perm[i] = 2 * i;
 		perm[i + N] = 2 * i + 1;
 	}
 
 	auto dup = operator_permute(combi, 2 * N, perm);
+
 	operator_free(combi);
 
-	for (unsigned int i = 0; i < N - 1; i++) {
+	for (int i = 0; i < (int)N - 1; i++) {
 
 		auto tmp = operator_dup_create(dup, N, N + 1);
+
 		operator_free(dup);
+
 		dup = tmp;
 	}
 
 	void* args[N + 1];
-	for (unsigned int i = 0; i < N; i++)
+
+	for (int i = 0; i < (int)N; i++)
 		args[i] = dst[i];
+
 	args[N] = (void*)src;
 
-
 	auto op_optimized = graph_optimize_operator_linop(dup);
+
 	operator_free(dup);
 
 	operator_generic_apply_unchecked(op_optimized, N + 1, args);
 
 	operator_free(op_optimized);
-
 }
+
