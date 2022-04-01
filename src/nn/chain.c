@@ -543,6 +543,20 @@ nn_t nn_chain2(nn_t a, int o, const char* oname, nn_t b, int i, const char* inam
 	o = nn_get_out_arg_index(a, o, oname);
 	i = nn_get_in_arg_index(b, i, iname);
 
+	for (int ia = 0; ia < IIa; ia++)
+		for (int ib = 0; ib < IIb; ib++)
+			assert(    (i == ib)
+				|| (NULL == nn_get_in_names(a)[ia])
+				|| (NULL == nn_get_in_names(b)[ib])
+				|| (0 != strcmp(nn_get_in_names(a)[ia], nn_get_in_names(b)[ib])));
+
+	for (int ia = 0; ia < OOa; ia++)
+		for (int ib = 0; ib < OOb; ib++)
+			assert(    (o == ia)
+				|| (NULL == nn_get_out_names(a)[ia])
+				|| (NULL == nn_get_out_names(b)[ib])
+				|| (0 != strcmp(nn_get_out_names(a)[ia], nn_get_out_names(b)[ib])));
+
 	auto result = nn_from_nlop_F(nlop_chain2(a->nlop, o, b->nlop, i));
 
 	for (int j = 0, jp = 0; j < IIb - 1; j++, jp++) {
