@@ -1072,62 +1072,54 @@ void train_reconet(	struct reconet_s* config,
 	monitor_iter6_free(monitor);
 }
 
-void apply_reconet(	struct reconet_s* config, unsigned int N, const long max_dims[N],
-			const long out_dims[N], _Complex float* out,
-			const long img_dims[N], const complex float* adjoint,
-			const long col_dims[N], const _Complex float* coil,
-			int ND, const long psf_dims[ND], const _Complex float* psf)
+void apply_reconet(struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[ND], struct named_data_list_s* data)
 {
 	if (config->gpu)
 		move_gpu_nn_weights(config->weights);
 
-	int DO[1] = { N };
-	int DI[3] = { N, N, ND };
-
-	const long* odims[1] = { out_dims };
-	const long* idims[3] = { img_dims, col_dims, psf_dims };
-
-	complex float* dst[1] = { out };
-	const complex float* src[3] = { adjoint, coil, psf };
-
 	long max_dims1[N];
 	long psf_dims1[ND];
 
-	md_select_dims(N, ~BATCH_FLAG, max_dims1, max_dims);
+	md_select_dims( N, ~BATCH_FLAG, max_dims1, max_dims);
 	md_select_dims(ND, ~BATCH_FLAG, psf_dims1, psf_dims);
 
-	config->coil_image = (1 != out_dims[COIL_DIM]);
+	auto ref_iov = named_data_list_get_iovec(data, "reconstruction");
+	config->coil_image = (1 != ref_iov->dims[COIL_DIM]);
+	iovec_free(ref_iov);
+
 	auto nn_apply = reconet_apply_op_create(config, N, max_dims1, ND, psf_dims1);
 
-	nlop_generic_apply_loop_sameplace(nn_get_nlop(nn_apply), BATCH_FLAG, 1, DO, odims, dst, 3, DI, idims, src, config->weights->tensors[0]);
+	nn_apply_named_list(nn_apply, data, config->weights->tensors[0]);
 
 	nn_free(nn_apply);
 
 	if (config->normalize_rss) {
 
-		assert(md_check_equal_dims(N, img_dims, out_dims, ~0));
+		auto dom_rec =  named_data_list_get_iovec(data, "reconstruction");
+		auto dom_col =  named_data_list_get_iovec(data, "coil");
 
-		complex float* tmp = md_alloc_sameplace(N, img_dims, CFL_SIZE, out);
-		md_zrss(N, col_dims, COIL_FLAG, tmp, coil);
-		md_zmul(N, img_dims, out, out, tmp);
+		assert(dom_col->N == dom_rec->N);
+		assert(!config->coil_image);
+
+		complex float* tmp = md_alloc(dom_rec->N, dom_rec->dims, CFL_SIZE);
+		md_zrss(dom_col->N, dom_col->dims, COIL_FLAG, tmp, named_data_list_get_data(data, "coil"));
+		md_zmul(dom_rec->N, dom_rec->dims, named_data_list_get_data(data, "reconstruction"), named_data_list_get_data(data, "reconstruction"), tmp);
 		md_free(tmp);
 	}
 }
 
-void eval_reconet(	struct reconet_s* config, unsigned int N, const long max_dims[N],
-			const long out_dims[N], const complex float* out,
-			const long img_dims[N], const complex float* adjoint,
-			const long col_dims[N], const complex float* coil,
-			int ND, const long psf_dims[ND], const complex float* psf)
+void eval_reconet(struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[ND], struct named_data_list_s* data)
 {
 	assert(DIMS == N);
 
-	complex float* tmp_out = md_alloc(N, out_dims, CFL_SIZE);
+	auto dom_rec = named_data_list_get_iovec(data, "reference");
+	complex float* tmp_out = md_alloc(dom_rec->N, dom_rec->dims, CFL_SIZE);
+	named_data_list_append(data, dom_rec->N, dom_rec->dims, tmp_out, "reconstruction");
 
-	apply_reconet(config, N, max_dims, out_dims, tmp_out, img_dims, adjoint, col_dims, coil, ND, psf_dims, psf);
+	apply_reconet(config, N, max_dims, ND, psf_dims, data);
 
 	long tout_dims[N];
-	md_select_dims(N, ~BATCH_FLAG, tout_dims, out_dims);
+	md_select_dims(N, ~BATCH_FLAG, tout_dims, dom_rec->dims);
 	auto loss = val_measure_create(config->valid_loss, N, tout_dims);
 	int NL = nn_get_nr_out_args(loss);
 
@@ -1139,7 +1131,7 @@ void eval_reconet(	struct reconet_s* config, unsigned int N, const long max_dims
 		loss_op = nlop_append_singleton_dim_out_F(loss_op, 0);
 
 	long tloss_dims[N];
-	md_select_dims(N, BATCH_FLAG, tloss_dims, out_dims);
+	md_select_dims(N, BATCH_FLAG, tloss_dims, dom_rec->dims);
 	tloss_dims[0] = NL;
 
 	complex float* tloss = md_alloc(N, tloss_dims, CFL_SIZE);
@@ -1149,8 +1141,8 @@ void eval_reconet(	struct reconet_s* config, unsigned int N, const long max_dims
 	complex float* loss_arr[1] = { tloss };
 
 	int DI[] = { N, N };
-	const long* idims[2] = { out_dims, out_dims };
-	const complex float* input_arr[2] = { tmp_out, out };
+	const long* idims[2] = { dom_rec->dims, dom_rec->dims };
+	const complex float* input_arr[2] = { tmp_out, named_data_list_get_data(data, "reference") };
 
 	nlop_generic_apply_loop(loss_op, BATCH_FLAG, 1, DO , odims, loss_arr, 2, DI, idims, input_arr);
 	nlop_free(loss_op);
@@ -1164,6 +1156,7 @@ void eval_reconet(	struct reconet_s* config, unsigned int N, const long max_dims
 	nn_free(loss);
 
 	md_free(tloss);
+	iovec_free(dom_rec);
 	md_free(tmp_out);
 
 }

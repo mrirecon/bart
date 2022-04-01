@@ -354,15 +354,23 @@ int main_reconet(int argc, char* argv[argc])
 
 	if (eval) {
 
+		auto eval_data_list = network_data_get_named_list(&data);
+
 		if (NULL == config.weights)
 			config.weights = load_nn_weights(filename_weights);
-		eval_reconet(&config, data.N, data.max_dims, data.out_dims, data.out, data.img_dims, data.adjoint, data.col_dims, data.coil, data.ND, data.psf_dims, data.psf);
+		eval_reconet(&config, data.N, data.max_dims, data.ND, data.psf_dims, eval_data_list);
+	
+		named_data_list_free(eval_data_list);
 	}
 
 	if (apply) {
 
+		auto apply_data_list = network_data_get_named_list(&data);
+
 		config.weights = load_nn_weights(filename_weights);
-		apply_reconet(&config, data.N, data.max_dims, data.out_dims, data.out, data.img_dims, data.adjoint, data.col_dims, data.coil, data.ND, data.psf_dims, data.psf);
+		apply_reconet(&config, data.N, data.max_dims, data.ND, data.psf_dims, apply_data_list);
+
+		named_data_list_free(apply_data_list);
 	}
 
 	nn_weights_free(config.weights);
