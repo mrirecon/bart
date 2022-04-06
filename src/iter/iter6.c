@@ -64,6 +64,7 @@ DEF_TYPEID(iter6_iPALM_conf);
 	.INTERFACE.batch_seed = 123, \
 	.INTERFACE.dump_flag = 0, \
 	.INTERFACE.min_learning_rate = 0.,\
+	.INTERFACE.epochs_warmup = 0.,\
 	.INTERFACE.monitor_averaged_objective = false,\
 	.INTERFACE.learning_rate_epoch_mod = 0,
 
@@ -246,7 +247,7 @@ static const struct operator_p_s* get_update_operator(const iter6_conf* conf, in
 	return NULL;
 }
 
-static float* get_learning_rate_schedule_cosine_annealing(int epochs, int numbatches, float learning_rate, float min_learning_rate, int epoch_mod)
+static const float* get_learning_rate_schedule_cosine_annealing(int epochs, int numbatches, float learning_rate, float min_learning_rate, int epoch_mod)
 {
 	long dims[2] = {numbatches, epochs};
 
@@ -263,6 +264,52 @@ static float* get_learning_rate_schedule_cosine_annealing(int epochs, int numbat
 
 	return &(result[0][0]);
 }
+
+static const float* get_learning_rate_schedule_exponential_decay(int epochs, int numbatches, float learning_rate, float min_learning_rate)
+{
+	long dims[2] = {numbatches, epochs};
+
+	if (0 >= min_learning_rate)
+		return NULL;
+
+	assert(0 <= min_learning_rate);
+
+	float (*result)[numbatches] = (float (*)[numbatches])md_alloc(2, dims, FL_SIZE);
+
+	for (int ie = 0; ie < dims[1]; ie++)
+		for (int ib = 0; ib < dims[0]; ib++)
+			result[ie][ib] = learning_rate * (expf(((float)ie) / (epochs - 1) * logf(min_learning_rate / learning_rate)));
+
+	return &(result[0][0]);
+}
+
+static const float* learning_rate_schedule_add_warmup(int epochs, int numbatches, float learning_rate, int epochs_warmup, const float* schedule)
+{
+	if (0 == epochs_warmup)
+		return schedule;
+	
+	long dims[2] = {numbatches, epochs};
+	float (*result)[numbatches] = (float (*)[numbatches])md_alloc(2, dims, FL_SIZE);
+	
+	for (int ie = 0; ie < epochs_warmup; ie++)
+		for (int ib = 0; ib < numbatches; ib++) {
+
+			result[ie][ib] = learning_rate / (float)(epochs_warmup * numbatches) * (float)(ie * numbatches + ib);
+		}
+	
+	for (int ie = 0; ie < epochs - epochs_warmup; ie++)
+		for (int ib = 0; ib < numbatches; ib++) {
+
+			result[ie + epochs_warmup][ib] = (NULL == schedule) ? learning_rate : schedule[numbatches * ie + ib];
+		}
+	
+	if (NULL != schedule)
+		md_free(schedule);
+	
+	return &(result[0][0]);
+}
+
+
 
 void iter6_sgd_like(	const iter6_conf* conf,
 			const struct nlop_s* nlop,
@@ -353,7 +400,17 @@ void iter6_sgd_like(	const iter6_conf* conf,
 	    && (0 < conf->dump_mod))
 		dump = iter6_dump_default_create(conf->dump_filename, conf->dump_mod, nlop, conf->dump_flag, NI, in_type);
 
-	float (*learning_rate_schedule)[numbatches] = (float (*)[numbatches])get_learning_rate_schedule_cosine_annealing(conf->epochs, numbatches, conf->learning_rate, conf->min_learning_rate, conf->learning_rate_epoch_mod);
+	float (*learning_rate_schedule)[numbatches] = NULL;
+	
+	if (0 < conf->min_learning_rate) {
+
+		if (conf->learning_rate_epoch_mod)
+			learning_rate_schedule = (float (*)[numbatches])get_learning_rate_schedule_cosine_annealing(conf->epochs, numbatches, conf->learning_rate, conf->min_learning_rate, conf->learning_rate_epoch_mod);
+		else
+			learning_rate_schedule = (float (*)[numbatches])get_learning_rate_schedule_exponential_decay(conf->epochs, numbatches, conf->learning_rate, conf->min_learning_rate);
+	}
+
+	learning_rate_schedule = (float (*)[numbatches])learning_rate_schedule_add_warmup(conf->epochs, numbatches, conf->learning_rate, conf->epochs_warmup, (const float*)learning_rate_schedule);
 
 	sgd(	conf->epochs, numbatches,
 		conf->learning_rate, conf->batchnorm_momentum,

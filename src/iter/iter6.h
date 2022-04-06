@@ -33,6 +33,7 @@ typedef struct iter6_conf_s {
 	int batch_seed;
 
 	float min_learning_rate;
+	int epochs_warmup;
 	int learning_rate_epoch_mod;
 
 	_Bool monitor_averaged_objective;

@@ -78,7 +78,8 @@ struct opt_s iter6_opts[] = {
 
 	OPTL_FLOAT(0, "weight-decay", &(iter6_conf_opts.weight_decay), "f", "reduce weights by 1 / (1 + lr*f) after each update"),
 
-	OPTL_FLOAT(0, "learning-rate-min", &(iter6_conf_opts.min_learning_rate), "f", "minimum learnin rate (used for scheduled learning rate)"),
+	OPTL_INT(0, "epochs-warmup", &(iter6_conf_opts.epochs_warmup), "d", "linearly increase learning rate in first d epochs"),
+	OPTL_FLOAT(0, "learning-rate-min", &(iter6_conf_opts.min_learning_rate), "f", "minimum learning rate (cosine annealing / exponential decay)"),
 	OPTL_INT(0, "cosine-annealing-mod", &(iter6_conf_opts.learning_rate_epoch_mod), "d", "schedule learning rate using cosine annealing each d epochs"),
 
 	OPTL_OUTFILE(0, "export-history", &(iter6_conf_opts.history_filename), "<file>", "export file containing the train history"),
@@ -168,6 +169,8 @@ void iter6_copy_config_from_opts(struct iter6_conf_s* result)
 		result->learning_rate_epoch_mod = iter6_conf_opts.learning_rate_epoch_mod;
 	if (iter6_conf_opts.min_learning_rate != iter6_conf_unset.min_learning_rate)
 		result->min_learning_rate = iter6_conf_opts.min_learning_rate;
+	if (iter6_conf_opts.epochs_warmup != iter6_conf_unset.epochs_warmup)
+		result->epochs_warmup = iter6_conf_opts.epochs_warmup;
 	if (iter6_conf_opts.monitor_averaged_objective != iter6_conf_unset.monitor_averaged_objective)
 		result->monitor_averaged_objective = iter6_conf_opts.monitor_averaged_objective;
 }
