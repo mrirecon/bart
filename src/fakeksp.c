@@ -44,7 +44,7 @@ int main_fakeksp(int argc, char* argv[argc])
 		ARG_INFILE(true, &im_file, "image"),
 		ARG_INFILE(true, &ksp_file, "kspace"),
 		ARG_INFILE(true, &sens_file, "sens"),
-		ARG_INFILE(true, &out_file, "output"),
+		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
 	bool rplksp = false;
