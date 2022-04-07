@@ -130,8 +130,6 @@ struct arg_s {
 };
 
 
-extern void* parse_arg_tuple(int n, ...);
-
 #define ARG_SINGLE(type, T, ptr, argname)			&(struct arg_single_s){ (type), sizeof(T), (ptr), (argname) }
 
 #define ARG_CHECKED(required, type, T, ptr, argname)		{ required, ARG, NULL, 1, ARG_SINGLE(type, T, TYPE_CHECK(T*, ptr), argname) }
