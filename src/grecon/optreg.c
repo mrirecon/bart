@@ -302,10 +302,6 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 
 
 			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-			minsize[0] = MIN(img_dims[0], 16);
-			minsize[1] = MIN(img_dims[1], 16);
-			minsize[2] = MIN(img_dims[2], 16);
-
 
 			unsigned int wflags = 0;
 			for (unsigned int i = 0; i < DIMS; i++) {
@@ -333,10 +329,6 @@ void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s*
 			md_calc_strides(N, img_strs, img_dims, CFL_SIZE);
 
 			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-			minsize[0] = MIN(img_dims[0], 16);
-			minsize[1] = MIN(img_dims[1], 16);
-			minsize[2] = MIN(img_dims[2], 16);
-
 
 			unsigned int wflags = 0;
 			unsigned int wxdim = 0;
