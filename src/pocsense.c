@@ -23,7 +23,8 @@
 
 #include "linops/someops.h"
 #include "linops/linop.h"
-#include "linops/waveop.h"
+
+#include "wavelet/wavthresh.h"
 
 #include "iter/iter.h"
 #include "iter/prox.h"
@@ -133,7 +134,6 @@ int main_pocsense(int argc, char* argv[argc])
 	// l1-norm threshold operator
 	
 	const struct operator_p_s* thresh_op = NULL;
-	const struct linop_s* wave_op = NULL;
 
 	if (l1wav) {
 
@@ -149,11 +149,8 @@ int main_pocsense(int argc, char* argv[argc])
 			}
 		}
 
-		long strs[DIMS];
-		md_calc_strides(DIMS, strs, ksp_dims, CFL_SIZE);
-
-		wave_op = linop_wavelet_create(DIMS, flags, ksp_dims, strs, minsize, false);
-		thresh_op = prox_unithresh_create(DIMS, wave_op, alpha, COIL_FLAG);
+		bool randshift = false;
+		thresh_op = prox_wavelet_thresh_create(DIMS, ksp_dims, flags, COIL_FLAG, minsize, alpha, randshift);
 	}
 #if 0
 	else {
@@ -220,9 +217,6 @@ int main_pocsense(int argc, char* argv[argc])
 	
 	if (NULL != thresh_op)
 		operator_p_free(thresh_op);
-
-	if (NULL != wave_op)
-		linop_free(wave_op);
 
 	unmap_cfl(N, ksp_dims, result);
 	unmap_cfl(N, ksp_dims, kspace_data);
