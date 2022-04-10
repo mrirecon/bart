@@ -97,8 +97,9 @@ int main_join(int argc, char* argv[argc])
 	}
 
 	long in_dims[count][N];
+	const complex float* in_data[count];
+
 	long offsets[count];
-	complex float* idata[count];
 	long sum = 0;
 
 	// figure out size of output
@@ -109,6 +110,7 @@ int main_join(int argc, char* argv[argc])
 		if (append && (i == 0)) {
 
 			name = out_file;
+
 		} else {
 
 			name = in_files[l++];
@@ -116,7 +118,8 @@ int main_join(int argc, char* argv[argc])
 
 		debug_printf(DP_DEBUG1, "loading %s\n", name);
 
-		idata[i] = load_cfl(name, N, in_dims[i]);
+		in_data[i] = load_cfl(name, N, in_dims[i]);
+
 		offsets[i] = sum;
 
 		sum += in_dims[i][dim];
@@ -125,7 +128,7 @@ int main_join(int argc, char* argv[argc])
 			assert((dim == j) || (in_dims[0][j] == in_dims[i][j]));
 
 		if (append && (i == 0))
-			unmap_cfl(N, in_dims[i], idata[i]);
+			unmap_cfl(N, in_dims[i], in_data[i]);
 	}
 
 	long out_dims[N];
@@ -159,9 +162,10 @@ int main_join(int argc, char* argv[argc])
 			long istr[N];
 			md_calc_strides(N, istr, in_dims[i], CFL_SIZE);
 
-			md_copy_block(N, pos, out_dims, out_data, in_dims[i], idata[i], CFL_SIZE);
+			md_copy_block(N, pos, out_dims, out_data, in_dims[i], in_data[i], CFL_SIZE);
 
-			unmap_cfl(N, in_dims[i], idata[i]);
+			unmap_cfl(N, in_dims[i], in_data[i]);
+
 			debug_printf(DP_DEBUG1, "done copying file %d\n", i);
 		}
 	}
