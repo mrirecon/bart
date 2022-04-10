@@ -80,41 +80,22 @@ static void eigen_herm3(int M, int N, float val[M], complex float matrix[N][N]) 
 			matrix[i][j] = mout[i][j];
 }
 
-static float scurve(float x)
-{
-	if (x <= -1.)
-		return 0.;
 
-	if (x >= 1.)
-		return 1.;
-
-	return 0.5 * (1. + 2. * x / (1. + powf(x, 2.)));
-}
-
-static float crop_weight_function(float crth, float val)
-{
-	return scurve((sqrtf(val) - crth) / (1. - crth));
-}
-
-static float crop_thresh_function(float crth, float val)
-{
-	return (val <= crth) ? 0. : 1.;
-}
 
 static void md_scurve(int N, const long dims[N], float* dst, const float* src)
 {
 	float* tmp1 = md_alloc_sameplace(N, dims, FL_SIZE, src);
 	float* tmp2 = md_alloc_sameplace(N, dims, FL_SIZE, src);
 
-	md_sgreatequal(N, dims, tmp1, src, -1);
-	md_slessequal(N, dims, tmp2, src, 1);
+	md_sgreatequal(N, dims, tmp1, src, -1.);
+	md_slessequal(N, dims, tmp2, src, 1.);
 
 	md_mul(N, dims, tmp2, src, src);
 	md_sadd(N, dims, tmp2, tmp2, 1.);
 	md_div(N, dims, tmp2, src, tmp2);
 	md_sadd(N, dims, tmp2, tmp2, 0.5);
 
-	md_sgreatequal(N, dims, dst, src, 1);
+	md_sgreatequal(N, dims, dst, src, 1.);
 	md_fmac(N, dims, dst, tmp1, tmp2);
 
 	md_free(tmp1);
@@ -124,13 +105,14 @@ static void md_scurve(int N, const long dims[N], float* dst, const float* src)
 static void md_crop_weight_fun(int N, const long dims[N], float crth, complex float* dst, const complex float* src)
 {
 	md_zabs(N, dims, dst, src);
-	
+
 	float* tmp = md_alloc_sameplace(N, dims, FL_SIZE, src);
+
 	md_real(N, dims, tmp, dst);
 
 	md_sqrt(N, dims, tmp, tmp);
 	md_sadd(N, dims, tmp, tmp, - crth);
-	md_smul(N, dims, tmp, tmp, 1. / (1. -crth));
+	md_smul(N, dims, tmp, tmp, 1. / (1. - crth));
 	md_scurve(N, dims, tmp, tmp);
 
 	md_zcmpl_real(N, dims, dst, tmp);
@@ -155,6 +137,7 @@ static void md_crop_weight(int N, const long dims[N], complex float* ptr, md_wei
 	md_select_dims(N, FFT_FLAGS | MAPS_FLAG, wgh_dims, dims);
 
 	complex float* tmp = md_alloc_sameplace(N, wgh_dims, CFL_SIZE, map);
+
 	fun(N, wgh_dims, crth, tmp, map);
 
 	long strs[N];
@@ -162,46 +145,17 @@ static void md_crop_weight(int N, const long dims[N], complex float* ptr, md_wei
 
 	md_calc_strides(N, strs, dims, CFL_SIZE);
 	md_calc_strides(N, wgh_strs, wgh_dims, CFL_SIZE);
-	
+
 	md_zmul2(N, dims, strs, ptr, strs, ptr, wgh_strs, tmp);
+
 	md_free(tmp);
 }
 
-
-typedef float (*weight_function)(float crth, float val);
-
-static void crop_weight(int N, const long dims[N], complex float* ptr, weight_function fun, float crth, const complex float* map)
-{
-	long xx = dims[0];
-	long yy = dims[1];
-	long zz = dims[2];
-	long cc = dims[3];
-	long mm = dims[4];
-
-	assert(N >= 5);
-	assert(1 == md_calc_size(N - 5, dims + 5));
-
-	for (long m = 0; m < mm; m++) {
-#pragma omp parallel for
-		for (long k = 0; k < zz; k++) {
-			for (long i = 0; i < yy; i++) {
-				for (long j = 0; j < xx; j++) {
-
-					float val = cabsf(map[((m * zz + k) * yy + i) * xx + j]);
-
-					for (long c = 0; c < cc; c++)
-						ptr[(((m * cc + c) * zz + k) * yy + i) * xx + j] *= fun(crth, val);
-				}
-			}
-		}
-	}
-}
 
 
 void crop_sens(const long dims[DIMS], complex float* ptr, bool soft, float crth, const complex float* map)
 {
 	md_crop_weight(DIMS, dims, ptr, soft ? md_crop_weight_fun : md_crop_thresh_fun, crth, map);
-	//crop_weight(DIMS, dims, ptr, soft ? crop_weight_function : crop_thresh_function, crth, map);
 }
 
 
