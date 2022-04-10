@@ -1,4 +1,5 @@
 /* Copyright 2017-2021. Uecker Lab. University Center Göttingen.
+ * Copyright 2022. Institute of Biomedical Imaging. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -52,6 +53,7 @@ static bool linear_derivative(const struct nlop_s* op)
 
 		nlop_apply(op, N_cod, dims_cod, y1, N_dom, dims_dom, x);
 		nlop_apply(op, N_cod, dims_cod, y2, N_dom, dims_dom, x0);
+
 		md_zsub(N_cod, dims_cod, y1, y1, y2);
 
 		nlop_derivative(op, N_cod, dims_cod, y2, N_dom, dims_dom, x);
@@ -144,10 +146,11 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, bool lin)
 	return (lin && linear_derivative(op)) ? 0. : val / val0;
 }
 
-static bool der_succes(int reduce_target, float val_target, int reduce, float val)
+static bool der_success(int reduce_target, float val_target, int reduce, float val)
 {
 	bool res1 = (reduce_target <= reduce);
 	bool res2 = (val_target >= val) || (0 >= val_target);
+
 	return res1 && res2;
 }
 
@@ -190,8 +193,11 @@ static bool nlop_test_derivative_priv_reduce(const struct nlop_s* op, bool lin, 
 		// d = F(x + s * h) - F(x)
 		md_copy(N_dom, dims_dom, x2, x1, CFL_SIZE);
 		md_zaxpy(N_dom, dims_dom, x2, scale, h);
+
 		nlop_apply(op, N_cod, dims_cod, y2, N_dom, dims_dom, x2);
+
 		md_zsub(N_cod, dims_cod, d2, y2, y1);
+
 
 		// DF(s * h)
 		md_zsmul(N_cod, dims_cod, d3, d1, scale);
@@ -216,7 +222,7 @@ static bool nlop_test_derivative_priv_reduce(const struct nlop_s* op, bool lin, 
 		vall = val;
 		scale /= 2.;
 
-		if (der_succes(reduce_target, val_target, iter_reduce, val/val0))
+		if (der_success(reduce_target, val_target, iter_reduce, val / val0))
 			break;
 	}
 
@@ -229,16 +235,20 @@ static bool nlop_test_derivative_priv_reduce(const struct nlop_s* op, bool lin, 
 	md_free(d2);
 	md_free(d3);
 
-	if (der_succes(reduce_target, val_target, iter_reduce, val/val0))
+	if (der_success(reduce_target, val_target, iter_reduce, val / val0))
 		return true;
 
 	if (!lin)
 		return false;
 
+
 	auto nlop_square = nlop_tenmul_create(N_cod, dims_cod, dims_cod, dims_cod);
+
 	nlop_square = nlop_dup_F(nlop_square, 0, 1);
 	auto nlop_tmp = nlop_chain(op, nlop_square);
+
 	nlop_free(nlop_square);
+
 
 	bool result = nlop_test_derivative_priv_reduce(nlop_tmp, false, iter_max, reduce_target, val_target);
 
@@ -259,32 +269,39 @@ float nlop_test_derivatives(const struct nlop_s* op)
 
 	complex float* src[nr_in_args];
 
-	float err = 0.0;
+	float err = 0.;
 
-	for (int in = 0; in < nr_in_args; in ++) {
+	for (int in = 0; in < nr_in_args; in++) {
 
-		src[in] = md_alloc(nlop_generic_domain(op, in)->N, nlop_generic_domain(op, in)->dims, CFL_SIZE);
+		auto iov = nlop_generic_domain(op, in);
 
-		md_gaussian_rand(nlop_generic_domain(op, in)->N, nlop_generic_domain(op, in)->dims, src[in]);
+		src[in] = md_alloc(iov->N, iov->dims, CFL_SIZE);
+
+		md_gaussian_rand(iov->N, iov->dims, src[in]);
 	}
 
-	for (int in = 0; in < nr_in_args; in ++) {
-		for (int out = 0; out < nr_out_args; out ++) {
+	for (int in = 0; in < nr_in_args; in++) {
+
+		for (int out = 0; out < nr_out_args; out++) {
 
 			const struct nlop_s* test_op = nlop_clone(op);
 
 			for (int in_del = 0; in_del < nr_in_args; in_del++) {
 
+				auto iov = nlop_generic_domain(op, in_del);
+
 				if (in_del < in)
-					test_op = nlop_set_input_const_F(test_op, 0, nlop_generic_domain(op, in_del)->N, nlop_generic_domain(op, in_del)->dims, true, src[in_del]);
+					test_op = nlop_set_input_const_F(test_op, 0, iov->N, iov->dims, true, src[in_del]);
+
 				if (in_del > in)
-					test_op = nlop_set_input_const_F(test_op, 1, nlop_generic_domain(op, in_del)->N, nlop_generic_domain(op, in_del)->dims, true, src[in_del]);
+					test_op = nlop_set_input_const_F(test_op, 1, iov->N, iov->dims, true, src[in_del]);
 			}
 
-			for (int out_del = 0; out_del < nr_out_args; out_del ++) {
+			for (int out_del = 0; out_del < nr_out_args; out_del++) {
 
 				if (out_del < out)
 					test_op = nlop_del_out_F(test_op, 0);
+
 				if (out_del > out)
 					test_op = nlop_del_out_F(test_op, 1);
 			}
@@ -299,7 +316,7 @@ float nlop_test_derivatives(const struct nlop_s* op)
 		}
 	}
 
-	for (int in = 0; in < nr_in_args; in ++)
+	for (int in = 0; in < nr_in_args; in++)
 		md_free(src[in]);
 
 	return err;
@@ -314,30 +331,37 @@ bool nlop_test_derivatives_reduce(const struct nlop_s* op, int iter_max, int red
 
 	bool result = true;
 
-	for (int in = 0; in < nr_in_args; in ++) {
+	for (int in = 0; in < nr_in_args; in++) {
 
-		src[in] = md_alloc(nlop_generic_domain(op, in)->N, nlop_generic_domain(op, in)->dims, CFL_SIZE);
+		auto iov = nlop_generic_domain(op, in);
 
-		md_gaussian_rand(nlop_generic_domain(op, in)->N, nlop_generic_domain(op, in)->dims, src[in]);
+		src[in] = md_alloc(iov->N, iov->dims, CFL_SIZE);
+
+		md_gaussian_rand(iov->N, iov->dims, src[in]);
 	}
 
-	for (int in = 0; in < nr_in_args; in ++) {
-		for (int out = 0; out < nr_out_args; out ++) {
+	for (int in = 0; in < nr_in_args; in++) {
+
+		for (int out = 0; out < nr_out_args; out++) {
 
 			const struct nlop_s* test_op = nlop_clone(op);
 
 			for (int in_del = 0; in_del < nr_in_args; in_del++) {
 
+				auto iov = nlop_generic_domain(op, in_del);
+
 				if (in_del < in)
-					test_op = nlop_set_input_const_F(test_op, 0, nlop_generic_domain(op, in_del)->N, nlop_generic_domain(op, in_del)->dims, true, src[in_del]);
+					test_op = nlop_set_input_const_F(test_op, 0, iov->N, iov->dims, true, src[in_del]);
+
 				if (in_del > in)
-					test_op = nlop_set_input_const_F(test_op, 1, nlop_generic_domain(op, in_del)->N, nlop_generic_domain(op, in_del)->dims, true, src[in_del]);
+					test_op = nlop_set_input_const_F(test_op, 1, iov->N, iov->dims, true, src[in_del]);
 			}
 
-			for (int out_del = 0; out_del < nr_out_args; out_del ++) {
+			for (int out_del = 0; out_del < nr_out_args; out_del++) {
 
 				if (out_del < out)
 					test_op = nlop_del_out_F(test_op, 0);
+
 				if (out_del > out)
 					test_op = nlop_del_out_F(test_op, 1);
 			}
@@ -353,13 +377,13 @@ bool nlop_test_derivatives_reduce(const struct nlop_s* op, int iter_max, int red
 		}
 	}
 
-	for (int in = 0; in < nr_in_args; in ++)
+	for (int in = 0; in < nr_in_args; in++)
 		md_free(src[in]);
 
 	return result;
 }
 
-float nlop_test_adj_derivatives(const struct nlop_s* op, _Bool real)
+float nlop_test_adj_derivatives(const struct nlop_s* op, bool real)
 {
 	int nr_in_args = nlop_get_nr_in_args(op);
 	int nr_out_args = nlop_get_nr_out_args(op);
@@ -367,34 +391,44 @@ float nlop_test_adj_derivatives(const struct nlop_s* op, _Bool real)
 	complex float* src[nr_in_args];
 	complex float* dst[nr_out_args];
 
-	float err = 0.0;
+	float err = 0.;
 
-	for (int in = 0; in < nr_in_args; in ++) {
+	for (int in = 0; in < nr_in_args; in++) {
 
-		src[in] = md_alloc(nlop_generic_domain(op, in)->N, nlop_generic_domain(op, in)->dims, CFL_SIZE);
+		auto iov = nlop_generic_domain(op, in);
 
-		md_gaussian_rand(nlop_generic_domain(op, in)->N, nlop_generic_domain(op, in)->dims, src[in]);
+		src[in] = md_alloc(iov->N, iov->dims, CFL_SIZE);
+
+		md_gaussian_rand(iov->N, iov->dims, src[in]);
 	}
 
 
-	for (int out = 0; out < nr_out_args; out ++)
-		dst[out] = md_alloc(nlop_generic_codomain(op, out)->N, nlop_generic_codomain(op, out)->dims, CFL_SIZE);
+	for (int out = 0; out < nr_out_args; out++) {
+
+		auto iov = nlop_generic_codomain(op, out);
+
+		dst[out] = md_alloc(iov->N, iov->dims, CFL_SIZE);
+	}
 
 
-	for (int in = 0; in < nr_in_args; in ++) {
-		for (int out = 0; out < nr_out_args; out ++) {
+	for (int in = 0; in < nr_in_args; in++) {
+
+		for (int out = 0; out < nr_out_args; out++) {
 
 			const struct nlop_s* test_op = nlop_clone(op);
 
 			for (int in_del = 0; in_del < nr_in_args; in_del++) {
 
+				auto iov = nlop_generic_domain(op, in_del);
+
 				if (in_del < in)
-					test_op = nlop_set_input_const_F(test_op, 0, nlop_generic_domain(op, in_del)->N, nlop_generic_domain(op, in_del)->dims, true, src[in_del]);
+					test_op = nlop_set_input_const_F(test_op, 0, iov->N, iov->dims, true, src[in_del]);
+
 				if (in_del > in)
-					test_op = nlop_set_input_const_F(test_op, 1, nlop_generic_domain(op, in_del)->N, nlop_generic_domain(op, in_del)->dims, true, src[in_del]);
+					test_op = nlop_set_input_const_F(test_op, 1, iov->N, iov->dims, true, src[in_del]);
 			}
 
-			for (int out_del = 0; out_del < nr_out_args; out_del ++) {
+			for (int out_del = 0; out_del < nr_out_args; out_del++) {
 
 				if (out_del < out)
 					test_op = nlop_del_out_F(test_op, 0);
@@ -403,13 +437,14 @@ float nlop_test_adj_derivatives(const struct nlop_s* op, _Bool real)
 					test_op = nlop_del_out_F(test_op, 1);
 			}
 
+			auto iovdo = nlop_generic_domain(op, in);
+			auto iovco = nlop_generic_codomain(op, out);
 
 			nlop_apply(test_op,
-				   nlop_generic_codomain(op, out)->N, nlop_generic_codomain(op, out)->dims, dst[out],
-				   nlop_generic_domain(op, in)->N, nlop_generic_domain(op, in)->dims, src[in]);
+				   iovco->N, iovco->dims, dst[out],
+				   iovdo->N, iovdo->dims, src[in]);
 
-			float tmp = (real ? linop_test_adjoint_real(nlop_get_derivative(test_op, 0, 0)) : linop_test_adjoint(nlop_get_derivative(test_op, 0, 0)));
-
+			float tmp = (real ? linop_test_adjoint_real : linop_test_adjoint)(nlop_get_derivative(test_op, 0, 0));
 
 			debug_printf(DP_DEBUG2, "adj der error (in=%d, out=%d): %.8f\n", in, out, tmp);
 
@@ -444,22 +479,26 @@ float compare_gpu(const struct nlop_s* cpu_op, const struct nlop_s* gpu_op)
 
 	for (int i = 0; i < II; i++) {
 
-		args[OO + i] = md_alloc(nlop_generic_domain(cpu_op, i)->N, nlop_generic_domain(cpu_op, i)->dims, nlop_generic_domain(cpu_op, i)->size);
+		auto iov = nlop_generic_domain(cpu_op, i);
+
+		args[OO + i] = md_alloc(iov->N, iov->dims, iov->size);
 
 		args_tmp[OO + i] = NULL;
 
-		args_gpu[OO + i] = md_alloc_gpu(nlop_generic_domain(cpu_op, i)->N, nlop_generic_domain(cpu_op, i)->dims, nlop_generic_domain(cpu_op, i)->size);
+		args_gpu[OO + i] = md_alloc_gpu(iov->N, iov->dims, iov->size);
 
-		md_gaussian_rand(nlop_generic_domain(cpu_op, i)->N, nlop_generic_domain(cpu_op, i)->dims, args[OO + i]);
+		md_gaussian_rand(iov->N, iov->dims, args[OO + i]);
 
-		md_copy(nlop_generic_domain(cpu_op, i)->N, nlop_generic_domain(cpu_op, i)->dims, args_gpu[OO + i], args[OO + i], nlop_generic_domain(cpu_op, i)->size);
+		md_copy(iov->N, iov->dims, args_gpu[OO + i], args[OO + i], iov->size);
 	}
 
 	for (int i = 0; i < OO; i++) {
 
-		args[i] = md_alloc(nlop_generic_codomain(cpu_op, i)->N, nlop_generic_codomain(cpu_op, i)->dims, nlop_generic_codomain(cpu_op, i)->size);
-		args_tmp[i] = md_alloc(nlop_generic_codomain(cpu_op, i)->N, nlop_generic_codomain(cpu_op, i)->dims, nlop_generic_codomain(cpu_op, i)->size);
-		args_gpu[i] = md_alloc_gpu(nlop_generic_codomain(cpu_op, i)->N, nlop_generic_codomain(cpu_op, i)->dims, nlop_generic_codomain(cpu_op, i)->size);
+		auto iov = nlop_generic_codomain(cpu_op, i);
+
+		args[i] = md_alloc(iov->N, iov->dims, iov->size);
+		args_tmp[i] = md_alloc(iov->N, iov->dims, iov->size);
+		args_gpu[i] = md_alloc_gpu(iov->N, iov->dims, iov->size);
 	}
 
 	nlop_generic_apply_unchecked(cpu_op, II + OO, (void**)args);
@@ -469,9 +508,11 @@ float compare_gpu(const struct nlop_s* cpu_op, const struct nlop_s* gpu_op)
 
 	for (int i = 0; i < OO; i++) {
 
-		md_copy(nlop_generic_codomain(cpu_op, i)->N, nlop_generic_codomain(cpu_op, i)->dims, args_tmp[i], args_gpu[i], nlop_generic_codomain(cpu_op, i)->size);
+		auto iov = nlop_generic_codomain(cpu_op, i);
 
-		result += md_znrmse(nlop_generic_codomain(cpu_op, i)->N, nlop_generic_codomain(cpu_op, i)->dims, args[i], args_tmp[i]);
+		md_copy(iov->N, iov->dims, args_tmp[i], args_gpu[i], iov->size);
+
+		result += md_znrmse(iov->N, iov->dims, args[i], args_tmp[i]);
 	}
 
 	for(int i = 0; i < II + OO; i++) {
@@ -490,38 +531,41 @@ float compare_gpu(const struct nlop_s* cpu_op, const struct nlop_s* gpu_op)
 			auto der_cpu = nlop_get_derivative(cpu_op, o, i);
 			auto der_gpu = nlop_get_derivative(gpu_op, o, i);
 
-			complex float* in_cpu = md_alloc(linop_domain(der_cpu)->N, linop_domain(der_cpu)->dims, CFL_SIZE);
-			complex float* in_gpu = md_alloc_gpu(linop_domain(der_cpu)->N, linop_domain(der_cpu)->dims, CFL_SIZE);
-			complex float* in_tmp = md_alloc(linop_domain(der_cpu)->N, linop_domain(der_cpu)->dims, CFL_SIZE);
-			complex float* out_cpu = md_alloc(linop_codomain(der_cpu)->N, linop_codomain(der_cpu)->dims, CFL_SIZE);
-			complex float* out_gpu = md_alloc_gpu(linop_codomain(der_cpu)->N, linop_codomain(der_cpu)->dims, CFL_SIZE);
-			complex float* out_tmp = md_alloc(linop_codomain(der_cpu)->N, linop_codomain(der_cpu)->dims, CFL_SIZE);
+			auto iovdo = linop_domain(der_cpu);
+			auto iovco = linop_codomain(der_cpu);
 
-			md_gaussian_rand(linop_domain(der_cpu)->N, linop_domain(der_cpu)->dims, in_cpu);
+			complex float* in_cpu = md_alloc(iovdo->N, iovdo->dims, CFL_SIZE);
+			complex float* in_gpu = md_alloc_gpu(iovdo->N, iovdo->dims, CFL_SIZE);
+			complex float* in_tmp = md_alloc(iovdo->N, iovdo->dims, CFL_SIZE);
+			complex float* out_cpu = md_alloc(iovco->N, iovco->dims, CFL_SIZE);
+			complex float* out_gpu = md_alloc_gpu(iovco->N, iovco->dims, CFL_SIZE);
+			complex float* out_tmp = md_alloc(iovco->N, iovco->dims, CFL_SIZE);
 
-			md_copy(linop_domain(der_cpu)->N, linop_domain(der_cpu)->dims, in_gpu, in_cpu, CFL_SIZE);
+			md_gaussian_rand(iovdo->N, iovdo->dims, in_cpu);
+
+			md_copy(iovdo->N, iovdo->dims, in_gpu, in_cpu, CFL_SIZE);
 
 			linop_forward_unchecked(der_cpu, out_cpu, in_cpu);
 			linop_forward_unchecked(der_gpu, out_gpu, in_gpu);
 
-			md_copy(linop_codomain(der_cpu)->N, linop_codomain(der_cpu)->dims, out_tmp, out_gpu, CFL_SIZE);
+			md_copy(iovco->N, iovco->dims, out_tmp, out_gpu, CFL_SIZE);
 
-			result += md_znrmse(linop_codomain(der_cpu)->N, linop_codomain(der_cpu)->dims, out_tmp, out_cpu);
+			result += md_znrmse(iovco->N, iovco->dims, out_tmp, out_cpu);
 
-			debug_printf(DP_DEBUG2, "der[o=%d, i =%d] error (cpu/gpu): %.8f\n", o, i, md_znrmse(linop_codomain(der_cpu)->N, linop_codomain(der_cpu)->dims, out_tmp, out_cpu));
+			debug_printf(DP_DEBUG2, "der[o=%d, i =%d] error (cpu/gpu): %.8f\n", o, i, md_znrmse(iovco->N, iovco->dims, out_tmp, out_cpu));
 
-			md_gaussian_rand(linop_codomain(der_cpu)->N, linop_codomain(der_cpu)->dims, out_cpu);
+			md_gaussian_rand(iovco->N, iovco->dims, out_cpu);
 
-			md_copy(linop_codomain(der_cpu)->N, linop_codomain(der_cpu)->dims, out_gpu, out_cpu, CFL_SIZE);
+			md_copy(iovco->N, iovco->dims, out_gpu, out_cpu, CFL_SIZE);
 
 			linop_adjoint_unchecked(der_cpu, in_cpu, out_cpu);
 			linop_adjoint_unchecked(der_gpu, in_gpu, out_gpu);
 
-			md_copy(linop_domain(der_cpu)->N, linop_domain(der_cpu)->dims, in_tmp, in_gpu, CFL_SIZE);
+			md_copy(iovdo->N, iovdo->dims, in_tmp, in_gpu, CFL_SIZE);
 
-			result += md_znrmse(linop_domain(der_cpu)->N, linop_domain(der_cpu)->dims, in_tmp, in_cpu);
+			result += md_znrmse(iovdo->N, iovdo->dims, in_tmp, in_cpu);
 
-			debug_printf(DP_DEBUG2, "adj[o=%d, i =%d] error (cpu/gpu): %.8f\n", o, i, md_znrmse(linop_domain(der_cpu)->N, linop_domain(der_cpu)->dims, in_tmp, in_cpu));
+			debug_printf(DP_DEBUG2, "adj[o=%d, i =%d] error (cpu/gpu): %.8f\n", o, i, md_znrmse(iovdo->N, iovdo->dims, in_tmp, in_cpu));
 
 			md_free(in_cpu);
 			md_free(in_gpu);
@@ -592,6 +636,8 @@ static bool compare_linops(const struct linop_s* lop1, const struct linop_s* lop
 	return result;
 }
 
+
+
 bool compare_nlops(const struct nlop_s* nlop1, const struct nlop_s* nlop2, bool shape, bool der, bool adj, float tol)
 {
 	int II = nlop_get_nr_in_args(nlop1);
@@ -607,30 +653,32 @@ bool compare_nlops(const struct nlop_s* nlop1, const struct nlop_s* nlop2, bool 
 
 	for (int i = 0; i < II; i++) {
 
-		auto iov = nlop_generic_domain(nlop1, i);
+		auto iov1 = nlop_generic_domain(nlop1, i);
+		auto iov2 = nlop_generic_domain(nlop2, i);
 
 		if (shape)
-			result = result && iovec_check(nlop_generic_domain(nlop2, i), iov->N, iov->dims, iov->strs);
+			result = result && iovec_check(iov2, iov1->N, iov1->dims, iov1->strs);
 		else
-			result = result && md_calc_size(iov->N, iov->dims) == md_calc_size(nlop_generic_domain(nlop2, i)->N, nlop_generic_domain(nlop2, i)->dims);
+			result = result && (md_calc_size(iov1->N, iov1->dims) == md_calc_size(iov2->N, iov2->dims));
 
-		args1[OO + i] = md_alloc(iov->N, iov->dims, iov->size);
+		args1[OO + i] = md_alloc(iov1->N, iov1->dims, iov1->size);
 		args2[OO + i] = args1[OO + i];
 
-		md_gaussian_rand(iov->N, iov->dims, args1[OO + i]);
+		md_gaussian_rand(iov1->N, iov1->dims, args1[OO + i]);
 	}
 
-	for (int i = 0; i < OO; i++){
+	for (int i = 0; i < OO; i++) {
 
-		auto iov = nlop_generic_codomain(nlop1, i);
+		auto iov1 = nlop_generic_domain(nlop1, i);
+		auto iov2 = nlop_generic_domain(nlop2, i);
 
 		if (shape)
-			result = result && iovec_check(nlop_generic_codomain(nlop2, i), iov->N, iov->dims, iov->strs);
+			result = result && iovec_check(iov2, iov1->N, iov1->dims, iov1->strs);
 		else
-			result = result && md_calc_size(iov->N, iov->dims) == md_calc_size(nlop_generic_codomain(nlop2, i)->N, nlop_generic_codomain(nlop2, i)->dims);
+			result = result && md_calc_size(iov1->N, iov1->dims) == md_calc_size(iov2->N, iov2->dims);
 
-		args1[i] = md_alloc(iov->N, iov->dims, iov->size);
-		args2[i] = md_alloc(iov->N, iov->dims, iov->size);
+		args1[i] = md_alloc(iov1->N, iov1->dims, iov1->size);
+		args2[i] = md_alloc(iov1->N, iov1->dims, iov1->size);
 	}
 
 	if (!result) {
@@ -642,8 +690,13 @@ bool compare_nlops(const struct nlop_s* nlop1, const struct nlop_s* nlop2, bool 
 	nlop_generic_apply_unchecked(nlop1, II + OO, (void**)args1);
 	nlop_generic_apply_unchecked(nlop2, II + OO, (void**)args2);
 
-	for (int i = 0; i < OO; i++)
-		result = result && (tol >= md_znrmse(nlop_generic_codomain(nlop1, i)->N, nlop_generic_codomain(nlop1, i)->dims, args1[i], args2[i]));
+
+	for (int i = 0; i < OO; i++) {
+
+		auto iovc1 = nlop_generic_codomain(nlop1, i);
+
+		result = result && (tol >= md_znrmse(iovc1->N, iovc1->dims, args1[i], args2[i]));
+	}
 
 	if (!result) {
 
