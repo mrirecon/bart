@@ -211,9 +211,9 @@ Integration_Test_UBSan:
   stage: test2
   script:
     - AUTOCLEAN=0 CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make test
-  needs: [Build]
+  needs: [Build_UBSan]
   dependencies:
-    - Build
+    - Build_UBSan
 
 
 
