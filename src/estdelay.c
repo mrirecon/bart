@@ -26,6 +26,7 @@
 #include "misc/mmio.h"
 #include "misc/opts.h"
 #include "misc/mri.h"
+#include "misc/debug.h"
 
 #include "num/init.h"
 #include "num/qform.h"
@@ -87,28 +88,43 @@ int main_estdelay(int argc, char* argv[argc])
 	md_select_dims(DIMS, ~MD_BIT(1), tdims1, tdims);
 
 	complex float* traj1 = md_alloc(DIMS, tdims1, CFL_SIZE);
+
 	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ 0 }, tdims, traj1, traj, CFL_SIZE);
 
 	int N = tdims[2];
 
 	float angles[N];
+
 	for (int i = 0; i < N; i++)
 		angles[i] = M_PI + atan2f(crealf(traj1[3 * i + 0]), crealf(traj1[3 * i + 1]));
 
+	// Extract what would be the DC component in Cartesian sampling
 
-	if (do_ring) {
+	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 }, tdims, traj1, traj, CFL_SIZE);
 
-		assert(0 == tdims[1] % 2);
+	NESTED(float, dist, (int i))
+	{
+		return sqrtf(powf(crealf(traj1[3 * i + 0]), 2.) + pow(crealf(traj1[3 * i + 1]), 2.));
+	};
 
-		md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 }, tdims, traj1, traj, CFL_SIZE);
+	float dc_shift = dist(0);
 
-		for (int i = 0; i < N; i++)
-			if (0. != cabsf(traj1[3 * i]))
-				error("Nominal trajectory must be centered for RING.\n");
-	}
+	for (int i = 0; i < N; i++)
+		if (fabsf(dc_shift - dist(i)) > 0.0001)
+			debug_printf(DP_WARN, "Inconsistently shifted spoke: %d %f != %f\n", i, dist(i), dc_shift);
 
+
+	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 + 1 }, tdims, traj1, traj, CFL_SIZE);
+
+	float shift1 = dist(0) - dc_shift;
 
 	md_free(traj1);
+
+	debug_printf(DP_WARN, "DC is shifted by: %f [sample], 1 sample = %f [1/FOV]\n", dc_shift, shift1);
+
+
+	if (0 != tdims[1] % 2)
+		debug_printf(DP_WARN, "odd number of samples\n");
 
 
 	long full_dims[DIMS];
@@ -134,6 +150,7 @@ int main_estdelay(int argc, char* argv[argc])
 		// Block and Uecker, ISMRM 19:2816 (2001)
 
 		float delays[N];
+
 		radial_self_delays(N, delays, angles, dims, in);
 
 		/* We allow an arbitrary quadratic form to account for
@@ -143,6 +160,9 @@ int main_estdelay(int argc, char* argv[argc])
 
 		fit_quadratic_form(qf, N, angles, delays);
 
+		qf[0] += 0.5;
+		qf[1] += 0.5;
+
 	} else {
 
 		/* RING method
@@ -151,6 +171,10 @@ int main_estdelay(int argc, char* argv[argc])
 
 		ring(&conf, qf, N, angles, dims, in);
 	}
+
+	qf[0] -= dc_shift / shift1;
+	qf[1] -= dc_shift / shift1;
+
 
 	bart_printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
 
