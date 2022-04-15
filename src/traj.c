@@ -47,6 +47,7 @@ int main_traj(int argc, char* argv[argc])
 	int mb = 1;
 	int turns = 1;
 	float rot = 0.;
+	float over = 1.;
 
 	struct traj_conf conf = traj_defaults;
 
@@ -77,6 +78,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_SET('H', &conf.half_circle_gold, "halfCircle golden-ratio sampling"),
 		OPT_INT('s', &conf.tiny_gold, "# Tiny GA", "tiny golden angle"),
 		OPT_SET('D', &conf.full_circle, "projection angle in [0,360°), else in [0,180°)"),
+		OPT_FLOAT('o', &over, "o", "oversampling factor"),
 		OPT_FLOAT('R', &rot, "phi", "rotate"),
 		OPT_FLVEC3('q', &gdelays[0], "delays", "gradient delays: x, y, xy"),
 		OPT_FLVEC3('Q', &gdelays[1], "delays", "(gradient delays: z, xz, yz)"),
@@ -92,6 +94,7 @@ int main_traj(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
+
 
 	// Load custom_angle
 	long sdims[DIMS];
@@ -111,6 +114,11 @@ int main_traj(int argc, char* argv[argc])
 
 		Y = sdims[0];
 	}
+
+	if (over <= 0.)
+		error("Oversampling factor must be positive.\n");
+
+	X *= over;
 
 	int tot_sp = Y * E * mb * turns;	// total number of lines/spokes
 	int N = X * tot_sp / conf.accel;
@@ -337,15 +345,17 @@ int main_traj(int argc, char* argv[argc])
 
 	} while(md_next(DIMS, dims, ~1L, pos));
 
+	md_zsmul(DIMS, dims, samples, samples, 1. / over);
+
 	assert(p == N - 0);
 
 	if (NULL != gdelays2)
 		unmap_cfl(DIMS, gdims, gdelays2);
 
 	if (NULL != custom_angle_vals)
-		unmap_cfl(3, sdims, custom_angle_vals);
+		unmap_cfl(DIMS, sdims, custom_angle_vals);
 
-	unmap_cfl(3, dims, samples);
+	unmap_cfl(DIMS, dims, samples);
 
 	return 0;
 }

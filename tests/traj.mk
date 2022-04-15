@@ -1,5 +1,17 @@
-# compare customAngle to default angle
 
+tests/test-traj-over: traj scale nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/traj -x128 -y71 -r traja.ra				;\
+	$(TOOLDIR)/traj -x64 -y71 -o2. -r trajb.ra			;\
+	$(TOOLDIR)/scale 0.5 traja.ra traja2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.0000001 traja2.ra trajb.ra		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+TESTS += tests/test-traj-over
+
+
+# compare customAngle to default angle
 
 tests/test-traj-custom: traj poly nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
