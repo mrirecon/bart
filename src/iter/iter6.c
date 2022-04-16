@@ -57,7 +57,6 @@ DEF_TYPEID(iter6_iPALM_conf);
 	.INTERFACE.clip_val = 0., \
 	.INTERFACE.weight_decay = 0., \
 	.INTERFACE.history_filename = NULL, \
-	.INTERFACE.dump = NULL, \
 	.INTERFACE.dump_filename = NULL, \
 	.INTERFACE.dump_mod = -1, \
 	.INTERFACE.batchnorm_momentum = .95, \
@@ -226,7 +225,7 @@ static const struct iter_dump_s* iter6_dump_default_create(const char* base_file
 	return iter_dump_default_create(base_filename, save_mod, NI, save_flag, D, dims);
 }
 
-static const struct operator_p_s* get_update_operator(iter6_conf* conf, int N, const long dims[N], long numbatches)
+static const struct operator_p_s* get_update_operator(const iter6_conf* conf, int N, const long dims[N], long numbatches)
 {
 	auto conf_adadelta = CAST_MAYBE(iter6_adadelta_conf, conf);
 
@@ -265,7 +264,7 @@ static float* get_learning_rate_schedule_cosine_annealing(int epochs, int numbat
 	return &(result[0][0]);
 }
 
-void iter6_sgd_like(	iter6_conf* conf,
+void iter6_sgd_like(	const iter6_conf* conf,
 			const struct nlop_s* nlop,
 			long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
 			long NO, enum OUT_TYPE out_type[NO],
@@ -347,10 +346,12 @@ void iter6_sgd_like(	iter6_conf* conf,
 	if (conf->monitor_averaged_objective)
 		monitor6_average_objective(monitor);
 
-	bool free_dump = ((NULL == conf->dump) && (NULL != conf->dump_filename) && (0 < conf->dump_mod));
 
-	if (free_dump)
-		conf->dump = iter6_dump_default_create(conf->dump_filename, conf->dump_mod, nlop, conf->dump_flag, NI, in_type);
+	const struct iter_dump_s* dump = NULL;
+
+	if (   (NULL != conf->dump_filename)
+	    && (0 < conf->dump_mod))
+		dump = iter6_dump_default_create(conf->dump_filename, conf->dump_mod, nlop, conf->dump_flag, NI, in_type);
 
 	float (*learning_rate_schedule)[numbatches] = (float (*)[numbatches])get_learning_rate_schedule_cosine_annealing(conf->epochs, numbatches, conf->learning_rate, conf->min_learning_rate, conf->learning_rate_epoch_mod);
 
@@ -365,7 +366,7 @@ void iter6_sgd_like(	iter6_conf* conf,
 		upd_iter_ops,
 		prox_iter,
 		nlop_batch_gen_iter,
-		(struct iter_op_s){ NULL, NULL }, monitor, conf->dump);
+		(struct iter_op_s){ NULL, NULL }, monitor, dump);
 
 	for (int i = 0; i < NI; i++)
 		operator_p_free(upd_ops[i]);
@@ -376,11 +377,8 @@ void iter6_sgd_like(	iter6_conf* conf,
 	if (free_monitor)
 		monitor_iter6_free(monitor);
 
-	if (free_dump) {
-
-		iter_dump_free(conf->dump);
-		conf->dump = NULL;
-	}
+	if (NULL != dump)
+		iter_dump_free(dump);
 
 	for (int i = 0; i < NI; i++) {
 
@@ -393,7 +391,7 @@ void iter6_sgd_like(	iter6_conf* conf,
 }
 
 
-void iter6_adadelta(	iter6_conf* _conf,
+void iter6_adadelta(	const iter6_conf* _conf,
 			const struct nlop_s* nlop,
 			long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
 			long NO, enum OUT_TYPE out_type[NO],
@@ -410,7 +408,7 @@ void iter6_adadelta(	iter6_conf* _conf,
 }
 
 
-void iter6_adam(iter6_conf* _conf,
+void iter6_adam(const iter6_conf* _conf,
 		const struct nlop_s* nlop,
 		long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
 		long NO, enum OUT_TYPE out_type[NO],
@@ -427,7 +425,7 @@ void iter6_adam(iter6_conf* _conf,
 }
 
 
-void iter6_sgd(		iter6_conf* _conf,
+void iter6_sgd(		const iter6_conf* _conf,
 			const struct nlop_s* nlop,
 			long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
 			long NO, enum OUT_TYPE out_type[NO],
@@ -444,7 +442,7 @@ void iter6_sgd(		iter6_conf* _conf,
 }
 
 
-void iter6_iPALM(	iter6_conf* _conf,
+void iter6_iPALM(	const iter6_conf* _conf,
 			const struct nlop_s* nlop,
 			long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
 			long NO, enum OUT_TYPE out_type[NO],
@@ -534,10 +532,11 @@ void iter6_iPALM(	iter6_conf* _conf,
 	if (_conf->monitor_averaged_objective)
 		monitor6_average_objective(monitor);
 
-	bool free_dump = ((NULL == conf->INTERFACE.dump) && (NULL != conf->INTERFACE.dump_filename) && (0 < conf->INTERFACE.dump_mod));
+	const struct iter_dump_s* dump = NULL;
 
-	if (free_dump)
-		conf->INTERFACE.dump = iter6_dump_default_create(conf->INTERFACE.dump_filename,conf->INTERFACE.dump_mod, nlop, conf->INTERFACE.dump_flag, NI, in_type);
+	if (   (NULL != conf->INTERFACE.dump_filename)
+	    && (0 < conf->INTERFACE.dump_mod))
+		dump = iter6_dump_default_create(conf->INTERFACE.dump_filename,conf->INTERFACE.dump_mod, nlop, conf->INTERFACE.dump_flag, NI, in_type);
 
 	iPALM(	NI, isize, in_type, dst, x_old,
 		NO, osize, out_type,
@@ -549,7 +548,7 @@ void iter6_iPALM(	iter6_conf* _conf,
 		prox_iter,
 		conf->INTERFACE.batchnorm_momentum,
 		nlop_batch_gen_iter,
-		(struct iter_op_s){ NULL, NULL }, monitor, conf->INTERFACE.dump);
+		(struct iter_op_s){ NULL, NULL }, monitor, dump);
 
 	if (NULL != conf->INTERFACE.history_filename)
 		monitor_iter6_dump_record(monitor, conf->INTERFACE.history_filename);
@@ -561,11 +560,8 @@ void iter6_iPALM(	iter6_conf* _conf,
 		if(IN_OPTIMIZE == in_type[i])
 			md_free(x_old[i]);
 
-	if (free_dump) {
-
-		iter_dump_free(conf->INTERFACE.dump);
-		conf->INTERFACE.dump = NULL;
-	}
+	if (NULL != dump)
+		iter_dump_free(dump);
 
 	for (int i = 0; i < NI; i++) {
 
@@ -577,7 +573,7 @@ void iter6_iPALM(	iter6_conf* _conf,
 	}
 }
 
-void iter6_by_conf(	iter6_conf* _conf,
+void iter6_by_conf(	const iter6_conf* _conf,
 			const struct nlop_s* nlop,
 			long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
 			long NO, enum OUT_TYPE out_type[NO],

@@ -8,8 +8,8 @@
 
 
 
-struct iter_dump_s;
 typedef struct iter6_conf_s {
+
 	TYPEID* TYPEID;
 
 	int epochs;
@@ -25,7 +25,6 @@ typedef struct iter6_conf_s {
 
 	const char* history_filename;
 
-	const struct iter_dump_s* dump;
 	const char* dump_filename;
 	long dump_mod;
 	unsigned long dump_flag;
@@ -98,7 +97,7 @@ struct iter3_conf_s;
 struct iter_nlop_s;
 struct nlop_s;
 struct operator_p_s;
-typedef void iter6_f(iter6_conf* _conf, const struct nlop_s* nlop, long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI], long NO, enum OUT_TYPE out_type[NO], int batchsize, int numbatches, const struct nlop_s* nlop_batch_gen, struct monitor_iter6_s* monitor);
+typedef void iter6_f(const iter6_conf* _conf, const struct nlop_s* nlop, long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI], long NO, enum OUT_TYPE out_type[NO], int batchsize, int numbatches, const struct nlop_s* nlop_batch_gen, struct monitor_iter6_s* monitor);
 
 extern iter6_f iter6_adadelta;
 extern iter6_f iter6_adam;
