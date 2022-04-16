@@ -29,7 +29,6 @@ static const char help_str[] = "Scale array by {factor}. The scale factor can be
 
 int main_scale(int argc, char* argv[argc])
 {
-
 	complex float scale = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
@@ -41,7 +40,8 @@ int main_scale(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	const struct opt_s opts[] = {};
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -55,6 +55,7 @@ int main_scale(int argc, char* argv[argc])
 
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, odata);
+
 	return 0;
 }
 

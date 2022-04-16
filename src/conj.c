@@ -35,7 +35,9 @@ int main_conj(int argc, char* argv[argc])
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
+
 	const struct opt_s opts[] = {};
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -49,6 +51,7 @@ int main_conj(int argc, char* argv[argc])
 
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, odata);
+
 	return 0;
 }
 

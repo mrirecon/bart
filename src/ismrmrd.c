@@ -58,7 +58,9 @@ int main_ismrmrd(int argc, char* argv[argc])
 	long dims[DIMS];
 
 	debug_printf(DP_INFO, "Reading dims ...\n");
+
 	ismrm_read_dims(ismrm_file, &config, DIMS, dims);
+
 	debug_printf(DP_INFO, "done.\nDIMS: ");
 	debug_print_dims(DP_INFO, DIMS, dims);
 	
@@ -69,9 +71,11 @@ int main_ismrmrd(int argc, char* argv[argc])
 	debug_printf(DP_INFO, "Reading data ...\n");
 
 	ismrm_read(ismrm_file, &config, DIMS, dims, out);
+
 	debug_printf(DP_INFO, "done.\n");
 
 	unmap_cfl(DIMS, dims, out);
+
 	return 0;
 }
 

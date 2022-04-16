@@ -252,8 +252,9 @@ int main_poisson(int argc, char* argv[argc])
 	assert((mask != NULL) || (0 == calreg));
 	assert((calreg <= dims[1]) && (calreg <= dims[2]));
 
-	for (unsigned int i = 0; i < calreg; i++) {
-		for (unsigned int j = 0; j < calreg; j++) {
+	for (int i = 0; i < (int)calreg; i++) {
+
+		for (int j = 0; j < (int)calreg; j++) {
 
 			int y = dims[1] / 2 - calreg / 2 + i;
 			int z = dims[2] / 2 - calreg / 2 + j;
@@ -285,6 +286,7 @@ int main_poisson(int argc, char* argv[argc])
 	}
 
 	printf("\n");
+
 	return 0;
 }
 

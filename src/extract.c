@@ -51,6 +51,7 @@ int main_extract(int argc, char* argv[argc])
 
 
 	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -86,9 +87,11 @@ int main_extract(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, in_dims, in_data);
 	unmap_cfl(DIMS, out_dims, out_data);
+
 	xfree(dims);
 	xfree(starts);
 	xfree(ends);
+
 	return 0;
 }
 

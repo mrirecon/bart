@@ -34,8 +34,7 @@ static const char help_str[] =
 
 int main_version(int argc, char* argv[argc])
 {
-	struct arg_s args[] = {};
-
+	struct arg_s args[] = { };
 
 	bool verbose = false;
 	const char* version = NULL;

@@ -43,6 +43,7 @@ int main_crop(int argc, char* argv[argc])
 	};
 
 	const struct opt_s opts[] = {};
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -67,6 +68,7 @@ int main_crop(int argc, char* argv[argc])
 
 	unmap_cfl(N, in_dims, in_data);
 	unmap_cfl(N, out_dims, out_data);
+
 	return 0;
 }
 

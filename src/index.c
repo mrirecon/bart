@@ -40,6 +40,7 @@ int main_index(int argc, char* argv[argc])
 	};
 
 	const struct opt_s opts[] = {};
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -60,6 +61,7 @@ int main_index(int argc, char* argv[argc])
 		x[i] = i;
 
 	unmap_cfl(N + 1, dims, x);
+
 	return 0;
 }
 

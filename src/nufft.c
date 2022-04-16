@@ -116,7 +116,7 @@ int main_nufft(int argc, char* argv[argc])
 
 			if (!conf.decomp) {
 
-				for (unsigned int i = 0; i < DIMS; i++)
+				for (int i = 0; i < DIMS; i++)
 					if (MD_IS_SET(FFT_FLAGS, i) && (1 < coilim_dims[i]))
 						coilim_dims[i] *= 2;
 			}
@@ -185,6 +185,7 @@ int main_nufft(int argc, char* argv[argc])
 		linop_forward(nufft_op, DIMS, ksp_dims, ksp, DIMS, coilim_dims, img);
 
 		linop_free(nufft_op);
+
 		unmap_cfl(DIMS, coilim_dims, img);
 		unmap_cfl(DIMS, ksp_dims, ksp);
 	}
@@ -192,6 +193,7 @@ int main_nufft(int argc, char* argv[argc])
 	unmap_cfl(DIMS, traj_dims, traj);
 
 	debug_printf(DP_INFO, "Done.\n");
+
 	return 0;
 }
 

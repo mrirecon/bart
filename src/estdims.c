@@ -38,7 +38,8 @@ int main_estdims(int argc, char* argv[argc])
 		ARG_INFILE(true, &traj_file, "traj"),
 	};
 
-	const struct opt_s opts[] = {};
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -56,6 +57,7 @@ int main_estdims(int argc, char* argv[argc])
 	bart_printf("%ld %ld %ld\n", im_dims[0], im_dims[1], im_dims[2]);
 	
 	unmap_cfl(N, traj_dims, traj);
+
 	return 0;
 }
 

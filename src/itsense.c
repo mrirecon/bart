@@ -171,7 +171,9 @@ int main_itsense(int argc, char* argv[argc])
 		ARG_INFILE(true, &pat_file, "pattern"),
 		ARG_OUTFILE(true, &im_file, "output"),
 	};
-	const struct opt_s opts[] = {};
+
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	struct sense_data data;
@@ -206,6 +208,7 @@ int main_itsense(int argc, char* argv[argc])
 	unmap_cfl(DIMS, data.mask_dims, data.pattern);
 	unmap_cfl(DIMS, data.sens_dims, data.sens);
 	unmap_cfl(DIMS, data.data_dims, kspace);
+
 	md_free(data.tmp);
 
 	return 0;

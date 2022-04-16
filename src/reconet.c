@@ -369,5 +369,5 @@ int main_reconet(int argc, char* argv[argc])
 
 	free_network_data(&data);
 
-	exit(0);
+	return 0;
 }

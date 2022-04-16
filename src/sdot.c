@@ -35,7 +35,9 @@ int main_sdot(int argc, char* argv[argc])
 		ARG_INFILE(true, &in1_file, "input1"),
 		ARG_INFILE(true, &in2_file, "input2"),
 	};
-	const struct opt_s opts[] = {};
+
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -53,10 +55,12 @@ int main_sdot(int argc, char* argv[argc])
 
 	// compute scalar product
 	complex float value = md_zscalar(N, in1_dims, in1_data, in2_data);
+
 	bart_printf("%+e%+ei\n", crealf(value), cimagf(value));
 
 	unmap_cfl(N, in1_dims, in1_data);
 	unmap_cfl(N, in2_dims, in2_data);
+
 	return 0;
 }
 

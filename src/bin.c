@@ -148,7 +148,6 @@ int main_bin(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &dst_file, "dst"),
 	};
 
-
 	const struct opt_s opts[] = {
 
 		OPT_INT('l', &conf.cluster_dim, "dim", "Bin according to labels: Specify cluster dimension"),

@@ -86,7 +86,7 @@ int main_rmfreq(int argc, char* argv[argc])
 	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ 0 }, t_dims, t1, t, CFL_SIZE);
 
 	int N = 1;
-	for (unsigned int i = 0; i < DIMS; i++)
+	for (int i = 0; i < DIMS; i++)
 		N = N * angles_dims[i];
 
 	for (int i = 0; i < N; i++) {
@@ -114,7 +114,7 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	int count = 0;
 
-	for (unsigned int h = 0; h < n_harmonics; h++) {
+	for (int h = 0; h < (int)n_harmonics; h++) {
 
 		// exp(i * theta * (h+1))
 		md_zsmul(DIMS, angles_dims, angles1, angles, (h + 1));
@@ -153,7 +153,8 @@ int main_rmfreq(int argc, char* argv[argc])
 	complex float* pinv = md_alloc(DIMS, pinv_dims, CFL_SIZE);
 
 	long proj_dims[DIMS];
-	for (unsigned int i = 0; i < DIMS; i++)
+
+	for (int i = 0; i < DIMS; i++)
 		proj_dims[i] = 1;
 
 	proj_dims[0] = 2 * n_harmonics;

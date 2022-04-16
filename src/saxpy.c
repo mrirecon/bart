@@ -64,6 +64,7 @@ int main_saxpy(int argc, char* argv[argc])
 	unmap_cfl(N, dims1, data1);
 	unmap_cfl(N, dims2, data2);
 	unmap_cfl(N, dims2, out);
+
 	return 0;
 }
 

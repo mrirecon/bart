@@ -87,23 +87,25 @@ int main_wavepsf(int argc, char* argv[argc])
 
 	assert(0 == adc % 10);					// Scanners require ADC_duration to be a multiple of 10.
 
-	int wavepoints = adc/10;				// Number of points in the gradient wave.
-	float T = wavepoints * dt/ncyc; // Time period of the sine wave.
-	float w = 2 * M_PI/T;						// Frequency in radians per second.
+	int wavepoints = adc / 10;				// Number of points in the gradient wave.
+	float T = wavepoints * dt / ncyc; // Time period of the sine wave.
+	float w = 2 * M_PI / T;					// Frequency in radians per second.
 
 	/* Calculating the wave-amplitude to use. It is either slew limited or gradient 
 		 amplitude limited. */
 	float gamp = (smax >= w * gmax) ? gmax : smax/w;
 	float gwave[wavepoints];
-	for (int tdx = 0; tdx < wavepoints; tdx++) {
+
+	for (int tdx = 0; tdx < wavepoints; tdx++)
 		gwave[tdx] = gamp * ((cs) ? cos(w * tdx * dt) : sin(w * tdx * dt));
-	}
 	
 	complex float phasepercm[wavepoints];
 	float prephase = -2 * M_PI * LARMOR * gamp/w;
 	float cumsum = 0;
+
 	for (int tdx = 0; tdx < wavepoints; tdx++) {
-		phasepercm[tdx] = 2 * M_PI * LARMOR * (cumsum + gwave[tdx]/2.0) * dt + prephase;
+
+		phasepercm[tdx] = 2 * M_PI * LARMOR * (cumsum + gwave[tdx] / 2.0) * dt + prephase;
 		cumsum = cumsum + gwave[tdx]; 
 	}
 
@@ -112,38 +114,48 @@ int main_wavepsf(int argc, char* argv[argc])
 	const long interp_dims[1] = {sx};
 
 	complex float k_phasepercm[wavepoints]; 
+
 	fftuc(1, wavepoint_dims, 1, k_phasepercm, phasepercm);	
 
 	complex float k_phasepercm_interp[sx]; 
+
 	md_resize_center(1, interp_dims, k_phasepercm_interp, wavepoint_dims, k_phasepercm, 
 		sizeof(complex float));
 
 	complex float phasepercm_interp_complex[sx]; 
+
 	ifftuc(1, interp_dims, 1, phasepercm_interp_complex, k_phasepercm_interp);
 
 	complex float phasepercm_interp_real[sx]; 
+
 	md_zreal(1, interp_dims, phasepercm_interp_real, phasepercm_interp_complex);
 
 	complex float phasepercm_interp[sx]; 
-	float scale = sqrt((float) sx/wavepoints);
+	float scale = sqrt((float) sx / wavepoints);
+
 	md_zsmul(1, interp_dims, phasepercm_interp, phasepercm_interp_real, scale);
 
 	complex float psf[sy][sx];
 
-	int midy = sy/2;
+	int midy = sy / 2;
 
 	complex float phase[sx];
 	float val;
 
 	for (int ydx = 0; ydx < sy; ydx++) {
+
 		val = -dy * (ydx - midy);
+
 		md_zsmul(1, interp_dims, phase, phasepercm_interp, val);
 		md_zexpj(1, interp_dims, psf[ydx], phase);
 	}
 
-	const long psf_dims[3] = {sx, sy, 1};
+	const long psf_dims[3] = { sx, sy, 1 };
+
 	complex float* psf_cfl = create_cfl(out_file, 3, psf_dims);
+
 	md_copy(3, psf_dims, psf_cfl, psf, sizeof(complex float));
+
 	unmap_cfl(3, psf_dims, psf_cfl);
 
 	return 0;

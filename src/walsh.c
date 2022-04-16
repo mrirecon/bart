@@ -73,7 +73,9 @@ int main_walsh(int argc, char* argv[argc])
 	debug_printf(DP_INFO, "Done.\n");
 
 	md_free(cal_data);
+
 	unmap_cfl(DIMS, dims, out_data);
+
 	return 0;
 }
 

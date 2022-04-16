@@ -39,7 +39,7 @@
 
 
 // FIXME: consider moving this to a more accessible location?
-static void wthresh(unsigned int D, const long dims[D], float lambda, unsigned int flags, complex float* out, const complex float* in)
+static void wthresh(int D, const long dims[D], float lambda, unsigned int flags, complex float* out, const complex float* in)
 {
 	long minsize[D];
 	md_singleton_dims(D, minsize);
@@ -49,7 +49,7 @@ static void wthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 
 	unsigned int wflags = 7; // FIXME
 
-	for (unsigned int i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		if (dims[i] < minsize[i])
 			wflags = MD_CLEAR(wflags, i);
 
@@ -65,7 +65,7 @@ static void wthresh(unsigned int D, const long dims[D], float lambda, unsigned i
 }
 
 
-static void lrthresh(unsigned int D, const long dims[D], int llrblk, float lambda, unsigned int flags, complex float* out, const complex float* in)
+static void lrthresh(int D, const long dims[D], int llrblk, float lambda, unsigned int flags, complex float* out, const complex float* in)
 {
 	long blkdims[MAX_LEV][D];
 
@@ -80,7 +80,7 @@ static void lrthresh(unsigned int D, const long dims[D], int llrblk, float lambd
 }
 
 
-static void dfthresh(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
+static void dfthresh(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
 	long minsize[D];
 	md_singleton_dims(D, minsize);
@@ -102,7 +102,7 @@ static void dfthresh(unsigned int D, const long dims[D], float lambda, complex f
 	operator_p_free(p);
 }
 
-static void hard_thresh(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
+static void hard_thresh(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
 	long size = md_calc_size(DIMS, dims);
 
@@ -111,7 +111,7 @@ static void hard_thresh(unsigned int D, const long dims[D], float lambda, comple
 		out[i] = (cabsf(in[i]) > lambda) ? in[i] : 0.;
 }
 
-static void binary_thresh(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
+static void binary_thresh(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
 	long size = md_calc_size(DIMS, dims);
 
@@ -167,34 +167,33 @@ int main_threshold(int argc, char* argv[argc])
 
 	switch (th_type) {
 
-		case WAV:
-			wthresh(N, dims, lambda, flags, odata, idata);
-			break;
+	case WAV:
+		wthresh(N, dims, lambda, flags, odata, idata);
+		break;
 
-		case LLR:
-			lrthresh(N, dims, llrblk, lambda, flags, odata, idata);
-			break;
-                        
-		case DFW:
-			dfthresh(N, dims, lambda, odata, idata);
-			break;
+	case LLR:
+		lrthresh(N, dims, llrblk, lambda, flags, odata, idata);
+		break;
+ 
+	case DFW:
+		dfthresh(N, dims, lambda, odata, idata);
+		break;
 
-		case HARD:
-			hard_thresh(N, dims, lambda, odata, idata);
-			break;
+	case HARD:
+		hard_thresh(N, dims, lambda, odata, idata);
+		break;
 
-		case BINARY:
-			binary_thresh(N, dims, lambda, odata, idata);
-			break;
+	case BINARY:
+		binary_thresh(N, dims, lambda, odata, idata);
+		break;
 
-		default:
-			md_zsoftthresh(N, dims, lambda, flags, odata, idata);
-
+	default:
+		md_zsoftthresh(N, dims, lambda, flags, odata, idata);
 	}
-
 
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, odata);
+
 	return 0;
 }
 

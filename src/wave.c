@@ -69,6 +69,7 @@ static void print_opdims(const struct linop_s* op)
 {
 	const struct iovec_s* domain   = linop_domain(op);
 	const struct iovec_s* codomain = linop_codomain(op);
+
 	debug_printf(DP_INFO, "\tDomain:   ");
 	debug_print_dims(DP_INFO, domain->N, domain->dims);
 	debug_printf(DP_INFO, "\tCodomain: ");
@@ -84,7 +85,9 @@ static const struct linop_s* linop_espirit_create(long sx, long sy, long sz, lon
 	max_dims[2] = sz;
 	max_dims[3] = nc;
 	max_dims[4] = md;
+
 	const struct linop_s* E = linop_fmac_create(DIMS, max_dims, MAPS_FLAG, COIL_FLAG, ~(FFT_FLAGS|MAPS_FLAG|COIL_FLAG), maps);
+
 	return E;
 }
 
@@ -99,7 +102,9 @@ static const struct linop_s* Xlinop_reshape_create(long wx, long sx, long sy, lo
 	long output_dims[DIMS];
 	md_copy_dims(DIMS, output_dims, input_dims);
 	output_dims[0] = wx;
+
 	struct linop_s* R = linop_resize_create(DIMS, output_dims, input_dims);
+
 	return R;
 }
 
@@ -111,7 +116,9 @@ static const struct linop_s* linop_fx_create(long wx, long sy, long sz, long nc)
 	dims[1] = sy;
 	dims[2] = sz;
 	dims[3] = nc;
+
 	struct linop_s* Fx = linop_fft_create(DIMS, dims, READ_FLAG);
+
 	return Fx;
 }
 
@@ -185,6 +192,7 @@ int main_wave(int argc, char* argv[argc])
 	bool  dcx       = false;
 
 	const struct opt_s opts[] = {
+
 		OPT_FLOAT( 'r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
 		OPT_INT(   'b', &blksize, "blkdim", "Block size for locally low rank."),
 		OPT_INT(   'i', &maxiter, "mxiter", "Maximum number of iterations."),
@@ -317,17 +325,24 @@ int main_wave(int argc, char* argv[argc])
 	unsigned int WAVFLAG = (sx > 1) * READ_FLAG | (sy > 1) * PHS1_FLAG | (sz > 2) * PHS2_FLAG;
 
 	enum algo_t algo = CG;
+
 	if ((wav) || (llr)) {
+
 		algo = (fista) ? FISTA : IST;
+
 		if (wav) {
+
 			debug_printf(DP_INFO, "Creating wavelet threshold operator... ");
 			T = prox_wavelet_thresh_create(DIMS, recon_dims, WAVFLAG, 0u, minsize, lambda, true);
 			debug_printf(DP_INFO, "Done.\n");
+
 		} else {
+
 			debug_printf(DP_INFO, "Creating locally low rank threshold operator across real-imag dimension... ");
 			llr_blkdims(blkdims, ~ITER_FLAG, recon_dims, blksize);
 			T = lrthresh_create(recon_dims, true, ~ITER_FLAG, (const long (*)[])blkdims, lambda, false, false, false);
 		}
+
 		debug_printf(DP_INFO, "Done.\n");
 	}
 
@@ -340,90 +355,97 @@ int main_wave(int argc, char* argv[argc])
 	struct iter_fista_conf    fsconf = iter_fista_defaults;
 	struct iter_ist_conf      isconf = iter_ist_defaults;
 
-	switch(algo) {
+	switch (algo) {
 
-		case IST:
+	case IST:
 
-			debug_printf(DP_INFO, "Using IST.\n");
-			debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
-			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
-			debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
-			debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
-			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
-			debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
+		debug_printf(DP_INFO, "Using IST.\n");
+		debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
+		debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
+		debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
+		debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
+		debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
+		debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
 
-			isconf              = iter_ist_defaults;
-			isconf.step         = step;
-			isconf.maxiter      = maxiter;
-			isconf.tol          = tol;
-			isconf.continuation = cont;
-			isconf.hogwild      = hgwld;
+		isconf              = iter_ist_defaults;
+		isconf.step         = step;
+		isconf.maxiter      = maxiter;
+		isconf.tol          = tol;
+		isconf.continuation = cont;
+		isconf.hogwild      = hgwld;
 
-			iter2_data.fun   = iter_ist;
-			iter2_data._conf = CAST_UP(&isconf);
+		iter2_data.fun   = iter_ist;
+		iter2_data._conf = CAST_UP(&isconf);
 
-			break;
+		break;
 
-		case FISTA:
+	case FISTA:
 
-			debug_printf(DP_INFO, "Using FISTA.\n");
-			debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
-			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
-			debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
-			debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
-			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
-			debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
+		debug_printf(DP_INFO, "Using FISTA.\n");
+		debug_printf(DP_INFO, "\tLambda:             %0.2e\n", lambda);
+		debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
+		debug_printf(DP_INFO, "\tStep size:          %0.2e\n", step);
+		debug_printf(DP_INFO, "\tHogwild:            %d\n", (int) hgwld);
+		debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
+		debug_printf(DP_INFO, "\tContinuation:       %0.2e\n", cont);
 
-			fsconf              = iter_fista_defaults;
-			fsconf.maxiter      = maxiter;
-			fsconf.step         = step;
-			fsconf.hogwild      = hgwld;
-			fsconf.tol          = tol;
-			fsconf.continuation = cont;
+		fsconf              = iter_fista_defaults;
+		fsconf.maxiter      = maxiter;
+		fsconf.step         = step;
+		fsconf.hogwild      = hgwld;
+		fsconf.tol          = tol;
+		fsconf.continuation = cont;
 
-			iter2_data.fun   = iter_fista;
-			iter2_data._conf = CAST_UP(&fsconf);
+		iter2_data.fun   = iter_fista;
+		iter2_data._conf = CAST_UP(&fsconf);
 
-			break;
+		break;
 
-		default:
-		case CG:
+	default:
+	case CG:
 
-			debug_printf(DP_INFO, "Using CG.\n");
-			debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
-			debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
+		debug_printf(DP_INFO, "Using CG.\n");
+		debug_printf(DP_INFO, "\tMaximum iterations: %d\n", maxiter);
+		debug_printf(DP_INFO, "\tTolerance:          %0.2e\n", tol);
 
-			cgconf          = iter_conjgrad_defaults;
-			cgconf.maxiter  = maxiter;
-			cgconf.l2lambda = 0;
-			cgconf.tol      = tol;
+		cgconf          = iter_conjgrad_defaults;
+		cgconf.maxiter  = maxiter;
+		cgconf.l2lambda = 0;
+		cgconf.tol      = tol;
 
-			iter2_data.fun   = iter_conjgrad;
-			iter2_data._conf = CAST_UP(&cgconf);
+		iter2_data.fun   = iter_conjgrad;
+		iter2_data._conf = CAST_UP(&cgconf);
 
-			break;
-
+		break;
 	}
 
 	debug_printf(DP_INFO, "Reconstruction... ");
+
 	complex float* recon = create_cfl(out_file, DIMS, recon_dims);
+
 	struct lsqr_conf lsqr_conf = lsqr_defaults;
 	lsqr_conf.lambda = 0.;
 	lsqr_conf.it_gpu = use_gpu;
+
 	double recon_start = timestamp();
+
 	const struct operator_p_s* J = lsqr2_create(&lsqr_conf, italgo, iconf, NULL, A, NULL, 1, &T, NULL, NULL);
 	operator_p_apply(J, 1., DIMS, recon_dims, recon, DIMS, kspc_dims, kspc);
 	double recon_end = timestamp();
+
 	debug_printf(DP_INFO, "Done.\nReconstruction time: %f seconds.\n", recon_end - recon_start);
 
 	debug_printf(DP_INFO, "Cleaning up and saving result... ");
+
 	operator_p_free(J);
 	linop_free(A);
 	md_free(mask);
+
 	unmap_cfl(DIMS, maps_dims, maps);
 	unmap_cfl(DIMS, wave_dims, wave);
 	unmap_cfl(DIMS, kspc_dims, kspc);
 	unmap_cfl(DIMS, recon_dims, recon);
+
 	debug_printf(DP_INFO, "Done.\n");
 
 	double end_time = timestamp();

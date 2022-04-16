@@ -47,9 +47,9 @@ int main_squeeze(int argc, char* argv[argc])
 
 	complex float* idata = load_cfl(in_file, DIMS, idims);
 		
-	unsigned int j = 0;
+	int j = 0;
 
-	for (unsigned int i = 0; i < DIMS; i++)
+	for (int i = 0; i < DIMS; i++)
 		if (1 < idims[i])
 			odims[j++] = idims[i];
 

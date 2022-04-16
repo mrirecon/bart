@@ -155,7 +155,9 @@ int main_lrmatrix(int argc, char* argv[argc])
 	// Get outdims
 	md_copy_dims(DIMS, odims, idims);
 	odims[LEVEL_DIM] = levels;
+
 	complex float* odata = create_cfl(out_file, DIMS, odims);
+
 	md_clear(DIMS, odims, odata, sizeof(complex float));
 
 	// Get pattern
@@ -209,7 +211,8 @@ int main_lrmatrix(int argc, char* argv[argc])
 	const struct operator_p_s* prox_ops[2] = { sum_prox, lr_prox };
 	long size = 2 * md_calc_size(DIMS, odims);
 
-	struct s_data* s_data = xmalloc(sizeof(struct s_data));
+	struct s_data* s_data = xmalloc(sizeof *s_data);
+
 	*s_data = (struct s_data){ { &TYPEID(s_data) }, size / 2 };
 
 	const struct operator_p_s* sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims, CAST_UP(s_data), sum_xupdate, sum_xupdate_free);
@@ -224,7 +227,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 		    ops,
 		    NULL,
 		    sum_xupdate_op,
-		    size, (float*) odata, NULL,
+		    size, (float*)odata, NULL,
 		    NULL);
 
 
@@ -232,6 +235,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 	if (sum_str) {
 
 		complex float* sdata = create_cfl(sum_str, DIMS, idims);
+
 		long istrs[DIMS];
 		long ostrs[DIMS];
 
@@ -239,9 +243,11 @@ int main_lrmatrix(int argc, char* argv[argc])
 		md_calc_strides(DIMS, ostrs, odims, sizeof(complex float));
 
 		md_clear(DIMS, idims, sdata, sizeof(complex float));
+
 		odims[LEVEL_DIM]--;
 		md_zaxpy2(DIMS, odims, istrs, sdata, 1. / sqrt(levels), ostrs, odata);
 		odims[LEVEL_DIM]++;
+
 		unmap_cfl(DIMS, idims, sdata);
 	}
 
@@ -261,6 +267,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 
 	double end_time = timestamp();
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);
+
 	return 0;
 }
 

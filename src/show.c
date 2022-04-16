@@ -31,10 +31,11 @@
 static const char help_str[] = "Outputs values or meta data.";
 
 
-static void print_cfl(unsigned int N, const long dims[N], const complex float* data, const char* fmt, const char* sep)
+static void print_cfl(int N, const long dims[N], const complex float* data, const char* fmt, const char* sep)
 {
 	// find first non-trivial dimension
-	unsigned int l = 0;
+	int l = 0;
+
 	while ((l < N - 1) && (1 == dims[l]))
 		l++;
 
@@ -49,7 +50,7 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 	};
 
 	// ensure that the input format string matches one of the valid format templates
-	for (unsigned int i = 0; i < ARRAY_SIZE(allowed_fmts); i++) {
+	for (int i = 0; i < (int)ARRAY_SIZE(allowed_fmts); i++) {
 
 		size_t rd = 0;
 
@@ -59,6 +60,7 @@ static void print_cfl(unsigned int N, const long dims[N], const complex float* d
 	}
 
 	debug_printf(DP_ERROR, "Invalid format string.\n");
+
 	return;
 
 ok:
@@ -95,7 +97,7 @@ int main_show(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	unsigned int N = DIMS;
+	int N = DIMS;
 
 	long dims[N];
 	complex float* data = load_cfl(in_file, N, dims);
@@ -114,7 +116,7 @@ int main_show(int argc, char* argv[argc])
 		bart_printf("Dimensions: %d\n", N);	// FIXME always DIMS
 		bart_printf("AoD:");
 
-		for (unsigned int i = 0; i < N; i++)
+		for (int i = 0; i < N; i++)
 			bart_printf("\t%ld", dims[i]);
 
 		bart_printf("\n");

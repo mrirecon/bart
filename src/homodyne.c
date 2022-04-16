@@ -153,10 +153,8 @@ int main_homodyne(int argc, char* argv[argc])
 	assert(frac > 0.);
 
 	if (image) {
-		complex float* ksp_in = md_alloc(N, dims, CFL_SIZE);
-		(center_fft ? fftuc : fftu)(N, dims, FFT_FLAGS, ksp_in, idata);
-		md_copy(N, dims, idata, ksp_in, CFL_SIZE);
-		md_free(ksp_in);
+
+		(center_fft ? fftuc : fftu)(N, dims, FFT_FLAGS, idata, idata);
 	}
 
 
@@ -185,10 +183,13 @@ int main_homodyne(int argc, char* argv[argc])
 	if (NULL == phase_ref) {
 
 		phase = estimate_phase(wdata, FFT_FLAGS, N, dims, idata, center_fft);
+
 		md_copy_dims(N, pdims, dims);
-	}
-	else
+
+	} else {
+
 		phase = load_cfl(phase_ref, N, pdims);
+	}
 
 	md_calc_strides(N, pstrs, pdims, CFL_SIZE);
 
@@ -196,11 +197,15 @@ int main_homodyne(int argc, char* argv[argc])
 
 	md_free(wdata.weights);
 
-	if (NULL == phase_ref)
+	if (NULL == phase_ref) {
+
 		md_free(phase);
-	else {
+
+	} else {
+
 		unmap_cfl(N, pdims, phase);
-		free((void*)phase_ref);
+
+		xfree(phase_ref);
 	}
 
 	unmap_cfl(N, dims, idata);

@@ -251,7 +251,7 @@ int main_traj(int argc, char* argv[argc])
 
 			double angle = 0.;
 
-			for (unsigned int d = 1; d < DIMS; d++)
+			for (int d = 1; d < DIMS; d++)
 				angle += pos[d] * base_angle[d];
 
 
@@ -323,10 +323,10 @@ int main_traj(int argc, char* argv[argc])
 
 				float delay = 0.;
 
-				for (unsigned int i = 0; i < 3; i++)
+				for (int i = 0; i < 3; i++)
 					delay += read_dir[i] * d[i];
 
-				for (unsigned int i = 0; i < 3; i++)
+				for (int i = 0; i < 3; i++)
 					d[i] = delay * read_dir[i];
 			}
 

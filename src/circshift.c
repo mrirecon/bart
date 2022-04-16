@@ -65,6 +65,7 @@ int main_circshift(int argc, char* argv[argc])
 
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, odata);
+
 	return 0;
 }
 

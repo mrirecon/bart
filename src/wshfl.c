@@ -100,13 +100,18 @@ static void print_opdims(const struct linop_s* op)
 {
 	const struct iovec_s* domain   = linop_domain(op);
 	const struct iovec_s* codomain = linop_codomain(op);
+
 	debug_printf(DP_INFO, "\tDomain:   [");
+
 	for (long k = 0; k < domain->N; k ++)
 		debug_printf(DP_INFO, "%6ld", domain->dims[k]);
+
 	debug_printf(DP_INFO, "]\n");
 	debug_printf(DP_INFO, "\tCodomain: [");
+
 	for (long k = 0; k < codomain->N; k ++)
 		debug_printf(DP_INFO, "%6ld", codomain->dims[k]);
+
 	debug_printf(DP_INFO, "]\n");
 }
 
@@ -124,9 +129,11 @@ static void construct_mask(
 	long t = 0;
 
 	for (int i = 0; i < n; i++) {
+
 		y = lround(creal(reorder[i]));
 		z = lround(creal(reorder[i + n]));
 		t = lround(creal(reorder[i + 2 * n]));
+
 		mask[(y + z * sy) + t * sy * sz] = 1;
 	}
 }
@@ -178,10 +185,14 @@ static void kern_apply(const linop_data_t* _data, complex float* dst, const comp
 	perm_dims[3] = tk;
 	perm_dims[4] = sy;
 	perm_dims[5] = sz;
+
 	complex float* perm = md_alloc_sameplace(DIMS, perm_dims, CFL_SIZE, src);
+
 	unsigned int permute_order[DIMS] = {0, 3, 5, 6, 1, 2, 4, 7};
-	for (unsigned int i = 8; i < DIMS; i++)
+
+	for (int i = 8; i < DIMS; i++)
 		permute_order[i] = i;
+
 	md_permute(DIMS, permute_order, perm_dims, perm, input_dims, src, CFL_SIZE);
 
 	long vec_dims[]     = {wx, nc, tf,  1};
@@ -249,12 +260,12 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	long num_threads = 1;
 #endif
 
-	long vec_dims[]     = {wx, nc, tf,  1};
-	long phi_mat_dims[] = { 1,  1, tf, tk};
-	long phi_out_dims[] = {wx, nc,  1, tk};
-	long fmac_dims[]    = {wx, nc, tf, tk};
-	long line_dims[]    = {wx, nc,  1,  1};
-	long vthrd_dims[]   = {wx, nc, tf,  1, num_threads};
+	long vec_dims[]     = { wx, nc, tf,  1 };
+	long phi_mat_dims[] = { 1,  1, tf, tk };
+	long phi_out_dims[] = { wx, nc,  1, tk };
+	long fmac_dims[]    = { wx, nc, tf, tk };
+	long line_dims[]    = { wx, nc,  1,  1 };
+	long vthrd_dims[]   = { wx, nc, tf,  1, num_threads };
 
 	complex float* vec = md_alloc_sameplace(5, vthrd_dims, CFL_SIZE, dst);
 	md_clear(5, vthrd_dims, vec, CFL_SIZE);
@@ -283,12 +294,16 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 		int t = -1;
 
 		if (0 == flags[k]) {
+
 			md_clear(4, vec_dims, vec + (wx * nc * tf * tid), CFL_SIZE);
 
 			for (int i = k; i < n; i ++) {
+
 				if ((y == lround(creal(data->reorder[i]))) && (z == lround(creal(data->reorder[i + n])))) {
+
 					flags[i] = 1;
 					t = lround(creal(data->reorder[i + 2 * n]));
+
 					md_copy(4, line_dims, (vec + (wx * nc * tf * tid) + t * wx * nc), (src + i * wx * nc), CFL_SIZE);
 				}
 			}
@@ -304,8 +319,10 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	out_dims[3] = nc;
 	out_dims[6] = tk;
 	unsigned int permute_order[DIMS] = {0, 4, 5, 1, 6, 2, 3, 7};
-	for (unsigned int i = 8; i < DIMS; i++)
+
+	for (int i = 8; i < DIMS; i++)
 		permute_order[i] = i;
+
 	md_permute(DIMS, permute_order, out_dims, dst, perm_dims, perm, CFL_SIZE);
 
 	md_free(vec);
@@ -444,11 +461,11 @@ static const struct linop_s* linop_kern_create(bool gpu_flag,
 	output_dims[1] = _table_dims[1];
 	output_dims[2] = _reorder_dims[0];
 
-	const struct linop_s* K = linop_create(DIMS, output_dims, DIMS, input_dims, CAST_UP(PTR_PASS(data)), kern_apply, kern_adjoint, kern_normal, NULL, kern_free);
-	return K;
+	return linop_create(DIMS, output_dims, DIMS, input_dims, CAST_UP(PTR_PASS(data)), kern_apply, kern_adjoint, kern_normal, NULL, kern_free);
 }
 
 struct multc_s {
+
 	INTERFACE(linop_data_t);
 
 	unsigned int nc;
@@ -494,6 +511,7 @@ static void multc_apply(const linop_data_t* _data, complex float* dst, const com
 	long single_map_dims[] = { [0 ... DIMS - 1] = 1 };
 	md_copy_dims(DIMS, single_map_dims, map_dims);
 	single_map_dims[COIL_DIM] = 1;
+
 	complex float* single_map = md_alloc_sameplace(DIMS, single_map_dims, CFL_SIZE, src);
 
 	complex float* buffer = md_alloc_sameplace(DIMS, sc_inp_dims, CFL_SIZE, src);
@@ -518,19 +536,26 @@ static void multc_apply(const linop_data_t* _data, complex float* dst, const com
 	md_calc_strides(DIMS, strides_sc_inp, sc_inp_dims, CFL_SIZE);
 
 	for (long k = 0; k < data->nc; k++) {
+
 		md_clear(DIMS, single_map_dims, single_map, CFL_SIZE);
 		md_clear(DIMS, sc_inp_dims, buffer, CFL_SIZE);
+
 		pos[COIL_DIM] = k;
 		md_slice(DIMS, COIL_FLAG, pos, map_dims, single_map, data->maps, CFL_SIZE);
 		pos[COIL_DIM] = 0;
+
 		md_zfmac2(DIMS, zfmac_dims, strides_sc_inp, buffer, strides_src, src, strides_single_map, single_map);
+
 		operator_apply(fwd, DIMS, sc_out_dims, tbl  + (wx * n * k), DIMS, sc_inp_dims, buffer);
 	}
 
 	md_clear(DIMS, dst_dims, dst, CFL_SIZE);
+
 	unsigned int permute_order[DIMS] = {0, 2, 1};
-	for (unsigned int i = 3; i < DIMS; i++)
+
+	for (int i = 3; i < DIMS; i++)
 		permute_order[i] = i;
+
 	md_permute(DIMS, permute_order, dst_dims, dst, tbl_dims, tbl, CFL_SIZE);
 
 	md_free(single_map);
@@ -595,17 +620,23 @@ static void multc_adjoint(const linop_data_t* _data, complex float* dst, const c
 	md_clear(DIMS, dst_dims, dst, CFL_SIZE);
 	
 	for (long k = 0; k < data->nc; k++) {
+
+
 		md_clear(DIMS, single_map_dims, single_map, CFL_SIZE);
 		md_clear(DIMS, sc_out_dims, buffer1, CFL_SIZE);
 		md_clear(DIMS, dst_dims, buffer2, CFL_SIZE);
 		md_clear(DIMS, tbl_dims, tbl, CFL_SIZE);
+
 		pos[1] = k;
 		md_slice(DIMS, 2, pos, src_dims, tbl, src, CFL_SIZE);
 		pos[1] = 0;
+
 		operator_apply(adj, DIMS, sc_out_dims, buffer1, DIMS, tbl_dims, tbl);
+
 		pos[COIL_DIM] = k;
 		md_slice(DIMS, COIL_FLAG, pos, map_dims, single_map, data->maps, CFL_SIZE);
 		pos[COIL_DIM] = 0;
+
 		md_zfmacc2(DIMS, dst_dims, strides_dst, buffer2, strides_sc_out, buffer1, strides_single_map, single_map);
 		md_zadd(DIMS, dst_dims, dst, dst, buffer2);
 	}
@@ -660,16 +691,22 @@ static void multc_normal(const linop_data_t* _data, complex float* dst, const co
 	md_calc_strides(DIMS, strides, dims, CFL_SIZE);
 
 	md_clear(DIMS, dims, dst, CFL_SIZE);
+
 	for (long k = 0; k < data->nc; k++) {
+
 		md_clear(DIMS, single_map_dims, single_map, CFL_SIZE);
 		md_clear(DIMS, sc_dims, buffer1, CFL_SIZE);
 		md_clear(DIMS, sc_dims, buffer2, CFL_SIZE);
 		md_clear(DIMS, dims, buffer3, CFL_SIZE);
+
 		pos[COIL_DIM] = k;
 		md_slice(DIMS, COIL_FLAG, pos, map_dims, single_map, data->maps, CFL_SIZE);
 		pos[COIL_DIM] = 0;
+
 		md_zfmac2(DIMS, dims, strides_sc, buffer1, strides, src, strides_single_map, single_map);
+
 		operator_apply(nrm, DIMS, sc_dims, buffer2, DIMS, sc_dims, buffer1);
+
 		md_zfmacc2(DIMS, dims, strides, buffer3, strides_sc, buffer2, strides_single_map, single_map);
 		md_zadd(DIMS, dims, dst, dst, buffer3);
 	}
@@ -835,7 +872,8 @@ static void construct_kernel(
 	}
 
 	unsigned int permute_order[DIMS] = {4, 1, 2, 5, 6, 7, 3, 0};
-	for (unsigned int i = 8; i < DIMS; i++)
+
+	for (int i = 8; i < DIMS; i++)
 		permute_order[i] = i;
 
 	md_permute(DIMS, permute_order, kern_dims, kern, out_dims, out, CFL_SIZE);
@@ -993,7 +1031,7 @@ int main_wshfl(int argc, char* argv[argc])
 	coeff_dims[6] = tk;
 	coeff_dims[8] = dcx ? 2 : 1;
 
-	if (ksp == true) {
+	if (ksp) {
 
 		const struct linop_s* Knc = linop_kern_create(use_gpu, reorder_dims, reorder, phi_dims, phi, kernel_dims, kernel, table_dims);
 		long ksp_dims[] = { [0 ... DIMS - 1] = 1 };
@@ -1008,6 +1046,7 @@ int main_wshfl(int argc, char* argv[argc])
 
 		linop_free(Knc);
 		md_free(kernel);
+
 		unmap_cfl(DIMS, maps_dims, maps);
 		unmap_cfl(DIMS, wave_dims, wave);
 		unmap_cfl(DIMS, phi_dims, phi);
@@ -1064,8 +1103,10 @@ int main_wshfl(int argc, char* argv[argc])
 	if (fwd != NULL) {
 
 		debug_printf(DP_INFO, "Going from coefficients to data table... ");
+
 		complex float* coeffs_to_fwd = load_cfl(fwd, DIMS, coeff_dims);
 		complex float* table_forward = create_cfl(out_file, DIMS, table_dims);
+
 		const struct linop_s* R      = linop_wavereshape_create(wx, sx, sy, sz, 1, tk);
 		const struct linop_s* CFx    = linop_fx_create( wx, sy, sz, 1, tk, true);
 		const struct linop_s* W      = linop_wave_create(wx, sy, sz, 1, tk, wave_dims[COEFF_DIM], wave);
@@ -1075,6 +1116,7 @@ int main_wshfl(int argc, char* argv[argc])
 			R, CFx), W), CFyz), K);
 		struct linop_s* AC = linop_multc_create(nc, md, maps, AC_sc);
 		operator_apply(AC->forward, DIMS, table_dims, table_forward, DIMS, coeff_dims, coeffs_to_fwd);
+
 		debug_printf(DP_INFO, "Done.\n");
 
 		debug_printf(DP_INFO, "Cleaning up... ");
@@ -1093,6 +1135,7 @@ int main_wshfl(int argc, char* argv[argc])
 	}
 
 	if (dcx) {
+
 		debug_printf(DP_INFO, "\tSplitting result into real and imaginary components.\n");
 		struct linop_s* tmp = A;
 		struct linop_s* dcxop = linop_decompose_complex_create(DIMS, ITER_DIM, linop_domain(A)->dims);
@@ -1106,12 +1149,15 @@ int main_wshfl(int argc, char* argv[argc])
 	}
 
 	debug_printf(DP_INFO, "Normalizing data table and applying fftmod to table and maps... ");
+
 	float norm = md_znorm(DIMS, table_dims, table);
 	md_zsmul(DIMS, table_dims, table, table, 1. / norm);
 	fftmod_apply(sy, sz, reorder_dims, reorder, table_dims, table, maps_dims, maps);
+
 	debug_printf(DP_INFO, "Done.\n");
 
 	debug_printf(DP_INFO, "Preparing reconstruction operator: ");
+
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
@@ -1132,6 +1178,7 @@ int main_wshfl(int argc, char* argv[argc])
 	struct iter it;
 
 	if (fista) {
+
 		if (eval < 0) {
 #ifdef USE_CUDA
 			eval = use_gpu ? estimate_maxeigenval_gpu(A_sc->normal) : estimate_maxeigenval(A_sc->normal);
@@ -1152,31 +1199,42 @@ int main_wshfl(int argc, char* argv[argc])
 
 		iter2_data.fun   = iter_fista;
 		iter2_data._conf = CAST_UP(&fsconf);
+
 	} else {
+
 		debug_printf(DP_INFO, "\tAlgorithm: ADMM\n.");
 		debug_printf(DP_INFO, "\tRho:       %.2e\n.", rho);
+
 		it = italgo_config(ALGO_ADMM, nr_penalties, regs, maxiter, step, hgwld, false, admm, 1, false);
 	}
 
 	complex float* init = NULL;
 	if (x0 != NULL) {
+
 		debug_printf(DP_INFO, "Loading in initial guess... ");
+
 		init = load_cfl(x0, DIMS, coeff_dims);
+
 		debug_printf(DP_INFO, "Done.\n");
 	}
 
 	debug_printf(DP_INFO, "Reconstruction... ");
+
 	complex float* recon = create_cfl(out_file, DIMS, coeff_dims);
+
 	struct lsqr_conf lsqr_conf = lsqr_defaults;
 	lsqr_conf.lambda = 0.;
 	lsqr_conf.it_gpu = use_gpu;
 	double recon_start = timestamp();
+
 	const struct operator_p_s* J = fista ?
 		lsqr2_create(&lsqr_conf, italgo,    iconf,    (const float*) init, A, NULL, nr_penalties, thresh_ops, NULL,   NULL):
 		lsqr2_create(&lsqr_conf, it.italgo, it.iconf, (const float*) init, A, NULL, nr_penalties, thresh_ops, trafos, NULL);
 	operator_p_apply(J, 1., DIMS, coeff_dims, recon, DIMS, table_dims, table);
 	md_zsmul(DIMS, coeff_dims, recon, recon, norm);
+
 	double recon_end = timestamp();
+
 	debug_printf(DP_INFO, "Done.\nReconstruction time: %f seconds.\n", recon_end - recon_start);
 
 	debug_printf(DP_INFO, "Cleaning up and saving result... ");

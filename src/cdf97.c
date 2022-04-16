@@ -59,6 +59,7 @@ int main_cdf97(int argc, char* argv[argc])
 	complex float* odata = create_cfl(out_file, DIMS, dims);
 
 	md_copy(DIMS, dims, odata, idata, CFL_SIZE);
+
 	unmap_cfl(DIMS, dims, idata);
 
 	if (inv) {
@@ -73,6 +74,7 @@ int main_cdf97(int argc, char* argv[argc])
 	}
 
 	unmap_cfl(DIMS, dims, odata);
+
 	return 0;
 }
 

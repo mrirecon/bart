@@ -166,11 +166,14 @@ int main_nnet(int argc, char* argv[argc])
 		if (NULL == config.train_conf) {
 
 			debug_printf(DP_WARN, "No training algorithm selected. Fallback to Adam!");
+
 			iter_6_select_algo = ITER6_ADAM;
 			config.train_conf = iter6_get_conf_from_opts();
 
-		} else
+		} else {
+
 			iter6_copy_config_from_opts(config.train_conf);
+		}
 	}
 
 	if (NULL == config.network)
@@ -212,6 +215,7 @@ int main_nnet(int argc, char* argv[argc])
 	if (-1 == NI) {
 
 		NI = DIMS;
+
 		while ((NI > 0) && (1 == dims_in[NI - 1]))
 			NI--;
 	}
@@ -221,14 +225,16 @@ int main_nnet(int argc, char* argv[argc])
 		N_batch = MIN(128, dims_in[NI - 1]);
 
 
-	if (train){
+	if (train) {
 
 		long NO = config.get_no_odims(&config, NI, dims_in);
 		long dims_out[NO];
+
 		complex float* out = load_cfl(filename_out, NO, dims_out);
 
 		complex float* in_mem = NULL;
 		complex float* out_mem = NULL;
+
 		if (load_mem) {
 
 			in_mem = md_alloc(NI, dims_in, CFL_SIZE);
@@ -252,7 +258,7 @@ int main_nnet(int argc, char* argv[argc])
 		unmap_cfl(NO, dims_out, out);
 	}
 
-	if (eval){
+	if (eval) {
 
 		long NO = config.get_no_odims(&config, NI, dims_in);
 		long dims_out[NO];
@@ -266,11 +272,12 @@ int main_nnet(int argc, char* argv[argc])
 		unmap_cfl(NO, dims_out, out);
 	}
 
-	if (apply){
+	if (apply) {
 
 		long NO = config.get_no_odims(&config, NI, dims_in);
 		long dims_out[NO];
 		config.get_odims(&config, NO, dims_out, NO, dims_in);
+
 		complex float* out = create_cfl(filename_out, NO, dims_out);
 
 		config.weights = load_nn_weights(filename_weights);
@@ -285,5 +292,5 @@ int main_nnet(int argc, char* argv[argc])
 
 	unmap_cfl(NI, dims_in, in);
 
-	exit(0);
+	return 0;
 }

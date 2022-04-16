@@ -65,11 +65,13 @@ int main_normalize(int argc, char* argv[argc])
 	assert(flags >= 0);
 
 	complex float* out = create_cfl(out_file, N, dims);
+
 	md_copy(N, dims, out, data, CFL_SIZE);
 
 	(l1 ? normalizel1 : normalize)(N, flags, dims, out);
 
 	unmap_cfl(N, dims, out);
+
 	return 0;
 }
 

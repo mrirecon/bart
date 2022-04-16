@@ -46,14 +46,14 @@ int main_copy(int argc, char* argv[argc])
 		ARG_INOUTFILE(true, &out_file, "output"),
 	};
 
-
 	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
 
-	unsigned int N = DIMS;
+	int N = DIMS;
 
 	assert(count >= 0);
 
@@ -78,7 +78,7 @@ int main_copy(int argc, char* argv[argc])
 
 	long position[N];
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		position[i] = 0;
 
 	for (int i = 0; i < count; i++) {

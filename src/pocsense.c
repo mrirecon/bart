@@ -90,7 +90,7 @@ int main_pocsense(int argc, char* argv[argc])
 		error("Unknown regularization type.");
 
 	
-	unsigned int N = DIMS;
+	int N = DIMS;
 
 	long dims[N];
 	long ksp_dims[N];
@@ -140,7 +140,8 @@ int main_pocsense(int argc, char* argv[argc])
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
 
 		unsigned int flags = 0;
-		for (unsigned int i = 0; i < DIMS; i++) {
+
+		for (int i = 0; i < DIMS; i++) {
 
 			if ((1 < ksp_dims[i]) && MD_IS_SET(FFT_FLAGS, i)) {
 

@@ -242,6 +242,7 @@ int main_pics(int argc, char* argv[argc])
 	if (NULL != basis_file) {
 
 		basis = load_cfl(basis_file, DIMS, basis_dims);
+
 		assert(!md_check_dimensions(DIMS, basis_dims, COEFF_FLAG | TE_FLAG));
 	}
 
@@ -637,7 +638,7 @@ int main_pics(int argc, char* argv[argc])
 	md_calc_strides(DIMS, strsx[0], img_dims, CFL_SIZE);
 	md_calc_strides(DIMS, strsx[1], ksp_dims, CFL_SIZE);
 
-	for (unsigned int i = 0; i < DIMS; i++) {
+	for (int i = 0; i < DIMS; i++) {
 
 		if (MD_IS_SET(loop_flags, i)) {
 

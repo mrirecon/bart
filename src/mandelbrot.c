@@ -62,19 +62,19 @@ int main_mandelbrot(int argc, char* argv[argc])
 	long dims[2] = { size, size };
 
 	complex float* o = create_cfl(out_file, 2, dims);
+
 	md_zfill(2, dims, o, iter);
 
 	complex float* x = md_calloc(2, dims, CFL_SIZE);
-
 	complex float* t = md_alloc(2, dims, CFL_SIZE);
-
 	complex float* c = md_alloc(2, dims, CFL_SIZE);
+
 	md_zgradient(2, dims, c, (complex float[2]){ 1., 1.i });
 	md_zfill(2, dims, t, (size / 2.) * (1. + 1.i + off));
 	md_zsub(2, dims, c, c, t);
 	md_zsmul(2, dims, c, c, 1. / (zoom * size));
 
-	for (unsigned int i = 0; i < iter; i++) {
+	for (int i = 0; i < (int)iter; i++) {
 
 		// iteration x -> x * x + c
 		md_zmul(2, dims, x, x, x);
@@ -92,6 +92,7 @@ int main_mandelbrot(int argc, char* argv[argc])
 	md_free(x);
 
 	unmap_cfl(2, dims, o);
+
 	return 0;
 }
 

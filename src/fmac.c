@@ -69,6 +69,7 @@ int main_fmac(int argc, char* argv[argc])
 	if (NULL != in2_file) {
 
 		data2 = load_cfl(in2_file, N, dims2);
+
 	} else {
 
 		md_singleton_dims(N, dims2);

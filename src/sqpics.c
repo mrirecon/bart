@@ -521,7 +521,7 @@ int main_sqpics(int argc, char* argv[argc])
 
 			unsigned int wflags = 0;
 
-			for (unsigned int i = 0; i < DIMS; i++) {
+			for (int i = 0; i < DIMS; i++) {
 
 				if ((1 < img_dims[i]) && MD_IS_SET(regs[nr].xflags, i)) {
 
@@ -622,13 +622,19 @@ int main_sqpics(int argc, char* argv[argc])
 	int nr = nr_penalties;
 	struct linop_s* sampling = linop_sampling_create(max_dims, pat_dims, pattern);
 	struct linop_s* tmp_op = linop_chain(forward_op, sampling);
+
 	linop_free(sampling);
 	linop_free(forward_op);
+
 	forward_op = tmp_op;
 	trafos[nr] = forward_op;
+
 	thresh_ops[nr] = prox_l2norm_create(DIMS, ksp_dims, 1.);
+
 	nr_penalties++;
+
 	const float** biases = xmalloc(sizeof(float*) * nr_penalties);
+
 	for (int i = 0; i < nr_penalties - 1; i++)
 		biases[i] = NULL;
 
@@ -725,7 +731,8 @@ int main_sqpics(int argc, char* argv[argc])
 
 	if (im_truth) {
 
-		free((void*)image_truth_file);
+		xfree(image_truth_file);
+
 		unmap_cfl(DIMS, img_dims, image_truth);
 	}
 
@@ -733,6 +740,7 @@ int main_sqpics(int argc, char* argv[argc])
 	double end_time = timestamp();
 
 	debug_printf(DP_INFO, "Total Time: %f\n", end_time - start_time);
+
 	return 0;
 }
 

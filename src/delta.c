@@ -29,7 +29,7 @@ static const char help_str[] = "Kronecker delta.";
 int main_delta(int argc, char* argv[argc])
 {
 	int N = 0;
-	unsigned int flags= 0;
+	unsigned int flags = 0;
 	long len = 0;
 	const char* out_file = NULL;
 
@@ -41,7 +41,8 @@ int main_delta(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "out"),
 	};
 
-	const struct opt_s opts[] = {};
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -59,6 +60,7 @@ int main_delta(int argc, char* argv[argc])
 	md_fill_diag(N, dims, flags, x, &(complex float){ 1. }, CFL_SIZE); 
 
 	unmap_cfl(N, dims, x);
+
 	return 0;
 }
 

@@ -296,8 +296,7 @@ int main_moba(int argc, char* argv[argc])
 	md_zfill(DIMS, img_dims, img, 1.0);
 	md_clear(DIMS, coil_dims, sens, CFL_SIZE);
 
-	complex float* k_grid_data = NULL;
-	k_grid_data = anon_cfl("", DIMS, grid_dims);
+	complex float* k_grid_data = anon_cfl("", DIMS, grid_dims);
 
 	complex float* pattern = NULL;
 	long pat_dims[DIMS];
@@ -333,6 +332,7 @@ int main_moba(int argc, char* argv[argc])
 		struct linop_s* nufft_op_k = NULL;
 
 		md_select_dims(DIMS, FFT_FLAGS|TE_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, pat_dims, grid_dims);
+
 		pattern = anon_cfl("", DIMS, pat_dims);
 
 		// Gridding sampling pattern

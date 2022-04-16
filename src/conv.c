@@ -39,7 +39,9 @@ int main_conv(int argc, char* argv[argc])
 		ARG_INFILE(true, &kern_file, "kernel"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
+
 	const struct opt_s opts[] = {};
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -59,6 +61,7 @@ int main_conv(int argc, char* argv[argc])
 	unmap_cfl(N, dims, out);
 	unmap_cfl(N, krn_dims, krn);
 	unmap_cfl(N, dims, in);
+
 	return 0;
 }
 

@@ -122,6 +122,7 @@ int main_filter(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, in_dims, in_data);
 	unmap_cfl(DIMS, out_dims, out_data);
+
 	return 0;
 }
 

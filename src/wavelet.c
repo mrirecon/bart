@@ -64,12 +64,12 @@ int main_wavelet(int argc, char* argv[argc])
 
 	num_init();
 
-	unsigned int n = adj ? bitcount(flags) : 0;
+	int n = adj ? bitcount(flags) : 0;
 
-	assert((int)n == count);
+	assert(n == count);
 
 
-	const unsigned int N = DIMS;
+	const int N = DIMS;
 	long idims[N];
 
 	complex float* idata = load_cfl(in_file, N, idims);
@@ -79,9 +79,9 @@ int main_wavelet(int argc, char* argv[argc])
 
 	if (adj) {
 
-		unsigned int j = 0;
+		int j = 0;
 
-		for (unsigned int i = 0; i < N; i++)
+		for (int i = 0; i < N; i++)
 			if (MD_IS_SET(flags, i))
 				dims[i] = adims[j++];
 
@@ -90,7 +90,7 @@ int main_wavelet(int argc, char* argv[argc])
 
 	long minsize[N];
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		minsize[i] = MD_IS_SET(flags, i) ? 16 : dims[i];
 
 	long strs[N];
@@ -109,6 +109,7 @@ int main_wavelet(int argc, char* argv[argc])
 
 	unmap_cfl(N, idims, idata);
 	unmap_cfl(N, odims, odata);
+
 	xfree(adims);
 
 	return 0;

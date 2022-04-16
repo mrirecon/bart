@@ -114,7 +114,7 @@ int main_bart(int argc, char* argv[argc])
 			"/usr/lib/bart/commands/",
 		};
 
-		for (unsigned int i = 0; i < ARRAY_SIZE(tpath); i++) {
+		for (int i = 0; i < (int)ARRAY_SIZE(tpath); i++) {
 
 			if (NULL == tpath[i])
 				continue;

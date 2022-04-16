@@ -42,7 +42,9 @@ int main_poly(int argc, char* argv[argc])
 		ARG_TUPLE(true, &count, 1, { OPT_FLOAT, sizeof(*as), &as, "a_" }),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
-	const struct opt_s opts[] = {};
+
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -55,7 +57,9 @@ int main_poly(int argc, char* argv[argc])
 
 	long p_dims[] = { [0 ... DIMS - 1] = 1 };
 	p_dims[0] = L;
+
 	complex float* p = create_cfl(out_file, DIMS, p_dims);
+
 	md_clear(DIMS, p_dims, p, CFL_SIZE);
 
 	for (int x = 0; x < L; x++) {

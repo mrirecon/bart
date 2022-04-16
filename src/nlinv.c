@@ -154,7 +154,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 		md_zsmul(DIMS, trj_dims, traj, traj, 2.);
 
-		for (unsigned int i = 0; i < DIMS; i++)
+		for (int i = 0; i < DIMS; i++)
 			if (MD_IS_SET(FFT_FLAGS, i) && (1 < dims[i]))
 				dims[i] *= 2;
 

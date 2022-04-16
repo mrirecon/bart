@@ -40,7 +40,8 @@ int main_estshift(int argc, char* argv[argc])
 		ARG_INFILE(true, &arg2_file, "arg2"),
 	};
 
-	const struct opt_s opts[] = {};
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	long dims1[DIMS];
@@ -56,7 +57,7 @@ int main_estshift(int argc, char* argv[argc])
 
 	bart_printf("Shifts:");
 
-	for (unsigned int i = 0; i < DIMS; i++) {
+	for (int i = 0; i < DIMS; i++) {
 
 		if (!MD_IS_SET(flags, i))
 			continue;

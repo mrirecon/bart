@@ -99,7 +99,6 @@ int main_rtnlinv(int argc, char* argv[argc])
 	struct noir_conf_s conf = noir_defaults;
 	bool out_sens = false;
 	bool scale_im = false;
-	unsigned int turns = 1;
 	bool use_gpu = false;
 	float scaling = -1.;
 	bool alt_scaling = false;
@@ -168,6 +167,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 	long trj_dims[DIMS];
 	long trj1_dims[DIMS];
 	complex float* traj = NULL;
+	int turns = 1;
 
 	long sens_dims[DIMS];
 	md_copy_dims(DIMS, sens_dims, ksp_dims);
@@ -410,13 +410,12 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 		traj1 = md_alloc(DIMS, trj1_dims, CFL_SIZE);
 
-		for (unsigned int i = 0; i < turns; ++i) {
+		for (int i = 0; i < turns; ++i) {
 
 			// pick trajectory for current frame
 			long pos[DIMS] = { 0 };
 			pos[TIME_DIM] = i;
 			md_slice(DIMS, TIME_FLAG, pos, trj_dims, traj1, traj, CFL_SIZE);
-
 
 			nufft_ops[i] = nufft_create(DIMS, ksp1_dims, kgrid1_dims, trj1_dims, traj1, NULL, nufft_conf);
 		}
@@ -444,7 +443,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 	complex float* pattern1 = md_alloc(DIMS, pat1_dims, CFL_SIZE);
 
-	for (unsigned int frame = 0; frame < frames; ++frame) {
+	for (int frame = 0; frame < frames; ++frame) {
 
 		debug_printf(DP_DEBUG1, "Reconstructing frame %d\n", frame);
 
@@ -559,7 +558,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 		operator_free(fftc);
 
-		for (unsigned int i = 0; i < turns; ++i)
+		for (int i = 0; i < turns; ++i)
 			linop_free(nufft_ops[i]);
 	}
 

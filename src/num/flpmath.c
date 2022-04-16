@@ -1241,7 +1241,6 @@ int calc_convcorr_geom_strs_dil(int N, unsigned long flags,
 				       const long odims[N], const long ostrs[N], const long kdims[N], const long kstrs[N], const long idims[N], const long istrs[N],
 				       const long dilation[N], const long strides[N], bool conv, bool test_mode)
  {
-
  	int shift = 0;
 
 	md_copy_strides(N, ostrs2, ostrs);

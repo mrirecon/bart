@@ -60,6 +60,7 @@ static void calc_optmat(const long mat_dims[DIMS], complex float* optmat, const 
 	long N = mat_dims[COIL_DIM];
 
 	complex float* chol = md_alloc(DIMS, mat_dims, CFL_SIZE);
+
 	md_copy(DIMS, mat_dims, chol, covar, CFL_SIZE);
 
 	lapack_cholesky_lower(N, MD_CAST_ARRAY2(complex float, DIMS, mat_dims, chol, COIL_DIM, MAPS_DIM));
@@ -139,20 +140,27 @@ int main_whiten(int argc, char* argv[argc])
 	if (NULL != covar_ifile) {
 
 		covar_in = load_cfl(covar_ifile, DIMS, mat_dims);
+
 		md_copy(DIMS, mat_dims, covar_out, covar_in, CFL_SIZE);
+
 		unmap_cfl(DIMS, mat_dims, covar_in);
-	}
-	else
+
+	} else {
+
 		calc_covar(mat_dims, covar_out, noise_dims, ndata);
+	}
 
 
 	if (NULL != optmat_ifile) {
 
 		optmat_in = load_cfl(optmat_ifile, DIMS, mat_dims);
+
 		md_copy(DIMS, mat_dims, optmat_out, optmat_in, CFL_SIZE);
+
 		unmap_cfl(DIMS, mat_dims, optmat_in);
-	}
-	else {
+
+	} else {
+
 		calc_optmat(mat_dims, optmat_out, covar_out);
 	}
 
@@ -170,9 +178,11 @@ int main_whiten(int argc, char* argv[argc])
 
 		// get scale factor by whitening the noise data and taking stdev
 		whiten(noise_dims, nwhite, mat_dims, optmat_out, ndata);
+
 		md_zstd(DIMS, noise_dims, ~0, nstdev, nwhite);
 
 		float stdev = md_zasum(DIMS, std_dims, nstdev);
+
 		md_zsmul(DIMS, dims, odata, odata, 1. / stdev);
 
 		debug_printf(DP_DEBUG1, "standard deviation scaling: %.6e\n", stdev);

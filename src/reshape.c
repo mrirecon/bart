@@ -42,14 +42,15 @@ int main_reshape(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	const struct opt_s opts[] = {};
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	unsigned int n = bitcount(flags);
+	int n = bitcount(flags);
 
-	assert((int)n == count);
+	assert(n == count);
 
 	long in_dims[DIMS];
 	long out_dims[DIMS];
@@ -58,9 +59,9 @@ int main_reshape(int argc, char* argv[argc])
 
 	md_copy_dims(DIMS, out_dims, in_dims);
 	
-	unsigned int j = 0;
+	int j = 0;
 
-	for (unsigned int i = 0; i < DIMS; i++)
+	for (int i = 0; i < DIMS; i++)
 		if (MD_IS_SET(flags, i))
 			out_dims[i] = dims[j++];
 

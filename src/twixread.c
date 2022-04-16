@@ -161,7 +161,7 @@ static int siemens_bounds(bool vd, int fd, long min[DIMS], long max[DIMS])
 		pos[TIME_DIM]	= mdh.sLC[6];
 		pos[TIME2_DIM]	= mdh.sLC[7];
 
-		for (unsigned int i = 0; i < DIMS; i++) {
+		for (int i = 0; i < DIMS; i++) {
 
 			max[i] = MAX(max[i], pos[i] + 1);
 			min[i] = MIN(min[i], pos[i] + 0);
@@ -169,6 +169,7 @@ static int siemens_bounds(bool vd, int fd, long min[DIMS], long max[DIMS])
 
 		size = max[READ_DIM] * CFL_SIZE;
 		char buf[size];
+
 		if (size != (size_t)read(fd, buf, size))
 			return -1;
 	}
@@ -306,7 +307,7 @@ int main_twixread(int argc, char* argv[argc])
 			adcs++;
 		}
 
-		for (unsigned int i = 0; i < DIMS; i++) {
+		for (int i = 0; i < DIMS; i++) {
 
 			off[i] = -min[i];
 			dims[i] = max[i] + off[i];
@@ -353,7 +354,7 @@ int main_twixread(int argc, char* argv[argc])
 			break;
 		}
 
-		for (unsigned int i = 0; i < DIMS; i++)
+		for (int i = 0; i < DIMS; i++)
 			pos[i] += off[i];
 
 		if (mpi) {
@@ -376,7 +377,9 @@ int main_twixread(int argc, char* argv[argc])
 	}
 
 	md_free(buf);
+
 	unmap_cfl(DIMS, dims, out);
+
 	return 0;
 }
 

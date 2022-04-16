@@ -98,6 +98,7 @@ int main_conway(int argc, char* argv[argc])
 	md_free(tmp);
 
 	unmap_cfl(3, odims, out);
+
 	return 0;
 }
 

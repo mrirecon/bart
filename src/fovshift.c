@@ -112,5 +112,6 @@ int main_fovshift(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, idims, idata);
 	unmap_cfl(DIMS, idims, odata);
+
 	return 0;
 }

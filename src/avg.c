@@ -37,8 +37,8 @@ int main_avg(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-
 	bool wavg = false;
+
 	const struct opt_s opts[] = {
 
 		OPT_SET('w', &wavg, "weighted average"),

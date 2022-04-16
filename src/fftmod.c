@@ -32,7 +32,6 @@ static const char help_str[] =	"Apply 1 -1 modulation along dimensions selected 
 
 int main_fftmod(int argc, char* argv[argc])
 {
-
 	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
@@ -67,6 +66,7 @@ int main_fftmod(int argc, char* argv[argc])
 
 	unmap_cfl(N, dims, idata);
 	unmap_cfl(N, dims, odata);
+
 	return 0;
 }
 

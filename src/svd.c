@@ -78,6 +78,7 @@ int main_svd(int argc, char* argv[argc])
 	unmap_cfl(N, dimsU, U);
 	unmap_cfl(N, dimsS, S);
 	unmap_cfl(N, dimsVH, VH);
+
 	return 0;
 }
 

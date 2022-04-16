@@ -41,7 +41,8 @@ int main_zeros(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	const struct opt_s opts[] = {};
+	const struct opt_s opts[] = { };
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -53,8 +54,11 @@ int main_zeros(int argc, char* argv[argc])
 		assert(dims[i] >= 1);
 
 	complex float* x = create_cfl(out_file, N, dims);
+
 	md_clear(N, dims, x, sizeof(complex float));
+
 	unmap_cfl(N, dims, x);
+
 	xfree(dims);
 
 	return 0;

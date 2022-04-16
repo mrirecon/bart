@@ -113,13 +113,16 @@ int main_ccapply(int argc, char* argv[argc])
 			ifftuc(DIMS, in_dims, READ_FLAG, in2_data, in_data);
 
 			unmap_cfl(DIMS, in_dims, in_data);
+
 			in_data = in2_data;
 		}
 
 		complex float* cc2_data = anon_cfl(NULL, DIMS, cc2_dims);
+
 		align_ro(cc2_dims, cc2_data, cc_data);
 
 		unmap_cfl(DIMS, cc_dims, cc_data);
+
 		cc_data = cc2_data;
 	}
 

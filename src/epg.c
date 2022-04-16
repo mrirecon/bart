@@ -90,12 +90,12 @@ int main_epg(int argc, char* argv[argc])
 		M = 2 * N;
 	
 	complex float out_signal[N];
+
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[TE_DIM] = N;
 
 	// allocate on HEAP	to avoid memory limitation
-	complex float (*out_states)[M][N];
-	out_states = xmalloc(3 * sizeof *out_states);
+	complex float (*out_states)[M][N] = xmalloc(3 * sizeof *out_states);
 
 	long dims_states[DIMS];
 	md_copy_dims(DIMS, dims_states, dims);
@@ -108,8 +108,7 @@ int main_epg(int argc, char* argv[argc])
 	dims_sigder[ITER_DIM] = 4;
    
 	// allocate on HEAP	to avoid memory limitation
-	complex float (*out_statesder)[3][M][N];
-	out_statesder = xmalloc(4 * sizeof *out_statesder);
+	complex float (*out_statesder)[3][M][N] = xmalloc(4 * sizeof *out_statesder);
 
 	long dims_statesder[DIMS];
    	md_copy_dims(DIMS, dims_statesder, dims_states);
@@ -183,7 +182,7 @@ int main_epg(int argc, char* argv[argc])
 		error("sequence type not supported yet");
 	}
 
-	if ((NULL != sigder_file)) {
+	if (NULL != sigder_file) {
 
 		if (0 < verbose) {
 

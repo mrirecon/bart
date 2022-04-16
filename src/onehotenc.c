@@ -62,6 +62,7 @@ int main_onehotenc(int argc, char* argv[argc])
 		odims[class_index] = lroundf(max) + 1;
 
 		complex float* out = create_cfl(output, DIMS, odims);
+
 		index_to_onehotenc(DIMS, odims, out, idims, in);
 
 		unmap_cfl(DIMS, odims, out);
@@ -76,6 +77,7 @@ int main_onehotenc(int argc, char* argv[argc])
 		md_select_dims(DIMS, ~MD_BIT(class_index), odims, idims);
 
 		complex float* out = create_cfl(output, DIMS, odims);
+
 		onehotenc_to_index(DIMS, odims, out, idims, in);
 
 		unmap_cfl(DIMS, odims, out);

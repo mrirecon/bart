@@ -39,7 +39,6 @@ int main_calmat(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "calibration_matrix"),
 	};
 
-
 	long calsize[3] = { 24, 24, 24 };
 	long kdims[3] = { 5, 5, 5 };
 	bool calcen = false;
@@ -91,7 +90,7 @@ int main_calmat(int argc, char* argv[argc])
 
 
 
-	 for (unsigned int i = 0; i < 3; i++)
+	 for (int i = 0; i < 3; i++)
 		 if ((1 == cal_dims[i]) && (1 != ksp_dims[i]))
 			error("Calibration region not found!\n");
 

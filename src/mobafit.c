@@ -118,7 +118,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	switch (seq) {
 
-	case MGRE:  ;
+	case MGRE: ;
 
 		float scale_fB0[2] = { 0., 1. };
 		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, TE, mgre_model, false, FAT_SPEC_1, scale_fB0, use_gpu);
@@ -149,7 +149,6 @@ int main_mobafit(int argc, char* argv[argc])
 	long pos[DIMS] = { 0 };
 
 	do {
-
 		md_copy_block(DIMS, pos, y_patch_dims, y_patch, y_dims, y, CFL_SIZE);
 		md_copy_block(DIMS, pos, x_patch_dims, x_patch, x_dims, x, CFL_SIZE);
 

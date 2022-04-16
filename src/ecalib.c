@@ -244,6 +244,7 @@ int main_ecalib(int argc, char* argv[argc])
 	printf("Done.\n");
 
 	unmap_cfl(N, ksp_dims, in_data);
+
 	md_free(cal_data);
 
 	return 0;

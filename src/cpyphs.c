@@ -41,6 +41,7 @@ int main_cpyphs(int argc, char* argv[argc])
 	};
 
 	const struct opt_s opts[] = {};
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
@@ -54,6 +55,7 @@ int main_cpyphs(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, dims, in_data);
 	unmap_cfl(DIMS, dims, out_data);
+
 	return 0;
 }
 

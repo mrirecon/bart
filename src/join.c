@@ -171,6 +171,7 @@ int main_join(int argc, char* argv[argc])
 	}
 
 	unmap_cfl(N, out_dims, out_data);
+
 	xfree(in_files);
 
 	return 0;
