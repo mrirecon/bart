@@ -369,5 +369,7 @@ int main_reconet(int argc, char* argv[argc])
 
 	free_network_data(&data);
 
+	xfree(config.train_conf);
+
 	return 0;
 }
