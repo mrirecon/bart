@@ -19,6 +19,7 @@ struct ecalib_conf {
 	_Bool softcrop;
 	float crop;
 	_Bool orthiter;
+	int num_orthiter;
 	_Bool usegpu;
 	float perturb;
 	_Bool intensity;
@@ -34,7 +35,7 @@ extern void calib(const struct ecalib_conf* conf, const long out_dims[DIMS], _Co
 
 extern void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], _Complex float* out_data, _Complex float* eptr, int SN, float svals[__VLA2(SN)], const long calreg_dims[DIMS], const _Complex float* data, const long msk_dims[3], const _Bool* msk);
 
-extern void eigenmaps(const long out_dims[DIMS], _Complex float* out_data, _Complex float* eptr, const _Complex float* imgcov, const long msk_dims[3], const _Bool* msk, _Bool orthiter, _Bool usegpu);
+extern void eigenmaps(const long out_dims[DIMS], _Complex float* out_data, _Complex float* eptr, const _Complex float* imgcov, const long msk_dims[3], const _Bool* msk, _Bool orthiter, int num_orthiter, _Bool usegpu);
 
 
 extern void crop_sens(const long dims[DIMS], _Complex float* ptr, bool soft, float crth, const _Complex float* map);

@@ -64,7 +64,7 @@
 #endif
 
 
-static void eigen_herm3(int M, int N, float val[M], complex float matrix[N][N]) // ordering might be different to herm2
+static void eigen_herm3(int M, int N, float val[M], complex float matrix[N][N], int num_orthiter) // ordering might be different to herm2
 {
 	complex float mout[M][N];
 
@@ -73,7 +73,7 @@ static void eigen_herm3(int M, int N, float val[M], complex float matrix[N][N]) 
 			matrix[lj][li] = conj(matrix[li][lj]);
 
 	//mat_identity(M, N, mout);
-	orthiter(M, N, 30, val, mout, matrix);
+	orthiter(M, N, num_orthiter, val, mout, matrix);
 
 	for (int i = 0; i < M; i++)
 		for (int j = 0; j < N; j++)
@@ -420,14 +420,14 @@ void calone(const struct ecalib_conf* conf, const long cov_dims[4], complex floa
 /* calculate point-wise maps 
  *
  */
-void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* eptr, const complex float* imgcov2, const long msk_dims[3], const bool* msk, bool orthiter, bool ecal_usegpu)
+void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* eptr, const complex float* imgcov2, const long msk_dims[3], const bool* msk, bool orthiter, int num_orthiter, bool ecal_usegpu)
 {
 #ifdef USE_CUDA
 	if (ecal_usegpu) {
 
 		//FIXME cuda version should be able to return sensitivities for a subset of image-space points
 		assert(!msk);
-		eigenmapscu(out_dims, optr, eptr, imgcov2);
+		eigenmapscu(out_dims, optr, eptr, imgcov2, num_orthiter);
 		return;
 	}
 #else
@@ -474,7 +474,7 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 					unpack_tri_matrix(channels, cov, tmp);
 
 					if (orthiter) 
-						eigen_herm3(maps, channels, val, cov);
+						eigen_herm3(maps, channels, val, cov, num_orthiter);
 					else 
 						lapack_eig(channels, val, cov);
 
@@ -538,7 +538,7 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 	debug_printf(DP_DEBUG1, "Point-wise eigen-decomposition...\n");
 
-	eigenmaps(out_dims, out_data, emaps, imgcov2, msk_dims, msk, conf->orthiter, conf->usegpu);
+	eigenmaps(out_dims, out_data, emaps, imgcov2, msk_dims, msk, conf->orthiter, conf->num_orthiter, conf->usegpu);
 
 	md_free(imgcov2);
 }
@@ -570,6 +570,7 @@ const struct ecalib_conf ecalib_defaults = {
 	.softcrop = false,
 	.crop = 0.8,
 	.orthiter = true,
+	.num_orthiter = 30,
 	.usegpu = false,
 	.perturb = -1.,
 	.intensity = false,

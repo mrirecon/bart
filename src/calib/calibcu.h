@@ -5,7 +5,7 @@
 
 #include "misc/cppwrap.h"
 
-extern void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr, const _Complex float* imgcov2);
+extern void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr, const _Complex float* imgcov2, int num_orthiter);
 
 #include "misc/cppwrap.h"
 

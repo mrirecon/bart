@@ -77,6 +77,7 @@ int main_ecalib(int argc, char* argv[argc])
 		OPT_SET('1', &one, "perform only first part of the calibration"),
 		OPT_CLEAR('P', &conf.rotphase, "Do not rotate the phase with respect to the first principal component"),
 		OPT_CLEAR('O', &conf.orthiter, "()"),
+		OPTL_INT('i', "orthiter", &conf.num_orthiter, "orthiter", "()"),
 		OPT_FLOAT('b', &conf.perturb, "", "()"),
 		OPT_SET('V', &print_svals, "()"),
 		OPT_SET('C', &calcen, "()"),

@@ -146,9 +146,8 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComple
 
 
         
-void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr, const _Complex float* imgcov2)
+void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr, const _Complex float* imgcov2, int num_orthiter)
 {
-	const int iter = 300;
 	const int x = (int) dims[0];
 	const int y = (int) dims[1];
 	const int z = (int) dims[2];
@@ -199,7 +198,7 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 	dim3 blocks(numBlocks); // if numBlocks > ~65,000, need to distribute over x, y, z dims
 	size_t sharedMem = memPerPoint * pointsPerBlock;
 
-	eigenmapscu_kern<<<blocks, threads, sharedMem>>>(imgcov2_device_filled, imgcov2_device, optr_device, eptr_device, iter, x, y, z, N, M);
+	eigenmapscu_kern<<<blocks, threads, sharedMem>>>(imgcov2_device_filled, imgcov2_device, optr_device, eptr_device, num_orthiter, x, y, z, N, M);
 	cudaDeviceSynchronize();
 
 	cudaError_t cu_error = cudaGetLastError();
