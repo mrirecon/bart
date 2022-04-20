@@ -1,5 +1,5 @@
 variables:
-  OMP_NUM_THREADS: "8"
+  OMP_NUM_THREADS: "1"
 
 
 before_script:
@@ -18,8 +18,6 @@ Build:
   stage: build
   script:
     - make all
-  tags: 
-    - cpu
   artifacts:
     paths:
       - bart
@@ -33,8 +31,6 @@ Build_Clang:
   script:
     - apt-get install -y clang-11 libblocksruntime-dev
     - CC=clang-11 OMP=0 make all
-  tags: 
-    - cpu
   artifacts:
     paths:
       - bart
@@ -48,8 +44,6 @@ Build_Static:
   script:
     - apt-get install -y libgfortran-10-dev
     - SLINK=1 make
-  tags: 
-    - cpu
   artifacts:
     paths:
       - bart
@@ -62,8 +56,6 @@ Build_UBSan:
   stage: build
   script:
     - CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make all
-  tags: 
-    - cpu
   artifacts:
     paths:
       - bart
@@ -76,8 +68,6 @@ Build_GPU:
   stage: build
   script:
     - CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make all
-  tags:
-    - cuda
   artifacts:
     paths:
       - bart
@@ -93,8 +83,6 @@ Build_Tensorflow:
     - wget https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
     - mkdir tensorflow && tar -C tensorflow -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
     - TENSORFLOW=1 TENSORFLOW_BASE=./tensorflow/ CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make
-  tags:
-    - cuda
   artifacts:
     paths:
       - bart
@@ -107,8 +95,6 @@ Unit_Test:
   stage: test1
   script:
     - AUTOCLEAN=0 make utest
-  tags:
-    - cpu
   needs: [Build]
   dependencies:
      - Build
@@ -120,8 +106,6 @@ Unit_Test_Clang:
   script:
     - apt-get install -y clang-11 libblocksruntime-dev
     - AUTOCLEAN=0 CC=clang-11 OMP=0 make utest
-  tags:
-    - cpu
   needs: [Build_Clang]
   dependencies:
      - Build_Clang
@@ -133,8 +117,6 @@ Unit_Test_Valgrind:
   script:
     - apt-get install -y valgrind
     - AUTOCLEAN=0 UTESTLEAK=1 make utest
-  tags:
-    - cpu
   needs: [Build]
   dependencies:
      - Build
@@ -145,8 +127,6 @@ Unit_Test_UBSan:
   stage: test1
   script:
     - AUTOCLEAN=0 CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make utest
-  tags:
-    - cpu
   needs: [Build_UBSan]
   dependencies:
      - Build_UBSan
@@ -157,8 +137,6 @@ Unit_Test_GPU:
   stage: test1
   script:
     - AUTOCLEAN=0 CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make utest_gpu
-  tags:
-    - cuda
   needs: [Build_GPU]
   dependencies:
     - Build_GPU
@@ -172,8 +150,6 @@ Unit_Test_Tensorflow:
     - wget https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
     - mkdir tensorflow && tar -C tensorflow -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
     - TENSORFLOW=1 TENSORFLOW_BASE=./tensorflow/ CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make utest
-  tags:
-    - cuda
   needs: [Build_Tensorflow]
   dependencies:
     - Build_Tensorflow
@@ -185,8 +161,6 @@ Integration_Test:
   stage: test2
   script:
     - AUTOCLEAN=0 make test testslow
-  tags:
-    - cpu
   needs: [Build]
   dependencies:
     - Build
@@ -198,8 +172,6 @@ Integration_Test_Python:
   script:
     - apt-get install -y python3 python3-numpy
     - AUTOCLEAN=0 make pythontest
-  tags:
-    - cpu
   needs: [Build]
   dependencies:
     - Build
@@ -211,8 +183,6 @@ Integration_Test_GPU:
   stage: test2
   script:
     - AUTOCLEAN=0 CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make gputest
-  tags:
-    - cuda
   needs: [Build_GPU]
   dependencies:
     - Build_GPU
@@ -224,8 +194,6 @@ Integration_Test_Clang:
   script:
     - apt-get install -y clang-11 libblocksruntime-dev
     - AUTOCLEAN=0 CC=clang-11 OMP=0 make test
-  tags:
-    - cpu
   needs: [Build_Clang]
   dependencies:
     - Build_Clang
@@ -236,8 +204,6 @@ Integration_Test_UBSan:
   stage: test2
   script:
     - AUTOCLEAN=0 CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make test
-  tags:
-    - cpu
   needs: [Build_UBSan]
   dependencies:
     - Build_UBSan
