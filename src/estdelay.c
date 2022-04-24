@@ -84,10 +84,6 @@ int main_estdelay(int argc, char* argv[argc])
 	long tdims[DIMS];
 	const complex float* traj = load_cfl(traj_file, DIMS, tdims);
 
-	long tdims1[DIMS];
-	md_select_dims(DIMS, ~MD_BIT(1), tdims1, tdims);
-
-	complex float* traj1 = md_alloc(DIMS, tdims1, CFL_SIZE);
 
 	int N = tdims[2];
 
@@ -95,27 +91,9 @@ int main_estdelay(int argc, char* argv[argc])
 
 	traj_radial_angles(N, angles, tdims, traj);
 
-	// Extract what would be the DC component in Cartesian sampling
+	float dc_shift = traj_radial_dcshift(tdims, traj);
+	float shift1 = traj_radial_dk(tdims, traj);
 
-	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 }, tdims, traj1, traj, CFL_SIZE);
-
-	NESTED(float, dist, (int i))
-	{
-		return sqrtf(powf(crealf(traj1[3 * i + 0]), 2.) + pow(crealf(traj1[3 * i + 1]), 2.));
-	};
-
-	float dc_shift = dist(0);
-
-	for (int i = 0; i < N; i++)
-		if (fabsf(dc_shift - dist(i)) > 0.0001)
-			debug_printf(DP_WARN, "Inconsistently shifted spoke: %d %f != %f\n", i, dist(i), dc_shift);
-
-
-	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 + 1 }, tdims, traj1, traj, CFL_SIZE);
-
-	float shift1 = dist(0) - dc_shift;
-
-	md_free(traj1);
 
 	debug_printf(DP_WARN, "DC is shifted by: %f [sample], 1 sample = %f [1/FOV]\n", dc_shift, shift1);
 
