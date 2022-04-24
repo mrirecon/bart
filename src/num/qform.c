@@ -24,12 +24,12 @@ float quadratic_form(const float qf[3], float phi)
 }
 
 
-void fit_quadratic_form(float qf[3], unsigned int N, const float phi[N], const float v[N])
+void fit_quadratic_form(float qf[3], int N, const float phi[N], const float v[N])
 {
 	complex float lhs[3] = { 0., 0., 0. };
 	complex float mat[3][3] = { { 0. } };
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		float x = cosf(phi[i]);
 		float y = sinf(phi[i]);
@@ -61,12 +61,18 @@ void fit_quadratic_form(float qf[3], unsigned int N, const float phi[N], const f
 }
 
 
-void fit_harmonic(float qf[3], unsigned int N, const float phi[N], const float v[N])
+float harmonic(const float qf[3], float phi)
+{
+	return qf[0] * cosf(phi) + qf[1] * sinf(phi) + qf[2];
+}
+
+
+void fit_harmonic(float qf[3], int N, const float phi[N], const float v[N])
 {
 	complex float lhs[3] = { 0., 0., 0. };
 	complex float mat[3][3] = { { 0. } };
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		float x = cosf(phi[i]);
 		float y = sinf(phi[i]);
@@ -83,7 +89,7 @@ void fit_harmonic(float qf[3], unsigned int N, const float phi[N], const float v
 		mat[1][2] += y;
 		mat[2][0] += x;
 		mat[2][1] += y;
-		mat[2][2] += 1;
+		mat[2][2] += 1.;
 	}
 
 	complex float inv[3][3];
