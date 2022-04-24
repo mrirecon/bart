@@ -89,14 +89,11 @@ int main_estdelay(int argc, char* argv[argc])
 
 	complex float* traj1 = md_alloc(DIMS, tdims1, CFL_SIZE);
 
-	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ 0 }, tdims, traj1, traj, CFL_SIZE);
-
 	int N = tdims[2];
 
 	float angles[N];
 
-	for (int i = 0; i < N; i++)
-		angles[i] = M_PI + atan2f(crealf(traj1[3 * i + 0]), crealf(traj1[3 * i + 1]));
+	traj_radial_angles(N, angles, tdims, traj);
 
 	// Extract what would be the DC component in Cartesian sampling
 

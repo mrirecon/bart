@@ -301,3 +301,23 @@ void estimate_fast_sq_im_dims(unsigned int N, long dims[3], const long tdims[N],
 		dims[j] = (0. == max_dims[j]) ? 1 : fast_size;
 }
 
+
+
+void traj_radial_angles(int N, float angles[N], const long tdims[DIMS], const complex float* traj)
+{
+	assert(N == tdims[2]);
+
+	long tdims1[DIMS];
+	md_select_dims(DIMS, ~MD_BIT(1), tdims1, tdims);
+
+	complex float* traj1 = md_alloc(DIMS, tdims1, CFL_SIZE);
+
+	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ 0 }, tdims, traj1, traj, CFL_SIZE);
+
+	for (int i = 0; i < N; i++)
+		angles[i] = M_PI + atan2f(crealf(traj1[3 * i + 0]), crealf(traj1[3 * i + 1]));
+
+	md_free(traj1);
+}
+
+

@@ -73,6 +73,9 @@ extern void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize
 extern void estimate_im_dims(int N, unsigned long flags, long dims[__VLA(N)], const long tdims[__VLA(N)], const _Complex float* traj);
 extern void estimate_fast_sq_im_dims(unsigned int N, long dims[3], const long tdims[N], const _Complex float* traj);
 
+extern void traj_radial_angles(int N, float angles[N], const long tdims[DIMS], const _Complex float* traj);
+
+
 #include "misc/cppwrap.h"
 
 #endif	// __MRI_H
