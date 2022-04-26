@@ -89,7 +89,7 @@ function [varargout] = bart(cmd, varargin)
 	if ispc % running windows?
         if isWSL
 			% For WSL and modify paths
-			cmdWSL = wslPathCorrection(cmd);
+			cmdWSL = cmd;
 			in_strWSL = wslPathCorrection(in_str);
 			out_strWSL =  wslPathCorrection(out_str);
 			final_strWSL = ['wsl ', bart_path, '/bart ', cmdWSL, ' ', in_strWSL, ' ', out_strWSL];
