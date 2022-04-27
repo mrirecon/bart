@@ -19,7 +19,7 @@
 static bool test_sinc_integral(void)
 {
 
-struct simdata_pulse pulse = simdata_pulse_defaults;
+        struct simdata_pulse pulse = simdata_pulse_defaults;
 
         sinc_pulse_create(&pulse, 0., 0.001, 180., 0., 4., 0.46);
 
