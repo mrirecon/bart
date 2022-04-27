@@ -193,6 +193,7 @@ static bool test_ode_irbssfp_simulation(void)
 	sim_data.seq.te = 0.0015;
 	sim_data.seq.rep_num = repetition;
 	sim_data.seq.spin_num = 1;
+        sim_data.seq.perfect_inversion = true;
 	sim_data.seq.inversion_pulse_length = 0.;
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
@@ -441,6 +442,7 @@ static bool test_ode_epg_relation(void)
 	sim_data.seq.rep_num = 1;
 	sim_data.seq.spin_num = 1;
 	sim_data.seq.inversion_pulse_length = 0.;
+        sim_data.seq.perfect_inversion = true;
 	sim_data.seq.prep_pulse_length = 0.;
 
 	sim_data.voxel = simdata_voxel_defaults;
@@ -542,6 +544,7 @@ static bool test_hp_irbssfp_simulation(void)
 	sim_data.seq.te = 0.0015;
 	sim_data.seq.rep_num = repetition;
 	sim_data.seq.spin_num = 1;
+        sim_data.seq.perfect_inversion = true;
 	sim_data.seq.inversion_pulse_length = 0.;
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
@@ -783,3 +786,50 @@ static bool test_ode_z_gradient_refocus(void)
 }
 
 UT_REGISTER_TEST(test_ode_z_gradient_refocus);
+
+
+// Test inversion pulse
+static bool test_ode_inversion(void)
+{
+        enum { N = 3 };              // Number of dimensions (x, y, z)
+	enum { P = 4 };              // Number of parameters with estimated derivative (Mxy, R1, R2, B1)
+
+        struct sim_data data;
+
+        data.seq = simdata_seq_defaults;
+        data.seq.seq_type = 2;
+        data.seq.tr = 0.001;
+        data.seq.te = 0.001;
+        data.seq.rep_num = 1;
+        data.seq.spin_num = 1;
+        data.seq.inversion_pulse_length = 0.01;
+        data.seq.inversion_spoiler = 0.005;
+
+        data.voxel = simdata_voxel_defaults;
+        data.voxel.r1 = 0.;
+        data.voxel.r2 = 0.;
+        data.voxel.m0 = 1;
+        data.voxel.w = 0;
+
+        data.pulse = simdata_pulse_defaults;
+        data.pulse.flipangle = 0.;
+        data.pulse.rf_end = 0.01;
+
+        data.grad = simdata_grad_defaults;
+        data.tmp = simdata_tmp_defaults;
+
+        float xp[P][N] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
+
+        float h = 10E-5;
+        float tol = 0.005; // >99.5% inversion efficiency
+
+        inversion(&data, h, tol, N, P, xp, 0., 0.005);
+
+        bart_printf("%f, %f, %f\n", xp[0][0], xp[0][1], xp[0][2]);
+
+        UT_ASSERT(fabs(xp[0][2] + 1.) < tol);
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_ode_inversion);

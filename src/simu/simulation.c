@@ -387,15 +387,33 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 
 /* ------------ Sequence Specific Blocks -------------- */
 
-static void inversion(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end)
+void inversion(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end)
 {
 	struct sim_data inv_data = *data;
 
-        // Perfect inversion
-        for (int p = 0; p < P; p++)
-                bloch_excitation2(xp[p], xp[p], M_PI, 0.);
+        if (data->seq.perfect_inversion) {
 
-        relaxation2(&inv_data, h, tol, N, P, xp, st, end);
+                // Apply perfect inversion
+
+                for (int p = 0; p < P; p++)
+                        bloch_excitation2(xp[p], xp[p], M_PI, 0.);
+
+                relaxation2(&inv_data, h, tol, N, P, xp, st, end);
+        }
+        else {
+                // Hyperbolic Secant inversion
+
+                inv_data.pulse.hs = hs_pulse_defaults;
+                inv_data.pulse.hs.on = true;
+                inv_data.pulse.hs.duration = data->seq.inversion_pulse_length;
+                inv_data.pulse.rf_end = data->seq.inversion_pulse_length;
+
+                start_rf_pulse(&inv_data, h, tol, N, P, xp);
+
+                // Spoiler gradients
+                inv_data.tmp.r2spoil = 10000.;
+                relaxation2(&inv_data, h, tol, N, P, xp, st, end);
+        }
 }
 
 
@@ -466,7 +484,7 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
 
                 if (    (IRBSSFP == data->seq.seq_type) ||
                         (IRFLASH == data->seq.seq_type))
-                        inversion(data, h, tol, N, P, xp, 0., data->seq.inversion_pulse_length);
+                        inversion(data, h, tol, N, P, xp, 0., data->seq.inversion_spoiler);
 
 
                 // Alpha/2 and TR/2 signal preparation
