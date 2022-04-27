@@ -137,4 +137,69 @@ void bloch_matrix_ode(float matrix[4][4], float r1, float r2, const float gb[3])
 }
 
 
+void bloch_matrix_int(float matrix[4][4], float t, float r1, float r2, const float gb[3])
+{
+	float blm[4][4];
+	bloch_matrix_ode(blm, r1, r2, gb);
+
+	mat_exp(4, t, matrix, blm);
+}
+
+
+void bloch_matrix_ode_sa(float matrix[10][10], float r1, float r2, const float gb[3])
+{
+	float m0 = 1.;
+	float m[10][10] = {
+		{	-r2,	gb[2],	-gb[1],	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
+		{	-gb[2],	-r2,	gb[0],	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
+		{	gb[1],	-gb[0],	-r1,	0.,	0.,	0.,	0.,	0.,	0.,	m0 * r1 },
+		{	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.,	0.,	0.,	0.	},
+		{	0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.,	0.,	0.,	0.	},
+		{	0.,	0.,	-1.,	gb[1],	-gb[0],	-r1,	0.,	0.,	0.,	m0	},
+		{	-1.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
+		{	0.,	-1.,	0.,	0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.	},
+		{	0.,	0.,	0.,	0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.	},
+		{	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
+	};
+
+	matf_copy(10, 10, matrix, m);
+}
+
+void bloch_matrix_int_sa(float matrix[10][10], float t, float r1, float r2, const float gb[3])
+{
+	float blm[10][10];
+	bloch_matrix_ode_sa(blm, r1, r2, gb);
+
+	mat_exp(10, t, matrix, blm);
+}
+
+void bloch_matrix_ode_sa2(float matrix[13][13], float r1, float r2, const float gb[3], float phase, float fa)
+{
+	float m0 = 1.;
+	float m[13][13] = {
+		{	-r2,		gb[2],		-gb[1],		0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
+		{	-gb[2],		-r2,		gb[0],		0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
+		{	gb[1],		-gb[0],		-r1,		0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	m0 * r1 },
+		{	0.,		0.,		0.,		-r2,	gb[2],	-gb[1],	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
+		{	0.,		0.,		0.,		-gb[2],	-r2,	gb[0],	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
+		{	0.,		0.,		-1.,		gb[1],	-gb[0],	-r1,	0.,	0.,	0.,	0.,	0.,	0.,	m0	},
+		{	-1.,		0.,		0.,		0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.,	0.,	0.,	0.	},
+		{	0.,		-1.,		0.,		0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.,	0.,	0.,	0.	},
+		{	0.,		0.,		0.,		0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.,	0.,	0.,	0.	},
+		{	0.,		0.,		-sinf(phase)*fa,0.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
+		{	0.,		0.,		cosf(phase)*fa,	0.,	0.,	0.,	0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.	},
+		{	sinf(phase)*fa,	-cosf(phase)*fa,0.,		0.,	0.,	0.,	0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.	},
+		{	0.,		0.,		0.,		0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
+	};
+
+	matf_copy(13, 13, matrix, m);
+}
+
+void bloch_matrix_int_sa2(float matrix[13][13], float t, float r1, float r2, const float gb[3], float phase, float fa)
+{
+	float blm[13][13];
+	bloch_matrix_ode_sa2(blm, r1, r2, gb, phase, fa);
+
+	mat_exp(13, t, matrix, blm);
+}
 
