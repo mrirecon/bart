@@ -145,7 +145,7 @@ static void bloch_simu_fun(void* _data, float* out, float t, const float* in)
 	if (data->seq.pulse_applied) {
 
                 // Hyperbolic Secant pulse
-                if (true == data->pulse.hs.on) {
+                if (data->pulse.hs.on) {
 
                         data->tmp.w1 = pulse_hypsec_am(&data->pulse.hs, t);
 
@@ -184,7 +184,6 @@ static void adc_corr(int N, int P, float out[P][N], float in[P][N], float angle)
 static long vector_position(int d, int r, int rep_max, int s, int spin_max)
 {
         return d * spin_max * rep_max + r * spin_max + s;
-
 }
 
 
@@ -362,13 +361,15 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
         if (get_signal)
 		collect_signal(data, N, P, mxy, sa_r1, sa_r2, sa_b1, xp);
 
-#if 1	// Smooth spoiling for FLASH sequences
-	if (    (FLASH == data->seq.seq_type) ||
-                (IRFLASH == data->seq.seq_type))
+
+	// Smooth spoiling for FLASH sequences
+
+	if ((FLASH == data->seq.seq_type) || (IRFLASH == data->seq.seq_type))
 		data->tmp.r2spoil = 10000.;
-#endif
+
 
         // Balance z-gradient for bSSFP type sequences
+
         if ((BSSFP == data->seq.seq_type) || (IRBSSFP == data->seq.seq_type)) {
 
                 relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr-data->pulse.rf_end);
@@ -443,7 +444,6 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
 
         enum { N = 3 };         // Number of dimensions (x, y, z)
 	enum { P = 4 };         // Number of parameters with estimated derivative (Mxy, R1, R2, B1)
-
 
         long storage_size = data->seq.spin_num * data->seq.rep_num * 3 * sizeof(float);
 
