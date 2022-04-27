@@ -138,9 +138,9 @@ static void bloch_pdp2(void* _data, float* out, float t, const float* in)
 
 /* ------------ Bloch Equation -------------- */
 
-static void bloch_simu_fun(void* _data, float* out, float t, const float* in)
+static void set_gradients(void* _data, float t)
 {
-	struct sim_data* data = _data;
+        struct sim_data* data = _data;
 
 	if (data->seq.pulse_applied) {
 
@@ -168,6 +168,14 @@ static void bloch_simu_fun(void* _data, float* out, float t, const float* in)
 
 	// Units: [gb] = rad/s
 	data->grad.gb_eff[2] = data->grad.gb[2] + data->voxel.w;
+}
+
+
+static void bloch_simu_fun(void* _data, float* out, float t, const float* in)
+{
+        set_gradients(_data, t);
+
+	struct sim_data* data = _data;
 
 	bloch_ode(out, in, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
 }
