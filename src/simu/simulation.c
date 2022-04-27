@@ -140,7 +140,17 @@ static void bloch_simu_fun(void* _data, float* out, float t, const float* in)
 
 	if (data->seq.pulse_applied) {
 
-		data->tmp.w1 = pulse_sinc(&data->pulse, t);
+                // Hyperbolic Secant pulse
+                if (true == data->pulse.hs.on) {
+
+                        data->tmp.w1 = pulse_hypsec_am(&data->pulse.hs, t);
+
+                        data->pulse.phase = pulse_hypsec_phase(&data->pulse.hs, t);
+                }
+                //Windowed Sinc pulse
+                else {
+                        data->tmp.w1 = pulse_sinc(&data->pulse, t);
+                }
 
 		data->grad.gb_eff[0] = cosf(data->pulse.phase) * data->tmp.w1 * data->voxel.b1 + data->grad.gb[0];
 		data->grad.gb_eff[1] = sinf(data->pulse.phase) * data->tmp.w1 * data->voxel.b1 + data->grad.gb[1];

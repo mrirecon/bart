@@ -7,6 +7,7 @@
  */
 
 #include <math.h>
+#include <assert.h>
 
 #include "misc/misc.h"
 
@@ -29,7 +30,6 @@ const struct simdata_pulse simdata_pulse_defaults = {
 	.alpha = 0.46,
 	.A = 1.,
 };
-
 
 /* -------------------------------
 	Sinc Pulse
@@ -97,4 +97,50 @@ void sinc_pulse_create(struct simdata_pulse* pulse, float rf_start, float rf_end
 	pulse->flipangle = angle;
 
 	pulse->A = scaling / 90. * angle;
+}
+
+
+/* -------------------------------
+	Hyperbolic Secant Pulse
+ ---------------------------------
+ Reference:
+ 	Baum, J., Tycko, R. and Pines, A. (1985). 'Broadband and adiabatic
+        inversion of a two-level system by phase-modulated pulses'.
+        Phys. Rev. A., 32:3435-3447.
+
+ Overview:
+        Bernstein et al., Handbook of MRI Pulse Sequences, Chapter 6
+*/
+
+const struct hs_pulse hs_pulse_defaults = {
+
+	.a0 = 13000.,
+	.beta = 800.,
+	.mu = 4.9, /* sech(x)=0.01*/
+	.duration = 0.01,
+        .on = false,
+};
+
+static float sechf(float x)
+{
+	return 1./coshf(x);
+}
+
+float pulse_hypsec_am(const struct hs_pulse* pulse, float t /*[s]*/)
+{
+        //Check adiabatic condition
+        assert(pulse->a0 > sqrtf(pulse->mu)*pulse->beta);
+
+        return pulse->a0 * sechf(pulse->beta * (t-pulse->duration/2.));
+}
+
+float pulse_hypsec_fm(const struct hs_pulse* pulse, float t /*[s]*/)
+{
+	return -pulse->mu * pulse->beta * tanhf(pulse->beta * (t-pulse->duration/2.));
+}
+
+float pulse_hypsec_phase(const struct hs_pulse* pulse, float t /*[s]*/)
+{
+        return pulse->mu*logf(sechf(pulse->beta * (t-pulse->duration/2.)))
+                + pulse->mu*logf(pulse->a0);
 }

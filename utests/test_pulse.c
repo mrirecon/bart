@@ -164,3 +164,53 @@ static bool test_rf_pulse_ode(void)
 }
 
 UT_REGISTER_TEST(test_rf_pulse_ode);
+
+
+
+static bool test_hypsec_rf_pulse_ode(void)
+{
+        enum { N = 3 };              // Number of dimensions (x, y, z)
+	enum { P = 4 };              // Number of parameters with estimated derivative (Mxy, R1, R2, B1)
+
+        struct sim_data data;
+
+        data.seq = simdata_seq_defaults;
+        data.seq.seq_type = 2;
+        data.seq.tr = 0.001;
+        data.seq.te = 0.001;
+        data.seq.rep_num = 1;
+        data.seq.spin_num = 1;
+
+        data.voxel = simdata_voxel_defaults;
+        data.voxel.r1 = 0.;
+        data.voxel.r2 = 0.;
+        data.voxel.m0 = 1;
+        data.voxel.w = 0;
+
+        data.pulse = simdata_pulse_defaults;
+        data.pulse.flipangle = 0.;      // Turn off flipangle -> do not influence inversion efficiency
+        data.pulse.rf_end = 0.01;
+
+        // Hyperbolic Secant Characteristics
+        data.pulse.hs = hs_pulse_defaults;
+        data.pulse.hs.on = true;
+        data.pulse.hs.duration = data.pulse.rf_end;
+
+        data.grad = simdata_grad_defaults;
+        data.tmp = simdata_tmp_defaults;
+
+        float xp[P][N] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
+
+        float h = 10E-5;
+        float tol = 0.005; // >99.5% inversion efficiency
+
+        start_rf_pulse(&data, h, tol, N, P, xp);
+
+        bart_printf("%f, %f, %f\n", xp[0][0], xp[0][1], xp[0][2]);
+
+        UT_ASSERT(fabs(xp[0][2] + 1.) < tol);
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_hypsec_rf_pulse_ode);
