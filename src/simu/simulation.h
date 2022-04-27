@@ -6,6 +6,7 @@
 #define SIMULATION_H
 
 typedef enum sim_seq_t {BSSFP, IRBSSFP, FLASH, IRFLASH} sim_seq;
+typedef enum sim_type_t {ODE, STM} sim_type;
 
 struct simdata_voxel {
 
@@ -20,6 +21,8 @@ extern const struct simdata_voxel simdata_voxel_defaults;
 
 struct simdata_seq {
 
+
+        sim_type type;
 	sim_seq seq_type;
 	float tr;
 	float te;

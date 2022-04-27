@@ -82,6 +82,7 @@ const struct simdata_voxel simdata_voxel_defaults = {
 
 const struct simdata_seq simdata_seq_defaults = {
 
+        .type = ODE,
 	.seq_type = BSSFP,
 	.tr = 0.004,
 	.te = 0.002,
