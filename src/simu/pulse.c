@@ -31,6 +31,11 @@ const struct simdata_pulse simdata_pulse_defaults = {
 };
 
 
+/* -------------------------------
+	Sinc Pulse
+ ---------------------------------
+*/
+
 // Sinc definition
 static float sincf(float x)
 {
@@ -72,7 +77,7 @@ float sinc_integral(const struct simdata_pulse* pulse)
 
 // Assume symmetric windowed sinc pulses
 // 	- Ensure windowed sinc leads to 90 deg rotation if its integral is pi/2
-void pulse_create(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle /*[deg]*/, float phase, float bwtp, float alpha)
+void sinc_pulse_create(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle /*[deg]*/, float phase, float bwtp, float alpha)
 {
 	pulse->rf_start = rf_start;
 	pulse->rf_end = rf_end;

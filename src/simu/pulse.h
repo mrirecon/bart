@@ -23,7 +23,7 @@ extern float pulse_sinc(const struct simdata_pulse* pulse, float t);
 
 extern float sinc_integral(const struct simdata_pulse* pulse);
 
-extern void pulse_create(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle, float phase, float bwtp, float alpha);
+extern void sinc_pulse_create(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle, float phase, float bwtp, float alpha);
 
 #endif
 

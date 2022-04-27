@@ -21,7 +21,7 @@ static bool test_sinc_integral(void)
 
 struct simdata_pulse pulse = simdata_pulse_defaults;
 
-pulse_create(&pulse, 0., 0.001, 180., 0., 4., 0.46);
+        sinc_pulse_create(&pulse, 0., 0.001, 180., 0., 4., 0.46);
 
         if ((M_PI - sinc_integral(&pulse)) > 10E-7)
                 return 0;
@@ -36,7 +36,7 @@ static bool test_sinc_integral2(void)
 {
         struct simdata_pulse pulse = simdata_pulse_defaults;
 
-        pulse_create(&pulse, 0., 0.001, 180., 0., 4., 0.46);
+        sinc_pulse_create(&pulse, 0., 0.001, 180., 0., 4., 0.46);
 
 
         // Estimate integral with trapezoidal rule
@@ -121,7 +121,7 @@ static bool test_rf_pulse_ode(void)
 
 
                         // Prepare pulse
-			pulse_create(&data.pulse, 0., trf, angle, 0., 4., 0.46);
+			sinc_pulse_create(&data.pulse, 0., trf, angle, 0., 4., 0.46);
 
 			float xp[4][3] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
 
