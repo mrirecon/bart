@@ -26,7 +26,10 @@ struct simdata_seq {
 	int rep_num;
 	int spin_num;
 
+	bool perfect_inversion;
 	float inversion_pulse_length;
+        float inversion_spoiler;
+
 	float prep_pulse_length;
 
         bool pulse_applied;
