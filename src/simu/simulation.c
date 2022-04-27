@@ -354,7 +354,19 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 		data->tmp.r2spoil = 10000.;
 #endif
 
-	relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr);
+        // Balance z-gradient for bSSFP type sequences
+        if ((BSSFP == data->seq.seq_type) || (IRBSSFP == data->seq.seq_type)) {
+
+                relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr-data->pulse.rf_end);
+
+                data->grad.mom = -data->grad.mom_sl;
+
+                relaxation2(data, h, tol, N, P, xp, data->seq.tr-data->pulse.rf_end, data->seq.tr);
+
+                data->grad.mom = 0.;
+        }
+        else
+        	relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr);
 
 	data->tmp.r2spoil = 0.;	// effects spoiled sequences only
 }
