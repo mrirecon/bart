@@ -171,7 +171,7 @@ static void set_gradients(void* _data, float t)
 }
 
 
-static void bloch_simu_fun(void* _data, float* out, float t, const float* in)
+static void bloch_simu_ode_fun(void* _data, float* out, float t, const float* in)
 {
         set_gradients(_data, t);
 
@@ -289,7 +289,7 @@ static void ode_pulse(struct sim_data* data, float h, float tol, int N, int P, f
 	data->grad.gb[2] = data->grad.mom_sl; // [rad/s]
 
         // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
-	ode_direct_sa(h, tol, N, P-1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_fun, bloch_pdy2, bloch_pdp2);
+	ode_direct_sa(h, tol, N, P-1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
 
 	data->grad.gb[2] = 0.;
 }
@@ -334,7 +334,7 @@ static void ode_relaxation(struct sim_data* data, float h, float tol, int N, int
 	data->grad.gb[2] = data->grad.mom; // [rad/s], offresonance w appears in Bloch equation and can be skipped here
 
         // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
-	ode_direct_sa(h, tol, N, P-1, xp, st, end, data, bloch_simu_fun, bloch_pdy2, bloch_pdp2);
+	ode_direct_sa(h, tol, N, P-1, xp, st, end, data, bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
 
 	data->grad.gb[2] = 0.;
 }
