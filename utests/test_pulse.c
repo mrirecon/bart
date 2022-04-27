@@ -206,7 +206,7 @@ static bool test_hypsec_rf_pulse_ode(void)
 
         start_rf_pulse(&data, h, tol, N, P, xp);
 
-        bart_printf("%f, %f, %f\n", xp[0][0], xp[0][1], xp[0][2]);
+        // bart_printf("%f, %f, %f\n", xp[0][0], xp[0][1], xp[0][2]);
 
         UT_ASSERT(fabs(xp[0][2] + 1.) < tol);
 
