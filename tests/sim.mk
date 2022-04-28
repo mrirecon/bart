@@ -73,8 +73,42 @@ tests/test-sim-multi-relaxation: sim slice nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-sim-ode-stm-bssfp: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --sim bssfp,ODE,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0.01,ppl=0.00225,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --sim bssfp,STM,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0.01,ppl=0.00225,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_stm.ra ;\
+	$(TOOLDIR)/nrmse -t 0.003 simu_stm.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-ode-stm-irbssfp: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --sim ir-bssfp,ODE,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0.01,ppl=0.00225,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --sim ir-bssfp,STM,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0.01,ppl=0.00225,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_stm.ra ;\
+	$(TOOLDIR)/nrmse -t 0.003 simu_stm.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-ode-stm-flash: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --sim flash,ODE,tr=0.003,te=0.0017,nrep=1000,pinv,ipl=0.01,ppl=0,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --sim flash,STM,tr=0.003,te=0.0017,nrep=1000,pinv,ipl=0.01,ppl=0,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_stm.ra ;\
+	$(TOOLDIR)/nrmse -t 0.001 simu_stm.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-ode-stm-irflash: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --sim ir-flash,ODE,tr=0.003,te=0.0017,nrep=1000,pinv,ipl=0.01,ppl=0,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --sim ir-flash,STM,tr=0.003,te=0.0017,nrep=1000,pinv,ipl=0.01,ppl=0,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_stm.ra ;\
+	$(TOOLDIR)/nrmse -t 0.001 simu_stm.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
 TESTS += tests/test-sim-ode-hp-irflash tests/test-sim-ode-hp-flash
 TESTS += tests/test-sim-ode-hp-irbssfp tests/test-sim-ode-hp-bssfp
 TESTS += tests/test-sim-multi-relaxation
+TESTS += tests/test-sim-ode-stm-bssfp tests/test-sim-ode-stm-irbssfp
+TESTS += tests/test-sim-ode-stm-flash tests/test-sim-ode-stm-irflash
