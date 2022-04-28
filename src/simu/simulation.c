@@ -180,9 +180,9 @@ static void set_gradients(void* _data, float t)
 
 static void bloch_simu_ode_fun(void* _data, float* out, float t, const float* in)
 {
-        set_gradients(_data, t);
+        struct sim_data* data = _data;
 
-	struct sim_data* data = _data;
+        set_gradients(data, t);
 
 	bloch_ode(out, in, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
 }
