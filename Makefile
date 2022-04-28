@@ -384,8 +384,8 @@ endif
 
 # sm_20 no longer supported in CUDA 9
 GPUARCH_FLAGS ?=
-NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O3 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
-#NVCCFLAGS = -Xcompiler -fPIC -Xcompiler -fopenmp -O3  -I$(srcdir)/
+NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O2 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
+#NVCCFLAGS = -Xcompiler -fPIC -Xcompiler -fopenmp -O2  -I$(srcdir)/
 
 
 %.o: %.cu

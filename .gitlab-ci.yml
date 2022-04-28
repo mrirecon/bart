@@ -55,7 +55,7 @@ Build_UBSan:
   image: debian:testing
   stage: build
   script:
-    - CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make all
+    - CFLAGS="-O2 -fsanitize=undefined -fsanitize=address" make all
   artifacts:
     paths:
       - bart
@@ -126,7 +126,7 @@ Unit_Test_UBSan:
   image: debian:testing
   stage: test1
   script:
-    - AUTOCLEAN=0 CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make utest
+    - AUTOCLEAN=0 CFLAGS="-O2 -fsanitize=undefined -fsanitize=address" make utest
   needs: [Build_UBSan]
   dependencies:
      - Build_UBSan
@@ -203,7 +203,7 @@ Integration_Test_UBSan:
   image: debian:stable
   stage: test2
   script:
-    - AUTOCLEAN=0 CFLAGS="-O3 -ffast-math -fsanitize=undefined -fsanitize=address" make test
+    - AUTOCLEAN=0 CFLAGS="-O2 -fsanitize=undefined -fsanitize=address" make test
   needs: [Build_UBSan]
   dependencies:
     - Build_UBSan
