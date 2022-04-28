@@ -67,6 +67,13 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tt0:%f\n", data->pulse.t0);
         debug_printf(DP_INFO, "\tAlpha:%f\n", data->pulse.alpha);
         debug_printf(DP_INFO, "\tA:%f\n\n", data->pulse.A);
+
+        debug_printf(DP_WARN, "Inversion Pulse-Parameter:\n");
+        debug_printf(DP_INFO, "\tA0:%f\n", data->pulse.hs.a0);
+        debug_printf(DP_INFO, "\tBeta:%f\n", data->pulse.hs.beta);
+        debug_printf(DP_INFO, "\tMu:%f\n", data->pulse.hs.mu);
+        debug_printf(DP_INFO, "\tDuration:%f\n", data->pulse.hs.duration);
+        debug_printf(DP_INFO, "\tON?:%d\n", data->pulse.hs.on);
 }
 
 
