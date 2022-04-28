@@ -187,6 +187,107 @@ static void bloch_simu_ode_fun(void* _data, float* out, float t, const float* in
 	bloch_ode(out, in, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
 }
 
+
+/* --------- Matrix Operations --------- */
+
+
+static void vm_mul_transpose(int N, float out[N], float matrix[N][N], float in[N])
+{
+	for (int i = 0; i < N; i++) {
+
+		out[i] = 0.;
+
+		for (int j = 0; j < N; j++)
+			out[i] += matrix[j][i] * in[j];
+	}
+}
+
+
+static void mm_mul(int N, float out[N][N], float in1[N][N], float in2[N][N])
+{
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++) {
+
+			out[i][j] = 0.;
+
+			for (int k = 0; k < N; k++)
+				out[i][j] += in1[i][k] * in2[k][j];
+		}
+}
+
+
+/* ---------  State-Transition Matrix Simulation --------- */
+
+
+static void bloch_simu_stm_fun(void* _data, float* out, float t, const float* in)
+{
+        struct ode_matrix_simu_s* ode_data = _data;
+	struct sim_data* data = ode_data->sim_data;
+
+        unsigned int N = ode_data->N;
+
+        set_gradients(data, t);
+
+	float matrix_time[N][N];
+
+	bloch_matrix_ode_sa2(matrix_time, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+
+        for (unsigned int i = 0; i < N; i++) {
+
+		out[i] = 0.;
+
+		for (unsigned int j = 0; j < N; j++)
+			out[i] += matrix_time[i][j] * in[j];
+	}
+}
+
+
+void ode_matrix_interval_simu(struct sim_data* _data, float h, float tol, unsigned int N, float out[N], float st, float end)
+{
+        struct ode_matrix_simu_s data = { N, _data };
+	ode_interval(h, tol, N, out, st, end, &data, bloch_simu_stm_fun);
+}
+
+
+void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N][N])
+{
+	assert(end >= st);
+
+	// compute F(t) := exp(tA)
+	// F(0) = id
+	// d/dt F = A
+
+	float h = (end-st) / 100.;
+	float tol = 1.E-6;
+
+	for (int i = 0; i < N; i++) {
+
+		for (int j = 0; j < N; j++)
+			out[i][j] = (i == j) ? 1. : 0.;
+
+		ode_matrix_interval_simu(data, h, tol, N, out[i], st, end);
+	}
+}
+
+static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], float st, float end)
+{
+	if (data->seq.pulse_applied)
+		sinc_pulse_create(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
+
+	mat_exp_simu(data, N, st, end, matrix);
+}
+
+static void apply_sim_matrix(int N, float m[N], float matrix[N][N])
+{
+	float tmp[N];
+
+	for (int i = 0; i < N; i++)
+		tmp[i] = m[i];
+
+	vm_mul_transpose(N, m, matrix, tmp);
+}
+
+
 /* ------------ Read-Out -------------- */
 
 static void adc_corr(int N, int P, float out[P][N], float in[P][N], float angle)
@@ -355,6 +456,24 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
 		hard_relaxation(data, N, P, xp, st, end);
 	else
 		ode_relaxation(data, h, tol, N, P, xp, st, end);
+
+/* ------------ Conversion ODE -> STM -------------- */
+
+
+static void stm2ode(int N, int P, float out[P][N], float in[P*N+1])
+{
+        for (int p = 0; p < P; p++)
+                for(int n = 0; n < N; n++)
+                        out[p][n] = in[p*N+n];
+}
+
+static void ode2stm(int N, int P, float out[P*N+1], float in[P][N])
+{
+        for (int p = 0; p < P; p++)
+                for(int n = 0; n < N; n++)
+                        out[p*N+n] = in[p][n];
+
+        out[P*N] = 1.;
 }
 
 
