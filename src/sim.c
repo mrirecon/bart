@@ -58,6 +58,7 @@ int main_sim(int argc, char* argv[argc])
 	data.seq = simdata_seq_defaults;
 	data.voxel = simdata_voxel_defaults;
 	data.pulse = simdata_pulse_defaults;
+        data.pulse.hs = hs_pulse_defaults;
 	data.grad = simdata_grad_defaults;
 	data.tmp = simdata_tmp_defaults;
 
