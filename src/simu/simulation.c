@@ -174,9 +174,11 @@ static void set_gradients(void* _data, float t)
 	}
 
 	// Units: [gb] = rad/s
-	data->grad.gb_eff[2] = data->grad.gb[2] + data->voxel.w;
+	data->grad.gb_eff[2] = data->grad.gb[2];
 }
 
+
+/* --------- ODE Simulation --------- */
 
 static void bloch_simu_ode_fun(void* _data, float* out, float t, const float* in)
 {
@@ -382,35 +384,37 @@ static void sum_up_signal(struct sim_data* data, float *mxy,  float *sa_r1, floa
 // Single hard pulse without discrete sampling
 static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 {
-	data->grad.gb[2] = (data->grad.mom_sl + data->voxel.w);	//[rad/s]
-
         for (int i = 0; i < P; i++)
                 bloch_excitation2(xp[i], xp[i], data->pulse.flipangle/180.*M_PI, data->pulse.phase);
-
-        data->grad.gb[2] = 0.;
 }
 
 
 static void ode_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N])
 {
-	// Turn on potential slice-selection gradient
-	data->grad.gb[2] = data->grad.mom_sl; // [rad/s]
-
-        // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
+	// Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
 	ode_direct_sa(h, tol, N, P-1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
-
-	data->grad.gb[2] = 0.;
 }
 
 
-void start_rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N])
+void start_rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P*N][P*N])
 {
 	data->seq.pulse_applied = true;
 
-	if (0. == data->pulse.rf_end)
-		hard_pulse(data, N, P, xp);
-	else
-		ode_pulse(data, h, tol, N, P, xp);
+        // Define effective z Gradient = Slice-selection gradient + off-resonance [rad/s]
+	data->grad.gb[2] = data->grad.mom_sl + data->voxel.w;
+
+        if (ODE == data->seq.type) {
+
+                if (0. == data->pulse.rf_end)
+                        hard_pulse(data, N, P, xp);
+                else
+                        ode_pulse(data, h, tol, N, P, xp);
+
+        } else { // STM
+                create_sim_matrix(data, P*N, stm_matrix, data->pulse.rf_start, data->pulse.rf_end);
+        }
+
+        data->grad.gb[2] = 0.;
 }
 
 
@@ -420,8 +424,6 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 {
 	float xp2[3] = { 0. };
 
-	data->grad.gb[2] = (data->grad.mom + data->voxel.w); // [rad/s]
-
 	for (int i = 0; i < P; i++) {
 
 		xp2[0] = xp[i][0];
@@ -430,32 +432,37 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 
 		bloch_relaxation(xp[i], end-st, xp2, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb);
 	}
-
-	data->grad.gb[2] = 0.;
 }
 
 
 static void ode_relaxation(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end)
 {
-	data->seq.pulse_applied = false;
-
-	data->grad.gb[2] = data->grad.mom; // [rad/s], offresonance w appears in Bloch equation and can be skipped here
-
         // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
 	ode_direct_sa(h, tol, N, P-1, xp, st, end, data, bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
-
-	data->grad.gb[2] = 0.;
 }
 
 
-static void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end)
+static void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P*N][P*N])
 {
 	data->seq.pulse_applied = false;
 
-        if (0. == data->pulse.rf_end)
-		hard_relaxation(data, N, P, xp, st, end);
-	else
-		ode_relaxation(data, h, tol, N, P, xp, st, end);
+        // Define effective z Gradient =Gradient Moments + off-resonance [rad/s]
+        data->grad.gb[2] = data->grad.mom + data->voxel.w;
+
+        if (ODE == data->seq.type) {
+
+                if (0. == data->pulse.rf_end)
+                        hard_relaxation(data, N, P, xp, st, end);
+                else
+                        ode_relaxation(data, h, tol, N, P, xp, st, end);
+
+        } else { // STM
+                create_sim_matrix(data, P*N, stm_matrix, st, end);
+        }
+
+        data->grad.gb[2] = 0.;
+}
+
 
 /* ------------ Conversion ODE -> STM -------------- */
 
@@ -479,45 +486,123 @@ static void ode2stm(int N, int P, float out[P*N+1], float in[P][N])
 
 /* ------------ Structural Elements -------------- */
 
-static void prepare_sim(struct sim_data* data)
+static void prepare_sim(struct sim_data* data, int N, int P, float mte[P*N+1][P*N+1], float mtr[P*N+1][P*N+1])
 {
-        if (0. != data->pulse.rf_end)
-        	sinc_pulse_create(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
+        switch(data->seq.type) {
+
+        case ODE:
+        {
+                if (0. != data->pulse.rf_end)
+                	sinc_pulse_create(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
+
+                break;
+        }
+
+        case STM:
+        {
+                int M = P*N+1;
+
+                // Matrix: 0 -> T_RF
+                float mrf[M][M];
+                start_rf_pulse(data, 0., 0., M, 1, NULL, mrf);
+
+                // Matrix: T_RF -> TE
+                float mrel[M][M];
+                relaxation2(data, 0., 0., M, 1, NULL, data->pulse.rf_end, data->seq.te, mrel);
+
+                // Join matrices: 0 -> TE
+                mm_mul(M, mte, mrf, mrel);
+
+                // Smooth spoiling for FLASH sequences
+
+                if ((FLASH == data->seq.seq_type) || (IRFLASH == data->seq.seq_type))
+		data->tmp.r2spoil = 10000.;
+
+                // Balance z-gradient for bSSFP type sequences
+
+                if ((BSSFP == data->seq.seq_type) || (IRBSSFP == data->seq.seq_type)) {
+
+                        // Matrix: TE -> TR-T_RF
+                        float mrel2[M][M];
+                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr-data->pulse.rf_end, mrel2);
+
+                        // Matrix: TR-T_RF -> TR
+                        float mrel3[M][M];
+                        data->grad.mom = -data->grad.mom_sl;
+                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.tr-data->pulse.rf_end, data->seq.tr, mrel3);
+                        data->grad.mom = 0.;
+
+                        // Join matrices: TE -> TR
+                        mm_mul(M, mtr, mrel2, mrel3);
+                }
+                else
+                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, mtr);
+
+                data->tmp.r2spoil = 0.;	// effects spoiled sequences only
+
+                break;
+        }
+        }
+
 }
 
 
-static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r2, float* sa_b1, float h, float tol, int N, int P, float xp[P][N], bool get_signal)
+static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r2, float* sa_b1,
+                        float h, float tol, int N, int P, float xp[P][N],
+                        float xstm[P*N+1], float mte[P*N+1][P*N+1], float mtr[P*N+1][P*N+1],
+                        bool get_signal)
 {
-	start_rf_pulse(data, h, tol, N, P, xp);
+        switch(data->seq.type) {
 
-	relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te);
+        case ODE:
+        {
+                start_rf_pulse(data, h, tol, N, P, xp, NULL);
 
-        if (get_signal)
-		collect_signal(data, N, P, mxy, sa_r1, sa_r2, sa_b1, xp);
+                relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
 
-
-	// Smooth spoiling for FLASH sequences
-
-	if ((FLASH == data->seq.seq_type) || (IRFLASH == data->seq.seq_type))
-		data->tmp.r2spoil = 10000.;
+                if (get_signal)
+                        collect_signal(data, N, P, mxy, sa_r1, sa_r2, sa_b1, xp);
 
 
-        // Balance z-gradient for bSSFP type sequences
+                // Smooth spoiling for FLASH sequences
 
-        if ((BSSFP == data->seq.seq_type) || (IRBSSFP == data->seq.seq_type)) {
+                if ((FLASH == data->seq.seq_type) || (IRFLASH == data->seq.seq_type))
+                        data->tmp.r2spoil = 10000.;
 
-                relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr-data->pulse.rf_end);
 
-                data->grad.mom = -data->grad.mom_sl;
+                // Balance z-gradient for bSSFP type sequences
 
-                relaxation2(data, h, tol, N, P, xp, data->seq.tr-data->pulse.rf_end, data->seq.tr);
+                if ((BSSFP == data->seq.seq_type) || (IRBSSFP == data->seq.seq_type)) {
 
-                data->grad.mom = 0.;
+                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr-data->pulse.rf_end, NULL);
+
+                        data->grad.mom = -data->grad.mom_sl;
+                        relaxation2(data, h, tol, N, P, xp, data->seq.tr-data->pulse.rf_end, data->seq.tr, NULL);
+                        data->grad.mom = 0.;
+                }
+                else
+                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL);
+
+                data->tmp.r2spoil = 0.;	// effects spoiled sequences only
+
+                break;
         }
-        else
-        	relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr);
 
-	data->tmp.r2spoil = 0.;	// effects spoiled sequences only
+        case STM:
+        {
+                // Evolution: 0 -> TE
+                apply_sim_matrix(N*P+1, xstm, mte);
+
+                // Save data
+                stm2ode(N, P, xp, xstm);
+                collect_signal(data, N, P, mxy, sa_r1, sa_r2, sa_b1, xp);
+
+                // Evolution: TE -> TR
+                apply_sim_matrix(N*P+1, xstm, mtr);
+
+                break;
+        }
+        }
 }
 
 
@@ -527,6 +612,9 @@ void inversion(struct sim_data* data, float h, float tol, int N, int P, float xp
 {
 	struct sim_data inv_data = *data;
 
+        // Enforce ODE: Way more efficient here!
+        inv_data.seq.type = ODE;
+
         if (data->seq.perfect_inversion) {
 
                 // Apply perfect inversion
@@ -534,7 +622,7 @@ void inversion(struct sim_data* data, float h, float tol, int N, int P, float xp
                 for (int p = 0; p < P; p++)
                         bloch_excitation2(xp[p], xp[p], M_PI, 0.);
 
-                relaxation2(&inv_data, h, tol, N, P, xp, st, end);
+                relaxation2(&inv_data, h, tol, N, P, xp, st, end, NULL);
         }
         else {
                 // Hyperbolic Secant inversion
@@ -544,11 +632,11 @@ void inversion(struct sim_data* data, float h, float tol, int N, int P, float xp
                 inv_data.pulse.hs.duration = data->seq.inversion_pulse_length;
                 inv_data.pulse.rf_end = data->seq.inversion_pulse_length;
 
-                start_rf_pulse(&inv_data, h, tol, N, P, xp);
+                start_rf_pulse(&inv_data, h, tol, N, P, xp, NULL);
 
                 // Spoiler gradients
                 inv_data.tmp.r2spoil = 10000.;
-                relaxation2(&inv_data, h, tol, N, P, xp, st, end);
+                relaxation2(&inv_data, h, tol, N, P, xp, st, end, NULL);
         }
 }
 
@@ -557,6 +645,9 @@ static void alpha_half_preparation(struct sim_data* data, float h, float tol, in
 {
 	struct sim_data prep_data = *data;
 
+        // Enforce ODE: Way more efficient here!
+        prep_data.seq.type = ODE;
+
         prep_data.pulse.flipangle = data->pulse.flipangle / 2.;
         prep_data.pulse.phase = M_PI;
         prep_data.seq.te = data->seq.prep_pulse_length;
@@ -564,9 +655,9 @@ static void alpha_half_preparation(struct sim_data* data, float h, float tol, in
 
         assert(prep_data.pulse.rf_end <= prep_data.seq.prep_pulse_length);
 
-        prepare_sim(&prep_data);
+        prepare_sim(&prep_data, N, P, NULL, NULL);
 
-        run_sim(&prep_data, NULL, NULL, NULL, NULL, h, tol, N, P, xp, false);
+        run_sim(&prep_data, NULL, NULL, NULL, NULL, h, tol, N, P, xp, NULL, NULL, NULL, false);
 }
 
 
@@ -579,6 +670,8 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
         enum { N = 3 };         // Number of dimensions (x, y, z)
 	enum { P = 4 };         // Number of parameters with estimated derivative (Mxy, R1, R2, B1)
 
+        enum { M = N*P+1 };     // STM based on single vector and additional +1 for linearized system matrix
+
         long storage_size = data->seq.spin_num * data->seq.rep_num * 3 * sizeof(float);
 
 	float* mxy = malloc(storage_size);
@@ -586,12 +679,12 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
 	float* sa_r2 = malloc(storage_size);
 	float* sa_b1 = malloc(storage_size);
 
-
 	float w_backup = data->voxel.w;
 	float zgradient_max = data->grad.mom_sl;
 
 	for (data->tmp.spin_counter = 0; data->tmp.spin_counter < data->seq.spin_num; data->tmp.spin_counter++) {
 
+                float h = 0.0001;
 
                 // Full Symmetric slice profile
 		//      - Calculate slice profile by looping over spins with z-gradient
@@ -603,17 +696,18 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
 			data->grad.mom_sl = zgradient_max/(data->seq.spin_num-1) * (data->tmp.spin_counter - (int)(data->seq.spin_num/2));
 		}
 
+                // ODE
 		float xp[P][N] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
 
-		float h = 0.0001;
+                // STM
+                float xstm[M] = { 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1. };
 
+
+                // Reset parameters
 		data->voxel.w = w_backup;
-
 		data->pulse.phase = 0;
-
                 data->tmp.t = 0;
                 data->tmp.rep_counter = 0;
-
 
                 // Apply perfect inversion
 
@@ -621,16 +715,34 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
                         (IRFLASH == data->seq.seq_type))
                         inversion(data, h, tol, N, P, xp, 0., data->seq.inversion_spoiler);
 
-
                 // Alpha/2 and TR/2 signal preparation
 
                 if (    (BSSFP == data->seq.seq_type) ||
                         (IRBSSFP == data->seq.seq_type))
                         alpha_half_preparation(data, h, tol, N, P, xp);
 
+                // if (STM == data->seq.type) printf("test\n");
 
-                prepare_sim(data);
+                float mte[M][M];
+                float mte2[M][M];
+                float mtr[M][M];
 
+                ode2stm(N, P, xstm, xp);
+
+                // STM requires two matrices for RFPhase=0 and RFPhase=PI
+                // Therefore mte and mte2 need to be estimated
+                // FIXME: Do not estimate mtr twice
+                if (    (BSSFP == data->seq.seq_type) ||
+                        (IRBSSFP == data->seq.seq_type)){
+
+                        data->pulse.phase = M_PI;
+                        prepare_sim(data, N, P, mte2, mtr);
+                        data->pulse.phase = 0.;
+
+                        prepare_sim(data, N, P, mte, mtr);
+
+                } else
+                        prepare_sim(data, N, P, mte, mtr);
 
                 // Loop over Pulse Blocks
 
@@ -640,10 +752,13 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
 
                         // Change phase of bSSFP sequence in each repetition block
                         if (    (BSSFP == data->seq.seq_type) ||
-                                (IRBSSFP == data->seq.seq_type))
+                                (IRBSSFP == data->seq.seq_type)) {
+
                                 data->pulse.phase = M_PI * (float)(data->tmp.rep_counter);
 
-                        run_sim(data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, true);
+                                run_sim(data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, ((0 == data->tmp.rep_counter%2) ? mte : mte2), mtr, true);
+                        } else
+                                run_sim(data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, mte, mtr, true);
 
                         data->tmp.rep_counter++;
                 }

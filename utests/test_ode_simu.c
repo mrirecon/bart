@@ -160,6 +160,139 @@ static bool test_ode_bloch_simulation_gradients(void)
 UT_REGISTER_TEST(test_ode_bloch_simulation_gradients);
 
 
+static bool test_stm_bloch_simulation_gradients(void)
+{
+	float e = 1.E-3;
+	float tol = 1.E-4;
+
+
+	struct sim_data sim_data;
+
+	sim_data.seq = simdata_seq_defaults;
+        sim_data.seq.type = STM;
+	sim_data.seq.seq_type = IRBSSFP;
+	sim_data.seq.tr = 0.003;
+	sim_data.seq.te = 0.0015;
+	sim_data.seq.rep_num = 500;
+	sim_data.seq.spin_num = 1;
+        sim_data.seq.inversion_pulse_length = 0.;
+	sim_data.seq.prep_pulse_length = sim_data.seq.te;
+
+	sim_data.voxel = simdata_voxel_defaults;
+	sim_data.voxel.r1 = 1. / WATER_T1;
+	sim_data.voxel.r2 = 1. / WATER_T2;
+	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.w = 0;
+	sim_data.voxel.b1 = 1.;
+
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.flipangle = 45.;
+	sim_data.pulse.rf_end = 0.0009;
+
+	sim_data.grad = simdata_grad_defaults;
+	sim_data.tmp = simdata_tmp_defaults;
+
+	float mxy_ref_sig[sim_data.seq.rep_num][3];
+	float sa_r1_ref_sig[sim_data.seq.rep_num][3];
+	float sa_r2_ref_sig[sim_data.seq.rep_num][3];
+	float sa_m0_ref_sig[sim_data.seq.rep_num][3];
+	float sa_b1_ref_sig[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxy_ref_sig, sa_r1_ref_sig, sa_r2_ref_sig, sa_m0_ref_sig, sa_b1_ref_sig);
+
+	/* ------------ R1 Partial Derivative Test -------------- */
+
+	float mxy_tmp_sig[sim_data.seq.rep_num][3];
+	float sa_r1_tmp_sig[sim_data.seq.rep_num][3];
+	float sa_r2_tmp_sig[sim_data.seq.rep_num][3];
+	float sa_m0_tmp_sig[sim_data.seq.rep_num][3];
+	float sa_b1_tmp_sig[sim_data.seq.rep_num][3];
+
+	struct sim_data data_r1 = sim_data;
+
+	data_r1.voxel.r1 += e;
+
+	bloch_simulation(&data_r1, mxy_tmp_sig, sa_r1_tmp_sig, sa_r2_tmp_sig, sa_m0_tmp_sig, sa_b1_tmp_sig);
+
+	float err = 0;
+
+	for (int i = 0; i < sim_data.seq.rep_num; i++)
+		for (int j = 0; j < 3; j++) {
+
+			err = fabsf(e * sa_r1_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
+
+			if (tol < err) {
+
+				printf("Error T1: (%d,%d)\t=>\t%f\n", i, j, err);
+				return false;
+			}
+		}
+
+	/* ------------ R2 Partial Derivative Test -------------- */
+
+	struct sim_data data_r2 = sim_data;
+
+	data_r2.voxel.r2 += e;
+
+	bloch_simulation(&data_r2, mxy_tmp_sig, sa_r1_tmp_sig, sa_r2_tmp_sig, sa_m0_tmp_sig, sa_b1_tmp_sig);
+
+	for (int i = 0; i < sim_data.seq.rep_num; i++)
+		for (int j = 0; j < 3; j++) {
+
+			err = fabsf(e * sa_r2_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
+
+			if (tol < err) {
+
+				printf("Error T2: (%d,%d)\t=>\t%f\n", i, j, err);
+				return false;
+			}
+		}
+
+	/* ------------ M0 Partial Derivative Test -------------- */
+
+	struct sim_data data_m0 = sim_data;
+
+	data_m0.voxel.m0 += e;
+
+	bloch_simulation(&data_m0, mxy_tmp_sig, sa_r1_tmp_sig, sa_r2_tmp_sig, sa_m0_tmp_sig, sa_b1_tmp_sig);
+
+	for (int i = 0; i < sim_data.seq.rep_num; i++)
+		for (int j = 0; j < 3; j++) {
+
+			err = fabsf(e * sa_m0_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
+
+			if (tol < err) {
+
+				printf("Error M0: (%d,%d)\t=>\t%f\n", i, j, err);
+				return false;
+			}
+		}
+
+	/* ------------ B1 Partial Derivative Test -------------- */
+
+	struct sim_data data_b1 = sim_data;
+
+	data_b1.voxel.b1 += e;
+
+	bloch_simulation(&data_b1, mxy_tmp_sig, sa_r1_tmp_sig, sa_r2_tmp_sig, sa_m0_tmp_sig, sa_b1_tmp_sig);
+
+	for (int i = 0; i < sim_data.seq.rep_num; i++)
+		for (int j = 0; j < 3; j++) {
+
+			err = fabsf(e * sa_b1_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
+
+			if (tol < err) {
+
+				printf("Error B1: (%d,%d)\t=>\t%f\n", i, j, err);
+				return false;
+			}
+		}
+	return true;
+}
+
+UT_REGISTER_TEST(test_stm_bloch_simulation_gradients);
+
+
 /* ODE Simulation
  * Compare the simulated IR bSSFP signal with the analytical model
  * Assumptions: 1. TR << T_{1,2}
@@ -257,6 +390,206 @@ static bool test_ode_irbssfp_simulation(void)
 UT_REGISTER_TEST(test_ode_irbssfp_simulation);
 
 
+
+/* Simulation Comparison IR FLASH
+ *      ODE <-> STM
+ * Stages of complexity:
+ *      1. Inversion
+ *      2. bSSFP
+ *      3. Relaxation
+ *      4. Slice-selection gradient moment != 0
+ *      5. Off-Resonance
+ */
+static bool test_stm_ode_bssfp_comparison(void)
+{
+	struct sim_data sim_data;
+
+	sim_data.seq = simdata_seq_defaults;
+	sim_data.seq.seq_type = IRBSSFP;
+	sim_data.seq.tr = 0.0045;
+	sim_data.seq.te = 0.00225;
+	sim_data.seq.rep_num = 500;
+	sim_data.seq.spin_num = 1;
+        sim_data.seq.perfect_inversion = true;
+	sim_data.seq.inversion_pulse_length = 0.01;
+        sim_data.seq.inversion_spoiler = 0.005;
+	sim_data.seq.prep_pulse_length = sim_data.seq.te;
+
+	sim_data.voxel = simdata_voxel_defaults;
+	sim_data.voxel.r1 = 1./WATER_T1;
+	sim_data.voxel.r2 = 1./WATER_T2;
+	sim_data.voxel.m0 = 1;
+	sim_data.voxel.w = 0;
+
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.flipangle = 45.;
+        sim_data.pulse.rf_end = 0.001;
+
+	sim_data.grad = simdata_grad_defaults;
+	sim_data.tmp = simdata_tmp_defaults;
+
+        sim_data.grad.mom_sl = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
+        sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
+
+	struct sim_data sim_ode = sim_data;
+
+	float mxy_ode[sim_ode.seq.rep_num][3];
+	float sa_r1_ode[sim_ode.seq.rep_num][3];
+	float sa_r2_ode[sim_ode.seq.rep_num][3];
+	float sa_m0_ode[sim_ode.seq.rep_num][3];
+	float sa_b1_ode[sim_ode.seq.rep_num][3];
+
+	bloch_simulation(&sim_ode, mxy_ode, sa_r1_ode, sa_r2_ode, sa_m0_ode, sa_b1_ode);
+
+        sim_data.seq.type = STM;
+
+	float mxy_matexp[sim_data.seq.rep_num][3];
+	float sa_r1_matexp[sim_data.seq.rep_num][3];
+	float sa_r2_matexp[sim_data.seq.rep_num][3];
+	float sa_m0_matexp[sim_data.seq.rep_num ][3];
+	float sa_b1_matexp[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxy_matexp, sa_r1_matexp, sa_r2_matexp, sa_m0_matexp, sa_b1_matexp);
+
+	float tol = 10E-3;
+	float err;
+
+	for (int rep = 0; rep < sim_data.seq.rep_num; rep++) {
+
+#if 0
+                        bart_printf("ODE M[%d] x: %f,\t%f,\t%f\n", rep, mxy_ode[rep][0], mxy_ode[rep][1], mxy_ode[rep][2]);
+                        bart_printf("STM M[%d] x: %f,\t%f,\t%f\n\n", rep, mxy_matexp[rep][0], mxy_matexp[rep][1], mxy_matexp[rep][2]);
+#endif
+
+        	for (int dim = 0; dim < 3; dim++) {
+
+			err = fabsf(mxy_matexp[rep][dim]-mxy_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+
+			err = fabsf(sa_r1_matexp[rep][dim]-sa_r1_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+
+			err = fabsf(sa_r2_matexp[rep][dim]-sa_r2_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+
+			err = fabsf(sa_m0_matexp[rep][dim]-sa_m0_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+
+			err = fabsf(sa_b1_matexp[rep][dim] - sa_b1_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+		}
+        }
+	return 1;
+}
+
+UT_REGISTER_TEST(test_stm_ode_bssfp_comparison);
+
+
+/* Simulation Comparison IR FLASH
+ *      ODE <-> STM
+ * Stages of complexity:
+ *      1. Inversion
+ *      2. FLASH
+ *      3. Relaxation
+ *      4. Slice-selection gradient moment != 0
+ *      5. Off-Resonance
+ */
+static bool test_stm_ode_flash_comparison(void)
+{
+	struct sim_data sim_data;
+
+	sim_data.seq = simdata_seq_defaults;
+	sim_data.seq.seq_type = IRFLASH;
+	sim_data.seq.tr = 0.003;
+	sim_data.seq.te = 0.0017;
+	sim_data.seq.rep_num = 500;
+	sim_data.seq.spin_num = 1;
+        sim_data.seq.perfect_inversion = true;
+	sim_data.seq.inversion_pulse_length = 0.01;
+        sim_data.seq.inversion_spoiler = 0.005;
+	sim_data.seq.prep_pulse_length = sim_data.seq.te;
+
+	sim_data.voxel = simdata_voxel_defaults;
+	sim_data.voxel.r1 = 1./WATER_T1;
+	sim_data.voxel.r2 = 1./WATER_T2;
+	sim_data.voxel.m0 = 1;
+	sim_data.voxel.w = 0;
+
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.flipangle = 8.;
+        sim_data.pulse.rf_end = 0.001;
+
+	sim_data.grad = simdata_grad_defaults;
+	sim_data.tmp = simdata_tmp_defaults;
+
+        sim_data.grad.mom_sl = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
+        sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
+
+	struct sim_data sim_ode = sim_data;
+
+	float mxy_ode[sim_ode.seq.rep_num][3];
+	float sa_r1_ode[sim_ode.seq.rep_num][3];
+	float sa_r2_ode[sim_ode.seq.rep_num][3];
+	float sa_m0_ode[sim_ode.seq.rep_num][3];
+	float sa_b1_ode[sim_ode.seq.rep_num][3];
+
+	bloch_simulation(&sim_ode, mxy_ode, sa_r1_ode, sa_r2_ode, sa_m0_ode, sa_b1_ode);
+
+        sim_data.seq.type = STM;
+
+	float mxy_matexp[sim_data.seq.rep_num][3];
+	float sa_r1_matexp[sim_data.seq.rep_num][3];
+	float sa_r2_matexp[sim_data.seq.rep_num][3];
+	float sa_m0_matexp[sim_data.seq.rep_num ][3];
+	float sa_b1_matexp[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxy_matexp, sa_r1_matexp, sa_r2_matexp, sa_m0_matexp, sa_b1_matexp);
+
+	float tol = 10E-3;
+	float err;
+
+	for (int rep = 0; rep < sim_data.seq.rep_num; rep++) {
+
+#if 0
+                        bart_printf("ODE M[%d] x: %f,\t%f,\t%f\n", rep, mxy_ode[rep][0], mxy_ode[rep][1], mxy_ode[rep][2]);
+                        bart_printf("STM M[%d] x: %f,\t%f,\t%f\n\n", rep, mxy_matexp[rep][0], mxy_matexp[rep][1], mxy_matexp[rep][2]);
+#endif
+
+        	for (int dim = 0; dim < 3; dim++) {
+
+			err = fabsf(mxy_matexp[rep][dim]-mxy_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+
+			err = fabsf(sa_r1_matexp[rep][dim]-sa_r1_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+
+			err = fabsf(sa_r2_matexp[rep][dim]-sa_r2_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+
+			err = fabsf(sa_m0_matexp[rep][dim]-sa_m0_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+
+			err = fabsf(sa_b1_matexp[rep][dim] - sa_b1_ode[rep][dim]);
+			if (tol < err)
+				return 0;
+		}
+        }
+	return 1;
+}
+
+UT_REGISTER_TEST(test_stm_ode_flash_comparison);
+
+
+
 // Test off-resonance effect in ODE simulation
 //      - Set off-resonance so that magnetization is rotated by 90 degree within TE
 //      - for w == 0 -> Mxy = 0+1*I
@@ -315,6 +648,67 @@ static bool test_ode_simu_offresonance(void)
 }
 
 UT_REGISTER_TEST(test_ode_simu_offresonance);
+
+
+// Test off-resonance effect in STM simulation
+//      - Set off-resonance so that magnetization is rotated by 90 degree within TE
+//      - for w == 0 -> Mxy = 0+1*I
+//      - Goal: Mxy = 1+0*I
+static bool test_stm_simu_offresonance(void)
+{
+	struct sim_data sim_data;
+
+	sim_data.seq = simdata_seq_defaults;
+        sim_data.seq.type = STM;
+	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+	sim_data.seq.tr = 0.003;
+	sim_data.seq.te = 0.001;
+	sim_data.seq.rep_num = 1;
+	sim_data.seq.spin_num = 1;
+	sim_data.seq.inversion_pulse_length = 0.;
+	sim_data.seq.prep_pulse_length = 0.;
+
+	sim_data.voxel = simdata_voxel_defaults;
+	sim_data.voxel.r1 = 0.;	// Turn off relaxation
+	sim_data.voxel.r2 = 0.;	// Turn off relaxation
+	sim_data.voxel.m0 = 1.;
+
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.flipangle = 90.;
+	sim_data.pulse.rf_end = 10E-9;	// Close to Hard-Pulses
+
+        sim_data.grad = simdata_grad_defaults;
+	sim_data.tmp = simdata_tmp_defaults;
+
+	sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
+
+	float mxySig_ode[sim_data.seq.rep_num][3];
+	float saR1Sig_ode[sim_data.seq.rep_num][3];
+	float saR2Sig_ode[sim_data.seq.rep_num][3];
+	float saDensSig_ode[sim_data.seq.rep_num][3];
+	float sa_b1_ode[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxySig_ode, saR1Sig_ode, saR2Sig_ode, saDensSig_ode, sa_b1_ode);
+
+#if 0
+	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[0][0], mxySig_ode[0][0]
+								, mxySig_ode[0][1], mxySig_ode[0][1]
+								, mxySig_ode[0][2], mxySig_ode[0][2] );
+
+	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[0][0] - 1.),
+							fabs(mxySig_ode[0][1] - 0.),
+							fabs(mxySig_ode[0][2] - 0.) );
+#endif
+	float tol = 10E-5;
+
+	UT_ASSERT(	(fabs(mxySig_ode[0][0] - 1.) < tol) &&
+			(fabs(mxySig_ode[0][1] - 0.) < tol) &&
+			(fabs(mxySig_ode[0][2] - 0.) < tol) );
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_stm_simu_offresonance);
 
 
 // Test gradient during relaxation
@@ -376,6 +770,68 @@ static bool test_ode_simu_gradient(void)
 }
 
 UT_REGISTER_TEST(test_ode_simu_gradient);
+
+
+// Test gradient during relaxation STM
+//      - Simulate gradient dephasing by PI/2 between RF_end and TE of first repetition
+//      - This should turn the magnetization from 0,1,0 to 1,0,0
+static bool test_stm_simu_gradient(void)
+{
+	struct sim_data sim_data;
+
+	sim_data.seq = simdata_seq_defaults;
+        sim_data.seq.type = STM;
+	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+	sim_data.seq.tr = 0.003;
+	sim_data.seq.te = 0.001;
+	sim_data.seq.rep_num = 1;
+	sim_data.seq.spin_num = 1;
+	sim_data.seq.inversion_pulse_length = 0.;
+	sim_data.seq.prep_pulse_length = 0.;
+
+	sim_data.voxel = simdata_voxel_defaults;
+	sim_data.voxel.r1 = 0.;	// Turn off relaxation
+	sim_data.voxel.r2 = 0.;	// Turn off relaxation
+	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.w = 0.;
+
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.flipangle = 90.;
+	sim_data.pulse.rf_end = 10E-9;	// Close to Hard-Pulses
+
+	sim_data.grad = simdata_grad_defaults;
+	sim_data.grad.mom =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
+
+	sim_data.tmp = simdata_tmp_defaults;
+
+	float mxySig_ode[sim_data.seq.rep_num][3];
+	float saR1Sig_ode[sim_data.seq.rep_num][3];
+	float saR2Sig_ode[sim_data.seq.rep_num][3];
+	float saDensSig_ode[sim_data.seq.rep_num][3];
+	float sa_b1_ode[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxySig_ode, saR1Sig_ode, saR2Sig_ode, saDensSig_ode, sa_b1_ode);
+
+#if 0
+	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[sim_data.seq.rep_num-1][0], mxySig_ode[sim_data.seq.rep_num-1][0]
+								, mxySig_ode[sim_data.seq.rep_num-1][1], mxySig_ode[sim_data.seq.rep_num-1][1]
+								, mxySig_ode[sim_data.seq.rep_num-1][2], mxySig_ode[sim_data.seq.rep_num-1][2] );
+
+	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.),
+							fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.),
+							fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) );
+
+#endif
+	float tol = 10E-5;
+
+	UT_ASSERT(	(fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.) < tol) &&
+			(fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.) < tol) &&
+			(fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) < tol) );
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_stm_simu_gradient);
 
 
 // Shaihan J Malik, Alessandro Sbrizzi, Hans Hoogduin, and Joseph V Hajnal
@@ -731,7 +1187,8 @@ UT_REGISTER_TEST(test_hp_simu_gradient);
 
 
 // Test for balanced z-gradient moment in bSSFP type sequences
-// Idea: Without balanced moments the bSSFP typical steady state will not be reached in presence of an z-Gradient
+// Idea:        Without balanced moments the bSSFP typical steady state
+//              will not be reached in presence of an z-Gradient
 static bool test_ode_z_gradient_refocus(void)
 {
 	struct sim_data sim_data;
@@ -825,7 +1282,7 @@ static bool test_ode_inversion(void)
 
         inversion(&data, h, tol, N, P, xp, 0., 0.005);
 
-        bart_printf("%f, %f, %f\n", xp[0][0], xp[0][1], xp[0][2]);
+        // bart_printf("%f, %f, %f\n", xp[0][0], xp[0][1], xp[0][2]);
 
         UT_ASSERT(fabs(xp[0][2] + 1.) < tol);
 
