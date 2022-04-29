@@ -538,12 +538,15 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P*N+1][P*
 
                 // Smooth spoiling for FLASH sequences
 
-                if ((FLASH == data->seq.seq_type) || (IRFLASH == data->seq.seq_type))
-		data->tmp.r2spoil = 10000.;
+                if (    (FLASH == data->seq.seq_type) ||
+                        (IRFLASH == data->seq.seq_type))
+
+		        data->tmp.r2spoil = 10000.;
 
                 // Balance z-gradient for bSSFP type sequences
 
-                if ((BSSFP == data->seq.seq_type) || (IRBSSFP == data->seq.seq_type)) {
+                if (    (BSSFP == data->seq.seq_type) ||
+                        (IRBSSFP == data->seq.seq_type)) {
 
                         // Matrix: TE -> TR-T_RF
                         float mrel2[M][M];
@@ -604,13 +607,16 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 
                 // Smooth spoiling for FLASH sequences
 
-                if ((FLASH == data->seq.seq_type) || (IRFLASH == data->seq.seq_type))
+                if (    (FLASH == data->seq.seq_type) ||
+                        (IRFLASH == data->seq.seq_type))
+
                         data->tmp.r2spoil = 10000.;
 
 
                 // Balance z-gradient for bSSFP type sequences
 
-                if ((BSSFP == data->seq.seq_type) || (IRBSSFP == data->seq.seq_type)) {
+                if (    (BSSFP == data->seq.seq_type) ||
+                        (IRBSSFP == data->seq.seq_type)) {
 
                         relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr-data->pulse.rf_end, NULL);
 
