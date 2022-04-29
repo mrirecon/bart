@@ -83,6 +83,10 @@
 	<img src="./imgs/banner.png" width="100%"><p>
       <h1><a>Toolbox for Computational Magnetic Resonance Imaging</a></h1>
 	<p>
+    <div>Quick links:  <a href="./tutorials.html">Tutorials</a>, <a href="./Installation.html">Installation</a></div>
+
+<hr>
+
 	<div>The Berkeley Advanced Reconstruction Toolbox (BART) toolbox is a free and open-source image-reconstruction
 framework for <strong>Computational Magnetic Resonance Imaging</strong> developed by the research groups of
 <a href="http://wwwuser.gwdg.de/~muecker1/">Martin Uecker</a> (Graz University of Technology), <a href="http://users.ece.utexas.edu/~jtamir/">Jon Tamir</a> (UT Austin), and
@@ -98,93 +102,12 @@ as efficient implementations of many calibration and reconstruction algorithms f
 	<img src="./imgs/bart8.png" alt="bart logo reconstructed from k-space" width="100%"><p>
 	<strong>Figure:</strong> Simulated MRI images.
 	</div>
-	</p>
-
-  <h2>BART Hands-on Material - Get Started and Find Help </h2>
-
-  <div>Our new bart <a href="./tutorials.html">hands-on material</a> page contains BART documentary and educational materials that were
-      published over the last few years in tutorials, workshops and online webinars. They are organized by topic, from a new-user level to advanced material.
-  </div>
 
 
 
 
-	<h2>List of Features</h2>
-	<p>
-	<ul>
-	<li>basic features:
-		<ul>
-		<li>runs on Linux and Mac OS X</li>
-		<li>multi-dimensional operations on arrays</li>
-		<li>fast non-uniform Fourier Transform (nuFFT and convolution-based method)</li>
-		<li>multi-dimensional (divergence-free) wavelet transform</li>
-		<li>parallel computation on multiple cores and with <strong>Graphical Processing Units (GPU)</strong></li>
-		</ul>
-	</li>
-	<li>iterative methods:
-		<ul>
-		<li>Conjugate Gradients (CG)</li>
-		<li>(Fast) Iterative Soft-Thresholding Algorithm (ISTA and FISTA)</li>
-		<li>Normalized iterative hard thresholding (NIHT)</li>
-		<li><strong>Alternating Direction Method of Multipliers (ADMM)</strong></li>
-		<li>Iteratively Regularized Gauss-Newton Method (IRGNM)</li>
-		<li>Chambolle-Pock primal-dual algorithm</li>
-		</ul>
-	</li>
-	<li>calibration methods:
-		<ul>
-		<li>direct calibration of coil sensitivities from k-space center</li>
-		<li>Walsh's method for calibration of coil sensitivities</li>
-		<li><strong>ESPIRiT</strong></li>
-		<li>(geometric) channel compression and whitening</li>
-		<li><strong>RING:</strong> estimation of gradient delays for radial MRI</li>
-		</ul>
-	</li>
-	<li>reconstruction methods for MRI:
-		<ul>
-		<li>iterative parallel imaging reconstruction: POCSENSE, SENSE</li>
-		<li><strong>compressed sensing and parallel imaging</strong></li>
-		<li>calibration-less parallel imaging: NLINV and <strong>ENLIVE</strong> (non-linear optimization) and SAKE (structured low-rank matrix completion)</li>
-		<li>reconstruction with <strong>linear subspace constraints</strong></li>
-		<li><strong>non-linear model-based reconstruction</strong> for T1, T2, flow, and water-fat mapping</li>
-		<li>methods based on <strong>deep learning</strong>: variational networks and MoDL</li>
-		</ul>
-	</li>
-	<li>regularization (in arbitrary dimensions):
-		<ul>
-		<li>Tikhonov</li>
-		<li>total variation</li>
-		<li>l1-wavelet</li>
-		<li>(multi-scale) low-rank</li>
-		<li>Tensorflow-based priors</li>
-		</ul>
-	</li>
-	</ul>
-	</p>
-	<h2>Example</h2>
-	<p>
-	Perform ESPIRiT calibration and image reconstruction with
-	l1-wavelet regularization:
-	</p>
-	<div class="code">
-	<code>
-	<p>
-	&nbsp;$ bart ecalib kspace sensitivities<br>
-	&nbsp;$ bart pics -l1 -r0.001 kspace sensitivities image_out
-	</p>
-	</code>
-	</div>
-	<p>
-	A python-based image viewer (bartview.py) which can read the
-	BART data format is included in the source repository.<br>
-	</p>
-	<p>
-	An image viewer for Linux and Mac OS X can be found
-	<a href="https://github.com/mrirecon/view">here</a>.
-	</p>
-	<p>
-	You can try BART directly in your browser: <a href="https://mybinder.org/v2/gh/mrirecon/bart-binder/v0.7.00?filepath=example.ipynb"><img src="./imgs/binder.svg" alt="binder"></a>
-	</p>
+
+  </p>
 	<h2 class="header">Mailing List</h2>
 	<p>
 	Please direct all questions or comments to the public mailing list:
@@ -217,45 +140,6 @@ as efficient implementations of many calibration and reconstruction algorithms f
 	Please note that running BART on Windows is not supported. Nevertheless, some versions of BART are reported to work on Windows using WSL or Cygwin.
 	<p>
 	For developers: the C source code can be found in the  <a class="github" href="https://github.com/mrirecon/bart">GitHub repository</a>
-	<h2>Installation</h2>
-	<p>Installation of the required libraries, downloading and unpacking of the archive, and
-	compilation on Linux is usually as simple as typing the following commands:
-	<div class="code">
-	<code>
-	<p>
-	&nbsp;$ sudo apt-get install make gcc libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev<br>
-	&nbsp;$ wget https://github.com/mrirecon/bart/archive/vX.Y.ZZ.tar.gz<br>
-	&nbsp;$ tar xzvf vX.YY.ZZ.tar.gz<br>
-	&nbsp;$ cd bart-X.YY.ZZ<br>
-	&nbsp;$ make
-	</p>
-	</code>
-	</div>
-	<p>
-	See the README file included with the source code for further instructions and for Mac OS X and Windows.
-	</p>
-	<p>
-	If you are a Docker user you can also start with this extremely simple <a href="./Dockerfile">Dockerfile</a>.
-	</p>
-	<h2>Matlab Interface and Examples</h2>
-	<p>
-	The toolbox can also be used in combination with Matlab/Octave.
-	</p>
-	<div class="code">
-	<code>
-	<p>
-	&nbsp;&gt;&gt;&nbsp;sensitivities = bart('ecalib', kspace);<br>
-	&nbsp;&gt;&gt;&nbsp;image_out = bart('pics -l1 -r0.001', kspace, sensitivities);
-	</code>
-	</div>
-	<p>
-	More examples where the tools are called
-	directly from Matlab can be found <a href="./examples.html">here</a>.
-	<p>
-	Matlab code and data: <a class="github" href="https://github.com/mikgroup/espirit-matlab-examples">GitHub repository</a>
-	<p>
-	A Matlab-based image viewer which works well with BART is <a href="http://www.biomednmr.mpg.de/index.php?option=com_content&task=view&id=137&Itemid=43">arrayShow</a> by Tilman Sumpf.
-
 
 
 

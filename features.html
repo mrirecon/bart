@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="de">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <title>BART Toolbox</title>
+    <style type="text/css">
+
+        BODY {
+		background: #292638;
+        }
+
+	h1, h2 {
+		font-family: 'PT Serif', serif;
+		border-bottom: 1px solid grey;
+		padding-bottom: 5px;
+	}
+
+	h1 {
+		border-top: 1px solid grey;
+		padding-top: 5px;
+		font-size: 30px;
+	}
+
+	h2 {
+		font-size: 24px;
+	}
+
+        div#index {
+                position: fixed;
+	        padding: 10px 15px 10px;
+		background: #FFFFFF;
+                width: 10%;
+        }
+
+        div#body {
+	        width: 60%;
+	        padding: 10px 15px 10px;
+		background: #FFFFFF;
+        }
+
+	.github {
+		padding: 3px;
+		color: white;
+		border-radius: 5px;
+		background: url(./imgs/GitHub-Mark-Light-64px.png) no-repeat 2% 50% #33f;
+		background-size: 12%;
+		padding-left: 25px;
+	}
+
+        div A {
+        }
+
+        div A:visited {
+        }
+
+        div A:hover {
+        }
+
+	.code {
+		border: 1px solid black;
+		background: #DDDDDD;
+	}
+
+	.alert {
+		border: 5px solid red;
+		padding-top: 5px;
+		font-size: 24px;
+	}
+
+	code {
+	}
+
+	img, object {
+        	max-width: 100%;
+	}
+
+    </style>
+  </head>
+  <body>
+    <center>
+    <p>
+    <div id="body" align="left">
+	<img src="./imgs/banner.png" width="100%"><p>
+      <h1><a>Toolbox for Computational Magnetic Resonance Imaging</a></h1>
+	<p>
+    <div>Quick links: <a href="./Download & Installation.html">Installation</a>, <a href="./tutorials.html">Tutorials</a>,  <a href="./features.html">List of features</a></div>
+
+<hr>
+
+	<small>
+	<p>
+	<div id="fig">
+	<img src="./imgs/bart8.png" alt="bart logo reconstructed from k-space" width="100%"><p>
+	<strong>Figure:</strong> Simulated MRI images.
+	</div>
+
+
+	<h2>List of Features</h2>
+	<p>
+	<ul>
+	<li>basic features:
+		<ul>
+		<li>runs on Linux and Mac OS X</li>
+		<li>multi-dimensional operations on arrays</li>
+		<li>fast non-uniform Fourier Transform (nuFFT and convolution-based method)</li>
+		<li>multi-dimensional (divergence-free) wavelet transform</li>
+		<li>parallel computation on multiple cores and with <strong>Graphical Processing Units (GPU)</strong></li>
+		</ul>
+	</li>
+	<li>iterative methods:
+		<ul>
+		<li>Conjugate Gradients (CG)</li>
+		<li>(Fast) Iterative Soft-Thresholding Algorithm (ISTA and FISTA)</li>
+		<li>Normalized iterative hard thresholding (NIHT)</li>
+		<li><strong>Alternating Direction Method of Multipliers (ADMM)</strong></li>
+		<li>Iteratively Regularized Gauss-Newton Method (IRGNM)</li>
+		<li>Chambolle-Pock primal-dual algorithm</li>
+		</ul>
+	</li>
+	<li>calibration methods:
+		<ul>
+		<li>direct calibration of coil sensitivities from k-space center</li>
+		<li>Walsh's method for calibration of coil sensitivities</li>
+		<li><strong>ESPIRiT</strong></li>
+		<li>(geometric) channel compression and whitening</li>
+		<li><strong>RING:</strong> estimation of gradient delays for radial MRI</li>
+		</ul>
+	</li>
+	<li>reconstruction methods for MRI:
+		<ul>
+		<li>iterative parallel imaging reconstruction: POCSENSE, SENSE</li>
+		<li><strong>compressed sensing and parallel imaging</strong></li>
+		<li>calibration-less parallel imaging: NLINV and <strong>ENLIVE</strong> (non-linear optimization) and SAKE (structured low-rank matrix completion)</li>
+		<li>reconstruction with <strong>linear subspace constraints</strong></li>
+		<li><strong>non-linear model-based reconstruction</strong> for T1, T2, flow, and water-fat mapping</li>
+		<li>methods based on <strong>deep learning</strong>: variational networks and MoDL</li>
+		</ul>
+	</li>
+	<li>regularization (in arbitrary dimensions):
+		<ul>
+		<li>Tikhonov</li>
+		<li>total variation</li>
+		<li>l1-wavelet</li>
+		<li>(multi-scale) low-rank</li>
+		<li>Tensorflow-based priors</li>
+		</ul>
+	</li>
+	</ul>
+	</p>
+
+    </center>
+  </body>
+</html>
