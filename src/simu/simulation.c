@@ -510,7 +510,28 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P*N+1][P*
 
                 // Matrix: T_RF -> TE
                 float mrel[M][M];
-                relaxation2(data, 0., 0., M, 1, NULL, data->pulse.rf_end, data->seq.te, mrel);
+
+                float tmp[M][M];
+                float tmp2[M][M];
+
+                if (0 != data->grad.mom_sl) {
+
+                        if (0.0000001 > (1.5*data->pulse.rf_end - data->seq.te)) { // Catch equality of floats
+
+                                // Slice-Rewinder
+
+                                data->grad.mom = -data->grad.mom_sl;
+                                relaxation2(data, 0, 0, M, 1, NULL, data->pulse.rf_end, 1.5*data->pulse.rf_end, tmp);
+                                data->grad.mom = 0.; // [rad/s]
+
+                                relaxation2(data, 0, 0, M, 1, NULL, 1.5*data->pulse.rf_end, data->seq.te, tmp2);
+
+                                mm_mul(M, mrel, tmp, tmp2);
+
+                        } else
+                                debug_printf(DP_WARN, "Slice-Selection Gradient rewinder does not fit between RF_end and TE!\n");
+                } else
+                        relaxation2(data, 0., 0., M, 1, NULL, data->pulse.rf_end, data->seq.te, mrel);
 
                 // Join matrices: 0 -> TE
                 mm_mul(M, mte, mrf, mrel);
@@ -560,7 +581,22 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
         {
                 start_rf_pulse(data, h, tol, N, P, xp, NULL);
 
-                relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
+                // Slice-Rewinder if time is long enough
+
+                if (0 != data->grad.mom_sl) {
+
+                        if (0.0000001 > (1.5*data->pulse.rf_end - data->seq.te)) { // Catch equality of floats
+
+                                data->grad.mom = -data->grad.mom_sl;
+                                relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, 1.5*data->pulse.rf_end, NULL);
+                                data->grad.mom = 0.; // [rad/s]
+
+                                relaxation2(data, h, tol, N, P, xp, 1.5*data->pulse.rf_end, data->seq.te, NULL);
+
+                        } else
+                                debug_printf(DP_WARN, "Slice-Selection Gradient rewinder does not fit between RF_end and TE!\n");
+                } else
+                        relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
 
                 if (get_signal)
                         collect_signal(data, N, P, mxy, sa_r1, sa_r2, sa_b1, xp);

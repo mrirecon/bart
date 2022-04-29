@@ -1186,25 +1186,26 @@ static bool test_hp_simu_gradient(void)
 UT_REGISTER_TEST(test_hp_simu_gradient);
 
 
-// Test for balanced z-gradient moment in bSSFP type sequences
-// Idea:        Without balanced moments the bSSFP typical steady state
-//              will not be reached in presence of an z-Gradient
+// Test refocussing of z-gradient moment in ODE simulation
+// Idea:        Without balanced z moments the magnetization state changes
+//              for different gradient strength. In the refocused case it
+//              is almost unaffected.
 static bool test_ode_z_gradient_refocus(void)
 {
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = BSSFP;
-	sim_data.seq.tr = 0.0045;
-	sim_data.seq.te = 0.00225;
-	sim_data.seq.rep_num = 1000;
+	sim_data.seq.seq_type = FLASH;
+	sim_data.seq.tr = 0.0030;
+	sim_data.seq.te = 0.0015;
+	sim_data.seq.rep_num = 1;
 	sim_data.seq.spin_num = 1;
 	sim_data.seq.inversion_pulse_length = 0.;
-	sim_data.seq.prep_pulse_length = sim_data.seq.te;
+	sim_data.seq.prep_pulse_length = 0.;//sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1./0.8;
-	sim_data.voxel.r2 = 1./0.05;
+	sim_data.voxel.r1 = 0.;
+	sim_data.voxel.r2 = 0.;
 	sim_data.voxel.m0 = 1.;
 	sim_data.voxel.w = 0;
 
@@ -1226,23 +1227,106 @@ static bool test_ode_z_gradient_refocus(void)
 
 	bloch_simulation(&sim_data, mxy_sig, sa_r1_sig, sa_r2_sig, sa_m0_sig, sa_b1_sig);
 
-#if 0
-	for (int i = 0; i < sim_data.seq.rep_num; i++)
-		bart_printf("x: %f,\ty: %f,\tz: %f\n", mxy_sig[i][0], mxy_sig[i][1], mxy_sig[i][2]);
+        sim_data.grad.mom_sl = 0.5 * 2. * M_PI * 1000.;	// [rad/s]
 
-        bart_printf("Diff 1: %f,\tDiff 2: %f,\n",       fabsf(mxy_sig[sim_data.seq.rep_num-1][0] - mxy_sig[sim_data.seq.rep_num-1][1]),
-                                                        fabsf(mxy_sig[sim_data.seq.rep_num-1][2] - mxy_sig[sim_data.seq.rep_num-2][2]));
+        float mxy_sig2[sim_data.seq.rep_num][3];
+	float sa_r1_sig2[sim_data.seq.rep_num][3];
+	float sa_r2_sig2[sim_data.seq.rep_num][3];
+	float sa_m0_sig2[sim_data.seq.rep_num][3];
+	float sa_b1_sig2[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxy_sig2, sa_r1_sig2, sa_r2_sig2, sa_m0_sig2, sa_b1_sig2);
+
+#if 0
+	bart_printf("M1 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig[0][0], mxy_sig[0][1], mxy_sig[0][2]);
+        bart_printf("M2 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig2[0][0], mxy_sig2[0][1], mxy_sig2[0][2]);
+        bart_printf("DIFF -> x: %f,\ty: %f,\tz: %f\n",  fabsf(mxy_sig[0][0]-mxy_sig2[0][0]),
+                                                        fabsf(mxy_sig[0][1]-mxy_sig2[0][1]),
+                                                        fabsf(mxy_sig[0][2]-mxy_sig2[0][2]));
 #endif
 
-	float tol = 10E-5;
+	float tol = 1.E-2;
 
-	UT_ASSERT(	fabsf(mxy_sig[sim_data.seq.rep_num-1][0] - mxy_sig[sim_data.seq.rep_num-1][1]) < tol &&
-			fabsf(mxy_sig[sim_data.seq.rep_num-1][2] - mxy_sig[sim_data.seq.rep_num-2][2]) < tol);
+	UT_ASSERT(      (fabsf(mxy_sig[0][0]-mxy_sig2[0][0]) < tol) &&
+                        (fabsf(mxy_sig[0][1]-mxy_sig2[0][1]) < tol) &&
+			(fabsf(mxy_sig[0][2]-mxy_sig2[0][2]) < tol) );
 
 	return true;
 }
 
 UT_REGISTER_TEST(test_ode_z_gradient_refocus);
+
+
+// Test refocussing of z-gradient moment in ODE simulation
+// Idea:        Without balanced z moments the magnetization state changes
+//              for different gradient strength. In the refocused case it
+//              is almost unaffected.
+static bool test_stm_z_gradient_refocus(void)
+{
+	struct sim_data sim_data;
+
+	sim_data.seq = simdata_seq_defaults;
+        sim_data.seq.type = STM;
+	sim_data.seq.seq_type = FLASH;
+	sim_data.seq.tr = 0.0030;
+	sim_data.seq.te = 0.0015;
+	sim_data.seq.rep_num = 1;
+	sim_data.seq.spin_num = 1;
+	sim_data.seq.inversion_pulse_length = 0.;
+	sim_data.seq.prep_pulse_length = 0.;//sim_data.seq.te;
+
+	sim_data.voxel = simdata_voxel_defaults;
+	sim_data.voxel.r1 = 0.;
+	sim_data.voxel.r2 = 0.;
+	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.w = 0;
+
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.flipangle = 45.;
+
+	sim_data.pulse.rf_end = 0.001;
+
+	sim_data.grad = simdata_grad_defaults;
+        sim_data.grad.mom_sl = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
+
+	sim_data.tmp = simdata_tmp_defaults;
+
+	float mxy_sig[sim_data.seq.rep_num][3];
+	float sa_r1_sig[sim_data.seq.rep_num][3];
+	float sa_r2_sig[sim_data.seq.rep_num][3];
+	float sa_m0_sig[sim_data.seq.rep_num][3];
+	float sa_b1_sig[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxy_sig, sa_r1_sig, sa_r2_sig, sa_m0_sig, sa_b1_sig);
+
+        sim_data.grad.mom_sl = 0.5 * 2. * M_PI * 1000.;	// [rad/s]
+
+        float mxy_sig2[sim_data.seq.rep_num][3];
+	float sa_r1_sig2[sim_data.seq.rep_num][3];
+	float sa_r2_sig2[sim_data.seq.rep_num][3];
+	float sa_m0_sig2[sim_data.seq.rep_num][3];
+	float sa_b1_sig2[sim_data.seq.rep_num][3];
+
+	bloch_simulation(&sim_data, mxy_sig2, sa_r1_sig2, sa_r2_sig2, sa_m0_sig2, sa_b1_sig2);
+
+#if 0
+	bart_printf("M1 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig[0][0], mxy_sig[0][1], mxy_sig[0][2]);
+        bart_printf("M2 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig2[0][0], mxy_sig2[0][1], mxy_sig2[0][2]);
+        bart_printf("DIFF -> x: %f,\ty: %f,\tz: %f\n",  fabsf(mxy_sig[0][0]-mxy_sig2[0][0]),
+                                                        fabsf(mxy_sig[0][1]-mxy_sig2[0][1]),
+                                                        fabsf(mxy_sig[0][2]-mxy_sig2[0][2]));
+#endif
+
+	float tol = 1.E-2;
+
+	UT_ASSERT(      (fabsf(mxy_sig[0][0]-mxy_sig2[0][0]) < tol) &&
+                        (fabsf(mxy_sig[0][1]-mxy_sig2[0][1]) < tol) &&
+			(fabsf(mxy_sig[0][2]-mxy_sig2[0][2]) < tol) );
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_stm_z_gradient_refocus);
 
 
 // Test inversion pulse
