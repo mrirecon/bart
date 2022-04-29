@@ -81,6 +81,11 @@
 	    <div id="body" align="left">
 	<img src="./imgs/banner.png" width="100%"><p>
 <h1>BART hands-on material: tutorials, workshops & webinars</h1>
+
+<div>Quick links: <a href="./Download & Installation.html">Installation</a>, <a href="./tutorials.html">Tutorials</a>,  <a href="./features.html">List of features</a></div>
+
+<hr>
+
 <p>This webpage includes BART documentary and educational materials that were
   published over the last few years in tutorials, workshops and online webinars.
   It is organized by topics, starting with the basic material for new users, and moving to advanced materials.
@@ -90,7 +95,7 @@
 <h2>Table of contents </h2>
 <b>Getting Started with BART </b>
 <br>
-<a href="#title1"> 1. Linux</a>
+<a href="#title1"> 1. Linux/unix terminal</a>
 <br>
 <a href="#title2"> 2. Python </a>
 <br>
@@ -159,14 +164,15 @@
 
 
 
+
 <hr>
 <h2>Getting Started with BART </h2>
 
-<h3 id="title1"> 1. Linux </h3>
+<h3 id="title1"> 1. Terminal </h3>
 
-<h4 id="webinar-1">1.1 Using BART through the linux command line: webinar for new users (2020)</h4>
+<h4 id="webinar-1">1.1 Using BART through the linux/unix command line: webinar for new users (2020)</h4>
 
-<p>This two-days webinar (from June 2020) introduced the concepts of working with BART through the linux command line.</p>
+<p>This two-days webinar (from June 2020) introduced the concepts of working with BART through the linux/unix command line.</p>
 <h4 id="day-1">Day 1</h4>
 <ul>
 <li>Where to find docs, examples, and help</li>
@@ -221,6 +227,32 @@ The workshop included demos for:
 </ul>
 
 
+<h4>1.4 Quick Example</h4>
+<p>
+Perform ESPIRiT calibration and image reconstruction with
+l1-wavelet regularization:
+</p>
+<div class="code">
+<code>
+<p>
+&nbsp;$ bart ecalib kspace sensitivities<br>
+&nbsp;$ bart pics -l1 -r0.001 kspace sensitivities image_out
+</p>
+</code>
+</div>
+<p>
+A python-based image viewer (bartview.py) which can read the
+BART data format is included in the source repository.<br>
+</p>
+<p>
+An image viewer for Linux and Mac OS X can be found
+<a href="https://github.com/mrirecon/view">here</a>.
+</p>
+<p>
+You can try BART directly in your browser: <a href="https://mybinder.org/v2/gh/mrirecon/bart-binder/v0.7.00?filepath=example.ipynb"><img src="./imgs/binder.svg" alt="binder"></a>
+
+
+<hr>
 <h3 id="title2"> 2. Python </h3>
 
 
@@ -263,9 +295,31 @@ interface for:
 
 
 
-
+<hr>
 
 <h3 id="title3"> 3. Matlab </h3>
+
+
+<h4>Matlab Interface and Examples</h4>
+<p>
+The toolbox can also be used in combination with Matlab/Octave.
+</p>
+<div class="code">
+<code>
+<p>
+&nbsp;&gt;&gt;&nbsp;sensitivities = bart('ecalib', kspace);<br>
+&nbsp;&gt;&gt;&nbsp;image_out = bart('pics -l1 -r0.001', kspace, sensitivities);
+</code>
+</div>
+<p>
+More examples where the tools are called
+directly from Matlab can be found <a href="./examples.html">here</a>.
+<p>
+Matlab code and data: <a class="github" href="https://github.com/mikgroup/espirit-matlab-examples">GitHub repository</a>
+<p>
+A Matlab-based image viewer which works well with BART is <a href="http://www.biomednmr.mpg.de/index.php?option=com_content&task=view&id=137&Itemid=43">arrayShow</a> by Tilman Sumpf.
+
+
 
 <h4 id="webinar-1">3.1 Inroduction to the BART-Matlab interface</h4>
 
@@ -284,7 +338,7 @@ followed by a retrospective Wave-CS reconstruction tool with the BART Matlab API
 <hr>
 <h2>Non-Cartesian Reconstruction with BART </h2>
 
-<h3 > 1. Linux </h3>
+<h3 > 1. Linux/unix terminal </h3>
 <h4 id="title_Non_cart">1. Non-Cartesian SENSE reconstruction</h4>
 The ISMRM 2019 workshop included a demo for non-Cartesian SENSE reconstruction
 <p><a href="https://github.com/mrirecon/bart-workshop/blob/master/ismrm2019/sense-recon/sense-recon.ipynb">Workshop Material</a></p>
