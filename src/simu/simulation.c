@@ -125,25 +125,35 @@ const struct simdata_grad simdata_grad_defaults = {
 };
 
 
-static void bloch_pdy2(void* _data, float* out, float t, const float* in)
-{
-	struct sim_data* data = _data;
-	(void)t;
+/* --------- Matrix Operations --------- */
 
-	bloch_pdy((float(*)[3])out, in, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
+
+static void vm_mul_transpose(int N, float out[N], float matrix[N][N], float in[N])
+{
+	for (int i = 0; i < N; i++) {
+
+		out[i] = 0.;
+
+		for (int j = 0; j < N; j++)
+			out[i] += matrix[j][i] * in[j];
+	}
 }
 
 
-static void bloch_pdp2(void* _data, float* out, float t, const float* in)
+static void mm_mul(int N, float out[N][N], float in1[N][N], float in2[N][N])
 {
-	struct sim_data* data = _data;
-	(void)t;
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++) {
 
-	bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+			out[i][j] = 0.;
+
+			for (int k = 0; k < N; k++)
+				out[i][j] += in1[i][k] * in2[k][j];
+		}
 }
 
 
-/* ------------ Bloch Equation -------------- */
+/* ------------ Bloch Equations -------------- */
 
 static void set_gradients(void* _data, float t)
 {
@@ -190,31 +200,21 @@ static void bloch_simu_ode_fun(void* _data, float* out, float t, const float* in
 }
 
 
-/* --------- Matrix Operations --------- */
-
-
-static void vm_mul_transpose(int N, float out[N], float matrix[N][N], float in[N])
+static void bloch_pdy2(void* _data, float* out, float t, const float* in)
 {
-	for (int i = 0; i < N; i++) {
+	struct sim_data* data = _data;
+	(void)t;
 
-		out[i] = 0.;
-
-		for (int j = 0; j < N; j++)
-			out[i] += matrix[j][i] * in[j];
-	}
+	bloch_pdy((float(*)[3])out, in, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
 }
 
 
-static void mm_mul(int N, float out[N][N], float in1[N][N], float in2[N][N])
+static void bloch_pdp2(void* _data, float* out, float t, const float* in)
 {
-	for (int i = 0; i < N; i++)
-		for (int j = 0; j < N; j++) {
+	struct sim_data* data = _data;
+	(void)t;
 
-			out[i][j] = 0.;
-
-			for (int k = 0; k < N; k++)
-				out[i][j] += in1[i][k] * in2[k][j];
-		}
+	bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
 }
 
 
