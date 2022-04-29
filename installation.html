@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="de">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <title>BART Toolbox</title>
+    <style type="text/css">
+
+        BODY {
+		background: #292638;
+        }
+
+	h1, h2 {
+		font-family: 'PT Serif', serif;
+		border-bottom: 1px solid grey;
+		padding-bottom: 5px;
+	}
+
+	h1 {
+		border-top: 1px solid grey;
+		padding-top: 5px;
+		font-size: 30px;
+	}
+
+	h2 {
+		font-size: 24px;
+	}
+
+        div#index {
+                position: fixed;
+	        padding: 10px 15px 10px;
+		background: #FFFFFF;
+                width: 10%;
+        }
+
+        div#body {
+	        width: 60%;
+	        padding: 10px 15px 10px;
+		background: #FFFFFF;
+        }
+
+	.github {
+		padding: 3px;
+		color: white;
+		border-radius: 5px;
+		background: url(./imgs/GitHub-Mark-Light-64px.png) no-repeat 2% 50% #33f;
+		background-size: 12%;
+		padding-left: 25px;
+	}
+
+        div A {
+        }
+
+        div A:visited {
+        }
+
+        div A:hover {
+        }
+
+	.code {
+		border: 1px solid black;
+		background: #DDDDDD;
+	}
+
+	.alert {
+		border: 5px solid red;
+		padding-top: 5px;
+		font-size: 24px;
+	}
+
+	code {
+	}
+
+	img, object {
+        	max-width: 100%;
+	}
+
+    </style>
+  </head>
+  <body>
+    <center>
+    <p>
+    <div id="body" align="left">
+	<img src="./imgs/banner.png" width="100%"><p>
+      <h1><a>Toolbox for Computational Magnetic Resonance Imaging</a></h1>
+	<p>
+    <div>Quick links: <a href="./Download & Installation.html">Installation</a>, <a href="./tutorials.html">Tutorials</a>,  <a href="./features.html">List of features</a></div>
+
+<hr>
+
+
+
+  <h2>Installation</h2>
+	<p>Installation of the required libraries, downloading and unpacking of the archive, and
+	compilation on Linux is usually as simple as typing the following commands:
+	<div class="code">
+	<code>
+	<p>
+	&nbsp;$ sudo apt-get install make gcc libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev<br>
+	&nbsp;$ wget https://github.com/mrirecon/bart/archive/vX.Y.ZZ.tar.gz<br>
+	&nbsp;$ tar xzvf vX.YY.ZZ.tar.gz<br>
+	&nbsp;$ cd bart-X.YY.ZZ<br>
+	&nbsp;$ make
+	</p>
+	</code>
+	</div>
+	<p>
+	See the README file included with the source code for further instructions and for Mac OS X and Windows.
+	</p>
+	<p>
+	If you are a Docker user you can also start with this extremely simple <a href="./Dockerfile">Dockerfile</a>.
+	</p>
+
+
+	</small>
+      </div>
+    </center>
+  </body>
+</html>
