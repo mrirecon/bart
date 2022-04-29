@@ -389,13 +389,6 @@ static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 }
 
 
-static void ode_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N])
-{
-	// Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
-	ode_direct_sa(h, tol, N, P-1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
-}
-
-
 void start_rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P*N][P*N])
 {
 	data->seq.pulse_applied = true;
@@ -403,15 +396,23 @@ void start_rf_pulse(struct sim_data* data, float h, float tol, int N, int P, flo
         // Define effective z Gradient = Slice-selection gradient + off-resonance [rad/s]
 	data->grad.gb[2] = data->grad.mom_sl + data->voxel.w;
 
-        if (ODE == data->seq.type) {
+        switch(data->seq.type) {
 
+        case ODE:
+        {
                 if (0. == data->pulse.rf_end)
                         hard_pulse(data, N, P, xp);
                 else
-                        ode_pulse(data, h, tol, N, P, xp);
+                        // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
+	                ode_direct_sa(h, tol, N, P-1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
+                break;
+        }
 
-        } else { // STM
+        case STM:
+        {
                 create_sim_matrix(data, P*N, stm_matrix, data->pulse.rf_start, data->pulse.rf_end);
+                break;
+        }
         }
 
         data->grad.gb[2] = 0.;
@@ -435,13 +436,6 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 }
 
 
-static void ode_relaxation(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end)
-{
-        // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
-	ode_direct_sa(h, tol, N, P-1, xp, st, end, data, bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
-}
-
-
 static void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P*N][P*N])
 {
 	data->seq.pulse_applied = false;
@@ -449,15 +443,23 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
         // Define effective z Gradient =Gradient Moments + off-resonance [rad/s]
         data->grad.gb[2] = data->grad.mom + data->voxel.w;
 
-        if (ODE == data->seq.type) {
+        switch(data->seq.type) {
 
+        case ODE:
+        {
                 if (0. == data->pulse.rf_end)
                         hard_relaxation(data, N, P, xp, st, end);
                 else
-                        ode_relaxation(data, h, tol, N, P, xp, st, end);
+                        // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
+	                ode_direct_sa(h, tol, N, P-1, xp, st, end, data, bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
+                break;
+        }
 
-        } else { // STM
+        case STM:
+        {
                 create_sim_matrix(data, P*N, stm_matrix, st, end);
+                break;
+        }
         }
 
         data->grad.gb[2] = 0.;
