@@ -315,7 +315,7 @@ NVCCFLAGS += -g
 endif
 
 ifeq ($(UBSAN),1)
-CFLAGS += -fsanitize=undefined -fsanitize-undefined-trap-on-error
+CFLAGS += -fsanitize=undefined -fsanitize=address -fsanitize-undefined-trap-on-error
 endif
 
 ifeq ($(NOEXEC_STACK),1)
