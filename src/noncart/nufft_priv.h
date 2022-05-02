@@ -25,7 +25,6 @@ struct nufft_data {
 	struct multiplace_array_s* fftmod;	///< FFT modulation for centering
 	struct multiplace_array_s* weights;	///< Weights, ex, density compensation
 	struct multiplace_array_s* basis;
-	struct multiplace_array_s* grid;	///< Oversampling grid
 
 	float width;			///< Interpolation kernel width
 	double beta;			///< Kaiser-Bessel beta parameter

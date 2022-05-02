@@ -1,11 +1,12 @@
 /* Copyright 2014-2015. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022. Institute of Biomedical Imaging. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014-2017 Frank Ong
- * 2014-2020 Martin Uecker
+ * 2014-2022 Martin Uecker
  * 2018      Sebastian Rosenzweig
  *
  */
@@ -441,14 +442,10 @@ static struct nufft_data* nufft_create_data(unsigned int N,
 	data->bas_strs = *TYPE_ALLOC(long[ND]);
 	data->out_strs = *TYPE_ALLOC(long[ND]);
 
-	data->linphase = NULL;
 	data->traj = NULL;
-	data->roll = NULL;
 	data->psf = NULL;
-	data->fftmod = NULL;
 	data->weights = NULL;
 	data->basis = NULL;
-	data->grid = NULL;
 
 
 	data->conf = conf;
@@ -463,13 +460,15 @@ static struct nufft_data* nufft_create_data(unsigned int N,
 	assert(0 == (data->flags & conf.cfft));
 	assert(!((!conf.decomp) && conf.toeplitz));
 
-	data->grid_conf = (struct grid_conf_s){
+	struct grid_conf_s grid_conf = {
 
 		.width = data->width,
 		.os = 2.,
 		.periodic = data->conf.periodic,
 		.beta = data->beta,
 	};
+
+	data->grid_conf = grid_conf;
 
 
 
@@ -570,7 +569,6 @@ static struct nufft_data* nufft_create_data(unsigned int N,
 	md_calc_strides(ND, data->cml_strs, data->cml_dims, CFL_SIZE);
 
 
-	// !
 	md_copy_dims(ND, data->cm2_dims, data->cim_dims);
 
 	for (int i = 0; i < (int)N; i++)
@@ -942,11 +940,10 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 	if (data->conf.toeplitz) {
 
 		complex float* tmp = md_alloc_sameplace(ND, data->cim_dims, CFL_SIZE, dst);
-
 		md_zmul2(ND, data->cim_dims, data->cim_strs, tmp, data->cim_strs, src, data->img_strs, multiplace_read(data->roll, src));
-
 		src = tmp;
 	}
+
 
 	complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
 
@@ -1237,7 +1234,7 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 	for (int i = 0; i < ncycles; i++) {
 
-		if (data->conf.pcycle && (i != data->cycle))
+		if (data->conf.pcycle && (i != (int)data->cycle))
 			continue;
 
 		toeplitz_mult_lowmem(data, i, dst, src);
@@ -1284,8 +1281,7 @@ void nufft_update_traj(	const struct linop_s* nufft, int N,
 			const long wgh_dims[N], const complex float* weights,
 			const long bas_dims[N], const complex float* basis)
 {
-	auto _data = linop_get_data(nufft);
-	auto data = CAST_DOWN(nufft_data, _data);
+	auto data = CAST_DOWN(nufft_data, linop_get_data(nufft));
 
 	assert(data->N == (unsigned int)N);
 
@@ -1294,8 +1290,7 @@ void nufft_update_traj(	const struct linop_s* nufft, int N,
 
 void nufft_update_psf2(const struct linop_s* nufft, unsigned int ND, const long psf_dims[ND], const long psf_strs[ND], const complex float* psf)
 {
-	auto _data = linop_get_data(nufft);
-	auto data = CAST_DOWN(nufft_data, _data);
+	auto data = CAST_DOWN(nufft_data, linop_get_data(nufft));
 
 	assert(md_check_equal_dims(ND, data->psf_dims, psf_dims, ~0));
 
