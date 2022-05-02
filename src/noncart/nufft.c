@@ -400,13 +400,16 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 }
 
 
-static struct nufft_data* nufft_create_data(unsigned int N)
+static struct nufft_data* nufft_create_data(unsigned int N,
+			const long cim_dims[N], bool basis,
+			struct nufft_conf_s conf)
 {
 	PTR_ALLOC(struct nufft_data, data);
 	SET_TYPEID(nufft_data, data);
 
 	data->N = N;
 
+	// extend internal dimensions by one for linear phases
 	unsigned int ND = N + 1;
 
 	data->ksp_dims = *TYPE_ALLOC(long[ND]);
@@ -447,15 +450,6 @@ static struct nufft_data* nufft_create_data(unsigned int N)
 	data->basis = NULL;
 	data->grid = NULL;
 
-	return PTR_PASS(data);
-}
-
-
-static void nufft_set_data(struct nufft_data* data,
-			   unsigned int N, const long cim_dims[N],
-			   bool basis, struct nufft_conf_s conf)
-{
-	assert(N == data->N);
 
 	data->conf = conf;
 	data->flags = conf.flags;
@@ -477,8 +471,6 @@ static void nufft_set_data(struct nufft_data* data,
 		.beta = data->beta,
 	};
 
-	// extend internal dimensions by one for linear phases
-	unsigned int ND = N + 1;
 
 
 	md_copy_dims(N, data->cim_dims, cim_dims);
@@ -595,6 +587,8 @@ static void nufft_set_data(struct nufft_data* data,
 		data->cycle = 0;
 		data->cfft_op = linop_fft_create(N, data->cim_dims, data->flags | data->conf.cfft);
 	}
+
+	return PTR_PASS(data);
 }
 
 
@@ -737,8 +731,8 @@ static struct linop_s* nufft_create3(unsigned int N,
 //	assert(md_check_bounds(N, ~0ul, chk_dims, ksp_dims));
 
 
-	auto data = nufft_create_data(N);
-	nufft_set_data(data, N, cim_dims, NULL != basis, conf);
+	auto data = nufft_create_data(N, cim_dims, NULL != basis, conf);
+
 
 	md_copy_dims(N, data->ksp_dims, ksp_dims);
 	data->ksp_dims[N] = 1;
@@ -850,8 +844,8 @@ struct linop_s* nufft_create_normal(int N, const long cim_dims[N],
 	debug_printf(DP_DEBUG1, "psf : ");
 	debug_print_dims(DP_DEBUG1, ND, psf_dims);
 
-	auto data = nufft_create_data(N);
-	nufft_set_data(data, N, cim_dims, basis, conf);
+	auto data = nufft_create_data(N, cim_dims, basis, conf);
+
 	md_copy_dims(ND, data->psf_dims, psf_dims);
 
 	assert(md_check_equal_dims(ND, data->psf_dims, data->lph_dims, data->flags));
