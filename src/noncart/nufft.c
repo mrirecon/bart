@@ -1200,18 +1200,6 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 }
 
 
-static void toeplitz_mult_pcycle(const struct nufft_data* data, complex float* dst, const complex float* src)
-{
-	unsigned int ncycles = data->lph_dims[data->N];
-        ((struct nufft_data*) data)->cycle = (data->cycle + 1) % ncycles;	// FIXME:
-
-	assert(dst != src);
-
-	md_clear(data->N, data->cim_dims, dst, CFL_SIZE);
-
-	toeplitz_mult_lowmem(data, data->cycle, dst, src);
-}
-
 
 static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
@@ -1219,20 +1207,25 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 	if (data->conf.toeplitz) {
 
-		if (data->conf.pcycle) {
-
-			toeplitz_mult_pcycle(data, dst, src);
-
-		} else if (data->conf.lowmem) {
-
-			int ncycles = data->lph_dims[data->N];
+		if (data->conf.pcycle || data->conf.lowmem) {
 
 			assert(dst != src);
 
+			int ncycles = data->lph_dims[data->N];
+
 			md_clear(data->N, data->cim_dims, dst, CFL_SIZE);
 
-			for (int i = 0; i < ncycles; i++)
-				toeplitz_mult_lowmem(data, i, dst, src);
+			if (data->conf.pcycle) {
+
+				for (int i = 0; i < ncycles; i++)
+					toeplitz_mult_lowmem(data, i, dst, src);
+
+			} else {
+
+				((struct nufft_data*) data)->cycle = (data->cycle + 1) % ncycles;	// FIXME:
+
+				toeplitz_mult_lowmem(data, data->cycle, dst, src);
+			}
 
 		} else {
 
