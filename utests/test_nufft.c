@@ -81,7 +81,6 @@ static struct linop_s* create_nufft2(bool toeplitz)
 
 static bool test_nufft_forward(void)
 {
-
 	const complex float src[] = { 
 		1., 1., 1., 1., 1., 1., 1., 1.,
 		1., 1., 1., 1., 1., 1., 1., 1.,
@@ -169,6 +168,27 @@ static bool test_nufft_toeplitz_weights(void)
 }
 
 
+static bool test_nufft_toeplitz_forward(void)
+{
+	complex float src[64];
+	complex float dst1[5] = { 0 };
+	complex float dst2[5] = { 0 };
+
+	md_gaussian_rand(N, cim_dims, src);
+
+	struct linop_s* op1 = create_nufft(false, false);
+	linop_forward(op1, N, ksp_dims, dst1, N, cim_dims, src);
+	linop_free(op1);
+
+	struct linop_s* op2 = create_nufft(true, false);
+	linop_forward(op2, N, ksp_dims, dst2, N, cim_dims, src);
+	linop_free(op2);
+
+	return md_znrmse(N, ksp_dims, dst1, dst2) < 0.01;
+}
+
+
+
 static bool test_nufft_basis_adjoint(void)
 {
 	struct linop_s* op = create_nufft2(false);
@@ -236,6 +256,7 @@ UT_REGISTER_TEST(test_nufft_adjoint);
 UT_REGISTER_TEST(test_nufft_normal);
 UT_REGISTER_TEST(test_nufft_toeplitz_weights);
 UT_REGISTER_TEST(test_nufft_toeplitz_noweights);
+UT_REGISTER_TEST(test_nufft_toeplitz_forward);
 UT_REGISTER_TEST(test_nufft_basis_adjoint);
 UT_REGISTER_TEST(test_nufft_basis_normal);
 UT_REGISTER_TEST(test_nufft_basis_toeplitz);

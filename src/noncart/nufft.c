@@ -937,16 +937,23 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 {
 	auto data = CAST_DOWN(nufft_data, _data);
 
-#ifdef USE_CUDA
-	//assert(!cuda_ondevice(src));
-#endif
-	assert(!data->conf.toeplitz); // if toeplitz linphase has no roll, so would need to be added
-
 	int ND = data->N + 1;
+
+	if (data->conf.toeplitz) {
+
+		complex float* tmp = md_alloc_sameplace(ND, data->cim_dims, CFL_SIZE, dst);
+
+		md_zmul2(ND, data->cim_dims, data->cim_strs, tmp, data->cim_strs, src, data->img_strs, multiplace_read(data->roll, src));
+
+		src = tmp;
+	}
 
 	complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
 
 	md_zmul2(ND, data->cml_dims, data->cml_strs, grid, data->cim_strs, src, data->lph_strs, multiplace_read(data->linphase, src));
+
+	if (data->conf.toeplitz)
+		md_free(src);
 
 	linop_forward(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
 
@@ -965,6 +972,7 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 		tmp = md_alloc_sameplace(ND, data->ksp_dims, CFL_SIZE, dst);
 
 	md_clear(ND, data->ksp_dims, tmp, CFL_SIZE);
+
 	grid2H(&data->grid_conf, ND, data->trj_dims, multiplace_read(data->traj, src), data->ksp_dims, tmp, data->cm2_dims, gridX);
 
 	md_free(gridX);
@@ -1037,6 +1045,7 @@ static void split_nufft_adjoint(const struct nufft_data* data, int ND, complex f
 		// sum over additional dimensions in the k-space
 		long sum_dims[ND];
 		long sum_flags = ~(nontriv_traj_flags | iter_flags);
+
 		md_select_dims(ND, sum_flags, sum_dims, max_dims);
 
 		md_clear(ND, cm2_reduced_dims, gridX, CFL_SIZE);
@@ -1103,6 +1112,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 	} else {
 
 		gridX = md_alloc_sameplace(data->N, data->cm2_dims, CFL_SIZE, dst);
+
 		md_clear(data->N, data->cm2_dims, gridX, CFL_SIZE);
 
 		grid2(&data->grid_conf, ND, data->trj_dims, multiplace_read(data->traj, dst), data->cm2_dims, gridX, data->ksp_dims, src);
