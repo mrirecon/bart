@@ -56,14 +56,6 @@ struct nufft_conf_s nufft_conf_defaults = {
 DEF_TYPEID(nufft_data);
 
 
-static void nufft_free_data(const linop_data_t* data);
-static void nufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src);
-static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src);
-static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src);
-
-
-static void toeplitz_mult(const struct nufft_data* data, complex float* dst, const complex float* src);
-
 
 static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned long flags, const long img_dims[N + 1])
 {
@@ -635,7 +627,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 		data->basis = multiplace_move(ND, data->bas_dims, CFL_SIZE, basis);
 	}
 
-	if (NULL != weights){
+	if (NULL != weights) {
 
 		md_copy_dims(N, data->wgh_dims, wgh_dims);
 		data->wgh_dims[N] = 1;
@@ -682,6 +674,14 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 		}
 	}
 }
+
+
+static void nufft_free_data(const linop_data_t* data);
+static void nufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src);
+
+
 
 static struct linop_s* nufft_create3(unsigned int N,
 			     const long ksp_dims[N],
@@ -1299,7 +1299,7 @@ void nufft_update_psf2(const struct linop_s* nufft, unsigned int ND, const long 
 	data->psf = multiplace_move2(ND, psf_dims, psf_strs, CFL_SIZE, psf);
 }
 
-void nufft_update_psf(	const struct linop_s* nufft, unsigned int ND, const long psf_dims[ND], const complex float* psf)
+void nufft_update_psf(const struct linop_s* nufft, unsigned int ND, const long psf_dims[ND], const complex float* psf)
 {
 	nufft_update_psf2(nufft, ND, psf_dims, MD_STRIDES(ND, psf_dims, CFL_SIZE), psf);
 }
