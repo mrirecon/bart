@@ -49,6 +49,7 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\t#Rep:%d\n", data->seq.rep_num);
         debug_printf(DP_INFO, "\t#Spins:%d\n", data->seq.spin_num);
         debug_printf(DP_INFO, "\tIPL:%f\n", data->seq.inversion_pulse_length);
+        debug_printf(DP_INFO, "\tISP:%f\n", data->seq.inversion_spoiler);
         debug_printf(DP_INFO, "\tPPL:%f\n", data->seq.prep_pulse_length);
         debug_printf(DP_INFO, "\tPulse Applied?:%d\n\n", data->seq.pulse_applied);
 

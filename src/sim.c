@@ -80,6 +80,7 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_INT(0, "nrep", &(data.seq.rep_num), "int", "Number of repetitions"),
                 OPTL_SET(0, "pinv", &(data.seq.perfect_inversion), "Use perfect inversions"),
                 OPTL_FLOAT(0, "ipl", &(data.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
+                OPTL_FLOAT(0, "isp", &(data.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
                 OPTL_FLOAT(0, "ppl", &(data.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
 
                 /* Pulse Specific Parameters */
