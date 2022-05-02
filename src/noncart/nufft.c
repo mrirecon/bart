@@ -512,52 +512,52 @@ static void nufft_set_data(struct nufft_data* data,
 	md_free(roll);
 
 
+	complex float* linphase;
+	float scx;
 
 	if (conf.decomp) {
 
-		complex float* linphase = compute_linphases(N, data->lph_dims, data->flags, data->img_dims);
+		linphase = compute_linphases(N, data->lph_dims, data->flags, data->img_dims);
 
 		md_calc_strides(ND, data->lph_strs, data->lph_dims, CFL_SIZE);
 
 		if (!conf.toeplitz)
 			md_zmul2(ND, data->lph_dims, data->lph_strs, linphase, data->lph_strs, linphase, data->img_strs, multiplace_read(data->roll, linphase));
 
-		fftmod(ND, data->lph_dims, data->flags, linphase, linphase);
-		fftscale(ND, data->lph_dims, data->flags, linphase, linphase);
-
-		float scale = powf(0.5, bitcount((data->flags) & md_nontriv_dims(N, data->lph_dims)));
-		md_zsmul(ND, data->lph_dims, linphase, linphase, scale);
-
-		data->linphase = multiplace_move(ND, data->lph_dims, CFL_SIZE, linphase);
-
-		md_free(linphase);
-
 		for (int i = 0; i < (int)data->N; i++)
 			if ((data->img_dims[i] > 1) && MD_IS_SET(data->flags, i))
 				data->factors[i] = 2;
 
+		scx = 0.5;
+
 	} else {
 
-		complex float* linphase = md_alloc(ND, data->img_dims, CFL_SIZE);
+		linphase = md_alloc(ND, data->img_dims, CFL_SIZE);
 
-		md_copy(ND, data->img_dims, linphase, multiplace_read(data->roll, linphase), CFL_SIZE);
+		md_copy_dims(ND, data->lph_dims, data->img_dims);
+
+		md_calc_strides(ND, data->lph_strs, data->lph_dims, CFL_SIZE);
+
+		md_copy(ND, data->lph_dims, linphase, multiplace_read(data->roll, linphase), CFL_SIZE);
 
 		multiplace_free(data->roll);
 		data->roll = NULL;
 
-		md_copy_dims(ND, data->lph_dims, data->img_dims);
-		md_calc_strides(ND, data->lph_strs, data->lph_dims, CFL_SIZE);
-
-		fftmod(ND, data->lph_dims, data->flags, linphase, linphase);
-		fftscale(ND, data->lph_dims, data->flags, linphase, linphase);
-
-		float scale = powf(sqrtf(0.5), bitcount((data->flags) & md_nontriv_dims(N, data->lph_dims)));
-		md_zsmul(ND, data->lph_dims, linphase, linphase, scale);
-
-		data->linphase = multiplace_move(ND, data->img_dims, CFL_SIZE, linphase);
-
-		md_free(linphase);
+		scx = sqrtf(0.5);
 	}
+
+
+	fftmod(ND, data->lph_dims, data->flags, linphase, linphase);
+	fftscale(ND, data->lph_dims, data->flags, linphase, linphase);
+
+	float scale = powf(scx, bitcount((data->flags) & md_nontriv_dims(N, data->lph_dims)));
+
+	md_zsmul(ND, data->lph_dims, linphase, linphase, scale);
+
+	data->linphase = multiplace_move(ND, data->lph_dims, CFL_SIZE, linphase);
+
+	md_free(linphase);
+
 
 	md_copy_dims(ND, data->cml_dims, data->cim_dims);
 	data->cml_dims[N + 0] = data->lph_dims[N + 0];
