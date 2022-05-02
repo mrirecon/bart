@@ -67,7 +67,7 @@ void bloch_pdp(float out[2][3], const float in[3], float r1, float r2, const flo
 	out[1][2] = 0.;
 }
 
-void bloch_b1_pdp(float out[3][3], const float in[3], float r1, float r2, const float gb[3], float phase, float fa)
+void bloch_b1_pdp(float out[3][3], const float in[3], float r1, float r2, const float gb[3], float phase, float b1)
 {
 	(void)r1; (void)r2; (void)gb;
 
@@ -78,9 +78,9 @@ void bloch_b1_pdp(float out[3][3], const float in[3], float r1, float r2, const 
 	out[1][0] = -in[0];
 	out[1][1] = -in[1];
 	out[1][2] = 0.;
-	out[2][0] = -sinf(phase) * in[2] * fa;
-	out[2][1] = cosf(phase) * in[2] * fa;
-	out[2][2] = (sinf(phase) * in[0] - cosf(phase) * in[1]) * fa;
+	out[2][0] = -sinf(phase) * in[2] * b1;
+	out[2][1] = cosf(phase) * in[2] * b1;
+	out[2][2] = (sinf(phase) * in[0] - cosf(phase) * in[1]) * b1;
 }
 
 
@@ -175,7 +175,7 @@ void bloch_matrix_int_sa(float matrix[10][10], float t, float r1, float r2, cons
 	mat_exp(10, t, matrix, blm);
 }
 
-void bloch_matrix_ode_sa2(float matrix[13][13], float r1, float r2, const float gb[3], float phase, float fa)
+void bloch_matrix_ode_sa2(float matrix[13][13], float r1, float r2, const float gb[3], float phase, float b1)
 {
 	float m0 = 1.;
 	float m[13][13] = {
@@ -188,19 +188,19 @@ void bloch_matrix_ode_sa2(float matrix[13][13], float r1, float r2, const float 
 		{	-1.,		0.,		0.,		0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.,	0.,	0.,	0.	},
 		{	0.,		-1.,		0.,		0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.,	0.,	0.,	0.	},
 		{	0.,		0.,		0.,		0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.,	0.,	0.,	0.	},
-		{	0.,		0.,		-sinf(phase)*fa,0.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
-		{	0.,		0.,		cosf(phase)*fa,	0.,	0.,	0.,	0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.	},
-		{	sinf(phase)*fa,	-cosf(phase)*fa,0.,		0.,	0.,	0.,	0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.	},
+		{	0.,		0.,		-sinf(phase)*b1,0.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
+		{	0.,		0.,		cosf(phase)*b1,	0.,	0.,	0.,	0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.	},
+		{	sinf(phase)*b1,	-cosf(phase)*b1,0.,		0.,	0.,	0.,	0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.	},
 		{	0.,		0.,		0.,		0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
 	};
 
 	matf_copy(13, 13, matrix, m);
 }
 
-void bloch_matrix_int_sa2(float matrix[13][13], float t, float r1, float r2, const float gb[3], float phase, float fa)
+void bloch_matrix_int_sa2(float matrix[13][13], float t, float r1, float r2, const float gb[3], float phase, float b1)
 {
 	float blm[13][13];
-	bloch_matrix_ode_sa2(blm, r1, r2, gb, phase, fa);
+	bloch_matrix_ode_sa2(blm, r1, r2, gb, phase, b1);
 
 	mat_exp(13, t, matrix, blm);
 }
