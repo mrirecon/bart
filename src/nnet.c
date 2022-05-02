@@ -1,17 +1,21 @@
-#include <stdlib.h>
-#include <stdio.h>
+/* Copyright 2021-2022. Uecker Lab, University Medical Center Goettingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+
 #include <complex.h>
 
 #include "grecon/opt_iter6.h"
 #include "grecon/losses.h"
 #include "grecon/network.h"
 
-#include "iter/iter6.h"
-
-#include "nn/weights.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/init.h"
+
+#include "iter/iter6.h"
+
+#include "nn/weights.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -121,7 +125,7 @@ int main_nnet(int argc, char* argv[argc])
 		OPTL_SUBOPT(0, "adam", "...", "configure Adam", N_iter6_adam_opts, iter6_adam_opts),
 		//OPTL_SUBOPT(0, "iPALM", "...", "configure iPALM", N_iter6_ipalm_opts, iter6_ipalm_opts),
 
-		OPTL_SET(0, "load-memory", &(load_mem), "load files int memory"),
+		OPTL_SET(0, "load-memory", &(load_mem), "load files into memory"),
 
 		OPTL_STRING(0, "export-graph", (const char**)(&(graph_filename)), "<file.dot>", "export graph for visualization"),
 	};
@@ -201,7 +205,7 @@ int main_nnet(int argc, char* argv[argc])
 	if (NULL != filename_weights_load) {
 
 		if (apply)
-			error("Weights should only be loaded for trining using -l option!");
+			error("Weights should only be loaded for training using -l option!");
 
 		config.weights = load_nn_weights(filename_weights_load);
 	}
