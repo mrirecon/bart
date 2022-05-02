@@ -143,7 +143,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_FLOAT('u', &conf.rho, "rho", "ADMM rho [default: 0.01]"),
 		OPT_UINT('C', &conf.inner_iter, "iter", "inner iterations"),
 		OPT_FLOAT('s', &conf.step, "step", "step size"),
-		OPT_FLOAT('B', &conf.lower_bound, "bound", "lower bound for relaxivity"),
+		OPT_FLOAT('B', &conf.lower_bound, "bound", "lower bound for relaxation"),
 		OPT_FLVEC2('b', &scale_fB0, "SMO:SC", "B0 field: spatial smooth level; scaling [default: 222.; 1.]"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('N', &unused, "(normalize)"), // no-op
