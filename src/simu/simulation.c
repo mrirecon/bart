@@ -42,6 +42,7 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tB1:%f\n\n", data->voxel.b1);
 
         debug_printf(DP_WARN, "Seq-Parameter:\n");
+        debug_printf(DP_INFO, "\tSimulation Type:%d\n", data->seq.type);
         debug_printf(DP_INFO, "\tSequence:%d\n", data->seq.seq_type);
         debug_printf(DP_INFO, "\tTR:%f\n", data->seq.tr);
         debug_printf(DP_INFO, "\tTE:%f\n", data->seq.te);
