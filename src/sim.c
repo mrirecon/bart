@@ -68,12 +68,12 @@ int main_sim(int argc, char* argv[argc])
         struct opt_s sim_opts[] = {
 
                 /* Sequence Specific Parameters */
-                OPTL_SELECT(0, "bssfp", enum sim_seq_t, &(data.seq.seq_type), BSSFP, "bSSFP"),
-                OPTL_SELECT(0, "ir-bssfp", enum sim_seq_t, &(data.seq.seq_type), IRBSSFP, "Inversion-Recovery bSSFP"),
-                OPTL_SELECT(0, "flash", enum sim_seq_t, &(data.seq.seq_type), FLASH, "FLASH"),
-                OPTL_SELECT(0, "ir-flash", enum sim_seq_t, &(data.seq.seq_type), IRFLASH, "Inversion-Recovery FLASH"),
-                OPTL_SELECT(0, "ODE", enum sim_type_t, &(data.seq.type), ODE, "Full Ordinary Differential Equation Solver based Simulation"),
-                OPTL_SELECT(0, "STM", enum sim_type_t, &(data.seq.type), STM, "State-Transition Matrix based Simulation"),
+                OPTL_SELECT(0, "bssfp", enum sim_seq, &(data.seq.seq_type), SEQ_BSSFP, "bSSFP"),
+                OPTL_SELECT(0, "ir-bssfp", enum sim_seq, &(data.seq.seq_type), SEQ_IRBSSFP, "Inversion-Recovery bSSFP"),
+                OPTL_SELECT(0, "flash", enum sim_seq, &(data.seq.seq_type), SEQ_FLASH, "FLASH"),
+                OPTL_SELECT(0, "ir-flash", enum sim_seq, &(data.seq.seq_type), SEQ_IRFLASH, "Inversion-Recovery FLASH"),
+                OPTL_SELECT(0, "ODE", enum sim_type, &(data.seq.type), SIM_ODE, "Full Ordinary Differential Equation Solver based Simulation"),
+                OPTL_SELECT(0, "STM", enum sim_type, &(data.seq.type), SIM_STM, "State-Transition Matrix based Simulation"),
                 OPTL_FLOAT(0, "tr", &(data.seq.tr), "float", "Repetition time [s]"),
                 OPTL_FLOAT(0, "te", &(data.seq.te), "float", "Echo time [s]"),
                 OPTL_INT(0, "nspins", &(data.seq.spin_num), "int", "Number of averaged spins"),

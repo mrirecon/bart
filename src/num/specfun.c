@@ -83,34 +83,6 @@ double Si_power(double x)
 //	arXiv:1407.7676
 //  		-> Appendix B: Efficient evaluation of the Sine and Cosine integrals
 
-#if 0
-// FIXME: Mistake in algorithm or publication?!
-// for now powerseries is accurate enough for x < 4
-static double Si_small_x(double x)
-{
-	double num = 	1
-			- 4.54393409816329991 * 10E-2 	* pow(x,2)
-			+ 1.15457225751016682 * 10E-3 	* pow(x,4)
-			- 1.41018536821330254 * 10E-5 	* pow(x,6)
-			+ 9.43280809438713025 * 10E-8 	* pow(x,8)
-			- 3.53201978997168357 * 10E-10 	* pow(x,10)
-			+ 7.08240282274875911 * 10E-13 	* pow(x,12)
-			- 6.05338212010422477 * 10E-16 	* pow(x,14);
-
-	double denum =	1
-			+ 1.01162145739225565 * 10E-2	* pow(x,2)
-			+ 4.99175116169755106 * 10E-5	* pow(x,4)
-			+ 1.55654986308745614 * 10E-7	* pow(x,6)
-			+ 3.28067571055789734 * 10E-10	* pow(x,8)
-			+ 4.5049097575386581  * 10E-13	* pow(x,10)
-			+ 3.21107051193712168 * 10E-16	* pow(x,12);
-
-	printf("Si_small_x: %f, %f\n", num, denum);
-
-	return x * num / denum;
-}
-#endif
-
 // helper function to calculate Si accurate for large arguments (> 4)
 static double Si_help_f(double x)
 {

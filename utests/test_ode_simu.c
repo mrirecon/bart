@@ -36,7 +36,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = IRBSSFP;
+	sim_data.seq.seq_type = SEQ_IRBSSFP;
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.0015;
 	sim_data.seq.rep_num = 500;
@@ -169,8 +169,8 @@ static bool test_stm_bloch_simulation_gradients(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-        sim_data.seq.type = STM;
-	sim_data.seq.seq_type = IRBSSFP;
+        sim_data.seq.type = SIM_STM;
+	sim_data.seq.seq_type = SEQ_IRBSSFP;
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.0015;
 	sim_data.seq.rep_num = 500;
@@ -182,7 +182,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 	sim_data.voxel.r1 = 1. / WATER_T1;
 	sim_data.voxel.r2 = 1. / WATER_T2;
 	sim_data.voxel.m0 = 1.;
-	sim_data.voxel.w = 0;
+	sim_data.voxel.w = 0.;
 	sim_data.voxel.b1 = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -321,7 +321,7 @@ static bool test_ode_irbssfp_simulation(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = IRBSSFP;
+	sim_data.seq.seq_type = SEQ_IRBSSFP;
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.0015;
 	sim_data.seq.rep_num = repetition;
@@ -331,8 +331,8 @@ static bool test_ode_irbssfp_simulation(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1./t1n;
-	sim_data.voxel.r2 = 1./t2n;
+	sim_data.voxel.r1 = 1. / t1n;
+	sim_data.voxel.r2 = 1. / t2n;
 	sim_data.voxel.m0 = m0n;
 	sim_data.voxel.w = 0;
 
@@ -355,9 +355,9 @@ static bool test_ode_irbssfp_simulation(void)
 
 
 	// Analytical Model
-	float t1s = 1 / ((cosf(fa/2.)*cosf(fa/2.))/t1n + (sinf(fa/2.)*sinf(fa/2.))/t2n);
-	float s0 = m0n * sinf(fa/2.);
-	float stst = m0n * sinf(fa) / ((t1n/t2n + 1) - cosf(fa) * (t1n/t2n-1));
+	float t1s = 1 / ((cosf(fa / 2.) * cosf(fa / 2.)) / t1n + (sinf(fa / 2.) * sinf(fa / 2.)) / t2n);
+	float s0 = m0n * sinf(fa / 2.);
+	float stst = m0n * sinf(fa) / ((t1n / t2n + 1) - cosf(fa) * (t1n / t2n-1));
 	float inv = 1 + s0 / stst;
 
 
@@ -370,9 +370,9 @@ static bool test_ode_irbssfp_simulation(void)
 
                 //Does NOT include phase information!
                 // + data.tr through alpha/2 preparation
-		out_theory = fabs(stst * (1. - inv * expf(-((float)(z+1) * sim_data.seq.tr)/t1s)));
+		out_theory = fabs(stst * (1. - inv * expf(-((float)(z + 1) * sim_data.seq.tr) / t1s)));
 
-		out_simu = cabsf(mxy_sig[z][1] + mxy_sig[z][0]*I);
+		out_simu = cabsf(mxy_sig[z][1] + mxy_sig[z][0] * I);
 
 		err = fabsf(out_simu - out_theory);
 
@@ -405,7 +405,7 @@ static bool test_stm_ode_bssfp_comparison(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = IRBSSFP;
+	sim_data.seq.seq_type = SEQ_IRBSSFP;
 	sim_data.seq.tr = 0.0045;
 	sim_data.seq.te = 0.00225;
 	sim_data.seq.rep_num = 500;
@@ -416,8 +416,8 @@ static bool test_stm_ode_bssfp_comparison(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1./WATER_T1;
-	sim_data.voxel.r2 = 1./WATER_T2;
+	sim_data.voxel.r1 = 1. / WATER_T1;
+	sim_data.voxel.r2 = 1. / WATER_T2;
 	sim_data.voxel.m0 = 1;
 	sim_data.voxel.w = 0;
 
@@ -441,7 +441,7 @@ static bool test_stm_ode_bssfp_comparison(void)
 
 	bloch_simulation(&sim_ode, mxy_ode, sa_r1_ode, sa_r2_ode, sa_m0_ode, sa_b1_ode);
 
-        sim_data.seq.type = STM;
+        sim_data.seq.type = SIM_STM;
 
 	float mxy_matexp[sim_data.seq.rep_num][3];
 	float sa_r1_matexp[sim_data.seq.rep_num][3];
@@ -463,19 +463,19 @@ static bool test_stm_ode_bssfp_comparison(void)
 
         	for (int dim = 0; dim < 3; dim++) {
 
-			err = fabsf(mxy_matexp[rep][dim]-mxy_ode[rep][dim]);
+			err = fabsf(mxy_matexp[rep][dim] - mxy_ode[rep][dim]);
 			if (tol < err)
 				return 0;
 
-			err = fabsf(sa_r1_matexp[rep][dim]-sa_r1_ode[rep][dim]);
+			err = fabsf(sa_r1_matexp[rep][dim] - sa_r1_ode[rep][dim]);
 			if (tol < err)
 				return 0;
 
-			err = fabsf(sa_r2_matexp[rep][dim]-sa_r2_ode[rep][dim]);
+			err = fabsf(sa_r2_matexp[rep][dim] - sa_r2_ode[rep][dim]);
 			if (tol < err)
 				return 0;
 
-			err = fabsf(sa_m0_matexp[rep][dim]-sa_m0_ode[rep][dim]);
+			err = fabsf(sa_m0_matexp[rep][dim] - sa_m0_ode[rep][dim]);
 			if (tol < err)
 				return 0;
 
@@ -504,7 +504,7 @@ static bool test_stm_ode_flash_comparison(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = IRFLASH;
+	sim_data.seq.seq_type = SEQ_IRFLASH;
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.0017;
 	sim_data.seq.rep_num = 500;
@@ -515,8 +515,8 @@ static bool test_stm_ode_flash_comparison(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1./WATER_T1;
-	sim_data.voxel.r2 = 1./WATER_T2;
+	sim_data.voxel.r1 = 1. / WATER_T1;
+	sim_data.voxel.r2 = 1. / WATER_T2;
 	sim_data.voxel.m0 = 1;
 	sim_data.voxel.w = 0;
 
@@ -540,7 +540,7 @@ static bool test_stm_ode_flash_comparison(void)
 
 	bloch_simulation(&sim_ode, mxy_ode, sa_r1_ode, sa_r2_ode, sa_m0_ode, sa_b1_ode);
 
-        sim_data.seq.type = STM;
+        sim_data.seq.type = SIM_STM;
 
 	float mxy_matexp[sim_data.seq.rep_num][3];
 	float sa_r1_matexp[sim_data.seq.rep_num][3];
@@ -562,19 +562,19 @@ static bool test_stm_ode_flash_comparison(void)
 
         	for (int dim = 0; dim < 3; dim++) {
 
-			err = fabsf(mxy_matexp[rep][dim]-mxy_ode[rep][dim]);
+			err = fabsf(mxy_matexp[rep][dim] - mxy_ode[rep][dim]);
 			if (tol < err)
 				return 0;
 
-			err = fabsf(sa_r1_matexp[rep][dim]-sa_r1_ode[rep][dim]);
+			err = fabsf(sa_r1_matexp[rep][dim] - sa_r1_ode[rep][dim]);
 			if (tol < err)
 				return 0;
 
-			err = fabsf(sa_r2_matexp[rep][dim]-sa_r2_ode[rep][dim]);
+			err = fabsf(sa_r2_matexp[rep][dim] - sa_r2_ode[rep][dim]);
 			if (tol < err)
 				return 0;
 
-			err = fabsf(sa_m0_matexp[rep][dim]-sa_m0_ode[rep][dim]);
+			err = fabsf(sa_m0_matexp[rep][dim] - sa_m0_ode[rep][dim]);
 			if (tol < err)
 				return 0;
 
@@ -599,7 +599,7 @@ static bool test_ode_simu_offresonance(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+	sim_data.seq.seq_type = SEQ_FLASH;	// Does not have preparation phase
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.001;
 	sim_data.seq.rep_num = 1;
@@ -640,9 +640,9 @@ static bool test_ode_simu_offresonance(void)
 #endif
 	float tol = 10E-5;
 
-	UT_ASSERT(	(fabs(mxySig_ode[0][0] - 1.) < tol) &&
-			(fabs(mxySig_ode[0][1] - 0.) < tol) &&
-			(fabs(mxySig_ode[0][2] - 0.) < tol) );
+	UT_ASSERT(	(fabs(mxySig_ode[0][0] - 1.) < tol)
+                        && (fabs(mxySig_ode[0][1] - 0.) < tol)
+                        && (fabs(mxySig_ode[0][2] - 0.) < tol) );
 
 	return true;
 }
@@ -659,8 +659,8 @@ static bool test_stm_simu_offresonance(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-        sim_data.seq.type = STM;
-	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+        sim_data.seq.type = SIM_STM;
+	sim_data.seq.seq_type = SEQ_FLASH;	// Does not have preparation phase
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.001;
 	sim_data.seq.rep_num = 1;
@@ -701,9 +701,9 @@ static bool test_stm_simu_offresonance(void)
 #endif
 	float tol = 10E-5;
 
-	UT_ASSERT(	(fabs(mxySig_ode[0][0] - 1.) < tol) &&
-			(fabs(mxySig_ode[0][1] - 0.) < tol) &&
-			(fabs(mxySig_ode[0][2] - 0.) < tol) );
+	UT_ASSERT(	(fabs(mxySig_ode[0][0] - 1.) < tol)
+                        && (fabs(mxySig_ode[0][1] - 0.) < tol)
+                        && (fabs(mxySig_ode[0][2] - 0.) < tol) );
 
 	return true;
 }
@@ -719,7 +719,7 @@ static bool test_ode_simu_gradient(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+	sim_data.seq.seq_type = SEQ_FLASH;	// Does not have preparation phase
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.001;
 	sim_data.seq.rep_num = 1;
@@ -762,9 +762,9 @@ static bool test_ode_simu_gradient(void)
 #endif
 	float tol = 10E-5;
 
-	UT_ASSERT(	(fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.) < tol) &&
-			(fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.) < tol) &&
-			(fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) < tol) );
+	UT_ASSERT(	(fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.) < tol)
+                        && (fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.) < tol)
+                        && (fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) < tol) );
 
 	return true;
 }
@@ -780,8 +780,8 @@ static bool test_stm_simu_gradient(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-        sim_data.seq.type = STM;
-	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+        sim_data.seq.type = SIM_STM;
+	sim_data.seq.seq_type = SEQ_FLASH;	// Does not have preparation phase
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.001;
 	sim_data.seq.rep_num = 1;
@@ -824,9 +824,9 @@ static bool test_stm_simu_gradient(void)
 #endif
 	float tol = 10E-5;
 
-	UT_ASSERT(	(fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.) < tol) &&
-			(fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.) < tol) &&
-			(fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) < tol) );
+	UT_ASSERT(	(fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.) < tol)
+                        && (fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.) < tol)
+                        && (fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) < tol) );
 
 	return true;
 }
@@ -860,7 +860,7 @@ static void ode_fourier_modes(int N, struct sim_data* data, complex float fn[N],
 		bloch_simulation(&sim_ode, mxySig_ode, saR1Sig_ode, saR2Sig_ode, saDensSig_ode, sa_b1_ode);
 
 		// Save M+
-		m_plus[i] = mxySig_ode[t][1] + mxySig_ode[t][0]*I;
+		m_plus[i] = mxySig_ode[t][1] + mxySig_ode[t][0] * I;
 	}
 
 #if 0	// Print out values
@@ -877,7 +877,7 @@ static void ode_fourier_modes(int N, struct sim_data* data, complex float fn[N],
 		fn[j] = 0.;
 
 		for (int m = 0; m < N; m++)
-			fn[j] += m_plus[m] * cexpf(-2. * M_PI * I * (-(float)N/2.+j) * (float)m/(float)N);
+			fn[j] += m_plus[m] * cexpf(-2. * M_PI * I * (-(float)N / 2. + j) * (float)m / (float)N);
 
 		fn[j] /= N; // Scale to compensate for Fn \prop N
 	}
@@ -892,7 +892,7 @@ static bool test_ode_epg_relation(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = FLASH;
+	sim_data.seq.seq_type = SEQ_FLASH;
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.001;
 	sim_data.seq.rep_num = 1;
@@ -956,10 +956,10 @@ static bool test_ode_epg_relation(void)
 
 	float tol = 10E-5;
 
-	UT_ASSERT(	(fabs(crealf(states[0][0][T-1]) - test_modes[0]) < tol) &&
-			(fabs(crealf(states[0][0][T-1]) - test_modes[1]) < tol) &&
-			(fabs(crealf(states[0][0][T-1]) - test_modes[2]) < tol) &&
-			(fabs(crealf(states[0][0][T-1]) - test_modes[3]) < tol) );
+	UT_ASSERT(	(fabs(crealf(states[0][0][T-1]) - test_modes[0]) < tol)
+                        && (fabs(crealf(states[0][0][T-1]) - test_modes[1]) < tol)
+                        && (fabs(crealf(states[0][0][T-1]) - test_modes[2]) < tol)
+                        && (fabs(crealf(states[0][0][T-1]) - test_modes[3]) < tol) );
 
 	return true;
 }
@@ -995,7 +995,7 @@ static bool test_hp_irbssfp_simulation(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = IRBSSFP;
+	sim_data.seq.seq_type = SEQ_IRBSSFP;
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.0015;
 	sim_data.seq.rep_num = repetition;
@@ -1005,8 +1005,8 @@ static bool test_hp_irbssfp_simulation(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1./t1n;
-	sim_data.voxel.r2 = 1./t2n;
+	sim_data.voxel.r1 = 1. / t1n;
+	sim_data.voxel.r2 = 1. / t2n;
 	sim_data.voxel.m0 = m0n;
 	sim_data.voxel.w = 0;
 
@@ -1030,9 +1030,9 @@ static bool test_hp_irbssfp_simulation(void)
 
 
 	// Analytical Model
-	float t1s = 1 / ((cosf(fa/2.)*cosf(fa/2.))/t1n + (sinf(fa/2.)*sinf(fa/2.))/t2n);
-	float s0 = m0n * sinf(fa/2.);
-	float stst = m0n * sinf(fa) / ((t1n/t2n + 1) - cosf(fa) * (t1n/t2n-1));
+	float t1s = 1 / ((cosf(fa / 2.) * cosf(fa / 2.)) / t1n + (sinf(fa / 2.) * sinf(fa / 2.)) / t2n);
+	float s0 = m0n * sinf(fa / 2.);
+	float stst = m0n * sinf(fa) / ((t1n / t2n + 1) - cosf(fa) * (t1n / t2n - 1));
 	float inv = 1 + s0 / stst;
 
 
@@ -1045,9 +1045,9 @@ static bool test_hp_irbssfp_simulation(void)
 
                 //Does NOT include phase information!
                 // + data.tr through alpha/2 preparation
-		out_theory = fabs(stst * (1. - inv * expf(-((float)(z+1) * sim_data.seq.tr)/t1s)));
+		out_theory = fabs(stst * (1. - inv * expf(-((float)(z + 1) * sim_data.seq.tr) / t1s)));
 
-		out_simu = cabsf(mxy_sig[z][1] + mxy_sig[z][0]*I);
+		out_simu = cabsf(mxy_sig[z][1] + mxy_sig[z][0] * I);
 
 		err = fabsf(out_simu - out_theory);
 
@@ -1074,7 +1074,7 @@ static bool test_hp_simu_offresonance(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+	sim_data.seq.seq_type = SEQ_FLASH;	// Does not have preparation phase
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.001;
 	sim_data.seq.rep_num = 1;
@@ -1115,9 +1115,9 @@ static bool test_hp_simu_offresonance(void)
 #endif
 	float tol = 10E-5;
 
-	UT_ASSERT(	(fabs(mxySig_ode[0][0] - 1.) < tol) &&
-			(fabs(mxySig_ode[0][1] - 0.) < tol) &&
-			(fabs(mxySig_ode[0][2] - 0.) < tol) );
+	UT_ASSERT(	(fabs(mxySig_ode[0][0] - 1.) < tol)
+                        && (fabs(mxySig_ode[0][1] - 0.) < tol)
+                        && (fabs(mxySig_ode[0][2] - 0.) < tol) );
 
 	return true;
 }
@@ -1133,7 +1133,7 @@ static bool test_hp_simu_gradient(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = FLASH;	// Does not have preparation phase
+	sim_data.seq.seq_type = SEQ_FLASH;	// Does not have preparation phase
 	sim_data.seq.tr = 0.003;
 	sim_data.seq.te = 0.001;
 	sim_data.seq.rep_num = 1;
@@ -1176,9 +1176,9 @@ static bool test_hp_simu_gradient(void)
 #endif
 	float tol = 10E-5;
 
-	UT_ASSERT(	(fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.) < tol) &&
-			(fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.) < tol) &&
-			(fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) < tol) );
+	UT_ASSERT(	(fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.) < tol)
+                        && (fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.) < tol)
+                        && (fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) < tol) );
 
 	return true;
 }
@@ -1195,7 +1195,7 @@ static bool test_ode_z_gradient_refocus(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-	sim_data.seq.seq_type = FLASH;
+	sim_data.seq.seq_type = SEQ_FLASH;
 	sim_data.seq.tr = 0.0030;
 	sim_data.seq.te = 0.0015;
 	sim_data.seq.rep_num = 1;
@@ -1247,9 +1247,9 @@ static bool test_ode_z_gradient_refocus(void)
 
 	float tol = 1.E-2;
 
-	UT_ASSERT(      (fabsf(mxy_sig[0][0]-mxy_sig2[0][0]) < tol) &&
-                        (fabsf(mxy_sig[0][1]-mxy_sig2[0][1]) < tol) &&
-			(fabsf(mxy_sig[0][2]-mxy_sig2[0][2]) < tol) );
+	UT_ASSERT(      (fabsf(mxy_sig[0][0]-mxy_sig2[0][0]) < tol)
+                        && (fabsf(mxy_sig[0][1]-mxy_sig2[0][1]) < tol)
+                        && (fabsf(mxy_sig[0][2]-mxy_sig2[0][2]) < tol) );
 
 	return true;
 }
@@ -1266,8 +1266,8 @@ static bool test_stm_z_gradient_refocus(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
-        sim_data.seq.type = STM;
-	sim_data.seq.seq_type = FLASH;
+        sim_data.seq.type = SIM_STM;
+	sim_data.seq.seq_type = SEQ_FLASH;
 	sim_data.seq.tr = 0.0030;
 	sim_data.seq.te = 0.0015;
 	sim_data.seq.rep_num = 1;
@@ -1319,9 +1319,9 @@ static bool test_stm_z_gradient_refocus(void)
 
 	float tol = 1.E-2;
 
-	UT_ASSERT(      (fabsf(mxy_sig[0][0]-mxy_sig2[0][0]) < tol) &&
-                        (fabsf(mxy_sig[0][1]-mxy_sig2[0][1]) < tol) &&
-			(fabsf(mxy_sig[0][2]-mxy_sig2[0][2]) < tol) );
+	UT_ASSERT(      (fabsf(mxy_sig[0][0]-mxy_sig2[0][0]) < tol)
+                        && (fabsf(mxy_sig[0][1]-mxy_sig2[0][1]) < tol)
+                        && (fabsf(mxy_sig[0][2]-mxy_sig2[0][2]) < tol) );
 
 	return true;
 }
@@ -1338,7 +1338,7 @@ static bool test_ode_inversion(void)
         struct sim_data data;
 
         data.seq = simdata_seq_defaults;
-        data.seq.seq_type = 2;
+        data.seq.seq_type = SEQ_FLASH;
         data.seq.tr = 0.001;
         data.seq.te = 0.001;
         data.seq.rep_num = 1;
