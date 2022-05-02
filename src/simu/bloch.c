@@ -4,6 +4,8 @@
 
 #include "num/vec3.h"
 
+#include "num/matexp.h"
+
 #include "bloch.h"
 
 
