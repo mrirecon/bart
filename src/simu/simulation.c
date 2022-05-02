@@ -550,20 +550,20 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P*N+1][P*
                         (IRBSSFP == data->seq.seq_type)) {
 
                         // Matrix: TE -> TR-T_RF
-                        float mrel2[M][M];
-                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr-data->pulse.rf_end, mrel2);
+                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr-data->pulse.rf_end, tmp);
 
                         // Matrix: TR-T_RF -> TR
-                        float mrel3[M][M];
                         data->grad.mom = -data->grad.mom_sl;
-                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.tr-data->pulse.rf_end, data->seq.tr, mrel3);
+                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.tr-data->pulse.rf_end, data->seq.tr, tmp2);
                         data->grad.mom = 0.;
 
                         // Join matrices: TE -> TR
-                        mm_mul(M, mtr, mrel2, mrel3);
-                }
-                else
+                        mm_mul(M, mtr, tmp, tmp2);
+
+                } else {
+
                         relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, mtr);
+                }
 
                 data->tmp.r2spoil = 0.;	// effects spoiled sequences only
 
