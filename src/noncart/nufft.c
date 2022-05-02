@@ -1122,8 +1122,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 	linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
 
-	md_clear(ND, data->cim_dims, dst, CFL_SIZE);
-	md_zfmacc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, multiplace_read(data->linphase, dst));
+	md_ztenmulc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, multiplace_read(data->linphase, dst));
 
 	md_free(grid);
 
@@ -1156,8 +1155,7 @@ static void toeplitz_mult(const struct nufft_data* data, complex float* dst, con
 
 	linop_adjoint(data->fft_op, ND, data->cml_dims, gridT, ND, data->cml_dims, gridT);
 
-	md_clear(ND, data->cim_dims, dst, CFL_SIZE);
-	md_zfmacc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, gridT, data->lph_strs, linphase);
+	md_ztenmulc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, gridT, data->lph_strs, linphase);
 
 	md_free(gridT);
 }
