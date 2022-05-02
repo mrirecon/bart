@@ -305,7 +305,7 @@ static long vector_position(int d, int r, int rep_max, int s, int spin_max)
 }
 
 
-static void collect_signal(struct sim_data* data, int N, int P, float* mxy, float* sa_r1, float* sa_r2, float* sa_b1, float xp[P + 1][N])
+static void collect_signal(struct sim_data* data, int N, int P, float* mxy, float* sa_r1, float* sa_r2, float* sa_b1, float xp[P][N])
 {
 	float tmp[4][3] = { { 0. }, { 0. }, { 0. }, { 0. } };
 
