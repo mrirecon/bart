@@ -716,6 +716,8 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
         enum { N = 3 };         // Number of dimensions (x, y, z)
 	enum { P = 4 };         // Number of parameters with estimated derivative (Mxy, R1, R2, B1)
 
+        assert(0 < P);
+
         enum { M = N * P + 1 };     // STM based on single vector and additional +1 for linearized system matrix
 
         long storage_size = data->seq.spin_num * data->seq.rep_num * 3 * sizeof(float);
@@ -742,11 +744,20 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
 			data->grad.mom_sl = zgradient_max / (data->seq.spin_num-1) * (data->tmp.spin_counter - (int)(data->seq.spin_num / 2.));
 		}
 
-                // ODE
-		float xp[P][N] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
+                // Initialize ODE
+		float xp[P][N];
 
-                // STM
-                float xstm[M] = { 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1. };
+                for (int p = 0; p < P; p++)
+                        for (int n = 0; n < N; n++)
+                                xp[p][n] = 0.;
+
+                xp[0][2] = 1.;
+
+                // Initialize STM
+                float xstm[M] = { 0. };
+
+                xstm[2] = 1.;
+                xstm[M - 1] = 1.;
 
 
                 // Reset parameters
