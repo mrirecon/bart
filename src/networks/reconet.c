@@ -893,6 +893,21 @@ static nn_t reconet_apply_op_create(const struct reconet_s* config, int N, const
 	nn_apply = reconet_sort_args(nn_apply);
 	nn_apply = nn_get_wo_weights_F(nn_apply, config->weights, false);
 
+	if (config->coil_image) {
+
+		long cim_dims[N];
+		long img_dims[N];
+		long col_dims[N];
+
+		md_select_dims(N, config->mri_config->coil_image_flags,	cim_dims, max_dims);
+		md_select_dims(N, config->mri_config->image_flags,	img_dims, max_dims);
+		md_select_dims(N, config->mri_config->coil_flags,	col_dims, max_dims);
+
+		nn_apply = nn_chain2_FF(nn_apply , 0, "reconstruction", nn_from_nlop_F(nlop_tenmul_create(N, cim_dims, img_dims, col_dims)), 0, NULL);
+		nn_apply = nn_dup_F(nn_apply , 0, "coil", 0, NULL);
+		nn_apply = nn_set_output_name_F(nn_apply , 0, "reconstruction");
+	}
+
 	debug_printf(DP_INFO, "Apply RecoNet\n");
 	nn_debug(DP_INFO, nn_apply);
 
