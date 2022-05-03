@@ -16,7 +16,7 @@ enum OPT_TYPE {
 	OPT_FLOAT,
 	OPT_CFL,
 	OPT_VEC2, OPT_VEC3,
-	OPT_FLOAT_VEC2, OPT_FLOAT_VEC3,
+	OPT_FLOAT_VEC2, OPT_FLOAT_VEC3, OPT_FLOAT_VEC4,
 	OPT_STRING,
 	OPT_INFILE, OPT_OUTFILE, OPT_INOUTFILE,
 	OPT_SELECT,
@@ -59,6 +59,7 @@ typedef long opt_vec2_t[2];
 typedef float opt_fvec2_t[2];
 typedef long opt_vec3_t[3];
 typedef float opt_fvec3_t[3];
+typedef float opt_fvec4_t[4];
 
 #define OPT_SEL(T, x, v)	&(struct opt_select_s){ (x), &(T){ (v) }, &(T){ *(x) }, sizeof(T) }
 #define OPT_SUB(n, opts, c, s, descr)	&(struct opt_subopt_s){ (n), (opts), (c), (s), (descr) }
@@ -79,6 +80,7 @@ typedef float opt_fvec3_t[3];
 #define OPT_FLVEC2(c, ptr, argname, descr)	OPT_ARG(c, OPT_FLOAT_VEC2, opt_fvec2_t, ptr, argname, descr)
 #define OPT_VEC3(c, ptr, argname, descr)	OPT_ARG(c, OPT_VEC3, opt_vec3_t, ptr, argname, descr)
 #define OPT_FLVEC3(c, ptr, argname, descr)	OPT_ARG(c, OPT_FLOAT_VEC3, opt_fvec3_t, ptr, argname, descr)
+#define OPT_FLVEC4(c, ptr, argname, descr)	OPT_ARG(c, OPT_FLOAT_VEC4, opt_fvec4_t, ptr, argname, descr)
 #define OPT_SELECT(c, T, ptr, value, descr)	{ (c), NULL, false, OPT_SELECT, NULL, OPT_SEL(T, TYPE_CHECK(T*, ptr), value), "", descr }
 #define OPT_SUBOPT(c, argname, descr, NR, opts)	OPT_ARG(c, OPT_SUBOPT, struct opt_subopt_s, OPT_SUB(NR, opts, c, NULL, descr), argname, descr)
 
@@ -100,6 +102,7 @@ typedef float opt_fvec3_t[3];
 #define OPTL_FLVEC2(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_FLOAT_VEC2, opt_fvec2_t, ptr, argname, descr)
 #define OPTL_VEC3(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_VEC3, opt_vec3_t, ptr, argname, descr)
 #define OPTL_FLVEC3(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_FLOAT_VEC3, opt_fvec3_t, ptr, argname, descr)
+#define OPTL_FLVEC4(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_FLOAT_VEC4, opt_fvec4_t, ptr, argname, descr)
 #define OPTL_SELECT(c, s, T, ptr, value, descr)	{ (c), (s), false, OPT_SELECT, NULL, OPT_SEL(T, TYPE_CHECK(T*, ptr), value), "", descr }
 #define OPTL_SELECT_DEF(c, s, T, ptr, value, def, descr)	{ (c), (s), false, OPT_SELECT, NULL, &(struct opt_select_s){ (TYPE_CHECK(T*, ptr)), &(T){ TYPE_CHECK(T, value) }, &(T){ (TYPE_CHECK(T, def)) }, sizeof(T) }, "", descr }
 #define OPTL_SUBOPT(c, s, argname, descr, NR, opts)	OPTL_ARG(c, s, OPT_SUBOPT, struct opt_subopt_s, OPT_SUB(NR, opts, c, s, descr), argname, descr)
@@ -148,6 +151,7 @@ struct arg_s {
 #define ARG_FLVEC2(required, ptr, argname)		ARG_CHECKED(required, OPT_FLOAT_VEC2,  opt_fvec2_t, ptr, argname)
 #define ARG_VEC3(required, ptr, argname)		ARG_CHECKED(required, OPT_VEC3,  opt_vec3_t, ptr, argname)
 #define ARG_FLVEC3(required, ptr, argname)		ARG_CHECKED(required, OPT_FLOAT_VEC3,  opt_fvec3_t, ptr, argname)
+#define ARG_FLVEC4(required, ptr, argname)		ARG_CHECKED(required, OPT_FLOAT_VEC4,  opt_fvec4_t, ptr, argname)
 
 #define ARG_TUPLE(required, count, n, ...)		{ (required), ARG_TUPLE, (count), (n), (struct arg_single_s[(n)]){ __VA_ARGS__ } }
 #define TUPLE_LONG(ptr, argname)			(struct arg_single_s){ OPT_LONG, sizeof(long), TYPE_CHECK(long**, ptr), argname }

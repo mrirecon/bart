@@ -63,6 +63,7 @@ opt_conv_f opt_vec2;
 opt_conv_f opt_float_vec2;
 opt_conv_f opt_vec3;
 opt_conv_f opt_float_vec3;
+opt_conv_f opt_float_vec4;
 opt_conv_f opt_select;
 opt_conv_f opt_subopt;
 
@@ -105,6 +106,9 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 	case OPT_FLOAT_VEC3:
 		return "f:f:f";
 
+        case OPT_FLOAT_VEC4:
+		return "f:f:f:f";
+
 	case OPT_STRING:
 		return "<string>";
 
@@ -134,6 +138,7 @@ static const char* opt_type_str(enum OPT_TYPE type)
 	OPT_ARG_TYPE_CASE(OPT_VEC3)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC2)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC3)
+        OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC4)
 	OPT_ARG_TYPE_CASE(OPT_STRING)
 	OPT_ARG_TYPE_CASE(OPT_INFILE)
 	OPT_ARG_TYPE_CASE(OPT_OUTFILE)
@@ -177,6 +182,8 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 		return opt_float_vec2(ptr, c, optarg);
 	case OPT_FLOAT_VEC3:
 		return opt_float_vec3(ptr, c, optarg);
+        case OPT_FLOAT_VEC4:
+		return opt_float_vec4(ptr, c, optarg);
 	case OPT_STRING:
 		return opt_string(ptr, c, optarg);
 	case OPT_INFILE:
@@ -793,6 +800,17 @@ bool opt_vec3(void* ptr, char c, const char* optarg)
 
 		assert(3 == r);
 	}
+
+	return false;
+}
+
+
+bool opt_float_vec4(void* ptr, char c, const char* optarg)
+{
+	UNUSED(c);
+	int r = sscanf(optarg, "%f:%f:%f:%f", &(*(float(*)[3])ptr)[0], &(*(float(*)[3])ptr)[1], &(*(float(*)[3])ptr)[2], &(*(float(*)[3])ptr)[3]);
+
+	assert(4 == r);
 
 	return false;
 }
