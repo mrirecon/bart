@@ -72,8 +72,6 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_SELECT(0, "ir-bssfp", enum sim_seq, &(data.seq.seq_type), SEQ_IRBSSFP, "Inversion-Recovery bSSFP"),
                 OPTL_SELECT(0, "flash", enum sim_seq, &(data.seq.seq_type), SEQ_FLASH, "FLASH"),
                 OPTL_SELECT(0, "ir-flash", enum sim_seq, &(data.seq.seq_type), SEQ_IRFLASH, "Inversion-Recovery FLASH"),
-                OPTL_SELECT(0, "ODE", enum sim_type, &(data.seq.type), SIM_ODE, "Full Ordinary Differential Equation Solver based Simulation"),
-                OPTL_SELECT(0, "STM", enum sim_type, &(data.seq.type), SIM_STM, "State-Transition Matrix based Simulation"),
                 OPTL_FLOAT(0, "tr", &(data.seq.tr), "float", "Repetition time [s]"),
                 OPTL_FLOAT(0, "te", &(data.seq.te), "float", "Echo time [s]"),
                 OPTL_INT(0, "nspins", &(data.seq.spin_num), "int", "Number of averaged spins"),
@@ -102,7 +100,9 @@ int main_sim(int argc, char* argv[argc])
 
                 OPTL_FLVEC3('1',        "T1",	&T1, 			"min:max:N", "range of T1 values"),
 		OPTL_FLVEC3('2',	"T2",   &T2, 			"min:max:N", "range of T2 values"),
-                OPTL_SUBOPT(0, "sim", "...", "configure Bloch simulation parameter", N_sim_opts, sim_opts),
+                OPTL_SELECT(0, "ODE", enum sim_type, &(data.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation (default)"),
+                OPTL_SELECT(0, "STM", enum sim_type, &(data.seq.type), SIM_STM, "state-transition matrix based simulation"),
+                OPTL_SUBOPT(0, "seq", "...", "configure sequence parameter", N_sim_opts, sim_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
