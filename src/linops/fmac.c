@@ -71,16 +71,14 @@ static void fmac_apply(const linop_data_t* _data, complex float* dst, const comp
 {
 	auto data = CAST_DOWN(fmac_data, _data);
 
-	md_clear2(data->N, data->odims, data->ostrs, dst, CFL_SIZE);
-	md_zfmac2(data->N, data->dims, data->ostrs, dst, data->istrs, src, data->tstrs, multiplace_read(data->tensor, dst));
+	md_ztenmul2(data->N, data->dims, data->ostrs, dst, data->istrs, src, data->tstrs, multiplace_read(data->tensor, dst));
 }
 
 static void fmac_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(fmac_data, _data);
 
-	md_clear2(data->N, data->idims, data->istrs, dst, CFL_SIZE);
-	md_zfmacc2(data->N, data->dims, data->istrs, dst, data->ostrs, src, data->tstrs, multiplace_read(data->tensor, dst));
+	md_ztenmulc2(data->N, data->dims, data->istrs, dst, data->ostrs, src, data->tstrs, multiplace_read(data->tensor, dst));
 }
 
 static void fmac_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
