@@ -307,7 +307,7 @@ static long vector_position(int d, int r, int rep_max, int s, int spin_max)
 }
 
 
-static void collect_signal(struct sim_data* data, int N, int P, float* mxy, float* sa_r1, float* sa_r2, float* sa_b1, float xp[P][N])
+static void collect_signal(struct sim_data* data, int N, int P, float* m, float* sa_r1, float* sa_r2, float* sa_b1, float xp[P][N])
 {
 	float tmp[4][3] = { { 0. }, { 0. }, { 0. }, { 0. } };
 
@@ -319,8 +319,8 @@ static void collect_signal(struct sim_data* data, int N, int P, float* mxy, floa
 
                 ind = vector_position(i, data->tmp.rep_counter, data->seq.rep_num, data->tmp.spin_counter, data->seq.spin_num);
 
-		if (NULL != mxy)
-			mxy[ind] = tmp[0][i];
+		if (NULL != m)
+			m[ind] = tmp[0][i];
 
 		if (NULL != sa_r1)
 			sa_r1[ind] = tmp[1][i];
@@ -334,10 +334,10 @@ static void collect_signal(struct sim_data* data, int N, int P, float* mxy, floa
 }
 
 
-static void sum_up_signal(struct sim_data* data, float *mxy,  float *sa_r1, float *sa_r2, float *sa_b1,
-                        float (*mxy_sig)[3], float (*sa_r1_sig)[3], float (*sa_r2_sig)[3], float (*sa_m0_sig)[3], float (*sa_b1_sig)[3])
+static void sum_up_signal(struct sim_data* data, float *m,  float *sa_r1, float *sa_r2, float *sa_b1,
+                        float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
 {
-        float sum_mxy;
+        float sum_m;
 	float sum_sa_r1;
 	float sum_sa_r2;
 	float sum_sa_b1;
@@ -347,7 +347,7 @@ static void sum_up_signal(struct sim_data* data, float *mxy,  float *sa_r1, floa
         // Dimensions; [x, y, z]
 	for (int dim = 0; dim < 3; dim++) {
 
-		sum_mxy = 0.;
+		sum_m = 0.;
 		sum_sa_r1 = 0.;
 		sum_sa_r2 = 0.;
 		sum_sa_b1 = 0.;
@@ -360,20 +360,20 @@ static void sum_up_signal(struct sim_data* data, float *mxy,  float *sa_r1, floa
 
                                 ind = vector_position(dim, r, data->seq.rep_num, spin, data->seq.spin_num);
 
-				sum_mxy += mxy[ind];
+				sum_m += m[ind];
 				sum_sa_r1 += sa_r1[ind];
 				sum_sa_r2 += sa_r2[ind];
 				sum_sa_b1 += sa_b1[ind];
 			}
 
                         // Mean
-                        mxy_sig[r][dim] = sum_mxy * data->voxel.m0 / (float)data->seq.spin_num;
-                        sa_r1_sig[r][dim] = sum_sa_r1 * data->voxel.m0 / (float)data->seq.spin_num;
-                        sa_r2_sig[r][dim] = sum_sa_r2 * data->voxel.m0 / (float)data->seq.spin_num;
-                        sa_b1_sig[r][dim] = sum_sa_b1 * data->voxel.m0 / (float)data->seq.spin_num;
-                        sa_m0_sig[r][dim] = sum_mxy / (float)data->seq.spin_num;
+                        m_state[r][dim] = sum_m * data->voxel.m0 / (float)data->seq.spin_num;
+                        sa_r1_state[r][dim] = sum_sa_r1 * data->voxel.m0 / (float)data->seq.spin_num;
+                        sa_r2_state[r][dim] = sum_sa_r2 * data->voxel.m0 / (float)data->seq.spin_num;
+                        sa_b1_state[r][dim] = sum_sa_b1 * data->voxel.m0 / (float)data->seq.spin_num;
+                        sa_m0_state[r][dim] = sum_m / (float)data->seq.spin_num;
 
-                        sum_mxy = 0.;
+                        sum_m = 0.;
                         sum_sa_r1 = 0.;
                         sum_sa_r2 = 0.;
                         sum_sa_b1 = 0.;
@@ -391,7 +391,7 @@ static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 }
 
 
-void start_rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P * N][P * N])
+void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P * N][P * N])
 {
 	data->seq.pulse_applied = true;
 
@@ -503,7 +503,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
 
                 // Matrix: 0 -> T_RF
                 float mrf[M][M];
-                start_rf_pulse(data, 0., 0., M, 1, NULL, mrf);
+                rf_pulse(data, 0., 0., M, 1, NULL, mrf);
 
                 // Matrix: T_RF -> TE
                 float mrel[M][M];
@@ -580,7 +580,7 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 
         case SIM_ODE:
                 ;
-                start_rf_pulse(data, h, tol, N, P, xp, NULL);
+                rf_pulse(data, h, tol, N, P, xp, NULL);
 
                 // Slice-Rewinder if time is long enough
 
@@ -678,7 +678,7 @@ void inversion(struct sim_data* data, float h, float tol, int N, int P, float xp
                 inv_data.pulse.hs.duration = data->seq.inversion_pulse_length;
                 inv_data.pulse.rf_end = data->seq.inversion_pulse_length;
 
-                start_rf_pulse(&inv_data, h, tol, N, P, xp, NULL);
+                rf_pulse(&inv_data, h, tol, N, P, xp, NULL);
 
                 // Spoiler gradients
                 inv_data.tmp.r2spoil = 10000.;
@@ -709,12 +709,12 @@ static void alpha_half_preparation(struct sim_data* data, float h, float tol, in
 
 /* ------------ Main Simulation -------------- */
 
-void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_sig)[3], float (*sa_r2_sig)[3], float (*sa_m0_sig)[3], float (*sa_b1_sig)[3])
+void bloch_simulation(struct sim_data* data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
 {
 	float tol = 10E-6;      // Tolerance of ODE solver
 
         enum { N = 3 };         // Number of dimensions (x, y, z)
-	enum { P = 4 };         // Number of parameters with estimated derivative (Mxy, R1, R2, B1)
+	enum { P = 4 };         // Number of parameters with estimated derivative (M, DR1, DR2, DB1)
 
         assert(0 < P);
 
@@ -829,7 +829,7 @@ void bloch_simulation(struct sim_data* data, float (*mxy_sig)[3], float (*sa_r1_
 
 	// Sum up magnetization
 
-        sum_up_signal(data, mxy, sa_r1, sa_r2, sa_b1, mxy_sig, sa_r1_sig, sa_r2_sig, sa_m0_sig, sa_b1_sig);
+        sum_up_signal(data, mxy, sa_r1, sa_r2, sa_b1, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
 
 	free(mxy);
 	free(sa_r1);

@@ -129,7 +129,7 @@ static bool test_rf_pulse_ode(void)
 			float tol = 10E-6;
 
                         // Run pulse
-			start_rf_pulse(&data, h, tol, N, P, xp, NULL);
+			rf_pulse(&data, h, tol, N, P, xp, NULL);
 
 
                         // Compare result to nominal FA
@@ -204,7 +204,7 @@ static bool test_hypsec_rf_pulse_ode(void)
         float h = 10E-5;
         float tol = 0.005; // >99.5% inversion efficiency
 
-        start_rf_pulse(&data, h, tol, N, P, xp, NULL);
+        rf_pulse(&data, h, tol, N, P, xp, NULL);
 
         // bart_printf("%f, %f, %f\n", xp[0][0], xp[0][1], xp[0][2]);
 

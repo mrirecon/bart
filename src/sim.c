@@ -65,7 +65,7 @@ int main_sim(int argc, char* argv[argc])
         float T1[3] = { WATER_T1, WATER_T1, 1 };
 	float T2[3] = { WATER_T2, WATER_T2, 1 };
 
-        struct opt_s sim_opts[] = {
+        struct opt_s seq_opts[] = {
 
                 /* Sequence Specific Parameters */
                 OPTL_SELECT(0, "bssfp", enum sim_seq, &(data.seq.seq_type), SEQ_BSSFP, "bSSFP"),
@@ -93,7 +93,7 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "mom-sl", &(data.grad.mom_sl), "float", "Slice Selection Gradient Moment [rad/s]"),
 
         };
-        const int N_sim_opts = ARRAY_SIZE(sim_opts);
+        const int N_seq_opts = ARRAY_SIZE(seq_opts);
 
 
 	const struct opt_s opts[] = {
@@ -102,7 +102,7 @@ int main_sim(int argc, char* argv[argc])
 		OPTL_FLVEC3('2',	"T2",   &T2, 			"min:max:N", "range of T2 values"),
                 OPTL_SELECT(0, "ODE", enum sim_type, &(data.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation (default)"),
                 OPTL_SELECT(0, "STM", enum sim_type, &(data.seq.type), SIM_STM, "state-transition matrix based simulation"),
-                OPTL_SUBOPT(0, "seq", "...", "configure sequence parameter", N_sim_opts, sim_opts),
+                OPTL_SUBOPT(0, "seq", "...", "configure sequence parameter", N_seq_opts, seq_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
