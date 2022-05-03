@@ -10,6 +10,7 @@
 
 #include "noncart/nufft.h"
 
+#include "num/multiplace.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/iovec.h"
@@ -65,6 +66,12 @@ struct sense_model_s {
 	long* trj_dims;
 	long* psf_dims;
 
+	long* pat_dims_merged;
+	long* fftmod_precomp_img_dims;
+	long* fftmod_precomp_ksp_dims;
+	struct multiplace_array_s* fftmod_precomp_img;
+	struct multiplace_array_s* fftmod_precomp_ksp;
+
 	const struct linop_s* sense;
 
 	const struct linop_s* coils;
@@ -88,6 +95,14 @@ static void sense_model_del(const struct shared_obj_s* sptr)
 	xfree(x->pat_dims);
 	xfree(x->trj_dims);
 	xfree(x->psf_dims);
+
+	if (x->fftmod_precomp_img != x->fftmod_precomp_ksp)
+		multiplace_free(x->fftmod_precomp_img);
+	multiplace_free(x->fftmod_precomp_ksp);
+
+	xfree(x->pat_dims_merged);
+	xfree(x->fftmod_precomp_img_dims);
+	xfree(x->fftmod_precomp_ksp_dims);
 
 	linop_free(x->sense);
 
@@ -135,6 +150,13 @@ static struct sense_model_s* mri_sense_init(int N, int ND)
 		.trj_dims = *TYPE_ALLOC(long[N]),
 		.psf_dims = *TYPE_ALLOC(long[ND]),
 
+		.pat_dims_merged = *TYPE_ALLOC(long[N]),
+		.fftmod_precomp_img_dims = *TYPE_ALLOC(long[N]),
+		.fftmod_precomp_ksp_dims = *TYPE_ALLOC(long[N]),
+
+		.fftmod_precomp_img = NULL,
+		.fftmod_precomp_ksp = NULL,
+
 		.sense = NULL,
 		.coils = NULL,
 		.pattern = NULL,
@@ -179,16 +201,40 @@ struct sense_model_s* sense_cart_create(int N, const long ksp_dims[N], const lon
 	md_max_dims(N, ~0, max_dims, img_dims, max_dims);
 	md_max_dims(N, ~0, max_dims, col_dims, max_dims);
 
+
+	md_select_dims(N, FFT_FLAGS, result->fftmod_precomp_ksp_dims, result->ksp_dims);
+	complex float* tmp = md_alloc(N, result->fftmod_precomp_ksp_dims, CFL_SIZE);
+	md_zfill(N, result->fftmod_precomp_ksp_dims, tmp, 1. / sqrt(sqrt(md_calc_size(N, result->fftmod_precomp_ksp_dims))));
+	fftmod(N, result->fftmod_precomp_ksp_dims, FFT_FLAGS, tmp, tmp);
+	result->fftmod_precomp_ksp = multiplace_move(N, result->fftmod_precomp_ksp_dims, CFL_SIZE, tmp);
+
+	md_free(tmp);
+
+
+	md_select_dims(N, md_nontriv_dims(N, result->fftmod_precomp_ksp_dims) | md_nontriv_dims(N, result->pat_dims),result->pat_dims_merged, result->ksp_dims);
+
+	if (!md_check_equal_dims(N, ksp_dims, ksp_dims2, ~0)) {
+
+		md_select_dims(N, FFT_FLAGS, result->fftmod_precomp_img_dims, result->img_dims);
+		complex float* tmp = md_alloc(N, result->fftmod_precomp_img_dims, CFL_SIZE);
+		md_resize_center(N, result->fftmod_precomp_img_dims, tmp, result->fftmod_precomp_ksp_dims, multiplace_read(result->fftmod_precomp_ksp, tmp), CFL_SIZE);
+		result->fftmod_precomp_img = multiplace_move(N, result->fftmod_precomp_img_dims, CFL_SIZE, tmp);
+		md_free(tmp);
+	} else {
+		md_copy_dims(N, result->fftmod_precomp_img_dims, result->fftmod_precomp_ksp_dims);
+		result->fftmod_precomp_img = result->fftmod_precomp_ksp;
+	}
+
 	result->coils = linop_fmac_create(N, max_dims, ~(md_nontriv_dims(N, ksp_dims2)), ~(md_nontriv_dims(N, img_dims)), ~(md_nontriv_dims(N, col_dims)), NULL);
 
 	assert(md_check_equal_dims(N, ksp_dims, pat_dims, md_nontriv_dims(N, pat_dims)));
-	result->pattern = linop_cdiag_create(N, ksp_dims, md_nontriv_dims(N, result->pat_dims), NULL);
+	result->pattern = linop_cdiag_create(N, ksp_dims, md_nontriv_dims(N, result->pat_dims) | md_nontriv_dims(N, result->fftmod_precomp_ksp_dims), NULL);
 
 	result->sense = linop_clone(result->coils);
 	if (!md_check_equal_dims(N, ksp_dims, ksp_dims2, ~0))
 		result->sense = linop_chain_FF(result->sense, linop_resize_center_create(N, ksp_dims, ksp_dims2));
 
-	result->sense = linop_chain_FF(result->sense, linop_fftc_create(N, ksp_dims, FFT_FLAGS));
+	result->sense = linop_chain_FF(result->sense, linop_fft_create(N, ksp_dims, FFT_FLAGS));
 	result->sense = linop_chain_FF(result->sense, linop_clone(result->pattern));
 
 	return result;
@@ -241,16 +287,29 @@ struct sense_model_s* sense_cart_normal_create(int N, const long max_dims[N], co
 	md_select_dims(N, conf->image_flags, result->img_dims, max_dims);
 	md_select_dims(N, conf->coil_flags, result->col_dims, max_dims);
 	md_select_dims(N, conf->coil_image_flags, result->cim_dims, max_dims);
+	md_select_dims(N, conf->coil_image_flags, result->ksp_dims, max_dims);
 	md_select_dims(N, conf->pattern_flags, result->pat_dims, max_dims);
 	md_select_dims(N, conf->pattern_flags, result->psf_dims, max_dims);
 
 	long max_dims2[N];
 	md_select_dims(N, conf->image_flags| conf->coil_flags | conf->coil_image_flags, max_dims2, max_dims);
 
-	result->coils = linop_fmac_create(N, max_dims2, ~(conf->coil_image_flags), ~(conf->image_flags), ~(conf->coil_flags), NULL);
-	result->pattern = linop_cdiag_create(N, result->cim_dims, md_nontriv_dims(N, result->pat_dims), NULL);
+	md_select_dims(N, FFT_FLAGS, result->fftmod_precomp_ksp_dims, result->ksp_dims);
+	complex float* tmp = md_alloc(N, result->fftmod_precomp_ksp_dims, CFL_SIZE);
+	md_zfill(N, result->fftmod_precomp_ksp_dims, tmp, 1. / sqrt(sqrt(md_calc_size(N, result->fftmod_precomp_ksp_dims))));
+	fftmod(N, result->fftmod_precomp_ksp_dims, FFT_FLAGS, tmp, tmp);
+	result->fftmod_precomp_ksp = multiplace_move(N, result->fftmod_precomp_ksp_dims, CFL_SIZE, tmp);
+	md_free(tmp);
 
-	result->sense = linop_chain_FF(linop_clone(result->coils), linop_fftc_create(N, result->cim_dims, conf->fft_flags));
+	md_select_dims(N, md_nontriv_dims(N, result->fftmod_precomp_ksp_dims) | md_nontriv_dims(N, result->pat_dims),result->pat_dims_merged, result->ksp_dims);
+
+	md_copy_dims(N, result->fftmod_precomp_img_dims, result->fftmod_precomp_ksp_dims);
+	result->fftmod_precomp_img = result->fftmod_precomp_ksp;
+
+	result->coils = linop_fmac_create(N, max_dims2, ~(conf->coil_image_flags), ~(conf->image_flags), ~(conf->coil_flags), NULL);
+	result->pattern = linop_cdiag_create(N, result->cim_dims, md_nontriv_dims(N, result->pat_dims) | md_nontriv_dims(N, result->fftmod_precomp_ksp_dims), NULL);
+
+	result->sense = linop_chain_FF(linop_clone(result->coils), linop_fft_create(N, result->cim_dims, conf->fft_flags));
 	result->sense = linop_chain_FF(result->sense, linop_clone(result->pattern));
 
 	return result;
@@ -333,11 +392,28 @@ static void sense_model_set_data_fun(const nlop_data_t* _data, int Narg, complex
 	if (NULL != dst_psf)
 		md_copy(d->model->ND, d->model->psf_dims, dst_psf, pattern, CFL_SIZE);
 
-	linop_fmac_set_tensor(d->model->coils, d->model->N, d->model->col_dims, coil);
-	if (NULL != d->model->pattern)
-		linop_gdiag_set_diag(d->model->pattern, d->model->ND, d->model->psf_dims, pattern);
-	if (NULL != d->model->nufft)
+	if (NULL != d->model->pattern) {
+
+		auto m = d->model;
+
+		complex float* tmp_coil = md_alloc_sameplace(m->N, m->col_dims, CFL_SIZE, coil);
+		complex float* tmp_pattern = md_alloc_sameplace(m->N, m->pat_dims_merged, CFL_SIZE, coil);
+
+		md_ztenmul(m->N, m->col_dims, tmp_coil, m->col_dims, coil, m->fftmod_precomp_img_dims, multiplace_read(m->fftmod_precomp_img, coil));
+		md_ztenmul(m->N, m->pat_dims_merged, tmp_pattern, m->pat_dims, pattern, m->fftmod_precomp_ksp_dims, multiplace_read(m->fftmod_precomp_ksp, pattern));
+
+		linop_fmac_set_tensor(m->coils, m->N, m->col_dims, tmp_coil);
+		linop_gdiag_set_diag(m->pattern, m->ND, m->pat_dims_merged, tmp_pattern);
+
+		md_free(tmp_coil);
+		md_free(tmp_pattern);
+	}
+
+	if (NULL != d->model->nufft) {
+
+		linop_fmac_set_tensor(d->model->coils, d->model->N, d->model->col_dims, coil);
 		nufft_update_psf(d->model->nufft, d->model->ND, d->model->psf_dims, pattern);
+	}
 }
 
 static void sense_model_set_data_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
