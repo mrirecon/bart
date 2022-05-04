@@ -42,7 +42,7 @@ static void perform_bloch_simulation(struct sim_data* data, int N, complex float
 }
 
 
-static const char help_str[] = "ODE simulation tool";
+static const char help_str[] = "simulation tool";
 
 
 int main_sim(int argc, char* argv[argc])
