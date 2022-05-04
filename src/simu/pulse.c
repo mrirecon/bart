@@ -19,7 +19,7 @@
 const struct simdata_pulse simdata_pulse_defaults = {
 
 	.rf_start = 0.,
-	.rf_end = 0.01,
+	.rf_end = 0.001,
 	.flipangle = 1.,
 	.phase = 0.,
 	.bwtp = 4.,
