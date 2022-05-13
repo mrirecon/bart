@@ -187,32 +187,35 @@ build the ISMRM raw data import tool:
 ### 2.3.1. Organization
 
 
-    .           main directory / built software tools
-    Makefile    Makefile
-    matlab/	Matlab helper scripts
-    python/	Python helper functions
-    doc/	documentation
-    rules/	more built-related files
-    scripts/	various helper scripts and examples
-    src/	source code
-    src/calib 	source code for sensitivity calibration
-    src/sense	source code for SENSE or ESPIRiT reconstruction
-    src/noir	source code for nonlinear inversion
-    src/sake	source code for SAKE reconstruction
-    src/wavelet	source code for wavelets
-    src/num	base library with numerical functions
-    src/iter	iterative algorithms
-    src/linops	library of linear operators
-    src/nlops   library of nonlinear operators
-    src/misc	miscellaneous (e.g. I/O)
-    src/ismrm	support for ISMRM raw data format
-    src/simu	source code for simulation
-    src/noncart	source code for non-uniform FFT
-    tests/	system tests
-    utests/	unit tests
-    lib/	built software libraries
-
-
+    .			main directory / built software tools
+    Makefile		Makefile
+    matlab/		Matlab helper scripts
+    python/		Python helper functions
+    doc/		documentation
+    rules/		more built-related files
+    scripts/		various helper scripts and examples
+    src/		source code
+    src/calib/		source code for sensitivity calibration
+    src/sense/		source code for SENSE or ESPIRiT reconstruction
+    src/noir/		source code for nonlinear inversion
+    src/sake/		source code for SAKE reconstruction
+    src/moba/		source code for model-based reconstruction
+    src/networks/	source code for neural networks
+    src/wavelet/	source code for wavelets
+    src/lowrank/	source code for low-rank regularization
+    src/num/		base library with numerical functions
+    src/misc/		miscellaneous (e.g. I/O)
+    src/geom/		geometric computations
+    src/iter/		iterative algorithms
+    src/linops/		library of linear operators
+    src/nlops/		library of nonlinear operators
+    src/nn/		infrastructure for neural networks
+    src/ismrm/		support for ISMRM raw data format
+    src/simu/		source code for simulation
+    src/noncart/	source code for non-uniform FFT
+    tests/		system tests
+    utests/		unit tests
+    lib/		built software libraries
 
 
 ### 2.3.2. Terminal
