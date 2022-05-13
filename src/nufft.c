@@ -98,6 +98,17 @@ int main_nufft(int argc, char* argv[argc])
 
 	assert(3 == traj_dims[0]);
 
+	long coilest_dims[DIMS];
+
+	estimate_im_dims(DIMS, FFT_FLAGS, coilest_dims, traj_dims, traj);
+
+	if (8 >= md_calc_size(3, coilest_dims)) {
+
+		debug_printf(DP_WARN,	"\tThe estimated image size %ldx%ldx%ld is very small.\n"
+					"\tDid you scale your trajectory correctly?\n"
+					"\tThe unit of measurement is pixel_size / FOV.\n",
+					coilest_dims[0], coilest_dims[1], coilest_dims[2]);
+	}
 
 	(use_gpu ? num_init_gpu : num_init)();
 
@@ -111,8 +122,8 @@ int main_nufft(int argc, char* argv[argc])
 
 		if (0 == md_calc_size(3, coilim_dims)) {
 
-			estimate_im_dims(DIMS, FFT_FLAGS, coilim_dims, traj_dims, traj);
-			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", coilim_dims[0], coilim_dims[1], coilim_dims[2]);
+			md_copy_dims(DIMS, coilim_dims, coilest_dims);
+			debug_printf(DP_INFO, "Est. image size: %ldx%ldx%ld\n", coilim_dims[0], coilim_dims[1], coilim_dims[2]);
 
 			if (!conf.decomp) {
 
