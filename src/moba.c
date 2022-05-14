@@ -219,15 +219,18 @@ int main_moba(int argc, char* argv[argc])
 			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", img_vec[0], img_vec[1], img_vec[2]);
 		}
 
-		md_zsmul(DIMS, traj_dims, traj, traj, 2.);
 
-		NESTED(long, dbl, (long x)) { return (x > 1) ? (2 * x) : 1; };
+		if (!use_compat_to_version("v0.7.00")) {
 
-		grid_dims[READ_DIM] = dbl(img_vec[0]);
-		grid_dims[PHS1_DIM] = dbl(img_vec[1]);
-		grid_dims[PHS2_DIM] = dbl(img_vec[2]);
+			md_zsmul(DIMS, traj_dims, traj, traj, 2.);
 
-		if (use_compat_to_version("v0.7.00")) {
+			NESTED(long, dbl, (long x)) { return (x > 1) ? (2 * x) : 1; };
+
+			grid_dims[READ_DIM] = dbl(img_vec[0]);
+			grid_dims[PHS1_DIM] = dbl(img_vec[1]);
+			grid_dims[PHS2_DIM] = dbl(img_vec[2]);
+
+		} else {
 
 			long grid_size = ksp_dims[1] * oversampling;
 			grid_dims[READ_DIM] = grid_size;
