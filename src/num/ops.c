@@ -1849,7 +1849,7 @@ static void stack_dims_trivial(unsigned int N, long dims[N], long strs[N], unsig
 }
 
 /**
- *Stacks two operators over selected arguments, the other arguments are duplex
+ * Stacks two operators over selected arguments, the other arguments are duplex
  *
  * @param M nr of arguments to stack over
  * @param arg_list index of arguments to stack

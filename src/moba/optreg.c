@@ -324,7 +324,7 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 		switch (regs[nr].xform) {
 
 		case L1WAV:
-		{
+
 			debug_printf(DP_INFO, "  > l1-wavelet regularization with parameters %d:%d:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
 			auto prox_maps = moba_joint_wavthresh_prox_create(N, maps_dims, COEFF_DIM, regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, nr_joint_coeff);
@@ -336,35 +336,32 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 			trafos[nr] = linop_identity_create(1, MD_DIMS(x_size));
 
 			break;
-		}
 
 		case L2IMG:
-		{
+
 			debug_printf(DP_INFO, "  > l2 regularization\n");
 
 			prox_ops[nr] = prox_l2norm_create(1, MD_DIMS(x_size), regs[nr].lambda);
 			trafos[nr] = linop_identity_create(1, MD_DIMS(x_size));
 
 			break;
-		}
 
 		case POS:
-		{
+
 			debug_printf(DP_INFO, "  > non-negative constraint with lambda %f\n", regs[nr].lambda);
 
-			auto prox_maps = moba_nonneg_prox_create(N, maps_dims, COEFF_DIM, nonneg_flag, regs[nr].lambda);
+			prox_maps = moba_nonneg_prox_create(N, maps_dims, COEFF_DIM, nonneg_flag, regs[nr].lambda);
 
-			auto prox_sens = moba_sens_prox_create(N, sens_dims);
+			prox_sens = moba_sens_prox_create(N, sens_dims);
 
 			prox_ops[nr] = stack_flatten_prox(prox_maps, prox_sens);
 
 			trafos[nr] = linop_identity_create(1, MD_DIMS(x_size));
 
 			break;
-		}
 
 		case TV: // temporal dimension
-		{
+
 			debug_printf(DP_INFO, "  > TV regularization with parameters %d:%d:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
 			auto lo_extract_maps = linop_extract_create(1, MD_DIMS(0), MD_DIMS(maps_size), MD_DIMS(x_size));
@@ -379,7 +376,6 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(N));
 
 			break;
-		}
 
 		default:
 

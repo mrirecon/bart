@@ -344,7 +344,7 @@ void md_select_dims(unsigned int D, unsigned long flags, long odims[D], const lo
  */
 void md_copy_dims(unsigned int D, long odims[D], const long idims[D])
 {
-	memcpy(odims, idims, D  * sizeof(long));
+	memcpy(odims, idims, D * sizeof(long));
 }
 
 
