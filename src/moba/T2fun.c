@@ -44,9 +44,6 @@ struct T2_s {
 	complex float* rho;
 	complex float* z;
 
-	complex float* tmp_map;
-	complex float* tmp_exp;
-
 	complex float* drho;
 	complex float* dz;
 
@@ -74,26 +71,34 @@ static void T2_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	pos[COEFF_DIM] = 1;
 	md_copy_block(data->N, pos, data->map_dims, data->z, data->in_dims, src, CFL_SIZE);
 
-	// -1*scaling_z.*z
-	md_zsmul(data->N, data->map_dims, data->tmp_map, data->z, -1 * data->scaling_z);
+	complex float* tmp_map = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
 
+	// -1*scaling_z.*z
+	md_zsmul(data->N, data->map_dims, tmp_map, data->z, -1. * data->scaling_z);
+
+	complex float* tmp_exp = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
 	// exp(-TE.*scaling_z.*z)
-	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_exp, data->map_strs, data->tmp_map, data->TE_strs, data->TE);
-	md_zexp(data->N, data->out_dims, data->tmp_exp, data->tmp_exp);
+	md_zmul2(data->N, data->out_dims, data->out_strs, tmp_exp, data->map_strs, tmp_map, data->TE_strs, data->TE);
+
+	md_free(tmp_map);
+
+	md_zexp(data->N, data->out_dims, tmp_exp, tmp_exp);
 
 	// Calculating derivatives
 	// drho
-	md_zsmul(data->N, data->out_dims, data->drho, data->tmp_exp, 1.0);
+	md_zsmul(data->N, data->out_dims, data->drho, tmp_exp, 1.0);
 
 	// model:
 	// rho.*exp(-TE.*scaling_z.*z)
-	md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->rho, data->out_strs, data->tmp_exp);
+	md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->rho, data->out_strs, tmp_exp);
 
 	// dz: z' = -rho.*scaling_z.*TE.*exp(-TE.*scaling_z.*z)
 	// TE.*exp(-TE.*scaling_z.*z), 
-	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_exp, data->out_strs, data->tmp_exp, data->TE_strs, data->TE);
-	md_zsmul(data->N, data->out_dims, data->tmp_exp, data->tmp_exp, -1*data->scaling_z);
-	md_zmul2(data->N, data->out_dims, data->out_strs, data->dz, data->map_strs, data->rho, data->out_strs, data->tmp_exp);
+	md_zmul2(data->N, data->out_dims, data->out_strs, tmp_exp, data->out_strs, tmp_exp, data->TE_strs, data->TE);
+	md_zsmul(data->N, data->out_dims, tmp_exp, tmp_exp, -1. * data->scaling_z);
+	md_zmul2(data->N, data->out_dims, data->out_strs, data->dz, data->map_strs, data->rho, data->out_strs, tmp_exp);
+
+	md_free(tmp_exp);
 }
 
 static void T2_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -107,19 +112,23 @@ static void T2_der(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	for (int i = 0; i < data->N; i++)
 		pos[i] = 0;
 
+	complex float* tmp_map = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+
 	// tmp = drho
 	pos[COEFF_DIM] = 0;
-	md_copy_block(data->N, pos, data->map_dims, data->tmp_map, data->in_dims, src, CFL_SIZE);
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, src, CFL_SIZE);
 
 	// dst = rho' * drho
-	md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->tmp_map, data->out_strs, data->drho);
+	md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, tmp_map, data->out_strs, data->drho);
 
 	// tmp =  dz
 	pos[COEFF_DIM] = 1;
-	md_copy_block(data->N, pos, data->map_dims, data->tmp_map, data->in_dims, src, CFL_SIZE);
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, src, CFL_SIZE);
 
 	// dst = dst + dz * z'
-	md_zfmac2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->tmp_map, data->out_strs, data->dz);
+	md_zfmac2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, tmp_map, data->out_strs, data->dz);
+
+	md_free(tmp_map);
 }
 
 static void T2_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -134,23 +143,26 @@ static void T2_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	for (int i = 0; i < data->N; i++)
 		pos[i] = 0;
 
+	complex float* tmp_map = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
 
 	// sum (conj(rho') * src, t)
-	md_clear(data->N, data->map_dims, data->tmp_map, CFL_SIZE);
-	md_zfmacc2(data->N, data->out_dims, data->map_strs, data->tmp_map, data->out_strs, src, data->out_strs, data->drho);
+	md_clear(data->N, data->map_dims, tmp_map, CFL_SIZE);
+	md_zfmacc2(data->N, data->out_dims, data->map_strs, tmp_map, data->out_strs, src, data->out_strs, data->drho);
 
 	// dst[0] = sum (conj(rho') * src, t)
 	pos[COEFF_DIM] = 0;
-	md_copy_block(data->N, pos, data->in_dims, dst, data->map_dims, data->tmp_map, CFL_SIZE);
+	md_copy_block(data->N, pos, data->in_dims, dst, data->map_dims, tmp_map, CFL_SIZE);
 
 	// sum (conj(z') * src, t)
-	md_clear(data->N, data->map_dims, data->tmp_map, CFL_SIZE);
-	md_zfmacc2(data->N, data->out_dims, data->map_strs, data->tmp_map, data->out_strs, src, data->out_strs, data->dz);
+	md_clear(data->N, data->map_dims, tmp_map, CFL_SIZE);
+	md_zfmacc2(data->N, data->out_dims, data->map_strs, tmp_map, data->out_strs, src, data->out_strs, data->dz);
 	// md_zreal(data->N, data->map_dims, data->tmp_map, data->tmp_map);
 
 	// dst[1] = sum (conj(z') * src, t)
 	pos[COEFF_DIM] = 1;
-	md_copy_block(data->N, pos, data->in_dims, dst, data->map_dims, data->tmp_map, CFL_SIZE);
+	md_copy_block(data->N, pos, data->in_dims, dst, data->map_dims, tmp_map, CFL_SIZE);
+
+	md_free(tmp_map);
 }
 
 static void T2_del(const nlop_data_t* _data)
@@ -161,9 +173,6 @@ static void T2_del(const nlop_data_t* _data)
 	md_free(data->z);
 
 	md_free(data->TE);
-
-	md_free(data->tmp_map);
-	md_free(data->tmp_exp);
 
 	md_free(data->drho);
 	md_free(data->dz);
@@ -230,8 +239,6 @@ struct nlop_s* nlop_T2_create(int N, const long map_dims[N], const long out_dims
 	data->N = N;
 	data->rho = my_alloc(N, map_dims, CFL_SIZE);
 	data->z = my_alloc(N, map_dims, CFL_SIZE);
-	data->tmp_map = my_alloc(N, map_dims, CFL_SIZE);
-	data->tmp_exp = my_alloc(N, out_dims, CFL_SIZE);
 	data->drho = my_alloc(N, out_dims, CFL_SIZE);
 	data->dz = my_alloc(N, out_dims, CFL_SIZE);
 	data->TE = my_alloc(N, TE_dims, CFL_SIZE);
