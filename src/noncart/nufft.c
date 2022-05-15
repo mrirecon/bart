@@ -49,6 +49,7 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.flags = FFT_FLAGS,
 	.cfft = 0u,
 	.decomp = true,
+	.nopsf = false,
 };
 
 #include "nufft_priv.h"
@@ -660,7 +661,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 
 		md_calc_strides(ND, data->psf_strs, data->psf_dims, CFL_SIZE);
 
-		if (NULL != data->traj) {
+		if (!data->conf.nopsf && (NULL != data->traj)) {
 
 			const complex float* psf = compute_psf2(N, data->psf_dims, data->flags, data->trj_dims, traj,
 						data->bas_dims, multiplace_read(data->basis, traj), data->wgh_dims, multiplace_read(data->weights, traj),
@@ -1243,21 +1244,20 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 
 
-unsigned int nufft_get_psf_dims(const struct linop_s* nufft, unsigned int N, long psf_dims[N])
+int nufft_get_psf_dims(const struct linop_s* nufft, int N, long psf_dims[N])
 {
 	auto lop_data = linop_get_data(nufft);
 	assert(NULL != lop_data);
 
 	auto data = CAST_DOWN(nufft_data, lop_data);
 
-	assert(N >= data->N + 1);
-	md_copy_dims(data->N + 1, psf_dims, data->psf_dims);
+	md_copy_dims(N, psf_dims, data->psf_dims);
 
 	return data->N + 1;
 }
 
 
-void nufft_get_psf2(const struct linop_s* nufft, unsigned int N, const long psf_dims[N], const long psf_strs[N], complex float* psf)
+void nufft_get_psf2(const struct linop_s* nufft, int N, const long psf_dims[N], const long psf_strs[N], complex float* psf)
 {
 	auto lop_data = linop_get_data(nufft);
 	assert(NULL != lop_data);
@@ -1271,7 +1271,7 @@ void nufft_get_psf2(const struct linop_s* nufft, unsigned int N, const long psf_
 }
 
 
-void nufft_get_psf(const struct linop_s* nufft, unsigned int N, const long psf_dims[N], complex float* psf)
+void nufft_get_psf(const struct linop_s* nufft, int N, const long psf_dims[N], complex float* psf)
 {
 	nufft_get_psf2(nufft, N, psf_dims, MD_STRIDES(N, psf_dims, CFL_SIZE), psf);
 }
@@ -1283,12 +1283,12 @@ void nufft_update_traj(	const struct linop_s* nufft, int N,
 {
 	auto data = CAST_DOWN(nufft_data, linop_get_data(nufft));
 
-	assert(data->N == (unsigned int)N);
+	assert((int)data->N == N);
 
 	nufft_set_traj(data, N, trj_dims, traj, wgh_dims, weights, bas_dims, basis);
 }
 
-void nufft_update_psf2(const struct linop_s* nufft, unsigned int ND, const long psf_dims[ND], const long psf_strs[ND], const complex float* psf)
+void nufft_update_psf2(const struct linop_s* nufft, int ND, const long psf_dims[ND], const long psf_strs[ND], const complex float* psf)
 {
 	auto data = CAST_DOWN(nufft_data, linop_get_data(nufft));
 
@@ -1299,7 +1299,7 @@ void nufft_update_psf2(const struct linop_s* nufft, unsigned int ND, const long 
 	data->psf = multiplace_move2(ND, psf_dims, psf_strs, CFL_SIZE, psf);
 }
 
-void nufft_update_psf(const struct linop_s* nufft, unsigned int ND, const long psf_dims[ND], const complex float* psf)
+void nufft_update_psf(const struct linop_s* nufft, int ND, const long psf_dims[ND], const complex float* psf)
 {
 	nufft_update_psf2(nufft, ND, psf_dims, MD_STRIDES(ND, psf_dims, CFL_SIZE), psf);
 }

@@ -308,8 +308,8 @@ tests/test-pics-noncart-sms: traj slice phantom conj join fft flip pics nrmse
 
 # Without limiting the number of threads, this takes a very long time. The process appears
 # to sleep for most of it, so it seems to be parallelization overhead.
-tests/test-pics-lowmem: traj phantom repmat ones  pics nrmse
-	set +e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+tests/test-pics-lowmem: traj phantom repmat ones pics nrmse
+	set +e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	export OMP_NUM_THREADS=4							;\
 	$(TOOLDIR)/traj -x 16 -y 3 -D -r t.ra						;\
 	$(TOOLDIR)/phantom -tt.ra -k k0.ra						;\
@@ -327,6 +327,19 @@ tests/test-pics-lowmem: traj phantom repmat ones  pics nrmse
 
 
 
+tests/test-pics-psf: traj phantom pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -D -y15 -o2. traj.ra						;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
+	$(TOOLDIR)/phantom -S1 o.ra							;\
+	$(TOOLDIR)/pics -S -r0.001 --psf_export=p.ra -t traj.ra ksp.ra o.ra reco1.ra	;\
+	$(TOOLDIR)/pics -S -r0.001 --psf_import=p.ra -t traj.ra ksp.ra o.ra reco2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.002 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-wavl1 tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
@@ -334,6 +347,6 @@ TESTS += tests/test-pics-warmstart tests/test-pics-batch
 TESTS += tests/test-pics-tedim tests/test-pics-bp-noncart
 TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory tests/test-pics-basis-noncart2
 #TESTS += tests/test-pics-lowmem
-TESTS += tests/test-pics-noncart-sms
+TESTS += tests/test-pics-noncart-sms tests/test-pics-psf
 
 

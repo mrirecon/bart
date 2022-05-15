@@ -51,7 +51,11 @@
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.\n";
                  
 
-static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS], const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf, const long wgs_dims[DIMS], const complex float* weights, const long basis_dims[DIMS], const complex float* basis, struct operator_s** precond_op)
+static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS],
+			const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf,
+			const long wgs_dims[DIMS], const complex float* weights,
+			const long basis_dims[DIMS], const complex float* basis,
+			const struct linop_s** fft_opp)
 {
 	long coilim_dims[DIMS];
 	long img_dims[DIMS];
@@ -61,17 +65,19 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	long ksp_dims2[DIMS];
 	md_copy_dims(DIMS, ksp_dims2, ksp_dims);
 	ksp_dims2[COEFF_DIM] = max_dims[COEFF_DIM];
-	//ksp_dims2[TE_DIM] = 1;
 
 	debug_print_dims(DP_INFO, DIMS, ksp_dims2);
 	debug_print_dims(DP_INFO, DIMS, coilim_dims);
 
-	const struct linop_s* fft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, (weights ? wgs_dims : NULL), weights, (basis ? basis_dims : NULL), basis, conf);
+	const struct linop_s* nufft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, (weights ? wgs_dims : NULL), weights, (basis ? basis_dims : NULL), basis, conf);
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
-	const struct linop_s* lop = linop_chain_FF(maps_op, fft_op);
+	const struct linop_s* lop = linop_chain(maps_op, nufft_op);
 
-	//precond_op[0] = (struct operator_s*) nufft_precond_create( fft_op );
-	precond_op[0] = NULL;
+	if (NULL != fft_opp)
+		*fft_opp = linop_clone(nufft_op);
+
+	linop_free(maps_op);
+	linop_free(nufft_op);
 
 	return lop;
 }
@@ -114,6 +120,8 @@ int main_pics(int argc, char* argv[argc])
 	float restrict_fov = -1.;
 	const char* pat_file = NULL;
 	const char* traj_file = NULL;
+	const char* psf_ifile = NULL;
+	const char* psf_ofile = NULL;
 	bool scale_im = false;
 	bool eigen = false;
 	float scaling = 0.;
@@ -185,6 +193,8 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SELECT('a', enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 		OPTL_SET('U', "lowmem", &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_OUTFILE(0, "psf_export", &psf_ofile, "file", "Export PSF to file"),
+		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
 	};
 
 
@@ -286,6 +296,8 @@ int main_pics(int argc, char* argv[argc])
 	if ((NULL != traj_file) && (!md_check_compat(DIMS, ~0, ksp_dims, traj_dims)))
 		error("Dimensions of data and trajectory do not match!\n");
 
+	if ((NULL == traj_file) && (NULL != psf_ofile))
+		error("Export of PSF for Cartesian scan requested!\n");
 
 
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -402,10 +414,9 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 
-	// initialize forward_op and precond_op
+	// initialize forward_op
 
 	const struct linop_s* forward_op = NULL;
-	const struct operator_s* precond_op = NULL;
 
 	if (NULL == traj_file) {
 
@@ -421,8 +432,44 @@ int main_pics(int argc, char* argv[argc])
 
 	} else {
 
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf,
-				pat_dims, pattern, basis_dims, basis, (struct operator_s**)&precond_op);
+		const struct linop_s* nufft_op = NULL;
+
+		if ((NULL != psf_ifile) && (NULL == psf_ofile))
+			nuconf.nopsf = true;
+
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
+				traj_dims, traj, nuconf,
+				pat_dims, pattern,
+				basis_dims, basis, &nufft_op);
+
+		if (NULL != psf_ofile) {
+
+			int D = nufft_get_psf_dims(nufft_op, 0, NULL);
+
+			long psf_dims[D];
+
+			nufft_get_psf_dims(nufft_op, D, psf_dims);
+
+			complex float* psf_out = create_cfl(psf_ofile, D, psf_dims);
+
+			nufft_get_psf(nufft_op, D, psf_dims, psf_out);
+
+			unmap_cfl(D, psf_dims, psf_out);
+
+		}
+
+		if (NULL != psf_ifile) {
+
+			long psf_dims[DIMS + 1];
+
+			complex float* psf_in = load_cfl(psf_ifile, DIMS + 1, psf_dims);
+
+			nufft_update_psf(nufft_op, DIMS + 1, psf_dims, psf_in);
+
+			unmap_cfl(DIMS + 1, psf_dims, psf_in);
+		}
+
+		linop_free(nufft_op);
 	}
 
 
@@ -627,7 +674,7 @@ int main_pics(int argc, char* argv[argc])
 	const struct operator_p_s* po = sense_recon_create(&conf, max1_dims, forward_op,
 				pat1_dims, ((NULL != traj_file) || conf.bpsense) ? NULL : pattern1,
 				it.italgo, it.iconf, image_start1, nr_penalties, thresh_ops,
-				trafos_cond ? trafos : NULL, precond_op, monitor);
+				trafos_cond ? trafos : NULL, NULL, monitor);
 
 	const struct operator_s* op = operator_p_bind(po, 1.);
 	operator_p_free(po);

@@ -15,7 +15,7 @@ struct nufft_data {
 	struct nufft_conf_s conf;	///< NUFFT configuration structure
 	struct grid_conf_s grid_conf;
 
-	unsigned int N;			///< Number of dimension
+	int N;				///< Number of dimension
 	unsigned long flags;
 
 	struct multiplace_array_s* linphase;	///< Linear phase for pruned FFT
