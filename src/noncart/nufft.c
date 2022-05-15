@@ -1251,7 +1251,8 @@ int nufft_get_psf_dims(const struct linop_s* nufft, int N, long psf_dims[N])
 
 	auto data = CAST_DOWN(nufft_data, lop_data);
 
-	md_copy_dims(N, psf_dims, data->psf_dims);
+	if (N > 0)
+		md_copy_dims(N, psf_dims, data->psf_dims);
 
 	return data->N + 1;
 }
