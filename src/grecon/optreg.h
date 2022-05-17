@@ -1,5 +1,5 @@
 /* Copyright 2014-2017. The Regents of the University of California.
- * Copyright 2018. Martin Uecker.
+ * Copyright 2018-2022. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -25,7 +25,7 @@ struct reg_s {
 
 	float lambda;
 	unsigned int k;
-	char* graph_file;
+	const char* graph_file;
 };
 
 
@@ -33,8 +33,7 @@ struct opt_reg_s {
 
 	float lambda;
 	struct reg_s regs[NUM_REGS];
-	unsigned int r;
-	unsigned int k;
+	int r;
 };
 
 
@@ -43,7 +42,7 @@ extern _Bool opt_reg_init(struct opt_reg_s* ropts);
 
 extern void opt_bpursuit_configure(struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const struct linop_s* model_op, const _Complex float* data, const float eps);
 
-extern void opt_reg_configure(unsigned int N, const long img_dims[__VLA(N)], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, unsigned int shift_mode, _Bool use_gpu);
+extern void opt_reg_configure(int N, const long img_dims[__VLA(N)], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, unsigned int shift_mode, _Bool use_gpu);
 
 extern void opt_reg_free(struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS]);
 

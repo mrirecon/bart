@@ -1,12 +1,12 @@
 /* Copyright 2015-2017. The Regents of the University of California.
- * Copyright 2015-2018. Martin Uecker.
+ * Copyright 2015-2022. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2015-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2015-2016 Frank Ong <frankong@berkeley.edu>
- * 2015-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2015-2022 Martin Uecker
+ * 2015-2016 Frank Ong
+ * 2015-2017 Jon Tamir
  *
  */
 
@@ -239,7 +239,6 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 {
 	ropts->r = 0;
 	ropts->lambda = -1;
-	ropts->k = 0;
 
 	return false;
 }
@@ -257,7 +256,7 @@ void opt_bpursuit_configure(struct opt_reg_s* ropts, const struct operator_p_s* 
 	ropts->r++;
 }
 
-void opt_reg_configure(unsigned int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, unsigned int shift_mode, bool use_gpu)
+void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, unsigned int shift_mode, bool use_gpu)
 {
 	float lambda = ropts->lambda;
 	bool randshift = shift_mode == 1;
