@@ -294,6 +294,10 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 		switch (regs[nr].xform) {
 
 		case TGV:
+
+			if (0 != ropts->svars)
+				error("only one TGV term allowed.");
+
 			ropts->svars += 2;
 			ropts->r++;
 			break;
@@ -315,7 +319,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 	int levels;
 
 
-	for (int nr = 0; nr < ropts->r; nr++) {
+	for (int nr = 0, nr2 = 0; nr < nr_penalties; nr++, nr2++) {
 
 		// fix up regularization parameter
 		if (-1. == regs[nr].lambda)
@@ -326,6 +330,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		long thresh_dims[N];
 		long img_strs[N];
+
+		assert(nr2 < NUM_REGS);
 
 		switch (regs[nr].xform) {
 
@@ -342,8 +348,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 				}
 			}
 
-			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].lambda, randshift);
+			trafos[nr2] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr2] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].lambda, randshift);
 			break;
 		
 		case NIHTWAV:
@@ -367,10 +373,10 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 				}
 			}
 
-			trafos[nr] = linop_wavelet_create(N, wflags, img_dims, img_strs, minsize, randshift);
+			trafos[nr2] = linop_wavelet_create(N, wflags, img_dims, img_strs, minsize, randshift);
 
 			long wav_dims[DIMS];
-			md_copy_dims(DIMS, wav_dims, linop_codomain(trafos[nr])->dims);
+			md_copy_dims(DIMS, wav_dims, linop_codomain(trafos[nr2])->dims);
 
 			unsigned int K = (md_calc_size(wxdim, wav_dims) / 100) * regs[nr].k;
 
@@ -382,7 +388,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_DEBUG3, "]\n");
 			
-			prox_ops[nr] = prox_niht_thresh_create(N, wav_dims, K, regs[nr].jflags);
+			prox_ops[nr2] = prox_niht_thresh_create(N, wav_dims, K, regs[nr].jflags);
 			break;
 
 		case NIHTIM:
@@ -398,8 +404,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "k = %d%%, actual K = %d\n", regs[nr].k, K);
 
-			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_niht_thresh_create(N, img_dims, K, regs[nr].jflags);
+			trafos[nr2] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr2] = prox_niht_thresh_create(N, img_dims, K, regs[nr].jflags);
 
 			break;
 
@@ -407,9 +413,9 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_grad_create(DIMS, img_dims, DIMS, regs[nr].xflags);
-			prox_ops[nr] = prox_thresh_create(DIMS + 1,
-					linop_codomain(trafos[nr])->dims,
+			trafos[nr2] = linop_grad_create(DIMS, img_dims, DIMS, regs[nr].xflags);
+			prox_ops[nr2] = prox_thresh_create(DIMS + 1,
+					linop_codomain(trafos[nr2])->dims,
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
 			break;
 
@@ -417,15 +423,15 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "TGV regularization: %f\n", regs[nr].lambda);
 
-			struct reg2 reg2 = tgvreg(regs[nr].xflags, regs[nr].lambda, DIMS, img_dims);
+			struct reg2 reg2 = tgvreg(regs[nr].xflags, regs[nr].jflags /*| MD_BIT(DIMS - 1)*/ | MD_BIT(DIMS), regs[nr].lambda, DIMS, img_dims);
 
-			trafos[nr + 0] = reg2.linop[0];
-			trafos[nr + 1] = reg2.linop[1];
+			trafos[nr2 + 0] = reg2.linop[0];
+			trafos[nr2 + 1] = reg2.linop[1];
 
-			prox_ops[nr + 0] = reg2.prox[0];
-			prox_ops[nr + 1] = reg2.prox[1];
+			prox_ops[nr2 + 0] = reg2.prox[0];
+			prox_ops[nr2 + 1] = reg2.prox[1];
 
-			nr++;
+			nr2++;
 
 			break;
 
@@ -447,10 +453,10 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			assert(9 == md_calc_size(DIMS, krn_dims));
 
-			trafos[nr] = linop_conv_create(DIMS, regs[nr].xflags, CONV_TRUNCATED, CONV_SYMMETRIC, img_dims, img_dims, krn_dims, krn);
-			prox_ops[nr] = prox_thresh_create(DIMS,
-					linop_codomain(trafos[nr])->dims,
-					regs[nr].lambda, regs[nr].jflags);
+			trafos[nr2] = linop_conv_create(DIMS, regs[nr].xflags, CONV_TRUNCATED, CONV_SYMMETRIC, img_dims, img_dims, krn_dims, krn);
+			prox_ops[nr2] = prox_thresh_create(DIMS,
+						linop_codomain(trafos[nr2])->dims,
+						regs[nr].lambda, regs[nr].jflags);
 			break;
 
 		case LLR:
@@ -477,8 +483,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			int remove_mean = 0;
 
-			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, overlapping_blocks);
+			trafos[nr2] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr2] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, overlapping_blocks);
 			break;
 
 		case MLR:
@@ -495,8 +501,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			for(int l = 0; l < levels; l++)
 				blkdims[l][MAPS_DIM] = 1;
 
-			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, 0, use_gpu);
+			trafos[nr2] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr2] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, 0, use_gpu);
 
 			const struct linop_s* decom_op = sum_create( img_dims, use_gpu );
 			const struct linop_s* tmp_op = forward_op;
@@ -514,55 +520,55 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "l1 regularization of imaginary part: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
-			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
+			trafos[nr2] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
+			prox_ops[nr2] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
 			break;
 
 		case IMAGL2:
 
 			debug_printf(DP_INFO, "l2 regularization of imaginary part: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
-			prox_ops[nr] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
+			trafos[nr2] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
+			prox_ops[nr2] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
 			break;
 
 		case L1IMG:
 
 			debug_printf(DP_INFO, "l1 regularization: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
+			trafos[nr2] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr2] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
 			break;
 
 		case POS:
 
 			debug_printf(DP_INFO, "non-negative constraint\n");
 
-			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_nonneg_create(DIMS, img_dims);
+			trafos[nr2] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr2] = prox_nonneg_create(DIMS, img_dims);
 			break;
 
 		case L2IMG:
 
 			debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
+			trafos[nr2] = linop_identity_create(DIMS, img_dims);
+			prox_ops[nr2] = prox_leastsquares_create(DIMS, img_dims, regs[nr].lambda, NULL);
 			break;
 
 		case FTL1:
 
 			debug_printf(DP_INFO, "l1 regularization of Fourier transform: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_fft_create(DIMS, img_dims, regs[nr].xflags);
-			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
+			trafos[nr2] = linop_fft_create(DIMS, img_dims, regs[nr].xflags);
+			prox_ops[nr2] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
 			break;
 
 		case TENFL:
 
 			debug_printf(DP_INFO, "TensorFlow Loss: %f %s\n", regs[nr].lambda, regs[nr].graph_file);
 
-			trafos[nr] = linop_identity_create(DIMS, img_dims);
+			trafos[nr2] = linop_identity_create(DIMS, img_dims);
 
 			const struct nlop_s* tf_ops = nlop_tf_create(1, 1, regs[nr].graph_file, true);
 
@@ -570,7 +576,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			auto prox_op = prox_nlgrad_create(tf_ops, 1, 1., regs[nr].lambda);
 
-			prox_ops[nr] = op_p_auto_normalize(prox_op, ~0LU, NORM_MAX);
+			prox_ops[nr2] = op_p_auto_normalize(prox_op, ~0LU, NORM_MAX);
 
 			operator_p_free(prox_op);
 
@@ -581,10 +587,12 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			long pos[DIMS] = { 0 };
 
-			trafos[nr] = linop_chain_FF(
-					linop_extract_create(DIMS, pos, linop_domain(trafos[nr])->dims, ext_dims),
-					trafos[nr]);
+			trafos[nr2] = linop_chain_FF(
+					linop_extract_create(DIMS, pos, linop_domain(trafos[nr2])->dims, ext_dims),
+					trafos[nr2]);
 		}
+
+		nr2++;
 	}
 }
 

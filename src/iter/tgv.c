@@ -13,7 +13,7 @@
 #include "tgv.h"
 
 
-struct reg2 tgvreg(unsigned long flags, float lambda, int N, const long in_dims[N])
+struct reg2 tgvreg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N])
 {
 	long out_dims[N];
 	struct reg2 reg2;
@@ -67,8 +67,8 @@ struct reg2 tgvreg(unsigned long flags, float lambda, int N, const long in_dims[
 	auto grad2e = linop_extract_create(N, pos2, grd_dims, out_dims);
 	reg2.linop[1] = linop_chain_FF(grad2e, grad2);
 
-	reg2.prox[0] = prox_thresh_create(N + 0, linop_codomain(reg2.linop[0])->dims, lambda, 0u);
-	reg2.prox[1] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[1])->dims, lambda, 0u);
+	reg2.prox[0] = prox_thresh_create(N + 0, linop_codomain(reg2.linop[0])->dims, lambda, jflags);
+	reg2.prox[1] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[1])->dims, lambda, jflags);
 
 	return reg2;
 }

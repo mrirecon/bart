@@ -83,7 +83,7 @@ int main_tgv(int argc, char* argv[argc])
 	assert(1 == in_dims[DIMS - 1]);
 
 
-	struct reg2 reg2 = tgvreg(flags, lambda, DIMS, in_dims);
+	struct reg2 reg2 = tgvreg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims);
 
 	long out_dims[DIMS];
 	md_copy_dims(DIMS, out_dims, linop_domain(reg2.linop[0])->dims);
