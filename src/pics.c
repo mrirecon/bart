@@ -1,12 +1,12 @@
 /* Copyright 2013-2018. The Regents of the University of California.
- * Copyright 2015-2019. Martin Uecker.
+ * Copyright 2015-2022. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014-2016 Frank Ong <frankong@berkeley.edu>
- * 2014-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2012-2022 Martin Uecker
+ * 2014-2016 Frank Ong
+ * 2014-2018 Jon Tamir
  */
 
 #include <assert.h>
@@ -28,6 +28,7 @@
 #include "linops/linop.h"
 #include "linops/fmac.h"
 #include "linops/sampling.h"
+#include "linops/someops.h"
 
 #include "noncart/nufft.h"
 
@@ -69,7 +70,11 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	debug_print_dims(DP_INFO, DIMS, ksp_dims2);
 	debug_print_dims(DP_INFO, DIMS, coilim_dims);
 
-	const struct linop_s* nufft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims, traj_dims, traj, (weights ? wgs_dims : NULL), weights, (basis ? basis_dims : NULL), basis, conf);
+	const struct linop_s* nufft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims,
+						traj_dims, traj,
+						(weights ? wgs_dims : NULL), weights,
+						(basis ? basis_dims : NULL), basis, conf);
+
 	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
 	const struct linop_s* lop = linop_chain(maps_op, nufft_op);
 
@@ -671,6 +676,27 @@ int main_pics(int argc, char* argv[argc])
 	if (im_truth)
 		monitor = create_monitor(2 * md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL);
 
+	if (0 < ropts.svars) {
+
+		assert(!im_truth);
+		assert(!conf.rvc);
+		assert(1 == img1_dims[BATCH_DIM]);
+		assert(1 == max1_dims[BATCH_DIM]);
+		assert(0 == loop_flags);
+
+		long img2_dims[DIMS];
+		md_copy_dims(DIMS, img2_dims, img1_dims);
+
+		img2_dims[BATCH_DIM] += ropts.svars;
+		long pos[DIMS] = { 0 };
+
+		max1_dims[BATCH_DIM] += ropts.svars;
+
+		forward_op = linop_chain_FF(
+				linop_extract_create(DIMS, pos, linop_domain(forward_op)->dims, img2_dims),
+				forward_op);
+	}
+
 	const struct operator_p_s* po = sense_recon_create(&conf, max1_dims, forward_op,
 				pat1_dims, ((NULL != traj_file) || conf.bpsense) ? NULL : pattern1,
 				it.italgo, it.iconf, image_start1, nr_penalties, thresh_ops,
@@ -678,6 +704,24 @@ int main_pics(int argc, char* argv[argc])
 
 	const struct operator_s* op = operator_p_bind(po, 1.);
 	operator_p_free(po);
+
+	if (0 < ropts.svars) {
+
+		assert(img1_dims[BATCH_DIM] + ropts.svars == operator_codomain(op)->dims[BATCH_DIM]);
+
+		long pos[DIMS] = { 0 };
+
+		auto extr = linop_extract_create(DIMS, pos, img1_dims, operator_codomain(op)->dims);
+
+		auto op2 = operator_chain(op, extr->forward);
+
+		operator_free(op);
+		op = op2;
+
+		assert(img1_dims[BATCH_DIM] == operator_codomain(op)->dims[BATCH_DIM]);
+
+		linop_free(extr);
+	}
 
 	long strsx[2][DIMS];
 	const long* strs[2] = { strsx[0], strsx[1] };
@@ -695,7 +739,6 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 	if (0 != loop_flags) {
-
 
 		auto op_tmp = operator_copy_wrapper(2, strs, op);
 		operator_free(op);

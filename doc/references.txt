@@ -328,6 +328,10 @@ Luo G, Zhao N, Jiang W, Hui ES, Cao P.
 MRI reconstruction using deep Bayesian estimation.
 Magn Reson Med 2020; 84:2246-2261.
 
+Knoll F, Bredies K, Pock T, Stollberger R.
+Second order total generalized variation (TGV) for MRI.
+Magn Reson Med 2010; 65:480-491.
+
 
 
 

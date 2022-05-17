@@ -7,7 +7,6 @@
  * 2015-2022 Martin Uecker
  * 2015-2016 Frank Ong
  * 2015-2017 Jon Tamir
- *
  */
 
 #include <assert.h>
@@ -24,6 +23,7 @@
 #include "iter/prox.h"
 #include "iter/prox2.h"
 #include "iter/thresh.h"
+#include "iter/tgv.h"
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -64,6 +64,7 @@ void help_reg(void)
 			"-R F:A:B:C\tl1-Fourier\n"
 			"-R T:A:B:C\ttotal variation\n"
 			"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
+			"-R G:A:B:C\ttotal generalized variation\n"
 			"-R L:7:7:.02\tLocally low rank with spatial decimation and 0.02 regularization.\n"
 			"-R M:7:7:.03\tMulti-scale low rank with spatial decimation and 0.03 regularization.\n"
 			"-R TF:{graph_path}:lambda\tTensorFlow loss\n"
@@ -133,6 +134,12 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 		else if (strcmp(rt, "T") == 0) {
 
 			regs[r].xform = TV;
+			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+		}
+		else if (strcmp(rt, "G") == 0) {
+
+			regs[r].xform = TGV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 		}
@@ -239,6 +246,7 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 {
 	ropts->r = 0;
 	ropts->lambda = -1;
+	ropts->svars = 0;
 
 	return false;
 }
@@ -259,8 +267,8 @@ void opt_bpursuit_configure(struct opt_reg_s* ropts, const struct operator_p_s* 
 void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, unsigned int shift_mode, bool use_gpu)
 {
 	float lambda = ropts->lambda;
-	bool randshift = shift_mode == 1;
-	bool overlapping_blocks = shift_mode == 2;
+	bool randshift = (1 == shift_mode);
+	bool overlapping_blocks = (2 == shift_mode);
 
 	if (-1. == lambda)
 		lambda = 0.;
@@ -279,31 +287,53 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 		ropts->r = 1;
 	}
 
-
-
 	int nr_penalties = ropts->r;
+
+	for (int nr = 0; nr < nr_penalties; nr++) {
+
+		switch (regs[nr].xform) {
+
+		case TGV:
+			ropts->svars += 2;
+			ropts->r++;
+			break;
+
+		default: ;
+		}
+	}
+
+	assert(ropts->r <= NUM_REGS);
+	assert(1 == img_dims[BATCH_DIM]);
+
+	long ext_dims[DIMS];
+	md_copy_dims(DIMS, ext_dims, img_dims);
+	ext_dims[BATCH_DIM] += ropts->svars;
+
+
+
 	long blkdims[MAX_LEV][DIMS];
 	int levels;
 
 
-	for (int nr = 0; nr < nr_penalties; nr++) {
+	for (int nr = 0; nr < ropts->r; nr++) {
 
 		// fix up regularization parameter
 		if (-1. == regs[nr].lambda)
 			regs[nr].lambda = lambda;
 
+		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
+		unsigned int wflags = 0;
+
+		long thresh_dims[N];
+		long img_strs[N];
+
 		switch (regs[nr].xform) {
 
 		case L1WAV:
-		{
 
 			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
 
-
-			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-
-			unsigned int wflags = 0;
-			for (unsigned int i = 0; i < DIMS; i++) {
+			for (int i = 0; i < DIMS; i++) {
 
 				if ((1 < img_dims[i]) && MD_IS_SET(regs[nr].xflags, i)) {
 
@@ -315,23 +345,19 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].lambda, randshift);
 			break;
-		}
 		
 		case NIHTWAV:
-		{
+
 			debug_printf(DP_INFO, "NIHT with wavelets regularization: k = %d%% of total elements in each wavelet transform\n", regs[nr].k);
 
 			if (use_gpu)
 				error("GPU operation is not currently implemented for NIHT.\n");
 
-			long img_strs[N];
 			md_calc_strides(N, img_strs, img_dims, CFL_SIZE);
 
-			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-
-			unsigned int wflags = 0;
 			unsigned int wxdim = 0;
-			for (unsigned int i = 0; i < DIMS; i++) {
+
+			for (int i = 0; i < DIMS; i++) {
 
 				if ((1 < img_dims[i]) && MD_IS_SET(regs[nr].xflags, i)) {
 
@@ -345,37 +371,40 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			long wav_dims[DIMS];
 			md_copy_dims(DIMS, wav_dims, linop_codomain(trafos[nr])->dims);
+
 			unsigned int K = (md_calc_size(wxdim, wav_dims) / 100) * regs[nr].k;
 
 			debug_printf(DP_DEBUG3, "\nK = %d elements will be thresholded per wavelet transform\n", K);
 			debug_printf(DP_DEBUG3, "Total wavelet dimensions: \n[");
-			for (unsigned int i = 0; i < DIMS; i++)
+
+			for (int i = 0; i < DIMS; i++)
 				debug_printf(DP_DEBUG3,"%d ", wav_dims[i]);
+
 			debug_printf(DP_DEBUG3, "]\n");
 			
 			prox_ops[nr] = prox_niht_thresh_create(N, wav_dims, K, regs[nr].jflags);
 			break;
-		}
 
 		case NIHTIM:
-		{
+
 			debug_printf(DP_INFO, "NIHT regularization in the image domain: k = %d%% of total elements in image vector\n", regs[nr].k);
 
 			if (use_gpu)
 				error("GPU operation is not currently implemented for NIHT.\n");
 
-			long thresh_dims[N];
-			md_select_dims(N, regs[nr].xflags, thresh_dims, img_dims);		
-			unsigned int K = (md_calc_size(N, thresh_dims) / 100) * regs[nr].k;
+			md_select_dims(N, regs[nr].xflags, thresh_dims, img_dims);
+
+			K = (md_calc_size(N, thresh_dims) / 100) * regs[nr].k;
+
 			debug_printf(DP_INFO, "k = %d%%, actual K = %d\n", regs[nr].k, K);
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = prox_niht_thresh_create(N, img_dims, K, regs[nr].jflags);
-			debug_printf(DP_INFO, "NIHTIM initialization complete\n");
+
 			break;
-		}
 
 		case TV:
+
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_grad_create(DIMS, img_dims, DIMS, regs[nr].xflags);
@@ -384,8 +413,26 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
 			break;
 
+		case TGV:
+
+			debug_printf(DP_INFO, "TGV regularization: %f\n", regs[nr].lambda);
+
+			struct reg2 reg2 = tgvreg(regs[nr].xflags, regs[nr].lambda, DIMS, img_dims);
+
+			trafos[nr + 0] = reg2.linop[0];
+			trafos[nr + 1] = reg2.linop[1];
+
+			prox_ops[nr + 0] = reg2.prox[0];
+			prox_ops[nr + 1] = reg2.prox[1];
+
+			nr++;
+
+			break;
+
 		case LAPLACE:
+
 			debug_printf(DP_INFO, "L1-Laplace regularization: %f\n", regs[nr].lambda);
+
 			long krn_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
 			for (unsigned int i = 0; i < DIMS; i++)
@@ -464,6 +511,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			break;
 
 		case IMAGL1:
+
 			debug_printf(DP_INFO, "l1 regularization of imaginary part: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
@@ -471,6 +519,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			break;
 
 		case IMAGL2:
+
 			debug_printf(DP_INFO, "l2 regularization of imaginary part: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_rdiag_create(DIMS, img_dims, 0, &(complex float){ 1.i });
@@ -478,6 +527,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			break;
 
 		case L1IMG:
+
 			debug_printf(DP_INFO, "l1 regularization: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
@@ -485,14 +535,15 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			break;
 
 		case POS:
+
 			debug_printf(DP_INFO, "non-negative constraint\n");
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = prox_nonneg_create(DIMS, img_dims);
 			break;
 
-
 		case L2IMG:
+
 			debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
@@ -500,6 +551,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			break;
 
 		case FTL1:
+
 			debug_printf(DP_INFO, "l1 regularization of Fourier transform: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_fft_create(DIMS, img_dims, regs[nr].xflags);
@@ -507,6 +559,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			break;
 
 		case TENFL:
+
 			debug_printf(DP_INFO, "TensorFlow Loss: %f %s\n", regs[nr].lambda, regs[nr].graph_file);
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
@@ -522,6 +575,15 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			operator_p_free(prox_op);
 
 			break;
+		}
+
+		if ((0 < ropts->svars) && (TGV != regs[nr].xform)) {
+
+			long pos[DIMS] = { 0 };
+
+			trafos[nr] = linop_chain_FF(
+					linop_extract_create(DIMS, pos, linop_domain(trafos[nr])->dims, ext_dims),
+					trafos[nr]);
 		}
 	}
 }
