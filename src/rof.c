@@ -1,15 +1,15 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2022. Institute of Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014, 2022 Martin Uecker
  *
  *
  * Rudin LI, Osher S, Fatemi E. Nonlinear total variation based
  * noise removal algorithms, Physica D: Nonlinear Phenomena
  * 60:259-268 (1992)
- * 
  */
 
 #include <stdlib.h>
@@ -46,6 +46,22 @@
 
 static const char help_str[] = "Perform total variation denoising along dims <flags>.";
 
+struct reg {
+
+	const struct linop_s* linop;
+	const struct operator_p_s* prox;
+};
+
+static struct reg tvreg(unsigned long flags, float lambda, int N, const long dims[N])
+{
+	struct reg reg;
+
+	reg.linop = linop_grad_create(N, dims, N, flags);
+	reg.prox = prox_thresh_create(N + 1, linop_codomain(reg.linop)->dims, lambda, MD_BIT(N));
+
+	return reg;
+}
+
 	
 int main_rof(int argc, char* argv[argc])
 {
@@ -74,8 +90,8 @@ int main_rof(int argc, char* argv[argc])
 	complex float* out_data = create_cfl(out_file, DIMS, dims);
 
 	auto id_op  = linop_identity_create(DIMS, dims);
-	const struct linop_s* grad_op = linop_grad_create(DIMS, dims, DIMS, flags);
-	auto thresh_prox = prox_thresh_create(DIMS + 1, linop_codomain(grad_op)->dims, lambda, MD_BIT(DIMS));
+
+	struct reg reg = tvreg(flags, lambda, DIMS, dims);
 
 	struct iter_admm_conf conf = iter_admm_defaults;
 
@@ -83,13 +99,13 @@ int main_rof(int argc, char* argv[argc])
 	conf.rho = .1;
 
 	iter2_admm(CAST_UP(&conf), id_op->forward,
-		   1, MAKE_ARRAY(thresh_prox), MAKE_ARRAY(grad_op), NULL,
+		   1, MAKE_ARRAY(reg.prox), MAKE_ARRAY(reg.linop), NULL,
 		   NULL, 2 * md_calc_size(DIMS, dims), (float*)out_data, (const float*)in_data, NULL);
 
 	linop_free(id_op);
-	linop_free(grad_op);
+	linop_free(reg.linop);
 
-	operator_p_free(thresh_prox);
+	operator_p_free(reg.prox);
 	
 	unmap_cfl(DIMS, dims, in_data);
 	unmap_cfl(DIMS, dims, out_data);

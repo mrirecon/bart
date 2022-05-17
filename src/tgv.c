@@ -1,9 +1,10 @@
 /* Copyright 2014,2019. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * Copyright 2022. Institute of Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014,2019 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2014,2019,2022 Martin Uecker.
  *
  *
  * Rudin LI, Osher S, Fatemi E. Nonlinear total variation based
@@ -17,7 +18,6 @@
 
 #include <stdlib.h>
 #include <assert.h>
-#include <stdio.h>
 #include <complex.h>
 #include <assert.h>
 #include <stdbool.h>
@@ -49,6 +49,71 @@
 
 static const char help_str[] = "Perform total generalized variation denoising along dims specified by flags.";
 
+struct reg2 {
+
+	const struct linop_s* linop[2];
+	const struct operator_p_s* prox[2];
+};
+
+static struct reg2 tgvreg(unsigned long flags, float lambda, int N, const long in_dims[N])
+{
+	long out_dims[N];
+	struct reg2 reg2;
+
+	const struct linop_s* grad1 = linop_grad_create(N - 1, in_dims, N - 1, flags);
+	const struct linop_s* grad2x = linop_grad_create(N + 0, linop_codomain(grad1)->dims, N + 0, flags);
+
+
+	auto grad2a = linop_transpose_create(N + 1, N - 1, N + 0, linop_codomain(grad2x)->dims);
+	auto grad2b = linop_identity_create(N + 1, linop_codomain(grad2x)->dims);
+	auto grad2 = linop_chain_FF(grad2x, linop_plus_FF(grad2a, grad2b));
+
+
+	long grd_dims[N];
+	md_copy_dims(N, grd_dims, linop_codomain(grad1)->dims);
+
+	md_copy_dims(N, out_dims, grd_dims);
+	out_dims[N - 1]++;
+
+
+	long pos1[N];
+
+	for (int i = 0; i < N; i++)
+		pos1[i] = 0;
+
+	pos1[N - 1] = 0;
+
+	auto grad1b = linop_extract_create(N, pos1, in_dims, out_dims);
+	auto grad1c = linop_reshape_create(N - 1, linop_domain(grad1)->dims, N, in_dims);
+	auto grad1d = linop_chain_FF(linop_chain_FF(grad1b, grad1c), grad1);
+
+
+	long pos1b[N];
+
+	for (int i = 0; i < N; i++)
+		pos1b[i] = 0;
+
+	pos1b[N - 1] = 1;
+
+	auto grad1e = linop_extract_create(N, pos1b, grd_dims, out_dims);
+	reg2.linop[0] = linop_plus_FF(grad1e, grad1d);
+
+
+	long pos2[N];
+
+	for (int i = 0; i < N; i++)
+		pos2[i] = 0;
+
+	pos2[N - 1] = 1;
+
+	auto grad2e = linop_extract_create(N, pos2, grd_dims, out_dims);
+	reg2.linop[1] = linop_chain_FF(grad2e, grad2);
+
+	reg2.prox[0] = prox_thresh_create(N + 0, linop_codomain(reg2.linop[0])->dims, lambda, 0u);
+	reg2.prox[1] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[1])->dims, lambda, 0u);
+
+	return reg2;
+}
 
 /* TGV
  * 
@@ -84,44 +149,14 @@ int main_tgv(int argc, char* argv[argc])
 
 	assert(1 == in_dims[DIMS - 1]);
 
+
+	struct reg2 reg2 = tgvreg(flags, lambda, DIMS, in_dims);
+
 	long out_dims[DIMS];
-	
-	const struct linop_s* grad1 = linop_grad_create(DIMS - 1, in_dims, DIMS - 1, flags);
-	const struct linop_s* grad2x = linop_grad_create(DIMS + 0, linop_codomain(grad1)->dims, DIMS + 0, flags);
+	md_copy_dims(DIMS, out_dims, linop_domain(reg2.linop[0])->dims);
 
-
-	auto grad2a = linop_transpose_create(DIMS + 1, DIMS - 1, DIMS + 0, linop_codomain(grad2x)->dims);
-	auto grad2b = linop_identity_create(DIMS + 1, linop_codomain(grad2x)->dims);
-	auto grad2 = linop_chain_FF(grad2x, linop_plus_FF(grad2a, grad2b));
-
-
-	long grd_dims[DIMS];
-	md_copy_dims(DIMS, grd_dims, linop_codomain(grad1)->dims);
-
-	md_copy_dims(DIMS, out_dims, grd_dims);
-	out_dims[DIMS - 1]++;
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
-
-
-	long pos1[DIMS] = { [DIMS - 1] = 0 };
-	auto grad1b = linop_extract_create(DIMS, pos1, in_dims, out_dims);
-	auto grad1c = linop_reshape_create(DIMS - 1, linop_domain(grad1)->dims, DIMS, in_dims);
-	auto grad1d = linop_chain_FF(linop_chain_FF(grad1b, grad1c), grad1);
-
-
-	long pos1b[DIMS] = { [DIMS - 1] = 1 };
-	auto grad1e = linop_extract_create(DIMS, pos1b, grd_dims, out_dims);
-	const struct linop_s* grad1f = linop_plus_FF(grad1e, grad1d);
-
-
-	long pos2[DIMS] = { [DIMS - 1] = 1 };
-	auto grad2e = linop_extract_create(DIMS, pos2, grd_dims, out_dims);
-	const struct linop_s* grad2f = linop_chain_FF(grad2e, grad2);
-
-
-	auto p1 = prox_thresh_create(DIMS + 0, linop_codomain(grad1f)->dims, lambda, 0u);
-	auto p2 = prox_thresh_create(DIMS + 1, linop_codomain(grad2f)->dims, lambda, 0u);
 
 	auto id = linop_extract_create(DIMS, (long[DIMS]){ 0 }, in_dims, out_dims);
 
@@ -135,7 +170,7 @@ int main_tgv(int argc, char* argv[argc])
 	conf.rho = .1;
 
 	iter2_admm(CAST_UP(&conf), id->normal,
-		   2, MAKE_ARRAY(p1, p2), MAKE_ARRAY(grad1f, grad2f),
+		   2, MAKE_ARRAY(reg2.prox[0], reg2.prox[1]), MAKE_ARRAY(reg2.linop[0], reg2.linop[1]),
 		   NULL, NULL,
 		   2 * md_calc_size(DIMS, out_dims), (float*)out_data, (const float*)adj,
 		   NULL);
@@ -143,12 +178,12 @@ int main_tgv(int argc, char* argv[argc])
 	md_free(adj);
 
 	linop_free(id);
-	linop_free(grad1f);
-	linop_free(grad2f);
+	linop_free(reg2.linop[0]);
+	linop_free(reg2.linop[1]);
 
-	operator_p_free(p1);
-	operator_p_free(p2);
-	
+	operator_p_free(reg2.prox[0]);
+	operator_p_free(reg2.prox[1]);
+
 	unmap_cfl(DIMS, in_dims, in_data);
 	unmap_cfl(DIMS, out_dims, out_data);
 
