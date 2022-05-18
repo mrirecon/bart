@@ -218,10 +218,11 @@ static void compute_kern(int N, unsigned long flags, const long pos[N],
 
 
 
-complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N], const complex float* _traj,
+static complex float* compute_psf_internal(int N, const long img_dims[N], const long trj_dims[N], const complex float* _traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights,
-				bool periodic, bool lowmem)
+				bool periodic, bool lowmem,
+				struct linop_s** lop_nufft)
 {
 	long img2_dims[N + 1];
 	md_copy_dims(N, img2_dims, img_dims);
@@ -251,6 +252,7 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 
 		assert(1 == trj2_dims[6]);
 		assert(1 == trj2_dims[N - 1]);
+
 		ksp2_dims[N - 1] = trj2_dims[5];
 		trj2_dims[N - 1] = trj2_dims[5];
 		trj2_dims[5] = 1;	// FIXME copy?
@@ -265,7 +267,6 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 			md_transpose(N, N - 1, 5, trj2_dims, tmp, trj3_dims, _traj, CFL_SIZE);
 			traj = tmp;
 		}
-
 	}
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
@@ -303,11 +304,25 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 
 		psft = md_alloc_sameplace(N, img2_dims, CFL_SIZE, traj);
 
-		struct linop_s* op2 = nufft_create(N, ksp2_dims, img2_dims, trj2_dims, traj, NULL, conf);
+		struct linop_s* op2 = NULL;
+
+		if ((NULL != lop_nufft) && (NULL != *lop_nufft)) {
+
+			op2 = *lop_nufft;
+
+			nufft_update_traj(op2, N, trj2_dims, traj, MD_SINGLETON_DIMS(1), NULL, MD_SINGLETON_DIMS(1), NULL);
+
+		} else {
+
+			op2 = nufft_create(N, ksp2_dims, img2_dims, trj2_dims, traj, NULL, conf);
+		}
 
 		linop_adjoint_unchecked(op2, psft, ones);
 
-		linop_free(op2);
+		if (NULL != lop_nufft)
+			*lop_nufft = op2;
+		else
+			linop_free(op2);
 
 		md_free(ones);
 
@@ -341,6 +356,7 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 			struct linop_s* op2 = nufft_create(N - 1, ksp2_dims, img2_dims, trj2_dims, (void*)traj + i * trj2_strs[N - 1], NULL, conf);
 
 			linop_adjoint_unchecked(op2, tmp, ones);
+
 			md_zadd(N - 1, img2_dims, psft, psft, tmp);
 
 			linop_free(op2);
@@ -356,10 +372,19 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 	return psft;
 }
 
+complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
+				const long bas_dims[N], const complex float* basis,
+				const long wgh_dims[N], const complex float* weights,
+				bool periodic, bool lowmem)
+{
+	return compute_psf_internal(N, img_dims, trj_dims, traj, bas_dims, basis, wgh_dims, weights, periodic, lowmem, NULL);
+}
+
 
 static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned long flags, const long trj_dims[N + 1], const complex float* traj,
 				const long bas_dims[N + 1], const complex float* basis, const long wgh_dims[N + 1], const complex float* weights,
-				bool periodic, bool lowmem)
+				bool periodic, bool lowmem,
+				struct linop_s** lop_nufft, struct linop_s** lop_fftuc)
 {
 	int ND = N + 1;
 
@@ -383,12 +408,26 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 	md_calc_strides(ND, img2_strs, img2_dims, CFL_SIZE);
 
 	complex float* traj2 = md_alloc_sameplace(ND, trj_dims, CFL_SIZE, traj);
+
 	md_zsmul(ND, trj_dims, traj2, traj, 2.);
 
-	complex float* psft = compute_psf(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem);
+	complex float* psft = compute_psf_internal(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem, lop_nufft);
+
 	md_free(traj2);
 
-	fftuc(ND, img2_dims, flags, psft, psft);
+	struct linop_s* lop_fft = NULL;
+
+	if ((NULL != lop_fftuc) && (NULL != *lop_fftuc))
+		lop_fft = *lop_fftuc;
+	else
+		lop_fft = linop_fftc_create(ND, img2_dims, flags);
+
+	linop_forward_unchecked(lop_fft, psft, psft);
+
+	if (NULL != lop_fftuc)
+		*lop_fftuc = lop_fft;
+	else
+		linop_free(lop_fft);
 
 	float scale = 1.;
 	for (int i = 0; i < N; i++)
@@ -408,6 +447,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 	md_decompose(N + 0, factors, psf_dims, psf, img2_dims, psft, CFL_SIZE);
 
 	md_free(psft);
+
 	return psf;
 }
 
@@ -458,6 +498,8 @@ static struct nufft_data* nufft_create_data(int N,
 	data->weights = NULL;
 	data->basis = NULL;
 
+	data->lop_nufft_psf = NULL;
+	data->lop_fftuc_psf = NULL;
 
 	data->conf = conf;
 	data->flags = conf.flags;
@@ -683,7 +725,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 
 			const complex float* psf = compute_psf2(N, data->psf_dims, data->flags, data->trj_dims, traj,
 						data->bas_dims, multiplace_read(data->basis, traj), data->wgh_dims, multiplace_read(data->weights, traj),
-						true /*conf.periodic*/, data->conf.lowmem);
+						true /*conf.periodic*/, data->conf.lowmem, &(data->lop_nufft_psf), &(data->lop_fftuc_psf));
 
 			multiplace_free(data->psf);
 
@@ -942,6 +984,12 @@ static void nufft_free_data(const linop_data_t* _data)
 
 	if (data->conf.pcycle || data->conf.lowmem)
 		linop_free(data->cfft_op);
+
+	if (NULL != data->lop_nufft_psf)
+		linop_free(data->lop_nufft_psf);
+
+	if (NULL != data->lop_fftuc_psf)
+		linop_free(data->lop_fftuc_psf);
 
 	xfree(data);
 }
