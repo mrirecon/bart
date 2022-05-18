@@ -340,15 +340,17 @@ tests/test-pics-psf: traj phantom pics nrmse
 
 
 
-tests/test-pics-tgv: phantom slice noise fft ones pics nrmse
+tests/test-pics-tgv: phantom slice noise fft ones pics tgv slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -s2 x.ra							;\
 	$(TOOLDIR)/slice 3 0 x.ra x0.ra							;\
 	$(TOOLDIR)/noise -n 1000000. x0.ra x0n.ra					;\
 	$(TOOLDIR)/fft -u 3 x0n.ra k0n.ra						;\
 	$(TOOLDIR)/ones 2 128 128 o.ra							;\
-	$(TOOLDIR)/pics -i100 -S -RG:3:0:0.0075 k0n.ra o.ra x.ra			;\
-	$(TOOLDIR)/nrmse -t 0.024 x0.ra x.ra						;\
+	$(TOOLDIR)/pics -w1. -i100 -u0.1 -S -RG:3:0:750. k0n.ra o.ra x.ra		;\
+	$(TOOLDIR)/tgv 750 3 x0n.ra xg.ra						;\
+	$(TOOLDIR)/slice 15 0 xg.ra xg0.ra						;\
+	$(TOOLDIR)/nrmse -t 0.000001 xg0.ra x.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
