@@ -259,22 +259,13 @@ Magn Reson Med 2009; 61:145-152.
 
 
 
-- model-based reconstruction -
-(commands: moba, pics)
+- non-linear model-based reconstruction -
+(commands: moba)
 
 
 Block KT, Uecker M, Frahm J.
 Model-Based Iterative Reconstruction for Radial Fast Spin-Echo MRI.
 IEEE Trans Med Imag 2019; 28:1759-1769.
-
-Petzschner FH, Ponce IP, Blaimer M, Jakob PM, Breuer FA.
-Fast MR parameter mapping using k‐t principal component analysis.
-Magn Reson Med 2011; 66;706-716.
-
-Mani M, Jacob M, Magnotta V, Zhong J.
-Fast iterative algorithm for the reconstruction of multishot non-cartesian
-diffusion data.
-Magn Reson Med 2015; 74:1086–1094.
 
 Wang X, Roeloffs V, Klosowski J, Tan Z, Voit D, Uecker M, Frahm J.
 Model-based T1 Mapping with Sparsity Constraints Using Single-Shot
@@ -296,6 +287,24 @@ Model-based Reconstruction for Simultaneous Multi-slice T1 Mapping using
 Single-shot Inversion-recovery Radial FLASH.
 Magn Reson Med 2021; 85:1258-1271.
 
+
+
+- subspace reconstruction -
+(commands: pics, signal, svd)
+
+
+Liang Z, Spatiotemporal Imaging with partially separable functions.
+4th IEEE International Symposium on Biomedical Imaging: From Nano to Macro,
+2007; 988-991.
+
+Petzschner FH, Ponce IP, Blaimer M, Jakob PM, Breuer FA.
+Fast MR parameter mapping using k‐t principal component analysis.
+Magn Reson Med 2011; 66;706-716.
+
+Mani M, Jacob M, Magnotta V, Zhong J.
+Fast iterative algorithm for the reconstruction of multishot non-cartesian
+diffusion data.
+Magn Reson Med 2015; 74:1086–1094.
 
 
 
