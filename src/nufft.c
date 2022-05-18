@@ -176,6 +176,13 @@ int main_nufft(int argc, char* argv[argc])
 
 		} else {
 
+			if (use_gpu) {
+
+				auto tmp = nufft_op;
+				nufft_op = linop_gpu_wrapper((struct linop_s*)tmp);
+				linop_free(tmp);
+			}
+
 			linop_adjoint(nufft_op, DIMS, coilim_dims, img, DIMS, ksp_dims, ksp);
 		}
 
@@ -201,6 +208,13 @@ int main_nufft(int argc, char* argv[argc])
 			nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf);
 		else
 			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
+
+		if (use_gpu) {
+
+			auto tmp = nufft_op;
+			nufft_op = linop_gpu_wrapper((struct linop_s*)tmp);
+			linop_free(tmp);
+		}
 
 		// nufft
 		linop_forward(nufft_op, DIMS, ksp_dims, ksp, DIMS, coilim_dims, img);
