@@ -36,6 +36,12 @@ struct linop_s {
 	const struct operator_p_s* norm_inv;
 };
 
+extern struct linop_s* linop_from_ops(
+	const struct operator_s* forward,
+	const struct operator_s* adjoint,
+	const struct operator_s* normal,
+	const struct operator_p_s* norm_inv);
+
 
 extern struct linop_s* linop_with_graph_create(unsigned int ON, const long odims[__VLA(ON)], unsigned int IN, const long idims[__VLA(IN)], linop_data_t* data,
 				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t del_fun,
@@ -80,11 +86,13 @@ extern void linop_normal_unchecked(const struct linop_s* op, complex float* dst,
 extern void linop_norm_inv_unchecked(const struct linop_s* op, float lambda, complex float* dst, const complex float* src);
 
 extern struct linop_s* linop_chain(const struct linop_s* a, const struct linop_s* b);
-extern struct linop_s* linop_chainN(unsigned int N, struct linop_s* x[N]);
+extern struct linop_s* linop_chainN(int N, struct linop_s* x[N]);
 
 extern struct linop_s* linop_chain_FF(const struct linop_s* a, const struct linop_s* b);
+extern struct linop_s* linop_chainN_F(int N, struct linop_s* x[N]);
 
 extern struct linop_s* linop_stack(int D, int E, const struct linop_s* a, const struct linop_s* b);
+extern struct linop_s* linop_stack_FF(int D, int E, const struct linop_s* a, const struct linop_s* b);
 
 
 struct iovec_s;
@@ -97,7 +105,9 @@ extern const struct linop_s* linop_get_adjoint(const struct linop_s* x);
 extern const struct linop_s* linop_get_normal(const struct linop_s* x);
 
 extern struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* op);
+extern struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const long ostrs[DO],  struct linop_s* op);
 extern struct linop_s* linop_copy_wrapper(unsigned int D, const long istrs[D], const long ostrs[D], struct linop_s* op);
+extern struct linop_s* linop_gpu_wrapper(struct linop_s* op);
 
 
 

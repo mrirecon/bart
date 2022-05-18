@@ -121,6 +121,43 @@ static const struct graph_s* operator_linop_get_graph(const struct operator_s* o
 		return lop_get_graph_default(op, data->data, data->lop_type);
 }
 
+struct linop_s* linop_from_ops(
+	const struct operator_s* forward,
+	const struct operator_s* adjoint,
+	const struct operator_s* normal,
+	const struct operator_p_s* norm_inv)
+{
+	assert(NULL != forward);
+	assert(NULL != adjoint);
+
+	auto dom = operator_domain(forward);
+	auto cod = operator_codomain(forward);
+
+	assert(iovec_check(operator_codomain(adjoint), dom->N, dom->dims, dom->strs));
+	assert(iovec_check(operator_domain(adjoint), cod->N, cod->dims, cod->strs));
+
+	PTR_ALLOC(struct linop_s, x);
+	x->forward = operator_ref(forward);
+	x->adjoint = operator_ref(adjoint);
+
+	if (NULL != normal) {
+
+		assert(iovec_check(operator_codomain(normal), dom->N, dom->dims, dom->strs));
+		assert(iovec_check(operator_domain(normal), dom->N, dom->dims, dom->strs));
+
+		x->normal = operator_ref(normal);
+	} else {
+
+		x->normal = operator_chain(forward, adjoint);
+	}
+
+	if (NULL != norm_inv)
+		x->norm_inv = operator_p_ref(norm_inv);
+	else
+		x->norm_inv = NULL;
+
+	return PTR_PASS(x);
+}
 
 /**
  * Create a linear operator (with strides)
@@ -588,14 +625,26 @@ struct linop_s* linop_chain_FF(const struct linop_s* a, const struct linop_s* b)
 }
 
 
-struct linop_s* linop_chainN(unsigned int N, struct linop_s* a[N])
+struct linop_s* linop_chainN(int N, struct linop_s* a[N])
 {
 	assert(N > 0);
 
-	if (1 == N)
-		return a[0];
+	struct linop_s* result = (struct linop_s*)linop_clone(a[0]);
+	for (int i = 1; i < N; i++)
+		result = linop_chain_FF(result, linop_clone(a[i]));
 
-	return linop_chain(a[0], linop_chainN(N - 1, a + 1));	// FIXME: free intermed.
+	return result;
+}
+
+struct linop_s* linop_chainN_F(int N, struct linop_s* a[N])
+{
+	assert(N > 0);
+
+	struct linop_s* result = a[0];
+	for (int i = 1; i < N; i++)
+		result = linop_chain_FF(result, a[i]);
+
+	return result;
 }
 
 
@@ -626,6 +675,16 @@ struct linop_s* linop_stack(int D, int E, const struct linop_s* a, const struct 
 	return PTR_PASS(c);
 }
 
+struct linop_s* linop_stack_FF(int D, int E, const struct linop_s* a, const struct linop_s* b)
+{
+	auto result = linop_stack(D, E, a, b);
+
+	linop_free(a);
+	linop_free(b);
+
+	return result;
+}
+
 
 
 
@@ -644,10 +703,12 @@ struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* o
 	return PTR_PASS(op2);
 }
 
-
-struct linop_s* linop_copy_wrapper(unsigned int D, const long istrs[D], const long ostrs[D],  struct linop_s* op)
+struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const long ostrs[DO],  struct linop_s* op)
 {
 	PTR_ALLOC(struct linop_s, op2);
+
+	assert((int)(linop_codomain(op)->N) == DO);
+	assert((int)(linop_domain(op)->N) == DI);
 
 	const long* strsx[2] = { ostrs, istrs };
 	const long* strsy[2] = { istrs, ostrs };
@@ -661,6 +722,22 @@ struct linop_s* linop_copy_wrapper(unsigned int D, const long istrs[D], const lo
 	return PTR_PASS(op2);
 }
 
+struct linop_s* linop_copy_wrapper(unsigned int D, const long istrs[D], const long ostrs[D],  struct linop_s* op)
+{
+	return linop_copy_wrapper2(D, istrs, D, ostrs, op);
+}
+
+struct linop_s* linop_gpu_wrapper(struct linop_s* op)
+{
+	PTR_ALLOC(struct linop_s, op2);
+
+	op2->forward = operator_gpu_wrapper(op->forward);
+	op2->adjoint = operator_gpu_wrapper(op->adjoint);
+	op2->normal = (NULL == op->normal) ? NULL : operator_gpu_wrapper(op->normal);
+	op2->norm_inv = NULL; // FIXME
+
+	return PTR_PASS(op2);
+}
 
 
 
