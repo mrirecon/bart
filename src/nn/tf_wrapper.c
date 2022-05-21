@@ -486,8 +486,8 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 		restore_session(graph, status, sess, path);
 #else
 	UNUSED(session);
-	TF_Status* status;
-	TF_Graph* graph;
+	TF_Status* status = 0;
+	TF_Graph* graph = NULL;
 #endif
 
 	/*** handle outputs and grad_ys ***/
