@@ -60,3 +60,5 @@ struct moba_conf {
 
 extern struct moba_conf moba_defaults;
 
+extern int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in);
+

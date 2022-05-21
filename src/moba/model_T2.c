@@ -38,13 +38,13 @@
 
 
 
-struct T2_s T2_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf, const struct noir_model_conf_s* conf, _Bool use_gpu)
+struct mobamod T2_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf, const struct noir_model_conf_s* conf, _Bool use_gpu)
 {
 	long data_dims[DIMS];
 	md_select_dims(DIMS, ~COEFF_FLAG, data_dims, dims);
 
 	struct noir_s nlinv = noir_create3(data_dims, mask, psf, conf);
-	struct T2_s ret;
+	struct mobamod ret;
 
 	long map_dims[DIMS];
 	long out_dims[DIMS];

@@ -235,20 +235,8 @@ int main_moba(int argc, char* argv[argc])
 	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, img_dims, grid_dims);
 
 
-	switch (conf.mode) {
+	img_dims[COEFF_DIM] = moba_get_nr_of_coeffs(&conf, grid_dims[COEFF_DIM]);
 
-	case MDB_T1:
-		img_dims[COEFF_DIM] = 3;
-		break;
-
-	case MDB_T2:
-		img_dims[COEFF_DIM] = 2;
-		break;
-
-	case MDB_MGRE:
-		img_dims[COEFF_DIM] = (MECO_PI != conf.mgre_model) ? get_num_of_coeff(conf.mgre_model) : grid_dims[TE_DIM];
-		break;
-	}
 
 	long img_strs[DIMS];
 	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);

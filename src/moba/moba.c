@@ -44,3 +44,28 @@ struct moba_conf moba_defaults = {
 	.use_gpu = false,
 };
 
+
+
+int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in)
+{
+	int coeffs = -1;
+
+	switch (conf->mode) {
+
+	case MDB_T1:
+		coeffs = 3;
+		break;
+
+	case MDB_T2:
+		coeffs = 2;
+		break;
+
+	case MDB_MGRE:
+		coeffs = (MECO_PI != conf->mgre_model) ? get_num_of_coeff(conf->mgre_model) : in;
+		break;
+	}
+
+	return coeffs;
+}
+
+
