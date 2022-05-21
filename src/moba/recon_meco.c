@@ -81,7 +81,7 @@ void init_meco_maps(const long maps_dims[DIMS], complex float* maps, enum meco_m
 		complex float* map1 = md_alloc(DIMS, map1_dims, CFL_SIZE);
 
 		// W & F
-		long pd_flag = set_PD_flag(sel_model);
+		long pd_flag = get_PD_flag(sel_model);
 		float val = 0.1;
 
 		for (int n = 0; n < NCOEFF; n++) {
@@ -110,7 +110,7 @@ static void rescale_maps(unsigned int model, double scaling_Y, const struct lino
 
 		long nr_coeff = maps_dims[COEFF_DIM];
 
-		long fB0_flag = set_fB0_flag(model);
+		long fB0_flag = get_fB0_flag(model);
 
 		long map_dims[DIMS];
 		md_select_dims(DIMS, ~COEFF_FLAG, map_dims, maps_dims);

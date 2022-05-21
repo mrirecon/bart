@@ -95,7 +95,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	long x_dims[DIMS];
 	md_select_dims(DIMS, ~TE_FLAG, x_dims, y_dims);
-	x_dims[COEFF_DIM] = set_num_of_coeff(mgre_model);
+	x_dims[COEFF_DIM] = get_num_of_coeff(mgre_model);
 
 
 	complex float* x = create_cfl(param_file, DIMS, x_dims);

@@ -69,7 +69,7 @@ struct meco_s {
 DEF_TYPEID(meco_s);
 
 
-int set_num_of_coeff(enum meco_model sel_model)
+int get_num_of_coeff(enum meco_model sel_model)
 {
 	int ncoeff = 0;
 
@@ -85,7 +85,7 @@ int set_num_of_coeff(enum meco_model sel_model)
 	return ncoeff;
 }
 
-long set_PD_flag(enum meco_model sel_model)
+long get_PD_flag(enum meco_model sel_model)
 {
 	long PD_flag = 0;
 
@@ -127,7 +127,7 @@ long set_PD_flag(enum meco_model sel_model)
 	return PD_flag;
 }
 
-long set_R2S_flag(enum meco_model sel_model)
+long get_R2S_flag(enum meco_model sel_model)
 {
 	long R2S_flag = 0;
 
@@ -165,12 +165,12 @@ long set_R2S_flag(enum meco_model sel_model)
 	return R2S_flag;
 }
 
-long set_fB0_flag(enum meco_model sel_model)
+long get_fB0_flag(enum meco_model sel_model)
 {
 	// the last parameter is fB0
 	long fB0_flag = 0;
 
-	fB0_flag = MD_SET(fB0_flag, set_num_of_coeff(sel_model) - 1);
+	fB0_flag = MD_SET(fB0_flag, get_num_of_coeff(sel_model) - 1);
 
 	return fB0_flag;
 }
@@ -865,9 +865,9 @@ static void meco_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, c
 
 
 	// real constraint
-	long  PD_flag = set_PD_flag(data->model);
-	long R2S_flag = set_R2S_flag(data->model);
-	long fB0_flag = set_fB0_flag(data->model);
+	long  PD_flag = get_PD_flag(data->model);
+	long R2S_flag = get_R2S_flag(data->model);
+	long fB0_flag = get_fB0_flag(data->model);
 
 	for (long pind = 0; pind < data->x_dims[COEFF_DIM]; pind++) {
 
@@ -938,7 +938,7 @@ struct nlop_s* nlop_meco_create(const int N, const long y_dims[N], const long x_
 	md_copy_dims(N, *nydims, y_dims);
 	data->y_dims = *PTR_PASS(nydims);
 
-	assert(x_dims[COEFF_DIM] == set_num_of_coeff(sel_model));
+	assert(x_dims[COEFF_DIM] == get_num_of_coeff(sel_model));
 	data->model = sel_model;
 
 	PTR_ALLOC(long[N], nxdims);

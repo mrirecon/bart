@@ -20,10 +20,10 @@ enum meco_weights_fB0 {
 	MECO_SOBOLEV,
 };
 
-extern int set_num_of_coeff(enum meco_model sel_model);
-extern long set_PD_flag(enum meco_model sel_model);
-extern long set_R2S_flag(enum meco_model sel_model);
-extern long set_fB0_flag(enum meco_model sel_model);
+extern int get_num_of_coeff(enum meco_model sel_model);
+extern long get_PD_flag(enum meco_model sel_model);
+extern long get_R2S_flag(enum meco_model sel_model);
+extern long get_fB0_flag(enum meco_model sel_model);
 
 
 extern void meco_calc_fat_modu(int N, const long dims[N], const complex float TE[*], complex float dst[*], enum fat_spec fat_spec);
