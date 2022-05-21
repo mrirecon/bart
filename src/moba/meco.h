@@ -2,10 +2,14 @@
 #ifndef _MECO_H
 #define _MECO_H 1
 
+#include <complex.h>
+
 struct linop_s;
 struct nlop_s;
 enum fat_spec;
 
+#ifndef _MECO_MODEL
+#define _MECO_MODEL 1
 enum meco_model {
 	MECO_WF,
 	MECO_WFR2S,
@@ -14,6 +18,7 @@ enum meco_model {
 	MECO_PHASEDIFF,
 	MECO_PI,
 };
+#endif
 
 enum meco_weights_fB0 {
 	MECO_IDENTITY,
@@ -35,7 +40,7 @@ extern void meco_back_fB0(const struct linop_s* op, complex float* dst, const co
 
 extern unsigned int meco_get_weight_fB0_type(struct nlop_s* op);
 
-extern struct nlop_s* nlop_meco_create(int N, const long y_dims[N], const long x_dims[N], const complex float* TE, enum meco_model sel_model, bool real_pd, enum fat_spec fat_spec, float* scale_fB0, _Bool use_gpu);
+extern struct nlop_s* nlop_meco_create(int N, const long y_dims[N], const long x_dims[N], const complex float* TE, enum meco_model sel_model, bool real_pd, enum fat_spec fat_spec, const float* scale_fB0, _Bool use_gpu);
 
 #endif // _MECO_H
 

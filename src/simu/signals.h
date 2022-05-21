@@ -1,4 +1,7 @@
 
+#ifndef _SIGNALS_H
+#define _SIGNALS_H 1
+
 #include <complex.h>
 #include <stdbool.h>
 
@@ -8,6 +11,7 @@ enum fat_spec {
 	FAT_SPEC_0,
 	FAT_SPEC_1,
 };
+
 struct signal_model {
 	
 	float m0;
@@ -59,4 +63,7 @@ extern const struct signal_model signal_multi_grad_echo_fat;
 extern complex float calc_fat_modulation(float b0, float TE, enum fat_spec fs);
 
 extern void multi_grad_echo_model(const struct signal_model* data, int N, complex float out[N]);
+
+
+#endif // _SIGNALS_H
 

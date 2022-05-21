@@ -139,16 +139,17 @@ static void rescale_maps(unsigned int model, double scaling_Y, const struct lino
 
 
 
-void meco_recon(struct moba_conf* moba_conf, 
-		enum meco_model sel_model, bool real_pd, enum fat_spec fat_spec, 
-		float* scale_fB0, bool warmstart, bool out_origin_maps, 
-		const long maps_dims[DIMS], complex float* maps, 
-		const long sens_dims[DIMS], complex float* sens, 
-		const long init_dims[DIMS], complex float* init, 
-		const complex float* mask, 
-		const complex float* TE, 
-		const long P_dims[DIMS], complex float* P, 
-		const long Y_dims[DIMS], complex float* Y)
+
+void meco_recon(const struct moba_conf* moba_conf,
+		enum meco_model sel_model, bool real_pd, enum fat_spec fat_spec,
+		const float* scale_fB0, bool warmstart, bool out_origin_maps,
+		const long maps_dims[DIMS], complex float* maps,
+		const long sens_dims[DIMS], complex float* sens,
+		const long init_dims[DIMS], const complex float* init,
+		const complex float* mask,
+		const complex float* TE,
+		const long P_dims[DIMS], const complex float* Pin,
+		const long Y_dims[DIMS], const complex float* Y)
 {
 	bool use_gpu = false;
 
@@ -235,6 +236,9 @@ void meco_recon(struct moba_conf* moba_conf,
 
 
 	// scaling of psf
+	//
+	complex float* P = md_alloc_sameplace(DIMS, P_dims, CFL_SIZE, Pin);
+	md_copy(DIMS, P_dims, P, Pin, CFL_SIZE);
 
 	if (moba_conf->noncartesian) {
 
@@ -305,10 +309,12 @@ void meco_recon(struct moba_conf* moba_conf,
 		struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 		irgnm_conf.iter = moba_conf->iter;
 		irgnm_conf.alpha = moba_conf->alpha;
+
 		if (moba_conf->alpha_min_exp_decay)
 			irgnm_conf.alpha_min = moba_conf->alpha_min;
 		else
 			irgnm_conf.alpha_min0 = moba_conf->alpha_min;
+
 		irgnm_conf.redu = moba_conf->redu;
 		irgnm_conf.cgiter = moba_conf->inner_iter;
 		irgnm_conf.cgtol = 0.01;
@@ -326,11 +332,13 @@ void meco_recon(struct moba_conf* moba_conf,
 		const struct operator_p_s* prox_ops[NUM_REGS] = { NULL };
 		const struct linop_s* trafos[NUM_REGS] = { NULL };
 
+		int algo = moba_conf->algo;
+
 		if (0 == ropts->r)
-			moba_conf->algo = ALGO_CG;
+			algo = ALGO_CG;
 
 
-		if (ALGO_CG == moba_conf->algo) { // CG
+		if (ALGO_CG == algo) { // CG
 
 			debug_printf(DP_DEBUG2, " >> linearized problem solved by CG\n");
 			
@@ -339,7 +347,7 @@ void meco_recon(struct moba_conf* moba_conf,
 			inv_op = NULL;
 
 		} else 
-		if (ALGO_ADMM == moba_conf->algo) {
+		if (ALGO_ADMM == algo) {
 
 			debug_printf(DP_DEBUG2, " >> linearized problem solved by ADMM ");
 
@@ -412,6 +420,9 @@ void meco_recon(struct moba_conf* moba_conf,
 
 		nlop_free(nl.nlop);
 	}
+
+	if (moba_conf->noncartesian)
+		md_free(P);
 
 	md_free(x_akt);
 	md_free(xref_akt);

@@ -1,6 +1,6 @@
 /* Copyright 2013. The Regents of the University of California.
  * Copyright 2019-2021. Uecker Lab, University Medical Center Goettingen.
- * Copyright 2021. Institute of Medical Engineering. Graz University of Technology.
+ * Copyright 2021-2022. Institute of Medical Engineering. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -39,13 +39,10 @@
 #endif
 
 #include "moba/optreg.h"
-#include "moba/recon_T1.h"
-#include "moba/recon_T2.h"
+#include "moba/recon.h"
 #include "moba/moba.h"
 #include "moba/meco.h"
-#include "moba/recon_meco.h"
 
-#include "simu/signals.h"
 
 static const char help_str[] = "Model-based nonlinear inverse reconstruction";
 
@@ -103,9 +100,6 @@ int main_moba(int argc, char* argv[argc])
 	float restrict_fov = -1.;
 	float oversampling = 1.f;
 
-	float scale_fB0[2] = { 222., 1. }; // { spatial smoothness, scaling }
-
-	unsigned int mgre_model = MECO_WFR2S;
 
 	const char* psf_file = NULL;
 	const char* traj_file = NULL;
@@ -115,11 +109,7 @@ int main_moba(int argc, char* argv[argc])
 	struct opt_reg_s ropts;
 	conf.ropts = &ropts;
 
-	bool out_origin_maps = false;
-	bool use_gpu = false;
 	bool unused = false;
-
-	enum fat_spec fat_spec = FAT_SPEC_1;
 
 	long img_vec[3] = { 0 };
 
@@ -132,7 +122,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SELECT('L', enum mdb_t, &conf.mode, MDB_T1, "T1 mapping using model-based look-locker"),
 		OPT_SELECT('F', enum mdb_t, &conf.mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
 		OPT_SELECT('G', enum mdb_t, &conf.mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
-		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
+		OPT_UINT('m', &conf.mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_UINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backsapce \b earlier
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPT_FLOAT('R', &conf.redu, "redu", "reduction factor"),
@@ -142,15 +132,15 @@ int main_moba(int argc, char* argv[argc])
 		OPT_UINT('C', &conf.inner_iter, "iter", "inner iterations"),
 		OPT_FLOAT('s', &conf.step, "step", "step size"),
 		OPT_FLOAT('B', &conf.lower_bound, "bound", "lower bound for relaxation"),
-		OPT_FLVEC2('b', &scale_fB0, "SMO:SC", "B0 field: spatial smooth level; scaling [default: 222.; 1.]"),
+		OPT_FLVEC2('b', &conf.scale_fB0, "SMO:SC", "B0 field: spatial smooth level; scaling [default: 222.; 1.]"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('N', &unused, "(normalize)"), // no-op
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
 		OPT_INFILE('p', &psf_file, "PSF", ""),
 		OPT_SET('J', &conf.stack_frames, "Stack frames for joint recon"),
 		OPT_SET('M', &conf.sms, "Simultaneous Multi-Slice reconstruction"),
-		OPT_SET('O', &out_origin_maps, "(Output original maps from reconstruction without post processing)"),
-		OPT_SET('g', &use_gpu, "use gpu"),
+		OPT_SET('O', &conf.out_origin_maps, "(Output original maps from reconstruction without post processing)"),
+		OPT_SET('g', &conf.use_gpu, "use gpu"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
 		OPT_INFILE('t', &traj_file, "Traj", ""),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.]"),
@@ -162,13 +152,13 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_CLEAR(0, "no_alpha_min_exp_decay", &conf.alpha_min_exp_decay, "(Use hard minimum instead of exponentional decay towards alpha_min)"),
 		OPTL_FLOAT(0, "sobolev_a", &conf.sobolev_a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "sobolev_b", &conf.sobolev_b, "", "(b in 1 + a * \\Laplace^-b/2)"),
-		OPTL_SELECT(0, "fat_spec_0", enum fat_spec, &fat_spec, FAT_SPEC_0, "select fat spectrum from ISMRM fat-water tool"),
+		OPTL_SELECT(0, "fat_spec_0", enum fat_spec, &conf.fat_spec, FAT_SPEC_0, "select fat spectrum from ISMRM fat-water tool"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
-	(use_gpu ? num_init_gpu : num_init)();
+	(conf.use_gpu ? num_init_gpu : num_init)();
 	
 #ifdef USE_CUDA
 	cuda_use_global_memory();
@@ -256,7 +246,7 @@ int main_moba(int argc, char* argv[argc])
 		break;
 
 	case MDB_MGRE:
-		img_dims[COEFF_DIM] = (MECO_PI != mgre_model) ? get_num_of_coeff(mgre_model) : grid_dims[TE_DIM];
+		img_dims[COEFF_DIM] = (MECO_PI != conf.mgre_model) ? get_num_of_coeff(conf.mgre_model) : grid_dims[TE_DIM];
 		break;
 	}
 
@@ -467,7 +457,7 @@ int main_moba(int argc, char* argv[argc])
 	}
 
 #ifdef  USE_CUDA
-	if (use_gpu) {
+	if (conf.use_gpu) {
 
 //		cuda_use_global_memory();
 
@@ -479,40 +469,17 @@ int main_moba(int argc, char* argv[argc])
 
 		md_copy(DIMS, TI_dims, TI_gpu, TI, CFL_SIZE);
 
-		switch (conf.mode) {
 
-		case MDB_T1:
-			T1_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, use_gpu);
-			break;
+		moba_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, init);
 
-		case MDB_T2:
-			T2_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, use_gpu);
-			break;
-
-		case MDB_MGRE:
-			meco_recon(&conf, mgre_model, false, fat_spec, scale_fB0, true, out_origin_maps, img_dims, img, coil_dims, sens, init_dims, init, mask, TI, pat_dims, pattern, grid_dims, kspace_gpu);
-			break;
-		};
 
 		md_free(kspace_gpu);
 		md_free(TI_gpu);
 
 	} else
 #endif
-	switch (conf.mode) {
 
-	case MDB_T1:
-		T1_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, use_gpu);
-		break;
-
-	case MDB_T2:
-		T2_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, use_gpu);
-		break;
-
-	case MDB_MGRE:
-		meco_recon(&conf, mgre_model, false, fat_spec, scale_fB0, true, out_origin_maps, img_dims, img, coil_dims, sens, init_dims, init, mask, TI, pat_dims, pattern, grid_dims, k_grid_data);
-		break;
-	};
+	moba_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, init);
 
 	md_free(mask);
 

@@ -5,6 +5,8 @@
  
 #include <stdbool.h>
 
+#include "moba/meco.h"
+
 #include "moba.h"
 
 struct moba_conf moba_defaults = {
@@ -32,5 +34,13 @@ struct moba_conf moba_defaults = {
 	.algo = 3,
 	.rho = 0.01,
 	.stack_frames = false,
+
+	// MECO
+	.mgre_model = MECO_WFR2S,
+	.fat_spec = FAT_SPEC_1,
+	.scale_fB0 = { 222., 1. },
+	.out_origin_maps = false,
+
+	.use_gpu = false,
 };
 
