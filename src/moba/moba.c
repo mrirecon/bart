@@ -9,6 +9,8 @@
 
 struct moba_conf moba_defaults = {
 
+	.mode = MDB_T1,
+
 	.iter = 8,
 	.opt_reg = 1.,
 	.alpha = 1.,
@@ -25,6 +27,7 @@ struct moba_conf moba_defaults = {
 	.noncartesian = false,
 	.sms = false,
         .k_filter = false,
+	.k_filter_type = EF1,
 	.auto_norm_off = false,
 	.algo = 3,
 	.rho = 0.01,

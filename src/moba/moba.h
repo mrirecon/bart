@@ -3,7 +3,13 @@
 
 struct opt_reg_s;
 
+enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE };
+enum edge_filter_t { EF1, EF2 };
+
+
 struct moba_conf {
+
+	enum mdb_t mode;
 
 	unsigned int iter;
 	unsigned int opt_reg;
@@ -20,7 +26,10 @@ struct moba_conf {
 	float sobolev_b;
 	bool noncartesian;
         bool sms;
+
 	bool k_filter;
+	enum edge_filter_t k_filter_type;
+
 	bool auto_norm_off;
 	bool stack_frames;
 	int algo;	// enum algo_t

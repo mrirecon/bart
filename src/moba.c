@@ -118,8 +118,6 @@ int main_moba(int argc, char* argv[argc])
 	bool out_origin_maps = false;
 	bool use_gpu = false;
 	bool unused = false;
-	enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE } mode = { MDB_T1 };
-	enum edge_filter_t { EF1, EF2 } k_filter_type = EF1;
 
 	enum fat_spec fat_spec = FAT_SPEC_1;
 
@@ -131,9 +129,9 @@ int main_moba(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		{ 'r', NULL, true, OPT_SPECIAL, opt_reg_moba, &ropts, "<T>:A:B:C", "generalized regularization options (-rh for help)" },
-		OPT_SELECT('L', enum mdb_t, &mode, MDB_T1, "T1 mapping using model-based look-locker"),
-		OPT_SELECT('F', enum mdb_t, &mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
-		OPT_SELECT('G', enum mdb_t, &mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
+		OPT_SELECT('L', enum mdb_t, &conf.mode, MDB_T1, "T1 mapping using model-based look-locker"),
+		OPT_SELECT('F', enum mdb_t, &conf.mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
+		OPT_SELECT('G', enum mdb_t, &conf.mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
 		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_UINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backsapce \b earlier
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
@@ -158,8 +156,8 @@ int main_moba(int argc, char* argv[argc])
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.]"),
 		OPTL_VEC3(0, "img_dims", &img_vec, "x:y:z", "dimensions"),
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
-		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &k_filter_type, EF1, "k-space edge filter 1"),
-		OPTL_SELECT(0, "kfilter-2", enum edge_filter_t, &k_filter_type, EF2, "k-space edge filter 2"),
+		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &conf.k_filter_type, EF1, "k-space edge filter 1"),
+		OPTL_SELECT(0, "kfilter-2", enum edge_filter_t, &conf.k_filter_type, EF2, "k-space edge filter 2"),
 		OPT_SET('n', &conf.auto_norm_off, "disable normlization of parameter maps for thresholding"),
 		OPTL_CLEAR(0, "no_alpha_min_exp_decay", &conf.alpha_min_exp_decay, "(Use hard minimum instead of exponentional decay towards alpha_min)"),
 		OPTL_FLOAT(0, "sobolev_a", &conf.sobolev_a, "", "(a in 1 + a * \\Laplace^-b/2)"),
@@ -247,7 +245,7 @@ int main_moba(int argc, char* argv[argc])
 	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, img_dims, grid_dims);
 
 
-	switch (mode) {
+	switch (conf.mode) {
 
 	case MDB_T1:
 		img_dims[COEFF_DIM] = 3;
@@ -393,7 +391,7 @@ int main_moba(int argc, char* argv[argc])
 
 		complex float* filter = md_alloc(DIMS, map_dims, CFL_SIZE);
 
-		switch (k_filter_type) {
+		switch (conf.k_filter_type) {
 
 		case EF1:
 			edge_filter1(map_dims, filter);
@@ -420,7 +418,7 @@ int main_moba(int argc, char* argv[argc])
 
 	// scaling
 
-	if ((MDB_T1 == mode) || (MDB_T2 == mode)) {
+	if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode)) {
 
 		double scaling = 5000. / md_znorm(DIMS, grid_dims, k_grid_data);
 		double scaling_psf = 1000. / md_znorm(DIMS, pat_dims, pattern);
@@ -455,12 +453,12 @@ int main_moba(int argc, char* argv[argc])
 		mask = compute_mask(DIMS, msk_dims, restrict_dims);
 		md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, msk_strs, mask);
 
-		if ((MDB_T1 == mode) || (MDB_T2 == mode)) {
+		if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode)) {
 
 			// Choose a different initial guess for R1* / R2
 			long pos[DIMS] = { 0 };
 
-			pos[COEFF_DIM] = (MDB_T2 == mode) ? 1 : 2;
+			pos[COEFF_DIM] = (MDB_T2 == conf.mode) ? 1 : 2;
 
 			md_copy_block(DIMS, pos, single_map_dims, single_map, img_dims, img, CFL_SIZE);
 			md_zsmul2(DIMS, single_map_dims, single_map_strs, single_map, single_map_strs, single_map, conf.sms ? 2.0 : 1.5);
@@ -481,7 +479,7 @@ int main_moba(int argc, char* argv[argc])
 
 		md_copy(DIMS, TI_dims, TI_gpu, TI, CFL_SIZE);
 
-		switch (mode) {
+		switch (conf.mode) {
 
 		case MDB_T1:
 			T1_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, use_gpu);
@@ -501,7 +499,7 @@ int main_moba(int argc, char* argv[argc])
 
 	} else
 #endif
-	switch (mode) {
+	switch (conf.mode) {
 
 	case MDB_T1:
 		T1_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, use_gpu);
