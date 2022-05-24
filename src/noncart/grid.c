@@ -106,9 +106,9 @@ void gridH(const struct grid_conf_s* conf, const complex float* traj, const long
 	for(int i = 0; i < samples; i++) {
 
 		float pos[3];
-		pos[0] = conf->os * (creal(traj[i * 3 + 0]));
-		pos[1] = conf->os * (creal(traj[i * 3 + 1]));
-		pos[2] = conf->os * (creal(traj[i * 3 + 2]));
+		pos[0] = conf->os * (creal(traj[i * 3 + 0]) + conf->shift[0]);
+		pos[1] = conf->os * (creal(traj[i * 3 + 1]) + conf->shift[1]);
+		pos[2] = conf->os * (creal(traj[i * 3 + 2]) + conf->shift[2]);
 
 		pos[0] += (grid_dims[0] > 1) ? ((float)grid_dims[0] / 2.) : 0.;
 		pos[1] += (grid_dims[1] > 1) ? ((float)grid_dims[1] / 2.) : 0.;
@@ -148,9 +148,9 @@ void grid(const struct grid_conf_s* conf, const complex float* traj, const long 
 	for(int i = 0; i < samples; i++) {
 
 		float pos[3];
-		pos[0] = conf->os * (creal(traj[i * 3 + 0]));
-		pos[1] = conf->os * (creal(traj[i * 3 + 1]));
-		pos[2] = conf->os * (creal(traj[i * 3 + 2]));
+		pos[0] = conf->os * (creal(traj[i * 3 + 0]) + conf->shift[0]);
+		pos[1] = conf->os * (creal(traj[i * 3 + 1]) + conf->shift[1]);
+		pos[2] = conf->os * (creal(traj[i * 3 + 2]) + conf->shift[2]);
 
 		pos[0] += (grid_dims[0] > 1) ? ((float) grid_dims[0] / 2.) : 0.;
 		pos[1] += (grid_dims[1] > 1) ? ((float) grid_dims[1] / 2.) : 0.;

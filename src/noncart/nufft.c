@@ -519,6 +519,8 @@ static struct nufft_data* nufft_create_data(int N,
 		.os = 2.,
 		.periodic = data->conf.periodic,
 		.beta = data->beta,
+
+		.shift = { 0., 0., 0. },
 	};
 
 	data->grid_conf = grid_conf;
@@ -1052,92 +1054,6 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 }
 
 
-static void split_nufft_adjoint(const struct nufft_data* data, int ND, complex float* grid, const complex float* src)
-{
-	debug_printf(DP_DEBUG1, "nufft_adj split calculation for lowmem\n");
-
-	// FFT_FLAGS, because the image dimensions can always occur in the trajectory
-
-	long nontriv_traj_flags = FFT_FLAGS | md_nontriv_dims(data->N, data->trj_dims);
-
-	long cm2_reduced_dims[ND];
-	md_select_dims(ND, nontriv_traj_flags, cm2_reduced_dims, data->cm2_dims);
-
-
-	// everything not in traj dims is done separately
-
-	long max_dims[ND];
-	md_set_dims(ND, max_dims, 1);
-	md_max_dims(ND, ~nontriv_traj_flags, max_dims, data->cm2_dims, data->ksp_dims);
-
-	long iter_dims[data->N];
-
-	// All dimension not in the nontriv_traj_flags and all dimensions in ksp dims but not in cm2 dims
-	// We need to exclude these last dimensions, because we have to sum over sum in the gridding procedure
-
-	long iter_flags = ~(  nontriv_traj_flags
-			    | (  md_nontriv_dims(ND, data->ksp_dims)
-			       & ~md_nontriv_dims(ND, data->cm2_dims)));
-
-	md_select_dims(data->N, iter_flags, iter_dims, max_dims);
-
-	long ksp_reduced_dims[ND];
-	md_select_dims(ND, nontriv_traj_flags, ksp_reduced_dims, data->ksp_dims);
-
-	long ksp_reduced_strs[ND];
-	md_calc_strides(ND, ksp_reduced_strs, ksp_reduced_dims, CFL_SIZE);
-
-	long ksp_strs[ND];
-	md_calc_strides(ND, ksp_strs, data->ksp_dims, CFL_SIZE);
-
-	long cml_reduced_dims[ND];
-	cml_reduced_dims[data->N] = data->cml_dims[data->N];
-	md_select_dims(data->N, nontriv_traj_flags, cml_reduced_dims, data->cml_dims);
-
-	long cml_reduced_strs[ND];
-	md_calc_strides(ND, cml_reduced_strs, cml_reduced_dims, CFL_SIZE);
-
-
-	complex float* grid_reduced = md_alloc_sameplace(ND, cml_reduced_dims, CFL_SIZE, src);
-	complex float* gridX = md_alloc_sameplace(ND, cm2_reduced_dims, CFL_SIZE, src);
-	complex float* src_reduced = md_alloc_sameplace(ND, ksp_reduced_dims, CFL_SIZE, src);
-
-	long pos[ND];
-	md_set_dims(ND, pos, 0L);
-
-	do {
-		// sum over additional dimensions in the k-space
-		long sum_dims[ND];
-		long sum_flags = ~(nontriv_traj_flags | iter_flags);
-
-		md_select_dims(ND, sum_flags, sum_dims, max_dims);
-
-		md_clear(ND, cm2_reduced_dims, gridX, CFL_SIZE);
-
-		do {
-			md_copy_block2(data->N, pos, ksp_reduced_dims, ksp_reduced_strs, src_reduced, data->ksp_dims, ksp_strs, src, CFL_SIZE);
-
-			grid2(&data->grid_conf, ND, data->trj_dims, multiplace_read(data->traj, src), cm2_reduced_dims, gridX, ksp_reduced_dims, src_reduced);
-
-		} while(md_next(ND, sum_dims, sum_flags, pos));
-
-
-		md_decompose(data->N, data->factors, cml_reduced_dims, grid_reduced, cm2_reduced_dims, gridX, CFL_SIZE);
-
-		md_copy_block2(ND, pos, data->cml_dims, data->cml_strs, grid, cml_reduced_dims, cml_reduced_strs, grid_reduced, CFL_SIZE);
-
-	} while(md_next(data->N, iter_dims, ~0L, pos));
-
-	md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, multiplace_read(data->fftmod, src));
-
-	md_free(grid_reduced);
-	md_free(gridX);
-	md_free(src_reduced);
-}
-
-
-
-
 // Adjoint: from kspace to image
 static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
@@ -1164,25 +1080,57 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 		bdat = md_alloc_sameplace(data->N, data->ksp_dims, CFL_SIZE, dst);
 		md_ztenmulc(data->N, data->ksp_dims, bdat, data->out_dims, src, data->bas_dims, multiplace_read(data->basis, dst));
 		src = bdat;
+
+		md_free(wdat);
+		wdat = NULL;
 	}
 
 
 	if (data->conf.lowmem) {
 
-		complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
+		md_clear(data->N, data->cim_dims, dst, CFL_SIZE);
 
-		split_nufft_adjoint(data, ND, grid, src);
+		complex float* grid = md_alloc_sameplace(data->N, data->cim_dims, CFL_SIZE, dst);
 
-		linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
+		long pos_fac[ND];
+		long pos_cml[ND];
 
-		md_ztenmulc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, multiplace_read(data->linphase, dst));
+		md_singleton_strides(ND, pos_fac);
+		md_singleton_strides(ND, pos_cml);
+
+		do {
+			struct grid_conf_s grid_conf = data->grid_conf;
+			grid_conf.width /= 2.;
+			grid_conf.os = 1.;
+
+			for (int i = 0, j = 0; i < data->N; i++) {
+				if (MD_IS_SET(data->conf.flags, i)) {
+
+					assert(j < 3);
+
+					grid_conf.shift[j++] = -(float)pos_fac[i] / (data->factors[i]);
+				}
+			}
+
+			md_clear(data->N, data->cim_dims, grid, CFL_SIZE);
+			grid2(&grid_conf, data->N, data->trj_dims, multiplace_read(data->traj, dst), data->cim_dims, grid, data->ksp_dims, src);
+
+			md_zmulc2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->img_strs, multiplace_read(data->fftmod, dst));
+
+			linop_adjoint(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
+
+			md_zfmacc2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, grid, data->lph_strs, &MD_ACCESS(ND, data->lph_strs, pos_cml, (complex float*)multiplace_read(data->linphase, dst)));
+
+			pos_cml[data->N]++;
+
+		} while (md_next(data->N, data->factors, data->conf.flags, pos_fac));
 
 		md_free(grid);
 
 	} else {
 
 		complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
-		complex float* gridX = md_alloc_sameplace(data->N, data->cm2_dims, CFL_SIZE, dst);
+		complex float* gridX = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
 
 		md_clear(data->N, data->cm2_dims, gridX, CFL_SIZE);
 

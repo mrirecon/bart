@@ -17,6 +17,8 @@ struct grid_conf_s {
 	float width;
 	_Bool periodic;
 	double beta;
+
+	float shift[3];
 };
 
 extern void grid(const struct grid_conf_s* conf, const complex float* traj, const long grid_dims[4], complex float* grid, const long ksp_dims[4], const complex float* src);
