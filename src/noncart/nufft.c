@@ -1166,39 +1166,43 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 		src = bdat;
 	}
 
-	complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
-	complex float* gridX = NULL;
 
 	if (data->conf.lowmem) {
 
+		complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
+
 		split_nufft_adjoint(data, ND, grid, src);
+
+		linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
+
+		md_ztenmulc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, multiplace_read(data->linphase, dst));
+
+		md_free(grid);
 
 	} else {
 
-		gridX = md_alloc_sameplace(data->N, data->cm2_dims, CFL_SIZE, dst);
+		complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
+		complex float* gridX = md_alloc_sameplace(data->N, data->cm2_dims, CFL_SIZE, dst);
 
 		md_clear(data->N, data->cm2_dims, gridX, CFL_SIZE);
 
 		grid2(&data->grid_conf, ND, data->trj_dims, multiplace_read(data->traj, dst), data->cm2_dims, gridX, data->ksp_dims, src);
-	}
-
-	md_free(bdat);
-	md_free(wdat);
-
-	if (!data->conf.lowmem) {
 
 		md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
 
 		md_free(gridX);
 
 		md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, multiplace_read(data->fftmod, dst));
+
+		linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
+
+		md_ztenmulc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, multiplace_read(data->linphase, dst));
+
+		md_free(grid);
 	}
 
-	linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
-
-	md_ztenmulc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, multiplace_read(data->linphase, dst));
-
-	md_free(grid);
+	md_free(bdat);
+	md_free(wdat);
 
 	if (data->conf.toeplitz)
 		md_zmul2(ND, data->cim_dims, data->cim_strs, dst, data->cim_strs, dst, data->img_strs, multiplace_read(data->roll, dst));
