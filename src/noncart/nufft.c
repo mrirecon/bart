@@ -852,30 +852,12 @@ struct linop_s* nufft_create2(int N,
 
 			auto nu = nufft_create2(N, ksp1_dims, cim1_dims, traj_dims, traj, wgh_dims, weights, bas_dims, basis, conf);
 
-			long out_dims[N];
-			md_copy_dims(N, out_dims, ksp_dims);
-
-			if (NULL != basis)
-				out_dims[6] = 1;
-
-			long istrs[N];
-			long ostrs[N];
-
-			md_calc_strides(N, istrs, cim_dims, CFL_SIZE);
-			md_calc_strides(N, ostrs, out_dims, CFL_SIZE);
-
-			istrs[d] = 0;
-			ostrs[d] = 0;
-
-			auto nu1 = linop_copy_wrapper(N, istrs, ostrs, nu);
-
 			long loop_dims[N];
-			md_select_dims(N, MD_BIT(d), loop_dims, out_dims);
+			md_select_dims(N, MD_BIT(d), loop_dims, cim_dims);
 
-			auto nu2 = linop_loop(N, loop_dims, nu1);
+			auto nu2 = linop_loop(N, loop_dims, nu);
 
 			linop_free(nu);
-			linop_free(nu1);
 
 			return nu2;
 		}

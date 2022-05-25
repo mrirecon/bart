@@ -705,18 +705,64 @@ struct linop_s* linop_stack_FF(int D, int E, const struct linop_s* a, const stru
 
 
 
+static void merge_dims(unsigned int D, long odims[D], const long idims1[D], const long idims2[D])
+{
+	md_copy_dims(D, odims, idims1);
+
+	for (unsigned int i = 0; i < D; i++) {
+
+		assert((1 == odims[i]) || (1 == idims2[i]));
+
+		if (1 == odims[i])
+			odims[i] = idims2[i];
+	}
+}
 
 
 struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* op)
 {
+	assert(D == linop_codomain(op)->N);
+	assert(D == linop_domain(op)->N);
+
+	long odims[D];
+	long idims[D];
+
+	long ostrs[D];
+	long istrs[D];
+
+	merge_dims(D, odims, dims, linop_codomain(op)->dims);
+	merge_dims(D, idims, dims, linop_domain(op)->dims);
+
+	md_calc_strides(D, ostrs, odims, linop_codomain(op)->size);
+	md_calc_strides(D, istrs, idims, linop_domain(op)->size);
+
+	for (unsigned int i = 0; i < D; i++) {
+
+		ostrs[i] = (1 == linop_codomain(op)->dims[i]) ? 0 : ostrs[i];
+		istrs[i] = (1 == linop_domain(op)->dims[i]) ? 0 : istrs[i];
+	}
+
+	auto lop_wrap = linop_copy_wrapper(D, istrs, ostrs, op);
+
 	PTR_ALLOC(struct linop_s, op2);
 
-	op2->forward = operator_loop(D, dims, op->forward);
-	op2->adjoint = operator_loop(D, dims, op->adjoint);
-	op2->normal = (NULL == op->normal) ? NULL : operator_loop(D, dims, op->normal);
+	op2->forward = operator_loop(D, dims, lop_wrap->forward);
+	op2->adjoint = operator_loop(D, dims, lop_wrap->adjoint);
+	op2->normal = (NULL == op->normal) ? NULL : operator_loop(D, dims, lop_wrap->normal);
 	op2->norm_inv = NULL; // FIXME
 
+	linop_free(lop_wrap);
+
 	return PTR_PASS(op2);
+}
+
+struct linop_s* linop_loop_F(unsigned int D, const long dims[D], struct linop_s* op)
+{
+	auto result = linop_loop(D, dims, op);
+	
+	linop_free(op);
+	
+	return result;
 }
 
 struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const long ostrs[DO],  struct linop_s* op)
