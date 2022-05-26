@@ -95,7 +95,18 @@ int main_mobafit(int argc, char* argv[argc])
 
 	long x_dims[DIMS];
 	md_select_dims(DIMS, ~TE_FLAG, x_dims, y_dims);
-	x_dims[COEFF_DIM] = get_num_of_coeff(mgre_model);
+
+	switch (seq) {
+
+	case MGRE:
+
+		x_dims[COEFF_DIM] = set_num_of_coeff(mgre_model);
+		break;
+
+	default:
+
+		error("sequence type not supported");
+	}
 
 
 	complex float* x = create_cfl(coeff_file, DIMS, x_dims);
@@ -124,9 +135,7 @@ int main_mobafit(int argc, char* argv[argc])
 		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, TE, mgre_model, false, FAT_SPEC_1, scale_fB0, use_gpu);
 		break;
 
-	default:
-
-		error("sequence type not supported");
+	default: ;
 	}
 
 
