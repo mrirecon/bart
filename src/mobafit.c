@@ -38,7 +38,7 @@
 #endif
 
 
-static const char help_str[] = "Pixel-wise fitting of sequence models.";
+static const char help_str[] = "Pixel-wise fitting of physical signal models.";
 
 int main_mobafit(int argc, char* argv[argc])
 {
@@ -46,13 +46,13 @@ int main_mobafit(int argc, char* argv[argc])
 
 	const char* TE_file = NULL;
 	const char* echo_file = NULL;
-	const char* param_file = NULL;
+	const char* coeff_file = NULL;
 
 	struct arg_s args[] = {
 
 		ARG_INFILE(true, &TE_file, "TE"),
-		ARG_INFILE(true, &echo_file, "echo images"),
-		ARG_OUTFILE(false, &param_file, "paramters"),
+		ARG_INFILE(true, &echo_file, "echo/contrast images"),
+		ARG_OUTFILE(false, &coeff_file, "coefficients"),
 	};
 
 
@@ -98,7 +98,7 @@ int main_mobafit(int argc, char* argv[argc])
 	x_dims[COEFF_DIM] = get_num_of_coeff(mgre_model);
 
 
-	complex float* x = create_cfl(param_file, DIMS, x_dims);
+	complex float* x = create_cfl(coeff_file, DIMS, x_dims);
 
 	md_clear(DIMS, x_dims, x, CFL_SIZE);
 
