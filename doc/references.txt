@@ -265,7 +265,7 @@ Magn Reson Med 2009; 61:145-152.
 
 Block KT, Uecker M, Frahm J.
 Model-Based Iterative Reconstruction for Radial Fast Spin-Echo MRI.
-IEEE Trans Med Imag 2019; 28:1759-1769.
+IEEE Trans Med Imag 2009; 28:1759-1769.
 
 Wang X, Roeloffs V, Klosowski J, Tan Z, Voit D, Uecker M, Frahm J.
 Model-based T1 Mapping with Sparsity Constraints Using Single-Shot
