@@ -79,6 +79,7 @@ struct nlop_s* nlop_chain_FF(const struct nlop_s* a, const struct nlop_s* b)
 	return x;
 }
 
+
 /**
  * Chain output o of nlop a in input i of nlop b.
  *
@@ -122,6 +123,7 @@ struct nlop_s* nlop_chain2(const struct nlop_s* a, int o, const struct nlop_s* b
 	return li;
 }
 
+
 /**
  * Chain output o of nlop a in input i of nlop b.
  * Keep output o of a.
@@ -153,6 +155,7 @@ struct nlop_s* nlop_chain2_keep(const struct nlop_s* a, int o, const struct nlop
 	return result;
 }
 
+
 /**
  * Chain output o of nlop a in input i of nlop b.
  * Frees a and b.
@@ -175,6 +178,7 @@ struct nlop_s* nlop_chain2_FF(const struct nlop_s* a, int o, const struct nlop_s
 
 	return result;
 }
+
 
 /**
  * Chain output o of nlop a in input i of nlop b.
@@ -199,6 +203,7 @@ struct nlop_s* nlop_chain2_keep_FF(const struct nlop_s* a, int o, const struct n
 
 	return result;
 }
+
 
 /**
  * Chain output o of nlop a in input i of nlop b.
@@ -288,6 +293,7 @@ struct nlop_s* nlop_append_FF(const struct nlop_s* a, int o, const struct nlop_s
 	return nlop_shift_output_F(result, o, 0);
 }
 
+
 /**
  * Chain nlop a into input i of b and permute input of a to i
  *
@@ -305,6 +311,7 @@ struct nlop_s* nlop_prepend_FF(const struct nlop_s* a, const struct nlop_s* b, i
 	assert(1 == nlop_get_nr_out_args(a));
 
 	auto result = nlop_chain2_swap_FF(a, 0, b, i);
+
 	return nlop_shift_input_F(result, i, 0);
 }
 
@@ -394,11 +401,14 @@ struct nlop_s* nlop_combine(const struct nlop_s* a, const struct nlop_s* b)
 	return PTR_PASS(n);
 }
 
+
 struct nlop_s* nlop_combine_FF(const struct nlop_s* a, const struct nlop_s* b)
 {
 	auto result = nlop_combine(a, b);
+
 	nlop_free(a);
 	nlop_free(b);
+
 	return result;
 }
 
@@ -436,9 +446,7 @@ struct nlop_s* nlop_link(const struct nlop_s* x, int oo, int ii)
 			const struct linop_s* tmp = linop_chain(nlop_get_derivative(x, oo, ip),
 								nlop_get_derivative(x, op, ii));
 
-			(*der)[i][o] = linop_plus(
-				nlop_get_derivative(x, op, ip),
-				tmp);
+			(*der)[i][o] = linop_plus(nlop_get_derivative(x, op, ip), tmp);
 
 			linop_free(tmp);
 		}
@@ -449,10 +457,12 @@ struct nlop_s* nlop_link(const struct nlop_s* x, int oo, int ii)
 	return PTR_PASS(n);
 }
 
+
 struct nlop_s* nlop_link_F(const struct nlop_s* x, int oo, int ii)
 {
 	auto result = nlop_link(x, oo, ii);
 	nlop_free(x);
+
 	return result;
 }
 
@@ -539,8 +549,10 @@ static struct nlop_s* nlop_stack_inputs_generic(const struct nlop_s* x, int NI, 
 	for (int i = 0; i < NI; i++) {
 
 		assert(N == (int)nlop_generic_domain(x, index[i])->N);
+
 		md_copy_dims(N, odims[i], nlop_generic_domain(x, index[i])->dims);
 		idims[stack_dim] += odims[i][stack_dim];
+
 		nindex = MIN(nindex, index[i]);
 	}
 
@@ -549,6 +561,7 @@ static struct nlop_s* nlop_stack_inputs_generic(const struct nlop_s* x, int NI, 
 	for (int i = 0; i < NI; i++) {
 
 		result = nlop_link_F(result, OO, index[i]);
+
 		for (int j = i + 1; j < NI; j++)
 			if (index[j] > index[i])
 				index[j]--;
@@ -573,6 +586,7 @@ struct nlop_s* nlop_stack_inputs_F(const struct nlop_s* x, int a, int b, int sta
 static struct nlop_s* nlop_stack_outputs_generic(const struct nlop_s* x, int NO, int _index[NO], int stack_dim)
 {
 	int index[NO];
+
 	for (int i = 0; i < NO; i++)
 		index[i] = _index[i];
 
@@ -583,6 +597,7 @@ static struct nlop_s* nlop_stack_outputs_generic(const struct nlop_s* x, int NO,
 
 	long idims[NO][N];
 	long odims[N];
+
 	md_copy_dims(N, odims, nlop_generic_codomain(x, index[0])->dims);
 	odims[stack_dim] = 0;
 
@@ -591,8 +606,10 @@ static struct nlop_s* nlop_stack_outputs_generic(const struct nlop_s* x, int NO,
 	for (int i = 0; i < NO; i++) {
 
 		assert(N == (int)nlop_generic_codomain(x, index[i])->N);
+
 		md_copy_dims(N, idims[i], nlop_generic_codomain(x, index[i])->dims);
 		odims[stack_dim] += idims[i][stack_dim];
+
 		nindex = MIN(nindex, index[i]);
 	}
 
@@ -601,6 +618,7 @@ static struct nlop_s* nlop_stack_outputs_generic(const struct nlop_s* x, int NO,
 	for (int i = 0; i < NO; i++) {
 
 		result = nlop_link_F(result, 1 + index[i], 0);
+
 		for (int j = i + 1; j < NO; j++)
 			if (index[j] > index[i])
 				index[j]--;
@@ -705,8 +723,13 @@ struct nlop_s* nlop_shift_input(const struct nlop_s* x, int new_index, int old_i
 	for (int i = 0, ip = 0; i < II; i++, ip++) {
 
 		perm[i] = ip;
-		if (i == old_index) ip++;
-		if (i == new_index) ip--;
+
+		if (i == old_index)
+			ip++;
+
+		if (i == new_index)
+			ip--;
+
 		if (new_index > old_index)
 			perm[i] = ip;
 	}
@@ -720,6 +743,7 @@ struct nlop_s* nlop_shift_input_F(const struct nlop_s* x, int new_index, int old
 {
 	auto result = nlop_shift_input(x, new_index, old_index);
 	nlop_free(x);
+
 	return result;
 }
 
@@ -734,8 +758,13 @@ struct nlop_s* nlop_shift_output(const struct nlop_s* x, int new_index, int old_
 	for (int i = 0, ip = 0; i < OO; i++, ip++) {
 
 		perm[i] = ip;
-		if (i == old_index) ip++;
-		if (i == new_index) ip--;
+
+		if (i == old_index)
+			ip++;
+
+		if (i == new_index)
+			ip--;
+
 		if (new_index > old_index)
 			perm[i] = ip;
 	}
@@ -756,6 +785,7 @@ struct nlop_s* nlop_shift_output_F(const struct nlop_s* x, int new_index, int ol
 struct nlop_s* nlop_stack_multiple_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO])
 {
 	auto result = (struct nlop_s*)nlops[0];
+
 	for (int i = 1; i < N; i++)
 		result = nlop_combine_FF(result, nlops[i]);
 
@@ -763,6 +793,7 @@ struct nlop_s* nlop_stack_multiple_F(int N, const struct nlop_s* nlops[N], int I
 
 		int index[N];
 		index[0] = i;
+
 		for (int j = 1; j < N; j++)
 			index[j] = index[j - 1] + II - i;
 
@@ -781,6 +812,7 @@ struct nlop_s* nlop_stack_multiple_F(int N, const struct nlop_s* nlops[N], int I
 
 		int index[N];
 		index[0] = i;
+
 		for (int j = 1; j < N; j++)
 			index[j] = index[j - 1] + OO - i;
 
