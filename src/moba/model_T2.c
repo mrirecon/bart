@@ -7,18 +7,11 @@
  * 2018-2020 Xiaoqing Wang <xiaoqing.wang@med.uni-goettingen.de>
  */
 
-
-
 #include <stdlib.h>
-#include <complex.h>
-#include <math.h>
-#include <stdbool.h>
 #include <assert.h>
 
 #include "misc/misc.h"
 #include "misc/mri.h"
-#include "misc/mmio.h"
-#include "misc/debug.h"
 
 #include "nlops/nlop.h"
 #include "nlops/chain.h"
@@ -26,14 +19,12 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/iovec.h"
 
 #include "noir/model.h"
 
 #include "moba/T2fun.h"
 
 #include "model_T2.h"
-
 
 
 
@@ -59,11 +50,6 @@ struct mobamod T2_create(const long dims[DIMS], const complex float* mask, const
 	// chain T2 model
 	struct nlop_s* T2 = nlop_T2_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, use_gpu);
 
-	debug_print_dims(DP_INFO, DIMS, nlop_generic_domain(T2, 0)->dims);
-	debug_print_dims(DP_INFO, DIMS, nlop_generic_codomain(T2, 0)->dims);
-	debug_print_dims(DP_INFO, DIMS, nlop_generic_domain(nlinv.nlop, 0)->dims);
-	debug_print_dims(DP_INFO, DIMS, nlop_generic_domain(nlinv.nlop, 1)->dims);
-	debug_print_dims(DP_INFO, DIMS, nlop_generic_codomain(nlinv.nlop, 0)->dims);
 
 	const struct nlop_s* b = nlinv.nlop;
 	const struct nlop_s* c = nlop_chain2(T2, 0, b, 0);
