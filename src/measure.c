@@ -123,7 +123,7 @@ int main_measure(int argc, char* argv[argc])
 	md_select_dims(DIMS, bat_flags, out_dims, ref_dims);
 
 	auto nn_measure = val_measure_create(&config, DIMS, op_dims);
-	auto nlop_measure = nlop_clone(nn_get_nlop(nn_measure));
+	const struct nlop_s* nlop_measure = nlop_clone(nn_get_nlop(nn_measure));
 
 	out_dims[0] = nn_get_nr_out_args(nn_measure);
 	

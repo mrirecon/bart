@@ -443,7 +443,7 @@ void nlop_free(const struct nlop_s* op)
 }
 
 
-const struct nlop_s* nlop_clone(const struct nlop_s* op)
+struct nlop_s* nlop_clone(const struct nlop_s* op)
 {
 	PTR_ALLOC(struct nlop_s, n);
 
@@ -666,6 +666,21 @@ const struct iovec_s* nlop_codomain(const struct nlop_s* op)
 }
 
 
+
+const struct nlop_s* nlop_attach(const struct nlop_s* nop, void* ptr, void (*del)(const void* ptr))
+{
+	struct nlop_s* nlop = nlop_clone(nop);
+
+	const struct operator_s* op = nlop->op;
+
+	nlop->op = operator_attach(op, ptr, del);
+
+	operator_free(op);
+
+	return nlop;
+}
+
+
 struct flatten_s {
 
 	INTERFACE(nlop_data_t);
@@ -876,6 +891,8 @@ const struct nlop_s* nlop_reshape_in(const struct nlop_s* op, int i, int NI, con
 
 	return PTR_PASS(n);
 }
+
+
 
 const struct nlop_s* nlop_reshape_out(const struct nlop_s* op, int o, int NO, const long odims[NO])
 {

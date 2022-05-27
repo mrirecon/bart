@@ -55,7 +55,7 @@ extern struct nlop_s* nlop_create2(	unsigned int ON, const long odims[__VLA(ON)]
 					nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t);
 
 
-extern const struct nlop_s* nlop_clone(const struct nlop_s* op);
+extern struct nlop_s* nlop_clone(const struct nlop_s* op);
 extern void nlop_free(const struct nlop_s* op);
 
 extern nlop_data_t* nlop_get_data(const struct nlop_s* op);
@@ -81,6 +81,9 @@ extern const struct linop_s* nlop_get_derivative(const struct nlop_s* op, int o,
 
 extern const struct iovec_s* nlop_generic_domain(const struct nlop_s* op, int i);
 extern const struct iovec_s* nlop_generic_codomain(const struct nlop_s* op, int o);
+
+
+extern const struct nlop_s* nlop_attach(const struct nlop_s* op, void* ptr, void (*del)(const void* ptr));
 
 
 
