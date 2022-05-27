@@ -1,10 +1,11 @@
 /* Copyright 2020. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2022. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- * 
+ *
  * Authors:
- * 2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
+ * 2020-2022 Martin Uecker
+ * 2020 Zhengguo Tan
  */
 
 #include <stdbool.h>
@@ -14,6 +15,7 @@
 #include "num/flpmath.h"
 #include "num/ops_p.h"
 #include "num/init.h"
+#include "num/iovec.h"
 
 #include "misc/mri.h"
 #include "misc/misc.h"
@@ -30,6 +32,7 @@
 #include "nlops/nlop.h"
 
 #include "moba/meco.h"
+#include "moba/exp.h"
 
 #include "simu/signals.h"
 
@@ -44,19 +47,19 @@ int main_mobafit(int argc, char* argv[argc])
 {
 	double start_time = timestamp();
 
-	const char* TE_file = NULL;
+	const char* enc_file = NULL;
 	const char* echo_file = NULL;
 	const char* coeff_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(true, &TE_file, "TE"),
+		ARG_INFILE(true, &enc_file, "enc"),
 		ARG_INFILE(true, &echo_file, "echo/contrast images"),
 		ARG_OUTFILE(false, &coeff_file, "coefficients"),
 	};
 
 
-	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE } seq = MGRE;
+	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE, DIFF } seq = MGRE;
 
 	unsigned int mgre_model = MECO_WFR2S;
 
@@ -70,10 +73,11 @@ int main_mobafit(int argc, char* argv[argc])
 #if 0
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
 		OPT_SELECT('B', enum seq_type, &seq, BSSFP, "bSSFP"),
-		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 #endif
+		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
+		OPT_SELECT('D', enum seq_type, &seq, DIFF, "diffusion"),
 		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_UINT('i', &iter, "iter", "Number of IRGNM steps"),
 		OPT_VEC3('p', &patch_size, "px,py,pz", "(patch size)"),
@@ -85,13 +89,13 @@ int main_mobafit(int argc, char* argv[argc])
 	num_init();
 
 
-	long TE_dims[DIMS];
-	complex float* TE = load_cfl(TE_file, DIMS, TE_dims);
+	long enc_dims[DIMS];
+	complex float* enc = load_cfl(enc_file, DIMS, enc_dims);
 
 	long y_dims[DIMS];
 	complex float* y = load_cfl(echo_file, DIMS, y_dims);
 
-	assert(y_dims[TE_DIM] == TE_dims[TE_DIM]);
+	assert(y_dims[TE_DIM] == enc_dims[TE_DIM]);
 
 	long x_dims[DIMS];
 	md_select_dims(DIMS, ~TE_FLAG, x_dims, y_dims);
@@ -100,7 +104,23 @@ int main_mobafit(int argc, char* argv[argc])
 
 	case MGRE:
 
-		x_dims[COEFF_DIM] = set_num_of_coeff(mgre_model);
+	//	assert(1 == enc_dims[TE_DIM]);
+
+		x_dims[COEFF_DIM] = get_num_of_coeff(mgre_model);
+		break;
+
+	case TSE:
+
+		assert(1 == enc_dims[COEFF_DIM]);
+
+		md_zsmul(DIMS, enc_dims, enc, enc, -1.);
+
+		x_dims[COEFF_DIM] = 2;
+		break;
+
+	case DIFF:
+
+		x_dims[COEFF_DIM] = enc_dims[COEFF_DIM] + 1;
 		break;
 
 	default:
@@ -132,7 +152,19 @@ int main_mobafit(int argc, char* argv[argc])
 	case MGRE: ;
 
 		float scale_fB0[2] = { 0., 1. };
-		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, TE, mgre_model, false, FAT_SPEC_1, scale_fB0, use_gpu);
+		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0, use_gpu);
+		break;
+
+	case TSE:
+	case DIFF: ;
+
+		long dims[DIMS];
+		md_copy_dims(DIMS, dims, y_patch_dims);
+		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
+
+		auto nl = nlop_exp_create(DIMS, dims, enc);
+		nlop = nlop_flatten(nl);
+		nlop_free(nl);
 		break;
 
 	default: ;
@@ -184,7 +216,7 @@ int main_mobafit(int argc, char* argv[argc])
 	nlop_free(nlop);
 
 	unmap_cfl(DIMS, y_dims, y);
-	unmap_cfl(DIMS, TE_dims, TE);
+	unmap_cfl(DIMS, enc_dims, enc);
 	unmap_cfl(DIMS, x_dims, x);
 
 	double recosecs = timestamp() - start_time;
@@ -193,3 +225,4 @@ int main_mobafit(int argc, char* argv[argc])
 
 	return 0;
 }
+

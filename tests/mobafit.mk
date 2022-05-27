@@ -53,4 +53,27 @@ tests/test-mobafit-wfr2s: phantom signal fmac index scale extract mobafit saxpy 
 	touch $@
 
 
+tests/test-mobafit-r2: phantom signal reshape fmac index mobafit slice nrmse index extract invert
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
+	$(TOOLDIR)/signal -250:160:11 -T -e10 -n16 sig.ra		;\
+	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
+	$(TOOLDIR)/index 5 16 te.ra					;\
+	$(TOOLDIR)/mobafit -T te.ra x.ra fit.ra				;\
+	$(TOOLDIR)/slice 6 0 fit.ra x0.ra				;\
+	$(TOOLDIR)/slice 6 1 fit.ra x1.ra				;\
+	$(TOOLDIR)/phantom -x32 -T r0.ra				;\
+	$(TOOLDIR)/nrmse -t 0.000001 r0.ra x0.ra			;\
+	$(TOOLDIR)/index 6 16 t2.ra					;\
+	$(TOOLDIR)/extract 6 5 16 t2.ra t2b.ra 				;\
+	$(TOOLDIR)/invert t2b.ra r2.ra					;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra r2.ra r1.ra 			;\
+	$(TOOLDIR)/nrmse -t 0.000001 r1.ra x1.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 TESTS += tests/test-mobafit-r2s tests/test-mobafit-wfr2s
+TESTS += tests/test-mobafit-r2
+
