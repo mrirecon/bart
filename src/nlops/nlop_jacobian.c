@@ -88,12 +88,13 @@ static void block_diag_clear_der(const nlop_data_t* _data)
 
 	void* (*der)[OO][II] = (void*)(data->der);
 
-	for (int i = 0; i < II; i++)
+	for (int i = 0; i < II; i++) {
 		for (int o = 0; o < OO; o++) {
 
 			md_free((*der)[o][i]);
 			(*der)[o][i] = NULL;
 		}
+	}
 }
 
 static void zblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float* args[Nargs])

@@ -1577,7 +1577,6 @@ void md_zfmaccD(unsigned int D, const long dims[D], complex double* optr, const 
  */
 void md_zaxpy2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr, complex float val, const long istr[D], const complex float* iptr)
 {
-
 	if (0. == cimagf(val)) { // strength reduction: complex to real multiplication
 
 		long dimsR[D + 1];
@@ -1672,6 +1671,7 @@ void md_zmax2(unsigned int D, const long dims[D], const long ostr[D], complex fl
 {
 	if (simple_zmax(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
 		return;
+
 	MAKE_Z3OP(zmax, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 

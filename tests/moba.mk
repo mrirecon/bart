@@ -73,6 +73,7 @@ tests/test-moba-t1-no-IR: phantom signal fft ones index scale moba looklocker fm
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-moba-t1-nonCartesian: traj transpose phantom signal nufft fft ones index scale moba looklocker resize fmac nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/traj -x16 -y1 -r -D -G -s7 -t300 _traj.ra  		                ;\
@@ -98,6 +99,7 @@ tests/test-moba-t1-nonCartesian: traj transpose phantom signal nufft fft ones in
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-moba-t1-nufft: traj transpose phantom signal nufft fft ones index scale moba fmac nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/traj -x16 -y1 -r -D -G -s7 -t300 traj2.ra  		                ;\
@@ -119,6 +121,7 @@ tests/test-moba-t1-nufft: traj transpose phantom signal nufft fft ones index sca
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-moba-t2: phantom signal fmac fft ones index scale moba slice invert nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
@@ -137,6 +140,7 @@ tests/test-moba-t2: phantom signal fmac fft ones index scale moba slice invert n
 	$(TOOLDIR)/nrmse -t 0.0008 masked.ra ref.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-moba-meco-noncart-r2s: traj scale phantom signal fmac index extract moba slice resize nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	                  ;\
@@ -158,6 +162,7 @@ tests/test-moba-meco-noncart-r2s: traj scale phantom signal fmac index extract m
 	$(TOOLDIR)/nrmse -t 0.008 ref.ra masked.ra                        ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-moba-meco-noncart-wfr2s: traj scale phantom signal fmac index extract moba slice resize saxpy cabs spow nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	                  ;\
@@ -193,6 +198,7 @@ tests/test-moba-meco-noncart-wfr2s: traj scale phantom signal fmac index extract
 	$(TOOLDIR)/nrmse -t 0.0003 fB0_ref.ra fB0_masked.ra               ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 TESTS_SLOW += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
 TESTS_SLOW += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
