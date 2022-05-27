@@ -14,7 +14,10 @@
 #include "num/fft.h"
 
 #include "iter/iter3.h"
+
 #include "nlops/nlop.h"
+#include "nlops/cast.h"
+#include "nlops/chain.h"
 
 #include "noir/model.h"
 #include "noir/recon.h"
@@ -22,12 +25,50 @@
 #include "moba/model_T1.h"
 #include "moba/model_T2.h"
 #include "moba/iter_l1.h"
-#
 #include "moba/moba.h"
+#include "moba/exp.h"
 #include "moba/recon_meco.h"
 
 #include "recon.h"
 
+
+
+
+static struct mobamod exp_create(const long dims[DIMS], const complex float* mask, const complex float* TE, const complex float* psf, const struct noir_model_conf_s* conf)
+{
+	long data_dims[DIMS];
+	md_select_dims(DIMS, ~COEFF_FLAG, data_dims, dims);
+
+	struct noir_s nlinv = noir_create3(data_dims, mask, psf, conf);
+	struct mobamod ret;
+
+	assert(2 == dims[COEFF_DIM]);
+
+	long edims[DIMS];
+	md_select_dims(DIMS, TE_FLAG, edims, dims);
+
+	complex float* TE2 = md_alloc(DIMS, edims, CFL_SIZE);
+
+	md_zsmul(DIMS, edims, TE2, TE, -10.);
+
+
+	// chain T2 model
+	struct nlop_s* a = nlop_exp_create(DIMS, data_dims, TE2);
+
+
+	const struct nlop_s* b = nlinv.nlop;
+	const struct nlop_s* c = nlop_chain2_FF(a, 0, b, 0);
+
+
+	nlinv.nlop = nlop_permute_inputs_F(c, 3, (const int[3]){ 1, 2, 0 });
+
+	ret.nlop = nlop_flatten(nlop_attach(nlinv.nlop, TE2, md_free));
+	ret.linop = nlinv.linop;
+
+	nlop_free(nlinv.nlop);
+
+	return ret;
+}
 
 
 
@@ -56,7 +97,7 @@ static void recon(const struct moba_conf* conf, const long dims[DIMS],
 	mconf.b = conf->sobolev_b;
 	mconf.cnstcoil_flags = TE_FLAG;
 
-	struct mobamod nl;
+	struct mobamod nl = { 0 };
 
 	switch (conf->mode) {
 	case MDB_T1:
@@ -66,7 +107,13 @@ static void recon(const struct moba_conf* conf, const long dims[DIMS],
 
 	case MDB_T2:
 
+#if 0
+		// slower
+		nl = exp_create(dims, mask, TI, pattern, &mconf);
+#else
+		UNUSED(exp_create);
 		nl = T2_create(dims, mask, TI, pattern, &mconf, usegpu);
+#endif
 		break;
 
 	case MDB_MGRE:
