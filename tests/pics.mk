@@ -80,7 +80,7 @@ tests/test-pics-bpwavl1: scale fft noise fmac ones pics nrmse $(TESTS_OUT)/shepp
 	touch $@
 
 
-tests/test-pics-bp-noncart: traj scale phantom pics nrmse
+tests/test-pics-bp-noncart: traj scale phantom ones pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x256 -y64 traj.ra						;\
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
