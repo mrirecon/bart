@@ -1374,7 +1374,7 @@ const struct operator_s* operator_dup_create(const struct operator_s* op, unsign
 	const long* dims[N - 1];
 	const long* strs[N - 1];
 
-	debug_printf(DP_DEBUG3, "Duplicating args %d-%d of %d.\n", a, b, N);
+	debug_printf(DP_DEBUG4, "Duplicating args %d-%d of %d.\n", a, b, N);
 
 	for (unsigned int s = 0, t = 0; s < N; s++) {
 

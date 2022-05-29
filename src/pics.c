@@ -618,18 +618,20 @@ int main_pics(int argc, char* argv[argc])
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
+
 	opt_reg_configure(DIMS, img1_dims, &ropts, thresh_ops, trafos, llr_blk, shift_mode, conf.gpu);
 
 	if (conf.bpsense)
 		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace, bpsense_eps);
 
-	int nr_penalties = ropts.r;
-	struct reg_s* regs = ropts.regs;
+	int nr_penalties = ropts.r + ropts.sr;
+
+	debug_printf(DP_INFO, "Regularization terms: %d, Supporting variables: %d\n", nr_penalties, ropts.svars);
 
 	// choose algorithm
 
 	if (ALGO_DEFAULT == algo)
-		algo = italgo_choose(nr_penalties, regs);
+		algo = italgo_choose(ropts.r, ropts.regs);
 
 	if (conf.bpsense)
 		assert((ALGO_ADMM == algo) || (ALGO_PRIDU == algo));
@@ -660,7 +662,7 @@ int main_pics(int argc, char* argv[argc])
 
 	// initialize algorithm
 
-	struct iter it = italgo_config(algo, nr_penalties, regs, maxiter, step, hogwild, fast, admm, scaling, warm_start);
+	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, fast, admm, scaling, warm_start);
 
 	if (ALGO_CG == algo)
 		nr_penalties = 0;
@@ -668,7 +670,7 @@ int main_pics(int argc, char* argv[argc])
 	bool trafos_cond = (   (ALGO_PRIDU == algo)
 			    || (ALGO_ADMM == algo)
 			    || (   (ALGO_NIHT == algo)
-				&& (regs[0].xform == NIHTWAV)));
+				&& (ropts.regs[0].xform == NIHTWAV)));
 
 	// FIXME: will fail with looped dims
 	struct iter_monitor_s* monitor = NULL;

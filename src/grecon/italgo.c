@@ -46,6 +46,7 @@ enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties
 
 		case TV:
 		case TGV:
+		case ICTV:
 		case IMAGL1:
 		case IMAGL2:
 

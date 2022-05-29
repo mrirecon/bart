@@ -78,7 +78,7 @@ static bool checkeps(float eps)
 
 static bool check_ops(long size,
 	const struct operator_s* normaleq_op,
-	unsigned int D,
+	int D,
 	const struct operator_p_s* prox_ops[D],
 	const struct linop_s* ops[D])
 {
@@ -95,7 +95,7 @@ static bool check_ops(long size,
 			return false;
 	}
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		long cosize = size;
 

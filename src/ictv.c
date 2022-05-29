@@ -49,22 +49,30 @@ static const char help_str[] = "Perform total generalized variation denoising al
 
 
 	
-int main_tgv(int argc, char* argv[argc])
+int main_ictv(int argc, char* argv[argc])
 {
 	float lambda = 0.;
-	int flags = -1;
+	int flags1 = -1;
+	int flags2 = -1;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
+
+	struct iter_admm_conf conf = iter_admm_defaults;
 
 	struct arg_s args[] = {
 
 		ARG_FLOAT(true, &lambda, "lambda"),
-		ARG_INT(true, &flags, "flags"),
+		ARG_INT(true, &flags1, "flags"),
+		ARG_INT(true, &flags2, "flags"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	const struct opt_s opts[] = { };
+	const struct opt_s opts[] = {
+	
+		OPT_UINT('i', &conf.maxiter, "i", "max. iterations"),
+		OPT_FLOAT('u', &conf.rho, "rho", "rho in ADMM"),
+	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
@@ -79,24 +87,20 @@ int main_tgv(int argc, char* argv[argc])
 	long out_dims[DIMS];
 	md_copy_dims(DIMS, out_dims, in_dims);
 
-	out_dims[DIMS - 1] = 1 + bitcount(flags);
+	out_dims[DIMS - 1] = 2;
 
 	int ext_shift = 1;
-	struct reg2 reg2 = tgv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, out_dims, &ext_shift);
+	struct reg2 reg2 = ictv_reg(flags1, flags2, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, out_dims, &ext_shift);
 
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
 	auto id = linop_extract_create(DIMS, (long[DIMS]){ 0 }, in_dims, out_dims);
 
-	struct iter_admm_conf conf = iter_admm_defaults;
 
 	complex float* adj = md_alloc(DIMS, out_dims, CFL_SIZE);
 
 	linop_adjoint(id, DIMS, out_dims, adj, DIMS, in_dims, in_data);
-
-	conf.maxiter = 100;
-	conf.rho = .1;
 
 	iter2_admm(CAST_UP(&conf), id->normal,
 		   2, MAKE_ARRAY(reg2.prox[0], reg2.prox[1]), MAKE_ARRAY(reg2.linop[0], reg2.linop[1]),
