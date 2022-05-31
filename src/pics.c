@@ -590,7 +590,7 @@ int main_pics(int argc, char* argv[argc])
 
 	// FIXME: re-initialize forward_op and precond_op
 
-	if ((NULL == traj_file) && (0u != loop_flags) && !sms) { // FIXME: no basis
+	if ((NULL == traj_file) && !sms) { // FIXME: no basis
 
 		linop_free(forward_op);
 		forward_op = sense_init(max1_dims, map_flags, maps);
