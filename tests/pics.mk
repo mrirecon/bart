@@ -66,16 +66,28 @@ tests/test-pics-poisson-wavl1: poisson squeeze fft fmac ones pics nrmse $(TESTS_
 	touch $@
 
 
-tests/test-pics-bpwavl1: scale fft noise fmac ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+tests/test-pics-bpwavl1: scale fft noise fmac ones upat squeeze pics saxpy vec nrmse $(TESTS_OUT)/shepplogan.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/scale 50 $(TESTS_OUT)/shepplogan.ra shepp.ra				;\
 	$(TOOLDIR)/fft -u 7 shepp.ra ksp1.ra						;\
 	$(TOOLDIR)/noise -s 1 -n 1 ksp1.ra ksp2.ra					;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
-	$(TOOLDIR)/pics -a -P 128 -w1. -RW:3:0:1. -i50 ksp2.ra o.ra reco.ra		;\
-	$(TOOLDIR)/pics -m -P 128 -w1. -RW:3:0:1. -i50 -u 2 ksp2.ra o.ra reco2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.08 shepp.ra reco.ra					;\
-	$(TOOLDIR)/nrmse -t 0.08 shepp.ra reco2.ra					;\
+	$(TOOLDIR)/upat -Y 128 -Z 128 -y 2 -z 2 pat.ra					;\
+	$(TOOLDIR)/squeeze pat.ra pat.ra	 					;\
+	$(TOOLDIR)/fmac ksp2.ra pat.ra ksp3.ra	 					;\
+	$(TOOLDIR)/pics -a -P 64 -w1. -n -RW:3:0:1. -i50 ksp3.ra o.ra reco.ra		;\
+	$(TOOLDIR)/pics -m -P 64 -w1. -n -RW:3:0:1. -i100 -u .5 ksp3.ra o.ra reco2.ra	;\
+	$(TOOLDIR)/fft -u 3 reco.ra kreco.ra						;\
+	$(TOOLDIR)/saxpy -- -1 kreco.ra ksp3.ra ereco.ra				;\
+	$(TOOLDIR)/fmac ereco.ra pat.ra preco.ra					;\
+	$(TOOLDIR)/fmac -C -s 3 preco.ra preco.ra e.ra					;\
+	$(TOOLDIR)/fft -u 3 reco2.ra kreco2.ra						;\
+	$(TOOLDIR)/saxpy -- -1 kreco2.ra ksp3.ra ereco2.ra				;\
+	$(TOOLDIR)/fmac ereco2.ra pat.ra preco2.ra					;\
+	$(TOOLDIR)/fmac -C -s 3 preco2.ra preco2.ra e2.ra				;\
+	$(TOOLDIR)/vec 4096 f.ra 							;\
+	$(TOOLDIR)/nrmse -t .001 f.ra e.ra						;\
+	$(TOOLDIR)/nrmse -t .001 f.ra e2.ra 						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
