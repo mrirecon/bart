@@ -85,9 +85,9 @@ tests/test-pics-bpwavl1: scale fft noise fmac ones upat squeeze pics saxpy vec n
 	$(TOOLDIR)/saxpy -- -1 kreco2.ra ksp3.ra ereco2.ra				;\
 	$(TOOLDIR)/fmac ereco2.ra pat.ra preco2.ra					;\
 	$(TOOLDIR)/fmac -C -s 3 preco2.ra preco2.ra e2.ra				;\
-	$(TOOLDIR)/vec 4096 f.ra ;\
-	$(TOOLDIR)/nrmse -t .001 f.ra e.ra ;\
-	$(TOOLDIR)/nrmse -t .001 f.ra e2.ra ;\
+	$(TOOLDIR)/vec 4096 f.ra 							;\
+	$(TOOLDIR)/nrmse -t .001 f.ra e.ra						;\
+	$(TOOLDIR)/nrmse -t .001 f.ra e2.ra 						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
