@@ -71,11 +71,6 @@ struct noir_op_s {
 	const struct nlop_s* nl;
 	/*const*/ struct nlop_s* nl2;
 
-	complex float* msk;
-	complex float* wghts;
-	complex float* ptr;
-	complex float* adj_ptr;
-
 	struct noir_model_conf_s conf;
 };
 
@@ -106,63 +101,65 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 	md_select_dims(DIMS, conf->ptrn_flags, ptrn_dims, dims);
 
 
-	data->wghts = md_alloc(DIMS, wght_dims, CFL_SIZE);
+	complex float* wghts = md_alloc(DIMS, wght_dims, CFL_SIZE);
 
-	noir_calc_weights(conf->a, conf->b, dims, data->wghts);
-	fftmod(DIMS, wght_dims, FFT_FLAGS, data->wghts, data->wghts);
-	fftscale(DIMS, wght_dims, FFT_FLAGS, data->wghts, data->wghts);
+	noir_calc_weights(conf->a, conf->b, dims, wghts);
+	fftmod(DIMS, wght_dims, FFT_FLAGS, wghts, wghts);
+	fftscale(DIMS, wght_dims, FFT_FLAGS, wghts, wghts);
 
-	const struct linop_s* wghts = linop_cdiag_create(DIMS, data->coil_dims, FFT_FLAGS, data->wghts);
-	const struct linop_s* wghts_ifft = linop_ifft_create(DIMS, data->coil_dims, FFT_FLAGS);
+	const struct linop_s* lop_wghts = linop_cdiag_create(DIMS, data->coil_dims, FFT_FLAGS, wghts);
+	const struct linop_s* lop_wghts_ifft = linop_ifft_create(DIMS, data->coil_dims, FFT_FLAGS);
 
-	data->weights = linop_chain(wghts, wghts_ifft);
+	md_free(wghts);
 
-	linop_free(wghts);
-	linop_free(wghts_ifft);
+	data->weights = linop_chain_FF(lop_wghts, lop_wghts_ifft);
+
 
 
 	const struct linop_s* lop_fft = linop_fft_create(DIMS, data->data_dims, conf->fft_flags);
 
 
-	data->ptr = md_alloc(DIMS, ptrn_dims, CFL_SIZE);
+	complex float* ptr = md_alloc(DIMS, ptrn_dims, CFL_SIZE);
 
-	md_copy(DIMS, ptrn_dims, data->ptr, psf, CFL_SIZE);
-	fftmod(DIMS, ptrn_dims, conf->fft_flags, data->ptr, data->ptr);
+	md_copy(DIMS, ptrn_dims, ptr, psf, CFL_SIZE);
+	fftmod(DIMS, ptrn_dims, conf->fft_flags, ptr, ptr);
 
-	const struct linop_s* lop_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, ~conf->ptrn_flags, data->ptr);
+	const struct linop_s* lop_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, ~conf->ptrn_flags, ptr);
+	md_free(ptr);
 
 	const struct linop_s* lop_adj_pattern;
 
 	if (!conf->noncart) {
 
 		lop_adj_pattern = linop_clone(lop_pattern);
-		data->adj_ptr = NULL;
-
 	} else {
 
-		data->adj_ptr = md_alloc(DIMS, ptrn_dims, CFL_SIZE);
+		complex float* adj_ptr = md_alloc(DIMS, ptrn_dims, CFL_SIZE);
 
-		md_zfill(DIMS, ptrn_dims, data->adj_ptr, 1.);
+		md_zfill(DIMS, ptrn_dims, adj_ptr, 1.);
 
-		fftmod(DIMS, ptrn_dims, conf->fft_flags, data->adj_ptr, data->adj_ptr);
+		fftmod(DIMS, ptrn_dims, conf->fft_flags, adj_ptr, adj_ptr);
 
-		lop_adj_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, ~conf->ptrn_flags, data->adj_ptr);
+		lop_adj_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, ~conf->ptrn_flags, adj_ptr);
+
+		md_free(adj_ptr);
 	}
 
-	data->msk = md_alloc(DIMS, mask_dims, CFL_SIZE);
+	complex float* msk = md_alloc(DIMS, mask_dims, CFL_SIZE);
 
 	if (NULL == mask) {
 
-		md_zfill(DIMS, mask_dims, data->msk, 1.);
+		md_zfill(DIMS, mask_dims, msk, 1.);
 
 	} else {
 
-		md_copy(DIMS, mask_dims, data->msk, mask, CFL_SIZE);
+		md_copy(DIMS, mask_dims, msk, mask, CFL_SIZE);
 	}
 
-	fftscale(DIMS, mask_dims, FFT_FLAGS, data->msk, data->msk);
+	fftscale(DIMS, mask_dims, FFT_FLAGS, msk, msk);
 
-	const struct linop_s* lop_mask = linop_cdiag_create(DIMS, data->data_dims, FFT_FLAGS, data->msk);
+	const struct linop_s* lop_mask = linop_cdiag_create(DIMS, data->data_dims, FFT_FLAGS, msk);
+	md_free(msk);
 
 	const struct linop_s* lop_fft2 = linop_chain(lop_mask, lop_fft);
 	linop_free(lop_mask);
@@ -196,11 +193,6 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 
 static void noir_free(struct noir_op_s* data)
 {
-	md_free(data->ptr);
-	md_free(data->adj_ptr);
-	md_free(data->wghts);
-	md_free(data->msk);
-
 	linop_free(data->frw);
 	linop_free(data->adj);
 	linop_free(data->weights);
