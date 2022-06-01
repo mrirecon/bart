@@ -20,6 +20,7 @@ function [varargout] = bart(cmd, varargin)
 % 2014-2016 Martin Uecker <uecker@med.uni-goettingen.de>
 % 2018 (Edited for WSL) Soumick Chatterjee <soumick.chatterjee@ovgu.de>
 % 2020 Martin Krämer <martin.kraemer@med.uni-jena.de>
+% 2022 Jon Tamir <jtamir.utexas.edu>
 
     % Check input variables
 	if nargin==0 || isempty(cmd)
@@ -28,24 +29,9 @@ function [varargout] = bart(cmd, varargin)
 	end
 
     % Check bart toolbox path
-	bart_path = getenv('TOOLBOX_PATH');
-	isWSL = false;
+	[bart_path, isWSL] = get_bart_path();
 	if isempty(bart_path)
-		if exist('/usr/local/bin/bart', 'file')
-			bart_path = '/usr/local/bin';
-		elseif exist('/usr/bin/bart', 'file')
-			bart_path = '/usr/bin';
-		else
-			% Try to execute bart inside wsl, if it works, then it returns status 0
-			[bartstatus, ~] = system('wsl bart version -V');
-			if bartstatus==0
-				[~, bart_path] = system('wsl dirname $(which bart)');
-				bart_path = strip(bart_path);
-				isWSL = true;
-			else
-				error('Environment variable TOOLBOX_PATH is not set.');
-			end
-		end
+		error('BART path not detected.');
 	end
 
 	% Clear the LD_LIBRARY_PATH environment variable (to work around a bug in Matlab).
@@ -89,10 +75,9 @@ function [varargout] = bart(cmd, varargin)
 	if ispc % running windows?
         if isWSL
 			% For WSL and modify paths
-			cmdWSL = cmd;
 			in_strWSL = wslPathCorrection(in_str);
 			out_strWSL =  wslPathCorrection(out_str);
-			final_strWSL = ['wsl ', bart_path, '/bart ', cmdWSL, ' ', in_strWSL, ' ', out_strWSL];
+			final_strWSL = ['wsl ', bart_path, '/bart ', cmd, ' ', in_strWSL, ' ', out_strWSL];
 			ERR = system(final_strWSL);
         else
 			% For cygwin use bash and modify paths
