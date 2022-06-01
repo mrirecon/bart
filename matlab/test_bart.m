@@ -5,6 +5,7 @@ function test_bart()
 %   functionality of the MATLAB wrapper.
 %   
 % Copyright 2020. Martin Krämer (Martin.Kraemer@uni-jena.de)
+% 2022 Jon Tamir <jtamir.utexas.edu>
 
     %% Test setup
     testLog = [];
@@ -12,8 +13,8 @@ function test_bart()
     tolFloat = 1e-7;
 
     %% Test1: Environmental variable
-    %bartPath = getenv('TOOLBOX_PATH');
-    %testAssert(~isempty(bartPath), 'Environmental variable (TOOLBOX_PATH)');
+    bartPath = get_bart_path()
+    testAssert(~isempty(bartPath), 'BART path');
 
     %% Test2: Write/Read cfl
     file = tempname;
