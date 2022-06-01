@@ -159,17 +159,15 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 
 	fftscale(DIMS, mask_dims, FFT_FLAGS, msk, msk);
 
-	const struct linop_s* lop_mask = linop_cdiag_create(DIMS, data->data_dims, FFT_FLAGS, msk);
+	const struct linop_s* lop_mask = linop_cdiag_create(DIMS, data->imgs_dims, FFT_FLAGS, msk);
 	md_free(msk);
 
-	const struct linop_s* lop_fft2 = linop_chain(lop_mask, lop_fft);
-	linop_free(lop_mask);
-	linop_free(lop_fft);
-
-	data->frw = linop_chain_FF(lop_fft2, lop_pattern);
+	data->frw = linop_chain_FF(lop_fft, lop_pattern);
 
 
 	const struct nlop_s* nlw1 = nlop_tenmul_create(DIMS, data->data_dims, data->imgs_dims, data->coil_dims);
+	nlw1 = nlop_chain2_swap_FF(nlop_from_linop_F(lop_mask), 0, nlw1, 0);
+
 	const struct nlop_s* nlw2 = nlop_from_linop(data->weights);
 	data->nl = nlop_chain2_FF(nlw2, 0, nlw1, 1);
 
