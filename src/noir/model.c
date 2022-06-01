@@ -66,7 +66,6 @@ struct noir_op_s {
 
 	const struct linop_s* weights;
 	const struct linop_s* frw;
-	const struct linop_s* adj;
 
 	const struct nlop_s* nl;
 	/*const*/ struct nlop_s* nl2;
@@ -127,12 +126,7 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 	const struct linop_s* lop_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, ~conf->ptrn_flags, ptr);
 	md_free(ptr);
 
-	const struct linop_s* lop_adj_pattern;
-
-	if (!conf->noncart) {
-
-		lop_adj_pattern = linop_clone(lop_pattern);
-	} else {
+	if (conf->noncart) {
 
 		complex float* adj_ptr = md_alloc(DIMS, ptrn_dims, CFL_SIZE);
 
@@ -140,9 +134,16 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 
 		fftmod(DIMS, ptrn_dims, conf->fft_flags, adj_ptr, adj_ptr);
 
-		lop_adj_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, ~conf->ptrn_flags, adj_ptr);
+		const struct linop_s* lop_adj_pattern = linop_fmac_create(DIMS, data->data_dims, 0, 0, ~conf->ptrn_flags, adj_ptr);
 
 		md_free(adj_ptr);
+
+		const struct linop_s* lop_tmp = linop_from_ops(lop_pattern->forward, lop_adj_pattern->adjoint, NULL, NULL);
+
+		linop_free(lop_adj_pattern);
+		linop_free(lop_pattern);
+
+		lop_pattern = lop_tmp;
 	}
 
 	complex float* msk = md_alloc(DIMS, mask_dims, CFL_SIZE);
@@ -165,25 +166,14 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 	linop_free(lop_mask);
 	linop_free(lop_fft);
 
-	data->frw = linop_chain(lop_fft2, lop_pattern);
-	linop_free(lop_pattern);
-
-	data->adj = linop_chain(lop_fft2, lop_adj_pattern);
-	linop_free(lop_fft2);
-	linop_free(lop_adj_pattern);
-
+	data->frw = linop_chain_FF(lop_fft2, lop_pattern);
 
 
 	const struct nlop_s* nlw1 = nlop_tenmul_create(DIMS, data->data_dims, data->imgs_dims, data->coil_dims);
-
 	const struct nlop_s* nlw2 = nlop_from_linop(data->weights);
-
-	data->nl = nlop_chain2(nlw2, 0, nlw1, 1);
-	nlop_free(nlw1);
-	nlop_free(nlw2);
+	data->nl = nlop_chain2_FF(nlw2, 0, nlw1, 1);
 
 	const struct nlop_s* frw = nlop_from_linop(data->frw);
-
 	data->nl2 = nlop_chain2(data->nl, 0, frw, 0);
 
 	nlop_free(frw);
@@ -194,7 +184,6 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 static void noir_free(struct noir_op_s* data)
 {
 	linop_free(data->frw);
-	linop_free(data->adj);
 	linop_free(data->weights);
 
 	nlop_free(data->nl);
@@ -347,7 +336,7 @@ static void noir_adjA2(const nlop_data_t* _data, unsigned int o, unsigned int i,
 
 	complex float* tmp = md_alloc_sameplace(DIMS, data->data_dims, CFL_SIZE, img);
 
-	linop_adjoint(data->adj, DIMS, data->data_dims, tmp, DIMS, data->data_dims, src);
+	linop_adjoint(data->frw, DIMS, data->data_dims, tmp, DIMS, data->data_dims, src);
 	noir_adjA(_data, o, i, img, tmp);
 
 	md_free(tmp);
@@ -359,7 +348,7 @@ static void noir_adjB2(const nlop_data_t* _data, unsigned int o, unsigned int i,
 
 	complex float* tmp = md_alloc_sameplace(DIMS, data->data_dims, CFL_SIZE, coils);
 
-	linop_adjoint(data->adj, DIMS, data->data_dims, tmp, DIMS, data->data_dims, src);
+	linop_adjoint(data->frw, DIMS, data->data_dims, tmp, DIMS, data->data_dims, src);
 	noir_adjB(_data, o, i, coils, tmp);
 
 	md_free(tmp);
@@ -371,7 +360,7 @@ static void noir_adj2(const nlop_data_t* _data, unsigned int o, unsigned int i, 
 
 	complex float* tmp = md_alloc_sameplace(DIMS, data->data_dims, CFL_SIZE, img);
 
-	linop_adjoint(data->adj, DIMS, data->data_dims, tmp, DIMS, data->data_dims, src);
+	linop_adjoint(data->frw, DIMS, data->data_dims, tmp, DIMS, data->data_dims, src);
 
 	noir_adjB(_data, o, i, coils, tmp);
 	noir_adjA(_data, o, i, img, tmp);
