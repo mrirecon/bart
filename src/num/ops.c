@@ -2380,6 +2380,7 @@ list_t operator_get_list(const struct operator_s* op) {
 	auto data_perm = CAST_MAYBE(permute_data_s, op->data);
 	auto data_plus = CAST_MAYBE(operator_plus_s, op->data);
 	auto data_copy = CAST_MAYBE(copy_data_s, op->data);
+	auto data_attach = CAST_MAYBE(attach_data_s, op->data);
 
 	if (NULL != data_combi) {
 
@@ -2432,6 +2433,11 @@ list_t operator_get_list(const struct operator_s* op) {
 	if (NULL != data_copy) {
 
 		return operator_get_list(data_copy->op);
+	}
+
+	if (NULL != data_attach) {
+
+		return operator_get_list(data_attach->op);
 	}
 
 	list_t result = list_create();
