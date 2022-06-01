@@ -173,6 +173,12 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 	const struct nlop_s* nlw2 = nlop_from_linop(data->weights);
 	data->nl = nlop_chain2_FF(nlw2, 0, nlw1, 1);
 
+	if (conf->rvc) {
+
+		const struct nlop_s* nlop_zreal = nlop_from_linop_F(linop_zreal_create(DIMS, data->imgs_dims));
+		data->nl = nlop_chain2_swap_FF(nlop_zreal, 0, data->nl, 0);
+	}
+
 	const struct nlop_s* frw = nlop_from_linop(data->frw);
 	data->nl2 = nlop_chain2(data->nl, 0, frw, 0);
 
@@ -314,8 +320,6 @@ static void noir_adjA(const nlop_data_t* _data, unsigned int o, unsigned int i, 
 
 	linop_adjoint(der1, DIMS, data->imgs_dims, img, DIMS, data->data_dims, src);
 
-	if (data->conf.rvc)
-		md_zreal(DIMS, data->imgs_dims, img, img);
 }
 
 static void noir_adjB(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* coils, const complex float* src)
@@ -418,7 +422,6 @@ struct noir_s noir_create3(const long dims[DIMS], const complex float* mask, con
 struct noir_s noir_create2(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf)
 {
 	assert(!conf->noncart);
-	assert(!conf->rvc);
 
 	struct noir_op_s* data = noir_init(dims, mask, psf, conf);
 	struct nlop_s* nlop = data->nl2;
