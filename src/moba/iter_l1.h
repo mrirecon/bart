@@ -17,6 +17,8 @@ struct mdb_irgnm_l1_conf {
 	float lower_bound;
 	int constrained_maps;
 	bool auto_norm_off;
+
+        int not_wav_maps;
 };
 
 void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,

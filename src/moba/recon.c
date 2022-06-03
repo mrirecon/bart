@@ -167,7 +167,8 @@ static void recon(const struct moba_conf* conf, const long dims[DIMS],
 		.step = conf->step,
 		.lower_bound = conf->lower_bound,
 		.constrained_maps = 1,
-		.auto_norm_off = conf->auto_norm_off
+		.auto_norm_off = conf->auto_norm_off,
+                .not_wav_maps = 0
 	};
 
 

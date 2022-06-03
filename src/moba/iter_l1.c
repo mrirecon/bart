@@ -3,7 +3,7 @@
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: Xiaoqing Wang, Martin Uecker
+ * Authors: Xiaoqing Wang, Nick Scholand, Martin Uecker
  */
 
 #include <assert.h>
@@ -28,6 +28,7 @@
 
 #include "nlops/nlop.h"
 
+#include "iter/prox.h"
 #include "iter/prox2.h"
 #include "iter/vec.h"
 #include "iter/italgos.h"
@@ -254,10 +255,30 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);
-	debug_print_dims(DP_INFO, DIMS, img_dims);
+
+        // jointly penalize the first few maps
+        long penalized_dims = img_dims[COEFF_DIM] - conf->not_wav_maps;
+
+        debug_printf(DP_DEBUG2, "penelized dims: %d\n", penalized_dims);
+
+        img_dims[COEFF_DIM] = penalized_dims;
 
 	auto prox1 = create_prox(img_dims, COEFF_FLAG, 1.);
 	auto prox2 = op_p_auto_normalize(prox1, ~(COEFF_FLAG | SLICE_FLAG), NORM_L2);
+
+        if (0 < conf->not_wav_maps) {
+
+		long map_dims[DIMS];
+		md_copy_dims(DIMS, map_dims, img_dims);
+		map_dims[COEFF_DIM] = conf->not_wav_maps;
+
+		auto prox3 = prox_zero_create(DIMS, map_dims);
+		auto prox4 = operator_p_stack(COEFF_DIM, COEFF_DIM, prox1, prox3);
+		prox2 = op_p_auto_normalize(prox4, ~(COEFF_FLAG | TIME_FLAG | TIME2_FLAG | SLICE_FLAG), NORM_L2);
+
+		operator_p_free(prox3);
+		operator_p_free(prox4);
+	}
 
 	struct T1inv_s idata = {
 
