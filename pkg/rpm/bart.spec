@@ -36,6 +36,7 @@ echo {{{ bart_git_version }}} > version.txt
 
 %endif
 
+export LDFLAGS="$LDFLAGS -Wl,--no-as-needed"
 make PARALLEL=1
 make doc/commands.txt
 

@@ -23,6 +23,7 @@ This package provides headers and static libraries.
 {{{ git_setup_macro dir_name=libbart-devel }}}
 
 %build
+export LDFLAGS="$LDFLAGS -Wl,--no-as-needed"
 make PARALLEL=1
 
 %install
