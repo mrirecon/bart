@@ -53,8 +53,9 @@ struct entry_s {
 
 static void xread(int fd, void* buf, size_t size)
 {
-	if (size != (size_t)read(fd, buf, size))
-		error("reading file");
+	size_t rsize = (size_t)read(fd, buf, size);
+	if (size != rsize)
+		error("Error reading %zu bytes, read returned %zu\n", size, rsize);
 }
 
 static void xseek(int fd, off_t pos)
@@ -74,7 +75,7 @@ static bool siemens_meas_setup(int fd, struct hdr_s* hdr)
 	bool vd = ((0 == hdr->offset) && (hdr->nscans < 64));
 
 	if (vd) {
-	
+
 		assert((0 < hdr->nscans) && (hdr->nscans < 30));
 
 		struct entry_s entries[hdr->nscans];
@@ -82,8 +83,8 @@ static bool siemens_meas_setup(int fd, struct hdr_s* hdr)
 
 		int n = hdr->nscans - 1;
 
-		debug_printf(DP_INFO, "VD Header. MeasID: %d FileID: %d Scans: %d\n",
-					entries[n].measid, entries[n].fileid, hdr->nscans);
+		debug_printf(DP_INFO, "VD/VE Header. MeasID: %d FileID: %d Scans: %d\n",
+				entries[n].measid, entries[n].fileid, hdr->nscans);
 
 		debug_printf(DP_INFO, "Patient: %.64s\nProtocol: %.64s\n", entries[n].patient, entries[n].protocol);
 
@@ -104,9 +105,29 @@ static bool siemens_meas_setup(int fd, struct hdr_s* hdr)
 
 	xseek(fd, start);
 
-        return vd;
+	return vd;
 }
 
+enum adc_flags {
+	ACQEND = 0,
+	SYNCDATA = 5,
+};
+
+enum adc_return {
+	ADC_ERROR = -1,
+	ADC_OK = 0,
+	ADC_SKIP = 1,
+	ADC_END = 2,
+};
+
+struct mdh1 {
+
+	uint32_t flags_dmalength;
+	int32_t measUID;
+	uint32_t scounter;
+	uint32_t timestamp;
+	uint32_t pmutime;
+};
 
 struct mdh2 {	// second part of mdh
 
@@ -122,12 +143,30 @@ struct mdh2 {	// second part of mdh
 };
 
 
-static int siemens_bounds(bool vd, int fd, long min[DIMS], long max[DIMS])
+static enum adc_return skip_to_next(const char* hdr, int fd, size_t offset)
+{
+	struct mdh1 mdh1;
+	memcpy(&mdh1, hdr, sizeof(mdh1));
+
+	size_t dma_length = mdh1.flags_dmalength & 0x01FFFFFFL;
+
+	if (dma_length < offset)
+		error("dma_length < offset.\n");
+
+	if (-1 == lseek(fd, dma_length - offset, SEEK_CUR))
+		error("seeking");
+
+	return ADC_SKIP;
+}
+
+
+static enum adc_return siemens_bounds(bool vd, int fd, long min[DIMS], long max[DIMS])
 {
 	char scan_hdr[vd ? 192 : 0];
 	size_t size = sizeof(scan_hdr);
+
 	if (size != (size_t)read(fd, scan_hdr, size))
-		return -1;
+		return ADC_ERROR;
 
 	long pos[DIMS] = { 0 };
 
@@ -135,11 +174,21 @@ static int siemens_bounds(bool vd, int fd, long min[DIMS], long max[DIMS])
 
 		char chan_hdr[vd ? 32 : 128];
 		size_t size = sizeof(chan_hdr);
+
 		if (size != (size_t)read(fd, chan_hdr, size))
-			return -1;
+			return ADC_ERROR;
 
 		struct mdh2 mdh;
 		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
+
+		if (MD_IS_SET(mdh.evalinfo[0], ACQEND))
+			return ADC_END;
+		if (MD_IS_SET(mdh.evalinfo[0], SYNCDATA)) {
+
+			size_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
+			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
+
+		}
 
 		if (0 == max[READ_DIM]) {
 
@@ -147,19 +196,22 @@ static int siemens_bounds(bool vd, int fd, long min[DIMS], long max[DIMS])
 			max[COIL_DIM] = mdh.channels;
 		}
 
+
 		if (max[READ_DIM] != mdh.samples)
-			return -1;
+			return ADC_ERROR;
 
 		if (max[COIL_DIM] != mdh.channels)
-			return -1;
+			return ADC_ERROR;
 
 		pos[PHS1_DIM]	= mdh.sLC[0];
 		pos[AVG_DIM]	= mdh.sLC[1];
 		pos[SLICE_DIM]	= mdh.sLC[2];
 		pos[PHS2_DIM]	= mdh.sLC[3];
 		pos[TE_DIM]	= mdh.sLC[4];
+		pos[COEFF_DIM]	= mdh.sLC[5];
 		pos[TIME_DIM]	= mdh.sLC[6];
 		pos[TIME2_DIM]	= mdh.sLC[7];
+
 
 		for (int i = 0; i < DIMS; i++) {
 
@@ -167,18 +219,18 @@ static int siemens_bounds(bool vd, int fd, long min[DIMS], long max[DIMS])
 			min[i] = MIN(min[i], pos[i] + 0);
 		}
 
-		size = max[READ_DIM] * CFL_SIZE;
+		size = mdh.samples * CFL_SIZE;
 		char buf[size];
 
 		if (size != (size_t)read(fd, buf, size))
-			return -1;
+			return ADC_ERROR;
 	}
 
-	return 0;
+	return ADC_OK;
 }
 
 
-static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const long dims[DIMS], long pos[DIMS], complex float* buf)
+static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf)
 {
 	char scan_hdr[vd ? 192 : 0];
 	xread(fd, scan_hdr, sizeof(scan_hdr));
@@ -191,43 +243,59 @@ static int siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, const l
 		struct mdh2 mdh;
 		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
 
-		if (0 == pos[COIL_DIM]) {
+		if (MD_IS_SET(mdh.evalinfo[0], ACQEND))
+			return ADC_END;
 
-			// TODO: rethink this
-			pos[PHS1_DIM]	= mdh.sLC[0] + (linectr ? mdh.linectr : 0);
-			pos[AVG_DIM]	= mdh.sLC[1];
-			pos[SLICE_DIM]	= mdh.sLC[2];
-			pos[PHS2_DIM]	= mdh.sLC[3] + (partctr ? mdh.partctr : 0);
-			pos[TE_DIM]	= mdh.sLC[4];
-			pos[TIME_DIM]	= mdh.sLC[6];
-			pos[TIME2_DIM]	= mdh.sLC[7];
+		if (MD_IS_SET(mdh.evalinfo[0], SYNCDATA)
+			|| (dims[READ_DIM] != mdh.samples)) {
+
+			size_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
+			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
 		}
 
-		debug_print_dims(DP_DEBUG4, DIMS, pos);
 
-		if (dims[READ_DIM] != mdh.samples) {
+			if (0 == pos[COIL_DIM]) {
 
-			debug_printf(DP_WARN, "Wrong number of samples: %d != %d.\n", dims[READ_DIM], mdh.samples);
-			return -1;
-		}
+				// TODO: rethink this
+				pos[PHS1_DIM]	= mdh.sLC[0] + (linectr ? mdh.linectr : 0);
+				pos[AVG_DIM]	= mdh.sLC[1];
+				if (radial) { // reorder for radial
 
-		if ((0 != mdh.channels) && (dims[COIL_DIM] != mdh.channels)) {
+					pos[SLICE_DIM]	= mdh.sLC[3];
+				} else {
 
-			debug_printf(DP_WARN, "Wrong number of channels: %d != %d.\n", dims[COIL_DIM], mdh.channels);
-			return -1;
-		}
+					pos[SLICE_DIM]	= mdh.sLC[2];
+					pos[PHS2_DIM]	= mdh.sLC[3] + (partctr ? mdh.partctr : 0);
+				}
+				pos[TE_DIM]	= mdh.sLC[4];
+				pos[COEFF_DIM]	= mdh.sLC[5];
+				pos[TIME_DIM]	= mdh.sLC[6];
+				pos[TIME2_DIM]	= mdh.sLC[7];
+			}
 
-		xread(fd, buf + pos[COIL_DIM] * dims[READ_DIM], dims[READ_DIM] * CFL_SIZE);
+			debug_print_dims(DP_DEBUG3, DIMS, pos);
+
+			if (dims[READ_DIM] != mdh.samples) {
+
+				debug_printf(DP_WARN, "Wrong number of samples: %d != %d.\n", dims[READ_DIM], mdh.samples);
+				return ADC_ERROR;
+			}
+
+			if ((0 != mdh.channels) && (dims[COIL_DIM] != mdh.channels)) {
+
+				debug_printf(DP_WARN, "Wrong number of channels: %d != %d.\n", dims[COIL_DIM], mdh.channels);
+				return ADC_ERROR;
+			}
+
+			xread(fd, buf + pos[COIL_DIM] * dims[READ_DIM], dims[READ_DIM] * CFL_SIZE);
 	}
 
 	pos[COIL_DIM] = 0;
-	return 0;
+	return ADC_OK;
 }
 
 
 
-
-//	fprintf(fd, "Usage: %s [...] [-a A] <dat file> <output>\n", name);
 
 static const char help_str[] = "Read data from Siemens twix (.dat) files.";
 
@@ -273,8 +341,12 @@ int main_twixread(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	if (-1 != radial_lines)
+	bool radial = false;
+	if (-1 != radial_lines) {
+
 		dims[PHS1_DIM] = radial_lines;
+		radial = true;
+	}
 
 	if (0 == adcs)
 		adcs = dims[PHS1_DIM] * dims[PHS2_DIM] * dims[SLICE_DIM] * dims[TIME_DIM];
@@ -288,6 +360,7 @@ int main_twixread(int argc, char* argv[argc])
 	struct hdr_s hdr;
 	bool vd = siemens_meas_setup(ifd, &hdr);
 
+	enum adc_return sar = ADC_OK;
 	long off[DIMS] = { 0 };
 
 	if (autoc) {
@@ -297,15 +370,25 @@ int main_twixread(int argc, char* argv[argc])
 
 		adcs = 0;
 
-		while (true) {
+		while (ADC_END != sar) {
 
-			if (-1 == siemens_bounds(vd, ifd, min, max))
-				break;
 
-			debug_print_dims(DP_DEBUG3, DIMS, max);
+			sar = siemens_bounds(vd, ifd, min, max);
 
-			adcs++;
+			if (ADC_SKIP == sar) {
+
+				continue;
+			} else if (ADC_ERROR == sar) {
+
+				error("Could not automatically determine dimensions, adc read error!\n");
+			} else if (ADC_OK == sar) {
+
+				debug_print_dims(DP_DEBUG3, DIMS, max);
+				adcs++;
+			}
 		}
+
+		debug_printf(DP_DEBUG2, "found %d adcs\n", adcs);
 
 		for (int i = 0; i < DIMS; i++) {
 
@@ -336,6 +419,7 @@ int main_twixread(int argc, char* argv[argc])
 	complex float* out = create_cfl(out_file, DIMS, odims);
 	md_clear(DIMS, odims, out, CFL_SIZE);
 
+	debug_printf(DP_DEBUG1, "___ reading measured data (%d adcs).\n", adcs);
 
 	long adc_dims[DIMS];
 	md_select_dims(DIMS, READ_FLAG|COIL_FLAG, adc_dims, dims);
@@ -344,38 +428,67 @@ int main_twixread(int argc, char* argv[argc])
 
 	long mpi_slice = -1;
 
-	while (adcs--) {
+	sar = ADC_OK;
+
+	while (ADC_END != sar) {
+
+		if (mpi && (0 == adcs)) //with MPI, we cannot rely on ADC_END
+			break;
 
 		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-		if (-1 == siemens_adc_read(vd, ifd, linectr, partctr, dims, pos, buf)) {
+		sar = siemens_adc_read(vd, ifd, linectr, partctr, radial, dims, pos, buf);
 
-			debug_printf(DP_WARN, "Stopping.\n");
+		if (ADC_ERROR == sar) {
+
+			debug_printf(DP_WARN, "ADC read error, stopping\n");
 			break;
-		}
+		} else if (ADC_SKIP == sar) {
 
-		for (int i = 0; i < DIMS; i++)
-			pos[i] += off[i];
-
-		if (mpi) {
-
-			pos[SLICE_DIM] = mpi_slice;
-
-			if ((0 == pos[TIME_DIM]) && (0 == pos[PHS1_DIM]))
-				mpi_slice++;
-		}
-
-		debug_print_dims(DP_DEBUG1, DIMS, pos);
-
-		if (!md_is_index(DIMS, pos, dims)) {
-
-			debug_printf(DP_WARN, "Index out of bounds.\n");
+			debug_printf(DP_DEBUG2, "Skipping.\n");
 			continue;
+		} else if (ADC_OK == sar) {
+
+			adcs--; // count ADC
+
+			for (int i = 0; i < DIMS; i++)
+				pos[i] += off[i];
+
+			if (mpi) {
+
+				pos[SLICE_DIM] = mpi_slice;
+
+				if ((0 == pos[TIME_DIM]) && (0 == pos[PHS1_DIM]))
+					mpi_slice++;
+
+				if (0 > pos[SLICE_DIM]) { //skip first
+
+					// FIXME: Why do we not count this ADC?
+					continue;
+				}
+			}
+
+			debug_printf(DP_DEBUG2, "pos: ");
+			debug_print_dims(DP_DEBUG2, DIMS, pos);
+
+			if (!md_is_index(DIMS, pos, dims)) {
+
+				// FIXME: This should be an error or fixed earlier
+				debug_printf(DP_WARN, "Index out of bounds.\n");
+				debug_printf(DP_WARN, " dims: ");
+				debug_print_dims(DP_WARN, DIMS, dims);
+				debug_printf(DP_WARN, "  pos: ");
+				debug_print_dims(DP_WARN, DIMS, pos);
+				continue;
+			}
+
+			md_copy_block(DIMS, pos, dims, out, adc_dims, buf, CFL_SIZE);
 		}
 
-		md_copy_block(DIMS, pos, dims, out, adc_dims, buf, CFL_SIZE); 
 	}
 
+	if (0 != adcs)
+		error("Incorrect number of ADCs read! ADC count difference: %d != 0!\n", adcs);
 	md_free(buf);
 
 	unmap_cfl(DIMS, dims, out);
