@@ -337,6 +337,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('L', &linectr, "use linectr offset"),
 		OPT_SET('P', &partctr, "use partctr offset"),
 		OPT_SET('M', &mpi, "MPI mode"),
+		OPT_INT('d', &debug_level, "level", "Debug level"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
