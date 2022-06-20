@@ -332,7 +332,7 @@ endif
 
 ifeq ($(MAKESTAGE),1)
 .PHONY: doc/commands.txt $(TARGETS)
-default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest testslow pythontest shared-lib $(TARGETS):
+default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest testslow pythontest testague shared-lib $(TARGETS):
 	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
 
 tests/test-%: force
@@ -808,6 +808,8 @@ endif
 test:	${TESTS}
 
 testslow: ${TESTS_SLOW}
+
+testague: ${TESTS_AGUE} # test importing *.dat-files specified in tests/twixread.mk
 
 gputest: ${TESTS_GPU}
 
