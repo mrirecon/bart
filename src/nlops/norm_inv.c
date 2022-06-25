@@ -52,13 +52,16 @@ struct norm_inv_s {
 
 DEF_TYPEID(norm_inv_s);
 
+
 static void norm_inv_alloc(struct norm_inv_s* d, const void* ref)
 {
 	for (int i = 0; i < d->II; i++)
 		if (NULL == d->in_args[i])
 			d->in_args[i] = md_alloc_sameplace(d->dom[i]->N, d->dom[i]->dims, CFL_SIZE, ref);
+
 	md_clear(d->dom[0]->N, d->dom[0]->dims, d->in_args[0], CFL_SIZE);
 }
+
 
 static void norm_inv_set_ops(const struct norm_inv_s* d, unsigned long der_flag)
 {
@@ -66,6 +69,7 @@ static void norm_inv_set_ops(const struct norm_inv_s* d, unsigned long der_flag)
 
 	void* args[d->II + 1];
 	args[0] = tmp_out;
+
 	for (int i = 0; i < d->II; i++) {
 
 		assert(NULL != d->in_args[i]);
@@ -77,10 +81,12 @@ static void norm_inv_set_ops(const struct norm_inv_s* d, unsigned long der_flag)
 	md_free(tmp_out);
 }
 
+
 static void norm_inv_free_ops(const struct norm_inv_s* d)
 {
 	nlop_clear_derivatives(d->normal_op);
 }
+
 
 static void norm_inv(const struct norm_inv_s* d, complex float* dst, const complex float* src)
 {
@@ -96,17 +102,20 @@ static void norm_inv(const struct norm_inv_s* d, complex float* dst, const compl
 			NULL);
 }
 
+
 static void norm_inv_compute_adjoint(struct norm_inv_s* d, complex float* dst, const complex float* src)
 {
 	if (NULL == d->dout) {
 
 		d->dout = md_alloc_sameplace(d->dom[0]->N, d->dom[0]->dims, CFL_SIZE, dst);
+
 		md_clear(d->dom[0]->N, d->dom[0]->dims, d->dout, CFL_SIZE);
 	}
 
 	if (NULL == d->AhAdout) {
 
 		d->AhAdout = md_alloc_sameplace(d->dom[0]->N, d->dom[0]->dims, CFL_SIZE, dst);
+
 		md_clear(d->dom[0]->N, d->dom[0]->dims, d->AhAdout, CFL_SIZE);
 	}
 
@@ -117,6 +126,7 @@ static void norm_inv_compute_adjoint(struct norm_inv_s* d, complex float* dst, c
 		if (d->store_nlop) {
 
 			norm_inv(d, d->AhAdout, src);
+
 		} else {
 
 			norm_inv_set_ops(d, MD_BIT(0));
@@ -128,9 +138,11 @@ static void norm_inv_compute_adjoint(struct norm_inv_s* d, complex float* dst, c
 	md_copy(d->dom[0]->N, d->dom[0]->dims, dst, d->AhAdout, CFL_SIZE);
 }
 
+
 static void norm_inv_fun(const nlop_data_t* _data, int Narg, complex float* args[Narg])
 {
 	const auto d = CAST_DOWN(norm_inv_s, _data);
+
 	assert(1 + d->II == Narg);
 
 	complex float* dst = args[0];
@@ -142,15 +154,17 @@ static void norm_inv_fun(const nlop_data_t* _data, int Narg, complex float* args
 		md_copy(d->dom[i]->N, d->dom[i]->dims, d->in_args[i], args[i + 1], CFL_SIZE);
 
 	d->iter_conf.INTERFACE.alpha = 0;
+
 	norm_inv_set_ops(d, MD_BIT(0));
 	norm_inv(d, dst, src);
 
 	md_copy(d->dom[0]->N, d->dom[0]->dims, d->in_args[0], dst, CFL_SIZE);
 
 	unsigned long der_flags = 0;
-		for (int i = 0; i < d->II; i++)
-			if (nlop_der_requested(_data, i, 0))
-				der_flags = MD_SET(der_flags, i);
+
+	for (int i = 0; i < d->II; i++)
+		if (nlop_der_requested(_data, i, 0))
+			der_flags = MD_SET(der_flags, i);
 
 	if (d->store_nlop)
 		norm_inv_set_ops(d, (0 == der_flags) ? 0 : MD_BIT(0) | der_flags);
@@ -158,16 +172,20 @@ static void norm_inv_fun(const nlop_data_t* _data, int Narg, complex float* args
 		norm_inv_free_ops(d);
 
 
-	if (d->store_nlop || (0 == der_flags))
+	if (d->store_nlop || (0 == der_flags)) {
+
 		for (int i = 0; i < d->II; i++) {
 
 			md_free(d->in_args[i]);
+
 			d->in_args[i] = NULL;
 		}
+	}
 
 
 	md_free(d->dout);
 	md_free(d->AhAdout);
+
 	d->dout = NULL;
 	d->AhAdout = NULL;
 }
@@ -192,6 +210,7 @@ static void norm_inv_der_src(const nlop_data_t* _data, unsigned int o, unsigned 
 	}
 }
 
+
 static void norm_inv_adj_src(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
 	UNUSED(o);
@@ -202,6 +221,7 @@ static void norm_inv_adj_src(const nlop_data_t* _data, unsigned int o, unsigned 
 
 	norm_inv_compute_adjoint(d, dst, src);
 }
+
 
 static void norm_inv_der_par(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
@@ -216,20 +236,27 @@ static void norm_inv_der_par(const nlop_data_t* _data, unsigned int o, unsigned 
 	if (d->store_nlop) {
 
 		linop_forward(nlop_get_derivative(d->normal_op, 0, i), d->dom[0]->N, d->dom[0]->dims, tmp, d->dom[i]->N, d->dom[i]->dims, src);
+
 		md_zsmul(d->dom[0]->N, d->dom[0]->dims, tmp, tmp, -1);
+
 		norm_inv(d, dst, tmp);
+
 	} else {
 
 		norm_inv_set_ops(d, MD_BIT(0) | MD_BIT(i));
 
 		linop_forward(nlop_get_derivative(d->normal_op, 0, i), d->dom[0]->N, d->dom[0]->dims, tmp, d->dom[i]->N, d->dom[i]->dims, src);
+
 		md_zsmul(d->dom[0]->N, d->dom[0]->dims, tmp, tmp, -1);
+
 		norm_inv(d, dst, tmp);
 
 		norm_inv_free_ops(d);
 	}
+
 	md_free(tmp);
 }
+
 
 static void norm_inv_adj_par(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
@@ -237,15 +264,19 @@ static void norm_inv_adj_par(const nlop_data_t* _data, unsigned int o, unsigned 
 	assert(0 < i);
 
 	const auto d = CAST_DOWN(norm_inv_s, _data);
+
 	assert(0 == d->iter_conf.tol);
 
 	complex float* tmp = md_alloc_sameplace(d->dom[0]->N, d->dom[0]->dims, CFL_SIZE, dst);
+
 	norm_inv_compute_adjoint(d, tmp, src);
+
 	md_zsmul(d->dom[0]->N, d->dom[0]->dims, tmp, tmp, -1);
 
 	if (d->store_nlop) {
 
 		linop_adjoint(nlop_get_derivative(d->normal_op, 0, i), d->dom[i]->N, d->dom[i]->dims, dst, d->dom[0]->N, d->dom[0]->dims, tmp);
+
 	} else {
 
 		norm_inv_set_ops(d, MD_BIT(i));
@@ -254,6 +285,7 @@ static void norm_inv_adj_par(const nlop_data_t* _data, unsigned int o, unsigned 
 
 		norm_inv_free_ops(d);
 	}
+
 	md_free(tmp);
 }
 
@@ -269,7 +301,9 @@ static void norm_inv_free(const nlop_data_t* _data)
 	md_free(d->noise);
 
 	for (int i = 0; i < d->II; i++) {
+
 		iovec_free(d->dom[i]);
+
 		md_free(d->in_args[i]);
 	}
 
@@ -278,6 +312,7 @@ static void norm_inv_free(const nlop_data_t* _data)
 
 	xfree(d);
 }
+
 
 static struct norm_inv_s* norm_inv_data_create(struct nlop_norm_inv_conf* conf, const struct nlop_s* normal_op)
 {
@@ -311,6 +346,7 @@ static struct norm_inv_s* norm_inv_data_create(struct nlop_norm_inv_conf* conf, 
 		data->iter_conf = iter_conjgrad_defaults;
 		data->iter_conf.l2lambda = 1.;
 		data->iter_conf.maxiter = 30;
+
 	} else {
 
 		data->iter_conf = *conf->iter_conf;
@@ -394,6 +430,7 @@ const struct nlop_s* norm_inv_lambda_create(struct nlop_norm_inv_conf* conf, con
 	return result;
 }
 
+
 const struct nlop_s* norm_inv_lop_lambda_create(struct nlop_norm_inv_conf* conf, const struct linop_s* lop, unsigned long lflags)
 {
 	struct nlop_norm_inv_conf tconf = conf ? *conf : nlop_norm_inv_default;
@@ -403,6 +440,7 @@ const struct nlop_s* norm_inv_lop_lambda_create(struct nlop_norm_inv_conf* conf,
 	auto result = norm_inv_lambda_create(&tconf, normal_op, lflags);
 
 	nlop_free(normal_op);
+
 	return result;
 }
 
@@ -411,6 +449,7 @@ const struct nlop_s* norm_inv_lop_lambda_create(struct nlop_norm_inv_conf* conf,
 static void normal_power_iter_fun(const nlop_data_t* _data, int Narg, complex float* args[Narg])
 {
 	const auto d = CAST_DOWN(norm_inv_s, _data);
+
 	assert(d->II == Narg);
 
 	complex float* dst = args[0];
@@ -431,9 +470,11 @@ static void normal_power_iter_fun(const nlop_data_t* _data, int Narg, complex fl
 	complex float result = iter_power(d->maxeigen_iter, nlop_get_derivative(d->normal_op, 0, 0)->forward, 2 * md_calc_size(d->dom[0]->N, d->dom[0]->dims), (float*)d->noise);
 
 	norm_inv_free_ops(d);
+
 	for (int i = 0; i < d->II; i++) {
 
 		md_free(d->in_args[i]);
+
 		d->in_args[i] = NULL;
 	}
 
@@ -445,6 +486,7 @@ static void normal_power_iter_fun(const nlop_data_t* _data, int Narg, complex fl
 const struct nlop_s* nlop_maxeigen_create(const struct nlop_s* normal_op)
 {
 	auto data = norm_inv_data_create(NULL, normal_op);
+
 	data->maxeigen_iter = 30;
 
 	int II = nlop_get_nr_in_args(normal_op) - 1;
@@ -463,7 +505,7 @@ const struct nlop_s* nlop_maxeigen_create(const struct nlop_s* normal_op)
 
 	md_singleton_dims(NO, nl_odims[0]);
 
-	for (int i = 0; i < II; i++){
+	for (int i = 0; i < II; i++) {
 
 		md_singleton_dims(nlop_generic_domain(normal_op, i + 1)->N, nl_idims[i]);
 		md_copy_dims(nlop_generic_domain(normal_op, i + 1)->N, nl_idims[i], nlop_generic_domain(normal_op, i + 1)->dims);
