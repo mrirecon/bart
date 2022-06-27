@@ -2970,6 +2970,28 @@ float md_asum2(unsigned int D, const long dims[D], const long strs[D], const flo
 }
 
 
+/**
+ * Calculate arccos of real part.
+ *
+ */
+void md_zacos2(unsigned int D, const long dims[D], const long ostr[D], complex float* optr,
+		const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zacos, D, dims, ostr, optr, istr, iptr);
+}
+
+
+
+/**
+ * Calculate arccos of real part.
+ *
+ */
+void md_zacos(unsigned int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zacos2, D, dims, optr, iptr);
+}
+
+
 
 /**
  * Calculate sum of absolute values.
