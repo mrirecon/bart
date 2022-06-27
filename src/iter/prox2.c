@@ -334,7 +334,7 @@ static void auto_norm_apply(const operator_data_t* _data, float mu, complex floa
 
 		complex float val = MD_ACCESS(N, sstrs, pos, scale);
 
-		debug_printf(DP_DEBUG1, "auto normalize %f\n", crealf(val));
+		debug_printf(DP_DEBUG4, "auto normalize %f\n", crealf(val));
 
 		md_zsmul2(N, xdims, io->strs, &MD_ACCESS(N, io->strs, pos, y),
 				io->strs, &MD_ACCESS(N, io->strs, pos, x),
