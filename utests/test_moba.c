@@ -26,6 +26,7 @@
 #include "moba/moba.h"
 #include "moba/blochfun.h"
 #include "moba/T1fun.h"
+#include "moba/T1phyfun.h"
 #include "moba/optreg.h"
 
 #include "utest.h"
@@ -161,3 +162,35 @@ static bool test_nlop_blochfun(void)
 }
 
 UT_REGISTER_TEST(test_nlop_blochfun);
+
+
+static bool test_nlop_T1phyfun(void)
+{
+	enum { N = 16 };
+	long map_dims[N] = { 16, 16, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long out_dims[N] = { 16, 16, 1, 1, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long in_dims[N] = { 16, 16, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long TI_dims[N] = { 1, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+
+	complex float* dst = md_alloc(N, out_dims, CFL_SIZE);
+	complex float* src = md_alloc(N, in_dims, CFL_SIZE);
+
+	complex float TI[4] = { 0., 1., 2., 3. };
+
+	md_zfill(N, in_dims, src, 1.0);
+
+	struct nlop_s* T1_phy = nlop_T1_phy_create(N, map_dims, out_dims, in_dims, TI_dims, TI, false);
+
+	nlop_apply(T1_phy, N, out_dims, dst, N, in_dims, src);
+
+	float err = linop_test_adjoint(nlop_get_derivative(T1_phy, 0, 0));
+
+	nlop_free(T1_phy);
+
+	md_free(src);
+	md_free(dst);
+
+	UT_ASSERT(err < 1.E-3);
+}
+
+UT_REGISTER_TEST(test_nlop_T1phyfun);

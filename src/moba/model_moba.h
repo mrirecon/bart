@@ -1,7 +1,6 @@
 
 
 
-#include "misc/mri.h"
 
 struct linop_s;
 struct nlop_s;
@@ -18,6 +17,7 @@ struct mobamod {
 };
 #endif
 
-extern struct mobamod moba_create(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf, struct moba_conf_s* data, _Bool use_gpu);
+extern struct mobamod moba_create(const long dims[DIMS], const complex float* mask, const complex float* T1,
+		const complex float* psf, const struct noir_model_conf_s* conf, struct moba_conf_s* data, _Bool use_gpu);
 
 

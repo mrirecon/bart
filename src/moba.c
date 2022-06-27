@@ -179,6 +179,7 @@ int main_moba(int argc, char* argv[argc])
                 //FIXME: Sort options into optimization and others interface
 		{ 'r', NULL, true, OPT_SPECIAL, opt_reg_moba, &ropts, "<T>:A:B:C", "generalized regularization options (-rh for help)" },
 		OPT_SELECT('L', enum mdb_t, &conf.mode, MDB_T1, "T1 mapping using model-based look-locker"),
+                OPT_SELECT('P', enum mdb_t, &conf.mode, MDB_T1_PHY, "T1 mapping using reparameterized (M0, R1, alpha) model-based look-locker (TR required!)"),
 		OPT_SELECT('F', enum mdb_t, &conf.mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
 		OPT_SELECT('G', enum mdb_t, &conf.mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
                 OPTL_SELECT(0, "bloch", enum mdb_t, &conf.mode, MDB_BLOCH, "Bloch model-based reconstruction"),
@@ -229,6 +230,9 @@ int main_moba(int argc, char* argv[argc])
 
         data.model = conf.mode;
 
+        if (MDB_T1_PHY == conf.mode)
+                debug_printf(DP_WARN, "The chosen TR for MDB_T1_PHY is %f s!\n", data.sim.seq.tr);
+
         // debug_sim(&(data.sim));
         // debug_other(&(data.other));
 
@@ -239,7 +243,7 @@ int main_moba(int argc, char* argv[argc])
 	complex float* kspace_data = load_cfl(ksp_file, DIMS, ksp_dims);
 
 	long TI_dims[DIMS];
-	complex float* TI = load_cfl(TI_file, DIMS, TI_dims);
+	const complex float* TI = load_cfl(TI_file, DIMS, TI_dims);
 
 	assert(TI_dims[TE_DIM] == ksp_dims[TE_DIM]);
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -465,7 +469,7 @@ int main_moba(int argc, char* argv[argc])
 
 	// scaling
 
-	if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode) || (MDB_BLOCH == conf.mode)) {
+	if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode) || (MDB_T1_PHY == conf.mode) || (MDB_BLOCH == conf.mode)) {
 
 		double scaling = 5000. / md_znorm(DIMS, grid_dims, k_grid_data);
 		double scaling_psf = 1000. / md_znorm(DIMS, pat_dims, pattern);
@@ -493,6 +497,7 @@ int main_moba(int argc, char* argv[argc])
 	if (-1. == restrict_fov) {
 
 		mask = md_alloc(DIMS, msk_dims, CFL_SIZE);
+
 		md_zfill(DIMS, msk_dims, mask, 1.);
 
 	} else {
@@ -521,9 +526,8 @@ int main_moba(int argc, char* argv[argc])
 	}
 
         // Scale parameter maps
-        //	- Linearity of Fourier transform also allows this for frequency domain
 
-        complex float initval[4] = {1., 1., 1., 1.};
+        complex float initval[4] = { 1., 1., 1., 1. };
 
         long tmp_dims[DIMS];
         md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, tmp_dims, grid_dims);
@@ -532,7 +536,7 @@ int main_moba(int argc, char* argv[argc])
 
         long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-        if (MDB_BLOCH == conf.mode) {
+        if ((MDB_T1_PHY == conf.mode) || (MDB_BLOCH == conf.mode)) {
 
                 // FIXME: Integrate other moba models here -> switch case modifying initval
                 initval[0] = 3.;
@@ -561,7 +565,9 @@ int main_moba(int argc, char* argv[argc])
 		const struct linop_s* linop_fftc = linop_fftc_create(DIMS, tmp_dims, FFT_FLAGS);
 
 		md_copy_block(DIMS, pos, tmp_dims, tmp, img_dims, img, CFL_SIZE);
+
 		linop_forward_unchecked(linop_fftc, tmp, tmp);
+
 		md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
 
 		linop_free(linop_fftc);
@@ -591,7 +597,8 @@ int main_moba(int argc, char* argv[argc])
 
         // Rescale estimated parameter maps
 
-        if (MDB_BLOCH == conf.mode) {
+        if ((MDB_T1_PHY == conf.mode) || (MDB_BLOCH == conf.mode)) {
+
                 for (int i = 0; i < img_dims[COEFF_DIM]; i++) {
 
                         pos[COEFF_DIM] = i;

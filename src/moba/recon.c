@@ -26,6 +26,7 @@
 #include "moba/model_T2.h"
 #include "moba/model_moba.h"
 #include "moba/blochfun.h"
+#include "moba/T1phyfun.h"
 #include "moba/iter_l1.h"
 #include "moba/moba.h"
 #include "moba/exp.h"
@@ -124,9 +125,10 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 		assert(0);
 
+        case MDB_T1_PHY:
         case MDB_BLOCH:
 
-                nl = moba_create(dims, mask, pattern, &mconf, data, usegpu);
+                nl = moba_create(dims, mask, TI, pattern, &mconf, data, usegpu);
                 break;
 	}
 
@@ -199,6 +201,13 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
                 }
         }
 
+        // No Wavelet penalty on flip angle map
+        if (MDB_T1_PHY == conf->mode) {
+
+                conf2.constrained_maps = 2;
+                conf2.not_wav_maps = 1;
+        }
+
 	long irgnm_conf_dims[DIMS];
 	md_select_dims(DIMS, fft_flags|MAPS_FLAG|COEFF_FLAG|TIME2_FLAG, irgnm_conf_dims, imgs_dims);
 
@@ -248,6 +257,42 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 	md_free(tmp);
 
+        // Reparameterized Look-Locker Model
+	// FIXME: Move to separate function which can be tested with a unit test
+
+	if (MDB_T1_PHY == conf->mode) {
+
+		md_set_dims(DIMS, pos, 0);
+
+		// output the alpha map (in degree!)
+		pos[COEFF_DIM] = 2;
+
+                long map_size = md_calc_size(DIMS, map_dims);
+
+                complex float* tmp = md_alloc(DIMS, map_dims, CFL_SIZE);
+
+		md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
+
+		T1_forw_alpha(nl.linop_alpha, tmp, tmp);
+
+		md_zreal(DIMS, map_dims, tmp, tmp);
+
+		md_zsmul(DIMS, map_dims, tmp, tmp, -data->sim.seq.tr * 0.2);
+
+		md_smin(1, MD_DIMS(2 * map_size), (float*)tmp, (float*)tmp, 0.);
+
+		md_zexp(DIMS, map_dims, tmp, tmp);
+
+		md_zacos(DIMS, map_dims, tmp, tmp);
+
+	        md_zsmul(DIMS, map_dims, tmp, tmp, 180. / M_PI);
+
+		md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
+
+                md_free(tmp);
+		linop_free(nl.linop_alpha);
+	}
+
 	nlop_free(nl.nlop);
 
 	md_free(x);
@@ -275,6 +320,7 @@ void moba_recon(const struct moba_conf* conf, struct moba_conf_s* data, const lo
 	switch (conf->mode) {
 
 	case MDB_T1:
+        case MDB_T1_PHY:
 	case MDB_T2:
         case MDB_BLOCH:
 

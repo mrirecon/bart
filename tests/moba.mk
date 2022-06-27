@@ -241,9 +241,53 @@ tests/test-moba-bloch-irflash-traj: traj repmat phantom signal fmac ones scale i
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-moba-t1-phy-psf: phantom signal fft ones index scale moba slice spow fmac nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
+	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
+	$(TOOLDIR)/signal -I -F -r0.005 -n300 -1 1.25:1.25:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/fmac circ.ra signal.ra image.ra					;\
+	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
+	$(TOOLDIR)/ones 6 16 16 1 1 1 300 psf.ra					;\
+	$(TOOLDIR)/index 5 300 tmp1.ra   						;\
+	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
+	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 -d3 --seq tr=0.005 -p psf.ra k_space.ra TI.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/slice 6 1 reco.ra r1map.ra						;\
+	$(TOOLDIR)/phantom -x16 -c circ.ra						;\
+	$(TOOLDIR)/fmac r1map.ra circ.ra masked.ra	    				;\
+	$(TOOLDIR)/scale -- 0.8 circ.ra ref.ra			    			;\
+	$(TOOLDIR)/nrmse -t 0.005 masked.ra ref.ra			    		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-moba-t1-phy-traj: traj repmat scale phantom signal fmac index moba slice resize nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
+	$(TOOLDIR)/traj -x12 -y12 _traj.ra                  				;\
+	$(TOOLDIR)/repmat 5 300 _traj.ra traj2.ra					;\
+	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
+	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra				;\
+	$(TOOLDIR)/signal -F -I -r0.005 -f8 -n300 -1 1.25:1.25:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/fmac basis_geom.ra signal.ra k_space.ra				;\
+	$(TOOLDIR)/index 5 300 tmp1.ra							;\
+	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra						;\
+	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 -d3 --seq tr=0.005 -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/slice 6 1 reco.ra r1map.ra						;\
+	$(TOOLDIR)/phantom -x6 -c circ2.ra						;\
+	$(TOOLDIR)/resize -c 0 12 1 12 circ2.ra circ.ra					;\
+	$(TOOLDIR)/fmac r1map.ra circ.ra r1masked.ra	    				;\
+	$(TOOLDIR)/scale -- 0.8 circ.ra r1ref.ra			    		;\
+	$(TOOLDIR)/nrmse -t 0.009 r1masked.ra r1ref.ra			    		;\
+	$(TOOLDIR)/slice 6 2 reco.ra famap.ra						;\
+	$(TOOLDIR)/fmac famap.ra circ.ra famasked.ra	    				;\
+	$(TOOLDIR)/scale -- 8 circ.ra faref.ra			    			;\
+	$(TOOLDIR)/nrmse -t 0.02 famasked.ra faref.ra			    		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS_SLOW += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
 TESTS_SLOW += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
 TESTS_SLOW += tests/test-moba-t2
 TESTS_SLOW += tests/test-moba-meco-noncart-r2s tests/test-moba-meco-noncart-wfr2s
 TESTS_SLOW += tests/test-moba-bloch-irflash-psf tests/test-moba-bloch-irflash-traj
+TESTS_SLOW += tests/test-moba-t1-phy-psf tests/test-moba-t1-phy-traj
 

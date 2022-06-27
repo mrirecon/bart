@@ -50,7 +50,7 @@ struct moba_conf moba_defaults = {
 struct moba_other_conf moba_other_defaults = {
 
         .fov_reduction_factor = 1.,
-        .scale = {1., 1., 1., 1.},
+        .scale = { 1., 1., 1., 1. },
 };
 
 
@@ -61,6 +61,7 @@ int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in)
 	switch (conf->mode) {
 
 	case MDB_T1:
+        case MDB_T1_PHY:
 		coeffs = 3;
 		break;
 

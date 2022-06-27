@@ -7,7 +7,7 @@
 
 struct opt_reg_s;
 
-enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE, MDB_BLOCH };
+enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE, MDB_T1_PHY, MDB_BLOCH };
 enum edge_filter_t { EF1, EF2 };
 
 #ifndef _MECO_MODEL

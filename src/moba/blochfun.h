@@ -1,6 +1,7 @@
 
 struct nlop_s;
 struct noir_model_conf_s;
+struct moba_conf_s;
 struct modBlochFit;
 
 extern const struct linop_s* bloch_get_alpha_trafo(const struct nlop_s* op);
