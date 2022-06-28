@@ -45,6 +45,7 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tIPL:%f\n", data->seq.inversion_pulse_length);
         debug_printf(DP_INFO, "\tISP:%f\n", data->seq.inversion_spoiler);
         debug_printf(DP_INFO, "\tPPL:%f\n", data->seq.prep_pulse_length);
+        debug_printf(DP_INFO, "\tAveraged Spokes:%d\n", data->seq.averaged_spokes);
         debug_printf(DP_INFO, "\tPulse Applied?:%d\n\n", data->seq.pulse_applied);
 
         debug_printf(DP_INFO, "Gradient-Parameter:\n");
@@ -101,6 +102,8 @@ const struct simdata_seq simdata_seq_defaults = {
         .inversion_spoiler = 0.,
 
 	.prep_pulse_length = 0.001,
+
+        .averaged_spokes = 1,
 
         .pulse_applied = false,
 };
@@ -916,3 +919,73 @@ void bloch_simulation(const struct sim_data* _data, float (*m_state)[3], float (
 }
 
 
+// FIXME: Would be faster to integrate it in one single loop above, but more ugly -> other solution?
+void bloch_simulation2(struct sim_data* data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
+{
+        // Spoke averaging
+
+        enum { N = 3 };         // Number of dimensions (x, y, z)
+	enum { P = 4 };         // Number of parameters with estimated derivative (M, DR1, DR2, DB1)
+
+        if (1 != data->seq.averaged_spokes) {
+
+                struct sim_data tmp_data = *data;
+
+                // Remove spoke averaging for full simulation
+
+                tmp_data.seq.rep_num = data->seq.rep_num * data->seq.averaged_spokes;
+
+                tmp_data.seq.averaged_spokes = 1;
+
+                // Run simulation without spoke averaging
+
+                float m[tmp_data.seq.rep_num][3];
+                float sa_r1[tmp_data.seq.rep_num][3];
+                float sa_r2[tmp_data.seq.rep_num][3];
+                float sa_m0[tmp_data.seq.rep_num][3];
+                float sa_b1[tmp_data.seq.rep_num][3];
+
+                bloch_simulation(&tmp_data, m, sa_r1, sa_r2, sa_m0, sa_b1);
+
+                // Store and average results to fit spoke averaging
+
+                float sum_m = 0.;
+                float sum_sar1 = 0.;
+                float sum_sam0 = 0.;
+                float sum_sar2 = 0.;
+                float sum_sab1 = 0.;
+
+                // debug_sim(data);
+
+                for (int d = 0; d < N; d++) {
+
+                        for (int t = 0; t < data->seq.rep_num; t++) {
+
+                                sum_m = 0.;
+                                sum_sar1 = 0.;
+                                sum_sam0 = 0.;
+                                sum_sar2 = 0.;
+                                sum_sab1 = 0.;
+
+                                for (int as = 0; as < data->seq.averaged_spokes; as++) {
+
+                                        sum_m += m[t * data->seq.averaged_spokes + as][d];
+                                        sum_sar1 += sa_r1[t * data->seq.averaged_spokes + as][d];
+                                        sum_sam0 += sa_m0[t * data->seq.averaged_spokes + as][d];
+                                        sum_sar2 += sa_r2[t * data->seq.averaged_spokes + as][d];
+                                        sum_sab1 += sa_b1[t * data->seq.averaged_spokes + as][d];
+                                }
+
+                                m_state[t][d] = sum_m / (float)data->seq.averaged_spokes;
+                                sa_r1_state[t][d] = sum_sar1 / (float)data->seq.averaged_spokes;
+                                sa_m0_state[t][d] = sum_sam0 / (float)data->seq.averaged_spokes;
+                                sa_r2_state[t][d] = sum_sar2 / (float)data->seq.averaged_spokes;
+                                sa_b1_state[t][d] = sum_sab1 / (float)data->seq.averaged_spokes;
+                        }
+                }
+        } else
+                bloch_simulation(data, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
+
+
+        
+}

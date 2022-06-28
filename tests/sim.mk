@@ -30,6 +30,34 @@ tests/test-sim-to-signal-irbSSFP: sim signal nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-sim-spoke-averaging-3: signal slice join avg nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 ref.ra	;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4,av-spokes=3 -1 3:3:1 -2 1:1:1 signal.ra	;\
+	$(TOOLDIR)/slice 5 0 ref.ra ref1.ra ;\
+	$(TOOLDIR)/slice 5 1 ref.ra ref2.ra ;\
+	$(TOOLDIR)/slice 5 2 ref.ra ref3.ra ;\
+	$(TOOLDIR)/join 5 ref1.ra ref2.ra ref3.ra comb.ra ;\
+	$(TOOLDIR)/avg 32 comb.ra avg.ra ;\
+	$(TOOLDIR)/slice 5 0 signal.ra s.ra;\
+	$(TOOLDIR)/nrmse -t 0.00001 avg.ra s.ra			    			;\
+	$(TOOLDIR)/slice 5 501 ref.ra ref1.ra ;\
+	$(TOOLDIR)/slice 5 502 ref.ra ref2.ra ;\
+	$(TOOLDIR)/slice 5 503 ref.ra ref3.ra ;\
+	$(TOOLDIR)/join 5 ref1.ra ref2.ra ref3.ra comb.ra ;\
+	$(TOOLDIR)/avg 32 comb.ra avg.ra ;\
+	$(TOOLDIR)/slice 5 167 signal.ra s.ra;\
+	$(TOOLDIR)/nrmse -t 0.00001 avg.ra s.ra			    			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-to-signal-irbSSFP-averaged-spokes: sim signal nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4,av-spokes=3 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/signal -I -B -r0.0045 -e0.00225 -f45 -n1000 -1 3:3:1 -2 1:1:1 --av-spokes 3 signal.ra		;\
+	$(TOOLDIR)/nrmse -t 0.001 sim.ra signal.ra			    		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 tests/test-sim-ode-hp-irflash: sim nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
@@ -107,6 +135,7 @@ tests/test-sim-ode-stm-irflash: sim nrmse
 
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
+TESTS += tests/test-sim-spoke-averaging-3 tests/test-sim-to-signal-irbSSFP-averaged-spokes
 TESTS += tests/test-sim-ode-hp-irflash tests/test-sim-ode-hp-flash
 TESTS += tests/test-sim-ode-hp-irbssfp tests/test-sim-ode-hp-bssfp
 TESTS += tests/test-sim-multi-relaxation

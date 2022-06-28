@@ -9,6 +9,8 @@
 
 #include "num/multind.h"
 
+#include "misc/debug.h"
+
 #include "misc/mri.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
@@ -24,7 +26,22 @@
 static const char help_str[] = "Analytical simulation tool.";
 
 
+static void get_signal(const struct signal_model* parm, int N, complex float* out, const complex float* in)
+{
+        complex float sum = 0.;
 
+        debug_printf(DP_INFO, "AV: %d\n",parm->averaged_spokes);
+
+        for (int t = 0; t < N; t++) {
+
+                sum = 0.;
+
+                for (int av = 0; av < parm->averaged_spokes; av++)
+                        sum += in[t * parm->averaged_spokes + av];
+
+                out[t] = sum / parm->averaged_spokes;
+        }
+}
 
 
 int main_signal(int argc, char* argv[argc])
@@ -58,6 +75,8 @@ int main_signal(int argc, char* argv[argc])
 
         float time_T1relax = -1.; // second
         long Hbeats = -1;
+        int averaged_spokes = -1;
+
 	const struct opt_s opts[] = {
 
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
@@ -78,6 +97,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_FLOAT('t', &time_T1relax, "T1 relax", "T1 relax period (second) for MOLLI"),
 		OPT_LONG('n', &dims[TE_DIM], "n", "number of measurements"),
 		OPT_LONG('b', &Hbeats, "heart beats", "number of heart beats for MOLLI"),
+                OPTL_INT(0, "av-spokes", &averaged_spokes, "", "Number of averaged consecutive spokes"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -98,6 +118,8 @@ int main_signal(int argc, char* argv[argc])
 
         parm.time_T1relax = (-1 == time_T1relax) ? -1 : time_T1relax;
         parm.Hbeats = (-1 == Hbeats) ? -1 : Hbeats;
+        parm.averaged_spokes = (-1 == averaged_spokes) ? 1 : averaged_spokes;
+
 	if (-1. != FA)
 		parm.fa = FA * M_PI / 180.;
 
@@ -126,6 +148,7 @@ int main_signal(int argc, char* argv[argc])
 
 	long pos[DIMS] = { 0 };
 	int N = dims[TE_DIM];
+        int N_all = dims[TE_DIM] * parm.averaged_spokes;
 
 	do {
 		parm.t1 = T1[0] + (T1[1] - T1[0]) / T1[2] * (float)pos[COEFF_DIM];
@@ -137,18 +160,22 @@ int main_signal(int argc, char* argv[argc])
 
 		parm.off_reson = off_reson[0] + (off_reson[1] - off_reson[0]) / off_reson[2] * (float)pos[ITER_DIM];
 
-		complex float out[N];
+                complex float mxy[N_all];
 
 		switch (seq) {
 
-		case FLASH: (1 != Ms[2]) ? looklocker_model2(&parm, N, out) : looklocker_model(&parm, N, out); break;
-		case MGRE:  multi_grad_echo_model(&parm, N, out); break;
-		case BSSFP: IR_bSSFP_model(&parm, N, out); break;
-		case TSE:   TSE_model(&parm, N, out); break;
-		case MOLLI: MOLLI_model(&parm, N, out); break;
+		case FLASH: (1 != Ms[2]) ? looklocker_model2(&parm, N_all, mxy) : looklocker_model(&parm, N_all, mxy); break;
+		case MGRE:  multi_grad_echo_model(&parm, N_all, mxy); break;
+		case BSSFP: IR_bSSFP_model(&parm, N_all, mxy); break;
+		case TSE:   TSE_model(&parm, N_all, mxy); break;
+		case MOLLI: MOLLI_model(&parm, N_all, mxy); break;
 
 		default: assert(0);
 		}
+
+                complex float out[N];
+
+                get_signal(&parm, N, out, mxy);
 
 		md_copy_block(DIMS, pos, dims, signals, dims1, out, CFL_SIZE);
 
@@ -158,5 +185,3 @@ int main_signal(int argc, char* argv[argc])
 
 	return 0;
 }
-
-

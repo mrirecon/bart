@@ -302,7 +302,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 				float sa_m0[sim_data.seq.rep_num][3];
 				float sa_b1[sim_data.seq.rep_num][3];
 
-				bloch_simulation(&sim_data, m, sa_r1, sa_r2, sa_m0, sa_b1);
+				bloch_simulation2(&sim_data, m, sa_r1, sa_r2, sa_m0, sa_b1);
 
 				//-------------------------------------------------------------------
 				// Copy simulation output to storage on CPU

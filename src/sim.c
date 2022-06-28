@@ -35,7 +35,7 @@ static void perform_bloch_simulation(struct sim_data* data, int N, complex float
         float sa_m0[N][3];
         float sa_b1[N][3];
 
-        bloch_simulation(data, m, sa_r1, sa_r2, sa_m0, sa_b1);
+        bloch_simulation2(data, m, sa_r1, sa_r2, sa_m0, sa_b1);
 
         for (int i = 0; i < N; i++)
                 out[i] = m[i][1] + m[i][0] * I;
@@ -81,6 +81,7 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "ipl", &(data.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
                 OPTL_FLOAT(0, "isp", &(data.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
                 OPTL_FLOAT(0, "ppl", &(data.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
+                OPTL_INT(0, "av-spokes", &(data.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
 
                 /* Pulse Specific Parameters */
                 OPTL_FLOAT(0, "trf", &(data.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */

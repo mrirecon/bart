@@ -32,6 +32,8 @@ struct signal_model {
 	enum fat_spec fat_spec;
         float time_T1relax;
         long Hbeats;
+
+        int averaged_spokes;
 };
 
 

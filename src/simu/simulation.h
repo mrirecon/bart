@@ -36,6 +36,8 @@ struct simdata_seq {
 
 	float prep_pulse_length;
 
+        int averaged_spokes;
+
         bool pulse_applied;
 };
 
@@ -88,9 +90,10 @@ struct sim_data {
 
 extern void debug_sim(struct sim_data* data);
 extern void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P*N + 1][P*N + 1]);
+
 extern void inversion(const struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end);
 extern void bloch_simulation(const struct sim_data* data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3]);
-
+extern void bloch_simulation2(struct sim_data* data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3]);
 
 struct ode_matrix_simu_s {
 
