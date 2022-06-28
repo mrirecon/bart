@@ -17,7 +17,7 @@ struct mobamod {
 };
 #endif
 
-extern struct mobamod moba_create(const long dims[DIMS], const complex float* mask, const complex float* T1,
+extern struct mobamod moba_create(const long dims[DIMS], const complex float* mask, const complex float* T1, const complex float* b1,
 		const complex float* psf, const struct noir_model_conf_s* conf, struct moba_conf_s* data, _Bool use_gpu);
 
 

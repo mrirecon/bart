@@ -58,13 +58,15 @@ struct blochfun_s {
 	complex float* tmp;
 	complex float* in_tmp;
 
-	struct moba_conf_s moba_data;
+	const complex float* b1;
+
+	const struct moba_conf_s* moba_data;
 
 	bool use_gpu;
 
 	int counter;
 
-	complex float* weights;
+	const complex float* weights;
 	const struct linop_s* linop_alpha;
 };
 
@@ -170,10 +172,20 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	// Copy necessary files from GPU to CPU
 	//-------------------------------------------------------------------
 
+	float scale[4];
+
+	for (int i = 0; i < 4; i++) {
+
+		scale[i] = data->moba_data->other.scale[i];
+
+		if (0. == scale[i])
+			scale[i] = 1.;
+	}
+
 	// R1
 	pos[COEFF_DIM] = 0;
 	const complex float* R1 = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);
-	md_zsmul2(data->N, data->map_dims, data->map_strs, r1scale_tmp, data->map_strs, R1, (0. != data->moba_data.other.scale[0]) ? data->moba_data.other.scale[0] : 1.);
+	md_zsmul2(data->N, data->map_dims, data->map_strs, r1scale_tmp, data->map_strs, R1, scale[0]);
 
 	complex float* r1scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
 	md_copy(data->N, data->map_dims, r1scale, r1scale_tmp, CFL_SIZE);
@@ -181,7 +193,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	// M0
 	pos[COEFF_DIM] = 1;
 	const complex float* M0 = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);
-	md_zsmul2(data->N, data->map_dims, data->map_strs, m0scale_tmp, data->map_strs, M0, (0. != data->moba_data.other.scale[1]) ? data->moba_data.other.scale[1] : 1.);
+	md_zsmul2(data->N, data->map_dims, data->map_strs, m0scale_tmp, data->map_strs, M0, scale[1]);
 
 	complex float* m0scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
 	md_copy(data->N, data->map_dims, m0scale, m0scale_tmp, CFL_SIZE);
@@ -189,7 +201,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	// R2
 	pos[COEFF_DIM] = 2;
 	const complex float* R2 = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);
-	md_zsmul2(data->N, data->map_dims, data->map_strs, r2scale_tmp, data->map_strs, R2, (0. != data->moba_data.other.scale[2]) ? data->moba_data.other.scale[2] : 1.);
+	md_zsmul2(data->N, data->map_dims, data->map_strs, r2scale_tmp, data->map_strs, R2, scale[2]);
 
 	complex float* r2scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
 	md_copy(data->N, data->map_dims, r2scale, r2scale_tmp, CFL_SIZE);
@@ -197,7 +209,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	// B1
 	pos[COEFF_DIM] = 3;
 	const complex float* B1 = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);
-	md_zsmul2(data->N, data->map_dims, data->map_strs, data->tmp, data->map_strs, B1, (0. != data->moba_data.other.scale[3]) ? data->moba_data.other.scale[3] : 1.);
+	md_zsmul2(data->N, data->map_dims, data->map_strs, data->tmp, data->map_strs, B1, scale[3]);
 
 	bloch_forw_alpha(data->linop_alpha, b1scale_tmp, data->tmp);	// freq -> pixel + smoothing!
 
@@ -217,14 +229,15 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	complex float* dm0_cpu = md_calloc(data->N, data->out_dims, CFL_SIZE);
 	complex float* db1_cpu = md_calloc(data->N, data->out_dims, CFL_SIZE);
 
+	float fov_reduction_factor = data->moba_data->other.fov_reduction_factor;
 
 	// Get start and end values of reduced F0V
-	int xstart = round(data->map_dims[0] / 2. - (data->moba_data.other.fov_reduction_factor * data->map_dims[0]) / 2.);
-	int xend = round(xstart + data->moba_data.other.fov_reduction_factor * data->map_dims[0]);
-	int ystart = round(data->map_dims[1] / 2. - (data->moba_data.other.fov_reduction_factor * data->map_dims[1]) / 2.);
-	int yend = round(ystart + data->moba_data.other.fov_reduction_factor * data->map_dims[1]);
-	int zstart = round(data->map_dims[2] / 2. - (data->moba_data.other.fov_reduction_factor * data->map_dims[2]) / 2.);
-	int zend = round(zstart + data->moba_data.other.fov_reduction_factor * data->map_dims[2]);
+	int xstart = round(data->map_dims[0] / 2. - fov_reduction_factor * data->map_dims[0] / 2.);
+	int xend = round(xstart + fov_reduction_factor * data->map_dims[0]);
+	int ystart = round(data->map_dims[1] / 2. - fov_reduction_factor * data->map_dims[1] / 2.);
+	int yend = round(ystart + fov_reduction_factor * data->map_dims[1]);
+	int zstart = round(data->map_dims[2] / 2. - fov_reduction_factor * data->map_dims[2] / 2.);
+	int zend = round(zstart + fov_reduction_factor * data->map_dims[2]);
 
 	// Solve rounding bug if fov_reduction_factor becomes to small, Change to round-up macro?!
 	if (0 == zend)
@@ -252,14 +265,29 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 				// Define simulation parameter
 				//-------------------------------------------------------------------
 
-				struct sim_data sim_data = data->moba_data.sim;
+                                // Extract external B1 value from input
+
+				float b1s = 1.;
+
+				if (NULL != data->b1) {
+
+					b1s = crealf(data->b1[spa_ind]);
+
+					if (safe_isnanf(b1s))
+						b1s = 0.;
+				}
+
+                                // Copy simulation data
+
+				struct sim_data sim_data = data->moba_data->sim;
+
 
                                 sim_data.seq.rep_num = data->out_dims[TE_DIM];
 
                                 sim_data.voxel.r1 = crealf(r1scale[spa_ind]);
 				sim_data.voxel.r2 = crealf(r2scale[spa_ind]);
 				sim_data.voxel.m0 = 1.;
-				sim_data.voxel.b1 = crealf(b1scale[spa_ind]);
+				sim_data.voxel.b1 = b1s * crealf(b1scale[spa_ind]);
 
                                 // debug_sim(&sim_data);
                                 // debug_sim(&(data->moba_data.sim));
@@ -304,12 +332,13 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
                                         else if ((SEQ_BSSFP == sim_data.seq.seq_type) || (SEQ_IRBSSFP == sim_data.seq.seq_type))
                                                 a = 1. / (sinf(sim_data.pulse.flipangle / 2. * M_PI / 180.) * expf(-sim_data.voxel.r2 * sim_data.seq.te));
 
+					const float (*scale2)[4] = &data->moba_data->other.scale;
 
 					// complex m0scale[spa_ind] adds scaling and phase to the signal
-					dr1_cpu[position] = a * data->moba_data.other.scale[0] * m0scale[spa_ind] * (sa_r1[j][1] + sa_r1[j][0] * 1.i);
-					dm0_cpu[position] = a * data->moba_data.other.scale[1] * (sa_m0[j][1] + sa_m0[j][0] * 1.i);
-					dr2_cpu[position] = a * data->moba_data.other.scale[2] * m0scale[spa_ind] * (sa_r2[j][1] + sa_r2[j][0] * 1.i);
-					db1_cpu[position] = a * data->moba_data.other.scale[3] * m0scale[spa_ind] * (sa_b1[j][1] + sa_b1[j][0] * 1.i);
+					dr1_cpu[position] = a * (*scale2)[0] * m0scale[spa_ind] * (sa_r1[j][1] + sa_r1[j][0] * 1.i);
+					dm0_cpu[position] = a * (*scale2)[1] * (sa_m0[j][1] + sa_m0[j][0] * 1.i);
+					dr2_cpu[position] = a * (*scale2)[2] * m0scale[spa_ind] * (sa_r2[j][1] + sa_r2[j][0] * 1.i);
+					db1_cpu[position] = a * (*scale2)[3] * m0scale[spa_ind] * (sa_b1[j][1] + sa_b1[j][0] * 1.i);
 					sig_cpu[position] = a * m0scale[spa_ind] * (m[j][1] + m[j][0] * 1.i);
 				}
 			}
@@ -447,7 +476,8 @@ static void bloch_del(const nlop_data_t* _data)
 }
 
 
-struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_dims[N], const long out_dims[N], const long in_dims[N], const struct moba_conf_s* _data, bool use_gpu)
+struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_dims[N], const long out_dims[N], const long in_dims[N],
+			const complex float* b1, const struct moba_conf_s* config, bool use_gpu)
 {
 #ifdef USE_CUDA
 	md_alloc_fun_t my_alloc = use_gpu ? md_alloc_gpu : md_alloc;
@@ -499,7 +529,9 @@ struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_d
 
 
 	// parameters for fit
-	data->moba_data = *_data;
+	data->moba_data = config;
+
+	data->b1 = b1;
 
 	data->use_gpu = use_gpu;
 
@@ -510,8 +542,9 @@ struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_d
 	long w_dims[N];
 	md_select_dims(N, FFT_FLAGS, w_dims, map_dims);
 
-	data->weights = md_alloc(N, w_dims, CFL_SIZE);
-	noir_calc_weights(440., 20., w_dims, data->weights);
+	complex float* weights = md_alloc(N, w_dims, CFL_SIZE);
+	noir_calc_weights(440., 20., w_dims, weights);
+	data->weights = weights;
 
 	const struct linop_s* linop_wghts = linop_cdiag_create(N, map_dims, FFT_FLAGS, data->weights);
 	const struct linop_s* linop_ifftc = linop_ifftc_create(N, map_dims, FFT_FLAGS);
