@@ -103,9 +103,25 @@ static void pos_value(iter_op_data* _data, float* dst, const float* src)
 
 	for (int i = 0; i < slices; i++) {
 
-	        md_zsmax(DIMS, dims1, (_Complex float*)dst + (parameters - data->conf->constrained_maps) * res * res + i * res * res * parameters,
-			(const _Complex float*)src + (parameters - data->conf->constrained_maps) * res * res + i * res * res * parameters, data->conf->lower_bound);
+                int map = 0;
+                int constrain_flags = data->conf->constrained_maps;
 
+                // Constraint dimensions defined by flag
+
+                while (constrain_flags) {
+
+                        if (constrain_flags & 1) {
+
+                                debug_printf(DP_DEBUG4, "Chosen constrained maps: %d\n", map);
+
+                                md_zsmax(DIMS, dims1, (_Complex float*)dst + map * res * res + i * res * res * parameters,
+			                (const _Complex float*)src + map * res * res + i * res * res * parameters,
+                                        data->conf->lower_bound);
+                        }
+
+                        constrain_flags >>= 1;
+                        map++;
+                }
         }
 
 }
