@@ -170,8 +170,6 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 	irgnm_conf.cgiter = conf->inner_iter;
 	irgnm_conf.nlinv_legacy = true;
 
-
-
 	struct mdb_irgnm_l1_conf conf2 = {
 
 		.c2 = &irgnm_conf,
@@ -245,14 +243,11 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
                 assert(NULL != data);
 
-                if (SEQ_IRFLASH == data->sim.seq.seq_type) {
+                pos[COEFF_DIM] = 3;
 
-                        pos[COEFF_DIM] = 3;
-
-                        md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
-                        bloch_forw_alpha(nl.linop_alpha, tmp, tmp);
-                        md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
-                }
+                md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
+                bloch_forw_alpha(nl.linop_alpha, tmp, tmp);
+                md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
         }
 
 	md_free(tmp);
@@ -290,8 +285,10 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
 
                 md_free(tmp);
-		linop_free(nl.linop_alpha);
 	}
+
+        if ((MDB_T1_PHY == conf->mode) || (MDB_BLOCH == conf->mode))
+                linop_free(nl.linop_alpha);
 
 	nlop_free(nl.nlop);
 

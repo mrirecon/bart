@@ -100,8 +100,8 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 	ret.nlop = nlop_flatten(nlinv.nlop);
 	ret.linop = nlinv.linop;
 
-	if ((MDB_BLOCH == data->model) && (SEQ_IRFLASH == data->sim.seq.seq_type))
-		ret.linop_alpha = bloch_get_alpha_trafo(model);
+	if (MDB_BLOCH == data->model)
+                ret.linop_alpha = bloch_get_alpha_trafo(model);
         else if (MDB_T1_PHY == data->model)
                 ret.linop_alpha = T1_get_alpha_trafo(model);
 
