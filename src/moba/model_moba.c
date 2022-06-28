@@ -62,6 +62,7 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 
                 // FIXME: Integrate other models here
 		assert(0);
+		break;
 
         case MDB_T1_PHY:
 

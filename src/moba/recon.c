@@ -189,12 +189,12 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
                 if (SEQ_IRFLASH == data->sim.seq.seq_type) {
 
-                        conf2.constrained_maps = 1;	// only T1 map
+                        conf2.constrained_maps = 1;	// only R1 map: bitmask (1 0 0 0) = 1
                         conf2.not_wav_maps = 2;		// no wavelet for T2 and B1 map
                 }
                 else if (SEQ_IRBSSFP == data->sim.seq.seq_type) {
 
-                        conf2.constrained_maps = 5;	// only T1 and T2
+                        conf2.constrained_maps = 5;	// only T1 and T2: bitmask(1 0 1 0) = 5
                         conf2.not_wav_maps = 1;		// no wavelet for B1 map
                 }
         }
@@ -202,7 +202,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
         // No Wavelet penalty on flip angle map
         if (MDB_T1_PHY == conf->mode) {
 
-                conf2.constrained_maps = 2;
+                conf2.constrained_maps = 2;     // only R1 map: bitmask (0 1 0) = 2
                 conf2.not_wav_maps = 1;
         }
 
@@ -253,13 +253,13 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 	md_free(tmp);
 
         // Reparameterized Look-Locker Model
+        // Estimate effective flip angle from R1'
 	// FIXME: Move to separate function which can be tested with a unit test
 
 	if (MDB_T1_PHY == conf->mode) {
 
 		md_set_dims(DIMS, pos, 0);
 
-		// output the alpha map (in degree!)
 		pos[COEFF_DIM] = 2;
 
                 long map_size = md_calc_size(DIMS, map_dims);
@@ -272,7 +272,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 		md_zreal(DIMS, map_dims, tmp, tmp);
 
-		md_zsmul(DIMS, map_dims, tmp, tmp, -data->sim.seq.tr * 0.2);
+		md_zsmul(DIMS, map_dims, tmp, tmp, -data->sim.seq.tr * 0.2);    // 0.2 -> Same scaling set in T1phyfun.c
 
 		md_smin(1, MD_DIMS(2 * map_size), (float*)tmp, (float*)tmp, 0.);
 
@@ -280,7 +280,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 		md_zacos(DIMS, map_dims, tmp, tmp);
 
-	        md_zsmul(DIMS, map_dims, tmp, tmp, 180. / M_PI);
+	        md_zsmul(DIMS, map_dims, tmp, tmp, 180. / M_PI);        // output the effective flip angle map (in degree!)
 
 		md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
 

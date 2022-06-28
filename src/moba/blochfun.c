@@ -58,10 +58,6 @@ struct blochfun_s {
 	complex float* tmp;
 	complex float* in_tmp;
 
-	complex float* input_exb1;
-	complex float* input_sliceprofile;
-	complex float* input_fa_profile;
-
 	struct moba_conf_s moba_data;
 
 	bool use_gpu;
@@ -328,7 +324,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	debug_printf(DP_DEBUG3, "Copy data\n");
 
 	//-------------------------------------------------------------------
-	// Collect data of signal (potentionally on GPU)
+	// Collect data of signal (potentially on GPU)
 	//-------------------------------------------------------------------
 
 	md_copy(data->N, data->out_dims, dst, sig_cpu, CFL_SIZE);
@@ -336,7 +332,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	md_free(sig_cpu);
 
 	//-------------------------------------------------------------------
-	// Collect data of derivatives in single arrray
+	// Collect data of derivatives in single array
 	//-------------------------------------------------------------------
 
 	md_clear(data->N, data->der_dims, data->derivatives, CFL_SIZE);

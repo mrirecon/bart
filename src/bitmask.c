@@ -35,7 +35,7 @@ int main_bitmask(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_SET('b', &inverse, "dimensions from bitmask, use with exaclty one argument"),
+		OPT_SET('b', &inverse, "dimensions from bitmask, use with exactly one argument"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

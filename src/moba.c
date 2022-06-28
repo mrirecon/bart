@@ -137,7 +137,6 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "tr", &(data.sim.seq.tr), "float", "Repetition time [s]"),
                 OPTL_FLOAT(0, "te", &(data.sim.seq.te), "float", "Echo time [s]"),
                 OPTL_INT(0, "nspins", &(data.sim.seq.spin_num), "int", "Number of averaged spins"),
-                OPTL_INT(0, "nrep", &(data.sim.seq.rep_num), "int", "Number of repetitions"),
                 OPTL_SET(0, "pinv", &(data.sim.seq.perfect_inversion), "Use perfect inversions"),
                 OPTL_FLOAT(0, "ipl", &(data.sim.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
                 OPTL_FLOAT(0, "isp", &(data.sim.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
@@ -145,7 +144,7 @@ int main_moba(int argc, char* argv[argc])
 
                 /* Pulse Specific Parameters */
                 OPTL_FLOAT(0, "trf", &(data.sim.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
-                OPTL_FLOAT(0, "fa", &(data.sim.pulse.flipangle), "float", "Flipangle [deg]"),
+                OPTL_FLOAT(0, "fa", &(data.sim.pulse.flipangle), "float", "Flip angle [deg]"),
                 OPTL_FLOAT(0, "bwtp", &(data.sim.pulse.bwtp), "float", "Bandwidth-Time-Product"),
 
                 /* Voxel Specific Parameters */
@@ -188,7 +187,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPT_FLOAT('R', &conf.redu, "redu", "reduction factor"),
 		OPT_FLOAT('T', &conf.damping, "damp", "damping on temporal frames"),
-		OPT_FLOAT('j', &conf.alpha_min, "minreg", "Minimum regu. parameter"),
+		OPT_FLOAT('j', &conf.alpha_min, "minreg", "Minimum regularization parameter"),
 		OPT_FLOAT('u', &conf.rho, "rho", "ADMM rho [default: 0.01]"),
 		OPT_UINT('C', &conf.inner_iter, "iter", "inner iterations"),
 		OPT_FLOAT('s', &conf.step, "step", "step size"),
@@ -209,8 +208,8 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
 		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &conf.k_filter_type, EF1, "k-space edge filter 1"),
 		OPTL_SELECT(0, "kfilter-2", enum edge_filter_t, &conf.k_filter_type, EF2, "k-space edge filter 2"),
-		OPT_SET('n', &conf.auto_norm_off, "disable normlization of parameter maps for thresholding"),
-		OPTL_CLEAR(0, "no_alpha_min_exp_decay", &conf.alpha_min_exp_decay, "(Use hard minimum instead of exponentional decay towards alpha_min)"),
+		OPT_SET('n', &conf.auto_norm_off, "disable normalization of parameter maps for thresholding"),
+		OPTL_CLEAR(0, "no_alpha_min_exp_decay", &conf.alpha_min_exp_decay, "(Use hard minimum instead of exponential decay towards alpha_min)"),
 		OPTL_FLOAT(0, "sobolev_a", &conf.sobolev_a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "sobolev_b", &conf.sobolev_b, "", "(b in 1 + a * \\Laplace^-b/2)"),
 		OPTL_SELECT(0, "fat_spec_0", enum fat_spec, &conf.fat_spec, FAT_SPEC_0, "select fat spectrum from ISMRM fat-water tool"),
