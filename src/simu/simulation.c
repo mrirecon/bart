@@ -46,6 +46,7 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tISP:%f\n", data->seq.inversion_spoiler);
         debug_printf(DP_INFO, "\tPPL:%f\n", data->seq.prep_pulse_length);
         debug_printf(DP_INFO, "\tAveraged Spokes:%d\n", data->seq.averaged_spokes);
+        debug_printf(DP_INFO, "\tNumber of Slice Profile Spins:%d\n", data->seq.slice_profile_spins);
         debug_printf(DP_INFO, "\tPulse Applied?:%d\n\n", data->seq.pulse_applied);
 
         debug_printf(DP_INFO, "Gradient-Parameter:\n");
@@ -104,6 +105,7 @@ const struct simdata_seq simdata_seq_defaults = {
 	.prep_pulse_length = 0.001,
 
         .averaged_spokes = 1,
+        .slice_profile_spins = 1,
 
         .pulse_applied = false,
 };
@@ -291,7 +293,7 @@ void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N
 static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], float st, float end)
 {
 	if (data->seq.pulse_applied)
-		sinc_pulse_create(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
+		sinc_pulse_init(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
 
 	mat_exp_simu(data, N, st, end, matrix);
 }
@@ -548,7 +550,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
         case SIM_ODE:
 
                 if (0. != data->pulse.rf_end)
-                	sinc_pulse_create(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
+			sinc_pulse_init(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
 
                 break;
 
@@ -775,7 +777,7 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 
 /* ------------ Main Simulation -------------- */
 
-void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
+void bloch_simulation(const struct sim_data* _data, const complex float* slice, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
 {
 	// FIXME: split config + variable part
 
@@ -787,6 +789,9 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 	enum { P = 4 };         // Number of parameters with estimated derivative (M, DR1, DR2, DB1)
 
         assert(0 < P);
+
+        if (NULL != slice)
+                assert(data.seq.slice_profile_spins == data.seq.spin_num);
 
         enum { M = N * P + 1 };     // STM based on single vector and additional +1 for linearized system matrix
 
@@ -804,20 +809,31 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 	float (*sa_r2)[R * A][S][3] = xmalloc(sizeof *sa_r2);
 	float (*sa_b1)[R * A][S][3] = xmalloc(sizeof *sa_b1);
 
+        float slice_factor = 1.;
+
 
 	for (data.tmp.spin_counter = 0; data.tmp.spin_counter < S; data.tmp.spin_counter++) {
 
                 float h = 0.0001;
 
-                // Full Symmetric slice profile
-		//      - Calculate slice profile by looping over spins with z-gradient
-		if (1 != S) {
+                // Slice Profile Options
+		//	1. Approximate a slice profile
+                //              Half slice profile
+		if (NULL != slice) {
+
+			slice_factor = cabsf(slice[data.tmp.spin_counter]);
+
+                //      2. Calculate slice profile by looping over spins with z-gradient
+                //              Full Symmetric slice profile
+		} else if (1 != S) {
 
                         // Ensures central spin on main lope is set
 			assert(1 == S % 2);
 
 			data.grad.mom_sl = _data->grad.mom_sl / (S - 1) * (data.tmp.spin_counter - (int)(S / 2.));
 		}
+
+                data.pulse.flipangle = _data->pulse.flipangle * slice_factor;
 
                 // Initialize ODE
 		float xp[P][N];

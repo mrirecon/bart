@@ -38,7 +38,7 @@ extern float pulse_sinc(const struct simdata_pulse* pulse, float t);
 
 extern float sinc_integral(const struct simdata_pulse* pulse);
 
-extern void sinc_pulse_create(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle, float phase, float bwtp, float alpha);
+extern void sinc_pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle, float phase, float bwtp, float alpha);
 
 extern float pulse_hypsec_am(const struct hs_pulse* pulse, float t);
 extern float pulse_hypsec_fm(const struct hs_pulse* pulse, float t);

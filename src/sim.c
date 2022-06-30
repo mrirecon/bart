@@ -21,13 +21,14 @@
 #include "simu/bloch.h"
 #include "simu/pulse.h"
 #include "simu/simulation.h"
+#include "simu/slice_profile.h"
 
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static void perform_bloch_simulation(struct sim_data* data, int N, complex float out[N])
+static void perform_bloch_simulation(struct sim_data* data, const complex float* slice, int N, complex float out[N])
 {
         float m[N][3];
         float sa_r1[N][3];
@@ -35,7 +36,7 @@ static void perform_bloch_simulation(struct sim_data* data, int N, complex float
         float sa_m0[N][3];
         float sa_b1[N][3];
 
-        bloch_simulation(data, N, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
+        bloch_simulation(data, slice, N, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
 
         for (int i = 0; i < N; i++)
                 out[i] = m[i][1] + m[i][0] * I;
@@ -82,6 +83,7 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "isp", &(data.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
                 OPTL_FLOAT(0, "ppl", &(data.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
                 OPTL_INT(0, "av-spokes", &(data.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
+                OPTL_INT(0, "slice-profile-spins", &(data.seq.slice_profile_spins), "", "Number of spins in the slice-profile"),
 
                 /* Pulse Specific Parameters */
                 OPTL_FLOAT(0, "trf", &(data.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
@@ -116,6 +118,7 @@ int main_sim(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
+
         // Define output dimensions
         long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
@@ -126,6 +129,25 @@ int main_sim(int argc, char* argv[argc])
 	if ((dims[TE_DIM] < 1) || (dims[COEFF_DIM] < 1) || (dims[COEFF2_DIM] < 1))
 		error("invalid parameter range");
 
+
+        // Approximate slice profile
+
+        long spdims[DIMS] = { [0 ... DIMS - 1] = 1 };
+	complex float* slice = NULL;
+
+	if (1 != data.seq.slice_profile_spins) {
+
+		assert((1 == data.seq.spin_num) || (data.seq.spin_num == data.seq.slice_profile_spins));
+
+		data.seq.spin_num = data.seq.slice_profile_spins;
+
+		spdims[READ_DIM] = data.seq.spin_num;	// FIXME: Why read?
+		slice = md_alloc(DIMS, spdims, CFL_SIZE);
+
+
+		sinc_pulse_init(&data.pulse, data.pulse.rf_start, data.pulse.rf_end, data.pulse.flipangle, data.pulse.phase, data.pulse.bwtp, data.pulse.alpha); // FIXME
+		slice_profile_fourier(DIMS, spdims, slice, &data.pulse);
+        }
 
         // Allocate output file
 	complex float* signals = create_cfl(out_file, DIMS, dims);
@@ -144,13 +166,16 @@ int main_sim(int argc, char* argv[argc])
 
 		complex float out[N];
 
-                perform_bloch_simulation(&data, N, out);
+                perform_bloch_simulation(&data, slice, N, out);
 
 		md_copy_block(DIMS, pos, dims, signals, dims1, out, CFL_SIZE);
 
 	} while(md_next(DIMS, dims, ~TE_FLAG, pos));
 
 	unmap_cfl(DIMS, dims, signals);
+
+	if (NULL != slice)
+		md_free(slice);
 
 	return 0;
 }

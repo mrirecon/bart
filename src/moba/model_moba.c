@@ -31,7 +31,8 @@
 #include "model_moba.h"
 
 
-struct mobamod moba_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* b1, const complex float* psf, const struct noir_model_conf_s* conf, struct moba_conf_s* data, _Bool use_gpu)
+struct mobamod moba_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* b1, const complex float* slice,
+		const complex float* psf, const struct noir_model_conf_s* conf, struct moba_conf_s* data, _Bool use_gpu)
 {
 	long data_dims[DIMS];
 	md_select_dims(DIMS, ~COEFF_FLAG, data_dims, dims);
@@ -79,7 +80,7 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 		if (SEQ_IRFLASH == data->sim.seq.seq_type)
 			data->other.scale[2] = 0.;
 
-		model = nlop_bloch_create(DIMS, der_dims, map_dims, out_dims, in_dims, b1, data, use_gpu);
+		model = nlop_bloch_create(DIMS, der_dims, map_dims, out_dims, in_dims, b1, slice, data, use_gpu);
 		break;
 	}
 

@@ -30,7 +30,7 @@ tests/test-sim-to-signal-irbSSFP: sim signal nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-sim-spoke-averaging-3: signal slice join avg nrmse
+tests/test-sim-spoke-averaging-3: sim slice join avg nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 ref.ra	;\
 	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4,av-spokes=3 -1 3:3:1 -2 1:1:1 signal.ra	;\
@@ -56,6 +56,14 @@ tests/test-sim-to-signal-irbSSFP-averaged-spokes: sim signal nrmse
 	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4,av-spokes=3 -1 3:3:1 -2 1:1:1 sim.ra ;\
 	$(TOOLDIR)/signal -I -B -r0.0045 -e0.00225 -f45 -n1000 -1 3:3:1 -2 1:1:1 --av-spokes 3 signal.ra		;\
 	$(TOOLDIR)/nrmse -t 0.001 sim.ra signal.ra			    		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-to-signal-slice-profile: sim signal nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-profile-spins=40 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-profile-spins=42 -1 3:3:1 -2 1:1:1 sim2.ra ;\
+	$(TOOLDIR)/nrmse -t 0.0015 sim.ra sim2.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -136,6 +144,7 @@ tests/test-sim-ode-stm-irflash: sim nrmse
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
 TESTS += tests/test-sim-spoke-averaging-3 tests/test-sim-to-signal-irbSSFP-averaged-spokes
+TESTS += tests/test-sim-to-signal-slice-profile
 TESTS += tests/test-sim-ode-hp-irflash tests/test-sim-ode-hp-flash
 TESTS += tests/test-sim-ode-hp-irbssfp tests/test-sim-ode-hp-bssfp
 TESTS += tests/test-sim-multi-relaxation

@@ -1,4 +1,4 @@
-/* Copyright 2022. Martin Uecker.
+/* Copyright 2022. TU Graz. Insitute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -18,10 +18,9 @@
 
 static bool test_sinc_integral(void)
 {
-
         struct simdata_pulse pulse = simdata_pulse_defaults;
 
-        sinc_pulse_create(&pulse, 0., 0.001, 180., 0., 4., 0.46);
+        sinc_pulse_init(&pulse, 0., 0.001, 180., 0., 4., 0.46);
 
         if ((M_PI - sinc_integral(&pulse)) > 10E-7)
                 return 0;
@@ -36,7 +35,7 @@ static bool test_sinc_integral2(void)
 {
         struct simdata_pulse pulse = simdata_pulse_defaults;
 
-        sinc_pulse_create(&pulse, 0., 0.001, 180., 0., 4., 0.46);
+        sinc_pulse_init(&pulse, 0., 0.001, 180., 0., 4., 0.46);
 
 
         // Estimate integral with trapezoidal rule
@@ -121,7 +120,7 @@ static bool test_rf_pulse_ode(void)
 
 
                         // Prepare pulse
-			sinc_pulse_create(&data.pulse, 0., trf, angle, 0., 4., 0.46);
+			sinc_pulse_init(&data.pulse, 0., trf, angle, 0., 4., 0.46);
 
 			float xp[4][3] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
 

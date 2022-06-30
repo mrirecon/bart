@@ -431,6 +431,30 @@ tests/test-moba-bloch-irbssfp-traj-av-spokes: traj repmat phantom signal fmac in
 	touch $@
 
 
+tests/test-moba-bloch-irbssfp-traj-slice-profile: traj repmat scale phantom sim fmac index moba slice resize nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/traj -x16 -y16 _traj.ra			;\
+	$(TOOLDIR)/repmat 5 100 _traj.ra traj2.ra	;\
+	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
+	$(TOOLDIR)/phantom -c -k -t traj.ra basis_geom.ra				;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=100,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,av-spokes=10,slice-profile-spins=10 -1 1.25:1.25:1 -2 0.1:0.1:1 basis_simu.ra ;\
+	$(TOOLDIR)/fmac basis_geom.ra basis_simu.ra k_space.ra		;\
+	$(TOOLDIR)/index 5 100 dummy_ti.ra 	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq ir-bssfp,tr=0.0045,te=0.00225,fa=45,trf=0.001,bwtp=4,pinv,ipl=0,ppl=0.00225,av-spokes=10,slice-profile-spins=10 --other pdscale=1:1:1:0 -i11 -C300 -s0.95 -R3 -o1 -j0.001 -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra				;\
+	$(TOOLDIR)/phantom -x 8 -c ref.ra				;\
+	$(TOOLDIR)/resize -c 0 16 1 16 ref.ra ref2.ra					;\
+	$(TOOLDIR)/fmac r1map.ra ref2.ra masked_r1.ra				;\
+	$(TOOLDIR)/scale -- 0.8 ref2.ra ref3.ra				;\
+	$(TOOLDIR)/nrmse -t 0.001 masked_r1.ra ref3.ra				;\
+	$(TOOLDIR)/slice 6 2 reco.ra r2map.ra				;\
+	$(TOOLDIR)/fmac r2map.ra ref2.ra masked_r2.ra				;\
+	$(TOOLDIR)/scale -- 10 ref2.ra ref4.ra				;\
+	$(TOOLDIR)/nrmse -t 0.01 masked_r2.ra ref4.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 TESTS_SLOW += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
 TESTS_SLOW += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
 TESTS_SLOW += tests/test-moba-t2
@@ -438,4 +462,4 @@ TESTS_SLOW += tests/test-moba-meco-noncart-r2s tests/test-moba-meco-noncart-wfr2
 TESTS_SLOW += tests/test-moba-bloch-irflash-psf tests/test-moba-bloch-irflash-traj tests/test-moba-bloch-irflash-traj-fixfa tests/test-moba-bloch-irflash-r2fix
 TESTS_SLOW += tests/test-moba-t1-phy-psf tests/test-moba-t1-phy-traj
 TESTS_SLOW += tests/test-moba-bloch-irbssfp-psf tests/test-moba-bloch-irbssfp-traj tests/test-moba-bloch-irbssfp-traj-input-b1 tests/test-moba-bloch-irbssfp-traj-av-spokes
-
+TESTS_SLOW += tests/test-moba-bloch-irbssfp-traj-slice-profile

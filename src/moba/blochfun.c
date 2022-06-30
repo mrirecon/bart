@@ -59,6 +59,7 @@ struct blochfun_s {
 	complex float* in_tmp;
 
 	const complex float* b1;
+	const complex float* slice;
 
 	const struct moba_conf_s* moba_data;
 
@@ -302,7 +303,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 				float sa_m0[sim_data.seq.rep_num][3];
 				float sa_b1[sim_data.seq.rep_num][3];
 
-				bloch_simulation(&sim_data, sim_data.seq.rep_num, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
+				bloch_simulation(&sim_data, data->slice, sim_data.seq.rep_num, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
 
 				//-------------------------------------------------------------------
 				// Copy simulation output to storage on CPU
@@ -477,7 +478,7 @@ static void bloch_del(const nlop_data_t* _data)
 
 
 struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_dims[N], const long out_dims[N], const long in_dims[N],
-			const complex float* b1, const struct moba_conf_s* config, bool use_gpu)
+			const complex float* b1, const complex float* slice, const struct moba_conf_s* config, bool use_gpu)
 {
 #ifdef USE_CUDA
 	md_alloc_fun_t my_alloc = use_gpu ? md_alloc_gpu : md_alloc;
@@ -528,10 +529,10 @@ struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_d
 	data->in_tmp = my_alloc(N, in_dims, CFL_SIZE);
 
 
-	// parameters for fit
 	data->moba_data = config;
 
 	data->b1 = b1;
+	data->slice = slice;
 
 	data->use_gpu = use_gpu;
 
