@@ -779,9 +779,11 @@ static void alpha_half_preparation(struct sim_data* data, float h, float tol, in
 
 /* ------------ Main Simulation -------------- */
 
-void bloch_simulation(struct sim_data* data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
+void bloch_simulation(struct sim_data* _data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
 {
-        float tol = data->other.ode_tol;
+	struct sim_data data = *_data;  // Lose information of complex pointer variables
+
+        float tol = 10E-6;      // Tolerance of ODE solver
 
         enum { N = 3 };         // Number of dimensions (x, y, z)
 	enum { P = 4 };         // Number of parameters with estimated derivative (M, DR1, DR2, DB1)
@@ -790,28 +792,26 @@ void bloch_simulation(struct sim_data* data, float (*m_state)[3], float (*sa_r1_
 
         enum { M = N * P + 1 };     // STM based on single vector and additional +1 for linearized system matrix
 
-        long storage_size = data->seq.spin_num * data->seq.rep_num * 3 * sizeof(float);
+        long storage_size = data.seq.spin_num * data.seq.rep_num * 3 * sizeof(float);
 
 	float* mxy = xmalloc(storage_size);
 	float* sa_r1 = xmalloc(storage_size);
 	float* sa_r2 = xmalloc(storage_size);
 	float* sa_b1 = xmalloc(storage_size);
 
-	float w_backup = data->voxel.w;
-	float zgradient_max = data->grad.mom_sl;
 
-	for (data->tmp.spin_counter = 0; data->tmp.spin_counter < data->seq.spin_num; data->tmp.spin_counter++) {
+	for (data.tmp.spin_counter = 0; data.tmp.spin_counter < data.seq.spin_num; data.tmp.spin_counter++) {
 
                 float h = 0.0001;
 
                 // Full Symmetric slice profile
 		//      - Calculate slice profile by looping over spins with z-gradient
-		if (1 != data->seq.spin_num) {
+		if (1 != data.seq.spin_num) {
 
                         // Ensures central spin on main lope is set
-			assert(1 == data->seq.spin_num % 2);
+			assert(1 == data.seq.spin_num % 2);
 
-			data->grad.mom_sl = zgradient_max / (data->seq.spin_num-1) * (data->tmp.spin_counter - (int)(data->seq.spin_num / 2.));
+			data.grad.mom_sl = _data->grad.mom_sl / (data.seq.spin_num-1) * (data.tmp.spin_counter - (int)(data.seq.spin_num / 2.));
 		}
 
                 // Initialize ODE
@@ -831,22 +831,22 @@ void bloch_simulation(struct sim_data* data, float (*m_state)[3], float (*sa_r1_
 
 
                 // Reset parameters
-		data->voxel.w = w_backup;
-		data->pulse.phase = 0;
-                data->tmp.t = 0;
-                data->tmp.rep_counter = 0;
+		data.voxel.w = _data->voxel.w;
+		data.pulse.phase = 0;
+                data.tmp.t = 0;
+                data.tmp.rep_counter = 0;
 
                 // Apply perfect inversion
 
-                if (    (SEQ_IRBSSFP == data->seq.seq_type) ||
-                        (SEQ_IRFLASH == data->seq.seq_type))
-                        inversion(data, h, tol, N, P, xp, 0., data->seq.inversion_spoiler);
+                if (    (SEQ_IRBSSFP == data.seq.seq_type) ||
+                        (SEQ_IRFLASH == data.seq.seq_type))
+                        inversion(&data, h, tol, N, P, xp, 0., data.seq.inversion_spoiler);
 
                 // Alpha/2 and TR/2 signal preparation
 
-                if (    (SEQ_BSSFP == data->seq.seq_type) ||
-                        (SEQ_IRBSSFP == data->seq.seq_type))
-                        alpha_half_preparation(data, h, tol, N, P, xp);
+                if (    (SEQ_BSSFP == data.seq.seq_type) ||
+                        (SEQ_IRBSSFP == data.seq.seq_type))
+                        alpha_half_preparation(&data, h, tol, N, P, xp);
 
                 float mte[M][M];
                 float mte2[M][M];
@@ -857,50 +857,52 @@ void bloch_simulation(struct sim_data* data, float (*m_state)[3], float (*sa_r1_
                 // STM requires two matrices for RFPhase=0 and RFPhase=PI
                 // Therefore mte and mte2 need to be estimated
                 // FIXME: Do not estimate mtr twice
-                if (    (SEQ_BSSFP == data->seq.seq_type) ||
-                        (SEQ_IRBSSFP == data->seq.seq_type)) {
+                if (    (SEQ_BSSFP == data.seq.seq_type) ||
+                        (SEQ_IRBSSFP == data.seq.seq_type)) {
 
-                        data->pulse.phase = M_PI;
-                        prepare_sim(data, N, P, mte2, mtr);
-                        data->pulse.phase = 0.;
+                        data.pulse.phase = M_PI;
+                        prepare_sim(&data, N, P, mte2, mtr);
+                        data.pulse.phase = 0.;
 
-                        prepare_sim(data, N, P, mte, mtr);
+                        prepare_sim(&data, N, P, mte, mtr);
 
                 } else {
 
-                        prepare_sim(data, N, P, mte, mtr);
+                        prepare_sim(&data, N, P, mte, mtr);
                 }
 
                 // Loop over Pulse Blocks
 
-                data->tmp.t = 0;
+                data.tmp.t = 0;
 
-                while (data->tmp.rep_counter < data->seq.rep_num) {
+                while (data.tmp.rep_counter < data.seq.rep_num) {
 
                         // Change phase of bSSFP sequence in each repetition block
-                        if (    (SEQ_BSSFP == data->seq.seq_type) ||
-                                (SEQ_IRBSSFP == data->seq.seq_type)) {
+                        if (    (SEQ_BSSFP == data.seq.seq_type) ||
+                                (SEQ_IRBSSFP == data.seq.seq_type)) {
 
-                                data->pulse.phase = M_PI * (float)(data->tmp.rep_counter);
+                                data.pulse.phase = M_PI * (float)(data.tmp.rep_counter);
 
-                                run_sim(data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, ((0 == data->tmp.rep_counter % 2) ? mte : mte2), mtr, true);
+                                run_sim(&data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, ((0 == data.tmp.rep_counter % 2) ? mte : mte2), mtr, true);
 
                         } else {
 
-                                run_sim(data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, mte, mtr, true);
+                                run_sim(&data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, mte, mtr, true);
                         }
 
-                        data->tmp.rep_counter++;
+                        data.tmp.rep_counter++;
                 }
 	}
 
 
 	// Sum up magnetization
 
-        sum_up_signal(data, mxy, sa_r1, sa_r2, sa_b1, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
+        sum_up_signal(&data, mxy, sa_r1, sa_r2, sa_b1, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
 
 	free(mxy);
 	free(sa_r1);
 	free(sa_r2);
 	free(sa_b1);
 }
+
+
