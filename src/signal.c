@@ -48,14 +48,16 @@ int main_signal(int argc, char* argv[argc])
 	float FA = -1.;
 	float TR = -1.;
 	float TE = -1.;
-	float time_T1relax = -1.; // second
-	long Hbeats = -1;
 
 	float off_reson[3] = { 20., 20., 1 };
 	float T1[3] = { 0.5, 1.5, 1 };
 	float T2[3] = { 0.05, 0.15, 1 };
 	float Ms[3] = { 0.05, 1.0, 1 };
 
+        struct signal_model parm;
+
+        float time_T1relax = -1.; // second
+        long Hbeats = -1;
 	const struct opt_s opts[] = {
 
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
@@ -80,8 +82,6 @@ int main_signal(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	struct signal_model parm;
-
 	if ((!IR) && (BSSFP == seq))
 		error("only IR signal supported for bSSFP");
 
@@ -96,6 +96,8 @@ int main_signal(int argc, char* argv[argc])
 	default: error("sequence type not supported");
 	}
 
+        parm.time_T1relax = (-1 == time_T1relax) ? -1 : time_T1relax;
+        parm.Hbeats = (-1 == Hbeats) ? -1 : Hbeats;
 	if (-1. != FA)
 		parm.fa = FA * M_PI / 180.;
 
@@ -143,7 +145,7 @@ int main_signal(int argc, char* argv[argc])
 		case MGRE:  multi_grad_echo_model(&parm, N, out); break;
 		case BSSFP: IR_bSSFP_model(&parm, N, out); break;
 		case TSE:   TSE_model(&parm, N, out); break;
-		case MOLLI: MOLLI_model(&parm, N, Hbeats, time_T1relax, out); break;
+		case MOLLI: MOLLI_model(&parm, N, out); break;
 
 		default: assert(0);
 		}

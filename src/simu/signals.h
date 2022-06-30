@@ -30,6 +30,8 @@ struct signal_model {
 	bool ir;
 	bool ir_ss;
 	enum fat_spec fat_spec;
+        float time_T1relax;
+        long Hbeats;
 };
 
 
@@ -49,7 +51,7 @@ extern void looklocker_model(const struct signal_model* data, int N, complex flo
 
 extern void looklocker_model2(const struct signal_model* data, int N, complex float out[N]);
 
-extern void MOLLI_model(const struct signal_model* data, int N, int Hbeats, float time_T1relax, complex float out[N]);
+extern void MOLLI_model(const struct signal_model* data, int N, complex float out[N]);
 
 
 extern const struct signal_model signal_IR_bSSFP_defaults;

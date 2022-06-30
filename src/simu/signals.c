@@ -167,9 +167,9 @@ void looklocker_model2(const struct signal_model* data, int N, complex float out
  * MOLLI
  */
 
-extern void MOLLI_model(const struct signal_model* data, int N, int Hbeats, float time_T1relax, complex float out[N])
+extern void MOLLI_model(const struct signal_model* data, int N, complex float out[N])
 {
-	assert(0 == (N % Hbeats));
+	assert(0 == (N % data->Hbeats));
 
 	bool  ir   = data->ir;
 	float m0   = data->m0;
@@ -180,13 +180,13 @@ extern void MOLLI_model(const struct signal_model* data, int N, int Hbeats, floa
 
 	for (int ind = 0; ind < N; ind++) {
 
-		if((0 < ind) && (0 == ind % (N / Hbeats))) {
+		if((0 < ind) && (0 == ind % (N / data->Hbeats))) {
 
-			temp = m0 + (out[ind-1] - m0) * expf(-1.0 * time_T1relax * r1);
+			temp = m0 + (out[ind-1] - m0) * expf(-1.0 * data->time_T1relax * r1);
 			cycle++;
 		}
 			
-		out[ind] = signal_looklocker(data, ind - cycle * (N / Hbeats), &temp);
+		out[ind] = signal_looklocker(data, ind - cycle * (N / data->Hbeats), &temp);
 	}
 }
 
