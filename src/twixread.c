@@ -20,6 +20,7 @@
 #include "misc/mmio.h"
 #include "misc/debug.h"
 #include "misc/opts.h"
+#include "misc/cppmap.h"
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
@@ -31,7 +32,8 @@
 
 
 /* Information about twix files can be found here:
- * (Matlab code by Philipp Ehses and others, Yarra by Tobias Block)
+ * (Python/Matlab code by Philipp Ehses and others, Yarra by Tobias Block)
+ * https://github.com/pehses/twixtools
  * https://github.com/cjohnevans/Gannet2.0/blob/master/mapVBVD.m
  * https://bitbucket.org/yarra-dev/yarramodules-setdcmtags/src/
  */ 
@@ -108,17 +110,187 @@ static bool siemens_meas_setup(int fd, struct hdr_s* hdr)
 	return vd;
 }
 
-enum adc_flags {
-	ACQEND = 0,
-	SYNCDATA = 5,
-};
-
 enum adc_return {
 	ADC_ERROR = -1,
 	ADC_OK = 0,
 	ADC_SKIP = 1,
 	ADC_END = 2,
 };
+
+enum adc_flags {
+	ACQEND, // last scan
+	RTFEEDBACK, // Realtime feedback scan
+	HPFEEDBACK, // High perfomance feedback scan
+	ONLINE, // processing should be done online
+	OFFLINE, // processing should be done offline
+	SYNCDATA, // readout contains synchroneous data
+	unused06,
+	unused07,
+	LASTSCANINCONCAT, // Flag for last scan in concatination
+	unused09,
+	RAWDATACORRECTION, // Correct the rawadata with the rawdata correction factor
+	LASTSCANINMEAS, // Flag for last scan in measurement
+	SCANSCALEFACTOR, // Flag for scan specific additional scale factor
+	_2NDHADAMARPULSE, // 2nd RF exitation of HADAMAR
+	REFPHASESTABSCAN, // reference phase stabilization scan
+	PHASESTABSCAN, // phase stabilization scan
+	D3FFT, // execute 3D FFT
+	SIGNREV, // sign reversal
+	PHASEFFT, // execute phase fft
+	SWAPPED, // swapped phase/readout direction
+	POSTSHAREDLINE, // shared line
+	PHASCOR, // phase correction data
+	PATREFSCAN, // additonal scan for PAT reference line/partition
+	PATREFANDIMASCAN, // additonal scan for PAT reference line/partition that is also used as image scan
+	REFLECT, // reflect line
+	NOISEADJSCAN, // noise adjust scan
+	SHARENOW, // all lines are acquired from the actual and previous e.g. phases
+	LASTMEASUREDLINE, // indicates that the current line is the last measured line of all succeeding e.g. phases
+	FIRSTSCANINSLICE, // indicates first scan in slice (needed for time stamps)
+	LASTSCANINSLICE, // indicates  last scan in slice (needed for time stamps)
+	TREFFECTIVEBEGIN, // indicates the begin time stamp for TReff (triggered measurement)
+	TREFFECTIVEEND, // indicates the   end time stamp for TReff (triggered measurement)
+	MDS_REF_POSITION, // indicates the reference position for move during scan images (must be set once per slice/partition in MDS mode)
+	SLC_AVERAGED, // indicates avveraged slice for slice partial averaging scheme
+	TAGFLAG1, // adjust scan
+
+	CT_NORMALIZE, // Marks scans used to calculate correction maps for TimCT-Prescan normalize
+	SCAN_FIRST, // Marks the first scan of a particular map
+	SCAN_LAST, // Marks the last scan of a particular map
+
+	SLICE_ACCEL_REFSCAN, // indicates single-band reference scan within slice accelerated multi-band acquisition
+	SLICE_ACCEL_PHASCOR, // for additional phase correction in slice accelerated multi-band acquisition
+
+	FIRST_SCAN_IN_BLADE, // Marks the first line of a blade
+	LAST_SCAN_IN_BLADE, // Marks the last line of a blade
+	LAST_BLADE_IN_TR, // Set for all lines of the last BLADE in each TR interval
+	unused43,
+	PACE, // Distinguishes PACE scans from non PACE scans.
+
+	RETRO_LASTPHASE, // Marks the last phase in a heartbeat
+	RETRO_ENDOFMEAS, // Marks an ADC at the end of the measurement
+	RETRO_REPEATTHISHEARTBEAT, // Repeat the current heartbeat when this bit is found
+	RETRO_REPEATPREVHEARTBEAT, // Repeat the previous heartbeat when this bit is found
+	RETRO_ABORTSCANNOW, // Just abort everything
+	RETRO_LASTHEARTBEAT, // This adc is from the last heartbeat (a dummy)
+	RETRO_DUMMYSCAN, // This adc is just a dummy scan, throw it away
+	RETRO_ARRDETDISABLED, // Disable all arrhythmia detection when this bit is found
+
+	B1_CONTROLLOOP, // Marks the readout as to be used for B1 Control Loop
+
+	SKIP_ONLINE_PHASCOR, // Marks scans not to be online phase corrected, even if online phase correction is switched on
+	SKIP_REGRIDDING, // Marks scans not to be regridded, even if regridding is switched on
+
+	RF_MONITOR, // Marks the readout as to be used for RF monitoring
+	unused57,
+	unused58,
+	unsued59,
+	unused60,
+	WIP_1, // Mark scans for WIP application "type 1"
+	WIP_2, // Mark scans for WIP application "type 2"
+	WIP_3, // Mark scans for WIP application "type 3"
+
+};
+
+
+static const char* flag_strings[] = {
+ #define LSTR(x) [x] = # x,
+ MAP(LSTR,
+	ACQEND,
+	RTFEEDBACK,
+	HPFEEDBACK,
+	ONLINE,
+	OFFLINE,
+	SYNCDATA,
+	unused06,
+	unused07,
+	LASTSCANINCONCAT,
+	unused09,
+	RAWDATACORRECTION,
+	LASTSCANINMEAS,
+	SCANSCALEFACTOR,
+	_2NDHADAMARPULSE,
+	REFPHASESTABSCAN,
+	PHASESTABSCAN,
+	D3FFT,
+	SIGNREV,
+	PHASEFFT,
+	SWAPPED,
+	POSTSHAREDLINE,
+	PHASCOR,
+	PATREFSCAN,
+	PATREFANDIMASCAN,
+	REFLECT,
+	NOISEADJSCAN,
+	SHARENOW,
+	LASTMEASUREDLINE,
+	FIRSTSCANINSLICE,
+	LASTSCANINSLICE,
+	TREFFECTIVEBEGIN,
+	TREFFECTIVEEND,
+	MDS_REF_POSITION,
+	SLC_AVERAGED,
+	TAGFLAG1,
+	CT_NORMALIZE,
+	SCAN_FIRST,
+	SCAN_LAST,
+	SLICE_ACCEL_REFSCAN,
+	SLICE_ACCEL_PHASCOR,
+	FIRST_SCAN_IN_BLADE,
+	LAST_SCAN_IN_BLADE,
+	LAST_BLADE_IN_TR,
+	unused43,
+	PACE,
+	RETRO_LASTPHASE,
+	RETRO_ENDOFMEAS,
+	RETRO_REPEATTHISHEARTBEAT,
+	RETRO_REPEATPREVHEARTBEAT,
+	RETRO_ABORTSCANNOW,
+	RETRO_LASTHEARTBEAT,
+	RETRO_DUMMYSCAN,
+	RETRO_ARRDETDISABLED,
+	B1_CONTROLLOOP,
+	SKIP_ONLINE_PHASCOR,
+	SKIP_REGRIDDING,
+	RF_MONITOR,
+	unused57,
+	unused58,
+	unsued59,
+	unused60,
+	WIP_1,
+	WIP_2,
+	WIP_3)
+ #undef  LSTR
+};
+
+static bool is_image_adc(uint64_t adc_flag)
+{
+	// if any of these are set, it is not an image adc
+	uint64_t non_image = MD_BIT(ACQEND) | MD_BIT(SYNCDATA) |
+		MD_BIT(RTFEEDBACK) | MD_BIT(HPFEEDBACK) | MD_BIT(REFPHASESTABSCAN) |
+		MD_BIT(PHASESTABSCAN) | MD_BIT(PHASCOR) | MD_BIT(NOISEADJSCAN) |
+		MD_BIT(unused60);
+
+	if (adc_flag & non_image)
+		return false;
+
+// This is needed if we want to separate image adcs from coil calibration data (PATREFSCAN).
+// But I don't think we want to make that distinction.
+// 	if (MD_IS_SET(adc_flag, PATREFSCAN) && !MD_IS_SET(adc_flag, PATREFANDIMASCAN))
+// 		return false;
+
+	return true;
+}
+
+static void debug_print_flags(int dblevel, uint64_t adc_flag)
+{
+	debug_printf(dblevel, "-------------\n");
+	for (int f = ACQEND; f <= WIP_3; f++)
+		if (MD_IS_SET(adc_flag, f))
+			debug_printf(dblevel, "\t%s\n", flag_strings[f]);
+	debug_printf(dblevel, "Image scan? %d\n", is_image_adc(adc_flag));
+	debug_printf(dblevel, "-------------\n");
+}
 
 struct mdh1 {
 
@@ -131,7 +303,7 @@ struct mdh1 {
 
 struct mdh2 {	// second part of mdh
 
-	uint32_t evalinfo[2];
+	uint64_t evalinfo;
 	uint16_t samples;
 	uint16_t channels;
 	uint16_t sLC[14];
@@ -181,14 +353,18 @@ static enum adc_return siemens_bounds(bool vd, int fd, long min[DIMS], long max[
 		struct mdh2 mdh;
 		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
 
-		if (MD_IS_SET(mdh.evalinfo[0], ACQEND))
-			return ADC_END;
-		if (MD_IS_SET(mdh.evalinfo[0], SYNCDATA)) {
+		size_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
 
-			size_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
+		if (0 == pos[COIL_DIM])
+			debug_print_flags(DP_DEBUG2, mdh.evalinfo);
+
+		if (MD_IS_SET(mdh.evalinfo, ACQEND))
+			return ADC_END;
+
+
+		if (!is_image_adc(mdh.evalinfo))
 			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
 
-		}
 
 		if (0 == max[READ_DIM]) {
 
@@ -197,11 +373,11 @@ static enum adc_return siemens_bounds(bool vd, int fd, long min[DIMS], long max[
 		}
 
 
-		if (max[READ_DIM] != mdh.samples)
-			return ADC_ERROR;
+		if ((max[READ_DIM] != mdh.samples) || (max[COIL_DIM] != mdh.channels)) {
 
-		if (max[COIL_DIM] != mdh.channels)
-			return ADC_ERROR;
+			debug_printf(DP_DEBUG1, "Wrong number of channels or samples, skipping ADC\n");
+			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
+		}
 
 		pos[PHS1_DIM]	= mdh.sLC[0];
 		pos[AVG_DIM]	= mdh.sLC[1];
@@ -222,8 +398,11 @@ static enum adc_return siemens_bounds(bool vd, int fd, long min[DIMS], long max[
 		size = mdh.samples * CFL_SIZE;
 		char buf[size];
 
-		if (size != (size_t)read(fd, buf, size))
+		if (size != (size_t)read(fd, buf, size)) {
+
+			debug_printf(DP_ERROR, "Incomplete read!\n");
 			return ADC_ERROR;
+		}
 	}
 
 	return ADC_OK;
@@ -243,10 +422,10 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 		struct mdh2 mdh;
 		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
 
-		if (MD_IS_SET(mdh.evalinfo[0], ACQEND))
+		if (MD_IS_SET(mdh.evalinfo, ACQEND))
 			return ADC_END;
 
-		if (MD_IS_SET(mdh.evalinfo[0], SYNCDATA)
+		if (!is_image_adc(mdh.evalinfo)
 			|| (dims[READ_DIM] != mdh.samples)) {
 
 			size_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
@@ -446,7 +625,7 @@ int main_twixread(int argc, char* argv[argc])
 			break;
 		} else if (ADC_SKIP == sar) {
 
-			debug_printf(DP_DEBUG2, "Skipping.\n");
+			debug_printf(DP_DEBUG3, "Skipping.\n");
 			continue;
 		} else if (ADC_OK == sar) {
 
@@ -469,8 +648,8 @@ int main_twixread(int argc, char* argv[argc])
 				}
 			}
 
-			debug_printf(DP_DEBUG2, "pos: ");
-			debug_print_dims(DP_DEBUG2, DIMS, pos);
+			debug_printf(DP_DEBUG3, "pos: ");
+			debug_print_dims(DP_DEBUG3, DIMS, pos);
 
 			if (!md_is_index(DIMS, pos, dims)) {
 
