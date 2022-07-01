@@ -11,6 +11,7 @@
 #include <complex.h>
 
 #include "num/multind.h"
+#include "num/flpmath.h"
 
 #include "misc/mri.h"
 #include "misc/mmio.h"
@@ -28,31 +29,78 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static void perform_bloch_simulation(struct sim_data* data, const complex float* slice, int N, complex float out[N])
-{
-        float m[N][3];
-        float sa_r1[N][3];
-        float sa_r2[N][3];
-        float sa_m0[N][3];
-        float sa_b1[N][3];
-
-        bloch_simulation(data, slice, N, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
-
-        for (int i = 0; i < N; i++)
-                out[i] = m[i][1] + m[i][0] * I;
-}
 
 
 static const char help_str[] = "simulation tool";
 
 
+// FIXME: Turn of sensitivity analysis if derivatives are not asked for
+static void perform_bloch_simulation(int N, struct sim_data* data, const complex float* slice, long mdims[N], complex float* mxy, long ddims[N], complex float* deriv)     // 4 Derivatives: dR1, dM0, dR2, dB1
+{
+        (void) mdims;
+
+        int T = ddims[TE_DIM];
+
+        float m[T][3];
+        float sa_r1[T][3];
+        float sa_r2[T][3];
+        float sa_m0[T][3];
+        float sa_b1[T][3];
+
+        bloch_simulation(data, slice, T, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
+
+        long pos[DIMS];
+        md_copy_dims(DIMS, pos, ddims);
+
+        long dstrs[DIMS];
+        md_calc_strides(N, dstrs, ddims, CFL_SIZE);
+
+        long ind = 0;
+
+        for (int i = 0; i < T; i++) {
+
+                // Calculate spatial position and save data
+
+                pos[TE_DIM] = i;
+                pos[MAPS_DIM] = 0;
+
+                ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+
+                mxy[i] = m[i][1] + m[i][0] * I;
+
+                if (NULL != deriv) {
+
+                        // dR1
+                        deriv[ind] = sa_r1[i][1] + sa_r1[i][0] * I;
+
+                        // dM0
+                        pos[MAPS_DIM] = 1;
+                        ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+                        deriv[ind] = sa_m0[i][1] + sa_m0[i][0] * I;
+
+                        // dR2
+                        pos[MAPS_DIM] = 2;
+                        ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+                        deriv[ind] = sa_r2[i][1] + sa_r2[i][0] * I;
+
+                        // dB1
+                        pos[MAPS_DIM] = 3;
+                        ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+                        deriv[ind] = sa_b1[i][1] + sa_b1[i][0] * I;
+                }
+        }
+}
+
+
 int main_sim(int argc, char* argv[argc])
 {
-	const char* out_file = NULL;
+	const char* out_signal = NULL;
+        const char* out_deriv = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_OUTFILE(true, &out_file, "basis-functions"),
+		ARG_OUTFILE(true, &out_signal, "signal: Mxy"),
+                ARG_OUTFILE(false, &out_deriv, "Partial derivatives: dR1, dM0, dR2, dB1"),
 	};
 
 	struct sim_data data;
@@ -119,14 +167,15 @@ int main_sim(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
-        // Define output dimensions
-        long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
+        // Define output dimensions for signal
 
-	dims[TE_DIM] = data.seq.rep_num;
-	dims[COEFF_DIM] = truncf(T1[2]);
-	dims[COEFF2_DIM] = truncf(T2[2]);
+        long mdims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
-	if ((dims[TE_DIM] < 1) || (dims[COEFF_DIM] < 1) || (dims[COEFF2_DIM] < 1))
+	mdims[TE_DIM] = data.seq.rep_num;
+	mdims[COEFF_DIM] = truncf(T1[2]);
+	mdims[COEFF2_DIM] = truncf(T2[2]);
+
+	if ((mdims[TE_DIM] < 1) || (mdims[COEFF_DIM] < 1) || (mdims[COEFF2_DIM] < 1))
 		error("invalid parameter range");
 
 
@@ -149,30 +198,62 @@ int main_sim(int argc, char* argv[argc])
 		slice_profile_fourier(DIMS, spdims, slice, &data.pulse);
         }
 
-        // Allocate output file
-	complex float* signals = create_cfl(out_file, DIMS, dims);
+        // Allocate output file for signal and optional derivatives
 
-	long dims1[DIMS];
-	md_select_dims(DIMS, TE_FLAG, dims1, dims);
+	complex float* signals = create_cfl(out_signal, DIMS, mdims);
 
-	long pos[DIMS] = { 0 };
-	int N = dims[TE_DIM];
+        long ddims[DIMS] = { [0 ... DIMS - 1] = 1 };
+
+        md_copy_dims(DIMS, ddims, mdims);
+        ddims[MAPS_DIM] = 4;    // dR1, dM0, dR2, dB1
+
+        complex float* deriv = NULL;
+
+        if (NULL != out_deriv)
+                deriv = create_cfl( out_deriv, DIMS, ddims);
+
+        // Temporary dimensions for derivative and magnetization
+
+	long tmdims[DIMS];
+	md_select_dims(DIMS, ~(COEFF_FLAG|COEFF2_FLAG), tmdims, mdims);
+
+	long tddims[DIMS];
+	md_select_dims(DIMS, ~(COEFF_FLAG|COEFF2_FLAG), tddims, ddims);
 
 
-        // Run all simulations and store magnetization
+        // Allocate temporary magnetization and derivative arrays
+
+	complex float* tm = md_alloc(DIMS, tmdims, CFL_SIZE);
+	md_zfill(DIMS, tmdims, tm, 0.);
+
+	complex float* td = md_alloc(DIMS, tddims, CFL_SIZE);
+	md_zfill(DIMS, tddims, td, 0.);
+
+
+        // Run all simulations and store signal and optional derivatives
+
+        long pos[DIMS] = { 0 };
+
 	do {
 		data.voxel.r1 = 1. / (T1[0] + (T1[1] - T1[0]) / T1[2] * (float)pos[COEFF_DIM]);
         	data.voxel.r2 = 1. / (T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM]);
 
-		complex float out[N];
+                perform_bloch_simulation(DIMS, &data, slice, tmdims, tm, tddims, td);
 
-                perform_bloch_simulation(&data, slice, N, out);
+		md_copy_block(DIMS, pos, mdims, signals, tmdims, tm, CFL_SIZE);
 
-		md_copy_block(DIMS, pos, dims, signals, dims1, out, CFL_SIZE);
+                if (NULL != deriv)
+                        md_copy_block(DIMS, pos, ddims, deriv, tddims, td, CFL_SIZE);
 
-	} while(md_next(DIMS, dims, ~TE_FLAG, pos));
+	} while(md_next(DIMS, mdims, ~TE_FLAG, pos));
 
-	unmap_cfl(DIMS, dims, signals);
+        md_free(tm);
+        md_free(td);
+
+	unmap_cfl(DIMS, mdims, signals);
+
+        if (NULL != out_deriv)
+                unmap_cfl(DIMS, ddims, deriv);
 
 	if (NULL != slice)
 		md_free(slice);
