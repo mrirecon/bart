@@ -706,6 +706,22 @@ static void* cuda_malloc_wrapper(size_t size)
 
 		CUDA_ERROR(cudaMallocManaged(&ptr, size, cudaMemAttachGlobal));
 
+		int device = cuda_get_internal_device(cuda_get_device());
+		
+		for (int i = 0; i < cuda_num_devices(); i++) {
+
+			int access;
+			CUDA_ERROR(cudaDeviceGetAttribute(&access, cudaDevAttrConcurrentManagedAccess, cuda_get_internal_device(i)));
+
+			if(0 != access)
+				CUDA_ERROR(cudaMemAdvise(ptr, size, cudaMemAdviseSetAccessedBy, cuda_get_internal_device(i)));
+		}
+
+		int access;
+		CUDA_ERROR(cudaDeviceGetAttribute(&access, cudaDevAttrConcurrentManagedAccess, device));
+
+		if (0 != access)
+			CUDA_ERROR(cudaMemPrefetchAsync(ptr, size, device, cuda_get_stream()));
 	} else {
 
 		CUDA_ERROR(cudaMalloc(&ptr, size));
@@ -754,14 +770,23 @@ void cuda_memcache_clear(void)
 }
 
 
-#if 0
-// We still don use this because it is slow. Why? Nivida, why?
+#if CUDART_VERSION >= 10000
+#define CUDA_GET_CUDA_DEVICE_NUM
+#endif
 
-static bool cuda_cuda_ondevice(const void* ptr)
+#ifdef CUDA_GET_CUDA_DEVICE_NUM
+// (We still don use this because it is slow. Why? Nivida, why?)
+// Starting with CUDA 10 it has similar speed to the memcache but is 
+// faster if multiple threads access the memcache
+
+static int cuda_cuda_get_device_num_internal(const void* ptr)
 {
 	if (NULL == ptr)
-		return false;
+		return -1;
 
+	if (0 == n_reserved_gpus)
+		return -1;
+	
 	struct cudaPointerAttributes attr;
 	if (cudaSuccess != (cudaPointerGetAttributes(&attr, ptr)))
 	{
@@ -770,10 +795,13 @@ static bool cuda_cuda_ondevice(const void* ptr)
 	   http://www.alexstjohn.com/WP/2014/04/28/cuda-6-0-first-look/
 	 */
 		cudaGetLastError();
-		return false;
+		return -1;
 	}
 
-	return (cudaMemoryTypeDevice == attr.memoryType);
+	if ((cudaMemoryTypeUnregistered == attr.type) || (cudaMemoryTypeHost == attr.type))
+		return -1;
+
+	return attr.device;
 }
 #endif
 
@@ -792,7 +820,12 @@ static int cuda_get_device_num_internal(const void* ptr)
 	if (NULL == ptr)
 		return -1;
 
+#ifdef CUDA_GET_CUDA_DEVICE_NUM
+	return cuda_cuda_get_device_num_internal(ptr);
+#else
 	return mem_device_num(ptr);
+#endif
+
 }
 
 int cuda_get_device_num(const void* ptr)
@@ -803,6 +836,7 @@ int cuda_get_device_num(const void* ptr)
 
 void cuda_clear(long size, void* dst)
 {
+	CUDA_ERROR_PTR(dst);
 	CUDA_ERROR(cudaMemsetAsync(dst, 0, size, cuda_get_stream()));
 }
 
