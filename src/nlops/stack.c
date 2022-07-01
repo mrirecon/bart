@@ -14,6 +14,9 @@
 #include "num/iovec.h"
 #include "num/ops.h"
 #include "num/ops_graph.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 
 #include "linops/someops.h"
@@ -22,6 +25,7 @@
 #include "nlops/chain.h"
 #include "nlops/cast.h"
 #include "nlops/const.h"
+#include "nlops/checkpointing.h"
 
 #include "stack.h"
 
@@ -212,6 +216,10 @@ struct stack_container_s {
 
 	INTERFACE(nlop_data_t);
 
+	bool multi_gpu;
+	bool exclude_main_gpu;
+	int* device_id;
+
 	int Nnlops;
 
 	int N;
@@ -245,9 +253,21 @@ static void stack_clear_der(const nlop_data_t* _data)
 
 static int sc_threads(const struct stack_container_s* d)
 {
-	UNUSED(d);
+	int threads = -1;
+#ifdef USE_CUDA
+	if (d->multi_gpu) {
 
-	return -1;
+		threads = cuda_num_devices();
+		if (d->exclude_main_gpu)
+			threads = MAX(1, threads -1);
+
+		threads *= cuda_streams_per_device;
+	}
+#else
+	UNUSED(d);
+#endif
+
+	return threads;
 }
 
 
@@ -414,7 +434,7 @@ static const struct graph_s* nlop_graph_stack_container(const struct operator_s*
 }
 
 
-const struct nlop_s* nlop_stack_container_create(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO])
+static const struct nlop_s* nlop_stack_container_internal_create(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO], bool multi_gpu, bool exclude_main_gpu)
 {
 	PTR_ALLOC(struct stack_container_s, d);
 	SET_TYPEID(stack_container_s, d);
@@ -453,6 +473,8 @@ const struct nlop_s* nlop_stack_container_create(int N, const struct nlop_s* nlo
 	d->II = II;
 	d->OO = OO;
 	d->N = II + OO;
+	d->multi_gpu = multi_gpu;
+	d->exclude_main_gpu = exclude_main_gpu;
 
 
 	d->dup = *TYPE_ALLOC(_Bool[II]);
@@ -558,7 +580,20 @@ const struct nlop_s* nlop_stack_container_create(int N, const struct nlop_s* nlo
 	for (int i = 0; i < N; i++) {
 
 		d->nlops_original[i] = nlop_clone(nlops[i]);
-		d->nlops[i] = nlop_copy_wrapper(OO, (const long**)d->strs, II, (const long**)d->strs + OO, nlops[i]);
+
+		const struct nlop_s* tmp;
+
+		// checkpointing container applies derivatives jointly
+		// makes use of shared ops
+
+		if (!nlop_is_checkpoint(nlops[i]) && ((II > 1) || (OO > 1)))
+			tmp = nlop_checkpoint_create(nlops[i], true, false);
+		else
+			tmp = nlop_clone(nlops[i]);
+
+		d->nlops[i] = nlop_copy_wrapper(OO, (const long**)d->strs, II, (const long**)d->strs + OO, tmp);
+
+		nlop_free(tmp);
 	}
 
 	d->simple_flatten_in =     (1 == II)
@@ -571,6 +606,16 @@ const struct nlop_s* nlop_stack_container_create(int N, const struct nlop_s* nlo
 				&& (   (out_stack_dim[0] == (int)max_DO - 1)
 				    || (1 == md_calc_size(max_DO - out_stack_dim[0] - 1, nl_odims[0] + out_stack_dim[0] + 1)));
 
+#ifdef USE_CUDA
+	for (int i = 0; multi_gpu && (i < N); i++) {
+
+		int device = i + 1;
+		if (exclude_main_gpu && (1 < cuda_num_devices()))
+			device = 1 + (device % (cuda_num_devices() - 1));
+
+		d->nlops[i] = nlop_assign_gpu_F(d->nlops[i], device); // less memory on main gpu 0
+	}
+#endif
 
 	nlop_der_fun_t der_funs[II][OO];
 	nlop_der_fun_t adj_funs[II][OO];
@@ -609,14 +654,24 @@ const struct nlop_s* nlop_stack_container_create(int N, const struct nlop_s* nlo
 	return result;
 }
 
-const struct nlop_s* nlop_stack_container_create_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO])
+static const struct nlop_s* nlop_stack_container_internal_create_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO], bool multi_gpu, bool exclude_main_gpu)
 {
-	auto result = nlop_stack_container_create(N, nlops, II, in_stack_dim, OO, out_stack_dim);
+	auto result = nlop_stack_container_internal_create(N, nlops, II, in_stack_dim, OO, out_stack_dim, multi_gpu, exclude_main_gpu);
 
 	for (int i = 0; i < N; i++)
 		nlop_free(nlops[i]);
 	
 	return result;
+}
+
+const struct nlop_s* nlop_stack_container_create_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO])
+{
+	return nlop_stack_container_internal_create_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, false, false);
+}
+
+const struct nlop_s* nlop_stack_multigpu_create_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO])
+{
+	return nlop_stack_container_internal_create_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, true, false);
 }
 
 struct stack_flatten_trafo_s {
@@ -894,7 +949,7 @@ const struct nlop_s* nlop_flatten_stacked(const struct nlop_s* nlop)
 	int istack_dims[1] = { 0 };
 	int ostack_dims[1] = { 0 };
 	
-	auto result = nlop_stack_container_create_F(data->Nnlops, nlops, 1, istack_dims, 1, ostack_dims);
+	auto result = nlop_stack_container_internal_create_F(data->Nnlops, nlops, 1, istack_dims, 1, ostack_dims, data->multi_gpu, data->exclude_main_gpu);
 
 	if (NULL != itrafo)
 		result = nlop_chain_FF(itrafo, result);
