@@ -101,7 +101,7 @@ of gcc from MacPorts (http://www.macports.org/).
 
 
     $ sudo port install fftw-3-single
-    $ sudo port install gcc6
+    $ sudo port install gcc10
     $ sudo port install libpng
     $ sudo port install openblas
 
