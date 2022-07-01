@@ -148,7 +148,13 @@ extern void nlop_export_graph(const char* filename, const struct nlop_s* op);
 extern const struct nlop_s* nlop_copy_wrapper(int OO, const long* ostrs[OO], int II, const long* istrs[II], const struct nlop_s* nlop);
 extern const struct nlop_s* nlop_copy_wrapper_F(int OO, const long* ostrs[OO], int II, const long* istrs[II], const struct nlop_s* nlop);
 
+extern const struct nlop_s* nlop_assign_gpu(const struct nlop_s* op, int device);
+extern const struct nlop_s* nlop_assign_gpu_F(const struct nlop_s* op, int device);
+
 extern const struct nlop_s* nlop_optimize_graph(const struct nlop_s* op);
+
+
+
 
 #endif
 

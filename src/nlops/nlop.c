@@ -1343,3 +1343,41 @@ const struct nlop_s* nlop_copy_wrapper_F(int OO, const long* ostrs[OO], int II, 
 	nlop_free(nlop);
 	return result;
 }
+
+
+const struct nlop_s* nlop_assign_gpu(const struct nlop_s* op, int device) 
+{
+#ifdef USE_CUDA
+
+	PTR_ALLOC(struct nlop_s, n);
+
+	int II = nlop_get_nr_in_args(op);
+	int OO = nlop_get_nr_out_args(op);
+
+	n->op = operator_assign_gpu(op->op, device);
+
+	const struct linop_s* (*der)[II][OO] = (void*)op->derivative;
+
+	PTR_ALLOC(const struct linop_s*[II][OO], nder);
+
+	for (int ii = 0; ii < II; ii++)
+		for (int oo = 0; oo < OO; oo++)
+			(*nder)[ii][oo] = linop_assign_gpu((*der)[ii][oo], device);
+
+
+	n->derivative = &(*PTR_PASS(nder))[0][0];
+	return PTR_PASS(n);
+#else
+	UNUSED(device);
+	return nlop_clone(op);
+#endif
+}
+
+const struct nlop_s* nlop_assign_gpu_F(const struct nlop_s* op, int device) 
+{
+	auto result = nlop_assign_gpu(op, device);
+	nlop_free(op);
+	return result;
+}
+
+
