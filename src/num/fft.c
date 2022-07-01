@@ -463,6 +463,7 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 #ifdef  USE_CUDA
 	if (cuda_ondevice(src)) {
 #ifdef	LAZY_CUDA
+		#pragma omp critical(cufft_create_plan_in_threads)
 		if (NULL == plan->cuplan)
 			((struct fft_plan_s*)plan)->cuplan = fft_cuda_plan(plan->D, plan->dims, plan->flags, plan->ostrs, plan->istrs, plan->backwards);
 #endif
