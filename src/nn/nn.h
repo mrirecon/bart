@@ -124,6 +124,7 @@ extern const struct iovec_s* nn_generic_domain(nn_t op, int i, const char* iname
 extern const struct iovec_s* nn_generic_codomain(nn_t op, int o, const char* oname);
 
 extern nn_t nn_checkpoint_F(nn_t op, _Bool der_once, _Bool clear_mem);
+extern nn_t nn_assign_gpu_F(nn_t op, int device);
 
 extern void nn_debug(enum debug_levels dl, nn_t x);
 extern void nn_export_graph(const char* filename, nn_t op);
