@@ -40,7 +40,9 @@ extern void cuda_set_device(int device);
 extern int cuda_get_device(void);
 extern int cuda_get_device_internal_unchecked(void);
 
-
+#ifdef USE_CUDA
+extern cudaStream_t cuda_get_stream(void);
+#endif
 //synchronisation functions
 extern void cuda_sync_device(void);
 extern void cuda_sync_devices(void);

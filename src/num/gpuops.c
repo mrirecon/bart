@@ -431,6 +431,13 @@ void cuda_exit(void)
 
 
 
+//*************************************** Stream Synchronisation ********************************************* 
+
+cudaStream_t cuda_get_stream(void)
+{
+	return cudaStreamLegacy;
+}
+
 
 
 //*************************************** Host Synchonization ********************************************* 
@@ -549,8 +556,7 @@ bool cuda_ondevice(const void* ptr)
 
 void cuda_clear(long size, void* dst)
 {
-//	printf("CLEAR %x %ld\n", dst, size);
-	CUDA_ERROR(cudaMemsetAsync(dst, 0, size, cudaStreamLegacy));
+	CUDA_ERROR(cudaMemsetAsync(dst, 0, size, cuda_get_stream()));
 }
 
 static void cuda_float_clear(long size, float* dst)
@@ -560,13 +566,12 @@ static void cuda_float_clear(long size, float* dst)
 
 void cuda_memcpy(long size, void* dst, const void* src)
 {
-//	printf("COPY %x %x %ld\n", dst, src, size);
-	CUDA_ERROR(cudaMemcpyAsync(dst, src, size, cudaMemcpyDefault, cudaStreamLegacy));
+	CUDA_ERROR(cudaMemcpyAsync(dst, src, size, cudaMemcpyDefault, cuda_get_stream()));
 }
 
 void cuda_memcpy_strided(const long dims[2], long ostr, void* dst, long istr, const void* src)
 {
-	CUDA_ERROR(cudaMemcpy2DAsync(dst, ostr, src, istr, dims[0], dims[1], cudaMemcpyDefault, cudaStreamLegacy));
+	CUDA_ERROR(cudaMemcpy2DAsync(dst, ostr, src, istr, dims[0], dims[1], cudaMemcpyDefault, cuda_get_stream()));
 }
 
 static void cuda_float_copy(long size, float* dst, const float* src)
