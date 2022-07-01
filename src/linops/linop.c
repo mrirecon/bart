@@ -1067,6 +1067,32 @@ const linop_data_t* operator_get_linop_data(const struct operator_s* op)
 		return data->data;
 }
 
+struct linop_s* linop_assign_gpu(const struct linop_s* op, int device)
+{
+	#ifdef USE_CUDA
+	if (operator_zero_or_null_p(op->forward))
+		return (struct linop_s*)linop_clone(op);
+
+	PTR_ALLOC(struct linop_s, c);
+
+	c->forward =  operator_assign_gpu(op->forward, device);
+	c->adjoint = operator_assign_gpu(op->adjoint, device);
+	c->normal = operator_assign_gpu(op->normal, device);
+	c->norm_inv = NULL;
+
+	return PTR_PASS(c);
+	#else
+	UNUSED(device);
+	return (struct linop_s*)linop_clone(op);
+	#endif
+}
+
+struct linop_s* linop_assign_gpu_F(const struct linop_s* op, int device)
+{
+	auto result = linop_assign_gpu(op, device);
+	linop_free(op);
+	return result;
+}
 
 static enum node_identic node_identify_linop(const struct node_s* _a, const struct node_s* _b)
 {
