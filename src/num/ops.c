@@ -533,6 +533,7 @@ const struct operator_s* get_in_reshape(const struct operator_s* op) {
 	return NULL;
 }
 
+
 struct zero_s {
 
 	INTERFACE(operator_data_t);
@@ -1356,6 +1357,22 @@ const struct operator_s* operator_gpu_wrapper2(const struct operator_s* op, long
 const struct operator_s* operator_gpu_wrapper(const struct operator_s* op)
 {
 	return operator_gpu_wrapper2(op, ~0L);
+}
+
+
+const struct operator_s* operator_assign_gpu(const struct operator_s* op, int device)
+{
+	int N = op->N;
+	enum COPY_LOCATION loc[N];
+	const long* strs[N];
+
+	for (int i = 0; i < (int)N; i++) {
+
+		loc[i] = CL_DEVICE;
+		strs[i] = NULL;
+	}
+
+	return operator_copy_wrapper_generic(N, strs, loc, op, device, false);
 }
 
 
