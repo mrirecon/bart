@@ -43,6 +43,7 @@ struct cdiag_s {
 	const long* dstrs;
 
 	struct multiplace_array_s* diag;
+	struct multiplace_array_s* normal;
 	bool rmul;
 };
 
@@ -69,14 +70,28 @@ static void cdiag_adjoint(const linop_data_t* _data, complex float* dst, const c
 
 static void cdiag_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	cdiag_apply(_data, dst, src);
-	cdiag_adjoint(_data, dst, dst);
+	const auto data = CAST_DOWN(cdiag_s, _data);
+
+	#pragma omp critical (linop_cdiag_normal)
+	if (NULL == data->normal) {
+
+		const complex float* diag = multiplace_read(data->diag, src);
+
+		complex float* tmp = md_alloc_sameplace(data->N, data->ddims, CFL_SIZE, dst);
+		(data->rmul ? md_zrmul : md_zmulc)(data->N, data->ddims, tmp, diag, diag);
+		data->normal = multiplace_move_F(data->N, data->ddims, CFL_SIZE, tmp);
+	}
+
+	const complex float* normal = multiplace_read(data->normal, src);
+
+	(data->rmul ? md_zrmul2 : md_zmul2)(data->N, data->dims, data->strs, dst, data->strs, src, data->dstrs, normal);
 }
 
 static void cdiag_free(const linop_data_t* _data)
 {
 	const auto data = CAST_DOWN(cdiag_s, _data);
 
+	multiplace_free(data->normal);
 	multiplace_free(data->diag);
 	xfree(data->ddims);
 	xfree(data->dims);
@@ -111,6 +126,7 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
 	data->dstrs = *PTR_PASS(dstrs);
 
 	data->diag = (NULL == diag) ? NULL : multiplace_move(N, data->ddims, CFL_SIZE, diag);
+	data->normal = NULL;
 
 	return linop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
 }
@@ -153,7 +169,9 @@ void linop_gdiag_set_diag(const struct linop_s* lop, int N, const long ddims[N],
 	assert(md_check_equal_dims(N, ddims, data->ddims, ~0));
 
 	multiplace_free(data->diag);
+	multiplace_free(data->normal);
 
+	data->normal = NULL;
 	data->diag = multiplace_move(N, data->ddims, CFL_SIZE, diag);
 }
 
@@ -1489,6 +1507,14 @@ static void fft_linop_apply(const linop_data_t* _data, complex float* out, const
 {
 	const auto data = CAST_DOWN(fft_linop_s, _data);
 
+#ifdef USE_CUDA
+	if (cuda_ondevice(out)) {
+
+		operator_apply(data->frw, data->N, data->dims, out, data->N, data->dims, in);
+		return;
+	}
+#endif
+
 	if (in != out)
 		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
 
@@ -1498,6 +1524,14 @@ static void fft_linop_apply(const linop_data_t* _data, complex float* out, const
 static void fft_linop_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
 	const auto data = CAST_DOWN(fft_linop_s, _data);
+
+#ifdef USE_CUDA
+	if (cuda_ondevice(out)) {
+
+		operator_apply(data->adj, data->N, data->dims, out, data->N, data->dims, in);
+		return;
+	}
+#endif
 
 	if (in != out)
 		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
