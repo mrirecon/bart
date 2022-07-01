@@ -5,6 +5,21 @@
 
 #include "misc/cppwrap.h"
 
+#ifdef USE_CUDA
+
+#include <cuda_runtime_api.h>
+void cuda_error(const char* file, int line, cudaError_t code);
+void cuda_gpu_check(const char* file, int line, const char* note);
+void cuda_check_ptr(const char* file, int line, int N, const void* ptr[__VLA(N)]);
+
+#define CUDA_ASYNC_ERROR_NOTE(x)	({ cuda_gpu_check(__FILE__, __LINE__, (x)); })
+#define CUDA_ASYNC_ERROR		CUDA_ASYNC_ERROR_NOTE("")
+#define CUDA_ERROR(x)			({ cudaError_t errval = (x); if (cudaSuccess != errval) cuda_error(__FILE__, __LINE__, errval); })
+#define CUDA_KERNEL_ERROR 		({ cudaError_t errval = cudaGetLastError(); if (cudaSuccess != errval) cuda_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR; })
+#define CUDA_ERROR_PTR(...)		({ CUDA_ASYNC_ERROR; const void* _ptr[] = { __VA_ARGS__}; cuda_check_ptr(__FILE__, __LINE__, (sizeof(_ptr) / sizeof(_ptr[0])), _ptr); })
+
+#endif
+
 #define MAX_CUDA_DEVICES 16
 #define MAX_CUDA_STREAMS 2
 extern int cuda_streams_per_device;
@@ -24,6 +39,8 @@ extern int cuda_num_devices(void);
 extern void cuda_set_device(int device);
 extern int cuda_get_device(void);
 extern int cuda_get_device_internal_unchecked(void);
+
+
 //synchronisation functions
 extern void cuda_sync_device(void);
 extern void cuda_sync_devices(void);

@@ -56,16 +56,53 @@ static void cuda_set_device_internal(int device);
 static void cuda_stream_sync_deinit(void);
 static void cuda_stream_sync_init(void);
 
-
-
-static void cuda_error(int line, cudaError_t code)
+void cuda_error(const char* file, int line, cudaError_t code)
 {
 	const char *err_str = cudaGetErrorString(code);
-	error("cuda error: %d %s \n", line, err_str);
+	error("CUDA Error on Device %d: %s in %s:%d\n", cuda_get_device_internal(), err_str, file, line);
 }
 
+void cuda_gpu_check(const char* file, int line, const char* note)
+{
+#ifdef GPU_ASSERTS
+	cudaError_t code = cudaStreamSynchronize(cuda_default_stream);
 
-#define CUDA_ERROR(x)	({ cudaError_t errval = (x); if (cudaSuccess != errval) cuda_error(__LINE__, errval); })
+	if (cudaSuccess != code) {
+		
+		const char *err_str = cudaGetErrorString(code);
+		if (0 == strlen(note))
+			error("CUDA Error on Device %d: %s in %s:%d\n", cuda_get_device_internal(), err_str, file, line);
+		else
+			error("CUDA Error on Device %d: %s in %s:%d (%s)\n", cuda_get_device_internal(), err_str, file, line, note);
+	}
+#else
+	UNUSED(file);
+	UNUSED(line);
+	UNUSED(note);
+#endif
+}
+
+void cuda_check_ptr(const char* file, int line, int N, const void* ptr[N])
+{
+#ifdef GPU_ASSERTS
+	bool same_device = true;
+	
+	for (int i = 0; i < N; i++)
+		if (cuda_get_device() != cuda_get_device_num(ptr[i]))
+			same_device = false;
+	
+	if (!same_device) {
+		for (int i = 0; i < N; i++)
+			debug_printf(DP_WARN, "%d: %x on device %d\n", i, ptr[i], cuda_get_device_num(ptr[i]));
+		error("CUDA Error on Device %d: Pointer not on current device in %s:%d", cuda_get_device(), file, line);
+	}
+#else
+	UNUSED(file);
+	UNUSED(line);
+	UNUSED(N);
+	UNUSED(ptr);
+#endif
+}
 
 // Print free and used memory on GPU.
 void print_cuda_meminfo(void)
