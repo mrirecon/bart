@@ -61,6 +61,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	float mxy_ref_sig[sim_data.seq.rep_num][3];
 	float sa_r1_ref_sig[sim_data.seq.rep_num][3];
@@ -195,6 +196,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	float mxy_ref_sig[sim_data.seq.rep_num][3];
 	float sa_r1_ref_sig[sim_data.seq.rep_num][3];
@@ -348,6 +350,7 @@ static bool test_ode_irbssfp_simulation(void)
 
 	sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	float mxy_sig[sim_data.seq.rep_num][3];
 	float sa_r1_sig[sim_data.seq.rep_num][3];
@@ -545,6 +548,7 @@ static bool test_stm_ode_bssfp_comparison(void)
 
 	sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
         sim_data.grad.mom_sl = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
         sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
@@ -644,6 +648,7 @@ static bool test_stm_ode_flash_comparison(void)
 
 	sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
         sim_data.grad.mom_sl = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
         sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
@@ -736,6 +741,7 @@ static bool test_ode_simu_offresonance(void)
 
         sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
@@ -797,6 +803,7 @@ static bool test_stm_simu_offresonance(void)
 
         sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
@@ -859,6 +866,7 @@ static bool test_ode_simu_gradient(void)
 	sim_data.grad.mom =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	float mxySig_ode[sim_data.seq.rep_num][3];
 	float saR1Sig_ode[sim_data.seq.rep_num][3];
@@ -921,6 +929,7 @@ static bool test_stm_simu_gradient(void)
 	sim_data.grad.mom =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	float mxySig_ode[sim_data.seq.rep_num][3];
 	float saR1Sig_ode[sim_data.seq.rep_num][3];
@@ -1031,7 +1040,7 @@ static bool test_ode_epg_relation(void)
 
 	sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
-
+        sim_data.other = simdata_other_defaults;
 
 	// Estimate Fourier modes from ODE simulation
 
@@ -1137,6 +1146,7 @@ static bool test_hp_irbssfp_simulation(void)
 
 	sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	float mxy_sig[sim_data.seq.rep_num][3];
 	float sa_r1_sig[sim_data.seq.rep_num][3];
@@ -1211,6 +1221,7 @@ static bool test_hp_simu_offresonance(void)
 
         sim_data.grad = simdata_grad_defaults;
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
@@ -1273,6 +1284,7 @@ static bool test_hp_simu_gradient(void)
 	sim_data.grad.mom =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	float mxySig_ode[sim_data.seq.rep_num][3];
 	float saR1Sig_ode[sim_data.seq.rep_num][3];
@@ -1336,6 +1348,7 @@ static bool test_ode_z_gradient_refocus(void)
         sim_data.grad.mom_sl = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	float mxy_sig[sim_data.seq.rep_num][3];
 	float sa_r1_sig[sim_data.seq.rep_num][3];
@@ -1408,6 +1421,7 @@ static bool test_stm_z_gradient_refocus(void)
         sim_data.grad.mom_sl = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
 	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
 
 	float mxy_sig[sim_data.seq.rep_num][3];
 	float sa_r1_sig[sim_data.seq.rep_num][3];
@@ -1476,6 +1490,7 @@ static bool test_ode_inversion(void)
 
         data.grad = simdata_grad_defaults;
         data.tmp = simdata_tmp_defaults;
+        data.other = simdata_other_defaults;
 
         float xp[P][N] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
 

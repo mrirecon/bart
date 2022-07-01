@@ -139,6 +139,7 @@ const struct simdata_other simdata_other_defaults = {
 
 
 
+
 /* --------- Matrix Operations --------- */
 
 
@@ -780,7 +781,7 @@ static void alpha_half_preparation(struct sim_data* data, float h, float tol, in
 
 void bloch_simulation(struct sim_data* data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
 {
-	float tol = 10E-6;      // Tolerance of ODE solver
+        float tol = data->other.ode_tol;
 
         enum { N = 3 };         // Number of dimensions (x, y, z)
 	enum { P = 4 };         // Number of parameters with estimated derivative (M, DR1, DR2, DB1)

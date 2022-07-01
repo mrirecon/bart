@@ -61,6 +61,7 @@ int main_sim(int argc, char* argv[argc])
         data.pulse.hs = hs_pulse_defaults;
 	data.grad = simdata_grad_defaults;
 	data.tmp = simdata_tmp_defaults;
+        data.other = simdata_other_defaults;
 
         float T1[3] = { WATER_T1, WATER_T1, 1 };
 	float T2[3] = { WATER_T2, WATER_T2, 1 };
@@ -95,6 +96,12 @@ int main_sim(int argc, char* argv[argc])
         };
         const int N_seq_opts = ARRAY_SIZE(seq_opts);
 
+        struct opt_s other_opts[] = {
+
+                OPTL_FLOAT(0, "ode-tol", &(data.other.ode_tol), "", "ODE tolerance value [def: 10E-6]"),
+        };
+        const int N_other_opts = ARRAY_SIZE(other_opts);
+
 
 	const struct opt_s opts[] = {
 
@@ -103,6 +110,7 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_SELECT(0, "ODE", enum sim_type, &(data.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation (default)"),
                 OPTL_SELECT(0, "STM", enum sim_type, &(data.seq.type), SIM_STM, "state-transition matrix based simulation"),
                 OPTL_SUBOPT(0, "seq", "...", "configure sequence parameter", N_seq_opts, seq_opts),
+                OPTL_SUBOPT(0, "other", "...", "configure other parameters", N_other_opts, other_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
