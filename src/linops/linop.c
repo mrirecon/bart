@@ -923,7 +923,7 @@ struct linop_s* graph_optimize_linop(const struct linop_s* op)
 
 //FIXME: This is not optimal as it should be part of the operator framework only.
 //However, to optimize using Ax + Ay = A(x+y) the information of the linop framework is necessary.
-void operator_linops_apply_parallel_unchecked(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
+void operator_linops_apply_joined_unchecked(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
 {
 	auto combi = operator_combi_create(N, op);
 

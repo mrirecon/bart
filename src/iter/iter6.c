@@ -203,7 +203,7 @@ static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, unsigned long ofla
 	for (int i = 0; i < NO_t; i++)
 		operator_apply_unchecked(op_arr[i], ((complex float**)dst_t)[i], (const complex float*)(src[0]));
 #else
-	operator_apply_parallel_unchecked(NO_t, op_arr, (complex float**)dst_t, (const complex float*)(src[0]));
+	operator_apply_joined_unchecked(NO_t, op_arr, (complex float**)dst_t, (const complex float*)(src[0]));
 #endif
 }
 

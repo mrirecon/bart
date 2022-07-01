@@ -2058,7 +2058,7 @@ static void plus_apply(const operator_data_t* _data, unsigned int N, void* args[
 	auto iov = operator_codomain(data->b);
 	complex float* tmp = md_alloc_sameplace(iov->N, iov->dims, iov->size, src);
 
-	operator_apply_parallel_unchecked(2, MAKE_ARRAY(data->a, data->b), MAKE_ARRAY((complex float*)args[0], tmp), args[1]);
+	operator_apply_joined_unchecked(2, MAKE_ARRAY(data->a, data->b), MAKE_ARRAY((complex float*)args[0], tmp), args[1]);
 
 	md_zadd2(iov->N, iov->dims, iov->strs, dst,iov->strs, dst, iov->strs, tmp);
 	md_free(tmp);
@@ -2447,7 +2447,7 @@ bool operator_identify(const struct operator_s* a, const struct operator_s* b)
 	return false;
 }
 
-void operator_apply_parallel_unchecked(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
+void operator_apply_joined_unchecked(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
 {
 	auto combi = operator_combi_create(N, op);
 

@@ -731,7 +731,7 @@ static bool test_nlop_parallel_derivatives(void)
 	auto countop1 = linop_counter_create(&counter);
 	auto chain = linop_chain(countop1, countop1);
 
-	operator_apply_parallel_unchecked(2, MAKE_ARRAY(chain->forward, chain->forward), outs, in);
+	operator_apply_joined_unchecked(2, MAKE_ARRAY(chain->forward, chain->forward), outs, in);
 
 	bool result = (2 == counter);
 
@@ -760,7 +760,7 @@ static bool test_nlop_parallel_derivatives(void)
 	const struct operator_s* op1 = nlop_get_derivative(tenmul_chain, 0, 0)->adjoint;
 	const struct operator_s* op2 = nlop_get_derivative(tenmul_chain, 0, 1)->adjoint;
 
-	operator_apply_parallel_unchecked(2, MAKE_ARRAY(op1, op2), outs, in);
+	operator_apply_joined_unchecked(2, MAKE_ARRAY(op1, op2), outs, in);
 
 	result = result && (6 == counter);
 

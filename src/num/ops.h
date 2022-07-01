@@ -85,7 +85,7 @@ extern void operator_apply(const struct operator_s* op, unsigned int ON, const l
 extern void operator_apply2(const struct operator_s* op, unsigned int ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)], _Complex float* dst, const long IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], const _Complex float* src);
 
 extern void operator_apply_unchecked(const struct operator_s* op, _Complex float* dst, const _Complex float* src);
-extern void operator_apply_parallel_unchecked(unsigned int N, const struct operator_s* op[__VLA(N)], _Complex float* dst[__VLA(N)], const _Complex float* src);
+extern void operator_apply_joined_unchecked(unsigned int N, const struct operator_s* op[__VLA(N)], _Complex float* dst[__VLA(N)], const _Complex float* src);
 
 
 // get functions

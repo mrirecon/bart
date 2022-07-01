@@ -212,7 +212,7 @@ static void checkpoint_der(const nlop_data_t* _data, unsigned int o, unsigned in
 		der_out_tmp[num_ops_par++] = d->der_out[i + d->II * j];
 	}
 
-	operator_linops_apply_parallel_unchecked(num_ops_par, der_ops, (complex float**)der_out_tmp, src);
+	operator_linops_apply_joined_unchecked(num_ops_par, der_ops, (complex float**)der_out_tmp, src);
 	if (d->clear_mem)
 		nlop_clear_derivatives(d->nlop);
 
@@ -298,7 +298,7 @@ static void checkpoint_adj(const nlop_data_t* _data, unsigned int o, unsigned in
 		adj_out_tmp[num_ops_par++] = d->adj_out[j + d->II * o];
 	}
 
-	operator_linops_apply_parallel_unchecked(num_ops_par, adj_ops, (complex float**)adj_out_tmp, src);
+	operator_linops_apply_joined_unchecked(num_ops_par, adj_ops, (complex float**)adj_out_tmp, src);
 	if (d->clear_mem)
 		nlop_clear_derivatives(d->nlop);
 
@@ -376,7 +376,7 @@ static const struct graph_s* nlop_graph_checkpointing(const struct operator_s* o
  *
  * When the clear_mem flag is not set, the forward operator of the inner nlop will store information related to the derivatives and no reduction in memory usage is expected.
  * In this case, the difference compared to the plain operator is that still all (adjoint) derivatives with respect to one input are precomputed.
- * This might reduce the memory overhead in the operator_apply_parallel_unchecked function.
+ * This might reduce the memory overhead in the operator_apply_joined_unchecked function.
  *
  * @param nlop
  * @param der_once
@@ -526,7 +526,7 @@ const struct nlop_s* nlop_checkpoint_create(const struct nlop_s* nlop, bool der_
  *
  * When the clear_mem flag is not set, the forward operator of the inner nlop will store information related to the derivatives and no reduction in memory usage is expected.
  * In this case, the difference compared to the plain operator is that still all (adjoint) derivatives with respect to one input are precomputed.
- * This might reduce the memory overhead in the operator_apply_parallel_unchecked function.
+ * This might reduce the memory overhead in the operator_apply_joined_unchecked function.
  *
  * @param nlop
  * @param der_once
