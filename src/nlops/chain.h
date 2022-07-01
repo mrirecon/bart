@@ -29,4 +29,4 @@ extern struct nlop_s* nlop_shift_input_F(const struct nlop_s* x, int new_index, 
 extern struct nlop_s* nlop_shift_output(const struct nlop_s* x, int new_index, int old_index);
 extern struct nlop_s* nlop_shift_output_F(const struct nlop_s* x, int new_index, int old_index);
 
-extern struct nlop_s* nlop_stack_multiple_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO]);
+extern struct nlop_s* nlop_stack_multiple_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO], _Bool container, _Bool multigpu);

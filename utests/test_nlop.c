@@ -846,7 +846,7 @@ static bool test_stack_multiple(void)
 	for (int i = 0; i < 3; i++)
 		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
 	
-	const struct nlop_s* nlop1 = nlop_stack_multiple_F(3, nlops, 2, (int[2]){ 2, -1}, 1, (int[1]){ 2 });
+	const struct nlop_s* nlop1 = nlop_stack_multiple_F(3, nlops, 2, (int[2]){ 2, -1}, 1, (int[1]){ 2 }, false, false);
 	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
 
 	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
@@ -875,7 +875,7 @@ static bool test_stack_multiple2(void)
 	for (int i = 0; i < 5; i++)
 		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
 	
-	const struct nlop_s* nlop1 = nlop_stack_multiple_F(5, nlops, 2, (int[2]){ 1, -1}, 1, (int[1]){ 1 });
+	const struct nlop_s* nlop1 = nlop_stack_multiple_F(5, nlops, 2, (int[2]){ 1, -1}, 1, (int[1]){ 1 }, false, false);
 	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
 
 	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
@@ -904,7 +904,7 @@ static bool test_stack_multiple_container(void)
 	for (int i = 0; i < 3; i++)
 		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
 	
-	const struct nlop_s* nlop1 = nlop_stack_container_create_F(3, nlops, 2, (int[2]){ 2, -1}, 1, (int[1]){ 2 });
+	const struct nlop_s* nlop1 = nlop_stack_multiple_F(3, nlops, 2, (int[2]){ 2, -1}, 1, (int[1]){ 2 }, true, false);
 	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
 
 	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
@@ -933,7 +933,7 @@ static bool test_stack_multiple_container2(void)
 	for (int i = 0; i < 5; i++)
 		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
 	
-	const struct nlop_s* nlop1 = nlop_stack_container_create_F(5, nlops, 2, (int[2]){ 1, -1}, 1, (int[1]){ 1 });
+	const struct nlop_s* nlop1 = nlop_stack_multiple_F(5, nlops, 2, (int[2]){ 1, -1}, 1, (int[1]){ 1 }, true, false);
 	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
 
 	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
@@ -963,7 +963,7 @@ static bool test_stack_multiple_container_flatten(void)
 	for (int i = 0; i < 3; i++)
 		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
 	
-	const struct nlop_s* nlop1 = nlop_stack_container_create_F(3, nlops, 2, (int[2]){ 2, -1}, 1, (int[1]){ 2 });
+	const struct nlop_s* nlop1 = nlop_stack_multiple_F(3, nlops, 2, (int[2]){ 2, -1}, 1, (int[1]){ 2 }, true, false);
 	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
 
 	nlop1 = nlop_flatten_F(nlop1);
@@ -995,7 +995,7 @@ static bool test_stack_multiple_container_flatten2(void)
 	for (int i = 0; i < 5; i++)
 		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
 	
-	const struct nlop_s* nlop1 = nlop_stack_container_create_F(5, nlops, 2, (int[2]){ 1, -1}, 1, (int[1]){ 1 });
+	const struct nlop_s* nlop1 = nlop_stack_multiple_F(5, nlops, 2, (int[2]){ 1, -1}, 1, (int[1]){ 1 }, true, false);
 	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
 
 	nlop1 = nlop_flatten_F(nlop1);
@@ -1010,7 +1010,6 @@ static bool test_stack_multiple_container_flatten2(void)
 }
 
 UT_REGISTER_TEST(test_stack_multiple_container_flatten2);
-
 
 
 static bool test_nlop_select_derivatives(void)

@@ -12,6 +12,9 @@ struct config_nlop_mri_s {
 	struct nufft_conf_s* nufft_conf;
 };
 
+void mri_ops_activate_multigpu(void);
+void mri_ops_deactivate_multigpu(void);
+
 struct iter_conjgrad_conf;
 
 struct sense_model_s;

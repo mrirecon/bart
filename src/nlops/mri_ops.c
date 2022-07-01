@@ -42,6 +42,18 @@
 
 #include "mri_ops.h"
 
+static bool multigpu = false;
+
+void mri_ops_activate_multigpu(void)
+{
+	multigpu = true;
+}
+
+void mri_ops_deactivate_multigpu(void)
+{
+	multigpu = false;
+}
+
 
 struct config_nlop_mri_s conf_nlop_mri_simple = {
 
@@ -576,7 +588,7 @@ const struct nlop_s* nlop_sense_model_set_data_batch_create(int N, const long di
 	int ostack_dim[] = { BATCH_DIM };
 	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM };
 
-	return nlop_stack_multiple_F(Nb, nlops, 3, istack_dim, 1, ostack_dim);
+	return nlop_stack_multiple_F(Nb, nlops, 3, istack_dim, 1, ostack_dim, true , multigpu);
 }
 
 
@@ -718,7 +730,7 @@ const struct nlop_s* nlop_sense_adjoint_create(int Nb, struct sense_model_s* mod
 	int ostack_dim[] = { BATCH_DIM, BATCH_DIM };
 	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM };
 
-	return nlop_stack_multiple_F(Nb, nlops, (NULL == models[0]->nufft) ? 2 : 3, istack_dim, output_psf ? 2 : 1, ostack_dim);
+	return nlop_stack_multiple_F(Nb, nlops, (NULL == models[0]->nufft) ? 2 : 3, istack_dim, output_psf ? 2 : 1, ostack_dim, true , multigpu);
 }
 
 const struct nlop_s* nlop_sense_normal_create(int Nb, struct sense_model_s* models[Nb])
@@ -734,7 +746,7 @@ const struct nlop_s* nlop_sense_normal_create(int Nb, struct sense_model_s* mode
 	int ostack_dim[] = { BATCH_DIM };
 	int istack_dim[] = { BATCH_DIM };
 
-	return nlop_stack_multiple_F(Nb, nlops, 1, istack_dim, 1, ostack_dim);
+	return nlop_stack_multiple_F(Nb, nlops, 1, istack_dim, 1, ostack_dim, true , multigpu);
 }
 
 const struct nlop_s* nlop_sense_normal_inv_create(int Nb, struct sense_model_s* models[Nb], struct iter_conjgrad_conf* iter_conf, unsigned long lambda_flags)
@@ -756,7 +768,7 @@ const struct nlop_s* nlop_sense_normal_inv_create(int Nb, struct sense_model_s* 
 	int ostack_dim[] = { BATCH_DIM };
 	int istack_dim[] = { BATCH_DIM, MD_IS_SET(lambda_flags, BATCH_DIM) ? BATCH_DIM : -1 };
 
-	return nlop_stack_multiple_F(Nb, nlops, 2, istack_dim, 1, ostack_dim);
+	return nlop_stack_multiple_F(Nb, nlops, 2, istack_dim, 1, ostack_dim, true , multigpu);
 }
 
 const struct nlop_s* nlop_sense_dc_prox_create(int Nb, struct sense_model_s* models[Nb], struct iter_conjgrad_conf* iter_conf, unsigned long lambda_flags)
@@ -821,7 +833,7 @@ const struct nlop_s* nlop_sense_scale_maxeigen_create(int Nb, struct sense_model
 	if (1 == Nb)
 		result = nlops[0];
 	else
-		result = nlop_stack_multiple_F(Nb, nlops, 1, istack_dim, 1, ostack_dim);
+		result = nlop_stack_multiple_F(Nb, nlops, 1, istack_dim, 1, ostack_dim, true , multigpu);
 
 	long odims[N];
 	md_select_dims(N, BATCH_FLAG, odims, dims);
@@ -919,7 +931,7 @@ const struct nlop_s* nlop_mri_normal_create(int N, const long max_dims[N], int N
 	int ostack_dim[] = { batch_dim };
 	int istack_dim[] = { batch_dim, batch_dim, (1 == psf_dims[batch_dim]) ? -1 : batch_dim };
 
-	return nlop_stack_multiple_F(Nb, nlops, 3, istack_dim, 1, ostack_dim);
+	return nlop_stack_multiple_F(Nb, nlops, 3, istack_dim, 1, ostack_dim, true , multigpu);
 }
 
 
@@ -1024,7 +1036,7 @@ const struct nlop_s* nlop_mri_normal_inv_create(int N, const long max_dims[N], c
 	int ostack_dim[] = { batch_dim };
 	int istack_dim[] = { batch_dim, batch_dim, (1 == psf_dims[batch_dim]) ? -1 : batch_dim, (1 == lam_dims[batch_dim]) ? -1 : batch_dim };
 
-	return nlop_stack_multiple_F(Nb, nlops, 4, istack_dim, 1, ostack_dim);
+	return nlop_stack_multiple_F(Nb, nlops, 4, istack_dim, 1, ostack_dim, true , multigpu);
 }
 
 
@@ -1162,7 +1174,7 @@ const struct nlop_s* nlop_mri_normal_max_eigen_create(int N, const long max_dims
 	int ostack_dim[] = { batch_dim };
 	int istack_dim[] = { batch_dim, (1 == psf_dims[batch_dim]) ? -1 : batch_dim };
 
-	return nlop_stack_multiple_F(Nb, nlops, 2, istack_dim, 1, ostack_dim);
+	return nlop_stack_multiple_F(Nb, nlops, 2, istack_dim, 1, ostack_dim, true , multigpu);
 }
 
 
