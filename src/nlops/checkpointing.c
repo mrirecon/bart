@@ -151,14 +151,53 @@ static void checkpoint_fun(const nlop_data_t* _data, int N, complex float* args[
 	checkpoint_free_der(data);
 }
 
+static void checkpoint_re_evaluate(struct checkpoint_s* d) 
+{
+	bool (*der_requested)[d->II][d->OO] = (void*)d->der_requested;
+	nlop_set_derivatives(d->nlop, d->II, d->OO, (*der_requested));
+
+	void* args[d->OO + d->II];
+
+	for (int j = 0; j < d->OO; j++)
+		args[j] = md_alloc_sameplace(d->DO[j], d->odims[j], CFL_SIZE, d->inputs[0]);
+	
+	for (int j = 0; j < d->II; j++)
+		args[d->OO + j] = d->inputs[j];
+
+	nlop_generic_apply_unchecked(d->nlop, d->OO + d->II, (void**)args);
+
+	for (int j = 0; j < d->OO; j++)
+		md_free(args[j]);
+}
+
+
+static void checkpoint_der_direct(struct checkpoint_s* d, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+{
+	if (d->clear_mem)
+		checkpoint_re_evaluate(d);
+	
+	linop_forward_unchecked(nlop_get_derivative(d->nlop, o, i), dst, src);
+
+	if (d->clear_mem)
+		nlop_clear_derivatives(d->nlop);
+}
+
+
 static void checkpoint_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
 	const auto d = CAST_DOWN(checkpoint_s, _data);
 
 	if ((NULL != d->der_in[i]) && (0 == md_zrmse(d->DI[i], d->idims[i], d->der_in[i], src))) {
+		
+		if (NULL == d->der_out[i + d->II * o]) {
 
-		assert(NULL != d->der_out[i + d->II * o]);
+			checkpoint_der_direct(d, o, i, dst, src);
+			debug_printf(DP_DEBUG1, "Derivative evaluated multiple times on the same input.\nThe graph is not optimized.\n");
+			return;
+		}
+
 		md_copy(d->DO[o], d->odims[o], dst, d->der_out[i + d->II * o], CFL_SIZE);
+
 		if (d->der_once) {
 
 			md_free(d->der_out[i + d->II * o]);
@@ -179,22 +218,6 @@ static void checkpoint_der(const nlop_data_t* _data, unsigned int o, unsigned in
 		d->der_in[i] = md_alloc_sameplace(d->DI[i], d->idims[i], CFL_SIZE, src);
 	md_copy(d->DI[i], d->idims[i], d->der_in[i], src, CFL_SIZE);
 
-	if (d->clear_mem) {
-
-		bool (*der_requested)[d->II][d->OO] = (void*)d->der_requested;
-		nlop_set_derivatives(d->nlop, d->II, d->OO, (*der_requested));
-
-		void* args[d->OO + d->II];
-		for (int j = 0; j < d->OO; j++)
-			args[j] = md_alloc_sameplace(d->DO[j], d->odims[j], CFL_SIZE, src);
-		for (int j = 0; j < d->II; j++)
-			args[d->OO + j] = d->inputs[j];
-
-		nlop_generic_apply_unchecked(d->nlop, d->OO + d->II, (void**)args);
-
-		for (int j = 0; j < d->OO; j++)
-			md_free(args[j]);
-	}
 
 	int num_ops_par = 0;
 	const struct operator_s* der_ops[d->OO];
@@ -212,7 +235,11 @@ static void checkpoint_der(const nlop_data_t* _data, unsigned int o, unsigned in
 		der_out_tmp[num_ops_par++] = d->der_out[i + d->II * j];
 	}
 
+	if (d->clear_mem)
+		checkpoint_re_evaluate(d);
+
 	operator_linops_apply_joined_unchecked(num_ops_par, der_ops, (complex float**)der_out_tmp, src);
+
 	if (d->clear_mem)
 		nlop_clear_derivatives(d->nlop);
 
@@ -236,14 +263,33 @@ static void checkpoint_der(const nlop_data_t* _data, unsigned int o, unsigned in
 }
 
 
+static void checkpoint_adj_direct(struct checkpoint_s* d, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+{
+	if (d->clear_mem)
+		checkpoint_re_evaluate(d);
+	
+	linop_adjoint_unchecked(nlop_get_derivative(d->nlop, o, i), dst, src);
+
+	if (d->clear_mem)
+		nlop_clear_derivatives(d->nlop);
+}
+
+
 static void checkpoint_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
 	const auto d = CAST_DOWN(checkpoint_s, _data);
 
 	if ((NULL != d->adj_in[o]) && (0 == md_zrmse(d->DO[o], d->odims[o], d->adj_in[o], src))) {
 
-		assert(NULL != d->adj_out[i + d->II * o]);
+		if (NULL == d->adj_out[i + d->II * o]) {
+
+			checkpoint_adj_direct(d, o, i, dst, src);
+			debug_printf(DP_DEBUG1, "Derivative evaluated multiple times on the same input.\nThe graph is not optimized.\n");
+			return;
+		}
+
 		md_copy(d->DI[i], d->idims[i], dst, d->adj_out[i + d->II * o], CFL_SIZE);
+
 		if (d->der_once) {
 
 			md_free(d->adj_out[i + d->II * o]);
@@ -264,23 +310,6 @@ static void checkpoint_adj(const nlop_data_t* _data, unsigned int o, unsigned in
 		d->adj_in[o] = md_alloc_sameplace(d->DO[o], d->odims[o], CFL_SIZE, src);
 	md_copy(d->DO[o], d->odims[o], d->adj_in[o], src, CFL_SIZE);
 
-	if (d->clear_mem) {
-
-		bool (*der_requested)[d->II][d->OO] = (void*)d->der_requested;
-		nlop_set_derivatives(d->nlop, d->II, d->OO, (*der_requested));
-
-		void* args[d->OO + d->II];
-		for (int j = 0; j < d->OO; j++)
-			args[j] = md_alloc_sameplace(d->DO[j], d->odims[j], CFL_SIZE, src);
-		for (int j = 0; j < d->II; j++)
-			args[d->OO + j] = d->inputs[j];
-
-
-		nlop_generic_apply_unchecked(d->nlop, d->OO + d->II, (void**)args);
-
-		for (int j = 0; j < d->OO; j++)
-			md_free(args[j]);
-	}
 
 	int num_ops_par = 0;
 	const struct operator_s* adj_ops[d->II];
@@ -298,7 +327,11 @@ static void checkpoint_adj(const nlop_data_t* _data, unsigned int o, unsigned in
 		adj_out_tmp[num_ops_par++] = d->adj_out[j + d->II * o];
 	}
 
+	if (d->clear_mem)
+		checkpoint_re_evaluate(d);
+
 	operator_linops_apply_joined_unchecked(num_ops_par, adj_ops, (complex float**)adj_out_tmp, src);
+	
 	if (d->clear_mem)
 		nlop_clear_derivatives(d->nlop);
 
@@ -540,3 +573,14 @@ const struct nlop_s* nlop_checkpoint_create_F(const struct nlop_s* nlop, bool de
 	return result;
 }
 
+bool nlop_is_checkpoint(const struct nlop_s* nlop)
+{
+	const nlop_data_t* _data = nlop_get_data_nested(nlop);
+
+	if (NULL == _data)
+		return false;
+
+	auto data = CAST_MAYBE(checkpoint_s, _data);
+	
+	return NULL != data;
+}
