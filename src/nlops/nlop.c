@@ -27,6 +27,7 @@
 #include "misc/graph.h"
 
 #include "nlops/stack.h"
+#include "nlops/chain.h"
 #include "nlop.h"
 
 
@@ -806,12 +807,18 @@ static void flatten_der(const nlop_data_t* _data, unsigned int o, unsigned int i
 
 			auto iov2 = linop_domain(der);
 
+			complex float* tmp = (0 == i) ? (void*)dst + data->off[o] : md_alloc_sameplace(iov->N, iov->dims, iov->size, src);
+
 			linop_forward(der,
 				iov->N, iov->dims, tmp,
 				iov2->N, iov2->dims,
 				(void*)src + data->off[OO + i]);
+			
+			if (0 != i) {
 
-			md_zadd(iov->N, iov->dims, (void*)dst + data->off[o], (void*)dst + data->off[o], tmp);
+				md_zadd(iov->N, iov->dims, (void*)dst + data->off[o], (void*)dst + data->off[o], tmp);
+				md_free(tmp);
+			}
 		}
 
 		md_free(tmp);
@@ -832,22 +839,22 @@ static void flatten_adj(const nlop_data_t* _data, unsigned int o, unsigned int i
 
 		auto iov = linop_domain(nlop_get_derivative(data->op, 0, i));
 
-		complex float* tmp = md_alloc_sameplace(iov->N, iov->dims, iov->size, src);
-
-		md_clear(iov->N, iov->dims, (void*)dst + data->off[OO + i], iov->size);
-
 		for (int o = 0; o < OO; o++) {	// FIXME
 
 			const struct linop_s* der = nlop_get_derivative(data->op, o, i);
+
+			complex float* tmp = (0 == o) ? (void*)dst + data->off[OO + i] : md_alloc_sameplace(iov->N, iov->dims, iov->size, src);
 
 			linop_adjoint_unchecked(der,
 				tmp,
 				(void*)src + data->off[o]);
 
-			md_zadd(iov->N, iov->dims, (void*)dst + data->off[OO + i], (void*)dst + data->off[OO + i], tmp);
-		}
+			if (0 != o) {
 
-		md_free(tmp);
+				md_zadd(iov->N, iov->dims, (void*)dst + data->off[OO + i], (void*)dst + data->off[OO + i], tmp);
+				md_free(tmp);
+			}
+		}
 	}
 }
 
@@ -873,6 +880,21 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 
 	int II = nlop_get_nr_in_args(op);
 	int OO = nlop_get_nr_out_args(op);
+
+	if (1 < II) {
+
+		// this uses optimization to apply linops jointly
+
+		op = nlop_clone(op);
+
+		for (int i = 0; i < II; i++)
+			op = nlop_flatten_in_F(op, i);
+
+		for (int i = 1; i < II; i++)
+			op = nlop_stack_inputs_F(op, 0, 1, 0);
+		
+		return nlop_flatten_F(op);
+	}
 
 	long odims[1] = { 0 };
 	long ostrs[] = { CFL_SIZE };
