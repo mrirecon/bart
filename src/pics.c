@@ -278,8 +278,8 @@ int main_pics(int argc, char* argv[argc])
 	bool hogwild = false;
 	bool fast = false;
 
-	int gpun = -1;
 	bool gpu_gridding = false;
+	unsigned int requested_gpus = 0u;
 
 	struct opt_reg_s ropts;
 	opt_reg_init(&ropts);
@@ -300,7 +300,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SET('N', &overlapping_blocks, "do fully overlapping LLR blocks"),
 		OPT_SET('g', &conf.gpu, "use GPU"),
 		OPTL_SET(0, "gpu-gridding", &gpu_gridding, "use GPU for gridding"),
-		OPT_INT('G', &gpun, "gpun", "use GPU device gpun"),
+		OPT_UINT('G', &requested_gpus, "bitmask", "bitmask of requested GPU devices"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPTL_SET(0, "precond", &(conf.precond), "interprete weights as preconditioner"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
@@ -450,14 +450,16 @@ int main_pics(int argc, char* argv[argc])
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
+	if (conf.gpu) {
 
-	if (conf.gpu)
-		if (-1 == gpun)
-			num_init_gpu();
+		if (0u == requested_gpus)
+			num_init_gpu_memopt();
 		else
-			num_init_gpu_device(gpun);
-	else
+			num_init_multigpu_select(requested_gpus);
+	} else {
+
 		num_init();
+	}
 
 	// print options
 

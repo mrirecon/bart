@@ -75,8 +75,19 @@ tests/test-pics-gpu-llr: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplo
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+# test using as many of the first 16 GPUs as possible
+tests/test-pics-multigpu: pics repmat nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/repmat 5 32 $(TESTS_OUT)/shepplogan_coil_ksp.ra kspaces.ra		;\
+	$(TOOLDIR)/pics -g -G65535 -r0.01 -L32 kspaces.ra $(TESTS_OUT)/coils.ra reco1.ra		;\
+	$(TOOLDIR)/pics -g         -r0.01 -L32 kspaces.ra $(TESTS_OUT)/coils.ra reco2.ra		;\
+	$(TOOLDIR)/nrmse -t 0.00001 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 
 TESTS_GPU += tests/test-pics-gpu tests/test-pics-gpu-noncart tests/test-pics-gpu-noncart-gridding
 TESTS_GPU += tests/test-pics-gpu-weights tests/test-pics-gpu-noncart-weights tests/test-pics-gpu-llr
+TESTS_GPU += tests/test-pics-multigpu
 
