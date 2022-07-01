@@ -318,6 +318,22 @@ const linop_data_t* linop_get_data(const struct linop_s* ptr)
 	return (sdata == NULL) ? NULL : sdata->data;
 }
 
+/**
+ * Return the data associated with the linear operator and look into reshape containers
+ *
+ * @param ptr linear operator
+ */
+const linop_data_t* linop_get_data_nested(const struct linop_s* ptr)
+{
+	const struct operator_s* op = ptr->forward;
+	while(NULL != get_in_reshape(op))
+		op = get_in_reshape(op);
+
+	auto sdata = CAST_MAYBE(shared_data_s, operator_get_data(op));
+	return sdata == NULL ? NULL : sdata->data;
+}
+
+
 
 /**
  * Make a copy of a linear operator

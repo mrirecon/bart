@@ -479,6 +479,29 @@ nlop_data_t* nlop_get_data(const struct nlop_s* op)
 	return data2->data;
 }
 
+
+nlop_data_t* nlop_get_data_nested(const struct nlop_s* nlop)
+{
+	const struct operator_s* op = nlop->op;
+	while(NULL != get_in_reshape(op))
+		op = get_in_reshape(op);
+
+	auto data2 = CAST_MAYBE(nlop_op_data_s, operator_get_data(op));
+
+	if (NULL == data2)
+		return NULL;
+#if 1
+	// If the derivative is zero, this assertion fails
+	if (NULL != linop_get_data_nested(nlop->derivative[0])) {
+
+		auto data3 = CAST_DOWN(nlop_linop_data_s, linop_get_data_nested(nlop->derivative[0]));
+		assert(data3->data == data2->data);
+	}
+#endif
+	return data2->data;
+}
+
+
 void nlop_apply(const struct nlop_s* op, int ON, const long odims[ON], complex float* dst, int IN, const long idims[IN], const complex float* src)
 {
 	operator_apply(op->op, ON, odims, dst, IN, idims, src);
@@ -872,22 +895,10 @@ const struct nlop_s* nlop_reshape_in(const struct nlop_s* op, int i, int NI, con
 
 	n->derivative = &(*der)[0][0];
 
-	//derivatives are not put into an operator-reshape-container but linked with an reshaping copy operator
-	//	-> operators can be compared in operator chain to only evaluate them once (for parallel application)
-	PTR_ALLOC(struct linop_s, resh_t);
-
-	resh_t->forward = operator_reshape_create(oNI, oidims, NI, idims);
-	resh_t->adjoint = operator_reshape_create(NI, idims, oNI, oidims);
-	resh_t->normal = operator_reshape_create(NI, idims, NI, idims);
-	resh_t->norm_inv = NULL;
-
-	auto resh = PTR_PASS(resh_t);
 
 	for (int ii = 0; ii < II; ii++)
 		for (int io = 0; io < OO; io++)
-			(*der)[ii][io] = (ii == i) ? linop_chain(resh, nlop_get_derivative(op, io, ii)) : linop_clone(nlop_get_derivative(op, io, ii));
-
-	linop_free(resh);
+			(*der)[ii][io] = (ii == i) ? linop_reshape_in(nlop_get_derivative(op, io, ii), NI, idims) : linop_clone(nlop_get_derivative(op, io, ii));
 
 	return PTR_PASS(n);
 }
@@ -914,22 +925,9 @@ const struct nlop_s* nlop_reshape_out(const struct nlop_s* op, int o, int NO, co
 	auto der = TYPE_ALLOC(const struct linop_s*[II?:1][OO?:1]);
 	n->derivative = &(*der)[0][0];
 
-	//derivatives are not put into an operator-reshape-container but linked with an reshaping copy operator
-	//	-> operators can be compared in operator chain to only evaluate them once (for parallel application)
-	PTR_ALLOC(struct linop_s, resh_t);
-
-	resh_t->forward = operator_reshape_create(NO, odims, oNO, oodims);
-	resh_t->adjoint = operator_reshape_create(oNO, oodims, NO, odims);
-	resh_t->normal= operator_reshape_create(oNO, oodims, oNO, oodims);
-	resh_t->norm_inv = NULL;
-
-	auto resh = PTR_PASS(resh_t);
-
 	for (int ii = 0; ii < II; ii++)
 		for (int io = 0; io < OO; io++)
-			(*der)[ii][io] = (io == o) ? linop_chain(nlop_get_derivative(op, io, ii), resh) : linop_clone(nlop_get_derivative(op, io, ii));
-
-	linop_free(resh);
+			(*der)[ii][io] = (io == o) ? linop_reshape_out(nlop_get_derivative(op, io, ii), NO, odims) : linop_clone(nlop_get_derivative(op, io, ii));
 
 	return PTR_PASS(n);
 }

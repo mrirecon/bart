@@ -137,6 +137,7 @@ extern const struct operator_s* operator_extract_create(const struct operator_s*
 extern const struct operator_s* operator_extract_create2(const struct operator_s* op, int a, int Da, const long dimsa[Da], const long strsa[Da], const long pos[Da]);
 extern const struct operator_s* operator_permute(const struct operator_s* op, int N, const int perm[N]);
 extern const struct operator_s* operator_reshape(const struct operator_s* op, unsigned int i, long N, const long dims[__VLA(N)]);
+extern const struct operator_s* get_in_reshape(const struct operator_s* op);
 
 extern const struct operator_s* operator_zadd_create(int II, int N, const long dims[__VLA(N)]);
 extern _Bool operator_is_zadd(const struct operator_s* op);

@@ -525,6 +525,13 @@ bool check_simple_copy(const struct operator_s* op)
 	return false;
 }
 
+const struct operator_s* get_in_reshape(const struct operator_s* op) {
+
+	if (NULL != get_reshape_data(op))
+		return get_reshape_data(op)->x;
+	
+	return NULL;
+}
 
 struct zero_s {
 

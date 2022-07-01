@@ -59,6 +59,7 @@ extern struct nlop_s* nlop_clone(const struct nlop_s* op);
 extern void nlop_free(const struct nlop_s* op);
 
 extern nlop_data_t* nlop_get_data(const struct nlop_s* op);
+extern nlop_data_t* nlop_get_data_nested(const struct nlop_s* op);
 extern _Bool nlop_der_requested(const nlop_data_t* data, int i, int o);
 extern void nlop_get_der_array(const nlop_data_t* data, int N, void* arrays[N]);
 extern void nlop_data_der_alloc_memory(const nlop_data_t* data, const void* arg);
