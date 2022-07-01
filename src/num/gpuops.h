@@ -14,7 +14,7 @@ void cuda_check_ptr(const char* file, int line, int N, const void* ptr[__VLA(N)]
 
 #define CUDA_ASYNC_ERROR_NOTE(x)	({ cuda_gpu_check(__FILE__, __LINE__, (x)); })
 #define CUDA_ASYNC_ERROR		CUDA_ASYNC_ERROR_NOTE("")
-#define CUDA_ERROR(x)			({ cudaError_t errval = (x); if (cudaSuccess != errval) cuda_error(__FILE__, __LINE__, errval); })
+#define CUDA_ERROR(x)			({ cuda_device_is_set(__FILE__, __LINE__); cudaError_t errval = (x); if (cudaSuccess != errval) cuda_error(__FILE__, __LINE__, errval); })
 #define CUDA_KERNEL_ERROR 		({ cudaError_t errval = cudaGetLastError(); if (cudaSuccess != errval) cuda_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR; })
 #define CUDA_ERROR_PTR(...)		({ CUDA_ASYNC_ERROR; const void* _ptr[] = { __VA_ARGS__}; cuda_check_ptr(__FILE__, __LINE__, (sizeof(_ptr) / sizeof(_ptr[0])), _ptr); })
 
@@ -39,13 +39,17 @@ extern int cuda_num_devices(void);
 extern void cuda_set_device(int device);
 extern int cuda_get_device(void);
 extern int cuda_get_device_internal_unchecked(void);
+extern void cuda_device_is_set(const char* file, int line);
 
+extern int cuda_num_streams(void);
+extern void cuda_set_stream(int stream);
 #ifdef USE_CUDA
 extern cudaStream_t cuda_get_stream(void);
 #endif
 extern int cuda_get_stream_id(void);
 
 //synchronisation functions
+extern void cuda_sync_stream(void);
 extern void cuda_sync_device(void);
 extern void cuda_sync_devices(void);
 
@@ -55,6 +59,8 @@ extern void cuda_free(void*);
 
 extern _Bool cuda_ondevice(const void* ptr);
 extern _Bool cuda_accessible(const void* ptr);
+extern int cuda_get_device_num(const void* ptr);
+
 extern void cuda_clear(long size, void* ptr);
 extern void cuda_memcpy(long size, void* dst, const void* src);
 extern void cuda_memcpy_strided(const long dims[2], long ostr, void* dst, long istr, const void* src);

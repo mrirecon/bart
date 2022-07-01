@@ -45,10 +45,26 @@
 
 static unsigned int reserved_gpus = 0U;
 static int n_reserved_gpus = 0;
+int cuda_streams_per_device = 1;
 
 static int gpu_map[MAX_CUDA_DEVICES] = { [0 ... MAX_CUDA_DEVICES - 1] = -1 };
 
+static cudaStream_t gpu_streams[MAX_CUDA_DEVICES][MAX_CUDA_STREAMS + 1];
+static cudaEvent_t gpu_streams_sync[MAX_CUDA_DEVICES][MAX_CUDA_DEVICES][MAX_CUDA_STREAMS + 1][MAX_CUDA_STREAMS + 1];
+
 static bool gpu_peer_accees[MAX_CUDA_DEVICES][MAX_CUDA_DEVICES] = { [0 ... MAX_CUDA_DEVICES - 1] = { [0 ... MAX_CUDA_DEVICES - 1] = false} };
+
+struct cuda_stream_id {
+
+	int device;
+	int stream;
+};
+
+// we check ourself which stream/device is associated to the current thread 
+static _Thread_local struct cuda_stream_id thread_active_stream = { -1, 0 };
+// we need to sync streams, if we change the stream/device and call a new kernel
+// thus, we keep track of the last stream we placed a cuda call in 
+static _Thread_local struct cuda_stream_id thread_last_issued_stream = { -1, 0 };
 
 
 bool cuda_memcache = true;
@@ -169,14 +185,15 @@ static int cuda_get_device_internal(void)
 	else
 		CUDA_ERROR(cudaGetDevice(&device));
 
+	if (device != thread_active_stream.device)
+		error("CUDA incosistent active device!\n");
 
 	return device;
 }
 
 int cuda_get_device_internal_unchecked(void)
 {
-	
-	return cuda_get_device_internal();
+	return thread_active_stream.device;
 }
 
 int cuda_get_device(void)
@@ -198,6 +215,8 @@ static void cuda_set_device_internal(int device)
 	if (!MD_IS_SET(reserved_gpus, device))
 		error("Trying to use non-reserved GPU (%d)! Reserve first by using cuda_try_init(device)\n", device);
 
+	thread_active_stream.device = device;
+
 	CUDA_ERROR(cudaSetDevice(device));
 }
 
@@ -211,6 +230,20 @@ void cuda_set_device(int device)
 	if (0 <= device)
 		cuda_set_device_internal(gpu_map[device]);
 }
+
+void cuda_device_is_set(const char* file, int line)
+{
+	if ((0 < n_reserved_gpus) && (-1 == thread_active_stream.device))
+		error(
+		"CUDA Error on Device ?: Call without selected device! in %s:%d\n"
+		"Probably CUDA is called within an OMP region without setting the device after entering!\n",
+		file, line);
+}
+
+
+
+//*************************************** CUDA Device Initialization *********************************************
+
 
 static void cuda_activate_p2p(void)
 {
@@ -250,6 +283,7 @@ static void cuda_deactivate_p2p(void)
 
 static void cuda_libraries_init(void)
 {
+	cuda_stream_sync_init();
 	memcache_init();
 	cuda_activate_p2p();
 	cublas_init();
@@ -260,6 +294,7 @@ static void cuda_libraries_init(void)
 
 static void cuda_libraries_deinit(void)
 {
+	cuda_stream_sync_deinit();
 	memcache_destroy();
 	cuda_deactivate_p2p();
 	cublas_deinit();
@@ -296,6 +331,7 @@ bool cuda_try_init(int device)
 			}
 
 			cuda_set_device(0);
+			thread_last_issued_stream.device = thread_active_stream.device;
 			return true;
 
 		} else {
@@ -448,20 +484,132 @@ void cuda_exit(void)
 
 //*************************************** Stream Synchronisation ********************************************* 
 
+
+static void cuda_stream_sync_init(void)
+{
+	int num_device = cuda_num_devices();
+	int device = cuda_get_device();
+
+	for (int dev1 = 0; dev1 < num_device; dev1++) {
+
+		cuda_set_device(dev1);
+
+		for (int str1 = 0; str1 < MAX_CUDA_STREAMS; str1++) {
+
+			CUDA_ERROR(cudaStreamCreate(&(gpu_streams[dev1][str1])));
+
+			for (int dev2 = 0; dev2 < num_device; dev2++)
+				for (int str2 = 0; str2 < MAX_CUDA_STREAMS; str2++) {
+
+					CUDA_ERROR(cudaEventCreate(&(gpu_streams_sync[dev1][dev2][str1][str2])));
+					CUDA_ERROR(cudaEventRecord(gpu_streams_sync[dev1][dev2][str1][str2], gpu_streams[dev1][str1]));
+				}
+		}
+
+		thread_last_issued_stream.stream = 0;
+		thread_active_stream.stream = 0;
+	}
+
+	cuda_set_device(device);
+}
+
+static void cuda_stream_sync_deinit(void)
+{
+	int num_device = cuda_num_devices();
+	int device = cuda_get_device();
+
+	for (int dev1 = 0; dev1 < num_device; dev1++) {
+
+		cuda_set_device(dev1);
+
+		for (int str1 = 0; str1 < MAX_CUDA_STREAMS; str1++) {
+
+			for (int dev2 = 0; dev2 < num_device; dev2++)
+				for (int str2 = 0; str2 < MAX_CUDA_STREAMS; str2++) {
+
+					CUDA_ERROR(cudaEventDestroy((gpu_streams_sync[dev1][dev2][str1][str2])));
+
+				}
+			
+			CUDA_ERROR(cudaStreamDestroy((gpu_streams[dev1][str1])));
+		}
+	}
+
+	cuda_set_device(device);
+}
+
+static void cuda_stream_sync(void)
+{
+	struct cuda_stream_id new = thread_active_stream;
+	struct cuda_stream_id old = thread_last_issued_stream;
+
+	if ((old.device == new.device) && (old.stream == new.stream))
+		return;
+
+	int device = cuda_get_device_internal();
+	assert(new.device == device);
+
+	new.device = cuda_get_external_device(new.device);
+	old.device = cuda_get_external_device(old.device);
+
+
+	cuda_set_device(old.device);
+	CUDA_ERROR(cudaEventRecord(gpu_streams_sync[old.device][new.device][old.stream][new.stream], gpu_streams[old.device][old.stream]));
+	
+	cuda_set_device(new.device);
+	CUDA_ERROR(cudaStreamWaitEvent(gpu_streams[new.device][new.stream], gpu_streams_sync[old.device][new.device][old.stream][new.stream], 0));
+
+	new.device = cuda_get_internal_device(new.device);
+	thread_last_issued_stream = new;
+}
+
+void cuda_set_stream(int stream)
+{
+	thread_active_stream.stream = stream;
+}
+
+static cudaStream_t cuda_get_stream_internal(void)
+{
+	if (MAX_CUDA_STREAMS >= thread_active_stream.stream)
+		return cudaStreamLegacy;
+	
+	if (   (0 > thread_active_stream.device)
+	    || (0 > thread_active_stream.stream)
+	    || (MAX_CUDA_DEVICES <= thread_active_stream.device)
+	    || (MAX_CUDA_STREAMS <= thread_active_stream.stream))
+		error("CUDA: active device/stream not initialized correctly!\n");
+
+	return gpu_streams[thread_active_stream.device][thread_active_stream.stream];
+}
+
 cudaStream_t cuda_get_stream(void)
 {
-	return cudaStreamLegacy;
+	cuda_stream_sync();
+	return cuda_get_stream_internal();
 }
 
 int cuda_get_stream_id(void)
 {
-	return 0;
+	return thread_active_stream.stream;
 }
 
+int cuda_num_streams()
+{
+	assert(cuda_streams_per_device <= MAX_CUDA_STREAMS);
+	return cuda_streams_per_device;
+}
 
 
 //*************************************** Host Synchonization ********************************************* 
 
+void cuda_sync_stream(void)
+{
+	// do not initialize gpu just for syncing
+	if (-1 == cuda_get_device())
+		return;
+
+	CUDA_ERROR(cudaStreamSynchronize(cuda_get_stream()));
+}
 
 void cuda_sync_device(void)
 {
@@ -492,6 +640,9 @@ void cuda_sync_devices(void)
 
 static void* cuda_malloc_wrapper(size_t size)
 {
+	if (0 == cuda_num_devices())
+		error("CUDA_ERROR: No gpu initialized, run \"num_init_gpu\"!\n");
+
 	void* ptr;
 
 	if (cuda_global_memory) {
@@ -571,7 +722,7 @@ static bool cuda_cuda_ondevice(const void* ptr)
 
 bool cuda_ondevice(const void* ptr)
 {
-	return mem_ondevice(ptr);
+	return (-1 != cuda_get_device_num(ptr));
 }
 
 bool cuda_accessible(const void* ptr)
@@ -579,6 +730,18 @@ bool cuda_accessible(const void* ptr)
 	return cuda_ondevice(ptr);
 }
 
+static int cuda_get_device_num_internal(const void* ptr)
+{
+	if (NULL == ptr)
+		return -1;
+
+	return mem_device_num(ptr);
+}
+
+int cuda_get_device_num(const void* ptr)
+{
+	return cuda_get_external_device(cuda_get_device_num_internal(ptr));
+}
 
 
 void cuda_clear(long size, void* dst)
