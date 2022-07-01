@@ -551,3 +551,17 @@ static nn_t network_mnist_create(const struct network_s* _config, unsigned int N
 
 	return network;
 }
+
+bool network_is_diagonal(const struct network_s* config)
+{
+	auto resnet = CAST_MAYBE(network_resnet_s, config);
+
+	if ((NULL != resnet) && (!resnet->batch_norm))
+		return true;
+	
+	auto varnet = CAST_MAYBE(network_varnet_s, config);
+	if (NULL != varnet)
+		return true;
+	
+	return false;
+}

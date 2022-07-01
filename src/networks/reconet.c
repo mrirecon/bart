@@ -669,6 +669,47 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 {
 
 	int Nb = max_dims[BATCH_DIM];
+
+#ifdef USE_CUDA
+
+	static bool in_multi_gpu = false;
+
+	if (   !in_multi_gpu
+	    && (0 < cuda_num_devices())
+	    && (1 < Nb)
+	    && network_is_diagonal(config->network)
+	    && (psf_dims[BATCH_DIM] == Nb)) {
+
+		long max_dims2[N];
+		long psf_dims2[ND];
+
+		md_select_dims(N, ~BATCH_FLAG, max_dims2, max_dims);
+		md_select_dims(ND, ~BATCH_FLAG, psf_dims2, psf_dims);
+
+		int num_nets = MIN(Nb, cuda_num_devices() * cuda_num_streams());
+		int remaining = Nb;
+		in_multi_gpu = true;
+
+		nn_t networks[num_nets];
+		for (int i = 0; i < num_nets; i++) {
+
+			max_dims2[BATCH_DIM] = remaining / (num_nets - i);
+			psf_dims2[BATCH_DIM] = remaining / (num_nets - i);
+			remaining -= remaining / (num_nets - i);
+			networks[i] = reconet_create(config, N, max_dims2, ND, psf_dims2, status);
+		}
+
+		in_multi_gpu = false;
+
+		return nn_stack_multigpu_F(num_nets, networks, BATCH_DIM);
+	}
+
+
+	if (!in_multi_gpu && config->gpu && (1 < cuda_num_devices()))
+		mri_ops_activate_multigpu();
+#endif
+
+
 	struct sense_model_s* models[Nb];
 
 	for (int i = 0; i < Nb; i++) {

@@ -34,6 +34,9 @@ typedef struct network_s {
 
 extern nn_t network_create(const struct network_s* config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status);
 
+extern _Bool network_is_diagonal(const struct network_s* config);
+
+
 struct network_resnet_s {
 
 	INTERFACE(network_t);

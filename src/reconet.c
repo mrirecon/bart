@@ -78,6 +78,8 @@ int main_reconet(int argc, char* argv[argc])
 
 	bool test_defaults = false;
 
+	int num_gpus = 0;
+
 	enum NETWORK_SELECT net = NETWORK_NONE;
 
 	const char* graph_filename = NULL;
@@ -138,6 +140,7 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_SET('a', "apply", &apply, "apply reconet"),
 
 		OPTL_SET('g', "gpu", &(config.gpu), "run on gpu"),
+		OPTL_INT('G', "multi-gpu", &(num_gpus), "num", "run on num gpus (default: 1)"),
 
 		OPTL_INFILE('l', "load", (const char**)(&(filename_weights_load)), "<weights-init>", "load weights for continuing training"),
 		OPTL_LONG('b', "batch-size", &(Nb), "", "size of mini batches"),
@@ -269,12 +272,14 @@ int main_reconet(int argc, char* argv[argc])
 		error("Network must be either trained (-t) or applied(-a)!\n");
 
 #ifdef USE_CUDA
+	if (0 != num_gpus)
+		config.gpu = true;
+
 	if (config.gpu) {
 
-		num_init_gpu();
+		num_init_multigpu(MAX(num_gpus, 1));
 		cuda_use_global_memory();
-
-	} else
+	} else 
 #endif
 		num_init();
 
