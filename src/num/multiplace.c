@@ -27,6 +27,7 @@ struct multiplace_array_s {
 #ifdef USE_CUDA
 	void* ptr_gpu[MAX_CUDA_DEVICES];
 #endif
+	bool free;
 };
 
 
@@ -44,6 +45,7 @@ static struct multiplace_array_s* multiplace_alloc(int D, const long dimensions[
 	result->dims = *PTR_PASS(dims);
 
 	result->ptr_cpu = NULL;
+	result->free = true;
 
 #ifdef USE_CUDA
 	for (int i = 0; i < MAX_CUDA_DEVICES; i++)
@@ -60,7 +62,9 @@ void multiplace_free(const struct multiplace_array_s* ptr)
 	if (NULL == ptr)
 		return;
 
-	md_free(ptr->ptr_cpu);
+	if (ptr->free)
+		md_free(ptr->ptr_cpu);
+
 #ifdef USE_CUDA
 	for (int i = 0; i < MAX_CUDA_DEVICES; i++)
 		md_free(ptr->ptr_gpu[i]);
@@ -142,6 +146,20 @@ struct multiplace_array_s* multiplace_move_F(int D, const long dimensions[D], si
 #endif
 	result->ptr_cpu = (void*)ptr;
 
+	return result;
+}
+
+struct multiplace_array_s* multiplace_move_wrapper(int D, const long dimensions[D], size_t size, const void* ptr)
+{
+
+#ifdef USE_CUDA
+	assert (!cuda_ondevice(ptr));
+#endif
+
+	auto result = multiplace_alloc(D, dimensions, size);
+	result->ptr_cpu = (void*)ptr;
+	result->ptr_ref = (void*)ptr;
+	result->free = false;
 	return result;
 }
 
