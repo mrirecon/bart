@@ -31,6 +31,10 @@
 #include "num/mem.h"
 #include "num/multind.h"
 
+#ifdef USE_CUDNN
+#include "num/cudnn_wrapper.h"
+#endif
+
 #include "misc/misc.h"
 #include "misc/debug.h"
 
@@ -246,11 +250,17 @@ static void cuda_deactivate_p2p(void)
 static void cuda_libraries_init(void)
 {
 	cuda_activate_p2p();
+#ifdef USE_CUDNN
+	cudnn_init();
+#endif
 }
 
 static void cuda_libraries_deinit(void)
 {
 	cuda_deactivate_p2p();
+#ifdef USE_CUDNN
+	cudnn_deinit();
+#endif
 }
 
 bool cuda_try_init(int device)

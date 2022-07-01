@@ -24,25 +24,93 @@
 
 #include "cudnn_wrapper.h"
 
-static void cudnn_error(int line, cudnnStatus_t code)
+static void cudnn_error(const char* file, int line, cudnnStatus_t code)
 {
 	const char *err_str = cudnnGetErrorString(code);
-	error("cudnn error: %d %s \n", line, err_str);
+	error("cDNN error: %s in %s:%d \n", err_str, file, line);
+}
+
+#define CUDNN_ERROR(x)	({ CUDA_ASYNC_ERROR_NOTE("before cuDNN call"); cudnnStatus_t errval = (x); if (CUDNN_STATUS_SUCCESS  != errval) cudnn_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuDNN call"); })
+#define CUDNN_CALL(x)	({ CUDA_ASYNC_ERROR_NOTE("before cuDNN call"); cudnn_set_gpulock(); cudnnStatus_t errval = (x); if (CUDNN_STATUS_SUCCESS  != errval) cudnn_error(__FILE__, __LINE__, errval); cudnn_unset_gpulock(); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
+
+
+static cudnnHandle_t handle[MAX_CUDA_DEVICES];
+static int num_devices_initialized = 0;
+
+
+void cudnn_init(void)
+{
+	if (0 != num_devices_initialized)
+		error("Cannot reinitialize cuDNN, deinit it first!");
+
+	int old_device = cuda_get_device();
+
+	for (int device = 0; device < cuda_num_devices(); ++device) {
+
+		cuda_set_device(device);
+		CUDNN_ERROR(cudnnCreate(handle + device));
+	}
+
+	cuda_set_device(old_device);
+
+	num_devices_initialized = cuda_num_devices();	
 }
 
 
-#define CUDNN_ERROR(x)	({ cudnnStatus_t errval = (x); if (CUDNN_STATUS_SUCCESS != errval) cudnn_error(__LINE__, errval); })
+void cudnn_deinit(void)
+{
+	if (cuda_num_devices() != num_devices_initialized)
+		error("Cannot deinitialize cuDNN, number of devices has changed from initialization!");
 
+	for (int device = 0; device < cuda_num_devices(); ++device)
+		CUDNN_ERROR(cudnnDestroy(handle[device]));
 
-static cudnnHandle_t handle;
-static bool handle_created = false;
+	num_devices_initialized = 0;	
+}
+
+#ifdef _OPENMP
+#include <omp.h>
+static bool gpulock_init = false;
+static omp_lock_t gpulock[MAX_CUDA_DEVICES];
+static void cudnn_set_gpulock(void)
+{
+	#pragma omp critical (init_cudnn_gpulock)
+	if (!gpulock_init) {
+
+		for (int i = 0; i < MAX_CUDA_DEVICES; i++)
+			omp_init_lock(&gpulock[i]);
+
+		gpulock_init = true;		
+	}
+
+	omp_set_lock(&gpulock[cuda_get_device()]);
+}
+
+static void cudnn_unset_gpulock(void)
+{
+	omp_unset_lock(&gpulock[cuda_get_device()]);
+}
+#else
+static void cudnn_set_gpulock(void)
+{
+	return;
+}
+
+static void cudnn_unset_gpulock(void)
+{
+	return;
+}
+#endif
 
 static cudnnHandle_t get_handle(void)
 {
-	if (!handle_created)
-		CUDNN_ERROR(cudnnCreate(&handle));
-	handle_created = true;
-	return handle;
+	if (cuda_num_devices() != num_devices_initialized)
+		error("cuDNN not initialized correctly!");
+
+	cudnnHandle_t result = handle[cuda_get_device()];
+	CUDNN_ERROR(cudnnSetStream(result, cuda_get_stream()));
+
+	return result;
 }
 
 #if 0
@@ -141,7 +209,7 @@ static void cudnn_smul2(unsigned int D, const long dims[D], const long ostr[D], 
 	float alpha = val;
 	float beta = 0;
 
-	CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, idesc, iptr, &beta, odesc, optr));
+	CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, idesc, iptr, &beta, odesc, optr));
 
 	CUDNN_ERROR(cudnnDestroyTensorDescriptor(odesc));
 	CUDNN_ERROR(cudnnDestroyTensorDescriptor(idesc));
@@ -539,9 +607,9 @@ static bool cudnn_convcorr_fwd_int(	float alpha,
 					float* out)
 {
 	int N_algos;
-	CUDNN_ERROR(cudnnGetConvolutionForwardAlgorithmMaxCount(get_handle(), &N_algos));
+	CUDNN_CALL(cudnnGetConvolutionForwardAlgorithmMaxCount(get_handle(), &N_algos));
 	cudnnConvolutionFwdAlgoPerf_t algos[N_algos];
-	CUDNN_ERROR(cudnnGetConvolutionForwardAlgorithm_v7(get_handle(), in_desc, krn_desc, conv_desc, out_desc, N_algos, &N_algos, algos));
+	CUDNN_CALL(cudnnGetConvolutionForwardAlgorithm_v7(get_handle(), in_desc, krn_desc, conv_desc, out_desc, N_algos, &N_algos, algos));
 
 	size_t in_size;
 	size_t out_size;
@@ -569,7 +637,9 @@ static bool cudnn_convcorr_fwd_int(	float alpha,
 	size_t ws_size = algo->memory;
 	void* workspace = (0 < ws_size) ? md_alloc_gpu(1, MD_DIMS(1), ws_size) : NULL;
 
+	cudnn_set_gpulock();
 	cudnnStatus_t status = cudnnConvolutionForward(get_handle(), &alpha, in_desc, in, krn_desc, krn, conv_desc, algo->algo, workspace, ws_size, &beta, out_desc, out);
+	cudnn_unset_gpulock();
 	md_free(workspace);
 
 	if (CUDNN_STATUS_NOT_SUPPORTED == status)
@@ -590,9 +660,9 @@ static bool cudnn_convcorr_bwd_krn_int(	float alpha,
 					const float* out)
 {
 	int N_algos;
-	CUDNN_ERROR(cudnnGetConvolutionBackwardFilterAlgorithmMaxCount(get_handle(), &N_algos));
+	CUDNN_CALL(cudnnGetConvolutionBackwardFilterAlgorithmMaxCount(get_handle(), &N_algos));
 	cudnnConvolutionBwdFilterAlgoPerf_t algos[N_algos];
-	CUDNN_ERROR(cudnnGetConvolutionBackwardFilterAlgorithm_v7(get_handle(), in_desc, out_desc, conv_desc, krn_desc, N_algos, &N_algos, algos));
+	CUDNN_CALL(cudnnGetConvolutionBackwardFilterAlgorithm_v7(get_handle(), in_desc, out_desc, conv_desc, krn_desc, N_algos, &N_algos, algos));
 
 	size_t in_size;
 	size_t out_size;
@@ -620,7 +690,9 @@ static bool cudnn_convcorr_bwd_krn_int(	float alpha,
 	size_t ws_size = algo->memory;
 	void* workspace = (0 < ws_size) ? md_alloc_gpu(1, MD_DIMS(1), ws_size) : NULL;
 
+	cudnn_set_gpulock();
 	cudnnStatus_t status = cudnnConvolutionBackwardFilter(get_handle(), &alpha, in_desc, in, out_desc, out, conv_desc, algo->algo, workspace, ws_size, &beta, krn_desc, krn);
+	cudnn_unset_gpulock();
 	md_free(workspace);
 
 	if (CUDNN_STATUS_NOT_SUPPORTED == status)
@@ -641,9 +713,9 @@ static bool cudnn_convcorr_bwd_in_int(	float alpha,
 					const float* out)
 {
 	int N_algos;
-	CUDNN_ERROR(cudnnGetConvolutionBackwardDataAlgorithmMaxCount(get_handle(), &N_algos));
+	CUDNN_CALL(cudnnGetConvolutionBackwardDataAlgorithmMaxCount(get_handle(), &N_algos));
 	cudnnConvolutionBwdDataAlgoPerf_t algos[N_algos];
-	CUDNN_ERROR(cudnnGetConvolutionBackwardDataAlgorithm_v7(get_handle(), krn_desc, out_desc, conv_desc, in_desc, N_algos, &N_algos, algos));
+	CUDNN_CALL(cudnnGetConvolutionBackwardDataAlgorithm_v7(get_handle(), krn_desc, out_desc, conv_desc, in_desc, N_algos, &N_algos, algos));
 
 	size_t in_size;
 	size_t out_size;
@@ -671,7 +743,9 @@ static bool cudnn_convcorr_bwd_in_int(	float alpha,
 	size_t ws_size = algo->memory;
 	void* workspace = (0 < ws_size) ? md_alloc_gpu(1, MD_DIMS(1), ws_size) : NULL;
 
+	cudnn_set_gpulock();
 	cudnnStatus_t status = cudnnConvolutionBackwardData(get_handle(), &alpha, krn_desc, krn, out_desc, out, conv_desc, algo->algo, workspace, ws_size, &beta, in_desc, in);
+	cudnn_unset_gpulock();
 	md_free(workspace);
 
 	if (CUDNN_STATUS_NOT_SUPPORTED == status)
@@ -683,7 +757,7 @@ static bool cudnn_convcorr_bwd_in_int(	float alpha,
 
 static void cudnn_tensor_transform(float alpha, float beta, cudnnTensorDescriptor_t dst_desc, float* dst, cudnnTensorDescriptor_t src_desc, const float* src)
 {
-	CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, src_desc, src, &beta, dst_desc, dst));
+	CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, src_desc, src, &beta, dst_desc, dst));
 }
 
 static void cudnn_tensor_transform_split_complex(float alpha, float beta, cudnnTensorDescriptor_t real_desc, float* real, float* imag, cudnnTensorDescriptor_t comp_desc, const complex float* comp)
@@ -725,8 +799,8 @@ static void cudnn_tensor_transform_split_complex(float alpha, float beta, cudnnT
 		CUDNN_ERROR(cudnnCreateTensorDescriptor(&tDesc));
 		CUDNN_ERROR(cudnnSetTensorNdDescriptor(tDesc, dataType, nbDims, dimA_comp, strA_comp));
 
-		CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, tDesc, real_tmp, &beta, real_desc, real));
-		CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, tDesc, imag_tmp, &beta, real_desc, imag));
+		CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, tDesc, real_tmp, &beta, real_desc, real));
+		CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, tDesc, imag_tmp, &beta, real_desc, imag));
 
 		CUDNN_ERROR(cudnnDestroyTensorDescriptor(tDesc));
 
@@ -734,8 +808,8 @@ static void cudnn_tensor_transform_split_complex(float alpha, float beta, cudnnT
 		md_free(imag_tmp);
 	} else {
 
-		CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, comp_desc, (const float*)comp + 0, &beta, real_desc, real));
-		CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, comp_desc, (const float*)comp + 1, &beta, real_desc, imag));
+		CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, comp_desc, (const float*)comp + 0, &beta, real_desc, real));
+		CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, comp_desc, (const float*)comp + 1, &beta, real_desc, imag));
 	}
 }
 
@@ -781,8 +855,8 @@ static void cudnn_tensor_transform_combine_complex(float alpha, float beta, cudn
 		CUDNN_ERROR(cudnnCreateTensorDescriptor(&tDesc));
 		CUDNN_ERROR(cudnnSetTensorNdDescriptor(tDesc, dataType, nbDims, dimA_comp, strA_comp));
 
-		CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, real_desc, real, &beta, tDesc, real_tmp));
-		CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, real_desc, imag, &beta, tDesc, imag_tmp));
+		CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, real_desc, real, &beta, tDesc, real_tmp));
+		CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, real_desc, imag, &beta, tDesc, imag_tmp));
 
 		CUDNN_ERROR(cudnnDestroyTensorDescriptor(tDesc));
 
@@ -792,8 +866,8 @@ static void cudnn_tensor_transform_combine_complex(float alpha, float beta, cudn
 		md_free(imag_tmp);
 	} else {
 
-		CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, real_desc, real, &beta, comp_desc, (float*)comp + 0));
-		CUDNN_ERROR(cudnnTransformTensor(get_handle(), &alpha, real_desc, imag, &beta, comp_desc, (float*)comp + 1));
+		CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, real_desc, real, &beta, comp_desc, (float*)comp + 0));
+		CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, real_desc, imag, &beta, comp_desc, (float*)comp + 1));
 	}
 }
 // *_split methodes compute four real convolutions
