@@ -466,6 +466,10 @@ static void tf_add_placeholder_same_shape(TF_Graph* graph, const char* name, TF_
 
 const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool session)
 {
+#ifndef TENSORFLOW
+	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
+#endif
+
 	assert(1 == OO);
 
 	// load graph, restore session
