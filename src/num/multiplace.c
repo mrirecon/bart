@@ -7,7 +7,9 @@
 #include "misc/types.h"
 
 #include "num/multind.h"
+#ifdef USE_CUDA
 #include "num/gpuops.h"
+#endif
 
 #include "num/multiplace.h"
 
@@ -23,7 +25,7 @@ struct multiplace_array_s {
 	void* ptr_cpu;
 
 #ifdef USE_CUDA
-	void* ptr_gpu;
+	void* ptr_gpu[MAX_CUDA_DEVICES];
 #endif
 };
 
@@ -44,7 +46,8 @@ static struct multiplace_array_s* multiplace_alloc(int D, const long dimensions[
 	result->ptr_cpu = NULL;
 
 #ifdef USE_CUDA
-	result->ptr_gpu = NULL;
+	for (int i = 0; i < MAX_CUDA_DEVICES; i++)
+		result->ptr_gpu[i] = NULL;
 #endif
 
 	return PTR_PASS(result);
@@ -59,7 +62,8 @@ void multiplace_free(const struct multiplace_array_s* ptr)
 
 	md_free(ptr->ptr_cpu);
 #ifdef USE_CUDA
-	md_free(ptr->ptr_gpu);
+	for (int i = 0; i < MAX_CUDA_DEVICES; i++)
+		md_free(ptr->ptr_gpu[i]);
 #endif
 
 	xfree(ptr->dims);
@@ -75,10 +79,13 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 #ifdef USE_CUDA
 	if (cuda_ondevice(ref)) {
 
-		if (NULL == ptr->ptr_gpu)
-			ptr->ptr_gpu = md_gpu_move(ptr->N, ptr->dims, ptr->ptr_ref, ptr->size);
+		if (NULL == ptr->ptr_gpu[cuda_get_device()]) {
 
-		return ptr->ptr_gpu;
+			ptr->ptr_gpu[cuda_get_device()] = md_gpu_move(ptr->N, ptr->dims, ptr->ptr_ref, ptr->size);
+			cuda_sync_device();
+		}
+
+		return ptr->ptr_gpu[cuda_get_device()];
 	}
 #else
 	UNUSED(ref);
@@ -105,10 +112,9 @@ struct multiplace_array_s* multiplace_move2(int D, const long dimensions[D], con
 	result->ptr_ref = tmp;
 
 #ifdef USE_CUDA
-	if (cuda_ondevice(tmp)) {
-
-		result->ptr_gpu = tmp;
-	} else
+	if (cuda_ondevice(tmp))
+		result->ptr_gpu[cuda_get_device()] = tmp;
+	else
 #endif
 	result->ptr_cpu = tmp;
 
@@ -130,7 +136,7 @@ struct multiplace_array_s* multiplace_move_F(int D, const long dimensions[D], si
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr)) {
 
-		result->ptr_gpu = (void*)ptr;
+		result->ptr_gpu[cuda_get_device_num(ptr)] = (void*)ptr;
 		cuda_sync_device();
 	} else 
 #endif
