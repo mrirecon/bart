@@ -22,6 +22,7 @@
 #include <cuComplex.h>
 
 #include "num/gpukrnls.h"
+#include "num/gpuops.h"
 #include "num/multind.h"
 
 #if 1
@@ -84,7 +85,7 @@ __global__ void kern_float2double(long N, double* dst, const float* src)
 
 extern "C" void cuda_float2double(long N, double* dst, const float* src)
 {
-	kern_float2double<<<gridsize(N), blocksize(N)>>>(N, dst, src);
+	kern_float2double<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src);
 }
 
 __global__ void kern_double2float(long N, float* dst, const double* src)
@@ -98,7 +99,7 @@ __global__ void kern_double2float(long N, float* dst, const double* src)
 
 extern "C" void cuda_double2float(long N, float* dst, const double* src)
 {
-	kern_double2float<<<gridsize(N), blocksize(N)>>>(N, dst, src);
+	kern_double2float<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src);
 }
 
 __global__ void kern_xpay(long N, float beta, float* dst, const float* src)
@@ -112,7 +113,7 @@ __global__ void kern_xpay(long N, float beta, float* dst, const float* src)
 
 extern "C" void cuda_xpay(long N, float beta, float* dst, const float* src)
 {
-	kern_xpay<<<gridsize(N), blocksize(N)>>>(N, beta, dst, src);
+	kern_xpay<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, beta, dst, src);
 }
 
 
@@ -128,7 +129,7 @@ __global__ void kern_axpbz(long N, float* dst, const float a1, const float* src1
 
 extern "C" void cuda_axpbz(long N, float* dst, const float a1, const float* src1, const float a2, const float* src2)
 {
-	kern_axpbz<<<gridsize(N), blocksize(N)>>>(N, dst, a1, src1, a2, src2);
+	kern_axpbz<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, a1, src1, a2, src2);
 }
 
 
@@ -143,7 +144,7 @@ __global__ void kern_smul(long N, float alpha, float* dst, const float* src)
 
 extern "C" void cuda_smul(long N, float alpha, float* dst, const float* src)
 {
-	kern_smul<<<gridsize(N), blocksize(N)>>>(N, alpha, dst, src);
+	kern_smul<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, alpha, dst, src);
 }
 
 
@@ -151,7 +152,7 @@ typedef void (*cuda_3op_f)(long N, float* dst, const float* src1, const float* s
 
 extern "C" void cuda_3op(cuda_3op_f krn, int N, float* dst, const float* src1, const float* src2)
 {
-	krn<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	krn<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
 }
 
 __global__ void kern_add(long N, float* dst, const float* src1, const float* src2)
@@ -179,7 +180,7 @@ __global__ void kern_sadd(long N, float val, float* dst, const float* src1)
 
 extern "C" void cuda_sadd(long N, float val, float* dst, const float* src1)
 {
-	kern_sadd<<<gridsize(N), blocksize(N)>>>(N, val, dst, src1);
+	kern_sadd<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, val, dst, src1);
 }
 
 __global__ void kern_zsadd(long N, cuFloatComplex val, cuFloatComplex* dst, const cuFloatComplex* src1)
@@ -193,7 +194,7 @@ __global__ void kern_zsadd(long N, cuFloatComplex val, cuFloatComplex* dst, cons
 
 extern "C" void cuda_zsadd(long N, _Complex float val, _Complex float* dst, const _Complex float* src1)
 {
-	kern_zsadd<<<gridsize(N), blocksize(N)>>>(N, make_cuFloatComplex(__real(val), __imag(val)), (cuFloatComplex*)dst, (const cuFloatComplex*)src1);
+	kern_zsadd<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, make_cuFloatComplex(__real(val), __imag(val)), (cuFloatComplex*)dst, (const cuFloatComplex*)src1);
 }
 
 __global__ void kern_sub(long N, float* dst, const float* src1, const float* src2)
@@ -266,7 +267,7 @@ __global__ void kern_fmac2(long N, double* dst, const float* src1, const float* 
 
 extern "C" void cuda_fmac2(long N, double* dst, const float* src1, const float* src2)
 {
-	kern_fmac2<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	kern_fmac2<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
 }
 
 __global__ void kern_zsmul(long N, cuFloatComplex val, cuFloatComplex* dst, const cuFloatComplex* src1)
@@ -280,7 +281,7 @@ __global__ void kern_zsmul(long N, cuFloatComplex val, cuFloatComplex* dst, cons
 
 extern "C" void cuda_zsmul(long N, _Complex float alpha, _Complex float* dst, const _Complex float* src1)
 {
-	kern_zsmul<<<gridsize(N), blocksize(N)>>>(N, make_cuFloatComplex(__real(alpha), __imag(alpha)), (cuFloatComplex*)dst, (const cuFloatComplex*)src1);
+	kern_zsmul<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, make_cuFloatComplex(__real(alpha), __imag(alpha)), (cuFloatComplex*)dst, (const cuFloatComplex*)src1);
 }
 
 
@@ -295,7 +296,7 @@ __global__ void kern_zmul(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zmul(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zmul<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zmul<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 __global__ void kern_zdiv(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
@@ -313,7 +314,7 @@ __global__ void kern_zdiv(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zdiv(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zdiv<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zdiv<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -329,7 +330,7 @@ __global__ void kern_zfmac(long N, cuFloatComplex* dst, const cuFloatComplex* sr
 
 extern "C" void cuda_zfmac(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zfmac<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zfmac<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -344,7 +345,7 @@ __global__ void kern_zfmac2(long N, cuDoubleComplex* dst, const cuFloatComplex* 
 
 extern "C" void cuda_zfmac2(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zfmac2<<<gridsize(N), blocksize(N)>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zfmac2<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -359,7 +360,7 @@ __global__ void kern_zmulc(long N, cuFloatComplex* dst, const cuFloatComplex* sr
 
 extern "C" void cuda_zmulc(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zmulc<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zmulc<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 __global__ void kern_zfmacc(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
@@ -374,7 +375,7 @@ __global__ void kern_zfmacc(long N, cuFloatComplex* dst, const cuFloatComplex* s
 
 extern "C" void cuda_zfmacc(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zfmacc<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zfmacc<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -390,7 +391,7 @@ __global__ void kern_zfmacc2(long N, cuDoubleComplex* dst, const cuFloatComplex*
 
 extern "C" void cuda_zfmacc2(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zfmacc2<<<gridsize(N), blocksize(N)>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zfmacc2<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -446,7 +447,7 @@ extern "C" void cuda_zfmac_strided(long N, long dims[3], unsigned long oflags, u
 	md_calc_strides(3, s.istrs1, idims1, N);
 	md_calc_strides(3, s.istrs2, idims2, N);
 
-	kern_zfmac_strides<<<gridsize(N), blocksize(N)>>>(s, N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zfmac_strides<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(s, N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -493,7 +494,7 @@ extern "C" void cuda_zfmacc_strided(long N, long dims[3], unsigned long oflags, 
 	md_calc_strides(3, s.istrs1, idims1, N);
 	md_calc_strides(3, s.istrs2, idims2, N);
 
-	kern_zfmacc_strides<<<gridsize(N), blocksize(N)>>>(s, N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zfmacc_strides<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(s, N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -617,7 +618,7 @@ __global__ void kern_zpow(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zpow(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zpow<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zpow<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -632,7 +633,7 @@ __global__ void kern_sqrt(long N, float* dst, const float* src)
 
 extern "C" void cuda_sqrt(long N, float* dst, const float* src)
 {
-	kern_sqrt<<<gridsize(N), blocksize(N)>>>(N, dst, src);
+	kern_sqrt<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src);
 }
 
 
@@ -647,7 +648,7 @@ __global__ void kern_zconj(long N, cuFloatComplex* dst, const cuFloatComplex* sr
 
 extern "C" void cuda_zconj(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zconj<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zconj<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 
@@ -662,7 +663,7 @@ __global__ void kern_zcmp(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zcmp(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zcmp<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zcmp<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 __global__ void kern_zdiv_reg(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2, cuFloatComplex lambda)
@@ -676,7 +677,7 @@ __global__ void kern_zdiv_reg(long N, cuFloatComplex* dst, const cuFloatComplex*
 
 extern "C" void cuda_zdiv_reg(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2, _Complex float lambda)
 {
-	kern_zdiv_reg<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2, make_cuFloatComplex(__real(lambda), __imag(lambda)));
+	kern_zdiv_reg<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2, make_cuFloatComplex(__real(lambda), __imag(lambda)));
 }
 
 
@@ -694,7 +695,7 @@ __global__ void kern_zphsr(long N, cuFloatComplex* dst, const cuFloatComplex* sr
 
 extern "C" void cuda_zphsr(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zphsr<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zphsr<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 
@@ -709,7 +710,7 @@ __global__ void kern_zexp(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zexp(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zexp<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zexp<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 
@@ -728,7 +729,7 @@ __global__ void kern_zexpj(long N, cuFloatComplex* dst, const cuFloatComplex* sr
 
 extern "C" void cuda_zexpj(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zexpj<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zexpj<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_zlog(long N, cuFloatComplex* dst, const cuFloatComplex* src)
@@ -745,7 +746,7 @@ __global__ void kern_zlog(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zlog(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zlog<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zlog<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_zarg(long N, cuFloatComplex* dst, const cuFloatComplex* src)
@@ -759,7 +760,7 @@ __global__ void kern_zarg(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zarg(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zarg<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zarg<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_zsin(long N, cuFloatComplex* dst, const cuFloatComplex* src)
@@ -773,7 +774,7 @@ __global__ void kern_zsin(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zsin(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zsin<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zsin<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_zcos(long N, cuFloatComplex* dst, const cuFloatComplex* src)
@@ -787,7 +788,7 @@ __global__ void kern_zcos(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zcos(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zcos<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zcos<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_zsinh(long N, cuFloatComplex* dst, const cuFloatComplex* src)
@@ -801,7 +802,7 @@ __global__ void kern_zsinh(long N, cuFloatComplex* dst, const cuFloatComplex* sr
 
 extern "C" void cuda_zsinh(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zsinh<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zsinh<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_zcosh(long N, cuFloatComplex* dst, const cuFloatComplex* src)
@@ -815,7 +816,7 @@ __global__ void kern_zcosh(long N, cuFloatComplex* dst, const cuFloatComplex* sr
 
 extern "C" void cuda_zcosh(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zcosh<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zcosh<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 
@@ -830,7 +831,7 @@ __global__ void kern_zabs(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zabs(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zabs<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zabs<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_exp(long N, float* dst, const float* src)
@@ -844,7 +845,7 @@ __global__ void kern_exp(long N, float* dst, const float* src)
 
 extern "C" void cuda_exp(long N, float* dst, const float* src)
 {
-	kern_exp<<<gridsize(N), blocksize(N)>>>(N, dst, src);
+	kern_exp<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src);
 }
 
 __global__ void kern_log(long N, float* dst, const float* src)
@@ -858,7 +859,7 @@ __global__ void kern_log(long N, float* dst, const float* src)
 
 extern "C" void cuda_log(long N, float* dst, const float* src)
 {
-	kern_log<<<gridsize(N), blocksize(N)>>>(N, dst, src);
+	kern_log<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src);
 }
 
 
@@ -873,7 +874,7 @@ __global__ void kern_zatanr(long N, cuFloatComplex* dst, const cuFloatComplex* s
 
 extern "C" void cuda_zatanr(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zatanr<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zatanr<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_zacos(long N, cuFloatComplex* dst, const cuFloatComplex* src)
@@ -887,7 +888,7 @@ __global__ void kern_zacos(long N, cuFloatComplex* dst, const cuFloatComplex* sr
 
 extern "C" void cuda_zacos(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zacos<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zacos<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 
@@ -917,7 +918,7 @@ __global__ void kern_zsoftthresh_half(long N, float lambda, cuFloatComplex* d, c
 
 extern "C" void cuda_zsoftthresh_half(long N, float lambda, _Complex float* d, const _Complex float* x)
 {
-	kern_zsoftthresh_half<<<gridsize(N), blocksize(N)>>>(N, lambda, (cuFloatComplex*)d, (const cuFloatComplex*)x);
+	kern_zsoftthresh_half<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, lambda, (cuFloatComplex*)d, (const cuFloatComplex*)x);
 }
 
 
@@ -937,7 +938,7 @@ __global__ void kern_zsoftthresh(long N, float lambda, cuFloatComplex* d, const 
 
 extern "C" void cuda_zsoftthresh(long N, float lambda, _Complex float* d, const _Complex float* x)
 {
-	kern_zsoftthresh<<<gridsize(N), blocksize(N)>>>(N, lambda, (cuFloatComplex*)d, (const cuFloatComplex*)x);
+	kern_zsoftthresh<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, lambda, (cuFloatComplex*)d, (const cuFloatComplex*)x);
 }
 
 
@@ -957,7 +958,7 @@ __global__ void kern_softthresh_half(long N, float lambda, float* d, const float
 
 extern "C" void cuda_softthresh_half(long N, float lambda, float* d, const float* x)
 {
-	kern_softthresh_half<<<gridsize(N), blocksize(N)>>>(N, lambda, d, x);
+	kern_softthresh_half<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, lambda, d, x);
 }
 
 
@@ -977,7 +978,7 @@ __global__ void kern_softthresh(long N, float lambda, float* d, const float* x)
 
 extern "C" void cuda_softthresh(long N, float lambda, float* d, const float* x)
 {
-	kern_softthresh<<<gridsize(N), blocksize(N)>>>(N, lambda, d, x);
+	kern_softthresh<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, lambda, d, x);
 }
 
 
@@ -992,7 +993,7 @@ __global__ void kern_zreal(long N, cuFloatComplex* dst, const cuFloatComplex* sr
 
 extern "C" void cuda_zreal(long N, _Complex float* dst, const _Complex float* src)
 {
-	kern_zreal<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zreal<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 
@@ -1007,7 +1008,7 @@ __global__ void kern_zle(long N, cuFloatComplex* dst, const cuFloatComplex* src1
 
 extern "C" void cuda_zle(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zle<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zle<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -1022,7 +1023,7 @@ __global__ void kern_le(long N, float* dst, const float* src1, const float* src2
 
 extern "C" void cuda_le(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_le<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	kern_le<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
 }
 
 __device__ cuFloatComplex cuDouble2Float(cuDoubleComplex x)
@@ -1077,7 +1078,7 @@ __global__ void kern_zfftmod(long N, cuFloatComplex* dst, const cuFloatComplex* 
 
 extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Bool inv, double phase)
 {
-	kern_zfftmod<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src, n, inv, phase);
+	kern_zfftmod<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src, n, inv, phase);
 }
 
 
@@ -1098,7 +1099,7 @@ __global__ void kern_zmax(long N, cuFloatComplex* dst, const cuFloatComplex* src
 
 extern "C" void cuda_zmax(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zmax<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zmax<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -1115,7 +1116,7 @@ __global__ void kern_smax(long N, float val, float* dst, const float* src1)
 
 extern "C" void cuda_smax(long N, float val, float* dst, const float* src1)
 {
-	kern_smax<<<gridsize(N), blocksize(N)>>>(N, val, dst, src1);
+	kern_smax<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, val, dst, src1);
 }
 
 
@@ -1131,7 +1132,7 @@ __global__ void kern_max(long N, float* dst, const float* src1, const float* src
 
 extern "C" void cuda_max(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_max<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	kern_max<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
 }
 
 
@@ -1147,7 +1148,7 @@ __global__ void kern_min(long N, float* dst, const float* src1, const float* src
 
 extern "C" void cuda_min(long N, float* dst, const float* src1, const float* src2)
 {
-	kern_min<<<gridsize(N), blocksize(N)>>>(N, dst, src1, src2);
+	kern_min<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
 }
 
 __global__ void kern_zsmax(long N, float val, cuFloatComplex* dst, const cuFloatComplex* src)
@@ -1164,7 +1165,7 @@ __global__ void kern_zsmax(long N, float val, cuFloatComplex* dst, const cuFloat
 
 extern "C" void cuda_zsmax(long N, float alpha, _Complex float* dst, const _Complex float* src)
 {
-	kern_zsmax<<<gridsize(N), blocksize(N)>>>(N, alpha, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	kern_zsmax<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, alpha, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
 __global__ void kern_reduce_zsum(long N, cuFloatComplex* dst)
@@ -1187,7 +1188,7 @@ extern "C" void cuda_zsum(long N, _Complex float* dst)
 
 	while (N > 1) {
 
-		kern_reduce_zsum<<<1, B>>>(N, (cuFloatComplex*)dst);
+		kern_reduce_zsum<<<1, B, 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst);
 		N = MIN(B, N);
 		B /= 32;
 	}
@@ -1205,7 +1206,7 @@ __global__ void kern_pdf_gauss(long N, float mu, float sig, float* dst, const fl
 
 extern "C" void cuda_pdf_gauss(long N, float mu, float sig, float* dst, const float* src)
 {
-	kern_pdf_gauss<<<gridsize(N), blocksize(N)>>>(N, mu, sig, dst, src);
+	kern_pdf_gauss<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, mu, sig, dst, src);
 }
 
 
@@ -1220,7 +1221,7 @@ __global__ void kern_real(int N, float* dst, const cuFloatComplex* src)
 
 extern "C" void cuda_real(long N, float* dst, const _Complex float* src)
 {
-	kern_real<<<gridsize(N), blocksize(N)>>>(N, dst, (cuFloatComplex*)src);
+	kern_real<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, (cuFloatComplex*)src);
 }
 
 __global__ void kern_imag(int N, float* dst, const cuFloatComplex* src)
@@ -1234,7 +1235,7 @@ __global__ void kern_imag(int N, float* dst, const cuFloatComplex* src)
 
 extern "C" void cuda_imag(long N, float* dst, const _Complex float* src)
 {
-	kern_imag<<<gridsize(N), blocksize(N)>>>(N, dst, (cuFloatComplex*)src);
+	kern_imag<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, (cuFloatComplex*)src);
 }
 
 __global__ void kern_zcmpl_real(int N, cuFloatComplex* dst, const float* src)
@@ -1248,7 +1249,7 @@ __global__ void kern_zcmpl_real(int N, cuFloatComplex* dst, const float* src)
 
 extern "C" void cuda_zcmpl_real(long N, _Complex float* dst, const float* src)
 {
-	kern_zcmpl_real<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, src);
+	kern_zcmpl_real<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, src);
 }
 
 __global__ void kern_zcmpl_imag(int N, cuFloatComplex* dst, const float* src)
@@ -1262,7 +1263,7 @@ __global__ void kern_zcmpl_imag(int N, cuFloatComplex* dst, const float* src)
 
 extern "C" void cuda_zcmpl_imag(long N, _Complex float* dst, const float* src)
 {
-	kern_zcmpl_imag<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, src);
+	kern_zcmpl_imag<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, src);
 }
 
 __global__ void kern_zcmpl(int N, cuFloatComplex* dst, const float* real_src, const float* imag_src)
@@ -1276,7 +1277,7 @@ __global__ void kern_zcmpl(int N, cuFloatComplex* dst, const float* real_src, co
 
 extern "C" void cuda_zcmpl(long N, _Complex float* dst, const float* real_src, const float* imag_src)
 {
-	kern_zcmpl<<<gridsize(N), blocksize(N)>>>(N, (cuFloatComplex*)dst, real_src, imag_src);
+	kern_zcmpl<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, real_src, imag_src);
 }
 
 __global__ void kern_zfill(int N, cuFloatComplex val, cuFloatComplex* dst)
@@ -1290,5 +1291,5 @@ __global__ void kern_zfill(int N, cuFloatComplex val, cuFloatComplex* dst)
 
 extern "C" void cuda_zfill(long N, _Complex float val, _Complex float* dst)
 {
-	kern_zfill<<<gridsize(N), blocksize(N)>>>(N, make_cuFloatComplex(__real(val), __imag(val)), (cuFloatComplex*)dst);
+	kern_zfill<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, make_cuFloatComplex(__real(val), __imag(val)), (cuFloatComplex*)dst);
 }

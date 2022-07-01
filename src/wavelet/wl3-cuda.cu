@@ -15,6 +15,8 @@
 
 #include "misc/misc.h"
 
+#include "num/gpuops.h"
+
 #include "wl3-cuda.h"
 
 #ifndef CFL_SIZE
@@ -122,7 +124,7 @@ extern "C" void wl3_cuda_down3(const long dims[3], const long out_str[3], _Compl
 	dim3 th(T, T, T);
 	dim3 bl((dims[0] + T - 1) / T, (d1 + T - 1) / T, (dims[2] + T - 1) / T);
 
-	kern_down3<<< bl, th >>>(dims3, ostrs, (cuFloatComplex*)out, istrs, (const cuFloatComplex*)in, flen, filter);
+	kern_down3<<< bl, th, 0, cuda_get_stream() >>>(dims3, ostrs, (cuFloatComplex*)out, istrs, (const cuFloatComplex*)in, flen, filter);
 }
 
 extern "C" void wl3_cuda_up3(const long dims[3], const long out_str[3], _Complex float* out, const long in_str[3],  const _Complex float* in, unsigned int flen, const float filter[__VLA(flen)])
@@ -135,7 +137,7 @@ extern "C" void wl3_cuda_up3(const long dims[3], const long out_str[3], _Complex
 	dim3 th(T, T, T);
 	dim3 bl((dims[0] + T - 1) / T, (dims[1] + T - 1) / T, (dims[2] + T - 1) / T);
 
-	kern_up3<<< bl, th >>>(dims3, ostrs, (cuFloatComplex*)out, istrs, (const cuFloatComplex*)in, flen, filter);
+	kern_up3<<< bl, th, 0, cuda_get_stream() >>>(dims3, ostrs, (cuFloatComplex*)out, istrs, (const cuFloatComplex*)in, flen, filter);
 }
 
 

@@ -17,6 +17,7 @@
 #include <cuda.h>
 
 #include "num/multind.h"
+#include "num/gpuops.h"
 
 #include "dfwavelet_kernels.h"
 #include "dfwavelet_impl.h"
@@ -367,7 +368,7 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numThreads = dim3(T/K,K,1);
       mem = K*dx*sizeof(_data_t);
 
-      cu_fwt3df_col <<< numBlocks,numThreads,mem >>>(dev_tempLx,dev_tempHx,dev_current_vx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
+      cu_fwt3df_col <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLx,dev_tempHx,dev_current_vx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
       cuda_sync();
       // FWT Rows
       K = (SHMEM_SIZE-16)/(dy*sizeof(_data_t));
@@ -375,8 +376,8 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numThreads = dim3(K,T/K,1);
       mem = K*dy*sizeof(_data_t);
       
-      cu_fwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempLxLy,dev_tempLxHy,dev_tempLx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
-      cu_fwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempHxLy,dev_tempHxHy,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLxLy,dev_tempLxHy,dev_tempLx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHxLy,dev_tempHxHy,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
       cuda_sync();
       // FWT Depths
       K = (SHMEM_SIZE-16)/(dz*sizeof(_data_t));
@@ -384,10 +385,10 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numThreads = dim3(K,1,T/K);
       mem = K*dz*sizeof(_data_t);
       
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_LxLyLz_df1,dev_LxLyHz_df1,dev_tempLxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_LxHyLz_df1,dev_LxHyHz_df1,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_HxLyLz_df1,dev_HxLyHz_df1,dev_tempHxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_HxHyLz_df1,dev_HxHyHz_df1,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_LxLyLz_df1,dev_LxLyHz_df1,dev_tempLxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_LxHyLz_df1,dev_LxHyHz_df1,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_HxLyLz_df1,dev_HxLyHz_df1,dev_tempHxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_HxHyLz_df1,dev_HxHyHz_df1,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
       cuda_sync();
 
       //************WCVY***********
@@ -397,7 +398,7 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numThreads = dim3(T/K,K,1);
       mem = K*dx*sizeof(_data_t);
       
-      cu_fwt3df_col <<< numBlocks,numThreads,mem >>>(dev_tempLx,dev_tempHx,dev_current_vy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_col <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLx,dev_tempHx,dev_current_vy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
       cuda_sync();
       // FWT Rows
       K = (SHMEM_SIZE-16)/(dy*sizeof(_data_t));
@@ -405,8 +406,8 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numThreads = dim3(K,T/K,1);
       mem = K*dy*sizeof(_data_t);
       
-      cu_fwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempLxLy,dev_tempLxHy,dev_tempLx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
-      cu_fwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempHxLy,dev_tempHxHy,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
+      cu_fwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLxLy,dev_tempLxHy,dev_tempLx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
+      cu_fwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHxLy,dev_tempHxHy,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
       cuda_sync();
       // FWT Depths
       K = (SHMEM_SIZE-16)/(dz*sizeof(_data_t));
@@ -414,10 +415,10 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numThreads = dim3(K,1,T/K);
       mem = K*dz*sizeof(_data_t);
       
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_LxLyLz_df2,dev_LxLyHz_df2,dev_tempLxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_LxHyLz_df2,dev_LxHyHz_df2,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_HxLyLz_df2,dev_HxLyHz_df2,dev_tempHxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_HxHyLz_df2,dev_HxHyHz_df2,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_LxLyLz_df2,dev_LxLyHz_df2,dev_tempLxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_LxHyLz_df2,dev_LxHyHz_df2,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_HxLyLz_df2,dev_HxLyHz_df2,dev_tempHxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_HxHyLz_df2,dev_HxHyHz_df2,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
       cuda_sync();
 
       //************WCVZ***********
@@ -427,7 +428,7 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numThreads = dim3(T/K,K,1);
       mem = K*dx*sizeof(_data_t);
 
-      cu_fwt3df_col <<< numBlocks,numThreads,mem >>>(dev_tempLx,dev_tempHx,dev_current_vz,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_col <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLx,dev_tempHx,dev_current_vz,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
       cuda_sync();
       // FWT Rows
       K = (SHMEM_SIZE-16)/(dy*sizeof(_data_t));
@@ -435,8 +436,8 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numThreads = dim3(K,T/K,1);
       mem = K*dy*sizeof(_data_t);
       
-      cu_fwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempLxLy,dev_tempLxHy,dev_tempLx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
-      cu_fwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempHxLy,dev_tempHxHy,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLxLy,dev_tempLxHy,dev_tempLx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
+      cu_fwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHxLy,dev_tempHxHy,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod0,dev_hid0,filterLen);
       cuda_sync();
       // FWT Depths
       K = (SHMEM_SIZE-16)/(dz*sizeof(_data_t));
@@ -444,19 +445,19 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numThreads = dim3(K,1,T/K);
       mem = K*dz*sizeof(_data_t);
       
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_LxLyLz_n,dev_LxLyHz_n,dev_tempLxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_LxHyLz_n,dev_LxHyHz_n,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_HxLyLz_n,dev_HxLyHz_n,dev_tempHxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
-      cu_fwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_HxHyLz_n,dev_HxHyHz_n,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_LxLyLz_n,dev_LxLyHz_n,dev_tempLxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_LxHyLz_n,dev_LxHyHz_n,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_HxLyLz_n,dev_HxLyHz_n,dev_tempHxLy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
+      cu_fwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_HxHyLz_n,dev_HxHyHz_n,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,dev_lod1,dev_hid1,filterLen);
       cuda_sync();
 
       //******* Multi ******
       int maxInd = 7*blockSize;
       numThreads = T;
       numBlocks = (maxInd+numThreads.x-1)/numThreads.x;
-      cu_mult <<< numBlocks, numThreads >>> (dev_HxLyLz_df1,1.f/res[0],maxInd);
-      cu_mult <<< numBlocks, numThreads >>> (dev_HxLyLz_df2,1.f/res[1],maxInd);
-      cu_mult <<< numBlocks, numThreads >>> (dev_HxLyLz_n,1.f/res[2],maxInd);
+      cu_mult <<< numBlocks, numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_df1,1.f/res[0],maxInd);
+      cu_mult <<< numBlocks, numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_df2,1.f/res[1],maxInd);
+      cu_mult <<< numBlocks, numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_n,1.f/res[2],maxInd);
       cuda_sync();
 
       //*******Linear Combination******
@@ -465,12 +466,12 @@ extern "C" void dffwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_wcdf1,data
       numBlocks = dim3( (dxNext+t1-1)/t1, (dyNext+t2-1)/t2, dzNext);
       numThreads = dim3(t1,t2,1);
 	  
-      cu_fwt3df_LC1 <<< numBlocks,numThreads >>> (dev_HxLyLz_df1,dev_HxLyLz_df2,dev_HxLyLz_n,dev_LxHyLz_df1,dev_LxHyLz_df2,dev_LxHyLz_n,dev_LxLyHz_df1,dev_LxLyHz_df2,dev_LxLyHz_n,dxNext,dyNext,dzNext);
-      cu_fwt3df_LC2 <<< numBlocks,numThreads >>> (dev_HxHyLz_df1,dev_HxHyLz_df2,dev_HxHyLz_n,dev_HxLyHz_df1,dev_HxLyHz_df2,dev_HxLyHz_n,dev_LxHyHz_df1,dev_LxHyHz_df2,dev_LxHyHz_n,dxNext,dyNext,dzNext);
-      cu_fwt3df_LC3 <<< numBlocks,numThreads >>> (dev_HxHyHz_df1,dev_HxHyHz_df2,dev_HxHyHz_n,dxNext,dyNext,dzNext);
+      cu_fwt3df_LC1 <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_df1,dev_HxLyLz_df2,dev_HxLyLz_n,dev_LxHyLz_df1,dev_LxHyLz_df2,dev_LxHyLz_n,dev_LxLyHz_df1,dev_LxLyHz_df2,dev_LxLyHz_n,dxNext,dyNext,dzNext);
+      cu_fwt3df_LC2 <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxHyLz_df1,dev_HxHyLz_df2,dev_HxHyLz_n,dev_HxLyHz_df1,dev_HxLyHz_df2,dev_HxLyHz_n,dev_LxHyHz_df1,dev_LxHyHz_df2,dev_LxHyHz_n,dxNext,dyNext,dzNext);
+      cu_fwt3df_LC3 <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxHyHz_df1,dev_HxHyHz_df2,dev_HxHyHz_n,dxNext,dyNext,dzNext);
       cuda_sync();
-      cu_fwt3df_LC1_diff <<< numBlocks,numThreads >>> (dev_HxLyLz_df1,dev_HxLyLz_df2,dev_HxLyLz_n,dev_LxHyLz_df1,dev_LxHyLz_df2,dev_LxHyLz_n,dev_LxLyHz_df1,dev_LxLyHz_df2,dev_LxLyHz_n,dxNext,dyNext,dzNext);
-      cu_fwt3df_LC2_diff <<< numBlocks,numThreads >>> (dev_HxHyLz_df1,dev_HxHyLz_df2,dev_HxHyLz_n,dev_HxLyHz_df1,dev_HxLyHz_df2,dev_HxLyHz_n,dev_LxHyHz_df1,dev_LxHyHz_df2,dev_LxHyHz_n,dxNext,dyNext,dzNext);
+      cu_fwt3df_LC1_diff <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_df1,dev_HxLyLz_df2,dev_HxLyLz_n,dev_LxHyLz_df1,dev_LxHyLz_df2,dev_LxHyLz_n,dev_LxLyHz_df1,dev_LxLyHz_df2,dev_LxLyHz_n,dxNext,dyNext,dzNext);
+      cu_fwt3df_LC2_diff <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxHyLz_df1,dev_HxHyLz_df2,dev_HxHyLz_n,dev_HxLyHz_df1,dev_HxLyHz_df2,dev_HxLyHz_n,dev_LxHyHz_df1,dev_LxHyHz_df2,dev_LxHyHz_n,dxNext,dyNext,dzNext);
       cuda_sync();
 
       dev_current_vx = dev_wcdf1;
@@ -605,21 +606,21 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numBlocks = dim3( (dx+t1-1)/t1, (dy+t2-1)/t2, dz);
       numThreads = dim3(t1,t2,1);
 
-      cu_iwt3df_LC1 <<< numBlocks,numThreads >>> (dev_HxLyLz_df1,dev_HxLyLz_df2,dev_HxLyLz_n,dev_LxHyLz_df1,dev_LxHyLz_df2,dev_LxHyLz_n,dev_LxLyHz_df1,dev_LxLyHz_df2,dev_LxLyHz_n,dx,dy,dz);
-      cu_iwt3df_LC2 <<< numBlocks,numThreads >>> (dev_HxHyLz_df1,dev_HxHyLz_df2,dev_HxHyLz_n,dev_HxLyHz_df1,dev_HxLyHz_df2,dev_HxLyHz_n,dev_LxHyHz_df1,dev_LxHyHz_df2,dev_LxHyHz_n,dx,dy,dz);
-      cu_iwt3df_LC3 <<< numBlocks,numThreads >>> (dev_HxHyHz_df1,dev_HxHyHz_df2,dev_HxHyHz_n,dx,dy,dz);
+      cu_iwt3df_LC1 <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_df1,dev_HxLyLz_df2,dev_HxLyLz_n,dev_LxHyLz_df1,dev_LxHyLz_df2,dev_LxHyLz_n,dev_LxLyHz_df1,dev_LxLyHz_df2,dev_LxLyHz_n,dx,dy,dz);
+      cu_iwt3df_LC2 <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxHyLz_df1,dev_HxHyLz_df2,dev_HxHyLz_n,dev_HxLyHz_df1,dev_HxLyHz_df2,dev_HxLyHz_n,dev_LxHyHz_df1,dev_LxHyHz_df2,dev_LxHyHz_n,dx,dy,dz);
+      cu_iwt3df_LC3 <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxHyHz_df1,dev_HxHyHz_df2,dev_HxHyHz_n,dx,dy,dz);
       cuda_sync();
-      cu_iwt3df_LC1_diff <<< numBlocks,numThreads >>> (dev_HxLyLz_df1,dev_HxLyLz_df2,dev_HxLyLz_n,dev_LxHyLz_df1,dev_LxHyLz_df2,dev_LxHyLz_n,dev_LxLyHz_df1,dev_LxLyHz_df2,dev_LxLyHz_n,dx,dy,dz);
-      cu_iwt3df_LC2_diff <<< numBlocks,numThreads >>> (dev_HxHyLz_df1,dev_HxHyLz_df2,dev_HxHyLz_n,dev_HxLyHz_df1,dev_HxLyHz_df2,dev_HxLyHz_n,dev_LxHyHz_df1,dev_LxHyHz_df2,dev_LxHyHz_n,dx,dy,dz);
+      cu_iwt3df_LC1_diff <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_df1,dev_HxLyLz_df2,dev_HxLyLz_n,dev_LxHyLz_df1,dev_LxHyLz_df2,dev_LxHyLz_n,dev_LxLyHz_df1,dev_LxLyHz_df2,dev_LxLyHz_n,dx,dy,dz);
+      cu_iwt3df_LC2_diff <<< numBlocks,numThreads, 0, cuda_get_stream() >>> (dev_HxHyLz_df1,dev_HxHyLz_df2,dev_HxHyLz_n,dev_HxLyHz_df1,dev_HxLyHz_df2,dev_HxLyHz_n,dev_LxHyHz_df1,dev_LxHyHz_df2,dev_LxHyHz_n,dx,dy,dz);
       cuda_sync();
       
       //******* Multi ******
       int maxInd = 7*blockSize;
       numThreads = T;
       numBlocks = (maxInd+numThreads.x-1)/numThreads.x;
-      cu_mult <<< numBlocks, numThreads >>> (dev_HxLyLz_df1,res[0],maxInd);
-      cu_mult <<< numBlocks, numThreads >>> (dev_HxLyLz_df2,res[1],maxInd);
-      cu_mult <<< numBlocks, numThreads >>> (dev_HxLyLz_n,res[2],maxInd);
+      cu_mult <<< numBlocks, numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_df1,res[0],maxInd);
+      cu_mult <<< numBlocks, numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_df2,res[1],maxInd);
+      cu_mult <<< numBlocks, numThreads, 0, cuda_get_stream() >>> (dev_HxLyLz_n,res[2],maxInd);
       cuda_sync();
 
       //************WCX************
@@ -632,10 +633,10 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numThreads = dim3(K,1,(T/K));
       mem = K*2*dz*sizeof(_data_t);
 
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempLxLy,dev_LxLyLz_df1,dev_LxLyHz_df1,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempHxLy,dev_HxLyLz_df1,dev_HxLyHz_df1,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempLxHy,dev_LxHyLz_df1,dev_LxHyHz_df1,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempHxHy,dev_HxHyLz_df1,dev_HxHyHz_df1,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLxLy,dev_LxLyLz_df1,dev_LxLyHz_df1,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHxLy,dev_HxLyLz_df1,dev_HxLyHz_df1,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLxHy,dev_LxHyLz_df1,dev_LxHyHz_df1,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHxHy,dev_HxHyLz_df1,dev_HxHyHz_df1,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
       cuda_sync();
       // IWT Rows
       K = (SHMEM_SIZE-16)/(2*dy*sizeof(_data_t));
@@ -643,8 +644,8 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numThreads = dim3(K,(T/K),1);
       mem = K*2*dy*sizeof(_data_t);
 
-      cu_iwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempLx,dev_tempLxLy,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
-      cu_iwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempHx,dev_tempHxLy,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
+      cu_iwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLx,dev_tempLxLy,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
+      cu_iwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHx,dev_tempHxLy,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
       cuda_sync();
       // IWT Columns
       K = (SHMEM_SIZE-16)/(2*dx*sizeof(_data_t));
@@ -652,7 +653,7 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numThreads = dim3((T/K),K,1);
       mem = K*2*dx*sizeof(_data_t);
 
-      cu_iwt3df_col <<< numBlocks,numThreads,mem >>>(dev_current_vx,dev_tempLx,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,plan->filterLen);
+      cu_iwt3df_col <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_current_vx,dev_tempLx,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,plan->filterLen);
       cuda_sync();
 
       //************WCY************
@@ -665,10 +666,10 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numThreads = dim3(K,1,(T/K));
       mem = K*2*dz*sizeof(_data_t);
 
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempLxLy,dev_LxLyLz_df2,dev_LxLyHz_df2,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempHxLy,dev_HxLyLz_df2,dev_HxLyHz_df2,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempLxHy,dev_LxHyLz_df2,dev_LxHyHz_df2,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempHxHy,dev_HxHyLz_df2,dev_HxHyHz_df2,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLxLy,dev_LxLyLz_df2,dev_LxLyHz_df2,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHxLy,dev_HxLyLz_df2,dev_HxLyHz_df2,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLxHy,dev_LxHyLz_df2,dev_LxHyHz_df2,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHxHy,dev_HxHyLz_df2,dev_HxHyHz_df2,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,filterLen);
       cuda_sync();
       // IWT Rows
       K = (SHMEM_SIZE-16)/(2*dy*sizeof(_data_t));
@@ -676,8 +677,8 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numThreads = dim3(K,(T/K),1);
       mem = K*2*dy*sizeof(_data_t);
 
-      cu_iwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempLx,dev_tempLxLy,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,plan->filterLen);
-      cu_iwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempHx,dev_tempHxLy,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,plan->filterLen);
+      cu_iwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLx,dev_tempLxLy,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,plan->filterLen);
+      cu_iwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHx,dev_tempHxLy,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,plan->filterLen);
       cuda_sync();
       // IWT Columns
       K = (SHMEM_SIZE-16)/(2*dx*sizeof(_data_t));
@@ -685,7 +686,7 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numThreads = dim3((T/K),K,1);
       mem = K*2*dx*sizeof(_data_t);
 
-      cu_iwt3df_col <<< numBlocks,numThreads,mem >>>(dev_current_vy,dev_tempLx,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
+      cu_iwt3df_col <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_current_vy,dev_tempLx,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
       cuda_sync();
 
       //************WCZ************
@@ -698,10 +699,10 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numThreads = dim3(K,1,(T/K));
       mem = K*2*dz*sizeof(_data_t);
 
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempLxLy,dev_LxLyLz_n,dev_LxLyHz_n,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,filterLen);
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempHxLy,dev_HxLyLz_n,dev_HxLyHz_n,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,filterLen);
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempLxHy,dev_LxHyLz_n,dev_LxHyHz_n,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,filterLen);
-      cu_iwt3df_dep <<< numBlocks,numThreads,mem >>>(dev_tempHxHy,dev_HxHyLz_n,dev_HxHyHz_n,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLxLy,dev_LxLyLz_n,dev_LxLyHz_n,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHxLy,dev_HxLyLz_n,dev_HxLyHz_n,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLxHy,dev_LxHyLz_n,dev_LxHyHz_n,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,filterLen);
+      cu_iwt3df_dep <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHxHy,dev_HxHyLz_n,dev_HxHyHz_n,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor1,dev_hir1,filterLen);
       cuda_sync();
       // IWT Rows
       K = (SHMEM_SIZE-16)/(2*dy*sizeof(_data_t));
@@ -709,8 +710,8 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numThreads = dim3(K,(T/K),1);
       mem = K*2*dy*sizeof(_data_t);
 
-      cu_iwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempLx,dev_tempLxLy,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
-      cu_iwt3df_row <<< numBlocks,numThreads,mem >>>(dev_tempHx,dev_tempHxLy,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
+      cu_iwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempLx,dev_tempLxLy,dev_tempLxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
+      cu_iwt3df_row <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_tempHx,dev_tempHxLy,dev_tempHxHy,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
       cuda_sync();
       // IWT Columns
       K = (SHMEM_SIZE-16)/(2*dx*sizeof(_data_t));
@@ -718,7 +719,7 @@ extern "C" void dfiwt3_gpu(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t*
       numThreads = dim3((T/K),K,1);
       mem = K*2*dx*sizeof(_data_t);
 
-      cu_iwt3df_col <<< numBlocks,numThreads,mem >>>(dev_current_vz,dev_tempLx,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
+      cu_iwt3df_col <<< numBlocks,numThreads,mem, cuda_get_stream() >>>(dev_current_vz,dev_tempLx,dev_tempHx,dx,dy,dz,dxNext,dyNext,dzNext,xOffset,yOffset,zOffset,dev_lor0,dev_hir0,plan->filterLen);
       cuda_sync();
       dev_HxLyLz_df1 += 7*blockSize;
       dev_HxLyLz_df2 += 7*blockSize;

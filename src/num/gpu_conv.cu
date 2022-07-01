@@ -16,7 +16,7 @@
 #include <cuComplex.h>
 
 #include "misc/misc.h"
-
+#include "num/gpuops.h"
 #include "num/gpu_conv.h"
 #include "num/multind.h"
 
@@ -316,14 +316,14 @@ static void cuda_im2col_int(_Complex float* dst, const _Complex float* src, cons
 	if (func1) {
 	
 		const void* func = (const void*)kern_im2col_valid_no_dil_str<DIMS, T, transp>;
-		kern_im2col_valid_no_dil_str<DIMS, T, transp><<<gridsize(config.N_in_elements, func), blocksize(config.N_in_elements, func)>>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
+		kern_im2col_valid_no_dil_str<DIMS, T, transp><<<gridsize(config.N_in_elements, func), blocksize(config.N_in_elements, func), 0, cuda_get_stream() >>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
 		return;
 	}
 	
 	if (func2) {
 
 		const void* func = (const void*)kern_im2col_valid<DIMS, T, transp>;
-		kern_im2col_valid<DIMS, T, transp><<<gridsize(config.N_in_elements, func), blocksize(config.N_in_elements, func)>>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
+		kern_im2col_valid<DIMS, T, transp><<<gridsize(config.N_in_elements, func), blocksize(config.N_in_elements, func), 0, cuda_get_stream() >>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
 		return;
 	}
 
