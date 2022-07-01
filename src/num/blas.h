@@ -3,6 +3,17 @@
 
 #include "misc/misc.h"
 
+#ifdef USE_CUDA
+void cublas_init(void);
+void cublas_deinit(void);
+
+extern double cuda_sdot(long size, const float* src1, const float* src2);
+extern double cuda_norm(long size, const float* src1);
+extern double cuda_asum(long size, const float* src);
+extern void cuda_saxpy(long size, float* y, float alpha, const float* src);
+extern void cuda_swap(long size, float* a, float* b);
+#endif
+
 
 
 extern void blas_cgemm(char transa, char transb, long M, long N, long K, const _Complex float alpha, long lda, const _Complex float* A, long ldb, const _Complex float* B, const _Complex float beta, long ldc, _Complex float* C);

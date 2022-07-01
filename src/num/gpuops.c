@@ -30,6 +30,7 @@
 #include "num/gpukrnls.h"
 #include "num/mem.h"
 #include "num/multind.h"
+#include "num/blas.h"
 
 #ifdef USE_CUDNN
 #include "num/cudnn_wrapper.h"
@@ -250,6 +251,7 @@ static void cuda_deactivate_p2p(void)
 static void cuda_libraries_init(void)
 {
 	cuda_activate_p2p();
+	cublas_init();
 #ifdef USE_CUDNN
 	cudnn_init();
 #endif
@@ -258,6 +260,7 @@ static void cuda_libraries_init(void)
 static void cuda_libraries_deinit(void)
 {
 	cuda_deactivate_p2p();
+	cublas_deinit();
 #ifdef USE_CUDNN
 	cudnn_deinit();
 #endif
@@ -600,49 +603,7 @@ static void cuda_float_free(float* x)
 	cuda_free((void*)x);
 }
 
-static double cuda_sdot(long size, const float* src1, const float* src2)
-{
-	assert(size <= INT_MAX / 2);
-	assert(cuda_ondevice(src1));
-	assert(cuda_ondevice(src2));
-//	printf("SDOT %x %x %ld\n", src1, src2, size);
-	return cublasSdot(size, src1, 1, src2, 1);
-}
 
-
-static double cuda_norm(long size, const float* src1)
-{
-#if 1
-	// cublasSnrm2 produces NaN in some situations
-	// e.g. nlinv -g -i8 utests/data/und2x2 o
-	// git rev: ab28a9a953a80d243511640b23501f964a585349
-//	printf("cublas: %f\n", cublasSnrm2(size, src1, 1));
-//	printf("GPU norm (sdot: %f)\n", sqrt(cuda_sdot(size, src1, src1)));
-	return sqrt(cuda_sdot(size, src1, src1));
-#else
-	return cublasSnrm2(size, src1, 1);
-#endif
-}
-
-
-static double cuda_asum(long size, const float* src)
-{
-	assert(size <= INT_MAX / 2);
-	return cublasSasum(size, src, 1);
-}
-
-static void cuda_saxpy(long size, float* y, float alpha, const float* src)
-{
-//	printf("SAXPY %x %x %ld\n", y, src, size);
-	assert(size <= INT_MAX / 2);
-    cublasSaxpy(size, alpha, src, 1, y, 1);
-}
-
-static void cuda_swap(long size, float* a, float* b)
-{
-	assert(size <= INT_MAX / 2);
-	cublasSswap(size, a, 1, b, 1);
-}
 
 const struct vec_ops gpu_ops = {
 

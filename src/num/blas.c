@@ -6,7 +6,7 @@
  * Authors:
  * 2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  * 2016-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2019-2020 Moritz Blumenthal
+ * 2019-2021 Moritz Blumenthal
  */
 
 #include <assert.h>
@@ -43,44 +43,118 @@
 
 //blas_* uses the old interface where scalar parameters/results are provided/written by value/return.
 
-static void cublas_error(int line, cublasStatus_t code)
+static void cublas_error(const char* file, int line, cublasStatus_t code)
 {
-	error("cublas error: %d in line %d \n", code, line);
+	const char* err_str = NULL;
+	switch (code) {
+		case CUBLAS_STATUS_SUCCESS: err_str="CUBLAS_STATUS_SUCCESS"; break;
+		case CUBLAS_STATUS_NOT_INITIALIZED: err_str="CUBLAS_STATUS_NOT_INITIALIZED"; break;
+		case CUBLAS_STATUS_ALLOC_FAILED: err_str="CUBLAS_STATUS_ALLOC_FAILED"; break;
+		case CUBLAS_STATUS_INVALID_VALUE: err_str="CUBLAS_STATUS_INVALID_VALUE"; break;
+		case CUBLAS_STATUS_ARCH_MISMATCH: err_str="CUBLAS_STATUS_ARCH_MISMATCH"; break;
+		case CUBLAS_STATUS_MAPPING_ERROR: err_str="CUBLAS_STATUS_MAPPING_ERROR"; break;
+		case CUBLAS_STATUS_EXECUTION_FAILED: err_str="CUBLAS_STATUS_EXECUTION_FAILED"; break;
+		case CUBLAS_STATUS_INTERNAL_ERROR: err_str="CUBLAS_STATUS_INTERNAL_ERROR"; break;
+		case CUBLAS_STATUS_NOT_SUPPORTED: err_str="CUBLAS_STATUS_NOT_SUPPORTED"; break;
+		case CUBLAS_STATUS_LICENSE_ERROR: err_str="CUBLAS_STATUS_LICENSE_ERROR"; break;
+	};
+
+	error("cuBLAS Error: %s in %s:%d \n", err_str, file, line);
 }
 
-#define CUBLAS_ERROR(x)	({ cublasStatus_t errval = (x); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__LINE__, errval); })
+#define CUBLAS_ERROR(x)	({ CUDA_ASYNC_ERROR_NOTE("before cuBLAS call"); cublasStatus_t errval = (x); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
+#define CUBLAS_CALL(x)	({ CUDA_ASYNC_ERROR_NOTE("before cuBLAS call"); cublas_set_gpulock(); cublasStatus_t errval = (x); cublas_unset_gpulock(); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
 
-static cublasHandle_t handle;
-static _Bool handle_created = false;
 
-static cublasHandle_t get_handle(void)
+static cublasHandle_t handle[MAX_CUDA_DEVICES];
+static int num_devices_initialized = 0;
+
+void cublas_init(void)
 {
-	if (!handle_created)
-		CUBLAS_ERROR(cublasCreate(&handle));
+	if (0 != num_devices_initialized)
+		error("Cannot reinitialize cuBLAS, deinit it first!");
 
-	handle_created = true;
+	int old_device = cuda_get_device();
 
-	return handle;
+	for (int device = 0; device < cuda_num_devices(); ++device) {
+
+		cuda_set_device(device);
+		CUBLAS_ERROR(cublasCreate(&handle[device]));
+	}
+
+	cuda_set_device(old_device);
+
+	num_devices_initialized = cuda_num_devices();	
 }
 
-static void destroy_handle(void)
+void cublas_deinit(void)
 {
-	CUBLAS_ERROR(cublasDestroy(handle));
-	handle_created = false;
+	if (cuda_num_devices() != num_devices_initialized)
+		error("Cannot deinitialize cuBLAS, number of devices has changed from initialization!");
+
+	for (int device = 0; device < cuda_num_devices(); ++device)
+		CUBLAS_ERROR(cublasDestroy(handle[device]));
+
+	num_devices_initialized = 0;	
 }
 
-static void cublas_set_pointer_host(void)
-{
-	(void)get_handle();
 
-	CUBLAS_ERROR(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
+#ifdef _OPENMP
+#include <omp.h>
+static bool gpulock_init = false;
+static omp_lock_t gpulock[MAX_CUDA_DEVICES];
+static void cublas_set_gpulock(void)
+{
+	#pragma omp critical (init_cublas_gpulock)
+	if (!gpulock_init) {
+
+		for (int i = 0; i < MAX_CUDA_DEVICES; i++)
+			omp_init_lock(&gpulock[i]);
+
+		gpulock_init = true;		
+	}
+
+	omp_set_lock(&gpulock[cuda_get_device()]);
 }
 
-static void cublas_set_pointer_device(void)
+static void cublas_unset_gpulock(void)
 {
-	(void)get_handle();
+	omp_unset_lock(&gpulock[cuda_get_device()]);
+}
+#else
+static void cublas_set_gpulock(void)
+{
+	return;
+}
 
-	CUBLAS_ERROR(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE));
+static void cublas_unset_gpulock(void)
+{
+	return;
+}
+#endif
+
+static cublasHandle_t get_handle_device(void)
+{
+	if (cuda_num_devices() != num_devices_initialized)
+		error("cuBLAS not initialized correctly!");
+
+	cublasHandle_t result = handle[cuda_get_device()];
+	CUBLAS_ERROR(cublasSetPointerMode(result, CUBLAS_POINTER_MODE_DEVICE));
+	CUBLAS_ERROR(cublasSetStream(result, cuda_get_stream()));
+
+	return result;
+}
+
+static cublasHandle_t get_handle_host(void)
+{
+	if (cuda_num_devices() != num_devices_initialized)
+		error("cuBLAS not initialized correctly!");
+
+	cublasHandle_t result = handle[cuda_get_device()];
+	CUBLAS_ERROR(cublasSetPointerMode(result, CUBLAS_POINTER_MODE_HOST));
+	CUBLAS_ERROR(cublasSetStream(result, cuda_get_stream()));
+
+	return result;
 }
 
 static cublasOperation_t cublas_trans(char trans)
@@ -96,6 +170,91 @@ static cublasOperation_t cublas_trans(char trans)
 
 	assert(0);
 }
+
+
+double cuda_sdot(long size, const float* src1, const float* src2)
+{
+//	printf("SDOT %x %x %ld\n", src1, src2, size);
+	double result = 0;
+
+	while (size > 0) {
+
+		float tmp;
+		CUBLAS_CALL(cublasSdot(get_handle_host(), MIN(size, INT_MAX / 4), src1, 1, src2, 1, &tmp));
+
+		result += tmp;
+		
+		src1 += INT_MAX / 4;
+		src2 += INT_MAX / 4;
+		size -= INT_MAX / 4;
+	}
+
+	return result;
+}
+
+
+double cuda_norm(long size, const float* src1)
+{
+#if 1
+	// cublasSnrm2 produces NaN in some situations
+	// e.g. nlinv -g -i8 utests/data/und2x2 o
+	// git rev: ab28a9a953a80d243511640b23501f964a585349
+//	printf("cublas: %f\n", cublasSnrm2(size, src1, 1));
+//	printf("GPU norm (sdot: %f)\n", sqrt(cuda_sdot(size, src1, src1)));
+#ifdef GPU_ASSERTS
+	assert(cuda_ondevice_num(src1, cuda_get_device_internal()));
+#endif
+	return sqrt(cuda_sdot(size, src1, src1));
+#else
+	return cublasSnrm2(size, src1, 1);
+#endif
+}
+
+double cuda_asum(long size, const float* src)
+{
+	double result = 0;
+
+	while (size > 0) {
+
+		float tmp;
+		CUBLAS_CALL(cublasSasum(get_handle_host(), MIN(size, INT_MAX / 4), src, 1, &tmp));
+
+		result += tmp;
+		
+		src += INT_MAX / 4;
+		size -= INT_MAX / 4;
+	}
+
+	return result;
+}
+
+void cuda_saxpy(long size, float* y, float alpha, const float* src)
+{
+//	printf("SAXPY %x %x %ld\n", y, src, size);
+
+	while (size > 0) {
+
+		CUBLAS_CALL(cublasSaxpy(get_handle_host(), MIN(size, INT_MAX / 4), &alpha, src, 1, y, 1));
+		
+		src += INT_MAX / 4;
+		y += INT_MAX / 4;
+		size -= INT_MAX / 4;
+	}
+    
+}
+
+void cuda_swap(long size, float* a, float* b)
+{
+	while (size > 0) {
+
+		CUBLAS_CALL(cublasSswap(get_handle_host(), MIN(size, INT_MAX / 4), a, 1, b, 1));
+		
+		a += INT_MAX / 4;
+		b += INT_MAX / 4;
+		size -= INT_MAX / 4;
+	}
+}
+
 #endif
 
 
@@ -127,10 +286,8 @@ void blas2_cgemm(char transa, char transb, long M, long N, long K, const complex
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_device();
-
-		cublasCgemm(get_handle(), cublas_trans(transa), cublas_trans(transb), M, N, K, (const cuComplex*)alpha,
-			    (const cuComplex*)A, lda, (const cuComplex*)B, ldb, (const cuComplex*)beta, (cuComplex*)C, ldc);
+		CUBLAS_CALL(cublasCgemm(get_handle_device(), cublas_trans(transa), cublas_trans(transb), M, N, K, (const cuComplex*)alpha,
+			    (const cuComplex*)A, lda, (const cuComplex*)B, ldb, (const cuComplex*)beta, (cuComplex*)C, ldc));
 
 		return;
 	}
@@ -149,10 +306,8 @@ void blas_cgemm(char transa, char transb, long M, long N,  long K, const complex
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
-		cublasCgemm(get_handle(), cublas_trans(transa), cublas_trans(transb), M, N, K, (const cuComplex*)(&alpha),
-			    (const cuComplex*)A, lda, (const cuComplex*)B, ldb, (const cuComplex*)(&beta), (cuComplex*)C, ldc);
+		CUBLAS_CALL(cublasCgemm(get_handle_host(), cublas_trans(transa), cublas_trans(transb), M, N, K, (const cuComplex*)(&alpha),
+			    (const cuComplex*)A, lda, (const cuComplex*)B, ldb, (const cuComplex*)(&beta), (cuComplex*)C, ldc));
 
 		return;
 	}
@@ -172,10 +327,8 @@ void blas2_cgemv(char trans, long M, long N, const complex float* alpha, long ld
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_device();
-
-		cublasCgemv(get_handle(), cublas_trans(trans), M, N, (const cuComplex*)alpha,
-			    (const cuComplex*)A, lda, (const cuComplex*)x, incx, (const cuComplex*)beta, (cuComplex*)y, incy);
+		CUBLAS_CALL(cublasCgemv(get_handle_device(), cublas_trans(trans), M, N, (const cuComplex*)alpha,
+			    (const cuComplex*)A, lda, (const cuComplex*)x, incx, (const cuComplex*)beta, (cuComplex*)y, incy));
 
 		return;
 	}
@@ -193,10 +346,8 @@ void blas_cgemv(char trans, long M, long N, complex float alpha, long lda, const
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
-		cublasCgemv(get_handle(), cublas_trans(trans), M, N, (const cuComplex*)&alpha,
-			    (const cuComplex*)A, lda, (const cuComplex*)x, incx, (const cuComplex*)&beta, (cuComplex*)y, incy);
+		CUBLAS_CALL(cublasCgemv(get_handle_host(), cublas_trans(trans), M, N, (const cuComplex*)&alpha,
+			    (const cuComplex*)A, lda, (const cuComplex*)x, incx, (const cuComplex*)&beta, (cuComplex*)y, incy));
 
 		return;
 	}
@@ -214,10 +365,8 @@ void blas2_cgeru(long M, long N, const complex float* alpha, long incx, const co
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_device();
-
-		cublasCgeru(get_handle(), M, N, (const cuComplex*)alpha,
-			    (const cuComplex*)x, incx, (const cuComplex*)y, incy, (cuComplex*)A, lda);
+		CUBLAS_CALL(cublasCgeru(get_handle_device(), M, N, (const cuComplex*)alpha,
+			    (const cuComplex*)x, incx, (const cuComplex*)y, incy, (cuComplex*)A, lda));
 
 		return;
 	}
@@ -234,10 +383,8 @@ void blas_cgeru(long M, long N, complex float alpha, long incx, const complex fl
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
-		cublasCgeru(get_handle(), M, N, (const cuComplex*)&alpha,
-			    (const cuComplex*)x, incx, (const cuComplex*)y, incy, (cuComplex*)A, lda);
+		CUBLAS_CALL(cublasCgeru(get_handle_host(), M, N, (const cuComplex*)&alpha,
+			    (const cuComplex*)x, incx, (const cuComplex*)y, incy, (cuComplex*)A, lda));
 
 		return;
 	}
@@ -254,9 +401,7 @@ void blas2_caxpy(long N, const complex float* alpha, long incx, const complex fl
 #ifdef USE_CUDA
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_device();
-
-		cublasCaxpy(get_handle(), N, (const cuComplex*)alpha, (const cuComplex*)x, incx, (cuComplex*)y, incy);
+		CUBLAS_CALL(cublasCaxpy(get_handle_device(), N, (const cuComplex*)alpha, (const cuComplex*)x, incx, (cuComplex*)y, incy));
 
 		return;
 	}
@@ -274,9 +419,7 @@ void blas_caxpy(long N, const complex float alpha, long incx, const complex floa
 #ifdef USE_CUDA
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_host();
-
-		cublasCaxpy(get_handle(), N, (const cuComplex*)&alpha, (const cuComplex*)x, incx, (cuComplex*)y, incy);
+		CUBLAS_CALL(cublasCaxpy(get_handle_host(), N, (const cuComplex*)&alpha, (const cuComplex*)x, incx, (cuComplex*)y, incy));
 
 		return;
 	}
@@ -294,9 +437,7 @@ void blas2_cscal(long N, const complex float* alpha, long incx, complex float* x
 #ifdef USE_CUDA
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_device();
-
-		cublasCscal(get_handle(), N, (const cuComplex*)alpha, (cuComplex*)x, incx);
+		CUBLAS_CALL(cublasCscal(get_handle_device(), N, (const cuComplex*)alpha, (cuComplex*)x, incx));
 
 		return;
 	}
@@ -313,9 +454,7 @@ void blas_cscal(long N, const complex float alpha, long incx, complex float* x)
 #ifdef USE_CUDA
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_host();
-
-		cublasCscal(get_handle(), N, (const cuComplex*)&alpha, (cuComplex*)x, incx);
+		CUBLAS_CALL(cublasCscal(get_handle_host(), N, (const cuComplex*)&alpha, (cuComplex*)x, incx));
 
 		return;
 	}
@@ -332,9 +471,7 @@ void blas2_cdotu(complex float* result, long N, long incx, const complex float* 
 #ifdef USE_CUDA
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_device();
-
-		cublasCdotu(get_handle(), N, (const cuComplex*)x, incx, (const cuComplex*)y, incy, (cuComplex*)result);
+		CUBLAS_CALL(cublasCdotu(get_handle_device(), N, (const cuComplex*)x, incx, (const cuComplex*)y, incy, (cuComplex*)result));
 
 		return;
 	}
@@ -351,9 +488,7 @@ void blas2_sgemm(char transa, char transb, long M, long N, long K, const float* 
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_device();
-
-		cublasSgemm(get_handle(), cublas_trans(transa), cublas_trans(transb), M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+		CUBLAS_CALL(cublasSgemm(get_handle_device(), cublas_trans(transa), cublas_trans(transb), M, N, K, alpha, A, lda, B, ldb, beta, C, ldc));
 
 		return;
 	}
@@ -372,9 +507,7 @@ void blas_sgemm(char transa, char transb, long M, long N,  long K, const float a
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
-		cublasSgemm(get_handle(), cublas_trans(transa), cublas_trans(transb), M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
+		CUBLAS_CALL(cublasSgemm(get_handle_host(), cublas_trans(transa), cublas_trans(transb), M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc));
 
 		return;
 	}
@@ -393,10 +526,8 @@ void blas2_sgemv(char trans, long M, long N, const float* alpha, long lda, const
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_device();
-
-		cublasSgemv(get_handle(), cublas_trans(trans), M, N, alpha,
-			    (const float*)A, lda, x, incx, beta, y, incy);
+		CUBLAS_CALL(cublasSgemv(get_handle_device(), cublas_trans(trans), M, N, alpha,
+			    (const float*)A, lda, x, incx, beta, y, incy));
 
 		return;
 	}
@@ -414,10 +545,8 @@ void blas_sgemv(char trans, long M, long N, const float alpha, long lda, const f
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
-		cublasSgemv(get_handle(), cublas_trans(trans), M, N, &alpha,
-			    (const float*)A, lda, x, incx, &beta, y, incy);
+		CUBLAS_CALL(cublasSgemv(get_handle_host(), cublas_trans(trans), M, N, &alpha,
+			    (const float*)A, lda, x, incx, &beta, y, incy));
 
 		return;
 	}
@@ -435,9 +564,7 @@ void blas2_sger(long M, long N, const float* alpha, long incx, const float* x, l
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_device();
-
-		cublasSger(get_handle(), M, N, alpha, x, incx, y, incy, (float*)A, lda);
+		CUBLAS_CALL(cublasSger(get_handle_device(), M, N, alpha, x, incx, y, incy, (float*)A, lda));
 
 		return;
 	}
@@ -455,9 +582,7 @@ void blas_sger(long M, long N, const float alpha, long incx, const float* x, lon
 
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
-		cublasSger(get_handle(), M, N, &alpha, x, incx, y, incy, (float*)A, lda);
+		CUBLAS_CALL(cublasSger(get_handle_host(), M, N, &alpha, x, incx, y, incy, (float*)A, lda));
 
 		return;
 	}
@@ -474,9 +599,7 @@ void blas2_saxpy(long N, const float* alpha, long incx, const float* x, long inc
 #ifdef USE_CUDA
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_device();
-
-		cublasSaxpy(get_handle(), N, alpha, x, incx, y, incy);
+		CUBLAS_CALL(cublasSaxpy(get_handle_device(), N, alpha, x, incx, y, incy));
 
 		return;
 	}
@@ -493,9 +616,7 @@ void blas_saxpy(long N, const float alpha, long incx, const float* x, long incy,
 #ifdef USE_CUDA
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_host();
-
-		cublasSaxpy(get_handle(), N, &alpha, x, incx, y, incy);
+		CUBLAS_CALL(cublasSaxpy(get_handle_host(), N, &alpha, x, incx, y, incy));
 
 		return;
 	}
@@ -513,9 +634,7 @@ void blas2_sscal(long N, const float* alpha, long incx, float* x)
 
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_device();
-
-		cublasSscal(get_handle(), N, alpha, x, incx);
+		CUBLAS_CALL(cublasSscal(get_handle_device(), N, alpha, x, incx));
 
 		return;
 	}
@@ -532,9 +651,7 @@ void blas_sscal(long N, float alpha, long incx, float* x)
 #ifdef USE_CUDA
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_host();
-
-		cublasSscal(get_handle(), N, &alpha, x, incx);
+		CUBLAS_CALL(cublasSscal(get_handle_host(), N, &alpha, x, incx));
 
 		return;
 	}
@@ -551,9 +668,7 @@ void blas2_sdot(float* result, long N, long incx, const float* x, long incy, con
 #ifdef USE_CUDA
 	if (cuda_ondevice(x)) {
 
-		cublas_set_pointer_device();
-
-		cublasSdot(get_handle(), N, x, incx, y, incy, result);
+		CUBLAS_CALL(cublasSdot(get_handle_device(), N, x, incx, y, incy, result));
 
 		return;
 	}
@@ -570,8 +685,8 @@ void blas_cdgmm(long M, long N, _Bool left_mul, const complex float* A, long lda
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublasCdgmm(get_handle(), left_mul ? CUBLAS_SIDE_LEFT : CUBLAS_SIDE_RIGHT,
-			    M, N, (const cuComplex*)A, lda, (const cuComplex*)x, incx, (cuComplex*)C, ldc);
+		CUBLAS_CALL(cublasCdgmm(get_handle_device(), left_mul ? CUBLAS_SIDE_LEFT : CUBLAS_SIDE_RIGHT,
+			    M, N, (const cuComplex*)A, lda, (const cuComplex*)x, incx, (cuComplex*)C, ldc));
 
 		return;
 	}
@@ -596,8 +711,8 @@ void blas_sdgmm(long M, long N, _Bool left_mul, const float* A, long lda, const 
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublasSdgmm(get_handle(), left_mul ? CUBLAS_SIDE_LEFT : CUBLAS_SIDE_RIGHT,
-			    M, N, A, lda, x, incx, C, ldc);
+		CUBLAS_CALL(cublasSdgmm(get_handle_device(), left_mul ? CUBLAS_SIDE_LEFT : CUBLAS_SIDE_RIGHT,
+			    M, N, A, lda, x, incx, C, ldc));
 
 		return;
 	}
@@ -623,12 +738,10 @@ void blas_cmatcopy(char trans, long M, long N, complex float alpha, const comple
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
 		complex float zero = 0.;
 
-		cublasCgeam(get_handle(), cublas_trans(trans), cublas_trans('N'),
-			    M, N, (const cuComplex*)&alpha, (const cuComplex*)A, lda, (const cuComplex*)&zero, (const cuComplex*)B, ldb, (cuComplex*)B, ldb);
+		CUBLAS_CALL(cublasCgeam(get_handle_host(), cublas_trans(trans), cublas_trans('N'),
+			    M, N, (const cuComplex*)&alpha, (const cuComplex*)A, lda, (const cuComplex*)&zero, (const cuComplex*)B, ldb, (cuComplex*)B, ldb));
 
 		return;
 	}
@@ -654,13 +767,11 @@ void blas2_cmatcopy(char trans, long M, long N, const complex float* alpha, cons
 
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
 		complex float* zero = cuda_malloc(8);
 		cuda_clear(8, zero);
 
-		cublasCgeam(get_handle(), cublas_trans(trans), cublas_trans('N'),
-			    M, N, (const cuComplex*)alpha, (const cuComplex*)A, lda, (const cuComplex*)zero, (const cuComplex*)B, ldb, (cuComplex*)B, ldb);
+		CUBLAS_CALL(cublasCgeam(get_handle_host(), cublas_trans(trans), cublas_trans('N'),
+			    M, N, (const cuComplex*)alpha, (const cuComplex*)A, lda, (const cuComplex*)zero, (const cuComplex*)B, ldb, (cuComplex*)B, ldb));
 
 		cuda_free(zero);
 
@@ -687,12 +798,10 @@ void blas_smatcopy(char trans, long M, long N, float alpha, const float* A, long
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
 		float zero = 0.;
 
-		cublasSgeam(get_handle(), cublas_trans(trans), cublas_trans('N'),
-			    M, N, &alpha, A, lda, &zero, B, ldb, B, ldb);
+		CUBLAS_CALL(cublasSgeam(get_handle_host(), cublas_trans(trans), cublas_trans('N'),
+			    M, N, &alpha, A, lda, &zero, B, ldb, B, ldb));
 
 		return;
 	}
@@ -717,13 +826,11 @@ void blas2_smatcopy(char trans, long M, long N, const float* alpha, const float*
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		cublas_set_pointer_host();
-
 		float* zero = cuda_malloc(4);
 		cuda_clear(4, zero);
 
-		cublasSgeam(get_handle(), cublas_trans(trans), cublas_trans('N'),
-			    M, N, alpha, A, lda, zero, B, ldb, B, ldb);
+		CUBLAS_CALL(cublasSgeam(get_handle_host(), cublas_trans(trans), cublas_trans('N'),
+			    M, N, alpha, A, lda, zero, B, ldb, B, ldb));
 
 		cuda_free(zero);
 
