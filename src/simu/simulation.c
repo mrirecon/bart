@@ -1,4 +1,4 @@
-/* Copyright 2022. Martin Uecker.
+/* Copyright 2022. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -76,6 +76,10 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tMu:%f\n", data->pulse.hs.mu);
         debug_printf(DP_INFO, "\tDuration:%f\n", data->pulse.hs.duration);
         debug_printf(DP_INFO, "\tON?:%d\n", data->pulse.hs.on);
+
+        debug_printf(DP_WARN, "Other Parameter:\n");
+        debug_printf(DP_INFO, "\tODE Tolerance:%f\n", data->other.ode_tol);
+        debug_printf(DP_INFO, "\tPulse Sampling Rate:%f Hz\n", data->other.sampling_rate);
 }
 
 
@@ -125,6 +129,14 @@ const struct simdata_grad simdata_grad_defaults = {
 	.mom = 0.,
 	.mom_sl = 0.,
 };
+
+
+const struct simdata_other simdata_other_defaults = {
+
+	.ode_tol = 10E-6,
+	.sampling_rate = 10E5,
+};
+
 
 
 /* --------- Matrix Operations --------- */
@@ -383,11 +395,51 @@ static void sum_up_signal(struct sim_data* data, float *m,  float *sa_r1, float 
 
 /* ------------ RF-Pulse -------------- */
 
+// FIXME: Make hard pulse function special case of rot_pulse
 // Single hard pulse without discrete sampling
 static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 {
         for (int i = 0; i < P; i++)
                 bloch_excitation2(xp[i], xp[i], data->pulse.flipangle / 180. * M_PI, data->pulse.phase);
+}
+
+
+// Homogeneously discretize pulse with rotational matrices
+static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
+{
+        assert(0. < data->other.sampling_rate);
+
+        float sample_time = 1. / data->other.sampling_rate;
+
+        assert((data->pulse.rf_end-data->pulse.rf_start) > sample_time);
+
+        float t_im = data->pulse.rf_start + sample_time / 2.;
+
+        float xp2[3] = { 0. };
+        float xp3[3] = { 0. };
+
+        float w1 = 0;
+
+        while (data->pulse.rf_end >= t_im) {
+
+                // RF-pulse strength of current interval
+                w1 = pulse_sinc(&data->pulse, t_im);
+
+                for (int i = 0; i < P; i++) {
+
+                        xp2[0] = xp[i][0];
+                        xp2[1] = xp[i][1];
+                        xp2[2] = xp[i][2];
+
+                        // RF-Pulse
+                        bloch_excitation2(xp3, xp2, w1*sample_time, data->pulse.phase);
+
+                        // Relaxation
+                        bloch_relaxation(xp[i], sample_time, xp3, data->voxel.r1, data->voxel.r2, data->grad.gb);
+                }
+
+                t_im += sample_time;
+        }
 }
 
 
@@ -399,6 +451,11 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 	data->grad.gb[2] = data->grad.mom_sl + data->voxel.w;
 
         switch (data->seq.type) {
+
+        case SIM_ROT:
+                ;
+                rot_pulse(data, N, P, xp);
+                break;
 
         case SIM_ODE:
                 ;
@@ -445,6 +502,11 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
 
         switch (data->seq.type) {
 
+        case SIM_ROT:
+                ;
+                hard_relaxation(data, N, P, xp, st, end);
+                break;
+
         case SIM_ODE:
                 ;
                 if (0. == data->pulse.rf_end)
@@ -490,6 +552,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
 {
         switch (data->seq.type) {
 
+        case SIM_ROT:
         case SIM_ODE:
                 ;
                 if (0. != data->pulse.rf_end)
@@ -578,6 +641,7 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 {
         switch (data->seq.type) {
 
+        case SIM_ROT:
         case SIM_ODE:
                 ;
                 rf_pulse(data, h, tol, N, P, xp, NULL);

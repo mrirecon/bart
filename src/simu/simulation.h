@@ -1,12 +1,13 @@
 
-#include <complex.h>
-#include <stdbool.h>
-
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
+#include <complex.h>
+#include <stdbool.h>
+
+
 enum sim_seq { SEQ_BSSFP, SEQ_IRBSSFP, SEQ_FLASH, SEQ_IRFLASH };
-enum sim_type { SIM_ODE, SIM_STM };
+enum sim_type { SIM_ROT, SIM_ODE, SIM_STM };
 
 struct simdata_voxel {
 
@@ -63,6 +64,16 @@ struct simdata_grad {
 
 extern const struct simdata_grad simdata_grad_defaults;
 
+
+struct simdata_other {
+
+	float ode_tol;
+        float sampling_rate;
+};
+
+extern const struct simdata_other simdata_other_defaults;
+
+
 struct simdata_pulse;
 
 struct sim_data {
@@ -72,6 +83,7 @@ struct sim_data {
 	struct simdata_pulse pulse;
 	struct simdata_grad grad;
 	struct simdata_tmp tmp;
+	struct simdata_other other;
 };
 
 extern void debug_sim(struct sim_data* data);
@@ -91,3 +103,4 @@ extern void ode_matrix_interval_simu(struct sim_data* _data, float h, float tol,
 extern void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N][N]);
 
 #endif
+
