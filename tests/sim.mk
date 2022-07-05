@@ -141,6 +141,38 @@ tests/test-sim-ode-stm-irflash: sim nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-sim-ode-rot-bssfp: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --ODE --seq bssfp,tr=0.0045,te=0.00225,nrep=50,pinv,ipl=0.01,ppl=0.00225,trf=0.0001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --ROT --seq bssfp,tr=0.0045,te=0.00225,nrep=50,pinv,ipl=0.01,ppl=0.00225,trf=0.0001,fa=45,bwtp=4 --other sampling-rate=10E5 -1 3:3:1 -2 1:1:1 simu_rot.ra ;\
+	$(TOOLDIR)/nrmse -t 0.003 simu_rot.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-ode-rot-irbssfp: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --ODE --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=50,pinv,ipl=0.01,ppl=0.00225,trf=0.0001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --ROT --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=50,pinv,ipl=0.01,ppl=0.00225,trf=0.0001,fa=45,bwtp=4 --other sampling-rate=10E5 -1 3:3:1 -2 1:1:1 simu_rot.ra ;\
+	$(TOOLDIR)/nrmse -t 0.003 simu_rot.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-ode-rot-flash: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --ODE --seq flash,tr=0.003,te=0.0017,nrep=1000,pinv,ipl=0.01,ppl=0,trf=0.001,fa=8,bwtp=4 -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --ROT --seq flash,tr=0.003,te=0.0017,nrep=1000,pinv,ipl=0.01,ppl=0,trf=0.001,fa=8,bwtp=4 --other sampling-rate=10E5 -1 3:3:1 -2 1:1:1 simu_rot.ra ;\
+	$(TOOLDIR)/nrmse -t 0.006 simu_rot.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-ode-rot-irflash: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --ODE --seq ir-flash,tr=0.003,te=0.0017,nrep=1000,pinv,ipl=0.01,ppl=0,trf=0.001,fa=8,bwtp=4 -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --ROT --seq ir-flash,tr=0.003,te=0.0017,nrep=1000,pinv,ipl=0.01,ppl=0,trf=0.001,fa=8,bwtp=4 --other sampling-rate=10E5 -1 3:3:1 -2 1:1:1 simu_rot.ra ;\
+	$(TOOLDIR)/nrmse -t 0.01 simu_rot.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
 TESTS += tests/test-sim-spoke-averaging-3 tests/test-sim-to-signal-irbSSFP-averaged-spokes
@@ -150,3 +182,4 @@ TESTS += tests/test-sim-ode-hp-irbssfp tests/test-sim-ode-hp-bssfp
 TESTS += tests/test-sim-multi-relaxation
 TESTS += tests/test-sim-ode-stm-bssfp tests/test-sim-ode-stm-irbssfp
 TESTS += tests/test-sim-ode-stm-flash tests/test-sim-ode-stm-irflash
+
