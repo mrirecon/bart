@@ -173,6 +173,28 @@ tests/test-sim-ode-rot-irflash: sim nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-sim-split-dim-mag: sim slice saxpy nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=10,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 mxy.ra ;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=10,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4 --split-dim -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/slice 0 0 sim.ra y.ra ;\
+	$(TOOLDIR)/slice 0 1 sim.ra x.ra ;\
+	$(TOOLDIR)/saxpy -- 1i y.ra x.ra mxy2.ra ;\
+	$(TOOLDIR)/nrmse -t 0.002 mxy.ra mxy2.ra ;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-split-dim-deriv: sim slice saxpy nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=10,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 mxy.ra dxy.ra;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=10,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4 --split-dim -1 3:3:1 -2 1:1:1 sim.ra deriv.ra;\
+	$(TOOLDIR)/slice 0 0 deriv.ra y.ra ;\
+	$(TOOLDIR)/slice 0 1 deriv.ra x.ra ;\
+	$(TOOLDIR)/saxpy -- 1i y.ra x.ra d.ra ;\
+	$(TOOLDIR)/nrmse -t 0.002 dxy.ra d.ra ;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
 TESTS += tests/test-sim-spoke-averaging-3 tests/test-sim-to-signal-irbSSFP-averaged-spokes
@@ -184,4 +206,5 @@ TESTS += tests/test-sim-ode-stm-bssfp tests/test-sim-ode-stm-irbssfp
 TESTS += tests/test-sim-ode-stm-flash tests/test-sim-ode-stm-irflash
 TESTS += tests/test-sim-ode-rot-bssfp tests/test-sim-ode-rot-irbssfp
 TESTS += tests/test-sim-ode-rot-flash tests/test-sim-ode-rot-irflash
+TESTS += tests/test-sim-split-dim-mag tests/test-sim-split-dim-deriv
 

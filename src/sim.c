@@ -37,8 +37,7 @@ static const char help_str[] = "simulation tool";
 // FIXME: Turn of sensitivity analysis if derivatives are not asked for
 static void perform_bloch_simulation(int N, struct sim_data* data, const complex float* slice, long mdims[N], complex float* mxy, long ddims[N], complex float* deriv)     // 4 Derivatives: dR1, dM0, dR2, dB1
 {
-        (void) mdims;
-
+        int D = ddims[READ_DIM];
         int T = ddims[TE_DIM];
 
         float m[T][3];
@@ -55,38 +54,42 @@ static void perform_bloch_simulation(int N, struct sim_data* data, const complex
         long dstrs[DIMS];
         md_calc_strides(N, dstrs, ddims, CFL_SIZE);
 
+        long mstrs[DIMS];
+        md_calc_strides(N, mstrs, mdims, CFL_SIZE);
+
         long ind = 0;
 
-        for (int i = 0; i < T; i++) {
+        for (int d = 0; d < D; d++) {
 
-                // Calculate spatial position and save data
+                pos[READ_DIM] = d;
 
-                pos[TE_DIM] = i;
-                pos[MAPS_DIM] = 0;
+                for (int i = 0; i < T; i++) {
 
-                ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+                        // Calculate spatial position and save data
 
-                mxy[i] = m[i][1] + 1.i * m[i][0];
+                        pos[TE_DIM] = i;
+                        pos[MAPS_DIM] = 0;
 
-                if (NULL != deriv) {
+			ind = md_calc_offset(N, mstrs, pos) / CFL_SIZE;
 
-                        // dR1
-                        deriv[ind] = sa_r1[i][1] + 1.i * sa_r1[i][0];
+			mxy[ind] = (3 == D) ? m[i][d] : (m[i][1] + 1.i * m[i][0]);
 
-                        // dM0
+                        if (NULL == deriv)
+				continue;
+
+                        deriv[ind] = (3 == D) ? sa_r1[i][d] : (sa_r1[i][1] + 1.i * sa_r1[i][0]);
+
                         pos[MAPS_DIM] = 1;
                         ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = sa_m0[i][1] + 1.i * sa_m0[i][0];
+                        deriv[ind] = (3 == D) ? sa_m0[i][d] : (sa_m0[i][1] + 1.i * sa_m0[i][0]);
 
-                        // dR2
                         pos[MAPS_DIM] = 2;
                         ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = sa_r2[i][1] + 1.i * sa_r2[i][0];
+                        deriv[ind] = (3 == D) ? sa_r2[i][d] : (sa_r2[i][1] + 1.i * sa_r2[i][0]);
 
-                        // dB1
                         pos[MAPS_DIM] = 3;
                         ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = sa_b1[i][1] + 1.i * sa_b1[i][0];
+                        deriv[ind] = (3 == D) ? sa_b1[i][d] : (sa_b1[i][1] + 1.i * sa_b1[i][0]);
                 }
         }
 }
@@ -114,6 +117,8 @@ int main_sim(int argc, char* argv[argc])
 
         float T1[3] = { WATER_T1, WATER_T1, 1 };
 	float T2[3] = { WATER_T2, WATER_T2, 1 };
+
+        bool split_dim = false;
 
         struct opt_s seq_opts[] = {
 
@@ -162,6 +167,7 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_SELECT(0, "ROT", enum sim_type, &(data.seq.type), SIM_ROT, "homogeneously discretized simulation based on rotational matrices"),
                 OPTL_SELECT(0, "ODE", enum sim_type, &(data.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation (default)"),
                 OPTL_SELECT(0, "STM", enum sim_type, &(data.seq.type), SIM_STM, "state-transition matrix based simulation"),
+                OPTL_SET(0, "split-dim", &split_dim, "Split output in x, y, and z dimensional parts"),
                 OPTL_SUBOPT(0, "seq", "...", "configure sequence parameter", N_seq_opts, seq_opts),
                 OPTL_SUBOPT(0, "other", "...", "configure other parameters", N_other_opts, other_opts),
 	};
@@ -172,6 +178,9 @@ int main_sim(int argc, char* argv[argc])
         // Define output dimensions for signal
 
         long mdims[DIMS] = { [0 ... DIMS - 1] = 1 };
+
+        if (split_dim)
+                mdims[READ_DIM] = 3; // x, y, z
 
 	mdims[TE_DIM] = data.seq.rep_num;
 
@@ -245,7 +254,7 @@ int main_sim(int argc, char* argv[argc])
                 if (NULL != deriv)
                         md_copy_block(DIMS, pos, ddims, deriv, tddims, td, CFL_SIZE);
 
-	} while(md_next(DIMS, mdims, ~TE_FLAG, pos));
+	} while(md_next(DIMS, mdims, ~(READ_FLAG|TE_FLAG), pos));
 
         md_free(tm);
         md_free(td);
