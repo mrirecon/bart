@@ -395,7 +395,6 @@ static void sum_up_signal(struct sim_data* data, float *m,  float *sa_r1, float 
 
 /* ------------ RF-Pulse -------------- */
 
-// FIXME: Make hard pulse function special case of rot_pulse
 // Single hard pulse without discrete sampling
 static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 {
@@ -404,41 +403,45 @@ static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 }
 
 
-// Homogeneously discretize pulse with rotational matrices
+// Homogeneously discretized pulse with rotational matrices
 static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 {
-        assert(0. < data->other.sampling_rate);
+        if (0. == data->pulse.rf_end)
+                hard_pulse(data, N, P, xp);
+        else {
+                assert(0. < data->other.sampling_rate);
 
-        float sample_time = 1. / data->other.sampling_rate;
+                float sample_time = 1. / data->other.sampling_rate;
 
-        assert((data->pulse.rf_end-data->pulse.rf_start) > sample_time);
+                assert((data->pulse.rf_end-data->pulse.rf_start) > sample_time);
 
-        float t_im = data->pulse.rf_start + sample_time / 2.;
+                float t_im = data->pulse.rf_start + sample_time / 2.;
 
-        float xp2[3] = { 0. };
-        float xp3[3] = { 0. };
+                float xp2[3] = { 0. };
+                float xp3[3] = { 0. };
 
-        float w1 = 0;
+                float w1 = 0;
 
-        while (data->pulse.rf_end >= t_im) {
+                while (data->pulse.rf_end >= t_im) {
 
-                // RF-pulse strength of current interval
-                w1 = pulse_sinc(&data->pulse, t_im);
+                        // RF-pulse strength of current interval
+                        w1 = pulse_sinc(&data->pulse, t_im);
 
-                for (int i = 0; i < P; i++) {
+                        for (int i = 0; i < P; i++) {
 
-                        xp2[0] = xp[i][0];
-                        xp2[1] = xp[i][1];
-                        xp2[2] = xp[i][2];
+                                xp2[0] = xp[i][0];
+                                xp2[1] = xp[i][1];
+                                xp2[2] = xp[i][2];
 
-                        // RF-Pulse
-                        bloch_excitation2(xp3, xp2, w1*sample_time, data->pulse.phase);
+                                // RF-Pulse
+                                bloch_excitation2(xp3, xp2, w1*sample_time, data->pulse.phase);
 
-                        // Relaxation
-                        bloch_relaxation(xp[i], sample_time, xp3, data->voxel.r1, data->voxel.r2, data->grad.gb);
+                                // Relaxation
+                                bloch_relaxation(xp[i], sample_time, xp3, data->voxel.r1, data->voxel.r2, data->grad.gb);
+                        }
+
+                        t_im += sample_time;
                 }
-
-                t_im += sample_time;
         }
 }
 
@@ -446,6 +449,10 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P * N][P * N])
 {
 	data->seq.pulse_applied = true;
+
+        // Single hard pulse is special case of homogeneously sampled sinc pulse
+        if (0. == data->pulse.rf_end)
+                data->seq.type = SIM_ROT;
 
         // Define effective z Gradient = Slice-selection gradient + off-resonance [rad/s]
 	data->grad.gb[2] = data->grad.mom_sl + data->voxel.w;
@@ -459,11 +466,8 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
         case SIM_ODE:
                 ;
-                if (0. == data->pulse.rf_end)
-                        hard_pulse(data, N, P, xp);
-                else
-                        // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
-	                ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
+                // Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
+               	ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
                 break;
 
         case SIM_STM:
@@ -497,6 +501,10 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
 {
 	data->seq.pulse_applied = false;
 
+        // Single hard pulse is special case of homogeneously sampled sinc pulse
+        if (0. == data->pulse.rf_end)
+                data->seq.type = SIM_ROT;
+
         // Define effective z Gradient =Gradient Moments + off-resonance [rad/s]
         data->grad.gb[2] = data->grad.mom + data->voxel.w;
 
@@ -509,11 +517,8 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
 
         case SIM_ODE:
                 ;
-                if (0. == data->pulse.rf_end)
-                        hard_relaxation(data, N, P, xp, st, end);
-                else
-                        // Choose P-1 because ODE interface treats signal seperat and P only describes the number of parameters
-	                ode_direct_sa(h, tol, N, P - 1, xp, st, end, data, bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
+                // Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
+                ode_direct_sa(h, tol, N, P - 1, xp, st, end, data, bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
                 break;
 
         case SIM_STM:
@@ -841,8 +846,6 @@ void bloch_simulation(struct sim_data* data, float (*m_state)[3], float (*sa_r1_
                 if (    (SEQ_BSSFP == data->seq.seq_type) ||
                         (SEQ_IRBSSFP == data->seq.seq_type))
                         alpha_half_preparation(data, h, tol, N, P, xp);
-
-                // if (STM == data->seq.type) printf("test\n");
 
                 float mte[M][M];
                 float mte2[M][M];
