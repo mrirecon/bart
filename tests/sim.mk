@@ -182,4 +182,6 @@ TESTS += tests/test-sim-ode-hp-irbssfp tests/test-sim-ode-hp-bssfp
 TESTS += tests/test-sim-multi-relaxation
 TESTS += tests/test-sim-ode-stm-bssfp tests/test-sim-ode-stm-irbssfp
 TESTS += tests/test-sim-ode-stm-flash tests/test-sim-ode-stm-irflash
+TESTS += tests/test-sim-ode-rot-bssfp tests/test-sim-ode-rot-irbssfp
+TESTS += tests/test-sim-ode-rot-flash tests/test-sim-ode-rot-irflash
 
