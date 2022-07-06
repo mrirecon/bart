@@ -243,6 +243,9 @@ int main_sim(int argc, char* argv[argc])
 
         long pos[DIMS] = { 0 };
 
+        // Starting time of simulation
+	double start = timestamp();
+
 	do {
 		data.voxel.r1 = 1. / (T1[0] + (T1[1] - T1[0]) / T1[2] * (float)pos[COEFF_DIM]);
         	data.voxel.r2 = 1. / (T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM]);
@@ -255,6 +258,11 @@ int main_sim(int argc, char* argv[argc])
                         md_copy_block(DIMS, pos, ddims, deriv, tddims, td, CFL_SIZE);
 
 	} while(md_next(DIMS, mdims, ~(READ_FLAG|TE_FLAG), pos));
+
+        // End time of simulation
+	double end = timestamp();
+
+        debug_printf(DP_INFO, "%f\n", end - start);
 
         md_free(tm);
         md_free(td);
