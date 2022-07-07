@@ -195,6 +195,14 @@ tests/test-sim-split-dim-deriv: sim slice saxpy nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-sim-ode-stm-flash-te-eq-trf-eq-tr: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --ODE --seq flash,tr=0.001,te=0.001,nrep=100,pinv,ipl=0,ppl=0,trf=0.001,fa=180,bwtp=1,isp=0,mom-sl=16050 --split-dim -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --STM --seq flash,tr=0.001,te=0.001,nrep=100,pinv,ipl=0,ppl=0,trf=0.001,fa=180,bwtp=1,isp=0,mom-sl=16050 --split-dim -1 3:3:1 -2 1:1:1 simu_stm.ra ;\
+	$(TOOLDIR)/nrmse -t 0.001 simu_stm.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
 TESTS += tests/test-sim-spoke-averaging-3 tests/test-sim-to-signal-irbSSFP-averaged-spokes
@@ -207,4 +215,5 @@ TESTS += tests/test-sim-ode-stm-flash tests/test-sim-ode-stm-irflash
 TESTS += tests/test-sim-ode-rot-bssfp tests/test-sim-ode-rot-irbssfp
 TESTS += tests/test-sim-ode-rot-flash tests/test-sim-ode-rot-irflash
 TESTS += tests/test-sim-split-dim-mag tests/test-sim-split-dim-deriv
+TESTS += tests/test-sim-ode-stm-flash-te-eq-trf-eq-tr
 

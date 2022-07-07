@@ -593,7 +593,10 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
                 }
 
                 // Join matrices: 0 -> TE
-                mm_mul(M, mte, mrf, mrel);
+                if (0.000001 > (data->seq.te - data->pulse.rf_end))
+                        memcpy(mte, mrf, sizeof (float) * (P * N + 1) * (P * N + 1));
+                else
+                        mm_mul(M, mte, mrf, mrel);
 
                 // Smooth spoiling for FLASH sequences
 
