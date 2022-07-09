@@ -121,7 +121,6 @@ void landweber_sym(unsigned int maxiter, float epsilon, float alpha, long N,
 
 
 
-
 /**
  * Iterative Soft Thresholding
  *
@@ -779,10 +778,10 @@ static float compute_objective(long NO, long NI, struct iter_nlop_s nlop, float*
 static void getgrad(int NI, unsigned long in_optimize_flag, long isize[NI], float* grad[NI], int NO, unsigned long out_optimize_flag, struct iter_op_arr_s adj, const struct vec_iter_s* vops)
 {
 	float* one = vops->allocate(2);
-	_Complex float one_var = 1.;
+	float one_var[2] = { 1., 0. };	// complex
 	const float* one_arr[] = { one };
 
-	vops->copy(2, one, (float*)&one_var);
+	vops->copy(2, one, one_var);
 
 	float* tmp_grad[NI];
 
@@ -866,9 +865,9 @@ void sgd(	unsigned int epochs, unsigned int batches,
 	if ((int)batches != N_total / N_batch)
 		error("Wrong number of batches!");
 
-	for (int i = 0; i< NI; i++){
+	for (int i = 0; i < NI; i++) {
 
-		switch(in_type[i]){
+		switch (in_type[i]) {
 
 		case IN_STATIC:
 
@@ -923,7 +922,7 @@ void sgd(	unsigned int epochs, unsigned int batches,
 		args[NO + i] = x[i];
 	}
 
-	for (int o = 0; o < NO; o++){
+	for (int o = 0; o < NO; o++) {
 
 		args[o] = vops->allocate(osize[o]);
 
@@ -991,15 +990,15 @@ void sgd(	unsigned int epochs, unsigned int batches,
 				args[NO + i] -= isize[i] * (N_total / N_batch);
 	}
 
-	for (int i = 0; i< NI; i++) {
+	for (int i = 0; i < NI; i++) {
 
-		if(NULL != grad[i])
+		if (NULL != grad[i])
 			vops->del(grad[i]);
 
-		if(NULL != dxs[i])
+		if (NULL != dxs[i])
 			vops->del(dxs[i]);
 
-		if(IN_BATCH_GENERATOR == in_type[i]) {
+		if (IN_BATCH_GENERATOR == in_type[i]) {
 
 			vops->del(x[i]);
 			x[i] = NULL;
@@ -1007,7 +1006,7 @@ void sgd(	unsigned int epochs, unsigned int batches,
 	}
 
 	for (int o = 0; o < NO; o++)
-		if(NULL != args[o])
+		if (NULL != args[o])
 			vops->del(args[o]);
 }
 
@@ -1037,11 +1036,11 @@ void sgd(	unsigned int epochs, unsigned int batches,
  * @param alpha parameter per input
  * @param beta parameter per input
  * @param convex parameter per input, determines stepsize
- * @param L Lipshitz constants
- * @param Lmin minimal Lipshitz constant for backtracking
- * @param Lmax maximal Lipshitz constant for backtracking
- * @param Lshrink L->L / L_shrinc if Lipshitz condition is satisfied
- * @param Lincrease L->L * Lincrease if Lipshitz condition is not satisfied
+ * @param L Lipschitz constants
+ * @param Lmin minimal Lipschitz constant for backtracking
+ * @param Lmax maximal Lipschitz constant for backtracking
+ * @param Lshrink L->L / L_shrinc if Lipschitz condition is satisfied
+ * @param Lincrease L->L * Lincrease if Lipschitz condition is not satisfied
  * @param nlop nlop for minimization
  * @param adj array of adjoints of nlop
  * @param prox proximal operators of f, if (NULL == prox[i].fun) f = 0 is assumed
@@ -1249,6 +1248,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 					if ((r_lip_z * 1.001 >= r_new) || (L[i] >= Lmax)) { //1.001 for flp errors
 
 						lipshitz_condition = true;
+
 						if (L[i] > Lmin)
 							L[i] /= Lshrink;
 
