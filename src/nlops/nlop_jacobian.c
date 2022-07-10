@@ -40,7 +40,10 @@ struct block_diag_s {
 
 	const struct iovec_s** iov_der;
 	void** der;
-
+	bool* holomorphic;
+	void** derc;
+	
+	nlop_zrblock_diag_generic_fun_t zrblock_diag_fun;
 	nlop_zblock_diag_generic_fun_t zblock_diag_fun;
 	nlop_rblock_diag_generic_fun_t rblock_diag_fun;
 
@@ -55,6 +58,7 @@ struct diag_s {
 
 	INTERFACE(nlop_data_t);
 
+	nlop_zrdiag_fun_t zrdiag_fun;
 	nlop_zdiag_fun_t zdiag_fun;
 	nlop_rdiag_fun_t rdiag_fun;
 
@@ -69,6 +73,7 @@ struct block_diag_simple_s {
 
 	INTERFACE(nlop_data_t);
 
+	nlop_zrblock_diag_fun_t zrblock_diag_fun;
 	nlop_zblock_diag_fun_t zblock_diag_fun;
 	nlop_rblock_diag_fun_t rblock_diag_fun;
 
@@ -87,17 +92,21 @@ static void block_diag_clear_der(const nlop_data_t* _data)
 	int II = data->II;
 
 	void* (*der)[OO][II] = (void*)(data->der);
+	void* (*derc)[OO][II] = (void*)(data->derc);
 
 	for (int i = 0; i < II; i++) {
 		for (int o = 0; o < OO; o++) {
 
 			md_free((*der)[o][i]);
 			(*der)[o][i] = NULL;
+
+			md_free((*derc)[o][i]);
+			(*derc)[o][i] = NULL;
 		}
 	}
 }
 
-static void zblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float* args[Nargs])
+static void zrblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float* args[Nargs])
 {
 	const auto data = CAST_DOWN(block_diag_s, _data);
 
@@ -130,6 +139,8 @@ static void zblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float* 
 
 	long ddims[OO][II][N];
 	complex float* (*der)[OO][II] = (void*)(data->der);
+	complex float* (*derc)[OO][II] = (void*)(data->derc);
+	bool (*holom)[OO][II] = (void*)(data->holomorphic);
 	const struct iovec_s* (*iov_der)[OO][II] = (void*)(data->iov_der);
 
 	for (int i = 0; i < II; i++)
@@ -144,12 +155,21 @@ static void zblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float* 
 
 			if (nlop_der_requested(_data, i, o))
 				(*der)[o][i] = md_alloc_sameplace(iov->N, iov->dims, iov->size, args[0]);
+
+			md_free((*derc)[o][i]);
+			(*derc)[o][i] = NULL;
+
+			if (!(*holom)[o][i] && nlop_der_requested(_data, i, o))
+				(*derc)[o][i] = md_alloc_sameplace(iov->N, iov->dims, iov->size, args[0]);
 		}
 
 	assert(NULL == data->rblock_diag_fun);
 
 	if (NULL != data->zblock_diag_fun)
 		data->zblock_diag_fun(data->data, N, OO, odims, dst, II, idims, src, ddims, (*der));
+	
+	if (NULL != data->zrblock_diag_fun)
+		data->zrblock_diag_fun(data->data, N, OO, odims, dst, II, idims, src, ddims, (*der), (*derc));
 }
 
 static void zblock_diag_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -165,6 +185,18 @@ static void zblock_diag_der(const nlop_data_t* _data, unsigned int o, unsigned i
 		error("Block diag %x derivative not available!\n", data);
 
 	md_ztenmul(data->N, data->iov_out[o]->dims, dst, data->iov_in[i]->dims, src, ddims, der);
+
+	const complex float* derc = (*(complex float* (*)[OO][II])(data->derc))[o][i];
+
+	long max_dims[data->N];
+	md_tenmul_dims(data->N, max_dims, data->iov_out[o]->dims, data->iov_in[i]->dims, ddims);
+
+	if (NULL != derc)
+		md_zfmacc2(data->N, max_dims,
+			data->iov_out[o]->strs, dst,
+			MD_STRIDES(data->N, ddims, CFL_SIZE), derc,
+			data->iov_in[i]->strs, src
+			);
 }
 
 static void zblock_diag_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -180,6 +212,17 @@ static void zblock_diag_adj(const nlop_data_t* _data, unsigned int o, unsigned i
 		error("Block diag %x derivative not available!\n", data);
 
 	md_ztenmulc(data->N, data->iov_in[i]->dims, dst, data->iov_out[o]->dims, src, ddims, der);
+
+	const complex float* derc = (*(complex float* (*)[OO][II])(data->derc))[o][i];
+
+	long max_dims[data->N];
+	md_tenmul_dims(data->N, max_dims, data->iov_out[o]->dims, data->iov_in[i]->dims, ddims);
+
+	if (NULL != derc)
+		md_zfmacc2(data->N, max_dims,
+			data->iov_in[i]->strs, dst,
+			MD_STRIDES(data->N, ddims, CFL_SIZE), derc,
+			data->iov_out[o]->strs, src);
 }
 
 static void block_diag_del(const nlop_data_t* _data)
@@ -201,12 +244,16 @@ static void block_diag_del(const nlop_data_t* _data)
 
 		iovec_free(data->iov_der[i]);
 		md_free(data->der[i]);
+		md_free(data->derc[i]);
 	}
 
 	xfree(data->iov_in);
 	xfree(data->iov_out);
 	xfree(data->iov_der);
 	xfree(data->der);
+	xfree(data->derc);
+
+	xfree(data->holomorphic);
 
 	xfree(data);
 }
@@ -234,6 +281,70 @@ static const struct graph_s* nlop_block_diag_get_graph(const struct operator_s* 
 	return create_graph_operator(op, _data->TYPEID->name);
 }
 
+struct nlop_s* nlop_zrblock_diag_generic_create(nlop_data_t* data, int N,
+						int OO, const long odims[OO][N],
+						int II, const long idims[II][N],
+						unsigned long diag_flags [OO][II],
+						bool holomorphic[OO][II],
+						nlop_zrblock_diag_generic_fun_t forward, nlop_del_diag_fun_t del)
+{
+	PTR_ALLOC(struct block_diag_s, _data);
+	SET_TYPEID(block_diag_s, _data);
+
+	_data->iov_in = *TYPE_ALLOC(const struct iovec_s*[II]);
+	_data->iov_out = *TYPE_ALLOC(const struct iovec_s*[OO]);
+
+	_data->iov_der = &((*TYPE_ALLOC(const struct iovec_s*[OO][II]))[0][0]);
+	_data->der = &((*TYPE_ALLOC(void*[OO][II]))[0][0]);
+	_data->derc = &((*TYPE_ALLOC(void*[OO][II]))[0][0]);
+
+	_data->holomorphic = &(ARR_CLONE(bool[OO][II], holomorphic)[0][0]);
+
+	_data->data = data;
+	_data->del = del;
+
+	_data->rblock_diag_fun = NULL;
+	_data->zrblock_diag_fun = forward;
+	_data->zblock_diag_fun = NULL;
+
+	_data->N = N;
+	_data->OO = OO;
+	_data->II = II;
+
+	nlop_der_fun_t der_funs[II][OO];
+	nlop_der_fun_t adj_funs[II][OO];
+
+	for (int i = 0; i < II; i++)
+		_data->iov_in[i] = iovec_create(N, idims[i], CFL_SIZE);
+
+	for (int i = 0; i < OO; i++)
+		_data->iov_out[i] = iovec_create(N, odims[i], CFL_SIZE);
+
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++) {
+
+			der_funs[i][o] = zblock_diag_der;
+			adj_funs[i][o] = zblock_diag_adj;
+
+			assert(md_check_compat(N, ~0, odims[o], idims[i]));
+
+			long ddims[N];
+			md_singleton_dims(N, ddims);
+			md_max_dims(N, ~diag_flags[o][i], ddims, odims[o], idims[i]);
+
+			(*(const struct iovec_s* (*)[OO][II])(_data->iov_der))[o][i] = iovec_create(N, ddims, CFL_SIZE);
+			(*(void* (*)[OO][II])(_data->der))[o][i] = NULL;
+			(*(void* (*)[OO][II])(_data->derc))[o][i] = NULL;
+		}
+
+	return nlop_generic_managed_create(
+		OO, N, odims, II, N, idims, CAST_UP(PTR_PASS(_data)),
+		zrblock_diag_fun, der_funs, adj_funs,
+		NULL, NULL, block_diag_del, block_diag_clear_der, nlop_block_diag_get_graph
+	);
+}
+
+
 struct nlop_s* nlop_zblock_diag_generic_create(nlop_data_t* data, int N,
 						int OO, const long odims[OO][N],
 						int II, const long idims[II][N],
@@ -248,11 +359,18 @@ struct nlop_s* nlop_zblock_diag_generic_create(nlop_data_t* data, int N,
 
 	_data->iov_der = &((*TYPE_ALLOC(const struct iovec_s*[OO][II]))[0][0]);
 	_data->der = &((*TYPE_ALLOC(void*[OO][II]))[0][0]);
+	_data->derc = &((*TYPE_ALLOC(void*[OO][II]))[0][0]);
+
+	bool* holom = &((*TYPE_ALLOC(bool[OO][II]))[0][0]);
+	for (int i = 0; i < (II * OO); i++)
+		holom[i] = true;
+	_data->holomorphic = holom;
 
 	_data->data = data;
 	_data->del = del;
 
 	_data->rblock_diag_fun = NULL;
+	_data->zrblock_diag_fun = NULL;
 	_data->zblock_diag_fun = forward;
 
 	_data->N = N;
@@ -282,11 +400,12 @@ struct nlop_s* nlop_zblock_diag_generic_create(nlop_data_t* data, int N,
 
 			(*(const struct iovec_s* (*)[OO][II])(_data->iov_der))[o][i] = iovec_create(N, ddims, CFL_SIZE);
 			(*(void* (*)[OO][II])(_data->der))[o][i] = NULL;
+			(*(void* (*)[OO][II])(_data->derc))[o][i] = NULL;
 		}
 
 	return nlop_generic_managed_create(
 		OO, N, odims, II, N, idims, CAST_UP(PTR_PASS(_data)),
-		zblock_diag_fun, der_funs, adj_funs,
+		zrblock_diag_fun, der_funs, adj_funs,
 		NULL, NULL, block_diag_del, block_diag_clear_der, nlop_block_diag_get_graph
 	);
 }
@@ -390,11 +509,18 @@ struct nlop_s* nlop_rblock_diag_generic_create(nlop_data_t* data, int N,
 
 	_data->iov_der = &((*TYPE_ALLOC(const struct iovec_s*[OO][II]))[0][0]);
 	_data->der = &((*TYPE_ALLOC(void*[OO][II]))[0][0]);
+	_data->derc = &((*TYPE_ALLOC(void*[OO][II]))[0][0]);
+
+	bool* holom = &((*TYPE_ALLOC(bool[OO][II]))[0][0]);
+	for (int i = 0; i < (II * OO); i++)
+		holom[i] = true;
+	_data->holomorphic = holom;
 
 	_data->data = data;
 	_data->del = del;
 
 	_data->zblock_diag_fun = NULL;
+	_data->zrblock_diag_fun = NULL;
 	_data->rblock_diag_fun = forward;
 
 	assert(2 < N);
@@ -439,6 +565,7 @@ struct nlop_s* nlop_rblock_diag_generic_create(nlop_data_t* data, int N,
 
 			(*(const struct iovec_s* (*)[OO][II])(_data->iov_der))[o][i] = iovec_create(N, ddims, FL_SIZE);
 			(*(void* (*)[OO][II])(_data->der))[o][i] = NULL;
+			(*(void* (*)[OO][II])(_data->derc))[o][i] = NULL;
 		}
 
 	return nlop_generic_managed_create(
@@ -458,12 +585,7 @@ bool nlop_block_diag_der_available(const struct nlop_s* op, int o, int i)
 }
 
 
-
-
-
-
-
-static void zdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II])
+static void zrdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II], _Complex float* jacc[OO][II])
 {
 	auto data = CAST_DOWN(diag_s, _data);
 
@@ -474,7 +596,8 @@ static void zdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[
 	assert(md_check_equal_dims(N, odims[0], ddims[0][0], ~0));
 
 	assert(NULL == data->rdiag_fun);
-	data->zdiag_fun(data->data, N, odims[0], dst[0], src[0], jac[0][0]);
+	assert(NULL == data->zdiag_fun);
+	data->zrdiag_fun(data->data, N, odims[0], dst[0], src[0], jac[0][0], jacc[0][0]);
 }
 
 
@@ -491,6 +614,52 @@ static void diag_del(const nlop_data_t* _data)
 }
 
 
+struct nlop_s* nlop_zrdiag_create(int N, const long dims[N], nlop_data_t* data, nlop_zrdiag_fun_t forward, nlop_del_diag_fun_t del)
+{
+	PTR_ALLOC(struct diag_s, _data);
+	SET_TYPEID(diag_s, _data);
+
+	_data->data = data;
+	_data->del = del;
+	_data->rdiag_fun = NULL;
+	_data->zdiag_fun = NULL;
+	_data->zrdiag_fun = forward;
+
+	long nl_odims[1][N];
+	long nl_idims[1][N];
+
+	md_copy_dims(N, nl_idims[0], dims);
+	md_copy_dims(N, nl_odims[0], dims);
+
+	unsigned long diag_flags[1][1];
+	diag_flags[0][0] = 0;
+	
+	bool holomorphic[1][1];
+	holomorphic[0][0] = false;
+
+	return nlop_zrblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N, 1, nl_odims, 1, nl_idims, diag_flags, holomorphic, zrdiag_fun, diag_del);
+}
+
+
+
+
+static void zdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II])
+{
+	auto data = CAST_DOWN(diag_s, _data);
+
+	assert(1 == OO);
+	assert(1 == II);
+
+	assert(md_check_equal_dims(N, idims[0], ddims[0][0], ~0));
+	assert(md_check_equal_dims(N, odims[0], ddims[0][0], ~0));
+
+	assert(NULL == data->rdiag_fun);
+	assert(NULL == data->zrdiag_fun);
+	data->zdiag_fun(data->data, N, odims[0], dst[0], src[0], jac[0][0]);
+}
+
+
+
 struct nlop_s* nlop_zdiag_create(int N, const long dims[N], nlop_data_t* data, nlop_zdiag_fun_t forward, nlop_del_diag_fun_t del)
 {
 	PTR_ALLOC(struct diag_s, _data);
@@ -500,6 +669,7 @@ struct nlop_s* nlop_zdiag_create(int N, const long dims[N], nlop_data_t* data, n
 	_data->del = del;
 	_data->rdiag_fun = NULL;
 	_data->zdiag_fun = forward;
+	_data->zrdiag_fun = NULL;
 
 	long nl_odims[1][N];
 	long nl_idims[1][N];
@@ -537,6 +707,7 @@ struct nlop_s* nlop_rdiag_create(int N, const long dims[N], nlop_data_t* data, n
 	_data->del = del;
 	_data->rdiag_fun = forward;
 	_data->zdiag_fun = NULL;
+	_data->zrdiag_fun = NULL;
 
 	long nl_odims[1][N + 2];
 	long nl_idims[1][N + 2];
@@ -568,6 +739,7 @@ static void zblock_diag_simple_fun(const nlop_data_t* _data, int N, int OO, cons
 	assert(1 == II);
 
 	assert(NULL == data->rblock_diag_fun);
+	assert(NULL == data->zrblock_diag_fun);
 	data->zblock_diag_fun(data->data, N, odims[0], dst[0], idims[0], src[0], ddims[0][0], jac[0][0]);
 }
 
@@ -593,6 +765,7 @@ struct nlop_s* nlop_zblock_diag_create(nlop_data_t* data, int N, const long odim
 	_data->del = del;
 	_data->rblock_diag_fun = NULL;
 	_data->zblock_diag_fun = forward;
+	_data->zrblock_diag_fun = NULL;
 
 	long nl_odims[1][N];
 	long nl_idims[1][N];
@@ -615,6 +788,44 @@ static void rblock_diag_simple_fun(const nlop_data_t* _data, int N, int OO, cons
 
 	assert(NULL == data->zblock_diag_fun);
 	data->rblock_diag_fun(data->data, N, odims[0], dst[0], idims[0], src[0], ddims[0][0], jac[0][0]);
+}
+
+static void zrblock_diag_simple_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II], _Complex float* jacc[OO][II])
+{
+	auto data = CAST_DOWN(block_diag_simple_s, _data);
+
+	assert(1 == OO);
+	assert(1 == II);
+
+	assert(NULL == data->rblock_diag_fun);
+	assert(NULL == data->zblock_diag_fun);
+	data->zrblock_diag_fun(data->data, N, odims[0], dst[0], idims[0], src[0], ddims[0][0], jac[0][0], jacc[0][0]);
+}
+
+struct nlop_s* nlop_zrblock_diag_create(nlop_data_t* data, int N, const long odims[N], const long idims[N], const long ddims[N], nlop_zrblock_diag_fun_t forward, nlop_del_diag_fun_t del)
+{
+	PTR_ALLOC(struct block_diag_simple_s, _data);
+	SET_TYPEID(block_diag_simple_s, _data);
+
+	_data->data = data;
+	_data->del = del;
+	_data->rblock_diag_fun = NULL;
+	_data->zblock_diag_fun = NULL;
+	_data->zrblock_diag_fun = forward;
+
+	long nl_odims[1][N];
+	long nl_idims[1][N];
+
+	md_copy_dims(N, nl_idims[0], idims);
+	md_copy_dims(N, nl_odims[0], odims);
+
+	unsigned long diag_flags[1][1];
+	diag_flags[0][0] = ~md_nontriv_dims(N, ddims);
+
+	bool holomorphic[1][1];
+	holomorphic[0][0] = false;
+
+	return nlop_zrblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N, 1, nl_odims, 1, nl_idims, diag_flags, holomorphic, zrblock_diag_simple_fun, block_diag_simple_del);
 }
 
 
@@ -897,6 +1108,47 @@ void linop_compute_matrix_rblock_diag(const struct linop_s* lop, int N, const lo
 }
 
 
+void linop_compute_matrix_zrblock_diag(const struct linop_s* lop, int N, const long ddims[N], complex float* jac, complex float* jacc)
+{
+	assert(N == (int)linop_domain(lop)->N);
+	assert(N == (int)linop_codomain(lop)->N);
+
+	long ddims2[N + 2];
+	ddims2[0] = 2;
+	ddims2[1] = 2;
+	md_copy_dims(N, ddims2 + 2, ddims);
+
+	float* jac_r = md_alloc_sameplace(N + 2, ddims2, FL_SIZE, jac);
+
+	linop_compute_matrix_rblock_diag(lop, N + 2, ddims2, jac_r);
+
+	complex float* jac_y = md_alloc_sameplace(N, ddims, CFL_SIZE, jac);
+	complex float* jac_x = md_alloc_sameplace(N, ddims, CFL_SIZE, jac);
+
+	long pos[N + 2];
+	for (int i = 0; i < N + 2; i++)
+		pos[i] = 0;
+	
+	int idx = 1;
+	
+	md_slice(N + 2, MD_BIT(idx), pos, ddims2, jac_x, jac_r, FL_SIZE);
+	
+	pos[idx] = 1;
+	md_slice(N + 2, MD_BIT(idx), pos, ddims2, jac_y, jac_r, FL_SIZE);
+
+	md_zsmul(N, ddims, jac,  jac_x, 0.5);
+	md_zsmul(N, ddims, jacc, jac_x, 0.5);
+
+	md_zaxpy(N, ddims, jac,  -0.5 * I, jac_y);
+	md_zaxpy(N, ddims, jacc, +0.5 * I, jac_y);
+
+	md_free(jac_r);
+	md_free(jac_x);
+	md_free(jac_y);
+}
+
+
+
 struct precomp_jacobian_s {
 
 	INTERFACE(nlop_data_t);
@@ -996,7 +1248,7 @@ struct nlop_s* nlop_zprecomp_jacobian_F(const struct nlop_s* nlop)
 }
 
 
-static void zrprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], float* dst[OO], int II, const long idims[II][N], const float* src[II], const long ddims[OO][II][N], float* jac[OO][II])
+static void zrprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], complex float* dst[OO], int II, const long idims[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II], complex float* jacc[OO][II])
 {
 	auto data = CAST_DOWN(precomp_jacobian_s, _data);
 
@@ -1031,7 +1283,7 @@ static void zrprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, cons
 	for (int i = 0; i < II; i++)
 		for (int o = 0; o < OO; o++)
 			if (NULL != jac[o][i])
-				linop_compute_matrix_rblock_diag(nlop_get_derivative(op, o, i), N, ddims[o][i], jac[o][i]);
+				linop_compute_matrix_zrblock_diag(nlop_get_derivative(op, o, i), N, ddims[o][i], jac[o][i], jacc[o][i]);
 
 	nlop_clear_derivatives(op);
 }
@@ -1051,29 +1303,30 @@ struct nlop_s* nlop_zrprecomp_jacobian_F(const struct nlop_s* nlop)
 
 	int N = nlop_generic_domain(nlop, 0)->N;
 
-	long nl_odims[OO][N + 2];
-	long nl_idims[II][N + 2];
+	long nl_odims[OO][N];
+	long nl_idims[II][N];
 
 	for (int i = 0; i < II; i++) {
 
 		assert(N == (int)nlop_generic_domain(nlop, i)->N);
-		md_copy_dims(N, nl_idims[i] + 2, nlop_generic_domain(nlop, i)->dims);
-		nl_idims[i][0] = 1;
-		nl_idims[i][1] = 2;
+		md_copy_dims(N, nl_idims[i], nlop_generic_domain(nlop, i)->dims);
 	}
 
 	for (int o = 0; o < OO; o++) {
 
 		assert(N == (int)nlop_generic_codomain(nlop, o)->N);
-		md_copy_dims(N, nl_odims[o] + 2, nlop_generic_codomain(nlop, o)->dims);
-		nl_odims[o][0] = 2;
-		nl_odims[o][1] = 1;
+		md_copy_dims(N, nl_odims[o], nlop_generic_codomain(nlop, o)->dims);
 	}
 
 	unsigned long diag_flags[OO][II];
 	for (int i = 0; i < II; i++)
 		for (int o = 0; o < OO; o++)
 			diag_flags[o][i] = 0;
+	
+	bool holomorphic[OO][II];
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++)
+			holomorphic[o][i] = false;
 
-	return nlop_rblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N + 2, OO, nl_odims, II, nl_idims, diag_flags, zrprecomp_jacobian_fun, precomp_jacobian_del);
+	return nlop_zrblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N, OO, nl_odims, II, nl_idims, diag_flags, holomorphic, zrprecomp_jacobian_fun, precomp_jacobian_del);
 }
