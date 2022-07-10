@@ -983,6 +983,9 @@ void linop_compute_matrix_rblock_diag_fwd(const struct linop_s* lop, int N, cons
 	idims[0] = 1;
 	idims[1] = 2;
 
+	assert(2 == ddims[0]);
+	assert(2 == ddims[1]);
+
 	md_copy_dims(N - 2, odims + 2, linop_codomain(lop)->dims);
 	md_copy_dims(N - 2, idims + 2, linop_domain(lop)->dims);
 
@@ -1009,15 +1012,24 @@ void linop_compute_matrix_rblock_diag_fwd(const struct linop_s* lop, int N, cons
 
 	float* in = md_alloc_sameplace(N, idims, FL_SIZE, jacobian);
 	float* out = md_alloc_sameplace(N, odims, FL_SIZE, jacobian);
-	float* ones = md_alloc_sameplace(N, diag_dims, FL_SIZE, jacobian);
 
-	float one = 1.;
-	md_fill(N, diag_dims, ones, &one, FL_SIZE);
+	complex float* ones = md_alloc_sameplace(N, diag_dims, CFL_SIZE, jacobian);
+	complex float* imag = md_alloc_sameplace(N, diag_dims, CFL_SIZE, jacobian);
+
+	md_zfill(N, diag_dims, ones, 1.);
+	md_zfill(N, diag_dims, imag, 1. * I);
 
 	do {
 
 		md_clear(N, idims, in, FL_SIZE);
-		md_copy_block(N, pos, idims, in, diag_dims, ones, FL_SIZE);
+
+		md_copy_block(N - 2, pos + 2, idims + 2, in, diag_dims + 2, ones, CFL_SIZE);
+		linop_forward_unchecked(lop, (complex float*)out, (complex float*)in);
+		md_copy_block(N, pos, ddims, jacobian, odims, out, FL_SIZE);
+
+		pos[1] = 1;
+
+		md_copy_block(N - 2, pos + 2, idims + 2, in, diag_dims + 2, imag, CFL_SIZE);
 		linop_forward_unchecked(lop, (complex float*)out, (complex float*)in);
 		md_copy_block(N, pos, ddims, jacobian, odims, out, FL_SIZE);
 
@@ -1026,6 +1038,7 @@ void linop_compute_matrix_rblock_diag_fwd(const struct linop_s* lop, int N, cons
 	md_free(in);
 	md_free(out);
 	md_free(ones);
+	md_free(imag);
 }
 
 void linop_compute_matrix_rblock_diag_bwd(const struct linop_s* lop, int N, const long ddims[N], float* jacobian)
@@ -1068,15 +1081,24 @@ void linop_compute_matrix_rblock_diag_bwd(const struct linop_s* lop, int N, cons
 
 	float* in = md_alloc_sameplace(N, idims, FL_SIZE, jacobian);
 	float* out = md_alloc_sameplace(N, odims, FL_SIZE, jacobian);
-	float* ones = md_alloc_sameplace(N, diag_dims, FL_SIZE, jacobian);
+	
+	complex float* ones = md_alloc_sameplace(N, diag_dims, CFL_SIZE, jacobian);
+	complex float* imag = md_alloc_sameplace(N, diag_dims, CFL_SIZE, jacobian);
 
-	float one = 1.;
-	md_fill(N, diag_dims, ones, &one, FL_SIZE);
+	md_zfill(N, diag_dims, ones, 1.);
+	md_zfill(N, diag_dims, imag, 1. * I);
 
 	do {
 
 		md_clear(N, odims, out, FL_SIZE);
-		md_copy_block(N, pos, odims, out, diag_dims, ones, FL_SIZE);
+
+		md_copy_block(N - 2, pos + 2, odims + 2, out, diag_dims + 2, ones, CFL_SIZE);
+		linop_adjoint_unchecked(lop, (complex float*)in, (complex float*)out);
+		md_copy_block(N, pos, ddims, jacobian, idims, in, FL_SIZE);
+
+		pos[0] = 1;
+
+		md_copy_block(N - 2, pos + 2, odims + 2, out, diag_dims + 2, imag, CFL_SIZE);
 		linop_adjoint_unchecked(lop, (complex float*)in, (complex float*)out);
 		md_copy_block(N, pos, ddims, jacobian, idims, in, FL_SIZE);
 
@@ -1085,6 +1107,7 @@ void linop_compute_matrix_rblock_diag_bwd(const struct linop_s* lop, int N, cons
 	md_free(in);
 	md_free(out);
 	md_free(ones);
+	md_free(imag);
 }
 
 void linop_compute_matrix_rblock_diag(const struct linop_s* lop, int N, const long ddims[N], float* jacobian)
