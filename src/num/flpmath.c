@@ -396,7 +396,7 @@ static void make_z3op_scalar(md_z3op_t fun, int D, const long dims[D], const lon
 	int ND = MIN(md_calc_blockdim(D, dims, istr, size), md_calc_blockdim(D, dims, ostr, size));
 
 	for (int i = 0; i < ND; i++)
-		if (1024 >= md_calc_size(i, dims))
+		if (1024 * 1024 >= md_calc_size(i, dims))
 			flags = MD_SET(flags, i);
 
 
@@ -422,7 +422,7 @@ static void make_3op_scalar(md_3op_t fun, int D, const long dims[D], const long 
 	int ND = MIN(md_calc_blockdim(D, dims, istr, size), md_calc_blockdim(D, dims, ostr, size));
 
 	for (int i = 0; i < ND; i++)
-		if (1024 >= md_calc_size(i, dims))
+		if (1024 * 1024 >= md_calc_size(i, dims))
 			flags = MD_SET(flags, i);
 
 
