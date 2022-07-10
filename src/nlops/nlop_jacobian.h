@@ -14,7 +14,7 @@ extern struct nlop_s* nlop_zblock_diag_generic_create(nlop_data_t* data, int N,
 						unsigned long diag_flags [OO][II],
 						nlop_zblock_diag_generic_fun_t forward, nlop_del_diag_fun_t del);
 
-extern struct nlop_s* nlop_zrblock_diag_generic_create(nlop_data_t* data, int N,
+extern struct nlop_s* nlop_rblock_diag_generic_create(nlop_data_t* data, int N,
 						int OO, const long rodims[OO][N],
 						int II, const long ridims[II][N],
 						unsigned long diag_flags [OO][II],
@@ -26,13 +26,13 @@ typedef void (*nlop_zdiag_fun_t)(const nlop_data_t* _data, int N, const long dim
 typedef void (*nlop_rdiag_fun_t)(const nlop_data_t* _data, int N, const long dims[N], float* dst, const float* src, float* jac);
 
 extern struct nlop_s* nlop_zdiag_create(int N, const long dims[N], nlop_data_t* data, nlop_zdiag_fun_t forward, nlop_del_diag_fun_t del);
-extern struct nlop_s* nlop_zrdiag_create(int N, const long dims[N], nlop_data_t* data, nlop_rdiag_fun_t forward, nlop_del_diag_fun_t del);
+extern struct nlop_s* nlop_rdiag_create(int N, const long dims[N], nlop_data_t* data, nlop_rdiag_fun_t forward, nlop_del_diag_fun_t del);
 
 typedef void (*nlop_zblock_diag_fun_t)(const nlop_data_t* _data, int N, const long odims[N], _Complex float* dst, const long idims[N], const _Complex float* src, const long ddims[N], _Complex float* jac);
 typedef void (*nlop_rblock_diag_fun_t)(const nlop_data_t* _data, int N, const long odims[N], float* dst, const long idims[N], const float* src, const long ddims[N], float* jac);
 
 extern struct nlop_s* nlop_zblock_diag_create(nlop_data_t* data, int N, const long odims[N], const long idims[N], const long ddims[N], nlop_zblock_diag_fun_t forward, nlop_del_diag_fun_t del);
-extern struct nlop_s* nlop_zrblock_diag_create(nlop_data_t* data, int N, const long odims[N], const long idims[N], const long ddims[N], nlop_rblock_diag_fun_t forward, nlop_del_diag_fun_t del);
+extern struct nlop_s* nlop_rblock_diag_create(nlop_data_t* data, int N, const long odims[N], const long idims[N], const long ddims[N], nlop_rblock_diag_fun_t forward, nlop_del_diag_fun_t del);
 
 
 extern void linop_compute_matrix_zblock_diag_fwd(const struct linop_s* lop, int N, const long dims[N], _Complex float* out);

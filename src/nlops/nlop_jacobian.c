@@ -376,7 +376,7 @@ static void rblock_diag_adj(const nlop_data_t* _data, unsigned int o, unsigned i
 	md_tenmul(data->N, data->iov_in[i]->dims, (float*)dst, data->iov_out[o]->dims, (float*)src, ddims, der);
 }
 
-struct nlop_s* nlop_zrblock_diag_generic_create(nlop_data_t* data, int N,
+struct nlop_s* nlop_rblock_diag_generic_create(nlop_data_t* data, int N,
 						int OO, const long rodims[OO][N],
 						int II, const long ridims[II][N],
 						unsigned long diag_flags [OO][II],
@@ -514,7 +514,7 @@ struct nlop_s* nlop_zdiag_create(int N, const long dims[N], nlop_data_t* data, n
 }
 
 
-static void zrdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], float* dst[OO], int II, const long idims[II][N], const float* src[II], const long ddims[OO][II][N], float* jac[OO][II])
+static void rdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], float* dst[OO], int II, const long idims[II][N], const float* src[II], const long ddims[OO][II][N], float* jac[OO][II])
 {
 	auto data = CAST_DOWN(diag_s, _data);
 
@@ -528,7 +528,7 @@ static void zrdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims
 	data->rdiag_fun(data->data, N, odims[0], (float*)(dst[0]), (float*)(src[0]), (float*)(jac[0][0]));
 }
 
-struct nlop_s* nlop_zrdiag_create(int N, const long dims[N], nlop_data_t* data, nlop_rdiag_fun_t forward, nlop_del_diag_fun_t del)
+struct nlop_s* nlop_rdiag_create(int N, const long dims[N], nlop_data_t* data, nlop_rdiag_fun_t forward, nlop_del_diag_fun_t del)
 {
 	PTR_ALLOC(struct diag_s, _data);
 	SET_TYPEID(diag_s, _data);
@@ -553,7 +553,7 @@ struct nlop_s* nlop_zrdiag_create(int N, const long dims[N], nlop_data_t* data, 
 	unsigned long diag_flags[1][1];
 	diag_flags[0][0] = 0;
 
-	return nlop_zrblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N + 2, 1, nl_odims, 1, nl_idims, diag_flags, zrdiag_fun, diag_del);
+	return nlop_rblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N + 2, 1, nl_odims, 1, nl_idims, diag_flags, rdiag_fun, diag_del);
 }
 
 
@@ -618,7 +618,7 @@ static void rblock_diag_simple_fun(const nlop_data_t* _data, int N, int OO, cons
 }
 
 
-struct nlop_s* nlop_zrblock_diag_create(nlop_data_t* data, int N, const long odims[N], const long idims[N], const long ddims[N], nlop_rblock_diag_fun_t forward, nlop_del_diag_fun_t del)
+struct nlop_s* nlop_rblock_diag_create(nlop_data_t* data, int N, const long odims[N], const long idims[N], const long ddims[N], nlop_rblock_diag_fun_t forward, nlop_del_diag_fun_t del)
 {
 	PTR_ALLOC(struct block_diag_simple_s, _data);
 	SET_TYPEID(block_diag_simple_s, _data);
@@ -637,7 +637,7 @@ struct nlop_s* nlop_zrblock_diag_create(nlop_data_t* data, int N, const long odi
 	unsigned long diag_flags[1][1];
 	diag_flags[0][0] = ~md_nontriv_dims(N, ddims);
 
-	return nlop_zrblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N, 1, nl_odims, 1, nl_idims, diag_flags, rblock_diag_simple_fun, block_diag_simple_del);
+	return nlop_rblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N, 1, nl_odims, 1, nl_idims, diag_flags, rblock_diag_simple_fun, block_diag_simple_del);
 }
 
 void linop_compute_matrix_zblock_diag_fwd(const struct linop_s* lop, int N, const long ddims[N], complex float* jacobian)
@@ -1075,5 +1075,5 @@ struct nlop_s* nlop_zrprecomp_jacobian_F(const struct nlop_s* nlop)
 		for (int o = 0; o < OO; o++)
 			diag_flags[o][i] = 0;
 
-	return nlop_zrblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N + 2, OO, nl_odims, II, nl_idims, diag_flags, zrprecomp_jacobian_fun, precomp_jacobian_del);
+	return nlop_rblock_diag_generic_create(CAST_UP(PTR_PASS(_data)), N + 2, OO, nl_odims, II, nl_idims, diag_flags, zrprecomp_jacobian_fun, precomp_jacobian_del);
 }

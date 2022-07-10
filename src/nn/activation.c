@@ -355,7 +355,7 @@ const struct nlop_s* nlop_leaky_relu_create(unsigned int N, const long dims[N], 
 
 	data->slope_param = slope_parameter;
 
-	return nlop_zrdiag_create(N, dims, CAST_UP(PTR_PASS(data)), relu_apply, relu_free);
+	return nlop_rdiag_create(N, dims, CAST_UP(PTR_PASS(data)), relu_apply, relu_free);
 }
 
 const struct nlop_s* nlop_relu_create(unsigned int N, const long dims[N])
@@ -545,7 +545,7 @@ const struct nlop_s* nlop_sigmoid_create(unsigned int N, const long dims[N])
 	PTR_ALLOC(struct sigmoid_s, data);
 	SET_TYPEID(sigmoid_s, data);
 
-	return nlop_zrdiag_create(N, dims, CAST_UP(PTR_PASS(data)), sigmoid_apply, sigmoid_free);
+	return nlop_rdiag_create(N, dims, CAST_UP(PTR_PASS(data)), sigmoid_apply, sigmoid_free);
 }
 
 
