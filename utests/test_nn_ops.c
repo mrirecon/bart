@@ -803,3 +803,26 @@ static bool test_dice3(void)
 }
 
 UT_REGISTER_TEST(test_dice3);
+
+
+static bool test_nlop_cardioid(void)
+{
+	enum { N = 3 };
+	long dims[N] = { 10, 7, 3 };
+
+	const struct nlop_s* cardioid = nlop_cardioid_create(N, dims);
+	cardioid = nlop_chain_FF(nlop_from_linop_F(linop_zreal_create(N, dims)), cardioid);
+
+	const struct nlop_s* relu = nlop_relu_create(N, dims);
+	relu = nlop_chain_FF(nlop_from_linop_F(linop_zreal_create(N, dims)), relu);
+
+	bool test = compare_nlops(relu, cardioid, true, true, true, UT_TOL);
+
+	nlop_free(relu);
+	nlop_free(cardioid);
+
+	UT_ASSERT(test);
+}
+
+
+UT_REGISTER_TEST(test_nlop_cardioid);

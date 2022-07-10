@@ -22,32 +22,20 @@
 #include "num/gpuops.h"
 #endif
 
+#include "linops/someops.h"
+
 #include "nlops/nlop.h"
 #include "nlops/chain.h"
+#include "nlops/cast.h"
+#include "nlops/someops.h"
+#include "nlops/tenmul.h"
+#include "nlops/zexp.h"
 #include "nlops/nlop_jacobian.h"
 
 #include "activation.h"
 
+static const struct nlop_s* append_activation_bias_internal(const struct nlop_s* network, int o, enum ACTIVATION activation, unsigned long bflags, bool bias);
 
-static void perm_shift(int N, int from, int to, int perm[N])
-{
-	for (int j = 0; j < N; j ++){
-
-		if (j == to){
-
-			perm[j] = from;
-			continue;
-		}
-
-		int i = j;
-		if (j >= from)
-			i += 1;
-		if (j > to)
-			i -= 1;
-
-		perm[j] = i;
-	}
-}
 
 /**
  * Append activation to nlop, free input and return nlop with appended activation
@@ -58,43 +46,8 @@ static void perm_shift(int N, int from, int to, int perm[N])
  */
 const struct nlop_s* append_activation(const struct nlop_s* network, int o, enum ACTIVATION activation)
 {
-	long N = nlop_generic_codomain(network, o)->N;
-	long dims[N];
-	md_copy_dims(N, dims, nlop_generic_codomain(network, o)->dims);
-
-	long NO = nlop_get_nr_out_args(network);
-	assert(o < NO);
-	int perm_out[NO];
-	perm_shift(NO, 0, o, perm_out);
-
-	switch (activation){
-
-		case ACT_LIN:
-
-			break;
-
-		case ACT_RELU:
-
-			network = nlop_chain2_FF(network, o, nlop_relu_create(N, dims), 0);
-			network = nlop_permute_outputs_F(network, NO, perm_out);
-			break;
-
-		case ACT_SOFTMAX:
-
-			network = nlop_chain2_FF(network, o, nlop_softmax_create(N, dims, ~MD_BIT(0)), 0);
-			network = nlop_permute_outputs_F(network, NO, perm_out);
-			break;
-
-		case ACT_SIGMOID:
-
-			network = nlop_chain2_FF(network, o, nlop_sigmoid_create(N, dims), 0);
-			network = nlop_permute_outputs_F(network, NO, perm_out);
-			break;
-	}
-
-	return network;
+	return append_activation_bias_internal(network, o, activation, 0, false);
 }
-
 
 /**
  * Append activation and bias to nlop, free input and return nlop with appended activation
@@ -106,6 +59,14 @@ const struct nlop_s* append_activation(const struct nlop_s* network, int o, enum
  */
 const struct nlop_s* append_activation_bias(const struct nlop_s* network, int o, enum ACTIVATION activation, unsigned long bflags)
 {
+	return append_activation_bias_internal(network, o, activation, bflags, true);
+}
+
+
+
+
+static const struct nlop_s* append_activation_bias_internal(const struct nlop_s* network, int o, enum ACTIVATION activation, unsigned long bflags, bool bias)
+{
 	long NI = nlop_get_nr_in_args(network);
 	long NO = nlop_get_nr_out_args(network);
 	assert(o < NO);
@@ -113,8 +74,10 @@ const struct nlop_s* append_activation_bias(const struct nlop_s* network, int o,
 	const struct nlop_s* nlop_act;
 
 	long N = nlop_generic_codomain(network, o)->N;
+
 	long dims[N];
 	md_copy_dims(N, dims, nlop_generic_codomain(network, o)->dims);
+
 	long bdims[N];
 	md_select_dims(N, bflags, bdims, dims);
 
@@ -122,22 +85,37 @@ const struct nlop_s* append_activation_bias(const struct nlop_s* network, int o,
 
 		case ACT_LIN:
 
-			nlop_act = nlop_bias_create(N, dims, bdims);
+			nlop_act = nlop_from_linop_F(linop_identity_create(N, dims));
 			break;
 
 		case ACT_RELU:
 
-			nlop_act = nlop_relu_bias_create(N, dims, bdims);
+			nlop_act = nlop_relu_create(N, dims);
 			break;
 
 		case ACT_SOFTMAX:
 
-			nlop_act = nlop_softmax_bias_create(N, dims, ~bflags, bdims);
+			nlop_act = nlop_softmax_create(N, dims, ~bflags);
 			break;
 
 		case ACT_SIGMOID:
 
-			nlop_act = nlop_sigmoid_bias_create(N, dims, bdims);
+			nlop_act = nlop_sigmoid_create(N, dims);
+			break;
+
+		case ACT_SIGLOG:
+
+			nlop_act = nlop_siglog_create(N, dims, 1, 1);
+			break;
+
+		case ACT_IGAUSSIAN:
+
+			nlop_act = nlop_igaussian_create(N, dims, 1);
+			break;
+
+		case ACT_CARDIOID:
+
+			nlop_act = nlop_cardioid_create(N, dims);
 			break;
 
 		default:
@@ -146,15 +124,15 @@ const struct nlop_s* append_activation_bias(const struct nlop_s* network, int o,
 			assert(0);
 	}
 
-	network = nlop_chain2_FF(network, o, nlop_act, 0);
+	if (bias)
+		nlop_act = nlop_chain2_FF(nlop_bias_create(N, dims, bdims), 0, nlop_act, 0);
 
-	int perm_in[NI + 1];
-	perm_shift(NI + 1, 0, NI, perm_in);
-	network = nlop_permute_inputs_F(network, NI + 1, perm_in);
 
-	int perm_out[NO];
-	perm_shift(NO, 0, o, perm_out);
-	network = nlop_permute_outputs_F(network, NO, perm_out);
+	network = nlop_chain2_swap_FF(network, o, nlop_act, 0);
+	network = nlop_shift_output_F(network, o, 0);
+
+	if (!bias)
+		return network;
 
 	long bdims_layer[N];
 	int j = 0;
@@ -366,10 +344,6 @@ const struct nlop_s* nlop_relu_create(unsigned int N, const long dims[N])
 	return nlop_leaky_relu_create(N, dims, 0.);
 }
 
-const struct nlop_s* nlop_relu_bias_create(unsigned int N, const long dims[N], const long bdims[N])
-{
-	return nlop_chain2_FF(nlop_bias_create(N, dims, bdims), 0, nlop_relu_create(N, dims), 0);
-}
 
 struct softmax_s {
 
@@ -495,15 +469,6 @@ const struct nlop_s* nlop_softmax_create(unsigned int N, const long dims[N], uns
 	return nlop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), softmax_apply, softmax_der, softmax_der, NULL, NULL, softmax_free);
 }
 
-const struct nlop_s* nlop_softmax_bias_create(unsigned int N, const long dims[N], unsigned long batch_flag, const long bdims[N])
-{
-	const struct nlop_s* act = nlop_softmax_create(N, dims, batch_flag);
-	const struct nlop_s* bias = nlop_bias_create(N, dims, bdims);
-	const struct nlop_s* result = nlop_chain2(bias, 0, act, 0);
-	nlop_free(bias);
-	nlop_free(act);
-	return result;
-}
 
 struct sigmoid_s {
 	INTERFACE(nlop_data_t);
@@ -549,12 +514,63 @@ const struct nlop_s* nlop_sigmoid_create(unsigned int N, const long dims[N])
 }
 
 
-const struct nlop_s* nlop_sigmoid_bias_create(unsigned int N, const long dims[N], const long bdims[N])
+
+
+
+/**
+ * Create Cardioid nlop 
+ * f(z) = 0.5(1+cos(arg(z)))z = (|z|+z)^2/(4|z|)
+ * PHD thesis Patrick Virtue : https://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-126.pdf
+ */
+const struct nlop_s* nlop_cardioid_create(unsigned int N, const long dims[N])
 {
-	const struct nlop_s* act = nlop_sigmoid_create(N, dims);
-	const struct nlop_s* bias = nlop_bias_create(N, dims, bdims);
-	const struct nlop_s* result = nlop_chain2(bias, 0, act, 0);
-	nlop_free(bias);
-	nlop_free(act);
-	return result;
+	auto result = nlop_zabs_create(N, dims);
+	result = nlop_chain2_FF(result, 0, nlop_zaxpbz_create(N, dims, 1., 1.), 0);
+	result = nlop_dup_F(result, 0, 1);
+	
+	auto square = nlop_tenmul_create(N, dims, dims, dims);
+	square = nlop_dup_F(square, 0, 1);
+
+	result = nlop_chain2_FF(result, 0, square, 0);
+	result = nlop_chain2_FF(result, 0, nlop_zdiv_create(N, dims), 0);
+	result = nlop_chain2_FF(nlop_zabs_create(N, dims), 0, result, 0);
+	result = nlop_chain2_FF(nlop_from_linop_F(linop_scale_create(N, dims, 4)), 0, result, 1);
+	result = nlop_dup_F(result, 0, 1);
+
+	return nlop_zrprecomp_jacobian_F(result);
+}
+
+
+/**
+ * Create siglog nlop 
+ * f(z) = z / (c + |z| / r)
+ * PHD thesis Patrick Virtue : https://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-126.pdf
+ */
+const struct nlop_s* nlop_siglog_create(unsigned int N, const long dims[N], float c, float r)
+{
+	auto result = nlop_zdiv_reg_create(N, dims, c);
+	result = nlop_chain2_FF(nlop_zabs_create(N, dims), 0, result, 0);
+	result = nlop_chain2_FF(nlop_from_linop_F(linop_scale_create(N, dims, 1./ r)), 0, result, 0);
+
+	return nlop_zrprecomp_jacobian_F(result);
+}
+
+/**
+ * Create iGaussian nlop 
+ * f(z) = (1 - exp(-|z|^2/(2s^2)))*z/|z|
+ * PHD thesis Patrick Virtue : https://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-126.pdf
+ */
+const struct nlop_s* nlop_igaussian_create(unsigned int N, const long dims[N], float sigma)
+{
+	auto result = nlop_tenmul_create(N, dims, dims, dims);
+	result = nlop_chain2_FF(nlop_from_linop_F(linop_zconj_create(N, dims)), 0, result, 0);
+	result = nlop_dup_F(result, 0, 1);
+	result = nlop_chain_FF(result, nlop_from_linop_F(linop_scale_create(N, dims, 1./(2*sigma*sigma))));
+	result = nlop_chain_FF(result, nlop_zexp_create(N, dims));
+	result = nlop_chain_FF(result, nlop_from_linop_F(linop_scale_create(N, dims, -1.)));
+	result = nlop_chain2_FF(result, 0, nlop_tenmul_create(N, dims, dims, dims), 0);
+	result = nlop_chain2_FF(nlop_zphsr_create(N, dims), 0, result, 0);
+	result = nlop_dup_F(result, 0, 1);
+
+	return nlop_zrprecomp_jacobian_F(result);
 }
