@@ -11,6 +11,7 @@
 #include "networks/cnn.h"
 
 #include "network.h"
+#include "nn/activation.h"
 
 struct network_s* get_default_network(enum NETWORK_SELECT net)
 {
@@ -40,6 +41,8 @@ struct opt_s res_block_opts[] = {
 
 	OPTL_CLEAR(0, "no-batch-normalization", &(network_resnet_default.batch_norm), "do not use batch normalization"),
 	OPTL_CLEAR(0, "no-bias", &(network_resnet_default.bias), "do not use bias"),
+
+	OPTL_SELECT_DEF(0, "cardioid", enum ACTIVATION, &(network_resnet_default.activation), ACT_CARDIOID, ACT_RELU, "use cardioid as activation"),
 };
 const int N_res_block_opts = ARRAY_SIZE(res_block_opts);
 
