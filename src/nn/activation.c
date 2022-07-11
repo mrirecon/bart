@@ -168,15 +168,6 @@ static void bias_op_apply(const nlop_data_t* _data, int N, complex float* args[N
 	const struct bias_op_s* d = CAST_DOWN(bias_op_s, _data);
 	assert(3 == N);
 
-#ifdef USE_CUDA
-
-	if (cuda_ondevice(args[0])) {
-
-		md_copy2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), args[0], MD_STRIDES(d->N, d->bdims, CFL_SIZE), args[2], CFL_SIZE);
-		md_zadd(d->N, d->dims, args[0], args[1], args[0]);
-	} else
-#endif
-
 	md_zadd2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), args[0], MD_STRIDES(d->N, d->dims, CFL_SIZE), args[1], MD_STRIDES(d->N, d->bdims, CFL_SIZE), args[2]);
 }
 
