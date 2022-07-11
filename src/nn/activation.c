@@ -272,20 +272,38 @@ struct relu_s {
 
 	INTERFACE(nlop_data_t);
 
+	int N;
+	const long* rdims;
+
+	void* der;
+
 	float slope_param;
 };
 
 DEF_TYPEID(relu_s);
 
 
-static void relu_apply(const nlop_data_t* _data, int N, const long dims[N], float* dst, const float* src, float* der)
+static void relu_apply(const nlop_data_t* _data, complex float* _dst, const complex float* _src)
 {
 	struct relu_s* d = CAST_DOWN(relu_s, _data);
 
+	int N = d->N;
+	const long* dims = d->rdims;
+	
+	float* dst = (float*)_dst;
+	const float* src = (float*)_src;
+
 	md_smax(N, dims, dst, src, 0.);
+
+	float* der = md_alloc_sameplace(N, dims, FL_SIZE, src);
 
 	if ((0 == d->slope_param) && (NULL != der))
 		md_greatequal(N, dims, der, src, dst);
+
+	md_free(d->der);
+	d->der = md_compress(N, dims, der);
+
+	md_free(der);
 
 	// leaky RELU if slope parameter has been set
 	if (0 != d->slope_param) {
@@ -309,9 +327,6 @@ static void relu_apply(const nlop_data_t* _data, int N, const long dims[N], floa
 		md_free(tmp);
 		md_free(tmp2);
 
-		if (NULL != der)
-			md_copy(N, dims, der, tder, FL_SIZE);
-
 		md_free(tder);
 
 	}
@@ -319,7 +334,38 @@ static void relu_apply(const nlop_data_t* _data, int N, const long dims[N], floa
 
 static void relu_free(const nlop_data_t* _data)
 {
+	struct relu_s* d = CAST_DOWN(relu_s, _data);
+	md_free(d->der);
+	xfree(d->rdims);
+
 	xfree(_data);
+}
+
+static void relu_deradj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* _dst, const complex float* _src)
+{
+	struct relu_s* d = CAST_DOWN(relu_s, _data);
+
+	assert(0 == i);
+	assert(0 == o);
+	
+	int N = d->N;
+	const long* dims = d->rdims;
+	
+	float* dst = (float*)_dst;
+	const float* src = (float*)_src;
+
+	float* der = md_alloc_sameplace(N, dims, FL_SIZE, d->der);
+	md_decompress(N, dims, der, d->der);
+
+	md_mul(N, dims, dst, src, der);
+
+	if (0 != d->slope_param) {
+
+		md_smul(N, dims, dst, dst, 1. -d->slope_param);
+		md_axpy(N, dims, dst, d->slope_param, src);	
+	}
+
+	md_free(der);
 }
 
 /**
@@ -331,9 +377,17 @@ const struct nlop_s* nlop_leaky_relu_create(unsigned int N, const long dims[N], 
 	PTR_ALLOC(struct relu_s, data);
 	SET_TYPEID(relu_s, data);
 
-	data->slope_param = slope_parameter;
+	data->N = N + 1;
+	long rdims[N + 1];
+	rdims[0] = 2;
+	md_copy_dims(N, rdims + 1, dims);
 
-	return nlop_rdiag_create(N, dims, CAST_UP(PTR_PASS(data)), relu_apply, relu_free);
+	data->rdims = ARR_CLONE(long[N + 1], rdims);
+
+	data->slope_param = slope_parameter;
+	data->der = NULL;
+
+	return nlop_create(N, dims, N, dims,  CAST_UP(PTR_PASS(data)), relu_apply, relu_deradj, relu_deradj, NULL, NULL, relu_free);
 }
 
 const struct nlop_s* nlop_relu_create(unsigned int N, const long dims[N])
