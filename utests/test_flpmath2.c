@@ -57,8 +57,8 @@ static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long
 	md_zfmac2(D, dims, ostr, optr1, istr1, iptr1, istr2, iptr2);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_zfmac(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
-	debug_printf(DP_DEBUG1, "%f\n", md_znrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_val > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -69,15 +69,15 @@ static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long
 
 static bool test_optimized_md_zfmac2_dot(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(0ul, 1ul, 1ul, blas_threadsafe2, 5.e-6)); }
 static bool test_optimized_md_zfmac2_dot2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(2ul, 3ul, 3ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_zfmac2_gemv(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(1ul, 3ul, 2ul, blas_threadsafe2, 2.e-6)); }
+static bool test_optimized_md_zfmac2_gemv(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
 static bool test_optimized_md_zfmac2_gemv2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(2ul, 1ul, 3ul, blas_threadsafe2, 5.e-6)); }
 static bool test_optimized_md_zfmac2_gemv3(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(14ul, 13ul, 7ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_zfmac2_gemm(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 6ul, 5ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_zfmac2_gemm2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(11ul, 14ul, 13ul, blas_threadsafe2, 1.e-6));}
-static bool test_optimized_md_zfmac2_ger(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 1ul, 2ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_zfmac2_ger2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(7ul, 5ul, 6ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_zfmac2_axpy(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(1ul, 1ul, 0ul, blas_threadsafe2, 3.e-6)); }
-static bool test_optimized_md_zfmac2_axpy2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 2ul, 3ul, blas_threadsafe2, 1.e-6));}
+static bool test_optimized_md_zfmac2_gemm(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 6ul, 5ul, true, 2.e-6)); }
+static bool test_optimized_md_zfmac2_gemm2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(11ul, 14ul, 13ul, true, 1.e-6));}
+static bool test_optimized_md_zfmac2_ger(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 1ul, 2ul, true, 2.e-6)); }
+static bool test_optimized_md_zfmac2_ger2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(7ul, 5ul, 6ul, true, 1.e-6)); }
+static bool test_optimized_md_zfmac2_axpy(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(1ul, 1ul, 0ul, true, 3.e-6)); }
+static bool test_optimized_md_zfmac2_axpy2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 2ul, 3ul, true, 1.e-6));}
 
 UT_REGISTER_TEST(test_optimized_md_zfmac2_dot);
 UT_REGISTER_TEST(test_optimized_md_zfmac2_dot2);
@@ -127,8 +127,7 @@ static bool test_optimized_md_zfmacc2_flags(unsigned long out_flag, unsigned lon
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_zfmacc(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
 	result &= (!optimization_expected) || (err_val > md_znrmse(D, odims, optr1, optr2));
-	if (!result)
-		debug_printf(DP_INFO, "%.10f: ", md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -139,15 +138,15 @@ static bool test_optimized_md_zfmacc2_flags(unsigned long out_flag, unsigned lon
 
 static bool test_optimized_md_zfmacc2_dot(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(0ul, 1ul, 1ul, blas_threadsafe2, 8.e-6)); }
 static bool test_optimized_md_zfmacc2_dot2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(2ul, 3ul, 3ul, blas_threadsafe2, 5.e-6)); }
-static bool test_optimized_md_zfmacc2_gemv(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(1ul, 3ul, 2ul, blas_threadsafe2, 2.e-6)); }
+static bool test_optimized_md_zfmacc2_gemv(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
 static bool test_optimized_md_zfmacc2_gemv2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(2ul, 1ul, 3ul, blas_threadsafe2, 5.e-6)); }
 static bool test_optimized_md_zfmacc2_gemv3(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(14ul, 13ul, 7ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_zfmacc2_gemm(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(3ul, 6ul, 5ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_zfmacc2_gemm2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(11ul, 14ul, 13ul, blas_threadsafe2, 1.e-6));}
-static bool test_optimized_md_zfmacc2_ger(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(3ul, 1ul, 2ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_zfmacc2_ger2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(7ul, 5ul, 6ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_zfmacc2_axpy(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(1ul, 1ul, 0ul, blas_threadsafe2, 5.e-6)); }
-static bool test_optimized_md_zfmacc2_axpy2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(3ul, 2ul, 3ul, blas_threadsafe2, 1.e-6));}
+static bool test_optimized_md_zfmacc2_gemm(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(3ul, 6ul, 5ul, true, 2.e-6)); }
+static bool test_optimized_md_zfmacc2_gemm2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(11ul, 14ul, 13ul, true, 1.e-6));}
+static bool test_optimized_md_zfmacc2_ger(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(3ul, 1ul, 2ul, true, 2.e-6)); }
+static bool test_optimized_md_zfmacc2_ger2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(7ul, 5ul, 6ul, true, 1.e-6)); }
+static bool test_optimized_md_zfmacc2_axpy(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(1ul, 1ul, 0ul, true, 5.e-6)); }
+static bool test_optimized_md_zfmacc2_axpy2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(3ul, 2ul, 3ul, true, 1.e-6));}
 
 UT_REGISTER_TEST(test_optimized_md_zfmacc2_dot);
 UT_REGISTER_TEST(test_optimized_md_zfmacc2_dot2);
@@ -196,8 +195,8 @@ static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long 
 	md_fmac2(D, dims, ostr, optr1, istr1, iptr1, istr2, iptr2);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_fmac(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
-	debug_printf(DP_DEBUG1, "%f\n", md_nrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_val > md_nrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_nrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -208,15 +207,15 @@ static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long 
 
 static bool test_optimized_md_fmac2_dot(void) { UT_ASSERT(test_optimized_md_fmac2_flags(0ul, 1ul, 1ul, blas_threadsafe2, 2.e-5)); }
 static bool test_optimized_md_fmac2_dot2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(2ul, 3ul, 3ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_fmac2_gemv(void) { UT_ASSERT(test_optimized_md_fmac2_flags(1ul, 3ul, 2ul, blas_threadsafe2, 2.e-6)); }
+static bool test_optimized_md_fmac2_gemv(void) { UT_ASSERT(test_optimized_md_fmac2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
 static bool test_optimized_md_fmac2_gemv2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(2ul, 1ul, 3ul, blas_threadsafe2, 2.e-6)); }
 static bool test_optimized_md_fmac2_gemv3(void) { UT_ASSERT(test_optimized_md_fmac2_flags(14ul, 13ul, 7ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_fmac2_gemm(void) { UT_ASSERT(test_optimized_md_fmac2_flags(3ul, 6ul, 5ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_fmac2_gemm2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(11ul, 14ul, 13ul, blas_threadsafe2, 1.e-6));}
-static bool test_optimized_md_fmac2_ger(void) { UT_ASSERT(test_optimized_md_fmac2_flags(3ul, 1ul, 2ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_fmac2_ger2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(7ul, 5ul, 6ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_fmac2_axpy(void) { UT_ASSERT(test_optimized_md_fmac2_flags(1ul, 1ul, 0ul, blas_threadsafe2, 3.e-6)); }
-static bool test_optimized_md_fmac2_axpy2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(3ul, 2ul, 3ul, blas_threadsafe2, 1.e-6));}
+static bool test_optimized_md_fmac2_gemm(void) { UT_ASSERT(test_optimized_md_fmac2_flags(3ul, 6ul, 5ul, true, 2.e-6)); }
+static bool test_optimized_md_fmac2_gemm2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(11ul, 14ul, 13ul, true, 1.e-6));}
+static bool test_optimized_md_fmac2_ger(void) { UT_ASSERT(test_optimized_md_fmac2_flags(3ul, 1ul, 2ul, true, 2.e-6)); }
+static bool test_optimized_md_fmac2_ger2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(7ul, 5ul, 6ul, true, 1.e-6)); }
+static bool test_optimized_md_fmac2_axpy(void) { UT_ASSERT(test_optimized_md_fmac2_flags(1ul, 1ul, 0ul, true, 3.e-6)); }
+static bool test_optimized_md_fmac2_axpy2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(3ul, 2ul, 3ul, true, 1.e-6));}
 
 UT_REGISTER_TEST(test_optimized_md_fmac2_dot);
 UT_REGISTER_TEST(test_optimized_md_fmac2_dot2);
@@ -263,8 +262,8 @@ static bool test_optimized_md_zmul2_flags(unsigned long out_flag, unsigned long 
 	md_zmul2(D, dims, ostr, optr1, istr1, iptr1, istr2, iptr2);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_zmul(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
-
 	result &= (!optimization_expected) || (err_val > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -273,11 +272,11 @@ static bool test_optimized_md_zmul2_flags(unsigned long out_flag, unsigned long 
 	return result;
 }
 
-static bool test_optimized_md_zmul2_smul(void) { UT_ASSERT(test_optimized_md_zmul2_flags(~0ul, 1ul, 0ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_zmul2_smul2(void) { UT_ASSERT(test_optimized_md_zmul2_flags(~0ul, 2ul, 3ul, blas_threadsafe2, 1.e-6)); } // also dgmm on gpu
+static bool test_optimized_md_zmul2_smul(void) { UT_ASSERT(test_optimized_md_zmul2_flags(~0ul, 1ul, 0ul, true, 1.e-6)); }
+static bool test_optimized_md_zmul2_smul2(void) { UT_ASSERT(test_optimized_md_zmul2_flags(~0ul, 2ul, 3ul, true, 1.e-6)); } // also dgmm on gpu
 static bool test_optimized_md_zmul2_dgmm(void) { UT_ASSERT(test_optimized_md_zmul2_flags(~0ul, 1ul, 3ul, false, 1.e-6)); } // only on gpu
-static bool test_optimized_md_zmul2_ger(void) { UT_ASSERT(test_optimized_md_zmul2_flags(~0ul, 1ul, 2ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_zmul2_ger2(void) { UT_ASSERT(test_optimized_md_zmul2_flags(~0ul, 5ul, 6ul, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_zmul2_ger(void) { UT_ASSERT(test_optimized_md_zmul2_flags(~0ul, 1ul, 2ul, true, 2.e-6)); }
+static bool test_optimized_md_zmul2_ger2(void) { UT_ASSERT(test_optimized_md_zmul2_flags(~0ul, 5ul, 6ul, true, 1.e-6)); }
 
 UT_REGISTER_TEST(test_optimized_md_zmul2_smul);
 UT_REGISTER_TEST(test_optimized_md_zmul2_smul2);
@@ -318,8 +317,8 @@ static bool test_optimized_md_zmulc2_flags(unsigned long out_flag, unsigned long
 	md_zmulc2(D, dims, ostr, optr1, istr1, iptr1, istr2, iptr2);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_zmulc(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
-
 	result &= (!optimization_expected) || (err_val > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -328,11 +327,11 @@ static bool test_optimized_md_zmulc2_flags(unsigned long out_flag, unsigned long
 	return result;
 }
 
-static bool test_optimized_md_zmulc2_smul(void) { UT_ASSERT(test_optimized_md_zmulc2_flags(~0ul, 1ul, 0ul, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_zmulc2_smul2(void) { UT_ASSERT(test_optimized_md_zmulc2_flags(~0ul, 2ul, 3ul, blas_threadsafe2, 1.e-6)); } // also dgmm on gpu
+static bool test_optimized_md_zmulc2_smul(void) { UT_ASSERT(test_optimized_md_zmulc2_flags(~0ul, 1ul, 0ul, true, 1.e-6)); }
+static bool test_optimized_md_zmulc2_smul2(void) { UT_ASSERT(test_optimized_md_zmulc2_flags(~0ul, 2ul, 3ul, true, 1.e-6)); } // also dgmm on gpu
 static bool test_optimized_md_zmulc2_dgmm(void) { UT_ASSERT(test_optimized_md_zmulc2_flags(~0ul, 1ul, 3ul, false, 1.e-6)); } // only on gpu
-static bool test_optimized_md_zmulc2_ger(void) { UT_ASSERT(test_optimized_md_zmulc2_flags(~0ul, 1ul, 2ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_zmulc2_ger2(void) { UT_ASSERT(test_optimized_md_zmulc2_flags(~0ul, 5ul, 6ul, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_zmulc2_ger(void) { UT_ASSERT(test_optimized_md_zmulc2_flags(~0ul, 1ul, 2ul, true, 2.e-6)); }
+static bool test_optimized_md_zmulc2_ger2(void) { UT_ASSERT(test_optimized_md_zmulc2_flags(~0ul, 5ul, 6ul, true, 1.e-6)); }
 
 UT_REGISTER_TEST(test_optimized_md_zmulc2_smul);
 UT_REGISTER_TEST(test_optimized_md_zmulc2_smul2);
@@ -375,8 +374,8 @@ static bool test_optimized_md_mul2_flags(unsigned long out_flag, unsigned long i
 	md_mul2(D, dims, ostr, optr1, istr1, iptr1, istr2, iptr2);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_mul(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
-
 	result &= (!optimization_expected) || (err_val > md_nrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_nrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -385,11 +384,11 @@ static bool test_optimized_md_mul2_flags(unsigned long out_flag, unsigned long i
 	return result;
 }
 
-static bool test_optimized_md_mul2_smul(void) { UT_ASSERT(test_optimized_md_mul2_flags(~0ul, 1ul, 0ul, blas_threadsafe2, 1.e-8)); }
-static bool test_optimized_md_mul2_smul2(void) { UT_ASSERT(test_optimized_md_mul2_flags(~0ul, 2ul, 3ul, blas_threadsafe2, 1.e-8)); } // also dgmm on gpu
+static bool test_optimized_md_mul2_smul(void) { UT_ASSERT(test_optimized_md_mul2_flags(~0ul, 1ul, 0ul, true, 1.e-8)); }
+static bool test_optimized_md_mul2_smul2(void) { UT_ASSERT(test_optimized_md_mul2_flags(~0ul, 2ul, 3ul, true, 1.e-8)); } // also dgmm on gpu
 static bool test_optimized_md_mul2_dgmm(void) { UT_ASSERT(test_optimized_md_mul2_flags(~0ul, 1ul, 3ul, false, 1.e-8)); } // only on gpu
-static bool test_optimized_md_mul2_ger(void) { UT_ASSERT(test_optimized_md_mul2_flags(~0ul, 1ul, 2ul, blas_threadsafe2, 1.e-8)); }
-static bool test_optimized_md_mul2_ger2(void) { UT_ASSERT(test_optimized_md_mul2_flags(~0ul, 5ul, 6ul, blas_threadsafe2, 1.e-8)); }
+static bool test_optimized_md_mul2_ger(void) { UT_ASSERT(test_optimized_md_mul2_flags(~0ul, 1ul, 2ul, true, 1.e-8)); }
+static bool test_optimized_md_mul2_ger2(void) { UT_ASSERT(test_optimized_md_mul2_flags(~0ul, 5ul, 6ul, true, 1.e-8)); }
 
 UT_REGISTER_TEST(test_optimized_md_mul2_smul);
 UT_REGISTER_TEST(test_optimized_md_mul2_smul2);
@@ -439,10 +438,8 @@ static bool test_optimized_md_zadd(unsigned long out_flag, unsigned long in1_fla
 	activate_strided_vecops();
 
 	bool result = (optimization_expected == simple_zadd(D, dims, ostr, optr2, istr1, !in1_same ? iptr1 : optr2, istr2, !in2_same ? iptr2 : optr2));
-
-	debug_printf(DP_DEBUG1, "%d %.10f\n", optimization_expected, md_znrmse(D, odims, optr1, optr2));
-
 	result &= (!optimization_expected) || (err_val > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 
 	md_free(optr1);
 	md_free(optr2);
@@ -512,8 +509,8 @@ static bool test_optimized_md_add(unsigned long out_flag, unsigned long in1_flag
 		md_add2(D, dims, ostr, optr1, istr1, !in1_same ? iptr1 : optr1, istr2, !in2_same ? iptr2 : optr1);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_add(D, dims, ostr, optr2, istr1, !in1_same ? iptr1 : optr2, istr2, !in2_same ? iptr2 : optr2));
-	debug_printf(DP_DEBUG1, "%d %d %.10f\n", result, optimization_expected, md_nrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_val > md_nrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_nrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -582,8 +579,8 @@ static bool test_optimized_md_zmax(unsigned long out_flag, unsigned long in1_fla
 		md_zmax2(D, dims, ostr, optr1, istr1, !in1_same ? iptr1 : optr1, istr2, !in2_same ? iptr2 : optr1);
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_zmax(D, dims, ostr, optr2, istr1, !in1_same ? iptr1 : optr2, istr2, !in2_same ? iptr2 : optr2));
-	debug_printf(DP_DEBUG1, "%d %.10f\n", optimization_expected, md_znrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_val > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);

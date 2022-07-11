@@ -166,8 +166,9 @@ struct simple_z3op_check {
 	bool on_gpu;
 	bool on_cpu;
 	bool in_place;
-	bool reduction; // outptr and first inptr must equal
+	bool reduction;   // outptr and first inptr must equal
 	bool thread_save; // kernel can be called in open_mp region
+	bool long_dims;	  // support for 64 bit dimensions
 };
 
 struct simple_3op_check {
@@ -177,8 +178,9 @@ struct simple_3op_check {
 	bool on_gpu;
 	bool on_cpu;
 	bool in_place;
-	bool reduction; // outptr and first inptr must equal
+	bool reduction;   // outptr and first inptr must equal
 	bool thread_save; // kernel can be called in open_mp region
+	bool long_dims;	  // support for 64 bit dimensions
 };
 
 #if 0
@@ -837,9 +839,12 @@ static size_t get_block_size(unsigned int N, const long dims[N], const long strs
 }
 
 
-static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_checks], unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2, bool conj)
+static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_checks], unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2, bool symmetric, bool conj)
 {
 	if (!use_strided_vecops)
+		return false;
+
+	if (0 == N)
 		return false;
 
 	long size = CFL_SIZE;
@@ -870,6 +875,9 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 		strided_call = strided_calls[i];
 
+		if (!(strided_call.in_place || strided_call.reduction) && ((out == in1) || (out == in2)))
+			continue;
+
 		bool applicable = on_gpu ? strided_call.on_gpu : strided_call.on_cpu;
 
 		#ifdef _OPENMP
@@ -899,7 +907,12 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 			}
 
 			break;
+
+			
 		}
+
+		if (!symmetric)
+			continue;
 
 
 		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, dims, ostrs, istrs2, istrs1, size);
@@ -916,7 +929,6 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 				long size_tmp = get_block_size(N, dims, istrs2, size);
 				size_tmp /= size;
-
 				conj_in = md_alloc_sameplace(1, &size_tmp, size, in2);
 				md_zconj(1, &size_tmp, conj_in, in2);
 				tin1 = conj_in;
@@ -930,7 +942,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 		return false;
 
 	// FIXME: blas calls are not save with large input dimensions
-	if (INT_MAX / 2 < md_calc_size(N_in, ndims)) {
+	if (!strided_call.long_dims && (INT_MAX / 2 < md_calc_size(N_in, ndims))) {
 
 		md_free(conj_in);
 		return false;
@@ -971,9 +983,12 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	return true;
 }
 
-static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_checks], unsigned int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
+static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_checks], unsigned int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2, bool symmetric)
 {
 	if (!use_strided_vecops)
+		return false;
+
+	if (0 == N)
 		return false;
 
 	long size = FL_SIZE;
@@ -999,6 +1014,9 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 
 		strided_call = strided_calls[i];
 
+		if (!(strided_call.in_place || strided_call.reduction) && ((out == in1) || (out == in2)))
+			continue;
+
 		bool applicable = on_gpu ? strided_call.on_gpu : strided_call.on_cpu;
 
 		#ifdef _OPENMP
@@ -1021,6 +1039,9 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 			break;
 		}
 
+		if (!symmetric)
+			continue;
+
 		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, dims, ostrs, istrs2, istrs1, size);
 
 		if ((strided_call.reduction) && (out != in2))
@@ -1039,7 +1060,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 		return false;
 
 	// FIXME: blas calls are not save with large input dimensions
-	if (INT_MAX / 2 < md_calc_size(N_in, ndims))
+	if (!strided_call.long_dims && (INT_MAX / 2 < md_calc_size(N_in, ndims)))
 		return false;
 
 	size_t osize = get_block_size(N_in, ndims, nostrs, size);
@@ -1150,122 +1171,122 @@ bool simple_zfmac(int N, const long dims[N], const long ostrs[N], complex float*
 		return true;
 
 	struct simple_z3op_check strided_calls[] = {
-		{ check_gemm,	blas_zfmac_cgemm, true, true, false, false, blas_threadsafe },
-		{ check_gemv,	blas_zfmac_cgemv, true, true, false, false, blas_threadsafe },
-		{ check_ger,	blas_zfmac_cgeru, true, true, false, false, blas_threadsafe },
-		{ check_axpy,	blas_zfmac_caxpy, true, true, false, false, blas_threadsafe },
-		{ check_dot,	blas_zfmac_cdotu, true, true, false, false, blas_threadsafe },
-		{ check_batched_select,	zfmac_gpu_batched_loop, true, false, false, false, true },
-		{ check_dot_outer, md_zfmac_transp, true, false, false, false, blas_threadsafe }
+		{ check_gemm,	blas_zfmac_cgemm, true, true, false, false, blas_threadsafe, false },
+		{ check_gemv,	blas_zfmac_cgemv, true, true, false, false, blas_threadsafe, false },
+		{ check_ger,	blas_zfmac_cgeru, true, true, false, false, blas_threadsafe, false },
+		{ check_axpy,	blas_zfmac_caxpy, true, true, false, false, true, false },
+		{ check_dot,	blas_zfmac_cdotu, true, true, false, false, blas_threadsafe, true },
+		{ check_batched_select,	zfmac_gpu_batched_loop, true, false, false, false, true, true },
+		{ check_dot_outer, md_zfmac_transp, true, false, false, false, blas_threadsafe, false }
 	};
 
 	return simple_z3op(	ARRAY_SIZE(strided_calls), strided_calls,
-				N, dims, ostrs, out, istrs1, in1, istrs2, in2, false);
+				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true, false);
 }
 
 bool simple_zfmacc(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
-		{ check_gemm,  blas_zfmac_cgemm, true, true, false, false, blas_threadsafe },
-		{ check_gemv,  blas_zfmac_cgemv, true, true, false, false, blas_threadsafe },
-		{ check_ger,   blas_zfmac_cgeru, true, true, false, false, blas_threadsafe },
-		{ check_axpy,  blas_zfmac_caxpy, true, true, false, false, blas_threadsafe },
-		{ check_dot,   blas_zfmac_cdotu, true, true, false, false, blas_threadsafe },
-		{ check_batched_select,	zfmac_gpu_batched_loop, true, false, false, false, true },
-		{ check_dot_outer, md_zfmac_transp, true, false, false, false, blas_threadsafe }
+		{ check_gemm,  blas_zfmac_cgemm, true, true, false, false, blas_threadsafe, false },
+		{ check_gemv,  blas_zfmac_cgemv, true, true, false, false, blas_threadsafe, false },
+		{ check_ger,   blas_zfmac_cgeru, true, true, false, false, blas_threadsafe, false },
+		{ check_axpy,  blas_zfmac_caxpy, true, true, false, false, true, false },
+		{ check_dot,   blas_zfmac_cdotu, true, true, false, false, blas_threadsafe, true },
+		{ check_batched_select,	zfmac_gpu_batched_loop, true, false, false, false, true, true },
+		{ check_dot_outer, md_zfmac_transp, true, false, false, false, blas_threadsafe, false }
 	};
 
 	return simple_z3op(	ARRAY_SIZE(strided_calls), strided_calls,
-				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true);
+				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true, true);
 }
 
 bool simple_fmac(int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
 {
 	struct simple_3op_check strided_calls[] = {
-		{ check_gemm,  blas_fmac_sgemm, true, true, false, false, blas_threadsafe },
-		{ check_gemv,  blas_fmac_sgemv, true, true, false, false, blas_threadsafe },
-		{ check_ger,   blas_fmac_sger,  true, true, false, false, blas_threadsafe },
-		{ check_axpy,  blas_fmac_saxpy, true, true, false, false, blas_threadsafe },
-		{ check_dot,   blas_fmac_sdot,  true, true, false, false, blas_threadsafe }
+		{ check_gemm,  blas_fmac_sgemm, true, true, false, false, blas_threadsafe, false },
+		{ check_gemv,  blas_fmac_sgemv, true, true, false, false, blas_threadsafe, false },
+		{ check_ger,   blas_fmac_sger,  true, true, false, false, blas_threadsafe, false },
+		{ check_axpy,  blas_fmac_saxpy, true, true, false, false, true, false },
+		{ check_dot,   blas_fmac_sdot,  true, true, false, false, blas_threadsafe, true },
 	};
 
 	return simple_3op(	ARRAY_SIZE(strided_calls), strided_calls,
-				N, dims, ostrs, out, istrs1, in1, istrs2, in2);
+				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true);
 }
 
 bool simple_zmul(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
-		{ check_ger,   blas_zmul_cgeru, true, true, false, false, blas_threadsafe },
-		{ check_dgmm,  blas_zmul_cdgmm, true, false, true, false, blas_threadsafe },
-		{ check_axpy,  blas_zmul_cscal, true, true, true, false, blas_threadsafe }
+		{ check_ger,   blas_zmul_cgeru, true, true, false, false, blas_threadsafe, false },
+		{ check_dgmm,  blas_zmul_cdgmm, true, false, true, false, blas_threadsafe, false },
+		{ check_axpy,  blas_zmul_cscal, true, true, true, false, true, false }
 	};
 
 	return simple_z3op(	ARRAY_SIZE(strided_calls), strided_calls,
-				N, dims, ostrs, out, istrs1, in1, istrs2, in2, false);
+				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true, false);
 }
 
 bool simple_zmulc(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
-		{ check_ger,   blas_zmul_cgeru, true, true, false, false, blas_threadsafe },
-		{ check_dgmm,  blas_zmul_cdgmm, true, false, true, false, blas_threadsafe },
-		{ check_axpy,  blas_zmul_cscal, true, true, true, false, blas_threadsafe }
+		{ check_ger,   blas_zmul_cgeru, true, true, false, false, blas_threadsafe, false },
+		{ check_dgmm,  blas_zmul_cdgmm, true, false, true, false, blas_threadsafe, false },
+		{ check_axpy,  blas_zmul_cscal, true, true, true, false, true, false }
 	};
 
 	return simple_z3op(	ARRAY_SIZE(strided_calls), strided_calls,
-				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true);
+				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true, true);
 }
 
 bool simple_mul(int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
 {
 	struct simple_3op_check strided_calls[] = {
-		{ check_ger,   blas_mul_sger, true, true, false, false, blas_threadsafe },
-		{ check_dgmm,  blas_mul_sdgmm, true, false, true, false, blas_threadsafe },
-		{ check_axpy,  blas_mul_sscal, true, true, true, false, blas_threadsafe }
+		{ check_ger,   blas_mul_sger, true, true, false, false, blas_threadsafe, false },
+		{ check_dgmm,  blas_mul_sdgmm, true, false, true, false, blas_threadsafe, false },
+		{ check_axpy,  blas_mul_sscal, true, true, true, false, true, false }
 	};
 
 	return simple_3op(	ARRAY_SIZE(strided_calls), strided_calls,
-				N, dims, ostrs, out, istrs1, in1, istrs2, in2);
+				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true);
 }
 
 bool simple_zadd(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
 #ifdef NON_DETERMINISTIC
-		{ check_reduce_outer,	reduce_zadd_outer_gpu, true, false, false, true, true },
-		{ check_reduce_inner,	reduce_zadd_inner_gpu, true, false, false, true, true },
+		{ check_reduce_outer,	reduce_zadd_outer_gpu, true, false, false, true, true, false },
+		{ check_reduce_inner,	reduce_zadd_inner_gpu, true, false, false, true, true, false },
 #endif
-		{ check_reduce_outer,	reduce_zadd_gemv, true, true, false, true, blas_threadsafe },
-		{ check_reduce_inner,	reduce_zadd_gemv, true, true, false, true, blas_threadsafe },
+		{ check_reduce_outer,	reduce_zadd_gemv, true, true, false, true, blas_threadsafe, false },
+		{ check_reduce_inner,	reduce_zadd_gemv, true, true, false, true, blas_threadsafe, false },
 	};
 
 	return simple_z3op(	ARRAY_SIZE(strided_calls), strided_calls,
-				N, dims, ostrs, out, istrs1, in1, istrs2, in2, false);
+				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true, false);
 }
 
 bool simple_add(int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
 {
 	struct simple_3op_check strided_calls[] = {
 #ifdef NON_DETERMINISTIC
-		{ check_reduce_outer,	reduce_add_outer_gpu, true, false, false, true, true },
-		{ check_reduce_inner,	reduce_add_inner_gpu, true, false, false, true, true },
+		{ check_reduce_outer,	reduce_add_outer_gpu, true, false, false, true, true, false },
+		{ check_reduce_inner,	reduce_add_inner_gpu, true, false, false, true, true, false },
 #endif
-		{ check_reduce_outer,	reduce_add_gemv, true, true, false, true, blas_threadsafe },
-		{ check_reduce_inner,	reduce_add_gemv, true, true, false, true, blas_threadsafe },
+		{ check_reduce_outer,	reduce_add_gemv, true, true, false, true, blas_threadsafe, false },
+		{ check_reduce_inner,	reduce_add_gemv, true, true, false, true, blas_threadsafe, false },
 	};
 
 	return simple_3op(	ARRAY_SIZE(strided_calls), strided_calls,
-				N, dims, ostrs, out, istrs1, in1, istrs2, in2);
+				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true);
 }
 
 bool simple_zmax(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
-		{ check_reduce_outer,	reduce_zmax_outer_gpu, true, false, false, true, true },
-		{ check_reduce_inner,	reduce_zmax_inner_gpu, true, false, false, true, true },
+		{ check_reduce_outer,	reduce_zmax_outer_gpu, true, false, false, true, true, false },
+		{ check_reduce_inner,	reduce_zmax_inner_gpu, true, false, false, true, true, false },
 	};
 
 	return simple_z3op(	ARRAY_SIZE(strided_calls), strided_calls,
-				N, dims, ostrs, out, istrs1, in1, istrs2, in2, false);
+				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true, false);
 }
