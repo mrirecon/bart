@@ -55,6 +55,7 @@
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #include "num/gpukrnls.h"
+#include "num/gpukrnls_copy.h"
 #endif
 
 #include "multind.h"
@@ -762,6 +763,14 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 
 	md_permute_dims(ND, perm, tmp, tistr);
 	md_copy_dims(ND, tistr, tmp);
+#endif
+
+#ifdef USE_CUDA
+	if (use_gpu && (cuda_get_device_num(optr) == cuda_get_device_num(iptr)) && ND <= 7) {
+
+		cuda_copy_ND(ND, tdims, tostr, optr, tistr, iptr, size);
+		return;
+	}
 #endif
 
 #if 1
