@@ -16,10 +16,14 @@
 
 #ifdef USE_CUDA
 #include "num/gpukrnls.h"
+#include "num/gpukrnls_unfold.h"
 #include "num/gpuops.h"
 #endif
 
 #include "md_wrapper.h"
+
+#define CFL_SIZE sizeof(complex float)
+#define FL_SIZE sizeof(float)
 
 
 /****************************************************************************************************
@@ -96,6 +100,20 @@ void zfmac_gpu_batched_loop(int N, const long dims[N], const long ostr[N], compl
 #endif
 }
 
+
+void zfmac_gpu_unfold(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+{
+	assert(3 >= N);
+	assert((optr != iptr1) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr1, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+	assert((optr != iptr2) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr2, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+
+#ifdef USE_CUDA
+	cuda_zfmac_unfold(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+#else
+	assert(0);
+#endif
+}
+
 /****************************************************************************************************
  *
  * Wrappers for zfmacc
@@ -166,6 +184,206 @@ void zfmacc_gpu_batched_loop(int N, const long dims[N], const long ostr[N], comp
 	UNUSED(optr);
 	UNUSED(iptr1);
 	UNUSED(iptr2);
+	assert(0);
+#endif
+}
+
+void zfmacc_gpu_unfold(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+{
+	assert(3 >= N);
+	assert((optr != iptr1) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr1, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+	assert((optr != iptr2) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr2, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+
+#ifdef USE_CUDA
+	cuda_zfmacc_unfold(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+#else
+	assert(0);
+#endif
+}
+
+/****************************************************************************************************
+ *
+ * Wrappers for fmac
+ *
+ ****************************************************************************************************/
+
+
+void fmac_gpu_unfold(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+{
+	assert(3 >= N);
+	assert((optr != iptr1) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, FL_SIZE), ~0u) && md_check_equal_dims(N, istr1, MD_STRIDES(N, dims, FL_SIZE), ~0u)));
+	assert((optr != iptr2) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, FL_SIZE), ~0u) && md_check_equal_dims(N, istr2, MD_STRIDES(N, dims, FL_SIZE), ~0u)));
+
+#ifdef USE_CUDA
+	cuda_fmac_unfold(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+#else
+	assert(0);
+#endif
+}
+
+
+
+
+/****************************************************************************************************
+ *
+ * Wrappers for add
+ *
+ ****************************************************************************************************/
+
+/**
+ * md_add with input strides possibly 0, no inplace
+ *
+ * @param dims
+ * @param ostr
+ * @param optr
+ * @param istr1
+ * @param iptr1
+ * @param istr1
+ * @param iptr1
+ **/
+void add_gpu_unfold(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+{
+	assert(3 >= N);
+	assert((optr != iptr1) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, FL_SIZE), ~0u) && md_check_equal_dims(N, istr1, MD_STRIDES(N, dims, FL_SIZE), ~0u)));
+	assert((optr != iptr2) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, FL_SIZE), ~0u) && md_check_equal_dims(N, istr2, MD_STRIDES(N, dims, FL_SIZE), ~0u)));
+
+#ifdef USE_CUDA
+	cuda_add_unfold(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+#else
+	assert(0);
+#endif
+}
+
+
+
+
+
+/****************************************************************************************************
+ *
+ * Wrappers for zadd
+ *
+ ****************************************************************************************************/
+
+/**
+ * md_add with input strides possibly 0, no inplace
+ *
+ * @param dims
+ * @param ostr
+ * @param optr
+ * @param istr1
+ * @param iptr1
+ * @param istr1
+ * @param iptr1
+ **/
+void zadd_gpu_unfold(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+{
+	assert(3 >= N);
+	assert((optr != iptr1) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr1, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+	assert((optr != iptr2) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr2, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+
+#ifdef USE_CUDA
+	cuda_zadd_unfold(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+#else
+	assert(0);
+#endif
+}
+
+
+
+
+
+/****************************************************************************************************
+ *
+ * Wrappers for mul
+ *
+ ****************************************************************************************************/
+
+/**
+ * md_add with input strides possibly 0, no inplace
+ *
+ * @param dims
+ * @param ostr
+ * @param optr
+ * @param istr1
+ * @param iptr1
+ * @param istr1
+ * @param iptr1
+ **/
+void mul_gpu_unfold(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+{
+	assert(3 >= N);
+	assert((optr != iptr1) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, FL_SIZE), ~0u) && md_check_equal_dims(N, istr1, MD_STRIDES(N, dims, FL_SIZE), ~0u)));
+	assert((optr != iptr2) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, FL_SIZE), ~0u) && md_check_equal_dims(N, istr2, MD_STRIDES(N, dims, FL_SIZE), ~0u)));
+
+#ifdef USE_CUDA
+	cuda_mul_unfold(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+#else
+	assert(0);
+#endif
+}
+
+
+
+
+
+/****************************************************************************************************
+ *
+ * Wrappers for zmul
+ *
+ ****************************************************************************************************/
+
+/**
+ * md_add with input strides possibly 0, no inplace
+ *
+ * @param dims
+ * @param ostr
+ * @param optr
+ * @param istr1
+ * @param iptr1
+ * @param istr1
+ * @param iptr1
+ **/
+void zmul_gpu_unfold(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+{
+	assert(3 >= N);
+	assert((optr != iptr1) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr1, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+	assert((optr != iptr2) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr2, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+
+#ifdef USE_CUDA
+	cuda_zmul_unfold(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+#else
+	assert(0);
+#endif
+}
+
+
+
+/****************************************************************************************************
+ *
+ * Wrappers for zmulc
+ *
+ ****************************************************************************************************/
+
+/**
+ * md_add with input strides possibly 0, no inplace
+ *
+ * @param dims
+ * @param ostr
+ * @param optr
+ * @param istr1
+ * @param iptr1
+ * @param istr1
+ * @param iptr1
+ **/
+void zmulc_gpu_unfold(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+{
+	assert(3 >= N);
+	assert((optr != iptr1) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr1, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+	assert((optr != iptr2) ||  (md_check_equal_dims(N, ostr, MD_STRIDES(N, dims, CFL_SIZE), ~0u) && md_check_equal_dims(N, istr2, MD_STRIDES(N, dims, CFL_SIZE), ~0u)));
+
+#ifdef USE_CUDA
+	cuda_zmulc_unfold(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+#else
 	assert(0);
 #endif
 }
