@@ -105,6 +105,6 @@ struct ode_matrix_simu_s {
 extern void ode_matrix_interval_simu(struct sim_data* _data, float h, float tol, unsigned int N, float out[N], float st, float end);
 
 extern void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N][N]);
+extern void apply_sim_matrix(int N, float m[N], float matrix[N][N]);
 
 #endif
-

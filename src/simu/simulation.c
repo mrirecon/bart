@@ -249,7 +249,18 @@ static void bloch_simu_stm_fun(void* _data, float* out, float t, const float* in
 
 	float matrix_time[N][N];
 
-	bloch_matrix_ode_sa2(matrix_time, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+        if (4 == N) // M
+                bloch_matrix_ode(matrix_time, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
+
+        else if (10 == N) // M, dR1, dR2, dM0
+                bloch_matrix_ode_sa(matrix_time, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
+
+        else if (13 == N) // M, dR1, dR2, dM0, dB1
+	        bloch_matrix_ode_sa2(matrix_time, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+
+        else
+                error("Please choose correct dimension for STM matrix!\n");
+
 
         for (unsigned int i = 0; i < N; i++) {
 
@@ -298,7 +309,7 @@ static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], 
 	mat_exp_simu(data, N, st, end, matrix);
 }
 
-static void apply_sim_matrix(int N, float m[N], float matrix[N][N])
+void apply_sim_matrix(int N, float m[N], float matrix[N][N])
 {
 	float tmp[N];
 

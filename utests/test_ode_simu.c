@@ -1539,3 +1539,92 @@ static bool test_ode_inversion(void)
 }
 
 UT_REGISTER_TEST(test_ode_inversion);
+
+
+// Test STM matrix creation.
+// Test with
+//      - RF pulse: sim_data.seq.pulse_applied = true;
+//      - Relaxation: sim_data.voxel.r1 and sim_data.voxel.r2 != 0;
+//      - z-Gradient: sim_data.grad.gb[2] = 2. * M_PI * 1000.;
+static bool test_stm_matrix_creation(void)
+{
+	struct sim_data sim_data;
+
+	sim_data.seq = simdata_seq_defaults;
+	sim_data.seq.seq_type = SEQ_FLASH;
+	sim_data.seq.tr = 0.003;
+	sim_data.seq.te = 0.0017;
+        sim_data.seq.pulse_applied = true;
+
+	sim_data.voxel = simdata_voxel_defaults;
+	sim_data.voxel.r1 = 10.;
+	sim_data.voxel.r2 = 1.;
+	sim_data.voxel.m0 = 1.;
+
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.flipangle = 90.;
+
+        sim_data.grad = simdata_grad_defaults;
+        sim_data.grad.gb[2] = 2. * M_PI * 1000.;	// [rad/s]
+
+	sim_data.tmp = simdata_tmp_defaults;
+        sim_data.other = simdata_other_defaults;
+
+        // Prepare RF pulse to have correct flip angle
+        sinc_pulse_init(&sim_data.pulse, sim_data.pulse.rf_start, sim_data.pulse.rf_end, sim_data.pulse.flipangle, sim_data.pulse.phase, sim_data.pulse.bwtp, sim_data.pulse.alpha);
+
+
+        // Create STM for Bloch equation only
+
+        float t0 = 0.;
+        float t1 = 0.001;
+
+        int N1 = 4;
+        float out1[4][4] = { { 0. }, { 0. }, { 0. }, { 0. } };
+
+        float m1[4] = { 0. };
+        m1[2] = -1.;
+        m1[3] = 1.;
+
+        mat_exp_simu(&sim_data, N1, t0, t1, out1);
+        apply_sim_matrix(N1, m1, out1);
+
+
+        // Create STM for Bloch + SA with dR1, dM0, dR2
+
+        int N2 = 10;
+        float out2[10][10] = {  { 0. }, { 0. }, { 0. }, { 0. },
+                                { 0. }, { 0. }, { 0. }, { 0. },
+                                { 0. }, { 0. } };
+
+        float m2[10] = { 0. };
+        m2[2] = -1.;
+        m2[9] = 1.;
+
+        mat_exp_simu(&sim_data, N2, t0, t1, out2);
+        apply_sim_matrix(N2, m2, out2);
+
+
+        // Potential output
+#if 0
+        bart_printf("\tM1\tM2\n");
+
+        for (int i = 0; i < 4; i++) {
+                bart_printf("%f \t %f\n", m1[i], (3 == i) ? m2[9] : m2[i]);
+        }
+#endif
+
+        // Compare signal part of STM matrices estimated above by its effect on the magnetization
+
+        float tol = 1.E-5;
+
+	UT_ASSERT(	(fabs(m1[0] - m2[0]) < tol)
+                        && (fabs(m1[1] - m2[1]) < tol)
+                        && (fabs(m1[2] - m2[2]) < tol)
+                        && (fabs(m1[3] - m2[9]) < tol) );
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_stm_matrix_creation);
+
