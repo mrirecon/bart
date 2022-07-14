@@ -611,34 +611,37 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
 
                 // Smooth spoiling for FLASH sequences
 
-                if (   (SEQ_FLASH == data->seq.seq_type)
-                    || (SEQ_IRFLASH == data->seq.seq_type)) {
+                if (NULL != mtr) {
 
-		        data->tmp.r2spoil = 10000.;
-		}
+                        if (   (SEQ_FLASH == data->seq.seq_type)
+                            || (SEQ_IRFLASH == data->seq.seq_type)) {
 
-                // Balance z-gradient for bSSFP type sequences
+                                data->tmp.r2spoil = 10000.;
+			}
 
-                if (   (SEQ_BSSFP == data->seq.seq_type)
-                    || (SEQ_IRBSSFP == data->seq.seq_type)) {
+                        // Balance z-gradient for bSSFP type sequences
 
-                        // Matrix: TE -> TR-T_RF
-                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr-data->pulse.rf_end, tmp);
+                        if (   (SEQ_BSSFP == data->seq.seq_type)
+                            || (SEQ_IRBSSFP == data->seq.seq_type)) {
 
-                        // Matrix: TR-T_RF -> TR
-                        data->grad.mom = -data->grad.mom_sl;
-                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.tr-data->pulse.rf_end, data->seq.tr, tmp2);
-                        data->grad.mom = 0.;
+                                // Matrix: TE -> TR-T_RF
+                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr-data->pulse.rf_end, tmp);
 
-                        // Join matrices: TE -> TR
-                        mm_mul(M, mtr, tmp, tmp2);
+                                // Matrix: TR-T_RF -> TR
+                                data->grad.mom = -data->grad.mom_sl;
+                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.tr-data->pulse.rf_end, data->seq.tr, tmp2);
+                                data->grad.mom = 0.;
 
-                } else {
+                                // Join matrices: TE -> TR
+                                mm_mul(M, mtr, tmp, tmp2);
 
-                        relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, mtr);
+                        } else {
+
+                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, mtr);
+                        }
+
+                        data->tmp.r2spoil = 0.;	// effects spoiled sequences only
                 }
-
-                data->tmp.r2spoil = 0.;	// effects spoiled sequences only
 
                 break;
         }
@@ -886,15 +889,14 @@ void bloch_simulation(const struct sim_data* _data, const complex float* slice, 
 
                 ode2stm(N, P, xstm, xp);
 
-                // STM requires two matrices for RFPhase = 0 and RFPhase = PI
-                // Therefore mte and mte2 need to be caclulated
-                // FIXME: Do not estimate mtr twice
-
+                // STM requires two matrices for RFPhase=0 and RFPhase=PI
+                // Therefore mte and mte2 need to be estimated
+		//
                 if (   (SEQ_BSSFP == data.seq.seq_type)
                     || (SEQ_IRBSSFP == data.seq.seq_type)) {
 
                         data.pulse.phase = M_PI;
-                        prepare_sim(&data, N, P, mte[1], mtr);
+                        prepare_sim(&data, N, P, mte[1], NULL);
                         data.pulse.phase = 0.;
                 }
 
