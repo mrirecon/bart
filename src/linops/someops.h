@@ -14,6 +14,7 @@ extern struct linop_s* linop_zconj_create(unsigned int N, const long dims[N]);
 extern struct linop_s* linop_zreal_create(unsigned int N, const long dims[N]);
 
 extern struct linop_s* linop_identity_create(unsigned int N, const long dims[__VLA(N)]);
+extern _Bool linop_is_identity(const struct linop_s* lop);
 
 extern struct linop_s* linop_resize_create(unsigned int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);	// deprecated
 extern struct linop_s* linop_resize_center_create(unsigned int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);
