@@ -102,7 +102,7 @@ const struct simdata_seq simdata_seq_defaults = {
 	.inversion_pulse_length = 0.01,
         .inversion_spoiler = 0.,
 
-	.prep_pulse_length = 0.001,
+	.prep_pulse_length = 0.002,
 
         .averaged_spokes = 1,
         .slice_profile_spins = 1,
@@ -625,12 +625,12 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
                         if (   (SEQ_BSSFP == data->seq.seq_type)
                             || (SEQ_IRBSSFP == data->seq.seq_type)) {
 
-                                // Matrix: TE -> TR-T_RF
-                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr-data->pulse.rf_end, tmp);
+                                // Matrix: TE -> TR-1/2*T_RF
+                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr-0.5*data->pulse.rf_end, tmp);
 
-                                // Matrix: TR-T_RF -> TR
+                                // Matrix: TR-1/2*T_RF -> TR
                                 data->grad.mom = -data->grad.mom_sl;
-                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.tr-data->pulse.rf_end, data->seq.tr, tmp2);
+                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.tr-0.5*data->pulse.rf_end, data->seq.tr, tmp2);
                                 data->grad.mom = 0.;
 
                                 // Join matrices: TE -> TR
@@ -700,10 +700,10 @@ static void run_sim(struct sim_data* data, int R, int S, float (*mxy)[R][S][3], 
                 if (   (SEQ_BSSFP == data->seq.seq_type)
                     || (SEQ_IRBSSFP == data->seq.seq_type)) {
 
-                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr-data->pulse.rf_end, NULL);
+                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr-0.5*data->pulse.rf_end, NULL);
 
                         data->grad.mom = -data->grad.mom_sl;
-                        relaxation2(data, h, tol, N, P, xp, data->seq.tr-data->pulse.rf_end, data->seq.tr, NULL);
+                        relaxation2(data, h, tol, N, P, xp, data->seq.tr-0.5*data->pulse.rf_end, data->seq.tr, NULL);
                         data->grad.mom = 0.;
 
                 } else {
@@ -777,10 +777,11 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 
         prep_data.pulse.flipangle = data->pulse.flipangle / 2.;
         prep_data.pulse.phase = M_PI;
-        prep_data.seq.te = data->seq.prep_pulse_length;
+        prep_data.seq.te = 1.5 * prep_data.pulse.rf_end;
         prep_data.seq.tr = data->seq.prep_pulse_length;
 
-        assert(prep_data.pulse.rf_end <= prep_data.seq.prep_pulse_length);
+        // Ensure enough time for slice-seelction gradient rephaser
+        assert(2 * prep_data.pulse.rf_end <= prep_data.seq.prep_pulse_length);
 
         prepare_sim(&prep_data, N, P, NULL, NULL);
 
