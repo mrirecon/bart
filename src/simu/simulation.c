@@ -739,6 +739,10 @@ void inversion(const struct sim_data* data, float h, float tol, int N, int P, fl
 {
 	struct sim_data inv_data = *data;
 
+        // Non Slice-Selective as default
+        // FIXME: Add slice-selective inversion too
+        inv_data.grad.mom_sl = 0.;
+
         // Enforce ODE: Way more efficient here!
         inv_data.seq.type = SIM_ODE;
 
