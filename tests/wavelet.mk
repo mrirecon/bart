@@ -7,6 +7,25 @@ tests/test-wavelet: wavelet nrmse $(TESTS_OUT)/shepplogan.ra
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
+tests/test-wavelet-haar: wavelet nrmse $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/wavelet -H 3 $(TESTS_OUT)/shepplogan.ra w.ra				;\
+	$(TOOLDIR)/wavelet -H -a 3 128 128 w.ra a.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 $(TESTS_OUT)/shepplogan.ra a.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-wavelet-cdf44: wavelet nrmse $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/wavelet -C 3 $(TESTS_OUT)/shepplogan.ra w.ra				;\
+	$(TOOLDIR)/wavelet -C -a 3 128 128 w.ra a.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 $(TESTS_OUT)/shepplogan.ra a.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 tests/test-wavelet-batch: ones resize circshift fft fmac wavelet nrmse $(TESTS_OUT)/shepplogan.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/ones 1 1 one.ra							;\
@@ -82,7 +101,7 @@ tests/test-wavelet-batch4: ones resize circshift fft fmac transpose wavelet nrms
 
 
 
-
 TESTS += tests/test-wavelet tests/test-wavelet-batch tests/test-wavelet-batch1
 TESTS += tests/test-wavelet-batch2 tests/test-wavelet-batch3 tests/test-wavelet-batch4
+TESTS += tests/test-wavelet-haar tests/test-wavelet-cdf44
 

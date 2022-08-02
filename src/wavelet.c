@@ -51,10 +51,14 @@ int main_wavelet(int argc, char* argv[argc])
 	};
 
 	bool adj = false;
+	enum wtype wtype = DAU2;
         
 	const struct opt_s opts[] = {
 
 		OPT_SET('a', &adj, "adjoint (specify dims)"),
+		OPT_SELECT('H', enum wtype, &wtype, HAAR, "type: Haar"),
+		OPT_SELECT('D', enum wtype, &wtype, DAU2, "type: Dau2"),
+		OPT_SELECT('C', enum wtype, &wtype, CDF44, "type: CDF44"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -96,7 +100,7 @@ int main_wavelet(int argc, char* argv[argc])
 	long strs[N];
 	md_calc_strides(N, strs, dims, CFL_SIZE);
 
-	const struct linop_s* w = linop_wavelet_create(N, flags, dims, strs, minsize, false);
+	const struct linop_s* w = linop_wavelet_create(N, flags, dims, strs, wtype, minsize, false);
 
 	long odims[N];
 	md_copy_dims(N, odims, (adj ? linop_domain : linop_codomain)(w)->dims);

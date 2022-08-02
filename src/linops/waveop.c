@@ -40,6 +40,8 @@ struct wavelet_s {
 	long* shifts;
 	bool randshift;
 	int rand_state;
+	int flen;
+	const void* filter;
 };
 
 static DEF_TYPEID(wavelet_s);
@@ -67,7 +69,7 @@ static void wavelet_forward(const linop_data_t* _data, complex float* dst, const
 
 			if (MD_IS_SET(data->flags, i)) {
 
-				int levels = wavelet_num_levels(data->N, MD_BIT(i), data->idims, data->minsize, 4);
+				int levels = wavelet_num_levels(data->N, MD_BIT(i), data->idims, data->minsize, data->flen);
 				data->shifts[i] = wrand_lim((unsigned int*)&data->rand_state, 1 << levels);
 
 				assert(data->shifts[i] < data->idims[i]);
@@ -75,14 +77,14 @@ static void wavelet_forward(const linop_data_t* _data, complex float* dst, const
 		}
 	}
 
-	fwt2(data->N, data->flags, data->shifts, data->odims, data->ostr, dst, data->idims, data->istr, src, data->minsize, 4, wavelet_dau2);
+	fwt2(data->N, data->flags, data->shifts, data->odims, data->ostr, dst, data->idims, data->istr, src, data->minsize, data->flen, data->filter);
 }
 
 static void wavelet_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(wavelet_s, _data);
 
-	iwt2(data->N, data->flags, data->shifts, data->idims, data->istr, dst, data->odims, data->ostr, src, data->minsize, 4, wavelet_dau2);
+	iwt2(data->N, data->flags, data->shifts, data->idims, data->istr, dst, data->odims, data->ostr, src, data->minsize, data->flen, data->filter);
 }
 
 static void wavelet_del(const linop_data_t* _data)
@@ -99,7 +101,7 @@ static void wavelet_del(const linop_data_t* _data)
 	xfree(data);
 }
 
-struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], const long minsize[N], bool randshift)
+struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], enum wtype wtype, const long minsize[N], bool randshift)
 {
 	PTR_ALLOC(struct wavelet_s, data);
 	SET_TYPEID(wavelet_s, data);
@@ -108,6 +110,26 @@ struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const l
 	data->flags = flags;
 	data->randshift = randshift;
 	data->rand_state = 1;
+	data->flen = 0;
+	data->filter = NULL;
+
+	switch (wtype) {
+
+	case HAAR:
+		data->flen = ARRAY_SIZE(wavelet_haar[0][0]);
+		data->filter = &wavelet_haar;
+		break;
+
+	case DAU2:
+		data->flen = ARRAY_SIZE(wavelet_dau2[0][0]);
+		data->filter = &wavelet_dau2;
+		break;
+
+	case CDF44:
+		data->flen = ARRAY_SIZE(wavelet_cdf44[0][0]);
+		data->filter = &wavelet_cdf44;
+		break;
+	}
 
 	long (*idims)[N] = TYPE_ALLOC(long[N]);
 	md_copy_dims(N, *idims, dims);
@@ -122,7 +144,7 @@ struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const l
 	data->minsize = *nminsize;
 
 	long (*odims)[N] = TYPE_ALLOC(long[N]);
-	wavelet_coeffs2(N, flags, *odims, dims, minsize, 4);
+	wavelet_coeffs2(N, flags, *odims, dims, minsize, data->flen);
 	data->odims = *odims;
 
 	long (*ostr)[N] = TYPE_ALLOC(long[N]);
@@ -132,6 +154,7 @@ struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const l
 	long (*shifts)[N] = TYPE_ALLOC(long[N]);
 	for (unsigned int i = 0; i < data->N; i++)
 		(*shifts)[i] = 0;
+
 	data->shifts = *shifts;
 
 	return linop_create2(N, *odims, *ostr, N, dims, istr, CAST_UP(PTR_PASS(data)), wavelet_forward, wavelet_adjoint, NULL, NULL, wavelet_del);

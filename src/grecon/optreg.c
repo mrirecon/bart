@@ -387,7 +387,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 				}
 			}
 
-			trafos[nr] = linop_wavelet_create(N, wflags, img_dims, img_strs, minsize, randshift);
+			trafos[nr] = linop_wavelet_create(N, wflags, img_dims, img_strs, DAU2, minsize, randshift);
 
 			long wav_dims[DIMS];
 			md_copy_dims(DIMS, wav_dims, linop_codomain(trafos[nr])->dims);

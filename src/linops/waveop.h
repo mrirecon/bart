@@ -1,11 +1,15 @@
 /* Copyright 2015. The Regents of the University of California.
+ * Copyright 2022. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
 
 #include "misc/cppwrap.h"
 
-extern struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const long dims[__VLA(N)], const long istr[__VLA(N)], const long minsize[__VLA(N)], _Bool randshift);
+enum wtype { HAAR, DAU2, CDF44 };
+
+extern struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const long dims[__VLA(N)], const long istr[__VLA(N)],
+						enum wtype wtype, const long minsize[__VLA(N)], _Bool randshift);
 
 #include "misc/cppwrap.h"
 
