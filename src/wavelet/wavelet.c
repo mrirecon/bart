@@ -1,11 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2017. Martin Uecker.
+ * Copyright 2017, 2022. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013 Frank Ong <uecker@eecs.berkeley.edu>
- * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2022 Martin Uecker <uecker@tugraz.at>
  */
 
 /*
@@ -51,7 +51,7 @@
 
 // layer 1 - 1-dimensional wavelet transform
 
-static unsigned int bandsize(unsigned int imsize, unsigned int flen)
+static int bandsize(int imsize, int flen)
 {
 	return (imsize + flen - 1) / 2;
 }
@@ -66,10 +66,15 @@ static const complex float* caccess(const long str[3], const complex float* x, l
 	return (const void*)x + str[2] * i + str[1] * j + str[0] * k;
 }
 
+/*
+ * l: [3210]		(flen=4)
+ * n:    [0123456789]	(dims[1])
+ * j:   0 1 2 | | |	(bandsize)
+ * */
 
-static int coord(int l, int x, int flen, int k)
+static int coord(int j, int x, int flen, int l)
 {
-	int n = 2 * l + 1 - (flen - 1) + k;
+	int n = 2 * j + 1 - (flen - 1) + l;
 
 	if (n < 0)
 		n = -n - 1;
@@ -81,45 +86,60 @@ static int coord(int l, int x, int flen, int k)
 }
 
 
-static void wavelet_down3(const long dims[3], const long out_str[3], complex float* out, const long in_str[3], const complex float* in, unsigned int flen, const float filter[flen])
+static void wavelet_down3(const long dims[3], const long out_str[3], complex float* out, const long in_str[3], const complex float* in, int flen, const float filter[flen])
 {
 #pragma omp parallel for collapse(3)
-	for (unsigned int i = 0; i < dims[2]; i++)
-		for (unsigned int j = 0; j < bandsize(dims[1], flen); j++)
-			for (unsigned int k = 0; k < dims[0]; k++) {
+	for (int i = 0; i < dims[2]; i++) {
+
+		for (int j = 0; j < bandsize(dims[1], flen); j++) {
+
+			for (int k = 0; k < dims[0]; k++) {
 
 				*access(out_str, out, i, j, k) = 0.;
 
-				for (unsigned int l = 0; l < flen; l++) {
+				for (int l = 0; l < flen; l++) {
 
-						int n = coord(j, dims[1], flen, l);
+					int n = coord(j, dims[1], flen, l);
 	
-						*access(out_str, out, i, j, k) += 
-							*(caccess(in_str, in, i, n, k)) * filter[flen - l - 1];
+					*access(out_str, out, i, j, k) +=
+						*(caccess(in_str, in, i, n, k)) * filter[flen - l - 1];
 				}
 			}
+		}
+	}
 }
 
-static void wavelet_up3(const long dims[3], const long out_str[3], complex float* out, const long in_str[3],  const complex float* in, unsigned int flen, const float filter[flen])
+static void wavelet_up3(const long dims[3], const long out_str[3], complex float* out, const long in_str[3],  const complex float* in, int flen, const float filter[flen])
 {
 //	md_clear2(3, dims, out_str, out, CFL_SIZE);
 
 #pragma omp parallel for collapse(3)
-	for (unsigned int i = 0; i < dims[2]; i++)
-		for (unsigned int j = 0; j < dims[1]; j++)
-			for (unsigned int k = 0; k < dims[0]; k++) {
+	for (int i = 0; i < dims[2]; i++) {
+
+		for (int n = 0; n < dims[1]; n++) {
+
+			for (int k = 0; k < dims[0]; k++) {
 
 		//		*access(out_str, out, i, j, k) = 0.;
 
-				for (unsigned int l = ((j + flen / 2 - 0) - (flen - 1)) % 2; l < flen; l += 2) {
+				int odd = (n + 1) % 2;
 
-					int n = ((j + flen / 2 - 0) - (flen - 1) + l) / 2;
+				for (int l = odd; l < flen; l += 2) {
 
-					if ((0 <= n) && ((unsigned int)n < bandsize(dims[1], flen)))
-						*access(out_str, out, i, j, k) += 
-							*caccess(in_str, in, i, n, k) * filter[flen - l - 1];
+					int j = (n + l - 1) / 2;
+#if 0
+					assert(1 == (n + l) % 2);
+					assert(n == coord(j, dims[1], flen, flen - l - 1));
+#endif
+					if ((j < 0) || ((int)bandsize(dims[1], flen) <= j))
+						continue;
+
+					*access(out_str, out, i, n, k) +=
+						*caccess(in_str, in, i, j, k) * filter[flen - l - 1];
 				}
 			}
+		}
+	}
 }
 
 
@@ -553,7 +573,8 @@ void fwt2(unsigned int N, unsigned int flags, const long shifts[N], const long o
 		shifts0[i] = 0;
 
 	unsigned int flags2 = wavelet_filter_flags(N, flags, wdims, minsize);
-	assert((0 == offset) == (0u == flags2));
+
+	assert((0 == offset) || (0u != flags2));
 
 	fwtN(N, flags, shifts, idims, ostr2, out + offset, istr, in, flen, filter);
 
@@ -643,7 +664,8 @@ void iwt2(unsigned int N, unsigned int flags, const long shifts[N], const long o
 		shifts0[i] = 0;
 
 	unsigned int flags2 = wavelet_filter_flags(N, flags, wdims, minsize);
-	assert((0 == offset) == (0u == flags2));
+
+	assert((0 == offset) || (0u != flags2));
 
 	if (0u != flags2) {
 
@@ -704,6 +726,7 @@ const float wavelet_cdf44[2][2][10] = {
 	  { +0.00000000000000000, -0.03782845550726404 , -0.023849465019556843, +0.11062440441843718 , +0.37740285561283066,
             -0.85269867900889385, +0.37740285561283066 , +0.11062440441843718 , -0.023849465019556843, -0.03782845550726404 }, },
 };
+
 
 
 
