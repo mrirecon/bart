@@ -89,14 +89,16 @@ __global__ void kern_up3(dim3 dims, dim3 ostr, cuFloatComplex* out, dim3 istr, c
 //	cuFloatComplex y = make_cuFloatComplex(0., 0.);
 	cuFloatComplex y = out[Wdot(ind, ostr)];
 
-	for (unsigned int l = ((ind.y + flen / 2 - 0) - (flen - 1)) % 2; l < flen; l += 2) {
+	int odd = (ind.y + 1) % 2;
 
-		int n = ((ind.y + flen / 2 - 0) - (flen - 1) + l) / 2;
+	for (unsigned int l = odd; l < flen; l += 2) {
+
+		int j = (ind.y + l - 1) / 2;
 
 		dim3 ac = ind;
-		ac.y = n;
+		ac.y = j;
 
-		if ((0 <= n) && ((unsigned int)n < bandsize(dims.y, flen))) {
+		if ((0 <= j) && ((unsigned int)j < bandsize(dims.y, flen))) {
 
 			y.x += in[Wdot(ac, istr)].x * filter[flen - l - 1];
 			y.y += in[Wdot(ac, istr)].y * filter[flen - l - 1];
