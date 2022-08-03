@@ -30,7 +30,7 @@ bart spow -- -0.5 density sqdcf
 
 # adjoint nufft
 bart fmac dcf ksp ksp_filt2
-bart nufft -a traj ksp_filt img_filt2
+bart nufft -a traj ksp_filt2 img_filt2
 
 # one channel all ones sensititty
 bart ones 3 256 256 1 sens
