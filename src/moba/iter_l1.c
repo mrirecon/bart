@@ -200,7 +200,7 @@ static const struct operator_p_s* create_prox(const long img_dims[DIMS], unsigne
 		}
 	}
 
-	return prox_wavelet_thresh_create(DIMS, img_dims, wflags, jflag, minsize, lambda, randshift);
+	return prox_wavelet_thresh_create(DIMS, img_dims, wflags, jflag, WAVELET_DAU2, minsize, lambda, randshift);
 }
 
 

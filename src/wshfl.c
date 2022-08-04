@@ -1161,7 +1161,7 @@ int main_wshfl(int argc, char* argv[argc])
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
-	opt_reg_configure(DIMS, coeff_dims, &ropts, thresh_ops, trafos, blksize, 1, use_gpu);
+	opt_reg_configure(DIMS, coeff_dims, &ropts, thresh_ops, trafos, blksize, 1, "dau2", use_gpu);
 	int nr_penalties = ropts.r;
 	struct reg_s* regs = ropts.regs;
 	bool fista = (nr_penalties == 1);

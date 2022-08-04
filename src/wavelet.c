@@ -51,14 +51,14 @@ int main_wavelet(int argc, char* argv[argc])
 	};
 
 	bool adj = false;
-	enum wtype wtype = DAU2;
+	enum wtype wtype = WAVELET_DAU2;
         
 	const struct opt_s opts[] = {
 
 		OPT_SET('a', &adj, "adjoint (specify dims)"),
-		OPT_SELECT('H', enum wtype, &wtype, HAAR, "type: Haar"),
-		OPT_SELECT('D', enum wtype, &wtype, DAU2, "type: Dau2"),
-		OPT_SELECT('C', enum wtype, &wtype, CDF44, "type: CDF44"),
+		OPT_SELECT('H', enum wtype, &wtype, WAVELET_HAAR, "type: Haar"),
+		OPT_SELECT('D', enum wtype, &wtype, WAVELET_DAU2, "type: Dau2"),
+		OPT_SELECT('C', enum wtype, &wtype, WAVELET_CDF44, "type: CDF44"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

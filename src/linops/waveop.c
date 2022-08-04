@@ -115,17 +115,17 @@ struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const l
 
 	switch (wtype) {
 
-	case HAAR:
+	case WAVELET_HAAR:
 		data->flen = ARRAY_SIZE(wavelet_haar[0][0]);
 		data->filter = &wavelet_haar;
 		break;
 
-	case DAU2:
+	case WAVELET_DAU2:
 		data->flen = ARRAY_SIZE(wavelet_dau2[0][0]);
 		data->filter = &wavelet_dau2;
 		break;
 
-	case CDF44:
+	case WAVELET_CDF44:
 		data->flen = ARRAY_SIZE(wavelet_cdf44[0][0]);
 		data->filter = &wavelet_cdf44;
 		break;

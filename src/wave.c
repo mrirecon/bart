@@ -333,7 +333,7 @@ int main_wave(int argc, char* argv[argc])
 		if (wav) {
 
 			debug_printf(DP_INFO, "Creating wavelet threshold operator... ");
-			T = prox_wavelet_thresh_create(DIMS, recon_dims, WAVFLAG, 0u, minsize, lambda, true);
+			T = prox_wavelet_thresh_create(DIMS, recon_dims, WAVFLAG, 0u, WAVELET_DAU2, minsize, lambda, true);
 			debug_printf(DP_INFO, "Done.\n");
 
 		} else {

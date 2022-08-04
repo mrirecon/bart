@@ -272,7 +272,7 @@ void opt_bpursuit_configure(struct opt_reg_s* ropts, const struct operator_p_s* 
 	ropts->sr++;
 }
 
-void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, unsigned int shift_mode, bool use_gpu)
+void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, unsigned int shift_mode, const char* wtype_str, bool use_gpu)
 {
 	float lambda = ropts->lambda;
 	bool randshift = (1 == shift_mode);
@@ -331,6 +331,17 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 	long blkdims[MAX_LEV][DIMS];
 	int levels;
 
+	enum wtype wtype;
+
+	if	(0 == strcmp("haar", wtype_str))
+		wtype = WAVELET_HAAR;
+	else if (0 == strcmp("dau2", wtype_str))
+		wtype = WAVELET_DAU2;
+	else if (0 == strcmp("cdf44", wtype_str))
+		wtype = WAVELET_CDF44;
+	else
+		error("unsupported wavelet type.\n");
+
 
 	for (int nr = 0; nr < ropts->r; nr++) {
 
@@ -363,7 +374,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			}
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, minsize, regs[nr].lambda, randshift);
+			prox_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, wtype, minsize, regs[nr].lambda, randshift);
 			break;
 		
 		case NIHTWAV:
@@ -387,7 +398,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 				}
 			}
 
-			trafos[nr] = linop_wavelet_create(N, wflags, img_dims, img_strs, DAU2, minsize, randshift);
+			trafos[nr] = linop_wavelet_create(N, wflags, img_dims, img_strs, wtype, minsize, randshift);
 
 			long wav_dims[DIMS];
 			md_copy_dims(DIMS, wav_dims, linop_codomain(trafos[nr])->dims);

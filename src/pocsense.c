@@ -151,7 +151,7 @@ int main_pocsense(int argc, char* argv[argc])
 		}
 
 		bool randshift = false;
-		thresh_op = prox_wavelet_thresh_create(DIMS, ksp_dims, flags, COIL_FLAG, minsize, alpha, randshift);
+		thresh_op = prox_wavelet_thresh_create(DIMS, ksp_dims, flags, COIL_FLAG, WAVELET_DAU2, minsize, alpha, randshift);
 	}
 #if 0
 	else {

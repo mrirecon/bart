@@ -135,6 +135,7 @@ int main_pics(int argc, char* argv[argc])
         bool sms = false;
 
 	unsigned int llr_blk = 8;
+	const char* wtype_str = "dau2";
 
 	const char* image_truth_file = NULL;
 	bool im_truth = false;
@@ -200,6 +201,7 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_SET('U', "lowmem", &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
 		OPTL_OUTFILE(0, "psf_export", &psf_ofile, "file", "Export PSF to file"),
 		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
+		OPTL_STRING(0, "wavelet", &wtype_str, "name", "wavelet type (haar,dau2,cdf44)"),
 	};
 
 
@@ -619,7 +621,7 @@ int main_pics(int argc, char* argv[argc])
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
 
-	opt_reg_configure(DIMS, img1_dims, &ropts, thresh_ops, trafos, llr_blk, shift_mode, conf.gpu);
+	opt_reg_configure(DIMS, img1_dims, &ropts, thresh_ops, trafos, llr_blk, shift_mode, wtype_str, conf.gpu);
 
 	if (conf.bpsense)
 		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace, bpsense_eps);

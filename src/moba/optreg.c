@@ -63,7 +63,7 @@ static const struct operator_p_s* create_wav_prox(const long img_dims[DIMS], uns
 		}
 	}
 
-	return prox_wavelet_thresh_create(DIMS, img_dims, wflags, jt_flag, minsize, lambda, randshift);
+	return prox_wavelet_thresh_create(DIMS, img_dims, wflags, jt_flag, WAVELET_DAU2, minsize, lambda, randshift);
 }
 
 

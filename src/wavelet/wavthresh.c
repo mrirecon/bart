@@ -1,11 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016-2019. Martin Uecker
+ * Copyright 2016-2022. Martin Uecker
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2013 Frank Ong <uecker@eecs.berkeley.edu>
- * 2013-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2013-2022 Martin Uecker <uecker@tugraz.at>
  */
 
 #define _GNU_SOURCE
@@ -42,6 +42,9 @@ struct wavelet_thresh_s {
 	float lambda;
 	bool randshift;
 	int rand_state;
+
+	int flen;
+	const void* filter;
 };
 
 static DEF_TYPEID(wavelet_thresh_s);
@@ -75,7 +78,7 @@ static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex
 
 			if (MD_IS_SET(data->flags, i)) {
 
-				int levels = wavelet_num_levels(data->N, MD_BIT(i), data->dims, data->minsize, 4);
+				int levels = wavelet_num_levels(data->N, MD_BIT(i), data->dims, data->minsize, data->flen);
 				shift[i] = rand_lim((unsigned int*)&data->rand_state, 1 << levels);
 
 				assert(shift[i] < data->dims[i]);
@@ -84,7 +87,7 @@ static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex
 	}
 
 	wavelet_thresh(data->N, data->lambda * mu, data->flags, data->jflags, shift, data->dims,
-		out, in, data->minsize, 4, wavelet_dau2);
+		out, in, data->minsize, data->flen, data->filter);
 }
 
 
@@ -112,11 +115,13 @@ static void wavelet_thresh_del(const operator_data_t* _data)
  * @param dims dimensions of x
  * @param flags bitmask for Wavelet transform
  * @param jflags bitmask for joint thresholding
+ * Qparam wtype wavelet type
  * @param minsize minimium size of coarse Wavelet scale
  * @param lambda threshold parameter
  * @param randshift random shifting
  */
-const struct operator_p_s* prox_wavelet_thresh_create(unsigned int N, const long dims[N], unsigned int flags, unsigned int jflags, const long minsize[N], float lambda, bool randshift)
+const struct operator_p_s* prox_wavelet_thresh_create(unsigned int N, const long dims[N], unsigned int flags, unsigned int jflags,
+				enum wtype wtype, const long minsize[N], float lambda, bool randshift)
 {
 	PTR_ALLOC(struct wavelet_thresh_s, data);
 	SET_TYPEID(wavelet_thresh_s, data);
@@ -136,6 +141,27 @@ const struct operator_p_s* prox_wavelet_thresh_create(unsigned int N, const long
 	data->lambda = lambda;
 	data->randshift = randshift;
 	data->rand_state = 1;
+	data->flen = 0;
+	data->filter = NULL;
+
+	switch (wtype) {
+
+	case WAVELET_HAAR:
+		data->flen = ARRAY_SIZE(wavelet_haar[0][0]);
+		data->filter = &wavelet_haar;
+		break;
+
+	case WAVELET_DAU2:
+		data->flen = ARRAY_SIZE(wavelet_dau2[0][0]);
+		data->filter = &wavelet_dau2;
+		break;
+
+	case WAVELET_CDF44:
+		data->flen = ARRAY_SIZE(wavelet_cdf44[0][0]);
+		data->filter = &wavelet_cdf44;
+		break;
+	}
+
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), wavelet_thresh_apply, wavelet_thresh_del);
 }
