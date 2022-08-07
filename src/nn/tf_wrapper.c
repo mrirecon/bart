@@ -293,7 +293,7 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	TF_SessionRun(data->sess,
 				/* RunOptions */ NULL,
 				/* Input tensors */ inp_ops, inp_tensors, data->nr_inputs + 1,
-				/* Output tensors */ &(data->grad_op[i]), out_tensor, 1,
+				/* Output tensors */ &(data->grad_op[i + data->nr_inputs * o]), out_tensor, 1,
 				/* Target operations */ NULL, 0,
 				/* RunMetadata */ NULL,
 				/* Output status */ data->status);
@@ -470,7 +470,6 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 #endif
 
-	assert(1 == OO);
 
 	// load graph, restore session
 
@@ -493,6 +492,19 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	TF_Status* status = 0;
 	TF_Graph* graph = NULL;
 #endif
+
+	if ((-1 == OO) && (-1 == II)) {
+
+		char name[20];
+
+		do
+			sprintf(name, "input_%d", ++II);
+		while (NULL != TF_GraphOperationByName(graph, name));
+
+		do
+			sprintf(name, "output_%d", ++OO);
+		while (NULL != TF_GraphOperationByName(graph, name));
+	}
 
 	/*** handle outputs and grad_ys ***/
 
@@ -534,6 +546,8 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 			error("Tensorflow output and corresponding gradient input do not have the same shape!");
 
 		(*grad_ys_op)[i] = arg_grad_y.out;
+
+		xfree(arg_grad_y.dims);
 	}
 
 	PTR_ALLOC(struct tf_s, data);
@@ -559,7 +573,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	PTR_ALLOC(TF_Tensor*[II], input_tensors);
 	PTR_ALLOC(int[II], nr_in_dim);
 	PTR_ALLOC(const int64_t *[II], in_dims_tf);
-	PTR_ALLOC(struct TF_Output[II], grad_op);
+	PTR_ALLOC(struct TF_Output[II * OO], grad_op);
 
 	for (int i = 0; i < II; i++) {
 
@@ -585,15 +599,23 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 #endif
 #else
 
-		char grad_name[20];
-		sprintf(grad_name, "grad_%d", i);
+		for (int o = 0; o < OO; o++) {
 
-		struct tf_arg arg_grad = process_arg(graph, grad_name, status);
+			char grad_name[30];
+			sprintf(grad_name, "grad_%d", i);
 
-		if (!cmp_arg(arg, arg_grad))
-			error("Tensorflow input and corresponding gradient do not have the same shape!");
+			if ((1 != OO) || (NULL == TF_GraphOperationByName(graph, grad_name)))
+				sprintf(grad_name, "grad_%d_%d", i, o);
 
-		(*grad_op)[i] = arg_grad.out;
+			struct tf_arg arg_grad = process_arg(graph, grad_name, status);
+
+			if (!cmp_arg(arg, arg_grad))
+				error("Tensorflow input and corresponding gradient do not have the same shape!");
+
+			(*grad_op)[i + II * o] = arg_grad.out;
+
+			xfree(arg_grad.dims);
+		}
 #endif
 	}
 
@@ -634,6 +656,19 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 
 	const struct nlop_s* result = nlop_generic_create(	OO, ON, nl_odims, II, IN, nl_idims,
 								CAST_UP(PTR_PASS(data)), tf_forward, deriv, adjoint, normal, norm_inv, tf_del);
+
+	for (int i = 0; i < II; i++)
+		if (1 < IN_arr[i])
+			result = nlop_reshape_in_F(result, i, IN_arr[i] - 1, nl_idims[i] + 1);
+		else
+			result = nlop_reshape_in_F(result, i, 1, MD_DIMS(1));
+
+	for (int i = 0; i < OO; i++)
+		if (1 < ON_arr[i])
+			result = nlop_reshape_out_F(result, i, ON_arr[i] - 1, nl_odims[i] + 1);
+		else
+			result = nlop_reshape_out_F(result, i, 1, MD_DIMS(1));
+
 	return result;
 }
 
