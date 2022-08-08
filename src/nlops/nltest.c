@@ -669,8 +669,8 @@ bool compare_nlops(const struct nlop_s* nlop1, const struct nlop_s* nlop2, bool 
 
 	for (int i = 0; i < OO; i++) {
 
-		auto iov1 = nlop_generic_domain(nlop1, i);
-		auto iov2 = nlop_generic_domain(nlop2, i);
+		auto iov1 = nlop_generic_codomain(nlop1, i);
+		auto iov2 = nlop_generic_codomain(nlop2, i);
 
 		if (shape)
 			result = result && iovec_check(iov2, iov1->N, iov1->dims, iov1->strs);
