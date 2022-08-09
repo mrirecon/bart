@@ -9,6 +9,7 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/mmio.h"
+#include "misc/shrdptr.h"
 
 #include "num/multind.h"
 
@@ -162,6 +163,78 @@ static void restore_session(TF_Graph* graph, TF_Status *status, TF_Session *sess
 }
 #endif
 
+struct tf_shared_graph_s {
+
+	struct shared_obj_s sptr;
+
+	TF_Status* status;
+	TF_Graph* graph;
+	TF_Session* sess;
+};
+
+static void tf_shared_graph_del(const struct shared_obj_s* sptr)
+{
+	const struct tf_shared_graph_s* x = CONTAINER_OF(sptr, const struct tf_shared_graph_s, sptr);
+
+	TF_DeleteGraph(x->graph);
+	TF_DeleteSession(x->sess, x->status);
+	TF_DeleteStatus(x->status);
+
+	xfree(x);
+}
+
+static const struct tf_shared_graph_s* tf_shared_graph_ref(const struct tf_shared_graph_s* x)
+{
+	if (NULL != x)
+		shared_obj_ref(&x->sptr);
+
+	return x;
+}
+
+void tf_shared_graph_free(const struct tf_shared_graph_s* x)
+{
+	if (NULL == x)
+		return;
+
+	shared_obj_destroy(&x->sptr);
+}
+
+const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, bool session)
+{
+#ifdef TENSORFLOW
+
+	int plen = strlen(path) + 4;
+
+	char graph_path[plen];
+	int rlen = snprintf(graph_path, plen, "%s.pb", path);
+	assert(rlen < plen);
+
+	TF_Status* status = TF_NewStatus();
+
+	TF_Graph* graph = load_graph(graph_path, status);
+
+	TF_Session* sess = create_session(graph, status);
+
+	if (session)
+		restore_session(graph, status, sess, path);
+	
+	PTR_ALLOC(struct tf_shared_graph_s, x);
+
+	x->graph = graph;
+	x->sess = sess;
+	x->status = status;
+
+	shared_obj_init(&x->sptr, tf_shared_graph_del);
+
+	return PTR_PASS(x);
+
+#else
+	UNUSED(path);
+	UNUSED(session);
+	return NULL;
+#endif
+}
+
 
 
 #ifndef TENSORFLOW
@@ -200,9 +273,7 @@ struct tf_s {
 	int nr_outputs;
 
 #ifdef TENSORFLOW
-	TF_Session* sess;
-	TF_Status* status;
-	TF_Graph* graph;
+	const struct tf_shared_graph_s* graph;
 #endif
 
 	TF_Tensor* const* input_tensors;
@@ -232,16 +303,16 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 	for (int i = 0; i < data->nr_inputs; i++)
 		md_copy(data->nr_in_dim[i], data->in_dims_tf[i], TF_TensorData(data->input_tensors[i]), args[i + data->nr_outputs], CFL_SIZE);
 
-	TF_SessionRun(data->sess,
+	TF_SessionRun(data->graph->sess,
 				/* RunOptions */ NULL,
 				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs,
 				/* Output tensors */ data->outputs_op, output_tensors, data->nr_outputs,
 				/* Target operations */ NULL, 0,
 				/* RunMetadata */ NULL,
-				/* Output status */ data->status);
+				/* Output status */ data->graph->status);
 
-	if (TF_GetCode(data->status) != TF_OK)
-		error("Running TensorFlow failed: %s\n", TF_Message(data->status));
+	if (TF_GetCode(data->graph->status) != TF_OK)
+		error("Running TensorFlow failed: %s\n", TF_Message(data->graph->status));
 
 	for (int i = 0; i < data->nr_outputs; i++) {
 
@@ -290,16 +361,16 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 
 	struct TF_Tensor* out_tensor[1];
 
-	TF_SessionRun(data->sess,
+	TF_SessionRun(data->graph->sess,
 				/* RunOptions */ NULL,
 				/* Input tensors */ inp_ops, inp_tensors, data->nr_inputs + 1,
 				/* Output tensors */ &(data->grad_op[i + data->nr_inputs * o]), out_tensor, 1,
 				/* Target operations */ NULL, 0,
 				/* RunMetadata */ NULL,
-				/* Output status */ data->status);
+				/* Output status */ data->graph->status);
 
-	if (TF_GetCode(data->status) != TF_OK)
-		error("Running TensorFlow failed: %s\n", TF_Message(data->status));
+	if (TF_GetCode(data->graph->status) != TF_OK)
+		error("Running TensorFlow failed: %s\n", TF_Message(data->graph->status));
 
 	TF_DeleteTensor(inp_tensors[data->nr_inputs]);
 
@@ -322,8 +393,7 @@ static void tf_del(const nlop_data_t* _data)
 	for (int i = 0; i < data->nr_inputs; i++)
 		TF_DeleteTensor(data->input_tensors[i]);
 
-	TF_DeleteGraph(data->graph);
-	TF_DeleteSession(data->sess, data->status);
+	tf_shared_graph_free(data->graph);
 #endif
 	xfree(data->input_tensors);
 
@@ -464,48 +534,21 @@ static void tf_add_placeholder_same_shape(TF_Graph* graph, const char* name, TF_
 }
 #endif
 
-const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool session)
+const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph)
 {
-#ifndef TENSORFLOW
-	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
-#endif
+	int II = -1;
+	int OO = -1;
+	
+	char name[20];
 
+	do
+		sprintf(name, "input_%d", ++II);
+	while (NULL != TF_GraphOperationByName(graph->graph, name));
 
-	// load graph, restore session
-
-	int plen = strlen(path) + 4;
-
-	char graph_path[plen];
-	int rlen = snprintf(graph_path, plen, "%s.pb", path);
-	assert(rlen < plen);
-#ifdef TENSORFLOW
-	TF_Status* status = TF_NewStatus();
-
-	TF_Graph* graph = load_graph(graph_path, status);
-
-	TF_Session* sess = create_session(graph, status);
-
-	if (session)
-		restore_session(graph, status, sess, path);
-#else
-	UNUSED(session);
-	TF_Status* status = 0;
-	TF_Graph* graph = NULL;
-#endif
-
-	if ((-1 == OO) && (-1 == II)) {
-
-		char name[20];
-
-		do
-			sprintf(name, "input_%d", ++II);
-		while (NULL != TF_GraphOperationByName(graph, name));
-
-		do
-			sprintf(name, "output_%d", ++OO);
-		while (NULL != TF_GraphOperationByName(graph, name));
-	}
-
+	do
+		sprintf(name, "output_%d", ++OO);
+	while (NULL != TF_GraphOperationByName(graph->graph, name));
+	
 	/*** handle outputs and grad_ys ***/
 
 	// outputs
@@ -521,7 +564,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 
 		char out_name[20];
 		sprintf(out_name, "output_%d", i);
-		struct tf_arg arg = process_arg(graph, out_name, status);
+		struct tf_arg arg = process_arg(graph->graph, out_name, graph->status);
 
 		ON_arr[i] = arg.N;
 		ON = MAX(ON, ON_arr[i]);
@@ -540,7 +583,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 		sprintf(grad_ys_name, "grad_ys_%d", i);
 #endif
 
-		struct tf_arg arg_grad_y = process_arg(graph, grad_ys_name, status);
+		struct tf_arg arg_grad_y = process_arg(graph->graph, grad_ys_name, graph->status);
 
 		if (!cmp_arg(arg, arg_grad_y) || (arg.N != arg_grad_y.N))
 			error("Tensorflow output and corresponding gradient input do not have the same shape!");
@@ -553,9 +596,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	PTR_ALLOC(struct tf_s, data);
 	SET_TYPEID(tf_s, data);
 #ifdef TENSORFLOW
-	data->sess = sess;
-	data->status = status;
-	data->graph = graph;
+	data->graph = tf_shared_graph_ref(graph);
 #endif
 	data->nr_inputs = II;
 	data->nr_outputs = OO;
@@ -580,7 +621,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 		char in_name[20];
 		sprintf(in_name, "input_%d", i);
 
-		struct tf_arg arg = process_arg(graph, in_name, status);
+		struct tf_arg arg = process_arg(graph->graph, in_name, graph->status);
 
 		IN_arr[i] = arg.N;
 		IN = MAX(IN, IN_arr[i]);
@@ -604,10 +645,10 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 			char grad_name[30];
 			sprintf(grad_name, "grad_%d", i);
 
-			if ((1 != OO) || (NULL == TF_GraphOperationByName(graph, grad_name)))
+			if ((1 != OO) || (NULL == TF_GraphOperationByName(graph->graph, grad_name)))
 				sprintf(grad_name, "grad_%d_%d", i, o);
 
-			struct tf_arg arg_grad = process_arg(graph, grad_name, status);
+			struct tf_arg arg_grad = process_arg(graph->graph, grad_name, graph->status);
 
 			if (!cmp_arg(arg, arg_grad))
 				error("Tensorflow input and corresponding gradient do not have the same shape!");
@@ -668,6 +709,24 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 			result = nlop_reshape_out_F(result, i, ON_arr[i] - 1, nl_odims[i] + 1);
 		else
 			result = nlop_reshape_out_F(result, i, 1, MD_DIMS(1));
+
+	return result;
+}
+
+const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool session)
+{
+#ifndef TENSORFLOW
+	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
+#endif
+
+	const struct tf_shared_graph_s* graph = tf_shared_graph_create(path, session);
+
+	const struct nlop_s* result = nlop_tf_shared_create(graph);
+
+	tf_shared_graph_free(graph);
+	
+	assert((-1 == II) || (II == nlop_get_nr_in_args(result)));
+	assert((-1 == OO) || (OO == nlop_get_nr_out_args(result)));
 
 	return result;
 }
