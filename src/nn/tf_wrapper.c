@@ -13,6 +13,14 @@
 
 #include "num/multind.h"
 
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
+
+#ifdef _OPENMP
+#include "omp.h"
+#endif
+
 #include "nlops/nlop.h"
 
 #ifdef _WIN32
@@ -51,6 +59,84 @@ static int product(int n, const int64_t ar[n])
 // function to read network/graph definition from binary protobuf file
 
 #ifdef TENSORFLOW
+
+/*
+Python code to generate session config for selecting GPUs (https://github.com/tensorflow/tensorflow/issues/13853):
+
+import tensorflow as tf
+config = tf.compat.v1.ConfigProto(allow_soft_placement=True, device_count = {'GPU': 0})
+config.gpu_options.allow_growth=True
+config.intra_op_parallelism_threads = 9
+config.inter_op_parallelism_threads = 9
+result = list(map(hex, config.SerializeToString()))
+print("uint8_t no_gpu[] = { "+ str(len(result))+", "+ ", ".join(result)+" };")
+
+for i in range(16):
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+    config.gpu_options.allow_growth=True
+    config.gpu_options.visible_device_list=str(i)
+	config.intra_op_parallelism_threads = 9
+	config.inter_op_parallelism_threads = 9
+    result = list(map(hex, config.SerializeToString()))
+    print('uint8_t gpu_{}[] = {{ '.format(i)+ str(len(result))+", "+ ", ".join(result)+" };")
+
+Afterwards replace 0x9 with threads.
+This seems to work upt to threads 127
+*/
+
+static TF_SessionOptions* get_session_opts(void)
+{
+	int threads = 1;
+
+#ifdef _OPENMP
+	threads = omp_get_max_threads();
+	threads = MIN(127, threads);
+#endif
+
+	uint8_t no_gpu[] = { 19, 0xa, 0x7, 0xa, 0x3, 0x47, 0x50, 0x55, 0x10, 0x0, 0x10, threads, 0x28, threads, 0x32, 0x2, 0x20, 0x1, 0x38, 0x1 };
+	uint8_t gpu_0[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x30, 0x38, 0x1 };
+	uint8_t gpu_1[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x31, 0x38, 0x1 };
+	uint8_t gpu_2[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x32, 0x38, 0x1 };
+	uint8_t gpu_3[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x33, 0x38, 0x1 };
+	uint8_t gpu_4[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x34, 0x38, 0x1 };
+	uint8_t gpu_5[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x35, 0x38, 0x1 };
+	uint8_t gpu_6[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x36, 0x38, 0x1 };
+	uint8_t gpu_7[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x37, 0x38, 0x1 };
+	uint8_t gpu_8[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x38, 0x38, 0x1 };
+	uint8_t gpu_9[] = { 13, 0x10, threads, 0x28, threads, 0x32, 0x5, 0x20, 0x1, 0x2a, 0x1, 0x39, 0x38, 0x1 };
+	uint8_t gpu_10[] = { 14, 0x10, threads, 0x28, threads, 0x32, 0x6, 0x20, 0x1, 0x2a, 0x2, 0x31, 0x30, 0x38, 0x1 };
+	uint8_t gpu_11[] = { 14, 0x10, threads, 0x28, threads, 0x32, 0x6, 0x20, 0x1, 0x2a, 0x2, 0x31, 0x31, 0x38, 0x1 };
+	uint8_t gpu_12[] = { 14, 0x10, threads, 0x28, threads, 0x32, 0x6, 0x20, 0x1, 0x2a, 0x2, 0x31, 0x32, 0x38, 0x1 };
+	uint8_t gpu_13[] = { 14, 0x10, threads, 0x28, threads, 0x32, 0x6, 0x20, 0x1, 0x2a, 0x2, 0x31, 0x33, 0x38, 0x1 };
+	uint8_t gpu_14[] = { 14, 0x10, threads, 0x28, threads, 0x32, 0x6, 0x20, 0x1, 0x2a, 0x2, 0x31, 0x34, 0x38, 0x1 };
+	uint8_t gpu_15[] = { 14, 0x10, threads, 0x28, threads, 0x32, 0x6, 0x20, 0x1, 0x2a, 0x2, 0x31, 0x35, 0x38, 0x1 };
+	uint8_t* gpu[] = { gpu_0, gpu_1, gpu_2, gpu_3, gpu_4, gpu_5, gpu_6, gpu_7, gpu_8, gpu_9, gpu_10, gpu_11, gpu_12, gpu_13, gpu_14, gpu_15 };
+	
+	uint8_t* config = no_gpu;
+
+#ifdef USE_CUDA
+	if (1 == cuda_num_devices())
+		config = gpu[cuda_get_device_internal_unchecked()];
+	
+	if (1 < cuda_num_devices())
+		error("TensorFlow Wrapper does not support multiple GPUs!\n");
+#else
+	UNUSED(gpu);
+#endif
+
+	TF_Status* status = TF_NewStatus();
+	TF_SessionOptions* sess_opts = TF_NewSessionOptions();
+		
+	TF_SetConfig(sess_opts, (void*)(config + 1), *config, status);
+	
+	if (TF_GetCode(status) != TF_OK)
+		error("Unable to parse session option config: \n", TF_Message(status));
+	
+	TF_DeleteStatus(status);
+	
+	return sess_opts;
+}
+
 static void free_buf(void* data, size_t size)
 {
 	unmap_raw(data, size);
@@ -82,13 +168,8 @@ static TF_Graph* load_graph(const char* name, TF_Status* status)
 
 static TF_Session* create_session(TF_Graph* graph, TF_Status* status)
 {
-	TF_SessionOptions* opt = TF_NewSessionOptions();
-#if 0
-	TF_SetConfig(opt, config, clen, status);
+	TF_SessionOptions* opt = get_session_opts();
 
-	if (TF_GetCode(status) != TF_OK)
-		debug_printf(DP_INFO, "GPU selection failed\n");
-#endif
 	TF_Session* sess = TF_NewSession(graph, opt, status);
 
 	TF_DeleteSessionOptions(opt);
