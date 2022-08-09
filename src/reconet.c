@@ -37,6 +37,7 @@
 
 #include "networks/cnn.h"
 #include "networks/unet.h"
+#include "networks/tf.h"
 #include "networks/reconet.h"
 #include "networks/losses.h"
 #include "networks/misc.h"
@@ -148,6 +149,7 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_SUBOPT('N', "network", "...", "select neural network", ARRAY_SIZE(network_opts), network_opts),
 		OPTL_SUBOPT(0, "resnet-block", "...", "configure residual block", N_res_block_opts, res_block_opts),
 		OPTL_SUBOPT(0, "varnet-block", "...", "configure variational block", N_variational_block_opts, variational_block_opts),
+		OPTL_SUBOPT(0, "tensorflow", "...", "configure tensorflow as network", N_tensorflow_opts, network_tensorflow_opts),
 		OPTL_SUBOPT(0, "unet", "...", "configure U-Net block", N_unet_reco_opts, unet_reco_opts),
 
 		OPTL_SUBOPT(0, "data-consistency", "...", "configure data-consistency method", ARRAY_SIZE(dc_opts), dc_opts),
@@ -205,6 +207,8 @@ int main_reconet(int argc, char* argv[argc])
 	config.train_loss = get_loss_from_option();
 
 	config.network = get_default_network(net);
+	if (NULL != network_tensorflow_default.model_path)
+		config.network = CAST_UP(&network_tensorflow_default);
 
 	if (test_defaults) {
 

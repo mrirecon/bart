@@ -287,6 +287,112 @@ tests/test-reconet-nnmodl-train-gpu: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-reconet-nnmodl-tensorflow2: nrmse multicfl $(TESTS_OUT)/pattern.ra reconet \
+	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=1 													;\
+	CUDA_VISIBLE_DEVICES=-1 python $(TOOLDIR)/tests/network_tf2.py ;\
+	$(TOOLDIR)/reconet --network modl --resnet-block L=3,F=8,no-batch-normalization,no-bias -t -n --train-algo e=1  -b2 -I1 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra		;\
+	$(TOOLDIR)/reconet --network modl --resnet-block L=3,F=8,no-batch-normalization,no-bias -t -n --train-algo e=10 -b2 -I3 -lweights0 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights_b $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/reconet --network modl --tensorflow p=tf2_resnet/ -t -n --train-algo e=10 -b2 -I3 -lweights0 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights_t $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/multicfl -s weights_b b1 b2 b3 b4		;\
+	$(TOOLDIR)/multicfl -s weights_t t1 t2 t3 t4		;\
+	$(TOOLDIR)/nrmse -t0.0005 b1 t1					;\
+	$(TOOLDIR)/nrmse -t0.0005 b2 t2					;\
+	$(TOOLDIR)/nrmse -t0.0050 b3 t3					;\
+	$(TOOLDIR)/nrmse -t0.0005 b4 t4					;\
+	rm -r tf2_resnet; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-tensorflow1: nrmse multicfl $(TESTS_OUT)/pattern.ra reconet \
+	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=1 													;\
+	CUDA_VISIBLE_DEVICES=-1 python $(TOOLDIR)/tests/network_tf1.py ;\
+	$(TOOLDIR)/reconet --network modl --resnet-block L=3,F=8,no-batch-normalization,no-bias -t -n --train-algo e=1  -b2 -I1 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra		;\
+	$(TOOLDIR)/reconet --network modl --resnet-block L=3,F=8,no-batch-normalization,no-bias -t -n --train-algo e=10 -b2 -I3 -lweights0 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights_b $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/reconet --network modl --tensorflow p=tf1_resnet -t -n --train-algo e=10 -b2 -I3 -lweights0 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights_t $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/multicfl -s weights_b b1 b2 b3 b4		;\
+	$(TOOLDIR)/multicfl -s weights_t t1 t2 t3 t4		;\
+	$(TOOLDIR)/nrmse -t0.0005 b1 t1					;\
+	$(TOOLDIR)/nrmse -t0.0005 b2 t2					;\
+	$(TOOLDIR)/nrmse -t0.0050 b3 t3					;\
+	$(TOOLDIR)/nrmse -t0.0005 b4 t4					;\
+	rm -r tf1_resnet.pb; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-reconet-nnmodl-train-tensorflow2: nrmse $(TESTS_OUT)/pattern.ra reconet \
+	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=1 													;\
+	CUDA_VISIBLE_DEVICES=-1 python $(TOOLDIR)/tests/network_tf2.py ;\
+	$(TOOLDIR)/reconet --network modl --tensorflow p=tf2_resnet/ -t -n --train-algo e=1 -b2 -I1 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra		;\
+	$(TOOLDIR)/reconet --network modl --tensorflow p=tf2_resnet/ -t -n --train-algo e=10 -b2 -I1 --valid-data=pattern=$(TESTS_OUT)/pattern.ra,kspace=$(TESTS_OUT)/test_kspace.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref.ra --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights01 $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/reconet --network modl --tensorflow p=tf2_resnet/ -n -t --train-algo e=10 -b2 -I3 -lweights01 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/reconet --network modl --tensorflow p=tf2_resnet/ -a -n -I3 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra weights0 out0.ra					;\
+	$(TOOLDIR)/reconet --network modl --tensorflow p=tf2_resnet/ -a -n -I3 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra weights1 out1.ra					;\
+	if [ 1 == $$( echo "`$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref.ra` <= 1.05 * `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref.ra`" | bc ) ] ; then \
+		echo "untrained error: `$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref.ra`"		;\
+		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref.ra`"		;\
+		false									;\
+	fi							;\
+	rm -r tf2_resnet; rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-tensorflow2-gpu: nrmse multicfl $(TESTS_OUT)/pattern.ra reconet \
+	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 													;\
+	CUDA_VISIBLE_DEVICES=-1 python $(TOOLDIR)/tests/network_tf2.py ;\
+	$(TOOLDIR)/reconet --network modl -g --resnet-block L=3,F=8,no-batch-normalization,no-bias -t -n --train-algo e=1  -b2 -I1 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra		;\
+	$(TOOLDIR)/reconet --network modl -g --resnet-block L=3,F=8,no-batch-normalization,no-bias -t -n --train-algo e=10 -b2 -I3 -lweights0 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights_b $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/reconet --network modl -g --tensorflow p=tf2_resnet/ -t -n --train-algo e=10 -b2 -I3 -lweights0 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights_t $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/multicfl -s weights_b b1 b2 b3 b4		;\
+	$(TOOLDIR)/multicfl -s weights_t t1 t2 t3 t4		;\
+	$(TOOLDIR)/nrmse -t0.0005 b1 t1					;\
+	$(TOOLDIR)/nrmse -t0.0005 b2 t2					;\
+	$(TOOLDIR)/nrmse -t0.0050 b3 t3					;\
+	$(TOOLDIR)/nrmse -t0.0005 b4 t4					;\
+	rm -r tf2_resnet; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-tensorflow1-gpu: nrmse multicfl $(TESTS_OUT)/pattern.ra reconet \
+	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 													;\
+	CUDA_VISIBLE_DEVICES=-1 python $(TOOLDIR)/tests/network_tf1.py ;\
+	$(TOOLDIR)/reconet --network modl -g --resnet-block L=3,F=8,no-batch-normalization,no-bias -t -n --train-algo e=1  -b2 -I1 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra		;\
+	$(TOOLDIR)/reconet --network modl -g --resnet-block L=3,F=8,no-batch-normalization,no-bias -t -n --train-algo e=10 -b2 -I3 -lweights0 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights_b $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/reconet --network modl -g --tensorflow p=tf1_resnet -t -n --train-algo e=10 -b2 -I3 -lweights0 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights_t $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/multicfl -s weights_b b1 b2 b3 b4		;\
+	$(TOOLDIR)/multicfl -s weights_t t1 t2 t3 t4		;\
+	$(TOOLDIR)/nrmse -t0.0005 b1 t1					;\
+	$(TOOLDIR)/nrmse -t0.0005 b2 t2					;\
+	$(TOOLDIR)/nrmse -t0.0050 b3 t3					;\
+	$(TOOLDIR)/nrmse -t0.0005 b4 t4					;\
+	rm -r tf1_resnet.pb; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-reconet-nnmodl-train-tensorflow2-gpu: nrmse $(TESTS_OUT)/pattern.ra reconet \
+	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 													;\
+	CUDA_VISIBLE_DEVICES=-1 python $(TOOLDIR)/tests/network_tf2.py ;\
+	$(TOOLDIR)/reconet --network modl -g --tensorflow p=tf2_resnet/ -t -n --train-algo e=1 -b2 -I1 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra		;\
+	$(TOOLDIR)/reconet --network modl -g --tensorflow p=tf2_resnet/ -t -n --train-algo e=10 -b2 -I1 --valid-data=pattern=$(TESTS_OUT)/pattern.ra,kspace=$(TESTS_OUT)/test_kspace.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref.ra --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights01 $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/reconet --network modl -g --tensorflow p=tf2_resnet/ -n -t --train-algo e=10 -b2 -I3 -lweights01 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref.ra	;\
+	$(TOOLDIR)/reconet --network modl -g --tensorflow p=tf2_resnet/ -a -n -I3 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra weights0 out0.ra					;\
+	$(TOOLDIR)/reconet --network modl -g --tensorflow p=tf2_resnet/ -a -n -I3 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra weights1 out1.ra					;\
+	if [ 1 == $$( echo "`$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref.ra` <= 1.05 * `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref.ra`" | bc ) ] ; then \
+		echo "untrained error: `$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref.ra`"		;\
+		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref.ra`"		;\
+		false									;\
+	fi							;\
+	rm -r tf2_resnet; rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@	
+
 TESTS += tests/test-reconet-nnvn-train
 TESTS += tests/test-reconet-nnvn-train-max-eigen
 TESTS += tests/test-reconet-nnmodl-train
@@ -297,5 +403,15 @@ TESTS += tests/test-reconet-nnmodl-train-basis
 
 TESTS_GPU += tests/test-reconet-nnvn-train-gpu
 TESTS_GPU += tests/test-reconet-nnmodl-train-gpu
+
+ifeq ($(TENSORFLOW),1)
+TESTS += tests/test-reconet-nnmodl-tensorflow1
+TESTS += tests/test-reconet-nnmodl-tensorflow2
+TESTS += tests/test-reconet-nnmodl-train-tensorflow2
+
+TESTS_GPU += tests/test-reconet-nnmodl-tensorflow1-gpu
+TESTS_GPU += tests/test-reconet-nnmodl-tensorflow2-gpu
+TESTS_GPU += tests/test-reconet-nnmodl-train-tensorflow2-gpu
+endif
 
 
