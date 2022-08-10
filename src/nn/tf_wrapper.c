@@ -182,19 +182,13 @@ static TF_Session* create_session(TF_Graph* graph, TF_Status* status)
 	return sess;
 }
 
-#if 0
-static void deallocator(void* ptr, size_t len, void* arg)
-{
-	xfree(ptr);
-	UNUSED(len); UNUSED(arg);
-}
-#else
+
 static void deallocator(void* ptr, size_t len, void* arg)
 {
 	TF_TString_Dealloc(ptr);
 	UNUSED(len); UNUSED(arg);
 }
-#endif
+
 
 // function to restore trained weights
 static void restore_session(TF_Graph* graph, TF_Status *status, TF_Session *sess, const char* ckpt_path)
@@ -203,27 +197,12 @@ static void restore_session(TF_Graph* graph, TF_Status *status, TF_Session *sess
 
 	const TF_Operation* restore_op = TF_GraphOperationByName(graph, "save/restore_all");
 
-#if 0
-	size_t checkpoint_path_str_len = strlen(ckpt_path);
-	size_t encoded_size = TF_StringEncodedSize(checkpoint_path_str_len);
-	size_t total_size = sizeof(int64_t) + encoded_size;
 
-	char* input_encoded = xmalloc(total_size);
-
-	memset(input_encoded, 0, total_size);
-
-	TF_StringEncode(ckpt_path, checkpoint_path_str_len, input_encoded + sizeof(int64_t), encoded_size, status);
-
-	if (TF_GetCode(status) != TF_OK)
-		error("Something wrong with encoding: %s", TF_Message(status));
-
-	TF_Tensor* path_tensor = TF_NewTensor(TF_STRING, NULL, 0, input_encoded, total_size, &deallocator, 0);
-#else
 	TF_TString path_string;
 	TF_TString_Init(&path_string);
 	TF_TString_Copy(&path_string, ckpt_path, strlen(ckpt_path));
 	TF_Tensor* path_tensor = TF_NewTensor(TF_STRING, NULL, 0, &path_string, TF_TString_GetSize(&path_string), &deallocator, 0);
-#endif
+
 	TF_Output run_path;
 	run_path.oper = checkpoint_op;
 	run_path.index = 0;
@@ -580,40 +559,7 @@ static bool cmp_arg(struct tf_arg arg1, struct tf_arg arg2)
 	return result;
 }
 
-#ifdef TF_AUTOGRAD
 
-static void tf_add_placeholder_same_shape(TF_Graph* graph, const char* name, TF_Status* status, struct TF_Output out)
-{
-#ifdef TENSORFLOW
-	TF_OperationDescription* desc = TF_NewOperation(graph, "Placeholder", name);
-
-	int N = TF_GraphGetTensorNumDims(graph, out, status);
-
-	if (TF_GetCode(status) != TF_OK)
-		error("Add Tensorflow Placeholder failed: %s\n", TF_Message(status));
-
-	long tdims[N ?: 1];
-	TF_GraphGetTensorShape(graph, out, tdims, N, status);
-
-	if (TF_GetCode(status) != TF_OK)
-		error("Add Tensorflow Placeholder failed: %s\n", TF_Message(status));
-
-	TF_DataType type = TF_OperationOutputType(out);
-
-	TF_SetAttrType(desc, "dtype", type);
-	TF_SetAttrShape(desc, "shape", tdims, N);
-	TF_FinishOperation(desc, status);
-
-	if (TF_GetCode(status) != TF_OK)
-		error("Add Tensorflow Placeholder failed: %s\n", TF_Message(status));
-#else
-	UNUSED(graph);
-	UNUSED(name);
-	UNUSED(status);
-	UNUSED(out);
-#endif
-}
-#endif
 
 const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph)
 {
@@ -654,15 +600,8 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 		(*nr_out_dim)[i] = arg.N;
 		(*out_dims_tf)[i] = arg.dims;
 
-#ifdef TF_AUTOGRAD
-		char grad_ys_name[20];
-		sprintf(grad_ys_name, "grad_ys_bart_%d", i);
-
-		tf_add_placeholder_same_shape(graph, grad_ys_name, status, arg.out);
-#else
 		char grad_ys_name[20];
 		sprintf(grad_ys_name, "grad_ys_%d", i);
-#endif
 
 		struct tf_arg arg_grad_y = process_arg(graph->graph, grad_ys_name, graph->status);
 
@@ -712,14 +651,6 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 		(*nr_in_dim)[i] = arg.N;
 		(*in_dims_tf)[i] = arg.dims;
 
-#ifdef TF_AUTOGRAD
-#ifdef TENSORFLOW
-		TF_AddGradients(graph, data->outputs_op, 1, &(*inputs_op)[i], 1, data->grad_ys_op, data->status, &(*grad_op)[i]);
-
-		if (TF_OK != TF_GetCode(status))
-			error("Add Tensorflow Gradient failed: %s\n", TF_Message(status));
-#endif
-#else
 
 		for (int o = 0; o < OO; o++) {
 
@@ -738,7 +669,6 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 
 			xfree(arg_grad.dims);
 		}
-#endif
 	}
 
 	data->inputs_op = *PTR_PASS(inputs_op);
