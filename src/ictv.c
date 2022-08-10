@@ -1,19 +1,10 @@
-/* Copyright 2014,2019. The Regents of the University of California.
- * Copyright 2022. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2022. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014,2019,2022 Martin Uecker.
+ * 2022 Martin Uecker.
  *
- *
- * Rudin LI, Osher S, Fatemi E. Nonlinear total variation based
- * noise removal algorithms, Physica D: Nonlinear Phenomena
- * 60:259-268 (1992)
- *
- * Bredies K, Kunisch K, Pock T. Total generalized variation.
- * SIAM Journal on Imaging Sciences
- * 3:492-526 (2010)
  */
 
 #include <stdlib.h>
@@ -45,7 +36,7 @@
 #endif
 
 
-static const char help_str[] = "Perform total generalized variation denoising along dims specified by flags.";
+static const char help_str[] = "Infimal convolutioni of total variation along dims specified by flags.";
 
 
 	
