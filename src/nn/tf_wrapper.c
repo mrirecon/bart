@@ -487,32 +487,46 @@ struct tf_arg {
 	const int64_t* dims;
 };
 
+#ifdef TENSORFLOW
+
+static TF_Operation* get_operation(const struct tf_shared_graph_s* graph, const char* name)
+{
+	return TF_GraphOperationByName(graph->graph, name);
+}
+
+static bool graph_has_arg(const struct tf_shared_graph_s* graph, const char* name)
+{
+	return NULL != get_operation(graph, name);
+}
+
+static struct TF_Output get_output(const struct tf_shared_graph_s* graph, const char* name)
+{
+	return (struct TF_Output){ TF_GraphOperationByName(graph->graph, name), 0 };
+}
+#endif
 
 
-static struct tf_arg process_arg(TF_Graph* graph, const char* name, TF_Status* status)
+static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const char* name)
 {
 #ifdef TENSORFLOW
 	struct tf_arg arg;
 
-	arg.out = (struct TF_Output){ TF_GraphOperationByName(graph, name), 0 };
+	arg.out = get_output(graph, name);
 
 	if (NULL == arg.out.oper)
 		error("Graph operation %s missing.\n", name);
 
-	arg.N = TF_GraphGetTensorNumDims(graph, arg.out, status);
+	arg.N = TF_GraphGetTensorNumDims(graph->graph, arg.out, graph->status);
 
-	if (TF_GetCode(status) != TF_OK)
-		error("Getting TensorFlow dimensions failed: %s\n", TF_Message(status));
-#if 0
-	if (0 == arg.N)
-		error("Graph operaton %s missing or incorrect.\n", name);
-#endif
+	if (TF_GetCode(graph->status) != TF_OK)
+		error("Getting TensorFlow dimensions failed: %s\n", TF_Message(graph->status));
+
 	long tdims[arg.N ?: 1];
 
-	TF_GraphGetTensorShape(graph, arg.out, tdims, arg.N, status);
+	TF_GraphGetTensorShape(graph->graph, arg.out, tdims, arg.N, graph->status);
 
-	if (TF_GetCode(status) != TF_OK)
-		error("Getting TensorFlow shape failed: %s\n", TF_Message(status));
+	if (TF_GetCode(graph->status) != TF_OK)
+		error("Getting TensorFlow shape failed: %s\n", TF_Message(graph->status));
 
 	if (0 == arg.N) {	// create a scalar
 
@@ -570,11 +584,11 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 
 	do
 		sprintf(name, "input_%d", ++II);
-	while (NULL != TF_GraphOperationByName(graph->graph, name));
+	while (graph_has_arg(graph, name));
 
 	do
 		sprintf(name, "output_%d", ++OO);
-	while (NULL != TF_GraphOperationByName(graph->graph, name));
+	while (graph_has_arg(graph, name));
 	
 	/*** handle outputs and grad_ys ***/
 
@@ -591,7 +605,7 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 
 		char out_name[20];
 		sprintf(out_name, "output_%d", i);
-		struct tf_arg arg = process_arg(graph->graph, out_name, graph->status);
+		struct tf_arg arg = process_arg(graph, out_name);
 
 		ON_arr[i] = arg.N;
 		ON = MAX(ON, ON_arr[i]);
@@ -603,7 +617,7 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 		char grad_ys_name[20];
 		sprintf(grad_ys_name, "grad_ys_%d", i);
 
-		struct tf_arg arg_grad_y = process_arg(graph->graph, grad_ys_name, graph->status);
+		struct tf_arg arg_grad_y = process_arg(graph, grad_ys_name);
 
 		if (!cmp_arg(arg, arg_grad_y) || (arg.N != arg_grad_y.N))
 			error("Tensorflow output and corresponding gradient input do not have the same shape!");
@@ -641,7 +655,7 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 		char in_name[20];
 		sprintf(in_name, "input_%d", i);
 
-		struct tf_arg arg = process_arg(graph->graph, in_name, graph->status);
+		struct tf_arg arg = process_arg(graph, in_name);
 
 		IN_arr[i] = arg.N;
 		IN = MAX(IN, IN_arr[i]);
@@ -657,10 +671,10 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 			char grad_name[30];
 			sprintf(grad_name, "grad_%d", i);
 
-			if ((1 != OO) || (NULL == TF_GraphOperationByName(graph->graph, grad_name)))
+			if ((1 != OO) || !graph_has_arg(graph, grad_name))
 				sprintf(grad_name, "grad_%d_%d", i, o);
 
-			struct tf_arg arg_grad = process_arg(graph->graph, grad_name, graph->status);
+			struct tf_arg arg_grad = process_arg(graph, grad_name);
 
 			if (!cmp_arg(arg, arg_grad))
 				error("Tensorflow input and corresponding gradient do not have the same shape!");
