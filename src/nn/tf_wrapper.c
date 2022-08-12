@@ -43,12 +43,42 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-//#define TF_AUTOGRAD 1
-// The TensorFlow C API does not support all gradients
-// Thus we require that the TensorFlow graph is annotated with gradients
+#ifndef TENSORFLOW
+
+const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key, bool session)
+{
+	UNUSED(path); UNUSED(signature_key); UNUSED(session);
+	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
+}
+
+void tf_shared_graph_free(const struct tf_shared_graph_s* x)
+{
+	UNUSED(x);
+	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
+}
+
+const char* tf_shared_graph_get_init_path(const struct tf_shared_graph_s* x)
+{
+	UNUSED(x);
+	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
+}
 
 
-#ifdef TENSORFLOW
+const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph)
+{
+	UNUSED(graph);
+	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
+}
+
+const struct nlop_s* nlop_tf_create(int nr_outputs, int nr_inputs, const char* path, bool session)
+{
+	UNUSED(nr_inputs); UNUSED(nr_outputs); UNUSED(path); UNUSED(session);
+	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
+}
+
+#else 
+
+
 static int product(int n, const int64_t ar[n])
 {
     int64_t result = 1;
@@ -58,12 +88,9 @@ static int product(int n, const int64_t ar[n])
 
     return result;
 }
-#endif
+
 
 // function to read network/graph definition from binary protobuf file
-
-#ifdef TENSORFLOW
-
 /*
 Python code to generate session config for selecting GPUs (https://github.com/tensorflow/tensorflow/issues/13853):
 
@@ -225,7 +252,6 @@ static void restore_session(TF_Graph* graph, TF_Status *status, TF_Session *sess
 
 	debug_printf(DP_DEBUG1, "TensorFlow session restored from path %s.\n", ckpt_path);
 }
-#endif
 
 struct tf_arg_map_s {
 
@@ -407,8 +433,6 @@ const char* tf_shared_graph_get_init_path(const struct tf_shared_graph_s* x)
 
 const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key, bool session)
 {
-#ifdef TENSORFLOW
-
 	int plen = strlen(path) + 20;
 
 	char graph_path[plen];
@@ -473,22 +497,8 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 
 	return PTR_PASS(x);
 
-#else
-	UNUSED(path);
-	UNUSED(session);
-	return NULL;
-#endif
 }
 
-
-
-#ifndef TENSORFLOW
-struct TF_Output { int dummy; };
-typedef int TF_Graph;
-typedef int TF_Status;
-typedef int TF_Session;
-typedef int TF_Tensor;
-#endif
 
 
 static TF_Tensor* tensor_allocate(int N, const long dims[N])
@@ -502,13 +512,9 @@ static TF_Tensor* tensor_allocate(int N, const long dims[N])
 	assert(1 == dims2[N - 1]);
 	dims2[N - 1] = 2;
 
-#ifdef TENSORFLOW
 	size_t size = product(N, dims2) * FL_SIZE;
 
 	return TF_AllocateTensor(TF_FLOAT, dims2, N, size);
-#else
-	return NULL;
-#endif
 }
 struct tf_s {
 
@@ -517,9 +523,7 @@ struct tf_s {
 	int nr_inputs;
 	int nr_outputs;
 
-#ifdef TENSORFLOW
 	const struct tf_shared_graph_s* graph;
-#endif
 
 	TF_Tensor* const* input_tensors;
 
@@ -541,7 +545,7 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 	auto data = CAST_DOWN(tf_s, _data);
 
 	assert(data->nr_inputs + data->nr_outputs == N);
-#ifdef TENSORFLOW
+
 	TF_Tensor* output_tensors[data->nr_outputs];
 
 	for (int i = 0; i < data->nr_inputs; i++)
@@ -564,11 +568,6 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 
 		TF_DeleteTensor(output_tensors[i]);
 	}
-#else
-	UNUSED(N); UNUSED(args);
-
-	error("TensorFlow support not available.\n");
-#endif
 }
 
 static void tf_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -587,8 +586,6 @@ static void tf_der(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(tf_s, _data);
-
-#ifdef TENSORFLOW
 	
 	md_copy(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src, CFL_SIZE);
 
@@ -608,11 +605,6 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	md_copy(data->nr_in_dim[i], data->in_dims_tf[i], dst, TF_TensorData(out_tensor[0]), CFL_SIZE);
 
 	TF_DeleteTensor(out_tensor[0]);
-#else
-	UNUSED(data); UNUSED(o); UNUSED(i); UNUSED(dst); UNUSED(src);
-
-	error("TensorFlow support not available.\n");
-#endif
 }
 
 
@@ -620,12 +612,11 @@ static void tf_del(const nlop_data_t* _data)
 {
 	const auto data = CAST_DOWN(tf_s, _data);
 
-#ifdef TENSORFLOW
 	for (int i = 0; i < data->nr_inputs + data->nr_outputs; i++)
 		TF_DeleteTensor(data->input_tensors[i]);
 
 	tf_shared_graph_free(data->graph);
-#endif
+
 	xfree(data->input_tensors);
 
 	xfree(data->inputs_op);
@@ -657,7 +648,6 @@ struct tf_arg {
 	const int64_t* dims;
 };
 
-#ifdef TENSORFLOW
 
 static bool cmp_arg_name(const void* _map, const void* _bart_name)
 {
@@ -689,12 +679,10 @@ static bool graph_has_arg(const struct tf_shared_graph_s* graph, const char* nam
 	return NULL != get_output(graph, name).oper;
 }
 
-#endif
 
 
 static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const char* name)
 {
-#ifdef TENSORFLOW
 	struct tf_arg arg;
 
 	arg.out = get_output(graph, name);
@@ -733,11 +721,6 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 
 
 	arg.dims = *PTR_PASS(dims);
-#else
-	struct tf_arg arg = { 0 };
-
-	UNUSED(graph); UNUSED(name); UNUSED(status);
-#endif
 
 	return arg;
 }
@@ -819,9 +802,8 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 
 	PTR_ALLOC(struct tf_s, data);
 	SET_TYPEID(tf_s, data);
-#ifdef TENSORFLOW
+
 	data->graph = tf_shared_graph_ref(graph);
-#endif
 	data->nr_inputs = II;
 	data->nr_outputs = OO;
 
@@ -927,10 +909,6 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 
 const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool session)
 {
-#ifndef TENSORFLOW
-	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
-#endif
-
 	const struct tf_shared_graph_s* graph = tf_shared_graph_create(path, NULL, session);
 
 	const struct nlop_s* result = nlop_tf_shared_create(graph);
@@ -942,6 +920,8 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 
 	return result;
 }
+
+#endif
 
 
 
