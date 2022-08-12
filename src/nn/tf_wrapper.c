@@ -4,12 +4,16 @@
  */
 
 #include <complex.h>
+#include <string.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/mmio.h"
 #include "misc/shrdptr.h"
+#include "misc/list.h"
 
 #include "num/multind.h"
 
@@ -223,6 +227,127 @@ static void restore_session(TF_Graph* graph, TF_Status *status, TF_Session *sess
 }
 #endif
 
+struct tf_arg_map_s {
+
+	const char* bart_name;
+	const char* tf_name;
+	int tf_index;
+};
+
+static struct tf_arg_map_s* tf_arg_map_create(const char* bname, const char* tname, int index)
+{
+	PTR_ALLOC(struct tf_arg_map_s, tm);
+
+	tm->bart_name = ptr_printf("%s", bname);
+	tm->tf_name = ptr_printf("%s", tname);
+	tm->tf_index = index;
+
+	return PTR_PASS(tm);
+}
+
+static void tf_arg_map_free(struct tf_arg_map_s* tm)
+{
+	xfree(tm->bart_name);
+	xfree(tm->tf_name);
+
+	xfree(tm);
+}
+
+
+static list_t read_name_mapping(const char * filename, const char* signature_key)
+{
+	if (NULL == filename)
+		return NULL;
+
+	int fd;
+	if (-1 == (fd = open(filename, O_RDONLY)))
+		error("TensorFlow config file %s not found!\n", filename);
+	
+	char config[4097];
+	memset(config, 0, 4097);
+
+	int max;
+	if (0 > (max = read(fd, config, 4096)))
+		error("TensorFlow config file %s too large!\n", filename);
+
+	int pos = 0;
+	int delta = 0;
+
+	list_t arg_map = list_create();
+
+	while (true) {
+
+		// skip lines not starting with '#'
+
+		while ('#' != config[pos]) {
+
+			if ('\0' == config[pos])
+				goto out;
+
+			if (0 != sscanf(config + pos, "%*[^\n]\n%n", &delta))
+				error("Could not parse TensorFlow config file for BART!\n");
+
+			if (0 == delta)
+				goto out;
+
+			pos += delta;
+		}
+
+		char keyword[32];
+
+		if (1 == sscanf(config + pos, "# %31s\n%n", keyword, &delta)) {
+
+			pos += delta;
+
+			if (0 == strcmp(keyword, "ArgumentNameMapping")) {
+
+				char signature[80];
+
+				if ((1 == sscanf(config + pos, "%79s\n%n", signature, &delta)) && (0 == strcmp(signature_key, signature))) {
+
+					debug_printf(DP_INFO, "Found signature \"%s\" in config.\n", signature);
+
+					pos += delta;
+					char bart_name[80];
+					char tf_name[80];
+					int index;
+
+					while (3 == sscanf(config + pos, "%79s %79s %d\n%n", bart_name, tf_name, &index, &delta)) {
+ 
+ 						debug_printf(DP_DEBUG1, "TensorFlow input mapping: %s %s %d\n", bart_name, tf_name, index);
+						list_append(arg_map, tf_arg_map_create(bart_name, tf_name, index));
+
+						pos += delta;
+					}
+
+					if(3 == sscanf(config + pos, "%79s %79s:%d%n", bart_name, tf_name, &index, &delta)) {
+
+						debug_printf(DP_DEBUG1, "TensorFlow output mapping: %s %s %d\n", bart_name, tf_name, index);
+						list_append(arg_map, tf_arg_map_create(bart_name, tf_name, index));
+
+						pos += delta;
+					}
+				}
+			}
+
+		} else {
+
+			// skip this line
+
+			if (0 != sscanf(config + pos, "%*[^\n]\n%n", &delta))
+				error("Could not parse TensorFlow config file for BART!\n");
+
+			if (0 == delta)
+				goto out;
+
+			pos += delta;
+		}
+	}
+
+out:
+	return arg_map;
+}
+
 struct tf_shared_graph_s {
 
 	struct shared_obj_s sptr;
@@ -230,6 +355,10 @@ struct tf_shared_graph_s {
 	TF_Status* status;
 	TF_Graph* graph;
 	TF_Session* sess;
+
+	list_t arg_name_map;
+
+	const char* weight_init;
 };
 
 static void tf_shared_graph_del(const struct shared_obj_s* sptr)
@@ -239,6 +368,15 @@ static void tf_shared_graph_del(const struct shared_obj_s* sptr)
 	TF_DeleteGraph(x->graph);
 	TF_DeleteSession(x->sess, x->status);
 	TF_DeleteStatus(x->status);
+	
+	if (NULL != x->arg_name_map) {
+
+		while (0 < list_count(x->arg_name_map))
+			tf_arg_map_free(list_pop(x->arg_name_map));
+	
+		list_free(x->arg_name_map);
+	}
+	
 
 	xfree(x);
 }
@@ -259,11 +397,19 @@ void tf_shared_graph_free(const struct tf_shared_graph_s* x)
 	shared_obj_destroy(&x->sptr);
 }
 
-const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, bool session)
+const char* tf_shared_graph_get_init_path(const struct tf_shared_graph_s* x)
+{
+	if (NULL == x)
+		return NULL;
+
+	return x->weight_init;
+}
+
+const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key, bool session)
 {
 #ifdef TENSORFLOW
 
-	int plen = strlen(path) + 4;
+	int plen = strlen(path) + 20;
 
 	char graph_path[plen];
 	int rlen = snprintf(graph_path, plen, "%s.pb", path);
@@ -271,18 +417,57 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, bool se
 
 	TF_Status* status = TF_NewStatus();
 
-	TF_Graph* graph = load_graph(graph_path, status);
+	TF_Graph* graph;
+	TF_Session* sess;
+	list_t arg_name_mapping = NULL;
+	const char* init_file = NULL;
 
-	TF_Session* sess = create_session(graph, status);
+	FILE *fp = fopen(graph_path, "r");
+	if (fp != NULL)
+	{
+		fclose(fp);
 
-	if (session)
-		restore_session(graph, status, sess, path);
+		graph = load_graph(graph_path, status);
+		sess = create_session(graph, status);
+
+		if (session)
+			restore_session(graph, status, sess, path);
+		
+		debug_printf(DP_DEBUG1, "Succesfully loaded TensorFlow v1 graph!\n");
+	
+	} else {
+
+		snprintf(graph_path, plen, "%s/", path);
+
+		graph = TF_NewGraph();
+
+		TF_SessionOptions* sess_opts = get_session_opts();
+    	
+		TF_Buffer* run_opts = NULL;
+
+		const char* tags = "serve"; // default model serving tag; can change in future
+    	int ntags = 1;
+
+		sess = TF_LoadSessionFromSavedModel(sess_opts, run_opts, graph_path, &tags, ntags, graph, NULL, status);
+
+		if (TF_GetCode(status) != TF_OK)
+			error("Unable to restore TensorFlow saved model from %s: %s\n", graph_path, TF_Message(status));
+
+		snprintf(graph_path, plen, "%s/bart_config.dat", path);
+		arg_name_mapping = read_name_mapping(graph_path, signature_key ?: "serving_default");
+
+		debug_printf(DP_DEBUG1, "Succesfully loaded TensorFlow v2 saved model!\n");
+
+		init_file = ptr_printf("%s/bart_initial_weights", path);
+	}	
 	
 	PTR_ALLOC(struct tf_shared_graph_s, x);
 
 	x->graph = graph;
 	x->sess = sess;
 	x->status = status;
+	x->arg_name_map = arg_name_mapping;
+	x->weight_init = init_file;
 
 	shared_obj_init(&x->sptr, tf_shared_graph_del);
 
@@ -404,7 +589,7 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	auto data = CAST_DOWN(tf_s, _data);
 
 #ifdef TENSORFLOW
-
+	
 	md_copy(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src, CFL_SIZE);
 
 	struct TF_Tensor* out_tensor[1];
@@ -474,20 +659,36 @@ struct tf_arg {
 
 #ifdef TENSORFLOW
 
-static TF_Operation* get_operation(const struct tf_shared_graph_s* graph, const char* name)
+static bool cmp_arg_name(const void* _map, const void* _bart_name)
 {
-	return TF_GraphOperationByName(graph->graph, name);
+	const struct tf_arg_map_s* map = _map;
+	const char* bart_name = _bart_name;
+	
+	return 0 == strcmp(map->bart_name, bart_name);
+}
+
+static TF_Output get_output(const struct tf_shared_graph_s* graph, const char* name)
+{
+	if (NULL != graph->arg_name_map) {
+
+		int idx = list_get_first_index(graph->arg_name_map, name, cmp_arg_name);
+		if (-1 == idx)
+			return (struct TF_Output){ NULL, 0 };
+
+		const struct tf_arg_map_s* map = list_get_item(graph->arg_name_map, idx);
+
+		return (struct TF_Output){ TF_GraphOperationByName(graph->graph, map->tf_name), map->tf_index };
+
+	}
+
+	return (struct TF_Output){ TF_GraphOperationByName(graph->graph, name), 0 };
 }
 
 static bool graph_has_arg(const struct tf_shared_graph_s* graph, const char* name)
 {
-	return NULL != get_operation(graph, name);
+	return NULL != get_output(graph, name).oper;
 }
 
-static struct TF_Output get_output(const struct tf_shared_graph_s* graph, const char* name)
-{
-	return (struct TF_Output){ TF_GraphOperationByName(graph->graph, name), 0 };
-}
 #endif
 
 
@@ -730,7 +931,7 @@ const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool sessi
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 #endif
 
-	const struct tf_shared_graph_s* graph = tf_shared_graph_create(path, session);
+	const struct tf_shared_graph_s* graph = tf_shared_graph_create(path, NULL, session);
 
 	const struct nlop_s* result = nlop_tf_shared_create(graph);
 
