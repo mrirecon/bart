@@ -63,7 +63,7 @@ int main_filter(int argc, char* argv[argc])
 
 	num_init();
 
-	char filter_type;
+	char filter_type = 0;
 
 	assert (med == -1 || mavg == -1);
 
@@ -118,6 +118,9 @@ int main_filter(int argc, char* argv[argc])
 
 		md_moving_avgz2(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
 		break;
+
+	default:
+		error("No filter applied!\n");
 	}
 
 	unmap_cfl(DIMS, in_dims, in_data);
