@@ -1,4 +1,4 @@
-/* Copyright 2022. Martin Uecker.
+/* Copyright 2022. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -25,8 +25,12 @@
 
 #include "utest.h"
 
+
+
+
 // Validate the partial derivatives estimated with the SA with
 // the difference quotient method for estimating gradients
+
 static bool test_ode_bloch_simulation_gradients(void)
 {
 	float e = 1.E-3;
@@ -392,18 +396,21 @@ UT_REGISTER_TEST(test_ode_irbssfp_simulation);
 
 
 /* ROT Simulation
+ *
  * Compare the simulated IR bSSFP signal with the analytical model
  * Assumptions: 1. TR << T_{1,2}
  *              2. T_RF \approx 0
  *
  * References:
- * Schmitt, P. , Griswold, M. A., Jakob, P. M., Kotas, M. , Gulani, V. , Flentje, M. and Haase, A. (2004),
- * Inversion recovery TrueFISP: Quantification of T1, T2, and spin density.
- * Magn. Reson. Med., 51: 661-667. doi:10.1002/mrm.20058
  *
- * Ehses, P. , Seiberlich, N. , Ma, D. , Breuer, F. A., Jakob, P. M., Griswold, M. A. and Gulani, V. (2013),
+ * Schmitt P, Griswold MA, Jakob PM, Kotas M, Gulani V, Flentje M, Haase A.
+ * Inversion recovery TrueFISP: Quantification of T1, T2, and spin density.
+ * Magn Reson Med 2004;51:661-667.
+ *
+ * Ehses P, Seiberlich N, Ma D, Breuer FA, Jakob PM, Griswold MA, Gulan, V.
  * IR TrueFISP with a golden‐ratio‐based radial readout: Fast quantification of T1, T2, and proton density.
- * Magn Reson Med, 69: 71-81. doi:10.1002/mrm.24225
+ * Magn Reson Med 2013;69:71-81.
+ *
  */
 static bool test_rot_irbssfp_simulation(void)
 {
@@ -419,6 +426,7 @@ static bool test_rot_irbssfp_simulation(void)
 	struct sim_data sim_data;
 
 	sim_data.seq = simdata_seq_defaults;
+
         sim_data.seq.type = SIM_ROT;
 	sim_data.seq.seq_type = SEQ_IRBSSFP;
 	sim_data.seq.tr = 0.003;
@@ -442,20 +450,26 @@ static bool test_rot_irbssfp_simulation(void)
 	sim_data.pulse.rf_end = 0.00001;
 
 	sim_data.grad = simdata_grad_defaults;
+
 	sim_data.tmp = simdata_tmp_defaults;
+
         sim_data.other = simdata_other_defaults;
+
         sim_data.other.sampling_rate = 10E5;
 
-	float mxy_sig[sim_data.seq.rep_num][3];
-	float sa_r1_sig[sim_data.seq.rep_num][3];
-	float sa_r2_sig[sim_data.seq.rep_num][3];
-	float sa_m0_sig[sim_data.seq.rep_num][3];
-	float sa_b1_sig[sim_data.seq.rep_num][3];
+	int N = sim_data.seq.rep_num;
+
+	float mxy_sig[N][3];
+	float sa_r1_sig[N][3];
+	float sa_r2_sig[N][3];
+	float sa_m0_sig[N][3];
+	float sa_b1_sig[N][3];
 
 	bloch_simulation(&sim_data, mxy_sig, sa_r1_sig, sa_r2_sig, sa_m0_sig, sa_b1_sig);
 
 
 	// Analytical Model
+
 	float t1s = 1 / ((cosf(fa / 2.) * cosf(fa / 2.)) / t1n + (sinf(fa / 2.) * sinf(fa / 2.)) / t2n);
 	float s0 = m0n * sinf(fa / 2.);
 	float stst = m0n * sinf(fa) / ((t1n / t2n + 1) - cosf(fa) * (t1n / t2n-1));
@@ -463,6 +477,7 @@ static bool test_rot_irbssfp_simulation(void)
 
 
         // Model Comparison
+
 	float out_simu = 0.;
 	float out_theory = 0.;
 	float err = 0.;
@@ -471,7 +486,8 @@ static bool test_rot_irbssfp_simulation(void)
 
                 //Does NOT include phase information!
                 // + data.tr through alpha/2 preparation
-		out_theory = fabs(stst * (1. - inv * expf(-((float)(z + 1) * sim_data.seq.tr) / t1s)));
+
+		out_theory = fabs(stst * (1. - inv * expf(-((float)(z + 1.) * sim_data.seq.tr) / t1s)));
 
 		out_simu = cabsf(mxy_sig[z][1] + mxy_sig[z][0] * I);
 
@@ -482,10 +498,11 @@ static bool test_rot_irbssfp_simulation(void)
 			debug_printf(DP_ERROR, "err: %f,\t out_simu: %f,\t out_theory: %f\n", err, out_simu, out_theory);
 			debug_printf(DP_ERROR, "Error in sequence test\n see: -> test_simulation() in test_ode_simu.c\n");
 
-			return 0;
+			return false;
 		}
 	}
-	return 1;
+
+	return true;
 }
 
 UT_REGISTER_TEST(test_rot_irbssfp_simulation);
