@@ -39,8 +39,40 @@
 
 #include  "cnn.h"
 
-nn_t network_create(const struct network_s* config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status)
+nn_t network_create(const struct network_s* config, unsigned int _NO, const long _odims[_NO], unsigned int _NI, const long _idims[_NI], enum NETWORK_STATUS status)
 {
+	int NO = _NO;
+	int NI = _NI;
+
+	long odims[NO];
+	long idims[NI];
+
+	md_copy_dims(NO, odims, _odims);
+	md_copy_dims(NI, idims, _idims);
+
+	long channel = 1;
+
+	if (config->bart_to_channel_first) {
+
+		assert(_NO == _NI);
+		assert(DIMS == _NO);
+
+		NO = 5;
+		NI = 5;
+
+		unsigned long channel_flag = (~(FFT_FLAGS | BATCH_FLAG)) & (md_nontriv_dims(_NO, _odims));
+
+		long chn_dims[_NO];
+		md_select_dims(_NO, channel_flag, chn_dims, _odims);
+		channel = md_calc_size(_NO, chn_dims);
+
+		odims[0] = channel;
+		md_copy_dims(3, odims + 1, _odims);
+		odims[4] = _odims[BATCH_DIM];
+
+		md_copy_dims(5, idims, odims);
+	}
+
 	auto result = config->create(config, NO, odims, NI, idims, status);
 	result = nn_checkpoint_F(result, true, config->low_mem);
 
@@ -71,6 +103,25 @@ nn_t network_create(const struct network_s* config, unsigned int NO, const long 
 		result = nn_dup_F(result, 0, NULL, 1, NULL);
 	}
 
+	if (config->bart_to_channel_first) {
+
+		if (1 != channel) {
+
+			int iperm[5] = {3, 0, 1, 2, 4};
+			int operm[5] = {1, 2, 3, 0, 4};
+
+			long dims[5];
+			md_permute_dims(5, operm, dims, idims);
+
+			result = nn_chain2_swap_FF(nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(5, iperm, dims))), 0, NULL, result, 0, NULL);
+			result = nn_chain2_swap_FF(result, 0, NULL, nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(5, operm, odims))), 0, NULL);
+		}
+
+		result = nn_reshape_in_F(result, 0, NULL, _NI, _idims);
+		result = nn_reshape_out_F(result, 0, NULL, _NO, _odims);
+	}
+
+
 	return result;
 }
 
@@ -100,6 +151,7 @@ struct network_resnet_s network_resnet_default = {
 	.INTERFACE.residual = true,
 
 	.INTERFACE.debug = false,
+	.INTERFACE.bart_to_channel_first = true,
 
 	.INTERFACE.prefix = NULL,
 
@@ -348,6 +400,7 @@ struct network_varnet_s network_varnet_default = {
 	.INTERFACE.norm_batch_flag = MD_BIT(4),
 
 	.INTERFACE.debug = false,
+	.INTERFACE.bart_to_channel_first = true,
 
 	.INTERFACE.prefix = NULL,
 

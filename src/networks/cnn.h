@@ -25,8 +25,10 @@ typedef struct network_s {
 	unsigned long norm_batch_flag;
 
 	_Bool debug;
-
+	
 	_Bool residual;
+	
+	_Bool bart_to_channel_first;
 
 	const char* prefix;
 

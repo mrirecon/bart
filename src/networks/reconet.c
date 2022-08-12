@@ -503,36 +503,9 @@ static nn_t network_block_create(const struct reconet_s* config, unsigned int N,
 	if (!config->one_channel_per_map)
 		timg_dims[MAPS_DIM] = 1;
 
-
-	assert(1 == bitcount(config->mri_config->batch_flags));
-	int bat_dim = md_max_idx(config->mri_config->batch_flags);
-
-	unsigned long channel_flag = (~(FFT_FLAGS | config->mri_config->batch_flags)) & (md_nontriv_dims(N, timg_dims));
-	assert(config->mri_config->batch_flags > channel_flag);
-
-	long chn_dims[N];
-	md_select_dims(N, channel_flag, chn_dims, timg_dims);
-	long channel = md_calc_size(N, chn_dims);
-
-	long dims[5] = {timg_dims[0], timg_dims[1], timg_dims[2], channel, timg_dims[bat_dim]};
-	long dims_net[5] = {channel, timg_dims[0], timg_dims[1], timg_dims[2], timg_dims[bat_dim]};
-
 	nn_t result = NULL;
 
-	result = network_create(config->network, 5, dims_net, 5, dims_net, status);
-
-	if (1 != channel) {
-
-		int iperm[5] = {3, 0, 1, 2, 4};
-		int operm[5] = {1, 2, 3, 0, 4};
-
-		result = nn_chain2_swap_FF(nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(5, iperm, dims))), 0, NULL, result, 0, NULL);
-		result = nn_chain2_swap_FF(result, 0, NULL, nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(5, operm, dims_net))), 0, NULL);
-	}
-
-
-	result = nn_reshape_in_F(result, 0, NULL, N, timg_dims);
-	result = nn_reshape_out_F(result, 0, NULL, N, timg_dims);
+	result = network_create(config->network, N, timg_dims, N, timg_dims, status);
 
 	int N_in_names = nn_get_nr_named_in_args(result);
 	int N_out_names = nn_get_nr_named_out_args(result);

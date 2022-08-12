@@ -58,6 +58,7 @@ struct network_unet_s network_unet_default_reco = {
 	.INTERFACE.norm_batch_flag = MD_BIT(4),
 
 	.INTERFACE.debug = false,
+	.INTERFACE.bart_to_channel_first = true,
 
 	.INTERFACE.prefix = NULL,
 
@@ -115,6 +116,7 @@ struct network_unet_s network_unet_default_segm = {
 	.INTERFACE.low_mem = false,
 
 	.INTERFACE.debug = false,
+	.INTERFACE.bart_to_channel_first = false,
 
 	.N = 5,
 
