@@ -1,5 +1,5 @@
 # Copyright 2013-2015. The Regents of the University of California.
-# Copyright 2015-2019. Martin Uecker <martin.uecker@med.uni-goettingen.de>
+# Copyright 2015-2022. Martin Uecker <uecker@tugraz.at>
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 
@@ -34,6 +34,7 @@ OMP?=1
 SLINK?=0
 DEBUG?=0
 UBSAN?=0
+ASAN?=0
 FFTWTHREADS?=1
 FFTW_WISDOM?=0
 SCALAPACK?=0
@@ -317,7 +318,11 @@ NVCCFLAGS += -g
 endif
 
 ifeq ($(UBSAN),1)
-CFLAGS += -fsanitize=undefined -fsanitize=address -fsanitize-undefined-trap-on-error
+CFLAGS += -fsanitize=undefined -fsanitize-undefined-trap-on-error
+endif
+
+ifeq ($(ASAN),1)
+CFLAGS += -fsanitize=address
 endif
 
 ifeq ($(NOEXEC_STACK),1)

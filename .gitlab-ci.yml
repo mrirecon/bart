@@ -55,7 +55,7 @@ Build_UBSan:
   image: debian:testing
   stage: build
   script:
-    - UBSAN=1 make all
+    - UBSAN=1 ASAN=1 make all
   artifacts:
     paths:
       - bart
@@ -126,7 +126,7 @@ Unit_Test_UBSan:
   image: debian:testing
   stage: test1
   script:
-    - AUTOCLEAN=0 UBSAN=1 make utest
+    - AUTOCLEAN=0 UBSAN=1 ASAN=1 make utest
   needs: [Build_UBSan]
   dependencies:
      - Build_UBSan
@@ -203,7 +203,7 @@ Integration_Test_UBSan:
   image: debian:testing
   stage: test2
   script:
-    - AUTOCLEAN=0 UBSAN=1 make test
+    - AUTOCLEAN=0 UBSAN=1 ASAN=1 make test
   needs: [Build_UBSan]
   dependencies:
     - Build_UBSan
