@@ -15,6 +15,7 @@
 #include "misc/shrdptr.h"
 #include "misc/list.h"
 
+#include "num/flpmath.h"
 #include "num/multind.h"
 
 #ifdef USE_CUDA
@@ -536,6 +537,8 @@ struct tf_s {
 
 	const int64_t **out_dims_tf;
 	const int64_t **in_dims_tf;
+
+	complex float*** cached_gradient;
 };
 
 DEF_TYPEID(tf_s);
@@ -568,6 +571,13 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 
 		TF_DeleteTensor(output_tensors[i]);
 	}
+
+	for (int i = 0; i < data->nr_inputs; i++)
+		for (int o = 0; o < data->nr_outputs; o++) {
+		
+			md_free(data->cached_gradient[o][i]);
+			data->cached_gradient[o][i] = NULL;
+		}
 }
 
 static void tf_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -586,25 +596,54 @@ static void tf_der(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(tf_s, _data);
+
+	if (   (0 != md_zrmse(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src))
+		|| (NULL == data->cached_gradient[o][i])) {
 	
-	md_copy(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src, CFL_SIZE);
+		md_copy(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src, CFL_SIZE);
 
-	struct TF_Tensor* out_tensor[1];
+		complex float** grad = data->cached_gradient[o];
+		
+		int N = 0;
+		struct TF_Output grad_ops[data->nr_inputs];
 
-	TF_SessionRun(data->graph->sess,
+		for (int i = 0; i < data->nr_inputs; i++) {
+
+			md_free(grad[i]);
+			grad[i] = NULL;
+
+			if (nlop_der_requested(_data, i, o)) {
+
+				grad[i] = md_alloc(data->nr_in_dim[i], data->in_dims_tf[i], CFL_SIZE);
+				grad_ops[N] = data->grad_op[i + data->nr_inputs * o];
+				N++;
+			}
+		}
+
+		struct TF_Tensor* out_tensor[N];
+
+		TF_SessionRun(data->graph->sess,
 				/* RunOptions */ NULL,
 				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs + data->nr_outputs,
-				/* Output tensors */ &(data->grad_op[i + data->nr_inputs * o]), out_tensor, 1,
+				/* Output tensors */ grad_ops, out_tensor, N,
 				/* Target operations */ NULL, 0,
 				/* RunMetadata */ NULL,
 				/* Output status */ data->graph->status);
 
-	if (TF_GetCode(data->graph->status) != TF_OK)
-		error("Running TensorFlow failed: %s\n", TF_Message(data->graph->status));
+		if (TF_GetCode(data->graph->status) != TF_OK)
+			error("Running TensorFlow failed: %s\n", TF_Message(data->graph->status));
 
-	md_copy(data->nr_in_dim[i], data->in_dims_tf[i], dst, TF_TensorData(out_tensor[0]), CFL_SIZE);
+		for (int i = 0, ip = 0; i < data->nr_inputs; i++) {
 
-	TF_DeleteTensor(out_tensor[0]);
+			if (nlop_der_requested(_data, i, o)) {
+
+				md_copy(data->nr_in_dim[i], data->in_dims_tf[i], grad[i], TF_TensorData(out_tensor[ip]), CFL_SIZE);
+				TF_DeleteTensor(out_tensor[ip++]);
+			}
+		}		
+	}
+
+	md_copy(data->nr_in_dim[i], data->in_dims_tf[i], dst, data->cached_gradient[o][i], CFL_SIZE);
 }
 
 
@@ -633,6 +672,17 @@ static void tf_del(const nlop_data_t* _data)
 
 	for (int i = 0; i < data->nr_outputs; i++)
 		xfree(data->out_dims_tf[i]);
+
+	for (int o = 0; o < data->nr_outputs; o++) {
+
+		for (int i = 0; i < data->nr_inputs; i++)	
+			md_free(data->cached_gradient[o][i]);
+		
+		xfree(data->cached_gradient[o]);
+	}
+
+	xfree(data->cached_gradient);
+
 
 	xfree(data->out_dims_tf);
 
@@ -859,6 +909,17 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 	data->nr_in_dim = *PTR_PASS(nr_in_dim);
 	data->in_dims_tf = *PTR_PASS(in_dims_tf);
 	data->grad_op = *PTR_PASS(grad_op);
+
+	complex float* ci[II];
+	for (int i = 0; i < II; i++)
+		ci[i] = NULL;
+	
+	complex float** cached_gradients[OO];
+	for (int i = 0; i < OO; i++)
+		cached_gradients[i] = ARR_CLONE(complex float*[II], ci);
+
+	data->cached_gradient = ARR_CLONE(complex float**[OO], cached_gradients);	
+
 
 
 
