@@ -169,6 +169,61 @@ const struct initializer_s* init_const_create(_Complex float val)
 	return CAST_UP(PTR_PASS(data));
 }
 
+struct initializer_fixed_s {
+
+	INTERFACE(init_t);
+	
+	int N;
+	const long* dims;
+	
+	complex float* data;
+};
+
+static DEF_TYPEID(initializer_fixed_s);
+
+static void init_fixed_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
+{
+	auto conf = CAST_DOWN(initializer_fixed_s, conf_);
+
+	assert(N == conf->N);
+	assert(md_check_equal_dims(N, dims, conf->dims, ~0));
+
+	md_copy(N, dims, weights, conf->data, CFL_SIZE);
+}
+
+static void init_fixed_del(const init_t* conf_)
+{
+	auto d = CAST_DOWN(initializer_fixed_s, conf_);
+	
+	md_free(d->data);
+	xfree(d->dims);
+}
+
+/**
+ * Create a constant initializer from array
+ *
+ * @returns Constant initializer
+ */
+const struct initializer_s* init_array_create(int N, const long dims[N], const complex float* dat)
+{
+	PTR_ALLOC(struct initializer_fixed_s, data);
+	SET_TYPEID(initializer_fixed_s, data);
+
+	shared_obj_init(&(data->INTERFACE.sptr), init_del);
+
+	data->INTERFACE.del = init_fixed_del;
+	data->INTERFACE.fun = init_fixed_fun;
+
+	data->N = N;
+	data->dims = ARR_CLONE(long[N], dims);
+	complex float* tmp = md_alloc(N, dims, CFL_SIZE);
+	md_copy(N, dims, tmp, dat, CFL_SIZE);
+
+	data->data = tmp;
+
+	return CAST_UP(PTR_PASS(data));
+}
+
 // Returns real/complex uniform/normal distribution with mean 0 and variance 1
 static void get_base_dist(unsigned int N, const long dims[N], complex float* dst, bool uniform, bool real)
 {

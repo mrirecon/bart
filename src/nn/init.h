@@ -21,6 +21,7 @@ extern unsigned long out_flag_conv_generic(int N, unsigned long conv_flag, unsig
 extern const struct initializer_s* init_const_create(_Complex float val);
 extern const struct initializer_s* init_xavier_create(unsigned long in_flags, unsigned long out_flags, _Bool real, _Bool uniform);
 extern const struct initializer_s* init_kaiming_create(unsigned long in_flags, _Bool real, _Bool uniform, float leaky_val);
+extern const struct initializer_s* init_array_create(int N, const long dims[N], const _Complex float* dat);
 
 extern const struct initializer_s* init_std_normal_create(_Bool real, float scale, float mean);
 extern const struct initializer_s* init_uniform_create(_Bool real, float scale, float mean);
