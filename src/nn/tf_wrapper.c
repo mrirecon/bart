@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -435,6 +436,10 @@ const char* tf_shared_graph_get_init_path(const struct tf_shared_graph_s* x)
 const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key, bool session)
 {
 	int plen = strlen(path) + 20;
+
+	//reduce logging level of TensorFlow
+	if (debug_level <= DP_INFO)
+		setenv("TF_CPP_MIN_LOG_LEVEL", "1", false);
 
 	char graph_path[plen];
 	int rlen = snprintf(graph_path, plen, "%s.pb", path);
