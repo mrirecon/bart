@@ -60,6 +60,17 @@ nn_t network_create(const struct network_s* config, unsigned int NO, const long 
 		result = nn_link_F(result, 1, NULL, 0, NULL);
 	}
 
+	if (config->residual) {
+
+		assert(NO == NI);
+
+		auto nlop_sum = nlop_zaxpbz_create(NO, odims, 1, -1);
+		nlop_sum = nlop_chain2_FF(nlop_from_linop_F(linop_expand_create(NI, odims, idims)), 0, nlop_sum, 0);
+
+		result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(nlop_sum), 0, NULL);
+		result = nn_dup_F(result, 0, NULL, 1, NULL);
+	}
+
 	return result;
 }
 
@@ -292,22 +303,13 @@ static nn_t network_resnet_create(const struct network_s* _config, unsigned int 
 	else
 		result = nn_append_activation(result, 0, NULL, config->last_activation);
 
+	//this scale is for compatibility as resdidual should sum for resnet but -1 is used above
+	result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(nlop_from_linop_F(linop_scale_create(N, odims, -1))), 0, NULL);
+
 	static int counter = 0;
 	const char* i_name_debug = ptr_printf("resblock_%d_in", counter);
 	const char* o_name_debug = ptr_printf("resblock_%d_out", counter);
 	const char* r_name_debug = ptr_printf("resblock_%d_res", counter++);
-
-	if (_config->debug)
-		result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(nlop_dump_create(N, odims, r_name_debug, true, true, true)), 0, NULL);
-
-	if (config->INTERFACE.residual) {
-
-		auto nlop_sum = nlop_zaxpbz_create(N, odims, 1, 1);
-		nlop_sum = nlop_chain2_FF(nlop_from_linop_F(linop_expand_create(N, odims, idims)), 0, nlop_sum, 1);
-
-		result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(nlop_sum), 0, NULL);
-		result = nn_dup_F(result, 0, NULL, 1, NULL);
-	}
 
 	if (_config->debug) {
 
@@ -432,12 +434,6 @@ static nn_t network_varnet_create(const struct network_s* _config, unsigned int 
 	auto iov = nn_generic_domain(nn_result, 0, "conv");
 	auto prox_conv = operator_project_mean_free_sphere_create(iov->N, iov->dims, MD_BIT(0), false);
 	nn_result = nn_set_prox_op_F(nn_result, 0, "conv", prox_conv);
-
-	if(config->INTERFACE.residual) {
-
-		nn_result = nn_chain2_FF(nn_result, 0, NULL, nn_from_nlop_F(nlop_zaxpbz_create(N, idims, 1., -1.)), 1, NULL);
-		nn_result = nn_dup_F(nn_result, 0, NULL, 1, NULL);
-	}
 
 	nn_result = nn_sort_inputs_by_list_F(nn_result, ARRAY_SIZE(varnet_sorted_weight_names), varnet_sorted_weight_names);
 

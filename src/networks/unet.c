@@ -832,12 +832,6 @@ nn_t network_unet_create(const struct network_s* _unet, unsigned int NO, const l
 
 	auto result = unet_level_create(unet, N, odims, idims, 0, status);
 
-	if (unet->INTERFACE.residual) {
-
-		result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(nlop_zaxpbz_create(N, idims, 1., -1.)), 1, NULL);
-		result = nn_dup_F(result, 0, NULL, 1, NULL);
-	}
-
 	result = unet_sort_names(result, unet);
 
 	debug_printf(DP_DEBUG1, "U-Net created:\n");
