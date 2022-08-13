@@ -45,6 +45,12 @@ struct moba_conf moba_defaults = {
 };
 
 
+struct moba_other_conf moba_other_defaults = {
+
+        .fov_reduction_factor = 1.,
+        .scale = {1., 1., 1., 1.},
+};
+
 
 int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in)
 {
@@ -63,9 +69,11 @@ int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in)
 	case MDB_MGRE:
 		coeffs = (MECO_PI != conf->mgre_model) ? get_num_of_coeff(conf->mgre_model) : in;
 		break;
+
+        case MDB_BLOCH:
+		coeffs = 4;
+		break;
 	}
 
 	return coeffs;
 }
-
-

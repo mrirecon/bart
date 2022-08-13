@@ -23,6 +23,8 @@
 
 #include "nlops/nlop.h"
 
+#include "moba/moba.h"
+#include "moba/blochfun.h"
 #include "moba/T1fun.h"
 #include "moba/optreg.h"
 
@@ -113,3 +115,49 @@ static bool test_op_p_stack_moba_nonneg(void)
 }
 
 UT_REGISTER_TEST(test_op_p_stack_moba_nonneg);
+
+
+static bool test_nlop_blochfun(void)
+{
+	enum { N = 16 };
+	long map_dims[N] = { 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long out_dims[N] = { 3, 3, 1, 1, 1, 500, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long in_dims[N] = { 3, 3, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long all_dims[N] = { 3, 3, 1, 1, 1, 500, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+
+	complex float* dst = md_alloc(N, out_dims, CFL_SIZE);
+	complex float* src = md_alloc(N, in_dims, CFL_SIZE);
+
+	bool gpu_use = false;
+
+	struct moba_conf_s data;
+
+        data.sim.seq = simdata_seq_defaults;
+        data.sim.voxel = simdata_voxel_defaults;
+        data.sim.pulse = simdata_pulse_defaults;
+        data.sim.pulse.hs = hs_pulse_defaults;
+        data.sim.grad = simdata_grad_defaults;
+        data.sim.tmp = simdata_tmp_defaults;
+
+        data.other = moba_other_defaults;
+
+        data.sim.seq.perfect_inversion = true; //FIXME: HypSec inversion too slow
+        data.sim.seq.type = SIM_ODE;
+
+	md_zfill(N, in_dims, src, 1.0);
+
+	struct nlop_s* op_bloch = nlop_bloch_create(N, all_dims, map_dims, out_dims, in_dims, &data, gpu_use);
+
+	nlop_apply(op_bloch, N, out_dims, dst, N, in_dims, src);
+
+	float err = linop_test_adjoint(nlop_get_derivative(op_bloch, 0, 0));
+
+	nlop_free(op_bloch);
+
+	md_free(src);
+	md_free(dst);
+
+	UT_ASSERT(err < 1.E-3);
+}
+
+UT_REGISTER_TEST(test_nlop_blochfun);

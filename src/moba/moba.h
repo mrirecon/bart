@@ -2,10 +2,12 @@
 #include <stdbool.h>
 
 #include "simu/signals.h"
+#include "simu/pulse.h"
+#include "simu/simulation.h"
 
 struct opt_reg_s;
 
-enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE };
+enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE, MDB_BLOCH };
 enum edge_filter_t { EF1, EF2 };
 
 #ifndef _MECO_MODEL
@@ -60,5 +62,24 @@ struct moba_conf {
 
 extern struct moba_conf moba_defaults;
 
+struct moba_other_conf {
+
+        float fov_reduction_factor;
+        float scale[4];
+};
+
+extern struct moba_other_conf moba_other_defaults;
+
+struct sim_data;
+
+struct moba_conf_s {
+
+        enum mdb_t model;
+
+        struct sim_data sim;
+        struct moba_other_conf other;
+};
+
 extern int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in);
 
+extern void debug_other(struct moba_other_conf* data);
