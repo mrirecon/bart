@@ -1,4 +1,5 @@
 /* Copyright 2019-2020. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2022. Institute of Biomedical Imaging. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  **/
@@ -6,6 +7,7 @@
 #include <stdbool.h>
 
 #include "moba/meco.h"
+#include "misc/debug.h"
 
 #include "moba.h"
 
@@ -76,4 +78,12 @@ int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in)
 	}
 
 	return coeffs;
+}
+
+
+void debug_other(struct moba_other_conf* data)
+{
+        debug_printf(DP_WARN, "Other Debug-Output for MOBA\n\n");
+        debug_printf(DP_INFO, "\tR1:%f\n", data->fov_reduction_factor);
+        debug_printf(DP_INFO, "\tscale:%f:%f:%f:%f\n", data->scale[0], data->scale[1], data->scale[2], data->scale[3]);
 }

@@ -83,3 +83,4 @@ struct moba_conf_s {
 extern int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in);
 
 extern void debug_other(struct moba_other_conf* data);
+

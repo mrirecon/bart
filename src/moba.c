@@ -4,7 +4,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: Xiaoqing Wang, Martin Uecker
+ * Authors: Xiaoqing Wang, Martin Uecker, Nick Scholand
  */
 
 #include <stdbool.h>
@@ -25,9 +25,13 @@
 #include "misc/debug.h"
 #include "misc/version.h"
 
+#include "simu/pulse.h"
+#include "simu/simulation.h"
+
 #include "noncart/nufft.h"
 
 #include "linops/linop.h"
+#include "linops/someops.h"
 
 #include "iter/iter2.h"
 
@@ -42,7 +46,6 @@
 #include "moba/recon.h"
 #include "moba/moba.h"
 #include "moba/meco.h"
-
 
 static const char help_str[] = "Model-based nonlinear inverse reconstruction";
 
@@ -113,15 +116,72 @@ int main_moba(int argc, char* argv[argc])
 
 	long img_vec[3] = { 0 };
 
+        struct moba_conf_s data;
+
+        data.sim.seq = simdata_seq_defaults;
+        data.sim.voxel = simdata_voxel_defaults;
+        data.sim.pulse = simdata_pulse_defaults;
+        data.sim.pulse.hs = hs_pulse_defaults;
+        data.sim.grad = simdata_grad_defaults;
+        data.sim.tmp = simdata_tmp_defaults;
+        data.other = moba_other_defaults;
+
+        // FIXME: Move to separate function to reuse it for sim.c
+        struct opt_s seq_opts[] = {
+
+                /* Sequence Specific Parameters */
+                OPTL_SELECT(0, "bssfp", enum sim_seq, &(data.sim.seq.seq_type), SEQ_BSSFP, "bSSFP"),
+                OPTL_SELECT(0, "ir-bssfp", enum sim_seq, &(data.sim.seq.seq_type), SEQ_IRBSSFP, "Inversion-Recovery bSSFP"),
+                OPTL_SELECT(0, "flash", enum sim_seq, &(data.sim.seq.seq_type), SEQ_FLASH, "FLASH"),
+                OPTL_SELECT(0, "ir-flash", enum sim_seq, &(data.sim.seq.seq_type), SEQ_IRFLASH, "Inversion-Recovery FLASH"),
+                OPTL_FLOAT(0, "tr", &(data.sim.seq.tr), "float", "Repetition time [s]"),
+                OPTL_FLOAT(0, "te", &(data.sim.seq.te), "float", "Echo time [s]"),
+                OPTL_INT(0, "nspins", &(data.sim.seq.spin_num), "int", "Number of averaged spins"),
+                OPTL_INT(0, "nrep", &(data.sim.seq.rep_num), "int", "Number of repetitions"),
+                OPTL_SET(0, "pinv", &(data.sim.seq.perfect_inversion), "Use perfect inversions"),
+                OPTL_FLOAT(0, "ipl", &(data.sim.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
+                OPTL_FLOAT(0, "isp", &(data.sim.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
+                OPTL_FLOAT(0, "ppl", &(data.sim.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
+
+                /* Pulse Specific Parameters */
+                OPTL_FLOAT(0, "trf", &(data.sim.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
+                OPTL_FLOAT(0, "fa", &(data.sim.pulse.flipangle), "float", "Flipangle [deg]"),
+                OPTL_FLOAT(0, "bwtp", &(data.sim.pulse.bwtp), "float", "Bandwidth-Time-Product"),
+
+                /* Voxel Specific Parameters */
+                OPTL_FLOAT(0, "off", &(data.sim.voxel.w), "float", "Off-Resonance [rad/s]"),
+
+                /* Gradient Specific Parameters */
+                OPTL_FLOAT(0, "mom-sl", &(data.sim.grad.mom_sl), "float", "Slice Selection Gradient Moment [rad/s]"),
+
+        };
+        const int N_seq_opts = ARRAY_SIZE(seq_opts);
+
+        struct opt_s sim_opts[] = {
+
+                OPTL_SELECT(0, "ODE", enum sim_type, &(data.sim.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation"),
+                OPTL_SELECT(0, "STM", enum sim_type, &(data.sim.seq.type), SIM_STM, "state-transition matrix based simulation (default)"),
+
+        };
+        const int N_sim_opts = ARRAY_SIZE(sim_opts);
+
+        struct opt_s other_opts[] = {
+
+                OPTL_FLVEC4(0, "pdscale", &(data.other.scale), "sdR1:sdM0:sdR2:sdB1", "Scaling of partial derivatives for Bloch model-based reconstruction"),
+        };
+        const int N_other_opts = ARRAY_SIZE(other_opts);
+
 
 	opt_reg_init(&ropts);
 
 	const struct opt_s opts[] = {
 
+                //FIXME: Sort options into optimization and others interface
 		{ 'r', NULL, true, OPT_SPECIAL, opt_reg_moba, &ropts, "<T>:A:B:C", "generalized regularization options (-rh for help)" },
 		OPT_SELECT('L', enum mdb_t, &conf.mode, MDB_T1, "T1 mapping using model-based look-locker"),
 		OPT_SELECT('F', enum mdb_t, &conf.mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
 		OPT_SELECT('G', enum mdb_t, &conf.mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
+                OPTL_SELECT(0, "bloch", enum mdb_t, &conf.mode, MDB_BLOCH, "Bloch model-based reconstruction"),
 		OPT_UINT('m', &conf.mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_UINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backsapce \b earlier
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
@@ -153,6 +213,9 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "sobolev_a", &conf.sobolev_a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "sobolev_b", &conf.sobolev_b, "", "(b in 1 + a * \\Laplace^-b/2)"),
 		OPTL_SELECT(0, "fat_spec_0", enum fat_spec, &conf.fat_spec, FAT_SPEC_0, "select fat spectrum from ISMRM fat-water tool"),
+                OPTL_SUBOPT(0, "seq", "...", "configure sequence parameters", N_seq_opts, seq_opts),
+                OPTL_SUBOPT(0, "sim", "...", "configure simulation parameters", N_sim_opts, sim_opts),
+                OPTL_SUBOPT(0, "other", "...", "configure other parameters", N_other_opts, other_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -164,6 +227,10 @@ int main_moba(int argc, char* argv[argc])
 	cuda_use_global_memory();
 #endif
 
+        data.model = conf.mode;
+
+        // debug_sim(&(data.sim));
+        // debug_other(&(data.other));
 
 	if (conf.ropts->r > 0)
 		conf.algo = ALGO_ADMM;
@@ -355,6 +422,8 @@ int main_moba(int argc, char* argv[argc])
 		unmap_cfl(DIMS, ksp_dims, kspace_data);
 	}
 
+        if (MDB_BLOCH == conf.mode)
+		data.other.fov_reduction_factor = restrict_fov;
 
 	if (conf.k_filter) {
 
@@ -396,7 +465,7 @@ int main_moba(int argc, char* argv[argc])
 
 	// scaling
 
-	if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode)) {
+	if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode) || (MDB_BLOCH == conf.mode)) {
 
 		double scaling = 5000. / md_znorm(DIMS, grid_dims, k_grid_data);
 		double scaling_psf = 1000. / md_znorm(DIMS, pat_dims, pattern);
@@ -414,7 +483,12 @@ int main_moba(int argc, char* argv[argc])
 		md_zsmul(DIMS, pat_dims, pattern, pattern, scaling_psf);
 	}
 
+
 	// mask
+
+        // Idea:        Speed up md-function based nlops by skipping zero parts,
+	//              not required for Bloch model, because other_conf.fov_reduction_factor
+	//              constrains the k-space coverage there
 
 	if (-1. == restrict_fov) {
 
@@ -429,7 +503,9 @@ int main_moba(int argc, char* argv[argc])
 		restrict_dims[2] = restrict_fov;
 
 		mask = compute_mask(DIMS, msk_dims, restrict_dims);
-		md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, msk_strs, mask);
+
+                if (MDB_BLOCH != conf.mode)
+		        md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, msk_strs, mask);
 
 		if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode)) {
 
@@ -442,6 +518,53 @@ int main_moba(int argc, char* argv[argc])
 			md_zsmul2(DIMS, single_map_dims, single_map_strs, single_map, single_map_strs, single_map, conf.sms ? 2.0 : 1.5);
 			md_copy_block(DIMS, pos, img_dims, img, single_map_dims, single_map, CFL_SIZE);
 		}
+	}
+
+        // Scale parameter maps
+        //	- Linearity of Fourier transform also allows this for frequency domain
+
+        complex float initval[4] = {1., 1., 1., 1.};
+
+        long tmp_dims[DIMS];
+        md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, tmp_dims, grid_dims);
+
+        complex float* tmp = md_alloc(DIMS, tmp_dims, CFL_SIZE);
+
+        long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
+
+        if (MDB_BLOCH == conf.mode) {
+
+                // FIXME: Integrate other moba models here -> switch case modifying initval
+                initval[0] = 3.;
+
+                for (int i = 0; i < img_dims[COEFF_DIM]; i++) {
+
+                        pos[COEFF_DIM] = i;
+
+                        md_copy_block(DIMS, pos, tmp_dims, tmp, img_dims, img, CFL_SIZE);
+
+                        md_zsmul(DIMS, tmp_dims, tmp, tmp, initval[i]);
+
+                        if (0. != data.other.scale[i])
+                                md_zsmul(DIMS, tmp_dims, tmp, tmp, 1. / data.other.scale[i]);
+
+                        md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
+                }
+        }
+
+        // Transform B1 map from image to k-space and add k-space to initialization array (img)
+
+	if (MDB_BLOCH == conf.mode) {
+
+		pos[COEFF_DIM] = 3;
+
+		const struct linop_s* linop_fftc = linop_fftc_create(DIMS, tmp_dims, FFT_FLAGS);
+
+		md_copy_block(DIMS, pos, tmp_dims, tmp, img_dims, img, CFL_SIZE);
+		linop_forward_unchecked(linop_fftc, tmp, tmp);
+		md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
+
+		linop_free(linop_fftc);
 	}
 
 #ifdef  USE_CUDA
@@ -457,18 +580,32 @@ int main_moba(int argc, char* argv[argc])
 
 		md_copy(DIMS, TI_dims, TI_gpu, TI, CFL_SIZE);
 
-
-		moba_recon(&conf, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, init);
-
+		moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI_gpu, kspace_gpu, init);
 
 		md_free(kspace_gpu);
 		md_free(TI_gpu);
 
 	} else
 #endif
+	moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, k_grid_data, init);
 
-	moba_recon(&conf, dims, img, sens, pattern, mask, TI, k_grid_data, init);
+        // Rescale estimated parameter maps
 
+        if (MDB_BLOCH == conf.mode) {
+                for (int i = 0; i < img_dims[COEFF_DIM]; i++) {
+
+                        pos[COEFF_DIM] = i;
+
+                        md_copy_block(DIMS, pos, tmp_dims, tmp, img_dims, img, CFL_SIZE);
+
+                        if (0. !=  data.other.scale[i])
+                                md_zsmul(DIMS, tmp_dims, tmp, tmp,  data.other.scale[i]);
+
+                        md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
+                }
+        }
+
+        md_free(tmp);
 	md_free(mask);
 
 	unmap_cfl(DIMS, coil_dims, sens);
