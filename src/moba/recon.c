@@ -100,6 +100,7 @@ static void recon(const struct moba_conf* conf, const long dims[DIMS],
 	struct mobamod nl = { 0 };
 
 	switch (conf->mode) {
+
 	case MDB_T1:
 
 		nl = T1_create(dims, mask, TI, pattern, &mconf, usegpu);
@@ -117,6 +118,8 @@ static void recon(const struct moba_conf* conf, const long dims[DIMS],
 		break;
 
 	case MDB_MGRE:
+	case MDB_BLOCH:
+
 		assert(0);
 	}
 

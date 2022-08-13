@@ -3,7 +3,7 @@ struct nlop_s;
 struct noir_model_conf_s;
 struct modBlochFit;
 
-extern const struct linop_s* bloch_get_alpha_trafo(struct nlop_s* op);
+extern const struct linop_s* bloch_get_alpha_trafo(const struct nlop_s* op);
 extern void bloch_forw_alpha(const struct linop_s* op, complex float* dst, const complex float* src);
 extern void bloch_back_alpha(const struct linop_s* op, complex float* dst, const complex float* src);
 
