@@ -47,8 +47,15 @@ int main(int argc, char* argv[])
 	int num_tests_run = 0;
 	int num_tests_pass = 0;
 
-	for (ut_test_f** ptr = &_utests_begin; ptr != &_utests_end; ptr++)
-		UNUSED((num_tests_run++, (**ptr)()) && num_tests_pass++);
+	for (ut_test_f** ptr = &_utests_begin; ptr != &_utests_end; ptr++) {
+
+		if ((**ptr)())
+			num_tests_pass++;
+		else
+			debug_printf(DP_ERROR, "Test %d failed.\n", num_tests_run);
+
+		num_tests_run++;
+	}
 
 	bool good = (num_tests_pass == num_tests_run);
 
