@@ -6,23 +6,17 @@
  *	Nick Scholand
  */
 
-#include <stdio.h>
-#include <memory.h>
 #include <complex.h>
 #include <math.h>
-#include <time.h>
-#include <stdlib.h>
 #include <stdbool.h>
 
 #include "misc/debug.h"
 #include "misc/mri.h"
-#include "misc/mmio.h"
-#include "misc/opts.h"
+#include "misc/misc.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/linalg.h"
-#include "num/init.h"
 #include "num/ode.h"
 
 #include "simu/bloch.h"
@@ -33,15 +27,15 @@
 
 void debug_sim(struct sim_data* data)
 {
-        debug_printf(DP_WARN, "Simulation-Debug-Output\n\n");
-        debug_printf(DP_WARN, "Voxel-Parameter:\n");
+        debug_printf(DP_INFO, "Simulation-Debug-Output\n\n");
+        debug_printf(DP_INFO, "Voxel-Parameter:\n");
         debug_printf(DP_INFO, "\tR1:%f\n", data->voxel.r1);
         debug_printf(DP_INFO, "\tR2:%f\n", data->voxel.r2);
         debug_printf(DP_INFO, "\tM0:%f\n", data->voxel.m0);
         debug_printf(DP_INFO, "\tw:%f\n", data->voxel.w);
         debug_printf(DP_INFO, "\tB1:%f\n\n", data->voxel.b1);
 
-        debug_printf(DP_WARN, "Seq-Parameter:\n");
+        debug_printf(DP_INFO, "Seq-Parameter:\n");
         debug_printf(DP_INFO, "\tSimulation Type:%d\n", data->seq.type);
         debug_printf(DP_INFO, "\tSequence:%d\n", data->seq.seq_type);
         debug_printf(DP_INFO, "\tTR:%f\n", data->seq.tr);
@@ -53,11 +47,11 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tPPL:%f\n", data->seq.prep_pulse_length);
         debug_printf(DP_INFO, "\tPulse Applied?:%d\n\n", data->seq.pulse_applied);
 
-        debug_printf(DP_WARN, "Gradient-Parameter:\n");
+        debug_printf(DP_INFO, "Gradient-Parameter:\n");
         debug_printf(DP_INFO, "\tMoment:%f\n", data->grad.mom);
         debug_printf(DP_INFO, "\tMoment SL:%f\n\n", data->grad.mom_sl);
 
-        debug_printf(DP_WARN, "Pulse-Parameter:\n");
+        debug_printf(DP_INFO, "Pulse-Parameter:\n");
         debug_printf(DP_INFO, "\tRF-Start:%f\n", data->pulse.rf_start);
         debug_printf(DP_INFO, "\tRF-End:%f\n", data->pulse.rf_end);
         debug_printf(DP_INFO, "\tFlipangle:%f\n", data->pulse.flipangle);
@@ -70,14 +64,14 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tAlpha:%f\n", data->pulse.alpha);
         debug_printf(DP_INFO, "\tA:%f\n\n", data->pulse.A);
 
-        debug_printf(DP_WARN, "Inversion Pulse-Parameter:\n");
+        debug_printf(DP_INFO, "Inversion Pulse-Parameter:\n");
         debug_printf(DP_INFO, "\tA0:%f\n", data->pulse.hs.a0);
         debug_printf(DP_INFO, "\tBeta:%f\n", data->pulse.hs.beta);
         debug_printf(DP_INFO, "\tMu:%f\n", data->pulse.hs.mu);
         debug_printf(DP_INFO, "\tDuration:%f\n", data->pulse.hs.duration);
         debug_printf(DP_INFO, "\tON?:%d\n", data->pulse.hs.on);
 
-        debug_printf(DP_WARN, "Other Parameter:\n");
+        debug_printf(DP_INFO, "Other Parameter:\n");
         debug_printf(DP_INFO, "\tODE Tolerance:%f\n", data->other.ode_tol);
         debug_printf(DP_INFO, "\tPulse Sampling Rate:%f Hz\n", data->other.sampling_rate);
 }
@@ -134,7 +128,7 @@ const struct simdata_grad simdata_grad_defaults = {
 const struct simdata_other simdata_other_defaults = {
 
 	.ode_tol = 10E-6,
-	.sampling_rate = 10E5,
+	.sampling_rate = 10E+5,
 };
 
 
@@ -143,7 +137,7 @@ const struct simdata_other simdata_other_defaults = {
 /* --------- Matrix Operations --------- */
 
 
-static void vm_mul_transpose(int N, float out[N], float matrix[N][N], float in[N])
+static void vm_mul_transpose(int N, float out[N], const float matrix[N][N], const float in[N])
 {
 	for (int i = 0; i < N; i++) {
 
@@ -155,9 +149,10 @@ static void vm_mul_transpose(int N, float out[N], float matrix[N][N], float in[N
 }
 
 
-static void mm_mul(int N, float out[N][N], float in1[N][N], float in2[N][N])
+static void mm_mul(int N, float out[N][N], const float in1[N][N], const float in2[N][N])
 {
-	for (int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++) {
+
 		for (int j = 0; j < N; j++) {
 
 			out[i][j] = 0.;
@@ -165,25 +160,27 @@ static void mm_mul(int N, float out[N][N], float in1[N][N], float in2[N][N])
 			for (int k = 0; k < N; k++)
 				out[i][j] += in1[i][k] * in2[k][j];
 		}
+	}
 }
 
 
 /* ------------ Bloch Equations -------------- */
 
-static void set_gradients(void* _data, float t)
+static void set_gradients(struct sim_data* data, float t)
 {
-        struct sim_data* data = _data;
-
 	if (data->seq.pulse_applied) {
 
-                // Hyperbolic Secant pulse
                 if (data->pulse.hs.on) {
+
+			// Hyperbolic Secant pulse
 
                         data->tmp.w1 = pulse_hypsec_am(&data->pulse.hs, t);
 
                         data->pulse.phase = pulse_hypsec_phase(&data->pulse.hs, t);
 
-                } else { //Windowed Sinc pulse
+                } else {
+
+			// Windowed Sinc pulse
 
                         data->tmp.w1 = pulse_sinc(&data->pulse, t);
                 }
@@ -262,6 +259,7 @@ static void bloch_simu_stm_fun(void* _data, float* out, float t, const float* in
 void ode_matrix_interval_simu(struct sim_data* _data, float h, float tol, unsigned int N, float out[N], float st, float end)
 {
         struct ode_matrix_simu_s data = { N, _data };
+
 	ode_interval(h, tol, N, out, st, end, &data, bloch_simu_stm_fun);
 }
 
@@ -407,9 +405,12 @@ static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 // Homogeneously discretized pulse with rotational matrices
 static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 {
-        if (0. == data->pulse.rf_end)
+        if (0. == data->pulse.rf_end) {
+
                 hard_pulse(data, N, P, xp);
-        else {
+
+	} else {
+
                 assert(0. < data->other.sampling_rate);
 
                 float sample_time = 1. / data->other.sampling_rate;
@@ -423,9 +424,10 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 
                 float w1 = 0;
 
-                while (data->pulse.rf_end >= t_im) {
+                while (t_im <= data->pulse.rf_end) {
 
                         // RF-pulse strength of current interval
+
                         w1 = pulse_sinc(&data->pulse, t_im);
 
                         for (int i = 0; i < P; i++) {
@@ -434,10 +436,8 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
                                 xp2[1] = xp[i][1];
                                 xp2[2] = xp[i][2];
 
-                                // RF-Pulse
-                                bloch_excitation2(xp3, xp2, w1*sample_time, data->pulse.phase);
+                                bloch_excitation2(xp3, xp2, w1 * sample_time, data->pulse.phase);
 
-                                // Relaxation
                                 bloch_relaxation(xp[i], sample_time, xp3, data->voxel.r1, data->voxel.r2, data->grad.gb);
                         }
 
@@ -461,18 +461,18 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
         switch (data->seq.type) {
 
         case SIM_ROT:
-                ;
+
                 rot_pulse(data, N, P, xp);
                 break;
 
         case SIM_ODE:
-                ;
+
                 // Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
-               	ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
+		ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
                 break;
 
         case SIM_STM:
-                ;
+
                 create_sim_matrix(data, P * N, stm_matrix, data->pulse.rf_start, data->pulse.rf_end);
                 break;
         }
@@ -493,7 +493,7 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 		xp2[1] = xp[i][1];
 		xp2[2] = xp[i][2];
 
-		bloch_relaxation(xp[i], end-st, xp2, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb);
+		bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb);
 	}
 }
 
@@ -512,18 +512,18 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
         switch (data->seq.type) {
 
         case SIM_ROT:
-                ;
+
                 hard_relaxation(data, N, P, xp, st, end);
                 break;
 
         case SIM_ODE:
-                ;
+
                 // Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
                 ode_direct_sa(h, tol, N, P - 1, xp, st, end, data, bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
                 break;
 
         case SIM_STM:
-                ;
+
                 create_sim_matrix(data, P * N, stm_matrix, st, end);
                 break;
         }
@@ -560,15 +560,15 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
 
         case SIM_ROT:
         case SIM_ODE:
-                ;
+
                 if (0. != data->pulse.rf_end)
                 	sinc_pulse_create(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
 
                 break;
 
-        case SIM_STM:
-                ;
-                int M = P*N+1;
+        case SIM_STM: ;
+
+                int M = P * N + 1;
 
                 // Matrix: 0 -> T_RF
                 float mrf[M][M];
@@ -582,7 +582,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
 
                 if (0 != data->grad.mom_sl) {
 
-                        if (0.0000001 > (1.5*data->pulse.rf_end - data->seq.te)) { // Catch equality of floats
+                        if (0.0000001 > (1.5 * data->pulse.rf_end - data->seq.te)) { // Catch equality of floats
 
                                 // Slice-Rewinder
 
@@ -594,8 +594,11 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
 
                                 mm_mul(M, mrel, tmp, tmp2);
 
-                        } else
+                        } else {
+
                                 debug_printf(DP_WARN, "Slice-Selection Gradient rewinder does not fit between RF_end and TE!\n");
+			}
+
                 } else {
 
                         relaxation2(data, 0., 0., M, 1, NULL, data->pulse.rf_end, data->seq.te, mrel);
@@ -606,15 +609,16 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
 
                 // Smooth spoiling for FLASH sequences
 
-                if (    (SEQ_FLASH == data->seq.seq_type) ||
-                        (SEQ_IRFLASH == data->seq.seq_type))
+                if (   (SEQ_FLASH == data->seq.seq_type)
+                    || (SEQ_IRFLASH == data->seq.seq_type)) {
 
 		        data->tmp.r2spoil = 10000.;
+		}
 
                 // Balance z-gradient for bSSFP type sequences
 
-                if (    (SEQ_BSSFP == data->seq.seq_type) ||
-                        (SEQ_IRBSSFP == data->seq.seq_type)) {
+                if (   (SEQ_BSSFP == data->seq.seq_type)
+                    || (SEQ_IRBSSFP == data->seq.seq_type)) {
 
                         // Matrix: TE -> TR-T_RF
                         relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr-data->pulse.rf_end, tmp);
@@ -636,7 +640,6 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
 
                 break;
         }
-
 }
 
 
@@ -649,7 +652,7 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 
         case SIM_ROT:
         case SIM_ODE:
-                ;
+
                 rf_pulse(data, h, tol, N, P, xp, NULL);
 
                 // Slice-Rewinder if time is long enough
@@ -670,6 +673,7 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
                         }
 
                 } else {
+
                         relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
                 }
 
@@ -680,16 +684,17 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 
                 // Smooth spoiling for FLASH sequences
 
-                if (    (SEQ_FLASH == data->seq.seq_type) ||
-                        (SEQ_IRFLASH == data->seq.seq_type))
+                if (   (SEQ_FLASH == data->seq.seq_type)
+                    || (SEQ_IRFLASH == data->seq.seq_type)) {
 
                         data->tmp.r2spoil = 10000.;
+		}
 
 
                 // Balance z-gradient for bSSFP type sequences
 
-                if (    (SEQ_BSSFP == data->seq.seq_type) ||
-                        (SEQ_IRBSSFP == data->seq.seq_type)) {
+                if (   (SEQ_BSSFP == data->seq.seq_type)
+                    || (SEQ_IRBSSFP == data->seq.seq_type)) {
 
                         relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr-data->pulse.rf_end, NULL);
 
@@ -701,17 +706,19 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 
                         relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL);
                 }
+
                 data->tmp.r2spoil = 0.;	// effects spoiled sequences only
 
                 break;
 
         case SIM_STM:
-                ;
+
                 // Evolution: 0 -> TE
                 apply_sim_matrix(N * P + 1, xstm, mte);
 
                 // Save data
                 stm2ode(N, P, xp, xstm);
+
                 collect_signal(data, N, P, mxy, sa_r1, sa_r2, sa_b1, xp);
 
                 // Evolution: TE -> TR
@@ -724,7 +731,7 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 
 /* ------------ Sequence Specific Blocks -------------- */
 
-void inversion(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end)
+void inversion(const struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end)
 {
 	struct sim_data inv_data = *data;
 
@@ -757,7 +764,7 @@ void inversion(struct sim_data* data, float h, float tol, int N, int P, float xp
 }
 
 
-static void alpha_half_preparation(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N])
+static void alpha_half_preparation(const struct sim_data* data, float h, float tol, int N, int P, float xp[P][N])
 {
 	struct sim_data prep_data = *data;
 
@@ -779,8 +786,10 @@ static void alpha_half_preparation(struct sim_data* data, float h, float tol, in
 
 /* ------------ Main Simulation -------------- */
 
-void bloch_simulation(struct sim_data* _data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
+void bloch_simulation(const struct sim_data* _data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
 {
+	// FIXME: split config + variable part
+
 	struct sim_data data = *_data;  // Lose information of complex pointer variables
 
         float tol = 10E-6;      // Tolerance of ODE solver
@@ -838,14 +847,14 @@ void bloch_simulation(struct sim_data* _data, float (*m_state)[3], float (*sa_r1
 
                 // Apply perfect inversion
 
-                if (    (SEQ_IRBSSFP == data.seq.seq_type) ||
-                        (SEQ_IRFLASH == data.seq.seq_type))
+                if (   (SEQ_IRBSSFP == data.seq.seq_type)
+		    || (SEQ_IRFLASH == data.seq.seq_type))
                         inversion(&data, h, tol, N, P, xp, 0., data.seq.inversion_spoiler);
 
                 // Alpha/2 and TR/2 signal preparation
 
-                if (    (SEQ_BSSFP == data.seq.seq_type) ||
-                        (SEQ_IRBSSFP == data.seq.seq_type))
+                if (   (SEQ_BSSFP == data.seq.seq_type)
+                    || (SEQ_IRBSSFP == data.seq.seq_type))
                         alpha_half_preparation(&data, h, tol, N, P, xp);
 
                 float mte[M][M];
@@ -854,11 +863,12 @@ void bloch_simulation(struct sim_data* _data, float (*m_state)[3], float (*sa_r1
 
                 ode2stm(N, P, xstm, xp);
 
-                // STM requires two matrices for RFPhase=0 and RFPhase=PI
-                // Therefore mte and mte2 need to be estimated
+                // STM requires two matrices for RFPhase = 0 and RFPhase = PI
+                // Therefore mte and mte2 need to be caclulated
                 // FIXME: Do not estimate mtr twice
-                if (    (SEQ_BSSFP == data.seq.seq_type) ||
-                        (SEQ_IRBSSFP == data.seq.seq_type)) {
+
+                if (   (SEQ_BSSFP == data.seq.seq_type)
+                    || (SEQ_IRBSSFP == data.seq.seq_type)) {
 
                         data.pulse.phase = M_PI;
                         prepare_sim(&data, N, P, mte2, mtr);
@@ -866,10 +876,9 @@ void bloch_simulation(struct sim_data* _data, float (*m_state)[3], float (*sa_r1
 
                         prepare_sim(&data, N, P, mte, mtr);
 
-                } else {
-
-                        prepare_sim(&data, N, P, mte, mtr);
                 }
+
+		prepare_sim(&data, N, P, mte, mtr);
 
                 // Loop over Pulse Blocks
 
@@ -878,8 +887,8 @@ void bloch_simulation(struct sim_data* _data, float (*m_state)[3], float (*sa_r1
                 while (data.tmp.rep_counter < data.seq.rep_num) {
 
                         // Change phase of bSSFP sequence in each repetition block
-                        if (    (SEQ_BSSFP == data.seq.seq_type) ||
-                                (SEQ_IRBSSFP == data.seq.seq_type)) {
+                        if (   (SEQ_BSSFP == data.seq.seq_type)
+                            || (SEQ_IRBSSFP == data.seq.seq_type)) {
 
                                 data.pulse.phase = M_PI * (float)(data.tmp.rep_counter);
 
@@ -899,10 +908,10 @@ void bloch_simulation(struct sim_data* _data, float (*m_state)[3], float (*sa_r1
 
         sum_up_signal(&data, mxy, sa_r1, sa_r2, sa_b1, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
 
-	free(mxy);
-	free(sa_r1);
-	free(sa_r2);
-	free(sa_b1);
+	xfree(mxy);
+	xfree(sa_r1);
+	xfree(sa_r2);
+	xfree(sa_b1);
 }
 
 

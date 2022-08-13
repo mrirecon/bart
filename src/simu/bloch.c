@@ -102,7 +102,7 @@ void bloch_excitation(float out[3], float t, const float in[3], float r1, float 
 	(void)r1; (void)r2;
 	assert(0. == gb[2]); // no gradient, rotating frame
 
-	rotx(out, in, gb[0]*t);
+	rotx(out, in, gb[0] * t);
 }
 
 // Rotation effects of RF fields only
