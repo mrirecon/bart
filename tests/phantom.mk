@@ -74,7 +74,7 @@ tests/test-phantom-basis: nrmse phantom fmac
 	$(TOOLDIR)/phantom -T -k k0.ra								;\
 	$(TOOLDIR)/phantom -T -b -k k1.ra							;\
 	$(TOOLDIR)/fmac -s 64 k1.ra k2.ra							;\
-	$(TOOLDIR)/nrmse -t 0. k0.ra k2.ra							;\
+	$(TOOLDIR)/nrmse -t 0.000001 k0.ra k2.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

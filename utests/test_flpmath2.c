@@ -10,17 +10,6 @@
 
 #include "utest.h"
 
-#ifdef _OPENMP
-#ifdef BLAS_THREADSAFE
-bool blas_threadsafe2 = true;
-#else
-bool blas_threadsafe2 = false;
-#endif
-#else
-bool blas_threadsafe2 = true;
-#endif
-
-
 
 static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long in1_flag, unsigned long in2_flag, bool optimization_expected, float err_val)
 {
@@ -67,11 +56,11 @@ static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long
 	return result;
 }
 
-static bool test_optimized_md_zfmac2_dot(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(0ul, 1ul, 1ul, blas_threadsafe2, 5.e-6)); }
-static bool test_optimized_md_zfmac2_dot2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(2ul, 3ul, 3ul, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_zfmac2_dot(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(0ul, 1ul, 1ul, true, 5.e-6)); }
+static bool test_optimized_md_zfmac2_dot2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(2ul, 3ul, 3ul, true, 1.e-6)); }
 static bool test_optimized_md_zfmac2_gemv(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
-static bool test_optimized_md_zfmac2_gemv2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(2ul, 1ul, 3ul, blas_threadsafe2, 5.e-6)); }
-static bool test_optimized_md_zfmac2_gemv3(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(14ul, 13ul, 7ul, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_zfmac2_gemv2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(2ul, 1ul, 3ul, true, 5.e-6)); }
+static bool test_optimized_md_zfmac2_gemv3(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(14ul, 13ul, 7ul, true, 1.e-6)); }
 static bool test_optimized_md_zfmac2_gemm(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 6ul, 5ul, true, 2.e-6)); }
 static bool test_optimized_md_zfmac2_gemm2(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(11ul, 14ul, 13ul, true, 1.e-6));}
 static bool test_optimized_md_zfmac2_ger(void) { UT_ASSERT(test_optimized_md_zfmac2_flags(3ul, 1ul, 2ul, true, 2.e-6)); }
@@ -136,11 +125,11 @@ static bool test_optimized_md_zfmacc2_flags(unsigned long out_flag, unsigned lon
 	return result;
 }
 
-static bool test_optimized_md_zfmacc2_dot(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(0ul, 1ul, 1ul, blas_threadsafe2, 8.e-6)); }
-static bool test_optimized_md_zfmacc2_dot2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(2ul, 3ul, 3ul, blas_threadsafe2, 5.e-6)); }
+static bool test_optimized_md_zfmacc2_dot(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(0ul, 1ul, 1ul, true, 8.e-6)); }
+static bool test_optimized_md_zfmacc2_dot2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(2ul, 3ul, 3ul, true, 5.e-6)); }
 static bool test_optimized_md_zfmacc2_gemv(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
-static bool test_optimized_md_zfmacc2_gemv2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(2ul, 1ul, 3ul, blas_threadsafe2, 5.e-6)); }
-static bool test_optimized_md_zfmacc2_gemv3(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(14ul, 13ul, 7ul, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_zfmacc2_gemv2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(2ul, 1ul, 3ul, true, 5.e-6)); }
+static bool test_optimized_md_zfmacc2_gemv3(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(14ul, 13ul, 7ul, true, 1.e-6)); }
 static bool test_optimized_md_zfmacc2_gemm(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(3ul, 6ul, 5ul, true, 2.e-6)); }
 static bool test_optimized_md_zfmacc2_gemm2(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(11ul, 14ul, 13ul, true, 1.e-6));}
 static bool test_optimized_md_zfmacc2_ger(void) { UT_ASSERT(test_optimized_md_zfmacc2_flags(3ul, 1ul, 2ul, true, 2.e-6)); }
@@ -205,11 +194,11 @@ static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long 
 	return result;
 }
 
-static bool test_optimized_md_fmac2_dot(void) { UT_ASSERT(test_optimized_md_fmac2_flags(0ul, 1ul, 1ul, blas_threadsafe2, 2.e-5)); }
-static bool test_optimized_md_fmac2_dot2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(2ul, 3ul, 3ul, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_fmac2_dot(void) { UT_ASSERT(test_optimized_md_fmac2_flags(0ul, 1ul, 1ul, true, 2.e-5)); }
+static bool test_optimized_md_fmac2_dot2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(2ul, 3ul, 3ul, true, 1.e-6)); }
 static bool test_optimized_md_fmac2_gemv(void) { UT_ASSERT(test_optimized_md_fmac2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
-static bool test_optimized_md_fmac2_gemv2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(2ul, 1ul, 3ul, blas_threadsafe2, 2.e-6)); }
-static bool test_optimized_md_fmac2_gemv3(void) { UT_ASSERT(test_optimized_md_fmac2_flags(14ul, 13ul, 7ul, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_fmac2_gemv2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(2ul, 1ul, 3ul, true, 2.e-6)); }
+static bool test_optimized_md_fmac2_gemv3(void) { UT_ASSERT(test_optimized_md_fmac2_flags(14ul, 13ul, 7ul, true, 1.e-6)); }
 static bool test_optimized_md_fmac2_gemm(void) { UT_ASSERT(test_optimized_md_fmac2_flags(3ul, 6ul, 5ul, true, 2.e-6)); }
 static bool test_optimized_md_fmac2_gemm2(void) { UT_ASSERT(test_optimized_md_fmac2_flags(11ul, 14ul, 13ul, true, 1.e-6));}
 static bool test_optimized_md_fmac2_ger(void) { UT_ASSERT(test_optimized_md_fmac2_flags(3ul, 1ul, 2ul, true, 2.e-6)); }
@@ -449,11 +438,11 @@ static bool test_optimized_md_zadd(unsigned long out_flag, unsigned long in1_fla
 	return result;
 }
 
-static bool test_optimized_md_zadd2_reduce_inner1(void) { UT_ASSERT(test_optimized_md_zadd(~(1ul+4ul), ~(1ul+4ul), ~0ul, true, false, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_zadd2_reduce_inner1(void) { UT_ASSERT(test_optimized_md_zadd(~(1ul+4ul), ~(1ul+4ul), ~0ul, true, false, true, 1.e-6)); }
 static bool test_optimized_md_zadd2_reduce_inner2(void) { UT_ASSERT(test_optimized_md_zadd(~(1ul+4ul), ~(1ul+4ul), ~0ul, false, false, false, 1.e-6)); }
 static bool test_optimized_md_zadd2_reduce_inner3(void) { UT_ASSERT(test_optimized_md_zadd(~(1ul+4ul), ~(1ul), ~0ul, true, false, false, 1.e-6)); }
-static bool test_optimized_md_zadd2_reduce_inner4(void) { UT_ASSERT(test_optimized_md_zadd(~(1ul+2ul), ~4ul, ~(1ul + 2ul), false, true, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_zadd2_reduce_inner5(void) { UT_ASSERT(test_optimized_md_zadd(0ul, ~4ul, 0ul, false, true, blas_threadsafe2, 2.e-6)); }
+static bool test_optimized_md_zadd2_reduce_inner4(void) { UT_ASSERT(test_optimized_md_zadd(~(1ul+2ul), ~4ul, ~(1ul + 2ul), false, true, true, 1.e-6)); }
+static bool test_optimized_md_zadd2_reduce_inner5(void) { UT_ASSERT(test_optimized_md_zadd(0ul, ~4ul, 0ul, false, true, true, 2.e-6)); }
 
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner1);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner2);
@@ -461,10 +450,10 @@ UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner3);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner4);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner5);
 
-static bool test_optimized_md_zadd2_reduce_outer1(void) { UT_ASSERT(test_optimized_md_zadd(~(4ul), ~(4ul), ~0ul, true, false, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_zadd2_reduce_outer1(void) { UT_ASSERT(test_optimized_md_zadd(~(4ul), ~(4ul), ~0ul, true, false, true, 1.e-6)); }
 static bool test_optimized_md_zadd2_reduce_outer2(void) { UT_ASSERT(test_optimized_md_zadd(~(2ul), ~(2ul+4ul), ~0ul, false, false, false, 1.e-6)); }
 static bool test_optimized_md_zadd2_reduce_outer3(void) { UT_ASSERT(test_optimized_md_zadd(~(8ul), ~(1ul), ~(8ul), true, false, false, 1.e-6)); }
-static bool test_optimized_md_zadd2_reduce_outer4(void) { UT_ASSERT(test_optimized_md_zadd(~(4ul), ~(8ul), ~(4ul), false, true, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_zadd2_reduce_outer4(void) { UT_ASSERT(test_optimized_md_zadd(~(4ul), ~(8ul), ~(4ul), false, true, true, 1.e-6)); }
 
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_outer1);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_outer2);
@@ -519,11 +508,11 @@ static bool test_optimized_md_add(unsigned long out_flag, unsigned long in1_flag
 	return result;
 }
 
-static bool test_optimized_md_add2_reduce_inner1(void) { UT_ASSERT(test_optimized_md_add(~(1ul+4ul), ~(1ul+4ul), ~0ul, true, false, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_add2_reduce_inner1(void) { UT_ASSERT(test_optimized_md_add(~(1ul+4ul), ~(1ul+4ul), ~0ul, true, false, true, 1.e-6)); }
 static bool test_optimized_md_add2_reduce_inner2(void) { UT_ASSERT(test_optimized_md_add(~(1ul+4ul), ~(1ul+4ul), ~0ul, false, false, false, 1.e-6)); }
 static bool test_optimized_md_add2_reduce_inner3(void) { UT_ASSERT(test_optimized_md_add(~(1ul+4ul), ~(1ul), ~0ul, true, false, false, 1.e-6)); }
-static bool test_optimized_md_add2_reduce_inner4(void) { UT_ASSERT(test_optimized_md_add(~(1ul+2ul), ~4ul, ~(1ul + 2ul), false, true, blas_threadsafe2, 1.e-6)); }
-static bool test_optimized_md_add2_reduce_inner5(void) { UT_ASSERT(test_optimized_md_add(0ul, ~4ul, 0ul, false, true, blas_threadsafe2, 5.e-6)); }
+static bool test_optimized_md_add2_reduce_inner4(void) { UT_ASSERT(test_optimized_md_add(~(1ul+2ul), ~4ul, ~(1ul + 2ul), false, true, true, 1.e-6)); }
+static bool test_optimized_md_add2_reduce_inner5(void) { UT_ASSERT(test_optimized_md_add(0ul, ~4ul, 0ul, false, true, true, 5.e-6)); }
 
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner1);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner2);
@@ -531,10 +520,10 @@ UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner3);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner4);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner5);
 
-static bool test_optimized_md_add2_reduce_outer1(void) { UT_ASSERT(test_optimized_md_add(~(4ul), ~(4ul), ~0ul, true, false, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_add2_reduce_outer1(void) { UT_ASSERT(test_optimized_md_add(~(4ul), ~(4ul), ~0ul, true, false, true, 1.e-6)); }
 static bool test_optimized_md_add2_reduce_outer2(void) { UT_ASSERT(test_optimized_md_add(~(2ul), ~(2ul+4ul), ~0ul, false, false, false, 1.e-6)); }
 static bool test_optimized_md_add2_reduce_outer3(void) { UT_ASSERT(test_optimized_md_add(~(8ul), ~(1ul), ~(8ul), true, false, false, 1.e-6)); }
-static bool test_optimized_md_add2_reduce_outer4(void) { UT_ASSERT(test_optimized_md_add(~(4ul), ~(8ul), ~(4ul), false, true, blas_threadsafe2, 1.e-6)); }
+static bool test_optimized_md_add2_reduce_outer4(void) { UT_ASSERT(test_optimized_md_add(~(4ul), ~(8ul), ~(4ul), false, true, true, 1.e-6)); }
 
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_outer1);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_outer2);

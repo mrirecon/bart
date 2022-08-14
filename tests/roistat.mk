@@ -10,7 +10,7 @@ tests/test-roistat-std: zeros noise ones resize roistat std nrmse
 	$(TOOLDIR)/roistat -b -D oy2.ra n.ra dy.ra					;\
 	$(TOOLDIR)/resize -c 0 50 1 50 n.ra ny2.ra					;\
 	$(TOOLDIR)/std 3 ny2.ra dy2.ra							;\
-	$(TOOLDIR)/nrmse -t 0.0000001 dy2.ra dy.ra 					;\
+	$(TOOLDIR)/nrmse -t 0.000001 dy2.ra dy.ra 						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
