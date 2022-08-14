@@ -527,22 +527,128 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 
 
 
-
-static TF_Tensor* tensor_allocate(int N, const long dims[N])
+static bool cmp_arg_name(const void* _map, const void* _bart_name)
 {
-	long dims2[N];
-	assert(0 < N);
-
-	for (int i = 0; i < N; i++)
-		dims2[i] = dims[N - i - 1];
-
-	assert(1 == dims2[N - 1]);
-	dims2[N - 1] = 2;
-
-	size_t size = product(N, dims2) * FL_SIZE;
-
-	return TF_AllocateTensor(TF_FLOAT, dims2, N, size);
+	const struct tf_arg_map_s* map = _map;
+	const char* bart_name = _bart_name;
+	
+	return 0 == strcmp(map->bart_name, bart_name);
 }
+
+static TF_Output get_output(const struct tf_shared_graph_s* graph, const char* name)
+{
+	if (NULL != graph->arg_name_map) {
+
+		int idx = list_get_first_index(graph->arg_name_map, name, cmp_arg_name);
+		if (-1 == idx)
+			return (struct TF_Output){ NULL, 0 };
+
+		const struct tf_arg_map_s* map = list_get_item(graph->arg_name_map, idx);
+
+		return (struct TF_Output){ TF_GraphOperationByName(graph->graph, map->tf_name), map->tf_index };
+
+	}
+
+	return (struct TF_Output){ TF_GraphOperationByName(graph->graph, name), 0 };
+}
+
+static bool graph_has_arg(const struct tf_shared_graph_s* graph, const char* name)
+{
+	return NULL != get_output(graph, name).oper;
+}
+
+
+
+
+struct tf_arg {
+
+	struct TF_Output out;
+	int N;
+	const int64_t* dims;
+};
+
+static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const char* name)
+{
+	struct tf_arg arg;
+
+	arg.out = get_output(graph, name);
+
+	if (NULL == arg.out.oper)
+		error("Graph operation %s missing.\n", name);
+
+	arg.N = TF_GraphGetTensorNumDims(graph->graph, arg.out, graph->status);
+
+	if (TF_GetCode(graph->status) != TF_OK)
+		error("Getting TensorFlow dimensions failed: %s\n", TF_Message(graph->status));
+
+	long tdims[arg.N ?: 1];
+
+	TF_GraphGetTensorShape(graph->graph, arg.out, tdims, arg.N, graph->status);
+
+	if (TF_GetCode(graph->status) != TF_OK)
+		error("Getting TensorFlow shape failed: %s\n", TF_Message(graph->status));
+
+	if (0 == arg.N) {	// create a scalar
+
+		error("TensorFlow: Real scalar arguments are not supported! Stack with zero_like to construct complex argument!");
+		arg.N = 1;
+		tdims[0] = 2;
+	}
+
+	PTR_ALLOC(int64_t[arg.N], dims);
+
+	for (int i = 0; i < arg.N; i++) // convert to Fortran order
+		(*dims)[i] = tdims[arg.N - i - 1];
+
+	if (2 != (*dims)[0])
+		error("TensorFlow: Last dimension must have size 2 for real and imaginary part!\nStack with zero_like to construct complex argument!");
+
+	(*dims)[0] = 1;
+
+
+	arg.dims = *PTR_PASS(dims);
+
+	return arg;
+}
+
+static bool cmp_arg(struct tf_arg arg1, struct tf_arg arg2)
+{
+
+	bool result = true;
+
+	for (int i = 0; i < MIN(arg1.N, arg2.N); i++)
+		result = result && (arg1.dims[i] == arg2.dims[i]);
+
+	for (int i = MIN(arg1.N, arg2.N); i < arg1.N; i++)
+		result = result && (1 == arg1.dims[i]);
+
+	for (int i = MIN(arg1.N, arg2.N); i < arg2.N; i++)
+		result = result && (1 == arg2.dims[i]);
+
+	return result;
+}
+
+
+
+static TF_Tensor* tensor_allocate(const struct tf_shared_graph_s* graph, const char* name)
+{
+	struct TF_Output arg = get_output(graph, name);
+
+	int N = TF_GraphGetTensorNumDims(graph->graph, arg, graph->status);
+
+	enum TF_DataType type = TF_OperationOutputType(arg);
+	
+	long tdims[N ?: 1];
+
+	TF_GraphGetTensorShape(graph->graph, arg, tdims, N, graph->status);
+
+	size_t size = product(N, tdims) * ((type == TF_FLOAT) ? FL_SIZE : CFL_SIZE);
+
+	return TF_AllocateTensor(type, tdims, N, size);
+}
+
+
+
 
 struct tf_s {
 
@@ -718,109 +824,6 @@ static void tf_del(const nlop_data_t* _data)
 
 
 
-struct tf_arg {
-
-	struct TF_Output out;
-	int N;
-	const int64_t* dims;
-};
-
-
-static bool cmp_arg_name(const void* _map, const void* _bart_name)
-{
-	const struct tf_arg_map_s* map = _map;
-	const char* bart_name = _bart_name;
-	
-	return 0 == strcmp(map->bart_name, bart_name);
-}
-
-static TF_Output get_output(const struct tf_shared_graph_s* graph, const char* name)
-{
-	if (NULL != graph->arg_name_map) {
-
-		int idx = list_get_first_index(graph->arg_name_map, name, cmp_arg_name);
-		if (-1 == idx)
-			return (struct TF_Output){ NULL, 0 };
-
-		const struct tf_arg_map_s* map = list_get_item(graph->arg_name_map, idx);
-
-		return (struct TF_Output){ TF_GraphOperationByName(graph->graph, map->tf_name), map->tf_index };
-
-	}
-
-	return (struct TF_Output){ TF_GraphOperationByName(graph->graph, name), 0 };
-}
-
-static bool graph_has_arg(const struct tf_shared_graph_s* graph, const char* name)
-{
-	return NULL != get_output(graph, name).oper;
-}
-
-
-
-static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const char* name)
-{
-	struct tf_arg arg;
-
-	arg.out = get_output(graph, name);
-
-	if (NULL == arg.out.oper)
-		error("Graph operation %s missing.\n", name);
-
-	arg.N = TF_GraphGetTensorNumDims(graph->graph, arg.out, graph->status);
-
-	if (TF_GetCode(graph->status) != TF_OK)
-		error("Getting TensorFlow dimensions failed: %s\n", TF_Message(graph->status));
-
-	long tdims[arg.N ?: 1];
-
-	TF_GraphGetTensorShape(graph->graph, arg.out, tdims, arg.N, graph->status);
-
-	if (TF_GetCode(graph->status) != TF_OK)
-		error("Getting TensorFlow shape failed: %s\n", TF_Message(graph->status));
-
-	if (0 == arg.N) {	// create a scalar
-
-		error("TensorFlow: Real scalar arguments are not supported! Stack with zero_like to construct complex argument!");
-		arg.N = 1;
-		tdims[0] = 2;
-	}
-
-	PTR_ALLOC(int64_t[arg.N], dims);
-
-	for (int i = 0; i < arg.N; i++) // convert to Fortran order
-		(*dims)[i] = tdims[arg.N - i - 1];
-
-	if (2 != (*dims)[0])
-		error("TensorFlow: Last dimension must have size 2 for real and imaginary part!\nStack with zero_like to construct complex argument!");
-
-	(*dims)[0] = 1;
-
-
-	arg.dims = *PTR_PASS(dims);
-
-	return arg;
-}
-
-static bool cmp_arg(struct tf_arg arg1, struct tf_arg arg2)
-{
-
-	bool result = true;
-
-	for (int i = 0; i < MIN(arg1.N, arg2.N); i++)
-		result = result && (arg1.dims[i] == arg2.dims[i]);
-
-	for (int i = MIN(arg1.N, arg2.N); i < arg1.N; i++)
-		result = result && (1 == arg1.dims[i]);
-
-	for (int i = MIN(arg1.N, arg2.N); i < arg2.N; i++)
-		result = result && (1 == arg2.dims[i]);
-
-	return result;
-}
-
-
-
 const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph)
 {
 	int II = -1;
@@ -871,7 +874,7 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 			error("Tensorflow output and corresponding gradient input do not have the same shape!");
 
 		(*inputs_op)[II + i] = arg_grad_y.out;
-		(*input_tensors)[II + i] = tensor_allocate(arg_grad_y.N, arg_grad_y.dims);
+		(*input_tensors)[II + i] = tensor_allocate(graph, grad_ys_name);
 		md_clear(arg_grad_y.N, arg_grad_y.dims, TF_TensorData((*input_tensors)[II + i]), CFL_SIZE);
 
 		xfree(arg_grad_y.dims);
@@ -906,7 +909,7 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 		IN_arr[i] = arg.N;
 		IN = MAX(IN, IN_arr[i]);
 
-		(*input_tensors)[i] = tensor_allocate(arg.N, arg.dims);
+		(*input_tensors)[i] = tensor_allocate(graph, in_name);
 		(*inputs_op)[i] = arg.out;
 		(*nr_in_dim)[i] = arg.N;
 		(*in_dims_tf)[i] = arg.dims;
@@ -946,8 +949,6 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 		cached_gradients[i] = ARR_CLONE(complex float*[II], ci);
 
 	data->cached_gradient = ARR_CLONE(complex float**[OO], cached_gradients);	
-
-
 
 
 	long nl_odims[OO][ON];
