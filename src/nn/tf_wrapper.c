@@ -581,6 +581,11 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 	if (TF_GetCode(graph->status) != TF_OK)
 		error("Getting TensorFlow dimensions failed: %s\n", TF_Message(graph->status));
 
+	enum TF_DataType type = TF_OperationOutputType(arg.out);
+
+	if (! ((TF_COMPLEX64 == type) || (TF_FLOAT == type)))
+		error("TensorFlow: Argument \"%s:%d\" has unsupported type. Only single precission (complex) floats are supported.\n");
+
 	long tdims[arg.N ?: 1];
 
 	TF_GraphGetTensorShape(graph->graph, arg.out, tdims, arg.N, graph->status);
@@ -590,23 +595,33 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 
 	if (0 == arg.N) {	// create a scalar
 
-		error("TensorFlow: Real scalar arguments are not supported! Stack with zero_like to construct complex argument!");
+		if (TF_FLOAT == type)
+			error("TensorFlow: Real scalar arguments are not supported! Stack with zero_like to construct complex argument!");
+		
 		arg.N = 1;
-		tdims[0] = 2;
+		tdims[0] = 1;
+	} else {
+
+		if (TF_FLOAT == type) {
+			
+			if (2 != tdims[arg.N - 1])
+			error("TensorFlow: Real valued arguments must have two (real + imaginary) channels in the last dimension!");
+			
+			tdims[arg.N - 1] = 1;
+		}
 	}
+
+	arg.N = MAX(1, type == TF_FLOAT ? arg.N - 1 : arg.N);
 
 	PTR_ALLOC(int64_t[arg.N], dims);
 
 	for (int i = 0; i < arg.N; i++) // convert to Fortran order
 		(*dims)[i] = tdims[arg.N - i - 1];
 
-	if (2 != (*dims)[0])
-		error("TensorFlow: Last dimension must have size 2 for real and imaginary part!\nStack with zero_like to construct complex argument!");
-
-	(*dims)[0] = 1;
-
-
 	arg.dims = *PTR_PASS(dims);
+
+	debug_printf(DP_DEBUG2, "TensorFlow: Processed argument %s with dimensions: ", name);
+	debug_print_dims(DP_DEBUG2, arg.N, arg.dims);
 
 	return arg;
 }
@@ -982,17 +997,11 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 								CAST_UP(PTR_PASS(data)), tf_forward, deriv, adjoint, normal, norm_inv, tf_del);
 
 	for (int i = 0; i < II; i++)
-		if (1 < IN_arr[i])
-			result = nlop_reshape_in_F(result, i, IN_arr[i] - 1, nl_idims[i] + 1);
-		else
-			result = nlop_reshape_in_F(result, i, 1, MD_DIMS(1));
+		result = nlop_reshape_in_F(result, i, IN_arr[i], nl_idims[i]);
 
 	for (int i = 0; i < OO; i++)
-		if (1 < ON_arr[i])
-			result = nlop_reshape_out_F(result, i, ON_arr[i] - 1, nl_odims[i] + 1);
-		else
-			result = nlop_reshape_out_F(result, i, 1, MD_DIMS(1));
-
+		result = nlop_reshape_out_F(result, i, ON_arr[i], nl_odims[i]);
+	
 	return result;
 }
 
