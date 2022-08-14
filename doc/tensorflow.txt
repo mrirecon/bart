@@ -1,0 +1,74 @@
+
+
+TensorFlow graphs can be wrapped in an nlop (non-linear operator) to be called in BART.
+TensorFlow v1 Graphs and TensorFlow v2 SavedModel are supported.
+In python/bart_tf.py, we provide wrapping functions to export TensorFlow graphs.
+
+1. Tensor data types and shapes
+
+	nlops work with single precision complex floats. From the TensorFlow
+	side, we support the tf.complex64 and tf.float32 data types. Tensors
+	with data type tf.float32 must have a 2 in the last dimension to stack
+	real and imaginary part. BART will create an nlop ignoring this dimension.
+
+	BART uses Fortran ordering for dimensions. Hence, the nlop will have flipped
+	dimensions compared to the TensorFlow graph.
+
+2. Naming Conventions
+
+	The inputs of the TensorFlow graph should be named "input_0", "input_1", ...
+	The outputs of the TensorFlow graph should be named "output_0", "output_1", ...
+
+	TensorFlow v1 graphs are exported respecting the names for inputs/outputs which
+	are assigned by the user. TensorFlow v2 SavedModels assign new names for the
+	saved inputs/outputs, usually of the form:
+		input_0 -> input_0 serving_default_input_0
+		output_0 -> StatefulPartitionedCall
+	The names can be inspected using "saved_model_cli" tool provided by TensorFlow.
+	To provide the mapping to BART, include a file named "bart_config.dat" in the
+	SavedModel directory containing the mapping in the following structure:
+
+# ArgumentNameMapping
+serving_default
+input_0 serving_default_input_0 0
+grad_ys_0 serving_default_grad_ys_0 0
+grad_0_0 StatefulPartitionedCall 0
+output_0 StatefulPartitionedCall 1
+
+	Here "serving_default" is the signature and the integer in the last column is
+	the index of the operation.
+
+3. Automatic Differentiation
+
+	We provide three methods to use TensorFlow automatic differentiation in BART:
+
+	3.1 Backpropagation
+
+		For each output o provide an input "grad_ys_o" and for each combination
+		of outputs o and inputs i provide the gradient with name "grad_i_o".
+		The shape of "grad_ys_o" must equal the shape of "output_o" and the shape
+		of "grad_i_o" must equal the shape of "input_i"
+
+	3.2 Jacobian
+
+		The forward path can directly output the complete Jacobian matrix. For this,
+		all dimensions of the input and output should either equal or one must be
+		one. We assume that the operator and hence the Jacobian is block diagonal.
+
+		3.2.1 Holomorphic Functions
+
+			The output of the Jacobian should be named "jacobian_0_0" (only one
+			input and one output is supported).
+			Please note, that the Jacobian computed by TensorFlow (tape.jacobian) is
+			the complex conjugate of the actual Jacobian!
+
+		3.2.2 Non-Holomorphic Functions
+
+			For non-holomorphic functions, the Jacobian of the real-valued function
+			can be provided with the name "jacobian_real_0_0". This Jacobian should
+			have (TensorFlow)-dimensions [ ... , 2, 2 ] where the 2x2 matrix contains
+			the real valued derivatives:
+				[ ... , 0, 0 ]: d real / d real
+				[ ... , 0, 1 ]: d real / d imag
+				[ ... , 1, 0 ]: d imag / d real
+				[ ... , 1, 1 ]: d imag / d imag

@@ -150,6 +150,8 @@ libraries or features which are not available everywhere.
 
 Support for CUDA can be turned on. It may be necessary to also
 provide the base path for CUDA installation.
+CUDA is supported starting with version 8, however, newer versions
+are recommended.
 
 	CUDA=1
 	CUDA_BASE=/usr/
@@ -185,6 +187,8 @@ C API of TensorFlow, which can be downloaded from
 here:
 
 https://www.tensorflow.org/install/lang_c
+
+See tensorflow.txt for more information on conventions used.
 
 TensorFlow support can then be activated with:
 
