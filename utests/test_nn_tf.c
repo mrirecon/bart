@@ -10,7 +10,13 @@
 #include "num/flpmath.h"
 #include "num/iovec.h"
 
+#include "linops/someops.h"
+
 #include "nlops/nlop.h"
+#include "nlops/cast.h"
+#include "nlops/chain.h"
+#include "nlops/zexp.h"
+#include "nlops/nltest.h"
 
 #include "nn/tf_wrapper.h"
 
@@ -118,3 +124,93 @@ static bool test_nn_tf_adjoint(void)
 
 UT_REGISTER_TEST(test_nn_tf_adjoint);
 
+/*
+generate graphs for the following tests:
+
+import tensorflow.compat.v1 as tf
+tf.disable_eager_execution()
+
+import bart_tf
+
+
+g = tf.Graph()
+with g.as_default():
+    i = tf.placeholder(tf.complex64, shape = [4, 2], name="input_0")
+    o = tf.exp(i, name="output_0")
+
+bart_tf.tf1_export_graph(g, "utests", "exp_grad")
+
+
+g = tf.Graph()
+with g.as_default():
+    i = tf.placeholder(tf.complex64, shape = [4, 2], name="input_0")
+    o = tf.exp(i, name="output_0")
+    j = tf.identity(o, name="jacobian_0_0")
+
+bart_tf.tf1_export_graph(g, "utests", "exp_grad_jac")
+
+
+g = tf.Graph()
+with g.as_default():
+    i = tf.placeholder(tf.complex64, shape = [4, 2], name="input_0")
+    o = tf.conj(tf.exp(i), name="output_0")
+
+    real = tf.reshape(tf.gradients(tf.math.real(o), i), [4, 2])
+    imag = tf.reshape(tf.gradients(tf.math.imag(o), i), [4, 2])
+
+    jac = tf.stack([real, imag], axis=2, name="jacobian_real_0_0")
+
+bart_tf.tf1_export_graph(g, "utests", "exp_grad_jac_real")
+*/
+
+static bool test_nn_tf_exp_v1(void)
+{
+	const struct nlop_s* nlop_tf = nlop_tf_create("./utests/exp_grad");
+	auto iov = nlop_domain(nlop_tf);
+
+	const struct nlop_s* nlop_bart = nlop_zexp_create(iov->N, iov->dims);
+
+	bool ok = compare_nlops(nlop_bart, nlop_tf, true, false, true, UT_TOL);
+
+	nlop_free(nlop_tf);
+	nlop_free(nlop_bart);
+
+	return (ok);
+}
+
+UT_REGISTER_TEST(test_nn_tf_exp_v1);
+
+
+static bool test_nn_tf_exp_jacobian_v1(void)
+{
+	const struct nlop_s* nlop_tf = nlop_tf_create("./utests/exp_grad_jac");
+	auto iov = nlop_domain(nlop_tf);
+
+	const struct nlop_s* nlop_bart = nlop_zexp_create(iov->N, iov->dims);
+
+	bool ok = compare_nlops(nlop_bart, nlop_tf, true, true, true, UT_TOL);
+
+	nlop_free(nlop_tf);
+	nlop_free(nlop_bart);
+
+	return (ok);
+}
+
+UT_REGISTER_TEST(test_nn_tf_exp_jacobian_v1);
+
+static bool test_nn_tf_exp_jacobian_real_v1(void)
+{
+	const struct nlop_s* nlop_tf = nlop_tf_create("./utests/exp_grad_jac_real");
+	auto iov = nlop_domain(nlop_tf);
+
+	const struct nlop_s* nlop_bart = nlop_chain_FF(nlop_zexp_create(iov->N, iov->dims), nlop_from_linop_F(linop_zconj_create(iov->N, iov->dims)));
+
+	bool ok = compare_nlops(nlop_bart, nlop_tf, true, true, true, UT_TOL);
+
+	nlop_free(nlop_tf);
+	nlop_free(nlop_bart);
+
+	return (ok);
+}
+
+UT_REGISTER_TEST(test_nn_tf_exp_jacobian_real_v1);
