@@ -664,10 +664,10 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 			phantom_tubes_N[2 * N - 2] = _ebsb;
 		}
 		else {
-			assert((11 == N) || (15 == N));
+			assert((8 == N) || (11 == N) || (15 == N));
 
 			for (int i = 0; i < 2 * N - 1; i++)
-				phantom_tubes_N[i] = (15 == N ? nist_phantom_t2 : phantom_tubes)[i];
+				phantom_tubes_N[i] = (8 == N ? phantom_sonar : (15 == N ? nist_phantom_t2 : phantom_tubes))[i];
 		}
 
 
