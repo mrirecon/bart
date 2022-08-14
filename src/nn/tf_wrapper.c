@@ -47,9 +47,9 @@
 
 #ifndef TENSORFLOW
 
-const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key, bool session)
+const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key)
 {
-	UNUSED(path); UNUSED(signature_key); UNUSED(session);
+	UNUSED(path); UNUSED(signature_key);
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
@@ -72,9 +72,9 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
-const struct nlop_s* nlop_tf_create(int nr_outputs, int nr_inputs, const char* path, bool session)
+const struct nlop_s* nlop_tf_create(const char* path)
 {
-	UNUSED(nr_inputs); UNUSED(nr_outputs); UNUSED(path); UNUSED(session);
+	UNUSED(path);
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
@@ -170,6 +170,11 @@ static TF_SessionOptions* get_session_opts(void)
 	return sess_opts;
 }
 
+
+/*
+Functions to import TF v1 Graphs
+*/
+
 static void free_buf(void* data, size_t size)
 {
 	unmap_raw(data, size);
@@ -230,6 +235,12 @@ static void restore_session(TF_Graph* graph, TF_Status *status, TF_Session *sess
 
 	const TF_Operation* restore_op = TF_GraphOperationByName(graph, "save/restore_all");
 
+	if ((NULL == checkpoint_op) || (NULL == restore_op)) {
+
+		debug_printf(DP_DEBUG1, "TensorFlow graph does not contain operation for restoring weights.\n");
+		return;
+	}
+
 
 	TF_TString path_string;
 	TF_TString_Init(&path_string);
@@ -254,6 +265,12 @@ static void restore_session(TF_Graph* graph, TF_Status *status, TF_Session *sess
 
 	debug_printf(DP_DEBUG1, "TensorFlow session restored from path %s.\n", ckpt_path);
 }
+
+
+/*
+Argument name mapping from BART names to TensorFlow opration names and index
+*/
+
 
 struct tf_arg_map_s {
 
@@ -280,7 +297,6 @@ static void tf_arg_map_free(struct tf_arg_map_s* tm)
 
 	xfree(tm);
 }
-
 
 static list_t read_name_mapping(const char * filename, const char* signature_key)
 {
@@ -330,10 +346,14 @@ static list_t read_name_mapping(const char * filename, const char* signature_key
 			if (0 == strcmp(keyword, "ArgumentNameMapping")) {
 
 				char signature[80];
+				signature[0] = '\0';
+				delta = 0;
 
-				if ((1 == sscanf(config + pos, "%79s\n%n", signature, &delta)) && (0 == strcmp(signature_key, signature))) {
+				if (   (NULL == signature)
+				    || ((1 == sscanf(config + pos, "%79s\n%n", signature, &delta)) && (0 == strcmp(signature_key, signature))) ) {
 
-					debug_printf(DP_INFO, "Found signature \"%s\" in config.\n", signature);
+					if (NULL != signature_key)
+						debug_printf(DP_INFO, "Found signature \"%s\" in config.\n", signature);
 
 					pos += delta;
 					char bart_name[80];
@@ -343,14 +363,6 @@ static list_t read_name_mapping(const char * filename, const char* signature_key
 					while (3 == sscanf(config + pos, "%79s %79s %d\n%n", bart_name, tf_name, &index, &delta)) {
  
  						debug_printf(DP_DEBUG1, "TensorFlow input mapping: %s %s %d\n", bart_name, tf_name, index);
-						list_append(arg_map, tf_arg_map_create(bart_name, tf_name, index));
-
-						pos += delta;
-					}
-
-					if(3 == sscanf(config + pos, "%79s %79s:%d%n", bart_name, tf_name, &index, &delta)) {
-
-						debug_printf(DP_DEBUG1, "TensorFlow output mapping: %s %s %d\n", bart_name, tf_name, index);
 						list_append(arg_map, tf_arg_map_create(bart_name, tf_name, index));
 
 						pos += delta;
@@ -375,6 +387,13 @@ static list_t read_name_mapping(const char * filename, const char* signature_key
 out:
 	return arg_map;
 }
+
+
+/*
+Structure to hold TensorFlow grap and session.
+The same structure can be used to create multiple nlops.
+*/
+
 
 struct tf_shared_graph_s {
 
@@ -433,7 +452,7 @@ const char* tf_shared_graph_get_init_path(const struct tf_shared_graph_s* x)
 	return x->weight_init;
 }
 
-const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key, bool session)
+const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key)
 {
 	int plen = strlen(path) + 20;
 
@@ -459,9 +478,7 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 
 		graph = load_graph(graph_path, status);
 		sess = create_session(graph, status);
-
-		if (session)
-			restore_session(graph, status, sess, path);
+		restore_session(graph, status, sess, path);
 		
 		debug_printf(DP_DEBUG1, "Succesfully loaded TensorFlow v1 graph!\n");
 	
@@ -507,6 +524,10 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 
 
 
+
+
+
+
 static TF_Tensor* tensor_allocate(int N, const long dims[N])
 {
 	long dims2[N];
@@ -522,6 +543,7 @@ static TF_Tensor* tensor_allocate(int N, const long dims[N])
 
 	return TF_AllocateTensor(TF_FLOAT, dims2, N, size);
 }
+
 struct tf_s {
 
 	INTERFACE(nlop_data_t);
@@ -973,16 +995,13 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 	return result;
 }
 
-const struct nlop_s* nlop_tf_create(int OO, int II, const char* path, bool session)
+const struct nlop_s* nlop_tf_create(const char* path)
 {
-	const struct tf_shared_graph_s* graph = tf_shared_graph_create(path, NULL, session);
+	const struct tf_shared_graph_s* graph = tf_shared_graph_create(path, NULL);
 
 	const struct nlop_s* result = nlop_tf_shared_create(graph);
 
 	tf_shared_graph_free(graph);
-	
-	assert((-1 == II) || (II == nlop_get_nr_in_args(result)));
-	assert((-1 == OO) || (OO == nlop_get_nr_out_args(result)));
 
 	return result;
 }

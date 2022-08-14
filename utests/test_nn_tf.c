@@ -19,7 +19,7 @@
 
 static bool test_nn_tf_forward(void)
 {
-	const struct nlop_s* nlop = nlop_tf_create(1, 2, "./utests/test_nn_tf", false);
+	const struct nlop_s* nlop = nlop_tf_create("./utests/test_nn_tf");
 
 	nlop_debug(DP_DEBUG1, nlop);
 
@@ -59,7 +59,7 @@ UT_REGISTER_TEST(test_nn_tf_forward);
 
 static bool test_nn_tf_adjoint(void)
 {
-	const struct nlop_s* nlop = nlop_tf_create(1, 2, "./utests/test_nn_tf", false);
+	const struct nlop_s* nlop = nlop_tf_create("./utests/test_nn_tf");
 
 	nlop_debug(DP_DEBUG1, nlop);
 

@@ -612,7 +612,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 
-			const struct nlop_s* tf_ops = nlop_tf_create(1, 1, regs[nr].graph_file, true);
+			const struct nlop_s* tf_ops = nlop_tf_create(regs[nr].graph_file);
 
 			// with one step, this only does one gradient descent step
 
