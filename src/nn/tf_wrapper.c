@@ -28,6 +28,7 @@
 #endif
 
 #include "nlops/nlop.h"
+#include "nlops/nlop_jacobian.h"
 
 #ifdef _WIN32
 #include <stdint.h>
@@ -605,7 +606,7 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 		if (TF_FLOAT == type) {
 			
 			if (2 != tdims[arg.N - 1])
-			error("TensorFlow: Real valued arguments must have two (real + imaginary) channels in the last dimension!");
+				error("TensorFlow: Real valued arguments must have two (real + imaginary) channels in the last dimension!");
 			
 			tdims[arg.N - 1] = 1;
 		}
@@ -839,7 +840,7 @@ static void tf_del(const nlop_data_t* _data)
 
 
 
-const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph)
+static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_graph_s* graph)
 {
 	int II = -1;
 	int OO = -1;
@@ -1003,6 +1004,200 @@ const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph
 		result = nlop_reshape_out_F(result, i, ON_arr[i], nl_odims[i]);
 	
 	return result;
+}
+
+
+
+
+struct tf_jac_s {
+
+	INTERFACE(nlop_data_t);
+
+	const struct tf_shared_graph_s* graph;
+
+	struct TF_Output *inputs_op;	//input
+	struct TF_Output *outputs_op;	//output, jacobian
+};
+
+DEF_TYPEID(tf_jac_s);
+
+
+static void tf_jac_del(const nlop_data_t* _data)
+{
+	const auto data = CAST_DOWN(tf_jac_s, _data);
+
+	tf_shared_graph_free(data->graph);
+
+	xfree(data->inputs_op);
+	xfree(data->outputs_op);
+
+	xfree(data);
+};
+
+
+static void tf_zjac(const nlop_data_t* _data, int N, const long odims[N], _Complex float* dst, const long idims[N], const _Complex float* src, const long ddims[N], _Complex float* jac)
+{
+	auto data = CAST_DOWN(tf_jac_s, _data);
+
+	TF_Tensor* output_tensors[2];
+	TF_Tensor* input_tensors[1] = { tensor_allocate(data->graph, "input_0") };
+
+	md_copy(N, idims, TF_TensorData(input_tensors[0]), src, CFL_SIZE);
+
+	TF_SessionRun(data->graph->sess,
+				/* RunOptions */ NULL,
+				/* Input tensors */ data->inputs_op, input_tensors, 1,
+				/* Output tensors */ data->outputs_op, output_tensors, 2,
+				/* Target operations */ NULL, 0,
+				/* RunMetadata */ NULL,
+				/* Output status */ data->graph->status);
+
+	if (TF_GetCode(data->graph->status) != TF_OK)
+		error("Running TensorFlow failed: %s\n", TF_Message(data->graph->status));
+	
+	md_copy(N, odims, dst, TF_TensorData(output_tensors[0]), CFL_SIZE);
+	TF_DeleteTensor(output_tensors[0]);
+
+	if (NULL != jac)
+		md_copy(N, ddims, jac, TF_TensorData(output_tensors[1]), CFL_SIZE);
+
+	TF_DeleteTensor(output_tensors[1]);
+	TF_DeleteTensor(input_tensors[0]);
+
+}
+
+static void tf_rjac(const nlop_data_t* _data, int N, const long odims[N], float* dst, const long idims[N], const float* src, const long ddims[N], float* jac)
+{
+	auto data = CAST_DOWN(tf_jac_s, _data);
+
+	TF_Tensor* output_tensors[2];
+	TF_Tensor* input_tensors[1] = { tensor_allocate(data->graph, "input_0") };
+
+	md_copy(N, idims, TF_TensorData(input_tensors[0]), src, FL_SIZE);
+
+	TF_SessionRun(data->graph->sess,
+				/* RunOptions */ NULL,
+				/* Input tensors */ data->inputs_op, input_tensors, 1,
+				/* Output tensors */ data->outputs_op, output_tensors, 2,
+				/* Target operations */ NULL, 0,
+				/* RunMetadata */ NULL,
+				/* Output status */ data->graph->status);
+
+	if (TF_GetCode(data->graph->status) != TF_OK)
+		error("Running TensorFlow failed: %s\n", TF_Message(data->graph->status));
+	
+	md_copy(N, odims, dst, TF_TensorData(output_tensors[0]), FL_SIZE);
+	TF_DeleteTensor(output_tensors[0]);
+
+	if (NULL != jac)
+		md_copy(N, ddims, jac, TF_TensorData(output_tensors[1]), FL_SIZE);
+
+	TF_DeleteTensor(output_tensors[1]);
+	TF_DeleteTensor(input_tensors[0]);
+}
+
+static const struct nlop_s* nlop_tf_shared_jac_create(const struct tf_shared_graph_s* graph, bool real)
+{
+	int II = -1;
+	int OO = -1;
+	
+	char name[20];
+
+	do
+		sprintf(name, "input_%d", ++II);
+	while (graph_has_arg(graph, name));
+
+	do
+		sprintf(name, "output_%d", ++OO);
+	while (graph_has_arg(graph, name));
+
+	if ((1 != II) || (1 != OO))
+		error("TensorFlow: The jacobian wrapper for TensorFlow supports currently only exactly one input and one output!\n");
+
+	PTR_ALLOC(struct tf_jac_s, data);
+	SET_TYPEID(tf_jac_s, data);
+
+	data->graph = tf_shared_graph_ref(graph);
+
+	/*** handle outputs and grad_ys ***/
+	PTR_ALLOC(struct TF_Output[2], outputs_op);
+
+	struct tf_arg oarg = process_arg(graph, "output_0");
+	struct tf_arg jarg = process_arg(graph, real ? "jacobian_real_0_0" : "jacobian_0_0");
+	
+	int N = oarg.N;
+	assert(N == real ? jarg.N - 1 : jarg.N);
+
+	(*outputs_op)[0] = oarg.out;
+	(*outputs_op)[1] = jarg.out;
+
+	data->outputs_op = *PTR_PASS(outputs_op);
+
+
+	PTR_ALLOC(struct TF_Output[1], inputs_op);
+
+	struct tf_arg iarg = process_arg(graph, "input_0");
+	assert(N == iarg.N);
+
+	(*inputs_op)[0] = iarg.out;
+	data->inputs_op = *PTR_PASS(inputs_op);
+
+	long jdims[real ? N + 2 : N];
+	long odims[real ? N + 2 : N];
+	long idims[real ? N + 2 : N];
+
+	if (real) {
+
+		jdims[0] = 2;
+		odims[1] = 2;
+		idims[0] = 2;
+
+		jdims[1] = 2;
+		odims[0] = 1;
+		idims[1] = 1;
+
+		for (int i = 0; i < N; i++) {
+
+			jdims[1 + i] = jarg.dims[i];
+			odims[2 + i] = oarg.dims[i];
+			idims[2 + i] = iarg.dims[i];
+		}
+		
+		jdims[1 + N] = jarg.dims[N];
+
+	} else {
+
+		for (int i = 0; i < N; i++) {
+
+			jdims[i] = jarg.dims[i];
+			odims[i] = oarg.dims[i];
+			idims[i] = iarg.dims[i];
+		}
+	}
+
+	xfree(jarg.dims);
+	xfree(oarg.dims);
+	xfree(iarg.dims);
+
+	if (real)
+		return nlop_rblock_diag_create(CAST_UP(PTR_PASS(data)), N + 2, odims, idims, jdims, tf_rjac, tf_jac_del);
+	else
+		return nlop_zblock_diag_create(CAST_UP(PTR_PASS(data)), N, odims, idims, jdims, tf_zjac, tf_jac_del);
+}
+
+
+
+
+const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph)
+{
+	if (graph_has_arg(graph, "jacobian_real_0_0"))
+		return nlop_tf_shared_jac_create(graph, true);
+	
+	if (graph_has_arg(graph, "jacobian_0_0"))
+		return nlop_tf_shared_jac_create(graph, false);
+
+
+	return nlop_tf_shared_grad_create(graph);
 }
 
 const struct nlop_s* nlop_tf_create(const char* path)
