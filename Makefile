@@ -220,12 +220,12 @@ ifeq ($(BUILDTYPE), MSYS)
 MODULES += -lwin
 endif
 
-MODULES_pics = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
+MODULES_pics = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnn -lnlops 
 MODULES_sqpics = -lsense -liter -llinops -lwavelet -llowrank -lnoncart
 MODULES_pocsense = -lsense -liter -llinops -lwavelet
 MODULES_nlinv = -lnoir -liter -lnlops -llinops -lnoncart
 MODULES_rtnlinv = -lnoir -liter -lnlops -llinops -lnoncart
-MODULES_moba = -lmoba -lnoir -lnlops -llinops -lwavelet -lnoncart -lsimu -lgrecon -llowrank -llinops -liter -lnn
+MODULES_moba = -lmoba -lnoir -lnn -lnlops -llinops -lwavelet -lnoncart -lsimu -lgrecon -llowrank -llinops -liter -lnn
 MODULES_mobafit = -lmoba -lnlops -llinops -lsimu -liter -lnoir
 MODULES_bpsense = -lsense -lnoncart -liter -llinops -lwavelet
 MODULES_itsense = -liter -llinops
@@ -254,7 +254,7 @@ MODULES_lrmatrix = -llowrank -liter -llinops -lnlops
 MODULES_estdims =
 MODULES_ismrmrd = -lismrm
 MODULES_wavelet = -llinops -lwavelet
-MODULES_wshfl = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
+MODULES_wshfl = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn -lnlops
 MODULES_ssa = -lcalib
 MODULES_bin = -lcalib
 MODULES_signal = -lsimu
