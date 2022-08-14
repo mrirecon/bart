@@ -8,11 +8,15 @@
 #include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
+#include <limits.h>
 
 #include "misc/misc.h"
 
 #include "num/blas.h"
 #include "num/multind.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 #include "blas_md_wrapper.h"
 
@@ -181,7 +185,26 @@ void blas_zfmac_caxpy(int N, const long dims[N], const long ostr[N], complex flo
 	long incx = istr1[0] / size;
 	long incy = ostr[0] / size;
 
-	blas2_caxpy(dims[0], iptr2, incx, iptr1, incy, optr);
+#ifdef USE_CUDA
+	if (cuda_ondevice(optr)) {
+
+		blas2_caxpy(dims[0], iptr2, incx, iptr1, incy, optr);
+
+		return;
+	}
+#endif
+
+	complex float val = *iptr2;
+
+	if ((1 == incx) && (1 == incy)) {
+
+		for (long i = 0; i < dims[0]; i++)
+			optr[i] += iptr1[i] * val;
+	} else {
+
+		for (long i = 0; i < dims[0]; i++)
+			optr[i * incy] += iptr1[i * incx] * val;
+	}
 }
 
 
@@ -215,8 +238,17 @@ void blas_zfmac_cdotu(int N, const long dims[N], const long ostr[N], complex flo
 
 	complex float* tmp = md_alloc_sameplace(1, MAKE_ARRAY(1l), size, optr);
 
-	blas2_cdotu(tmp, dims[0], incx, iptr1, incy, iptr2);
-	blas_caxpy(1, 1., size, tmp, size, optr);
+	long S = dims[0];
+	
+	while (S > 0) {
+
+		blas2_cdotu(tmp, MIN(S, INT_MAX / 4), incx, iptr1, incy, iptr2);
+		blas_caxpy(1, 1., 1, tmp, 1, optr);
+
+		iptr1 += (INT_MAX / 4) * incx;
+		iptr2 += (INT_MAX / 4) * incy;
+		S -= (INT_MAX / 4);
+	}
 
 	md_free(tmp);
 }
@@ -374,7 +406,26 @@ void blas_fmac_saxpy(int N, const long dims[N], const long ostr[N], float* optr,
 	long incx = istr1[0] / size;
 	long incy = ostr[0] / size;
 
-	blas2_saxpy(dims[0], iptr2, incx, iptr1, incy, optr);
+#ifdef USE_CUDA
+	if (cuda_ondevice(optr)) {
+
+		blas2_saxpy(dims[0], iptr2, incx, iptr1, incy, optr);
+
+		return;
+	}
+#endif
+
+	float val = *iptr2;
+
+	if ((1 == incx) && (1 == incy)) {
+
+		for (long i = 0; i < dims[0]; i++)
+			optr[i] += iptr1[i] * val;
+	} else {
+
+		for (long i = 0; i < dims[0]; i++)
+			optr[i * incy] += iptr1[i * incx] * val;
+	}
 }
 
 
@@ -408,8 +459,16 @@ void blas_fmac_sdot(int N, const long dims[N], const long ostr[N], float* optr, 
 
 	float* tmp = md_alloc_sameplace(1, MAKE_ARRAY(1l), size, optr);
 
-	blas2_sdot(tmp, dims[0], incx, iptr1, incy, iptr2);
-	blas_saxpy(1, 1., size, tmp, size, optr);
+	long S = dims[0];
+	while (S > 0) {
+
+		blas2_sdot(tmp, MIN(S, INT_MAX / 4), incx, iptr1, incy, iptr2);
+		blas_saxpy(1, 1., 1, tmp, 1, optr);
+
+		iptr1 += (INT_MAX / 4) * incx;
+		iptr2 += (INT_MAX / 4) * incy;
+		S -= (INT_MAX / 4);
+	}
 
 	md_free(tmp);
 }
@@ -561,13 +620,35 @@ void blas_zmul_cscal(int N, const long dims[N], const long ostr[N], complex floa
 {
 	long size = 8;
 
-	assert(((optr != iptr1) || (ostr[0] == istr1[0])) && (0 == ostr[0] % size) && (0 == istr2[0]));
+	assert(((optr != iptr1) || (ostr[0] == istr1[0])) && (0 == ostr[0] % size) && (0 == istr1[0] % size) && (0 == istr2[0]));
 	assert(1 == N);
 
-	if (optr != iptr1)
-		md_copy2(N, dims, ostr, optr, istr1, iptr1, size);
+#ifdef USE_CUDA
+	if (cuda_ondevice(optr)) {
 
-	blas2_cscal(dims[0], iptr2, ostr[0] / size, optr);
+		if (optr != iptr1)
+			md_copy2(N, dims, ostr, optr, istr1, iptr1, size);
+
+		blas2_cscal(dims[0], iptr2, ostr[0] / size, optr);
+
+	return;
+	}
+#endif
+
+	complex float val = *iptr2;
+
+	if ((size == ostr[0]) && (size == istr1[0])) {
+
+		for (long i = 0; i < dims[0]; i++)
+			optr[i] = iptr1[i] * val;
+	} else {
+
+		long ostride = ostr[0] / size;
+		long istride = istr1[0] / size;
+
+		for (long i = 0; i < dims[0]; i++)
+			optr[i * ostride] = iptr1[i * istride] * val;
+	}
 }
 
 
@@ -717,11 +798,33 @@ void blas_mul_sscal(int N, const long dims[N], const long ostr[N], float* optr, 
 {
 	long size = 4;
 
-	assert((ostr[0] == istr1[0]) && (0 == ostr[0] % size) && (0 == istr2[0]));
+	assert(((optr != iptr1) || (ostr[0] == istr1[0])) && (0 == ostr[0] % size) && (0 == istr1[0] % size) && (0 == istr2[0]));
 	assert(1 == N);
 
-	if (optr != iptr1)
-		md_copy2(N, dims, ostr, optr, istr1, iptr1, size);
+#ifdef USE_CUDA
+	if (cuda_ondevice(optr)) {
 
-	blas2_sscal(dims[0], iptr2, istr1[0] / size, optr);
+		if (optr != iptr1)
+			md_copy2(N, dims, ostr, optr, istr1, iptr1, size);
+
+		blas2_sscal(dims[0], iptr2, ostr[0] / size, optr);
+
+	return;
+	}
+#endif
+
+	float val = *iptr2;
+
+	if ((size == ostr[0]) && (size == istr1[0])) {
+
+		for (long i = 0; i < dims[0]; i++)
+			optr[i] = iptr1[i] * val;
+	} else {
+
+		long ostride = ostr[0] / size;
+		long istride = istr1[0] / size;
+
+		for (long i = 0; i < dims[0]; i++)
+			optr[i * ostride] = iptr1[i * istride] * val;
+	}
 }
