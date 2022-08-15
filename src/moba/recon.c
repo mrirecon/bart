@@ -35,6 +35,35 @@
 #include "recon.h"
 
 
+static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, struct moba_conf_s* data)
+{
+
+	// T2 estimation turned off for IR FLASH Simulation
+
+        if (MDB_BLOCH == mode) {
+
+                assert(NULL != data);
+
+                if (SEQ_IRFLASH == data->sim.seq.seq_type) {
+
+                        conf2->constrained_maps = 1;	// only R1 map: bitmask (1 0 0 0) = 1
+                        conf2->not_wav_maps = 2;	// no wavelet for T2 and B1 map
+                }
+                else if (SEQ_IRBSSFP == data->sim.seq.seq_type) {
+
+                        conf2->constrained_maps = 5;	// only T1 and T2: bitmask(1 0 1 0) = 5
+                        conf2->not_wav_maps = 1;	// no wavelet for B1 map
+                }
+        }
+
+        // No Wavelet penalty on flip angle map
+        if (MDB_T1_PHY == mode) {
+
+                conf2->constrained_maps = 2;     // only R1 map: bitmask (0 1 0) = 2
+                conf2->not_wav_maps = 1;
+        }
+}
+
 
 
 static struct mobamod exp_create(const long dims[DIMS], const complex float* mask, const complex float* TE, const complex float* psf, const struct noir_model_conf_s* conf)
@@ -183,30 +212,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
                 .not_wav_maps = 0
 	};
 
-        // T2 estimation turned off for IR FLASH Simulation
-
-        if (MDB_BLOCH == conf->mode) {
-
-                assert(NULL != data);
-
-                if (SEQ_IRFLASH == data->sim.seq.seq_type) {
-
-                        conf2.constrained_maps = 1;	// only R1 map: bitmask (1 0 0 0) = 1
-                        conf2.not_wav_maps = 2;		// no wavelet for T2 and B1 map
-                }
-                else if (SEQ_IRBSSFP == data->sim.seq.seq_type) {
-
-                        conf2.constrained_maps = 5;	// only T1 and T2: bitmask(1 0 1 0) = 5
-                        conf2.not_wav_maps = 1;		// no wavelet for B1 map
-                }
-        }
-
-        // No Wavelet penalty on flip angle map
-        if (MDB_T1_PHY == conf->mode) {
-
-                conf2.constrained_maps = 2;     // only R1 map: bitmask (0 1 0) = 2
-                conf2.not_wav_maps = 1;
-        }
+        set_bloch_conf(conf->mode, &conf2, data);
 
 	long irgnm_conf_dims[DIMS];
 	md_select_dims(DIMS, fft_flags|MAPS_FLAG|COEFF_FLAG|TIME2_FLAG, irgnm_conf_dims, imgs_dims);
