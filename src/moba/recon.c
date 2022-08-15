@@ -35,6 +35,66 @@
 #include "recon.h"
 
 
+static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_conf_s* data, const long dims[DIMS], complex float* img)
+{
+	long imgs_dims[DIMS];
+	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|CSHIFT_FLAG|COEFF_FLAG|TIME2_FLAG, imgs_dims, dims);
+
+	long pos[DIMS] = { 0L };
+
+	// Project B1 map back into image space
+
+        long map_dims[DIMS];
+        md_select_dims(DIMS, FFT_FLAGS|TIME_FLAG|TIME2_FLAG, map_dims, dims);
+
+	complex float* tmp = md_alloc_sameplace(DIMS, map_dims, CFL_SIZE, img);
+
+	if (MDB_BLOCH == mode) {
+
+                assert(NULL != data);
+
+                pos[COEFF_DIM] = 3;
+
+                md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
+                bloch_forw_alpha(op, tmp, tmp);
+                md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
+        }
+
+        // Reparameterized Look-Locker Model
+        // Estimate effective flip angle from R1'
+	// FIXME: Move to separate function which can be tested with a unit test
+
+	if (MDB_T1_PHY == mode) {
+
+		md_set_dims(DIMS, pos, 0);
+
+		pos[COEFF_DIM] = 2;
+
+                long map_size = md_calc_size(DIMS, map_dims);
+
+		md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
+
+		T1_forw_alpha(op, tmp, tmp);
+
+		md_zreal(DIMS, map_dims, tmp, tmp);
+
+		md_zsmul(DIMS, map_dims, tmp, tmp, -data->sim.seq.tr * 0.2);    // 0.2 -> Same scaling set in T1phyfun.c
+
+		md_smin(1, MD_DIMS(2 * map_size), (float*)tmp, (float*)tmp, 0.);
+
+		md_zexp(DIMS, map_dims, tmp, tmp);
+
+		md_zacos(DIMS, map_dims, tmp, tmp);
+
+	        md_zsmul(DIMS, map_dims, tmp, tmp, 180. / M_PI);        // output the effective flip angle map (in degree!)
+
+		md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
+	}
+
+	md_free(tmp);
+}
+
+
 static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, struct moba_conf_s* data)
 {
 
@@ -238,62 +298,9 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		fftmod(DIMS, coil_dims, fft_flags, sens, sens);
 	}
 
-        // Project B1 map back into image space
+	post_process(conf->mode, nl.linop_alpha, data, dims, img);
 
-        long pos[DIMS] = { 0L };
-
-        long map_dims[DIMS];
-        md_select_dims(DIMS, fft_flags|TIME_FLAG|TIME2_FLAG, map_dims, dims);
-
-	complex float* tmp = md_alloc_sameplace(DIMS, map_dims, CFL_SIZE, kspace_data);
-
-	if (MDB_BLOCH == conf->mode) {
-
-                assert(NULL != data);
-
-                pos[COEFF_DIM] = 3;
-
-                md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
-                bloch_forw_alpha(nl.linop_alpha, tmp, tmp);
-                md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
-        }
-
-	md_free(tmp);
-
-        // Reparameterized Look-Locker Model
-        // Estimate effective flip angle from R1'
-	// FIXME: Move to separate function which can be tested with a unit test
-
-	if (MDB_T1_PHY == conf->mode) {
-
-		md_set_dims(DIMS, pos, 0);
-
-		pos[COEFF_DIM] = 2;
-
-                long map_size = md_calc_size(DIMS, map_dims);
-
-                complex float* tmp = md_alloc(DIMS, map_dims, CFL_SIZE);
-
-		md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
-
-		T1_forw_alpha(nl.linop_alpha, tmp, tmp);
-
-		md_zreal(DIMS, map_dims, tmp, tmp);
-
-		md_zsmul(DIMS, map_dims, tmp, tmp, -data->sim.seq.tr * 0.2);    // 0.2 -> Same scaling set in T1phyfun.c
-
-		md_smin(1, MD_DIMS(2 * map_size), (float*)tmp, (float*)tmp, 0.);
-
-		md_zexp(DIMS, map_dims, tmp, tmp);
-
-		md_zacos(DIMS, map_dims, tmp, tmp);
-
-	        md_zsmul(DIMS, map_dims, tmp, tmp, 180. / M_PI);        // output the effective flip angle map (in degree!)
-
-		md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
-
-                md_free(tmp);
-	}
+	// Clean up
 
         if ((MDB_T1_PHY == conf->mode) || (MDB_BLOCH == conf->mode))
                 linop_free(nl.linop_alpha);
