@@ -268,11 +268,11 @@ void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N
 {
 	assert(end >= st);
 
-	// compute F(t) := exp(tA)
+	// compute F(t) := T{exp(tA)}
 	// F(0) = id
 	// d/dt F = A
 
-	float h = (end-st) / 100.;
+	float h = (end - st) / 100.;
 	float tol = 1.E-6;
 
 	for (int i = 0; i < N; i++) {
@@ -283,6 +283,7 @@ void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N
 		ode_matrix_interval_simu(data, h, tol, N, out[i], st, end);
 	}
 }
+
 
 static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], float st, float end)
 {
