@@ -6,7 +6,6 @@
  *	Xiaoqing Wang, Nick Scholand, Martin Uecker
  */
 
-#include <stdio.h>
 #include <complex.h>
 
 #include "misc/types.h"
@@ -18,9 +17,12 @@
 #include "num/flpmath.h"
 #include "num/filter.h"
 
-#include "nlops/nlop.h"
 #include "linops/linop.h"
 #include "linops/someops.h"
+
+#include "nlops/nlop.h"
+
+#include "noir/utils.h"
 
 #include "T1phyfun.h"
 
@@ -69,21 +71,6 @@ struct T1_phy_s {
 
 DEF_TYPEID(T1_phy_s);
 
-// FIXME: duplicate function
-static void moba_calc_weights(const long dims[3], complex float* dst)
-{
-	unsigned int flags = 0;
-
-	for (int i = 0; i < 3; i++)
-		if (1 != dims[i])
-			flags = MD_SET(flags, i);
-
-
-	klaplace(3, dims, flags, dst);
-	md_zsmul(3, dims, dst, dst, 44.);
-	md_zsadd(3, dims, dst, dst, 1.);
-	md_zspow(3, dims, dst, dst, -5.);
-}
 
 const struct linop_s* T1_get_alpha_trafo(struct nlop_s* op)
 {
@@ -374,7 +361,8 @@ struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_
 	md_select_dims(N, FFT_FLAGS, w_dims, map_dims);
 
 	data->weights = md_alloc(N, w_dims, CFL_SIZE);
-	moba_calc_weights(w_dims, data->weights);
+
+	noir_calc_weights(44., 10., w_dims, data->weights);
 
 	const struct linop_s* linop_wghts = linop_cdiag_create(N, map_dims, FFT_FLAGS, data->weights);
 	const struct linop_s* linop_ifftc = linop_ifftc_create(N, map_dims, FFT_FLAGS);

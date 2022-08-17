@@ -29,6 +29,8 @@
 
 #include "moba/moba.h"
 
+#include "noir/utils.h"
+
 #include "blochfun.h"
 
 #define round(x)	((int) ((x) + .5))
@@ -72,21 +74,6 @@ struct blochfun_s {
 
 DEF_TYPEID(blochfun_s);
 
-
-
-static void moba_calc_weights(const long dims[3], complex float* dst)
-{
-	unsigned int flags = 0;
-
-	for (int i = 0; i < 3; i++)
-		if (1 != dims[i])
-			flags = MD_SET(flags, i);
-
-	klaplace(3, dims, flags, dst);
-	md_zsmul(3, dims, dst, dst, 440.);
-	md_zsadd(3, dims, dst, dst, 1.);
-	md_zspow(3, dims, dst, dst, -10.);
-}
 
 
 const struct linop_s* bloch_get_alpha_trafo(const struct nlop_s* op)
@@ -528,7 +515,7 @@ struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_d
 	md_select_dims(N, FFT_FLAGS, w_dims, map_dims);
 
 	data->weights = md_alloc(N, w_dims, CFL_SIZE);
-	moba_calc_weights(w_dims, data->weights);
+	noir_calc_weights(440., 20., w_dims, data->weights);
 
 	const struct linop_s* linop_wghts = linop_cdiag_create(N, map_dims, FFT_FLAGS, data->weights);
 	const struct linop_s* linop_ifftc = linop_ifftc_create(N, map_dims, FFT_FLAGS);

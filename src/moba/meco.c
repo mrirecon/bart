@@ -30,6 +30,7 @@
 #include "nlops/nlop.h"
 
 #include "noir/model.h"
+#include "noir/utils.h"
 
 #include "meco.h"
 
@@ -193,12 +194,6 @@ static void meco_calc_weights(const nlop_data_t* _data, const int N, const long 
 {
 	struct meco_s* data = CAST_DOWN(meco_s, _data);
 
-	unsigned long flags = 0;
-
-	for (int i = 0; i < 3; i++)
-		if (1 != dims[i])
-			flags = MD_SET(flags, i);
-
 	enum meco_weights_fB0 weights_type = (0. == wgh_fB0) ? MECO_IDENTITY : MECO_SOBOLEV;
 
 	switch (weights_type) {
@@ -207,8 +202,7 @@ static void meco_calc_weights(const nlop_data_t* _data, const int N, const long 
 
 		debug_printf(DP_DEBUG2, " identity weight on fB0\n");
 
-		md_clear(N, dims, data->weights, CFL_SIZE);
-		md_zsadd(N, dims, data->weights, data->weights, 1.);
+		md_zfill(N, dims, data->weights, 1.);
 
 		data->linop_fB0 = linop_cdiag_create(N, data->map_dims, FFT_FLAGS, data->weights);
 
@@ -220,10 +214,7 @@ static void meco_calc_weights(const nlop_data_t* _data, const int N, const long 
 
 		debug_printf(DP_DEBUG2, " sobolev weight on fB0\n");
 
-		klaplace(N, dims, flags, data->weights);
-		md_zsmul(N, dims, data->weights, data->weights, wgh_fB0);
-		md_zsadd(N, dims, data->weights, data->weights, 1.);
-		md_zspow(N, dims, data->weights, data->weights, -16.);
+		noir_calc_weights(wgh_fB0, 32., dims, data->weights);
 
 		auto linop_wghts = linop_cdiag_create(N, data->map_dims, FFT_FLAGS, data->weights);
 		auto linop_ifftc = linop_ifftc_create(N, data->map_dims, FFT_FLAGS);

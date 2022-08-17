@@ -12,8 +12,6 @@
  * Magn Reson Med 2008; 60:674-682.
  */
 
-
-#include <stdlib.h>
 #include <complex.h>
 #include <math.h>
 #include <stdbool.h>
@@ -36,6 +34,8 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/filter.h"
+
+#include "noir/utils.h"
 
 #include "model.h"
 
@@ -82,21 +82,6 @@ struct noir_op_s {
 
 DEF_TYPEID(noir_op_s);
 
-static void noir_calc_weights(const struct noir_model_conf_s* conf, const long dims[3], complex float* dst)
-{
-	unsigned int flags = 0;
-
-	for (int i = 0; i < 3; i++)
-		if (1 != dims[i])
-			flags = MD_SET(flags, i);
-
-	klaplace(3, dims, flags, dst);
-	md_zsmul(3, dims, dst, dst, conf->a);
-	md_zsadd(3, dims, dst, dst, 1.);
-	md_zspow(3, dims, dst, dst, -conf->b / 2.);	// 1 + 220. \Laplace^16
-}
-
-
 static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf)
 {
 	PTR_ALLOC(struct noir_op_s, data);
@@ -123,7 +108,7 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 
 	data->wghts = md_alloc(DIMS, wght_dims, CFL_SIZE);
 
-	noir_calc_weights(conf, dims, data->wghts);
+	noir_calc_weights(conf->a, conf->b, dims, data->wghts);
 	fftmod(DIMS, wght_dims, FFT_FLAGS, data->wghts, data->wghts);
 	fftscale(DIMS, wght_dims, FFT_FLAGS, data->wghts, data->wghts);
 
@@ -548,3 +533,4 @@ void noir_orthogonalize(struct noir_s* op, complex float* coils)
 
 	md_free(tmp);
 }
+
