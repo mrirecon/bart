@@ -9,7 +9,6 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <math.h>
-#include <stdio.h>
 
 #include "misc/types.h"
 #include "misc/mri.h"
@@ -93,37 +92,25 @@ static void pos_value(iter_op_data* _data, float* dst, const float* src)
 {
 	auto data = CAST_DOWN(T1inv_s, _data);
 
-	long res = data->dims[0];
-	long parameters = data->dims[COEFF_DIM];
-	long slices = data->dims[SLICE_DIM];
+	long strs[DIMS];
+	md_calc_strides(DIMS, strs, data->dims, CFL_SIZE);
 
 	long dims1[DIMS];
-
 	md_select_dims(DIMS, FFT_FLAGS, dims1, data->dims);
 
-	for (int i = 0; i < slices; i++) {
+	long pos[DIMS] = { 0 };
 
-                int map = 0;
-                int constrain_flags = data->conf->constrained_maps;
+	do {
 
-                // Constraint dimensions defined by flag
+		if ((1UL << pos[COEFF_DIM]) & data->conf->constrained_maps) {
 
-                while (constrain_flags) {
+			md_zsmax2(DIMS, dims1,
+				strs, &MD_ACCESS(DIMS, strs, pos, (complex float*)dst),
+				strs, &MD_ACCESS(DIMS, strs, pos, (const complex float*)src),
+				data->conf->lower_bound);
+		}
 
-                        if (constrain_flags & 1) {
-
-                                debug_printf(DP_DEBUG4, "Chosen constrained maps: %d\n", map);
-
-                                md_zsmax(DIMS, dims1, (_Complex float*)dst + map * res * res + i * res * res * parameters,
-			                (const _Complex float*)src + map * res * res + i * res * res * parameters,
-                                        data->conf->lower_bound);
-                        }
-
-                        constrain_flags >>= 1;
-                        map++;
-                }
-        }
-
+        } while(md_next(DIMS, data->dims, ~FFT_FLAGS, pos));
 }
 
 
@@ -275,7 +262,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
         // jointly penalize the first few maps
         long penalized_dims = img_dims[COEFF_DIM] - conf->not_wav_maps;
 
-        debug_printf(DP_DEBUG2, "penelized dims: %d\n", penalized_dims);
+        debug_printf(DP_DEBUG2, "nr. of penalized maps: %d\n", penalized_dims);
 
         img_dims[COEFF_DIM] = penalized_dims;
 
