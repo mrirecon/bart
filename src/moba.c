@@ -235,7 +235,7 @@ int main_moba(int argc, char* argv[argc])
         data.model = conf.mode;
 
         if (MDB_T1_PHY == conf.mode)
-                debug_printf(DP_WARN, "The chosen TR for MDB_T1_PHY is %f s!\n", data.sim.seq.tr);
+                debug_printf(DP_INFO, "The TR for MDB_T1_PHY is %f s!\n", data.sim.seq.tr);
 
         // debug_sim(&(data.sim));
         // debug_other(&(data.other));

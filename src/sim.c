@@ -66,27 +66,27 @@ static void perform_bloch_simulation(int N, struct sim_data* data, const complex
 
                 ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
 
-                mxy[i] = m[i][1] + m[i][0] * I;
+                mxy[i] = m[i][1] + 1.i * m[i][0];
 
                 if (NULL != deriv) {
 
                         // dR1
-                        deriv[ind] = sa_r1[i][1] + sa_r1[i][0] * I;
+                        deriv[ind] = sa_r1[i][1] + 1.i * sa_r1[i][0];
 
                         // dM0
                         pos[MAPS_DIM] = 1;
                         ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = sa_m0[i][1] + sa_m0[i][0] * I;
+                        deriv[ind] = sa_m0[i][1] + 1.i * sa_m0[i][0];
 
                         // dR2
                         pos[MAPS_DIM] = 2;
                         ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = sa_r2[i][1] + sa_r2[i][0] * I;
+                        deriv[ind] = sa_r2[i][1] + 1.i * sa_r2[i][0];
 
                         // dB1
                         pos[MAPS_DIM] = 3;
                         ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = sa_b1[i][1] + sa_b1[i][0] * I;
+                        deriv[ind] = sa_b1[i][1] + 1.i * sa_b1[i][0];
                 }
         }
 }
@@ -174,6 +174,7 @@ int main_sim(int argc, char* argv[argc])
         long mdims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
 	mdims[TE_DIM] = data.seq.rep_num;
+
 	mdims[COEFF_DIM] = truncf(T1[2]);
 	mdims[COEFF2_DIM] = truncf(T2[2]);
 
@@ -225,11 +226,8 @@ int main_sim(int argc, char* argv[argc])
 
         // Allocate temporary magnetization and derivative arrays
 
-	complex float* tm = md_alloc(DIMS, tmdims, CFL_SIZE);
-	md_zfill(DIMS, tmdims, tm, 0.);
-
-	complex float* td = md_alloc(DIMS, tddims, CFL_SIZE);
-	md_zfill(DIMS, tddims, td, 0.);
+	complex float* tm = md_calloc(DIMS, tmdims, CFL_SIZE);
+	complex float* td = md_calloc(DIMS, tddims, CFL_SIZE);
 
 
         // Run all simulations and store signal and optional derivatives
