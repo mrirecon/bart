@@ -69,7 +69,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 	float sa_m0_ref_sig[sim_data.seq.rep_num][3];
 	float sa_b1_ref_sig[sim_data.seq.rep_num][3];
 
-	bloch_simulation(&sim_data, mxy_ref_sig, sa_r1_ref_sig, sa_r2_ref_sig, sa_m0_ref_sig, sa_b1_ref_sig);
+	bloch_simulation(&sim_data, &mxy_ref_sig, &sa_r1_ref_sig, &sa_r2_ref_sig, &sa_m0_ref_sig, &sa_b1_ref_sig);
 
 	/* ------------ R1 Partial Derivative Test -------------- */
 

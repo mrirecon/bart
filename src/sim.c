@@ -35,7 +35,7 @@ static void perform_bloch_simulation(struct sim_data* data, int N, complex float
         float sa_m0[N][3];
         float sa_b1[N][3];
 
-        bloch_simulation2(data, m, sa_r1, sa_r2, sa_m0, sa_b1);
+        bloch_simulation(data, N, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
 
         for (int i = 0; i < N; i++)
                 out[i] = m[i][1] + m[i][0] * I;

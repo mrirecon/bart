@@ -349,49 +349,39 @@ static void collect_signal(struct sim_data* data, int N, int P, float* m, float*
 }
 
 
-static void sum_up_signal(struct sim_data* data, float *m,  float *sa_r1, float *sa_r2, float *sa_b1,
-                        float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
+static void sum_up_signal(float m0, int R, int S, int A, float *m,  float *sa_r1, float *sa_r2, float *sa_b1,
+                        float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
 {
-        float sum_m;
-	float sum_sa_r1;
-	float sum_sa_r2;
-	float sum_sa_b1;
+	float norm = m0 / (float)(A * S);
 
-        long ind = 0;
+	for (int r = 0; r < R; r++) {
 
-        // Dimensions; [x, y, z]
-	for (int dim = 0; dim < 3; dim++) {
+		for (int dim = 0; dim < 3; dim++) {
 
-		sum_m = 0.;
-		sum_sa_r1 = 0.;
-		sum_sa_r2 = 0.;
-		sum_sa_b1 = 0.;
+			float sum_m = 0.;
+			float sum_sa_r1 = 0.;
+			float sum_sa_r2 = 0.;
+			float sum_sa_b1 = 0.;
 
-                //Repetitions
-		for (int r = 0; r < data->seq.rep_num; r++) {
+			for (int a = 0; a < A; a++) {
 
-                        // Spins
-			for (int spin = 0; spin < data->seq.spin_num; spin++) {
+				for (int spin = 0; spin < S; spin++) {
 
-                                ind = vector_position(dim, r, data->seq.rep_num, spin, data->seq.spin_num);
+					long ind = vector_position(dim, r * A + a, R * A, spin, S);
 
-				sum_m += m[ind];
-				sum_sa_r1 += sa_r1[ind];
-				sum_sa_r2 += sa_r2[ind];
-				sum_sa_b1 += sa_b1[ind];
+					sum_m += m[ind];
+					sum_sa_r1 += sa_r1[ind];
+					sum_sa_r2 += sa_r2[ind];
+					sum_sa_b1 += sa_b1[ind];
+				}
 			}
 
                         // Mean
-                        m_state[r][dim] = sum_m * data->voxel.m0 / (float)data->seq.spin_num;
-                        sa_r1_state[r][dim] = sum_sa_r1 * data->voxel.m0 / (float)data->seq.spin_num;
-                        sa_r2_state[r][dim] = sum_sa_r2 * data->voxel.m0 / (float)data->seq.spin_num;
-                        sa_b1_state[r][dim] = sum_sa_b1 * data->voxel.m0 / (float)data->seq.spin_num;
-                        sa_m0_state[r][dim] = sum_m / (float)data->seq.spin_num;
-
-                        sum_m = 0.;
-                        sum_sa_r1 = 0.;
-                        sum_sa_r2 = 0.;
-                        sum_sa_b1 = 0.;
+                        (*m_state)[r][dim] = sum_m * norm;
+                        (*sa_r1_state)[r][dim] = sum_sa_r1 * norm;
+                        (*sa_r2_state)[r][dim] = sum_sa_r2 * norm;
+                        (*sa_b1_state)[r][dim] = sum_sa_b1 * norm;
+                        (*sa_m0_state)[r][dim] = sum_m / (float)(A * S);
 		}
 	}
 }
@@ -790,7 +780,7 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 
 /* ------------ Main Simulation -------------- */
 
-void bloch_simulation(const struct sim_data* _data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
+void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
 {
 	// FIXME: split config + variable part
 
@@ -804,6 +794,13 @@ void bloch_simulation(const struct sim_data* _data, float (*m_state)[3], float (
         assert(0 < P);
 
         enum { M = N * P + 1 };     // STM based on single vector and additional +1 for linearized system matrix
+
+	assert(R == data.seq.rep_num);
+
+	int A = data.seq.averaged_spokes;
+
+	data.seq.rep_num *= A;
+	data.seq.averaged_spokes = 1;
 
         long storage_size = data.seq.spin_num * data.seq.rep_num * 3 * sizeof(float);
 
@@ -824,7 +821,7 @@ void bloch_simulation(const struct sim_data* _data, float (*m_state)[3], float (
                         // Ensures central spin on main lope is set
 			assert(1 == data.seq.spin_num % 2);
 
-			data.grad.mom_sl = _data->grad.mom_sl / (data.seq.spin_num-1) * (data.tmp.spin_counter - (int)(data.seq.spin_num / 2.));
+			data.grad.mom_sl = _data->grad.mom_sl / (data.seq.spin_num - 1) * (data.tmp.spin_counter - (int)(data.seq.spin_num / 2.));
 		}
 
                 // Initialize ODE
@@ -907,7 +904,7 @@ void bloch_simulation(const struct sim_data* _data, float (*m_state)[3], float (
 
 	// Sum up magnetization
 
-        sum_up_signal(&data, mxy, sa_r1, sa_r2, sa_b1, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
+        sum_up_signal(data.voxel.m0, data.seq.rep_num / A, data.seq.spin_num, A, mxy, sa_r1, sa_r2, sa_b1, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
 
 	xfree(mxy);
 	xfree(sa_r1);
@@ -916,73 +913,3 @@ void bloch_simulation(const struct sim_data* _data, float (*m_state)[3], float (
 }
 
 
-// FIXME: Would be faster to integrate it in one single loop above, but more ugly -> other solution?
-void bloch_simulation2(struct sim_data* data, float (*m_state)[3], float (*sa_r1_state)[3], float (*sa_r2_state)[3], float (*sa_m0_state)[3], float (*sa_b1_state)[3])
-{
-        // Spoke averaging
-
-        enum { N = 3 };         // Number of dimensions (x, y, z)
-	enum { P = 4 };         // Number of parameters with estimated derivative (M, DR1, DR2, DB1)
-
-        if (1 != data->seq.averaged_spokes) {
-
-                struct sim_data tmp_data = *data;
-
-                // Remove spoke averaging for full simulation
-
-                tmp_data.seq.rep_num = data->seq.rep_num * data->seq.averaged_spokes;
-
-                tmp_data.seq.averaged_spokes = 1;
-
-                // Run simulation without spoke averaging
-
-                float m[tmp_data.seq.rep_num][3];
-                float sa_r1[tmp_data.seq.rep_num][3];
-                float sa_r2[tmp_data.seq.rep_num][3];
-                float sa_m0[tmp_data.seq.rep_num][3];
-                float sa_b1[tmp_data.seq.rep_num][3];
-
-                bloch_simulation(&tmp_data, m, sa_r1, sa_r2, sa_m0, sa_b1);
-
-                // Store and average results to fit spoke averaging
-
-                float sum_m = 0.;
-                float sum_sar1 = 0.;
-                float sum_sam0 = 0.;
-                float sum_sar2 = 0.;
-                float sum_sab1 = 0.;
-
-                // debug_sim(data);
-
-                for (int d = 0; d < N; d++) {
-
-                        for (int t = 0; t < data->seq.rep_num; t++) {
-
-                                sum_m = 0.;
-                                sum_sar1 = 0.;
-                                sum_sam0 = 0.;
-                                sum_sar2 = 0.;
-                                sum_sab1 = 0.;
-
-                                for (int as = 0; as < data->seq.averaged_spokes; as++) {
-
-                                        sum_m += m[t * data->seq.averaged_spokes + as][d];
-                                        sum_sar1 += sa_r1[t * data->seq.averaged_spokes + as][d];
-                                        sum_sam0 += sa_m0[t * data->seq.averaged_spokes + as][d];
-                                        sum_sar2 += sa_r2[t * data->seq.averaged_spokes + as][d];
-                                        sum_sab1 += sa_b1[t * data->seq.averaged_spokes + as][d];
-                                }
-
-                                m_state[t][d] = sum_m / (float)data->seq.averaged_spokes;
-                                sa_r1_state[t][d] = sum_sar1 / (float)data->seq.averaged_spokes;
-                                sa_m0_state[t][d] = sum_sam0 / (float)data->seq.averaged_spokes;
-                                sa_r2_state[t][d] = sum_sar2 / (float)data->seq.averaged_spokes;
-                                sa_b1_state[t][d] = sum_sab1 / (float)data->seq.averaged_spokes;
-                        }
-                }
-        } else
-                bloch_simulation(data, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
-
-
-        
-}

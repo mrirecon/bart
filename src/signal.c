@@ -30,7 +30,7 @@ static void get_signal(const struct signal_model* parm, int N, complex float* ou
 {
         complex float sum = 0.;
 
-        debug_printf(DP_INFO, "AV: %d\n",parm->averaged_spokes);
+        debug_printf(DP_INFO, "Spoke Averaging: %d\n", parm->averaged_spokes);
 
         for (int t = 0; t < N; t++) {
 
@@ -75,7 +75,7 @@ int main_signal(int argc, char* argv[argc])
 
         float time_T1relax = -1.; // second
         long Hbeats = -1;
-        int averaged_spokes = -1;
+        int averaged_spokes = 1;
 
 	const struct opt_s opts[] = {
 
@@ -118,7 +118,9 @@ int main_signal(int argc, char* argv[argc])
 
         parm.time_T1relax = (-1 == time_T1relax) ? -1 : time_T1relax;
         parm.Hbeats = (-1 == Hbeats) ? -1 : Hbeats;
-        parm.averaged_spokes = (-1 == averaged_spokes) ? 1 : averaged_spokes;
+        parm.averaged_spokes = averaged_spokes;
+
+	assert(0 <= parm.averaged_spokes);
 
 	if (-1. != FA)
 		parm.fa = FA * M_PI / 180.;
