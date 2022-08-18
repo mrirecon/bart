@@ -36,7 +36,7 @@
 #endif
 
 
-static const char help_str[] = "Infimal convolutioni of total variation along dims specified by flags.";
+static const char help_str[] = "Infimal convolution of total variation along dims specified by flags.";
 
 
 	
