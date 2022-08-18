@@ -316,40 +316,34 @@ static void adc_corr(int N, int P, float out[P][N], float in[P][N], float angle)
 }
 
 
-static long vector_position(int d, int r, int rep_max, int s, int spin_max)
-{
-        return d * spin_max * rep_max + r * spin_max + s;
-}
 
-
-static void collect_signal(struct sim_data* data, int N, int P, float* m, float* sa_r1, float* sa_r2, float* sa_b1, float xp[P][N])
+static void collect_signal(struct sim_data* data, int N, int P, int R, int S, float (*m)[R][S][N], float (*sa_r1)[R][S][N], float (*sa_r2)[R][S][N], float (*sa_b1)[R][S][N], float xp[P][N])
 {
 	float tmp[4][3] = { { 0. }, { 0. }, { 0. }, { 0. } };
 
 	adc_corr(N, P, tmp, xp, -data->pulse.phase);
 
-        long ind = 0;
-
 	for (int i = 0; i < N; i++) {
 
-                ind = vector_position(i, data->tmp.rep_counter, data->seq.rep_num, data->tmp.spin_counter, data->seq.spin_num);
+		int r = data->tmp.rep_counter;
+		int s = data->tmp.spin_counter;
 
 		if (NULL != m)
-			m[ind] = tmp[0][i];
+			(*m)[r][s][i] = tmp[0][i];
 
 		if (NULL != sa_r1)
-			sa_r1[ind] = tmp[1][i];
+			(*sa_r1)[r][s][i] = tmp[1][i];
 
 		if (NULL != sa_r2)
-			sa_r2[ind] = tmp[2][i];
+			(*sa_r2)[r][s][i] = tmp[2][i];
 
 		if (NULL != sa_b1)
-			sa_b1[ind] = tmp[3][i];
+			(*sa_b1)[r][s][i] = tmp[3][i];
 	}
 }
 
 
-static void sum_up_signal(float m0, int R, int S, int A, float *m,  float *sa_r1, float *sa_r2, float *sa_b1,
+static void sum_up_signal(float m0, int R, int S, int A, float (*m)[R * A][S][3],  float (*sa_r1)[R * A][S][3], float (*sa_r2)[R * A][S][3], float (*sa_b1)[R * A][S][3],
                         float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
 {
 	float norm = m0 / (float)(A * S);
@@ -367,12 +361,10 @@ static void sum_up_signal(float m0, int R, int S, int A, float *m,  float *sa_r1
 
 				for (int spin = 0; spin < S; spin++) {
 
-					long ind = vector_position(dim, r * A + a, R * A, spin, S);
-
-					sum_m += m[ind];
-					sum_sa_r1 += sa_r1[ind];
-					sum_sa_r2 += sa_r2[ind];
-					sum_sa_b1 += sa_b1[ind];
+					sum_m += (*m)[r * A + a][spin][dim];
+					sum_sa_r1 += (*sa_r1)[r * A + a][spin][dim];
+					sum_sa_r2 += (*sa_r2)[r * A + a][spin][dim];
+					sum_sa_b1 += (*sa_b1)[r * A + a][spin][dim];
 				}
 			}
 
@@ -637,7 +629,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
 }
 
 
-static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r2, float* sa_b1,
+static void run_sim(struct sim_data* data, int R, int S, float (*mxy)[R][S][3], float (*sa_r1)[R][S][3], float (*sa_r2)[R][S][3], float (*sa_b1)[R][S][3],
                         float h, float tol, int N, int P, float xp[P][N],
                         float xstm[P * N + 1], float mte[P * N + 1][P * N + 1], float mtr[P * N + 1][P * N + 1],
                         bool get_signal)
@@ -673,7 +665,7 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
 
 
                 if (get_signal)
-                        collect_signal(data, N, P, mxy, sa_r1, sa_r2, sa_b1, xp);
+                        collect_signal(data, N, P, R, S, mxy, sa_r1, sa_r2, sa_b1, xp);
 
 
                 // Smooth spoiling for FLASH sequences
@@ -713,7 +705,7 @@ static void run_sim(struct sim_data* data, float* mxy, float* sa_r1, float* sa_r
                 // Save data
                 stm2ode(N, P, xp, xstm);
 
-                collect_signal(data, N, P, mxy, sa_r1, sa_r2, sa_b1, xp);
+                collect_signal(data, N, P, R, S, mxy, sa_r1, sa_r2, sa_b1, xp);
 
                 // Evolution: TE -> TR
                 apply_sim_matrix(N * P + 1, xstm, mtr);
@@ -774,7 +766,10 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 
         prepare_sim(&prep_data, N, P, NULL, NULL);
 
-        run_sim(&prep_data, NULL, NULL, NULL, NULL, h, tol, N, P, xp, NULL, NULL, NULL, false);
+	int R = data->seq.rep_num;
+	int S = data->seq.spin_num;
+
+        run_sim(&prep_data, R, S, NULL, NULL, NULL, NULL, h, tol, N, P, xp, NULL, NULL, NULL, false);
 }
 
 
@@ -802,26 +797,26 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 	data.seq.rep_num *= A;
 	data.seq.averaged_spokes = 1;
 
-        long storage_size = data.seq.spin_num * data.seq.rep_num * 3 * sizeof(float);
+	int S = data.seq.spin_num;
 
-	float* mxy = xmalloc(storage_size);
-	float* sa_r1 = xmalloc(storage_size);
-	float* sa_r2 = xmalloc(storage_size);
-	float* sa_b1 = xmalloc(storage_size);
+	float (*mxy)[R * A][S][3] = xmalloc(sizeof *mxy);
+	float (*sa_r1)[R * A][S][3] = xmalloc(sizeof *sa_r1);
+	float (*sa_r2)[R * A][S][3] = xmalloc(sizeof *sa_r2);
+	float (*sa_b1)[R * A][S][3] = xmalloc(sizeof *sa_b1);
 
 
-	for (data.tmp.spin_counter = 0; data.tmp.spin_counter < data.seq.spin_num; data.tmp.spin_counter++) {
+	for (data.tmp.spin_counter = 0; data.tmp.spin_counter < S; data.tmp.spin_counter++) {
 
                 float h = 0.0001;
 
                 // Full Symmetric slice profile
 		//      - Calculate slice profile by looping over spins with z-gradient
-		if (1 != data.seq.spin_num) {
+		if (1 != S) {
 
                         // Ensures central spin on main lope is set
-			assert(1 == data.seq.spin_num % 2);
+			assert(1 == S % 2);
 
-			data.grad.mom_sl = _data->grad.mom_sl / (data.seq.spin_num - 1) * (data.tmp.spin_counter - (int)(data.seq.spin_num / 2.));
+			data.grad.mom_sl = _data->grad.mom_sl / (S - 1) * (data.tmp.spin_counter - (int)(S / 2.));
 		}
 
                 // Initialize ODE
@@ -858,9 +853,8 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
                     || (SEQ_IRBSSFP == data.seq.seq_type))
                         alpha_half_preparation(&data, h, tol, N, P, xp);
 
-                float mte[M][M];
-                float mte2[M][M];
                 float mtr[M][M];
+                float mte[2][M][M];
 
                 ode2stm(N, P, xstm, xp);
 
@@ -872,11 +866,11 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
                     || (SEQ_IRBSSFP == data.seq.seq_type)) {
 
                         data.pulse.phase = M_PI;
-                        prepare_sim(&data, N, P, mte2, mtr);
+                        prepare_sim(&data, N, P, mte[1], mtr);
                         data.pulse.phase = 0.;
                 }
 
-		prepare_sim(&data, N, P, mte, mtr);
+		prepare_sim(&data, N, P, mte[0], mtr);
 
                 // Loop over Pulse Blocks
 
@@ -884,18 +878,18 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 
                 while (data.tmp.rep_counter < data.seq.rep_num) {
 
+			bool odd = false;
+
                         // Change phase of bSSFP sequence in each repetition block
                         if (   (SEQ_BSSFP == data.seq.seq_type)
                             || (SEQ_IRBSSFP == data.seq.seq_type)) {
 
                                 data.pulse.phase = M_PI * (float)(data.tmp.rep_counter);
 
-                                run_sim(&data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, ((0 == data.tmp.rep_counter % 2) ? mte : mte2), mtr, true);
-
-                        } else {
-
-                                run_sim(&data, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, mte, mtr, true);
+				odd = (1 == data.tmp.rep_counter % 2);
                         }
+
+			run_sim(&data, R, S, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, mte[odd], mtr, true);
 
                         data.tmp.rep_counter++;
                 }
