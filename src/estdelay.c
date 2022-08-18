@@ -140,8 +140,11 @@ int main_estdelay(int argc, char* argv[argc])
 
 		fit_quadratic_form(qf, N, angles, delays);
 
-		qf[0] += 0.5;
-		qf[1] += 0.5;
+		if (0 == tdims[1] % 2) {
+
+			qf[0] += 0.5;
+			qf[1] += 0.5;
+		}
 
 	} else {
 
