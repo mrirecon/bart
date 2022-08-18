@@ -877,9 +877,6 @@ void bloch_simulation(const struct sim_data* _data, float (*m_state)[3], float (
                         data.pulse.phase = M_PI;
                         prepare_sim(&data, N, P, mte2, mtr);
                         data.pulse.phase = 0.;
-
-                        prepare_sim(&data, N, P, mte, mtr);
-
                 }
 
 		prepare_sim(&data, N, P, mte, mtr);
