@@ -203,7 +203,7 @@ Integration_Test_UBSan:
   image: debian:testing
   stage: test2
   script:
-    - AUTOCLEAN=0 UBSAN=1 ASAN=1 make test
+    - AUTOCLEAN=0 UBSAN=1 ASAN=1 DEBUG=1 UBSAN_OPTIONS=print_stacktrace=1 make test
   needs: [Build_UBSan]
   dependencies:
     - Build_UBSan

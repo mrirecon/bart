@@ -318,7 +318,10 @@ NVCCFLAGS += -g
 endif
 
 ifeq ($(UBSAN),1)
-CFLAGS += -fsanitize=undefined -fsanitize-undefined-trap-on-error
+CFLAGS += -fsanitize=undefined
+ifeq ($(DEBUG),0)
+CFLAGS += -fsanitize-undefined-trap-on-error
+endif
 endif
 
 ifeq ($(ASAN),1)
