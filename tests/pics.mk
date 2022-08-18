@@ -373,7 +373,7 @@ tests/test-pics-psf: traj phantom pics nrmse
 	$(TOOLDIR)/phantom -S1 o.ra							;\
 	$(TOOLDIR)/pics -S -r0.001 --psf_export=p.ra -t traj.ra ksp.ra o.ra reco1.ra	;\
 	$(TOOLDIR)/pics -S -r0.001 --psf_import=p.ra -t traj.ra ksp.ra o.ra reco2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.0022 reco1.ra reco2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.003 reco1.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
