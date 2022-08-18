@@ -92,14 +92,19 @@ int main_estdelay(int argc, char* argv[argc])
 	traj_radial_angles(N, angles, tdims, traj);
 
 	float dc_shift = traj_radial_dcshift(tdims, traj);
-	float shift1 = traj_radial_dk(tdims, traj);
+	float scale = traj_radial_dk(tdims, traj);
 
+	// Warn on unexpected shifts: != 0.5 for even number of samples, != 0 for odd number of sampled
+	if (1 == tdims[1] % 2) {
 
-	debug_printf(DP_WARN, "DC is shifted by: %f [sample], 1 sample = %f [1/FOV]\n", dc_shift, shift1);
-
-
-	if (0 != tdims[1] % 2)
 		debug_printf(DP_WARN, "odd number of samples\n");
+		if (fabsf(dc_shift/scale - 0.0f) > 0.0001)
+			debug_printf(DP_WARN, "DC is shifted by: %f [sample], 1 sample = %f [1/FOV]\n", dc_shift, scale);
+
+	} else if (fabsf(dc_shift/scale - 0.5f) > 0.0001) {
+
+		debug_printf(DP_WARN, "DC is shifted by: %f [sample], 1 sample = %f [1/FOV]\n", dc_shift, scale);
+	}
 
 
 	long full_dims[DIMS];
@@ -147,8 +152,8 @@ int main_estdelay(int argc, char* argv[argc])
 		ring(&conf, qf, N, angles, dims, in);
 	}
 
-	qf[0] -= dc_shift / shift1;
-	qf[1] -= dc_shift / shift1;
+	qf[0] -= dc_shift / scale;
+	qf[1] -= dc_shift / scale;
 
 
 	bart_printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
