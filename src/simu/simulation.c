@@ -553,7 +553,7 @@ static void ode2stm(int N, int P, float out[P * N + 1], float in[P][N])
 
 /* ------------ Structural Elements -------------- */
 
-static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1][P * N + 1], float mtr[P * N + 1][P * N + 1])
+static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N + 1][P * N + 1], float (*mtr)[P * N + 1][P * N + 1])
 {
         switch (data->seq.type) {
 
@@ -596,6 +596,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
                         } else {
 
                                 debug_printf(DP_WARN, "Slice-Selection Gradient rewinder does not fit between RF_end and TE!\n");
+				// FIXME: mrel?
 			}
 
                 } else {
@@ -604,10 +605,10 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
                 }
 
                 // Join matrices: 0 -> TE
-                if (0.000001 > (data->seq.te - data->pulse.rf_end))
-                        memcpy(mte, mrf, sizeof (float) * (P * N + 1) * (P * N + 1));
+                if (0.000001 > (data->seq.te - data->pulse.rf_end))	// FIXME
+                        memcpy(mte, mrf, sizeof(*mte));
                 else
-                        mm_mul(M, mte, mrf, mrel);
+                        mm_mul(M, *mte, mrf, mrel);
 
                 // Smooth spoiling for FLASH sequences
 
@@ -633,11 +634,11 @@ static void prepare_sim(struct sim_data* data, int N, int P, float mte[P * N + 1
                                 data->grad.mom = 0.;
 
                                 // Join matrices: TE -> TR
-                                mm_mul(M, mtr, tmp, tmp2);
+                                mm_mul(M, *mtr, tmp, tmp2);
 
                         } else {
 
-                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, mtr);
+                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, *mtr);
                         }
 
                         data->tmp.r2spoil = 0.;	// effects spoiled sequences only
@@ -896,11 +897,11 @@ void bloch_simulation(const struct sim_data* _data, const complex float* slice, 
                     || (SEQ_IRBSSFP == data.seq.seq_type)) {
 
                         data.pulse.phase = M_PI;
-                        prepare_sim(&data, N, P, mte[1], NULL);
+                        prepare_sim(&data, N, P, &mte[1], NULL);
                         data.pulse.phase = 0.;
                 }
 
-		prepare_sim(&data, N, P, mte[0], mtr);
+		prepare_sim(&data, N, P, &mte[0], &mtr);
 
                 // Loop over Pulse Blocks
 
