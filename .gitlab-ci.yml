@@ -48,7 +48,6 @@ Build_Static:
     paths:
       - bart
     expire_in: 45 minutes
-  allow_failure: true
 
 
 Build_UBSan:
@@ -73,6 +72,18 @@ Build_GPU:
       - bart
       - ./lib/
     expire_in: 45 minutes
+
+
+Build_LTO:
+  image: debian:stable
+  stage: build
+  script:
+    - CFLAGS="-flto -O2 -g" make
+  artifacts:
+    paths:
+      - bart
+    expire_in: 45 minutes
+
 
 
 Build_Tensorflow:
@@ -153,6 +164,16 @@ Unit_Test_Tensorflow:
   needs: [Build_Tensorflow]
   dependencies:
     - Build_Tensorflow
+
+
+Unit_Test_LTO:
+  image: debian:stable
+  stage: test1
+  script:
+    - CFLAGS="-flto -O2 -g" make test
+  needs: [Build_LTO]
+  dependencies:
+    - Build_LTO
 
 
 
