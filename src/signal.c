@@ -58,7 +58,7 @@ int main_signal(int argc, char* argv[argc])
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[TE_DIM] = 100;
 
-	enum seq_type { BSSFP, FLASH, TSE, SE, MOLLI, MGRE };
+	enum seq_type { BSSFP, FLASH, TSE, SE, MOLLI, MGRE, IR_MGRE };
 	enum seq_type seq = FLASH;
 
 	bool IR = false;
@@ -79,6 +79,7 @@ int main_signal(int argc, char* argv[argc])
         float time_T1relax = -1.; // second
         long Hbeats = -1;
         int averaged_spokes = 1;
+	int NE = -1;
 
 	const struct opt_s opts[] = {
 
@@ -88,6 +89,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_SELECT('S', enum seq_type, &seq, SE, "SE"),
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
+		OPT_SELECT('C', enum seq_type, &seq, IR_MGRE, "IR MGRE"),
 		OPTL_SET(0, "fat", &fat, "Simulate additional fat component."),
 		OPT_SET('I', &IR, "inversion recovery"),
 		OPT_SET('s', &IR_SS, "inversion recovery starting from steady state"),
@@ -103,6 +105,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_LONG('n', &dims[TE_DIM], "n", "number of measurements"),
 		OPT_LONG('b', &Hbeats, "heart beats", "number of heart beats for MOLLI"),
                 OPTL_INT(0, "av-spokes", &averaged_spokes, "", "Number of averaged consecutive spokes"),
+		OPT_INT('m', &NE, "multi echos", "number of multi gradient echos"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -118,6 +121,7 @@ int main_signal(int argc, char* argv[argc])
 	case TSE:   parm = signal_TSE_defaults; break;
 	case SE:    parm = signal_SE_defaults; break;
 	case MOLLI: parm = signal_looklocker_defaults; break;
+	case IR_MGRE: parm = signal_ir_multi_grad_echo_fat_defaults; break;
 
 	default: error("sequence type not supported");
 	}
@@ -184,6 +188,7 @@ int main_signal(int argc, char* argv[argc])
 		case TSE:   TSE_model(&parm, N_all, mxy); break;
 		case SE:    SE_model(&parm, N_all, mxy); break;
 		case MOLLI: MOLLI_model(&parm, N_all, mxy); break;
+		case IR_MGRE: ir_multi_grad_echo_model(&parm, NE, N_all, mxy); break;
 
 		default: assert(0);
 		}

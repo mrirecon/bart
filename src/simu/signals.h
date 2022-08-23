@@ -19,6 +19,7 @@ struct signal_model {
 	float m0_fat;
 	float ms;
 	float t1;
+	float t1_fat;
 	float t2;
 	float t2star;
 	float te;
@@ -75,5 +76,9 @@ extern complex float calc_fat_modulation(float b0, float TE, enum fat_spec fs);
 extern void multi_grad_echo_model(const struct signal_model* data, int N, complex float out[N]);
 
 
-#endif // _SIGNALS_H
+extern const struct signal_model signal_ir_multi_grad_echo_fat_defaults;
+
+extern void ir_multi_grad_echo_model(const struct signal_model* data, int NE, int N, complex float out[N]);
+
+#endif
 

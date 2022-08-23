@@ -160,11 +160,9 @@ const struct signal_model signal_looklocker_defaults = {
 	.ir_ss = false,
 };
 
-static float signal_looklocker(const struct signal_model* data, int ind, float* m_start)
+static float signal_looklocker2(const struct signal_model* data, float t1, float m0, int ind, float* m_start)
 {
 	float fa   = data->fa;
-	float t1   = data->t1;
-	float m0   = data->m0;
 	float tr   = data->tr;
 	bool  ir   = data->ir;
 	bool ir_ss = data->ir_ss;
@@ -187,6 +185,14 @@ static float signal_looklocker(const struct signal_model* data, int ind, float* 
 
 	return mss - (mss - s0) * expf(-ind * tr * r1s);
 }
+
+static float signal_looklocker(const struct signal_model* data, int ind, float* m_start)
+{
+	float t1   = data->t1;
+	float m0   = data->m0;
+	return signal_looklocker2(data, t1, m0, ind, m_start);
+}
+
 
 void looklocker_model(const struct signal_model* data, int N, complex float out[N])
 {
@@ -377,4 +383,53 @@ void multi_grad_echo_model(const struct signal_model* data, int N, complex float
 }
 
 
+/*
+ * IR Look-Locker multi gradient echo model
+ */
+const struct signal_model signal_ir_multi_grad_echo_fat_defaults = {
 
+	.m0 = 1.,
+	.m0_water = 0.8,
+	.m0_fat = 0.2,
+	.t2 = .05, // s
+	.off_reson = 20, // Hz
+	.te = 1.6 * 1.E-3, // s
+	.b0 = 3., // Tesla
+	.fat_spec = FAT_SPEC_1,
+
+	.t1 = 1.2, // s
+	.t1_fat = 0.3, // s
+	.tr = 0.008, // s
+	.fa = 6. * M_PI / 180.,
+	.ir = true,
+
+};
+
+static complex float signal_ir_multi_grad_echo(const struct signal_model* data, int ind_TE, int ind_TI)
+{
+	assert(data->m0 == data->m0_water + data->m0_fat);
+
+	float TE = data->te * ind_TE;
+
+	float t1 = data->t1;
+	float m0 = data->m0_water;
+	float W  = signal_looklocker2(data, t1, m0, ind_TI, NULL);
+
+	t1       = data->t1_fat;
+	m0       = data->m0_fat;
+	float F  = signal_looklocker2(data, t1, m0, ind_TI, NULL);
+
+	complex float cshift = calc_fat_modulation(data->b0, TE, data->fat_spec);
+
+	complex float z = -1. / data->t2 + 2.i * M_PI * data->off_reson;
+
+	return (W + F * cshift) * cexpf(z * TE);
+}
+
+void ir_multi_grad_echo_model(const struct signal_model* data, int NE, int N, complex float out[N])
+{
+	int NI = N / NE;
+	for (int ind_e = 0; ind_e < NE; ind_e++)
+		for (int ind_i = 0; ind_i < NI; ind_i++)
+			out[ind_i + NI * ind_e] = signal_ir_multi_grad_echo(data, ind_e, ind_i);
+}
