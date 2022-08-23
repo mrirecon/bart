@@ -12,7 +12,7 @@ import cfl
 import os
 from wslsupport import PathCorrection
 
-def bart(nargout, cmd, *args):
+def bart(nargout, cmd, *args, **kwargs):
 
     if type(nargout) != int or nargout < 0:
         print("Usage: bart(<nargout>, <command>, <arguements...>)")
@@ -46,6 +46,15 @@ def bart(nargout, cmd, *args):
     for idx in range(nargin):
         cfl.writecfl(infiles[idx], args[idx])
 
+    infiles_kw = [name + 'in' + kw for kw in kwargs]
+    in_kw_str = ''
+    for idx, kw in enumerate(kwargs):
+        cfl.writecfl(infiles_kw[idx], kwargs[kw])
+        if len(kw) > 1:
+            in_kw_str += f'--{kw} {infiles_kw[idx]} '
+        else:
+            in_kw_str += f'-{kw} {infiles_kw[idx]} '
+
     outfiles = [name + 'out' + str(idx) for idx in range(nargout)]
     out_str = ' '.join(outfiles)
 
@@ -54,16 +63,23 @@ def bart(nargout, cmd, *args):
             #For WSL and modify paths
             cmdWSL = PathCorrection(cmd)
             in_strWSL = PathCorrection(in_str)
+            in_kw_strWSL = PathCorrection(in_kw_str)
             out_strWSL =  PathCorrection(out_str)	
-            ERR = os.system('wsl bart ' + cmdWSL + ' ' + in_strWSL + ' ' + out_strWSL)
+            ERR = os.system('wsl bart ' + cmdWSL + ' ' + in_kw_strWSL + ' ' + in_strWSL + ' ' + out_strWSL)
         else:
             #For cygwin use bash and modify paths
-            ERR = os.system('bash.exe --login -c ' + bart_path + '"/bart ' + cmd.replace(os.path.sep, '/') + ' ' + in_str.replace(os.path.sep, '/') + ' ' + out_str.replace(os.path.sep, '/') + '"')
+            ERR = os.system('bash.exe --login -c ' + bart_path + '"/bart ' + cmd.replace(os.path.sep, '/') + ' ' + in_kw_str.replace(os.path.sep, '/') + ' ' + in_str.replace(os.path.sep, '/') + ' ' + out_str.replace(os.path.sep, '/') + '"')
             #TODO: Test with cygwin, this is just translation from matlab code
     else:
-        ERR = os.system(bart_path + '/bart ' + cmd + ' ' + in_str + ' ' + out_str)
+        ERR = os.system(bart_path + '/bart ' + cmd + ' ' + in_kw_str + ' ' + in_str + ' ' + out_str)
 
     for elm in infiles:
+        if os.path.isfile(elm + '.cfl'):
+            os.remove(elm + '.cfl')
+        if os.path.isfile(elm + '.hdr'):
+            os.remove(elm + '.hdr')
+
+    for elm in infiles_kw:
         if os.path.isfile(elm + '.cfl'):
             os.remove(elm + '.cfl')
         if os.path.isfile(elm + '.hdr'):
