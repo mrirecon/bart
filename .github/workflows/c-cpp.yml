@@ -21,3 +21,7 @@ jobs:
       run: make utest
     - name: make test
       run: make test
+    - name: make pythontest
+      run: |
+        sudo apt install python3 python3-numpy
+        make pythontest
