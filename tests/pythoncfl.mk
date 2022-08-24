@@ -1,6 +1,6 @@
 
 
-# test python reacfl and writecfl interface
+# test python readcfl and writecfl interface
 
 
 tests/test-python-cfl: $(TOOLDIR)/tests/pythoncfl.py nrmse flip $(TESTS_OUT)/shepplogan.ra
