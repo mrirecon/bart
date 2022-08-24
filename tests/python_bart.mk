@@ -9,7 +9,7 @@ tests/test-python-cfl: $(TOOLDIR)/python/bart.py $(TESTS_OUT)/shepplogan.ra nrms
 	PYTHONPATH=$(TOOLDIR)/python python3 -c "import cfl; 			\
 		ph=cfl.readcfl('$(TESTS_OUT)/shepplogan.ra'); 			\
 	cfl.writecfl('shepplogan_cfl', ph)"					;\
-	$(TOOLDIR)/nrmse -t 0.5 $(TESTS_OUT)/shepplogan.ra shepplogan_cfl	;\
+	$(TOOLDIR)/nrmse -t 0. $(TESTS_OUT)/shepplogan.ra shepplogan_cfl	;\
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
