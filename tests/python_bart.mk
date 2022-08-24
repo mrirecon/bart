@@ -4,15 +4,6 @@ tests/test-python-bart: $(TOOLDIR)/python/bart.py bart
 	PYTHONPATH=$(TOOLDIR)/python python3 -c "import bart; bart.bart(0,'version -V')"
 	touch $@
 
-tests/test-python-cfl: $(TOOLDIR)/python/bart.py $(TESTS_OUT)/shepplogan.ra nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
-	PYTHONPATH=$(TOOLDIR)/python python3 -c "import cfl; 			\
-		ph=cfl.readcfl('$(TESTS_OUT)/shepplogan.ra'); 			\
-	cfl.writecfl('shepplogan_cfl', ph)"					;\
-	$(TOOLDIR)/nrmse -t 0. $(TESTS_OUT)/shepplogan.ra shepplogan_cfl	;\
-	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@
-
 tests/test-python-bart-io: $(TOOLDIR)/python/bart.py $(TESTS_OUT)/shepplogan.ra bart nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)                                            ;\
 	PYTHONPATH=$(TOOLDIR)/python python3 -c "import bart; import cfl;			\
@@ -32,6 +23,6 @@ tests/test-python-bart-io-kwargs: $(TOOLDIR)/python/bart.py $(TESTS_OUT)/shepplo
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS_PYTHON += tests/test-python-bart tests/test-python-cfl
+TESTS_PYTHON += tests/test-python-bart
 TESTS_PYTHON += tests/test-python-bart-io tests/test-python-bart-io-kwargs
 
