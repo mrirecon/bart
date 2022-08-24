@@ -15,8 +15,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: update
       run: sudo apt-get install gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
-    - name: make
-      run: make
+    - name: make all
+      run: make all
     - name: make utest
       run: make utest
     - name: make test
