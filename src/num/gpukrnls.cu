@@ -38,9 +38,13 @@ static int blocksize(int N)
 	return BLOCKSIZE;
 }
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 static long gridsize(long N)
 {
-	return (N + BLOCKSIZE - 1) / BLOCKSIZE;
+	// to ensure that "start" does not overflow we need to restrict gridsize!
+	return MIN((N + BLOCKSIZE - 1) / BLOCKSIZE, 65536 - 1);
 }
 #else
 // http://stackoverflow.com/questions/5810447/cuda-block-and-grid-size-efficiencies
@@ -1077,8 +1081,6 @@ extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* 
 }
 
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 
 __global__ void kern_zmax(long N, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
