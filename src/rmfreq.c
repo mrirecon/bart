@@ -76,11 +76,13 @@ int main_rmfreq(int argc, char* argv[argc])
 	// Modulation file
 	long mod_dims[DIMS];
 	complex float* mod = NULL;
+
 	if (NULL != mod_file) {
 
 		mod = load_cfl(mod_file, DIMS, mod_dims);
+
 		assert(md_check_equal_dims(DIMS, k_dims, mod_dims, ~(COIL_FLAG)));
-		assert(mod_dims[COIL_DIM] == 1);
+		assert(1 == mod_dims[COIL_DIM]);
 	}
 
 
@@ -158,11 +160,13 @@ int main_rmfreq(int argc, char* argv[argc])
 	complex float* n_part_singleton = md_alloc(DIMS, n_part_singleton_dims, CFL_SIZE);
 
 	/* Account for contrast change */
-	if (mod_file != NULL) {
+	if (NULL != mod_file) {
+
 		assert(md_check_equal_dims(DIMS, n_dims, mod_dims, ~(MD_BIT(LAST_DIM))));
-		
+
 		long n_strs[DIMS];
 		md_calc_strides(DIMS, n_strs, n_dims, CFL_SIZE);
+
 		long mod_strs[DIMS];
 		md_calc_strides(DIMS, mod_strs, mod_dims, CFL_SIZE);
 
