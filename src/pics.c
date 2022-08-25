@@ -678,7 +678,7 @@ int main_pics(int argc, char* argv[argc])
 	struct iter_monitor_s* monitor = NULL;
 
 	if (im_truth)
-		monitor = create_monitor(2 * md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL);
+		monitor = iter_monitor_create(2 * md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL);
 
 	if (0 < ropts.svars) {
 

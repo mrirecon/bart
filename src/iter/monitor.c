@@ -78,7 +78,7 @@ static void monitor_default_fun(struct iter_monitor_s* _data, const struct vec_i
 	data->INTERFACE.err = err;
 }
 
-struct iter_monitor_s* create_monitor(long N, const float* image_truth, void* data, float (*objective)(const void* data, const float* x))
+struct iter_monitor_s* iter_monitor_create(long N, const float* image_truth, void* data, float (*objective)(const void* data, const float* x))
 {
 	PTR_ALLOC(struct monitor_default_s, monitor);
 	SET_TYPEID(monitor_default_s, monitor);
