@@ -22,6 +22,7 @@
 #include "linops/someops.h"
 
 #include "nlops/nlop.h"
+#include "nlops/nltest.h"
 
 #include "moba/moba.h"
 #include "moba/blochfun.h"
@@ -51,21 +52,42 @@ static bool test_nlop_T1fun(void)
 
 	md_zfill(N, in_dims, src, 1.0);
 
-	struct nlop_s* T1 = nlop_T1_create(N, map_dims, out_dims, in_dims, TI_dims, TI, 2, 1., false);
+	struct nlop_s* T1 = nlop_T1_create(N, map_dims, out_dims, in_dims, TI_dims, TI, 2., 1., false);
 
 	nlop_apply(T1, N, out_dims, dst, N, in_dims, src);
 	
-	float err = linop_test_adjoint(nlop_get_derivative(T1, 0, 0));
+	float err = linop_test_adjoint_real(nlop_get_derivative(T1, 0, 0));
 
 	nlop_free(T1);
 
 	md_free(src);
 	md_free(dst);
 
-	UT_ASSERT(err < 1.E-3);
+	UT_ASSERT(err < UT_TOL);
 }
 
 UT_REGISTER_TEST(test_nlop_T1fun);
+
+static bool test_nlop_T1fun_der(void) 
+{
+	enum { N = 16 };
+	long map_dims[N] = { 16, 16, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long out_dims[N] = { 16, 16, 1, 1, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long in_dims[N] = { 16, 16, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long TI_dims[N] = { 1, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+
+	complex float TI[4] = { 0., 1., 2., 3. };
+
+
+	struct nlop_s* T1 = nlop_T1_create(N, map_dims, out_dims, in_dims, TI_dims, TI, 2., 1., false);
+	float err = nlop_test_derivative(T1);
+
+	nlop_free(T1);
+
+	UT_ASSERT(err < 1.E-1);
+}
+
+UT_REGISTER_TEST(test_nlop_T1fun_der);
 
 static bool test_op_p_stack_moba_nonneg(void)
 {
