@@ -336,11 +336,12 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 					const float (*scale2)[4] = &data->moba_data->other.scale;
 
 					// complex m0scale[spa_ind] adds scaling and phase to the signal
-					dr1_cpu[position] = a * (*scale2)[0] * m0scale[spa_ind] * (sa_r1[j][1] + sa_r1[j][0] * 1.i);
-					dm0_cpu[position] = a * (*scale2)[1] * (sa_m0[j][1] + sa_m0[j][0] * 1.i);
-					dr2_cpu[position] = a * (*scale2)[2] * m0scale[spa_ind] * (sa_r2[j][1] + sa_r2[j][0] * 1.i);
-					db1_cpu[position] = a * (*scale2)[3] * m0scale[spa_ind] * (sa_b1[j][1] + sa_b1[j][0] * 1.i);
-					sig_cpu[position] = a * m0scale[spa_ind] * (m[j][1] + m[j][0] * 1.i);
+					// M = M_x + i M_y	and S = S_x + i S_y
+					dr1_cpu[position] = a * (*scale2)[0] * m0scale[spa_ind] * (sa_r1[j][0] + sa_r1[j][1] * 1.i);
+					dm0_cpu[position] = a * (*scale2)[1] * (sa_m0[j][0] + sa_m0[j][1] * 1.i);
+					dr2_cpu[position] = a * (*scale2)[2] * m0scale[spa_ind] * (sa_r2[j][0] + sa_r2[j][1] * 1.i);
+					db1_cpu[position] = a * (*scale2)[3] * m0scale[spa_ind] * (sa_b1[j][0] + sa_b1[j][1] * 1.i);
+					sig_cpu[position] = a * m0scale[spa_ind] * (m[j][0] + m[j][1] * 1.i);
 				}
 			}
 		}

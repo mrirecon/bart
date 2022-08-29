@@ -9,7 +9,18 @@
 #include "bloch.h"
 
 
-// Rotations in LEFT-handed coordinate system!
+// Rotations in RIGHT-handed coordinate system with CLOCKWISE rotation for angle > 0
+// Keep it consitent with clockwise rotation of Bloch equations
+//       z
+//       |
+//       |
+//       |
+//       |_ _ _ _ _ _ _y
+//      /
+//     /
+//    /
+//   x
+
 void rotx(float out[3], const float in[3], float angle)
 {
 	out[0] = in[0];
@@ -31,6 +42,8 @@ void rotz(float out[3], const float in[3], float angle)
 	out[2] = in[2];
 }
 
+// RIGHT-handed coordinate system with CLOCKWISE rotation
+// dM/dt = MxB - ...
 void bloch_ode(float out[3], const float in[3], float r1, float r2, const float gb[3])
 {
 	float m0 = 1.;
@@ -78,9 +91,9 @@ void bloch_b1_pdp(float out[3][3], const float in[3], float r1, float r2, const 
 	out[1][0] = -in[0];
 	out[1][1] = -in[1];
 	out[1][2] = 0.;
-	out[2][0] = -sinf(phase) * in[2] * b1;
+	out[2][0] = sinf(phase) * in[2] * b1;
 	out[2][1] = cosf(phase) * in[2] * b1;
-	out[2][2] = (sinf(phase) * in[0] - cosf(phase) * in[1]) * b1;
+	out[2][2] = (-sinf(phase) * in[0] - cosf(phase) * in[1]) * b1;
 }
 
 
@@ -147,7 +160,6 @@ void bloch_matrix_int(float matrix[4][4], float t, float r1, float r2, const flo
 	mat_exp(4, t, matrix, blm);
 }
 
-
 void bloch_matrix_ode_sa(float matrix[10][10], float r1, float r2, const float gb[3])
 {
 	float m0 = 1.;
@@ -188,9 +200,9 @@ void bloch_matrix_ode_sa2(float matrix[13][13], float r1, float r2, const float 
 		{	-1.,		0.,		0.,		0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.,	0.,	0.,	0.	},
 		{	0.,		-1.,		0.,		0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.,	0.,	0.,	0.	},
 		{	0.,		0.,		0.,		0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.,	0.,	0.,	0.	},
-		{	0.,		0.,		-sinf(phase)*b1,0.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
+		{	0.,		0.,		sinf(phase)*b1,0.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
 		{	0.,		0.,		cosf(phase)*b1,	0.,	0.,	0.,	0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.	},
-		{	sinf(phase)*b1,	-cosf(phase)*b1,0.,		0.,	0.,	0.,	0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.	},
+		{	-sinf(phase)*b1,	-cosf(phase)*b1,0.,		0.,	0.,	0.,	0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.	},
 		{	0.,		0.,		0.,		0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
 	};
 

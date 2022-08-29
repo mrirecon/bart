@@ -1,30 +1,33 @@
-tests/test-sim-to-signal-irflash: sim cabs mip spow fmac signal nrmse
+tests/test-sim-to-signal-irflash: sim cabs mip spow fmac scale signal nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/sim --seq ir-flash,tr=0.0041,te=0.0025,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=8,bwtp=4 -1 3:3:1 -2 1:1:1 _simu.ra ;\
 	$(TOOLDIR)/cabs _simu.ra _simu_abs.ra								;\
 	$(TOOLDIR)/mip 32 _simu_abs.ra max.ra								;\
 	$(TOOLDIR)/spow -- -1 max.ra scale.ra								;\
-	$(TOOLDIR)/fmac _simu.ra scale.ra simu.ra 							;\
+	$(TOOLDIR)/fmac _simu.ra scale.ra _simu2.ra 							;\
+	$(TOOLDIR)/scale -- -1i _simu2.ra simu.ra							;\
 	$(TOOLDIR)/signal -I -F -r0.0041 -e0.00258 -f8 -n1000 -1 3:3:1 -2 1:1:1 signal.ra		;\
 	$(TOOLDIR)/nrmse -t 0.003 simu.ra signal.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-sim-to-signal-flash: sim cabs mip spow fmac signal nrmse
+tests/test-sim-to-signal-flash: sim cabs mip spow fmac scale signal nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/sim --seq flash,tr=0.0041,te=0.0025,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=8,bwtp=4 -1 3:3:1 -2 1:1:1 _simu.ra ;\
 	$(TOOLDIR)/cabs _simu.ra _simu_abs.ra								;\
 	$(TOOLDIR)/mip 32 _simu_abs.ra max.ra								;\
 	$(TOOLDIR)/spow -- -1 max.ra scale.ra								;\
-	$(TOOLDIR)/fmac _simu.ra scale.ra simu.ra 							;\
+	$(TOOLDIR)/fmac _simu.ra scale.ra _simu2.ra 							;\
+	$(TOOLDIR)/scale -- -1i _simu2.ra simu.ra							;\
 	$(TOOLDIR)/signal -F -r0.0041 -e0.00258 -f8 -n1000 -1 3:3:1 -2 1:1:1 signal.ra		;\
 	$(TOOLDIR)/nrmse -t 0.003 simu.ra signal.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-sim-to-signal-irbSSFP: sim signal nrmse
+tests/test-sim-to-signal-irbSSFP: sim scale signal nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 _sim.ra ;\
+	$(TOOLDIR)/scale -- -1i _sim.ra sim.ra							;\
 	$(TOOLDIR)/signal -I -B -r0.0045 -e0.00225 -f45 -n1000 -1 3:3:1 -2 1:1:1 signal.ra		;\
 	$(TOOLDIR)/nrmse -t 0.003 sim.ra signal.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -51,9 +54,10 @@ tests/test-sim-spoke-averaging-3: sim slice join avg nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-sim-to-signal-irbSSFP-averaged-spokes: sim signal nrmse
+tests/test-sim-to-signal-irbSSFP-averaged-spokes: sim scale signal nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4,av-spokes=3 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0,trf=0,fa=45,bwtp=4,av-spokes=3 -1 3:3:1 -2 1:1:1 _sim.ra ;\
+	$(TOOLDIR)/scale -- -1i _sim.ra sim.ra							;\
 	$(TOOLDIR)/signal -I -B -r0.0045 -e0.00225 -f45 -n1000 -1 3:3:1 -2 1:1:1 --av-spokes 3 signal.ra		;\
 	$(TOOLDIR)/nrmse -t 0.001 sim.ra signal.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -177,8 +181,8 @@ tests/test-sim-split-dim-mag: sim slice saxpy nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=10,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 mxy.ra ;\
 	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=10,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4 --split-dim -1 3:3:1 -2 1:1:1 sim.ra ;\
-	$(TOOLDIR)/slice 0 0 sim.ra y.ra ;\
-	$(TOOLDIR)/slice 0 1 sim.ra x.ra ;\
+	$(TOOLDIR)/slice 0 0 sim.ra x.ra ;\
+	$(TOOLDIR)/slice 0 1 sim.ra y.ra ;\
 	$(TOOLDIR)/saxpy -- 1i y.ra x.ra mxy2.ra ;\
 	$(TOOLDIR)/nrmse -t 0.002 mxy.ra mxy2.ra ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -188,8 +192,8 @@ tests/test-sim-split-dim-deriv: sim slice saxpy nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=10,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4 -1 3:3:1 -2 1:1:1 mxy.ra dxy.ra;\
 	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=10,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4 --split-dim -1 3:3:1 -2 1:1:1 sim.ra deriv.ra;\
-	$(TOOLDIR)/slice 0 0 deriv.ra y.ra ;\
-	$(TOOLDIR)/slice 0 1 deriv.ra x.ra ;\
+	$(TOOLDIR)/slice 0 0 deriv.ra x.ra ;\
+	$(TOOLDIR)/slice 0 1 deriv.ra y.ra ;\
 	$(TOOLDIR)/saxpy -- 1i y.ra x.ra d.ra ;\
 	$(TOOLDIR)/nrmse -t 0.002 dxy.ra d.ra ;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)

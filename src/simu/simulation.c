@@ -190,8 +190,10 @@ static void set_gradients(struct sim_data* data, float t)
                         data->tmp.w1 = pulse_sinc(&data->pulse, t);
                 }
 
+                // Definition from Bernstein et al., Handbook of MRI Pulse Sequences, p. 26f
+                // dM/dt = M x (e_x*B_1*sin(phase)-e_y*B_1*sin(phase) +e_z* B_0)) - ...
 		data->grad.gb_eff[0] = cosf(data->pulse.phase) * data->tmp.w1 * data->voxel.b1 + data->grad.gb[0];
-		data->grad.gb_eff[1] = sinf(data->pulse.phase) * data->tmp.w1 * data->voxel.b1 + data->grad.gb[1];
+		data->grad.gb_eff[1] = -sinf(data->pulse.phase) * data->tmp.w1 * data->voxel.b1 + data->grad.gb[1];
 
 	} else {
 

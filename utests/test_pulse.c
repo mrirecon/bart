@@ -99,9 +99,9 @@ static bool test_rf_pulse_ode(void)
 			struct sim_data data;
 
 			data.seq = simdata_seq_defaults;
-			data.seq.seq_type = 1;
-			data.seq.tr = 10;
-			data.seq.te = 5;
+			data.seq.seq_type = SEQ_IRBSSFP;
+			data.seq.tr = 10.;
+			data.seq.te = 5.;
 			data.seq.rep_num = 1;
 			data.seq.spin_num = 1;
 
@@ -174,7 +174,7 @@ static bool test_hypsec_rf_pulse_ode(void)
         struct sim_data data;
 
         data.seq = simdata_seq_defaults;
-        data.seq.seq_type = 2;
+        data.seq.seq_type = SEQ_FLASH;
         data.seq.tr = 0.001;
         data.seq.te = 0.001;
         data.seq.rep_num = 1;

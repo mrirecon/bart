@@ -373,10 +373,10 @@ static bool test_ode_irbssfp_simulation(void)
 
 
 	// Analytical Model
-	float t1s = 1 / ((cosf(fa / 2.) * cosf(fa / 2.)) / t1n + (sinf(fa / 2.) * sinf(fa / 2.)) / t2n);
+	float t1s = 1. / ((cosf(fa / 2.) * cosf(fa / 2.)) / t1n + (sinf(fa / 2.) * sinf(fa / 2.)) / t2n);
 	float s0 = m0n * sinf(fa / 2.);
-	float stst = m0n * sinf(fa) / ((t1n / t2n + 1) - cosf(fa) * (t1n / t2n-1));
-	float inv = 1 + s0 / stst;
+	float stst = m0n * sinf(fa) / ((t1n / t2n + 1.) - cosf(fa) * (t1n / t2n - 1.));
+	float inv = 1. + s0 / stst;
 
 
         // Model Comparison
@@ -388,16 +388,16 @@ static bool test_ode_irbssfp_simulation(void)
 
                 //Does NOT include phase information!
                 // + data.tr through alpha/2 preparation
-		out_theory = fabs(stst * (1. - inv * expf(-((float)(z + 1) * sim_data.seq.tr) / t1s)));
+		out_theory = fabs(stst * (1. - inv * expf(-((float)(z + 1.) * sim_data.seq.tr) / t1s)));
 
-		out_simu = cabsf(mxy_sig[z][1] + mxy_sig[z][0] * I);
+		out_simu = cabsf(mxy_sig[z][0] + mxy_sig[z][1] * I);
 
 		err = fabsf(out_simu - out_theory);
 
 		if (10E-4 < err) {
 
 			debug_printf(DP_ERROR, "err: %f,\t out_simu: %f,\t out_theory: %f\n", err, out_simu, out_theory);
-			debug_printf(DP_ERROR, "Error in sequence test\n see: -> test_simulation() in test_ode_simu.c\n");
+			debug_printf(DP_ERROR, "Error in sequence test\n see: -> test_ode_irbssfp_simulation() in test_ode_simu.c\n");
 
 			return 0;
 		}
@@ -461,7 +461,7 @@ static bool test_rot_irbssfp_simulation(void)
 	sim_data.pulse.flipangle = angle;
 
         // Choose close to hard-pulse approximation -> same assumptions as analytical model
-	sim_data.pulse.rf_end = 0.00001;
+	sim_data.pulse.rf_end = 0.;
 
 	sim_data.grad = simdata_grad_defaults;
 
@@ -484,10 +484,10 @@ static bool test_rot_irbssfp_simulation(void)
 
 	// Analytical Model
 
-	float t1s = 1 / ((cosf(fa / 2.) * cosf(fa / 2.)) / t1n + (sinf(fa / 2.) * sinf(fa / 2.)) / t2n);
+	float t1s = 1. / ((cosf(fa / 2.) * cosf(fa / 2.)) / t1n + (sinf(fa / 2.) * sinf(fa / 2.)) / t2n);
 	float s0 = m0n * sinf(fa / 2.);
-	float stst = m0n * sinf(fa) / ((t1n / t2n + 1) - cosf(fa) * (t1n / t2n-1));
-	float inv = 1 + s0 / stst;
+	float stst = m0n * sinf(fa) / ((t1n / t2n + 1.) - cosf(fa) * (t1n / t2n - 1.));
+	float inv = 1. + s0 / stst;
 
 
         // Model Comparison
@@ -503,14 +503,14 @@ static bool test_rot_irbssfp_simulation(void)
 
 		out_theory = fabs(stst * (1. - inv * expf(-((float)(z + 1.) * sim_data.seq.tr) / t1s)));
 
-		out_simu = cabsf(mxy_sig[z][1] + mxy_sig[z][0] * I);
+		out_simu = cabsf(mxy_sig[z][0] + mxy_sig[z][1] * I);
 
 		err = fabsf(out_simu - out_theory);
 
 		if (10E-4 < err) {
 
 			debug_printf(DP_ERROR, "err: %f,\t out_simu: %f,\t out_theory: %f\n", err, out_simu, out_theory);
-			debug_printf(DP_ERROR, "Error in sequence test\n see: -> test_simulation() in test_ode_simu.c\n");
+			debug_printf(DP_ERROR, "Error in sequence test\n see: -> test_rot_irbssfp_simulation() in test_ode_simu.c\n");
 
 			return false;
 		}
@@ -1016,7 +1016,7 @@ static void ode_fourier_modes(int N, struct sim_data* data, complex float fn[N],
 		bloch_simulation(&sim_ode, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 		// Save M+
-		m_plus[i] = mxySig_ode[t][1] + mxySig_ode[t][0] * I;
+		m_plus[i] = mxySig_ode[t][0] + mxySig_ode[t][1] * I;
 	}
 
 #if 0	// Print out values
@@ -1079,7 +1079,7 @@ static bool test_ode_epg_relation(void)
 
 	float angles[4] = {0, 1, 2, 3};	// [rotations/ms]
 
-	float test_modes[4] = { 0. };
+	complex float test_modes[4] = { 0. };
 
 	for (int i = 0; i < 4; i++) {
 
@@ -1099,23 +1099,25 @@ static bool test_ode_epg_relation(void)
 	flash_epg_der(T, M, signal, states, NULL, NULL, sim_data.pulse.flipangle, sim_data.seq.tr, 1000000., 1000000., 1., sim_data.voxel.w, 0L);
 
 #if 0
-	for (int i = 0; i < M; i++)
+	for (int i = 0; i < M; i++) {
+
 		bart_printf("EPG: Fn: k: %d,\t%f+%f*I\n", i, crealf(states[0][i][T-1]), cimagf(states[0][i][T-1])); // 0 -> Fn
+
+		bart_printf("\nTest Modes:\t%f+%f*I\n", crealf(test_modes[i]), cimagf(test_modes[i]));
+	}
 
 	bart_printf("\nSignal(EPG):\t %f+%f*i\n\n", crealf(signal[T-1]), cimagf(signal[T-1]));
 
-	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	(fabs(crealf(states[0][0][T-1]) - test_modes[0])),
-							(fabs(crealf(states[0][0][T-1]) - test_modes[1])),
-							(fabs(crealf(states[0][0][T-1]) - test_modes[2])),
-							(fabs(crealf(states[0][0][T-1]) - test_modes[3])) );
+	bart_printf("Err\n k0: %f,\tk1: %f\n",	(fabs(cimagf(states[0][0][T-1]) - cimagf(test_modes[0]))),
+							(fabs(cimagf(states[0][1][T-1]) - cimagf(test_modes[1]))) );
 #endif
 
 	float tol = 10E-5;
 
-	UT_ASSERT(	(fabs(crealf(states[0][0][T-1]) - test_modes[0]) < tol)
-                        && (fabs(crealf(states[0][0][T-1]) - test_modes[1]) < tol)
-                        && (fabs(crealf(states[0][0][T-1]) - test_modes[2]) < tol)
-                        && (fabs(crealf(states[0][0][T-1]) - test_modes[3]) < tol) );
+	// "* -1" for EPG rotations defined COUNTER clockwise, while Bloch equations rotate ation CLOCKWISE around x
+	// FIXME: Redefine EPG clockwise
+	UT_ASSERT(	(fabs(cimagf(-1. * states[0][0][T-1]) - cimagf(test_modes[0])) < tol)
+                        && (fabs(cimagf(states[0][1][T-1]) - cimagf(test_modes[1])) < tol) );
 
 	return true;
 }
@@ -1220,6 +1222,7 @@ UT_REGISTER_TEST(test_hp_irbssfp_simulation);
 // Test off-resonance effect in HARD PULSE simulation
 //      - Set off-resonance so that magnetization is rotated by 90 degree within TE
 //      - for w == 0 -> Mxy = 0+1*I
+//	- Rotation through off-resonance clockwise
 //      - Goal: Mxy = 1+0*I
 static bool test_hp_simu_offresonance(void)
 {
@@ -1260,11 +1263,11 @@ static bool test_hp_simu_offresonance(void)
 	bloch_simulation(&sim_data, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 #if 0
-	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[0][0], mxySig_ode[0][0]
-								, mxySig_ode[0][1], mxySig_ode[0][1]
-								, mxySig_ode[0][2], mxySig_ode[0][2] );
+	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", crealf(mxySig_ode[0][0]), cimagf(mxySig_ode[0][0])
+								, crealf(mxySig_ode[0][1]), cimagf(mxySig_ode[0][1])
+								, crealf(mxySig_ode[0][2]), cimagf(mxySig_ode[0][2]) );
 
-	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[0][0] - 1.),
+	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[0][0] + 1.),
 							fabs(mxySig_ode[0][1] - 0.),
 							fabs(mxySig_ode[0][2] - 0.) );
 #endif
@@ -1323,11 +1326,11 @@ static bool test_hp_simu_gradient(void)
 	bloch_simulation(&sim_data, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 #if 0
-	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[sim_data.seq.rep_num-1][0], mxySig_ode[sim_data.seq.rep_num-1][0]
-								, mxySig_ode[sim_data.seq.rep_num-1][1], mxySig_ode[sim_data.seq.rep_num-1][1]
-								, mxySig_ode[sim_data.seq.rep_num-1][2], mxySig_ode[sim_data.seq.rep_num-1][2] );
+	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", crealf(mxySig_ode[0][0]), cimagf(mxySig_ode[0][0])
+								, crealf(mxySig_ode[0][1]), cimagf(mxySig_ode[0][1])
+								, crealf(mxySig_ode[0][2]), cimagf(mxySig_ode[0][2]) );
 
-	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.),
+	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[sim_data.seq.rep_num-1][0] + 1.),
 							fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.),
 							fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) );
 

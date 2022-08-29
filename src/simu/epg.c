@@ -574,7 +574,7 @@ void flash_epg_der(int N, int M, complex float signal[N], complex float states[3
 		epg_pulse_der(T_exc, M, state_current, dT_exc, dstate_current);
 
 		// sample signal
-		epg_adc_der(i, N, M, signal, states, dsignal, dstates, state_current, dstate_current, M_PI / 2 - rf_phase);
+		epg_adc_der(i, N, M, signal, states, dsignal, dstates, state_current, dstate_current, rf_phase);
 
 		// dephase
 		epg_grad_der(M, state_current, dstate_current);

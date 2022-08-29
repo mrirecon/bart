@@ -448,12 +448,12 @@ static bool test_bloch_b1_pdp(void)
 
 	bloch_b1_pdp(out, in, 0., 0., gb, M_PI/2., 1.);
 
-	if (-1 != out[2][0])
+	if (1 != out[2][0])
 		return false;
 
 	bloch_b1_pdp(out, in, 0., 0., gb, M_PI/2., 2.);
 
-	if (-2 != out[2][0])
+	if (2 != out[2][0])
 		return false;
 
 	// M_y == 1
@@ -479,7 +479,7 @@ static bool test_bloch_b1_pdp(void)
 
 	bloch_b1_pdp(out, in, 0., 0., gb, M_PI/2., 1.);
 
-	if ((1 != out[0][2]) || (-1 != out[1][0]) || (1 != out[2][2]))
+	if ((1 != out[0][2]) || (-1 != out[1][0]) || (-1 != out[2][2]))
 		return false;
 
 #if 0
@@ -629,7 +629,7 @@ static bool test_ode_sa_bloch_fa_with_phase(void)
 	float fa = M_PI / 2. / end;
 	float phase = M_PI/2.;
 
-	struct bloch_s data = { 0. , 0., { cosf(phase)*fa, sinf(phase)*fa, 0. } };
+	struct bloch_s data = { 0. , 0., { cosf(phase)*fa, -sinf(phase)*fa, 0. } };
 
 	float xp[4][3] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
 	float x0[3] = { 0., 0., 1. };

@@ -72,24 +72,25 @@ static void perform_bloch_simulation(int N, struct sim_data* data, const complex
 
 			ind = md_calc_offset(N, mstrs, pos) / CFL_SIZE;
 
-			mxy[ind] = (3 == D) ? m[i][d] : (m[i][1] + 1.i * m[i][0]);
+                        // M = M_x + i M_y
+			mxy[ind] = (3 == D) ? m[i][d] : (m[i][0] + 1.i * m[i][1]);
 
                         if (NULL == deriv)
 				continue;
 
-                        deriv[ind] = (3 == D) ? sa_r1[i][d] : (sa_r1[i][1] + 1.i * sa_r1[i][0]);
+                        deriv[ind] = (3 == D) ? sa_r1[i][d] : (sa_r1[i][0] + 1.i * sa_r1[i][1]);
 
                         pos[MAPS_DIM] = 1;
                         ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = (3 == D) ? sa_m0[i][d] : (sa_m0[i][1] + 1.i * sa_m0[i][0]);
+                        deriv[ind] = (3 == D) ? sa_m0[i][d] : (sa_m0[i][0] + 1.i * sa_m0[i][1]);
 
                         pos[MAPS_DIM] = 2;
                         ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = (3 == D) ? sa_r2[i][d] : (sa_r2[i][1] + 1.i * sa_r2[i][0]);
+                        deriv[ind] = (3 == D) ? sa_r2[i][d] : (sa_r2[i][0] + 1.i * sa_r2[i][1]);
 
                         pos[MAPS_DIM] = 3;
                         ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = (3 == D) ? sa_b1[i][d] : (sa_b1[i][1] + 1.i * sa_b1[i][0]);
+                        deriv[ind] = (3 == D) ? sa_b1[i][d] : (sa_b1[i][0] + 1.i * sa_b1[i][1]);
                 }
         }
 }
