@@ -58,6 +58,9 @@ int main_phantom(int argc, char* argv[argc])
 	int rinit = -1;
 	int N = -1;
 
+	float rotation_angle = 0.;
+	int rotation_steps = 1;
+
 
 	const struct opt_s opts[] = {
 
@@ -78,6 +81,8 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_SET('3', &d3, "3D"),
 		OPT_SET('b', &basis, "basis functions for geometry"),
 		OPT_INT('r', &rinit, "seed", "random seed initialization"),
+		OPTL_FLOAT(0, "rotation-angle", &(rotation_angle), "[deg]", "Angle of Rotation"),
+		OPTL_INT(0, "rotation-steps", &(rotation_steps), " ", "Number of rotation steps"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -110,6 +115,9 @@ int main_phantom(int argc, char* argv[argc])
 
 	if (TIME == ptype)
 		dims[TE_DIM] = 32;
+
+	if ((TUBES == ptype) || (NIST == ptype))
+		dims[TIME_DIM] = rotation_steps;
 
 	if (-1 != osens) {
 
@@ -211,12 +219,12 @@ int main_phantom(int argc, char* argv[argc])
 	case TUBES:
 	case NIST:
 
-		calc_phantom_tubes(dims, out, kspace, false, N, sstrs, samples);
+		calc_phantom_tubes(dims, out, kspace, false, rotation_angle, N, sstrs, samples);
 		break;
 
 	case RAND_TUBES:
 
-		calc_phantom_tubes(dims, out, kspace, true, N, sstrs, samples);
+		calc_phantom_tubes(dims, out, kspace, true, rotation_angle, N, sstrs, samples);
 		break;
 
 	case BART:

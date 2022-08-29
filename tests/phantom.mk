@@ -96,6 +96,126 @@ tests/test-phantom-NIST-basis: nrmse phantom fmac
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-phantom-rotation-tubes: phantom flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 -T o.ra					;\
+	$(TOOLDIR)/flip 3 o.ra of.ra								;\
+	$(TOOLDIR)/phantom -x 21 -T --rotation-angle 180 r.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 of.ra r.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-tubes-kspace: phantom flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 -k -T o.ra					;\
+	$(TOOLDIR)/flip 3 o.ra of.ra								;\
+	$(TOOLDIR)/phantom -x 21 -k -T --rotation-angle 180 r.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 of.ra r.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-tubes-basis: phantom flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 -b -T o.ra					;\
+	$(TOOLDIR)/flip 3 o.ra of.ra								;\
+	$(TOOLDIR)/phantom -x 21 -b -T --rotation-angle 180 r.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 of.ra r.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-NIST: phantom flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 --NIST o.ra					;\
+	$(TOOLDIR)/flip 3 o.ra of.ra								;\
+	$(TOOLDIR)/phantom -x 21 --NIST --rotation-angle 180 r.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 of.ra r.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-NIST-basis: phantom flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 --NIST -b o.ra					;\
+	$(TOOLDIR)/flip 3 o.ra of.ra								;\
+	$(TOOLDIR)/phantom -x 21 --NIST -b --rotation-angle 180 r.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 of.ra r.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-NIST-kspace: phantom flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 --NIST -k o.ra					;\
+	$(TOOLDIR)/flip 3 o.ra of.ra								;\
+	$(TOOLDIR)/phantom -x 21 --NIST -k --rotation-angle 180 r.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 of.ra r.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-tubes-multistep: phantom slice flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 -T --rotation-steps 4 --rotation-angle 90 o.ra					;\
+	$(TOOLDIR)/slice 10 0 o.ra o2.ra							;\
+	$(TOOLDIR)/flip 3 o2.ra o2f.ra								;\
+	$(TOOLDIR)/slice 10 2 o.ra o3.ra							;\
+	$(TOOLDIR)/nrmse -t 0.000001 o2f.ra o3.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-tubes-kspace-multistep: phantom slice flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 -k -T --rotation-steps 4 --rotation-angle 90 o.ra					;\
+	$(TOOLDIR)/slice 10 0 o.ra o2.ra							;\
+	$(TOOLDIR)/flip 3 o2.ra o2f.ra								;\
+	$(TOOLDIR)/slice 10 2 o.ra o3.ra							;\
+	$(TOOLDIR)/nrmse -t 0.000001 o2f.ra o3.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-tubes-basis-multistep: phantom fmac slice flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 -k -T k.ra					;\
+	$(TOOLDIR)/phantom -x 21 -k -b -T --rotation-steps 4 --rotation-angle 90 k2.ra					;\
+	$(TOOLDIR)/fmac -s 64 k2.ra o.ra							;\
+	$(TOOLDIR)/slice 10 1 o.ra o2.ra							;\
+	$(TOOLDIR)/flip 3 k.ra kf.ra								;\
+	$(TOOLDIR)/nrmse -t 0.000001 kf.ra o2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-NIST-multistep: phantom slice flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 --NIST --rotation-steps 4 --rotation-angle 90 o.ra					;\
+	$(TOOLDIR)/slice 10 0 o.ra o2.ra							;\
+	$(TOOLDIR)/flip 3 o2.ra o2f.ra								;\
+	$(TOOLDIR)/slice 10 2 o.ra o3.ra							;\
+	$(TOOLDIR)/nrmse -t 0.000001 o2f.ra o3.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-NIST-kspace-multistep: phantom slice flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 -k --NIST --rotation-steps 4 --rotation-angle 90 o.ra					;\
+	$(TOOLDIR)/slice 10 0 o.ra o2.ra							;\
+	$(TOOLDIR)/flip 3 o2.ra o2f.ra								;\
+	$(TOOLDIR)/slice 10 2 o.ra o3.ra							;\
+	$(TOOLDIR)/nrmse -t 0.000001 o2f.ra o3.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-rotation-NIST-basis-multistep: phantom fmac slice flip nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -x 21 -k --NIST k.ra					;\
+	$(TOOLDIR)/phantom -x 21 -k -b --NIST --rotation-steps 4 --rotation-angle 90 k2.ra					;\
+	$(TOOLDIR)/fmac -s 64 k2.ra o.ra							;\
+	$(TOOLDIR)/slice 10 1 o.ra o2.ra							;\
+	$(TOOLDIR)/flip 3 k.ra kf.ra								;\
+	$(TOOLDIR)/nrmse -t 0.000001 kf.ra o2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-phantom-ksp tests/test-phantom-noncart tests/test-phantom-coil tests/test-phantom-ksp-coil
 TESTS += tests/test-phantom-bart tests/test-phantom-basis tests/test-phantom-random-tubes
 TESTS += tests/test-phantom-NIST tests/test-phantom-NIST-basis
+TESTS += tests/test-phantom-rotation-tubes tests/test-phantom-rotation-tubes-kspace tests/test-phantom-rotation-tubes-basis
+TESTS += tests/test-phantom-rotation-NIST tests/test-phantom-rotation-NIST-kspace tests/test-phantom-rotation-NIST-basis
+TESTS += tests/test-phantom-rotation-tubes-multistep tests/test-phantom-rotation-tubes-kspace-multistep tests/test-phantom-rotation-tubes-basis-multistep
+TESTS += tests/test-phantom-rotation-NIST-multistep tests/test-phantom-rotation-NIST-kspace-multistep tests/test-phantom-rotation-NIST-basis-multistep

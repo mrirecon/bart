@@ -499,17 +499,41 @@ void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const lon
 }
 
 
-
-void calc_phantom_arb(int N, const struct ellipsis_s data[N], const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+void calc_phantom_arb(int N, const struct ellipsis_s data[N], const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, float rotation_angle)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
 	assert((!coeff) || (0 == tstrs[COEFF_DIM]));
 	assert((!coeff) || (N == dims[COEFF_DIM]));
 
-	sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, N, data }, krn2d, kspace);
-}
+	long strs[DIMS];
+	md_calc_strides(DIMS, strs, dims, sizeof(complex float));
 
+	long dims1[DIMS];
+	md_select_dims(DIMS, ~MD_BIT(TIME_DIM), dims1, dims);
+
+	for (int i = 1; i < dims[TIME_DIM]+1; i++) {
+
+		struct ellipsis_s data2[N];
+
+		complex float position = 0.;
+
+		for (int j = 0; j < N; j++) {
+
+			position = (data[j].center[0] + data[j].center[1]*I) * cexpf(-2.i * M_PI * rotation_angle / 360. * (float)i);
+
+			data2[j] = data[j];
+			data2[j].center[0] = crealf(position);
+			data2[j].center[1] = cimagf(position);
+			data2[j].axis[0] = data[j].axis[0];
+			data2[j].axis[1] = data[j].axis[1];
+		}
+
+		void* traj2 = (NULL == traj) ? NULL : ((void*)traj + (i - 1) * tstrs[TIME_DIM]);
+
+		sample(dims1, (void*)out + (i - 1) * strs[TIME_DIM], tstrs, traj2, &(struct krn2d_data){ kspace, coeff, N, data2 }, krn2d, kspace);
+	}
+}
 
 static void separate_bckgrd(int Nb, struct ellipsis_s bckgrd[Nb], int Nf, struct ellipsis_s frgrd[Nf], int N, const struct ellipsis_bs geometry[N])
 {
@@ -551,7 +575,7 @@ static bool circ_in_background(float s1, float px1, float py1, float s2, float p
 	return false;
 }
 
-void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, bool random, int N, const long tstrs[DIMS], const complex float* traj)
+void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, bool random, float rotation_angle, int N, const long tstrs[DIMS], const complex float* traj)
 {
 	if (1 < dims[COEFF_DIM]) {
 
@@ -664,7 +688,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		complex float* bkgrd = md_alloc(DIMS, dims2, CFL_SIZE);
 
-		calc_phantom_arb(dims2[COEFF_DIM], tubes_bkgrd, dims2, bkgrd, kspace, tstrs, traj);
+		calc_phantom_arb(dims2[COEFF_DIM], tubes_bkgrd, dims2, bkgrd, kspace, tstrs, traj, rotation_angle);
 
 		// Sum up all spatial coefficients
 
@@ -690,7 +714,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		complex float* frgrd = md_alloc(DIMS, dims2, CFL_SIZE);
 
-		calc_phantom_arb(dims2[COEFF_DIM], tubes_frgrd, dims2, frgrd, kspace, tstrs, traj);
+		calc_phantom_arb(dims2[COEFF_DIM], tubes_frgrd, dims2, frgrd, kspace, tstrs, traj, rotation_angle);
 
 		// Add foreground basis functions to out
 
@@ -709,7 +733,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		complex float* tmp = md_alloc(DIMS, tdims, CFL_SIZE);
 
-		calc_phantom_tubes(tdims, tmp, kspace, random, N, tstrs, traj);
+		calc_phantom_tubes(tdims, tmp, kspace, random, rotation_angle, N, tstrs, traj);
 
 		md_zsum(DIMS, tdims, COEFF_FLAG, out, tmp);
 		md_free(tmp);
