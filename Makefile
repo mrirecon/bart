@@ -341,7 +341,7 @@ endif
 
 ifeq ($(MAKESTAGE),1)
 .PHONY: doc/commands.txt $(TARGETS)
-default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest testslow pythontest testague shared-lib $(TARGETS):
+default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest testslow pythontest testague scripttest shared-lib $(TARGETS):
 	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
 
 tests/test-%: force
@@ -771,6 +771,7 @@ allclean: clean
 	rm -f $(patsubst %, %, $(TARGETS))
 	rm -f $(srcdir)/misc/version.inc
 	rm -rf $(root)/tests/tmp/*/
+	rm -rf $(root)/stests/tmp/*/
 	rm -rf $(root)/doc/dx
 	rm -f $(root)/doc/commands.txt
 	rm -f $(root)/save/fftw/*.fftw
@@ -814,6 +815,14 @@ NOT_SUPPORTED=tests/test-io tests/test-io2 tests/test-join-append tests/test-joi
 TESTS = $(filter-out $(NOT_SUPPORTED),$(TMP_TESTS))
 endif
 
+# script tests
+
+SCRIPTDIR=$(root)/scripts
+STESTS_TMP=$(root)/stests/tmp/$$$$/
+STESTS_OUT=$(root)/stests/out/
+
+include $(root)/stests/*.mk
+
 test:	${TESTS}
 
 testslow: ${TESTS_SLOW}
@@ -823,6 +832,8 @@ testague: ${TESTS_AGUE} # test importing *.dat-files specified in tests/twixread
 gputest: ${TESTS_GPU}
 
 pythontest: ${TESTS_PYTHON}
+
+scripttest:	${STESTS}
 
 # unit tests
 
