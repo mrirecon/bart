@@ -193,6 +193,48 @@ static node_t list_get_node(list_t list, int index)
 }
 
 /**
+ * Insert new item at specified index
+ *
+ * @param list
+ * @param item pointer to item;
+ * @param index index where item is inserted
+ */
+void list_insert(list_t list, void* item, int index)
+{
+	assert(NULL != item);
+	assert(0 <= index);
+	assert(list->N >= index);
+
+	if (0 == index) {
+
+		list_push(list, item);
+		return;
+	}
+
+	if (index == list->N) {
+
+		list_append(list, item);
+		return;
+	}
+
+	auto node = create_node(item);
+	auto prev = list_get_node(list, index - 1);
+	auto next = list_get_node(list, index);
+	
+
+	node->prev = prev;
+	node->next = next;
+
+	next->prev = node;
+	prev->next = node;
+
+	list->N++;
+
+	list->current_index = index;
+	list->current = node;
+}
+
+/**
  * Remove and return item at index
  *
  * @param list
@@ -274,6 +316,27 @@ int list_get_first_index(list_t list, const void* ref, list_cmp_t cmp)
 	}
 
 	return -1;
+}
+
+/**
+ * Returns first item for which cmp(item, ref) evaluates true
+ *
+ * @param list
+ * @param ref reference pointer
+ * @param cmp function to compare list entry with reference
+ * @param remove remove item from list
+ */
+void* list_get_first_item(list_t list, const void* ref, list_cmp_t cmp, bool remove)
+{
+
+	int idx = list_get_first_index(list, ref, cmp);
+
+	void* result = NULL;
+	
+	if (0 <= idx)
+		result = (remove ? list_remove_item : list_get_item)(list, idx);
+	
+	return result;
 }
 
 /**
