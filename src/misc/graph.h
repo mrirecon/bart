@@ -5,6 +5,8 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
+#include "misc/cppwrap.h"
+
 struct node_s;
 struct graph_s;
 struct vertex_s;
@@ -54,7 +56,7 @@ struct vertex_s {
 typedef struct vertex_s* vertex_t;
 
 void node_free(node_t x);
-void node_init(struct node_s* x, int N_vertices, const _Bool io_flags[N_vertices], const char* name, _Bool external, graph_t subgraph);
+void node_init(struct node_s* x, int N_vertices, const _Bool io_flags[__VLA(N_vertices)], const char* name, _Bool external, graph_t subgraph);
 
 void graph_free(graph_t x);
 graph_t graph_create(void);
@@ -64,17 +66,17 @@ extern void graph_add_edge(struct vertex_s _a, struct vertex_s _b);
 extern void graph_remove_node(graph_t graph, node_t node);
 extern void graph_remove_edge(struct vertex_s a, struct vertex_s b);
 
-extern void graph_redirect_edge(struct vertex_s new, struct vertex_s old);
+extern void graph_redirect_edge(struct vertex_s newv, struct vertex_s oldv);
 
 extern graph_t copy_graph(graph_t graph);
-extern graph_t combine_graphs_F(int N, graph_t graphs[N]);
+extern graph_t combine_graphs_F(int N, graph_t graphs[__VLA(N)]);
 extern graph_t link_graphs_F(graph_t graph, int oo, int ii);
-extern graph_t perm_ext_graphs_F(graph_t graph, int N, const int perm[N]);
+extern graph_t perm_ext_graphs_F(graph_t graph, int N, const int perm[__VLA(N)]);
 extern graph_t dup_graphs_F(graph_t graph, int a, int b);
 
 extern const char* print_vertex(node_t node, int idx);
 extern const char* print_node(const struct node_s* node);
-extern const char* print_internl_graph(graph_t graph, _Bool get_ext_nodes, int N, const char* ext_nodes[N]);
+extern const char* print_internl_graph(graph_t graph, _Bool get_ext_nodes, int N, const char* ext_nodes[__VLA(N)]);
 extern void export_graph_dot(const char* filename, graph_t graph);
 
 extern graph_t graph_topological_sort_F(graph_t graph);
@@ -88,6 +90,7 @@ extern graph_t graph_identify_nodes_F(graph_t _graph, node_cmp_t cmp);
 extern graph_t graph_cluster_nodes_F(graph_t graph, list_t nodes, edge_separator_node_f get_separator_nodes);
 extern graph_t graph_reinsert_subgraph_FF(graph_t graph, graph_t subgraph);
 extern graph_t graph_bridge_node(graph_t _graph, node_t node);
+extern graph_t graph_remove_end_node(graph_t graph, node_t node);
 
 extern list_t graph_get_chains(graph_t graph);
 extern list_t graph_get_clusters(graph_t graph, _Bool simple_only);
@@ -98,5 +101,7 @@ extern list_t graph_get_linop_sum(graph_t graph, node_cmp_t linop_identify, node
 enum debug_levels;
 extern void debug_nodes(enum debug_levels dl, list_t nodes);
 extern void debug_edges(enum debug_levels dl, list_t nodes);
+
+#include "misc/cppwrap.h"
 
 #endif

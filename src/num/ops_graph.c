@@ -631,20 +631,46 @@ static bool cmp_identity_node(const void* data, const void* _ref) {
 	return check_simple_copy(node->op);
 }
 
+static bool cmp_end_node(const void* data, const void* _ref)
+{
+	UNUSED(_ref);
+
+	const struct node_s* node = data;
+	
+	bool end = true;
+	for (int i = 0; i < node->N_vertices; i++)
+		end &= !(node->io_flags[i]);
+
+	return end;
+}
+
 //remove identity operator from graph
 graph_t operator_graph_optimize_identity_F(graph_t graph)
 {
-	list_t identity_nodes = list_get_sublist(graph->nodes, NULL, cmp_identity_node);
+	list_t nodes = list_get_sublist(graph->nodes, NULL, cmp_identity_node);
 
-	node_t node = list_pop(identity_nodes);
+	node_t node = list_pop(nodes);
 
 	while (NULL != node){
 
 		graph_bridge_node(graph, node);
-		node = list_pop(identity_nodes);
+		node = list_pop(nodes);
 	}
 
-	list_free(identity_nodes);
+	list_free(nodes);
+
+	nodes = list_get_sublist(graph->nodes, NULL, cmp_end_node);
+
+	node = list_pop(nodes);
+
+	while (NULL != node){
+
+		graph_remove_end_node(graph, node);
+		node = list_pop(nodes);
+	}
+
+	list_free(nodes);
+
 	return graph;
 }
 

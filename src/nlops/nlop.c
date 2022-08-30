@@ -465,6 +465,53 @@ struct nlop_s* nlop_clone(const struct nlop_s* op)
 	return PTR_PASS(n);
 }
 
+static const struct operator_s* graph_optimize_operator(const struct operator_s* op)
+{
+	if (NULL == op)
+		return NULL;
+
+	auto graph = operator_get_graph(op);
+
+	int count1;
+	int count2 = list_count(graph->nodes);
+
+	do {
+		count1 = count2;
+
+		graph = operator_graph_optimize_identity_F(graph);
+		graph = operator_graph_optimize_identify_F(graph);
+		count2 = list_count(graph->nodes);
+
+	} while(count1 > count2);
+
+	return graph_to_operator_F(graph);
+}
+
+
+
+const struct nlop_s* nlop_optimize_graph(const struct nlop_s* op)
+{
+	PTR_ALLOC(struct nlop_s, n);
+
+	int II = nlop_get_nr_in_args(op);
+	int OO = nlop_get_nr_out_args(op);
+
+	n->op = graph_optimize_operator(op->op);
+
+	const struct linop_s* (*der)[II][OO] = (void*)op->derivative;
+
+	PTR_ALLOC(const struct linop_s*[II][OO], nder);
+
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++)
+			(*nder)[i][o] = graph_optimize_linop((*der)[i][o]);
+
+	n->derivative = &(*PTR_PASS(nder))[0][0];
+
+	nlop_free(op);
+	
+	return PTR_PASS(n);
+}
 
 
 nlop_data_t* nlop_get_data(const struct nlop_s* op)

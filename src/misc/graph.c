@@ -632,7 +632,7 @@ graph_t graph_bridge_node(graph_t graph, node_t node)
 
 	for (int i = 0; i < list_count(node->edges[0]); i++)
 		if ((vertices_get(node->edges[0], i))->node->external)
-			return NULL;
+			return false;
 
 	list_t in = node->edges[1];
 	list_t out = node->edges[0];
@@ -661,6 +661,30 @@ graph_t graph_bridge_node(graph_t graph, node_t node)
 	for (int i = 0; i < I; i++)
 		for (int o = 0; o < O; o++)
 			graph_add_edge(ivs[i], ovs[o]);
+
+	graph_remove_node(graph, node);
+
+	return graph;
+}
+
+//trys to remove a end-node (only inputs) from a graph
+//returns new graph if successful, NULL else
+//nodes cannot be removed if they map to output
+graph_t graph_remove_end_node(graph_t graph, node_t node)
+{
+	int N = node->N_vertices;
+
+	for (int i = 0; i < N; i++) {
+
+		struct vertex_s ver = *vertices_get(node->edges[i], 0);
+		bool found = false;
+
+		for (int i = 0; i < list_count(ver.node->edges[ver.idx]); i++)
+			found = found || (vertices_get(ver.node->edges[ver.idx], i)->node != node);
+		
+		if (!found)
+			return NULL;
+	}
 
 	graph_remove_node(graph, node);
 
