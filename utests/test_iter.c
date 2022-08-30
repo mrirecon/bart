@@ -45,7 +45,7 @@ static bool test_iter_irgnm0(bool v2, bool ref)
 
 	md_zfill(N, dims, src1, 1.);
 
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
 
 	nlop_apply(zexp, N, dims, dst1, N, dims, src1);
 
@@ -81,7 +81,7 @@ static bool test_iter_irgnm_lsqr0(bool ref)
 
 	md_zfill(N, dims, src1, 1.);
 
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
 
 	nlop_apply(zexp, N, dims, dst1, N, dims, src1);
 
@@ -141,7 +141,7 @@ static bool test_iter_irgnm_lsqr1(bool ref, bool regu)
 
 	md_zfill(N, dims, src1, 1.);
 
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
 
 	nlop_apply(zexp, N, dims, dst1, N, dims, src1);
 

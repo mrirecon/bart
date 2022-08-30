@@ -40,7 +40,7 @@ static void zexp_apply(const nlop_data_t* /*_data*/, int N, const long dims[N], 
 		md_copy(N, dims, der, dst, CFL_SIZE);
 }
 
-struct nlop_s* nlop_zexp_create(int N, const long dims[N])
+const struct nlop_s* nlop_zexp_create(int N, const long dims[N])
 {
 	PTR_ALLOC(struct zexp_s, data);
 	SET_TYPEID(zexp_s, data);
@@ -76,7 +76,7 @@ static void zlog_apply(const nlop_data_t* /*_data*/, int N, const long dims[N], 
 	md_zlog(N, dims, dst, src);
 }
 
-struct nlop_s* nlop_zlog_create(int N, const long dims[N])
+const struct nlop_s* nlop_zlog_create(int N, const long dims[N])
 {
 	PTR_ALLOC(struct zlog_s, data);
 	SET_TYPEID(zlog_s, data);

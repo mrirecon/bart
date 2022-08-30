@@ -73,7 +73,7 @@ static bool test_nlop_cast_neg(void)
 	enum { N = 3 };
 	long dims[N] = { 10, 7, 3 };
 
-	struct nlop_s* d = nlop_zexp_create(N, dims);
+	const struct nlop_s* d = nlop_zexp_create(N, dims);
 
 	if (NULL != linop_from_nlop(d))
 		ok = false;
@@ -103,8 +103,8 @@ static bool test_nlop_chain(void)
 
 	struct linop_s* cdiag = linop_cdiag_create(N, dims, 0, &val);
 	struct nlop_s* diag = nlop_from_linop(cdiag);
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
-	struct nlop_s* zexp2 = nlop_chain(zexp, diag);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp2 = nlop_chain(zexp, diag);
 
 	double err = nlop_test_derivative(zexp2);
 
@@ -246,7 +246,7 @@ static bool test_nlop_zexp(void)
 
 	md_gaussian_rand(N, dims, src);
 
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
 
 	md_zexp(N, dims, dst1, src);
 
@@ -341,7 +341,7 @@ static bool test_nlop_zexp_derivative(void)
 	enum { N = 3 };
 	long dims[N] = { 10, 7, 3 };
 
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
 
 	double err = nlop_test_derivative(zexp);
 
@@ -362,7 +362,7 @@ static bool test_nlop_zexp_der_adj(void)
 	enum { N = 3 };
 	long dims[N] = { 10, 7, 3 };
 
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
 
 	complex float* dst = md_alloc(N, dims, CFL_SIZE);
 	complex float* src = md_alloc(N, dims, CFL_SIZE);
@@ -393,7 +393,7 @@ static bool test_nlop_combine(void)
 	enum { N = 3 };
 	long dims[N] = { 10, 7, 3 };
 
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
 	struct linop_s* lid = linop_identity_create(N, dims);
 	struct nlop_s* id = nlop_from_linop(lid);
 	linop_free(lid);
@@ -444,7 +444,7 @@ static bool test_nlop_combine_der1(void)
 	enum { N = 3 };
 	long dims[N] = { 10, 7, 3 };	// FIXME: this test is broken
 
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
 	struct linop_s* lid = linop_identity_create(N, dims);
 	struct nlop_s* id = nlop_from_linop(lid);
 	linop_free(lid);
@@ -506,8 +506,8 @@ static bool test_nlop_comb_flat_der(void)
 	enum { N = 3 };
 	long dims[N] = { 10, 7, 3 };
 
-	struct nlop_s* zexp1 = nlop_zexp_create(N, dims);
-	struct nlop_s* zexp2 = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp1 = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp2 = nlop_zexp_create(N, dims);
 
 	random_application(zexp1);
 	random_application(zexp2);
@@ -553,8 +553,8 @@ static bool test_nlop_combine_derivative(void)
 	enum { N = 3 };
 	long dims[N] = { 10, 7, 3 };	// FIXME: this test is broken
 
-	struct nlop_s* zexp1 = nlop_zexp_create(N, dims);
-	struct nlop_s* zexp2 = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp1 = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp2 = nlop_zexp_create(N, dims);
 	struct nlop_s* comb = nlop_combine(zexp1, zexp2);
 	struct nlop_s* flat = nlop_flatten(comb);
 
@@ -586,10 +586,10 @@ static bool test_nlop_link(void)
 	struct nlop_s* diag = nlop_from_linop(cdiag);
 	linop_free(cdiag);
 
-	struct nlop_s* zexp = nlop_zexp_create(N, dims);
-	struct nlop_s* zexp2 = nlop_chain(zexp, diag);
-	struct nlop_s* zexp3 = nlop_combine(diag, zexp);
-	struct nlop_s* zexp4 = nlop_link(zexp3, 1, 0);
+	const struct nlop_s* zexp = nlop_zexp_create(N, dims);
+	const struct nlop_s* zexp2 = nlop_chain(zexp, diag);
+	const struct nlop_s* zexp3 = nlop_combine(diag, zexp);
+	const struct nlop_s* zexp4 = nlop_link(zexp3, 1, 0);
 
 	complex float* in = md_alloc(N, dims, CFL_SIZE);
 	complex float* dst1 = md_alloc(N, dims, CFL_SIZE);
