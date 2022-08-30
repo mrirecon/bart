@@ -64,6 +64,7 @@ opt_conv_f opt_float_vec2;
 opt_conv_f opt_vec3;
 opt_conv_f opt_float_vec3;
 opt_conv_f opt_float_vec4;
+opt_conv_f opt_float_vecN;
 opt_conv_f opt_select;
 opt_conv_f opt_subopt;
 
@@ -108,6 +109,9 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 
         case OPT_FLOAT_VEC4:
 		return "f:f:f:f";
+	
+	case OPT_FLOAT_VECN:
+		return "[f:]*f";
 
 	case OPT_STRING:
 		return "<string>";
@@ -139,6 +143,7 @@ static const char* opt_type_str(enum OPT_TYPE type)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC2)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC3)
         OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC4)
+        OPT_ARG_TYPE_CASE(OPT_FLOAT_VECN)
 	OPT_ARG_TYPE_CASE(OPT_STRING)
 	OPT_ARG_TYPE_CASE(OPT_INFILE)
 	OPT_ARG_TYPE_CASE(OPT_OUTFILE)
@@ -184,6 +189,8 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 		return opt_float_vec3(ptr, c, optarg);
         case OPT_FLOAT_VEC4:
 		return opt_float_vec4(ptr, c, optarg);
+	case OPT_FLOAT_VECN:
+		return opt_float_vecN(ptr, c, optarg);
 	case OPT_STRING:
 		return opt_string(ptr, c, optarg);
 	case OPT_INFILE:
@@ -811,6 +818,43 @@ bool opt_float_vec4(void* ptr, char c, const char* optarg)
 	int r = sscanf(optarg, "%f:%f:%f:%f", &(*(float(*)[3])ptr)[0], &(*(float(*)[3])ptr)[1], &(*(float(*)[3])ptr)[2], &(*(float(*)[3])ptr)[3]);
 
 	assert(4 == r);
+
+	return false;
+}
+
+bool opt_float_vecN(void* _ptr, char c, const char* optarg)
+{
+	UNUSED(c);
+
+	struct opt_vec_s* ptr = _ptr;
+	float* vec = ptr->ptr;
+	int count = 0;
+
+	int delta = 0;
+
+	int r = sscanf(optarg, "%f%n", vec + count, &delta);
+	assert(1 == r);
+
+	optarg += delta;
+	count++;
+
+	float tmp;
+
+	while (1 == sscanf(optarg, ":%f%n", &tmp, &delta)) {
+
+		if (count == ptr->max)
+			error("Option '%c' is at maximum a vector of size %d!\n", c, ptr->max);
+
+		vec[count] = tmp;
+		count++;
+		optarg += delta;
+	}
+
+	if (count < ptr->requiered)
+		error("Option '%c' is at minimum a vector of size %d!\n", c, ptr->requiered);
+
+	if (NULL != ptr->count)
+		*(ptr->count) = count;
 
 	return false;
 }
