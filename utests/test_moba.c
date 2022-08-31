@@ -174,7 +174,7 @@ static bool test_nlop_blochfun(void)
 
 	nlop_apply(op_bloch, N, out_dims, dst, N, in_dims, src);
 
-	float err = linop_test_adjoint(nlop_get_derivative(op_bloch, 0, 0));
+	float err = linop_test_adjoint_real(nlop_get_derivative(op_bloch, 0, 0));
 
 	nlop_free(op_bloch);
 

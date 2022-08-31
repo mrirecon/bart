@@ -405,50 +405,77 @@ static void bloch_der(const nlop_data_t* _data, unsigned int o, unsigned int i, 
 
 	long pos[data->N];
 	md_set_dims(data->N, pos, 0);
-	pos[COEFF_DIM] = 3;
 
-	md_clear(data->N, data->in_dims, data->in_tmp, CFL_SIZE);
-	md_copy(data->N, data->in_dims, data->in_tmp, src, CFL_SIZE);
+	complex float* tmp = md_alloc_sameplace(data->N, data->in_dims, CFL_SIZE, dst);
+	complex float* tmp_map = md_alloc_sameplace(data->N, data->in_dims, CFL_SIZE, dst);
 
-	md_copy_block(data->N, pos, data->map_dims, data->tmp, data->in_dims, data->in_tmp, CFL_SIZE);
-	bloch_forw_alpha(data->linop_alpha, data->tmp, data->tmp); // freq -> pixel + smoothing!
-	md_copy_block(data->N, pos, data->in_dims, data->in_tmp, data->map_dims, data->tmp, CFL_SIZE);
+	pos[COEFF_DIM] = 0; // R1
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, src, CFL_SIZE);
+	md_zreal(data->N, data->map_dims, tmp_map, tmp_map);
+	md_copy_block(data->N, pos, data->in_dims, tmp, data->map_dims, tmp_map, CFL_SIZE);
 
-	// Estimate derivative of operator
-	// FIXME: replace by linop to use automatic gram matrix calculation
-	md_clear(data->N, data->out_dims, dst, CFL_SIZE);
-	md_ztenmul(data->N, data->out_dims, dst, data->der_dims, data->derivatives, data->in_dims, data->in_tmp);
+	pos[COEFF_DIM] = 1; // M0
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, src, CFL_SIZE);
+	md_copy_block(data->N, pos, data->in_dims, tmp, data->map_dims, tmp_map, CFL_SIZE);
+
+	pos[COEFF_DIM] = 2; // R2
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, src, CFL_SIZE);
+	md_zreal(data->N, data->map_dims, tmp_map, tmp_map);
+	md_copy_block(data->N, pos, data->in_dims, tmp, data->map_dims, tmp_map, CFL_SIZE);
+
+	pos[COEFF_DIM] = 3; // B1
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, src, CFL_SIZE);
+	bloch_forw_alpha(data->linop_alpha, tmp_map, tmp_map); // freq -> pixel + smoothing!
+	md_zreal(data->N, data->map_dims, tmp_map, tmp_map);
+	md_copy_block(data->N, pos, data->in_dims, tmp, data->map_dims, tmp_map, CFL_SIZE);
+
+	md_ztenmul(data->N, data->out_dims, dst, data->in_dims, tmp, data->der_dims, data->derivatives);
+
+	md_free(tmp);
+	md_free(tmp_map);
 }
-
-
 
 static void bloch_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
 {
 	UNUSED(o);
 	UNUSED(i);
 
-	debug_printf(DP_DEBUG3, "Start Adjoint\n");
+	debug_printf(DP_DEBUG3, "Start Derivative\n");
 
 	struct blochfun_s* data = CAST_DOWN(blochfun_s, _data);
 
-	// Estimate adjoint derivative of operator
-	// FIXME: replace by linop to use automatic gram matrix calculation
-	md_clear(data->N, data->in_dims, data->in_tmp, CFL_SIZE);
-	md_zfmacc2(data->N, data->der_dims, data->in_strs, data->in_tmp, data->out_strs, src, data->der_strs, data->derivatives);
-
-	// Transform B1 map component from pixel to freq domain
+	// Transform B1 map component from freq to pixel domain
 
 	long pos[data->N];
 	md_set_dims(data->N, pos, 0);
-	pos[COEFF_DIM] = 3;
+	
+	complex float* tmp = md_alloc_sameplace(data->N, data->in_dims, CFL_SIZE, dst);
+	complex float* tmp_map = md_alloc_sameplace(data->N, data->in_dims, CFL_SIZE, dst);
 
-	md_copy_block(data->N, pos, data->map_dims, data->tmp, data->in_dims, data->in_tmp, CFL_SIZE);
+	md_ztenmulc(data->N, data->in_dims, tmp, data->out_dims, src, data->der_dims, data->derivatives);
 
-	bloch_back_alpha(data->linop_alpha, data->tmp, data->tmp); // pixel -> freq + smoothing!
+	pos[COEFF_DIM] = 0; // R1
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, tmp, CFL_SIZE);
+	md_zreal(data->N, data->map_dims, tmp_map, tmp_map);
+	md_copy_block(data->N, pos, data->in_dims, dst, data->map_dims, tmp_map, CFL_SIZE);
 
-	md_copy_block(data->N, pos, data->in_dims, data->in_tmp, data->map_dims, data->tmp, CFL_SIZE);
+	pos[COEFF_DIM] = 1; // M0
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, tmp, CFL_SIZE);
+	md_copy_block(data->N, pos, data->in_dims, dst, data->map_dims, tmp_map, CFL_SIZE);
 
-	md_copy(data->N, data->in_dims, dst, data->in_tmp, CFL_SIZE);
+	pos[COEFF_DIM] = 2; // R2
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, tmp, CFL_SIZE);
+	md_zreal(data->N, data->map_dims, tmp_map, tmp_map);
+	md_copy_block(data->N, pos, data->in_dims, dst, data->map_dims, tmp_map, CFL_SIZE);
+
+	pos[COEFF_DIM] = 3; // B1
+	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, tmp, CFL_SIZE);
+	md_zreal(data->N, data->map_dims, tmp_map, tmp_map);
+	bloch_back_alpha(data->linop_alpha, tmp_map, tmp_map); // freq -> pixel + smoothing!
+	md_copy_block(data->N, pos, data->in_dims, dst, data->map_dims, tmp_map, CFL_SIZE);
+
+	md_free(tmp);
+	md_free(tmp_map);
 }
 
 
