@@ -672,7 +672,7 @@ struct linop_s* linop_stack(int D, int E, const struct linop_s* a, const struct 
 	PTR_ALLOC(struct linop_s, c);
 
 	c->forward = operator_stack(D, E, a->forward, b->forward);
-	c->adjoint = operator_stack(E, D, b->adjoint, a->adjoint);
+	c->adjoint = operator_stack(E, D, a->adjoint, b->adjoint);
 
 	const struct operator_s* an = a->normal;
 
