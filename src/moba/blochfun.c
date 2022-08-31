@@ -152,24 +152,24 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 
 	float fov_reduction_factor = data->moba_data->other.fov_reduction_factor;
 
-	// Get start and end values of reduced F0V
-	int xstart = round(data->map_dims[0] / 2. - fov_reduction_factor * data->map_dims[0] / 2.);
-	int xend = round(xstart + fov_reduction_factor * data->map_dims[0]);
-	int ystart = round(data->map_dims[1] / 2. - fov_reduction_factor * data->map_dims[1] / 2.);
-	int yend = round(ystart + fov_reduction_factor * data->map_dims[1]);
-	int zstart = round(data->map_dims[2] / 2. - fov_reduction_factor * data->map_dims[2] / 2.);
-	int zend = round(zstart + fov_reduction_factor * data->map_dims[2]);
+	long start[3];
+	long end[3];
 
-	// Solve rounding bug if fov_reduction_factor becomes to small, Change to round-up macro?!
-	if (0 == zend)
-		zend = 1;
+	for (int i = 0; i < 3; i++) {
+
+		//consistent with compute_mask
+		long size = (1 == data->map_dims[i]) ? 1 : (data->map_dims[i] * fov_reduction_factor);
+		start[i] = labs((size / 2) - (data->map_dims[i] / 2));
+		end[i] = size + start[i];
+	}
+
 
 	// debug_sim(&(data->moba_data.sim));
 
 	#pragma omp parallel for collapse(3)
-	for (int x = xstart; x < xend; x++) {
-		for (int y = ystart; y < yend; y++) {
-			for (int z = zstart; z < zend; z++) {
+	for (int x = start[0]; x < end[0]; x++) {	
+		for (int y = start[1]; y < end[1]; y++) {
+			for (int z = start[2]; z < end[2]; z++) {
 
 				//Calculate correct spatial position
 				long spa_pos[DIMS];
