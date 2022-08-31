@@ -750,7 +750,7 @@ bool opt_float_vec2(void* ptr, char c, const char* optarg)
 
 bool opt_vec2(void* ptr, char c, const char* optarg)
 {
-	if (islower(c)) {
+	if (islower(c) || !isprint(c)) {
 
 		if (2 != sscanf(optarg, "%ld:%ld", &(*(long(*)[2])ptr)[0], &(*(long(*)[2])ptr)[1])) {
 
@@ -783,7 +783,7 @@ bool opt_float_vec3(void* ptr, char c, const char* optarg)
 
 bool opt_vec3(void* ptr, char c, const char* optarg)
 {
-	if (islower(c)) {
+	if (islower(c) || !isprint(c)) {
 
 		if (3 != sscanf(optarg, "%ld:%ld:%ld", &(*(long(*)[3])ptr)[0], &(*(long(*)[3])ptr)[1], &(*(long(*)[3])ptr)[2])) {
 
