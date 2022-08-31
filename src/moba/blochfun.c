@@ -55,8 +55,6 @@ struct blochfun_s {
 
 	//derivatives
 	complex float* derivatives;
-	complex float* tmp;
-	complex float* in_tmp;
 
 	const complex float* b1;
 
@@ -66,7 +64,6 @@ struct blochfun_s {
 
 	int counter;
 
-	const complex float* weights;
 	const struct linop_s* linop_alpha;
 };
 
@@ -138,30 +135,11 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 #endif
 
 	// Allocate GPU memory
-	complex float* r1scale_tmp;
-	complex float* r2scale_tmp;
-	complex float* m0scale_tmp;
-	complex float* b1scale_tmp;
-
-
-	if (data->use_gpu) {
-
-#ifdef USE_CUDA
-		r1scale_tmp = md_alloc_gpu(data->N, data->map_dims, CFL_SIZE);
-		r2scale_tmp = md_alloc_gpu(data->N, data->map_dims, CFL_SIZE);
-		m0scale_tmp = md_alloc_gpu(data->N, data->map_dims, CFL_SIZE);
-		b1scale_tmp = md_alloc_gpu(data->N, data->map_dims, CFL_SIZE);
-#else
-		assert(0);
-#endif
-
-	} else {
-
-		r1scale_tmp = md_alloc(data->N, data->map_dims, CFL_SIZE);
-		r2scale_tmp = md_alloc(data->N, data->map_dims, CFL_SIZE);
-		m0scale_tmp = md_alloc(data->N, data->map_dims, CFL_SIZE);
-		b1scale_tmp = md_alloc(data->N, data->map_dims, CFL_SIZE);
-	}
+	complex float* r1scale_tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+	complex float* r2scale_tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+	complex float* m0scale_tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+	complex float* b1scale_tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+	complex float* tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
 
 
 	long pos[data->N];
@@ -209,9 +187,9 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	// B1
 	pos[COEFF_DIM] = 3;
 	const complex float* B1 = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);
-	md_zsmul2(data->N, data->map_dims, data->map_strs, data->tmp, data->map_strs, B1, scale[3]);
+	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp, data->map_strs, B1, scale[3]);
 
-	bloch_forw_alpha(data->linop_alpha, b1scale_tmp, data->tmp);	// freq -> pixel + smoothing!
+	bloch_forw_alpha(data->linop_alpha, b1scale_tmp, tmp);	// freq -> pixel + smoothing!
 
 	complex float* b1scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
 	md_copy(data->N, data->map_dims, b1scale, b1scale_tmp, CFL_SIZE);
@@ -220,6 +198,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	md_free(r2scale_tmp);
 	md_free(m0scale_tmp);
 	md_free(b1scale_tmp);
+	md_free(tmp);
 
 
 	//Allocate Output CPU memory
@@ -365,6 +344,9 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	// Collect data of derivatives in single array
 	//-------------------------------------------------------------------
 
+	if (NULL == data->derivatives)
+		data->derivatives = md_alloc_sameplace(data->N, data->der_dims, CFL_SIZE, dst);
+
 	md_clear(data->N, data->der_dims, data->derivatives, CFL_SIZE);
 
 	md_set_dims(data->N, pos, 0);
@@ -484,9 +466,6 @@ static void bloch_del(const nlop_data_t* _data)
 	struct blochfun_s* data = CAST_DOWN(blochfun_s, _data);
 
 	md_free(data->derivatives);
-	md_free(data->tmp);
-	md_free(data->in_tmp);
-	md_free(data->weights);
 
 	xfree(data->der_dims);
 	xfree(data->map_dims);
@@ -507,12 +486,7 @@ static void bloch_del(const nlop_data_t* _data)
 struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_dims[N], const long out_dims[N], const long in_dims[N],
 			const complex float* b1, const struct moba_conf_s* config, bool use_gpu)
 {
-#ifdef USE_CUDA
-	md_alloc_fun_t my_alloc = use_gpu ? md_alloc_gpu : md_alloc;
-#else
-	assert(!use_gpu);
-	md_alloc_fun_t my_alloc = md_alloc;
-#endif
+	UNUSED(use_gpu);
 
 	PTR_ALLOC(struct blochfun_s, data);
 	SET_TYPEID(blochfun_s, data);
@@ -551,9 +525,7 @@ struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_d
 
 	data->N = N;
 
-	data->derivatives = my_alloc(N, der_dims, CFL_SIZE);
-	data->tmp = my_alloc(N, map_dims, CFL_SIZE);
-	data->in_tmp = my_alloc(N, in_dims, CFL_SIZE);
+	data->derivatives = NULL;
 
 
 	data->moba_data = config;
@@ -571,12 +543,13 @@ struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_d
 
 	complex float* weights = md_alloc(N, w_dims, CFL_SIZE);
 	noir_calc_weights(440., 20., w_dims, weights);
-	data->weights = weights;
 
-	const struct linop_s* linop_wghts = linop_cdiag_create(N, map_dims, FFT_FLAGS, data->weights);
+	const struct linop_s* linop_wghts = linop_cdiag_create(N, map_dims, FFT_FLAGS, weights);
 	const struct linop_s* linop_ifftc = linop_ifftc_create(N, map_dims, FFT_FLAGS);
 
 	data->linop_alpha = linop_chain(linop_wghts, linop_ifftc);
+
+	md_free(weights);
 
 	linop_free(linop_wghts);
 	linop_free(linop_ifftc);
