@@ -98,57 +98,32 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 
 	struct blochfun_s* data = CAST_DOWN(blochfun_s, _data);
 
-#if 0
-	// Print out intermediate reconstruction steps
-
-	if (DP_DEBUG2 <= debug_level) {
-
-		// B1 map: kspace -> pixel
-
-		long index[DIMS];
-		md_set_dims(DIMS, index, 0);
-
-		index[COEFF_DIM] = 3;
-
-		const struct linop_s* linop_fftc = linop_fftc_create(DIMS, data->map_dims, FFT_FLAGS);
-
-		md_copy(data->N, data->in_dims, data->in_tmp, src, CFL_SIZE);
-
-		md_copy_block(DIMS, index, data->map_dims, data->tmp, data->in_dims, data->in_tmp, CFL_SIZE);
-
-		linop_forward_unchecked(linop_fftc, data->tmp, data->tmp);
-
-		md_copy_block(DIMS, index, data->in_dims, data->in_tmp, data->map_dims, data->tmp, CFL_SIZE);
-
-		linop_free(linop_fftc);
-
-		// Dump cfl
-
-		char name[255] = { '\0' };
-
-		sprintf(name, "current_map_%02d", data->counter);
-
-		dump_cfl(name, data->N, data->in_dims, data->in_tmp);
-
-		data->counter++;
-	}
-#endif
-
-	// Allocate GPU memory
-	complex float* r1scale_tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
-	complex float* r2scale_tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
-	complex float* m0scale_tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
-	complex float* b1scale_tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
-	complex float* tmp = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
-
+	// Forward model is always on CPU
+	complex float* r1scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
+	complex float* r2scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
+	complex float* m0scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
+	complex float* b1scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
 
 	long pos[data->N];
-
 	md_set_dims(data->N, pos, 0);
 
 	//-------------------------------------------------------------------
 	// Copy necessary files from GPU to CPU
 	//-------------------------------------------------------------------
+
+
+	pos[COEFF_DIM] = 0;// R1
+	md_copy_block(data->N, pos, data->map_dims, r1scale, data->in_dims, src, CFL_SIZE);
+
+	pos[COEFF_DIM] = 1;// M0
+	md_copy_block(data->N, pos, data->map_dims, m0scale, data->in_dims, src, CFL_SIZE);
+
+	pos[COEFF_DIM] = 2;// R2
+	md_copy_block(data->N, pos, data->map_dims, r2scale, data->in_dims, src, CFL_SIZE);
+
+	pos[COEFF_DIM] = 3;// B1
+	md_copy_block(data->N, pos, data->map_dims, b1scale, data->in_dims, src, CFL_SIZE);
+
 
 	float scale[4];
 
@@ -160,45 +135,12 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 			scale[i] = 1.;
 	}
 
-	// R1
-	pos[COEFF_DIM] = 0;
-	const complex float* R1 = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);
-	md_zsmul2(data->N, data->map_dims, data->map_strs, r1scale_tmp, data->map_strs, R1, scale[0]);
+	md_zsmul(data->N, data->map_dims, r1scale, r1scale, scale[0]);
+	md_zsmul(data->N, data->map_dims, m0scale, m0scale, scale[1]);
+	md_zsmul(data->N, data->map_dims, r2scale, r2scale, scale[2]);
+	md_zsmul(data->N, data->map_dims, b1scale, b1scale, scale[3]);
 
-	complex float* r1scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
-	md_copy(data->N, data->map_dims, r1scale, r1scale_tmp, CFL_SIZE);
-
-	// M0
-	pos[COEFF_DIM] = 1;
-	const complex float* M0 = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);
-	md_zsmul2(data->N, data->map_dims, data->map_strs, m0scale_tmp, data->map_strs, M0, scale[1]);
-
-	complex float* m0scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
-	md_copy(data->N, data->map_dims, m0scale, m0scale_tmp, CFL_SIZE);
-
-	// R2
-	pos[COEFF_DIM] = 2;
-	const complex float* R2 = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);
-	md_zsmul2(data->N, data->map_dims, data->map_strs, r2scale_tmp, data->map_strs, R2, scale[2]);
-
-	complex float* r2scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
-	md_copy(data->N, data->map_dims, r2scale, r2scale_tmp, CFL_SIZE);
-
-	// B1
-	pos[COEFF_DIM] = 3;
-	const complex float* B1 = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);
-	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp, data->map_strs, B1, scale[3]);
-
-	bloch_forw_alpha(data->linop_alpha, b1scale_tmp, tmp);	// freq -> pixel + smoothing!
-
-	complex float* b1scale = md_alloc(data->N, data->map_dims, CFL_SIZE);
-	md_copy(data->N, data->map_dims, b1scale, b1scale_tmp, CFL_SIZE);
-
-	md_free(r1scale_tmp);
-	md_free(r2scale_tmp);
-	md_free(m0scale_tmp);
-	md_free(b1scale_tmp);
-	md_free(tmp);
+	bloch_forw_alpha(data->linop_alpha, b1scale, b1scale);	// freq -> pixel + smoothing!
 
 
 	//Allocate Output CPU memory
