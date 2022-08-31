@@ -95,11 +95,16 @@ static void pos_value(iter_op_data* _data, float* dst, const float* src)
 {
 	auto data = CAST_DOWN(T1inv_s, _data);
 
+
+	// filter coils here, as we want to leave the coil sensitivity part untouched
+	long img_dims[DIMS];
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, data->dims);
+
 	long strs[DIMS];
-	md_calc_strides(DIMS, strs, data->dims, CFL_SIZE);
+	md_calc_strides(DIMS, strs, img_dims, CFL_SIZE);
 
 	long dims1[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS, dims1, data->dims);
+	md_select_dims(DIMS, FFT_FLAGS, dims1, img_dims);
 	
 	long pos[DIMS] = { 0 };
 
@@ -113,7 +118,7 @@ static void pos_value(iter_op_data* _data, float* dst, const float* src)
 				data->conf->lower_bound);
 		}
 
-        } while(md_next(DIMS, data->dims, ~FFT_FLAGS, pos));
+	} while(md_next(DIMS, img_dims, ~FFT_FLAGS, pos));
 }
 
 
