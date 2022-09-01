@@ -124,6 +124,7 @@ int main_moba(int argc, char* argv[argc])
         data.sim.pulse.hs = hs_pulse_defaults;
         data.sim.grad = simdata_grad_defaults;
         data.sim.tmp = simdata_tmp_defaults;
+	data.sim.other = simdata_other_defaults;
         data.other = moba_other_defaults;
 
         // FIXME: Move to separate function to reuse it for sim.c

@@ -814,7 +814,7 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 
 	struct sim_data data = *_data;  // Lose information of complex pointer variables
 
-        float tol = 10E-6;      // Tolerance of ODE solver
+        float tol = _data->other.ode_tol;      // Tolerance of ODE solver
 
         enum { N = 3 };         // Number of dimensions (x, y, z)
 	enum { P = 4 };         // Number of parameters with estimated derivative (M, DR1, DR2, DB1)
