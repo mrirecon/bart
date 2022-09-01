@@ -77,6 +77,7 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
                         if (NULL == deriv)
 				continue;
 
+                        ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
                         deriv[ind] = (3 == D) ? sa_r1[i][d] : (sa_r1[i][0] + 1.i * sa_r1[i][1]);
 
                         pos[MAPS_DIM] = 1;
