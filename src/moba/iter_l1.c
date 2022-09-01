@@ -422,26 +422,29 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
         img_dims[COEFF_DIM] = penalized_dims;
 
 	auto prox1 = create_prox(img_dims, COEFF_FLAG, 1.);
-	auto prox2 = op_p_auto_normalize(prox1, ~(COEFF_FLAG | TIME_FLAG | TIME2_FLAG | SLICE_FLAG), NORM_L2);
+	auto prox2 = operator_p_ref(prox1);
 
-        if (0 < conf->not_wav_maps) {
+	if (0 < conf->not_wav_maps) {
 
 		long map_dims[DIMS];
 		md_copy_dims(DIMS, map_dims, img_dims);
 		map_dims[COEFF_DIM] = conf->not_wav_maps;
 
 		auto prox3 = prox_zero_create(DIMS, map_dims);
-		auto prox4 = operator_p_stack(COEFF_DIM, COEFF_DIM, prox1, prox3);
-		prox2 = op_p_auto_normalize(prox4, ~(COEFF_FLAG | TIME_FLAG | TIME2_FLAG | SLICE_FLAG), NORM_L2);
+		prox2 = operator_p_stack_FF(COEFF_DIM, COEFF_DIM, prox2, prox3);
+	}
 
-		operator_p_free(prox3);
-		operator_p_free(prox4);
+	if (conf->auto_norm) {
+
+		auto prox3 = op_p_auto_normalize(prox2, ~(COEFF_FLAG | TIME_FLAG | TIME2_FLAG | SLICE_FLAG), NORM_L2);
+		operator_p_free(prox2);
+		prox2 = prox3;
 	}
 
 	struct T1inv_s idata = {
 
 		{ &TYPEID(T1inv_s) }, nlop_clone(nlop), conf,
-		N, M, 1.0, ndims, true, 0, prox1, conf->auto_norm ? prox2 : prox1
+		N, M, 1.0, ndims, true, 0, prox1, prox2
 	};
 
 	data->data = idata;
