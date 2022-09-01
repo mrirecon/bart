@@ -310,7 +310,7 @@ int main_moba(int argc, char* argv[argc])
 	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, img_dims, grid_dims);
 
 
-	img_dims[COEFF_DIM] = moba_get_nr_of_coeffs(&conf, grid_dims[COEFF_DIM]);
+	img_dims[COEFF_DIM] = moba_get_nr_of_coeffs(&conf, grid_dims[TE_DIM]); // grid_dims[TE_DIM] is only used for MECO_PI == conf.mgre_model
 
 
 	long img_strs[DIMS];
