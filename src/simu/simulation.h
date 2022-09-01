@@ -37,7 +37,7 @@ struct simdata_seq {
 	float prep_pulse_length;
 
         int averaged_spokes;
-        int slice_profile_spins;
+	float slice_thickness;
 
         bool pulse_applied;
 };
@@ -61,6 +61,7 @@ struct simdata_grad {
 
 	float gb[3];
 	float gb_eff[3];
+	float sl_gradient_strength;
 	float mom;
 	float mom_sl;
 };
@@ -93,8 +94,7 @@ extern void debug_sim(struct sim_data* data);
 extern void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P*N + 1][P*N + 1]);
 
 extern void inversion(const struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end);
-extern void bloch_simulation(const struct sim_data* data, const complex float* slice,
-		int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3]);
+extern void bloch_simulation(const struct sim_data* data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3]);
 
 struct ode_matrix_simu_s {
 

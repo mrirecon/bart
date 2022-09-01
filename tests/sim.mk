@@ -63,11 +63,36 @@ tests/test-sim-to-signal-irbSSFP-averaged-spokes: sim scale signal nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-sim-to-signal-slice-profile: sim signal nrmse
+tests/test-sim-slice-profile-spins: sim nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-profile-spins=40 -1 3:3:1 -2 1:1:1 sim.ra ;\
-	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-profile-spins=42 -1 3:3:1 -2 1:1:1 sim2.ra ;\
-	$(TOOLDIR)/nrmse -t 0.0015 sim.ra sim2.ra			    		;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-thickness=0.020,sl-grad=0.01,nspins=41 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-thickness=0.020,sl-grad=0.01,nspins=61 -1 3:3:1 -2 1:1:1 sim2.ra ;\
+	$(TOOLDIR)/nrmse -t 0.01 sim.ra sim2.ra			    		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-slice-profile-slicethickness: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-thickness=0.040,sl-grad=0.01,nspins=41 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-thickness=0.020,sl-grad=0.01,nspins=41 -1 3:3:1 -2 1:1:1 sim2.ra ;\
+	$(TOOLDIR)/nrmse -t 0.02 sim.ra sim2.ra			    		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-slice-profile-density: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-thickness=0.040,sl-grad=0.01,nspins=41 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-thickness=0.020,sl-grad=0.01,nspins=31 -1 3:3:1 -2 1:1:1 sim2.ra ;\
+	$(TOOLDIR)/nrmse -t 0.02 sim.ra sim2.ra			    		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-slice-profile-density2: sim scale nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,slice-thickness=0.041,sl-grad=0,nspins=41 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=1000,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,sl-grad=0 -1 3:3:1 -2 1:1:1 sim2.ra ;\
+	$(TOOLDIR)/scale -- 41 sim2.ra sim3.ra			;\
+	$(TOOLDIR)/nrmse -t 0.02 sim.ra sim3.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -201,8 +226,8 @@ tests/test-sim-split-dim-deriv: sim slice saxpy nrmse
 
 tests/test-sim-ode-stm-flash-te-eq-trf-eq-tr: sim nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/sim --ODE --seq flash,tr=0.001,te=0.001,nrep=100,pinv,ipl=0,ppl=0,trf=0.001,fa=180,bwtp=1,isp=0,mom-sl=16050 --split-dim -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
-	$(TOOLDIR)/sim --STM --seq flash,tr=0.001,te=0.001,nrep=100,pinv,ipl=0,ppl=0,trf=0.001,fa=180,bwtp=1,isp=0,mom-sl=16050 --split-dim -1 3:3:1 -2 1:1:1 simu_stm.ra ;\
+	$(TOOLDIR)/sim --ODE --seq flash,tr=0.001,te=0.001,nrep=100,pinv,ipl=0,ppl=0,trf=0.001,fa=180,bwtp=1,isp=0,slice-thickness=0.040,sl-grad=0.001 --split-dim -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --STM --seq flash,tr=0.001,te=0.001,nrep=100,pinv,ipl=0,ppl=0,trf=0.001,fa=180,bwtp=1,isp=0,slice-thickness=0.040,sl-grad=0.001 --split-dim -1 3:3:1 -2 1:1:1 simu_stm.ra ;\
 	$(TOOLDIR)/nrmse -t 0.001 simu_stm.ra simu_ode.ra			    	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -210,7 +235,7 @@ tests/test-sim-ode-stm-flash-te-eq-trf-eq-tr: sim nrmse
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
 TESTS += tests/test-sim-spoke-averaging-3 tests/test-sim-to-signal-irbSSFP-averaged-spokes
-TESTS += tests/test-sim-to-signal-slice-profile
+TESTS += tests/test-sim-slice-profile-spins tests/test-sim-slice-profile-slicethickness tests/test-sim-slice-profile-density tests/test-sim-slice-profile-density2
 TESTS += tests/test-sim-ode-hp-irflash tests/test-sim-ode-hp-flash
 TESTS += tests/test-sim-ode-hp-irbssfp tests/test-sim-ode-hp-bssfp
 TESTS += tests/test-sim-multi-relaxation

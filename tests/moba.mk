@@ -335,7 +335,7 @@ tests/test-moba-t1-phy-traj: traj repmat scale phantom signal fmac index moba sl
 	touch $@
 
 
-tests/test-moba-bloch-irbssfp-psf: traj repmat phantom signal fmac index moba spow slice scale resize nrmse
+tests/test-moba-bloch-irbssfp-psf: traj repmat phantom signal fmac fft ones index moba spow slice scale resize nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
 	$(TOOLDIR)/signal -B -I -r 0.0045 -e 0.00225 -f45 -n 1000 -1 1.25:1.25:1 -2 0.1:0.1:1 signal.ra	;\
@@ -437,10 +437,10 @@ tests/test-moba-bloch-irbssfp-traj-slice-profile: traj repmat scale phantom sim 
 	$(TOOLDIR)/repmat 5 100 _traj.ra traj2.ra	;\
 	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
 	$(TOOLDIR)/phantom -c -k -t traj.ra basis_geom.ra				;\
-	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=100,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,av-spokes=10,slice-profile-spins=10 -1 1.25:1.25:1 -2 0.1:0.1:1 basis_simu.ra ;\
+	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=100,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,av-spokes=10,slice-thickness=0.04,sl-grad=0.01,nspins=61 -1 1.25:1.25:1 -2 0.1:0.1:1 basis_simu.ra ;\
 	$(TOOLDIR)/fmac basis_geom.ra basis_simu.ra k_space.ra		;\
 	$(TOOLDIR)/index 5 100 dummy_ti.ra 	;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-bssfp,tr=0.0045,te=0.00225,fa=45,trf=0.001,bwtp=4,pinv,ipl=0,ppl=0.00225,av-spokes=10,slice-profile-spins=10 --other pdscale=1:1:1:0 -i11 -C300 -s0.95 -R3 -o1 -j0.001 -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq ir-bssfp,tr=0.0045,te=0.00225,fa=45,trf=0.001,bwtp=4,pinv,ipl=0,ppl=0.00225,av-spokes=10,slice-thickness=0.02,sl-grad=0.01,nspins=11 --other pdscale=1:1:1:0 -i11 -C300 -s0.95 -R3 -o1 -j0.001 -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra				;\
 	$(TOOLDIR)/phantom -x 8 -c ref.ra				;\
 	$(TOOLDIR)/resize -c 0 16 1 16 ref.ra ref2.ra					;\

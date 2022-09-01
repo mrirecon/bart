@@ -22,7 +22,6 @@
 #include "simu/bloch.h"
 #include "simu/pulse.h"
 #include "simu/simulation.h"
-#include "simu/slice_profile.h"
 
 
 #ifndef CFL_SIZE
@@ -35,7 +34,7 @@ static const char help_str[] = "simulation tool";
 
 
 // FIXME: Turn of sensitivity analysis if derivatives are not asked for
-static void perform_bloch_simulation(int N, struct sim_data* data, const complex float* slice, long mdims[N], complex float* mxy, long ddims[N], complex float* deriv)     // 4 Derivatives: dR1, dM0, dR2, dB1
+static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N], complex float* mxy, long ddims[N], complex float* deriv)     // 4 Derivatives: dR1, dM0, dR2, dB1
 {
         int D = ddims[READ_DIM];
         int T = ddims[TE_DIM];
@@ -46,7 +45,7 @@ static void perform_bloch_simulation(int N, struct sim_data* data, const complex
         float sa_m0[T][3];
         float sa_b1[T][3];
 
-        bloch_simulation(data, slice, T, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
+        bloch_simulation(data, T, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
 
         long pos[DIMS];
         md_copy_dims(DIMS, pos, ddims);
@@ -137,7 +136,6 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "isp", &(data.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
                 OPTL_FLOAT(0, "ppl", &(data.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
                 OPTL_INT(0, "av-spokes", &(data.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
-                OPTL_INT(0, "slice-profile-spins", &(data.seq.slice_profile_spins), "", "Number of spins in the slice-profile"),
 
                 /* Pulse Specific Parameters */
                 OPTL_FLOAT(0, "trf", &(data.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
@@ -147,8 +145,9 @@ int main_sim(int argc, char* argv[argc])
                 /* Voxel Specific Parameters */
                 OPTL_FLOAT(0, "off", &(data.voxel.w), "float", "Off-Resonance [rad/s]"),
 
-                /* Gradient Specific Parameters */
-                OPTL_FLOAT(0, "mom-sl", &(data.grad.mom_sl), "float", "Slice Selection Gradient Moment [rad/s]"),
+                /* Slice Profile Parameters */
+                OPTL_FLOAT(0, "sl-grad", &(data.grad.sl_gradient_strength), "float", "Strength of Slice Selection Gradient [T/m]"),
+                OPTL_FLOAT(0, "slice-thickness", &(data.seq.slice_thickness), "float", "Thickness of simulated slice [m]."),
 
         };
         const int N_seq_opts = ARRAY_SIZE(seq_opts);
@@ -175,7 +174,6 @@ int main_sim(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-
         // Define output dimensions for signal
 
         long mdims[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -190,26 +188,6 @@ int main_sim(int argc, char* argv[argc])
 
 	if ((mdims[TE_DIM] < 1) || (mdims[COEFF_DIM] < 1) || (mdims[COEFF2_DIM] < 1))
 		error("invalid parameter range");
-
-
-        // Approximate slice profile
-
-        long spdims[DIMS] = { [0 ... DIMS - 1] = 1 };
-	complex float* slice = NULL;
-
-	if (1 != data.seq.slice_profile_spins) {
-
-		assert((1 == data.seq.spin_num) || (data.seq.spin_num == data.seq.slice_profile_spins));
-
-		data.seq.spin_num = data.seq.slice_profile_spins;
-
-		spdims[READ_DIM] = data.seq.spin_num;	// FIXME: Why read?
-		slice = md_alloc(DIMS, spdims, CFL_SIZE);
-
-
-		sinc_pulse_init(&data.pulse, data.pulse.rf_start, data.pulse.rf_end, data.pulse.flipangle, data.pulse.phase, data.pulse.bwtp, data.pulse.alpha); // FIXME
-		slice_profile_fourier(DIMS, spdims, slice, &data.pulse);
-        }
 
         // Allocate output file for signal and optional derivatives
 
@@ -251,7 +229,7 @@ int main_sim(int argc, char* argv[argc])
 		data.voxel.r1 = 1. / (T1[0] + (T1[1] - T1[0]) / T1[2] * (float)pos[COEFF_DIM]);
         	data.voxel.r2 = 1. / (T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM]);
 
-                perform_bloch_simulation(DIMS, &data, slice, tmdims, tm, tddims, td);
+                perform_bloch_simulation(DIMS, &data, tmdims, tm, tddims, td);
 
 		md_copy_block(DIMS, pos, mdims, signals, tmdims, tm, CFL_SIZE);
 
@@ -272,9 +250,6 @@ int main_sim(int argc, char* argv[argc])
 
         if (NULL != out_deriv)
                 unmap_cfl(DIMS, ddims, deriv);
-
-	if (NULL != slice)
-		md_free(slice);
 
 	return 0;
 }

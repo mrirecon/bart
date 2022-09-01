@@ -71,7 +71,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 	float sa_m0_ref_sig[R][3];
 	float sa_b1_ref_sig[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxy_ref_sig, &sa_r1_ref_sig, &sa_r2_ref_sig, &sa_m0_ref_sig, &sa_b1_ref_sig);
+	bloch_simulation(&sim_data, R, &mxy_ref_sig, &sa_r1_ref_sig, &sa_r2_ref_sig, &sa_m0_ref_sig, &sa_b1_ref_sig);
 
 	/* ------------ R1 Partial Derivative Test -------------- */
 
@@ -85,7 +85,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	data_r1.voxel.r1 += e;
 
-	bloch_simulation(&data_r1, NULL, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
+	bloch_simulation(&data_r1, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
 	float err = 0;
 
@@ -107,7 +107,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	data_r2.voxel.r2 += e;
 
-	bloch_simulation(&data_r2, NULL, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
+	bloch_simulation(&data_r2, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
 	for (int i = 0; i < sim_data.seq.rep_num; i++)
 		for (int j = 0; j < 3; j++) {
@@ -127,7 +127,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	data_m0.voxel.m0 += e;
 
-	bloch_simulation(&data_m0, NULL, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
+	bloch_simulation(&data_m0, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
 	for (int i = 0; i < sim_data.seq.rep_num; i++)
 		for (int j = 0; j < 3; j++) {
@@ -147,7 +147,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	data_b1.voxel.b1 += e;
 
-	bloch_simulation(&data_b1, NULL, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
+	bloch_simulation(&data_b1, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
 	for (int i = 0; i < sim_data.seq.rep_num; i++)
 		for (int j = 0; j < 3; j++) {
@@ -208,7 +208,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 	float sa_m0_ref_sig[R][3];
 	float sa_b1_ref_sig[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxy_ref_sig, &sa_r1_ref_sig, &sa_r2_ref_sig, &sa_m0_ref_sig, &sa_b1_ref_sig);
+	bloch_simulation(&sim_data, R, &mxy_ref_sig, &sa_r1_ref_sig, &sa_r2_ref_sig, &sa_m0_ref_sig, &sa_b1_ref_sig);
 
 	/* ------------ R1 Partial Derivative Test -------------- */
 
@@ -222,7 +222,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	data_r1.voxel.r1 += e;
 
-	bloch_simulation(&data_r1, NULL, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
+	bloch_simulation(&data_r1, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
 	float err = 0;
 
@@ -244,7 +244,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	data_r2.voxel.r2 += e;
 
-	bloch_simulation(&data_r2, NULL, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
+	bloch_simulation(&data_r2, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
 	for (int i = 0; i < R; i++) {
 
@@ -266,7 +266,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	data_m0.voxel.m0 += e;
 
-	bloch_simulation(&data_m0, NULL, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
+	bloch_simulation(&data_m0, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
 	for (int i = 0; i < sim_data.seq.rep_num; i++)
 		for (int j = 0; j < 3; j++) {
@@ -286,7 +286,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	data_b1.voxel.b1 += e;
 
-	bloch_simulation(&data_b1, NULL, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
+	bloch_simulation(&data_b1, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
 	for (int i = 0; i < R; i++) {
 
@@ -369,7 +369,7 @@ static bool test_ode_irbssfp_simulation(void)
 	float sa_m0_sig[R][3];
 	float sa_b1_sig[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
+	bloch_simulation(&sim_data, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
 
 
 	// Analytical Model
@@ -479,7 +479,7 @@ static bool test_rot_irbssfp_simulation(void)
 	float sa_m0_sig[N][3];
 	float sa_b1_sig[N][3];
 
-	bloch_simulation(&sim_data, NULL, N, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
+	bloch_simulation(&sim_data, N, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
 
 
 	// Analytical Model
@@ -574,7 +574,7 @@ static bool test_stm_ode_bssfp_comparison(void)
 	float sa_m0_ode[R][3];
 	float sa_b1_ode[R][3];
 
-	bloch_simulation(&sim_ode, NULL, R, &mxy_ode, &sa_r1_ode, &sa_r2_ode, &sa_m0_ode, &sa_b1_ode);
+	bloch_simulation(&sim_ode, R, &mxy_ode, &sa_r1_ode, &sa_r2_ode, &sa_m0_ode, &sa_b1_ode);
 
         sim_data.seq.type = SIM_STM;
 
@@ -586,7 +586,7 @@ static bool test_stm_ode_bssfp_comparison(void)
 	float sa_m0_matexp[R][3];
 	float sa_b1_matexp[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxy_matexp, &sa_r1_matexp, &sa_r2_matexp, &sa_m0_matexp, &sa_b1_matexp);
+	bloch_simulation(&sim_data, R, &mxy_matexp, &sa_r1_matexp, &sa_r2_matexp, &sa_m0_matexp, &sa_b1_matexp);
 
 	float tol = 10E-3;
 	float err;
@@ -680,7 +680,7 @@ static bool test_stm_ode_flash_comparison(void)
 
 	assert(R == sim_data.seq.rep_num);
 
-	bloch_simulation(&sim_ode, NULL, R, &mxy_ode, &sa_r1_ode, &sa_r2_ode, &sa_m0_ode, &sa_b1_ode);
+	bloch_simulation(&sim_ode, R, &mxy_ode, &sa_r1_ode, &sa_r2_ode, &sa_m0_ode, &sa_b1_ode);
 
         sim_data.seq.type = SIM_STM;
 
@@ -690,7 +690,7 @@ static bool test_stm_ode_flash_comparison(void)
 	float sa_m0_matexp[R ][3];
 	float sa_b1_matexp[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxy_matexp, &sa_r1_matexp, &sa_r2_matexp, &sa_m0_matexp, &sa_b1_matexp);
+	bloch_simulation(&sim_data, R, &mxy_matexp, &sa_r1_matexp, &sa_r2_matexp, &sa_m0_matexp, &sa_b1_matexp);
 
 	float tol = 10E-3;
 	float err;
@@ -772,7 +772,7 @@ static bool test_ode_simu_offresonance(void)
 	float saDensSig_ode[R][3];
 	float sa_b1_ode[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
+	bloch_simulation(&sim_data, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 #if 0
 	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[0][0], mxySig_ode[0][0]
@@ -836,7 +836,7 @@ static bool test_stm_simu_offresonance(void)
 	float saDensSig_ode[R][3];
 	float sa_b1_ode[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
+	bloch_simulation(&sim_data, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 #if 0
 	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[0][0], mxySig_ode[0][0]
@@ -899,7 +899,7 @@ static bool test_ode_simu_gradient(void)
 	float saDensSig_ode[R][3];
 	float sa_b1_ode[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
+	bloch_simulation(&sim_data, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 #if 0
 	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[sim_data.seq.rep_num-1][0], mxySig_ode[sim_data.seq.rep_num-1][0]
@@ -964,7 +964,7 @@ static bool test_stm_simu_gradient(void)
 	float saDensSig_ode[R][3];
 	float sa_b1_ode[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
+	bloch_simulation(&sim_data, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 #if 0
 	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[sim_data.seq.rep_num-1][0], mxySig_ode[sim_data.seq.rep_num-1][0]
@@ -1013,7 +1013,7 @@ static void ode_fourier_modes(int N, struct sim_data* data, complex float fn[N],
 		float saDensSig_ode[R][3];
 		float sa_b1_ode[R][3];
 
-		bloch_simulation(&sim_ode, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
+		bloch_simulation(&sim_ode, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 		// Save M+
 		m_plus[i] = mxySig_ode[t][0] + mxySig_ode[t][1] * I;
@@ -1180,7 +1180,7 @@ static bool test_hp_irbssfp_simulation(void)
 	float sa_m0_sig[R][3];
 	float sa_b1_sig[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
+	bloch_simulation(&sim_data, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
 
 
 	// Analytical Model
@@ -1260,7 +1260,7 @@ static bool test_hp_simu_offresonance(void)
 	float saDensSig_ode[R][3];
 	float sa_b1_ode[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
+	bloch_simulation(&sim_data, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 #if 0
 	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", crealf(mxySig_ode[0][0]), cimagf(mxySig_ode[0][0])
@@ -1323,7 +1323,7 @@ static bool test_hp_simu_gradient(void)
 	float saDensSig_ode[R][3];
 	float sa_b1_ode[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
+	bloch_simulation(&sim_data, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
 #if 0
 	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", crealf(mxySig_ode[0][0]), cimagf(mxySig_ode[0][0])
@@ -1390,7 +1390,7 @@ static bool test_ode_z_gradient_refocus(void)
 	float sa_m0_sig[R][3];
 	float sa_b1_sig[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
+	bloch_simulation(&sim_data, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
 
         sim_data.grad.mom_sl = 0.5 * 2. * M_PI * 1000.;	// [rad/s]
 
@@ -1400,7 +1400,7 @@ static bool test_ode_z_gradient_refocus(void)
 	float sa_m0_sig2[R][3];
 	float sa_b1_sig2[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxy_sig2, &sa_r1_sig2, &sa_r2_sig2, &sa_m0_sig2, &sa_b1_sig2);
+	bloch_simulation(&sim_data, R, &mxy_sig2, &sa_r1_sig2, &sa_r2_sig2, &sa_m0_sig2, &sa_b1_sig2);
 
 #if 0
 	bart_printf("M1 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig[0][0], mxy_sig[0][1], mxy_sig[0][2]);
@@ -1462,7 +1462,7 @@ static bool test_stm_z_gradient_refocus(void)
 	float sa_m0_sig[R][3];
 	float sa_b1_sig[R][3];
 
-	bloch_simulation(&sim_data, NULL, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
+	bloch_simulation(&sim_data, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
 
 #if 0
 	bart_printf("M1 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig[0][0], mxy_sig[0][1], mxy_sig[0][2]);

@@ -27,7 +27,6 @@
 
 #include "simu/pulse.h"
 #include "simu/simulation.h"
-#include "simu/slice_profile.h"
 
 #include "noncart/nufft.h"
 
@@ -143,7 +142,6 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "isp", &(data.sim.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
                 OPTL_FLOAT(0, "ppl", &(data.sim.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
                 OPTL_INT(0, "av-spokes", &(data.sim.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
-                OPTL_INT(0, "slice-profile-spins", &(data.sim.seq.slice_profile_spins), "", "Number of spins in the slice-profile"),
 
                 /* Pulse Specific Parameters */
                 OPTL_FLOAT(0, "trf", &(data.sim.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
@@ -153,8 +151,9 @@ int main_moba(int argc, char* argv[argc])
                 /* Voxel Specific Parameters */
                 OPTL_FLOAT(0, "off", &(data.sim.voxel.w), "float", "Off-Resonance [rad/s]"),
 
-                /* Gradient Specific Parameters */
-                OPTL_FLOAT(0, "mom-sl", &(data.sim.grad.mom_sl), "float", "Slice Selection Gradient Moment [rad/s]"),
+		/* Slice Profile Parameters */
+                OPTL_FLOAT(0, "sl-grad", &(data.sim.grad.sl_gradient_strength), "float", "Strength of Slice Selection Gradient [T/m]"),
+                OPTL_FLOAT(0, "slice-thickness", &(data.sim.seq.slice_thickness), "float", "Thickness of simulated slice. [m]"),
 
         };
         const int N_seq_opts = ARRAY_SIZE(seq_opts);
@@ -481,28 +480,6 @@ int main_moba(int argc, char* argv[argc])
 		assert(md_check_bounds(DIMS, FFT_FLAGS, grid_dims, b1_dims));
 	}
 
-
-        // Compute slice profile
-
-        long spdims[DIMS] = { [0 ... DIMS - 1] = 1 };
-	complex float* slice = NULL;
-
-	if (1 != data.sim.seq.slice_profile_spins) {
-
-		assert((1 == data.sim.seq.spin_num) || (data.sim.seq.spin_num == data.sim.seq.slice_profile_spins));
-
-		data.sim.seq.spin_num = data.sim.seq.slice_profile_spins;
-
-		spdims[READ_DIM] = data.sim.seq.spin_num;	// FIXME: Why read?
-		slice = md_alloc(DIMS, spdims, CFL_SIZE);
-
-
-		sinc_pulse_init(&data.sim.pulse, data.sim.pulse.rf_start, data.sim.pulse.rf_end, data.sim.pulse.flipangle, data.sim.pulse.phase, data.sim.pulse.bwtp, data.sim.pulse.alpha); // FIXME
-		slice_profile_fourier(DIMS, spdims, slice, &data.sim.pulse);
-        }
-
- 
-
 	// scaling
 
 	if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode) || (MDB_T1_PHY == conf.mode) || (MDB_BLOCH == conf.mode)) {
@@ -622,14 +599,14 @@ int main_moba(int argc, char* argv[argc])
 
 		md_copy(DIMS, TI_dims, TI_gpu, TI, CFL_SIZE);
 
-		moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI_gpu, b1, slice, kspace_gpu, init);
+		moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI_gpu, b1, kspace_gpu, init);
 
 		md_free(kspace_gpu);
 		md_free(TI_gpu);
 
 	} else
 #endif
-	moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, b1, slice, k_grid_data, init);
+	moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, b1, k_grid_data, init);
 
         // Rescale estimated parameter maps
 
@@ -666,9 +643,6 @@ int main_moba(int argc, char* argv[argc])
 
         if(NULL != input_b1)
 		unmap_cfl(DIMS, b1_dims, b1);
-
-        if (NULL != slice)
-		md_free(slice);
 
 	double recosecs = timestamp() - start_time;
 

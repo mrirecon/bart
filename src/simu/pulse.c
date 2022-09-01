@@ -75,14 +75,14 @@ float sinc_integral(const struct simdata_pulse* pulse)
 // 	- Ensure windowed sinc leads to 90 deg rotation if its integral is pi/2
 void sinc_pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle /*[deg]*/, float phase, float bwtp, float alpha)
 {
-	pulse->rf_start = rf_start;
-	pulse->rf_end = rf_end;
-	pulse->flipangle = 90.;
-	pulse->phase = phase;
-	pulse->nl = bwtp / 2.;	// Symmetry condition: nl=nr
+	pulse->rf_start = rf_start;	// [s]
+	pulse->rf_end = rf_end;		// [s]
+	pulse->flipangle = 90.;		// [deg]
+	pulse->phase = phase;		// [rad]
+	pulse->nl = bwtp / 2.;		// Symmetry condition: nl=nr
 	pulse->nr = bwtp / 2.;
 	pulse->n = MAX(pulse->nl, pulse->nr);
-	pulse->t0 = (rf_end - rf_start) / (2. + (pulse->nl - 1.) + (pulse->nr - 1.));
+	pulse->t0 = (rf_end - rf_start) / (2. + (pulse->nl - 1.) + (pulse->nr - 1.)); // [s]
 	pulse->alpha = alpha;
 	pulse->A = 1.;
 

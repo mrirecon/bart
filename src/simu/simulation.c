@@ -46,11 +46,12 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tISP:%f\n", data->seq.inversion_spoiler);
         debug_printf(DP_INFO, "\tPPL:%f\n", data->seq.prep_pulse_length);
         debug_printf(DP_INFO, "\tAveraged Spokes:%d\n", data->seq.averaged_spokes);
-        debug_printf(DP_INFO, "\tNumber of Slice Profile Spins:%d\n", data->seq.slice_profile_spins);
+        debug_printf(DP_INFO, "\tSlice Thickness:%f m\n", data->seq.slice_thickness);
         debug_printf(DP_INFO, "\tPulse Applied?:%d\n\n", data->seq.pulse_applied);
 
         debug_printf(DP_INFO, "Gradient-Parameter:\n");
         debug_printf(DP_INFO, "\tMoment:%f\n", data->grad.mom);
+        debug_printf(DP_INFO, "\tSlice-Selection Gradient Strength:%f T/m\n", data->grad.sl_gradient_strength);
         debug_printf(DP_INFO, "\tMoment SL:%f\n\n", data->grad.mom_sl);
 
         debug_printf(DP_INFO, "Pulse-Parameter:\n");
@@ -105,7 +106,7 @@ const struct simdata_seq simdata_seq_defaults = {
 	.prep_pulse_length = 0.002,
 
         .averaged_spokes = 1,
-        .slice_profile_spins = 1,
+        .slice_thickness = 0.,
 
         .pulse_applied = false,
 };
@@ -125,6 +126,7 @@ const struct simdata_grad simdata_grad_defaults = {
 
 	.gb = { 0., 0., 0. },
 	.gb_eff = { 0., 0., 0.},
+        .sl_gradient_strength = 0.,
 	.mom = 0.,
 	.mom_sl = 0.,
 };
@@ -358,10 +360,10 @@ static void collect_signal(struct sim_data* data, int P, int R, int S, float (*m
 }
 
 
-static void sum_up_signal(float m0, int R, int S, int A, float (*m)[R * A][S][3],  float (*sa_r1)[R * A][S][3], float (*sa_r2)[R * A][S][3], float (*sa_b1)[R * A][S][3],
+static void sum_up_signal(float m0, int R, int S, int A, float D, float (*m)[R * A][S][3], float (*sa_r1)[R * A][S][3], float (*sa_r2)[R * A][S][3], float (*sa_b1)[R * A][S][3],
                         float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
 {
-	float norm = m0 / (float)(A * S);
+	float norm = m0 / ((float)A * D);
 
 	for (int r = 0; r < R; r++) {
 
@@ -388,7 +390,7 @@ static void sum_up_signal(float m0, int R, int S, int A, float (*m)[R * A][S][3]
                         (*sa_r1_state)[r][dim] = sum_sa_r1 * norm;
                         (*sa_r2_state)[r][dim] = sum_sa_r2 * norm;
                         (*sa_b1_state)[r][dim] = sum_sa_b1 * norm;
-                        (*sa_m0_state)[r][dim] = sum_m / (float)(A * S);
+                        (*sa_m0_state)[r][dim] = sum_m / ((float)A * D);
 		}
 	}
 }
@@ -806,7 +808,7 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 
 /* ------------ Main Simulation -------------- */
 
-void bloch_simulation(const struct sim_data* _data, const complex float* slice, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
+void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
 {
 	// FIXME: split config + variable part
 
@@ -819,14 +821,17 @@ void bloch_simulation(const struct sim_data* _data, const complex float* slice, 
 
         assert(0 < P);
 
-        if (NULL != slice)
-                assert(data.seq.slice_profile_spins == data.seq.spin_num);
-
         enum { M = N * P + 1 };     // STM based on single vector and additional +1 for linearized system matrix
 
 	assert(R == data.seq.rep_num);
 
 	int A = data.seq.averaged_spokes;
+
+        // Unit: [M0] = 1 Magnetization / mm
+        //      -> Default slice thickness of a single isochromat set to 1 mm
+        //              FIXME: Slice Profile in relative units of theoretical slice thickness?
+        // debug_printf(DP_INFO, "Theoretical Slice Thickness: %f\n", 2 * M_PI / ((data.pulse.rf_end - data.pulse.rf_start) / (2. + (data.pulse.nl - 1.) + (data.pulse.nr - 1.)) * data.grad.sl_gradient_strength * GAMMA_H1));
+        float default_slice_thickness = 0.001; // [m]
 
 	data.seq.rep_num *= A;
 	data.seq.averaged_spokes = 1;
@@ -838,31 +843,31 @@ void bloch_simulation(const struct sim_data* _data, const complex float* slice, 
 	float (*sa_r2)[R * A][S][3] = xmalloc(sizeof *sa_r2);
 	float (*sa_b1)[R * A][S][3] = xmalloc(sizeof *sa_b1);
 
-        float slice_factor = 1.;
-
-
 	for (data.tmp.spin_counter = 0; data.tmp.spin_counter < S; data.tmp.spin_counter++) {
 
                 float h = 0.0001;
 
-                // Slice Profile Options
-		//	1. Approximate a slice profile
-                //              Half slice profile
-		if (NULL != slice) {
 
-			slice_factor = cabsf(slice[data.tmp.spin_counter]);
+		if (1 != S) {
 
-                //      2. Calculate slice profile by looping over spins with z-gradient
-                //              Full Symmetric slice profile
-		} else if (1 != S) {
+                        // Calculate slice profile by looping over spins with z-gradient
+                        //      Full Symmetric slice profile
 
                         // Ensures central spin on main lope is set
 			assert(1 == S % 2);
+                        assert(0. != _data->seq.slice_thickness);
 
-			data.grad.mom_sl = _data->grad.mom_sl / (S - 1) * (data.tmp.spin_counter - (int)(S / 2.));
-		}
+			data.grad.mom_sl = (_data->grad.sl_gradient_strength * _data->seq.slice_thickness * GAMMA_H1) / (S - 1) * (data.tmp.spin_counter - (int)(S / 2.));
 
-                data.pulse.flipangle = _data->pulse.flipangle * slice_factor;
+                } else {
+
+                        data.seq.slice_thickness = default_slice_thickness;
+
+                        // Define z-Position with slice thickness for single spin
+                        data.grad.mom_sl = _data->grad.sl_gradient_strength * _data->seq.slice_thickness * GAMMA_H1;
+                }
+
+                data.pulse.flipangle = _data->pulse.flipangle;
 
                 // Initialize ODE
 		float xp[P][N];
@@ -916,6 +921,7 @@ void bloch_simulation(const struct sim_data* _data, const complex float* slice, 
 
 		prepare_sim(&data, N, P, &mte[0], &mtr);
 
+
                 // Loop over Pulse Blocks
 
                 data.tmp.t = 0;
@@ -942,7 +948,11 @@ void bloch_simulation(const struct sim_data* _data, const complex float* slice, 
 
 	// Sum up magnetization
 
-        sum_up_signal(data.voxel.m0, data.seq.rep_num / A, data.seq.spin_num, A, mxy, sa_r1, sa_r2, sa_b1, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
+        // Scale signal with density
+        //      - Relative to default slice thickness to keep strength of simulation higher
+        float D = (float)S / (data.seq.slice_thickness / default_slice_thickness);
+
+        sum_up_signal(data.voxel.m0, data.seq.rep_num / A, data.seq.spin_num, A, D, mxy, sa_r1, sa_r2, sa_b1, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
 
 	xfree(mxy);
 	xfree(sa_r1);

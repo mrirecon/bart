@@ -171,8 +171,9 @@ TRF=0.001       # Pulse Duration [s]
 FA=6            # Flip Angle [degree]
 BWTP=4          # Bandwidth-Time-Product
 OFF=0           # Off-Resonance [rad/s]
-MOMSL=0         # Slice Selection Gradient Moment [rad/s]
-
+SLGRAD=0        # Slice Selection Gradient Strength [T/m]
+SLTHICK=0       # Thickness of Simulated Slice [m]
+NSPINS=1        # Number of Simulated Spins
 
 # Run Simulation
 for i in `seq 0 $((${#T1[@]}-1))`; do
@@ -180,7 +181,7 @@ for i in `seq 0 $((${#T1[@]}-1))`; do
         echo -e "Tube $i\t T1: ${T1[$i]} s,\tT2[$i]: ${T2[$i]} s"
 
         bart sim        --ODE \
-                        --seq $SEQ,tr=$TR,te=$TE,nrep=$REP,ipl=$IPL,isp=$ISP,ppl=$PPL,trf=$TRF,fa=$FA,bwtp=$BWTP,off=$OFF,mom-sl=$MOMSL \
+                        --seq $SEQ,tr=$TR,te=$TE,nrep=$REP,ipl=$IPL,isp=$ISP,ppl=$PPL,trf=$TRF,fa=$FA,bwtp=$BWTP,off=$OFF,sl-grad=$SLGRAD,slice-thickness=$SLTHICK,nspins=$NSPINS \
                         -1 ${T1[$i]}:${T1[$i]}:1 -2 ${T2[$i]}:${T2[$i]}:1 \
                         _simu$(printf "%02d" $i)
 done
