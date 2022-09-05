@@ -34,7 +34,8 @@
 
 
 
-struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf, const struct noir_model_conf_s* conf, _Bool use_gpu)
+struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf,
+			float scaling_M0, float scaling_R1s, const struct noir_model_conf_s* conf, _Bool use_gpu)
 {
 	long data_dims[DIMS];
 	md_select_dims(DIMS, ~COEFF_FLAG, data_dims, dims);
@@ -55,7 +56,8 @@ struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const
 
 #if 1
 	// chain T1 model
-	struct nlop_s* T1 = nlop_T1_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, use_gpu);
+	struct nlop_s* T1 = nlop_T1_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI,
+			scaling_M0, scaling_R1s, use_gpu);
 
 	debug_print_dims(DP_INFO, DIMS, nlop_generic_domain(T1, 0)->dims);
 	debug_print_dims(DP_INFO, DIMS, nlop_generic_codomain(T1, 0)->dims);

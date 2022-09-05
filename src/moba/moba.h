@@ -42,6 +42,10 @@ struct moba_conf {
 	bool noncartesian;
         bool sms;
 
+	// T1
+	float scaling_M0;
+	float scaling_R1s;
+
 	bool k_filter;
 	enum edge_filter_t k_filter_type;
 

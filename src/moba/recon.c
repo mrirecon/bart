@@ -197,7 +197,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 	case MDB_T1:
 
-		nl = T1_create(dims, mask, TI, pattern, &mconf, usegpu);
+		nl = T1_create(dims, mask, TI, pattern, conf->scaling_M0, conf->scaling_R1s, &mconf, usegpu);
 		break;
 
 	case MDB_T2:

@@ -37,6 +37,10 @@ struct moba_conf moba_defaults = {
 	.rho = 0.01,
 	.stack_frames = false,
 
+	// T1
+	.scaling_M0 = 1.,
+	.scaling_R1s = 1.,
+
 	// MECO
 	.mgre_model = MECO_WFR2S,
 	.fat_spec = FAT_SPEC_1,
