@@ -41,7 +41,6 @@ int main_looklocker(int argc, char* argv[argc])
 	};
 
 	float threshold = 0.2;
-	float scaling_M0 = 2.0;
 	float Td = 0.;
 
 	const struct opt_s opts[] = {
@@ -76,7 +75,7 @@ int main_looklocker(int argc, char* argv[argc])
 		complex float M0 = MD_ACCESS(DIMS, istrs, (pos[COEFF_DIM] = 1, pos), in_data);
 		complex float R1s = MD_ACCESS(DIMS, istrs, (pos[COEFF_DIM] = 2, pos), in_data);
 
-		float T1 = scaling_M0 * cabs(M0) / (cabs(Ms) * cabs(R1s)) + 2. * Td;
+		float T1 = cabs(M0) / (cabs(Ms) * cabs(R1s)) + 2. * Td;
 
 		if (safe_isnanf(T1) || (cabs(Ms) < threshold))
 			T1 = 0.;
