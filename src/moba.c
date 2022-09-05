@@ -103,6 +103,10 @@ int main_moba(int argc, char* argv[argc])
 
 	float kfilter_strength = 2e-3;
 
+	bool normalize_scaling = false;
+	float scaling = 1.;
+	float scaling_psf = 1.;
+
 	const char* psf_file = NULL;
 	const char* traj_file = NULL;
 	const char* init_file = NULL;
@@ -218,6 +222,9 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "sobolev_a", &conf.sobolev_a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "sobolev_b", &conf.sobolev_b, "", "(b in 1 + a * \\Laplace^-b/2)"),
 		OPTL_SELECT(0, "fat_spec_0", enum fat_spec, &conf.fat_spec, FAT_SPEC_0, "select fat spectrum from ISMRM fat-water tool"),
+		OPTL_FLOAT(0, "scale_data", &scaling, "", "scaling factor for data"),
+		OPTL_FLOAT(0, "scale_psf", &scaling_psf, "", "(scaling factor for PSF)"),
+		OPTL_SET(0, "normalize_scaling", &normalize_scaling, "(normalize scaling by data / PSF)"),
                 OPTL_SUBOPT(0, "seq", "...", "configure sequence parameters", N_seq_opts, seq_opts),
                 OPTL_SUBOPT(0, "sim", "...", "configure simulation parameters", N_sim_opts, sim_opts),
                 OPTL_SUBOPT(0, "other", "...", "configure other parameters", N_other_opts, other_opts),
@@ -483,19 +490,19 @@ int main_moba(int argc, char* argv[argc])
 
 	// scaling
 
-	if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode) || (MDB_T1_PHY == conf.mode) || (MDB_BLOCH == conf.mode)) {
+	if (normalize_scaling) {
 
-		double scaling = 5000. / md_znorm(DIMS, grid_dims, k_grid_data);
-		double scaling_psf = 1000. / md_znorm(DIMS, pat_dims, pattern);
+		scaling /= md_znorm(DIMS, grid_dims, k_grid_data);
+		scaling_psf /= md_znorm(DIMS, pat_dims, pattern);
+	}
 
-		if (conf.sms) {
-
-			scaling *= grid_dims[SLICE_DIM] / 5.0;
-			scaling_psf *= grid_dims[SLICE_DIM] / 5.0;
-		}
+	if (1. != scaling) {
 
 		debug_printf(DP_INFO, "Scaling: %f\n", scaling);
 		md_zsmul(DIMS, grid_dims, k_grid_data, k_grid_data, scaling);
+	}
+
+	if (1. != scaling_psf) {
 
 		debug_printf(DP_INFO, "Scaling_psf: %f\n", scaling_psf);
 		md_zsmul(DIMS, pat_dims, pattern, pattern, scaling_psf);
