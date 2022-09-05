@@ -173,7 +173,9 @@ int main_moba(int argc, char* argv[argc])
 
         struct opt_s other_opts[] = {
 
-                OPTL_FLVEC4(0, "pdscale", &(data.other.scale), "sdR1:sdM0:sdR2:sdB1", "Scaling of partial derivatives for Bloch model-based reconstruction"),
+		// FIXME: MGRE can have 5 parameters
+                OPTL_FLVEC4(0, "pscale", &(data.other.scale), "s1:s2:s3:s4", "Scaling of parameters in model-based reconstruction"),
+                OPTL_FLVEC4(0, "pinit", &(data.other.initval), "i1:i2:i3:i4", "Initial values of parameters in model-based reconstruction"),
                 OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
         };
         const int N_other_opts = ARRAY_SIZE(other_opts);
@@ -532,23 +534,9 @@ int main_moba(int argc, char* argv[argc])
 
                 if (MDB_BLOCH != conf.mode)
 		        md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, msk_strs, mask);
-
-		if ((MDB_T1 == conf.mode) || (MDB_T2 == conf.mode)) {
-
-			// Choose a different initial guess for R1* / R2
-			long pos[DIMS] = { 0 };
-
-			pos[COEFF_DIM] = (MDB_T2 == conf.mode) ? 1 : 2;
-
-			md_copy_block(DIMS, pos, single_map_dims, single_map, img_dims, img, CFL_SIZE);
-			md_zsmul2(DIMS, single_map_dims, single_map_strs, single_map, single_map_strs, single_map, conf.sms ? 2.0 : 1.5);
-			md_copy_block(DIMS, pos, img_dims, img, single_map_dims, single_map, CFL_SIZE);
-		}
 	}
 
         // Scale parameter maps
-
-        complex float initval[4] = { 1., 1., 1., 1. };
 
         long tmp_dims[DIMS];
         md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, tmp_dims, grid_dims);
@@ -557,25 +545,18 @@ int main_moba(int argc, char* argv[argc])
 
         long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-        if ((MDB_T1_PHY == conf.mode) || (MDB_BLOCH == conf.mode)) {
+	assert(img_dims[COEFF_DIM] <= (long)ARRAY_SIZE(data.other.scale));
 
-                // FIXME: Integrate other moba models here -> switch case modifying initval
-                initval[0] = 3.;
+	for (int i = 0; i < img_dims[COEFF_DIM]; i++) {
 
-                for (int i = 0; i < img_dims[COEFF_DIM]; i++) {
+		pos[COEFF_DIM] = i;
 
-                        pos[COEFF_DIM] = i;
+		md_copy_block(DIMS, pos, tmp_dims, tmp, img_dims, img, CFL_SIZE);
 
-                        md_copy_block(DIMS, pos, tmp_dims, tmp, img_dims, img, CFL_SIZE);
+		md_zsmul(DIMS, tmp_dims, tmp, tmp, data.other.initval[i] / (data.other.scale[i] ?: 1));
 
-                        md_zsmul(DIMS, tmp_dims, tmp, tmp, initval[i]);
-
-                        if (0. != data.other.scale[i])
-                                md_zsmul(DIMS, tmp_dims, tmp, tmp, 1. / data.other.scale[i]);
-
-                        md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
-                }
-        }
+		md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
+	}
 
         // Transform B1 map from image to k-space and add k-space to initialization array (img)
 
@@ -618,20 +599,16 @@ int main_moba(int argc, char* argv[argc])
 
         // Rescale estimated parameter maps
 
-        if ((MDB_T1_PHY == conf.mode) || (MDB_BLOCH == conf.mode)) {
+	for (int i = 0; i < img_dims[COEFF_DIM]; i++) {
 
-                for (int i = 0; i < img_dims[COEFF_DIM]; i++) {
+		pos[COEFF_DIM] = i;
 
-                        pos[COEFF_DIM] = i;
+		md_copy_block(DIMS, pos, tmp_dims, tmp, img_dims, img, CFL_SIZE);
 
-                        md_copy_block(DIMS, pos, tmp_dims, tmp, img_dims, img, CFL_SIZE);
+		md_zsmul(DIMS, tmp_dims, tmp, tmp, (data.other.scale[i] ?: 1.));
 
-                        if (0. !=  data.other.scale[i])
-                                md_zsmul(DIMS, tmp_dims, tmp, tmp,  data.other.scale[i]);
-
-                        md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
-                }
-        }
+		md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
+	}
 
         md_free(tmp);
 	md_free(mask);
