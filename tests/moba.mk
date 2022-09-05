@@ -51,7 +51,7 @@ tests/test-moba-t1-sms: phantom signal repmat fft ones index scale moba looklock
 	$(TOOLDIR)/looklocker -t0.1 -D0. reco.ra T1.ra		    			;\
 	$(TOOLDIR)/fmac T1.ra circ2.ra masked.ra		 			;\
 	$(TOOLDIR)/scale -- 1.12 circ2.ra ref.ra		    			;\
-	$(TOOLDIR)/nrmse -t 0.006 masked.ra ref.ra			    		;\
+	$(TOOLDIR)/nrmse -t 0.008 masked.ra ref.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
