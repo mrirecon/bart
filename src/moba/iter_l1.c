@@ -417,8 +417,8 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 
 	auto tmp = operator_p_create(dm->N, dm->dims, dm->N, dm->dims, CAST_UP(PTR_PASS(data)), T1inv_apply, T1inv_del);
 
-#ifdef USE_CUDA
-	if (0 < cuda_num_devices()) {
+#if 0
+	if (0 < cuda_num_devices()) {	// FIXME: not a correct check for GPU mode
 
 		auto tmp2 = tmp;
 
@@ -481,8 +481,8 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 
 		struct lsqr_conf lsqr_conf = lsqr_defaults;
 		lsqr_conf.it_gpu = false;
-#ifdef USE_CUDA
-		if (0 < cuda_num_devices())
+#if 0
+		if (0 < cuda_num_devices())	// FIXME: not correct check for GPU mode
 			lsqr_conf.it_gpu = true;
 #endif
 		lsqr_conf.warmstart = true;
