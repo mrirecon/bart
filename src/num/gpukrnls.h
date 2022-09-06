@@ -67,6 +67,7 @@ extern void cuda_max(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_min(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_zsum(long N, _Complex float* dst);
 extern void cuda_zsmax(long N, float alpha, _Complex float* dst, const _Complex float* src);
+extern void cuda_zsmin(long N, float alpha, _Complex float* dst, const _Complex float* src);
 extern void cuda_pdf_gauss(long N, float mu, float sig, float* dst, const float* src);
 extern void cuda_real(long N, float* dst, const _Complex float* src);
 extern void cuda_imag(long N, float* dst, const _Complex float* src);

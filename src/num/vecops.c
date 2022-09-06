@@ -467,6 +467,12 @@ static void zsmax(long N, float val, complex float* dst, const complex float* sr
 		dst[i] = MAX(crealf(src[i]), val);
 }
 
+static void zsmin(long N, float val, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = MIN(crealf(src[i]), val);
+}
+
 
 static void vec_pow(long N, float* dst, const float* src1, const float* src2)
 {
@@ -821,6 +827,7 @@ const struct vec_ops cpu_ops = {
 	.zfsq2 = zfsq2,
 
 	.zsmax = zsmax,
+	.zsmin = zsmin,
 	.zsmul = zsmul,
 	.zsadd = zsadd,
 

@@ -1291,6 +1291,23 @@ extern "C" void cuda_zsmax(long N, float alpha, _Complex float* dst, const _Comp
 	kern_zsmax<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, alpha, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
 
+__global__ void kern_zsmin(long N, float val, cuFloatComplex* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride) {
+
+		dst[i].x = MIN(src[i].x, val);
+		dst[i].y = 0.0;
+	}
+}
+
+extern "C" void cuda_zsmin(long N, float alpha, _Complex float* dst, const _Complex float* src)
+{
+	kern_zsmin<<<gridsize(N), blocksize(N)>>>(N, alpha, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+}
+
 __global__ void kern_reduce_zsum(long N, cuFloatComplex* dst)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;

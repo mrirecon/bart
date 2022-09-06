@@ -3968,6 +3968,24 @@ void md_zsmax2(int D, const long dim[D], const long ostr[D], complex float* optr
 #endif
 }
 
+/**
+ * Elementwise maximum of input and scalar (with strides)
+ *
+ * optr = min(val, real(iptr))
+ */
+void md_zsmin2(int D, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, float val)
+{
+	// FIXME: we should rather optimize md_zmul2 for this case
+
+	NESTED(void, nary_zsmin, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zsmin(data->size, val, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dim, ostr, optr, istr, iptr,
+		(size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zsmin);
+}
+
 
 /**
  * Elementwise maximum of input and scalar (without strides)

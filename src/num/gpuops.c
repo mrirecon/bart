@@ -952,6 +952,7 @@ const struct vec_ops gpu_ops = {
 	.zsmul = cuda_zsmul,
 	.zsadd = cuda_zsadd,
 	.zsmax = cuda_zsmax,
+	.zsmin = cuda_zsmin,
 
 	.zmul = cuda_zmul,
 	.zdiv = cuda_zdiv,

@@ -75,6 +75,7 @@ struct vec_ops {
 
 	void (*zmax)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zsmax)(long N, float alpha, _Complex float* dst, const _Complex float* src);
+	void (*zsmin)(long N, float alpha, _Complex float* dst, const _Complex float* src);
 
 	void (*smax)(long N, float val, float* dst, const float* src1);
 	void (*max)(long N, float* dst, const float* src1, const float* src2);
