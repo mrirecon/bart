@@ -49,7 +49,7 @@ struct moba_conf {
 	bool k_filter;
 	enum edge_filter_t k_filter_type;
 
-	bool auto_norm_off;
+	bool auto_norm;
 	bool stack_frames;
 	int algo;	// enum algo_t
 	float rho;

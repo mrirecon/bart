@@ -253,7 +253,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 	if (MDB_T1 == conf->mode) {
 
-		if ((2 == conf->opt_reg) || (conf->auto_norm_off))
+		if ((2 == conf->opt_reg) || (!conf->auto_norm))
 			irgnm_conf.cgtol = 1e-3;
 	}
 
@@ -267,7 +267,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		.step = conf->step,
 		.lower_bound = conf->lower_bound,
 		.constrained_maps = 1UL << (dims[COEFF_DIM] - 1), // Always constrain last parameter map as default
-		.auto_norm_off = conf->auto_norm_off,
+		.auto_norm = conf->auto_norm,
                 .not_wav_maps = 0,
 		.algo = conf->algo,
 		.rho = conf->rho,

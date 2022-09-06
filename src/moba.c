@@ -116,8 +116,6 @@ int main_moba(int argc, char* argv[argc])
 	struct opt_reg_s ropts;
 	conf.ropts = &ropts;
 
-	bool unused = false;
-
 	long img_vec[3] = { 0 };
 
         struct moba_conf_s data;
@@ -204,7 +202,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_FLOAT('B', &conf.lower_bound, "bound", "lower bound for relaxation"),
 		OPT_FLVEC2('b', &conf.scale_fB0, "SMO:SC", "B0 field: spatial smooth level; scaling [default: 222.; 1.]"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
-		OPT_SET('N', &unused, "(normalize)"), // no-op
+		OPT_SET('N', &conf.auto_norm, "(normalize)"),
 		OPT_FLOAT('f', &restrict_fov, "FOV", ""),
 		OPT_INFILE('p', &psf_file, "PSF", ""),
 		OPT_SET('J', &conf.stack_frames, "Stack frames for joint recon"),
@@ -219,7 +217,7 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_SELECT(0, "kfilter-1", enum edge_filter_t, &conf.k_filter_type, EF1, "k-space edge filter 1"),
 		OPTL_SELECT(0, "kfilter-2", enum edge_filter_t, &conf.k_filter_type, EF2, "k-space edge filter 2"),
 		OPT_FLOAT('e', &kfilter_strength, "kfilter_strength", "strength for k-space edge filter [default: 2e-3]"),
-		OPT_SET('n', &conf.auto_norm_off, "disable normalization of parameter maps for thresholding"),
+		OPT_CLEAR('n', &conf.auto_norm, "(disable normalization of parameter maps for thresholding)"),
 		OPTL_CLEAR(0, "no_alpha_min_exp_decay", &conf.alpha_min_exp_decay, "(Use hard minimum instead of exponential decay towards alpha_min)"),
 		OPTL_FLOAT(0, "sobolev_a", &conf.sobolev_a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "sobolev_b", &conf.sobolev_b, "", "(b in 1 + a * \\Laplace^-b/2)"),

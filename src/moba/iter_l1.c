@@ -422,7 +422,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 	struct T1inv_s idata = {
 
 		{ &TYPEID(T1inv_s) }, nlop_clone(nlop), conf,
-		N, M, 1.0, ndims, true, 0, prox1, conf->auto_norm_off ? prox1 : prox2
+		N, M, 1.0, ndims, true, 0, prox1, conf->auto_norm ? prox2 : prox1
 	};
 
 	data->data = idata;
