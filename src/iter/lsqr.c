@@ -56,6 +56,7 @@ static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void
 
 	linop_normal_unchecked(data->model_op, args[0], args[1]);
 
+	assert(args[0] != args[1]);
 	md_axpy(1, MD_DIMS(data->size), args[0], data->l2_lambda, args[1]);
 }
 

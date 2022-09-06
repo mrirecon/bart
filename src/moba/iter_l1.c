@@ -93,7 +93,12 @@ static void normal(iter_op_data* _data, float* dst, const float* src)
 	long time = data->dims[TIME_DIM];
 	long time2 = data->dims[TIME2_DIM];
 	long slices = data->dims[SLICE_DIM];
+
+	if (0. == data->alpha)
+		return;
  
+	assert(dst != src);
+
         if (1 == data->conf->opt_reg) {
  
                 md_axpy(1, MD_DIMS(data->size_x * coils / (coils + parameters)),
@@ -168,17 +173,24 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 {
 	auto data = CAST_DOWN(T1inv_s, _data);
 
-	data->alpha = alpha;	// update alpha for normal operator
-
+	data->alpha = 0.;
 
 	void* x = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
 	md_gaussian_rand(1, MD_DIMS(data->size_x / 2), x);
+
 	double maxeigen = power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x);
+
 	md_free(x);
+#if 0
+	maxeigen += alpha;
+#endif
+	data->alpha = alpha;	// update alpha for normal operator
+
+	assert(data->conf->step < 1.);
 
 	double step = data->conf->step / maxeigen;
 
-	debug_printf(DP_DEBUG3, "##reg. alpha = %f\n", alpha);
+	debug_printf(DP_DEBUG3, "##max eigenv = %f, step = %f, alpha = %f\n", maxeigen, step, alpha);
 
 	wavthresh_rand_state_set(data->prox1, 1);
     

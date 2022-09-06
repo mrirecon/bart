@@ -117,7 +117,7 @@ tests/test-moba-t1-nufft: traj transpose phantom signal nufft fft ones index sca
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
 	$(TOOLDIR)/moba -L -l1 -i11 -C200 -j0.01 --scale_data=5000. --scale_psf=1000. --normalize_scaling -p psf.ra k_space.ra TI.ra reco.ra	;\
 	$(TOOLDIR)/moba -L -l1 -i11 -C200 -j0.01 --scale_data=5000. --scale_psf=1000. --normalize_scaling -o1.0 -t traj.ra data.ra TI.ra reco2.ra ;\
-	$(TOOLDIR)/nrmse -t 0.00003 reco.ra reco2.ra			    		;\
+	$(TOOLDIR)/nrmse -t 0.00007 reco.ra reco2.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -459,7 +459,8 @@ TESTS_SLOW += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
 TESTS_SLOW += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
 TESTS_SLOW += tests/test-moba-t2
 TESTS_SLOW += tests/test-moba-meco-noncart-r2s tests/test-moba-meco-noncart-wfr2s
-TESTS_SLOW += tests/test-moba-bloch-irflash-psf tests/test-moba-bloch-irflash-traj tests/test-moba-bloch-irflash-traj-fixfa tests/test-moba-bloch-irflash-r2fix
+TESTS_SLOW += tests/test-moba-bloch-irflash-psf
+TESTS_SLOW += tests/test-moba-bloch-irflash-traj tests/test-moba-bloch-irflash-traj-fixfa tests/test-moba-bloch-irflash-r2fix
 TESTS_SLOW += tests/test-moba-t1-phy-psf tests/test-moba-t1-phy-traj
 TESTS_SLOW += tests/test-moba-bloch-irbssfp-psf tests/test-moba-bloch-irbssfp-traj tests/test-moba-bloch-irbssfp-traj-input-b1 tests/test-moba-bloch-irbssfp-traj-av-spokes
 TESTS_SLOW += tests/test-moba-bloch-irbssfp-traj-slice-profile
