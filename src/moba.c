@@ -141,9 +141,9 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "te", &(data.sim.seq.te), "float", "Echo time [s]"),
                 OPTL_INT(0, "nspins", &(data.sim.seq.spin_num), "int", "Number of averaged spins"),
                 OPTL_SET(0, "pinv", &(data.sim.seq.perfect_inversion), "Use perfect inversions"),
-                OPTL_FLOAT(0, "ipl", &(data.sim.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
-                OPTL_FLOAT(0, "isp", &(data.sim.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
-                OPTL_FLOAT(0, "ppl", &(data.sim.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
+                OPTL_FLOAT(0, "ipl", &(data.sim.seq.inversion_pulse_length), "float", "Inversion-pulse length [s]"),
+                OPTL_FLOAT(0, "isp", &(data.sim.seq.inversion_spoiler), "float", "Inversion spoiler gradient length [s]"),
+                OPTL_FLOAT(0, "ppl", &(data.sim.seq.prep_pulse_length), "float", "Preparation-pulse length [s]"),
                 OPTL_INT(0, "av-spokes", &(data.sim.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
 
                 /* Pulse Specific Parameters */
@@ -155,7 +155,7 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "off", &(data.sim.voxel.w), "float", "Off-Resonance [rad/s]"),
 
 		/* Slice Profile Parameters */
-                OPTL_FLOAT(0, "sl-grad", &(data.sim.grad.sl_gradient_strength), "float", "Strength of Slice Selection Gradient [T/m]"),
+                OPTL_FLOAT(0, "sl-grad", &(data.sim.grad.sl_gradient_strength), "float", "Strength of slice-selection gradient [T/m]"),
                 OPTL_FLOAT(0, "slice-thickness", &(data.sim.seq.slice_thickness), "float", "Thickness of simulated slice. [m]"),
 
         };
@@ -210,7 +210,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('O', &conf.out_origin_maps, "(Output original maps from reconstruction without post processing)"),
 		OPT_SET('g', &conf.use_gpu, "use gpu"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
-		OPT_INFILE('t', &traj_file, "Traj", ""),
+		OPT_INFILE('t', &traj_file, "traj", "K-space trajectory"),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.]"),
 		OPTL_VEC3(0, "img_dims", &img_vec, "x:y:z", "dimensions"),
 		OPT_SET('k', &conf.k_filter, "k-space edge filter for non-Cartesian trajectories"),
