@@ -19,6 +19,23 @@ tests/test-moba-t1: phantom signal fft ones index scale moba looklocker fmac nrm
 	touch $@
 
 
+tests/test-moba-t1-gpu: phantom signal fmac fft ones index scale moba nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
+	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
+	$(TOOLDIR)/signal -I -F -r0.005 -n100 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/fmac circ.ra signal.ra image.ra					;\
+	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
+	$(TOOLDIR)/ones 6 16 16 1 1 1 100 psf.ra					;\
+	$(TOOLDIR)/index 5 100 tmp1.ra   						;\
+	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
+	$(TOOLDIR)/moba -L -i11 -f1 -C100 --other pinit=1:1:2:1 --scale_data=5000. --scale_psf=1000. --normalize_scaling -p psf.ra k_space.ra TI.ra reco.ra	;\
+	$(TOOLDIR)/moba -g -L -i11 -f1 -C100 --other pinit=1:1:2:1 --scale_data=5000. --scale_psf=1000. --normalize_scaling -p psf.ra k_space.ra TI.ra reco2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0005 reco2.ra reco.ra			    		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
 tests/test-moba-t1-magn: phantom signal fft ones index scale moba normalize slice fmac nrmse 
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
@@ -464,4 +481,6 @@ TESTS_SLOW += tests/test-moba-bloch-irflash-traj tests/test-moba-bloch-irflash-t
 TESTS_SLOW += tests/test-moba-t1-phy-psf tests/test-moba-t1-phy-traj
 TESTS_SLOW += tests/test-moba-bloch-irbssfp-psf tests/test-moba-bloch-irbssfp-traj tests/test-moba-bloch-irbssfp-traj-input-b1 tests/test-moba-bloch-irbssfp-traj-av-spokes
 TESTS_SLOW += tests/test-moba-bloch-irbssfp-traj-slice-profile
+
+TESTS_GPU += tests/test-moba-t1-gpu
 
