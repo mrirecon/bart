@@ -84,7 +84,7 @@ static bool test_nlop_T1fun_der(void)
 
 	nlop_free(T1);
 
-	UT_ASSERT(err < 1.E-1);
+	UT_ASSERT(err < 1.E-3);
 }
 
 UT_REGISTER_TEST(test_nlop_T1fun_der);

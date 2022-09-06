@@ -94,6 +94,9 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	// R1s
 	pos[COEFF_DIM] = 2;
 	md_copy_block(data->N, pos, data->map_dims, data->R1s, data->in_dims, src, CFL_SIZE);
+	if (!use_compat_to_version("v0.7.00"))
+		md_zreal(data->N, data->map_dims, data->R1s, data->R1s);
+
 
 	// -1*scaling_R1s.*R1s
 	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp_map, data->map_strs, data->R1s, -1.0*data->scaling_R1s);
