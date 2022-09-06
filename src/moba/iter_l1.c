@@ -181,9 +181,9 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 	double maxeigen = power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x);
 
 	md_free(x);
-#if 0
+
 	maxeigen += alpha;
-#endif
+
 	data->alpha = alpha;	// update alpha for normal operator
 
 	assert(data->conf->step < 1.);
