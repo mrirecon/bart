@@ -377,7 +377,7 @@ int main_moba(int argc, char* argv[argc])
 
 		unmap_cfl(DIMS, ksp_dims, kspace_data);
 
-		if (0 == md_check_compat(DIMS, COIL_FLAG, ksp_dims, pat_dims))
+		if (!md_check_compat(DIMS, COIL_FLAG, ksp_dims, pat_dims))
 			error("pattern not compatible with kspace dimensions\n");
 
 		if (-1 == restrict_fov)
