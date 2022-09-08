@@ -246,6 +246,9 @@ int main_moba(int argc, char* argv[argc])
 
         // debug_sim(&(data.sim));
         // debug_other(&(data.other));
+	if (use_compat_to_version("v0.6.00"))
+		conf.scaling_M0 = 2.;
+
 
 	if (conf.ropts->r > 0)
 		conf.algo = ALGO_ADMM;

@@ -128,7 +128,10 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	md_zmul2(data->N, data->out_dims, data->out_strs, tmp_exp, data->out_strs, tmp_exp, data->TI_strs, multiplace_read(data->TI, dst));
 
 	// scaling_R1s.*exp(-t.*scaling_R1s.*R1s).*t
-	md_zsmul(data->N, data->out_dims, tmp_exp, tmp_exp, data->scaling_R1s);
+	if (!use_compat_to_version("v0.6.00"))
+		md_zsmul(data->N, data->out_dims, tmp_exp, tmp_exp, data->scaling_R1s);
+	else
+		md_zsmul(data->N, data->out_dims, tmp_exp, tmp_exp, data->scaling_M0);
 
 	// scaling_M0.*M0
 	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp_map, data->map_strs, data->M0, data->scaling_M0);
