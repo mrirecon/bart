@@ -180,7 +180,7 @@ static void T1_der(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	// tmp =  dR1s
 	pos[COEFF_DIM] = 2;
 	md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, src, CFL_SIZE);
-	if (!use_compat_to_version("v0.7.00"))
+	if (!use_compat_to_version("v0.6.00"))
 		md_zreal(data->N, data->map_dims, tmp_map, tmp_map);
 
 	//const complex float* tmp_R1s = (const void*)src + md_calc_offset(data->N, data->in_strs, pos);

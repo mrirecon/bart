@@ -14,6 +14,7 @@
 #include "misc/mri.h"
 #include "misc/debug.h"
 #include "misc/misc.h"
+#include "misc/version.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -94,10 +95,13 @@ static void normal(iter_op_data* _data, float* dst, const float* src)
 	long time2 = data->dims[TIME2_DIM];
 	long slices = data->dims[SLICE_DIM];
 
+// We do not enforce this for now, for backwards compatibility
+#if 0
 	if (0. == data->alpha)
 		return;
  
 	assert(dst != src);
+#endif
 
         if (1 == data->conf->opt_reg) {
  
@@ -173,18 +177,25 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 {
 	auto data = CAST_DOWN(T1inv_s, _data);
 
-	data->alpha = 0.;
+	double maxeigen = 0.;
+
+	if (!use_compat_to_version("v0.6.00")) {
+
+		data->alpha = 0.;
+		maxeigen = alpha;
+	} else {
+
+		data->alpha = alpha;
+	}
 
 	void* x = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
 	md_gaussian_rand(1, MD_DIMS(data->size_x / 2), x);
 
-	double maxeigen = power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x);
+	maxeigen += power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x);
 
 	md_free(x);
 
-	maxeigen += alpha;
-
-	data->alpha = alpha;	// update alpha for normal operator
+	data->alpha = alpha;	// reset alpha
 
 	assert(data->conf->step < 1.);
 
