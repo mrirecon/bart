@@ -628,9 +628,12 @@ const char* ptr_vprintf(const char* fmt, va_list ap)
 	va_list ap1;
 	va_copy(ap1, ap);
 
-	size_t len = vsnprintf(NULL, 0, fmt, ap1);
+	ssize_t len = vsnprintf(NULL, 0, fmt, ap1);
 
 	va_end(ap1);
+
+	if (len < 0)
+		abort();
 
 	PTR_ALLOC(char[len + 1], result);
 
