@@ -815,13 +815,6 @@ NOT_SUPPORTED=tests/test-io tests/test-io2 tests/test-join-append tests/test-joi
 TESTS = $(filter-out $(NOT_SUPPORTED),$(TMP_TESTS))
 endif
 
-# script tests
-
-SCRIPTDIR=$(root)/scripts
-STESTS_TMP=$(root)/stests/tmp/$$$$/
-STESTS_OUT=$(root)/stests/out/
-
-include $(root)/stests/*.mk
 
 test:	${TESTS}
 
@@ -833,7 +826,6 @@ gputest: ${TESTS_GPU}
 
 pythontest: ${TESTS_PYTHON}
 
-scripttest:	${STESTS}
 
 # unit tests
 
