@@ -1,3 +1,8 @@
+/* Copyright 2021-2022. Uecker Lab. University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ **/
+
 #include <assert.h>
 #include <float.h>
 #include <stdbool.h>
@@ -1145,7 +1150,8 @@ void eval_reconet(struct reconet_s* config, int N, const long max_dims[N], int N
 	auto loss = val_measure_create(config->valid_loss, N, tout_dims);
 	int NL = nn_get_nr_out_args(loss);
 
-	auto loss_op = nlop_clone(nn_get_nlop(loss));
+	const struct nlop_s* loss_op = nlop_clone(nn_get_nlop(loss));
+
 	for (int i = 1; i < NL; i++)
 		loss_op = nlop_stack_outputs_F(loss_op, 0, 1, 0);
 

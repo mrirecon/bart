@@ -1,3 +1,7 @@
+/* Copyright 2022. TU Graz. Institute of Biomedical Imaging.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ **/
 
 #include <assert.h>
 #include <math.h>

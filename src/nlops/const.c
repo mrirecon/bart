@@ -28,6 +28,7 @@ struct const_s {
 	const long* dims;
 	const long* strs;
 	const complex float* xn_ref;
+
 	struct multiplace_array_s* xn_cop;
 
 	bool copied;

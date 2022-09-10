@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2022. Martin Uecker.
+# Copyright 2022. TU Graz. Institute of Biomedical Imaging.
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 #
@@ -229,3 +229,4 @@ bart fmac -s $(bart bitmask 6) geom simu2 $output
 [ -d $WORKDIR ] && rm -rf $WORKDIR
 
 exit 0
+

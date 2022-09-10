@@ -1,3 +1,8 @@
+/* Copyright 2021-2022. Uecker Lab. University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ **/
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

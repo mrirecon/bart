@@ -1,10 +1,11 @@
+/* Copyright 2021-2022. Uecker Lab. University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ **/
+
 #include <assert.h>
-#include <float.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
-#include <string.h>
 
 #include "misc/debug.h"
 #include "misc/misc.h"
@@ -70,11 +71,14 @@ static unsigned int get_no_odims_mnist(const struct nnet_s* config, unsigned int
 {
 	UNUSED(config);
 	UNUSED(idims);
+
 	return 2;
 }
+
 static void get_odims_mnist(const struct nnet_s* config, unsigned int NO, long odims[NO], unsigned int NI, const long idims[NI])
 {
 	UNUSED(config);
+
 	odims[0] = 10;
 	odims[1] = idims[2];
 }
@@ -85,11 +89,13 @@ void nnet_init_mnist_default(struct nnet_s* nnet)
 
 		PTR_ALLOC(struct iter6_adadelta_conf, train_conf);
 		*train_conf = iter6_adadelta_conf_defaults;
+
 		nnet->train_conf = CAST_UP(PTR_PASS(train_conf));
 	}
 
 	PTR_ALLOC(struct network_s, network);
 	*network = network_mnist_default;
+
 	nnet->network = PTR_PASS(network);
 
 	nnet->get_no_odims = get_no_odims_mnist;
@@ -109,14 +115,18 @@ static unsigned int get_no_odims_segm(const struct nnet_s* config, unsigned int 
 {
 	UNUSED(config);
 	UNUSED(idims);
+
 	return NI;
 }
 
 static void get_odims_segm(const struct nnet_s* config, unsigned int NO, long odims[NO], unsigned int NI, const long idims[NI])
 {
 	UNUSED(config);
+
 	assert(NO == NI);
+
 	md_copy_dims(NO, odims, idims);
+
 	odims[0] = config->N_segm_labels;
 }
 
@@ -124,10 +134,12 @@ void nnet_init_unet_segm_default(struct nnet_s* nnet, long N_segm_labels)
 {
 	PTR_ALLOC(struct iter6_adam_conf, train_conf);
 	*train_conf = iter6_adam_conf_defaults;
+
 	nnet->train_conf = CAST_UP(PTR_PASS(train_conf));
 
 	PTR_ALLOC(struct network_unet_s, network);
 	*network = network_unet_default_segm;
+
 	nnet->network = CAST_UP(PTR_PASS(network));
 
 	nnet->get_no_odims = get_no_odims_segm;
@@ -155,7 +167,9 @@ static nn_t nnet_network_create(const struct nnet_s* config, unsigned int NO, co
 static nn_t nnet_train_create(const struct nnet_s* config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI])
 {
 	auto train_op = nnet_network_create(config, NO, odims, NI, idims, STAT_TRAIN);
+
 	auto loss = train_loss_create(config->train_loss, NO, odims);
+
 	train_op = nn_chain2_FF(train_op, 0, NULL, loss, 0, NULL);
 
 	return train_op;
@@ -164,6 +178,7 @@ static nn_t nnet_train_create(const struct nnet_s* config, unsigned int NO, cons
 static nn_t nnet_apply_op_create(const struct nnet_s* config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI])
 {
 	auto nn_apply = nnet_network_create(config, NO, odims, NI, idims, STAT_TEST);
+
 	return nn_get_wo_weights_F(nn_apply, config->weights, false);
 }
 
@@ -233,7 +248,9 @@ void train_nnet(struct nnet_s* config,
 
 		auto iov_weight = config->weights->iovs[i];
 		auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i + 2);
+
 		assert(md_check_equal_dims(iov_weight->N, iov_weight->dims, iov_train_op->dims, ~0));
+
 		src[i + 2] = (float*)config->weights->tensors[i];
 	}
 
@@ -260,10 +277,14 @@ void train_nnet(struct nnet_s* config,
 
 		auto nn_validation_loss = nnet_valid_create(config, valid_files);
 		const char* val_names[nn_get_nr_out_args(nn_validation_loss)];
+
 		for (int i = 0; i < nn_get_nr_out_args(nn_validation_loss); i++)
 			val_names[i] = nn_get_out_name_from_arg_index(nn_validation_loss, i, false);
+
 		value_monitors[num_monitors] = monitor_iter6_nlop_create(nn_get_nlop(nn_validation_loss), false, nn_get_nr_out_args(nn_validation_loss), val_names);
+
 		nn_free(nn_validation_loss);
+
 		num_monitors += 1;
 	}
 
@@ -275,6 +296,7 @@ void train_nnet(struct nnet_s* config,
 		nn_export_graph(config->graph_file, nn_train);
 
 	nn_free(nn_train);
+
 	nlop_free(batch_generator);
 
 	monitor_iter6_free(monitor);
@@ -317,12 +339,14 @@ void apply_nnet(	const struct nnet_s* config,
 	md_free(out_tmp);
 }
 
+
 void apply_nnet_batchwise(	const struct nnet_s* config,
 				unsigned int NO, const long odims[NO], complex float* out,
 				unsigned int NI, const long idims[NI], const complex float* in,
 				long Nb)
 {
 	long Nt = odims[NO - 1];
+
 	while (0 < Nt) {
 
 		long odims1[NO];
@@ -355,12 +379,15 @@ extern void eval_nnet(	struct nnet_s* nnet,
 
 	auto loss = val_measure_create(nnet->valid_loss, NO, odims);
 	int N = nn_get_nr_out_args(loss);
+
 	complex float losses[N];
+
 	md_clear(1, MD_DIMS(N), losses, CFL_SIZE);
 
 	apply_nnet_batchwise(nnet, NO, odims, tmp_out, NI, idims, in, Nb);
 
 	complex float* args[N + 2];
+
 	for (int i = 0; i < N; i++)
 		args[i] = losses + i;
 
@@ -368,6 +395,7 @@ extern void eval_nnet(	struct nnet_s* nnet,
 	args[N + 1] = (complex float*)out;
 
 	nlop_generic_apply_select_derivative_unchecked(nn_get_nlop(loss), N + 2, (void**)args, 0, 0);
+
 	for (int i = 0; i < N ; i++)
 		debug_printf(DP_INFO, "%s: %e\n", nn_get_out_name_from_arg_index(loss, i, false), crealf(losses[i]));
 

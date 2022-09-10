@@ -1,8 +1,13 @@
+/* Copyright 2021-2022. Uecker Lab. University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ **/
+
 #include <complex.h>
 #include <stdbool.h>
 #include <assert.h>
-#include <math.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "misc/debug.h"
 #include "misc/opts.h"
@@ -166,8 +171,8 @@ static nn_t unet_sort_names(nn_t network, struct network_unet_s* unet)
 
 	const char* names[unet->N_level][ARRAY_SIZE(prefixes)][ARRAY_SIZE(weights)];
 
-	for (int i = 0; i < unet->N_level; i++)
-		for (unsigned int j = 0; j < ARRAY_SIZE(prefixes); j++)
+	for (int i = 0; i < unet->N_level; i++) {
+		for (unsigned int j = 0; j < ARRAY_SIZE(prefixes); j++) {
 			for (unsigned int k = 0; k < ARRAY_SIZE(weights); k++) {
 
 				names[i][j][k] = ptr_printf("level_%d%s_%s", i, prefixes[j], weights[k]);
@@ -175,6 +180,8 @@ static nn_t unet_sort_names(nn_t network, struct network_unet_s* unet)
 				if (unet->real_constraint && nn_is_name_in_in_args(network, names[i][j][k]))
 					network = nn_real_input_F(network, 0, names[i][j][k]);
 			}
+		}
+	}
 
 	int N = unet->N_level * ARRAY_SIZE(prefixes) * ARRAY_SIZE(weights);
 
@@ -227,13 +234,16 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 	const char* layer_name = ptr_printf("%s%s", config->conv ? "conv" : "corr", (config->adjoint) ? "_adj" : "");
 	const char* name = ptr_printf("%s%s%s", name_prefix, layer_name, name_postfix);
 	const char* name_tmp = ptr_printf("%s%s_tmp", name_prefix, layer_name);
+
 	xfree(layer_name);
 
 	stack = config->stack && nn_is_name_in_in_args(network, name);
 	name_working = stack ? name_tmp : name;
 
 	unsigned long in_flag = (config->adjoint ? out_flag_conv_generic : in_flag_conv_generic)(N, config->conv_flag, config->channel_flag, config->group_flag);
+
 	const struct initializer_s* init_conv = NULL;
+
 	if (config->init_zero && !config->use_bn)
 		init_conv = init_const_create(0);
 	else
@@ -247,6 +257,7 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 	if (config->stack) {
 
 		network = nn_append_singleton_dim_in_F(network, 0, name_working);
+
 		if (stack)
 			network = nn_stack_inputs_F(network, 0, name, 0, name_tmp, -1);
 	}
@@ -306,6 +317,7 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 
 			if(config->stack)
 				network = nn_append_singleton_dim_in_F(network, 0, name_working);
+
 			if (stack)
 				network = nn_stack_inputs_F(network, 0, name, 0, name_tmp, -1);
 
@@ -324,8 +336,10 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 
 		network = nn_append_activation_bias(network, o, oname, name_working, config->activation, (config->channel_flag | config->group_flag));
 		network = nn_append_singleton_dim_in_F(network, 0, name_working);
+
 		if(config->stack)
 			network = nn_append_singleton_dim_in_F(network, 0, name_working);
+
 		if (stack)
 			network = nn_stack_inputs_F(network, 0, name, 0, name_tmp, -1);
 
@@ -396,6 +410,7 @@ static nn_t unet_sample_fft_create(struct network_unet_s* unet, unsigned int N, 
 		down_dims[i] = MD_IS_SET(unet->conv_flag, i) ? MAX(1, round(dims[i] / unet->reduce_factor)) : dims[i];
 
 	const struct linop_s* linop_result = linop_fftc_create(N, dims, unet->conv_flag);
+
 	linop_result = linop_chain_FF(linop_result, linop_resize_center_create(N, down_dims, dims));
 	linop_result = linop_chain_FF(linop_result, linop_ifftc_create(N, down_dims, unet->conv_flag));
 
@@ -452,7 +467,6 @@ static nn_t unet_sample_conv_strided_create(struct network_unet_s* unet, unsigne
 
 			kdims[i] = dims[i];
 		}
-
 	}
 
 	struct nn_conv_block_s config;
@@ -491,6 +505,7 @@ static nn_t unet_downsample_create(struct network_unet_s* unet, unsigned int N, 
 
 	case UNET_DS_FFT:
 		return unet_sample_fft_create(unet, N, dims, down_dims, false, status);
+
 	case UNET_DS_STRIDED_CONV:
 		return unet_sample_conv_strided_create(unet, N, dims, down_dims, false, level, status);
 	}
@@ -504,6 +519,7 @@ static nn_t unet_upsample_create(struct network_unet_s* unet, unsigned int N, co
 
 	case UNET_US_FFT:
 		return unet_sample_fft_create(unet, N, dims, down_dims, true, status);
+
 	case UNET_US_STRIDED_CONV:
 		return unet_sample_conv_strided_create(unet, N, dims, down_dims, true, level, status);
 	}
@@ -516,6 +532,7 @@ static void unet_get_kdims(const struct network_unet_s* config, unsigned int N, 
 	if (0 != md_calc_size(config->N, config->kdims)) {
 
 		md_copy_dims(N, kdims, config->kdims);
+
 	} else {
 
 		assert(1 == bitcount(config->channel_flag));
@@ -633,10 +650,12 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, unsigned int N
 	if (!last_same) {
 
 		int prefix_len = snprintf(NULL, 0, "level_%u_last_", level);
+
 		char prefix[prefix_len + 1];
 		sprintf(prefix, "level_%u_last_", level);
 
 		bool last_layer = (unet->us_method != UNET_US_STRIDED_CONV);
+
 		result = unet_append_conv_block(result, unet, N, okdims, last_layer ? ACT_LIN : unet->activation, level, true, last_layer, prefix, status);
 	}
 
@@ -660,7 +679,7 @@ static nn_t unet_level_create(struct network_unet_s* unet, unsigned int N, const
 	long okdims[N];
 	md_copy_dims(N, okdims, kdims);
 
-	for(unsigned int i = 0; i < N; i++) {
+	for (unsigned int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(unet->channel_flag, i) || MD_IS_SET(unet->group_flag, i))
 			okdims[i] = odims[i];
@@ -732,6 +751,7 @@ static nn_t unet_level_create(struct network_unet_s* unet, unsigned int N, const
 	auto nn_ds = unet_downsample_create(unet, N, nn_generic_codomain(result, 0, NULL)->dims, down_dims_in, level, status);
 	long down_dims_out[N];
 	auto nn_us = unet_upsample_create(unet, N, nn_generic_codomain(result, 0, NULL)->dims, down_dims_out, level, status);
+
 	//FIXME: currently, a level is not allowed to change spatial dimensions (valid convolution)
 	//While the upsampling opperator should define the channel dimensions, the lower level should define the spatial dims
 
@@ -741,9 +761,12 @@ static nn_t unet_level_create(struct network_unet_s* unet, unsigned int N, const
 
 	long tdims[N];
 	md_copy_dims(N, tdims, nn_generic_codomain(result, 0, NULL)->dims);
+
 	const struct nlop_s* nlop_join = NULL;
+
 	if (UNET_COMBINE_ATTENTION_SIGMOID == unet->combine_method)
 		nlop_join = nlop_tenmul_create(N, tdims, tdims, tdims);
+
 	if (UNET_COMBINE_ADD == unet->combine_method)
 		nlop_join = nlop_zaxpbz_create(N, nn_generic_codomain(result, 0, NULL)->dims, 1, 1);
 
@@ -753,6 +776,7 @@ static nn_t unet_level_create(struct network_unet_s* unet, unsigned int N, const
 	result = nn_chain2_swap_FF(result, 0, NULL, lower_level, 0, NULL);
 
 	enum ACTIVATION activation_last_layer = unet->activation_output;
+
 	if (0 != level) {
 
 		activation_last_layer = ACT_LIN;

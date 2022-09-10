@@ -1,3 +1,11 @@
+/* Copyright 2021. Uecker Lab. University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ *
+ * Authors: Moritz Blumenthal
+ */
+
+
 #include "misc/misc.h"
 #include "misc/types.h"
 #include "misc/debug.h"
@@ -197,11 +205,13 @@ static void norm_inv_der_src(const nlop_data_t* _data, unsigned int o, unsigned 
 	UNUSED(i);
 
 	const auto d = CAST_DOWN(norm_inv_s, _data);
-	assert(0 == d->iter_conf.tol);
+
+	assert(0. == d->iter_conf.tol);
 
 	if (d->store_nlop) {
 
 		norm_inv(d, dst, src);
+
 	} else {
 
 		norm_inv_set_ops(d, MD_BIT(0));
@@ -217,7 +227,8 @@ static void norm_inv_adj_src(const nlop_data_t* _data, unsigned int o, unsigned 
 	UNUSED(i);
 
 	const auto d = CAST_DOWN(norm_inv_s, _data);
-	assert(0 == d->iter_conf.tol);
+
+	assert(0. == d->iter_conf.tol);
 
 	norm_inv_compute_adjoint(d, dst, src);
 }
@@ -229,6 +240,7 @@ static void norm_inv_der_par(const nlop_data_t* _data, unsigned int o, unsigned 
 	assert(0 < i);
 
 	const auto d = CAST_DOWN(norm_inv_s, _data);
+
 	assert(0 == d->iter_conf.tol);
 
 	complex float* tmp = md_alloc_sameplace(d->dom[0]->N, d->dom[0]->dims, CFL_SIZE, dst);
