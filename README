@@ -199,10 +199,12 @@ build the ISMRM raw data import tool:
 
 
     .			main directory / built software tools
-    Makefile		Makefile
+    Makefile		makefile
+    Makefiles/		directory for custom makefiles
     matlab/		Matlab helper scripts
     python/		Python helper functions
     doc/		documentation
+    pkg/		packaging for Fedora
     rules/		more built-related files
     scripts/		various helper scripts and examples
     src/		source code
@@ -213,17 +215,22 @@ build the ISMRM raw data import tool:
     src/moba/		source code for model-based reconstruction
     src/networks/	source code for neural networks
     src/wavelet/	source code for wavelets
+    src/dfwavelet/	source code for divergence-free wavelets
     src/lowrank/	source code for low-rank regularization
-    src/num/		base library with numerical functions
-    src/misc/		miscellaneous (e.g. I/O)
-    src/geom/		geometric computations
-    src/iter/		iterative algorithms
+    src/simu/		source code for MRI simulation
+    src/noncart/	source code for non-uniform FFT
+    src/iter/		library of iterative algorithms
     src/linops/		library of linear operators
     src/nlops/		library of nonlinear operators
-    src/nn/		infrastructure for neural networks
+    src/nn/		library for neural networks
+    src/geom/		library for geometric computations
+    src/num/		base library with numerical functions
+    src/misc/		miscellaneous (e.g. I/O)
+    src/lapacke/	copy of a part of LAPACKE
+    src/grecon/		helper functions for generic reconstructions
     src/ismrm/		support for ISMRM raw data format
-    src/simu/		source code for simulation
-    src/noncart/	source code for non-uniform FFT
+    src/python/		support for Python
+    src/win/		support for Windows
     tests/		system tests
     utests/		unit tests
     lib/		built software libraries
@@ -371,7 +378,7 @@ positions.
 
 The k-space coordinates for each sample are stored along dimension 0
 which must have size equal to three. The unit of measurement is 1/FOV.
-Dimension 1 stores the samples along a single readout windows while
+Dimension 1 stores the samples along a single readout window while
 dimension 2 may be used to differentiate between different lines
 (e.g. radial spokes). Channel (3) and map (4) dimensions must not
 be used (i.e. have size one), while other dimensions can be used
