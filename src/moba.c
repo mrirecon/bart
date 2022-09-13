@@ -157,6 +157,7 @@ int main_moba(int argc, char* argv[argc])
 		/* Slice Profile Parameters */
                 OPTL_FLOAT(0, "sl-grad", &(data.sim.grad.sl_gradient_strength), "float", "Strength of slice-selection gradient [T/m]"),
                 OPTL_FLOAT(0, "slice-thickness", &(data.sim.seq.slice_thickness), "float", "Thickness of simulated slice. [m]"),
+		OPTL_FLOAT(0, "nom-slice-thickness", &(data.sim.seq.nom_slice_thickness), "float", "Nominal thickness of simulated slice. [m]"),
 
         };
         const int N_seq_opts = ARRAY_SIZE(seq_opts);

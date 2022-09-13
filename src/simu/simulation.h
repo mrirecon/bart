@@ -38,6 +38,7 @@ struct simdata_seq {
 
         int averaged_spokes;
 	float slice_thickness;
+	float nom_slice_thickness;
 
         bool pulse_applied;
 };

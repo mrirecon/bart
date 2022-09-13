@@ -47,6 +47,7 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tPPL:%f\n", data->seq.prep_pulse_length);
         debug_printf(DP_INFO, "\tAveraged Spokes:%d\n", data->seq.averaged_spokes);
         debug_printf(DP_INFO, "\tSlice Thickness:%f m\n", data->seq.slice_thickness);
+	debug_printf(DP_INFO, "\tNominal Slice Thickness:%f m\n", data->seq.nom_slice_thickness);
         debug_printf(DP_INFO, "\tPulse Applied?:%d\n\n", data->seq.pulse_applied);
 
         debug_printf(DP_INFO, "Gradient-Parameter:\n");
@@ -107,6 +108,7 @@ const struct simdata_seq simdata_seq_defaults = {
 
         .averaged_spokes = 1,
         .slice_thickness = 0.,
+	.nom_slice_thickness = 0.001,
 
         .pulse_applied = false,
 };
