@@ -124,14 +124,14 @@ int main_sim(int argc, char* argv[argc])
         struct opt_s seq_opts[] = {
 
                 /* Sequence Specific Parameters */
-                OPTL_SELECT(0, "bssfp", enum sim_seq, &(data.seq.seq_type), SEQ_BSSFP, "bSSFP"),
-                OPTL_SELECT(0, "ir-bssfp", enum sim_seq, &(data.seq.seq_type), SEQ_IRBSSFP, "Inversion-Recovery bSSFP"),
-                OPTL_SELECT(0, "flash", enum sim_seq, &(data.seq.seq_type), SEQ_FLASH, "FLASH"),
-                OPTL_SELECT(0, "ir-flash", enum sim_seq, &(data.seq.seq_type), SEQ_IRFLASH, "Inversion-Recovery FLASH"),
-                OPTL_FLOAT(0, "tr", &(data.seq.tr), "float", "Repetition time [s]"),
-                OPTL_FLOAT(0, "te", &(data.seq.te), "float", "Echo time [s]"),
-                OPTL_INT(0, "nspins", &(data.seq.spin_num), "int", "Number of averaged spins"),
-                OPTL_INT(0, "nrep", &(data.seq.rep_num), "int", "Number of repetitions"),
+                OPTL_SELECT(0, "BSSFP", enum sim_seq, &(data.seq.seq_type), SEQ_BSSFP, "bSSFP"),
+                OPTL_SELECT(0, "IR-BSSFP", enum sim_seq, &(data.seq.seq_type), SEQ_IRBSSFP, "Inversion-Recovery bSSFP"),
+                OPTL_SELECT(0, "FLASH", enum sim_seq, &(data.seq.seq_type), SEQ_FLASH, "FLASH"),
+                OPTL_SELECT(0, "IR-FLASH", enum sim_seq, &(data.seq.seq_type), SEQ_IRFLASH, "Inversion-Recovery FLASH"),
+                OPTL_FLOAT(0, "TR", &(data.seq.tr), "float", "Repetition time [s]"),
+                OPTL_FLOAT(0, "TE", &(data.seq.te), "float", "Echo time [s]"),
+                OPTL_INT(0, "Nspins", &(data.seq.spin_num), "int", "Number of averaged spins"),
+                OPTL_INT(0, "Nrep", &(data.seq.rep_num), "int", "Number of repetitions"),
                 OPTL_SET(0, "pinv", &(data.seq.perfect_inversion), "Use perfect inversions"),
                 OPTL_FLOAT(0, "ipl", &(data.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
                 OPTL_FLOAT(0, "isp", &(data.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
@@ -139,9 +139,9 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_INT(0, "av-spokes", &(data.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
 
                 /* Pulse Specific Parameters */
-                OPTL_FLOAT(0, "trf", &(data.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
-                OPTL_FLOAT(0, "fa", &(data.pulse.flipangle), "float", "Flipangle [deg]"),
-                OPTL_FLOAT(0, "bwtp", &(data.pulse.bwtp), "float", "Bandwidth-Time-Product"),
+                OPTL_FLOAT(0, "Trf", &(data.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
+                OPTL_FLOAT(0, "FA", &(data.pulse.flipangle), "float", "Flipangle [deg]"),
+                OPTL_FLOAT(0, "BWTP", &(data.pulse.bwtp), "float", "Bandwidth-Time-Product"),
 
                 /* Voxel Specific Parameters */
                 OPTL_FLOAT(0, "off", &(data.voxel.w), "float", "Off-Resonance [rad/s]"),

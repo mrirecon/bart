@@ -160,12 +160,12 @@ esac
 
 # Simulation Parameters
 #       Run `bart sim --seq h` for more details
-SEQ=ir-flash    # Sequence Type
+SEQ=IR-FLASH    # Sequence Type
 TR=0.0034       # Repetition Time [s]
 TE=0.0021       # Echo Time [s]
 REP=600         # Number of repetitions
-IPL=0.01           # Inversion Pulse Length [s]
-ISP=0.005           # Inversion Spoiler Gradient Length [s]
+IPL=0.01        # Inversion Pulse Length [s]
+ISP=0.005       # Inversion Spoiler Gradient Length [s]
 PPL=0           # Preparation Pulse Length [s]
 TRF=0.001       # Pulse Duration [s]
 FA=6            # Flip Angle [degree]
@@ -181,7 +181,7 @@ for i in `seq 0 $((${#T1[@]}-1))`; do
         echo -e "Tube $i\t T1: ${T1[$i]} s,\tT2[$i]: ${T2[$i]} s"
 
         bart sim        --ODE \
-                        --seq $SEQ,tr=$TR,te=$TE,nrep=$REP,ipl=$IPL,isp=$ISP,ppl=$PPL,trf=$TRF,fa=$FA,bwtp=$BWTP,off=$OFF,sl-grad=$SLGRAD,slice-thickness=$SLTHICK,nspins=$NSPINS \
+                        --seq $SEQ,TR=$TR,TE=$TE,Nrep=$REP,ipl=$IPL,isp=$ISP,ppl=$PPL,Trf=$TRF,FA=$FA,BWTP=$BWTP,off=$OFF,sl-grad=$SLGRAD,slice-thickness=$SLTHICK,Nspins=$NSPINS \
                         -1 ${T1[$i]}:${T1[$i]}:1 -2 ${T2[$i]}:${T2[$i]}:1 \
                         _simu$(printf "%02d" $i)
 done

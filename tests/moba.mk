@@ -226,7 +226,7 @@ tests/test-moba-bloch-irflash-psf: phantom signal fft ones index scale moba slic
 	$(TOOLDIR)/ones 6 16 16 1 1 1 100 psf.ra					;\
 	$(TOOLDIR)/index 5 100 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-flash,tr=0.005,te=0.003,fa=6,trf=0.00001,bwtp=4,pinv,ipl=0,ppl=0 --other pscale=1:1:1:1,pinit=3:1:1:1 -i11 -C300 -s0.95 -R3 -f1 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -p psf.ra k_space.ra TI.ra reco.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-FLASH,TR=0.005,TE=0.003,FA=6,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0 --other pscale=1:1:1:1,pinit=3:1:1:1 -i11 -C300 -s0.95 -R3 -f1 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -p psf.ra k_space.ra TI.ra reco.ra	;\
 	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra						;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra						;\
 	$(TOOLDIR)/fmac r1map.ra circ.ra masked.ra	    				;\
@@ -250,7 +250,7 @@ tests/test-moba-bloch-irflash-traj: traj repmat phantom signal fmac ones scale i
 	$(TOOLDIR)/fmac circ.ra signal.ra k_space.ra					;\
 	$(TOOLDIR)/index 5 1000 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-flash,tr=0.005,te=0.003,fa=6,trf=0.00001,bwtp=4,pinv,ipl=0,ppl=0 --other pscale=1:1:1:1,pinit=3:1:1:1 -i11 -C300 -s0.95 -d3 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-FLASH,TR=0.005,TE=0.003,FA=6,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0 --other pscale=1:1:1:1,pinit=3:1:1:1 -i11 -C300 -s0.95 -d3 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra						;\
 	$(TOOLDIR)/spow -- -1. r1map.ra t1map.ra						;\
 	$(TOOLDIR)/phantom -x8 -c circ2.ra						;\
@@ -275,7 +275,7 @@ tests/test-moba-bloch-irflash-traj-fixfa: traj repmat phantom signal fmac scale 
 	$(TOOLDIR)/fmac circ.ra signal.ra k_space.ra					;\
 	$(TOOLDIR)/index 5 1000 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-flash,tr=0.005,te=0.003,fa=8,trf=0.00001,bwtp=4,pinv,ipl=0,ppl=0 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C30 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-FLASH,TR=0.005,TE=0.003,FA=8,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C30 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra						;\
 	$(TOOLDIR)/spow -- -1. r1map.ra t1map.ra						;\
 	$(TOOLDIR)/phantom -x8 -c circ2.ra						;\
@@ -301,7 +301,7 @@ tests/test-moba-bloch-irflash-r2fix: traj repmat scale phantom signal fmac index
 	$(TOOLDIR)/fmac circ.ra signal.ra k_space.ra					;\
 	$(TOOLDIR)/index 5 1000 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-flash,tr=0.005,te=0.003,fa=8,trf=0.00001,bwtp=4,pinv,ipl=0,ppl=0 --other pscale=1:1:1:1,pinit=3:1:1:1 -i11 -C30 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-FLASH,TR=0.005,TE=0.003,FA=8,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0 --other pscale=1:1:1:1,pinit=3:1:1:1 -i11 -C30 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 2 reco.ra r2map.ra						;\
 	$(TOOLDIR)/ones 2 16 16 ones.ra						;\
 	$(TOOLDIR)/nrmse -t 0.00001 ones.ra r2map.ra			    		;\
@@ -317,7 +317,7 @@ tests/test-moba-t1-phy-psf: phantom signal fft ones index scale moba slice spow 
 	$(TOOLDIR)/ones 6 16 16 1 1 1 300 psf.ra					;\
 	$(TOOLDIR)/index 5 300 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
-	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -d3 --seq tr=0.005 -p psf.ra k_space.ra TI.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -d3 --seq TR=0.005 -p psf.ra k_space.ra TI.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 1 reco.ra r1map.ra						;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra						;\
 	$(TOOLDIR)/fmac r1map.ra circ.ra masked.ra	    				;\
@@ -337,7 +337,7 @@ tests/test-moba-t1-phy-traj: traj repmat scale phantom signal fmac index moba sl
 	$(TOOLDIR)/fmac basis_geom.ra signal.ra k_space.ra				;\
 	$(TOOLDIR)/index 5 300 tmp1.ra							;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra						;\
-	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -d3 --seq tr=0.005 -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -d3 --seq TR=0.005 -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 1 reco.ra r1map.ra						;\
 	$(TOOLDIR)/phantom -x6 -c circ2.ra						;\
 	$(TOOLDIR)/resize -c 0 12 1 12 circ2.ra circ.ra					;\
@@ -360,7 +360,7 @@ tests/test-moba-bloch-irbssfp-psf: traj repmat phantom signal fmac fft ones inde
 	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
 	$(TOOLDIR)/ones 6 16 16 1 1 1 1000 psf.ra					;\
 	$(TOOLDIR)/index 5 1000 dummy_ti.ra 	;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-bssfp,tr=0.0045,te=0.00225,fa=45,trf=0.00001,bwtp=4,pinv,ipl=0,ppl=0.00225 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C300 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -p psf.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-BSSFP,TR=0.0045,TE=0.00225,FA=45,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0.00225 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C300 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -p psf.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra				;\
 	$(TOOLDIR)/phantom -x 8 -c ref.ra				;\
 	$(TOOLDIR)/resize -c 0 16 1 16 ref.ra ref2.ra					;\
@@ -384,7 +384,7 @@ tests/test-moba-bloch-irbssfp-traj: traj repmat phantom signal fmac index moba s
 	$(TOOLDIR)/signal -B -I -r 0.0045 -e 0.00225 -f45 -n 1000 -1 1.25:1.25:1 -2 0.1:0.1:1 basis_simu.ra	;\
 	$(TOOLDIR)/fmac basis_geom.ra basis_simu.ra k_space.ra		;\
 	$(TOOLDIR)/index 5 1000 dummy_ti.ra 	;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-bssfp,tr=0.0045,te=0.00225,fa=45,trf=0.00001,bwtp=4,pinv,ipl=0,ppl=0.00225 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C300 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-BSSFP,TR=0.0045,TE=0.00225,FA=45,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0.00225 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C300 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra				;\
 	$(TOOLDIR)/phantom -x 8 -c ref.ra				;\
 	$(TOOLDIR)/resize -c 0 16 1 16 ref.ra ref2.ra					;\
@@ -410,7 +410,7 @@ tests/test-moba-bloch-irbssfp-traj-input-b1: traj repmat phantom signal fmac ind
 	$(TOOLDIR)/index 5 1000 dummy_ti.ra 	;\
 	$(TOOLDIR)/ones 2 16 16 ones.ra				;\
 	$(TOOLDIR)/scale -- 45 ones.ra b1map.ra				;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-bssfp,tr=0.0045,te=0.00225,fa=1,trf=0.00001,bwtp=4,pinv,ipl=0,ppl=0.00225 --other pscale=1:1:1:0,pinit=3:1:1:1,b1map=b1map.ra -i11 -C300 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-BSSFP,TR=0.0045,TE=0.00225,FA=1,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0.00225 --other pscale=1:1:1:0,pinit=3:1:1:1,b1map=b1map.ra -i11 -C300 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra				;\
 	$(TOOLDIR)/phantom -x 8 -c ref.ra				;\
 	$(TOOLDIR)/resize -c 0 16 1 16 ref.ra ref2.ra					;\
@@ -433,7 +433,7 @@ tests/test-moba-bloch-irbssfp-traj-av-spokes: traj repmat phantom signal fmac in
 	$(TOOLDIR)/signal -B -I -r 0.0045 -e 0.00225 -f45 -n 100 -1 1.25:1.25:1 -2 0.1:0.1:1 --av-spokes 10 basis_simu.ra	;\
 	$(TOOLDIR)/fmac basis_geom.ra basis_simu.ra k_space.ra		;\
 	$(TOOLDIR)/index 5 100 dummy_ti.ra 	;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-bssfp,tr=0.0045,te=0.00225,fa=45,trf=0.00001,bwtp=4,pinv,ipl=0,ppl=0.00225,av-spokes=10 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C150 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-BSSFP,TR=0.0045,TE=0.00225,FA=45,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0.00225,av-spokes=10 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C150 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra				;\
 	$(TOOLDIR)/phantom -x 8 -c ref.ra				;\
 	$(TOOLDIR)/resize -c 0 16 1 16 ref.ra ref2.ra					;\
@@ -454,10 +454,10 @@ tests/test-moba-bloch-irbssfp-traj-slice-profile: traj repmat scale phantom sim 
 	$(TOOLDIR)/repmat 5 100 _traj.ra traj2.ra	;\
 	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
 	$(TOOLDIR)/phantom -c -k -t traj.ra basis_geom.ra				;\
-	$(TOOLDIR)/sim --seq ir-bssfp,tr=0.0045,te=0.00225,nrep=100,pinv,ipl=0,ppl=0.00225,trf=0.001,fa=45,bwtp=4,av-spokes=10,slice-thickness=0.04,sl-grad=0.01,nspins=61 -1 1.25:1.25:1 -2 0.1:0.1:1 basis_simu.ra ;\
+	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=100,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,av-spokes=10,slice-thickness=0.04,sl-grad=0.01,Nspins=61 -1 1.25:1.25:1 -2 0.1:0.1:1 basis_simu.ra ;\
 	$(TOOLDIR)/fmac basis_geom.ra basis_simu.ra k_space.ra		;\
 	$(TOOLDIR)/index 5 100 dummy_ti.ra 	;\
-	$(TOOLDIR)/moba --bloch --sim STM --seq ir-bssfp,tr=0.0045,te=0.00225,fa=45,trf=0.001,bwtp=4,pinv,ipl=0,ppl=0.00225,av-spokes=10,slice-thickness=0.02,sl-grad=0.01,nspins=11 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C250 --scale_data=5000. --scale_psf=1000. --normalize_scaling -s0.95 -R3 -o1 -j0.001 -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-BSSFP,TR=0.0045,TE=0.00225,FA=45,Trf=0.001,BWTP=4,pinv,ipl=0,ppl=0.00225,av-spokes=10,slice-thickness=0.02,sl-grad=0.01,Nspins=11 --other pscale=1:1:1:0,pinit=3:1:1:1 -i11 -C250 --scale_data=5000. --scale_psf=1000. --normalize_scaling -s0.95 -R3 -o1 -j0.001 -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra				;\
 	$(TOOLDIR)/phantom -x 8 -c ref.ra				;\
 	$(TOOLDIR)/resize -c 0 16 1 16 ref.ra ref2.ra					;\
