@@ -16,8 +16,9 @@ struct mdb_irgnm_l1_conf {
 
 	float step;
 	float lower_bound;
-	int constrained_maps;
-	bool auto_norm;
+	unsigned long constrained_maps;
+	unsigned long l2flags;
+	_Bool auto_norm;
 
 	int not_wav_maps;
 	unsigned int algo;

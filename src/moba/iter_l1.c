@@ -7,6 +7,7 @@
  */
 
 #include <assert.h>
+#include <complex.h>
 #include <stdbool.h>
 #include <math.h>
 
@@ -88,12 +89,6 @@ static void normal(iter_op_data* _data, float* dst, const float* src)
 
 	linop_normal_unchecked(nlop_get_derivative(data->nlop, 0, 0), (complex float*)dst, (const complex float*)src);
 
-	long res = data->dims[0];
-	long parameters = data->dims[COEFF_DIM];
-	long coils = data->dims[COIL_DIM];
-	long time = data->dims[TIME_DIM];
-	long time2 = data->dims[TIME2_DIM];
-	long slices = data->dims[SLICE_DIM];
 
 // We do not enforce this for now, for backwards compatibility
 #if 0
@@ -103,17 +98,30 @@ static void normal(iter_op_data* _data, float* dst, const float* src)
 	assert(dst != src);
 #endif
 
-        if (1 == data->conf->opt_reg) {
- 
-                md_axpy(1, MD_DIMS(data->size_x * coils / (coils + parameters)),
-						dst + res * res * 2 * parameters * time * time2 * slices,
-                                                data->alpha,
-						src + res * res * 2 * parameters * time * time2 * slices);
+	long img_dims[DIMS];
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, data->dims);
 
-	} else {
+	long img_strs[DIMS];
+	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);
 
-		md_axpy(1, MD_DIMS(data->size_x), dst, data->alpha, src);
+	long map_dims[DIMS];
+	md_select_dims(DIMS, ~COEFF_FLAG, map_dims, img_dims);
+	
+	long pos[DIMS] = { 0 };
+	for (pos[COEFF_DIM] = 0; pos[COEFF_DIM] < img_dims[COEFF_DIM]; pos[COEFF_DIM]++) {
+
+		complex float* map_dst = &MD_ACCESS(DIMS, img_strs, pos, (complex float*)dst);
+		const complex float* map_src = &MD_ACCESS(DIMS, img_strs, pos, (const complex float*)src);
+
+		if (MD_IS_SET(data->conf->l2flags, pos[COEFF_DIM]))
+			md_zaxpy2(DIMS, map_dims, img_strs, map_dst, data->alpha, img_strs, map_src);
 	}
+
+	complex float* col_dst = ((complex float*)dst) + md_calc_size(DIMS, img_dims);
+	const complex float* col_src = ((const complex float*)src) + md_calc_size(DIMS, img_dims);
+	long col_size = data->size_x / 2 - md_calc_size(DIMS, img_dims);
+
+	md_zaxpy(1, MD_DIMS(col_size), col_dst, data->alpha, col_src);
 }
 
 static void pos_value(iter_op_data* _data, float* dst, const float* src)
