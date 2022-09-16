@@ -117,11 +117,15 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, str
         }
 
         // No Wavelet penalty on flip angle map
+
         if (MDB_T1_PHY == mode) {
 
                 conf2->constrained_maps = 2;     // only R1 map: bitmask (0 1 0) = 2
                 conf2->not_wav_maps = 1;
         }
+
+	conf2->tvscales_N = data->other.tvscales_N;
+	conf2->tvscales = data->other.tvscales;
 }
 
 

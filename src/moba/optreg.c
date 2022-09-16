@@ -390,7 +390,6 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 
 static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
 {
-	UNUSED(optreg_conf);
 	float lambda = ropts->lambda;
 #if 0
 	bool overlapping_blocks = shift_mode == 2;
@@ -475,30 +474,21 @@ static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct op
 			
 			auto grad = linop_grad_create(DIMS, img_dims, DIMS, regs[nr].xflags);
 
-			unsigned int flag_READ  = (regs[nr].xflags & 1);
-			unsigned int flag_TIME  = ((regs[nr].xflags >> 10) & 1);
-			unsigned int flag_TIME2 = ((regs[nr].xflags >> 11) & 1);
+			trafos[nr] = linop_chain(extract, grad);
 
+			if (0 < optreg_conf->tvscales_N) {
 
-			// fixme: hard-coded weighting values
-			if ((flag_TIME && flag_TIME2) || (flag_READ && flag_TIME)) {
+				debug_printf(DP_INFO, "TV anisotropic scaling: %d\n", optreg_conf->tvscales_N);
 
-				complex float diag[4] = {0.4, 0.4, 1.0, 0.2};
-				
-				if (0 == flag_READ) {
+				assert(optreg_conf->tvscales_N == linop_codomain(grad)->dims[DIMS]);
 
-					diag[0] = diag[2];
-					diag[1] = diag[3];
-				}
-
-				trafos[nr] = linop_chain_FF(linop_chain_FF(extract, grad), 
-					linop_cdiag_create(DIMS + 1, linop_codomain(grad)->dims, MD_BIT(DIMS), diag));
-					
-			} else {
-
-				trafos[nr] = linop_chain_FF(extract, grad);
+				trafos[nr] = linop_chain_FF(trafos[nr],
+					linop_cdiag_create(DIMS + 1, linop_codomain(grad)->dims, MD_BIT(DIMS), optreg_conf->tvscales));
 			}
-			
+
+			linop_free(extract);
+			linop_free(grad);
+
 			prox_ops[nr] = prox_thresh_create(DIMS + 1,
 					linop_codomain(trafos[nr])->dims,
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));

@@ -167,9 +167,12 @@ int main_moba(int argc, char* argv[argc])
 
                 OPTL_SELECT(0, "ODE", enum sim_type, &(data.sim.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation"),
                 OPTL_SELECT(0, "STM", enum sim_type, &(data.sim.seq.type), SIM_STM, "state-transition matrix based simulation (default)"),
-
         };
         const int N_sim_opts = ARRAY_SIZE(sim_opts);
+
+
+	int tvscales_N = 4;
+	float tvscales[4] = { 0. };
 
         struct opt_s other_opts[] = {
 
@@ -177,9 +180,8 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_FLVEC4(0, "pscale", &(data.other.scale), "s1:s2:s3:s4", "Scaling of parameters in model-based reconstruction"),
                 OPTL_FLVEC4(0, "pinit", &(data.other.initval), "i1:i2:i3:i4", "Initial values of parameters in model-based reconstruction"),
                 OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
+                OPTL_FLVEC4(0, "tvscale", &tvscales, "s1:s2:s3:s4", "Scaling of derivatives in TV penalty"),
         };
-        const int N_other_opts = ARRAY_SIZE(other_opts);
-
 
 	opt_reg_init(&ropts);
 
@@ -195,7 +197,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_UINT('m', &conf.mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_UINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backsapce \b earlier
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
-		OPT_FLOAT('R', &conf.redu, "redu", "reduction factor"),
+		OPTL_FLOAT('R', "reduction", &conf.redu, "redu", "reduction factor"),
 		OPT_FLOAT('T', &conf.damping, "damp", "damping on temporal frames"),
 		OPT_FLOAT('j', &conf.alpha_min, "minreg", "Minimum regularization parameter"),
 		OPT_FLOAT('u', &conf.rho, "rho", "ADMM rho [default: 0.01]"),
@@ -236,7 +238,7 @@ int main_moba(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (conf.use_gpu || (0 < conf.num_gpu)) {
-		
+
 		num_init_multigpu(MAX(1, conf.num_gpu));
 
 	} else {
@@ -261,6 +263,16 @@ int main_moba(int argc, char* argv[argc])
 
 	if (conf.ropts->r > 0)
 		conf.algo = ALGO_ADMM;
+
+	while ((0 < tvscales_N) && (0. == tvscales[tvscales_N - 1]))
+		tvscales_N--;
+
+	data.other.tvscales_N = tvscales_N;
+
+	for (int i = 0; i < tvscales_N; i++)
+		data.other.tvscales[i] = tvscales[i];
+
+
 
 	long ksp_dims[DIMS];
 	complex float* kspace_data = load_cfl(ksp_file, DIMS, ksp_dims);

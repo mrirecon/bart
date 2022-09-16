@@ -6,6 +6,9 @@ struct optreg_conf {
 
 	unsigned int moba_model;
 	unsigned int weight_fB0_type;
+
+	int tvscales_N;
+	complex float* tvscales;
 };
 
 extern struct optreg_conf optreg_defaults;

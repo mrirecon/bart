@@ -56,6 +56,8 @@ struct moba_other_conf moba_other_defaults = {
         .fov_reduction_factor = 1.,
         .scale = { 1., 1., 1., 1. },
         .initval = { 1., 1., 1., 1. },
+	.tvscales_N = 0,
+	.tvscales = { 1., 1., 1., 1. },
 };
 
 
@@ -93,3 +95,4 @@ void debug_other(struct moba_other_conf* data)
         debug_printf(DP_INFO, "\tR1:%f\n", data->fov_reduction_factor);
         debug_printf(DP_INFO, "\tscale:%f:%f:%f:%f\n", data->scale[0], data->scale[1], data->scale[2], data->scale[3]);
 }
+

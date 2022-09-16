@@ -24,6 +24,8 @@ struct mdb_irgnm_l1_conf {
 	unsigned int algo;
 	float rho;
 	struct opt_reg_s* ropts;
+	int tvscales_N;
+	complex float* tvscales;
 };
 
 void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,

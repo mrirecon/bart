@@ -72,6 +72,9 @@ struct moba_other_conf {
         float fov_reduction_factor;
         float scale[4];
 	float initval[4];
+
+	int tvscales_N;
+	complex float tvscales[4];
 };
 
 extern struct moba_other_conf moba_other_defaults;

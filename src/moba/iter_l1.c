@@ -500,6 +500,8 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 		struct optreg_conf optreg_conf = optreg_defaults;
 
 		optreg_conf.moba_model = IRLL;
+		optreg_conf.tvscales_N = conf->tvscales_N;
+		optreg_conf.tvscales = conf->tvscales;
 
 		opt_reg_moba_configure(DIMS, dims, conf->ropts, thresh_ops, trafos, &optreg_conf);
 
