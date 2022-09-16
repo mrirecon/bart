@@ -109,7 +109,7 @@ static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned lo
 
 
 
-static void compute_kern_basis(unsigned int N, unsigned int flags, const long pos[N],
+static void compute_kern_basis(int N, unsigned long flags, const long pos[N],
 				const long krn_dims[N], complex float* krn,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights)
@@ -189,7 +189,7 @@ static void compute_kern_basis(unsigned int N, unsigned int flags, const long po
 
 
 
-static void compute_kern(unsigned int N, unsigned int flags, const long pos[N],
+static void compute_kern(int N, unsigned long flags, const long pos[N],
 				const long krn_dims[N], complex float* krn,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights)
@@ -218,7 +218,7 @@ static void compute_kern(unsigned int N, unsigned int flags, const long pos[N],
 
 
 
-complex float* compute_psf(unsigned int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
+complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights,
 				bool periodic, bool lowmem)
@@ -272,7 +272,7 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 	complex float* psft = NULL;
 
 	long pos[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		pos[i] = 0;
 
 	long A = md_calc_size(N, ksp2_dims);
@@ -315,7 +315,7 @@ complex float* compute_psf(unsigned int N, const long img_dims[N], const long tr
 
 			debug_printf(DP_DEBUG1, "KERN %03ld\n", i);
 
-			unsigned int flags = ~0u;
+			long flags = ~0UL;
 
 			if (1 != trj2_dims[N - 1])
 				flags = ~(1u << (N - 1u));
@@ -394,7 +394,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 }
 
 
-static struct nufft_data* nufft_create_data(unsigned int N,
+static struct nufft_data* nufft_create_data(int N,
 			const long cim_dims[N], bool basis,
 			struct nufft_conf_s conf)
 {
@@ -404,7 +404,7 @@ static struct nufft_data* nufft_create_data(unsigned int N,
 	data->N = N;
 
 	// extend internal dimensions by one for linear phases
-	unsigned int ND = N + 1;
+	int ND = N + 1;
 
 	data->ksp_dims = *TYPE_ALLOC(long[ND]);
 	data->cim_dims = *TYPE_ALLOC(long[ND]);
@@ -588,7 +588,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 			   const long wgh_dims[N], const complex float* weights,
 			   const long bas_dims[N], const complex float* basis)
 {
-	unsigned int ND = N + 1;
+	int ND = N + 1;
 
 	if (NULL != traj) {
 
@@ -684,7 +684,7 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 
 
-static struct linop_s* nufft_create3(unsigned int N,
+static struct linop_s* nufft_create3(int N,
 			     const long ksp_dims[N],
 			     const long cim_dims[N],
 			     const long traj_dims[N],
@@ -720,7 +720,7 @@ static struct linop_s* nufft_create3(unsigned int N,
 	assert((1 == md_calc_size(N, ksp_dims)) || md_check_bounds(N, ~(conf.flags | (NULL == basis ? 0 : (1 << 6))), cim_dims, ksp_dims));
 
 	// extend internal dimensions by one for linear phases
-	unsigned int ND = N + 1;
+	int ND = N + 1;
 
 	assert((1 == md_calc_size(N, traj_dims)) || (bitcount(conf.flags) == traj_dims[0]));
 
@@ -756,7 +756,7 @@ static struct linop_s* nufft_create3(unsigned int N,
 }
 
 
-struct linop_s* nufft_create2(unsigned int N,
+struct linop_s* nufft_create2(int N,
 			     const long ksp_dims[N],
 			     const long cim_dims[N],
 			     const long traj_dims[N],
@@ -862,7 +862,7 @@ struct linop_s* nufft_create_normal(int N, const long cim_dims[N],
 	return result;
 }
 
-struct linop_s* nufft_create(unsigned int N,			///< Number of dimension
+struct linop_s* nufft_create(int N,				///< Number of dimension
 			     const long ksp_dims[N],		///< kspace dimension
 			     const long cim_dims[N],		///< Coil images dimension
 			     const long traj_dims[N],		///< Trajectory dimension
@@ -1144,7 +1144,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 static void toeplitz_mult(const struct nufft_data* data, complex float* dst, const complex float* src)
 {
-	unsigned int ND = data->N + 1;
+	int ND = data->N + 1;
 
 	const complex float* linphase = multiplace_read(data->linphase, src);
 	const complex float* psf = multiplace_read(data->psf, src);
