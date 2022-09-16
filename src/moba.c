@@ -161,14 +161,12 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "nom-slice-thickness", &(data.sim.seq.nom_slice_thickness), "float", "Nominal thickness of simulated slice. [m]"),
 
         };
-        const int N_seq_opts = ARRAY_SIZE(seq_opts);
 
         struct opt_s sim_opts[] = {
 
                 OPTL_SELECT(0, "ODE", enum sim_type, &(data.sim.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation"),
                 OPTL_SELECT(0, "STM", enum sim_type, &(data.sim.seq.type), SIM_STM, "state-transition matrix based simulation (default)"),
         };
-        const int N_sim_opts = ARRAY_SIZE(sim_opts);
 
 
 	int tvscales_N = 4;
@@ -230,9 +228,9 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "scale_data", &scaling, "", "scaling factor for data"),
 		OPTL_FLOAT(0, "scale_psf", &scaling_psf, "", "(scaling factor for PSF)"),
 		OPTL_SET(0, "normalize_scaling", &normalize_scaling, "(normalize scaling by data / PSF)"),
-                OPTL_SUBOPT(0, "seq", "...", "configure sequence parameters", N_seq_opts, seq_opts),
-                OPTL_SUBOPT(0, "sim", "...", "configure simulation parameters", N_sim_opts, sim_opts),
-                OPTL_SUBOPT(0, "other", "...", "configure other parameters", N_other_opts, other_opts),
+                OPTL_SUBOPT(0, "seq", "...", "configure sequence parameters", ARRAY_SIZE(seq_opts), seq_opts),
+                OPTL_SUBOPT(0, "sim", "...", "configure simulation parameters", ARRAY_SIZE(sim_opts), sim_opts),
+                OPTL_SUBOPT(0, "other", "...", "configure other parameters", ARRAY_SIZE(other_opts), other_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
