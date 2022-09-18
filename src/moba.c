@@ -459,9 +459,6 @@ int main_moba(int argc, char* argv[argc])
 		unmap_cfl(DIMS, ksp_dims, kspace_data);
 	}
 
-        if (MDB_BLOCH == conf.mode)
-		data.other.fov_reduction_factor = restrict_fov;
-
 	if (conf.k_filter) {
 
 		long map_dims[DIMS];
@@ -543,6 +540,8 @@ int main_moba(int argc, char* argv[argc])
 
 		md_zfill(DIMS, msk_dims, mask, 1.);
 
+		data.other.fov_reduction_factor = 1;
+
 	} else {
 
 		float restrict_dims[DIMS] = { [0 ... DIMS - 1] = 1. };
@@ -551,6 +550,8 @@ int main_moba(int argc, char* argv[argc])
 		restrict_dims[2] = restrict_fov;
 
 		mask = compute_mask(DIMS, msk_dims, restrict_dims);
+
+		data.other.fov_reduction_factor = restrict_fov;
 
                 if (MDB_BLOCH != conf.mode)
 		        md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, msk_strs, mask);
