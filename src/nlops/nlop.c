@@ -1221,3 +1221,46 @@ void nlop_export_graph(const char* filename, const struct nlop_s* op)
 {
 	operator_export_graph_dot(filename, op->op);
 }
+
+const struct nlop_s* nlop_copy_wrapper(int OO, const long* ostrs[OO], int II, const long* istrs[II], const struct nlop_s* nlop)
+{
+	PTR_ALLOC(struct nlop_s, n);
+
+	assert(nlop_get_nr_in_args(nlop) == II);
+	assert(nlop_get_nr_out_args(nlop) == OO);
+
+	const long* strs[II + OO];
+
+	for (int i = 0; i < OO; i++)
+		strs[i] = ostrs[i];
+
+	for (int i = 0; i < II; i++)
+		strs[OO + i] = istrs[i];
+
+	n->op = operator_copy_wrapper(OO + II, strs, nlop->op);
+
+	const struct linop_s* (*der)[II][OO] = (void*)nlop->derivative;
+
+	PTR_ALLOC(const struct linop_s*[II][OO], nder);
+
+	for (int ii = 0; ii < II; ii++)
+		for (int oo = 0; oo < OO; oo++) {
+
+			auto lop = (struct linop_s*)((*der)[ii][oo]);
+			
+			int DO = linop_codomain(lop)->N;
+			int DI = linop_domain(lop)->N;
+
+			(*nder)[ii][oo] = linop_copy_wrapper2(DI, istrs[ii], DO, ostrs[oo], lop);
+		}
+
+	n->derivative = &(*PTR_PASS(nder))[0][0];
+	return PTR_PASS(n);
+}
+
+const struct nlop_s* nlop_copy_wrapper_F(int OO, const long* ostrs[OO], int II, const long* istrs[II], const struct nlop_s* nlop)
+{
+	auto result = nlop_copy_wrapper(OO, ostrs, II, istrs, nlop);
+	nlop_free(nlop);
+	return result;
+}

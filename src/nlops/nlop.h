@@ -143,5 +143,8 @@ extern void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned 
 
 extern void nlop_export_graph(const char* filename, const struct nlop_s* op);
 
+extern const struct nlop_s* nlop_copy_wrapper(int OO, const long* ostrs[OO], int II, const long* istrs[II], const struct nlop_s* nlop);
+extern const struct nlop_s* nlop_copy_wrapper_F(int OO, const long* ostrs[OO], int II, const long* istrs[II], const struct nlop_s* nlop);
+
 #endif
 
