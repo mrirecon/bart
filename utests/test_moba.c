@@ -52,7 +52,7 @@ static bool test_nlop_T1fun(void)
 
 	md_zfill(N, in_dims, src, 1.0);
 
-	struct nlop_s* T1 = nlop_T1_create(N, map_dims, out_dims, in_dims, TI_dims, TI, 2., 1., false);
+	struct nlop_s* T1 = nlop_T1_create(N, map_dims, out_dims, in_dims, TI_dims, TI, 2., 1.);
 
 	nlop_apply(T1, N, out_dims, dst, N, in_dims, src);
 	
@@ -79,7 +79,7 @@ static bool test_nlop_T1fun_der(void)
 	complex float TI[4] = { 0., 1., 2., 3. };
 
 
-	struct nlop_s* T1 = nlop_T1_create(N, map_dims, out_dims, in_dims, TI_dims, TI, 2., 1., false);
+	struct nlop_s* T1 = nlop_T1_create(N, map_dims, out_dims, in_dims, TI_dims, TI, 2., 1.);
 	float err = nlop_test_derivative(T1);
 
 	nlop_free(T1);

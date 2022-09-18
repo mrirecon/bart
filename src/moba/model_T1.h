@@ -20,6 +20,6 @@ struct mobamod {
 
 
 extern struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf,
-				float scaling_M0, float scaling_R1s, const struct noir_model_conf_s* conf, _Bool use_gpu);
+				float scaling_M0, float scaling_R1s, const struct noir_model_conf_s* conf, float fov);
 
 
