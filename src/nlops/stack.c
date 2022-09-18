@@ -614,3 +614,306 @@ const struct nlop_s* nlop_stack_container_create_F(int N, const struct nlop_s* n
 	return result;
 }
 
+struct stack_flatten_trafo_s {
+
+	INTERFACE(linop_data_t);
+
+	long isize;
+	long osize;
+
+	int N;
+	
+	long* ioff;
+	long* ooff;
+
+	int* D;
+	long** dims;
+	long** ostrs;
+	long** istrs;
+
+	bool dup;
+};
+
+static DEF_TYPEID(stack_flatten_trafo_s);
+
+
+static void stack_flatten_trafo_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	const auto d = CAST_DOWN(stack_flatten_trafo_s, _data);
+
+	for (int i = 0; i < d->N; i++)
+		md_copy2(d->D[i], d->dims[i], d->ostrs[i], dst + d->ooff[i], d->istrs[i], src + d->ioff[i], CFL_SIZE);
+}
+
+static void stack_flatten_trafo_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	const auto d = CAST_DOWN(stack_flatten_trafo_s, _data);
+
+	if (d->dup) {
+
+		md_clear(1, MD_DIMS(d->isize), dst, CFL_SIZE);
+		for (int i = 0; i < d->N; i++)
+			md_zadd2(d->D[i], d->dims[i], d->istrs[i], dst + d->ioff[i], d->istrs[i], dst + d->ioff[i], d->ostrs[i], src + d->ooff[i]);
+
+	} else {
+
+		for (int i = 0; i < d->N; i++)
+			md_copy2(d->D[i], d->dims[i], d->istrs[i], dst + d->ioff[i], d->ostrs[i], src + d->ooff[i], CFL_SIZE);
+	}
+}
+
+static void stack_flatten_trafo_free(const linop_data_t* _data)
+{
+	const auto d = CAST_DOWN(stack_flatten_trafo_s, _data);
+
+	for (int i = 0; i < d->N; i++) {
+
+		xfree(d->dims[i]);
+		xfree(d->istrs[i]);
+		xfree(d->ostrs[i]);
+	}
+
+	xfree(d->D);
+	xfree(d->dims);
+	xfree(d->ostrs);
+	xfree(d->istrs);
+	xfree(d->ooff);
+	xfree(d->ioff);
+
+	xfree(d);
+}
+
+
+static struct nlop_s* nlop_flatten_stacked_transform_input_create(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II])
+{
+	PTR_ALLOC(struct stack_flatten_trafo_s, d);
+	SET_TYPEID(stack_flatten_trafo_s, d);
+
+	d->N = N * II;
+
+	d->D = *TYPE_ALLOC(int[d->N]);
+	d->dims = *TYPE_ALLOC(long*[d->N]);
+	d->ostrs = *TYPE_ALLOC(long*[d->N]);
+	d->istrs = *TYPE_ALLOC(long*[d->N]);
+	d->ooff = *TYPE_ALLOC(long[d->N]);
+	d->ioff = *TYPE_ALLOC(long[d->N]);
+
+	int (*D)[II][N] = (void*)d->D;
+	long* (*dims)[II][N] = (void*)d->dims;
+	long* (*ostrs)[II][N] = (void*)d->ostrs;
+	long* (*istrs)[II][N] = (void*)d->istrs;
+	long (*ooff)[II][N] = (void*)d->ooff;
+	long (*ioff)[II][N] = (void*)d->ioff;
+
+	long* st_dims[II];
+	
+	for (int i = 0; i < II; i++) {
+
+		for (int j = 0; j < N; j++) {
+
+			auto iov = nlop_generic_domain(nlops[j], i);
+
+			(*D)[i][j] = iov->N;
+			(*dims)[i][j] = ARR_CLONE(long[iov->N], iov->dims);
+			(*ostrs)[i][j] = ARR_CLONE(long[iov->N], iov->strs);
+
+			if (0 == j) {
+				st_dims[i] = ARR_CLONE(long[iov->N], iov->dims);
+
+			} else {
+
+				if (-1 == in_stack_dim[i])
+					assert(md_check_equal_dims(iov->N, st_dims[i], iov->dims, ~0));
+				else {
+					assert(md_check_equal_dims(iov->N, st_dims[i], iov->dims, ~MD_BIT(in_stack_dim[i])));
+					st_dims[i][in_stack_dim[i]] += iov->dims[in_stack_dim[i]];
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < II; i++) {
+
+		long pos = 0;
+		long strs[(*D)[i][0]];
+		md_calc_strides((*D)[i][0], strs, st_dims[i], CFL_SIZE);
+
+		for (int j = 0; j < N; j++) {
+
+			(*istrs)[i][j] = ARR_CLONE(long[(*D)[i][j]], strs);
+			(*ioff)[i][j] = (-1 == in_stack_dim[i]) ? 0 : pos * strs[in_stack_dim[i]] / CFL_SIZE;
+			pos += (-1 == in_stack_dim[i]) ? 0 : (*dims)[i][j][in_stack_dim[i]];
+		}
+	}
+
+	d->isize = 0;
+
+	for (int i = 0; i < II; i++) {
+
+		for (int j = 0; j < N; j++)
+			(*ioff)[i][j] += d->isize;
+
+		d->isize += md_calc_size((*D)[i][0], st_dims[i]);
+		xfree(st_dims[i]);
+	}
+
+	d->osize = 0;
+
+	for (int j = 0; j < N; j++)
+		for (int i = 0; i < II; i++) {
+
+			(*ooff)[i][j] = d->osize;
+			d->osize += md_calc_size((*D)[i][j], (*dims)[i][j]);
+		}
+	
+	d->dup = false;
+	for (int i = 0; i < II; i++)
+		d->dup = d->dup || (-1 == in_stack_dim[i]);
+
+	long odims[1] = { d->osize };
+	long idims[1] = { d->isize };
+
+	return nlop_from_linop_F(linop_create(1, odims, 1, idims, CAST_UP(PTR_PASS(d)), stack_flatten_trafo_apply, stack_flatten_trafo_adjoint, NULL, NULL, stack_flatten_trafo_free));
+}
+
+
+
+static struct nlop_s* nlop_flatten_stacked_transform_output_create(int N, const struct nlop_s* nlops[N], int OO, int out_stack_dim[OO])
+{
+	PTR_ALLOC(struct stack_flatten_trafo_s, d);
+	SET_TYPEID(stack_flatten_trafo_s, d);
+
+	d->N = N * OO;
+
+	d->D = *TYPE_ALLOC(int[d->N]);
+	d->dims = *TYPE_ALLOC(long*[d->N]);
+	d->ostrs = *TYPE_ALLOC(long*[d->N]);
+	d->istrs = *TYPE_ALLOC(long*[d->N]);
+	d->ooff = *TYPE_ALLOC(long[d->N]);
+	d->ioff = *TYPE_ALLOC(long[d->N]);
+
+	int (*D)[OO][N] = (void*)d->D;
+	long* (*dims)[OO][N] = (void*)d->dims;
+	long* (*ostrs)[OO][N] = (void*)d->ostrs;
+	long* (*istrs)[OO][N] = (void*)d->istrs;
+	long (*ooff)[OO][N] = (void*)d->ooff;
+	long (*ioff)[OO][N] = (void*)d->ioff;
+
+	long* st_dims[OO];
+	
+	for (int i = 0; i < OO; i++) {
+
+		for (int j = 0; j < N; j++) {
+
+			auto iov = nlop_generic_codomain(nlops[j], i);
+
+			(*D)[i][j] = iov->N;
+			(*dims)[i][j] = ARR_CLONE(long[iov->N], iov->dims);
+			(*istrs)[i][j] = ARR_CLONE(long[iov->N], iov->strs);
+
+			if (0 == j) {
+				st_dims[i] = ARR_CLONE(long[iov->N], iov->dims);
+
+			} else {
+
+				assert(0 <= out_stack_dim[i]);
+				assert(md_check_equal_dims(iov->N, st_dims[i], iov->dims, ~MD_BIT(out_stack_dim[i])));
+				st_dims[i][out_stack_dim[i]] += iov->dims[out_stack_dim[i]];
+			}
+		}
+	}
+
+	for (int i = 0; i < OO; i++) {
+
+		long pos = 0;
+		long strs[(*D)[i][0]];
+		md_calc_strides((*D)[i][0], strs, st_dims[i], CFL_SIZE);
+
+		for (int j = 0; j < N; j++) {
+
+			(*ostrs)[i][j] = ARR_CLONE(long[(*D)[i][j]], strs);
+			(*ooff)[i][j] = pos * strs[out_stack_dim[i]] / CFL_SIZE;
+			pos += (*dims)[i][j][out_stack_dim[i]];
+		}
+	}
+
+	d->osize = 0;
+
+	for (int i = 0; i < OO; i++) {
+
+		for (int j = 0; j < N; j++)
+			(*ooff)[i][j] += d->osize;
+
+		d->osize += md_calc_size((*D)[i][0], st_dims[i]);
+		xfree(st_dims[i]);
+	}
+
+	d->isize = 0;
+
+	for (int j = 0; j < N; j++)
+		for (int i = 0; i < OO; i++) {
+
+			(*ioff)[i][j] = d->isize;
+			d->isize += md_calc_size((*D)[i][j], (*dims)[i][j]);
+		}
+	
+	d->dup = false;
+
+	long odims[1] = { d->osize };
+	long idims[1] = { d->isize };
+
+	return nlop_from_linop_F(linop_create(1, odims, 1, idims, CAST_UP(PTR_PASS(d)), stack_flatten_trafo_apply, stack_flatten_trafo_adjoint, NULL, NULL, stack_flatten_trafo_free));
+}
+
+const struct nlop_s* nlop_flatten_stacked(const struct nlop_s* nlop)
+{
+	auto _data = nlop_get_data_nested(nlop);
+	if (NULL == _data)
+		return NULL;
+
+	auto data = CAST_MAYBE(stack_container_s, _data);	
+	if (NULL == data)
+		return NULL;
+
+	int N = data->Nnlops;
+	int II = data->II;
+	int OO = data->OO;
+
+	auto itrafo = data->simple_flatten_in ? NULL : nlop_flatten_stacked_transform_input_create(N, data->nlops_original, II, data->istack_dims);
+	auto otrafo = data->simple_flatten_out ? NULL : nlop_flatten_stacked_transform_output_create(N, data->nlops_original, OO, data->ostack_dims);
+
+	const struct nlop_s* nlops[data->Nnlops];
+	for (int i = 0; i < data->Nnlops; i++)
+		nlops[i] = nlop_flatten(data->nlops_original[i]);
+
+	int istack_dims[1] = { 0 };
+	int ostack_dims[1] = { 0 };
+	
+	auto result = nlop_stack_container_create_F(data->Nnlops, nlops, 1, istack_dims, 1, ostack_dims);
+
+	if (NULL != itrafo)
+		result = nlop_chain_FF(itrafo, result);
+	
+	if (NULL == otrafo)
+		return result;
+
+	auto frw = operator_chain(nlop_get_derivative(result,0,0)->forward, nlop_get_derivative(otrafo,0,0)->forward);
+	auto adj = operator_chain(nlop_get_derivative(otrafo,0,0)->adjoint, nlop_get_derivative(result,0,0)->adjoint);
+	auto nrm = nlop_get_derivative(result,0,0)->normal;
+
+	PTR_ALLOC(struct nlop_s, n);
+
+	auto der = TYPE_ALLOC(const struct linop_s*[1][1]);
+	(*der)[0][0] = linop_from_ops(frw, adj, nrm, NULL);
+	n->derivative = &(*der)[0][0];
+
+	n->op = operator_chain(result->op, otrafo->op);
+
+	operator_free(frw);
+	operator_free(adj);
+
+	nlop_free(result);
+	nlop_free(otrafo);
+
+	return PTR_PASS(n);
+}

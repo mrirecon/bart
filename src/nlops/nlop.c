@@ -26,6 +26,7 @@
 #include "misc/list.h"
 #include "misc/graph.h"
 
+#include "nlops/stack.h"
 #include "nlop.h"
 
 
@@ -819,6 +820,10 @@ static void flatten_del(const nlop_data_t* _data)
 
 struct nlop_s* nlop_flatten(const struct nlop_s* op)
 {
+	auto result = nlop_flatten_stacked(op);
+	if (NULL != result)
+		return (struct nlop_s*)result;
+
 	int II = nlop_get_nr_in_args(op);
 	int OO = nlop_get_nr_out_args(op);
 
