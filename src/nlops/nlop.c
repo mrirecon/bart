@@ -871,6 +871,13 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 	return nlop_create2(1, odims, ostrs, 1, idims, istrs, CAST_UP(PTR_PASS(data)), flatten_fun, flatten_der, flatten_adj, NULL, NULL, flatten_del);
 }
 
+struct nlop_s* nlop_flatten_F(const struct nlop_s* op)
+{
+	auto result = nlop_flatten(op);
+	nlop_free(op);
+	return result;
+}
+
 
 const struct nlop_s* nlop_flatten_get_op(struct nlop_s* op)
 {
