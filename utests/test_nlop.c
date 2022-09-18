@@ -831,6 +831,187 @@ static bool test_stack(void)
 
 UT_REGISTER_TEST(test_stack);
 
+static bool test_stack_multiple(void)
+{
+	enum { N = 3 };
+	long idims1_1[N] = { 3, 5, 3 };
+	long idims2_1[N] = { 1, 5, 1 };
+	long odims_1[N] = { 3, 5, 3 };
+
+	long idims1_2[N] = { 3, 5, 1 };
+	long idims2_2[N] = { 1, 5, 1 };
+	long odims_2[N] = { 3, 5, 1 };
+
+	const struct nlop_s* nlops[3];
+
+	for (int i = 0; i < 3; i++)
+		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
+	
+	const struct nlop_s* nlop1 = nlop_stack_multiple_F(3, nlops, 2, (int[2]){ 2, -1}, 1, (int[1]){ 2 });
+	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
+
+	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
+
+	nlop_free(nlop1);
+	nlop_free(nlop2);
+
+	UT_ASSERT(ok);
+}
+
+UT_REGISTER_TEST(test_stack_multiple);
+
+static bool test_stack_multiple2(void)
+{
+	enum { N = 3 };
+	long idims1_1[N] = { 3, 5, 3 };
+	long idims2_1[N] = { 1, 1, 3 };
+	long odims_1[N] = { 3, 5, 3 };
+
+	long idims1_2[N] = { 3, 1, 3 };
+	long idims2_2[N] = { 1, 1, 3 };
+	long odims_2[N] = { 3, 1, 3 };
+
+	const struct nlop_s* nlops[5];
+
+	for (int i = 0; i < 5; i++)
+		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
+	
+	const struct nlop_s* nlop1 = nlop_stack_multiple_F(5, nlops, 2, (int[2]){ 1, -1}, 1, (int[1]){ 1 });
+	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
+
+	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
+
+	nlop_free(nlop1);
+	nlop_free(nlop2);
+
+	UT_ASSERT(ok);
+}
+
+UT_REGISTER_TEST(test_stack_multiple2);
+
+static bool test_stack_multiple_container(void)
+{
+	enum { N = 3 };
+	long idims1_1[N] = { 3, 5, 3 };
+	long idims2_1[N] = { 1, 5, 1 };
+	long odims_1[N] = { 3, 5, 3 };
+
+	long idims1_2[N] = { 3, 5, 1 };
+	long idims2_2[N] = { 1, 5, 1 };
+	long odims_2[N] = { 3, 5, 1 };
+
+	const struct nlop_s* nlops[3];
+
+	for (int i = 0; i < 3; i++)
+		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
+	
+	const struct nlop_s* nlop1 = nlop_stack_container_create_F(3, nlops, 2, (int[2]){ 2, -1}, 1, (int[1]){ 2 });
+	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
+
+	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
+
+	nlop_free(nlop1);
+	nlop_free(nlop2);
+
+	UT_ASSERT(ok);
+}
+
+UT_REGISTER_TEST(test_stack_multiple_container);
+
+static bool test_stack_multiple_container2(void)
+{
+	enum { N = 3 };
+	long idims1_1[N] = { 3, 5, 3 };
+	long idims2_1[N] = { 1, 1, 3 };
+	long odims_1[N] = { 3, 5, 3 };
+
+	long idims1_2[N] = { 3, 1, 3 };
+	long idims2_2[N] = { 1, 1, 3 };
+	long odims_2[N] = { 3, 1, 3 };
+
+	const struct nlop_s* nlops[5];
+
+	for (int i = 0; i < 5; i++)
+		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
+	
+	const struct nlop_s* nlop1 = nlop_stack_container_create_F(5, nlops, 2, (int[2]){ 1, -1}, 1, (int[1]){ 1 });
+	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
+
+	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
+
+	nlop_free(nlop1);
+	nlop_free(nlop2);
+
+	UT_ASSERT(ok);
+}
+
+UT_REGISTER_TEST(test_stack_multiple_container2);
+
+
+static bool test_stack_multiple_container_flatten(void)
+{
+	enum { N = 3 };
+	long idims1_1[N] = { 3, 5, 3 };
+	long idims2_1[N] = { 1, 5, 1 };
+	long odims_1[N] = { 3, 5, 3 };
+
+	long idims1_2[N] = { 3, 5, 1 };
+	long idims2_2[N] = { 1, 5, 1 };
+	long odims_2[N] = { 3, 5, 1 };
+
+	const struct nlop_s* nlops[3];
+
+	for (int i = 0; i < 3; i++)
+		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
+	
+	const struct nlop_s* nlop1 = nlop_stack_container_create_F(3, nlops, 2, (int[2]){ 2, -1}, 1, (int[1]){ 2 });
+	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
+
+	nlop1 = nlop_flatten_F(nlop1);
+	nlop2 = nlop_flatten_F(nlop2);
+
+	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
+
+	nlop_free(nlop1);
+	nlop_free(nlop2);
+
+	UT_ASSERT(ok);
+}
+
+UT_REGISTER_TEST(test_stack_multiple_container_flatten);
+
+static bool test_stack_multiple_container_flatten2(void)
+{
+	enum { N = 3 };
+	long idims1_1[N] = { 3, 5, 3 };
+	long idims2_1[N] = { 1, 1, 3 };
+	long odims_1[N] = { 3, 5, 3 };
+
+	long idims1_2[N] = { 3, 1, 3 };
+	long idims2_2[N] = { 1, 1, 3 };
+	long odims_2[N] = { 3, 1, 3 };
+
+	const struct nlop_s* nlops[5];
+
+	for (int i = 0; i < 5; i++)
+		nlops[i] = nlop_tenmul_create(N, odims_2, idims1_2, idims2_2);
+	
+	const struct nlop_s* nlop1 = nlop_stack_container_create_F(5, nlops, 2, (int[2]){ 1, -1}, 1, (int[1]){ 1 });
+	const struct nlop_s* nlop2 = nlop_tenmul_create(N, odims_1, idims1_1, idims2_1);
+
+	nlop1 = nlop_flatten_F(nlop1);
+	nlop2 = nlop_flatten_F(nlop2);
+
+	bool ok = compare_nlops(nlop1, nlop2, true, true, true, UT_TOL);
+
+	nlop_free(nlop1);
+	nlop_free(nlop2);
+
+	UT_ASSERT(ok);
+}
+
+UT_REGISTER_TEST(test_stack_multiple_container_flatten2);
+
 
 
 static bool test_nlop_select_derivatives(void)
