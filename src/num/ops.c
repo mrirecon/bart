@@ -36,10 +36,11 @@
 #include "misc/list.h"
 #include "misc/graph.h"
 
-#ifdef USE_CUDA
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+
+#ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
 
@@ -611,6 +612,33 @@ void operator_generic_apply_unchecked(const struct operator_s* op, unsigned int 
 	debug_trace("LEAVE %p\n", op->apply);
 }
 
+void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* op[__VLA(D)], unsigned int N, void* args[__VLA(D)][N], int num_threads)
+{
+#ifdef _OPENMP
+	if (0 < num_threads) {
+
+		int max_threads = omp_get_max_threads();
+		omp_set_num_threads(num_threads);
+
+		#pragma omp parallel
+		{
+			for (int i = omp_get_thread_num(); i < D; i += omp_get_num_threads())
+				operator_generic_apply_unchecked(op[i], N, args[i]);
+	
+		}
+
+		omp_set_num_threads(max_threads);
+	
+		return;
+	}
+#else
+	UNUSED(num_threads);
+#endif
+
+	for (int i = 0; i < D; i++)
+		operator_generic_apply_unchecked(op[i], N, args[i]);
+}
+
 
 void operator_apply_unchecked(const struct operator_s* op, complex float* dst, const complex float* src)
 {
@@ -618,6 +646,22 @@ void operator_apply_unchecked(const struct operator_s* op, complex float* dst, c
 	assert(!op->io_flags[1]);
 
 	operator_generic_apply_unchecked(op, 2, (void*[2]){ (void*)dst, (void*)src });
+}
+
+void operator_apply_parallel_unchecked(int D, const struct operator_s* op[D], complex float* dst[D], const complex float* src[D], int num_threads)
+{
+	void* args[D][2];
+	
+	for (int i = 0; i < D; i++) {
+
+		assert(op[i]->io_flags[0]);
+		assert(!op[i]->io_flags[1]);
+
+		args[i][0] = dst[i];
+		args[i][1] = (void*)src[i];
+	}
+
+	operator_generic_apply_parallel_unchecked(D, op, 2, args, num_threads);
 }
 
 void operator_apply2(const struct operator_s* op, unsigned int ON, const long odims[ON], const long ostrs[ON], complex float* dst, const long IN, const long idims[IN], const long istrs[ON], const complex float* src)

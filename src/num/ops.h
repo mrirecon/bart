@@ -81,10 +81,12 @@ extern const struct operator_s* operator_unref(const struct operator_s* x);
 
 // apply functions
 extern void operator_generic_apply_unchecked(const struct operator_s* op, unsigned int N, void* args[__VLA(N)]);
+extern void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* op[__VLA(D)], unsigned int N, void* args[__VLA(D)][N], int num_threads);
 extern void operator_apply(const struct operator_s* op, unsigned int ON, const long odims[__VLA(ON)], _Complex float* dst, const long IN, const long idims[__VLA(IN)], const _Complex float* src);
 extern void operator_apply2(const struct operator_s* op, unsigned int ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)], _Complex float* dst, const long IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], const _Complex float* src);
 
 extern void operator_apply_unchecked(const struct operator_s* op, _Complex float* dst, const _Complex float* src);
+extern void operator_apply_parallel_unchecked(int D, const struct operator_s* op[__VLA(D)], _Complex float* dst[__VLA(D)], const _Complex float* src[__VLA(D)], int num_threads);
 extern void operator_apply_joined_unchecked(unsigned int N, const struct operator_s* op[__VLA(N)], _Complex float* dst[__VLA(N)], const _Complex float* src);
 
 
