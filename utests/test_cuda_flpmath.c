@@ -28,6 +28,8 @@ typedef void (*md_z3opd_t)(unsigned int D, const long dims[D], const long ostrs[
 
 static bool test_md_z3op(md_z3op_t function)
 {
+	num_init_gpu();
+
 	enum { N = 3 };
 	const long dims[N] = { 2, 5, 3 };
 	long strs[N];
@@ -122,6 +124,8 @@ UT_GPU_REGISTER_TEST(test_md_zgreatequal2);
 
 static bool test_md_z2op(md_z2op_t function)
 {
+	num_init_gpu();
+
 	enum { N = 3 };
 	const long dims[N] = { 2, 5, 3 };
 	long strs[N];
