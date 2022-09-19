@@ -218,7 +218,7 @@ static void compute_kern(int N, unsigned long flags, const long pos[N],
 
 
 
-complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
+complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N], const complex float* _traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights,
 				bool periodic, bool lowmem)
@@ -230,6 +230,8 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 	long trj2_dims[N + 1];
 	md_copy_dims(N, trj2_dims, trj_dims);
 	trj2_dims[N] = 1;
+
+	const complex float* traj = _traj;
 
 	long bas2_dims[N + 1];
 	md_copy_dims(N, bas2_dims, bas_dims);
@@ -252,6 +254,18 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 		ksp2_dims[N - 1] = trj2_dims[5];
 		trj2_dims[N - 1] = trj2_dims[5];
 		trj2_dims[5] = 1;	// FIXME copy?
+
+		if (1 != md_calc_size(N - 6, trj2_dims + 5)) {
+
+			long trj3_dims[N];
+			md_copy_dims(N - 1, trj3_dims, trj_dims);
+			trj3_dims[N - 1] = 1;
+
+			complex float* tmp = md_alloc_sameplace(N, trj2_dims, CFL_SIZE, _traj);
+			md_transpose(N, N - 1, 5, trj2_dims, tmp, trj3_dims, _traj, CFL_SIZE);
+			traj = tmp;
+		}
+
 	}
 
 	struct nufft_conf_s conf = nufft_conf_defaults;
@@ -335,6 +349,9 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 		md_free(ones);
 		md_free(tmp);
 	}
+
+	if (_traj != traj)
+		md_free(traj);
 
 	return psft;
 }
