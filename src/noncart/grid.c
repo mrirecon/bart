@@ -192,18 +192,28 @@ void grid2(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D
 	long grid_strs[D];
 	md_calc_strides(D, grid_strs, grid_dims, CFL_SIZE);
 
+	const long* ptr_grid_dims = &(grid_dims[0]);
+	const long* ptr_ksp_dims = &(ksp_dims[0]);
 
-	long pos[D];
-	for (unsigned int i = 0; i < D; i++)
-		pos[i] = 0;
+	NESTED(void, nary_grid, (void* ptr[]))
+	{
+		const complex float* _trj = ptr[0];
+		complex float* _dst = ptr[1];
+		const complex float* _src = ptr[2];
 
-	do {
+		grid(conf, _trj, ptr_grid_dims, _dst, ptr_ksp_dims, _src);
+	};
 
-		grid(conf, &MD_ACCESS(D, trj_strs, pos, traj),
-			grid_dims, &MD_ACCESS(D, grid_strs, pos, dst),
-			ksp_dims, &MD_ACCESS(D, ksp_strs, pos, src));
+	const long* strs[3] = { trj_strs + 4, grid_strs + 4, ksp_strs + 4 };
+	void* ptr[3] = { (void*)traj, (void*)dst, (void*)src };
+	unsigned long pflags = md_nontriv_dims(D - 4, grid_dims + 4);
 
-	} while(md_next(D, ksp_dims, (~0 ^ 15), pos));
+#ifdef USE_CUDA
+	if (cuda_ondevice(traj))
+		pflags = 0;
+#endif
+
+	md_parallel_nary(3, D - 4, ksp_dims + 4, pflags, strs, ptr, nary_grid);
 }
 
 
