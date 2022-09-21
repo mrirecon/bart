@@ -197,7 +197,7 @@ void bloch_matrix_ode_sa2(float matrix[13][13], float r1, float r2, const float 
 		{	-1.,		0.,		0.,		0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.,	0.,	0.,	0.	},
 		{	0.,		-1.,		0.,		0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.,	0.,	0.,	0.	},
 		{	0.,		0.,		0.,		0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.,	0.,	0.,	0.	},
-		{	0.,		0.,		sinf(phase)*b1,0.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
+		{	0.,		0.,		sinf(phase) *b1,0.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
 		{	0.,		0.,		cosf(phase)*b1,	0.,	0.,	0.,	0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.	},
 		{	-sinf(phase)*b1,	-cosf(phase)*b1,0.,		0.,	0.,	0.,	0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.	},
 		{	0.,		0.,		0.,		0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
@@ -213,4 +213,47 @@ void bloch_matrix_int_sa2(float matrix[13][13], float t, float r1, float r2, con
 
 	mat_exp(13, t, matrix, blm);
 }
+
+
+
+void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const float r1[P], const float r2[P], const float k[P][P], const float Th[P], const float Om[P], const float gb[3])
+{
+	int N = 1 + P * 3;
+	float m0 = 1.;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			matrix[i][j] = 0.;
+
+	// copy 3 x 3 Bloch matrix
+
+	for (int p = 0; p < P; p++) {
+
+		float g[3];
+		for (int i = 0; i < 3; i++)
+			g[i] = gb[i];
+
+		g[2] += Om[p];
+
+		float m[4][4];
+		bloch_matrix_ode(m, r1[p], r2[p], g);
+
+		for (int i = 0; i < 3; i++)
+			for (int j = 0; j < 3; j++)
+				matrix[3 * p + i][3 * p + j] = m[i][j];
+	}
+
+	// equilibrium
+
+	for (int p = 0; p < P; p++)
+		matrix[3 * p + 2][N - 1] = m0 * Th[p] * r1[p];
+
+	// exchange
+
+	for (int p = 0; p < P; p++)
+		for (int q = 0; q < P; q++)
+			for (int i = 0; i < 3; i++)
+				matrix[3 * p + i][3 * q + i] += k[p][q];
+}
+
 

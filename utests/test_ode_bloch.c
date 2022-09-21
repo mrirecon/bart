@@ -662,3 +662,117 @@ static bool test_ode_sa_bloch_fa_with_phase(void)
 
 UT_REGISTER_TEST(test_ode_sa_bloch_fa_with_phase);
 
+
+
+
+
+static bool test_bloch_mcconnel(void)
+{
+	int P = 1;
+
+	float m1[1 + P * 3][1 + P * 3];
+	float gb[3] = { 0., 0., 0. };
+	float k[1][1] = { { 0. } };
+	float Th[1] = { 1. };
+	float Om[1] = { 0. };
+	float r1[1] = { 1. };
+	float r2[1] = { 0.1 };
+
+	bloch_mcconnel_matrix_ode(P, m1, r1, r2, k, Th, Om, gb);
+
+	float m2[4][4];
+
+	bloch_matrix_ode(m2, r1[0], r2[0], gb);
+
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
+			if (m1[i][j] != m2[i][j])
+				return false;
+
+	return true;
+}
+
+
+UT_REGISTER_TEST(test_bloch_mcconnel);
+
+
+
+static bool test_bloch_mcconnel2(void)
+{
+	int P = 2;
+
+	float m1[1 + P * 3][1 + P * 3];
+	float gb[3] = { 0., 0., 0. };
+	float k[2][2] = { { -0.2, 0.2 }, { 0.2, -0.2 } };
+	float Th[2] = { 0.5, 0.5 };
+	float Om[2] = { 0., 0. };
+	float r1[2] = { 1., 1.1 };
+	float r2[2] = { 0.1, 0.05 };
+	bloch_mcconnel_matrix_ode(P, m1, r1, r2, k, Th, Om, gb);
+
+	float m2[4][4];
+	bloch_matrix_ode(m2, r1[0], r2[0], gb);
+
+	float m3[4][4];
+	bloch_matrix_ode(m3, r1[1], r2[1], gb);
+
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			if (fabsf(m1[0 + i][0 + j] - (m2[i][j] + ((i == j) ? k[0][0] : 0.f))) > 1.E-3)
+				return false;
+
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			if (fabsf(m1[3 + i][3 + j] - (m3[i][j] + ((i == j) ? k[1][1] : 0.f))) > 1.E-3)
+				return false;
+
+	return true;
+}
+
+
+UT_REGISTER_TEST(test_bloch_mcconnel2);
+
+
+
+static bool test_ode_bloch_mcconnel(void)
+{
+	int P = 2;
+	int N = 1 + P * 3;
+
+	float m1[N][N];
+	float gb[3] = { 0., 0., 0. };
+	float k[2][2] = { { -0.2, 0.2 }, { 0.2, -0.2 } };
+	float Th[2] = { 0.5, 0.5 };
+	float Om[2] = { 0., 0.01 };
+	float r1[2] = { 1., 1.1 };
+	float r2[2] = { 0.1, 0.05 };
+
+	bloch_mcconnel_matrix_ode(P, m1, r1, r2, k, Th, Om, gb);
+
+	float end = 10.;
+
+	float h = 0.01;
+	float tol = 0.001;
+
+	float x[N];
+
+	for (int i = 0; i < N; i++)
+		x[i] = 0.;
+
+	x[N - 1] = 1.;
+
+	ode_matrix_interval(h, tol, N, x, 0., end, m1);
+
+	float x2[7] = { 0., 0., 0.5, 0., 0., 0.5, 1. };
+
+	float err = 0.;
+
+	for (int i = 0; i < N; i++)
+		err += powf(x[i] - x2[i], 2.);
+
+	UT_ASSERT(err < 1.E-9);
+}
+
+
+UT_REGISTER_TEST(test_ode_bloch_mcconnel);
+
