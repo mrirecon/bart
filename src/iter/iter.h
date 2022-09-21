@@ -36,6 +36,9 @@ struct iter_conjgrad_conf {
 	unsigned int maxiter;
 	float l2lambda;
 	float tol;
+
+	long Bo;
+	long Bi;
 };
 
 

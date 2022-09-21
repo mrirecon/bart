@@ -146,13 +146,25 @@ void iter2_conjgrad(const iter_conf* _conf,
 
 	auto conf = CAST_DOWN(iter_conjgrad_conf, _conf);
 
-	float eps = md_norm(1, MD_DIMS(size), image_adj);
+	long Bo = conf->Bo;
+	long Bi = conf->Bi;
 
-	if (checkeps(eps))
-		goto cleanup;
+	if (1 == Bo * Bi) {
 
-	conjgrad(conf->maxiter, conf->INTERFACE.alpha * conf->l2lambda, eps * conf->tol, size, select_vecops(image_adj),
+		float eps = md_norm(1, MD_DIMS(size), image_adj);
+
+		if (checkeps(eps))
+			goto cleanup;
+
+		conjgrad(conf->maxiter, conf->INTERFACE.alpha * conf->l2lambda, eps * conf->tol, size, select_vecops(image_adj),
+				OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
+	} else {
+
+		assert(0 == size % (Bo * Bi));
+
+		conjgrad_batch(conf->maxiter, conf->INTERFACE.alpha * conf->l2lambda, conf->tol, size / (Bo * Bi * 2), Bi, Bo, select_vecops(image_adj),
 			OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
+	}
 
 cleanup:
 	;

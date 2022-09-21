@@ -98,6 +98,13 @@ float conjgrad(int maxiter, float l2lambda, float epsilon,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor);
 
+void conjgrad_batch(unsigned int maxiter, float l2lambda, float epsilon,
+	long N, long Bi, long Bo,
+	const struct vec_iter_s* vops,
+	struct iter_op_s linop,
+	float* x, const float* b,
+	struct iter_monitor_s* monitor);
+
 
 void landweber(int maxiter, float epsilon, float alpha,
 	long N, long M,

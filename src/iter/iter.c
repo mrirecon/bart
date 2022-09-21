@@ -54,6 +54,9 @@ const struct iter_conjgrad_conf iter_conjgrad_defaults = {
 	.maxiter = 50,
 	.l2lambda = 0.,
 	.tol = 0.,
+
+	.Bo = 1,
+	.Bi = 1,
 };
 
 const struct iter_landweber_conf iter_landweber_defaults = {

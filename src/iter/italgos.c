@@ -396,6 +396,110 @@ cleanup:
 }
 
 
+/**
+ * Conjugate Gradient Descent to solve Ax = b for blockdiagonal symmetric A
+ *
+ * @param maxiter maximum number of iterations
+ * @param regularization parameter
+ * @param epsilon stop criterion
+ * @param N size of problem, dims of x: { 2, Bi, N, Bo }
+ * @param Bi inner batch size of problem, dims of x: { 2, Bi, N, Bo }
+ * @param Bo outer batch size of problem, dims of x: { 2, Bi, N, Bo }
+ * @param vops vector ops definition
+ * @param linop linear operator, i.e. A
+ * @param x initial estimate
+ * @param b observations
+ */
+void conjgrad_batch(unsigned int maxiter, float l2lambda, float epsilon,
+	long N, long Bi, long Bo,
+	const struct vec_iter_s* vops,
+	struct iter_op_s linop,
+	float* x, const float* b,
+	struct iter_monitor_s* monitor)
+{
+	float* r = vops->allocate(2 * Bo * Bi * N);
+	float* p = vops->allocate(2 * Bo * Bi * N);
+	float* Ap = vops->allocate(2 * Bo * Bi * N);
+
+
+	// The first calculation of the residual might not
+	// be necessary in some cases...
+
+	iter_op_call(linop, r, x);		// r = A x
+	vops->axpy(2 * Bo * Bi * N, r, l2lambda, x);
+
+	vops->xpay(2 * Bo * Bi * N, -1., r, b);	// r = b - r = b - A x
+	vops->copy(2 * Bo * Bi * N, p, r);		// p = r
+
+	float* rsnot = vops->allocate(Bo * Bi);
+	float* rsold = vops->allocate(Bo * Bi);
+	float* rsnew = vops->allocate(Bo * Bi);
+
+	float* pAp = vops->allocate(Bo * Bi);
+	float* alpha = vops->allocate(Bo * Bi);
+	float* beta = vops->allocate(Bo * Bi);
+	
+	vops->dot_bat(Bi, N, Bo, rsnot, r, r);
+	vops->copy(Bo * Bi, rsold, rsnot);
+	vops->copy(Bo * Bi, rsnew, rsnot);
+
+	vops->smul(Bo * Bi, pow(epsilon, 2.), rsnot, rsnot);
+
+	unsigned int i = 0;
+
+	if (0. == vops->norm(Bo * Bi, rsold)) {
+
+		debug_printf(DP_DEBUG3, "CG: early out\n");
+		goto cleanup;
+	}
+
+	for (i = 0; i <maxiter; i++) {
+
+		iter_monitor(monitor, vops, x);
+
+		debug_printf(DP_DEBUG3, "#%d: %f\n", i, (double)sqrtf(vops->norm(Bo * Bi, rsnew) / (Bo * Bi)));
+
+		iter_op_call(linop, Ap, p);	// Ap = A p
+		vops->axpy(Bo * Bi * N, Ap, l2lambda, p);
+
+		vops->dot_bat(Bi, N, Bo, pAp, p, Ap);
+
+		if (0. == vops->norm(Bo * Bi, pAp))
+			break;
+
+		vops->div(Bo * Bi, alpha, rsold, pAp);
+
+		vops->axpy_bat(Bi, N, Bo, x, alpha, p);
+		vops->smul(Bo * Bi, -1, alpha, alpha);
+		vops->axpy_bat(Bi, N, Bo, r, alpha, Ap);
+
+		vops->dot_bat(Bi, N, Bo, rsnew, r, r);
+
+		vops->div(Bo * Bi, beta, rsnew, rsold);
+
+		vops->le(Bo * Bi, rsold, rsnot, rsnew);
+		vops->mul(Bo * Bi, rsold, rsold, rsnew);
+
+		if (0. == vops->norm(Bo * Bi, rsold))
+			break;
+
+		vops->xpay_bat(Bi, N, Bo, beta, p, r);	// p = beta * p + r
+	}
+
+cleanup:
+	vops->del(Ap);
+	vops->del(p);
+	vops->del(r);
+
+	vops->del(rsnot);
+	vops->del(rsold);
+	vops->del(rsnew);
+	vops->del(pAp);
+	vops->del(alpha);
+	vops->del(beta);
+
+	debug_printf(DP_DEBUG2, "\t cg: %3d\n", i);
+}
 
 
 
