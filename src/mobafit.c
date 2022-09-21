@@ -71,7 +71,6 @@ int main_mobafit(int argc, char* argv[argc])
 	unsigned int mgre_model = MECO_WFR2S;
 
 	bool use_gpu = false;
-	long patch_size[3] = { 1, 1, 1 };
 
 	unsigned int iter = 5;
 
@@ -90,7 +89,6 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_SELECT('D', enum seq_type, &seq, DIFF, "diffusion"),
 		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_UINT('i', &iter, "iter", "Number of IRGNM steps"),
-		OPT_VEC3('p', &patch_size, "px,py,pz", "(patch size)"),
 		OPT_SET('g', &use_gpu, "use gpu"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 	};
@@ -189,16 +187,12 @@ int main_mobafit(int argc, char* argv[argc])
 
 
 	long y_patch_dims[DIMS];
-	md_select_dims(DIMS, TE_FLAG | COEFF_FLAG, y_patch_dims, y_dims);
-	md_copy_dims(3, y_patch_dims, patch_size);
-
-	long y_patch_sig_dims[DIMS];
-	md_select_dims(DIMS, TE_FLAG, y_patch_sig_dims, y_sig_dims);
-	md_copy_dims(3, y_patch_sig_dims, patch_size);
-
 	long x_patch_dims[DIMS];
-	md_select_dims(DIMS, COEFF_FLAG, x_patch_dims, x_dims);
-	md_copy_dims(3, x_patch_dims, patch_size);
+	long y_patch_sig_dims[DIMS];
+
+	md_select_dims(DIMS, FFT_FLAGS | TE_FLAG | COEFF_FLAG, y_patch_dims, y_dims);
+	md_select_dims(DIMS, FFT_FLAGS | TE_FLAG | COEFF_FLAG, y_patch_sig_dims, y_sig_dims);
+	md_select_dims(DIMS, FFT_FLAGS | TE_FLAG | COEFF_FLAG, x_patch_dims, x_dims);
 
 
 	// create signal model
@@ -265,6 +259,8 @@ int main_mobafit(int argc, char* argv[argc])
 
 
 	struct iter_conjgrad_conf conjgrad_conf = iter_conjgrad_defaults;
+	conjgrad_conf.Bi = md_calc_size(3, x_patch_dims);
+
 	struct lsqr_conf lsqr_conf = lsqr_defaults;
 	lsqr_conf.it_gpu = false;
 
@@ -275,8 +271,23 @@ int main_mobafit(int argc, char* argv[argc])
 	irgnm_conf.iter = iter;
 
 
-	complex float* y_patch = md_alloc(DIMS, y_patch_dims, CFL_SIZE);
-	complex float* x_patch = md_alloc(DIMS, x_patch_dims, CFL_SIZE);
+	complex float* y_patch = NULL;
+	complex float* x_patch = NULL;
+
+	if (use_gpu) {
+
+	#ifdef USE_CUDA
+		y_patch = md_alloc_gpu(DIMS, y_patch_dims, CFL_SIZE);
+		x_patch = md_alloc_gpu(DIMS, x_patch_dims, CFL_SIZE);
+	#else
+		error("Compiled without GPU support!\n");
+	#endif
+
+	} else {
+
+		y_patch = md_alloc(DIMS, y_patch_dims, CFL_SIZE);
+		x_patch = md_alloc(DIMS, x_patch_dims, CFL_SIZE);
+	}
 
 
 	long pos[DIMS] = { 0 };
@@ -298,7 +309,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 		md_copy_block(DIMS, pos, x_dims, x, x_patch_dims, x_patch, CFL_SIZE);
 
-	} while(md_next(DIMS, y_dims, ~(TE_FLAG | COEFF_FLAG), pos));
+	} while(md_next(DIMS, y_dims, ~(FFT_FLAGS | TE_FLAG | COEFF_FLAG), pos));
 
 	md_free(x_patch);
 	md_free(y_patch);
