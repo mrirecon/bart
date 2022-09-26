@@ -146,8 +146,12 @@ Unit_Test_UBSan:
 Unit_Test_GPU:
   image: nvidia/cuda:10.2-devel-ubuntu18.04
   stage: test1
-  script:
-    - AUTOCLEAN=0 CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make utest_gpu
+  script: |
+    if nvidia-smi ; then
+      AUTOCLEAN=0 CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make utest_gpu
+    else
+      printf "No usable GPU found, skipping GPU tests!\n"
+    fi
   needs: [Build_GPU]
   dependencies:
     - Build_GPU
@@ -202,8 +206,12 @@ Integration_Test_Python:
 Integration_Test_GPU:
   image: nvidia/cuda:10.2-devel-ubuntu18.04
   stage: test2
-  script:
-    - AUTOCLEAN=0 CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make gputest
+  script: |
+    if nvidia-smi ; then
+      AUTOCLEAN=0 CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make gputest
+    else
+      printf "No usable GPU found, skipping GPU tests!\n"
+    fi
   needs: [Build_GPU]
   dependencies:
     - Build_GPU
