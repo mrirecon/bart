@@ -174,7 +174,7 @@ Unit_Test_LTO:
   image: debian:stable
   stage: test1
   script:
-    - CFLAGS="-flto -O2 -g" make test
+    - CFLAGS="-flto -O2 -g" make utest
   needs: [Build_LTO]
   dependencies:
     - Build_LTO
