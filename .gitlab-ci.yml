@@ -237,5 +237,13 @@ Integration_Test_UBSan:
   dependencies:
     - Build_UBSan
 
+Integration_Test_LTO:
+  image: debian:stable
+  stage: test2
+  script:
+    - CFLAGS="-flto -O2 -g" make test
+  needs: [Build_LTO]
+  dependencies:
+    - Build_LTO
 
 
