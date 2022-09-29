@@ -435,8 +435,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 
 			if (0 == pos[COIL_DIM]) {
 
-				// TODO: rethink this
-				pos[PHS1_DIM]	= mdh.sLC[0] + (linectr ? mdh.linectr : 0);
+				pos[PHS1_DIM]	= mdh.sLC[0] - (linectr ? mdh.linectr - dims[PHS1_DIM] / 2 : 0);
 				pos[AVG_DIM]	= mdh.sLC[1];
 				if (radial) { // reorder for radial
 
@@ -444,7 +443,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 				} else {
 
 					pos[SLICE_DIM]	= mdh.sLC[2];
-					pos[PHS2_DIM]	= mdh.sLC[3] + (partctr ? mdh.partctr : 0);
+					pos[PHS2_DIM]	= mdh.sLC[3] - (partctr ? mdh.partctr - dims[PHS2_DIM] / 2 : 0);
 				}
 				pos[TE_DIM]	= mdh.sLC[4];
 				pos[COEFF_DIM]	= mdh.sLC[5];
