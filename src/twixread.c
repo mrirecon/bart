@@ -496,6 +496,7 @@ int main_twixread(int argc, char* argv[argc])
 	bool linectr = false;
 	bool partctr = false;
 	bool mpi = false;
+	bool check_read = true;
 
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
@@ -515,6 +516,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('L', &linectr, "use linectr offset"),
 		OPT_SET('P', &partctr, "use partctr offset"),
 		OPT_SET('M', &mpi, "MPI mode"),
+		OPT_CLEAR('X', &check_read, "no consistency check for number of read acquisitions"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 	};
 
@@ -666,7 +668,7 @@ int main_twixread(int argc, char* argv[argc])
 
 	}
 
-	if (0 != adcs)
+	if ((0 != adcs) && check_read)
 		error("Incorrect number of ADCs read! ADC count difference: %d != 0!\n", adcs);
 	md_free(buf);
 
