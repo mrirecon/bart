@@ -391,7 +391,7 @@ bool md_is_index(int D, const long pos[D], const long dims[D])
 /**
  * return whether some other dimensions are >1
  */
-bool md_check_dimensions(int N, const long dims[N], unsigned int flags)
+bool md_check_dimensions(int N, const long dims[N], unsigned long flags)
 {
 	long d[N];
 	md_select_dims(N, ~flags, d, dims);
@@ -404,7 +404,7 @@ bool md_check_dimensions(int N, const long dims[N], unsigned int flags)
 /**
  * Check if dimensions at 'flags' position are equal
  */
-bool md_check_equal_dims(int N, const long dims1[N], const long dims2[N], unsigned int flags)
+bool md_check_equal_dims(int N, const long dims1[N], const long dims2[N], unsigned long flags)
 {
 	return (   md_check_bounds(N, flags, dims1, dims2)
 	        && md_check_bounds(N, flags, dims2, dims1));
