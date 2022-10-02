@@ -3068,7 +3068,7 @@ float md_z1norm(int D, const long dim[D], const complex float* ptr)
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the root of sum of squares, ie the dimensions that will not stay
  */
-void md_rss(int D, const long dims[D], unsigned int flags, float* dst, const float* src)
+void md_rss(int D, const long dims[D], unsigned long flags, float* dst, const float* src)
 {
 	long str1[D];
 	long str2[D];
@@ -3093,7 +3093,7 @@ void md_rss(int D, const long dims[D], unsigned int flags, float* dst, const flo
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
  */
-void md_zss2(int D, const long dims[D], unsigned int flags, const long str2[D], complex float* dst, const long str1[D], const complex float* src)
+void md_zss2(int D, const long dims[D], unsigned long flags, const long str2[D], complex float* dst, const long str1[D], const complex float* src)
 {
 	long dims2[D];
 	md_select_dims(D, ~flags, dims2, dims);
@@ -3109,7 +3109,7 @@ void md_zss2(int D, const long dims[D], unsigned int flags, const long str2[D], 
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
  */
-void md_zss(int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
+void md_zss(int D, const long dims[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long dims2[D];
 
@@ -3126,7 +3126,7 @@ void md_zss(int D, const long dims[D], unsigned int flags, complex float* dst, c
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the root of sum of squares, i.e. the dimensions that will not stay
  */
-void md_zrss(int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
+void md_zrss(int D, const long dims[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long dims2[D];
 	md_select_dims(D, ~flags, dims2, dims);
@@ -3157,7 +3157,7 @@ void md_zrss(int D, const long dims[D], unsigned int flags, complex float* dst, 
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
  */
-void md_zvar2(int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+void md_zvar2(int D, const long dims[D], unsigned long flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
 	long odims[D];
 	long fdims[D];
@@ -3191,7 +3191,7 @@ void md_zvar2(int D, const long dims[D], unsigned int flags, const long ostr[D],
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
  */
-void md_zvar(int D, const long dims[D], unsigned int flags, complex float* optr, const complex float* iptr)
+void md_zvar(int D, const long dims[D], unsigned long flags, complex float* optr, const complex float* iptr)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
@@ -3210,7 +3210,7 @@ void md_zvar(int D, const long dims[D], unsigned int flags, complex float* optr,
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for calculating standard deviation, i.e. the dimensions that will not stay
  */
-void md_zstd2(int D, const long dims[D], unsigned int flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+void md_zstd2(int D, const long dims[D], unsigned long flags, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
 	md_zvar2(D, dims, flags, ostr, optr, istr, iptr);
 
@@ -3239,7 +3239,7 @@ void md_zstd2(int D, const long dims[D], unsigned int flags, const long ostr[D],
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for calculating standard deviation, i.e. the dimensions that will not stay
  */
-void md_zstd(int D, const long dims[D], unsigned int flags, complex float* optr, const complex float* iptr)
+void md_zstd(int D, const long dims[D], unsigned long flags, complex float* optr, const complex float* iptr)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
@@ -3257,7 +3257,7 @@ void md_zstd(int D, const long dims[D], unsigned int flags, complex float* optr,
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
  */
-void md_zcovar2(int D, const long dims[D], unsigned int flags,
+void md_zcovar2(int D, const long dims[D], unsigned long flags,
 		const long ostr[D], complex float* optr,
 		const long istr1[D], const complex float* iptr1,
 		const long istr2[D], const complex float* iptr2)
@@ -3299,7 +3299,7 @@ void md_zcovar2(int D, const long dims[D], unsigned int flags,
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for calculating variance, i.e. the dimensions that will not stay
  */
-void md_zcovar(int D, const long dims[D], unsigned int flags,
+void md_zcovar(int D, const long dims[D], unsigned long flags,
 		complex float* optr, const complex float* iptr1, const complex float* iptr2)
 {
 	long odims[D];
@@ -3318,7 +3318,7 @@ void md_zcovar(int D, const long dims[D], unsigned int flags,
  * @param dims -- full dimensions of iptr
  * @param flags -- bitmask for applying the average, i.e. the dimensions that will not stay
  */
-void md_zavg(int D, const long dims[D], unsigned int flags, complex float* optr, const complex float* iptr)
+void md_zavg(int D, const long dims[D], unsigned long flags, complex float* optr, const complex float* iptr)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
@@ -3336,7 +3336,7 @@ void md_zavg(int D, const long dims[D], unsigned int flags, complex float* optr,
  * @param dims -- full dimensions of iptr
  * @param flags -- bitmask for applying the average, i.e. the dimensions that will not stay
  */
-void md_zavg2(int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* optr, const long istr[D], const complex float* iptr)
+void md_zavg2(int D, const long dims[D], unsigned long flags, const long ostr[D],  complex float* optr, const long istr[D], const complex float* iptr)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
@@ -3372,7 +3372,7 @@ void md_zavg2(int D, const long dims[D], unsigned int flags, const long ostr[D],
  * @param dims -- full dimensions of iptr
  * @param flags -- bitmask for applying the weighted average, i.e. the dimensions that will not stay
  */
-void md_zwavg(int D, const long dims[D], unsigned int flags, complex float* optr, const complex float* iptr)
+void md_zwavg(int D, const long dims[D], unsigned long flags, complex float* optr, const complex float* iptr)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
@@ -3390,7 +3390,7 @@ void md_zwavg(int D, const long dims[D], unsigned int flags, complex float* optr
  * @param dims -- full dimensions of iptr
  * @param flags -- bitmask for applying the weighted average, i.e. the dimensions that will not stay
  */
-void md_zwavg2(int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* optr, const long istr[D], const complex float* iptr)
+void md_zwavg2(int D, const long dims[D], unsigned long flags, const long ostr[D],  complex float* optr, const long istr[D], const complex float* iptr)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
@@ -3411,7 +3411,7 @@ void md_zwavg2(int D, const long dims[D], unsigned int flags, const long ostr[D]
  * @param iptr input array to be averaged
  * @param weights output weights
  */
-void md_zwavg2_core1(int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* weights, const long istr[D], const complex float* iptr)
+void md_zwavg2_core1(int D, const long dims[D], unsigned long flags, const long ostr[D],  complex float* weights, const long istr[D], const complex float* iptr)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
@@ -3438,7 +3438,7 @@ void md_zwavg2_core1(int D, const long dims[D], unsigned int flags, const long o
  * @param weights precomputed weights for averaging
  * @param optr output array after averaging
  */
-void md_zwavg2_core2(int D, const long dims[D], unsigned int flags, const long ostr[D],  complex float* optr, const complex float* weights, const long istr[D], const complex float* iptr)
+void md_zwavg2_core2(int D, const long dims[D], unsigned long flags, const long ostr[D],  complex float* optr, const complex float* weights, const long istr[D], const complex float* iptr)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
@@ -3561,7 +3561,7 @@ void md_zsoftthresh_half(int D, const long dim[D], float lambda, complex float* 
 
 
 
-void md_softthresh_core2(int D, const long dims[D], float lambda, unsigned int flags, float* tmp_norm, const long ostrs[D], float* optr, const long istrs[D], const float* iptr)
+void md_softthresh_core2(int D, const long dims[D], float lambda, unsigned long flags, float* tmp_norm, const long ostrs[D], float* optr, const long istrs[D], const float* iptr)
 {
 	long norm_dims[D];
 	long norm_strs[D];
@@ -3581,7 +3581,7 @@ void md_softthresh_core2(int D, const long dims[D], float lambda, unsigned int f
  *
  * optr = ST(iptr, lambda)
  */
-void md_softthresh2(int D, const long dims[D], float lambda, unsigned int flags, const long ostrs[D], float* optr, const long istrs[D], const float* iptr)
+void md_softthresh2(int D, const long dims[D], float lambda, unsigned long flags, const long ostrs[D], float* optr, const long istrs[D], const float* iptr)
 {
 	NESTED(void, nary_softthresh, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -3611,7 +3611,7 @@ void md_softthresh2(int D, const long dims[D], float lambda, unsigned int flags,
  *
  * optr = ST(iptr, lambda)
  */
-void md_softthresh(int D, const long dims[D], float lambda, unsigned int flags, float* optr, const float* iptr)
+void md_softthresh(int D, const long dims[D], float lambda, unsigned long flags, float* optr, const float* iptr)
 {
 	long str[D];
 	md_calc_strides(D, str, dims, FL_SIZE);
@@ -3621,7 +3621,7 @@ void md_softthresh(int D, const long dims[D], float lambda, unsigned int flags, 
 
 
 
-void md_zsoftthresh_core2(int D, const long dims[D], float lambda, unsigned int flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+void md_zsoftthresh_core2(int D, const long dims[D], float lambda, unsigned long flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
 	long norm_dims[D];
 	long norm_strs[D];
@@ -3652,7 +3652,7 @@ void md_zsoftthresh_core2(int D, const long dims[D], float lambda, unsigned int 
  * @param optr destination -- soft thresholded values
  * @param iptr source -- values to be soft thresholded
  */
-void md_zsoftthresh2(int D, const long dims[D], float lambda, unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+void md_zsoftthresh2(int D, const long dims[D], float lambda, unsigned long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
 	NESTED(void, nary_zsoftthresh, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -3690,7 +3690,7 @@ void md_zsoftthresh2(int D, const long dims[D], float lambda, unsigned int flags
  * @param optr destination -- soft thresholded values
  * @param iptr source -- values to be soft thresholded
  */
-void md_zsoftthresh(int D, const long dims[D], float lambda, unsigned int flags, complex float* optr, const complex float* iptr)
+void md_zsoftthresh(int D, const long dims[D], float lambda, unsigned long flags, complex float* optr, const complex float* iptr)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
@@ -3716,7 +3716,7 @@ void md_zsoftthresh(int D, const long dims[D], float lambda, unsigned int flags,
  * @param istr input strides
  * @param iptr pointer to input
  */
-void md_zhardthresh_mask2(int D, const long dim[D], int k, unsigned int flags, complex float* tmp_norm, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+void md_zhardthresh_mask2(int D, const long dim[D], int k, unsigned long flags, complex float* tmp_norm, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
 	NESTED(void, nary_zhardthresh_mask, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -3752,7 +3752,7 @@ void md_zhardthresh_mask2(int D, const long dim[D], int k, unsigned int flags, c
  * @param optr pointer to output
  * @param iptr pointer to input
  */
-void md_zhardthresh_mask(int D, const long dim[D], int k, unsigned int flags, complex float* optr, const complex float* iptr)
+void md_zhardthresh_mask(int D, const long dim[D], int k, unsigned long flags, complex float* optr, const complex float* iptr)
 {
 	long str[D];
 	md_calc_strides(D, str, dim, CFL_SIZE);
@@ -3784,7 +3784,7 @@ void md_zhardthresh_mask(int D, const long dim[D], int k, unsigned int flags, co
  * @param istrs source strides
  * @param iptr source -- values to be thresholded
  */
-void md_zhardthresh_joint2(int D, const long dims[D], int k, unsigned int flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+void md_zhardthresh_joint2(int D, const long dims[D], int k, unsigned long flags, complex float* tmp_norm, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
 	long norm_dims[D];
 	long norm_strs[D];
@@ -3823,7 +3823,7 @@ void md_zhardthresh_joint2(int D, const long dims[D], int k, unsigned int flags,
  * @param istrs source strides
  * @param iptr source -- values to be thresholded
  */
-void md_zhardthresh2(int D, const long dims[D], int k, unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+void md_zhardthresh2(int D, const long dims[D], int k, unsigned long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
 	NESTED(void, nary_zhardthresh, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -3858,7 +3858,7 @@ void md_zhardthresh2(int D, const long dims[D], int k, unsigned int flags, const
  * @param optr destination -- thresholded values
  * @param iptr source -- values to be thresholded
  */
-void md_zhardthresh(int D, const long dims[D], int k, unsigned int flags, complex float* optr, const complex float* iptr)
+void md_zhardthresh(int D, const long dims[D], int k, unsigned long flags, complex float* optr, const complex float* iptr)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
@@ -4142,7 +4142,7 @@ void md_zfftmod(int D, const long dims[D], complex float* optr, const complex fl
  * @param dims -- full dimensions of src image
  * @param flags -- bitmask for applying the sum, i.e. the dimensions that will not stay
  */
-void md_zsum(int D, const long dims[D], unsigned int flags, complex float* dst, const complex float* src)
+void md_zsum(int D, const long dims[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long str1[D];
 	long str2[D];
