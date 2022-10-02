@@ -10,6 +10,7 @@
 
 #include "misc/cppwrap.h"
 
+#include <stdbool.h>
 
 #define CFL_SIZE	sizeof(_Complex float)
 #define  FL_SIZE	sizeof(float)
@@ -116,14 +117,14 @@ extern void md_zconv(	int N, unsigned long flags,
 			const long idims[__VLA(N)], const _Complex float* in);
 
 extern int calc_convcorr_geom(int N, unsigned long flags,
- 			long mdims[__VLA(2 * N)], long ostrs2[__VLA(2 * N)], long kstrs2[__VLA(2 * N)], long istrs2[__VLA(2 * N)],
- 			const long odims[__VLA(N)], const long ostrs[__VLA(N)],
- 			const long kdims[__VLA(N)], const long kstrs[__VLA(N)],
- 			const long idims[__VLA(N)], const long istrs[__VLA(N)], _Bool conv);
+			long mdims[__VLA(2 * N)], long ostrs2[__VLA(2 * N)], long kstrs2[__VLA(2 * N)], long istrs2[__VLA(2 * N)],
+			const long odims[__VLA(N)], const long ostrs[__VLA(N)],
+			const long kdims[__VLA(N)], const long kstrs[__VLA(N)],
+			const long idims[__VLA(N)], const long istrs[__VLA(N)], bool conv);
 extern int calc_convcorr_geom_strs_dil(int N, unsigned long flags,
 				       long mdims[__VLA(2 * N)], long ostrs2[__VLA(2 * N)], long kstrs2[__VLA(2 * N)], long istrs2[__VLA(2 * N)],
 				       const long odims[__VLA(N)], const long ostrs[__VLA(N)], const long kdims[__VLA(N)], const long kstrs[__VLA(N)], const long idims[__VLA(N)], const long istrs[__VLA(N)],
-				       const long dilation[__VLA(N)], const long strides[__VLA(N)], _Bool conv, _Bool test_mode);
+				       const long dilation[__VLA(N)], const long strides[__VLA(N)], bool conv, bool test_mode);
 
 extern void md_matmul_dims(int D, long max_dims[__VLA(D)], const long out_dims[__VLA(D)], const long mat_dims[__VLA(D)], const long in_dims[__VLA(D)]);
 
@@ -377,8 +378,8 @@ extern void md_zfdiff_backwards2(int D, const long dims[__VLA(D)], int d, const 
 extern void md_zfdiff_backwards(int D, const long dims[__VLA(D)], int d, _Complex float* out, const _Complex float* in);
 
 
-extern void md_zfftmod(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr, _Bool inv, double phase);
-extern void md_zfftmod2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr, _Bool inv, double phase);
+extern void md_zfftmod(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr, bool inv, double phase);
+extern void md_zfftmod2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr, bool inv, double phase);
 
 extern void md_zsum(int D, const long dims[__VLA(D)], unsigned long flags, _Complex float* dst, const _Complex float* src);
 
