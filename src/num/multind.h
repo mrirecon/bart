@@ -87,9 +87,9 @@ extern void md_circ_ext(int D, const long dims1[__VLA(D)], void* dst, const long
 extern void md_periodic2(int D, const long dims1[__VLA(D)], const long strs1[__VLA(D)], void* dst, const long dims2[__VLA(D)], const long strs2[__VLA(D)], const void* src, size_t size);
 extern void md_periodic(int D, const long dims1[__VLA(D)], void* dst, const long dims2[__VLA(D)], const void* src, size_t size);
 
-extern _Bool md_compare2(int D, const long dims[__VLA(D)], const long str1[__VLA(D)], const void* src1,
+extern bool md_compare2(int D, const long dims[__VLA(D)], const long str1[__VLA(D)], const void* src1,
 			const long str2[__VLA(D)], const void* src2, size_t size);
-extern _Bool md_compare(int D, const long dims[__VLA(D)], const void* src1, const void* src2, size_t size);
+extern bool md_compare(int D, const long dims[__VLA(D)], const void* src1, const void* src2, size_t size);
 
 
 typedef void* (*md_alloc_fun_t)(int D, const long dimensions[__VLA(D)], size_t size);
@@ -101,7 +101,7 @@ extern void* md_alloc_gpu(int D, const long dimensions[__VLA(D)], size_t size);
 extern void* md_gpu_move(int D, const long dims[__VLA(D)], const void* ptr, size_t size);
 #endif
 extern void* md_alloc_sameplace(int D, const long dimensions[__VLA(D)], size_t size, const void* ptr);
-extern _Bool md_is_sameplace(const void* ptr1, const void* ptr2);
+extern bool md_is_sameplace(const void* ptr1, const void* ptr2);
 extern void md_free(const void* p);
 
 
@@ -113,19 +113,19 @@ extern void md_select_dims(int D, unsigned long flags, long odims[__VLA(D)], con
 extern void md_copy_dims(int D, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_copy_strides(int D, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_merge_dims(int D, long odims[__VLA(D)], const long dims1[__VLA(D)], const long dims2[__VLA(D)]);
-extern _Bool md_check_compat(int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
-extern _Bool md_check_bounds(int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
+extern bool md_check_compat(int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
+extern bool md_check_bounds(int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
 extern void md_singleton_dims(int D, long dims[__VLA(D)]);
 extern void md_singleton_strides(int D, long strs[__VLA(D)]);
 extern void md_set_dims(int D, long dims[__VLA(D)], long val);
 extern void md_min_dims(int D, unsigned long flags, long odims[__VLA(D)], const long idims1[__VLA(D)], const long idims2[__VLA(D)]);
 extern void md_max_dims(int D, unsigned long flags, long odims[__VLA(D)], const long idims1[__VLA(D)], const long idims2[__VLA(D)]);
-extern _Bool md_is_index(int D, const long pos[__VLA(D)], const long dims[__VLA(D)]);
-extern _Bool md_check_dimensions(int N, const long dims[__VLA(N)], unsigned int flags);
-extern _Bool md_check_equal_dims(int N, const long dims1[__VLA(N)], const long dims2[__VLA(N)], unsigned int flags);
+extern bool md_is_index(int D, const long pos[__VLA(D)], const long dims[__VLA(D)]);
+extern bool md_check_dimensions(int N, const long dims[__VLA(N)], unsigned int flags);
+extern bool md_check_equal_dims(int N, const long dims1[__VLA(N)], const long dims2[__VLA(N)], unsigned int flags);
 extern void md_permute_dims(int D, const int order[__VLA(D)], long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_transpose_dims(int D, int dim1, int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
-extern _Bool md_next(int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
+extern bool md_next(int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
 
 extern unsigned long md_nontriv_dims(int D, const long dims[__VLA(D)]);
 extern unsigned long md_nontriv_strides(int D, const long dims[__VLA(D)]);
