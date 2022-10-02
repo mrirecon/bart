@@ -47,7 +47,7 @@ static bool check_blas_strides(int N, const long str[N], long size)
  * @param istr1 must be of the form {0, 1, dim[1] + x} or {0, dim[2] + x, 1}
  * @param iptr1
  **/
-void blas_zfmac_cgemm(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void blas_zfmac_cgemm(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -91,7 +91,7 @@ void blas_zfmac_cgemm(unsigned int N, const long dims[N], const long ostr[N], co
  * @param istr1 must be of the form {0, 1+x}
  * @param iptr1
  **/
-void blas_zfmac_cgemv(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void blas_zfmac_cgemv(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -131,7 +131,7 @@ void blas_zfmac_cgemv(unsigned int N, const long dims[N], const long ostr[N], co
  * @param istr1 must be of the form {0, 1+x}
  * @param iptr1
  **/
-void blas_zfmac_cgeru(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void blas_zfmac_cgeru(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -165,7 +165,7 @@ void blas_zfmac_cgeru(unsigned int N, const long dims[N], const long ostr[N], co
  * @param istr2 must be of the form {0}
  * @param iptr2
  **/
-void blas_zfmac_caxpy(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void blas_zfmac_caxpy(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -196,7 +196,7 @@ void blas_zfmac_caxpy(unsigned int N, const long dims[N], const long ostr[N], co
  * @param istr2 must be of the form {1+x}
  * @param iptr2
  **/
-void blas_zfmac_cdotu(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void blas_zfmac_cdotu(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -240,7 +240,7 @@ void blas_zfmac_cdotu(unsigned int N, const long dims[N], const long ostr[N], co
  * @param istr1 must be of the form {0, 1, dim[1]} or {0, dim[2], 1}
  * @param iptr1
  **/
-void blas_fmac_sgemm(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+void blas_fmac_sgemm(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -283,7 +283,7 @@ void blas_fmac_sgemm(unsigned int N, const long dims[N], const long ostr[N], flo
  * @param istr1 must be of the form {0, 1+x}
  * @param iptr1
  **/
-void blas_fmac_sgemv(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+void blas_fmac_sgemv(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -323,7 +323,7 @@ void blas_fmac_sgemv(unsigned int N, const long dims[N], const long ostr[N], flo
  * @param istr1 must be of the form {0, 1+x}
  * @param iptr1
  **/
-void blas_fmac_sger(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+void blas_fmac_sger(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -358,7 +358,7 @@ void blas_fmac_sger(unsigned int N, const long dims[N], const long ostr[N], floa
  * @param istr2 must be of the form {0}
  * @param iptr2
  **/
-void blas_fmac_saxpy(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+void blas_fmac_saxpy(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -389,7 +389,7 @@ void blas_fmac_saxpy(unsigned int N, const long dims[N], const long ostr[N], flo
  * @param istr2 must be of the form {1+x}
  * @param iptr2
  **/
-void blas_fmac_sdot(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+void blas_fmac_sdot(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -432,7 +432,7 @@ void blas_fmac_sdot(unsigned int N, const long dims[N], const long ostr[N], floa
  * @param istr1 must be of the form {0, 0}
  * @param iptr1
  **/
-void blas_zmul_cmatcopy(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void blas_zmul_cmatcopy(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -467,7 +467,7 @@ void blas_zmul_cmatcopy(unsigned int N, const long dims[N], const long ostr[N], 
  * @param iptr
  * @param val
  **/
-void blas_zsmul_cmatcopy(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr[N], const complex float* iptr, complex float val)
+void blas_zsmul_cmatcopy(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr[N], const complex float* iptr, complex float val)
 {
 	long size = 8;
 
@@ -501,7 +501,7 @@ void blas_zsmul_cmatcopy(unsigned int N, const long dims[N], const long ostr[N],
  * @param istr1 must be of the form {1+x, 0} or {0, 1+x}
  * @param iptr1
  **/
-void blas_zmul_cdgmm(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void blas_zmul_cdgmm(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -537,7 +537,7 @@ void blas_zmul_cdgmm(unsigned int N, const long dims[N], const long ostr[N], com
  * @param istr1 must be of the form {0, 1+x}
  * @param iptr1
  **/
-void blas_zmul_cgeru(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void blas_zmul_cgeru(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -557,7 +557,7 @@ void blas_zmul_cgeru(unsigned int N, const long dims[N], const long ostr[N], com
  * @param istr1 must be of the form {0}
  * @param iptr1
  **/
-void blas_zmul_cscal(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void blas_zmul_cscal(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -589,7 +589,7 @@ void blas_zmul_cscal(unsigned int N, const long dims[N], const long ostr[N], com
  * @param istr1 must be of the form {0, 0}
  * @param iptr1
  **/
-void blas_mul_smatcopy(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+void blas_mul_smatcopy(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -624,7 +624,7 @@ void blas_mul_smatcopy(unsigned int N, const long dims[N], const long ostr[N], f
  * @param iptr
  * @param val
  **/
-void blas_smul_smatcopy(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr[N], const float* iptr, float val)
+void blas_smul_smatcopy(int N, const long dims[N], const long ostr[N], float* optr, const long istr[N], const float* iptr, float val)
 {
 	long size = 4;
 
@@ -658,7 +658,7 @@ void blas_smul_smatcopy(unsigned int N, const long dims[N], const long ostr[N], 
  * @param istr1 must be of the form {1+x, 0} or {0, 1+x}
  * @param iptr1
  **/
-void blas_mul_sdgmm(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+void blas_mul_sdgmm(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -693,7 +693,7 @@ void blas_mul_sdgmm(unsigned int N, const long dims[N], const long ostr[N], floa
  * @param istr1 must be of the form {0, 1+x}
  * @param iptr1
  **/
-void blas_mul_sger(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+void blas_mul_sger(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -713,7 +713,7 @@ void blas_mul_sger(unsigned int N, const long dims[N], const long ostr[N], float
  * @param istr1 must be of the form {0}
  * @param iptr1
  **/
-void blas_mul_sscal(unsigned int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
+void blas_mul_sscal(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 

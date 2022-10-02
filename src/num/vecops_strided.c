@@ -69,12 +69,12 @@ void deactivate_strided_vecops(void)
 	use_strided_vecops = false;
 }
 
-typedef long (*md_check_3op_t)(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size);
-typedef long (*md_check_2op_t)(unsigned long N, long ndims[N], long nostrs[N], long nistrs[N], const long dims[N], const long ostrs[N], const long istrs[N], long size);
+typedef int (*md_check_3op_t)(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size);
+typedef int (*md_check_2op_t)(int N, long ndims[N], long nostrs[N], long nistrs[N], const long dims[N], const long ostrs[N], const long istrs[N], long size);
 
-typedef void (*md_3op_t)(unsigned int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const float* iptr1, const long istrs2[D], const float* iptr2);
-typedef void (*md_s2op_t)(unsigned int D, const long dims[D], const long ostrs[D], float* optr, const long istrs[D], const float* iptr, float val);
-typedef void (*md_z3op_t)(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1, const long istrs2[D], const complex float* iptr2);
+typedef void (*md_3op_t)(int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const float* iptr1, const long istrs2[D], const float* iptr2);
+typedef void (*md_s2op_t)(int D, const long dims[D], const long ostrs[D], float* optr, const long istrs[D], const float* iptr, float val);
+typedef void (*md_z3op_t)(int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1, const long istrs2[D], const complex float* iptr2);
 
 static void perm_z3op(	unsigned int D, const long dims[D], int order[D],
 			unsigned long oflag, complex float* out,
@@ -137,7 +137,7 @@ static void perm_z3op(	unsigned int D, const long dims[D], int order[D],
 	md_free(out_p);
 }
 
-static void md_zfmac_transp(unsigned int D, const long dims[D], const long ostr[D], complex float* out, const long istr1[D], const complex float* in1, const long istr2[D], const complex float* in2)
+static void md_zfmac_transp(int D, const long dims[D], const long ostr[D], complex float* out, const long istr1[D], const complex float* in1, const long istr2[D], const complex float* in2)
 {
 	assert(2 == D);
 
@@ -145,7 +145,7 @@ static void md_zfmac_transp(unsigned int D, const long dims[D], const long ostr[
 	unsigned long iflag1 = 0;
 	unsigned long iflag2 = 0;
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		if (0 != ostr[i])
 			oflag = MD_SET(oflag, i);
@@ -247,7 +247,7 @@ static bool is_matrix(const long dims[3], const long strs[3], int i1, int i2, lo
  *
  * Fixme: we could loose restriction for matrix lying contiguously in memory
  */
-static long check_gemm(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_gemm(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -320,7 +320,7 @@ static long check_gemm(unsigned long N, long ndims[N], long nostrs[N], long nist
 	 */
 	int perm[N];
 
-	for (unsigned int i = 3; i < N; i++)
+	for (int i = 3; i < N; i++)
 		perm[i] = i;
 
 	perm[0] = ipos2;
@@ -344,7 +344,7 @@ static long check_gemm(unsigned long N, long ndims[N], long nostrs[N], long nist
  * nistrs1: (s, (ndim[0]+x)*s) or ((ndim[1]+x)*s, s)
  * nistrs2: (0, s)
  */
-static long check_gemv(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_gemv(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -370,7 +370,7 @@ static long check_gemv(unsigned long N, long ndims[N], long nostrs[N], long nist
 
 	int perm[N];
 
-	for (unsigned int i = 2; i < N; i++)
+	for (int i = 2; i < N; i++)
 		perm[i] = i;
 
 	perm[0] = (tostrs[0] == 0) ? 1 : 0;
@@ -406,7 +406,7 @@ static long check_gemv(unsigned long N, long ndims[N], long nostrs[N], long nist
  * nistrs1: (s*(1+x), 0)
  * nistrs2: (0, s*(1+x))
  */
-static long check_ger(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_ger(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -432,7 +432,7 @@ static long check_ger(unsigned long N, long ndims[N], long nostrs[N], long nistr
 
 	int perm[N];
 
-	for (unsigned int i = 2; i < N; i++)
+	for (int i = 2; i < N; i++)
 		perm[i] = i;
 
 	perm[0] = (tostrs[0] == size) ? 0 : 1;
@@ -461,7 +461,7 @@ static long check_ger(unsigned long N, long ndims[N], long nostrs[N], long nistr
  * nistrs1: (s*(1+x))
  * nistrs2: (0)
  */
-static long check_axpy(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_axpy(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -505,7 +505,7 @@ static long check_axpy(unsigned long N, long ndims[N], long nostrs[N], long nist
  * nistrs1: (s*x)
  * nistrs2: (s*x)
  */
-static long check_dot(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_dot(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -548,7 +548,7 @@ static long check_dot(unsigned long N, long ndims[N], long nostrs[N], long nistr
  * nistrs1: (s, s*dim[0])
  * nistrs2: (s, s*dim[0])
  */
-static long check_dot_outer(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_dot_outer(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -596,7 +596,7 @@ static long check_dot_outer(unsigned long N, long ndims[N], long nostrs[N], long
  * istr1:	[s, 4s, 0]
  * istr2:	[s, 0, 2s]
  */
-static long check_batched_select(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_batched_select(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -656,7 +656,7 @@ static long check_batched_select(unsigned long N, long ndims[N], long nostrs[N],
  * nistrs1: (s, s*(dims[0] + x))
  * nistrs2: (s*x, 0) or (0, s*x)
  */
-static long check_dgmm(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_dgmm(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -682,7 +682,7 @@ static long check_dgmm(unsigned long N, long ndims[N], long nostrs[N], long nist
 
 	int perm[N];
 
-	for (unsigned int i = 2; i < N; i++)
+	for (int i = 2; i < N; i++)
 		perm[i] = i;
 
 	perm[0] = (tostrs[0] == size) ? 0 : 1;
@@ -715,7 +715,7 @@ static long check_dgmm(unsigned long N, long ndims[N], long nostrs[N], long nist
  * nistrs1: (s, 0, ...)
  * nistrs2: (s, s * dim[0], ...)
  */
-static long check_reduce_outer(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_reduce_outer(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -736,7 +736,7 @@ static long check_reduce_outer(unsigned long N, long ndims[N], long nostrs[N], l
 
 	N = simplify_dims(3, N, tdims, strs);
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		if (tostrs[i] != tistrs1[i])
 			return -1;
 
@@ -768,7 +768,7 @@ static long check_reduce_outer(unsigned long N, long ndims[N], long nostrs[N], l
  * nistrs1: (0) or (0, s)
  * nistrs2: (s) or (s, s * dim[0])
  */
-static long check_reduce_inner(unsigned long N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -789,7 +789,7 @@ static long check_reduce_inner(unsigned long N, long ndims[N], long nostrs[N], l
 
 	N = simplify_dims(3, N, tdims, strs);
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		if (tostrs[i] != tistrs1[i])
 			return -1;
 
@@ -1141,7 +1141,7 @@ static bool simple_s2op(int N_checks, struct simple_s2op_check strided_calls[N_c
 }
 #endif
 
-bool simple_zfmac(unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
+bool simple_zfmac(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	if (!use_strided_vecops)
 		return false;
@@ -1163,7 +1163,7 @@ bool simple_zfmac(unsigned int N, const long dims[N], const long ostrs[N], compl
 				N, dims, ostrs, out, istrs1, in1, istrs2, in2, false);
 }
 
-bool simple_zfmacc(unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
+bool simple_zfmacc(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
 		{ check_gemm,  blas_zfmac_cgemm, true, true, false, false, blas_threadsafe },
@@ -1179,7 +1179,7 @@ bool simple_zfmacc(unsigned int N, const long dims[N], const long ostrs[N], comp
 				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true);
 }
 
-bool simple_fmac(unsigned int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
+bool simple_fmac(int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
 {
 	struct simple_3op_check strided_calls[] = {
 		{ check_gemm,  blas_fmac_sgemm, true, true, false, false, blas_threadsafe },
@@ -1193,7 +1193,7 @@ bool simple_fmac(unsigned int N, const long dims[N], const long ostrs[N], float*
 				N, dims, ostrs, out, istrs1, in1, istrs2, in2);
 }
 
-bool simple_zmul(unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
+bool simple_zmul(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
 		{ check_ger,   blas_zmul_cgeru, true, true, false, false, blas_threadsafe },
@@ -1205,7 +1205,7 @@ bool simple_zmul(unsigned int N, const long dims[N], const long ostrs[N], comple
 				N, dims, ostrs, out, istrs1, in1, istrs2, in2, false);
 }
 
-bool simple_zmulc(unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
+bool simple_zmulc(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
 		{ check_ger,   blas_zmul_cgeru, true, true, false, false, blas_threadsafe },
@@ -1217,7 +1217,7 @@ bool simple_zmulc(unsigned int N, const long dims[N], const long ostrs[N], compl
 				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true);
 }
 
-bool simple_mul(unsigned int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
+bool simple_mul(int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
 {
 	struct simple_3op_check strided_calls[] = {
 		{ check_ger,   blas_mul_sger, true, true, false, false, blas_threadsafe },
@@ -1229,7 +1229,7 @@ bool simple_mul(unsigned int N, const long dims[N], const long ostrs[N], float* 
 				N, dims, ostrs, out, istrs1, in1, istrs2, in2);
 }
 
-bool simple_zadd(unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
+bool simple_zadd(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
 #ifdef NON_DETERMINISTIC
@@ -1244,7 +1244,7 @@ bool simple_zadd(unsigned int N, const long dims[N], const long ostrs[N], comple
 				N, dims, ostrs, out, istrs1, in1, istrs2, in2, false);
 }
 
-bool simple_add(unsigned int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
+bool simple_add(int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
 {
 	struct simple_3op_check strided_calls[] = {
 #ifdef NON_DETERMINISTIC
@@ -1259,7 +1259,7 @@ bool simple_add(unsigned int N, const long dims[N], const long ostrs[N], float* 
 				N, dims, ostrs, out, istrs1, in1, istrs2, in2);
 }
 
-bool simple_zmax(unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
+bool simple_zmax(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
 		{ check_reduce_outer,	reduce_zmax_outer_gpu, true, false, false, true, true },

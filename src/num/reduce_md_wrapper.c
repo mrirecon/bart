@@ -32,7 +32,7 @@
  * @param istr1 must be of the form {1, dim[0]} or {1}
  * @param iptr1
  **/
-void reduce_zadd_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
+void reduce_zadd_inner_gpu(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -69,7 +69,7 @@ void reduce_zadd_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long
  * @param istr1 must be of the form {1, dim[0]}
  * @param iptr1
  **/
-void reduce_zadd_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
+void reduce_zadd_outer_gpu(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -99,12 +99,13 @@ void reduce_zadd_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long
  * @param istr1 must be of the form {1, dim[0]} or {1}
  * @param iptr1
  **/
-void reduce_zadd_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
+void reduce_zadd_gemv(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
 	assert(optr == iptr1);
-	for (unsigned int i = 0; i < N; i++)
+
+	for (int i = 0; i < N; i++)
 		assert(ostr[i] == istr1[i]);
 
 	long one_dims[N];
@@ -128,7 +129,7 @@ void reduce_zadd_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr
  * @param istr1 must be of the form {1, dim[0]} or {1}
  * @param iptr1
  **/
-void reduce_add_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], float* optr, const long istr1[__VLA(N)], const float* iptr1, const long istr2[__VLA(N)], const float* iptr2)
+void reduce_add_inner_gpu(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -165,7 +166,7 @@ void reduce_add_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long 
  * @param istr1 must be of the form {1, dim[0]}
  * @param iptr1
  **/
-void reduce_add_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], float* optr, const long istr1[__VLA(N)], const float* iptr1, const long istr2[__VLA(N)], const float* iptr2)
+void reduce_add_outer_gpu(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
@@ -195,12 +196,13 @@ void reduce_add_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long 
  * @param istr1 must be of the form {1, dim[0]} or {1}
  * @param iptr1
  **/
-void reduce_add_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], float* optr, const long istr1[__VLA(N)], const float* iptr1, const long istr2[__VLA(N)], const float* iptr2)
+void reduce_add_gemv(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
 	long size = 4;
 
 	assert(optr == iptr1);
-	for (unsigned int i = 0; i < N; i++)
+
+	for (int i = 0; i < N; i++)
 		assert(ostr[i] == istr1[i]);
 
 	long one_dims[N];
@@ -225,7 +227,7 @@ void reduce_add_gemv(unsigned int N, const long dims[__VLA(N)], const long ostr[
  * @param istr1 must be of the form {1, dim[0]} or {1}
  * @param iptr1
  **/
-void reduce_zmax_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
+void reduce_zmax_inner_gpu(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -262,7 +264,7 @@ void reduce_zmax_inner_gpu(unsigned int N, const long dims[__VLA(N)], const long
  * @param istr1 must be of the form {1, dim[0]}
  * @param iptr1
  **/
-void reduce_zmax_outer_gpu(unsigned int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], complex float* optr, const long istr1[__VLA(N)], const complex float* iptr1, const long istr2[__VLA(N)], const complex float* iptr2)
+void reduce_zmax_outer_gpu(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 

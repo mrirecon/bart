@@ -42,7 +42,7 @@
  * @param istr1
  * @param iptr1
  **/
-void zfmac_gpu_batched_loop(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void zfmac_gpu_batched_loop(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -64,7 +64,7 @@ void zfmac_gpu_batched_loop(unsigned int N, const long dims[N], const long ostr[
 	md_calc_strides(N, tistrs1, tidims1, size);
 	md_calc_strides(N, tistrs2, tidims2, size);
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		assert(tostrs[i] == ostr[i]);
 		assert(tistrs1[i] == istr1[i]);
@@ -116,7 +116,7 @@ void zfmac_gpu_batched_loop(unsigned int N, const long dims[N], const long ostr[
  * @param istr1
  * @param iptr1
  **/
-void zfmacc_gpu_batched_loop(unsigned int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
+void zfmacc_gpu_batched_loop(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
 	long size = 8;
 
@@ -138,7 +138,7 @@ void zfmacc_gpu_batched_loop(unsigned int N, const long dims[N], const long ostr
 	md_calc_strides(N, tistrs1, tidims1, size);
 	md_calc_strides(N, tistrs2, tidims2, size);
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		assert(tostrs[i] == ostr[i]);
 		assert(tistrs1[i] == istr1[i]);
