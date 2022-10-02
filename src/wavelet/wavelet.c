@@ -163,11 +163,11 @@ void fwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N]
 	// --d-- * --u--|N
 	// ---o---
 
-	assert(d == md_calc_blockdim(d, dims + 0, istr + 0, CFL_SIZE));
-	assert(u == md_calc_blockdim(u, dims + o, istr + o, CFL_SIZE * md_calc_size(o, dims)));
+	assert((int)d == md_calc_blockdim(d, dims + 0, istr + 0, CFL_SIZE));
+	assert((int)u == md_calc_blockdim(u, dims + o, istr + o, CFL_SIZE * md_calc_size(o, dims)));
 
-	assert(d == md_calc_blockdim(d, odims + 0, ostr + 0, CFL_SIZE));
-	assert(u == md_calc_blockdim(u, odims + o, ostr + o, CFL_SIZE * md_calc_size(o, odims)));
+	assert((int)d == md_calc_blockdim(d, odims + 0, ostr + 0, CFL_SIZE));
+	assert((int)u == md_calc_blockdim(u, odims + o, ostr + o, CFL_SIZE * md_calc_size(o, odims)));
 
 	// merge dims
 
@@ -219,10 +219,10 @@ void iwt1(unsigned int N, unsigned int d, const long dims[N], const long ostr[N]
 	// --d-- * --u--|N
 	// ---o---
 
-	assert(d == md_calc_blockdim(d, dims + 0, ostr + 0, CFL_SIZE));
-	assert(u == md_calc_blockdim(u, dims + o, ostr + o, CFL_SIZE * md_calc_size(o, dims)));
-	assert(d == md_calc_blockdim(d, idims + 0, istr + 0, CFL_SIZE));
-	assert(u == md_calc_blockdim(u, idims + o, istr + o, CFL_SIZE * md_calc_size(o, idims)));
+	assert((int)d == md_calc_blockdim(d, dims + 0, ostr + 0, CFL_SIZE));
+	assert((int)u == md_calc_blockdim(u, dims + o, ostr + o, CFL_SIZE * md_calc_size(o, dims)));
+	assert((int)d == md_calc_blockdim(d, idims + 0, istr + 0, CFL_SIZE));
+	assert((int)u == md_calc_blockdim(u, idims + o, istr + o, CFL_SIZE * md_calc_size(o, idims)));
 
 	long wdims[3] = { md_calc_size(d, dims), dims[d], md_calc_size(u, dims + o) };
 	long wistr[3] = { CFL_SIZE, istr[d], CFL_SIZE * md_calc_size(o, idims) };

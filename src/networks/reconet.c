@@ -523,8 +523,8 @@ static nn_t network_block_create(const struct reconet_s* config, unsigned int N,
 
 	if (1 != channel) {
 
-		unsigned int iperm[5] = {3, 0, 1, 2, 4};
-		unsigned int operm[5] = {1, 2, 3, 0, 4};
+		int iperm[5] = {3, 0, 1, 2, 4};
+		int operm[5] = {1, 2, 3, 0, 4};
 
 		result = nn_chain2_swap_FF(nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(5, iperm, dims))), 0, NULL, result, 0, NULL);
 		result = nn_chain2_swap_FF(result, 0, NULL, nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(5, operm, dims_net))), 0, NULL);

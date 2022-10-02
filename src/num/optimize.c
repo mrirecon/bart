@@ -435,7 +435,7 @@ unsigned int min_blockdim(unsigned int D, unsigned int N, const long dims[N], lo
 	unsigned int mbd = N;
 
 	for (unsigned int i = 0; i < D; i++)
-		mbd = MIN(mbd, md_calc_blockdim(N, dims, *strs[i], size[i]));
+		mbd = MIN(mbd, (unsigned int)md_calc_blockdim(N, dims, *strs[i], size[i]));
 
 	return mbd;
 }

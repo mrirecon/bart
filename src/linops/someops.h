@@ -20,7 +20,7 @@ extern struct linop_s* linop_resize_center_create(unsigned int N, const long out
 extern struct linop_s* linop_expand_create(unsigned int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);
 extern struct linop_s* linop_reshape_create(unsigned int A, const long out_dims[__VLA(A)], int B, const long in_dims[__VLA(B)]);
 extern struct linop_s* linop_extract_create(unsigned int N, const long pos[N], const long out_dims[N], const long in_dims[N]);
-extern struct linop_s* linop_permute_create(unsigned int N, const unsigned int order[__VLA(N)], const long idims[N]);
+extern struct linop_s* linop_permute_create(unsigned int N, const int order[__VLA(N)], const long idims[N]);
 extern struct linop_s* linop_transpose_create(int N, int a, int b, const long dims[N]);
 
 

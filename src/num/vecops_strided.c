@@ -76,7 +76,7 @@ typedef void (*md_3op_t)(unsigned int D, const long dims[D], const long ostrs[D]
 typedef void (*md_s2op_t)(unsigned int D, const long dims[D], const long ostrs[D], float* optr, const long istrs[D], const float* iptr, float val);
 typedef void (*md_z3op_t)(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1, const long istrs2[D], const complex float* iptr2);
 
-static void perm_z3op(	unsigned int D, const long dims[D], unsigned int order[D],
+static void perm_z3op(	unsigned int D, const long dims[D], int order[D],
 			unsigned long oflag, complex float* out,
 			unsigned long iflag1, const complex float* in1,
 			unsigned long iflag2, const complex float* in2,
@@ -85,7 +85,7 @@ static void perm_z3op(	unsigned int D, const long dims[D], unsigned int order[D]
 	long dims_p[D];
 	md_permute_dims(D, order, dims_p, dims);
 
-	unsigned int order_p[D];
+	int order_p[D];
 
 	unsigned oflag_p = 0;
 	unsigned iflag1_p = 0;
@@ -155,7 +155,7 @@ static void md_zfmac_transp(unsigned int D, const long dims[D], const long ostr[
 			iflag2 = MD_SET(iflag2, i);
 	}
 
-	perm_z3op( D, dims, (unsigned int[2]){1, 0}, oflag, out, iflag1, in1, iflag2, in2, md_zfmac2, false);
+	perm_z3op(D, dims, (int[2]){ 1, 0 }, oflag, out, iflag1, in1, iflag2, in2, md_zfmac2, false);
 }
 
 
@@ -318,7 +318,7 @@ static long check_gemm(unsigned long N, long ndims[N], long nostrs[N], long nist
 	 * (x, x, 0)
 	 * (0, x, x)
 	 */
-	unsigned int perm[N];
+	int perm[N];
 
 	for (unsigned int i = 3; i < N; i++)
 		perm[i] = i;
@@ -368,7 +368,7 @@ static long check_gemv(unsigned long N, long ndims[N], long nostrs[N], long nist
 	if (2 > N)
 		return -1;
 
-	unsigned int perm[N];
+	int perm[N];
 
 	for (unsigned int i = 2; i < N; i++)
 		perm[i] = i;
@@ -430,7 +430,7 @@ static long check_ger(unsigned long N, long ndims[N], long nostrs[N], long nistr
 	if ((2 > N) || ((size != tostrs[0]) && (size != tostrs[1])))
 		return -1;
 
-	unsigned int perm[N];
+	int perm[N];
 
 	for (unsigned int i = 2; i < N; i++)
 		perm[i] = i;
@@ -680,7 +680,7 @@ static long check_dgmm(unsigned long N, long ndims[N], long nostrs[N], long nist
 	if (2 > N)
 		return -1;
 
-	unsigned int perm[N];
+	int perm[N];
 
 	for (unsigned int i = 2; i < N; i++)
 		perm[i] = i;
@@ -828,8 +828,9 @@ static size_t get_block_size(unsigned int N, const long dims[N], const long strs
 
 	long (*nstr[1])[N?N:1] = { (long (*)[N?N:1])tstrs };
 
-	unsigned int NN = optimize_dims_gpu(1, N, tdims, nstr); // sorting of dims
-	if (md_calc_blockdim(NN, tdims, tstrs, size) != NN)
+	int NN = optimize_dims_gpu(1, N, tdims, nstr); // sorting of dims
+
+	if (NN != md_calc_blockdim(NN, tdims, tstrs, size))
 		return 0;
 
 	return md_calc_size(NN, tdims) * size;

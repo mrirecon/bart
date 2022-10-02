@@ -238,7 +238,7 @@ static bool test_linop_permute(void)
 {
 	enum { N = 4 };
 	long idims[N] = { 8, 4, 6, 3};
-	unsigned int perm[N] = {0, 3, 2, 1};
+	int perm[N] = { 0, 3, 2, 1 };
 	long odims[N];
 	md_permute_dims(N, perm, odims, idims);
 

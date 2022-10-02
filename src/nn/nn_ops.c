@@ -44,7 +44,7 @@ const struct nlop_s* nlop_maxpool_create(int N, const long dims[N], const long p
 	long ndims[2 * N];
 	long odims[2 * N];
 
-	unsigned int perm[2 * N];
+	int perm[2 * N];
 
 
 

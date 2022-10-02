@@ -1159,7 +1159,7 @@ void md_ztenmul2(unsigned int D, const long max_dims[D], const long out_strs[D],
 	if (simple_matmul(D, max_dims, out_strs, out, in2_strs, in2, in1_strs, in1))
 		return;
 
-	if (D == md_calc_blockdim(D, max_dims, out_strs, CFL_SIZE)) {
+	if ((int)D == md_calc_blockdim(D, max_dims, out_strs, CFL_SIZE)) {
 
 		md_zmul2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
 		return;
@@ -1172,7 +1172,7 @@ void md_ztenmul2(unsigned int D, const long max_dims[D], const long out_strs[D],
 
 void md_ztenmulc2(unsigned int D, const long max_dims[D], const long out_strs[D], complex float* out, const long in1_strs[D], const complex float* in1, const long in2_strs[D], const complex float* in2)
 {
-	if (D == md_calc_blockdim(D, max_dims, out_strs, CFL_SIZE)) {
+	if ((int)D == md_calc_blockdim(D, max_dims, out_strs, CFL_SIZE)) {
 
 		md_zmulc2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
 		return;
@@ -1207,7 +1207,7 @@ void md_ztenmulc(unsigned int D, const long out_dims[D], complex float* out, con
 void md_tenmul2(unsigned int D, const long max_dims[D], const long out_strs[D], float* out, const long in1_strs[D], const float* in1, const long in2_strs[D], const float* in2)
 {
 
-	if (D == md_calc_blockdim(D, max_dims, out_strs, FL_SIZE)) {
+	if ((int)D == md_calc_blockdim(D, max_dims, out_strs, FL_SIZE)) {
 
 		md_mul2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
 		return;
@@ -2491,8 +2491,8 @@ void md_zcosh(unsigned int D, const long dims[D], complex float* optr, const com
 float md_scalar2(unsigned int D, const long dim[D], const long str1[D], const float* ptr1, const long str2[D], const float* ptr2)
 {
 #if 1
-	if (       (D == md_calc_blockdim(D, dim, str1, FL_SIZE))
-		&& (D == md_calc_blockdim(D, dim, str2, FL_SIZE))) {
+	if (       ((int)D == md_calc_blockdim(D, dim, str1, FL_SIZE))
+		&& ((int)D == md_calc_blockdim(D, dim, str2, FL_SIZE))) {
 
 #ifdef USE_CUDA
 		if (cuda_ondevice(ptr1)) {
@@ -2927,7 +2927,7 @@ void md_zatanr(unsigned int D, const long dims[D], complex float* optr, const co
 float md_asum2(unsigned int D, const long dims[D], const long strs[D], const float* ptr)
 {
 #if 1
-	if (md_calc_blockdim(D, dims, strs, FL_SIZE) == D) {
+	if ((int)D == md_calc_blockdim(D, dims, strs, FL_SIZE)) {
 
 #ifdef USE_CUDA
 		if (cuda_ondevice(ptr))

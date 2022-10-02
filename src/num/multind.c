@@ -1,5 +1,6 @@
 /* Copyright 2013-2015 The Regents of the University of California.
  * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022. TU Graz. Institute of Biomedical Imaging.
  * Copyright 2017. Intel Corporation.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -60,7 +61,7 @@
  * Generic functions which loops over all dimensions of a set of
  * multi-dimensional arrays and calls a given function for each position.
  */
-void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[C], void* ptr[C], md_nary_fun_t fun)
+void md_nary(int C, int D, const long dim[D], const long* str[C], void* ptr[C], md_nary_fun_t fun)
 {
 	if (0 == D) {
 
@@ -72,7 +73,7 @@ void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[
 
 		void* moving_ptr[C];
 
-		for (unsigned int j = 0; j < C; j++)
+		for (int j = 0; j < C; j++)
 			moving_ptr[j] = ptr[j] + i * str[j][D - 1];
 
 		md_nary(C, D - 1, dim, str, moving_ptr, fun);
@@ -87,7 +88,7 @@ void md_nary(unsigned int C, unsigned int D, const long dim[D], const long* str[
  * This functions tries to parallelize over the dimensions indicated
  * with flags.
  */
-void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigned long flags, const long* str[C], void* ptr[C], md_nary_fun_t fun)
+void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, const long* str[C], void* ptr[C], md_nary_fun_t fun)
 {
 	flags = flags & md_nontriv_dims(D, dim);
 
@@ -140,7 +141,7 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 
 		void* moving_ptr[C];
 
-		for (unsigned int j = 0; j < C; j++) {
+		for (int j = 0; j < C; j++) {
 
 			moving_ptr[j] = ptr[j];
 
@@ -154,7 +155,7 @@ void md_parallel_nary(unsigned int C, unsigned int D, const long dim[D], unsigne
 
 
 
-static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[static N], unsigned int flags, const long pos[static N], md_loop_fun_t fun)
+static void md_parallel_loop_r(int D, int N, const long dim[static N], unsigned int flags, const long pos[static N], md_loop_fun_t fun)
 {
 	if (0 == D) {
 
@@ -168,7 +169,7 @@ static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[st
 	// an array instead of a pointer
 	long pos_copy[N];
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		pos_copy[i] = pos[i];
 
 	#pragma omp parallel for firstprivate(pos_copy) if ((1 < dim[D]) && (flags & (1 << D)))
@@ -187,7 +188,7 @@ static void md_parallel_loop_r(unsigned int D, unsigned int N, const long dim[st
  * Runs fun(data, position) for all position in dim
  *
  */
-void md_parallel_loop(unsigned int D, const long dim[static D], unsigned long flags, md_loop_fun_t fun)
+void md_parallel_loop(int D, const long dim[static D], unsigned long flags, md_loop_fun_t fun)
 {
 	long pos[D];
 	md_parallel_loop_r(D, D, dim, flags, pos, fun);
@@ -195,7 +196,7 @@ void md_parallel_loop(unsigned int D, const long dim[static D], unsigned long fl
 
 
 
-static void md_loop_r(unsigned int D, const long dim[D], long pos[D], md_loop_fun_t fun)
+static void md_loop_r(int D, const long dim[D], long pos[D], md_loop_fun_t fun)
 {
 	if (0 == D) {
 
@@ -216,7 +217,7 @@ static void md_loop_r(unsigned int D, const long dim[D], long pos[D], md_loop_fu
  * Runs fun( position ) for all position in dim
  *
  */
-void md_loop(unsigned int D, const long dim[D], md_loop_fun_t fun)
+void md_loop(int D, const long dim[D], md_loop_fun_t fun)
 {
 	long pos[D];
 	md_loop_r(D, dim, pos, fun);
@@ -227,7 +228,7 @@ void md_loop(unsigned int D, const long dim[D], md_loop_fun_t fun)
 /**
  * Computes the next position. Returns true until last index.
  */
-bool md_next(unsigned int D, const long dims[D], unsigned long flags, long pos[D])
+bool md_next(int D, const long dims[D], unsigned long flags, long pos[D])
 {
 	if (0 == D--)
 		return false;
@@ -258,11 +259,11 @@ bool md_next(unsigned int D, const long dims[D], unsigned long flags, long pos[D
  * @param D number of dimensions
  * @param dim dimensions array
  */
-long md_calc_offset(unsigned int D, const long strides[D], const long position[D])
+long md_calc_offset(int D, const long strides[D], const long position[D])
 {
 	long pos = 0;
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		pos += strides[i] * position[i];
 
 	return pos;
@@ -270,7 +271,7 @@ long md_calc_offset(unsigned int D, const long strides[D], const long position[D
 
 
 
-static long md_calc_size_r(unsigned int D, const long dim[D], size_t size)
+static long md_calc_size_r(int D, const long dim[D], size_t size)
 {
 	if (0 == D)
 		return size;
@@ -286,7 +287,7 @@ static long md_calc_size_r(unsigned int D, const long dim[D], size_t size)
  * @param D number of dimensions
  * @param dim dimensions array
  */
-long md_calc_size(unsigned int D, const long dim[D])
+long md_calc_size(int D, const long dim[D])
 {
 	return md_calc_size_r(D, dim, 1);
 }
@@ -298,10 +299,10 @@ long md_calc_size(unsigned int D, const long dim[D])
  * contineously, i.e. can be accessed as a block of memory.
  *
  */
-unsigned int md_calc_blockdim(unsigned int D, const long dim[D], const long str[D], size_t size)
+int md_calc_blockdim(int D, const long dim[D], const long str[D], size_t size)
 {
 	long dist = size;
-	unsigned int i = 0;
+	int i = 0;
 
 	for (i = 0; i < D; i++) {
 
@@ -326,11 +327,11 @@ unsigned int md_calc_blockdim(unsigned int D, const long dim[D], const long str[
  * @param odims output dimensions
  * @param idims input dimensions
  */
-void md_select_dims(unsigned int D, unsigned long flags, long odims[D], const long idims[D])
+void md_select_dims(int D, unsigned long flags, long odims[D], const long idims[D])
 {
 	md_copy_dims(D, odims, idims);
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (!MD_IS_SET(flags, i))
 			odims[i] = 1;
 }
@@ -342,7 +343,7 @@ void md_select_dims(unsigned int D, unsigned long flags, long odims[D], const lo
  *
  * odims[i] = idims[i]
  */
-void md_copy_dims(unsigned int D, long odims[D], const long idims[D])
+void md_copy_dims(int D, long odims[D], const long idims[D])
 {
 	memcpy(odims, idims, D * sizeof(long));
 }
@@ -354,7 +355,7 @@ void md_copy_dims(unsigned int D, long odims[D], const long idims[D])
  *
  * ostrs[i] = istrs[i]
  */
-void md_copy_strides(unsigned int D, long ostrs[D], const long istrs[D])
+void md_copy_strides(int D, long ostrs[D], const long istrs[D])
 {
 	memcpy(ostrs, istrs, D  * sizeof(long));
 }
@@ -366,9 +367,9 @@ void md_copy_strides(unsigned int D, long ostrs[D], const long istrs[D])
  *
  * dims[i] = val
  */
-void md_set_dims(unsigned int D, long dims[D], long val)
+void md_set_dims(int D, long dims[D], long val)
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		dims[i] = val;
 }
 
@@ -377,7 +378,7 @@ void md_set_dims(unsigned int D, long dims[D], long val)
 /**
  * returns whether or not @param pos is a valid index of an array of dimension @param dims
  */
-bool md_is_index(unsigned int D, const long pos[D], const long dims[D])
+bool md_is_index(int D, const long pos[D], const long dims[D])
 {
 	if (D == 0)
 		return true;
@@ -390,7 +391,7 @@ bool md_is_index(unsigned int D, const long pos[D], const long dims[D])
 /**
  * return whether some other dimensions are >1
  */
-bool md_check_dimensions(unsigned int N, const long dims[N], unsigned int flags)
+bool md_check_dimensions(int N, const long dims[N], unsigned int flags)
 {
 	long d[N];
 	md_select_dims(N, ~flags, d, dims);
@@ -403,7 +404,7 @@ bool md_check_dimensions(unsigned int N, const long dims[N], unsigned int flags)
 /**
  * Check if dimensions at 'flags' position are equal
  */
-bool md_check_equal_dims(unsigned int N, const long dims1[N], const long dims2[N], unsigned int flags)
+bool md_check_equal_dims(int N, const long dims1[N], const long dims2[N], unsigned int flags)
 {
 	return (   md_check_bounds(N, flags, dims1, dims2)
 	        && md_check_bounds(N, flags, dims2, dims1));
@@ -414,11 +415,11 @@ bool md_check_equal_dims(unsigned int N, const long dims1[N], const long dims2[N
 /*
  * compute non-trivial (> 1) dims
  */
-unsigned long md_nontriv_dims(unsigned int D, const long dims[D])
+unsigned long md_nontriv_dims(int D, const long dims[D])
 {
 	unsigned long flags = 0;
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (dims[i] > 1)
 			flags = MD_SET(flags, i);
 
@@ -429,11 +430,11 @@ unsigned long md_nontriv_dims(unsigned int D, const long dims[D])
 /*
  * compute non-trivial (!= 0) strides
  */
-unsigned long md_nontriv_strides(unsigned int D, const long strs[D])
+unsigned long md_nontriv_strides(int D, const long strs[D])
 {
 	unsigned long flags = 0;
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (strs[i] != 0)
 			flags = MD_SET(flags, i);
 
@@ -447,9 +448,9 @@ unsigned long md_nontriv_strides(unsigned int D, const long strs[D])
  *
  * dims[i] = 1
  */
-void md_singleton_dims(unsigned int D, long dims[D])
+void md_singleton_dims(int D, long dims[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		dims[i] = 1;
 }
 
@@ -460,9 +461,9 @@ void md_singleton_dims(unsigned int D, long dims[D])
  *
  * dims[i] = 1
  */
-void md_singleton_strides(unsigned int D, long strs[D])
+void md_singleton_strides(int D, long strs[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		strs[i] = 0;
 }
 
@@ -473,7 +474,7 @@ void md_singleton_strides(unsigned int D, long strs[D])
  * where indicated by a set bit in flags one must be equal to one
  * in atleast one of the arguments.
  */
-bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], const long dim2[D])
+bool md_check_compat(int D, unsigned long flags, const long dim1[D], const long dim2[D])
 {
 	if (0 == D)
 		return true;
@@ -488,11 +489,11 @@ bool md_check_compat(unsigned int D, unsigned long flags, const long dim1[D], co
 
 
 
-void md_merge_dims(unsigned int N, long out_dims[N], const long dims1[N], const long dims2[N])
+void md_merge_dims(int N, long out_dims[N], const long dims1[N], const long dims2[N])
 {
 	assert(md_check_compat(N, ~0UL, dims1, dims2));
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		out_dims[i] = (1 == dims1[i]) ? dims2[i] : dims1[i];
 }
 
@@ -501,7 +502,7 @@ void md_merge_dims(unsigned int N, long out_dims[N], const long dims1[N], const 
 /**
  * dim1 must be bounded by dim2 where a bit is set
  */
-bool md_check_bounds(unsigned int D, unsigned long flags, const long dim1[D], const long dim2[D])
+bool md_check_bounds(int D, unsigned long flags, const long dim1[D], const long dim2[D])
 {
 	if (0 == D--)
 		return true;
@@ -524,9 +525,9 @@ bool md_check_bounds(unsigned int D, unsigned long flags, const long dim1[D], co
  * @param idims1 input 1 dimensions
  * @param idims2 input 2 dimensions
  */
-void md_min_dims(unsigned int D, unsigned long flags, long odims[D], const long idims1[D], const long idims2[D])
+void md_min_dims(int D, unsigned long flags, long odims[D], const long idims1[D], const long idims2[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (MD_IS_SET(flags, i))
 			odims[i] = MIN(idims1[i], idims2[i]);
 }
@@ -543,9 +544,9 @@ void md_min_dims(unsigned int D, unsigned long flags, long odims[D], const long 
  * @param idims1 input 1 dimensions
  * @param idims2 input 2 dimensions
  */
-void md_max_dims(unsigned int D, unsigned long flags, long odims[D], const long idims1[D], const long idims2[D])
+void md_max_dims(int D, unsigned long flags, long odims[D], const long idims1[D], const long idims2[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (MD_IS_SET(flags, i))
 			odims[i] = MAX(idims1[i], idims2[i]);
 }
@@ -557,7 +558,7 @@ void md_max_dims(unsigned int D, unsigned long flags, long odims[D], const long 
  *
  * ptr[i] = 0
  */
-void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, size_t size)
+void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t size)
 {
 	const long (*nstr[1])[D] = { (const long (*)[D])str };
 #ifdef	USE_CUDA
@@ -565,7 +566,7 @@ void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, 
 #endif
 	unsigned long flags = 0;
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (0 == str[i])
 			flags |= MD_BIT(i);
 
@@ -601,11 +602,11 @@ void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, 
  * @param dim array of dimensions
  * @param size of a single element
  */
-long* md_calc_strides(unsigned int D, long str[D], const long dim[D], size_t size)
+long* md_calc_strides(int D, long str[D], const long dim[D], size_t size)
 {
 	long old = size;
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		str[i] = (1 == dim[i]) ? 0 : old;
 		old *= dim[i];
@@ -626,7 +627,7 @@ long* md_calc_strides(unsigned int D, long str[D], const long dim[D], size_t siz
  * @param ptr pointer to data to clear
  * @param size sizeof()
  */
-void md_clear(unsigned int D, const long dim[D], void* ptr, size_t size)
+void md_clear(int D, const long dim[D], void* ptr, size_t size)
 {
 	md_clear2(D, dim, MD_STRIDES(D, dim, size), ptr, size);
 }
@@ -639,7 +640,7 @@ void md_clear(unsigned int D, const long dim[D], void* ptr, size_t size)
  *
  * optr[i] = iptr[i]
  */
-void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
+void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
 {
 #if 0
 	// this is for a fun comparison between our copy engine and FFTW
@@ -666,13 +667,13 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 	long (*nstr2[2])[D] = { &tostr, &tistr };
 	int ND = optimize_dims_gpu(2, D, tdims, nstr2);
 
-	assert(ND <= (int)D);
+	assert(ND <= D);
 
 #if 1
 	// permute dims with 0 input strides or negative in/output strides to the end
 	// these might be permuted to the inner dimensions by optimize_dims and break the strided copy
 
-	unsigned int perm[ND];
+	int perm[ND];
 
 	for (int i = 0, j = 0; i < ND; i++) {
 
@@ -806,7 +807,7 @@ out:	;
  *
  * optr[i] = iptr[i]
  */
-void md_copy(unsigned int D, const long dim[D], void* optr, const void* iptr, size_t size)
+void md_copy(int D, const long dim[D], void* optr, const void* iptr, size_t size)
 {
 	long str[D];
 	md_calc_strides(D, str, dim, size);
@@ -829,7 +830,7 @@ static void* gpu_constant(const void* vp, size_t size)
  *
  * ptr[i] = iptr[0]
  */
-void md_fill2(unsigned int D, const long dim[D], const long str[D], void* ptr, const void* iptr, size_t size)
+void md_fill2(int D, const long dim[D], const long str[D], void* ptr, const void* iptr, size_t size)
 {
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr) && (!cuda_ondevice(iptr))) {
@@ -856,7 +857,7 @@ void md_fill2(unsigned int D, const long dim[D], const long str[D], void* ptr, c
  *
  * ptr[i] = iptr[0]
  */
-void md_fill(unsigned int D, const long dim[D], void* ptr, const void* iptr, size_t size)
+void md_fill(int D, const long dim[D], void* ptr, const void* iptr, size_t size)
 {
 	md_fill2(D, dim, MD_STRIDES(D, dim, size), ptr, iptr, size);
 }
@@ -867,16 +868,16 @@ void md_fill(unsigned int D, const long dim[D], void* ptr, const void* iptr, siz
 /**
  * Swap values between a number of arrays (with strides)
  */
-void md_circular_swap2(unsigned int M, unsigned int D, const long dims[D], const long* strs[M], void* ptr[M], size_t size)
+void md_circular_swap2(int M, int D, const long dims[D], const long* strs[M], void* ptr[M], size_t size)
 {
 	size_t sizes[M];
 
-	for (unsigned int i = 0; i < M; i++)
+	for (int i = 0; i < M; i++)
 		sizes[i] = size;
 
 	const long (*nstrs[M])[D];
 
-	for (unsigned int i = 0; i < M; i++)
+	for (int i = 0; i < M; i++)
 		nstrs[i] = (const long (*)[D])strs[i];
 
 
@@ -892,7 +893,7 @@ void md_circular_swap2(unsigned int M, unsigned int D, const long dims[D], const
 #endif
 		memcpy(tmp, ptr[0], size2);
 
-		for (unsigned int i = 0; i < M - 1; i++)
+		for (int i = 0; i < M - 1; i++)
 			memcpy(ptr[i], ptr[i + 1], size2);
 
 		memcpy(ptr[M - 1], tmp, size2);
@@ -909,7 +910,7 @@ void md_circular_swap2(unsigned int M, unsigned int D, const long dims[D], const
 /**
  * Swap values between a number of arrays
  */
-void md_circular_swap(unsigned M, unsigned int D, const long dims[D], void* ptr[M], size_t size)
+void md_circular_swap(int M, int D, const long dims[D], void* ptr[M], size_t size)
 {
 	long strs[M][D];
 
@@ -919,7 +920,7 @@ void md_circular_swap(unsigned M, unsigned int D, const long dims[D], void* ptr[
 
 	strp[0] = strs[0];
 
-	for (unsigned int i = 1; i < M; i++) {
+	for (int i = 1; i < M; i++) {
 
 		md_copy_strides(D, strs[i], strs[0]);
 		strp[i] = strs[i];
@@ -935,7 +936,7 @@ void md_circular_swap(unsigned M, unsigned int D, const long dims[D], void* ptr[
  *
  * iptr[i] = optr[i] and optr[i] = iptr[i]
  */
-void md_swap2(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr[D], void* iptr, size_t size)
+void md_swap2(int D, const long dim[D], const long ostr[D], void* optr, const long istr[D], void* iptr, size_t size)
 {
 	md_circular_swap2(2, D, dim, (const long*[2]){ ostr, istr }, (void*[2]){ optr, iptr }, size);
 }
@@ -947,7 +948,7 @@ void md_swap2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
  *
  * iptr[i] = optr[i] and optr[i] = iptr[i]
  */
-void md_swap(unsigned int D, const long dim[D], void* optr, void* iptr, size_t size)
+void md_swap(int D, const long dim[D], void* optr, void* iptr, size_t size)
 {
 	long str[D];
 	md_calc_strides(D, str, dim, size);
@@ -961,9 +962,9 @@ void md_swap(unsigned int D, const long dim[D], void* optr, void* iptr, size_t s
  * Move a block from an array to another array (with strides)
  *
  */
-void md_move_block2(unsigned int D, const long dim[D], const long opos[D], const long odim[D], const long ostr[D], void* optr, const long ipos[D], const long idim[D], const long istr[D], const void* iptr, size_t size)
+void md_move_block2(int D, const long dim[D], const long opos[D], const long odim[D], const long ostr[D], void* optr, const long ipos[D], const long idim[D], const long istr[D], const void* iptr, size_t size)
 {
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		assert(dim[i] <= odim[i]);
 		assert(dim[i] <= idim[i]);
@@ -982,7 +983,7 @@ void md_move_block2(unsigned int D, const long dim[D], const long opos[D], const
  * Move a block from an array to another array (without strides)
  *
  */
-void md_move_block(unsigned int D, const long dim[D], const long opos[D], const long odim[D], void* optr, const long ipos[D], const long idim[D], const void* iptr, size_t size)
+void md_move_block(int D, const long dim[D], const long opos[D], const long odim[D], void* optr, const long ipos[D], const long idim[D], const void* iptr, size_t size)
 {
 	md_move_block2(D, dim,
 			opos, odim, MD_STRIDES(D, odim, size), optr,
@@ -1000,13 +1001,13 @@ void md_move_block(unsigned int D, const long dim[D], const long opos[D], const 
  * if idim[d] < odim[d], then optr[pos + i] = iptr[i] for 0 <= i < idim[d]
  *
  */
-void md_copy_block2(unsigned int D, const long pos[D], const long odim[D], const long ostr[D], void* optr, const long idim[D], const long istr[D], const void* iptr, size_t size)
+void md_copy_block2(int D, const long pos[D], const long odim[D], const long ostr[D], void* optr, const long idim[D], const long istr[D], const void* iptr, size_t size)
 {
 	long dim[D];
 	long ipos[D];
 	long opos[D];
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		assert((idim[i] != odim[i]) || (0 == pos[i]));
 
@@ -1036,7 +1037,7 @@ void md_copy_block2(unsigned int D, const long pos[D], const long odim[D], const
  * if idim[d] < odim[d], then optr[pos + i] = iptr[i] for 0 <= i < idim[d]
  *
  */
-void md_copy_block(unsigned int D, const long pos[D], const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+void md_copy_block(int D, const long pos[D], const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
 	md_copy_block2(D, pos,
 			odim, MD_STRIDES(D, odim, size), optr,
@@ -1051,7 +1052,7 @@ void md_copy_block(unsigned int D, const long pos[D], const long odim[D], void* 
  * optr = [iptr 0 0 0 0]
  *
  */
-void md_resize(unsigned int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+void md_resize(int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
 	long pos[D];
 	memset(pos, 0, D * sizeof(long));
@@ -1066,7 +1067,7 @@ void md_resize(unsigned int D, const long odim[D], void* optr, const long idim[D
  * optr = [iptr val val val val]
  *
  */
-void md_pad(unsigned int D, const void* val, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+void md_pad(int D, const void* val, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
 	long pos[D];
 	memset(pos, 0, D * sizeof(long));
@@ -1081,13 +1082,13 @@ void md_pad(unsigned int D, const void* val, const long odim[D], void* optr, con
  * optr = [0 0 iptr 0 0]
  *
  */
-void md_resize_center(unsigned int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+void md_resize_center(int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
 	// the definition of the center position corresponds
 	// to the one used in the FFT.
 
 	long pos[D];
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		pos[i] = labs((odim[i] / 2) - (idim[i] / 2));
 
 	md_clear(D, odim, optr, size);
@@ -1100,11 +1101,11 @@ void md_resize_center(unsigned int D, const long odim[D], void* optr, const long
  * optr = [val val iptr val val]
  *
  */
-void md_pad_center(unsigned int D, const void* val, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+void md_pad_center(int D, const void* val, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
 	long pos[D];
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		pos[i] = labs((odim[i] / 2) - (idim[i] / 2));
 
 	md_fill(D, odim, optr, val, size);
@@ -1118,7 +1119,7 @@ void md_pad_center(unsigned int D, const void* val, const long odim[D], void* op
  * optr = iptr(pos[0], :, pos[2], :, :)
  *
  */
-void md_slice2(unsigned int D, unsigned long flags, const long pos[D], const long dim[D], const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
+void md_slice2(int D, unsigned long flags, const long pos[D], const long dim[D], const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
 {
 	long odim[D];
 	md_select_dims(D, ~flags, odim, dim);
@@ -1134,7 +1135,7 @@ void md_slice2(unsigned int D, unsigned long flags, const long pos[D], const lon
  * optr = iptr(pos[0], :, pos[2], :, :)
  *
  */
-void md_slice(unsigned int D, unsigned long flags, const long pos[D], const long dim[D], void* optr, const void* iptr, size_t size)
+void md_slice(int D, unsigned long flags, const long pos[D], const long dim[D], void* optr, const void* iptr, size_t size)
 {
 	long odim[D];
 	md_select_dims(D, ~flags, odim, dim);
@@ -1152,12 +1153,12 @@ void md_slice(unsigned int D, unsigned long flags, const long pos[D], const long
  * optr[order[i]] = iptr[i]
  *
  */
-void md_permute2(unsigned int D, const unsigned int order[D], const long odims[D], const long ostr[D], void* optr, const long idims[D], const long istr[D], const void* iptr, size_t size)
+void md_permute2(int D, const int order[D], const long odims[D], const long ostr[D], void* optr, const long idims[D], const long istr[D], const void* iptr, size_t size)
 {
 	unsigned int flags = 0;
 	long ostr2[D];
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		assert(order[i] < D);
 		assert(odims[i] == idims[order[i]]);
@@ -1180,7 +1181,7 @@ void md_permute2(unsigned int D, const unsigned int order[D], const long odims[D
  * optr[order[i]] = iptr[i]
  *
  */
-void md_permute(unsigned int D, const unsigned int order[D], const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
+void md_permute(int D, const int order[D], const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
 {
 	md_permute2(D, order,
 			odims, MD_STRIDES(D, odims, size), optr,
@@ -1194,20 +1195,20 @@ void md_permute(unsigned int D, const unsigned int order[D], const long odims[D]
  *
  *
  */
-void md_permute_dims(unsigned int D, const unsigned int order[D], long odims[D], const long idims[D])
+void md_permute_dims(int D, const int order[D], long odims[D], const long idims[D])
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		odims[i] = idims[order[i]];
 }
 
 
 
-static void md_transpose_order(unsigned int D, unsigned int order[D], unsigned int dim1, unsigned int dim2)
+static void md_transpose_order(int D, int order[D], int dim1, int dim2)
 {
 	assert(dim1 < D);
 	assert(dim2 < D);
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		order[i] = i;
 
 	order[dim1] = dim2;
@@ -1219,9 +1220,9 @@ static void md_transpose_order(unsigned int D, unsigned int order[D], unsigned i
  *
  *
  */
-void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int dim2, long odims[D], const long idims[D])
+void md_transpose_dims(int D, int dim1, int dim2, long odims[D], const long idims[D])
 {
-	unsigned int order[D];
+	int order[D];
 	md_transpose_order(D, order, dim1, dim2);
 
 	md_permute_dims(D, order, odims, idims);
@@ -1237,16 +1238,16 @@ void md_transpose_dims(unsigned int D, unsigned int dim1, unsigned int dim2, lon
  * optr[dim1] = iptr[dim2]
  *
  */
-void md_transpose2(unsigned int D, unsigned int dim1, unsigned int dim2, const long odims[D], const long ostr[D], void* optr, const long idims[D], const long istr[D], const void* iptr, size_t size)
+void md_transpose2(int D, int dim1, int dim2, const long odims[D], const long ostr[D], void* optr, const long idims[D], const long istr[D], const void* iptr, size_t size)
 {
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if ((i != dim1) && (i != dim2))
 			assert(odims[i] == idims[i]);
 
 	assert(odims[dim1] == idims[dim2]);
 	assert(odims[dim2] == idims[dim1]);
 
-	unsigned int order[D];
+	int order[D];
 	md_transpose_order(D, order, dim1, dim2);
 
 	md_permute2(D, order, odims, ostr, optr, idims, istr, iptr, size);
@@ -1262,7 +1263,7 @@ void md_transpose2(unsigned int D, unsigned int dim1, unsigned int dim2, const l
  * optr[dim1] = iptr[dim2]
  *
  */
-void md_transpose(unsigned int D, unsigned int dim1, unsigned int dim2, const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
+void md_transpose(int D, int dim1, int dim2, const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
 {
 	md_transpose2(D, dim1, dim2,
 			odims, MD_STRIDES(D, odims, size), optr,
@@ -1271,13 +1272,13 @@ void md_transpose(unsigned int D, unsigned int dim1, unsigned int dim2, const lo
 
 
 
-static void md_flip_inpl2(unsigned int D, const long dims[D], unsigned long flags, const long str[D], void* ptr, size_t size);
+static void md_flip_inpl2(int D, const long dims[D], unsigned long flags, const long str[D], void* ptr, size_t size);
 
 /**
  * Swap input and output while flipping selected dimensions
  * at the same time.
  */
-void md_swap_flip2(unsigned int D, const long dims[D], unsigned long flags, const long ostr[D], void* optr, const long istr[D], void* iptr, size_t size)
+void md_swap_flip2(int D, const long dims[D], unsigned long flags, const long ostr[D], void* optr, const long istr[D], void* iptr, size_t size)
 {
 #if 1
 	int i;
@@ -1331,7 +1332,7 @@ void md_swap_flip2(unsigned int D, const long dims[D], unsigned long flags, cons
  * Swap input and output while flipping selected dimensions
  * at the same time.
  */
-void md_swap_flip(unsigned int D, const long dims[D], unsigned long flags, void* optr, void* iptr, size_t size)
+void md_swap_flip(int D, const long dims[D], unsigned long flags, void* optr, void* iptr, size_t size)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, size);
@@ -1341,7 +1342,7 @@ void md_swap_flip(unsigned int D, const long dims[D], unsigned long flags, void*
 
 
 
-static void md_flip_inpl2(unsigned int D, const long dims[D], unsigned long flags, const long str[D], void* ptr, size_t size)
+static void md_flip_inpl2(int D, const long dims[D], unsigned long flags, const long str[D], void* ptr, size_t size)
 {
 	int i;
 
@@ -1372,7 +1373,7 @@ static void md_flip_inpl2(unsigned int D, const long dims[D], unsigned long flag
  * optr[dims[D] - 1 - i] = iptr[i]
  *
  */
-void md_flip2(unsigned int D, const long dims[D], unsigned long flags, const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
+void md_flip2(int D, const long dims[D], unsigned long flags, const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
 {
 	if (optr == iptr) {
 
@@ -1385,7 +1386,7 @@ void md_flip2(unsigned int D, const long dims[D], unsigned long flags, const lon
 	long off = 0;
 	long ostr2[D];
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		ostr2[i] = ostr[i];
 
@@ -1407,7 +1408,7 @@ void md_flip2(unsigned int D, const long dims[D], unsigned long flags, const lon
  * optr[dims[D] - 1 - i] = iptr[i]
  *
  */
-void md_flip(unsigned int D, const long dims[D], unsigned long flags, void* optr, const void* iptr, size_t size)
+void md_flip(int D, const long dims[D], unsigned long flags, void* optr, const void* iptr, size_t size)
 {
 	long str[D];
 	md_calc_strides(D, str, dims, size);
@@ -1421,28 +1422,28 @@ void md_flip(unsigned int D, const long dims[D], unsigned long flags, void* optr
  *
  * Only flagged dims may flow
  */
-void md_reshape2(unsigned int D, unsigned long flags, const long odims[D], const long ostrs[D], void* optr, const long idims[D], const long istrs[D], const void* iptr, size_t size)
+void md_reshape2(int D, unsigned long flags, const long odims[D], const long ostrs[D], void* optr, const long idims[D], const long istrs[D], const void* iptr, size_t size)
 {
 	assert(md_calc_size(D, odims) == md_calc_size(D, idims));
 	assert(md_check_equal_dims(D, odims, idims, ~flags));
 
-	unsigned int order[D];
-	unsigned int j = 0;
+	int order[D];
+	int j = 0;
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (MD_IS_SET(flags, i))
 			order[j++] = i;
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (!MD_IS_SET(flags, i))
 			order[j++] = i;
 
 	assert(D == j);
 
 
-	unsigned int iorder[D];
+	int iorder[D];
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		iorder[order[i]] = i;
 
 
@@ -1475,7 +1476,7 @@ void md_reshape2(unsigned int D, unsigned long flags, const long odims[D], const
  *
  * Only flagged dims may flow
  */
-void md_reshape(unsigned int D, unsigned long flags, const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
+void md_reshape(int D, unsigned long flags, const long odims[D], void* optr, const long idims[D], const void* iptr, size_t size)
 {
 	assert(md_calc_size(D, odims) == md_calc_size(D, idims));
 	assert(md_check_equal_dims(D, odims, idims, ~flags));
@@ -1498,7 +1499,7 @@ void md_reshape(unsigned int D, unsigned long flags, const long odims[D], void* 
 
 
 
-bool md_compare2(unsigned int D, const long dims[D], const long str1[D], const void* src1,
+bool md_compare2(int D, const long dims[D], const long str1[D], const void* src1,
 			const long str2[D], const void* src2, size_t size)
 {
 	__block bool eq = true;
@@ -1521,7 +1522,7 @@ bool md_compare2(unsigned int D, const long dims[D], const long str1[D], const v
 }
 
 
-bool md_compare(unsigned int D, const long dims[D], const void* src1, const void* src2, size_t size)
+bool md_compare(int D, const long dims[D], const void* src1, const void* src2, size_t size)
 {
 	long str[D];
 	md_calc_strides(D, str, dims, size);
@@ -1533,7 +1534,7 @@ bool md_compare(unsigned int D, const long dims[D], const void* src1, const void
 
 
 
-static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun)
+static void md_septrafo_r(int D, unsigned int R, long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun)
 {
 	if (0 == R--)
 		return;
@@ -1565,7 +1566,7 @@ static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], un
  * Apply a separable transformation along selected dimensions.
  *
  */
-void md_septrafo2(unsigned int D, const long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun)
+void md_septrafo2(int D, const long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun)
 {
         long dimcopy[D];
 	md_copy_dims(D, dimcopy, dimensions);
@@ -1579,7 +1580,7 @@ void md_septrafo2(unsigned int D, const long dimensions[D], unsigned long flags,
  * Apply a separable transformation along selected dimensions.
  *
  */
-void md_septrafo(unsigned int D, const long dims[D], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun)
+void md_septrafo(int D, const long dims[D], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun)
 {
         md_septrafo2(D, dims, flags, MD_STRIDES(D, dims, size), ptr, fun);
 }
@@ -1592,13 +1593,13 @@ void md_septrafo(unsigned int D, const long dims[D], unsigned long flags, void* 
  * dst(i, i, :, i, :) = src(i, i, :, i, :)
  *
  */
-void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, const long str1[D], void* dst, const long str2[D], const void* src, size_t size)
+void md_copy_diag2(int D, const long dims[D], unsigned long flags, const long str1[D], void* dst, const long str2[D], const void* src, size_t size)
 {
 	long stride1 = 0;
 	long stride2 = 0;
 	long count = -1;
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		if (MD_IS_SET(flags, i)) {
 
@@ -1627,7 +1628,7 @@ void md_copy_diag2(unsigned int D, const long dims[D], unsigned long flags, cons
  * dst(i ,i ,: ,i , :) = src(i ,i ,: ,i ,:)
  *
  */
-void md_copy_diag(unsigned int D, const long dims[D], unsigned long flags, void* dst, const void* src, size_t size)
+void md_copy_diag(int D, const long dims[D], unsigned long flags, void* dst, const void* src, size_t size)
 {
 	long str[D];
 	md_calc_strides(D, str, dims, size);
@@ -1643,7 +1644,7 @@ void md_copy_diag(unsigned int D, const long dims[D], unsigned long flags, void*
  * dst(i, i, :, i, :) = src[0]
  *
  */
-void md_fill_diag(unsigned int D, const long dims[D], unsigned long flags, void* dst, const void* src, size_t size)
+void md_fill_diag(int D, const long dims[D], unsigned long flags, void* dst, const void* src, size_t size)
 {
 	long str2[D];
 	md_singleton_strides(D, str2);
@@ -1653,7 +1654,7 @@ void md_fill_diag(unsigned int D, const long dims[D], unsigned long flags, void*
 
 
 
-static void md_circ_shift_inpl2(unsigned int D, const long dims[D], const long center[D], const long strs[D], void* dst, size_t size)
+static void md_circ_shift_inpl2(int D, const long dims[D], const long center[D], const long strs[D], void* dst, size_t size)
 {
 #if 0
 	long dims1[D];
@@ -1662,7 +1663,7 @@ static void md_circ_shift_inpl2(unsigned int D, const long dims[D], const long c
 	md_copy_dims(D, dims1, dims);
 	md_copy_dims(D, dims2, dims);
 
-	unsigned int i;
+	int i;
 
 	for (i = 0; i < D; i++) {
 		if (0 != center[i]) {
@@ -1693,7 +1694,7 @@ static void md_circ_shift_inpl2(unsigned int D, const long dims[D], const long c
 	md_circ_shift_inpl2(D, dims, center2, strs, dst, size);
 #else
 	// use tmp for now
-	unsigned int i;
+	int i;
 
 	for (i = 0; i < D; i++)
 		if (0 != center[i])
@@ -1720,11 +1721,11 @@ static void md_circ_shift_inpl2(unsigned int D, const long dims[D], const long c
  * dst[mod(i + center)] = src[i]
  *
  */
-void md_circ_shift2(unsigned int D, const long dimensions[D], const long center[D], const long str1[D], void* dst, const long str2[D], const void* src, size_t size)
+void md_circ_shift2(int D, const long dimensions[D], const long center[D], const long str1[D], void* dst, const long str2[D], const void* src, size_t size)
 {
 	long pos[D];
 
-	for (unsigned int i = 0; i < D; i++) {	// FIXME: it would be better to calc modulo
+	for (int i = 0; i < D; i++) {	// FIXME: it would be better to calc modulo
 
 		pos[i] = center[i];
 
@@ -1732,7 +1733,7 @@ void md_circ_shift2(unsigned int D, const long dimensions[D], const long center[
 			pos[i] += dimensions[i];
 	}
 
-	unsigned int i = 0;		// FIXME :maybe we shoud search the other way?
+	int i = 0;		// FIXME :maybe we shoud search the other way?
 
 	while ((i < D) && (0 == pos[i]))
 		i++;
@@ -1782,7 +1783,7 @@ void md_circ_shift2(unsigned int D, const long dimensions[D], const long center[
  * dst[mod(i + center)] = src[i]
  *
  */
-void md_circ_shift(unsigned int D, const long dimensions[D], const long center[D], void* dst, const void* src, size_t size)
+void md_circ_shift(int D, const long dimensions[D], const long center[D], void* dst, const void* src, size_t size)
 {
 	long strides[D];
 	md_calc_strides(D, strides, dimensions, size);
@@ -1796,11 +1797,11 @@ void md_circ_shift(unsigned int D, const long dimensions[D], const long center[D
  * Circularly extend array (with strides)
  *
  */
-void md_circ_ext2(unsigned int D, const long dims1[D], const long strs1[D], void* dst, const long dims2[D], const long strs2[D], const void* src, size_t size)
+void md_circ_ext2(int D, const long dims1[D], const long strs1[D], void* dst, const long dims2[D], const long strs2[D], const void* src, size_t size)
 {
 	long ext[D];
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		ext[i] = dims1[i] - dims2[i];
 
@@ -1808,7 +1809,7 @@ void md_circ_ext2(unsigned int D, const long dims1[D], const long strs1[D], void
 		assert(ext[i] <= dims2[i]);
 	}
 
-	unsigned int i = 0;		// FIXME :maybe we shoud search the other way?
+	int i = 0;		// FIXME :maybe we shoud search the other way?
 	while ((i < D) && (0 == ext[i]))
 		i++;
 
@@ -1844,7 +1845,7 @@ void md_circ_ext2(unsigned int D, const long dims1[D], const long strs1[D], void
  * Circularly extend array (without strides)
  *
  */
-void md_circ_ext(unsigned int D, const long dims1[D],  void* dst, const long dims2[D], const void* src, size_t size)
+void md_circ_ext(int D, const long dims1[D],  void* dst, const long dims2[D], const void* src, size_t size)
 {
 	md_circ_ext2(D, dims1, MD_STRIDES(D, dims1, size), dst,
 			dims2, MD_STRIDES(D, dims2, size), src, size);
@@ -1856,13 +1857,13 @@ void md_circ_ext(unsigned int D, const long dims1[D],  void* dst, const long dim
  * Periodically extend array (with strides)
  *
  */
-void md_periodic2(unsigned int D, const long dims1[D], const long strs1[D], void* dst, const long dims2[D], const long strs2[D], const void* src, size_t size)
+void md_periodic2(int D, const long dims1[D], const long strs1[D], void* dst, const long dims2[D], const long strs2[D], const void* src, size_t size)
 {
 	long dims1B[2 * D];
 	long strs1B[2 * D];
 	long strs2B[2 * D];
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		assert(0 == dims1[i] % dims2[i]);
 
@@ -1888,7 +1889,7 @@ void md_periodic2(unsigned int D, const long dims1[D], const long strs1[D], void
  * Periodically extend array (without strides)
  *
  */
-void md_periodic(unsigned int D, const long dims1[D], void* dst, const long dims2[D], const void* src, size_t size)
+void md_periodic(int D, const long dims1[D], void* dst, const long dims2[D], const void* src, size_t size)
 {
 	md_periodic2(D, dims1, MD_STRIDES(D, dims1, size), dst,
 			dims2, MD_STRIDES(D, dims2, size), src, size);
@@ -1901,7 +1902,7 @@ void md_periodic(unsigned int D, const long dims1[D], void* dst, const long dims
  *
  * return pointer to CPU memory
  */
-void* md_alloc(unsigned int D, const long dimensions[D], size_t size)
+void* md_alloc(int D, const long dimensions[D], size_t size)
 {
 	return xmalloc(md_calc_size(D, dimensions) * size);
 }
@@ -1913,7 +1914,7 @@ void* md_alloc(unsigned int D, const long dimensions[D], size_t size)
  *
  * return pointer to CPU memory
  */
-void* md_calloc(unsigned int D, const long dimensions[D], size_t size)
+void* md_calloc(int D, const long dimensions[D], size_t size)
 {
 	void* ptr = md_alloc(D, dimensions, size);
 
@@ -1930,7 +1931,7 @@ void* md_calloc(unsigned int D, const long dimensions[D], size_t size)
  *
  * return pointer to GPU memory
  */
-void* md_alloc_gpu(unsigned int D, const long dimensions[D], size_t size)
+void* md_alloc_gpu(int D, const long dimensions[D], size_t size)
 {
 	return cuda_malloc(md_calc_size(D, dimensions) * size);
 }
@@ -1942,7 +1943,7 @@ void* md_alloc_gpu(unsigned int D, const long dimensions[D], size_t size)
  *
  * return pointer to GPU memory
  */
-void* md_gpu_move(unsigned int D, const long dims[D], const void* ptr, size_t size)
+void* md_gpu_move(int D, const long dims[D], const void* ptr, size_t size)
 {
 	if (NULL == ptr)
 		return NULL;
@@ -1962,7 +1963,7 @@ void* md_gpu_move(unsigned int D, const long dims[D], const void* ptr, size_t si
  *
  * return pointer to CPU memory if ptr is in CPU or to GPU memory if ptr is in GPU
  */
-void* md_alloc_sameplace(unsigned int D, const long dimensions[D], size_t size, const void* ptr)
+void* md_alloc_sameplace(int D, const long dimensions[D], size_t size, const void* ptr)
 {
 #ifdef USE_CUDA
 	return (cuda_ondevice(ptr) ? md_alloc_gpu : md_alloc)(D, dimensions, size);

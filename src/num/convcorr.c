@@ -582,13 +582,13 @@ static bool check_trivial_cf(	int N,
 		return false;
 
 	// check contiguous memory
-	if ((unsigned int)N > md_calc_blockdim(N, odims, ostrs, size))
+	if (N > md_calc_blockdim(N, odims, ostrs, size))
 		return false;
 
-	if ((unsigned int)N > md_calc_blockdim(N, idims, istrs, size))
+	if (N > md_calc_blockdim(N, idims, istrs, size))
 		return false;
 
-	if ((unsigned int)N > md_calc_blockdim(N, kdims, kstrs, size))
+	if (N > md_calc_blockdim(N, kdims, kstrs, size))
 		return false;
 
 	return true;

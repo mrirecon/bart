@@ -188,7 +188,7 @@ static void kern_apply(const linop_data_t* _data, complex float* dst, const comp
 
 	complex float* perm = md_alloc_sameplace(DIMS, perm_dims, CFL_SIZE, src);
 
-	unsigned int permute_order[DIMS] = {0, 3, 5, 6, 1, 2, 4, 7};
+	int permute_order[DIMS] = { 0, 3, 5, 6, 1, 2, 4, 7 };
 
 	for (int i = 8; i < DIMS; i++)
 		permute_order[i] = i;
@@ -318,7 +318,8 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	out_dims[2] = sz;
 	out_dims[3] = nc;
 	out_dims[6] = tk;
-	unsigned int permute_order[DIMS] = {0, 4, 5, 1, 6, 2, 3, 7};
+
+	int permute_order[DIMS] = { 0, 4, 5, 1, 6, 2, 3, 7 };
 
 	for (int i = 8; i < DIMS; i++)
 		permute_order[i] = i;
@@ -551,7 +552,7 @@ static void multc_apply(const linop_data_t* _data, complex float* dst, const com
 
 	md_clear(DIMS, dst_dims, dst, CFL_SIZE);
 
-	unsigned int permute_order[DIMS] = {0, 2, 1};
+	int permute_order[DIMS] = { 0, 2, 1 };
 
 	for (int i = 3; i < DIMS; i++)
 		permute_order[i] = i;
@@ -871,7 +872,7 @@ static void construct_kernel(
 		}
 	}
 
-	unsigned int permute_order[DIMS] = {4, 1, 2, 5, 6, 7, 3, 0};
+	int permute_order[DIMS] = { 4, 1, 2, 5, 6, 7, 3, 0 };
 
 	for (int i = 8; i < DIMS; i++)
 		permute_order[i] = i;

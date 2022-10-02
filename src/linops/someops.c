@@ -848,8 +848,8 @@ struct permute_op_s {
 	int N;
 	const long* idims;
 	const long* odims;
-	const unsigned int* order;
-	const unsigned int* order_adj;
+	const int* order;
+	const int* order_adj;
 };
 
 static DEF_TYPEID(permute_op_s);
@@ -888,7 +888,7 @@ static void permute_free(const linop_data_t* _data)
 }
 
 
-struct linop_s* linop_permute_create(unsigned int N, const unsigned int order[N], const long idims[N])
+struct linop_s* linop_permute_create(unsigned int N, const int order[N], const long idims[N])
 {
 	long odims[N];
 	md_permute_dims(N, order, odims, idims);
@@ -904,8 +904,8 @@ struct linop_s* linop_permute_create(unsigned int N, const unsigned int order[N]
 
 	long* tidims = *TYPE_ALLOC(long[N]);
 	long* todims = *TYPE_ALLOC(long[N]);
-	unsigned int* torder = *TYPE_ALLOC(unsigned int[N]);
-	unsigned int* torder_adj = *TYPE_ALLOC(unsigned int[N]);
+	int* torder = *TYPE_ALLOC(int[N]);
+	int* torder_adj = *TYPE_ALLOC(int[N]);
 
 	for (unsigned int i = 0; i < N; i++) {
 
@@ -925,7 +925,7 @@ struct linop_s* linop_permute_create(unsigned int N, const unsigned int order[N]
 	return linop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)), permute_forward, permute_adjoint, permute_normal, NULL, permute_free);
 }
 
-extern struct linop_s* linop_permute_create(unsigned int N, const unsigned int order[__VLA(N)], const long idims[N]);
+extern struct linop_s* linop_permute_create(unsigned int N, const int order[__VLA(N)], const long idims[N]);
 
 struct transpose_op_s {
 
