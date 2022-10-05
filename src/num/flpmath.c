@@ -3458,7 +3458,7 @@ void md_zwavg2_core2(int D, const long dims[D], unsigned long flags, const long 
 void md_zfill2(int D, const long dim[D], const long str[D], complex float* ptr, complex float val)
 {
 #if 1
-	const long (*nstr[1])[D?D:1] = { (const long (*)[D?D:1])str};
+	const long (*nstr[1])[D?D:1] = { (const long (*)[D ?: 1])str };
 	void *nptr[1] = { ptr };
 	int io = 1;
 	size_t sizes[1] = { CFL_SIZE };
