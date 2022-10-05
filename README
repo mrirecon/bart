@@ -449,6 +449,9 @@ are installed and the wrong version is used accidentally.
 Please report problems to our mailing list and include
 the following information (as applicable):
 
+* What system you are using (Linux, Mac OS X, Windows)
+  and whether you use Matlab/Python wrappers.
+
 * The output of the 'version' command:
 
     $ bart version -V
