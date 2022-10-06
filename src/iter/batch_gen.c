@@ -29,10 +29,8 @@ struct bat_gen_conf_s bat_gen_conf_default = {
 	.bat_flags = 0,
 };
 
-static void rand_draw_data(unsigned int* rand_seed, long N, long perm[N], long Nb)
+static void rand_draw_data(unsigned int* rand_seed, long N, long perm[N], long /*Nb*/)
 {
-	UNUSED(Nb);
-
 	for (int i = 0; i < N; i++) {
 
 		#pragma omp critical
@@ -40,11 +38,10 @@ static void rand_draw_data(unsigned int* rand_seed, long N, long perm[N], long N
 	}
 }
 
-static void rand_perm_data(unsigned int* rand_seed, long N, long perm[N], long Nb)
+static void rand_perm_data(unsigned int* rand_seed, long N, long perm[N], long /*Nb*/)
 {
-	UNUSED(Nb);
-
 	bool drawn[N];
+
 	for (int i = 0; i < N; i++)
 		drawn[i] = false;
 

@@ -46,10 +46,8 @@ static DEF_TYPEID(s_data);
 
 // x = (z1 + z2)/2
 
-static void sum_xupdate(const operator_data_t* _data, float rho, complex float* dst, const complex float* src)
+static void sum_xupdate(const operator_data_t* _data, float /*rho*/, complex float* dst, const complex float* src)
 {
-	UNUSED(rho);
-
 	const struct s_data* data = CAST_DOWN(s_data, _data);
 
 	for(int i = 0; i < data->size; i++)

@@ -817,17 +817,15 @@ bool fft_threads_init = false;
 void fft_set_num_threads(int n)
 {
 #ifdef FFTWTHREADS
-	#pragma omp critical
+#pragma omp critical
 	if (!fft_threads_init) {
 
 		fft_threads_init = true;
 		fftwf_init_threads();
 	}
 
-	#pragma omp critical
+#pragma omp critical
         fftwf_plan_with_nthreads(n);
-#else
-	UNUSED(n);
 #endif
 }
 

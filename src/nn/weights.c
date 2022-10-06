@@ -146,14 +146,18 @@ void move_gpu_nn_weights(nn_weights_t weights){
 	for (int i = 0; i < weights->N; i++) {
 
 		auto iov = weights->iovs[i];
+
 		complex float* tmp = md_alloc_gpu(iov->N, iov->dims, iov->size);
+
 		md_copy(iov->N, iov->dims, tmp, weights->tensors[i], iov->size);
+
 		md_free(weights->tensors[i]);
+
 		weights->tensors[i] = tmp;
 	}
 #else
+	(void)weights;
 	error("Compiled without gpu support!");
-	UNUSED(weights);
 #endif
 }
 
@@ -169,7 +173,7 @@ bool nn_weights_on_gpu(nn_weights_t weights)
 #ifdef USE_CUDA
 	return cuda_ondevice(weights->tensors[0]);
 #else
-	UNUSED(weights);
+	(void)weights;
 	return false;
 #endif
 }

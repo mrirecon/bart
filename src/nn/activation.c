@@ -171,43 +171,33 @@ static void bias_op_apply(const nlop_data_t* _data, int N, complex float* args[N
 	md_zadd2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), args[0], MD_STRIDES(d->N, d->dims, CFL_SIZE), args[1], MD_STRIDES(d->N, d->bdims, CFL_SIZE), args[2]);
 }
 
-static void bias_op_deriv1(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void bias_op_deriv1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const struct bias_op_s* d = CAST_DOWN(bias_op_s, _data);
+
 	md_copy2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), dst, MD_STRIDES(d->N, d->dims, CFL_SIZE), src, CFL_SIZE);
 }
 
-static void bias_op_deriv2(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void bias_op_deriv2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const struct bias_op_s* d = CAST_DOWN(bias_op_s, _data);
+
 	md_copy2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), dst, MD_STRIDES(d->N, d->bdims, CFL_SIZE), src, CFL_SIZE);
 }
 
-static void bias_op_adj1(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void bias_op_adj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const struct bias_op_s* d = CAST_DOWN(bias_op_s, _data);
+
 	md_copy2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), dst, MD_STRIDES(d->N, d->dims, CFL_SIZE), src, CFL_SIZE);
 }
 
-static void bias_op_adj2(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void bias_op_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const struct bias_op_s* d = CAST_DOWN(bias_op_s, _data);
 
 	md_clear(d->N, d->bdims, dst, CFL_SIZE);
 	md_zsum(d->N, d->dims, ~md_nontriv_dims(d->N, d->bdims), dst, src);
-
 }
 
 static void bias_op_free(const nlop_data_t* _data)
@@ -451,11 +441,8 @@ static void softmax_apply(const nlop_data_t* _data, complex float* dst, const co
 	md_copy(d->N, d->dom->dims, dst, d->tmp, CFL_SIZE);
 }
 
-static void softmax_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void softmax_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	//applying a_i -> a_j = sum_i D_jS_ia_i = sum_i S_i(\delta_ij - S_j)a_i
 	const struct softmax_s* d = CAST_DOWN(softmax_s, _data);
 	assert(NULL != d->tmp);
@@ -524,13 +511,11 @@ struct sigmoid_s {
 
 DEF_TYPEID(sigmoid_s);
 
-static void sigmoid_apply(const nlop_data_t* _data, int N, const long dims[N], float* dst, const float* src, float* der)
+static void sigmoid_apply(const nlop_data_t* /*_data*/, int N, const long dims[N], float* dst, const float* src, float* der)
 {
-
-	UNUSED(_data);
-
 	float one = 1.;
 	float* ones = md_alloc_sameplace(N, dims, FL_SIZE, dst);
+
 	md_fill(N, dims, ones, &one, FL_SIZE);
 
 	md_smul(N, dims, dst, src, -1);

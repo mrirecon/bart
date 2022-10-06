@@ -1079,7 +1079,7 @@ const linop_data_t* operator_get_linop_data(const struct operator_s* op)
 
 struct linop_s* linop_assign_gpu(const struct linop_s* op, int device)
 {
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 	if (operator_zero_or_null_p(op->forward))
 		return (struct linop_s*)linop_clone(op);
 
@@ -1091,10 +1091,11 @@ struct linop_s* linop_assign_gpu(const struct linop_s* op, int device)
 	c->norm_inv = NULL;
 
 	return PTR_PASS(c);
-	#else
-	UNUSED(device);
+#else
+	(void)device;
+
 	return (struct linop_s*)linop_clone(op);
-	#endif
+#endif
 }
 
 struct linop_s* linop_assign_gpu_F(const struct linop_s* op, int device)

@@ -49,12 +49,11 @@ struct nlop_wrapper_s {
 DEF_TYPEID(nlop_wrapper_s);
 
 
-static void orthogonalize(iter_op_data* ptr, float* _dst, const float* _src)
+static void orthogonalize(iter_op_data* ptr, float* _dst, const float* /*_src*/)
 {
 #if 0
 	noir_orthogonalize(nlop_get_data(CAST_DOWN(nlop_wrapper_s, ptr)->noir), (complex float*)_dst, (const complex float*)_src);
 #else
-	UNUSED(_src);
 
 	auto nlw = CAST_DOWN(nlop_wrapper_s, ptr);
 

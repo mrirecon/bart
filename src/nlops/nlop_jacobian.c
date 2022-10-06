@@ -1191,13 +1191,9 @@ static void precomp_jacobian_del(const nlop_data_t* _data)
 }
 
 
-static void zprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II])
+static void zprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const long /*odims*/[OO][N], _Complex float* dst[OO], int II, const long /*idims*/[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II])
 {
 	auto data = CAST_DOWN(precomp_jacobian_s, _data);
-
-	UNUSED(odims);
-	UNUSED(idims);
-
 	auto op = data->nlop;
 
 	assert(nlop_get_nr_out_args(op) == OO);
@@ -1206,13 +1202,15 @@ static void zprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const
 	unsigned long out_der_flag = 0;
 	unsigned long in_der_flag = 0;
 
-	for (int i = 0; i < II; i++)
-		for (int o = 0; o < OO; o++)
+	for (int i = 0; i < II; i++) {
+		for (int o = 0; o < OO; o++) {
 			if (NULL != jac[o][i]) {
 
 				out_der_flag = MD_SET(out_der_flag, o);
 				in_der_flag = MD_SET(in_der_flag, i);
 			}
+		}
+	}
 
 	void* args[OO + II];
 	for (int i = 0; i < OO; i++)
@@ -1274,10 +1272,6 @@ struct nlop_s* nlop_zprecomp_jacobian_F(const struct nlop_s* nlop)
 static void zrprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], complex float* dst[OO], int II, const long idims[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II], complex float* jacc[OO][II])
 {
 	auto data = CAST_DOWN(precomp_jacobian_s, _data);
-
-	UNUSED(odims);
-	UNUSED(idims);
-
 	auto op = data->nlop;
 
 	assert(nlop_get_nr_out_args(op) == OO);
@@ -1286,13 +1280,15 @@ static void zrprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, cons
 	unsigned long out_der_flag = 0;
 	unsigned long in_der_flag = 0;
 
-	for (int i = 0; i < II; i++)
-		for (int o = 0; o < OO; o++)
+	for (int i = 0; i < II; i++) {
+		for (int o = 0; o < OO; o++) {
 			if (NULL != jac[o][i]) {
 
 				out_der_flag = MD_SET(out_der_flag, o);
 				in_der_flag = MD_SET(in_der_flag, i);
 			}
+		}
+	}
 
 	void* args[OO + II];
 	for (int i = 0; i < OO; i++)

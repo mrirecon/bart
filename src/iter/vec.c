@@ -18,7 +18,7 @@ const struct vec_iter_s* select_vecops(const float* x)
 #ifdef USE_CUDA
 	return cuda_ondevice(x) ? &gpu_iter_ops : &cpu_iter_ops;
 #else
-	UNUSED(x);
+	(void)x;
 	return &cpu_iter_ops;
 #endif
 }

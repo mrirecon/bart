@@ -198,11 +198,8 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
         // FIXME: Precalculate derivatives here and perform md_ztenmul only in operators below -> potential speed up
 }
 
-static void T1_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void T1_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	struct T1_phy_s* data = CAST_DOWN(T1_phy_s, _data);
 	long pos[data->N];
 
@@ -235,11 +232,8 @@ static void T1_der(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	md_zfmac2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->tmp_map, data->out_strs, data->tmp_dalpha);
 }
 
-static void T1_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void T1_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	struct T1_phy_s* data = CAST_DOWN(T1_phy_s, _data);
 
 	long pos[data->N];

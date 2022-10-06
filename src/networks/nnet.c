@@ -67,18 +67,13 @@ struct nnet_s nnet_init = {
 	.N_segm_labels = -1,
 };
 
-static unsigned int get_no_odims_mnist(const struct nnet_s* config, unsigned int NI, const long idims[NI])
+static unsigned int get_no_odims_mnist(const struct nnet_s* /*config*/, unsigned int NI, const long /*idims*/[NI])
 {
-	UNUSED(config);
-	UNUSED(idims);
-
 	return 2;
 }
 
-static void get_odims_mnist(const struct nnet_s* config, unsigned int NO, long odims[NO], unsigned int NI, const long idims[NI])
+static void get_odims_mnist(const struct nnet_s* /*config*/, unsigned int NO, long odims[NO], unsigned int NI, const long idims[NI])
 {
-	UNUSED(config);
-
 	odims[0] = 10;
 	odims[1] = idims[2];
 }
@@ -111,18 +106,13 @@ void nnet_init_mnist_default(struct nnet_s* nnet)
 		nnet->valid_loss =  &loss_classification_valid;
 }
 
-static unsigned int get_no_odims_segm(const struct nnet_s* config, unsigned int NI, const long idims[NI])
+static unsigned int get_no_odims_segm(const struct nnet_s* /*config*/, unsigned int NI, const long /*idims*/[NI])
 {
-	UNUSED(config);
-	UNUSED(idims);
-
 	return NI;
 }
 
 static void get_odims_segm(const struct nnet_s* config, unsigned int NO, long odims[NO], unsigned int NI, const long idims[NI])
 {
-	UNUSED(config);
-
 	assert(NO == NI);
 
 	md_copy_dims(NO, odims, idims);

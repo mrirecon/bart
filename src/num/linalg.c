@@ -190,8 +190,8 @@ bool mat_inverse(int N, complex float out[N][N], const complex float in[N][N])
 {
 #ifdef MAT_USE_LAPACK
 //	return blas_matrix_inverse(N, out, in);
-	UNUSED(in);
-	UNUSED(out);
+	(void)in;
+	(void)out;
 	assert(0);
 #else
 	// ATTENTION: slow and inaccurate

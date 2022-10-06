@@ -45,17 +45,13 @@ struct {
 	{ NULL, NULL }
 };
 
-static bool help_func_calc(void* ptr, char c, const char* optarg)
+static bool help_func_calc(void* /*ptr*/, char /*c*/, const char* /*optarg*/)
 {
-	UNUSED(ptr);
-	UNUSED(c);
-	UNUSED(optarg);
-
 	printf( "Available functions are:\n");
 
 	for (unsigned int i = 0; i < ARRAY_SIZE(calc_table); i++) {
 
-		if (0 == i%6)
+		if (0 == i % 6)
 			printf("\n");
 
 		if (NULL != calc_table[i].name)

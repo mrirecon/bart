@@ -161,9 +161,8 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 	return val;
 }
 
-static complex float nosens(int c, int s, double mpos[3], void* data, krn_t fun)
+static complex float nosens(int /*c*/, int s, double mpos[3], void* data, krn_t fun)
 {
-	UNUSED(c);
 	return fun(data, s, mpos);
 }
 
@@ -398,11 +397,8 @@ void calc_geo_phantom(const long dims[DIMS], complex float* out, bool kspace, in
 	md_free(angular);
 }
 
-static complex float cnst_one(void* _data, int s, const double mpos[3])
+static complex float cnst_one(void* /*_data*/, int /*s*/, const double /*mpos*/[3])
 {
-	UNUSED(_data);
-	UNUSED(mpos);
-	UNUSED(s);
 	return 1.;
 }
 

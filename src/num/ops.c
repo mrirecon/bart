@@ -587,11 +587,8 @@ struct null_s {
 
 static DEF_TYPEID(null_s);
 
-static void null_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+static void null_apply(const operator_data_t* /*_data*/, unsigned int N, void* /*args*/[N])
 {
-	UNUSED(_data);
-	UNUSED(args);
-
 	assert(1 == N);
 }
 
@@ -642,7 +639,7 @@ void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* o
 		return;
 	}
 #else
-	UNUSED(num_threads);
+	(void)num_threads;
 #endif
 
 	for (int i = 0; i < D; i++)
@@ -1195,11 +1192,11 @@ const struct operator_s* operator_copy_wrapper_sameplace(unsigned int N, const l
 	enum COPY_LOCATION loc[N];
 	for (int i = 0; i < (int)N; i++) {
 
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 		if (cuda_ondevice(ref))
 			loc[i] = CL_DEVICE;
 		else
-	#endif
+#endif
 			loc[i] = CL_CPU;
 		
 		if (NULL == ref)

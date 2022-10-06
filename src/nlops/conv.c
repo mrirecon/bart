@@ -124,11 +124,8 @@ static void convcorr_geom_fun(const nlop_data_t* _data, int N, complex float* ar
 }
 
 
-static void convcorr_geom_der2(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void convcorr_geom_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(convcorr_geom_s, _data);
 	complex float* x1 = data->der1;
 
@@ -139,11 +136,8 @@ static void convcorr_geom_der2(const nlop_data_t* _data, unsigned int o, unsigne
 	md_zfmacc2(2 * data->N, data->mdims, data->ostrs, dst, data->istrs2, src + data->shift, data->istrs1, x1);
 }
 
-static void convcorr_geom_adj2(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void convcorr_geom_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(convcorr_geom_s, _data);
 	complex float* x1 = data->der1;
 
@@ -154,11 +148,8 @@ static void convcorr_geom_adj2(const nlop_data_t* _data, unsigned int o, unsigne
 	md_zfmac2(2 * data->N, data->mdims, data->istrs2, dst + data->shift, data->ostrs, src, data->istrs1, x1);
 }
 
-static void convcorr_geom_der1(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void convcorr_geom_der1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(convcorr_geom_s, _data);
 	complex float* x2 = data->der2;
 
@@ -169,11 +160,8 @@ static void convcorr_geom_der1(const nlop_data_t* _data, unsigned int o, unsigne
 	md_zfmacc2(2 * data->N, data->mdims, data->ostrs, dst, data->istrs1, src, data->istrs2, x2 + data->shift);
 }
 
-static void convcorr_geom_adj1(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void convcorr_geom_adj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(convcorr_geom_s, _data);
 	complex float* x2 = data->der2;
 

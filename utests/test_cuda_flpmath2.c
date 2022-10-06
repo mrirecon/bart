@@ -12,7 +12,7 @@
 #include "utest.h"
 
 
-
+#define UNUSED(x) (void)x
 
 
 static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long in1_flag, unsigned long in2_flag, bool optimization_expected, float err_val)

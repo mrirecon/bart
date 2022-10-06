@@ -275,10 +275,6 @@ static void inverse_admm(iter_op_data* _data, float alpha, float* dst, const flo
 	struct iter_admm_conf *conf = &conf1;
 	unsigned int D = data->conf->ropts->r;;
 
-	const struct operator_s* normaleq_op = NULL;
-
-	UNUSED(normaleq_op);
-
 	struct admm_plan_s admm_plan = {
 
 		.maxiter = conf->maxiter,

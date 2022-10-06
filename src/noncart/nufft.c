@@ -1035,12 +1035,8 @@ struct linop_s* nufft_create2(int N,
 			bas_dims, basis, conf);
 }
 
-static void nufft_normal_only(const linop_data_t* _data, complex float* dst, const complex float* src)
+static void nufft_normal_only(const linop_data_t* /*_data*/, complex float* /*dst*/, const complex float* /*src*/)
 {
-	UNUSED(_data);
-	UNUSED(src);
-	UNUSED(dst);
-
 	error("NuFFT with normal operator only!");
 }
 

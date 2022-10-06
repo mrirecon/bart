@@ -93,9 +93,9 @@ void zfmac_gpu_batched_loop(int N, const long dims[N], const long ostr[N], compl
 				optr, iptr1, iptr2);
 
 #else
-	UNUSED(optr);
-	UNUSED(iptr1);
-	UNUSED(iptr2);
+	(void)optr;
+	(void)iptr1;
+	(void)iptr2;
 	assert(0);
 #endif
 }
@@ -169,7 +169,6 @@ void zfmacc_gpu_batched_loop(int N, const long dims[N], const long ostr[N], comp
 	md_copy_dims(N - 1, tdims, dims + 1);
 
 #ifdef USE_CUDA
-
 	assert(cuda_ondevice(optr));
 	assert(cuda_ondevice(iptr1));
 	assert(cuda_ondevice(iptr2));
@@ -179,11 +178,10 @@ void zfmacc_gpu_batched_loop(int N, const long dims[N], const long ostr[N], comp
 				md_nontriv_strides(N - 1, istr1 + 1),
 				md_nontriv_strides(N - 1, istr2 + 1),
 				optr, iptr1, iptr2);
-
 #else
-	UNUSED(optr);
-	UNUSED(iptr1);
-	UNUSED(iptr2);
+	(void)optr;
+	(void)iptr1;
+	(void)iptr2;
 	assert(0);
 #endif
 }

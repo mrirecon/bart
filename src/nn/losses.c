@@ -70,31 +70,29 @@ static void znorm_fun(const nlop_data_t* _data, complex float* dst, const comple
 	md_smul(d->N, d->ridims, d->tmp, (const float*)src, 2. / d->scale);
 }
 
-static void znorm_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void znorm_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto d = CAST_DOWN(znorm_s, _data);
 	assert(NULL != d->tmp);
 
 	float* tmp = md_alloc_sameplace(d->N, d->rodims, FL_SIZE, dst);
+
 	md_tenmul(d->N, d->rodims, tmp, d->ridims, d->tmp, d->ridims, (const float*)src);
 	md_zcmpl_real(d->N - 1, d->rodims + 1, dst, tmp);
+
 	md_free(tmp);
 }
 
-static void znorm_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void znorm_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto d = CAST_DOWN(znorm_s, _data);
 	assert(NULL != d->tmp);
 
 	float* tmp = md_alloc_sameplace(d->N, d->rodims, FL_SIZE, dst);
+
 	md_real(d->N - 1, d->rodims + 1, tmp, src);
 	md_tenmul(d->N, d->ridims, (float*)dst, d->ridims, d->tmp, d->rodims, tmp);
+
 	md_free(tmp);
 }
 
@@ -209,11 +207,8 @@ static void zasum_fun(const nlop_data_t* _data, complex float* dst, const comple
 }
 
 
-static void zasum_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void zasum_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	auto data = CAST_DOWN(zasum_s, _data);
 	assert(NULL != data->der);
 
@@ -221,11 +216,8 @@ static void zasum_der(const nlop_data_t* _data, unsigned int o, unsigned int i, 
 	md_tenmul(data->N, MD_SINGLETON_DIMS(data->N), (float*)dst, data->rdims, (float*)src, data->rdims, data->der);
 }
 
-static void zasum_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void zasum_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	auto data = CAST_DOWN(zasum_s, _data);
 	assert(NULL != data->der);
 
@@ -559,67 +551,67 @@ static void cce_fun(const nlop_data_t* _data, int D, complex float* args[D])
 }
 
 
-static void cce_der1(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void cce_der1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const struct cce_s* data = CAST_DOWN(cce_s, _data);
+
 	assert(NULL != data->tmp_log);
 	assert(NULL != data->tmp_div);
 
 	long odims[1];
 	md_singleton_dims(1, odims);
+
 	md_ztenmul2(data->N, data->dom->dims, MD_SINGLETON_STRS(data->N), dst, data->dom->strs, src, data->dom->strs, data->tmp_div);
 	md_zsmul(1, odims, dst, dst, -1. / data->scaling);
 }
 
-static void cce_der2(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void cce_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const struct cce_s* data = CAST_DOWN(cce_s, _data);
+
 	assert(NULL != data->tmp_log);
 	assert(NULL != data->tmp_div);
 
 	long odims[1];
 	md_singleton_dims(1, odims);
+
 	md_ztenmul2(data->N, data->dom->dims, MD_SINGLETON_STRS(data->N), dst, data->dom->strs, src, data->dom->strs, data->tmp_log);
 	md_zsmul(1, odims, dst, dst, -1. / data->scaling);
 }
 
-static void cce_adj1(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void cce_adj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const struct cce_s* data = CAST_DOWN(cce_s, _data);
+
 	assert(NULL != data->tmp_log);
 	assert(NULL != data->tmp_div);
 
 	long odims[1];
 	md_singleton_dims(1, odims);
+
 	complex float* tmp = md_alloc_sameplace(1, odims, CFL_SIZE, dst);
+
 	md_zsmul(1, odims, tmp, src, (complex float)(-1) / data->scaling);
 	md_ztenmulc2(data->N, data->dom->dims, data->dom->strs, dst, MD_SINGLETON_STRS(data->N), tmp, data->dom->strs, data->tmp_div);
+
 	md_free(tmp);
 }
 
-static void cce_adj2(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void cce_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const struct cce_s* data = CAST_DOWN(cce_s, _data);
+
 	assert(NULL != data->tmp_log);
 	assert(NULL != data->tmp_div);
 
 	long odims[1];
 	md_singleton_dims(1, odims);
+
 	complex float* tmp = md_alloc_sameplace(1, odims, CFL_SIZE, dst);
+
 	md_zsmul(1, odims, tmp, src, (complex float)(-1) / data->scaling);
 	md_ztenmul2(data->N, data->dom->dims, data->dom->strs, dst, MD_SINGLETON_STRS(data->N), tmp, data->dom->strs, data->tmp_log);
+
 	md_free(tmp);
 }
 
@@ -1028,9 +1020,8 @@ static void dice_fun(const nlop_data_t* _data, int D, complex float* args[D])
 	md_free(tmp);
 }
 
-static void dice_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void dice_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int i, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
 	const struct dice_s* d = CAST_DOWN(dice_s, _data);
 
 	complex float* tmp_sum = md_alloc_sameplace(d->cod->N, d->cod->dims, CFL_SIZE, dst);
@@ -1049,9 +1040,8 @@ static void dice_der(const nlop_data_t* _data, unsigned int o, unsigned int i, c
 	md_zsmul(d->cod->N, d->cod->dims, dst, dst, -2.);
 }
 
-static void dice_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void dice_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int i, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
 	const struct dice_s* d = CAST_DOWN(dice_s, _data);
 	int N = d->N;
 

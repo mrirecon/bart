@@ -199,11 +199,8 @@ static void norm_inv_fun(const nlop_data_t* _data, int Narg, complex float* args
 }
 
 
-static void norm_inv_der_src(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void norm_inv_der_src(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto d = CAST_DOWN(norm_inv_s, _data);
 
 	assert(0. == d->iter_conf.tol);
@@ -221,11 +218,8 @@ static void norm_inv_der_src(const nlop_data_t* _data, unsigned int o, unsigned 
 }
 
 
-static void norm_inv_adj_src(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void norm_inv_adj_src(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto d = CAST_DOWN(norm_inv_s, _data);
 
 	assert(0. == d->iter_conf.tol);

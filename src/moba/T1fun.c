@@ -158,12 +158,10 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	md_free(tmp_exp);
 }
 
-static void T1_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void T1_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	struct T1_s* data = CAST_DOWN(T1_s, _data);
+
 	long pos[data->N];
 
 	for (int i = 0; i < data->N; i++)
@@ -202,11 +200,8 @@ static void T1_der(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	md_free(tmp_map);
 }
 
-static void T1_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void T1_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	struct T1_s* data = CAST_DOWN(T1_s, _data);
 
 	long pos[data->N];

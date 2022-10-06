@@ -289,10 +289,8 @@ void bloch_mcconnell_ode(int P, float out[P * 3], const float in[P * 3] , float 
 		out[i] = out_tmp[i];
 }
 
-void bloch_mcc_pdy(int P, float out[P * 3][P * 3], const float in[P * 3], float r1[P], float r2[P], const float k[P - 1], const float m0[P], const float Om[P], const float gb[3])
+void bloch_mcc_pdy(int P, float out[P * 3][P * 3], const float /*in*/[P * 3], float r1[P], float r2[P], const float k[P - 1], const float m0[P], const float Om[P], const float gb[3])
 {
-	UNUSED(in);
-
 	float m[P * 3 + 1][P * 3 + 1];
 
 	bloch_mcconnel_matrix_ode(P, m, r1, r2, k, m0, Om, gb);
@@ -302,10 +300,8 @@ void bloch_mcc_pdy(int P, float out[P * 3][P * 3], const float in[P * 3], float 
 			out[j][i] = m[i][j]; //transposition
 }
 
-void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3], float r1[P], float r2[P], const float k[P - 1], const float m0[P], const float gb[3], complex float b1)
+void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3], float r1[P], float /*r2*/[P], const float k[P - 1], const float m0[P], const float /*gb*/[3], complex float b1)
 {
-	UNUSED(r2); UNUSED(gb);
-
 	for (int i = 0; i < P * 5 - 1; i++)
 		for (int j = 0; j < P * 3; j++)
 			out[i][j] = 0.;

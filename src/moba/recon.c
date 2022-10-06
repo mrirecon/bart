@@ -225,7 +225,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		// slower
 		nl = exp_create(dims, mask, TI, pattern, &mconf);
 #else
-		UNUSED(exp_create);
+		(void)exp_create;
 		nl = T2_create(dims, mask, TI, pattern, &mconf, usegpu);
 #endif
 		break;

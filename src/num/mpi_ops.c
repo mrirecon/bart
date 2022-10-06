@@ -33,8 +33,10 @@
 #include "num/flpmath.h"
 #include "num/vptr.h"
 
-
 #include "mpi_ops.h"
+
+#define UNUSED(x) (void)x
+
 
 static int mpi_rank = -1;  //ranks are the process ID of MPI
 static int mpi_nprocs = 1; // number of processes
@@ -48,7 +50,6 @@ static MPI_Comm mpi_get_comm(void)
 {
 	return comm;
 }
-
 #endif
 
 

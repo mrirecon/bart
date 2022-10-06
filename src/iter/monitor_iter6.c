@@ -390,10 +390,9 @@ static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, unsig
 	md_free(tmp_args[0]);
 }
 
-static bool monitor_iter6_nlop_eval(const monitor_iter6_value_data_t* _data, long epoch, long batch, long num_batches)
+static bool monitor_iter6_nlop_eval(const monitor_iter6_value_data_t* _data, long /*epoch*/, long batch, long num_batches)
 {
 	const auto d = CAST_DOWN(monitor_iter6_nlop_s, _data);
-	UNUSED(epoch);
 
 	return d->eval_each_batch || (num_batches == batch + 1);
 }
@@ -511,10 +510,9 @@ static void monitor_iter6_function_fun(const monitor_iter6_value_data_t* data, u
 	vals[0] = d->last_result;
 }
 
-static bool monitor_iter6_function_eval(const monitor_iter6_value_data_t* _data, long epoch, long batch, long num_batches)
+static bool monitor_iter6_function_eval(const monitor_iter6_value_data_t* _data, long /*epoch*/, long batch, long num_batches)
 {
 	const auto d = CAST_DOWN(monitor_iter6_function_s, _data);
-	UNUSED(epoch);
 
 	return d->eval_each_batch || (num_batches == batch + 1);
 }

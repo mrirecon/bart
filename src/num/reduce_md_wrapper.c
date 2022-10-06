@@ -54,7 +54,7 @@ void reduce_zadd_inner_gpu(int N, const long dims[N], const long ostr[N], comple
 	assert(cuda_ondevice(optr) && cuda_ondevice(iptr2));
 	cuda_reduce_zadd_inner(dims[0], (2 == N) ? dims[1] : 1, optr, iptr2);
 #else
-	UNUSED(iptr2);
+	(void)iptr2;
 	error("Compiled without gpu support!");
 #endif
 }
@@ -84,7 +84,7 @@ void reduce_zadd_outer_gpu(int N, const long dims[N], const long ostr[N], comple
 	assert(cuda_ondevice(optr) && cuda_ondevice(iptr2));
 	cuda_reduce_zadd_outer(dims[1], dims[0], optr, iptr2);
 #else
-	UNUSED(iptr2);
+	(void)iptr2;
 	error("Compiled without gpu support!");
 #endif
 }
@@ -151,7 +151,7 @@ void reduce_add_inner_gpu(int N, const long dims[N], const long ostr[N], float* 
 	assert(cuda_ondevice(optr) && cuda_ondevice(iptr2));
 	cuda_reduce_add_inner(dims[0], (2 == N) ? dims[1] : 1, optr, iptr2);
 #else
-	UNUSED(iptr2);
+	(void)iptr2;
 	error("Compiled without gpu support!");
 #endif
 }
@@ -181,7 +181,7 @@ void reduce_add_outer_gpu(int N, const long dims[N], const long ostr[N], float* 
 	assert(cuda_ondevice(optr) && cuda_ondevice(iptr2));
 	cuda_reduce_add_outer(dims[1], dims[0], optr, iptr2);
 #else
-	UNUSED(iptr2);
+	(void)iptr2;
 	error("Compiled without gpu support!");
 #endif
 }
@@ -249,7 +249,7 @@ void reduce_zmax_inner_gpu(int N, const long dims[N], const long ostr[N], comple
 	assert(cuda_ondevice(optr) && cuda_ondevice(iptr2));
 	cuda_reduce_zmax_inner(dims[0], (2 == N) ? dims[1] : 1, optr, iptr2);
 #else
-	UNUSED(iptr2);
+	(void)iptr2;
 	error("Compiled without gpu support!");
 #endif
 }
@@ -279,7 +279,7 @@ void reduce_zmax_outer_gpu(int N, const long dims[N], const long ostr[N], comple
 	assert(cuda_ondevice(optr) && cuda_ondevice(iptr2));
 	cuda_reduce_zmax_outer(dims[1], dims[0], optr, iptr2);
 #else
-	UNUSED(iptr2);
+	(void)iptr2;
 	error("Compiled without gpu support!");
 #endif
 }

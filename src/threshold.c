@@ -70,7 +70,7 @@ static void lrthresh(int D, const long dims[D], int llrblk, float lambda, unsign
 	long blkdims[MAX_LEV][D];
 
 	int levels = llr_blkdims(blkdims, ~flags, dims, llrblk);
-	UNUSED(levels);
+	(void)levels;
 
 	const struct operator_p_s* p = lrthresh_create(dims, false, ~flags, (const long (*)[])blkdims, lambda, false, false, false);
 

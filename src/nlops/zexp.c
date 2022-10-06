@@ -32,10 +32,8 @@ static void zexp_free(const nlop_data_t* _data)
 	xfree(_data);
 }
 
-static void zexp_apply(const nlop_data_t* _data, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
+static void zexp_apply(const nlop_data_t* /*_data*/, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
 {
-	UNUSED(_data);
-
 	md_zexp(N, dims, dst, src);
 
 	if (NULL != der)
@@ -67,10 +65,8 @@ static void zlog_free(const nlop_data_t* _data)
 	xfree(_data);
 }
 
-static void zlog_apply(const nlop_data_t* _data, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
+static void zlog_apply(const nlop_data_t* /*_data*/, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
 {
-	UNUSED(_data);
-
 	if (NULL != der) {
 
 		md_zfill(N, dims, der, 1);

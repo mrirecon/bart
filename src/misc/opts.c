@@ -585,23 +585,20 @@ int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* h
 }
 
 
-bool opt_set(void* ptr, char c, const char* optarg)
+bool opt_set(void* ptr, char /*c*/, const char* /*optarg*/)
 {
-	UNUSED(c); UNUSED(optarg);
 	*(bool*)ptr = true;
 	return false;
 }
 
-bool opt_clear(void* ptr, char c, const char* optarg)
+bool opt_clear(void* ptr, char /*c*/, const char* /*optarg*/)
 {
-	UNUSED(c); UNUSED(optarg);
 	*(bool*)ptr = false;
 	return false;
 }
 
-bool opt_int(void* ptr, char c, const char* optarg)
+bool opt_int(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	int val;
 
 	if (0 != parse_int(&val, optarg))
@@ -611,10 +608,10 @@ bool opt_int(void* ptr, char c, const char* optarg)
 	return false;
 }
 
-bool opt_uint(void* ptr, char c, const char* optarg)
+bool opt_uint(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	int val;
+
 	if (0 != parse_int(&val, optarg))
 		error("Could not parse argument to opt_uint: %s!\n", optarg);
 
@@ -625,9 +622,8 @@ bool opt_uint(void* ptr, char c, const char* optarg)
 	return false;
 }
 
-bool opt_long(void* ptr, char c, const char* optarg)
+bool opt_long(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	long val;
 
 	if (0 != parse_long(&val, optarg))
@@ -638,10 +634,10 @@ bool opt_long(void* ptr, char c, const char* optarg)
 	return false;
 }
 
-bool opt_ulong(void* ptr, char c, const char* optarg)
+bool opt_ulong(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	long val;
+
 	if (0 != parse_long(&val, optarg))
 		error("Could not parse argument to opt_ulong: %s!\n", optarg);
 
@@ -652,9 +648,8 @@ bool opt_ulong(void* ptr, char c, const char* optarg)
 	return false;
 }
 
-bool opt_float(void* ptr, char c, const char* optarg)
+bool opt_float(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	complex float val;
 
 	if (0 != parse_cfl(&val, optarg))
@@ -669,16 +664,14 @@ bool opt_float(void* ptr, char c, const char* optarg)
 }
 
 
-bool opt_cfl(void* ptr, char c, const char* optarg)
+bool opt_cfl(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	return 0 != parse_cfl(ptr, optarg);
 }
 
 
-bool opt_string(void* ptr, char c, const char* optarg)
+bool opt_string(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	*(const char**)ptr = strdup(optarg);
 
 #pragma omp critical (bart_options_str_list)
@@ -690,14 +683,12 @@ bool opt_string(void* ptr, char c, const char* optarg)
 }
 
 
-static bool opt_file(void* ptr, char c, const char* optarg, bool out, bool in)
+static bool opt_file(void* ptr, char /*c*/, const char* optarg, bool out, bool in)
 {
-	UNUSED(c);
-
 	*(const char**)ptr = strdup(optarg);
 
 	#pragma omp critical (bart_options_str_list)
-	list_append(str_list, *(char**) ptr);
+	list_append(str_list, *(char**)ptr);
 
 	if (out)
 		io_reserve_output(*(char**)ptr);
@@ -724,9 +715,8 @@ bool opt_inoutfile(void* ptr, char c, const char* optarg)
 	return opt_file(ptr, c, optarg, true, true);
 }
 
-bool opt_float_vec2(void* ptr, char c, const char* optarg)
+bool opt_float_vec2(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	int r = sscanf(optarg, "%f:%f", &(*(float(*)[2])ptr)[0], &(*(float(*)[2])ptr)[1]);
 
 	assert(2 == r);
@@ -756,9 +746,8 @@ bool opt_vec2(void* ptr, char c, const char* optarg)
 	return false;
 }
 
-bool opt_float_vec3(void* ptr, char c, const char* optarg)
+bool opt_float_vec3(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	int r = sscanf(optarg, "%f:%f:%f", &(*(float(*)[3])ptr)[0], &(*(float(*)[3])ptr)[1], &(*(float(*)[3])ptr)[2]);
 
 	assert(3 == r);
@@ -792,9 +781,6 @@ bool opt_vec3(void* ptr, char c, const char* optarg)
 
 bool opt_vecn(void* _ptr, char c, const char* optarg)
 {
-
-	UNUSED(c);
-
 	struct opt_vec_s* ptr = _ptr;
 	long* vec = ptr->ptr;
 	int count = 0;
@@ -829,9 +815,8 @@ bool opt_vecn(void* _ptr, char c, const char* optarg)
 }
 
 
-bool opt_float_vec4(void* ptr, char c, const char* optarg)
+bool opt_float_vec4(void* ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
 	int r = sscanf(optarg, "%f:%f:%f:%f", &(*(float(*)[3])ptr)[0], &(*(float(*)[3])ptr)[1], &(*(float(*)[3])ptr)[2], &(*(float(*)[3])ptr)[3]);
 
 	assert(4 == r);
@@ -841,8 +826,6 @@ bool opt_float_vec4(void* ptr, char c, const char* optarg)
 
 bool opt_float_vecN(void* _ptr, char c, const char* optarg)
 {
-	UNUSED(c);
-
 	struct opt_vec_s* ptr = _ptr;
 	float* vec = ptr->ptr;
 	int count = 0;
@@ -877,10 +860,8 @@ bool opt_float_vecN(void* _ptr, char c, const char* optarg)
 }
 
 
-bool opt_select(void* ptr, char c, const char* optarg)
+bool opt_select(void* ptr, char /*c*/, const char* /*optarg*/)
 {
-	UNUSED(c); UNUSED(optarg);
-
 	struct opt_select_s* sel = ptr;
 
 	if (0 != memcmp(sel->ptr, sel->default_value, sel->size))
@@ -892,10 +873,8 @@ bool opt_select(void* ptr, char c, const char* optarg)
 }
 
 
-bool opt_subopt(void* _ptr, char c, const char* optarg)
+bool opt_subopt(void* _ptr, char /*c*/, const char* optarg)
 {
-	UNUSED(c);
-
 	struct opt_subopt_s* ptr = _ptr;
 
 	int n = ptr->n;

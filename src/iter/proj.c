@@ -67,9 +67,8 @@ static void proj_pos_real_fun(const operator_data_t* _data, unsigned int N, void
 	md_zsmax(data->N, data->dims, dst, src, data->min);
 }
 
-static void proj_pos_real_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+static void proj_pos_real_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	UNUSED(mu);
 	proj_pos_real_fun(_data, 2, MAKE_ARRAY((void*)dst, (void*)src));
 }
 
@@ -158,12 +157,12 @@ static void proj_mean_free_fun(const operator_data_t* _data, unsigned int N, voi
 	md_zsum(data->N, data->dims, ~data->bflag, tmp, src);
 	md_zsmul(data->N, batch_dims, tmp, tmp, 1./(float)md_calc_size(data->N, mf_dims));
 	md_zsub2(data->N, data->dims, MD_STRIDES(data->N, data->dims, CFL_SIZE), dst, MD_STRIDES(data->N, data->dims, CFL_SIZE), src, MD_STRIDES(data->N, batch_dims, CFL_SIZE), tmp);
+
 	md_free(tmp);
 }
 
-static void proj_mean_free_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+static void proj_mean_free_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	UNUSED(mu);
 	proj_mean_free_fun(_data, 2, MAKE_ARRAY((void*)dst, (void*)src));
 }
 
@@ -171,6 +170,7 @@ static void proj_mean_free_apply(const operator_data_t* _data, float mu, complex
 static void proj_mean_free_del(const operator_data_t* _data)
 {
 	const auto data = CAST_DOWN(proj_mean_free_s, _data);
+
 	xfree(data->dims);
 	xfree(data);
 }
@@ -271,15 +271,13 @@ static void proj_sphere_complex_fun(const struct operator_data_s* _data, unsigne
 	md_free(tmp);
 }
 
-static void proj_sphere_real_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+static void proj_sphere_real_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	UNUSED(mu);
 	proj_sphere_real_fun(_data, 2, MAKE_ARRAY((void*)dst, (void*)src));
 }
 
-static void proj_sphere_complex_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+static void proj_sphere_complex_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	UNUSED(mu);
 	proj_sphere_complex_fun(_data, 2, MAKE_ARRAY((void*)dst, (void*)src));
 }
 

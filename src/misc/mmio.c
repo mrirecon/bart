@@ -745,8 +745,6 @@ complex float* load_zcoo(const char* name, int D, long dimensions[D])
 
 static complex float* load_cfl_internal(const char* name, int D, long dimensions[D], bool priv)
 {
-	UNUSED(priv);
-
 	io_register_input(name);
 
 	enum file_types_e type = file_type(name);
@@ -890,10 +888,8 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 }
 
 
-complex float* anon_cfl(const char* name, int D, const long dims[D])
+complex float* anon_cfl(const char* /*name*/, int D, const long dims[D])
 {
-	UNUSED(name);
-
 	void* addr;
 	long T;
 

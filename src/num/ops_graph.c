@@ -631,10 +631,8 @@ static bool cmp_identity_node(const void* data, const void* _ref) {
 	return check_simple_copy(node->op);
 }
 
-static bool cmp_end_node(const void* data, const void* _ref)
+static bool cmp_end_node(const void* data, const void* /*_ref*/)
 {
-	UNUSED(_ref);
-
 	const struct node_s* node = data;
 	
 	bool end = true;
@@ -920,11 +918,8 @@ static graph_t create_sum_graph(bool multi_sum, int II, int out_index, int N, co
 	return result;
 }
 
-static enum node_identic node_cmp_false(const struct node_s* _a, const struct node_s* _b)
+static enum node_identic node_cmp_false(const struct node_s* /*_a*/, const struct node_s* /*_b*/)
 {
-	UNUSED(_a);
-	UNUSED(_b);
-
 	return NODE_NOT_IDENTICAL;
 }
 

@@ -156,9 +156,8 @@ struct prox_lineq_data {
 
 static DEF_TYPEID(prox_lineq_data);
 
-static void prox_lineq_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+static void prox_lineq_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	UNUSED(mu);
 	auto pdata = CAST_DOWN(prox_lineq_data, _data);
 
 	const struct linop_s* op = pdata->op;

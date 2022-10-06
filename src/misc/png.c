@@ -82,27 +82,23 @@ cleanup:
 
 
 
-int png_write_rgb24(const char* name, int w, int h, long inum, const unsigned char* buf)
+int png_write_rgb24(const char* name, int w, int h, long /*inum*/, const unsigned char* buf)
 {
-	UNUSED(inum);
 	return png_write_anyrgb(name, w, h, 3, true, buf);
 }
 
-int png_write_rgb32(const char* name, int w, int h, long inum, const unsigned char* buf)
+int png_write_rgb32(const char* name, int w, int h, long /*inum*/, const unsigned char* buf)
 {
-	UNUSED(inum);
 	return png_write_anyrgb(name, w, h, 4, true, buf);
 }
 
-int png_write_bgr24(const char* name, int w, int h, long inum, const unsigned char* buf)
+int png_write_bgr24(const char* name, int w, int h, long /*inum*/, const unsigned char* buf)
 {
-	UNUSED(inum);
 	return png_write_anyrgb(name, w, h, 3, false, buf);
 }
 
-int png_write_bgr32(const char* name, int w, int h, long inum, const unsigned char* buf)
+int png_write_bgr32(const char* name, int w, int h, long /*inum*/, const unsigned char* buf)
 {
-	UNUSED(inum);
 	return png_write_anyrgb(name, w, h, 4, false, buf);
 }
 #endif

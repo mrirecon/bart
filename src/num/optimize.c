@@ -324,7 +324,7 @@ int optimize_dims(int D, int N, long dims[N], long (*strs[D])[N])
 	// actually those are not the blocking factors
 	// as used below but relative to fast memory
 	//demmel_factors(D, ND, blocking, strs);
-	UNUSED(demmel_factors);
+	(void)demmel_factors;
 #if 0
 	debug_printf(DP_DEBUG4, "DB: ");
 	for (int i = 0; i < ND; i++)

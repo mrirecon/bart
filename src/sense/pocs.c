@@ -67,11 +67,10 @@ struct data {
 static DEF_TYPEID(data);
 
 
-static void xupdate_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+static void xupdate_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(data, _data);
 
-	UNUSED(mu);
 	md_zsmul(DIMS, data->dims_ksp, dst, src, 1. / (data->alpha == 0 ? 2. : 3.));
 }
 
@@ -124,9 +123,8 @@ static void sparsity_proj_apply(const operator_data_t* _data, float mu, complex 
 }
 
 
-static void data_consistency_proj_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+static void data_consistency_proj_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	UNUSED(mu);
 	const auto data = CAST_DOWN(data, _data);
 
 	if (-1. != data->lambda)
@@ -136,10 +134,8 @@ static void data_consistency_proj_apply(const operator_data_t* _data, float mu, 
 }
 
 
-static void sense_proj_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+static void sense_proj_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	UNUSED(mu);
-
 	const auto data = CAST_DOWN(data, _data);
 
 	// assumes normalized sensitivities
@@ -149,9 +145,8 @@ static void sense_proj_apply(const operator_data_t* _data, float mu, complex flo
 }
 
 
-static void proj_del(const operator_data_t* _data)
+static void proj_del(const operator_data_t* /*_data*/)
 {
-	UNUSED(_data);
 }
 
 

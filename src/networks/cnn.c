@@ -431,12 +431,10 @@ struct network_varnet_s network_varnet_default = {
 };
 
 
-static nn_t network_varnet_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status)
+static nn_t network_varnet_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS /*status*/)
 {
 	assert(NO == NI);
 	unsigned int N = NO;
-
-	UNUSED(status);
 
 	auto config = CAST_DOWN(network_varnet_s, _config);
 
@@ -517,10 +515,8 @@ struct network_s network_mnist_default = {
 	.debug = false,
 };
 
-static nn_t network_mnist_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status)
+static nn_t network_mnist_create(const struct network_s* /*_config*/, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status)
 {
-	UNUSED(_config);
-
 	assert(2 == NO);
 	assert(10 == odims[0]);
 	assert(idims[2] == odims[1]);

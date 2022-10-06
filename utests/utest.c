@@ -46,9 +46,9 @@ int main(int argc, char* argv[])
 {
 #ifdef USE_MPI
 	init_mpi(&argc, &argv);
+#else
+	(void)argc;
 #endif
-
-	UNUSED(argc);
 
 	int num_tests_run = 0;
 	int num_tests_pass = 0;

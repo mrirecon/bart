@@ -695,17 +695,9 @@ void blas_cdgmm(long M, long N, _Bool left_mul, const complex float* A, long lda
 
 		return;
 	}
+#else
+	(void)M; (void)N; (void)left_mul; (void)A; (void)lda; (void)x; (void)incx; (void)C; (void)ldc;
 #endif
-	UNUSED(M);
-	UNUSED(N);
-	UNUSED(left_mul);
-	UNUSED(A);
-	UNUSED(lda);
-	UNUSED(x);
-	UNUSED(incx);
-	UNUSED(C);
-	UNUSED(ldc);
-
 	assert(0);
 }
 
@@ -721,17 +713,9 @@ void blas_sdgmm(long M, long N, _Bool left_mul, const float* A, long lda, const 
 
 		return;
 	}
+#else
+	(void)M; (void)N; (void)left_mul; (void)A; (void)lda; (void)x; (void)incx; (void)C; (void)ldc;
 #endif
-	UNUSED(M);
-	UNUSED(N);
-	UNUSED(left_mul);
-	UNUSED(A);
-	UNUSED(lda);
-	UNUSED(x);
-	UNUSED(incx);
-	UNUSED(C);
-	UNUSED(ldc);
-
 	assert(0);
 }
 
@@ -750,16 +734,9 @@ void blas_cmatcopy(char trans, long M, long N, complex float alpha, const comple
 
 		return;
 	}
+#else
+	(void)trans; (void)M; (void)N; (void)alpha; (void)A; (void)lda; (void)B; (void)ldb;
 #endif
-	UNUSED(trans);
-	UNUSED(M);
-	UNUSED(N);
-	UNUSED(alpha);
-	UNUSED(lda);
-	UNUSED(A);
-	UNUSED(ldb);
-	UNUSED(B);
-
 	assert(0);
 }
 
@@ -769,7 +746,6 @@ void blas_cmatcopy(char trans, long M, long N, complex float alpha, const comple
 void blas2_cmatcopy(char trans, long M, long N, const complex float* alpha, const complex float* A, long lda, complex float* B, long ldb)
 {
 #ifdef USE_CUDA
-
 	if (cuda_ondevice(A)) {
 
 		complex float* zero = cuda_malloc(8);
@@ -782,16 +758,9 @@ void blas2_cmatcopy(char trans, long M, long N, const complex float* alpha, cons
 
 		return;
 	}
+#else
+	(void)trans; (void)M; (void)N; (void)alpha; (void)A; (void)lda; (void)B; (void)ldb;
 #endif
-	UNUSED(trans);
-	UNUSED(M);
-	UNUSED(N);
-	UNUSED(alpha);
-	UNUSED(lda);
-	UNUSED(A);
-	UNUSED(ldb);
-	UNUSED(B);
-
 	assert(0);
 }
 
@@ -810,16 +779,9 @@ void blas_smatcopy(char trans, long M, long N, float alpha, const float* A, long
 
 		return;
 	}
+#else
+	(void)trans; (void)M; (void)N; (void)alpha; (void)A; (void)lda; (void)B; (void)ldb;
 #endif
-	UNUSED(trans);
-	UNUSED(M);
-	UNUSED(N);
-	UNUSED(alpha);
-	UNUSED(lda);
-	UNUSED(A);
-	UNUSED(ldb);
-	UNUSED(B);
-
 	assert(0);
 }
 
@@ -841,16 +803,9 @@ void blas2_smatcopy(char trans, long M, long N, const float* alpha, const float*
 
 		return;
 	}
+#else
+	(void)trans; (void)M; (void)N; (void)alpha; (void)A; (void)lda; (void)B; (void)ldb;
 #endif
-	UNUSED(trans);
-	UNUSED(M);
-	UNUSED(N);
-	UNUSED(alpha);
-	UNUSED(lda);
-	UNUSED(A);
-	UNUSED(ldb);
-	UNUSED(B);
-
 	assert(0);
 }
 
@@ -908,3 +863,5 @@ void blas_matrix_zfmac(long M, long N, long K, complex float* C, const complex f
 
 	blas_cgemm(transa, transb, M, N, K, 1., lda, A, ldb, B, 1., M, C);
 }
+
+

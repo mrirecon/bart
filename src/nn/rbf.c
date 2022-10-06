@@ -179,11 +179,8 @@ static void rbf_fun(const nlop_data_t* _data, int N_args, complex float* args[N_
 	md_free(real_dst);
 }
 
-static void rbf_der2(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void rbf_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	//dst_ik = sum_j src_ij * exp[-(z_ik-mu_j)^2/(s*sigma^2)]
 
 	const auto data = CAST_DOWN(rbf_s, _data);
@@ -201,6 +198,7 @@ static void rbf_der2(const nlop_data_t* _data, unsigned int o, unsigned int i, c
 	float dmu = (data->Imax - data->Imin)/((float)Nw - 1.);
 
 	float* real_src = md_alloc_sameplace(N, wdims, FL_SIZE, dst);
+
 	if (data->use_imag)
 		md_copy(N, wdims, real_src, src, FL_SIZE);
 	else
@@ -243,11 +241,8 @@ static void rbf_der2(const nlop_data_t* _data, unsigned int o, unsigned int i, c
 	md_free(real_src);
 }
 
-static void rbf_adj2(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void rbf_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	//dst_ij = sum_k src_ik * exp[-(z_ik-mu_j)^2/(s*sigma^2)]
 
 	const auto data = CAST_DOWN(rbf_s, _data);
@@ -267,6 +262,7 @@ static void rbf_adj2(const nlop_data_t* _data, unsigned int o, unsigned int i, c
 	md_clear(N, wdims, real_dst, FL_SIZE);
 
 	float* real_src = md_alloc_sameplace(N, zdims, FL_SIZE, dst);
+
 	if (data->use_imag)
 		md_copy(N, zdims, real_src, src, FL_SIZE);
 	else
@@ -302,18 +298,15 @@ static void rbf_adj2(const nlop_data_t* _data, unsigned int o, unsigned int i, c
 
 }
 
-static void rbf_deradj1(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void rbf_deradj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
-
 	const auto data = CAST_DOWN(rbf_s, _data);
 	float* der_dz = data->dz;
 
 	if (data->use_imag) {
 
 		md_mul(data->zdom->N, data->zdom->dims, (float*)dst, (const float*)src, der_dz);
+
 	} else {
 
 		complex float* tmp = md_alloc_sameplace(data->N, data->zdom->dims, CFL_SIZE, dst);

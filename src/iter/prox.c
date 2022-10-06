@@ -286,9 +286,8 @@ static const float* get_y(const struct prox_l2ball_data* data, bool gpu)
  * @param z output
  * @param x_plus_u input
  */
-static void prox_l2ball_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
+static void prox_l2ball_fun(const operator_data_t* prox_data, float /*mu*/, float* z, const float* x_plus_u)
 {
-	UNUSED(mu);
 	auto pdata = CAST_DOWN(prox_l2ball_data, prox_data);
 
 #ifdef USE_CUDA
@@ -423,9 +422,8 @@ static DEF_TYPEID(prox_zero_data);
  * @param z output
  * @param x_plus_u input
  */
-static void prox_zero_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
+static void prox_zero_fun(const operator_data_t* prox_data, float /*mu*/, float* z, const float* x_plus_u)
 {
-	UNUSED(mu);
 	auto pdata = CAST_DOWN(prox_zero_data, prox_data);
 
 	md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
@@ -474,9 +472,8 @@ struct prox_ineq_data {
 
 static DEF_TYPEID(prox_ineq_data);
 
-static void prox_ineq_fun(const operator_data_t* _data, float mu, float* dst, const float* src)
+static void prox_ineq_fun(const operator_data_t* _data, float /*mu*/, float* dst, const float* src)
 {
-	UNUSED(mu);
 	auto pdata = CAST_DOWN(prox_ineq_data, _data);
 
 	if (NULL == pdata->b) {
@@ -568,9 +565,8 @@ struct prox_rvc_data {
 static DEF_TYPEID(prox_rvc_data);
 
 
-static void prox_rvc_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+static void prox_rvc_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	UNUSED(mu);
 	auto pdata = CAST_DOWN(prox_rvc_data, _data);
 
 	md_zreal(1, MD_DIMS(pdata->size), dst, src);

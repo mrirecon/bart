@@ -254,23 +254,13 @@ static void lop_del(const linop_data_t* _data)
 	xfree(data);
 }
 
-static void der_not_implemented(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void der_not_implemented(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* /*dst*/, const complex float* /*src*/)
 {
-	UNUSED(o);
-	UNUSED(i);
-	UNUSED(dst);
-	UNUSED(src);
-
 	error("Derivative o=%d, i=%d of %s is not implemented!\n", o, i, _data->TYPEID->name);
 }
 
-static void adj_not_implemented(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void adj_not_implemented(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* /*dst*/, const complex float* /*src*/)
 {
-	UNUSED(o);
-	UNUSED(i);
-	UNUSED(dst);
-	UNUSED(src);
-
 	error("Adjoint derivative o=%d, i=%d of %s is not implemented!\n", o, i, _data->TYPEID->name);
 }
 
@@ -787,11 +777,8 @@ static void flatten_graph_fun(const nlop_data_t* _data, complex float* dst, cons
 	nlop_generic_apply_unchecked(data->op, OO + II, args);
 }
 
-static void flatten_graph_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void flatten_graph_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	auto data = CAST_DOWN(flatten_graph_s, _data);
 
 	int OO = nlop_get_nr_out_args(data->op);
@@ -808,11 +795,8 @@ static void flatten_graph_der(const nlop_data_t* _data, unsigned int o, unsigned
 	operator_generic_apply_unchecked(data->der, OO + II, args);
 }
 
-static void flatten_graph_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void flatten_graph_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	auto data = CAST_DOWN(flatten_graph_s, _data);
 
 	int OO = nlop_get_nr_out_args(data->op);
@@ -829,11 +813,8 @@ static void flatten_graph_adj(const nlop_data_t* _data, unsigned int o, unsigned
 	operator_generic_apply_unchecked(data->adj, OO + II, args);
 }
 
-static void flatten_graph_nrm(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void flatten_graph_nrm(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	auto data = CAST_DOWN(flatten_graph_s, _data);
 
 	int OO = nlop_get_nr_out_args(data->op);
@@ -1010,11 +991,8 @@ static void flatten_fun(const nlop_data_t* _data, complex float* dst, const comp
 	nlop_generic_apply_unchecked(data->op, OO + II, args);
 }
 
-static void flatten_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void flatten_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	auto data = CAST_DOWN(flatten_s, _data);
 
 	int OO = nlop_get_nr_out_args(data->op);
@@ -1053,11 +1031,8 @@ static void flatten_der(const nlop_data_t* _data, unsigned int o, unsigned int i
 	}
 }
 
-static void flatten_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void flatten_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	auto data = CAST_DOWN(flatten_s, _data);
 
 	int OO = nlop_get_nr_out_args(data->op);
@@ -1581,7 +1556,6 @@ const struct nlop_s* nlop_copy_wrapper_F(int OO, const long* ostrs[OO], int II, 
 const struct nlop_s* nlop_assign_gpu(const struct nlop_s* op, int device) 
 {
 #ifdef USE_CUDA
-
 	PTR_ALLOC(struct nlop_s, n);
 
 	int II = nlop_get_nr_in_args(op);
@@ -1601,7 +1575,8 @@ const struct nlop_s* nlop_assign_gpu(const struct nlop_s* op, int device)
 	n->derivative = &(*PTR_PASS(nder))[0][0];
 	return PTR_PASS(n);
 #else
-	UNUSED(device);
+	(void)device;
+
 	return nlop_clone(op);
 #endif
 }

@@ -227,11 +227,8 @@ static void dump_fun(const nlop_data_t* _data, complex float* dst, const complex
 	}
 }
 
-static void dump_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void dump_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(dump_s, _data);
 
 	md_copy(data->N, data->dims, dst, src, CFL_SIZE);
@@ -245,11 +242,8 @@ static void dump_der(const nlop_data_t* _data, unsigned int o, unsigned int i, c
 	}
 }
 
-static void dump_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void dump_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(dump_s, _data);
 
 	md_copy(data->N, data->dims, dst, src, CFL_SIZE);
@@ -411,22 +405,16 @@ static void zmax_fun(const nlop_data_t* _data, complex float* dst, const complex
 	md_zgreatequal2(data->N, data->dims, data->strides, data->max_index, data->strides, src, data->outstrides, dst);
 }
 
-static void zmax_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void zmax_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(zmax_s, _data);
 
 	md_ztenmul(data->N, data->outdims, dst, data->dims, src, data->dims, data->max_index);
 	md_zreal(data->N, data->outdims, dst, dst);
 }
 
-static void zmax_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void zmax_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(zmax_s, _data);
 
 	md_zmul2(data->N, data->dims, data->strides, dst, data->outstrides, src, data->strides, data->max_index);
@@ -494,10 +482,8 @@ static void zsqrt_free(const nlop_data_t* _data)
 	xfree(_data);
 }
 
-static void zsqrt_apply(const nlop_data_t* _data, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
+static void zsqrt_apply(const nlop_data_t* /* _data*/, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
 {
-	UNUSED(_data);
-
 	md_zsqrt(N, dims, dst, src);
 
 	if (NULL != der) {

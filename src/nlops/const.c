@@ -36,9 +36,8 @@ struct const_s {
 
 DEF_TYPEID(const_s);
 
-static void const_fun(const nlop_data_t* _data, int N, complex float** dst)
+static void const_fun(const nlop_data_t* _data, int /*N*/, complex float** dst)
 {
-	UNUSED(N);
 	const auto data = CAST_DOWN(const_s, _data);
 
 	const complex float* ref = data->copied ? multiplace_read(data->xn_cop, NULL) : data->xn_ref;
@@ -228,11 +227,8 @@ struct del_out_s {
 
 DEF_TYPEID(del_out_s);
 
-static void del_out_fun(const nlop_data_t* _data, int N, complex float** in)
+static void del_out_fun(const nlop_data_t* /*_data*/, int /*N*/, complex float** /*in*/)
 {
-	UNUSED(N);
-	UNUSED(_data);
-	UNUSED(in);
 }
 
 static void del_out_del(const nlop_data_t* _data)

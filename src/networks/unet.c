@@ -404,10 +404,8 @@ static nn_t unet_append_conv_block(	nn_t network, struct network_unet_s* unet,
 }
 
 
-static nn_t unet_sample_fft_create(struct network_unet_s* unet, unsigned int N, const long dims[N], long down_dims[N], bool up, enum NETWORK_STATUS status)
+static nn_t unet_sample_fft_create(struct network_unet_s* unet, unsigned int N, const long dims[N], long down_dims[N], bool up, enum NETWORK_STATUS /*status*/)
 {
-	UNUSED(status);
-
 	for (unsigned int i = 0; i < N; i++)
 		down_dims[i] = MD_IS_SET(unet->conv_flag, i) ? MAX(1, round(dims[i] / unet->reduce_factor)) : dims[i];
 

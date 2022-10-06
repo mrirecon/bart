@@ -789,11 +789,8 @@ static void meco_fun_phasediff(const nlop_data_t* _data, complex float* dst, con
 }
 
 
-static void meco_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void meco_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	struct meco_s* data = CAST_DOWN(meco_s, _data);
 
 	long x_pos[data->N];
@@ -824,11 +821,8 @@ static void meco_der(const nlop_data_t* _data, unsigned int o, unsigned int i, c
 	md_free(tmp_exp);
 }
 
-static void meco_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void meco_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	struct meco_s* data = CAST_DOWN(meco_s, _data);
 
 	long x_pos[data->N];

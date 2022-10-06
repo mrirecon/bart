@@ -31,10 +31,8 @@ static void zsinh_free(const nlop_data_t* _data)
 	xfree(_data);
 }
 
-static void zsinh_apply(const nlop_data_t* _data, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
+static void zsinh_apply(const nlop_data_t* /*_data*/, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
 {
-	UNUSED(_data);
-
 	if (NULL != der)
 		md_zcosh(N, dims, der, src);
 
@@ -66,10 +64,8 @@ static void zcosh_free(const nlop_data_t* _data)
 	xfree(_data);
 }
 
-static void zcosh_apply(const nlop_data_t* _data, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
+static void zcosh_apply(const nlop_data_t* /*_data*/, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
 {
-	UNUSED(_data);
-
 	if (NULL != der)
 		md_zsinh(N, dims, der, src);
 
@@ -83,3 +79,4 @@ struct nlop_s* nlop_zcosh_create(int N, const long dims[N])
 
 	return nlop_zdiag_create(N, dims, CAST_UP(PTR_PASS(data)), zcosh_apply, zcosh_free);
 }
+

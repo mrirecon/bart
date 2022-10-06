@@ -264,20 +264,18 @@ float svthresh_blockproc( const void* _data, const long blkdims[DIMS], complex f
 
 
 
-float nucnorm_blockproc( const void* _data, const long blkdims[DIMS], complex float* dst, const complex float* src )
+float nucnorm_blockproc(const void* _data, const long blkdims[DIMS], complex float* /*dst*/, const complex float* src)
 {
-	UNUSED(dst);
-
-	const struct svthresh_blockproc_data* data = (const struct svthresh_blockproc_data*) _data;
+	const struct svthresh_blockproc_data* data = _data;
 
 	long M = 1;
-	long N = md_calc_size( DIMS, blkdims );
+	long N = md_calc_size(DIMS, blkdims);
 
 
-	for ( unsigned int i = 0; i < DIMS; i++ )
-	{
-		if (MD_IS_SET(data->mflags, i))
-		{
+	for (int i = 0; i < DIMS; i++) {
+
+		if (MD_IS_SET(data->mflags, i)) {
+
 			M *= blkdims[i];
 			N /= blkdims[i];
 		}

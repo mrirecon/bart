@@ -179,8 +179,6 @@ void debug_vprintf_trace(const char* func_name,
 
 {
 #ifndef USE_LOG_BACKEND
-	UNUSED(func_name); UNUSED(file); UNUSED(line);
-
 	debug_vprintf(level, fmt, ap);
 #else
 	char tmp[1024] = { 0 };
@@ -218,7 +216,7 @@ void debug_backtrace(size_t n)
 	if (l > 1)
 		backtrace_symbols_fd(ptrs + 1, l - 1, STDERR_FILENO);
 #else
-	UNUSED(n);
+	(void)n;
 	debug_printf(DP_WARN, "no backtrace on cygwin.");
 #endif
 }
@@ -334,15 +332,13 @@ void debug_trace(const char* fmt, ...)
  * leaving any function, if instrumentation is enabled with:
  * -finstrument-functions -finstrument-functions-exclude-file-list=debug.c
  */
-extern void __cyg_profile_func_enter(void *this_fn, void *call_site)
+extern void __cyg_profile_func_enter(void *this_fn, void * /*call_site*/)
 {
-	UNUSED(call_site);
 	debug_trace("ENTER %p\n", this_fn);
 }
 
-extern void __cyg_profile_func_exit(void *this_fn, void *call_site)
+extern void __cyg_profile_func_exit(void *this_fn, void * /*call_site*/)
 {
-	UNUSED(call_site);
 	debug_trace("LEAVE %p\n", this_fn);
 }
 #endif

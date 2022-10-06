@@ -332,11 +332,8 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 }
 
 
-static void bloch_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void bloch_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	debug_printf(DP_DEBUG3, "Start Derivative\n");
 
 	struct blochfun_s* data = CAST_DOWN(blochfun_s, _data);
@@ -375,11 +372,8 @@ static void bloch_der(const nlop_data_t* _data, unsigned int o, unsigned int i, 
 	md_free(tmp_map);
 }
 
-static void bloch_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void bloch_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	debug_printf(DP_DEBUG3, "Start Derivative\n");
 
 	struct blochfun_s* data = CAST_DOWN(blochfun_s, _data);
@@ -444,8 +438,6 @@ static void bloch_del(const nlop_data_t* _data)
 struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_dims[N], const long out_dims[N], const long in_dims[N],
 			const complex float* b1, const complex float* b0, const struct moba_conf_s* config, bool use_gpu)
 {
-	UNUSED(use_gpu);
-
 	PTR_ALLOC(struct blochfun_s, data);
 	SET_TYPEID(blochfun_s, data);
 

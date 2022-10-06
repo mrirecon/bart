@@ -299,11 +299,8 @@ static void norm_max_abs_fun(const nlop_data_t* _data, int D, complex float* arg
 
 }
 
-static void norm_max_abs_deradj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void norm_max_abs_deradj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(norm_max_abs_s, _data);
 
 	unsigned long N = data->N;
@@ -397,11 +394,8 @@ static void norm_znorm_fun(const nlop_data_t* _data, int D, complex float* args[
 	md_zmul2(N, dims, MD_STRIDES(N, dims, CFL_SIZE), dst, MD_STRIDES(N, dims, CFL_SIZE), src, MD_STRIDES(N, sdims, CFL_SIZE), data->inv_scale);
 }
 
-static void norm_znorm_deradj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void norm_znorm_deradj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-	UNUSED(o);
-	UNUSED(i);
-
 	const auto data = CAST_DOWN(norm_znorm_s, _data);
 
 	unsigned long N = data->N;

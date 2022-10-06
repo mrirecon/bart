@@ -52,47 +52,39 @@
 
 #ifndef TENSORFLOW
 
-const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key)
+const struct tf_shared_graph_s* tf_shared_graph_create(const char* /*path*/, const char* /*signature_key*/)
 {
-	UNUSED(path); UNUSED(signature_key);
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
-void tf_shared_graph_free(const struct tf_shared_graph_s* x)
+void tf_shared_graph_free(const struct tf_shared_graph_s* /*x*/)
 {
-	UNUSED(x);
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
-const char* tf_shared_graph_get_init_path(const struct tf_shared_graph_s* x)
+const char* tf_shared_graph_get_init_path(const struct tf_shared_graph_s* /*x*/)
 {
-	UNUSED(x);
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
 
-const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph)
+const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* /*graph*/)
 {
-	UNUSED(graph);
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
-const struct nlop_s* nlop_tf_create(const char* path)
+const struct nlop_s* nlop_tf_create(const char* /*path*/)
 {
-	UNUSED(path);
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
-void tf_shared_graph_set_batch_size(const struct tf_shared_graph_s* x, long batch_size)
+void tf_shared_graph_set_batch_size(const struct tf_shared_graph_s* /*x*/, long /*batch_size*/)
 {
-	UNUSED(x);
-	UNUSED(batch_size);
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
-void tf_shared_graph_list_operations(const struct tf_shared_graph_s*x)
+void tf_shared_graph_list_operations(const struct tf_shared_graph_s* /*x*/)
 {
-	UNUSED(x);
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
@@ -169,7 +161,7 @@ static TF_SessionOptions* get_session_opts(void)
 	if (-1 != cuda_get_device_id())
 		config = gpu[cuda_get_device_id()];
 #else
-	UNUSED(gpu);
+	(void)gpu;
 #endif
 
 	TF_Status* status = TF_NewStatus();
@@ -236,10 +228,9 @@ static TF_Session* create_session(TF_Graph* graph, TF_Status* status)
 }
 
 
-static void deallocator(void* ptr, size_t len, void* arg)
+static void deallocator(void* ptr, size_t /*len*/, void* /*arg*/)
 {
 	TF_TString_Dealloc(ptr);
-	UNUSED(len); UNUSED(arg);
 }
 
 
@@ -824,17 +815,13 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 	}
 }
 
-static void tf_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void tf_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* /*dst*/, const complex float* /*src*/)
 {
 	auto data = CAST_DOWN(tf_s, _data);
 
 	error("Calling the derivative of a TensorFlow graph is not supported.");
 
-	UNUSED(data);
-	UNUSED(dst);
-	UNUSED(src);
-	UNUSED(o);
-	UNUSED(i);
+	(void)data;
 }
 
 static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)

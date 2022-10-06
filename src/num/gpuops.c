@@ -83,9 +83,9 @@ void cuda_gpu_check(const char* file, int line, const char* note)
 			error("CUDA Error: %s in %s:%d (%s)\n", err_str, file, line, note);
 	}
 #else
-	UNUSED(file);
-	UNUSED(line);
-	UNUSED(note);
+	(void)file;
+	(void)line;
+	(void)note;
 #endif
 }
 
@@ -98,10 +98,10 @@ void cuda_check_ptr(const char* file, int line, int N, const void* ptr[N])
 		if (!cuda_ondevice(ptr[i]))
 			error("CUDA Error: Pointer not on device in %s:%d", file, line);
 #else
-	UNUSED(file);
-	UNUSED(line);
-	UNUSED(N);
-	UNUSED(ptr);
+	(void)file;
+	(void)line;
+	(void)N;
+	(void)ptr;
 #endif
 }
 

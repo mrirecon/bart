@@ -537,9 +537,8 @@ void export_graph_dot(const char* filename, graph_t graph)
 
 
 
-static bool cmp_no_in_edge(const void* _data, const void* _ref)
+static bool cmp_no_in_edge(const void* _data, const void* /*_ref*/)
 {
-	UNUSED(_ref);
 	const struct node_s* node = _data;
 
 	for (int j = 0; j < node->N_vertices; j++)
@@ -549,9 +548,8 @@ static bool cmp_no_in_edge(const void* _data, const void* _ref)
 	return true;
 }
 
-static bool cmp_no_out_edge(const void* _data, const void* _ref)
+static bool cmp_no_out_edge(const void* _data, const void* /*_ref*/)
 {
-	UNUSED(_ref);
 	const struct node_s* node = _data;
 
 	for (int j = 0; j < node->N_vertices; j++)
@@ -851,9 +849,8 @@ static void vertex_list_identify_nodes(graph_t graph, list_t vertices, node_cmp_
 	list_free(nodes);
 }
 
-static bool cmp_node_count(const void* _data, const void* _ref)
+static bool cmp_node_count(const void* _data, const void* /*_ref*/)
 {
-	UNUSED(_ref);
 	const struct node_s* node = _data;
 
 	return (-1 == node->count);

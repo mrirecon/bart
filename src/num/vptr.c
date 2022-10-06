@@ -186,12 +186,10 @@ static struct mem_s* search(const void* ptr, bool remove);
 
 static struct sigaction old_sa;
 
-static void handler(int sig, siginfo_t *si, void *unused)
+static void handler(int /*sig*/, siginfo_t *si, void*)
 {
-	UNUSED(sig);
-	UNUSED(unused);
-
 	auto mem = search(si->si_addr, false);
+
 	if (mem)
 		error("Virtual pointer at %x not resolved!\n", si->si_addr);
 

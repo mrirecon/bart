@@ -59,10 +59,8 @@ void compute_crb(int P, float rCRB[P], complex float A[P][P], int M, int N, cons
 		rCRB[i] = crealf(A_inv[i][i]);
 }
 
-void normalize_crb(int P, float rCRB[P], int N, float TR, float T1, float T2, float B1, float omega, const unsigned long idx_unknowns[P - 1])
+void normalize_crb(int P, float rCRB[P], int N, float TR, float T1, float T2, float B1, float /*omega*/, const unsigned long idx_unknowns[P - 1])
 {
-	UNUSED(omega);
-
 	float normvalues[4];
 	normvalues[0] = powf(T1, 2);
 	normvalues[1] = powf(T2, 2);

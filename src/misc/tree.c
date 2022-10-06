@@ -46,8 +46,8 @@ struct tree_s {
 static void tree_set_lock(tree_t tree) { omp_set_lock(&(tree->lock)); }
 static void tree_unset_lock(tree_t tree) { omp_unset_lock(&(tree->lock)); }
 #else
-static void tree_set_lock(tree_t tree) { UNUSED(tree); }
-static void tree_unset_lock(tree_t tree) { UNUSED(tree); }
+static void tree_set_lock(tree_t /*tree*/) { }
+static void tree_unset_lock(tree_t /*tree*/) { }
 #endif
 
 typedef struct node_s* node_t;

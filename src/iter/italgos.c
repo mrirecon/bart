@@ -679,12 +679,9 @@ void altmin(int iter, float alpha, float redu,
 void pocs(int maxiter,
 	int D, struct iter_op_p_s proj_ops[static D],
 	const struct vec_iter_s* vops,
-	long N, float* x,
+	long /*N*/, float* x,
 	struct iter_monitor_s* monitor)
 {
-	UNUSED(N);
-	UNUSED(vops);
-
 	for (int i = 0; i < maxiter; i++) {
 
 		debug_printf(DP_DEBUG3, "#Iter %d\n", i);
@@ -955,10 +952,9 @@ void sgd(	int epochs, int batches,
 		struct iter_op_p_s update[NI],
 		struct iter_op_p_s prox[NI],
 		struct iter_nlop_s nlop_batch_gen,
-		struct iter_op_s callback, struct monitor_iter6_s* monitor, const struct iter_dump_s* dump)
+		struct iter_op_s /*callback*/,
+		struct monitor_iter6_s* monitor, const struct iter_dump_s* dump)
 {
-	UNUSED(callback);
-
 	float* grad[NI];
 	float* dxs[NI];
 	float* args[NO + NI];
@@ -1166,10 +1162,9 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 		struct iter_op_p_s prox[NI],
 		float batchnorm_momentum,
 		struct iter_nlop_s nlop_batch_gen,
-		struct iter_op_s callback, struct monitor_iter6_s* monitor, const struct iter_dump_s* dump)
+		struct iter_op_s /*callback*/,
+		struct monitor_iter6_s* monitor, const struct iter_dump_s* dump)
 {
-	UNUSED(callback);
-
 	float* x_batch_gen[NI]; //arrays which are filled by batch generator
 	long N_batch_gen = 0;
 

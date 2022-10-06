@@ -504,10 +504,8 @@ void iter6_iPALM(	const iter6_conf* _conf,
 			const struct nlop_s* nlop,
 			long NI, enum IN_TYPE in_type[NI], const struct operator_p_s* prox_ops[NI], float* dst[NI],
 			long NO, enum OUT_TYPE out_type[NO],
-			int batchsize, int numbatches, const struct nlop_s* nlop_batch_gen, struct monitor_iter6_s* monitor)
+			int /*batchsize*/, int numbatches, const struct nlop_s* nlop_batch_gen, struct monitor_iter6_s* monitor)
 {
-	UNUSED(batchsize);
-
 	auto conf = CAST_DOWN(iter6_iPALM_conf, _conf);
 
 	//Compute sizes

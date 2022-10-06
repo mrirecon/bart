@@ -1784,8 +1784,7 @@ bool md_compare2(int D, const long dims[D], const long str1[D], const void* src1
 		size_t size2 = size * opt_data->size;
 
 		bool eq2 = (0 == memcmp(ptrs[0], ptrs[1], size2));
-
-		#pragma omp atomic
+#pragma 	omp atomic
 		eq &= eq2;
 	};
 

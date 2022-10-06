@@ -340,7 +340,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			ropts->sr++;
 			break;
 
-		default: ;
+		default:
 		}
 	}
 

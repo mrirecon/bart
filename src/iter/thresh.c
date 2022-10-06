@@ -107,9 +107,8 @@ static void unisoftthresh_apply(const operator_data_t* _data, float mu, complex 
 	}
 }
 
-static void hardthresh_apply(const operator_data_t* _data,  float mu, complex float* optr, const complex float* iptr)
+static void hardthresh_apply(const operator_data_t* _data, float /*mu*/, complex float* optr, const complex float* iptr)
 {
-	UNUSED(mu);
 	const auto data = CAST_DOWN(thresh_s, _data);
 
 	complex float* tmp_norm = md_alloc_sameplace(data->D, data->norm_dim, CFL_SIZE, optr);

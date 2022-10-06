@@ -42,10 +42,8 @@ UTESTS_GPU
 #endif
 
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* argv[])
 {
-	UNUSED(argc);
-
 	int num_tests_run = 0;
 	int num_tests_pass = 0;
 
@@ -53,7 +51,7 @@ int main(int argc, char* argv[])
 	num_init_gpu_support();
 
 	for (ut_test_f** ptr = &_utests_begin; ptr != &_utests_end; ptr++)
-		UNUSED((num_tests_run++, (**ptr)()) && num_tests_pass++);
+		(void)((num_tests_run++, (**ptr)()) && num_tests_pass++);
 
 	bool good = (num_tests_pass == num_tests_run);
 

@@ -132,7 +132,7 @@ void iter2_conjgrad(const iter_conf* _conf,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
-		const struct operator_p_s* xupdate_op,
+		const struct operator_p_s* /*xupdate_op*/,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
@@ -140,7 +140,6 @@ void iter2_conjgrad(const iter_conf* _conf,
 	assert(NULL == prox_ops);
 	assert(NULL == ops);
 	assert(NULL == biases);
-	UNUSED(xupdate_op);
 
 	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
@@ -167,7 +166,6 @@ void iter2_conjgrad(const iter_conf* _conf,
 	}
 
 cleanup:
-	;
 }
 
 
@@ -177,7 +175,7 @@ void iter2_ist(const iter_conf* _conf,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
-		const struct operator_p_s* xupdate_op,
+		const struct operator_p_s* /*xupdate_op*/,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
@@ -186,10 +184,7 @@ void iter2_ist(const iter_conf* _conf,
 	assert(NULL == biases);
 #if 0
 	assert(NULL == ops);
-#else
-	UNUSED(ops);
 #endif
-	UNUSED(xupdate_op);
 
 	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
@@ -221,7 +216,7 @@ void iter2_fista(const iter_conf* _conf,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
-		const struct operator_p_s* xupdate_op,
+		const struct operator_p_s* /*xupdate_op*/,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
@@ -229,10 +224,7 @@ void iter2_fista(const iter_conf* _conf,
 	assert(NULL == biases);
 #if 0
 	assert(NULL == ops);
-#else
-	UNUSED(ops);
 #endif
-	UNUSED(xupdate_op);
 
 	auto conf = CAST_DOWN(iter_fista_conf, _conf);
 
@@ -323,15 +315,12 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
-		const struct operator_p_s* xupdate_op,
-		long size, float* image, const float* image_adj,
+		const struct operator_p_s* /*xupdate_op*/,
+		long size, float* image, const float* /*image_adj*/,
 		struct iter_monitor_s* monitor)
 {
 	assert(NULL == biases);
 	assert(NULL == normaleq_op);
-
-	UNUSED(xupdate_op);
-	UNUSED(image_adj);
 
 	auto conf = CAST_DOWN(iter_chambolle_pock_conf, _conf);
 
@@ -474,7 +463,7 @@ void iter2_pocs(const iter_conf* _conf,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
-		const struct operator_p_s* xupdate_op,
+		const struct operator_p_s* /*xupdate_op*/,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
@@ -485,9 +474,6 @@ void iter2_pocs(const iter_conf* _conf,
 	assert(NULL == biases);
 	assert(NULL == image_adj);
 
-	UNUSED(xupdate_op);
-	UNUSED(image_adj);
-	
 	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
 	struct iter_op_p_s proj_ops[D];
@@ -504,14 +490,11 @@ void iter2_niht(const iter_conf* _conf,
 		unsigned int D,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
-		const float* biases[D],
-		const struct operator_p_s* xupdate_op,
+		const float* /*biases*/[D],
+		const struct operator_p_s* /*xupdate_op*/,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
-	UNUSED(xupdate_op);
-	UNUSED(biases);
-
 	assert(D == 1);
 	
 	auto conf = CAST_DOWN(iter_niht_conf, _conf);
@@ -544,7 +527,6 @@ void iter2_niht(const iter_conf* _conf,
 	niht(&niht_conf, &trans, select_vecops(image_adj), OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
 cleanup:
-	;
 }
   
 void iter2_call_iter(const iter_conf* _conf,
@@ -553,15 +535,13 @@ void iter2_call_iter(const iter_conf* _conf,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
-		const struct operator_p_s* xupdate_op,
+		const struct operator_p_s* /*xupdate_op*/,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
 	assert(D <= 1);
 	assert(NULL == ops);
 	assert(NULL == biases);
-
-	UNUSED(xupdate_op);
 
 	auto it = CAST_DOWN(iter_call_s, _conf);
 

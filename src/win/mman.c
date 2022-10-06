@@ -37,7 +37,7 @@ IN THE SOFTWARE.
 // Reference: https://docs.microsoft.com/en-us/windows/win32/memory/creating-named-shared-memory
 int shm_open(const char *name, int oflag, mode_t mode)
 {
-	UNUSED(mode);
+	(void)mode;
 	HANDLE hMapFile;
 	if ((oflag & _O_CREAT) == 0) {
 		hMapFile = CreateFileMapping(
@@ -62,7 +62,7 @@ int shm_open(const char *name, int oflag, mode_t mode)
 
 int shm_unlink(const char *name)
 {
-	UNUSED(name);
+	(void)name;
 	return 0; // Handled automatically by the OS
 }
 
@@ -218,7 +218,7 @@ void* mmap(void *addr, size_t len, int prot, int flags, int fildes, OffsetType o
 
 int munmap(void *addr, size_t len)
 {
-	UNUSED(len);
+	(void)len;
 
 	if (UnmapViewOfFile(addr))
 		return 0;
@@ -230,7 +230,7 @@ int munmap(void *addr, size_t len)
 	if (error == ERROR_INVALID_ADDRESS)
 		return 0;
 	
-	errno =  __map_mman_error(error, EPERM);
+	errno = __map_mman_error(error, EPERM);
 	
 	return -1;
 }
