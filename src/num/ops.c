@@ -627,12 +627,19 @@ void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* o
 		int max_threads = omp_get_max_threads();
 		omp_set_num_threads(num_threads);
 
+		struct cuda_threads_s* gpu_stat = gpu_threads_create(NULL);
+
 		#pragma omp parallel
 		{
+			gpu_threads_enter(gpu_stat);
+
 			for (int i = omp_get_thread_num(); i < D; i += omp_get_num_threads())
 				operator_generic_apply_unchecked(op[i], N, args[i]);
-	
+
+			gpu_threads_leave(gpu_stat);
 		}
+
+		gpu_threads_free(gpu_stat);
 
 		omp_set_num_threads(max_threads);
 	
@@ -896,12 +903,18 @@ static void op_loop_fun(const operator_data_t* _data, unsigned int N, void* args
 	bool ap_save = num_auto_parallelize;
 	num_auto_parallelize = false;
 
+	struct cuda_threads_s* gpu_stat = gpu_threads_create(NULL);
+
 	NESTED(void, op_loop_nary, (void* ptr[]))
 	{
+		gpu_threads_enter(gpu_stat);
 		operator_generic_apply_unchecked(data->op, data->N, ptr);
+		gpu_threads_leave(gpu_stat);
 	};
 
 	md_parallel_nary(N, data->D, data->dims0, data->parallel, data->strs, args, op_loop_nary);
+
+	gpu_threads_free(gpu_stat);
 
 	num_auto_parallelize = ap_save;
 }

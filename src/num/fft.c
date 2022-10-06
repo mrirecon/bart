@@ -100,11 +100,21 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 	long tdims[N];
 	md_select_dims(N, ~MD_BIT(i), tdims, dims);
 
+	struct cuda_threads_s* gpu_stat = gpu_threads_create(dst);
+
 	#pragma omp parallel for
-	for (int j = 0; j < dims[i]; j++)
+	for (int j = 0; j < dims[i]; j++) {
+
+		gpu_threads_enter(gpu_stat);
+
 		fftmod2_r(N, tdims, MD_CLEAR(flags, i),
 			ostrs, (void*)dst + j * ostrs[i], istrs, (void*)src + j * istrs[i],
 			inv, phase + fftmod_phase(dims[i], j));
+		
+		gpu_threads_leave(gpu_stat);
+	}
+	
+	gpu_threads_free(gpu_stat);
 }
 
 

@@ -56,6 +56,26 @@
 
 
 
+extern struct cuda_threads_s* gpu_threads_create(const void* ref)
+{
+	UNUSED(ref);
+	return NULL;
+}
+
+extern void gpu_threads_enter(struct cuda_threads_s* x)
+{
+	UNUSED(x);
+}
+
+extern void gpu_threads_leave(struct cuda_threads_s* x)
+{
+	UNUSED(x);
+}
+
+extern void gpu_threads_free(struct cuda_threads_s* x)
+{
+	UNUSED(x);
+}
 
 /**
  * Generic functions which loops over all dimensions of a set of
@@ -125,9 +145,13 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 		nparallel++;
 	}
 
+	struct cuda_threads_s* gpu_stat = gpu_threads_create(ptr[0]);
+
 
 	#pragma omp parallel for
 	for (long i = 0; i < total_iterations; i++) {
+
+		gpu_threads_enter(gpu_stat);
 
 		// Recover place in parallel iteration space
 		long iter_i[D];
@@ -150,7 +174,11 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 		}
 
 		md_nary(C, D, dimc, str, moving_ptr, fun);
+
+		gpu_threads_leave(gpu_stat);
 	}
+
+	gpu_threads_free(gpu_stat);
 }
 
 

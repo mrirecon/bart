@@ -104,6 +104,12 @@ extern void* md_alloc_sameplace(int D, const long dimensions[__VLA(D)], size_t s
 extern bool md_is_sameplace(const void* ptr1, const void* ptr2);
 extern void md_free(const void* p);
 
+struct cuda_threads_s;
+extern struct cuda_threads_s* gpu_threads_create(const void* ref);
+extern void gpu_threads_enter(struct cuda_threads_s* x);
+extern void gpu_threads_leave(struct cuda_threads_s* x);
+extern void gpu_threads_free(struct cuda_threads_s* x);
+
 
 extern long md_calc_size(int D, const long dimensions[__VLA(D)]);
 extern long* md_calc_strides(int D, long str[__VLA(D)], const long dim[__VLA(D)], size_t size);
