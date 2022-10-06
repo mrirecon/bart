@@ -188,10 +188,13 @@ static cudnnTensorDescriptor_t bart_to_cudnn_float_tensor_descriptor(unsigned in
 		strideA[i] = 1;
 	}
 
-	for (int i = 0; i < (int)D; i++) {
+	dimA[D - 1] = dims[0];
+	strideA[D - 1] = str[0] ? str[0] / FL_SIZE : 1;
+
+	for (int i = 1; i < (int)D; i++) {
 
 		dimA[D - 1 - i] = dims[i];
-		strideA[D - 1 - i] = str[i] ? str[i] / FL_SIZE : 1;
+		strideA[D - 1 - i] = str[i] ? str[i] / (int)FL_SIZE : strideA[D - i] * dimA[D - i];
 	}
 
 	cudnnTensorDescriptor_t result;
@@ -320,6 +323,9 @@ static struct conv_desc_s create_conv_desc(	int N,
 
 	for (int i = 0; i < N; i++) {
 
+		if (MD_IS_SET(conv_flags, i) || !MD_IS_SET(non_singleton_flags, i))
+			continue;
+
 		if ((odims[i] == idims[i]) && (1 == kdims[i]) && (1 != odims[i]))
 			result.batch_flags = MD_SET(result.batch_flags, i);
 
@@ -334,15 +340,50 @@ static struct conv_desc_s create_conv_desc(	int N,
 
 	}
 
-	result.batch_flags &= ~conv_flags;
-	result.channel_in_flags &= ~conv_flags;
-	result.channel_out_flags &= ~conv_flags;
-	result.group_flags &= ~conv_flags;
+	if (   (0 == result.channel_in_flags)
+	    && (0 == result.channel_out_flags)
+	    && !MD_IS_SET(non_singleton_flags, 0)
+	    && !MD_IS_SET(non_singleton_flags, 1)
+	    && (2 < N) ) {
 
-	result.batch_flags &= non_singleton_flags;
-	result.channel_in_flags &= non_singleton_flags;
-	result.channel_out_flags &= non_singleton_flags;
-	result.group_flags &= non_singleton_flags;
+		result.channel_out_flags =  MD_BIT(0);
+		result.channel_in_flags =   MD_BIT(1);
+	    }
+	
+	if (   (0 == result.channel_in_flags)
+	    && (MD_BIT(0) == result.channel_out_flags)
+	    && !MD_IS_SET(non_singleton_flags, 1)
+	    && (2 < N)) {
+
+		result.channel_in_flags =  MD_BIT(1);
+	    }
+
+	if (   (MD_BIT(1) == result.channel_in_flags)
+	    && (0 == result.channel_out_flags)
+	    && !MD_IS_SET(non_singleton_flags, 0)
+	    && (2 < N)) {
+
+		result.channel_out_flags =  MD_BIT(0);
+	    }
+
+	if (   (0 == result.batch_flags)
+	    && !MD_IS_SET(non_singleton_flags, N - 1) ) {
+
+		result.batch_flags =  MD_BIT(N - 1);
+	}
+	
+	// cudnn does not ignore strides of singleton dims
+	// using packed strides improve detection of optimized kernels
+	result.ostrs[0] = (1 == result.odims[0]) ? (long)FL_SIZE : result.ostrs[0];
+	result.istrs[0] = (1 == result.idims[0]) ? (long)FL_SIZE : result.istrs[0];
+	result.kstrs[0] = (1 == result.kdims[0]) ? (long)FL_SIZE : result.kstrs[0];
+
+	for (int i = 1; i < N; i++) {
+
+		result.ostrs[i] = (1 == result.odims[i]) ? result.odims[i - 1] * result.ostrs[i - 1] : result.ostrs[i];
+		result.istrs[i] = (1 == result.idims[i]) ? result.idims[i - 1] * result.istrs[i - 1] : result.istrs[i];
+		result.kstrs[i] = (1 == result.kdims[i]) ? result.kdims[i - 1] * result.kstrs[i - 1] : result.kstrs[i];
+	}
 
 	return result;
 }
@@ -1114,8 +1155,14 @@ static bool cudnn_convcorr_fwd(
 	struct cudnn_tensor_s out_desc = get_tensor_descriptor(bcd, true, format);
 	struct cudnn_filter_s krn_desc = get_filter_descriptor(bcd, format);
 
-	float* krn_tmp = md_alloc_gpu(bcd.N, bcd.kdims, FL_SIZE);
-	cudnn_tensor_transform(1, 0, krn_desc.transformed_filter_tensor_desc, krn_tmp, krn_desc.input_filter_tensor_desc, krn);
+	const float* krn_tmp = krn;
+	
+	if (krn_desc.transform_needed) {
+
+		float* tmp = md_alloc_gpu(bcd.N, bcd.kdims, FL_SIZE);
+		cudnn_tensor_transform(1, 0, krn_desc.transformed_filter_tensor_desc, tmp, krn_desc.input_filter_tensor_desc, krn);
+		krn_tmp = tmp;
+	}
 
 	bool direct = false; // if true, cudnn tries to perform convolution with out transformation
 	direct = direct && cudnn_convcorr_fwd_int(1. , 1., conv_desc, in_desc.input_tensor_desc, in, krn_desc.filter_desc, krn_tmp, out_desc.input_tensor_desc, out);
@@ -1136,7 +1183,8 @@ static bool cudnn_convcorr_fwd(
 		md_free(out_tmp);
 	}
 
-	md_free(krn_tmp);
+	if (krn != krn_tmp)
+		md_free(krn_tmp);
 
 	free_tensor_descriptor(in_desc);
 	free_tensor_descriptor(out_desc);
@@ -1261,29 +1309,18 @@ static bool cudnn_zconvcorr_fwd_kernel(
 			cudnnTensorFormat_t format
 			)
 {
-	if (1 < bitcount(bcd.channel_in_flags))
-		return false;
-	if (1 < bitcount(bcd.channel_out_flags))
-		return false;
-
-	if (0 == bitcount(bcd.channel_out_flags))
-		for (unsigned int i = 0; (i < bcd.N) && (0 == bcd.channel_out_flags); i++)
-			if ((1 == bcd.odims[i]) && (1 == bcd.idims[i]) && (1 == bcd.kdims[i]))
-				bcd.channel_out_flags = MD_BIT(i);
-
-	if (0 == bitcount(bcd.channel_in_flags))
-		for (unsigned int i = 0; (i < bcd.N) && (0 == bcd.channel_in_flags); i++)
-			if ((1 == bcd.odims[i]) && (1 == bcd.idims[i]) && (1 == bcd.kdims[i]) && !(MD_IS_SET(bcd.channel_out_flags, i)))
-				bcd.channel_in_flags = MD_BIT(i);
-
 	if (1 != bitcount(bcd.channel_in_flags))
 		return false;
 	if (1 != bitcount(bcd.channel_out_flags))
 		return false;
 
-	if ((CFL_SIZE != bcd.istrs[flag_to_index(bcd.channel_in_flags)]) && (1 != bcd.idims[flag_to_index(bcd.channel_in_flags)]))
+	int idx_ichannel = flag_to_index(bcd.channel_in_flags);
+	int idx_ochannel = flag_to_index(bcd.channel_out_flags);
+
+	if ((CFL_SIZE != bcd.istrs[idx_ichannel]) && (1 != bcd.idims[idx_ichannel]))
 		return false;
-	if ((CFL_SIZE != bcd.ostrs[flag_to_index(bcd.channel_out_flags)]) && (1 != bcd.odims[flag_to_index(bcd.channel_out_flags)]))
+
+	if ((CFL_SIZE != bcd.ostrs[idx_ochannel]) && (1 != bcd.odims[idx_ochannel]))
 		return false;
 
 	long rkstrs[bcd.N];
