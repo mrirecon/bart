@@ -564,6 +564,12 @@ static cudnnConvolutionDescriptor_t get_conv_descriptor(struct conv_desc_s conv_
 	cudnnConvolutionDescriptor_t result;
 	CUDNN_ERROR(cudnnCreateConvolutionDescriptor(&result));
 
+	#if (8 <= CUDNN_MAJOR)
+	// FIXME: Tensor Cores reduce precission, are we fine with that?
+	//	  Deactivate it for now to have default case from cuDNN 7
+	CUDNN_ERROR(cudnnSetConvolutionMathType(result, CUDNN_FMA_MATH));
+	#endif
+
 	int nbDims = bitcount(conv_desc.conv_flags) + 2;
 
 	int padA[MAX(4, nbDims)];
