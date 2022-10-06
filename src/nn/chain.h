@@ -63,4 +63,6 @@ extern nn_t nn_real_output(nn_t op, int o, const char* oname);
 extern nn_t nn_real_input_F(nn_t op, int i, const char* iname);
 extern nn_t nn_real_output_F(nn_t op, int o, const char* oname);
 
+extern nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim);
+
 #endif

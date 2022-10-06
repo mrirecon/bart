@@ -1534,3 +1534,55 @@ nn_t nn_sort_outputs_F(nn_t x)
 
 	return nn_permute_outputs_F(x, OO, nperm);
 }
+
+nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
+{
+	int II = nn_get_nr_in_args(x[0]);
+	int OO = nn_get_nr_out_args(x[0]);
+
+	for (int i = 1; i < N; i++) {
+
+		assert(II == nn_get_nr_in_args(x[i]));
+
+		for (int j = 0; j < II; j++) {
+
+			assert((NULL == x[i]->in_names[j]) == (NULL == x[0]->in_names[j]));
+			assert(x[i]->in_types[j] == x[0]->in_types[j]);
+			assert(x[0]->in_types[j] != IN_BATCHNORM);
+		}
+
+		assert(OO == nn_get_nr_out_args(x[i]));
+
+		for (int j = 0; j < OO; j++) {
+
+			assert((NULL == x[i]->out_names[j]) == (NULL == x[0]->out_names[j]));
+			assert(x[i]->out_types[j] == x[0]->out_types[j]);
+			assert((x[0]->out_types[j] == OUT_UNDEFINED) || (x[0]->out_types[j] == OUT_STATIC));
+		}
+	}
+
+	const struct nlop_s* nlops[N];
+	for (int i = 0; i < N; i++)
+		nlops[i] = nlop_clone(x[i]->nlop);
+
+	int in_stack_dim[II];
+	int out_stack_dim[OO];
+
+	for (int i = 0; i < II; i++)
+		in_stack_dim[i] = (IN_OPTIMIZE == x[0]->in_types[i]) ? -1 : stack_dim;
+	
+	for (int i = 0; i < OO; i++)
+		out_stack_dim[i] = stack_dim;
+
+	auto result = nn_from_nlop_F(nlop_stack_multiple_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, true, true));
+
+	for (int i = 0; i < II; i++)
+		nn_clone_arg_i_from_i(result, i, x[0], i);
+	for (int i = 0; i < OO; i++)
+		nn_clone_arg_o_from_o(result, i, x[0], i);
+
+	for (int i = 0; i < N; i++)
+		nn_free(x[i]);
+	
+	return result;
+}
