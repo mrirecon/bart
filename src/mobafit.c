@@ -33,6 +33,7 @@
 
 #include "moba/meco.h"
 #include "moba/exp.h"
+#include "moba/T1fun.h"
 
 #include "simu/signals.h"
 
@@ -59,7 +60,7 @@ int main_mobafit(int argc, char* argv[argc])
 	};
 
 
-	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE, DIFF } seq = MGRE;
+	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE, DIFF, IR_LL } seq = MGRE;
 
 	unsigned int mgre_model = MECO_WFR2S;
 
@@ -76,6 +77,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 #endif
 		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
+		OPT_SELECT('L', enum seq_type, &seq, IR_LL, "Inversion Recovery Look-Locker"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPT_SELECT('D', enum seq_type, &seq, DIFF, "diffusion"),
 		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
@@ -101,6 +103,11 @@ int main_mobafit(int argc, char* argv[argc])
 	md_select_dims(DIMS, ~TE_FLAG, x_dims, y_dims);
 
 	switch (seq) {
+
+	case IR_LL:
+
+		x_dims[COEFF_DIM] = 3;
+		break;
 
 	case MGRE:
 
@@ -148,6 +155,16 @@ int main_mobafit(int argc, char* argv[argc])
 	struct nlop_s* nlop = NULL;
 
 	switch (seq) {
+	
+	case IR_LL: ;
+
+		long map_dims[DIMS];
+		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
+		nlop = nlop_T1_create(DIMS, map_dims, y_patch_dims, x_patch_dims, enc_dims, enc, 1, 1);
+
+		md_zfill(DIMS, x_dims, x, 1.);
+
+		break;
 
 	case MGRE: ;
 
