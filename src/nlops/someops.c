@@ -194,97 +194,6 @@ const struct nlop_s* nlop_zsadd_create(int N, const long dims[N], complex float 
 	return nlop_set_input_const_F2(result, 1, N, dims, MD_SINGLETON_STRS(N), true, &val);
 }
 
-struct smo_abs_s {
-
-	INTERFACE(nlop_data_t);
-
-	unsigned long N;
-	const long* dims;
-
-	complex float epsilon;
-	complex float* tmp;
-};
-
-DEF_TYPEID(smo_abs_s);
-
-static void smo_abs_fun(const nlop_data_t* _data, complex float* dst, const complex float* src)
-{
-	const auto data = CAST_DOWN(smo_abs_s, _data);
-
-	long rdims[data->N + 1];
-	rdims[0] = 2;
-	md_copy_dims(data->N, rdims + 1, data->dims);
-
-	if (NULL == data->tmp)
-		data->tmp = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, dst);
-
-	md_zmulc(data->N, data->dims, dst, src, src);//dst=[r0^2 + i0^2 + 0i, r1^2 + i1^2 + 0i, ...]
-	md_zreal(data->N, data->dims, dst, dst); //zmulc does not gurantee vanishing imag on gpu
-	md_zsadd(data->N, data->dims, dst, dst, data->epsilon);
-	md_sqrt(data->N + 1, rdims, (float*)dst, (float*)dst);
-	md_zdiv(data->N, data->dims, data->tmp, src, dst);
-}
-
-
-static void smo_abs_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
-{
-	UNUSED(o);
-	UNUSED(i);
-
-	const struct smo_abs_s* data = CAST_DOWN(smo_abs_s, _data);
-	assert(NULL != data->tmp);
-
-	md_zmulc(data->N, data->dims, dst, data->tmp, src);
-	md_zreal(data->N, data->dims, dst, dst);
-}
-
-static void smo_abs_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
-{
-	UNUSED(o);
-	UNUSED(i);
-
-
-	const struct smo_abs_s* data = CAST_DOWN(smo_abs_s, _data);
-	assert(NULL != data->tmp);
-
-	md_zreal(data->N, data->dims, dst, src);
-	md_zmul(data->N, data->dims, dst, dst, data->tmp);
-
-}
-
-static void smo_abs_del(const nlop_data_t* _data)
-{
-	const auto data = CAST_DOWN(smo_abs_s, _data);
-
-	md_free(data->tmp);
-
-	xfree(data->dims);
-	xfree(data);
-}
-
-/**
- * Operator computing the smoothed pointwise absolute value
- * f(x) = sqrt(re(x)^2 + im (x)^2 + epsilon)
- */
-const struct nlop_s* nlop_smo_abs_create(int N, const long dims[N], float epsilon)
-{
-	PTR_ALLOC(struct smo_abs_s, data);
-	SET_TYPEID(smo_abs_s, data);
-
-	data->N = N;
-
-	PTR_ALLOC(long[N], ndims);
-	md_copy_dims(N, *ndims, dims);
-
-	data->dims = *PTR_PASS(ndims);
-	data->epsilon = epsilon;
-
-	// will be initialized later, to transparently support GPU
-	data->tmp = NULL;
-
-	return nlop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), smo_abs_fun, smo_abs_der, smo_abs_adj, NULL, NULL, smo_abs_del);
-}
-
 
 struct dump_s {
 
@@ -575,54 +484,27 @@ const struct nlop_s* nlop_zmax_create(int N, const long dims[N], unsigned long f
 }
 
 
-struct zsqrt_s {
 
-	INTERFACE(nlop_data_t);
-
-	int N;
-	const long* dims;
-	complex float* xn;
-};
+struct zsqrt_s { INTERFACE(nlop_data_t); };
 
 DEF_TYPEID(zsqrt_s);
 
-static void zsqrt_fun(const nlop_data_t* _data, complex float* dst, const complex float* src)
+static void zsqrt_free(const nlop_data_t* _data)
 {
-	const auto data = CAST_DOWN(zsqrt_s, _data);
-
-	if (NULL == data->xn)
-		data->xn = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, dst);
-
-	md_zsqrt(data->N, data->dims, dst, src);
-	md_zfill(data->N, data->dims, data->xn, 0.5);
-	md_zdiv(data->N, data->dims, data->xn, data->xn, dst);
+	xfree(_data);
 }
 
-static void zsqrt_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void zsqrt_apply(const nlop_data_t* _data, int N, const long dims[N], complex float* dst, const complex float* src, complex float* der)
 {
-	UNUSED(o);
-	UNUSED(i);
+	UNUSED(_data);
 
-	const auto data = CAST_DOWN(zsqrt_s, _data);
-	md_zmul(data->N, data->dims, dst, src, data->xn);
-}
+	md_zsqrt(N, dims, dst, src);
 
-static void zsqrt_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
-{
-	UNUSED(o);
-	UNUSED(i);
+	if (NULL != der) {
 
-	const auto data = CAST_DOWN(zsqrt_s, _data);
-	md_zmulc(data->N, data->dims, dst, src, data->xn);
-}
-
-static void zsqrt_del(const nlop_data_t* _data)
-{
-	const auto data = CAST_DOWN(zsqrt_s, _data);
-
-	md_free(data->xn);
-	xfree(data->dims);
-	xfree(data);
+		md_zfill(N, dims, der, 0.5);
+		md_zdiv(N, dims, der, der, dst);
+	}
 }
 
 const struct nlop_s* nlop_zsqrt_create(int N, const long dims[N])
@@ -630,16 +512,10 @@ const struct nlop_s* nlop_zsqrt_create(int N, const long dims[N])
 	PTR_ALLOC(struct zsqrt_s, data);
 	SET_TYPEID(zsqrt_s, data);
 
-	PTR_ALLOC(long[N], ndims);
-	md_copy_dims(N, *ndims, dims);
-
-	data->N = N;
-	data->dims = *PTR_PASS(ndims);
-	data->xn = NULL;
-
-	return nlop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)),
-		zsqrt_fun, zsqrt_der, zsqrt_adj, NULL, NULL, zsqrt_del);
+	return nlop_zdiag_create(N, dims, CAST_UP(PTR_PASS(data)), zsqrt_apply, zsqrt_free);
 }
+
+
 
 /**
  * Returns zss of array along specified flags.
@@ -667,11 +543,7 @@ const struct nlop_s* nlop_zrss_reg_create(int N, const long dims[N], unsigned lo
 	long odims[N];
 	md_select_dims(N, ~flags, odims, dims);
 
-	auto result = nlop_tenmul_create(N, odims, dims, dims);
-	result = nlop_chain2_FF(nlop_from_linop_F(linop_zconj_create(N, dims)), 0, result, 0);
-	result = nlop_dup_F(result, 0, 1);
-
-	result = nlop_chain_FF(result, nlop_from_linop_F(linop_zreal_create(N, odims)));
+	auto result = nlop_zss_create(N, dims, flags);
 
 	if (0 != epsilon)
 		result = nlop_chain_FF(result, nlop_zsadd_create(N, odims, epsilon));
@@ -722,4 +594,32 @@ const struct nlop_s* nlop_zspow_create(int N, const long dims[N], complex float 
 	data->exp = exp;
 
 	return nlop_zdiag_create(N, dims, CAST_UP(PTR_PASS(data)), zspow_fun, NULL);
+}
+
+
+/**
+ * Operator computing the smoothed pointwise absolute value
+ * f(x) = sqrt(re(x)^2 + im (x)^2 + epsilon)
+ */
+const struct nlop_s* nlop_smo_abs_create(int N, const long dims[N], float epsilon)
+{
+	return nlop_zrss_reg_create(N, dims, 0, epsilon);
+}
+
+const struct nlop_s* nlop_zabs_create(int N, const long dims[N])
+{
+	return nlop_zrss_reg_create(N, dims, 0, 0);
+}
+
+
+/**
+ * Operator extracting unit-norm complex exponentials from complex arrays
+ * f(x) = x / |x|
+ */
+const struct nlop_s* nlop_zphsr_create(int N, const long dims[N])
+{
+	auto result = nlop_zdiv_create(N, dims);
+	result = nlop_chain2_FF(nlop_zabs_create(N, dims), 0, result, 1);
+	result = nlop_dup_F(result, 0, 0);
+	return result;
 }

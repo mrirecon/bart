@@ -22,3 +22,6 @@ extern const struct nlop_s* nlop_zss_create(int N, const long dims[__VLA(N)], un
 
 extern const struct nlop_s* nlop_zrss_reg_create(int N, const long dims[__VLA(N)], unsigned long flags, float epsilon);
 extern const struct nlop_s* nlop_zrss_create(int N, const long dims[__VLA(N)], unsigned long flags);
+
+extern const struct nlop_s* nlop_zabs_create(int N, const long dims[__VLA(N)]);
+extern const struct nlop_s* nlop_zphsr_create(int N, const long dims[__VLA(N)]);
