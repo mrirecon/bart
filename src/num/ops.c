@@ -891,8 +891,7 @@ static void op_loop_fun(const operator_data_t* _data, unsigned int N, void* args
 
 	if (data->gpu) {
 #if defined(USE_CUDA) && defined(_OPENMP)
-		int nr_cuda_devices = cuda_num_devices();
-		omp_set_num_threads(nr_cuda_devices * 2);
+		omp_set_num_threads(cuda_num_devices() * cuda_num_streams());
 //		fft_set_num_threads(1);
 #else
 		error("Both OpenMP and CUDA are necessary for op_loop_fun. At least one was not found.\n");
