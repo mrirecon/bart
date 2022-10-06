@@ -10,18 +10,18 @@
 
 #include "utest.h"
 
-typedef void (*md_2op_t)(unsigned int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const float* iptr1);
-typedef void (*md_z2op_t)(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1);
-typedef void (*md_2opf_t)(unsigned int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const double* iptr1);
-typedef void (*md_2opd_t)(unsigned int D, const long dims[D], const long ostrs[D], double* optr, const long istrs1[D], const float* iptr1);
-typedef void (*md_z2opf_t)(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex double* iptr1);
-typedef void (*md_z2opd_t)(unsigned int D, const long dims[D], const long ostrs[D], complex double* optr, const long istrs1[D], const complex float* iptr1);
+typedef void (*md_2op_t)(int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const float* iptr1);
+typedef void (*md_z2op_t)(int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1);
+typedef void (*md_2opf_t)(int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const double* iptr1);
+typedef void (*md_2opd_t)(int D, const long dims[D], const long ostrs[D], double* optr, const long istrs1[D], const float* iptr1);
+typedef void (*md_z2opf_t)(int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex double* iptr1);
+typedef void (*md_z2opd_t)(int D, const long dims[D], const long ostrs[D], complex double* optr, const long istrs1[D], const complex float* iptr1);
 
 
-typedef void (*md_3op_t)(unsigned int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const float* iptr1, const long istrs2[D], const float* iptr2);
-typedef void (*md_z3op_t)(unsigned int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1, const long istrs2[D], const complex float* iptr2);
-typedef void (*md_3opd_t)(unsigned int D, const long dims[D], const long ostrs[D], double* optr, const long istrs1[D], const float* iptr1, const long istrs2[D], const float* iptr2);
-typedef void (*md_z3opd_t)(unsigned int D, const long dims[D], const long ostrs[D], complex double* optr, const long istrs1[D], const complex float* iptr1, const long istrs2[D], const complex float* iptr2);
+typedef void (*md_3op_t)(int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const float* iptr1, const long istrs2[D], const float* iptr2);
+typedef void (*md_z3op_t)(int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1, const long istrs2[D], const complex float* iptr2);
+typedef void (*md_3opd_t)(int D, const long dims[D], const long ostrs[D], double* optr, const long istrs1[D], const float* iptr1, const long istrs2[D], const float* iptr2);
+typedef void (*md_z3opd_t)(int D, const long dims[D], const long ostrs[D], complex double* optr, const long istrs1[D], const complex float* iptr1, const long istrs2[D], const complex float* iptr2);
 
 
 
