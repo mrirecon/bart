@@ -977,6 +977,56 @@ struct linop_s* linop_transpose_create(int N, int a, int b, const long dims[N])
 
 
 
+struct flip_op_s {
+
+	INTERFACE(linop_data_t);
+
+	int N;
+	unsigned long flags;
+	const long* dims;
+};
+
+static DEF_TYPEID(flip_op_s);
+
+static void flip_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(flip_op_s, _data);
+	md_flip(data->N, data->dims, data->flags, dst, src, CFL_SIZE);
+}
+
+static void flip_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(flip_op_s, _data);
+
+	md_copy(data->N, data->dims, dst, src, CFL_SIZE);
+}
+
+static void flip_free(const linop_data_t* _data)
+{
+	auto data = CAST_DOWN(flip_op_s, _data);
+
+	xfree(data->dims);
+	xfree(data);
+}
+
+
+struct linop_s* linop_flip_create(int N, const long dims[N], unsigned long flags)
+{
+	PTR_ALLOC(struct flip_op_s, data);
+	SET_TYPEID(flip_op_s, data);
+
+	data->N = N;
+	data->flags = flags;
+
+	long* ndims = *TYPE_ALLOC(long[N]);
+	md_copy_dims(N, ndims, dims);
+	data->dims = ndims;
+
+	return linop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), flip_forward, flip_forward, flip_normal, NULL, flip_free);
+}
+
+
+
 struct operator_matrix_s {
 
 	INTERFACE(linop_data_t);

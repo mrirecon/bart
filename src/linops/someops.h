@@ -12,6 +12,7 @@ extern void linop_gdiag_set_diag(const struct linop_s* lop, int N, const long dd
 extern struct linop_s* linop_scale_create(unsigned int N, const long dims[N], const _Complex float scale);
 extern struct linop_s* linop_zconj_create(unsigned int N, const long dims[N]);
 extern struct linop_s* linop_zreal_create(unsigned int N, const long dims[N]);
+extern struct linop_s* linop_flip_create(int N, const long dims[N], unsigned long flags);
 
 extern struct linop_s* linop_identity_create(unsigned int N, const long dims[__VLA(N)]);
 extern _Bool linop_is_identity(const struct linop_s* lop);
