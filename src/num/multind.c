@@ -60,23 +60,40 @@
 
 extern struct cuda_threads_s* gpu_threads_create(const void* ref)
 {
+#ifdef USE_CUDA
+	if ((NULL == ref) || cuda_ondevice(ref))
+		return cuda_threads_create();
+#else
 	UNUSED(ref);
+#endif
 	return NULL;
 }
 
 extern void gpu_threads_enter(struct cuda_threads_s* x)
 {
+#ifdef USE_CUDA
+	cuda_threads_enter(x);
+#else
 	UNUSED(x);
+#endif
 }
 
 extern void gpu_threads_leave(struct cuda_threads_s* x)
 {
+#ifdef USE_CUDA
+	cuda_threads_leave(x);
+#else
 	UNUSED(x);
+#endif
 }
 
 extern void gpu_threads_free(struct cuda_threads_s* x)
 {
+#ifdef USE_CUDA
+	cuda_threads_free(x);
+#else
 	UNUSED(x);
+#endif
 }
 
 /**

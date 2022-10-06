@@ -71,4 +71,10 @@ extern void cuda_memcache_clear(void);
 extern void cuda_use_global_memory(void);
 extern void print_cuda_meminfo(void);
 
+struct cuda_threads_s;
+extern struct cuda_threads_s* cuda_threads_create(void);
+extern void cuda_threads_enter(struct cuda_threads_s* x);
+extern void cuda_threads_leave(struct cuda_threads_s* x);
+extern void cuda_threads_free(struct cuda_threads_s* x);
+
 #include "misc/cppwrap.h"

@@ -599,6 +599,63 @@ int cuda_num_streams()
 	return cuda_streams_per_device;
 }
 
+struct cuda_threads_s {
+	
+	struct cuda_stream_id active;
+	struct cuda_stream_id last;
+};
+
+struct cuda_threads_s* cuda_threads_create(void)
+{
+	if (0 == cuda_num_devices())
+		return NULL;
+
+	PTR_ALLOC(struct cuda_threads_s, x);
+	
+	x->active = thread_active_stream;
+	x->last = thread_last_issued_stream;
+
+	return PTR_PASS(x);
+}
+
+void cuda_threads_enter(struct cuda_threads_s* x)
+{
+	if(NULL == x)
+		return;
+
+	thread_last_issued_stream = x->last;
+	
+	cuda_set_device_internal(x->active.device);
+	cuda_set_stream(x->active.stream);
+}
+
+void cuda_threads_leave(struct cuda_threads_s* x)
+{
+	if(NULL == x)
+		return;
+
+#if 0
+	cuda_sync_stream();
+#else
+	cuda_set_device_internal(x->active.device);
+	cuda_set_stream(x->active.stream);
+	cuda_stream_sync();
+#endif
+	return;
+}
+
+void cuda_threads_free(struct cuda_threads_s* x)
+{
+	if(NULL == x)
+		return;
+
+	thread_last_issued_stream = x->active;
+
+	cuda_set_device_internal(x->active.device);
+	cuda_set_stream(x->active.stream);
+
+	xfree(x);
+}
 
 //*************************************** Host Synchonization ********************************************* 
 

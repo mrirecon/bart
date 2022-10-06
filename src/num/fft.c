@@ -216,13 +216,6 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 
 	struct cuda_threads_s* gpu_stat = gpu_threads_create(dst);
 
-#ifdef USE_CUDA
-	// FIXME: New threads initialize the 0 GPU by default
-	// As long as gpu_threads_enter is not implemented other active devices other than the 0th device will fail
-	// As a workaround use CUDA_VISIBLE_DEVICES environment variable to select a GPU and hide other GPUS by the driver 
-	assert((0 == cuda_get_device_internal_unchecked()) || !cuda_ondevice(dst));
-#endif
-
 	#pragma omp parallel for
 	for (int j = 0; j < dims[i]; j++) {
 
