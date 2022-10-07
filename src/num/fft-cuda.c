@@ -81,7 +81,7 @@ static bool noncontiguous_flags(int D, unsigned long flags)
 }
 
 
-static struct fft_cuda_plan_s* fft_cuda_plan0(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], const long istrides[D], bool backwards)
+static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], const long istrides[D], bool backwards)
 {
 	// TODO: This is not optimal, as it will often create separate fft's where they
 	// are not needed. And since we compute blocks, we could also recurse
@@ -91,7 +91,7 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(unsigned int D, const long dimensi
 		return NULL;
 
 	PTR_ALLOC(struct fft_cuda_plan_s, plan);
-	unsigned int N = D;
+	int N = D;
 
 	plan->batch = 1;
 	plan->odist = 0;
@@ -110,10 +110,10 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(unsigned int D, const long dimensi
 	assert(0 != flags);
 	
 	// the cufft interface is strange, but we do our best...
-	unsigned int k = 0;
-	unsigned int l = 0;
+	int k = 0;
+	int l = 0;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (1 == dimensions[i])
 			continue;
@@ -150,7 +150,7 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(unsigned int D, const long dimensi
 	if (k > 3)
 		goto errout;
 
-	for (unsigned int i = 0; i < k; i++) {
+	for (int i = 0; i < k; i++) {
 
 		// assert(dims[i].is == lis);
 		// assert(dims[i].os == los);
@@ -163,7 +163,7 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(unsigned int D, const long dimensi
 		los = dims[i].n * dims[i].os;
 	}
 
-	for (unsigned int i = 0; i < l; i++) {
+	for (int i = 0; i < l; i++) {
 
 		batchdims[i] = hmdims[i].n;
 
@@ -180,8 +180,8 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(unsigned int D, const long dimensi
 
 	// check that batch dimensions can be collapsed to one
 
-	unsigned int bi = md_calc_blockdim(l, batchdims, batchistr, hmdims[0].is);
-	unsigned int bo = md_calc_blockdim(l, batchdims, batchostr, hmdims[0].os);
+	int bi = md_calc_blockdim(l, batchdims, batchistr, hmdims[0].is);
+	int bo = md_calc_blockdim(l, batchdims, batchostr, hmdims[0].os);
 
 	if (bi != bo)
 		goto errout;
@@ -254,14 +254,14 @@ errout:
 
 static unsigned long find_msb(unsigned long flags)
 {
-	for (unsigned int i = 1; i < CHAR_BIT * sizeof(flags); i *= 2)
+	for (int i = 1; i < CHAR_BIT * (int)sizeof(flags); i *= 2)
 		flags |= flags >> i;
 
 	return (flags + 1) / 2;
 }
 
 
-struct fft_cuda_plan_s* fft_cuda_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], const long istrides[D], bool backwards)
+struct fft_cuda_plan_s* fft_cuda_plan(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], const long istrides[D], bool backwards)
 {
 	assert(0u != flags);
 	assert(0u == (flags & ~md_nontriv_dims(D, dimensions)));
