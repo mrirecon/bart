@@ -43,14 +43,14 @@ static double lerp(double t, double a, double b)
 
 
 
-static void de_casteljau_step(unsigned int N, double out[static N], double t, const double coeff[static N + 1])
+static void de_casteljau_step(int N, double out[static N], double t, const double coeff[static N + 1])
 {
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		out[i] = lerp(t, coeff[i], coeff[i + 1]);
 }
 
 
-static double de_casteljau(double t, unsigned int N, const double coeff[static N + 1])
+static double de_casteljau(double t, int N, const double coeff[static N + 1])
 {
 	if (0 == N)
 		return coeff[0];
@@ -62,7 +62,7 @@ static double de_casteljau(double t, unsigned int N, const double coeff[static N
 }
 
 
-static void de_casteljau_split(double t, unsigned int N, double coeffA[static N + 1], double coeffB[static N + 1], const double coeff[static N + 1])
+static void de_casteljau_split(double t, int N, double coeffA[static N + 1], double coeffB[static N + 1], const double coeff[static N + 1])
 {
 	coeffA[0] = coeff[0];
 	coeffB[N] = coeff[N];
@@ -202,7 +202,7 @@ double nurbs(int n, int p, const double tau[static n + 1], const double coord[st
 	double sum = 0.;
 	double nrm = 0.;
 
-	for (unsigned int i = 0; i < n + 0 - p; i++) {
+	for (int i = 0; i < n + 0 - p; i++) {
 
 		double b = bspline(n, i, p, tau, x);
 
@@ -234,7 +234,7 @@ static void cox_deboor_step(int N, double out[static N], double x, int p, const 
 	}
 }
 
-static double cox_deboor_i(double x, unsigned int N, unsigned int p, const double tau[static N + 1],  const double coeff[static N + 1])
+static double cox_deboor_i(double x, int N, int p, const double tau[static N + 1],  const double coeff[static N + 1])
 {
         if (0 == N)
                 return coeff[0];
@@ -246,7 +246,7 @@ static double cox_deboor_i(double x, unsigned int N, unsigned int p, const doubl
 }
 
 #if 0
-static double cox_deboor_r(unsigned int n, unsigned int p, unsigned int k, unsigned int s, const double t2[static n + 1], const double v2[static n + 1 - p], double x)
+static double cox_deboor_r(int n, int p, int k, int s, const double t2[static n + 1], const double v2[static n + 1 - p], double x)
 {
 	if (0 == k)
 		return v2[s];
@@ -260,11 +260,11 @@ static double cox_deboor_r(unsigned int n, unsigned int p, unsigned int k, unsig
 }
 #endif
 
-static unsigned int find_span(unsigned int n, const double t[static n + 1], double x)
+static int find_span(int n, const double t[static n + 1], double x)
 {
 	assert(x >= t[0]);
 
-	unsigned int i = 0;
+	int i = 0;
 
 	while (x >= t[i])
 		i++;
@@ -275,7 +275,7 @@ static unsigned int find_span(unsigned int n, const double t[static n + 1], doub
 }
 
 
-static double cox_deboor(unsigned int n, unsigned int p, const double t[static n + 1], const double v[static n + 1 - p], double x)
+static double cox_deboor(int n, int p, const double t[static n + 1], const double v[static n + 1 - p], double x)
 {
 	int i = find_span(n, t, x);
 
