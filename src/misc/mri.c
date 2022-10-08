@@ -334,7 +334,7 @@ float traj_radial_dcshift(const long tdims[DIMS], const complex float* traj)
 
 	NESTED(float, dist, (int i))
 	{
-		return sqrtf(powf(crealf(traj1[3 * i + 0]), 2.) + pow(crealf(traj1[3 * i + 1]), 2.));
+		return sqrtf(powf(crealf(traj1[3 * i + 0]), 2.) + powf(crealf(traj1[3 * i + 1]), 2.));
 	};
 
 	float dc_shift = dist(0);
@@ -361,7 +361,7 @@ float traj_radial_dk(const long tdims[DIMS], const complex float* traj)
 
 	NESTED(float, dist, (int i))
 	{
-		return sqrtf(powf(crealf(traj1[3 * i + 0]), 2.) + pow(crealf(traj1[3 * i + 1]), 2.));
+		return sqrtf(powf(crealf(traj1[3 * i + 0]), 2.) + powf(crealf(traj1[3 * i + 1]), 2.));
 	};
 
 	float dc_shift = dist(0);
