@@ -32,6 +32,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef _WIN32
 #include <malloc.h>
@@ -49,6 +50,7 @@
 #include "num/optimize.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
+#include "num/gpukrnls.h"
 #endif
 
 #include "multind.h"
@@ -1923,6 +1925,61 @@ void md_periodic(int D, const long dims1[D], void* dst, const long dims2[D], con
 			dims2, MD_STRIDES(D, dims2, size), src, size);
 }
 
+
+void* md_compress(int D, const long dims[D], const float* src)
+{
+	long N = md_calc_size(D, dims);
+	uint32_t* dst = md_alloc_sameplace(1, MD_DIMS(N / 32 + 1), sizeof(uint32_t), src);
+
+#ifdef USE_CUDA
+	if (cuda_ondevice(src)) {
+
+		cuda_compress(N, dst, src);
+		return dst;
+	}
+#endif 
+
+	#pragma omp parallel for
+	for (long i = 0; i < N / 32 + 1; i++) {
+
+		uint32_t result = 0;
+
+		for (long j = 0; j < 32; j++) {
+
+			if (((32 * i + j) < N) && 0. != src[(32 * i + j)])
+				result = MD_SET(result, j);
+		}
+
+		dst[i] = result;
+	}
+
+	return dst;
+}
+
+
+void md_decompress(int D, const long dims[D], float* dst, const void* _src)
+{
+	const uint32_t* src = _src;
+	long N = md_calc_size(D, dims);
+
+#ifdef USE_CUDA
+	if (cuda_ondevice(src)) {
+
+		cuda_decompress(N, dst, src);
+		return;
+	}
+#endif 
+
+	#pragma omp parallel for
+	for (long i = 0; i < N / 32 + ((0 == N % 32) ? 0 : 1); i++) {
+
+		for (long j = 0; j < 32; j++) {
+
+			if (((32 * i + j) < N))
+				dst[32 * i + j] = MD_IS_SET(src[i], j) ? 1 : 0;
+		}
+	}
+}
 
 
 /**

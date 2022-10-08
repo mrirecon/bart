@@ -3,6 +3,8 @@
 
 #include "num/multind.h"
 #include "num/rand.h"
+#include "num/flpmath.h"
+
 
 #include "utest.h"
 
@@ -161,4 +163,34 @@ static bool test_md_reshape(void)
 
 UT_REGISTER_TEST(test_md_reshape);
 
+
+static bool test_compress(void)
+{
+	enum { N = 1 };
+	long dims[N] = { 31 };
+
+	complex float* _ptr1 = md_alloc(N, dims, CFL_SIZE);
+	md_gaussian_rand(N, dims, _ptr1);
+
+	dims[0] = 62;
+
+	float* ptr1 = (float*)_ptr1;
+	md_sgreatequal(N, dims, ptr1, ptr1, 0.);
+
+	void* compress = md_compress(N, dims, ptr1);
+
+	float* ptr2 = md_alloc(N, dims, FL_SIZE);
+	md_decompress(N, dims, ptr2, compress);
+
+	float err = md_nrmse(N, dims, ptr2, ptr1);
+
+	md_free(ptr1);
+	md_free(ptr2);
+	md_free(compress);
+
+	
+	UT_ASSERT(err < UT_TOL);
+}
+
+UT_REGISTER_TEST(test_compress);
 

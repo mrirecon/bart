@@ -133,6 +133,9 @@ extern void md_permute_dims(int D, const int order[__VLA(D)], long odims[__VLA(D
 extern void md_transpose_dims(int D, int dim1, int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern bool md_next(int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
 
+extern void* md_compress(int D, const long dims[__VLA(D)], const float* src);
+extern void md_decompress(int D, const long dims[__VLA(D)], float* dst, const void* src);
+
 extern unsigned long md_nontriv_dims(int D, const long dims[__VLA(D)]);
 extern unsigned long md_nontriv_strides(int D, const long dims[__VLA(D)]);
 

@@ -1293,3 +1293,76 @@ extern "C" void cuda_zfill(long N, _Complex float val, _Complex float* dst)
 {
 	kern_zfill<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, make_cuFloatComplex(__real(val), __imag(val)), (cuFloatComplex*)dst);
 }
+
+
+__global__ static void kern_compress(long N, uint32_t* dst, const float* src)
+{
+	long idx;
+	long idx_init;
+	unsigned int stride;
+	unsigned int thread;
+
+	thread = threadIdx.x;
+	idx_init = blockDim.x * blockIdx.x; //if idx would contain thread id, the loop might diverge ->deadlock with syncthreads
+
+	stride = blockDim.x * gridDim.x;
+
+	for (idx = idx_init; idx < N; idx += stride) {
+		
+		long i = idx + thread;
+
+		extern __shared__ float tmp_float[];
+
+		tmp_float[thread] = (i < N) ? src[i] : 0;
+
+		__syncthreads();
+
+		if ((0 == i % 32) && (i - 32 < N)) {
+
+			uint32_t result = 0;
+			for (int j = 0; j < 32; j++)
+				if (0. != tmp_float[thread + j])
+					result = MD_SET(result, j);
+			
+			dst[i / 32] = result;
+		}
+	}
+}
+
+__global__ static void kern_decompress(long N, float* dst, const uint32_t* src)
+{
+	long idx;
+	long idx_init;
+	unsigned int stride;
+	unsigned int thread;
+
+	thread = threadIdx.x;
+	idx_init = blockDim.x * blockIdx.x; //if idx would contain thread id, the loop might diverge ->deadlock with syncthreads
+
+	stride = blockDim.x * gridDim.x;
+
+	for (idx = idx_init; idx < N; idx += stride) {
+		
+		long i = idx + thread;
+
+		extern __shared__ uint32_t tmp_uint32[];
+
+		if ((0 == i % 32) && (i - 32 < N))
+			tmp_uint32[thread / 32] = src[i / 32];
+		
+		__syncthreads();
+
+		if (i < N)
+			dst[i] = MD_IS_SET(tmp_uint32[thread / 32], thread % 32) ? 1. : 0.;		
+	}
+}
+
+extern "C" void cuda_compress(long N, uint32_t* dst, const float* src)
+{
+	kern_compress<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(float), cuda_get_stream()>>>(N, dst, src);
+}
+
+extern "C" void cuda_decompress(long N, float* dst, const uint32_t* src)
+{
+	kern_decompress<<<gridsize(N), blocksize(N), blocksize(N), cuda_get_stream()>>>(N, dst, src);
+}
