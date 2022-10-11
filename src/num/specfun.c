@@ -87,6 +87,7 @@ double Si_power(double x)
 static double Si_help_f(double x)
 {
 	double num_coeff[] = {
+		+1.,
 		+7.44437068161936700618e2,
 		+1.96396372895146869801e5,
 		+2.37750310125431834034e7,
@@ -100,6 +101,7 @@ static double Si_help_f(double x)
 	};
 
 	double denum_coeff[] = {
+		+1.,
 		+7.46437068161927678031e2,
 		+1.97865247031583951450e5,
 		+2.41535670165126845144e7,
@@ -111,15 +113,16 @@ static double Si_help_f(double x)
 		+1.11535493509914254097e13,
 	};
 
-	double num = 1.;
+	double num = 0.;
+	double X = 1. / (x * x);
 
 	for (int i = 0; i < (int)ARRAY_SIZE(num_coeff); i++)
-		num += num_coeff[i] * pow(x, -2 * (1 + i));
+		num += num_coeff[i] * pow(X, i);
 
-	double denum = 1.;
+	double denum = 0.;
 
 	for (int i = 0; i < (int)ARRAY_SIZE(denum_coeff); i++)
-		denum += denum_coeff[i] * pow(x, -2 * (1 + i));
+		denum += denum_coeff[i] * pow(X, i);
 
 	return num / denum / x;
 }
