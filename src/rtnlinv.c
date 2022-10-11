@@ -248,12 +248,12 @@ int main_rtnlinv(int argc, char* argv[argc])
 	long img_output1_dims[DIMS];
 	md_select_dims(DIMS, ~TIME_FLAG, img_output1_dims, img_output_dims);
 
-	if (!combine) {
+	if (combine) {
 
 		// The conventional img-dimensions contain only one map.
 		// The 'output' dimensions might contain multiple maps (ENLIVE)
-		img_output_dims[MAPS_DIM] = nmaps;
-		img_output1_dims[MAPS_DIM] = nmaps;
+		img_output_dims[MAPS_DIM] = 1;
+		img_output1_dims[MAPS_DIM] = 1;
 	}
 
 	complex float* img_output = create_cfl(img_file, DIMS, img_output_dims);
