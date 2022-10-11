@@ -60,7 +60,48 @@ tests/test-rtnlinv-nlinv-pseudocart: scale phantom ones rtnlinv nlinv nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-rtnlinv-maps-dims: phantom ones rtnlinv show
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/phantom -s1 -k ksp.ra					;\
+	$(TOOLDIR)/ones 2 128 128 psf.ra					;\
+	$(TOOLDIR)/rtnlinv -m4       -S -i1 -ppsf.ra ksp.ra r.ra c.ra		;\
+	$(TOOLDIR)/rtnlinv -m4    -U -S -i1 -ppsf.ra ksp.ra rU.ra cU.ra		;\
+	$(TOOLDIR)/rtnlinv -m4 -N    -S -i1 -ppsf.ra ksp.ra rN.ra cN.ra		;\
+	$(TOOLDIR)/rtnlinv -m4 -N -U -S -i1 -ppsf.ra ksp.ra rNU.ra cNU.ra	;\
+	[ 1 -eq `$(TOOLDIR)/show -d 4 r.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 c.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 rU.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cU.ra` ] 					&&\
+	[ 1 -eq `$(TOOLDIR)/show -d 4 rN.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cN.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 rNU.ra` ] 				&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cNU.ra` ] 				&&\
+	true
+	touch $@
+
+
+tests/test-rtnlinv-noncart-maps-dims: traj phantom rtnlinv show
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/traj -r -y21 traj.ra						;\
+	$(TOOLDIR)/phantom -s1 -k -ttraj.ra ksp.ra				;\
+	$(TOOLDIR)/rtnlinv -m4       -S -i1 -ttraj.ra  ksp.ra r.ra c.ra		;\
+	$(TOOLDIR)/rtnlinv -m4    -U -S -i1 -ttraj.ra  ksp.ra rU.ra cU.ra	;\
+	$(TOOLDIR)/rtnlinv -m4 -N    -S -i1 -ttraj.ra  ksp.ra rN.ra cN.ra	;\
+	$(TOOLDIR)/rtnlinv -m4 -N -U -S -i1 -ttraj.ra  ksp.ra rNU.ra cNU.ra	;\
+	[ 1 -eq `$(TOOLDIR)/show -d 4 r.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 c.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 rU.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cU.ra` ] 					&&\
+	[ 1 -eq `$(TOOLDIR)/show -d 4 rN.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cN.ra` ] 					&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 rNU.ra` ] 				&&\
+	[ 4 -eq `$(TOOLDIR)/show -d 4 cNU.ra` ] 				&&\
+	true
+	touch $@
+
+
 
 TESTS += tests/test-rtnlinv tests/test-rtnlinv-precomp tests/test-rtnlinv-nlinv-noncart tests/test-rtnlinv-nlinv-pseudocart
+TESTS += tests/test-rtnlinv-maps-dims tests/test-rtnlinv-noncart-maps-dims
 #TESTS += tests/test-rtnlinv-precomp
 
