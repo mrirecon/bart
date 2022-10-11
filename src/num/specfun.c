@@ -75,6 +75,11 @@ double Si_power(double x)
 }
 
 
+static double horner(double x, int N, const double coeff[N])
+{
+	return coeff[0] + ((1 == N) ? 1. : (x * horner(x, N - 1, coeff + 1)));
+}
+
 // Efficient and accurate calculation of Sine Integral using Padé approximants of the convergent Taylor series
 // For details see:
 // 	Rowe, B., et al.
@@ -113,19 +118,15 @@ static double Si_help_f(double x)
 		+1.11535493509914254097e13,
 	};
 
-	double num = 0.;
 	double X = 1. / (x * x);
-
-	for (int i = 0; i < (int)ARRAY_SIZE(num_coeff); i++)
-		num += num_coeff[i] * pow(X, i);
-
-	double denum = 0.;
-
-	for (int i = 0; i < (int)ARRAY_SIZE(denum_coeff); i++)
-		denum += denum_coeff[i] * pow(X, i);
+	double num = horner(X, ARRAY_SIZE(num_coeff), num_coeff);
+	double denum = horner(X, ARRAY_SIZE(denum_coeff), denum_coeff);
 
 	return num / denum / x;
 }
+
+
+
 
 // helper function to calculate Si accurate for large arguments (> 4)
 static double Si_help_g(double x)
@@ -157,17 +158,11 @@ static double Si_help_g(double x)
 		+3.99653257887490811e13,
 	};
 
-	double num = 0.;
 
 	double X = 1. / (x * x);
 
-	for (int i = 0; i < (int)ARRAY_SIZE(num_coeff); i++)
-		num += num_coeff[i] * pow(X, i);
-
-	double denum = 0.;
-
-	for (int i = 0; i < (int)ARRAY_SIZE(denum_coeff); i++)
-		denum += denum_coeff[i] * pow(X, i);
+	double num = horner(X, ARRAY_SIZE(num_coeff), num_coeff);
+	double denum = horner(X, ARRAY_SIZE(denum_coeff), denum_coeff);
 
 	return ((x < 0) ? -1 : 1) * X * (num / denum);
 }
