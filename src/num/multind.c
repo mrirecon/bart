@@ -34,6 +34,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #ifdef _WIN32
 #include <malloc.h>
 #else
@@ -166,10 +170,20 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 
 	struct cuda_threads_s* gpu_stat = gpu_threads_create(ptr[0]);
 
+#ifdef _OPENMP
+	int old_threads = omp_get_max_threads();
+	int outer_threads = MAX(1, MIN(old_threads, total_iterations));
+	int inner_threads = MAX(1, old_threads / outer_threads);
+
+	omp_set_num_threads(outer_threads);	
+#endif
 
 	#pragma omp parallel for
 	for (long i = 0; i < total_iterations; i++) {
 
+#ifdef _OPENMP
+		omp_set_num_threads(inner_threads);
+#endif
 		gpu_threads_enter(gpu_stat);
 
 		// Recover place in parallel iteration space
@@ -196,6 +210,10 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 
 		gpu_threads_leave(gpu_stat);
 	}
+
+#ifdef _OPENMP
+	omp_set_num_threads(old_threads);
+#endif
 
 	gpu_threads_free(gpu_stat);
 }
