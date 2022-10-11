@@ -29,6 +29,7 @@
 #include "num/vecops.h"
 #include "num/gpuops.h"
 #include "num/gpukrnls.h"
+#include "num/gpukrnls_bat.h"
 #include "num/mem.h"
 #include "num/multind.h"
 #include "num/blas.h"
@@ -1029,6 +1030,7 @@ struct vec_iter_s {
 	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
 	void (*fmac)(long N, float* a, const float* x, const float* y);
 
+	void (*mul)(long N, float* a, const float* x, const float* y);
 	void (*div)(long N, float* a, const float* x, const float* y);
 	void (*sqrt)(long N, float* a, const float* x);
 
@@ -1036,11 +1038,17 @@ struct vec_iter_s {
 	void (*smin)(long N, float alpha, float* a, const float* x);
 	void (*sadd)(long N, float* x, float y);
 	void (*sdiv)(long N, float* a, float x, const float* y);
+	void (*le)(long N, float* a, const float* x, const float* y);
 
 	void (*zmul)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zsmax)(long N, float val, _Complex float* dst, const _Complex float* src1);
 
 	void (*rand)(long N, float* dst);
+
+	void (*xpay_bat)(long Bi, long N, long Bo, const float* beta, float* a, const float* x);
+	void (*dot_bat)(long Bi, long N, long Bo, float* dst, const float* src1, const float* src2);
+	void (*axpy_bat)(long Bi, long N, long Bo, float* a, const float* alpha, const float* x);
+
 };
 
 
@@ -1062,6 +1070,20 @@ const struct vec_iter_s gpu_iter_ops = {
 	.swap = cuda_swap,
 	.zmul = cuda_zmul,
 	.rand = gaussian_rand_vec,
+	.mul = cuda_mul,
+	.fmac = cuda_fmac,
+	.div = cuda_div,
+	.sqrt = cuda_sqrt,
+	.smax = cuda_smax,
+	.smin = NULL,
+	.sadd = NULL,
+	.sdiv = NULL,
+	.le = cuda_le,
+	.zsmax = cuda_zsmax,
+	.xpay_bat = cuda_xpay_bat,
+	.dot_bat = cuda_dot_bat,
+	.axpy_bat = cuda_axpy_bat,
+	
 };
 
 #endif

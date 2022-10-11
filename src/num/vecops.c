@@ -722,6 +722,65 @@ static void vec_zfill(long N, _Complex float val, _Complex float* dst)
 		dst[i] = val;
 }
 
+
+static void xpay_bat(long Bi, long N, long Bo, const float* beta, float* a, const float* x)
+{
+	for (long bi = 0; bi < Bi; bi++) {
+
+		for (long bo = 0; bo < Bo; bo++) {
+
+			for (long i = 0; i < N; i++) {
+
+				long idx = 2 * bi + 2 * Bi * i + 2 * Bi * N * bo;
+				long idx_beta = bi + Bi * bo;
+
+				a[idx] = x[idx] + beta[idx_beta] * a[idx];
+				a[idx + 1] = x[idx + 1] + beta[idx_beta] * a[idx + 1];
+			}
+		}
+	}
+
+}
+
+static void dot_bat(long Bi, long N, long Bo, float* dst, const float* src1, const float* src2)
+{
+	for (long bi = 0; bi < Bi; bi++) {
+
+		for (long bo = 0; bo < Bo; bo++) {
+
+			double ret = 0.;
+
+			for (long i = 0; i < N; i++) {
+
+				long idx = 2 * bi + 2 * Bi * i + 2 * Bi * N * bo;
+				ret += src1[idx] * src2[idx] + src1[idx + 1] * src2[idx + 1];
+			}
+
+			dst[bi + Bi * bo] =(float)ret;
+		}
+	}
+}
+
+static void axpy_bat(long Bi, long N, long Bo, float* a, const float* alpha, const float* x)
+{
+	for (long bi = 0; bi < Bi; bi++) {
+
+		for (long bo = 0; bo < Bo; bo++) {
+
+			for (long i = 0; i < N; i++) {
+
+				long idx = 2 * bi + 2 * Bi * i + + 2 * Bi * N * bo;
+				long idx_alpha = bi + Bi * bo;
+
+				a[idx] += alpha[idx_alpha] * x[idx];
+				a[idx + 1] += alpha[idx_alpha] * x[idx + 1];
+			}
+		}
+	}
+
+}
+
+
 /*
  * If you add functions here, please also add to gpuops.c/gpukrnls.cu
  */
@@ -836,6 +895,7 @@ struct vec_iter_s {
 	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
 	void (*fmac)(long N, float* a, const float* x, const float* y);
 
+	void (*mul)(long N, float* a, const float* x, const float* y);
 	void (*div)(long N, float* a, const float* x, const float* y);
 	void (*sqrt)(long N, float* a, const float* x);
 
@@ -843,11 +903,17 @@ struct vec_iter_s {
 	void (*smin)(long N, float alpha, float* a, const float* x);
 	void (*sadd)(long N, float* x, float y);
 	void (*sdiv)(long N, float* a, float x, const float* y);
+	void (*le)(long N, float* a, const float* x, const float* y);
 
 	void (*zmul)(long N, complex float* dst, const complex float* src1, const complex float* src2);
- 	void (*zsmax)(long N, complex float val, complex float* dst, const complex float* src1);
+	void (*zsmax)(long N, float val, complex float* dst, const complex float* src1);
 
 	void (*rand)(long N, float* dst);
+
+	void (*xpay_bat)(long Bi, long N, long Bo, const float* beta, float* a, const float* x);
+	void (*dot_bat)(long Bi, long N, long Bo, float* dst, const float* src1, const float* src2);
+	void (*axpy_bat)(long Bi, long N, long Bo, float* a, const float* alpha, const float* x);
+
 };
 
 
@@ -872,8 +938,14 @@ const struct vec_iter_s cpu_iter_ops = {
 	.sqrt = vec_sqrt,
 	.sdiv = sdiv,
 	.sadd = sadd,
+	.mul = mul,
 	.div = vec_div,
 	.smax = smax,
 	.smin = smin,
 	.rand = gaussian_rand_vec,
+	.le = vec_le,
+
+	.xpay_bat = xpay_bat,
+	.dot_bat = dot_bat,
+	.axpy_bat = axpy_bat,
 };
