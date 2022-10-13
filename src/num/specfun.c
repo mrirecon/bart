@@ -55,7 +55,7 @@ double bessel_i0(double x)
 
 
 
-static long factorial(long k)
+static double factorial(int k)
 {
 	return (0 == k) ? 1 : (k * factorial(k - 1));
 }
