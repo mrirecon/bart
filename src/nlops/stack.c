@@ -416,12 +416,11 @@ static const struct graph_s* nlop_graph_stack_container(const struct operator_s*
 
 const struct nlop_s* nlop_stack_container_create(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO])
 {
-
 	PTR_ALLOC(struct stack_container_s, d);
 	SET_TYPEID(stack_container_s, d);
 
-	unsigned int max_DI = 0;
-	unsigned int max_DO = 0;
+	int max_DI = 0;
+	int max_DO = 0;
 
 	unsigned int DI[II];
 	unsigned int DO[OO];
@@ -444,17 +443,23 @@ const struct nlop_s* nlop_stack_container_create(int N, const struct nlop_s* nlo
 	d->Nnlops = N;
 	d->nlops = *TYPE_ALLOC(const struct nlop_s*[N]);
 	d->nlops_original = *TYPE_ALLOC(const struct nlop_s*[N]);
+
 	d->offsets = *TYPE_ALLOC(long*[N]);
+
 	for (int i = 0; i < N; i++)
 		d->offsets[i] = *TYPE_ALLOC(long[II + OO]);
+
 
 	d->II = II;
 	d->OO = OO;
 	d->N = II + OO;
 
+
 	d->dup = *TYPE_ALLOC(_Bool[II]);
+
 	for (int i = 0; i < II; i++)
 		d->dup[i] = (-1 == in_stack_dim[i]);
+
 
 	d->D = *TYPE_ALLOC(int[II + OO]);
 	d->strs = *TYPE_ALLOC(long*[II + OO]);

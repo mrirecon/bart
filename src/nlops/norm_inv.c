@@ -380,8 +380,8 @@ const struct nlop_s* norm_inv_create(struct nlop_norm_inv_conf* conf, const stru
 	int II = nlop_get_nr_in_args(normal_op);
 	int OO = 1;
 
-	unsigned int NO = nlop_generic_codomain(normal_op, 0)->N;
-	unsigned int NI = nlop_generic_domain(normal_op, 0)->N;
+	int NO = nlop_generic_codomain(normal_op, 0)->N;
+	int NI = nlop_generic_domain(normal_op, 0)->N;
 
 	for (int i = 0; i < II; i++)
 		NI = MAX(NI, nlop_generic_domain(normal_op, i)->N);
@@ -504,8 +504,8 @@ const struct nlop_s* nlop_maxeigen_create(const struct nlop_s* normal_op)
 	int II = nlop_get_nr_in_args(normal_op) - 1;
 	int OO = 1;
 
-	unsigned int NO = nlop_generic_codomain(normal_op, 0)->N;
-	unsigned int NI = nlop_generic_domain(normal_op, 0)->N;
+	int NO = nlop_generic_codomain(normal_op, 0)->N;
+	int NI = nlop_generic_domain(normal_op, 0)->N;
 
 	for (int i = 0; i < II; i++)
 		NI = MAX(NI, nlop_generic_domain(normal_op, i + 1)->N);

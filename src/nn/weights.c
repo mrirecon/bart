@@ -336,6 +336,7 @@ const struct nlop_s* nn_get_nlop_wo_weights_F(nn_t op, nn_weights_t weights, boo
 {
 	auto nn_result = nn_get_wo_weights_F(op, weights, copy);
 	auto result = nlop_clone(nn_get_nlop(nn_result));
+
 	nn_free(nn_result);
 
 	return result;
@@ -350,18 +351,21 @@ const struct nlop_s* nn_get_nlop_wo_weights_F(nn_t op, nn_weights_t weights, boo
  * @param dst
  * @param src
  */
-void nn_weights_copy(nn_weights_t dst, nn_weights_t src){
-
+void nn_weights_copy(nn_weights_t dst, nn_weights_t src)
+{
 	assert(dst->N == src->N);
-	for(int i = 0; i < src->N; i++){
+
+	for (int i = 0; i < src->N; i++){
 
 		auto iovd = dst->iovs[i];
 		auto iovs = src->iovs[i];
 
 		assert(iovd->N == iovs->N);
 		assert(iovd->size == iovs->size);
-		for (unsigned int j = 0; j < iovd->N; j++)
+
+		for (int j = 0; j < iovd->N; j++)
 			assert((1 == iovs->dims[j] ) || (iovs->dims[j] == iovs->dims[j]));
+
 
 		md_copy2(iovd->N, iovd->dims,
 			MD_STRIDES(iovd->N, iovd->dims, iovd->size), dst->tensors[i],

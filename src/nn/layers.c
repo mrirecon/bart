@@ -44,12 +44,10 @@
  * @param conv_pad padding for the convolution
  * @param swap_kernel_matrix if true, the kernel has dims (IC, OC) instead of (OC, IC)
  */
-const struct nlop_s* append_convcorr_layer_generic(
-						const struct nlop_s* network, int o,
+const struct nlop_s* append_convcorr_layer_generic(const struct nlop_s* network, int o,
 						unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag,
-						unsigned int N, long const kernel_dims[N], const long strides[N], const long dilations[N],
-						bool conv, enum PADDING conv_pad
-					)
+						int N, long const kernel_dims[N], const long strides[N], const long dilations[N],
+						bool conv, enum PADDING conv_pad)
 {
 	int NO = nlop_get_nr_out_args(network);
 	int NI = nlop_get_nr_in_args(network);
@@ -63,11 +61,12 @@ const struct nlop_s* append_convcorr_layer_generic(
 
 	//set default dilation/strides
 	long ones[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		ones[i] = 1;
 
 	if (NULL == strides)
 		strides = ones;
+
 	if (NULL == dilations)
 		dilations = ones;
 
@@ -95,18 +94,19 @@ const struct nlop_s* append_convcorr_layer_generic(
 
 	unsigned long conv_op_flags = 0;
 
-	unsigned int ip = 0;
-	unsigned int ik = 0;
+	int ip = 0;
+	int ik = 0;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(conv_flag, i)) {
 
-			if (conv_pad == PAD_VALID){
+			if (conv_pad == PAD_VALID) {
 
 				assert(0 == (idims[i] - dilations[i] * (kernel_dims[i] - 1) - 1) % strides[i]);
 				odims[i] = (idims[i] - dilations[i] * (kernel_dims[i] - 1) - 1) / strides[i] + 1;
 				odims_op[ip] = odims[i];
+
 			} else {
 
 				assert(0 == idims[i] % strides[i]);
@@ -224,12 +224,10 @@ const struct nlop_s* append_convcorr_layer_generic(
  * @param adjoint adjoint convolution if true, transposed else
  * @param swap_kernel_matrix if true, the kernel has dims (IC, OC) instead of (OC, IC)
  */
-const struct nlop_s* append_transposed_convcorr_layer_generic(
-						const struct nlop_s* network, int o,
+const struct nlop_s* append_transposed_convcorr_layer_generic(const struct nlop_s* network, int o,
 						unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag,
-						unsigned int N, long const kernel_dims[N], const long strides[N], const long dilations[N],
-						bool conv, enum PADDING conv_pad, bool adjoint
-					)
+						int N, long const kernel_dims[N], const long strides[N], const long dilations[N],
+						bool conv, enum PADDING conv_pad, bool adjoint)
 {
 	int NO = nlop_get_nr_out_args(network);
 	int NI = nlop_get_nr_in_args(network);
@@ -243,11 +241,12 @@ const struct nlop_s* append_transposed_convcorr_layer_generic(
 
 	//set default dilation/strides
 	long ones[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		ones[i] = 1;
 
 	if (NULL == strides)
 		strides = ones;
+
 	if (NULL == dilations)
 		dilations = ones;
 
@@ -275,17 +274,18 @@ const struct nlop_s* append_transposed_convcorr_layer_generic(
 
 	unsigned long conv_op_flags = 0;
 
-	unsigned int ip = 0;
-	unsigned int ik = 0;
+	int ip = 0;
+	int ik = 0;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(conv_flag, i)) {
 
-			if (conv_pad == PAD_VALID){
+			if (conv_pad == PAD_VALID) {
 
 				idims[i] = (odims[i] - 1) * strides[i] + 1 + dilations[i] * (kernel_dims[i] - 1);
 				idims_op[ip] = idims[i];
+
 			} else {
 
 				idims[i] = odims[i] * strides[i];
@@ -529,7 +529,7 @@ static bool calc_pooling_working_dims(unsigned int N, long dims_working[N], cons
  * @param pool_size {px, py, pz} size of pooling
  * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrinked/expanded to a multiple
  */
-const struct nlop_s* append_maxpool_layer_generic(const struct nlop_s* network, int o, unsigned int N, const long pool_size[N], enum PADDING conv_pad)
+const struct nlop_s* append_maxpool_layer_generic(const struct nlop_s* network, int o, int N, const long pool_size[N], enum PADDING conv_pad)
 {
 	//Fixme: we should adapt to tf convention (include strides)
 

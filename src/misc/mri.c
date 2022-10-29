@@ -264,7 +264,7 @@ void estimate_im_dims(int N, unsigned long flags, long dims[N], const long tdims
 /**
  * Estimate fast square image dimensions from trajectory
  */
-void estimate_fast_sq_im_dims(unsigned int N, long dims[3], const long tdims[N], const complex float* traj)
+void estimate_fast_sq_im_dims(int N, long dims[3], const long tdims[N], const complex float* traj)
 {
 	float max_dims[3] = { 0., 0., 0. };
 

@@ -919,7 +919,7 @@ static void merge_dims(unsigned int D, long odims[D], const long idims1[D], cons
 	}
 }
 
-const struct operator_s* (operator_loop_parallel2)(unsigned int N, const unsigned int D,
+const struct operator_s* operator_loop_parallel2(unsigned int N, unsigned int D,
 				const long dims[D], const long (*strs)[D],
 				const struct operator_s* op,
 				unsigned int flags, bool gpu)
@@ -937,13 +937,13 @@ const struct operator_s* (operator_loop_parallel2)(unsigned int N, const unsigne
 
 	// TODO: we should have a flag and ignore args with flag
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < (int)N; i++) {
 
 		const struct iovec_s* io = operator_arg_domain(op, i);
 
-		assert(D == io->N);
+		assert((int)D == io->N);
 
-		for (unsigned int j = 0; j < D; j++) {
+		for (int j = 0; j < (int)D; j++) {
 
 			assert((0 == io->strs[j]) || (io->strs[j] == strs[i][j]));
 			assert((1 == io->dims[j]) == (0 == io->strs[j]));
@@ -1092,7 +1092,7 @@ const struct operator_s* operator_copy_wrapper_sameplace(unsigned int N, const l
 	const long* dims[N];
 	const long* (*strs2)[N] = TYPE_ALLOC(const long*[N]);
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < (int)N; i++) {
 
 		const struct iovec_s* io = operator_arg_domain(op, i);
 
@@ -1108,7 +1108,7 @@ const struct operator_s* operator_copy_wrapper_sameplace(unsigned int N, const l
 		long tstrs[io->N];
 		md_calc_strides(io->N, tstrs, io->dims, CFL_SIZE);
 
-		for (unsigned int i = 0; i < io->N; i++)
+		for (int i = 0; i < io->N; i++)
 			if (1 != io->dims[i])
 				assert(io->strs[i] == tstrs[i]);
 	}

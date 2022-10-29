@@ -1,11 +1,11 @@
 /* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2022. Martin Uecker.
  * Copyright 2018. Massachusetts Institute of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2011-2022 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2018 Siddharth Iyer <ssi@mit.edu>
  *
@@ -42,7 +42,7 @@
 #endif
 
 
-void fftscale2(unsigned int N, const long dimensions[N], unsigned long flags, const long ostrides[N], complex float* dst, const long istrides[N], const complex float* src)
+void fftscale2(int N, const long dimensions[N], unsigned long flags, const long ostrides[N], complex float* dst, const long istrides[N], const complex float* src)
 {
 	long fft_dims[N];
 	md_select_dims(N, flags, fft_dims, dimensions);
@@ -52,7 +52,7 @@ void fftscale2(unsigned int N, const long dimensions[N], unsigned long flags, co
 	md_zsmul2(N, dimensions, ostrides, dst, istrides, src, scale);
 }
 
-void fftscale(unsigned int N, const long dims[N], unsigned long flags, complex float* dst, const complex float* src)
+void fftscale(int N, const long dims[N], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dims, CFL_SIZE);
@@ -68,7 +68,7 @@ static double fftmod_phase(long length, int j)
 	return ((double)j - (double)center1 / 2.) * shift;
 }
 
-static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src, bool inv, double phase)
+static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src, bool inv, double phase)
 {
 	if (0 == flags) {
 
@@ -80,7 +80,8 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 	/* this will also currently be slow on the GPU because we do not
 	 * support strides there on the lowest level */
 
-	unsigned int i = N - 1;
+	int i = N - 1;
+
 	while (!MD_IS_SET(flags, i))
 		i--;
 
@@ -107,13 +108,13 @@ static void fftmod2_r(unsigned int N, const long dims[N], unsigned long flags, c
 }
 
 
-static unsigned long clear_singletons(unsigned int N, const long dims[N], unsigned long flags)
+static unsigned long clear_singletons(int N, const long dims[N], unsigned long flags)
 {
        return (0 == N) ? flags : clear_singletons(N - 1, dims, (1 == dims[N - 1]) ? MD_CLEAR(flags, N - 1) : flags);
 }
 
 
-void fftmod2(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
+void fftmod2(int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
 {
 	fftmod2_r(N, dims, clear_singletons(N, dims, flags), ostrs, dst, istrs, src, false, 0.);
 }
@@ -124,19 +125,19 @@ void fftmod2(unsigned int N, const long dims[N], unsigned long flags, const long
  *      ifftmod before and after ifft (this is different from
  *	how fftshift/ifftshift has to be used)
  */
-void ifftmod2(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
+void ifftmod2(int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
 {
 	fftmod2_r(N, dims, clear_singletons(N, dims, flags), ostrs, dst, istrs, src, true, 0.);
 }
 
-void fftmod(unsigned int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
+void fftmod(int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dimensions, CFL_SIZE);
 	fftmod2(N, dimensions, flags, strs, dst, strs, src);
 }
 
-void ifftmod(unsigned int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
+void ifftmod(int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dimensions, CFL_SIZE);
@@ -148,36 +149,38 @@ void ifftmod(unsigned int N, const long dimensions[N], unsigned long flags, comp
 
 
 
-void ifftshift2(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
+void ifftshift2(int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
 {
 	long pos[N];
 	md_set_dims(N, pos, 0);
-	for (unsigned int i = 0; i < N; i++)
+
+	for (int i = 0; i < N; i++)
 		if (MD_IS_SET(flags, i))
 			pos[i] = dims[i] - dims[i] / 2;
 
 	md_circ_shift2(N, dims, pos, ostrs, dst, istrs, src, CFL_SIZE);
 }
 
-void ifftshift(unsigned int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
+void ifftshift(int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dimensions, CFL_SIZE);
 	ifftshift2(N, dimensions, flags, strs, dst, strs, src);
 }
 
-void fftshift2(unsigned int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
+void fftshift2(int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
 {
 	long pos[N];
 	md_set_dims(N, pos, 0);
-	for (unsigned int i = 0; i < N; i++)
+
+	for (int i = 0; i < N; i++)
 		if (MD_IS_SET(flags, i))
 			pos[i] = dims[i] / 2;
 
 	md_circ_shift2(N, dims, pos, ostrs, dst, istrs, src, CFL_SIZE);
 }
 
-void fftshift(unsigned int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
+void fftshift(int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dimensions, CFL_SIZE);
@@ -190,7 +193,7 @@ struct fft_plan_s {
 
 	fftwf_plan fftw;
 
-	unsigned int D;
+	int D;
 	unsigned long flags;
 	bool backwards;
 	const long* dims;
@@ -206,7 +209,7 @@ static DEF_TYPEID(fft_plan_s);
 
 
 #ifdef USE_FFTW_WISDOM
-static char* fftw_wisdom_name(int N, bool backwards, unsigned int flags, const long dims[N])
+static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const long dims[N])
 {
 	char* tbpath = getenv("TOOLBOX_PATH");
 
@@ -214,7 +217,7 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned int flags, const l
 		return NULL;
 
 	// Space for path and null terminator.
-	int space = snprintf(NULL, 0, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
+	int space = snprintf(NULL, 0, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%lu_DIMS", tbpath, N, backwards, flags);
 
 	// Space for dimensions.
 	for (int idx = 0; idx < N; idx ++)
@@ -231,7 +234,7 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned int flags, const l
 	if (NULL == loc)
 		error("memory out");
 
-	int ret = snprintf(loc, len, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%d_DIMS", tbpath, N, backwards, flags);
+	int ret = snprintf(loc, len, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%lu_DIMS", tbpath, N, backwards, flags);
 
 	assert(ret < len);
 	len -= ret;
@@ -254,15 +257,15 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned int flags, const l
 }
 #endif //USE_FFTW_WISDOM
 
-static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
+static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
 	fftwf_plan fftwf;
 
-	unsigned int N = D;
+	int N = D;
 	fftwf_iodim64 dims[N];
 	fftwf_iodim64 hmdims[N];
-	unsigned int k = 0;
-	unsigned int l = 0;
+	int k = 0;
+	int l = 0;
 
 #ifdef USE_FFTW_WISDOM
 	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
@@ -275,7 +278,7 @@ static fftwf_plan fft_fftwf_plan(unsigned int D, const long dimensions[D], unsig
 	//FFTW seems to be fine with this
 	//assert(0 != flags); 
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(flags, i)) {
 
@@ -361,7 +364,7 @@ static void fft_free_plan(const operator_data_t* _data)
 }
 
 
-const struct operator_s* fft_measure_create(unsigned int D, const long dimensions[D], unsigned long flags, bool inplace, bool backwards)
+const struct operator_s* fft_measure_create(int D, const long dimensions[D], unsigned long flags, bool inplace, bool backwards)
 {
 	flags &= md_nontriv_dims(D, dimensions);
 
@@ -411,7 +414,7 @@ const struct operator_s* fft_measure_create(unsigned int D, const long dimension
 }
 
 
-const struct operator_s* fft_create2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards)
+const struct operator_s* fft_create2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards)
 {
 	flags &= md_nontriv_dims(D, dimensions);
 
@@ -449,7 +452,7 @@ const struct operator_s* fft_create2(unsigned int D, const long dimensions[D], u
 	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, CAST_UP(PTR_PASS(plan)), fft_apply, fft_free_plan);
 }
 
-const struct operator_s* fft_create(unsigned int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src, bool backwards)
+const struct operator_s* fft_create(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src, bool backwards)
 {
 	long strides[D];
 	md_calc_strides(D, strides, dimensions, CFL_SIZE);
@@ -474,105 +477,105 @@ void fft_free(const struct operator_s* o)
 }
 
 
-void fft2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
+void fft2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
 	const struct operator_s* plan = fft_create2(D, dimensions, flags, ostrides, dst, istrides, src, false);
 	fft_exec(plan, dst, src);
 	fft_free(plan);
 }
 
-void ifft2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
+void ifft2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
 	const struct operator_s* plan = fft_create2(D, dimensions, flags, ostrides, dst, istrides, src, true);
 	fft_exec(plan, dst, src);
 	fft_free(plan);
 }
 
-void fft(unsigned int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
+void fft(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	const struct operator_s* plan = fft_create(D, dimensions, flags, dst, src, false);
 	fft_exec(plan, dst, src);
 	fft_free(plan);
 }
 
-void ifft(unsigned int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
+void ifft(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	const struct operator_s* plan = fft_create(D, dimensions, flags, dst, src, true);
 	fft_exec(plan, dst, src);
 	fft_free(plan);
 }
 
-void fftc(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void fftc(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
 {
 	fftmod(D, dimensions, flags, dst, src);
 	fft(D, dimensions, flags, dst, dst);
 	fftmod(D, dimensions, flags, dst, dst);
 }
 
-void ifftc(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void ifftc(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
 {
 	ifftmod(D, dimensions, flags, dst, src);
 	ifft(D, dimensions, flags, dst, dst);
 	ifftmod(D, dimensions, flags, dst, dst);
 }
 
-void fftc2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
+void fftc2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
 	fftmod2(D, dimensions, flags, ostrides, dst, istrides, src);
 	fft2(D, dimensions, flags, ostrides, dst, ostrides, dst);
 	fftmod2(D, dimensions, flags, ostrides, dst, ostrides, dst);
 }
 
-void ifftc2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
+void ifftc2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
 	ifftmod2(D, dimensions, flags, ostrides, dst, istrides, src);
 	ifft2(D, dimensions, flags, ostrides, dst, ostrides, dst);
 	ifftmod2(D, dimensions, flags, ostrides, dst, ostrides, dst);
 }
 
-void fftu(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void fftu(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
 {
 	fft(D, dimensions, flags, dst, src);
 	fftscale(D, dimensions, flags, dst, dst);
 }
 
-void ifftu(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void ifftu(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
 {
 	ifft(D, dimensions, flags, dst, src);
 	fftscale(D, dimensions, flags, dst, dst);
 }
 
-void fftu2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
+void fftu2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
 	fft2(D, dimensions, flags, ostrides, dst, istrides, src);
 	fftscale2(D, dimensions, flags, ostrides, dst, ostrides, dst);
 }
 
-void ifftu2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
+void ifftu2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
 	ifft2(D, dimensions, flags, ostrides, dst, istrides, src);
 	fftscale2(D, dimensions, flags, ostrides, dst, ostrides, dst);
 }
 
-void fftuc(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void fftuc(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
 {
 	fftc(D, dimensions, flags, dst, src);
 	fftscale(D, dimensions, flags, dst, dst);
 }
 
-void ifftuc(unsigned int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void ifftuc(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
 {
 	ifftc(D, dimensions, flags, dst, src);
 	fftscale(D, dimensions, flags, dst, dst);
 }
 
-void fftuc2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
+void fftuc2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
 	fftc2(D, dimensions, flags, ostrides, dst, istrides, src);
 	fftscale2(D, dimensions, flags, ostrides, dst, ostrides, dst);
 }
 
-void ifftuc2(unsigned int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
+void ifftuc2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
 	ifftc2(D, dimensions, flags, ostrides, dst, istrides, src);
 	fftscale2(D, dimensions, flags, ostrides, dst, ostrides, dst);
@@ -581,7 +584,7 @@ void ifftuc2(unsigned int D, const long dimensions[D], unsigned long flags, cons
 
 bool fft_threads_init = false;
 
-void fft_set_num_threads(unsigned int n)
+void fft_set_num_threads(int n)
 {
 #ifdef FFTWTHREADS
 	#pragma omp critical

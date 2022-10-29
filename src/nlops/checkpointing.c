@@ -386,15 +386,14 @@ static const struct graph_s* nlop_graph_checkpointing(const struct operator_s* o
  */
 const struct nlop_s* nlop_checkpoint_create(const struct nlop_s* nlop, bool der_once, bool clear_mem)
 {
-
 	PTR_ALLOC(struct checkpoint_s, d);
 	SET_TYPEID(checkpoint_s, d);
 
 	int II = nlop_get_nr_in_args(nlop);
 	int OO = nlop_get_nr_out_args(nlop);
 
-	unsigned int max_DI = 0;
-	unsigned int max_DO = 0;
+	int max_DI = 0;
+	int max_DO = 0;
 
 	PTR_ALLOC(unsigned int[OO], DO);
 	PTR_ALLOC(const long*[OO], odims);

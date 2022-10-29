@@ -30,7 +30,7 @@ void debug_print_iovec(int level, const struct iovec_s* vec)
 #endif
 
 
-void iovec_init2(struct iovec_s* n, unsigned int N, const long dims[N], const long strs[N], size_t size)
+void iovec_init2(struct iovec_s* n, int N, const long dims[N], const long strs[N], size_t size)
 {
 	n->N = N;
 
@@ -46,18 +46,21 @@ void iovec_init2(struct iovec_s* n, unsigned int N, const long dims[N], const lo
 }
 
 
-const struct iovec_s* iovec_create2(unsigned int N, const long dims[N], const long strs[N], size_t size)
+const struct iovec_s* iovec_create2(int N, const long dims[N], const long strs[N], size_t size)
 {
 	PTR_ALLOC(struct iovec_s, n);
+
 	iovec_init2(n, N, dims, strs, size);
+
 	return PTR_PASS(n);
 }
 
 
-const struct iovec_s* iovec_create(unsigned int N, const long dims[N], size_t size)
+const struct iovec_s* iovec_create(int N, const long dims[N], size_t size)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dims, size);
+
 	return iovec_create2(N, dims, strs, size);
 }
 
@@ -74,7 +77,7 @@ void iovec_free(const struct iovec_s* x)
 	xfree(x);
 }
 
-bool iovec_check(const struct iovec_s* iov, unsigned int N, const long dims[N], const long strs[N])
+bool iovec_check(const struct iovec_s* iov, int N, const long dims[N], const long strs[N])
 {
 	bool ok = true;
 	
@@ -84,7 +87,7 @@ bool iovec_check(const struct iovec_s* iov, unsigned int N, const long dims[N], 
 	if (N != iov->N)
 		return false;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		ok &= (dims[i] == iov->dims[i]);
 		ok &= (strs[i] == iov->strs[i]);

@@ -151,7 +151,7 @@ struct nlop_s* nlop_set_input_const2(const struct nlop_s* a, int i, int N, const
 	md_copy_dims(N_min, ndims, dims);
 	md_copy_strides(N_min, nstrs, strs);
 
-	for (unsigned int i = N_min; i < iov->N; i++)
+	for (int i = N_min; i < iov->N; i++)
 		assert(1 == iov->dims[i]);
 
 	for (int i = N_min; i < N; i++)

@@ -390,7 +390,7 @@ const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s* op, lo
 	auto io_in = operator_p_domain(op);
 	auto io_out = operator_p_codomain(op);
 
-	unsigned int N = io_in->N;
+	int N = io_in->N;
 	long dims[N];
 	md_copy_dims(N, dims, io_in->dims);
 

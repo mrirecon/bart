@@ -16,9 +16,9 @@
 #include "casorati.h"
 
 
-static void calc_casorati_geom(unsigned int N, long dimc[2 * N], long str2[2 * N], const long dimk[N], const long dim[N], const long str[N])
+static void calc_casorati_geom(int N, long dimc[2 * N], long str2[2 * N], const long dimk[N], const long dim[N], const long str[N])
 {
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		assert(dim[i] >= dimk[i]);
 
@@ -31,11 +31,11 @@ static void calc_casorati_geom(unsigned int N, long dimc[2 * N], long str2[2 * N
 }
 
 
-void casorati_dims(unsigned int N, long odim[2], const long dimk[N], const long dim[N])
+void casorati_dims(int N, long odim[2], const long dimk[N], const long dim[N])
 {
 	long dimc[2 * N];
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		assert(dim[i] >= dimk[i]);
 
@@ -48,7 +48,7 @@ void casorati_dims(unsigned int N, long odim[2], const long dimk[N], const long 
 }
 
 
-void casorati_matrix(unsigned int N, const long dimk[N], const long odim[2], complex float* optr, const long dim[N], const long str[N], const complex float* iptr)
+void casorati_matrix(int N, const long dimk[N], const long odim[2], complex float* optr, const long dim[N], const long str[N], const complex float* iptr)
 {
 	long str2[2 * N];
 	long strc[2 * N];
@@ -65,7 +65,7 @@ void casorati_matrix(unsigned int N, const long dimk[N], const long odim[2], com
 
 
 
-void casorati_matrixH(unsigned int N, const long dimk[N], const long dim[N], const long str[N], complex float* optr, const long odim[2], const complex float* iptr)
+void casorati_matrixH(int N, const long dimk[N], const long dim[N], const long str[N], complex float* optr, const long odim[2], const complex float* iptr)
 {
 	long str2[2 * N];
 	long strc[2 * N];
@@ -87,9 +87,9 @@ void casorati_matrixH(unsigned int N, const long dimk[N], const long dim[N], con
 
 
 
-static void calc_basorati_geom(unsigned int N, long dimc[2 * N], long str2[2 * N], const long dimk[N], const long dim[N], const long str[N])
+static void calc_basorati_geom(int N, long dimc[2 * N], long str2[2 * N], const long dimk[N], const long dim[N], const long str[N])
 {
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		dimc[i + 0] = dimk[i];			// size of blocks
 		dimc[i + N] = dim[i] / dimk[i];	// number of shifted blocks
@@ -100,11 +100,11 @@ static void calc_basorati_geom(unsigned int N, long dimc[2 * N], long str2[2 * N
 }
 
 
-void basorati_dims(unsigned int N, long odim[2], const long dimk[N], const long dim[N])
+void basorati_dims(int N, long odim[2], const long dimk[N], const long dim[N])
 {
 	long dimc[2 * N];
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		assert(0 == dim[i] % dimk[i]);
 
@@ -117,7 +117,7 @@ void basorati_dims(unsigned int N, long odim[2], const long dimk[N], const long 
 }
 
 
-void basorati_matrix(unsigned int N, const long dimk[N], const long odim[2], complex float* optr, const long dim[N], const long str[N], const complex float* iptr)
+void basorati_matrix(int N, const long dimk[N], const long odim[2], complex float* optr, const long dim[N], const long str[N], const complex float* iptr)
 {
 	long str2[2 * N];
 	long strc[2 * N];
@@ -134,7 +134,7 @@ void basorati_matrix(unsigned int N, const long dimk[N], const long odim[2], com
 
 
 
-void basorati_matrixH(unsigned int N, const long dimk[N], const long dim[N], const long str[N], complex float* optr, const long odim[2], const complex float* iptr)
+void basorati_matrixH(int N, const long dimk[N], const long dim[N], const long str[N], complex float* optr, const long odim[2], const complex float* iptr)
 {
 	long str2[2 * N];
 	long strc[2 * N];
