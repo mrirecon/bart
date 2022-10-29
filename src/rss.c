@@ -32,13 +32,13 @@ static const char help_str[] = "Calculates root of sum of squares along selected
 
 int main_rss(int argc, char* argv[argc])
 {
-	int flags = -1;
+	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_INT(true, &flags, "bitmask"),
+		ARG_ULONG(true, &flags, "bitmask"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
@@ -50,8 +50,6 @@ int main_rss(int argc, char* argv[argc])
 
 	long dims[DIMS];
 	complex float* data = load_cfl(in_file, DIMS, dims);
-
-	assert(0 <= flags);
 
 	long odims[DIMS];
 	md_select_dims(DIMS, ~flags, odims, dims);

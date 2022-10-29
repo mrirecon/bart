@@ -26,13 +26,13 @@ static const char help_str[] = "Calculates (weighted) average along dimensions s
 
 int main_avg(int argc, char* argv[argc])
 {
-	unsigned int flags = 0;
+	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_UINT(true, &flags, "bitmask"),
+		ARG_ULONG(true, &flags, "bitmask"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};

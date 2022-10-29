@@ -36,7 +36,7 @@ static const char help_str[] = "Perform wavelet transform.";
 
 int main_wavelet(int argc, char* argv[argc])
 {
-	unsigned int flags = 0;
+	unsigned long flags = 0;
 	long count = 0;
 	long* adims = NULL;
 	const char* in_file = NULL;
@@ -44,7 +44,7 @@ int main_wavelet(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_UINT(true, &flags, "bitmask"),
+		ARG_ULONG(true, &flags, "bitmask"),
 		ARG_TUPLE(false, &count, 1, TUPLE_LONG(&adims, "dim")),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),

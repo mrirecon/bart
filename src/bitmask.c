@@ -24,11 +24,11 @@ static const char help_str[] = "Convert between a bitmask and set of dimensions.
 int main_bitmask(int argc, char* argv[argc])
 {
 	long count = 0;
-	long* dims = NULL;
+	unsigned long* dims = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(false, &count, 1, TUPLE_LONG(&dims, "dim")),
+		ARG_TUPLE(false, &count, 1, TUPLE_ULONG(&dims, "dim")),
 	};
 
 	bool inverse = false;
@@ -43,14 +43,13 @@ int main_bitmask(int argc, char* argv[argc])
 	if ((1 != count) && inverse)
 		error("exactly one argument needed.\n");
 
-	long flags = 0;
+	unsigned long flags = 0;
 
 	if (!inverse) {
 
 		for (int i = 0; i < count; i++) {
 
-			long d = dims[i];
-			assert(d >= 0);
+			unsigned long d = dims[i];
 
 			flags = MD_SET(flags, d);
 		}

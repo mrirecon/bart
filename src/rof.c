@@ -66,14 +66,14 @@ static struct reg tvreg(unsigned long flags, float lambda, int N, const long dim
 int main_rof(int argc, char* argv[argc])
 {
 	float lambda = 0.;
-	int flags = -1;
+	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
 		ARG_FLOAT(true, &lambda, "lambda"),
-		ARG_INT(true, &flags, "flags"),
+		ARG_ULONG(true, &flags, "flags"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};

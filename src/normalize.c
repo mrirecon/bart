@@ -36,13 +36,13 @@ static const char help_str[] = "Normalize along selected dimensions.";
 
 int main_normalize(int argc, char* argv[argc])
 {
-	int flags = -1;
+	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_INT(true, &flags, "flags"),
+		ARG_ULONG(true, &flags, "flags"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
@@ -61,8 +61,6 @@ int main_normalize(int argc, char* argv[argc])
 	int N = DIMS;
 	long dims[N];
 	complex float* data = load_cfl(in_file, N, dims);
-
-	assert(flags >= 0);
 
 	complex float* out = create_cfl(out_file, N, dims);
 

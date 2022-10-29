@@ -95,7 +95,7 @@ static double bench_generic_matrix_multiply(long dims[DIMS])
 }
 
 
-static double bench_generic_add(long dims[DIMS], unsigned int flags, bool forloop)
+static double bench_generic_add(long dims[DIMS], unsigned long flags, bool forloop)
 {
 	long dimsX[DIMS];
 	long dimsY[DIMS];
@@ -104,7 +104,7 @@ static double bench_generic_add(long dims[DIMS], unsigned int flags, bool forloo
 
 	md_select_dims(DIMS, flags, dimsX, dims);
 	md_select_dims(DIMS, ~flags, dimsC, dims);
-	md_select_dims(DIMS, ~0u, dimsY, dims);
+	md_select_dims(DIMS, ~0UL, dimsY, dims);
 
 	long strsX[DIMS];
 	long strsY[DIMS];
@@ -146,13 +146,13 @@ static double bench_generic_add(long dims[DIMS], unsigned int flags, bool forloo
 }
 
 
-static double bench_generic_sum(long dims[DIMS], unsigned int flags, bool forloop)
+static double bench_generic_sum(long dims[DIMS], unsigned long flags, bool forloop)
 {
 	long dimsX[DIMS];
 	long dimsY[DIMS];
 	long dimsC[DIMS];
 
-	md_select_dims(DIMS, ~0u, dimsX, dims);
+	md_select_dims(DIMS, ~0UL, dimsX, dims);
 	md_select_dims(DIMS, flags, dimsY, dims);
 	md_select_dims(DIMS, ~flags, dimsC, dims);
 

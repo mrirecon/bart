@@ -139,7 +139,7 @@ int main_pocsense(int argc, char* argv[argc])
 
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
 
-		unsigned int flags = 0;
+		unsigned long flags = 0;
 
 		for (int i = 0; i < DIMS; i++) {
 

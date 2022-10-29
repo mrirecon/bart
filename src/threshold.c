@@ -39,7 +39,7 @@
 
 
 // FIXME: consider moving this to a more accessible location?
-static void wthresh(int D, const long dims[D], float lambda, unsigned int flags, complex float* out, const complex float* in)
+static void wthresh(int D, const long dims[D], float lambda, unsigned long flags, complex float* out, const complex float* in)
 {
 	long minsize[D];
 	md_singleton_dims(D, minsize);
@@ -47,7 +47,7 @@ static void wthresh(int D, const long dims[D], float lambda, unsigned int flags,
 	long course_scale[3] = MD_INIT_ARRAY(3, 16);
 	md_copy_dims(3, minsize, course_scale);
 
-	unsigned int wflags = 7; // FIXME
+	unsigned long wflags = 7; // FIXME
 
 	for (int i = 0; i < 3; i++)
 		if (dims[i] < minsize[i])
@@ -65,7 +65,7 @@ static void wthresh(int D, const long dims[D], float lambda, unsigned int flags,
 }
 
 
-static void lrthresh(int D, const long dims[D], int llrblk, float lambda, unsigned int flags, complex float* out, const complex float* in)
+static void lrthresh(int D, const long dims[D], int llrblk, float lambda, unsigned long flags, complex float* out, const complex float* in)
 {
 	long blkdims[MAX_LEV][D];
 
@@ -139,7 +139,7 @@ int main_threshold(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	unsigned int flags = 0;
+	unsigned long flags = 0;
         
 	enum th_type { NONE, WAV, LLR, DFW, MPDFW, HARD, BINARY } th_type = NONE;
 	int llrblk = 8;
@@ -152,7 +152,7 @@ int main_threshold(int argc, char* argv[argc])
 		OPT_SELECT('L', enum th_type, &th_type, LLR, "locally low rank soft-thresholding"),
 		OPT_SELECT('D', enum th_type, &th_type, DFW, "divergence-free wavelet soft-thresholding"),
 		OPT_SELECT('B', enum th_type, &th_type, BINARY, "thresholding with binary output"),
-		OPT_UINT('j', &flags, "bitmask", "joint soft-thresholding"),
+		OPT_ULONG('j', &flags, "bitmask", "joint soft-thresholding"),
 		OPT_INT('b', &llrblk, "blocksize", "locally low rank block size"),
 	};
 

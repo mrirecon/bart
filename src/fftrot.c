@@ -73,7 +73,7 @@ int main_fftrot(int argc, char* argv[argc])
 	float alpha = -tanf(theta / 2.);
 	float beta = sinf(theta);
 
-	long flags = (1 << dim1) | (1 << dim2);
+	unsigned long flags = (1UL << dim1) | (1UL << dim2);
 
 	long phdims[N];
 	md_select_dims(N, flags, phdims, dims);

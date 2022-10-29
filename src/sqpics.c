@@ -102,8 +102,8 @@ struct reg_s {
 
 	enum { L1WAV, TV, LLR, MLR, IMAGL1, IMAGL2, L1IMG, L2IMG } xform;
 
-	unsigned int xflags;
-	unsigned int jflags;
+	unsigned long xflags;
+	unsigned long jflags;
 
 	float lambda;
 };
@@ -141,13 +141,13 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 		if (strcmp(rt, "W") == 0) {
 
 			regs[r].xform = L1WAV;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 		}
 		else if (strcmp(rt, "L") == 0) {
 
 			regs[r].xform = LLR;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 		}
 		else if (strcmp(rt, "M") == 0) {
@@ -158,20 +158,20 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].lambda = regs[0].lambda;
 
 			regs[0].xform = MLR;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
 			assert(3 == ret);
 		}
 		else if (strcmp(rt, "T") == 0) {
 
 			regs[r].xform = TV;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 			p->algo = ADMM;
 		}
 		else if (strcmp(rt, "R1") == 0) {
 
 			regs[r].xform = IMAGL1;
-			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 			p->algo = ADMM;
@@ -179,7 +179,7 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 		else if (strcmp(rt, "R2") == 0) {
 
 			regs[r].xform = IMAGL2;
-			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 			p->algo = ADMM;
@@ -187,7 +187,7 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 		else if (strcmp(rt, "I") == 0) {
 
 			regs[r].xform = L1IMG;
-			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 		}

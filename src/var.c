@@ -30,13 +30,13 @@ static const char help_str[] = "Compute variance along selected dimensions speci
 
 int main_var(int argc, char* argv[argc])
 {
-	long flags = 0;
+	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_LONG(true, &flags, "bitmask"),
+		ARG_ULONG(true, &flags, "bitmask"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};

@@ -28,7 +28,7 @@ static const char help_str[] = "Reshape selected dimensions.";
 
 int main_reshape(int argc, char* argv[argc])
 {
-	long flags = -1;
+	unsigned long flags = 0;
 	long count = 0;
 	long* dims = NULL;
 	const char* in_file = NULL;
@@ -36,7 +36,7 @@ int main_reshape(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_LONG(true, &flags, "flags"),
+		ARG_ULONG(true, &flags, "flags"),
 		ARG_TUPLE(true, &count, 1, TUPLE_LONG(&dims, "dim")),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),

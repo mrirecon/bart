@@ -157,7 +157,7 @@ int main_pics(int argc, char* argv[argc])
 	struct opt_reg_s ropts;
 	opt_reg_init(&ropts);
 
-	unsigned int loop_flags = 0u;
+	unsigned long loop_flags = 0UL;
 
 	const struct opt_s opts[] = {
 
@@ -192,7 +192,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SELECT('m', enum algo_t, &algo, ALGO_ADMM, "select ADMM"),
 		OPT_FLOAT('w', &scaling, "", "inverse scaling of the data"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
-		OPT_UINT('L', &loop_flags, "flags", "batch-mode"),
+		OPT_ULONG('L', &loop_flags, "flags", "batch-mode"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
@@ -247,7 +247,7 @@ int main_pics(int argc, char* argv[argc])
 
 	complex float* maps = load_cfl(sens_file, DIMS, map_dims);
 
-	unsigned int map_flags = md_nontriv_dims(DIMS, map_dims);
+	unsigned long map_flags = md_nontriv_dims(DIMS, map_dims);
 
 	map_flags |= FFT_FLAGS | SENS_FLAGS;
 

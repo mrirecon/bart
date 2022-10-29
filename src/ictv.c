@@ -43,8 +43,8 @@ static const char help_str[] = "Infimal convolution of total variation along dim
 int main_ictv(int argc, char* argv[argc])
 {
 	float lambda = 0.;
-	int flags1 = -1;
-	int flags2 = -1;
+	unsigned long flags1 = 0;
+	unsigned long flags2 = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
@@ -53,8 +53,8 @@ int main_ictv(int argc, char* argv[argc])
 	struct arg_s args[] = {
 
 		ARG_FLOAT(true, &lambda, "lambda"),
-		ARG_INT(true, &flags1, "flags"),
-		ARG_INT(true, &flags2, "flags"),
+		ARG_ULONG(true, &flags1, "flags"),
+		ARG_ULONG(true, &flags2, "flags"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};

@@ -29,13 +29,13 @@ static const char help_str[] = "Estimate sub-pixel shift.";
 
 int main_estshift(int argc, char* argv[argc])
 {
-	unsigned int flags = 0;
+	unsigned long flags = 0;
 	const char* arg1_file = NULL;
 	const char* arg2_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_UINT(true, &flags, "flags"),
+		ARG_ULONG(true, &flags, "flags"),
 		ARG_INFILE(true, &arg1_file, "arg1"),
 		ARG_INFILE(true, &arg2_file, "arg2"),
 	};

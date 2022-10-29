@@ -43,13 +43,13 @@ int main_fmac(int argc, char* argv[argc])
 
 	bool clear = true;
 	bool conj = false;
-	long squash = 0;
+	unsigned long squash = 0;
 
 	const struct opt_s opts[] = {
 
 		OPT_CLEAR('A', &clear, "add to existing output (instead of overwriting)"),
 		OPT_SET('C', &conj, "conjugate input2"),
-		OPT_LONG('s', &squash, "b", "squash dimensions selected by bitmask b"),
+		OPT_ULONG('s', &squash, "b", "squash dimensions selected by bitmask b"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

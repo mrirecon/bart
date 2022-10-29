@@ -73,7 +73,7 @@ static float homodyne_filter(long N, float frac, float alpha, bool clear, long p
 
 
 
-static complex float* estimate_phase(struct wdata wdata, unsigned int flags,
+static complex float* estimate_phase(struct wdata wdata, unsigned long flags,
 		unsigned int N, const long dims[N], const complex float* idata, bool center_fft)
 {
 
@@ -95,7 +95,7 @@ static complex float* estimate_phase(struct wdata wdata, unsigned int flags,
 	return phase;
 }
 
-static void homodyne(struct wdata wdata, unsigned int flags, unsigned int N, const long dims[N],
+static void homodyne(struct wdata wdata, unsigned long flags, unsigned int N, const long dims[N],
 		const long strs[N], complex float* data, const complex float* idata,
 		const long pstrs[N], const complex float* phase, bool center_fft)
 {

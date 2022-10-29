@@ -27,14 +27,14 @@ static const char help_str[] = "Performs a convolution along selected dimensions
 
 int main_conv(int argc, char* argv[argc])
 {
-	unsigned int flags = 0;
+	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* kern_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_UINT(true, &flags, "bitmask"),
+		ARG_ULONG(true, &flags, "bitmask"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_INFILE(true, &kern_file, "kernel"),
 		ARG_OUTFILE(true, &out_file, "output"),
