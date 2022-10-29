@@ -60,10 +60,10 @@ int main_noise(int argc, char* argv[argc])
 	num_init();
 
 	if (-1 != rinit)
-		num_rand_init(rinit);
+		num_rand_init((unsigned int)rinit);
 
 
-	unsigned int N = DIMS;
+	int N = DIMS;
 	long dims[N];
 
 	complex float* y = load_cfl(in_file, N, dims);

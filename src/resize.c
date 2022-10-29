@@ -60,7 +60,7 @@ int main_resize(int argc, char* argv[argc])
 	num_init();
 
 
-	unsigned int N = DIMS;
+	int N = DIMS;
 
 	long in_dims[N];
 	long out_dims[N];
@@ -70,8 +70,8 @@ int main_resize(int argc, char* argv[argc])
 	
 	for (int i = 0; i < count; i++) {
 
-		unsigned int dim = dims[i];
-		unsigned int size = sizes[i];
+		long dim = dims[i];
+		long size = sizes[i];
 
 		assert(dim < N);
 		assert(size >= 1);

@@ -46,7 +46,7 @@ int main_conv(int argc, char* argv[argc])
 
 	num_init();
 
-	unsigned int N = DIMS;
+	int N = DIMS;
 	long dims[N];
 	const complex float* in = load_cfl(in_file, N, dims);
 

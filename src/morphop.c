@@ -28,7 +28,7 @@
 #define DIMS 16
 #endif
 
-static void mask_conv(unsigned int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
+static void mask_conv(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
 {
 	struct conv_plan* plan = conv_plan(D, FFT_FLAGS, CONV_CYCLIC, CONV_SYMMETRIC, dims, dims, mask_dims, mask);
 
@@ -37,7 +37,7 @@ static void mask_conv(unsigned int D, const long mask_dims[D], complex float* ma
 	conv_free(plan);
 }
 
-static void erosion(unsigned int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
+static void erosion(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
 {
 	complex float* tmp = md_alloc(DIMS, dims, CFL_SIZE);
 
@@ -50,7 +50,7 @@ static void erosion(unsigned int D, const long mask_dims[D], complex float* mask
 }
 
 
-static void dilation(unsigned int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
+static void dilation(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
 {
 	complex float* tmp = md_alloc(DIMS, dims, CFL_SIZE);
 
@@ -62,7 +62,7 @@ static void dilation(unsigned int D, const long mask_dims[D], complex float* mas
 	md_free(tmp);
 }
 
-static void opening(unsigned int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
+static void opening(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
 {
 	complex float* tmp = md_alloc(DIMS, dims, CFL_SIZE);
 
@@ -73,7 +73,7 @@ static void opening(unsigned int D, const long mask_dims[D], complex float* mask
 	md_free(tmp);
 }
 
-static void closing(unsigned int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
+static void closing(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
 {
 	complex float* tmp = md_alloc(DIMS, dims, CFL_SIZE);
 

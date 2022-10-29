@@ -48,7 +48,7 @@ int main_pattern(int argc, char* argv[argc])
 
 	num_init();
 
-	unsigned int N = DIMS;
+	int N = DIMS;
 	long in_dims[N];
 	long out_dims[N];
 
