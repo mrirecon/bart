@@ -101,7 +101,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	} else {
 
-		N = (SONAR == ptype ? 8 : (NIST == ptype ? 15 : 11));
+		N = (SONAR == ptype ? 8 : (NIST == ptype ? 15 : (BART == ptype ? 10 : 11)));
 	}
 
 	if ((GEOM != ptype) && (-1 != geo)) {
@@ -163,7 +163,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	if (basis) {
 
-		assert(TUBES == ptype || RAND_TUBES == ptype || NIST == ptype || SONAR == ptype);
+		assert(TUBES == ptype || RAND_TUBES == ptype || NIST == ptype || SONAR == ptype || BART == ptype);
 		dims[COEFF_DIM] = N; // Number of elements of tubes phantom with rings see src/shepplogan.c
 	}
 

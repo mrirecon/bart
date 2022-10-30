@@ -59,6 +59,16 @@ tests/test-phantom-bart: fft nrmse phantom
 	touch $@
 
 
+tests/test-phantom-bart-basis: nrmse phantom fmac
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -B -k k0.ra								;\
+	$(TOOLDIR)/phantom -B -b -k k1.ra							;\
+	$(TOOLDIR)/fmac -s 64 k1.ra k2.ra							;\
+	$(TOOLDIR)/nrmse -t 0.000001 k0.ra k2.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 tests/test-phantom-basis: nrmse phantom fmac
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/phantom -T -k k0.ra								;\
@@ -250,7 +260,8 @@ tests/test-phantom-rotation-SONAR-multistep: phantom slice flip nrmse
 	touch $@
 
 TESTS += tests/test-phantom-ksp tests/test-phantom-noncart tests/test-phantom-coil tests/test-phantom-ksp-coil
-TESTS += tests/test-phantom-bart tests/test-phantom-basis tests/test-phantom-random-tubes
+TESTS += tests/test-phantom-bart tests/test-phantom-bart-basis
+TESTS += tests/test-phantom-basis tests/test-phantom-random-tubes
 TESTS += tests/test-phantom-NIST tests/test-phantom-NIST-basis
 TESTS += tests/test-phantom-rotation-tubes tests/test-phantom-rotation-tubes-kspace tests/test-phantom-rotation-tubes-basis
 TESTS += tests/test-phantom-rotation-NIST tests/test-phantom-rotation-NIST-kspace tests/test-phantom-rotation-NIST-basis
