@@ -396,13 +396,11 @@ static complex float krn_poly(void* _data, int s, const double mpos[3])
 
 	complex float val = 0.;
 
-	for (int p = 0; p < data->P; p++) {
-
-		if (data->coeff && (s == p))
-			continue;
-
-		val += (*data->p)[p].coeff * (data->kspace ? kpolygon : xpolygon)((*data->p)[p].N, *(*data->p)[p].pg, mpos);
-	}
+	if (data->coeff)
+		val = (*data->p)[s].coeff * (data->kspace ? kpolygon : xpolygon)((*data->p)[s].N, *(*data->p)[s].pg, mpos);
+	else
+		for (int p = 0; p < data->P; p++)
+			val += (*data->p)[p].coeff * (data->kspace ? kpolygon : xpolygon)((*data->p)[p].N, *(*data->p)[p].pg, mpos);
 
 	return val;
 }
