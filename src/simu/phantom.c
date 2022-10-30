@@ -483,17 +483,7 @@ void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const lon
 		}
 	}
 
-	struct data data = {
-
-		.traj = traj,
-		.tstrs = tstrs,
-		.sens = (dims[COIL_DIM] > 1),
-		.dims = { dims[0], dims[1], dims[2] },
-		.data = &poly,
-		.fun = krn_poly,
-	};
-
-	my_sample(dims, out, &data, kspace ? kkernel : xkernel);
+	sample(dims, out, tstrs, traj, &poly, krn_poly, kspace);
 }
 
 
