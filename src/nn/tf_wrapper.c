@@ -1,4 +1,4 @@
-/* Copyright 2021. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2021-2022. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -46,6 +46,8 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
+
+
 #ifndef TENSORFLOW
 
 const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key)
@@ -79,17 +81,17 @@ const struct nlop_s* nlop_tf_create(const char* path)
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
-#else 
+#else
 
 
 static int product(int n, const int64_t ar[n])
 {
-    int64_t result = 1;
+	int64_t result = 1;
 
-    for (int i = 0; i < n; i++)
-	result = result * ar[i];
+	for (int i = 0; i < n; i++)
+		result = result * ar[i];
 
-    return result;
+	return result;
 }
 
 
@@ -145,13 +147,13 @@ static TF_SessionOptions* get_session_opts(void)
 	uint8_t gpu_14[] = { 14, 0x10, threads, 0x28, threads, 0x32, 0x6, 0x20, 0x1, 0x2a, 0x2, 0x31, 0x34, 0x38, 0x1 };
 	uint8_t gpu_15[] = { 14, 0x10, threads, 0x28, threads, 0x32, 0x6, 0x20, 0x1, 0x2a, 0x2, 0x31, 0x35, 0x38, 0x1 };
 	uint8_t* gpu[] = { gpu_0, gpu_1, gpu_2, gpu_3, gpu_4, gpu_5, gpu_6, gpu_7, gpu_8, gpu_9, gpu_10, gpu_11, gpu_12, gpu_13, gpu_14, gpu_15 };
-	
+
 	uint8_t* config = no_gpu;
 
 #ifdef USE_CUDA
 	if (1 == cuda_num_devices())
 		config = gpu[cuda_get_device_internal_unchecked()];
-	
+
 	if (1 < cuda_num_devices())
 		error("TensorFlow Wrapper does not support multiple GPUs!\n");
 #else
@@ -160,14 +162,14 @@ static TF_SessionOptions* get_session_opts(void)
 
 	TF_Status* status = TF_NewStatus();
 	TF_SessionOptions* sess_opts = TF_NewSessionOptions();
-		
+
 	TF_SetConfig(sess_opts, (void*)(config + 1), *config, status);
-	
+
 	if (TF_GetCode(status) != TF_OK)
 		error("Unable to parse session option config: \n", TF_Message(status));
-	
+
 	TF_DeleteStatus(status);
-	
+
 	return sess_opts;
 }
 
@@ -261,7 +263,7 @@ static void restore_session(TF_Graph* graph, TF_Status *status, TF_Session *sess
 
 	TF_DeleteTensor(path_tensor);
 
-	if (TF_GetCode(status) != TF_OK)
+	if (TF_OK != TF_GetCode(status))
 		error("Unable to run restore TensorFlow session: %s\n", TF_Message(status));
 
 	debug_printf(DP_DEBUG1, "TensorFlow session restored from path %s.\n", ckpt_path);
@@ -307,7 +309,7 @@ static list_t read_name_mapping(const char * filename, const char* signature_key
 	int fd;
 	if (-1 == (fd = open(filename, O_RDONLY)))
 		error("TensorFlow config file %s not found!\n", filename);
-	
+
 	char config[4097];
 	memset(config, 0, 4097);
 
@@ -416,15 +418,15 @@ static void tf_shared_graph_del(const struct shared_obj_s* sptr)
 	TF_DeleteGraph(x->graph);
 	TF_DeleteSession(x->sess, x->status);
 	TF_DeleteStatus(x->status);
-	
+
 	if (NULL != x->arg_name_map) {
 
 		while (0 < list_count(x->arg_name_map))
 			tf_arg_map_free(list_pop(x->arg_name_map));
-	
+
 		list_free(x->arg_name_map);
 	}
-	
+
 
 	xfree(x);
 }
@@ -473,16 +475,17 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 	const char* init_file = NULL;
 
 	FILE *fp = fopen(graph_path, "r");
-	if (fp != NULL)
-	{
+
+	if (NULL != fp) {
+
 		fclose(fp);
 
 		graph = load_graph(graph_path, status);
 		sess = create_session(graph, status);
 		restore_session(graph, status, sess, path);
-		
+
 		debug_printf(DP_DEBUG1, "Succesfully loaded TensorFlow v1 graph!\n");
-	
+
 	} else {
 
 		snprintf(graph_path, plen, "%s/", path);
@@ -490,11 +493,10 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 		graph = TF_NewGraph();
 
 		TF_SessionOptions* sess_opts = get_session_opts();
-    	
 		TF_Buffer* run_opts = NULL;
 
 		const char* tags = "serve"; // default model serving tag; can change in future
-    	int ntags = 1;
+		int ntags = 1;
 
 		sess = TF_LoadSessionFromSavedModel(sess_opts, run_opts, graph_path, &tags, ntags, graph, NULL, status);
 
@@ -507,8 +509,8 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 		debug_printf(DP_DEBUG1, "Succesfully loaded TensorFlow v2 saved model!\n");
 
 		init_file = ptr_printf("%s/bart_initial_weights", path);
-	}	
-	
+	}
+
 	PTR_ALLOC(struct tf_shared_graph_s, x);
 
 	x->graph = graph;
@@ -520,7 +522,6 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 	shared_obj_init(&x->sptr, tf_shared_graph_del);
 
 	return PTR_PASS(x);
-
 }
 
 
@@ -532,8 +533,8 @@ static bool cmp_arg_name(const void* _map, const void* _bart_name)
 {
 	const struct tf_arg_map_s* map = _map;
 	const char* bart_name = _bart_name;
-	
-	return 0 == strcmp(map->bart_name, bart_name);
+
+	return (0 == strcmp(map->bart_name, bart_name));
 }
 
 static TF_Output get_output(const struct tf_shared_graph_s* graph, const char* name)
@@ -541,6 +542,7 @@ static TF_Output get_output(const struct tf_shared_graph_s* graph, const char* n
 	if (NULL != graph->arg_name_map) {
 
 		int idx = list_get_first_index(graph->arg_name_map, name, cmp_arg_name);
+
 		if (-1 == idx)
 			return (struct TF_Output){ NULL, 0 };
 
@@ -598,16 +600,17 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 
 		if (TF_FLOAT == type)
 			error("TensorFlow: Real scalar arguments are not supported! Stack with zero_like to construct complex argument!");
-		
+
 		arg.N = 1;
 		tdims[0] = 1;
+
 	} else {
 
 		if (TF_FLOAT == type) {
-			
+
 			if (2 != tdims[arg.N - 1])
 				error("TensorFlow: Real valued arguments must have two (real + imaginary) channels in the last dimension!");
-			
+
 			tdims[arg.N - 1] = 1;
 		}
 	}
@@ -627,9 +630,9 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 	return arg;
 }
 
+
 static bool cmp_arg(struct tf_arg arg1, struct tf_arg arg2)
 {
-
 	bool result = true;
 
 	for (int i = 0; i < MIN(arg1.N, arg2.N); i++)
@@ -653,7 +656,7 @@ static TF_Tensor* tensor_allocate(const struct tf_shared_graph_s* graph, const c
 	int N = TF_GraphGetTensorNumDims(graph->graph, arg, graph->status);
 
 	enum TF_DataType type = TF_OperationOutputType(arg);
-	
+
 	long tdims[N ?: 1];
 
 	TF_GraphGetTensorShape(graph->graph, arg, tdims, N, graph->status);
@@ -721,12 +724,14 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 		TF_DeleteTensor(output_tensors[i]);
 	}
 
-	for (int i = 0; i < data->nr_inputs; i++)
+	for (int i = 0; i < data->nr_inputs; i++) {
 		for (int o = 0; o < data->nr_outputs; o++) {
-		
+
 			md_free(data->cached_gradient[o][i]);
+
 			data->cached_gradient[o][i] = NULL;
 		}
+	}
 }
 
 static void tf_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -747,12 +752,12 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	auto data = CAST_DOWN(tf_s, _data);
 
 	if (   (0 != md_zrmse(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src))
-		|| (NULL == data->cached_gradient[o][i])) {
-	
+	    || (NULL == data->cached_gradient[o][i])) {
+
 		md_copy(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src, CFL_SIZE);
 
 		complex float** grad = data->cached_gradient[o];
-		
+
 		int N = 0;
 		struct TF_Output grad_ops[data->nr_inputs];
 
@@ -789,7 +794,7 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 				md_copy(data->nr_in_dim[i], data->in_dims_tf[i], grad[i], TF_TensorData(out_tensor[ip]), CFL_SIZE);
 				TF_DeleteTensor(out_tensor[ip++]);
 			}
-		}		
+		}
 	}
 
 	md_copy(data->nr_in_dim[i], data->in_dims_tf[i], dst, data->cached_gradient[o][i], CFL_SIZE);
@@ -824,15 +829,13 @@ static void tf_del(const nlop_data_t* _data)
 
 	for (int o = 0; o < data->nr_outputs; o++) {
 
-		for (int i = 0; i < data->nr_inputs; i++)	
+		for (int i = 0; i < data->nr_inputs; i++)
 			md_free(data->cached_gradient[o][i]);
-		
+
 		xfree(data->cached_gradient[o]);
 	}
 
 	xfree(data->cached_gradient);
-
-
 	xfree(data->out_dims_tf);
 
 	xfree(data);
@@ -844,7 +847,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 {
 	int II = -1;
 	int OO = -1;
-	
+
 	char name[20];
 
 	do
@@ -854,7 +857,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	do
 		sprintf(name, "output_%d", ++OO);
 	while (graph_has_arg(graph, name));
-	
+
 	/*** handle outputs and grad_ys ***/
 
 	// outputs
@@ -891,6 +894,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 
 		(*inputs_op)[II + i] = arg_grad_y.out;
 		(*input_tensors)[II + i] = tensor_allocate(graph, grad_ys_name);
+
 		md_clear(arg_grad_y.N, arg_grad_y.dims, TF_TensorData((*input_tensors)[II + i]), CFL_SIZE);
 
 		xfree(arg_grad_y.dims);
@@ -957,14 +961,16 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	data->grad_op = *PTR_PASS(grad_op);
 
 	complex float* ci[II];
+
 	for (int i = 0; i < II; i++)
 		ci[i] = NULL;
-	
+
 	complex float** cached_gradients[OO];
+
 	for (int i = 0; i < OO; i++)
 		cached_gradients[i] = ARR_CLONE(complex float*[II], ci);
 
-	data->cached_gradient = ARR_CLONE(complex float**[OO], cached_gradients);	
+	data->cached_gradient = ARR_CLONE(complex float**[OO], cached_gradients);
 
 
 	long nl_odims[OO][ON];
@@ -1002,7 +1008,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 
 	for (int i = 0; i < OO; i++)
 		result = nlop_reshape_out_F(result, i, ON_arr[i], nl_odims[i]);
-	
+
 	return result;
 }
 
@@ -1054,8 +1060,9 @@ static void tf_zjac(const nlop_data_t* _data, int N, const long odims[N], _Compl
 
 	if (TF_GetCode(data->graph->status) != TF_OK)
 		error("Running TensorFlow failed: %s\n", TF_Message(data->graph->status));
-	
+
 	md_copy(N, odims, dst, TF_TensorData(output_tensors[0]), CFL_SIZE);
+
 	TF_DeleteTensor(output_tensors[0]);
 
 	if (NULL != jac)
@@ -1063,7 +1070,6 @@ static void tf_zjac(const nlop_data_t* _data, int N, const long odims[N], _Compl
 
 	TF_DeleteTensor(output_tensors[1]);
 	TF_DeleteTensor(input_tensors[0]);
-
 }
 
 static void tf_rjac(const nlop_data_t* _data, int N, const long odims[N], float* dst, const long idims[N], const float* src, const long ddims[N], float* jac)
@@ -1085,8 +1091,9 @@ static void tf_rjac(const nlop_data_t* _data, int N, const long odims[N], float*
 
 	if (TF_GetCode(data->graph->status) != TF_OK)
 		error("Running TensorFlow failed: %s\n", TF_Message(data->graph->status));
-	
+
 	md_copy(N, odims, dst, TF_TensorData(output_tensors[0]), FL_SIZE);
+
 	TF_DeleteTensor(output_tensors[0]);
 
 	if (NULL != jac)
@@ -1100,7 +1107,7 @@ static const struct nlop_s* nlop_tf_shared_jac_create(const struct tf_shared_gra
 {
 	int II = -1;
 	int OO = -1;
-	
+
 	char name[20];
 
 	do
@@ -1124,8 +1131,9 @@ static const struct nlop_s* nlop_tf_shared_jac_create(const struct tf_shared_gra
 
 	struct tf_arg oarg = process_arg(graph, "output_0");
 	struct tf_arg jarg = process_arg(graph, real ? "jacobian_real_0_0" : "jacobian_0_0");
-	
+
 	int N = oarg.N;
+
 	assert(N == real ? jarg.N - 1 : jarg.N);
 
 	(*outputs_op)[0] = oarg.out;
@@ -1162,7 +1170,7 @@ static const struct nlop_s* nlop_tf_shared_jac_create(const struct tf_shared_gra
 			odims[2 + i] = oarg.dims[i];
 			idims[2 + i] = iarg.dims[i];
 		}
-		
+
 		jdims[1 + N] = jarg.dims[N];
 
 	} else {
@@ -1181,21 +1189,18 @@ static const struct nlop_s* nlop_tf_shared_jac_create(const struct tf_shared_gra
 
 	if (real)
 		return nlop_rblock_diag_create(CAST_UP(PTR_PASS(data)), N + 2, odims, idims, jdims, tf_rjac, tf_jac_del);
-	else
-		return nlop_zblock_diag_create(CAST_UP(PTR_PASS(data)), N, odims, idims, jdims, tf_zjac, tf_jac_del);
+
+	return nlop_zblock_diag_create(CAST_UP(PTR_PASS(data)), N, odims, idims, jdims, tf_zjac, tf_jac_del);
 }
-
-
 
 
 const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph)
 {
 	if (graph_has_arg(graph, "jacobian_real_0_0"))
 		return nlop_tf_shared_jac_create(graph, true);
-	
+
 	if (graph_has_arg(graph, "jacobian_0_0"))
 		return nlop_tf_shared_jac_create(graph, false);
-
 
 	return nlop_tf_shared_grad_create(graph);
 }

@@ -1,3 +1,8 @@
+/* Copyright 2022. Uecker Lab. University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ **/
+
 #include <assert.h>
 #include <stdio.h>
 
@@ -71,9 +76,11 @@ nn_t network_tensorflow_create(const struct network_s* _config, unsigned int NO,
 	char wgh_name[30];
 
 	nn_weights_t tf_init = NULL;
+
 	if (NULL != tf_shared_graph_get_init_path(config->tf_graph)) {
-		
+
 		io_reserve_input(tf_shared_graph_get_init_path(config->tf_graph));
+
 		tf_init = load_nn_weights(tf_shared_graph_get_init_path(config->tf_graph));
 	}
 
@@ -81,13 +88,14 @@ nn_t network_tensorflow_create(const struct network_s* _config, unsigned int NO,
 	while (1 < nn_get_nr_unnamed_in_args(nn_net)) {
 
 		nn_net = nn_set_in_type_F(nn_net, 1, NULL, IN_OPTIMIZE);
-		
+
 		if (NULL == tf_init)
 			nn_net = nn_set_initializer_F(nn_net, 1, NULL, init_const_create(0));
 		else
 			nn_net = nn_set_initializer_F(nn_net, 1, NULL, init_array_create(tf_init->iovs[counter]->N, tf_init->iovs[counter]->dims, tf_init->tensors[counter]));
 
 		snprintf(wgh_name, 30, "tf_weight_%d", counter++);
+
 		nn_net = nn_set_input_name_F(nn_net, 1, wgh_name);
 	}
 

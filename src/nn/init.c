@@ -1,4 +1,4 @@
-/* Copyright 2020. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2020-2022. Uecker Lab. University Medical Center Göttingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -20,7 +20,7 @@
 
 typedef void (*initializer_del)(const struct initializer_s* conf);
 
-typedef struct initializer_s{
+typedef struct initializer_s {
 
 	TYPEID* TYPEID;
 
@@ -36,6 +36,7 @@ static void init_del(const struct shared_obj_s* sptr)
 
 	if (NULL != x->del)
 		x->del(x);
+
 	xfree(x);
 }
 
@@ -90,19 +91,22 @@ unsigned long in_flag_conv_generic(int N, unsigned long conv_flag, unsigned long
 unsigned long out_flag_conv_generic(int N, unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag)
 {
 	unsigned long out_flag = 0;
-	for (int i = N - 1; i >= 0; i--){
+
+	for (int i = N - 1; i >= 0; i--) {
 
 		if (MD_IS_SET(conv_flag, i)) {
 
 			out_flag = MD_SET(out_flag, i);
+
 			continue;
 		}
 
-		if (MD_IS_SET(channel_flag, i)){
+		if (MD_IS_SET(channel_flag, i)) {
 
 			out_flag *= 2;
 			out_flag = MD_SET(out_flag, i);
-		continue;
+
+			continue;
 		}
 
 		if (MD_IS_SET(group_flag, i))
@@ -121,6 +125,7 @@ unsigned long in_flag_conv(bool c1)
 	//filters, channel, kx, ky, kz    or x, y, z channel, filters
 	for (int i = 0; i < 3; i++)
 		in_flags |= MD_BIT(i + (c1 ? 0 : 2));
+
 	return in_flags;
 }
 
@@ -131,6 +136,7 @@ unsigned long out_flag_conv(bool c1)
 	//filters, channel, kx, ky, kz    or x, y, z channel, filters
 	for (int i = 0; i < 3; i++)
 		out_flags |= MD_BIT(i + (c1 ? 0 : 2));
+
 	return out_flags;
 }
 
@@ -145,6 +151,7 @@ static DEF_TYPEID(initializer_const_s);
 static void init_const_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
 {
 	auto conf = CAST_DOWN(initializer_const_s, conf_);
+
 	md_zfill(N, dims, weights, conf->val);
 }
 
@@ -172,10 +179,10 @@ const struct initializer_s* init_const_create(_Complex float val)
 struct initializer_fixed_s {
 
 	INTERFACE(init_t);
-	
+
 	int N;
 	const long* dims;
-	
+
 	complex float* data;
 };
 
@@ -194,7 +201,7 @@ static void init_fixed_fun(const init_t* conf_, long N, const long dims[N], comp
 static void init_fixed_del(const init_t* conf_)
 {
 	auto d = CAST_DOWN(initializer_fixed_s, conf_);
-	
+
 	md_free(d->data);
 	xfree(d->dims);
 }
@@ -216,6 +223,7 @@ const struct initializer_s* init_array_create(int N, const long dims[N], const c
 
 	data->N = N;
 	data->dims = ARR_CLONE(long[N], dims);
+
 	complex float* tmp = md_alloc(N, dims, CFL_SIZE);
 	md_copy(N, dims, tmp, dat, CFL_SIZE);
 
@@ -235,16 +243,20 @@ static void get_base_dist(unsigned int N, const long dims[N], complex float* dst
 		if (!real) {
 
 			complex float* tmp = md_alloc_sameplace(N, dims, CFL_SIZE, dst);
+
 			md_uniform_rand(N, dims, tmp);
 			md_zsadd(N, dims, tmp, tmp, (complex float)(-0.5));
 			md_zaxpy(N, dims, dst, 1.I, tmp);
+
 			md_free(tmp);
 		}
 
 		md_zsmul(N, dims, dst, dst, real ? sqrt(12) : sqrt(6));
+
 	} else {
 
 		md_gaussian_rand(N, dims, dst);
+
 		if (real)
 			md_zreal(N, dims, dst, dst);
 		else
@@ -260,7 +272,9 @@ static float get_scaling_xavier(unsigned int N, const long dims[N], unsigned lon
 {
 	long tdims[N];
 	md_select_dims(N, in_flags, tdims, dims);
+
 	long inputs = md_calc_size(N, tdims);
+
 	md_select_dims(N, out_flags, tdims, dims);
 	long outputs = md_calc_size(N, tdims);
 

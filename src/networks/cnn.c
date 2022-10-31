@@ -107,8 +107,8 @@ nn_t network_create(const struct network_s* config, unsigned int _NO, const long
 
 		if (1 != channel) {
 
-			int iperm[5] = {3, 0, 1, 2, 4};
-			int operm[5] = {1, 2, 3, 0, 4};
+			int iperm[5] = { 3, 0, 1, 2, 4 };
+			int operm[5] = { 1, 2, 3, 0, 4 };
 
 			long dims[5];
 			md_permute_dims(5, operm, dims, idims);
@@ -132,11 +132,11 @@ static nn_t network_mnist_create(const struct network_s* _config, unsigned int N
 DEF_TYPEID(network_resnet_s);
 
 const char* resnet_sorted_weight_names[] = {
-					"conv_0", "conv_i", "conv_n",
-					"bias_0", "bias_i", "bias_n",
-					"gamma",
-					"bn_0", "bn_i", "bn_n"
-				};
+	"conv_0", "conv_i", "conv_n",
+	"bias_0", "bias_i", "bias_n",
+	"gamma",
+	"bn_0", "bn_i", "bn_n"
+};
 
 
 struct network_resnet_s network_resnet_default = {
@@ -171,8 +171,8 @@ struct network_resnet_s network_resnet_default = {
 	.group_flag = 0,
 	.batch_flag = MD_BIT(4),
 
-	.kdims = {[0 ... DIMS -1] = 0},
-	.dilations = {[0 ... DIMS -1] = 1},
+	.kdims = { [0 ... DIMS - 1] = 0 },
+	.dilations = { [0 ... DIMS - 1] = 1 },
 
 	.batch_norm = true,
 	.batch_norm_lf = true,
@@ -233,9 +233,16 @@ static void network_resnet_get_kdims(const struct network_resnet_s* config, unsi
 static nn_t network_resnet_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status)
 {
 	int Nw = ARRAY_SIZE(resnet_sorted_weight_names);
+
 	const char* wnames[Nw];
-	for (int i = 0; i < Nw; i++)
-		wnames[i] = (NULL == _config->prefix) ? ptr_printf("%s", resnet_sorted_weight_names[i]) : ptr_printf("%s_%s", _config->prefix, resnet_sorted_weight_names[i]);
+
+	for (int i = 0; i < Nw; i++) {
+
+		if (NULL == _config->prefix)
+			wnames[i] = ptr_printf("%s", resnet_sorted_weight_names[i]);
+		else
+			wnames[i] = ptr_printf("%s_%s", _config->prefix, resnet_sorted_weight_names[i]);
+	}
 
 	assert(NO == NI);
 	unsigned int N = NO;
@@ -253,6 +260,7 @@ static nn_t network_resnet_create(const struct network_s* _config, unsigned int 
 	//if dim for group index are not equal in the first layer, we make it a chennl dim
 	unsigned long tchannel_flag = config->channel_flag;
 	unsigned long tgroup_flag = config->group_flag;
+
 	for (unsigned int i = 0; i < N; i++){
 
 		if (MD_IS_SET(tgroup_flag, i) && (kdims[i] != idims[i])) {
@@ -284,13 +292,14 @@ static nn_t network_resnet_create(const struct network_s* _config, unsigned int 
 		result = nn_mark_stack_output_if_exists_F(result, wnames[8]);
 
 
-		result = nn_append_convcorr_layer_generic(	result, 0, NULL, wnames[1],
-							config->conv_flag, config->channel_flag, config->group_flag,
-							N, kdims, NULL, config->dilations,
-							false, PAD_SAME, initializer_clone(conv_init));
+		result = nn_append_convcorr_layer_generic(result, 0, NULL, wnames[1],
+				config->conv_flag, config->channel_flag, config->group_flag,
+				N, kdims, NULL, config->dilations,
+				false, PAD_SAME, initializer_clone(conv_init));
 
 		if (config->batch_norm)
 			result = nn_append_batchnorm_layer(result, 0, NULL, wnames[8], ~(config->channel_flag | config->group_flag), status, NULL);
+
 		if (config->bias)
 			result = nn_append_activation_bias(result, 0, NULL, wnames[4], config->activation, MD_BIT(0));
 		else
@@ -306,6 +315,7 @@ static nn_t network_resnet_create(const struct network_s* _config, unsigned int 
 
 	long ldims[N];
 	md_copy_dims(N, ldims, kdims);
+
 	for(unsigned int i = 0; i < N; i++)
 		if (MD_IS_SET(config->channel_flag, i) || MD_IS_SET(config->group_flag, i))
 			ldims[i] = odims[i];
@@ -313,6 +323,7 @@ static nn_t network_resnet_create(const struct network_s* _config, unsigned int 
 	//if dim for group index are not equal in the last layer, we make it a channel dim
 	tchannel_flag = config->channel_flag;
 	tgroup_flag = config->group_flag;
+
 	for (unsigned int i = 0; i < N; i++){
 
 		if (MD_IS_SET(tgroup_flag, i) && (ldims[i] != odims[i])) {
@@ -433,9 +444,9 @@ static nn_t network_varnet_create(const struct network_s* _config, unsigned int 
 	assert(md_check_equal_dims(N, idims, odims, ~0));
 
 	//Padding
-	long pad_up[5] = {0, (config->Kx - 1), (config->Ky - 1), (config->Kz - 1), 0};
-	long pad_down[5] = {0, -(config->Kx - 1), -(config->Ky - 1), -(config->Kz - 1), 0};
-	long ker_size[3] = {config->Kx, config->Ky, config->Kz};
+	long pad_up[5] = { 0, (config->Kx - 1), (config->Ky - 1), (config->Kz - 1), 0 };
+	long pad_down[5] = { 0, -(config->Kx - 1), -(config->Ky - 1), -(config->Kz - 1), 0 };
+	long ker_size[3] = { config->Kx, config->Ky, config->Kz };
 
 	long Nc = idims[0];
 	long Ux = idims[1];
@@ -444,8 +455,8 @@ static nn_t network_varnet_create(const struct network_s* _config, unsigned int 
 	long Nb = idims[4];
 
 	//working dims
-	long zdimsw[5] = {config->Nf, Ux + 2 * (config->Kx - 1), Uy + 2 * (config->Ky - 1), Uz + 2 * (config->Kz - 1), Nb};
-	long rbfdims[3] = {config->Nf, (Ux + 2 * (config->Kx - 1)) * (Uy + 2 * (config->Ky - 1)) * (Uz + 2 * (config->Kz - 1)) * Nb, config->Nw};
+	long zdimsw[5] = { config->Nf, Ux + 2 * (config->Kx - 1), Uy + 2 * (config->Ky - 1), Uz + 2 * (config->Kz - 1), Nb };
+	long rbfdims[3] = { config->Nf, (Ux + 2 * (config->Kx - 1)) * (Uy + 2 * (config->Ky - 1)) * (Uz + 2 * (config->Kz - 1)) * Nb, config->Nw };
 
 	//operator dims
 	long wdims[2] = {config->Nf, config->Nw};
@@ -472,7 +483,7 @@ static nn_t network_varnet_create(const struct network_s* _config, unsigned int 
 	nlop_result = nlop_chain2_FF(nlop_from_linop_F(linop_zconj_create(iov_ker->N, iov_ker->dims)), 0, nlop_result, 2); //in: rbf_w, u, conv_w
 	nlop_result = nlop_chain2_FF(nlop_result, 0, nlop_from_linop_F(linop_scale_create(5, idims, 1. / config->Nf)), 0); //in: rbf_w, u, conv_w
 
-	int perm [] = {1, 2, 0};
+	int perm [] = { 1, 2, 0 };
 	nlop_result = nlop_permute_inputs_F(nlop_result, 3, perm); //in: u, conv_w, rbf_w
 
 	auto nn_result = nn_from_nlop_F(nlop_result);
@@ -515,12 +526,12 @@ static nn_t network_mnist_create(const struct network_s* _config, unsigned int N
 	assert(idims[2] == odims[1]);
 	assert(3 == NI);
 
-	long dims[5] = {1, idims[0], idims[1], 1, idims[2]};
+	long dims[5] = { 1, idims[0], idims[1], 1, idims[2] };
 
 	nn_t network = nn_from_nlop_F(nlop_from_linop(linop_reshape_create(5, dims, NI, idims)));
 
-	long kernel_size[] = {3, 3, 1};
-	long pool_size[] = {2, 2, 1};
+	long kernel_size[] = { 3, 3, 1 };
+	long pool_size[] = { 2, 2, 1 };
 
 	bool conv = false;
 

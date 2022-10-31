@@ -391,7 +391,7 @@ tests/test-reconet-nnmodl-train-tensorflow2-gpu: nrmse $(TESTS_OUT)/pattern.ra r
 		false									;\
 	fi							;\
 	rm -r tf2_resnet; rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@	
+	touch $@
 
 TESTS += tests/test-reconet-nnvn-train
 TESTS += tests/test-reconet-nnvn-train-max-eigen
