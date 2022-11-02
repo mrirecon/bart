@@ -101,7 +101,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	} else {
 
-		N = (SONAR == ptype ? 8 : (NIST == ptype ? 15 : (BART == ptype ? 10 : 11)));
+		N = (SONAR == ptype ? 8 : (NIST == ptype ? 15 : (BART == ptype ? 6 : 11)));
 	}
 
 	if ((GEOM != ptype) && (-1 != geo)) {

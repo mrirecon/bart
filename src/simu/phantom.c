@@ -446,7 +446,7 @@ void calc_star(const long dims[DIMS], complex float* out, bool kspace, const lon
 
 #define ARRAY_SLICE(x, a, b) ({ __auto_type __x = &(x); assert((0 <= a) && (a < b) && (b <= ARRAY_SIZE(*__x))); ((__typeof__((*__x)[0]) (*)[b - a])&((*__x)[a])); })
 
-void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+static void calc_bart2(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
@@ -458,16 +458,16 @@ void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const lon
 		coeff,
 		10,
 		&(struct poly1[]){
-			{ 11 * 11, -1., ARRAY_SLICE(points,  0 * 11, 11 * 11) },
-			{  6 * 11, -1., ARRAY_SLICE(points, 11 * 11, 17 * 11) },
-			{  6 * 11, -1., ARRAY_SLICE(points, 17 * 11, 23 * 11) },
-			{  8 * 11, -1., ARRAY_SLICE(points, 23 * 11, 31 * 11) },
-			{  4 * 11, -1., ARRAY_SLICE(points, 31 * 11, 35 * 11) },
-			{ 16 * 11, -1., ARRAY_SLICE(points, 35 * 11, 51 * 11) },
-			{  6 * 11, -1., ARRAY_SLICE(points, 51 * 11, 57 * 11) },
-			{  8 * 11, -1., ARRAY_SLICE(points, 57 * 11, 65 * 11) },
-			{  6 * 11, -1., ARRAY_SLICE(points, 65 * 11, 71 * 11) },
-			{  6 * 11, -1., ARRAY_SLICE(points, 71 * 11, 77 * 11) },
+			{ 11 * 11, -1., ARRAY_SLICE(points,  0 * 11, 11 * 11) }, // B background
+			{  6 * 11, -1., ARRAY_SLICE(points, 11 * 11, 17 * 11) }, // B hole 1
+			{  6 * 11, -1., ARRAY_SLICE(points, 17 * 11, 23 * 11) }, // B hole 1
+			{  8 * 11, -1., ARRAY_SLICE(points, 23 * 11, 31 * 11) }, // A background
+			{  4 * 11, -1., ARRAY_SLICE(points, 31 * 11, 35 * 11) }, // A hole
+			{ 16 * 11, -1., ARRAY_SLICE(points, 35 * 11, 51 * 11) }, // R background
+			{  6 * 11, -1., ARRAY_SLICE(points, 51 * 11, 57 * 11) }, // R hole
+			{  8 * 11, -1., ARRAY_SLICE(points, 57 * 11, 65 * 11) }, // T
+			{  6 * 11, -1., ARRAY_SLICE(points, 65 * 11, 71 * 11) }, // bracket left
+			{  6 * 11, -1., ARRAY_SLICE(points, 71 * 11, 77 * 11) }, // bracket right
 		}
 	};
 
@@ -484,6 +484,82 @@ void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const lon
 	}
 
 	sample(dims, out, tstrs, traj, &poly, krn_poly, kspace);
+}
+
+
+static void combine_geom_components(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj,
+		void (*fun)(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj),
+		const int N_all, const int N_reduc, const int components[N_reduc])
+{
+	if (1 < dims[COEFF_DIM]) {
+
+		assert(N_reduc == dims[COEFF_DIM]);
+
+		// Create full length phantom with all components of geometry
+
+		long full_dims[DIMS];
+		md_copy_dims(DIMS, full_dims, dims);
+		full_dims[COEFF_DIM] = N_all;
+
+		complex float* full_pha = md_alloc(DIMS, full_dims, CFL_SIZE);
+
+		fun(full_dims, full_pha, kspace, tstrs, traj);
+
+		// Sum up individual components of all objects in the phantom
+
+		long tmp_pos[DIMS] = { [0 ... DIMS - 1] = 0 };
+		long out_pos[DIMS] = { [0 ... DIMS - 1] = 0 };
+
+		long map_dims[DIMS];
+		md_select_dims(DIMS, ~COEFF_FLAG, map_dims, dims);
+
+		complex float* tmp_map = md_alloc(DIMS, map_dims, CFL_SIZE);
+
+		long tmp_dims[DIMS];
+		md_select_dims(DIMS, ~COEFF_FLAG, tmp_dims, dims);
+
+		for (int i = 0; i < dims[COEFF_DIM]; i++) {
+
+			tmp_dims[COEFF_DIM] = components[i];
+
+			complex float* tmp = md_alloc(DIMS, tmp_dims, CFL_SIZE);
+
+			// Extract block of components belonging to individual objects
+
+			md_copy_block(DIMS, tmp_pos, tmp_dims, tmp, full_dims, full_pha, CFL_SIZE);
+
+			// Sum up components belonging to individual object
+
+			md_zsum(DIMS, tmp_dims, COEFF_FLAG, tmp_map, tmp);
+
+			md_free(tmp);
+
+			tmp_pos[COEFF_DIM] += components[i];
+
+			// Copy object to output
+
+			md_copy_block(DIMS, out_pos, dims, out, map_dims, tmp_map, CFL_SIZE);
+
+			out_pos[COEFF_DIM] += 1;
+		}
+
+		md_free(tmp_map);
+		md_free(full_pha);
+
+	} else {
+		fun(dims, out, kspace, tstrs, traj);
+	}
+}
+
+
+void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+{
+	const int N_all = 10;		// There are overall 10 geometric components in the BART logo
+	const int N_reduc = 6;		// But the BART logo consists of only 6 characters: B, A, R, T, _, _
+
+	const int components[] = { 3, 2, 2, 1, 1, 1 }; // Defines how many geometric components reduce to a single character
+
+	combine_geom_components(dims, out, kspace, tstrs, traj, calc_bart2, N_all, N_reduc, components);
 }
 
 
