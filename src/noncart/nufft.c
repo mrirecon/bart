@@ -553,9 +553,7 @@ static struct nufft_data* nufft_create_data(int N,
 	md_zfill(ND, data->img_dims, fftm, 1.);
 	fftmod(ND, data->img_dims, data->flags, fftm, fftm);
 
-	data->fftmod = multiplace_move(ND, data->img_dims, CFL_SIZE, fftm);
-
-	md_free(fftm);
+	data->fftmod = multiplace_move_F(ND, data->img_dims, CFL_SIZE, fftm);
 
 
 
@@ -563,9 +561,7 @@ static struct nufft_data* nufft_create_data(int N,
 
 	rolloff_correction(conf.decomp ? 1. : data->grid_conf.os, data->width, data->beta, data->img_dims, roll);
 
-	data->roll = multiplace_move(ND, data->img_dims, CFL_SIZE, roll);
-
-	md_free(roll);
+	data->roll = multiplace_move_F(ND, data->img_dims, CFL_SIZE, roll);
 
 
 	complex float* linphase;
@@ -610,9 +606,7 @@ static struct nufft_data* nufft_create_data(int N,
 
 	md_zsmul(ND, data->lph_dims, linphase, linphase, scale);
 
-	data->linphase = multiplace_move(ND, data->lph_dims, CFL_SIZE, linphase);
-
-	md_free(linphase);
+	data->linphase = multiplace_move_F(ND, data->lph_dims, CFL_SIZE, linphase);
 
 
 	md_copy_dims(ND, data->cml_dims, data->cim_dims);
@@ -741,9 +735,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 
 			multiplace_free(data->psf);
 
-			data->psf = multiplace_move(ND, data->psf_dims, CFL_SIZE, psf);
-
-			md_free(psf);
+			data->psf = multiplace_move_F(ND, data->psf_dims, CFL_SIZE, psf);
 		}
 	}
 }
