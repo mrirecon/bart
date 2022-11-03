@@ -121,4 +121,21 @@ struct multiplace_array_s* multiplace_move(int D, const long dimensions[D], size
 	return multiplace_move2(D, dimensions, MD_STRIDES(D, dimensions, size), size, ptr);
 }
 
+struct multiplace_array_s* multiplace_move_F(int D, const long dimensions[D], size_t size, const void* ptr)
+{
+
+#ifdef USE_CUDA
+	if (cuda_ondevice(ptr)) {
+
+		struct multiplace_array_s* ret = multiplace_move(D, dimensions, size, ptr);
+		md_free(ptr);
+		return ret;
+	}
+#endif
+
+	auto result = multiplace_alloc(D, dimensions, size);
+	result->ptr_cpu = (void*)ptr;
+	return result;
+}
+
 
