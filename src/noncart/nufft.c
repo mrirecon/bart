@@ -745,9 +745,12 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 
 
 static void nufft_free_data(const linop_data_t* data);
-static void nufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void nufft_apply_forward(const linop_data_t* _data, complex float* dst, const complex float* src);
 static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src);
 static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src);
+
+static void nufft_apply_adjoint_lowmem(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void nufft_apply_forward_lowmem(const linop_data_t* _data, complex float* dst, const complex float* src);
 
 
 
@@ -818,8 +821,15 @@ static struct linop_s* nufft_create3(int N,
 	long out_dims[N];
 	md_copy_dims(N, out_dims, data->out_dims);
 
-	return linop_create(N, out_dims, N, cim_dims,
-			CAST_UP(data), nufft_apply, nufft_apply_adjoint, nufft_apply_normal, NULL, nufft_free_data);
+	if (conf.lowmem) {
+
+		return linop_create(N, out_dims, N, cim_dims,
+				CAST_UP(data), nufft_apply_forward_lowmem, nufft_apply_adjoint_lowmem, nufft_apply_normal, NULL, nufft_free_data);
+	} else {
+
+		return linop_create(N, out_dims, N, cim_dims,
+				CAST_UP(data), nufft_apply_forward, nufft_apply_adjoint, nufft_apply_normal, NULL, nufft_free_data);
+	}
 }
 
 
@@ -987,9 +997,10 @@ static void nufft_free_data(const linop_data_t* _data)
 
 
 // Forward: from image to kspace
-static void nufft_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
+static void nufft_apply_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(nufft_data, _data);
+	assert(!data->conf.lowmem);
 
 	int ND = data->N + 1;
 
@@ -1045,6 +1056,7 @@ static void nufft_apply(const linop_data_t* _data, complex float* dst, const com
 static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(nufft_data, _data);
+	assert(!data->conf.lowmem);
 
 #ifdef USE_CUDA
 	//assert(!cuda_ondevice(src));
@@ -1073,68 +1085,24 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 	}
 
 
-	if (data->conf.lowmem) {
+	complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
+	complex float* gridX = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
 
-		md_clear(data->N, data->cim_dims, dst, CFL_SIZE);
+	md_clear(data->N, data->cm2_dims, gridX, CFL_SIZE);
 
-		complex float* grid = md_alloc_sameplace(data->N, data->cim_dims, CFL_SIZE, dst);
+	grid2(&data->grid_conf, ND, data->trj_dims, multiplace_read(data->traj, dst), data->cm2_dims, gridX, data->ksp_dims, src);
 
-		long pos_fac[ND];
-		long pos_cml[ND];
+	md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
 
-		md_singleton_strides(ND, pos_fac);
-		md_singleton_strides(ND, pos_cml);
+	md_free(gridX);
 
-		do {
-			struct grid_conf_s grid_conf = data->grid_conf;
-			grid_conf.width /= 2.;
-			grid_conf.os = 1.;
+	md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, multiplace_read(data->fftmod, dst));
 
-			for (int i = 0, j = 0; i < data->N; i++) {
-				if (MD_IS_SET(data->conf.flags, i)) {
+	linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
 
-					assert(j < 3);
+	md_ztenmulc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, multiplace_read(data->linphase, dst));
 
-					grid_conf.shift[j++] = -(float)pos_fac[i] / (data->factors[i]);
-				}
-			}
-
-			md_clear(data->N, data->cim_dims, grid, CFL_SIZE);
-			grid2(&grid_conf, data->N, data->trj_dims, multiplace_read(data->traj, dst), data->cim_dims, grid, data->ksp_dims, src);
-
-			md_zmulc2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->img_strs, multiplace_read(data->fftmod, dst));
-
-			linop_adjoint(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
-
-			md_zfmacc2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, grid, data->lph_strs, &MD_ACCESS(ND, data->lph_strs, pos_cml, (complex float*)multiplace_read(data->linphase, dst)));
-
-			pos_cml[data->N]++;
-
-		} while (md_next(data->N, data->factors, data->conf.flags, pos_fac));
-
-		md_free(grid);
-
-	} else {
-
-		complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
-		complex float* gridX = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
-
-		md_clear(data->N, data->cm2_dims, gridX, CFL_SIZE);
-
-		grid2(&data->grid_conf, ND, data->trj_dims, multiplace_read(data->traj, dst), data->cm2_dims, gridX, data->ksp_dims, src);
-
-		md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
-
-		md_free(gridX);
-
-		md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, multiplace_read(data->fftmod, dst));
-
-		linop_adjoint(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
-
-		md_ztenmulc2(ND, data->cml_dims, data->cim_strs, dst, data->cml_strs, grid, data->lph_strs, multiplace_read(data->linphase, dst));
-
-		md_free(grid);
-	}
+	md_free(grid);
 
 	md_free(bdat);
 	md_free(wdat);
@@ -1219,8 +1187,15 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 		complex float* tmp_ksp = md_alloc_sameplace(data->N + 1, data->out_dims, CFL_SIZE, dst);
 
-		nufft_apply(_data, tmp_ksp, src);
-		nufft_apply_adjoint(_data, dst, tmp_ksp);
+		if (data->conf.lowmem) {
+
+			nufft_apply_forward_lowmem(_data, tmp_ksp, src);
+			nufft_apply_adjoint_lowmem(_data, dst, tmp_ksp);
+		} else {
+
+			nufft_apply_forward(_data, tmp_ksp, src);
+			nufft_apply_adjoint(_data, dst, tmp_ksp);
+		}
 
 		md_free(tmp_ksp);
 
@@ -1253,6 +1228,146 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 		toeplitz_mult_lowmem(data, i, dst, src);
 	}
 }
+
+
+// Adjoint: from kspace to image
+static void nufft_apply_adjoint_lowmem(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(nufft_data, _data);
+
+	int ND = data->N + 1;
+
+	complex float* wdat = NULL;
+
+	if (NULL != data->weights) {
+
+		wdat = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
+		md_zmulc2(data->N, data->out_dims, data->out_strs, wdat, data->out_strs, src, data->wgh_strs, multiplace_read(data->weights, dst));
+		src = wdat;
+	}
+
+	complex float* bdat = NULL;
+
+	if (NULL != data->basis) {
+
+		bdat = md_alloc_sameplace(data->N, data->ksp_dims, CFL_SIZE, dst);
+		md_ztenmulc(data->N, data->ksp_dims, bdat, data->out_dims, src, data->bas_dims, multiplace_read(data->basis, dst));
+		src = bdat;
+
+		md_free(wdat);
+		wdat = NULL;
+	}
+
+	md_clear(data->N, data->cim_dims, dst, CFL_SIZE);
+
+	complex float* grid = md_alloc_sameplace(data->N, data->cim_dims, CFL_SIZE, dst);
+
+	long pos_fac[ND];
+	long pos_cml[ND];
+
+	md_singleton_strides(ND, pos_fac);
+	md_singleton_strides(ND, pos_cml);
+
+	do {
+		struct grid_conf_s grid_conf = data->grid_conf;
+		grid_conf.width /= 2.;
+		grid_conf.os = 1.;
+
+		for (int i = 0, j = 0; i < data->N; i++) {
+			if (MD_IS_SET(data->conf.flags, i)) {
+
+				assert(j < 3);
+
+				grid_conf.shift[j++] = -(float)pos_fac[i] / (data->factors[i]);
+			}
+		}
+
+		md_clear(data->N, data->cim_dims, grid, CFL_SIZE);
+		grid2(&grid_conf, data->N, data->trj_dims, multiplace_read(data->traj, dst), data->cim_dims, grid, data->ksp_dims, src);
+
+		md_zmulc2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->img_strs, multiplace_read(data->fftmod, dst));
+
+		linop_adjoint(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
+
+		md_zfmacc2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, grid, data->lph_strs, &MD_ACCESS(ND, data->lph_strs, pos_cml, (complex float*)multiplace_read(data->linphase, dst)));
+
+		pos_cml[data->N]++;
+
+	} while (md_next(data->N, data->factors, data->conf.flags, pos_fac));
+
+	md_free(grid);
+	md_free(bdat);
+	md_free(wdat);
+
+	
+	if (data->conf.toeplitz)
+		md_zmul2(ND, data->cim_dims, data->cim_strs, dst, data->cim_strs, dst, data->img_strs, multiplace_read(data->roll, dst));
+}
+
+
+// Forward: from image to kspace
+static void nufft_apply_forward_lowmem(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(nufft_data, _data);
+
+	int ND = data->N + 1;
+
+	complex float* grid = md_alloc_sameplace(data->N, data->cim_dims, CFL_SIZE, dst);
+
+	long pos_fac[ND];
+	long pos_cml[ND];
+
+	md_singleton_strides(ND, pos_fac);
+	md_singleton_strides(ND, pos_cml);
+
+	complex float* tmp = dst;
+	if (NULL != data->basis)
+		tmp = md_alloc_sameplace(ND, data->ksp_dims, CFL_SIZE, dst);
+	
+	md_clear(ND, data->ksp_dims, tmp, CFL_SIZE);
+
+
+	do {
+		struct grid_conf_s grid_conf = data->grid_conf;
+		grid_conf.width /= 2.;
+		grid_conf.os = 1.;
+
+		for (int i = 0, j = 0; i < data->N; i++) {
+			if (MD_IS_SET(data->conf.flags, i)) {
+
+				assert(j < 3);
+
+				grid_conf.shift[j++] = -(float)pos_fac[i] / (data->factors[i]);
+			}
+		}
+
+		md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, src, data->lph_strs, &MD_ACCESS(ND, data->lph_strs, pos_cml, (complex float*)multiplace_read(data->linphase, dst)));
+
+		if (data->conf.toeplitz)
+			md_zmul2(ND, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->img_strs, multiplace_read(data->roll, dst));;
+
+		linop_forward(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
+
+		md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->img_strs, multiplace_read(data->fftmod, dst));
+
+		grid2H(&grid_conf, data->N, data->trj_dims, multiplace_read(data->traj, src), data->ksp_dims, tmp, data->cim_dims, grid);
+
+		pos_cml[data->N]++;
+
+	} while (md_next(data->N, data->factors, data->conf.flags, pos_fac));
+
+	md_free(grid);
+
+	if (NULL != data->basis) {
+
+		md_ztenmul(data->N, data->out_dims, dst, data->ksp_dims, tmp, data->bas_dims, multiplace_read(data->basis, src));
+		md_free(tmp);
+	}
+
+	if (NULL != data->weights)
+		md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->out_strs, dst, data->wgh_strs, multiplace_read(data->weights, src));
+}
+
 
 
 
