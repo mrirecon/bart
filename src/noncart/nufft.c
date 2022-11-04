@@ -29,6 +29,11 @@
 #include "num/ops.h"
 #include "num/multiplace.h"
 
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#include "noncart/gpu_grid.h"
+#endif
+
 #include "linops/linop.h"
 #include "linops/someops.h"
 #include "linops/fmac.h"
@@ -106,6 +111,61 @@ static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned lo
 	}
 
 	return linphase;
+}
+
+static void apply_linphases_3D(int N, const long img_dims[N], const float shifts[3], complex float* dst, const complex float* src, bool conj, bool fmac, float scale)
+{
+#ifdef USE_CUDA
+	assert(cuda_ondevice(dst) == cuda_ondevice(src));
+
+	if (cuda_ondevice(dst)) {
+		
+		cuda_apply_linphases_3D(N, img_dims, shifts, dst, src, conj, fmac, scale);
+		return;
+	}
+#endif
+
+	float shifts2[3];
+		
+	for (int n = 0; n < 3; n++)
+		shifts2[n] = 2. * M_PI * (float)(shifts[n]) / ((float)img_dims[n]);
+
+	complex float cn = 0.;
+	for (int n = 0; n < 3; n++)
+		cn -= shifts2[n] * (float)img_dims[n] / 2.;
+	
+	long tot = md_calc_size(N - 3, img_dims + 3);
+
+	#pragma omp parallel for collapse(3)
+	for (long z = 0; z < img_dims[2]; z++) {
+		for (long y = 0; y < img_dims[1]; y++) {
+			for (long x = 0; x < img_dims[0]; x++) {
+
+				long offset = x + y * img_dims[0] + z * img_dims[0] * img_dims[1];
+				long pos[3] = {x, y, z};
+
+				complex float val = cn;
+
+				for (int n = 0; n < 3; n++)
+					val += pos[n] * shifts2[n];
+				
+				val = scale * cexpf(1.I * val);
+
+				if (conj)
+					val = conjf(val);
+				
+				if (fmac) {
+
+					for (long i = 0; i < tot; i++)
+						dst[offset + i * img_dims[0] * img_dims[1] * img_dims[2]] += val * src[offset + i * img_dims[0] * img_dims[1] * img_dims[2]];
+				} else {
+
+					for (long i = 0; i < tot; i++)
+						dst[offset + i * img_dims[0] * img_dims[1] * img_dims[2]] = val * src[offset + i * img_dims[0] * img_dims[1] * img_dims[2]];
+				}
+			}
+		}
+	}
 }
 
 
