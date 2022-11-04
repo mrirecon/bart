@@ -122,9 +122,9 @@ int main_bart(int argc, char* argv[argc])
 			size_t len = strlen(tpath[i]) + strlen(argv[1]) + 2;
 
 			char (*cmd)[len] = xmalloc(sizeof *cmd);
-			size_t r = snprintf(*cmd, len, "%s/%s", tpath[i], argv[1]);
+			int r = snprintf(*cmd, len, "%s/%s", tpath[i], argv[1]);
 
-			if (r >= len) {
+			if (r >= (int)len) {
 
 				perror("Commandline too long");
 				return 1;
@@ -175,7 +175,7 @@ int bart_command(int len, char* buf, int argc, char* argv[])
 	if (NULL != buf) {
 
 		buf[0] = '\0';
-		bart_output = fmemopen(buf, len, "w");
+		bart_output = fmemopen(buf, (size_t)len, "w");
 	}
 
 	int ret = error_catcher(main_bart, argc, argv);

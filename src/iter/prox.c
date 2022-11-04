@@ -95,7 +95,7 @@ static void prox_leastsquares_del(const operator_data_t* _data)
 	xfree(CAST_DOWN(prox_leastsquares_data, _data));
 }
 
-const struct operator_p_s* prox_leastsquares_create(unsigned int N, const long dims[N], float lambda, const complex float* y)
+const struct operator_p_s* prox_leastsquares_create(int N, const long dims[N], float lambda, const complex float* y)
 {
 	PTR_ALLOC(struct prox_leastsquares_data, pdata);
 	SET_TYPEID(prox_leastsquares_data, pdata);
@@ -163,7 +163,7 @@ static void prox_l2norm_del(const operator_data_t* _data)
 	xfree(CAST_DOWN(prox_l2norm_data, _data));
 }
 
-const struct operator_p_s* prox_l2norm_create(unsigned int N, const long dims[N], float lambda)
+const struct operator_p_s* prox_l2norm_create(int N, const long dims[N], float lambda)
 {
 	PTR_ALLOC(struct prox_l2norm_data, pdata);
 	SET_TYPEID(prox_l2norm_data, pdata);
@@ -266,7 +266,7 @@ static void prox_l2ball_del(const operator_data_t* _data)
 	xfree(data);
 }
 
-const struct operator_p_s* prox_l2ball_create(unsigned int N, const long dims[N], float eps, const complex float* y)
+const struct operator_p_s* prox_l2ball_create(int N, const long dims[N], float eps, const complex float* y)
 {
 	PTR_ALLOC(struct prox_l2ball_data, pdata);
 	SET_TYPEID(prox_l2ball_data, pdata);
@@ -381,7 +381,7 @@ static void prox_zero_del(const operator_data_t* _data)
 	xfree(CAST_DOWN(prox_zero_data, _data));
 }
 
-const struct operator_p_s* prox_zero_create(unsigned int N, const long dims[N])
+const struct operator_p_s* prox_zero_create(int N, const long dims[N])
 {
 	PTR_ALLOC(struct prox_zero_data, pdata);
 	SET_TYPEID(prox_zero_data, pdata);
@@ -465,7 +465,7 @@ static const struct operator_p_s* prox_ineq_create(unsigned int N, const long di
  * Proximal function for less than or equal to:
  * f(z) = 1{z <= b}
  */
-const struct operator_p_s* prox_lesseq_create(unsigned int N, const long dims[N], const complex float* b)
+const struct operator_p_s* prox_lesseq_create(int N, const long dims[N], const complex float* b)
 {
 	return prox_ineq_create(N, dims, b, 0., false);
 }
@@ -474,7 +474,7 @@ const struct operator_p_s* prox_lesseq_create(unsigned int N, const long dims[N]
  * Proximal function for greater than or equal to:
  * f(z) = 1{z >= b}
  */
-const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[N], const complex float* b)
+const struct operator_p_s* prox_greq_create(int N, const long dims[N], const complex float* b)
 {
 	return prox_ineq_create(N, dims, b, 0., true);
 }
@@ -483,7 +483,7 @@ const struct operator_p_s* prox_greq_create(unsigned int N, const long dims[N], 
  * Proximal function for nonnegative orthant
  * f(z) = 1{z >= 0}
  */
-const struct operator_p_s* prox_nonneg_create(unsigned int N, const long dims[N])
+const struct operator_p_s* prox_nonneg_create(int N, const long dims[N])
 {
 	return prox_ineq_create(N, dims, NULL, 0., true);
 }
@@ -492,7 +492,7 @@ const struct operator_p_s* prox_nonneg_create(unsigned int N, const long dims[N]
  * Proximal function for greater than or equal to a scalar:
  * f(z) = 1{z >= a}
  */
-const struct operator_p_s* prox_zsmax_create(unsigned int N, const long dims[N], float a)
+const struct operator_p_s* prox_zsmax_create(int N, const long dims[N], float a)
 {
 	return prox_ineq_create(N, dims, NULL, a, true);
 }
@@ -524,7 +524,7 @@ static void prox_rvc_del(const operator_data_t* _data)
 /*
  * Proximal function for real-value constraint
  */
-const struct operator_p_s* prox_rvc_create(unsigned int N, const long dims[N])
+const struct operator_p_s* prox_rvc_create(int N, const long dims[N])
 {
 	PTR_ALLOC(struct prox_rvc_data, pdata);
 	SET_TYPEID(prox_rvc_data, pdata);

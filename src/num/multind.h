@@ -173,7 +173,7 @@ extern int md_min_idx(unsigned long flags);
 #define MD_CAST_ARRAY3(T, N, dims, x, a, b, c) (*MD_CAST_ARRAY3_PTR(T, N, dims, x, a, b, c))
 
 
-#define MD_ACCESS(N, strs, pos, x)	(*({ auto _x = (x); &((_x)[md_calc_offset((N), (strs), (pos)) / sizeof((_x)[0])]); }))
+#define MD_ACCESS(N, strs, pos, x)	(*({ auto _x = (x); &((_x)[md_calc_offset((N), (strs), (pos)) / (long)sizeof((_x)[0])]); }))
 
 #define MD_STRIDES(N, dims, elsize)	(md_calc_strides(N, alloca(N * sizeof(long)), dims, elsize))
 

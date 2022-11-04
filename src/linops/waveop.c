@@ -30,8 +30,8 @@ struct wavelet_s {
 
 	INTERFACE(linop_data_t);
 
-	unsigned int N;
-	unsigned int flags;
+	int N;
+	unsigned long flags;
 	const long* idims;
 	const long* istr;
 	const long* odims;
@@ -65,7 +65,7 @@ static void wavelet_forward(const linop_data_t* _data, complex float* dst, const
 
 	if (data->randshift) {
 
-		for (unsigned int i = 0; i < data->N; i++) {
+		for (int i = 0; i < data->N; i++) {
 
 			if (MD_IS_SET(data->flags, i)) {
 
@@ -101,7 +101,7 @@ static void wavelet_del(const linop_data_t* _data)
 	xfree(data);
 }
 
-struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const long dims[N], const long istr[N], enum wtype wtype, const long minsize[N], bool randshift)
+struct linop_s* linop_wavelet_create(int N, unsigned long flags, const long dims[N], const long istr[N], enum wtype wtype, const long minsize[N], bool randshift)
 {
 	PTR_ALLOC(struct wavelet_s, data);
 	SET_TYPEID(wavelet_s, data);
@@ -152,7 +152,7 @@ struct linop_s* linop_wavelet_create(unsigned int N, unsigned int flags, const l
 	data->ostr = *ostr;
 
 	long (*shifts)[N] = TYPE_ALLOC(long[N]);
-	for (unsigned int i = 0; i < data->N; i++)
+	for (int i = 0; i < data->N; i++)
 		(*shifts)[i] = 0;
 
 	data->shifts = *shifts;

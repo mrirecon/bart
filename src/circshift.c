@@ -55,7 +55,7 @@ int main_circshift(int argc, char* argv[argc])
 	assert((0 <= dim) && (dim < N));
 
 	long center[N];
-	memset(center, 0, N * sizeof(long));
+	memset(center, 0, N * (int)sizeof(long));
 	center[dim] = shift;
 
 	complex float* idata = load_cfl(in_file, N, dims);
