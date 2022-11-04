@@ -19,6 +19,11 @@
 #include "misc/nested.h"
 #include "misc/misc.h"
 
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#include "noncart/gpu_grid.h"
+#endif
+
 #include "grid.h"
 
 
@@ -376,6 +381,36 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 					* rolloff(os * pos(dimensions[1], y), beta, width)
 					* rolloff(os * pos(dimensions[2], z), beta, width);
 }
+
+void apply_rolloff_correction(float os, float width, float beta, int N, const long dims[N], complex float* dst, const complex float* src)
+{
+#ifdef USE_CUDA
+	assert(cuda_ondevice(dst) == cuda_ondevice(src));
+	if (cuda_ondevice(dst)) {
+
+		cuda_apply_rolloff_correction(os, width, beta, N, dims, dst, src);
+		return;
+	}
+#endif
+	long size_img = md_calc_size(3, dims);
+	long size_bat = md_calc_size(N - 3, dims + 3);
+
+	#pragma omp parallel for collapse(3)
+	for (int z = 0; z < dims[2]; z++) 
+		for (int y = 0; y < dims[1]; y++) 
+			for (int x = 0; x < dims[0]; x++) {
+
+				long idx = x + dims[0] * (y + z * dims[1]);
+
+				float val = rolloff(os * pos(dims[0], x), beta, width)
+					  * rolloff(os * pos(dims[1], y), beta, width)
+					  * rolloff(os * pos(dims[2], z), beta, width);
+
+				for (long i = 0; i < size_bat; i++)
+					dst[idx + i *size_img] = val * src[idx + i *size_img];
+			}
+}
+
 
 
 

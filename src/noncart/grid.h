@@ -35,6 +35,7 @@ extern void grid_point(unsigned int ch, int N, const long dims[__VLA(N)], const 
 extern double calc_beta(float os, float width);
 
 extern void rolloff_correction(float os, float width, float beta, const long dim[3], _Complex float* dst);
+extern void apply_rolloff_correction(float os, float width, float beta, int N, const long dimensions[__VLA(N)], _Complex float* dst, const _Complex float* src);
 
 
 #include "misc/cppwrap.h"
