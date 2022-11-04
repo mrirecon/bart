@@ -33,6 +33,7 @@ extern void grid_pointH(unsigned int ch, int N, const long dims[__VLA(N)], const
 extern void grid_point(unsigned int ch, int N, const long dims[__VLA(N)], const float pos[__VLA(N)], _Complex float* dst, const _Complex float val[__VLA(ch)], _Bool periodic, float width, int kb_size, const float kb_table[__VLA(kb_size + 1)]);
 
 extern double calc_beta(float os, float width);
+extern void kb_precompute(double beta, int n, float table[__VLA(n + 1)]);
 
 extern void rolloff_correction(float os, float width, float beta, const long dim[3], _Complex float* dst);
 extern void apply_rolloff_correction(float os, float width, float beta, int N, const long dimensions[__VLA(N)], _Complex float* dst, const _Complex float* src);

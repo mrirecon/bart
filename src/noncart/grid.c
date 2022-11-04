@@ -37,7 +37,7 @@ static double kb(double beta, double x)
         return bessel_i0(beta * sqrt(1. - pow(2. * x, 2.))) / bessel_i0(beta);
 }
 
-static void kb_precompute(double beta, int n, float table[n + 1])
+void kb_precompute(double beta, int n, float table[n + 1])
 {
 	for (int i = 0; i < n + 1; i++)
 		table[i] = kb(beta, (double)(i) / (double)(n - 1) / 2.);
@@ -92,6 +92,17 @@ static float kb_beta = -1.;
 
 void gridH(const struct grid_conf_s* conf, const complex float* traj, const long ksp_dims[4], complex float* dst, const long grid_dims[4], const complex float* grid)
 {
+
+#ifdef USE_CUDA
+	if (cuda_ondevice(traj)) {
+
+		long trj_dims[4] = { 3, ksp_dims[1], ksp_dims[2], 1 };
+		cuda_gridH(conf, 4, trj_dims, traj, ksp_dims, dst, grid_dims, grid);
+		
+		return;
+	}
+#endif
+
 	long C = ksp_dims[3];
 
 	// precompute kaiser bessel table
@@ -133,6 +144,17 @@ void gridH(const struct grid_conf_s* conf, const complex float* traj, const long
 
 void grid(const struct grid_conf_s* conf, const complex float* traj, const long grid_dims[4], complex float* grid, const long ksp_dims[4], const complex float* src)
 {
+
+#ifdef USE_CUDA
+	if (cuda_ondevice(traj)) {
+
+		long trj_dims[4] = { 3, ksp_dims[1], ksp_dims[2], 1 };
+		cuda_grid(conf, 4, trj_dims, traj, grid_dims, grid, ksp_dims, src);
+		
+		return;
+	}
+#endif
+
 	long C = ksp_dims[3];
 
 	// precompute kaiser bessel table
@@ -163,10 +185,15 @@ void grid(const struct grid_conf_s* conf, const complex float* traj, const long 
 
 		complex float val[C];
 		
-		for (int j = 0; j < C; j++)
-			val[j] = src[j * samples + i];
+		bool skip = true;
+		for (int j = 0; j < C; j++) {
 
-		grid_point(C, 3, grid_dims, pos, grid, val, conf->periodic, conf->width, kb_size, kb_table);
+			val[j] = src[j * samples + i];
+			skip = skip && (0. == val[j]);
+		}
+			
+		if (!skip)
+			grid_point(C, 3, grid_dims, pos, grid, val, conf->periodic, conf->width, kb_size, kb_table);			
 	}
 }
 
