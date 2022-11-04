@@ -369,7 +369,7 @@ default: bart .gitignore
 
 # cuda
 
-NVCC = $(CUDA_BASE)/bin/nvcc
+NVCC?=$(CUDA_BASE)/bin/nvcc
 
 
 ifeq ($(CUDA),1)
