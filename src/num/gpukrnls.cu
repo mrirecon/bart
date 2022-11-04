@@ -24,6 +24,7 @@
 #include "num/gpukrnls.h"
 #include "num/gpuops.h"
 #include "num/multind.h"
+#include "num/gpu_misc.h"
 
 #if 1
 // see Dara's src/calib/calibcu.cu for how to get
@@ -1079,6 +1080,40 @@ __global__ void kern_zfftmod(long N, cuFloatComplex* dst, const cuFloatComplex* 
 extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Bool inv, double phase)
 {
 	kern_zfftmod<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src, n, inv, phase);
+}
+
+
+__global__ void kern_fftmod_3d(long X, long Y, long Z, cuFloatComplex* dst, const cuFloatComplex* src, bool inv, double phase)
+{
+	int startX = threadIdx.x + blockDim.x * blockIdx.x;
+	int strideX = blockDim.x * gridDim.x;
+
+	int startY = threadIdx.y + blockDim.y * blockIdx.y;
+	int strideY = blockDim.y * gridDim.y;
+
+	int startZ = threadIdx.z + blockDim.z * blockIdx.z;
+	int strideZ = blockDim.z * gridDim.z;
+
+	long dims[3] = { X, Y, Z };
+
+	for (long z = startZ; z < Z; z += strideZ)
+		for (long y = startY; y < Y; y += strideY)
+			for (long x = startX; x < X; x +=strideX) {
+
+				long pos[3] = { x, y, z };
+				long idx = x + X * (y + Y * z);
+				
+				double phase0 = 1.;
+				for (int i = 2; i > 0; i--)
+					phase0 += fftmod_phase(dims[i], pos[i]);
+
+				dst[idx] = cuDouble2Float(cuCmul(fftmod_phase2(dims[0], x, inv, phase0), cuFloat2Double(src[idx])));				
+			}
+}
+
+extern "C" void cuda_zfftmod_3d(const long dims[3], _Complex float* dst, const _Complex float* src, _Bool inv, double phase)
+{
+	kern_fftmod_3d<<<getGridSize3(dims, (const void*)kern_fftmod_3d), getBlockSize3(dims, (const void*)kern_fftmod_3d), 0, cuda_get_stream()>>>(dims[0], dims[1], dims[2], (cuFloatComplex*)dst, (const cuFloatComplex*)src, inv, phase);
 }
 
 

@@ -37,6 +37,7 @@
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
+#include "num/gpukrnls.h"
 #include "fft-cuda.h"
 #define LAZY_CUDA
 #endif
@@ -68,14 +69,80 @@ static double fftmod_phase(long length, int j)
 	return ((double)j - (double)center1 / 2.) * shift;
 }
 
+static complex double fftmod_phase2(long n, int j, bool inv, double phase)
+{
+	phase += fftmod_phase(n, j);
+	double rem = phase - floor(phase);
+	double sgn = inv ? -1. : 1.;
+#if 1
+	if (rem == 0.)
+		return 1.;
+
+	if (rem == 0.5)
+		return -1.;
+
+	if (rem == 0.25)
+		return 1.i * sgn;
+
+	if (rem == 0.75)
+		return -1.i * sgn;
+#endif
+	return cexp(M_PI * 2.i * sgn * rem);
+}
+
+static void zfftmod_3d(const long dims[3], complex float* dst, const complex float* src, bool inv, double phase)
+{
+	#pragma omp parallel for collapse(3)
+	for (long z = 0; z < dims[2]; z++)
+		for (long y = 0; y < dims[1]; y++)
+			for (long x = 0; x < dims[0]; x++) {
+
+				long pos[3] = { x, y, z };
+				long idx = x + dims[0] * y + dims[0] * dims[1] * z;
+				
+				double phase0 = phase;
+				for (int i = 2; i > 0; i--)
+					phase0 += fftmod_phase(dims[i], pos[i]);
+				
+				complex double scale = fftmod_phase2(dims[0], pos[0], inv, phase0);
+
+				dst[idx] = scale * src[idx];		
+			}
+}
+
 static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src, bool inv, double phase)
 {
+	flags &= md_nontriv_dims(N, dims);
+
 	if (0 == flags) {
 
 		md_zsmul2(N, dims, ostrs, dst, istrs, src, cexp(M_PI * 2.i * (inv ? -phase : phase)));
 		return;
 	}
 
+	if (   ((3 == flags) && md_check_equal_dims(2, ostrs, istrs, 3) && md_check_equal_dims(2, ostrs, MD_STRIDES(2, dims, CFL_SIZE), 3))
+	    || ((7 == flags) && md_check_equal_dims(3, ostrs, istrs, 7) && md_check_equal_dims(3, ostrs, MD_STRIDES(3, dims, CFL_SIZE), 7)) ){
+
+		long tdims[3] = { dims[0], dims[1], (7 == flags) ? dims[2] : 1 };
+		long* tptr = &(tdims[0]);
+ 
+		NESTED(void, nary_zfftmod, (void* ptr[]))
+		{
+		#ifdef USE_CUDA
+			if (cuda_ondevice(dst))
+				cuda_zfftmod_3d(tptr, ptr[0], ptr[1], inv, phase);
+			else
+	 	#endif
+				zfftmod_3d(tptr, ptr[0], ptr[1], inv, phase);
+		};
+
+		const long* strs[2] = { ostrs + (3 == flags ? 2 : 3), istrs + (3 == flags ? 2 : 3) };
+		void* ptr[2] = { (void*)dst, (void*)src };
+
+		md_nary(2, N - (3 == flags ? 2 : 3), dims + (3 == flags ? 2 : 3), strs, ptr, nary_zfftmod);
+
+		return;
+	}
 
 	/* this will also currently be slow on the GPU because we do not
 	 * support strides there on the lowest level */
@@ -101,6 +168,13 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 	md_select_dims(N, ~MD_BIT(i), tdims, dims);
 
 	struct cuda_threads_s* gpu_stat = gpu_threads_create(dst);
+
+#ifdef USE_CUDA
+	// FIXME: New threads initialize the 0 GPU by default
+	// As long as gpu_threads_enter is not implemented other active devices other than the 0th device will fail
+	// As a workaround use CUDA_VISIBLE_DEVICES environment variable to select a GPU and hide other GPUS by the driver 
+	assert((0 == cuda_get_device_internal_unchecked()) || !cuda_ondevice(dst));
+#endif
 
 	#pragma omp parallel for
 	for (int j = 0; j < dims[i]; j++) {
