@@ -59,7 +59,7 @@ void data_consistency(const long dims[DIMS], complex float* dst, const complex f
 
 
 
-void estimate_pattern(int D, const long dims[D], long flags, complex float* pattern, const complex float* kspace_data)
+void estimate_pattern(int D, const long dims[D], unsigned long flags, complex float* pattern, const complex float* kspace_data)
 {
 	md_zrss(D, dims, flags, pattern, kspace_data);
 

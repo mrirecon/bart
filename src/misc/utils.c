@@ -62,7 +62,7 @@ void apply_mask(int N, const long dims[N], complex float* x, const float restric
 }
 
 
-void normalize(int N, long flags, const long dims[N], complex float* maps)
+void normalize(int N, unsigned long flags, const long dims[N], complex float* maps)
 {
 	long dims_img[N];
 	md_select_dims(N, ~flags, dims_img, dims);
@@ -82,7 +82,7 @@ void normalize(int N, long flags, const long dims[N], complex float* maps)
 }
 
 
-void normalizel1(int N, long flags, const long dims[N], complex float* maps)
+void normalizel1(int N, unsigned long flags, const long dims[N], complex float* maps)
 {
 	long dims_img[N];
 	md_select_dims(N, ~flags, dims_img, dims);

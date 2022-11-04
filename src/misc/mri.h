@@ -61,7 +61,7 @@ enum mri_dims {
 
 
 
-extern void estimate_pattern(int D, const long dims[__VLA(D)], long flags, _Complex float* pattern, const _Complex float* kspace_data);
+extern void estimate_pattern(int D, const long dims[__VLA(D)], unsigned long flags, _Complex float* pattern, const _Complex float* kspace_data);
 extern _Complex float* extract_calib(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const _Complex float* in_data, _Bool fixed);
 extern _Complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const long in_strs[DIMS], const _Complex float* in_data, _Bool fixed);
 extern void data_consistency(const long dims[DIMS], _Complex float* dst, const _Complex float* pattern, const _Complex float* kspace1, const _Complex float* kspace2);
