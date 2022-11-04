@@ -64,6 +64,7 @@ int main_nufft(int argc, char* argv[argc])
 	long coilim_vec[3] = { 0 };
 
 	float lambda = 0.;
+	bool precomp = true;
 
 	const struct opt_s opts[] = {
 
@@ -81,9 +82,18 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_SET('g', &use_gpu, "GPU (only inverse)"),
 		OPT_CLEAR('1', &conf.decomp, "use/return oversampled grid"),
 		OPTL_SET(0, "lowmem", &conf.lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_CLEAR(0, "no-precomp", &precomp, "Use low-low-mem mode of the nuFFT"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
+	if (!precomp) {
+
+		conf.lowmem = true;
+		conf.precomp_linphase = false;
+		conf.precomp_fftmod = false;
+		conf.precomp_roll = false;
+	}
 
 	// avoid computing PSF if not necessary
 	if (!inverse)

@@ -22,6 +22,10 @@ struct nufft_conf_s {
 	_Bool decomp;
 	_Bool nopsf;
 	_Bool cache_psf_grdding;
+
+	_Bool precomp_linphase;
+	_Bool precomp_fftmod;
+	_Bool precomp_roll;
 };
 
 extern struct nufft_conf_s nufft_conf_defaults;
