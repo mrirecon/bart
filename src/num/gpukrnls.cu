@@ -513,7 +513,7 @@ extern "C" void cuda_pow(long N, float* dst, const float* src1, const float* src
 	cuda_3op(kern_pow, N, dst, src1, src2);
 }
 
-__device__ cuDoubleComplex zexpD(cuDoubleComplex x)
+static __device__ cuDoubleComplex zexpD(cuDoubleComplex x)
 {
 	double sc = exp(cuCreal(x));
 	double si;
@@ -522,7 +522,7 @@ __device__ cuDoubleComplex zexpD(cuDoubleComplex x)
 	return make_cuDoubleComplex(sc * co, sc * si);
 }
 
-__device__ cuFloatComplex zexp(cuFloatComplex x)
+static __device__ cuFloatComplex zexp(cuFloatComplex x)
 {
 	float sc = expf(cuCrealf(x));
 	float si;
@@ -531,7 +531,7 @@ __device__ cuFloatComplex zexp(cuFloatComplex x)
 	return make_cuFloatComplex(sc * co, sc * si);
 }
 
-__device__ cuFloatComplex zsin(cuFloatComplex x)
+static __device__ cuFloatComplex zsin(cuFloatComplex x)
 {
 	float si;
 	float co;
@@ -543,7 +543,7 @@ __device__ cuFloatComplex zsin(cuFloatComplex x)
 	return make_cuFloatComplex(si * coh , co * sih);
 }
 
-__device__ cuFloatComplex zcos(cuFloatComplex x)
+static __device__ cuFloatComplex zcos(cuFloatComplex x)
 {
 	float si;
 	float co;
@@ -555,7 +555,7 @@ __device__ cuFloatComplex zcos(cuFloatComplex x)
 	return make_cuFloatComplex(co * coh , -si * sih);
 }
 
-__device__ cuFloatComplex zsinh(cuFloatComplex x)
+static __device__ cuFloatComplex zsinh(cuFloatComplex x)
 {
 	float si_i;
 	float co_i;
@@ -567,7 +567,7 @@ __device__ cuFloatComplex zsinh(cuFloatComplex x)
 	return make_cuFloatComplex(sih_r * co_i , coh_r * si_i);
 }
 
-__device__ cuFloatComplex zcosh(cuFloatComplex x)
+static __device__ cuFloatComplex zcosh(cuFloatComplex x)
 {
 	float si_i;
 	float co_i;
@@ -579,24 +579,24 @@ __device__ cuFloatComplex zcosh(cuFloatComplex x)
 	return make_cuFloatComplex(coh_r * co_i , sih_r * si_i);
 }
 
-__device__ float zarg(cuFloatComplex x)
+static __device__ float zarg(cuFloatComplex x)
 {
 	return atan2(cuCimagf(x), cuCrealf(x));
 }
 
-__device__ float zabs(cuFloatComplex x)
+static __device__ float zabs(cuFloatComplex x)
 {
 	return cuCabsf(x);
 }
 
-__device__ cuFloatComplex zlog(cuFloatComplex x)
+static __device__ cuFloatComplex zlog(cuFloatComplex x)
 {
 	return make_cuFloatComplex(log(cuCabsf(x)), zarg(x));
 }
 
 
 // x^y = e^{y ln(x)} = e^{y
-__device__ cuFloatComplex zpow(cuFloatComplex x, cuFloatComplex y)
+static __device__ cuFloatComplex zpow(cuFloatComplex x, cuFloatComplex y)
 {
 	if ((0 == y.x) && (0 == y.y))
 		return make_cuFloatComplex(1., 0.);
@@ -1026,25 +1026,25 @@ extern "C" void cuda_le(long N, float* dst, const float* src1, const float* src2
 	kern_le<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
 }
 
-__device__ cuFloatComplex cuDouble2Float(cuDoubleComplex x)
+static __device__ cuFloatComplex cuDouble2Float(cuDoubleComplex x)
 {
 	return make_cuFloatComplex(cuCreal(x), cuCimag(x));
 }
 
-__device__ cuDoubleComplex cuFloat2Double(cuFloatComplex x)
+static __device__ cuDoubleComplex cuFloat2Double(cuFloatComplex x)
 {
 	return make_cuDoubleComplex(cuCrealf(x), cuCimagf(x));
 }
 
 // identical copy in num/fft.c
-__device__ double fftmod_phase(long length, int j)
+static __device__ double fftmod_phase(long length, int j)
 {
 	long center1 = length / 2;
 	double shift = (double)center1 / (double)length;
 	return ((double)j - (double)center1 / 2.) * shift;
 }
 
-__device__ cuDoubleComplex fftmod_phase2(long n, int j, bool inv, double phase)
+static __device__ cuDoubleComplex fftmod_phase2(long n, int j, bool inv, double phase)
 {
 	phase += fftmod_phase(n, j);
 	double rem = phase - floor(phase);
