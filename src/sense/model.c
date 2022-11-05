@@ -54,6 +54,7 @@
 /**
  * data structure for holding the sense data.
  *
+ * @param owner linop is owner of sensitivity maps
  * @param max_dims maximal dimensions 
  * @param dims_mps maps dimensions
  * @param dims_ksp kspace dimensions
@@ -66,6 +67,8 @@
 struct maps_data {
 
 	INTERFACE(linop_data_t);
+
+	bool owner;
 
 	long max_dims[DIMS];
 
@@ -170,7 +173,8 @@ static void maps_free_data(const linop_data_t* _data)
 {
 	const auto data = CAST_DOWN(maps_data, _data);
 
-	md_free(data->sens);
+	if (data->owner)
+		md_free(data->sens);
 
 	if (NULL != data->norm)
 		md_free(data->norm);
@@ -184,7 +188,7 @@ static void maps_free_data(const linop_data_t* _data)
 
 
 static struct maps_data* maps_create_data(const long max_dims[DIMS], 
-			unsigned int sens_flags, const complex float* sens)
+			unsigned int sens_flags, const complex float* sens, bool owner)
 {
 	PTR_ALLOC(struct maps_data, data);
 	SET_TYPEID(maps_data, data);
@@ -202,10 +206,18 @@ static struct maps_data* maps_create_data(const long max_dims[DIMS],
 	md_select_dims(DIMS, ~COIL_FLAG, data->img_dims, max_dims);
 	md_calc_strides(DIMS, data->strs_img, data->img_dims, CFL_SIZE);
 
-	complex float* nsens = md_alloc(DIMS, data->mps_dims, CFL_SIZE);
+	data->owner = owner;
 
-	md_copy(DIMS, data->mps_dims, nsens, sens, CFL_SIZE);
-	data->sens = nsens;
+	if (owner) {
+
+		complex float* nsens = md_alloc(DIMS, data->mps_dims, CFL_SIZE);
+
+		md_copy(DIMS, data->mps_dims, nsens, sens, CFL_SIZE);
+		data->sens = nsens;
+	} else {
+
+		data->sens = (complex float*)sens;
+	}
 #ifdef USE_CUDA
 	data->gpu_sens = NULL;
 #endif
@@ -228,7 +240,7 @@ static struct maps_data* maps_create_data(const long max_dims[DIMS],
 struct linop_s* maps_create(const long max_dims[DIMS], 
 			unsigned int sens_flags, const complex float* sens)
 {
-	auto data = maps_create_data(max_dims, sens_flags, sens);
+	auto data = maps_create_data(max_dims, sens_flags, sens, true);
 
 	// scale the sensitivity maps by the FFT scale factor
 	fftscale(DIMS, data->mps_dims, FFT_FLAGS, data->sens, data->sens);
@@ -257,7 +269,7 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
 	for (unsigned int i = 0; i < DIMS; i++)
 		max_dims[i] = MAX(coilim_dims[i], MAX(maps_dims[i], img_dims[i]));
 
-	struct maps_data* data = maps_create_data(max_dims, sens_flags, maps);
+	struct maps_data* data = maps_create_data(max_dims, sens_flags, maps, false);
 
 	return linop_create(DIMS, coilim_dims, DIMS, img_dims, CAST_UP(data),
 		maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
