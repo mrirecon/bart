@@ -1156,7 +1156,7 @@ static DEF_TYPEID(gpu_data_s);
 #if defined(USE_CUDA) && defined(_OPENMP)
 #include <omp.h>
 #define MAX_CUDA_DEVICES 16
-omp_lock_t gpulock[MAX_CUDA_DEVICES];
+omp_nest_lock_t gpulock[MAX_CUDA_DEVICES];
 #endif
 
 
@@ -1192,9 +1192,9 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 			gpu_ptr[i] = md_gpu_move(io->N, io->dims, args[i], io->size);
 	}
 
-	omp_set_lock(&gpulock[gpun]);
+	omp_set_nest_lock(&gpulock[gpun]);
 	operator_generic_apply_unchecked(op, N, gpu_ptr);
-	omp_unset_lock(&gpulock[gpun]);
+	omp_unset_nest_lock(&gpulock[gpun]);
 
 	for (unsigned int i = 0; i < N; i++) {
 
