@@ -56,8 +56,21 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 			const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf,
 			const long wgs_dims[DIMS], const complex float* weights,
 			const long basis_dims[DIMS], const complex float* basis,
-			const struct linop_s** fft_opp)
+			const struct linop_s** fft_opp, unsigned long lowmem_stack)
 {
+	if (0 != (lowmem_stack & (conf.flags | conf.cfft))) {
+
+		lowmem_stack = lowmem_stack & ~(conf.flags | conf.cfft);
+		debug_printf(DP_WARN, "Lowmem-stacking not possible along FFT_FLAGS, set stacking flag to %lu!\n", lowmem_stack);
+	}
+
+	//FIXME: We can also stack other dims
+	if (0 != (lowmem_stack & ~COIL_FLAG)) {
+
+		lowmem_stack &= COIL_FLAG;
+		debug_printf(DP_WARN, "Lowmem-stacking currently only supported for COIL_DIM, set stacking flag to %lu!\n", lowmem_stack);
+	}
+
 	long coilim_dims[DIMS];
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
@@ -70,18 +83,57 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	debug_print_dims(DP_INFO, DIMS, ksp_dims2);
 	debug_print_dims(DP_INFO, DIMS, coilim_dims);
 
+	long map_strs[DIMS];
+	md_calc_strides(DIMS, map_strs, map_dims, CFL_SIZE);
+
+	if (MD_IS_SET(lowmem_stack, COIL_DIM)) {
+
+		long map_dims_slc[DIMS];
+		md_select_dims(DIMS, ~COIL_FLAG, map_dims_slc, map_dims);
+
+		if (!md_check_equal_dims(DIMS, MD_STRIDES(DIMS, map_dims_slc, CFL_SIZE), map_strs, ~COIL_FLAG)) {
+
+			lowmem_stack = 0;
+			debug_printf(DP_WARN, "Lowmem-stacking currently only supported for continous map dims, set stacking flag to %lu!\n", lowmem_stack);
+		} else {
+
+			ksp_dims2[COIL_DIM] = 1;
+			coilim_dims[COIL_DIM] = 1;
+		}
+	}
+
 	const struct linop_s* nufft_op = nufft_create2(DIMS, ksp_dims2, coilim_dims,
 						traj_dims, traj,
 						(weights ? wgs_dims : NULL), weights,
 						(basis ? basis_dims : NULL), basis, conf);
 
-	const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
-	const struct linop_s* lop = linop_chain(maps_op, nufft_op);
+	const struct linop_s* lop;
+
+	if (MD_IS_SET(lowmem_stack, COIL_DIM)) {
+
+		long map_dims_slc[DIMS];
+		md_select_dims(DIMS, ~COIL_FLAG, map_dims_slc, map_dims);
+
+		struct linop_s* lops[map_dims[COIL_DIM]];
+
+		for (int i = 0; i < map_dims[COIL_DIM]; i++) {
+
+			const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims_slc, img_dims, maps + i *  map_strs[COIL_DIM] / CFL_SIZE);
+			lops[i] = linop_chain(maps_op, nufft_op);
+			linop_free(maps_op);
+		}
+
+		lop = linop_stack_cod_F(map_dims[COIL_DIM], lops, COIL_DIM);
+	} else {
+		
+		const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
+		lop = linop_chain(maps_op, nufft_op);
+		linop_free(maps_op);
+	}
 
 	if (NULL != fft_opp)
 		*fft_opp = linop_clone(nufft_op);
 
-	linop_free(maps_op);
 	linop_free(nufft_op);
 
 	return lop;
@@ -158,6 +210,7 @@ int main_pics(int argc, char* argv[argc])
 	opt_reg_init(&ropts);
 
 	unsigned long loop_flags = 0UL;
+	unsigned long lowmem_flags = 0UL;
 
 	const struct opt_s opts[] = {
 
@@ -199,6 +252,8 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SELECT('a', enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 		OPTL_SET('U', "lowmem", &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_ULONG(0, "lowmem-stack", &lowmem_flags, "flags", "(Stack SENSE model along selected dims (currently only supports COIL_DIM and noncart)))"),
+		OPTL_CLEAR(0, "no-toeplitz", &nuconf.toeplitz, "Turn off Toeplitz mode of nuFFT"),
 		OPTL_OUTFILE(0, "psf_export", &psf_ofile, "file", "Export PSF to file"),
 		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
 		OPTL_STRING(0, "wavelet", &wtype_str, "name", "wavelet type (haar,dau2,cdf44)"),
@@ -220,6 +275,14 @@ int main_pics(int argc, char* argv[argc])
 
 	if (conf.bpsense)
 		nuconf.toeplitz = false;
+
+	if (0 != lowmem_flags) {
+
+		nuconf.lowmem = true;
+		nuconf.precomp_fftmod = false;
+		nuconf.precomp_roll = !nuconf.toeplitz;
+		nuconf.precomp_linphase = false;
+	}
 
 
 	long max_dims[DIMS];
@@ -450,7 +513,7 @@ int main_pics(int argc, char* argv[argc])
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
 				traj_dims, traj, nuconf,
 				pat_dims, pattern,
-				basis_dims, basis, &nufft_op);
+				basis_dims, basis, &nufft_op, lowmem_flags);
 
 		if (NULL != psf_ofile) {
 
