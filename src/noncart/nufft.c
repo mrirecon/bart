@@ -485,27 +485,28 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 
 	struct linop_s* lop_fft = NULL;
 
-	if ((NULL != lop_fftuc) && (NULL != *lop_fftuc)) {
+	if (NULL != lop_fftuc) {
 
 		lop_fft = *lop_fftuc;
+		
+		if (NULL == lop_fft){
 
+			long loop_dims[ND];
+			long fft_dims[ND];
+
+			md_select_dims(ND, flags, fft_dims, img2_dims);
+			md_select_dims(ND, ~flags, loop_dims, img2_dims);
+
+			lop_fft = linop_loop_F(ND, loop_dims, linop_fftc_create(ND, fft_dims, flags));
+		}
+
+		linop_forward_unchecked(lop_fft, psft, psft);
+
+		*lop_fftuc = lop_fft;
 	} else {
 
-		long loop_dims[ND];
-		long fft_dims[ND];
-
-		md_select_dims(ND, flags, fft_dims, img2_dims);
-		md_select_dims(ND, ~flags, loop_dims, img2_dims);
-
-		lop_fft = linop_loop_F(ND, loop_dims, linop_fftc_create(ND, fft_dims, flags));
+		fftuc(ND, img2_dims, flags, psft, psft);
 	}
-
-	linop_forward_unchecked(lop_fft, psft, psft);
-
-	if (NULL != lop_fftuc)
-		*lop_fftuc = lop_fft;
-	else
-		linop_free(lop_fft);
 
 	float scale = 1.;
 	for (int i = 0; i < N; i++)
