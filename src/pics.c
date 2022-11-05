@@ -582,10 +582,26 @@ int main_pics(int argc, char* argv[argc])
 		if ((NULL != psf_ifile) && (NULL == psf_ofile))
 			nuconf.nopsf = true;
 
+		const complex float* traj_tmp = traj;
+
+		//for computation of psf on GPU
+		#ifdef USE_CUDA
+		if (conf.gpu)
+			traj_tmp = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
+		#endif
+
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
-				traj_dims, traj, nuconf,
+				traj_dims, traj_tmp, nuconf,
 				pat_dims, pattern,
 				basis_dims, basis, &nufft_op, lowmem_flags);
+
+		if (conf.gpu) {
+
+			md_free(traj_tmp);
+			auto tmp = linop_gpu_wrapper((struct linop_s*)forward_op);
+			linop_free(forward_op);
+			forward_op = tmp;
+		}  
 
 		if (NULL != psf_ofile) {
 
