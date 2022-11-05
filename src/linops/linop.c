@@ -705,11 +705,11 @@ struct linop_s* linop_stack_FF(int D, int E, const struct linop_s* a, const stru
 
 
 
-static void merge_dims(unsigned int D, long odims[D], const long idims1[D], const long idims2[D])
+static void merge_dims(int D, long odims[D], const long idims1[D], const long idims2[D])
 {
 	md_copy_dims(D, odims, idims1);
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		assert((1 == odims[i]) || (1 == idims2[i]));
 
@@ -719,7 +719,7 @@ static void merge_dims(unsigned int D, long odims[D], const long idims1[D], cons
 }
 
 
-struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* op)
+struct linop_s* linop_loop(int D, const long dims[D], struct linop_s* op)
 {
 	assert(D == linop_codomain(op)->N);
 	assert(D == linop_domain(op)->N);
@@ -736,7 +736,7 @@ struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* o
 	md_calc_strides(D, ostrs, odims, linop_codomain(op)->size);
 	md_calc_strides(D, istrs, idims, linop_domain(op)->size);
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		ostrs[i] = (1 == linop_codomain(op)->dims[i]) ? 0 : ostrs[i];
 		istrs[i] = (1 == linop_domain(op)->dims[i]) ? 0 : istrs[i];
@@ -756,7 +756,7 @@ struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* o
 	return PTR_PASS(op2);
 }
 
-struct linop_s* linop_loop_F(unsigned int D, const long dims[D], struct linop_s* op)
+struct linop_s* linop_loop_F(int D, const long dims[D], struct linop_s* op)
 {
 	auto result = linop_loop(D, dims, op);
 	

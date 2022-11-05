@@ -105,8 +105,8 @@ extern const struct linop_s* linop_clone(const struct linop_s* x);
 extern const struct linop_s* linop_get_adjoint(const struct linop_s* x);
 extern const struct linop_s* linop_get_normal(const struct linop_s* x);
 
-extern struct linop_s* linop_loop(unsigned int D, const long dims[D], struct linop_s* op);
-extern struct linop_s* linop_loop_F(unsigned int D, const long dims[D], struct linop_s* op);
+extern struct linop_s* linop_loop(int D, const long dims[D], struct linop_s* op);
+extern struct linop_s* linop_loop_F(int D, const long dims[D], struct linop_s* op);
 extern struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const long ostrs[DO],  struct linop_s* op);
 extern struct linop_s* linop_copy_wrapper(unsigned int D, const long istrs[D], const long ostrs[D], struct linop_s* op);
 extern struct linop_s* linop_gpu_wrapper(struct linop_s* op);
