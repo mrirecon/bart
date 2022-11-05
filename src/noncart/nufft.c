@@ -914,11 +914,11 @@ static struct linop_s* nufft_create3(int N,
 	if (conf.lowmem) {
 
 		return linop_create(N, out_dims, N, cim_dims,
-				CAST_UP(data), nufft_apply_forward_lowmem, nufft_apply_adjoint_lowmem, nufft_apply_normal, NULL, nufft_free_data);
+				CAST_UP(data), nufft_apply_forward_lowmem, nufft_apply_adjoint_lowmem, conf.toeplitz ? nufft_apply_normal : NULL, NULL, nufft_free_data);
 	} else {
 
 		return linop_create(N, out_dims, N, cim_dims,
-				CAST_UP(data), nufft_apply_forward, nufft_apply_adjoint, nufft_apply_normal, NULL, nufft_free_data);
+				CAST_UP(data), nufft_apply_forward, nufft_apply_adjoint, conf.toeplitz ? nufft_apply_normal : NULL, NULL, nufft_free_data);
 	}
 }
 
@@ -1306,24 +1306,7 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 {
 	auto data = CAST_DOWN(nufft_data, _data);
 
-	if (!data->conf.toeplitz) {
-
-		complex float* tmp_ksp = md_alloc_sameplace(data->N + 1, data->out_dims, CFL_SIZE, dst);
-
-		if (data->conf.lowmem) {
-
-			nufft_apply_forward_lowmem(_data, tmp_ksp, src);
-			nufft_apply_adjoint_lowmem(_data, dst, tmp_ksp);
-		} else {
-
-			nufft_apply_forward(_data, tmp_ksp, src);
-			nufft_apply_adjoint(_data, dst, tmp_ksp);
-		}
-
-		md_free(tmp_ksp);
-
-		return;
-	}
+	assert(data->conf.toeplitz);
 
 	if (!(data->conf.pcycle || data->conf.lowmem)) {
 
