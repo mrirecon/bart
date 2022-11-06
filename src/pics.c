@@ -97,28 +97,28 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 			if (DIMS != md_calc_blockdim(DIMS, n_map_dims, MD_STRIDES(DIMS, map_dims, CFL_SIZE), CFL_SIZE)) {
 
 				lowmem_stack &= ~MD_BIT(i);
-				debug_printf(DP_WARN, "Sensitivity maps not continous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
+				debug_printf(DP_WARN, "Sensitivity maps not continuous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
 				continue;
 			}
 
 			if (DIMS != md_calc_blockdim(DIMS, n_traj_dims, MD_STRIDES(DIMS, traj_dims, CFL_SIZE), CFL_SIZE)) {
 
 				lowmem_stack &= ~MD_BIT(i);
-				debug_printf(DP_WARN, "Trajectory not continous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
+				debug_printf(DP_WARN, "Trajectory not continuous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
 				continue;
 			}
 
 			if ((NULL != weights) && (DIMS != md_calc_blockdim(DIMS, n_wgs_dims, MD_STRIDES(DIMS, wgs_dims, CFL_SIZE), CFL_SIZE))) {
 
 				lowmem_stack &= ~MD_BIT(i);
-				debug_printf(DP_WARN, "Weights not continous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
+				debug_printf(DP_WARN, "Weights not continuous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
 				continue;
 			}
 
 			if ((NULL != basis) && (DIMS != md_calc_blockdim(DIMS, n_basis_dims, MD_STRIDES(DIMS, basis_dims, CFL_SIZE), CFL_SIZE))) {
 
 				lowmem_stack &= ~MD_BIT(i);
-				debug_printf(DP_WARN, "Basis not continous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
+				debug_printf(DP_WARN, "Basis not continuous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
 				continue;
 			}
 
@@ -166,7 +166,8 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 		if (!md_check_equal_dims(DIMS, MD_STRIDES(DIMS, map_dims_slc, CFL_SIZE), map_strs, ~COIL_FLAG)) {
 
 			lowmem_stack = 0;
-			debug_printf(DP_WARN, "Lowmem-stacking currently only supported for continous map dims, set stacking flag to %lu!\n", lowmem_stack);
+			debug_printf(DP_WARN, "Lowmem-stacking currently only supported for continuous map dims, set stacking flag to %lu!\n", lowmem_stack);
+
 		} else {
 
 			ksp_dims2[COIL_DIM] = 1;
@@ -196,6 +197,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 		}
 
 		lop = linop_stack_cod_F(map_dims[COIL_DIM], lops, COIL_DIM);
+
 	} else {
 		
 		const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
