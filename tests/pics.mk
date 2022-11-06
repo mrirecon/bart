@@ -408,7 +408,81 @@ tests/test-pics-tgv2: phantom slice noise fft ones pics tgv slice nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-pics-noncart-lowmem: traj slice phantom conj join fft flip pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -y55 -r t0.ra							;\
+	$(TOOLDIR)/traj -y55 -G -r t1.ra						;\
+	$(TOOLDIR)/phantom    -t t0.ra -s8 -k k0.ra					;\
+	$(TOOLDIR)/phantom -T -t t1.ra -s8 -k k1C.ra					;\
+	$(TOOLDIR)/conj k1C.ra k1.ra							;\
+	$(TOOLDIR)/phantom -S8 s0.ra							;\
+	$(TOOLDIR)/conj s0.ra s1.ra							;\
+	$(TOOLDIR)/join 8 k0.ra k1.ra k.ra						;\
+	$(TOOLDIR)/join 8 s0.ra s1.ra s.ra						;\
+	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
+	$(TOOLDIR)/pics -t t.ra k.ra s.ra r1.ra						;\
+	$(TOOLDIR)/pics --lowmem -t t.ra k.ra s.ra r2.ra				;\
+	$(TOOLDIR)/nrmse -s -t 0.0005 r1.ra r2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
+tests/test-pics-noncart-lowmem-stack0: traj slice phantom conj join fft flip pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -y55 -r t0.ra							;\
+	$(TOOLDIR)/phantom -t t0.ra -s8 -k k0.ra					;\
+	$(TOOLDIR)/phantom -S8 s0.ra							;\
+	$(TOOLDIR)/pics -r0.01 -t t0.ra k0.ra s0.ra r1.ra				;\
+	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 -t t0.ra k0.ra s0.ra r2.ra		;\
+	$(TOOLDIR)/nrmse -s -t 0.002 r1.ra r2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-noncart-lowmem-no-toeplitz: traj slice phantom conj join fft flip pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -y55 -r t0.ra							;\
+	$(TOOLDIR)/phantom -t t0.ra -s8 -k k0.ra					;\
+	$(TOOLDIR)/phantom -S8 s0.ra							;\
+	$(TOOLDIR)/pics -r0.01 -t t0.ra k0.ra s0.ra r1.ra				;\
+	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 --no-toeplitz -t t0.ra k0.ra s0.ra r2.ra	;\
+	$(TOOLDIR)/nrmse -s -t 0.002 r1.ra r2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-noncart-lowmem-stack1: traj slice phantom conj join fft flip pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -y55 -r t0.ra							;\
+	$(TOOLDIR)/traj -y55 -G -r t1.ra						;\
+	$(TOOLDIR)/phantom    -t t0.ra -s8 -k k0.ra					;\
+	$(TOOLDIR)/phantom -T -t t1.ra -s8 -k k1C.ra					;\
+	$(TOOLDIR)/conj k1C.ra k1.ra							;\
+	$(TOOLDIR)/phantom -S8 s0.ra							;\
+	$(TOOLDIR)/conj s0.ra s1.ra							;\
+	$(TOOLDIR)/join 8 k0.ra k1.ra k.ra						;\
+	$(TOOLDIR)/join 8 s0.ra s1.ra s.ra						;\
+	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
+	$(TOOLDIR)/pics -t t.ra k.ra s.ra r1.ra						;\
+	$(TOOLDIR)/pics --lowmem-stack=256 -t t.ra k.ra s.ra r2.ra			;\
+	$(TOOLDIR)/nrmse -s -t 0.001 r1.ra r2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-noncart-lowmem-stack2: traj slice phantom conj join fft flip pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -y55 -r t0.ra							;\
+	$(TOOLDIR)/traj -y55 -G -r t1.ra						;\
+	$(TOOLDIR)/phantom    -t t0.ra -s8 -k k0.ra					;\
+	$(TOOLDIR)/phantom -T -t t1.ra -s8 -k k1C.ra					;\
+	$(TOOLDIR)/conj k1C.ra k1.ra							;\
+	$(TOOLDIR)/phantom -S8 s0.ra							;\
+	$(TOOLDIR)/conj s0.ra s1.ra							;\
+	$(TOOLDIR)/join 8 k0.ra k1.ra k.ra						;\
+	$(TOOLDIR)/join 8 s0.ra s1.ra s.ra						;\
+	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
+	$(TOOLDIR)/pics -t t.ra k.ra s.ra r1.ra						;\
+	$(TOOLDIR)/pics --lowmem-stack=264 -t t.ra k.ra s.ra r2.ra			;\
+	$(TOOLDIR)/nrmse -s -t 0.001 r1.ra r2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
@@ -420,5 +494,5 @@ TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-bas
 #TESTS += tests/test-pics-lowmem
 TESTS += tests/test-pics-noncart-sms tests/test-pics-psf tests/test-pics-tgv tests/test-pics-tgv2
 TESTS += tests/test-pics-wavl1-dau2 tests/test-pics-wavl1-cdf44 tests/test-pics-wavl1-haar
-
+TESTS += tests/test-pics-noncart-lowmem tests/test-pics-noncart-lowmem-stack0 tests/test-pics-noncart-lowmem-stack1 tests/test-pics-noncart-lowmem-stack2 tests/test-pics-noncart-lowmem-no-toeplitz
 
