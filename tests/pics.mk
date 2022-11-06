@@ -422,7 +422,7 @@ tests/test-pics-noncart-lowmem: traj slice phantom conj join fft flip pics nrmse
 	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
 	$(TOOLDIR)/pics -t t.ra k.ra s.ra r1.ra						;\
 	$(TOOLDIR)/pics --lowmem -t t.ra k.ra s.ra r2.ra				;\
-	$(TOOLDIR)/nrmse -s -t 0.0005 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -s -t 0.001 r1.ra r2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
