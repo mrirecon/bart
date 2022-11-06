@@ -397,7 +397,8 @@ static complex float krn_poly(void* _data, int s, const double mpos[3])
 	complex float val = 0.;
 
 	if (data->coeff)
-		val = (*data->p)[s].coeff * (data->kspace ? kpolygon : xpolygon)((*data->p)[s].N, *(*data->p)[s].pg, mpos);
+		// Constrain to 1 allows geometry separation by intensity
+		val = (*data->p)[s].coeff/cabsf((*data->p)[s].coeff) * (data->kspace ? kpolygon : xpolygon)((*data->p)[s].N, *(*data->p)[s].pg, mpos);
 	else
 		for (int p = 0; p < data->P; p++)
 			val += (*data->p)[p].coeff * (data->kspace ? kpolygon : xpolygon)((*data->p)[p].N, *(*data->p)[p].pg, mpos);
