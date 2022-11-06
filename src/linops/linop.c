@@ -767,6 +767,8 @@ static void stack_cod_free(const linop_data_t* _data)
 	xfree(d->offset);
 	xfree(d->dims);
 
+	xfree(d->lops);
+
 	xfree(d);
 }
 
@@ -807,7 +809,7 @@ struct linop_s* linop_stack_cod(int N, struct linop_s* lops[N], int stack_dim)
 	md_calc_strides(NO, ostrs, odims, CFL_SIZE);
 
 	data->lops = *TYPE_ALLOC(const struct linop_s*[N]);
-	
+
 	for (int i = 0; i < N; i++)
 		data->lops[i] = linop_copy_wrapper2(NI, istrs, NO, ostrs, lops[i]);
 
@@ -817,8 +819,9 @@ struct linop_s* linop_stack_cod(int N, struct linop_s* lops[N], int stack_dim)
 	data->D = NI;
 	data->N = N;
 
-	return linop_create(NO, odims,NI, idims, CAST_UP(PTR_PASS(data)), stack_cod_forward, stack_cod_adjoint, stack_cod_normal, NULL, stack_cod_free);
+	return linop_create(NO, odims, NI, idims, CAST_UP(PTR_PASS(data)), stack_cod_forward, stack_cod_adjoint, stack_cod_normal, NULL, stack_cod_free);
 }
+
 
 struct linop_s* linop_stack_cod_F(int N, struct linop_s* lops[N], int stack_dim)
 {
