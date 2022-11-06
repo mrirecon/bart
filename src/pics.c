@@ -58,17 +58,89 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 			const long basis_dims[DIMS], const complex float* basis,
 			const struct linop_s** fft_opp, unsigned long lowmem_stack)
 {
+	lowmem_stack &= md_nontriv_dims(DIMS, max_dims);
+
 	if (0 != (lowmem_stack & (conf.flags | conf.cfft))) {
 
 		lowmem_stack = lowmem_stack & ~(conf.flags | conf.cfft);
 		debug_printf(DP_WARN, "Lowmem-stacking not possible along FFT_FLAGS, set stacking flag to %lu!\n", lowmem_stack);
 	}
 
-	//FIXME: We can also stack other dims
-	if (0 != (lowmem_stack & ~COIL_FLAG)) {
+	if ((NULL != basis) && (0 != (lowmem_stack & (TE_FLAG | COEFF_FLAG)))) {
 
-		lowmem_stack &= COIL_FLAG;
-		debug_printf(DP_WARN, "Lowmem-stacking currently only supported for COIL_DIM, set stacking flag to %lu!\n", lowmem_stack);
+		lowmem_stack = lowmem_stack & ~(TE_FLAG | COEFF_FLAG);
+		debug_printf(DP_WARN, "Lowmem-stacking not possible along basis dimensions, set stacking flag to %lu!\n", lowmem_stack);
+	}
+
+	for (int i = DIMS - 1; i > MAPS_DIM; i--) {
+
+		if (MD_IS_SET(lowmem_stack, i)) {
+
+			long n_map_dims[DIMS];
+			long n_max_dims[DIMS];
+			long n_traj_dims[DIMS];
+			long n_ksp_dims[DIMS];
+			long n_wgs_dims[DIMS];
+			long n_basis_dims[DIMS];
+
+			md_select_dims(DIMS, ~MD_BIT(i), n_map_dims, map_dims);
+			md_select_dims(DIMS, ~MD_BIT(i), n_max_dims, max_dims);
+			md_select_dims(DIMS, ~MD_BIT(i), n_traj_dims, traj_dims);
+			md_select_dims(DIMS, ~MD_BIT(i), n_ksp_dims, ksp_dims);
+
+			if (NULL != weights)
+				md_select_dims(DIMS, ~MD_BIT(i), n_wgs_dims, wgs_dims);
+	
+			if (NULL != basis)
+				md_select_dims(DIMS, ~MD_BIT(i), n_basis_dims, basis_dims);
+
+			if (DIMS != md_calc_blockdim(DIMS, n_map_dims, MD_STRIDES(DIMS, map_dims, CFL_SIZE), CFL_SIZE)) {
+
+				lowmem_stack &= ~MD_BIT(i);
+				debug_printf(DP_WARN, "Sensitivity maps not continous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
+				continue;
+			}
+
+			if (DIMS != md_calc_blockdim(DIMS, n_traj_dims, MD_STRIDES(DIMS, traj_dims, CFL_SIZE), CFL_SIZE)) {
+
+				lowmem_stack &= ~MD_BIT(i);
+				debug_printf(DP_WARN, "Trajectory not continous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
+				continue;
+			}
+
+			if ((NULL != weights) && (DIMS != md_calc_blockdim(DIMS, n_wgs_dims, MD_STRIDES(DIMS, wgs_dims, CFL_SIZE), CFL_SIZE))) {
+
+				lowmem_stack &= ~MD_BIT(i);
+				debug_printf(DP_WARN, "Weights not continous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
+				continue;
+			}
+
+			if ((NULL != basis) && (DIMS != md_calc_blockdim(DIMS, n_basis_dims, MD_STRIDES(DIMS, basis_dims, CFL_SIZE), CFL_SIZE))) {
+
+				lowmem_stack &= ~MD_BIT(i);
+				debug_printf(DP_WARN, "Basis not continous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
+				continue;
+			}
+
+			long offset_basis = (NULL != basis) && (1 != basis_dims[i]) ? md_calc_size(i, basis_dims) : 0;
+			long offset_weights = (NULL != weights) && (1 != wgs_dims[i]) ? md_calc_size(i, wgs_dims) : 0;
+			long offset_traj = (1 != traj_dims[i]) ? md_calc_size(i, traj_dims) : 0;
+			long offset_sens = (1 != map_dims[i]) ? md_calc_size(i, map_dims) : 0;
+
+			if (conf.nopsf)
+				error("Lowmem stacking not compatible with precomputed psf!\n");
+
+			debug_printf(DP_DEBUG1, "Lowmem-stacking along dim %d\n!", i);
+
+			const struct linop_s* lop = sense_nc_init(n_max_dims, n_map_dims, maps, n_ksp_dims, n_traj_dims, traj, conf, n_wgs_dims, weights, n_basis_dims, basis, NULL, lowmem_stack);
+
+			for (int j = 1; j < max_dims[i]; j++)
+				lop = linop_stack_FF(i, i, lop, sense_nc_init(n_max_dims, n_map_dims, maps + j * offset_sens, n_ksp_dims, n_traj_dims,
+										traj + j * offset_traj, conf, n_wgs_dims, weights + j * offset_weights,
+										n_basis_dims, basis + j * offset_basis, NULL, lowmem_stack));
+
+			return lop;
+		}
 	}
 
 	long coilim_dims[DIMS];
