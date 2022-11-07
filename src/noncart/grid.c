@@ -93,6 +93,9 @@ static float kb_beta = -1.;
 void gridH(const struct grid_conf_s* conf, const complex float* traj, const long ksp_dims[4], complex float* dst, const long grid_dims[4], const complex float* grid)
 {
 
+	if (grid_dims[3] != ksp_dims[3])
+		error("Adjoint gridding: ksp and grid are incompatible in dim 3 (%d != %d)!\n", ksp_dims[3], grid_dims[3]);
+
 #ifdef USE_CUDA
 	if (cuda_ondevice(traj)) {
 
@@ -144,6 +147,9 @@ void gridH(const struct grid_conf_s* conf, const complex float* traj, const long
 
 void grid(const struct grid_conf_s* conf, const complex float* traj, const long grid_dims[4], complex float* grid, const long ksp_dims[4], const complex float* src)
 {
+
+	if (grid_dims[3] != ksp_dims[3])
+		error("Gridding: ksp and grid are incompatible in dim 3 (%d != %d)!\n", ksp_dims[3], grid_dims[3]);
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(traj)) {
