@@ -279,6 +279,7 @@ int main_pics(int argc, char* argv[argc])
 	bool fast = false;
 
 	int gpun = -1;
+	bool gpu_gridding = false;
 
 	struct opt_reg_s ropts;
 	opt_reg_init(&ropts);
@@ -298,6 +299,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('N', &overlapping_blocks, "do fully overlapping LLR blocks"),
 		OPT_SET('g', &conf.gpu, "use GPU"),
+		OPTL_SET(0, "gpu-gridding", &gpu_gridding, "use GPU for gridding"),
 		OPT_INT('G', &gpun, "gpun", "use GPU device gpun"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &algo, ALGO_IST, "select IST"),
@@ -588,8 +590,11 @@ int main_pics(int argc, char* argv[argc])
 
 		//for computation of psf on GPU
 		#ifdef USE_CUDA
-		if (conf.gpu)
+		if (gpu_gridding) {
+
+			assert(conf.gpu);
 			traj_tmp = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
+		}
 		#endif
 
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
@@ -597,13 +602,15 @@ int main_pics(int argc, char* argv[argc])
 				pat_dims, pattern,
 				basis_dims, basis, &nufft_op, lowmem_flags);
 
-		if (conf.gpu) {
+		#ifdef USE_CUDA
+		if (gpu_gridding) {
 
 			md_free(traj_tmp);
 			auto tmp = linop_gpu_wrapper((struct linop_s*)forward_op);
 			linop_free(forward_op);
 			forward_op = tmp;
-		}  
+		} 
+		#endif
 
 		if (NULL != psf_ofile) {
 
