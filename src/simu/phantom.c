@@ -705,6 +705,91 @@ void calc_brain(const long dims[DIMS], complex float* out, bool kspace, const lo
 }
 
 
+#define ARRAY_SLICE2(x, a, b) ({ __auto_type __x = &(x); ((__typeof__((*__x)[0]) (*)[b - a])&((*__x)[a])); })
+
+void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int N_max, int D_max, long hdims[N_max][D_max], complex float* x[N_max])
+{
+	bool coeff = (dims[COEFF_DIM] > 1);
+
+	long cstrs[DIMS] = { 0 };
+	md_calc_strides(DIMS, cstrs, hdims[0], sizeof(complex float));
+
+	long mstrs[DIMS] = { 0 };
+	md_calc_strides(DIMS, mstrs, hdims[1], sizeof(complex float));
+
+	int N = hdims[0][0];
+
+	double data[N][2][4];
+
+	long pos[DIMS];
+	md_copy_dims(DIMS, pos, hdims[0]);
+
+	for (int s = 0; s < hdims[0][0]; s++) {
+		for (int c = 0; c < hdims[0][1]; c++) {
+			for (int p = 0; p < hdims[0][2]; p++) {
+
+				pos[0] = s;
+				pos[1] = c;
+				pos[2] = p;
+
+				long ind = md_calc_offset(DIMS, cstrs, pos) / CFL_SIZE;
+
+				data[s][c][p] = x[0][ind];
+			}
+		}
+	}
+
+	double points[N * 11][2];
+
+	long point_index = 0;
+
+	struct poly1 paths[hdims[1][0]];
+
+	md_copy_dims(DIMS, pos, hdims[1]);
+
+	for (int i = 0; i < hdims[1][0]; i++) {
+
+		pos[0] = i;
+		pos[1] = 1;
+
+		long ind_cp = md_calc_offset(DIMS, mstrs, pos) / CFL_SIZE;
+
+		pos[1] = 2;
+		long ind_color = md_calc_offset(DIMS, mstrs, pos) / CFL_SIZE;
+
+		int cp = (int) cabsf(x[1][ind_cp]);
+		int color = cabsf(x[1][ind_color]);
+
+		struct poly1 tmp = { cp * 11, color, ARRAY_SLICE2(points, point_index * 11, (point_index + cp) * 11) };
+
+		paths[i] = tmp;
+
+		point_index += cp;
+	}
+
+	struct poly poly = {
+		kspace,
+		coeff,
+		hdims[1][0],
+		(struct poly1 (*)[]) paths
+	};
+
+	for (int i = 0; i < N; i++) {
+
+		for (int j = 0; j <= 10; j++) {
+
+			double t = j * 0.1;
+			int n = i * 11 + j;
+
+			points[n][1] = cspline(t, data[i][1]);
+			points[n][0] = cspline(t, data[i][0]);
+		}
+	}
+
+	sample(dims, out, tstrs, traj, &poly, krn_poly, kspace);
+}
+
+
 void calc_phantom_arb(int N, const struct ellipsis_s* data /*[N]*/, const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, float rotation_angle)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);

@@ -1,4 +1,7 @@
 
+#ifndef PHANTOM_H
+#define PHANTOM_H
+
 
 extern void calc_sens(const long dims[DIMS], complex float* sens);
 
@@ -24,3 +27,7 @@ extern void calc_star(const long dims[DIMS], complex float* out, bool kspace, co
 extern void calc_star3d(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj);
 extern void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj);
 extern void calc_brain(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj);
+
+extern void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int N_max, int D_max, long hdims[N_max][D_max], complex float* x[N_max]);
+
+#endif

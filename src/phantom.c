@@ -45,7 +45,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	int geo = -1;
 
-	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, BRAIN, TUBES, RAND_TUBES, NIST, SONAR } ptype = SHEPPLOGAN;
+	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, BRAIN, TUBES, RAND_TUBES, NIST, SONAR, FILE } ptype = SHEPPLOGAN;
 
 	const char* traj_file = NULL;
 	bool basis = false;
@@ -61,6 +61,7 @@ int main_phantom(int argc, char* argv[argc])
 	float rotation_angle = 0.;
 	int rotation_steps = 1;
 
+	const char* file_load = NULL;
 
 	const struct opt_s opts[] = {
 
@@ -78,6 +79,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPTL_SELECT(0, "BRAIN", enum ptype_e, &ptype, BRAIN, "BRAIN geometry phantom"),
 		OPT_INT('N', &N, "num", "Random tubes phantom and number"),
 		OPT_SELECT('B', enum ptype_e, &ptype, BART, "BART logo"),
+		OPTL_INFILE(0, "FILE", (const char**)(&(file_load)), "name", "Arbitrary geometry based on multicfl file."),
 		OPT_INT('x', &xdim, "n", "dimensions in y and z"),
 		OPT_INT('g', &geo, "n=1,2,3", "select geometry for object phantom"),
 		OPT_SET('3', &d3, "3D"),
@@ -103,6 +105,34 @@ int main_phantom(int argc, char* argv[argc])
 	} else {
 
 		N = (SONAR == ptype ? 8 : (NIST == ptype ? 15 : (BART == ptype ? 6 : (BRAIN == ptype ? 4 : 11))));
+	}
+
+	// Load multi cfl geometry file, if provided
+
+	int N_max = 2;
+	int D_max = 16;
+	int D[N_max];
+
+	long hdims[N_max][D_max];
+	const long* store_dims[N_max];
+
+	complex float* multifile[N_max];
+
+	int subfiles = 0;
+
+	if (NULL != file_load) {
+
+		ptype = FILE;
+
+		subfiles = load_multi_cfl(file_load, N_max, D_max, D, hdims, multifile);
+
+		if (subfiles != N_max)
+			error("Number of cfls in input does not match required number!");
+
+		for (int i = 0; i < subfiles; i++)
+			store_dims[i] = hdims[i];
+
+		N = hdims[1][0];
 	}
 
 	if ((GEOM != ptype) && (-1 != geo)) {
@@ -164,7 +194,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	if (basis) {
 
-		assert(TUBES == ptype || RAND_TUBES == ptype || NIST == ptype || SONAR == ptype || BART == ptype || BRAIN == ptype);
+		assert(TUBES == ptype || RAND_TUBES == ptype || NIST == ptype || SONAR == ptype || BART == ptype || BRAIN == ptype || FILE == ptype);
 		dims[COEFF_DIM] = N; // Number of elements of tubes phantom with rings see src/shepplogan.c
 	}
 
@@ -239,10 +269,18 @@ int main_phantom(int argc, char* argv[argc])
 
 		calc_brain(dims, out, kspace, sstrs, samples);
 		break;
+
+	case FILE:
+
+		calc_cfl_geom(dims, out, kspace, sstrs, samples, N_max, D_max, hdims, multifile);
+		break;
 	}
 
 	if (NULL != samples)
 		unmap_cfl(3, sdims, samples);
+
+	if (NULL != file_load)
+		unmap_multi_cfl(subfiles, D, store_dims, multifile);
 
 	unmap_cfl(DIMS, dims, out);
 
