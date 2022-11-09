@@ -75,9 +75,12 @@ def bart(nargout, cmd, *args, **kwargs):
     else:
         shell_cmd = [os.path.join(bart_path, 'bart'), *cmd, *infiles, *outfiles]
 
-    # run bart command and store error code, stdout and stderr in function attributes
+    # run bart command
+    ERR, stdout, stderr = execute_cmd(shell_cmd)
+
+    # store error code, stdout and stderr in function attributes for outside access
     # this makes it possible to access these variables from outside the function (e.g "print(bart.ERR)")
-    bart.ERR, bart.stdout, bart.stderr = execute_cmd(shell_cmd)
+    bart.ERR, bart.stdout, bart.stderr = ERR, stdout, stderr
 
     for elm in infiles:
         if os.path.isfile(elm + '.cfl'):
@@ -94,17 +97,16 @@ def bart(nargout, cmd, *args, **kwargs):
     output = []
     for idx in range(nargout):
         elm = outfiles[idx]
-        if not bart.ERR:
+        if not ERR:
             output.append(cfl.readcfl(elm))
         if os.path.isfile(elm + '.cfl'):
             os.remove(elm + '.cfl')
         if os.path.isfile(elm + '.hdr'):
             os.remove(elm + '.hdr')
 
-    if bart.ERR:
-        print(f"Command exited with error code {bart.ERR}.")
+    if ERR:
+        print(f"Command exited with error code {ERR}.")
         return
-        # raise Exception(f"Command exited with error code {bart.ERR}.")
 
     if nargout == 0:
         return
