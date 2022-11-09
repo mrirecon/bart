@@ -282,6 +282,17 @@ tests/test-nufft-over: traj phantom resize nufft nrmse
 	touch $@
 
 
+tests/test-nufft-forward-zero-mem: traj phantom nufft nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
+	$(TOOLDIR)/phantom -s4 phan.ra							;\
+	$(TOOLDIR)/nufft    -r traj.ra phan.ra ksp1.ra					;\
+	$(TOOLDIR)/nufft --zero-mem traj.ra phan.ra ksp2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.00001 ksp1.ra ksp2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 
 # test low-mem adjoin
 
@@ -303,6 +314,17 @@ tests/test-nufft-no-precomp-adjoint: zeros noise traj nufft nrmse
 	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
 	$(TOOLDIR)/nufft -a traj.ra n2.ra x1.ra						;\
 	$(TOOLDIR)/nufft --no-precomp -a traj.ra n2.ra x2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.000001 x1.ra x2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nufft-lowmem-zero-mem: zeros noise traj nufft nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/zeros 4 1 128 128 3 z.ra						;\
+	$(TOOLDIR)/noise -s321 z.ra n2.ra						;\
+	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
+	$(TOOLDIR)/nufft -a traj.ra n2.ra x1.ra						;\
+	$(TOOLDIR)/nufft --zero-mem -a traj.ra n2.ra x2.ra				;\
 	$(TOOLDIR)/nrmse -t 0.000001 x1.ra x2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -341,6 +363,7 @@ TESTS += tests/test-nufft-nudft tests/test-nudft-forward tests/test-nudft-adjoin
 TESTS += tests/test-nufft-batch tests/test-nufft-over
 TESTS += tests/test-nufft-lowmem-adjoint tests/test-nufft-lowmem-inverse tests/test-nufft-no-precomp-adjoint tests/test-nufft-no-precomp-inverse
 TESTS += tests/test-nufft-inverse2 tests/test-nufft-inverse3
+TESTS += tests/test-nufft-lowmem-zero-mem tests/test-nufft-lowmem-zero-mem
 
 TESTS_GPU += tests/test-nufft-gpu-inverse tests/test-nufft-gpu-adjoint tests/test-nufft-gpu-forward
 TESTS_GPU += tests/test-nufft-gpu-inverse-lowmem tests/test-nufft-gpu-adjoint-lowmem tests/test-nufft-gpu-forward-lowmem

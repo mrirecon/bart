@@ -59,6 +59,7 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.precomp_linphase = true,
 	.precomp_fftmod = true,
 	.precomp_roll = true,
+	.zero_overhead = false,
 };
 
 #include "nufft_priv.h"
@@ -692,6 +693,11 @@ static struct nufft_data* nufft_create_data(int N,
 	PTR_ALLOC(struct nufft_data, data);
 	SET_TYPEID(nufft_data, data);
 
+	conf.precomp_fftmod = conf.precomp_fftmod && !conf.zero_overhead;
+	conf.precomp_linphase = conf.precomp_linphase && !conf.zero_overhead;
+	conf.precomp_roll = conf.precomp_roll && !conf.zero_overhead;
+	conf.lowmem = conf.lowmem || conf.zero_overhead;
+
 	data->N = N;
 
 	// extend internal dimensions by one for linear phases
@@ -997,6 +1003,8 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 static void nufft_apply_adjoint_lowmem(const linop_data_t* _data, complex float* dst, const complex float* src);
 static void nufft_apply_forward_lowmem(const linop_data_t* _data, complex float* dst, const complex float* src);
 
+static void nufft_apply_adjoint_zero_overhead(const linop_data_t* _data, complex float* dst, const complex float* src);
+static void nufft_apply_forward_zero_overhead(const linop_data_t* _data, complex float* dst, const complex float* src);
 
 
 static struct linop_s* nufft_create3(int N,
@@ -1065,6 +1073,10 @@ static struct linop_s* nufft_create3(int N,
 
 	long out_dims[N];
 	md_copy_dims(N, out_dims, data->out_dims);
+
+	if (conf.zero_overhead)
+		return linop_create(N, out_dims, N, cim_dims,
+				CAST_UP(data), nufft_apply_forward_zero_overhead, nufft_apply_adjoint_zero_overhead, NULL, NULL, nufft_free_data);
 
 	if (conf.lowmem) {
 
@@ -1689,6 +1701,121 @@ static void nufft_apply_forward_lowmem(const linop_data_t* _data, complex float*
 		md_ztenmul(data->N, data->out_dims, dst, data->ksp_dims, tmp, data->bas_dims, multiplace_read(data->basis, src));
 		md_free(tmp);
 	}
+
+	if (NULL != data->weights)
+		md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->out_strs, dst, data->wgh_strs, multiplace_read(data->weights, src));
+}
+
+
+
+// Adjoint: from kspace to image
+static void nufft_apply_adjoint_zero_overhead(const linop_data_t* _data, complex float* dst, const complex float* _src)
+{
+	auto data = CAST_DOWN(nufft_data, _data);
+
+	int ND = data->N + 1;
+
+	complex float* src = (complex float*) _src;
+
+	if (NULL != data->weights)
+		md_zmulc2(data->N, data->out_dims, data->out_strs, src, data->out_strs, src, data->wgh_strs, src);
+
+
+	md_clear(data->N, data->cim_dims, dst, CFL_SIZE);
+
+	long pos_fac[ND];
+	long pos_cml[ND];
+
+	md_singleton_strides(ND, pos_fac);
+	md_singleton_strides(ND, pos_cml);
+
+	do {
+		struct grid_conf_s grid_conf = data->grid_conf;
+		grid_conf.width /= 2.;
+		grid_conf.os = 1.;
+
+		for (int i = 0, j = 0; i < data->N; i++) {
+			if (MD_IS_SET(data->conf.flags, i)) {
+
+				assert(j < 3);
+
+				grid_conf.shift[j++] = -(float)pos_fac[i] / (data->factors[i]);
+			}
+		}
+
+		float scale = 1. / sqrtf(md_calc_size(3, data->lph_dims));
+		apply_linphases_3D(data->N, data->cim_dims, grid_conf.shift, dst, dst, false, false, scale);
+		
+		linop_forward(data->cfft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, dst);
+		fftmod(data->N, data->cim_dims, data->flags, dst, dst);
+
+		grid2(&grid_conf, data->N, data->trj_dims, multiplace_read(data->traj, dst), data->cim_dims, dst, data->ksp_dims, src);
+
+		ifftmod(data->N, data->cim_dims, data->flags, dst, dst);
+		linop_adjoint(data->cfft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, dst);
+
+		apply_linphases_3D(data->N, data->cim_dims, grid_conf.shift, dst, dst, true, false, scale);
+		
+
+		pos_cml[data->N]++;
+	} while (md_next(data->N, data->factors, data->conf.flags, pos_fac));
+
+	ifftmod(data->N, data->cim_dims, data->flags, dst, dst);
+	apply_rolloff_correction(2., data->grid_conf.width, data->grid_conf.beta, data->N, data->cim_dims, dst, dst);
+}
+
+
+// Forward: from image to kspace
+static void nufft_apply_forward_zero_overhead(const linop_data_t* _data, complex float* dst, const complex float* _src)
+{
+	auto data = CAST_DOWN(nufft_data, _data);
+
+	complex float* src = (complex float*) _src;
+
+	int ND = data->N + 1;
+
+	long pos_fac[ND];
+	long pos_cml[ND];
+
+	md_singleton_strides(ND, pos_fac);
+	md_singleton_strides(ND, pos_cml);
+	
+	md_clear(ND, data->ksp_dims, dst, CFL_SIZE);
+
+	fftmod(data->N, data->cim_dims, data->flags, src, src);
+	apply_rolloff_correction(2., data->grid_conf.width, data->grid_conf.beta, data->N, data->cim_dims, src, src);
+
+	do {
+		struct grid_conf_s grid_conf = data->grid_conf;
+		grid_conf.width /= 2.;
+		grid_conf.os = 1.;
+
+		for (int i = 0, j = 0; i < data->N; i++) {
+			if (MD_IS_SET(data->conf.flags, i)) {
+
+				assert(j < 3);
+
+				grid_conf.shift[j++] = -(float)pos_fac[i] / (data->factors[i]);
+			}
+		}
+
+		float scale = 1. / sqrtf(md_calc_size(3, data->lph_dims));
+
+		apply_linphases_3D(data->N, data->cim_dims, grid_conf.shift, src, src, false, false, scale);
+		linop_forward(data->cfft_op, data->N, data->cim_dims, src, data->N, data->cim_dims, src);
+		fftmod(data->N, data->cim_dims, data->flags, src, src);
+
+		grid2H(&grid_conf, data->N, data->trj_dims, multiplace_read(data->traj, src), data->ksp_dims, dst, data->cim_dims, src);
+
+		// Recover src
+		ifftmod(data->N, data->cim_dims, data->flags, src, src);
+		linop_adjoint(data->cfft_op, data->N, data->cim_dims, src, data->N, data->cim_dims, src);
+
+		apply_linphases_3D(data->N, data->cim_dims, grid_conf.shift, src, src, true, false, scale);
+
+		pos_cml[data->N]++;
+
+	} while (md_next(data->N, data->factors, data->conf.flags, pos_fac));
 
 	if (NULL != data->weights)
 		md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->out_strs, dst, data->wgh_strs, multiplace_read(data->weights, src));

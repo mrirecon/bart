@@ -26,6 +26,7 @@ struct nufft_conf_s {
 	_Bool precomp_linphase;
 	_Bool precomp_fftmod;
 	_Bool precomp_roll;
+	_Bool zero_overhead;
 };
 
 extern struct nufft_conf_s nufft_conf_defaults;

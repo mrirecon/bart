@@ -86,6 +86,7 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_SET('g', &use_gpu, "GPU (only inverse)"),
 		OPT_CLEAR('1', &conf.decomp, "use/return oversampled grid"),
 		OPTL_SET(0, "lowmem", &conf.lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_SET(0, "zero-mem", &conf.zero_overhead, "Use zero-overhead mode of the nuFFT"),
 		OPTL_CLEAR(0, "no-precomp", &precomp, "Use low-low-mem mode of the nuFFT"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPT_INFILE('p', &pattern_file, "file", "weighting of nufft"),
