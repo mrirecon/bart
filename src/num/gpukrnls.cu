@@ -1103,7 +1103,7 @@ __global__ void kern_fftmod_3d(long X, long Y, long Z, cuFloatComplex* dst, cons
 				long pos[3] = { x, y, z };
 				long idx = x + X * (y + Y * z);
 				
-				double phase0 = 1.;
+				double phase0 = phase;
 				for (int i = 2; i > 0; i--)
 					phase0 += fftmod_phase(dims[i], pos[i]);
 

@@ -37,5 +37,17 @@ tests/test-fft-uncentered: fftmod fft nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_O
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-fft-shift: fftmod fft fftshift nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_fftu.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/resize -c 0 5 1 7 3 5 $(TESTS_OUT)/shepplogan_fftu.ra i.ra	;\
+	$(TOOLDIR)/fft 15 i.ra k1.ra			;\
+	$(TOOLDIR)/fftshift -b 15 i.ra t1.ra		;\
+	$(TOOLDIR)/fft -n 15 t1.ra t2.ra						;\
+	$(TOOLDIR)/fftshift 15 t2.ra t1.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 k1.ra t1.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
-TESTS += tests/test-fft-basic tests/test-fft-unitary tests/test-fft-uncentered
+
+
+TESTS += tests/test-fft-basic tests/test-fft-unitary tests/test-fft-uncentered tests/test-fft-shift
