@@ -98,6 +98,7 @@ static bool test_cuda_fft(void)
 	return true;
 #endif
 }
+UT_GPU_REGISTER_TEST(test_cuda_fft);
 
 static bool test_cuda_fftmod(void)
 {
