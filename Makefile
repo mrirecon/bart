@@ -36,7 +36,6 @@ DEBUG?=0
 UBSAN?=0
 ASAN?=0
 FFTWTHREADS?=1
-FFTW_WISDOM?=0
 SCALAPACK?=0
 ISMRMRD?=0
 TENSORFLOW?=0
@@ -508,9 +507,6 @@ ifneq ($(BUILDTYPE), MSYS)
 endif
 endif
 
-ifeq ($(FFTW_WISDOM),1)
-	CPPFLAGS += -DUSE_FFTW_WISDOM
-endif
 
 
 # Matlab

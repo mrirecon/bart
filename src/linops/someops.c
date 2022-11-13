@@ -1512,12 +1512,12 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
 }
 
 
-static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool forward, bool center, bool measure)
+static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned int flags, bool forward, bool center)
 {
 	const struct operator_s* plan = NULL;
 	const struct operator_s* iplan = NULL;
 
-	if (measure) {
+	if (use_fftw_wisdom) {
 
 		plan = fft_measure_create(N, dims, flags, true, false);
 		iplan = fft_measure_create(N, dims, flags, true, true);
@@ -1588,7 +1588,7 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
  */
 struct linop_s* linop_fft_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, true, false, false);
+	return linop_fft_create_priv(N, dims, flags, true, false);
 }
 
 
@@ -1601,7 +1601,7 @@ struct linop_s* linop_fft_create(int N, const long dims[N], unsigned int flags)
  */
 struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, false, false, false);
+	return linop_fft_create_priv(N, dims, flags, false, false);
 }
 
 
@@ -1614,7 +1614,7 @@ struct linop_s* linop_ifft_create(int N, const long dims[N], unsigned int flags)
  */
 struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, true, true, false);
+	return linop_fft_create_priv(N, dims, flags, true, true);
 }
 
 
@@ -1627,23 +1627,10 @@ struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags)
  */
 struct linop_s* linop_ifftc_create(int N, const long dims[N], unsigned int flags)
 {
-	return linop_fft_create_priv(N, dims, flags, false, true, false);
+	return linop_fft_create_priv(N, dims, flags, false, true);
 }
 
 
-/**
- * Uncentered forward Fourier transform linear operator
- * fft_measure_create used
- *
- * @param N number of dimensions
- * @param dims dimensions of input
- * @param flags bitmask of the dimensions to apply the Fourier transform
- * @param gpu use gpu
- */
-struct linop_s* linop_fft_create_measure(int N, const long dims[N], unsigned int flags)
-{
-	return linop_fft_create_priv(N, dims, flags, true, false, true);
-}
 
 struct linop_cdf97_s {
 

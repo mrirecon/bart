@@ -69,6 +69,19 @@ void num_init(void)
 	fft_set_num_threads(p);
 #endif
 
+	const char* wisdom_str;
+
+	if (NULL != (wisdom_str = getenv("BART_USE_FFTW_WISDOM"))) {
+		
+		long wisdom = strtoul(wisdom_str, NULL, 10);
+
+		if ((1 != wisdom) && (0 != wisdom))
+			error("BART_USE_FFTW_WISDOM environment variable must be 0 or 1!\n");
+		
+		use_fftw_wisdom = (1 == wisdom);
+	}
+		
+
 	const char* chunk_str;
 
 	if (NULL != (chunk_str = getenv("BART_PARALLEL_CHUNK_SIZE"))) {

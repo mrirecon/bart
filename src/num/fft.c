@@ -291,14 +291,20 @@ struct fft_plan_s {
 
 static DEF_TYPEID(fft_plan_s);
 
+bool use_fftw_wisdom = false;
 
-#ifdef USE_FFTW_WISDOM
 static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const long dims[N])
 {
+	if (!use_fftw_wisdom)
+		return NULL;
+
 	char* tbpath = getenv("TOOLBOX_PATH");
 
-	if (NULL == tbpath)
+	if (NULL == tbpath) {
+
+		debug_printf(DP_WARN, "FFTW wisdom only works with TOOLBOX_PATH set!\n");
 		return NULL;
+	}
 
 	// Space for path and null terminator.
 	int space = snprintf(NULL, 0, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%lu_DIMS", tbpath, N, backwards, flags);
@@ -339,7 +345,7 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const 
 
 	return loc;
 }
-#endif //USE_FFTW_WISDOM
+
 
 static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
@@ -351,13 +357,11 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 	int k = 0;
 	int l = 0;
 
-#ifdef USE_FFTW_WISDOM
 	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
 
 	if (NULL != wisdom)
 		fftwf_import_wisdom_from_filename(wisdom);
 
-#endif //USE_FFTW_WISDOM
 
 	//FFTW seems to be fine with this
 	//assert(0 != flags); 
@@ -384,12 +388,12 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 	fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
 				backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
 
-#ifdef USE_FFTW_WISDOM
-	if (NULL != wisdom)
-		fftwf_export_wisdom_to_filename(wisdom);
 
-	md_free(wisdom);
-#endif //USE_FFTW_WISDOM
+	if (NULL != wisdom) {
+
+		fftwf_export_wisdom_to_filename(wisdom);
+		xfree(wisdom);
+	}
 
 	return fftwf;
 }

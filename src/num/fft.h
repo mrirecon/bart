@@ -74,6 +74,7 @@ extern const struct operator_s* fft_measure_create(int D, const long dimensions[
 extern void fft_exec(const struct operator_s* plan, _Complex float* dst, const _Complex float* src);
 extern void fft_free(const struct operator_s* plan);
 
+extern _Bool use_fftw_wisdom;
 extern void fft_set_num_threads(int n);
 
 
