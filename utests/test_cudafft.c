@@ -125,10 +125,43 @@ static bool test_cuda_fftmod(void)
 
 	float err = md_znrmse(DIMS, dims, cpu2, cpu1);
 
-	debug_printf(DP_INFO, "%e\n", err);
-
 	UT_ASSERT(err < UT_TOL);
 #endif
 }
 
 UT_GPU_REGISTER_TEST(test_cuda_fftmod);
+
+
+static bool test_cuda_fftmod2(void)
+{
+#ifndef USE_CUDA
+	return true;
+#else
+	// TODO: detect if GPU works
+
+	num_rand_init(5);
+	num_init_gpu();
+	
+	enum { DIMS = 4 };
+	const long dims[DIMS] = {16, 4, 16, 3};
+	complex float* cpu1 = md_alloc(DIMS, dims, CFL_SIZE);
+	md_gaussian_rand(DIMS, dims, cpu1);
+
+	complex float* gpu = md_gpu_move(DIMS, dims, cpu1, CFL_SIZE);
+
+	fftmod(DIMS, dims, 15, cpu1, cpu1);
+	fftmod(DIMS, dims, 15, gpu, gpu);
+
+	complex float* cpu2 = md_alloc(DIMS, dims, CFL_SIZE);
+	md_copy(DIMS, dims, cpu2, gpu, CFL_SIZE);
+
+	float err = md_znrmse(DIMS, dims, cpu2, cpu1);
+
+
+	UT_ASSERT(err < UT_TOL);
+#endif
+}
+
+UT_GPU_REGISTER_TEST(test_cuda_fftmod2);
+
+

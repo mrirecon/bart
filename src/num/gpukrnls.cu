@@ -514,7 +514,7 @@ extern "C" void cuda_pow(long N, float* dst, const float* src1, const float* src
 	cuda_3op(kern_pow, N, dst, src1, src2);
 }
 
-static __device__ cuDoubleComplex zexpD(cuDoubleComplex x)
+static __device__ __host__ cuDoubleComplex zexpD(cuDoubleComplex x)
 {
 	double sc = exp(cuCreal(x));
 	double si;
@@ -1083,6 +1083,48 @@ extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* 
 }
 
 
+__global__ void kern_fftmod_3d_4(long X, long Y, long Z, cuFloatComplex* dst, const cuFloatComplex* src, bool inv, cuDoubleComplex scale_1)
+{
+	int startX = threadIdx.x + blockDim.x * blockIdx.x;
+	int strideX = blockDim.x * gridDim.x;
+
+	int startY = threadIdx.y + blockDim.y * blockIdx.y;
+	int strideY = blockDim.y * gridDim.y;
+
+	int startZ = threadIdx.z + blockDim.z * blockIdx.z;
+	int strideZ = blockDim.z * gridDim.z;
+
+	for (long z = startZ; z < Z; z += strideZ)
+		for (long y = startY; y < Y; y += strideY)
+			for (long x = startX; x < X; x +=strideX) {
+
+				long idx = x + X * (y + Y * z);
+				
+				cuDoubleComplex scale = scale_1;
+
+				if (1 == x % 2) {
+
+					scale.x = -scale.x;
+					scale.y = -scale.y;
+				}
+				
+				if (1 == y % 2) {
+
+					scale.x = -scale.x;
+					scale.y = -scale.y;
+				}
+
+				if (1 == z % 2) {
+
+					scale.x = -scale.x;
+					scale.y = -scale.y;
+				}
+
+				
+				dst[idx] = cuDouble2Float(cuCmul(scale, cuFloat2Double(src[idx])));				
+			}
+}
+
 __global__ void kern_fftmod_3d(long X, long Y, long Z, cuFloatComplex* dst, const cuFloatComplex* src, bool inv, double phase)
 {
 	int startX = threadIdx.x + blockDim.x * blockIdx.x;
@@ -1113,6 +1155,38 @@ __global__ void kern_fftmod_3d(long X, long Y, long Z, cuFloatComplex* dst, cons
 
 extern "C" void cuda_zfftmod_3d(const long dims[3], _Complex float* dst, const _Complex float* src, _Bool inv, double phase)
 {
+	if (   ((dims[0] == 1) || (dims[0] % 4 == 0))
+	    && ((dims[1] == 1) || (dims[1] % 4 == 0))
+	    && ((dims[2] == 1) || (dims[2] % 4 == 0)))
+		{
+			double rem = phase - floor(phase);
+			double sgn = inv ? -1. : 1.;
+
+			cuDoubleComplex scale = zexpD(make_cuDoubleComplex(0, M_PI * 2. * sgn * rem));
+
+			if ((1 != dims[0]) && (0 != dims[0] % 8)) {
+
+				scale.x *= -1;
+				scale.y *= -1;
+			}
+				
+			if ((1 != dims[1]) && (0 != dims[1] % 8)) {
+
+				scale.x *= -1;
+				scale.y *= -1;
+			}
+	
+			if ((1 != dims[2]) && (0 != dims[2] % 8)) {
+
+				scale.x *= -1;
+				scale.y *= -1;
+			}
+
+
+			kern_fftmod_3d_4<<<getGridSize3(dims, (const void*)kern_fftmod_3d), getBlockSize3(dims, (const void*)kern_fftmod_3d), 0, cuda_get_stream()>>>(dims[0], dims[1], dims[2], (cuFloatComplex*)dst, (const cuFloatComplex*)src, inv, scale);
+			return;
+		}
+
 	kern_fftmod_3d<<<getGridSize3(dims, (const void*)kern_fftmod_3d), getBlockSize3(dims, (const void*)kern_fftmod_3d), 0, cuda_get_stream()>>>(dims[0], dims[1], dims[2], (cuFloatComplex*)dst, (const cuFloatComplex*)src, inv, phase);
 }
 

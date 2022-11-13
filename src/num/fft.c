@@ -90,8 +90,55 @@ static complex double fftmod_phase2(long n, int j, bool inv, double phase)
 	return cexp(M_PI * 2.i * sgn * rem);
 }
 
+static void zfftmod_3d_4(const long dims[3], complex float* dst, const complex float* src, bool inv, double phase)
+{
+	double rem = phase - floor(phase);
+	double sgn = inv ? -1. : 1.;
+
+	complex double scale_1 = cexp(M_PI * 2.i * sgn * rem);
+
+	if ((1 != dims[0]) && (0 != dims[0] % 8))
+		scale_1 *= -1;
+	
+	if ((1 != dims[1]) && (0 != dims[1] % 8))
+		scale_1 *= -1;
+	
+	if ((1 != dims[2]) && (0 != dims[2] % 8))
+		scale_1 *= -1;
+
+
+	#pragma omp parallel for collapse(3)
+	for (long z = 0; z < dims[2]; z++)
+		for (long y = 0; y < dims[1]; y++)
+			for (long x = 0; x < dims[0]; x++) {
+
+				complex double scale = scale_1;
+
+				if (1 == x % 2)
+					scale = -scale;
+				
+				if (1 == y % 2)
+					scale = -scale;
+
+				if (1 == z % 2)
+					scale = -scale;
+
+				long idx = x + dims[0] * y + dims[0] * dims[1] * z;
+				
+				dst[idx] = scale * src[idx];		
+			}
+}
+
 static void zfftmod_3d(const long dims[3], complex float* dst, const complex float* src, bool inv, double phase)
 {
+	if (   ((dims[0] == 1) || (dims[0] % 4 == 0))
+	    && ((dims[1] == 1) || (dims[1] % 4 == 0))
+	    && ((dims[2] == 1) || (dims[2] % 4 == 0)))
+		{
+			zfftmod_3d_4(dims, dst, src, inv, phase);
+			return;
+		}
+
 	#pragma omp parallel for collapse(3)
 	for (long z = 0; z < dims[2]; z++)
 		for (long y = 0; y < dims[1]; y++)
