@@ -45,14 +45,10 @@ def bart(nargout, cmd, *args, **kwargs):
     for idx in range(nargin):
         cfl.writecfl(infiles[idx], args[idx])
 
+    args_kw = ["--" if len(kw)>1 else "-" + kw for kw in kwargs]
     infiles_kw = [name + 'in' + kw for kw in kwargs]
-    in_kw_str = ''
     for idx, kw in enumerate(kwargs):
         cfl.writecfl(infiles_kw[idx], kwargs[kw])
-        if len(kw) > 1:
-            in_kw_str += f'--{kw} {infiles_kw[idx]} '
-        else:
-            in_kw_str += f'-{kw} {infiles_kw[idx]} '
 
     outfiles = [name + 'out' + str(idx) for idx in range(nargout)]
 
@@ -62,18 +58,23 @@ def bart(nargout, cmd, *args, **kwargs):
         if isWSL:
             #For WSL and modify paths
             infiles = [PathCorrection(item) for item in infiles]
+            infiles_kw = [PathCorrection(item) for item in infiles_kw]
             outfiles = [PathCorrection(item) for item in outfiles]
             cmd = [PathCorrection(item) for item in cmd]
-            shell_cmd = ['wsl', 'bart', *cmd, *infiles, *outfiles]
+            args_infiles_kw = [item for pair in zip(args_kw, infiles_kw) for item in pair]
+            shell_cmd = ['wsl', 'bart', *cmd, *args_infiles_kw, *infiles, *outfiles]
         else:
             #For cygwin use bash and modify paths
             infiles = [item.replace(os.path.sep, '/') for item in infiles]
+            infiles_kw = [item.replace(os.path.sep, '/') for item in infiles_kw]
             outfiles = [item.replace(os.path.sep, '/') for item in outfiles]
             cmd = [item.replace(os.path.sep, '/') for item in cmd]
-            shell_cmd = ['bash.exe', '--login',  '-c', os.path.join(bart_path, 'bart'), *cmd, *infiles, *outfiles]
+            args_infiles_kw = [item for pair in zip(args_kw, infiles_kw) for item in pair]
+            shell_cmd = ['bash.exe', '--login',  '-c', os.path.join(bart_path, 'bart'), *cmd, *args_infiles_kw, *infiles, *outfiles]
             #TODO: Test with cygwin, this is just translation from matlab code
     else:
-        shell_cmd = [os.path.join(bart_path, 'bart'), *cmd, *infiles, *outfiles]
+        args_infiles_kw = [item for pair in zip(args_kw, infiles_kw) for item in pair]
+        shell_cmd = [os.path.join(bart_path, 'bart'), *cmd, *args_infiles_kw, *infiles, *outfiles]
 
     # run bart command
     ERR, stdout, stderr = execute_cmd(shell_cmd)
