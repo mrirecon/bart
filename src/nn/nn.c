@@ -27,6 +27,7 @@
 
 #include "nlops/nlop.h"
 #include "nlops/chain.h"
+#include "nlops/cast.h"
 #include "nlops/const.h"
 #include "nlops/checkpointing.h"
 
@@ -138,6 +139,16 @@ nn_t nn_from_nlop_F(const struct nlop_s* op)
 	auto result = nn_from_nlop(op);
 	nlop_free(op);
 	return result;
+}
+
+nn_t nn_from_linop_F(const struct linop_s* op)
+{
+	return nn_from_nlop_F(nlop_from_linop_F(op));
+}
+
+nn_t nn_from_linop(const struct linop_s* op)
+{
+	return nn_from_nlop_F(nlop_from_linop(op));
 }
 
 const struct nlop_s* nn_get_nlop(nn_t op)

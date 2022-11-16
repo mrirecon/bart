@@ -58,6 +58,8 @@ typedef const struct nn_s* nn_t;
 
 extern nn_t nn_from_nlop(const struct nlop_s* op);
 extern nn_t nn_from_nlop_F(const struct nlop_s* op);
+extern nn_t nn_from_linop(const struct linop_s* op);
+extern nn_t nn_from_linop_F(const struct linop_s* op);
 extern void nn_free(nn_t op);
 
 extern const struct nlop_s* nn_get_nlop(nn_t op);
