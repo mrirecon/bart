@@ -869,6 +869,77 @@ struct linop_s* linop_reshape_create(unsigned int A, const long out_dims[A], int
 	return PTR_PASS(c);
 }
 
+
+
+struct reshape_flagged_s {
+
+	INTERFACE(linop_data_t);
+
+	int N;
+	unsigned long flags;
+	const long* idims;
+	const long* odims;
+};
+
+static DEF_TYPEID(reshape_flagged_s);
+
+static void reshape_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	const auto d = CAST_DOWN(reshape_flagged_s, _data);
+	assert(dst != src);
+	
+	md_reshape(d->N, d->flags, d->odims, dst, d->idims, src, CFL_SIZE);
+}
+
+static void reshape_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	const auto d = CAST_DOWN(reshape_flagged_s, _data);;
+
+	md_reshape(d->N, d->flags, d->idims, dst, d->odims, src, CFL_SIZE);
+}
+
+static void reshape_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	const auto d = CAST_DOWN(reshape_flagged_s, _data);
+
+	if (dst != src)
+		md_copy(d->N, d->odims, dst, src, CFL_SIZE);
+}
+
+static void reshape_free(const linop_data_t* _data)
+{
+	const auto data = CAST_DOWN(reshape_flagged_s, _data);
+
+	xfree(data->odims);
+	xfree(data->idims);
+
+
+	xfree(data);
+}
+
+
+
+struct linop_s* linop_reshape2_create(int N, unsigned long flags, const long out_dims[N], const long in_dims[N])
+{
+	if (md_check_equal_dims(N, MD_STRIDES(N, out_dims, CFL_SIZE), MD_STRIDES(N, in_dims, CFL_SIZE), ~flags))
+		return linop_reshape_create(N, out_dims, N, in_dims);
+
+	PTR_ALLOC(struct reshape_flagged_s, data);
+	SET_TYPEID(reshape_flagged_s, data);
+
+	assert(md_check_equal_dims(N, out_dims, in_dims, ~flags));
+	assert(md_calc_size(N, out_dims) == md_calc_size(N, in_dims));
+
+	data->N = N;
+	data->odims = ARR_CLONE(long[N], out_dims);
+	data->idims = ARR_CLONE(long[N], in_dims);
+	data->flags = flags;
+
+	return linop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), reshape_forward, reshape_adjoint, reshape_normal, NULL, reshape_free);
+}
+
+
+
 struct permute_op_s {
 
 	INTERFACE(linop_data_t);

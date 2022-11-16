@@ -20,6 +20,7 @@
 #include "num/flpmath.h"
 
 #include "linops/linop.h"
+#include "linops/someops.h"
 
 #include "misc/shrdptr.h"
 #include "misc/misc.h"
@@ -30,6 +31,7 @@
 
 #include "nlops/stack.h"
 #include "nlops/chain.h"
+#include "nlops/cast.h"
 #include "nlop.h"
 
 
@@ -1236,6 +1238,31 @@ const struct nlop_s* nlop_reshape_out_F(const struct nlop_s* op, int o, int NO, 
 	nlop_free(op);
 	return result;
 }
+
+const struct nlop_s* nlop_reshape2_in_F(const struct nlop_s* op, int i, int NI, unsigned long flags, const long idims[NI])
+{
+	auto iov = nlop_generic_domain(op, i);
+	
+	assert(NI == iov->N);
+
+	if (md_check_equal_dims(NI, MD_STRIDES(iov->N, iov->dims, CFL_SIZE), MD_STRIDES(iov->N, idims, CFL_SIZE), ~flags))
+		return nlop_reshape_in_F(op, i, NI, idims);
+
+	return nlop_prepend_FF(nlop_from_linop_F(linop_reshape2_create(NI, flags, iov->dims, idims)), op, i);
+}
+
+const struct nlop_s* nlop_reshape2_out_F(const struct nlop_s* op, int o, int NO, unsigned long flags, const long odims[NO])
+{
+	auto iov = nlop_generic_codomain(op, o);
+	
+	assert(NO == iov->N);
+
+	if (md_check_equal_dims(NO, MD_STRIDES(iov->N, iov->dims, CFL_SIZE), MD_STRIDES(iov->N, odims, CFL_SIZE), ~flags))
+		return nlop_reshape_out_F(op, o, NO, odims);
+
+	return nlop_append_FF(op, o, nlop_from_linop_F(linop_reshape2_create(NO, flags, odims, iov->dims)));
+}
+
 
 const struct nlop_s* nlop_flatten_in_F(const struct nlop_s* op, int i)
 {
