@@ -66,7 +66,7 @@ static double kb(double beta, double x)
 	if (fabs(x) >= 0.5)
 		return 0.;
 
-        return bessel_i0(beta * sqrt(1. - pow(2. * x, 2.))) / bessel_i0(beta);
+	return bessel_i0(beta * sqrt(1. - pow(2. * x, 2.))) / bessel_kb_beta;
 }
 
 void kb_precompute(double beta, int n, float table[n + 1])
@@ -79,12 +79,17 @@ void kb_precompute(double beta, int n, float table[n + 1])
 static double ftkb(double beta, double x)
 {
 	double a = sqrt(pow(beta, 2.) - pow(M_PI * x, 2.));
-	return ((0. == a) ? 1. : (a / sinh(a))); // * bessel_i0(beta);
+	return ((0. == a) ? 1. : (a / sinh(a))) * bessel_kb_beta;
+}
+
+static double rolloff_compat(double x, double beta, double width)
+{
+	return ftkb(beta, x * width) / ftkb(beta, 0.);
 }
 
 static double rolloff(double x, double beta, double width)
 {
-	return ftkb(beta, x * width) / ftkb(beta, 0.);
+	return ftkb(beta, x * width) / width;
 }
 
 // Linear interpolation
@@ -423,14 +428,29 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 	// precompute kaiser bessel table
 	kb_init(beta);
 
+
+	if(use_compat_to_version("v0.8.00")) {
+
+		#pragma omp parallel for collapse(3)
+		for (int z = 0; z < dimensions[2]; z++) 
+			for (int y = 0; y < dimensions[1]; y++) 
+				for (int x = 0; x < dimensions[0]; x++)
+					dst[x + dimensions[0] * (y + z * dimensions[1])] 
+						= rolloff_compat(os * pos(dimensions[0], x), beta, width)
+						* rolloff_compat(os * pos(dimensions[1], y), beta, width)
+						* rolloff_compat(os * pos(dimensions[2], z), beta, width);
+		
+		return;
+	}
+
 #pragma omp parallel for collapse(3)
 	for (int z = 0; z < dimensions[2]; z++) 
 		for (int y = 0; y < dimensions[1]; y++) 
 			for (int x = 0; x < dimensions[0]; x++)
 				dst[x + dimensions[0] * (y + z * dimensions[1])] 
-					= rolloff(os * pos(dimensions[0], x), beta, width)
-					* rolloff(os * pos(dimensions[1], y), beta, width)
-					* rolloff(os * pos(dimensions[2], z), beta, width);
+					= (dimensions[0] > 1 ? rolloff(os * pos(dimensions[0], x), beta, width) : 1.)
+					* (dimensions[1] > 1 ? rolloff(os * pos(dimensions[1], y), beta, width) : 1.)
+					* (dimensions[2] > 1 ? rolloff(os * pos(dimensions[2], z), beta, width) : 1.);
 }
 
 void apply_rolloff_correction(float os, float width, float beta, int N, const long dims[N], complex float* dst, const complex float* src)
@@ -458,9 +478,9 @@ void apply_rolloff_correction(float os, float width, float beta, int N, const lo
 
 				long idx = x + dims[0] * (y + z * dims[1]);
 
-				float val = rolloff(os * pos(dims[0], x), beta, width)
-					  * rolloff(os * pos(dims[1], y), beta, width)
-					  * rolloff(os * pos(dims[2], z), beta, width);
+				float val = (dims[0] > 1 ? rolloff(os * pos(dims[0], x), beta, width) : 1)
+					  * (dims[1] > 1 ? rolloff(os * pos(dims[1], y), beta, width) : 1)
+					  * (dims[2] > 1 ? rolloff(os * pos(dims[2], z), beta, width) : 1);
 
 				for (long i = 0; i < size_bat; i++)
 					dst[idx + i *size_img] = val * src[idx + i *size_img];

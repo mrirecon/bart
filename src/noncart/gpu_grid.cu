@@ -124,7 +124,7 @@ static __device__ double ftkb(double beta, double x)
 
 static __device__ double rolloff(double x, double beta, double width)
 {
-	return ftkb(beta, x * width) / ftkb(beta, 0.);
+	return ftkb(beta, x * width) / width;
 }
 
 static __device__ float posf(int d, int i)
@@ -140,6 +140,7 @@ struct rolloff_conf {
 	float os;
 	float width;
 	float beta;
+	float bessel_beta;
 };
 
 __global__ void kern_apply_rolloff_correction(struct rolloff_conf c, cuFloatComplex* dst, const cuFloatComplex* src)
@@ -159,9 +160,9 @@ __global__ void kern_apply_rolloff_correction(struct rolloff_conf c, cuFloatComp
 
 				long idx = x + c.dims[0] * (y + c.dims[1] * z);
 				
-				float val = rolloff(c.os * posf(c.dims[0], x), c.beta, c.width)
-					  * rolloff(c.os * posf(c.dims[1], y), c.beta, c.width)
-					  * rolloff(c.os * posf(c.dims[2], z), c.beta, c.width);
+				float val = ((c.dims[0] > 1) ? rolloff(c.os * posf(c.dims[0], x), c.beta, c.width) * c.bessel_beta : 1)
+					  * ((c.dims[1] > 1) ? rolloff(c.os * posf(c.dims[1], y), c.beta, c.width) * c.bessel_beta : 1)
+					  * ((c.dims[2] > 1) ? rolloff(c.os * posf(c.dims[2], z), c.beta, c.width) * c.bessel_beta : 1);
 
 				for (long i = 0; i < c.N; i++) {
 
@@ -183,6 +184,7 @@ extern "C" void cuda_apply_rolloff_correction(float os, float width, float beta,
 		.os = os,
 		.width = width,
 		.beta = beta,
+		.bessel_beta = bessel_kb_beta,
 	};
 
 	const void* func = (const void*)kern_apply_rolloff_correction;
