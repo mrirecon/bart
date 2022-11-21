@@ -15,9 +15,11 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/specfun.h"
+#include "num/multiplace.h"
 
 #include "misc/nested.h"
 #include "misc/misc.h"
+#include "misc/version.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -27,6 +29,36 @@
 #include "grid.h"
 
 
+enum { kb_size_max = 1000 };
+int kb_size = -1;
+float bessel_kb_beta = -1.; // = bessel_i0(beta);
+
+static float kb_table[kb_size_max + 1];
+static double kb_beta = -1.;
+
+static void kb_init(double beta)
+{
+	#pragma	omp critical
+	if (-1 == kb_beta) {
+
+		bessel_kb_beta = bessel_i0(beta);
+
+		kb_size = use_compat_to_version("v0.8.00") ? 100 : kb_size_max;
+
+		kb_precompute(beta, kb_size, kb_table);
+		kb_beta = beta;
+	}
+
+	if (fabs(kb_beta - beta) / fabs(kb_beta) >= 1.E-6)
+		error("Kaiser-Bessel window initialized with different beta (%e != %e)!\n", kb_beta, beta);
+}
+
+const struct multiplace_array_s* kb_get_table(double beta)
+{
+	kb_init(beta);
+
+	return multiplace_move(1, MD_DIMS(kb_size + 1), FL_SIZE, kb_table);
+}
 
 
 static double kb(double beta, double x)
@@ -85,9 +117,6 @@ static float intlookup(int n, const float table[n + 1], float x)
 	return l;
 }
 
-enum { kb_size = 100 };
-static float kb_table[kb_size + 1];
-static float kb_beta = -1.;
 
 
 void gridH(const struct grid_conf_s* conf, const complex float* traj, const long ksp_dims[4], complex float* dst, const long grid_dims[4], const complex float* grid)
@@ -109,14 +138,7 @@ void gridH(const struct grid_conf_s* conf, const complex float* traj, const long
 	long C = ksp_dims[3];
 
 	// precompute kaiser bessel table
-#pragma	omp critical
-	if (-1 == kb_beta) {
-
-		kb_precompute(conf->beta, kb_size, kb_table);
-		kb_beta = conf->beta;
-	}
-
-	assert(fabs(kb_beta - conf->beta) < 1.E-6);
+	kb_init(conf->beta);
 
 	assert(1 == ksp_dims[0]);
 	long samples = ksp_dims[1] * ksp_dims[2];
@@ -164,14 +186,7 @@ void grid(const struct grid_conf_s* conf, const complex float* traj, const long 
 	long C = ksp_dims[3];
 
 	// precompute kaiser bessel table
-#pragma	omp critical
-	if (-1 == kb_beta) {
-
-		kb_precompute(conf->beta, kb_size, kb_table);
-		kb_beta = conf->beta;
-	}
-
-	assert(fabs(kb_beta - conf->beta) < 1.E-6);
+	kb_init(conf->beta);
 
 	assert(1 == ksp_dims[0]);
 	long samples = ksp_dims[1] * ksp_dims[2];
@@ -405,6 +420,9 @@ static float pos(int d, int i)
 
 void rolloff_correction(float os, float width, float beta, const long dimensions[3], complex float* dst)
 {
+	// precompute kaiser bessel table
+	kb_init(beta);
+
 #pragma omp parallel for collapse(3)
 	for (int z = 0; z < dimensions[2]; z++) 
 		for (int y = 0; y < dimensions[1]; y++) 
@@ -417,6 +435,11 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 
 void apply_rolloff_correction(float os, float width, float beta, int N, const long dims[N], complex float* dst, const complex float* src)
 {
+	// precompute kaiser bessel table
+	kb_init(beta);
+	
+	assert(!use_compat_to_version("v0.8.00"));
+
 #ifdef USE_CUDA
 	assert(cuda_ondevice(dst) == cuda_ondevice(src));
 	if (cuda_ondevice(dst)) {

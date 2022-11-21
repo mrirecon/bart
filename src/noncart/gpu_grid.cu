@@ -17,6 +17,7 @@
 #include "num/multind.h"
 #include "num/gpu_misc.h"
 #include "num/gpuops.h"
+#include "num/multiplace.h"
 
 #include "noncart/grid.h"
 #include "gpu_grid.h"
@@ -204,33 +205,14 @@ __device__ static float intlookup(int n, const float* table, float x)
 	return l;
 }
 
-enum { kb_size = 100 };
 
-static float* kb_table[MAX_CUDA_DEVICES] = {  NULL };
-static double kb_beta = -1.;
+static const struct multiplace_array_s* kb_table = NULL;
 
 static void kb_precompute_gpu(double beta)
 {
-	// precompute kaiser bessel table
-
-	int device = cuda_get_device();
-
-	#pragma	omp critical
-	if (NULL == kb_table[device]) {
-
-		assert((-1 == kb_beta) || (fabs(kb_beta - beta) < 1.E-6));
-
-		float table_cpu[kb_size + 1];
-		kb_precompute(beta, kb_size, table_cpu);
-		kb_beta = beta;
-
-		CUDA_ERROR(cudaMalloc(kb_table + device, (1 + kb_size) * sizeof(float)));
-		CUDA_ERROR(cudaMemcpy(kb_table[device], table_cpu, (1 + kb_size) * sizeof(float), cudaMemcpyDefault));
-
-		CUDA_ERROR(cudaDeviceSynchronize());
-	}
-
-	assert(fabs(kb_beta - beta) < 1.E-6);
+	#pragma omp critical(kb_tbale_gpu)
+	if (NULL == kb_table)
+		kb_table = kb_get_table(beta);
 }
 
 #define GRID_DIMS 3
@@ -251,6 +233,7 @@ struct grid_data {
 	long off_ch_ksp;
 	long off_ch_grid;
 
+	int kb_size;
 	float* kb_table;
 
 	long NB;
@@ -290,17 +273,17 @@ __device__ static void grid_point_r(const struct grid_data* gd, const struct gri
 
 	for (long z = gdd->sti[2]; z <= gdd->eni[2]; z++) {
 
-		d[2] = intlookup(kb_size, gd->kb_table, fabs(((float)z - gdd->pos[2]))/ gd->width);
+		d[2] = intlookup(gd->kb_size, gd->kb_table, fabs(((float)z - gdd->pos[2]))/ gd->width);
 		ind[2] = ((z + gdd->off[2]) % gd->grid_dims[2]);
 
 		for (long y = gdd->sti[1]; y <= gdd->eni[1]; y++) {
 
-			d[1] = intlookup(kb_size, gd->kb_table, fabs(((float)y - gdd->pos[1]))/ gd->width) * d[2];
+			d[1] = intlookup(gd->kb_size, gd->kb_table, fabs(((float)y - gdd->pos[1]))/ gd->width) * d[2];
 			ind[1] = ((y + gdd->off[1]) % gd->grid_dims[1]) + ind[2] * gd->grid_dims[1];
 
 			for (long x = gdd->sti[0]; x <= gdd->eni[0]; x++) {
 
-				d[0] = intlookup(kb_size, gd->kb_table, fabs(((float)x - gdd->pos[0]))/ gd->width) * d[1];
+				d[0] = intlookup(gd->kb_size, gd->kb_table, fabs(((float)x - gdd->pos[0]))/ gd->width) * d[1];
 				ind[0] = ((x + gdd->off[0]) % gd->grid_dims[0]) + ind[1] * gd->grid_dims[0];
 
 				dev_atomic_zadd_scl(dst + ind[0] , src[0], d[0]);
@@ -317,17 +300,17 @@ __device__ static void gridH_point_r(const struct grid_data* gd, const struct gr
 
 	for (long z = gdd->sti[2]; z <= gdd->eni[2]; z++) {
 
-		d[2] = intlookup(kb_size, gd->kb_table, fabs(((float)z - gdd->pos[2]))/ gd->width);
+		d[2] = intlookup(gd->kb_size, gd->kb_table, fabs(((float)z - gdd->pos[2]))/ gd->width);
 		ind[2] = ((z + gdd->off[2]) % gd->grid_dims[2]);
 
 		for (long y = gdd->sti[1]; y <= gdd->eni[1]; y++) {
 
-			d[1] = intlookup(kb_size, gd->kb_table, fabs(((float)y - gdd->pos[1]))/ gd->width) * d[2];
+			d[1] = intlookup(gd->kb_size, gd->kb_table, fabs(((float)y - gdd->pos[1]))/ gd->width) * d[2];
 			ind[1] = ((y + gdd->off[1]) % gd->grid_dims[1]) + ind[2] * gd->grid_dims[1];
 
 			for (long x = gdd->sti[0]; x <= gdd->eni[0]; x++) {
 
-				d[0] = intlookup(kb_size, gd->kb_table, fabs(((float)x - gdd->pos[0]))/ gd->width) * d[1];
+				d[0] = intlookup(gd->kb_size, gd->kb_table, fabs(((float)x - gdd->pos[0]))/ gd->width) * d[1];
 				ind[0] = ((x + gdd->off[0]) % gd->grid_dims[0]) + ind[1] * gd->grid_dims[0];
 
 				dev_atomic_zadd_scl(dst, src[ind[0]], d[0]);
@@ -431,7 +414,8 @@ void cuda_grid(const struct grid_conf_s* conf, int N, const long traj_dims[], co
 		.off_ch_ksp = md_calc_size(3, ksp_dims),
 		.off_ch_grid = md_calc_size(3, grid_dims),
 
-		.kb_table = kb_table[cuda_get_device()],
+		.kb_size = kb_size,
+		.kb_table = (float*)multiplace_read((struct multiplace_array_s*)kb_table, (const void*)traj),
 
 		.NB = (4 == N) ? 1 : MAX(ksp_dims[4], grid_dims[4]),
 		.SB_trj = ((4 == N) || (1 == traj_dims[4])) ? 0 : md_calc_size(4, traj_dims),
@@ -504,7 +488,8 @@ void cuda_gridH(const struct grid_conf_s* conf, int N, const long traj_dims[], c
 		.off_ch_ksp = md_calc_size(3, ksp_dims),
 		.off_ch_grid = md_calc_size(3, grid_dims),
 
-		.kb_table = kb_table[cuda_get_device()],
+		.kb_size = kb_size,
+		.kb_table = (float*)multiplace_read((struct multiplace_array_s*)kb_table, (const void*)traj),
 
 		.NB = (4 == N) ? 1 : MAX(ksp_dims[4], grid_dims[4]),
 		.SB_trj = ((4 == N) || (1 == traj_dims[4])) ? 0 : md_calc_size(4, traj_dims),
