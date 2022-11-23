@@ -60,6 +60,9 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.precomp_fftmod = true,
 	.precomp_roll = true,
 	.zero_overhead = false,
+	.width = 6,
+	.os = 2.,
+	
 };
 
 #include "nufft_priv.h"
@@ -743,8 +746,8 @@ static struct nufft_data* nufft_create_data(int N,
 	data->conf = conf;
 	data->flags = conf.flags;
 
-	data->width = 6.;
-	data->beta = calc_beta(2., data->width);
+	data->width = conf.width;
+	data->beta = calc_beta(conf.os, data->width);
 
 	// dim 0 must be transformed (we treat this special in the trajectory)
 	assert(MD_IS_SET(data->flags, 0));
@@ -755,7 +758,7 @@ static struct nufft_data* nufft_create_data(int N,
 	struct grid_conf_s grid_conf = {
 
 		.width = data->width,
-		.os = 2.,
+		.os = conf.os,
 		.periodic = data->conf.periodic,
 		.beta = data->beta,
 
