@@ -31,7 +31,7 @@
 
 enum { kb_size_max = 1000 };
 int kb_size = -1;
-float bessel_kb_beta = -1.; // = bessel_i0(beta);
+double bessel_kb_beta = -1.; // = bessel_i0(beta);
 
 static float kb_table[kb_size_max + 1];
 static double kb_beta = -1.;
@@ -81,12 +81,12 @@ static double ftkb(double beta, double x)
 	double a = pow(beta, 2.) - pow(M_PI * x, 2.);
 
 	if (0. == a)
-		return 1. / bessel_i0(beta);
+		return 1. / bessel_kb_beta;
 
 	if (a > 0)
-		return (sinh(sqrt(a)) / sqrt(a)) / bessel_i0(beta);
+		return (sinh(sqrt(a)) / sqrt(a)) / bessel_kb_beta;
 	else
-		return (sin(sqrt(-a)) / sqrt(-a)) / bessel_i0(beta);
+		return (sin(sqrt(-a)) / sqrt(-a)) / bessel_kb_beta;
 }
 
 

@@ -147,7 +147,7 @@ struct rolloff_conf {
 	float os;
 	float width;
 	float beta;
-	float bessel_beta;
+	double bessel_beta;
 };
 
 __global__ void kern_apply_rolloff_correction(struct rolloff_conf c, cuFloatComplex* dst, const cuFloatComplex* src)

@@ -20,7 +20,7 @@ struct grid_conf_s {
 };
 
 extern int kb_size;
-extern float bessel_kb_beta; // = bessel_i0(beta);
+extern double bessel_kb_beta; // = bessel_i0(beta);
 extern const struct multiplace_array_s* kb_get_table(double beta);
 
 extern void grid(const struct grid_conf_s* conf, const _Complex float* traj, const long grid_dims[4], _Complex float* grid, const long ksp_dims[4], const _Complex float* src);
