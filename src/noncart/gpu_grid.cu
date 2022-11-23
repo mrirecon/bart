@@ -141,9 +141,9 @@ static __device__ float posf(int d, int i)
 
 struct rolloff_conf {
 
-	long dims[3];
-	long tot;
-	long N;
+	long dims[4];
+	long ostrs[4];
+	long istrs[4];
 	float os;
 	float width;
 	float beta;
@@ -165,34 +165,35 @@ __global__ void kern_apply_rolloff_correction(struct rolloff_conf c, cuFloatComp
 		for (long y = startY; y < c.dims[1]; y += strideY)
 			for (long x = startX; x < c.dims[0]; x +=strideX) {
 
-				long idx = x + c.dims[0] * (y + c.dims[1] * z);
+				long iidx = x * c.istrs[0] + y * c.istrs[1] + z * c.istrs[2];
+				long oidx = x * c.ostrs[0] + y * c.ostrs[1] + z * c.ostrs[2];
 				
 				float val = ((c.dims[0] > 1) ? rolloff(posf(c.dims[0], x) / c.os, c.beta, c.width) * c.bessel_beta : 1)
 					  * ((c.dims[1] > 1) ? rolloff(posf(c.dims[1], y) / c.os, c.beta, c.width) * c.bessel_beta : 1)
 					  * ((c.dims[2] > 1) ? rolloff(posf(c.dims[2], z) / c.os, c.beta, c.width) * c.bessel_beta : 1);
 
-				for (long i = 0; i < c.N; i++) {
+				for (long i = 0; i < c.dims[3]; i++) {
 
-					dst[idx + i * c.tot].x = val * src[idx + i * c.tot].x;
-					dst[idx + i * c.tot].y = val * src[idx + i * c.tot].y;
+					dst[oidx + i * c.ostrs[3]].x = val * src[iidx + i * c.istrs[3]].x;
+					dst[oidx + i * c.ostrs[3]].y = val * src[iidx + i * c.istrs[3]].y;
 				}
 			}
 }
 
 
 
-extern "C" void cuda_apply_rolloff_correction(float os, float width, float beta, int N, const long dims[], _Complex float* dst, const _Complex float* src)
+extern "C" void cuda_apply_rolloff_correction2(float os, float width, float beta, int N, const long dims[4], const long ostrs[4], _Complex float* dst, const long istrs[4], const _Complex float* src)
 {
-	struct rolloff_conf c = {
+	struct rolloff_conf c;
 
-		.dims = { dims[0], dims[1], dims[2] },
-		.tot = md_calc_size(3, dims),
-		.N = md_calc_size(N - 3, dims + 3),
-		.os = os,
-		.width = width,
-		.beta = beta,
-		.bessel_beta = bessel_kb_beta,
-	};
+	c.os = os,
+	c.width = width,
+	c.beta = beta,
+	c.bessel_beta = bessel_kb_beta,
+
+	md_copy_dims(4, c.dims, dims);
+	md_copy_dims(4, c.ostrs, ostrs);
+	md_copy_dims(4, c.istrs, istrs);
 
 	const void* func = (const void*)kern_apply_rolloff_correction;
 	kern_apply_rolloff_correction<<<getGridSize3(c.dims, func), getBlockSize3(c.dims, (const void*)func), 0, cuda_get_stream()>>>(c, (cuFloatComplex*)dst, (const cuFloatComplex*)src);

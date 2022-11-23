@@ -40,6 +40,7 @@ extern double calc_beta(float os, float width);
 extern void kb_precompute(double beta, int n, float table[__VLA(n + 1)]);
 
 extern void rolloff_correction(float os, float width, float beta, const long dim[3], _Complex float* dst);
+extern void apply_rolloff_correction2(float os, float width, float beta, int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], _Complex float* dst, const long istrs[__VLA(N)], const _Complex float* src);
 extern void apply_rolloff_correction(float os, float width, float beta, int N, const long dimensions[__VLA(N)], _Complex float* dst, const _Complex float* src);
 
 

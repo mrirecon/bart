@@ -452,43 +452,70 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 	}
 }
 
-void apply_rolloff_correction(float os, float width, float beta, int N, const long dims[N], complex float* dst, const complex float* src)
+void apply_rolloff_correction2(float os, float width, float beta, int N, const long dims[N], const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
 {
 	// precompute kaiser bessel table
 	kb_init(beta);
 	
+	long size_bat = 1;
+	long obstr = -1;	// batch stride, we support three dims with strides and one batch dim
+	long ibstr = -1;	// batch stride, we support three dims with strides and one batch dim
+
+	for (int i = 3; i < N; i++) {
+
+		if (1 == dims[i])
+			continue;
+
+		assert((-1 == obstr) || ( (ostrs[i] == obstr * size_bat) && (istrs[i] == ibstr * size_bat)));
+
+		if (-1 == obstr) {
+			
+			obstr = ostrs[i];
+			ibstr = istrs[i];
+		}
+		
+		size_bat *= dims[i];
+	}
+
+	obstr /= CFL_SIZE;
+	ibstr /= CFL_SIZE;
+
 #ifdef USE_CUDA
+
 	assert(cuda_ondevice(dst) == cuda_ondevice(src));
 
 	if (cuda_ondevice(dst)) {
 
-		cuda_apply_rolloff_correction(os, width, beta, N, dims, dst, src);
+		long dims_cuda[4] = { dims[0], dims[1], dims[2], md_calc_size(N - 3, dims + 3) };
+		long ostrs_cuda[4] = { ostrs[0] / CFL_SIZE, ostrs[1] / CFL_SIZE, ostrs[2] / CFL_SIZE, obstr };
+		long istrs_cuda[4] = { istrs[0] / CFL_SIZE, istrs[1] / CFL_SIZE, istrs[2] / CFL_SIZE, ibstr };
+
+		cuda_apply_rolloff_correction2(os, width, beta, N, dims_cuda, ostrs_cuda, dst, istrs_cuda, src);
 
 		if (use_compat_to_version("v0.8.00")) {
 
 			float scale = powf(ftkb(beta, 0) * width / 2, bitcount(md_nontriv_dims(3, dims)));
-			md_zsmul(N, dims, dst, dst, scale);
+			md_zsmul2(N, dims, ostrs, dst, ostrs, dst, scale);
 		}
 
 		return;
 	}
 #endif
-	long size_img = md_calc_size(3, dims);
-	long size_bat = md_calc_size(N - 3, dims + 3);
 
 	#pragma omp parallel for collapse(3)
 	for (int z = 0; z < dims[2]; z++) {
 		for (int y = 0; y < dims[1]; y++) {
 			for (int x = 0; x < dims[0]; x++) {
 
-				long idx = x + dims[0] * (y + z * dims[1]);
+				long oidx = (x * ostrs[0] + y * ostrs[1] + z * ostrs[2]) / CFL_SIZE;
+				long iidx = (x * istrs[0] + y * istrs[1] + z * istrs[2]) / CFL_SIZE;
 
 				float val = (dims[0] > 1 ? rolloff(pos(dims[0], x) / os, beta, width) : 1)
 					  * (dims[1] > 1 ? rolloff(pos(dims[1], y) / os, beta, width) : 1)
 					  * (dims[2] > 1 ? rolloff(pos(dims[2], z) / os, beta, width) : 1);
 
 				for (long i = 0; i < size_bat; i++)
-					dst[idx + i *size_img] = val * src[idx + i *size_img];
+					dst[oidx + i * obstr] = val * src[iidx + i * ibstr];
 			}
 		}
 	}
@@ -496,10 +523,14 @@ void apply_rolloff_correction(float os, float width, float beta, int N, const lo
 	if (use_compat_to_version("v0.8.00")) {
 
 		float scale = powf(ftkb(beta, 0) * width / 2, bitcount(md_nontriv_dims(3, dims)));
-		md_zsmul(N, dims, dst, dst, scale);
+		md_zsmul2(N, dims, ostrs, dst, ostrs, dst, scale);
 	}
 }
 
+void apply_rolloff_correction(float os, float width, float beta, int N, const long dims[N], complex float* dst, const complex float* src)
+{
+	apply_rolloff_correction2(os, width, beta, N, dims, MD_STRIDES(N, dims, CFL_SIZE), dst, MD_STRIDES(N, dims, CFL_SIZE), src);
+}
 
 
 
