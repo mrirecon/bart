@@ -9,6 +9,7 @@
 
 #include <complex.h>
 #include <assert.h>
+#include <math.h>
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -1461,7 +1462,6 @@ struct fft_linop_s {
 	const struct operator_s* frw;
 	const struct operator_s* adj;
 
-	bool center;
 	float nscale;
 
 	int N;
@@ -1508,10 +1508,7 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
 {
 	const auto data = CAST_DOWN(fft_linop_s, _data);
 
-	if (data->center)
-		md_copy(data->N, data->dims, out, in, CFL_SIZE);
-	else
-		md_zsmul(data->N, data->dims, out, in, data->nscale);
+	md_zsmul(data->N, data->dims, out, in, data->nscale);
 }
 
 
@@ -1542,8 +1539,6 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 	data->adj = iplan;
 	data->N = N;
 
-	data->center = center;
-
 	data->dims = *TYPE_ALLOC(long[N]);
 	md_copy_dims(N, data->dims, dims);
 
@@ -1562,35 +1557,21 @@ static struct linop_s* linop_fft_create_priv(int N, const long dims[N], unsigned
 	if (center) {
 
 		complex float* fftmod_mat = md_alloc(N, fft_dims, CFL_SIZE);
-		complex float* fftmodk_mat = md_alloc(N, fft_dims, CFL_SIZE);
 
-		// we need fftmodk only because we want to apply scaling only once
+		float scale = sqrt(md_calc_size(N, fft_dims));
+		md_zfill(N, fft_dims, fftmod_mat, 1. / sqrt(scale));
 
-		complex float one[1] = { 1. };
-		md_fill(N, fft_dims, fftmod_mat, one, CFL_SIZE);
-
-		if (forward)
-			fftmod(N, fft_dims, flags, fftmodk_mat, fftmod_mat);
-		else
-			ifftmod(N, fft_dims, flags, fftmodk_mat, fftmod_mat);
-
-		fftscale(N, fft_dims, flags, fftmod_mat, fftmodk_mat);
-
+		(forward ? fftmod : ifftmod)(N, fft_dims, flags, fftmod_mat, fftmod_mat);
+		
 		struct linop_s* mod = linop_cdiag_create(N, dims, flags, fftmod_mat);
-		struct linop_s* modk = linop_cdiag_create(N, dims, flags, fftmodk_mat);
-
+		
 		struct linop_s* tmp = linop_chain(mod, lop);
 
 		linop_free(lop);
-		linop_free(mod);
 
-		lop = linop_chain(tmp, modk);
-
-		linop_free(tmp);
-		linop_free(modk);
+		lop = linop_chain_FF(tmp, mod);
 
 		md_free(fftmod_mat);
-		md_free(fftmodk_mat);
 	}
 
 	return lop;
