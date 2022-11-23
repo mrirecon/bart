@@ -221,7 +221,7 @@ MODULES += -lwin
 endif
 
 MODULES_pics = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnn -lnlops 
-MODULES_sqpics = -lsense -liter -llinops -lwavelet -llowrank -lnoncart
+MODULES_sqpics = -lsense -liter -llinops -lwavelet -llowrank -lnoncart -llinops
 MODULES_pocsense = -lsense -liter -llinops -lwavelet
 MODULES_nlinv = -lnoir -liter -lnlops -llinops -lnoncart
 MODULES_rtnlinv = -lnoir -liter -lnlops -llinops -lnoncart

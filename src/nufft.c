@@ -90,6 +90,8 @@ int main_nufft(int argc, char* argv[argc])
 		OPTL_CLEAR(0, "no-precomp", &precomp, "Use low-low-mem mode of the nuFFT"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPT_INFILE('p', &pattern_file, "file", "weighting of nufft"),
+		OPTL_FLOAT('o', "oversampling", &(conf.os), "o", "oversample grid by factor (default: o=2; required for Toeplitz)"),
+		OPTL_FLOAT('w', "width", &(conf.width), "w", "width of Kaiser-Bessel window (default: w=6)"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

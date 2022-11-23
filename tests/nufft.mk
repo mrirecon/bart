@@ -255,6 +255,27 @@ tests/test-nufft-gpu-adjoint-precomp: traj phantom nufft nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-nufft-forward-os: traj phantom nufft nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x64 -y64 traj.ra						;\
+	$(TOOLDIR)/phantom -s2 -x64 phan.ra						;\
+	$(TOOLDIR)/nufft -P    	  -r traj.ra phan.ra ksp1.ra				;\
+	$(TOOLDIR)/nufft -P -w8  -o1.5 -t traj.ra phan.ra ksp2.ra			;\
+	$(TOOLDIR)/nrmse -t 0.00001 ksp1.ra ksp2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nufft-adjoint-os: traj phantom nufft nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x64 -y64 traj.ra						;\
+	$(TOOLDIR)/phantom -s2 -k -ttraj.ra ksp.ra					;\
+	$(TOOLDIR)/nufft -a -P    	  -r traj.ra ksp.ra rec1.ra			;\
+	$(TOOLDIR)/nufft -a -P -w8  -o1.5 -t traj.ra ksp.ra rec2.ra			;\
+	$(TOOLDIR)/nrmse -t 0.00001 rec1.ra rec2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 tests/test-nufft-gpu-forward-precomp: traj phantom nufft nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x128 -y128 traj.ra						;\
@@ -364,6 +385,7 @@ TESTS += tests/test-nufft-batch tests/test-nufft-over
 TESTS += tests/test-nufft-lowmem-adjoint tests/test-nufft-lowmem-inverse tests/test-nufft-no-precomp-adjoint tests/test-nufft-no-precomp-inverse
 TESTS += tests/test-nufft-inverse2 tests/test-nufft-inverse3
 TESTS += tests/test-nufft-lowmem-zero-mem tests/test-nufft-lowmem-zero-mem
+TESTS += tests/test-nufft-adjoint-os tests/test-nufft-forward-os
 
 TESTS_GPU += tests/test-nufft-gpu-inverse tests/test-nufft-gpu-adjoint tests/test-nufft-gpu-forward
 TESTS_GPU += tests/test-nufft-gpu-inverse-lowmem tests/test-nufft-gpu-adjoint-lowmem tests/test-nufft-gpu-forward-lowmem

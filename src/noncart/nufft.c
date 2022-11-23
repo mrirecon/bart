@@ -39,6 +39,7 @@
 #include "linops/fmac.h"
 
 #include "noncart/grid.h"
+#include "noncart/nufft_chain.h"
 
 #include "nufft.h"
 
@@ -1021,6 +1022,22 @@ static struct linop_s* nufft_create3(int N,
 			     const complex float* basis,
 			     struct nufft_conf_s conf)
 {
+	if (2. != conf.os) {
+
+		debug_printf(DP_DEBUG1, "Chained nuFFT!\n");
+
+		struct grid_conf_s grid_conf = {
+
+			.os = conf.os,
+			.width = conf.width,
+			.beta = calc_beta(grid_conf.os, grid_conf.width),
+			.periodic = conf.periodic,
+			.shift = { 0., 0., 0. },
+		};
+
+		return nufft_create_chain(N, ksp_dims, cim_dims, traj_dims, traj, wgh_dims, weights, bas_dims, basis, &grid_conf);
+	}
+
 	debug_printf(DP_DEBUG1, "ksp : ");
 	debug_print_dims(DP_DEBUG1, N, ksp_dims);
 	debug_printf(DP_DEBUG1, "cim : ");
