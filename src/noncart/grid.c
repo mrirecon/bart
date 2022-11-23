@@ -76,10 +76,17 @@ void kb_precompute(double beta, int n, float table[n + 1])
 }
 
 
-static double ftkb(double beta, double x)
+double ftkb(double beta, double x)
 {
-	double a = sqrt(pow(beta, 2.) - pow(M_PI * x, 2.));
-	return ((0. == a) ? 1. : (a / sinh(a))) * bessel_kb_beta;
+	double a = pow(beta, 2.) - pow(M_PI * x, 2.);
+
+	if (0. == a)
+		return 1. / bessel_i0(beta);
+
+	if (a > 0)
+		return (sinh(sqrt(a)) / sqrt(a)) / bessel_i0(beta);
+	else
+		return (sin(sqrt(-a)) / sqrt(-a)) / bessel_i0(beta);
 }
 
 static double rolloff_compat(double x, double beta, double width)
@@ -89,7 +96,7 @@ static double rolloff_compat(double x, double beta, double width)
 
 static double rolloff(double x, double beta, double width)
 {
-	return ftkb(beta, x * width) / width;
+	return 1. / ftkb(beta, x * width) / width;
 }
 
 // Linear interpolation

@@ -118,13 +118,20 @@ extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const floa
 
 static __device__ double ftkb(double beta, double x)
 {
-	double a = sqrt(pow(beta, 2.) - pow(M_PI * x, 2.));
-	return ((0. == a) ? 1. : (a / sinh(a))); // * bessel_i0(beta); // bessel is multiplied in kernel
+	double a = pow(beta, 2.) - pow(M_PI * x, 2.);
+
+	if (0. == a)
+		return 1;
+
+	if (a > 0)
+		return (sinh(sqrt(a)) / sqrt(a));
+	else
+		return (sin(sqrt(-a)) / sqrt(-a));
 }
 
 static __device__ double rolloff(double x, double beta, double width)
 {
-	return ftkb(beta, x * width) / width;
+	return 1. / ftkb(beta, x * width) / width;
 }
 
 static __device__ float posf(int d, int i)
