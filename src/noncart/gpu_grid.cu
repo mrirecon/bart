@@ -119,7 +119,7 @@ extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const floa
 static __device__ double ftkb(double beta, double x)
 {
 	double a = sqrt(pow(beta, 2.) - pow(M_PI * x, 2.));
-	return ((0. == a) ? 1. : (a / sinh(a))); // * bessel_i0(beta);
+	return ((0. == a) ? 1. : (a / sinh(a))); // * bessel_i0(beta); // bessel is multiplied in kernel
 }
 
 static __device__ double rolloff(double x, double beta, double width)
@@ -160,9 +160,9 @@ __global__ void kern_apply_rolloff_correction(struct rolloff_conf c, cuFloatComp
 
 				long idx = x + c.dims[0] * (y + c.dims[1] * z);
 				
-				float val = ((c.dims[0] > 1) ? rolloff(c.os * posf(c.dims[0], x), c.beta, c.width) * c.bessel_beta : 1)
-					  * ((c.dims[1] > 1) ? rolloff(c.os * posf(c.dims[1], y), c.beta, c.width) * c.bessel_beta : 1)
-					  * ((c.dims[2] > 1) ? rolloff(c.os * posf(c.dims[2], z), c.beta, c.width) * c.bessel_beta : 1);
+				float val = ((c.dims[0] > 1) ? rolloff(posf(c.dims[0], x) / c.os, c.beta, c.width) * c.bessel_beta : 1)
+					  * ((c.dims[1] > 1) ? rolloff(posf(c.dims[1], y) / c.os, c.beta, c.width) * c.bessel_beta : 1)
+					  * ((c.dims[2] > 1) ? rolloff(posf(c.dims[2], z) / c.os, c.beta, c.width) * c.bessel_beta : 1);
 
 				for (long i = 0; i < c.N; i++) {
 
@@ -201,6 +201,7 @@ __device__ static __inline__ float lerp(float a, float b, float c)
 // Linear interpolation look up
 __device__ static float intlookup(int n, const float* table, float x)
 {
+	x *= 2;
 	int index = (int)(x * (n - 1));
 	float fpart = x * (n - 1) - (float)index;
 	float l = lerp(table[index], table[index + 1], fpart);
@@ -330,8 +331,8 @@ __device__ static struct grid_data_device get_grid_data_device(const struct grid
 		gdd.pos[j] = conf->os * ((traj[j]).x + conf->shift[j]);
 		gdd.pos[j] += (conf->grid_dims[j] > 1) ? ((float) conf->grid_dims[j] / 2.) : 0.;
 
-		gdd.sti[j] = (int)ceil(gdd.pos[j] - conf->width);
-		gdd.eni[j] = (int)floor(gdd.pos[j] + conf->width);
+		gdd.sti[j] = (int)ceil(gdd.pos[j] - 0.5 * conf->width);
+		gdd.eni[j] = (int)floor(gdd.pos[j] + 0.5 * conf->width);
 		gdd.off[j] = 0;
 
 		if (gdd.sti[j] > gdd.eni[j])
