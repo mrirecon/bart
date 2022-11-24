@@ -57,6 +57,8 @@ extern const struct operator_s* operator_p_upcast(const struct operator_p_s* op)
 extern const struct operator_p_s* operator_p_downcast(const struct operator_s* op);
 
 extern const struct operator_p_s* operator_p_gpu_wrapper(const struct operator_p_s* op);
+extern const struct operator_p_s* operator_p_cpu_wrapper(const struct operator_p_s* op);
+extern const struct operator_p_s* operator_p_cpu_wrapper_F(const struct operator_p_s* op);
 
 // functions freeing its arguments
 extern const struct operator_p_s* operator_p_pre_chain_FF(const struct operator_s* a, const struct operator_p_s* _b);
