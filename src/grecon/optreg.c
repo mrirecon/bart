@@ -505,10 +505,6 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "lowrank regularization: %f\n", regs[nr].lambda);
 
-			if (use_gpu)
-				error("GPU operation is not currently implemented for lowrank regularization.\n");
-
-
 			// add locally lowrank penalty
 			levels = llr_blkdims(blkdims, regs[nr].jflags, img_dims, llr_blk);
 
@@ -527,6 +523,13 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, overlapping_blocks);
+
+			if (use_gpu) {
+
+				prox_ops[nr] = operator_p_cpu_wrapper_F(prox_ops[nr]);
+				debug_printf(DP_WARN, "Lowrank regularization is not GPU accelerated.\n");
+			}
+
 			break;
 
 		case MLR:

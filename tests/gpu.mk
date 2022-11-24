@@ -63,9 +63,20 @@ tests/test-pics-gpu-noncart-weights: traj scale ones phantom pics nrmse $(TESTS_
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-pics-gpu-llr: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y48 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
+	$(TOOLDIR)/pics -S    -R L:7:7:.02 -u0.1 -e -t traj2.ra ksp.ra o.ra reco_c.ra	;\
+	$(TOOLDIR)/pics -S -g -R L:7:7:.02 -u0.1 -e -t traj2.ra ksp.ra o.ra reco_g.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0001 reco_c.ra reco_g.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
 
 TESTS_GPU += tests/test-pics-gpu tests/test-pics-gpu-noncart tests/test-pics-gpu-noncart-gridding
-TESTS_GPU += tests/test-pics-gpu-weights tests/test-pics-gpu-noncart-weights
+TESTS_GPU += tests/test-pics-gpu-weights tests/test-pics-gpu-noncart-weights tests/test-pics-gpu-llr
 
