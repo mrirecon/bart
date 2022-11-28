@@ -65,6 +65,47 @@ struct nufft_conf_s nufft_conf_defaults = {
 
 DEF_TYPEID(nufft_data);
 
+static void compute_shift(int NS, float shift[NS], int N, const long factors[N], int idx)
+{
+	assert(NS <=N);
+
+	for (int i = 0; i < NS; i++) {
+
+		shift[i] = -(float)(idx % factors[i]) / factors[i];
+		idx /= factors[i];
+	}
+
+	assert(0 == idx);
+
+	for (int i = NS; i < N; i++)
+		assert(1 == factors[i]);
+}
+
+static struct grid_conf_s compute_grid_conf_decomp(int N, const long factors[N], struct grid_conf_s grid, int idx)
+{
+	struct grid_conf_s ret = grid;
+	ret.width /= 2.;
+	ret.os = 1.;
+
+	compute_shift(3, ret.shift, N, factors, idx);
+	return ret;
+}
+
+
+static void grid2_decomp(struct grid_conf_s* _conf, int idx, int N, const long factors[N],
+			const long trj_dims[N], const complex float* traj,
+			const long cim_dims[N], complex float* grid,
+			const long ksp_dims[N],  const complex float* ksp)
+{
+
+	struct grid_conf_s conf = compute_grid_conf_decomp(N, factors, *_conf, idx);
+
+	grid2(&conf, N, trj_dims, traj, cim_dims, grid, ksp_dims, ksp);
+
+}
+
+
+
 
 
 static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned long flags, const long img_dims[N + 1])
@@ -1165,15 +1206,26 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 
 	complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
-	complex float* gridX = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
 
-	md_clear(data->N, data->cm2_dims, gridX, CFL_SIZE);
+	if (data->conf.decomp) {
 
-	grid2(&data->grid_conf, ND, data->trj_dims, multiplace_read(data->traj, dst), data->cm2_dims, gridX, data->ksp_dims, src);
+		md_clear(ND, data->cml_dims, grid, CFL_SIZE);
 
-	md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
+		for (int i = 0; i < md_calc_size(data->N, data->factors); i++)
+			grid2_decomp(&data->grid_conf, i, data->N, data->factors, data->trj_dims, multiplace_read(data->traj, dst), data->cml_dims, grid + i * md_calc_size(data->N, data->cml_dims), data->ksp_dims, src);
 
-	md_free(gridX);
+	} else {
+
+		complex float* gridX = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
+
+		md_clear(data->N, data->cm2_dims, gridX, CFL_SIZE);
+
+		grid2(&data->grid_conf, ND, data->trj_dims, multiplace_read(data->traj, dst), data->cm2_dims, gridX, data->ksp_dims, src);
+
+		md_decompose(data->N, data->factors, data->cml_dims, grid, data->cm2_dims, gridX, CFL_SIZE);
+
+		md_free(gridX);
+	}
 
 	md_zmulc2(ND, data->cml_dims, data->cml_strs, grid, data->cml_strs, grid, data->img_strs, multiplace_read(data->fftmod, dst));
 
