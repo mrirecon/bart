@@ -139,7 +139,7 @@ static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned lo
 
 	complex float* linphase = md_alloc(ND, lph_dims, CFL_SIZE);
 
-	#pragma omp parallel for shared(linphase)
+	//#pragma omp parallel for shared(linphase)
 	for(int i = 0; i < s; i++) {
 
 		float shifts2[ND];

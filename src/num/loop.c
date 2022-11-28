@@ -80,10 +80,33 @@ void md_zmap(unsigned int N, const long dims[N], complex float* out, const compl
 void md_zgradient(unsigned int N, const long dims[N], complex float* out, const complex float grad[N])
 {
 #if 1
+	long strs[N];
+	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
+
+	const long* strsp = strs;		// because of clang
+	const long* dimsp = dims;		// because of clang
+	const complex float* gradp = grad;	// because of clang
+
+	NESTED(void, gradient_kernel, (const long pos[]))
+	{
+		long offset = md_calc_offset(N - 1, strsp + 1, pos);
+		complex float val = 0;
+		
+		for (int i = 0; i < (int)N - 1; i++)
+			val += pos[i] * gradp[i + 1];
+
+		for (long i = 0; i < dimsp[0]; i++)
+			out[offset + i] = val + gradp[0] * i;
+	};
+
+	md_parallel_loop(N - 1, dims + 1, ~0, gradient_kernel);
+
+#else	
+
 	// clang
 	const complex float* grad2 = grad;
-#endif
-	NESTED(complex float, gradient_kernel, (const long pos[]))
+
+	NESTED(void, gradient_kernel, (const long pos[]))
 	{
 		complex float val = 0.;
 
@@ -94,6 +117,7 @@ void md_zgradient(unsigned int N, const long dims[N], complex float* out, const 
 	};
 
 	md_zsample(N, dims, out, gradient_kernel);
+#endif
 }
 
 
