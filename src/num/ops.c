@@ -1186,7 +1186,7 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 	assert(N == operator_nr_args(op));
 
-	debug_printf(DP_DEBUG1, "GPU start.\n");
+	debug_printf(DP_DEBUG3, "GPU start.\n");
 
 	int nr_cuda_devices = MIN(cuda_num_devices(), MAX_CUDA_DEVICES);
 	int gpun = omp_get_thread_num() % nr_cuda_devices;
@@ -1226,7 +1226,7 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 		md_free(gpu_ptr[i]);
 	}
 
-	debug_printf(DP_DEBUG1, "GPU end.\n");
+	debug_printf(DP_DEBUG3, "GPU end.\n");
 
 #else
 	UNUSED(_data); UNUSED(N); UNUSED(args);
