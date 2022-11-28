@@ -184,8 +184,7 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 }
 
 
-
-static void md_parallel_loop_r(int D, int N, const long dim[static N], unsigned int flags, const long pos[static N], md_loop_fun_t fun)
+static void md_loop_r(int D, const long dim[D], unsigned long flags, long pos[D], md_loop_fun_t fun)
 {
 	if (0 == D) {
 
@@ -195,19 +194,13 @@ static void md_parallel_loop_r(int D, int N, const long dim[static N], unsigned 
 
 	D--;
 
-	// we need to make a copy because firstprivate needs to see
-	// an array instead of a pointer
-	long pos_copy[N];
+	if (!MD_IS_SET(flags, D)) {
 
-	for (int i = 0; i < N; i++)
-		pos_copy[i] = pos[i];
+		for (pos[D] = 0; pos[D] < dim[D]; pos[D]++)
+			md_loop_r(D, dim, flags, pos, fun);
+	} else {
 
-	#pragma omp parallel for firstprivate(pos_copy) if ((1 < dim[D]) && (flags & (1 << D)))
-	for (int i = 0; i < dim[D]; i++) {
-
-		pos_copy[D] = i;
-
-		md_parallel_loop_r(D, N, dim, flags, pos_copy, fun);
+		md_loop_r(D, dim, flags, pos, fun);
 	}
 }
 
@@ -220,24 +213,29 @@ static void md_parallel_loop_r(int D, int N, const long dim[static N], unsigned 
  */
 void md_parallel_loop(int D, const long dim[static D], unsigned long flags, md_loop_fun_t fun)
 {
-	long pos[D];
-	md_parallel_loop_r(D, D, dim, flags, pos, fun);
-}
+	flags &= md_nontriv_dims(D, dim);
 
+	long pdims[D];
+	md_select_dims(D, flags, pdims, dim);
 
+	long iter = md_calc_size(D, pdims);
 
-static void md_loop_r(int D, const long dim[D], long pos[D], md_loop_fun_t fun)
-{
-	if (0 == D) {
+	#pragma omp parallel for
+	for (long i = 0; i < iter; i++) {
 
-		NESTED_CALL(fun, (pos));
-		return;
+		// Recover place in parallel iteration space
+		long pos[D];
+
+		long ii = i;
+
+		for (int j = 0; j < D; j++) {
+
+			pos[j] = ii % pdims[j];
+			ii /= pdims[j];
+		}
+
+		md_loop_r(D, dim, flags, pos, fun);
 	}
-
-	D--;
-
-	for (pos[D] = 0; pos[D] < dim[D]; pos[D]++)
-		md_loop_r(D, dim, pos, fun);
 }
 
 /**
@@ -250,7 +248,7 @@ static void md_loop_r(int D, const long dim[D], long pos[D], md_loop_fun_t fun)
 void md_loop(int D, const long dim[D], md_loop_fun_t fun)
 {
 	long pos[D];
-	md_loop_r(D, dim, pos, fun);
+	md_loop_r(D, dim, 0, pos, fun);
 }
 
 
