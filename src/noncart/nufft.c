@@ -65,6 +65,14 @@ struct nufft_conf_s nufft_conf_defaults = {
 
 DEF_TYPEID(nufft_data);
 
+static void compute_factors(int N, unsigned long flags, long factors[N], const long dims[N])
+{
+	flags = flags & md_nontriv_dims(N, dims);
+	
+	for (int i = 0; i < N; i++)
+		factors[i] = (MD_IS_SET(flags, i)) ? 2 : 1;
+}
+
 static void compute_shift(int NS, float shift[NS], int N, const long factors[N], int idx)
 {
 	assert(NS <=N);
@@ -489,12 +497,122 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 	return compute_psf_internal(N, img_dims, trj_dims, traj, bas_dims, basis, wgh_dims, weights, periodic, lowmem, NULL);
 }
 
+static void grid_psf_decomposed_kern(int N, unsigned long flags, int factor_dim, const long psf_dims[N], complex float* _psf, const long trj_dims[N], const complex float* traj, const long ksp_dims[N], const complex float* kern, bool periodic, bool lowmem)
+{
+
+	long img_dims[N];
+	long img_strs[N];
+
+	md_select_dims(N, ~MD_BIT(factor_dim), img_dims, psf_dims);
+	md_calc_strides(N, img_strs, img_dims, CFL_SIZE);
+
+	struct nufft_conf_s conf = nufft_conf_defaults;
+	conf.periodic = periodic;
+	conf.toeplitz = false;	// avoid infinite loop
+	conf.lowmem = lowmem;
+	conf.precomp_linphase = !lowmem;
+	conf.precomp_roll = !lowmem;
+	conf.precomp_fftmod = !lowmem;
+
+	const struct linop_s* lop_nufft = nufft_create(N, ksp_dims, img_dims, trj_dims, (void*)traj, NULL, conf);
+
+	for (int i = 0; i < psf_dims[factor_dim]; i++) {
+
+		complex float* psf = _psf + md_calc_size(N, img_dims) * i;
+
+		long factors[N];
+		compute_factors(N, flags, factors, psf_dims);
+
+		float shift[3];
+		compute_shift(3, shift, N, factors, i);
+
+		complex float* kern_tmp = md_alloc_sameplace(N, ksp_dims, CFL_SIZE, traj);
+		md_copy(N , ksp_dims, kern_tmp, kern, CFL_SIZE);
+
+		for (int i = 0, j = 0; i < N; i++) {
+
+			if (MD_IS_SET(flags, i) && (1 < img_dims[i])) {
+
+				assert(i < trj_dims[0]);
+			
+				long cdims[N];
+				md_select_dims(N, ~MD_BIT(0), cdims, trj_dims);
+
+				long pos_trj[N];
+				md_set_dims(N, pos_trj, 0);
+
+				pos_trj[0] = i;
+
+				complex float* tmp = md_alloc_sameplace(N, cdims, CFL_SIZE, traj);
+				md_slice(N, MD_BIT(0), pos_trj, trj_dims, tmp, traj, CFL_SIZE);
+
+				md_zsmul(N, cdims, tmp, tmp, M_PI);
+				(0. != shift[j++] ? md_zsin : md_zcos)(N, cdims, tmp, tmp);
+
+				md_zsmul(N, cdims, tmp, tmp, 1. / sqrt(img_dims[i]) * cexp(-M_PI * 0.5I * img_dims[i]));
+			
+				md_zmul2(N, ksp_dims, MD_STRIDES(N, ksp_dims, CFL_SIZE), kern_tmp, MD_STRIDES(N, ksp_dims, CFL_SIZE), kern_tmp, MD_STRIDES(N, cdims, CFL_SIZE), tmp);
+
+				md_free(tmp);
+			}
+		}
+
+		linop_adjoint(lop_nufft, N, img_dims, psf, N, ksp_dims, kern_tmp);
+
+		md_free(kern_tmp);
+	};
+
+	linop_free(lop_nufft);
+}
+
+static complex float* compute_psf_decomposed(int N, const long psf_dims[N + 1], unsigned long flags, const long trj_dims[N + 1], const complex float* traj, const long wgh_dims[N + 1], const complex float* weights, bool periodic)
+{
+	int ND = N + 1;
+
+	long ksp_dims[ND];
+	md_select_dims(ND, ~(MD_BIT(N + 0)), ksp_dims, psf_dims);
+	md_select_dims(3, ~MD_BIT(0), ksp_dims, trj_dims);
+
+
+	complex float* _psf = md_alloc_sameplace(ND, psf_dims, CFL_SIZE, traj);
+	complex float* ones = md_alloc_sameplace(ND, ksp_dims, CFL_SIZE, traj);
+	
+	compute_kern(N, ~0u, MD_SINGLETON_STRS(ND), ksp_dims, ones, NULL, NULL, wgh_dims, weights);
+	
+	grid_psf_decomposed_kern(ND, flags, N, psf_dims, _psf, trj_dims, traj, ksp_dims, ones, periodic, true);
+
+	md_free(ones);
+
+
+	long factors[N];
+	compute_factors(N, flags, factors, psf_dims);
+
+	for (int i = 0; i < psf_dims[N]; i++) {
+
+		complex float* psf = _psf + md_calc_size(N, psf_dims) * i;
+
+		float shift[3];	
+		compute_shift(3, shift, N, factors, i);
+
+		apply_linphases_3D(N, psf_dims, shift, psf, psf, false, false, 1);
+
+		fftmod(N, psf_dims, flags, psf, psf);
+		fft(N, psf_dims, flags, psf, psf);
+	}
+
+	return _psf;
+}
+
+
 
 static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned long flags, const long trj_dims[N + 1], const complex float* traj,
 				const long bas_dims[N + 1], const complex float* basis, const long wgh_dims[N + 1], const complex float* weights,
 				bool periodic, bool lowmem,
 				struct linop_s** lop_nufft, struct linop_s** lop_fftuc)
 {
+	if (NULL == basis)
+		return compute_psf_decomposed(N, psf_dims, flags, trj_dims, traj, wgh_dims, weights, periodic);
+
 	int ND = N + 1;
 
 	long img_dims[ND];
