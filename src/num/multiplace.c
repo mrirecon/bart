@@ -76,7 +76,7 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 	if (cuda_ondevice(ref)) {
 
 		if (NULL == ptr->ptr_gpu)
-			ptr->ptr_gpu = md_gpu_move(ptr->N, ptr->dims, ptr->ptr_cpu, ptr->size);
+			ptr->ptr_gpu = md_gpu_move(ptr->N, ptr->dims, ptr->ptr_ref, ptr->size);
 
 		return ptr->ptr_gpu;
 	}
@@ -124,17 +124,18 @@ struct multiplace_array_s* multiplace_move(int D, const long dimensions[D], size
 struct multiplace_array_s* multiplace_move_F(int D, const long dimensions[D], size_t size, const void* ptr)
 {
 
+	auto result = multiplace_alloc(D, dimensions, size);
+	result->ptr_ref = (void*)ptr;
+
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr)) {
 
-		struct multiplace_array_s* ret = multiplace_move(D, dimensions, size, ptr);
-		md_free(ptr);
-		return ret;
-	}
+		result->ptr_gpu = (void*)ptr;
+		cuda_sync_device();
+	} else 
 #endif
-
-	auto result = multiplace_alloc(D, dimensions, size);
 	result->ptr_cpu = (void*)ptr;
+
 	return result;
 }
 
