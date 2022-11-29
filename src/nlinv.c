@@ -88,6 +88,8 @@ int main_nlinv(int argc, char* argv[argc])
 	float scaling = -1.;
 	bool nufft_lowmem = false;
 
+	long my_img_dims[3] = { 0, 0, 0 };
+
 	const struct opt_s opts[] = {
 
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
@@ -111,6 +113,7 @@ int main_nlinv(int argc, char* argv[argc])
 		OPT_SET('n', &conf.noncart, "(non-Cartesian)"),
 		OPT_FLOAT('w', &scaling, "", "(inverse scaling of the data)"),
 		OPTL_SET(0, "lowmem", &nufft_lowmem, "Use low-mem mode of the nuFFT"),
+		OPT_VEC3('x', &my_img_dims, "x:y:z", "Explicitly specify image dimensions"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -144,7 +147,7 @@ int main_nlinv(int argc, char* argv[argc])
 	long trj_dims[DIMS];
 
 	if (NULL != trajectory) {
-
+#if 0
 		conf.noncart = true;
 
 		traj = load_cfl(trajectory, DIMS, trj_dims);
@@ -159,6 +162,34 @@ int main_nlinv(int argc, char* argv[argc])
 				dims[i] *= 2;
 
 		md_copy_dims(DIMS - 3, dims + 3, ksp_dims + 3);
+#else
+		conf.noncart = true;
+
+		traj = load_cfl(trajectory, DIMS, trj_dims);
+
+		debug_print_dims(DP_INFO, 3, my_img_dims);
+
+		const float oversampling = 2;
+
+		md_zsmul(DIMS, trj_dims, traj, traj, oversampling);
+
+		if (0 == my_img_dims[0] + my_img_dims[1] + my_img_dims[2]) {
+
+			estimate_fast_sq_im_dims(3, dims, trj_dims, traj);
+		} else {
+
+			md_copy_dims(3, dims, my_img_dims);
+
+			for (int i = 0; i < 3; i++)
+				if (1 != dims[i])
+					dims[i] *= oversampling;
+		}
+
+#endif
+
+
+
+
 	}	
 
 	// for ENLIVE maps
