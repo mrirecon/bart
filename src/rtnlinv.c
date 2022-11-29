@@ -189,8 +189,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 		turns = pat_dims[TIME_DIM];
 
-	} else
-	if (NULL != trajectory) {
+	} else if (NULL != trajectory) {
 
 		conf.noncart = true;
 
@@ -200,7 +199,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 		md_select_dims(DIMS, ~TIME_FLAG, trj1_dims, trj_dims);
 
-		debug_print_dims(DP_INFO, 3, my_img_dims);
+		//debug_print_dims(DP_INFO, 3, my_img_dims);
 
 		if (!alt_scaling)
 			md_zsmul(DIMS, trj_dims, traj, traj, 2.);
