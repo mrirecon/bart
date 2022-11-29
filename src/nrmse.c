@@ -47,11 +47,13 @@ int main_nrmse(int argc, char* argv[argc])
 
 	float test = -1.;
 	bool auto_scale = false;
+	bool scientific = false;
 
 	const struct opt_s opts[] = {
 
 		OPT_FLOAT('t', &test, "eps", "compare to eps"),
 		OPT_SET('s', &auto_scale, "automatic (complex) scaling"),
+		OPTL_SET('S', "scientific", &scientific, "use scientific notation in output"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -84,7 +86,10 @@ int main_nrmse(int argc, char* argv[argc])
 
 	float err = md_znrmse(DIMS, ref_dims, ref, in);
 
-	bart_printf("%f\n", err);
+	if (scientific)
+		bart_printf("%e\n", err);
+	else
+		bart_printf("%f\n", err);
 
 	unmap_cfl(DIMS, ref_dims, ref);
 	unmap_cfl(DIMS, in_dims, in);
