@@ -420,9 +420,12 @@ tests/test-pics-noncart-lowmem: traj slice phantom conj join fft flip pics nrmse
 	$(TOOLDIR)/join 8 k0.ra k1.ra k.ra						;\
 	$(TOOLDIR)/join 8 s0.ra s1.ra s.ra						;\
 	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
-	$(TOOLDIR)/pics -t t.ra k.ra s.ra r1.ra						;\
-	$(TOOLDIR)/pics --lowmem -t t.ra k.ra s.ra r2.ra				;\
-	$(TOOLDIR)/nrmse -s -t 0.001 r1.ra r2.ra					;\
+	$(TOOLDIR)/pics 	 -i2 -t t.ra k.ra s.ra r1.ra				;\
+	$(TOOLDIR)/pics --lowmem -i2 -t t.ra k.ra s.ra r2.ra				;\
+	$(TOOLDIR)/nrmse -s -t 0.000002 r1.ra r2.ra					;\
+	$(TOOLDIR)/pics 	    -t t.ra k.ra s.ra r1.ra				;\
+	$(TOOLDIR)/pics --lowmem    -t t.ra k.ra s.ra r2.ra				;\
+	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -431,20 +434,26 @@ tests/test-pics-noncart-lowmem-stack0: traj slice phantom conj join fft flip pic
 	$(TOOLDIR)/traj -y55 -r t0.ra							;\
 	$(TOOLDIR)/phantom -t t0.ra -s8 -k k0.ra					;\
 	$(TOOLDIR)/phantom -S8 s0.ra							;\
-	$(TOOLDIR)/pics -r0.01 -t t0.ra k0.ra s0.ra r1.ra				;\
+	$(TOOLDIR)/pics -r0.01			  -i2 -t t0.ra k0.ra s0.ra r1.ra	;\
+	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 -i2 -t t0.ra k0.ra s0.ra r2.ra	;\
+	$(TOOLDIR)/nrmse -s -t 0.000005 r1.ra r2.ra					;\
+	$(TOOLDIR)/pics -r0.01			  -t t0.ra k0.ra s0.ra r1.ra		;\
 	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 -t t0.ra k0.ra s0.ra r2.ra		;\
-	$(TOOLDIR)/nrmse -s -t 0.002 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-pics-noncart-lowmem-no-toeplitz: traj slice phantom conj join fft flip pics nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -y55 -r t0.ra							;\
-	$(TOOLDIR)/phantom -t t0.ra -s8 -k k0.ra					;\
-	$(TOOLDIR)/phantom -S8 s0.ra							;\
-	$(TOOLDIR)/pics -r0.01 -t t0.ra k0.ra s0.ra r1.ra				;\
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/traj -y55 -r t0.ra								;\
+	$(TOOLDIR)/phantom -t t0.ra -s8 -k k0.ra						;\
+	$(TOOLDIR)/phantom -S8 s0.ra								;\
+	$(TOOLDIR)/pics -r0.01 					-i2 -t t0.ra k0.ra s0.ra r1.ra	;\
+	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 --no-toeplitz -i2 -t t0.ra k0.ra s0.ra r2.ra	;\
+	$(TOOLDIR)/nrmse -s -t 0.00005 r1.ra r2.ra						;\
+	$(TOOLDIR)/pics -r0.01 					-t t0.ra k0.ra s0.ra r1.ra	;\
 	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 --no-toeplitz -t t0.ra k0.ra s0.ra r2.ra	;\
-	$(TOOLDIR)/nrmse -s -t 0.002 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -460,9 +469,12 @@ tests/test-pics-noncart-lowmem-stack1: traj slice phantom conj join fft flip pic
 	$(TOOLDIR)/join 8 k0.ra k1.ra k.ra						;\
 	$(TOOLDIR)/join 8 s0.ra s1.ra s.ra						;\
 	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
-	$(TOOLDIR)/pics -t t.ra k.ra s.ra r1.ra						;\
-	$(TOOLDIR)/pics --lowmem-stack=256 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -s -t 0.001 r1.ra r2.ra					;\
+	$(TOOLDIR)/pics 		   -i2 -t t.ra k.ra s.ra r1.ra			;\
+	$(TOOLDIR)/pics --lowmem-stack=256 -i2 -t t.ra k.ra s.ra r2.ra			;\
+	$(TOOLDIR)/nrmse -s -t 0.00001 r1.ra r2.ra					;\
+	$(TOOLDIR)/pics 		   -i2 -t t.ra k.ra s.ra r1.ra			;\
+	$(TOOLDIR)/pics --lowmem-stack=256 -i2 -t t.ra k.ra s.ra r2.ra			;\
+	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -478,9 +490,12 @@ tests/test-pics-noncart-lowmem-stack2: traj slice phantom conj join fft flip pic
 	$(TOOLDIR)/join 8 k0.ra k1.ra k.ra						;\
 	$(TOOLDIR)/join 8 s0.ra s1.ra s.ra						;\
 	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
-	$(TOOLDIR)/pics -t t.ra k.ra s.ra r1.ra						;\
+	$(TOOLDIR)/pics 		   -i2 -t t.ra k.ra s.ra r1.ra			;\
+	$(TOOLDIR)/pics --lowmem-stack=264 -i2 -t t.ra k.ra s.ra r2.ra			;\
+	$(TOOLDIR)/nrmse -s -t 0.00005 r1.ra r2.ra					;\
+	$(TOOLDIR)/pics 		   -t t.ra k.ra s.ra r1.ra			;\
 	$(TOOLDIR)/pics --lowmem-stack=264 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -s -t 0.001 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
