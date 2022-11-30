@@ -70,8 +70,9 @@ int main_nufft(int argc, char* argv[argc])
 
 		OPT_SET('a', &adjoint, "adjoint"),
 		OPT_SET('i', &inverse, "inverse"),
-		OPT_VEC3('d', &coilim_vec, "x:y:z", "dimensions"),
-		OPT_VEC3('D', &coilim_vec, "", "()"),
+		OPT_VEC3('x', &coilim_vec, "x:y:z", "dimensions"),
+		OPT_VEC3('d', &coilim_vec, "", "(dimensions, deprecated)"),
+		OPT_VEC3('D', &coilim_vec, "", "(dimensions, long deprecated)"),
 		OPT_SET('t', &conf.toeplitz, "Toeplitz embedding for inverse NUFFT"),
 		OPT_CLEAR('r', &conf.toeplitz, "turn-off Toeplitz embedding for inverse NUFFT"),
 		OPT_SET('c', &precond, "Preconditioning for inverse NUFFT"),

@@ -119,9 +119,9 @@ tests/test-moba-t1-nonCartesian: traj transpose phantom signal nufft fft ones in
 	$(TOOLDIR)/signal -F -I -r0.005 -n300 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac -s 64 basis_geom.ra signal.ra data.ra				;\
  	$(TOOLDIR)/ones 16 1 16 1 1 1 300 1 1 1 1 1 1 1 1 1 1 ones.ra	   		;\
-	$(TOOLDIR)/nufft -d 16:16:1 -a _traj2.ra ones.ra pattern.ra	   		;\
+	$(TOOLDIR)/nufft -x 16:16:1 -a _traj2.ra ones.ra pattern.ra	   		;\
 	$(TOOLDIR)/fft -u 3 pattern.ra psf.ra				   		;\
-	$(TOOLDIR)/nufft -d 16:16:1 -a _traj2.ra data.ra zerofill_reco.ra  		;\
+	$(TOOLDIR)/nufft -x 16:16:1 -a _traj2.ra data.ra zerofill_reco.ra  		;\
 	$(TOOLDIR)/fft -u 3 zerofill_reco.ra k_space.ra					;\
 	$(TOOLDIR)/index 5 300 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
@@ -145,9 +145,9 @@ tests/test-moba-t1-nufft: traj transpose phantom signal nufft fft ones index sca
 	$(TOOLDIR)/signal -F -I -r0.005 -n300 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac -s 64 basis_geom.ra signal.ra data.ra				;\
  	$(TOOLDIR)/ones 16 1 16 1 1 1 300 1 1 1 1 1 1 1 1 1 1 ones.ra	   		;\
-	$(TOOLDIR)/nufft -d 16:16:1 -a traj2T.ra ones.ra pattern.ra	   		;\
+	$(TOOLDIR)/nufft -x 16:16:1 -a traj2T.ra ones.ra pattern.ra	   		;\
 	$(TOOLDIR)/fft -u 3 pattern.ra psf.ra				   		;\
-	$(TOOLDIR)/nufft -d 16:16:1 -a traj2T.ra data.ra zerofill_reco.ra  		;\
+	$(TOOLDIR)/nufft -x 16:16:1 -a traj2T.ra data.ra zerofill_reco.ra  		;\
 	$(TOOLDIR)/fft -u 3 zerofill_reco.ra k_space.ra					;\
 	$(TOOLDIR)/index 5 300 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\

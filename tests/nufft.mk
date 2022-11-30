@@ -93,14 +93,14 @@ tests/test-nufft-adj-lin: traj rss extract phantom fmac saxpy nrmse nufft
 	$(TOOLDIR)/extract 1 32  64 kw.ra k1.ra						;\
 	$(TOOLDIR)/extract 1 64  96 kw.ra k2.ra						;\
 	$(TOOLDIR)/extract 1 96 128 kw.ra k3.ra						;\
-	$(TOOLDIR)/nufft -d128:128:1 -a t0.ra k0.ra x0.ra				;\
-	$(TOOLDIR)/nufft -d128:128:1 -a t1.ra k1.ra x1.ra				;\
-	$(TOOLDIR)/nufft -d128:128:1 -a t2.ra k2.ra x2.ra				;\
-	$(TOOLDIR)/nufft -d128:128:1 -a t3.ra k3.ra x3.ra				;\
+	$(TOOLDIR)/nufft -x128:128:1 -a t0.ra k0.ra x0.ra				;\
+	$(TOOLDIR)/nufft -x128:128:1 -a t1.ra k1.ra x1.ra				;\
+	$(TOOLDIR)/nufft -x128:128:1 -a t2.ra k2.ra x2.ra				;\
+	$(TOOLDIR)/nufft -x128:128:1 -a t3.ra k3.ra x3.ra				;\
 	$(TOOLDIR)/saxpy -- 1. x0.ra x1.ra xa.ra					;\
 	$(TOOLDIR)/saxpy -- 1. x2.ra x3.ra xb.ra					;\
 	$(TOOLDIR)/saxpy -- 1. xa.ra xb.ra x.ra						;\
-	$(TOOLDIR)/nufft -d128:128:1 -a t.ra kw.ra r.ra					;\
+	$(TOOLDIR)/nufft -x128:128:1 -a t.ra kw.ra r.ra					;\
 	$(TOOLDIR)/nrmse -t 0.000001 r.ra x.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
