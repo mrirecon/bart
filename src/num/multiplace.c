@@ -83,6 +83,7 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 #ifdef USE_CUDA
 	if (cuda_ondevice(ref)) {
 
+		#pragma omp critical (bart_multiplace)
 		if (NULL == ptr->ptr_gpu[cuda_get_device()]) {
 
 			ptr->ptr_gpu[cuda_get_device()] = md_gpu_move(ptr->N, ptr->dims, ptr->ptr_ref, ptr->size);
@@ -137,14 +138,17 @@ struct multiplace_array_s* multiplace_move_F(int D, const long dimensions[D], si
 	auto result = multiplace_alloc(D, dimensions, size);
 	result->ptr_ref = (void*)ptr;
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(ptr)) {
+	#pragma omp critical (bart_multiplace)
+	{
+	#ifdef USE_CUDA
+		if (cuda_ondevice(ptr)) {
 
-		result->ptr_gpu[cuda_get_device_num(ptr)] = (void*)ptr;
-		cuda_sync_device();
-	} else 
-#endif
-	result->ptr_cpu = (void*)ptr;
+			result->ptr_gpu[cuda_get_device_num(ptr)] = (void*)ptr;
+			cuda_sync_device();
+		} else 
+	#endif
+		result->ptr_cpu = (void*)ptr;
+	}
 
 	return result;
 }
