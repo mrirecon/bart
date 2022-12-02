@@ -156,6 +156,7 @@ int main_sim(int argc, char* argv[argc])
         struct opt_s other_opts[] = {
 
                 OPTL_FLOAT(0, "ode-tol", &(data.other.ode_tol), "", "ODE tolerance value [def: 1e-5]"),
+		OPTL_FLOAT(0, "stm-tol", &(data.other.stm_tol), "", "STM tolerance value [def: 1e-6]"),
                 OPTL_FLOAT(0, "sampling-rate", &(data.other.sampling_rate), "", "Sampling rate of RF pulse used for ROT simulation in Hz [def: 1e6 Hz]"),
         };
         const int N_other_opts = ARRAY_SIZE(other_opts);

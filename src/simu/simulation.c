@@ -138,6 +138,7 @@ const struct simdata_grad simdata_grad_defaults = {
 const struct simdata_other simdata_other_defaults = {
 
 	.ode_tol = 1e-5,
+	.stm_tol = 1e-6,
 	.sampling_rate = 1e+6,
 };
 

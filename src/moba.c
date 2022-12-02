@@ -179,6 +179,8 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_FLVEC4(0, "pinit", &(data.other.initval), "i1:i2:i3:i4", "Initial values of parameters in model-based reconstruction"),
                 OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
                 OPTL_FLVEC4(0, "tvscale", &tvscales, "s1:s2:s3:s4", "Scaling of derivatives in TV penalty"),
+		OPTL_FLOAT(0, "ode-tol", &(data.sim.other.ode_tol), "f", "ODE tolerance value [def: 1e-5]"),
+		OPTL_FLOAT(0, "stm-tol", &(data.sim.other.stm_tol), "f", "STM tolerance value [def: 1e-6]"),
         };
 
 	opt_reg_init(&ropts);

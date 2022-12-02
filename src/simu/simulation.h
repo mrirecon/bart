@@ -73,6 +73,7 @@ extern const struct simdata_grad simdata_grad_defaults;
 struct simdata_other {
 
 	float ode_tol;
+	float stm_tol;
         float sampling_rate;
 };
 
