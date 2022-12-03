@@ -21,17 +21,21 @@ void shared_obj_init(struct shared_obj_s* obj, void (*del)(const struct shared_o
 
 void shared_obj_ref(const struct shared_obj_s* obj)
 {
+	#pragma omp atomic
 	((struct shared_obj_s*)obj)->refcount++;
 }
 
 void shared_obj_unref(const struct shared_obj_s* obj)
 {
+	#pragma omp atomic
 	((struct shared_obj_s*)obj)->refcount--;
 }
 
 void shared_obj_destroy(const struct shared_obj_s* x)
 {
-	if (1 > --(((struct shared_obj_s*)x)->refcount))
+	shared_obj_unref(x);
+
+	if (1 > (((struct shared_obj_s*)x)->refcount))
 		if (NULL != x->del)
 			x->del(x);
 }
