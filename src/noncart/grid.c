@@ -76,7 +76,7 @@ void kb_precompute(double beta, int n, float table[n + 1])
 }
 
 
-double ftkb(double beta, double x)
+static double ftkb(double beta, double x)
 {
 	double a = pow(beta, 2.) - pow(M_PI * x, 2.);
 
