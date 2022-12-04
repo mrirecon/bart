@@ -134,11 +134,15 @@ extern const struct operator_s* operator_loop_parallel(unsigned int D, const lon
 
 
 extern const struct operator_s* operator_combi_create(int N, const struct operator_s* x[N]);
+extern const struct operator_s* operator_combi_create_FF(int N, const struct operator_s* x[N]);
 extern const struct operator_s* operator_link_create(const struct operator_s* op, unsigned int o, unsigned int i);
+extern const struct operator_s* operator_link_create_F(const struct operator_s* op, unsigned int o, unsigned int i);
 extern const struct operator_s* operator_dup_create(const struct operator_s* op, unsigned int a, unsigned int b);
+extern const struct operator_s* operator_dup_create_F(const struct operator_s* op, unsigned int a, unsigned int b);
 extern const struct operator_s* operator_extract_create(const struct operator_s* op, int a, int N, const long dims[N], const long pos[N]);
 extern const struct operator_s* operator_extract_create2(const struct operator_s* op, int a, int Da, const long dimsa[Da], const long strsa[Da], const long pos[Da]);
 extern const struct operator_s* operator_permute(const struct operator_s* op, int N, const int perm[N]);
+extern const struct operator_s* operator_sort_args_F(const struct operator_s* op);
 extern const struct operator_s* operator_reshape(const struct operator_s* op, unsigned int i, long N, const long dims[__VLA(N)]);
 extern const struct operator_s* get_in_reshape(const struct operator_s* op);
 

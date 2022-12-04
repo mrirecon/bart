@@ -1482,6 +1482,16 @@ const struct operator_s* operator_combi_create(int N, const struct operator_s* x
 }
 
 
+const struct operator_s* operator_combi_create_FF(int N, const struct operator_s* x[N])
+{
+	auto ret = operator_combi_create(N, x);
+
+	for (int i = 0; i < N; i++)
+		operator_free(x[i]);
+	
+	return ret;
+}
+
 
 
 struct operator_dup_s {
@@ -1589,7 +1599,12 @@ const struct operator_s* operator_dup_create(const struct operator_s* op, unsign
 	return operator_generic_create2(N - 1, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), dup_apply, dup_del, operator_dup_get_graph);
 }
 
-
+const struct operator_s* operator_dup_create_F(const struct operator_s* op, unsigned int a, unsigned int b)
+{
+	auto ret = operator_dup_create(op, a, b);
+	operator_free(op);
+	return ret;
+}
 
 
 // FIXME: we should reimplement link in terms of dup and bind (caveat: gpu; io_flags)
@@ -1733,6 +1748,13 @@ const struct operator_s* operator_link_create(const struct operator_s* op, unsig
 	return operator_generic_create2(N - 2, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), link_apply, link_del, operator_link_get_graph);
 }
 
+const struct operator_s* operator_link_create_F(const struct operator_s* op, unsigned int o, unsigned int i)
+{
+	auto ret = operator_link_create(op, o, i);
+	operator_free(op);
+	return ret;
+}
+
 
 
 struct permute_data_s {
@@ -1831,6 +1853,24 @@ const struct operator_s* operator_permute(const struct operator_s* op, int N, co
 	data->perm = nperm;
 
 	return operator_generic_create2(N, io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), permute_fun, permute_del, operator_permute_get_graph);
+}
+
+const struct operator_s* operator_sort_args_F(const struct operator_s* op)
+{
+	int II = operator_nr_in_args(op);
+	int OO = operator_nr_out_args(op);
+
+	int perm[II + OO];
+
+	for(int j = 0, o = 0, i = OO; j < OO + II; j++)
+		if (operator_get_io_flags(op)[j])
+			perm[o++] = j;
+		else
+		 	perm[i++] = j;
+
+	auto ret = operator_permute(op, OO + II, perm);
+	operator_free(op);
+	return ret;;
 }
 
 
