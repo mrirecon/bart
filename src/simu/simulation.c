@@ -217,7 +217,7 @@ void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N
 		bloch_simu_stm_fun(data, N, out, t, in);
 	};
 
-	mat_to_exp(N, st, end, out, call);
+	mat_to_exp(N, st, end, out, data->other.stm_tol, call);
 }
 
 static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], float st, float end)
@@ -421,15 +421,22 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
 static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N], float st, float end)
 {
-	float xp2[3] = { 0. };
+	if (0. < (end - st)) {
 
-	for (int i = 0; i < P; i++) {
+		float xp2[3] = { 0. };
 
-		xp2[0] = xp[i][0];
-		xp2[1] = xp[i][1];
-		xp2[2] = xp[i][2];
+		for (int i = 0; i < P; i++) {
 
-		bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb);
+			xp2[0] = xp[i][0];
+			xp2[1] = xp[i][1];
+			xp2[2] = xp[i][2];
+
+			bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb);
+		}
+
+	} else {
+
+		debug_printf(DP_WARN, "ROT Simulation, Relaxation time == 0 or < 0! Skip...\n");
 	}
 }
 
@@ -534,29 +541,14 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 
                 if (0 != data->grad.mom_sl) {
 
-			float rewind_end = 1.5 * data->pulse.rf_end; // FIXME: Why?
+			// Slice-Rewinder
 
-                        if (data->seq.te < rewind_end) {
+			// Time-independent gradient integral
+			data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.te - data->pulse.rf_end);
 
-				rewind_end = data->pulse.rf_end;
+			relaxation2(data, 0, 0, M, 1, NULL, data->pulse.rf_end, data->seq.te, mrel);
 
-				debug_printf(DP_WARN, "Slice-Selection Gradient rewinder does not fit between RF_end and TE!\n");
-
-				relaxation2(data, 0., 0., M, 1, NULL, rewind_end, data->seq.te, mrel);
-
-                        } else {
-                                // Slice-Rewinder
-				float tmp[M][M];
-				float tmp2[M][M];
-
-                                data->grad.mom = -data->grad.mom_sl;
-                                relaxation2(data, 0, 0, M, 1, NULL, data->pulse.rf_end, rewind_end, tmp);
-                                data->grad.mom = 0.; // [rad/s]
-
-                                relaxation2(data, 0, 0, M, 1, NULL, rewind_end, data->seq.te, tmp2);
-
-                                matf_mul(M, M, M, mrel, tmp, tmp2);
-			}
+			data->grad.mom = 0.; // [rad/s]
 
 		} else {
 
@@ -578,23 +570,16 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 
                         // Balance z-gradient for bSSFP type sequences
 
+			// Matrix: TE -> TR
                         if (   (SEQ_BSSFP == data->seq.seq_type)
                             || (SEQ_IRBSSFP == data->seq.seq_type)) {
 
-				float tmp[M][M];
-		                float tmp2[M][M];
+				// Time-independent gradient integral
+                                data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.tr - data->seq.te);
 
-                                // Matrix: TE -> TR-1/2*T_RF
-                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr-0.5*data->pulse.rf_end, tmp);
+                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, *mtr);
 
-                                // Matrix: TR-1/2*T_RF -> TR
-                                data->grad.mom = -data->grad.mom_sl;
-                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.tr-0.5*data->pulse.rf_end, data->seq.tr, tmp2);
                                 data->grad.mom = 0.;
-
-                                // Join matrices: TE -> TR
-                                matf_mul(M, M, M, *mtr, tmp, tmp2);
-
                         } else {
 
                                 relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, *mtr);
@@ -619,30 +604,21 @@ static void run_sim(struct sim_data* data, int R, int S, float (*mxy)[R][S][3], 
 
                 rf_pulse(data, h, tol, N, P, xp, NULL);
 
-                // Slice-Rewinder if time is long enough
-
-		float rewind_end = data->pulse.rf_end;
+                // Slice-Rewinder
 
                 if (0 != data->grad.mom_sl) {
 
-			rewind_end = 1.5 * data->pulse.rf_end; // FIXME: Why?
+			// Time-independent gradient integral
+			data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.te - data->pulse.rf_end);
 
-                        if (data->seq.te < rewind_end) {
+			relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
 
-                                debug_printf(DP_WARN, "Slice-Selection Gradient rewinder does not fit between RF_end and TE!\n");
+			data->grad.mom = 0.; // [rad/s]
 
-				rewind_end = data->pulse.rf_end;
+		} else {
 
-                        } else {
-
-                                data->grad.mom = -data->grad.mom_sl;
-                                relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, rewind_end, NULL);
-                                data->grad.mom = 0.; // [rad/s]
-			}
+			relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
 		}
-
-		relaxation2(data, h, tol, N, P, xp, rewind_end, data->seq.te, NULL);
-
 
 		collect_signal(data, P, R, S, mxy, sa_r1, sa_r2, sa_b1, xp);
 
@@ -661,10 +637,11 @@ static void run_sim(struct sim_data* data, int R, int S, float (*mxy)[R][S][3], 
                 if (   (SEQ_BSSFP == data->seq.seq_type)
                     || (SEQ_IRBSSFP == data->seq.seq_type)) {
 
-                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr - 0.5 * data->pulse.rf_end, NULL);
+			// Time-independent gradient integral
+                        data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.tr - data->seq.te);
 
-                        data->grad.mom = -data->grad.mom_sl;
-                        relaxation2(data, h, tol, N, P, xp, data->seq.tr - 0.5 * data->pulse.rf_end, data->seq.tr, NULL);
+                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL);
+
                         data->grad.mom = 0.;
 
                 } else {
@@ -742,11 +719,8 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 
         prep_data.pulse.flipangle = data->pulse.flipangle / 2.;
         prep_data.pulse.phase = M_PI;
-        prep_data.seq.te = 1.5 * prep_data.pulse.rf_end;
+        prep_data.seq.te = (data->pulse.rf_end + data->seq.prep_pulse_length) / 2.;
         prep_data.seq.tr = data->seq.prep_pulse_length;
-
-        // Ensure enough time for slice-seelction gradient rephaser
-        assert(2 * prep_data.pulse.rf_end <= prep_data.seq.prep_pulse_length);
 
         prepare_sim(&prep_data, N, P, NULL, NULL);
 
