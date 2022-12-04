@@ -752,6 +752,232 @@ const struct nlop_s* nlop_attach(const struct nlop_s* nop, void* ptr, void (*del
 	return nlop;
 }
 
+struct flatten_graph_s {
+
+	INTERFACE(nlop_data_t);
+
+	size_t* off;
+	const struct nlop_s* op;
+
+	const struct operator_s* der;
+	const struct operator_s* adj;
+	const struct operator_s* nrm;
+};
+
+DEF_TYPEID(flatten_graph_s);
+
+static void flatten_graph_fun(const nlop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(flatten_graph_s, _data);
+
+	int OO = nlop_get_nr_out_args(data->op);
+	int II = nlop_get_nr_in_args(data->op);
+
+	void* args[OO + II];
+
+	for (int o = 0; o < OO; o++)
+		args[o] = (void*)dst + data->off[o];
+
+	for (int i = 0; i < II; i++)
+		args[OO + i] = (void*)src + data->off[OO + i];
+
+
+	nlop_generic_apply_unchecked(data->op, OO + II, args);
+}
+
+static void flatten_graph_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+{
+	UNUSED(o);
+	UNUSED(i);
+
+	auto data = CAST_DOWN(flatten_graph_s, _data);
+
+	int OO = nlop_get_nr_out_args(data->op);
+	int II = nlop_get_nr_in_args(data->op);
+
+	void* args[OO + II];
+
+	for (int o = 0; o < OO; o++)
+		args[o] = (void*)dst + data->off[o];
+
+	for (int i = 0; i < II; i++)
+		args[OO + i] = (void*)src + data->off[OO + i];
+
+	operator_generic_apply_unchecked(data->der, OO + II, args);
+}
+
+static void flatten_graph_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+{
+	UNUSED(o);
+	UNUSED(i);
+
+	auto data = CAST_DOWN(flatten_graph_s, _data);
+
+	int OO = nlop_get_nr_out_args(data->op);
+	int II = nlop_get_nr_in_args(data->op);
+
+	void* args[OO + II];
+
+	for (int o = 0; o < II; o++)
+		args[o] = (void*)dst + data->off[OO + o];
+
+	for (int i = 0; i < OO; i++)
+		args[II + i] = (void*)src + data->off[i];
+
+	operator_generic_apply_unchecked(data->adj, OO + II, args);
+}
+
+static void flatten_graph_nrm(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+{
+	UNUSED(o);
+	UNUSED(i);
+
+	auto data = CAST_DOWN(flatten_graph_s, _data);
+
+	int OO = nlop_get_nr_out_args(data->op);
+	int II = nlop_get_nr_in_args(data->op);
+
+	void* args[2 * II];
+
+	for (int o = 0; o < II; o++)
+		args[o] = (void*)dst + data->off[OO + o];
+
+	for (int i = 0; i < II; i++)
+		args[II + i] = (void*)src + data->off[OO + i];
+
+	operator_generic_apply_unchecked(data->nrm, 2 * II, args);
+}
+
+static void flatten_graph_del(const nlop_data_t* _data)
+{
+	auto data = CAST_DOWN(flatten_graph_s, _data);
+
+	nlop_free(data->op);
+
+	operator_free(data->der);
+	operator_free(data->nrm);
+	operator_free(data->adj);
+
+	xfree(data->off);
+
+	xfree(data);
+}
+
+
+
+
+static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
+{
+	int II = nlop_get_nr_in_args(op);
+	int OO = nlop_get_nr_out_args(op);
+
+	long odims[1] = { 0 };
+	long ostrs[] = { CFL_SIZE };
+	size_t olast = 0;
+
+	PTR_ALLOC(size_t[OO + II], offs);
+
+	for (int o = 0; o < OO; o++) {
+
+		auto iov = nlop_generic_codomain(op, o);
+
+		assert(CFL_SIZE == iov->size);
+		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+
+		odims[0] += md_calc_size(iov->N, iov->dims);
+		(*offs)[o] = olast;
+		olast = odims[0] * CFL_SIZE;
+	}
+
+
+	long idims[1] = { 0 };
+	long istrs[1] = { CFL_SIZE };
+	size_t ilast = 0;
+
+	for (int i = 0; i < II; i++) {
+
+		auto iov = nlop_generic_domain(op, i);
+
+		assert(CFL_SIZE == iov->size);
+		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+
+		idims[0] += md_calc_size(iov->N, iov->dims);
+		(*offs)[OO + i] = ilast;
+		ilast = idims[0] * CFL_SIZE;
+	}
+
+	PTR_ALLOC(struct flatten_graph_s, data);
+	SET_TYPEID(flatten_graph_s, data);
+
+	data->op = nlop_clone(op);
+	data->off = *PTR_PASS(offs);
+
+
+	const struct operator_s* der[OO];
+	const struct operator_s* adj[OO];
+
+	for (int o = 0; o < OO; o++) {
+
+		const struct operator_s* ders[II];
+		const struct operator_s* adjs[II];
+
+		for (int i = 0; i < II; i++) {
+
+			ders[i] = nlop_get_derivative(op, o, i)->forward;
+			adjs[i] = nlop_get_derivative(op, o, i)->adjoint;
+		}
+
+		der[o] = operator_sort_args_F(operator_combi_create(II, ders));
+		adj[o] = operator_sort_args_F(operator_combi_create(II, adjs));
+		
+		if (1 < II) {
+
+			auto cod = operator_arg_domain(der[o], 0);
+			der[o] = operator_combi_create_FF(2, (const struct operator_s*[2]){operator_zadd_create(II, cod->N, cod->dims), der[o]});
+
+			for (int i = o; i < II; i++)
+				der[o] = operator_link_create_F(der[o], II + 1 - i, 1);
+
+			for (int i = 1; i < II; i++)
+				adj[o] = operator_dup_create_F(adj[o], II, II + 1);
+		}
+	}
+
+	const struct operator_s* op_der = operator_sort_args_F(operator_combi_create_FF(OO, der));
+	const struct operator_s* op_adj = operator_sort_args_F(operator_combi_create_FF(OO, adj));
+
+	if (1 < OO) {
+
+		for(int o = 1; o < OO; o++)
+			for (int i = 0; i < II; i++)
+				op_der = operator_dup_create_F(op_der, OO + i, OO + II);
+
+		for (int i = II - 1; i >= 0; i--) {
+
+			auto cod = operator_arg_domain(op_adj, II - 1);
+			op_adj = operator_combi_create_FF(OO, (const struct operator_s*[2]){operator_zadd_create(OO, cod->N, cod->dims), op_adj});
+
+			for (int o = OO - 1 ; o >= 0; o--)
+				op_adj = operator_link_create_F(op_adj, 1 + o + II - 1 - i + i * o , 1);
+		}
+	}
+
+	const struct operator_s* op_nrm = operator_combi_create(2, (const struct operator_s*[2]) { op_adj, op_der });
+	
+	for (int o = 0; o < OO; o++)
+		op_nrm = operator_link_create_F(op_nrm, II + OO - o, II);
+
+	op_der = graph_optimize_operator_linop_F(op_der);
+	op_adj = graph_optimize_operator_linop_F(op_adj);
+	op_nrm = graph_optimize_operator_linop_F(op_nrm);
+
+	data->der = op_der;
+	data->adj = op_adj;
+	data->nrm = op_nrm;
+
+	return nlop_create2(1, odims, ostrs, 1, idims, istrs, CAST_UP(PTR_PASS(data)), flatten_graph_fun, flatten_graph_der, flatten_graph_adj, flatten_graph_nrm, NULL, flatten_graph_del);
+}
+
 
 struct flatten_s {
 
@@ -880,6 +1106,9 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 
 	int II = nlop_get_nr_in_args(op);
 	int OO = nlop_get_nr_out_args(op);
+
+	if (1 == OO)
+		return nlop_flatten_graph(op);
 
 	if (1 < II) {
 
