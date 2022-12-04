@@ -133,6 +133,7 @@ extern struct linop_s* linop_reshape_out_F(const struct linop_s* op, unsigned in
 
 
 extern struct linop_s* graph_optimize_linop(const struct linop_s* op);
+extern const struct operator_s* graph_optimize_operator_linop_F(const struct operator_s* op);
 
 void operator_linops_apply_joined_unchecked(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src);
 

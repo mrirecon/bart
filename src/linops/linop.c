@@ -1136,6 +1136,13 @@ static const struct operator_s* graph_optimize_operator_linop(const struct opera
 	return graph_to_operator_F(graph);
 }
 
+const struct operator_s* graph_optimize_operator_linop_F(const struct operator_s* op)
+{
+	auto ret = graph_optimize_operator_linop(op);
+	operator_free(op);
+	return ret;
+}
+
 
 struct linop_s* graph_optimize_linop(const struct linop_s* op)
 {
