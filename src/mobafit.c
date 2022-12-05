@@ -24,6 +24,7 @@
 #include "misc/utils.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
+#include "misc/types.h"
 
 #include "iter/italgos.h"
 #include "iter/iter3.h"
@@ -31,6 +32,7 @@
 #include "iter/lsqr.h"
 
 #include "linops/fmac.h"
+#include "linops/someops.h"
 
 #include "nlops/nlop.h"
 #include "nlops/cast.h"
@@ -46,6 +48,65 @@
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
 #endif
+
+struct mobafit_bound_s {
+
+	INTERFACE(iter_op_data);
+
+	int N;
+	long* dims;
+
+	unsigned long min_flags;
+	unsigned long max_flags;
+	unsigned long max_norm_flags;
+
+	float* min;
+	float* max;
+};
+
+DEF_TYPEID(mobafit_bound_s)
+
+static void mobafit_bound(iter_op_data* _data, float* dst, const float* src)
+{
+	assert(dst == src);
+
+	struct mobafit_bound_s* data = CAST_DOWN(mobafit_bound_s, _data);
+
+	int N = data->N;
+
+	long map_dims[N];
+	long strs[N];
+
+	md_select_dims(N, ~COEFF_FLAG, map_dims, data->dims);
+	md_calc_strides(N, strs, data->dims, CFL_SIZE);
+
+	long pos[N];
+	md_set_dims(N, pos, 0);
+
+	complex float* tmp_map = md_alloc_sameplace(N, map_dims, CFL_SIZE, dst);
+
+	do {
+
+		complex float* map = &MD_ACCESS(N, strs, pos, (complex float*)dst);
+
+		if (MD_IS_SET(data->min_flags, pos[COEFF_DIM]))
+			md_zsmax2(N, map_dims, strs, map, strs, map, data->min[pos[COEFF_DIM]]);
+		
+		if (MD_IS_SET(data->max_flags, pos[COEFF_DIM]))
+			md_zsmin2(N, map_dims, strs, map, strs, map, data->max[pos[COEFF_DIM]]);
+		
+		if (MD_IS_SET(data->max_norm_flags, pos[COEFF_DIM])) {
+
+			md_zabs2(N, map_dims, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, strs, map);
+			md_zdiv2(N, map_dims, strs, map, strs, map, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map);
+			md_zsmin2(N, map_dims, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, data->max[pos[COEFF_DIM]]);
+			md_zmul2(N, map_dims, strs, map, strs, map, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map);
+		}
+
+	} while (md_next(N, data->dims, COEFF_FLAG, pos));
+
+	md_free(tmp_map);
+}
 
 
 static const char help_str[] = "Pixel-wise fitting of physical signal models.";
@@ -65,6 +126,21 @@ int main_mobafit(int argc, char* argv[argc])
 		ARG_OUTFILE(false, &coeff_file, "coefficients"),
 	};
 
+	float _init[DIMS] = { 0 };
+	float _scale[DIMS] = { [0 ... DIMS - 1] = 1. };
+
+	float bound_min[DIMS] = { 0 };
+	float bound_max[DIMS] = { 0 };
+
+	struct mobafit_bound_s bounds;
+	SET_TYPEID(mobafit_bound_s, &bounds);
+	
+	bounds.N = DIMS;
+	bounds.min_flags = 0;
+	bounds.max_flags = 0;
+	bounds.max_norm_flags = 0;
+	bounds.min = bound_min;
+	bounds.max = bound_max;	
 
 	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE, DIFF, IR_LL } seq = MGRE;
 
@@ -91,6 +167,14 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_UINT('i', &iter, "iter", "Number of IRGNM steps"),
 		OPT_SET('g', &use_gpu, "use gpu"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
+		OPTL_FLVECN(0, "init", _init, "Initial values of parameters in model-based reconstruction"),
+		OPTL_FLVECN(0, "scale", _scale, "Scaling"),
+
+		OPTL_ULONG(0, "min-flag", &(bounds.min_flags), "flags", "Apply minimum constraint on selected maps"),
+		OPTL_ULONG(0, "max-flag", &(bounds.max_flags), "flags", "Apply maximum constraint on selected maps"),
+		OPTL_ULONG(0, "max-mag-flag", &(bounds.max_norm_flags), "flags", "Apply maximum magnitude constraint on selected maps"),
+		OPTL_FLVECN(0, "min", bound_min, "Min bound (map must be selected with \"min-flag\")"),
+		OPTL_FLVECN(0, "max", bound_max, "Max bound (map must be selected with \"max-flag\" or \"max-mag-flag\")"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -182,7 +266,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	complex float* x = create_cfl(coeff_file, DIMS, x_dims);
 
-	md_clear(DIMS, x_dims, x, CFL_SIZE);
+	md_zfill(DIMS, x_dims, x, 1.);
 
 
 
@@ -228,8 +312,6 @@ int main_mobafit(int argc, char* argv[argc])
 			nlop = nlop_chain_FF(nlop_from_linop_F(tmp), nlop);
 		}
 
-		md_zfill(DIMS, x_dims, x, 1.);
-
 		break;
 
 	case MGRE: ;
@@ -256,6 +338,42 @@ int main_mobafit(int argc, char* argv[argc])
 		__builtin_unreachable();
 	}
 
+
+	complex float init[DIMS];
+	complex float scale[DIMS];
+
+	for (unsigned int i = 0; i < x_dims[COEFF_DIM]; i++) {
+
+		init[i] = _init[i];
+		scale[i] = _scale[i];
+		bound_max[i] /= _scale[i];
+		bound_min[i] /= _scale[i];
+	}
+
+	long c_dims[DIMS];
+	md_select_dims(DIMS, COEFF_FLAG, c_dims, x_dims);
+
+	long c_strs[DIMS];
+	long x_strs[DIMS];
+
+	md_calc_strides(DIMS, c_strs, c_dims, CFL_SIZE);
+	md_calc_strides(DIMS, x_strs, x_dims, CFL_SIZE);
+
+	md_zfill(DIMS, x_dims, x, 1.);
+	md_zmul2(DIMS, x_dims, x_strs, x, x_strs, x, c_strs, init);
+	md_zdiv2(DIMS, x_dims, x_strs, x, x_strs, x, c_strs, scale);
+
+	bounds.dims = x_patch_dims;
+
+	for (int i = 0; i < x_dims[COEFF_DIM]; i++) {
+		
+		if (1. != scale[i]) {
+
+			auto lop_scale = linop_cdiag_create(DIMS, x_patch_dims, COEFF_FLAG, scale);
+			nlop = nlop_chain_FF(nlop_from_linop_F(lop_scale), nlop);
+			break;
+		}
+	}
 
 
 	struct iter_conjgrad_conf conjgrad_conf = iter_conjgrad_defaults;
@@ -305,7 +423,7 @@ int main_mobafit(int argc, char* argv[argc])
 		iter4_irgnm2(CAST_UP(&irgnm_conf), nlop,
 				2 * md_calc_size(DIMS, x_patch_dims), (float*)x_patch, NULL,
 				2 * md_calc_size(DIMS, y_patch_dims), (const float*)y_patch, lsqr,
-				(struct iter_op_s){ NULL, NULL });
+				(struct iter_op_s){ mobafit_bound, CAST_UP(&bounds) });
 
 		md_copy_block(DIMS, pos, x_dims, x, x_patch_dims, x_patch, CFL_SIZE);
 
@@ -317,6 +435,8 @@ int main_mobafit(int argc, char* argv[argc])
 
 	operator_p_free(lsqr);
 	nlop_free(nlop);
+
+	md_zmul2(DIMS, x_dims, x_strs, x, x_strs, x, c_strs, scale);
 
 	unmap_cfl(DIMS, y_dims, y);
 	unmap_cfl(DIMS, enc_dims, enc);
