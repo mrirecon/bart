@@ -86,7 +86,7 @@ void cuda_error(const char* file, int line, cudaError_t code)
 void cuda_gpu_check(const char* file, int line, const char* note)
 {
 #ifdef GPU_ASSERTS
-	cudaError_t code = cudaStreamSynchronize(cuda_default_stream);
+	cudaError_t code = cudaStreamSynchronize(cuda_get_stream());
 
 	if (cudaSuccess != code) {
 		

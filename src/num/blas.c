@@ -62,8 +62,9 @@ static void cublas_error(const char* file, int line, cublasStatus_t code)
 	error("cuBLAS Error: %s in %s:%d \n", err_str, file, line);
 }
 
-#define CUBLAS_ERROR(x)	({ CUDA_ASYNC_ERROR_NOTE("before cuBLAS call"); cublasStatus_t errval = (x); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
-#define CUBLAS_CALL(x)	({ CUDA_ASYNC_ERROR_NOTE("before cuBLAS call"); cublas_set_gpulock(); cublasStatus_t errval = (x); cublas_unset_gpulock(); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
+#define CUBLAS_ERROR_INIT(x)	({ cublasStatus_t errval = (x); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); })
+#define CUBLAS_ERROR(x)		({ CUDA_ASYNC_ERROR_NOTE("before cuBLAS call"); cublasStatus_t errval = (x); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
+#define CUBLAS_CALL(x)		({ CUDA_ASYNC_ERROR_NOTE("before cuBLAS call"); cublas_set_gpulock(); cublasStatus_t errval = (x); cublas_unset_gpulock(); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
 
 
 static cublasHandle_t handle[MAX_CUDA_DEVICES];
@@ -79,7 +80,7 @@ void cublas_init(void)
 	for (int device = 0; device < cuda_num_devices(); ++device) {
 
 		cuda_set_device(device);
-		CUBLAS_ERROR(cublasCreate(&handle[device]));
+		CUBLAS_ERROR_INIT(cublasCreate(&handle[device]));
 	}
 
 	cuda_set_device(old_device);
@@ -93,7 +94,7 @@ void cublas_deinit(void)
 		error("Cannot deinitialize cuBLAS, number of devices has changed from initialization!");
 
 	for (int device = 0; device < cuda_num_devices(); ++device)
-		CUBLAS_ERROR(cublasDestroy(handle[device]));
+		CUBLAS_ERROR_INIT(cublasDestroy(handle[device]));
 
 	num_devices_initialized = 0;	
 }
@@ -201,9 +202,9 @@ double cuda_norm(long size, const float* src1)
 	// git rev: ab28a9a953a80d243511640b23501f964a585349
 //	printf("cublas: %f\n", cublasSnrm2(size, src1, 1));
 //	printf("GPU norm (sdot: %f)\n", sqrt(cuda_sdot(size, src1, src1)));
-#ifdef GPU_ASSERTS
-	assert(cuda_ondevice_num(src1, cuda_get_device_internal()));
-#endif
+//#ifdef GPU_ASSERTS
+//	assert(cuda_ondevice_num(src1, cuda_get_device_internal()));
+//#endif
 	return sqrt(cuda_sdot(size, src1, src1));
 #else
 	return cublasSnrm2(size, src1, 1);
