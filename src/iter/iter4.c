@@ -60,6 +60,14 @@ static void nlop_adj_iter(iter_op_data* _o, float* _dst, const float* _src)
 	linop_adjoint_unchecked(nlop->nlop.derivative[0], (complex float*)_dst, (const complex float*)_src);
 }
 
+static void nlop_nrm_iter(iter_op_data* _o, float* _dst, const float* _src)
+{
+	const auto nlop = CAST_DOWN(iter4_nlop_s, _o);
+
+	assert(2 == operator_nr_args(nlop->nlop.op));
+	linop_normal_unchecked(nlop->nlop.derivative[0], (complex float*)_dst, (const complex float*)_src);
+}
+
 
 struct irgnm_s {
 
@@ -67,6 +75,7 @@ struct irgnm_s {
 
 	struct iter_op_s der;
 	struct iter_op_s adj;
+	struct iter_op_s nrm;
 
 	float* tmp;
 
@@ -83,8 +92,7 @@ static void normal(iter_op_data* _data, float* dst, const float* src)
 {
 	auto data = CAST_DOWN(irgnm_s, _data);
 
-	iter_op_call(data->der, data->tmp, src);
-	iter_op_call(data->adj, dst, data->tmp);
+	iter_op_call(data->nrm, dst, src);
 }
 
 static void inverse(iter_op_data* _data, float alpha, float* dst, const float* src)
@@ -129,10 +137,11 @@ void iter4_irgnm(const iter3_conf* _conf,
 	struct iter_op_s frw = { nlop_for_iter, CAST_UP(&data) };
 	struct iter_op_s der = { nlop_der_iter, CAST_UP(&data) };
 	struct iter_op_s adj = { nlop_adj_iter, CAST_UP(&data) };
+	struct iter_op_s nrm = { nlop_nrm_iter, CAST_UP(&data) };
 
 	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
 
-	struct irgnm_s data2 = { { &TYPEID(irgnm_s) }, der, adj, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
+	struct irgnm_s data2 = { { &TYPEID(irgnm_s) }, der, adj, nrm, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
 
 	struct iter_op_p_s inv = { inverse, CAST_UP(&data2) };
 
@@ -211,8 +220,9 @@ void iter4_irgnm2(const iter3_conf* _conf,
 	struct iter_op_s frw = { nlop_for_iter, CAST_UP(&data) };
 	struct iter_op_s der = { nlop_der_iter, CAST_UP(&data) };
 	struct iter_op_s adj = { nlop_adj_iter, CAST_UP(&data) };
+	struct iter_op_s nrm = { nlop_nrm_iter, CAST_UP(&data) };
 
-	struct irgnm_s data2 = { { &TYPEID(irgnm_s) }, der, adj, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
+	struct irgnm_s data2 = { { &TYPEID(irgnm_s) }, der, adj, nrm, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
 
 	// one limitation is that we currently cannot warm start the inner solver
 
