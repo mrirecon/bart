@@ -208,7 +208,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
                                 sim_data.voxel.r1 = crealf(r1scale[spa_ind]);
 				sim_data.voxel.r2 = crealf(r2scale[spa_ind]);
 				sim_data.voxel.m0 = 1.;
-				sim_data.voxel.b1 = b1s * crealf(b1scale[spa_ind]);
+				sim_data.voxel.b1 = b1s * (1. + crealf(b1scale[spa_ind]));
 
                                 // debug_sim(&sim_data);
                                 // debug_sim(&(data->moba_data->sim));

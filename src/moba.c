@@ -630,6 +630,9 @@ int main_moba(int argc, char* argv[argc])
 
 		md_zsmul(DIMS, tmp_dims, tmp, tmp, (data.other.scale[i] ?: 1.));
 
+		if ((MDB_BLOCH == conf.mode) && (3 == i))
+			md_zsadd(DIMS, tmp_dims, tmp, tmp, 1.);
+
 		md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
 	}
 

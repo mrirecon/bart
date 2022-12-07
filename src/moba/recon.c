@@ -106,6 +106,7 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, str
 
                 if (SEQ_IRFLASH == data->sim.seq.seq_type) {
 
+			conf2->l2flags = (0 != data->other.scale[3]) ? 8 : (0UL);
                         conf2->constrained_maps = 1;	// only R1 map: bitmask (1 0 0 0) = 1
                         conf2->not_wav_maps = 2;	// no wavelet for T2 and B1 map
                 }
