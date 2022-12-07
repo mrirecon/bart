@@ -583,9 +583,16 @@ int main_moba(int argc, char* argv[argc])
 
         // Transform B1 map from image to k-space and add k-space to initialization array (img)
 
-	if (MDB_BLOCH == conf.mode) {
+	unsigned long sobolev_flag = 0;
 
-		pos[COEFF_DIM] = 3;
+	sobolev_flag |= (MDB_T1_PHY == conf.mode) ? MD_BIT(2) : 0;
+	sobolev_flag |= (MDB_BLOCH == conf.mode) ? MD_BIT(3) : 0;
+
+
+	for (pos[COEFF_DIM] = 0; pos[COEFF_DIM] < img_dims[COEFF_DIM]; pos[COEFF_DIM]++) {
+
+		if (!MD_IS_SET(sobolev_flag, pos[COEFF_DIM]))
+			continue;
 
 		const struct linop_s* linop_fftc = linop_fftc_create(DIMS, tmp_dims, FFT_FLAGS);
 

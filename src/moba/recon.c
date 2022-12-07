@@ -121,8 +121,9 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, str
 
         if (MDB_T1_PHY == mode) {
 
-                conf2->constrained_maps = 2;     // only R1 map: bitmask (0 1 0) = 2
-                conf2->not_wav_maps = 1;
+		conf2->l2flags = 4;
+                conf2->constrained_maps = 2;    // only R1 map: bitmask (0 1 0) = 2
+                conf2->not_wav_maps = 1;	// no wavelet for R1' map
         }
 
 	conf2->tvscales_N = data->other.tvscales_N;
