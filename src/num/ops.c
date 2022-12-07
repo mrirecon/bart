@@ -388,7 +388,8 @@ static void identity_apply(const operator_data_t* _data, unsigned int N, void* a
 {
 	const auto d = CAST_DOWN(identity_s, _data);
 	assert(2 == N);
-	md_copy2(d->domain->N, d->domain->dims, d->codomain->strs, args[0], d->domain->strs, args[1], d->domain->size);
+	if (args[0] != args[1])
+		md_copy2(d->domain->N, d->domain->dims, d->codomain->strs, args[0], d->domain->strs, args[1], d->domain->size);
 }
 
 
