@@ -648,7 +648,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 
 		lop_fft = *lop_fftuc;
 		
-		if (NULL == lop_fft){
+		if (NULL == lop_fft) {
 
 			long loop_dims[ND];
 			long fft_dims[ND];
@@ -662,6 +662,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 		linop_forward_unchecked(lop_fft, psft, psft);
 
 		*lop_fftuc = lop_fft;
+
 	} else {
 
 		fftuc(ND, img2_dims, flags, psft, psft);
@@ -775,9 +776,11 @@ static struct nufft_data* nufft_create_data(int N,
 		complex float* fftm = md_alloc(ND, data->img_dims, CFL_SIZE);
 
 		md_zfill(ND, data->img_dims, fftm, 1.);
+
 		fftmod(ND, data->img_dims, data->flags, fftm, fftm);
 
 		data->fftmod = multiplace_move_F(ND, data->img_dims, CFL_SIZE, fftm);
+
 	} else {
 
 		data->fftmod = NULL;
@@ -791,6 +794,7 @@ static struct nufft_data* nufft_create_data(int N,
 		rolloff_correction(conf.decomp ? data->grid_conf.os : 1, data->width, data->beta, data->img_dims, roll);
 		
 		data->roll = multiplace_move_F(ND, data->img_dims, CFL_SIZE, roll);
+
 	} else {
 
 		data->roll = NULL;
@@ -825,8 +829,11 @@ static struct nufft_data* nufft_create_data(int N,
 		if (!conf.toeplitz) {
 
 			assert(conf.precomp_roll);
+
 			md_zmul2(ND, data->lph_dims, data->lph_strs, linphase, data->lph_strs, linphase, data->img_strs, multiplace_read(data->roll, linphase));
+
 			multiplace_free(data->roll);
+
 			data->roll = NULL;
 		}
 
@@ -971,8 +978,8 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 			const complex float* psf = compute_psf2(N, data->psf_dims, data->flags, data->trj_dims, traj,
 						data->bas_dims, multiplace_read(data->basis, traj), data->wgh_dims, multiplace_read(data->weights, traj),
 						true /*conf.periodic*/, data->conf.lowmem,
-						data->conf.cache_psf_grdding ? &(data->lop_nufft_psf) : NULL,
-						data->conf.cache_psf_grdding ? &(data->lop_fftuc_psf) : NULL);
+						data->conf.cache_psf_grdding ? &data->lop_nufft_psf : NULL,
+						data->conf.cache_psf_grdding ? &data->lop_fftuc_psf : NULL);
 
 			multiplace_free(data->psf);
 
@@ -1409,6 +1416,7 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 	if (NULL != clinphase) {
 
 		md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, src, data->img_strs, clinphase);
+
 	} else {
 
 		float scale = 1. / sqrtf(md_calc_size(3, data->lph_dims));
@@ -1431,7 +1439,9 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 		md_ztenmul(data->N, data->ciT_dims, gridT, data->cim_dims, grid, data->psf_dims, cpsf);
 
 		md_free(grid);
+
 		grid = gridT;
+
 	} else {
 
 		md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->psf_strs, cpsf);
@@ -1442,6 +1452,7 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 	if (NULL != clinphase) {
 
 		md_zfmacc2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, grid, data->img_strs, clinphase);
+
 	} else {
 
 		if (NULL != data->fftmod)
@@ -1537,6 +1548,7 @@ static void nufft_apply_adjoint_lowmem(const linop_data_t* _data, complex float*
 		grid_conf.os = 1.;
 
 		for (int i = 0, j = 0; i < data->N; i++) {
+
 			if (MD_IS_SET(data->conf.flags, i)) {
 
 				assert(j < 3);
@@ -1558,6 +1570,7 @@ static void nufft_apply_adjoint_lowmem(const linop_data_t* _data, complex float*
 		if (NULL != data->linphase){
 
 			md_zfmacc2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, grid, data->lph_strs, &MD_ACCESS(ND, data->lph_strs, pos_cml, (complex float*)multiplace_read(data->linphase, dst)));
+
 		} else {
 	
 			float scale = 1. / sqrtf(md_calc_size(3, data->lph_dims));
@@ -1621,6 +1634,7 @@ static void nufft_apply_forward_lowmem(const linop_data_t* _data, complex float*
 		grid_conf.os = 1.;
 
 		for (int i = 0, j = 0; i < data->N; i++) {
+
 			if (MD_IS_SET(data->conf.flags, i)) {
 
 				assert(j < 3);
@@ -1632,6 +1646,7 @@ static void nufft_apply_forward_lowmem(const linop_data_t* _data, complex float*
 		if (NULL != data->linphase){
 
 			md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, src, data->lph_strs, &MD_ACCESS(ND, data->lph_strs, pos_cml, (complex float*)multiplace_read(data->linphase, dst)));
+
 		} else {
 	
 			float scale = 1. / sqrtf(md_calc_size(3, data->lph_dims));
@@ -1644,7 +1659,7 @@ static void nufft_apply_forward_lowmem(const linop_data_t* _data, complex float*
 				fftmod(data->N, data->cim_dims, data->flags, grid, grid);
 		}
 
-		if ((NULL == data->linphase) || (data->conf.toeplitz)){
+		if ((NULL == data->linphase) || (data->conf.toeplitz)) {
 		
 			if (NULL == data->roll)
 				apply_rolloff_correction(2., data->grid_conf.width, data->grid_conf.beta, data->N, data->cim_dims, grid, grid);
