@@ -28,19 +28,21 @@ static const char help_str[] = "Analytical simulation tool.";
 
 static void get_signal(const struct signal_model* parm, int N, complex float* out, const complex float* in)
 {
-        complex float sum = 0.;
+	complex float sum = 0.;
+	int av_spokes = parm->averaged_spokes;
 
-        debug_printf(DP_INFO, "Spoke Averaging: %d\n", parm->averaged_spokes);
+	if (1 != av_spokes)
+		debug_printf(DP_INFO, "Spoke averaging: %d\n", av_spokes);
 
-        for (int t = 0; t < N; t++) {
+	for (int t = 0; t < N; t++) {
 
-                sum = 0.;
+		sum = 0.;
 
-                for (int av = 0; av < parm->averaged_spokes; av++)
-                        sum += in[t * parm->averaged_spokes + av];
+		for (int av = 0; av < av_spokes; av++)
+			sum += in[t * av_spokes + av];
 
-                out[t] = sum / parm->averaged_spokes;
-        }
+		out[t] = sum / av_spokes;
+	}
 }
 
 
