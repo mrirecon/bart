@@ -135,7 +135,6 @@ static float intlookup(int n, const float table[n + 1], float x)
 
 void gridH(const struct grid_conf_s* conf, const complex float* traj, const long ksp_dims[4], complex float* dst, const long grid_dims[4], const complex float* grid)
 {
-
 	if (grid_dims[3] != ksp_dims[3])
 		error("Adjoint gridding: ksp and grid are incompatible in dim 3 (%d != %d)!\n", ksp_dims[3], grid_dims[3]);
 
@@ -183,7 +182,6 @@ void gridH(const struct grid_conf_s* conf, const complex float* traj, const long
 
 void grid(const struct grid_conf_s* conf, const complex float* traj, const long grid_dims[4], complex float* grid, const long ksp_dims[4], const complex float* src)
 {
-
 	if (grid_dims[3] != ksp_dims[3])
 		error("Gridding: ksp and grid are incompatible in dim 3 (%d != %d)!\n", ksp_dims[3], grid_dims[3]);
 
@@ -207,7 +205,7 @@ void grid(const struct grid_conf_s* conf, const complex float* traj, const long 
 
 	// grid
 #pragma omp parallel for
-	for(int i = 0; i < samples; i++) {
+	for (int i = 0; i < samples; i++) {
 
 		float pos[3];
 		pos[0] = conf->os * (creal(traj[i * 3 + 0]) + conf->shift[0]);
@@ -221,6 +219,7 @@ void grid(const struct grid_conf_s* conf, const complex float* traj, const long 
 		complex float val[C];
 		
 		bool skip = true;
+
 		for (int j = 0; j < C; j++) {
 
 			val[j] = src[j * samples + i];
@@ -441,8 +440,7 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 	// precompute kaiser bessel table
 	kb_init(beta);
 
-
-	if(use_compat_to_version("v0.8.00")) {
+	if (use_compat_to_version("v0.8.00")) {
 
 		#pragma omp parallel for collapse(3)
 		for (int z = 0; z < dimensions[2]; z++) 
@@ -475,6 +473,7 @@ void apply_rolloff_correction(float os, float width, float beta, int N, const lo
 
 #ifdef USE_CUDA
 	assert(cuda_ondevice(dst) == cuda_ondevice(src));
+
 	if (cuda_ondevice(dst)) {
 
 		cuda_apply_rolloff_correction(os, width, beta, N, dims, dst, src);
@@ -485,8 +484,8 @@ void apply_rolloff_correction(float os, float width, float beta, int N, const lo
 	long size_bat = md_calc_size(N - 3, dims + 3);
 
 	#pragma omp parallel for collapse(3)
-	for (int z = 0; z < dims[2]; z++) 
-		for (int y = 0; y < dims[1]; y++) 
+	for (int z = 0; z < dims[2]; z++) {
+		for (int y = 0; y < dims[1]; y++) {
 			for (int x = 0; x < dims[0]; x++) {
 
 				long idx = x + dims[0] * (y + z * dims[1]);
@@ -498,6 +497,8 @@ void apply_rolloff_correction(float os, float width, float beta, int N, const lo
 				for (long i = 0; i < size_bat; i++)
 					dst[idx + i *size_img] = val * src[idx + i *size_img];
 			}
+		}
+	}
 }
 
 
