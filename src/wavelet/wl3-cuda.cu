@@ -23,21 +23,28 @@
 #define CFL_SIZE sizeof(_Complex float)
 #endif
 
+struct ldim3 {
 
-__device__ long Wdot(dim3 a, dim3 b)
+	unsigned long x;
+	unsigned long y;
+	unsigned long z;
+};
+
+
+__device__ long Wdot(ldim3 a, ldim3 b)
 {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-__device__ dim3 Wpmuladd(dim3 a, dim3 b, dim3 c)
+__device__ ldim3 Wpmuladd(dim3 a, dim3 b, dim3 c)
 {
-	dim3 r(a.x * b.x + c.x, a.y * b.y + c.y, a.z * b.z + c.z);
+	struct ldim3 r = { a.x * b.x + c.x, a.y * b.y + c.y, a.z * b.z + c.z};
 	return r;
 }
 
-__device__ dim3 Wpmul(dim3 a, dim3 b)
+__device__ ldim3 Wpmul(ldim3 a, ldim3 b)
 {
-	dim3 r(a.x * b.x, a.y * b.y, a.z * b.z);
+	struct ldim3 r = { a.x * b.x, a.y * b.y, a.z * b.z };
 	return r;
 }
 
@@ -59,85 +66,94 @@ __host__ __device__ int coord(int l, int x, int flen, int k)
 	return n;
 }
 
-__global__ void kern_down3(dim3 dims, dim3 ostr, cuFloatComplex* out, dim3 istr, const cuFloatComplex* in, unsigned int flen, const float* filter)
+__global__ void kern_down3(ldim3 dims, ldim3 ostr, cuFloatComplex* out, ldim3 istr, const cuFloatComplex* in, unsigned int flen, const float* filter)
 {
-	dim3 ind = Wpmuladd(blockIdx, blockDim, threadIdx);
+	ldim3 ind = Wpmuladd(blockIdx, blockDim, threadIdx);
+
+	if ((ind.x >= dims.x) || (ind.y >= bandsize(dims.y, flen)))
+		return;
+
+	for( ; ind.z < dims.z; ind.z += (blockDim.z * gridDim.z)) {
 	
-	if ((ind.x >= dims.x) || (ind.y >= bandsize(dims.y, flen)) || (ind.z >= dims.z))
-		return;
+		cuFloatComplex y = make_cuFloatComplex(0., 0.);
 
-	cuFloatComplex y = make_cuFloatComplex(0., 0.);
+		for (unsigned int l = 0; l < flen; l++) {
 
-	for (unsigned int l = 0; l < flen; l++) {
-
-		int n = coord(ind.y, dims.y, flen, l);
-		dim3 ac = ind;
-		ac.y = n;
-
-		y.x += in[Wdot(ac, istr)].x * filter[flen - l - 1];
-		y.y += in[Wdot(ac, istr)].y * filter[flen - l - 1];
-	}
-
-	out[Wdot(ind, ostr)] = y;
-}
-
-__global__ void kern_up3(dim3 dims, dim3 ostr, cuFloatComplex* out, dim3 istr, const cuFloatComplex* in, unsigned int flen, const float* filter)
-{
-	dim3 ind = Wpmuladd(blockIdx, blockDim, threadIdx);
-
-	if ((ind.x >= dims.x) || (ind.y >= dims.y) || (ind.z >= dims.z))
-		return;
-
-//	cuFloatComplex y = make_cuFloatComplex(0., 0.);
-	cuFloatComplex y = out[Wdot(ind, ostr)];
-
-	int odd = (ind.y + 1) % 2;
-
-	for (unsigned int l = odd; l < flen; l += 2) {
-
-		int j = (ind.y + l - 1) / 2;
-
-		dim3 ac = ind;
-		ac.y = j;
-
-		if ((0 <= j) && ((unsigned int)j < bandsize(dims.y, flen))) {
+			int n = coord(ind.y, dims.y, flen, l);
+			ldim3 ac = ind;
+			ac.y = n;
 
 			y.x += in[Wdot(ac, istr)].x * filter[flen - l - 1];
 			y.y += in[Wdot(ac, istr)].y * filter[flen - l - 1];
 		}
-	}
 
-	out[Wdot(ind, ostr)] = y;
+		out[Wdot(ind, ostr)] = y;
+	}
+}
+
+__global__ void kern_up3(ldim3 dims, ldim3 ostr, cuFloatComplex* out, ldim3 istr, const cuFloatComplex* in, unsigned int flen, const float* filter)
+{
+	ldim3 ind = Wpmuladd(blockIdx, blockDim, threadIdx);
+
+	if ((ind.x >= dims.x) || (ind.y >= dims.y))
+		return;
+
+	for( ; ind.z < dims.z; ind.z += (blockDim.z * gridDim.z)) {
+
+		cuFloatComplex y = out[Wdot(ind, ostr)];
+
+		int odd = (ind.y + 1) % 2;
+
+		for (unsigned int l = odd; l < flen; l += 2) {
+
+			int j = (ind.y + l - 1) / 2;
+
+			ldim3 ac = ind;
+			ac.y = j;
+
+			if ((0 <= j) && ((unsigned int)j < bandsize(dims.y, flen))) {
+
+				y.x += in[Wdot(ac, istr)].x * filter[flen - l - 1];
+				y.y += in[Wdot(ac, istr)].y * filter[flen - l - 1];
+			}
+		}
+
+		out[Wdot(ind, ostr)] = y;
+	}
 }
 
 // extern "C" size_t cuda_shared_mem;
 
 extern "C" void wl3_cuda_down3(const long dims[3], const long out_str[3], _Complex float* out, const long in_str[3], const _Complex float* in, unsigned int flen, const float filter[__VLA(flen)])
 {
-	dim3 dims3(dims[0], dims[1], dims[2]);
-	dim3 ostrs(out_str[0] / CFL_SIZE, out_str[1] / CFL_SIZE, out_str[2] / CFL_SIZE);
-	dim3 istrs(in_str[0] / CFL_SIZE, in_str[1] / CFL_SIZE, in_str[2] / CFL_SIZE);
+	struct ldim3 dims3 = { (unsigned long)dims[0], (unsigned long)dims[1], (unsigned long)dims[2] };
+	struct ldim3 ostrs = { out_str[0] / CFL_SIZE, out_str[1] / CFL_SIZE, out_str[2] / CFL_SIZE };
+	struct ldim3 istrs = { in_str[0] / CFL_SIZE, in_str[1] / CFL_SIZE, in_str[2] / CFL_SIZE };
 
 	long d1 = bandsize(dims[1], flen);
 
 	int T = 8;
 	dim3 th(T, T, T);
-	dim3 bl((dims[0] + T - 1) / T, (d1 + T - 1) / T, (dims[2] + T - 1) / T);
+	dim3 bl((dims[0] + T - 1) / T, (d1 + T - 1) / T, MIN(65535, (dims[2] + T - 1) / T));
 
 	kern_down3<<< bl, th, 0, cuda_get_stream() >>>(dims3, ostrs, (cuFloatComplex*)out, istrs, (const cuFloatComplex*)in, flen, filter);
+
+	CUDA_KERNEL_ERROR;
 }
 
 extern "C" void wl3_cuda_up3(const long dims[3], const long out_str[3], _Complex float* out, const long in_str[3],  const _Complex float* in, unsigned int flen, const float filter[__VLA(flen)])
 {
-	dim3 dims3(dims[0], dims[1], dims[2]);
-	dim3 ostrs(out_str[0] / CFL_SIZE, out_str[1] / CFL_SIZE, out_str[2] / CFL_SIZE);
-	dim3 istrs(in_str[0] / CFL_SIZE, in_str[1] / CFL_SIZE, in_str[2] / CFL_SIZE);
+	ldim3 dims3 = { (unsigned long)dims[0], (unsigned long)dims[1], (unsigned long)dims[2] };
+	ldim3 ostrs = { out_str[0] / CFL_SIZE, out_str[1] / CFL_SIZE, out_str[2] / CFL_SIZE };
+	ldim3 istrs = { in_str[0] / CFL_SIZE, in_str[1] / CFL_SIZE, in_str[2] / CFL_SIZE };
 
 	int T = 8;
 	dim3 th(T, T, T);
-	dim3 bl((dims[0] + T - 1) / T, (dims[1] + T - 1) / T, (dims[2] + T - 1) / T);
+	dim3 bl((dims[0] + T - 1) / T, (dims[1] + T - 1) / T, MIN(65535, (dims[2] + T - 1) / T));
 
 	kern_up3<<< bl, th, 0, cuda_get_stream() >>>(dims3, ostrs, (cuFloatComplex*)out, istrs, (const cuFloatComplex*)in, flen, filter);
+
+	CUDA_KERNEL_ERROR;
 }
 
 
