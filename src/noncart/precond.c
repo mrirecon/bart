@@ -45,7 +45,7 @@
  * Strang's reconditioner is simply the cropped psf in the image domain
  *
  */
-static complex float* compute_precond(unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase)
+static struct multiplace_array_s* compute_precond(unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase)
 {
 	int ND = N + 1;
 	unsigned long flags = FFT_FLAGS;
@@ -68,7 +68,7 @@ static complex float* compute_precond(unsigned int N, const long* pre_dims, cons
 	md_zabs(N, pre_dims, pre, pre);
 	md_zsadd(N, pre_dims, pre, pre, 1e-3);
 	
-	return pre;
+	return multiplace_move_F(ND, pre_dims, CFL_SIZE, pre);
 }
 
 
@@ -81,7 +81,7 @@ struct nufft_precond_data {
 	INTERFACE(operator_data_t);
 
 	unsigned int N;
-	const complex float* pre; ///< Preconditioner
+	struct multiplace_array_s* pre; ///< Preconditioner
 
 	long* cim_dims; ///< Coil image dimension
 	long* pre_dims; ///< Preconditioner dimension
@@ -107,7 +107,7 @@ static void nufft_precond_apply(const operator_data_t* _data, unsigned int M, vo
 
 	linop_forward(data->fft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, src);
 
-	md_zdiv2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, dst, data->pre_strs, data->pre);
+	md_zdiv2(data->N, data->cim_dims, data->cim_strs, dst, data->cim_strs, dst, data->pre_strs, multiplace_read(data->pre, dst));
 	linop_adjoint(data->fft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, dst);
 }
 
@@ -120,7 +120,7 @@ static void nufft_precond_del(const operator_data_t* _data)
 	xfree(data->cim_strs);
 	xfree(data->pre_strs);
 
-	md_free(data->pre);
+	multiplace_free(data->pre);
 	xfree(data);
 }
 
