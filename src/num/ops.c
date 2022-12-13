@@ -1051,7 +1051,7 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 
 		const struct iovec_s* io = operator_arg_domain(op, i);
 
-		allocated[i] = (!md_check_equal_dims(io->N, io->strs, data->strs[i], ~0) || ((NULL != data->ref) && !md_is_sameplace(data->ref, args[i])));
+		allocated[i] = (!md_check_equal_dims(io->N, io->strs, data->strs[i], md_nontriv_dims(io->N, io->dims)) || ((NULL != data->ref) && !md_is_sameplace(data->ref, args[i])));
 
 		if (allocated[i]) {
 
@@ -1195,7 +1195,7 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 	for (unsigned int i = 0; i < N; i++) {
 
-		if (!MD_IS_SET(data->move_flags, i)) {
+		if ((!MD_IS_SET(data->move_flags, i) || cuda_ondevice(args[i]))) {
 
 			gpu_ptr[i] = args[i];
 			continue;
@@ -1215,7 +1215,7 @@ static void gpuwrp_fun(const operator_data_t* _data, unsigned int N, void* args[
 
 	for (unsigned int i = 0; i < N; i++) {
 
-		if (!MD_IS_SET(data->move_flags, i))
+		if (gpu_ptr[i] == args[i])
 			continue;
 
 		const struct iovec_s* io = operator_arg_domain(op, i);
