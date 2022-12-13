@@ -152,7 +152,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 
 			debug_printf(DP_INFO, "Primal Dual\n");
 
-			assert(2 == nr_penalties);
+			//assert(2 == nr_penalties);
 
 			PTR_ALLOC(struct iter_chambolle_pock_conf, pdconf);
 			*pdconf = iter_chambolle_pock_defaults;

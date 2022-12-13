@@ -302,7 +302,9 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_SET(0, "gpu-gridding", &gpu_gridding, "use GPU for gridding"),
 		OPT_INT('G', &gpun, "gpun", "use GPU device gpun"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
+		OPTL_SET(0, "precond", &(conf.precond), "interprete weights as preconditioner"),
 		OPT_SELECT('I', enum algo_t, &algo, ALGO_IST, "select IST"),
+		OPTL_SELECT(0, "pridu", enum algo_t, &algo, ALGO_PRIDU, "select primal dual"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
@@ -770,8 +772,9 @@ int main_pics(int argc, char* argv[argc])
 
 	double maxeigen = 1.;
 
-	if (eigen) {
+	if (eigen && (ALGO_PRIDU != algo)) {
 
+		// Maxeigen in PRIDU must include regularizations
 		maxeigen = estimate_maxeigenval(forward_op->normal);
 
 		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
@@ -788,6 +791,9 @@ int main_pics(int argc, char* argv[argc])
 
 	if (conf.bpsense)
 		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace, bpsense_eps);
+	
+	if (conf.precond)
+		opt_precond_configure(&ropts, thresh_ops, trafos, forward_op, DIMS, ksp_dims, kspace, pat_dims, conf.precond ? pattern : NULL);
 
 	int nr_penalties = ropts.r + ropts.sr;
 
@@ -798,7 +804,7 @@ int main_pics(int argc, char* argv[argc])
 	if (ALGO_DEFAULT == algo)
 		algo = italgo_choose(ropts.r, ropts.regs);
 
-	if (conf.bpsense)
+	if (conf.bpsense || conf.precond)
 		assert((ALGO_ADMM == algo) || (ALGO_PRIDU == algo));
 
 
@@ -828,6 +834,9 @@ int main_pics(int argc, char* argv[argc])
 	// initialize algorithm
 
 	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, fast, admm, scaling, warm_start);
+
+	if (eigen && (ALGO_PRIDU == algo))
+		CAST_DOWN(iter_chambolle_pock_conf, it.iconf)->maxeigen_iter = 30;
 
 	if (ALGO_CG == algo)
 		nr_penalties = 0;
@@ -917,7 +926,7 @@ int main_pics(int argc, char* argv[argc])
 		op = op_tmp;
 	}
 
-	operator_apply(op, DIMS, img_dims, image, DIMS, conf.bpsense ? img_dims : ksp_dims, conf.bpsense ? NULL : kspace);
+	operator_apply(op, DIMS, img_dims, image, DIMS, (conf.bpsense || conf.precond) ? img_dims : ksp_dims, (conf.bpsense || conf.precond) ? NULL : kspace);
 
 	operator_free(op);
 
