@@ -259,7 +259,11 @@ void iter2_fista(const iter_conf* _conf,
 		}
 	};
 
-	fista(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step, size, select_vecops(image_adj),
+	double maxeigen = 1.;
+	if (0 != conf->maxeigen_iter)
+		maxeigen = estimate_maxeigenval_sameplace(normaleq_op, conf->maxeigen_iter, image_adj);
+
+	fista(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step / maxeigen, size, select_vecops(image_adj),
 		continuation, OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
 // cleanup:
@@ -351,11 +355,18 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 #else
 	float eps = 1.;
 #endif
+	double maxeigen = 1.;
+	if (0 != conf->maxeigen_iter) {
+
+		debug_printf(DP_INFO, "Estimating max eigenvalue...\n");
+		maxeigen = estimate_maxeigenval_sameplace(lop_A->normal, conf->maxeigen_iter, image);
+		debug_printf(DP_INFO, "Max eigenvalue: %e\n", maxeigen);
+	}
 
 	const struct iovec_s* ov = linop_codomain(lop_A);
 
 	// FIXME: conf->INTERFACE.alpha * c
-	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau, conf->sigma, conf->theta, conf->decay, size, 2 * md_calc_size(ov->N, ov->dims), select_vecops(image),
+	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau / sqrtf(maxeigen), conf->sigma / sqrtf(maxeigen), conf->theta, conf->decay, size, 2 * md_calc_size(ov->N, ov->dims), select_vecops(image),
 			OPERATOR2ITOP(lop_A->forward), OPERATOR2ITOP(lop_A->adjoint), OPERATOR_P2ITOP(prox_F), OPERATOR_P2ITOP(prox_G),
 			image, monitor);
 
