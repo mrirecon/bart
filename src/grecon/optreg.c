@@ -19,6 +19,8 @@
 #include "num/iovec.h"
 #include "num/ops_p.h"
 #include "num/ops.h"
+#include "num/multind.h"
+#include "num/flpmath.h"
 
 #include "iter/prox.h"
 #include "iter/prox2.h"
@@ -43,9 +45,6 @@
 #include "misc/debug.h"
 
 #include "optreg.h"
-
-
-#define CFL_SIZE sizeof(complex float)
 
 
 void help_reg(void)
@@ -267,6 +266,32 @@ void opt_bpursuit_configure(struct opt_reg_s* ropts, const struct operator_p_s* 
 
 	const struct iovec_s* iov = linop_codomain(model_op);
 	prox_ops[nr_penalties] = prox_l2ball_create(iov->N, iov->dims, eps, data);
+	trafos[nr_penalties] = linop_clone(model_op);
+
+	ropts->sr++;
+}
+
+void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const struct linop_s* model_op, int N, const long ksp_dims[N], const complex float* data, const long pat_dims[N], const complex float* pattern)
+{
+	int nr_penalties = ropts->r + ropts->sr;
+	assert(NUM_REGS > nr_penalties);
+
+	
+	const struct iovec_s* iov = linop_codomain(model_op);
+	assert(md_check_equal_dims(N, iov->dims, ksp_dims, ~0));
+	assert(md_check_compat(N, ~0, pat_dims, ksp_dims));
+
+	if (NULL == pattern)
+		prox_ops[nr_penalties] = prox_leastsquares_create(iov->N, iov->dims, 1., data);
+	else {
+
+		complex float* ipattern = md_alloc_sameplace(N, pat_dims, CFL_SIZE, pattern);
+		md_zfill(N, pat_dims, ipattern, 1.);
+		md_zdiv(N, pat_dims, ipattern, ipattern, pattern);
+		prox_ops[nr_penalties] = prox_weighted_leastsquares_create(iov->N, iov->dims, 1., data, md_nontriv_dims(N, pat_dims), ipattern);
+		md_free(ipattern);
+	}
+
 	trafos[nr_penalties] = linop_clone(model_op);
 
 	ropts->sr++;
