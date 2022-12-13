@@ -27,6 +27,7 @@
 #include "num/ops.h"
 
 #include "linops/linop.h"
+#include "linops/someops.h"
 
 #include "iter/italgos.h"
 #include "iter/iter.h"
@@ -34,6 +35,7 @@
 #include "iter/admm.h"
 #include "iter/vec.h"
 #include "iter/niht.h"
+#include "iter/misc.h"
 
 #include "iter2.h"
 
@@ -265,8 +267,39 @@ void iter2_fista(const iter_conf* _conf,
 }
 
 
-/* Chambolle Pock Primal Dual algorithm. Solves G(x) + F(Ax)
- * Assumes that G is in prox_ops[0], F is in prox_ops[1], A is in ops[1]
+static const struct linop_s* stack_flatten_cod_linop_F(const struct linop_s* lop1, const struct linop_s* lop2)
+{
+	long cod_size1 = md_calc_size(linop_codomain(lop1)->N, linop_codomain(lop1)->dims);
+	long cod_size2 = md_calc_size(linop_codomain(lop2)->N, linop_codomain(lop2)->dims);
+
+	auto lop1_r = linop_reshape_out_F(lop1, 1, MD_DIMS(cod_size1));
+	auto lop2_r = linop_reshape_out_F(lop2, 1, MD_DIMS(cod_size2));
+
+	auto result = linop_stack_cod(2, (struct linop_s*[2]){ lop1_r, lop2_r }, 0);
+
+	linop_free(lop1_r);
+	linop_free(lop2_r);
+
+	return result;
+}
+
+static const struct operator_p_s* stack_flatten_prox_F(const struct operator_p_s* prox1, const struct operator_p_s* prox2)
+{
+	long size1 = md_calc_size(operator_p_domain(prox1)->N, operator_p_domain(prox1)->dims);
+	long size2 = md_calc_size(operator_p_domain(prox2)->N, operator_p_domain(prox2)->dims);
+
+	auto prox1_r = operator_p_reshape_out_F(operator_p_reshape_in_F(prox1, 1, MD_DIMS(size1)), 1, MD_DIMS(size1));
+	auto prox2_r = operator_p_reshape_out_F(operator_p_reshape_in_F(prox2, 1, MD_DIMS(size2)), 1, MD_DIMS(size2));
+
+	auto prox3 = operator_p_stack(0, 0, prox1_r, prox2_r);
+
+	operator_p_free(prox1_r);
+	operator_p_free(prox2_r);
+	return prox3;
+}
+
+/* Chambolle Pock Primal Dual algorithm. Solves G(x) + sum F_i(A_ix)
+ * Assumes that G is in prox_ops[0] and ops[0] is NULL or identity, else G(x) = 0 is used.
  */
 void iter2_chambolle_pock(const iter_conf* _conf,
 		const struct operator_s* normaleq_op,
@@ -278,7 +311,6 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
-	assert(D == 2);
 	assert(NULL == biases);
 	assert(NULL == normaleq_op);
 
@@ -287,12 +319,28 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 
 	auto conf = CAST_DOWN(iter_chambolle_pock_conf, _conf);
 
-	const struct iovec_s* iv = linop_domain(ops[1]);
-	const struct iovec_s* ov = linop_codomain(ops[1]);
-
-	assert((long)md_calc_size(iv->N, iv->dims) * 2 == size);
-
 	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
+
+	const struct operator_p_s* prox_G = NULL;
+
+	if ((1 <= D) && ((NULL == ops[0]) || linop_is_identity(ops[0]))) {
+
+		prox_G = operator_p_ref(prox_ops[0]);
+		D--;
+		prox_ops += 1;
+		ops += 1;
+	} else 
+		prox_G = prox_zero_create(1, MD_DIMS(size / 2));
+
+	const struct operator_p_s* prox_F = (0 < D) ? operator_p_ref(prox_ops[0]) : prox_zero_create(1, MD_DIMS(size / 2));
+	const struct linop_s* lop_A = (0 < D) ? linop_clone(ops[0]) : linop_null_create(1, MD_DIMS(size / 2), 1, MD_DIMS(size / 2));
+
+	for (unsigned int i = 1; i < D; i++) {
+
+		prox_F = stack_flatten_prox_F(prox_F, operator_p_ref(prox_ops[i]));
+		lop_A = stack_flatten_cod_linop_F(lop_A, linop_clone(ops[i]));
+	}
+
 
 	// FIXME: sensible way to check for corrupt data?
 #if 0
@@ -304,10 +352,16 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 	float eps = 1.;
 #endif
 
+	const struct iovec_s* ov = linop_codomain(lop_A);
+
 	// FIXME: conf->INTERFACE.alpha * c
-	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau, conf->sigma, conf->theta, conf->decay, 2 * md_calc_size(iv->N, iv->dims), 2 * md_calc_size(ov->N, ov->dims), select_vecops(image),
-			OPERATOR2ITOP(ops[1]->forward), OPERATOR2ITOP(ops[1]->adjoint), OPERATOR_P2ITOP(prox_ops[1]), OPERATOR_P2ITOP(prox_ops[0]), 
+	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau, conf->sigma, conf->theta, conf->decay, size, 2 * md_calc_size(ov->N, ov->dims), select_vecops(image),
+			OPERATOR2ITOP(lop_A->forward), OPERATOR2ITOP(lop_A->adjoint), OPERATOR_P2ITOP(prox_F), OPERATOR_P2ITOP(prox_G),
 			image, monitor);
+
+	operator_p_free(prox_F);
+	operator_p_free(prox_G);
+	linop_free(lop_A);
 
 	//cleanup:
 	//;
