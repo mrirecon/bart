@@ -740,9 +740,13 @@ static void stack_cod_adjoint(const linop_data_t* _data, complex float* dst, con
 	md_free(tmp);
 }
 
-static void stack_cod_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
+static void stack_cod_normal(const linop_data_t* _data, complex float* _dst, const complex float* src)
 {
 	const auto d = CAST_DOWN(stack_op_s, _data);
+
+	complex float* dst = _dst;
+	if(dst == src)
+		dst = md_alloc_sameplace(d->D, d->dims, CFL_SIZE, dst);
 
 	linop_normal_unchecked(d->lops[0], dst, src);
 
@@ -755,6 +759,12 @@ static void stack_cod_normal(const linop_data_t* _data, complex float* dst, cons
 	}
 
 	md_free(tmp);
+
+	if (dst != _dst){
+
+		md_copy(d->D, d->dims, _dst, dst, CFL_SIZE);
+		md_free(dst);
+	}
 }
 
 static void stack_cod_free(const linop_data_t* _data)
