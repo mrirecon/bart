@@ -28,6 +28,7 @@ struct sense_conf {
 	float gamma;	// ..
 	float cclambda;
 	bool bpsense;
+	bool precond;
 };
 
 

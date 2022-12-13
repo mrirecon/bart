@@ -60,6 +60,7 @@ const struct sense_conf sense_defaults = {
 	.gamma = -1.,
 	.cclambda = 0.,
 	.bpsense = false,
+	.precond = false,
 };
 
 
@@ -149,7 +150,7 @@ const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, con
 	} else
 	if (NULL == pattern) {
 
-		if (conf->bpsense)
+		if ((conf->bpsense) || (conf->precond))
 			op = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init, NULL, NULL,
 					num_funs, thresh_op, thresh_funs, monitor);
 		else
