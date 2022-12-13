@@ -14,6 +14,7 @@
 #include <math.h>
 
 #include "num/multind.h"
+#include "num/multiplace.h"
 #include "num/flpmath.h"
 #include "num/ops_p.h"
 #include "num/ops.h"
@@ -41,70 +42,127 @@
 
 /**
  * Data for computing prox_leastsquares_fun:
- * Proximal function for f(z) = lambda / 2 || y - z ||_2^2.
+ * Proximal function for f(z) = lambda / 2 || W * (y - z) ||_2^2.
  *
  * @param y
  * @param lambda regularization
  * @param size size of z
  */
-struct prox_leastsquares_data {
+struct prox_weighted_leastsquares_data {
 
 	INTERFACE(operator_data_t);
 
-	const float* y;
-	float lambda;
+	int N;
 
-	long size;
+	const long* dims;
+	struct multiplace_array_s* y;
+
+	const long* wdims;
+	struct multiplace_array_s* W;
+
+	float lambda;
 };
 
-static DEF_TYPEID(prox_leastsquares_data);
+static DEF_TYPEID(prox_weighted_leastsquares_data);
 
 
 /**
- * Proximal function for f(z) = lambda / 2 || y - z ||_2^2.
- * Solution is z =  (mu * lambda * y + x_plus_u) / (mu * lambda + 1)
+ * Proximal function for f(z) = lambda / 2 || W (y - z) ||_2^2.
+ * Solution is z =  (mu * lambda * y + x_plus_u) / (mu * lambda * |W|^2 + 1)
  *
- * @param prox_data should be of type prox_leastsquares_data
+ * @param prox_data should be of type prox_weighted_leastsquares_data
  * @param mu proximal penalty
  * @param z output
  * @param x_plus_u input
  */
-static void prox_leastsquares_fun(const operator_data_t* prox_data, float mu, float* z, const float* x_plus_u)
+static void prox_weighted_leastsquares_fun(const operator_data_t* prox_data, float mu, complex float* z, const complex float* x_plus_u)
 {
-	auto pdata = CAST_DOWN(prox_leastsquares_data, prox_data);
+	auto pdata = CAST_DOWN(prox_weighted_leastsquares_data, prox_data);
+	
+	int N = pdata->N;
+	const long* dims = pdata->dims;
+	const long* wdims = pdata->wdims;
+
+	const complex float* y = multiplace_read(pdata->y, z);
+	const complex float* W_sqr = multiplace_read(pdata->W, z);
 
 	if (z != x_plus_u)
-		md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
+		md_copy(N, dims, z, x_plus_u, CFL_SIZE);
 
 	if (0 != mu) {
+		
+		if (NULL == W_sqr) {
 
-		if (NULL != pdata->y)
-			md_axpy(1, MD_DIMS(pdata->size), z, pdata->lambda * mu, pdata->y);
+			if (NULL != y)
+				md_zaxpy(N, dims, z, pdata->lambda * mu, multiplace_read(pdata->y, z));
 
-		md_smul(1, MD_DIMS(pdata->size), z, z, 1. / (mu * pdata->lambda + 1));
+			md_zsmul(N, dims, z, z, 1. / (mu * pdata->lambda + 1));
+		
+		} else {
+
+			complex float* tmp = md_alloc_sameplace(N, wdims, CFL_SIZE, z);
+			md_zsmul(N, wdims, tmp, W_sqr, mu * pdata->lambda);
+
+			if (NULL != y)
+				md_zfmac2(N, dims, MD_STRIDES(N, dims, CFL_SIZE), z, MD_STRIDES(N, dims, CFL_SIZE), y, MD_STRIDES(N, wdims, CFL_SIZE), tmp);
+
+			complex float* ones = md_alloc_sameplace(N, wdims, CFL_SIZE, z);
+			md_zfill(N, wdims, ones, 1);
+
+			md_zadd(N, wdims, tmp, tmp, ones);
+			md_zdiv(N, wdims, tmp, ones, tmp);
+
+			md_free(ones);
+
+			md_zmul2(N, dims, MD_STRIDES(N, dims, CFL_SIZE), z, MD_STRIDES(N, dims, CFL_SIZE), z, MD_STRIDES(N, wdims, CFL_SIZE), tmp);
+			md_free(tmp);
+		}
 	}
 }
 
-static void prox_leastsquares_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+
+static void prox_weighted_leastsquares_del(const operator_data_t* _data)
 {
-	prox_leastsquares_fun(_data, mu, (float*)dst, (const float*)src);
+	auto data = CAST_DOWN(prox_weighted_leastsquares_data, _data);
+	multiplace_free(data->y);
+
+	xfree(data->dims);
+	xfree(data->wdims);
+
+	xfree(data);
 }
 
-static void prox_leastsquares_del(const operator_data_t* _data)
+const struct operator_p_s* prox_weighted_leastsquares_create(int N, const long dims[N], float lambda, const complex float* y, unsigned long flags, const complex float* W)
 {
-	xfree(CAST_DOWN(prox_leastsquares_data, _data));
+	PTR_ALLOC(struct prox_weighted_leastsquares_data, pdata);
+	SET_TYPEID(prox_weighted_leastsquares_data, pdata);
+
+	pdata->N = N;
+	pdata->dims = ARR_CLONE(long[N], dims);
+
+	pdata->y = (NULL == y) ? NULL : multiplace_move(N, dims, CFL_SIZE, y);
+	pdata->lambda = lambda;
+
+	long wdims[N];
+	md_select_dims(N, flags, wdims, dims);
+	pdata->wdims = ARR_CLONE(long[N], wdims);
+
+	if (NULL != W) {
+	
+		complex float* tmp = md_alloc_sameplace(N, wdims, CFL_SIZE, W);
+		md_zmulc(N, wdims, tmp, W, W);
+
+		pdata->W = multiplace_move_F(N, wdims, CFL_SIZE, tmp);
+	} else {
+		pdata->W = NULL;
+	}
+
+	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_weighted_leastsquares_fun, prox_weighted_leastsquares_del);
 }
 
 const struct operator_p_s* prox_leastsquares_create(int N, const long dims[N], float lambda, const complex float* y)
 {
-	PTR_ALLOC(struct prox_leastsquares_data, pdata);
-	SET_TYPEID(prox_leastsquares_data, pdata);
-
-	pdata->y = (const float*)y;
-	pdata->lambda = lambda;
-	pdata->size = md_calc_size(N, dims) * 2;
-
-	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_leastsquares_apply, prox_leastsquares_del);
+	return prox_weighted_leastsquares_create(N, dims, lambda, y, 0, NULL);
 }
 
 
