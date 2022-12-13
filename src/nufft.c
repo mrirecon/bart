@@ -152,9 +152,21 @@ int main_nufft(int argc, char* argv[argc])
 
 		const struct linop_s* nufft_op;
 
-		if (!dft)
-			nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf);
-		else
+		if (!dft) {
+#ifdef USE_CUDA
+			if (use_gpu && !precond && !dft) {
+
+				complex float* traj_gpu = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
+
+				auto tmp = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj_gpu, NULL, conf);
+				nufft_op = linop_gpu_wrapper((struct linop_s*)tmp);
+				linop_free(tmp);
+
+				md_free(traj_gpu);
+			} else 
+#endif
+				nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf);
+		} else
 			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
 
 
@@ -176,13 +188,6 @@ int main_nufft(int argc, char* argv[argc])
 				operator_free(precond_op);
 
 		} else {
-
-			if (use_gpu) {
-
-				auto tmp = nufft_op;
-				nufft_op = linop_gpu_wrapper((struct linop_s*)tmp);
-				linop_free(tmp);
-			}
 
 			linop_adjoint(nufft_op, DIMS, coilim_dims, img, DIMS, ksp_dims, ksp);
 		}
