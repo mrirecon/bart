@@ -71,6 +71,7 @@ struct iter_fista_conf {
 	float continuation;
 	_Bool hogwild;
 	float tol;
+	int maxeigen_iter;
 };
 
 
@@ -86,6 +87,7 @@ struct iter_chambolle_pock_conf {
 	float decay;
 	float tol;
 	_Bool fast;
+	int maxeigen_iter;
 };
 
 
