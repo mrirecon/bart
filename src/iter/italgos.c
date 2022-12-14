@@ -648,21 +648,12 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 	struct iter_monitor_s* monitor)
 {
 	float* x_avg = vops->allocate(N);
-	float* x_old = vops->allocate(N);
-	float* x_new = vops->allocate(N);
 
-	float* u_old = vops->allocate(M);
 	float* u = vops->allocate(M);
-	float* u_new = vops->allocate(M);
 
-	vops->copy(N, x_old, x);
-	vops->copy(N, x_new, x);
 	vops->copy(N, x_avg, x);
 
 	vops->clear(M, u);
-	vops->clear(M, u_new);
-	vops->clear(M, u_old);
-
 
 	for (unsigned int i = 0; i < maxiter; i++) {
 
@@ -675,6 +666,9 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 		 * u = lambda * u + (1 - lambda) * u0
 		 */
 
+		float* u_old = vops->allocate(M);
+		float* u_new = vops->allocate(M);
+
 		iter_op_call(op_forw, u_old, x_avg);
 
 		vops->axpy(M, u_old, 1. / sigma, u); // (u + sigma * A(x)) / sigma
@@ -685,12 +679,22 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 		vops->copy(M, u_old, u);
 		vops->axpbz(M, u, lambda, u_new, 1. - lambda, u_old);
 
+		vops->sub(M, u_old, u, u_old);
+		float res2 = vops->norm(M, u_old) / tau;
+
+		vops->del(u_old);
+		vops->del(u_new);
+
 		/* update x
 		 * x0 = x
 		 * q = x0 - tau * AH(u)
 		 * x = prox2(q, tau)
 		 * x = lambda * x + (1 - lambda * x0)
 		 */
+
+		float* x_old = vops->allocate(N);
+		float* x_new = vops->allocate(N);
+
 		vops->copy(N, x_old, x);
 
 		iter_op_call(op_adj, x_new, u);
@@ -708,10 +712,10 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 
 		// residual
 		vops->sub(N, x_old, x, x_old);
-		vops->sub(M, u_old, u, u_old);
-
 		float res1 = vops->norm(N, x_old) / sigma;
-		float res2 = vops->norm(M, u_old) / tau;
+
+		vops->del(x_old);
+		vops->del(x_new);
 
 		iter_monitor(monitor, vops, x);
 
@@ -724,12 +728,7 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 	debug_printf(DP_DEBUG3, "\n");
 
 	vops->del(x_avg);
-	vops->del(x_old);
-	vops->del(x_new);
-
-	vops->del(u_old);
 	vops->del(u);
-	vops->del(u_new);
 }
 
 
