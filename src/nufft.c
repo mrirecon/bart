@@ -58,6 +58,9 @@ int main_nufft(int argc, char* argv[argc])
 	bool dft = false;
 	bool use_gpu = false;
 
+	const char* basis_file = NULL;
+	const char* pattern_file = NULL;
+
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 
@@ -84,6 +87,8 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_CLEAR('1', &conf.decomp, "use/return oversampled grid"),
 		OPTL_SET(0, "lowmem", &conf.lowmem, "Use low-mem mode of the nuFFT"),
 		OPTL_CLEAR(0, "no-precomp", &precomp, "Use low-low-mem mode of the nuFFT"),
+		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
+		OPT_INFILE('p', &pattern_file, "file", "weighting of nufft"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -123,6 +128,22 @@ int main_nufft(int argc, char* argv[argc])
 
 	(use_gpu ? num_init_gpu : num_init)();
 
+	long basis_dims[DIMS];
+	complex float* basis = NULL;
+
+	if (NULL != basis_file) {
+
+		basis = load_cfl(basis_file, DIMS, basis_dims);
+		assert(!md_check_dimensions(DIMS, basis_dims, COEFF_FLAG | TE_FLAG));
+	}
+
+	long pattern_dims[DIMS];
+	complex float* pattern = NULL;
+
+	if (NULL != pattern_file)
+		pattern = load_cfl(pattern_file, DIMS, pattern_dims);
+
+
 	if (inverse || adjoint) {
 
 		long ksp_dims[DIMS];
@@ -146,6 +167,12 @@ int main_nufft(int argc, char* argv[argc])
 
 		md_copy_dims(DIMS - 3, coilim_dims + 3, ksp_dims + 3);
 
+		if (NULL != basis) {
+
+			coilim_dims[COEFF_DIM] = basis_dims[COEFF_DIM];
+			coilim_dims[TE_DIM] = 1;
+		}
+
 		complex float* img = create_cfl(out_file, DIMS, coilim_dims);
 
 		md_clear(DIMS, coilim_dims, img, CFL_SIZE);
@@ -158,14 +185,14 @@ int main_nufft(int argc, char* argv[argc])
 
 				complex float* traj_gpu = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
 
-				auto tmp = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj_gpu, NULL, conf);
+				auto tmp = nufft_create2(DIMS, ksp_dims, coilim_dims, traj_dims, traj_gpu, pattern_dims, pattern, basis_dims, basis, conf);
 				nufft_op = linop_gpu_wrapper((struct linop_s*)tmp);
 				linop_free(tmp);
 
 				md_free(traj_gpu);
 			} else 
 #endif
-				nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf);
+				nufft_op = nufft_create2(DIMS, ksp_dims, coilim_dims, traj_dims, traj, pattern_dims, pattern, basis_dims, basis, conf);
 		} else
 			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
 
@@ -206,12 +233,18 @@ int main_nufft(int argc, char* argv[argc])
 		md_select_dims(DIMS, PHS1_FLAG|PHS2_FLAG, ksp_dims, traj_dims);
 		md_copy_dims(DIMS - 3, ksp_dims + 3, coilim_dims + 3);
 
+		if (NULL != basis) {
+
+			ksp_dims[TE_DIM] = basis_dims[TE_DIM];
+			ksp_dims[COEFF_DIM] = 1;
+		}
+
 		complex float* ksp = create_cfl(out_file, DIMS, ksp_dims);
 
 		const struct linop_s* nufft_op;
 
 		if (!dft)
-			nufft_op = nufft_create(DIMS, ksp_dims, coilim_dims, traj_dims, traj, NULL, conf);
+			nufft_op = nufft_create2(DIMS, ksp_dims, coilim_dims, traj_dims, traj, pattern_dims, pattern, basis_dims, basis, conf);
 		else
 			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
 
@@ -232,6 +265,12 @@ int main_nufft(int argc, char* argv[argc])
 	}
 
 	unmap_cfl(DIMS, traj_dims, traj);
+
+	if (NULL != basis)
+		unmap_cfl(DIMS, basis_dims, basis);
+
+	if (NULL != pattern)
+		unmap_cfl(DIMS, pattern_dims, pattern);
 
 	debug_printf(DP_INFO, "Done.\n");
 
