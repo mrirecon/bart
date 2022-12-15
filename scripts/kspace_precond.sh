@@ -14,20 +14,25 @@ Note the square in the definition. The preconditioner can be used directly as wi
 
 <ones>	contains ones with image dimensions
 
+-B file subspace basis
 -g 	use GPU
 -h	help
 EOF
 )
 
 
-usage="Usage: $0 [-h] [-g] <ones> <trajectory> <output>"
+usage="Usage: $0 [-h] [-g] [-B <basis>] <ones> <trajectory> <output>"
 
 GPU=""
+BASIS=""
 
-while getopts "hg" opt; do
+while getopts "hgB:" opt; do
         case $opt in
         g)
 		GPU="-g"
+        ;;
+        B)
+		BASIS=$(readlink -f "$OPTARG")
         ;;
 	h)
 		echo "$usage"
@@ -82,11 +87,24 @@ for i in $(seq 15); do
 	ksp_dims+=" $(bart show -d$i $traj)"
 done
 
+if [[ "$BASIS" != "" ]] ; then
+
+	bart fmac -C -s$(bart bitmask 6) $BASIS $BASIS bas_scale
+	bart fmac scale bas_scale scale2
+	bart copy scale2 scale
+
+	COE=$(bart show -d6 $BASIS)
+
+	bart transpose 6 7 $BASIS basis_r 
+	bart fmac -C $BASIS basis_r basis_2
+	bart reshape $(bart bitmask 6 7) $((COE*COE)) 1 basis_2 basis
+	BASIS="-B basis"
+fi
 
 bart ones 16 $ksp_dims ksp
 bart scale 2 $traj traj2
 
-bart nufft -P --lowmem --no-precomp -a $GPU -x$X:$Y:$Z traj2 ksp psf
+bart nufft $BASIS -P --lowmem --no-precomp -a $GPU -x$X:$Y:$Z traj2 ksp psf
 
 bart resize -c 0 $X 1 $Y 2 $Z $ones ones_os
 bart fft -u 7 ones_os ones_ksp1
@@ -95,7 +113,7 @@ bart fft -u -i 7 ones_ksp ones_img
 
 bart fmac psf ones_img psf_mul
 
-bart nufft -P --lowmem --no-precomp $GPU traj2 psf_mul pre_inv
+bart nufft $BASIS -P --lowmem --no-precomp $GPU traj2 psf_mul pre_inv
 
 bart creal pre_inv pre_inv_real
 bart invert pre_inv_real pre_real
