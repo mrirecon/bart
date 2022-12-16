@@ -89,10 +89,6 @@ static double ftkb(double beta, double x)
 		return (sin(sqrt(-a)) / sqrt(-a)) / bessel_i0(beta);
 }
 
-static double rolloff_compat(double x, double beta, double width)
-{
-	return ftkb(beta, x * width / 2.) / ftkb(beta, 0.) / 2.;
-}
 
 static double rolloff(double x, double beta, double width)
 {
@@ -440,20 +436,6 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 	// precompute kaiser bessel table
 	kb_init(beta);
 
-	if (use_compat_to_version("v0.8.00")) {
-
-		#pragma omp parallel for collapse(3)
-		for (int z = 0; z < dimensions[2]; z++) 
-			for (int y = 0; y < dimensions[1]; y++) 
-				for (int x = 0; x < dimensions[0]; x++)
-					dst[x + dimensions[0] * (y + z * dimensions[1])] 
-						= rolloff_compat(pos(dimensions[0], x) / os, beta, width)
-						* rolloff_compat(pos(dimensions[1], y) / os, beta, width)
-						* rolloff_compat(pos(dimensions[2], z) / os, beta, width);
-		
-		return;
-	}
-
 #pragma omp parallel for collapse(3)
 	for (int z = 0; z < dimensions[2]; z++) 
 		for (int y = 0; y < dimensions[1]; y++) 
@@ -462,6 +444,12 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 					= (dimensions[0] > 1 ? rolloff(pos(dimensions[0], x) / os, beta, width) : 1.)
 					* (dimensions[1] > 1 ? rolloff(pos(dimensions[1], y) / os, beta, width) : 1.)
 					* (dimensions[2] > 1 ? rolloff(pos(dimensions[2], z) / os, beta, width) : 1.);
+
+	if (use_compat_to_version("v0.8.00")) {
+
+		float scale = powf(ftkb(beta, 0) * width / 2, bitcount(md_nontriv_dims(3, dimensions)));
+		md_zsmul(3, dimensions, dst, dst, scale);
+	}
 }
 
 void apply_rolloff_correction(float os, float width, float beta, int N, const long dims[N], complex float* dst, const complex float* src)
@@ -469,14 +457,19 @@ void apply_rolloff_correction(float os, float width, float beta, int N, const lo
 	// precompute kaiser bessel table
 	kb_init(beta);
 	
-	assert(!use_compat_to_version("v0.8.00"));
-
 #ifdef USE_CUDA
 	assert(cuda_ondevice(dst) == cuda_ondevice(src));
 
 	if (cuda_ondevice(dst)) {
 
 		cuda_apply_rolloff_correction(os, width, beta, N, dims, dst, src);
+
+		if (use_compat_to_version("v0.8.00")) {
+
+			float scale = powf(ftkb(beta, 0) * width / 2, bitcount(md_nontriv_dims(3, dims)));
+			md_zsmul(N, dims, dst, dst, scale);
+		}
+
 		return;
 	}
 #endif
@@ -498,6 +491,12 @@ void apply_rolloff_correction(float os, float width, float beta, int N, const lo
 					dst[idx + i *size_img] = val * src[idx + i *size_img];
 			}
 		}
+	}
+
+	if (use_compat_to_version("v0.8.00")) {
+
+		float scale = powf(ftkb(beta, 0) * width / 2, bitcount(md_nontriv_dims(3, dims)));
+		md_zsmul(N, dims, dst, dst, scale);
 	}
 }
 
