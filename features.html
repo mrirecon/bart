@@ -99,7 +99,7 @@
 		<ul>
 		<li>runs on Linux and Mac OS X</li>
 		<li>multi-dimensional operations on arrays</li>
-		<li>fast non-uniform Fourier Transform (nuFFT and convolution-based method)</li>
+		<li>fast non-uniform Fourier Transform (nuFFT, convolution-based method, GPU gridding)</li>
 		<li>multi-dimensional (divergence-free) wavelet transform</li>
 		<li>parallel computation on multiple cores and with <strong>Graphical Processing Units (GPU)</strong></li>
 		</ul>
@@ -111,7 +111,8 @@
 		<li>Normalized iterative hard thresholding (NIHT)</li>
 		<li><strong>Alternating Direction Method of Multipliers (ADMM)</strong></li>
 		<li>Iteratively Regularized Gauss-Newton Method (IRGNM)</li>
-		<li>Chambolle-Pock primal-dual algorithm</li>
+		<li>Primal-dual hybrid gradient algorithm</li>
+		<li>Adam, stochastic gradient descent, adadelta, iPALM</li>
 		</ul>
 	</li>
 	<li>Calibration methods:
@@ -123,20 +124,20 @@
 		<li><strong>RING:</strong> estimation of gradient delays for radial MRI</li>
 		</ul>
 	</li>
-	<li>reconstruction methods for MRI:
+	<li>Reconstruction methods for MRI:
 		<ul>
 		<li>iterative parallel imaging reconstruction: POCSENSE, SENSE</li>
 		<li><strong>compressed sensing and parallel imaging</strong></li>
 		<li>calibration-less parallel imaging: NLINV and <strong>ENLIVE</strong> (non-linear optimization) and SAKE (structured low-rank matrix completion)</li>
 		<li>reconstruction with <strong>linear subspace constraints</strong></li>
-		<li><strong>non-linear model-based reconstruction</strong> for T1, T2, flow, and water-fat mapping</li>
+		<li><strong>non-linear model-based reconstruction</strong> for T1, T2, T2&midast;, flow, and water-fat mapping</li>
 		<li>methods based on <strong>deep learning</strong>: variational networks and MoDL</li>
 		</ul>
 	</li>
 	<li>Regularization (in arbitrary dimensions):
 		<ul>
 		<li>Tikhonov</li>
-		<li>total variation</li>
+		<li>total (generalized) variation</li>
 		<li>l1-wavelet</li>
 		<li>(multi-scale) low-rank</li>
 		<li>Tensorflow-based priors</li>
