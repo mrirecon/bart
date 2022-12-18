@@ -120,6 +120,28 @@ tests/test-nufft-inverse: traj scale phantom nufft nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-nufft-inverse2: traj scale phantom nufft nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y201 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/nufft -x128:130:1 -i traj2.ra ksp.ra reco.ra				;\
+	$(TOOLDIR)/nufft traj2.ra reco.ra k2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.001 ksp.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nufft-inverse3: traj scale phantom nufft nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y201 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/nufft -x128:128:1 -i traj2.ra ksp.ra reco.ra				;\
+	$(TOOLDIR)/nufft traj2.ra reco.ra k2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.001 ksp.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 
 # test toeplitz by comparing to non-toeplitz
@@ -318,6 +340,7 @@ TESTS += tests/test-nufft-forward tests/test-nufft-adjoint tests/test-nufft-inve
 TESTS += tests/test-nufft-nudft tests/test-nudft-forward tests/test-nudft-adjoint tests/test-nufft-adj-lin
 TESTS += tests/test-nufft-batch tests/test-nufft-over
 TESTS += tests/test-nufft-lowmem-adjoint tests/test-nufft-lowmem-inverse tests/test-nufft-no-precomp-adjoint tests/test-nufft-no-precomp-inverse
+TESTS += tests/test-nufft-inverse2 tests/test-nufft-inverse3
 
 TESTS_GPU += tests/test-nufft-gpu-inverse tests/test-nufft-gpu-adjoint tests/test-nufft-gpu-forward
 TESTS_GPU += tests/test-nufft-gpu-inverse-lowmem tests/test-nufft-gpu-adjoint-lowmem tests/test-nufft-gpu-forward-lowmem

@@ -549,7 +549,7 @@ static void grid_psf_decomposed_kern(int N, unsigned long flags, int factor_dim,
 				md_zsmul(N, cdims, tmp, tmp, M_PI);
 				(0. != shift[j++] ? md_zsin : md_zcos)(N, cdims, tmp, tmp);
 
-				md_zsmul(N, cdims, tmp, tmp, 1. / sqrt(img_dims[i]) * cexp(-M_PI * 0.5I * img_dims[i]));
+				md_zsmul(N, cdims, tmp, tmp, cexp(M_PI * 0.25I * img_dims[i]));
 			
 				md_zmul2(N, ksp_dims, MD_STRIDES(N, ksp_dims, CFL_SIZE), kern_tmp, MD_STRIDES(N, ksp_dims, CFL_SIZE), kern_tmp, MD_STRIDES(N, cdims, CFL_SIZE), tmp);
 
@@ -594,7 +594,7 @@ static complex float* compute_psf_decomposed(int N, const long psf_dims[N + 1], 
 		float shift[3];	
 		compute_shift(3, shift, N, factors, i);
 
-		apply_linphases_3D(N, psf_dims, shift, psf, psf, false, false, 1);
+		apply_linphases_3D(N, psf_dims, shift, psf, psf, false, false, 1. / sqrt(md_calc_size(3, psf_dims)));
 
 		fftmod(N, psf_dims, flags, psf, psf);
 		fft(N, psf_dims, flags, psf, psf);
