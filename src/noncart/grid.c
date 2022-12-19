@@ -262,6 +262,38 @@ void grid2(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D
 	md_max_dims(D, ~0, max_dims, ksp_dims, trj_dims);
 	md_max_dims(D - 4, ~0, max_dims + 4, max_dims + 4, grid_dims + 4);
 
+	if ((trj_strs[2] == trj_strs[1] * max_dims[1]) && (ksp_strs[2] == ksp_strs[1] * max_dims[1])) {
+
+		max_dims[1] *= max_dims[2];
+		max_dims[2] = 1;
+	}
+
+	for (int i = 4; i < (int)D; i++) {
+
+		if (0 != grid_strs[i])
+			continue;
+		
+		if ((trj_strs[i] == trj_strs[1] * max_dims[1]) && (ksp_strs[i] == ksp_strs[1] * max_dims[1])) {
+
+			max_dims[1] *= max_dims[i];
+			max_dims[i] = 1;
+		}
+
+		if (1 == max_dims[2]) {
+
+			max_dims[2] = max_dims[i];
+			trj_strs[2] = trj_strs[i];
+			ksp_strs[2] = ksp_strs[i];
+			max_dims[i] = 1;
+		}
+
+		if ((trj_strs[i] == trj_strs[2] * max_dims[2]) && (ksp_strs[i] == ksp_strs[2] * max_dims[2])) {
+
+			max_dims[2] *= max_dims[i];
+			max_dims[i] = 1;
+		}
+	}
+
 	const long* ptr_grid_dims = &(grid_dims[0]);
 	const long* ptr_ksp_dims = &(max_dims[0]);
 
@@ -307,6 +339,38 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 	long max_dims[D];
 	md_max_dims(D, ~0, max_dims, ksp_dims, trj_dims);
 	md_max_dims(D - 4, ~0, max_dims + 4, max_dims + 4, grid_dims + 4);
+
+	if ((trj_strs[2] == trj_strs[1] * max_dims[1]) && (ksp_strs[2] == ksp_strs[1] * max_dims[1])) {
+
+		max_dims[1] *= max_dims[2];
+		max_dims[2] = 1;
+	}
+
+	for (int i = 4; i < (int)D; i++) {
+
+		if (0 != grid_strs[i])
+			continue;
+		
+		if ((trj_strs[i] == trj_strs[1] * max_dims[1]) && (ksp_strs[i] == ksp_strs[1] * max_dims[1])) {
+
+			max_dims[1] *= max_dims[i];
+			max_dims[i] = 1;
+		}
+
+		if (1 == max_dims[2]) {
+
+			max_dims[2] = max_dims[i];
+			trj_strs[2] = trj_strs[i];
+			ksp_strs[2] = ksp_strs[i];
+			max_dims[i] = 1;
+		}
+
+		if ((trj_strs[i] == trj_strs[2] * max_dims[2]) && (ksp_strs[i] == ksp_strs[2] * max_dims[2])) {
+
+			max_dims[2] *= max_dims[i];
+			max_dims[i] = 1;
+		}
+	}
 
 	const long* ptr_grid_dims = &(grid_dims[0]);
 	const long* ptr_ksp_dims = &(max_dims[0]);
