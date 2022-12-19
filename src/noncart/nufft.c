@@ -383,162 +383,64 @@ static struct nufft_conf_s compute_psf_nufft_conf(bool periodic, bool lowmem, bo
 }
 
 
-static complex float* compute_psf_internal(int N, const long img_dims[N], const long trj_dims[N], const complex float* _traj,
+static complex float* compute_psf_internal(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights,
 				bool periodic, bool lowmem,
-				struct linop_s** lop_nufft)
+				struct linop_s** _lop_nufft)
 {
-	long img2_dims[N + 1];
-	md_copy_dims(N, img2_dims, img_dims);
-	img2_dims[N] = 1;
+	long ksp_dims[N];
+	md_select_dims(N, ~MD_BIT(0), ksp_dims, trj_dims);
 
-	long trj2_dims[N + 1];
-	md_copy_dims(N, trj2_dims, trj_dims);
-	trj2_dims[N] = 1;
+	if (NULL != weights)
+		md_max_dims(N, ~0, ksp_dims, ksp_dims, wgh_dims);
 
-	const complex float* traj = _traj;
+	long sqr_bas_dims[N];
 
-	long bas2_dims[N + 1];
-	md_copy_dims(N, bas2_dims, bas_dims);
-	bas2_dims[N] = 1;
+	complex float* sqr_basis = compute_square_basis(N, sqr_bas_dims, bas_dims, basis, ksp_dims);
+	complex float* sqr_weights = compute_square_weights(N, wgh_dims, weights);
 
-	long wgh2_dims[N + 1];
-	md_copy_dims(N, wgh2_dims, wgh_dims);
-	wgh2_dims[N] = 1;
+	long img_dims2[N];
+	md_copy_dims(N, img_dims2, img_dims);
+	
+	if (NULL != sqr_basis) {
 
-	N++;
-
-	long ksp2_dims[N];
-	md_copy_dims(N, ksp2_dims, img2_dims);
-	md_select_dims(3, ~MD_BIT(0), ksp2_dims, trj2_dims);
-
-	if (NULL != basis) {
-
-		assert(1 == trj2_dims[6]);
-		assert(1 == trj2_dims[N - 1]);
-
-		ksp2_dims[N - 1] = trj2_dims[5];
-		trj2_dims[N - 1] = trj2_dims[5];
-		trj2_dims[5] = 1;	// FIXME copy?
-
-		if (1 != md_calc_size(N - 6, trj2_dims + 5)) {
-
-			long trj3_dims[N];
-			md_copy_dims(N - 1, trj3_dims, trj_dims);
-			trj3_dims[N - 1] = 1;
-
-			complex float* tmp = md_alloc_sameplace(N, trj2_dims, CFL_SIZE, _traj);
-			md_transpose(N, N - 1, 5, trj2_dims, tmp, trj3_dims, _traj, CFL_SIZE);
-			traj = tmp;
-		}
+		img_dims2[6] *= img_dims2[6];
+		img_dims2[5] = 1;
 	}
 
-	struct nufft_conf_s conf = nufft_conf_defaults;
-	conf.periodic = periodic;
-	conf.toeplitz = false;	// avoid infinite loop
-	conf.lowmem = lowmem;
+	complex float* psf = md_alloc_sameplace(N, img_dims, CFL_SIZE, traj);
 
-	conf.precomp_linphase = !conf.lowmem;
-	conf.precomp_roll = !conf.lowmem;
-	conf.precomp_fftmod = !conf.lowmem;
+	complex float* ones = md_alloc_sameplace(N, ksp_dims, CFL_SIZE, traj);
+	md_zfill(N, ksp_dims, ones, 1.);
+
+	struct nufft_conf_s conf = compute_psf_nufft_conf(periodic, lowmem, NULL != _lop_nufft);
+	struct linop_s* lop_nufft = (NULL == _lop_nufft) ? NULL : *_lop_nufft;
 
 
-	debug_printf(DP_DEBUG2, "nufft kernel dims: ");
-	debug_print_dims(DP_DEBUG2, N, ksp2_dims);
+	if (NULL == lop_nufft) {
 
-	debug_printf(DP_DEBUG2, "nufft psf dims:    ");
-	debug_print_dims(DP_DEBUG2, N, img2_dims);
-
-	debug_printf(DP_DEBUG2, "nufft traj dims:   ");
-	debug_print_dims(DP_DEBUG2, N, trj2_dims);
-
-	complex float* psft = NULL;
-
-	long pos[N];
-	for (int i = 0; i < N; i++)
-		pos[i] = 0;
-
-	long A = md_calc_size(N, ksp2_dims);
-	long B = md_calc_size(N - 1, ksp2_dims) + md_calc_size(N - 1, img2_dims);
-	long C = md_calc_size(N, img2_dims);
-
-	if ((A <= B) || !lowmem) {
-
-		debug_printf(DP_DEBUG1, "Allocating %ld (vs. %ld) + %ld\n", A, B, C);
-
-		complex float* ones = md_alloc_sameplace(N, ksp2_dims, CFL_SIZE, traj);
-
-		compute_kern(N, ~0u, pos, ksp2_dims, ones, bas2_dims, basis, wgh2_dims, weights);
-
-		psft = md_alloc_sameplace(N, img2_dims, CFL_SIZE, traj);
-
-		struct linop_s* op2 = NULL;
-
-		if ((NULL != lop_nufft) && (NULL != *lop_nufft)) {
-
-			op2 = *lop_nufft;
-
-			nufft_update_traj(op2, N, trj2_dims, traj, MD_SINGLETON_DIMS(1), NULL, MD_SINGLETON_DIMS(1), NULL);
-
-		} else {
-
-			op2 = nufft_create(N, ksp2_dims, img2_dims, trj2_dims, traj, NULL, conf);
-		}
-
-		linop_adjoint_unchecked(op2, psft, ones);
-
-		if (NULL != lop_nufft)
-			*lop_nufft = op2;
-		else
-			linop_free(op2);
-
-		md_free(ones);
-
+		lop_nufft = nufft_create2(N, ksp_dims, img_dims2, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis, conf);
+		lop_nufft = linop_reshape_in_F(lop_nufft, N, img_dims);
 	} else {
 
-		debug_printf(DP_DEBUG1, "Allocating %ld (vs. %ld) + %ld\n", B, A, C);
-
-		psft = md_alloc_sameplace(N, img2_dims, CFL_SIZE, traj);
-		md_clear(N, img2_dims, psft, CFL_SIZE);
-
-		long trj2_strs[N];
-		md_calc_strides(N, trj2_strs, trj2_dims, CFL_SIZE);
-
-		complex float* ones = md_alloc_sameplace(N - 1, ksp2_dims, CFL_SIZE, traj);
-		complex float* tmp = md_alloc_sameplace(N - 1, img2_dims, CFL_SIZE, traj);
-
-		assert(!((1 != trj2_dims[N - 1]) && (NULL == basis)));
-
-		for (long i = 0; i < trj2_dims[N - 1]; i++) {
-
-			debug_printf(DP_DEBUG1, "KERN %03ld\n", i);
-
-			long flags = ~0UL;
-
-			if (1 != trj2_dims[N - 1])
-				flags = ~(1u << (N - 1u));
-
-			pos[N - 1] = i;
-			compute_kern(N, flags, pos, ksp2_dims, ones, bas2_dims, basis, wgh2_dims, weights);
-
-			struct linop_s* op2 = nufft_create(N - 1, ksp2_dims, img2_dims, trj2_dims, (void*)traj + i * trj2_strs[N - 1], NULL, conf);
-
-			linop_adjoint_unchecked(op2, tmp, ones);
-
-			md_zadd(N - 1, img2_dims, psft, psft, tmp);
-
-			linop_free(op2);
-		}
-
-		md_free(ones);
-		md_free(tmp);
+		nufft_update_traj(lop_nufft, N, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis);
 	}
 
-	if (_traj != traj)
-		md_free(traj);
+	md_free(sqr_weights);
+	md_free(sqr_basis);
 
-	return psft;
+
+	linop_adjoint(lop_nufft, N, img_dims, psf, N, ksp_dims, ones);
+
+	md_free(ones);
+
+	if (NULL == _lop_nufft)
+		linop_free(lop_nufft);
+	else
+		*_lop_nufft = lop_nufft;
+
+	return psf;
 }
 
 complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
