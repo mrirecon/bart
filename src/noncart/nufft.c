@@ -334,6 +334,53 @@ static void compute_kern(int N, unsigned long flags, const long pos[N],
 	return;
 }
 
+static complex float* compute_square_basis(int N, long sqr_bas_dims[N], const long bas_dims[N], const complex float* basis, const long ksp_dims[N])
+{
+	if (NULL == basis) {
+
+		md_singleton_dims(N, sqr_bas_dims);
+		return NULL;
+	}
+
+	long bas_dimsT[N];
+
+	md_transpose_dims(N, 6, 7, bas_dimsT, bas_dims);
+	md_max_dims(N, ~0, sqr_bas_dims, bas_dims, bas_dimsT);
+	sqr_bas_dims[5] = ksp_dims[5];
+
+	complex float* sqr_basis = md_alloc_sameplace(N, sqr_bas_dims, CFL_SIZE, basis);
+	md_ztenmulc(N, sqr_bas_dims, sqr_basis, bas_dims, basis, bas_dimsT, basis);
+
+	sqr_bas_dims[6] *= sqr_bas_dims[6];
+	sqr_bas_dims[7] = 1;
+
+	return sqr_basis;
+}
+
+static complex float* compute_square_weights(int N, const long wgh_dims[N], const complex float* weights)
+{
+	if (NULL == weights)
+		return NULL;
+
+	complex float* sqr_weights = md_alloc_sameplace(N, wgh_dims, CFL_SIZE, weights);
+	md_zmulc(N, wgh_dims, sqr_weights, weights, weights);
+
+	return sqr_weights;
+}
+
+static struct nufft_conf_s compute_psf_nufft_conf(bool periodic, bool lowmem, bool cache)
+{
+	struct nufft_conf_s conf = nufft_conf_defaults;
+	conf.periodic = periodic;
+	conf.toeplitz = false;	// avoid infinite loop
+	conf.lowmem = lowmem;
+
+	conf.precomp_linphase = !conf.lowmem || cache;
+	conf.precomp_roll = !conf.lowmem || cache;
+	conf.precomp_fftmod = !conf.lowmem || cache;
+
+	return conf;
+}
 
 
 static complex float* compute_psf_internal(int N, const long img_dims[N], const long trj_dims[N], const complex float* _traj,
