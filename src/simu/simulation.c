@@ -782,6 +782,7 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 			assert(1 == S % 2);
                         assert(0. != _data->seq.slice_thickness);
 
+			// w_{gz} [rad/s] = gamma_H1 [rad/(sT)] * Gz [T/m] * z [m], FIXME: Change name of variable mom_sl
 			data.grad.mom_sl = (_data->grad.sl_gradient_strength * _data->seq.slice_thickness * GAMMA_H1) / (S - 1) * (data.tmp.spin_counter - (int)(S / 2.));
 
                 } else {
@@ -816,7 +817,7 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
                 data.tmp.t = 0;
                 data.tmp.rep_counter = 0;
 
-                // Apply perfect inversion
+                // Apply inversion
 
                 if (   (SEQ_IRBSSFP == data.seq.seq_type)
 		    || (SEQ_IRFLASH == data.seq.seq_type))
