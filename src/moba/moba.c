@@ -56,6 +56,8 @@ struct moba_other_conf moba_other_defaults = {
         .fov_reduction_factor = 1.,
         .scale = { 1., 1., 1., 1. },
         .initval = { 1., 1., 1., 1. },
+	.b1_sobolev_a = 440.f,
+	.b1_sobolev_b = 20.f,
 	.tvscales_N = 0,
 	.tvscales = { 1., 1., 1., 1. },
 };

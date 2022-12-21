@@ -485,7 +485,7 @@ struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_d
 	md_select_dims(N, FFT_FLAGS, w_dims, map_dims);
 
 	complex float* weights = md_alloc(N, w_dims, CFL_SIZE);
-	noir_calc_weights(440., 20., w_dims, weights);
+	noir_calc_weights(config->other.b1_sobolev_a, config->other.b1_sobolev_b, w_dims, weights);
 
 	const struct linop_s* linop_wghts = linop_cdiag_create(N, map_dims, FFT_FLAGS, weights);
 	const struct linop_s* linop_ifftc = linop_ifftc_create(N, map_dims, FFT_FLAGS);

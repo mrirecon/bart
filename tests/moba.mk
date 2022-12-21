@@ -336,7 +336,7 @@ tests/test-moba-t1-phy-psf: phantom signal fft ones index scale moba slice spow 
 	$(TOOLDIR)/ones 6 16 16 1 1 1 300 psf.ra					;\
 	$(TOOLDIR)/index 5 300 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
-	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -d3 --seq TR=0.005 -p psf.ra k_space.ra TI.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling --other=b1-sobolev-a=44,b1-sobolev-b=10 -d3 --seq TR=0.005 -p psf.ra k_space.ra TI.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 1 reco.ra r1map.ra						;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra						;\
 	$(TOOLDIR)/fmac r1map.ra circ.ra masked.ra	    				;\
@@ -356,7 +356,7 @@ tests/test-moba-t1-phy-traj: traj repmat scale phantom signal fmac index moba sl
 	$(TOOLDIR)/fmac basis_geom.ra signal.ra k_space.ra				;\
 	$(TOOLDIR)/index 5 300 tmp1.ra							;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra						;\
-	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -d3 --seq TR=0.005 -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/moba -P -i11 -C250 -s0.95 -f1 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling --other=b1-sobolev-a=44,b1-sobolev-b=10 -d3 --seq TR=0.005 -t traj.ra k_space.ra TI.ra reco.ra sens.ra	;\
 	$(TOOLDIR)/slice 6 1 reco.ra r1map.ra						;\
 	$(TOOLDIR)/phantom -x6 -c circ2.ra						;\
 	$(TOOLDIR)/resize -c 0 12 1 12 circ2.ra circ.ra					;\

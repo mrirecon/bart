@@ -22,6 +22,8 @@
 
 #include "nlops/nlop.h"
 
+#include "moba/moba.h"
+
 #include "noir/utils.h"
 
 #include "T1phyfun.h"
@@ -295,7 +297,7 @@ static void T1_del(const nlop_data_t* _data)
 }
 
 
-struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_dims[N], const long in_dims[N], const long TI_dims[N], const complex float* TI, bool use_gpu)
+struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_dims[N], const long in_dims[N], const long TI_dims[N], const complex float* TI,  const struct moba_conf_s* config, bool use_gpu)
 {
 #ifdef USE_CUDA
 	md_alloc_fun_t my_alloc = use_gpu ? md_alloc_gpu : md_alloc;
@@ -362,7 +364,7 @@ struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_
 
 	data->weights = md_alloc(N, w_dims, CFL_SIZE);
 
-	noir_calc_weights(44., 10., w_dims, data->weights);
+	noir_calc_weights(config->other.b1_sobolev_a, config->other.b1_sobolev_b, w_dims, data->weights);
 
 	const struct linop_s* linop_wghts = linop_cdiag_create(N, map_dims, FFT_FLAGS, data->weights);
 	const struct linop_s* linop_ifftc = linop_ifftc_create(N, map_dims, FFT_FLAGS);

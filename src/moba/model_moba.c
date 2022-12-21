@@ -67,7 +67,7 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 
         case MDB_T1_PHY:
 
-		model = nlop_T1_phy_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, use_gpu);
+		model = nlop_T1_phy_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, data, use_gpu);
 		break;
 
 	case MDB_BLOCH:
