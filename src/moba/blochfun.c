@@ -244,15 +244,15 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 
                                         assert(0 != sim_data.pulse.flipangle);
 
-					// Scaling signal to 1
-                                        //      -> Comparable to Look-Locker model
+					// Scaling signal close to 1
+                                        //      -> Comparable to Look-Locker model (difference relaxation factor: expf(-sim_data.voxel.r2 * sim_data.seq.te))
 					//	-> divided by nom slice thickness to keep multi spin simulation signal around 1
 					// 	-> nom slice thickness [m] * 1000 -> [mm], because relative to default slice thickness of single spin of 0.001 m
 					if ((SEQ_FLASH == sim_data.seq.seq_type) || (SEQ_IRFLASH == sim_data.seq.seq_type))
-						a = 1. / (sinf(sim_data.pulse.flipangle * M_PI / 180.) * expf(-sim_data.voxel.r2 * sim_data.seq.te)) / (sim_data.seq.nom_slice_thickness * 1000.);
+						a = 1. / sinf(sim_data.pulse.flipangle * M_PI / 180.) / (sim_data.seq.nom_slice_thickness * 1000.);
 
                                         else if ((SEQ_BSSFP == sim_data.seq.seq_type) || (SEQ_IRBSSFP == sim_data.seq.seq_type))
-                                                a = 1. / (sinf(sim_data.pulse.flipangle / 2. * M_PI / 180.) * expf(-sim_data.voxel.r2 * sim_data.seq.te)) / (sim_data.seq.nom_slice_thickness * 1000.);
+                                                a = 1. / sinf(sim_data.pulse.flipangle / 2. * M_PI / 180.) / (sim_data.seq.nom_slice_thickness * 1000.);
 
 					const float (*scale2)[4] = &data->moba_data->other.scale;
 
