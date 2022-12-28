@@ -257,3 +257,31 @@ void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const 
 }
 
 
+void bloch_mcconnell_ode(int P, float out[P * 3], const float in[P * 3] , const float r1[P], const float r2[P], const float k[P][P], const float Th[P], const float Om[P], const float gb[3])
+{
+	int N = 1 + P * 3;
+	float m[N][N];
+
+	// create Bloch-McConnell matrix
+	bloch_mcconnel_matrix_ode(P, m, r1, r2, k, Th, Om, gb);
+
+	float out_tmp[N];
+	float in_tmp[N];
+
+	for (int i = 0; i < N - 1; i++)
+		in_tmp[i] = in[i];
+
+	in_tmp[N-1] = 1.;
+
+	// multiply matrix with input vector
+	for (int i = 0; i < N; i++) {
+
+		out_tmp[i] = 0.;
+
+		for (int j = 0; j < N; j++)
+			out_tmp[i] += m[i][j] * in_tmp[j];
+	}
+
+	for (int i = 0; i < N - 1; i++)
+		out[i] = out_tmp[i];
+}

@@ -776,3 +776,89 @@ static bool test_ode_bloch_mcconnel(void)
 
 UT_REGISTER_TEST(test_ode_bloch_mcconnel);
 
+
+static bool test_bmc_ode_pools(void)
+{
+	int P = 5;
+	float out_5[P * 3];
+	float out_1[3] = { 0., 0., 0. };
+
+	float in_5[P * 3];
+	float in_1[3] = { 0.5, 0.2, 0.8 };
+	float r1[P];
+	float r2[P];
+	float k[P][P];
+	
+	for (int i = 0; i < P; i++)
+		for (int j = 0; j < P; j++)
+			k[i][j] = 0.;
+
+	for (int p = 0; p < P; p++) {
+
+		in_5[0 + 3 * p] = 0.5;
+		in_5[1 + 3 * p] = 0.2;
+		in_5[2 + 3 * p] = 0.8;
+		r1[p] = 1.2;
+		r2[p] = 20.;
+	}
+
+	float gb[3] = { 0.2, 0.6, 0.9 };
+	float m0[5] = { 1., 1., 1., 1., 1., };
+	float Om[5] = { 0., 0., 0., 0., 0. };
+
+	bloch_mcconnell_ode(P, out_5, in_5, r1, r2, k, m0, Om, gb);
+	bloch_ode(out_1, in_1, r1[0], r2[0], gb);
+
+	for (int p = 0; p < P; p++)
+		for (int d = 0; d < 3; d++)
+			if (fabsf(out_5[d + p * 3] - out_1[d]) > 1e-6)
+				return false;
+	
+	return true;
+}
+
+UT_REGISTER_TEST(test_bmc_ode_pools);
+
+
+
+static bool test_bloch_mcconnell_matrix(void)
+{
+	int P = 2;
+	int N = 1 + P * 3;
+	
+	float gb[3] = { 0., 0.05, 0.06 };
+	float k[2][2] = { { -0.2, 0.2 }, { 0.4, -0.2 } };
+	float Th[2] = { 1., 1. };
+	float Om[2] = { 0., 0.05 };
+	float r1[2] = { 1., 1.1 };
+	float r2[2] = { 0.1, 0.05 };
+	float m_in[7] = { 0.1, 0.2, 0.3, 0.1, 0.2, 0.3, 1.};
+	float m_in_2[6] = { 0.1, 0.2, 0.3, 0.1, 0.2, 0.3};
+	float m1[N][N];
+
+	bloch_mcconnel_matrix_ode(P, m1, r1, r2, k, Th, Om ,gb);
+
+	float out1[N];
+	float out2[N-1];
+
+	bloch_mcconnell_ode(P,out2, m_in_2, r1, r2, k, Th, Om, gb);
+
+	for (int i = 0; i < N; i++) {
+
+		out1[i] = 0.;
+
+		for (int j = 0; j < N; j++)
+			out1[i] += m1[i][j] * m_in[j];
+	}
+
+	for (int i = 0; i < N-1; i++)
+		if (out1[i] != out2[i])
+			return false;
+
+	return true;
+
+}
+
+UT_REGISTER_TEST(test_bloch_mcconnell_matrix);
+
+
