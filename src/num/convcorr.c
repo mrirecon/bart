@@ -578,7 +578,7 @@ static bool check_trivial_cf(	int N,
 {
 	// Check conv dims
 	for (int i = 2; i < N; i++)
-		if ((!MD_IS_SET(flags, i)) && ((1 != odims[i]) || (1 != idims[i]) || (1 != kdims[i])))
+		if ((!MD_IS_SET(flags, i)) && ((1 != idims[i]) && (1 != kdims[i])))
 			return false;
 
 	// Check matmul dims
