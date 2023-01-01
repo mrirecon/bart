@@ -715,6 +715,8 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 	if (sizeof(complex float) == size)
 		fft2(D, dim, 0, ostr, optr, istr, iptr);
 #endif
+	if (0 == md_calc_size(D, dim))
+		return;
 
 #ifdef	USE_CUDA
 	bool use_gpu = cuda_ondevice(optr) || cuda_ondevice(iptr);
