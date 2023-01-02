@@ -1142,6 +1142,104 @@ struct linop_s* linop_flip_create(int N, const long dims[N], unsigned long flags
 }
 
 
+struct add_strided_s {
+
+	INTERFACE(linop_data_t);
+
+	int N;
+	
+	const long* dims;
+
+	const long* istrs;
+	const long* ostrs;
+
+	int OO;
+	const long* odims;
+	
+	int II;
+	const long* idims;
+	
+	long ooffset;
+	long ioffset;
+};
+
+static DEF_TYPEID(add_strided_s);
+
+static void add_strided_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(add_strided_s, _data);
+
+	md_clear(data->OO, data->odims, dst, CFL_SIZE);
+	md_zadd2(data->N, data->dims, data->ostrs, dst + data->ooffset, data->ostrs, dst + data->ooffset, data->istrs, src + data->ioffset);
+}
+
+static void add_strided_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(add_strided_s, _data);
+	
+	md_clear(data->II, data->idims, dst, CFL_SIZE);
+	md_zadd2(data->N, data->dims, data->istrs, dst + data->ioffset, data->istrs, dst + data->ioffset, data->ostrs, src + data->ooffset);
+}
+
+
+static void add_strided_free(const linop_data_t* _data)
+{
+	auto data = CAST_DOWN(add_strided_s, _data);
+
+	xfree(data->dims);
+	xfree(data->odims);
+	xfree(data->idims);
+	xfree(data->ostrs);
+	xfree(data->istrs);
+
+	xfree(data);
+}
+
+
+struct linop_s* linop_add_strided_create(int N, const long dims[N], const long ostrs[N], const long istrs[N],
+					int OO, const long odims[OO], int II, const long idims[II])
+{
+	PTR_ALLOC(struct add_strided_s, data);
+	SET_TYPEID(add_strided_s, data);
+
+	data->N = N;
+	data->dims = ARR_CLONE(long[N], dims);
+	data->ostrs = ARR_CLONE(long[N], ostrs);
+	data->istrs = ARR_CLONE(long[N], istrs);
+
+	data->OO = OO;
+	data->II = II;
+
+	data->odims = ARR_CLONE(long[OO], odims);
+	data->idims = ARR_CLONE(long[II], idims);
+
+	data->ioffset = 0;
+	data->ooffset = 0;
+
+	return linop_create(OO, odims, II, idims, CAST_UP(PTR_PASS(data)), add_strided_forward, add_strided_adjoint, NULL, NULL, add_strided_free);
+}
+
+struct linop_s* linop_hankelization_create(int N, const long dims[N], int dim, int window_dim, int window_size)
+{
+	long odims[N];
+	md_copy_dims(N, odims, dims);
+
+	assert(1 == odims[window_dim]);
+	assert(window_size <= odims[dim]);
+
+	odims[window_dim] = window_size;
+	odims[dim] -= window_size - 1;
+	long ostrs[N];
+	long istrs[N];
+
+	md_calc_strides(N, ostrs, odims, CFL_SIZE);
+	md_calc_strides(N, istrs, dims, CFL_SIZE);
+	istrs[window_dim] = istrs[dim];
+
+	return linop_add_strided_create(N, odims, ostrs, istrs, N, odims, N, dims);
+}
+
+
 
 struct operator_matrix_s {
 
