@@ -575,6 +575,19 @@ static void padding_free(const linop_data_t* _data)
 
 struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADDING pad_type, int pad_dim, long pad_for, long pad_after)
 {
+	if ((PAD_VALID == pad_type) || (PAD_SAME == pad_type) || (PAD_CAUSAL == pad_type)) {
+
+		long pad_for_arr[N];
+		long pad_after_arr[N];
+
+		for (int i = 0; i < N; i++) {
+			
+			pad_for_arr[i] = (pad_dim == i) ? pad_for : 0;
+			pad_after_arr[i] = (pad_dim == i) ? pad_after : 0;
+		}
+
+		return linop_padding_create(N, dims, pad_type, pad_for_arr, pad_after_arr);
+	}
 
 	assert(pad_dim < N);
 	assert(0 <= pad_for * pad_after); // same sign or zero
@@ -632,33 +645,9 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 	switch (pad_type) {
 
 	case PAD_VALID:
-
-		assert(0 >= pad_for);
-		assert(0 >= pad_after);
-
-		pos[pad_dim] -= pad_for;
-
-		offset_in_mid = md_calc_offset(N, strs_in , pos) / CFL_SIZE;
-
-		md_calc_strides(N, *strs_mid, dims, CFL_SIZE);
-
-		//no sum over dims_for, dims_after
-		break;
-
 	case PAD_SAME:
-
-		assert(0 <= pad_for);
-		assert(0 <= pad_after);
-
-		offset_in_mid = 0;
-
-		md_calc_strides(N, *strs_mid, dims, CFL_SIZE);
-
-		(*dims_for)[pad_dim] = 0;
-		(*dims_after)[pad_dim] = 0;
-
-		//no sum over dims_for, dims_after
-		break;
+	case PAD_CAUSAL:
+		assert(0); // should be covered by copy_block
 
 	case PAD_SYMMETRIC:
 
@@ -766,44 +755,28 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 
 struct linop_s* linop_padding_create(int N, const long dims[N], enum PADDING pad_type, long pad_for[N], long pad_after[N])
 {
-	bool resc = (PAD_VALID == pad_type) || (PAD_SAME == pad_type);
-	bool res = (PAD_VALID == pad_type) || (PAD_SAME == pad_type);
+	for (int i = 0; i < N; i++)
+		assert(0 <= pad_for[i] * pad_after[i]); // same sign or zero
 
-	long odims[N];
+	if ((PAD_VALID == pad_type) || (PAD_SAME == pad_type) || (PAD_CAUSAL == pad_type)) {
 
-	for(int i = 0; i < N; i++) {
+		long pos[N];
+		long odims[N];
 
-		resc = resc && ( (pad_for[i] == pad_after[i])
-				 || ((pad_for[i] + 1 == pad_after[i]) && (pad_for[i] < 0))
-				 || ((pad_for[i] - 1 == pad_after[i]) && (pad_for[i] > 0))
-				);
+		for (int i = 0; i < N; i++) {
 
-		res = res && (0 == pad_for[i]);
-
-		odims[i] = dims[i] + pad_for[i] + pad_after[i];
-	}
-
-	if (resc)
-		return linop_resize_center_create(N, odims, dims);
-
-	if (res)
-		return linop_resize_create(N, odims, dims);
-
-	struct linop_s* result = NULL;
-
-	for (int i = 0; i < N; i++) {
-
-		if ((0 != pad_for[i]) || (0 != pad_after[i])) {
-
-			if (NULL != result)
-				result = linop_chain_FF(result, linop_padding_create_onedim(N, linop_codomain(result)->dims, pad_type, i, pad_for[i], pad_after[i]));
-			else
-				result = linop_padding_create_onedim(N, dims, pad_type, i, pad_for[i], pad_after[i]);
+			pos[i] = labs(pad_for[i]);
+			odims[i] = dims[i] + pad_after[i] + pad_for[i];
 		}
+
+		return linop_copy_block_create(N, pos, odims, dims);
 	}
 
-	if (NULL == result)
-		result = linop_identity_create(N, dims);
+	struct linop_s* result = linop_identity_create(N, dims);
+
+	for (int i = 0; i < N; i++)
+		if ((0 != pad_for[i]) || (0 != pad_after[i]))
+			result = linop_chain_FF(result, linop_padding_create_onedim(N, linop_codomain(result)->dims, pad_type, i, pad_for[i], pad_after[i]));
 
 	return result;
 }
