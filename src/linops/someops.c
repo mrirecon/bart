@@ -386,71 +386,70 @@ bool linop_is_identity(const struct linop_s* lop)
 	return check_simple_copy(lop->forward);
 }
 
-
-struct resize_op_s {
+struct copy_block_s {
 
 	INTERFACE(linop_data_t);
 
-	bool center;
+	int N;
 
-	unsigned int N;
-	const long* out_dims;
-	const long* in_dims;
+	const long* odims;
+	const long* idims;
+	
+	const long* pos;
 };
 
-static DEF_TYPEID(resize_op_s);
+static DEF_TYPEID(copy_block_s);
 
-static void resize_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
+static void copy_block_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const auto data = CAST_DOWN(resize_op_s, _data);
+	const auto data = CAST_DOWN(copy_block_s, _data);
 
-	(data->center ? md_resize_center : md_resize)(data->N, data->out_dims, dst, data->in_dims, src, CFL_SIZE);
+	for (int i = 0; i < data->N; i++)
+		if (data->odims[i] > data->idims[i]) {
+
+			md_clear(data->N, data->odims, dst, CFL_SIZE);
+			break;
+		}
+
+	md_copy_block(data->N, data->pos, data->odims, dst, data->idims, src, CFL_SIZE);
 }
 
-static void resize_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
+static void copy_block_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	const auto data = CAST_DOWN(resize_op_s, _data);
+	const auto data = CAST_DOWN(copy_block_s, _data);
 
-	(data->center ? md_resize_center : md_resize)(data->N, data->in_dims, dst, data->out_dims, src, CFL_SIZE);
+	for (int i = 0; i < data->N; i++)
+		if (data->idims[i] > data->odims[i]) {
+
+			md_clear(data->N, data->idims, dst, CFL_SIZE);
+			break;
+		}
+
+	md_copy_block(data->N, data->pos, data->idims, dst, data->odims, src, CFL_SIZE);
 }
 
-static void resize_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
+static void copy_block_free(const linop_data_t* _data)
 {
-	const auto data = CAST_DOWN(resize_op_s, _data);
+	const auto data = CAST_DOWN(copy_block_s, _data);
 
-	complex float* tmp = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
-
-	resize_forward(_data, tmp, src);
-	resize_adjoint(_data, dst, tmp);
-
-	md_free(tmp);
-}
-
-static void resize_free(const linop_data_t* _data)
-{
-	const auto data = CAST_DOWN(resize_op_s, _data);
-
-	xfree(data->out_dims);
-	xfree(data->in_dims);
+	xfree(data->odims);
+	xfree(data->idims);
+	xfree(data->pos);
 
 	xfree(data);
 }
 
-
-static struct linop_s* linop_resize_generic_create(unsigned int N, const long out_dims[N], const long in_dims[N], bool center)
+struct linop_s* linop_copy_block_create(int N, const long pos[N], const long odims[N], const long idims[N])
 {
-	PTR_ALLOC(struct resize_op_s, data);
-	SET_TYPEID(resize_op_s, data);
+	PTR_ALLOC(struct copy_block_s, data);
+	SET_TYPEID(copy_block_s, data);
 
-	data->center = center;
 	data->N = N;
-	data->out_dims = *TYPE_ALLOC(long[N]);
-	data->in_dims = *TYPE_ALLOC(long[N]);
+	data->odims = ARR_CLONE(long[N], odims);
+	data->idims = ARR_CLONE(long[N], idims);
+	data->pos = ARR_CLONE(long[N], pos);
 
-	md_copy_dims(N, (long*)data->out_dims, out_dims);
-	md_copy_dims(N, (long*)data->in_dims, in_dims);
-
-	return linop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), resize_forward, resize_adjoint, resize_normal, NULL, resize_free);
+	return linop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)), copy_block_forward, copy_block_adjoint, NULL, NULL, copy_block_free);
 }
 
 
@@ -463,19 +462,29 @@ static struct linop_s* linop_resize_generic_create(unsigned int N, const long ou
  * @param out_dims output dimensions
  * @param in_dims input dimensions
  */
-struct linop_s* linop_resize_create(unsigned int N, const long out_dims[N], const long in_dims[N])
+struct linop_s* linop_resize_center_create(int N, const long out_dims[N], const long in_dims[N])
 {
-	return linop_resize_generic_create(N, out_dims, in_dims, true);
+	long pos[N];
+	for (int i = 0; i < N; i++)
+		pos[i] = labs((out_dims[i] / 2) - (in_dims[i] / 2));
+
+
+	return linop_copy_block_create(N, pos, out_dims, in_dims);
 }
 
-struct linop_s* linop_resize_center_create(unsigned int N, const long out_dims[N], const long in_dims[N])
+struct linop_s* linop_resize_create(int N, const long out_dims[N], const long in_dims[N])
 {
-	return linop_resize_generic_create(N, out_dims, in_dims, true);
+	//FIXME: inconstent with md_resize
+	return linop_resize_center_create(N, out_dims, in_dims);
 }
 
-struct linop_s* linop_expand_create(unsigned int N, const long out_dims[N], const long in_dims[N])
+struct linop_s* linop_expand_create(int N, const long out_dims[N], const long in_dims[N])
 {
-	return linop_resize_generic_create(N, out_dims, in_dims, false);
+	long pos[N];
+	for (int i = 0; i < N; i++)
+		pos[i] = 0;
+
+	return linop_copy_block_create(N, pos, out_dims, in_dims);
 }
 
 
@@ -775,10 +784,10 @@ struct linop_s* linop_padding_create(int N, const long dims[N], enum PADDING pad
 	}
 
 	if (resc)
-		return linop_resize_generic_create(N, odims, dims, true);
+		return linop_resize_center_create(N, odims, dims);
 
 	if (res)
-		return linop_resize_generic_create(N, odims, dims, false);
+		return linop_resize_create(N, odims, dims);
 
 	struct linop_s* result = NULL;
 

@@ -20,9 +20,10 @@ extern struct linop_s* linop_flip_create(int N, const long dims[N], unsigned lon
 extern struct linop_s* linop_identity_create(unsigned int N, const long dims[__VLA(N)]);
 extern _Bool linop_is_identity(const struct linop_s* lop);
 
-extern struct linop_s* linop_resize_create(unsigned int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);	// deprecated
-extern struct linop_s* linop_resize_center_create(unsigned int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);
-extern struct linop_s* linop_expand_create(unsigned int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);
+extern struct linop_s* linop_copy_block_create(int N, const long pos[__VLA(N)], const long odims[__VLA(N)], const long idims[__VLA(N)]);
+extern struct linop_s* linop_resize_create(int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);	// deprecated
+extern struct linop_s* linop_resize_center_create(int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);
+extern struct linop_s* linop_expand_create(int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);
 extern struct linop_s* linop_reshape_create(unsigned int A, const long out_dims[__VLA(A)], int B, const long in_dims[__VLA(B)]);
 extern struct linop_s* linop_reshape2_create(int N, unsigned long flags, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)]);
 extern struct linop_s* linop_extract_create(unsigned int N, const long pos[N], const long out_dims[N], const long in_dims[N]);
