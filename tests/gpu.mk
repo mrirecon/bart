@@ -17,9 +17,9 @@ tests/test-pics-gpu-noncart: traj scale phantom ones pics nrmse
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
 	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
-	$(TOOLDIR)/pics    -S -r0.001 -t traj2.ra ksp.ra o.ra reco1.ra			;\
-	$(TOOLDIR)/pics -g -S -r0.001 -t traj2.ra ksp.ra o.ra reco2.ra			;\
-	$(TOOLDIR)/nrmse -t 0.001 reco1.ra reco2.ra					;\
+	$(TOOLDIR)/pics    -S --fista -e -r0.001 -t traj2.ra ksp.ra o.ra reco1.ra	;\
+	$(TOOLDIR)/pics -g -S --fista -e -r0.001 -t traj2.ra ksp.ra o.ra reco2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.00001 reco1.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
