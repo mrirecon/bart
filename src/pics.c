@@ -304,6 +304,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPTL_SET(0, "precond", &(conf.precond), "interprete weights as preconditioner"),
 		OPT_SELECT('I', enum algo_t, &algo, ALGO_IST, "select IST"),
+		OPTL_SELECT(0, "fista", enum algo_t, &algo, ALGO_FISTA, "select FISTA"),
 		OPTL_SELECT(0, "pridu", enum algo_t, &algo, ALGO_PRIDU, "select primal dual"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
