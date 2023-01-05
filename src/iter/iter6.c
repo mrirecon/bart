@@ -220,7 +220,7 @@ static const struct iter_dump_s* iter6_dump_default_create(const char* base_file
 		D[i] = nlop_generic_domain(nlop, i)->N;
 		dims[i] = nlop_generic_domain(nlop, i)->dims;
 
-		if ((guess_save_flag) && ((IN_OPTIMIZE == in_type[i]) || (IN_BATCHNORM == in_type[i])))
+		if ((guess_save_flag) && ((IN_OPTIMIZE == in_type[i]) || (IN_BATCHNORM == in_type[i]) || (IN_STATIC == in_type[i])))
 			save_flag = MD_SET(save_flag, i);
 	}
 
