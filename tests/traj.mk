@@ -49,13 +49,15 @@ tests/test-traj-custom: traj poly nrmse
 TESTS += tests/test-traj-custom
 
 
-tests/test-traj-rot: traj phantom estshift
+tests/test-traj-rot: traj phantom estshift vec nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/traj -R0. -r -y360 -D t0.ra 				;\
 	$(TOOLDIR)/phantom -k -t t0.ra k0.ra 				;\
 	$(TOOLDIR)/traj -R30. -r -y360 -D t30.ra			;\
 	$(TOOLDIR)/phantom -k -t t30.ra k30.ra 				;\
-	$(TOOLDIR)/estshift 4 k0.ra k30.ra | grep "30.00000" 		;\
+	$(TOOLDIR)/vec 30. real_shift.ra 				;\
+	$(TOOLDIR)/vec `$(TOOLDIR)/estshift 4 k0.ra k30.ra | grep -Eo "[0-9.]+$$"` shift.ra		;\
+	$(TOOLDIR)/nrmse -t1e-6 real_shift.ra shift.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
