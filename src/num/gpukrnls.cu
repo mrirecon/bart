@@ -35,7 +35,7 @@
 // should be a multiple of 32 (warp size)
 #define BLOCKSIZE 1024
 
-static int blocksize(int N)
+static int blocksize(long N)
 {
 	return BLOCKSIZE;
 }
@@ -58,7 +58,7 @@ static long gridsize(long N)
 #define MIN(x, y) ((x < y) ? (x) : (y))
 #define MAX(x, y) ((x > y) ? (x) : (y))
 
-static int blocksize(int N)
+static int blocksize(long N)
 {
 	int warps_total = (N + WARPSIZE - 1) / WARPSIZE;
 	int warps_block = MAX(1, MIN(4, warps_total));
@@ -151,7 +151,7 @@ extern "C" void cuda_smul(long N, float alpha, float* dst, const float* src)
 
 typedef void (*cuda_3op_f)(long N, float* dst, const float* src1, const float* src2);
 
-extern "C" void cuda_3op(cuda_3op_f krn, int N, float* dst, const float* src1, const float* src2)
+extern "C" void cuda_3op(cuda_3op_f krn, long N, float* dst, const float* src1, const float* src2)
 {
 	krn<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
 }
@@ -1319,12 +1319,12 @@ extern "C" void cuda_pdf_gauss(long N, float mu, float sig, float* dst, const fl
 }
 
 
-__global__ void kern_real(int N, float* dst, const cuFloatComplex* src)
+__global__ void kern_real(long N, float* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCrealf(src[i]);
 }
 
@@ -1333,12 +1333,12 @@ extern "C" void cuda_real(long N, float* dst, const _Complex float* src)
 	kern_real<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, (cuFloatComplex*)src);
 }
 
-__global__ void kern_imag(int N, float* dst, const cuFloatComplex* src)
+__global__ void kern_imag(long N, float* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = cuCimagf(src[i]);
 }
 
@@ -1347,12 +1347,12 @@ extern "C" void cuda_imag(long N, float* dst, const _Complex float* src)
 	kern_imag<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, (cuFloatComplex*)src);
 }
 
-__global__ void kern_zcmpl_real(int N, cuFloatComplex* dst, const float* src)
+__global__ void kern_zcmpl_real(long N, cuFloatComplex* dst, const float* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = make_cuFloatComplex(src[i], 0);
 }
 
@@ -1361,12 +1361,12 @@ extern "C" void cuda_zcmpl_real(long N, _Complex float* dst, const float* src)
 	kern_zcmpl_real<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, src);
 }
 
-__global__ void kern_zcmpl_imag(int N, cuFloatComplex* dst, const float* src)
+__global__ void kern_zcmpl_imag(long N, cuFloatComplex* dst, const float* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = make_cuFloatComplex(0., src[i]);
 }
 
@@ -1375,12 +1375,12 @@ extern "C" void cuda_zcmpl_imag(long N, _Complex float* dst, const float* src)
 	kern_zcmpl_imag<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, src);
 }
 
-__global__ void kern_zcmpl(int N, cuFloatComplex* dst, const float* real_src, const float* imag_src)
+__global__ void kern_zcmpl(long N, cuFloatComplex* dst, const float* real_src, const float* imag_src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = make_cuFloatComplex(real_src[i], imag_src[i]);
 }
 
@@ -1389,12 +1389,12 @@ extern "C" void cuda_zcmpl(long N, _Complex float* dst, const float* real_src, c
 	kern_zcmpl<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, real_src, imag_src);
 }
 
-__global__ void kern_zfill(int N, cuFloatComplex val, cuFloatComplex* dst)
+__global__ void kern_zfill(long N, cuFloatComplex val, cuFloatComplex* dst)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (int i = start; i < N; i += stride)
+	for (long i = start; i < N; i += stride)
 		dst[i] = val;
 }
 
