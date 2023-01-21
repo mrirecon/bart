@@ -24,7 +24,7 @@
 #include "num/gpukrnls.h"
 #include "num/gpuops.h"
 #include "num/multind.h"
-#include "num/gpu_misc.h"
+#include "num/gpukrnls_misc.h"
 
 #if 1
 // see Dara's src/calib/calibcu.cu for how to get
@@ -1183,7 +1183,7 @@ extern "C" void cuda_zfftmod_3d(const long dims[3], _Complex float* dst, const _
 			}
 
 
-			kern_fftmod_3d_4<<<getGridSize3(dims, (const void*)kern_fftmod_3d), getBlockSize3(dims, (const void*)kern_fftmod_3d), 0, cuda_get_stream()>>>(dims[0], dims[1], dims[2], (cuFloatComplex*)dst, (const cuFloatComplex*)src, inv, scale);
+			kern_fftmod_3d_4<<<getGridSize3(dims, (const void*)kern_fftmod_3d_4), getBlockSize3(dims, (const void*)kern_fftmod_3d), 0, cuda_get_stream()>>>(dims[0], dims[1], dims[2], (cuFloatComplex*)dst, (const cuFloatComplex*)src, inv, scale);
 			return;
 		}
 

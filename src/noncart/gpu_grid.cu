@@ -15,7 +15,7 @@
 #include "misc/misc.h"
 
 #include "num/multind.h"
-#include "num/gpu_misc.h"
+#include "num/gpukrnls_misc.h"
 #include "num/gpuops.h"
 #include "num/multiplace.h"
 
