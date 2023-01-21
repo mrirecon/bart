@@ -18,78 +18,12 @@
 #include "misc/misc.h"
 #include "num/gpuops.h"
 #include "num/gpu_conv.h"
+#include "num/gpukrnls_misc.h"
 #include "num/multind.h"
 
 // limited by hardware to 1024 on most devices
 // should be a multiple of 32 (warp size)
 #define BLOCKSIZE 1024
-
-
-static void getBlockSize3_internal(int block[3], const long dims[3], const void* func)
-{
-	cudaFuncAttributes attr;
-	cudaFuncGetAttributes(&attr, func);
-	int threads = attr.maxThreadsPerBlock;
-
-	block[0] = 1;
-	block[1] = 1;
-	block[2] = 1;
-
-	while ((threads >= 2) && (block[0] < dims[0])) {
-
-		block[0] *= 2;
-		threads /= 2;
-	}
-
-	while ((threads >= 2) && (block[1] < dims[1])) {
-
-		block[1] *= 2;
-		threads /= 2;
-	}
-
-	while ((threads >= 2) && (block[2] < dims[2])) {
-
-		block[2] *= 2;
-		threads /= 2;
-	}
-}
-
-static dim3 getBlockSize3(const long dims[3], const void* func)
-{
-	int block[3];
-
-	getBlockSize3_internal(block, dims, func);
-
-	return dim3(block[0], block[1], block[2]);
-}
-
-static long gridsize_int(long N, int blocksize)
-{
-	return (N + blocksize - 1) / blocksize;
-}
-
-static dim3 getGridSize3(const long dims[3], const void* func)
-{
-	int block[3];
-
-	getBlockSize3_internal(block, dims, func);
-
-	return dim3(gridsize_int(dims[0], block[0]), gridsize_int(dims[1], block[1]), gridsize_int(dims[2], block[2]));
-}
-
-
-
-static dim3 blocksize(int N, const void* func)
-{
-	const long dims[3] = { N, 1, 1};
-	return getBlockSize3(dims, func);
-}
-
-static dim3 gridsize(long N, const void* func)
-{
-	const long dims[3] = { N, 1, 1};
-	return getGridSize3(dims, func);
-}
 
 
 template <int DIMS, typename T> 
@@ -316,14 +250,14 @@ static void cuda_im2col_int(_Complex float* dst, const _Complex float* src, cons
 	if (func1) {
 	
 		const void* func = (const void*)kern_im2col_valid_no_dil_str<DIMS, T, transp>;
-		kern_im2col_valid_no_dil_str<DIMS, T, transp><<<gridsize(config.N_in_elements, func), blocksize(config.N_in_elements, func), 0, cuda_get_stream() >>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
+		kern_im2col_valid_no_dil_str<DIMS, T, transp><<<getGridSize(config.N_in_elements, func), getBlockSize(config.N_in_elements, func), 0, cuda_get_stream() >>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
 		return;
 	}
 	
 	if (func2) {
 
 		const void* func = (const void*)kern_im2col_valid<DIMS, T, transp>;
-		kern_im2col_valid<DIMS, T, transp><<<gridsize(config.N_in_elements, func), blocksize(config.N_in_elements, func), 0, cuda_get_stream() >>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
+		kern_im2col_valid<DIMS, T, transp><<<getGridSize(config.N_in_elements, func), getBlockSize(config.N_in_elements, func), 0, cuda_get_stream() >>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
 		return;
 	}
 
