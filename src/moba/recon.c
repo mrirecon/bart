@@ -178,6 +178,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		const complex float* mask,
 		const complex float* TI,
 		const complex float* b1,
+		const complex float* b0,
 		const long data_dims[DIMS], const complex float* kspace_data, bool usegpu)
 {
 	unsigned int fft_flags = FFT_FLAGS;
@@ -224,7 +225,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
         case MDB_T1_PHY:
         case MDB_BLOCH:
 
-                nl = moba_create(dims, mask, TI, b1, pattern, &mconf, data, usegpu);
+                nl = moba_create(dims, mask, TI, b1, b0, pattern, &mconf, data, usegpu);
                 break;
 	}
 
@@ -320,7 +321,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 }
 
 
-void moba_recon(const struct moba_conf* conf, struct moba_conf_s* data, const long dims[DIMS], complex float* img, complex float* sens, const complex float* pattern, const complex float* mask, const complex float* TI, const complex float* b1, const complex float* kspace_data, const complex float* init)
+void moba_recon(const struct moba_conf* conf, struct moba_conf_s* data, const long dims[DIMS], complex float* img, complex float* sens, const complex float* pattern, const complex float* mask, const complex float* TI, const complex float* b1, const complex float* b0, const complex float* kspace_data, const complex float* init)
 {
 	long imgs_dims[DIMS];
 	long coil_dims[DIMS];
@@ -346,7 +347,7 @@ void moba_recon(const struct moba_conf* conf, struct moba_conf_s* data, const lo
         case MDB_BLOCH:
 
 		assert(NULL == init);
-		recon(conf, data, dims, imgs_dims, img, coil_dims, sens, pattern, mask, TI, b1, data_dims, kspace_data, conf->use_gpu);
+		recon(conf, data, dims, imgs_dims, img, coil_dims, sens, pattern, mask, TI, b1, b0, data_dims, kspace_data, conf->use_gpu);
 		break;
 
 	case MDB_MGRE:

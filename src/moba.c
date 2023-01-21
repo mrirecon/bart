@@ -111,6 +111,7 @@ int main_moba(int argc, char* argv[argc])
 	const char* traj_file = NULL;
 	const char* init_file = NULL;
         const char* input_b1 = NULL;
+	const char* input_b0 = NULL;
 
 	struct moba_conf conf = moba_defaults;
 	struct opt_reg_s ropts;
@@ -178,6 +179,7 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_FLVEC4(0, "pscale", &(data.other.scale), "s1:s2:s3:s4", "Scaling of parameters in model-based reconstruction"),
                 OPTL_FLVEC4(0, "pinit", &(data.other.initval), "i1:i2:i3:i4", "Initial values of parameters in model-based reconstruction"),
                 OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
+		OPTL_INFILE(0, "b0map", &input_b0, "[rad/s]", "Input B0 map as cfl file"),
                 OPTL_FLVEC4(0, "tvscale", &tvscales, "s1:s2:s3:s4", "Scaling of derivatives in TV penalty"),
 		OPTL_FLOAT(0, "b1-sobolev-a", &(data.other.b1_sobolev_a), "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "b1-sobolev-b", &(data.other.b1_sobolev_b), "", "(a in 1 + a * \\Laplace^-b/2)"),
@@ -511,6 +513,18 @@ int main_moba(int argc, char* argv[argc])
 		assert(md_check_bounds(DIMS, FFT_FLAGS, grid_dims, b1_dims));
 	}
 
+	// Load passed B1
+
+        const complex float* b0 = NULL;
+	long b0_dims[DIMS];
+
+	if (NULL != input_b0) {
+
+		b0 = load_cfl(input_b0, DIMS, b0_dims);
+
+		assert(md_check_bounds(DIMS, FFT_FLAGS, grid_dims, b0_dims));
+	}
+
 	// scaling
 
 	if (normalize_scaling) {
@@ -620,14 +634,14 @@ int main_moba(int argc, char* argv[argc])
 
 		md_copy(DIMS, TI_dims, TI_gpu, TI, CFL_SIZE);
 
-		moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI_gpu, b1, kspace_gpu, init);
+		moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI_gpu, b1, b0, kspace_gpu, init);
 
 		md_free(kspace_gpu);
 		md_free(TI_gpu);
 
 	} else
 #endif
-	moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, b1, k_grid_data, init);
+	moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, b1, b0, k_grid_data, init);
 
         // Rescale estimated parameter maps
 
@@ -663,6 +677,9 @@ int main_moba(int argc, char* argv[argc])
 
         if(NULL != input_b1)
 		unmap_cfl(DIMS, b1_dims, b1);
+
+	if(NULL != input_b0)
+		unmap_cfl(DIMS, b0_dims, b0);
 
 	double recosecs = timestamp() - start_time;
 

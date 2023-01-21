@@ -443,6 +443,56 @@ tests/test-moba-bloch-irbssfp-traj-input-b1: traj repmat phantom signal fmac ind
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-moba-bloch-irbssfp-traj-input-b0: traj repmat phantom sim fmac index moba spow slice scale resize nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/traj -x16 -y16 _traj.ra			;\
+	$(TOOLDIR)/repmat 5 1000 _traj.ra traj2.ra	;\
+	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
+	$(TOOLDIR)/phantom -c -k -t traj.ra basis_geom.ra				;\
+	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0,Trf=0,FA=45,BWTP=4,off=100 -1 1.25:1.25:1 -2 0.1:0.1:1 basis_simu.ra	;\
+	$(TOOLDIR)/fmac basis_geom.ra basis_simu.ra k_space.ra		;\
+	$(TOOLDIR)/index 5 1000 dummy_ti.ra 	;\
+	$(TOOLDIR)/ones 2 16 16 ones.ra				;\
+	$(TOOLDIR)/scale -- 100 ones.ra b0map.ra				;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-BSSFP,TR=0.0045,TE=0.00225,FA=45,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0.00225 --other pscale=1:1:1:0,pinit=3:1:1:0,b0map=b0map.ra -i11 -C300 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra				;\
+	$(TOOLDIR)/phantom -x 8 -c ref.ra				;\
+	$(TOOLDIR)/resize -c 0 16 1 16 ref.ra ref2.ra					;\
+	$(TOOLDIR)/fmac r1map.ra ref2.ra masked_r1.ra				;\
+	$(TOOLDIR)/scale -- 0.8 ref2.ra ref3.ra				;\
+	$(TOOLDIR)/nrmse -t 0.014 masked_r1.ra ref3.ra				;\
+	$(TOOLDIR)/slice 6 2 reco.ra r2map.ra				;\
+	$(TOOLDIR)/fmac r2map.ra ref2.ra masked_r2.ra				;\
+	$(TOOLDIR)/scale -- 10 ref2.ra ref4.ra				;\
+	$(TOOLDIR)/nrmse -t 0.01 masked_r2.ra ref4.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-moba-bloch-irbssfp-traj-input-b0-sym: traj repmat phantom sim fmac index moba spow slice scale resize nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/traj -x16 -y16 _traj.ra			;\
+	$(TOOLDIR)/repmat 5 1000 _traj.ra traj2.ra	;\
+	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
+	$(TOOLDIR)/phantom -c -k -t traj.ra basis_geom.ra				;\
+	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0,Trf=0,FA=45,BWTP=4,off=100 -1 1.25:1.25:1 -2 0.1:0.1:1 basis_simu.ra	;\
+	$(TOOLDIR)/fmac basis_geom.ra basis_simu.ra k_space.ra		;\
+	$(TOOLDIR)/index 5 1000 dummy_ti.ra 	;\
+	$(TOOLDIR)/ones 2 16 16 ones.ra				;\
+	$(TOOLDIR)/scale -- -100 ones.ra b0map.ra				;\
+	$(TOOLDIR)/moba --bloch --sim STM --seq IR-BSSFP,TR=0.0045,TE=0.00225,FA=45,Trf=0.00001,BWTP=4,pinv,ipl=0,ppl=0.00225 --other pscale=1:1:1:0,pinit=3:1:1:0,b0map=b0map.ra -i11 -C300 -s0.95 -R3 -o1 -j0.001 --scale_data=5000. --scale_psf=1000. --normalize_scaling -t traj.ra k_space.ra dummy_ti.ra reco.ra sens.ra	;\
+	$(TOOLDIR)/slice 6 0 reco.ra r1map.ra				;\
+	$(TOOLDIR)/phantom -x 8 -c ref.ra				;\
+	$(TOOLDIR)/resize -c 0 16 1 16 ref.ra ref2.ra					;\
+	$(TOOLDIR)/fmac r1map.ra ref2.ra masked_r1.ra				;\
+	$(TOOLDIR)/scale -- 0.8 ref2.ra ref3.ra				;\
+	$(TOOLDIR)/nrmse -t 0.014 masked_r1.ra ref3.ra				;\
+	$(TOOLDIR)/slice 6 2 reco.ra r2map.ra				;\
+	$(TOOLDIR)/fmac r2map.ra ref2.ra masked_r2.ra				;\
+	$(TOOLDIR)/scale -- 10 ref2.ra ref4.ra				;\
+	$(TOOLDIR)/nrmse -t 0.01 masked_r2.ra ref4.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-moba-bloch-irbssfp-traj-av-spokes: traj repmat phantom signal fmac index moba spow slice scale resize nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/traj -x16 -y16 _traj.ra			;\
@@ -499,6 +549,7 @@ TESTS_SLOW += tests/test-moba-bloch-irflash-psf tests/test-moba-bloch-irflash-tr
 TESTS_SLOW += tests/test-moba-t1-phy-psf tests/test-moba-t1-phy-traj
 TESTS_SLOW += tests/test-moba-bloch-irbssfp-psf tests/test-moba-bloch-irbssfp-traj tests/test-moba-bloch-irbssfp-traj-input-b1 tests/test-moba-bloch-irbssfp-traj-av-spokes
 TESTS_SLOW += tests/test-moba-bloch-irbssfp-traj-slice-profile
+TESTS_SLOW += tests/test-moba-bloch-irbssfp-traj-input-b0 tests/test-moba-bloch-irbssfp-traj-input-b0-sym
 
 TESTS_GPU += tests/test-moba-t1-gpu
 

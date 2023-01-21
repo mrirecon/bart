@@ -57,6 +57,7 @@ struct blochfun_s {
 	complex float* derivatives;
 
 	const complex float* b1;
+	const complex float* b0;
 
 	const struct moba_conf_s* moba_data;
 
@@ -209,6 +210,20 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 				sim_data.voxel.r2 = crealf(r2scale[spa_ind]);
 				sim_data.voxel.m0 = 1.;
 				sim_data.voxel.b1 = b1s * (1. + crealf(b1scale[spa_ind]));
+
+				// Extract external B0 value from input
+
+				float b0s = 0.;
+
+				if (NULL != data->b0) {
+
+					b0s = crealf(data->b0[spa_ind]);
+
+					if (safe_isnanf(b0s))
+						b0s = 0.;
+				}
+
+				sim_data.voxel.w = b0s;
 
                                 // debug_sim(&sim_data);
                                 // debug_sim(&(data->moba_data->sim));
@@ -427,7 +442,7 @@ static void bloch_del(const nlop_data_t* _data)
 
 
 struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_dims[N], const long out_dims[N], const long in_dims[N],
-			const complex float* b1, const struct moba_conf_s* config, bool use_gpu)
+			const complex float* b1, const complex float* b0, const struct moba_conf_s* config, bool use_gpu)
 {
 	UNUSED(use_gpu);
 
@@ -474,6 +489,7 @@ struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_d
 	data->moba_data = config;
 
 	data->b1 = b1;
+	data->b0 = b0;
 
 	data->use_gpu = use_gpu;
 

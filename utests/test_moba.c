@@ -170,7 +170,7 @@ static bool test_nlop_blochfun(void)
 
 	md_zfill(N, in_dims, src, 1.0);
 
-	struct nlop_s* op_bloch = nlop_bloch_create(N, all_dims, map_dims, out_dims, in_dims, NULL, &data, gpu_use);
+	struct nlop_s* op_bloch = nlop_bloch_create(N, all_dims, map_dims, out_dims, in_dims, NULL, NULL, &data, gpu_use);
 
 	nlop_apply(op_bloch, N, out_dims, dst, N, in_dims, src);
 
