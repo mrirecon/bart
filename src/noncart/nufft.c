@@ -1892,7 +1892,10 @@ void nufft_update_traj(	const struct linop_s* nufft, int N,
 			const long wgh_dims[N], const complex float* weights,
 			const long bas_dims[N], const complex float* basis)
 {
-	auto data = CAST_DOWN(nufft_data, linop_get_data(nufft));
+	auto _data = linop_get_data_nested(nufft);
+	assert (NULL != _data);
+
+	auto data = CAST_DOWN(nufft_data, _data);
 
 	assert((int)data->N == N);
 
@@ -1901,7 +1904,10 @@ void nufft_update_traj(	const struct linop_s* nufft, int N,
 
 void nufft_update_psf2(const struct linop_s* nufft, int ND, const long psf_dims[ND], const long psf_strs[ND], const complex float* psf)
 {
-	auto data = CAST_DOWN(nufft_data, linop_get_data(nufft));
+	auto _data = linop_get_data_nested(nufft);
+	assert (NULL != _data);
+
+	auto data = CAST_DOWN(nufft_data, _data);
 
 	assert(md_check_equal_dims(ND, data->psf_dims, psf_dims, ~0));
 
