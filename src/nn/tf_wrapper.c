@@ -315,7 +315,7 @@ static list_t read_name_mapping(const char * filename, const char* signature_key
 
 	int fd;
 	if (-1 == (fd = open(filename, O_RDONLY)))
-		error("TensorFlow config file %s not found!\n", filename);
+		return NULL;
 
 	char config[4097];
 	memset(config, 0, 4097);
@@ -495,6 +495,9 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 
 		debug_printf(DP_DEBUG1, "Succesfully loaded TensorFlow v1 graph!\n");
 
+		snprintf(graph_path, plen, "%s.map", path);
+		arg_name_mapping = read_name_mapping(graph_path, signature_key ?: "serving_default");
+
 	} else {
 
 		snprintf(graph_path, plen, "%s/", path);
@@ -514,6 +517,8 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 
 		snprintf(graph_path, plen, "%s/bart_config.dat", path);
 		arg_name_mapping = read_name_mapping(graph_path, signature_key ?: "serving_default");
+		if (NULL == arg_name_mapping)
+			error("TensorFlow config file %s not found!\n", graph_path);
 
 		debug_printf(DP_DEBUG1, "Succesfully loaded TensorFlow v2 saved model!\n");
 
@@ -579,19 +584,27 @@ static bool graph_has_arg(const struct tf_shared_graph_s* graph, const char* nam
 
 struct tf_arg {
 
+	bool available;
 	struct TF_Output out;
 	int N;
 	const int64_t* dims;
 };
 
-static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const char* name, long batch_size)
+static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const char* name, bool required, long batch_size)
 {
 	struct tf_arg arg;
 
 	arg.out = get_output(graph, name);
 
-	if (NULL == arg.out.oper)
-		error("Graph operation %s missing.\n", name);
+	arg.available = (NULL != arg.out.oper);
+ 
+	if (!arg.available) {
+
+		if (required)
+			error("Graph operation %s missing.\n", name);
+		else
+			return arg;
+	}
 
 	arg.N = TF_GraphGetTensorNumDims(graph->graph, arg.out, graph->status);
 
@@ -698,6 +711,9 @@ struct tf_s {
 	int nr_inputs;
 	int nr_outputs;
 
+	bool* der_avail;
+	bool* der_out_avail;
+
 	const struct tf_shared_graph_s* graph;
 
 	TF_Tensor* const* input_tensors;
@@ -730,7 +746,7 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 
 	TF_SessionRun(data->graph->sess,
 				/* RunOptions */ NULL,
-				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs + data->nr_outputs,
+				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs,
 				/* Output tensors */ data->outputs_op, output_tensors, data->nr_outputs,
 				/* Target operations */ NULL, 0,
 				/* RunMetadata */ NULL,
@@ -790,6 +806,9 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 
 			if (nlop_der_requested(_data, i, o)) {
 
+				if (!data->der_avail[i + data->nr_inputs * o] || !data->der_out_avail[o])
+					error("Gradient not available for input %d and output %d!\n", i, o);
+
 				grad[i] = md_alloc(data->nr_in_dim[i], data->in_dims_tf[i], CFL_SIZE);
 				grad_ops[N] = data->grad_op[i + data->nr_inputs * o];
 				N++;
@@ -827,8 +846,12 @@ static void tf_del(const nlop_data_t* _data)
 {
 	const auto data = CAST_DOWN(tf_s, _data);
 
-	for (int i = 0; i < data->nr_inputs + data->nr_outputs; i++)
+	for (int i = 0; i < data->nr_inputs; i++)
 		TF_DeleteTensor(data->input_tensors[i]);
+	
+	for (int i = 0; i < data->nr_outputs; i++)
+		if (data->der_out_avail[i])
+			TF_DeleteTensor(data->input_tensors[i +  data->nr_inputs]);
 
 	tf_shared_graph_free(data->graph);
 
@@ -840,6 +863,9 @@ static void tf_del(const nlop_data_t* _data)
 
 	xfree(data->nr_out_dim);
 	xfree(data->nr_in_dim);
+
+	xfree(data->der_avail);
+	xfree(data->der_out_avail);
 
 	for (int i = 0; i < data->nr_inputs; i++)
 		xfree(data->in_dims_tf[i]);
@@ -870,6 +896,8 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	int II = -1;
 	int OO = -1;
 
+	bool ders = true;
+
 	char name[20];
 
 	do
@@ -893,11 +921,14 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	PTR_ALLOC(struct TF_Output[II + OO], inputs_op);
 	PTR_ALLOC(TF_Tensor*[II + OO], input_tensors);
 
+	bool der_avail[II * OO];
+	bool der_out_avail[OO];
+
 	for (int i = 0; i < OO; i++) {
 
 		char out_name[20];
 		sprintf(out_name, "output_%d", i);
-		struct tf_arg arg = process_arg(graph, out_name, graph->batch_size);
+		struct tf_arg arg = process_arg(graph, out_name, true, graph->batch_size);
 
 		ON_arr[i] = arg.N;
 		ON = MAX(ON, ON_arr[i]);
@@ -909,17 +940,23 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 		char grad_ys_name[20];
 		sprintf(grad_ys_name, "grad_ys_%d", i);
 
-		struct tf_arg arg_grad_y = process_arg(graph, grad_ys_name, graph->batch_size);
+		struct tf_arg arg_grad_y = process_arg(graph, grad_ys_name, false, graph->batch_size);
 
-		if (!cmp_arg(arg, arg_grad_y) || (arg.N != arg_grad_y.N))
-			error("Tensorflow output and corresponding gradient input do not have the same shape!");
+		der_out_avail[i] = arg_grad_y.available;
+		ders &= arg_grad_y.available;
 
-		(*inputs_op)[II + i] = arg_grad_y.out;
-		(*input_tensors)[II + i] = tensor_allocate(graph, grad_ys_name, graph->batch_size);
+		if (arg_grad_y.available) {
 
-		md_clear(arg_grad_y.N, arg_grad_y.dims, TF_TensorData((*input_tensors)[II + i]), CFL_SIZE);
+			if (!cmp_arg(arg, arg_grad_y) || (arg.N != arg_grad_y.N))
+				error("Tensorflow output and corresponding gradient input do not have the same shape!");
 
-		xfree(arg_grad_y.dims);
+			(*inputs_op)[II + i] = arg_grad_y.out;
+			(*input_tensors)[II + i] = tensor_allocate(graph, grad_ys_name, graph->batch_size);
+
+			md_clear(arg_grad_y.N, arg_grad_y.dims, TF_TensorData((*input_tensors)[II + i]), CFL_SIZE);
+
+			xfree(arg_grad_y.dims);
+		}
 	}
 
 	PTR_ALLOC(struct tf_s, data);
@@ -946,7 +983,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 		char in_name[20];
 		sprintf(in_name, "input_%d", i);
 
-		struct tf_arg arg = process_arg(graph, in_name, graph->batch_size);
+		struct tf_arg arg = process_arg(graph, in_name, true, graph->batch_size);
 
 		IN_arr[i] = arg.N;
 		IN = MAX(IN, IN_arr[i]);
@@ -965,14 +1002,20 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 			if ((1 != OO) || !graph_has_arg(graph, grad_name))
 				sprintf(grad_name, "grad_%d_%d", i, o);
 
-			struct tf_arg arg_grad = process_arg(graph, grad_name);
+			struct tf_arg arg_grad = process_arg(graph, grad_name, false, graph->batch_size);
 
-			if (!cmp_arg(arg, arg_grad))
-				error("Tensorflow input and corresponding gradient do not have the same shape!");
+			der_avail[i + II * o] = arg_grad.available;
+			ders &= arg_grad.available;
 
-			(*grad_op)[i + II * o] = arg_grad.out;
+			if (arg_grad.available) {
 
-			xfree(arg_grad.dims);
+				if (!cmp_arg(arg, arg_grad))
+					error("Tensorflow input and corresponding gradient do not have the same shape!");
+
+				(*grad_op)[i + II * o] = arg_grad.out;
+
+				xfree(arg_grad.dims);
+			}
 		}
 	}
 
@@ -981,6 +1024,8 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	data->nr_in_dim = *PTR_PASS(nr_in_dim);
 	data->in_dims_tf = *PTR_PASS(in_dims_tf);
 	data->grad_op = *PTR_PASS(grad_op);
+	data->der_avail = ARR_CLONE(bool[II * OO], der_avail);
+	data->der_out_avail = ARR_CLONE(bool[OO], der_out_avail);
 
 	complex float* ci[II];
 
@@ -1015,8 +1060,8 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	for (int i = 0; i < II; i++) {
 		for (int o = 0; o < OO; o++) {
 
-			deriv[i][o] = tf_der;
-			adjoint[i][o] = tf_adj;
+			deriv[i][o] = ders ? tf_der : NULL;
+			adjoint[i][o] = ders ? tf_adj : NULL;
 			normal[i][o] = NULL;
 			norm_inv[i][o] = NULL;
 		}
