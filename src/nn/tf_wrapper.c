@@ -409,6 +409,8 @@ struct tf_shared_graph_s {
 	list_t arg_name_map;
 
 	const char* weight_init;
+
+	long batch_size;
 };
 
 static void tf_shared_graph_del(const struct shared_obj_s* sptr)
@@ -518,6 +520,7 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 	x->status = status;
 	x->arg_name_map = arg_name_mapping;
 	x->weight_init = init_file;
+	x->batch_size = 1;
 
 	shared_obj_init(&x->sptr, tf_shared_graph_del);
 
@@ -570,7 +573,7 @@ struct tf_arg {
 	const int64_t* dims;
 };
 
-static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const char* name)
+static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const char* name, long batch_size)
 {
 	struct tf_arg arg;
 
@@ -621,6 +624,10 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 
 	for (int i = 0; i < arg.N; i++) // convert to Fortran order
 		(*dims)[i] = tdims[arg.N - i - 1];
+	
+	for (int i = 0; i < arg.N; i++)
+		if (-1 == (*dims)[i])
+			(*dims)[i] = batch_size;
 
 	arg.dims = *PTR_PASS(dims);
 
@@ -649,7 +656,7 @@ static bool cmp_arg(struct tf_arg arg1, struct tf_arg arg2)
 
 
 
-static TF_Tensor* tensor_allocate(const struct tf_shared_graph_s* graph, const char* name)
+static TF_Tensor* tensor_allocate(const struct tf_shared_graph_s* graph, const char* name, long batch_size)
 {
 	struct TF_Output arg = get_output(graph, name);
 
@@ -660,6 +667,10 @@ static TF_Tensor* tensor_allocate(const struct tf_shared_graph_s* graph, const c
 	long tdims[N ?: 1];
 
 	TF_GraphGetTensorShape(graph->graph, arg, tdims, N, graph->status);
+
+	for (int i = 0; i < N; i++)
+		if (-1 == tdims[i])
+			tdims[i] = batch_size;
 
 	size_t size = product(N, tdims) * ((type == TF_FLOAT) ? FL_SIZE : CFL_SIZE);
 
@@ -875,7 +886,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 
 		char out_name[20];
 		sprintf(out_name, "output_%d", i);
-		struct tf_arg arg = process_arg(graph, out_name);
+		struct tf_arg arg = process_arg(graph, out_name, graph->batch_size);
 
 		ON_arr[i] = arg.N;
 		ON = MAX(ON, ON_arr[i]);
@@ -887,13 +898,13 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 		char grad_ys_name[20];
 		sprintf(grad_ys_name, "grad_ys_%d", i);
 
-		struct tf_arg arg_grad_y = process_arg(graph, grad_ys_name);
+		struct tf_arg arg_grad_y = process_arg(graph, grad_ys_name, graph->batch_size);
 
 		if (!cmp_arg(arg, arg_grad_y) || (arg.N != arg_grad_y.N))
 			error("Tensorflow output and corresponding gradient input do not have the same shape!");
 
 		(*inputs_op)[II + i] = arg_grad_y.out;
-		(*input_tensors)[II + i] = tensor_allocate(graph, grad_ys_name);
+		(*input_tensors)[II + i] = tensor_allocate(graph, grad_ys_name, graph->batch_size);
 
 		md_clear(arg_grad_y.N, arg_grad_y.dims, TF_TensorData((*input_tensors)[II + i]), CFL_SIZE);
 
@@ -924,12 +935,12 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 		char in_name[20];
 		sprintf(in_name, "input_%d", i);
 
-		struct tf_arg arg = process_arg(graph, in_name);
+		struct tf_arg arg = process_arg(graph, in_name, graph->batch_size);
 
 		IN_arr[i] = arg.N;
 		IN = MAX(IN, IN_arr[i]);
 
-		(*input_tensors)[i] = tensor_allocate(graph, in_name);
+		(*input_tensors)[i] = tensor_allocate(graph, in_name, graph->batch_size);
 		(*inputs_op)[i] = arg.out;
 		(*nr_in_dim)[i] = arg.N;
 		(*in_dims_tf)[i] = arg.dims;
@@ -1046,7 +1057,7 @@ static void tf_zjac(const nlop_data_t* _data, int N, const long odims[N], _Compl
 	auto data = CAST_DOWN(tf_jac_s, _data);
 
 	TF_Tensor* output_tensors[2];
-	TF_Tensor* input_tensors[1] = { tensor_allocate(data->graph, "input_0") };
+	TF_Tensor* input_tensors[1] = { tensor_allocate(data->graph, "input_0", data->graph->batch_size) };
 
 	md_copy(N, idims, TF_TensorData(input_tensors[0]), src, CFL_SIZE);
 
@@ -1077,7 +1088,7 @@ static void tf_rjac(const nlop_data_t* _data, int N, const long odims[N], float*
 	auto data = CAST_DOWN(tf_jac_s, _data);
 
 	TF_Tensor* output_tensors[2];
-	TF_Tensor* input_tensors[1] = { tensor_allocate(data->graph, "input_0") };
+	TF_Tensor* input_tensors[1] = { tensor_allocate(data->graph, "input_0", data->graph->batch_size) };
 
 	md_copy(N, idims, TF_TensorData(input_tensors[0]), src, FL_SIZE);
 
@@ -1129,8 +1140,8 @@ static const struct nlop_s* nlop_tf_shared_jac_create(const struct tf_shared_gra
 	/*** handle outputs and grad_ys ***/
 	PTR_ALLOC(struct TF_Output[2], outputs_op);
 
-	struct tf_arg oarg = process_arg(graph, "output_0");
-	struct tf_arg jarg = process_arg(graph, real ? "jacobian_real_0_0" : "jacobian_0_0");
+	struct tf_arg oarg = process_arg(graph, "output_0", true, data->graph->batch_size);
+	struct tf_arg jarg = process_arg(graph, real ? "jacobian_real_0_0" : "jacobian_0_0", true, data->graph->batch_size);
 
 	int N = oarg.N;
 
@@ -1144,7 +1155,7 @@ static const struct nlop_s* nlop_tf_shared_jac_create(const struct tf_shared_gra
 
 	PTR_ALLOC(struct TF_Output[1], inputs_op);
 
-	struct tf_arg iarg = process_arg(graph, "input_0");
+	struct tf_arg iarg = process_arg(graph, "input_0", true, data->graph->batch_size);
 	assert(N == iarg.N);
 
 	(*inputs_op)[0] = iarg.out;
