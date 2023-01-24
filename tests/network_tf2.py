@@ -50,15 +50,14 @@ def tf2_generate_resnet(path, model):
                 conv = tf.reshape(conv, conv.shape[1:])
             conv = real_from_complex_weights(conv)
 
-            shp = list(input.shape[:-1])
-            shp[-1] = shp[-1] * 2
+            shp = tf.shape(input)
+            shp = tf.concat([shp[:-2], [2 *shp[-2]]], 0)
 
             tmp = tf.reshape(input, shp)
             tmp = tf.nn.conv3d(tmp, conv, [1] * 5, "SAME")
 
-            shp = list(tmp.shape)
-            shp[-1] = shp[-1] // 2
-            shp.append(2)
+            shp = tf.shape(tmp)
+            shp = tf.concat([shp[:-1], [shp[-1] // 2, 2]], 0)
 
             return tf.reshape(tmp, shp)
     
@@ -71,8 +70,8 @@ def tf2_generate_resnet(path, model):
 
         def __call__(self, input):
 
-            shp = list(input.shape)
-            shp.insert(-1, 1)
+            shp = tf.shape(input)
+            shp = tf.concat([shp[:-1], tf.constant([1]), shp[-1:]], 0)
 
             out = tf.reshape(input, shp)
             out = self.conv1(out)
@@ -80,10 +79,10 @@ def tf2_generate_resnet(path, model):
             out = self.conv2(out)
             out = tf.nn.relu(out)
             out = self.conv3(out)
-            out = input + tf.reshape(out, input.shape)
+            out = input + tf.reshape(out, tf.shape(input))
             return out
 
-    bart_tf.tf2_export_module(ResBlock(), [32, 32, 1], path+"/"+model, trace_complex=False, batch_sizes=[2, 10])
+    bart_tf.tf2_export_module(ResBlock(), [32, 32, 1], path+"/"+model, trace_complex=False)
 
 tf2_generate_resnet("./", "tf2_resnet")
 

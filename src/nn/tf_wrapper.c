@@ -81,6 +81,13 @@ const struct nlop_s* nlop_tf_create(const char* path)
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
+void tf_shared_graph_set_batch_size(const struct tf_shared_graph_s* x, long batch_size)
+{
+	UNUSED(x);
+	UNUSED(batch_size);
+	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
+}
+
 #else
 
 
@@ -527,6 +534,10 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 	return PTR_PASS(x);
 }
 
+void tf_shared_graph_set_batch_size(const struct tf_shared_graph_s* x, long batch_size)
+{
+	((struct tf_shared_graph_s*)x)->batch_size = batch_size;
+}
 
 
 

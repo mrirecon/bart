@@ -6,14 +6,14 @@
 # Moritz Blumenthal
 
 
-def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10]):
+def tf2_export_module(model, dims, path, trace_complex=True):
 
     import tensorflow as tf
     import numpy as np
 
     class BartWrapper(tf.Module):
     
-        def __init__(self, model, dims, batch_sizes = [10], vars_as_input = True, name=None):
+        def __init__(self, model, dims, vars_as_input = True, name=None):
         
             super(BartWrapper, self).__init__(name=name)
 
@@ -40,6 +40,9 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
                     self.dims_tf[len(self.dims_tf) - 2 - i] = dims[i]
 
                 self.model(np.zeros(self.dims_tf, np.complex64)) #run model ones to initialize weights
+            
+            self.dims_tf[0] = -1
+            self.dims_bart[0] = -1
 
             self.trace_complex = trace_complex
         
@@ -55,8 +58,6 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
             self.sig = {}
             
             self.add_concrete_function()
-            for bs in batch_sizes:
-                self.add_concrete_function(bs)
 
         @tf.function
         def __call__(self, input, weights, grad_in):
@@ -76,12 +77,13 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
             with tf.GradientTape(persistent=True) as g:
                 g.watch(input)
 
-                shp = self.dims_tf.copy()
-                shp[0] = input.shape[0]
+                print("Tracing TensorFlow model with dims: {}".format(input))
 
-                print("Tracing TensorFlow model with dims: {}".format(shp))
-                out = self.model(tf.reshape(input, shp))
-                out = tf.reshape(out, input.shape)
+                res = tf.reshape(input, self.dims_tf)
+
+                outr = self.model(res)
+
+                out = tf.reshape(outr, self.dims_bart)
 
             result = {}
         
@@ -98,10 +100,10 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
             return result
 
 
-        def add_concrete_function(self, batch_size=1, name=None):
+        def add_concrete_function(self, name=None):
 
             dims = self.dims_bart.copy()
-            dims[0] = batch_size
+            dims[0] = None
 
             if (self.trace_complex):
                 signature_input = tf.TensorSpec(shape=dims, dtype=tf.complex64, name="input_0")
@@ -118,11 +120,7 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
                     signature_weight.append(tf.TensorSpec(shape=var.shape, dtype=tf.float32, name="input_{}".format(i)))
 
             if name is None:
-                if 1 == batch_size:
-                    name = "serving_default"
-                else:
-                    name = "serving_default_batch_{}".format(batch_size)
-
+                name = "serving_default"
             self.sig[name] = self.__call__.get_concrete_function(signature_input, signature_weight, signature_grad_ys)
 
 
@@ -177,7 +175,7 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
                         f.write("{} {} {}\n".format(bart_name, outputs[bart_name].name.split(":")[0], outputs[bart_name].name.split(":")[1]))
 
     
-    BartWrapper(model, dims, batch_sizes).save(path)
+    BartWrapper(model, dims).save(path)
 
 
 
@@ -224,7 +222,7 @@ def tf1_graph_attach_gradients(graph):
             if not(op_exists(graph, name='grad_{}_{}'.format(i, o))):
                 with graph.as_default():
                     grad = tf.gradients(outputs[o], inputs[i], grad_ys[o])
-                    tf.reshape(grad, inputs[i].shape, name='grad_{}_{}'.format(i, o))
+                    tf.reshape(grad, tf.shape(inputs[i]), name='grad_{}_{}'.format(i, o))
 
 
 def tf1_export_graph(graph, path, name, session=None):

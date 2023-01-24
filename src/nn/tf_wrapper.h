@@ -10,6 +10,7 @@ struct tf_shared_graph_s;
 extern const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key);
 extern void tf_shared_graph_free(const struct tf_shared_graph_s* x);
 extern const char* tf_shared_graph_get_init_path(const struct tf_shared_graph_s* x);
+extern void tf_shared_graph_set_batch_size(const struct tf_shared_graph_s* x, long batch_size);
 
 
 extern const struct nlop_s* nlop_tf_shared_create(const struct tf_shared_graph_s* graph);
