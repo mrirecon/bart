@@ -287,15 +287,18 @@ struct tf_arg_map_s {
 	const char* bart_name;
 	const char* tf_name;
 	int tf_index;
+
+	_Bool real;
 };
 
-static struct tf_arg_map_s* tf_arg_map_create(const char* bname, const char* tname, int index)
+static struct tf_arg_map_s* tf_arg_map_create(const char* bname, const char* tname, int index, bool real)
 {
 	PTR_ALLOC(struct tf_arg_map_s, tm);
 
 	tm->bart_name = ptr_printf("%s", bname);
 	tm->tf_name = ptr_printf("%s", tname);
 	tm->tf_index = index;
+	tm->real = real;
 
 	return PTR_PASS(tm);
 }
@@ -359,23 +362,32 @@ static list_t read_name_mapping(const char * filename, const char* signature_key
 				signature[0] = '\0';
 				delta = 0;
 
-				if (   (NULL == signature)
-				    || ((1 == sscanf(config + pos, "%79s\n%n", signature, &delta)) && (0 == strcmp(signature_key, signature))) ) {
+				if (((1 == sscanf(config + pos, "%79s\n%n", signature, &delta)) && (0 == strcmp(signature_key, signature))) ) {
 
-					if (NULL != signature_key)
+					if ((NULL != signature_key) && (0 != strcmp("serving_default", signature_key)))
 						debug_printf(DP_INFO, "Found signature \"%s\" in config.\n", signature);
 
 					pos += delta;
 					char bart_name[80];
 					char tf_name[80];
+					char type[80];
 					int index;
 
-					while (3 == sscanf(config + pos, "%79s %79s %d\n%n", bart_name, tf_name, &index, &delta)) {
- 
- 						debug_printf(DP_DEBUG1, "TensorFlow input mapping: %s %s %d\n", bart_name, tf_name, index);
-						list_append(arg_map, tf_arg_map_create(bart_name, tf_name, index));
+					const char* del = "\n";
+					const char* line = strtok(config + pos, del);
 
-						pos += delta;
+					while (NULL != line) {
+
+						sprintf(type, "COMPLEX");
+						int count = sscanf(line, "%79s %79s %d %79s", bart_name, tf_name, &index, type);
+						line = NULL;
+
+						if (3 == count || 4 == count) {
+
+							debug_printf(DP_DEBUG1, "TensorFlow input mapping: %s %s %d %s\n", bart_name, tf_name, index, type);
+							list_append(arg_map, tf_arg_map_create(bart_name, tf_name, index, 0 == strcmp("REAL", type)));
+							line = strtok(NULL, del);							
+						}
 					}
 				}
 			}
@@ -579,12 +591,25 @@ static bool graph_has_arg(const struct tf_shared_graph_s* graph, const char* nam
 	return NULL != get_output(graph, name).oper;
 }
 
+static bool arg_is_real(const struct tf_shared_graph_s* graph, const char* name)
+{
+	if (NULL != graph->arg_name_map) {
+
+		const struct tf_arg_map_s* ma = list_get_first_item(graph->arg_name_map, name, cmp_arg_name, false);
+		return (NULL != ma) && ma->real;
+	} else {
+
+		return false;
+	}
+}
+
 
 
 
 struct tf_arg {
 
 	bool available;
+	bool real;
 	struct TF_Output out;
 	int N;
 	const int64_t* dims;
@@ -595,6 +620,7 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 	struct tf_arg arg;
 
 	arg.out = get_output(graph, name);
+	arg.real = arg_is_real(graph, name);
 
 	arg.available = (NULL != arg.out.oper);
  
@@ -625,24 +651,22 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 
 	if (0 == arg.N) {	// create a scalar
 
-		if (TF_FLOAT == type)
-			error("TensorFlow: Real scalar arguments are not supported! Stack with zero_like to construct complex argument!");
-
 		arg.N = 1;
 		tdims[0] = 1;
+	} 
+	
+	if ((TF_FLOAT == type) && (!arg.real)) {
 
-	} else {
+		if (2 != tdims[arg.N - 1])
+			error("TensorFlow: Real valued arguments which are interpreted as complex must have two (real + imaginary) channels in the last dimension!");
 
-		if (TF_FLOAT == type) {
-
-			if (2 != tdims[arg.N - 1])
-				error("TensorFlow: Real valued arguments must have two (real + imaginary) channels in the last dimension!");
-
-			tdims[arg.N - 1] = 1;
-		}
+		tdims[--arg.N] = 1;
 	}
 
-	arg.N = MAX(1, type == TF_FLOAT ? arg.N - 1 : arg.N);
+	if ((TF_COMPLEX64 == type) && (arg.real))
+		error("TensorFlow: Compley valued argument cannot be interpreted as real!");
+
+	arg.N = MAX(1, arg.N);
 
 	PTR_ALLOC(int64_t[arg.N], dims);
 
@@ -711,6 +735,9 @@ struct tf_s {
 	int nr_inputs;
 	int nr_outputs;
 
+	size_t* in_size;
+	size_t* out_size;
+
 	bool* der_avail;
 	bool* der_out_avail;
 
@@ -742,7 +769,9 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 	TF_Tensor* output_tensors[data->nr_outputs];
 
 	for (int i = 0; i < data->nr_inputs; i++)
-		md_copy(data->nr_in_dim[i], data->in_dims_tf[i], TF_TensorData(data->input_tensors[i]), args[i + data->nr_outputs], CFL_SIZE);
+		md_copy2(data->nr_in_dim[i], data->in_dims_tf[i],
+				MD_STRIDES(data->nr_in_dim[i], data->in_dims_tf[i], data->in_size[i]), TF_TensorData(data->input_tensors[i]),
+				MD_STRIDES(data->nr_in_dim[i], data->in_dims_tf[i], CFL_SIZE), args[i + data->nr_outputs], data->in_size[i]);
 
 	TF_SessionRun(data->graph->sess,
 				/* RunOptions */ NULL,
@@ -757,7 +786,12 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 
 	for (int i = 0; i < data->nr_outputs; i++) {
 
-		md_copy(data->nr_out_dim[i], data->out_dims_tf[i], args[i], TF_TensorData(output_tensors[i]), CFL_SIZE);
+		if (CFL_SIZE != data->out_size[i])
+			md_clear(data->nr_out_dim[i], data->out_dims_tf[i], args[i], CFL_SIZE);
+
+		md_copy2(data->nr_out_dim[i], data->out_dims_tf[i],
+			MD_STRIDES(data->nr_out_dim[i], data->out_dims_tf[i], CFL_SIZE), args[i],
+			MD_STRIDES(data->nr_out_dim[i], data->out_dims_tf[i], data->out_size[i]), TF_TensorData(output_tensors[i]), data->out_size[i]);
 
 		TF_DeleteTensor(output_tensors[i]);
 	}
@@ -792,7 +826,9 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 	if (   (0 != md_zrmse(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src))
 	    || (NULL == data->cached_gradient[o][i])) {
 
-		md_copy(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src, CFL_SIZE);
+		md_copy2(data->nr_out_dim[o], data->out_dims_tf[o],
+				MD_STRIDES(data->nr_out_dim[o], data->out_dims_tf[o], data->out_size[o]), TF_TensorData(data->input_tensors[data->nr_inputs + o]),
+				MD_STRIDES(data->nr_out_dim[o], data->out_dims_tf[o], CFL_SIZE), src, data->out_size[o]);
 
 		complex float** grad = data->cached_gradient[o];
 
@@ -832,7 +868,12 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 
 			if (nlop_der_requested(_data, i, o)) {
 
-				md_copy(data->nr_in_dim[i], data->in_dims_tf[i], grad[i], TF_TensorData(out_tensor[ip]), CFL_SIZE);
+				if (CFL_SIZE != data->in_size[i])
+					md_clear(data->nr_in_dim[i], data->in_dims_tf[i], grad[i], CFL_SIZE);
+
+				md_copy2(data->nr_in_dim[i], data->in_dims_tf[i],
+						MD_STRIDES(data->nr_in_dim[i], data->in_dims_tf[i], CFL_SIZE), grad[i],
+						MD_STRIDES(data->nr_in_dim[i], data->in_dims_tf[i], data->in_size[i]), TF_TensorData(out_tensor[ip]), data->in_size[i]);
 				TF_DeleteTensor(out_tensor[ip++]);
 			}
 		}
@@ -866,6 +907,9 @@ static void tf_del(const nlop_data_t* _data)
 
 	xfree(data->der_avail);
 	xfree(data->der_out_avail);
+
+	xfree(data->in_size);
+	xfree(data->out_size);
 
 	for (int i = 0; i < data->nr_inputs; i++)
 		xfree(data->in_dims_tf[i]);
@@ -924,6 +968,9 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	bool der_avail[II * OO];
 	bool der_out_avail[OO];
 
+	size_t in_sizes[II];
+	size_t out_sizes[OO];
+
 	for (int i = 0; i < OO; i++) {
 
 		char out_name[20];
@@ -936,6 +983,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 		(*outputs_op)[i] = arg.out;
 		(*nr_out_dim)[i] = arg.N;
 		(*out_dims_tf)[i] = arg.dims;
+		out_sizes[i] = arg.real ? FL_SIZE : CFL_SIZE; 
 
 		char grad_ys_name[20];
 		sprintf(grad_ys_name, "grad_ys_%d", i);
@@ -992,6 +1040,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 		(*inputs_op)[i] = arg.out;
 		(*nr_in_dim)[i] = arg.N;
 		(*in_dims_tf)[i] = arg.dims;
+		in_sizes[i] = arg.real ? FL_SIZE : CFL_SIZE;
 
 
 		for (int o = 0; o < OO; o++) {
@@ -1026,6 +1075,8 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	data->grad_op = *PTR_PASS(grad_op);
 	data->der_avail = ARR_CLONE(bool[II * OO], der_avail);
 	data->der_out_avail = ARR_CLONE(bool[OO], der_out_avail);
+	data->in_size = ARR_CLONE(size_t[II], in_sizes);
+	data->out_size = ARR_CLONE(size_t[OO], out_sizes);
 
 	complex float* ci[II];
 
