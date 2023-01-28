@@ -88,6 +88,12 @@ void tf_shared_graph_set_batch_size(const struct tf_shared_graph_s* x, long batc
 	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
 }
 
+void tf_shared_graph_list_operations(const struct tf_shared_graph_s*x)
+{
+	UNUSED(x);
+	error("BART is build without TensorFlow support!\nRebuild with \"TENSORFLOW=1\"\n");
+}
+
 #else
 
 
@@ -474,6 +480,16 @@ const char* tf_shared_graph_get_init_path(const struct tf_shared_graph_s* x)
 		return NULL;
 
 	return x->weight_init;
+}
+
+void tf_shared_graph_list_operations(const struct tf_shared_graph_s*x)
+{
+	size_t pos = 0;
+	TF_Operation* oper;
+	size_t counter = 0;
+	
+	while (NULL != (oper = TF_GraphNextOperation(x->graph, &pos)))
+		debug_printf(DP_INFO, "%lu: %s\n", counter++, TF_OperationName(oper));
 }
 
 const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key)
