@@ -53,7 +53,7 @@ def tf1_generate_resnet(path, model):
     out = out + img_t
     out = tf.reshape(out, tf.shape(img), name='output_0')
 
-    bart_tf.tf1_export_graph(tf.get_default_graph(), path, model)
+    bart_tf.tf1_export_graph(path, name=model)
 
 tf1_generate_resnet("./", "tf1_resnet")
 
