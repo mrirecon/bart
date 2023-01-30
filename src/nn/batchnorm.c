@@ -657,26 +657,28 @@ const struct nlop_s* nlop_batchnorm_create(int N, const long dims[N], unsigned l
 
 	switch (status) {
 
-		case STAT_TRAIN:
+	case STAT_TRAIN:
 
-			result = nlop_bn_create(N, dims, flags, epsilon);
-			result = nlop_append_singleton_dim_out_F(result, 1);
-			result = nlop_append_singleton_dim_out_F(result, 2);
-			result = nlop_stack_outputs_F(result, 1, 2, N);
-			iov = nlop_generic_codomain(result, 1);
-			result = nlop_combine_FF(result, nlop_del_out_create(iov->N, iov->dims));
-			return result;
+		result = nlop_bn_create(N, dims, flags, epsilon);
+		result = nlop_append_singleton_dim_out_F(result, 1);
+		result = nlop_append_singleton_dim_out_F(result, 2);
+		result = nlop_stack_outputs_F(result, 1, 2, N);
+		iov = nlop_generic_codomain(result, 1);
+		result = nlop_combine_FF(result, nlop_del_out_create(iov->N, iov->dims));
 
-		case STAT_TEST:
+		return result;
 
-			result = nlop_normalize_create(N, dims, flags, epsilon);
-			result = nlop_append_singleton_dim_in_F(result, 1);
-			result = nlop_append_singleton_dim_in_F(result, 2);
-			result = nlop_stack_inputs_F(result, 1, 2, N);
-			iov = nlop_generic_domain(result, 1);
-			result = nlop_combine_FF(result, nlop_from_linop_F(linop_identity_create(iov->N, iov->dims)));
-			result = nlop_dup_F(result, 1, 2);
-			return result;
+	case STAT_TEST:
+
+		result = nlop_normalize_create(N, dims, flags, epsilon);
+		result = nlop_append_singleton_dim_in_F(result, 1);
+		result = nlop_append_singleton_dim_in_F(result, 2);
+		result = nlop_stack_inputs_F(result, 1, 2, N);
+		iov = nlop_generic_domain(result, 1);
+		result = nlop_combine_FF(result, nlop_from_linop_F(linop_identity_create(iov->N, iov->dims)));
+		result = nlop_dup_F(result, 1, 2);
+
+		return result;
 	}
 
 	assert(0);

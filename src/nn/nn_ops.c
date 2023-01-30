@@ -457,17 +457,18 @@ const struct nlop_s* nlop_norm_znorm_create(int N, const long dims[N], unsigned 
 const struct nlop_s* nlop_norm_create(int N, const long dims[N], unsigned long batch_flag, enum norm norm, _Bool stop_grad)
 {
 	const struct nlop_s* result = NULL;
+
 	switch (norm) {
 
-		case NORM_MAX:
-			result = nlop_norm_max_abs_create(N, dims, batch_flag);
-			break;
+	case NORM_MAX:
+		result = nlop_norm_max_abs_create(N, dims, batch_flag);
+		break;
 
-		case NORM_L2:
-			result = nlop_norm_znorm_create(N, dims, batch_flag);
-			break;
+	case NORM_L2:
+		result = nlop_norm_znorm_create(N, dims, batch_flag);
+		break;
 
-		case NORM_NONE:
+	case NORM_NONE:
 		default:
 			error("No normalization selected!");
 	}

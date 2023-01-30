@@ -968,23 +968,26 @@ void train_reconet(	struct reconet_s* config,
 
 		switch (in_type[i]) {
 
-			case IN_BATCH_GENERATOR:
+		case IN_BATCH_GENERATOR:
 
-				src[i] = NULL;
-				break;
+			src[i] = NULL;
+			break;
 
-			case IN_BATCH:
-			case IN_UNDEFINED:
-			case IN_STATIC:
-				assert(0);
-				break;
+		case IN_BATCH:
+		case IN_UNDEFINED:
+		case IN_STATIC:
+			assert(0);
+			break;
 
-			case IN_OPTIMIZE:
-			case IN_BATCHNORM:
+		case IN_OPTIMIZE:
+		case IN_BATCHNORM:
+
 			{
 				auto iov_weight = config->weights->iovs[weight_index];
 				auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i);
+
 				assert(md_check_equal_dims(iov_weight->N, iov_weight->dims, iov_train_op->dims, ~0));
+
 				src[i] = (float*)config->weights->tensors[weight_index];
 				weight_index++;
 			}

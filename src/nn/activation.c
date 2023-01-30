@@ -83,45 +83,45 @@ static const struct nlop_s* append_activation_bias_internal(const struct nlop_s*
 
 	switch (activation){
 
-		case ACT_LIN:
+	case ACT_LIN:
 
-			nlop_act = nlop_from_linop_F(linop_identity_create(N, dims));
-			break;
+		nlop_act = nlop_from_linop_F(linop_identity_create(N, dims));
+		break;
 
-		case ACT_RELU:
+	case ACT_RELU:
 
-			nlop_act = nlop_relu_create(N, dims);
-			break;
+		nlop_act = nlop_relu_create(N, dims);
+		break;
 
-		case ACT_SOFTMAX:
+	case ACT_SOFTMAX:
 
-			nlop_act = nlop_softmax_create(N, dims, ~bflags);
-			break;
+		nlop_act = nlop_softmax_create(N, dims, ~bflags);
+		break;
 
-		case ACT_SIGMOID:
+	case ACT_SIGMOID:
 
-			nlop_act = nlop_sigmoid_create(N, dims);
-			break;
+		nlop_act = nlop_sigmoid_create(N, dims);
+		break;
 
-		case ACT_SIGLOG:
+	case ACT_SIGLOG:
 
-			nlop_act = nlop_siglog_create(N, dims, 1, 1);
-			break;
+		nlop_act = nlop_siglog_create(N, dims, 1, 1);
+		break;
 
-		case ACT_IGAUSSIAN:
+	case ACT_IGAUSSIAN:
 
-			nlop_act = nlop_igaussian_create(N, dims, 1);
-			break;
+		nlop_act = nlop_igaussian_create(N, dims, 1);
+		break;
 
-		case ACT_CARDIOID:
+	case ACT_CARDIOID:
 
-			nlop_act = nlop_cardioid_create(N, dims);
-			break;
+		nlop_act = nlop_cardioid_create(N, dims);
+		break;
 
-		default:
+	default:
 
-			nlop_act = NULL;
-			assert(0);
+		nlop_act = NULL;
+		assert(0);
 	}
 
 	if (bias)
