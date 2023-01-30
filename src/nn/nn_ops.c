@@ -454,7 +454,7 @@ const struct nlop_s* nlop_norm_znorm_create(int N, const long dims[N], unsigned 
 }
 
 
-const struct nlop_s* nlop_norm_create(int N, const long dims[__VLA(N)], unsigned long batch_flag, enum norm norm, _Bool stop_grad)
+const struct nlop_s* nlop_norm_create(int N, const long dims[N], unsigned long batch_flag, enum norm norm, _Bool stop_grad)
 {
 	const struct nlop_s* result = NULL;
 	switch (norm) {

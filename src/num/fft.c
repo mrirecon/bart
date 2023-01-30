@@ -640,14 +640,14 @@ void ifft(int D, const long dimensions[D], unsigned long flags, complex float* d
 	fft_free(plan);
 }
 
-void fftc(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void fftc(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	fftmod(D, dimensions, flags, dst, src);
 	fft(D, dimensions, flags, dst, dst);
 	fftmod(D, dimensions, flags, dst, dst);
 }
 
-void ifftc(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void ifftc(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	ifftmod(D, dimensions, flags, dst, src);
 	ifft(D, dimensions, flags, dst, dst);
@@ -668,13 +668,13 @@ void ifftc2(int D, const long dimensions[D], unsigned long flags, const long ost
 	ifftmod2(D, dimensions, flags, ostrides, dst, ostrides, dst);
 }
 
-void fftu(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void fftu(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	fft(D, dimensions, flags, dst, src);
 	fftscale(D, dimensions, flags, dst, dst);
 }
 
-void ifftu(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void ifftu(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	ifft(D, dimensions, flags, dst, src);
 	fftscale(D, dimensions, flags, dst, dst);
@@ -692,13 +692,13 @@ void ifftu2(int D, const long dimensions[D], unsigned long flags, const long ost
 	fftscale2(D, dimensions, flags, ostrides, dst, ostrides, dst);
 }
 
-void fftuc(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void fftuc(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	fftc(D, dimensions, flags, dst, src);
 	fftscale(D, dimensions, flags, dst, dst);
 }
 
-void ifftuc(int D, const long dimensions[__VLA(D)], unsigned long flags, complex float* dst, const complex float* src)
+void ifftuc(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
 	ifftc(D, dimensions, flags, dst, src);
 	fftscale(D, dimensions, flags, dst, dst);

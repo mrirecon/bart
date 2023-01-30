@@ -528,8 +528,8 @@ void altmin(unsigned int iter, float alpha, float redu,
 	    const struct vec_iter_s* vops,
 	    unsigned int NI,
 	    struct iter_nlop_s op,
-	    struct iter_op_p_s min_ops[__VLA(NI)],
-	    float* x[__VLA(NI)], const float* y,
+	    struct iter_op_p_s min_ops[NI],
+	    float* x[NI], const float* y,
 	    struct iter_nlop_s callback)
 {
 	float* r = vops->allocate(N);

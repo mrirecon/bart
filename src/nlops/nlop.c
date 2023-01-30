@@ -163,7 +163,7 @@ static void sptr_linop_del(const struct shared_ptr_s* sptr)
 	data->del(data->data);
 }
 
-static void op_fun(const operator_data_t* _data, unsigned int N, void* args[__VLA(N)])
+static void op_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
 	auto data = CAST_DOWN(nlop_op_data_s, _data);
 
@@ -391,8 +391,8 @@ struct nlop_s* nlop_generic_create(int OO, int ON, const long odims[OO][ON], int
 
 
 
-struct nlop_s* nlop_create2(unsigned int ON, const long odims[__VLA(ON)], const long ostrs[__VLA(ON)],
-				unsigned int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], nlop_data_t* data,
+struct nlop_s* nlop_create2(unsigned int ON, const long odims[ON], const long ostrs[ON],
+				unsigned int IN, const long idims[IN], const long istrs[IN], nlop_data_t* data,
 				nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t del)
 {
 	struct nlop_s* op = nlop_generic_create2(1, ON, (const long(*)[])&odims[0], (const long(*)[])&ostrs[0], 1, IN, (const long(*)[])&idims[0], (const long(*)[])&istrs[0], data, NULL,
@@ -405,7 +405,7 @@ struct nlop_s* nlop_create2(unsigned int ON, const long odims[__VLA(ON)], const 
 	return op;
 }
 
-struct nlop_s* nlop_create(unsigned int ON, const long odims[__VLA(ON)], unsigned int IN, const long idims[__VLA(IN)], nlop_data_t* data,
+struct nlop_s* nlop_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], nlop_data_t* data,
 				nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t del)
 {
 	return nlop_create2(	ON, odims, MD_STRIDES(ON, odims, CFL_SIZE),

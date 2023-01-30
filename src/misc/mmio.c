@@ -668,7 +668,7 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 #endif /* MEMONLY_CFL */
 }
 
-static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D[__VLA(N_max)], long dimensions[__VLA(N_max)][D_max], _Complex float* args[__VLA(N_max)], bool priv)
+static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D[N_max], long dimensions[N_max][D_max], _Complex float* args[N_max], bool priv)
 {
 	io_register_input(name);
 

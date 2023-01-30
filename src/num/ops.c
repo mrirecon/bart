@@ -619,7 +619,7 @@ void operator_generic_apply_unchecked(const struct operator_s* op, unsigned int 
 	debug_trace("LEAVE %p\n", op->apply);
 }
 
-void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* op[__VLA(D)], unsigned int N, void* args[__VLA(D)][N], int num_threads)
+void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* op[D], unsigned int N, void* args[D][N], int num_threads)
 {
 #ifdef _OPENMP
 	if (0 < num_threads) {

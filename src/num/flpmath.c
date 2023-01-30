@@ -4299,7 +4299,7 @@ void md_pdf_gauss(int D, const long dims[D], float* optr, const float* iptr, flo
 }
 
 
-float md_zmaxnorm2(int D, const long dims[__VLA(D)], const long strs[__VLA(D)], const complex float* src)
+float md_zmaxnorm2(int D, const long dims[D], const long strs[D], const complex float* src)
 {
 	complex float* tmp = md_alloc(D, dims, CFL_SIZE);
 
@@ -4319,7 +4319,7 @@ float md_zmaxnorm2(int D, const long dims[__VLA(D)], const long strs[__VLA(D)], 
 }
 
 
-float md_zmaxnorm(int D, const long dims[__VLA(D)], const complex float* ptr)
+float md_zmaxnorm(int D, const long dims[D], const complex float* ptr)
 {
 	return md_zmaxnorm2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), ptr);
 }

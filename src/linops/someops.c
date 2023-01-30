@@ -904,7 +904,7 @@ struct linop_s* linop_permute_create(unsigned int N, const int order[N], const l
 	return linop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)), permute_forward, permute_adjoint, permute_normal, NULL, permute_free);
 }
 
-extern struct linop_s* linop_permute_create(unsigned int N, const int order[__VLA(N)], const long idims[N]);
+extern struct linop_s* linop_permute_create(unsigned int N, const int order[N], const long idims[N]);
 
 struct transpose_op_s {
 
