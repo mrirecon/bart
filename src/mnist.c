@@ -69,10 +69,10 @@ static nn_t network_mnist_create(const long odims[2], const long idims[3], enum 
 	assert(10 == odims[0]);		// 10 classes 
 	assert(idims[2] == odims[1]);	// batch size of input and output equals
 	
-	long dims[5] = {1, idims[0], idims[1], 1, idims[2]};	// input dimensions in the channel NHWC format, i.e. { Channels, X, Y, Z, Batch }
+	long dims[5] = { 1, idims[0], idims[1], 1, idims[2] };	// input dimensions in the channel NHWC format, i.e. { Channels, X, Y, Z, Batch }
 	bool nhwc = true;					// we use NHWC layout
 
-	long kernel_size[] = { 3, 3, 1} ;	// size of 3D convolution kernel
+	long kernel_size[] = { 3, 3, 1 };	// size of 3D convolution kernel
 	long strides[] = { 1, 1, 1 };
 	long dilation[] = { 1, 1, 1 };
 	
@@ -196,7 +196,7 @@ int main_mnist(int argc, char* argv[argc])
 			move_gpu_nn_weights(weights);
 		
 		const struct nlop_s* batch_generator = batch_gen_create(2, (int [2]){ NO, NI },
-									(const long*[2]){ bdims_out, bdims_in},
+									(const long*[2]){ bdims_out, bdims_in },
 									(const long*[2]){ dims_out, dims_in },
 									(const complex float*[2]){ out, in },
 									0, BATCH_GEN_SHUFFLE_DATA, 123);
