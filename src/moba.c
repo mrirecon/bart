@@ -217,6 +217,8 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('M', &conf.sms, "Simultaneous Multi-Slice reconstruction"),
 		OPT_SET('O', &conf.out_origin_maps, "(Output original maps from reconstruction without post processing)"),
 		OPT_SET('g', &conf.use_gpu, "use gpu"),
+		OPTL_INT(0, "positive-maps", &conf.constrained_maps, "flag", "Maps with positivity contraint as FLAG!"),
+		OPTL_INT(0, "not-wav-maps", &conf.not_wav_maps, "d", "Maps removed from wavelet denoising (counted from back!)"),
 		OPTL_INT(0, "multi-gpu", &conf.num_gpu, "num", "number of gpus to use"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
 		OPT_INFILE('t', &traj_file, "traj", "K-space trajectory"),

@@ -41,6 +41,8 @@ struct moba_conf {
 	float sobolev_b;
 	bool noncartesian;
         bool sms;
+	int not_wav_maps;
+	int constrained_maps;
 
 	// T1
 	float scaling_M0;

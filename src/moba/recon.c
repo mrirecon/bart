@@ -95,7 +95,7 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 }
 
 
-static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, struct moba_conf_s* data)
+static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, const struct moba_conf* conf, struct moba_conf_s* data)
 {
 
 	// T2 estimation turned off for IR FLASH Simulation
@@ -107,13 +107,13 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, str
                 if (SEQ_IRFLASH == data->sim.seq.seq_type) {
 
 			conf2->l2flags = (0 != data->other.scale[3]) ? 8 : (0UL);
-                        conf2->constrained_maps = 1;	// only R1 map: bitmask (1 0 0 0) = 1
-                        conf2->not_wav_maps = 2;	// no wavelet for T2 and B1 map
+                        conf2->constrained_maps = (0 == conf->constrained_maps) ? 1 : conf->constrained_maps;	// only R1 map: bitmask (1 0 0 0) = 1
+                        conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 2 : conf->not_wav_maps; // no wavelet for T2 and B1 map
                 }
                 else if (SEQ_IRBSSFP == data->sim.seq.seq_type) {
 
-                        conf2->constrained_maps = 5;	// only T1 and T2: bitmask(1 0 1 0) = 5
-                        conf2->not_wav_maps = 1;	// no wavelet for B1 map
+                        conf2->constrained_maps = (0 == conf->constrained_maps) ? 5 : conf->constrained_maps;	// only T1 and T2: bitmask(1 0 1 0) = 5
+                        conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 1 : conf->not_wav_maps; // no wavelet for B1 map
                 }
         }
 
@@ -122,8 +122,8 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, str
         if (MDB_T1_PHY == mode) {
 
 		conf2->l2flags = 4;
-                conf2->constrained_maps = 2;    // only R1 map: bitmask (0 1 0) = 2
-                conf2->not_wav_maps = 1;	// no wavelet for R1' map
+                conf2->constrained_maps = (0 == conf->constrained_maps) ? 2 : conf->constrained_maps;    // only R1 map: bitmask (0 1 0) = 2
+                conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 1 : conf->not_wav_maps;	// no wavelet for R1' map
         }
 
 	conf2->tvscales_N = data->other.tvscales_N;
@@ -282,7 +282,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		.ropts = conf->ropts
 	};
 
-        set_bloch_conf(conf->mode, &conf2, data);
+        set_bloch_conf(conf->mode, &conf2, conf, data);
 
 	long irgnm_conf_dims[DIMS];
 	md_select_dims(DIMS, fft_flags|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|TIME2_FLAG, irgnm_conf_dims, imgs_dims);

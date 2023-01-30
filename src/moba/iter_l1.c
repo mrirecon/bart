@@ -415,7 +415,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);
 
         // jointly penalize the first few maps
-        long penalized_dims = img_dims[COEFF_DIM] - conf->not_wav_maps;
+        long penalized_dims = MAX(1, img_dims[COEFF_DIM] - conf->not_wav_maps);
 
         debug_printf(DP_DEBUG2, "nr. of penalized maps: %d\n", penalized_dims);
 
@@ -431,7 +431,14 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 		map_dims[COEFF_DIM] = conf->not_wav_maps;
 
 		auto prox3 = prox_zero_create(DIMS, map_dims);
-		prox2 = operator_p_stack_FF(COEFF_DIM, COEFF_DIM, prox2, prox3);
+
+		if (conf->not_wav_maps < dims[COEFF_DIM])
+			prox2 = operator_p_stack_FF(COEFF_DIM, COEFF_DIM, prox2, prox3);
+		else {
+
+			operator_p_free(prox2);
+			prox2 = prox3;
+		}
 	}
 
 	if (conf->auto_norm) {
