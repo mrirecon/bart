@@ -512,10 +512,10 @@ int main_moba(int argc, char* argv[argc])
 
 		b1 = load_cfl(input_b1, DIMS, b1_dims);
 
-		assert(md_check_bounds(DIMS, FFT_FLAGS, grid_dims, b1_dims));
+		assert(md_check_compat(DIMS, ~FFT_FLAGS, grid_dims, b1_dims));
 	}
 
-	// Load passed B1
+	// Load passed B0
 
         const complex float* b0 = NULL;
 	long b0_dims[DIMS];
@@ -524,7 +524,7 @@ int main_moba(int argc, char* argv[argc])
 
 		b0 = load_cfl(input_b0, DIMS, b0_dims);
 
-		assert(md_check_bounds(DIMS, FFT_FLAGS, grid_dims, b0_dims));
+		assert(md_check_compat(DIMS, ~FFT_FLAGS, grid_dims, b0_dims));
 	}
 
 	// scaling
