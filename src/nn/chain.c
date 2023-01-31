@@ -41,15 +41,19 @@ nn_t nn_real_input(nn_t op, int i, const char* iname)
 
 	auto rvc = nlop_from_linop_F(linop_zreal_create(iov->N, iov->dims));
 	auto nlop_result = nlop_chain2(rvc, 0, nn_get_nlop(op), i);
+
 	nlop_free(rvc);
+
 	nlop_result = nlop_shift_input_F(nlop_result, i, nlop_get_nr_in_args(nlop_result) - 1);
 
 	auto result = nn_from_nlop_F(nlop_result);
 
 	for (int i = 0; i < nn_get_nr_in_args(result); i++)
 		nn_clone_arg_i_from_i(result, i, op, i);
+
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
+
 	return result;
 }
 
@@ -76,8 +80,10 @@ nn_t nn_real_output(nn_t op, int o, const char* oname)
 
 	for (int i = 0; i < nn_get_nr_in_args(result); i++)
 		nn_clone_arg_i_from_i(result, i, op, i);
+
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
+
 	return result;
 }
 
@@ -130,6 +136,7 @@ nn_t nn_reshape_out(nn_t op, int o, const char* oname, int N, const long odims[N
 
 	for (int i = 0; i < nn_get_nr_in_args(result); i++)
 		nn_clone_arg_i_from_i(result, i, op, i);
+
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
 
@@ -154,6 +161,7 @@ nn_t nn_reshape_in(nn_t op, int i, const char* iname, int N, const long idims[N]
 
 	for (int i = 0; i < nn_get_nr_in_args(result); i++)
 		nn_clone_arg_i_from_i(result, i, op, i);
+
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
 
@@ -282,6 +290,7 @@ nn_t nn_permute_inputs(nn_t op, int I2, const int perm[I2])
 
 	for (int i = 0; i < nn_get_nr_in_args(result); i++)
 		nn_clone_arg_i_from_i(result, i, op, nperm[i]);
+
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
 
@@ -324,6 +333,7 @@ nn_t nn_permute_outputs(nn_t op, int O2, const int perm[O2])
 
 	for (int i = 0; i < nn_get_nr_in_args(result); i++)
 		nn_clone_arg_i_from_i(result, i, op, i);
+
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, nperm[i]);
 
@@ -410,11 +420,13 @@ nn_t nn_combine(nn_t a, nn_t b)
 
 	for (int i = 0; i < IIa; i++)
 		nn_clone_arg_i_from_i(result, i, a, i);
+
 	for (int i = 0; i < IIb; i++)
 		nn_clone_arg_i_from_i(result, IIa + i, b, i);
 
 	for (int i = 0; i < OOa; i++)
 		nn_clone_arg_o_from_o(result, i, a, i);
+
 	for (int i = 0; i < OOb; i++)
 		nn_clone_arg_o_from_o(result, OOa + i, b, i);
 
@@ -477,19 +489,23 @@ nn_t nn_link(nn_t op, int o, const char* oname, int i, const char* iname)
 
 	auto result = nn_from_nlop_F(nlop_link(nn_get_nlop(op), o, i));
 
-	for (int ii = 0, ip = 0; ii < II; ii++){
+	for (int ii = 0, ip = 0; ii < II; ii++) {
 
 		if (ii == i)
 			ip++;
+
 		nn_clone_arg_i_from_i(result, ii, op, ip);
+
 		ip++;
 	}
 
-	for (int ii = 0, ip = 0; ii < OO; ii++){
+	for (int ii = 0, ip = 0; ii < OO; ii++) {
 
 		if (ii == o)
 			ip++;
+
 		nn_clone_arg_o_from_o(result, ii, op, ip);
+
 		ip++;
 	}
 
@@ -568,6 +584,7 @@ nn_t nn_chain2(nn_t a, int o, const char* oname, nn_t b, int i, const char* inam
 
 		if (j == i)
 			jp++;
+
 		nn_clone_arg_i_from_i(result, j, b, jp);
 	}
 
@@ -581,6 +598,7 @@ nn_t nn_chain2(nn_t a, int o, const char* oname, nn_t b, int i, const char* inam
 
 		if (j == o)
 			jp++;
+
 		nn_clone_arg_o_from_o(result, j + OOb, a, jp);
 	}
 
@@ -680,6 +698,7 @@ nn_t nn_chain2_keep(nn_t a, int o, const char* oname, nn_t b, int i, const char*
 
 		if (j == i)
 			jp++;
+
 		nn_clone_arg_i_from_i(result, j, b, jp);
 	}
 
@@ -777,7 +796,6 @@ nn_t nn_chain2_keep_swap_FF(nn_t a, int o, const char* oname, nn_t b, int i, con
  */
 nn_t nn_dup(nn_t op, int a, const char* aname, int b, const char* bname)
 {
-
 	a = nn_get_in_arg_index(op, a, aname);
 	b = nn_get_in_arg_index(op, b, bname);
 
@@ -789,13 +807,19 @@ nn_t nn_dup(nn_t op, int a, const char* aname, int b, const char* bname)
 	auto init_tmp = init_dup_create(op->initializers[a], op->initializers[b]);
 
 	const struct operator_p_s* prox_tmp = NULL;
-	if (NULL != op->prox_ops[a])
+
+	if (NULL != op->prox_ops[a]) {
+
 		prox_tmp = operator_p_ref(op->prox_ops[a]);
-	else
+
+	} else {
+
 		if (NULL != op->prox_ops[b])
 			prox_tmp = operator_p_ref(op->prox_ops[b]);
+	}
 
 	auto nlop = nlop_dup(nn_get_nlop(op), MIN(a , b), MAX(a, b));
+
 	if (a > b)
 		nlop = nlop_shift_input_F(nlop, a - 1, b);
 
@@ -803,9 +827,12 @@ nn_t nn_dup(nn_t op, int a, const char* aname, int b, const char* bname)
 
 	for (int i = 0, ip = 0; i < II - 1; i++) {
 
-		if (i == b) ip++;
+		if (i == b)
+			ip++;
+
 		nn_clone_arg_i_from_i(result, i, op, ip++);
 	}
+
 	for (int i = 0; i < OO; i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
 
@@ -880,6 +907,7 @@ nn_t nn_stack_inputs(nn_t op, int a, const char* aname, int b, const char* bname
 		stack_dim += iova->N;
 
 	const struct operator_p_s* prox_tmp = NULL;
+
 	if ((NULL != op->prox_ops[a]) || (NULL != op->prox_ops[b])) {
 
 		auto prox_a = (NULL == op->prox_ops[a]) ? prox_zero_create(iova->N, iova->dims) : operator_p_ref(op->prox_ops[a]);
@@ -888,15 +916,20 @@ nn_t nn_stack_inputs(nn_t op, int a, const char* aname, int b, const char* bname
 	}
 
 	auto nlop = nlop_stack_inputs(nn_get_nlop(op), a, b, stack_dim);
+
 	if (a > b)
 		nlop = nlop_shift_input_F(nlop, a - 1, b);
+
 	auto result = nn_from_nlop_F(nlop);
 
 	for (int i = 0, ip = 0; i < II - 1; i++) {
 
-		if (i == b) ip++;
+		if (i == b)
+			ip++;
+
 		nn_clone_arg_i_from_i(result, i, op, ip++);
 	}
+
 	for (int i = 0; i < OO; i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
 
@@ -958,8 +991,10 @@ nn_t nn_stack_outputs(nn_t op, int a, const char* aname, int b, const char* bnam
 	int OO = nn_get_nr_out_args(op);
 
 	auto nlop = nlop_stack_outputs(nn_get_nlop(op), a, b, stack_dim);
+
 	if (a > b)
 		nlop = nlop_shift_output_F(nlop, a - 1, b);
+
 	auto result = nn_from_nlop_F(nlop);
 
 	for (int i = 0; i < II; i++)
@@ -967,7 +1002,9 @@ nn_t nn_stack_outputs(nn_t op, int a, const char* aname, int b, const char* bnam
 
 	for (int i = 0, ip = 0; i < OO - 1; i++) {
 
-		if (i == b) ip++;
+		if (i == b)
+			ip++;
+
 		nn_clone_arg_o_from_o(result, i, op, ip++);
 	}
 
@@ -1016,11 +1053,17 @@ nn_t nn_shift_input_index_F(nn_t x, int n, int o)
 	assert(new_index < II);
 
 	int perm[II];
+
 	for (int i = 0, ip = 0; i < II; i++, ip++) {
 
 		perm[i] = ip;
-		if (i == old_index) ip++;
-		if (i == new_index) ip--;
+
+		if (i == old_index)
+			ip++;
+
+		if (i == new_index)
+			ip--;
+
 		if (new_index > old_index)
 			perm[i] = ip;
 	}
@@ -1053,8 +1096,13 @@ nn_t nn_shift_output_index_F(nn_t x, int n, int o)
 	for (int i = 0, ip = 0; i < OO; i++, ip++) {
 
 		perm[i] = ip;
-		if (i == old_index) ip++;
-		if (i == new_index) ip--;
+
+		if (i == old_index)
+			ip++;
+
+		if (i == new_index)
+			ip--;
+
 		if (new_index > old_index)
 			perm[i] = ip;
 	}
@@ -1158,6 +1206,7 @@ nn_t nn_mark_stack_output_F(nn_t x, const char* name)
 static nn_t stack_in_by_name(nn_t x) {
 
 	const char* stack_name = NULL;
+
 	for (int i = 0; i < nn_get_nr_in_args(x); i ++)
 		if (NULL != x->in_names[i] && 0 == strncmp(x->in_names[i], "#STACK_", 7))
 			stack_name = x->in_names[i];
@@ -1171,6 +1220,7 @@ static nn_t stack_in_by_name(nn_t x) {
 static nn_t stack_out_by_name(nn_t x) {
 
 	const char* stack_name = NULL;
+
 	for (int i = 0; i < nn_get_nr_out_args(x); i ++)
 		if (NULL != x->out_names[i] && 0 == strncmp(x->out_names[i], "#STACK_", 7))
 			stack_name = x->out_names[i];
@@ -1235,17 +1285,21 @@ static bool is_name_in_list(int N, const char* names[N], const char* name)
 		return false;
 
 	bool result = false;
+
 	for (int i = 0; i < N; i++)
 		result |= (NULL == names[i]) ? false : (0 == strcmp(names[i], name));
+
 	return result;
 }
 
 static int names_remove_double(int N, const char* dst_names[N], const char* src_names[N])
 {
 	int NN = 0;
+
 	for (int i = 0; i < N; i++)
 		if (!is_name_in_list(NN, dst_names, src_names[i]))
 			dst_names[NN++] = src_names[i];
+
 	return NN;
 }
 
@@ -1274,11 +1328,12 @@ nn_t nn_sort_inputs_by_list_F(nn_t x, int N, const char* sorted_names[N])
 
 		if (is_name_in_list(NN, nnames, nn_get_in_name_from_arg_index(x, i, false))) {
 
-			while (! nn_is_name_in_in_args(x, nnames[index]))
+			while (!nn_is_name_in_in_args(x, nnames[index]))
 				index++;
 
 			nperm[i] = nn_get_in_arg_index(x, 0, nnames[index]);
 			index++;
+
 		} else {
 
 			nperm[i] = i;
@@ -1313,11 +1368,12 @@ nn_t nn_sort_outputs_by_list_F(nn_t x, int N, const char* sorted_names[N])
 
 		if (is_name_in_list(NN, nnames, nn_get_out_name_from_arg_index(x, i, false))) {
 
-			while (! nn_is_name_in_out_args(x, nnames[index]))
+			while (!nn_is_name_in_out_args(x, nnames[index]))
 				index++;
 
 			nperm[i] = nn_get_out_arg_index(x, 0, nnames[index]);
 			index++;
+
 		} else {
 
 			nperm[i] = i;
@@ -1341,6 +1397,7 @@ nn_t nn_sort_outputs_by_list_F(nn_t x, int N, const char* sorted_names[N])
 nn_t nn_append_singleton_dim_in_if_exists_F(nn_t op, const char* iname)
 {
 	assert(NULL != iname);
+
 	if (nn_is_name_in_in_args(op, iname))
 		return nn_append_singleton_dim_in_F(op, 0, iname);
 	else
@@ -1441,7 +1498,7 @@ nn_t nn_sort_inputs_F(nn_t x)
 
 	int nperm[II];
 
-	for (int i = 0; i < II; i++){
+	for (int i = 0; i < II; i++) {
 
 		if (NULL == (x->in_names)[i])
 			nperm[index_unnamed++] = i;
@@ -1467,7 +1524,7 @@ nn_t nn_sort_outputs_F(nn_t x)
 
 	int nperm[OO];
 
-	for (int i = 0; i < OO; i++){
+	for (int i = 0; i < OO; i++) {
 
 		if (NULL == (x->out_names)[i])
 			nperm[index_unnamed++] = i;

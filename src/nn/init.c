@@ -64,7 +64,8 @@ void initializer_apply(const struct initializer_s* x, long N, const long dims[N]
 unsigned long in_flag_conv_generic(int N, unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag)
 {
 	unsigned long in_flag = 0;
-	for (int i = N - 1; i >= 0; i--){
+
+	for (int i = N - 1; i >= 0; i--) {
 
 		if (MD_IS_SET(conv_flag, i)) {
 
@@ -467,8 +468,9 @@ static void init_linspace_fun(const init_t* conf_, long N, const long dims[N], c
 	assert(conf->dim < N);
 
 	complex float vals[dims[conf->dim]];
+
 	for (int i = 0; i < dims[conf->dim]; i++)
-		vals[i] = conf->min_val + i *(conf->max_val - conf->min_val) / ((float)dims[conf->dim] - (conf->max_inc? 1. : 0));
+		vals[i] = conf->min_val + i *(conf->max_val - conf->min_val) / ((float)dims[conf->dim] - (conf->max_inc ? 1. : 0.));
 
 	long vdims[N];
 	md_select_dims(N, MD_BIT(conf->dim), vdims, dims);
@@ -538,6 +540,7 @@ const struct initializer_s* init_reshape_create(unsigned int N, const long dims[
 {
 	if(NULL == init)
 		return NULL;
+
 	PTR_ALLOC(struct initializer_reshape_s, data);
 	SET_TYPEID(initializer_reshape_s, data);
 
@@ -546,8 +549,11 @@ const struct initializer_s* init_reshape_create(unsigned int N, const long dims[
 	data->INTERFACE.fun = init_reshape_fun;
 
 	data->N = N;
+
 	PTR_ALLOC(long[N], ndims);
+
 	md_copy_dims(N, *ndims, dims);
+
 	data->dims = *PTR_PASS(ndims);
 	data->init = initializer_clone(init);
 
@@ -637,12 +643,15 @@ const struct initializer_s* init_stack_create(unsigned int N, int stack_dim, con
 	data->dimsb = *PTR_PASS(ndimsb);
 
 	PTR_ALLOC(long[N], dims);
+
 	for (int i = 0; i < (int)N; i++) {
 
 		if (i == data->stack_dim) {
 
 			(*dims)[i] = dimsa[i] + dimsb[i];
+
 		} else {
+
 			assert(dimsa[i] == dimsb[i]);
 			(*dims)[i] = dimsa[i];
 		}
@@ -665,5 +674,6 @@ const struct initializer_s* init_dup_create(const struct initializer_s* inita, c
 
 	if (inita->TYPEID != initb->TYPEID)
 		error("Dup for arguments with different initializers, i.e. \"%s\" and \"%s\"!", inita->TYPEID->name, initb->TYPEID->name);
+
 	return initializer_clone(inita);
 }

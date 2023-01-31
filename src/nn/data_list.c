@@ -131,7 +131,8 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 	int D = 0;
 	int N = 0;
 
-	for (int i = 0; i < II; i ++)
+	for (int i = 0; i < II; i ++) {
+
 		if (IN_BATCH_GENERATOR == in_types[i]) {
 
 			assert(0 != names[i]);
@@ -139,6 +140,7 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 			N = MAX(N, (int)nn_generic_domain(network, 0, names[i])->N);
 			D++;
 		}
+	}
 
 	long bat_dims[D][N];
 	long tot_dims[D][N];
@@ -146,7 +148,8 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 
 	D = 0;
 
-	for (int i = 0; i < II; i ++)
+	for (int i = 0; i < II; i ++) {
+
 		if (IN_BATCH_GENERATOR == in_types[i]) {
 
 			const struct named_tensor_s* tensor = get_tensor_by_name(train_data, names[i]);
@@ -163,6 +166,7 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 
 			D++;
 		}
+	}
 
 	return batch_generator_create(config, D, N, bat_dims, tot_dims, data);
 }
@@ -178,7 +182,8 @@ nn_t nn_valid_create(nn_t network, struct named_data_list_s* valid_data)
 	nn_get_in_args_names(network, II, names, true);
 	nn_get_in_types(network, II, in_types);
 
-	for (int i = 0; i < II; i ++)
+	for (int i = 0; i < II; i ++) {
+
 		if (IN_BATCH_GENERATOR == in_types[i]) {
 
 			const struct named_tensor_s* tensor = get_tensor_by_name(valid_data, names[i]);
@@ -188,6 +193,7 @@ nn_t nn_valid_create(nn_t network, struct named_data_list_s* valid_data)
 
 			assert(tensor->N == (int)(iov->N));
 		}
+	}
 
 	for(int i = 0; i < II; i++)
 		if (NULL != names[i])

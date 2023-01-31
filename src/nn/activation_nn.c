@@ -19,11 +19,13 @@
 nn_t nn_append_activation(nn_t network, int o, const char* oname, enum ACTIVATION activation)
 {
 	o = nn_get_out_arg_index(network, o, oname);
+
 	auto nlop = append_activation(nlop_clone(nn_get_nlop(network)), o, activation);
 	auto result = nn_from_nlop_F(nlop);
-	nn_clone_args(result, network);
-	nn_free(network);
 
+	nn_clone_args(result, network);
+
+	nn_free(network);
 
 	return result;
 }
@@ -31,8 +33,10 @@ nn_t nn_append_activation(nn_t network, int o, const char* oname, enum ACTIVATIO
 nn_t nn_append_activation_bias(nn_t network, int o, const char* oname, const char* bname, enum ACTIVATION activation, unsigned long bflag)
 {
 	o = nn_get_out_arg_index(network, o, oname);
+
 	auto nlop = append_activation_bias(nlop_clone(nn_get_nlop(network)), o, activation, bflag);
 	auto result = nn_from_nlop_F(nlop);
+
 	nn_clone_args(result, network);
 
 	result = nn_set_in_type_F(result, -1, NULL, IN_OPTIMIZE);

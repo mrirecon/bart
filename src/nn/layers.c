@@ -455,12 +455,13 @@ const struct nlop_s* append_transposed_convcorr_layer(const struct nlop_s* netwo
 {
 	if (channel_first) {
 
-		long kernel[5] = {channels, kernel_size[0], kernel_size[1], kernel_size[2], 1};
-		long dil_tmp[5] = { 1, 1, 1, 1, 1};
-		long str_tmp[5] = { 1, 1, 1, 1, 1};
+		long kernel[5] = { channels, kernel_size[0], kernel_size[1], kernel_size[2], 1 };
+		long dil_tmp[5] = { 1, 1, 1, 1, 1 };
+		long str_tmp[5] = { 1, 1, 1, 1, 1 };
 
 		if (NULL != dilations)
 			md_copy_dims(3, dil_tmp + 1, dilations);
+
 		if (NULL != strides)
 			md_copy_dims(3, str_tmp + 1, strides);
 
@@ -472,9 +473,9 @@ const struct nlop_s* append_transposed_convcorr_layer(const struct nlop_s* netwo
 					);
 	} else {
 
-		long kernel[5] = {kernel_size[0], kernel_size[1], kernel_size[2], channels, 1};
-		long dil_tmp[5] = { 1, 1, 1, 1, 1};
-		long str_tmp[5] = { 1, 1, 1, 1, 1};
+		long kernel[5] = { kernel_size[0], kernel_size[1], kernel_size[2], channels, 1 };
+		long dil_tmp[5] = { 1, 1, 1, 1, 1 };
+		long str_tmp[5] = { 1, 1, 1, 1, 1 };
 
 		if (NULL != dilations)
 			md_copy_dims(3, dil_tmp, dilations);
@@ -587,7 +588,6 @@ const struct nlop_s* append_maxpool_layer(const struct nlop_s* network, int o, c
  */
 const struct nlop_s* append_dense_layer(const struct nlop_s* network, int o, int out_neurons)
 {
-
 	int NO = nlop_get_nr_out_args(network);
 	int NI = nlop_get_nr_in_args(network);
 
@@ -640,6 +640,7 @@ const struct nlop_s* append_dropout_layer(const struct nlop_s* network, int o, f
 	md_copy_dims(N, idims, nlop_generic_codomain(network, o)->dims);
 
 	const struct nlop_s* dropout_op = NULL;
+
 	if (status == STAT_TRAIN)
 		dropout_op = nlop_dropout_create(N, idims, p, 0);
 	else

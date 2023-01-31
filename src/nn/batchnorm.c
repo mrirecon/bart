@@ -69,7 +69,6 @@ static void stats_fun(const nlop_data_t* _data, int N, complex float* args[N])
 	md_zsmul(data->codom->N, data->codom->dims, var, var, 1. / data->n);
 
 	md_zreal(data->codom->N, data->codom->dims, var, var);
-
 }
 
 static void stats_der_mean(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -208,6 +207,7 @@ static void normalize_fun(const nlop_data_t* _data, int N, complex float* args[N
 
 	if (NULL == data->tmp)
 		data->tmp = md_alloc_sameplace(data->dom->N, data->dom->dims, data->dom->size, dst);
+
 	if (NULL == data->scale)
 		data->scale = md_alloc_sameplace(data->statdom->N, data->statdom->dims, data->statdom->size, dst);
 
@@ -239,7 +239,6 @@ static void normalize_fun(const nlop_data_t* _data, int N, complex float* args[N
 
 	if (!der3)
 		normalize_clear_der_var(data);
-
 }
 
 static void normalize_deradj_src(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
@@ -321,8 +320,6 @@ static void normalize_der_var(const nlop_data_t* _data, unsigned int o, unsigned
 	md_zsmul(data->statdom->N, data->statdom->dims, tmp, tmp, -.5);
 
 	md_zmul2(data->dom->N, data->dom->dims, data->dom->strs, dst, data->statdom->strs, tmp, data->dom->strs, data->tmp);
-
-
 
 	md_free(tmp);
 }
@@ -453,8 +450,10 @@ static void bn_init(struct bn_s* data, const complex float* ref) {
 
 		if (NULL == data->der_out)
 			data->der_out = md_alloc_sameplace(data->dom->N, data->dom->dims, data->dom->size, ref);
+
 		if (NULL == data->der_scale)
 			data->der_scale = md_alloc_sameplace(data->stat_dom->N, data->stat_dom->dims, data->stat_dom->size, ref);
+
 	} else {
 
 		bn_clear_der(CAST_UP(data));
@@ -517,6 +516,7 @@ static void bn_fun(const nlop_data_t* _data, int D, complex float* args[D])
 
 		md_copy(N, data->dom->dims, data->der_out, out, CFL_SIZE);
 		md_copy(N, data->stat_dom->dims, data->der_scale, scale, CFL_SIZE);
+
 	} else {
 
 		bn_clear_der(_data);
