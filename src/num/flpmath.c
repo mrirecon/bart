@@ -108,12 +108,12 @@ static void make_2op_simple(md_2op_t fun, int D, const long dims[D], float* optr
  * @param size size of data structures, e.g. complex float
  * @param too two-op multiply function
  */
-static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, size_t sizes[2], md_nary_opt_fun_t too)
+static void optimized_twoop_oi(int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, size_t sizes[2], md_nary_opt_fun_t too)
 {
 	const long (*nstr[2])[D?D:1] = { (const long (*)[D?D:1])ostr, (const long (*)[D?D:1])istr1 };
 	void *nptr[2] = { optr, (void*)iptr1 };
 
-	unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0);
+	unsigned long io = 1 + ((iptr1 == optr) ? 2 : 0);
 
 	optimized_nop(2, io, D, dim, nstr, nptr, sizes, too);
 }
@@ -137,12 +137,12 @@ static void optimized_twoop_oi(unsigned int D, const long dim[D], const long ost
  * @param size size of data structures, e.g. complex float
  * @param too three-op multiply function
  */
-static void optimized_threeop_oii(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_opt_fun_t too)
+static void optimized_threeop_oii(int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_opt_fun_t too)
 {
 	const long (*nstr[3])[D?D:1] = { (const long (*)[D?D:1])ostr, (const long (*)[D?D:1])istr1, (const long (*)[D?D:1])istr2 };
 	void *nptr[3] = { optr, (void*)iptr1, (void*)iptr2 };
 
-	unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
+	unsigned long io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
 
 	optimized_nop(3, io, D, dim, nstr, nptr, sizes, too);
 }
@@ -178,7 +178,7 @@ static void make_z3op_simple(md_z3op_t fun, int D, const long dims[D], complex f
 	fun(D, dims, strs, optr, strs, iptr1, strs, iptr2);
 }
 
-static void make_3op_simple(md_3op_t fun, unsigned int D, const long dims[D], float* optr, const float* iptr1, const float* iptr2)
+static void make_3op_simple(md_3op_t fun, int D, const long dims[D], float* optr, const float* iptr1, const float* iptr2)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, FL_SIZE);
@@ -186,7 +186,7 @@ static void make_3op_simple(md_3op_t fun, unsigned int D, const long dims[D], fl
 	fun(D, dims, strs, optr, strs, iptr1, strs, iptr2);
 }
 
-static void make_z3opd_simple(md_z3opd_t fun, unsigned int D, const long dims[D], complex double* optr, const complex float* iptr1, const complex float* iptr2)
+static void make_z3opd_simple(md_z3opd_t fun, int D, const long dims[D], complex double* optr, const complex float* iptr1, const complex float* iptr2)
 {
 	long strs_single[D];
 	long strs_double[D];
@@ -197,7 +197,7 @@ static void make_z3opd_simple(md_z3opd_t fun, unsigned int D, const long dims[D]
 	fun(D, dims, strs_double, optr, strs_single, iptr1, strs_single, iptr2);
 }
 
-static void make_3opd_simple(md_3opd_t fun, unsigned int D, const long dims[D], double* optr, const float* iptr1, const float* iptr2)
+static void make_3opd_simple(md_3opd_t fun, int D, const long dims[D], double* optr, const float* iptr1, const float* iptr2)
 {
 	long strs_single[D];
 	long strs_double[D];
@@ -208,7 +208,7 @@ static void make_3opd_simple(md_3opd_t fun, unsigned int D, const long dims[D], 
 	fun(D, dims, strs_double, optr, strs_single, iptr1, strs_single, iptr2);
 }
 
-static void make_z2op_simple(md_z2op_t fun, unsigned int D, const long dims[D], complex float* optr, const complex float* iptr1)
+static void make_z2op_simple(md_z2op_t fun, int D, const long dims[D], complex float* optr, const complex float* iptr1)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
@@ -216,7 +216,7 @@ static void make_z2op_simple(md_z2op_t fun, unsigned int D, const long dims[D], 
 	fun(D, dims, strs, optr, strs, iptr1);
 }
 
-static void make_2op_simple(md_2op_t fun, unsigned int D, const long dims[D], float* optr, const float* iptr1)
+static void make_2op_simple(md_2op_t fun, int D, const long dims[D], float* optr, const float* iptr1)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, FL_SIZE);
@@ -224,7 +224,7 @@ static void make_2op_simple(md_2op_t fun, unsigned int D, const long dims[D], fl
 	fun(D, dims, strs, optr, strs, iptr1);
 }
 
-static void make_z2opd_simple(md_z2opd_t fun, unsigned int D, const long dims[D], complex double* optr, const complex float* iptr1)
+static void make_z2opd_simple(md_z2opd_t fun, int D, const long dims[D], complex double* optr, const complex float* iptr1)
 {
 	long strs_single[D];
 	long strs_double[D];
@@ -235,7 +235,7 @@ static void make_z2opd_simple(md_z2opd_t fun, unsigned int D, const long dims[D]
 	fun(D, dims, strs_double, optr, strs_single, iptr1);
 }
 
-static void make_2opd_simple(md_2opd_t fun, unsigned int D, const long dims[D], double* optr, const float* iptr1)
+static void make_2opd_simple(md_2opd_t fun, int D, const long dims[D], double* optr, const float* iptr1)
 {
 	long strs_single[D];
 	long strs_double[D];
@@ -246,7 +246,7 @@ static void make_2opd_simple(md_2opd_t fun, unsigned int D, const long dims[D], 
 	fun(D, dims, strs_double, optr, strs_single, iptr1);
 }
 
-static void make_z3op(size_t offset, unsigned int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
+static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 	NESTED(void, nary_z3op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -258,7 +258,7 @@ static void make_z3op(size_t offset, unsigned int D, const long dim[D], const lo
 }
 
 
-static void make_3op(size_t offset, unsigned int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
+static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
 	NESTED(void, nary_3op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -269,7 +269,7 @@ static void make_3op(size_t offset, unsigned int D, const long dim[D], const lon
 				(size_t[3]){ [0 ... 2] = FL_SIZE }, nary_3op);
 }
 
-static void make_z3opd(size_t offset, unsigned int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
+static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 	NESTED(void, nary_z3opd, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -280,7 +280,7 @@ static void make_z3opd(size_t offset, unsigned int D, const long dim[D], const l
 			(size_t[3]){ CDL_SIZE, CFL_SIZE, CFL_SIZE }, nary_z3opd);
 }
 
-static void make_3opd(size_t offset, unsigned int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
+static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
 	NESTED(void, nary_3opd, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -291,7 +291,7 @@ static void make_3opd(size_t offset, unsigned int D, const long dim[D], const lo
 			(size_t[3]){ DL_SIZE, FL_SIZE, FL_SIZE }, nary_3opd);
 }
 
-static void make_z2op(size_t offset, unsigned int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1)
+static void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1)
 {
 	NESTED(void, nary_z2op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -301,7 +301,7 @@ static void make_z2op(size_t offset, unsigned int D, const long dim[D], const lo
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_z2op);
 }
 
-static void make_2op(size_t offset, unsigned int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1)
+static void make_2op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1)
 {
 	NESTED(void, nary_2op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -312,7 +312,7 @@ static void make_2op(size_t offset, unsigned int D, const long dim[D], const lon
 }
 
 __attribute__((unused))
-static void make_z2opd(size_t offset, unsigned int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
+static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
 {
 	size_t sizes[2] = { sizeof(complex double), sizeof(complex float) };
 
@@ -325,7 +325,7 @@ static void make_z2opd(size_t offset, unsigned int D, const long dim[D], const l
 }
 
 
-static void make_2opd(size_t offset, unsigned int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1)
+static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1)
 {
 	NESTED(void, nary_2opd, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -335,7 +335,7 @@ static void make_2opd(size_t offset, unsigned int D, const long dim[D], const lo
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, (size_t[2]){ DL_SIZE, FL_SIZE }, nary_2opd);
 }
 
-static void make_z2opf(size_t offset, unsigned int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex double* iptr1)
+static void make_z2opf(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex double* iptr1)
 {
 	size_t sizes[2] = { sizeof(complex float), sizeof(complex double) };
 
@@ -349,7 +349,7 @@ static void make_z2opf(size_t offset, unsigned int D, const long dim[D], const l
 
 void* unused2 = make_z2opf;
 
-static void make_2opf(size_t offset, unsigned int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const double* iptr1)
+static void make_2opf(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const double* iptr1)
 {
 	NESTED(void, nary_2opf, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -359,7 +359,7 @@ static void make_2opf(size_t offset, unsigned int D, const long dim[D], const lo
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, (size_t[2]){ FL_SIZE, DL_SIZE }, nary_2opf);
 }
 
-static void make_z2opf_simple(md_z2opf_t fun, unsigned int D, const long dims[D], complex float* optr, const complex double* iptr1)
+static void make_z2opf_simple(md_z2opf_t fun, int D, const long dims[D], complex float* optr, const complex double* iptr1)
 {
 	long strs_single[D];
 	long strs_double[D];
@@ -370,7 +370,7 @@ static void make_z2opf_simple(md_z2opf_t fun, unsigned int D, const long dims[D]
 	fun(D, dims, strs_single, optr, strs_double, iptr1);
 }
 
-static void make_2opf_simple(md_2opf_t fun, unsigned int D, const long dims[D], float* optr, const double* iptr1)
+static void make_2opf_simple(md_2opf_t fun, int D, const long dims[D], float* optr, const double* iptr1)
 {
 	long strs_single[D];
 	long strs_double[D];
@@ -388,13 +388,14 @@ static void* gpu_constant(const void* vp, size_t size)
 }
 #endif
 
-static void make_z3op_scalar(md_z3op_t fun, unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
+static void make_z3op_scalar(md_z3op_t fun, int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
 {
 	size_t size = CFL_SIZE;
 	unsigned long flags = 0;
 
-	unsigned int ND = MIN(md_calc_blockdim(D, dims, istr, size), md_calc_blockdim(D, dims, ostr, size));
-	for (unsigned int i = 0; i < ND; i++)
+	int ND = MIN(md_calc_blockdim(D, dims, istr, size), md_calc_blockdim(D, dims, ostr, size));
+
+	for (int i = 0; i < ND; i++)
 		if (1024 >= md_calc_size(i, dims))
 			flags = MD_SET(flags, i);
 
@@ -413,13 +414,14 @@ static void make_z3op_scalar(md_z3op_t fun, unsigned int D, const long dims[D], 
 	md_free(valp);
 }
 
-static void make_3op_scalar(md_3op_t fun, unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
+static void make_3op_scalar(md_3op_t fun, int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
 	size_t size = FL_SIZE;
 	unsigned long flags = 0;
 
-	unsigned int ND = MIN(md_calc_blockdim(D, dims, istr, size), md_calc_blockdim(D, dims, ostr, size));
-	for (unsigned int i = 0; i < ND; i++)
+	int ND = MIN(md_calc_blockdim(D, dims, istr, size), md_calc_blockdim(D, dims, ostr, size));
+
+	for (int i = 0; i < ND; i++)
 		if (1024 >= md_calc_size(i, dims))
 			flags = MD_SET(flags, i);
 
@@ -438,7 +440,7 @@ static void make_3op_scalar(md_3op_t fun, unsigned int D, const long dims[D], co
 	md_free(valp);
 }
 
-static void make_z3op_scalar_direct(md_z3op_t fun, unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
+static void make_z3op_scalar_direct(md_z3op_t fun, int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
 {
 	complex float* valp = &val;
 
@@ -459,7 +461,7 @@ static void make_z3op_scalar_direct(md_z3op_t fun, unsigned int D, const long di
 }
 
 
-static void make_3op_scalar_direct(md_3op_t fun, unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
+static void make_3op_scalar_direct(md_3op_t fun, int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
 	float* valp = &val;
 
@@ -480,25 +482,25 @@ static void make_3op_scalar_direct(md_3op_t fun, unsigned int D, const long dims
 }
 
 
-static void real_from_complex_dims(unsigned int D, long odims[D + 1], const long idims[D])
+static void real_from_complex_dims(int D, long odims[D + 1], const long idims[D])
 {
 	odims[0] = 2;
 	md_copy_dims(D, odims + 1, idims);
 }
 
-static void real_from_complex_strides(unsigned int D, long ostrs[D + 1], const long istrs[D])
+static void real_from_complex_strides(int D, long ostrs[D + 1], const long istrs[D])
 {
 	ostrs[0] = FL_SIZE;
 	md_copy_dims(D, ostrs + 1, istrs);	// works for strides too
 }
 
-static void real_from_complex_stridesD(unsigned int D, long ostrs[D + 1], const long istrs[D])
+static void real_from_complex_stridesD(int D, long ostrs[D + 1], const long istrs[D])
 {
 	ostrs[0] = DL_SIZE;
 	md_copy_dims(D, ostrs + 1, istrs);	// works for strides too
 }
 
-static void make_z3op_from_real(size_t offset, unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
+static void make_z3op_from_real(size_t offset, int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 	long rdims[D + 1];
 	long rostr[D + 1];
@@ -513,7 +515,7 @@ static void make_z3op_from_real(size_t offset, unsigned int D, const long dims[D
 	make_3op(offset, D + 1, rdims, rostr, (float*)optr, ristr1, (const float*)iptr1, ristr2, (const float*)iptr2);
 }
 
-static void make_z2opd_from_real(size_t offset, unsigned int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
+static void make_z2opd_from_real(size_t offset, int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
 {
 	long rdims[D + 1];
 	long rostr[D + 1];
@@ -526,7 +528,7 @@ static void make_z2opd_from_real(size_t offset, unsigned int D, const long dims[
 	make_2opd(offset, D + 1, rdims, rostr, (double*)optr, ristr1, (const float*)iptr1);
 }
 
-static void make_z2opf_from_real(size_t offset, unsigned int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex double* iptr1)
+static void make_z2opf_from_real(size_t offset, int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex double* iptr1)
 {
 	long rdims[D + 1];
 	long rostr[D + 1];

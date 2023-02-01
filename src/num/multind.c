@@ -1183,7 +1183,7 @@ void md_slice(int D, unsigned long flags, const long pos[D], const long dim[D], 
  */
 void md_permute2(int D, const int order[D], const long odims[D], const long ostr[D], void* optr, const long idims[D], const long istr[D], const void* iptr, size_t size)
 {
-	unsigned int flags = 0;
+	unsigned long flags = 0;
 	long ostr2[D];
 
 	for (int i = 0; i < D; i++) {
@@ -1196,7 +1196,7 @@ void md_permute2(int D, const int order[D], const long odims[D], const long ostr
 		ostr2[order[i]] = ostr[i];
 	}
 
-	assert(MD_BIT(D) == flags + 1);
+	assert(MD_BIT(D) == flags + 1U);
 
 	md_copy2(D, idims, ostr2, optr, istr, iptr, size);
 }
