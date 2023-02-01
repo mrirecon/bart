@@ -38,6 +38,7 @@ struct moba_conf moba_defaults = {
 	.stack_frames = false,
 	.not_wav_maps = 0,
 	.constrained_maps = 0,
+	.l2para = 0,
 	.pusteps = 0,
 	.ratio = 0.,
 

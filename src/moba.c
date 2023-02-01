@@ -219,6 +219,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('g', &conf.use_gpu, "use gpu"),
 		OPTL_INT(0, "positive-maps", &conf.constrained_maps, "flag", "Maps with positivity contraint as FLAG!"),
 		OPTL_INT(0, "not-wav-maps", &conf.not_wav_maps, "d", "Maps removed from wavelet denoising (counted from back!)"),
+		OPTL_INT(0, "l2-on-parameters", &conf.l2para, "flag", "Flag for parameter maps with l2 norm"),
 		OPTL_UINT(0, "pusteps", &conf.pusteps, "ud", "Number of partially update steps for IRGNM"),
 		OPTL_FLOAT(0, "ratio", &conf.ratio, "f:[0;1]", "Ratio of partial updates: ratio*<updated-map> + (1-ratio)*<previous-map>"),
 		OPTL_INT(0, "multi-gpu", &conf.num_gpu, "num", "number of gpus to use"),

@@ -106,12 +106,13 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, con
 
                 if (SEQ_IRFLASH == data->sim.seq.seq_type) {
 
-			conf2->l2flags = (0 != data->other.scale[3]) ? 8 : (0UL);
+			conf2->l2flags = (0 != data->other.scale[3]) ? ((0 == conf->l2para) ? 8 : conf->l2para) : 0;
                         conf2->constrained_maps = (0 == conf->constrained_maps) ? 1 : conf->constrained_maps;	// only R1 map: bitmask (1 0 0 0) = 1
                         conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 2 : conf->not_wav_maps; // no wavelet for T2 and B1 map
                 }
                 else if (SEQ_IRBSSFP == data->sim.seq.seq_type) {
 
+			conf2->l2flags = (0 == conf->l2para) ? 0 : conf->l2para;
                         conf2->constrained_maps = (0 == conf->constrained_maps) ? 5 : conf->constrained_maps;	// only T1 and T2: bitmask(1 0 1 0) = 5
                         conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 1 : conf->not_wav_maps; // no wavelet for B1 map
                 }
@@ -121,7 +122,7 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, con
 
         if (MDB_T1_PHY == mode) {
 
-		conf2->l2flags = 4;
+		conf2->l2flags = (0 == conf->l2para) ? 4 : conf->l2para;
                 conf2->constrained_maps = (0 == conf->constrained_maps) ? 2 : conf->constrained_maps;    // only R1 map: bitmask (0 1 0) = 2
                 conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 1 : conf->not_wav_maps;	// no wavelet for R1' map
         }

@@ -43,6 +43,7 @@ struct moba_conf {
         bool sms;
 	int not_wav_maps;
 	int constrained_maps;
+	int l2para;
 	unsigned int pusteps;
 	float ratio;
 
