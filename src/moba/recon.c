@@ -250,6 +250,8 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 	irgnm_conf.iter = conf->iter;
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.redu = conf->redu;
+	irgnm_conf.pusteps = conf->pusteps;
+	irgnm_conf.ratio = conf->ratio;
 
 	if (conf->alpha_min_exp_decay)
 		irgnm_conf.alpha_min = conf->alpha_min;

@@ -43,6 +43,8 @@ struct moba_conf {
         bool sms;
 	int not_wav_maps;
 	int constrained_maps;
+	unsigned int pusteps;
+	float ratio;
 
 	// T1
 	float scaling_M0;
