@@ -61,6 +61,7 @@ struct network_unet_s network_unet_default_reco = {
 	.INTERFACE.bart_to_channel_first = true,
 
 	.INTERFACE.prefix = NULL,
+	.INTERFACE.loopdim = -1,
 
 	.N = 5,
 	.kdims = {[0 ... DIMS -1] = 0},
@@ -117,6 +118,7 @@ struct network_unet_s network_unet_default_segm = {
 
 	.INTERFACE.debug = false,
 	.INTERFACE.bart_to_channel_first = false,
+	.INTERFACE.loopdim = -1,
 
 	.N = 5,
 

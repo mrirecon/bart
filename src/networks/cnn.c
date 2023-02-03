@@ -27,6 +27,7 @@
 #include "nlops/chain.h"
 #include "nlops/tenmul.h"
 #include "nlops/someops.h"
+#include "nlops/checkpointing.h"
 
 #include "nn/activation_nn.h"
 #include "nn/activation.h"
@@ -49,6 +50,18 @@ nn_t network_create(const struct network_s* config, unsigned int _NO, const long
 
 	md_copy_dims(NO, odims, _odims);
 	md_copy_dims(NI, idims, _idims);
+
+	if((-1 < config->loopdim) && (1 < odims[config->loopdim]) && network_is_diagonal(config)) {
+
+		assert(_odims[config->loopdim] == _odims[config->loopdim]);
+		odims[config->loopdim] = 1;
+		idims[config->loopdim] = 1;
+
+		auto ret = network_create(config, NO, odims, NI, idims, status);
+		nn_set_nlop(ret, nlop_loop_F(_odims[config->loopdim], ret->nlop, ~MD_BIT(0), config->loopdim));
+
+		return ret;
+	}
 
 	long channel = 1;
 
@@ -74,7 +87,9 @@ nn_t network_create(const struct network_s* config, unsigned int _NO, const long
 	}
 
 	auto result = config->create(config, NO, odims, NI, idims, status);
-	result = nn_checkpoint_F(result, true, config->low_mem);
+
+	if (!((-1 < config->loopdim) && (1 < odims[config->loopdim]) && network_is_diagonal(config)))
+		result = nn_checkpoint_F(result, true, config->low_mem);
 
 	if (NORM_NONE != config->norm) {
 
@@ -154,6 +169,7 @@ struct network_resnet_s network_resnet_default = {
 	.INTERFACE.bart_to_channel_first = true,
 
 	.INTERFACE.prefix = NULL,
+	.INTERFACE.loopdim = -1,
 
 	.N = 5,
 
@@ -414,6 +430,7 @@ struct network_varnet_s network_varnet_default = {
 	.INTERFACE.bart_to_channel_first = true,
 
 	.INTERFACE.prefix = NULL,
+	.INTERFACE.loopdim = -1,
 
 	.Nf = 24,
 	.Nw = 31,

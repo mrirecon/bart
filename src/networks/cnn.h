@@ -28,6 +28,8 @@ typedef struct network_s {
 	_Bool residual;
 	_Bool bart_to_channel_first;
 
+	int loopdim;
+
 	const char* prefix;
 
 } network_t;

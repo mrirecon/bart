@@ -63,6 +63,7 @@ extern nn_t nn_from_linop_F(const struct linop_s* op);
 extern void nn_free(nn_t op);
 
 extern const struct nlop_s* nn_get_nlop(nn_t op);
+extern void nn_set_nlop(nn_t op, const struct nlop_s* nlop);
 
 extern nn_t nn_clone(nn_t op);
 extern void nn_clone_arg_i_from_i(nn_t nn1, int i1, nn_t nn2, int i2);

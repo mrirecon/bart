@@ -157,6 +157,11 @@ const struct nlop_s* nn_get_nlop(nn_t op)
 	return op->nlop;
 }
 
+void nn_set_nlop(nn_t op, const struct nlop_s* nlop)
+{
+	((struct nn_s*)op)->nlop = nlop;
+}
+
 void nn_clone_arg_i_from_i(nn_t nn1, int i1, nn_t nn2, int i2)
 {
 	if (NULL != nn1->in_names[i1])
