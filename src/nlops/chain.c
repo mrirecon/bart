@@ -784,14 +784,14 @@ struct nlop_s* nlop_shift_output_F(const struct nlop_s* x, int new_index, int ol
 
 struct nlop_s* nlop_stack_multiple_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO], bool container, bool multigpu)
 {
-	if (multigpu) {
-
-		assert(container);
+	if (multigpu)
 		return (struct nlop_s*)nlop_stack_multigpu_create_F(N, nlops, II, in_stack_dim, OO, out_stack_dim);
-	}
 
 	if (container)
 		return (struct nlop_s*)nlop_stack_container_create_F(N, nlops, II, in_stack_dim, OO, out_stack_dim);
+	
+	if (1 == N)
+		return (struct nlop_s*)nlops[0];
 	
 	assert(!multigpu);
 
