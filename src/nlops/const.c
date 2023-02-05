@@ -27,11 +27,10 @@ struct const_s {
 	int N;
 	const long* dims;
 	const long* strs;
+
+	complex float val;
 	const complex float* xn_ref;
-
 	struct multiplace_array_s* xn_cop;
-
-	bool copied;
 };
 
 DEF_TYPEID(const_s);
@@ -40,9 +39,19 @@ static void const_fun(const nlop_data_t* _data, int /*N*/, complex float** dst)
 {
 	const auto data = CAST_DOWN(const_s, _data);
 
-	const complex float* ref = data->copied ? multiplace_read(data->xn_cop, NULL) : data->xn_ref;
+	if (NULL != data->xn_ref) {
 
-	md_copy2(data->N, data->dims, MD_STRIDES(data->N, data->dims, CFL_SIZE), dst[0], data->strs, ref, CFL_SIZE);
+		md_copy2(data->N, data->dims, MD_STRIDES(data->N, data->dims, CFL_SIZE), dst[0], data->strs, data->xn_ref, CFL_SIZE);
+		return;
+	}
+
+	if (NULL != data->xn_cop) {
+
+		md_copy(data->N, data->dims, dst[0], multiplace_read(data->xn_cop, dst[0]), CFL_SIZE);
+		return;
+	}
+
+	md_zfill(data->N, data->dims, dst[0], data->val);
 }
 
 static void const_del(const nlop_data_t* _data)
@@ -71,33 +80,24 @@ struct nlop_s* nlop_const_create2(int N, const long dims[N], const long strs[N],
 	PTR_ALLOC(struct const_s, data);
 	SET_TYPEID(const_s, data);
 
-	PTR_ALLOC(long[N], ndims);
-	md_copy_dims(N, *ndims, dims);
-
 	data->N = N;
-	data->dims = *PTR_PASS(ndims);
+	data->dims = ARR_CLONE(long[N], dims);
+	data->strs = ARR_CLONE(long[N], strs);
 
-	data->copied = copy;
+	data->xn_ref = NULL;
+	data->xn_cop = NULL;
 
-	PTR_ALLOC(long[N], nstrs);
+	if (md_check_equal_dims(N, MD_SINGLETON_STRS(N), strs, ~0)) {
 
-	if (copy) {
-
-		data->xn_cop = multiplace_move2(N, dims, strs, CFL_SIZE, in);
-		data->xn_ref = NULL;
-
-		md_calc_strides(N, *nstrs, dims, CFL_SIZE);
+		md_copy(1, MD_DIMS(1), &(data->val), in, CFL_SIZE);
 
 	} else {
 
-		data->xn_cop = NULL;
-		data->xn_ref = in;
-
-		md_copy_dims(N, *nstrs, strs);
+		if (copy)
+			data->xn_cop = multiplace_move2(N, dims, strs, CFL_SIZE, in);
+		else 
+			data->xn_ref = in;
 	}
-
-	data->strs = *PTR_PASS(nstrs);
-
 
 	long ostrs[N];
 	md_calc_strides(N, ostrs, dims, CFL_SIZE);
@@ -216,6 +216,12 @@ struct nlop_s* nlop_set_input_const_F(const struct nlop_s* a, int i, int N, cons
 	nlop_free(a);
 
 	return result;
+}
+
+struct nlop_s* nlop_set_input_scalar_F(const struct nlop_s* a, int i, _Complex float val)
+{
+	auto iov = nlop_generic_domain(a, i);
+	return nlop_set_input_const_F2(a, i, iov->N, iov->dims, MD_SINGLETON_STRS(iov->N), true, &val);
 }
 
 
