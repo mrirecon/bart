@@ -2509,6 +2509,10 @@ const struct operator_s* operator_chain(const struct operator_s* a, const struct
 //get list of all operators applied in one operator
 list_t operator_get_list(const struct operator_s* op) {
 
+	auto list_graph = operator_graph_get_list(op);
+	if (NULL != list_graph)
+		return list_graph;
+
 	auto data_combi = CAST_MAYBE(operator_combi_s, op->data);
 	auto data_link = CAST_MAYBE(operator_link_s, op->data);
 	auto data_dup = CAST_MAYBE(operator_dup_s, op->data);

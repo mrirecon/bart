@@ -20,7 +20,9 @@ struct list_s;
 typedef struct list_s* list_t;
 
 typedef void (*node_del_t)(const struct node_s*);
+typedef struct node_s* (*node_clone_t)(const struct node_s*);
 typedef const char* (*node_print_t)(const struct node_s*);
+typedef _Bool (*vertex_is_out_f)(const struct node_s*, int i);
 typedef void (*edge_separator_node_f)(node_t ext_nodes[2], struct vertex_s);
 
 struct node_s {
@@ -30,7 +32,6 @@ struct node_s {
 	_Bool external;
 	int N_vertices;
 	list_t* edges;
-	_Bool* io_flags;
 
 	long count;
 
@@ -38,7 +39,9 @@ struct node_s {
 	graph_t subgraph;
 
 	node_print_t node_print;
+	node_clone_t node_clone;
 	node_del_t node_del;
+	vertex_is_out_f is_output;
 };
 
 struct graph_s {
@@ -56,10 +59,11 @@ struct vertex_s {
 typedef struct vertex_s* vertex_t;
 
 void node_free(node_t x);
-void node_init(struct node_s* x, int N_vertices, const _Bool io_flags[__VLA(N_vertices)], const char* name, _Bool external, graph_t subgraph);
+void node_init(struct node_s* x, int N_vertices, vertex_is_out_f is_output, const char* name, _Bool external, graph_t subgraph);
 
 void graph_free(graph_t x);
 graph_t graph_create(void);
+graph_t graph_clone(graph_t graph);
 
 extern void graph_add_node(graph_t graph, node_t node);
 extern void graph_add_edge(struct vertex_s _a, struct vertex_s _b);
@@ -91,9 +95,6 @@ extern graph_t graph_cluster_nodes_F(graph_t graph, list_t nodes, edge_separator
 extern graph_t graph_reinsert_subgraph_FF(graph_t graph, graph_t subgraph);
 extern graph_t graph_bridge_node(graph_t _graph, node_t node);
 extern graph_t graph_remove_end_node(graph_t graph, node_t node);
-
-extern list_t graph_get_chains(graph_t graph);
-extern list_t graph_get_clusters(graph_t graph, _Bool simple_only);
 
 enum SUM_GRAPH_TYPE {SUM_NODES_ONLY, MULTI_SUM_NODES_ONLY, SUM_NODES_AND_TWO_IDENTICAL_LINOPS, SUM_OPS_AND_OPS};
 extern list_t graph_get_linop_sum(graph_t graph, node_cmp_t linop_identify, node_is_t node_is_sum, enum SUM_GRAPH_TYPE sum_graph_type);

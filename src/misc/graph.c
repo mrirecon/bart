@@ -47,7 +47,6 @@ void node_free(node_t x)
 	}
 
 	xfree(x->edges);
-	xfree(x->io_flags);
 
 	if (NULL != x->node_del)
 		x->node_del(x);
@@ -61,7 +60,7 @@ void node_free(node_t x)
 	xfree(x);
 }
 
-void node_init(struct node_s* x, int N_vertices, const bool io_flags[N_vertices], const char* name, bool external, graph_t subgraph)
+void node_init(struct node_s* x, int N_vertices, vertex_is_out_f is_output, const char* name, bool external, graph_t subgraph)
 {
 	x->name = (NULL != name) ? strdup(name) : NULL;
 
@@ -71,19 +70,87 @@ void node_init(struct node_s* x, int N_vertices, const bool io_flags[N_vertices]
 	for (int i = 0; i < N_vertices; i++)
 		x->edges[i] = list_create();
 
-	x->io_flags = *TYPE_ALLOC(bool[N_vertices]);
-
-	for (int i = 0; i < N_vertices; i++)
-		x->io_flags[i] = io_flags[i];
-
 	x->count = 0;
 
 	x->subgraph = subgraph;
 
 	x->node_print = NULL;
 	x->node_del = NULL;
+	x->node_clone = NULL;
+	x->is_output = is_output;
 
 	x->external = external;
+}
+
+static struct node_s* node_clone(const struct node_s* node)
+{
+	assert(NULL != node->node_clone);
+
+	return node->node_clone(node);
+}
+
+static _Bool node_io_flag(const struct node_s* node, int i)
+{
+	return node->is_output(node, i);
+}
+
+graph_t graph_clone(graph_t graph)
+{
+	if (NULL == graph)
+		return graph;
+
+	graph_t ret = graph_create();
+
+	for (int i = 0; i < list_count(graph->ext_nodes); i++)
+		graph_add_node(ret, node_clone(list_get_item(graph->ext_nodes, i)));
+	
+	for (int i = 0; i < list_count(graph->nodes); i++)
+		graph_add_node(ret, node_clone(list_get_item(graph->nodes, i)));
+	
+	int N = list_count(graph->ext_nodes) + list_count(graph->nodes);
+	
+	node_t old_nodes[N];
+	node_t new_nodes[N];
+
+	for (int i = 0; i < list_count(graph->ext_nodes); i++) {
+
+		old_nodes[i] = list_get_item(graph->ext_nodes, i);
+		new_nodes[i] = list_get_item(ret->ext_nodes, i);
+	}
+
+	for (int i = 0; i < list_count(graph->nodes); i++) {
+
+		old_nodes[i + list_count(graph->ext_nodes)] = list_get_item(graph->nodes, i);
+		new_nodes[i + list_count(graph->ext_nodes)] = list_get_item(ret->nodes, i);
+	}
+	
+	for (int i = 0; i < N; i++) {
+		
+		node_t node_new = new_nodes[i];
+		node_t node_old = old_nodes[i];
+
+		for (int i = 0; i < node_new->N_vertices; i++) {
+
+			if (!(node_io_flag(node_new, i)))
+				continue;
+
+			for (int j = 0; j < list_count(node_old->edges[i]); j++) {
+
+				vertex_t ver = list_get_item(node_old->edges[i], j);
+
+				for (int k = 0; k < N; k++) {
+
+					if (old_nodes[k] == ver->node) {
+
+						graph_add_edge((struct vertex_s){ .node = node_new, .idx = i}, (struct vertex_s){ .node = new_nodes[k], .idx = ver->idx});
+						break;
+					}
+				}
+			}			
+		}
+	}
+
+	return ret;
 }
 
 
@@ -126,7 +193,7 @@ void graph_remove_node(graph_t graph, node_t node)
 
 		while (0 < list_count(vertices)) {
 
-			if (node->io_flags[i])
+			if (node_io_flag(node, i))
 				graph_remove_edge(vertex, *vertices_get(vertices, 0));
 			else
 				graph_remove_edge(*vertices_get(vertices, 0), vertex);
@@ -154,8 +221,8 @@ void graph_add_edge(struct vertex_s _a, struct vertex_s _b)
 	*a = _a;
 	*b = _b;
 
-	assert(a->node->io_flags[a->idx]);
-	assert(!(b->node->io_flags[b->idx]));
+	assert( (node_io_flag(a->node, a->idx)));
+	assert(!(node_io_flag(b->node, b->idx)));
 
 	list_append(a->node->edges[a->idx], b);
 	list_append(b->node->edges[b->idx], a);
@@ -192,7 +259,7 @@ void graph_redirect_edge(struct vertex_s new, struct vertex_s old)
 
 		struct vertex_s va = *vertices_get(vertices, 0);
 
-		if (old.node->io_flags[old.idx]) {
+		if (node_io_flag(old.node, old.idx)) {
 
 			graph_remove_edge(old, va);
 			graph_add_edge(new, va);
@@ -224,8 +291,8 @@ graph_t link_graphs_F(graph_t graph, int oo, int ii)
 	node_t onode = list_remove_item(graph->ext_nodes, oo);
 	node_t inode = list_remove_item(graph->ext_nodes, (ii < oo) ? ii : ii - 1);
 
-	assert(inode->io_flags[0]);
-	assert(!onode->io_flags[0]);
+	assert( node_io_flag(inode, 0));
+	assert(!node_io_flag(onode, 0));
 
 	struct vertex_s ov = {.node = onode, .idx = 0};
 	struct vertex_s iv = {.node = inode, .idx = 0};
@@ -287,8 +354,8 @@ graph_t dup_graphs_F(graph_t graph, int a, int b)
 	node_t anode = nodes_get(graph->ext_nodes, a);
 	node_t bnode = list_remove_item(graph->ext_nodes, b);
 
-	assert(anode->io_flags[0]);
-	assert(bnode->io_flags[0]);
+	assert(node_io_flag(anode, 0));
+	assert(node_io_flag(bnode, 0));
 
 	while (0 < list_count(bnode->edges[0])) {
 
@@ -378,7 +445,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 
 			node_t node = nodes_get(graph->ext_nodes, i);
 
-			if (node->io_flags[0])
+			if (node_io_flag(node, 0))
 				continue;
 
 			auto str_node = print_node(node);
@@ -418,7 +485,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 
 			node_t node = nodes_get(graph->ext_nodes, i);
 
-			if (!node->io_flags[0])
+			if (!node_io_flag(node, 0))
 				continue;
 
 			auto str_node = print_node(node);
@@ -460,7 +527,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 
 		for (int i = 0; i < node->N_vertices; i++) {
 
-			if (!node->io_flags[i])
+			if (!node_io_flag(node, i))
 				continue;
 
 			a.idx = i;
@@ -487,7 +554,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 
 		for (int i = 0; i < node->N_vertices; i++) {
 
-			if (!node->io_flags[i])
+			if (!node_io_flag(node, i))
 				continue;
 
 			a.idx = i;
@@ -542,40 +609,19 @@ static bool cmp_no_in_edge(const void* _data, const void* /*_ref*/)
 	const struct node_s* node = _data;
 
 	for (int j = 0; j < node->N_vertices; j++)
-		if ((!node->io_flags[j]) && (0 < list_count(node->edges[j])))
+		if ((!node_io_flag(node, j)) && (0 < list_count(node->edges[j])))
 			return false;
 
 	return true;
 }
 
-static bool cmp_no_out_edge(const void* _data, const void* /*_ref*/)
-{
-	const struct node_s* node = _data;
-
-	for (int j = 0; j < node->N_vertices; j++)
-		if ((node->io_flags[j]) && (0 < list_count(node->edges[j])))
-			return false;
-
-	return true;
-}
 
 static int count_in_edges(node_t node)
 {
 	int result = 0;
 
 	for (int j = 0; j < node->N_vertices; j++)
-		result += (node->io_flags[j]) ? 0 : list_count(node->edges[j]);
-
-	return result;
-}
-
-static int count_out_edges(node_t node)
-{
-	int result = 0;
-
-	for (int j = 0; j < node->N_vertices; j++)
-		result += (!node->io_flags[j]) ? 0 : list_count(node->edges[j]);
-
+		result += node_io_flag(node, j) ? 0 : list_count(node->edges[j]);
 	return result;
 }
 
@@ -608,7 +654,7 @@ static void sort_nodes(list_t sorted_nodes, list_t out_vertices)
 			node->count = 0;
 
 			for (int j = 0; j < node->N_vertices; j++)
-				if (node->io_flags[j])
+				if (node_io_flag(node, j))
 					sort_nodes(sorted_nodes, node->edges[j]);
 		}
 	}
@@ -626,7 +672,7 @@ graph_t graph_topological_sort_F(graph_t graph)
 		node_t node = nodes_get(sorted_nodes, i);
 
 		for (int j = 0; j < node->N_vertices; j++)
-			if (node->io_flags[j])
+			if (node_io_flag(node, j))
 				sort_nodes(sorted_nodes, node->edges[j]);
 	}
 
@@ -635,7 +681,7 @@ graph_t graph_topological_sort_F(graph_t graph)
 		node_t node = nodes_get(graph->ext_nodes, i);
 
 		for (int j = 0; j < node->N_vertices; j++)
-			if (node->io_flags[j])
+			if (node_io_flag(node, j))
 				sort_nodes(sorted_nodes, node->edges[j]);
 	}
 
@@ -654,8 +700,7 @@ graph_t graph_topological_sort_F(graph_t graph)
 graph_t graph_bridge_node(graph_t graph, node_t node)
 {
 	int N = node->N_vertices;
-
-	if ((2 != N) || (!node->io_flags[0]) || (node->io_flags[1]))
+	if ((2 != N) || (!node_io_flag(node, 0)) || (node_io_flag(node, 1)))
 		return NULL;
 
 	for (int i = 0; i < list_count(node->edges[0]); i++)
@@ -724,7 +769,7 @@ static void identify_node_internal(graph_t graph, node_t a, node_t b)
 {
 	for (int i = 0; i < b->N_vertices; i++) {
 
-		if (!a->io_flags[i])
+		if (!node_io_flag(a, i))
 			continue;
 
 		struct vertex_s vb = {.node = b, .idx = i};
@@ -756,10 +801,10 @@ static bool nodes_identifyable_internal(node_t a, node_t b, node_cmp_t cmp)
 
 	for (int i = 0; i < a->N_vertices; i++) {
 
-		if (a->io_flags[i] != b->io_flags[i])
+		if (node_io_flag(a, i) != node_io_flag(b, i))
 			return false;
 
-		if (a->io_flags[i]) {
+		if (node_io_flag(a, i)) {
 
 			for (int j = 0; j < list_count(a->edges[i]); j++)
 				if (vertices_get(a->edges[i], j)->node->external)
@@ -786,7 +831,7 @@ static bool nodes_identifyable_internal(node_t a, node_t b, node_cmp_t cmp)
 
 				for (int j = 0; j < a->N_vertices; j++){
 
-					if (b->io_flags[j])
+					if (node_io_flag(b, j))
 						continue;
 
 					vertex_t vb = vertices_get(b->edges[j], 0);
@@ -842,7 +887,7 @@ static void vertex_list_identify_nodes(graph_t graph, list_t vertices, node_cmp_
 		node_t node = nodes_get(nodes, i);
 
 		for (int j = 0; j < node->N_vertices; j++)
-			if (node->io_flags[j])
+			if (node_io_flag(node, j))
 				vertex_list_identify_nodes(graph, node->edges[j], cmp);
 	}
 
@@ -872,7 +917,7 @@ graph_t graph_identify_nodes_F(graph_t graph, node_cmp_t cmp)
 		node_t node = nodes_get(nodes_no_in_edge, i);
 
 		for (int j = 0; j < node->N_vertices; j++)
-			if (node->io_flags[j])
+			if (node_io_flag(node, j))
 				vertex_list_identify_nodes(graph, node->edges[j], cmp);
 	}
 
@@ -883,7 +928,7 @@ graph_t graph_identify_nodes_F(graph_t graph, node_cmp_t cmp)
 		node_t node = nodes_get(graph->ext_nodes, i);
 
 		for (int j = 0; j < node->N_vertices; j++)
-			if (node->io_flags[j])
+			if (node_io_flag(node, j))
 				vertex_list_identify_nodes(graph, node->edges[j], cmp);
 	}
 
@@ -946,7 +991,7 @@ graph_t graph_cluster_nodes_F(graph_t graph, list_t nodes, edge_separator_node_f
 			struct vertex_s ext_old = { .node = node_pair[0], .idx = 0 };
 			struct vertex_s ext_new = { .node = node_pair[1], .idx = 0 };
 
-			if (node->io_flags[j]) {
+			if (node_io_flag(node, j)) {
 
 				graph_redirect_edge(ext_old, vertex);
 				graph_add_edge(vertex, ext_new);
@@ -1011,7 +1056,7 @@ graph_t graph_cluster_nodes_F(graph_t graph, list_t nodes, edge_separator_node_f
 	int o = 0;
 	for (int i = 0; i < N_new_ext; i++) {
 
-		if ((nodes_get(result->ext_nodes, i))->io_flags[0]) { //io_falgs of ext_node == ! io_flags of node
+		if (node_io_flag(nodes_get(result->ext_nodes, i), 0)) { //io_falgs of ext_node == ! io_flags of node
 
 			perm_new[N_new_ext - 1 - i + o] = i;
 			perm_old[N_new_ext + N_old_ext - 1 - i + o] = i + N_old_ext;
@@ -1050,7 +1095,7 @@ graph_t graph_reinsert_subgraph_FF(graph_t graph, graph_t subgraph)
 
 		node_t node_ii = list_get_item(graph->ext_nodes, ii);
 
-		if (!node_ii->io_flags[0])
+		if (!node_io_flag(node_ii, 0))
 			SWAP(ii, oo);
 
 		graph = link_graphs_F(graph, oo, ii);
@@ -1083,7 +1128,7 @@ void debug_edges(enum debug_levels dl, list_t nodes)
 
 		for (int i = 0; i < node->N_vertices; i++) {
 
-			if (!node->io_flags[i])
+			if (!node_io_flag(node, i))
 				continue;
 
 			list_t vertices = list_copy(node->edges[i]);
@@ -1108,80 +1153,10 @@ void debug_edges(enum debug_levels dl, list_t nodes)
 
 static inline bool node_chainable(node_t node)
 {
-	return (2 == node->N_vertices) && (node->io_flags[0]) && (!node->io_flags[1]);
-}
-
-static void graph_chain_append(list_t result, list_t chain, node_t node)
-{
-	node->count++;
-
-	if (node_chainable(node)) {
-
-		list_append(chain, node);
-
-		if (1 == list_count(node->edges[0])) {
-
-			node_t nnode = (vertices_get(node->edges[0], 0))->node;
-			graph_chain_append(result, chain, nnode);
-			return;
-		}
-	}
-
-	if (1 < list_count(chain))
-		list_append(result, chain);
-	else
-		list_free(chain);
-
-	if (count_in_edges(node) != node->count)
-		return;
-
-	for (int i = 0; i < node->N_vertices; i++) {
-
-		if (node->io_flags[i]) {
-
-			vertices_t vertices = node->edges[i];
-
-			for (int j = 0; j < list_count(vertices); j++)
-				graph_chain_append(result, list_create(), vertices_get(vertices, j)->node);
-		}
-	}
-}
-
-// returns a list of lists of nodes which are a simple chain
-list_t graph_get_chains(graph_t graph)
-{
-	list_t result = list_create();
-	graph_reset_count(graph);
-
-	list_t starts = list_get_sublist(graph->nodes, NULL, cmp_no_in_edge);
-	list_merge(starts, list_copy(graph->ext_nodes), true);
-
-	while (0 < list_count(starts)) {
-
-		node_t node = list_pop(starts);
-
-		for (int i = 0; i < node->N_vertices; i++) {
-
-			if (node->io_flags[i]) {
-
-				vertices_t vertices = node->edges[i];
-
-				for (int j = 0; j < list_count(vertices); j++)
-					graph_chain_append(result, list_create(), vertices_get(vertices, j)->node);
-			}
-		}
-	}
-
-	list_free(starts);
-
-	return result;
+	return (2 == node->N_vertices) && (node_io_flag(node, 0)) && (!node_io_flag(node, 1));
 }
 
 
-static node_t access_node(node_t node)
-{
-	return (count_out_edges(node) <= ++(node->count)) ? node : NULL;
-}
 
 // returns true if a node has only one following node
 // there might be multiple edges to different vertices of the node
@@ -1191,14 +1166,14 @@ static inline bool node_one_child(node_t node, bool simple_only)
 		return false;
 
 	if (simple_only)
-		if (!((2 == node->N_vertices) && (node->io_flags[0]) && (!node->io_flags[1])))
+		if (!((2 == node->N_vertices) && (node_io_flag(node, 0)) && (!node_io_flag(node, 1))))
 			return false;
 
 	node_t follow = NULL;
 
 	for (int i = 0; i < node->N_vertices; i++) {
 
-		if (!node->io_flags[i])
+		if (!node_io_flag(node, i))
 			continue;
 
 		for (int j = 0; j < list_count(node->edges[i]); j++) {
@@ -1214,93 +1189,7 @@ static inline bool node_one_child(node_t node, bool simple_only)
 	return true;
 }
 
-static void graph_start_cluster(list_t result, node_t node, bool simple_only)
-{
-	node = access_node(node);
 
-	if (NULL == node)
-		return;
-
-	list_t cluster = list_create();
-
-	for (int i = 0; i < node->N_vertices; i++) {
-
-		if (node->io_flags[i])
-			continue;
-
-		assert(1 == list_count(node->edges[i]));
-		node_t tmp_node = access_node((vertices_get(node->edges[i], 0))->node);
-
-		if (NULL == tmp_node)
-			continue;
-
-		if (node_one_child(tmp_node, simple_only)) {
-
-			list_append(cluster, tmp_node);
-
-			for (int j = 0; j < tmp_node->N_vertices; j++) {
-
-				if (tmp_node->io_flags[j])
-					continue;
-
-				assert(1 == list_count(tmp_node->edges[j]));
-
-				node_t tmp_node2 = access_node((vertices_get(tmp_node->edges[j], 0))->node);
-				if (NULL != tmp_node2)
-					graph_start_cluster(result, tmp_node2, simple_only);
-			}
-
-		} else {
-
-			graph_start_cluster(result, tmp_node, simple_only);
-		}
-	}
-
-	if (0 < list_count(cluster)) {
-
-		list_append(cluster, node);
-		list_append(result, cluster);
-
-	} else {
-
-		list_free(cluster);
-	}
-}
-
-// find clusters, i.e. a node and its parents where the parents only have edges to this node
-list_t graph_get_clusters(graph_t graph, bool simple_only)
-{
-	list_t result = list_create();
-	graph_reset_count(graph);
-
-	list_t starts = list_get_sublist(graph->nodes, NULL, cmp_no_out_edge);
-
-	while (0 < list_count(starts))
-		graph_start_cluster(result, list_pop(starts), simple_only);
-
-	list_merge(starts, list_copy(graph->ext_nodes), true);
-
-	while (0 < list_count(starts)) {
-
-		node_t node = list_pop(starts);
-		for (int i = 0; i < node->N_vertices; i++) {
-
-			if (node->io_flags[i])
-				continue;
-
-			assert(1 == list_count(node->edges[i]));
-
-			node_t tmp_node = access_node((vertices_get(node->edges[i], 0))->node);
-
-			if (NULL != tmp_node)
-				graph_start_cluster(result, tmp_node, simple_only);
-		}
-	}
-
-	list_free(starts);
-
-	return result;
-}
 
 // extract nodes representing a sum (of sums) and operators having an edge to this sum
 static void get_sum_parents(node_t node_sum, list_t nodes_sum, list_t nodes_linops, node_is_t node_is_sum)
@@ -1310,7 +1199,7 @@ static void get_sum_parents(node_t node_sum, list_t nodes_sum, list_t nodes_lino
 
 	for (int i = 0; i < node_sum->N_vertices; i++) {
 
-		if (node_sum->io_flags[i])
+		if (node_io_flag(node_sum, i))
 			continue;
 
 		node_t node_in = ((vertex_t)list_get_item(node_sum->edges[i], 0))->node;
@@ -1320,7 +1209,7 @@ static void get_sum_parents(node_t node_sum, list_t nodes_sum, list_t nodes_lino
 			if (node_is_sum(node_in))
 				get_sum_parents(node_in, nodes_sum, nodes_linops, node_is_sum);
 
-			if ((2 == node_in->N_vertices) && !node_in->io_flags[1])
+			if ((2 == node_in->N_vertices) && !node_io_flag(node_in, 1))
 				list_append(nodes_linops, node_in);
 		}
 	}
