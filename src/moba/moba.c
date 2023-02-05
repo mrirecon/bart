@@ -41,6 +41,7 @@ struct moba_conf moba_defaults = {
 	.l2para = 0,
 	.pusteps = 0,
 	.ratio = 0.,
+	.l1val = 1.,
 
 	// T1
 	.scaling_M0 = 1.,

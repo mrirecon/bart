@@ -282,7 +282,8 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
                 .not_wav_maps = 0,
 		.algo = conf->algo,
 		.rho = conf->rho,
-		.ropts = conf->ropts
+		.ropts = conf->ropts,
+		.l1val = conf->l1val
 	};
 
         set_bloch_conf(conf->mode, &conf2, conf, data);

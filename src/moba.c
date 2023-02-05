@@ -222,6 +222,7 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_INT(0, "l2-on-parameters", &conf.l2para, "flag", "Flag for parameter maps with l2 norm"),
 		OPTL_UINT(0, "pusteps", &conf.pusteps, "ud", "Number of partially update steps for IRGNM"),
 		OPTL_FLOAT(0, "ratio", &conf.ratio, "f:[0;1]", "Ratio of partial updates: ratio*<updated-map> + (1-ratio)*<previous-map>"),
+		OPTL_FLOAT(0, "l1val", &conf.l1val, "f", "Regularization scaling of l1 wavelet (default: 1.)"),
 		OPTL_INT(0, "multi-gpu", &conf.num_gpu, "num", "number of gpus to use"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
 		OPT_INFILE('t', &traj_file, "traj", "K-space trajectory"),

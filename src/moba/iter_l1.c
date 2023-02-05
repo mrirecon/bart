@@ -421,7 +421,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 
         img_dims[COEFF_DIM] = penalized_dims;
 
-	auto prox1 = create_prox(img_dims, COEFF_FLAG, 1.);
+	auto prox1 = create_prox(img_dims, COEFF_FLAG, conf->l1val);
 	auto prox2 = operator_p_ref(prox1);
 
 	if (0 < conf->not_wav_maps) {

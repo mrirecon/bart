@@ -46,6 +46,7 @@ struct moba_conf {
 	int l2para;
 	unsigned int pusteps;
 	float ratio;
+	float l1val;
 
 	// T1
 	float scaling_M0;
