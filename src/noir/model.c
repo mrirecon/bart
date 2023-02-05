@@ -214,24 +214,12 @@ void noir_back_coils(const struct linop_s* op, complex float* dst, const complex
 
 
 
-struct noir_s noir_create3(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf)
-{
-	return noir_create2(dims, mask, psf, conf);
-}
 
-
-struct noir_s noir_create2(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf)
+struct noir_s noir_create(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf)
 {
 	struct noir_op_s* data = noir_init(dims, mask, psf, conf);
 	struct nlop_s* nlop = (struct nlop_s*)nlop_attach(data->nl2, data, noir_del);
 	return (struct noir_s){ .nlop = nlop, .linop = data->weights, .noir_op = data };
-}
-
-struct noir_s noir_create(const long dims[DIMS], const complex float* mask, const complex float* psf, const struct noir_model_conf_s* conf)
-{
-	struct noir_s ret = noir_create2(dims, mask, psf, conf);
-	ret.nlop = nlop_flatten_F(ret.nlop);
-	return ret;
 }
 
 

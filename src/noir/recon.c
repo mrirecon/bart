@@ -121,12 +121,9 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	complex float* xref = NULL;
 
-#if 1
 	struct noir_s nl = noir_create(dims, mask, pattern, &mconf);
-#else
-	struct noir_s nl = noir_create3(dims, mask, pattern, &mconf);
-	nl.nlop = nlop_flatten(nl.nlop);
-#endif
+	nl.nlop = nlop_flatten_F(nl.nlop);
+
 
 	if (NULL != ref) {
 

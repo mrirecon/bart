@@ -43,7 +43,7 @@ static struct mobamod T1_create_internal(const long dims[DIMS], const complex fl
 	long data_dims[DIMS];
 	md_select_dims(DIMS, ~COEFF_FLAG, data_dims, dims);
 
-	struct noir_s nlinv = noir_create3(data_dims, mask, psf, conf);
+	struct noir_s nlinv = noir_create(data_dims, mask, psf, conf);
 	struct mobamod ret;
 
 	long map_dims[DIMS];
