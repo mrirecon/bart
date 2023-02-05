@@ -12,17 +12,10 @@
  * 60:259-268 (1992)
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <complex.h>
-#include <assert.h>
-#include <stdbool.h>
-
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/iovec.h"
 #include "num/ops_p.h"
+#include "num/iovec.h"
 #include "num/init.h"
 
 #include "linops/linop.h"

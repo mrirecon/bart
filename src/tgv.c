@@ -16,15 +16,8 @@
  * 3:492-526 (2010)
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <complex.h>
-#include <assert.h>
-#include <stdbool.h>
-
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/iovec.h"
 #include "num/ops_p.h"
 #include "num/init.h"
 
