@@ -106,7 +106,7 @@ int main_ecalib(int argc, char* argv[argc])
 	if (conf.weighting) {
 
 		conf.numsv      = -1.;
-		conf.threshold  =   0;
+		conf.threshold  = 0.;
 		conf.percentsv  = -1.;
 		conf.orthiter   = false;
 	}
