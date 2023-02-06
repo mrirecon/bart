@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 #include <assert.h>
+#include <math.h>
 
 #include "misc/debug.h"
 #include "misc/misc.h"
@@ -66,6 +67,8 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 
 	if (MDB_T1_PHY == mode) {
 
+		float r1p_nom = -1./data->sim.seq.tr*log(cos(data->sim.pulse.flipangle*M_PI/180.));
+
 		md_set_dims(DIMS, pos, 0);
 
 		pos[COEFF_DIM] = 2;
@@ -78,7 +81,14 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 
 		md_zreal(DIMS, map_dims, tmp, tmp);
 
-		md_zsmul(DIMS, map_dims, tmp, tmp, -data->sim.seq.tr * 0.2);    // 0.2 -> Same scaling set in T1phyfun.c
+		md_zsmul(DIMS, map_dims, tmp, tmp, data->other.scale[2]);
+
+		complex float* offset = md_alloc_sameplace(DIMS, map_dims, CFL_SIZE, img);
+
+		md_zfill(DIMS, map_dims, offset, (1. == data->sim.pulse.flipangle) ? 1. : r1p_nom);
+		md_zadd(DIMS, map_dims, tmp, tmp, offset);
+
+		md_zsmul(DIMS, map_dims, tmp, tmp, -data->sim.seq.tr);    // Same scaling set in T1phyfun.c
 
 		md_smin(1, MD_DIMS(2 * map_size), (float*)tmp, (float*)tmp, 0.);
 
@@ -89,6 +99,8 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 	        md_zsmul(DIMS, map_dims, tmp, tmp, 180. / M_PI);        // output the effective flip angle map (in degree!)
 
 		md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
+
+		md_free(offset);
 	}
 
 	md_free(tmp);

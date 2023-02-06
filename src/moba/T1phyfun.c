@@ -7,6 +7,7 @@
  */
 
 #include <complex.h>
+#include <math.h>
 
 #include "misc/types.h"
 #include "misc/misc.h"
@@ -67,6 +68,7 @@ struct T1_phy_s {
 	const struct linop_s* linop_alpha;
 
 	float scaling_alpha;
+	float r1p_nom;
 
 	int counter;
 };
@@ -130,8 +132,12 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 
 	T1_forw_alpha(data->linop_alpha, data->tmp_map, data->alpha);
 
-	// R1s = R1 + alpha * scaling_alpha
+	// R1p_nom = -ln(cos(fa_nom))/tr = alpha_nom -> Sobolev on r1p around 0 instead of 1
+	md_zfill(data->N, data->map_dims, data->tmp_ones, data->r1p_nom);
+
+	// R1s = R1 + (1 + alpha * scaling_alpha)
 	md_zsmul(data->N, data->map_dims, data->tmp_R1s, data->tmp_map, data->scaling_alpha);
+	md_zadd(data->N, data->map_dims, data->tmp_R1s, data->tmp_ones, data->tmp_R1s);
 	md_zadd(data->N, data->map_dims, data->tmp_R1s, data->R1, data->tmp_R1s);
 
 	// exp(-t.* (R1 + alpha * scaling_alpha)):
@@ -374,7 +380,8 @@ struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_
 	linop_free(linop_wghts);
 	linop_free(linop_ifftc);
 
-	data->scaling_alpha = 0.2;
+	data->scaling_alpha = config->other.scale[2];
+	data->r1p_nom = (1. == config->sim.pulse.flipangle) ? 1. : -1./config->sim.seq.tr*log(cos(config->sim.pulse.flipangle*M_PI/180.));
 
 	data->counter = 0;
 	return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), T1_fun, T1_der, T1_adj, NULL, NULL, T1_del);
