@@ -621,7 +621,7 @@ UTARGETS += test_batchsvd
 MODULES_test_batchsvd = -llowrank
 
 # lib misc
-UTARGETS += test_pattern test_types test_misc test_memcfl
+UTARGETS += test_pattern test_types test_misc test_memcfl test_tree
 
 # lib moba
 UTARGETS += test_moba
