@@ -14,28 +14,28 @@
 #include "ode.h"
 
 
-static void vec_saxpy(unsigned int N, float dst[N], const float a[N], float alpha, const float b[N])
+static void vec_saxpy(int N, float dst[N], const float a[N], float alpha, const float b[N])
 {
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		dst[i] = a[i] + alpha * b[i];
 }
 
-static void vec_copy(unsigned N, float dst[N], const float src[N])
+static void vec_copy(int N, float dst[N], const float src[N])
 {
 	vec_saxpy(N, dst, src, 0., src);
 }
 
-static float vec_sdot(unsigned int N, const float a[N], const float b[N])
+static float vec_sdot(int N, const float a[N], const float b[N])
 {
 	float ret = 0.;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		ret += a[i] * b[i];
 
 	return ret;
 }
 
-static float vec_norm(unsigned int N, const float x[N])
+static float vec_norm(int N, const float x[N])
 {
 	return sqrtf(vec_sdot(N, x, x));
 }
@@ -44,15 +44,15 @@ static float vec_norm(unsigned int N, const float x[N])
 
 #define tridiag(s) (s * (s + 1) / 2)
 
-static void runga_kutta_step(float h, unsigned int s, const float a[tridiag(s)], const float b[s], const float c[s - 1], unsigned int N, unsigned int K, float k[K][N], float ynp[N], float tmp[N], float tn, const float yn[N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
+static void runga_kutta_step(float h, int s, const float a[tridiag(s)], const float b[s], const float c[s - 1], int N, int K, float k[K][N], float ynp[N], float tmp[N], float tn, const float yn[N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
 {
 	vec_saxpy(N, ynp, yn, h * b[0], k[0]);
 
-	for (unsigned int l = 0, t = 1; t < s; t++) {
+	for (int l = 0, t = 1; t < s; t++) {
 
 		vec_copy(N, tmp, yn);
 
-		for (unsigned int r = 0; r < t; r++, l++)
+		for (int r = 0; r < t; r++, l++)
 			vec_saxpy(N, tmp, tmp, h * a[l], k[r % K]);
 
 		f(data, k[t % K], tn + h * c[t - 1], tmp);
@@ -63,7 +63,7 @@ static void runga_kutta_step(float h, unsigned int s, const float a[tridiag(s)],
 
 // Runga-Kutta 4
 
-void rk4_step(float h, unsigned int N, float ynp[N], float tn, const float yn[N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
+void rk4_step(float h, int N, float ynp[N], float tn, const float yn[N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
 {
 	const float c[3] = { 0.5, 0.5, 1. };
 
@@ -87,7 +87,7 @@ void rk4_step(float h, unsigned int N, float ynp[N], float tn, const float yn[N]
  * Dormand JR, Prince PJ. A family of embedded Runge-Kutta formulae,
  * Journal of Computational and Applied Mathematics 6:19-26 (1980).
  */
-void dormand_prince_step(float h, unsigned int N, float ynp[N], float tn, const float yn[N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
+void dormand_prince_step(float h, int N, float ynp[N], float tn, const float yn[N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
 {
 	const float c[6] = { 1. / 5., 3. / 10., 4. / 5., 8. / 9., 1., 1. };
 
@@ -126,7 +126,7 @@ float dormand_prince_scale(float tol, float err)
 
 
 
-float dormand_prince_step2(float h, unsigned int N, float ynp[N], float tn, const float yn[N], float k[6][N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
+float dormand_prince_step2(float h, int N, float ynp[N], float tn, const float yn[N], float k[6][N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
 {
 	const float c[6] = { 1. / 5., 3. / 10., 4. / 5., 8. / 9., 1., 1. };
 
@@ -149,7 +149,7 @@ float dormand_prince_step2(float h, unsigned int N, float ynp[N], float tn, cons
 }
 
 
-void ode_interval(float h, float tol, unsigned int N, float x[N], float st, float end, void* data, void (*f)(void* data, float* out, float t, const float* yn))
+void ode_interval(float h, float tol, int N, float x[N], float st, float end, void* data, void (*f)(void* data, float* out, float t, const float* yn))
 {
 	float k[6][N];
 	f(data, k[0], st, x);
@@ -179,7 +179,7 @@ void ode_interval(float h, float tol, unsigned int N, float x[N], float st, floa
 		if (t + h > end)
 			h = end - t;
 
-		for (unsigned int i = 0; i < N; i++)
+		for (int i = 0; i < N; i++)
 			x[i] = ynp[i];
 	}
 }
@@ -187,7 +187,7 @@ void ode_interval(float h, float tol, unsigned int N, float x[N], float st, floa
 
 struct ode_matrix_s {
 
-	unsigned int N;
+	int N;
 	const float* matrix;
 };
 
@@ -196,18 +196,18 @@ static void ode_matrix_fun(void* _data, float* x, float t, const float* in)
 	struct ode_matrix_s* data = _data;
 	(void)t;
 
-	unsigned int N = data->N;
+	int N = data->N;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		x[i] = 0.;
 
-		for (unsigned int j = 0; j < N; j++)
+		for (int j = 0; j < N; j++)
 			x[i] += (*(const float(*)[N][N])data->matrix)[i][j] * in[j];
 	}
 }
 
-void ode_matrix_interval(float h, float tol, unsigned int N, float x[N], float st, float end, const float matrix[N][N])
+void ode_matrix_interval(float h, float tol, int N, float x[N], float st, float end, const float matrix[N][N])
 {
 	struct ode_matrix_s data = { N, &matrix[0][0] };
 	ode_interval(h, tol, N, x, st, end, &data, ode_matrix_fun);
@@ -222,8 +222,8 @@ void ode_matrix_interval(float h, float tol, unsigned int N, float x[N], float s
 
 struct seq_data {
 
-	unsigned int N;
-	unsigned int P;
+	int N;
+	int P;
 
 	void* data;
 	void (*f)(void* data, float* out, float t, const float* yn);
@@ -258,7 +258,7 @@ static void seq(void* _data, float* out, float t, const float* yn)
 	}
 }
 
-void ode_direct_sa(float h, float tol, unsigned int N, unsigned int P, float x[P + 1][N],
+void ode_direct_sa(float h, float tol, int N, int P, float x[P + 1][N],
 	float st, float end, void* data,
 	void (*f)(void* data, float* out, float t, const float* yn),
 	void (*pdy)(void* data, float* out, float t, const float* yn),
