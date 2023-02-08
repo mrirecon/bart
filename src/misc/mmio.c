@@ -58,10 +58,10 @@ static void io_error(const char* fmt, ...)
 	debug_vprintf_trace("error", __FILE__, __LINE__, DP_ERROR, fmt, ap);
 	va_end(ap);
 #else
+	perror(" ");
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 	fflush(stderr);
-	perror(" ");
 #endif
 #else
 	if (NULL == PyErr_Occurred()) {
