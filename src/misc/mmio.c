@@ -494,7 +494,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 
 	err_assert(T > 0);
 
-        if (-1 == (fd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
+        if (-1 == (fd = open(name, O_RDWR|O_CREAT, 0666 /* octal */)))
 		io_error("shared cfl %s\n", name);
 
 //	if (-1 == (fstat(fd, &st)))
