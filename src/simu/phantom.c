@@ -563,7 +563,7 @@ void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const lon
 }
 
 
-void calc_phantom_arb(int N, const struct ellipsis_s data[N], const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, float rotation_angle)
+void calc_phantom_arb(int N, const struct ellipsis_s* data /*[N]*/, const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, float rotation_angle)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 

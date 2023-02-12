@@ -112,7 +112,7 @@ extern void gpu_threads_free(struct cuda_threads_s* x);
 
 
 extern long md_calc_size(int D, const long dimensions[__VLA(D)]);
-extern long* md_calc_strides(int D, long str[__VLA(D)], const long dim[__VLA(D)], size_t size);
+extern long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size);
 extern long md_calc_offset(int D, const long strides[__VLA(D)], const long position[__VLA(D)]);
 extern int md_calc_blockdim(int D, const long dim[__VLA(D)], const long str[__VLA(D)], size_t size);
 extern void md_select_dims(int D, unsigned long flags, long odims[__VLA(D)], const long idims[__VLA(D)]);

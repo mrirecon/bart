@@ -678,7 +678,7 @@ void operator_apply_parallel_unchecked(int D, const struct operator_s* op[D], co
 	operator_generic_apply_parallel_unchecked(D, op, 2, args, num_threads);
 }
 
-void operator_apply2(const struct operator_s* op, unsigned int ON, const long odims[ON], const long ostrs[ON], complex float* dst, const long IN, const long idims[IN], const long istrs[ON], const complex float* src)
+void operator_apply2(const struct operator_s* op, unsigned int ON, const long odims[ON], const long ostrs[ON], complex float* dst, const long IN, const long idims[IN], const long istrs[IN], const complex float* src)
 {
 	assert(2 == op->N);
 	assert(iovec_check(op->domain[1], IN, idims, istrs));

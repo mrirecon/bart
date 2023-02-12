@@ -27,7 +27,7 @@
 
 
 
-enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties?:1])
+enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties])
 {
 	enum algo_t algo = ALGO_CG;
 

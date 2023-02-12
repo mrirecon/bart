@@ -21,7 +21,7 @@ extern void mat_muladd(int A, int B, int C, complex float x[MVLA(A)][C], const c
 extern void mat_add(int A, int B, complex float x[A][B], const complex float y[A][B], const complex float z[A][B]);
 extern void mat_transpose(int A, int B, complex float dst[B][A], const complex float src[A][B]);
 extern void mat_adjoint(int A, int B, complex float dst[B][A], const complex float src[A][B]);
-extern void mat_conj(int A, int B, complex float dst[B][A], const complex float src[A][B]);
+extern void mat_conj(int A, int B, complex float dst[A][B], const complex float src[A][B]);
 extern void mat_copy(int A, int B, complex float dst[A][B], const complex float src[A][B]);
 extern bool mat_inverse(unsigned int N, complex float dst[N][N], const complex float src[N][N]);
 extern void mat_pinv(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B]);
@@ -37,7 +37,7 @@ extern void vec_mat(unsigned int A, unsigned int B, complex float out[A][B], con
 extern complex float vec_dot(int N, const complex float x[N], const complex float y[N]);
 extern void vec_saxpy(int N, complex float x[N], complex float alpha, const complex float y[N]);
 extern void gram_matrix(int N, complex float cov[N][N], int L, const complex float data[N][L]);
-extern void gram_schmidt(int M, int N, float val[N], complex float vecs[M][N]);
+extern void gram_schmidt(int M, int N, float val[M], complex float vecs[M][N]);
 extern void gram_matrix2(int N, complex float cov[N * (N + 1) / 2], int L, const complex float data[N][L]);
 extern void pack_tri_matrix(int N, complex float cov[N * (N + 1) / 2], const complex float m[N][N]);
 extern void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2]);

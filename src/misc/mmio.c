@@ -592,7 +592,7 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 }
 
 
-void unmap_cfl(int D, const long dims[D?:1], const complex float* x)
+void unmap_cfl(int D, const long dims[D], const complex float* x)
 {
 	if (memcfl_unmap(x))
 		return;

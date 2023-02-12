@@ -52,7 +52,7 @@ extern void blas2_cmatcopy(char trans, long M, long N, const _Complex float* alp
 extern void blas_smatcopy(char trans, long M, long N, float alpha, const float* A, long lda, float* B, long ldb);
 extern void blas2_smatcopy(char trans, long M, long N, const float* alpha, const float* A, long lda, float* B, long ldb);
 
-extern void blas_csyrk(char uplow, char trans, long N, long K, _Complex float alpha, long lda, const _Complex float A[*][lda], _Complex float beta, long ldc, _Complex float C[*][ldc]);
+extern void blas_csyrk(char uplow, char trans, long N, long K, _Complex float alpha, long lda, const _Complex float A[][lda], _Complex float beta, long ldc, _Complex float C[][ldc]);
 
 extern void blas_matrix_multiply(long M, long N, long K, _Complex float C[N][M], const _Complex float A[K][M], const _Complex float B[N][K]);
 

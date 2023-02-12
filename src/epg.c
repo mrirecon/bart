@@ -190,9 +190,10 @@ int main_epg(int argc, char* argv[argc])
 
 			// determine indeces to unknowns in derivative
 			unsigned long idx_unknowns[Q];
-			getidxunknowns(Q, idx_unknowns, unknowns);
 
 			int P = Q + 1; // selected unknowns + M0
+			getidxunknowns(P, idx_unknowns, unknowns);
+
 			complex float fisher[P][P];
 			float rCRB[P];
 

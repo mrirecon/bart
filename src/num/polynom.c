@@ -18,7 +18,7 @@ complex double polynom_eval(complex double x, int N, const complex double coeff[
 	return coeff[0] + ((0 == N) ? 0. : (x * polynom_eval(x, N - 1, coeff + 1)));
 }
 
-void polynom_derivative(int N, complex double out[N?:1], const complex double in[N + 1])
+void polynom_derivative(int N, complex double out[N], const complex double in[N + 1])
 {
 	for (int i = 0; i < N; i++)
 		out[i] = (i + 1) * in[i + 1];

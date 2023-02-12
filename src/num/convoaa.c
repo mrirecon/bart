@@ -495,6 +495,8 @@ void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long
 
 	for (int i = 0; i < N; i++) {
 
+		dims1B[i] = 0;	// avoid warning
+
 		if (MD_IS_SET(flags, i)) {
 
 			assert(1 == dims2[i] % 2);
