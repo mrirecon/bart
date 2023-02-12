@@ -12,14 +12,14 @@
 #include "splines.h"
 
 
-static long binomial(unsigned int n, unsigned int k)
+static long binomial(int n, int k)
 {
 	long result = 1;
 
-	for (unsigned int i = 1; i <= k; i++)
+	for (int i = 1; i <= k; i++)
 		result *= (n + 1 - i);
 
-	for (unsigned int i = 1; i <= k; i++)
+	for (int i = 1; i <= k; i++)
 		result /= i;
 
 	return result;
@@ -27,7 +27,7 @@ static long binomial(unsigned int n, unsigned int k)
 
 
 /* basis */
-double bernstein(unsigned int n, unsigned int v, double x)
+double bernstein(int n, int v, double x)
 {
 	assert(v <= n);
 
@@ -77,34 +77,34 @@ static void de_casteljau_split(double t, unsigned int N, double coeffA[static N 
 }
 
 
-void bezier_split(double t, unsigned int N, double coeffA[static N + 1], double coeffB[static N + 1], const double coeff[static N + 1])
+void bezier_split(double t, int N, double coeffA[static N + 1], double coeffB[static N + 1], const double coeff[static N + 1])
 {
 	de_casteljau_split(t, N, coeffA, coeffB, coeff);
 }
 
 
-double bezier_curve(double u, unsigned int N, const double k[static N + 1])
+double bezier_curve(double u, int N, const double k[static N + 1])
 {
 	return de_casteljau(u, N, k);
 }
 
 
-void bezier_increase_degree(unsigned int N, double coeff2[static N + 2], const double coeff[static N + 1])
+void bezier_increase_degree(int N, double coeff2[static N + 2], const double coeff[static N + 1])
 {
 	coeff2[0] = coeff[0];
 
-	for (unsigned int i = 1; i <= N; i++)
+	for (int i = 1; i <= N; i++)
 		coeff2[i] = lerp(i / (1. + N), coeff[i], coeff[i - 1]);
 
 	coeff2[N + 1] = coeff[N];
 }
 
 
-double bezier_surface(double u, double v, unsigned int N, unsigned int M, const double k[static N + 1][M + 1])
+double bezier_surface(double u, double v, int N, int M, const double k[static N + 1][M + 1])
 {
 	double coeff[N + 1];
 
-	for (unsigned int i = 0; i <= N; i++)
+	for (int i = 0; i <= N; i++)
 		coeff[i] = bezier_curve(u, M, k[i]);
 
 	return bezier_curve(v, N, coeff);
@@ -165,7 +165,7 @@ static double frac(double u, double v)
 /*
  * bspline blending function of order p with n + 1 knots. i enumerates the basis.
  */
-double bspline(unsigned int n, unsigned int i, unsigned int p, const double tau[static n + 1], double u)
+double bspline(int n, int i, int p, const double tau[static n + 1], double u)
 {
 	assert(i + p < n);
 	assert(tau[i] <= tau[i + 1]);
@@ -184,7 +184,7 @@ double bspline(unsigned int n, unsigned int i, unsigned int p, const double tau[
 
 
 
-double bspline_derivative(unsigned int n, unsigned int i, unsigned int p, const double tau[static n + 1], double x)
+double bspline_derivative(int n, int i, int p, const double tau[static n + 1], double x)
 {
 	assert(p > 0);
 
@@ -195,7 +195,7 @@ double bspline_derivative(unsigned int n, unsigned int i, unsigned int p, const 
 }
 
 
-double nurbs(unsigned int n, unsigned int p, const double tau[static n + 1], const double coord[static n - p],
+double nurbs(int n, int p, const double tau[static n + 1], const double coord[static n - p],
 	const double w[static n - p], double x)
 {
 #if 0
@@ -212,7 +212,7 @@ double nurbs(unsigned int n, unsigned int p, const double tau[static n + 1], con
 #else
 	double coordw[n - p];
 
-	for (unsigned int i = 0; i < n + 0 - p; i++)
+	for (int i = 0; i < n + 0 - p; i++)
 		coordw[i] = w[i] * coord[i];
 
 	double sum = bspline_curve(n, p, tau, coordw, x);
@@ -223,11 +223,11 @@ double nurbs(unsigned int n, unsigned int p, const double tau[static n + 1], con
 
 
 
-static void cox_deboor_step(unsigned int N, double out[static N], double x, unsigned int p, const double tau[static N + p + 1], const double coeff[static N + 1])
+static void cox_deboor_step(int N, double out[static N], double x, int p, const double tau[static N + p + 1], const double coeff[static N + 1])
 {
-	unsigned int k = p - N + 1;
+	int k = p - N + 1;
 
-	for (unsigned int s = 0; s < N; s++) {
+	for (int s = 0; s < N; s++) {
 
 		double t = frac(x - tau[s + k], tau[s + p + 1] - tau[s + k]);
                 out[s] = lerp(t, coeff[s], coeff[s + 1]);
@@ -284,30 +284,30 @@ static double cox_deboor(unsigned int n, unsigned int p, const double t[static n
 }
 
 
-double bspline_curve(unsigned int n, unsigned int p, const double t[static n + 1], const double v[static n - p], double x)
+double bspline_curve(int n, int p, const double t[static n + 1], const double v[static n - p], double x)
 {
 	return cox_deboor(n, p, t, v, x);
 }
 
 
-static void bspline_coeff_derivative(unsigned int n, unsigned int p, double t2[static n - 1], double v2[static n - p - 1], const double t[static n + 1], const double v[static n - p])
+static void bspline_coeff_derivative(int n, int p, double t2[static n - 1], double v2[static n - p - 1], const double t[static n + 1], const double v[static n - p])
 {
-	for (unsigned int i = 1; i < n; i++)
+	for (int i = 1; i < n; i++)
 		t2[i - 1] = t[i];
 
-	for (unsigned int i = 0; i < n - p - 1; i++)
+	for (int i = 0; i < n - p - 1; i++)
 		v2[i] = (float)p / (t[i + p + 1] - t[i + 1]) * (v[i + 1] - v[i]);
 }
 
 
-void bspline_coeff_derivative_n(unsigned int k, unsigned int n, unsigned int p, double t2[static n + 1 - 2 * k], double v2[static n - p - k], const double t[static n + 1], const double v[static n - p])
+void bspline_coeff_derivative_n(int k, int n, int p, double t2[static n - 2 * k + 1], double v2[static n - p - k], const double t[static n + 1], const double v[static n - p])
 {
 	if (0 == k) {
 
-		for (unsigned int i = 0; i < n + 1; i++)
+		for (int i = 0; i < n + 1; i++)
 			t2[i] = t[i];
 
-		for (unsigned int i = 0; i < n - p; i++)
+		for (int i = 0; i < n - p; i++)
 			v2[i] = v[i];
 
 	} else {
@@ -321,7 +321,7 @@ void bspline_coeff_derivative_n(unsigned int k, unsigned int n, unsigned int p, 
 }
 
 
-double bspline_curve_derivative(unsigned int k, unsigned int n, unsigned int p, const double t[static n + 1], const double v[static n - p], double x)
+double bspline_curve_derivative(int k, int n, int p, const double t[static n + 1], const double v[static n - p], double x)
 {
 	double t2[n + 1 - 2 * k];
 	double v2[n - p - k];
@@ -338,8 +338,8 @@ static double newton_raphson(int iter, double x0, void* data, double (*fun)(void
 
 struct bspline_s {
 
-	unsigned int n;
-	unsigned int p;
+	int n;
+	int p;
 	const double* t;
 	const double* v;
 };
@@ -356,7 +356,7 @@ static double n_der(void* _data, double x)
 	return bspline_curve_derivative(1, data->n, data->p, data->t, data->v, x);
 }
 
-double bspline_curve_zero(unsigned int n, unsigned int p, const double tau[static n + 1], const double v[static n - p])
+double bspline_curve_zero(int n, int p, const double tau[static n + 1], const double v[static n - p])
 {
 	return newton_raphson(20, (tau[n] + tau[0]) / 2., &(struct bspline_s){ n, p, tau, v }, n_fun, n_der);
 }
@@ -364,34 +364,34 @@ double bspline_curve_zero(unsigned int n, unsigned int p, const double tau[stati
 
 
 
-void bspline_knot_insert(double x, unsigned int n, unsigned int p, double t2[static n + 2], double v2[n - p + 1], const double tau[static n + 1], const double v[static n - p])
+void bspline_knot_insert(double x, int n, int p, double t2[static n + 2], double v2[n - p + 1], const double tau[static n + 1], const double v[static n - p])
 {
-	unsigned int k = find_span(n, tau, x);
+	int k = find_span(n, tau, x);
 
 	// knots
 
-	for (unsigned int i = 0; i <= k; i++)
+	for (int i = 0; i <= k; i++)
 		t2[i] = tau[i];
 
 	t2[k + 1] = x;
 
-	for (unsigned int i = k + 1; i < n; i++)
+	for (int i = k + 1; i < n; i++)
 		t2[i + 1] = tau[i];
 
-	unsigned int r = k - p + 1;
-	unsigned int s = k;
+	int r = k - p + 1;
+	int s = k;
 
-	for (unsigned int i = 0; i < r; i++)
+	for (int i = 0; i < r; i++)
 		v2[i] = v[i];
 
-	for (unsigned int i = r; i <= s; i++) {
+	for (int i = r; i <= s; i++) {
 
 		double a = (x - tau[i]) / (tau[i + p] - tau[i]);
 
 		v2[i] = (1. - a) * v[i - 1] + a * v[i];
 	}
 
-	for (unsigned int i = s; i < n - p; i++)
+	for (int i = s; i < n - p; i++)
 		v2[i + 1] = v[i];
 }
 
