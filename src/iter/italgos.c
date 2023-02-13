@@ -509,7 +509,7 @@ void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha_min0, f
 		if (NULL != xref)
 			vops->axpy(N, x, +1., xref);
 
-		if (i < pusteps)
+		if (i < pusteps)	// Partially add previous map to update
 			vops->axpbz(N, x, ratio, x, 1.-ratio, t);
 
 		alpha = (alpha - alpha_min) / redu + alpha_min;
@@ -529,7 +529,7 @@ void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha_min0, f
 
 
 /**
- * Alternating Minimzation
+ * Alternating Minimization
  *
  * Minimize residual by calling each min_op in turn.
  */
