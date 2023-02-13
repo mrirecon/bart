@@ -187,6 +187,7 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "b1-sobolev-b", &(data.other.b1_sobolev_b), "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "ode-tol", &(data.sim.other.ode_tol), "f", "ODE tolerance value [def: 1e-5]"),
 		OPTL_FLOAT(0, "stm-tol", &(data.sim.other.stm_tol), "f", "STM tolerance value [def: 1e-6]"),
+		OPTL_SET(0,"no-sens-l2", &data.other.no_sens_l2, "(Turn off l2 regularization on coils)"),
 		OPTL_SET(0,"export-ksp-sens", &data.other.export_ksp_coils, "(Export coil sensitivities in ksp)"),
         };
 

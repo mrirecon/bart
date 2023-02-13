@@ -81,6 +81,7 @@ struct moba_other_conf {
 	float b1_sobolev_a;
 	float b1_sobolev_b;
 
+	bool no_sens_l2;
 	bool export_ksp_coils;
 
 	int tvscales_N;

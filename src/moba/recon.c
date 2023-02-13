@@ -291,6 +291,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		.l2flags = (0 == conf->l2para) ? ((1 == conf->opt_reg) ? (0UL) : ~(0UL)) : (long unsigned int) conf->l2para,
 		.constrained_maps = (0 == conf->constrained_maps) ? (1UL << (dims[COEFF_DIM] - 1)) : (long unsigned int) conf->constrained_maps, // Always constrain last parameter map as default
 		.auto_norm = conf->auto_norm,
+		.no_sens_l2 = data->other.no_sens_l2,
                 .not_wav_maps = (0 == conf->not_wav_maps) ? 0 : conf->not_wav_maps,
 		.algo = conf->algo,
 		.rho = conf->rho,

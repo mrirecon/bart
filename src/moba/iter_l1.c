@@ -121,7 +121,7 @@ static void normal(iter_op_data* _data, float* dst, const float* src)
 	const complex float* col_src = ((const complex float*)src) + md_calc_size(DIMS, img_dims);
 	long col_size = data->size_x / 2 - md_calc_size(DIMS, img_dims);
 
-	md_zaxpy(1, MD_DIMS(col_size), col_dst, data->alpha, col_src);
+	md_zaxpy(1, MD_DIMS(col_size), col_dst, (data->conf->no_sens_l2 ? 0. : data->alpha), col_src);
 }
 
 static void pos_value(iter_op_data* _data, float* dst, const float* src)

@@ -19,6 +19,7 @@ struct mdb_irgnm_l1_conf {
 	unsigned long constrained_maps;
 	unsigned long l2flags;
 	_Bool auto_norm;
+	_Bool no_sens_l2;
 
 	int not_wav_maps;
 	unsigned int algo;
