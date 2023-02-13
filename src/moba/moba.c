@@ -65,6 +65,7 @@ struct moba_other_conf moba_other_defaults = {
 	.b1_sobolev_a = 440.f,
 	.b1_sobolev_b = 20.f,
 	.no_sens_l2 = false,
+	.no_sens_deriv = false,
 	.export_ksp_coils = false,
 	.tvscales_N = 0,
 	.tvscales = { 1., 1., 1., 1. },

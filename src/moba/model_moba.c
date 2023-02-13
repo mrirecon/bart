@@ -92,6 +92,11 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 	debug_print_dims(DP_INFO, DIMS, nlop_generic_codomain(nlinv.nlop, 0)->dims);
 
 	const struct nlop_s* b = nlinv.nlop;
+
+	// Turn off coil derivative
+	if (data->other.no_sens_deriv)
+		b = nlop_no_der(b, 0, 1);
+
 	const struct nlop_s* c = nlop_chain2(model, 0, b, 0);
 	nlop_free(b);
 
