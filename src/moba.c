@@ -112,6 +112,7 @@ int main_moba(int argc, char* argv[argc])
 	const char* init_file = NULL;
         const char* input_b1 = NULL;
 	const char* input_b0 = NULL;
+	const char* input_sens = NULL;
 
 	struct moba_conf conf = moba_defaults;
 	struct opt_reg_s ropts;
@@ -180,6 +181,7 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_FLVEC4(0, "pinit", &(data.other.initval), "i1:i2:i3:i4", "Initial values of parameters in model-based reconstruction"),
                 OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
 		OPTL_INFILE(0, "b0map", &input_b0, "[rad/s]", "Input B0 map as cfl file"),
+		OPTL_INFILE(0, "ksp-sens", &input_sens, "", "Input kspace sensitivities"),
                 OPTL_FLVEC4(0, "tvscale", &tvscales, "s1:s2:s3:s4", "Scaling of derivatives in TV penalty"),
 		OPTL_FLOAT(0, "b1-sobolev-a", &(data.other.b1_sobolev_a), "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "b1-sobolev-b", &(data.other.b1_sobolev_b), "", "(a in 1 + a * \\Laplace^-b/2)"),
@@ -387,9 +389,24 @@ int main_moba(int argc, char* argv[argc])
 	bool sensout = (NULL != sens_file);
 	complex float* sens = (sensout ? create_cfl : anon_cfl)(sensout ? sens_file : "", DIMS, coil_dims);
 
+	// Input sensitivities
+
+	const complex float* in_sens = NULL;
+	long in_sens_dims[DIMS];
+
+
+	if (NULL != input_sens) {
+
+		in_sens = load_cfl(input_sens, DIMS, in_sens_dims);
+
+		assert(md_check_compat(DIMS, ~(FFT_FLAGS|COIL_FLAG), coil_dims, in_sens_dims));
+
+		md_copy(DIMS, coil_dims, sens, in_sens, CFL_SIZE);
+
+	} else
+		md_clear(DIMS, coil_dims, sens, CFL_SIZE);
 
 	md_zfill(DIMS, img_dims, img, 1.0);
-	md_clear(DIMS, coil_dims, sens, CFL_SIZE);
 
 	complex float* k_grid_data = anon_cfl("", DIMS, grid_dims);
 
@@ -686,6 +703,9 @@ int main_moba(int argc, char* argv[argc])
 
 	if(NULL != input_b0)
 		unmap_cfl(DIMS, b0_dims, b0);
+
+	if(NULL != input_sens)
+		unmap_cfl(DIMS, in_sens_dims, in_sens);
 
 	double recosecs = timestamp() - start_time;
 
