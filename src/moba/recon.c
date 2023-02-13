@@ -319,9 +319,16 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 	if (NULL != sens) {
 
-		noir_forw_coils(nl.linop, x + skip, x + skip);
-		md_copy(DIMS, coil_dims, sens, x + skip, CFL_SIZE);
-		fftmod(DIMS, coil_dims, fft_flags, sens, sens);
+		if (data->other.export_ksp_coils) {
+
+			md_copy(DIMS, coil_dims, sens, x + skip, CFL_SIZE);
+
+		} else {
+
+			noir_forw_coils(nl.linop, x + skip, x + skip);
+			md_copy(DIMS, coil_dims, sens, x + skip, CFL_SIZE);
+			fftmod(DIMS, coil_dims, fft_flags, sens, sens);
+		}
 	}
 
 	post_process(conf->mode, nl.linop_alpha, data, dims, img);
