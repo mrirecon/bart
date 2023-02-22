@@ -686,8 +686,11 @@ __global__ void kern_zdiv_reg(long N, cuFloatComplex* dst, const cuFloatComplex*
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	for (long i = start; i < N; i += stride)
-		dst[i] = cuCdivf(src1[i], cuCaddf(src2[i], lambda));
+	for (long i = start; i < N; i += stride) {
+
+		float abs = cuCabsf(src2[i]); // moved out, otherwise it triggers a compiler error in nvcc
+		dst[i] = (0. == abs) ? make_cuFloatComplex(0., 0.) : cuCdivf(src1[i], cuCaddf(src2[i], lambda));
+	}
 }
 
 extern "C" void cuda_zdiv_reg(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2, _Complex float lambda)
