@@ -35,6 +35,9 @@ struct network_s* get_default_network(enum NETWORK_SELECT net)
 
 struct opt_s res_block_opts[] = {
 
+	OPTL_CLEAR(0, "no-skip", &(network_resnet_default.INTERFACE.residual), "do not use skip connection"),
+	OPTL_SET(0, "init-zero", &(network_resnet_default.zero_init), "initialize last layer with zeros"),
+
 	OPTL_LONG('L', "layers", &(network_resnet_default.Nl), "d", "number of layers in residual block (default: 5)"),
 	OPTL_LONG('F', "filters", &(network_resnet_default.Nf), "d", "number of filters in residual block (default: 32)"),
 
