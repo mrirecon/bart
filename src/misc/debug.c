@@ -26,6 +26,10 @@
 #include <execinfo.h>
 #endif
 
+#ifdef USE_DWARF
+#include <elfutils/libdwfl.h>
+#endif //USE_DWARF
+
 #include "num/multind.h"
 
 #include "misc/io.h"
@@ -202,6 +206,71 @@ void debug_backtrace(size_t n)
 #endif
 }
 
+#ifdef USE_DWARF
+
+enum {backtrace_size = 50};
+
+void debug_good_backtrace(int skip)
+{
+#if !defined(__CYGWIN__) && !defined(_WIN32)
+	char* debuginfo_path = NULL;
+
+	Dwfl_Callbacks callbacks = {
+		.find_elf = dwfl_linux_proc_find_elf,
+		.find_debuginfo = dwfl_standard_find_debuginfo,
+		.debuginfo_path = &debuginfo_path,
+	};
+
+	Dwfl* dwfl = dwfl_begin(&callbacks);
+	if (NULL == dwfl) {
+
+		debug_printf(DP_WARN, "Backtrace failed\n.");
+		return;
+	}
+
+	int r = dwfl_linux_proc_report(dwfl, getpid());
+	if (0 != r) {
+
+		debug_printf(DP_WARN, "Backtrace failed\n.");
+		return;
+	}
+	r = dwfl_report_end(dwfl, NULL, NULL);
+	if (0 != r) {
+
+		debug_printf(DP_WARN, "Backtrace failed\n.");
+		return;
+	}
+
+	void* stack[backtrace_size + 1];
+	int stack_size = backtrace(stack, backtrace_size + 1);
+
+	for (int i = skip; i < stack_size; ++i) {
+
+
+		Dwarf_Addr addr = (Dwarf_Addr) stack[i];
+		Dwfl_Module* module = dwfl_addrmodule(dwfl, addr);
+		const char* name = dwfl_module_addrname(module, addr);
+
+		Dwfl_Line* dwfl_line;
+		int line = -1;
+		const char* file = NULL;
+		if ((dwfl_line = dwfl_module_getsrc(module, addr))) {
+
+			Dwarf_Addr addr2;
+			file = dwfl_lineinfo(dwfl_line, &addr2, &line, NULL, NULL, NULL);
+		}
+		fprintf(stderr, "%d: %p %s", i - skip, stack[i], name);
+		if (file)
+			fprintf(stderr, " at %s:%d", file, line);
+		fprintf(stderr, "\n");
+
+	}
+	dwfl_end(dwfl);
+#else
+	debug_printf(DP_WARN, "no backtrace on cygwin.");
+#endif
+}
+#endif // USE_DWARF
 
 
 void debug_trace(const char* fmt, ...)

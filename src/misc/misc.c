@@ -111,6 +111,10 @@ void error(const char* fmt, ...)
 
 	va_end(ap);
 
+#ifdef USE_DWARF
+	debug_good_backtrace(1); // Skip 1, to not include debug_good_backtrace()
+#endif
+
 	if (error_jumper.initialized)
 		longjmp(error_jumper.buf, 1);
 

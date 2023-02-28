@@ -51,6 +51,10 @@ extern void debug_vprintf_trace(const char* func_name,
 
 extern void debug_backtrace(size_t n);
 
+#ifdef USE_DWARF
+extern void debug_good_backtrace(int skip);
+#endif // USE_DWARF
+
 extern void debug_trace(const char* fmt, ...);
 
 #define TRACE()	debug_trace("%s:%d %s\n", __FILE__, __LINE__, __func__)

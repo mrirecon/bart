@@ -113,6 +113,18 @@ Build_Tensorflow:
       - ./lib/
     expire_in: 45 minutes
 
+Build_Debug_Dwarf:
+  image: debian:stable
+  stage: build
+  script:
+    - apt-get install -y libdw-dev libunwind-dev libbz2-dev liblzma-dev
+    - DEBUG_DWARF=1 make
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+    expire_in: 45 minutes
+
 
 Unit_Test:
   image: debian:bookworm
