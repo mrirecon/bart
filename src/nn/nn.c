@@ -29,6 +29,7 @@
 #include "nlops/chain.h"
 #include "nlops/cast.h"
 #include "nlops/const.h"
+#include "nlops/someops.h"
 #include "nlops/checkpointing.h"
 
 #include "nn.h"
@@ -756,6 +757,24 @@ nn_t nn_assign_gpu_F(nn_t op, int device)
 	nn_free(op);
 
 	return result;
+}
+
+nn_t nn_dump_input_F(nn_t op, int i, const char* iname, const char* fname, bool frw, bool der, bool adj)
+{
+	i = nn_get_in_arg_index(op, i, iname);
+	auto dom = nlop_generic_domain(op->nlop, i);
+	auto nlop_dump = nlop_dump_create(dom->N, dom->dims, fname, frw, der, adj);
+	((struct nn_s*)op)->nlop = nlop_prepend_FF(nlop_dump, op->nlop, i);
+	return op;
+}
+
+nn_t nn_dump_out_F(nn_t op, int o, const char* oname, const char* fname, bool frw, bool der, bool adj)
+{
+	o = nn_get_out_arg_index(op, o, oname);
+	auto dom = nlop_generic_codomain(op->nlop, o);
+	auto nlop_dump = nlop_dump_create(dom->N, dom->dims, fname, frw, der, adj);
+	((struct nn_s*)op)->nlop = nlop_append_FF(op->nlop, o, nlop_dump);
+	return op;
 }
 
 void nn_export_graph(const char* filename, nn_t op)

@@ -131,4 +131,7 @@ extern nn_t nn_assign_gpu_F(nn_t op, int device);
 extern void nn_debug(enum debug_levels dl, nn_t x);
 extern void nn_export_graph(const char* filename, nn_t op);
 
+extern nn_t nn_dump_input_F(nn_t op, int i, const char* iname, const char* fname, _Bool frw, _Bool der, _Bool adj);
+extern nn_t nn_dump_out_F(nn_t op, int o, const char* oname, const char* fname, _Bool frw, _Bool der, _Bool adj);
+
 #endif
