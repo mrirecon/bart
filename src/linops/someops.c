@@ -1,5 +1,6 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2015-2021. Uecker Lab. University Medical Center Göttingen
+ * Copyright 2021-2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -930,6 +931,18 @@ static void transpose_forward(const linop_data_t* _data, complex float* dst, con
 	md_transpose(data->N, data->a, data->b, odims, dst, data->dims, src, CFL_SIZE);
 }
 
+static void transpose_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(transpose_op_s, _data);
+
+	long odims[data->N];
+	md_copy_dims(data->N, odims, data->dims);
+	odims[data->a] = data->dims[data->b];
+	odims[data->b] = data->dims[data->a];
+
+	md_transpose(data->N, data->a, data->b, data->dims, dst, odims, src, CFL_SIZE);
+}
+
 static void transpose_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(transpose_op_s, _data);
@@ -969,7 +982,8 @@ struct linop_s* linop_transpose_create(int N, int a, int b, const long dims[N])
 	odims[a] = idims[b];
 	odims[b] = idims[a];
 
-	return linop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)), transpose_forward, transpose_forward, transpose_normal, NULL, transpose_free);
+	return linop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)),
+			transpose_forward, transpose_adjoint, transpose_normal, NULL, transpose_free);
 }
 
 

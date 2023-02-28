@@ -1,9 +1,6 @@
-/* Copyright 2018-2019. Martin Uecker.
+/* Copyright 2018-2023. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2018-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <complex.h>
@@ -95,7 +92,7 @@ static bool test_linop_stack(void)
 
 	linop_forward(stack, N, dims2, out, N, dims2, in);
 
-	n = powf(md_znorm(N, dims2, out), 2);
+	n = powf(md_znorm(N, dims2, out), 2.);
 	n2 = (powf(val1a, 2.) + powf(val1b, 2.)) * md_calc_size(N, dims);
 	err = fabs(n - n2);
 
@@ -107,7 +104,7 @@ static bool test_linop_stack(void)
 
 	linop_adjoint(stack, N, dims2, out, N, dims2, in);
 
-	n = powf(md_znorm(N, dims2, out), 2);
+	n = powf(md_znorm(N, dims2, out), 2.);
 	n2 = (powf(val1a, 2.) + powf(val1b, 2.)) * md_calc_size(N, dims);
 	err = fabs(n - n2);
 
@@ -166,8 +163,8 @@ UT_REGISTER_TEST(test_linop_null);
 static bool test_linop_extract(void)
 {
 	enum { N = 4 };
-	long dims[N] = { 8, 4, 6, 4};
-	long dims2[N] = { 8, 4, 2, 4};
+	long dims[N] = { 8, 4, 6, 4 };
+	long dims2[N] = { 8, 4, 2, 4 };
 
 	complex float val1a = 2.;
 
@@ -203,7 +200,7 @@ static bool test_linop_extract(void)
 
 	linop_adjoint(diaga1, N, dims, in, N, dims2, out);
 
-	n = powf(md_znorm(N, dims, in), 2);
+	n = powf(md_znorm(N, dims, in), 2.);
 	n2 = powf(val1a, 2.) * md_calc_size(N, dims2);
 	err = fabs(n - n2);
 
@@ -216,7 +213,7 @@ static bool test_linop_extract(void)
 
 	linop_normal(diaga1, N, dims, in, in);
 
-	n = powf(md_znorm(N, dims, in), 2);
+	n = powf(md_znorm(N, dims, in), 2.);
 	n2 = powf(val1a, 4.) * md_calc_size(N, dims2);
 	err = fabs(n - n2);
 
@@ -237,7 +234,7 @@ UT_REGISTER_TEST(test_linop_extract);
 static bool test_linop_permute(void)
 {
 	enum { N = 4 };
-	long idims[N] = { 8, 4, 6, 3};
+	long idims[N] = { 8, 4, 6, 3 };
 	int perm[N] = { 0, 3, 2, 1 };
 	long odims[N];
 	md_permute_dims(N, perm, odims, idims);
@@ -255,11 +252,11 @@ static bool test_linop_permute(void)
 
 	linop_forward(lop, N, odims, dst2, N, idims, src);
 
-	bool ok = (0 == md_zrmse(N, odims, dst1, dst2));
+	bool ok = (0. == md_zrmse(N, odims, dst1, dst2));
 
 	linop_adjoint(lop, N, idims, src2, N, odims, dst2);
 
-	ok = ok && (0 == md_zrmse(N, idims, src, src2));
+	ok = ok && (0. == md_zrmse(N, idims, src, src2));
 
 	ok = ok && (UT_TOL > linop_test_adjoint(lop));
 
@@ -275,4 +272,45 @@ static bool test_linop_permute(void)
 
 
 UT_REGISTER_TEST(test_linop_permute);
+
+
+static bool test_linop_transpose(void)
+{
+	enum { N = 5 };
+	long idims[N] = { 8, 4, 6, 3, 7 };
+	long odims[N] = { 8, 3, 6, 4, 7 };
+
+	complex float* src = md_alloc(N, idims, CFL_SIZE);
+	complex float* src2 = md_alloc(N, idims, CFL_SIZE);
+	complex float* dst1 = md_alloc(N, odims, CFL_SIZE);
+	complex float* dst2 = md_alloc(N, odims, CFL_SIZE);
+
+	md_gaussian_rand(N, idims, src);
+
+	md_transpose(N, 1, 3, odims, dst1, idims, src, CFL_SIZE);
+
+	auto lop = linop_transpose_create(N, 1, 3, idims);
+
+	linop_forward(lop, N, odims, dst2, N, idims, src);
+
+	bool ok = (0. == md_zrmse(N, odims, dst1, dst2));
+
+	linop_adjoint(lop, N, idims, src2, N, odims, dst2);
+
+	ok = ok && (0. == md_zrmse(N, idims, src, src2));
+
+	ok = ok && (UT_TOL > linop_test_adjoint(lop));
+
+	md_free(dst1);
+	md_free(dst2);
+	md_free(src);
+	md_free(src2);
+
+	linop_free(lop);
+
+	UT_ASSERT(ok);
+}
+
+
+UT_REGISTER_TEST(test_linop_transpose);
 
