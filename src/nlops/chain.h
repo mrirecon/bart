@@ -30,3 +30,6 @@ extern struct nlop_s* nlop_shift_output(const struct nlop_s* x, int new_index, i
 extern struct nlop_s* nlop_shift_output_F(const struct nlop_s* x, int new_index, int old_index);
 
 extern struct nlop_s* nlop_stack_multiple_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO], _Bool container, _Bool multigpu);
+extern struct nlop_s* nlop_stack_inputs_generic_F(const struct nlop_s* x, int NI, int _index[__VLA(NI)], int stack_dim);
+extern struct nlop_s* nlop_stack_outputs_generic_F(const struct nlop_s* x, int NO, int _index[__VLA(NO)], int stack_dim);
+

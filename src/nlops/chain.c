@@ -570,6 +570,13 @@ static struct nlop_s* nlop_stack_inputs_generic(const struct nlop_s* x, int NI, 
 	return nlop_shift_input_F(result, nindex, II - NI);
 }
 
+struct nlop_s* nlop_stack_inputs_generic_F(const struct nlop_s* x, int NI, int _index[NI], int stack_dim)
+{
+	auto ret = nlop_stack_inputs_generic(x, NI, _index, stack_dim);
+	nlop_free(x);
+	return ret;
+}
+
 
 struct nlop_s* nlop_stack_inputs(const struct nlop_s* x, int a, int b, int stack_dim)
 {
@@ -625,6 +632,13 @@ static struct nlop_s* nlop_stack_outputs_generic(const struct nlop_s* x, int NO,
 	}
 
 	return nlop_shift_output_F(result, nindex, 0);
+}
+
+struct nlop_s* nlop_stack_outputs_generic_F(const struct nlop_s* x, int NO, int _index[NO], int stack_dim)
+{
+	auto ret = nlop_stack_outputs_generic(x, NO, _index, stack_dim);
+	nlop_free(x);
+	return ret;
 }
 
 struct nlop_s* nlop_stack_outputs(const struct nlop_s* x, int a, int b, int stack_dim)
