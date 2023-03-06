@@ -55,7 +55,7 @@ int main_phantom(int argc, char* argv[argc])
 	dims[1] = 128;
 	dims[2] = 1;
 
-	int rinit = -1;
+	unsigned long long randseed = 0;
 	int N = -1;
 
 	float rotation_angle = 0.;
@@ -98,7 +98,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_INT('g', &geo, "n=1,2,3", "select geometry for object phantom"),
 		OPT_SET('3', &d3, "3D"),
 		OPT_SET('b', &basis, "basis functions for geometry"),
-		OPT_INT('r', &rinit, "seed", "random seed initialization"),
+		OPT_ULLONG('r', &randseed, "", "random seed initialization. '0' uses the default seed."),
 		OPTL_FLOAT(0, "rotation-angle", &rotation_angle, "[deg]", "Angle of rotation"),
 		OPTL_INT(0, "rotation-steps", &rotation_steps, "n", "Number of rotation steps"),
 		OPTL_SUBOPT(0, "coil", "...", "configure type of coil", ARRAY_SIZE(coil_opts), coil_opts),
@@ -107,9 +107,7 @@ int main_phantom(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	if (-1 != rinit)
-		num_rand_init((unsigned int)rinit);
+	num_rand_init(randseed);
 
 	if (-1 != N) {
 

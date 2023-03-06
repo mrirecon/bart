@@ -72,7 +72,7 @@ int main_poisson(int argc, char* argv[argc])
 	bool vd_def = false;
 	int T = 1;
 	int rnd = 0;
-	unsigned int randseed = 11235;
+	unsigned long long randseed = 11235;
 	bool msk = true;
 	int points = -1;
 	float mindist = 1. / 1.275;
@@ -94,7 +94,7 @@ int main_poisson(int argc, char* argv[argc])
 		OPT_INT('T', &T, "", "()"),
 		OPT_CLEAR('m', &msk, "()"),
 		OPT_INT('R', &points, "", "()"),
-		OPT_UINT('s', &randseed, "seed", "random seed"),
+		OPT_ULLONG('s', &randseed, "", "random seed initialization. '0' uses the default seed."),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

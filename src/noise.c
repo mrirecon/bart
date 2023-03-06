@@ -45,11 +45,11 @@ int main_noise(int argc, char* argv[argc])
 	float var = 1.;
 	float spike = 1.;
 	bool rvc = false;
-	int rinit = -1;
+	unsigned long long randseed = 0;
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('s', &rinit, "", "random seed initialization"),
+		OPT_ULLONG('s', &randseed, "", "random seed initialization. '0' uses the default seed."),
 		OPT_FLOAT('S', &spike, "", "()"),
 		OPT_SET('r', &rvc, "real-valued input"),
 		OPT_FLOAT('n', &var, "variance", "DEFAULT: 1.0"),
@@ -58,9 +58,7 @@ int main_noise(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	if (-1 != rinit)
-		num_rand_init((unsigned int)rinit);
+	num_rand_init(randseed);
 
 
 	int N = DIMS;
