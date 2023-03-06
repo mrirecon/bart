@@ -269,6 +269,28 @@ int parse_long(long res[1], const char* str)
 	return 0;
 }
 
+int parse_longlong(long long res[1], const char* str)
+{
+	char* tail;
+	long long l = strtoll(str, &tail, 10); // allow hex input
+
+	if ('\0' != tail[0])
+		return -1;
+	res[0] = l;
+	return 0;
+}
+
+int parse_ulonglong(unsigned long long res[1], const char* str)
+{
+	char* tail;
+	unsigned long long l = strtoull(str, &tail, 0); // allow hex input
+
+	if ('\0' != tail[0])
+		return -1;
+	res[0] = l;
+	return 0;
+}
+
 
 int parse_int(int res[1], const char* str)
 {

@@ -54,6 +54,7 @@ opt_conv_f opt_clear;
 opt_conv_f opt_uint;
 opt_conv_f opt_int;
 opt_conv_f opt_ulong;
+opt_conv_f opt_ullong;
 opt_conv_f opt_long;
 opt_conv_f opt_float;
 opt_conv_f opt_cfl;
@@ -90,6 +91,7 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 	case OPT_PINT:
 	case OPT_UINT:
 	case OPT_ULONG:
+	case OPT_ULLONG:
 	case OPT_LONG:
 		return "d";
 
@@ -143,6 +145,7 @@ static const char* opt_type_str(enum OPT_TYPE type)
 	OPT_ARG_TYPE_CASE(OPT_UINT)
 	OPT_ARG_TYPE_CASE(OPT_PINT)
 	OPT_ARG_TYPE_CASE(OPT_ULONG)
+	OPT_ARG_TYPE_CASE(OPT_ULLONG)
 	OPT_ARG_TYPE_CASE(OPT_LONG)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT)
 	OPT_ARG_TYPE_CASE(OPT_CFL)
@@ -183,6 +186,8 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 		return opt_uint(ptr, c, optarg);
 	case OPT_ULONG:
 		return opt_ulong(ptr, c, optarg);
+	case OPT_ULLONG:
+		return opt_ullong(ptr, c, optarg);
 	case OPT_LONG:
 		return opt_long(ptr, c, optarg);
 	case OPT_FLOAT:
@@ -650,6 +655,18 @@ bool opt_ulong(void* ptr, char /*c*/, const char* optarg)
 		error("Argument \"%s\" to opt_ulong is not unsigned!\n", optarg);
 
 	*(unsigned long*)ptr = (unsigned long) val;
+	return false;
+}
+
+
+bool opt_ullong(void* ptr, char /*c*/, const char* optarg)
+{
+	unsigned long long val;
+
+	if (0 != parse_ulonglong(&val, optarg))
+		error("Could not parse argument to opt_ullong: %s!\n", optarg);
+
+	*(unsigned long long*)ptr = val;
 	return false;
 }
 

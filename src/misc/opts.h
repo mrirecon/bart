@@ -14,7 +14,7 @@ enum OPT_TYPE {
 
 	OPT_SPECIAL,
 	OPT_SET, OPT_CLEAR,
-	OPT_INT, OPT_UINT, OPT_LONG, OPT_ULONG,
+	OPT_INT, OPT_UINT, OPT_LONG, OPT_ULONG, OPT_ULLONG,
 	OPT_PINT,
 	OPT_FLOAT,
 	OPT_CFL,
@@ -88,6 +88,7 @@ typedef float opt_fvec4_t[4];
 #define OPT_UINT(c, ptr, argname, descr)	OPT_ARG(c, OPT_UINT, unsigned int, ptr, argname, descr)
 #define OPT_INT(c, ptr, argname, descr)		OPT_ARG(c, OPT_INT, int, ptr, argname, descr)
 #define OPT_ULONG(c, ptr, argname, descr)	OPT_ARG(c, OPT_ULONG, unsigned long, ptr, argname, descr)
+#define OPT_ULLONG(c, ptr, argname, descr)	OPT_ARG(c, OPT_ULLONG, unsigned long long, ptr, argname, descr)
 #define OPT_LONG(c, ptr, argname, descr)	OPT_ARG(c, OPT_LONG, long, ptr, argname, descr)
 #define OPT_FLOAT(c, ptr, argname, descr)	OPT_ARG(c, OPT_FLOAT, float, ptr, argname, descr)
 #define OPT_VEC2(c, ptr, argname, descr)	OPT_ARG(c, OPT_VEC2, opt_vec2_t, ptr, argname, descr)
@@ -115,6 +116,7 @@ typedef float opt_fvec4_t[4];
 #define OPTL_PINT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_INT, int, ptr, argname, descr)
 #define OPTL_INT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_INT, int, ptr, argname, descr)
 #define OPTL_ULONG(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_ULONG, unsigned long, ptr, argname, descr)
+#define OPTL_ULLONG(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_ULLONG, unsigned long long, ptr, argname, descr)
 #define OPTL_LONG(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_LONG, long, ptr, argname, descr)
 #define OPTL_FLOAT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_FLOAT, float, ptr, argname, descr)
 #define OPTL_VEC2(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_VEC2, opt_vec2_t, ptr, argname, descr)

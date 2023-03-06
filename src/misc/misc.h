@@ -60,6 +60,8 @@ extern void warn_nonnull_ptr(void*);
 
 extern int parse_cfl(_Complex float res[1], const char* str);
 extern int parse_long(long res[1], const char* str);
+extern int parse_longlong(long long res[1], const char* str);
+extern int parse_ulonglong(unsigned long long res[1], const char* str);
 extern int parse_int(int res[1], const char* str);
 #ifndef __cplusplus
 extern noreturn void error(const char* str, ...);
