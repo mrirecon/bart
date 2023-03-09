@@ -30,6 +30,9 @@ extern struct linop_s* linop_extract_create(unsigned int N, const long pos[N], c
 extern struct linop_s* linop_permute_create(unsigned int N, const int order[__VLA(N)], const long idims[N]);
 extern struct linop_s* linop_transpose_create(int N, int a, int b, const long dims[N]);
 
+extern struct linop_s* linop_slice_create(int N, unsigned long flags, const long pos[__VLA(N)], const long dims[__VLA(N)]);
+extern struct linop_s* linop_slice_one_create(int N, int idx, long pos, const long dims[__VLA(N)]);
+
 extern struct linop_s* linop_add_strided_create(int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], const long istrs[__VLA(N)],
 					        int OO, const long odims[__VLA(OO)], int II, const long idims[__VLA(II)]);
 extern struct linop_s* linop_hankelization_create(int N, const long dims[__VLA(N)], int dim, int window_dim, int window_size);

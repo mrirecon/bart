@@ -839,6 +839,27 @@ extern struct linop_s* linop_extract_create(unsigned int N, const long pos[N], c
 	return linop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), extract_forward, extract_adjoint, NULL, NULL, extract_free);
 }
 
+extern struct linop_s* linop_slice_create(int N, unsigned long flags, const long pos[N], const long dims[N])
+{
+	long odim[N];
+	md_select_dims(N, ~flags, odim, dims);
+
+	return linop_extract_create(N, pos, odim, dims);
+}
+
+extern struct linop_s* linop_slice_one_create(int N, int idx, long pos, const long dims[N])
+{
+	long _pos[N];
+	md_set_dims(N, _pos, 0);
+
+	_pos[idx] = pos;
+
+	assert(0 <= idx);
+	assert(idx < N);
+
+	return linop_slice_create(N, MD_BIT(idx), _pos, dims);
+}
+
 struct linop_s* linop_reshape_create(unsigned int A, const long out_dims[A], int B, const long in_dims[B])
 {
 	PTR_ALLOC(struct linop_s, c);
