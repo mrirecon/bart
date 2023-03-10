@@ -1,13 +1,13 @@
-/* Copyright 2018. Martin Uecker.
+/* Copyright 2018-2023. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <math.h>
-//sqrt
+#include <assert.h>
+#include <stdlib.h>
+
+#include "misc/nested.h"
 
 // #include "iter/vec_iter.h"
 
@@ -189,6 +189,7 @@ struct ode_matrix_s {
 
 	int N;
 	const float* matrix;
+	const float* off;
 };
 
 static void ode_matrix_fun(void* _data, float* x, float t, const float* in)
@@ -200,7 +201,7 @@ static void ode_matrix_fun(void* _data, float* x, float t, const float* in)
 
 	for (int i = 0; i < N; i++) {
 
-		x[i] = 0.;
+		x[i] = data->off ? data->off[i] : 0.;
 
 		for (int j = 0; j < N; j++)
 			x[i] += (*(const float(*)[N][N])data->matrix)[i][j] * in[j];
@@ -209,7 +210,7 @@ static void ode_matrix_fun(void* _data, float* x, float t, const float* in)
 
 void ode_matrix_interval(float h, float tol, int N, float x[N], float st, float end, const float matrix[N][N])
 {
-	struct ode_matrix_s data = { N, &matrix[0][0] };
+	struct ode_matrix_s data = { N, &matrix[0][0], (void*)0 };
 	ode_interval(h, tol, N, x, st, end, &data, ode_matrix_fun);
 }
 
@@ -270,8 +271,175 @@ void ode_direct_sa(float h, float tol, int N, int P, float x[P + 1][N],
 }
 
 
+// the adjoint method for sensitivity analysis
+// void (*s)(void* data, float* out, float t)
+// void M
+
+void ode_adjoint_sa(float h, float tol,
+	int N, const float t[N + 1],
+	int M, float x[N + 1][M], float z[N + 1][M],
+	const float x0[M], void* data,
+	void (*sys)(void* data, float dst[M], float t, const float in[M]),
+	void (*sysT)(void* data, float dst[M], float t, const float in[M]),
+	void (*cost)(void* data, float dst[M], float t))
+{
+	// forward solution
+
+	for (int m = 0; m < M; m++)
+		x[0][m] = x0[m];
+
+	for (int i = 0; i < N; i++) {
+
+		for (int m = 0; m < M; m++)
+			x[i + 1][m] = x[i][m];
+
+		ode_interval(h, tol, M, x[i + 1], t[i], t[i + 1], data, sys);
+	}
+
+	// adjoint state
+
+	for (int m = 0; m < M; m++)
+		z[N][m] = 0.;
+
+	for (int i = N; 0 < i; i--) {
+
+		for (int m = 0; m < M; m++)
+			z[i - 1][m] = z[i][m];
+
+		// invert time -> ned. sign on RHS
+
+		NESTED(void, asa_eval, (void* d, float out[M], float t, const float yn[M]))
+		{
+			(void)d;
+
+			(*sysT)(data, out, -t, yn);
+
+			float off[M];
+			(*cost)(data, off, -t);
+
+			for (int m = 0; m < M; m++)
+				out[m] += off[m];
+		};
+
+		ode_interval(h, tol, M, z[i - 1], -t[i], -t[i - 1], NULL, asa_eval);
+	}
+}
 
 
+void ode_matrix_adjoint_sa(float h, float tol,
+	int N, const float t[N + 1],
+	int M, float x[N + 1][M], float z[N + 1][M],
+	const float x0[M], const float sys[N][M][M],
+	const float cost[N][M])
+{
+	// forward solution
+
+	for (int m = 0; m < M; m++)
+		x[0][m] = x0[m];
+
+	for (int i = 0; i < N; i++) {
+
+		for (int m = 0; m < M; m++)
+			x[i + 1][m] = x[i][m];
+
+		ode_matrix_interval(h, tol, M, x[i + 1], t[i], t[i + 1], sys[i]);
+	}
+
+	// adjoint state
+
+	for (int m = 0; m < M; m++)
+		z[N][m] = 0.;
+
+	for (int i = N; 0 < i; i--) {
+
+		for (int m = 0; m < M; m++)
+			z[i - 1][m] = z[i][m];
+
+		float sysmT[M][M];
+
+		// invert time -> ned. sign on RHS
+
+		for (int l = 0; l < M; l++)
+			for (int k = 0; k < M; k++)
+				sysmT[l][k] = sys[i - 1][k][l];
+
+		struct ode_matrix_s data = { M, &sysmT[0][0], &cost[i - 1][0] };
+		ode_interval(h, tol, M, z[i - 1], -t[i], -t[i - 1], &data, ode_matrix_fun);
+	}
+}
+
+static float adj_eval(int M, const float x[M], const float z[M], const float Adp[M][M])
+{
+	float ret = 0.;
+
+	for (int l = 0; l < M; l++)
+		for (int k = 0; k < M; k++)
+			ret += z[l] * Adp[l][k] * x[k];
+
+	return ret;
+}
+
+void ode_adjoint_sa_eval(int N, const float t[N + 1], int M,
+		int P, float dj[P],
+		const float x[N + 1][M], const float z[N + 1][M],
+		const float Adp[P][M][M])
+{
+	for (int p = 0; p < P; p++)
+		dj[p] = 0.;
+
+	float last[P];
+
+	for (int p = 0; p < P; p++)
+		last[p] = 0.;
+
+	for (int i = 0; i < N; i++) {
+
+		// trapezoidal
+
+		float w = t[i + 1] - t[i];
+
+		for (int p = 0; p < P; p++) {
+
+			float now = 0.;
+
+			for (int l = 0; l < M; l++)
+				for (int k = 0; k < M; k++)
+					now += z[i][l] * Adp[p][l][k] * x[i][k];
+
+			dj[p] += w * (now + last[p]) / 2.;
+			last[p] = now;
+		}
+	}
+}
 
 
+void ode_adjoint_sa_eq_eval(int N, int M, int P, float dj[P],
+		const float x[N + 1][M], const float z[N + 1][M],
+		const float Adp[P][M][M])
+{
+	assert(10 <= N);
+
+	for (int p = 0; p < P; p++)
+		dj[p] = 0.;
+
+	for (int p = 0; p < P; p++) {
+
+		// extended Simpson's rule
+		// https://mathworld.wolfram.com/Newton-CotesFormulas.html
+
+		int coeff[4] = { 17, 59, 43, 49 };
+
+		for (int i = 0; i < 4; i++)
+			dj[p] += coeff[i] * (adj_eval(M, z[i], x[i], Adp[p])
+					+ adj_eval(M, z[N - i], x[N - i], Adp[p]));
+
+		dj[p] /= 48;
+
+		for (int i = 4; i <= N - 4; i++)
+			dj[p] += adj_eval(M, z[i], x[i], Adp[p]);
+	}
+
+	for (int p = 0; p < P; p++)
+		dj[p] /= N;
+}
 
