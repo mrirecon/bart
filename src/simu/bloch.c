@@ -14,7 +14,7 @@
 
 
 // Rotations in RIGHT-handed coordinate system with CLOCKWISE rotation for angle > 0
-// Keep it consitent with clockwise rotation of Bloch equations
+// Keep it consistent with clockwise rotation of Bloch equations
 //       z
 //       |
 //       |
