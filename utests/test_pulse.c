@@ -1,4 +1,4 @@
-/* Copyright 2022. TU Graz. Insitute of Biomedical Imaging.
+/* Copyright 2022-2023. TU Graz. Insitute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -22,10 +22,7 @@ static bool test_sinc_integral(void)
 
         sinc_pulse_init(&pulse, 0., 0.001, 180., 0., 4., 0.46);
 
-        if ((M_PI - sinc_integral(&pulse)) > 10E-7)
-                return 0;
-        else
-                return 1;
+        return ((M_PI - sinc_integral(&pulse)) < 1E-6);
 }
 
 UT_REGISTER_TEST(test_sinc_integral);
@@ -38,9 +35,9 @@ static bool test_sinc_integral2(void)
         sinc_pulse_init(&pulse, 0., 0.001, 180., 0., 4., 0.46);
 
 
-        // Estimate integral with trapezoidal rule
+        // Estimate integral with trapezoidal rule, FIXME
 
-        float dt = 10E-8;
+        float dt = 1E-7;
 
         float integral = 0.5 * pulse_sinc(&pulse, pulse.rf_start) * dt;
 
@@ -59,10 +56,7 @@ static bool test_sinc_integral2(void)
 
         // debug_printf(DP_WARN, "Estimated Integral: %f,\t Error: %f\n", integral, error);
 
-        if (error > 10E-5)
-                return 0;
-        else
-        return 1;
+        return (error < 1E-4);
 }
 
 UT_REGISTER_TEST(test_sinc_integral2);
@@ -89,11 +83,11 @@ static bool test_rf_pulse_ode(void)
 	float amin = 0.;
 	float amax = 180.;
 
-	for (int i = 0; i < dim[READ_DIM]; i++ )
-		for (int j = 0; j < dim[PHS1_DIM]; j++ ) {
+	for (int i = 0; i < dim[READ_DIM]; i++) {
+		for (int j = 0; j < dim[PHS1_DIM]; j++) {
 
-			float trf = (tmin + (float)i/((float)dim[READ_DIM] - 1.) * (tmax - tmin));
-			float angle = (amin + (float)j/((float)dim[PHS1_DIM] - 1.) * (amax - amin));
+			float trf = (tmin + i / (dim[READ_DIM] - 1.) * (tmax - tmin));
+			float angle = (amin + j / (dim[PHS1_DIM] - 1.) * (amax - amin));
 
                         // Define sequence characteristics
 			struct sim_data data;
@@ -124,42 +118,33 @@ static bool test_rf_pulse_ode(void)
 
 			float xp[4][3] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
 
-			float h = 10E-5;
-			float tol = 10E-6;
+			float h = 1E-4;
+			float tol = 1E-5;
 
                         // Run pulse
 			rf_pulse(&data, h, tol, N, P, xp, NULL);
 
+			if (1.E-3 < fabs(xp[0][0]))
+				return false;
 
                         // Compare result to nominal FA
-			float sim_angle = 0.;
 
-                        // FA <= 90°
-			if (xp[0][2] >= 0) {
+			float sim_angle = atan2f(xp[0][1], xp[0][2]) / M_PI * 180.;
 
-				if (data.voxel.r1 != 0 && data.voxel.r2 != 0)   // relaxation case
-					sim_angle = asinf(xp[0][1] / data.voxel.m0) / M_PI * 180.;
-				else
-					sim_angle = asinf(xp[0][1] / sqrtf(xp[0][0]*xp[0][0]+xp[0][1]*xp[0][1]+xp[0][2]*xp[0][2])) / M_PI * 180.;
-			}
-                        // FA > 90°
-			else {
-				if (data.voxel.r1 != 0 && data.voxel.r2 != 0)   // relaxation case
-					sim_angle = acosf(fabs(xp[0][1]) / data.voxel.m0) / M_PI * 180. + 90.;
-				else
-					sim_angle = acosf(fabs(xp[0][1]) / sqrtf(xp[0][0]*xp[0][0]+xp[0][1]*xp[0][1]+xp[0][2]*xp[0][2])) / M_PI * 180. + 90.;
-			}
+			if (sim_angle < 0.)
+				sim_angle += 360.;
 
-			float err = fabs(data.pulse.flipangle - sim_angle);
+			float delta = 180.f - fabsf(fabsf(sim_angle - data.pulse.flipangle) - 180.f);
 
-			if (err > 10E-4) {
+			if (1E-3 < fabs(delta)) {
 
 				debug_printf(DP_WARN, "Error for test_rf_pulse_ode\n see -> utests/test_pulse.c\n");
-				return 0;
+				return false;
 			}
 		}
+	}
 
-	return 1;
+	return true;
 }
 
 UT_REGISTER_TEST(test_rf_pulse_ode);
@@ -200,7 +185,7 @@ static bool test_hypsec_rf_pulse_ode(void)
 
         float xp[P][N] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
 
-        float h = 10E-5;
+        float h = 1E-4;
         float tol = 0.005; // >99.5% inversion efficiency
 
         rf_pulse(&data, h, tol, N, P, xp, NULL);
@@ -209,7 +194,8 @@ static bool test_hypsec_rf_pulse_ode(void)
 
         UT_ASSERT(fabs(xp[0][2] + 1.) < tol);
 
-	return 1;
+	return true;
 }
 
 UT_REGISTER_TEST(test_hypsec_rf_pulse_ode);
+
