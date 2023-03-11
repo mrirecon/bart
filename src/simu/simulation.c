@@ -59,22 +59,18 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "Pulse-Parameter:\n");
         debug_printf(DP_INFO, "\tRF-Start:%f\n", data->pulse.rf_start);
         debug_printf(DP_INFO, "\tRF-End:%f\n", data->pulse.rf_end);
-        debug_printf(DP_INFO, "\tFlipangle:%f\n", data->pulse.flipangle);
+        debug_printf(DP_INFO, "\tFlipangle:%f\n", CAST_UP(&data->pulse.sinc)->flipangle);
         debug_printf(DP_INFO, "\tPhase:%f\n", data->pulse.phase);
-        debug_printf(DP_INFO, "\tBWTP:%f\n", data->pulse.bwtp);
-        debug_printf(DP_INFO, "\tNL:%f\n", data->pulse.nl);
-        debug_printf(DP_INFO, "\tNR:%f\n", data->pulse.nr);
-        debug_printf(DP_INFO, "\tN:%f\n", data->pulse.n);
-        debug_printf(DP_INFO, "\tt0:%f\n", data->pulse.t0);
-        debug_printf(DP_INFO, "\tAlpha:%f\n", data->pulse.alpha);
-        debug_printf(DP_INFO, "\tA:%f\n\n", data->pulse.A);
+        debug_printf(DP_INFO, "\tBWTP:%f\n", data->pulse.sinc.bwtp);
+        debug_printf(DP_INFO, "\tAlpha:%f\n", data->pulse.sinc.alpha);
+        debug_printf(DP_INFO, "\tA:%f\n\n", data->pulse.sinc.A);
 
         debug_printf(DP_INFO, "Inversion Pulse-Parameter:\n");
         debug_printf(DP_INFO, "\tA0:%f\n", data->pulse.hs.a0);
         debug_printf(DP_INFO, "\tBeta:%f\n", data->pulse.hs.beta);
         debug_printf(DP_INFO, "\tMu:%f\n", data->pulse.hs.mu);
-        debug_printf(DP_INFO, "\tDuration:%f\n", data->pulse.hs.duration);
-        debug_printf(DP_INFO, "\tON?:%d\n", data->pulse.hs.on);
+        debug_printf(DP_INFO, "\tDuration:%f\n", CAST_UP(&data->pulse.hs)->duration);
+        debug_printf(DP_INFO, "\tON?:%d\n", data->pulse.inversion_on);
 
         debug_printf(DP_INFO, "Other Parameter:\n");
         debug_printf(DP_INFO, "\tODE Tolerance:%f\n", data->other.ode_tol);
@@ -143,13 +139,38 @@ const struct simdata_other simdata_other_defaults = {
 };
 
 
+
+/* pulses */
+
+const struct simdata_pulse simdata_pulse_defaults = {
+
+	.rf_start = 0.,
+	.rf_end = 0.001,
+
+	.sinc.INTERFACE.flipangle = 1.,
+	.sinc.INTERFACE.duration = 0.001,
+	//.sinc.pulse.phase = 0.,
+	.sinc.alpha = 0.46,
+	.sinc.A = 1.,
+	.sinc.bwtp = 4.,
+};
+
+void pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle /*[deg]*/, float phase, float bwtp, float alpha)
+{
+	pulse->rf_start = rf_start;	// [s]
+	pulse->rf_end = rf_end;		// [s]
+
+	pulse_sinc_init(&pulse->sinc, rf_end - rf_start, angle, phase, bwtp, alpha);
+}
+
+
 /* ------------ Bloch Equations -------------- */
 
 static void set_gradients(struct sim_data* data, float t)
 {
 	if (data->seq.pulse_applied) {
 
-                if (data->pulse.hs.on) {
+                if (data->pulse.inversion_on) {
 
 			// Hyperbolic Secant pulse
 
@@ -161,11 +182,13 @@ static void set_gradients(struct sim_data* data, float t)
 
 			// Windowed Sinc pulse
 
-                        data->tmp.w1 = pulse_sinc(&data->pulse, t);
+                        data->tmp.w1 = pulse_sinc(&data->pulse.sinc, t);
                 }
 
                 // Definition from Bernstein et al., Handbook of MRI Pulse Sequences, p. 26f
                 // dM/dt = M x (e_x*B_1*sin(phase)-e_y*B_1*sin(phase) +e_z* B_0)) - ...
+		assert(0. == data->grad.gb[0]);
+		assert(0. == data->grad.gb[1]);
 		data->grad.gb_eff[0] = cosf(data->pulse.phase) * data->tmp.w1 * data->voxel.b1 + data->grad.gb[0];
 		data->grad.gb_eff[1] = -sinf(data->pulse.phase) * data->tmp.w1 * data->voxel.b1 + data->grad.gb[1];
 
@@ -223,7 +246,9 @@ void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N
 static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], float st, float end)
 {
 	if (data->seq.pulse_applied)
-		sinc_pulse_init(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
+		pulse_init(&data->pulse, data->pulse.rf_start, data->pulse.rf_end,
+				CAST_UP(&data->pulse.sinc)->flipangle, data->pulse.phase,
+				data->pulse.sinc.bwtp, data->pulse.sinc.alpha);
 
 	mat_exp_simu(data, N, st, end, matrix);
 }
@@ -323,7 +348,7 @@ static void sum_up_signal(float m0, int R, int S, int A, float D, float (*m)[R *
 static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 {
         for (int i = 0; i < P; i++)
-                bloch_excitation2(xp[i], xp[i], DEG2RAD(data->pulse.flipangle), data->pulse.phase);
+                bloch_excitation2(xp[i], xp[i], DEG2RAD(CAST_UP(&data->pulse.sinc)->flipangle), data->pulse.phase);
 }
 
 
@@ -348,7 +373,7 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 
                         // RF-pulse strength of current interval
 
-                        float w1 = pulse_sinc(&data->pulse, t_im);
+                        float w1 = pulse_sinc(&data->pulse.sinc, t_im);
 
                         for (int i = 0; i < P; i++) {
 
@@ -518,7 +543,9 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
         case SIM_ODE:
 
                 if (0. != data->pulse.rf_end)
-			sinc_pulse_init(&data->pulse, data->pulse.rf_start, data->pulse.rf_end, data->pulse.flipangle, data->pulse.phase, data->pulse.bwtp, data->pulse.alpha);
+			pulse_init(&data->pulse, data->pulse.rf_start, data->pulse.rf_end,
+				CAST_UP(&data->pulse.sinc)->flipangle, data->pulse.phase,
+				data->pulse.sinc.bwtp, data->pulse.sinc.alpha);
 
                 break;
 
@@ -692,9 +719,9 @@ void inversion(const struct sim_data* data, float h, float tol, int N, int P, fl
         } else {
                 // Hyperbolic Secant inversion
 
-                inv_data.pulse.hs = hs_pulse_defaults;
-                inv_data.pulse.hs.on = true;
-                inv_data.pulse.hs.duration = data->seq.inversion_pulse_length;
+                inv_data.pulse.hs = pulse_hypsec_defaults;
+                inv_data.pulse.inversion_on = true;
+                CAST_UP(&inv_data.pulse.hs)->duration = data->seq.inversion_pulse_length;
                 inv_data.pulse.rf_end = data->seq.inversion_pulse_length;
 
                 rf_pulse(&inv_data, h, tol, N, P, xp, NULL);
@@ -714,8 +741,7 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 
 	// Enforce ODE: Way more efficient here!
 	prep_data.seq.type = SIM_ODE;
-
-	prep_data.pulse.flipangle = data->pulse.flipangle / 2.;
+        CAST_UP(&prep_data.pulse.sinc)->flipangle = CAST_UP(&data->pulse.sinc)->flipangle / 2.;
 	prep_data.pulse.phase = M_PI;
 	prep_data.seq.te = (data->pulse.rf_end + data->seq.prep_pulse_length) / 2.;
 	prep_data.seq.tr = data->seq.prep_pulse_length;
@@ -732,7 +758,7 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 	} else { // Perfect preparation
 
 		for (int p = 0; p < P; p++)
-                        bloch_excitation2(xp[p], xp[p], DEG2RAD(prep_data.pulse.flipangle), prep_data.pulse.phase);
+                        bloch_excitation2(xp[p], xp[p], DEG2RAD(CAST_UP(&prep_data.pulse.sinc)->flipangle), prep_data.pulse.phase);
 	}
 }
 
@@ -799,7 +825,7 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
                         data.grad.mom_sl = _data->grad.sl_gradient_strength * _data->seq.slice_thickness * GAMMA_H1;
                 }
 
-                data.pulse.flipangle = _data->pulse.flipangle;
+                CAST_UP(&data.pulse.sinc)->flipangle = CAST_UP(&_data->pulse.sinc)->flipangle;
 
                 // Initialize ODE
 		float xp[P][N];

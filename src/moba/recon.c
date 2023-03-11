@@ -67,7 +67,7 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 
 	if (MDB_T1_PHY == mode) {
 
-		float r1p_nom = read_relax(data->sim.seq.tr, DEG2RAD(data->sim.pulse.flipangle));
+		float r1p_nom = read_relax(data->sim.seq.tr, DEG2RAD(CAST_UP(&data->sim.pulse.sinc)->flipangle));
 
 		md_set_dims(DIMS, pos, 0);
 

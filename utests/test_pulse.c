@@ -22,11 +22,11 @@
 
 static bool test_sinc_integral(void)
 {
-        struct simdata_pulse pulse = simdata_pulse_defaults;
+        struct pulse_sinc ps = pulse_sinc_defaults;
 
-        sinc_pulse_init(&pulse, 0., 0.001, 180., 0., 4., 0.46);
+        pulse_sinc_init(&ps, 0.001, 180., 0., 4., 0.46);
 
-        return ((M_PI - pulse_sinc_integral(&pulse)) < 1E-6);
+        return ((M_PI - pulse_sinc_integral(&ps)) < 1E-6);
 }
 
 UT_REGISTER_TEST(test_sinc_integral);
@@ -34,19 +34,20 @@ UT_REGISTER_TEST(test_sinc_integral);
 
 static bool test_sinc_integral2(void)
 {
-        struct simdata_pulse pulse = simdata_pulse_defaults;
+        struct pulse_sinc pulse = pulse_sinc_defaults;
 
-        sinc_pulse_init(&pulse, 0., 0.001, 180., 0., 4., 0.46);
+        pulse_sinc_init(&pulse, 0.001, 180., 0., 4., 0.46);
 
 	int N = 50;
 	float samples[N + 1];
-	float pulse_duration = pulse.rf_end - pulse.rf_start;
 
         for (int i = 0; i <= N; i++)
-		samples[i] = i * pulse_duration / N;
+		samples[i] = i * pulse.INTERFACE.duration / N;
+
 #ifdef __clang__
-	float* samples2 = samples;
+		float* samples2 = samples;
 #endif
+
 	NESTED(void, eval, (float out[1], int i))
 	{
 #ifdef __clang__
@@ -56,7 +57,7 @@ static bool test_sinc_integral2(void)
 	};
 
 	float integral[1];
-	quadrature_simpson_ext(N, pulse_duration, 1, integral, eval);
+	quadrature_simpson_ext(N, pulse.INTERFACE.duration, 1, integral, eval);
 
         float error = fabs(M_PI - integral[0]);
 
@@ -66,6 +67,38 @@ static bool test_sinc_integral2(void)
 }
 
 UT_REGISTER_TEST(test_sinc_integral2);
+
+
+
+static bool test_sinc_zeros(void)
+{
+        struct pulse_sinc ps = pulse_sinc_defaults;
+
+        pulse_sinc_init(&ps, 0.001, 180., 0., 4., 0.46);
+
+	int O = 10;
+
+	for (int i = 0; i < ps.bwtp * O; i++) {
+
+		float t = i * ps.INTERFACE.duration / (ps.bwtp * O);
+		float zero = pulse_sinc(&ps, t);
+
+		// no zero in the center
+		if (i == (ps.bwtp * O) / 2)
+			continue;
+
+		if ((0 != i % O) && (1.E-3 > fabsf(zero)))
+			return false;
+
+		if ((0 == i % O) && (1.E-3 < fabsf(zero)))
+			return false;
+	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_sinc_zeros);
+
 
 
 // Test Accuracy of on-resonant pulse
@@ -112,7 +145,7 @@ static bool test_rf_pulse_ode(void)
 			data.voxel.w = 0;
 
 			data.pulse = simdata_pulse_defaults;
-			data.pulse.flipangle = angle;
+			data.pulse.sinc.INTERFACE.flipangle = angle;
 			data.pulse.rf_end = trf;
 
 			data.grad = simdata_grad_defaults;
@@ -120,7 +153,7 @@ static bool test_rf_pulse_ode(void)
 
 
                         // Prepare pulse
-			sinc_pulse_init(&data.pulse, 0., trf, angle, 0., 4., 0.46);
+			pulse_sinc_init(&data.pulse.sinc, trf, angle, 0., 4., 0.46);
 
 			float xp[4][3] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
 
@@ -140,7 +173,7 @@ static bool test_rf_pulse_ode(void)
 			if (sim_angle < 0.)
 				sim_angle += 360.;
 
-			float delta = 180.f - fabsf(fabsf(sim_angle - data.pulse.flipangle) - 180.f);
+			float delta = 180.f - fabsf(fabsf(sim_angle - data.pulse.sinc.INTERFACE.flipangle) - 180.f);
 
 			if (1E-3 < fabs(delta)) {
 
@@ -178,13 +211,13 @@ static bool test_hypsec_rf_pulse_ode(void)
         data.voxel.w = 0;
 
         data.pulse = simdata_pulse_defaults;
-        data.pulse.flipangle = 0.;      // Turn off flipangle -> do not influence inversion efficiency
+        data.pulse.sinc.INTERFACE.flipangle = 0.;      // Turn off flipangle -> do not influence inversion efficiency
         data.pulse.rf_end = 0.01;
 
         // Hyperbolic Secant Characteristics
-        data.pulse.hs = hs_pulse_defaults;
-        data.pulse.hs.on = true;
-        data.pulse.hs.duration = data.pulse.rf_end;
+        data.pulse.hs = pulse_hypsec_defaults;
+        data.pulse.inversion_on = true;
+        data.pulse.hs.INTERFACE.duration = data.pulse.rf_end;
 
         data.grad = simdata_grad_defaults;
         data.tmp = simdata_tmp_defaults;

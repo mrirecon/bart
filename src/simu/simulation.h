@@ -80,7 +80,24 @@ struct simdata_other {
 extern const struct simdata_other simdata_other_defaults;
 
 
-struct simdata_pulse;
+struct pulse_sinc;
+struct pulse_hypsec;
+
+struct simdata_pulse {
+
+	float rf_start;
+	float rf_end;
+
+	float phase;
+
+	struct pulse_sinc sinc;
+        struct pulse_hypsec hs;
+	bool inversion_on;
+};
+
+extern void pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle, float phase, float bwtp, float alpha);
+extern const struct simdata_pulse simdata_pulse_defaults;
+
 
 struct sim_data {
 

@@ -125,7 +125,7 @@ int main_moba(int argc, char* argv[argc])
         data.sim.seq = simdata_seq_defaults;
         data.sim.voxel = simdata_voxel_defaults;
         data.sim.pulse = simdata_pulse_defaults;
-        data.sim.pulse.hs = hs_pulse_defaults;
+        data.sim.pulse.hs = pulse_hypsec_defaults;
         data.sim.grad = simdata_grad_defaults;
         data.sim.tmp = simdata_tmp_defaults;
 	data.sim.other = simdata_other_defaults;
@@ -151,8 +151,8 @@ int main_moba(int argc, char* argv[argc])
 
         	/* Pulse Specific Parameters */
 		OPTL_FLOAT(0, "Trf", &(data.sim.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
-		OPTL_FLOAT(0, "FA", &(data.sim.pulse.flipangle), "float", "Flipangle [deg]"),
-		OPTL_FLOAT(0, "BWTP", &(data.sim.pulse.bwtp), "float", "Bandwidth-Time-Product"),
+		OPTL_FLOAT(0, "FA", &(CAST_UP(&data.sim.pulse.sinc)->flipangle), "float", "Flipangle [deg]"),
+		OPTL_FLOAT(0, "BWTP", &(data.sim.pulse.sinc.bwtp), "float", "Bandwidth-Time-Product"),
 
                 /* Voxel Specific Parameters */
                 OPTL_FLOAT(0, "off", &(data.sim.voxel.w), "float", "Off-Resonance [rad/s]"),

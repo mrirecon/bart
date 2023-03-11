@@ -270,7 +270,7 @@ static void T1_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 
         // Real constraint through adjoint derivative operator? -> breaks scalar product test!
         // md_zreal(data->N, data->map_dims, data->tmp_map, data->tmp_map);
-	
+
         T1_back_alpha(data->linop_alpha, data->tmp_map, data->tmp_map);
 
 	// dst[2] = sum (conj(alpha') * src, t)
@@ -393,7 +393,7 @@ struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_
 	linop_free(linop_ifftc);
 
 	data->scaling_alpha = config->other.scale[2];
-	data->r1p_nom = read_relax(config->sim.seq.tr, DEG2RAD(config->sim.pulse.flipangle));
+	data->r1p_nom = read_relax(config->sim.seq.tr, DEG2RAD(CAST_UP(&config->sim.pulse.sinc)->flipangle));
 
 	data->counter = 0;
 	return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), T1_fun, T1_der, T1_adj, NULL, NULL, T1_del);
