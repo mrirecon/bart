@@ -25,7 +25,7 @@ static bool test_sinc_integral(void)
 
         sinc_pulse_init(&pulse, 0., 0.001, 180., 0., 4., 0.46);
 
-        return ((M_PI - sinc_integral(&pulse)) < 1E-6);
+        return ((M_PI - pulse_sinc_integral(&pulse)) < 1E-6);
 }
 
 UT_REGISTER_TEST(test_sinc_integral);

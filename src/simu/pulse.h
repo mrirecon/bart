@@ -25,8 +25,8 @@ struct simdata_pulse {
 	float nl;		/* number of zero crossings to the left of the main lope */
 	float nr; 		/* number of zero crossings to the right of the main lope */
 	float n;		/* max(nl, nr) */
-	float t0;		/* time of main lope: t0 = pulse_len / ( 2 + (nl-1)  + (nr-1)) */
-	float alpha; 	/* windows of pulse ( 0: normal sinc, 0.5: Hanning, 0.46: Hamming) */
+	float t0;		/* time of main lope: t0 = pulse_len / (2 + (nl-1)  + (nr-1)) */
+	float alpha;		/* windows of pulse (0: normal sinc, 0.5: Hanning, 0.46: Hamming) */
 	float A;		/* offset */
 
         struct hs_pulse hs;
@@ -35,8 +35,7 @@ struct simdata_pulse {
 extern const struct simdata_pulse simdata_pulse_defaults;
 
 extern float pulse_sinc(const struct simdata_pulse* pulse, float t);
-
-extern float sinc_integral(const struct simdata_pulse* pulse);
+extern float pulse_sinc_integral(const struct simdata_pulse* pulse);
 
 extern void sinc_pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle, float phase, float bwtp, float alpha);
 

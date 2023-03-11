@@ -31,8 +31,20 @@ const struct simdata_pulse simdata_pulse_defaults = {
 	.A = 1.,
 };
 
-/* sinc pulse */
+/* windowed sinc pulse */
 
+static float sinc_windowed(float alpha, float t, float n)
+{
+	return ((1. - alpha) + alpha * cosf(M_PI * t / n)) * sincf(M_PI * t);
+}
+
+/* analytical integral of windowed sinc */
+
+static float sinc_windowed_antiderivative(float alpha, float t, float n)
+{
+	return (alpha * (Si(M_PI * t * (n + 1.) / n) + Si(M_PI * t * (n - 1.) / n))
+			- 2. * (alpha - 1.) * Si(M_PI * t)) / (2. * M_PI);
+}
 
 // Analytical definition of windowed sinc pulse
 // 	! centered around 0
@@ -41,28 +53,15 @@ float pulse_sinc(const struct simdata_pulse* pulse, float t)
 {
 	float mid = (pulse->rf_start + pulse->rf_end) / 2.;
 
-	t -= mid;
-
-	return pulse->A * ((1. - pulse->alpha) + pulse->alpha * cosf(M_PI * t / (pulse->n * pulse->t0)))
-				* sincf(M_PI * t / pulse->t0);
+	return pulse->A * sinc_windowed(pulse->alpha, (t - mid) / pulse->t0, pulse->n);
 }
 
-
-// Analytical integral of windowed Sinc
-static float sinc_antiderivative(const struct simdata_pulse* pulse, float t)
+float pulse_sinc_integral(const struct simdata_pulse* pulse)
 {
-	float c = M_PI / pulse->n / pulse->t0;
+	float mid = (pulse->rf_end - pulse->rf_start) / 2.;
 
-	return 	pulse->A * pulse->t0 * (pulse->alpha * (Si(c * t * (pulse->n-1)) + Si(c * t * (pulse->n+1)))
-			- 2 * (pulse->alpha-1) * Si(M_PI / pulse->t0 * t)) / 2 / M_PI;
-}
-
-
-float sinc_integral(const struct simdata_pulse* pulse)
-{
-	float shift = (pulse->rf_end - pulse->rf_start) / 2.;
-
-	return sinc_antiderivative(pulse, shift) - sinc_antiderivative(pulse, -shift);
+	return pulse->A * pulse->t0 * (sinc_windowed_antiderivative(pulse->alpha, +mid / pulse->t0, pulse->n)
+			- sinc_windowed_antiderivative(pulse->alpha, -mid / pulse->t0, pulse->n));
 }
 
 
@@ -81,7 +80,7 @@ void sinc_pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, 
 	pulse->alpha = alpha;
 	pulse->A = 1.;
 
-	float integral = sinc_integral(pulse);
+	float integral = pulse_sinc_integral(pulse);
 
 	float scaling = M_PI / 2. / integral;
 
@@ -118,10 +117,10 @@ static float sechf(float x)
 
 float pulse_hypsec_am(const struct hs_pulse* pulse, float t /*[s]*/)
 {
-        //Check adiabatic condition
+        // Check adiabatic condition
         assert(pulse->a0 > sqrtf(pulse->mu) * pulse->beta);
 
-        return pulse->a0 * sechf(pulse->beta * (t-pulse->duration / 2.));
+        return pulse->a0 * sechf(pulse->beta * (t - pulse->duration / 2.));
 }
 
 float pulse_hypsec_fm(const struct hs_pulse* pulse, float t /*[s]*/)
@@ -131,7 +130,7 @@ float pulse_hypsec_fm(const struct hs_pulse* pulse, float t /*[s]*/)
 
 float pulse_hypsec_phase(const struct hs_pulse* pulse, float t /*[s]*/)
 {
-        return pulse->mu * logf(sechf(pulse->beta * (t-pulse->duration / 2.)))
+        return pulse->mu * logf(sechf(pulse->beta * (t - pulse->duration / 2.)))
                 + pulse->mu * logf(pulse->a0);
 }
 
