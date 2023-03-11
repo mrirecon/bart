@@ -1,14 +1,14 @@
-/* Copyright 2020. Martin Uecker.
+/* Copyright 2020-2023. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * 2019-2020 Martin Uecker
  */
 
 
 #include <complex.h>
 #include <assert.h>
 #include <math.h>
+
+#include "num/specfun.h"
 
 #include "geom/polygon.h"
 
@@ -21,11 +21,6 @@ complex double xpolygon(int N, const double pg[N][2], const double p[3])
 	int w = polygon_winding_number(N, pg, p);
 
 	return w;
-}
-
-static double sinc(double x)
-{
-	return (0. == x) ? 1. : (sin(x) / x);
 }
 
 static double sdot(const double a[2], const double b[2])

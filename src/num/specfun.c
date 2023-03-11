@@ -80,6 +80,25 @@ static double horner(double x, int N, const double coeff[N])
 	return coeff[0] + ((1 == N) ? 1. : (x * horner(x, N - 1, coeff + 1)));
 }
 
+
+
+double sinc(double x)
+{
+	return (0. == x) ? 1. : (sin(x) / x);
+}
+
+float sincf(float x)
+{
+	return (0. == x) ? 1. : (sinf(x) / x);
+}
+
+double jinc(double x)
+{
+	return (0. == x) ? 1. : (2. * j1(x) / x);
+}
+
+
+
 // Efficient and accurate calculation of Sine Integral using Padé approximants of the convergent Taylor series
 // For details see:
 // 	Rowe, B., et al.

@@ -1,9 +1,7 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2023. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * 2013-2016 Martin Uecker <martin.uecker@med.uni-goettinge.de>
  */
 
 #define _GNU_SOURCE
@@ -11,6 +9,8 @@
 #include <math.h>
 #include <assert.h>
 #include <stdbool.h>
+
+#include "num/specfun.h"
 
 #include "simu/shepplogan.h"
 
@@ -194,16 +194,6 @@ const struct ellipsis3d_s shepplogan3d[10] = {
 	{       -.2, { .0560, .0560, .1000 }, {  .000,  .100,  .625 }, 0.  }
 };
 
-
-static double sinc(double x)
-{
-	return (0. == x) ? 1. : (sin(x) / x);
-}
-
-static double jinc(double x)
-{
-	return (0. == x) ? 1. : (2. * j1(x) / x);
-}
 
 static void rot2d(double x[2], const double in[2], double angle)
 {

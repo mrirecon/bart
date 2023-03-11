@@ -33,11 +33,6 @@ const struct simdata_pulse simdata_pulse_defaults = {
 
 /* sinc pulse */
 
-static float sincf(float x)
-{
-	return (0. == x) ? 1. : (sinf(x) / x);
-}
-
 
 // Analytical definition of windowed sinc pulse
 // 	! centered around 0
@@ -124,7 +119,7 @@ static float sechf(float x)
 float pulse_hypsec_am(const struct hs_pulse* pulse, float t /*[s]*/)
 {
         //Check adiabatic condition
-        assert(pulse->a0 > sqrtf(pulse->mu)*pulse->beta);
+        assert(pulse->a0 > sqrtf(pulse->mu) * pulse->beta);
 
         return pulse->a0 * sechf(pulse->beta * (t-pulse->duration / 2.));
 }
