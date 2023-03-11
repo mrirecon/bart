@@ -97,14 +97,6 @@ extern void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, fl
 extern void inversion(const struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end);
 extern void bloch_simulation(const struct sim_data* data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3]);
 
-struct ode_matrix_simu_s {
-
-	int N;
-	struct sim_data* sim_data;
-};
-
-extern void ode_matrix_interval_simu(struct sim_data* _data, float h, float tol, unsigned int N, float out[N], float st, float end);
-
 extern void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N][N]);
 extern void apply_sim_matrix(int N, float m[N], float matrix[N][N]);
 

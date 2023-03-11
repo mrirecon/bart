@@ -17,6 +17,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/linalg.h"
+#include "num/matexp.h"
 #include "num/ode.h"
 
 #include "simu/bloch.h"
@@ -181,13 +182,8 @@ static void set_gradients(struct sim_data* data, float t)
 
 /* ---------  State-Transition Matrix Simulation --------- */
 
-
-static void bloch_simu_stm_fun(struct ode_matrix_simu_s* ode_data, float* out, float t, const float* in)
+static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t, const float* in)
 {
-	struct sim_data* data = ode_data->sim_data;
-
-        int N = ode_data->N;
-
         set_gradients(data, t);
 
 	float matrix_time[N][N];
@@ -213,40 +209,15 @@ static void bloch_simu_stm_fun(struct ode_matrix_simu_s* ode_data, float* out, f
 	matf_vecmul(N, N, out, matrix_time, in);
 }
 
-
-void ode_matrix_interval_simu(struct sim_data* _data, float h, float tol, unsigned int N, float out[N], float st, float end)
-{
-        struct ode_matrix_simu_s data = { N, _data };
-
-	NESTED(void, call, (float* out, float t, const float* in))
-	{
-		bloch_simu_stm_fun(&data, out, t, in);
-	};
-
-	ode_interval(h, tol, N, out, st, end, call);
-}
-
-
 void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N][N])
 {
-	assert(end >= st);
+	NESTED(void, call, (float* out, float t, const float* in))
+	{
+		bloch_simu_stm_fun(data, N, out, t, in);
+	};
 
-	// compute F(t) := T{exp(tA)}
-	// F(0) = id
-	// d/dt F = A
-
-	float h = (end - st) / 100.;
-	float tol = 1.E-6;
-
-	for (int i = 0; i < N; i++) {
-
-		for (int j = 0; j < N; j++)
-			out[i][j] = (i == j) ? 1. : 0.;
-
-		ode_matrix_interval_simu(data, h, tol, N, out[i], st, end);
-	}
+	mat_to_exp(N, st, end, out, call);
 }
-
 
 static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], float st, float end)
 {
@@ -255,6 +226,7 @@ static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], 
 
 	mat_exp_simu(data, N, st, end, matrix);
 }
+
 
 void apply_sim_matrix(int N, float m[N], float matrix[N][N])
 {
@@ -371,24 +343,17 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 
                 float t_im = data->pulse.rf_start + sample_time / 2.;
 
-                float xp2[3] = { 0. };
-                float xp3[3] = { 0. };
-
-                float w1 = 0;
-
                 while (t_im <= data->pulse.rf_end) {
 
                         // RF-pulse strength of current interval
 
-                        w1 = pulse_sinc(&data->pulse, t_im);
+                        float w1 = pulse_sinc(&data->pulse, t_im);
 
                         for (int i = 0; i < P; i++) {
 
-                                xp2[0] = xp[i][0];
-                                xp2[1] = xp[i][1];
-                                xp2[2] = xp[i][2];
+				float xp3[3] = { 0. };
 
-                                bloch_excitation2(xp3, xp2, w1 * sample_time, data->pulse.phase);
+                                bloch_excitation2(xp3, xp[i], w1 * sample_time, data->pulse.phase);
 
                                 bloch_relaxation(xp[i], sample_time, xp3, data->voxel.r1, data->voxel.r2, data->grad.gb);
                         }
