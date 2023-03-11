@@ -65,23 +65,23 @@ static bool test_ode_adjoint(void)
 	float x[N + 1][2];
 	float z[N + 1][2];
 
-	NESTED(void, sys, (void* d, float out[2], float t, const float in[2]))
+	NESTED(void, sys, (float out[2], float t, const float in[2]))
 	{
-		(void)d; (void)t;
+		(void)t;
 
 		out[0] = -r1 * in[0];
 		out[1] = -r2 * in[1];
 	};
 
-	NESTED(void, cost, (void* d, float out[2], float t))
+	NESTED(void, cost, (float out[2], float t))
 	{
-		(void)d; (void)t;
+		(void)t;
 
 		for (int l = 0; l < 2; l++)
 			out[l] = 1.;
 	};
 
-	ode_adjoint_sa(h, tol, N, t, 2, x, z, x0, NULL, sys, sys, cost);
+	ode_adjoint_sa(h, tol, N, t, 2, x, z, x0, sys, sys, cost);
 
 	if (1.E-3 < powf(fabs(x[N][0] - expf(-r1)), 2.))
 	       return false;

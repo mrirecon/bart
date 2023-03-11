@@ -44,7 +44,7 @@ static float vec_norm(int N, const float x[N])
 
 #define tridiag(s) (s * (s + 1) / 2)
 
-static void runga_kutta_step(float h, int s, const float a[tridiag(s)], const float b[s], const float c[s - 1], int N, int K, float k[K][N], float ynp[N], float tmp[N], float tn, const float yn[N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
+static void runga_kutta_step(float h, int s, const float a[tridiag(s)], const float b[s], const float c[s - 1], int N, int K, float k[K][N], float ynp[N], float tmp[N], float tn, const float yn[N], void CLOSURE_TYPE(f)(float* out, float t, const float* yn))
 {
 	vec_saxpy(N, ynp, yn, h * b[0], k[0]);
 
@@ -55,7 +55,7 @@ static void runga_kutta_step(float h, int s, const float a[tridiag(s)], const fl
 		for (int r = 0; r < t; r++, l++)
 			vec_saxpy(N, tmp, tmp, h * a[l], k[r % K]);
 
-		f(data, k[t % K], tn + h * c[t - 1], tmp);
+		NESTED_CALL(f, (k[t % K], tn + h * c[t - 1], tmp));
 
 		vec_saxpy(N, ynp, ynp, h * b[t], k[t % K]);
 	}
@@ -63,7 +63,8 @@ static void runga_kutta_step(float h, int s, const float a[tridiag(s)], const fl
 
 // Runga-Kutta 4
 
-void rk4_step(float h, int N, float ynp[N], float tn, const float yn[N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
+void rk4_step(float h, int N, float ynp[N], float tn, const float yn[N],
+		void CLOSURE_TYPE(f)(float* out, float t, const float* yn))
 {
 	const float c[3] = { 0.5, 0.5, 1. };
 
@@ -75,10 +76,10 @@ void rk4_step(float h, int N, float ynp[N], float tn, const float yn[N], void* d
 	const float b[4] = { 1. / 6., 1. / 3., 1. / 3., 1. / 6. };
 
 	float k[1][N];	// K = 1 because only diagonal elements are used
-	f(data, k[0], tn, yn);
+	NESTED_CALL(f, (k[0], tn, yn));
 
 	float tmp[N];
-	runga_kutta_step(h, 4, a, b, c, N, 1, k, ynp, tmp, tn, yn, data, f);
+	runga_kutta_step(h, 4, a, b, c, N, 1, k, ynp, tmp, tn, yn, f);
 }
 
 
@@ -87,7 +88,8 @@ void rk4_step(float h, int N, float ynp[N], float tn, const float yn[N], void* d
  * Dormand JR, Prince PJ. A family of embedded Runge-Kutta formulae,
  * Journal of Computational and Applied Mathematics 6:19-26 (1980).
  */
-void dormand_prince_step(float h, int N, float ynp[N], float tn, const float yn[N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
+void dormand_prince_step(float h, int N, float ynp[N], float tn, const float yn[N],
+		void CLOSURE_TYPE(f)(float* out, float t, const float* yn))
 {
 	const float c[6] = { 1. / 5., 3. / 10., 4. / 5., 8. / 9., 1., 1. };
 
@@ -103,10 +105,10 @@ void dormand_prince_step(float h, int N, float ynp[N], float tn, const float yn[
 	const float b[7] = { 5179. / 57600., 0.,  7571. / 16695., 393. / 640., -92097. / 339200., 187. / 2100., 1. / 40. };
 
 	float k[6][N];
-	f(data, k[0], tn, yn);
+	NESTED_CALL(f, (k[0], tn, yn));
 
 	float tmp[N];
-	runga_kutta_step(h, 7, a, b, c, N, 6, k, ynp, tmp, tn, yn, data, f);
+	runga_kutta_step(h, 7, a, b, c, N, 6, k, ynp, tmp, tn, yn, f);
 }
 
 
@@ -126,7 +128,8 @@ float dormand_prince_scale(float tol, float err)
 
 
 
-float dormand_prince_step2(float h, int N, float ynp[N], float tn, const float yn[N], float k[6][N], void* data, void (*f)(void* data, float* out, float t, const float* yn))
+float dormand_prince_step2(float h, int N, float ynp[N], float tn, const float yn[N], float k[6][N],
+		void CLOSURE_TYPE(f)(float* out, float t, const float* yn))
 {
 	const float c[6] = { 1. / 5., 3. / 10., 4. / 5., 8. / 9., 1., 1. };
 
@@ -142,17 +145,18 @@ float dormand_prince_step2(float h, int N, float ynp[N], float tn, const float y
 	const float b[7] = { 5179. / 57600., 0.,  7571. / 16695., 393. / 640., -92097. / 339200., 187. / 2100., 1. / 40. };
 
 	float tmp[N];
-	runga_kutta_step(h, 7, a, b, c, N, 6, k, ynp, tmp, tn, yn, data, f);
+	runga_kutta_step(h, 7, a, b, c, N, 6, k, ynp, tmp, tn, yn, f);
 
 	vec_saxpy(N, tmp, tmp, -1., ynp);
 	return vec_norm(N, tmp);
 }
 
 
-void ode_interval(float h, float tol, int N, float x[N], float st, float end, void* data, void (*f)(void* data, float* out, float t, const float* yn))
+void ode_interval(float h, float tol, int N, float x[N], float st, float end,
+		void CLOSURE_TYPE(f)(float* out, float t, const float* yn))
 {
 	float k[6][N];
-	f(data, k[0], st, x);
+	f(k[0], st, x);
 
 	if (h > end - st)
 		h = end - st;
@@ -162,14 +166,14 @@ void ode_interval(float h, float tol, int N, float x[N], float st, float end, vo
 		float ynp[N];
 	repeat:
 		;
-		float err = dormand_prince_step2(h, N, ynp, t, x, k, data, f);
+		float err = dormand_prince_step2(h, N, ynp, t, x, k, f);
 
 		float h_new = h * dormand_prince_scale(tol, err);
 
 		if (err > tol) {
 
 			h = h_new;
-			f(data, k[0], t, x);	// recreate correct k[0] which has been overwritten
+			NESTED_CALL(f, (k[0], t, x));	// recreate correct k[0] which has been overwritten
 			goto repeat;
 		}
 
@@ -185,33 +189,26 @@ void ode_interval(float h, float tol, int N, float x[N], float st, float end, vo
 }
 
 
-struct ode_matrix_s {
-
-	int N;
-	const float* matrix;
-	const float* off;
-};
-
-static void ode_matrix_fun(void* _data, float* x, float t, const float* in)
-{
-	struct ode_matrix_s* data = _data;
-	(void)t;
-
-	int N = data->N;
-
-	for (int i = 0; i < N; i++) {
-
-		x[i] = data->off ? data->off[i] : 0.;
-
-		for (int j = 0; j < N; j++)
-			x[i] += (*(const float(*)[N][N])data->matrix)[i][j] * in[j];
-	}
-}
 
 void ode_matrix_interval(float h, float tol, int N, float x[N], float st, float end, const float matrix[N][N])
 {
-	struct ode_matrix_s data = { N, &matrix[0][0], (void*)0 };
-	ode_interval(h, tol, N, x, st, end, &data, ode_matrix_fun);
+	const void* matrix2 = matrix;	// clang workaround
+
+	NESTED(void, ode_matrix_fun, (float* x, float t, const float* in))
+	{
+		(void)t;
+		const float (*matrix)[N][N] = matrix2;
+
+		for (int i = 0; i < N; i++) {
+
+			x[i] = 0.;
+
+			for (int j = 0; j < N; j++)
+				x[i] += (*matrix)[i][j] * in[j];
+		}
+	};
+
+	ode_interval(h, tol, N, x, st, end, ode_matrix_fun);
 }
 
 
@@ -226,25 +223,23 @@ struct seq_data {
 	int N;
 	int P;
 
-	void* data;
-	void (*f)(void* data, float* out, float t, const float* yn);
-	void (*pdy)(void* data, float* out, float t, const float* yn);
-	void (*pdp)(void* data, float* out, float t, const float* yn);
+	void CLOSURE_TYPE(f)(float* out, float t, const float* yn);
+	void CLOSURE_TYPE(pdy)(float* out, float t, const float* yn);
+	void CLOSURE_TYPE(pdp)(float* out, float t, const float* yn);
 };
 
-static void seq(void* _data, float* out, float t, const float* yn)
+static void seq(const struct seq_data* data, float* out, float t, const float* yn)
 {
-	struct seq_data* data = _data;
 	int N = data->N;
 	int P = data->P;
 
-	data->f(data->data, out, t, yn);
+	data->f(out, t, yn);
 
 	float dy[N][N];
-	data->pdy(data->data, &dy[0][0], t, yn);
+	data->pdy(&dy[0][0], t, yn);
 
 	float dp[P][N];
-	data->pdp(data->data, &dp[0][0], t, yn);
+	data->pdp(&dp[0][0], t, yn);
 
 	for (int i = 0; i < P; i++) {
 		for (int j = 0; j < N; j++) {
@@ -260,14 +255,19 @@ static void seq(void* _data, float* out, float t, const float* yn)
 }
 
 void ode_direct_sa(float h, float tol, int N, int P, float x[P + 1][N],
-	float st, float end, void* data,
-	void (*f)(void* data, float* out, float t, const float* yn),
-	void (*pdy)(void* data, float* out, float t, const float* yn),
-	void (*pdp)(void* data, float* out, float t, const float* yn))
+	float st, float end,
+	void CLOSURE_TYPE(f)(float* out, float t, const float* yn),
+	void CLOSURE_TYPE(pdy)(float* out, float t, const float* yn),
+	void CLOSURE_TYPE(pdp)(float* out, float t, const float* yn))
 {
-	struct seq_data data2 = { N, P, data, f, pdy, pdp };
+	struct seq_data data2 = { N, P, f, pdy, pdp };
 
-	ode_interval(h, tol, N * (1 + P), &x[0][0], st, end, &data2, seq);
+	NESTED(void, seq2, (float* out, float t, const float* yn))
+	{
+		seq(&data2, out, t, yn);
+	};
+
+	ode_interval(h, tol, N * (1 + P), &x[0][0], st, end, seq2);
 }
 
 
@@ -278,10 +278,10 @@ void ode_direct_sa(float h, float tol, int N, int P, float x[P + 1][N],
 void ode_adjoint_sa(float h, float tol,
 	int N, const float t[N + 1],
 	int M, float x[N + 1][M], float z[N + 1][M],
-	const float x0[M], void* data,
-	void (*sys)(void* data, float dst[M], float t, const float in[M]),
-	void (*sysT)(void* data, float dst[M], float t, const float in[M]),
-	void (*cost)(void* data, float dst[M], float t))
+	const float x0[M],
+	void CLOSURE_TYPE(sys)(float dst[M], float t, const float in[M]),
+	void CLOSURE_TYPE(sysT)(float dst[M], float t, const float in[M]),
+	void CLOSURE_TYPE(cost)(float dst[M], float t))
 {
 	// forward solution
 
@@ -293,7 +293,7 @@ void ode_adjoint_sa(float h, float tol,
 		for (int m = 0; m < M; m++)
 			x[i + 1][m] = x[i][m];
 
-		ode_interval(h, tol, M, x[i + 1], t[i], t[i + 1], data, sys);
+		ode_interval(h, tol, M, x[i + 1], t[i], t[i + 1], sys);
 	}
 
 	// adjoint state
@@ -308,20 +308,18 @@ void ode_adjoint_sa(float h, float tol,
 
 		// invert time -> ned. sign on RHS
 
-		NESTED(void, asa_eval, (void* d, float out[M], float t, const float yn[M]))
+		NESTED(void, asa_eval, (float out[M], float t, const float yn[M]))
 		{
-			(void)d;
-
-			(*sysT)(data, out, -t, yn);
+			NESTED_CALL(sysT, (out, -t, yn));
 
 			float off[M];
-			(*cost)(data, off, -t);
+			NESTED_CALL(cost, (off, -t));
 
 			for (int m = 0; m < M; m++)
 				out[m] += off[m];
 		};
 
-		ode_interval(h, tol, M, z[i - 1], -t[i], -t[i - 1], NULL, asa_eval);
+		ode_interval(h, tol, M, z[i - 1], -t[i], -t[i - 1], asa_eval);
 	}
 }
 
@@ -355,16 +353,27 @@ void ode_matrix_adjoint_sa(float h, float tol,
 		for (int m = 0; m < M; m++)
 			z[i - 1][m] = z[i][m];
 
-		float sysmT[M][M];
+		const void* cost2 = cost;
+		const void* sys2 = sys;
 
 		// invert time -> ned. sign on RHS
 
-		for (int l = 0; l < M; l++)
-			for (int k = 0; k < M; k++)
-				sysmT[l][k] = sys[i - 1][k][l];
+		NESTED(void, matrix_fun, (float x[M], float t, const float in[M]))
+		{
+			(void)t;
+			const float (*cost)[N][M] = cost2;
+			const float (*sys)[N][M][M] = sys2;
 
-		struct ode_matrix_s data = { M, &sysmT[0][0], &cost[i - 1][0] };
-		ode_interval(h, tol, M, z[i - 1], -t[i], -t[i - 1], &data, ode_matrix_fun);
+			for (int l = 0; l < M; l++) {
+
+				x[l] = (*cost)[i - 1][l];
+
+				for (int k = 0; k < M; k++)
+					x[l] += (*sys)[i - 1][k][l] * in[k];
+			}
+		};
+
+		ode_interval(h, tol, M, z[i - 1], -t[i], -t[i - 1], matrix_fun);
 	}
 }
 

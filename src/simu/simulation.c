@@ -211,36 +211,6 @@ static void set_gradients(struct sim_data* data, float t)
 }
 
 
-/* --------- ODE Simulation --------- */
-
-static void bloch_simu_ode_fun(void* _data, float* out, float t, const float* in)
-{
-        struct sim_data* data = _data;
-
-        set_gradients(data, t);
-
-	bloch_ode(out, in, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
-}
-
-
-static void bloch_pdy2(void* _data, float* out, float t, const float* in)
-{
-	struct sim_data* data = _data;
-	(void)t;
-
-	bloch_pdy((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
-}
-
-
-static void bloch_pdp2(void* _data, float* out, float t, const float* in)
-{
-	struct sim_data* data = _data;
-	(void)t;
-
-	bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
-}
-
-
 /* ---------  State-Transition Matrix Simulation --------- */
 
 
@@ -282,7 +252,12 @@ void ode_matrix_interval_simu(struct sim_data* _data, float h, float tol, unsign
 {
         struct ode_matrix_simu_s data = { N, _data };
 
-	ode_interval(h, tol, N, out, st, end, &data, bloch_simu_stm_fun);
+	NESTED(void, call, (float* out, float t, const float* in))
+	{
+		bloch_simu_stm_fun(&data, out, t, in);
+	};
+
+	ode_interval(h, tol, N, out, st, end, call);
 }
 
 
@@ -470,10 +445,28 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
                 rot_pulse(data, N, P, xp);
                 break;
 
-        case SIM_ODE:
+        case SIM_ODE: ;
+
+		NESTED(void, call_fun, (float* out, float t, const float* in))
+		{
+			set_gradients(data, t);
+			bloch_ode(out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+		};
+
+		NESTED(void, call_pdy2, (float* out, float t, const float* in))
+		{
+			(void)t;
+			bloch_pdy((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+		};
+
+		NESTED(void, call_pdp2, (float* out, float t, const float* in))
+		{
+			(void)t;
+			bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+		};
 
                 // Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
-		ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, data,  bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
+		ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, call_fun, call_pdy2, call_pdp2);
                 break;
 
         case SIM_STM:
@@ -521,10 +514,28 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
                 hard_relaxation(data, N, P, xp, st, end);
                 break;
 
-        case SIM_ODE:
+        case SIM_ODE: ;
+
+		NESTED(void, call_fun, (float* out, float t, const float* in))
+		{
+			set_gradients(data, t);
+			bloch_ode(out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+		};
+
+		NESTED(void, call_pdy2, (float* out, float t, const float* in))
+		{
+			(void)t;
+			bloch_pdy((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+		};
+
+		NESTED(void, call_pdp2, (float* out, float t, const float* in))
+		{
+			(void)t;
+			bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+		};
 
                 // Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
-                ode_direct_sa(h, tol, N, P - 1, xp, st, end, data, bloch_simu_ode_fun, bloch_pdy2, bloch_pdp2);
+                ode_direct_sa(h, tol, N, P - 1, xp, st, end, call_fun, call_pdy2, call_pdp2);
                 break;
 
         case SIM_STM:
