@@ -193,19 +193,21 @@ void ode_interval(float h, float tol, int N, float x[N], float st, float end,
 
 void ode_matrix_interval(float h, float tol, int N, float x[N], float st, float end, const float matrix[N][N])
 {
+#ifdef __clang__
 	const void* matrix2 = matrix;	// clang workaround
-
+#endif
 	NESTED(void, ode_matrix_fun, (float* x, float t, const float* in))
 	{
 		(void)t;
-		const float (*matrix)[N][N] = matrix2;
-
+#ifdef __clang__
+		const float (*matrix)[N] = matrix2;
+#endif
 		for (int i = 0; i < N; i++) {
 
 			x[i] = 0.;
 
 			for (int j = 0; j < N; j++)
-				x[i] += (*matrix)[i][j] * in[j];
+				x[i] += matrix[i][j] * in[j];
 		}
 	};
 
@@ -353,24 +355,25 @@ void ode_matrix_adjoint_sa(float h, float tol,
 
 		for (int m = 0; m < M; m++)
 			z[i - 1][m] = z[i][m];
-
+#ifdef __clang__
 		const void* cost2 = cost;
 		const void* sys2 = sys;
-
+#endif
 		// invert time -> ned. sign on RHS
 
 		NESTED(void, matrix_fun, (float x[M], float t, const float in[M]))
 		{
 			(void)t;
-			const float (*cost)[N][M] = cost2;
-			const float (*sys)[N][M][M] = sys2;
-
+#ifdef __clang__
+			const float (*cost)[M] = cost2;
+			const float (*sys)[M][M] = sys2;
+#endif
 			for (int l = 0; l < M; l++) {
 
-				x[l] = (*cost)[i - 1][l];
+				x[l] = cost[i - 1][l];
 
 				for (int k = 0; k < M; k++)
-					x[l] += (*sys)[i - 1][k][l] * in[k];
+					x[l] += sys[i - 1][k][l] * in[k];
 			}
 		};
 
@@ -394,8 +397,19 @@ void ode_adjoint_sa_eval(int N, const float t[N + 1], int M,
 		const float x[N + 1][M], const float z[N + 1][M],
 		const float Adp[P][M][M])
 {
+#ifdef __clang__
+	const void* x2 = x;
+	const void* z2 = z;
+	const void* Adp2 = Adp;
+#endif
+
 	NESTED(void, eval, (float out[P], int i))
 	{
+#ifdef __clang__
+		const float (*x)[M] = x2;
+		const float (*z)[M] = z2;
+		const float (*Adp)[M][M] = Adp2;
+#endif
 		for (int p = 0; p < P; p++)
 			out[p] = adj_eval(M, x[i], z[i], Adp[p]);
 	};
@@ -408,8 +422,19 @@ void ode_adjoint_sa_eq_eval(int N, int M, int P, float dj[P],
 		const float x[N + 1][M], const float z[N + 1][M],
 		const float Adp[P][M][M])
 {
+#ifdef __clang__
+	const void* x2 = x;
+	const void* z2 = z;
+	const void* Adp2 = Adp;
+#endif
+
 	NESTED(void, eval, (float out[P], int i))
 	{
+#ifdef __clang__
+		const float (*x)[M] = x2;
+		const float (*z)[M] = z2;
+		const float (*Adp)[M][M] = Adp2;
+#endif
 		for (int p = 0; p < P; p++)
 			out[p] = adj_eval(M, x[i], z[i], Adp[p]);
 	};
