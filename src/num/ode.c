@@ -4,10 +4,11 @@
  */
 
 #include <math.h>
-#include <assert.h>
 #include <stdlib.h>
 
 #include "misc/nested.h"
+
+#include "num/quadrature.h"
 
 // #include "iter/vec_iter.h"
 
@@ -393,32 +394,13 @@ void ode_adjoint_sa_eval(int N, const float t[N + 1], int M,
 		const float x[N + 1][M], const float z[N + 1][M],
 		const float Adp[P][M][M])
 {
-	for (int p = 0; p < P; p++)
-		dj[p] = 0.;
+	NESTED(void, eval, (float out[P], int i))
+	{
+		for (int p = 0; p < P; p++)
+			out[p] = adj_eval(M, x[i], z[i], Adp[p]);
+	};
 
-	float last[P];
-
-	for (int p = 0; p < P; p++)
-		last[p] = 0.;
-
-	for (int i = 0; i < N; i++) {
-
-		// trapezoidal
-
-		float w = t[i + 1] - t[i];
-
-		for (int p = 0; p < P; p++) {
-
-			float now = 0.;
-
-			for (int l = 0; l < M; l++)
-				for (int k = 0; k < M; k++)
-					now += z[i][l] * Adp[p][l][k] * x[i][k];
-
-			dj[p] += w * (now + last[p]) / 2.;
-			last[p] = now;
-		}
-	}
+	quadrature_trapezoidal(N, t, P, dj, eval);
 }
 
 
@@ -426,29 +408,12 @@ void ode_adjoint_sa_eq_eval(int N, int M, int P, float dj[P],
 		const float x[N + 1][M], const float z[N + 1][M],
 		const float Adp[P][M][M])
 {
-	assert(10 <= N);
+	NESTED(void, eval, (float out[P], int i))
+	{
+		for (int p = 0; p < P; p++)
+			out[p] = adj_eval(M, x[i], z[i], Adp[p]);
+	};
 
-	for (int p = 0; p < P; p++)
-		dj[p] = 0.;
-
-	for (int p = 0; p < P; p++) {
-
-		// extended Simpson's rule
-		// https://mathworld.wolfram.com/Newton-CotesFormulas.html
-
-		int coeff[4] = { 17, 59, 43, 49 };
-
-		for (int i = 0; i < 4; i++)
-			dj[p] += coeff[i] * (adj_eval(M, z[i], x[i], Adp[p])
-					+ adj_eval(M, z[N - i], x[N - i], Adp[p]));
-
-		dj[p] /= 48;
-
-		for (int i = 4; i <= N - 4; i++)
-			dj[p] += adj_eval(M, z[i], x[i], Adp[p]);
-	}
-
-	for (int p = 0; p < P; p++)
-		dj[p] /= N;
+	quadrature_simpson_ext(N, P, dj, eval);
 }
 
