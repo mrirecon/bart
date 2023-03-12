@@ -439,6 +439,6 @@ void ode_adjoint_sa_eq_eval(int N, int M, int P, float dj[P],
 			out[p] = adj_eval(M, x[i], z[i], Adp[p]);
 	};
 
-	quadrature_simpson_ext(N, P, dj, eval);
+	quadrature_simpson_ext(N, 1., P, dj, eval);
 }
 

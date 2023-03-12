@@ -36,7 +36,7 @@ void quadrature_trapezoidal(int N, const float t[N + 1], int P, float out[P],
 		}
 	}
 }
-void quadrature_simpson_ext(int N, int P, float out[P],
+void quadrature_simpson_ext(int N, float T, int P, float out[P],
 		void CLOSURE_TYPE(sample)(float out[P], int i))
 {
 	assert(10 <= N);
@@ -71,5 +71,5 @@ void quadrature_simpson_ext(int N, int P, float out[P],
 	}
 
 	for (int p = 0; p < P; p++)
-		out[p] /= N;
+		out[p] *= T / N;
 }

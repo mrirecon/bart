@@ -10,6 +10,9 @@
 
 #include "misc/misc.h"
 #include "misc/mri.h"
+#include "misc/nested.h"
+
+#include "num/quadrature.h"
 
 #include "simu/pulse.h"
 #include "simu/simulation.h"
@@ -34,25 +37,27 @@ static bool test_sinc_integral2(void)
 
         sinc_pulse_init(&pulse, 0., 0.001, 180., 0., 4., 0.46);
 
+	int N = 50;
+	float samples[N + 1];
+	float pulse_duration = pulse.rf_end - pulse.rf_start;
 
-        // Estimate integral with trapezoidal rule, FIXME
+        for (int i = 0; i <= N; i++)
+		samples[i] = i * pulse_duration / N;
+#ifdef __clang__
+	float* samples2 = samples;
+#endif
+	NESTED(void, eval, (float out[1], int i))
+	{
+#ifdef __clang__
+		float* samples = samples2;
+#endif
+		out[0] = pulse_sinc(&pulse, samples[i]);
+	};
 
-        float dt = 1E-7;
+	float integral[1];
+	quadrature_simpson_ext(N, pulse_duration, 1, integral, eval);
 
-        float integral = 0.5 * pulse_sinc(&pulse, pulse.rf_start) * dt;
-
-        float t = pulse.rf_start + dt;
-
-        while (t < pulse.rf_end) {
-
-                integral += pulse_sinc(&pulse, t) * dt;
-
-                t += dt;
-        }
-
-        integral += 0.5 * pulse_sinc(&pulse, pulse.rf_end) * dt;
-
-        float error = fabs(M_PI - integral);
+        float error = fabs(M_PI - integral[0]);
 
         // debug_printf(DP_WARN, "Estimated Integral: %f,\t Error: %f\n", integral, error);
 
