@@ -1,4 +1,4 @@
-/* Copyright 2022. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2022-2023. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  **/
@@ -7,7 +7,7 @@
 #include <math.h>
 
 #include "num/vec3.h"
-
+#include "num/linalg.h"
 #include "num/matexp.h"
 
 #include "bloch.h"
@@ -106,7 +106,7 @@ void bloch_relaxation(float out[3], float t, const float in[3], float r1, float 
 	float m0 = 1.;
 	assert((0. == gb[0]) && (0. == gb[1])); // no B1(t)
 
-        rotz(out, in, gb[2]*t);
+        rotz(out, in, gb[2] * t);
 
 	out[0] *= expf(-t * r2);
 	out[1] *= expf(-t * r2);
@@ -133,13 +133,6 @@ void bloch_excitation2(float out[3], const float in[3], float angle, float phase
 	rotz(out, tmp2, phase);
 }
 
-
-static void matf_copy(int N, int M, float out[N][M], /*const*/ float in[N][M])
-{
-	for (int i = 0; i < N; i++)
-		for (int j = 0; j < M; j++)
-			out[i][j] = in[i][j];
-}
 
 
 void bloch_matrix_ode(float matrix[4][4], float r1, float r2, const float gb[3])

@@ -130,6 +130,22 @@ void (mat_mul)(int A, int B, int C, complex float x[A][C], const complex float y
 #endif
 }
 
+void matf_mul(int A, int B, int C, float x[A][C], const float y[A][B], const float z[B][C])
+{
+	for (int i = 0; i < A; i++) {
+		for (int j = 0; j < C; j++) {
+
+			fl_acu_t tmp = 0.;
+
+			for (int k = 0; k < B; k++)
+				tmp += y[i][k] * z[k][j];
+
+			x[i][j] = tmp;
+		}
+	}
+}
+
+
 
 bool (mat_inverse)(unsigned int N, complex float out[N][N], const complex float in[N][N])
 {
@@ -249,6 +265,21 @@ void (mat_vecmul)(unsigned int A, unsigned int B, complex float out[A], const co
 		out[a] = tmp;
 	}
 }
+
+
+void matf_vecmul(unsigned int A, unsigned int B, float out[A], const float mat[A][B], const float in[B])
+{
+	for (unsigned int a = 0; a < A; a++) {
+
+		fl_acu_t tmp = 0.;
+
+		for (unsigned int b = 0; b < B; b++)
+			tmp += mat[a][b] * in[b];
+
+		out[a] = tmp;
+	}
+}
+
 
 void (mat_vec)(unsigned int A, unsigned int B, complex float out[A * B], const complex float in[A][B])
 {
@@ -386,6 +417,14 @@ void (mat_copy)(int A, int B, complex float dst[A][B], const complex float src[A
 	for (int i = 0; i < A; i++)
 		for (int j = 0; j < B; j++)
 			dst[i][j] = src[i][j];
+}
+
+
+void matf_copy(int N, int M, float out[N][M], const float in[N][M])
+{
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < M; j++)
+			out[i][j] = in[i][j];
 }
 
 void (mat_conj)(int A, int B, complex float dst[A][B], const complex float src[A][B])

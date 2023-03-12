@@ -16,6 +16,8 @@ extern void mat_zero(int A, int B, complex float x[A][B]);
 extern void mat_gaussian(int A, int B, complex float x[A][B]);
 extern void mat_mul(int A, int B, int C, complex float x[A][C], const complex float y[A][B], const complex float z[B][C]);
 
+extern void matf_mul(int A, int B, int C, float x[A][C], const float y[A][B], const float z[B][C]);
+
 #define MVLA(x) __restrict__ (A)
 extern void mat_muladd(int A, int B, int C, complex float x[MVLA(A)][C], const complex float y[MVLA(A)][B], const complex float z[MVLA(B)][C]);
 extern void mat_add(int A, int B, complex float x[A][B], const complex float y[A][B], const complex float z[A][B]);
@@ -23,11 +25,13 @@ extern void mat_transpose(int A, int B, complex float dst[B][A], const complex f
 extern void mat_adjoint(int A, int B, complex float dst[B][A], const complex float src[A][B]);
 extern void mat_conj(int A, int B, complex float dst[A][B], const complex float src[A][B]);
 extern void mat_copy(int A, int B, complex float dst[A][B], const complex float src[A][B]);
+extern void matf_copy(int N, int M, float out[N][M], const float in[N][M]);
 extern bool mat_inverse(unsigned int N, complex float dst[N][N], const complex float src[N][N]);
 extern void mat_pinv(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B]);
 extern void mat_pinv_left(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B]);
 extern void mat_pinv_right(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B]);
 extern void mat_vecmul(unsigned int A, unsigned int B, complex float out[A], const complex float mat[A][B], const complex float in[B]);
+extern void matf_vecmul(unsigned int A, unsigned int B, float out[A], const float mat[A][B], const float in[B]);
 extern void mat_kron(unsigned int A, unsigned int B, unsigned int C, unsigned int D,
 		complex float out[A * C][B * D], const complex float in1[A][B], const complex float in2[C][D]);
 extern void mat_vec(unsigned int A, unsigned int B, complex float out[A * B], const complex float in[A][B]);

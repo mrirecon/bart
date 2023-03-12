@@ -141,38 +141,6 @@ const struct simdata_other simdata_other_defaults = {
 };
 
 
-
-
-/* --------- Matrix Operations --------- */
-
-
-static void vm_mul_transpose(int N, float out[N], const float matrix[N][N], const float in[N])
-{
-	for (int i = 0; i < N; i++) {
-
-		out[i] = 0.;
-
-		for (int j = 0; j < N; j++)
-			out[i] += matrix[j][i] * in[j];
-	}
-}
-
-
-static void mm_mul(int N, float out[N][N], const float in1[N][N], const float in2[N][N])
-{
-	for (int i = 0; i < N; i++) {
-
-		for (int j = 0; j < N; j++) {
-
-			out[i][j] = 0.;
-
-			for (int k = 0; k < N; k++)
-				out[i][j] += in1[i][k] * in2[k][j];
-		}
-	}
-}
-
-
 /* ------------ Bloch Equations -------------- */
 
 static void set_gradients(struct sim_data* data, float t)
@@ -214,37 +182,35 @@ static void set_gradients(struct sim_data* data, float t)
 /* ---------  State-Transition Matrix Simulation --------- */
 
 
-static void bloch_simu_stm_fun(void* _data, float* out, float t, const float* in)
+static void bloch_simu_stm_fun(struct ode_matrix_simu_s* ode_data, float* out, float t, const float* in)
 {
-        struct ode_matrix_simu_s* ode_data = _data;
 	struct sim_data* data = ode_data->sim_data;
 
-        unsigned int N = ode_data->N;
+        int N = ode_data->N;
 
         set_gradients(data, t);
 
 	float matrix_time[N][N];
 
-        if (4 == N) // M
-                bloch_matrix_ode(matrix_time, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
+	switch (N) {
 
-        else if (10 == N) // M, dR1, dR2, dM0
-                bloch_matrix_ode_sa(matrix_time, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff);
+	case 4: // M
+                bloch_matrix_ode(matrix_time, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+		break;
 
-        else if (13 == N) // M, dR1, dR2, dM0, dB1
-	        bloch_matrix_ode_sa2(matrix_time, data->voxel.r1, data->voxel.r2+data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+	case 10: // M, dR1, dR2, dM0
+                bloch_matrix_ode_sa(matrix_time, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+		break;
 
-        else
+	case 13: // M, dR1, dR2, dM0, dB1
+	        bloch_matrix_ode_sa2(matrix_time, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+		break;
+
+	default:
                 error("Please choose correct dimension for STM matrix!\n");
-
-
-        for (unsigned int i = 0; i < N; i++) {
-
-		out[i] = 0.;
-
-		for (unsigned int j = 0; j < N; j++)
-			out[i] += matrix_time[i][j] * in[j];
 	}
+
+	matf_vecmul(N, N, out, matrix_time, in);
 }
 
 
@@ -297,7 +263,13 @@ void apply_sim_matrix(int N, float m[N], float matrix[N][N])
 	for (int i = 0; i < N; i++)
 		tmp[i] = m[i];
 
-	vm_mul_transpose(N, m, matrix, tmp);
+	for (int i = 0; i < N; i++) {
+
+		m[i] = 0.;
+
+		for (int j = 0; j < N; j++)
+			m[i] += matrix[j][i] * tmp[j];
+	}
 }
 
 
@@ -395,7 +367,7 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 
                 float sample_time = 1. / data->other.sampling_rate;
 
-                assert((data->pulse.rf_end-data->pulse.rf_start) > sample_time);
+                assert((data->pulse.rf_end - data->pulse.rf_start) > sample_time);
 
                 float t_im = data->pulse.rf_start + sample_time / 2.;
 
@@ -617,7 +589,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 
                                 relaxation2(data, 0, 0, M, 1, NULL, rewind_end, data->seq.te, tmp2);
 
-                                mm_mul(M, mrel, tmp, tmp2);
+                                matf_mul(M, M, M, mrel, tmp, tmp2);
 			}
 
 		} else {
@@ -626,7 +598,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 		}
 
                 // Join matrices: 0 -> TE
-		mm_mul(M, *mte, mrf, mrel);
+		matf_mul(M, M, M, *mte, mrf, mrel);
 
                 // Smooth spoiling for FLASH sequences
 
@@ -655,7 +627,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
                                 data->grad.mom = 0.;
 
                                 // Join matrices: TE -> TR
-                                mm_mul(M, *mtr, tmp, tmp2);
+                                matf_mul(M, M, M, *mtr, tmp, tmp2);
 
                         } else {
 
