@@ -278,7 +278,7 @@ void ode_direct_sa(float h, float tol, int N, int P, float x[P + 1][N],
 // void (*s)(void* data, float* out, float t)
 // void M
 
-void ode_adjoint_sa(float h, float tol,
+void ode_adjoint_sa_noinit(float h, float tol,
 	int N, const float t[N + 1],
 	int M, float x[N + 1][M], float z[N + 1][M],
 	const float x0[M],
@@ -300,9 +300,6 @@ void ode_adjoint_sa(float h, float tol,
 	}
 
 	// adjoint state
-
-	for (int m = 0; m < M; m++)
-		z[N][m] = 0.;
 
 	for (int i = N; 0 < i; i--) {
 
@@ -326,6 +323,20 @@ void ode_adjoint_sa(float h, float tol,
 	}
 }
 
+
+void ode_adjoint_sa(float h, float tol,
+	int N, const float t[N + 1],
+	int M, float x[N + 1][M], float z[N + 1][M],
+	const float x0[M],
+	void CLOSURE_TYPE(sys)(float dst[M], float t, const float in[M]),
+	void CLOSURE_TYPE(sysT)(float dst[M], float t, const float in[M]),
+	void CLOSURE_TYPE(cost)(float dst[M], float t))
+{
+	for (int m = 0; m < M; m++)
+		z[N][m] = 0.;
+
+	ode_adjoint_sa_noinit(h, tol, N, t, M, x, z, x0, sys, sysT, cost);
+}
 
 void ode_matrix_adjoint_sa(float h, float tol,
 	int N, const float t[N + 1],

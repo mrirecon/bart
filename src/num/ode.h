@@ -31,6 +31,14 @@ extern void ode_adjoint_sa(float h, float tol,
 	void CLOSURE_TYPE(sysT)(float dst[M], float t, const float in[M]),
 	void CLOSURE_TYPE(cost)(float dst[M], float t));
 
+void ode_adjoint_sa_noinit(float h, float tol,
+	int N, const float t[N + 1],
+	int M, float x[N + 1][M], float z[N + 1][M],
+	const float x0[M],
+	void CLOSURE_TYPE(sys)(float dst[M], float t, const float in[M]),
+	void CLOSURE_TYPE(sysT)(float dst[M], float t, const float in[M]),
+	void CLOSURE_TYPE(cost)(float dst[M], float t));
+
 extern void ode_matrix_adjoint_sa(float h, float tol,
 	int N, const float t[N + 1],
 	int M, float x[N + 1][M], float z[N + 1][M],
