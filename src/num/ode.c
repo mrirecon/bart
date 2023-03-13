@@ -190,6 +190,21 @@ void ode_interval(float h, float tol, int N, float x[N], float st, float end,
 }
 
 
+void ode_interval2(float h, float tol,
+	int N, const float t[N + 1],
+	int M, float x[N + 1][M],
+	void CLOSURE_TYPE(sys)(float dst[M], float t, const float in[M]))
+{
+	for (int i = 0; i < N; i++) {
+
+		for (int m = 0; m < M; m++)
+			x[i + 1][m] = x[i][m];
+
+		ode_interval(h, tol, M, x[i + 1], t[i], t[i + 1], sys);
+	}
+}
+
+
 
 void ode_matrix_interval(float h, float tol, int N, float x[N], float st, float end, const float matrix[N][N])
 {
@@ -280,25 +295,10 @@ void ode_direct_sa(float h, float tol, int N, int P, float x[P + 1][N],
 
 void ode_adjoint_sa_noinit(float h, float tol,
 	int N, const float t[N + 1],
-	int M, float x[N + 1][M], float z[N + 1][M],
-	const float x0[M],
-	void CLOSURE_TYPE(sys)(float dst[M], float t, const float in[M]),
+	int M, float z[N + 1][M],
 	void CLOSURE_TYPE(sysT)(float dst[M], float t, const float in[M]),
 	void CLOSURE_TYPE(cost)(float dst[M], float t))
 {
-	// forward solution
-
-	for (int m = 0; m < M; m++)
-		x[0][m] = x0[m];
-
-	for (int i = 0; i < N; i++) {
-
-		for (int m = 0; m < M; m++)
-			x[i + 1][m] = x[i][m];
-
-		ode_interval(h, tol, M, x[i + 1], t[i], t[i + 1], sys);
-	}
-
 	// adjoint state
 
 	for (int i = N; 0 < i; i--) {
@@ -332,10 +332,19 @@ void ode_adjoint_sa(float h, float tol,
 	void CLOSURE_TYPE(sysT)(float dst[M], float t, const float in[M]),
 	void CLOSURE_TYPE(cost)(float dst[M], float t))
 {
+	// forward solution
+
+	for (int m = 0; m < M; m++)
+		x[0][m] = x0[m];
+
+	ode_interval2(h, tol, N, t, M, x, sys);
+
+	// adjoint solution
+
 	for (int m = 0; m < M; m++)
 		z[N][m] = 0.;
 
-	ode_adjoint_sa_noinit(h, tol, N, t, M, x, z, x0, sys, sysT, cost);
+	ode_adjoint_sa_noinit(h, tol, N, t, M, z, sysT, cost);
 }
 
 void ode_matrix_adjoint_sa(float h, float tol,
