@@ -406,6 +406,13 @@ void (mat_transpose)(int A, int B, complex float dst[B][A], const complex float 
 			dst[i][j] = src[j][i];	// swap
 }
 
+void matf_transpose(int A, int B, float dst[B][A], const float src[A][B])
+{
+	for (int i = 0; i < B; i++)
+		for (int j = 0; j < A; j++)
+			dst[i][j] = src[j][i];	// swap
+}
+
 void (mat_adjoint)(int A, int B, complex float dst[B][A], const complex float src[A][B])
 {
 	for (int i = 0; i < B; i++)

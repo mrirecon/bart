@@ -23,6 +23,7 @@ extern void matf_mul(int A, int B, int C, float x[A][C], const float y[A][B], co
 extern void mat_muladd(int A, int B, int C, complex float x[MVLA(A)][C], const complex float y[MVLA(A)][B], const complex float z[MVLA(B)][C]);
 extern void mat_add(int A, int B, complex float x[A][B], const complex float y[A][B], const complex float z[A][B]);
 extern void mat_transpose(int A, int B, complex float dst[B][A], const complex float src[A][B]);
+extern void matf_transpose(int A, int B, float dst[B][A], const float src[A][B]);
 extern void mat_adjoint(int A, int B, complex float dst[B][A], const complex float src[A][B]);
 extern void mat_conj(int A, int B, complex float dst[A][B], const complex float src[A][B]);
 extern void mat_copy(int A, int B, complex float dst[A][B], const complex float src[A][B]);
