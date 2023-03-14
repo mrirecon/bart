@@ -126,9 +126,9 @@ ALLDEPS = $(shell find $(srcdir) utests -name ".*.d")
 # Compilation flags
 
 ifneq ($(DEBUG),1)
-OPT = -O2
+OPT = -O2 -ffp-contract=off
 else
-OPT = -Og
+OPT = -Og -ffp-contract=off
 endif
 CPPFLAGS ?= -Wall -Wextra
 CFLAGS ?= $(OPT) -Wmissing-prototypes
