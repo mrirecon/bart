@@ -609,9 +609,6 @@ int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max
 
 					if (j == n[i]) {
 
-						if (j != n[i])
-							return -1;
-
 						num_ele_dims += size_tensor;
 
 						size_tensor = 1;

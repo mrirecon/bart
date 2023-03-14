@@ -2448,11 +2448,6 @@ list_t operator_get_list(const struct operator_s* op) {
 		return operator_get_list(data_perm->op);
 	}
 
-	if (NULL != data_perm) {
-
-		return operator_get_list(data_perm->op);
-	}
-
 	if (NULL != data_plus) {
 
 		list_t result = operator_get_list(data_plus->a);
