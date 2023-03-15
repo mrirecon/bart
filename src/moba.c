@@ -406,8 +406,10 @@ int main_moba(int argc, char* argv[argc])
 
 		md_copy(DIMS, coil_dims, sens, in_sens, CFL_SIZE);
 
-	} else
+	} else {
+
 		md_clear(DIMS, coil_dims, sens, CFL_SIZE);
+	}
 
 	md_zfill(DIMS, img_dims, img, 1.0);
 
