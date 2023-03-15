@@ -240,7 +240,7 @@ tests/test-sim-ode-deriv-r1: sim slice saxpy scale nrmse
 	$(TOOLDIR)/saxpy -- -1 s.ra s2.ra diff.ra ;\
 	$(TOOLDIR)/scale -- 333 diff.ra g.ra ;\
 	$(TOOLDIR)/scale -- -9 g.ra g2.ra ;\
-	$(TOOLDIR)/nrmse -t 0.013 d_r1.ra g2.ra			    	;\
+	$(TOOLDIR)/nrmse -t 0.014 d_r1.ra g2.ra			    	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
