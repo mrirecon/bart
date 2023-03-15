@@ -84,11 +84,11 @@ DEF_TYPEID(T1inv_s);
 
 
 
-static void normal(iter_op_data* _data, float* dst, const float* src)
+static void normal(iter_op_data* _data, float* _dst, const float* _src)
 {
 	auto data = CAST_DOWN(T1inv_s, _data);
-	complex float* dst = _dst;
-	const complex float src = _src;
+	complex float* dst = (complex float*)_dst;
+	const complex float* src = (const complex float*)_src;
 
 	linop_normal_unchecked(nlop_get_derivative(data->nlop, 0, 0), dst, src);
 
@@ -442,7 +442,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 		if (conf->not_wav_maps < dims[COEFF_DIM]) {
 
 			prox2 = operator_p_stack_FF(COEFF_DIM, COEFF_DIM, prox2, prox3);
-		
+
 		} else {
 
 			operator_p_free(prox2);
@@ -486,6 +486,34 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 }
 
 
+struct pu_data {
+
+	INTERFACE(iter_op_data);
+
+	int N;
+	const long* dims;
+	complex float* tmp;
+	int steps;
+	int pusteps;
+	float ratio;
+};
+
+DEF_TYPEID(pu_data);
+
+static void partial_update(iter_op_data* _data, float* _dst, const float* _src)
+{
+	auto data = CAST_DOWN(pu_data, _data);
+	complex float* dst = (complex float*)_dst;
+	const complex float* src = (const complex float*)_src;
+
+	if (++data->steps > data->pusteps)
+		return;
+
+	md_zsmul(data->N, data->dims, dst, src, data->ratio);
+	md_zaxpy(data->N, data->dims, dst, 1. - data->ratio, data->tmp);
+
+	md_copy(data->N, data->dims, data->tmp, dst, CFL_SIZE);
+}
 
 
 void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
@@ -554,9 +582,31 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 				 NULL, conf->ropts->r, thresh_ops, trafos, NULL);
 	}
 
+	complex float* tmp = NULL;
+
+	if (0 < conf->pusteps) {
+
+		tmp = md_alloc_sameplace(dm->N, dm->dims, CFL_SIZE, dst);
+		md_copy(dm->N, dm->dims, tmp, dst, CFL_SIZE);
+	}
+
+	struct pu_data pu_data = {
+
+		.INTERFACE.TYPEID = &TYPEID(pu_data),
+		.N = dm->N,
+		.dims = dm->dims,
+		.tmp = tmp,
+		.steps = 0,
+		.pusteps = conf->pusteps,
+		.ratio = conf->ratio,
+	};
+
 	iter4_irgnm2(CAST_UP(conf->c2), nlop,
 		N, dst, NULL, M, src, inv_op,
-		(struct iter_op_s){ NULL, NULL });
+		(struct iter_op_s){ partial_update, CAST_UP(&pu_data) });
+
+	if (NULL != tmp)
+		md_free(tmp);
 
 	operator_p_free(inv_op);
 

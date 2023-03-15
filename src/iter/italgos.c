@@ -476,20 +476,14 @@ void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha_min0, f
 	struct iter_op_p_s lsqr,
 	float* x, const float* xref, const float* y,
 	struct iter_op_s callback,
-	unsigned int pusteps,
-	float ratio,
 	struct iter_monitor_s* monitor)
 {
 	float* r = vops->allocate(M);
 	float* q = vops->allocate(M);
-	float* t = vops->allocate(N);
 
 	for (unsigned int i = 0; i < iter; i++) {
 
 		iter_monitor(monitor, vops, x);
-
-		if (i < pusteps)
-			vops->copy(N, t, x);
 
 		iter_op_call(op, r, x);			// r = F x
 
@@ -509,9 +503,6 @@ void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha_min0, f
 		if (NULL != xref)
 			vops->axpy(N, x, +1., xref);
 
-		if (i < pusteps)	// Partially add previous map to update
-			vops->axpbz(N, x, ratio, x, 1.-ratio, t);
-
 		alpha = (alpha - alpha_min) / redu + alpha_min;
 
 		if (alpha < alpha_min0)
@@ -523,7 +514,6 @@ void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha_min0, f
 
 	vops->del(q);
 	vops->del(r);
-	vops->del(t);
 }
 
 

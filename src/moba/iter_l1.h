@@ -28,6 +28,9 @@ struct mdb_irgnm_l1_conf {
 	int tvscales_N;
 	complex float* tvscales;
 	float l1val;
+
+	unsigned int pusteps;
+	float ratio;
 };
 
 void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,

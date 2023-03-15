@@ -220,7 +220,7 @@ void iter4_irgnm2(const iter3_conf* _conf,
 
 	irgnm2(conf->iter, conf->alpha, conf->alpha_min, conf->alpha_min0, conf->redu, N, M, select_vecops(src),
 		frw, der, (NULL == lsqr) ? inv2 : OPERATOR_P2ITOP(lsqr),
-		dst, ref, src, cb, conf->pusteps, conf->ratio,  NULL);
+		dst, ref, src, cb, NULL);
 
 	md_free(tmp);
 }

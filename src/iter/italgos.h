@@ -192,8 +192,6 @@ void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha0, float
 	struct iter_op_p_s lsqr,
 	float* x, const float* xref, const float* y,
 	struct iter_op_s callback,
-	unsigned int pusteps,
-	float ratio,
 	struct iter_monitor_s* monitor);
 
 void altmin(unsigned int iter, float alpha, float redu,

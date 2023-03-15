@@ -41,9 +41,9 @@ struct moba_conf {
 	float sobolev_b;
 	bool noncartesian;
         bool sms;
-	int not_wav_maps;
-	int constrained_maps;
-	int l2para;
+	unsigned long not_wav_maps;
+	unsigned long constrained_maps;
+	unsigned long l2para;
 	unsigned int pusteps;
 	float ratio;
 	float l1val;

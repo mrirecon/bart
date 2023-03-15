@@ -25,9 +25,6 @@ struct iter3_irgnm_conf {
 	int cgiter;
 	float cgtol;
 
-	unsigned int pusteps; // Partial update steps
-	float ratio; // Ratio of update, (1-ratio)*previous-solution
-
 	_Bool nlinv_legacy;
 };
 
