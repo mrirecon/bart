@@ -25,5 +25,5 @@ license used by BART (see LICENSE file). By submitting patches to
 us it is understood that you agree to these terms and that you
 confirm that you hold all necessary rights yourself or have
 permission from the copyright holder. Please also add the name of
-the copyright holder and name and email of the author(s) to the
-copyright headers in all new or changed files.
+the copyright holder to the copyright header in all new or changed
+files.
