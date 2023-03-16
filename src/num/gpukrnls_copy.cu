@@ -1,4 +1,8 @@
-#include <stdio.h>
+/* Copyright 2023. Uecker Lab. University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+
 #include <stdbool.h>
 #include <assert.h>
 
@@ -35,6 +39,7 @@ typedef void(kern_copy_t)(cuda_strides_ND strs, cuFloatComplex* dst, const cuFlo
 static __device__ void md_unravel_index(int D, long* pos, const long* dims, long index)
 {
 	long ind = index;
+
 	for (int d = 0; d < D; ++d) {
 
 		pos[d] = ind % dims[d];
@@ -62,10 +67,10 @@ __global__ static void kern_copy_strides(cuda_strides_ND strs, T* dst, const T* 
 
 		md_unravel_index(N - 3, pos + 3, strs.dims + 3, i);
 
-		for (pos[2] = start[2]; pos[2] < ((2 < N) ? strs.dims[2] : 1); pos[2] += stride[2])
-			for (pos[1] = start[1]; pos[1] < ((1 < N) ? strs.dims[1] : 1); pos[1] += stride[1])
+		for (pos[2] = start[2]; pos[2] < ((2 < N) ? strs.dims[2] : 1); pos[2] += stride[2]) {
+			for (pos[1] = start[1]; pos[1] < ((1 < N) ? strs.dims[1] : 1); pos[1] += stride[1]) {
 				for (pos[0] = start[0]; pos[0] < ((0 < N) ? strs.dims[0] : 1); pos[0] += stride[0]) {
-		
+
 					long o_off = 0;
 					long i_off = 0;
 
@@ -77,6 +82,8 @@ __global__ static void kern_copy_strides(cuda_strides_ND strs, T* dst, const T* 
 
 					dst[o_off] = src[i_off];
 				}
+			}
+		}
 	}
 }
 
@@ -85,28 +92,28 @@ static void* get_kern_fop_unfold(int N)
 {
 	if (1 == N)
 		return (void*)kern_copy_strides<T, 1>;
-	
+
 	if (2 == N)
 		return (void*)kern_copy_strides<T, 2>;
 
 	if (3 == N)
 		return (void*)kern_copy_strides<T, 3>;
-	
+
 	if (4 == N)
 		return (void*)kern_copy_strides<T, 4>;
-	
+
 	if (5 == N)
 		return (void*)kern_copy_strides<T, 5>;
-	
+
 	if (6 == N)
 		return (void*)kern_copy_strides<T, 6>;
-	
+
 	if (7 == N)
 		return (void*)kern_copy_strides<T, 7>;
 
 	if (8 == N)
 		return (void*)kern_copy_strides<T, 8>;
-	
+
 	return NULL;
 }
 
@@ -121,7 +128,7 @@ static void cuda_copy_template_unfold(int D, const long dims[], const long ostrs
 
 	int shift = (1 == dims[0] ? 1 : 0);
 	strs.N = D - shift;
-	
+
 	for (int i = 0; i < D - shift; i++) {
 
 		strs.dims[i] =  dims[i + shift];
@@ -144,13 +151,13 @@ static void cuda_copy_template_unfold(int D, const long dims[], const long ostrs
 
 	if (1 == strs.N)
 		kern_copy_strides<T, 1><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
-	
+
 	if (2 == strs.N)
 		kern_copy_strides<T, 2><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
 	if (3 == strs.N)
 		kern_copy_strides<T, 3><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
-	
+
 	if (4 == strs.N)
 		kern_copy_strides<T, 4><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
@@ -174,18 +181,19 @@ void cuda_copy_ND(int D, const long dims[], const long ostrs[], void* dst, const
 	assert(D <= MAX_COPY_DIMS - 1);
 
 	size_t ele_size = 1;
-	
+
 	bool cont = true;
+
 	while (cont) {
 
 		if (0 != size % (2 * ele_size))
 			cont = false;
-		
+
 		for (int i = 0; i < D; i++) {
 
 			if (0 != ostrs[i] % (2 * ele_size))
 				cont = false;
-			
+
 			if (0 != istrs[i] % (2 * ele_size))
 				cont = false;
 		}
@@ -213,19 +221,19 @@ void cuda_copy_ND(int D, const long dims[], const long ostrs[], void* dst, const
 	}
 
 	switch (ele_size) {
-	
-		case 1:
-			cuda_copy_template_unfold<uint8_t>(D + 1, ndims, nostrs, dst, nistrs, src);
-			break;
-		case 2:
-			cuda_copy_template_unfold<uint16_t>(D + 1, ndims, nostrs, dst, nistrs, src);
-			break;
-		case 4:
-			cuda_copy_template_unfold<uint32_t>(D + 1, ndims, nostrs, dst, nistrs, src);
-			break;
-		case 8:
-			cuda_copy_template_unfold<uint64_t>(D + 1, ndims, nostrs, dst, nistrs, src);
-			break;
+
+	case 1:
+		cuda_copy_template_unfold<uint8_t>(D + 1, ndims, nostrs, dst, nistrs, src);
+		break;
+	case 2:
+		cuda_copy_template_unfold<uint16_t>(D + 1, ndims, nostrs, dst, nistrs, src);
+		break;
+	case 4:
+		cuda_copy_template_unfold<uint32_t>(D + 1, ndims, nostrs, dst, nistrs, src);
+		break;
+	case 8:
+		cuda_copy_template_unfold<uint64_t>(D + 1, ndims, nostrs, dst, nistrs, src);
+		break;
 	}
 }
 

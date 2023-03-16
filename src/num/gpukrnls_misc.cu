@@ -1,3 +1,7 @@
+/* Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
 
 #include <cuda_runtime_api.h>
 
@@ -19,7 +23,6 @@ static long gridsize_int(long N, int blocksize)
 
 static void getBlockSize3_internal(int block[3], const long dims[3], int threads)
 {
-
 	block[0] = 1;
 	block[1] = 1;
 	block[2] = 1;

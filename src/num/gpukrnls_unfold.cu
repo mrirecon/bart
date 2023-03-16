@@ -1,3 +1,8 @@
+/* Copyright 2023. Uecker Lab. University Medical Center Göttingen.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -70,7 +75,7 @@ __global__ static void kern_fop_unfold_generic(cuda_strides_3D strs, float* dst,
 	for (idx[2] = idx_init[2]; idx[2] < ((2 < N) ? strs.dims[2] : 1); idx[2] += stride[2])
 		for (idx[1] = idx_init[1]; idx[1] < ((1 < N) ? strs.dims[1] : 1); idx[1] += stride[1])
 			for (idx[0] = idx_init[0]; idx[0] < ((0 < N) ? strs.dims[0] : 1); idx[0] += stride[0]) {
-		
+
 				long o_off =  0;
 				long i1_off = 0;
 				long i2_off = 0;
@@ -89,10 +94,10 @@ __global__ static void kern_fop_unfold_generic(cuda_strides_3D strs, float* dst,
 
 				int tmp1_size = 0;
 				int tmp1_idx = 0;
-				_Bool read1 = false;
+				bool read1 = false;
 
 				if (const1) {
-					
+
 					tmp1_size = 1;
 					read1 = true;
 
@@ -101,6 +106,7 @@ __global__ static void kern_fop_unfold_generic(cuda_strides_3D strs, float* dst,
 						if (const1 & (1u << i)) {
 
 							read1 = read1 && (0 == thread[i]);
+
 						} else {
 
 							tmp1_idx += tmp1_size * thread[i];
@@ -114,7 +120,7 @@ __global__ static void kern_fop_unfold_generic(cuda_strides_3D strs, float* dst,
 				_Bool read2 = false;
 
 				if (const2) {
-					
+
 					tmp2_size = 1;
 					read2 = true;
 
@@ -123,6 +129,7 @@ __global__ static void kern_fop_unfold_generic(cuda_strides_3D strs, float* dst,
 						if (const2 & (1u << i)) {
 
 							read2 = read2 && (0 == thread[i]);
+
 						} else {
 
 							tmp2_idx += tmp2_size * thread[i];
@@ -135,7 +142,7 @@ __global__ static void kern_fop_unfold_generic(cuda_strides_3D strs, float* dst,
 
 				if (valid && read1)
 					tmp_float[tmp1_idx] = src1[i1_off];
-				
+
 				if (valid && read2)
 					tmp_float[tmp2_idx] = src2[i2_off];
 
@@ -283,7 +290,7 @@ __global__ static void kern_zop_unfold_generic(cuda_strides_3D strs, cuFloatComp
 	for (idx[2] = idx_init[2]; idx[2] < ((2 < N) ? strs.dims[2] : 1); idx[2] += stride[2])
 		for (idx[1] = idx_init[1]; idx[1] < ((1 < N) ? strs.dims[1] : 1); idx[1] += stride[1])
 			for (idx[0] = idx_init[0]; idx[0] < ((0 < N) ? strs.dims[0] : 1); idx[0] += stride[0]) {
-		
+
 				long o_off =  0;
 				long i1_off = 0;
 				long i2_off = 0;
@@ -301,10 +308,10 @@ __global__ static void kern_zop_unfold_generic(cuda_strides_3D strs, cuFloatComp
 
 				int tmp1_size = 0;
 				int tmp1_idx = 0;
-				_Bool read1 = false;
+				bool read1 = false;
 
 				if (const1) {
-					
+
 					tmp1_size = 1;
 					read1 = true;
 
@@ -313,6 +320,7 @@ __global__ static void kern_zop_unfold_generic(cuda_strides_3D strs, cuFloatComp
 						if (const1 & (1u << i)) {
 
 							read1 = read1 && (0 == thread[i]);
+
 						} else {
 
 							tmp1_idx += tmp1_size * thread[i];
@@ -323,10 +331,10 @@ __global__ static void kern_zop_unfold_generic(cuda_strides_3D strs, cuFloatComp
 
 				int tmp2_size = 0;
 				int tmp2_idx = tmp1_size;
-				_Bool read2 = false;
+				bool read2 = false;
 
 				if (const2) {
-					
+
 					tmp2_size = 1;
 					read2 = true;
 
@@ -335,6 +343,7 @@ __global__ static void kern_zop_unfold_generic(cuda_strides_3D strs, cuFloatComp
 						if (const2 & (1u << i)) {
 
 							read2 = read2 && (0 == thread[i]);
+
 						} else {
 
 							tmp2_idx += tmp2_size * thread[i];
@@ -347,7 +356,7 @@ __global__ static void kern_zop_unfold_generic(cuda_strides_3D strs, cuFloatComp
 
 				if (valid && read1)
 					tmp_complex[tmp1_idx] = src1[i1_off];
-				
+
 				if (valid && read2)
 					tmp_complex[tmp2_idx] = src2[i2_off];
 
@@ -471,7 +480,6 @@ static kern_zOp_unfold* get_kern_zop_unfold(int N, unsigned int const1, unsigned
 
 static void getBlockSize3_internal(int block[3], const long dims[3], int threads)
 {
-
 	block[0] = 1;
 	block[1] = 1;
 	block[2] = 1;
