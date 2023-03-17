@@ -1,12 +1,8 @@
 /* Copyright 2013-2018. The Regents of the University of California.
- * Copyright 2017-2018. Martin Uecker.
+ * Copyright 2017-2022. Uecker Lab. University Medical Center Göttingen.
+ * Copryight 2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2015-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
- *
  *
  * This file defines basic operations on vectors of floats/complex floats
  * for operations on the GPU. See the CPU version (vecops.c) for more
@@ -394,6 +390,24 @@ extern "C" void cuda_zfmacc2(long N, _Complex double* dst, const _Complex float*
 {
 	kern_zfmacc2<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
+
+
+__global__ void kern_zfsq2(long N, cuFloatComplex* dst, const cuFloatComplex* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
+		dst[i] = cuCaddf(dst[i], make_cuFloatComplex(
+					cuCrealf(src[i]) * cuCrealf(src[i]) + cuCimagf(src[i]) * cuCimagf(src[i]), 0.));
+}
+
+
+extern "C" void cuda_zfsq2(long N, _Complex float* dst, const _Complex float* src)
+{
+	kern_zfsq2<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+}
+
 
 
 #define MAX_DIMS 3

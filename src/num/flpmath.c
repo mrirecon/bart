@@ -1,11 +1,12 @@
 /* Copyright 2013-2018 The Regents of the University of California.
- * Copyright 2016-2021. Martin Uecker.
+ * Copyright 2016-2022. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2023. Insitute of Biomedical Imaging. TU Graz.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2021 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2023 Martin Uecker <uecker@tugraz.at>
  * 2013 Dara Bahri <dbahri123@gmail.com>
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2014-2018 Jonathan Tamir <jtamir@eecs.berkeley.edu>
@@ -3101,10 +3102,14 @@ void md_zss2(int D, const long dims[D], unsigned long flags, const long str2[D],
 	md_select_dims(D, ~flags, dims2, dims);
 
 	md_clear2(D, dims2, str2, dst, CFL_SIZE);
+#if 1
+	MAKE_Z2OP(zfsq2, D, dims, str2, dst, str1, src);
+#else
 	md_zfmacc2(D, dims, str2, dst, str1, src, str1, src);
 
 	// FMA may create small imaginary values (we should replace zfmacc2, and sqrt in rss)
 	md_zreal2(D, dims, str2, dst, str2, dst);
+#endif
 }
 
 

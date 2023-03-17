@@ -44,6 +44,7 @@ struct vec_ops {
 	void (*zmulc)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zfmacc)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zfmacc2)(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2);
+	void (*zfsq2)(long N, _Complex float* dst, const _Complex float* src1);
 
 	void (*zsmul)(long N, _Complex float val, _Complex float* dst, const _Complex float* src1);
 	void (*zsadd)(long N, _Complex float val, _Complex float* dst, const _Complex float* src1);

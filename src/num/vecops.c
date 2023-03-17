@@ -304,6 +304,13 @@ static void zfmacc2(long N, complex double* dst, const complex float* src1, cons
 		dst[i] += src1[i] * conjf(src2[i]);
 }
 
+static void zfsq2(long N, complex float* dst, const complex float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] += crealf(src[i]) * crealf(src[i]) + cimagf(src[i]) * cimagf(src[i]);
+}
+
+
 static void zconj(long N, complex float* dst, const complex float* src)
 {
 	for (long i = 0; i < N; i++)
@@ -750,6 +757,7 @@ const struct vec_ops cpu_ops = {
 	.zmulc = zmulc,
 	.zfmacc = zfmacc,
 	.zfmacc2 = zfmacc2,
+	.zfsq2 = zfsq2,
 
 	.zsmax = zsmax,
 	.zsmul = zsmul,
