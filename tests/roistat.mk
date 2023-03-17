@@ -59,7 +59,7 @@ tests/test-roistat-mult: zeros noise ones resize roistat join nrmse
 	$(TOOLDIR)/join 4 dy.ra dx.ra d2.ra 						;\
 	$(TOOLDIR)/join 4 oy2.ra ox2.ra o2.ra 						;\
 	$(TOOLDIR)/roistat -b -D o2.ra n.ra d.ra					;\
-	$(TOOLDIR)/nrmse -t 0. d2.ra d.ra 						;\
+	$(TOOLDIR)/nrmse -t 0.0000001 d2.ra d.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

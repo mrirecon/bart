@@ -3102,6 +3102,9 @@ void md_zss2(int D, const long dims[D], unsigned long flags, const long str2[D],
 
 	md_clear2(D, dims2, str2, dst, CFL_SIZE);
 	md_zfmacc2(D, dims, str2, dst, str1, src, str1, src);
+
+	// FMA may create small imaginary values (we should replace zfmacc2, and sqrt in rss)
+	md_zreal2(D, dims, str2, dst, str2, dst);
 }
 
 
