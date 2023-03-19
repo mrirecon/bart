@@ -421,22 +421,17 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
 static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N], float st, float end)
 {
-	if (0. < (end - st)) {
+	assert(0. <= (end - st));
 
-		float xp2[3] = { 0. };
+	float xp2[3] = { 0. };
 
-		for (int i = 0; i < P; i++) {
+	for (int i = 0; i < P; i++) {
 
-			xp2[0] = xp[i][0];
-			xp2[1] = xp[i][1];
-			xp2[2] = xp[i][2];
+		xp2[0] = xp[i][0];
+		xp2[1] = xp[i][1];
+		xp2[2] = xp[i][2];
 
-			bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb);
-		}
-
-	} else {
-
-		debug_printf(DP_WARN, "ROT Simulation, Relaxation time == 0 or < 0! Skip...\n");
+		bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb);
 	}
 }
 
@@ -714,20 +709,30 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 {
 	struct sim_data prep_data = *data;
 
-        // Enforce ODE: Way more efficient here!
-        prep_data.seq.type = SIM_ODE;
+	assert(0. <= data->seq.prep_pulse_length);
 
-        prep_data.pulse.flipangle = data->pulse.flipangle / 2.;
-        prep_data.pulse.phase = M_PI;
-        prep_data.seq.te = (data->pulse.rf_end + data->seq.prep_pulse_length) / 2.;
-        prep_data.seq.tr = data->seq.prep_pulse_length;
+	// Enforce ODE: Way more efficient here!
+	prep_data.seq.type = SIM_ODE;
 
-        prepare_sim(&prep_data, N, P, NULL, NULL);
+	prep_data.pulse.flipangle = data->pulse.flipangle / 2.;
+	prep_data.pulse.phase = M_PI;
+	prep_data.seq.te = (data->pulse.rf_end + data->seq.prep_pulse_length) / 2.;
+	prep_data.seq.tr = data->seq.prep_pulse_length;
 
-	int R = data->seq.rep_num;
-	int S = data->seq.spin_num;
+	if (0. < data->seq.prep_pulse_length) {
 
-        run_sim(&prep_data, R, S, NULL, NULL, NULL, NULL, h, tol, N, P, xp, NULL, NULL, NULL);
+		prepare_sim(&prep_data, N, P, NULL, NULL);
+
+		int R = data->seq.rep_num;
+		int S = data->seq.spin_num;
+
+		run_sim(&prep_data, R, S, NULL, NULL, NULL, NULL, h, tol, N, P, xp, NULL, NULL, NULL);
+
+	} else { // Perfect preparation
+
+		for (int p = 0; p < P; p++)
+                        bloch_excitation2(xp[p], xp[p], prep_data.pulse.flipangle / 180. * M_PI, prep_data.pulse.phase);
+	}
 }
 
 
