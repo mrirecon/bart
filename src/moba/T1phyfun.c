@@ -93,6 +93,18 @@ void T1_back_alpha(const struct linop_s* op, complex float* dst, const complex f
 	linop_adjoint_unchecked(op, dst, src);
 }
 
+/**
+ * Readout relaxation rate for reparameterized Look-Locker model
+ * Roeloffs, V., Wang, X., Sumpf, T.J., Untenberger, M., Voit, D. and Frahm, J. (2016),
+ * Model-based reconstruction for T1 mapping using single-shot inversion-recovery radial FLASH.
+ * Int. J. Imaging Syst. Technol., 26: 254-263. https://doi.org/10.1002/ima.22196z
+ * @param tr 	repetition time [s]
+ * @param angle flip angle [rad]
+ */
+float read_relax(float tr, float angle)
+{
+	return -1. / tr * logf(cosf(angle));
+}
 
 // Calculate Model: M0 * (R1/(R1 + alpha) - (1 + R1/(R1 + alpha)) * exp(-t.*(R1 + alpha)))
 static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex float* src)
@@ -381,10 +393,8 @@ struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_
 	linop_free(linop_ifftc);
 
 	data->scaling_alpha = config->other.scale[2];
-	data->r1p_nom = -1. / config->sim.seq.tr * log(cos(DEG2RAD(config->sim.pulse.flipangle)));
+	data->r1p_nom = read_relax(config->sim.seq.tr, DEG2RAD(config->sim.pulse.flipangle));
 
 	data->counter = 0;
 	return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), T1_fun, T1_der, T1_adj, NULL, NULL, T1_del);
 }
-
-
