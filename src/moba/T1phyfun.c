@@ -381,7 +381,7 @@ struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_
 	linop_free(linop_ifftc);
 
 	data->scaling_alpha = config->other.scale[2];
-	data->r1p_nom = (1. == config->sim.pulse.flipangle) ? 1. : -1./config->sim.seq.tr*log(cos(config->sim.pulse.flipangle*M_PI/180.));
+	data->r1p_nom = -1. / config->sim.seq.tr * log(cos(DEG2RAD(config->sim.pulse.flipangle)));
 
 	data->counter = 0;
 	return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), T1_fun, T1_der, T1_adj, NULL, NULL, T1_del);

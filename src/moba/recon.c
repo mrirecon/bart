@@ -67,7 +67,7 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 
 	if (MDB_T1_PHY == mode) {
 
-		float r1p_nom = -1./data->sim.seq.tr*log(cos(data->sim.pulse.flipangle*M_PI/180.));
+		float r1p_nom = -1. / data->sim.seq.tr * log(cos(DEG2RAD(data->sim.pulse.flipangle)));
 
 		md_set_dims(DIMS, pos, 0);
 
@@ -85,7 +85,7 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 
 		complex float* offset = md_alloc_sameplace(DIMS, map_dims, CFL_SIZE, img);
 
-		md_zfill(DIMS, map_dims, offset, (1. == data->sim.pulse.flipangle) ? 1. : r1p_nom);
+		md_zfill(DIMS, map_dims, offset, r1p_nom);
 		md_zadd(DIMS, map_dims, tmp, tmp, offset);
 
 		md_zsmul(DIMS, map_dims, tmp, tmp, -data->sim.seq.tr);    // Same scaling set in T1phyfun.c
