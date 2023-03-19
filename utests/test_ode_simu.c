@@ -327,7 +327,7 @@ static bool test_ode_irbssfp_simulation(void)
 	float angle = 45.;
 	float repetition = 100;
 
-	float fa = angle * M_PI / 180.;
+	float fa = DEG2RAD(angle);
 
 	float t1n = WATER_T1;
 	float t2n = WATER_T2;
@@ -431,7 +431,7 @@ static bool test_rot_irbssfp_simulation(void)
 	float angle = 45.;
 	float repetition = 100;
 
-	float fa = angle * M_PI / 180.;
+	float fa = DEG2RAD(angle);
 
 	float t1n = WATER_T1;
 	float t2n = WATER_T2;
@@ -1137,7 +1137,7 @@ static bool test_hp_irbssfp_simulation(void)
 	float angle = 45.;
 	float repetition = 100;
 
-	float fa = angle * M_PI / 180.;
+	float fa = DEG2RAD(angle);
 
 	float t1n = WATER_T1;
 	float t2n = WATER_T2;

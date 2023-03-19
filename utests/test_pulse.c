@@ -13,6 +13,7 @@
 #include "misc/nested.h"
 
 #include "num/quadrature.h"
+#include "num/flpmath.h"
 
 #include "simu/pulse.h"
 #include "simu/simulation.h"
@@ -134,7 +135,7 @@ static bool test_rf_pulse_ode(void)
 
                         // Compare result to nominal FA
 
-			float sim_angle = atan2f(xp[0][1], xp[0][2]) / M_PI * 180.;
+			float sim_angle = RAD2DEG(atan2f(xp[0][1], xp[0][2]));
 
 			if (sim_angle < 0.)
 				sim_angle += 360.;

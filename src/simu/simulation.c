@@ -323,7 +323,7 @@ static void sum_up_signal(float m0, int R, int S, int A, float D, float (*m)[R *
 static void hard_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 {
         for (int i = 0; i < P; i++)
-                bloch_excitation2(xp[i], xp[i], data->pulse.flipangle / 180. * M_PI, data->pulse.phase);
+                bloch_excitation2(xp[i], xp[i], DEG2RAD(data->pulse.flipangle), data->pulse.phase);
 }
 
 
@@ -731,7 +731,7 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 	} else { // Perfect preparation
 
 		for (int p = 0; p < P; p++)
-                        bloch_excitation2(xp[p], xp[p], prep_data.pulse.flipangle / 180. * M_PI, prep_data.pulse.phase);
+                        bloch_excitation2(xp[p], xp[p], DEG2RAD(prep_data.pulse.flipangle), prep_data.pulse.phase);
 	}
 }
 
