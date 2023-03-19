@@ -17,9 +17,6 @@
 #define CDL_SIZE	sizeof(_Complex double)
 #define  DL_SIZE	sizeof(double)
 
-#define DEG2RAD(d) ((d) * M_PI / 180.)
-#define RAD2DEG(r) ((r) / M_PI * 180.)
-
 #define MD_REAL_DIMS(N, dims)				\
 ({							\
 	int _N = (N);					\
