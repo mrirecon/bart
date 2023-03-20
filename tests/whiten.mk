@@ -1,7 +1,7 @@
 
 
 
-tests/test-whiten: zeros ones noise join whiten std nrmse show
+tests/test-whiten: zeros ones noise join whiten std nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/zeros 1 4096 z.ra							;\
 	$(TOOLDIR)/noise -s 1 -n 1 z.ra n1.ra						;\
