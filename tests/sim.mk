@@ -240,6 +240,14 @@ tests/test-sim-ode-stm-bssfp-te-eq-trf-eq-tr: sim nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-sim-ode-rot-flash-te-eq-trf-ep-tr: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/sim --ODE --seq FLASH,TR=0.001,TE=0.001,Nrep=1,ipl=0,isp=0,ppl=0,Trf=0.001,FA=180,BWTP=1,slice-thickness=0.005,sl-grad=0.012 -1 3:3:1 -2 1:1:1 simu_ode.ra ;\
+	$(TOOLDIR)/sim --ROT --seq FLASH,TR=0.001,TE=0.001,Nrep=1,ipl=0,isp=0,ppl=0,Trf=0.001,FA=180,BWTP=1,slice-thickness=0.005,sl-grad=0.012 --other sampling-rate=10E6 -1 3:3:1 -2 1:1:1 simu_rot.ra ;\
+	$(TOOLDIR)/nrmse -t 0.006 simu_rot.ra simu_ode.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-sim-ode-deriv-r1: sim slice saxpy scale nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
 	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=1000,pinv,ipl=0.01,ppl=0.002,Trf=0.001,FA=45,BWTP=4 -1 3:3:1 -2 1:1:1 --other ode-tol=1E-6 s.ra d.ra;\
@@ -296,5 +304,5 @@ TESTS += tests/test-sim-ode-stm-flash tests/test-sim-ode-stm-irflash
 TESTS += tests/test-sim-ode-rot-bssfp tests/test-sim-ode-rot-irbssfp
 TESTS += tests/test-sim-ode-rot-flash tests/test-sim-ode-rot-irflash
 TESTS += tests/test-sim-split-dim-mag tests/test-sim-split-dim-deriv
-TESTS += tests/test-sim-ode-stm-flash-te-eq-trf-eq-tr tests/test-sim-ode-stm-bssfp-te-eq-trf-eq-tr
+TESTS += tests/test-sim-ode-stm-flash-te-eq-trf-eq-tr tests/test-sim-ode-stm-bssfp-te-eq-trf-eq-tr tests/test-sim-ode-rot-flash-te-eq-trf-ep-tr
 TESTS += tests/test-sim-ode-deriv-r1 tests/test-sim-ode-deriv-r2 tests/test-sim-ode-deriv-b1 tests/test-sim-ode-stm-deriv

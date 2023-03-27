@@ -533,8 +533,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
                 // Matrix: T_RF -> TE
                 float mrel[M][M];
 
-
-                if (0 != data->grad.mom_sl) {
+                if ((0 != data->grad.mom_sl) && (data->seq.te != data->pulse.rf_end)) {
 
 			// Slice-Rewinder
 
@@ -566,8 +565,9 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
                         // Balance z-gradient for bSSFP type sequences
 
 			// Matrix: TE -> TR
-                        if (   (SEQ_BSSFP == data->seq.seq_type)
-                            || (SEQ_IRBSSFP == data->seq.seq_type)) {
+                        if ((   (SEQ_BSSFP == data->seq.seq_type)
+                            || (SEQ_IRBSSFP == data->seq.seq_type))
+			    && (data->seq.te != data->seq.tr)) {
 
 				// Time-independent gradient integral
                                 data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.tr - data->seq.te);
@@ -601,7 +601,7 @@ static void run_sim(struct sim_data* data, int R, int S, float (*mxy)[R][S][3], 
 
                 // Slice-Rewinder
 
-                if (0 != data->grad.mom_sl) {
+                if ((0 != data->grad.mom_sl) && (data->seq.te != data->pulse.rf_end)) {
 
 			// Time-independent gradient integral
 			data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.te - data->pulse.rf_end);
@@ -629,8 +629,9 @@ static void run_sim(struct sim_data* data, int R, int S, float (*mxy)[R][S][3], 
 
                 // Balance z-gradient for bSSFP type sequences
 
-                if (   (SEQ_BSSFP == data->seq.seq_type)
-                    || (SEQ_IRBSSFP == data->seq.seq_type)) {
+                if (   ((SEQ_BSSFP == data->seq.seq_type)
+                    || (SEQ_IRBSSFP == data->seq.seq_type))
+		    && (data->seq.te != data->seq.tr)) {
 
 			// Time-independent gradient integral
                         data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.tr - data->seq.te);
