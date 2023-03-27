@@ -43,15 +43,43 @@ Updates and further information can be found here:
 2. Installation
 ===============
 
-2.1. Prerequisites
+2.1. Packages
+-------------
+
+The easiest way to install BART on Debian or Ubuntu is to install the
+BART package.
+
+    $ sudo apt-get install bart bart-view
+
+You can also try the package built with CUDA support:
+
+    $ sudo apt-get install bart-cuda bart-view
+
+
+Note, if you need Matlab / Python integration, want to use BART on Macs or
+other Linux distributions, or if you need a very recent version or BART, you
+may need to compile BART yourself. Please see then follow the instructions
+below.
+
+
+Note that Windows is currently not supported. Nevertheless, many people
+use BART on Windows.
+
+The recommended way to use BART on Windows is with the Windows Subsystem for
+Linux (WSL2) which is available for Windows 10.
+
+Once you have installed WSL2 you can follow the steps for Linux given above
+to install the BART packages, or compile it yourself as described below.
+
+
+2.2. Prerequisites
 ------------------
 
 GCC compiler, the FFTW library, and optionally CUDA.
 (see recon/Makefile to turn options on or off)
 
-The minimum GCC supported is 5.0. It should also be possible
-to use the clang compiler, but older version before version
-4.0 are known to cause problems.
+The minimum GCC supported is 10. It should also be possible
+to use the clang compiler.
 
 The software can be used in combination with Matlab or octave.
 
@@ -68,7 +96,7 @@ Do not type '`$`' when entering commands.
 
 ### 2.1.1. Linux
 
-The software tools in recon should run on any recent Linux distribution.
+The software tools should run on any recent Linux distribution.
 
 To install the required libraries on Debian and Ubuntu run:
 
@@ -104,6 +132,7 @@ of gcc from MacPorts (http://www.macports.org/).
     $ sudo port install gcc10
     $ sudo port install libpng
     $ sudo port install openblas
+    $ sudo port install flock
 
     (optional)
     $ sudo port install octave
@@ -123,36 +152,6 @@ And then selecting gcc as a compiler when building (see below):
 
     $ CC=gcc make
 
-
-### 2.1.3. Windows
-
-Note that Windows is currently not supported. Nevertheless, many people
-use BART on Windows. If you have trouble to get it to work, you may
-want to try an older version (e.g. version 4.00).
-
-
-The recommended way to use BART on Windows is with the Windows Subsystem for
-Linux (WSL2) which is available for Windows 10. If you use WSL1, you need to
-either use the clang compiler or gcc with the NOEXEC_STACK option.
-
-
-BART should also work with Cygwin:
-
-https://www.cygwin.com/
-
-Install Cygwin and select the following packages:
-
-    Devel: gcc, make
-    Math: fftw3, fftw3-doc, libfftw3-devel, libfftw3_3
-    Math: liblapack-devel, liblapack-doc, liblapack0
-    Libs: libpng, libpng-devel
-
-
-Then use the cygwin shell to compile BART as described below.
-
-
-An alternative to using the Windows Subsystem for Linux or Cygwin
-is a virtual machine with Linux installed.
 
 
 
