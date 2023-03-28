@@ -23,14 +23,6 @@
 #include "noncart/grid.h"
 #include "gpu_grid.h"
 
-__device__ cuFloatComplex zexp(cuFloatComplex x)
-{
-	float sc = expf(cuCrealf(x));
-	float si;
-	float co;
-	sincosf(cuCimagf(x), &si, &co);
-	return make_cuFloatComplex(sc * co, sc * si);
-}
 
 struct linphase_conf {
 
@@ -62,19 +54,19 @@ __global__ void kern_apply_linphases_3D(struct linphase_conf c, cuFloatComplex* 
 				long pos[3] = { x, y, z };
 				long idx = x + c.dims[0] * (y + c.dims[1] * z);
 				
-				float val = c.cn;
+				double val = c.cn;
 
 				for (int n = 0; n < 3; n++)
 					val += pos[n] * c.shifts[n];
 
 				if (c.conj)
 					val = -val;
-				
-				cuFloatComplex cval = make_cuFloatComplex(0, val);
-				cval = zexp(cval);
 
-				cval.x *= c.scale;
-				cval.y *= c.scale;
+				double si;
+				double co;
+				sincos(val, &si, &co);
+				
+				cuFloatComplex cval = make_cuFloatComplex(c.scale * co, c.scale * si);
 
 				if (c.fmac) {
 
@@ -90,7 +82,7 @@ __global__ void kern_apply_linphases_3D(struct linphase_conf c, cuFloatComplex* 
 
 
 
-extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const float shifts[3], _Complex float* dst, const _Complex float* src, _Bool conj, _Bool fmac, float scale)
+extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const float shifts[3], _Complex float* dst, const _Complex float* src, _Bool conj, _Bool fmac, _Bool fftm, float scale)
 {
 	struct linphase_conf c;
 
@@ -108,6 +100,15 @@ extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const floa
 		
 		c.dims[n] = img_dims[n];
 		c.tot *= c.dims[n];
+
+		if (fftm) {
+
+			long center = c.dims[n] / 2;
+			double shift = (double)center / (double)c.dims[n];
+
+			c.shifts[n] += 2. * M_PI * shift; 
+			c.cn -= 2. * M_PI * shift * (double)center / 2.;	
+		} 
 	}
 
 	c.N = md_calc_size(N - 3, img_dims + 3);
