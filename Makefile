@@ -131,7 +131,7 @@ else
 OPT = -Og
 endif
 #OPT += -ffp-contract=off
-CPPFLAGS ?= -Wall -Wextra
+CPPFLAGS ?= -Wall -Wextra -Wno-nonnull -Wno-vla-parameter
 CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
 
