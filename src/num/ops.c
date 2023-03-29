@@ -1,5 +1,6 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2016-2019. Martin Uecker.
+ * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -1488,7 +1489,7 @@ const struct operator_s* operator_combi_create_FF(int N, const struct operator_s
 
 	for (int i = 0; i < N; i++)
 		operator_free(x[i]);
-	
+
 	return ret;
 }
 
@@ -1866,7 +1867,7 @@ const struct operator_s* operator_sort_args_F(const struct operator_s* op)
 		if (operator_get_io_flags(op)[j])
 			perm[o++] = j;
 		else
-		 	perm[i++] = j;
+			perm[i++] = j;
 
 	auto ret = operator_permute(op, OO + II, perm);
 	operator_free(op);

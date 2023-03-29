@@ -1,10 +1,9 @@
 /* Copyright 2013. The Regents of the University of California.
  * Copyright 2017-2022. Martin Uecker.
+ * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors:
- * 2011-2022 Martin Uecker
  *
  * Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction by regularized nonlinear
  * inversion – Joint estimation of coil sensitivities and image content.
@@ -53,15 +52,13 @@ void noir_calc_weights(double a, double b, const long dims[3], complex float* ds
  * @param N
  * @param img_dims
  * @param ksp_dims
- * @param flags 
+ * @param flags
  * @param factor_fov fft is applied on grid with size factor_fov * img_dims or -factor_fov * img_dims
  * @param a parameter a of W
  * @param b parameter b of W
  * @param c parameter b of W
  * img_spacing = dx = fov / img_dims
  * ksp_spacing = dk = img_dims / fov
- * 
-
  */
 struct linop_s* linop_noir_weights_create(int N, const long img_dims[N], const long ksp_dims[N], unsigned long flags, double factor_fov, double a, double b, double c)
 {
@@ -71,6 +68,7 @@ struct linop_s* linop_noir_weights_create(int N, const long img_dims[N], const l
 	assert(md_check_equal_dims(N, img_dims, ksp_dims, ~flags));
 
 	long tmp_dims[N];
+
 	for (int i = 0; i < N; i++)
 		tmp_dims[i] = lround((0 < factor_fov ? img_dims[i] : ksp_dims[i]) * (MD_IS_SET(flags, i) ? fabs(factor_fov) : 1.));
 

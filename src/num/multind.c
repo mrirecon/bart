@@ -1129,12 +1129,14 @@ void md_resize(int D, const long odim[D], void* optr, const long idim[D], const 
 	long pos[D];
 	memset(pos, 0, D * sizeof(long));
 
-	for (int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++) {
+
 		if (odim[i] > idim[i]) {
 
 			md_clear(D, odim, optr, size);
 			break;
 		}
+	}
 
 	md_copy_block(D, pos, odim, optr, idim, iptr, size);
 }
@@ -1169,12 +1171,14 @@ void md_resize_center(int D, const long odim[D], void* optr, const long idim[D],
 	for (int i = 0; i < D; i++)
 		pos[i] = labs((odim[i] / 2) - (idim[i] / 2));
 
-	for (int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++) {
+
 		if (odim[i] > idim[i]) {
 
 			md_clear(D, odim, optr, size);
 			break;
 		}
+	}
 
 	md_copy_block(D, pos, odim, optr, idim, iptr, size);
 }

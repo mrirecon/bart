@@ -1,4 +1,5 @@
-/* Copyright 2018-2021. Uecker Lab. University Center Göttingen.
+/* Copyright 2018-2022. Uecker Lab. University Center Göttingen.
+ * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -929,7 +930,7 @@ static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
 
 		der[o] = operator_sort_args_F(operator_combi_create(II, ders));
 		adj[o] = operator_sort_args_F(operator_combi_create(II, adjs));
-		
+
 		if (1 < II) {
 
 			auto cod = operator_arg_domain(der[o], 0);
@@ -963,7 +964,7 @@ static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
 	}
 
 	const struct operator_s* op_nrm = operator_combi_create(2, (const struct operator_s*[2]) { op_adj, op_der });
-	
+
 	for (int o = 0; o < OO; o++)
 		op_nrm = operator_link_create_F(op_nrm, II + OO - o, II);
 
