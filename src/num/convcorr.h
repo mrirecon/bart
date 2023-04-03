@@ -31,7 +31,7 @@ _Bool test_zconvcorr_fwd(	int N,
 				long odims[__VLA(N)], long ostrs[__VLA(N)],
 				long idims[__VLA(N)], long istrs[__VLA(N)],
 				long kdims[__VLA(N)], long kstrs[__VLA(N)],
-				unsigned long flags, const long dilation[__VLA(N)], const long strides[__VLA(N)], _Bool conv,
+				unsigned long flags, const long dilation[__VLA2(N)], const long strides[__VLA2(N)], _Bool conv,
 				float max_rmse, _Bool gpu, long min_no_algos);
 _Bool test_zconvcorr_bwd_in(	int N,
 				long odims[__VLA(N)], long ostrs[__VLA(N)],

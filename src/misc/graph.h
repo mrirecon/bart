@@ -76,7 +76,7 @@ extern graph_t dup_graphs_F(graph_t graph, int a, int b);
 
 extern const char* print_vertex(node_t node, int idx);
 extern const char* print_node(const struct node_s* node);
-extern const char* print_internl_graph(graph_t graph, _Bool get_ext_nodes, int N, const char* ext_nodes[__VLA(N)]);
+extern const char* print_internl_graph(graph_t graph, _Bool get_ext_nodes, int N, const char* ext_nodes[__VLA2(N)]);
 extern void export_graph_dot(const char* filename, graph_t graph);
 
 extern graph_t graph_topological_sort_F(graph_t graph);

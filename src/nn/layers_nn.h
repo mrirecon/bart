@@ -5,7 +5,7 @@
 #include "nn/nn.h"
 #include "nn/init.h"
 
-extern nn_t nn_append_convcorr_layer_generic(nn_t network, int o, const char* oname, const char* ker_name, unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag, unsigned int N, long const kernel_dims[__VLA(N)], const long strides[__VLA(N)], const long dilations[__VLA(N)], _Bool conv, enum PADDING conv_pad, const struct initializer_s* init);
+extern nn_t nn_append_convcorr_layer_generic(nn_t network, int o, const char* oname, const char* ker_name, unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag, unsigned int N, long const kernel_dims[__VLA2(N)], const long strides[__VLA2(N)], const long dilations[__VLA2(N)], _Bool conv, enum PADDING conv_pad, const struct initializer_s* init);
 extern nn_t nn_append_transposed_convcorr_layer_generic(nn_t network, int o, const char* oname, const char* ker_name, unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag, unsigned int N, long const kernel_dims[__VLA(N)], const long strides[__VLA(N)], const long dilations[__VLA(N)], _Bool conv, enum PADDING conv_pad, _Bool adjoint, const struct initializer_s* init);
 
 extern nn_t nn_append_maxpool_layer_generic(nn_t network, int o, const char* oname, unsigned int N, const long pool_size[__VLA(N)], enum PADDING conv_pad);
