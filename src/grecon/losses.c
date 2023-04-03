@@ -24,6 +24,8 @@ struct opt_s loss_opts[] = {
 	OPTL_FLOAT(0, "dice-0", &(loss_option.weighting_dice0), "weighting", "weighting for unbalanced dice loss"),
 	OPTL_FLOAT(0, "dice-1", &(loss_option.weighting_dice1), "weighting", "weighting for dice loss weighted with inverse frequency of label"),
 	OPTL_FLOAT(0, "dice-2", &(loss_option.weighting_dice2), "weighting", "weighting for dice loss weighted with inverse square frequency of label"),
+
+	OPTL_ULONG(0, "mse-mean-dims", &(loss_option.mse_mean_flags), "flags", "dims selected by flags are averaged, other are just added"),
 };
 
 const int N_loss_opts = ARRAY_SIZE(loss_opts);
