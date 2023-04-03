@@ -55,6 +55,8 @@ enum PADDING { PAD_VALID, PAD_SAME, PAD_CYCLIC, PAD_SYMMETRIC, PAD_REFLECT, PAD_
 extern struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADDING pad_type, int pad_dim, long pad_for, long pad_after);
 extern struct linop_s* linop_padding_create(int N, const long dims[N], enum PADDING pad_type, long pad_for[N], long pad_after[N]);
 
+extern struct linop_s* linop_shift_create(int N, const long dims[__VLA(N)], int shift_dim, long shift, enum PADDING pad_type);
+
 #ifndef __CONV_ENUMS
 #define __CONV_ENUMS
 enum conv_mode { CONV_SYMMETRIC, CONV_CAUSAL, CONV_ANTICAUSAL };

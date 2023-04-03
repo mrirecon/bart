@@ -1109,6 +1109,23 @@ struct linop_s* linop_transpose_create(int N, int a, int b, const long dims[N])
 }
 
 
+struct linop_s* linop_shift_create(int N, const long dims[N], int shift_dim, long shift, enum PADDING pad_type)
+{
+	auto lop_pad = linop_padding_create_onedim(N, dims, pad_type, shift_dim, MAX(shift, 0), MAX(-shift, 0));
+	
+	long dims_exp[N];
+	md_copy_dims(N, dims_exp, dims);
+	dims_exp[shift_dim] += labs(shift);
+
+	long pos[N];
+	md_set_dims(N, pos, 0);
+	if (0 > shift)
+		pos[shift_dim] = -shift;
+	
+	auto lop_ext = linop_extract_create(N, pos, dims, dims_exp);
+
+	return linop_chain_FF(lop_pad, lop_ext);
+}
 
 
 
