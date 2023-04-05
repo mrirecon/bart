@@ -243,6 +243,7 @@ static complex float* compute_square_basis(int N, long sqr_bas_dims[N], const lo
 		return NULL;
 	}
 
+	assert(1 == bas_dims[7]);
 	long bas_dimsT[N];
 
 	md_transpose_dims(N, 6, 7, bas_dimsT, bas_dims);
@@ -801,8 +802,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 		//	conf.toeplitz = false;
 		debug_print_dims(DP_DEBUG1, N, bas_dims);
 
-		assert(!md_check_dimensions(N, bas_dims, (1 << 5) | (1 << 6)));
-
+		assert(1 == md_calc_size(5, bas_dims));
 		data->out_dims[5] = bas_dims[5];	// TE
 		data->out_dims[6] = 1;			// COEFF
 
