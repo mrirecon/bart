@@ -2129,6 +2129,11 @@ bool operator_zero_or_null_p(const struct operator_s* op)
 
 	if (NULL != p)
 		return operator_zero_or_null_p(p->op);
+	
+	auto r = CAST_MAYBE(op_reshape_s, opd);
+	
+	if (NULL != r)
+		return operator_zero_or_null_p(r->x);
 
 	// FIXME: unwrap other types...
 
