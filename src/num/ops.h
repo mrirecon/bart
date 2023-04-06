@@ -158,6 +158,7 @@ extern _Bool operator_identify(const struct operator_s* a, const struct operator
 extern struct list_s* operator_get_list(const struct operator_s* op);
 extern const struct graph_s* operator_get_graph(const struct operator_s* op);
 
+extern const struct operator_s* operator_nograph_wrapper(const struct operator_s* op);
 extern const struct operator_s* graph_optimize_operator_F(const struct operator_s* op);
 
 extern _Bool operator_zero_or_null_p(const struct operator_s* op);

@@ -1186,6 +1186,22 @@ const struct operator_s* operator_cpu_wrapper(const struct operator_s* op)
 	return operator_copy_wrapper_sameplace(N, strs, op, &ref);
 }
 
+const struct operator_s* operator_nograph_wrapper(const struct operator_s* op)
+{
+	int N = operator_nr_args(op);
+
+	const long* strs[N];
+
+	for (int i = 0; i < N; i++) {
+
+		auto dom = operator_arg_domain(op, i);
+		assert(md_check_equal_dims(dom->N, MD_STRIDES(dom->N, dom->dims, dom->size), dom->strs, ~0));
+		strs[i] = dom->strs;
+	}
+
+	return operator_copy_wrapper_sameplace(N, strs, op, NULL);
+}
+
 
 const struct operator_s* operator_copy_wrapper_sameplace(unsigned int N, const long* strs[N], const struct operator_s* op, const void* ref)
 {
