@@ -502,10 +502,15 @@ const struct nlop_s* nlop_optimize_graph(const struct nlop_s* op)
 			(*nder)[i][o] = graph_optimize_linop((*der)[i][o]);
 
 	n->derivative = &(*PTR_PASS(nder))[0][0];
-
-	nlop_free(op);
 	
 	return PTR_PASS(n);
+}
+
+const struct nlop_s* nlop_optimize_graph_F(const struct nlop_s* op)
+{
+	auto ret = nlop_optimize_graph(op);
+	nlop_free(op);
+	return ret;
 }
 
 

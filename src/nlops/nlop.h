@@ -155,6 +155,7 @@ extern const struct nlop_s* nlop_assign_gpu(const struct nlop_s* op, int device)
 extern const struct nlop_s* nlop_assign_gpu_F(const struct nlop_s* op, int device);
 
 extern const struct nlop_s* nlop_optimize_graph(const struct nlop_s* op);
+extern const struct nlop_s* nlop_optimize_graph_F(const struct nlop_s* op);
 
 extern const struct operator_p_s* op_p_nlop_wrapper_F(const struct nlop_s* nlop);
 
