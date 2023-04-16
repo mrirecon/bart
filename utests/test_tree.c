@@ -10,8 +10,8 @@
 
 static int cmp(const void* _a, const void* _b)
 {
-	float a = *((float*)_a);
-	float b = *((float*)_b);
+	float a = *(float*)_a;
+	float b = *(float*)_b;
 
 	if (a > b)
 		return 1;
