@@ -45,7 +45,7 @@ def bart(nargout, cmd, *args, **kwargs):
     for idx in range(nargin):
         cfl.writecfl(infiles[idx], args[idx])
 
-    args_kw = ["--" if len(kw)>1 else "-" + kw for kw in kwargs]
+    args_kw = [("--" if len(kw)>1 else "-") + kw for kw in kwargs]
     infiles_kw = [name + 'in' + kw for kw in kwargs]
     for idx, kw in enumerate(kwargs):
         cfl.writecfl(infiles_kw[idx], kwargs[kw])
