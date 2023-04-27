@@ -1,10 +1,7 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2023. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  *
  * Optimization framework for operations on multi-dimensional arrays.
@@ -116,18 +113,18 @@ static long memory_footprint(int N, const long dims[N], const long strs[N])
 
 
 
-void merge_dims(unsigned int D, unsigned int N, long dims[N], long (*ostrs[D])[N])
+void merge_dims(int D, int N, long dims[N], long (*ostrs[D])[N])
 {
 	for (int i = N - 2; i >= 0; i--) {
 
 		bool domerge = true;
 
-		for (unsigned int j = 0; j < D; j++) // mergeable
+		for (int j = 0; j < D; j++) // mergeable
 			domerge = domerge && ((*ostrs[j])[i + 1] == dims[i] * (*ostrs[j])[i]);
 
 		if (domerge) {
 
-			for (unsigned int j = 0; j < D; j++)
+			for (int j = 0; j < D; j++)
 				(*ostrs[j])[i + 1] = 0;
 
 			dims[i + 0] *= dims[i + 1];
@@ -139,7 +136,7 @@ void merge_dims(unsigned int D, unsigned int N, long dims[N], long (*ostrs[D])[N
 			dims[i + 0] = dims[i + 1];
 			dims[i + 1] = 1;
 
-			for (unsigned int j = 0; j < D; j++) {
+			for (int j = 0; j < D; j++) {
 
 				(*ostrs[j])[i + 0] = (*ostrs[j])[i + 1];
 				(*ostrs[j])[i + 1] = 0;
@@ -149,26 +146,27 @@ void merge_dims(unsigned int D, unsigned int N, long dims[N], long (*ostrs[D])[N
 }
 
 
-unsigned int remove_empty_dims(unsigned int D, unsigned int N, long dims[N], long (*ostrs[D])[N])
+int remove_empty_dims(int D, int N, long dims[N], long (*ostrs[D])[N])
 {
-	unsigned int o = 0;
+	int o = 0;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (1 != dims[i]) {
 
 			dims[o] = dims[i];
 
-			for (unsigned int j = 0; j < D; j++)
+			for (int j = 0; j < D; j++)
 				(*ostrs[j])[o] = (*ostrs[j])[i];
 			o++;
 		}
 	}
 
-	for (unsigned int i = o; i < N; i++) {
+	for (int i = o; i < N; i++) {
 
-		for (unsigned int j = 0; j < D; j++)
+		for (int j = 0; j < D; j++)
 			(*ostrs[j])[i] = 0;
+
 		dims[i] = 1;
 	}
 
@@ -178,11 +176,11 @@ unsigned int remove_empty_dims(unsigned int D, unsigned int N, long dims[N], lon
 
 
 
-static void compute_permutation(unsigned int N, int ord[N], const long strs[N])
+static void compute_permutation(int N, int ord[N], const long strs[N])
 {
 	__block const long* strsp = strs; // clang workaround
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		ord[i] = i;
 
 	NESTED(int, cmp_strides, (int a, int b))
@@ -214,12 +212,12 @@ static void reorder_long(int N, int ord[N], long x[N])
 /*
  * Jim Demmel's generic blocking theorem
  */
-static void demmel_factors(unsigned int D, unsigned int N, float blocking[N], long (*strs[D])[N])
+static void demmel_factors(int D, int N, float blocking[N], long (*strs[D])[N])
 {
 	float delta[D][N];
 
-	for (unsigned int d = 0; d < D; d++)
-		for (unsigned int n = 0; n < N; n++)
+	for (int d = 0; d < D; d++)
+		for (int n = 0; n < N; n++)
 			delta[d][n] = (0 != (*strs[d])[n]) ? 1. : 0.;
 
 
@@ -227,7 +225,7 @@ static void demmel_factors(unsigned int D, unsigned int N, float blocking[N], lo
 	// M^{x_n} yields blocking factors where M is cache size (maybe needs to be devided by D?)
 
 	float ones[MAX(N, D)];
-	for (unsigned int n = 0; n < MAX(N, D); n++)
+	for (int n = 0; n < MAX(N, D); n++)
 		ones[n] = 1.;
 
 	simplex(D, N, blocking, ones, ones, (const float (*)[N])delta);
@@ -247,7 +245,7 @@ static long find_factor(long x, float blocking)
 }
 
 
-static bool split_dims(unsigned int D, unsigned int N, long dims[N + 1], long (*ostrs[D])[N + 1], float blocking[N])
+static bool split_dims(int D, int N, long dims[N + 1], long (*ostrs[D])[N + 1], float blocking[N])
 {
 	if (0 == N)
 		return false;
@@ -258,14 +256,14 @@ static bool split_dims(unsigned int D, unsigned int N, long dims[N + 1], long (*
 		dims[N - 1] = dims[N - 1] / f;
 		dims[N] = f;
 
-		for (unsigned int j = 0; j < D; j++)
+		for (int j = 0; j < D; j++)
 			(*ostrs[j])[N] = (*ostrs[j])[N - 1] * dims[N - 1];
 
 		blocking[N - 1] = blocking[N - 1];
 		blocking[N] = blocking[N - 1];
 #else
 		dims[N] = 1;
-		for (unsigned int j = 0; j < D; j++)
+		for (int j = 0; j < D; j++)
 			(*ostrs[j])[N] = 0;
 #endif
 		return true;
@@ -276,7 +274,7 @@ static bool split_dims(unsigned int D, unsigned int N, long dims[N + 1], long (*
 	dims[N] = dims[N - 1];
 	blocking[N] = blocking[N - 1];
 
-	for (unsigned int j = 0; j < D; j++)
+	for (int j = 0; j < D; j++)
 		(*ostrs[j])[N] = (*ostrs[j])[N - 1];
 
 	if (split_dims(D, N - 1, dims, ostrs, blocking))
@@ -284,7 +282,7 @@ static bool split_dims(unsigned int D, unsigned int N, long dims[N + 1], long (*
 
 	dims[N - 1] = dims[N];
 
-	for (unsigned int j = 0; j < D; j++)
+	for (int j = 0; j < D; j++)
 		(*ostrs[j])[N - 1] = (*ostrs[j])[N];
 
 	blocking[N - 1] = blocking[N];
@@ -294,17 +292,17 @@ static bool split_dims(unsigned int D, unsigned int N, long dims[N + 1], long (*
 
 
 
-unsigned int simplify_dims(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N])
+int simplify_dims(int D, int N, long dims[N], long (*strs[D])[N])
 {
 	merge_dims(D, N, dims, strs);
 
-	unsigned int ND = remove_empty_dims(D, N, dims, strs);
+	int ND = remove_empty_dims(D, N, dims, strs);
 
 	if (0 == ND) { // atleast return a single dimension
 
 		dims[0] = 1;
 
-		for (unsigned int j = 0; j < D; j++)
+		for (int j = 0; j < D; j++)
 			(*strs[j])[0] = 0;
 
 		ND = 1;
@@ -314,9 +312,9 @@ unsigned int simplify_dims(unsigned int D, unsigned int N, long dims[N], long (*
 }
 
 
-unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N])
+int optimize_dims(int D, int N, long dims[N], long (*strs[D])[N])
 {
-	unsigned int ND = simplify_dims(D, N, dims, strs);
+	int ND = simplify_dims(D, N, dims, strs);
 
 	debug_print_dims(DP_DEBUG4, ND, dims);
 
@@ -327,12 +325,12 @@ unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*
 	UNUSED(demmel_factors);
 #if 0
 	debug_printf(DP_DEBUG4, "DB: ");
-	for (unsigned int i = 0; i < ND; i++)
+	for (int i = 0; i < ND; i++)
 		debug_printf(DP_DEBUG4, "%f\t", blocking[i]);
 	debug_printf(DP_DEBUG4, "\n");
 #endif
 #if 1
-	for (unsigned int i = 0; i < ND; i++)
+	for (int i = 0; i < ND; i++)
 		blocking[i] = 0.5;
 	//	blocking[i] = 1.;
 #endif
@@ -358,21 +356,21 @@ unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*
 
 	long max_strides[ND];
 
-	for (unsigned int i = 0; i < ND; i++) {
+	for (int i = 0; i < ND; i++) {
 
 		max_strides[i] = 0;
 
-		for (unsigned int j = 0; j < D; j++)
+		for (int j = 0; j < D; j++)
 			max_strides[i] = MAX(max_strides[i], (*strs[j])[i]);
 	}
 
 	int ord[ND];
 	compute_permutation(ND, ord, max_strides);
 
-//	for (unsigned int i = 0; i < ND; i++)
+//	for (int i = 0; i < ND; i++)
 //		printf("%d: %ld %d\n", i, max_strides[i], ord[i]);
 #if 1
-	for (unsigned int j = 0; j < D; j++)
+	for (int j = 0; j < D; j++)
 		reorder_long(ND, ord, *strs[j]);
 
 	reorder_long(ND, ord, dims);
@@ -392,19 +390,19 @@ unsigned int optimize_dims(unsigned int D, unsigned int N, long dims[N], long (*
 	return ND;
 }
 
-unsigned int optimize_dims_gpu(unsigned int D, unsigned int N, long dims[N], long (*strs[D])[N])
+int optimize_dims_gpu(int D, int N, long dims[N], long (*strs[D])[N])
 {
-	unsigned int ND = simplify_dims(D, N, dims, strs);
+	int ND = simplify_dims(D, N, dims, strs);
 
 	debug_print_dims(DP_DEBUG4, ND, dims);
 
 	long max_strides[ND];
 
-	for (unsigned int i = 0; i < ND; i++) {
+	for (int i = 0; i < ND; i++) {
 
 		max_strides[i] = 0;
 
-		for (unsigned int j = 0; j < D; j++)
+		for (int j = 0; j < D; j++)
 			max_strides[i] = MAX(max_strides[i], (*strs[j])[i]);
 	}
 
@@ -412,7 +410,7 @@ unsigned int optimize_dims_gpu(unsigned int D, unsigned int N, long dims[N], lon
 	compute_permutation(ND, ord, max_strides);
 
 #if 1
-	for (unsigned int j = 0; j < D; j++)
+	for (int j = 0; j < D; j++)
 		reorder_long(ND, ord, *strs[j]);
 
 	reorder_long(ND, ord, dims);
@@ -430,27 +428,27 @@ unsigned int optimize_dims_gpu(unsigned int D, unsigned int N, long dims[N], lon
  * compute minimal dimension of largest contiguous block(s)
  *
  */
-unsigned int min_blockdim(unsigned int D, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D])
+int min_blockdim(int D, int N, const long dims[N], long (*strs[D])[N], size_t size[D])
 {
-	unsigned int mbd = N;
+	int mbd = N;
 
-	for (unsigned int i = 0; i < D; i++)
-		mbd = MIN(mbd, (unsigned int)md_calc_blockdim(N, dims, *strs[i], size[i]));
+	for (int i = 0; i < D; i++)
+		mbd = MIN(mbd, md_calc_blockdim(N, dims, *strs[i], size[i]));
 
 	return mbd;
 }
 
 
 
-static void compute_enclosures(unsigned int N, bool matrix[N][N], const long dims[N], const long strides[N])
+static void compute_enclosures(int N, bool matrix[N][N], const long dims[N], const long strides[N])
 {
 	long ext[N];
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		ext[i] = dims[i] * labs(strides[i]);
 
-	for (unsigned int i = 0; i < N; i++)
-		for (unsigned int j = 0; j < N; j++)
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
 			matrix[i][j] = (ext[i] <= labs(strides[j]));
 }
 
@@ -459,7 +457,7 @@ static void compute_enclosures(unsigned int N, bool matrix[N][N], const long dim
  * compute set of parallelizable dimensions
  *
  */
-static unsigned long parallelizable(unsigned int D, unsigned int io, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D])
+static unsigned long parallelizable(int D, unsigned int io, int N, const long dims[N], long (*strs[D])[N], size_t size[D])
 {
 	// we assume no input / output overlap
 	// (i.e. inputs which are also outputs have to be marked as output)
@@ -481,7 +479,7 @@ static unsigned long parallelizable(unsigned int D, unsigned int io, unsigned in
 
 	unsigned long flags = (1 << N) - 1;
 
-	for (unsigned int d = 0; d < D; d++) {
+	for (int d = 0; d < D; d++) {
 
 		if (MD_IS_SET(io, d)) {
 
@@ -491,11 +489,11 @@ static unsigned long parallelizable(unsigned int D, unsigned int io, unsigned in
 	//		print_dims(N, dims);
 	//		print_dims(N, *strs[d]);
 
-			for (unsigned int i = 0; i < N; i++) {
+			for (int i = 0; i < N; i++) {
 
-				unsigned int a = 0;
+				int a = 0;
 
-				for (unsigned int j = 0; j < N; j++)
+				for (int j = 0; j < N; j++)
 					if (m[i][j] || m[j][i])
 						a++;
 
@@ -519,14 +517,14 @@ long num_chunk_size = 32 * 256;
  * compute set of dimensions to parallelize
  *
  */
-unsigned long dims_parallel(unsigned int D, unsigned int io, unsigned int N, const long dims[N], long (*strs[D])[N], size_t size[D])
+unsigned long dims_parallel(int D, unsigned int io, int N, const long dims[N], long (*strs[D])[N], size_t size[D])
 {
 	unsigned long flags = parallelizable(D, io, N, dims, strs, size);
 
-	unsigned int i = N;
+	int i = N;
 
-	unsigned int max_size = 0;
-	for (unsigned int i = 0; i < D; i++)
+	size_t max_size = 0;
+	for (int i = 0; i < D; i++)
 		max_size = MAX(max_size, size[i]);
 
 	long reps = md_calc_size(N, dims) * max_size;
@@ -608,7 +606,7 @@ bool num_auto_parallelize = true;
  * @param too n-op function
  * @param data_ptr pointer to additional data used by too
  */
-void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too)
+void optimized_nop(int N, unsigned int io, int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too)
 {
 	assert(N > 0);
 
@@ -618,7 +616,7 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 		long tstrs[N][1];
 		long (*nstr1[N])[1];
 
-		for (unsigned int i = 0; i < N; i++) {
+		for (int i = 0; i < N; i++) {
 
 			tstrs[i][0] = 0;
 			nstr1[i] = &tstrs[i];
@@ -636,7 +634,7 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 	long (*nstr1[N])[D];
 	void* nptr1[N];
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		md_copy_strides(D, tstrs[i], *nstr[i]);
 
@@ -655,7 +653,7 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 	unsigned long cnst_flags = 0;
 	bool cnst_ok = true;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (0 == tstrs[i][0]) {
 
@@ -679,7 +677,7 @@ void optimized_nop(unsigned int N, unsigned int io, unsigned int D, const long d
 
 		cnst_size *= tdims[cnst_dims];
 
-		for (unsigned int i = 0; i < N; i++) {
+		for (int i = 0; i < N; i++) {
 			if (cnst_size * sizes[i] > 4096) {	// buffer too big
 
 				cnst_size /= tdims[cnst_dims];
@@ -702,7 +700,7 @@ out:
 
 		debug_printf(DP_DEBUG4, "MD constant buffer Io: %d Cnst: %d Size %ld.\n", io, cnst_flags, cnst_size);
 
-		for (unsigned int i = 0; i < N; i++) {
+		for (int i = 0; i < N; i++) {
 
 			if (MD_IS_SET(cnst_flags, i)) {
 
@@ -741,7 +739,7 @@ out:
 
 	const long* nstr2[N];
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		nstr2[i] = *nstr1[i] + skip;
 
 #ifdef USE_CUDA
