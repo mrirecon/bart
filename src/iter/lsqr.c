@@ -92,7 +92,9 @@ const struct operator_p_s* lsqr2_create(const struct lsqr_conf* conf,
 	if (NULL == model_op) {
 
 		assert(0 < num_funs);
-		iov = linop_domain(prox_linops[0]);
+
+		iov = operator_p_domain(prox_funs[0]);
+		//iov = linop_domain(prox_linops[0]);
 		data->model_op = NULL;
 
 	} else {
