@@ -399,6 +399,10 @@ int main_rtnlinv(int argc, char* argv[argc])
 	struct linop_s* nufft_ops[turns];
 	const struct operator_s* fftc = NULL;
 
+	// analyzer false positiv
+	for (int i = 0; i < turns; ++i)
+		nufft_ops[i] = NULL;
+
 	complex float* fftc_mod = NULL;
 	complex float* kgrid1 = NULL;
 	complex float* traj1 = NULL;

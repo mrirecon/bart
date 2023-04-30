@@ -394,7 +394,7 @@ int main_pics(int argc, char* argv[argc])
 
 
 
-	long basis_dims[DIMS];
+	long basis_dims[DIMS] = { 0 }; // analyzer false positive
 	complex float* basis = NULL;
 
 	if (NULL != basis_file) {

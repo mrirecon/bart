@@ -784,6 +784,9 @@ static void getgrad(int NI, unsigned long in_optimize_flag, long isize[NI], floa
 
 	float* tmp_grad[NI];
 
+	for (int i = 0; i < NI; i++) // analyzer false positive
+		tmp_grad[i] = NULL;
+
 	for (int i = 0; i < NI; i++)
 		if ((1 < NO) && MD_IS_SET(in_optimize_flag, i))
 			tmp_grad[i] = vops->allocate(isize[i]);

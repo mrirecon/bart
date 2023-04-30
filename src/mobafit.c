@@ -167,7 +167,8 @@ int main_mobafit(int argc, char* argv[argc])
 		nlop_free(nl);
 		break;
 
-	default: ;
+	default:
+		__builtin_unreachable();
 	}
 
 

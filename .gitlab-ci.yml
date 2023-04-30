@@ -85,6 +85,19 @@ Build_LTO:
     expire_in: 45 minutes
 
 
+Build_Analyzer:
+  image: debian:testing
+  stage: build
+  script:
+    - CFLAGS="-fanalyzer -Werror" make all
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+    expire_in: 45 minutes
+  allow_failure: true
+
+
 
 Build_Tensorflow:
   image: nvidia/cuda:10.2-devel-ubuntu18.04
