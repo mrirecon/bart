@@ -1,4 +1,5 @@
 /* Copyright 2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2023. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -63,6 +64,9 @@ static void rand_perm_data(unsigned int* rand_seed, long N, long perm[N], long N
 static void rand_perm_batches(unsigned int* rand_seed, long N, long perm[N], long Nb)
 {
 	long perm_batch[N / Nb];
+
+	for (int i = 0; i < N / Nb; i++) // analyzer workaround
+		perm_batch[N / Nb] = 0;
 
 	rand_perm_data(rand_seed, N / Nb, perm_batch, 0);
 
@@ -146,6 +150,7 @@ static void unravel_index(int N, long pos[N], const long dims[N], long index)
 	for (int d = 0; d < N; ++d) {
 
 		pos[d] = 0;
+
 		if (1 == dims[d])
 			continue;
 
@@ -167,7 +172,7 @@ static void batch_gen_fun(const struct nlop_data_s* _data, int N_args, complex f
 
 	int N = data->N;
 
-	for (long j = 0; j < data->D; j++) {
+	for (int j = 0; j < data->D; j++) {
 
 		long ipos[N];
 		long opos[N];
@@ -191,7 +196,7 @@ static void batch_gen_del(const nlop_data_t* _data)
 {
 	const auto data = CAST_DOWN(batch_gen_data_s, _data);
 
-	for(long i = 0; i < data->D; i ++) {
+	for (int i = 0; i < data->D; i ++) {
 
 		xfree(data->dims[i]);
 		xfree(data->tot_strs[i]);
@@ -205,6 +210,7 @@ static void batch_gen_del(const nlop_data_t* _data)
 	xfree(data->bat_dims_tot);
 	xfree(data->data);
 	xfree(data->perm);
+
 	xfree(data);
 }
 
@@ -224,7 +230,6 @@ static void batch_gen_del(const nlop_data_t* _data)
  */
 const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_dims[D], const long* tot_dims[D], const _Complex float* data[D], long Nc, enum BATCH_GEN_TYPE type, unsigned int seed)
 {
-
 	int N = 0;
 
 	long Nt = 1;
@@ -259,7 +264,7 @@ const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_di
 	long nbat_dims[D][N];
 	long ntot_dims[D][N];
 
-	for(long i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		md_singleton_dims(N, nbat_dims[i]);
 		md_singleton_dims(N, ntot_dims[i]);
@@ -308,15 +313,19 @@ const struct nlop_s* batch_generator_create2(struct bat_gen_conf_s* config, int 
 	SET_TYPEID(batch_gen_data_s, d);
 
 	unsigned long bat_flags = config->bat_flags;
+
 	if (0 == bat_flags) {
 
-		for (int i = 0; i < N; i++)
-			for (int j = 0; (j < D) && !MD_IS_SET(bat_flags, i) ; j++)
+		for (int i = 0; i < N; i++) {
+			for (int j = 0; (j < D) && !MD_IS_SET(bat_flags, i); j++) {
+
 				if (tot_dims[j][i] > bat_dims[j][i]) {
 
 					debug_printf(DP_INFO, "Batch dimension detected: %d\n", i);
 					bat_flags = MD_SET(bat_flags, i);
 				}
+			}
+		}
 	}
 
 	d->D = D;
@@ -394,6 +403,7 @@ const struct nlop_s* batch_generator_create2(struct bat_gen_conf_s* config, int 
 const struct nlop_s* batch_generator_create(struct bat_gen_conf_s* config, int D, int N, const long bat_dims[D][N], const long tot_dims[D][N], const complex float* data[D])
 {
 	long tot_strs[D][N];
+
 	for (int i = 0; i < D; i++)
 		md_calc_strides(N, tot_strs[i], tot_dims[i], CFL_SIZE);
 
