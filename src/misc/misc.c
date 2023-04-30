@@ -513,7 +513,7 @@ static const char* quote(const char* str)
 
 const char* command_line = NULL;
 
-void save_command_line(int argc, char* argv[static argc])
+void* save_command_line(int argc, char* argv[static argc])
 {
 	size_t len = 0;
 	const char* qargv[argc];
@@ -532,15 +532,22 @@ void save_command_line(int argc, char* argv[static argc])
 
 		strcpy((*buf) + pos, qargv[i]);
 		pos += strlen(qargv[i]);
-		xfree(qargv[i]);
+
 		(*buf)[pos++] = ' ';
 	}
+
+	// separate loop to not confuse analyzer
+	for (int i = 0; i < argc; i++)
+		xfree(qargv[i]);
 
 	(*buf)[pos] = '\0';
 
 	XFREE(command_line);
 
 	command_line = (*buf);
+
+	// FIXME: workaround analyzer detecting a leak
+	return (void*)buf;
 }
 
 

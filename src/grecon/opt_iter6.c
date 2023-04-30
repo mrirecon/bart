@@ -186,7 +186,6 @@ struct iter6_conf_s* iter6_get_conf_from_opts(void)
 	case ITER6_NONE:
 		debug_printf(DP_INFO, "No training algorithm selected! Fallback to default settings.\n");
 		return result;
-		break;
 
 	case ITER6_SGD:
 		result = CAST_UP(&iter6_sgd_conf_opts);
@@ -203,6 +202,9 @@ struct iter6_conf_s* iter6_get_conf_from_opts(void)
 	case ITER6_IPALM:
 		result = CAST_UP(&iter6_adam_conf_opts);
 		break;
+
+	default:
+		__builtin_unreachable();
 	}
 
 	iter6_copy_config_from_opts(result);
