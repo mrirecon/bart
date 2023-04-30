@@ -821,7 +821,7 @@ void circshift_cpu(struct dfwavelet_plan_s* plan, data_t *data) {
     return;
   }
   // Copy data
-  data_t* dataCopy = malloc(sizeof(data_t)*plan->numPixel);
+  data_t* dataCopy = xmalloc(sizeof(data_t)*plan->numPixel);
   memcpy(dataCopy, data, plan->numPixel*sizeof(data_t));
   if (plan->numdims==2)
     {
@@ -878,7 +878,7 @@ void circunshift_cpu(struct dfwavelet_plan_s* plan, data_t *data) {
   }
 
   // Copy data
-  data_t* dataCopy = malloc(sizeof(data_t)*plan->numPixel);
+  data_t* dataCopy = xmalloc(sizeof(data_t)*plan->numPixel);
   memcpy(dataCopy, data, plan->numPixel*sizeof(data_t));
   if (plan->numdims==2)
     {
