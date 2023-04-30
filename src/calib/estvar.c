@@ -56,7 +56,7 @@ static char* file_name(const char* toolbox, const long kernel_dims[3], const lon
 {
 	int size = 0;
 
-	size = snprintf(NULL, size, "%s/save/nsv/KERNEL_%ldx%ldx%ld_CAL_REG%ldx%ldx%ldx%ld.dat",
+	size = snprintf("", size, "%s/save/nsv/KERNEL_%ldx%ldx%ld_CAL_REG%ldx%ldx%ldx%ld.dat",
 		toolbox, kernel_dims[0], kernel_dims[1], kernel_dims[2],
 		calreg_dims[0], calreg_dims[1], calreg_dims[2], calreg_dims[3]);
 
