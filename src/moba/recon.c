@@ -94,7 +94,7 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 
 		md_zexp(DIMS, map_dims, tmp, tmp);
 
-		md_zacos(DIMS, map_dims, tmp, tmp);
+		md_zacosr(DIMS, map_dims, tmp, tmp);
 
 	        md_zsmul(DIMS, map_dims, tmp, tmp, 180. / M_PI);        // output the effective flip angle map (in degree!)
 

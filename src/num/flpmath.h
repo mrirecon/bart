@@ -252,8 +252,8 @@ extern void md_zsin2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)],
 extern void md_zcos(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
 extern void md_zcos2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
-extern void md_zacos(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
-extern void md_zacos2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+extern void md_zacosr(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
+extern void md_zacosr2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
 extern void md_zsinh(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
 extern void md_zsinh2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);

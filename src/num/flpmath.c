@@ -2926,10 +2926,10 @@ float md_asum2(int D, const long dims[D], const long strs[D], const float* ptr)
  * Calculate arccos of real part.
  *
  */
-void md_zacos2(int D, const long dims[D], const long ostr[D], complex float* optr,
+void md_zacosr2(int D, const long dims[D], const long ostr[D], complex float* optr,
 		const long istr[D], const complex float* iptr)
 {
-	MAKE_Z2OP(zacos, D, dims, ostr, optr, istr, iptr);
+	MAKE_Z2OP(zacosr, D, dims, ostr, optr, istr, iptr);
 }
 
 
@@ -2938,9 +2938,9 @@ void md_zacos2(int D, const long dims[D], const long ostr[D], complex float* opt
  * Calculate arccos of real part.
  *
  */
-void md_zacos(int D, const long dims[D], complex float* optr, const complex float* iptr)
+void md_zacosr(int D, const long dims[D], complex float* optr, const complex float* iptr)
 {
-	make_z2op_simple(md_zacos2, D, dims, optr, iptr);
+	make_z2op_simple(md_zacosr2, D, dims, optr, iptr);
 }
 
 
