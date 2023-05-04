@@ -34,6 +34,7 @@
 #include <stdint.h>
 #endif
 
+
 #ifdef TENSORFLOW
 #include "tensorflow/c/c_api.h"
 #include "tensorflow/c/tf_tensor.h"
@@ -765,6 +766,9 @@ struct tf_s {
 	struct TF_Output *outputs_op;
 	struct TF_Output *grad_op;
 
+	int nr_grad_y_op;
+	int* grad_y_op_map;
+
 	int *nr_out_dim;
 	int *nr_in_dim;
 
@@ -791,7 +795,7 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 
 	TF_SessionRun(data->graph->sess,
 				/* RunOptions */ NULL,
-				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs,
+				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs + data->nr_grad_y_op,
 				/* Output tensors */ data->outputs_op, output_tensors, data->nr_outputs,
 				/* Target operations */ NULL, 0,
 				/* RunMetadata */ NULL,
@@ -871,7 +875,7 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 
 		TF_SessionRun(data->graph->sess,
 				/* RunOptions */ NULL,
-				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs + data->nr_outputs,
+				/* Input tensors */ data->inputs_op, data->input_tensors, data->nr_inputs + data->nr_grad_y_op,
 				/* Output tensors */ grad_ops, out_tensor, N,
 				/* Target operations */ NULL, 0,
 				/* RunMetadata */ NULL,
@@ -917,6 +921,8 @@ static void tf_del(const nlop_data_t* _data)
 	xfree(data->inputs_op);
 	xfree(data->outputs_op);
 	xfree(data->grad_op);
+
+	xfree(data->grad_y_op_map);
 
 	xfree(data->nr_out_dim);
 	xfree(data->nr_in_dim);
@@ -987,6 +993,9 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	size_t in_sizes[II];
 	size_t out_sizes[OO];
 
+	int nr_grad_y_op = 0;
+	int grad_y_op_map[OO];
+
 	for (int i = 0; i < OO; i++) {
 
 		char out_name[20];
@@ -1014,12 +1023,16 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 			if (!cmp_arg(arg, arg_grad_y) || (arg.N != arg_grad_y.N))
 				error("Tensorflow output and corresponding gradient input do not have the same shape!");
 
-			(*inputs_op)[II + i] = arg_grad_y.out;
-			(*input_tensors)[II + i] = tensor_allocate(graph, grad_ys_name, graph->batch_size);
+			(*inputs_op)[II + nr_grad_y_op] = arg_grad_y.out;
+			(*input_tensors)[II + nr_grad_y_op] = tensor_allocate(graph, grad_ys_name, graph->batch_size);
+			grad_y_op_map[i] = nr_grad_y_op++;
 
 			md_clear(arg_grad_y.N, arg_grad_y.dims, TF_TensorData((*input_tensors)[II + i]), CFL_SIZE);
 
 			xfree(arg_grad_y.dims);
+		} else {
+
+			grad_y_op_map[i] = -1;
 		}
 	}
 
@@ -1033,6 +1046,9 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	data->outputs_op = *PTR_PASS(outputs_op);
 	data->nr_out_dim = *PTR_PASS(nr_out_dim);
 	data->out_dims_tf = *PTR_PASS(out_dims_tf);
+
+	data->nr_grad_y_op = nr_grad_y_op;
+	data->grad_y_op_map = ARR_CLONE(int[OO], grad_y_op_map);
 
 	// handle inputs and grad
 	int IN = 1;
