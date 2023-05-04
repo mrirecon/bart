@@ -45,7 +45,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	int geo = -1;
 
-	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, TUBES, RAND_TUBES, NIST, SONAR } ptype = SHEPPLOGAN;
+	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, BRAIN, TUBES, RAND_TUBES, NIST, SONAR } ptype = SHEPPLOGAN;
 
 	const char* traj_file = NULL;
 	bool basis = false;
@@ -75,6 +75,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_SELECT('T', enum ptype_e, &ptype, TUBES, "tubes phantom"),
 		OPTL_SELECT(0, "NIST", enum ptype_e, &ptype, NIST, "NIST phantom (T2 sphere)"),
                 OPTL_SELECT(0, "SONAR", enum ptype_e, &ptype, SONAR, "Diagnostic Sonar phantom"),
+		OPTL_SELECT(0, "BRAIN", enum ptype_e, &ptype, BRAIN, "BRAIN geometry phantom"),
 		OPT_INT('N', &N, "num", "Random tubes phantom and number"),
 		OPT_SELECT('B', enum ptype_e, &ptype, BART, "BART logo"),
 		OPT_INT('x', &xdim, "n", "dimensions in y and z"),
@@ -101,7 +102,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	} else {
 
-		N = (SONAR == ptype ? 8 : (NIST == ptype ? 15 : (BART == ptype ? 6 : 11)));
+		N = (SONAR == ptype ? 8 : (NIST == ptype ? 15 : (BART == ptype ? 6 : (BRAIN == ptype ? 4 : 11))));
 	}
 
 	if ((GEOM != ptype) && (-1 != geo)) {
@@ -163,7 +164,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	if (basis) {
 
-		assert(TUBES == ptype || RAND_TUBES == ptype || NIST == ptype || SONAR == ptype || BART == ptype);
+		assert(TUBES == ptype || RAND_TUBES == ptype || NIST == ptype || SONAR == ptype || BART == ptype || BRAIN == ptype);
 		dims[COEFF_DIM] = N; // Number of elements of tubes phantom with rings see src/shepplogan.c
 	}
 
@@ -232,6 +233,11 @@ int main_phantom(int argc, char* argv[argc])
 	case BART:
 
 		calc_bart(dims, out, kspace, sstrs, samples);
+		break;
+
+	case BRAIN:
+
+		calc_brain(dims, out, kspace, sstrs, samples);
 		break;
 	}
 

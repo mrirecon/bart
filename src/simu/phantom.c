@@ -26,6 +26,7 @@
 #include "misc/debug.h"
 
 #include "geom/logo.h"
+#include "geom/brain.h"
 
 #include "simu/sens.h"
 #include "simu/coil.h"
@@ -561,6 +562,112 @@ void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const lon
 	const int components[] = { 3, 2, 2, 1, 1, 1 }; // Defines how many geometric components reduce to a single character
 
 	combine_geom_components(dims, out, kspace, tstrs, traj, calc_bart2, N_all, N_reduc, components);
+}
+
+
+static void calc_brain2(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+{
+	bool coeff = (dims[COEFF_DIM] > 1);
+
+	int N = 3897;
+	double points[N * 11][2];
+
+	struct poly poly = {
+		kspace,
+		coeff,
+		64,
+		&(struct poly1[]){
+			{ 55 , 1, ARRAY_SLICE(points, 0, 55) },
+			{ 66 , 1, ARRAY_SLICE(points, 55, 121) },
+			{ 44 , 1, ARRAY_SLICE(points, 121, 165) },
+			{ 2596 , -1, ARRAY_SLICE(points, 165, 2761) },
+			{ 902 , 1, ARRAY_SLICE(points, 2761, 3663) },
+			{ 187 , 1, ARRAY_SLICE(points, 3663, 3850) },
+			{ 132 , 1, ARRAY_SLICE(points, 3850, 3982) },
+			{ 286 , -1, ARRAY_SLICE(points, 3982, 4268) },
+			{ 44 , 1, ARRAY_SLICE(points, 4268, 4312) },
+			{ 495 , -1, ARRAY_SLICE(points, 4312, 4807) },
+			{ 110 , 2, ARRAY_SLICE(points, 4807, 4917) },
+			{ 154 , 2, ARRAY_SLICE(points, 4917, 5071) },
+			{ 143 , 2, ARRAY_SLICE(points, 5071, 5214) },
+			{ 165 , 2, ARRAY_SLICE(points, 5214, 5379) },
+			{ 110 , 2, ARRAY_SLICE(points, 5379, 5489) },
+			{ 110 , 2, ARRAY_SLICE(points, 5489, 5599) },
+			{ 88 , 2, ARRAY_SLICE(points, 5599, 5687) },
+			{ 154 , -2, ARRAY_SLICE(points, 5687, 5841) },
+			{ 561 , -2, ARRAY_SLICE(points, 5841, 6402) },
+			{ 7656 , 2, ARRAY_SLICE(points, 6402, 14058) },
+			{ 286 , 2, ARRAY_SLICE(points, 14058, 14344) },
+			{ 187 , -2, ARRAY_SLICE(points, 14344, 14531) },
+			{ 462 , -2, ARRAY_SLICE(points, 14531, 14993) },
+			{ 121 , 2, ARRAY_SLICE(points, 14993, 15114) },
+			{ 209 , 2, ARRAY_SLICE(points, 15114, 15323) },
+			{ 88 , 2, ARRAY_SLICE(points, 15323, 15411) },
+			{ 88 , 2, ARRAY_SLICE(points, 15411, 15499) },
+			{ 176 , 2, ARRAY_SLICE(points, 15499, 15675) },
+			{ 88 , 2, ARRAY_SLICE(points, 15675, 15763) },
+			{ 88 , 2, ARRAY_SLICE(points, 15763, 15851) },
+			{ 132 , 2, ARRAY_SLICE(points, 15851, 15983) },
+			{ 66 , 2, ARRAY_SLICE(points, 15983, 16049) },
+			{ 88 , -2, ARRAY_SLICE(points, 16049, 16137) },
+			{ 121 , 2, ARRAY_SLICE(points, 16137, 16258) },
+			{ 286 , 2, ARRAY_SLICE(points, 16258, 16544) },
+			{ 110 , 3, ARRAY_SLICE(points, 16544, 16654) },
+			{ 154 , 3, ARRAY_SLICE(points, 16654, 16808) },
+			{ 132 , 3, ARRAY_SLICE(points, 16808, 16940) },
+			{ 154 , 3, ARRAY_SLICE(points, 16940, 17094) },
+			{ 110 , 3, ARRAY_SLICE(points, 17094, 17204) },
+			{ 484 , -3, ARRAY_SLICE(points, 17204, 17688) },
+			{ 110 , 3, ARRAY_SLICE(points, 17688, 17798) },
+			{ 88 , 3, ARRAY_SLICE(points, 17798, 17886) },
+			{ 154 , 3, ARRAY_SLICE(points, 17886, 18040) },
+			{ 7656 , -3, ARRAY_SLICE(points, 18040, 25696) },
+			{ 2596 , 3, ARRAY_SLICE(points, 25696, 28292) },
+			{ 187 , 3, ARRAY_SLICE(points, 28292, 28479) },
+			{ 297 , 3, ARRAY_SLICE(points, 28479, 28776) },
+			{ 110 , 3, ARRAY_SLICE(points, 28776, 28886) },
+			{ 198 , 3, ARRAY_SLICE(points, 28886, 29084) },
+			{ 88 , 3, ARRAY_SLICE(points, 29084, 29172) },
+			{ 88 , 3, ARRAY_SLICE(points, 29172, 29260) },
+			{ 5676 , -3, ARRAY_SLICE(points, 29260, 34936) },
+			{ 176 , 3, ARRAY_SLICE(points, 34936, 35112) },
+			{ 88 , 3, ARRAY_SLICE(points, 35112, 35200) },
+			{ 88 , 3, ARRAY_SLICE(points, 35200, 35288) },
+			{ 132 , 3, ARRAY_SLICE(points, 35288, 35420) },
+			{ 66 , 3, ARRAY_SLICE(points, 35420, 35486) },
+			{ 88 , 3, ARRAY_SLICE(points, 35486, 35574) },
+			{ 110 , 3, ARRAY_SLICE(points, 35574, 35684) },
+			{ 484 , 4, ARRAY_SLICE(points, 35684, 36168) },
+			{ 561 , 4, ARRAY_SLICE(points, 36168, 36729) },
+			{ 462 , 4, ARRAY_SLICE(points, 36729, 37191) },
+			{ 5676 , 4, ARRAY_SLICE(points, 37191, 42867) },
+		}
+	};
+
+	for (int i = 0; i < N; i++) {
+
+		for (int j = 0; j <= 10; j++) {
+
+			double t = j * 0.1;
+			int n = i * 11 + j;
+
+			// Scale geometry with 1.04 to match underlying raw data
+			points[n][1] = +1.04 * cspline(t, brain_geom[i][0]);
+			points[n][0] = -1.04 * cspline(t, brain_geom[i][1]); // -1 to reflect over y axis
+		}
+	}
+
+	sample(dims, out, tstrs, traj, &poly, krn_poly, kspace);
+}
+
+void calc_brain(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+{
+	enum { N_all = 64 };		// 64 overall geometric components in the brain geometry
+	enum { N_reduc = 4 };		// Combine them to 4
+
+	const int components[N_reduc] = { 10, 25, 25, 4 }; // Defines how many geometric components reduce to a single object
+
+	combine_geom_components(dims, out, kspace, tstrs, traj, calc_brain2, N_all, N_reduc, components);
 }
 
 

@@ -259,6 +259,27 @@ tests/test-phantom-rotation-SONAR-multistep: phantom slice flip nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-phantom-brain: fft nrmse phantom
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom --BRAIN -k k.ra								;\
+	$(TOOLDIR)/fft -i 3 k.ra x.ra								;\
+	$(TOOLDIR)/phantom --BRAIN r.ra								;\
+	$(TOOLDIR)/nrmse -t 0.2 r.ra x.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-phantom-BRAIN-basis: phantom index extract fmac nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom --BRAIN -k k0.ra							;\
+	$(TOOLDIR)/phantom --BRAIN -b -k k1.ra							;\
+	$(TOOLDIR)/index 6 5 ind.ra 								;\
+	$(TOOLDIR)/extract 6 1 5 ind.ra ind2.ra 						;\
+	$(TOOLDIR)/fmac -s 64 k1.ra ind2.ra k2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.000001 k0.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 TESTS += tests/test-phantom-ksp tests/test-phantom-noncart tests/test-phantom-coil tests/test-phantom-ksp-coil
 TESTS += tests/test-phantom-bart tests/test-phantom-bart-basis
 TESTS += tests/test-phantom-basis tests/test-phantom-random-tubes
@@ -268,3 +289,4 @@ TESTS += tests/test-phantom-rotation-NIST tests/test-phantom-rotation-NIST-kspac
 TESTS += tests/test-phantom-rotation-tubes-multistep tests/test-phantom-rotation-tubes-kspace-multistep tests/test-phantom-rotation-tubes-basis-multistep
 TESTS += tests/test-phantom-rotation-NIST-multistep tests/test-phantom-rotation-NIST-kspace-multistep tests/test-phantom-rotation-NIST-basis-multistep
 TESTS += tests/test-phantom-SONAR tests/test-phantom-SONAR-basis tests/test-phantom-rotation-SONAR tests/test-phantom-rotation-SONAR-multistep
+TESTS += tests/test-phantom-brain tests/test-phantom-BRAIN-basis
