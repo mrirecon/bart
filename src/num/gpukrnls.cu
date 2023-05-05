@@ -229,7 +229,7 @@ __global__ void kern_div(long N, float* dst, const float* src1, const float* src
 	int stride = blockDim.x * gridDim.x;
 
 	for (long i = start; i < N; i += stride)
-		dst[i] = src1[i] / src2[i];
+		dst[i] = (0 == src2[i]) ? 0.f : src1[i] / src2[i];
 }
 
 extern "C" void cuda_div(long N, float* dst, const float* src1, const float* src2)
