@@ -73,7 +73,109 @@ tests/test-mobafit-r2: phantom signal reshape fmac index mobafit slice nrmse ind
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+$(TESTS_OUT)/basis_irll.ra: signal reshape extract transpose squeeze svd
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/signal -F -I -1 0.1:10:20 -3 0.1:1.:10 -r0.41 -n30 sig.ra	;\
+	$(TOOLDIR)/reshape 192 200 1 sig.ra dicc1			;\
+	$(TOOLDIR)/squeeze dicc1 dicc					;\
+	$(TOOLDIR)/svd -e dicc U S V					;\
+	$(TOOLDIR)/extract 1 0 4 U basis				;\
+	$(TOOLDIR)/transpose 1 6 basis basis1				;\
+	$(TOOLDIR)/transpose 0 5 basis1 $@				;\
+	rm *.ra *.hdr *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+
+tests/test-mobafit-irll: phantom signal reshape fmac index mobafit slice nrmse index extract invert scale saxpy ones
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
+	$(TOOLDIR)/signal -F -I -1 2:2:1 -3.8:.8:11 -r0.41 -n30 sig.ra	;\
+	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
+	$(TOOLDIR)/index 5 30 ti1.ra					;\
+	$(TOOLDIR)/ones 6 1 1 1 1 1 30 ones.ra				;\
+	$(TOOLDIR)/saxpy 0.5 ones.ra ti1.ra ti2.ra          		;\
+	$(TOOLDIR)/scale 0.41 ti2.ra ti.ra				;\
+	$(TOOLDIR)/mobafit --init=.6:1.:.8 -L ti.ra x.ra fit.ra		;\
+	$(TOOLDIR)/slice 6 0 fit.ra x0.ra				;\
+	$(TOOLDIR)/slice 6 1 fit.ra x1.ra				;\
+	$(TOOLDIR)/slice 6 2 fit.ra x2.ra				;\
+	$(TOOLDIR)/phantom -x32 -T r1.ra				;\
+	$(TOOLDIR)/nrmse -t 0.00001 r1.ra x1.ra				;\
+	$(TOOLDIR)/scale .8 r1.ra r0.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00001 r0.ra x0.ra				;\
+	$(TOOLDIR)/scale .5 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00001 r2.ra x2.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-mobafit-irll_bas1: $(TESTS_OUT)/basis_irll.ra phantom signal reshape fmac index mobafit slice nrmse index extract invert scale saxpy ones
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
+	$(TOOLDIR)/signal -F -I -1 2:2:1 -3.8:.8:11 -r0.41 -n30 sig.ra	;\
+	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
+	$(TOOLDIR)/index 5 30 ti1.ra					;\
+	$(TOOLDIR)/ones 6 1 1 1 1 1 30 ones.ra				;\
+	$(TOOLDIR)/saxpy 0.5 ones.ra ti1.ra ti2.ra          		;\
+	$(TOOLDIR)/scale 0.41 ti2.ra ti.ra				;\
+	$(TOOLDIR)/mobafit -B$(TESTS_OUT)/basis_irll.ra  --init=.6:1.:.8 -L ti.ra x.ra fit.ra	;\
+	$(TOOLDIR)/slice 6 0 fit.ra x0.ra				;\
+	$(TOOLDIR)/slice 6 1 fit.ra x1.ra				;\
+	$(TOOLDIR)/slice 6 2 fit.ra x2.ra				;\
+	$(TOOLDIR)/phantom -x32 -T r1.ra				;\
+	$(TOOLDIR)/nrmse -t 0.00001 r1.ra x1.ra				;\
+	$(TOOLDIR)/scale .8 r1.ra r0.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00001 r0.ra x0.ra				;\
+	$(TOOLDIR)/scale .5 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00001 r2.ra x2.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-mobafit-irll_bas2: $(TESTS_OUT)/basis_irll.ra phantom signal reshape fmac index mobafit slice nrmse index extract invert scale saxpy ones
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
+	$(TOOLDIR)/signal -F -I -1 2:2:1 -3.8:.8:11 -r0.41 -n30 sig.ra	;\
+	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
+	$(TOOLDIR)/index 5 30 ti1.ra					;\
+	$(TOOLDIR)/ones 6 1 1 1 1 1 30 ones.ra				;\
+	$(TOOLDIR)/saxpy 0.5 ones.ra ti1.ra ti2.ra          		;\
+	$(TOOLDIR)/scale 0.41 ti2.ra ti.ra				;\
+	$(TOOLDIR)/fmac -s 32 x.ra $(TESTS_OUT)/basis_irll.ra coef.ra	;\
+	$(TOOLDIR)/mobafit -B$(TESTS_OUT)/basis_irll.ra --init=.6:1.:.8 -L ti.ra coef.ra fit.ra	;\
+	$(TOOLDIR)/slice 6 0 fit.ra x0.ra				;\
+	$(TOOLDIR)/slice 6 1 fit.ra x1.ra				;\
+	$(TOOLDIR)/slice 6 2 fit.ra x2.ra				;\
+	$(TOOLDIR)/phantom -x32 -T r1.ra				;\
+	$(TOOLDIR)/nrmse -t 0.00001 r1.ra x1.ra				;\
+	$(TOOLDIR)/scale .8 r1.ra r0.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00001 r0.ra x0.ra				;\
+	$(TOOLDIR)/scale .5 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00001 r2.ra x2.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-mobafit-gpu: phantom signal reshape fmac index mobafit slice nrmse index extract invert
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
+	$(TOOLDIR)/signal -250:160:11 -T -e10 -n16 sig.ra		;\
+	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
+	$(TOOLDIR)/index 5 16 te.ra					;\
+	$(TOOLDIR)/mobafit -g -T te.ra x.ra fit.ra			;\
+	$(TOOLDIR)/slice 6 0 fit.ra x0.ra				;\
+	$(TOOLDIR)/slice 6 1 fit.ra x1.ra				;\
+	$(TOOLDIR)/phantom -x32 -T r0.ra				;\
+	$(TOOLDIR)/nrmse -t 0.000001 r0.ra x0.ra			;\
+	$(TOOLDIR)/index 6 16 t2.ra					;\
+	$(TOOLDIR)/extract 6 5 16 t2.ra t2b.ra 				;\
+	$(TOOLDIR)/invert t2b.ra r2.ra					;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra r2.ra r1.ra 			;\
+	$(TOOLDIR)/nrmse -t 0.000001 r1.ra x1.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 TESTS += tests/test-mobafit-r2s tests/test-mobafit-wfr2s
 TESTS += tests/test-mobafit-r2
+TESTS += tests/test-mobafit-irll
 
+TESTS_GPU += tests/test-mobafit-gpu
