@@ -179,7 +179,10 @@ int main_mobafit(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	num_init();
+	if (use_gpu)
+		num_init_gpu();
+	else
+		num_init();
 
 	long bas_dims[DIMS];
 	complex float* basis = NULL;
