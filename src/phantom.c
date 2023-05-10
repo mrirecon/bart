@@ -98,7 +98,7 @@ int main_phantom(int argc, char* argv[argc])
 
 		ptype = RAND_TUBES;
 		if (N > 200)
-			BART_WARN("Number of tubes is large. Runetime may be very slow.\n");
+			BART_WARN("Number of tubes is large. Runtime may be very slow.\n");
 
 	} else {
 

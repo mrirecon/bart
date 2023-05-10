@@ -14,6 +14,14 @@ $(TESTS_OUT)/shepplogan_coil_ksp.ra: phantom
 $(TESTS_OUT)/coils.ra: phantom
 	$(TOOLDIR)/phantom -S8 $@
 
+$(TESTS_OUT)/shepplogan_coil_large.ra: phantom
+	$(TOOLDIR)/phantom -s64 $@
+
+$(TESTS_OUT)/shepplogan_coil_ksp_large.ra: phantom
+	$(TOOLDIR)/phantom -s64 -k $@
+
+$(TESTS_OUT)/coils_large.ra: phantom
+	$(TOOLDIR)/phantom -S64 $@
 
 tests/test-phantom-ksp: fft nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_ksp.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
@@ -48,6 +56,20 @@ tests/test-phantom-ksp-coil: fft nrmse $(TESTS_OUT)/shepplogan_coil.ra $(TESTS_O
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-phantom-coil-large: fmac nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil_large.ra $(TESTS_OUT)/coils_large.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/fmac $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/coils_large.ra sl_coil2.ra		;\
+	$(TOOLDIR)/nrmse -t 0. $(TESTS_OUT)/shepplogan_coil_large.ra sl_coil2.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-phantom-ksp-coil-large: fft nrmse $(TESTS_OUT)/shepplogan_coil_large.ra $(TESTS_OUT)/shepplogan_coil_ksp_large.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/fft -i 7 $(TESTS_OUT)/shepplogan_coil_ksp_large.ra shepplogan_cimg.ra		;\
+	$(TOOLDIR)/nrmse -t 0.22 $(TESTS_OUT)/shepplogan_coil_large.ra shepplogan_cimg.ra		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 tests/test-phantom-bart: fft nrmse phantom
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
@@ -290,3 +312,4 @@ TESTS += tests/test-phantom-rotation-tubes-multistep tests/test-phantom-rotation
 TESTS += tests/test-phantom-rotation-NIST-multistep tests/test-phantom-rotation-NIST-kspace-multistep tests/test-phantom-rotation-NIST-basis-multistep
 TESTS += tests/test-phantom-SONAR tests/test-phantom-SONAR-basis tests/test-phantom-rotation-SONAR tests/test-phantom-rotation-SONAR-multistep
 TESTS += tests/test-phantom-brain tests/test-phantom-BRAIN-basis
+TESTS += tests/test-phantom-coil-large tests/test-phantom-ksp-coil-large
