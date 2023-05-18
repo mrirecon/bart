@@ -1,4 +1,5 @@
 /* Copyright 2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -35,15 +36,16 @@
 #define STRUCT_TMP_COPY(x) ({ __typeof(x) __foo = (x); __typeof(__foo)* __foo2 = alloca(sizeof(__foo)); *__foo2 = __foo; __foo2; })
 #endif
 #define NLOP2ITNLOP(nlop) (struct iter_nlop_s){ (NULL == nlop) ? NULL : iter6_nlop, CAST_UP(STRUCT_TMP_COPY(((struct iter6_nlop_s){ { &TYPEID(iter6_nlop_s) }, nlop }))) }
-#define NLOP2IT_ADJ_ARR(nlop) ({\
-	long NO = nlop_get_nr_out_args(nlop);\
-	long NI = nlop_get_nr_in_args(nlop);\
-	const struct operator_s** adj_ops = (const struct operator_s**) alloca(sizeof(struct operator_s*) * NI * NO);\
-	for (int o = 0; o < NO; o++)\
-		for (int i = 0; i < NI; i++)\
-			adj_ops[i * NO + o] = nlop_get_derivative(nlop, o, i)->adjoint;\
-	struct iter6_op_arr_s adj_ops_data = { { &TYPEID(iter6_op_arr_s) }, NI, NO, adj_ops};\
-	(struct iter_op_arr_s){iter6_op_arr_fun_deradj, CAST_UP(STRUCT_TMP_COPY(adj_ops_data))} ;})
+#define NLOP2IT_ADJ_ARR(nlop) ({											\
+	long NO = nlop_get_nr_out_args(nlop);										\
+	long NI = nlop_get_nr_in_args(nlop);										\
+	const struct operator_s** adj_ops = (const struct operator_s**)alloca(sizeof(struct operator_s*) * NI * NO);	\
+	for (int o = 0; o < NO; o++)											\
+		for (int i = 0; i < NI; i++)										\
+			adj_ops[i * NO + o] = nlop_get_derivative(nlop, o, i)->adjoint;					\
+	struct iter6_op_arr_s adj_ops_data = { { &TYPEID(iter6_op_arr_s) }, NI, NO, adj_ops };				\
+	(struct iter_op_arr_s){ iter6_op_arr_fun_deradj, CAST_UP(STRUCT_TMP_COPY(adj_ops_data)) };			\
+})
 
 
 DEF_TYPEID(iter6_sgd_conf);
@@ -117,7 +119,7 @@ const struct iter6_iPALM_conf iter6_iPALM_conf_defaults = {
 	.INTERFACE.learning_rate = 1.,
 
 	.Lmin = 1.e-10,
-	.Lmax = 1.e10,
+	.Lmax = 1.e+10,
 	.Lshrink = 1.2,
 	.Lincrease = 2.,
 
@@ -128,11 +130,10 @@ const struct iter6_iPALM_conf iter6_iPALM_conf_defaults = {
 	.trivial_stepsize = false,
 
 	.alpha_arr = NULL,
-	.beta_arr =NULL,
+	.beta_arr = NULL,
 	.convex_arr = NULL,
 
 	.reduce_momentum = true,
-
 };
 
 
@@ -244,6 +245,7 @@ static const struct operator_p_s* get_update_operator(const iter6_conf* conf, in
 		return operator_adam_update_create(N, dims, conf_adam->beta1, conf_adam->beta2, conf_adam->epsilon, numbatches * conf_adam->reset_epoch);
 
 	error("iter6_conf not SGD-like!\n");
+
 	return NULL;
 }
 
@@ -288,20 +290,16 @@ static const float* learning_rate_schedule_add_warmup(int epochs, int numbatches
 	if (0 == epochs_warmup)
 		return schedule;
 	
-	long dims[2] = {numbatches, epochs};
+	long dims[2] = { numbatches, epochs };
 	float (*result)[numbatches] = (float (*)[numbatches])md_alloc(2, dims, FL_SIZE);
 	
 	for (int ie = 0; ie < epochs_warmup; ie++)
-		for (int ib = 0; ib < numbatches; ib++) {
-
+		for (int ib = 0; ib < numbatches; ib++)
 			result[ie][ib] = learning_rate / (float)(epochs_warmup * numbatches) * (float)(ie * numbatches + ib);
-		}
 	
 	for (int ie = 0; ie < epochs - epochs_warmup; ie++)
-		for (int ib = 0; ib < numbatches; ib++) {
-
+		for (int ib = 0; ib < numbatches; ib++)
 			result[ie + epochs_warmup][ib] = (NULL == schedule) ? learning_rate : schedule[numbatches * ie + ib];
-		}
 	
 	if (NULL != schedule)
 		md_free(schedule);
@@ -356,11 +354,13 @@ void iter6_sgd_like(	const iter6_conf* conf,
 
 		upd_ops[i] = get_update_operator(conf, nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims, numbatches);
 
-		if ((0.0 != conf->clip_norm) || (0.0 != conf->clip_val)) {
+		if ((0. != conf->clip_norm) || (0. != conf->clip_val)) {
 
 			const struct operator_s* tmp1 = operator_clip_create(nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims, conf->clip_norm, conf->clip_val);
 			const struct operator_p_s* tmp2 = upd_ops[i];
+
 			upd_ops[i] = operator_p_pre_chain(tmp1, tmp2);
+
 			operator_free(tmp1);
 			operator_p_free(tmp2);
 		}
@@ -379,6 +379,7 @@ void iter6_sgd_like(	const iter6_conf* conf,
 
 	//gpu ref (dst[i] can be null if batch_gen)
 	float* gpu_ref = NULL;
+
 	for (int i = 0; i < NI; i++)
 		if (IN_OPTIMIZE == in_type[i])
 			gpu_ref = dst[i];
@@ -439,7 +440,7 @@ void iter6_sgd_like(	const iter6_conf* conf,
 
 	for (int i = 0; i < NI; i++) {
 
-		if (NULL != prox_ops_weight_decay[i]) {
+		if (NULL == prox_ops_weight_decay[i]) {
 
 			operator_p_free(prox_ops_weight_decay[i]);
 			prox_ops[i] = NULL;
@@ -614,7 +615,7 @@ void iter6_iPALM(	const iter6_conf* _conf,
 		monitor_iter6_free(monitor);
 
 	for (int i = 0; i < NI; i++)
-		if(IN_OPTIMIZE == in_type[i])
+		if (IN_OPTIMIZE == in_type[i])
 			md_free(x_old[i]);
 
 	if (NULL != dump)
@@ -636,21 +637,15 @@ void iter6_by_conf(	const iter6_conf* _conf,
 			long NO, enum OUT_TYPE out_type[NO],
 			int batchsize, int numbatches, const struct nlop_s* nlop_batch_gen, struct monitor_iter6_s* monitor)
 {
-	auto conf = CAST_MAYBE(iter6_iPALM_conf, _conf);
+	auto algo = iter6_sgd_like;
 
-	if (NULL != conf) {
+	if (CAST_MAYBE(iter6_iPALM_conf, _conf))
+	       algo = iter6_iPALM;
 
-		iter6_iPALM(	_conf,
-				nlop,
-				NI, in_type, prox_ops, dst,
-				NO, out_type,
-				batchsize, numbatches, nlop_batch_gen, monitor);
-		return;
-	}
-
-	iter6_sgd_like(	_conf,
-			nlop,
-			NI, in_type, prox_ops, dst,
-			NO, out_type,
-			batchsize, numbatches, nlop_batch_gen, monitor);
+	algo(	_conf,
+		nlop,
+		NI, in_type, prox_ops, dst,
+		NO, out_type,
+		batchsize, numbatches, nlop_batch_gen, monitor);
 }
+

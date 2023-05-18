@@ -109,7 +109,6 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 
 static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, const struct moba_conf* conf, struct moba_conf_s* data)
 {
-
 	// T2 estimation turned off for IR FLASH Simulation
 
         if (MDB_BLOCH == mode) {
@@ -383,3 +382,4 @@ void moba_recon(const struct moba_conf* conf, struct moba_conf_s* data, const lo
 		assert(0);
 	}
 }
+

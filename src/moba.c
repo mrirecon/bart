@@ -1,6 +1,6 @@
 /* Copyright 2013. The Regents of the University of California.
  * Copyright 2019-2021. Uecker Lab, University Medical Center Goettingen.
- * Copyright 2021-2022. Institute of Medical Engineering. Graz University of Technology.
+ * Copyright 2021-2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -161,7 +161,6 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "sl-grad", &(data.sim.grad.sl_gradient_strength), "float", "Strength of slice-selection gradient [T/m]"),
                 OPTL_FLOAT(0, "slice-thickness", &(data.sim.seq.slice_thickness), "float", "Thickness of simulated slice. [m]"),
 		OPTL_FLOAT(0, "nom-slice-thickness", &(data.sim.seq.nom_slice_thickness), "float", "Nominal thickness of simulated slice. [m]"),
-
         };
 
         struct opt_s sim_opts[] = {
@@ -703,13 +702,13 @@ int main_moba(int argc, char* argv[argc])
 	if (NULL != init_file)
 		unmap_cfl(DIMS, init_dims, init);
 
-        if(NULL != input_b1)
+        if (NULL != input_b1)
 		unmap_cfl(DIMS, b1_dims, b1);
 
-	if(NULL != input_b0)
+	if (NULL != input_b0)
 		unmap_cfl(DIMS, b0_dims, b0);
 
-	if(NULL != input_sens)
+	if (NULL != input_sens)
 		unmap_cfl(DIMS, in_sens_dims, in_sens);
 
 	double recosecs = timestamp() - start_time;
