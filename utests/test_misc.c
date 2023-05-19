@@ -1,9 +1,6 @@
-/* Copyright 2019. Martin Uecker.
+/* Copyright 2019-2023. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include "misc/misc.h"
@@ -61,5 +58,41 @@ static bool test_quicksort2(void)
 
 UT_REGISTER_TEST(test_quicksort2);
 
+
+
+
+static bool test_quicksort3(void)
+{
+	int N = 1023;
+	int (*x)[N] = xmalloc(sizeof *x);
+	int (*d)[N] = xmalloc(sizeof *d);
+
+	for (int i = 0; i < N; i++)
+		(*x)[i] = i;
+
+	for (int i = 0; i < N; i++)
+		(*d)[i] = rand();
+
+	__block const int* dp = *d; // clang workaround
+
+	NESTED(int, cmp2, (int a, int b))
+	{
+		return dp[a] - dp[b];
+	};
+
+	quicksort(N, *x, cmp2);
+
+	for (int i = 0; i < N - 1; i++)
+		if ((*d)[(*x)[i]] > (*d)[(*x)[i + 1]])
+			return false;
+
+	xfree(x);
+	xfree(d);
+
+	return true;
+}
+
+
+UT_REGISTER_TEST(test_quicksort3);
 
 
