@@ -54,8 +54,8 @@ struct admm_op {
  */
 struct admm_plan_s {
 
-	unsigned int maxiter;
-	unsigned int maxitercg;
+	int maxiter;
+	int maxitercg;
 
 	float cg_eps;
 
@@ -77,7 +77,7 @@ struct admm_plan_s {
 	float tau_max;
 	float mu;
 
-	unsigned int num_funs;
+	int num_funs;
 
 	struct iter_op_p_s* prox_ops;
 	struct admm_op* ops;
@@ -104,8 +104,8 @@ struct admm_history_s {
 
 	INTERFACE(iter_history_t);
 
-	unsigned int numiter;
-	unsigned int nr_invokes;
+	int numiter;
+	int nr_invokes;
 	double r_norm;
 	double s_norm;
 	double r_scaling;
@@ -120,7 +120,7 @@ struct admm_history_s {
 
 
 extern void admm(const struct admm_plan_s* plan,
-		unsigned int D, const long z_dims[__VLA(D)],
+		int D, const long z_dims[__VLA(D)],
 		long N, float* x, const float* x_adj,
 		const struct vec_iter_s* vops,
 		struct iter_op_s Aop,

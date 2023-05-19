@@ -91,7 +91,7 @@ inline void iter_op_arr_call(struct iter_op_arr_s op, int NO, unsigned long ofla
 struct iter_monitor_s;
 struct monitor_iter6_s;
 
-float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
+float conjgrad(int maxiter, float l2lambda, float epsilon,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s linop,
@@ -99,7 +99,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 	struct iter_monitor_s* monitor);
 
 
-void landweber(unsigned int maxiter, float epsilon, float alpha,
+void landweber(int maxiter, float epsilon, float alpha,
 	long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
@@ -108,14 +108,14 @@ void landweber(unsigned int maxiter, float epsilon, float alpha,
 	struct iter_op_s callback,
 	struct iter_monitor_s* monitor);
 
-void landweber_sym(unsigned int maxiter, float epsilon, float alpha,
+void landweber_sym(int maxiter, float epsilon, float alpha,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor);
 
-void sgd(unsigned int epochs, unsigned int batches,
+void sgd(int epochs, int batches,
 	float learning_rate, float batchnorm_momentum,
 	float learning_rate_schedule[epochs][batches],
 	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI],
@@ -146,8 +146,8 @@ struct ist_data {
 
 	double rsnew;
 	double rsnot;
-	unsigned int iter;
-	const unsigned int maxiter;
+	int iter;
+	const int maxiter;
 	float tau;
 	float scale;
 };
@@ -155,7 +155,7 @@ struct ist_data {
 typedef void CLOSURE_TYPE(ist_continuation_t)(struct ist_data* itrdata);
 
 
-void ist(unsigned int maxiter, float epsilon, float tau,
+void ist(int maxiter, float epsilon, float tau,
 	long N,
 	const struct vec_iter_s* vops,
 	ist_continuation_t ist_continuation,
@@ -164,7 +164,7 @@ void ist(unsigned int maxiter, float epsilon, float tau,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor);
 
-void fista(unsigned int maxiter, float epsilon, float tau,
+void fista(int maxiter, float epsilon, float tau,
 	long N,
 	const struct vec_iter_s* vops,
 	ist_continuation_t ist_continuation,
@@ -174,7 +174,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
 	struct iter_monitor_s* monitor);
 
 
-void irgnm(unsigned int iter, float alpha, float alpha_min, float redu,
+void irgnm(int iter, float alpha, float alpha_min, float redu,
 	long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
@@ -184,7 +184,7 @@ void irgnm(unsigned int iter, float alpha, float alpha_min, float redu,
 	struct iter_op_s callback,
 	struct iter_monitor_s* monitor);
 
-void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha0, float redu,
+void irgnm2(int iter, float alpha, float alpha_min, float alpha0, float redu,
 	long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
@@ -194,28 +194,28 @@ void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha0, float
 	struct iter_op_s callback,
 	struct iter_monitor_s* monitor);
 
-void altmin(unsigned int iter, float alpha, float redu,
+void altmin(int iter, float alpha, float redu,
 	long N,
 	const struct vec_iter_s* vops,
-	unsigned int NI,
+	int NI,
 	struct iter_nlop_s op,
 	struct iter_op_p_s min_ops[__VLA(NI)],
 	float* x[__VLA(NI)], const float* y,
 	struct iter_nlop_s callback);
 
-void pocs(unsigned int maxiter,
-	unsigned int D, struct iter_op_p_s proj_ops[__VLA(D)],
+void pocs(int maxiter,
+	int D, struct iter_op_p_s proj_ops[__VLA(D)],
 	const struct vec_iter_s* vops,
 	long N, float* x,
 	struct iter_monitor_s* monitor);
 
-double power(unsigned int maxiter,
+double power(int maxiter,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	float* u);
 
-void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
+void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
 	long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op_forw,

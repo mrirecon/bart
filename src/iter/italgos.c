@@ -1,10 +1,11 @@
 /* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
+ * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2023 Martin Uecker <uecker@tugraz.at>
  * 2013-2014 Frank Ong <frankong@berkeley.edu>
  * 2013-2014,2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -80,7 +81,7 @@ static void ravine(const struct vec_iter_s* vops, long N, float* ftp, float* xa,
 
 
 
-void landweber_sym(unsigned int maxiter, float epsilon, float alpha, long N,
+void landweber_sym(int maxiter, float epsilon, float alpha, long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	float* x, const float* b,
@@ -90,7 +91,7 @@ void landweber_sym(unsigned int maxiter, float epsilon, float alpha, long N,
 
 	double rsnot = vops->norm(N, b);
 
-	for (unsigned int i = 0; i < maxiter; i++) {
+	for (int i = 0; i < maxiter; i++) {
 
 		iter_monitor(monitor, vops, x);
 
@@ -135,7 +136,7 @@ void landweber_sym(unsigned int maxiter, float epsilon, float alpha, long N,
  * @param b observations
  * @param monitor compute objective value, errors, etc.
  */
-void ist(unsigned int maxiter, float epsilon, float tau, long N,
+void ist(int maxiter, float epsilon, float tau, long N,
 		const struct vec_iter_s* vops,
 		ist_continuation_t ist_continuation,
 		struct iter_op_s op,
@@ -201,7 +202,7 @@ void ist(unsigned int maxiter, float epsilon, float tau, long N,
  * @param x initial estimate
  * @param b observations
  */
-void fista(unsigned int maxiter, float epsilon, float tau,
+void fista(int maxiter, float epsilon, float tau,
 	long N,
 	const struct vec_iter_s* vops,
 	ist_continuation_t ist_continuation,
@@ -265,7 +266,7 @@ void fista(unsigned int maxiter, float epsilon, float tau,
  *  Landweber L. An iteration formula for Fredholm integral equations of the
  *  first kind. Amer. J. Math. 1951; 73, 615-624.
  */
-void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
+void landweber(int maxiter, float epsilon, float alpha, long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	struct iter_op_s adj,
@@ -278,7 +279,7 @@ void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
 
 	double rsnot = vops->norm(M, b);
 
-	for (unsigned int i = 0; i < maxiter; i++) {
+	for (int i = 0; i < maxiter; i++) {
 
 		iter_monitor(monitor, vops, x);
 
@@ -317,7 +318,7 @@ void landweber(unsigned int maxiter, float epsilon, float alpha, long N, long M,
  * @param x initial estimate
  * @param b observations
  */
-float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
+float conjgrad(int maxiter, float l2lambda, float epsilon,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s linop,
@@ -345,7 +346,7 @@ float conjgrad(unsigned int maxiter, float l2lambda, float epsilon,
 	float eps_squared = pow(epsilon, 2.);
 
 
-	unsigned int i = 0;
+	int i = 0;
 
 	if (0. == rsold) {
 
@@ -411,7 +412,7 @@ cleanup:
  * to a least-squares problem where the quadratic regularization applies to the difference
  * to 'x0'.
  */
-void irgnm(unsigned int iter, float alpha, float alpha_min, float redu, long N, long M,
+void irgnm(int iter, float alpha, float alpha_min, float redu, long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	struct iter_op_s adj,
@@ -424,7 +425,7 @@ void irgnm(unsigned int iter, float alpha, float alpha_min, float redu, long N, 
 	float* p = vops->allocate(N);
 	float* h = vops->allocate(N);
 
-	for (unsigned int i = 0; i < iter; i++) {
+	for (int i = 0; i < iter; i++) {
 
 		iter_monitor(monitor, vops, x);
 
@@ -469,7 +470,7 @@ void irgnm(unsigned int iter, float alpha, float alpha_min, float redu, long N, 
  * This version has an extra call to DF, but we can use a generic regularized
  * least-squares solver.
  */
-void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha_min0, float redu, long N, long M,
+void irgnm2(int iter, float alpha, float alpha_min, float alpha_min0, float redu, long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	struct iter_op_s der,
@@ -481,7 +482,7 @@ void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha_min0, f
 	float* r = vops->allocate(M);
 	float* q = vops->allocate(M);
 
-	for (unsigned int i = 0; i < iter; i++) {
+	for (int i = 0; i < iter; i++) {
 
 		iter_monitor(monitor, vops, x);
 
@@ -523,10 +524,10 @@ void irgnm2(unsigned int iter, float alpha, float alpha_min, float alpha_min0, f
  *
  * Minimize residual by calling each min_op in turn.
  */
-void altmin(unsigned int iter, float alpha, float redu,
+void altmin(int iter, float alpha, float redu,
 	    long N,
 	    const struct vec_iter_s* vops,
-	    unsigned int NI,
+	    int NI,
 	    struct iter_nlop_s op,
 	    struct iter_op_p_s min_ops[NI],
 	    float* x[NI], const float* y,
@@ -542,9 +543,9 @@ void altmin(unsigned int iter, float alpha, float redu,
 	for (long i = 0; i < NI; ++i)
 		args[1 + i] = x[i];
 
-	for (unsigned int i = 0; i < iter; i++) {
+	for (int i = 0; i < iter; i++) {
 
-		for (unsigned int j = 0; j < NI; ++j) {
+		for (int j = 0; j < NI; ++j) {
 
 			iter_nlop_call(op, 1 + NI, args); 	// r = F x
 
@@ -571,8 +572,8 @@ void altmin(unsigned int iter, float alpha, float redu,
  * minimize 0 subject to: x in C_1, x in C_2, ..., x in C_D,
  * where the C_i are convex sets
  */
-void pocs(unsigned int maxiter,
-	unsigned int D, struct iter_op_p_s proj_ops[static D],
+void pocs(int maxiter,
+	int D, struct iter_op_p_s proj_ops[static D],
 	const struct vec_iter_s* vops,
 	long N, float* x,
 	struct iter_monitor_s* monitor)
@@ -580,13 +581,13 @@ void pocs(unsigned int maxiter,
 	UNUSED(N);
 	UNUSED(vops);
 
-	for (unsigned int i = 0; i < maxiter; i++) {
+	for (int i = 0; i < maxiter; i++) {
 
 		debug_printf(DP_DEBUG3, "#Iter %d\n", i);
 
 		iter_monitor(monitor, vops, x);
 
-		for (unsigned int j = 0; j < D; j++)
+		for (int j = 0; j < D; j++)
 			iter_op_p_call(proj_ops[j], 1., x, x); // use temporary memory here?
 	}
 }
@@ -595,7 +596,7 @@ void pocs(unsigned int maxiter,
 /**
  *  Power iteration
  */
-double power(unsigned int maxiter,
+double power(int maxiter,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
@@ -604,7 +605,7 @@ double power(unsigned int maxiter,
 	double s = vops->norm(N, u);
 	vops->smul(N, 1. / s, u, u);
 
-	for (unsigned int i = 0; i < maxiter; i++) {
+	for (int i = 0; i < maxiter; i++) {
 
 		iter_op_call(op, u, u);		// r = A x
 
@@ -637,7 +638,7 @@ double power(unsigned int maxiter,
  * @param x initial estimate
  * @param monitor callback function
  */
-void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
+void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
 	long N, long M,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op_forw,
@@ -655,7 +656,7 @@ void chambolle_pock(unsigned int maxiter, float epsilon, float tau, float sigma,
 
 	vops->clear(M, u);
 
-	for (unsigned int i = 0; i < maxiter; i++) {
+	for (int i = 0; i < maxiter; i++) {
 
 		float lambda = (float)pow(decay, i);
 
@@ -839,7 +840,7 @@ static void getgrad(int NI, unsigned long in_optimize_flag, long isize[NI], floa
  * @param callback UNUSED
  * @param monitor UNUSED
  */
-void sgd(	unsigned int epochs, unsigned int batches,
+void sgd(	int epochs, int batches,
 		float learning_rate, float batchnorm_momentum,
 		float learning_rate_schedule[epochs][batches],
 		long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI],
@@ -932,7 +933,7 @@ void sgd(	unsigned int epochs, unsigned int batches,
 			out_optimize_flag = MD_SET(out_optimize_flag, o);
 	}
 
-	for (unsigned int epoch = 0; epoch < epochs; epoch++) {
+	for (int epoch = 0; epoch < epochs; epoch++) {
 
 		iter_dump(dump, epoch, NI, (const float**)x);
 

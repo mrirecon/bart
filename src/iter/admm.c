@@ -1,10 +1,11 @@
 /* Copyright 2014-2018. The Regents of the University of California.
  * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2023 Martin Uecker <uecker@tugraz.at>
  * 2014-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 
  *
@@ -62,14 +63,14 @@ struct admm_normaleq_data {
 	INTERFACE(iter_op_data);
 
 	long N;
-	unsigned int num_funs;
+	int num_funs;
 	struct admm_op* ops;
 
 	float rho;
 
 	const struct vec_iter_s* vops;
 
-	unsigned int nr_invokes;
+	int nr_invokes;
 
 	struct iter_op_s Aop;
 };
@@ -85,7 +86,7 @@ static void admm_normaleq(iter_op_data* _data, float* dst, const float* src)
 
 	data->vops->clear(data->N, dst);
 
-	for (unsigned int i = 0; i < data->num_funs; i++) {
+	for (int i = 0; i < data->num_funs; i++) {
 
 	        iter_op_call(data->ops[i].normal, tmp, src);
 
@@ -111,10 +112,10 @@ struct cg_xupdate_s {
 
 	INTERFACE(iter_op_data);
 
-	unsigned int N;
+	int N;
 	const struct vec_iter_s* vops;
 
-	unsigned int maxitercg;
+	int maxitercg;
 
 	float cg_eps;
 
@@ -149,7 +150,7 @@ static void cg_xupdate(iter_op_data* _data, float rho, float* x, const float* rh
 }
 
 
-static long sum_long_array(unsigned int N, const long a[N])
+static long sum_long_array(int N, const long a[N])
 {
 	return ((0 == N) ? 0 : (a[0] + sum_long_array(N - 1, a + 1)));
 }
@@ -169,13 +170,13 @@ static long sum_long_array(unsigned int N, const long a[N])
  * The b_i are offsets (biases) that should also be provided in admm_plan_s.
  */
 void admm(const struct admm_plan_s* plan,
-	unsigned int D, const long z_dims[D],
+	int D, const long z_dims[D],
 	long N, float* x, const float* x_adj,
 	const struct vec_iter_s* vops,
 	struct iter_op_s Aop,
 	struct iter_monitor_s* monitor)
 {
-	unsigned int num_funs = D;
+	int num_funs = D;
 
 
 	float* rhs = vops->allocate(N);
@@ -187,7 +188,7 @@ void admm(const struct admm_plan_s* plan,
 	float* u[num_funs ?:1];
 	float* r[num_funs ?:1];
 
-	for (unsigned int j = 0; j < num_funs; j++) {
+	for (int j = 0; j < num_funs; j++) {
 
 		z[j] = vops->allocate(z_dims[j]);
 		u[j] = vops->allocate(z_dims[j]);
@@ -238,7 +239,7 @@ void admm(const struct admm_plan_s* plan,
 
 	const float* biases[num_funs ?:1];
 
-	for (unsigned int j = 0; j < num_funs; j++)
+	for (int j = 0; j < num_funs; j++)
 		biases[j] = (NULL != plan->biases) ? plan->biases[j] : NULL;
 
 	// compute norm of biases -- for eps_primal
@@ -246,7 +247,7 @@ void admm(const struct admm_plan_s* plan,
 
 	if (!plan->fast) {
 
-		for (unsigned int j = 0; j < num_funs; j++)
+		for (int j = 0; j < num_funs; j++)
 			if (biases[j] != NULL)
 				n3 += pow(vops->norm(z_dims[j], biases[j]), 2.);
 	}
@@ -254,7 +255,7 @@ void admm(const struct admm_plan_s* plan,
 
 	if (plan->do_warmstart) {
 
-		for (unsigned int j = 0; j < num_funs; j++) {
+		for (int j = 0; j < num_funs; j++) {
 	
 			// initialize for j'th function update
 
@@ -277,7 +278,7 @@ void admm(const struct admm_plan_s* plan,
 
 	} else {
 
-		for (unsigned int j = 0; j < num_funs; j++) {
+		for (int j = 0; j < num_funs; j++) {
 
 			vops->clear(z_dims[j], z[j]);
 			vops->clear(z_dims[j], u[j]);
@@ -285,14 +286,14 @@ void admm(const struct admm_plan_s* plan,
 	}
 
 
-	for (unsigned int i = 0; i < plan->maxiter; i++) {
+	for (int i = 0; i < plan->maxiter; i++) {
 
 		iter_monitor(monitor, vops, x);
 
 		// update x
 		vops->clear(N, rhs);
 
-		for (unsigned int j = 0; j < num_funs; j++) {
+		for (int j = 0; j < num_funs; j++) {
 
 			vops->sub(z_dims[j], r[j], z[j], u[j]);
 
@@ -322,13 +323,13 @@ void admm(const struct admm_plan_s* plan,
 			vops->clear(N, GH_usum);
 			vops->clear(N, s);
 
-			for (unsigned int j = 0; j < num_funs; j++)
+			for (int j = 0; j < num_funs; j++)
 				vops->clear(z_dims[j], r[j]);
 		}
 
 
 		// z_j prox
-		for (unsigned int j = 0; j < num_funs; j++) {
+		for (int j = 0; j < num_funs; j++) {
 	
 			// initialize for j'th function update
 
@@ -399,7 +400,7 @@ void admm(const struct admm_plan_s* plan,
 			s_norm = rho * vops->norm(N, s);
 			r_norm = 0.;
 
-			for (unsigned int j = 0; j < num_funs; j++)
+			for (int j = 0; j < num_funs; j++)
 				r_norm += pow(vops->norm(z_dims[j], r[j]), 2.);
 
 			r_norm = sqrt(r_norm);
@@ -409,7 +410,7 @@ void admm(const struct admm_plan_s* plan,
 
 			double n2 = 0.;
 
-			for (unsigned int j = 0; j < num_funs; j++)
+			for (int j = 0; j < num_funs; j++)
 				n2 += pow(vops->norm(z_dims[j], z[j]), 2.);
 
 			r_scaling = sqrt(MAX(MAX(n1, n2), n3));
@@ -512,7 +513,7 @@ void admm(const struct admm_plan_s* plan,
 
 			rho = rho * sc;
 
-			for (unsigned int j = 0; j < num_funs; j++)
+			for (int j = 0; j < num_funs; j++)
 				vops->smul(z_dims[j], 1. / sc, u[j], u[j]);
 		}
 	}
@@ -522,7 +523,7 @@ void admm(const struct admm_plan_s* plan,
 	vops->del(rhs);
 	vops->del(s);
 
-	for (unsigned int j = 0; j < num_funs; j++) {
+	for (int j = 0; j < num_funs; j++) {
 
 		vops->del(z[j]);
 		vops->del(u[j]);
