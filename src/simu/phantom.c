@@ -40,11 +40,17 @@
 #define MAX_COILS 64
 #define COIL_COEFF 5
 
+struct pha_opts pha_opts_defaults = {
+
+	.stype = DEFAULT,
+};
+
+
 struct krn2d_data {
 
 	bool kspace;
 	bool coeff;
-	bool lch;
+	enum coil_type stype;
 	int N;
 	const struct ellipsis_s* el;
 };
@@ -64,12 +70,27 @@ static complex float xsens(int c, int s, double mpos[3], void* data, krn_t fun)
 	for (int i = 0; i < COIL_COEFF; i++)
 		for (int j = 0; j < COIL_COEFF; j++) {
 
-			// FIXME: Definition of Discrete Fourier Trafo
-			if (krn_data->lch)
+			switch (krn_data->stype) {
+
+			case HEAD_3D_64CH:
+
 				for (int m = 0; m < COIL_COEFF; m++)
 					val += sens64_coeff[c][i][j][m] * cexpf(-2.i * M_PI * ((i - sh) * mpos[0] + (j - sh) * mpos[1] + (m - sh) * mpos[2]) / 4.);
-			else
+
+				break;
+
+			case HEAD_2D_8CH:
+
 				val += sens_coeff[c][i][j] * cexpf(-2.i * M_PI * ((i - sh) * mpos[0] + (j - sh) * mpos[1]) / 4.);
+				break;
+
+			case DEFAULT:
+			default:
+
+				error("Please specify a sensitivity type.");
+				break;
+
+			}
 		}
 
 #else
@@ -100,24 +121,37 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 			long sh = (COIL_COEFF - 1) / 2;
 
-			if (krn_data->lch) {
+			switch (krn_data->stype) {
+
+			case HEAD_3D_64CH: ;
 
 				for (int m = 0; m < COIL_COEFF; m++) {
 
 					double mpos2[3] = { mpos[0] + (double)(i - sh) / 4.,
-					    mpos[1] + (double)(j - sh) / 4.,
-					    mpos[2] + (double)(m - sh) / 4.};
+						mpos[1] + (double)(j - sh) / 4.,
+						mpos[2] + (double)(m - sh) / 4.};
 
 					val += sens64_coeff[c][i][j][m] * fun(data, s, mpos2);
 				}
 
-			} else {
+				break;
+
+			case HEAD_2D_8CH: ;
 
 				double mpos2[3] = { mpos[0] + (double)(i - sh) / 4.,
 					mpos[1] + (double)(j - sh) / 4.,
 					mpos[2] };
 
 				val += sens_coeff[c][i][j] * fun(data, s, mpos2);
+
+				break;
+
+			case DEFAULT:
+			default:
+
+				error("Please specify a sensitivity type.");
+				break;
+
 			}
 		}
 	}
@@ -236,7 +270,7 @@ struct krn3d_data {
 
 	bool kspace;
 	bool coeff;
-	bool lch;
+	enum coil_type stype;
 	int N;
 	const struct ellipsis3d_s* el;
 };
@@ -257,41 +291,40 @@ static complex float krn3d(void* _data, int s, const double mpos[3])
 }
 
 
-void calc_phantom(const long dims[DIMS], complex float* out, bool d3, bool kspace, const long tstrs[DIMS], const _Complex float* traj)
+void calc_phantom(const long dims[DIMS], complex float* out, bool d3, bool kspace, const long tstrs[DIMS], const _Complex float* traj, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
-	bool lch = (dims[COIL_DIM] > 8);
 
 	if (!d3)
-		sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, lch, ARRAY_SIZE(shepplogan_mod), shepplogan_mod }, krn2d, kspace);
+		sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(shepplogan_mod), shepplogan_mod }, krn2d, kspace);
 	else
-		sample(dims, out, tstrs, traj, &(struct krn3d_data){ kspace, coeff, lch, ARRAY_SIZE(shepplogan3d), shepplogan3d }, krn3d, kspace);
+		sample(dims, out, tstrs, traj, &(struct krn3d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(shepplogan3d), shepplogan3d }, krn3d, kspace);
 }
 
 
-void calc_geo_phantom(const long dims[DIMS], complex float* out, bool kspace, int phtype, const long tstrs[DIMS], const _Complex float* traj)
+void calc_geo_phantom(const long dims[DIMS], complex float* out, bool kspace, int phtype, const long tstrs[DIMS], const _Complex float* traj, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
-	bool lch = (dims[COIL_DIM] > 8);
+
 	complex float* round = md_alloc(DIMS, dims, CFL_SIZE);
 	complex float* angular = md_alloc(DIMS, dims, CFL_SIZE);
 
 	switch (phtype) {
 
 	case 1:
-		sample(dims, round, tstrs, traj, &(struct krn2d_data){ kspace, coeff, lch, ARRAY_SIZE(phantom_geo1), phantom_geo1 }, krn2d, kspace);
-		sample(dims, angular, tstrs, traj, &(struct krn2d_data){ kspace, coeff, lch, ARRAY_SIZE(phantom_geo2), phantom_geo2 }, krnX, kspace);
+		sample(dims, round, tstrs, traj, &(struct krn2d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(phantom_geo1), phantom_geo1 }, krn2d, kspace);
+		sample(dims, angular, tstrs, traj, &(struct krn2d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(phantom_geo2), phantom_geo2 }, krnX, kspace);
 		md_zadd(DIMS, dims, out, round, angular);
 		break;
 
 	case 2:
-		sample(dims, round, tstrs, traj, &(struct krn2d_data){ kspace, coeff, lch, ARRAY_SIZE(phantom_geo4), phantom_geo4 }, krn2d, kspace);
-		sample(dims, angular, tstrs, traj, &(struct krn2d_data){ kspace, coeff, lch, ARRAY_SIZE(phantom_geo3), phantom_geo3 }, krnX, kspace);
+		sample(dims, round, tstrs, traj, &(struct krn2d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(phantom_geo4), phantom_geo4 }, krn2d, kspace);
+		sample(dims, angular, tstrs, traj, &(struct krn2d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(phantom_geo3), phantom_geo3 }, krnX, kspace);
 		md_zadd(DIMS, dims, out, round, angular);
 		break;
 
 	case 3:
-		sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, lch, ARRAY_SIZE(phantom_geo5), phantom_geo5 }, krnX, kspace);
+		sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(phantom_geo5), phantom_geo5 }, krnX, kspace);
 		break;
 
 	default:
@@ -310,16 +343,14 @@ static complex float cnst_one(void* _data, int s, const double mpos[3])
 	return 1.;
 }
 
-void calc_sens(const long dims[DIMS], complex float* sens)
+void calc_sens(const long dims[DIMS], complex float* sens, struct pha_opts* popts)
 {
-	bool lch = (dims[COIL_DIM] > 8);
-
 	struct data data = {
 
 		.traj = NULL,
 		.sens = true,
 		.dims = { dims[0], dims[1], dims[2] },
-		.data = &(struct krn2d_data){ false, false, lch, DIMS, NULL },
+		.data = &(struct krn2d_data){ false, false, popts->stype, DIMS, NULL },
 		.fun = cnst_one,
 	};
 
@@ -329,23 +360,21 @@ void calc_sens(const long dims[DIMS], complex float* sens)
 
 
 
-void calc_circ(const long dims[DIMS], complex float* out, bool d3, bool kspace, const long tstrs[DIMS], const complex float* traj)
+void calc_circ(const long dims[DIMS], complex float* out, bool d3, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
-	bool lch = (dims[COIL_DIM] > 8);
 
 	if (!d3)
-		sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, lch, ARRAY_SIZE(phantom_disc), phantom_disc }, krn2d, kspace);
+		sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(phantom_disc), phantom_disc }, krn2d, kspace);
 	else
-		sample(dims, out, tstrs, traj, &(struct krn3d_data){ kspace, coeff, lch, ARRAY_SIZE(phantom_disc3d), phantom_disc3d }, krn3d, kspace);
+		sample(dims, out, tstrs, traj, &(struct krn3d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(phantom_disc3d), phantom_disc3d }, krn3d, kspace);
 }
 
-void calc_ring(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+void calc_ring(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
-	bool lch = (dims[COIL_DIM] > 8);
 
-	sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, lch, ARRAY_SIZE(phantom_ring), phantom_ring }, krn2d, kspace);
+	sample(dims, out, tstrs, traj, &(struct krn2d_data){ kspace, coeff, popts->stype, ARRAY_SIZE(phantom_ring), phantom_ring }, krn2d, kspace);
 }
 
 
@@ -367,10 +396,9 @@ static complex float fourier_series(float t, unsigned int N, const complex float
 }
 
 static void calc_moving_discs(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj,
-				int N, const struct moving_ellipsis_s disc[N])
+				int N, const struct moving_ellipsis_s disc[N], struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
-	bool lch = (dims[COIL_DIM] > 8);
 
 	long strs[DIMS];
 	md_calc_strides(DIMS, strs, dims, sizeof(complex float));
@@ -393,12 +421,12 @@ static void calc_moving_discs(const long dims[DIMS], complex float* out, bool ks
 #endif
 		void* traj2 = (NULL == traj) ? NULL : ((void*)traj + i * tstrs[TE_DIM]);
 
-		sample(dims1, (void*)out + i * strs[TE_DIM], tstrs, traj2, &(struct krn2d_data){ kspace, coeff, lch, N, disc2 }, krn2d, kspace);
+		sample(dims1, (void*)out + i * strs[TE_DIM], tstrs, traj2, &(struct krn2d_data){ kspace, coeff, popts->stype, N, disc2 }, krn2d, kspace);
 	}
 }
 
 
-void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	struct moving_ellipsis_s disc[1] = { {
 			.geom = phantom_disc[0],
@@ -406,7 +434,7 @@ void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace, co
 			.fourier_coeff_pos = { { 0, 0.5, 0., }, { 0., 0.5i, 0. } },
 	} };
 
-	calc_moving_discs(dims, out, kspace, tstrs, traj, ARRAY_SIZE(disc), disc);
+	calc_moving_discs(dims, out, kspace, tstrs, traj, ARRAY_SIZE(disc), disc, popts);
 }
 
 
@@ -421,6 +449,7 @@ struct poly {
 
 	bool kspace;
 	bool coeff;
+	enum coil_type stype;
 	int P;
 	struct poly1 (*p)[];
 };
@@ -441,13 +470,14 @@ static complex float krn_poly(void* _data, int s, const double mpos[3])
 	return val;
 }
 
-void calc_star(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+void calc_star(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
 	struct poly poly = {
 		kspace,
 		coeff,
+		popts->stype,
 		1,
 		&(struct poly1[]){
 			{
@@ -482,7 +512,7 @@ void calc_star(const long dims[DIMS], complex float* out, bool kspace, const lon
 
 #define ARRAY_SLICE(x, a, b) ({ __auto_type __x = &(x); assert((0 <= a) && (a < b) && (b <= ARRAY_SIZE(*__x))); ((__typeof__((*__x)[0]) (*)[b - a])&((*__x)[a])); })
 
-static void calc_bart2(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+static void calc_bart2(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
@@ -492,6 +522,7 @@ static void calc_bart2(const long dims[DIMS], complex float* out, bool kspace, c
 	struct poly poly = {
 		kspace,
 		coeff,
+		popts->stype,
 		10,
 		&(struct poly1[]){
 			{ 11 * 11, -1., ARRAY_SLICE(points,  0 * 11, 11 * 11) }, // B background
@@ -524,8 +555,8 @@ static void calc_bart2(const long dims[DIMS], complex float* out, bool kspace, c
 
 
 static void combine_geom_components(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj,
-		void (*fun)(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj),
-		const int N_all, const int N_reduc, const int components[N_reduc])
+		void (*fun)(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts),
+		const int N_all, const int N_reduc, const int components[N_reduc], struct pha_opts* popts)
 {
 	if (1 < dims[COEFF_DIM]) {
 
@@ -539,7 +570,7 @@ static void combine_geom_components(const long dims[DIMS], complex float* out, b
 
 		complex float* full_pha = md_alloc(DIMS, full_dims, CFL_SIZE);
 
-		fun(full_dims, full_pha, kspace, tstrs, traj);
+		fun(full_dims, full_pha, kspace, tstrs, traj, popts);
 
 		// Sum up individual components of all objects in the phantom
 
@@ -583,23 +614,23 @@ static void combine_geom_components(const long dims[DIMS], complex float* out, b
 		md_free(full_pha);
 
 	} else {
-		fun(dims, out, kspace, tstrs, traj);
+		fun(dims, out, kspace, tstrs, traj, popts);
 	}
 }
 
 
-void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	const int N_all = 10;		// There are overall 10 geometric components in the BART logo
 	const int N_reduc = 6;		// But the BART logo consists of only 6 characters: B, A, R, T, _, _
 
 	const int components[] = { 3, 2, 2, 1, 1, 1 }; // Defines how many geometric components reduce to a single character
 
-	combine_geom_components(dims, out, kspace, tstrs, traj, calc_bart2, N_all, N_reduc, components);
+	combine_geom_components(dims, out, kspace, tstrs, traj, calc_bart2, N_all, N_reduc, components, popts);
 }
 
 
-static void calc_brain2(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+static void calc_brain2(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
@@ -609,6 +640,7 @@ static void calc_brain2(const long dims[DIMS], complex float* out, bool kspace, 
 	struct poly poly = {
 		kspace,
 		coeff,
+		popts->stype,
 		64,
 		&(struct poly1[]){
 			{ 55 , 1, ARRAY_SLICE(points, 0, 55) },
@@ -694,20 +726,20 @@ static void calc_brain2(const long dims[DIMS], complex float* out, bool kspace, 
 	sample(dims, out, tstrs, traj, &poly, krn_poly, kspace);
 }
 
-void calc_brain(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj)
+void calc_brain(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	enum { N_all = 64 };		// 64 overall geometric components in the brain geometry
 	enum { N_reduc = 4 };		// Combine them to 4
 
 	const int components[N_reduc] = { 10, 25, 25, 4 }; // Defines how many geometric components reduce to a single object
 
-	combine_geom_components(dims, out, kspace, tstrs, traj, calc_brain2, N_all, N_reduc, components);
+	combine_geom_components(dims, out, kspace, tstrs, traj, calc_brain2, N_all, N_reduc, components, popts);
 }
 
 
 #define ARRAY_SLICE2(x, a, b) ({ __auto_type __x = &(x); ((__typeof__((*__x)[0]) (*)[b - a])&((*__x)[a])); })
 
-void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int N_max, int D_max, long hdims[N_max][D_max], complex float* x[N_max])
+void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int N_max, int D_max, long hdims[N_max][D_max], complex float* x[N_max], struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
@@ -770,6 +802,7 @@ void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const
 	struct poly poly = {
 		kspace,
 		coeff,
+		popts->stype,
 		hdims[1][0],
 		(struct poly1 (*)[]) paths
 	};
@@ -790,10 +823,9 @@ void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const
 }
 
 
-void calc_phantom_arb(int N, const struct ellipsis_s* data /*[N]*/, const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, float rotation_angle)
+void calc_phantom_arb(int N, const struct ellipsis_s* data /*[N]*/, const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, float rotation_angle, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
-	bool lch = (dims[COIL_DIM] > 8);
 
 	assert((!coeff) || (0 == tstrs[COEFF_DIM]));
 	assert((!coeff) || (N == dims[COEFF_DIM]));
@@ -823,7 +855,7 @@ void calc_phantom_arb(int N, const struct ellipsis_s* data /*[N]*/, const long d
 
 		void* traj2 = (NULL == traj) ? NULL : ((void*)traj + (i - 1) * tstrs[TIME_DIM]);
 
-		sample(dims1, (void*)out + (i - 1) * strs[TIME_DIM], tstrs, traj2, &(struct krn2d_data){ kspace, coeff, lch, N, data2 }, krn2d, kspace);
+		sample(dims1, (void*)out + (i - 1) * strs[TIME_DIM], tstrs, traj2, &(struct krn2d_data){ kspace, coeff, popts->stype, N, data2 }, krn2d, kspace);
 	}
 }
 
@@ -867,7 +899,7 @@ static bool circ_in_background(float s1, float px1, float py1, float s2, float p
 	return false;
 }
 
-void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, bool random, float rotation_angle, int N, const long tstrs[DIMS], const complex float* traj)
+void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, bool random, float rotation_angle, int N, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	if (1 < dims[COEFF_DIM]) {
 
@@ -980,7 +1012,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		complex float* bkgrd = md_alloc(DIMS, dims2, CFL_SIZE);
 
-		calc_phantom_arb(dims2[COEFF_DIM], tubes_bkgrd, dims2, bkgrd, kspace, tstrs, traj, rotation_angle);
+		calc_phantom_arb(dims2[COEFF_DIM], tubes_bkgrd, dims2, bkgrd, kspace, tstrs, traj, rotation_angle, popts);
 
 		// Sum up all spatial coefficients
 
@@ -1006,7 +1038,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		complex float* frgrd = md_alloc(DIMS, dims2, CFL_SIZE);
 
-		calc_phantom_arb(dims2[COEFF_DIM], tubes_frgrd, dims2, frgrd, kspace, tstrs, traj, rotation_angle);
+		calc_phantom_arb(dims2[COEFF_DIM], tubes_frgrd, dims2, frgrd, kspace, tstrs, traj, rotation_angle, popts);
 
 		// Add foreground basis functions to out
 
@@ -1025,7 +1057,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		complex float* tmp = md_alloc(DIMS, tdims, CFL_SIZE);
 
-		calc_phantom_tubes(tdims, tmp, kspace, random, rotation_angle, N, tstrs, traj);
+		calc_phantom_tubes(tdims, tmp, kspace, random, rotation_angle, N, tstrs, traj, popts);
 
 		md_zsum(DIMS, tdims, COEFF_FLAG, out, tmp);
 		md_free(tmp);

@@ -61,7 +61,15 @@ int main_phantom(int argc, char* argv[argc])
 	float rotation_angle = 0.;
 	int rotation_steps = 1;
 
+	struct pha_opts popts = pha_opts_defaults;
+
 	const char* file_load = NULL;
+
+	struct opt_s coil_opts[] = {
+
+		OPTL_SELECT(0, "HEAD_2D_8CH", enum coil_type, &(popts.stype), HEAD_2D_8CH, "2D head coil with up to 8 channels"),
+		OPTL_SELECT(0, "HEAD_3D_64CH", enum coil_type, &(popts.stype), HEAD_3D_64CH, "3D head coil with up to 64 channels"),
+	};
 
 	const struct opt_s opts[] = {
 
@@ -87,6 +95,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_INT('r', &rinit, "seed", "random seed initialization"),
 		OPTL_FLOAT(0, "rotation-angle", &(rotation_angle), "[deg]", "Angle of Rotation"),
 		OPTL_INT(0, "rotation-steps", &(rotation_steps), " ", "Number of rotation steps"),
+		OPTL_SUBOPT(0, "coil", "...", "configure type of coil", ARRAY_SIZE(coil_opts), coil_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -165,6 +174,21 @@ int main_phantom(int argc, char* argv[argc])
 		dims[2] = dims[0];
 
 
+	if ((DEFAULT == popts.stype) && (0 < sens || 0 < osens)) {
+
+		if (d3)
+			popts.stype = HEAD_3D_64CH;
+		else
+			popts.stype = HEAD_2D_8CH;
+	}
+
+	if ((HEAD_2D_8CH == popts.stype) && (8 < sens || 8 < osens))
+		error("More than eight 2D sensitivities are not supported!\n");
+
+	if (((HEAD_2D_8CH == popts.stype) && d3) && (0 < sens || 0 < osens))
+		debug_printf(DP_WARN, "A 3D simulation with 2D sensitivities is chosen!\n");
+
+
 	long sdims[DIMS];
 	long sstrs[DIMS] = { 0 };
 	complex float* samples = NULL;
@@ -211,7 +235,7 @@ int main_phantom(int argc, char* argv[argc])
 		assert(NULL == traj_file);
 		assert(!kspace);
 
-		calc_sens(dims, out);
+		calc_sens(dims, out, &popts);
 		break;
 
 	case GEOM:
@@ -222,57 +246,57 @@ int main_phantom(int argc, char* argv[argc])
 		if (d3)
 			error("geometric phantom: no 3D mode");
 
-		calc_geo_phantom(dims, out, kspace, geo, sstrs, samples);
+		calc_geo_phantom(dims, out, kspace, geo, sstrs, samples, &popts);
 		break;
 
 	case STAR:
 
 		assert(!d3);
-		calc_star(dims, out, kspace, sstrs, samples);
+		calc_star(dims, out, kspace, sstrs, samples, &popts);
 		break;
 
 	case TIME:
 
 		assert(!d3);
-		calc_moving_circ(dims, out, kspace, sstrs, samples);
+		calc_moving_circ(dims, out, kspace, sstrs, samples, &popts);
 		break;
 
 	case CIRC:
 
-		calc_circ(dims, out, d3, kspace, sstrs, samples);
+		calc_circ(dims, out, d3, kspace, sstrs, samples, &popts);
 //		calc_ring(dims, out, kspace);
 		break;
 
 	case SHEPPLOGAN:
 
-		calc_phantom(dims, out, d3, kspace, sstrs, samples);
+		calc_phantom(dims, out, d3, kspace, sstrs, samples, &popts);
 		break;
 
 	case TUBES:
 	case NIST:
         case SONAR:
 
-		calc_phantom_tubes(dims, out, kspace, false, rotation_angle, N, sstrs, samples);
+		calc_phantom_tubes(dims, out, kspace, false, rotation_angle, N, sstrs, samples, &popts);
 		break;
 
 	case RAND_TUBES:
 
-		calc_phantom_tubes(dims, out, kspace, true, rotation_angle, N, sstrs, samples);
+		calc_phantom_tubes(dims, out, kspace, true, rotation_angle, N, sstrs, samples, &popts);
 		break;
 
 	case BART:
 
-		calc_bart(dims, out, kspace, sstrs, samples);
+		calc_bart(dims, out, kspace, sstrs, samples, &popts);
 		break;
 
 	case BRAIN:
 
-		calc_brain(dims, out, kspace, sstrs, samples);
+		calc_brain(dims, out, kspace, sstrs, samples, &popts);
 		break;
 
 	case FILE:
 
-		calc_cfl_geom(dims, out, kspace, sstrs, samples, N_max, D_max, hdims, multifile);
+		calc_cfl_geom(dims, out, kspace, sstrs, samples, N_max, D_max, hdims, multifile, &popts);
 		break;
 	}
 

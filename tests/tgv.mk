@@ -17,7 +17,7 @@ tests/test-tgv: phantom slice noise tgv nrmse
 
 tests/test-tgv-3D: phantom slice noise tgv nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/phantom -x32 -3 -s2 x.ra						;\
+	$(TOOLDIR)/phantom -x32 -3 -s2 --coil HEAD_2D_8CH x.ra						;\
 	$(TOOLDIR)/slice 3 0 x.ra x0.ra							;\
 	$(TOOLDIR)/noise -n 1000000. x0.ra x0n.ra					;\
 	$(TOOLDIR)/tgv 650. 7 x0n.ra xd.ra						;\
