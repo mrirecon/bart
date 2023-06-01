@@ -351,6 +351,10 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 	void* workspace = md_alloc_gpu(1, MAKE_ARRAY(1l), workspace_size);
 	CUDA_ERROR_PTR(dst, src, workspace);
 
+	//FIXME: This should not be necessary, however, there seems to be
+	//	 a race condition in cufft so we keep it like this.
+	cuda_sync_stream();
+
 	cufft_set_gpulock();
 
 	CUFFT_ERROR(cufftSetStream(cufft, cuda_get_stream()));
@@ -362,6 +366,7 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 					 (!cuplan->backwards) ? CUFFT_FORWARD : CUFFT_INVERSE));
 
 	cufft_unset_gpulock();
+	cuda_sync_stream();
 	
 	md_free(workspace);
 
