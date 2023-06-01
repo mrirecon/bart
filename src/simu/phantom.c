@@ -1,9 +1,8 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2015-2020. Martin Uecker.
+ * Copyright 2021-2023. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * Simple numerical phantoms that simulate image-domain or
  * k-space data with multiple channels.
@@ -89,7 +88,6 @@ static complex float xsens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 				error("Please specify a sensitivity type.");
 				break;
-
 			}
 		}
 
@@ -123,7 +121,7 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 			switch (krn_data->stype) {
 
-			case HEAD_3D_64CH: ;
+			case HEAD_3D_64CH:
 
 				for (int m = 0; m < COIL_COEFF; m++) {
 
@@ -151,7 +149,6 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 				error("Please specify a sensitivity type.");
 				break;
-
 			}
 		}
 	}
@@ -462,7 +459,7 @@ static complex float krn_poly(void* _data, int s, const double mpos[3])
 
 	if (data->coeff)
 		// Constrain to 1 allows geometry separation by intensity
-		val = (*data->p)[s].coeff/cabsf((*data->p)[s].coeff) * (data->kspace ? kpolygon : xpolygon)((*data->p)[s].N, *(*data->p)[s].pg, mpos);
+		val = (*data->p)[s].coeff / cabsf((*data->p)[s].coeff) * (data->kspace ? kpolygon : xpolygon)((*data->p)[s].N, *(*data->p)[s].pg, mpos);
 	else
 		for (int p = 0; p < data->P; p++)
 			val += (*data->p)[p].coeff * (data->kspace ? kpolygon : xpolygon)((*data->p)[p].N, *(*data->p)[p].pg, mpos);
@@ -479,22 +476,17 @@ void calc_star(const long dims[DIMS], complex float* out, bool kspace, const lon
 		coeff,
 		popts->stype,
 		1,
-		&(struct poly1[]){
-			{
-			8,
-			1.,
-			&(double[][2]){
-				{ -0.5, -0.5 },
-				{  0.0, -0.3 },
-				{ +0.5, -0.5 },
-				{  0.3,  0.0 },
-				{ +0.5, +0.5 },
-				{  0.0, +0.3 },
-				{ -0.5, +0.5 },
-				{ -0.3,  0.0 },
-			}
-			}
-		}
+		&(struct poly1[]){ { 8, 1.,
+				&(double[][2]){
+					{ -0.5, -0.5 },
+					{  0.0, -0.3 },
+					{ +0.5, -0.5 },
+					{  0.3,  0.0 },
+					{ +0.5, +0.5 },
+					{  0.0, +0.3 },
+					{ -0.5, +0.5 },
+					{ -0.3,  0.0 },
+				} } }
 	};
 
 	struct data data = {
@@ -614,6 +606,7 @@ static void combine_geom_components(const long dims[DIMS], complex float* out, b
 		md_free(full_pha);
 
 	} else {
+
 		fun(dims, out, kspace, tstrs, traj, popts);
 	}
 }
@@ -800,11 +793,12 @@ void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const
 	}
 
 	struct poly poly = {
+
 		kspace,
 		coeff,
 		popts->stype,
 		hdims[1][0],
-		(struct poly1 (*)[]) paths
+		(struct poly1 (*)[])paths,
 	};
 
 	for (int i = 0; i < N; i++) {
@@ -836,7 +830,7 @@ void calc_phantom_arb(int N, const struct ellipsis_s* data /*[N]*/, const long d
 	long dims1[DIMS];
 	md_select_dims(DIMS, ~MD_BIT(TIME_DIM), dims1, dims);
 
-	for (int i = 1; i < dims[TIME_DIM]+1; i++) {
+	for (int i = 1; i < dims[TIME_DIM] + 1; i++) {
 
 		struct ellipsis_s data2[N];
 
@@ -953,41 +947,45 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 					py = pmin + (pmax - pmin) * uniform_rand();
 
 					// check that ellipse fits within background circle
-					overlap = ! circ_in_background(edge_scale * sx, px, py, sx_bg, px_bg, py_bg);
+					overlap = !circ_in_background(edge_scale * sx, px, py, sx_bg, px_bg, py_bg);
 
 					// check that new ellipse does not overlap with existing ellipses
 					// FIXME: change from circle to ellipse intersection
-					if (i > 0 && !overlap) {
+					if ((i > 0) && !overlap) {
 
 						for (int j = 1; j < i; j+=2) {
 
-							float _sx = phantom_tubes_N[j].geo.axis[0];
-							float _px = phantom_tubes_N[j].geo.center[0];
-							float _py = phantom_tubes_N[j].geo.center[1];
+							float sx2 = phantom_tubes_N[j].geo.axis[0];
+							float px2 = phantom_tubes_N[j].geo.center[0];
+							float py2 = phantom_tubes_N[j].geo.center[1];
 
-							overlap = circ_intersection(edge_scale * sx, px, py, _sx, _px, _py);
+							overlap = circ_intersection(edge_scale * sx, px, py, sx2, px2, py2);
+
 							if (overlap)
 								break;
 						}
 					}
+
 					count++;
 					
 					if (total_count > 100 * max_count)
 						error("Could not fit tube in phantom (requested %d, stopped at %d after %d trials\n", N, i/2, total_count);
 				}
+
 				debug_printf(DP_DEBUG4, "i=%d, (%f, %f), (%f, %f)\n", i, sx, sx, px, py);
 
-				struct ellipsis_bs _ebs = {{ 1., {sx, sx}, {px, py}, 0.}, false };
-				phantom_tubes_N[i] = _ebs;
+				struct ellipsis_bs ebs = { { 1., { sx, sx }, { px, py }, 0.}, false };
+				phantom_tubes_N[i] = ebs;
 
-				struct ellipsis_bs _ebs2 = {{ -1., {edge_scale * sx, edge_scale * sx}, {px, py}, 0.}, true };
-				phantom_tubes_N[i+1] = _ebs2;
+				struct ellipsis_bs ebs2 = { { -1., { edge_scale * sx, edge_scale * sx }, { px, py }, 0.}, true };
+				phantom_tubes_N[i + 1] = ebs2;
 			}
 
-			struct ellipsis_bs _ebsb = {{ 1., {sx_bg, sx_bg}, {px_bg, py_bg}, 0.}, true };
-			phantom_tubes_N[2 * N - 2] = _ebsb;
-		}
-		else {
+			struct ellipsis_bs ebsb = { { 1., { sx_bg, sx_bg }, { px_bg, py_bg }, 0. }, true };
+			phantom_tubes_N[2 * N - 2] = ebsb;
+
+		} else {
+
 			assert((8 == N) || (11 == N) || (15 == N));
 
 			for (int i = 0; i < 2 * N - 1; i++)
