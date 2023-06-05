@@ -62,6 +62,7 @@ opt_conv_f opt_inoutfile;
 opt_conv_f opt_vec2;
 opt_conv_f opt_float_vec2;
 opt_conv_f opt_vec3;
+opt_conv_f opt_vecn;
 opt_conv_f opt_float_vec3;
 opt_conv_f opt_float_vec4;
 opt_conv_f opt_float_vecN;
@@ -100,6 +101,8 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 
 	case OPT_VEC3:
 		return "d:d:d";
+	case OPT_VECN:
+		return "d0:d1:...:dN";
 
 	case OPT_FLOAT_VEC2:
 		return "f:f";
@@ -140,6 +143,7 @@ static const char* opt_type_str(enum OPT_TYPE type)
 	OPT_ARG_TYPE_CASE(OPT_CFL)
 	OPT_ARG_TYPE_CASE(OPT_VEC2)
 	OPT_ARG_TYPE_CASE(OPT_VEC3)
+	OPT_ARG_TYPE_CASE(OPT_VECN)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC2)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC3)
         OPT_ARG_TYPE_CASE(OPT_FLOAT_VEC4)
@@ -183,6 +187,8 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 		return opt_vec2(ptr, c, optarg);
 	case OPT_VEC3:
 		return opt_vec3(ptr, c, optarg);
+	case OPT_VECN:
+		return opt_vecn(ptr, c, optarg);
 	case OPT_FLOAT_VEC2:
 		return opt_float_vec2(ptr, c, optarg);
 	case OPT_FLOAT_VEC3:
@@ -807,6 +813,44 @@ bool opt_vec3(void* ptr, char c, const char* optarg)
 
 		assert(3 == r);
 	}
+
+	return false;
+}
+
+bool opt_vecn(void* _ptr, char c, const char* optarg)
+{
+
+	UNUSED(c);
+
+	struct opt_vec_s* ptr = _ptr;
+	long* vec = ptr->ptr;
+	int count = 0;
+
+	int delta = 0;
+
+	int r = sscanf(optarg, "%ld%n", vec + count, &delta);
+	assert(1 == r);
+
+	optarg += delta;
+	count++;
+
+	long tmp;
+
+	while (1 == sscanf(optarg, ":%ld%n", &tmp, &delta)) {
+
+		if (count == ptr->max)
+			error("Option '%c' is at maximum a vector of size %d!\n", c, ptr->max);
+
+		vec[count] = tmp;
+		count++;
+		optarg += delta;
+	}
+
+	if (count < ptr->requiered)
+		error("Option '%c' is at minimum a vector of size %d!\n", c, ptr->requiered);
+
+	if (NULL != ptr->count)
+		*(ptr->count) = count;
 
 	return false;
 }
