@@ -336,8 +336,12 @@ int main_traj(int argc, char* argv[argc])
 
 		} else {
 
-			samples[p * 3 + 0] = (i - X / 2);
-			samples[p * 3 + 1] = (j - Y / 2);
+			double x = (i - X / 2);
+			double y = (j - Y / 2);
+			double angle = -rot / 180. * M_PI;
+
+			samples[p * 3 + 0] =  x * cos(angle) + -y * sin(angle);
+			samples[p * 3 + 1] =  x * sin(angle) + y * cos(angle);
 			samples[p * 3 + 2] = 0;
 		}
 
