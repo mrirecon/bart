@@ -185,7 +185,6 @@ MKL_BASE ?= /opt/intel/mkl/lib/intel64/
 
 
 # fftw
-
 ifneq ($(BUILDTYPE), MacOSX)
 FFTW_BASE ?= /usr/
 else
@@ -446,7 +445,11 @@ BLAS_L := -L$(BLAS_BASE)/lib -llapack -lblas
 CPPFLAGS += -Isrc/lapacke
 else
 ifeq ($(OPENBLAS), 1)
+ifeq ($(FORTRAN), 0)
+BLAS_L := -L$(BLAS_BASE)/lib -lopenblas
+else
 BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lopenblas
+endif
 CPPFLAGS += -DUSE_OPENBLAS
 CFLAGS += -DUSE_OPENBLAS
 else
@@ -746,7 +749,11 @@ endif
 
 .SECONDEXPANSION:
 $(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
+ifeq ($(SHARED),1)
+	$(LINKER) $(LDFLAGS) -shared $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o bart.o $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
+else
 	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
+endif
 #	rm $(srcdir)/$@.o
 
 UTESTS=$(shell $(root)/utests/utests-collect.sh ./utests/$@.c)
