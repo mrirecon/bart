@@ -42,6 +42,14 @@
 #define LAZY_CUDA
 #endif
 
+#ifdef NO_FORTRANFFT
+#define FFT_PLAN fftw_plan
+#define FFT_IODIM64 fftw_iodim64
+#else
+#define FFT_PLAN fftwf_plan
+#define FFT_IODIM64 fftwf_iodim64
+#endif
+
 
 void fftscale2(int N, const long dimensions[N], unsigned long flags, const long ostrides[N], complex float* dst, const long istrides[N], const complex float* src)
 {
@@ -315,7 +323,7 @@ struct fft_plan_s {
 
 	INTERFACE(operator_data_t);
 
-	fftwf_plan fftw;
+	FFT_PLAN fftw;
 
 	int D;
 	unsigned long flags;
@@ -387,20 +395,25 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const 
 }
 
 
-static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
+static FFT_PLAN fft_fftwf_plan(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
-	fftwf_plan fftwf;
+	FFT_PLAN fftwf;
 
 	int N = D;
-	fftwf_iodim64 dims[N];
-	fftwf_iodim64 hmdims[N];
+	FFT_IODIM64 dims[N];
+	FFT_IODIM64 hmdims[N];
 	int k = 0;
 	int l = 0;
 
 	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
 
-	if (NULL != wisdom)
+	if (NULL != wisdom) {
+		#ifdef NO_FORTRANFFT
+		fftw_import_wisdom_from_filename(wisdom);
+		#else
 		fftwf_import_wisdom_from_filename(wisdom);
+		#endif
+	}
 
 
 	//FFTW seems to be fine with this
@@ -425,13 +438,22 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 	}
 
 	#pragma omp critical
+	#ifdef NO_FORTRANFFT
+	fftwf = fftw_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
+				backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
+	#else
 	fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
 				backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
+	#endif
 
 
 	if (NULL != wisdom) {
 
+		#ifdef NO_FORTRANFFT
+		fftw_export_wisdom_to_filename(wisdom);
+		#else
 		fftwf_export_wisdom_to_filename(wisdom);
+		#endif
 		xfree(wisdom);
 	}
 
@@ -469,7 +491,11 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 #endif
 	{
 		assert(NULL != plan->fftw);
+		#ifdef NO_FORTRANFFT
+		fftw_execute_dft(plan->fftw, (complex float*)src, dst);
+		#else
 		fftwf_execute_dft(plan->fftw, (complex float*)src, dst);
+		#endif
 	}
 }
 
@@ -478,8 +504,13 @@ static void fft_free_plan(const operator_data_t* _data)
 {
 	const auto plan = CAST_DOWN(fft_plan_s, _data);
 
-	if (NULL != plan->fftw)
+	if (NULL != plan->fftw) {
+		#ifdef NO_FORTRANFFT
+		fftw_destroy_plan(plan->fftw);
+		#else
 		fftwf_destroy_plan(plan->fftw);
+		#endif
+	}
 
 #ifdef	USE_CUDA
 	if (NULL != plan->cuplan)
