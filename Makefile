@@ -488,7 +488,13 @@ else
 endif
 
 # png
+ifeq ($(PNG), 0)
+PNG_L :=
+CFLAGS += -DNO_PNG
+CPPFLAGS += -DNO_PNG
+else
 PNG_L := -lpng
+endif
 
 ifeq ($(SLINK),1)
 	PNG_L += -lz

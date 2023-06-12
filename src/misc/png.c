@@ -5,7 +5,7 @@
  * Authors: 
  * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
  */
-
+#ifndef NO_PNG
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -105,3 +105,4 @@ int png_write_bgr32(const char* name, int w, int h, long inum, const unsigned ch
 	UNUSED(inum);
 	return png_write_anyrgb(name, w, h, 4, false, buf);
 }
+#endif
