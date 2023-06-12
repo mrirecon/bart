@@ -1,0 +1,66 @@
+A short guide on how I compiled BART to WebAssembler:
+
+1. Download:
+    - emscripten (3.1.41)
+    - OpenBLAS source (0.3.23)
+    - libfftw3 source (3.3.10)
+    - bart source (with my changes)
+    - optional: libpng and zlib sources
+
+2. Prepare:
+    - use emsdk to install and activate latest emscripten.
+
+3. Compile OpenBLAS:
+    - a few month ago OpenBLAS got support for emscripten so just use this make command to compile:
+    make CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NO_FORTRAN=1 USE_THREAD=0
+    - install the results outside of the standard places in /usr/ ! e.g. somewhere in your home directory
+    make CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NO_FORTRAN=1 USE_THREAD=0 PREFIX=$HOME/openblas install
+
+4. Compile libfftw3
+    - again: set install prefix outside of /usr/ !
+    emconfigure ./configure --prefix=$HOME/fftw/
+    emmake make
+    make install
+
+5. Compile bart
+    - create a Makefile.local in folder Makefiles
+    - content should be this:
+"""
+FFTW_BASE=$HOME/fftw
+BLAS_BASE=$HOME/openblas
+CC=emcc
+CFLAGS+=-fblocks
+LDFLAGS+=-s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -s EXPORTED_FUNCTIONS="['_main_version']" -shared
+
+OPENBLAS=1
+OMP=0
+USE_THREAD=0
+FFTWTHREADS=0
+TENSORFLOW=0
+DEBUG=0
+MKL=0
+ACML=0
+CUDA=0
+CUDNN=0
+ISMRMRD=0
+FORTRAN=0
+PNG=0
+"""
+
+    - then compile, no need for emmake just make:
+    make
+
+    - Troubleshoot: the compilation will fail if /usr/include is included (-I/usr//include). 
+    - Check if you have set all base directories outside of /usr or disabled them (e.g. ACML)
+
+6. Include into your WebAssembler project
+    - copy the bart.o file to where you want it
+    - add it to the emcc call as an input file e.g.:
+    emcc -O3 -Wall simulate.c bart.o -s EXPORTED_FUNCTIONS="['_simulate','_malloc', '_free','_bart_version']" \
+        -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -o a.out.js
+    - all functions, variables you want to access in the js files have to be exported.
+    - In the example the functions "simulate", "malloc", and "free" and the variable "bart_version" are exported and accessible.
+    - The "_" in front of the name is mandatory. In js the function/variable is then called "_simulate", "_malloc", etc....
+    - MAXIMUM_MEMORY=4GB raises the amount of ram the browser is allowed to use, ALLOW_MEMORY_GROWTH=1 allows dynamic allocation of ALLOW_MEMORY_GROWTH
+    - Results in two files: a.out.js and a.out.wasm (can be changed to anything with -o filename.js but the .js at the end is important)
+    - Both have to be in the same directory on the web server
