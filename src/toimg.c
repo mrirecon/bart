@@ -23,7 +23,9 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/mmio.h"
+#ifndef NO_PNG
 #include "misc/png.h"
+#endif
 #include "misc/dicom.h"
 #include "misc/opts.h"
 
@@ -83,7 +85,11 @@ static void toimg(bool dicom, bool use_windowing, const char* name, long inum, f
 		}
 	}
 
+	#ifdef NO_PNG 
+	dicom_write(name, w, h, inum, &(*buf)[0][0][0]);
+	#else
 	(dicom  ? dicom_write : png_write_rgb24)(name, w, h, inum, &(*buf)[0][0][0]);
+	#endif
 	free(buf);
 }
 
