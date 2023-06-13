@@ -33,18 +33,19 @@ list_t str_list = NULL;
 
 void opt_free_strdup(void)
 {
-	if (NULL == str_list)
-		return;
+	#pragma omp critical (bart_options_str_list)
+	if (NULL != str_list) {
 
-	const char* str = list_pop(str_list);
-	while (NULL != str) {
+		const char* str = list_pop(str_list);
+		while (NULL != str) {
 
-		xfree(str);
-		str = list_pop(str_list);
+			xfree(str);
+			str = list_pop(str_list);
+		}
+
+		list_free(str_list);
+		str_list = NULL;
 	}
-
-	list_free(str_list);
-	str_list = NULL;
 }
 
 opt_conv_f opt_set;
@@ -543,31 +544,32 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 #endif
 
 
+	#pragma omp critical(bart_getopt)
+	{
+		char optstr[2 * n + 2];
+		ya_getopt_reset(); // reset getopt variables to process multiple argc/argv pairs
 
-	char optstr[2 * n + 2];
-	ya_getopt_reset(); // reset getopt variables to process multiple argc/argv pairs
+		check_options(n, wopts);
 
-	check_options(n, wopts);
+		save_command_line(argc, argv);
 
-	save_command_line(argc, argv);
+		int l = 0;
+		optstr[l++] = 'h';
 
-	int l = 0;
-	optstr[l++] = 'h';
+		for (int i = 0; i < n; i++) {
 
-	for (int i = 0; i < n; i++) {
+			optstr[l++] = wopts[i].c;
 
-		optstr[l++] = wopts[i].c;
+			if (wopts[i].arg)
+				optstr[l++] = ':';
+		}
 
-		if (wopts[i].arg)
-			optstr[l++] = ':';
-	}
+		optstr[l] = '\0';
 
-	optstr[l] = '\0';
+		int c;
+		int longindex = -1;
 
-	int c;
-	int longindex = -1;
-
-	while (-1 != (c = ya_getopt_long(argc, argv, optstr, longopts, &longindex))) {
+		while (-1 != (c = ya_getopt_long(argc, argv, optstr, longopts, &longindex))) {
 	//while (-1 != (c = ya_getopt(argc, argv, optstr))) {
 #if 0
 		if ('h' == c) {
@@ -596,23 +598,24 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 
 	out:	continue;
 #else
-		process_option(c, optarg, argv[0], usage_str, help_str, n, wopts, m, args);
+			process_option(c, optarg, argv[0], usage_str, help_str, n, wopts, m, args);
 #endif
+		}
+
+		if (   (argc - optind < min_args)
+		|| (argc - optind > max_args)) {
+
+			print_usage(stderr, argv[0], usage_str, n, wopts);
+			error("cmdline: too few or too many arguments\n");
+		}
+
+		int i;
+		for (i = optind; i < argc; i++)
+			argv[i - optind + 1] = argv[i];
+
+		*argcp = argc - optind + 1;
+		argv[*argcp] = NULL;
 	}
-
-	if (   (argc - optind < min_args)
-	    || (argc - optind > max_args)) {
-
-		print_usage(stderr, argv[0], usage_str, n, wopts);
-		error("cmdline: too few or too many arguments\n");
-	}
-
-	int i;
-	for (i = optind; i < argc; i++)
-		argv[i - optind + 1] = argv[i];
-
-	*argcp = argc - optind + 1;
-	argv[*argcp] = NULL;
 }
 
 
@@ -711,6 +714,8 @@ bool opt_string(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
 	*(const char**)ptr = strdup(optarg);
+
+	#pragma omp critical (bart_options_str_list)
 	list_append(str_list, *(char**)ptr);
 
 	assert(NULL != ptr);
@@ -724,6 +729,8 @@ static bool opt_file(void* ptr, char c, const char* optarg, bool out, bool in)
 	UNUSED(c);
 
 	*(const char**)ptr = strdup(optarg);
+
+	#pragma omp critical (bart_options_str_list)
 	list_append(str_list, *(char**) ptr);
 
 	if (out)
@@ -1113,8 +1120,11 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 {
 	check_args(m, args);
 
-	if (NULL == str_list)
-		str_list = list_create();
+	#pragma omp critical (bart_options_str_list)
+	{
+		if (NULL == str_list)
+			str_list = list_create();
+	}
 
 	long min_args = 0;
 	long max_args = 0;
