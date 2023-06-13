@@ -87,7 +87,7 @@ struct iofile_s {
 	struct iofile_s* prev;
 };
 
-static struct iofile_s* iofiles = NULL;
+static _Thread_local struct iofile_s* iofiles = NULL;
 
 
 
