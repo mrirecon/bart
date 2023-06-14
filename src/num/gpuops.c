@@ -312,6 +312,12 @@ static void cuda_libraries_deinit(void)
 
 bool cuda_try_init(int device)
 {
+
+	// prevent reinitialization
+	for (int i = 0; i < n_reserved_gpus; ++i)
+		if (gpu_map[i] == device)
+			return true;
+
 	int odev = cuda_get_device_internal();
 
 	cudaError_t errval = cudaSetDevice(device);
