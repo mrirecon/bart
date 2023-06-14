@@ -15,7 +15,7 @@ tests/test-rtnlinv: traj scale phantom nufft resize rtnlinv fmac nrmse
 	touch $@
 
 
-tests/test-rtnlinv-precomp: traj scale phantom ones repmat fft nufft rtnlinv fmac nrmse
+tests/test-rtnlinv-precomp: traj scale phantom ones repmat fft nufft rtnlinv nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/traj -r -x128 -y21 -t5 traj.ra				;\
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra					;\
