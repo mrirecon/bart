@@ -6,6 +6,13 @@
 #include "misc/cppwrap.h"
 
 #include <stddef.h>
+extern void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[__VLA(D)], unsigned long flags, int index);
+extern void set_cfl_loop_index(long index);
+extern _Bool cfl_loop_desc_active(void);
+extern long cfl_loop_worker_id(void);
+extern long cfl_loop_num_workers(void);
+extern long cfl_loop_desc_total(void);
+extern long calc_size_cfl_loop(int D, const long dims[__VLA(D)], size_t size);
 
 extern void* private_raw(size_t* size, const char* name);
 extern void unmap_raw(const void* data, size_t size);

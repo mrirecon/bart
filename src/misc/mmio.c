@@ -32,6 +32,7 @@
 #include "num/multind.h"
 
 #include "misc/misc.h"
+#include "misc/list.h"
 #include "misc/io.h"
 #include "misc/debug.h"
 #include "misc/memcfl.h"
@@ -47,6 +48,30 @@
 #  include <Python.h>
 #endif /* BART_WITH_PYTHON */
 
+#ifndef DIMS
+#define DIMS 16
+#endif
+
+struct cfl_loop_desc_s {
+
+	
+	unsigned long flags;
+	long loop_dims[DIMS];
+	long offs_dims[DIMS];
+};
+
+static struct cfl_loop_desc_s cfl_loop_desc = {
+
+
+	.flags = 0UL,
+	.loop_dims =  { [0 ... DIMS - 1] = 1 },
+	.offs_dims =  { [0 ... DIMS - 1] = 0 },
+};
+
+#define MAX_WORKER 128
+
+static long cfl_loop_index[MAX_WORKER] = { [ 0 ... MAX_WORKER - 1 ] = 0 };
+static list_t unmap_addrs = NULL;
 
 
 static void io_error(const char* fmt, ...)
@@ -81,6 +106,148 @@ static void io_error(const char* fmt, ...)
 
 #define err_assert(x)	({ if (!(x)) { debug_printf(DP_ERROR, "%s", #x); exit(EXIT_FAILURE); } })
 
+
+long cfl_loop_worker_id(void)
+{
+	if (!cfl_loop_desc_active())
+		return 0;
+
+	return 0;
+}
+
+long cfl_loop_num_workers(void)
+{
+	if (!cfl_loop_desc_active())
+		return 1;
+
+	return 1;
+}
+
+
+
+void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[__VLA(D)], unsigned long flags, int index)
+{
+	cfl_loop_desc.flags = flags;
+	md_copy_dims(D, cfl_loop_desc.loop_dims, loop_dims);
+	md_copy_dims(D, cfl_loop_desc.offs_dims, start_dims);
+	set_cfl_loop_index(index);
+
+	#pragma omp critical(unmap_addrs)
+	if (NULL == unmap_addrs)
+		unmap_addrs = list_create();
+}
+
+long cfl_loop_desc_total(void)
+{
+	return md_calc_size(DIMS, cfl_loop_desc.loop_dims);
+}
+
+void set_cfl_loop_index(long index)
+{
+	cfl_loop_index[cfl_loop_worker_id()] = index;
+}
+
+bool cfl_loop_desc_active(void)
+{
+	return cfl_loop_desc.flags > 0;
+}
+
+
+
+struct cfl_file_desc_s {
+	
+	bool use_out_pos;
+	const void* base_addr;
+	const complex float* data_addr;
+};
+
+static bool cmp_addr(const void* _item, const void* _ref)
+{
+	const struct cfl_file_desc_s* item = _item;
+	const complex float* ref = _ref;
+
+	return (item->data_addr == ref);
+}
+
+static void add_cfl_file(const void* base_addr, const complex float* data_addr, bool use_out_pos)
+{
+	PTR_ALLOC(struct cfl_file_desc_s, desc);
+	desc->base_addr = base_addr;
+	desc->data_addr = data_addr;
+	desc->use_out_pos = use_out_pos;
+
+	#pragma omp critical(unmap_addrs)
+	list_append(unmap_addrs, PTR_PASS(desc));
+}
+
+static struct cfl_file_desc_s* get_cfl_file(const complex float* data_addr, bool remove)
+{
+	struct cfl_file_desc_s* file_desc = NULL;
+
+	#pragma omp critical(unmap_addrs)
+	file_desc = list_get_first_item(unmap_addrs, data_addr, cmp_addr, remove);
+	
+	if (NULL != file_desc && remove) {
+	
+		xfree(file_desc);
+		return NULL;
+	}
+
+	return file_desc;
+}
+
+
+
+
+
+long calc_size_cfl_loop(int D, const long dims[D], size_t size)
+{
+	if (cfl_loop_desc_active()) {
+
+		long new_dims[D];
+
+		md_select_dims(D, ~(cfl_loop_desc.flags), new_dims, dims);
+		return io_calc_size(D, new_dims, size);
+	}
+
+	return io_calc_size(D, dims, size);
+}
+
+static long calc_cfl_offset(int D, const long dims[D], long index, bool use_out_pos)
+{
+	long strides[D];
+	long pos[D];
+
+	md_calc_strides(D, strides, dims, 1);
+
+	md_set_dims(D, pos, 0);
+	md_unravel_index(MIN(D, DIMS), pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, index);
+
+	if (!use_out_pos) {
+
+		for(int i = 0; i < MIN(D, DIMS); i++)
+			pos[i] += cfl_loop_desc.offs_dims[i];
+	}
+
+	return md_calc_offset(MIN(D, DIMS), strides, pos);
+}
+
+
+
+static complex float* create_worker_buffer(const void* addr, int D, const long dims[D])
+{
+	bool use_out_pos = md_check_equal_dims(D, dims, cfl_loop_desc.loop_dims, cfl_loop_desc.flags);
+
+	complex float* worker_buffer = (complex float*)addr;
+
+	if (cfl_loop_desc_active()) {
+
+		worker_buffer = (complex float*)addr + calc_cfl_offset(D, dims, cfl_loop_index[cfl_loop_worker_id()], use_out_pos);
+		add_cfl_file(addr, worker_buffer, use_out_pos);
+	}
+	
+	return worker_buffer;
+}
 
 
 static complex float* load_zra_internal(int fd, const char* name, int D, long dims[D])
@@ -288,7 +455,22 @@ static complex float* create_pipe(int pfd, int D, const long dimensions[D])
 
 complex float* create_cfl(const char* name, int D, const long dimensions[D])
 {
+	long dims[D];
+	md_copy_dims(D, dims, dimensions);
+	
+	if (cfl_loop_desc_active()) {
+
+		if (!md_check_equal_dims(MIN(DIMS, D), dimensions, MD_SINGLETON_DIMS(DIMS), cfl_loop_desc.flags))
+			io_error("Loop over altered dimensions!\n");
+		
+		for (int i = 0; i < MIN(D, DIMS); ++i)
+			dims[i] = (MD_IS_SET(cfl_loop_desc.flags, i)) ? cfl_loop_desc.loop_dims[i] : dimensions[i];
+	
+	} else {
+
 	io_unlink_if_opened(name);
+	}
+
 	io_register_output(name);
 
 	enum file_types_e type = file_type(name);
@@ -327,13 +509,13 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)))
 		io_error("Creating cfl file %s\n", name);
 
-	if (-1 == write_cfl_header(ofd, NULL, D, dimensions))
+		if (-1 == write_cfl_header(ofd, NULL, D, dims))
 		error("Creating cfl file %s\n", name);
 
 	if (-1 == close(ofd))
 		io_error("Creating cfl file %s\n", name);
 
-	return shared_cfl(D, dimensions, name_bdy);
+	return shared_cfl(D, dims, name_bdy);
 }
 
 
@@ -466,6 +648,9 @@ skip: ;
 
 	free(filename);
 
+	if (cfl_loop_desc_active())
+		md_select_dims(DIMS, ~cfl_loop_desc.flags, dimensions, dimensions);
+
 	return ret;
 }
 
@@ -486,7 +671,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 {
 //	struct stat st;
 	int fd;
-	void* addr;
+	void* addr = NULL;
 	long T;
 
 	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
@@ -509,7 +694,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 	if (-1 == close(fd))
 		io_error("shared cfl %s\n", name);
 
-	return (complex float*)addr;
+	return create_worker_buffer(addr, D, dims);
 }
 
 
@@ -570,7 +755,7 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 		error("private cfl %s\n", name);
 
 	int fd;
-	void* addr;
+	void* addr = NULL;
 	struct stat st;
 
 	if (-1 == (fd = open(name, O_RDONLY)))
@@ -588,7 +773,7 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 	if (-1 == close(fd))
 		io_error("private cfl %s\n", name);
 
-	return (complex float*)addr;
+	return create_worker_buffer(addr, D, dims);
 }
 
 
@@ -599,13 +784,22 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 
 	long T;
 
+	const complex float* base_x = x;
+	bool use_out_pos = false;
+
+	if (cfl_loop_desc_active() && NULL != get_cfl_file(x, false)) {
+
+		base_x = get_cfl_file(x, false)->base_addr;
+		use_out_pos = get_cfl_file(x, false)->use_out_pos;
+	}
+
 	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
 		error("unmap cfl\n");
 
 #ifdef _WIN32
-	if (-1 == munmap((void*)x, T))
+	if (-1 == munmap((void*)base_x, T))
 #else
-	if (-1 == munmap((void*)((uintptr_t)x & ~4095UL), T))
+	if (-1 == munmap((void*)((uintptr_t)base_x & ~4095UL), T))
 #endif
 		io_error("unmap cfl\n");
 }

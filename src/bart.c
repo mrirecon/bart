@@ -22,12 +22,14 @@
 #endif
 
 #include "misc/io.h"
+#include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
 #include "misc/version.h"
 #include "misc/debug.h"
 #include "misc/cppmap.h"
 
+#include "num/multind.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -43,6 +45,9 @@
 #include "main.h"
 
 
+#ifndef DIMS
+#define DIMS 16
+#endif
 
 extern FILE* bart_output;	// src/misc.c
 
@@ -64,11 +69,11 @@ static void bart_exit_cleanup(void)
 #endif
 }
 
-
+typedef int (main_fun_t)(int argc, char* argv[]); 
 
 struct {
 
-	int (*main_fun)(int argc, char* argv[]);
+	main_fun_t* main_fun;
 	const char* name;
 
 } dispatch_table[] = {
@@ -79,8 +84,27 @@ struct {
 	{ NULL, NULL }
 };
 
+static int find_command_index(int argc, char* argv[argc])
+{
+	int i = 1;
+
+	for (; i < argc; ++i) {
+
+		for (unsigned int c = 0; c < ARRAY_SIZE(dispatch_table) - 1; ++c) {
+
+			if (0 == strcmp(argv[i], dispatch_table[c].name))
+				return i;
+		}
+	}
+
+	return 1;
+}
+
+static const char help_str[] = "BART. command line flags";
+
 static void usage(void)
 {
+	printf("Usage: bart [-p flags] [-s start1:start2:...startN] [-e end1:end2:...endN] <command> args...\n");
 	printf("BART. Available commands are:");
 
 	for (int i = 0; NULL != dispatch_table[i].name; i++) {
@@ -93,6 +117,109 @@ static void usage(void)
 
 	printf("\n");
 }
+
+
+static int bart_exit(int err_no, const char* exit_msg)
+{
+	if (0 != err_no) {
+
+		if (NULL != exit_msg)
+			debug_printf(DP_ERROR, "%s\n", exit_msg);
+	}
+
+	return err_no;
+}
+
+
+static int parse_bart_opts(int argc, char* argv[argc])
+{
+	int command_arg = find_command_index(argc, argv);
+	int offset = command_arg;
+
+	if (1 == command_arg)
+		return offset;
+		
+	unsigned long flags = 0;
+	long param_start[DIMS] = { [0 ... DIMS - 1] = -1 };
+	long param_end[DIMS] = { [0 ... DIMS - 1] = -1 };
+	
+	struct arg_s args[] = {	};
+
+ 	struct opt_s opts[] = {
+
+		OPTL_ULONG('l', "loop", &(flags), "flag", "Flag to specify dimensions for looping"),
+		OPTL_VECN('s', "start", param_start, "Start index of range for looping (default: 0)"),
+		OPTL_VECN('e', "end", param_end, "End index of range for looping (default: start + 1)"),
+ 	};
+	
+	cmdline(&command_arg, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
+	XFREE(command_line);
+	opt_free_strdup();
+
+	int nstart = 0;
+	int nend = 0;
+
+	for(; nstart < DIMS && -1 != param_start[nstart]; nstart++);
+	for(; nend < DIMS && -1 != param_end[nend]; nend++);
+
+	if (0 != nstart && bitcount(flags) != nstart)
+		perror("Size of start values does not coincide with number of selected flags!");
+	
+	if (0 != nend && bitcount(flags) != nend)
+		perror("Size of start values does not coincide with number of selected flags!");
+		
+	if (0 == nstart)
+		for (int i = 0; i < bitcount(flags); i++)
+			param_start[i] = 0;
+
+	if (0 == nend)
+		for (int i = 0; i < bitcount(flags); i++)
+			param_end[i] = param_start[i] + 1;
+
+	long offs_size[DIMS] = { [0 ... DIMS - 1] = 0 };
+	long loop_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
+
+	for (int i = 0, j = 0; i < DIMS; ++i) {
+
+		if (MD_IS_SET(flags, i)) {
+
+			offs_size[i] = param_start[j];
+			loop_dims[i] = param_end[j] - param_start[j];
+			j++;
+		}
+	}
+
+	init_cfl_loop_desc(DIMS, loop_dims, offs_size, flags, 0);
+		
+	return offset;
+
+}
+
+static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], long pos)
+{
+	char* thread_argv[argc + 1];
+	char* thread_argv_save[argc];
+
+	for(int m = 0; m < argc; m++) {
+
+		thread_argv[m] = strdup(argv[m]);
+		thread_argv_save[m] = thread_argv[m];
+	}
+
+	thread_argv[argc] = NULL;
+
+	set_cfl_loop_index(pos);
+	int ret = (*dispatch_func)(argc, thread_argv);
+		
+	io_memory_cleanup();
+
+	for(int m=0; m< argc; ++m)
+		free(thread_argv_save[m]);
+
+	return ret;
+}
+
 
 int main_bart(int argc, char* argv[argc])
 {
@@ -127,7 +254,7 @@ int main_bart(int argc, char* argv[argc])
 			if (r >= (int)len) {
 
 				perror("Commandline too long");
-				return 1;
+				bart_exit(1, NULL);
 			}
 
 			if (-1 == execv(*cmd, argv + 1)) {
@@ -137,7 +264,7 @@ int main_bart(int argc, char* argv[argc])
 				if (ENOENT != errno) {
 
 					perror("Executing bart command failed");
-					return 1;
+					return bart_exit(1, NULL);
 				}
 
 			} else {
@@ -148,7 +275,16 @@ int main_bart(int argc, char* argv[argc])
 			xfree(cmd);
 		}
 
-		return main_bart(argc - 1, argv + 1);
+		int offset = parse_bart_opts(argc, argv);
+		
+		return main_bart(argc - offset, argv + offset);
+	}
+	
+	main_fun_t* dispatch_func = NULL;
+	for (int i = 0; NULL != dispatch_table[i].name; i++) {
+
+		if (0 == strcmp(bn, dispatch_table[i].name))
+			dispatch_func = dispatch_table[i].main_fun;
 	}
 
 	unsigned int v[5];
@@ -157,13 +293,32 @@ int main_bart(int argc, char* argv[argc])
 	if (0 != v[4])
 		debug_printf(DP_WARN, "BART version is not reproducible.\n");
 
-	for (int i = 0; NULL != dispatch_table[i].name; i++)
-		if (0 == strcmp(bn, dispatch_table[i].name))
-			return dispatch_table[i].main_fun(argc, argv);
+	if (NULL == dispatch_func) {
 
 	fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
+		return bart_exit(-1, NULL);
+	}
+	
+	long start = cfl_loop_worker_id();
+	long total = cfl_loop_desc_total();
+	
+	int final_ret = 0;
 
-	return -1;
+	for (long i = start; (i < total) && (0 == final_ret) ; i += cfl_loop_num_workers()) {
+
+		int ret = batch_wrapper(dispatch_func, argc, argv, i);
+		
+		if (0 != ret) {
+
+			#pragma omp critical (main_end_condition)
+			final_ret = ret;
+			bart_exit(ret, "Tool exited with error");
+		}
+	}
+
+	bart_exit_cleanup();
+
+	return final_ret;
 }
 
 

@@ -528,6 +528,87 @@ tests/test-pics-phase: traj phantom ones join nufft fmac scale bitmask saxpy sli
 	touch $@
 
 
+$(TESTS_OUT)/ksp_usamp_1.ra: bart
+	$(TOOLDIR)/bart phantom -x 64 -k -s 2 ksp_1.ra					;\
+	$(TOOLDIR)/bart poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_1.ra		;\
+	$(TOOLDIR)/bart squeeze tmp_poisson_1.ra poisson_1.ra				;\
+	$(TOOLDIR)/bart fmac ksp_1.ra poisson_1.ra $@
+
+$(TESTS_OUT)/ksp_usamp_2.ra: bart
+	$(TOOLDIR)/bart phantom -G -x 64 -k -s 2 ksp_2.ra				;\
+	$(TOOLDIR)/bart poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_2.ra		;\
+	$(TOOLDIR)/bart squeeze tmp_poisson_2.ra poisson_2.ra				;\
+	$(TOOLDIR)/bart fmac ksp_2.ra poisson_2.ra $@
+
+$(TESTS_OUT)/ksp_usamp_3.ra: bart
+	$(TOOLDIR)/bart phantom -B -x 64 -k -s 2 ksp_3.ra				;\
+	$(TOOLDIR)/bart poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_3.ra		;\
+	$(TOOLDIR)/bart squeeze tmp_poisson_3.ra poisson_3.ra				;\
+	$(TOOLDIR)/bart fmac ksp_3.ra poisson_3.ra $@
+
+$(TESTS_OUT)/sens_1.ra: bart $(TESTS_OUT)/ksp_usamp_1.ra
+	$(TOOLDIR)/bart ecalib -S $(TESTS_OUT)ksp_usamp_1.ra $@
+
+$(TESTS_OUT)/sens_2.ra: bart $(TESTS_OUT)/ksp_usamp_2.ra
+	$(TOOLDIR)/bart ecalib -S $(TESTS_OUT)ksp_usamp_2.ra $@
+
+$(TESTS_OUT)/sens_3.ra: bart $(TESTS_OUT)/ksp_usamp_3.ra
+	$(TOOLDIR)/bart ecalib -S $(TESTS_OUT)ksp_usamp_3.ra $@
+
+$(TESTS_OUT)/img_l2_1.ra: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/sens_1.ra
+	$(TOOLDIR)/bart pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/sens_1.ra $@
+
+$(TESTS_OUT)/img_l2_2.ra: bart $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/sens_2.ra
+	$(TOOLDIR)/bart pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/sens_2.ra $@
+
+$(TESTS_OUT)/img_l2_3.ra: bart $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_3.ra
+	$(TOOLDIR)/bart pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_3.ra $@
+
+tests/test-pics-cart-loop: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref			;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	$(TOOLDIR)/bart -l 8192 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p						;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-cart-loop_range: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_13						;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_3.ra img_l2_ref_23									;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra img_l2_ref_02						;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra img_l2_ref_01									;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	$(TOOLDIR)/bart -l 8192 -s 1 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p13					;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_13 img_l2_p13										;\
+	$(TOOLDIR)/bart -l 8192 -s 0 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p03					;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_03 img_l2_p03										;\
+	$(TOOLDIR)/bart -l 8192 -s 2 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p23					;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_23 img_l2_p23										;\
+	$(TOOLDIR)/bart -l 8192 -s 0 -e 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p02					;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_02 img_l2_p02										;\
+	$(TOOLDIR)/bart -l 8192 -s 0 -e 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p01					;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-cart-slice: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	$(TOOLDIR)/bart -l 8192 -s 0 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_0						;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_1.ra img_l2_0									;\
+	$(TOOLDIR)/bart -l 8192 -s 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_1						;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_2.ra img_l2_1									;\
+	$(TOOLDIR)/bart -l 8192 -s 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_2						;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_3.ra img_l2_2									;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
@@ -539,3 +620,6 @@ TESTS += tests/test-pics-noncart-sms tests/test-pics-psf tests/test-pics-tgv tes
 TESTS += tests/test-pics-wavl1-dau2 tests/test-pics-wavl1-cdf44 tests/test-pics-wavl1-haar
 TESTS += tests/test-pics-noncart-lowmem tests/test-pics-noncart-lowmem-stack0 tests/test-pics-noncart-lowmem-stack1 tests/test-pics-noncart-lowmem-stack2 tests/test-pics-noncart-lowmem-no-toeplitz
 TESTS += tests/test-pics-phase
+TESTS += tests/test-pics-cart-loop tests/test-pics-cart-loop_range tests/test-pics-cart-slice
+
+
