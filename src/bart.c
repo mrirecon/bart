@@ -29,7 +29,13 @@
 #include "misc/debug.h"
 #include "misc/cppmap.h"
 
+#include "num/mpi_ops.h"
 #include "num/multind.h"
+
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -125,6 +131,10 @@ static int bart_exit(int err_no, const char* exit_msg)
 
 		if (NULL != exit_msg)
 			debug_printf(DP_ERROR, "%s\n", exit_msg);
+
+#ifdef USE_MPI
+		MPI_Abort(MPI_COMM_WORLD, err_no);
+#endif
 	}
 
 	return err_no;
@@ -225,6 +235,8 @@ int main_bart(int argc, char* argv[argc])
 {
 	char* bn = basename(argv[0]);
 
+	init_mpi(&argc, &argv);
+	
 	if (0 == strcmp(bn, "bart") || 0 == strcmp(bn, "bart.exe")) {
 
 		if (1 == argc) {
@@ -316,6 +328,7 @@ int main_bart(int argc, char* argv[argc])
 		}
 	}
 
+	deinit_mpi();
 	bart_exit_cleanup();
 
 	return final_ret;

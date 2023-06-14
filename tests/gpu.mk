@@ -87,7 +87,56 @@ tests/test-pics-multigpu: pics repmat nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra 
 
 
 
+#MPI multigpu testing only for local use
+tests/test-pics-gpu-mpi: bart nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)												;\
+	$(TOOLDIR)/bart scale 0.3 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra							;\
+	$(TOOLDIR)/bart pics    -S -r0.001 $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra reco1.ra					;\
+	$(TOOLDIR)/bart pics    -S -r0.001 shepplogan_coil_ksp_s.ra $(TESTS_OUT)/coils.ra reco2.ra						;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra coils						;\
+	$(TOOLDIR)/bart join 13 reco1.ra reco2.ra reco1.ra reco_ref.ra										;\
+	mpirun -n 2 $(TOOLDIR)/bart -l 8192 -e 3 pics -g -S -r0.001 ksp coils reco_p								;\
+	$(TOOLDIR)/nrmse -t 0.000001 reco_ref.ra reco_p												;\
+	rm *.cfl ; rm *.hdr ; rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+#MPI multigpu testing only for local use
+tests/test-pics-gpu-noncart-weights-mpi: bart traj scale ones phantom pics nrmse $(TESTS_OUT)/coils.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)									;\
+	$(TOOLDIR)/bart traj -r -x256 -y32 traj.ra										;\
+	$(TOOLDIR)/bart scale 0.5 traj.ra traj1.ra										;\
+	$(TOOLDIR)/bart traj -r -R 90 -x256 -y32 traj2.ra									;\
+	$(TOOLDIR)/bart scale 0.75 traj2.ra traj2.ra										;\
+	$(TOOLDIR)/bart phantom -s8 -t traj.ra ksp.ra										;\
+	$(TOOLDIR)/bart phantom -s8 -t traj1.ra ksp1.ra										;\
+	$(TOOLDIR)/bart phantom -s8 -t traj2.ra ksp2.ra										;\
+	$(TOOLDIR)/bart phantom -S8 coils.ra											;\
+	$(TOOLDIR)/bart scale 0.5 coils.ra coils1.ra										;\
+	$(TOOLDIR)/bart scale 0.75   coils.ra coils2.ra										;\
+	$(TOOLDIR)/bart ones 4 1 256 32 1 weights.ra										;\
+	$(TOOLDIR)/bart scale 0.5 weights.ra weights1.ra									;\
+	$(TOOLDIR)/bart scale 0.75 weights.ra weights2.ra									;\
+	$(TOOLDIR)/bart pics -S -r0.001 -p weights.ra -t traj.ra ksp.ra coils.ra reco1.ra					;\
+	$(TOOLDIR)/bart pics -S -r0.001 -p weights1.ra -t traj1.ra ksp1.ra coils1.ra reco2.ra					;\
+	$(TOOLDIR)/bart pics -S -r0.001 -p weights2.ra -t traj2.ra ksp2.ra coils2.ra reco3.ra					;\
+	$(TOOLDIR)/bart join 13 reco1.ra reco2.ra reco3.ra reco_ref.ra								;\
+	$(TOOLDIR)/bart join 13 traj.ra traj1.ra traj2.ra traj_p								;\
+	$(TOOLDIR)/bart join 13 ksp.ra ksp1.ra ksp2.ra ksp_p									;\
+	$(TOOLDIR)/bart join 13 weights.ra weights1.ra weights2.ra weights_p							;\
+	$(TOOLDIR)/bart join 13 coils.ra coils1.ra coils2.ra coils_p								;\
+	mpirun -n 2 $(TOOLDIR)/bart -l 8192 -e 3 pics -g -S -r0.001 -p weights_p -t traj_p ksp_p coils_p reco_p			;\
+	$(TOOLDIR)/nrmse -t 0.01 reco_ref.ra reco_p										;\
+	rm *.cfl ; rm *.hdr ; rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 TESTS_GPU += tests/test-pics-gpu tests/test-pics-gpu-noncart tests/test-pics-gpu-noncart-gridding
 TESTS_GPU += tests/test-pics-gpu-weights tests/test-pics-gpu-noncart-weights tests/test-pics-gpu-llr
 TESTS_GPU += tests/test-pics-multigpu
 
+
+#MPI multigpu testing only for local use
+#ifeq ($(MPI), 1)
+#TESTS_GPU += tests/test-pics-gpu-mpi tests/test-pics-gpu-noncart-weights-mpi
+#endif

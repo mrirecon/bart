@@ -49,5 +49,37 @@ tests/test-fft-shift: resize fft fftshift nrmse $(TESTS_OUT)/shepplogan_fftu.ra
 	touch $@
 
 
+tests/test-fft-multi-loop-mpi: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)													;\
+	$(TOOLDIR)/bart phantom -B -x 64 bart_phantom.ra 												;\
+	$(TOOLDIR)/bart phantom -B -x 64 -k bart_phantom_ksp.ra												;\
+	$(TOOLDIR)/bart phantom -G -x 64 geom_phantom.ra 												;\
+	$(TOOLDIR)/bart phantom -G -x 64 -k geom_phantom_ksp.ra 											;\
+	$(TOOLDIR)/bart phantom -x 64 shepplogan_phantom.ra 												;\
+	$(TOOLDIR)/bart phantom -x 64 -k shepplogan_phantom_ksp.ra 											;\
+	$(TOOLDIR)/bart fft -iu 7 bart_phantom.ra bart_phantom_fft.ra 											;\
+	$(TOOLDIR)/bart fft -iu 7 bart_phantom_ksp.ra bart_phantom_ksp_fft.ra 										;\
+	$(TOOLDIR)/bart fft -iu 7 geom_phantom.ra geom_phantom_fft.ra 											;\
+	$(TOOLDIR)/bart fft -iu 7 geom_phantom_ksp.ra geom_phantom_ksp_fft.ra 										;\
+	$(TOOLDIR)/bart fft -iu 7 shepplogan_phantom.ra shepplogan_phantom_fft.ra 									;\
+	$(TOOLDIR)/bart fft -iu 7 shepplogan_phantom_ksp.ra shepplogan_phantom_ksp_fft.ra 								;\
+	$(TOOLDIR)/bart join 6 bart_phantom_fft.ra bart_phantom_ksp_fft.ra geom_phantom_fft.ra geom_phantom_ksp_fft.ra phantom_1_fft			;\
+	$(TOOLDIR)/bart join 6 geom_phantom_fft.ra geom_phantom_ksp_fft.ra shepplogan_phantom_fft.ra shepplogan_phantom_ksp_fft.ra phantom_2_fft	;\
+	$(TOOLDIR)/bart join 6 shepplogan_phantom_ksp_fft.ra bart_phantom_ksp_fft.ra geom_phantom_ksp_fft.ra bart_phantom_ksp_fft.ra phantom_3_fft	;\
+	$(TOOLDIR)/bart join 15 phantom_1_fft phantom_2_fft phantom_3_fft phantom_fft_ref 								;\
+	$(TOOLDIR)/bart join 6 bart_phantom.ra bart_phantom_ksp.ra geom_phantom.ra geom_phantom_ksp.ra phantom_1 					;\
+	$(TOOLDIR)/bart join 6 geom_phantom.ra geom_phantom_ksp.ra shepplogan_phantom.ra shepplogan_phantom_ksp.ra phantom_2				;\
+	$(TOOLDIR)/bart join 6 shepplogan_phantom_ksp.ra bart_phantom_ksp.ra geom_phantom_ksp.ra bart_phantom_ksp.ra phantom_3				;\
+	$(TOOLDIR)/bart join 15 phantom_1 phantom_2 phantom_3 phantom_stack										;\
+	mpirun -n 4 --allow-run-as-root $(TOOLDIR)/bart -l 32832 -e 4:3 fft -iu 7 phantom_stack phantom_stack_fft					;\
+	$(TOOLDIR)/bart nrmse -t 1e-5 phantom_fft_ref phantom_stack_fft											;\
+	rm *.ra ; rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-fft-basic tests/test-fft-unitary tests/test-fft-uncentered tests/test-fft-shift
+
+ifeq ($(MPI),1)
+TESTS_SLOW += tests/test-fft-multi-loop-mpi
+endif
+

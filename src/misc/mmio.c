@@ -22,6 +22,10 @@
 #include <unistd.h>
 #include <stdarg.h>
 
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+
 #ifdef _WIN32
 #include "win/mman.h"
 #include "win/open_patch.h"
@@ -29,6 +33,7 @@
 #include <sys/mman.h>
 #endif
 
+#include "num/mpi_ops.h"
 #include "num/multind.h"
 
 #include "misc/misc.h"
@@ -112,6 +117,16 @@ long cfl_loop_worker_id(void)
 	if (!cfl_loop_desc_active())
 		return 0;
 
+	if (1 < mpi_get_num_procs()) {
+		
+		int procno = mpi_get_rank();
+
+		if(MAX_WORKER <= procno)
+			error("Maximum supported number of MPI workers (%d) exceeded!\n", MAX_WORKER);
+
+		return procno;
+	}
+
 	return 0;
 }
 
@@ -119,6 +134,16 @@ long cfl_loop_num_workers(void)
 {
 	if (!cfl_loop_desc_active())
 		return 1;
+
+	if (1 < mpi_get_num_procs()) {
+
+		int nprocs = mpi_get_num_procs();
+
+		if (MAX_WORKER < nprocs)
+			error("Maximum supported number of MPI workers (%d) exceeded!\n", MAX_WORKER);
+
+		return nprocs;
+	}
 
 	return 1;
 }
@@ -135,6 +160,16 @@ void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[_
 	#pragma omp critical(unmap_addrs)
 	if (NULL == unmap_addrs)
 		unmap_addrs = list_create();
+
+#ifdef USE_MPI
+	int tag = COMM_CFL_BCAST;
+	int mod = (cfl_loop_desc_total() % mpi_get_num_procs());
+	if ((0 != mod) && (mpi_get_rank() >= (cfl_loop_desc_total() % mpi_get_num_procs())))
+		tag = MPI_UNDEFINED;
+	
+	mpi_split_comm(MPI_COMM_WORLD, tag);
+
+#endif
 }
 
 long cfl_loop_desc_total(void)
@@ -144,7 +179,18 @@ long cfl_loop_desc_total(void)
 
 void set_cfl_loop_index(long index)
 {
-	cfl_loop_index[cfl_loop_worker_id()] = index;
+	int worker_id = cfl_loop_worker_id();
+	if (MAX_WORKER < worker_id)
+		error("Worker id exceeds maximum supported workers!\n");
+
+	cfl_loop_index[worker_id] = index;
+
+#ifdef USE_MPI
+	int mod = cfl_loop_desc_total() % mpi_get_num_procs();
+	if ((0 != mod) && 
+		(index >= (cfl_loop_desc_total() - mod)))
+		mpi_comm_subset_activate();
+#endif
 }
 
 bool cfl_loop_desc_active(void)
@@ -233,6 +279,30 @@ static long calc_cfl_offset(int D, const long dims[D], long index, bool use_out_
 }
 
 
+#ifdef USE_MPI
+static void set_counts_and_placements(int D, const long dims[D], int size, int num_workers, int placements[num_workers], int counts[num_workers], bool use_out_pos)
+{
+	long index = cfl_loop_index[cfl_loop_worker_id()];
+	long total = md_calc_size(DIMS, cfl_loop_desc.loop_dims);
+
+	if (0 == mpi_get_rank()) {
+
+		for(int i = 0; i < MIN(num_workers, total); ++i) {
+
+			if ((index + i) < total) {
+
+				placements[i] = calc_cfl_offset(D, dims, index + i, use_out_pos);
+				counts[i]  = size;
+			
+			} else {
+
+				placements[i] = 0;
+				counts[i] = 0;
+			}
+		}
+	}
+}
+#endif
 
 static complex float* create_worker_buffer(const void* addr, int D, const long dims[D])
 {
@@ -242,7 +312,26 @@ static complex float* create_worker_buffer(const void* addr, int D, const long d
 
 	if (cfl_loop_desc_active()) {
 
-		worker_buffer = (complex float*)addr + calc_cfl_offset(D, dims, cfl_loop_index[cfl_loop_worker_id()], use_out_pos);
+		if (1 < mpi_get_num_procs()) {
+
+#ifdef USE_MPI
+			long size = calc_size_cfl_loop(D, dims, 1);
+			worker_buffer = *TYPE_ALLOC(complex float[size]);
+
+			int counts_send[cfl_loop_num_workers()];
+			int placement_send[cfl_loop_num_workers()];
+			set_counts_and_placements(DIMS, dims, size, cfl_loop_num_workers(), placement_send, counts_send, use_out_pos);
+
+			MPI_Scatterv(addr, counts_send, placement_send, MPI_C_FLOAT_COMPLEX,
+				worker_buffer, size, MPI_C_FLOAT_COMPLEX, 0, mpi_get_comm());
+#else
+			error("Not compiled with MPI=1, but want to use MPI functions!\n");
+#endif			
+		} else {
+
+			worker_buffer = (complex float*)addr + calc_cfl_offset(D, dims, cfl_loop_index[cfl_loop_worker_id()], use_out_pos);
+		}
+
 		add_cfl_file(addr, worker_buffer, use_out_pos);
 	}
 	
@@ -468,12 +557,14 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	
 	} else {
 
-	io_unlink_if_opened(name);
+		io_unlink_if_opened(name);
 	}
 
 	io_register_output(name);
 
 	enum file_types_e type = file_type(name);
+
+	assert(!cfl_loop_desc_active() || (FILE_TYPE_CFL == type));
 
 	switch (type) {
 
@@ -505,15 +596,19 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
 		error("Creating cfl file %s\n", name);
 
-	int ofd;
-	if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)))
-		io_error("Creating cfl file %s\n", name);
+	#pragma omp critical (bart_file_access)
+	if (0 == mpi_get_rank()) {
+
+		int ofd;
+		if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)))
+			io_error("Creating cfl file %s\n", name);
 
 		if (-1 == write_cfl_header(ofd, NULL, D, dims))
-		error("Creating cfl file %s\n", name);
+			error("Creating cfl file %s\n", name);
 
-	if (-1 == close(ofd))
-		io_error("Creating cfl file %s\n", name);
+		if (-1 == close(ofd))
+			io_error("Creating cfl file %s\n", name);
+	}
 
 	return shared_cfl(D, dims, name_bdy);
 }
@@ -578,6 +673,8 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 	char* filename = NULL;
 	enum file_types_e type = file_type(name);
 
+	assert(!cfl_loop_desc_active() || (FILE_TYPE_CFL == type));
+
 	switch (type) {
 
 	case FILE_TYPE_PIPE:
@@ -628,16 +725,25 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
 		error("Loading cfl file %s\n", name);
 
-	int ofd;
+	if (0 == mpi_get_rank()) {
 
-	if (-1 == (ofd = open(name_hdr, O_RDONLY)))
-		io_error("Loading cfl file %s\n", name);
+		int ofd;
 
-	if (-1 == read_cfl_header(ofd, &filename, D, dimensions))
-		error("Loading cfl file %s\n", name);
+		if (-1 == (ofd = open(name_hdr, O_RDONLY)))
+			io_error("Loading cfl file %s\n", name);
 
-	if (-1 == close(ofd))
-		io_error("Loading cfl file %s\n", name);
+		if (-1 == read_cfl_header(ofd, &filename, D, dimensions))
+			error("Loading cfl file %s\n", name);
+
+		if (-1 == close(ofd))
+			io_error("Loading cfl file %s\n", name);
+
+	}
+
+#ifdef USE_MPI
+	if (1 < mpi_get_num_procs())
+		MPI_Bcast(dimensions, D, MPI_LONG, 0, mpi_get_comm());
+#endif
 
 skip: ;
 	complex float* ret = (priv ? private_cfl : shared_cfl)(D, dimensions, filename ?: name_bdy);
@@ -679,21 +785,19 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 
 	err_assert(T > 0);
 
-        if (-1 == (fd = open(name, O_RDWR|O_CREAT, 0666 /* octal */)))
-		io_error("shared cfl %s\n", name);
+	#pragma omp critical (bart_file_access)
+	if (0 == mpi_get_rank()) {
 
-//	if (-1 == (fstat(fd, &st)))
-//		error("abort");
+		if (-1 == (fd = open(name, O_RDWR|O_CREAT, 0666 /* octal */)))
+			io_error("shared cfl %s\n", name);
 
-//	if (!((0 == st.st_size) || (T == st.st_size)))
-//		error("abort");
+		if (NULL == (addr = create_data(fd, 0, T)))
+			error("shared cfl %s\n", name);
 
-	if (NULL == (addr = create_data(fd, 0, T)))
-		error("shared cfl %s\n", name);
-
-	if (-1 == close(fd))
-		io_error("shared cfl %s\n", name);
-
+		if (-1 == close(fd))
+			io_error("shared cfl %s\n", name);
+	}
+	
 	return create_worker_buffer(addr, D, dims);
 }
 
@@ -758,20 +862,24 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 	void* addr = NULL;
 	struct stat st;
 
-	if (-1 == (fd = open(name, O_RDONLY)))
-		io_error("private cfl %s\n", name);
+	#pragma omp critical (bart_file_access)
+	if (0 == mpi_get_rank()) {
 
-	if (-1 == (fstat(fd, &st)))
-		io_error("private cfl %s\n", name);
+		if (-1 == (fd = open(name, O_RDONLY)))
+			io_error("private cfl %s\n", name);
 
-	if (T != st.st_size)
-		error("private cfl %s\n", name);
+		if (-1 == (fstat(fd, &st)))
+			io_error("private cfl %s\n", name);
 
-	if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
-		io_error("private cfl %s\n", name);
+		if (T != st.st_size)
+			error("private cfl %s\n", name);
 
-	if (-1 == close(fd))
-		io_error("private cfl %s\n", name);
+		if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
+			io_error("private cfl %s\n", name);
+
+		if (-1 == close(fd))
+			io_error("private cfl %s\n", name);
+	}
 
 	return create_worker_buffer(addr, D, dims);
 }
@@ -796,12 +904,44 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
 		error("unmap cfl\n");
 
-#ifdef _WIN32
-	if (-1 == munmap((void*)base_x, T))
-#else
-	if (-1 == munmap((void*)((uintptr_t)base_x & ~4095UL), T))
+#ifdef USE_MPI
+	if ((1 < mpi_get_num_procs()) && cfl_loop_desc_active()) {
+		
+		if (use_out_pos) {
+
+			int size = calc_size_cfl_loop(D, dims, 1);
+			struct cfl_loop_desc_s* desc = &cfl_loop_desc;
+						
+			int counts_recv[cfl_loop_num_workers()];
+			int placement_recv[cfl_loop_num_workers()];
+			long dims_original[DIMS];
+			for(int i = 0; i < DIMS; ++i)
+				dims_original[i] = MD_IS_SET(desc->flags, i) ? desc->loop_dims[i] : dims[i];
+			
+			set_counts_and_placements(DIMS, dims_original, size, cfl_loop_num_workers(), placement_recv, counts_recv, use_out_pos);
+			debug_printf(DP_DEBUG2, "unmap gather [%d/%d], addr=%p, buffer=%p\n", cfl_loop_worker_id(), cfl_loop_num_workers(), base_x, x);
+
+			MPI_Gatherv(x, size, MPI_C_FLOAT_COMPLEX,
+				(void*)base_x, counts_recv, placement_recv, MPI_C_FLOAT_COMPLEX,
+				0, mpi_get_comm());
+		}
+
+		xfree((void*)((uintptr_t)x));
+	}
 #endif
-		io_error("unmap cfl\n");
+
+	if (cfl_loop_desc_active())
+		get_cfl_file(x, true);
+
+	if (0 == mpi_get_rank()) {
+		
+		#ifdef _WIN32
+			if (-1 == munmap((void*)base_x, T))
+		#else
+			if (-1 == munmap((void*)((uintptr_t)base_x & ~4095UL), T))
+		#endif
+				io_error("unmap cfl\n");
+	}
 }
 
 /**

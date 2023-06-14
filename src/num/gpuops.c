@@ -33,6 +33,7 @@
 #include "num/multind.h"
 #include "num/blas.h"
 #include "num/rand.h"
+#include "num/mpi_ops.h"
 
 #ifdef USE_CUDNN
 #include "num/cudnn_wrapper.h"
@@ -407,9 +408,10 @@ static void cuda_deinit(int device)
 void cuda_init(void)
 {
 	int num_devices = num_cuda_devices_internal();
+	int off = mpi_get_rank();
 
-	for (int device = 0; device < num_devices; ++device)
-		if (cuda_try_init(device))
+	for (int device = off; device < (num_devices + off); ++device)
+		if (cuda_try_init(device % num_devices))
 			return;
 
 	error("Could not allocate any GPU device\n");

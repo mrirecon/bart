@@ -25,6 +25,7 @@ NON_DETERMINISTIC?=0
 BLAS_THREADSAFE?=0
 
 # use for ppc64le HPC
+MPI?=0
 OPENBLAS?=0
 MKL?=0
 CUDA?=0
@@ -422,7 +423,11 @@ CFLAGS += -Wno-unknown-pragmas
 CXXFLAGS += -Wno-unknown-pragmas
 endif
 
-
+# Message Passing Interface
+ifeq ($(MPI),1)
+CFLAGS += -DUSE_MPI
+CC = mpicc
+endif
 
 # BLAS/LAPACK
 ifeq ($(SCALAPACK),1)

@@ -7,6 +7,7 @@ before_script:
   - apt-get install -y -qq make git
   - apt-get install -y -qq libfftw3-dev libblas-dev libpng-dev
   - apt-get install -y -qq gcc liblapacke-dev
+  - apt-get install -y -qq libopenmpi-dev
 
 stages:
   - build
@@ -73,6 +74,16 @@ Build_GPU:
       - ./lib/
     expire_in: 45 minutes
 
+Build_MPI:
+  image: debian:bookworm
+  stage: build
+  script:
+    - MPI=1 make all
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+    expire_in: 45 minutes
 
 Build_LTO:
   image: debian:bookworm
@@ -259,6 +270,16 @@ Integration_Test_UBSan:
   needs: [Build_UBSan]
   dependencies:
     - Build_UBSan
+
+
+Integration_Test_MPI:
+  image: debian:bookworm
+  stage: test2
+  script:
+    - AUTOCLEAN=0 MPI=1 make testslow
+  needs: [Build_MPI]
+  dependencies:
+    - Build_MPI
 
 #Integration_Test_LTO:
 #  image: debian:bookworm

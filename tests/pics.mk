@@ -609,6 +609,72 @@ tests/test-pics-cart-slice: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_u
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
+tests/test-pics-cart-mpi: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref			;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	mpirun -n 4 --allow-run-as-root $(TOOLDIR)/bart -p 8192 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p					;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-cart-range-mpi: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_13						;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_3.ra img_l2_ref_23									;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra img_l2_ref_02						;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra img_l2_ref_01									;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	mpirun -n 2  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 0 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p03				;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_03 img_l2_p03										;\
+	mpirun -n 4  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 1 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p13				;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_13 img_l2_p13										;\
+	mpirun -n 4  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 2 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p23				;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_23 img_l2_p23										;\
+	mpirun -n 4  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 0 -e 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p02				;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_02 img_l2_p02										;\
+	mpirun -n 3  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 0 -e 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p01				;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-cart-slice-mpi: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	mpirun -n 1  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 0 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_0					;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_1.ra img_l2_0									;\
+	mpirun -n 2  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_1					;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_2.ra img_l2_1									;\
+	mpirun -n 3  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_2					;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_3.ra img_l2_2									;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-non-cart-mpi: bart $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)										;\
+	$(TOOLDIR)/bart traj -r -D -x 64 -y 32 tr										;\
+	$(TOOLDIR)/bart scale 0.5 tr tr1											;\
+	$(TOOLDIR)/bart scale 2 tr tr2												;\
+	$(TOOLDIR)/bart phantom -ttr -k -s 2 ksp_rad										;\
+	$(TOOLDIR)/bart phantom -ttr1 -k -G -s 2 ksp_rad_g									;\
+	$(TOOLDIR)/bart phantom -ttr2 -k -B -s 2 ksp_rad_b									;\
+	$(TOOLDIR)/bart pics -i 3 -t tr ksp_rad $(TESTS_OUT)/sens_1.ra pics_rad							;\
+	$(TOOLDIR)/bart pics -i 3 -t tr1 ksp_rad_g $(TESTS_OUT)/sens_2.ra pics_rad_g						;\
+	$(TOOLDIR)/bart pics -i 3 -t tr2 ksp_rad_b $(TESTS_OUT)/sens_3.ra pics_rad_b						;\
+	$(TOOLDIR)/bart join 13 pics_rad pics_rad_g pics_rad_b pics_rad_ref							;\
+	$(TOOLDIR)/bart join 13 ksp_rad ksp_rad_g ksp_rad_b ksp_rad_p								;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens1_p			;\
+	$(TOOLDIR)/bart join 13 tr tr1 tr2 tr_p											;\
+	mpirun -n 2 --allow-run-as-root $(TOOLDIR)/bart -l 8192 -e 3 pics -i 3 -ttr_p ksp_rad_p sens1_p pics_rad_p		;\
+	$(TOOLDIR)/bart nrmse -t 5e-3 pics_rad_ref pics_rad_p									;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
@@ -621,5 +687,9 @@ TESTS += tests/test-pics-wavl1-dau2 tests/test-pics-wavl1-cdf44 tests/test-pics-
 TESTS += tests/test-pics-noncart-lowmem tests/test-pics-noncart-lowmem-stack0 tests/test-pics-noncart-lowmem-stack1 tests/test-pics-noncart-lowmem-stack2 tests/test-pics-noncart-lowmem-no-toeplitz
 TESTS += tests/test-pics-phase
 TESTS += tests/test-pics-cart-loop tests/test-pics-cart-loop_range tests/test-pics-cart-slice
+
+ifeq ($(MPI),1)
+TESTS_SLOW += tests/test-pics-cart-mpi tests/test-pics-non-cart-mpi tests/test-pics-cart-slice-mpi tests/test-pics-cart-range-mpi
+endif
 
 
