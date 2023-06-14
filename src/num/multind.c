@@ -2241,3 +2241,20 @@ int md_min_idx(unsigned long flags)
 	return ffsl(flags) - 1;
 }
 
+/**
+ * Convert flat index to pos
+ *
+ */
+void md_unravel_index(int D, long pos[D], unsigned long flags, const long dims[D], long index)
+{
+	long ind = index;
+	for (int d = 0; d < D; ++d) {
+
+		if (!MD_IS_SET(flags, d))
+			continue;
+
+		pos[d] = ind % dims[d];
+		ind /= dims[d];
+	}
+}
+
