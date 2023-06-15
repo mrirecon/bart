@@ -330,22 +330,24 @@ int main_traj(int argc, char* argv[argc])
 					d[i] = delay * read_dir[i];
 			}
 
-			samples[p * 3 + 0] = d[1] + read * read_dir[1];
-			samples[p * 3 + 1] = d[0] + read * read_dir[0];
-			samples[p * 3 + 2] = d[2] + read * read_dir[2];
+			samples[p * 3 + 0] = (d[1] + read * read_dir[1]) / over;
+			samples[p * 3 + 1] = (d[0] + read * read_dir[0]) / over;
+			samples[p * 3 + 2] = (d[2] + read * read_dir[2]) / over;
 
 		} else {
 
-			samples[p * 3 + 0] = (i - X / 2);
-			samples[p * 3 + 1] = (j - Y / 2);
+			double x = (i - X / 2) / over;
+			double y = (j - Y / 2);
+			double angle = -rot / 180. * M_PI;
+
+			samples[p * 3 + 0] =  x * cos(angle) + -y * sin(angle);
+			samples[p * 3 + 1] =  x * sin(angle) + y * cos(angle);
 			samples[p * 3 + 2] = 0;
 		}
 
 		p++;
 
 	} while(md_next(DIMS, dims, ~1L, pos));
-
-	md_zsmul(DIMS, dims, samples, samples, 1. / over);
 
 	assert(p == N - 0);
 

@@ -14,7 +14,7 @@ stages:
   - test2
 
 Build:
-  image: debian:stable
+  image: debian:bookworm
   stage: build
   script:
     - make all
@@ -26,11 +26,11 @@ Build:
 
 
 Build_Clang:
-  image: debian:stable
+  image: debian:bookworm
   stage: build
   script:
-    - apt-get install -y clang-11 libblocksruntime-dev
-    - CC=clang-11 OMP=0 make all
+    - apt-get install -y clang-14 libblocksruntime-dev
+    - CC=clang-14 OMP=0 make all
   artifacts:
     paths:
       - bart
@@ -39,10 +39,10 @@ Build_Clang:
 
 
 Build_Static:
-  image: debian:stable
+  image: debian:bookworm
   stage: build
   script:
-    - apt-get install -y libgfortran-10-dev
+    - apt-get install -y libgfortran-12-dev
     - SLINK=1 make
   artifacts:
     paths:
@@ -51,7 +51,7 @@ Build_Static:
 
 
 Build_UBSan:
-  image: debian:testing
+  image: debian:bookworm
   stage: build
   script:
     - UBSAN=1 ASAN=1 make all
@@ -75,7 +75,7 @@ Build_GPU:
 
 
 Build_LTO:
-  image: debian:stable
+  image: debian:bookworm
   stage: build
   script:
     - CFLAGS="-flto -O2 -g" make
@@ -86,7 +86,7 @@ Build_LTO:
 
 
 Build_Analyzer:
-  image: debian:testing
+  image: debian:bookworm
   stage: build
   script:
     - CFLAGS="-fanalyzer -Werror" make all
@@ -115,7 +115,7 @@ Build_Tensorflow:
 
 
 Unit_Test:
-  image: debian:stable
+  image: debian:bookworm
   stage: test1
   script:
     - AUTOCLEAN=0 make utest
@@ -125,18 +125,18 @@ Unit_Test:
 
 
 Unit_Test_Clang:
-  image: debian:stable
+  image: debian:bookworm
   stage: test1
   script:
-    - apt-get install -y clang-11 libblocksruntime-dev
-    - AUTOCLEAN=0 CC=clang-11 OMP=0 make utest
+    - apt-get install -y clang-14 libblocksruntime-dev
+    - AUTOCLEAN=0 CC=clang-14 OMP=0 make utest
   needs: [Build_Clang]
   dependencies:
      - Build_Clang
 
 
 Unit_Test_Valgrind:
-  image: debian:stable
+  image: debian:bookworm
   stage: test1
   script:
     - apt-get install -y valgrind
@@ -147,7 +147,7 @@ Unit_Test_Valgrind:
 
 
 Unit_Test_UBSan:
-  image: debian:testing
+  image: debian:bookworm
   stage: test1
   script:
     - AUTOCLEAN=0 UBSAN=1 ASAN=1 make utest
@@ -183,7 +183,7 @@ Unit_Test_Tensorflow:
 
 
 Unit_Test_LTO:
-  image: debian:stable
+  image: debian:bookworm
   stage: test1
   script:
     - CFLAGS="-flto -O2 -g" make utest
@@ -194,7 +194,7 @@ Unit_Test_LTO:
 
 
 Integration_Test:
-  image: debian:stable
+  image: debian:bookworm
   stage: test2
   script:
     - AUTOCLEAN=0 make test testslow
@@ -204,7 +204,7 @@ Integration_Test:
 
 
 Integration_Test_Python:
-  image: debian:stable
+  image: debian:bookworm
   stage: test2
   script:
     - apt-get install -y python3 python3-numpy
@@ -229,18 +229,18 @@ Integration_Test_GPU:
 
 
 Integration_Test_Clang:
-  image: debian:stable
+  image: debian:bookworm
   stage: test2
   script:
-    - apt-get install -y clang-11 libblocksruntime-dev
-    - AUTOCLEAN=0 CC=clang-11 OMP=0 make test
+    - apt-get install -y clang-14 libblocksruntime-dev
+    - AUTOCLEAN=0 CC=clang-14 OMP=0 make test
   needs: [Build_Clang]
   dependencies:
     - Build_Clang
 
 
 Integration_Test_UBSan:
-  image: debian:testing
+  image: debian:bookworm
   stage: test2
   script:
     - AUTOCLEAN=0 UBSAN=1 ASAN=1 DEBUG=1 UBSAN_OPTIONS=print_stacktrace=1 make test
@@ -249,7 +249,7 @@ Integration_Test_UBSan:
     - Build_UBSan
 
 #Integration_Test_LTO:
-#  image: debian:stable
+#  image: debian:bookworm
 #  stage: test2
 #  script:
 #    - CFLAGS="-flto -O2 -g" make test
