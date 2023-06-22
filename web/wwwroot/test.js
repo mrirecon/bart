@@ -24,6 +24,53 @@ function show_phantom() {
     ctx.putImageData(idata, 0, 0);
 }
 
+function fft_phantom() {
+    var canvas = document.getElementById("fft_phant");
+    ctx = canvas.getContext('2d');
+    canvas.width = 128;
+    canvas.height = 128;
+    idata = ctx.createImageData(128, 128);
+    var dims = Array(DIMS);
+    dims[0] = 128;
+    dims[1] = 128;
+    phant_data = calc_phantom(dims);
+    data = fft(phant_data, dims, 0);
+    console.log(data.reduce((p,c) => p+c),data.reduce((p,c) => p<c?p:c),data.reduce((p,c) => p<c?c:p))
+    var result = new Uint8ClampedArray(128 * 128 * 4);
+    for(var i=0;i<128*128;i++) {
+        result[i] = data[2*i]*256;
+        result[i+1] = data[2*i]*256;
+        result[i+2] = data[2*i]*256;
+        result[i+3] = 255;
+    }
+    idata.data.set(result);
+    ctx.putImageData(idata, 0, 0);
+}
+
+function ifft_fft_phantom() {
+    var canvas = document.getElementById("ifft_phant");
+    ctx = canvas.getContext('2d');
+    canvas.width = 128;
+    canvas.height = 128;
+    idata = ctx.createImageData(128, 128);
+    var dims = Array(DIMS);
+    dims[0] = 128;
+    dims[1] = 128;
+    phant_data = calc_phantom(dims);
+    fft_data = fft(phant_data, dims, 0);
+    data = ifft(fft_data, dims, 0);
+    console.log(data.reduce((p,c) => p+c),data.reduce((p,c) => p<c?p:c),data.reduce((p,c) => p<c?c:p))
+    var result = new Uint8ClampedArray(128 * 128 * 4);
+    for(var i=0;i<128*128;i++) {
+        result[i] = data[2*i]*256;
+        result[i+1] = data[2*i]*256;
+        result[i+2] = data[2*i]*256;
+        result[i+3] = 255;
+    }
+    idata.data.set(result);
+    ctx.putImageData(idata, 0, 0);
+}
+
 function calc_phantom(dims) {
     var sstrs = Array(DIMS);
     var samples = 0;
