@@ -1,12 +1,27 @@
+<!DOCTYPE html>
 <html>
     <head>
         <script src="./bart.js"></script>
         <script src="./test.js"></script>
     </head>
     <body>
-        <button onclick="show_phantom()" value="Show Phantom">Show Phantom</button>
         <div>
-            <canvas style="width:128;height:128" id="phant"></canvas>
+            <button onclick="show_phantom()" value="Show Phantom">Show Phantom</button>
+            <div>
+                <canvas style="width:128;height:128" id="phant"></canvas>
+            </div>
+        </div>
+        <div>
+            <button onclick="fft_phantom()" value="Show FFT of Phantom">Show Phantom</button>
+            <div>
+                <canvas style="width:128;height:128" id="fft_phant"></canvas>
+            </div>
+        </div>
+        <div>
+            <button onclick="ifft_fft_phantom()" value="Show IFFT of FFT of Phantom">Show Phantom</button>
+            <div>
+                <canvas style="width:128;height:128" id="ifft_phant"></canvas>
+            </div>
         </div>
     </body>
 </html>

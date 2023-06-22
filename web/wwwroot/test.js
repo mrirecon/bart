@@ -8,24 +8,74 @@ function show_phantom() {
     canvas.width = 128;
     canvas.height = 128;
     idata = ctx.createImageData(128, 128);
-    var dims = Array(DIMS);
+    var dims = new Int32Array(DIMS);
+    dims.fill(1);
     dims[0] = 128;
     dims[1] = 128;
     data = calc_phantom(dims);
     console.log(data.reduce((p,c) => p+c),data.reduce((p,c) => p<c?p:c),data.reduce((p,c) => p<c?c:p))
     var result = new Uint8ClampedArray(128 * 128 * 4);
     for(var i=0;i<128*128;i++) {
-        result[i] = data[2*i]*256;
-        result[i+1] = data[2*i]*256;
-        result[i+2] = data[2*i]*256;
-        result[i+3] = 255;
+        result[4*i] = data[2*i]*256;
+        result[4*i+1] = data[2*i]*256;
+        result[4*i+2] = data[2*i]*256;
+        result[4*i+3] = 255;
+    }
+    idata.data.set(result);
+    ctx.putImageData(idata, 0, 0);
+}
+
+function fft_phantom() {
+    var canvas = document.getElementById("fft_phant");
+    ctx = canvas.getContext('2d');
+    canvas.width = 128;
+    canvas.height = 128;
+    idata = ctx.createImageData(128, 128);
+    var dims = new Int32Array(DIMS);
+    dims.fill(1);
+    dims[0] = 128;
+    dims[1] = 128;
+    phant_data = calc_phantom(dims);
+    data = fft(phant_data, dims, 3);
+    console.log(data.reduce((p,c) => p+c),data.reduce((p,c) => p<c?p:c),data.reduce((p,c) => p<c?c:p))
+    var result = new Uint8ClampedArray(128 * 128 * 4);
+    for(var i=0;i<128*128;i++) {
+        result[4*i] = data[2*i]*256;
+        result[4*i+1] = data[2*i]*256;
+        result[4*i+2] = data[2*i]*256;
+        result[4*i+3] = 255;
+    }
+    idata.data.set(result);
+    ctx.putImageData(idata, 0, 0);
+}
+
+function ifft_fft_phantom() {
+    var canvas = document.getElementById("ifft_phant");
+    ctx = canvas.getContext('2d');
+    canvas.width = 128;
+    canvas.height = 128;
+    idata = ctx.createImageData(128, 128);
+    var dims = new Int32Array(DIMS);
+    dims.fill(1);
+    dims[0] = 128;
+    dims[1] = 128;
+    phant_data = calc_phantom(dims);
+    fft_data = fft(phant_data, dims, 0);
+    data = ifft(fft_data, dims, 0);
+    console.log(data.reduce((p,c) => p+c),data.reduce((p,c) => p<c?p:c),data.reduce((p,c) => p<c?c:p))
+    var result = new Uint8ClampedArray(128 * 128 * 4);
+    for(var i=0;i<128*128;i++) {
+        result[4*i] = data[2*i]*256;
+        result[4*i+1] = data[2*i]*256;
+        result[4*i+2] = data[2*i]*256;
+        result[4*i+3] = 255;
     }
     idata.data.set(result);
     ctx.putImageData(idata, 0, 0);
 }
 
 function calc_phantom(dims) {
-    var sstrs = Array(DIMS);
+    var sstrs = new Int32Array(DIMS);
     var samples = 0;
     var d3 = false;
     var kspace = false;
@@ -38,16 +88,20 @@ function calc_phantom(dims) {
         size = size*dims[dim];
     }
     var data = alloc(size*scalar_size);
+    var heapDims = allocFromArray(dims);
+    var heapsstrs = allocFromArray(sstrs);
 
     _num_init();
     //_calc_phantom(dims, data.byteOffset, d3, kspace, sstrs, samples, popts);
-    _calc_bart(dims, data.byteOffset, kspace, sstrs, samples, popts);
+    _calc_bart(heapDims.byteOffset, data.byteOffset, kspace, heapsstrs.byteOffset, samples, popts);
     //_calc_circ(dims, data.byteOffset, d3, kspace, sstrs, samples, popts);
 
     var pdata = new Float32Array(size);
     pdata.set(new Float32Array(Module.HEAPU8.buffer, data.byteOffset, size));
 
     free(data);
+    free(heapDims);
+    free(heapsstrs);
     return pdata;
 }
 
@@ -60,25 +114,24 @@ function fft(data, dims, flags=0) {
         size = size*dims[dim];
     }
     var outData = alloc(size*scalar_size);
-    var inData = alloc(size*scalar_size);
-    for(var i=0;i<data.length;i++) {
-        inData[2*i] = data[i];
-    }
+    var inData = allocFromArray(data);
 
-    _fft(dims.length, dims, flags, inData.byteOffset, outData.byteOffset);
+    var heapDims = allocFromArray(dims);
+    _fft(dims.length, heapDims.byteOffset, flags, outData.byteOffset, inData.byteOffset);
 
     /* Get spectrum from the heap, copy it to local array. */
     var spectrum = new Float32Array(size);
     if(scalar_size==8) {
-        var tmp = new Float64Array(Module.HEAPU8.buffer, heapSpectrum.byteOffset, size);
+        var tmp = new Float64Array(Module.HEAPU8.buffer, outData.byteOffset, size);
         for(var i=0;i<tmp.length;i++) { spectrum[i] = tmp[i]; }
     } else {
-        spectrum.set(new Float32Array(Module.HEAPU8.buffer, heapSpectrum.byteOffset, size));
+        spectrum.set(new Float32Array(Module.HEAPU8.buffer, outData.byteOffset, size));
     }   
 
     /* Free heap objects. */
-    free(heapData);
-    free(heapSpectrum);
+    free(inData);
+    free(outData);
+    free(heapDims);
 
     return spectrum;
 }
@@ -95,16 +148,19 @@ function ifft(data, dims, flags=0) {
         inData[2*i] = data[i];
     }
 
-    _ifft(dims.length, dims, flags, inData.byetOffset, outData.byteOffset);
+    var heapDims = allocFromArray(dims);
 
-    var data = scalar_size==4 ? Float32Array.from(new Float32Array(Module.HEAPU8.buffer,heapData.byteOffset, size)): Float32Array.from(new Float64Array(Module.HEAPU8.buffer,heapData.byteOffset, size));
+    _ifft(dims.length, heapDims.byteOffset, flags, inData.byetOffset, outData.byteOffset);
+
+    var data = scalar_size==4 ? Float32Array.from(new Float32Array(Module.HEAPU8.buffer,outData.byteOffset, size)): Float32Array.from(new Float64Array(Module.HEAPU8.buffer,outData.byteOffset, size));
 
     //for (i=0;i<size;i++) {
         //data[i] /= size;
     //}
 
-    free(heapSpectrum);
-    free(heapData);
+    free(inData);
+    free(outData);
+    free(heapDims);
 
     return data;
 }
