@@ -117,15 +117,15 @@ function fft(data, dims, flags=0) {
     /* Get spectrum from the heap, copy it to local array. */
     var spectrum = new Float32Array(size);
     if(scalar_size==8) {
-        var tmp = new Float64Array(Module.HEAPU8.buffer, heapSpectrum.byteOffset, size);
+        var tmp = new Float64Array(Module.HEAPU8.buffer, outData.byteOffset, size);
         for(var i=0;i<tmp.length;i++) { spectrum[i] = tmp[i]; }
     } else {
-        spectrum.set(new Float32Array(Module.HEAPU8.buffer, heapSpectrum.byteOffset, size));
+        spectrum.set(new Float32Array(Module.HEAPU8.buffer, outData.byteOffset, size));
     }   
 
     /* Free heap objects. */
-    free(heapData);
-    free(heapSpectrum);
+    free(inData);
+    free(outData);
 
     return spectrum;
 }
@@ -144,14 +144,14 @@ function ifft(data, dims, flags=0) {
 
     _ifft(dims.length, dims, flags, inData.byetOffset, outData.byteOffset);
 
-    var data = scalar_size==4 ? Float32Array.from(new Float32Array(Module.HEAPU8.buffer,heapData.byteOffset, size)): Float32Array.from(new Float64Array(Module.HEAPU8.buffer,heapData.byteOffset, size));
+    var data = scalar_size==4 ? Float32Array.from(new Float32Array(Module.HEAPU8.buffer,outData.byteOffset, size)): Float32Array.from(new Float64Array(Module.HEAPU8.buffer,outData.byteOffset, size));
 
     //for (i=0;i<size;i++) {
         //data[i] /= size;
     //}
 
-    free(heapSpectrum);
-    free(heapData);
+    free(inData);
+    free(outData);
 
     return data;
 }

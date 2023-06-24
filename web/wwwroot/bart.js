@@ -4403,6 +4403,8 @@ var _calc_bart = Module["_calc_bart"] = createExportWrapper("calc_bart");
 
 var _malloc = Module["_malloc"] = createExportWrapper("malloc");
 
+var __Block_object_dispose = Module["__Block_object_dispose"] = createExportWrapper("_Block_object_dispose");
+
 var _phantom = Module["_phantom"] = createExportWrapper("phantom");
 
 var _emscripten_builtin_memalign = createExportWrapper("emscripten_builtin_memalign");
@@ -4437,9 +4439,9 @@ var _emscripten_stack_get_current = function() {
 
 var dynCall_jiji = Module["dynCall_jiji"] = createExportWrapper("dynCall_jiji");
 
-var _bart_version = Module["_bart_version"] = 282608;
+var _bart_version = Module["_bart_version"] = 282704;
 
-var _pha_opts_defaults = Module["_pha_opts_defaults"] = 283360;
+var _pha_opts_defaults = Module["_pha_opts_defaults"] = 283488;
 
 Module["addFunction"] = addFunction;
 
