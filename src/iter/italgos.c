@@ -833,22 +833,33 @@ double power(int maxiter,
  * @param monitor callback function
  */
 void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
-	long N, long M,
+	int O, long N, long M[O],
 	const struct vec_iter_s* vops,
-	struct iter_op_s op_forw,
-	struct iter_op_s op_adj,
-	struct iter_op_p_s prox1,
+	struct iter_op_s op_norm,
+	struct iter_op_s op_forw[O],
+	struct iter_op_s op_adj[O],
+	struct iter_op_p_s prox1[O],
 	struct iter_op_p_s prox2,
-	float* x,
+	float* x, const float* xadj,
 	struct iter_monitor_s* monitor)
 {
 	float* x_avg = vops->allocate(N);
-
-	float* u = vops->allocate(M);
-
 	vops->copy(N, x_avg, x);
 
-	vops->clear(M, u);
+	float* u[O];
+	for (int j = 0; j < O; j++) {
+
+		u[j] = vops->allocate(M[j]);
+		vops->clear(M[j], u[j]);
+	}
+
+	float* Ahu = NULL;
+
+	if (NULL != xadj) {
+
+		Ahu = vops->allocate(N);
+		vops->clear(N, Ahu);
+	}
 
 	for (int i = 0; i < maxiter; i++) {
 
@@ -861,24 +872,55 @@ void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float th
 		 * u = lambda * u + (1 - lambda) * u0
 		 */
 
-		float* u_old = vops->allocate(M);
-		float* u_new = vops->allocate(M);
+		float res2 = 0;
 
-		iter_op_call(op_forw, u_old, x_avg);
+		if (NULL != xadj) {
 
-		vops->axpy(M, u_old, 1. / sigma, u); // (u + sigma * A(x)) / sigma
+			float* Ahu_old = vops->allocate(N);
+			float* Ahu_new = vops->allocate(N);
 
-		iter_op_p_call(prox1, 1. / sigma, u_new, u_old);
+			iter_op_call(op_norm, Ahu_old, x_avg);
 
-		vops->axpbz(M, u_new, -1. * sigma, u_new, sigma, u_old);
-		vops->copy(M, u_old, u);
-		vops->axpbz(M, u, lambda, u_new, 1. - lambda, u_old);
+			vops->xpay(N, sigma, Ahu_old, Ahu);
 
-		vops->sub(M, u_old, u, u_old);
-		float res2 = vops->norm(M, u_old) / tau;
+			vops->axpbz(N, Ahu_new, 1. / (1. + sigma), Ahu_old, -sigma / (1. + sigma), xadj);
 
-		vops->del(u_old);
-		vops->del(u_new);
+			vops->copy(N, Ahu_old, Ahu);
+			vops->axpbz(N, Ahu, lambda, Ahu_new, 1. - lambda, Ahu_old);
+
+			vops->sub(N, Ahu_old, Ahu, Ahu_old);
+
+			// This is different to the norm in the loop below
+			res2 += vops->dot(N, Ahu_old, Ahu_old);
+
+			vops->del(Ahu_new);
+			vops->del(Ahu_old);
+		}
+
+
+		for (int j = 0; j < O; j++) {
+
+			float* u_old = vops->allocate(M[j]);
+			float* u_new = vops->allocate(M[j]);
+
+			iter_op_call(op_forw[j], u_old, x_avg);
+
+			vops->axpy(M[j], u_old, 1. / sigma, u[j]); // (u + sigma * A(x)) / sigma
+
+			iter_op_p_call(prox1[j], 1. / sigma, u_new, u_old);
+
+			vops->axpbz(M[j], u_new, -1. * sigma, u_new, sigma, u_old);
+			vops->copy(M[j], u_old, u[j]);
+			vops->axpbz(M[j], u[j], lambda, u_new, 1. - lambda, u_old);
+
+			vops->sub(M[j], u_old, u[j], u_old);
+			res2 += vops->dot(M[j], u_old, u_old);
+
+			vops->del(u_old);
+			vops->del(u_new);
+		}
+
+		res2 = sqrtf(res2) / tau;
 
 		/* update x
 		 * x0 = x
@@ -892,9 +934,14 @@ void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float th
 
 		vops->copy(N, x_old, x);
 
-		iter_op_call(op_adj, x_new, u);
+		if (NULL != Ahu)
+			vops->axpy(N, x, -1. * tau, Ahu);
 
-		vops->axpy(N, x, -1. * tau, x_new);
+		for (int j = 0; j < O; j++) {
+
+			iter_op_call(op_adj[j], x_new, u[j]);
+			vops->axpy(N, x, -1. * tau, x_new);
+		}
 
 		iter_op_p_call(prox2, tau, x_new, x);
 
@@ -923,7 +970,12 @@ void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float th
 	debug_printf(DP_DEBUG3, "\n");
 
 	vops->del(x_avg);
-	vops->del(u);
+
+	for (int j = 0; j < O; j++)
+		vops->del(u[j]);
+
+	if (NULL != Ahu)
+		vops->del(Ahu);
 }
 
 

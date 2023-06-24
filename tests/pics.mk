@@ -625,6 +625,26 @@ tests/test-pics-ist: phantom upat squeeze fmac pics nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-pics-pridu-norm: phantom ones pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -x32 -k ksp.ra						;\
+	$(TOOLDIR)/ones 3 32 32 1 o.ra							;\
+	$(TOOLDIR)/pics -S -RT:7:0:0.001 -e --pridu --precond ksp.ra o.ra reco1.ra	;\
+	$(TOOLDIR)/pics -S -RT:7:0:0.001 -e --pridu           ksp.ra o.ra reco2.ra	;\
+	$(TOOLDIR)/nrmse -t 1.e-6 reco1.ra reco2.ra 					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-pridu-admm: phantom ones pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -x32 -k ksp.ra						;\
+	$(TOOLDIR)/ones 3 32 32 1 o.ra							;\
+	$(TOOLDIR)/pics -S -RT:7:0:0.001 -i300            ksp.ra o.ra reco1.ra		;\
+	$(TOOLDIR)/pics -S -RT:7:0:0.001 -i300 -e --pridu ksp.ra o.ra reco2.ra		;\
+	$(TOOLDIR)/nrmse -t 1.e-5 reco1.ra reco2.ra 					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
@@ -639,5 +659,6 @@ TESTS += tests/test-pics-noncart-lowmem tests/test-pics-noncart-lowmem-stack0 te
 TESTS += tests/test-pics-phase
 TESTS += tests/test-pics-eulermaruyama tests/test-pics-eulermaruyama2 tests/test-pics-eulermaruyama3
 TESTS += tests/test-pics-fista tests/test-pics-ist
+TESTS += tests/test-pics-pridu-norm tests/test-pics-pridu-admm
 
 

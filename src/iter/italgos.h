@@ -243,13 +243,14 @@ double power(int maxiter,
 	float* u, float*b);
 
 void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
-	long N, long M,
+	int O, long N, long M[O],
 	const struct vec_iter_s* vops,
-	struct iter_op_s op_forw,
-	struct iter_op_s op_adj,
-	struct iter_op_p_s thresh1,
-	struct iter_op_p_s thresh2,
-	float* x,
+	struct iter_op_s op_norm,
+	struct iter_op_s op_forw[O],
+	struct iter_op_s op_adj[O],
+	struct iter_op_p_s prox1[O],
+	struct iter_op_p_s prox2,
+	float* x, const float* xadj,
 	struct iter_monitor_s* monitor);
 
 void iPALM(	long NI, long isize[__VLA(NI)], enum IN_TYPE in_type[__VLA(NI)], float* x[__VLA(NI)], float* x_old[__VLA(NI)],
