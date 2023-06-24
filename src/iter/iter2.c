@@ -370,37 +370,6 @@ void iter2_fista(const iter_conf* _conf,
 }
 
 
-static const struct linop_s* stack_flatten_cod_linop_F(const struct linop_s* lop1, const struct linop_s* lop2)
-{
-	long cod_size1 = md_calc_size(linop_codomain(lop1)->N, linop_codomain(lop1)->dims);
-	long cod_size2 = md_calc_size(linop_codomain(lop2)->N, linop_codomain(lop2)->dims);
-
-	auto lop1_r = linop_reshape_out_F(lop1, 1, MD_DIMS(cod_size1));
-	auto lop2_r = linop_reshape_out_F(lop2, 1, MD_DIMS(cod_size2));
-
-	auto result = linop_stack_cod(2, (struct linop_s*[2]){ lop1_r, lop2_r }, 0);
-
-	linop_free(lop1_r);
-	linop_free(lop2_r);
-
-	return result;
-}
-
-static const struct operator_p_s* stack_flatten_prox_F(const struct operator_p_s* prox1, const struct operator_p_s* prox2)
-{
-	long size1 = md_calc_size(operator_p_domain(prox1)->N, operator_p_domain(prox1)->dims);
-	long size2 = md_calc_size(operator_p_domain(prox2)->N, operator_p_domain(prox2)->dims);
-
-	auto prox1_r = operator_p_reshape_out_F(operator_p_reshape_in_F(prox1, 1, MD_DIMS(size1)), 1, MD_DIMS(size1));
-	auto prox2_r = operator_p_reshape_out_F(operator_p_reshape_in_F(prox2, 1, MD_DIMS(size2)), 1, MD_DIMS(size2));
-
-	auto prox3 = operator_p_stack(0, 0, prox1_r, prox2_r);
-
-	operator_p_free(prox1_r);
-	operator_p_free(prox2_r);
-	return prox3;
-}
-
 /* Chambolle Pock Primal Dual algorithm. Solves G(x) + sum F_i(A_ix)
  * Assumes that G is in prox_ops[0] and ops[0] is NULL or identity, else G(x) = 0 is used.
  */
@@ -411,64 +380,91 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 		const struct linop_s* ops[D],
 		const float* biases[D],
 		const struct operator_p_s* /*xupdate_op*/,
-		long size, float* image, const float* /*image_adj*/,
+		long size, float* image, const float* image_adj,
 		struct iter_monitor_s* monitor)
 {
 	assert(NULL == biases);
-	assert(NULL == normaleq_op);
+	assert((NULL == normaleq_op) == (NULL == image_adj));
 
 	auto conf = CAST_DOWN(iter_chambolle_pock_conf, _conf);
 
 	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
+	normaleq_op = operator_ref(normaleq_op);
+
 	const struct operator_p_s* prox_G = NULL;
 
-	if ((1 <= D) && ((NULL == ops[0]) || linop_is_identity(ops[0]))) {
+	if ((NULL == ops[0]) || linop_is_identity(ops[0])) {
 
 		prox_G = operator_p_ref(prox_ops[0]);
 		D--;
 		prox_ops += 1;
 		ops += 1;
-	} else 
-		prox_G = prox_zero_create(1, MD_DIMS(size / 2));
+	} else {
+		const struct iovec_s* iov = NULL;
 
-	const struct operator_p_s* prox_F = (0 < D) ? operator_p_ref(prox_ops[0]) : prox_zero_create(1, MD_DIMS(size / 2));
-	const struct linop_s* lop_A = (0 < D) ? linop_clone(ops[0]) : linop_null_create(1, MD_DIMS(size / 2), 1, MD_DIMS(size / 2));
+		if (NULL != normaleq_op)
+			iov = operator_domain(normaleq_op);
 
-	for (int i = 1; i < D; i++) {
+		for (int i = 0; i < D; i++)
+			if (NULL != ops[i])
+				iov = linop_domain(ops[i]);
 
-		prox_F = stack_flatten_prox_F(prox_F, operator_p_ref(prox_ops[i]));
-		lop_A = stack_flatten_cod_linop_F(lop_A, linop_clone(ops[i]));
+		assert(NULL != iov);
+
+		prox_G = prox_zero_create(iov->N, iov->dims);
 	}
 
+	long M[D?:1];
 
-	// FIXME: sensible way to check for corrupt data?
-#if 0
-	float eps = md_norm(1, MD_DIMS(size), image_adj);
+	struct iter_op_s lop_frw[D?:1];
+	struct iter_op_s lop_adj[D?:1];
+	struct iter_op_p_s it_prox[D?:1];
 
-	if (checkeps(eps))
-		goto cleanup;
-#else
+	for (int i = 0; i < D; i++) {
+
+		const struct iovec_s* ov = linop_codomain(ops[i]);
+		M[i] = 2 * md_calc_size(ov->N, ov->dims);
+
+		lop_frw[i] = OPERATOR2ITOP(ops[i]->forward);
+		lop_adj[i] = OPERATOR2ITOP(ops[i]->adjoint);
+		it_prox[i] = OPERATOR_P2ITOP(prox_ops[i]);
+	}
+
 	float eps = 1.;
-#endif
+
 	double maxeigen = 1.;
 	if (0 != conf->maxeigen_iter) {
 
+		auto iov = operator_p_domain(prox_G);
+		const struct linop_s* lop_zero = linop_null_create(iov->N, iov->dims, iov->N, iov->dims);
+
+		const struct operator_s* me_normal = operator_ref(normaleq_op) ?: operator_ref(lop_zero->normal);
+
+		linop_free(lop_zero);
+
+		for (int i = 0; i < D; i++) {
+
+			auto tmp = me_normal;
+			me_normal = operator_plus_create(me_normal, t_ops[i]->normal);
+			operator_free(tmp);
+		}
+
 		debug_printf(DP_INFO, "Estimating max eigenvalue...\n");
-		maxeigen = estimate_maxeigenval_sameplace(lop_A->normal, conf->maxeigen_iter, image);
+		maxeigen = estimate_maxeigenval_sameplace(me_normal, conf->maxeigen_iter, image);
 		debug_printf(DP_INFO, "Max eigenvalue: %e\n", maxeigen);
+
+		operator_free(me_normal);
 	}
 
-	const struct iovec_s* ov = linop_codomain(lop_A);
 
 	// FIXME: conf->INTERFACE.alpha * c
-	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau / sqrtf(maxeigen), conf->sigma / sqrtf(maxeigen), conf->theta, conf->decay, size, 2 * md_calc_size(ov->N, ov->dims), select_vecops(image),
-			OPERATOR2ITOP(lop_A->forward), OPERATOR2ITOP(lop_A->adjoint), OPERATOR_P2ITOP(prox_F), OPERATOR_P2ITOP(prox_G),
-			image, monitor);
+	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau / sqrtf(maxeigen), conf->sigma / sqrtf(maxeigen), conf->theta, conf->decay, D, size, M, select_vecops(image),
+			OPERATOR2ITOP(normaleq_op), lop_frw, lop_adj, it_prox, OPERATOR_P2ITOP(prox_G),
+			image, image_adj, monitor);
 
-	operator_p_free(prox_F);
 	operator_p_free(prox_G);
-	linop_free(lop_A);
+	operator_free(normaleq_op);
 
 	//cleanup:
 	//;
