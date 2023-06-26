@@ -199,14 +199,14 @@ int (poissondisc_mc)(int D, int T, int N, int I, float vardens, const float delt
 			if (accept) {
 
 				long off[D];
-				for (int i = 0; i < D; i++)
-					off[i] = MIN(MAX(0, pos[i] - (patchdims[i] + 1) / 2), griddims[i] - patchdims[i]);
+				for (int ii = 0; ii < D; ii++)
+					off[ii] = MIN(MAX(0, pos[ii] - (patchdims[ii] + 1) / 2), griddims[ii] - patchdims[ii]);
 
 				md_copy_block(D, off, patchdims, patch, griddims, grid, sizeof(int));
 
-				for (int i = 0; i < md_calc_size(D, patchdims); i++)
-					if (-1 != patch[i])
-						accept &= distance_check(D, T, N, vardens, delta, points, kind, p, patch[i]);
+				for (int ii = 0; ii < md_calc_size(D, patchdims); ii++)
+					if (-1 != patch[ii])
+						accept &= distance_check(D, T, N, vardens, delta, points, kind, p, patch[ii]);
 			}
 
 #endif
