@@ -453,9 +453,9 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 		xfree(tmp);
 	}
 
-	for (int i = 0; i < list_count(graph->nodes); i++) {
+	for (int k = 0; k < list_count(graph->nodes); k++) {
 
-		auto node = (node_t)nodes_get(graph->nodes, i);
+		auto node = (node_t)nodes_get(graph->nodes, k);
 		struct vertex_s a = { .node = node, .idx = 0 };
 
 		for (int i = 0; i < node->N_vertices; i++) {
