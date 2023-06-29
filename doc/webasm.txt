@@ -64,9 +64,9 @@ DEBUG=1
     - copy the bart.o file to where you want it
     - add it to the emcc call as an input file e.g.:
 
-    emcc -O3 -Wall bart.o -s EXPORTED_FUNCTIONS="['__Block_Object_dispose','_malloc','_free','_bart_version', '_phantom',  \
-       '_calc_phantom', '_calc_bart', '_calc_circ', '_fft', '_ifft', '_num_init', '_pha_opts_defaults']" -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB \
-       -o ./web/wwwroot/bart.js $HOME/fftw/lib/libfftw3f.a $HOME/openblas/lib/libopenblas.a $HOME/blocksruntime/lib/libBlocksRuntime.a
+    emcc -O3 -Wall bart.o -s EXPORTED_FUNCTIONS="['__Block_object_dispose','_malloc','_free','_bart_version', '_phantom',  '_calc_phantom',\ 
+       '_calc_bart', '_calc_circ', '_fft', '_ifft','_fftc','_ifftc','_num_init', '_pha_opts_defaults']" -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB 
+       -o ./web/wwwroot/bart.js /home/ich/fftw/lib/libfftw3f.a /home/ich/openblas/lib/libopenblas.a /home/ich/blocksruntime/libBlocksRuntime.a
 
     - important to include all libfftw3.a, libopenblas.a and also libBlocksRuntime.a (here clang doesn't crash)
     - all functions, variables you want to access in the js files have to be exported.
