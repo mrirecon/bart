@@ -226,3 +226,42 @@ void postprocess(const long dims[DIMS], bool normalize,
 }
 
 
+void postprocess2(bool normalize,
+		  const long sens_dims[DIMS], const complex float* sens,
+		  const long img_dims[DIMS], const complex float* img,
+		  const long img_output_dims[DIMS], complex float* img_output)
+{
+	int N = DIMS;
+
+	assert(MAPS_DIM < N);
+
+	long n_sens_dims[N];
+	long n_img_dims[N];
+
+	md_copy_dims(N, n_sens_dims, sens_dims);
+	md_copy_dims(N, n_img_dims, img_dims);
+
+	assert(3 <= N);
+
+	md_copy_dims(3, n_sens_dims, img_output_dims);
+	md_copy_dims(3, n_img_dims, img_output_dims);
+
+	complex float* n_sens = md_alloc_sameplace(N, n_sens_dims, CFL_SIZE, sens);
+	complex float* n_img = md_alloc_sameplace(N, n_img_dims, CFL_SIZE, img);
+
+	md_resize_center(N, n_sens_dims, n_sens, sens_dims, sens, CFL_SIZE);
+	md_resize_center(N, n_img_dims, n_img, img_dims, img, CFL_SIZE);
+
+	long dims[N];
+	md_max_dims(N, ~0, dims, n_sens_dims, n_img_dims);
+
+	postprocess(dims, normalize,
+		    MD_STRIDES(N, n_sens_dims, CFL_SIZE), n_sens,
+		    MD_STRIDES(N, n_img_dims, CFL_SIZE), n_img,
+		    img_output_dims, MD_STRIDES(N, img_output_dims, CFL_SIZE), img_output);
+
+	md_free(n_img);
+	md_free(n_sens);
+}
+
+
