@@ -15,6 +15,9 @@
 #include <complex.h>
 #include <math.h>
 
+#include "misc/debug.h"
+
+#include "misc/misc.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/filter.h"
@@ -40,6 +43,44 @@ void noir_calc_weights(double a, double b, const long dims[3], complex float* ds
 	md_zspow(3, dims, dst, dst, -b / 2.);	// 1 + 220. \Laplace^16
 }
 
+static struct linop_s* linop_ifft_resize_create(int N, unsigned long flags, const long osdims[N], const long idims[N], const long kdims[N])
+{
+
+#ifdef USE_CUDA
+	int first = 0;
+	while (flags && !MD_IS_SET(flags, first))
+		first++;
+
+	if (1 == bitcount(flags) && 0 < first) {
+		//cuFFT is much more efficient for FFT in first dimension!
+
+		long tosdims[N];
+		long tidims[N];
+		long tkdims[N];
+
+		md_transpose_dims(N, 0, first, tosdims, osdims);
+		md_transpose_dims(N, 0, first, tidims, idims);
+		md_transpose_dims(N, 0, first, tkdims, kdims);
+
+		auto lop_ret = linop_ifft_resize_create(N, MD_BIT(0), tosdims, tidims, tkdims);
+		lop_ret = linop_chain_FF(linop_transpose_create(N, 0, first, kdims), lop_ret);
+		lop_ret = linop_chain_FF(lop_ret, linop_transpose_create(N, 0, first, tidims));
+
+		return lop_ret;
+	}
+#endif
+
+	auto lop_ret = linop_ifft_create(N, osdims, flags);
+
+	if (!md_check_equal_dims(N, osdims, kdims, flags))
+		lop_ret = linop_chain_FF(linop_resize_center_create(N, osdims, kdims), lop_ret);
+
+	if (!md_check_equal_dims(N, osdims, idims, flags))
+		lop_ret = linop_chain_FF(lop_ret, linop_resize_center_create(N, idims, osdims));
+	
+	return lop_ret;
+}
+
 
 /**
  * Create linear operator computing R(WF)^(-1)R with
@@ -52,33 +93,41 @@ void noir_calc_weights(double a, double b, const long dims[3], complex float* ds
  * @param N
  * @param img_dims
  * @param ksp_dims
+ * @param ref_dims for computing laplacian
  * @param flags
- * @param factor_fov fft is applied on grid with size factor_fov * img_dims or -factor_fov * img_dims
+ * @param factor_fov fft is applied on grid with size factor_fov * img_dims
  * @param a parameter a of W
  * @param b parameter b of W
  * @param c parameter b of W
  * img_spacing = dx = fov / img_dims
  * ksp_spacing = dk = img_dims / fov
  */
-struct linop_s* linop_noir_weights_create(int N, const long img_dims[N], const long ksp_dims[N], unsigned long flags, double factor_fov, double a, double b, double c)
+struct linop_s* linop_noir_weights_create(int N, const long img_dims[N], const long ksp_dims[N], const long ref_dims[N], unsigned long flags, double factor_fov, double a, double b, double c)
 {
 	flags &= md_nontriv_dims(N, img_dims);
 
 	assert(md_nontriv_dims(N, img_dims) == md_nontriv_dims(N, ksp_dims));
 	assert(md_check_equal_dims(N, img_dims, ksp_dims, ~flags));
 
-	long tmp_dims[N];
+	long os_dims[N];
 
-	for (int i = 0; i < N; i++)
-		tmp_dims[i] = lround((0 < factor_fov ? img_dims[i] : ksp_dims[i]) * (MD_IS_SET(flags, i) ? fabs(factor_fov) : 1.));
+	for (int i = 0; i < N; i++) {
+
+		os_dims[i] = lround(img_dims[i] * (MD_IS_SET(flags, i) ? fabs(factor_fov) : 1.));
+		if (fabs(img_dims[i] * (MD_IS_SET(flags, i) ? fabs(factor_fov) : 1.) - os_dims[i]) > 0.0001)
+			debug_printf(DP_WARN, "Sobolev oversampling factor %f is incompatible with grid size %d!\n", factor_fov, img_dims[i]);
+	}
 
 	long wgh_dims[N];
-	md_select_dims(N, flags, wgh_dims, tmp_dims);
+	md_select_dims(N, flags, wgh_dims, os_dims);
 
 	complex float* wgh = md_alloc(N, wgh_dims, CFL_SIZE);
-	complex float* wgh_res = md_alloc(N, wgh_dims, CFL_SIZE);
 
-	klaplace(N, wgh_dims, flags, wgh);
+	float sc[N];
+	for (int i = 0; i < N; i++)
+		sc[i] = (NULL == ref_dims) ? 1. / wgh_dims[i] :  1. / ref_dims[i];
+
+	klaplace_scaled(N, wgh_dims, flags, sc, wgh);
 	md_zsmul(N, wgh_dims, wgh, wgh, a);
 	md_zsadd(N, wgh_dims, wgh, wgh, 1.);
 	md_zspow(N, wgh_dims, wgh, wgh, -b / 2.);
@@ -87,13 +136,38 @@ struct linop_s* linop_noir_weights_create(int N, const long img_dims[N], const l
 	ifftmod(N, wgh_dims, flags, wgh, wgh);
 	fftscale(N, wgh_dims, flags, wgh, wgh);
 
-	struct linop_s* lop_ret = linop_ifft_create(N, tmp_dims, flags);
+	struct linop_s* lop_ret = NULL;
 
-	if (!md_check_equal_dims(N, tmp_dims, ksp_dims, flags))
-		lop_ret = linop_chain_FF(linop_resize_center_create(N, tmp_dims, ksp_dims), lop_ret);
+	if (md_check_equal_dims(N, os_dims, ksp_dims, flags)) {
 
-	if (!md_check_equal_dims(N, tmp_dims, img_dims, flags))
-		lop_ret = linop_chain_FF(lop_ret, linop_resize_center_create(N, img_dims, tmp_dims));
+		lop_ret = linop_ifft_resize_create(N, flags, os_dims, img_dims, ksp_dims);
+
+	} else {
+
+		long timg_dims[N];
+		long tksp_dims[N];
+		long tos_dims[N];
+
+		md_copy_dims(N, timg_dims, img_dims);
+		md_copy_dims(N, tksp_dims, img_dims);
+
+		lop_ret = linop_identity_create(N, timg_dims);
+
+		for (int i = 0; i < N; i++) {
+
+			if (!MD_IS_SET(flags, i))
+				continue;
+
+			md_copy_dims(N, tos_dims, tksp_dims);
+			
+			tksp_dims[i] = ksp_dims[i];
+			tos_dims[i] = os_dims[i];
+
+			lop_ret = linop_chain_FF(linop_ifft_resize_create(N, MD_BIT(i), tos_dims, timg_dims, tksp_dims), lop_ret);
+
+			timg_dims[i] = ksp_dims[i];
+		}
+	}
 
 	long wgh_ksp_dims[N];
 	long wgh_img_dims[N];
@@ -101,17 +175,20 @@ struct linop_s* linop_noir_weights_create(int N, const long img_dims[N], const l
 	md_select_dims(N, flags, wgh_ksp_dims, ksp_dims);
 	md_select_dims(N, flags, wgh_img_dims, img_dims);
 
+	complex float* wgh_res = md_alloc(N, wgh_ksp_dims, CFL_SIZE);
 	md_resize_center(N, wgh_ksp_dims, wgh_res, wgh_dims, wgh, CFL_SIZE);
 	lop_ret = linop_chain_FF(linop_cdiag_create(N, ksp_dims, flags, wgh_res), lop_ret);
+	md_free(wgh_res);
 
 	md_zfill(N, wgh_dims, wgh, 1);
 	ifftmod(N, wgh_dims, flags, wgh, wgh);
 
+	wgh_res = md_alloc(N, wgh_img_dims, CFL_SIZE);
 	md_resize_center(N, wgh_img_dims, wgh_res, wgh_dims, wgh, CFL_SIZE);
 	lop_ret = linop_chain_FF(lop_ret, linop_cdiag_create(N, img_dims, flags, wgh_res));
+	md_free(wgh_res);
 
 	md_free(wgh);
-	md_free(wgh_res);
 
 	return lop_ret;
 }
