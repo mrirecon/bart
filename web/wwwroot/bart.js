@@ -4439,9 +4439,9 @@ var _emscripten_stack_get_current = function() {
 
 var dynCall_jiji = Module["dynCall_jiji"] = createExportWrapper("dynCall_jiji");
 
-var _bart_version = Module["_bart_version"] = 282704;
+var _bart_version = Module["_bart_version"] = 283024;
 
-var _pha_opts_defaults = Module["_pha_opts_defaults"] = 283488;
+var _pha_opts_defaults = Module["_pha_opts_defaults"] = 283808;
 
 Module["addFunction"] = addFunction;
 

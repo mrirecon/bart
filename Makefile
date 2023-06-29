@@ -509,15 +509,8 @@ endif
 
 
 # fftw
-
 FFTW_H := -I$(FFTW_BASE)/include/
-ifeq ($(FORTRAN), 0)
-CFLAGS += -DNO_FORTRANFFT
-CPPFLAGS += -DNO_FORTRANFFT
-FFTW_L := -L$(FFTW_BASE)/lib -lfftw3
-else
 FFTW_L := -L$(FFTW_BASE)/lib -lfftw3f
-endif
 
 ifeq ($(FFTWTHREADS),1)
 ifneq ($(BUILDTYPE), MSYS)
