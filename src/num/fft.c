@@ -42,9 +42,6 @@
 #define LAZY_CUDA
 #endif
 
-#define FFT_PLAN fftwf_plan
-#define FFT_IODIM64 fftwf_iodim64
-
 
 void fftscale2(int N, const long dimensions[N], unsigned long flags, const long ostrides[N], complex float* dst, const long istrides[N], const complex float* src)
 {
@@ -318,7 +315,7 @@ struct fft_plan_s {
 
 	INTERFACE(operator_data_t);
 
-	FFT_PLAN fftw;
+	fftwf_plan fftw;
 
 	int D;
 	unsigned long flags;
@@ -390,13 +387,13 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const 
 }
 
 
-static FFT_PLAN fft_fftwf_plan(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
+static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
-	FFT_PLAN fftwf;
+	fftwf_plan fftwf;
 
 	int N = D;
-	FFT_IODIM64 dims[N];
-	FFT_IODIM64 hmdims[N];
+	fftwf_iodim64 dims[N];
+	fftwf_iodim64 hmdims[N];
 	int k = 0;
 	int l = 0;
 
