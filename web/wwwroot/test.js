@@ -99,9 +99,18 @@ function calc_phantom(dims) {
     var heapsstrs_byteOffset = heapsstrs.byteOffset;
 
     _num_init();
-    //_calc_phantom(heapDims_byteOffset, data_byteOffset, d3, kspace, heapsstrs_byteOffset, samples, popts);
-    _calc_bart(heapDims.byteOffset, data.byteOffset, kspace, heapsstrs.byteOffset, samples, popts);
-    //_calc_circ(heapDims.byteOffset, data.byteOffset, d3, kspace, heapsstrs.byteOffset, samples, popts);
+    var phant_sel = document.getElementById("select_phantom").value;
+    switch(phant_sel){ 
+        case "0":
+            _calc_phantom(heapDims_byteOffset, data_byteOffset, d3, kspace, heapsstrs_byteOffset, samples, popts);
+            break;
+        case "1":
+            _calc_bart(heapDims.byteOffset, data.byteOffset, kspace, heapsstrs.byteOffset, samples, popts);
+            break;
+        case "2":
+            _calc_circ(heapDims.byteOffset, data.byteOffset, d3, kspace, heapsstrs.byteOffset, samples, popts);
+            break;
+    } 
 
     var pdata = new Float32Array(size);
     pdata.set(new Float32Array(Module.HEAPU8.buffer, data_byteOffset, size));
@@ -204,9 +213,9 @@ function ifft(data, dims, flags=0) {
 
     var data = scalar_size==4 ? Float32Array.from(new Float32Array(Module.HEAPU8.buffer,outData_byteOffset, size)): Float32Array.from(new Float64Array(Module.HEAPU8.buffer,outData_byteOffset, size));
 
-    //for (i=0;i<size;i++) {
-        //data[i] /= size;
-    //}
+    for (i=0;i<size;i++) {
+        data[i] /= 0.5*size;
+    }
 
     free(inData);
     free(outData);

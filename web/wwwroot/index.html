@@ -6,19 +6,27 @@
     </head>
     <body>
         <div>
+            <label for"select_phantom">Select Phantom Type:</label>
+            <select id="select_phantom">
+                <option value="0">Shepp-Logan</option>
+                <option value="1">BART</option>
+                <option value="2">Circle</option>
+            </select>
+        </div>
+        <div>
             <button onclick="show_phantom()" value="Show Phantom">Show Phantom</button>
             <div>
                 <canvas style="width:128;height:128" id="phant"></canvas>
             </div>
         </div>
         <div>
-            <button onclick="fft_phantom()" value="Show FFT of Phantom">Show Phantom</button>
+            <button onclick="fft_phantom()" value="Show FFT of Phantom">Show FFT of Phantom</button>
             <div>
                 <canvas style="width:128;height:128" id="fft_phant"></canvas>
             </div>
         </div>
         <div>
-            <button onclick="ifft_fft_phantom()" value="Show IFFT of FFT of Phantom">Show Phantom</button>
+            <button onclick="ifft_fft_phantom()" value="Show IFFT of FFT of Phantom">Show IFFT of FFT of Phantom</button>
             <div>
                 <canvas style="width:128;height:128" id="ifft_phant"></canvas>
             </div>
