@@ -748,7 +748,7 @@ endif
 
 .SECONDEXPANSION:
 $(TARGETS): % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
-ifeq ($(FORTRAN),0)
+ifeq ($(SHARED),1)
 	$(LINKER) $(LDFLAGS) -shared $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o bart.o $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
 else
 	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)

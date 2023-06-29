@@ -36,21 +36,22 @@ BLAS_BASE=/home/ich/openblas
 CC=emcc
 
 CFLAGS+=-fblocks
-LDFLAGS+=-s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -s EXPORTED_FUNCTIONS="['_main_version', '_pha_opts_defaults', '_free', '_malloc', '_fft', '_ifft', '_num_init', '_calc_bart', '_calc_phantom', '_calc_circ']" -shared
+LDFLAGS+=
 
 OPENBLAS=1
 FORTRAN=0
 FFTWTHREADS=0
 USE_THREAD=0
+SHARED=1
 PNG=0
 OMP=0
 TENSORFLOW=0
+DEBUG=0
 MKL=0
 ACML=0
 CUDA=0
 CUDNN=0
 ISMRMRD=0
-DEBUG=1 
 """
     - don't add libBlocksRuntime.a to LDFLAGS! clang will crash.
 
