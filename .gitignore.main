@@ -52,3 +52,10 @@ doc/commands.txt
 
 # test files
 tests/test-*
+
+#clangd cache
+.cache/*
+compile_commands.json
+
+#vscode
+.vscode/*
