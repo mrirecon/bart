@@ -70,7 +70,6 @@ void debug_sim(struct sim_data* data)
         debug_printf(DP_INFO, "\tBeta:%f\n", data->pulse.hs.beta);
         debug_printf(DP_INFO, "\tMu:%f\n", data->pulse.hs.mu);
         debug_printf(DP_INFO, "\tDuration:%f\n", CAST_UP(&data->pulse.hs)->duration);
-        debug_printf(DP_INFO, "\tON?:%d\n", data->pulse.inversion_on);
 
         debug_printf(DP_INFO, "Other Parameter:\n");
         debug_printf(DP_INFO, "\tODE Tolerance:%f\n", data->other.ode_tol);
@@ -172,26 +171,25 @@ static void set_gradients(struct sim_data* data, float t)
 {
 	if (data->seq.pulse_applied) {
 
-                if (data->pulse.inversion_on) {
+		switch (data->pulse.type) {
 
-			// Hyperbolic Secant pulse
+		case PULSE_SINC:
 
-                        data->tmp.w1 = pulse_hypsec_am(&data->pulse.hs, t);
+			data->tmp.w1 = pulse_sinc(&data->pulse.sinc, t);
+			break;
+
+		case PULSE_HS:
+
+			data->tmp.w1 = pulse_hypsec_am(&data->pulse.hs, t);
 
                         data->pulse.phase = pulse_hypsec_phase(&data->pulse.hs, t);
+			break;
 
-		} else if (PULSE_REC == data->pulse.type){
-
-			// Rectangular pulse
+		case PULSE_REC:
 
 			data->tmp.w1 = pulse_rect(&data->pulse.rect, t);
-
-		} else {
-
-			// Windowed Sinc pulse
-
-                        data->tmp.w1 = pulse_sinc(&data->pulse.sinc, t);
-                }
+			break;
+		}
 
                 // Definition from Bernstein et al., Handbook of MRI Pulse Sequences, p. 26f
                 // dM/dt = M x (e_x*B_1*sin(phase)-e_y*B_1*sin(phase) +e_z* B_0)) - ...
@@ -726,9 +724,9 @@ void inversion(const struct sim_data* data, float h, float tol, int N, int P, fl
 
         } else {
                 // Hyperbolic Secant inversion
+		inv_data.pulse.type = PULSE_HS;
 
                 inv_data.pulse.hs = pulse_hypsec_defaults;
-                inv_data.pulse.inversion_on = true;
                 CAST_UP(&inv_data.pulse.hs)->duration = data->seq.inversion_pulse_length;
                 inv_data.pulse.rf_end = data->seq.inversion_pulse_length;
 

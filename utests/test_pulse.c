@@ -226,7 +226,7 @@ static bool test_hypsec_rf_pulse_ode(void)
 
         // Hyperbolic Secant Characteristics
         data.pulse.hs = pulse_hypsec_defaults;
-        data.pulse.inversion_on = true;
+        data.pulse.type = PULSE_HS;
         data.pulse.hs.INTERFACE.duration = data.pulse.rf_end;
 
         data.grad = simdata_grad_defaults;
