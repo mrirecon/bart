@@ -99,7 +99,17 @@ static bool test_sinc_zeros(void)
 
 UT_REGISTER_TEST(test_sinc_zeros);
 
+static bool test_rect_integral(void)
+{
+	struct pulse_rect pr = pulse_rect_defaults;
 
+	pulse_rect_init(&pr, 1., 180., 0.);
+
+	return ((M_PI - pr.A) < 1E-6);
+}
+
+
+UT_REGISTER_TEST(test_rect_integral);
 
 // Test Accuracy of on-resonant pulse
 //      1. Execute pulse for various angles and durations

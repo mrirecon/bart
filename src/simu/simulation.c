@@ -144,6 +144,8 @@ const struct simdata_other simdata_other_defaults = {
 
 const struct simdata_pulse simdata_pulse_defaults = {
 
+	.type = PULSE_SINC,
+
 	.rf_start = 0.,
 	.rf_end = 0.001,
 
@@ -178,7 +180,13 @@ static void set_gradients(struct sim_data* data, float t)
 
                         data->pulse.phase = pulse_hypsec_phase(&data->pulse.hs, t);
 
-                } else {
+		} else if (PULSE_REC == data->pulse.type){
+
+			// Rectangular pulse
+
+			data->tmp.w1 = pulse_rect(&data->pulse.rect, t);
+
+		} else {
 
 			// Windowed Sinc pulse
 

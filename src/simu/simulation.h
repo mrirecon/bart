@@ -8,6 +8,7 @@
 
 enum sim_seq { SEQ_BSSFP, SEQ_IRBSSFP, SEQ_FLASH, SEQ_IRFLASH };
 enum sim_type { SIM_ROT, SIM_ODE, SIM_STM };
+enum pulse_t { PULSE_SINC, PULSE_HS, PULSE_REC };
 
 struct simdata_voxel {
 
@@ -82,8 +83,11 @@ extern const struct simdata_other simdata_other_defaults;
 
 struct pulse_sinc;
 struct pulse_hypsec;
+struct pulse_rect;
 
 struct simdata_pulse {
+
+	enum pulse_t type;
 
 	float rf_start;
 	float rf_end;
@@ -91,6 +95,7 @@ struct simdata_pulse {
 	float phase;
 
 	struct pulse_sinc sinc;
+	struct pulse_rect rect;
         struct pulse_hypsec hs;
 	bool inversion_on;
 };

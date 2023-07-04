@@ -14,6 +14,7 @@
 #include "pulse.h"
 
 DEF_TYPEID(pulse_sinc);
+DEF_TYPEID(pulse_rect);
 
 extern inline complex float pulse_eval(const struct pulse* p, float t);
 
@@ -99,6 +100,43 @@ void pulse_sinc_init(struct pulse_sinc* ps, float duration, float angle /*[deg]*
 
 	ps->A = scaling / 90. * angle;
 }
+
+
+/* Rectangular pulse */
+
+void pulse_rect_init(struct pulse_rect* pr, float duration, float angle /*[deg]*/, float phase)
+{
+	pr->INTERFACE.duration = duration;
+	pr->INTERFACE.flipangle = angle;
+	(void)phase;
+//	pulse->phase = phase;		// [rad]
+
+	pr->A = angle / duration * M_PI / 180.;
+}
+
+float pulse_rect(const struct pulse_rect* pr, float t)
+{
+	(void)t;
+	return pr->A;
+}
+
+static complex float pulse_rect_eval(const struct pulse* _pr, float t)
+{
+	auto pr = CAST_DOWN(pulse_rect, _pr);
+
+	return pulse_rect(pr, t);
+}
+
+const struct pulse_rect pulse_rect_defaults = {
+
+	.INTERFACE.duration = 0.001,
+	.INTERFACE.flipangle = 1.,
+	.INTERFACE.eval = pulse_rect_eval,
+	.INTERFACE.TYPEID = &TYPEID2(pulse_rect),
+	// .pulse.phase = 0.,
+
+	.A = 1.,
+};
 
 
 /* Hyperbolic Secant Pulse
