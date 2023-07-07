@@ -7,12 +7,12 @@
 #include <assert.h>
 #include <math.h>
 
-#include "num/loop.h"
 #include "misc/misc.h"
 #include "misc/debug.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/loop.h"
 
 #include "nlmeans.h"
 
@@ -233,6 +233,7 @@ void md_znlmeans_distance2(int D, const long idim[D], int xD,
 		const long istrs[D], const complex float* iptr)
 {
 	assert(xD > D);
+
 	int flag_count = 0;
 	long loop_idx[D];
 	long r_patchstart_offset[D];
@@ -244,6 +245,7 @@ void md_znlmeans_distance2(int D, const long idim[D], int xD,
 
 		loop_idx[i] = 0;
 		r_patchstart_offset[i] = 0;
+
 		if (MD_IS_SET(flags, i)) {
 
 			assert(xD > D + flag_count);
@@ -258,6 +260,7 @@ void md_znlmeans_distance2(int D, const long idim[D], int xD,
 
 			xflags = MD_SET(xflags, D + flag_count);
 			++flag_count;
+
 		} else {
 
 			assert(odim[i] == idim[i]);
@@ -279,8 +282,10 @@ void md_znlmeans_distance2(int D, const long idim[D], int xD,
 		md_zsub2(D, odim, ostrs, &MD_ACCESS(xD, ostrs, xpos, optr),
 				istrs, r_patchstart,
 				istrs, &MD_ACCESS(D, istrs, ipos, r_patchstart));
+
 	} while (md_next(xD, odim, xflags, xpos));
 }
+
 
 void md_znlmeans_distance(int D, const long idim[D], int xD,
 		const long odim[xD], unsigned long flags,
@@ -291,22 +296,30 @@ void md_znlmeans_distance(int D, const long idim[D], int xD,
 			MD_STRIDES(D, idim, CFL_SIZE), iptr);
 }
 
+
 /* Sample multivariate normal distribution
  * with covariance matrix = diag([S,..S])
  */
 void md_zgausspdf(int D, const long dim[D], complex float *optr, complex float S)
 {
 	assert(cabsf(S) > 0);
+
 	md_clear(D, dim, optr, CFL_SIZE);
+
 	const long *dimp = &dim[0];
+
 	NESTED(complex float, zgauss_core, (const long im_pos[]))
 	{
 		complex float val = 0.;
+
 		for (int i = 0; i < D; i++)
-			val += -.5 * powf((im_pos[i] - (dimp[i] - 1) / 2.f), 2) / S;
+			val += -0.5 * powf((im_pos[i] - (dimp[i] - 1) / 2.f), 2) / S;
+
 		return val;
 	};
+
 	md_parallel_zsample(D, dim, optr, zgauss_core);
 	md_zexp(D, dim, optr, optr);
-	md_zsmul(D, dim, optr, optr, powf( powf(2. * M_PI * S, D), -.5));
+	md_zsmul(D, dim, optr, optr, powf(powf(2. * M_PI * S, D), -0.5));
 }
+
