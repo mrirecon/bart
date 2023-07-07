@@ -194,3 +194,65 @@ static bool test_compress(void)
 
 UT_REGISTER_TEST(test_compress);
 
+
+static float test_md_reflectpad_center(int D,
+		const long odims[D], const complex float* expect,
+		const long idims[D], const complex float* in)
+{
+	complex float* t = md_alloc(D, odims, sizeof(complex float));
+
+	md_reflectpad_center(D, odims, t, idims, in, sizeof(complex float));
+
+	float err = md_znrmse(D, odims, expect, t);
+
+	md_free(t);
+
+	return err;
+}
+
+static bool test_md_reflectpad_center_1(void)
+{
+	const long idims[] = { 3, 2 };
+
+	const complex float in[] = {
+		1, 2, 3,
+		4, 5, 6,
+	};
+
+	const long odims[] = { 4, 3 };
+
+	const complex float good[] = {
+		1, 1, 2, 3,
+		4, 4, 5, 6,
+		4, 4, 5, 6,
+	};
+
+	UT_ASSERT(UT_TOL > test_md_reflectpad_center(2, odims, good, idims, in));
+}
+
+UT_REGISTER_TEST(test_md_reflectpad_center_1);
+
+
+static bool test_md_reflectpad_center_2(void)
+{
+	const long idims[] = { 2, 2 };
+
+	complex float in[] = {
+		1, 2,
+		4, 5,
+	};
+
+	const long odims[] = { 9, 4 };
+
+	complex float good[] = {
+		2, 2, 1, 1, 2, 2, 1, 1, 2,
+		2, 2, 1, 1, 2, 2, 1, 1, 2,
+		5, 5, 4, 4, 5, 5, 4, 4, 5,
+		5, 5, 4, 4, 5, 5, 4, 4, 5,
+	};
+
+	UT_ASSERT(UT_TOL > test_md_reflectpad_center(2, odims, good, idims, in));
+}
+
+UT_REGISTER_TEST(test_md_reflectpad_center_2);
+
