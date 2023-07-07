@@ -292,13 +292,13 @@ graph_t dup_graphs_F(graph_t graph, int a, int b)
 
 	while (0 < list_count(bnode->edges[0])) {
 
-		struct vertex_s a = { .node = anode, .idx = 0 };
-		struct vertex_s b = { .node = bnode, .idx = 0 };
+		struct vertex_s tmpa = { .node = anode, .idx = 0 };
+		struct vertex_s tmpb = { .node = bnode, .idx = 0 };
 
 		struct vertex_s n = *(vertices_get(bnode->edges[0], 0));
 
-		graph_remove_edge(b, n);
-		graph_add_edge(a, n);
+		graph_remove_edge(tmpb, n);
+		graph_add_edge(tmpa, n);
 	}
 
 	node_free(bnode);
