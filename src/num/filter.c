@@ -9,10 +9,8 @@
  */
 
 #include <assert.h>
-#include <stdlib.h>
 #include <complex.h>
 #include <math.h>
-#include <strings.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
