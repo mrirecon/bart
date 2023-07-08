@@ -1,13 +1,14 @@
 #include <complex.h>
 #include <stdio.h>
 
-#include "utest.h"
+#include "misc/misc.h"
 
 #include "num/flpmath.h"
 #include "num/rand.h"
 
 #include "num/nlmeans.h"
 
+#include "utest.h"
 
 
 static bool test_md_zgausspdf(void)
