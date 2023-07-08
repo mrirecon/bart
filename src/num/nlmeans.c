@@ -149,7 +149,7 @@ void md_znlmeans2(int D, const long dim[D], unsigned long flags,
 
 	// gauss kernel for distance-weighted euclidean norm
 	md_zgausspdf(xD, w_weight_dim, w_weight, powf(a, 2));
-	md_zsmul(xD, w_weight_dim, w_weight, w_weight, 1./md_znorm(xD, w_weight_dim, w_weight)); // don't interfere with h_factor.
+	md_zsmul(xD, w_weight_dim, w_weight, w_weight, 1. / md_znorm(xD, w_weight_dim, w_weight)); // don't interfere with h_factor.
 
 	md_clear2(D, dim, ostrs, optr, CFL_SIZE);
 
@@ -297,29 +297,5 @@ void md_znlmeans_distance(int D, const long idim[D], int xD,
 }
 
 
-/* Sample multivariate normal distribution
- * with covariance matrix = diag([S,..S])
- */
-void md_zgausspdf(int D, const long dim[D], complex float *optr, complex float S)
-{
-	assert(cabsf(S) > 0);
 
-	md_clear(D, dim, optr, CFL_SIZE);
-
-	const long *dimp = &dim[0];
-
-	NESTED(complex float, zgauss_core, (const long im_pos[]))
-	{
-		complex float val = 0.;
-
-		for (int i = 0; i < D; i++)
-			val += -0.5 * powf((im_pos[i] - (dimp[i] - 1) / 2.f), 2) / S;
-
-		return val;
-	};
-
-	md_parallel_zsample(D, dim, optr, zgauss_core);
-	md_zexp(D, dim, optr, optr);
-	md_zsmul(D, dim, optr, optr, powf(powf(2. * M_PI * S, D), -0.5));
-}
 

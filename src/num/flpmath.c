@@ -41,6 +41,7 @@
 #include "num/blas.h"
 #include "num/vecops_strided.h"
 #include "num/fltools.h"
+#include "num/loop.h"
 
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -4306,6 +4307,33 @@ void md_pdf_gauss2(int D, const long dims[D], const long ostr[D], float* optr, c
 void md_pdf_gauss(int D, const long dims[D], float* optr, const float* iptr, float mu, float sigma)
 {
 	md_pdf_gauss2(D, dims, MD_STRIDES(D, dims, FL_SIZE), optr, MD_STRIDES(D, dims, FL_SIZE), iptr, mu, sigma);
+}
+
+
+/* Sample multivariate normal distribution
+ * with covariance matrix = diag([S,..S])
+ */
+void md_zgausspdf(int D, const long dim[D], complex float *optr, complex float S)
+{
+	assert(cabsf(S) > 0);
+
+	md_clear(D, dim, optr, CFL_SIZE);
+
+	const long *dimp = &dim[0];
+
+	NESTED(complex float, zgauss_core, (const long im_pos[]))
+	{
+		complex float val = 0.;
+
+		for (int i = 0; i < D; i++)
+			val += -0.5 * powf((im_pos[i] - (dimp[i] - 1) / 2.f), 2) / S;
+
+		return val;
+	};
+
+	md_parallel_zsample(D, dim, optr, zgauss_core);
+	md_zexp(D, dim, optr, optr);
+	md_zsmul(D, dim, optr, optr, powf(powf(2. * M_PI * S, D), -0.5));
 }
 
 

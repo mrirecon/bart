@@ -19,4 +19,3 @@ extern void md_znlmeans_distance(int D, const long idims[D], int xD,
 		const long odims[xD], unsigned long flags,
 		complex float* optr, const complex float* iptr);
 
-extern void md_zgausspdf(int D, const long dims[D], complex float *optr, complex float S);
