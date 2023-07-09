@@ -199,6 +199,11 @@ struct nlop_s* nlop_destack_generic_create(int OO, int N, const long odims[OO][N
 
 	assert(pos[stack_dim] == idims[stack_dim]);
 
+	// memory efficient in graph execution
+	auto tmp = result->op;
+	((struct nlop_s*)result)->op = operator_nograph_wrapper(tmp);
+	operator_free(tmp);
+
 	return result;
 }
 
