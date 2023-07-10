@@ -6,6 +6,7 @@
  */
 
 #include <complex.h>
+#include <assert.h>
 #include <math.h>
 
 #include "misc/types.h"
@@ -23,6 +24,7 @@
 
 #include "linops/someops.h"
 #include "linops/sum.h"
+#include "linops/fmac.h"
 
 #include "nlops/nlop.h"
 #include "nlops/stack.h"
@@ -36,6 +38,8 @@
 #include "nn/layers.h"
 
 #include "nn_ops.h"
+
+static bool update_random_state = true;
 
 
 
@@ -77,6 +81,7 @@ struct rand_mask_s {
 	int N;
 	float p;
 	long* dims;
+	complex float* state;
 };
 
 DEF_TYPEID(rand_mask_s);
@@ -86,12 +91,16 @@ static void rand_mask_fun(const nlop_data_t* _data, int N, complex float* args[N
 {
 	assert(1 == N);
 	const auto data = CAST_DOWN(rand_mask_s, _data);
-	md_rand_one(data->N, data->dims, args[0], (1. - data->p));
+
+	if (update_random_state)
+		md_rand_one(data->N, data->dims, data->state, (1. - data->p));
+	md_copy(data->N, data->dims, args[0], data->state, CFL_SIZE);
 }
 
 static void rand_mask_del(const struct nlop_data_s* _data)
 {
 	const auto data = CAST_DOWN(rand_mask_s, _data);
+	md_free(data->state);
 	xfree(data->dims);
 	xfree(data);
 }
@@ -106,6 +115,7 @@ const struct nlop_s* nlop_rand_mask_create(int N, const long dims[N], float p)
 	data->p = p;
 	data->dims = *TYPE_ALLOC(long[N]);
 	md_copy_dims(N, data->dims, dims);
+	data->state = md_alloc(N, dims, CFL_SIZE);
 
 	long odims[1][N];
 	md_copy_dims(N, odims[0], dims);
@@ -130,6 +140,152 @@ const struct nlop_s* nlop_rand_split_create(int N, const long dims[N], unsigned 
 	result = nlop_dup_F(result, 0, 2);
 	result = nlop_dup_F(result, 1, 2);
 	result = nlop_chain2_FF(nlop_rand_mask_create(N, dims2, 1. -p), 0, result, 1);
+
+	return result;
+}
+
+
+struct rand_mask_fixed_s {
+
+	INTERFACE(nlop_data_t);
+
+	int N;
+	long* dims;
+	unsigned long bat_flags;
+	float p;
+
+	complex float* state;
+
+	unsigned int seed;
+};
+
+DEF_TYPEID(rand_mask_fixed_s);
+
+
+static void rand_mask_fixed_fun(const nlop_data_t* _data, int D, complex float* args[D])
+{
+	assert(1 == D);
+	const auto data = CAST_DOWN(rand_mask_fixed_s, _data);
+
+	int N = data->N;
+
+	if (!update_random_state) {
+		
+		md_copy(data->N, data->dims, args[0], data->state, CFL_SIZE);
+		return;
+	}
+
+	md_clear(data->N, data->dims, data->state, CFL_SIZE);
+
+	long pos[N];
+	md_set_dims(N, pos, 0);
+
+	long tdims[N];
+	md_select_dims(N, ~data->bat_flags, tdims, data->dims);
+	long NV = md_calc_size(N, tdims);
+
+	assert( 1 >= fabsf(data->p));
+
+	long strs[N];
+	md_calc_strides(N, strs, data->dims, CFL_SIZE);
+
+	do {
+		long ones = data->p * NV;
+
+		if (0 > ones) {
+
+			ones *= -1;
+			ones = rand_r(&(data->seed)) % (ones + 1);
+		}
+
+		for (int i = 0; i < ones; i++) {
+
+
+			md_unravel_index(N, pos, ~data->bat_flags, data->dims, 0);
+
+			long idx = rand_r(&(data->seed)) % (NV - i);
+			while ((0 < idx) || (1. == MD_ACCESS(N, strs, pos, data->state))) {
+
+				if (0. == MD_ACCESS(N, strs, pos, data->state))
+					idx--;
+				
+				md_next(N, data->dims, ~data->bat_flags, pos);
+			}
+
+			MD_ACCESS(N, strs, pos, data->state) = 1.;
+		}
+
+	} while (md_next(N, data->dims, data->bat_flags, pos));
+
+
+	md_copy(data->N, data->dims, args[0], data->state, CFL_SIZE);
+}
+
+static void rand_mask_fixed_del(const struct nlop_data_s* _data)
+{
+	const auto data = CAST_DOWN(rand_mask_fixed_s, _data);
+	xfree(data->dims);
+	md_free(data->state);
+	xfree(data);
+}
+
+//nlop creating random mask with (1. - p) ones and p. zeros
+const struct nlop_s* nlop_rand_mask_fixed_create(int N, const long dims[N], float p, unsigned long bat_flags)
+{
+	PTR_ALLOC(struct rand_mask_fixed_s, data);
+	SET_TYPEID(rand_mask_fixed_s, data);
+
+	data->N = N;
+	data->p = p;
+	data->dims = *TYPE_ALLOC(long[N]);
+	md_copy_dims(N, data->dims, dims);
+	data->state = md_calloc(data->N, data->dims, CFL_SIZE);
+
+	data->seed = 123;
+	data->bat_flags = bat_flags;
+
+	long odims[1][N];
+	md_copy_dims(N, odims[0], dims);
+
+	return nlop_generic_create(1, N, odims, 0, 0, NULL, CAST_UP(PTR_PASS(data)), rand_mask_fixed_fun, NULL, NULL, NULL, NULL, rand_mask_fixed_del);
+}
+
+//input is multiplied with p ones to create first output
+//input is multiplied with 1.-p ones and p times "leaky" to create second output
+//if fix_first==1, output one is multiplied with 1 and output two is multiplied with zero
+const struct nlop_s* nlop_rand_split_fixed_create(int N, const long dims[N], unsigned long shared_dims_flag, unsigned long bat_dims_flag, float p, unsigned long fix_flags, const complex float* _fix_first, float leaky_val)
+{
+	long fix_dims[N];
+	md_select_dims(N, fix_flags, fix_dims, dims);
+
+	complex float* fix_first = md_alloc(N, fix_dims, CFL_SIZE);		// 0 if must be in first output
+	md_zfill(N, fix_dims, fix_first, 1);
+	if (NULL != _fix_first)
+		md_zsub(N, fix_dims, fix_first, fix_first, _fix_first);
+	
+	long dims2[N];
+	md_select_dims(N, (~shared_dims_flag) | fix_flags, dims2, dims);
+
+	complex float one = 1.;
+
+	auto invert = nlop_zaxpbz_create(N, dims2, -1., 1.);
+	invert = nlop_set_input_const_F2(invert, 1, N, dims2, MD_SINGLETON_STRS(N), true, &one);
+	auto first = nlop_chain2_FF(invert, 0, nlop_tenmul_create(N, dims, dims, dims2), 1);
+
+	auto leaky = nlop_zaxpbz_create(N, dims2, 1. - leaky_val, leaky_val);
+	leaky = nlop_set_input_const_F2(leaky, 1, N, dims2, MD_SINGLETON_STRS(N), true, &one);
+	auto second = nlop_chain2_FF(leaky, 0, nlop_tenmul_create(N, dims, dims, dims2), 1);
+
+	auto result = nlop_combine_FF(first, second);
+	result = nlop_dup_F(result, 0, 2);
+	result = nlop_dup_F(result, 1, 2);												// out: (1 - mask) * in, mask * in ; in: in, mask 
+
+	result = nlop_prepend_FF(nlop_from_linop_F(linop_fmac_create(N, dims2, 0, shared_dims_flag, ~fix_flags, fix_first)), result, 1);// out: (1 - mask') * in, mask' * in ; in: in, mask ; where mask' = (1 - fix_first) * mask 
+
+	md_select_dims(N, ~shared_dims_flag, dims2, dims);
+	result = nlop_chain2_FF(nlop_rand_mask_fixed_create(N, dims2, (0 < p ? 1. : -1) - p, bat_dims_flag), 0, result, 1);
+
+	md_free(fix_first);
 
 	return result;
 }
