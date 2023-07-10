@@ -65,6 +65,11 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 #endif
 
 
+#ifdef USE_DWARF
+#undef assert
+#define assert(expr) if (!(expr)) error("Assertion '" #expr "' failed in %s:%d\n",  __FILE__, __LINE__)
+#endif
+
 extern int error_catcher(int fun(int argc, char* argv[__VLA(argc)]), int argc, char* argv[__VLA(argc)]);
 
 extern int bart_printf(const char* fmt, ...);
