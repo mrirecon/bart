@@ -59,17 +59,11 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 {
 	lowmem_stack &= md_nontriv_dims(DIMS, max_dims);
 
-	if (0 != (lowmem_stack & (conf.flags | conf.cfft))) {
+	if (0UL != (lowmem_stack & (conf.flags | conf.cfft)))
+		error("Lowmem-stacking not possible along FFT_FLAGS.\n");
 
-		lowmem_stack = lowmem_stack & ~(conf.flags | conf.cfft);
-		debug_printf(DP_WARN, "Lowmem-stacking not possible along FFT_FLAGS, set stacking flag to %lu!\n", lowmem_stack);
-	}
-
-	if ((NULL != basis) && (0 != (lowmem_stack & (TE_FLAG | COEFF_FLAG)))) {
-
-		lowmem_stack = lowmem_stack & ~(TE_FLAG | COEFF_FLAG);
-		debug_printf(DP_WARN, "Lowmem-stacking not possible along basis dimensions, set stacking flag to %lu!\n", lowmem_stack);
-	}
+	if ((NULL != basis) && (0UL != (lowmem_stack & (TE_FLAG | COEFF_FLAG))))
+		error("Lowmem-stacking not possible along basis dimensions.\n");
 
 	for (int i = DIMS - 1; i > MAPS_DIM; i--) {
 
@@ -93,33 +87,17 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 			if (NULL != basis)
 				md_select_dims(DIMS, ~MD_BIT(i), n_basis_dims, basis_dims);
 
-			if (DIMS != md_calc_blockdim(DIMS, n_map_dims, MD_STRIDES(DIMS, map_dims, CFL_SIZE), CFL_SIZE)) {
+			if (DIMS != md_calc_blockdim(DIMS, n_map_dims, MD_STRIDES(DIMS, map_dims, CFL_SIZE), CFL_SIZE))
+				error("Sensitivity maps not continuous for stacking along dim %d.\n");
 
-				lowmem_stack &= ~MD_BIT(i);
-				debug_printf(DP_WARN, "Sensitivity maps not continuous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
-				continue;
-			}
+			if (DIMS != md_calc_blockdim(DIMS, n_traj_dims, MD_STRIDES(DIMS, traj_dims, CFL_SIZE), CFL_SIZE))
+				error("Trajectory not continuous for stacking along dim %d.");
 
-			if (DIMS != md_calc_blockdim(DIMS, n_traj_dims, MD_STRIDES(DIMS, traj_dims, CFL_SIZE), CFL_SIZE)) {
+			if ((NULL != weights) && (DIMS != md_calc_blockdim(DIMS, n_wgs_dims, MD_STRIDES(DIMS, wgs_dims, CFL_SIZE), CFL_SIZE)))
+				error("Weights not continuous for stacking along dim %d.");
 
-				lowmem_stack &= ~MD_BIT(i);
-				debug_printf(DP_WARN, "Trajectory not continuous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
-				continue;
-			}
-
-			if ((NULL != weights) && (DIMS != md_calc_blockdim(DIMS, n_wgs_dims, MD_STRIDES(DIMS, wgs_dims, CFL_SIZE), CFL_SIZE))) {
-
-				lowmem_stack &= ~MD_BIT(i);
-				debug_printf(DP_WARN, "Weights not continuous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
-				continue;
-			}
-
-			if ((NULL != basis) && (DIMS != md_calc_blockdim(DIMS, n_basis_dims, MD_STRIDES(DIMS, basis_dims, CFL_SIZE), CFL_SIZE))) {
-
-				lowmem_stack &= ~MD_BIT(i);
-				debug_printf(DP_WARN, "Basis not continuous for stacking along dim %d, set stacking flag to %lu!\n", lowmem_stack);
-				continue;
-			}
+			if ((NULL != basis) && (DIMS != md_calc_blockdim(DIMS, n_basis_dims, MD_STRIDES(DIMS, basis_dims, CFL_SIZE), CFL_SIZE)))
+				error("Basis not continuous for stacking along dim %d.");
 
 			long offset_basis = (NULL != basis) && (1 != basis_dims[i]) ? md_calc_size(i, basis_dims) : 0;
 			long offset_weights = (NULL != weights) && (1 != wgs_dims[i]) ? md_calc_size(i, wgs_dims) : 0;
@@ -253,11 +231,12 @@ int main_pics(int argc, char* argv[argc])
 	nuconf.toeplitz = true;
 	nuconf.lowmem = false;
 
-	float restrict_fov = -1.;
 	const char* pat_file = NULL;
 	const char* traj_file = NULL;
 	const char* psf_ifile = NULL;
 	const char* psf_ofile = NULL;
+
+	float restrict_fov = -1.;
 	bool scale_im = false;
 	bool eigen = false;
 	float scaling = 0.;
