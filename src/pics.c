@@ -1,10 +1,10 @@
 /* Copyright 2013-2018. The Regents of the University of California.
- * Copyright 2015-2022. Martin Uecker.
+ * Copyright 2015-2023. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2022 Martin Uecker
+ * 2012-2023 Martin Uecker
  * 2014-2016 Frank Ong
  * 2014-2018 Jon Tamir
  */
@@ -269,10 +269,7 @@ int main_pics(int argc, char* argv[argc])
 	const char* wtype_str = "dau2";
 
 	const char* image_truth_file = NULL;
-	bool im_truth = false;
-
 	const char* image_start_file = NULL;
-	bool warm_start = false;
 
 	const char* basis_file = NULL;
 
@@ -337,7 +334,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 		OPTL_SET('U', "lowmem", &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
-		OPTL_ULONG(0, "lowmem-stack", &lowmem_flags, "flags", "(Stack SENSE model along selected dims (currently only supports COIL_DIM and noncart)))"),
+		OPTL_ULONG(0, "lowmem-stack", &lowmem_flags, "flags", "(Stack SENSE model along selected dimscurrently only supports COIL_DIM and noncart)"),
 		OPTL_CLEAR(0, "no-toeplitz", &nuconf.toeplitz, "Turn off Toeplitz mode of nuFFT"),
 		OPTL_OUTFILE(0, "psf_export", &psf_ofile, "file", "Export PSF to file"),
 		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
@@ -346,12 +343,6 @@ int main_pics(int argc, char* argv[argc])
 
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
-
-	if (NULL != image_truth_file)
-		im_truth = true;
-
-	if (NULL != image_start_file)
-		warm_start = true;
 
 	if (0 <= bpsense_eps)
 		conf.bpsense = true;
@@ -489,9 +480,6 @@ int main_pics(int argc, char* argv[argc])
 
 	if (admm.relative_norm)
 		debug_printf(DP_INFO, "ADMM residual balancing\n");
-
-	if (im_truth)
-		debug_printf(DP_INFO, "Compare to truth\n");
 
 	if (randshift)
 		shift_mode = 1;
@@ -706,7 +694,9 @@ int main_pics(int argc, char* argv[argc])
 	long img_truth_dims[DIMS];
 	complex float* image_truth = NULL;
 
-	if (im_truth) {
+	if (NULL != image_truth_file) {
+
+		debug_printf(DP_INFO, "Compare to truth\n");
 
 		image_truth = load_cfl(image_truth_file, DIMS, img_truth_dims);
 		//md_zsmul(DIMS, img_dims, image_truth, image_truth, 1. / scaling);
@@ -727,7 +717,7 @@ int main_pics(int argc, char* argv[argc])
 	long img_start_dims[DIMS];
 	complex float* image_start = NULL;
 
-	if (warm_start) {
+	if (NULL != image_start_file) {
 
 		debug_printf(DP_DEBUG1, "Warm start: %s\n", image_start_file);
 
@@ -850,7 +840,7 @@ int main_pics(int argc, char* argv[argc])
 
 	// initialize algorithm
 
-	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, fast, admm, scaling, warm_start);
+	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, fast, admm, scaling, NULL != image_truth);
 
 	if (eigen && (ALGO_PRIDU == algo))
 		CAST_DOWN(iter_chambolle_pock_conf, it.iconf)->maxeigen_iter = 30;
@@ -866,12 +856,12 @@ int main_pics(int argc, char* argv[argc])
 	// FIXME: will fail with looped dims
 	struct iter_monitor_s* monitor = NULL;
 
-	if (im_truth)
+	if (NULL != image_truth)
 		monitor = iter_monitor_create(2 * md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL);
 
 	if (0 < ropts.svars) {
 
-		assert(!im_truth);
+		assert(NULL == image_truth);
 		assert(!conf.rvc);
 		assert(1 == img1_dims[BATCH_DIM]);
 		assert(1 == max1_dims[BATCH_DIM]);
@@ -972,7 +962,7 @@ int main_pics(int argc, char* argv[argc])
 	if (NULL != traj)
 		unmap_cfl(DIMS, traj_dims, traj);
 
-	if (im_truth) {
+	if (NULL != image_truth) {
 
 #ifdef USE_CUDA
 		if (conf.gpu)
