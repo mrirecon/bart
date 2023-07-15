@@ -732,7 +732,7 @@ void calc_brain(const long dims[DIMS], complex float* out, bool kspace, const lo
 
 #define ARRAY_SLICE2(x, a, b) ({ __auto_type __x = &(x); ((__typeof__((*__x)[0]) (*)[b - a])&((*__x)[a])); })
 
-void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int N_max, int D_max, long hdims[N_max][D_max], complex float* x[N_max], struct pha_opts* popts)
+void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int D_max, long hdims[2][D_max], complex float* x[2], struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 

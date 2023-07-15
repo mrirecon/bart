@@ -37,6 +37,6 @@ extern void calc_star3d(const long dims[DIMS], complex float* out, bool kspace, 
 extern void calc_bart(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts);
 extern void calc_brain(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts);
 
-extern void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int N_max, int D_max, long hdims[N_max][D_max], complex float* x[N_max], struct pha_opts* popts);
+extern void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int D_max, long hdims[2][D_max], complex float* x[2], struct pha_opts* popts);
 
 #endif
