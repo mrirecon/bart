@@ -27,7 +27,6 @@
 
 #include "linops/linop.h"
 #include "linops/fmac.h"
-#include "linops/sampling.h"
 #include "linops/someops.h"
 
 #include "noncart/nufft.h"

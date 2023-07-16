@@ -20,7 +20,6 @@
 
 #include "linops/linop.h"
 #include "linops/sum.h"
-#include "linops/sampling.h"
 #include "linops/someops.h"
 
 #include "iter/iter.h"
@@ -189,7 +188,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 
         if (!decom) {
 
-                sampling_op = linop_sampling_create(idims, idims, pattern);
+                sampling_op = linop_cdiag_create(DIMS, idims, ~0, pattern);
                 sum_op = linop_chain_FF(sum_op, sampling_op);
         }
 

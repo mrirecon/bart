@@ -36,7 +36,6 @@
 #include "num/iovec.h"
 
 #include "linops/linop.h"
-#include "linops/sampling.h"
 #include "linops/someops.h"
 #include "linops/realval.h"
 

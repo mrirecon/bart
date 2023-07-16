@@ -14,6 +14,8 @@ extern "C" {
 struct operator_s;
 struct vec_ops;
 
+extern struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims[DIMS], const complex float* pattern);
+
 extern struct linop_s* sense_init(const long max_dims[DIMS], unsigned int sens_flags, const complex float* sens);
 extern struct linop_s* maps_create(const long max_dims[DIMS], 
 			unsigned int sens_flags, const complex float* sens);
