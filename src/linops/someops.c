@@ -175,6 +175,36 @@ void linop_gdiag_set_diag(const struct linop_s* lop, int N, const long ddims[N],
 	data->diag = multiplace_move(N, data->ddims, CFL_SIZE, diag);
 }
 
+void linop_gdiag_set_diag_F(const struct linop_s* lop, int N, const long ddims[N], const complex float* diag)
+{
+	auto _data = linop_get_data(lop);
+	auto data = CAST_DOWN(cdiag_s, _data);
+
+	assert(data->N == (unsigned int)N);
+	assert(md_check_equal_dims(N, ddims, data->ddims, ~0));
+
+	multiplace_free(data->diag);
+	multiplace_free(data->normal);
+
+	data->normal = NULL;
+	data->diag = multiplace_move_F(N, data->ddims, CFL_SIZE, diag);
+}
+
+void linop_gdiag_set_diag_ref(const struct linop_s* lop, int N, const long ddims[N], const complex float* diag)
+{
+	auto _data = linop_get_data(lop);
+	auto data = CAST_DOWN(cdiag_s, _data);
+
+	assert(data->N == (unsigned int)N);
+	assert(md_check_equal_dims(N, ddims, data->ddims, ~0));
+
+	multiplace_free(data->diag);
+	multiplace_free(data->normal);
+
+	data->normal = NULL;
+	data->diag = multiplace_move_wrapper(N, data->ddims, CFL_SIZE, diag);
+}
+
 struct scale_s {
 
 	INTERFACE(linop_data_t);

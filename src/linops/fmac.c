@@ -91,8 +91,8 @@ static void fmac_normal(const linop_data_t* _data, complex float* dst, const com
 	md_free(tmp);
 }
 
-const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N],
-		unsigned int oflags, unsigned int iflags, unsigned int tflags, const complex float* tensor)
+const struct linop_s* linop_fmac_create(int N, const long dims[N],
+		unsigned long oflags, unsigned long iflags, unsigned long tflags, const complex float* tensor)
 {
 	PTR_ALLOC(struct fmac_data, data);
 	SET_TYPEID(fmac_data, data);
@@ -133,6 +133,14 @@ const struct linop_s* linop_fmac_create(unsigned int N, const long dims[N],
 			NULL, fmac_free_data);
 }
 
+const struct linop_s* linop_fmac_dims_create(int N, const long odims[N], const long idims[N], const long tdims[N], const complex float* tensor)
+{
+	long max_dims[N];
+	md_tenmul_dims(N, max_dims, odims, idims, tdims);
+
+	return linop_fmac_create(N, max_dims, ~md_nontriv_dims(N, odims), ~md_nontriv_dims(N, idims), ~md_nontriv_dims(N, tdims), tensor);
+}
+
 void linop_fmac_set_tensor(const struct linop_s* lop, int N, const long tdims[N], const complex float* tensor)
 {
 	auto _data = linop_get_data(lop);
@@ -144,5 +152,31 @@ void linop_fmac_set_tensor(const struct linop_s* lop, int N, const long tdims[N]
 	multiplace_free(data->tensor);
 
 	data->tensor = multiplace_move(N, data->tdims, CFL_SIZE, tensor);
+}
+
+void linop_fmac_set_tensor_F(const struct linop_s* lop, int N, const long tdims[N], const complex float* tensor)
+{
+	auto _data = linop_get_data(lop);
+	auto data = CAST_DOWN(fmac_data, _data);
+
+	assert(data->N == (unsigned int)N);
+	assert(md_check_equal_dims(N, tdims, data->tdims, ~0));
+
+	multiplace_free(data->tensor);
+
+	data->tensor = multiplace_move_F(N, data->tdims, CFL_SIZE, tensor);
+}
+
+void linop_fmac_set_tensor_ref(const struct linop_s* lop, int N, const long tdims[N], const complex float* tensor)
+{
+	auto _data = linop_get_data(lop);
+	auto data = CAST_DOWN(fmac_data, _data);
+
+	assert(data->N == (unsigned int)N);
+	assert(md_check_equal_dims(N, tdims, data->tdims, ~0));
+
+	multiplace_free(data->tensor);
+
+	data->tensor = multiplace_move_wrapper(N, data->tdims, CFL_SIZE, tensor);
 }
 
