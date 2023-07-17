@@ -149,9 +149,9 @@ static bool test_rf_pulse_ode(void)
 			data.seq.spin_num = 1;
 
 			data.voxel = simdata_voxel_defaults;
-			data.voxel.r1 = 0.;
-			data.voxel.r2 = 0.;
-			data.voxel.m0 = 1;
+			data.voxel.r1[0] = 0.;
+			data.voxel.r2[0] = 0.;
+			data.voxel.m0[0] = 1;
 			data.voxel.w = 0;
 
 			data.pulse = simdata_pulse_defaults;
@@ -215,9 +215,9 @@ static bool test_hypsec_rf_pulse_ode(void)
         data.seq.spin_num = 1;
 
         data.voxel = simdata_voxel_defaults;
-        data.voxel.r1 = 0.;
-        data.voxel.r2 = 0.;
-        data.voxel.m0 = 1;
+        data.voxel.r1[0] = 0.;
+        data.voxel.r2[0] = 0.;
+        data.voxel.m0[0] = 1;
         data.voxel.w = 0;
 
         data.pulse = simdata_pulse_defaults;

@@ -49,9 +49,9 @@ static bool test_ode_bloch_simulation_gradients(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1. / WATER_T1;
-	sim_data.voxel.r2 = 1. / WATER_T2;
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 1. / WATER_T1;
+	sim_data.voxel.r2[0] = 1. / WATER_T2;
+	sim_data.voxel.m0[0] = 1.;
 	sim_data.voxel.w = 0;
 	sim_data.voxel.b1 = 1.;
 
@@ -83,7 +83,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	struct sim_data data_r1 = sim_data;
 
-	data_r1.voxel.r1 += e;
+	data_r1.voxel.r1[0] += e;
 
 	bloch_simulation(&data_r1, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
@@ -105,7 +105,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	struct sim_data data_r2 = sim_data;
 
-	data_r2.voxel.r2 += e;
+	data_r2.voxel.r2[0] += e;
 
 	bloch_simulation(&data_r2, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
@@ -125,7 +125,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	struct sim_data data_m0 = sim_data;
 
-	data_m0.voxel.m0 += e;
+	data_m0.voxel.m0[0] += e;
 
 	bloch_simulation(&data_m0, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
@@ -186,9 +186,9 @@ static bool test_stm_bloch_simulation_gradients(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1. / WATER_T1;
-	sim_data.voxel.r2 = 1. / WATER_T2;
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 1. / WATER_T1;
+	sim_data.voxel.r2[0] = 1. / WATER_T2;
+	sim_data.voxel.m0[0] = 1.;
 	sim_data.voxel.w = 0.;
 	sim_data.voxel.b1 = 1.;
 
@@ -220,7 +220,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	struct sim_data data_r1 = sim_data;
 
-	data_r1.voxel.r1 += e;
+	data_r1.voxel.r1[0] += e;
 
 	bloch_simulation(&data_r1, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
@@ -242,7 +242,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	struct sim_data data_r2 = sim_data;
 
-	data_r2.voxel.r2 += e;
+	data_r2.voxel.r2[0] += e;
 
 	bloch_simulation(&data_r2, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
@@ -264,7 +264,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	struct sim_data data_m0 = sim_data;
 
-	data_m0.voxel.m0 += e;
+	data_m0.voxel.m0[0] += e;
 
 	bloch_simulation(&data_m0, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
@@ -346,9 +346,9 @@ static bool test_ode_irbssfp_simulation(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1. / t1n;
-	sim_data.voxel.r2 = 1. / t2n;
-	sim_data.voxel.m0 = m0n;
+	sim_data.voxel.r1[0] = 1. / t1n;
+	sim_data.voxel.r2[0] = 1. / t2n;
+	sim_data.voxel.m0[0] = m0n;
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -452,9 +452,9 @@ static bool test_rot_irbssfp_simulation(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1. / t1n;
-	sim_data.voxel.r2 = 1. / t2n;
-	sim_data.voxel.m0 = m0n;
+	sim_data.voxel.r1[0] = 1. / t1n;
+	sim_data.voxel.r2[0] = 1. / t2n;
+	sim_data.voxel.m0[0] = m0n;
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -548,9 +548,9 @@ static bool test_stm_ode_bssfp_comparison(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1. / WATER_T1;
-	sim_data.voxel.r2 = 1. / WATER_T2;
-	sim_data.voxel.m0 = 1;
+	sim_data.voxel.r1[0] = 1. / WATER_T1;
+	sim_data.voxel.r2[0] = 1. / WATER_T2;
+	sim_data.voxel.m0[0] = 1;
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -652,9 +652,9 @@ static bool test_stm_ode_flash_comparison(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1. / WATER_T1;
-	sim_data.voxel.r2 = 1. / WATER_T2;
-	sim_data.voxel.m0 = 1;
+	sim_data.voxel.r1[0] = 1. / WATER_T1;
+	sim_data.voxel.r2[0] = 1. / WATER_T2;
+	sim_data.voxel.m0[0] = 1;
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -750,9 +750,9 @@ static bool test_ode_simu_offresonance(void)
 	sim_data.seq.prep_pulse_length = 0.;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 0.;	// Turn off relaxation
-	sim_data.voxel.r2 = 0.;	// Turn off relaxation
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.r2[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.m0[0] = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
@@ -814,9 +814,9 @@ static bool test_stm_simu_offresonance(void)
 	sim_data.seq.prep_pulse_length = 0.;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 0.;	// Turn off relaxation
-	sim_data.voxel.r2 = 0.;	// Turn off relaxation
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.r2[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.m0[0] = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
@@ -876,9 +876,9 @@ static bool test_ode_simu_gradient(void)
 	sim_data.seq.prep_pulse_length = 0.;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 0.;	// Turn off relaxation
-	sim_data.voxel.r2 = 0.;	// Turn off relaxation
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.r2[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.m0[0] = 1.;
 	sim_data.voxel.w = 0.;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -941,9 +941,9 @@ static bool test_stm_simu_gradient(void)
 	sim_data.seq.prep_pulse_length = 0.;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 0.;	// Turn off relaxation
-	sim_data.voxel.r2 = 0.;	// Turn off relaxation
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.r2[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.m0[0] = 1.;
 	sim_data.voxel.w = 0.;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -1058,9 +1058,9 @@ static bool test_ode_epg_relation(void)
 	sim_data.seq.prep_pulse_length = 0.;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 0.;	// Turn off relaxation
-	sim_data.voxel.r2 = 0.;	// Turn off relaxation
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.r2[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.m0[0] = 1.;
 	sim_data.voxel.w = 0.;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -1157,9 +1157,9 @@ static bool test_hp_irbssfp_simulation(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 1. / t1n;
-	sim_data.voxel.r2 = 1. / t2n;
-	sim_data.voxel.m0 = m0n;
+	sim_data.voxel.r1[0] = 1. / t1n;
+	sim_data.voxel.r2[0] = 1. / t2n;
+	sim_data.voxel.m0[0] = m0n;
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -1239,9 +1239,9 @@ static bool test_hp_simu_offresonance(void)
 	sim_data.seq.prep_pulse_length = 0.;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 0.;	// Turn off relaxation
-	sim_data.voxel.r2 = 0.;	// Turn off relaxation
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.r2[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.m0[0] = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
@@ -1301,9 +1301,9 @@ static bool test_hp_simu_gradient(void)
 	sim_data.seq.prep_pulse_length = 0.;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 0.;	// Turn off relaxation
-	sim_data.voxel.r2 = 0.;	// Turn off relaxation
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.r2[0] = 0.;	// Turn off relaxation
+	sim_data.voxel.m0[0] = 1.;
 	sim_data.voxel.w = 0.;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -1367,9 +1367,9 @@ static bool test_ode_z_gradient_refocus(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 0.;
-	sim_data.voxel.r2 = 0.;
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 0.;
+	sim_data.voxel.r2[0] = 0.;
+	sim_data.voxel.m0[0] = 1.;
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -1439,9 +1439,9 @@ static bool test_stm_z_gradient_refocus(void)
 	sim_data.seq.prep_pulse_length = sim_data.seq.te;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 0.;
-	sim_data.voxel.r2 = 0.;
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 0.;
+	sim_data.voxel.r2[0] = 0.;
+	sim_data.voxel.m0[0] = 1.;
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
@@ -1500,9 +1500,9 @@ static bool test_ode_inversion(void)
         data.seq.inversion_spoiler = 0.005;
 
         data.voxel = simdata_voxel_defaults;
-        data.voxel.r1 = 0.;
-        data.voxel.r2 = 0.;
-        data.voxel.m0 = 1;
+        data.voxel.r1[0] = 0.;
+        data.voxel.r2[0] = 0.;
+        data.voxel.m0[0] = 1;
         data.voxel.w = 0;
 
         data.pulse = simdata_pulse_defaults;
@@ -1533,7 +1533,7 @@ UT_REGISTER_TEST(test_ode_inversion);
 // Test STM matrix creation.
 // Test with
 //      - RF pulse: sim_data.seq.pulse_applied = true;
-//      - Relaxation: sim_data.voxel.r1 and sim_data.voxel.r2 != 0;
+//      - Relaxation: sim_data.voxel.r1[0] and sim_data.voxel.r2[0] != 0;
 //      - z-Gradient: sim_data.grad.gb[2] = 2. * M_PI * 1000.;
 static bool test_stm_matrix_creation(void)
 {
@@ -1546,9 +1546,9 @@ static bool test_stm_matrix_creation(void)
         sim_data.seq.pulse_applied = true;
 
 	sim_data.voxel = simdata_voxel_defaults;
-	sim_data.voxel.r1 = 10.;
-	sim_data.voxel.r2 = 1.;
-	sim_data.voxel.m0 = 1.;
+	sim_data.voxel.r1[0] = 10.;
+	sim_data.voxel.r2[0] = 1.;
+	sim_data.voxel.m0[0] = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;

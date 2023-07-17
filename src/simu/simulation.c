@@ -4,6 +4,7 @@
  *
  * Author:
  *	Nick Scholand
+ *	Martin Juschitz
  */
 
 #include <complex.h>
@@ -30,15 +31,17 @@ void debug_sim(struct sim_data* data)
 {
         debug_printf(DP_INFO, "Simulation-Debug-Output\n\n");
         debug_printf(DP_INFO, "Voxel-Parameter:\n");
-        debug_printf(DP_INFO, "\tR1:%f\n", data->voxel.r1);
-        debug_printf(DP_INFO, "\tR2:%f\n", data->voxel.r2);
-        debug_printf(DP_INFO, "\tM0:%f\n", data->voxel.m0);
-        debug_printf(DP_INFO, "\tw:%f\n", data->voxel.w);
+	debug_printf(DP_INFO, "\tNumber of Pools:%f\n\n", data->voxel.P);
+	debug_printf(DP_INFO, "\tR1:%f\n\n", data->voxel.r1[0]);
+	debug_printf(DP_INFO, "\tR2:%f\n\n", data->voxel.r2[0]);
+	debug_printf(DP_INFO, "\tM0:%f\n", data->voxel.m0[0]);
+	debug_printf(DP_INFO, "\tw:%f\n", data->voxel.w);
         debug_printf(DP_INFO, "\tB1:%f\n\n", data->voxel.b1);
 
         debug_printf(DP_INFO, "Seq-Parameter:\n");
         debug_printf(DP_INFO, "\tSimulation Type:%d\n", data->seq.type);
         debug_printf(DP_INFO, "\tSequence:%d\n", data->seq.seq_type);
+        debug_printf(DP_INFO, "\tModel:%d\n\n", data->seq.model);
         debug_printf(DP_INFO, "\tTR:%f\n", data->seq.tr);
         debug_printf(DP_INFO, "\tTE:%f\n", data->seq.te);
         debug_printf(DP_INFO, "\t#Rep:%d\n", data->seq.rep_num);
@@ -79,9 +82,11 @@ void debug_sim(struct sim_data* data)
 
 const struct simdata_voxel simdata_voxel_defaults = {
 
-	.r1 = 0.,
-	.r2 = 0.,
-	.m0 = 1.,
+	.P = 1,
+
+	.r1 = { 0. },
+	.r2 = { 0. },
+	.m0 = { 1. },
 	.w = 0.,
 	.b1 = 1.,
 };
@@ -91,6 +96,8 @@ const struct simdata_seq simdata_seq_defaults = {
 
         .type = SIM_ODE,
 	.seq_type = SEQ_BSSFP,
+	.model = MODEL_BLOCH,
+
 	.tr = 0.004,
 	.te = 0.002,
 	.rep_num = 1,
@@ -212,6 +219,7 @@ static void set_gradients(struct sim_data* data, float t)
 
 /* ---------  State-Transition Matrix Simulation --------- */
 
+
 static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t, const float* in)
 {
         set_gradients(data, t);
@@ -221,15 +229,15 @@ static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t
 	switch (N) {
 
 	case 4: // M
-                bloch_matrix_ode(matrix_time, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+                bloch_matrix_ode(matrix_time, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		break;
 
 	case 10: // M, dR1, dR2, dM0
-                bloch_matrix_ode_sa(matrix_time, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+                bloch_matrix_ode_sa(matrix_time, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		break;
 
 	case 13: // M, dR1, dR2, dM0, dB1
-	        bloch_matrix_ode_sa2(matrix_time, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+	        bloch_matrix_ode_sa2(matrix_time, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
 		break;
 
 	default:
@@ -279,71 +287,87 @@ void apply_sim_matrix(int N, float m[N], float matrix[N][N])
 
 /* ------------ Read-Out -------------- */
 
-static void adc_corr(int P, float out[P][3], float in[P][3], float angle)
+static void rotz_pools(int pools, float out[pools][3], const float in[3 * pools], float angle)
+{
+	for (int p = 0; p < pools; p++) {
+
+		out[p][0] = in[0 + p * 3] * cosf(angle) + in[1 + p * 3] * sinf(angle);
+		out[p][1] = -in[0 + p * 3] * sinf(angle) + in[1 + p * 3] * cosf(angle);
+		out[p][2] = in[2 + p * 3];
+	}
+}
+
+static void adc_corr(int P, int N, int pools, float out[P][pools][N], float in[P][N * pools], float angle)
 {
 	for (int i = 0; i < P; i++)
-		rotz(out[i], in[i], angle);
+		rotz_pools(pools, out[i], in[i], angle);
 }
 
 
 
-static void collect_signal(struct sim_data* data, int P, int R, int S, float (*m)[R][S][3], float (*sa_r1)[R][S][3], float (*sa_r2)[R][S][3], float (*sa_b1)[R][S][3], float xp[P][3])
+static void collect_signal(struct sim_data* data, int P, int R, int S, int pools, float (*m)[R][S][pools][3], float (*sa_r1)[R][S][pools][3], float (*sa_r2)[R][S][pools][3], float (*sa_b1)[R][S][pools][3], float xp[P][3])
 {
-	float tmp[4][3] = { { 0. }, { 0. }, { 0. }, { 0. } };
+        float tmp[P][pools][3];
 
-	adc_corr(P, tmp, xp, -data->pulse.phase);
+        adc_corr(P, 3, pools, tmp, xp, -data->pulse.phase);
 
-	for (int i = 0; i < 3; i++) {
+        int r = data->tmp.rep_counter;
+	int s = data->tmp.spin_counter;
 
-		int r = data->tmp.rep_counter;
-		int s = data->tmp.spin_counter;
+	for (int p = 0; p < pools; p++) {
+		for (int i = 0; i < 3; i++) {
 
-		if (NULL != m)
-			(*m)[r][s][i] = tmp[0][i];
+			if (NULL != m)
+				(*m)[r][s][p][i] = tmp[0][p][i];
 
-		if (NULL != sa_r1)
-			(*sa_r1)[r][s][i] = tmp[1][i];
+			if (NULL != sa_r1)
+				(*sa_r1)[r][s][p][i] = tmp[1][p][i];
 
-		if (NULL != sa_r2)
-			(*sa_r2)[r][s][i] = tmp[2][i];
+			if (NULL != sa_r2)
+				(*sa_r2)[r][s][p][i] = tmp[2][p][i];
 
-		if (NULL != sa_b1)
-			(*sa_b1)[r][s][i] = tmp[3][i];
+			if (NULL != sa_b1)
+				(*sa_b1)[r][s][p][i] = tmp[3][p][i];
+		}
 	}
 }
 
 
-static void sum_up_signal(float m0, int R, int S, int A, float D, float (*m)[R * A][S][3], float (*sa_r1)[R * A][S][3], float (*sa_r2)[R * A][S][3], float (*sa_b1)[R * A][S][3],
-                        float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
+static void sum_up_signal(float m0, int R, int S, int A, float D, int pools, float (*m)[R * A][S][pools][3], float (*sa_r1)[R * A][S][pools][3], float (*sa_r2)[R * A][S][pools][3], float (*sa_b1)[R * A][S][pools][3],
+                        float (*m_state)[R][pools][3], float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3], float (*sa_b1_state)[R][pools][3])
 {
 	float norm = m0 / ((float)A * D);
 
-	for (int r = 0; r < R; r++) {
+	for (int p = 0; p < pools; p++) {
 
-		for (int dim = 0; dim < 3; dim++) {
+		for (int r = 0; r < R; r++) {
 
-			float sum_m = 0.;
-			float sum_sa_r1 = 0.;
-			float sum_sa_r2 = 0.;
-			float sum_sa_b1 = 0.;
+			for (int dim = 0; dim < 3; dim++) {
 
-			for (int a = 0; a < A; a++) {
+				float sum_m = 0.;
+				float sum_sa_r1 = 0.;
+				float sum_sa_r2 = 0.;
+				float sum_sa_b1 = 0.;
 
-				for (int spin = 0; spin < S; spin++) {
+				for (int a = 0; a < A; a++) {
 
-					sum_m += (*m)[r * A + a][spin][dim];
-					sum_sa_r1 += (*sa_r1)[r * A + a][spin][dim];
-					sum_sa_r2 += (*sa_r2)[r * A + a][spin][dim];
-					sum_sa_b1 += (*sa_b1)[r * A + a][spin][dim];
+					for (int spin = 0; spin < S; spin++) {
+
+						sum_m += (*m)[r * A + a][spin][p][dim];
+						sum_sa_r1 += (*sa_r1)[r * A + a][spin][p][dim];
+						sum_sa_r2 += (*sa_r2)[r * A + a][spin][p][dim];
+						sum_sa_b1 += (*sa_b1)[r * A + a][spin][p][dim];
+					}
 				}
-			}
 
-                        // Mean
-                        (*m_state)[r][dim] = sum_m * norm;
-                        (*sa_r1_state)[r][dim] = sum_sa_r1 * norm;
-                        (*sa_r2_state)[r][dim] = sum_sa_r2 * norm;
-                        (*sa_b1_state)[r][dim] = sum_sa_b1 * norm;
-                        (*sa_m0_state)[r][dim] = sum_m / ((float)A * D);
+				// Mean
+				(*m_state)[r][p][dim] = sum_m * norm;
+				(*sa_r1_state)[r][p][dim] = sum_sa_r1 * norm;
+				(*sa_r2_state)[r][p][dim] = sum_sa_r2 * norm;
+				(*sa_b1_state)[r][p][dim] = sum_sa_b1 * norm;
+				(*sa_m0_state)[r][p][dim] = sum_m / ((float)A * D);
+
+			}
 		}
 	}
 }
@@ -387,7 +411,7 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 
                                 bloch_excitation2(xp3, xp[i], w1 * sample_time, data->pulse.phase);
 
-                                bloch_relaxation(xp[i], sample_time, xp3, data->voxel.r1, data->voxel.r2, data->grad.gb);
+                                bloch_relaxation(xp[i], sample_time, xp3, data->voxel.r1[0], data->voxel.r2[0], data->grad.gb);
                         }
 
                         t_im += sample_time;
@@ -419,22 +443,22 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
 			set_gradients(data, t);
-			bloch_ode(out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		};
 
 		NESTED(void, call_pdy2, (float* out, float t, const float* in))
 		{
 			(void)t;
-			bloch_pdy((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		};
 
 		NESTED(void, call_pdp2, (float* out, float t, const float* in))
 		{
 			(void)t;
-			bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
 		};
 
-                // Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
+		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
 		ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, call_fun, call_pdy2, call_pdp2);
                 break;
 
@@ -462,7 +486,7 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 		xp2[1] = xp[i][1];
 		xp2[2] = xp[i][2];
 
-		bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb);
+		bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb);
 	}
 }
 
@@ -490,25 +514,25 @@ static void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
 			set_gradients(data, t);
-			bloch_ode(out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+			bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		};
 
 		NESTED(void, call_pdy2, (float* out, float t, const float* in))
 		{
 			(void)t;
-			bloch_pdy((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff);
+			bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		};
 
 		NESTED(void, call_pdp2, (float* out, float t, const float* in))
 		{
 			(void)t;
-			bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1, data->voxel.r2 + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+			bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
 		};
 
-                // Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
-                ode_direct_sa(h, tol, N, P - 1, xp, st, end, call_fun, call_pdy2, call_pdp2);
-                break;
+		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
+		ode_direct_sa(h, tol, N, P - 1, xp, st, end, call_fun, call_pdy2, call_pdp2);
 
+                break;
         case SIM_STM:
 
                 create_sim_matrix(data, P * N, stm_matrix, st, end);
@@ -621,7 +645,8 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 }
 
 
-static void run_sim(struct sim_data* data, int R, int S, float (*mxy)[R][S][3], float (*sa_r1)[R][S][3], float (*sa_r2)[R][S][3], float (*sa_b1)[R][S][3],
+static void run_sim(struct sim_data* data, int R, int S, int pools,
+			float (*mxy)[R][S][pools][3], float (*sa_r1)[R][S][pools][3], float (*sa_r2)[R][S][pools][3], float (*sa_b1)[R][S][pools][3],
                         float h, float tol, int N, int P, float xp[P][N],
                         float xstm[P * N + 1], float mte[P * N + 1][P * N + 1], float mtr[P * N + 1][P * N + 1])
 {
@@ -648,8 +673,7 @@ static void run_sim(struct sim_data* data, int R, int S, float (*mxy)[R][S][3], 
 			relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
 		}
 
-		collect_signal(data, P, R, S, mxy, sa_r1, sa_r2, sa_b1, xp);
-
+		collect_signal(data, P, R, S, pools, mxy, sa_r1, sa_r2, sa_b1, xp);
 
                 // Smooth spoiling for FLASH sequences
 
@@ -690,7 +714,7 @@ static void run_sim(struct sim_data* data, int R, int S, float (*mxy)[R][S][3], 
                 // Save data
                 stm2ode(N, P, xp, xstm);
 
-                collect_signal(data, P, R, S, mxy, sa_r1, sa_r2, sa_b1, xp);
+                collect_signal(data, P, R, S, pools, mxy, sa_r1, sa_r2, sa_b1, xp);
 
                 // Evolution: TE -> TR
                 apply_sim_matrix(N * P + 1, xstm, mtr);
@@ -739,7 +763,7 @@ void inversion(const struct sim_data* data, float h, float tol, int N, int P, fl
 }
 
 
-static void alpha_half_preparation(const struct sim_data* data, float h, float tol, int N, int P, float xp[P][N])
+static void alpha_half_preparation(const struct sim_data* data, int pools, float h, float tol, int N, int P, float xp[P][N])
 {
 	struct sim_data prep_data = *data;
 
@@ -759,7 +783,7 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 		int R = data->seq.rep_num;
 		int S = data->seq.spin_num;
 
-		run_sim(&prep_data, R, S, NULL, NULL, NULL, NULL, h, tol, N, P, xp, NULL, NULL, NULL);
+		run_sim(&prep_data, R, S, pools, NULL, NULL, NULL, NULL, h, tol, N, P, xp, NULL, NULL, NULL);
 
 	} else { // Perfect preparation
 
@@ -771,7 +795,8 @@ static void alpha_half_preparation(const struct sim_data* data, float h, float t
 
 /* ------------ Main Simulation -------------- */
 
-void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3], float (*sa_b1_state)[R][3])
+void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m_state)[R][pools][3], float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3],
+			float (*sa_b1_state)[R][pools][3])
 {
 	// FIXME: split config + variable part
 
@@ -779,12 +804,12 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 
         float tol = _data->other.ode_tol;      // Tolerance of ODE solver
 
-        enum { N = 3 };         // Number of dimensions (x, y, z)
-	enum { P = 4 };         // Number of parameters with estimated derivative (M, DR1, DR2, DB1)
+	int N = 3 * pools;	// Number of dimensions (x, y, z)
+	int P = 4;		// Number of parameters with estimated derivative (M, DR1, DR2, DB1)
 
         assert(0 < P);
 
-        enum { M = N * P + 1 };     // STM based on single vector and additional +1 for linearized system matrix
+        int M = N * P + 1;     // STM based on single vector and additional +1 for linearized system matrix
 
 	assert(R == data.seq.rep_num);
 
@@ -801,10 +826,10 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 
 	int S = data.seq.spin_num;
 
-	float (*mxy)[R * A][S][3] = xmalloc(sizeof *mxy);
-	float (*sa_r1)[R * A][S][3] = xmalloc(sizeof *sa_r1);
-	float (*sa_r2)[R * A][S][3] = xmalloc(sizeof *sa_r2);
-	float (*sa_b1)[R * A][S][3] = xmalloc(sizeof *sa_b1);
+	float (*mxy)[R * A][S][pools][3] = xmalloc(sizeof *mxy);
+	float (*sa_r1)[R * A][S][pools][3] = xmalloc(sizeof *sa_r1);
+	float (*sa_r2)[R * A][S][pools][3] = xmalloc(sizeof *sa_r2);
+	float (*sa_b1)[R * A][S][pools][3] = xmalloc(sizeof *sa_b1);
 
 	for (data.tmp.spin_counter = 0; data.tmp.spin_counter < S; data.tmp.spin_counter++) {
 
@@ -843,7 +868,10 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
                 xp[0][2] = 1.;
 
                 // Initialize STM
-                float xstm[M] = { 0. };
+                float xstm[M];
+
+		for (int n = 0; n < M; n++)
+			xstm[n] = 0.;
 
                 xstm[2] = 1.;
                 xstm[M - 1] = 1.;
@@ -865,7 +893,7 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 
                 if (   (SEQ_BSSFP == data.seq.seq_type)
                     || (SEQ_IRBSSFP == data.seq.seq_type))
-                        alpha_half_preparation(&data, h, tol, N, P, xp);
+                        alpha_half_preparation(&data, pools, h, tol, N, P, xp);
 
                 float mtr[M][M];
                 float mte[2][M][M];
@@ -903,7 +931,7 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 				odd = (1 == data.tmp.rep_counter % 2);
                         }
 
-			run_sim(&data, R * A, S, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, mte[odd], mtr);
+			run_sim(&data, R * A, S, pools, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, mte[odd], mtr);
 
                         data.tmp.rep_counter++;
                 }
@@ -916,7 +944,8 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
         //      - Relative to default slice thickness to keep strength of simulation higher
         float D = (float)S / (data.seq.slice_thickness / default_slice_thickness);
 
-        sum_up_signal(data.voxel.m0, data.seq.rep_num / A, data.seq.spin_num, A, D, mxy, sa_r1, sa_r2, sa_b1, m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
+        sum_up_signal(data.voxel.m0[0], data.seq.rep_num / A, data.seq.spin_num, A, D, pools, mxy, sa_r1, sa_r2, sa_b1,
+			m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
 
 	xfree(mxy);
 	xfree(sa_r1);
@@ -924,4 +953,27 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 	xfree(sa_b1);
 }
 
+// Wrapper for single pool simulation
+void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3],	float (*sa_b1_state)[R][3])
+{
+	int pools = 1;
 
+	float mxy[R][pools][3];
+	float sa_r1[R][pools][3];
+	float sa_r2[R][pools][3];
+	float sa_b1[R][pools][3];
+	float sa_m0[R][pools][3];
+
+	bloch_simulation2(_data, R, pools, &mxy, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
+
+
+	for(int r = 0; r < R; r++)
+		for(int n = 0; n < 3; n++) {
+
+			(*m_state)[r][n] = mxy[r][0][n];
+			(*sa_r1_state)[r][n] = sa_r1[r][0][n];
+			(*sa_r2_state)[r][n] = sa_r2[r][0][n];
+			(*sa_m0_state)[r][n] = sa_m0[r][0][n];
+			(*sa_b1_state)[r][n] = sa_b1[r][0][n];
+		}
+}
