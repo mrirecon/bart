@@ -420,7 +420,7 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 }
 
 
-void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P * N][P * N])
+void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P * N + 1][P * N + 1])
 {
 	data->seq.pulse_applied = true;
 
@@ -491,7 +491,7 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 }
 
 
-static void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P * N][P * N])
+void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P * N + 1][P * N + 1])
 {
 	data->seq.pulse_applied = false;
 
