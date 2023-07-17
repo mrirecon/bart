@@ -55,7 +55,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 			const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf,
 			const long wgs_dims[DIMS], const complex float* weights,
 			const long basis_dims[DIMS], const complex float* basis,
-			const struct linop_s** fft_opp, unsigned long lowmem_stack)
+			const struct linop_s** fft_opp, unsigned long shared_img_dims, unsigned long lowmem_stack)
 {
 	lowmem_stack &= md_nontriv_dims(DIMS, max_dims);
 
@@ -131,12 +131,18 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 
 			debug_printf(DP_DEBUG1, "Lowmem-stacking along dim %d\n!", i);
 
-			const struct linop_s* lop = sense_nc_init(n_max_dims, n_map_dims, maps, n_ksp_dims, n_traj_dims, traj, conf, n_wgs_dims, weights, n_basis_dims, basis, NULL, lowmem_stack);
+			const struct linop_s* lop = sense_nc_init(n_max_dims, n_map_dims, maps, n_ksp_dims, n_traj_dims, traj, conf, n_wgs_dims, weights, n_basis_dims, basis, NULL, shared_img_dims, lowmem_stack);
 
-			for (int j = 1; j < max_dims[i]; j++)
-				lop = linop_stack_FF(i, i, lop, sense_nc_init(n_max_dims, n_map_dims, maps + j * offset_sens, n_ksp_dims, n_traj_dims,
+			for (int j = 1; j < max_dims[i]; j++) {
+
+				auto tmp = sense_nc_init(n_max_dims, n_map_dims, maps + j * offset_sens, n_ksp_dims, n_traj_dims,
 										traj + j * offset_traj, conf, n_wgs_dims, weights + j * offset_weights,
-										n_basis_dims, basis + j * offset_basis, NULL, lowmem_stack));
+										n_basis_dims, basis + j * offset_basis, NULL, shared_img_dims, lowmem_stack);
+				if (MD_IS_SET(shared_img_dims, i))
+					lop = linop_stack_cod_F(2, (struct linop_s*[2]){ (struct linop_s*)lop, (struct linop_s*)tmp }, i);
+				else
+					lop = linop_stack_FF(i, i, lop, tmp);
+			}
 
 			return lop;
 		}
@@ -145,7 +151,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 	long coilim_dims[DIMS];
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
-	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
+	md_select_dims(DIMS, ~COIL_FLAG & ~shared_img_dims, img_dims, max_dims);
 
 	long ksp_dims2[DIMS];
 	md_copy_dims(DIMS, ksp_dims2, ksp_dims);
@@ -284,6 +290,7 @@ int main_pics(int argc, char* argv[argc])
 	opt_reg_init(&ropts);
 
 	unsigned long loop_flags = 0UL;
+	unsigned long shared_img_flags = 0UL;
 	unsigned long lowmem_flags = 0UL;
 
 	const struct opt_s opts[] = {
@@ -324,6 +331,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_FLOAT('w', &scaling, "", "inverse scaling of the data"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_ULONG('L', &loop_flags, "flags", "batch-mode"),
+		OPTL_ULONG(0, "shared-img-dims", &shared_img_flags, "flags", "deselect image dims with flags"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
@@ -433,8 +441,10 @@ int main_pics(int argc, char* argv[argc])
 		debug_print_dims(DP_INFO, DIMS, max_dims);
 	}
 
+	if ((NULL == traj_file) && (0 != shared_img_flags))
+		error("Shared image flags only supported for non-Cartesian trajectories.");
 
-	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
+	md_select_dims(DIMS, ~COIL_FLAG & ~shared_img_flags, img_dims, max_dims);
 	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
 
 	if (!md_check_compat(DIMS, ~(MD_BIT(MAPS_DIM)|FFT_FLAGS), img_dims, map_dims))
@@ -604,7 +614,7 @@ int main_pics(int argc, char* argv[argc])
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
 				traj_dims, traj_tmp, nuconf,
 				pat_dims, pattern,
-				basis_dims, basis, &nufft_op, lowmem_flags);
+				basis_dims, basis, &nufft_op, shared_img_flags, lowmem_flags);
 
 #ifdef USE_CUDA
 		if (gpu_gridding) {
