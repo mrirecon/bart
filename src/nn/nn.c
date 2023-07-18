@@ -782,6 +782,18 @@ nn_t nn_dump_out_F(nn_t op, int o, const char* oname, const char* fname, bool fr
 	return op;
 }
 
+nn_t nn_optimize_graph_F(nn_t op)
+{
+	auto result = nn_from_nlop_F(nlop_optimize_graph(op->nlop));
+
+	for (int i = 0; i < nn_get_nr_in_args(result); i++)
+		nn_clone_arg_i_from_i(result, i, op, i);
+	for (int i = 0; i < nn_get_nr_out_args(result); i++)
+		nn_clone_arg_o_from_o(result, i, op, i);
+
+	return result;
+}
+
 void nn_export_graph(const char* filename, nn_t op)
 {
 	int II = nlop_get_nr_in_args(op->nlop);
