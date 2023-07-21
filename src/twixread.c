@@ -387,6 +387,7 @@ static enum adc_return siemens_bounds(bool vd, int fd, long min[DIMS], long max[
 		pos[COEFF_DIM]	= mdh.sLC[5];
 		pos[TIME_DIM]	= mdh.sLC[6];
 		pos[TIME2_DIM]	= mdh.sLC[7];
+		pos[LEVEL_DIM]	= mdh.sLC[8];
 
 
 		for (int i = 0; i < DIMS; i++) {
@@ -449,6 +450,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 			pos[COEFF_DIM]	= mdh.sLC[5];
 			pos[TIME_DIM]	= mdh.sLC[6];
 			pos[TIME2_DIM]	= mdh.sLC[7];
+			pos[LEVEL_DIM]	= mdh.sLC[8];
 		}
 
 		debug_print_dims(DP_DEBUG3, DIMS, pos);
@@ -654,6 +656,7 @@ int main_twixread(int argc, char* argv[argc])
 			if (mpi) {
 
 				pos[SLICE_DIM] = mpi_slice;
+				pos[LEVEL_DIM] = 0;
 
 				if ((0 == pos[TIME_DIM]) && (0 == pos[PHS1_DIM]))
 					mpi_slice++;
