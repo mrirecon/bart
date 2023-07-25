@@ -593,28 +593,32 @@ int main_pics(int argc, char* argv[argc])
 		const complex float* traj_tmp = traj;
 
 		//for computation of psf on GPU
-		#ifdef USE_CUDA
+#ifdef USE_CUDA
 		if (gpu_gridding) {
 
 			assert(conf.gpu);
+
 			traj_tmp = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
 		}
-		#endif
+#endif
 
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
 				traj_dims, traj_tmp, nuconf,
 				pat_dims, pattern,
 				basis_dims, basis, &nufft_op, lowmem_flags);
 
-		#ifdef USE_CUDA
+#ifdef USE_CUDA
 		if (gpu_gridding) {
 
 			md_free(traj_tmp);
+
 			auto tmp = linop_gpu_wrapper((struct linop_s*)forward_op);
+
 			linop_free(forward_op);
+
 			forward_op = tmp;
 		} 
-		#endif
+#endif
 
 		if (NULL != psf_ofile) {
 
@@ -669,11 +673,13 @@ int main_pics(int argc, char* argv[argc])
 	if (0. == scaling) {
 
 		debug_printf(DP_WARN, "Estimated scale is zero. Set to one.");
+
 		scaling = 1.;
 
 	} else {
 
 		debug_printf(DP_DEBUG1, "Inverse scaling of the data: %f\n", scaling);
+
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
 
 		if (conf.bpsense) {
