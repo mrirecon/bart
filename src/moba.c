@@ -389,7 +389,7 @@ int main_moba(int argc, char* argv[argc])
 
 	complex float* mask = NULL;
 	bool sensout = (NULL != sens_file);
-	complex float* sens = (sensout ? create_cfl : anon_cfl)(sensout ? sens_file : "", DIMS, coil_dims);
+	complex float* sens = (sensout ? create_cfl : anon_cfl)(sens_file, DIMS, coil_dims);
 
 	// Input sensitivities
 

@@ -267,7 +267,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 	complex float* mask = NULL;
 
 	// Full output sensitivities
-	complex float* sens = (out_sens ? create_cfl : anon_cfl)(out_sens ? sens_file : "", DIMS, sens_dims);
+	complex float* sens = (out_sens ? create_cfl : anon_cfl)(sens_file, DIMS, sens_dims);
 
 	// Sensitivities in image domain (relevant for output and normalization)
 	complex float* sens1 = md_calloc(DIMS, sens1_dims, CFL_SIZE);

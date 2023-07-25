@@ -683,7 +683,7 @@ int main_bench(int argc, char* argv[argc])
 	md_calc_strides(BENCH_DIMS, strs, dims, CFL_SIZE);
 
 	bool outp = (NULL != out_file);
-	complex float* out = (outp ? create_cfl : anon_cfl)(outp ? out_file : "", BENCH_DIMS, dims);
+	complex float* out = (outp ? create_cfl : anon_cfl)(out_file, BENCH_DIMS, dims);
 
 	num_init();
 

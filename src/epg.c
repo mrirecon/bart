@@ -116,11 +116,11 @@ int main_epg(int argc, char* argv[argc])
 
 	complex float* signals = create_cfl(signal_file, DIMS, dims);
 
-	complex float* states = ((NULL != states_file) ? create_cfl : anon_cfl)((NULL != states_file) ? states_file : "", DIMS, dims_states);
+	complex float* states = ((NULL != states_file) ? create_cfl : anon_cfl)(states_file, DIMS, dims_states);
 
-	complex float* sigder = ((NULL != sigder_file) ? create_cfl : anon_cfl)((NULL != sigder_file) ? sigder_file : "", DIMS, dims_sigder);
+	complex float* sigder = ((NULL != sigder_file) ? create_cfl : anon_cfl)(sigder_file, DIMS, dims_sigder);
 
-	complex float* statesder = ((NULL != statesder_file) ? create_cfl : anon_cfl)((NULL != statesder_file) ? statesder_file : "", DIMS, dims_statesder);
+	complex float* statesder = ((NULL != statesder_file) ? create_cfl : anon_cfl)(statesder_file, DIMS, dims_statesder);
 
 	switch (seq) {
 
