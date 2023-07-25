@@ -401,24 +401,24 @@ static void calc_moving_discs(const long dims[DIMS], complex float* out, bool ks
 	md_calc_strides(DIMS, strs, dims, sizeof(complex float));
 
 	long dims1[DIMS];
-	md_select_dims(DIMS, ~MD_BIT(TE_DIM), dims1, dims);
+	md_select_dims(DIMS, ~MD_BIT(TIME_DIM), dims1, dims);
 
-	for (int i = 0; i < dims[TE_DIM]; i++) {
-#if 1
+	for (int i = 0; i < dims[TIME_DIM]; i++) {
+
 		struct ellipsis_s disc2[N];
 
 		for (int j = 0; j < N; j++) {
 
 			disc2[j] = disc[j].geom;
-			disc2[j].center[0] = crealf(fourier_series(i / (float)dims[TE_DIM], 3, disc[j].fourier_coeff_pos[0]));
-			disc2[j].center[1] = crealf(fourier_series(i / (float)dims[TE_DIM], 3, disc[j].fourier_coeff_pos[1]));
-			disc2[j].axis[0] = crealf(fourier_series(i / (float)dims[TE_DIM], 3, disc[j].fourier_coeff_size[0]));
-			disc2[j].axis[1] = crealf(fourier_series(i / (float)dims[TE_DIM], 3, disc[j].fourier_coeff_size[1]));
+			disc2[j].center[0] = crealf(fourier_series(i / (float)dims[TIME_DIM], 3, disc[j].fourier_coeff_pos[0]));
+			disc2[j].center[1] = crealf(fourier_series(i / (float)dims[TIME_DIM], 3, disc[j].fourier_coeff_pos[1]));
+			disc2[j].axis[0] = crealf(fourier_series(i / (float)dims[TIME_DIM], 3, disc[j].fourier_coeff_size[0]));
+			disc2[j].axis[1] = crealf(fourier_series(i / (float)dims[TIME_DIM], 3, disc[j].fourier_coeff_size[1]));
 		}
-#endif
-		void* traj2 = (NULL == traj) ? NULL : ((void*)traj + i * tstrs[TE_DIM]);
 
-		sample(dims1, (void*)out + i * strs[TE_DIM], tstrs, traj2, &(struct krn2d_data){ kspace, coeff, popts->stype, N, disc2 }, krn2d, kspace);
+		void* traj2 = (NULL == traj) ? NULL : ((void*)traj + i * tstrs[TIME_DIM]);
+
+		sample(dims1, (void*)out + i * strs[TIME_DIM], tstrs, traj2, &(struct krn2d_data){ kspace, coeff, popts->stype, N, disc2 }, krn2d, kspace);
 	}
 }
 

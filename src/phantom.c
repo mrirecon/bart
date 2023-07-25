@@ -155,7 +155,7 @@ int main_phantom(int argc, char* argv[argc])
 
 
 	if (TIME == ptype)
-		dims[TE_DIM] = 32;
+		dims[TIME_DIM] = 32;
 
 	if ((TUBES == ptype) || (NIST == ptype) || (SONAR == ptype))
 		dims[TIME_DIM] = rotation_steps;
@@ -208,8 +208,8 @@ int main_phantom(int argc, char* argv[argc])
 		dims[1] = sdims[1];
 		dims[2] = sdims[2];
 
+		// FIXME, check with previos
 		dims[TE_DIM] = sdims[TE_DIM];
-
 		dims[TIME_DIM] = sdims[TIME_DIM];
 	}
 
