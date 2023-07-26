@@ -6,8 +6,8 @@
 
 enum NETWORK_STATUS {STAT_TRAIN, STAT_TEST};
 
-extern const struct nlop_s* append_convcorr_layer_generic(const struct nlop_s* network, int o, unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag, int N, long const kernel_dims[__VLA(N)], const long strides[__VLA(N)], const long dilations[__VLA(N)], _Bool conv, enum PADDING conv_pad);
-extern const struct nlop_s* append_transposed_convcorr_layer_generic(const struct nlop_s* network, int o, unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag, int N, long const kernel_dims[__VLA(N)], const long strides[__VLA(N)], const long dilations[__VLA(N)], _Bool conv, enum PADDING conv_pad, _Bool adjoint);
+extern const struct nlop_s* append_convcorr_layer_generic(const struct nlop_s* network, int o, unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag, int N, long const kernel_dims[__VLA(N)], const long strides[__VLA2(N)], const long dilations[__VLA2(N)], _Bool conv, enum PADDING conv_pad);
+extern const struct nlop_s* append_transposed_convcorr_layer_generic(const struct nlop_s* network, int o, unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag, int N, long const kernel_dims[__VLA(N)], const long strides[__VLA2(N)], const long dilations[__VLA2(N)], _Bool conv, enum PADDING conv_pad, _Bool adjoint);
 
 extern const struct nlop_s* append_maxpool_layer_generic(const struct nlop_s* network, int o, int N, const long pool_size[__VLA(N)], enum PADDING conv_pad);
 
