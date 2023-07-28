@@ -62,13 +62,15 @@ void multiplace_free(const struct multiplace_array_s* ptr)
 	if (NULL == ptr)
 		return;
 
-	if (ptr->free)
-		md_free(ptr->ptr_cpu);
+	md_free(ptr->ptr_cpu);
 
 #ifdef USE_CUDA
 	for (int i = 0; i < MAX_CUDA_DEVICES; i++)
 		md_free(ptr->ptr_gpu[i]);
 #endif
+
+	if (ptr->free)
+		md_free(ptr->ptr_ref);
 
 	xfree(ptr->dims);
 	xfree(ptr);
@@ -79,6 +81,13 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 {
 	if (NULL == ptr)
 		return NULL;
+	
+	//CPU reference by default
+	if (NULL == ref)
+		ref = &ref;
+	
+	if (md_is_sameplace(ref, ptr->ptr_ref))
+		return ptr->ptr_ref;
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(ref)) {
@@ -95,6 +104,7 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 #else
 	UNUSED(ref);
 #endif
+	#pragma omp critical (bart_multiplace)
 	if (NULL == ptr->ptr_cpu) {
 
 		ptr->ptr_cpu = md_alloc(ptr->N, ptr->dims, ptr->size);
@@ -116,13 +126,6 @@ struct multiplace_array_s* multiplace_move2(int D, const long dimensions[D], con
 
 	result->ptr_ref = tmp;
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(tmp))
-		result->ptr_gpu[cuda_get_device()] = tmp;
-	else
-#endif
-	result->ptr_cpu = tmp;
-
 	return result;
 }
 
@@ -134,34 +137,14 @@ struct multiplace_array_s* multiplace_move(int D, const long dimensions[D], size
 
 struct multiplace_array_s* multiplace_move_F(int D, const long dimensions[D], size_t size, const void* ptr)
 {
-
 	auto result = multiplace_alloc(D, dimensions, size);
 	result->ptr_ref = (void*)ptr;
-
-	#pragma omp critical (bart_multiplace)
-	{
-	#ifdef USE_CUDA
-		if (cuda_ondevice(ptr)) {
-
-			result->ptr_gpu[cuda_get_device_num(ptr)] = (void*)ptr;
-			cuda_sync_device();
-		} else 
-	#endif
-		result->ptr_cpu = (void*)ptr;
-	}
-
 	return result;
 }
 
 struct multiplace_array_s* multiplace_move_wrapper(int D, const long dimensions[D], size_t size, const void* ptr)
 {
-
-#ifdef USE_CUDA
-	assert (!cuda_ondevice(ptr));
-#endif
-
 	auto result = multiplace_alloc(D, dimensions, size);
-	result->ptr_cpu = (void*)ptr;
 	result->ptr_ref = (void*)ptr;
 	result->free = false;
 	return result;
