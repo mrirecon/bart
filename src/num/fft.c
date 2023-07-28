@@ -399,42 +399,44 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 
 	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
 
-	if (NULL != wisdom)
-		fftwf_import_wisdom_from_filename(wisdom);
+	#pragma omp critical (bart_fftwf_plan)
+	{
+
+		if (NULL != wisdom)
+			fftwf_import_wisdom_from_filename(wisdom);
 
 
-	//FFTW seems to be fine with this
-	//assert(0 != flags); 
+		//FFTW seems to be fine with this
+		//assert(0 != flags); 
 
-	for (int i = 0; i < N; i++) {
+		for (int i = 0; i < N; i++) {
 
-		if (MD_IS_SET(flags, i)) {
+			if (MD_IS_SET(flags, i)) {
 
-			dims[k].n = dimensions[i];
-			dims[k].is = istrides[i] / CFL_SIZE;
-			dims[k].os = ostrides[i] / CFL_SIZE;
-			k++;
+				dims[k].n = dimensions[i];
+				dims[k].is = istrides[i] / CFL_SIZE;
+				dims[k].os = ostrides[i] / CFL_SIZE;
+				k++;
 
-		} else  {
+			} else  {
 
-			hmdims[l].n = dimensions[i];
-			hmdims[l].is = istrides[i] / CFL_SIZE;
-			hmdims[l].os = ostrides[i] / CFL_SIZE;
-			l++;
+				hmdims[l].n = dimensions[i];
+				hmdims[l].is = istrides[i] / CFL_SIZE;
+				hmdims[l].os = ostrides[i] / CFL_SIZE;
+				l++;
+			}
+		}
+
+		fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
+					backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
+
+
+		if (NULL != wisdom) {
+
+			fftwf_export_wisdom_to_filename(wisdom);
+			xfree(wisdom);
 		}
 	}
-
-	#pragma omp critical
-	fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
-				backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
-
-
-	if (NULL != wisdom) {
-
-		fftwf_export_wisdom_to_filename(wisdom);
-		xfree(wisdom);
-	}
-
 	return fftwf;
 }
 
