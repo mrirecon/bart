@@ -439,6 +439,10 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 	PTR_ALLOC(struct stack_container_s, d);
 	SET_TYPEID(stack_container_s, d);
 
+#ifdef USE_CUDA
+	multi_gpu = multi_gpu && cuda_switch_multigpu;
+#endif
+
 	int max_DI = 0;
 	int max_DO = 0;
 

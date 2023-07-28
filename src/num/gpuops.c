@@ -48,6 +48,7 @@
 static unsigned int reserved_gpus = 0U;
 static int n_reserved_gpus = 0;
 int cuda_streams_per_device = 1;
+bool cuda_switch_multigpu = true;
 
 static int gpu_map[MAX_CUDA_DEVICES] = { [0 ... MAX_CUDA_DEVICES - 1] = -1 };
 

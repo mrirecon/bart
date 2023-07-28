@@ -673,6 +673,7 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 	static bool in_multi_gpu = false;
 
 	if (   !in_multi_gpu
+	    && (cuda_switch_multigpu)
 	    && (0 < cuda_num_devices())
 	    && (1 < Nb)
 	    && network_is_diagonal(config->network)

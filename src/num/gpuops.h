@@ -23,6 +23,7 @@ void cuda_check_ptr(const char* file, int line, int N, const void* ptr[__VLA(N)]
 #define MAX_CUDA_DEVICES 16
 #define MAX_CUDA_STREAMS 2
 extern int cuda_streams_per_device;
+extern _Bool cuda_switch_multigpu; 
 
 extern const struct vec_ops gpu_ops;
 

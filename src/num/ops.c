@@ -1100,7 +1100,7 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 	int oldstream = (0 == cuda_num_devices()) ? 0 : cuda_get_stream_id();
 	int gpun = (0 == cuda_num_devices()) ? -1 : cuda_get_device();
 
-	if (-2 < data->device) {
+	if (-2 < data->device && cuda_switch_multigpu) {
 
 		if (0 == cuda_num_devices())
 			error("No GPU initialized!\n");
