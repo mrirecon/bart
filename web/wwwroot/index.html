@@ -14,21 +14,38 @@
             </select>
         </div>
         <div>
-            <button onclick="show_phantom()" value="Show Phantom">Show Phantom</button>
+            <button id="show_phantom" onclick="show_phantom()">Show Phantom</button>
+            <button id="fft_phantom" onclick="fft_phantom()" disabled>Show FFT of Phantom</button>
+            <button id="ifft_phantom" onclick="ifft_fft_phantom()" disabled>Show IFFT of FFT of Phantom</button>
             <div>
                 <canvas style="width:128;height:128" id="phant"></canvas>
             </div>
         </div>
         <div>
-            <button onclick="fft_phantom()" value="Show FFT of Phantom">Show FFT of Phantom</button>
             <div>
                 <canvas style="width:128;height:128" id="fft_phant"></canvas>
             </div>
         </div>
         <div>
-            <button onclick="ifft_fft_phantom()" value="Show IFFT of FFT of Phantom">Show IFFT of FFT of Phantom</button>
             <div>
                 <canvas style="width:128;height:128" id="ifft_phant"></canvas>
+            </div>
+        </div>
+        <div>
+            <button id="btn_pics_phantom" onclick="pics_phantom()">Calculate Phantom for PICS</button>
+            <button id="btn_pics_ifft" onclick="pics_ifft()" disabled>IFFT of Phantom</button>
+            <button id="btn_pics" onclick="pics()" disabled>PICS reconstruction of Phantom</button>
+            <div>
+                <canvas style="width:128;height:128" id="pics_kspace"></canvas>
+            </div>
+            <div>
+                <canvas style="width:128;height:128" id="pics_ifft"></canvas>
+            </div>
+            <div>
+                <canvas style="width:128;height:128" id="pics_sens"></canvas>
+            </div>
+            <div>
+                <canvas style="width:128;height:128" id="pics"></canvas>
             </div>
         </div>
     </body>

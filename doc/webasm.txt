@@ -36,12 +36,11 @@ BLAS_BASE=/home/ich/openblas
 CC=emcc
 
 CFLAGS+=-fblocks
-LDFLAGS+=
 
 OPENBLAS=1
 FORTRAN=0
 FFTWTHREADS=0
-USE_THREAD=0
+USE_THREAD=1
 SHARED=1
 PNG=0
 OMP=0
@@ -65,14 +64,18 @@ ISMRMRD=0
     - copy the bart.o file to where you want it
     - add it to the emcc call as an input file e.g.:
 
-    emcc -O3 -Wall bart.o -s EXPORTED_FUNCTIONS="['__Block_object_dispose','_malloc','_free','_bart_version', '_phantom',  '_calc_phantom',\ 
-       '_calc_bart', '_calc_circ', '_fft', '_ifft','_fftc','_ifftc','_num_init', '_pha_opts_defaults']" -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB 
-       -o ./web/wwwroot/bart.js /home/ich/fftw/lib/libfftw3f.a /home/ich/openblas/lib/libopenblas.a /home/ich/blocksruntime/libBlocksRuntime.a
+    emcc -O3 -Wall bart.o -s EXPORTED_FUNCTIONS="['__Block_object_dispose','_malloc','_free', \
+       '_calc_phantom', '_calc_bart', '_calc_circ', '_fftc','_ifftc', '_num_init', '_pha_opts_defaults', \
+       '_memcfl_create', '_load_cfl', '_main_ecalib', '_main_pics', '_main_phantom', '_main_fft']" \
+       -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -o ./web/wwwroot/bart.js /home/ich/fftw/lib/libfftw3f.a \
+       /home/ich/openblas/lib/libopenblas.a /home/ich/blocksruntime/libBlocksRuntime.a
 
     - important to include all libfftw3.a, libopenblas.a and also libBlocksRuntime.a (here clang doesn't crash)
     - all functions, variables you want to access in the js files have to be exported.
-    - you definitely need '__Block_Object_dispose','_malloc','_free'
-    - In the example the functions needed for the small web example are exported.
+    - you definitely have to include '__Block_Object_dispose' even if you don't call this function in your js code!
+    - to allocate and free memory include '_malloc', '_free'
+    - In the example, given above, all functions needed for the small web example are exported, 
+      the second line contains names to call the bart functions directly, the third line uses the command line functions.
     - The "_" in front of the name is mandatory. The c function calc_phantom is called "_calc_phantom" in JS
     - MAXIMUM_MEMORY=4GB raises the amount of ram the browser is allowed to use, ALLOW_MEMORY_GROWTH=1 allows dynamic allocation.
     - if you want to call a js Function from c use -s EXPORTED_RUNTIME_METHODS="['addFunction', 'removeFunction']" -s RESERVED_FUNCTION_POINTERS=2
