@@ -23,6 +23,7 @@
 
 #include "misc/debug.h"
 #include "misc/misc.h"
+#include "misc/mmio.h"
 
 #include "num/fft.h"
 
@@ -39,7 +40,7 @@
 extern unsigned long num_chunk_size;	// num/optimize.c
 
 
-void num_init(void)
+static void num_init_internal(void)
 {
 #ifdef __linux__
 //	feenableexcept(FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW|FE_UNDERFLOW);
@@ -60,6 +61,10 @@ void num_init(void)
 		omp_set_num_threads(p);
 
 	p = omp_get_max_threads();
+
+	int running_thr = omp_get_team_size(1); //get number of running top level threads
+	p = MAX(1, p / running_thr);
+	
 
 	// omp_set_nested(1);
 #else
@@ -99,6 +104,18 @@ void num_init(void)
 	}
 }
 
+void num_init(void)
+{
+	static int initialized = false;
+
+	#pragma omp critical (bart_num_init)
+	if (!initialized) {
+
+		num_init_internal();
+		initialized = true;
+	}
+}
+
 
 void num_init_gpu(void)
 {
@@ -118,6 +135,15 @@ void num_init_gpu(void)
 
 void num_init_multigpu_select(unsigned long requested_gpus)
 {
+	if (1 < cfl_loop_num_workers()) {
+
+		if (1 < bitcount(requested_gpus))
+			error("BART can only use one GPU per thread in OMP/process in MPI batch looping!");
+		
+		num_init_gpu();
+		return;
+	}
+
 	num_init();
 
 #ifdef USE_CUDA
@@ -134,6 +160,12 @@ void num_init_multigpu_select(unsigned long requested_gpus)
 
 void num_init_multigpu(int requested_gpus)
 {
+	if (1 < cfl_loop_num_workers()) {
+
+		error("BART can only use one GPU per thread in OMP batch looping!");
+		return;
+	}
+
 	num_init();
 
 #ifdef USE_CUDA
@@ -151,6 +183,12 @@ void num_init_multigpu(int requested_gpus)
 
 void num_init_gpu_device(int device)
 {
+	if (cfl_loop_desc_active()) {
+
+		num_init_gpu();
+		return;
+	}
+
 	num_init();
 
 #ifdef USE_CUDA
@@ -169,6 +207,12 @@ void num_init_gpu_device(int device)
 
 void num_init_gpu_memopt(void)
 {
+	if (cfl_loop_desc_active()) {
+
+		num_init_gpu();
+		return;
+	}
+
 	num_init();
 
 #ifdef USE_CUDA

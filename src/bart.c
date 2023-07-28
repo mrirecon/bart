@@ -36,6 +36,10 @@
 #include <mpi.h>
 #endif
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -110,7 +114,7 @@ static const char help_str[] = "BART. command line flags";
 
 static void usage(void)
 {
-	printf("Usage: bart [-p flags] [-s start1:start2:...startN] [-e end1:end2:...endN] <command> args...\n");
+	printf("Usage: bart [-p flags] [-s start1:start2:...startN] [-e end1:end2:...endN] [-t nthreads] <command> args...\n");
 	printf("BART. Available commands are:");
 
 	for (int i = 0; NULL != dispatch_table[i].name; i++) {
@@ -148,21 +152,47 @@ static int parse_bart_opts(int argc, char* argv[argc])
 
 	if (1 == command_arg)
 		return offset;
-		
+
+	int omp_threads = 1;		
 	unsigned long flags = 0;
+	unsigned long pflags = 0;
 	long param_start[DIMS] = { [0 ... DIMS - 1] = -1 };
 	long param_end[DIMS] = { [0 ... DIMS - 1] = -1 };
+	const char* ref_file = NULL;
 	
 	struct arg_s args[] = {	};
 
  	struct opt_s opts[] = {
 
 		OPTL_ULONG('l', "loop", &(flags), "flag", "Flag to specify dimensions for looping"),
+		OPTL_ULONG('p', "parallel-loop", &(pflags), "flag", "Flag to specify dimensions for looping and activate parallelization"),
 		OPTL_VECN('s', "start", param_start, "Start index of range for looping (default: 0)"),
 		OPTL_VECN('e', "end", param_end, "End index of range for looping (default: start + 1)"),
+		OPTL_INT('t', "threads", &omp_threads, "nthreads", "Set threads for parallelization"),
+		OPTL_INFILE('r', "ref-file", &ref_file, "<file>", "Obtain loop size from reference file"),
  	};
 	
 	cmdline(&command_arg, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
+	if (0 != flags && 0 != pflags && flags != pflags)
+		error("Inconsistent use of -p and -l!\n");
+	
+	flags |= pflags;
+
+	if (1 == omp_threads && 0 != pflags)
+		omp_threads = 0;
+
+	if (NULL != ref_file) {
+
+		long ref_dims[DIMS];
+		const _Complex float* tmp = load_cfl(ref_file, DIMS, ref_dims);
+		unmap_cfl(DIMS, ref_dims, tmp);
+		assert(-1 == param_end[0]);
+
+		for (int i =0, ip = 0; i < DIMS; i++)
+			if (MD_IS_SET(flags, i))
+				param_end[ip++] = ref_dims[i];
+	}
 
 	XFREE(command_line);
 	opt_free_strdup();
@@ -200,7 +230,22 @@ static int parse_bart_opts(int argc, char* argv[argc])
 		}
 	}
 
-	init_cfl_loop_desc(DIMS, loop_dims, offs_size, flags, 0);
+	#ifdef _OPENMP
+	if (0 == omp_threads) {
+
+		if (NULL == getenv("OMP_NUM_THREADS"))
+			omp_set_num_threads(omp_get_num_procs());
+
+		omp_threads = omp_get_max_threads();
+	}
+	#endif
+
+	omp_threads = MAX(omp_threads, 1);
+	omp_threads = MIN(omp_threads, md_calc_size(DIMS, loop_dims));
+	if (1 < mpi_get_num_procs())
+		omp_threads = 1;
+
+	init_cfl_loop_desc(DIMS, loop_dims, offs_size, flags, omp_threads, 0);
 		
 	return offset;
 
@@ -311,20 +356,24 @@ int main_bart(int argc, char* argv[argc])
 		return bart_exit(-1, NULL);
 	}
 	
-	long start = cfl_loop_worker_id();
-	long total = cfl_loop_desc_total();
 	
 	int final_ret = 0;
+	
+	#pragma omp parallel num_threads(cfl_loop_num_workers()) if(cfl_loop_omp())
+	{
+		long start = cfl_loop_worker_id();
+		long total = cfl_loop_desc_total();
 
-	for (long i = start; (i < total) && (0 == final_ret) ; i += cfl_loop_num_workers()) {
+		for (long i = start; ((i < total) && (0 == final_ret)) ; i += cfl_loop_num_workers()) {
 
-		int ret = batch_wrapper(dispatch_func, argc, argv, i);
-		
-		if (0 != ret) {
+			int ret = batch_wrapper(dispatch_func, argc, argv, i);
+			
+			if (0 != ret) {
 
-			#pragma omp critical (main_end_condition)
-			final_ret = ret;
-			bart_exit(ret, "Tool exited with error");
+				#pragma omp critical (main_end_condition)
+				final_ret = ret;
+				bart_exit(ret, "Tool exited with error");
+			}
 		}
 	}
 

@@ -26,6 +26,10 @@
 #include <mpi.h>
 #endif
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #ifdef _WIN32
 #include "win/mman.h"
 #include "win/open_patch.h"
@@ -59,7 +63,7 @@
 
 struct cfl_loop_desc_s {
 
-	
+	int omp_threads;
 	unsigned long flags;
 	long loop_dims[DIMS];
 	long offs_dims[DIMS];
@@ -67,13 +71,14 @@ struct cfl_loop_desc_s {
 
 static struct cfl_loop_desc_s cfl_loop_desc = {
 
-
+	.omp_threads = 1,
 	.flags = 0UL,
 	.loop_dims =  { [0 ... DIMS - 1] = 1 },
 	.offs_dims =  { [0 ... DIMS - 1] = 0 },
 };
 
 #define MAX_WORKER 128
+#define THREAD_BATCH_LVL 1
 
 static long cfl_loop_index[MAX_WORKER] = { [ 0 ... MAX_WORKER - 1 ] = 0 };
 static list_t unmap_addrs = NULL;
@@ -111,6 +116,13 @@ static void io_error(const char* fmt, ...)
 
 #define err_assert(x)	({ if (!(x)) { debug_printf(DP_ERROR, "%s", #x); exit(EXIT_FAILURE); } })
 
+bool cfl_loop_omp(void)
+{
+#ifdef _OPENMP
+	return (1 < cfl_loop_desc.omp_threads);
+#endif
+	return false;
+}
 
 long cfl_loop_worker_id(void)
 {
@@ -126,6 +138,21 @@ long cfl_loop_worker_id(void)
 
 		return procno;
 	}
+
+#ifdef _OPENMP
+	if (1 < cfl_loop_desc.omp_threads) {
+
+		int threadno = omp_get_ancestor_thread_num(THREAD_BATCH_LVL);
+
+		if ((THREAD_BATCH_LVL < omp_get_level()) || (1 < omp_get_team_size(0)))
+			debug_printf(DP_WARN, "File accessed in OMP region! Cannot guarantee thread safty!\n");
+
+		if (MAX_WORKER <= threadno)
+			error("Maximum supported number of MPI workers (%d) exceeded!\n", MAX_WORKER);
+
+		return MAX(0, threadno);
+	}
+#endif
 
 	return 0;
 }
@@ -145,13 +172,29 @@ long cfl_loop_num_workers(void)
 		return nprocs;
 	}
 
+	if (1 < cfl_loop_desc.omp_threads) {
+		
+		int omp_threads = cfl_loop_desc.omp_threads;
+		
+		if (MAX_WORKER < omp_threads)
+			error("Maximum supported number of OMP workers exceeded!\n");
+
+		return omp_threads;
+	}
+
 	return 1;
 }
 
 
 
-void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[__VLA(D)], unsigned long flags, int index)
+void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[__VLA(D)], unsigned long flags, int omp_threads, int index)
 {
+
+	if (MAX_WORKER < omp_threads)
+		error("Maximum supported number of OMP workers exceeded!\n");
+
+	cfl_loop_desc.omp_threads = omp_threads;
+
 	cfl_loop_desc.flags = flags;
 	md_copy_dims(D, cfl_loop_desc.loop_dims, loop_dims);
 	md_copy_dims(D, cfl_loop_desc.offs_dims, start_dims);

@@ -1055,10 +1055,10 @@ static omp_nest_lock_t gpulock[MAX_CUDA_DEVICES];
 
 static omp_nest_lock_t* set_gpu_lock(int gpun)
 {
-	if (0 == omp_get_level())
+	if (0 == omp_get_active_level())
 		return NULL;
 	
-	if (1 < omp_get_level())
+	if (1 < omp_get_active_level())
 		error("Changing GPU is only supported for OMP levels 0 and 1!\n");
 	
 	#pragma omp critical(gpulock_init)

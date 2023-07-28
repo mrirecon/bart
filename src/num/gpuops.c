@@ -41,6 +41,7 @@
 
 #include "misc/misc.h"
 #include "misc/debug.h"
+#include "misc/mmio.h"
 
 #include "gpuops.h"
 
@@ -407,6 +408,26 @@ static void cuda_deinit(int device)
 
 void cuda_init(void)
 {
+	if (cfl_loop_omp()) {
+
+		static bool init = false;
+
+		#pragma omp critical
+		if (!init) {
+
+			cuda_init_multigpu_number(cfl_loop_num_workers());
+			init = true;
+		}
+
+		cuda_set_device(cfl_loop_worker_id() % cuda_num_devices());
+		thread_last_issued_stream.device = thread_active_stream.device;
+
+		cuda_switch_multigpu = false;
+		
+		return;
+	}
+
+
 	int num_devices = num_cuda_devices_internal();
 	int off = mpi_get_rank();
 

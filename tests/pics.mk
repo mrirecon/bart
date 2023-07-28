@@ -610,6 +610,29 @@ tests/test-pics-cart-slice: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_u
 	touch $@
 
 
+tests/test-pics-cart-loop_range-omp: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_13						;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_3.ra img_l2_ref_23									;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra img_l2_ref_02						;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra img_l2_ref_01									;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -s 1 -e 3 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p13		;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_13 img_l2_p13										;\
+	OMP_NUM_THREADS=4 $(TOOLDIR)/bart -l 8192 -s 0 -e 3 -t 4 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p03		;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_03 img_l2_p03										;\
+	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -s 2 -e 3 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p23		;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_23 img_l2_p23										;\
+	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -s 0 -e 2 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p02		;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_02 img_l2_p02										;\
+	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -s 0 -e 1 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p01		;\
+	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 tests/test-pics-cart-mpi: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
 	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref			;\
@@ -692,4 +715,7 @@ ifeq ($(MPI),1)
 TESTS_SLOW += tests/test-pics-cart-mpi tests/test-pics-non-cart-mpi tests/test-pics-cart-slice-mpi tests/test-pics-cart-range-mpi
 endif
 
+ifeq ($(OMP),1)
+TEST_SLOW += tests/test-pics-cart-loop_range-omp
+endif
 
