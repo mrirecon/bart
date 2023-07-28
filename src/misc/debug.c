@@ -210,7 +210,7 @@ void debug_backtrace(size_t n)
 
 enum {backtrace_size = 50};
 
-void debug_good_backtrace(int skip)
+static void debug_good_backtrace_file(FILE * stream, int skip)
 {
 #if !defined(__CYGWIN__) && !defined(_WIN32)
 	char* debuginfo_path = NULL;
@@ -259,10 +259,10 @@ void debug_good_backtrace(int skip)
 			Dwarf_Addr addr2;
 			file = dwfl_lineinfo(dwfl_line, &addr2, &line, NULL, NULL, NULL);
 		}
-		fprintf(stderr, "%d: %p %s", i - skip, stack[i], name);
+		fprintf(stream, "%d: %p %s", i - skip, stack[i], name);
 		if (file)
-			fprintf(stderr, " at %s:%d", file, line);
-		fprintf(stderr, "\n");
+			fprintf(stream, " at %s:%d", file, line);
+		fprintf(stream, "\n");
 
 	}
 	dwfl_end(dwfl);
@@ -270,6 +270,33 @@ void debug_good_backtrace(int skip)
 	debug_printf(DP_WARN, "no backtrace on cygwin.");
 #endif
 }
+
+const char* debug_good_backtrace_string(int skip)
+{
+	FILE* fp = tmpfile(); 
+	debug_good_backtrace_file(fp, skip);	
+	rewind(fp);
+
+	char tmp[1024];
+	const char* ret = ptr_printf("");
+
+	while (NULL != fgets(tmp, 1023, fp)) {
+
+		const char* tmp2 = ptr_printf("%s%s", ret, tmp);
+		xfree(ret);
+		ret = tmp2;
+	}
+
+	fclose(fp);
+
+	return ret;
+}
+
+void debug_good_backtrace(int skip)
+{
+	debug_good_backtrace_file(stderr, skip);
+}
+
 #endif // USE_DWARF
 
 

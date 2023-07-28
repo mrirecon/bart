@@ -53,6 +53,7 @@ extern void debug_backtrace(size_t n);
 
 #ifdef USE_DWARF
 extern void debug_good_backtrace(int skip);
+const char* debug_good_backtrace_string(int skip);
 #endif // USE_DWARF
 
 extern void debug_trace(const char* fmt, ...);
