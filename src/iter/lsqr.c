@@ -138,7 +138,9 @@ const struct operator_p_s* lsqr2_create(const struct lsqr_conf* conf,
 	if (conf->it_gpu) {
 
 		debug_printf(DP_DEBUG1, "lsqr: add GPU wrapper\n");
-		itop_op = operator_p_gpu_wrapper(itop_op);
+		auto tmp = operator_p_gpu_wrapper(itop_op);
+		operator_p_free(itop_op);
+		itop_op = tmp;
 	}
 
 	const struct operator_p_s* lsqr_op;
