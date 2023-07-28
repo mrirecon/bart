@@ -292,6 +292,43 @@ tests/test-sim-ode-stm-deriv: sim nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-sim-bmc-signal: sim extract nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=300,ipl=0.01,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --BMC --pool P=5,T1=3:3:3:3,T2=1e-2:1e-2:1e-2:1e-2,M0=0.3:0.3:0.3:0.3,k=20:20:20:20 -1 3:3:1 -2 0.1:0.1:1 s.ra d.ra;\
+        $(TOOLDIR)/extract 8 1 3 s.ra s2.ra ;\
+        $(TOOLDIR)/extract 8 3 5 s.ra s3.ra ;\
+	$(TOOLDIR)/nrmse -t 1e-5 s2.ra s3.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-bmc-deriv: sim extract nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+        $(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=300,ipl=0.01,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --BMC --pool P=5,T1=3:3:3:3,T2=1e-5:1e-5:1e-5:1e-5,M0=0.3:0.3:0.3:0.3,k=10:10:10:10,Om=100:100:100:100 -1 3:3:1 -2 1:1:1 s.ra d.ra;\
+        $(TOOLDIR)/extract 4 0 3 8 1 3 d.ra d1.ra ;\
+        $(TOOLDIR)/extract 4 0 3 8 3 5 d.ra d2.ra ;\
+        $(TOOLDIR)/extract 4 4 6 8 1 2 d.ra d3.ra ;\
+        $(TOOLDIR)/extract 4 4 6 8 2 3 d.ra d4.ra ;\
+	$(TOOLDIR)/nrmse -t 1e-5 d1.ra d2.ra				;\
+	$(TOOLDIR)/nrmse -t 1e-5 d3.ra d4.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sim-bmc-stm-ode: sim nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+        $(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=500,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --BMC --pool P=2,T1=3:3:3:3,T2=1e-4:1e-4:1e-4:1e-4,M0=0.3:0.3:0.3:0.3,k=10:10:10:10,Om=100:100:100:100 -1 3:3:1 -2 0.1:0.1:1 s_ode.ra d_ode.ra ;\
+        $(TOOLDIR)/sim --STM --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=500,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --BMC --pool P=2,T1=3:3:3:3,T2=1e-4:1e-4:1e-4:1e-4,M0=0.3:0.3:0.3:0.3,k=10:10:10:10,Om=100:100:100:100 -1 3:3:1 -2 0.1:0.1:1 s_stm.ra d_stm.ra ;\
+        $(TOOLDIR)/nrmse -t 1e-3 s_ode.ra s_stm.ra			;\
+        $(TOOLDIR)/nrmse -t 0.004 d_ode.ra d_stm.ra			;\
+
+tests/test-sim-bmc-bloch: sim extract slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+        $(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=500,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --BMC --pool P=2,T1=1:1:1:1,T2=0.1:0.1:0.1:0.1,M0=1:1:1:1,k=0:0:0:0 -1 1:1:1 -2 0.1:0.1:1 --other ode-tol=0.5e-5 s_bmc.ra d_bmc.ra ;\
+        $(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=500,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --other ode-tol=0.5e-5 -1 1:1:1 -2 0.1:0.1:1 s.ra d.ra ;\
+        $(TOOLDIR)/extract 4 0 4 8 0 1 d_bmc.ra d_bmc2.ra ;\
+	$(TOOLDIR)/slice 8 0 s_bmc.ra s_bmc2.ra ;\
+        $(TOOLDIR)/nrmse -t 0.0006 d.ra d_bmc2.ra			;\
+        $(TOOLDIR)/nrmse -t 0.0003 s.ra s_bmc2.ra			;\
+
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
 TESTS += tests/test-sim-spoke-averaging-3 tests/test-sim-to-signal-irbSSFP-averaged-spokes
@@ -306,3 +343,4 @@ TESTS += tests/test-sim-ode-rot-flash tests/test-sim-ode-rot-irflash
 TESTS += tests/test-sim-split-dim-mag tests/test-sim-split-dim-deriv
 TESTS += tests/test-sim-ode-stm-flash-te-eq-trf-eq-tr tests/test-sim-ode-stm-bssfp-te-eq-trf-eq-tr tests/test-sim-ode-rot-flash-te-eq-trf-ep-tr
 TESTS += tests/test-sim-ode-deriv-r1 tests/test-sim-ode-deriv-r2 tests/test-sim-ode-deriv-b1 tests/test-sim-ode-stm-deriv
+TESTS += tests/test-sim-bmc-signal tests/test-sim-bmc-deriv tests/test-sim-bmc-stm-ode tests/test-sim-bmc-bloch

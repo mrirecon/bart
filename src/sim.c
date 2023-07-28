@@ -39,13 +39,17 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
         int D = ddims[READ_DIM];
         int T = ddims[TE_DIM];
 
-        float m[T][3];
-        float sa_r1[T][3];
-        float sa_r2[T][3];
-        float sa_m0[T][3];
-        float sa_b1[T][3];
+	int A = 3;
 
-        bloch_simulation(data, T, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
+        float m[T][data->voxel.P][3];
+        float sa_r1[T][data->voxel.P][3];
+        float sa_r2[T][data->voxel.P][3];
+        float sa_m0[T][data->voxel.P][3];
+        float sa_b1[T][1][3];
+	float sa_Om[T][data->voxel.P][3];	
+	float sa_k[T][data->voxel.P][3];	// [T][data->voxel.P - 1][A] is empty for k and Om
+
+        bloch_simulation2(data, T, data->voxel.P, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1, &sa_Om, &sa_k);
 
         long pos[DIMS];
         md_copy_dims(DIMS, pos, ddims);
@@ -58,41 +62,58 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
 
         long ind = 0;
 
-        for (int d = 0; d < D; d++) {
+	for (int d = 0; d < D; d++) {
 
-                pos[READ_DIM] = d;
+		pos[READ_DIM] = d;
 
-                for (int i = 0; i < T; i++) {
+		for (int i = 0; i < T; i++) {
 
-                        // Calculate spatial position and save data
+			// Calculate spatial position and save data
 
-                        pos[TE_DIM] = i;
-                        pos[MAPS_DIM] = 0;
+			pos[TE_DIM] = i;
+			pos[MAPS_DIM] = 0;
 
-			ind = md_calc_offset(N, mstrs, pos) / CFL_SIZE;
+			for (int p = 0; p < data->voxel.P; p++) {
 
-                        // M = M_x + i M_y
-			mxy[ind] = (3 == D) ? m[i][d] : (m[i][0] + 1.i * m[i][1]);
+				pos[ITER_DIM] = p;
 
-                        if (NULL == deriv)
-				continue;
+				ind = md_calc_offset(N, mstrs, pos) / CFL_SIZE;
 
-                        ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = (3 == D) ? sa_r1[i][d] : (sa_r1[i][0] + 1.i * sa_r1[i][1]);
+				// M = M_x + i M_y
+				mxy[ind] = (A == D) ? m[i][p][d] : (m[i][p][0] + 1.i * m[i][p][1]);
 
-                        pos[MAPS_DIM] = 1;
-                        ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = (3 == D) ? sa_m0[i][d] : (sa_m0[i][0] + 1.i * sa_m0[i][1]);
+				if (NULL == deriv)
+					continue;
 
-                        pos[MAPS_DIM] = 2;
-                        ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = (3 == D) ? sa_r2[i][d] : (sa_r2[i][0] + 1.i * sa_r2[i][1]);
+				ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+				deriv[ind] = (A == D) ? sa_r1[i][p][d] : (sa_r1[i][p][0] + 1.i * sa_r1[i][p][1]);
 
-                        pos[MAPS_DIM] = 3;
-                        ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-                        deriv[ind] = (3 == D) ? sa_b1[i][d] : (sa_b1[i][0] + 1.i * sa_b1[i][1]);
-                }
-        }
+				pos[MAPS_DIM] = 1;
+				ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+				deriv[ind] = (A == D) ? sa_m0[i][p][d] : (sa_m0[i][p][0] + 1.i * sa_m0[i][p][1]);
+
+				pos[MAPS_DIM] = 2;
+				ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+				deriv[ind] = (A == D) ? sa_r2[i][p][d] : (sa_r2[i][p][0] + 1.i * sa_r2[i][p][1]);
+
+				pos[MAPS_DIM] = 3;
+				ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+				if (0 == p)
+					deriv[ind] = (A == D) ? sa_b1[i][0][d] : (sa_b1[i][0][0] + 1.i * sa_b1[i][0][1]);
+
+				if (p < data->voxel.P - 1) {
+
+					pos[MAPS_DIM] = 4;
+					ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+					deriv[ind] = (A == D) ? sa_Om[i][p][d] : (sa_Om[i][p][0] + 1.i * sa_Om[i][p][1]);
+
+					pos[MAPS_DIM] = 5;
+					ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+					deriv[ind] = (A == D) ? sa_k[i][p][d] : (sa_k[i][p][0] + 1.i * sa_k[i][p][1]);
+				}
+			}
+		}
+	}
 }
 
 
@@ -118,6 +139,13 @@ int main_sim(int argc, char* argv[argc])
 
         float T1[3] = { WATER_T1, WATER_T1, 1 };
 	float T2[3] = { WATER_T2, WATER_T2, 1 };
+
+	// Further pool parameters
+	float T1pools[4] = { 0., 0., 0., 0. };
+	float T2pools[4] = { 0., 0., 0., 0. };
+	float Ompools[4] = { 0., 0., 0., 0. };
+	float M0pools[4] = { 0., 0., 0., 0. };
+	float kpools[4] = { 0., 0., 0., 0. };
 
         bool split_dim = false;
 
@@ -158,35 +186,56 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_FLOAT(0, "ode-tol", &(data.other.ode_tol), "", "ODE tolerance value [def: 1e-5]"),
 		OPTL_FLOAT(0, "stm-tol", &(data.other.stm_tol), "", "STM tolerance value [def: 1e-6]"),
                 OPTL_FLOAT(0, "sampling-rate", &(data.other.sampling_rate), "", "Sampling rate of RF pulse used for ROT simulation in Hz [def: 1e6 Hz]"),
+	};
+	const int N_other_opts = ARRAY_SIZE(other_opts);
+
+
+	struct opt_s pool_opts[] = {
+
+            OPT_INT('P', &(data.voxel.P), "int", "Number of pools"),
+			OPTL_FLVEC4(0,        "T1",	&T1pools, 	"<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "T1 values for further pools"),
+			OPTL_FLVEC4(0,        "T2",	&T2pools, 	"<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "T2 values for further pools"),
+			OPTL_FLVEC4(0,        "Om",	&Ompools, 	"<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "Om values for further pools"),
+			OPTL_FLVEC4(0,        "M0",	&M0pools, 	"<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "M0 values for further pools"),
+			OPTL_FLVEC4(0, 		  "k",	&kpools, 	"<k1>:<k2>:<k3>:<k4>", 	"k values for further pools"),
         };
-        const int N_other_opts = ARRAY_SIZE(other_opts);
+        const int N_pool_opts = ARRAY_SIZE(pool_opts);
 
 
 	const struct opt_s opts[] = {
 
                 OPTL_FLVEC3('1',        "T1",	&T1, 			"min:max:N", "range of T1 values"),
 		OPTL_FLVEC3('2',	"T2",   &T2, 			"min:max:N", "range of T2 values"),
+		OPTL_SELECT(0, "BLOCH", enum sim_model, &(data.seq.model), MODEL_BLOCH, "Bloch Equations (default)"),
+		OPTL_SELECT(0, "BMC", enum sim_model, &(data.seq.model), MODEL_BMC, "Bloch-McConnell Equations"),
                 OPTL_SELECT(0, "ROT", enum sim_type, &(data.seq.type), SIM_ROT, "homogeneously discretized simulation based on rotational matrices"),
                 OPTL_SELECT(0, "ODE", enum sim_type, &(data.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation (default)"),
                 OPTL_SELECT(0, "STM", enum sim_type, &(data.seq.type), SIM_STM, "state-transition matrix based simulation"),
                 OPTL_SET(0, "split-dim", &split_dim, "Split magnetization into x, y, and z component"),
                 OPTL_SUBOPT(0, "seq", "...", "configure sequence parameter", N_seq_opts, seq_opts),
                 OPTL_SUBOPT(0, "other", "...", "configure other parameters", N_other_opts, other_opts),
+		OPTL_SUBOPT(0, "pool", "...", "configure parameters for 2nd->5th pool", N_pool_opts, pool_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
+	// Tests for validity of input parameter
+
+	if (MODEL_BMC == data.seq.model)
+		assert(1 < data.voxel.P);
 
         // Define output dimensions for signal
 
         long mdims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
         if (split_dim)
-                mdims[READ_DIM] = 3; // x, y, z
+                mdims[READ_DIM] = 3; // (x, y, z)
 
 	mdims[TE_DIM] = data.seq.rep_num;
 
 	mdims[COEFF_DIM] = truncf(T1[2]);
 	mdims[COEFF2_DIM] = truncf(T2[2]);
+	mdims[ITER_DIM] = data.voxel.P;
 
 	if ((mdims[TE_DIM] < 1) || (mdims[COEFF_DIM] < 1) || (mdims[COEFF2_DIM] < 1))
 		error("invalid parameter range");
@@ -198,7 +247,7 @@ int main_sim(int argc, char* argv[argc])
         long ddims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
         md_copy_dims(DIMS, ddims, mdims);
-        ddims[MAPS_DIM] = 4;    // dR1, dM0, dR2, dB1
+        ddims[MAPS_DIM] = (1 == data.voxel.P) ? 4 : 6; // [dR1, dM0, dR2, dB1], dOm, dk
 
         complex float* deriv = NULL;
 
@@ -226,19 +275,27 @@ int main_sim(int argc, char* argv[argc])
 
         // Starting time of simulation
 	double start = timestamp();
-
 	do {
 		data.voxel.r1[0] = 1. / (T1[0] + (T1[1] - T1[0]) / T1[2] * (float)pos[COEFF_DIM]);
         	data.voxel.r2[0] = 1. / (T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM]);
 
-                perform_bloch_simulation(DIMS, &data, tmdims, tm, tddims, td);
+		for (int i = 1; i < data.voxel.P; i++) {
+
+			data.voxel.r1[i] = 1 / T1pools[i - 1];
+			data.voxel.r2[i] = 1 / T2pools[i - 1];
+			data.voxel.m0[i] = M0pools[i - 1];
+			data.voxel.Om[i] = Ompools[i - 1];
+			data.voxel.k[i - 1] = kpools[i - 1];
+		}
+
+		perform_bloch_simulation(DIMS, &data, tmdims, tm, tddims, td);
 
 		md_copy_block(DIMS, pos, mdims, signals, tmdims, tm, CFL_SIZE);
 
-                if (NULL != deriv)
-                        md_copy_block(DIMS, pos, ddims, deriv, tddims, td, CFL_SIZE);
+		if (NULL != deriv)
+			md_copy_block(DIMS, pos, ddims, deriv, tddims, td, CFL_SIZE);
 
-	} while(md_next(DIMS, mdims, ~(READ_FLAG|TE_FLAG), pos));
+	} while(md_next(DIMS, mdims, ~(READ_FLAG|MAPS_FLAG|TE_FLAG|ITER_FLAG), pos));
 
         // End time of simulation
 	double end = timestamp();
