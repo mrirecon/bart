@@ -195,17 +195,6 @@ tests/test-pics-warmstart: pics scale nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra 
 	touch $@
 
 
-tests/test-pics-batch: pics repmat nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/repmat 5 32 $(TESTS_OUT)/shepplogan_coil_ksp.ra kspaces.ra		;\
-	$(TOOLDIR)/pics -r0.01 -L32 kspaces.ra $(TESTS_OUT)/coils.ra reco1.ra		;\
-	$(TOOLDIR)/pics -r0.01      kspaces.ra $(TESTS_OUT)/coils.ra reco2.ra		;\
-	$(TOOLDIR)/nrmse -t 0. reco1.ra reco2.ra					;\
-	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@
-
-
-
 tests/test-pics-timedim: phantom fmac fft pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -s4 -m coils.ra						;\
@@ -701,7 +690,7 @@ tests/test-pics-non-cart-mpi: bart $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
-TESTS += tests/test-pics-warmstart tests/test-pics-batch
+TESTS += tests/test-pics-warmstart
 TESTS += tests/test-pics-timedim tests/test-pics-bp-noncart
 TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory tests/test-pics-basis-noncart2
 #TESTS += tests/test-pics-lowmem

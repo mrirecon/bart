@@ -260,7 +260,6 @@ int main_pics(int argc, char* argv[argc])
 	bool fast = false;
 
 	bool gpu_gridding = false;
-	unsigned int requested_gpus = 0u;
 
 	struct opt_reg_s ropts;
 	opt_reg_init(&ropts);
@@ -282,7 +281,6 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SET('N', &overlapping_blocks, "do fully overlapping LLR blocks"),
 		OPT_SET('g', &conf.gpu, "use GPU"),
 		OPTL_SET(0, "gpu-gridding", &gpu_gridding, "use GPU for gridding"),
-		OPT_UINT('G', &requested_gpus, "bitmask", "bitmask of requested GPU devices"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPTL_SET(0, "precond", &(conf.precond), "interprete weights as preconditioner"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
@@ -306,7 +304,7 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_SELECT('a', "pridu", enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_FLOAT('w', &scaling, "", "inverse scaling of the data"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
-		OPT_ULONG('L', &loop_flags, "flags", "batch-mode"),
+		OPT_ULONG('L', &loop_flags, "flags", "(batch-mode)"),
 		OPTL_ULONG(0, "shared-img-dims", &shared_img_flags, "flags", "deselect image dims with flags"),
 		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
@@ -322,6 +320,9 @@ int main_pics(int argc, char* argv[argc])
 
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
+	if (0 != loop_flags)
+		error("Looping only supported via BART generic looping interface!\n");
 
 	if (0 <= bpsense_eps)
 		conf.bpsense = true;
@@ -429,16 +430,10 @@ int main_pics(int argc, char* argv[argc])
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
-	if (conf.gpu) {
-
-		if (0u == requested_gpus)
-			num_init_gpu_memopt();
-		else
-			num_init_multigpu_select(requested_gpus);
-	} else {
-
+	if (conf.gpu)
+		num_init_gpu();
+	else
 		num_init();
-	}
 
 	// print options
 
@@ -710,50 +705,11 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 
-
-	assert((0u == loop_flags) || (NULL == image_truth));
-	assert((0u == loop_flags) || (NULL == image_start));
-	assert((0u == loop_flags) || (NULL == traj_file));
-	assert(!(loop_flags & COIL_FLAG));
-
-	const complex float* image_start1 = image_start;
-
-	long loop_dims[DIMS];
-	md_select_dims(DIMS,  loop_flags, loop_dims, max_dims);
-
-	long img1_dims[DIMS];
-	md_select_dims(DIMS, ~loop_flags, img1_dims, img_dims);
-
-	long ksp1_dims[DIMS];
-	md_select_dims(DIMS, ~loop_flags, ksp1_dims, ksp_dims);
-
-	long max1_dims[DIMS];
-	md_select_dims(DIMS, ~loop_flags, max1_dims, max_dims);
-
-	long pat1_dims[DIMS];
-	md_select_dims(DIMS, ~loop_flags, pat1_dims, pat_dims);
-
-	complex float* pattern1 = NULL;
-
-	if (NULL != pattern) {
-
-		pattern1 = md_alloc(DIMS, pat1_dims, CFL_SIZE);
-		md_slice(DIMS, loop_flags, (const long[DIMS]){ [0 ... DIMS - 1] = 0 }, pat_dims, pattern1, pattern, CFL_SIZE);
-	}
-
-	// FIXME: re-initialize forward_op and precond_op
-
-	if ((NULL == traj_file) && ((0u != loop_flags && !sms) || conf.bpsense)) { // FIXME: no basis
-
-		linop_free(forward_op);
-		forward_op = sense_init(max1_dims, map_flags, maps);
+	if ((NULL == traj_file) && (conf.bpsense)) {
 
 		// basis pursuit requires the full forward model to add as a linop constraint
-		if (conf.bpsense) {
-
-			const struct linop_s* sample_op = linop_sampling_create(max1_dims, pat1_dims, pattern1);
-			forward_op = linop_chain_FF(forward_op, sample_op);
-		}
+		const struct linop_s* sample_op = linop_sampling_create(max_dims, pat_dims, pattern);
+		forward_op = linop_chain_FF(forward_op, sample_op);
 	}
 
 	double maxeigen = 1.;
@@ -773,7 +729,7 @@ int main_pics(int argc, char* argv[argc])
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
 
-	opt_reg_configure(DIMS, img1_dims, &ropts, thresh_ops, trafos, llr_blk, shift_mode, wtype_str, conf.gpu);
+	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, llr_blk, shift_mode, wtype_str, conf.gpu);
 
 	if (conf.bpsense)
 		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace, bpsense_eps);
@@ -832,7 +788,6 @@ int main_pics(int argc, char* argv[argc])
 			    || (   (ALGO_NIHT == algo)
 				&& (ropts.regs[0].xform == NIHTWAV)));
 
-	// FIXME: will fail with looped dims
 	struct iter_monitor_s* monitor = NULL;
 
 	if (NULL != image_truth)
@@ -842,26 +797,26 @@ int main_pics(int argc, char* argv[argc])
 
 		assert(NULL == image_truth);
 		assert(!conf.rvc);
-		assert(1 == img1_dims[BATCH_DIM]);
-		assert(1 == max1_dims[BATCH_DIM]);
+		assert(1 == img_dims[BATCH_DIM]);
+		assert(1 == max_dims[BATCH_DIM]);
 		assert(0 == loop_flags);
 
 		long img2_dims[DIMS];
-		md_copy_dims(DIMS, img2_dims, img1_dims);
+		md_copy_dims(DIMS, img2_dims, img_dims);
 
 		img2_dims[BATCH_DIM] += ropts.svars;
 		long pos[DIMS] = { 0 };
 
-		max1_dims[BATCH_DIM] += ropts.svars;
+		max_dims[BATCH_DIM] += ropts.svars;
 
 		forward_op = linop_chain_FF(
 				linop_extract_create(DIMS, pos, linop_domain(forward_op)->dims, img2_dims),
 				forward_op);
 	}
 
-	const struct operator_p_s* po = sense_recon_create(&conf, max1_dims, forward_op,
-				pat1_dims, ((NULL != traj_file) || conf.bpsense) ? NULL : pattern1,
-				it.italgo, it.iconf, image_start1, nr_penalties, thresh_ops,
+	const struct operator_p_s* po = sense_recon_create(&conf, max_dims, forward_op,
+				pat_dims, ((NULL != traj_file) || conf.bpsense) ? NULL : pattern,
+				it.italgo, it.iconf, image_start, nr_penalties, thresh_ops,
 				trafos_cond ? trafos : NULL, NULL, monitor);
 
 	const struct operator_s* op = operator_p_bind(po, 1.);
@@ -869,48 +824,22 @@ int main_pics(int argc, char* argv[argc])
 
 	if (0 < ropts.svars) {
 
-		assert(img1_dims[BATCH_DIM] + ropts.svars == operator_codomain(op)->dims[BATCH_DIM]);
+		assert(img_dims[BATCH_DIM] + ropts.svars == operator_codomain(op)->dims[BATCH_DIM]);
 
 		long pos[DIMS] = { 0 };
 
-		auto extr = linop_extract_create(DIMS, pos, img1_dims, operator_codomain(op)->dims);
+		auto extr = linop_extract_create(DIMS, pos, img_dims, operator_codomain(op)->dims);
 
 		auto op2 = operator_chain(op, extr->forward);
 
 		operator_free(op);
 		op = op2;
 
-		assert(img1_dims[BATCH_DIM] == operator_codomain(op)->dims[BATCH_DIM]);
+		assert(img_dims[BATCH_DIM] == operator_codomain(op)->dims[BATCH_DIM]);
 
 		linop_free(extr);
 	}
 
-	long strsx[2][DIMS];
-	const long* strs[2] = { strsx[0], strsx[1] };
-
-	md_calc_strides(DIMS, strsx[0], img_dims, CFL_SIZE);
-	md_calc_strides(DIMS, strsx[1], ksp_dims, CFL_SIZE);
-
-	for (int i = 0; i < DIMS; i++) {
-
-		if (MD_IS_SET(loop_flags, i)) {
-
-			strsx[0][i] = 0;
-			strsx[1][i] = 0;
-		}
-	}
-
-	if (0 != loop_flags) {
-
-		auto op_tmp = operator_copy_wrapper(2, strs, op);
-		operator_free(op);
-		op = op_tmp;
-
-		// op = operator_loop(DIMS, loop_dims, op);
-		op_tmp = operator_loop_parallel(DIMS, loop_dims, op, loop_flags, conf.gpu);
-		operator_free(op);
-		op = op_tmp;
-	}
 
 	operator_apply(op, DIMS, img_dims, image, DIMS, (conf.bpsense || conf.precond) ? img_dims : ksp_dims, (conf.bpsense || conf.precond) ? NULL : kspace);
 
@@ -929,10 +858,6 @@ int main_pics(int argc, char* argv[argc])
 		unmap_cfl(DIMS, pat_dims, pattern);
 	else
 		md_free(pattern);
-
-	if (NULL != pattern1)
-		md_free(pattern1);
-
 
 	unmap_cfl(DIMS, map_dims, maps);
 	unmap_cfl(DIMS, ksp_dims, kspace);

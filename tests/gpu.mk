@@ -76,13 +76,14 @@ tests/test-pics-gpu-llr: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplo
 	touch $@
 
 # test using as many of the first 16 GPUs as possible
-tests/test-pics-multigpu: pics repmat nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/repmat 5 32 $(TESTS_OUT)/shepplogan_coil_ksp.ra kspaces.ra			;\
-	$(TOOLDIR)/pics -g -G65535 -r0.01 -L32 kspaces.ra $(TESTS_OUT)/coils.ra reco1.ra	;\
-	$(TOOLDIR)/pics -g         -r0.01 -L32 kspaces.ra $(TESTS_OUT)/coils.ra reco2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.00001 reco1.ra reco2.ra						;\
-	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+tests/test-pics-multigpu: bart copy pics repmat nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/repmat 5 32 $(TESTS_OUT)/shepplogan_coil_ksp.ra kspaces		;\
+	$(TOOLDIR)/copy $(TESTS_OUT)/coils.ra coils					;\
+	$(TOOLDIR)/bart -l32 -r kspaces pics -g -r0.01 kspaces coils reco1		;\
+	$(TOOLDIR)/bart -p32 -r kspaces pics -g -r0.01 kspaces coils reco2		;\
+	$(TOOLDIR)/nrmse -t 0.00001 reco1 reco2						;\
+	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 #threaded multigpu testing only for local use
