@@ -105,7 +105,7 @@ static node_t node_arg_create(bool output, const struct iovec_s* iov)
 
 	const char* name = ptr_printf("%s\\n[", output ? "Output" : "Input");
 
-	for (int i = 0; i < (int)iov->N; i++) {
+	for (int i = 0; i < iov->N; i++) {
 
 		auto tmp = name;
 

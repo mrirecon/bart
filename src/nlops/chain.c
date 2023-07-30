@@ -548,7 +548,7 @@ static struct nlop_s* nlop_stack_inputs_generic(const struct nlop_s* x, int NI, 
 
 	for (int i = 0; i < NI; i++) {
 
-		assert(N == (int)nlop_generic_domain(x, index[i])->N);
+		assert(N == nlop_generic_domain(x, index[i])->N);
 
 		md_copy_dims(N, odims[i], nlop_generic_domain(x, index[i])->dims);
 		idims[stack_dim] += odims[i][stack_dim];
@@ -605,7 +605,7 @@ static struct nlop_s* nlop_stack_outputs_generic(const struct nlop_s* x, int NO,
 
 	for (int i = 0; i < NO; i++) {
 
-		assert(N == (int)nlop_generic_codomain(x, index[i])->N);
+		assert(N == nlop_generic_codomain(x, index[i])->N);
 
 		md_copy_dims(N, idims[i], nlop_generic_codomain(x, index[i])->dims);
 		odims[stack_dim] += idims[i][stack_dim];

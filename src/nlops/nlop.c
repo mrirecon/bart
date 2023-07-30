@@ -883,7 +883,7 @@ static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
 		auto iov = nlop_generic_codomain(op, o);
 
 		assert(CFL_SIZE == iov->size);
-		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+		assert(iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
 
 		odims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[o] = olast;
@@ -900,7 +900,7 @@ static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
 		auto iov = nlop_generic_domain(op, i);
 
 		assert(CFL_SIZE == iov->size);
-		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+		assert(iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
 
 		idims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[OO + i] = ilast;
@@ -1137,7 +1137,7 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 		auto iov = nlop_generic_codomain(op, o);
 
 		assert(CFL_SIZE == iov->size);
-		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+		assert(iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
 
 		odims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[o] = olast;
@@ -1154,7 +1154,7 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 		auto iov = nlop_generic_domain(op, i);
 
 		assert(CFL_SIZE == iov->size);
-		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+		assert(iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
 
 		idims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[OO + i] = ilast;

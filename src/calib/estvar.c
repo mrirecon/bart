@@ -244,7 +244,7 @@ static float estimate_noise_variance(long L, const float* S, const float* E)
 		if (isnan(S[start + idx]) || (S[start + idx] <= 0) || isnan(E[start + idx]) || (E[start + idx] <= 0))
 			break;
 
-		t += ((float)S[start + idx]) / ((float)E[start + idx]);
+		t += S[start + idx] / E[start + idx];
 		c += 1.f;
 	}
 

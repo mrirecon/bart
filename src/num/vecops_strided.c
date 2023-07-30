@@ -228,11 +228,11 @@ static bool is_matrix(const long dims[3], const long strs[3], int i1, int i2, lo
 {
 	assert(i1 != i2);
 
-	bool a = (   (strs[i1] == (long)size)
-		  && (strs[i2] == (long)size * dims[i1]));
+	bool a = (   (strs[i1] == size)
+		  && (strs[i2] == size * dims[i1]));
 
-	bool b = (   (strs[i2] == (long)size)
-		  && (strs[i1] == (long)size * dims[i2]));
+	bool b = (   (strs[i2] == size)
+		  && (strs[i1] == size * dims[i2]));
 
 	return a || b;
 }
@@ -636,7 +636,7 @@ static int check_batched_select(int N, long ndims[N], long nostrs[N], long nistr
 	md_calc_strides(N, tistrs2, tidims2, size);
 
 	int i = 0;
-	while ( i < (int)N
+	while ( i < N
 		&& (tostrs[i] == nostrs[i])
 		&& (tistrs1[i] == nistrs1[i])
 		&& (tistrs2[i] == nistrs2[i]))
@@ -693,7 +693,7 @@ static int check_unfold(int N, long ndims[N], long nostrs[N], long nistrs1[N], l
 	md_calc_strides(N, tistrs2, tidims2, size);
 
 	int i = 0;
-	while ( i < (int)N
+	while ( i < N
 		&& (tostrs[i] == nostrs[i])
 		&& (tistrs1[i] == nistrs1[i])
 		&& (tistrs2[i] == nistrs2[i])

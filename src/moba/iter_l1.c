@@ -326,7 +326,7 @@ static void inverse_admm(iter_op_data* _data, float alpha, float* dst, const flo
 
 
 	admm(&admm_plan, admm_plan.num_funs,
-		z_dims, data->size_x, (float*)dst, src,
+		z_dims, data->size_x, dst, src,
 		select_vecops(src),
 		(struct iter_op_s){ normal, CAST_UP(data) }, NULL);
 

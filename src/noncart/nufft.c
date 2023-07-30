@@ -689,7 +689,7 @@ static struct nufft_data* nufft_create_data(int N,
 
 			linphase = compute_linphases(N, data->lph_dims, data->flags, data->img_dims);
 
-			for (int i = 0; i < (int)data->N; i++)
+			for (int i = 0; i < data->N; i++)
 				if ((data->img_dims[i] > 1) && MD_IS_SET(data->flags, i))
 					data->factors[i] = 2;
 
@@ -725,7 +725,7 @@ static struct nufft_data* nufft_create_data(int N,
 
 	} else {
 
-		for (int i = 0; i < (int)data->N; i++)
+		for (int i = 0; i < data->N; i++)
 			if ((data->img_dims[i] > 1) && MD_IS_SET(data->flags, i))
 				data->factors[i] = conf.decomp ? 2 : 1;
 		
@@ -756,7 +756,7 @@ static struct nufft_data* nufft_create_data(int N,
 
 	md_copy_dims(ND, data->cm2_dims, data->cim_dims);
 
-	for (int i = 0; i < (int)N; i++)
+	for (int i = 0; i < N; i++)
 		if (conf.decomp && MD_IS_SET(data->flags, i))
 			data->cm2_dims[i] = (1 == cim_dims[i]) ? 1 : (2 * cim_dims[i]);
 
@@ -838,7 +838,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 
 		md_copy_dims(ND, data->psf_dims, data->lph_dims);
 
-		for (int i = 0; i < (int)N; i++)
+		for (int i = 0; i < N; i++)
 			if (!MD_IS_SET(data->flags, i))
 				data->psf_dims[i] = MAX(data->trj_dims[i], ((NULL != weights) ? data->wgh_dims[i] : 0));
 
@@ -996,7 +996,7 @@ struct linop_s* nufft_create2(int N,
 		int d = conf.loopdim;
 		const long L = ksp_dims[d];
 
-		assert(d < (int)N);
+		assert(d < N);
 		assert((NULL == weights) || (1 == wgh_dims[d]));
 		assert((NULL == basis) || (1 == bas_dims[d]));
 		assert(1 == traj_dims[d]);
@@ -1388,7 +1388,7 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 	int ncycles = data->lph_dims[data->N];
 
 	if (data->conf.pcycle)
-		((struct nufft_data*) data)->cycle = (data->cycle + 1) % ncycles;	// FIXME:
+		data->cycle = (data->cycle + 1) % ncycles;	// FIXME:
 
 	md_clear(data->N, data->cim_dims, dst, CFL_SIZE);
 
@@ -1732,7 +1732,7 @@ void nufft_update_traj(	const struct linop_s* nufft, int N,
 
 	auto data = CAST_DOWN(nufft_data, _data);
 
-	assert((int)data->N == N);
+	assert(data->N == N);
 
 	nufft_set_traj(data, N, trj_dims, traj, wgh_dims, weights, bas_dims, basis);
 }

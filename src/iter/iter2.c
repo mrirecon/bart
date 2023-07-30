@@ -449,7 +449,7 @@ void iter2_admm(const iter_conf* _conf,
 			goto cleanup;
 	}
 
-	admm(&admm_plan, admm_plan.num_funs, z_dims, size, (float*)image, image_adj, select_vecops(image), OPERATOR2ITOP(normaleq_op), monitor);
+	admm(&admm_plan, admm_plan.num_funs, z_dims, size, image, image_adj, select_vecops(image), OPERATOR2ITOP(normaleq_op), monitor);
 
 cleanup:
 	;

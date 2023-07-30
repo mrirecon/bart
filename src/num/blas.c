@@ -543,14 +543,14 @@ void blas2_sgemv(char trans, long M, long N, const float* alpha, long lda, const
 	if (cuda_ondevice(A)) {
 
 		CUBLAS_CALL(cublasSgemv(get_handle_device(), cublas_trans(trans), M, N, alpha,
-			    (const float*)A, lda, x, incx, beta, y, incy));
+			    A, lda, x, incx, beta, y, incy));
 
 		return;
 	}
 #endif
 
 	BLAS_CALL(cblas_sgemv(CblasColMajor, ('T' == trans) ? CblasTrans : CblasNoTrans, M, N, *alpha,
-		    (const float*)A, lda, x, incx, *beta, y, incy));
+			A, lda, x, incx, *beta, y, incy));
 }
 
 
@@ -561,14 +561,14 @@ void blas_sgemv(char trans, long M, long N, const float alpha, long lda, const f
 	if (cuda_ondevice(A)) {
 
 		CUBLAS_CALL(cublasSgemv(get_handle_host(), cublas_trans(trans), M, N, &alpha,
-			    (const float*)A, lda, x, incx, &beta, y, incy));
+			A, lda, x, incx, &beta, y, incy));
 
 		return;
 	}
 #endif
 
 	BLAS_CALL(cblas_sgemv(CblasColMajor, ('T' == trans) ? CblasTrans : CblasNoTrans, M, N, alpha,
-		    (const float*)A, lda, x, incx, beta, y, incy));
+			A, lda, x, incx, beta, y, incy));
 }
 
 
@@ -578,13 +578,12 @@ void blas2_sger(long M, long N, const float* alpha, long incx, const float* x, l
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
 
-		CUBLAS_CALL(cublasSger(get_handle_device(), M, N, alpha, x, incx, y, incy, (float*)A, lda));
-
+		CUBLAS_CALL(cublasSger(get_handle_device(), M, N, alpha, x, incx, y, incy, A, lda));
 		return;
 	}
 #endif
 
-	BLAS_CALL(cblas_sger(CblasColMajor, M, N, *alpha, x, incx, y, incy, (float*)A, lda));
+	BLAS_CALL(cblas_sger(CblasColMajor, M, N, *alpha, x, incx, y, incy, A, lda));
 }
 
 
@@ -595,13 +594,12 @@ void blas_sger(long M, long N, const float alpha, long incx, const float* x, lon
 
 	if (cuda_ondevice(A)) {
 
-		CUBLAS_CALL(cublasSger(get_handle_host(), M, N, &alpha, x, incx, y, incy, (float*)A, lda));
-
+		CUBLAS_CALL(cublasSger(get_handle_host(), M, N, &alpha, x, incx, y, incy, A, lda));
 		return;
 	}
 #endif
 
-	BLAS_CALL(cblas_sger(CblasColMajor, M, N, alpha, x, incx, y, incy, (float*)A, lda));
+	BLAS_CALL(cblas_sger(CblasColMajor, M, N, alpha, x, incx, y, incy, A, lda));
 }
 
 

@@ -598,12 +598,12 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 
 	d->simple_flatten_in =     (1 == II)
 				&& (in_stack_dim[0] >= 0)
-				&& (   (in_stack_dim[0] == (int)max_DI - 1)
+				&& (   (in_stack_dim[0] == max_DI - 1)
 				    || (1 == md_calc_size(max_DI - in_stack_dim[0] - 1, nl_idims[0] + in_stack_dim[0] + 1)));
 				
 	d->simple_flatten_out =    (1 == OO)
 				&& (out_stack_dim[0] >= 0)
-				&& (   (out_stack_dim[0] == (int)max_DO - 1)
+				&& (   (out_stack_dim[0] == max_DO - 1)
 				    || (1 == md_calc_size(max_DO - out_stack_dim[0] - 1, nl_odims[0] + out_stack_dim[0] + 1)));
 
 #ifdef USE_CUDA

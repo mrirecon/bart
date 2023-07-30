@@ -104,7 +104,7 @@ int main_show(int argc, char* argv[argc])
 
 	if (-1 != showdim) {
 
-		assert((showdim >= 0) && (showdim < (int)N));
+		assert((showdim >= 0) && (showdim < N));
 		bart_printf("%ld\n", dims[showdim]);
 
 		goto out;

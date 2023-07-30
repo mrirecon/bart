@@ -239,7 +239,7 @@ void estimate_im_dims(int N, unsigned long flags, long dims[N], const long tdims
 {
 	int T = tdims[0];
 
-	assert(T == (int)bitcount(flags));
+	assert(T == bitcount(flags));
 
 	float max_dims[T];
 	for (int i = 0; i < T; i++)

@@ -55,7 +55,7 @@ struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims
 {
 	assert(md_check_compat(DIMS, ~0UL, dims, pat_dims));
 
-	auto ret = (struct linop_s*)linop_cdiag_create(DIMS, dims, md_nontriv_dims(DIMS, pat_dims), NULL);
+	auto ret = linop_cdiag_create(DIMS, dims, md_nontriv_dims(DIMS, pat_dims), NULL);
 	linop_gdiag_set_diag_ref(ret, DIMS, pat_dims, pattern);
 
 	return ret;

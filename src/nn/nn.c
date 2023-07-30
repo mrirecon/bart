@@ -254,11 +254,11 @@ int nn_get_nr_unnamed_out_args(nn_t op)
 
 bool nn_is_num_in_index(nn_t op, int i)
 {
-	return i < (int)nn_get_nr_unnamed_in_args(op);
+	return i < nn_get_nr_unnamed_in_args(op);
 }
 bool nn_is_num_out_index(nn_t op, int o)
 {
-	return o < (int)nn_get_nr_unnamed_out_args(op);
+	return o < nn_get_nr_unnamed_out_args(op);
 }
 
 int nn_get_out_arg_index(nn_t op, int o, const char* oname)
@@ -270,10 +270,10 @@ int nn_get_out_arg_index(nn_t op, int o, const char* oname)
 		if (-1 == o)
 			error("Name %s not found!", oname);
 	} else {
-		assert(o >= -(int)nn_get_nr_unnamed_out_args(op));
-		o = o + ((o < 0) ? (int)nn_get_nr_unnamed_out_args(op) : 0);
+		assert(o >= -nn_get_nr_unnamed_out_args(op));
+		o = o + ((o < 0) ? nn_get_nr_unnamed_out_args(op) : 0);
 
-		assert(o < (int)nn_get_nr_unnamed_out_args(op));
+		assert(o < nn_get_nr_unnamed_out_args(op));
 		for (int i = 0; i <= o; i++)
 			if (NULL != op->out_names[i])
 				o++;
@@ -291,10 +291,10 @@ int nn_get_in_arg_index(nn_t op, int i, const char* iname)
 		if (-1 == i)
 			error("Name %s not found!", iname);
 	} else {
-		assert(i >= -(int)nn_get_nr_unnamed_in_args(op));
-		i = i + ((i < 0) ? (int)nn_get_nr_unnamed_in_args(op) : 0);
+		assert(i >= -nn_get_nr_unnamed_in_args(op));
+		i = i + ((i < 0) ? nn_get_nr_unnamed_in_args(op) : 0);
 
-		assert(i < (int)nn_get_nr_unnamed_in_args(op));
+		assert(i < nn_get_nr_unnamed_in_args(op));
 		for (int ii = 0; ii <= i; ii++)
 			if (NULL != op->in_names[ii])
 				i++;

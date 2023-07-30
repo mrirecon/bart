@@ -112,7 +112,7 @@ int main_nnet(int argc, char* argv[argc])
 		OPTL_SET('g', "gpu", &(config.gpu), "run on gpu"),
 
 		OPTL_LONG('b', "batch-size", &(N_batch), "batchsize", "size of mini batches"),
-		OPTL_INFILE('l', "load", (const char**)(&(filename_weights_load)), "<weights-init>", "load weights for continuing training"),
+		OPTL_INFILE('l', "load", &filename_weights_load, "<weights-init>", "load weights for continuing training"),
 
 		OPTL_SUBOPT('N', "network", "...", "select neural network", ARRAY_SIZE(network_opts), network_opts),
 		OPTL_SUBOPT('U', "unet-segm", "...", "configure U-Net for segmentation", N_unet_segm_opts, unet_segm_opts),
@@ -127,7 +127,7 @@ int main_nnet(int argc, char* argv[argc])
 
 		OPTL_SET(0, "load-memory", &(load_mem), "load files into memory"),
 
-		OPTL_STRING(0, "export-graph", (const char**)(&(graph_filename)), "<file.dot>", "export graph for visualization"),
+		OPTL_STRING(0, "export-graph", &graph_filename, "<file.dot>", "export graph for visualization"),
 	};
 
 	const char* filename_in;
@@ -214,7 +214,7 @@ int main_nnet(int argc, char* argv[argc])
 
 
 	long dims_in[DIMS];
-	complex float* in = load_cfl(filename_in, (-1 == NI) ? (int)DIMS : NI, dims_in);
+	complex float* in = load_cfl(filename_in, (-1 == NI) ? DIMS : NI, dims_in);
 
 	if (-1 == NI) {
 
