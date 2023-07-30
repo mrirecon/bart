@@ -45,6 +45,8 @@ struct mem_s {
 
 	int device_id;
 	int stream_id;
+
+	const char* backtrace;
 };
 
 
@@ -138,8 +140,12 @@ static void print_mem_tree(int dl, tree_t tree)
 	struct mem_s* m[N];
 	tree_to_array(tree, N, (void**)m);
 
-	for (int j = 0; j < N; j++) 
+	for (int j = 0; j < N; j++) {
+
 		debug_printf(dl, "ptr: %p, len: %zd, device_id: %d\n", m[j]->ptr, m[j]->len, m[j]->device_id);
+		if (NULL != m[j]->backtrace)
+			debug_printf(dl, "%s", m[j]->backtrace);
+	}
 }
 
 void debug_print_memcache(int dl)
@@ -241,6 +247,10 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
 
 	struct mem_s* nptr = search(ptr, true);
 
+	if (NULL != nptr->backtrace)
+		xfree(nptr->backtrace);
+	nptr->backtrace = NULL;
+
 	assert(NULL != nptr);
 	assert(nptr->ptr == ptr);
 
@@ -290,9 +300,13 @@ void* mem_device_malloc(int device, int stream, long size, void* (*device_alloc)
 		_nptr->len_used = size;
 		_nptr->device_id = device;
 		_nptr->stream_id = stream;
+		_nptr->backtrace = NULL;
 
 		nptr = PTR_PASS(_nptr);
 	}
+
+	//use for debugging memcache
+	//nptr->backtrace = debug_good_backtrace_string(2);
 
 	tree_insert(mem_pool, nptr);
 	return (void*)(nptr->ptr);
