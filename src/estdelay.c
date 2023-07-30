@@ -163,9 +163,11 @@ int main_estdelay(int argc, char* argv[argc])
 
 	if (NULL != qf_file) {
 
-		long qf_dims[1] = { 3 };
+		long qf_dims[DIMS];
+		md_singleton_dims(DIMS, qf_dims);
+		qf_dims[0] = 3;
 
-		complex float* oqf = create_cfl(qf_file, 1, qf_dims);
+		complex float* oqf = create_cfl(qf_file, DIMS, qf_dims);
 
 		for (int i = 0; i < 3; i++)
 			oqf[i] = qf[i];
