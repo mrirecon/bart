@@ -255,6 +255,9 @@ static complex float* compute_square_basis(int N, long sqr_bas_dims[N], const lo
 	sqr_bas_dims[6] *= sqr_bas_dims[6];
 	sqr_bas_dims[7] = 1;
 
+	if (use_compat_to_version("v0.7.00"))
+		md_zsmul(N, sqr_bas_dims, sqr_basis, sqr_basis, (double)bas_dims[6]);
+
 	return sqr_basis;
 }
 
