@@ -1,6 +1,6 @@
 /* Copyright 2014-2015. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022. Institute of Biomedical Imaging. Graz University of Technology.
+ * Copyright 2022-2023. Institute of Biomedical Imaging. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -326,6 +326,7 @@ static complex float* compute_psf_internal(int N, const long img_dims[N], const 
 
 		lop_nufft = nufft_create2(N, ksp_dims, img_dims2, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis, conf);
 		lop_nufft = linop_reshape_in_F(lop_nufft, N, img_dims);
+
 	} else {
 
 		nufft_update_traj(lop_nufft, N, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis);
@@ -454,6 +455,7 @@ static complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1],
 	
 		lop_nufft = nufft_create2(N, ksp_dims, psf_dims2, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis, conf);
 		lop_nufft = linop_reshape_in_F(lop_nufft, N, psf_dims);
+
 	} else {
 
 		nufft_update_traj(lop_nufft, N, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis);
@@ -1331,6 +1333,7 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 	if (NULL != clinphase) {
 
 		md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, src, data->img_strs, clinphase);
+
 	} else {
 
 		float scale = 1. / sqrtf(md_calc_size(3, data->lph_dims));
@@ -1627,8 +1630,8 @@ static void nufft_apply_adjoint_zero_overhead(const linop_data_t* _data, complex
 		linop_adjoint(data->cfft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, dst);
 		apply_linphases_3D(data->N, data->cim_dims, grid_conf.shift, dst, dst, true, false, true, scale);
 		
-
 		pos_cml[data->N]++;
+
 	} while (md_next(data->N, data->factors, data->conf.flags, pos_fac));
 
 	apply_rolloff_correction(2., data->grid_conf.width, data->grid_conf.beta, data->N, data->cim_dims, dst, dst);

@@ -26,7 +26,7 @@ def tf2_export_module(model, dims, path, trace_complex=True):
 
             self.model = model
             self.trace_complex = trace_complex
-        
+
             self.dims_bart = [1] * 16
             self.dims_tf =   [1] * (len(dims) + 1)
 
@@ -47,7 +47,7 @@ def tf2_export_module(model, dims, path, trace_complex=True):
                     self.dims_tf[len(self.dims_tf) - 2 - i] = dims[i]
 
                 self.model(np.zeros(self.dims_tf, np.complex64)) #run model ones to initialize weights
-            
+
             self.dims_tf[0] = -1
             self.dims_bart[0] = -1
 
@@ -61,9 +61,9 @@ def tf2_export_module(model, dims, path, trace_complex=True):
             self.vars_rtoc = [] # variables for which a 0 imaginary part is stacked
             for var in self.vars:
                 self.vars_rtoc.append(2 != var.shape[-1])
-            
+
             self.sig = {}
-            
+
             self.add_concrete_function()
 
         @tf2.function
@@ -135,7 +135,7 @@ def tf2_export_module(model, dims, path, trace_complex=True):
             
             weights = []
             for i, var in enumerate(self.variables):
-                
+
                 if (self.vars_rtoc[i]):
                     weights.append(var.numpy().astype(np.complex64)) 
                 else:
@@ -196,13 +196,13 @@ class TensorMap:
             self.type = "REAL"
         else:
             self.type = "COMPLEX"
-        
+
         if isinstance(tensor, TensorMap):
             self.type = tensor.type
 
         if enforce_real:
             self.type = "REAL"
-    
+
     def export(self):
         n = self.tensor.name
         return "{} {} {} {}".format(self.name, n.split(":")[0], n.split(":")[1], self.type)
@@ -214,7 +214,7 @@ def tf1_export_tensor_mapping(path, name, mapping, signature="serving_default"):
         for map in mapping:
             f.write('{}\n'.format(map.export()))
 
-def tf1_op_exists(graph, name):  
+def tf1_op_exists(graph, name):
     try:
         graph.get_operation_by_name(name)
         return True
@@ -229,14 +229,14 @@ def tf1_find_tensors(graph, inputs, outputs):
         while tf1_op_exists(graph, "input_"+str(II)):
             inputs.append(graph.get_tensor_by_name("input_{}:0".format(II)))
             II += 1
-    
+
     if outputs is None:
         OO = 0
         outputs = []
         while tf1_op_exists(graph, "output_"+str(OO)):
             outputs.append(graph.get_tensor_by_name("output_{}:0".format(OO)))
             OO += 1
-    
+
     for i in range(len(inputs)):
         inputs[i] = TensorMap(inputs[i], "input_"+str(i))
 
@@ -275,14 +275,14 @@ def tf1_export_graph(path, graph = None, session=None, inputs=None, outputs=None
         name = os.path.basename(os.path.normpath(path))
 
     inputs, outputs = tf1_find_tensors(graph, inputs, outputs)
-    
+
     mappings = []
     if attach_gradients:
         mappings = tf1_graph_attach_gradients(graph, inputs, outputs)
-    
+
     mappings += inputs
     mappings += outputs
-    
+
     tf1.train.write_graph(graph, path, name+'.pb', False)
 
     if session is not None:
@@ -292,7 +292,6 @@ def tf1_export_graph(path, graph = None, session=None, inputs=None, outputs=None
         if (tf1_op_exists(graph, "save/restore_all")):
             print("WARNING: No weights are stored with the graph!\nWARNING: BART propably will not be able to load the graph.")
 
-    
     tf1_export_tensor_mapping(path, name, mappings)
 
 

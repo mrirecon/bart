@@ -39,7 +39,7 @@ static const char help_str[] =
 
 
 
-int main_tf(int argc, char* argv[argc])
+int main_tensorflow(int argc, char* argv[argc])
 {
 	long count = 0;
 	const char* graph = NULL;
