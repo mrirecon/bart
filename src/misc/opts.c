@@ -902,8 +902,8 @@ bool opt_subopt(void* _ptr, char c, const char* optarg)
 		process_option(wopts[i / 2].c, value, "", "", "", n, wopts, 0, NULL);
 	}
 
-	for (int i = 0; i < 2 * n + 1; i++)
-		xfree(tokens[i]);
+	for (int ii = 0; ii < 2 * n + 1; ii++)
+		xfree(tokens[ii]);
 
 	xfree(tmpoptionp);
 
