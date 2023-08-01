@@ -24,7 +24,7 @@
 
 
 
-static void rot45z2(unsigned int D, unsigned int M,
+static void rot45z2(int D, int M,
 	const long dim[D], const long ostr[D], complex float* optr,
 	const long istr[D], const complex float* iptr)
 {
@@ -50,32 +50,32 @@ static void rot45z2(unsigned int D, unsigned int M,
 
 
 
-static unsigned int find_bit(unsigned long N)
+static int find_bit(unsigned long N)
 {
 	return ffsl(N) - 1;
 }
 
-static unsigned int next_powerof2(unsigned int x)
+static int next_powerof2(uint x)
 {
 	x--;
 
-	assert(x <= (UINT32_MAX >> 1));
+	assert(x <= (INT32_MAX >> 1));
 
-	for (unsigned int i = 0, n = 1; i < 5; i++, n *= 2)
+	for (int i = 0, n = 1; i < 5; i++, n *= 2)
 		x = (x >> n) | x;
 
 	return x + 1;
 }
 
 
-static void compute_chirp(unsigned int L, bool dir, unsigned int M, complex float krn[M])
+static void compute_chirp(int L, bool dir, int M, complex float krn[M])
 {
 	krn[0] = 1.;
 
-	for (unsigned int i = 1; i < M; i++)
+	for (int i = 1; i < M; i++)
 		krn[i] = 0.;
 
-	for (unsigned int i = 1; i < M; i++) {
+	for (int i = 1; i < M; i++) {
 
 		if (i < L) {
 
@@ -86,13 +86,13 @@ static void compute_chirp(unsigned int L, bool dir, unsigned int M, complex floa
 	}
 }
 
-static void bluestein(unsigned int N, const long dims[N],
+static void bluestein(int N, const long dims[N],
 	unsigned long flags, unsigned long dirs,
 	const long ostrs[N], complex float* dst,
 	const long istrs[N], const complex float* in)
 {
-	unsigned int D = find_bit(flags);
-	unsigned int M = next_powerof2(2 * dims[D] - 1);
+	int D = find_bit(flags);
+	int M = next_powerof2(2 * dims[D] - 1);
 
 	assert(M >= 2 * dims[D] - 1);
 	assert(0 == MD_CLEAR(flags, D));
@@ -153,15 +153,15 @@ static void bluestein(unsigned int N, const long dims[N],
 
 
 
-static void compute_twiddle(unsigned int n, unsigned int m, complex float t[n][m])
+static void compute_twiddle(int n, int m, complex float t[n][m])
 {
-	for (unsigned int i = 0; i < n; i++)
-		for (unsigned int j = 0; j < m; j++)
+	for (int i = 0; i < n; i++)
+		for (int j = 0; j < m; j++)
 			t[i][j] = cexpf(-2.i * M_PI * (float)(i * j) / (float)(n * m));
 }
 
-static void cooley_tukey(unsigned int N, const long dims[N],
-		unsigned int D, unsigned int a, unsigned int b,
+static void cooley_tukey(int N, const long dims[N],
+		int D, int a, int b,
 		unsigned long flags, unsigned long dirs,
 		const long ostr[N], complex float* dst,
 		const long istr[N], const complex float* in)
@@ -214,25 +214,25 @@ static void cooley_tukey(unsigned int N, const long dims[N],
 }
 
 
-static bool check_strides(unsigned int N, const long ostr[N], const long istr[N])
+static bool check_strides(int N, const long ostr[N], const long istr[N])
 {
 	bool ret = true;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		ret = ret & (ostr[i] == istr[i]);
 
 	return ret;
 }
 
-static unsigned int find_factor(unsigned int N)
+static int find_factor(int N)
 {
-	for (unsigned int i = 2; i < N; i++)
+	for (int i = 2; i < N; i++)
 		if (0 == N % i)
 			return i;
 	return N;
 }
 
-void md_fft2(unsigned int N, const long dims[N],
+void md_fft2(int N, const long dims[N],
 		unsigned long flags, unsigned long dirs,
 		const long ostr[N], complex float* dst,
 		const long istr[N], const complex float* in)
@@ -261,7 +261,7 @@ void md_fft2(unsigned int N, const long dims[N],
 		return;
 	}
 
-	unsigned int D = find_bit(flags);
+	int D = find_bit(flags);
 
 	if (1 == dims[D]) {
 
@@ -283,7 +283,7 @@ void md_fft2(unsigned int N, const long dims[N],
 
 		} else {
 
-			// the nufft may do the transpose
+			// the fft may do the transpose
 			rot45z2(N, D, dims, ostr, dst, istr, in);
 			md_fft2(N, dims, MD_CLEAR(flags, D), dirs, ostr, dst, ostr, dst);
 		}
@@ -291,8 +291,8 @@ void md_fft2(unsigned int N, const long dims[N],
 		return;
 	}
 
-	unsigned int a = find_factor(dims[D]);
-	unsigned int b = dims[D] / a;
+	int a = find_factor(dims[D]);
+	int b = dims[D] / a;
 
 	if (1 == b) { // prime
 
@@ -309,7 +309,7 @@ void md_fft2(unsigned int N, const long dims[N],
 
 
 
-void md_fft(unsigned int N, const long dims[N],
+void md_fft(int N, const long dims[N],
 		unsigned long flags, unsigned long dirs,
 		complex float* dst, const complex float* in)
 {
