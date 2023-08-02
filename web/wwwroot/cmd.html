@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="./bart_cmd.js"></script>
+        <script src="./cmd.js"></script>
+        <style type="text/css">
+            .dims {
+                display: flex;
+            }
+            .dims input {
+                width: 50px;
+            }
+            #cmd_input {
+                width: 75%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="cmd">
+            <input type="text" id="cmd_input" value="phantom -x 128 -s 8 phantom.mem; fft 3 phantom.mem kspace.mem; ecalib kspace.mem sensitivities.mem; pics -l1 -r 0.001 kspace.mem sensitivities.mem image.mem" onkeypress="enter_cmd(event)"/><button id="btn_cmd" onclick="cmd()">Submit</button>
+        </div>
+        <div>
+            <select id="dimx" onchange="updateDisplay()">
+                
+            </select>
+            <select id="dimy" onchange="updateDisplay()">
+                
+            </select>
+            <select id="dimz" onchange="updateDisplay()">
+                
+            </select>
+            <div class="dims">
+                <div>
+                    <div>Name</div>
+                    <div>Size</div>
+                    <div>Index</div>
+                </div>
+                <div id="d0">
+                    <div id="name_0">x</div>
+                    <div id="dim_0"></div>
+                    <div id="idx_0"><input type="number"></input></div>
+                </div>
+                <div id="d1">
+                    <div id="name_1">y</div>
+                    <div id="dim_1"></div>
+                    <div id="idx_1"><input type="number"></input></div>
+                </div>
+                <div id="d2">
+                    <div id="name_2">z</div>
+                    <div id="dim_2"></div>
+                    <div id="idx_2"><input type="number"></input></div>
+                </div>
+                <div id="d3">
+                    <div id="name_3">4</div>
+                    <div id="dim_3"></div>
+                    <div id="idx_3"><input type="number"></input></div>
+                </div>
+                <div id="d4">
+                    <div id="name_4">5</div>
+                    <div id="dim_4"></div>
+                    <div id="idx_4"><input type="number"></input></div>
+                </div>
+                <div id="d5">
+                    <div id="name_5">6</div>
+                    <div id="dim_5"></div>
+                    <div id="idx_5"><input type="number"></input></div>
+                </div>
+                <div id="d6">
+                    <div id="name_6">7</div>
+                    <div id="dim_6"></div>
+                    <div id="idx_6"><input type="number"></input></div>
+                </div>
+                <div id="d7">
+                    <div id="name_7">8</div>
+                    <div id="dim_7"></div>
+                    <div id="idx_7"><input type="number"></input></div>
+                </div>
+                <div id="d8">
+                    <div id="name_8">9</div>
+                    <div id="dim_8"></div>
+                    <div id="idx_8"><input type="number"></input></div>
+                </div>
+                <div id="d9">
+                    <div id="name_9">10</div>
+                    <div id="dim_9"></div>
+                    <div id="idx_9"><input type="number"></input></div>
+                </div>
+                <div id="d10">
+                    <div id="name_10">11</div>
+                    <div id="dim_10"></div>
+                    <div id="idx_10"><input type="number"></input></div>
+                </div>
+                <div id="d11">
+                    <div id="name_11">12</div>
+                    <div id="dim_11"></div>
+                    <div id="idx_11"><input type="number"></input></div>
+                </div>
+                <div id="d12">
+                    <div id="name_12">13</div>
+                    <div id="dim_12"></div>
+                    <div id="idx_12"><input type="number"></input></div>
+                </div>
+                <div id="d13">
+                    <div id="name_13">14</div>
+                    <div id="dim_13"></div>
+                    <div id="idx_13"><input type="number"></input></div>
+                </div>
+                <div id="d14">
+                    <div id="name_14">15</div>
+                    <div id="dim_14"></div>
+                    <div id="idx_14"><input type="number"></input></div>
+                </div>
+                <div id="d15">
+                    <div id="name_15">16</div>
+                    <div id="dim_15"></div>
+                    <div id="idx_15"><input type="number"></input></div>
+                </div>
+            </div>
+            <canvas id="img" onwheel="scroll(event)"></canvas>
+        </div>
+        <div>
+            <button onclick="list_memcfl()">Update memory files</button>
+            <ul id="files">
+            </ul>
+        </div>
+    </body>
+</html>
