@@ -68,6 +68,27 @@ bool memcfl_exists(const char* name)
 	return false;
 }
 
+const char** memcfl_list_all() {
+	struct memcfl* mem = memcfl_list;
+	int count = 0;
+	while (NULL != mem) {
+		mem = mem->next;
+		count++;
+	}
+	const char** list = (const char**) malloc((count+1)*sizeof(char*));
+	list[0] = (char*)count;
+	mem = memcfl_list;
+	for(int i=1;i<count+1;i++) {
+		if(mem == NULL) {
+			list[i] = 0;
+		} else {
+			list[i] = mem->name;
+		}
+		mem = mem->next;
+	}
+
+	return list;
+}
 
 complex float* memcfl_load(const char* name, int D, long dims[D])
 {
