@@ -186,7 +186,7 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_SET(0, "lowmem", &(config.low_mem), "reduce memory usage by checkpointing"),
 
 		OPTL_SET(0, "test", &(test_defaults), "very small network for tests"),
-		OPTL_STRING(0, "export-graph", (const char**)(&(graph_filename)), "<file.dot>", "export graph for visualization"),
+		OPTL_STRING(0, "export-graph", &graph_filename, "<file.dot>", "export graph for visualization"),
 
 		OPT_INFILE('B', &(data.filename_basis), "file", "(temporal (or other) basis)"),
 	};

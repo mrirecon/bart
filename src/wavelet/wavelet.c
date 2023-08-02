@@ -131,7 +131,7 @@ static void wavelet_up3(const long dims[3], const long out_str[3], complex float
 					assert(1 == (n + l) % 2);
 					assert(n == coord(j, dims[1], flen, flen - l - 1));
 #endif
-					if ((j < 0) || ((int)bandsize(dims[1], flen) <= j))
+					if ((j < 0) || (bandsize(dims[1], flen) <= j))
 						continue;
 
 					*access(out_str, out, i, n, k) +=

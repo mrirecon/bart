@@ -106,7 +106,7 @@ int main_epg(int argc, char* argv[argc])
 	long dims_sigder[DIMS];
    	md_copy_dims(DIMS, dims_sigder, dims);
 	dims_sigder[ITER_DIM] = 4;
-   
+
 	// allocate on HEAP	to avoid memory limitation
 	complex float (*out_statesder)[3][M][N] = xmalloc(4 * sizeof *out_statesder);
 
@@ -116,11 +116,11 @@ int main_epg(int argc, char* argv[argc])
 
 	complex float* signals = create_cfl(signal_file, DIMS, dims);
 
-	complex float* states = ((NULL != states_file) ? create_cfl : anon_cfl)((NULL != states_file) ? states_file : "", DIMS, dims_states);
+	complex float* states = ((NULL != states_file) ? create_cfl : anon_cfl)(states_file, DIMS, dims_states);
 
-	complex float* sigder = ((NULL != sigder_file) ? create_cfl : anon_cfl)((NULL != sigder_file) ? sigder_file : "", DIMS, dims_sigder);
+	complex float* sigder = ((NULL != sigder_file) ? create_cfl : anon_cfl)(sigder_file, DIMS, dims_sigder);
 
-	complex float* statesder = ((NULL != statesder_file) ? create_cfl : anon_cfl)((NULL != statesder_file) ? statesder_file : "", DIMS, dims_statesder);
+	complex float* statesder = ((NULL != statesder_file) ? create_cfl : anon_cfl)(statesder_file, DIMS, dims_statesder);
 
 	switch (seq) {
 
@@ -145,6 +145,8 @@ int main_epg(int argc, char* argv[argc])
 		if ((NULL != sigder_file) || (NULL != statesder_file))
 			error("No derivatives available for HYPER!");
 
+		memset(out_sigder, 0, sizeof out_sigder);	// GCC ANALYZER
+
 		hyperecho_epg(N, M, out_signal, (NULL != states_file) ? out_states : NULL,
 						90.0, 180.0, TE, FA, T1, T2, B1, offres);
 
@@ -163,6 +165,8 @@ int main_epg(int argc, char* argv[argc])
 
 		if ((NULL != sigder_file) || (NULL != statesder_file))
 			error("No derivatives available for Spinecho!");
+
+		memset(out_sigder, 0, sizeof out_sigder);	// GCC ANALYZER
 
 		hahnspinecho_epg(N, M, out_signal, (NULL != states_file) ? out_states : NULL,
 						FA, TE, T1, T2, B1, offres);

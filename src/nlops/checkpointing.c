@@ -164,7 +164,7 @@ static void checkpoint_re_evaluate(struct checkpoint_s* d)
 	for (int j = 0; j < d->II; j++)
 		args[d->OO + j] = d->inputs[j];
 
-	nlop_generic_apply_unchecked(d->nlop, d->OO + d->II, (void**)args);
+	nlop_generic_apply_unchecked(d->nlop, d->OO + d->II, args);
 
 	for (int j = 0; j < d->OO; j++)
 		md_free(args[j]);

@@ -910,8 +910,8 @@ struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const 
 {
 	PTR_ALLOC(struct linop_s, op2);
 
-	assert((int)(linop_codomain(op)->N) == DO);
-	assert((int)(linop_domain(op)->N) == DI);
+	assert(linop_codomain(op)->N == DO);
+	assert(linop_domain(op)->N == DI);
 
 	const long* strsx[2] = { ostrs, istrs };
 	const long* strsy[2] = { istrs, ostrs };

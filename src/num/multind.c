@@ -1201,6 +1201,86 @@ void md_pad_center(int D, const void* val, const long odim[D], void* optr, const
 }
 
 
+void md_reflectpad_center2(int D, const long odim[D], const long ostr[D], void* optr,
+			const long idim[D], const long istr[D], const void* iptr, size_t size)
+{
+	long odim2[D];
+	long ristr[D];
+	long loop_idx[D];
+	long blockdim[D];
+	long center_block[D];
+	long block0_size[D];
+	long count = 0;
+
+	for (int i = 0; i < D; i++) {
+
+		assert(odim[i] >= idim[i]);
+
+		blockdim[i] = 1;
+		center_block[i] = 0;
+
+		ristr[i] = istr[i];
+		odim2[i] = idim[i];
+
+		block0_size[i] = 0;
+
+		if (odim[i] > idim[i]) {
+
+			loop_idx[count++] = i;
+
+			long main_start = labs((odim[i] / 2) - (idim[i] / 2));
+			long main_end = main_start + idim[i];
+			long before = (main_start + idim[i] - 1) / idim[i];
+			long after = (odim[i] - main_end + idim[i] - 1) / idim[i];
+
+			blockdim[i] = 1 + before + after;
+			center_block[i] = before;
+
+			long x = main_start % idim[i];
+
+			block0_size[i] = (0 == x) ? idim[i] : x;
+		}
+	}
+
+	long block_pos[D];
+	long in_pos[D];
+
+	md_set_dims(D, block_pos, 0);
+	md_set_dims(D, in_pos, 0);
+
+	long opos[D];
+	md_set_dims(D, opos, 0);
+
+	do {
+		for (int i = 0, idx = loop_idx[0]; i < count; idx = (++i < count) ? loop_idx[i] : idx) {
+
+			opos[idx] = (block_pos[idx] >= 1) ? (block0_size[idx] + idim[idx] * (block_pos[idx] - 1)) : 0;
+			odim2[idx] = (block_pos[idx] == 0) ? block0_size[idx] : MIN(idim[idx], odim[idx] - opos[idx]);
+
+			if (1 == labs(center_block[idx] - block_pos[idx]) % 2) {
+
+				ristr[idx] = -istr[idx];
+				in_pos[idx] = (odim2[idx] < idim[idx]) ? ((block_pos[idx] > center_block[idx]) ? (idim[idx] - 1) : odim2[idx] - 1) : (idim[idx] - 1);
+
+			} else {
+
+				ristr[idx] = istr[idx];
+				in_pos[idx] = (odim2[idx] < idim[idx]) ? ((block_pos[idx] > center_block[idx]) ? 0 : (idim[idx] - odim2[idx])) : 0;
+			}
+		}
+
+		md_copy2(D, odim2, ostr, md_calc_offset(D, ostr, opos) + optr, ristr, md_calc_offset(D, istr, in_pos) + iptr, size);
+
+	} while (md_next(D, blockdim, ~0U, block_pos));
+}
+
+void md_reflectpad_center(int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+{
+	md_reflectpad_center2(D, odim, MD_STRIDES(D, odim, size), optr,
+				idim, MD_STRIDES(D, idim, size), iptr, size);
+}
+
+
 /**
  * Extract slice from array specified by flags (with strides)
  *

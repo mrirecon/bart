@@ -31,7 +31,6 @@
 #include "linops/someops.h"
 #include "linops/grad.h"
 #include "linops/sum.h"
-#include "linops/sampling.h"
 
 #include "iter/iter.h"
 #include "iter/iter2.h"

@@ -40,7 +40,7 @@ tests/test-ssa: traj phantom resize squeeze svd transpose ssa cabs nrmse casorat
 tests/test-ssa-backprojection: phantom reshape repmat squeeze transpose noise ssa extract cabs nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 		$(TOOLDIR)/phantom -m -x12 -s8 ph.ra						;\
-		$(TOOLDIR)/reshape 1067 1 1 1152 1 32 ph.ra phc.ra				;\
+		$(TOOLDIR)/reshape 11 1 1 1152  ph.ra phc.ra					;\
 		$(TOOLDIR)/repmat 11 5 phc.ra phc1.ra						;\
 		$(TOOLDIR)/reshape 3072 160 1 phc1.ra phc2.ra					;\
 		$(TOOLDIR)/squeeze phc2.ra phc10.ra					        ;\

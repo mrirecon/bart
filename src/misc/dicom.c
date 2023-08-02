@@ -264,7 +264,7 @@ int dicom_write(const char* name, int cols, int rows, long inum, const unsigned 
 
 	ret = 0;
 
-	if (-1 == munmap((void*)addr, size))
+	if (-1 == munmap(addr, size))
 		error("abort!");
 
 cleanup:

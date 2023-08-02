@@ -64,6 +64,15 @@ complex double gaussian_rand(void)
 	return re + 1.i * im;
 }
 
+void gaussian_rand_vec(long N, float* dst)
+{
+	complex float* tmp = md_alloc(1, MD_DIMS(N / 2 + 1), sizeof(complex float));
+	md_gaussian_rand(1, MD_DIMS(N / 2 + 1), tmp);
+	md_copy(1, MD_DIMS(N), dst, tmp, sizeof(float));
+	md_free(tmp);
+	//This does not need to be scaled as md_gaussian_rand has (complex) variance 2!
+}
+
 void md_gaussian_rand(unsigned int D, const long dims[D], complex float* dst)
 {
 #ifdef  USE_CUDA

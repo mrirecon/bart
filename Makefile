@@ -207,13 +207,13 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 #
 TBASE=show slice crop resize join transpose squeeze flatten zeros ones flip circshift extract repmat bitmask reshape version delta copy casorati vec poly index multicfl
 TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexp
-TNUM=fft fftmod fftshift noise bench threshold conv rss filter mandelbrot wavelet window var std fftrot roistat pol2mask conway morphop
+TNUM=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbrot wavelet window var std fftrot roistat pol2mask conway morphop
 TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
 TSIM=phantom traj signal epg sim
 TIO=toimg
-TNN=reconet nnet onehotenc measure mnist
+TNN=reconet nnet onehotenc measure mnist tensorflow
 
 
 
@@ -265,6 +265,7 @@ MODULES_epg = -lsimu
 MODULES_reconet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_mnist = -lnetworks -lnn -lnlops -llinops -liter
 MODULES_nnet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
+MODULES_tensorflow = -lnn -lnlops -llinops -liter
 MODULES_measure = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_onehotenc = -lnn
 MODULES_sim = -lsimu
@@ -650,7 +651,7 @@ UTARGETS += test_nufft
 MODULES_test_nufft += -lnoncart -llinops
 
 # lib num
-UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv test_ode
+UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv test_ode test_nlmeans test_rand
 UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr test_specfun test_qform test_fft
 UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr test_cuda_multind test_cuda_shuffle test_cuda_memcache_clear
 

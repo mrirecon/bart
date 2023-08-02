@@ -41,6 +41,7 @@
 
 #include "linops/linop.h"
 #include "linops/someops.h"
+#include "linops/fmac.h"
 
 #include "misc/misc.h"
 #include "misc/mri.h"
@@ -50,142 +51,15 @@
 #include "model.h"
 
 
-
-
-/**
- * data structure for holding the sense data.
- *
- * @param owner linop is owner of sensitivity maps
- * @param max_dims maximal dimensions 
- * @param dims_mps maps dimensions
- * @param dims_ksp kspace dimensions
- * @param img_dims final image dimensions
- * @param strs_mps strides for maps
- * @param strs_ksp strides for kspace
- * @param strs_img strides for image
- * @param sens sensitivity maps
-  */
-struct maps_data {
-
-	INTERFACE(linop_data_t);
-
-	bool owner;
-
-	long max_dims[DIMS];
-
-	long mps_dims[DIMS];
-	long ksp_dims[DIMS];
-	long img_dims[DIMS];
-
-	long strs_mps[DIMS];
-	long strs_ksp[DIMS];
-	long strs_img[DIMS];
-
-	struct multiplace_array_s* sens;
-	complex float* norm;
-};
-
-static DEF_TYPEID(maps_data);
-
-
-static void maps_apply(const linop_data_t* _data, complex float* dst, const complex float* src)
+struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims[DIMS], const complex float* pattern)
 {
-	const auto data = CAST_DOWN(maps_data, _data);
-	const complex float* sens = multiplace_read(data->sens, dst);
-	md_clear(DIMS, data->ksp_dims, dst, CFL_SIZE);
-	md_zfmac2(DIMS, data->max_dims, data->strs_ksp, dst, data->strs_img, src, data->strs_mps, sens);
+	assert(md_check_compat(DIMS, ~0UL, dims, pat_dims));
+
+	auto ret = linop_cdiag_create(DIMS, dims, md_nontriv_dims(DIMS, pat_dims), NULL);
+	linop_gdiag_set_diag_ref(ret, DIMS, pat_dims, pattern);
+
+	return ret;
 }
-
-
-static void maps_apply_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
-{
-	const auto data = CAST_DOWN(maps_data, _data);
-	const complex float* sens = multiplace_read(data->sens, dst);
-	// dst = sum( conj(sens) .* tmp )
-	md_clear(DIMS, data->img_dims, dst, CFL_SIZE);
-	md_zfmacc2(DIMS, data->max_dims, data->strs_img, dst, data->strs_ksp, src, data->strs_mps, sens);
-}
-
-
-static void maps_apply_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
-{
-	auto data = CAST_DOWN(maps_data, _data);
-
-	if (NULL == data->norm) {
-
-		// FIXME: gpu/cpu mixed use
-		data->norm = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, data->sens);
-		md_zrss(DIMS, data->mps_dims, COIL_FLAG, data->norm, multiplace_read(data->sens, dst));
-		md_zmul(DIMS, data->img_dims, data->norm, data->norm, data->norm);
-	}
-
-	md_zmul(DIMS, data->img_dims, dst, src, data->norm);
-}
-
-
-/*
- * ( AT A + lambda I) x = b
- */
-static void maps_apply_pinverse(const linop_data_t* _data, float lambda, complex float* dst, const complex float* src)
-{
-	auto data = CAST_DOWN(maps_data, _data);
-
-	if (NULL == data->norm) {
-
-		// FIXME: gpu/cpu mixed use
-		data->norm = md_alloc_sameplace(DIMS, data->img_dims, CFL_SIZE, data->sens);
-		md_zrss(DIMS, data->mps_dims, COIL_FLAG, data->norm, multiplace_read(data->sens, dst));
-		md_zmul(DIMS, data->img_dims, data->norm, data->norm, data->norm);
-	}
-
-	md_zsadd(DIMS, data->img_dims, data->norm, data->norm, lambda);
-	md_zdiv(DIMS, data->img_dims, dst, src, data->norm);
-	md_zsadd(DIMS, data->img_dims, data->norm, data->norm, -lambda);
-}
-
-static void maps_free_data(const linop_data_t* _data)
-{
-	const auto data = CAST_DOWN(maps_data, _data);
-
-	multiplace_free(data->sens);
-
-	if (NULL != data->norm)
-		md_free(data->norm);
-
-	xfree(data);
-}
-
-
-static struct maps_data* maps_create_data(const long max_dims[DIMS], 
-			unsigned int sens_flags, const complex float* sens, bool owner)
-{
-	PTR_ALLOC(struct maps_data, data);
-	SET_TYPEID(maps_data, data);
-
-	// maximal dimensions
-	md_copy_dims(DIMS, data->max_dims, max_dims);
-
-	// sensitivity dimensions
-	md_select_dims(DIMS, sens_flags, data->mps_dims, max_dims);
-	md_calc_strides(DIMS, data->strs_mps, data->mps_dims, CFL_SIZE);
-
-	md_select_dims(DIMS, ~MAPS_FLAG, data->ksp_dims, max_dims);
-	md_calc_strides(DIMS, data->strs_ksp, data->ksp_dims, CFL_SIZE);
-
-	md_select_dims(DIMS, ~COIL_FLAG, data->img_dims, max_dims);
-	md_calc_strides(DIMS, data->strs_img, data->img_dims, CFL_SIZE);
-
-	if (owner)
-		data->sens = multiplace_move(DIMS, data->mps_dims, CFL_SIZE, sens);
-	else
-		data->sens = multiplace_move_wrapper(DIMS, data->mps_dims, CFL_SIZE, sens);
-
-	data->norm = NULL;
-
-	return PTR_PASS(data);
-}
-
-
 
 
 /**
@@ -203,21 +77,23 @@ struct linop_s* maps_create(const long max_dims[DIMS],
 	complex float* nsens = md_alloc_sameplace(DIMS, mps_dims, CFL_SIZE, sens);
 	fftscale(DIMS, mps_dims, FFT_FLAGS, nsens, sens);
 
-	auto data = maps_create_data(max_dims, sens_flags, nsens, true);
+	long cim_dims[DIMS];
+	long img_dims[DIMS];
 
-	md_free(nsens);
+	md_select_dims(DIMS, ~MAPS_FLAG, cim_dims, max_dims);
+	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
 
-	return linop_create(DIMS, data->ksp_dims, DIMS, data->img_dims, CAST_UP(data),
-			maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
+	auto ret = (struct linop_s*)linop_fmac_dims_create(DIMS, cim_dims, img_dims, mps_dims, NULL);
+	linop_fmac_set_tensor_F(ret, DIMS, mps_dims, nsens);
+
+	return ret;
 }
 
 
 
 struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const complex float* maps)
 {
-	long max_dims[DIMS];
-
-	unsigned int sens_flags = 0;
+	unsigned long sens_flags = 0;
 
 	for (unsigned int i = 0; i < DIMS; i++)
 		if (1 != maps_dims[i])
@@ -228,13 +104,10 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
 	assert(maps_dims[COIL_DIM] == coilim_dims[COIL_DIM]);
 	assert(maps_dims[MAPS_DIM] == img_dims[MAPS_DIM]);
 
-	for (unsigned int i = 0; i < DIMS; i++)
-		max_dims[i] = MAX(coilim_dims[i], MAX(maps_dims[i], img_dims[i]));
+	auto ret = (struct linop_s*)linop_fmac_dims_create(DIMS, coilim_dims, img_dims, maps_dims, NULL);
+	linop_fmac_set_tensor_ref(ret, DIMS, maps_dims, maps);
 
-	struct maps_data* data = maps_create_data(max_dims, sens_flags, maps, false);
-
-	return linop_create(DIMS, coilim_dims, DIMS, img_dims, CAST_UP(data),
-		maps_apply, maps_apply_adjoint, maps_apply_normal, maps_apply_pinverse, maps_free_data);
+	return ret;
 }
 
 

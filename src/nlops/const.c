@@ -141,8 +141,8 @@ struct nlop_s* nlop_set_input_const2(const struct nlop_s* a, int i, int N, const
 
 	auto iov = nlop_generic_domain(a, i);
 
-	int N_min = (N < (int)(iov->N)) ? N : (int)(iov->N);
-	int N_max = (N > (int)(iov->N)) ? N : (int)(iov->N);
+	int N_min = (N < iov->N) ? N : iov->N;
+	int N_max = (N > iov->N) ? N : iov->N;
 	long ndims[N_max];
 	long nstrs[N_max];
 

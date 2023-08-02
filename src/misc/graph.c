@@ -292,13 +292,13 @@ graph_t dup_graphs_F(graph_t graph, int a, int b)
 
 	while (0 < list_count(bnode->edges[0])) {
 
-		struct vertex_s a = { .node = anode, .idx = 0 };
-		struct vertex_s b = { .node = bnode, .idx = 0 };
+		struct vertex_s tmpa = { .node = anode, .idx = 0 };
+		struct vertex_s tmpb = { .node = bnode, .idx = 0 };
 
 		struct vertex_s n = *(vertices_get(bnode->edges[0], 0));
 
-		graph_remove_edge(b, n);
-		graph_add_edge(a, n);
+		graph_remove_edge(tmpb, n);
+		graph_add_edge(tmpa, n);
 	}
 
 	node_free(bnode);
@@ -350,7 +350,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 
 	for (int i = 0; i < list_count(graph->nodes); i++) {
 
-		auto node = (node_t)nodes_get(graph->nodes, i);
+		auto node = nodes_get(graph->nodes, i);
 
 		auto str_node = print_node(node);
 		auto tmp = result;
@@ -453,9 +453,9 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 		xfree(tmp);
 	}
 
-	for (int i = 0; i < list_count(graph->nodes); i++) {
+	for (int k = 0; k < list_count(graph->nodes); k++) {
 
-		auto node = (node_t)nodes_get(graph->nodes, i);
+		auto node = nodes_get(graph->nodes, k);
 		struct vertex_s a = { .node = node, .idx = 0 };
 
 		for (int i = 0; i < node->N_vertices; i++) {
@@ -482,7 +482,7 @@ const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const 
 
 	for (int i = 0; i < list_count(graph->ext_nodes); i++) {
 
-		auto node = (node_t)nodes_get(graph->ext_nodes, i);
+		auto node = nodes_get(graph->ext_nodes, i);
 		struct vertex_s a = { .node = node, .idx = 0 };
 
 		for (int i = 0; i < node->N_vertices; i++) {

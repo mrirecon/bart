@@ -1234,7 +1234,7 @@ static const struct operator_s* operator_copy_wrapper_generic(int N, const long*
 	assert(N == (int)operator_nr_args(op));
 
 	bool keep_strs = true;
-	for (int i = 0; i < (int)N; i++)
+	for (int i = 0; i < N; i++)
 		keep_strs = keep_strs && (NULL == strs[i]);
 
 	// merge gpu wrapper with copy wrpper (stides)
@@ -1368,7 +1368,7 @@ const struct operator_s* operator_assign_gpu(const struct operator_s* op, int de
 	enum COPY_LOCATION loc[N];
 	const long* strs[N];
 
-	for (int i = 0; i < (int)N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		loc[i] = CL_DEVICE;
 		strs[i] = NULL;
@@ -1397,7 +1397,7 @@ static void combi_apply(const operator_data_t* _data, unsigned int N, void* args
 
 	int off = N;
 
-	for (int i = (int)data->N - 1; 0 <= i; i--) {
+	for (int i = data->N - 1; 0 <= i; i--) {
 
 		int A = operator_nr_args(data->x[i]);
 
@@ -1586,8 +1586,8 @@ const struct operator_s* operator_dup_create(const struct operator_s* op, unsign
 	auto ioa = operator_arg_domain(op, a);
 	auto iob = operator_arg_domain(op, b);
 
-	assert((int)ioa->N == md_calc_blockdim(ioa->N, ioa->dims, ioa->strs, ioa->size));
-	assert((int)iob->N == md_calc_blockdim(iob->N, iob->dims, iob->strs, iob->size));
+	assert(ioa->N == md_calc_blockdim(ioa->N, ioa->dims, ioa->strs, ioa->size));
+	assert(iob->N == md_calc_blockdim(iob->N, iob->dims, iob->strs, iob->size));
 
 
 	PTR_ALLOC(struct operator_dup_s, data);
@@ -1735,8 +1735,8 @@ const struct operator_s* operator_link_create(const struct operator_s* op, unsig
 	auto ioi = operator_arg_domain(op, i);
 	auto ioo = operator_arg_domain(op, o);
 
-	assert((int)ioi->N == md_calc_blockdim(ioi->N, ioi->dims, ioi->strs, ioi->size));
-	assert((int)ioo->N == md_calc_blockdim(ioo->N, ioo->dims, ioo->strs, ioo->size));
+	assert(ioi->N == md_calc_blockdim(ioi->N, ioi->dims, ioi->strs, ioi->size));
+	assert(ioo->N == md_calc_blockdim(ioo->N, ioo->dims, ioo->strs, ioo->size));
 
 
 	PTR_ALLOC(struct operator_link_s, data);
@@ -2442,8 +2442,8 @@ const struct operator_s* operator_chainN(unsigned int N, const struct operator_s
 
 			assert(a->domain[0]->N == b->domain[1]->N);
 			assert(md_calc_size(a->domain[0]->N, a->domain[0]->dims) == md_calc_size(b->domain[1]->N, b->domain[1]->dims));
-			assert((int)a->domain[0]->N == md_calc_blockdim(a->domain[0]->N, a->domain[0]->dims, a->domain[0]->strs, a->domain[0]->size));
-			assert((int)b->domain[1]->N == md_calc_blockdim(b->domain[1]->N, b->domain[1]->dims, b->domain[1]->strs, b->domain[1]->size));
+			assert(a->domain[0]->N == md_calc_blockdim(a->domain[0]->N, a->domain[0]->dims, a->domain[0]->strs, a->domain[0]->size));
+			assert(b->domain[1]->N == md_calc_blockdim(b->domain[1]->N, b->domain[1]->dims, b->domain[1]->strs, b->domain[1]->size));
 		}
 	}
 

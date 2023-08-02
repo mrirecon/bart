@@ -199,8 +199,14 @@ int main_nufft(int argc, char* argv[argc])
 			} else 
 #endif
 				nufft_op = nufft_create2(DIMS, ksp_dims, coilim_dims, traj_dims, traj, pattern_dims, pattern, basis_dims, basis, conf);
-		} else
+
+		} else {
+
+			assert(NULL == basis);
+			assert(NULL == pattern);
+
 			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
+		}
 
 
 		if (inverse) {

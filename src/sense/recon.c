@@ -28,7 +28,6 @@
 #include <complex.h>
 #include <stdbool.h>
 #include <assert.h>
-#include <stdlib.h>
 #include <math.h>
 
 #include "num/multind.h"
@@ -36,7 +35,6 @@
 #include "num/iovec.h"
 
 #include "linops/linop.h"
-#include "linops/sampling.h"
 #include "linops/someops.h"
 #include "linops/realval.h"
 
@@ -134,6 +132,7 @@ const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, con
 
 		linop_free(sampling);
 		linop_free(sense_op);
+
 		sense_op = tmp_op;
 
 		unsigned int flags = 0;

@@ -5,21 +5,28 @@
 # Authors:
 # Moritz Blumenthal
 
+import os
+import numpy as np
+import cfl
 
-def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10]):
+import tensorflow as tf2
 
-    import tensorflow as tf
-    import numpy as np
+try:
+    import tensorflow.compat.v1 as tf1
+except ImportError:
+    import tensorflow as tf1
+    pass
 
-    class BartWrapper(tf.Module):
+def tf2_export_module(model, dims, path, trace_complex=True):
+    class BartWrapper(tf2.Module):
     
-        def __init__(self, model, dims, batch_sizes = [10], vars_as_input = True, name=None):
+        def __init__(self, model, dims, vars_as_input = True, name=None):
         
             super(BartWrapper, self).__init__(name=name)
 
             self.model = model
             self.trace_complex = trace_complex
-        
+
             self.dims_bart = [1] * 16
             self.dims_tf =   [1] * (len(dims) + 1)
 
@@ -41,6 +48,9 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
 
                 self.model(np.zeros(self.dims_tf, np.complex64)) #run model ones to initialize weights
 
+            self.dims_tf[0] = -1
+            self.dims_bart[0] = -1
+
             self.trace_complex = trace_complex
         
             if vars_as_input:
@@ -51,14 +61,12 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
             self.vars_rtoc = [] # variables for which a 0 imaginary part is stacked
             for var in self.vars:
                 self.vars_rtoc.append(2 != var.shape[-1])
-            
-            self.sig = {}
-            
-            self.add_concrete_function()
-            for bs in batch_sizes:
-                self.add_concrete_function(bs)
 
-        @tf.function
+            self.sig = {}
+
+            self.add_concrete_function()
+
+        @tf2.function
         def __call__(self, input, weights, grad_in):
 
             for i in range(len(weights)):
@@ -73,15 +81,16 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
                 self.model.variables[i].assign(wgh)
 
 
-            with tf.GradientTape(persistent=True) as g:
+            with tf2.GradientTape(persistent=True) as g:
                 g.watch(input)
 
-                shp = self.dims_tf.copy()
-                shp[0] = input.shape[0]
+                print("Tracing TensorFlow model with dims: {}".format(input))
 
-                print("Tracing TensorFlow model with dims: {}".format(shp))
-                out = self.model(tf.reshape(input, shp))
-                out = tf.reshape(out, input.shape)
+                res = tf2.reshape(input, self.dims_tf)
+
+                outr = self.model(res)
+
+                out = tf2.reshape(outr, self.dims_bart)
 
             result = {}
         
@@ -93,36 +102,32 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
                 
                 if self.vars_rtoc[i - 1]:
                     tmp = result["grad_{}_0".format(i)]
-                    result["grad_{}_0".format(i)] = tf.stack([tmp, tf.zeros_like(tmp)], axis = len(tmp.shape))
+                    result["grad_{}_0".format(i)] = tf2.stack([tmp, tf2.zeros_like(tmp)], axis = len(tmp.shape))
         
             return result
 
 
-        def add_concrete_function(self, batch_size=1, name=None):
+        def add_concrete_function(self, name=None):
 
             dims = self.dims_bart.copy()
-            dims[0] = batch_size
+            dims[0] = None
 
             if (self.trace_complex):
-                signature_input = tf.TensorSpec(shape=dims, dtype=tf.complex64, name="input_0")
-                signature_grad_ys = tf.TensorSpec(shape=dims, dtype=tf.complex64, name="grad_ys_0")
+                signature_input = tf2.TensorSpec(shape=dims, dtype=tf2.complex64, name="input_0")
+                signature_grad_ys = tf2.TensorSpec(shape=dims, dtype=tf2.complex64, name="grad_ys_0")
             else:
-                signature_input = tf.TensorSpec(shape=dims, dtype=tf.float32, name="input_0")
-                signature_grad_ys = tf.TensorSpec(shape=dims, dtype=tf.float32, name="grad_ys_0")
+                signature_input = tf2.TensorSpec(shape=dims, dtype=tf2.float32, name="input_0")
+                signature_grad_ys = tf2.TensorSpec(shape=dims, dtype=tf2.float32, name="grad_ys_0")
 
             signature_weight = []
             for i, var in enumerate(self.model.variables, 1):
                 if self.vars_rtoc[i - 1]:
-                    signature_weight.append(tf.TensorSpec(shape=list(var.shape)+[2], dtype=tf.float32, name="input_{}".format(i)))
+                    signature_weight.append(tf2.TensorSpec(shape=list(var.shape)+[2], dtype=tf2.float32, name="input_{}".format(i)))
                 else:
-                    signature_weight.append(tf.TensorSpec(shape=var.shape, dtype=tf.float32, name="input_{}".format(i)))
+                    signature_weight.append(tf2.TensorSpec(shape=var.shape, dtype=tf2.float32, name="input_{}".format(i)))
 
             if name is None:
-                if 1 == batch_size:
-                    name = "serving_default"
-                else:
-                    name = "serving_default_batch_{}".format(batch_size)
-
+                name = "serving_default"
             self.sig[name] = self.__call__.get_concrete_function(signature_input, signature_weight, signature_grad_ys)
 
 
@@ -130,7 +135,7 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
             
             weights = []
             for i, var in enumerate(self.variables):
-                
+
                 if (self.vars_rtoc[i]):
                     weights.append(var.numpy().astype(np.complex64)) 
                 else:
@@ -147,14 +152,13 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
                 weights[-1] = np.transpose(weights[-1])
             
             if (0 < len(weights)):
-                import cfl
                 cfl.writemulticfl(path, weights)
 
 
 
         def save(self, path):
 
-            tf.saved_model.save(self, path, signatures=self.sig)
+            tf2.saved_model.save(self, path, signatures=self.sig)
             self.save_variables(path+"/bart_initial_weights")
 
             from tensorflow.python.tools import saved_model_utils
@@ -177,85 +181,124 @@ def tf2_export_module(model, dims, path, trace_complex=True, batch_sizes = [10])
                         f.write("{} {} {}\n".format(bart_name, outputs[bart_name].name.split(":")[0], outputs[bart_name].name.split(":")[1]))
 
     
-    BartWrapper(model, dims, batch_sizes).save(path)
+    BartWrapper(model, dims).save(path)
 
+class TensorMap:
+    def __init__(self, tensor, name, enforce_real = False):
 
+        if isinstance(tensor, TensorMap):
+            self.tensor = tensor.tensor
+        else:
+            self.tensor = tensor
+        self.name = name
 
+        if (self.tensor.shape[-1] != 2) and (self.tensor.dtype == tf1.float32):
+            self.type = "REAL"
+        else:
+            self.type = "COMPLEX"
 
+        if isinstance(tensor, TensorMap):
+            self.type = tensor.type
 
-def tf1_graph_attach_gradients(graph):
+        if enforce_real:
+            self.type = "REAL"
 
+    def export(self):
+        n = self.tensor.name
+        return "{} {} {} {}".format(self.name, n.split(":")[0], n.split(":")[1], self.type)
+
+def tf1_export_tensor_mapping(path, name, mapping, signature="serving_default"):
+    with open(path + "/" + name + ".map", 'w') as f:
+        f.write('# ArgumentNameMapping\n')
+        f.write('{}\n'.format(signature))
+        for map in mapping:
+            f.write('{}\n'.format(map.export()))
+
+def tf1_op_exists(graph, name):
     try:
-        import tensorflow.compat.v1 as tf
-    except ImportError:
-        import tensorflow as tf
-        pass
+        graph.get_operation_by_name(name)
+        return True
+    except KeyError:
+        return False
 
-    def op_exists(graph, name):  
-        try:
-            graph.get_operation_by_name(name)
-            return True
-        except KeyError:
-            return False
-
-    II = 0
-    OO = 0
-
-    inputs=[]
-    outputs=[]
-    grad_ys=[]
-
-    while op_exists(graph, "input_"+str(II)):
-        inputs.append(graph.get_tensor_by_name("input_{}:0".format(II)))
-        II += 1
+def tf1_find_tensors(graph, inputs, outputs):
     
-    while op_exists(graph, "output_"+str(OO)):
-        outputs.append(graph.get_tensor_by_name("output_{}:0".format(OO)))
-        if not(op_exists(graph, name='grad_ys_'+ str(OO))):
+    if inputs is None:
+        II = 0
+        inputs = []
+        while tf1_op_exists(graph, "input_"+str(II)):
+            inputs.append(graph.get_tensor_by_name("input_{}:0".format(II)))
+            II += 1
+
+    if outputs is None:
+        OO = 0
+        outputs = []
+        while tf1_op_exists(graph, "output_"+str(OO)):
+            outputs.append(graph.get_tensor_by_name("output_{}:0".format(OO)))
+            OO += 1
+
+    for i in range(len(inputs)):
+        inputs[i] = TensorMap(inputs[i], "input_"+str(i))
+
+    for i in range(len(outputs)):
+        outputs[i] = TensorMap(outputs[i], "output_"+str(i))
+
+    return inputs, outputs
+
+
+def tf1_graph_attach_gradients(graph, inputs, outputs):
+
+    grad_tensors=[]
+
+    for o, out in enumerate(outputs):
+        with graph.as_default():
+            gy = tf1.placeholder(out.tensor.dtype, shape=out.tensor.shape, name='grad_ys_'+ str(o))
+            grad_tensors.append(TensorMap(gy, 'grad_ys_'+ str(o), out.type == "REAL"))
+
+    for i, inp in enumerate(inputs):
+        for o, out in enumerate(outputs):
+            name = 'grad_{}_{}'.format(i, o)
             with graph.as_default():
-                grad_ys.append(tf.placeholder(outputs[-1].dtype, shape=outputs[-1].shape, name='grad_ys_'+ str(OO)))
-        OO += 1
-
-    print("{} Inputs found".format(II))
-    print("{} Outputs found".format(OO))
-
-    for i in range(II):
-        for o in range(OO):
-            if not(op_exists(graph, name='grad_{}_{}'.format(i, o))):
-                with graph.as_default():
-                    grad = tf.gradients(outputs[o], inputs[i], grad_ys[o])
-                    tf.reshape(grad, inputs[i].shape, name='grad_{}_{}'.format(i, o))
-
-
-def tf1_export_graph(graph, path, name, session=None):
-
-    import os
-    try:
-        import tensorflow.compat.v1 as tf
-    except ImportError:
-        import tensorflow as tf
-        pass
-
+                grad = tf1.gradients(out.tensor, inp.tensor, grad_tensors[o].tensor)
+                grad = tf1.reshape(grad, tf1.shape(inp.tensor), name='grad_{}_{}'.format(i, o))
+                grad_tensors.append(TensorMap(grad, name, inp.type == "REAL"))
     
-    tf1_graph_attach_gradients(graph)
+    return grad_tensors
 
-    tf.train.write_graph(graph, path, name+'.pb', False)
+
+def tf1_export_graph(path, graph = None, session=None, inputs=None, outputs=None, name=None, attach_gradients=True):
+
+    if graph is None:
+        graph = tf1.get_default_graph()
+
+    if name is None:
+        name = os.path.basename(os.path.normpath(path))
+
+    inputs, outputs = tf1_find_tensors(graph, inputs, outputs)
+
+    mappings = []
+    if attach_gradients:
+        mappings = tf1_graph_attach_gradients(graph, inputs, outputs)
+
+    mappings += inputs
+    mappings += outputs
+
+    tf1.train.write_graph(graph, path, name+'.pb', False)
 
     if session is not None:
-        saver = tf.train.Saver()
+        saver = tf1.train.Saver()
         saver.save(session, os.path.join(path, name))
+    else:
+        if (tf1_op_exists(graph, "save/restore_all")):
+            print("WARNING: No weights are stored with the graph!\nWARNING: BART propably will not be able to load the graph.")
+
+    tf1_export_tensor_mapping(path, name, mappings)
 
 
 def tf1_convert_model(model_path, path, name):
 
-    try:
-        import tensorflow.compat.v1 as tf
-    except ImportError:
-        import tensorflow as tf
-        pass
-
-    sess = tf.Session()
-    saver = tf.train.Saver()
+    sess = tf1.Session()
+    saver = tf1.train.Saver()
     saver.restore(sess, model_path) 
 
     tf1_graph_attach_gradients(sess.graph)

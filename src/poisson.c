@@ -118,8 +118,8 @@ int main_poisson(int argc, char* argv[argc])
 	int Pest = T * (int)(1.2 * powf(kspext, 2.) / (yscale * zscale));
 
 	mindist /= kspext;
-	yscale *= (float)kspext / (float)yy;
-	zscale *= (float)kspext / (float)zz;
+	yscale *= kspext / (float)yy;
+	zscale *= kspext / (float)zz;
 
 	if (vardensity != 0.) {
 

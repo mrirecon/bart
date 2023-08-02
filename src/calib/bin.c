@@ -79,7 +79,7 @@ static void det_bins_amp(const long state_dims[DIMS], const complex float* state
 	md_real(DIMS, state_dims, s, state);
 	md_sadd(DIMS, state_dims, s, s, -min);
 
-	float delta = (float)max / n;
+	float delta = max / n;
 	float amp = 0.;
 
 	for (int t = 0; t < T; t++) {

@@ -43,7 +43,7 @@ nn_t nn_set_input_const_F2(nn_t op, int i, const char* iname, int N, const long 
 
 	for (int j = 0, jp = 0; j < nn_get_nr_in_args(result); j++) {
 
-		if (i == (int)j)
+		if (i == j)
 			jp++;
 
 		nn_clone_arg_i_from_i(result, j, op, jp);
@@ -78,7 +78,7 @@ nn_t nn_set_input_const_F(nn_t op, int i, const char* iname, int N, const long d
 
 	for (int j = 0, jp = 0; j < nn_get_nr_in_args(result); j++) {
 
-		if (i == (int)j)
+		if (i == j)
 			jp++;
 
 		nn_clone_arg_i_from_i(result, j, op, jp);
@@ -109,7 +109,7 @@ nn_t nn_del_out_F(nn_t op, int o, const char* oname)
 
 	for (int j = 0, jp = 0; j < nn_get_nr_out_args(result); j++) {
 
-		if (o == (int)j)
+		if (o == j)
 			jp++;
 
 		nn_clone_arg_o_from_o(result, j, op, jp);

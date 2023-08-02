@@ -20,12 +20,12 @@
 
 
 
-static void get_coord(unsigned int N, unsigned long flags, float coord[N], long pos[N], const long tdims[N], const long tstrs[N], const complex float* traj)
+static void get_coord(int N, unsigned long flags, float coord[N], long pos[N], const long tdims[N], const long tstrs[N], const complex float* traj)
 {
 	assert(0 == pos[0]);
-	unsigned int j = 0;
+	int j = 0;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		coord[i] = 0.;
 
@@ -43,7 +43,7 @@ static void get_coord(unsigned int N, unsigned long flags, float coord[N], long 
 
 
 
-void nudft_forward2(unsigned int N, unsigned long flags, 
+void nudft_forward2(int N, unsigned long flags,
 			const long kdims[N], const long kstrs[N], complex float* ksp,
 			const long idims[N], const long istrs[N], const complex float* img,
 			const long tdims[N], const long tstrs[N], const complex float* traj)
@@ -60,14 +60,14 @@ void nudft_forward2(unsigned int N, unsigned long flags,
 	complex float* tmp = md_alloc(N, tmp_dims, CFL_SIZE);
 
 	long kstrs2[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		kstrs2[i] = MD_IS_SET(flags, i) ? 0 : kstrs[i];
 
 
 	md_clear2(N, kdims, kstrs, ksp, CFL_SIZE);
 
 	long pos[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		pos[i] = 0;
 
 	do {
@@ -86,7 +86,7 @@ void nudft_forward2(unsigned int N, unsigned long flags,
 /**
  *
  */
-void nudft_adjoint2(unsigned int N, unsigned long flags, 
+void nudft_adjoint2(int N, unsigned long flags,
 			const long idims[N], const long istrs[N], complex float* img,
 			const long kdims[N], const long kstrs[N], const complex float* ksp,
 			const long tdims[N], const long tstrs[N], const complex float* traj)
@@ -103,14 +103,14 @@ void nudft_adjoint2(unsigned int N, unsigned long flags,
 	complex float* tmp = md_alloc(N, tmp_dims, CFL_SIZE);
 
 	long kstrs2[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		kstrs2[i] = MD_IS_SET(flags, i) ? 0 : kstrs[i];
 
 
 	md_clear2(N, idims, istrs, img, CFL_SIZE);
 
 	long pos[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		pos[i] = 0;
 
 	do {
@@ -127,7 +127,7 @@ void nudft_adjoint2(unsigned int N, unsigned long flags,
 }
 
 
-void nudft_forward(unsigned int N, unsigned long flags,
+void nudft_forward(int N, unsigned long flags,
 			const long odims[N], complex float* out,
 			const long idims[N], const complex float* in,
 			const long tdims[N], const complex float* traj)
@@ -148,7 +148,7 @@ struct nudft_s {
 
 	linop_data_t base;
 
-	unsigned int N;
+	int N;
 	unsigned long flags;
 
 	long* kdims;
@@ -165,7 +165,7 @@ struct nudft_s {
 static void nudft_apply(const linop_data_t* _data, complex float* out, const complex float* in)
 {
 	const struct nudft_s* data = CONTAINER_OF(_data, const struct nudft_s, base);
-	unsigned int N = data->N;
+	int N = data->N;
 
 	nudft_forward2(N, data->flags,
 			data->kdims, data->kstrs, out,
@@ -176,7 +176,7 @@ static void nudft_apply(const linop_data_t* _data, complex float* out, const com
 static void nudft_adj(const linop_data_t* _data, complex float* out, const complex float* in)
 {
 	const struct nudft_s* data = CONTAINER_OF(_data, const struct nudft_s, base);
-	unsigned int N = data->N;
+	int N = data->N;
 
 	nudft_adjoint2(N, data->flags,
 			data->idims, data->istrs, out,
@@ -198,7 +198,7 @@ static void nudft_delete(const linop_data_t* _data)
 	xfree(data);
 }
 
-const struct linop_s* nudft_create2(unsigned int N, unsigned long flags,
+const struct linop_s* nudft_create2(int N, unsigned long flags,
 					const long odims[N], const long ostrs[N],
 					const long idims[N], const long istrs[N],
 					const long tdims[N], const complex float* traj)
@@ -231,7 +231,7 @@ const struct linop_s* nudft_create2(unsigned int N, unsigned long flags,
 			nudft_apply, nudft_adj, NULL, NULL, nudft_delete);
 }
 
-const struct linop_s* nudft_create(unsigned int N, unsigned long flags, const long odims[N], const long idims[N], const long tdims[N], const complex float* traj)
+const struct linop_s* nudft_create(int N, unsigned long flags, const long odims[N], const long idims[N], const long tdims[N], const complex float* traj)
 {
 	return nudft_create2(N, flags, odims, MD_STRIDES(N, odims, CFL_SIZE), idims, MD_STRIDES(N, idims, CFL_SIZE), tdims, traj);
 }

@@ -1,6 +1,6 @@
 /* Copyright 2014-2015. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022. Institute of Biomedical Imaging. Graz University of Technology.
+ * Copyright 2022-2023. Institute of Biomedical Imaging. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -255,6 +255,9 @@ static complex float* compute_square_basis(int N, long sqr_bas_dims[N], const lo
 	sqr_bas_dims[6] *= sqr_bas_dims[6];
 	sqr_bas_dims[7] = 1;
 
+	if (use_compat_to_version("v0.7.00"))
+		md_zsmul(N, sqr_bas_dims, sqr_basis, sqr_basis, (double)bas_dims[6]);
+
 	return sqr_basis;
 }
 
@@ -323,6 +326,7 @@ static complex float* compute_psf_internal(int N, const long img_dims[N], const 
 
 		lop_nufft = nufft_create2(N, ksp_dims, img_dims2, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis, conf);
 		lop_nufft = linop_reshape_in_F(lop_nufft, N, img_dims);
+
 	} else {
 
 		nufft_update_traj(lop_nufft, N, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis);
@@ -451,6 +455,7 @@ static complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1],
 	
 		lop_nufft = nufft_create2(N, ksp_dims, psf_dims2, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis, conf);
 		lop_nufft = linop_reshape_in_F(lop_nufft, N, psf_dims);
+
 	} else {
 
 		nufft_update_traj(lop_nufft, N, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis);
@@ -689,7 +694,7 @@ static struct nufft_data* nufft_create_data(int N,
 
 			linphase = compute_linphases(N, data->lph_dims, data->flags, data->img_dims);
 
-			for (int i = 0; i < (int)data->N; i++)
+			for (int i = 0; i < data->N; i++)
 				if ((data->img_dims[i] > 1) && MD_IS_SET(data->flags, i))
 					data->factors[i] = 2;
 
@@ -725,7 +730,7 @@ static struct nufft_data* nufft_create_data(int N,
 
 	} else {
 
-		for (int i = 0; i < (int)data->N; i++)
+		for (int i = 0; i < data->N; i++)
 			if ((data->img_dims[i] > 1) && MD_IS_SET(data->flags, i))
 				data->factors[i] = conf.decomp ? 2 : 1;
 		
@@ -756,7 +761,7 @@ static struct nufft_data* nufft_create_data(int N,
 
 	md_copy_dims(ND, data->cm2_dims, data->cim_dims);
 
-	for (int i = 0; i < (int)N; i++)
+	for (int i = 0; i < N; i++)
 		if (conf.decomp && MD_IS_SET(data->flags, i))
 			data->cm2_dims[i] = (1 == cim_dims[i]) ? 1 : (2 * cim_dims[i]);
 
@@ -838,7 +843,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 
 		md_copy_dims(ND, data->psf_dims, data->lph_dims);
 
-		for (int i = 0; i < (int)N; i++)
+		for (int i = 0; i < N; i++)
 			if (!MD_IS_SET(data->flags, i))
 				data->psf_dims[i] = MAX(data->trj_dims[i], ((NULL != weights) ? data->wgh_dims[i] : 0));
 
@@ -996,7 +1001,7 @@ struct linop_s* nufft_create2(int N,
 		int d = conf.loopdim;
 		const long L = ksp_dims[d];
 
-		assert(d < (int)N);
+		assert(d < N);
 		assert((NULL == weights) || (1 == wgh_dims[d]));
 		assert((NULL == basis) || (1 == bas_dims[d]));
 		assert(1 == traj_dims[d]);
@@ -1328,6 +1333,7 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 	if (NULL != clinphase) {
 
 		md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, src, data->img_strs, clinphase);
+
 	} else {
 
 		float scale = 1. / sqrtf(md_calc_size(3, data->lph_dims));
@@ -1388,7 +1394,7 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 	int ncycles = data->lph_dims[data->N];
 
 	if (data->conf.pcycle)
-		((struct nufft_data*) data)->cycle = (data->cycle + 1) % ncycles;	// FIXME:
+		data->cycle = (data->cycle + 1) % ncycles;	// FIXME:
 
 	md_clear(data->N, data->cim_dims, dst, CFL_SIZE);
 
@@ -1624,8 +1630,8 @@ static void nufft_apply_adjoint_zero_overhead(const linop_data_t* _data, complex
 		linop_adjoint(data->cfft_op, data->N, data->cim_dims, dst, data->N, data->cim_dims, dst);
 		apply_linphases_3D(data->N, data->cim_dims, grid_conf.shift, dst, dst, true, false, true, scale);
 		
-
 		pos_cml[data->N]++;
+
 	} while (md_next(data->N, data->factors, data->conf.flags, pos_fac));
 
 	apply_rolloff_correction(2., data->grid_conf.width, data->grid_conf.beta, data->N, data->cim_dims, dst, dst);
@@ -1732,7 +1738,7 @@ void nufft_update_traj(	const struct linop_s* nufft, int N,
 
 	auto data = CAST_DOWN(nufft_data, _data);
 
-	assert((int)data->N == N);
+	assert(data->N == N);
 
 	nufft_set_traj(data, N, trj_dims, traj, wgh_dims, weights, bas_dims, basis);
 }

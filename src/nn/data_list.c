@@ -137,7 +137,7 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 
 			assert(0 != names[i]);
 
-			N = MAX(N, (int)nn_generic_domain(network, 0, names[i])->N);
+			N = MAX(N, nn_generic_domain(network, 0, names[i])->N);
 			D++;
 		}
 	}
@@ -155,7 +155,7 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 			const struct named_tensor_s* tensor = get_tensor_by_name(train_data, names[i]);
 			auto iov = nn_generic_domain(network, 0, names[i]);
 
-			assert(tensor->N == (int)(iov->N));
+			assert(tensor->N == iov->N);
 
 			md_singleton_dims(N, bat_dims[D]);
 			md_singleton_dims(N, tot_dims[D]);
@@ -191,7 +191,7 @@ nn_t nn_valid_create(nn_t network, struct named_data_list_s* valid_data)
 
 			network = nn_ignore_input_F(network, 0, names[i], tensor->N, tensor->dims, false, tensor->data);
 
-			assert(tensor->N == (int)(iov->N));
+			assert(tensor->N == iov->N);
 		}
 	}
 

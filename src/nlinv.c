@@ -237,7 +237,7 @@ int main_nlinv(int argc, char* argv[argc])
 	complex float* mask = NULL;
 
 	complex float* ksens = md_alloc(DIMS, sens_dims, CFL_SIZE);
-	complex float* sens = ((NULL != sens_file) ? create_cfl : anon_cfl)((NULL != sens_file) ? sens_file : "", DIMS, sens_dims);
+	complex float* sens = ((NULL != sens_file) ? create_cfl : anon_cfl)(sens_file, DIMS, sens_dims);
 
 	// initialization
 	if (NULL != init_file) {

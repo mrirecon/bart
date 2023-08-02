@@ -1,5 +1,6 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -82,14 +83,14 @@ complex float vec_mean(long D, const complex float src[D])
 	return val / D;
 }
 
-void (mat_add)(int A, int B, complex float x[A][B], const complex float y[A][B], const complex float z[A][B])
+void mat_add(int A, int B, complex float x[A][B], const complex float y[A][B], const complex float z[A][B])
 {
 	for (int i = 0; i < A; i++)
 		for (int j = 0; j < B; j++)
 			x[i][j] = y[i][j] + z[i][j];
 }
 
-void (mat_muladd)(int A, int B, int C, complex float x[MVLA(A)][C], const complex float y[MVLA(A)][B], const complex float z[MVLA(B)][C])
+void mat_muladd(int A, int B, int C, complex float x[MVLA(A)][C], const complex float y[MVLA(A)][B], const complex float z[MVLA(B)][C])
 {
 #ifdef MAT_USE_LAPACK
 	complex float tmp[A][C];
@@ -111,7 +112,7 @@ void (mat_muladd)(int A, int B, int C, complex float x[MVLA(A)][C], const comple
 }
 
 
-void (mat_mul)(int A, int B, int C, complex float x[A][C], const complex float y[A][B], const complex float z[B][C])
+void mat_mul(int A, int B, int C, complex float x[A][C], const complex float y[A][B], const complex float z[B][C])
 {
 #ifdef MAT_USE_LAPACK
 	blas_matrix_multiply(C, A, B, x, z, y);
@@ -147,7 +148,7 @@ void matf_mul(int A, int B, int C, float x[A][C], const float y[A][B], const flo
 
 
 
-bool (mat_inverse)(unsigned int N, complex float out[N][N], const complex float in[N][N])
+bool mat_inverse(int N, complex float out[N][N], const complex float in[N][N])
 {
 #ifdef MAT_USE_LAPACK
 //	return blas_matrix_inverse(N, out, in);
@@ -164,17 +165,17 @@ bool (mat_inverse)(unsigned int N, complex float out[N][N], const complex float 
 	complex float tmp2[N][2 * N];
 	mat_transpose(2 * N, N, tmp2, tmp);
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		complex float diag = tmp2[i][i];
 
 		if (0. == diag)
 			return false;
 
-		for (unsigned int j = 0; j < 2 * N; j++)
+		for (int j = 0; j < 2 * N; j++)
 			tmp2[i][j] /= diag;
 
-		for (unsigned int j = 0; j < N; j++) {
+		for (int j = 0; j < N; j++) {
 
 			if (i != j)
 				vec_saxpy(2 * N, tmp2[j], -tmp2[j][i], tmp2[i]);
@@ -190,13 +191,13 @@ bool (mat_inverse)(unsigned int N, complex float out[N][N], const complex float 
 
 
 // Moore-Penrose pseudo inverse
-void mat_pinv(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B])
+void mat_pinv(int A, int B, complex float out[B][A], const complex float in[A][B])
 {
 	((B <= A) ? mat_pinv_left : mat_pinv_right)(A, B, out, in);
 }
 
 
-void mat_pinv_left(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B])
+void mat_pinv_left(int A, int B, complex float out[B][A], const complex float in[A][B])
 {
 	if (A == B) {
 
@@ -219,7 +220,7 @@ void mat_pinv_left(unsigned int A, unsigned int B, complex float out[B][A], cons
 }
 
 
-void mat_pinv_right(unsigned int A, unsigned int B, complex float out[B][A], const complex float in[A][B])
+void mat_pinv_right(int A, int B, complex float out[B][A], const complex float in[A][B])
 {
 	if (A == B) {
 
@@ -242,24 +243,24 @@ void mat_pinv_right(unsigned int A, unsigned int B, complex float out[B][A], con
 }
 
 
-void (mat_kron)(unsigned int A, unsigned int B, unsigned int C, unsigned int D, 
-		complex float out[A * C][B * D], const complex float in1[A][B], const complex float in2[C][D])
+void mat_kron(int A, int B, int C, int D,
+	      complex float out[A * C][B * D], const complex float in1[A][B], const complex float in2[C][D])
 {
-	for (unsigned int a = 0; a < A; a++)
-		for (unsigned int b = 0; b < B; b++)
-			for (unsigned int c = 0; c < C; c++)
-				for (unsigned int d = 0; d < D; d++)
+	for (int a = 0; a < A; a++)
+		for (int b = 0; b < B; b++)
+			for (int c = 0; c < C; c++)
+				for (int d = 0; d < D; d++)
 					out[a + c * A][b + d * B] = in1[a][b] * in2[c][d];
 }
 
 
-void (mat_vecmul)(unsigned int A, unsigned int B, complex float out[A], const complex float mat[A][B], const complex float in[B])
+void mat_vecmul(int A, int B, complex float out[A], const complex float mat[A][B], const complex float in[B])
 {
-	for (unsigned int a = 0; a < A; a++) {
+	for (int a = 0; a < A; a++) {
 
 		cfl_acu_t tmp = 0.;
 
-		for (unsigned int b = 0; b < B; b++)
+		for (int b = 0; b < B; b++)
 			tmp += mat[a][b] * in[b];
 
 		out[a] = tmp;
@@ -267,13 +268,13 @@ void (mat_vecmul)(unsigned int A, unsigned int B, complex float out[A], const co
 }
 
 
-void matf_vecmul(unsigned int A, unsigned int B, float out[A], const float mat[A][B], const float in[B])
+void matf_vecmul(int A, int B, float out[A], const float mat[A][B], const float in[B])
 {
-	for (unsigned int a = 0; a < A; a++) {
+	for (int a = 0; a < A; a++) {
 
 		fl_acu_t tmp = 0.;
 
-		for (unsigned int b = 0; b < B; b++)
+		for (int b = 0; b < B; b++)
 			tmp += mat[a][b] * in[b];
 
 		out[a] = tmp;
@@ -281,17 +282,17 @@ void matf_vecmul(unsigned int A, unsigned int B, float out[A], const float mat[A
 }
 
 
-void (mat_vec)(unsigned int A, unsigned int B, complex float out[A * B], const complex float in[A][B])
+void mat_vec(int A, int B, complex float out[A * B], const complex float in[A][B])
 {
-	for (unsigned int a = 0; a < A; a++)
-		for (unsigned int b = 0; b < B; b++)
+	for (int a = 0; a < A; a++)
+		for (int b = 0; b < B; b++)
 			out[a * B + b] = in[a][b];
 }
 
-void (vec_mat)(unsigned int A, unsigned int B, complex float out[A][B], const complex float in[A * B])
+void vec_mat(int A, int B, complex float out[A][B], const complex float in[A * B])
 {
-	for (unsigned int a = 0; a < A; a++)
-		for (unsigned int b = 0; b < B; b++)
+	for (int a = 0; a < A; a++)
+		for (int b = 0; b < B; b++)
 			out[a][b] = in[a * B + b];
 }
 
@@ -324,7 +325,7 @@ void vec_saxpy(int N, complex float x[N], complex float alpha, const complex flo
 		x[k] += alpha * y[k];
 }
 
-void (gram_matrix)(int N, complex float cov[N][N], int L, const complex float data[N][L])
+void gram_matrix(int N, complex float cov[N][N], int L, const complex float data[N][L])
 {
 #pragma omp parallel for
 	for (int i = 0; i < N; i++) {
@@ -338,7 +339,7 @@ void (gram_matrix)(int N, complex float cov[N][N], int L, const complex float da
 	}
 }
 
-void (pack_tri_matrix)(int N, complex float cov[N * (N + 1) / 2], const complex float m[N][N])
+void pack_tri_matrix(int N, complex float cov[N * (N + 1) / 2], const complex float m[N][N])
 {
 	int l = 0;
 
@@ -347,7 +348,7 @@ void (pack_tri_matrix)(int N, complex float cov[N * (N + 1) / 2], const complex 
 			cov[l++] = m[i][j];
 }
 
-void (unpack_tri_matrix)(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])
+void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])
 {
 	int l = 0;
 
@@ -356,7 +357,7 @@ void (unpack_tri_matrix)(int N, complex float m[N][N], const complex float cov[N
 			m[i][j] = cov[l++];
 }
 
-void (gram_matrix2)(int N, complex float cov[N * (N + 1) / 2], int L, const complex float data[N][L])
+void gram_matrix2(int N, complex float cov[N * (N + 1) / 2], int L, const complex float data[N][L])
 {
 #if 0
 	int l = 0;
@@ -399,6 +400,13 @@ void gram_schmidt(int M, int N, float vals[M], complex float vecs[M][N])
 }
 
 void (mat_transpose)(int A, int B, complex float dst[B][A], const complex float src[A][B])
+{
+	for (int i = 0; i < B; i++)
+		for (int j = 0; j < A; j++)
+			dst[i][j] = src[j][i];	// swap
+}
+
+void matf_transpose(int A, int B, float dst[B][A], const float src[A][B])
 {
 	for (int i = 0; i < B; i++)
 		for (int j = 0; j < A; j++)

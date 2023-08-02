@@ -14,6 +14,7 @@
 #include "num/multind.h"
 
 #include "num/ops.h"
+#include "num/ops_p.h"
 #include "num/ops_graph.h"
 #include "num/iovec.h"
 #include "num/flpmath.h"
@@ -883,7 +884,7 @@ static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
 		auto iov = nlop_generic_codomain(op, o);
 
 		assert(CFL_SIZE == iov->size);
-		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+		assert(iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
 
 		odims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[o] = olast;
@@ -900,7 +901,7 @@ static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
 		auto iov = nlop_generic_domain(op, i);
 
 		assert(CFL_SIZE == iov->size);
-		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+		assert(iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
 
 		idims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[OO + i] = ilast;
@@ -1137,7 +1138,7 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 		auto iov = nlop_generic_codomain(op, o);
 
 		assert(CFL_SIZE == iov->size);
-		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+		assert(iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
 
 		odims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[o] = olast;
@@ -1154,7 +1155,7 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 		auto iov = nlop_generic_domain(op, i);
 
 		assert(CFL_SIZE == iov->size);
-		assert((int)iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
+		assert(iov->N == md_calc_blockdim(iov->N, iov->dims, iov->strs, iov->size));
 
 		idims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[OO + i] = ilast;
@@ -1609,5 +1610,56 @@ const struct nlop_s* nlop_assign_gpu_F(const struct nlop_s* op, int device)
 	nlop_free(op);
 	return result;
 }
+
+
+struct op_p_nlop_wrapper {
+
+	INTERFACE(operator_data_t);
+
+	const struct nlop_s* nlop;
+};
+
+static DEF_TYPEID(op_p_nlop_wrapper);
+
+
+static void op_p_nlop_fun(const operator_data_t* data, float _par, complex float* dst, const complex float* src)
+{
+	auto d = CAST_DOWN(op_p_nlop_wrapper, data);
+
+	complex float* par = md_alloc_sameplace(1, MD_DIMS(1), CFL_SIZE, src);
+	md_clear(1, MD_DIMS(1), par, CFL_SIZE);
+	md_copy(1, MD_DIMS(1), par, &_par, FL_SIZE);
+	
+	void* args[3] = { dst, (void*)src, par};
+	nlop_generic_apply_select_derivative_unchecked(d->nlop, 3, args, 0, 0);
+}
+
+
+static void op_p_nlop_del(const operator_data_t* data)
+{
+	auto d = CAST_DOWN(op_p_nlop_wrapper, data);
+	nlop_free(d->nlop);
+
+	xfree(data);
+}
+
+const struct operator_p_s* op_p_nlop_wrapper_F(const struct nlop_s* nlop)
+{
+	PTR_ALLOC(struct op_p_nlop_wrapper, data);
+	SET_TYPEID(op_p_nlop_wrapper, data);
+
+	data->nlop = nlop;
+	auto pdom = nlop_generic_domain(nlop, 1);
+	assert(1 == md_calc_size(pdom->N, pdom->dims));
+
+	auto cod = nlop_generic_codomain(nlop, 0);
+	auto dom = nlop_generic_domain(nlop, 0);
+
+	return operator_p_create(cod->N, cod->dims, dom->N, dom->dims, CAST_UP(PTR_PASS(data)), op_p_nlop_fun, op_p_nlop_del);
+}
+
+
+
+
 
 

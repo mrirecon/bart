@@ -206,7 +206,7 @@ tests/test-pics-batch: pics repmat nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(T
 
 
 
-tests/test-pics-tedim: phantom fmac fft pics nrmse
+tests/test-pics-timedim: phantom fmac fft pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -s4 -m coils.ra						;\
 	$(TOOLDIR)/phantom -m img.ra							;\
@@ -499,15 +499,43 @@ tests/test-pics-noncart-lowmem-stack2: traj slice phantom conj join fft flip pic
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-pics-phase: traj phantom ones join nufft fmac scale bitmask saxpy slice pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x64 -o2 -y13 -t3 t.ra					;\
+	$(TOOLDIR)/phantom -N2 -b -t t.ra -s8 -k k0.ra					;\
+	$(TOOLDIR)/ones 1 1 one.ra							;\
+	$(TOOLDIR)/scale -- -1. one.ra mone.ra						;\
+	$(TOOLDIR)/scale -- -2. one.ra mtwo.ra						;\
+	$(TOOLDIR)/scale 2. one.ra two.ra						;\
+	$(TOOLDIR)/join 10 one.ra one.ra mone.ra scl1.ra				;\
+	$(TOOLDIR)/join 10 two.ra mtwo.ra two.ra scl2.ra				;\
+	$(TOOLDIR)/join 6 scl1.ra scl2.ra scl.ra					;\
+	$(TOOLDIR)/fmac -s $$($(TOOLDIR)/bitmask 6) scl.ra k0.ra k.ra			;\
+	$(TOOLDIR)/ones 2 64 64 phmap0.ra						;\
+	$(TOOLDIR)/phantom -N2 -b -x64 i.ra						;\
+	$(TOOLDIR)/fmac -s $$($(TOOLDIR)/bitmask 6) scl.ra i.ra ref1.ra			;\
+	$(TOOLDIR)/slice 10 0 ref1.ra ref.ra						;\
+	$(TOOLDIR)/slice 6 0 i.ra i1.ra							;\
+	$(TOOLDIR)/slice 6 1 i.ra i2.ra							;\
+	$(TOOLDIR)/saxpy -- -2 i2.ra phmap0.ra phmap1.ra				;\
+	$(TOOLDIR)/saxpy -- -2 i1.ra phmap0.ra phmap2.ra				;\
+	$(TOOLDIR)/join 10 phmap0.ra phmap1.ra phmap2.ra phmap.ra			;\
+	$(TOOLDIR)/phantom -S8 -x64 c.ra						;\
+	$(TOOLDIR)/fmac c.ra phmap.ra c2.ra						;\
+	$(TOOLDIR)/pics -S --shared-img-dims=$$($(TOOLDIR)/bitmask 10) -tt.ra k.ra c2.ra i.ra		;\
+	$(TOOLDIR)/nrmse -s -t0.13 i.ra ref.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 TESTS += tests/test-pics-warmstart tests/test-pics-batch
-TESTS += tests/test-pics-tedim tests/test-pics-bp-noncart
+TESTS += tests/test-pics-timedim tests/test-pics-bp-noncart
 TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory tests/test-pics-basis-noncart2
 #TESTS += tests/test-pics-lowmem
 TESTS += tests/test-pics-noncart-sms tests/test-pics-psf tests/test-pics-tgv tests/test-pics-tgv2
 TESTS += tests/test-pics-wavl1-dau2 tests/test-pics-wavl1-cdf44 tests/test-pics-wavl1-haar
 TESTS += tests/test-pics-noncart-lowmem tests/test-pics-noncart-lowmem-stack0 tests/test-pics-noncart-lowmem-stack1 tests/test-pics-noncart-lowmem-stack2 tests/test-pics-noncart-lowmem-no-toeplitz
-
+TESTS += tests/test-pics-phase

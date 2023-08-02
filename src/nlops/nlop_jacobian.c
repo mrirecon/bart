@@ -695,7 +695,7 @@ static void rdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[
 	assert(md_check_equal_dims(N, odims[0], ddims[0][0], ~0));
 
 	assert(NULL == data->zdiag_fun);
-	data->rdiag_fun(data->data, N, odims[0], (float*)(dst[0]), (float*)(src[0]), (float*)(jac[0][0]));
+	data->rdiag_fun(data->data, N, odims[0], dst[0], src[0], jac[0][0]);
 }
 
 struct nlop_s* nlop_rdiag_create(int N, const long dims[N], nlop_data_t* data, nlop_rdiag_fun_t forward, nlop_del_diag_fun_t del)
@@ -853,8 +853,8 @@ struct nlop_s* nlop_rblock_diag_create(nlop_data_t* data, int N, const long odim
 
 void linop_compute_matrix_zblock_diag_fwd(const struct linop_s* lop, int N, const long ddims[N], complex float* jacobian)
 {
-	assert(N == (int)linop_domain(lop)->N);
-	assert(N == (int)linop_codomain(lop)->N);
+	assert(N == linop_domain(lop)->N);
+	assert(N == linop_codomain(lop)->N);
 
 	const long* odims = linop_codomain(lop)->dims;
 	const long* idims = linop_domain(lop)->dims;
@@ -901,8 +901,8 @@ void linop_compute_matrix_zblock_diag_fwd(const struct linop_s* lop, int N, cons
 
 void linop_compute_matrix_zblock_diag_bwd(const struct linop_s* lop, int N, const long ddims[N], complex float* jacobian)
 {
-	assert(N == (int)linop_domain(lop)->N);
-	assert(N == (int)linop_codomain(lop)->N);
+	assert(N == linop_domain(lop)->N);
+	assert(N == linop_codomain(lop)->N);
 
 	const long* odims = linop_codomain(lop)->dims;
 	const long* idims = linop_domain(lop)->dims;
@@ -951,8 +951,8 @@ void linop_compute_matrix_zblock_diag_bwd(const struct linop_s* lop, int N, cons
 
 void linop_compute_matrix_zblock_diag(const struct linop_s* lop, int N, const long ddims[N], complex float* jacobian)
 {
-	assert(N == (int)linop_domain(lop)->N);
-	assert(N == (int)linop_codomain(lop)->N);
+	assert(N == linop_domain(lop)->N);
+	assert(N == linop_codomain(lop)->N);
 
 	const long* odims = linop_codomain(lop)->dims;
 	const long* idims = linop_domain(lop)->dims;
@@ -971,8 +971,8 @@ void linop_compute_matrix_zblock_diag(const struct linop_s* lop, int N, const lo
 
 void linop_compute_matrix_rblock_diag_fwd(const struct linop_s* lop, int N, const long ddims[N], float* jacobian)
 {
-	assert(N == 2 + (int)linop_domain(lop)->N);
-	assert(N == 2 + (int)linop_codomain(lop)->N);
+	assert(N == 2 + linop_domain(lop)->N);
+	assert(N == 2 + linop_codomain(lop)->N);
 
 	long odims[N];
 	long idims[N];
@@ -1043,8 +1043,8 @@ void linop_compute_matrix_rblock_diag_fwd(const struct linop_s* lop, int N, cons
 
 void linop_compute_matrix_rblock_diag_bwd(const struct linop_s* lop, int N, const long ddims[N], float* jacobian)
 {
-	assert(N == 2 + (int)linop_domain(lop)->N);
-	assert(N == 2 + (int)linop_codomain(lop)->N);
+	assert(N == 2 + linop_domain(lop)->N);
+	assert(N == 2 + linop_codomain(lop)->N);
 
 	long odims[N];
 	long idims[N];
@@ -1112,8 +1112,8 @@ void linop_compute_matrix_rblock_diag_bwd(const struct linop_s* lop, int N, cons
 
 void linop_compute_matrix_rblock_diag(const struct linop_s* lop, int N, const long ddims[N], float* jacobian)
 {
-	assert(N == 2 + (int)linop_domain(lop)->N);
-	assert(N == 2 + (int)linop_codomain(lop)->N);
+	assert(N == 2 + linop_domain(lop)->N);
+	assert(N == 2 + linop_codomain(lop)->N);
 
 	const long* odims = linop_codomain(lop)->dims;
 	const long* idims = linop_domain(lop)->dims;
@@ -1133,8 +1133,8 @@ void linop_compute_matrix_rblock_diag(const struct linop_s* lop, int N, const lo
 
 void linop_compute_matrix_zrblock_diag(const struct linop_s* lop, int N, const long ddims[N], complex float* jac, complex float* jacc)
 {
-	assert(N == (int)linop_domain(lop)->N);
-	assert(N == (int)linop_codomain(lop)->N);
+	assert(N == linop_domain(lop)->N);
+	assert(N == linop_codomain(lop)->N);
 
 	long ddims2[N + 2];
 	ddims2[0] = 2;
@@ -1252,13 +1252,13 @@ struct nlop_s* nlop_zprecomp_jacobian_F(const struct nlop_s* nlop)
 
 	for (int i = 0; i < II; i++) {
 
-		assert(N == (int)nlop_generic_domain(nlop, i)->N);
+		assert(N == nlop_generic_domain(nlop, i)->N);
 		md_copy_dims(N, nl_idims[i], nlop_generic_domain(nlop, i)->dims);
 	}
 
 	for (int o = 0; o < OO; o++) {
 
-		assert(N == (int)nlop_generic_codomain(nlop, o)->N);
+		assert(N == nlop_generic_codomain(nlop, o)->N);
 		md_copy_dims(N, nl_odims[o], nlop_generic_codomain(nlop, o)->dims);
 	}
 
@@ -1331,13 +1331,13 @@ struct nlop_s* nlop_zrprecomp_jacobian_F(const struct nlop_s* nlop)
 
 	for (int i = 0; i < II; i++) {
 
-		assert(N == (int)nlop_generic_domain(nlop, i)->N);
+		assert(N == nlop_generic_domain(nlop, i)->N);
 		md_copy_dims(N, nl_idims[i], nlop_generic_domain(nlop, i)->dims);
 	}
 
 	for (int o = 0; o < OO; o++) {
 
-		assert(N == (int)nlop_generic_codomain(nlop, o)->N);
+		assert(N == nlop_generic_codomain(nlop, o)->N);
 		md_copy_dims(N, nl_odims[o], nlop_generic_codomain(nlop, o)->dims);
 	}
 

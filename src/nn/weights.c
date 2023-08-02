@@ -208,7 +208,7 @@ void nn_init(nn_t op, nn_weights_t weights)
 
 		if(NULL != op->initializers[i]) {
 
-			assert((int)ip < weights->N);
+			assert(ip < weights->N);
 			auto iov = nlop_generic_domain(op->nlop, i);
 			iovec_check(weights->iovs[ip], iov->N, iov->dims, iov->strs);
 			initializer_apply(op->initializers[i], iov->N, iov->dims, weights->tensors[ip++]);
@@ -252,11 +252,11 @@ nn_t nn_get_wo_weights(nn_t op, nn_weights_t weights, bool copy)
 
 	auto nlop_result = nlop_clone(op->nlop);
 
-	for (int i = (int)nn_get_nr_out_args(op) - 1; i >= 0; i--)
+	for (int i = nn_get_nr_out_args(op) - 1; i >= 0; i--)
 		if (OUT_BATCHNORM == op->out_types[i])
 			nlop_result = nlop_del_out_F(nlop_result, i);
 
-	for (int i = (int)nn_get_nr_in_args(op) - 1, ip = weights->N - 1; i >= 0; i--)
+	for (int i = nn_get_nr_in_args(op) - 1, ip = weights->N - 1; i >= 0; i--)
 		if ((IN_OPTIMIZE == op->in_types[i]) || (IN_BATCHNORM == op->in_types[i])) {
 
 			auto iov = weights->iovs[ip];

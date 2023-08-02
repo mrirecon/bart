@@ -26,12 +26,12 @@ def tf1_generate_resnet(path, model):
 
     tf.reset_default_graph()
 
-    batch_size = 2
+    batch_size = None
     image_shape = [1, 32, 32]
     img_channel = 1
 
     img = tf.placeholder(tf.float32, shape=[batch_size] + [1] * 12 + image_shape+[2], name='input_0')
-    img_t = tf.reshape(img, [batch_size] + image_shape + [img_channel * 2])
+    img_t = tf.reshape(img, [-1] + image_shape + [img_channel * 2])
 
     conv_0 = tf.placeholder(tf.float32, shape=[1, 3, 3, 1, 8, 2], name='input_1')
     conv_i = tf.placeholder(tf.float32, shape=[1, 1, 3, 3, 8, 8, 2], name='input_2')
@@ -51,9 +51,9 @@ def tf1_generate_resnet(path, model):
             out = tf.nn.relu(out)
         
     out = out + img_t
-    out = tf.reshape(out, img.shape, name='output_0')
+    out = tf.reshape(out, tf.shape(img), name='output_0')
 
-    bart_tf.tf1_export_graph(tf.get_default_graph(), path, model)
+    bart_tf.tf1_export_graph(path, name=model)
 
 tf1_generate_resnet("./", "tf1_resnet")
 

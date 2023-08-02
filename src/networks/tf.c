@@ -52,15 +52,13 @@ nn_t network_tensorflow_create(const struct network_s* _config, unsigned int NO,
 
 	if (NULL == config->tf_graph) {
 
-		const char* signature_key = ptr_printf("serving_default_batch_%d", idims[NI - 1]);
-
-		config->tf_graph = tf_shared_graph_create(config->model_path, (1 != idims[NI - 1]) ? signature_key : NULL);
-
-		xfree(signature_key);
+		config->tf_graph = tf_shared_graph_create(config->model_path, NULL);
 
 		if (NULL == tf_shared_graph_get_init_path(config->tf_graph))
 			debug_printf(DP_WARN, "All weights of TensorFlow v1 graph are initialized with zeros (if not loaded)!\n");
 	}
+
+	tf_shared_graph_set_batch_size(config->tf_graph, idims[NI - 1]);
 
 	const struct nlop_s* nlop_net = nlop_tf_shared_create(config->tf_graph);
 

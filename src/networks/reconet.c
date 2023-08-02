@@ -1192,7 +1192,7 @@ void eval_reconet(struct reconet_s* config, int N, const long max_dims[N], int N
 	for (int i = 1; i < NL; i++)
 		loss_op = nlop_stack_outputs_F(loss_op, 0, 1, 0);
 
-	for (int i = 0; i < (int)N - 1; i++)
+	for (int i = 0; i < N - 1; i++)
 		loss_op = nlop_append_singleton_dim_out_F(loss_op, 0);
 
 	long tloss_dims[N];

@@ -9,10 +9,8 @@
  */
 
 #include <assert.h>
-#include <stdlib.h>
 #include <complex.h>
 #include <math.h>
-#include <strings.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -266,7 +264,7 @@ void linear_phase(unsigned int N, const long dims[N], const float pos[N], comple
 	complex float grad[N];
 
 	for (unsigned int n = 0; n < N; n++)
-		grad[n] = 2. * M_PI * (float)(pos[n]) / ((float)dims[n]);
+		grad[n] = 2. * M_PI * pos[n] / ((float)dims[n]);
 
 	centered_gradient(N, dims, grad, out);
 	md_zexpj(N, dims, out, out);

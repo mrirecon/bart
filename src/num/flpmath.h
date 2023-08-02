@@ -124,7 +124,7 @@ extern int calc_convcorr_geom(int N, unsigned long flags,
 extern int calc_convcorr_geom_strs_dil(int N, unsigned long flags,
 				       long mdims[__VLA(2 * N)], long ostrs2[__VLA(2 * N)], long kstrs2[__VLA(2 * N)], long istrs2[__VLA(2 * N)],
 				       const long odims[__VLA(N)], const long ostrs[__VLA(N)], const long kdims[__VLA(N)], const long kstrs[__VLA(N)], const long idims[__VLA(N)], const long istrs[__VLA(N)],
-				       const long dilation[__VLA(N)], const long strides[__VLA(N)], bool conv, bool test_mode);
+				       const long dilation[__VLA2(N)], const long strides[__VLA2(N)], bool conv, bool test_mode);
 
 extern void md_matmul_dims(int D, long max_dims[__VLA(D)], const long out_dims[__VLA(D)], const long mat_dims[__VLA(D)], const long in_dims[__VLA(D)]);
 
@@ -396,6 +396,8 @@ extern void md_zcmpl(int D, const long dims[__VLA(D)], _Complex float* dst, cons
 
 extern void md_pdf_gauss2(int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr, float mu, float sigma);
 extern void md_pdf_gauss(int D, const long dims[__VLA(D)], float* optr, const float* iptr, float mu, float sigma);
+
+extern void md_zgausspdf(int D, const long dims[__VLA(D)], _Complex float *optr, _Complex float S);
 
 extern float md_zmaxnorm2(int D, const long dims[__VLA(D)], const long strs[__VLA(D)], const _Complex float* ptr);
 extern float md_zmaxnorm(int D, const long dims[__VLA(D)], const _Complex float* ptr);
