@@ -70,6 +70,8 @@ ISMRMRD=0
        -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -o ./web/wwwroot/bart.js /home/ich/fftw/lib/libfftw3f.a \
        /home/ich/openblas/lib/libopenblas.a /home/ich/blocksruntime/libBlocksRuntime.a
 
+    - the script webasm.sh builds the files needed for the included web examples
+
     - important to include all libfftw3.a, libopenblas.a and also libBlocksRuntime.a (here clang doesn't crash)
     - all functions, variables you want to access in the js files have to be exported.
     - you definitely have to include '__Block_Object_dispose' even if you don't call this function in your js code!
