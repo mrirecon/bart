@@ -399,9 +399,8 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 
 	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
 
-	if (NULL != wisdom) {
+	if (NULL != wisdom)
 		fftwf_import_wisdom_from_filename(wisdom);
-	}
 
 
 	//FFTW seems to be fine with this
@@ -428,7 +427,8 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 	#pragma omp critical
 	fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
 				backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
-	
+
+
 	if (NULL != wisdom) {
 
 		fftwf_export_wisdom_to_filename(wisdom);
@@ -478,9 +478,8 @@ static void fft_free_plan(const operator_data_t* _data)
 {
 	const auto plan = CAST_DOWN(fft_plan_s, _data);
 
-	if (NULL != plan->fftw) {
+	if (NULL != plan->fftw)
 		fftwf_destroy_plan(plan->fftw);
-	}
 
 #ifdef	USE_CUDA
 	if (NULL != plan->cuplan)
