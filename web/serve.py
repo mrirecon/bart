@@ -1,3 +1,11 @@
+# Copyright 2023. Christian Tönnes.
+# All rights reserved. Use of this source code is governed by
+# a BSD-style license which can be found in the LICENSE file.
+# 
+# Authors:
+# 2023 Christian Tönnes <christian.toennes@keks.li>
+#
+
 # pip install libsass watchdog
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import mimetypes
