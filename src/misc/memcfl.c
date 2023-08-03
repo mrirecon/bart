@@ -1,8 +1,13 @@
+/* Copyright 2021-2023. Martin Uecker and BART Developers.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
 
 #include <stdbool.h>
 #include <complex.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "misc/misc.h"
 
@@ -68,27 +73,36 @@ bool memcfl_exists(const char* name)
 	return false;
 }
 
-const char** memcfl_list_all() {
+const char** memcfl_list_all(void)
+{
 	struct memcfl* mem = memcfl_list;
 	int count = 0;
+
 	while (NULL != mem) {
+
 		mem = mem->next;
 		count++;
 	}
-	const char** list = (const char**) malloc((count+1)*sizeof(char*));
-	list[0] = (char*)count;
+
+	const char* (*list)[count + 1] = xmalloc(sizeof *list);
+
+	(*list)[0] = (char*)(uintptr_t)count;	// !
+
 	mem = memcfl_list;
-	for(int i=1;i<count+1;i++) {
-		if(mem == NULL) {
-			list[i] = 0;
-		} else {
-			list[i] = mem->name;
-		}
+
+	for(int i = 1; i < count + 1; i++) {
+
+		(*list)[i] = NULL;
+
+		if (mem != NULL)
+			(*list)[i] = mem->name;
+
 		mem = mem->next;
 	}
 
-	return list;
+	return *list;
 }
+
 
 complex float* memcfl_load(const char* name, int D, long dims[D])
 {
