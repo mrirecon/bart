@@ -1,20 +1,21 @@
 A short guide on how I compiled BART to WebAssembler:
 
-1. Download:
+1. Download (tested versions.):
     - emscripten (3.1.41)
     - OpenBLAS source (0.3.23)
     - libfftw3 source (3.3.10)
-    - bart source (with my changes)
-    - optional: libpng and zlib sources
+    - BlocksRuntime source (from git)
+    - bart source
 
 2. Prepare:
     - use emsdk to install and activate latest emscripten.
 
 3. Compile OpenBLAS:
+    - compiling this is a bit troublesome, for me it only works on a linux system and not on windows with wsl.
     - a few month ago OpenBLAS got support for emscripten so just use this make command to compile:
-    make CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NO_FORTRAN=1 USE_THREAD=0
+    make CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NOFORTRAN=1 USE_THREAD=0
     - install the results outside of the standard places in /usr/ ! e.g. somewhere in your home directory
-    make CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NO_FORTRAN=1 USE_THREAD=0 PREFIX=$HOME/openblas install
+    make CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NOFORTRAN=1 USE_THREAD=0 PREFIX=$HOME/openblas install
 
 4. Compile libfftw3
     - again: set install prefix outside of /usr/ !
@@ -25,14 +26,16 @@ A short guide on how I compiled BART to WebAssembler:
 
 5. Compile BlocksRuntime
     CC=emcc AR=emar RANLIB=emranlib ./buildlib
-    sudo env prefix=$HOME/blocksruntime ./installlib
+    - run the install script with sudo or:
+    - open ./installlib in a texteditor and delete the lines 85 to 89. then run it without sudo
+    sudo prefix=$HOME/blocksruntime ./installlib
 
 6. Compile bart
     - create a Makefile.local in folder Makefiles
     - content should be this:
 """
-FFTW_BASE=/home/ich/fftw
-BLAS_BASE=/home/ich/openblas
+FFTW_BASE=$HOME/fftw
+BLAS_BASE=$HOME/openblas
 CC=emcc
 
 CFLAGS+=-fblocks
@@ -70,7 +73,7 @@ ISMRMRD=0
        -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -o ./web/wwwroot/bart.js /home/ich/fftw/lib/libfftw3f.a \
        /home/ich/openblas/lib/libopenblas.a /home/ich/blocksruntime/libBlocksRuntime.a
 
-    - the script webasm.sh builds the files needed for the included web examples
+    - the script build_webasm.sh builds the files needed for the included web examples
 
     - important to include all libfftw3.a, libopenblas.a and also libBlocksRuntime.a (here clang doesn't crash)
     - all functions, variables you want to access in the js files have to be exported.
