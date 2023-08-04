@@ -99,7 +99,7 @@ static int find_command_index(int argc, char* argv[argc])
 			if (0 == strcmp(argv[i], dispatch_table[c].name))
 				return i;
 
-	return 1;
+	return argc;
 }
 
 static const char help_str[] = "BART. command line flags";
