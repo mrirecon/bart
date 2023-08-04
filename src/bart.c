@@ -1,11 +1,9 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2015-2021. Martin Uecker.
- + Copyright 2018. Damien Nguyen.
+ * Copyright 2018. Damien Nguyen.
+ * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2014-2021 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <stdlib.h>
@@ -96,16 +94,10 @@ struct {
 
 static int find_command_index(int argc, char* argv[argc])
 {
-	int i = 1;
-
-	for (; i < argc; ++i) {
-
-		for (unsigned int c = 0; c < ARRAY_SIZE(dispatch_table) - 1; ++c) {
-
+	for (int i = 1; i < argc; ++i)
+		for (int c = 0; NULL != dispatch_table[c].name; c++)
 			if (0 == strcmp(argv[i], dispatch_table[c].name))
 				return i;
-		}
-	}
 
 	return 1;
 }
@@ -150,7 +142,7 @@ static int parse_bart_opts(int argc, char* argv[argc])
 	int command_arg = find_command_index(argc, argv);
 	int offset = command_arg;
 
-	if (1 == command_arg)
+	if (1 == offset)
 		return offset;
 
 	int omp_threads = 1;		
@@ -159,8 +151,8 @@ static int parse_bart_opts(int argc, char* argv[argc])
 	long param_start[DIMS] = { [0 ... DIMS - 1] = -1 };
 	long param_end[DIMS] = { [0 ... DIMS - 1] = -1 };
 	const char* ref_file = NULL;
-	
-	struct arg_s args[] = {	};
+
+	struct arg_s args[] = { };
 
  	struct opt_s opts[] = {
 
@@ -171,8 +163,9 @@ static int parse_bart_opts(int argc, char* argv[argc])
 		OPTL_INT('t', "threads", &omp_threads, "nthreads", "Set threads for parallelization"),
 		OPTL_INFILE('r', "ref-file", &ref_file, "<file>", "Obtain loop size from reference file"),
  	};
-	
+
 	cmdline(&command_arg, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
 
 	if (0 != flags && 0 != pflags && flags != pflags)
 		error("Inconsistent use of -p and -l!\n");
@@ -187,6 +180,7 @@ static int parse_bart_opts(int argc, char* argv[argc])
 		long ref_dims[DIMS];
 		const _Complex float* tmp = load_cfl(ref_file, DIMS, ref_dims);
 		unmap_cfl(DIMS, ref_dims, tmp);
+
 		assert(-1 == param_end[0]);
 
 		for (int i =0, ip = 0; i < DIMS; i++)
@@ -230,7 +224,7 @@ static int parse_bart_opts(int argc, char* argv[argc])
 		}
 	}
 
-	#ifdef _OPENMP
+#ifdef _OPENMP
 	if (0 == omp_threads) {
 
 		if (NULL == getenv("OMP_NUM_THREADS"))
@@ -238,18 +232,19 @@ static int parse_bart_opts(int argc, char* argv[argc])
 
 		omp_threads = omp_get_max_threads();
 	}
-	#endif
+#endif
 
 	omp_threads = MAX(omp_threads, 1);
 	omp_threads = MIN(omp_threads, md_calc_size(DIMS, loop_dims));
+
 	if (1 < mpi_get_num_procs())
 		omp_threads = 1;
 
 	init_cfl_loop_desc(DIMS, loop_dims, offs_size, flags, omp_threads, 0);
-		
-	return offset;
 
+	return offset;
 }
+
 
 static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], long pos)
 {
@@ -269,7 +264,7 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 		
 	io_memory_cleanup();
 
-	for(int m=0; m< argc; ++m)
+	for(int m = 0; m < argc; ++m)
 		free(thread_argv_save[m]);
 
 	return ret;
@@ -306,6 +301,7 @@ int main_bart(int argc, char* argv[argc])
 			size_t len = strlen(tpath[i]) + strlen(argv[1]) + 2;
 
 			char (*cmd)[len] = xmalloc(sizeof *cmd);
+
 			int r = snprintf(*cmd, len, "%s/%s", tpath[i], argv[1]);
 
 			if (r >= (int)len) {
@@ -338,11 +334,10 @@ int main_bart(int argc, char* argv[argc])
 	}
 	
 	main_fun_t* dispatch_func = NULL;
-	for (int i = 0; NULL != dispatch_table[i].name; i++) {
 
+	for (int i = 0; NULL != dispatch_table[i].name; i++)
 		if (0 == strcmp(bn, dispatch_table[i].name))
 			dispatch_func = dispatch_table[i].main_fun;
-	}
 
 	unsigned int v[5];
 	version_parse(v, bart_version);
@@ -352,25 +347,26 @@ int main_bart(int argc, char* argv[argc])
 
 	if (NULL == dispatch_func) {
 
-	fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
+		fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
 		return bart_exit(-1, NULL);
 	}
 	
 	
 	int final_ret = 0;
 	
-	#pragma omp parallel num_threads(cfl_loop_num_workers()) if(cfl_loop_omp())
+#pragma omp parallel num_threads(cfl_loop_num_workers()) if(cfl_loop_omp())
 	{
 		long start = cfl_loop_worker_id();
 		long total = cfl_loop_desc_total();
+		long workers = cfl_loop_num_workers();
 
-		for (long i = start; ((i < total) && (0 == final_ret)) ; i += cfl_loop_num_workers()) {
+		for (long i = start; ((i < total) && (0 == final_ret)); i += workers) {
 
 			int ret = batch_wrapper(dispatch_func, argc, argv, i);
-			
+
 			if (0 != ret) {
 
-				#pragma omp critical (main_end_condition)
+#pragma omp critical (main_end_condition)
 				final_ret = ret;
 				bart_exit(ret, "Tool exited with error");
 			}
@@ -414,6 +410,5 @@ int bart_command(int len, char* buf, int argc, char* argv[])
 
 	return ret;
 }
-
 
 

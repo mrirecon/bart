@@ -1,11 +1,8 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
+ * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012-2021 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
  */
 
 #define _GNU_SOURCE
@@ -189,29 +186,29 @@ long cfl_loop_num_workers(void)
 
 void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[__VLA(D)], unsigned long flags, int omp_threads, int index)
 {
-
 	if (MAX_WORKER < omp_threads)
 		error("Maximum supported number of OMP workers exceeded!\n");
 
 	cfl_loop_desc.omp_threads = omp_threads;
-
 	cfl_loop_desc.flags = flags;
+
 	md_copy_dims(D, cfl_loop_desc.loop_dims, loop_dims);
 	md_copy_dims(D, cfl_loop_desc.offs_dims, start_dims);
+
 	set_cfl_loop_index(index);
 
-	#pragma omp critical(unmap_addrs)
+#pragma omp critical(unmap_addrs)
 	if (NULL == unmap_addrs)
 		unmap_addrs = list_create();
 
 #ifdef USE_MPI
 	int tag = COMM_CFL_BCAST;
 	int mod = (cfl_loop_desc_total() % mpi_get_num_procs());
+
 	if ((0 != mod) && (mpi_get_rank() >= (cfl_loop_desc_total() % mpi_get_num_procs())))
 		tag = MPI_UNDEFINED;
 	
 	mpi_split_comm(MPI_COMM_WORLD, tag);
-
 #endif
 }
 
@@ -223,6 +220,7 @@ long cfl_loop_desc_total(void)
 void set_cfl_loop_index(long index)
 {
 	int worker_id = cfl_loop_worker_id();
+
 	if (MAX_WORKER < worker_id)
 		error("Worker id exceeds maximum supported workers!\n");
 
@@ -230,8 +228,8 @@ void set_cfl_loop_index(long index)
 
 #ifdef USE_MPI
 	int mod = cfl_loop_desc_total() % mpi_get_num_procs();
-	if ((0 != mod) && 
-		(index >= (cfl_loop_desc_total() - mod)))
+
+	if ((0 != mod) && (index >= (cfl_loop_desc_total() - mod)))
 		mpi_comm_subset_activate();
 #endif
 }
@@ -265,7 +263,7 @@ static void add_cfl_file(const void* base_addr, const complex float* data_addr, 
 	desc->data_addr = data_addr;
 	desc->use_out_pos = use_out_pos;
 
-	#pragma omp critical(unmap_addrs)
+#pragma omp critical(unmap_addrs)
 	list_append(unmap_addrs, PTR_PASS(desc));
 }
 
@@ -273,10 +271,10 @@ static struct cfl_file_desc_s* get_cfl_file(const complex float* data_addr, bool
 {
 	struct cfl_file_desc_s* file_desc = NULL;
 
-	#pragma omp critical(unmap_addrs)
+#pragma omp critical(unmap_addrs)
 	file_desc = list_get_first_item(unmap_addrs, data_addr, cmp_addr, remove);
 	
-	if (NULL != file_desc && remove) {
+	if ((NULL != file_desc) && remove) {
 	
 		xfree(file_desc);
 		return NULL;
@@ -639,7 +637,7 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
 		error("Creating cfl file %s\n", name);
 
-	#pragma omp critical (bart_file_access)
+#pragma omp critical (bart_file_access)
 	if (0 == mpi_get_rank()) {
 
 		int ofd;
@@ -828,7 +826,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 
 	err_assert(T > 0);
 
-	#pragma omp critical (bart_file_access)
+#pragma omp critical (bart_file_access)
 	if (0 == mpi_get_rank()) {
 
 		if (-1 == (fd = open(name, O_RDWR|O_CREAT, 0666 /* octal */)))
@@ -905,7 +903,7 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 	void* addr = NULL;
 	struct stat st;
 
-	#pragma omp critical (bart_file_access)
+#pragma omp critical (bart_file_access)
 	if (0 == mpi_get_rank()) {
 
 		if (-1 == (fd = open(name, O_RDONLY)))
@@ -958,6 +956,7 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 			int counts_recv[cfl_loop_num_workers()];
 			int placement_recv[cfl_loop_num_workers()];
 			long dims_original[DIMS];
+
 			for(int i = 0; i < DIMS; ++i)
 				dims_original[i] = MD_IS_SET(desc->flags, i) ? desc->loop_dims[i] : dims[i];
 			
@@ -969,7 +968,7 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 				0, mpi_get_comm());
 		}
 
-		xfree((void*)((uintptr_t)x));
+		xfree((void*)x);
 	}
 #endif
 
@@ -978,12 +977,12 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 
 	if (0 == mpi_get_rank()) {
 		
-		#ifdef _WIN32
-			if (-1 == munmap((void*)base_x, T))
-		#else
-			if (-1 == munmap((void*)((uintptr_t)base_x & ~4095UL), T))
-		#endif
-				io_error("unmap cfl\n");
+#ifdef _WIN32
+		if (-1 == munmap((void*)base_x, T))
+#else
+		if (-1 == munmap((void*)((uintptr_t)base_x & ~4095UL), T))
+#endif
+			io_error("unmap cfl\n");
 	}
 }
 

@@ -546,16 +546,17 @@ void* save_command_line(int argc, char* argv[static argc])
 
 	(*buf)[pos] = '\0';
 
-	#pragma omp critical (bart_opts_commandline)
+#pragma omp critical (bart_opts_commandline)
 	{
 		if (NULL == command_line) {
 
-	command_line = (*buf);
+			command_line = *buf;
+
 		} else {
 
-			assert(0 == strcmp((*buf), command_line));
-			xfree((*buf));
-		} 
+			assert(0 == strcmp(*buf, command_line));
+			xfree(*buf);
+		}
 	}
 
 	// FIXME: workaround analyzer detecting a leak

@@ -544,7 +544,7 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 #endif
 
 
-	#pragma omp critical(bart_getopt)
+#pragma omp critical(bart_getopt)
 	{
 		char optstr[2 * n + 2];
 		ya_getopt_reset(); // reset getopt variables to process multiple argc/argv pairs
@@ -1120,11 +1120,9 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 {
 	check_args(m, args);
 
-	#pragma omp critical (bart_options_str_list)
-	{
-		if (NULL == str_list)
-			str_list = list_create();
-	}
+#pragma omp critical (bart_options_str_list)
+	if (NULL == str_list)
+		str_list = list_create();
 
 	long min_args = 0;
 	long max_args = 0;
@@ -1178,7 +1176,6 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 	int req_args_remaining = min_args;
 
 	for (int i = 0, j = 1; (i < m) && (j < *argc); ++i) {
-
 
 		int given_args_following = *argc - j; // number of following args given on the command line, NOT in the args-array
 		int declared_args_following = m - i - 1; // number of following arguments in args-array, NOT on the command line
@@ -1242,7 +1239,6 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 		// how many required arguments are, at minimum, still needed.
 		if (args[i].required)
 			req_args_remaining -= args[i].nargs;
-
 	}
 
 	assert(0 == req_args_remaining);
@@ -1255,3 +1251,4 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 	*argc = -1;
 #endif
 }
+
