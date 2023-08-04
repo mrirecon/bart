@@ -198,10 +198,10 @@ static int parse_bart_opts(int argc, char* argv[argc])
 	for(; nend < DIMS && -1 != param_end[nend]; nend++);
 
 	if (0 != nstart && bitcount(flags) != nstart)
-		perror("Size of start values does not coincide with number of selected flags!");
+		error("Size of start values does not coincide with number of selected flags!");
 	
 	if (0 != nend && bitcount(flags) != nend)
-		perror("Size of start values does not coincide with number of selected flags!");
+		error("Size of start values does not coincide with number of selected flags!");
 		
 	if (0 == nstart)
 		for (int i = 0; i < bitcount(flags); i++)
@@ -306,7 +306,7 @@ int main_bart(int argc, char* argv[argc])
 
 			if (r >= (int)len) {
 
-				perror("Commandline too long");
+				error("Commandline too long");
 				bart_exit(1, NULL);
 			}
 
