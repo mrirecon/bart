@@ -133,6 +133,7 @@ static void find_nearest_orthogonal_spokes(int N, int spokes[N], float ref_angle
 static void find_intersec_sp(const int no_intersec_sp, int intersec_sp[no_intersec_sp], const int cur_idx, const int N, const float angles[N])
 {
 	float intersec_angles[no_intersec_sp];
+	memset(intersec_angles, 0, sizeof intersec_angles);	// GCC ANALYZER
 
 	for (int i = 0; i < no_intersec_sp; i++) {
 
