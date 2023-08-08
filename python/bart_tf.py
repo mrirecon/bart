@@ -183,6 +183,25 @@ def tf2_export_module(model, dims, path, trace_complex=True):
     
     BartWrapper(model, dims).save(path)
 
+def tf2_add_signature(path, signature='serving_default'):
+
+	from tensorflow.python.tools import saved_model_utils
+	meta_graph_def = saved_model_utils.get_meta_graph_def(path, "serve")
+
+	with open(path + "/bart_config.dat", 'w') as f:
+		
+		inputs = meta_graph_def.signature_def[signature].inputs
+		outputs = meta_graph_def.signature_def[signature].outputs
+
+		f.write('# ArgumentNameMapping\n')
+		f.write('{}\n'.format(signature))
+
+		for bart_name in list(inputs):
+			f.write("{} {} {}\n".format(bart_name, inputs[bart_name].name.split(":")[0], inputs[bart_name].name.split(":")[1]))
+
+		for bart_name in list(outputs):
+			f.write("{} {} {}\n".format(bart_name, outputs[bart_name].name.split(":")[0], outputs[bart_name].name.split(":")[1]))
+
 class TensorMap:
     def __init__(self, tensor, name, enforce_real = False):
 
