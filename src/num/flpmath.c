@@ -3053,14 +3053,10 @@ void md_zss2(int D, const long dims[D], unsigned long flags, const long str2[D],
 	md_select_dims(D, ~flags, dims2, dims);
 
 	md_clear2(D, dims2, str2, dst, CFL_SIZE);
-#if 1
-	MAKE_Z2OP(zfsq2, D, dims, str2, dst, str1, src);
-#else
 	md_zfmacc2(D, dims, str2, dst, str1, src, str1, src);
 
-	// FMA may create small imaginary values (we should replace zfmacc2, and sqrt in rss)
-	md_zreal2(D, dims, str2, dst, str2, dst);
-#endif
+	//md_zfmacc2 may have small negative real part or non vanishing imaginary part
+	md_zsmax2(D, dims2, str2, dst, str2, dst, 0);
 }
 
 
@@ -3091,22 +3087,13 @@ void md_zrss(int D, const long dims[D], unsigned long flags, complex float* dst,
 {
 	long dims2[D];
 	md_select_dims(D, ~flags, dims2, dims);
-#if 1
+
 	md_zss(D, dims, flags, dst, src);
 
-#if 1
 	long dims2R[D + 1];
 	real_from_complex_dims(D, dims2R, dims2);
 
 	md_sqrt(D + 1, dims2R, (float*)dst, (const float*)dst);
-#else
-	md_zsqrt(D, dims2, dst, dst);
-#endif
-#else
-	long dimsR[D + 1];
-	real_from_complex_dims(D, dimsR, dims);
-	md_rrss(D + 1, dimsR, (flags << 1), (float*)dst, (const float*)src);
-#endif
 }
 
 
@@ -3132,7 +3119,10 @@ void md_zvar2(int D, const long dims[D], unsigned long flags, const long ostr[D]
 	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
 
 	md_zavg2(D, dims, flags, ostr, optr, istr, iptr);
-	md_zsub2(D, dims, tstrs, tmp, istr, iptr, ostr, optr);
+	
+	//zadd2 is optimized, zsub2 not!
+	md_zsmul2(D, odims, ostr, optr, ostr, optr, -1.);
+	md_zadd2(D, dims, tstrs, tmp, istr, iptr, ostr, optr);
 
 	double scale = md_calc_size(D, fdims) - 1.;
 
@@ -3178,17 +3168,7 @@ void md_zstd2(int D, const long dims[D], unsigned long flags, const long ostr[D]
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);
 
-#if 1
-	long dimsR[D + 1];
-	real_from_complex_dims(D, dimsR, odims);
-
-	long strsR[D + 1];
-	real_from_complex_strides(D, strsR, ostr);
-
-	md_sqrt2(D + 1, dimsR, strsR, (float*)optr, strsR, (const float*)optr);
-#else
 	md_zsqrt2(D, odims, ostr, optr, ostr, optr);
-#endif
 }
 
 
@@ -3300,29 +3280,18 @@ void md_zavg(int D, const long dims[D], unsigned long flags, complex float* optr
 void md_zavg2(int D, const long dims[D], unsigned long flags, const long ostr[D],  complex float* optr, const long istr[D], const complex float* iptr)
 {
 	long odims[D];
-	md_select_dims(D, ~flags, odims, dims);
-	md_clear(D, odims, optr, CFL_SIZE);
-
-	//FIXME: this is faster
-#if 1
-	complex float* o = md_alloc_sameplace(1, MD_DIMS(1), CFL_SIZE, optr);
-	md_zfill(1, MD_DIMS(1), o, 1.);
-
-	long ss[D];
-	md_singleton_strides(D, ss);
-	md_zfmac2(D, dims, ostr, optr, istr, iptr, ss, o);
-	md_free(o);
-#else
-	md_zaxpy2(D, dims, ostr, optr, 1., istr, iptr);
-#endif
-
 	long sdims[D];
+	
+	md_select_dims(D, ~flags, odims, dims);
 	md_select_dims(D, flags, sdims, dims);
+
+	md_clear2(D, odims, ostr, optr, CFL_SIZE);
+	md_zadd2(D, dims, ostr, optr, ostr, optr, istr, iptr);
 
 	long scale = md_calc_size(D, sdims);
 
 	if (scale != 0.)
-		md_zsmul(D, odims, optr, optr, 1. / scale);
+		md_zsmul2(D, odims, ostr, optr, ostr, optr, 1. / scale);
 }
 
 
@@ -3892,7 +3861,7 @@ void md_smax2(int D, const long dim[D], const long ostr[D], float* optr, const l
 /**
  * Elementwise maximum of input and scalar (with strides)
  *
- * optr = max(val, iptr)
+ * optr = max(val, real(iptr))
  */
 void md_zsmax2(int D, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, float val)
 {
@@ -3940,7 +3909,7 @@ void md_zsmin2(int D, const long dim[D], const long ostr[D], complex float* optr
 /**
  * Elementwise maximum of input and scalar (without strides)
  *
- * optr = max(val, iptr)
+ * optr = max(val, real(iptr))
  */
 void md_zsmax(int D, const long dim[D], complex float* optr, const complex float* iptr, float val)
 {
