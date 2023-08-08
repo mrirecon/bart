@@ -170,6 +170,8 @@ int main_phantom(int argc, char* argv[argc])
 
 	if ((TUBES == ptype) || (NIST == ptype) || (SONAR == ptype))
 		dims[TIME_DIM] = rotation_steps;
+	else
+		debug_printf(DP_WARN, "Parameter for rotation steps only supported for NIST, SONAR, and tubes phantoms.\n");
 
 	if (-1 != osens) {
 
