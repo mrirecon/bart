@@ -6,6 +6,7 @@
 #include "misc/cppwrap.h"
 
 #include <stddef.h>
+extern _Bool mpi_shared_files;
 extern void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[__VLA(D)], unsigned long flags, int omp_threads, int index);
 extern void set_cfl_loop_index(long index);
 extern _Bool cfl_loop_desc_active(void);

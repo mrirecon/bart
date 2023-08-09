@@ -87,6 +87,17 @@ Build_GPU:
       - ./commands/
     expire_in: 45 minutes
 
+Build_MPI_GPU:
+  stage: build
+  script:
+    - MPI=1 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+      - ./commands/
+    expire_in: 45 minutes
+
 Build_MPI:
   stage: build
   script:
@@ -292,6 +303,15 @@ Integration_Test_MPI:
   needs: [Build_MPI]
   dependencies:
     - Build_MPI
+
+Integration_Test_MPI_GPU:
+  stage: test2
+  script:
+    - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
+    - AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" MPI=1 make gputest
+  needs: [Build_MPI_GPU]
+  dependencies:
+    - Build_MPI_GPU
 
 #Integration_Test_LTO:
 #  stage: test2

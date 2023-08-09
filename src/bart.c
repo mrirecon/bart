@@ -148,6 +148,7 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 		OPTL_VECN('e', "end", param_end, "End index of range for looping (default: start + 1)"),
 		OPTL_INT('t', "threads", &omp_threads, "nthreads", "Set threads for parallelization"),
 		OPTL_INFILE('r', "ref-file", &ref_file, "<file>", "Obtain loop size from reference file"),
+		OPT_SET('S', &mpi_shared_files, "Maps files from each rank (requires shared files system)"),
  	};
 
 	int next_arg = options(argcp, *argvp, "", help_str, ARRAY_SIZE(opts), opts, ARRAY_SIZE(args), args, true);
@@ -303,9 +304,14 @@ int main_bart(int argc, char* argv[argc])
 			long total = cfl_loop_desc_total();
 			long workers = cfl_loop_num_workers();
 
+			mpi_signoff_proc(cfl_loop_desc_active() && (mpi_get_rank() >= total));
+
 			for (long i = start; ((i < total) && (0 == final_ret)); i += workers) {
 
 				int ret = batch_wrapper(dispatch_func, argc, argv, i);
+
+				int tag = ((((i + workers) < total) || (0 != ret)) ? 1 : 0);
+				mpi_signoff_proc(cfl_loop_desc_active() && (0 == tag));
 
 				if (0 != ret) {
 

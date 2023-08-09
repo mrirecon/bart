@@ -71,13 +71,23 @@ tests/test-fft-multi-loop-mpi: bart
 	$(ROOTDIR)/bart join 6 geom_phantom.ra geom_phantom_ksp.ra shepplogan_phantom.ra shepplogan_phantom_ksp.ra phantom_2				;\
 	$(ROOTDIR)/bart join 6 shepplogan_phantom_ksp.ra bart_phantom_ksp.ra geom_phantom_ksp.ra bart_phantom_ksp.ra phantom_3				;\
 	$(ROOTDIR)/bart join 15 phantom_1 phantom_2 phantom_3 phantom_stack										;\
-	mpirun -n 4 --allow-run-as-root $(ROOTDIR)/bart -l 32832 -e 4:3 fft -iu 7 phantom_stack phantom_stack_fft					;\
+	mpirun -n 4 --allow-run-as-root $(ROOTDIR)/bart -p 32832 -e 4:3 fft -iu 7 phantom_stack phantom_stack_fft					;\
 	$(ROOTDIR)/bart nrmse -t 1e-5 phantom_fft_ref phantom_stack_fft											;\
 	rm *.ra ; rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-fft-multi-loop-omp: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)													;\
+	$(ROOTDIR)/bart phantom phan.ra 														;\
+	$(ROOTDIR)/bart                fft 2 phan.ra ksp1.ra												;\
+	$(ROOTDIR)/bart -p 1 -rphan.ra fft 2 phan.ra ksp2.ra												;\
+	$(ROOTDIR)/bart nrmse -t 1e-5 ksp1.ra ksp2.ra													;\
+	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-fft-basic tests/test-fft-unitary tests/test-fft-uncentered tests/test-fft-shift
+TESTS += tests/test-fft-multi-loop-omp
 
 ifeq ($(MPI),1)
 TESTS_SLOW += tests/test-fft-multi-loop-mpi
