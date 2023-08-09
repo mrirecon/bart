@@ -968,8 +968,10 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 				0, mpi_get_comm());
 		}
 
-		xfree((void*)x);
+		xfree(x);
 	}
+#else
+	(void)use_out_pos;
 #endif
 
 	if (cfl_loop_desc_active())
@@ -978,7 +980,7 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 	if (0 == mpi_get_rank()) {
 		
 #ifdef _WIN32
-		if (-1 == munmap((void*)base_x, T))
+		if (-1 == munmap(base_x, T))
 #else
 		if (-1 == munmap((void*)((uintptr_t)base_x & ~4095UL), T))
 #endif
@@ -1039,6 +1041,7 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 		io_error("Creating cfl file %s\n", name);
 
 	args[0] = shared_cfl(1, &num_ele, name_bdy);
+
 	for (int i = 1; i < N; i++)
 		args[i] = args[i - 1] + md_calc_size(D[i - 1], dimensions[i - 1]);
 #endif /* MEMONLY_CFL */

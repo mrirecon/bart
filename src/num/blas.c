@@ -861,7 +861,7 @@ void blas_csyrk(char uplo, char trans, long N, long K, const complex float alpha
 	assert('U' == uplo);
 	assert(('T' == trans) || ('N' == trans));
 
-	cblas_csyrk(CblasColMajor, CblasUpper, ('T' == trans) ? CblasTrans : CblasNoTrans, N, K, (void*)&alpha, (void*)A, lda, (void*)&beta, (void*)C, ldc);
+	cblas_csyrk(CblasColMajor, CblasUpper, ('T' == trans) ? CblasTrans : CblasNoTrans, N, K, &alpha, (void*)A, lda, (void*)&beta, (void*)C, ldc);
 }
 
 

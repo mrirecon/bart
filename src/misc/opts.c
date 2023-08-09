@@ -706,7 +706,7 @@ bool opt_float(void* ptr, char c, const char* optarg)
 bool opt_cfl(void* ptr, char c, const char* optarg)
 {
 	UNUSED(c);
-	return 0 != parse_cfl((complex float*) ptr, optarg);
+	return 0 != parse_cfl(ptr, optarg);
 }
 
 
