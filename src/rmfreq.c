@@ -50,7 +50,7 @@ int main_rmfreq(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_UINT('N', &n_harmonics, "#", "Number of harmonics [Default: 5]"),
-		OPT_STRING('M', &mod_file, "file", "Contrast modulation file"),
+		OPT_INFILE('M', &mod_file, "file", "Contrast modulation file"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -75,7 +75,7 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	// Modulation file
 	long mod_dims[DIMS];
-	complex float* mod = NULL;
+	const complex float* mod = NULL;
 
 	if (NULL != mod_file) {
 
