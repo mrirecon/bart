@@ -13,6 +13,8 @@
 #include "misc/debug.h"
 #include "misc/misc.h"
 
+#include "num/mpi_ops.h"
+
 #include "utest.h"
 
 
@@ -42,6 +44,7 @@ UTESTS
 
 int main(int argc, char* argv[])
 {
+	init_mpi(&argc, &argv);
 	UNUSED(argc);
 
 	int num_tests_run = 0;
@@ -60,6 +63,8 @@ int main(int argc, char* argv[])
 	bool good = (num_tests_pass == num_tests_run);
 
 	debug_printf(good ? DP_INFO : DP_ERROR, "%20s: %2d/%2d passed.\n", argv[0], num_tests_pass, num_tests_run);
+
+	deinit_mpi();
 
 	exit(good ? 0 : 1);
 }

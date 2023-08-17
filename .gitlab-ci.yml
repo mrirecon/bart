@@ -216,6 +216,14 @@ Unit_Test_GPU:
   dependencies:
     - Build_GPU
 
+Unit_Test_MPI:
+  stage: test1
+  script:
+    - AUTOCLEAN=0 MPI=1 make utest
+  needs: [Build_MPI]
+  dependencies:
+     - Build_MPI
+
 
 Unit_Test_Tensorflow:
   stage: test1

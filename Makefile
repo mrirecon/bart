@@ -671,6 +671,9 @@ MODULES_test_nufft += -lnoncart -llinops
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv test_ode test_nlmeans test_rand
 UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr test_specfun test_qform test_fft test_gaussians
+ifeq ($(MPI),1)
+UTARGETS += test_mpi test_mpi_multind test_mpi_flpmath test_mpi_fft
+endif
 UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr test_cuda_multind test_cuda_shuffle test_cuda_memcache_clear
 
 # lib simu
@@ -871,6 +874,12 @@ pythontest: ${TESTS_PYTHON}
 # unit tests
 
 UTEST_RUN=
+
+ifeq ($(MPI),1)
+# only cfl files allowed with MPI
+UTARGETS:=$(filter-out test_memcfl ,$(UTARGETS))
+UTEST_RUN=mpirun --allow-run-as-root -n 3
+endif
 
 ifeq ($(UTESTLEAK),1)
 # we blacklist some targets because valgrind crashes (blas related)
