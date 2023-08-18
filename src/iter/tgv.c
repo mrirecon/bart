@@ -22,11 +22,13 @@
 
 /* TGV
  *
- * min x \|Ix - y\|_2^2 + min z \alpha \|grad x - z \|_1 + \beta \|Eps z \|_1
+ * min x 0.5 \|Ix - y\|_2^2 + min z \alpha \|grad x - z \|_1 + \beta \|Eps z \|_1
  *
- * min x,z \| Ix - y \|_2^2 + \alpha \|grad x - z\|_1 + \beta \|Eps z\|_1
+ * min x,z 0.5 \| Ix - y \|_2^2 + \alpha \|grad x - z\|_1 + \beta \|Eps z\|_1
+ *
+ * \alpha = 1, \beta = 2
+ *
  * */
-
 struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long out_dims[N], int* ext_shift)
 {
 	long in_dims[N];
