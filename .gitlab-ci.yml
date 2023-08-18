@@ -220,7 +220,7 @@ Integration_Test:
   image: debian:bookworm
   stage: test2
   script:
-    - AUTOCLEAN=0 make test testslow
+    - AUTOCLEAN=0 AGUE_TWIX_REF=/reference_data/twix/ make test testslow testague
   needs: [Build]
   dependencies:
     - Build
