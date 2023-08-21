@@ -8,6 +8,7 @@ void cublas_init(void);
 void cublas_deinit(void);
 
 extern double cuda_sdot(long size, const float* src1, const float* src2);
+extern _Complex double cuda_zdot(long size, const _Complex float* src1, const _Complex float* src2);
 extern double cuda_norm(long size, const float* src1);
 extern double cuda_asum(long size, const float* src);
 extern void cuda_saxpy(long size, float* y, float alpha, const float* src);

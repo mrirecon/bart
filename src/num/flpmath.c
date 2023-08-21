@@ -2492,47 +2492,26 @@ void md_zcosh(int D, const long dims[D], complex float* optr, const complex floa
  */
 float md_scalar2(int D, const long dim[D], const long str1[D], const float* ptr1, const long str2[D], const float* ptr2)
 {
-#if 1
-	if (       (D == md_calc_blockdim(D, dim, str1, FL_SIZE))
-		&& (D == md_calc_blockdim(D, dim, str2, FL_SIZE))) {
-
-#ifdef USE_CUDA
-		if (cuda_ondevice(ptr1)) {
-
-			assert(cuda_ondevice(ptr2));
-
-			return gpu_ops.dot(md_calc_size(D, dim), ptr1, ptr2);
-		}
-#endif
-		return cpu_ops.dot(md_calc_size(D, dim), ptr1, ptr2);
-	}
-#endif
-
 	double ret = 0.;
-	double* retp = &ret;
+	
+	int N = MIN(md_calc_blockdim(D, dim, str1, FL_SIZE), md_calc_blockdim(D, dim, str2, FL_SIZE));
+	long S = md_calc_size(N, dim);
 
+	long pos[D];
+	md_set_dims(D, pos, 0);
+
+	do {
+		const float* _ptr1 = &(MD_ACCESS(D, str1, pos, ptr1));
+		const float* _ptr2 = &(MD_ACCESS(D, str1, pos, ptr2));
 #ifdef USE_CUDA
-	if (cuda_ondevice(ptr1))
-		retp = gpu_constant(&ret, DL_SIZE);
+		if (cuda_ondevice(ptr1))
+			ret += gpu_ops.dot(S, _ptr1, _ptr2);
+		else
 #endif
+		ret += cpu_ops.dot(S, _ptr1, _ptr2);
+	} while (md_next(D, dim, ~(MD_BIT(N) - 1), pos));
 
-	long stro[D];
-	md_singleton_strides(D, stro);
-
-	// Because this might lose precision for large data sets
-	// we use double precision to accumlate result
-	// (Kahan summation formula would be another option)
-
-	md_fmacD2(D, dim, stro, retp, str1, ptr1, str2, ptr2);
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(ptr1)) {
-
-		md_copy(1, (long[1]){ 1 }, &ret, retp, DL_SIZE);
-		md_free(retp);
-	}
-#endif
-	return ret;
+	return (float)ret;
 }
 
 
@@ -2695,57 +2674,28 @@ float md_zrnorme(int D, const long dim[D], const complex float* ref, const compl
 /**
  * Calculate inner product between two complex arrays (with strides)
  *
- * return iptr1^H * iptr2
+ * return iptr1 * iptr2^H
  */
 complex float md_zscalar2(int D, const long dim[D], const long str1[D], const complex float* ptr1, const long str2[D], const complex float* ptr2)
 {
 	complex double ret = 0.;
-	complex double* retp = &ret;
+	
+	int N = MIN(md_calc_blockdim(D, dim, str1, CFL_SIZE), md_calc_blockdim(D, dim, str2, CFL_SIZE));
+	long S = md_calc_size(N, dim);
 
+	long pos[D];
+	md_set_dims(D, pos, 0);
+
+	do {
+		const complex float* _ptr1 = &(MD_ACCESS(D, str1, pos, ptr1));
+		const complex float* _ptr2 = &(MD_ACCESS(D, str1, pos, ptr2));
 #ifdef USE_CUDA
-	if (cuda_ondevice(ptr1)) {
-
-		// FIXME: because md_zfmacc2 with stride = 0 is slow
-
-		complex float* tmp = md_alloc_gpu(D, dim, CFL_SIZE);
-
-		long strs[D];
-		md_calc_strides(D, strs, dim, CFL_SIZE);
-		md_clear(D, dim, tmp, CFL_SIZE);
-
-		md_zfmacc2(D, dim, strs, tmp, str1, ptr1, str2, ptr2);
-
-		gpu_ops.zsum(md_calc_size(D, dim), tmp);
-
-		complex float ret = 0.;
-		md_copy(1, (long[1]){ 1 }, &ret, tmp, CFL_SIZE);
-		md_free(tmp);
-
-		return ret;
-	}
+		if (cuda_ondevice(ptr1))
+			ret += gpu_ops.zdot(S, _ptr1, _ptr2);
+		else
 #endif
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(ptr1))
-		retp = gpu_constant(&ret, CDL_SIZE);
-#endif
-
-	long stro[D];
-	md_singleton_strides(D, stro);
-
-	// Because this might lose precision for large data sets
-	// we use double precision to accumlate result
-	// (Kahan summation formula would be another option)
-
-	md_zfmaccD2(D, dim, stro, retp, str1, ptr1, str2, ptr2);
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(ptr1)) {
-
-		md_copy(1, (long[1]){ 1 }, &ret, retp, CDL_SIZE);
-		md_free(retp);
-	}
-#endif
+			ret += cpu_ops.zdot(S, _ptr1, _ptr2);
+	} while (md_next(D, dim, ~(MD_BIT(N) - 1), pos));
 
 	return (complex float)ret;
 }

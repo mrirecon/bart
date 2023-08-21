@@ -193,6 +193,26 @@ double cuda_sdot(long size, const float* src1, const float* src2)
 	return result;
 }
 
+complex double cuda_zdot(long size, const complex float* src1, const complex float* src2)
+{
+//FIXME: opposite convetion of conjugate vs blas
+	complex double result = 0;
+
+	while (size > 0) {
+
+		complex float tmp;
+		CUBLAS_CALL(cublasCdotc(get_handle_host(), MIN(size, INT_MAX / 4), (const cuComplex*)src2, 1, (const cuComplex*)src1, 1, (cuComplex*)(&tmp)));
+
+		result += tmp;
+		
+		src1 += INT_MAX / 4;
+		src2 += INT_MAX / 4;
+		size -= INT_MAX / 4;
+	}
+
+	return result;
+}
+
 
 double cuda_norm(long size, const float* src1)
 {

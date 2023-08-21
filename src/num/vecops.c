@@ -98,6 +98,16 @@ static double dot(long N, const float* vec1, const float* vec2)
 	return res;
 }
 
+static complex double zdot(long N, const complex float* vec1, const complex float* vec2)
+{
+	complex double res = 0.;
+
+	for (long i = 0; i < N; i++)
+		res += vec1[i] * conjf(vec2[i]);
+
+	return res;
+}
+
 /**
  * Compute l2 norm of vec
  *
@@ -798,6 +808,8 @@ const struct vec_ops cpu_ops = {
 	.asum = asum,
 	.zsum = zsum,
 	.zl1norm = zl1norm,
+
+	.zdot = zdot,
 
 	.add = add,
 	.sub = sub,

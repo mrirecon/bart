@@ -19,6 +19,8 @@ struct vec_ops {
 	void (*zsum)(long N, _Complex float* vec);
 	double (*zl1norm)(long N, const _Complex float* vec);
 
+	_Complex double (*zdot)(long N, const _Complex float* vec1, const _Complex float* vec2);
+
 	void (*axpy)(long N, float* a, float alpha, const float* x);
 	void (*axpbz)(long N, float* out, const float a, const float* x, const float b, const float* z);
 
