@@ -117,7 +117,7 @@ Build_Tensorflow:
     - apt-get install -y wget
     - wget https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
     - mkdir tensorflow && tar -C tensorflow -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
-    - TENSORFLOW=1 TENSORFLOW_BASE=./tensorflow/ CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make
+    - TENSORFLOW=1 TENSORFLOW_BASE=./tensorflow/ CUDA=1 CUDA_BASE=/usr/local/cuda CUDA_LIB=lib64 make all
   artifacts:
     paths:
       - bart
