@@ -38,6 +38,7 @@ static int blocksize(long N)
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define SWAP(x, y) { __typeof(x) temp = x; x = y; y = temp; }
 
 static long gridsize(long N)
 {
@@ -407,7 +408,6 @@ extern "C" void cuda_zfsq2(long N, _Complex float* dst, const _Complex float* sr
 {
 	kern_zfsq2<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
 }
-
 
 
 #define MAX_DIMS 3
@@ -1506,3 +1506,192 @@ extern "C" void cuda_decompress(long N, float* dst, const uint32_t* src)
 {
 	kern_decompress<<<gridsize(N), blocksize(N), blocksize(N), cuda_get_stream()>>>(N, dst, src);
 }
+
+__global__ static void kern_reduce_zsumD(long N, cuDoubleComplex* dst, const cuDoubleComplex* src)
+{
+	extern __shared__ cuDoubleComplex sdata_cD[];
+
+	int tidx = threadIdx.x;
+	long idxx = blockIdx.x * blockDim.x + threadIdx.x;
+
+	sdata_cD[tidx] = make_cuDoubleComplex(0., 0.);
+
+	for (long j = idxx; j < N; j += blockDim.x * gridDim.x)
+		sdata_cD[tidx] = cuCadd(sdata_cD[tidx], src[j]);
+
+	__syncthreads();
+
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1){
+
+		if (tidx < s)
+			sdata_cD[tidx] = cuCadd(sdata_cD[tidx], sdata_cD[tidx + s]);
+		__syncthreads();
+	}
+
+	if (0 == tidx) {
+		
+		dst[blockIdx.x].x = sdata_cD[0].x;
+		dst[blockIdx.x].y = sdata_cD[0].y;
+	}
+}
+
+static _Complex double cuda_reduce_zsumD(long N, const _Complex double* src)
+{
+	_Complex double* tmp1 = (_Complex double*)cuda_malloc(gridsize(N) * sizeof(_Complex double));
+	_Complex double* tmp2 = (_Complex double*)cuda_malloc(gridsize(gridsize(N)) * sizeof(_Complex double));
+
+	kern_reduce_zsumD<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(_Complex double), cuda_get_stream()>>>(N, (cuDoubleComplex*)tmp1, (const cuDoubleComplex*)src);
+	N = gridsize(N);
+
+	while (N > 1) {
+
+		kern_reduce_zsumD<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(_Complex double), cuda_get_stream()>>>(N, (cuDoubleComplex*)tmp2, (const cuDoubleComplex*)tmp1);
+		N = gridsize(N);
+		SWAP(tmp1, tmp2);
+	}
+
+	_Complex double ret;
+	cuda_memcpy(sizeof(_Complex double), &ret, tmp1);
+	cuda_free(tmp1);
+	cuda_free(tmp2);
+
+	return ret;
+}
+
+__global__ static void kern_reduce_sumD(long N, double* dst, const double* src)
+{
+	extern __shared__ double sdata_D[];
+
+	int tidx = threadIdx.x;
+	long idxx = blockIdx.x * blockDim.x + threadIdx.x;
+
+	sdata_D[tidx] = 0;
+
+	for (long j = idxx; j < N; j += blockDim.x * gridDim.x)
+		sdata_D[tidx] += src[j];
+
+	__syncthreads();
+
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1){
+
+		if (tidx < s)
+			sdata_D[tidx] += sdata_D[tidx + s];
+		__syncthreads();
+	}
+
+	if (0 == tidx)
+		dst[blockIdx.x] = sdata_D[0];
+}
+
+static double cuda_reduce_sumD(long N, const double* src)
+{
+	double* tmp1 = (double*)cuda_malloc(gridsize(N) * sizeof(double));
+	double* tmp2 = (double*)cuda_malloc(gridsize(gridsize(N)) * sizeof(double));
+
+	kern_reduce_sumD<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(double), cuda_get_stream()>>>(N, tmp1, src);
+	N = gridsize(N);
+
+	while (N > 1) {
+
+		kern_reduce_sumD<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(double), cuda_get_stream()>>>(N, tmp2, tmp1);
+		N = gridsize(N);
+		SWAP(tmp1, tmp2);
+	}
+
+	double ret;
+	cuda_memcpy(sizeof(double), &ret, tmp1);
+	cuda_free(tmp1);
+	cuda_free(tmp2);
+
+	return ret;
+}
+
+
+__global__ static void kern_cdot(long N, cuDoubleComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+{
+	extern __shared__ cuDoubleComplex sdata_cD[];
+
+	int tidx = threadIdx.x;
+	long idxx = blockIdx.x * blockDim.x + threadIdx.x;
+
+	sdata_cD[tidx] = make_cuDoubleComplex(0., 0.);
+
+	for (long j = idxx; j < N; j += blockDim.x * gridDim.x)
+		sdata_cD[tidx] = cuCadd(sdata_cD[tidx], make_cuDoubleComplex(
+			(double)src1[j].x * (double)src2[j].x + (double)src1[j].y * (double)src2[j].y,
+			(double)src2[j].x * (double)src1[j].y - (double)src1[j].x * (double)src2[j].y));
+
+	__syncthreads();
+
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1){
+
+		if (tidx < s)
+			sdata_cD[tidx] = cuCadd(sdata_cD[tidx], sdata_cD[tidx + s]);
+		__syncthreads();
+	}
+
+	if (0 == tidx) {
+		
+		dst[blockIdx.x].x = sdata_cD[0].x;
+		dst[blockIdx.x].y = sdata_cD[0].y;
+	}
+}
+
+extern "C" _Complex double cuda_cdot(long N, const _Complex float* src1, const _Complex float* src2)
+{
+	_Complex double* tmp = (_Complex double*)cuda_malloc(gridsize(N) * sizeof(_Complex double));
+	kern_cdot<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(_Complex double), cuda_get_stream()>>>(N, (cuDoubleComplex*)tmp, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+
+	_Complex double ret = cuda_reduce_zsumD(gridsize(N), tmp);
+	cuda_free(tmp);
+
+	return ret;
+}
+
+
+__global__ static void kern_dot(long N, double* dst, const float* src1, const float* src2)
+{
+	extern __shared__ double sdata_D[];
+
+	int tidx = threadIdx.x;
+	int idxx = blockIdx.x * blockDim.x + threadIdx.x;
+
+	sdata_D[tidx] = 0;
+
+	for (long j = idxx; j < N; j += blockDim.x * gridDim.x)
+		sdata_D[tidx] += src1[j] * src2[j];
+
+	__syncthreads();
+
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1){
+
+		if (tidx < s)
+			sdata_D[tidx] += sdata_D[tidx + s];
+		__syncthreads();
+	}
+
+	if (0 == tidx)		
+		dst[blockIdx.x] = sdata_D[0];
+
+}
+
+extern "C" double cuda_dot(long N, const float* src1, const float* src2)
+{
+	double* tmp = (double*)cuda_malloc(gridsize(N) * sizeof(double));
+	
+	kern_dot<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(double), cuda_get_stream()>>>(N, tmp, src1, src2);
+
+	double ret = cuda_reduce_sumD(gridsize(N), tmp);
+	cuda_free(tmp);
+
+	return ret;
+}
+
+
+
+
+
+
+
+
+

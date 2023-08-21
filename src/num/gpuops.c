@@ -927,12 +927,12 @@ const struct vec_ops gpu_ops = {
 
 	.float2double = cuda_float2double,
 	.double2float = cuda_double2float,
-	.dot = cuda_sdot,
+	.dot = cuda_dot,
 	.asum = cuda_asum,
 	.zsum = cuda_zsum,
 	.zl1norm = NULL,
 
-	.zdot = cuda_zdot,
+	.zdot = cuda_cdot,
 
 	.add = cuda_add,
 	.sub = cuda_sub,
