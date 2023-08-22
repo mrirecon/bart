@@ -871,6 +871,9 @@ static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1
 	md_copy_strides(N, nistrs1, tistrs1);
 	md_copy_strides(N, nistrs2, tistrs2);
 
+	if (1 == N)
+		return 1;
+
 	reduce &= (size == tostrs[1]);
 	reduce &= (size == tistrs1[1]);
 	reduce &= (size * tdims[0] == tistrs2[1]);
