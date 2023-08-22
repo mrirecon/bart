@@ -253,7 +253,7 @@ extern "C" void cuda_fmac(long N, float* dst, const float* src1, const float* sr
 }
 
 
-__global__ void kern_fmac2(long N, double* dst, const float* src1, const float* src2)
+__global__ void kern_fmacD(long N, double* dst, const float* src1, const float* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
@@ -262,9 +262,9 @@ __global__ void kern_fmac2(long N, double* dst, const float* src1, const float* 
 		dst[i] += src1[i] * src2[i];
 }
 
-extern "C" void cuda_fmac2(long N, double* dst, const float* src1, const float* src2)
+extern "C" void cuda_fmacD(long N, double* dst, const float* src1, const float* src2)
 {
-	kern_fmac2<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
+	kern_fmacD<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
 }
 
 __global__ void kern_zsmul(long N, cuFloatComplex val, cuFloatComplex* dst, const cuFloatComplex* src1)
@@ -331,7 +331,7 @@ extern "C" void cuda_zfmac(long N, _Complex float* dst, const _Complex float* sr
 }
 
 
-__global__ void kern_zfmac2(long N, cuDoubleComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zfmacD(long N, cuDoubleComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
@@ -340,9 +340,9 @@ __global__ void kern_zfmac2(long N, cuDoubleComplex* dst, const cuFloatComplex* 
 		dst[i] = cuCadd(dst[i], cuComplexFloatToDouble(cuCmulf(src1[i], src2[i])));
 }
 
-extern "C" void cuda_zfmac2(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2)
+extern "C" void cuda_zfmacD(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zfmac2<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zfmacD<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 
@@ -376,7 +376,7 @@ extern "C" void cuda_zfmacc(long N, _Complex float* dst, const _Complex float* s
 }
 
 
-__global__ void kern_zfmacc2(long N, cuDoubleComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
+__global__ void kern_zfmaccD(long N, cuDoubleComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
@@ -386,9 +386,9 @@ __global__ void kern_zfmacc2(long N, cuDoubleComplex* dst, const cuFloatComplex*
 }
 
 
-extern "C" void cuda_zfmacc2(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2)
+extern "C" void cuda_zfmaccD(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2)
 {
-	kern_zfmacc2<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zfmaccD<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuDoubleComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 }
 
 

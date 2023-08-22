@@ -246,7 +246,7 @@ static void fmac(long N, float* dst, const float* src1, const float* src2)
 	//dst[i] = fmaf(src1[i], src2[i], dst[i]);
 }
 
-static void fmac2(long N, double* dst, const float* src1, const float* src2)
+static void fmacD(long N, double* dst, const float* src1, const float* src2)
 {
 	for (long i = 0; i < N; i++)
 		dst[i] += src1[i] * src2[i];
@@ -282,7 +282,7 @@ static void zfmac(long N, complex float* dst, const complex float* src1, const c
 		dst[i] += src1[i] * src2[i];
 }
 
-static void zfmac2(long N, complex double* dst, const complex float* src1, const complex float* src2)
+static void zfmacD(long N, complex double* dst, const complex float* src1, const complex float* src2)
 {
 	for (long i = 0; i < N; i++)
 		dst[i] += src1[i] * src2[i];
@@ -300,7 +300,7 @@ static void zfmacc(long N, complex float* dst, const complex float* src1, const 
 		dst[i] += src1[i] * conjf(src2[i]);
 }
 
-static void zfmacc2(long N, complex double* dst, const complex float* src1, const complex float* src2)
+static void zfmaccD(long N, complex double* dst, const complex float* src1, const complex float* src2)
 {
 	for (long i = 0; i < N; i++)
 		dst[i] += src1[i] * conjf(src2[i]);
@@ -739,7 +739,7 @@ const struct vec_ops cpu_ops = {
 	.mul = mul,
 	.div = vec_div,
 	.fmac = fmac,
-	.fmac2 = fmac2,
+	.fmacD = fmacD,
 	.sadd = sadd_update,
 
 	.smul = smul,
@@ -755,10 +755,10 @@ const struct vec_ops cpu_ops = {
 	.zmul = zmul,
 	.zdiv = zdiv,
 	.zfmac = zfmac,
-	.zfmac2 = zfmac2,
+	.zfmacD = zfmacD,
 	.zmulc = zmulc,
 	.zfmacc = zfmacc,
-	.zfmacc2 = zfmacc2,
+	.zfmaccD = zfmaccD,
 	.zfsq2 = zfsq2,
 
 	.zsmax = zsmax,

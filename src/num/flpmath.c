@@ -1452,7 +1452,7 @@ void md_zfmac(int D, const long dims[D], complex float* optr, const complex floa
  */
 void md_zfmacD2(int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	MAKE_Z3OPD(zfmac2, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	MAKE_Z3OPD(zfmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
 
@@ -1503,7 +1503,7 @@ void md_fmac(int D, const long dims[D], float* optr, const float* iptr1, const f
  */
 void md_fmacD2(int D, const long dims[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	MAKE_3OPD(fmac2, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	MAKE_3OPD(fmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
 
@@ -1555,7 +1555,7 @@ void md_zfmacc(int D, const long dims[D], complex float* optr, const complex flo
  */
 void md_zfmaccD2(int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	MAKE_Z3OPD(zfmacc2, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	MAKE_Z3OPD(zfmaccD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
 

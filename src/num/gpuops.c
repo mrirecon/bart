@@ -936,7 +936,7 @@ const struct vec_ops gpu_ops = {
 	.mul = cuda_mul,
 	.div = cuda_div,
 	.fmac = cuda_fmac,
-	.fmac2 = cuda_fmac2,
+	.fmacD = cuda_fmacD,
 
 	.smul = cuda_smul,
 	.sadd = cuda_sadd,
@@ -955,10 +955,10 @@ const struct vec_ops gpu_ops = {
 	.zmul = cuda_zmul,
 	.zdiv = cuda_zdiv,
 	.zfmac = cuda_zfmac,
-	.zfmac2 = cuda_zfmac2,
+	.zfmacD = cuda_zfmacD,
 	.zmulc = cuda_zmulc,
 	.zfmacc = cuda_zfmacc,
-	.zfmacc2 = cuda_zfmacc2,
+	.zfmaccD = cuda_zfmaccD,
 	.zfsq2 = cuda_zfsq2,
 
 	.zpow = cuda_zpow,

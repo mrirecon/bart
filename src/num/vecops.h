@@ -33,17 +33,17 @@ struct vec_ops {
 	void (*mul)(long N, float* dst, const float* src1, const float* src2);
 	void (*div)(long N, float* dst, const float* src1, const float* src2);
 	void (*fmac)(long N, float* dst, const float* src1, const float* src2);
-	void (*fmac2)(long N, double* dst, const float* src1, const float* src2);
+	void (*fmacD)(long N, double* dst, const float* src1, const float* src2);
 	void (*smul)(long N, float alpha, float* dst, const float* src1);
 	void (*sadd)(long N, float alpha, float* dst, const float* src1);
 
 	void (*zmul)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zdiv)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zfmac)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
-	void (*zfmac2)(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2);
+	void (*zfmacD)(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zmulc)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zfmacc)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
-	void (*zfmacc2)(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2);
+	void (*zfmaccD)(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zfsq2)(long N, _Complex float* dst, const _Complex float* src1);
 
 	void (*zsmul)(long N, _Complex float val, _Complex float* dst, const _Complex float* src1);
