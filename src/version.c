@@ -108,6 +108,20 @@ int main_version(int argc, char* argv[argc])
 #else
 			bart_printf("0\n");
 #endif
+
+		bart_printf("TENSORFLOW=");
+#ifdef TENSORFLOW
+			bart_printf("1\n");
+#else
+			bart_printf("0\n");
+#endif
+
+		bart_printf("MPI=");
+#ifdef USE_MPI
+			bart_printf("1\n");
+#else
+			bart_printf("0\n");
+#endif
 	}
 
 	xfree(version);
