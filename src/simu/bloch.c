@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <math.h>
 
+#include "misc/misc.h"
+
 #include "num/vec3.h"
 #include "num/linalg.h"
 #include "num/matexp.h"
@@ -291,4 +293,78 @@ void bloch_mcconnell_ode(int P, float out[P * 3], const float in[P * 3] , float 
 
 	for (int i = 0; i < N - 1; i++)
 		out[i] = out_tmp[i];
+}
+
+void bloch_mcc_pdy(int P, float out[P * 3][P * 3], const float in[P * 3], float r1[P], float r2[P], const float k[P - 1], const float m0[P], const float Om[P], const float gb[3])
+{
+	UNUSED(in);
+
+	float m[P * 3 + 1][P * 3 + 1];
+
+	bloch_mcconnel_matrix_ode(P, m, r1, r2, k, m0, Om, gb);
+
+	for (int i = 0; i < P * 3; i++)
+		for (int j = 0; j < P * 3; j++)
+			out[j][i] = m[i][j]; //transposition
+
+}
+
+void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3], float r1[P], float r2[P], const float k[P - 1], const float m0[P], const float gb[3], float phase, float b1)
+{
+	UNUSED(r2); UNUSED(gb); 
+
+	for (int i = 0; i < P * 5 - 1; i++)
+		for (int j = 0; j < P * 3; j++)
+			out[i][j] = 0.;
+
+	assert(P > 1);
+
+	for (int p = 0; p < P; p++) {
+
+		// R1
+		out[0 + p][2 + p * 3] = - (in[2 + p * 3] - m0[p]);
+		// R2
+		out[P + p][0 + p * 3] = - in[p * 3];
+		out[P + p][1 + p * 3] = - in[1 + p * 3];
+		// B1
+		out[2 * P][0 + p * 3] = sinf(phase) * in[2 + p * 3] * b1;
+		out[2 * P][1 + p * 3] = cosf(phase) * in[2 + p * 3] * b1;
+		out[2 * P][2 + p * 3] = (-sinf(phase) * in[0 + p * 3] - cosf(phase) * in[1 + p * 3]) * b1;
+	}
+
+	for (int p = 0; p < P - 1; p++) {
+
+		// M0 water; special treatment because of exchange with all other pools
+		out[2 * P + 1][0] += in[3 + p * 3] * k[p];
+		out[2 * P + 1][1] += in[4 + p * 3] * k[p];
+		out[2 * P + 1][2] += in[5 + p * 3] * k[p];
+		out[2 * P + 1][3 + p * 3] = -in[3 + p * 3] * k[p];
+		out[2 * P + 1][4 + p * 3] = -in[4 + p * 3] * k[p];
+		out[2 * P + 1][5 + p * 3] = -in[5 + p * 3] * k[p];
+
+		// M0 remaining
+		out[2 * P + 2 + p][0] = -in[0] * k[p];
+		out[2 * P + 2 + p][1] = -in[1] * k[p];
+		out[2 * P + 2 + p][2] = -in[2] * k[p];
+		out[2 * P + 2 + p][3 + p * 3] = in[0] * k[p];
+		out[2 * P + 2 + p][4 + p * 3] = in[1] * k[p];
+		out[2 * P + 2 + p][5 + p * 3] = r1[p + 1] + in[2] * k[p];
+
+		// k; Pools only exchange with water pool
+		out[3 * P + 1 + p][0] = -in[0] * m0[p + 1] + in[3 + p * 3] * m0[0];
+		out[3 * P + 1 + p][1] = -in[1] * m0[p + 1] + in[4 + p * 3] * m0[0];
+		out[3 * P + 1 + p][2] = -in[2] * m0[p + 1] + in[5 + p * 3] * m0[0];
+		out[3 * P + 1 + p][3 + p * 3] = in[0] * m0[p + 1] - in[3 + p * 3] * m0[0];
+		out[3 * P + 1 + p][4 + p * 3] = in[1] * m0[p + 1] - in[4 + p * 3] * m0[0];
+		out[3 * P + 1 + p][5 + p * 3] = in[2] * m0[p + 1] - in[5 + p * 3] * m0[0];
+
+		// Om
+		out[4 * P + p][3 + p * 3] = in[4 + p * 3];
+		out[4 * P + p][4 + p * 3] = -in[3 + p * 3];
+
+	}
+
+	// Missing term for M0 water
+	out[2 * P + 1][2] += r1[0];
+
 }

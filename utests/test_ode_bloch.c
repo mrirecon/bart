@@ -861,3 +861,191 @@ static bool test_bloch_mcconnell_matrix(void)
 UT_REGISTER_TEST(test_bloch_mcconnell_matrix);
 
 
+// Test function for SA with case P = 2
+static bool test_bloch_mcconnell_b1_pdp(void)
+{
+	int P = 2;
+	float out_2_pool[P * 5 - 1][P * 3];
+	float in[6] = { 0.1, 0.4, 1, 0.5, 0.7, 0.8};
+
+	float gb[3] = { 0.2, 0.6, 0.9 };
+	float k[1] = { -2. };
+	float m0[2] = { 0.93, 0.76 };
+	float r1[2] = { 1., 1.1 };
+	float r2[2] = { 0.6, 0.08 };
+	float phase = 0.1;
+	float b1 = 1.1;
+	
+	for (int i = 0; i < P * 5 - 1; i++)
+		for (int j = 0; j < P * 3; j++)
+			out_2_pool[i][j] = 0.;
+
+	// R1
+	out_2_pool[0][2] = -(in[2] - m0[0]);
+	// R1_2
+	out_2_pool[1][5] = -(in[5] - m0[1]);
+	// R2
+	out_2_pool[2][0] = -in[0];
+	out_2_pool[2][1] = -in[1];
+	// R2_2
+	out_2_pool[3][3] = -in[3];
+	out_2_pool[3][4] = -in[4];
+	// B1
+	out_2_pool[4][0] = sinf(phase) * in[2] * b1;
+	out_2_pool[4][1] = cosf(phase) * in[2] * b1;
+	out_2_pool[4][2] = ((-sinf(phase) * in[0]) - (cosf(phase) * in[1])) * b1;
+	out_2_pool[4][3] = sinf(phase) * in[5] * b1;
+	out_2_pool[4][4] = cosf(phase) * in[5] * b1;
+	out_2_pool[4][5] = ((-sinf(phase) * in[3]) - (cosf(phase) * in[4])) * b1;
+	// k
+	out_2_pool[7][0] = -in[0] * m0[1] + in[3] * m0[0]; 
+	out_2_pool[7][1] = -in[1] * m0[1] + in[4] * m0[0];
+	out_2_pool[7][2] = -in[2] * m0[1] + in[5] * m0[0];
+	out_2_pool[7][3] = in[0] * m0[1] - (in[3] * m0[0]);
+	out_2_pool[7][4] = in[1] * m0[1] - in[4] * m0[0];
+	out_2_pool[7][5] = in[2] * m0[1] - in[5] * m0[0];
+	// m0_1
+ 	out_2_pool[5][0] = in[3] * k[0];
+	out_2_pool[5][1] = in[4] * k[0];
+	out_2_pool[5][2] = in[5] * k[0] + r1[0];
+	out_2_pool[5][3] = -in[3] * k[0];
+	out_2_pool[5][4] = -in[4] * k[0];
+	out_2_pool[5][5] =  -in[5] * k[0];
+	// m0_2
+	out_2_pool[6][0] = -in[0] * k[0];
+	out_2_pool[6][1] = -in[1] * k[0];
+	out_2_pool[6][2] = -in[2] * k[0];
+	out_2_pool[6][3] = in[0] * k[0];
+	out_2_pool[6][4] = in[1] * k[0];
+	out_2_pool[6][5] = r1[1] + in[2] * k[0];  
+	// Om
+	out_2_pool[8][3] = in[4];
+	out_2_pool[8][4] = -in[3];
+
+	float out_gen[9][P * 3];
+ 
+	for (int i = 0; i < P * 5 - 1; i++)
+		for (int j = 0; j < P * 3; j++)
+			out_gen[i][j] = 0.;
+
+	bloch_mcc_b1_pdp(P, out_gen, in, r1, r2, k, m0, gb, phase, b1);
+
+	for (int i = 0; i < P * 5 - 1; i++)
+		for (int j = 0; j < P * 3; j++)
+			if (fabsf(out_gen[i][j] - out_2_pool[i][j]) > 1e-6)
+				return false;
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_bloch_mcconnell_b1_pdp);
+
+
+// Test function for SA with case P = 3
+static bool test_bloch_mcconnell_b1_pdp_3(void)
+{
+	int P = 3;
+	float out_3_pool[P * 5 - 1][P * 3];
+	float in[9] = { 0.1, 0.4, 1., 0.5, 0.7, 0.8, -0.6, -0.9, 2.};
+
+	float gb[3] = { 0.2, 0.7, 0.9 };
+	float k[2] = { 2.3, 8.4 };
+	float m0[3] = { 0.93, 0.76, 0.37 };
+	float r1[3] = { 1., 1.1, 2.3 };
+	float r2[3] = { 0.6, 0.08, 0.15 };
+	float phase = 0.1;
+	float b1 = 1.1;
+	
+	for (int i = 0; i < P * 5 - 1; i++)
+		for (int j = 0; j < P * 3; j++)
+			out_3_pool[i][j] = 0.;
+
+	// R1
+	out_3_pool[0][2] = -(in[2] - m0[0]);
+	// R1_2
+	out_3_pool[1][5] = -(in[5] - m0[1]);
+	// R1_3
+	out_3_pool[2][8] = -(in[8] - m0[2]);
+	// R2
+	out_3_pool[3][0] = -in[0];
+	out_3_pool[3][1] = -in[1];
+	// R2_2
+	out_3_pool[4][3] = -in[3];
+	out_3_pool[4][4] = -in[4];
+	// R2_3
+	out_3_pool[5][6] = -in[6];
+	out_3_pool[5][7] = -in[7];
+	// B1
+	out_3_pool[6][0] = sinf(phase) * in[2] * b1;
+	out_3_pool[6][1] = cosf(phase) * in[2] * b1;
+	out_3_pool[6][2] = ((-sinf(phase) * in[0]) - (cosf(phase) * in[1])) * b1;
+	out_3_pool[6][3] = sinf(phase) * in[5] * b1;
+	out_3_pool[6][4] = cosf(phase) * in[5] * b1;
+	out_3_pool[6][5] = ((-sinf(phase) * in[3]) - (cosf(phase) * in[4])) * b1;
+	out_3_pool[6][6] = sinf(phase) * in[8] * b1;
+	out_3_pool[6][7] = cosf(phase) * in[8] * b1;
+	out_3_pool[6][8] = ((-sinf(phase) * in[6]) - (cosf(phase) * in[7])) * b1;
+
+	// m0_1
+ 	out_3_pool[7][0] = in[3] * k[0] + in[6] * k[1];
+	out_3_pool[7][1] = in[4] * k[0] + in[7] * k[1];
+	out_3_pool[7][2] = in[5] * k[0] + in[8] * k[1] + r1[0];
+	out_3_pool[7][3] = -in[3] * k[0]; 
+	out_3_pool[7][4] = -in[4] * k[0]; 
+	out_3_pool[7][5] =  -in[5] * k[0]; 
+	out_3_pool[7][6] = - in[6] * k[1];
+	out_3_pool[7][7] = - in[7] * k[1];
+	out_3_pool[7][8] = - in[8] * k[1];
+	// m0_2
+	out_3_pool[8][0] = -in[0] * k[0];
+	out_3_pool[8][1] = -in[1] * k[0];
+	out_3_pool[8][2] = -in[2] * k[0];
+	out_3_pool[8][3] = in[0] * k[0];
+	out_3_pool[8][4] = in[1] * k[0];
+	out_3_pool[8][5] = r1[1] + in[2] * k[0];
+	// m0_3
+	out_3_pool[9][0] = -in[0] * k[1];
+	out_3_pool[9][1] = -in[1] * k[1];
+	out_3_pool[9][2] = -in[2] * k[1];
+	out_3_pool[9][6] = in[0] * k[1];
+	out_3_pool[9][7] = in[1] * k[1];
+	out_3_pool[9][8] = r1[2] + in[2] * k[1];   
+	// k1
+	out_3_pool[10][0] = -in[0] * m0[1] + in[3] * m0[0]; 
+	out_3_pool[10][1] = -in[1] * m0[1] + in[4] * m0[0];
+	out_3_pool[10][2] = -in[2] * m0[1] + in[5] * m0[0];
+	out_3_pool[10][3] = in[0] * m0[1] - (in[3] * m0[0]);
+	out_3_pool[10][4] = in[1] * m0[1] - in[4] * m0[0];
+	out_3_pool[10][5] = in[2] * m0[1] - in[5] * m0[0];
+	// k2
+	out_3_pool[11][0] = -in[0] * m0[2] + in[6] * m0[0]; 
+	out_3_pool[11][1] = -in[1] * m0[2] + in[7] * m0[0];
+	out_3_pool[11][2] = -in[2] * m0[2] + in[8] * m0[0];
+	out_3_pool[11][6] = in[0] * m0[2] - in[6] * m0[0];
+	out_3_pool[11][7] = in[1] * m0[2] - in[7] * m0[0];
+	out_3_pool[11][8] = in[2] * m0[2] - in[8] * m0[0];
+	// Om1
+	out_3_pool[12][3] = in[4];
+	out_3_pool[12][4] = -in[3];
+	// Om2
+	out_3_pool[13][6] = in[7];
+	out_3_pool[13][7] = -in[6];
+
+
+	float out_gen[P * 5 - 1][P * 3]; 
+	for (int i = 0; i < P * 5 - 1; i++)
+		for (int j = 0; j < P * 3; j++)
+			out_gen[i][j] = 0.;
+
+	bloch_mcc_b1_pdp(P, out_gen, in, r1, r2, k, m0, gb, phase, b1);
+
+	for (int i = 0; i < P * 5 - 1; i++)
+		for (int j = 0; j < P * 3; j++)
+			if (fabsf(out_gen[i][j] - out_3_pool[i][j]) > 1e-6)
+				return false;
+
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_bloch_mcconnell_b1_pdp_3);
