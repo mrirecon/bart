@@ -31,11 +31,20 @@ void debug_sim(struct sim_data* data)
 {
         debug_printf(DP_INFO, "Simulation-Debug-Output\n\n");
         debug_printf(DP_INFO, "Voxel-Parameter:\n");
-	debug_printf(DP_INFO, "\tNumber of Pools:%f\n\n", data->voxel.P);
-	debug_printf(DP_INFO, "\tR1:%f\n\n", data->voxel.r1[0]);
-	debug_printf(DP_INFO, "\tR2:%f\n\n", data->voxel.r2[0]);
-	debug_printf(DP_INFO, "\tM0:%f\n", data->voxel.m0[0]);
-	debug_printf(DP_INFO, "\tw:%f\n", data->voxel.w);
+        debug_printf(DP_INFO, "\tNumber of Pools:%d\n\n", data->voxel.P);
+        debug_printf(DP_INFO, "\tR1:%f\n\n", data->voxel.r1[0]);
+        debug_printf(DP_INFO, "\tR2:%f\n\n", data->voxel.r2[0]);
+        debug_printf(DP_INFO, "\tM0:%f\n", data->voxel.m0[0]);
+        debug_printf(DP_INFO, "\tOm:%f\n\n", data->voxel.Om[0]);
+        debug_printf(DP_INFO, "\tR2_2:%f \tR2_3:%f\t R2_4:%f\t R2_5:%f\n\n", data->voxel.r2[1], data->voxel.r2[2],data->voxel.r2[3],data->voxel.r2[4]);
+        debug_printf(DP_INFO, "\tR1_2:%f \tR1_3:%f\t R1_4:%f\t R1_5:%f\n\n", data->voxel.r1[1], data->voxel.r1[2],data->voxel.r1[3],data->voxel.r1[4]);
+        debug_printf(DP_INFO, "\tM0_2:%f \tM0_3:%f \tM0_4:%f \tM0_5:%f\n", data->voxel.m0[1], data->voxel.m0[2], data->voxel.m0[3], data->voxel.m0[4]);
+        debug_printf(DP_INFO, "\tOm_2:%f \tOm_3:%f \tOm_4:%f \tOm_5:%f\n", data->voxel.Om[1], data->voxel.Om[2], data->voxel.Om[3], data->voxel.Om[4]);
+        debug_printf(DP_INFO, "\tk[0]:%f\n\n", data->voxel.k[0]);
+        debug_printf(DP_INFO, "\tk[1]:%f\n\n", data->voxel.k[1]);
+        debug_printf(DP_INFO, "\tk[2]:%f\n\n", data->voxel.k[2]);
+        debug_printf(DP_INFO, "\tk[3]:%f\n\n", data->voxel.k[3]);
+        debug_printf(DP_INFO, "\tw:%f\n", data->voxel.w);
         debug_printf(DP_INFO, "\tB1:%f\n\n", data->voxel.b1);
 
         debug_printf(DP_INFO, "Seq-Parameter:\n");
@@ -84,9 +93,14 @@ const struct simdata_voxel simdata_voxel_defaults = {
 
 	.P = 1,
 
-	.r1 = { 0. },
-	.r2 = { 0. },
-	.m0 = { 1. },
+	.r1 = { 0., 0., 0., 0., 0. },
+	.r2 = { 0., 0., 0., 0., 0. },
+	.m0 = { 1., 1., 1., 1., 1. },
+	.Om = { 0., 0., 0., 0., 0. },
+
+	.k = { 0., 0., 0., 0.}, 
+
+
 	.w = 0.,
 	.b1 = 1.,
 };
@@ -225,23 +239,37 @@ static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t
         set_gradients(data, t);
 
 	float matrix_time[N][N];
+	int N_pools_b1 = 15 * data->voxel.P * data->voxel.P + 1;
+	int N_pools = N_pools_b1 - 3 * data->voxel.P;
 
-	switch (N) {
+	float r2[data->voxel.P];
+	for (int i = 0; i < data->voxel.P; i++)
+		r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
-	case 4: // M
-                bloch_matrix_ode(matrix_time, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
-		break;
+	if (N == 4) { // M
 
-	case 10: // M, dR1, dR2, dM0
-                bloch_matrix_ode_sa(matrix_time, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
-		break;
+		bloch_matrix_ode(matrix_time, data->voxel.r1[0], r2[0], data->grad.gb_eff);
 
-	case 13: // M, dR1, dR2, dM0, dB1
-	        bloch_matrix_ode_sa2(matrix_time, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
-		break;
+	} else if (N == 10) { // M, dR1, dR2, dM0
 
-	default:
-                error("Please choose correct dimension for STM matrix!\n");
+		bloch_matrix_ode_sa(matrix_time, data->voxel.r1[0], r2[0], data->grad.gb_eff);
+
+	} else if (N == 13) { // M, dR1, dR2, dM0, dB1
+
+		bloch_matrix_ode_sa2(matrix_time, data->voxel.r1[0], r2[0], data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+
+	} else if (N == N_pools) { // M,  dR1, dR2, dk, dOm, dM0
+
+		assert(MODEL_BMC == data->seq.model);
+		bloch_mcc_matrix_ode_sa(data->voxel.P, matrix_time, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
+
+	} else if (N == N_pools_b1) { // M, dR1, dR2, dB1, dk, dOm, dM0
+
+		assert(MODEL_BMC == data->seq.model);
+		bloch_mcc_matrix_ode_sa2(data->voxel.P, matrix_time, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+
+	} else {
+		error("Please choose correct dimension for STM matrix!\n");
 	}
 
 	matf_vecmul(N, N, out, matrix_time, in);
@@ -305,7 +333,7 @@ static void adc_corr(int P, int N, int pools, float out[P][pools][N], float in[P
 
 
 
-static void collect_signal(struct sim_data* data, int P, int R, int S, int pools, float (*m)[R][S][pools][3], float (*sa_r1)[R][S][pools][3], float (*sa_r2)[R][S][pools][3], float (*sa_b1)[R][S][pools][3], float xp[P][3])
+static void collect_signal(struct sim_data* data, int P, int R, int S, int pools, float (*m)[R][S][pools][3], float (*sa_r1)[R][S][pools][3], float (*sa_r2)[R][S][pools][3], float (*sa_b1)[R][S][1][3], float (*sa_m0)[R][S][pools][3], float (*sa_k)[R][S][pools][3], float (*sa_Om)[R][S][pools][3], float xp[P][pools * 3])
 {
         float tmp[P][pools][3];
 
@@ -314,6 +342,8 @@ static void collect_signal(struct sim_data* data, int P, int R, int S, int pools
         int r = data->tmp.rep_counter;
 	int s = data->tmp.spin_counter;
 
+	// Keep all entries for m
+	// Only keep x,y,z components with respect to water pool for SA params
 	for (int p = 0; p < pools; p++) {
 		for (int i = 0; i < 3; i++) {
 
@@ -321,22 +351,40 @@ static void collect_signal(struct sim_data* data, int P, int R, int S, int pools
 				(*m)[r][s][p][i] = tmp[0][p][i];
 
 			if (NULL != sa_r1)
-				(*sa_r1)[r][s][p][i] = tmp[1][p][i];
+				(*sa_r1)[r][s][p][i] = tmp[1 + p][0][i];
 
 			if (NULL != sa_r2)
-				(*sa_r2)[r][s][p][i] = tmp[2][p][i];
+				(*sa_r2)[r][s][p][i] = tmp[1 + pools + p][0][i];
 
-			if (NULL != sa_b1)
-				(*sa_b1)[r][s][p][i] = tmp[3][p][i];
+			if ( (0 == p) && (NULL != sa_b1) )
+				(*sa_b1)[r][s][p][i] = tmp[1 + 2 * pools][p][i];
+
+			if ( (1 < pools) && (NULL != sa_m0) ) // For 1 == pools -> sa_m0 == m, see sum_up_signal()
+				(*sa_m0)[r][s][p][i] = tmp[2 + 2 * pools + p][0][i];
+
+			// pools - 1 instances of k and Om
+			if (p < pools - 1) {
+
+				if (NULL != sa_k)
+					(*sa_k)[r][s][p][i] = tmp[2 + 3 * pools + p][0][i];
+
+				if (NULL != sa_Om)
+					(*sa_Om)[r][s][p][i] = tmp[1 + 4 * pools + p][0][i];
+			}
 		}
 	}
 }
 
 
-static void sum_up_signal(float m0, int R, int S, int A, float D, int pools, float (*m)[R * A][S][pools][3], float (*sa_r1)[R * A][S][pools][3], float (*sa_r2)[R * A][S][pools][3], float (*sa_b1)[R * A][S][pools][3],
-                        float (*m_state)[R][pools][3], float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3], float (*sa_b1_state)[R][pools][3])
+static void sum_up_signal(float m0, int R, int S, int A, float D, int pools,
+			float (*m)[R * A][S][pools][3], float (*sa_r1)[R * A][S][pools][3], float (*sa_r2)[R * A][S][pools][3], float (*sa_b1)[R * A][S][1][3],
+			float (*sa_m0)[R * A][S][pools][3], float (*sa_k)[R * A][S][pools][3], float (*sa_om)[R * A][S][pools][3],
+                        float (*m_state)[R][pools][3], float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3], float (*sa_b1_state)[R][1][3], float (*sa_k_state)[R][pools][3], float (*sa_om_state)[R][pools][3])
 {
 	float norm = m0 / ((float)A * D);
+
+        if (pools > 1)
+                norm = 1. / ((float)A * D);
 
 	for (int p = 0; p < pools; p++) {
 
@@ -348,6 +396,9 @@ static void sum_up_signal(float m0, int R, int S, int A, float D, int pools, flo
 				float sum_sa_r1 = 0.;
 				float sum_sa_r2 = 0.;
 				float sum_sa_b1 = 0.;
+				float sum_sa_m0 = 0.;
+				float sum_sa_k = 0.;
+				float sum_sa_om = 0.;
 
 				for (int a = 0; a < A; a++) {
 
@@ -356,7 +407,13 @@ static void sum_up_signal(float m0, int R, int S, int A, float D, int pools, flo
 						sum_m += (*m)[r * A + a][spin][p][dim];
 						sum_sa_r1 += (*sa_r1)[r * A + a][spin][p][dim];
 						sum_sa_r2 += (*sa_r2)[r * A + a][spin][p][dim];
-						sum_sa_b1 += (*sa_b1)[r * A + a][spin][p][dim];
+
+						if (p == 0)
+							sum_sa_b1 += (*sa_b1)[r * A + a][spin][p][dim];
+
+						sum_sa_k += (*sa_k)[r * A + a][spin][p][dim];
+						sum_sa_om += (*sa_om)[r * A + a][spin][p][dim];
+						sum_sa_m0 += (*sa_m0)[r * A + a][spin][p][dim];
 					}
 				}
 
@@ -364,9 +421,20 @@ static void sum_up_signal(float m0, int R, int S, int A, float D, int pools, flo
 				(*m_state)[r][p][dim] = sum_m * norm;
 				(*sa_r1_state)[r][p][dim] = sum_sa_r1 * norm;
 				(*sa_r2_state)[r][p][dim] = sum_sa_r2 * norm;
-				(*sa_b1_state)[r][p][dim] = sum_sa_b1 * norm;
-				(*sa_m0_state)[r][p][dim] = sum_m / ((float)A * D);
 
+				if (0 == p)
+					(*sa_b1_state)[r][p][dim] = sum_sa_b1 * norm;
+
+				if (1 == pools)
+					(*sa_m0_state)[r][p][dim] = sum_m / ((float)A * D);
+				else
+					(*sa_m0_state)[r][p][dim] = sum_sa_m0 * norm;
+
+				if (NULL != sa_k_state)
+					(*sa_k_state)[r][p][dim] = sum_sa_k * norm;
+
+				if (NULL != sa_om_state)
+					(*sa_om_state)[r][p][dim] = sum_sa_om * norm;
 			}
 		}
 	}
@@ -443,18 +511,52 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
 			set_gradients(data, t);
+
+			float r2[data->voxel.P];
+
+			if (MODEL_BMC == data->seq.model) {
+
+				for (int i = 0; i < data->voxel.P; i++)
+					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+
+				bloch_mcconnell_ode(data->voxel.P, out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
+			}
+			else {
 				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
+			}
 		};
 
 		NESTED(void, call_pdy2, (float* out, float t, const float* in))
 		{
 			(void)t;
+
+			float r2[data->voxel.P];
+
+			if (MODEL_BMC == data->seq.model) {
+
+				for (int i = 0; i < data->voxel.P; i++)
+					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+
+				bloch_mcc_pdy(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
+			}
+			else
 				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		};
 
 		NESTED(void, call_pdp2, (float* out, float t, const float* in))
 		{
 			(void)t;
+
+			float r2[data->voxel.P];
+
+			if (MODEL_BMC == data->seq.model) {
+
+				for (int i = 0; i < data->voxel.P; i++)
+					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+
+				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+			}
+			else
 				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
 		};
 
@@ -514,19 +616,53 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
 			set_gradients(data, t);
-			bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
+
+			float r2[data->voxel.P];
+
+			if (MODEL_BMC == data->seq.model) {
+
+				for (int i = 0; i < data->voxel.P; i++)
+					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+
+				bloch_mcconnell_ode(data->voxel.P, out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
+			}
+			else {
+				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
+			}
 		};
 
 		NESTED(void, call_pdy2, (float* out, float t, const float* in))
 		{
 			(void)t;
-			bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
+
+			float r2[data->voxel.P];
+
+			if (MODEL_BMC == data->seq.model) {
+
+				for (int i = 0; i < data->voxel.P; i++)
+					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+
+				bloch_mcc_pdy(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
+			}
+			else
+				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		};
 
 		NESTED(void, call_pdp2, (float* out, float t, const float* in))
 		{
 			(void)t;
-			bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+
+			float r2[data->voxel.P];
+
+			if (MODEL_BMC == data->seq.model) {
+
+				for (int i = 0; i < data->voxel.P; i++)
+					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+
+				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+			}
+			else
+				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
 		};
 
 		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
@@ -646,7 +782,8 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 
 
 static void run_sim(struct sim_data* data, int R, int S, int pools,
-			float (*mxy)[R][S][pools][3], float (*sa_r1)[R][S][pools][3], float (*sa_r2)[R][S][pools][3], float (*sa_b1)[R][S][pools][3],
+			float (*mxy)[R][S][pools][3], float (*sa_r1)[R][S][pools][3], float (*sa_r2)[R][S][pools][3], float (*sa_b1)[R][S][1][3],
+			float (*sa_m0)[R][S][pools][3], float (*sa_k)[R][S][pools][3], float (*sa_Om)[R][S][pools][3],
                         float h, float tol, int N, int P, float xp[P][N],
                         float xstm[P * N + 1], float mte[P * N + 1][P * N + 1], float mtr[P * N + 1][P * N + 1])
 {
@@ -673,7 +810,7 @@ static void run_sim(struct sim_data* data, int R, int S, int pools,
 			relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
 		}
 
-		collect_signal(data, P, R, S, pools, mxy, sa_r1, sa_r2, sa_b1, xp);
+		collect_signal(data, P, R, S, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, xp);
 
                 // Smooth spoiling for FLASH sequences
 
@@ -714,7 +851,7 @@ static void run_sim(struct sim_data* data, int R, int S, int pools,
                 // Save data
                 stm2ode(N, P, xp, xstm);
 
-                collect_signal(data, P, R, S, pools, mxy, sa_r1, sa_r2, sa_b1, xp);
+                collect_signal(data, P, R, S, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, xp);
 
                 // Evolution: TE -> TR
                 apply_sim_matrix(N * P + 1, xstm, mtr);
@@ -783,7 +920,7 @@ static void alpha_half_preparation(const struct sim_data* data, int pools, float
 		int R = data->seq.rep_num;
 		int S = data->seq.spin_num;
 
-		run_sim(&prep_data, R, S, pools, NULL, NULL, NULL, NULL, h, tol, N, P, xp, NULL, NULL, NULL);
+		run_sim(&prep_data, R, S, pools, NULL, NULL, NULL, NULL, NULL, NULL, NULL, h, tol, N, P, xp, NULL, NULL, NULL);
 
 	} else { // Perfect preparation
 
@@ -796,7 +933,7 @@ static void alpha_half_preparation(const struct sim_data* data, int pools, float
 /* ------------ Main Simulation -------------- */
 
 void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m_state)[R][pools][3], float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3],
-			float (*sa_b1_state)[R][pools][3])
+			float (*sa_b1_state)[R][1][3], float (*sa_k_state)[R][pools][3], float (*sa_om_state)[R][pools][3])
 {
 	// FIXME: split config + variable part
 
@@ -804,8 +941,9 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 
         float tol = _data->other.ode_tol;      // Tolerance of ODE solver
 
-	int N = 3 * pools;	// Number of dimensions (x, y, z)
-	int P = 4;		// Number of parameters with estimated derivative (M, DR1, DR2, DB1)
+	// Dimensions and parameters according to number of pools
+	int N = 3 * pools;	// Number of dimensions (x, y, z) * #pools
+	int P = (1 == pools) ? 4 : 5 * pools;		// Number of parameters with estimated derivative (M, DR1, DR2, DB1, DM0, Dk, DOm)
 
         assert(0 < P);
 
@@ -829,7 +967,11 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 	float (*mxy)[R * A][S][pools][3] = xmalloc(sizeof *mxy);
 	float (*sa_r1)[R * A][S][pools][3] = xmalloc(sizeof *sa_r1);
 	float (*sa_r2)[R * A][S][pools][3] = xmalloc(sizeof *sa_r2);
-	float (*sa_b1)[R * A][S][pools][3] = xmalloc(sizeof *sa_b1);
+	float (*sa_b1)[R * A][S][1][3] = xmalloc(sizeof *sa_b1);
+
+	float (*sa_m0)[R * A][S][pools][3] = xmalloc(sizeof *sa_m0);
+	float (*sa_k)[R * A][S][pools][3] = xmalloc(sizeof *sa_k);
+	float (*sa_Om)[R * A][S][pools][3] = xmalloc(sizeof *sa_Om);
 
 	for (data.tmp.spin_counter = 0; data.tmp.spin_counter < S; data.tmp.spin_counter++) {
 
@@ -876,6 +1018,17 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
                 xstm[2] = 1.;
                 xstm[M - 1] = 1.;
 
+                if (MODEL_BMC == data.seq.model) {
+
+			for (int p = 0; p < data.voxel.P; p++) {
+
+				xp[0][2 + p * 3] = data.voxel.m0[p];
+
+				// Sensitivities to m0[0] and m0[1] need 1 as initialization
+				xp[2 + 2 * data.voxel.P + p][2 + p * 3] = 1.; 
+				xstm[2 + p * 3] = data.voxel.m0[p];
+			}
+                }
 
                 // Reset parameters
 		data.voxel.w = _data->voxel.w;
@@ -931,7 +1084,7 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 				odd = (1 == data.tmp.rep_counter % 2);
                         }
 
-			run_sim(&data, R * A, S, pools, mxy, sa_r1, sa_r2, sa_b1, h, tol, N, P, xp, xstm, mte[odd], mtr);
+			run_sim(&data, R * A, S, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, h, tol, N, P, xp, xstm, mte[odd], mtr);
 
                         data.tmp.rep_counter++;
                 }
@@ -944,13 +1097,16 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
         //      - Relative to default slice thickness to keep strength of simulation higher
         float D = (float)S / (data.seq.slice_thickness / default_slice_thickness);
 
-        sum_up_signal(data.voxel.m0[0], data.seq.rep_num / A, data.seq.spin_num, A, D, pools, mxy, sa_r1, sa_r2, sa_b1,
-			m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state);
+        sum_up_signal(data.voxel.m0[0], data.seq.rep_num / A, data.seq.spin_num, A, D, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om,
+			m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state, sa_k_state, sa_om_state);
 
 	xfree(mxy);
 	xfree(sa_r1);
 	xfree(sa_r2);
 	xfree(sa_b1);
+	xfree(sa_m0);
+        xfree(sa_k);
+        xfree(sa_Om);
 }
 
 // Wrapper for single pool simulation
@@ -961,11 +1117,10 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 	float mxy[R][pools][3];
 	float sa_r1[R][pools][3];
 	float sa_r2[R][pools][3];
-	float sa_b1[R][pools][3];
+	float sa_b1[R][1][3];
 	float sa_m0[R][pools][3];
 
-	bloch_simulation2(_data, R, pools, &mxy, &sa_r1, &sa_r2, &sa_m0, &sa_b1);
-
+	bloch_simulation2(_data, R, pools, &mxy, &sa_r1, &sa_r2, &sa_m0, &sa_b1, NULL, NULL);
 
 	for(int r = 0; r < R; r++)
 		for(int n = 0; n < 3; n++) {

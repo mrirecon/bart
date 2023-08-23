@@ -8,15 +8,19 @@
 
 enum sim_seq { SEQ_BSSFP, SEQ_IRBSSFP, SEQ_FLASH, SEQ_IRFLASH };
 enum sim_type { SIM_ROT, SIM_ODE, SIM_STM };
-enum sim_model { MODEL_BLOCH };
+enum sim_model { MODEL_BLOCH, MODEL_BMC };
 
 struct simdata_voxel {
 
 	int P;
 
-	float r1[1];
-	float r2[1];
-	float m0[1];
+	float r1[5];
+	float r2[5];
+	float m0[5];
+	float Om[5];
+
+	float k[4];
+
 	float w;
 	float b1;
 };
@@ -124,7 +128,7 @@ extern void relaxation2(struct sim_data* data, float h, float tol, int N, int P,
 
 extern void inversion(const struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end);
 extern void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3],	float (*sa_b1_state)[R][3]);
-extern void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m_state)[R][pools][3], float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3], float (*sa_b1_state)[R][pools][3]);
+extern void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m_state)[R][pools][3], float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3], float (*sa_b1_state)[R][pools][3], float (*sa_k_state)[R][pools][3], float (*sa_om_state)[R][pools][3]);
 
 extern void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N][N]);
 extern void apply_sim_matrix(int N, float m[N], float matrix[N][N]);

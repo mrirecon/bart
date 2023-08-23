@@ -1618,3 +1618,496 @@ static bool test_stm_matrix_creation(void)
 
 UT_REGISTER_TEST(test_stm_matrix_creation);
 
+
+// Validate the partial derivatives of Bloch-McConnell
+// equations estimated with the SA with the
+// difference quotient method for estimating gradients.
+
+static bool test_ode_bloch_mcc_simulation_gradients(void)
+{
+	float e = 1.E-3;
+	float tol = 1.E-4;
+
+ 	struct sim_data sim_data;
+
+	sim_data.grad = simdata_grad_defaults;
+	sim_data.tmp = simdata_tmp_defaults;
+	sim_data.other = simdata_other_defaults;
+	sim_data.seq = simdata_seq_defaults;
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.voxel = simdata_voxel_defaults;
+
+	sim_data.seq.seq_type = SEQ_IRBSSFP;
+	sim_data.seq.type = SIM_ODE;
+	sim_data.seq.tr = 0.004;
+	sim_data.seq.te = 0.002;
+	sim_data.seq.rep_num = 45;
+	sim_data.seq.spin_num = 1;
+	sim_data.seq.inversion_pulse_length = 0.01;
+	sim_data.seq.prep_pulse_length = sim_data.seq.te;
+
+	sim_data.voxel.r1[0] = 1. / WATER_T1;
+	sim_data.voxel.r2[0] = 1. / WATER_T2;
+	sim_data.voxel.r1[1] = 1. / WATER_T1;
+	sim_data.voxel.r2[1] = 10000.;
+	sim_data.voxel.m0[1] = 0.20;
+	sim_data.voxel.m0[0] = 1.;
+	sim_data.voxel.k[0] = 10.;
+
+	sim_data.voxel.Om[1] = 0;
+	sim_data.voxel.P = 2;
+
+	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.rf_end = 0.001;
+
+	int R = sim_data.seq.rep_num;
+	float mxy_ref_sig[R][sim_data.voxel.P][3];
+	float sa_r1_ref_sig[R][sim_data.voxel.P][3];
+	float sa_r2_ref_sig[R][sim_data.voxel.P][3];
+	float sa_m0_ref_sig[R][sim_data.voxel.P][3];
+	float sa_b1_ref_sig[R][1][3];
+	float sa_k_ref_sig[R][sim_data.voxel.P][3];
+	float sa_om_ref_sig[R][sim_data.voxel.P][3];
+
+	sim_data.seq.model = MODEL_BMC;
+
+	bloch_simulation2(&sim_data, R, sim_data.voxel.P, &mxy_ref_sig, &sa_r1_ref_sig, &sa_r2_ref_sig, &sa_m0_ref_sig, &sa_b1_ref_sig, &sa_k_ref_sig, &sa_om_ref_sig);
+
+
+	 /* ------------ R1 Partial Derivative Test -------------- */
+
+	float mxy_tmp_sig[R][sim_data.voxel.P][3];
+	float sa_r1_tmp_sig[R][sim_data.voxel.P][3];
+	float sa_r2_tmp_sig[R][sim_data.voxel.P][3];
+	float sa_m0_tmp_sig[R][sim_data.voxel.P][3];
+	float sa_b1_tmp_sig[R][1][3];
+	float sa_k_tmp_sig[R][sim_data.voxel.P][3];
+	float sa_om_tmp_sig[R][sim_data.voxel.P][3];
+
+	struct sim_data data_r1 = sim_data;
+
+	data_r1.voxel.r1[0] += e;
+
+	bloch_simulation2(&data_r1, R, sim_data.voxel.P, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig, &sa_k_tmp_sig, &sa_om_tmp_sig);
+
+	float err = 0;
+
+	 	for (int i = 0; i < sim_data.seq.rep_num; i++) {
+	 		for (int j = 0; j < 3; j++) {
+	 			err = fabsf(e * sa_r1_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
+
+	 			if (tol < err)  {
+
+	 				printf("Error T1 : (%d,%d)\t=>\t%f\n", i, j, err);
+					return false;
+	 			}
+	 		}
+	 	}
+
+
+	/* ------------ R2 Partial Derivative Test -------------- */
+
+	struct sim_data data_r2 = sim_data;
+
+	data_r2.voxel.r2[0] += e;
+
+	bloch_simulation2(&data_r2, R, sim_data.voxel.P, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig, &sa_k_tmp_sig, &sa_om_tmp_sig);
+
+	for (int i = 0; i < R; i++) {
+	 	for (int j = 0; j < 3; j++) {
+
+	 		err = fabsf(e * sa_r2_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
+
+	 		if (tol < err) {
+
+	 			printf("Error T2: (%d,%d)\t=>\t%f\n", i, j, err);
+				return false;
+	 		}
+	 	}
+	}
+
+	/* ------------ M0 Partial Derivative Test -------------- */
+
+	struct sim_data data_m0 = sim_data;
+
+	data_m0.voxel.m0[0] += e;
+	bloch_simulation2(&data_m0, R, sim_data.voxel.P, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig, &sa_k_tmp_sig, &sa_om_tmp_sig);
+
+	 	for (int i = 0; i < sim_data.seq.rep_num; i++) {
+	 		for (int j = 0; j < 3; j++) {
+
+	 			err = fabsf(e * sa_m0_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
+
+	 			if (tol < err) {
+
+	 				printf("Error M0 : (%d,%d)\t=>\t%f\n", i, j, err);
+					return false;
+	 			}
+	 		}
+		}
+
+	/* ------------ B1 Partial Derivative Test -------------- */
+
+	struct sim_data data_b1 = sim_data;
+
+	data_b1.voxel.b1 += e;
+
+	bloch_simulation2(&data_b1, R, sim_data.voxel.P, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig, &sa_k_tmp_sig, &sa_om_tmp_sig);
+
+	for (int i = 0; i < R; i++) {
+	 	for (int j = 0; j < 3; j++) {
+
+	 		err = fabsf(e * sa_b1_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
+
+	 		if (tol < err) {
+
+	 			printf("Error B1[%d]: (%d)\t=>\t%f\n", i, j, err);
+				return false;
+	 		}
+	 	}
+	}
+
+	/* ------------ R1_2 Partial Derivative Test -------------- */
+
+	struct sim_data data_r1_2 = sim_data;
+
+	data_r1_2.voxel.r1[1] += e;
+
+	bloch_simulation2(&data_r1_2, R, sim_data.voxel.P, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig, &sa_k_tmp_sig, &sa_om_tmp_sig);
+
+	 	for (int i = 0; i < R; i++) {
+	 		for (int j = 0; j < 3; j++) {
+
+	 			err = fabsf(e * sa_r1_ref_sig[i][1][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
+
+	 			if (tol < err) {
+
+	 				printf("Error T1_2 : (%d,%d)\t=>\t%f\n", i, j, err);
+					return false;
+	 			}
+	 		}
+	 	}
+
+	/* ------------ R2_2 Partial Derivative Test -------------- */
+
+	struct sim_data data_r2_2 = sim_data;
+
+	data_r2_2.voxel.r2[1] += e;
+
+	bloch_simulation2(&data_r2_2, R, sim_data.voxel.P, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig, &sa_k_tmp_sig, &sa_om_tmp_sig);
+
+	 	for (int i = 0; i < R; i++) {
+	 		for (int j = 0; j < 3; j++) {
+
+	 			err = fabsf(e * sa_r2_ref_sig[i][1][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
+
+	 			if (tol < err) {
+
+	 				printf("Error T_2_2: (%d,%d)\t=>\t%f\n", i, j, err);
+					return false;
+	 			}
+	 		}
+	 	}
+
+
+	/* ------------ k Partial Derivative Test -------------- */
+
+	struct sim_data data_k = sim_data;
+	data_k.voxel.k[0] += e;
+
+
+	bloch_simulation2(&data_k, R, sim_data.voxel.P, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig, &sa_k_tmp_sig, &sa_om_tmp_sig);
+
+	 	for (int i = 0; i < R; i++) {
+	 		for (int j = 0; j < 3; j++) {
+
+	 			err = fabsf(e * sa_k_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
+	 			if (tol < err) {
+
+	 				printf("Error k: (%d,%d)\t=>\t%f\n", i, j, err);
+					return false;
+	 			}
+	 		}
+	 	}
+	 /* ------------ M0 2 Partial Derivative Test -------------- */
+
+	 struct sim_data data_m0_2 = sim_data;
+	 data_m0_2.voxel.m0[1] += e;
+
+
+	bloch_simulation2(&data_m0_2, R, sim_data.voxel.P, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig, &sa_k_tmp_sig, &sa_om_tmp_sig);
+
+	 	for (int i = 0; i < R; i++) {
+			for (int j = 0; j < 3; j++) {
+
+	 			err = fabsf(e * sa_m0_ref_sig[i][1][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
+
+	 			if (tol < err) {
+
+	 			printf("Error M0_2 : (%d,%d)\t=>\t%f\n", i, j, err);
+				return false;
+	 			}
+	 		}
+	 	}
+	/* ------------ Om Partial Derivative Test -------------- */
+
+	struct sim_data data_Om = sim_data;
+
+	data_Om.voxel.Om[1] += e;
+
+	bloch_simulation2(&data_Om, R, sim_data.voxel.P, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig, &sa_k_tmp_sig, &sa_om_tmp_sig);
+
+	 	for (int i = 0; i < R; i++) {
+	 		for (int j = 0; j < 3; j++) {
+
+	 			err = fabsf(e *sa_om_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
+
+	 			if (tol < err) {
+
+	 				printf("Error Om : (%d,%d)\t=>\t%f\n", i, j, err);
+					return false;
+	 			}
+	 		}
+	 	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_ode_bloch_mcc_simulation_gradients);
+
+
+// Test signal of BMC simulation 
+//	- Do BMC sim with 3 identical pools without exchange
+//	- Compare to 1 pool Bloch simulation
+
+static bool test_bmc_ode_irbssfp_signal(void)
+{
+
+	float tol = 5.E-4;
+
+ 	struct sim_data sim_data;
+
+	sim_data.grad = simdata_grad_defaults;
+	sim_data.tmp = simdata_tmp_defaults;
+	sim_data.other = simdata_other_defaults;
+	sim_data.seq = simdata_seq_defaults;
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.voxel = simdata_voxel_defaults;
+
+	sim_data.seq.seq_type = SEQ_IRBSSFP;
+	sim_data.seq.type = SIM_ODE;
+	sim_data.seq.tr = 0.004;
+	sim_data.seq.te = 0.002;
+	sim_data.seq.rep_num = 30;
+	sim_data.seq.spin_num = 1;
+	sim_data.seq.inversion_pulse_length = 0.01;
+	sim_data.seq.inversion_spoiler = 0.005;
+
+	int P = 3;
+
+	for (int p = 0; p < P; p++) {
+
+		sim_data.voxel.r1[p] = 1. / WATER_T1;
+		sim_data.voxel.r2[p] = 1. / WATER_T2;
+		sim_data.voxel.m0[p] = 1.;
+		sim_data.voxel.Om[p] = 0.;
+
+		if (p < 4)
+			sim_data.voxel.k[p] = 0.;
+	}
+
+	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.rf_end = 0.001;
+
+	int R = sim_data.seq.rep_num;
+
+	float mxy_sig[R][3];
+	float sa_r1_sig[R][3];
+	float sa_r2_sig[R][3];
+	float sa_m0_sig[R][3];
+	float sa_b1_sig[R][3];
+
+	sim_data.other.ode_tol = 0.2e-5;
+
+	bloch_simulation(&sim_data, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
+
+	struct sim_data sim_data_pools = sim_data;
+	sim_data_pools.voxel.P = P;
+
+	sim_data_pools.seq.model = MODEL_BMC;
+
+	float mxy_pools[R][sim_data_pools.voxel.P][3];
+	float sa_r1_pools[R][sim_data_pools.voxel.P][3];
+	float sa_r2_pools[R][sim_data_pools.voxel.P][3];
+	float sa_m0_pools[R][sim_data_pools.voxel.P][3];
+	float sa_b1_pools[R][1][3];
+	float sa_k_pools[R][sim_data_pools.voxel.P][3];
+	float sa_om_pools[R][sim_data_pools.voxel.P][3];
+
+	bloch_simulation2(&sim_data_pools, R, sim_data_pools.voxel.P, &mxy_pools, &sa_r1_pools, &sa_r2_pools, &sa_m0_pools,
+						&sa_b1_pools, &sa_k_pools, &sa_om_pools);
+
+	float err = 0.;
+
+	for (int p = 0; p < sim_data_pools.voxel.P; p++) {
+		for (int r = 0; r < R; r++) {
+			for (int d = 0; d < 3; d++) {
+
+					err = fabsf(mxy_pools[r][p][d] - mxy_sig[r][d]);
+					if (err > tol) {
+
+						debug_printf(DP_INFO,"err %f, pool %d, rep %d, dim %d\n", err, p, r, d);
+						return false;
+					}
+			}
+		}
+	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_bmc_ode_irbssfp_signal);
+
+
+
+// Test 5 pool BMC simulation
+// 	- 5 pool sim with 1 water pool, 4 identical MT pools
+//	- Compare signal and partial derivatives of MT pools
+
+static bool test_ode_bmc_5pool(void)
+{
+	float tol = 1.E-6;
+
+ 	struct sim_data sim_data;
+
+	sim_data.grad = simdata_grad_defaults;
+	sim_data.tmp = simdata_tmp_defaults;
+	sim_data.other = simdata_other_defaults;
+	sim_data.seq = simdata_seq_defaults;
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.voxel = simdata_voxel_defaults;
+
+	sim_data.seq.seq_type = SEQ_IRBSSFP;
+	sim_data.seq.type = SIM_ODE;
+	sim_data.seq.tr = 0.004;
+	sim_data.seq.te = 0.002;
+	sim_data.seq.rep_num = 30;
+	sim_data.seq.spin_num = 1;
+	sim_data.seq.inversion_pulse_length = 0.01;
+	sim_data.seq.inversion_spoiler = 0.005;
+	sim_data.voxel.P = 5;
+
+	sim_data.voxel.r1[0] = 1. / WATER_T1;
+	sim_data.voxel.r2[0] = 10.;
+	sim_data.voxel.m0[0] = 1.;
+	sim_data.voxel.k[0] = 10.;
+	sim_data.voxel.Om[0] = 0.;
+
+	for (int i = 1; i < sim_data.voxel.P; i++) {
+
+		sim_data.voxel.r1[i] = 1. / WATER_T1;
+		sim_data.voxel.r2[i] = 1000.;
+		sim_data.voxel.m0[i] = 1.;
+		sim_data.voxel.Om[i] =  - 0.5 * 2. * M_PI * 3. * 42.5764; // 0.5 ppm offset
+
+		if (sim_data.voxel.P - 1 > i)
+			sim_data.voxel.k[i] = 10.;
+	}
+
+	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.rf_end = 0.001;
+
+	int R = sim_data.seq.rep_num;
+	int P = sim_data.voxel.P;
+
+	float m[R][sim_data.voxel.P][3];
+	float sa_r1[R][sim_data.voxel.P][3];
+	float sa_r2[R][sim_data.voxel.P][3];
+	float sa_m0[R][sim_data.voxel.P][3];
+	float sa_b1[R][1][3];
+	float sa_k[R][sim_data.voxel.P][3];
+	float sa_om[R][sim_data.voxel.P][3];
+
+	sim_data.seq.model = MODEL_BMC;
+
+	bloch_simulation2(&sim_data, R, P, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1, &sa_k, &sa_om);
+
+	float err = 0;
+
+	for (int r = 0; r < R; r++)
+		for (int p = 2; p < P; p++)
+			for (int d = 0; d < 3; d++) {
+
+				err = fabsf( m[r][1][d] - m[r][p][d] );
+				if (err > tol) {
+
+					printf("err m : %f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+					return false;
+				}
+			}
+
+	for (int r = 0; r < R; r++)
+		for (int p = 2; p < P; p++)
+			for (int d = 0; d < 3; d++) {
+
+				err = fabsf( sa_r1[r][1][d] - sa_r1[r][p][d] );
+				if (err > tol) {
+
+					printf("err r1 : %f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+					return false;
+				}
+			}
+
+	for (int r = 0; r < R; r++)
+		for (int p = 2; p < P; p++)
+			for (int d = 0; d < 3; d++) {
+
+				err = fabsf( sa_r2[r][1][d] - sa_r2[r][p][d] );
+				if (err > tol) {
+
+					printf("err r2 : %0.10f pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+					return false;
+				}
+			}  
+
+	for (int r = 0; r < R; r++)
+		for (int p = 2; p < P; p++)
+			for (int d = 0; d < 3; d++) {
+
+				err = fabsf( sa_m0[r][1][d] - sa_m0[r][p][d] );
+				if (err > tol) {
+
+					printf("err m0 : %0.9f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+					return false;
+				}
+			}
+
+	for (int r = 0; r < R; r++)
+		for (int p = 1; p < P - 1; p++)
+			for (int d = 0; d < 3; d++) {
+
+				err = fabsf(sa_k[r][0][d] - sa_k[r][p][d]);
+				if (err > tol) {
+
+					printf("err k : %f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+					return false;
+				}
+			}
+
+	for (int r = 0; r < R; r++)
+		for (int p = 2; p < P - 1; p++)
+			for (int d = 0; d < 3; d++) {
+
+				err = fabsf( sa_om[r][1][d] - sa_om[r][p][d] );
+				if (err > tol) {
+
+					printf("err om : %f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+					return false;
+				}
+			}      
+
+	return true;
+	
+}
+
+UT_REGISTER_TEST(test_ode_bmc_5pool);
