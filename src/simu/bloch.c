@@ -216,10 +216,10 @@ void bloch_matrix_int_sa2(float matrix[13][13], float t, float r1, float r2, con
 
 
 
-void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const float r1[P], const float r2[P], const float k[P][P], const float Th[P], const float Om[P], const float gb[3])
+void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const float r1[P], const float r2[P], const float k[P][P], const float m0[P], const float Om[P], const float gb[3])
 {
+	// +1 for T1 relaxation term in homogeneous ODE representation
 	int N = 1 + P * 3;
-	float m0 = 1.;
 
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++)
@@ -246,7 +246,7 @@ void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const 
 	// equilibrium
 
 	for (int p = 0; p < P; p++)
-		matrix[3 * p + 2][N - 1] = m0 * Th[p] * r1[p];
+		matrix[3 * p + 2][N - 1] = m0[p] * r1[p];
 
 	// exchange
 
@@ -257,13 +257,13 @@ void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const 
 }
 
 
-void bloch_mcconnell_ode(int P, float out[P * 3], const float in[P * 3] , const float r1[P], const float r2[P], const float k[P][P], const float Th[P], const float Om[P], const float gb[3])
+void bloch_mcconnell_ode(int P, float out[P * 3], float in[P * 3] , float r1[P], float r2[P], float k[P][P], float m0[P], float Om[P], float gb[3])
 {
 	int N = 1 + P * 3;
 	float m[N][N];
 
 	// create Bloch-McConnell matrix
-	bloch_mcconnel_matrix_ode(P, m, r1, r2, k, Th, Om, gb);
+	bloch_mcconnel_matrix_ode(P, m, r1, r2, k, m0, Om, gb);
 
 	float out_tmp[N];
 	float in_tmp[N];
