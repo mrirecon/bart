@@ -368,3 +368,156 @@ void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3],
 	out[2 * P + 1][2] += r1[0];
 
 }
+
+void bloch_mcc_matrix_ode_sa2(int P, float matrix[15 * P * P + 1][15 * P * P + 1], float r1[P], float r2[P], float k[P - 1], float m0[P], float Om[P],  const float gb[3], float phase, float b1)
+{	
+	int N = 15 * P * P + 1;
+	int Ns = P * 3; // Number of rows of a BMC submatrix / parameter that only occurs once (M, B1)
+	int Np = 3 * P * P; // Number of rows for a parameter occuring in all pools (R1, R2, M0)
+	int Np2 = 3 * P * (P - 1); // Number of rows for a parameter occuring in all but one pool (k, Om)
+	float m[N][N];
+	float m2[P * 3 + 1][P * 3 + 1];
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			m[i][j] = 0;
+
+	for (int i = 0; i < P * 3; i++)
+		for (int j = 0; j < P * 3; j++)
+			m2[i][j] = 0.;
+
+ 	bloch_mcconnel_matrix_ode(P, m2, r1, r2, k, m0, Om, gb);
+
+	for (int p = 0; p < 5 * P; p++)
+		for (int i = 0; i < P * 3; i++)
+			for (int j = 0; j < P * 3; j++)
+				m[3 * P * p + i][3 * P * p + j]= m2[i][j];
+
+	for (int p = 0; p < P; p++) {
+
+		// M
+		m[2 + p * 3][N - 1] = m0[p] * r1[p];
+
+		// R1
+		m[Ns + Ns * p + 3 * p + 2][2 + p * 3] = -1.;
+		m[Ns + Ns * p + 3 * p + 2][N - 1] = m0[p];
+
+		// R2
+		m[Ns + Np + 3 * p + Ns * p][0 + p * 3] = -1.;
+		m[Ns + Np + 3 * p + Ns * p + 1][1 + p * 3] = -1.;
+
+		// B1
+		m[Ns + 2 * Np + p * 3][2 + p * 3] = sinf(phase) * b1;
+		m[Ns + 2 * Np + p * 3 + 1][2 + p * 3] = cosf(phase) * b1;
+		m[Ns + 2 * Np + p * 3 + 2][0 + p * 3] = -sinf(phase) * b1;
+		m[Ns + 2 * Np + p * 3 + 2][1 + p * 3] = -cosf(phase) * b1;
+	}
+
+	for (int p = 0; p < P - 1; p++) {
+
+		for (int d = 0; d < 3; d++) {
+
+			// M0 water
+			m[2 * Ns + 2 * Np + d][d + 3 + p * 3] = k[p];
+			m[2 * Ns + 2 * Np + 3 * p + d + 3][d + 3 + p * 3] = -k[p];
+
+			// M0 remaining
+			m[3 * Ns + 2 * Np + p * Ns + d][d] = -k[p];
+			m[3 * Ns + 2 * Np + p * Ns + 3 + d][d + p * 3] = k[p];
+		}
+
+		m[3 * Ns + 2 * Np + Ns * p + 5][N - 1] = r1[p + 1];
+
+		// k
+		for (int d = 0; d < 3; d++) {
+
+			m[2 * Ns + 3 * Np + Ns * p + d][d] = - m0[p + 1];
+			m[2 * Ns + 3 * Np + Ns * p + d][d + (p + 1) * 3] = m0[0];
+			m[2 * Ns + 3 * Np + Ns * p + d + 3][d] = m0[p + 1];
+			m[2 * Ns + 3 * Np + Ns * p + d + 3][d + (p + 1) * 3] = - m0[0];
+		} 
+
+		// Om
+		m[2 * Ns + 3 * Np + Np2 + Ns * p + 3][4 + p * 3] = 1.;
+		m[2 * Ns + 3 * Np + Np2 + Ns * p + 4][3 + p * 3] = -1.;
+	}
+
+	// Remaining term for M0 water
+	m[6 * P + 6 * P * P + 2][N - 1] = r1[0];
+
+	matf_copy(N, N, matrix, m);
+}
+
+void bloch_mcc_matrix_ode_sa(int P, float matrix[15 * P * P - 3 * P + 1][15 * P * P - 3 * P + 1], float r1[P], float r2[P], float k[P - 1], float m0[P], float Om[P], const float gb[3])
+{
+	int N = 15 * P * P - 3 * P + 1;
+
+	float m[N][N];
+	float m2[P * 3 + 1][P * 3 + 1];
+	int Ns = P * 3;
+	int Np = 3 * P * P;
+	int Np2 = 3 * P * (P - 1);
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			m[i][j] = 0;
+
+	for (int i = 0; i < P * 3; i++)
+		for (int j = 0; j < P * 3; j++)
+			m2[i][j] = 0.;
+
+ 	bloch_mcconnel_matrix_ode(P, m2, r1, r2, k, m0, Om, gb);
+
+	for (int p = 0; p < 5 * P - 1; p++)
+		for (int i = 0; i < P * 3; i++)
+			for (int j = 0; j < P * 3; j++)
+				m[3 * P * p + i][3 * P * p + j]= m2[i][j];
+
+	for (int p = 0; p < P; p++) {
+
+		// M
+		m[2 + p * 3][N - 1] = m0[p] * r1[p];
+
+		// R1
+		m[Ns + Ns * p + 2 + 3 * p][2 + p * 3] = -1.;
+		m[Ns + Ns * p + 2 + 3 * p][N - 1] = m0[p];
+
+		// R2
+		m[Ns + Np + 3 * p + Ns * p][0 + p * 3] = -1.;
+		m[Ns + Np + 3 * p + Ns * p + 1][1 + p * 3] = -1.;
+	}
+
+	for (int p = 0; p < P - 1; p++) {
+
+		for (int d = 0; d < 3; d++) {
+
+			// M0w
+			m[Ns + 2 * Np + d][d + 3 + p * 3] = k[p];
+			m[Ns + 2 * Np + 3 * p + d + 3][d + 3 + p * 3] = -k[p];
+
+			// M0 remaining
+			m[2 * Ns + 2 * Np + Ns * p + d][d] = -k[p];
+			m[2 * Ns + 2 * Np + Ns * p + 3 + d][d + p * 3] = k[p];
+		}
+
+		m[2 * Ns + 2 * Np + Ns * p + 5][N - 1] = r1[p + 1];
+
+		// k
+		for (int d = 0; d < 3; d++) {
+
+			m[Ns + 3 * Np + Ns * p + d][d] = - m0[p + 1];
+			m[Ns + 3 * Np + Ns * p + d][d + (p + 1) * 3] = m0[0];
+			m[Ns + 3 * Np + Ns * p + d + 3][d] = m0[p + 1];
+			m[Ns + 3 * Np + Ns * p + d + 3][d + (p + 1) * 3] = -m0[0];
+		}
+
+		// Om
+		m[Ns + 3 * Np + Np2 + Ns * p + 3][4 + p * 3] = 1.;
+		m[Ns + 3 * Np + Np2 + Ns * p + 4][3 + p * 3] = -1.;
+	}
+
+	// Remaining term for M0w
+	m[Ns + 2 * Np + 2][N - 1] = r1[0];
+
+	matf_copy(N, N, matrix, m);
+}

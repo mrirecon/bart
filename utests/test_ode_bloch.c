@@ -1049,3 +1049,90 @@ static bool test_bloch_mcconnell_b1_pdp_3(void)
 }
 
 UT_REGISTER_TEST(test_bloch_mcconnell_b1_pdp_3);
+
+// Test STM function for SA with P = 2
+static bool test_bloch_mcconnell_matrix_ode_sa(void)
+{
+	int P = 2;
+
+	float m[61][61] = { { 0. } };
+	float m2[61][61] = { { 0. } };
+	float m_tmp[7][7] = { { 0. }};
+
+	float gb[3] = { 0. };
+	float Om[2] = { 0. };
+	float m0[2] = { 0.93, 0.76 };
+	float r1[2] = { 1., 1.1 };
+	float r2[2] = { 0.6, 0.08 };
+	float phase = 0.1;
+	float b1 = 1.1;
+	float k[1] = { 0.2 };
+
+ 	bloch_mcconnel_matrix_ode(P, m_tmp, r1, r2, k, m0, Om, gb);
+
+	for (int p = 0; p < 10; p++)
+		for (int i = 0; i < 6; i++)
+			for (int j = 0; j < 6; j++)
+				m[6 * p + i][6 * p + j]= m_tmp[i][j];
+
+	m[2][60] = m0[0] * r1[0];
+	m[5][60] = m0[1] * r1[1];
+
+	// R1
+	m[8][2] = -1.;
+	m[8][60] = m0[0];
+	// R1_2
+	m[17][5] = -1.;
+	m[17][60] = m0[1];
+	// R2
+	m[18][0] = -1.;
+	m[19][1] = -1.;
+	// R2_2
+	m[27][3] = -1.;
+	m[28][4] = -1.;
+	// B1
+	m[30][2] = sinf(phase) *b1;
+	m[31][2] = cosf(phase)*b1;
+	m[32][0] = -sinf(phase)*b1;
+	m[32][1] = -cosf(phase)*b1;
+	m[33][5] = sinf(phase) *b1;
+	m[34][5] = cosf(phase)*b1;
+	m[35][3] = -sinf(phase)*b1;
+	m[35][4] = -cosf(phase)*b1;
+	// M0
+	for (int i = 0; i < 3; i++) {
+
+		m[36+i][i+3] = k[0];
+		m[39+i][i+3] = -k[0];
+	}
+	m[38][60] = r1[0];
+	// M0_2
+	for (int i = 0; i < 3; i++) {
+
+		m[42+i][i] = -k[0];
+		m[45+i][i] = k[0];
+	}
+	m[47][60] = r1[1];
+	// k
+	for (int i = 0; i < 3; i++) {
+
+		m[48+i][i] = -m0[1];
+		m[48+i][i+3] = m0[0];
+		m[51+i][i] = m0[1];
+		m[51+i][i+3] = - m0[0];
+	}
+	// Om
+	m[57][4] = 1.;
+	m[58][3] = -1.;
+
+	bloch_mcc_matrix_ode_sa2(P, m2, r1, r2, k, m0, Om, gb, phase, b1);
+
+	for (int i = 0; i < 61; i++)
+		for (int j = 0; j < 61; j++)
+			if (m[i][j] != m2[i][j])
+				return false;
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_bloch_mcconnell_matrix_ode_sa);
