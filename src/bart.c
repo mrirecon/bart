@@ -343,7 +343,7 @@ int main_bart(int argc, char* argv[argc])
 	version_parse(v, bart_version);
 
 	if (0 != v[4])
-		debug_printf(DP_WARN, "BART version is not reproducible.\n");
+		debug_printf(DP_WARN, "BART version %s is not reproducible.\n", bart_version);
 
 	if (NULL == dispatch_func) {
 
