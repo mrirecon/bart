@@ -79,7 +79,7 @@ static void free_pair(struct ptr_cpugpu x)
 
 static bool test_cuda_decompose1(void)
 {
-	num_init_gpu();
+
 	enum { N = 5 };
 
 	const long dims[N] = { 4, 1, 9, 2, 2 };
@@ -99,7 +99,7 @@ static bool test_cuda_decompose1(void)
 
 static bool test_cuda_decompose2(void)
 {
-	num_init_gpu();
+
 	enum { N = 5 };
 
 	const long dims[N] = { 4, 1, 9, 2, 2 };
@@ -119,7 +119,7 @@ static bool test_cuda_decompose2(void)
 
 static bool test_cuda_recompose1(void)
 {
-	num_init_gpu();
+
 	enum { N = 5 };
 
 	const long dims[N] = { 4, 1, 9, 2, 2 };
@@ -139,7 +139,7 @@ static bool test_cuda_recompose1(void)
 
 static bool test_cuda_recompose2(void)
 {
-	num_init_gpu();
+
 	enum { N = 5 };
 
 	const long dims[N] = { 4, 1, 9, 2, 2 };

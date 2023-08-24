@@ -13,6 +13,8 @@
 #include "misc/debug.h"
 #include "misc/misc.h"
 
+#include "num/init.h"
+
 #include "utest.h"
 
 
@@ -46,6 +48,9 @@ int main(int argc, char* argv[])
 
 	int num_tests_run = 0;
 	int num_tests_pass = 0;
+
+	bart_use_gpu = true;
+	num_init_gpu_support();
 
 	for (ut_test_f** ptr = &_utests_begin; ptr != &_utests_end; ptr++)
 		UNUSED((num_tests_run++, (**ptr)()) && num_tests_pass++);

@@ -25,7 +25,7 @@ static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long
 	UNUSED(err_val);
 	return true;
 #else
-	num_init_gpu();
+
 	enum {D = 5};
 	long dims[D] = {3, 5, 2, 4, 4};
 
@@ -106,7 +106,7 @@ static bool test_optimized_md_zfmacc2_flags(unsigned long out_flag, unsigned lon
 	UNUSED(err_val);
 	return true;
 #else
-	num_init_gpu();
+
 	enum {D = 5};
 	long dims[D] = {3, 5, 2, 4, 4};
 
@@ -188,7 +188,7 @@ static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long 
 	UNUSED(err_val);
 	return true;
 #else
-	num_init_gpu();
+
 	enum {D = 5};
 	long dims[D] = {3, 5, 2, 4, 4};
 
@@ -268,7 +268,7 @@ static bool test_optimized_md_zmul2_flags(unsigned long out_flag, unsigned long 
 	UNUSED(err_val);
 	return true;
 #else
-	num_init_gpu();
+
 	enum {D = 5};
 	long dims[D] = {3, 5, 2, 4, 4};
 
@@ -333,7 +333,7 @@ static bool test_optimized_md_zmulc2_flags(unsigned long out_flag, unsigned long
 	UNUSED(err_val);
 	return true;
 #else
-	num_init_gpu();
+
 	enum {D = 5};
 	long dims[D] = {3, 5, 2, 4, 4};
 
@@ -398,7 +398,7 @@ static bool test_optimized_md_mul2_flags(unsigned long out_flag, unsigned long i
 	UNUSED(err_val);
 	return true;
 #else
-	num_init_gpu();
+
 	enum {D = 5};
 	long dims[D] = {3, 5, 2, 4, 4};
 
@@ -467,7 +467,7 @@ static bool test_optimized_md_zadd(unsigned long out_flag, unsigned long in1_fla
 	UNUSED(in2_same);
 	return true;
 #else
-	num_init_gpu();
+
 	enum {D = 5};
 	long dims[D] = {3, 32, 7, 13, 3};
 	md_select_dims(D, out_flag | in1_flag | in2_flag, dims, dims);
@@ -545,7 +545,7 @@ static bool test_optimized_md_add(unsigned long out_flag, unsigned long in1_flag
 	UNUSED(in2_same);
 	return true;
 #else
-	num_init_gpu();
+
 
 	enum {D = 5};
 	long dims[D] = {3, 32, 7, 13, 3};
@@ -624,7 +624,7 @@ static bool test_optimized_md_zmax(unsigned long out_flag, unsigned long in1_fla
 	UNUSED(in2_same);
 	return true;
 #else
-	num_init_gpu();
+
 	enum {D = 5};
 	long dims[D] = {3, 32, 7, 13, 3};
 	md_select_dims(D, out_flag | in1_flag | in2_flag, dims, dims);

@@ -109,7 +109,7 @@ int main_nnet(int argc, char* argv[argc])
 		OPTL_SET( 'e', "eval", &eval, "evaluate nnet"),
 		OPTL_SET('t', "train", &train, "trains network"),
 
-		OPTL_SET('g', "gpu", &(config.gpu), "run on gpu"),
+		OPTL_SET('g', "gpu", &(bart_use_gpu), "run on gpu"),
 
 		OPTL_LONG('b', "batch-size", &(N_batch), "batchsize", "size of mini batches"),
 		OPTL_INFILE('l', "load", &filename_weights_load, "<weights-init>", "load weights for continuing training"),
@@ -186,17 +186,8 @@ int main_nnet(int argc, char* argv[argc])
 	if ((0 < config.train_conf->dump_mod) && (NULL == config.train_conf->dump_filename))
 		config.train_conf->dump_filename = filename_weights;
 
-
-#ifdef USE_CUDA
-	if (config.gpu) {
-
-		num_init_gpu();
-		cuda_use_global_memory();
-	}
-
-	else
-#endif
-		num_init();
+	config.gpu = bart_use_gpu;
+	num_init_gpu_support();
 
 
 	if (apply && (train || eval))

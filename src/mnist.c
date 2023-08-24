@@ -122,14 +122,12 @@ int main_mnist(int argc, char* argv[argc])
 	bool apply = false;
 	bool train = false;
 
-	bool gpu = false;
-
 	const struct opt_s opts[] = {
 
 		OPTL_SET('a', "apply", &apply, "apply nnet"),
 		OPTL_SET('t', "train", &train, "trains network"),
 
-		OPTL_SET('g', "gpu", &(gpu), "run on gpu"),
+		OPTL_SET('g', "gpu", &(bart_use_gpu), "run on gpu"),
 	};
 
 	const char* filename_in;
@@ -145,18 +143,7 @@ int main_mnist(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-
-#ifdef USE_CUDA
-	if (gpu) {
-
-		num_init_gpu();
-		cuda_use_global_memory();
-
-	} else
-#endif
-	{
-		num_init();
-	}
+	num_init_gpu_support();
 
 
 	if (apply && train)
@@ -192,7 +179,7 @@ int main_mnist(int argc, char* argv[argc])
 		nn_weights_t weights = nn_weights_create_from_nn(train_op);
 		nn_init(train_op, weights);
 
-		if (gpu)
+		if (bart_use_gpu)
 			move_gpu_nn_weights(weights);
 		
 		const struct nlop_s* batch_generator = batch_gen_create(2, (int [2]){ NO, NI },
@@ -241,7 +228,7 @@ int main_mnist(int argc, char* argv[argc])
 		
 		nn_weights_t weights = load_nn_weights(filename_weights);
 
-		if (gpu)
+		if (bart_use_gpu)
 			move_gpu_nn_weights(weights);
 
 		net = nn_get_wo_weights_F(net, weights, false);	//set inputs corresponding to weights to the loaded weights

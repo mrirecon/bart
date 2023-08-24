@@ -78,8 +78,6 @@ int main_reconet(int argc, char* argv[argc])
 
 	bool test_defaults = false;
 
-	int num_gpus = 0;
-
 	enum NETWORK_SELECT net = NETWORK_NONE;
 
 	const char* graph_filename = NULL;
@@ -139,8 +137,7 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_SET('e', "eval", &eval, "evaluate reconet"),
 		OPTL_SET('a', "apply", &apply, "apply reconet"),
 
-		OPTL_SET('g', "gpu", &(config.gpu), "run on gpu"),
-		OPTL_INT('G', "multi-gpu", &(num_gpus), "num", "(removed multi-gpu option)"),
+		OPTL_SET('g', "gpu", &(bart_use_gpu), "run on gpu"),
 
 		OPTL_INFILE('l', "load", (const char**)(&(filename_weights_load)), "<weights-init>", "load weights for continuing training"),
 		OPTL_LONG('b', "batch-size", &(Nb), "", "size of mini batches"),
@@ -271,17 +268,8 @@ int main_reconet(int argc, char* argv[argc])
 	if (((train || eval) && apply) || (!train && !apply && ! eval))
 		error("Network must be either trained (-t) or applied(-a)!\n");
 
-	if (0 < num_gpus)
-		error("Multi gpu is now only supported via MPI!\n");
-
-#ifdef USE_CUDA
-	if (config.gpu) {
-
-		num_init_gpu();
-		cuda_use_global_memory();
-	} else 
-#endif
-		num_init();
+	config.gpu = bart_use_gpu;
+	num_init_gpu_support();
 
 	if (apply)
 		data.create_out = true;

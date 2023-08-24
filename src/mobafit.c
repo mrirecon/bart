@@ -147,8 +147,6 @@ int main_mobafit(int argc, char* argv[argc])
 
 	unsigned int mgre_model = MECO_WFR2S;
 
-	bool use_gpu = false;
-
 	unsigned int iter = 5;
 
 	const char* basis_file = NULL;
@@ -170,7 +168,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_SET('a', &use_magn, "fit magnitude of signal model to data"),
 		OPT_UINT('i', &iter, "iter", "Number of IRGNM steps"),
-		OPT_SET('g', &use_gpu, "use gpu"),
+		OPT_SET('g', &bart_use_gpu, "use gpu"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPTL_FLVECN(0, "init", _init, "Initial values of parameters in model-based reconstruction"),
 		OPTL_FLVECN(0, "scale", _scale, "Scaling"),
@@ -184,10 +182,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	if (use_gpu)
-		num_init_gpu();
-	else
-		num_init();
+	num_init_gpu_support();
 
 	long bas_dims[DIMS];
 	complex float* basis = NULL;
@@ -337,7 +332,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 		float scale_fB0[2] = { 0., 1. };
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
-		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0, use_gpu);
+		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0, bart_use_gpu);
 		break;
 
 	case TSE:
@@ -416,7 +411,7 @@ int main_mobafit(int argc, char* argv[argc])
 	complex float* y_patch = NULL;
 	complex float* x_patch = NULL;
 
-	if (use_gpu) {
+	if (bart_use_gpu) {
 
 	#ifdef USE_CUDA
 		y_patch = md_alloc_gpu(DIMS, y_patch_dims, CFL_SIZE);

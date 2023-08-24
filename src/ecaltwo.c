@@ -71,7 +71,8 @@ int main_ecaltwo(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	(conf.usegpu ? num_init_gpu : num_init)();
+	bart_use_gpu = conf.usegpu;
+	num_init_gpu_support();
 
 	long in_dims[DIMS];
 

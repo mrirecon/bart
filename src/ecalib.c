@@ -168,8 +168,8 @@ int main_ecalib(int argc, char* argv[argc])
 
 
 	// FIXME: we should scale the data
-
-	(conf.usegpu ? num_init_gpu : num_init)();
+	bart_use_gpu = conf.usegpu;
+	num_init_gpu_support();
 
         if ((conf.var < 0.) && (conf.weighting || (conf.crop < 0.))) {
 

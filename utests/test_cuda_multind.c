@@ -19,7 +19,7 @@
 
 static bool test_cuda_compress(void)
 {
-	num_init_gpu();
+
 	enum { N = 5 };
 
 	const long dims[N] = { 4, 1, 9, 2, 2 };

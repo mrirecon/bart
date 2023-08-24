@@ -27,7 +27,7 @@ static bool test_cuda_memcache_clear(void)
 #else
 	// TODO: detect if GPU works
 
-	num_init_gpu();
+
 	enum { test_dims = 7 };
 
 	const long dims[test_dims] = { 4, 4, 4, 4, 4, 4, 1 };

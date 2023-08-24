@@ -31,49 +31,15 @@
 #include "num/gpuops.h"
 #endif
 
-#ifdef USE_CULA
-#include <cula_lapack_device.h>
-#endif
-
 #include "init.h"
 
 extern unsigned long num_chunk_size;	// num/optimize.c
 
+static _Bool bart_gpu_support = false;
+_Bool bart_use_gpu = false;
 
 static void num_init_internal(void)
 {
-#ifdef __linux__
-//	feenableexcept(FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW|FE_UNDERFLOW);
-#endif
-
-#if 0
-	// set stack limit
-	if (-1 == setrlimit(RLIMIT_STACK, &(struct rlimit){ 500000000, 500000000 }))
-		debug_printf(DP_WARN, "error setting stack size\n");
-
-	// FIXME: should also set openmp stack size
-#endif
-
-#ifdef _OPENMP
-	int p = omp_get_num_procs();
-
-	if (NULL == getenv("OMP_NUM_THREADS"))
-		omp_set_num_threads(p);
-
-	p = omp_get_max_threads();
-
-	int running_thr = omp_get_team_size(1); //get number of running top level threads
-	p = MAX(1, p / running_thr);
-	
-
-	// omp_set_nested(1);
-#else
-	int p = 2;
-#endif
-#ifdef FFTWTHREADS
-	fft_set_num_threads(p);
-#endif
-
 	const char* wisdom_str;
 
 	if (NULL != (wisdom_str = getenv("BART_USE_FFTW_WISDOM"))) {
@@ -102,30 +68,88 @@ static void num_init_internal(void)
 			debug_printf(DP_WARN, "invalid chunk size\n");
 		}
 	}
-}
+
+#ifdef USE_CUDA
+	const char* gpu_str;
+
+	if (NULL != (gpu_str = getenv("BART_GPU"))) {
+
+		int bart_num_gpus = strtoul(gpu_str, NULL, 10);
+		
+		if (0 < bart_num_gpus)
+			bart_use_gpu = true;
+	}
+
+	if (NULL != (gpu_str = getenv("BART_GPU_STREAMS"))) {
+
+		int bart_num_streams = strtoul(gpu_str, NULL, 10);
+		
+		if (0 < bart_num_streams)
+			cuda_num_streams = bart_num_streams;
+	}
+
+	const char* mem_str;
+
+	if (NULL != (mem_str = getenv("BART_GPU_GLOBAL_MEMORY"))) {
+		
+		long mem = strtoul(mem_str, NULL, 10);
+
+		if ((1 != mem) && (0 != mem))
+			error("BART_GPU_GLOBAL_MEMORY environment variable must be 0 or 1!\n");
+		
+		if (1 == mem)
+			cuda_use_global_memory();
+	}
+	
+	const char* streams_str;
+#endif
+
+	int p = 2;
+
+#ifdef _OPENMP
+	p = omp_get_num_procs();
+
+	if (NULL == getenv("OMP_NUM_THREADS"))
+		omp_set_num_threads(p);
+
+	p = omp_get_max_threads();
+
+	int running_thr = omp_get_team_size(1); //get number of running top level threads
+	p = MAX(1, p / running_thr);
+#endif
+
+#ifdef FFTWTHREADS
+	fft_set_num_threads(p);
+#endif
+
+} 
+
 
 void num_init(void)
 {
 	static int initialized = false;
 
-	#pragma omp critical (bart_num_init)
+#pragma omp critical (bart_num_init)
 	if (!initialized) {
 
 		num_init_internal();
 		initialized = true;
 	}
-}
-
-
-void num_init_gpu(void)
-{
-	num_init();
 
 #ifdef USE_CUDA
-	cuda_init();
+	if (bart_gpu_support && bart_use_gpu)
+			cuda_init();
 #else
-	error("BART compiled without GPU support.\n");
+	if (bart_use_gpu)
+		error("BART compiled without GPU support.\n");
 #endif
+
+}
+
+void num_init_gpu_support(void)
+{
+	bart_gpu_support = true;
+	num_init();
 }
 
 void num_deinit_gpu(void)

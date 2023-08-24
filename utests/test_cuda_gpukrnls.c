@@ -24,7 +24,7 @@
 
 static bool test_im2col_loop_in(void)
 {
-	num_init_gpu();
+
 
 	unsigned long size = CFL_SIZE;
 	unsigned int N = 5;
@@ -91,7 +91,7 @@ UT_GPU_REGISTER_TEST(test_im2col_loop_in);
 
 static bool test_im2col_loop_out(void)
 {
-	num_init_gpu();
+
 
 	unsigned long size = CFL_SIZE;
 	unsigned int N = 5;
@@ -158,7 +158,7 @@ UT_GPU_REGISTER_TEST(test_im2col_loop_out);
 
 static bool test_im2col_adj(void)
 {
-	num_init_gpu();
+
 
 	unsigned long size = CFL_SIZE;
 	unsigned int N = 5;

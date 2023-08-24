@@ -284,7 +284,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_INFILE('t', &traj_file, "file", "k-space trajectory"),
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('N', &overlapping_blocks, "do fully overlapping LLR blocks"),
-		OPT_SET('g', &conf.gpu, "use GPU"),
+		OPT_SET('g', &bart_use_gpu, "use GPU"),
 		OPTL_SET(0, "gpu-gridding", &gpu_gridding, "use GPU for gridding"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPTL_SET(0, "precond", &(conf.precond), "interprete weights as preconditioner"),
@@ -465,10 +465,8 @@ int main_pics(int argc, char* argv[argc])
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
-	if (conf.gpu)
-		num_init_gpu();
-	else
-		num_init();
+	conf.gpu = bart_use_gpu;
+	num_init_gpu_support();
 
 	// print options
 

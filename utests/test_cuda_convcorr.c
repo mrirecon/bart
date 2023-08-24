@@ -14,7 +14,7 @@ int cudnn = 0;
 
 static bool test_convcorr_cf_1D(void)
 {
-	num_init_gpu();
+
 
 	enum {N = 6};
 	long odims[N] = {2, 1, 3, 1, 1, 4};
@@ -51,7 +51,7 @@ UT_GPU_REGISTER_TEST(test_convcorr_cf_1D);
 
 static bool test_convcorr_cf_2D(void)
 {
-	num_init_gpu();
+
 
 	enum {N = 6};
 	long odims[N] = {2, 1, 3, 2, 1, 4};
@@ -88,7 +88,7 @@ UT_GPU_REGISTER_TEST(test_convcorr_cf_2D);
 
 static bool test_convcorr_cf_3D(void)
 {
-	num_init_gpu();
+
 
 	enum {N = 6};
 	long odims[N] = {2, 1, 3, 2, 1, 4};
@@ -125,7 +125,7 @@ UT_GPU_REGISTER_TEST(test_convcorr_cf_3D);
 
 static bool test_convcorr_rand_ord(void)
 {
-	num_init_gpu();
+
 
 	enum {N = 6};
 	long odims[N] = {2, 4, 3, 1, 2, 1};
@@ -163,7 +163,7 @@ UT_GPU_REGISTER_TEST(test_convcorr_rand_ord);
 
 static bool test_convcorr_cf_one_channel(void)
 {
-	num_init_gpu();
+
 
 	enum {N = 6};
 	long odims[N] = {2, 1, 3, 2, 1, 4};
@@ -202,7 +202,7 @@ UT_GPU_REGISTER_TEST(test_convcorr_cf_one_channel);
 
 static bool test_convcorr_cf_dil_strs(void)
 {
-	num_init_gpu();
+
 
 	enum {N = 6};
 	long odims[N] = 	{2, 1, 3, 3, 1, 4};

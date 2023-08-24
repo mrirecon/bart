@@ -81,8 +81,6 @@ int main_lrmatrix(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	bool use_gpu = false;
-
 	int maxiter = 100;
 	float rho = 0.25;
 	int blkskip = 2;
@@ -120,7 +118,6 @@ int main_lrmatrix(int argc, char* argv[argc])
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_FLOAT('p', &rho, "", "(rho)"),
 		OPT_CLEAR('n', &randshift, "(no randshift)"),
-		OPT_SET('g', &use_gpu, "(use GPU)"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -194,14 +191,6 @@ int main_lrmatrix(int argc, char* argv[argc])
 
 	const struct operator_p_s* sum_prox = prox_lineq_create(sum_op, idata);
 	const struct operator_p_s* lr_prox = lrthresh_create(odims, randshift, mflags, (const long (*)[])blkdims, 1., noise, remove_mean, false);
-
-	if (use_gpu)
-		error("GPU support not implemented yet!\n");
-
-	(use_gpu ? num_init_gpu : num_init)();
-
-	if (use_gpu)
-		debug_printf(DP_INFO, "GPU reconstruction\n");
 
 	// put into iter2 format
 	unsigned int num_funs = 2;

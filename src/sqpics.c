@@ -256,9 +256,6 @@ int main_sqpics(int argc, char* argv[argc])
 
 	// Initialize default parameters
 
-
-	bool use_gpu = false;
-
 	bool randshift = true;
 	unsigned int maxiter = 30;
 	float step = -1.;
@@ -307,7 +304,7 @@ int main_sqpics(int argc, char* argv[argc])
 		OPT_UINT('i', &maxiter, "iter", "max. number of iterations"),
 		OPT_INFILE('t', &traj_file, "file", "k-space trajectory"),
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
-		OPT_SET('g', &use_gpu, "use GPU"),
+		OPT_SET('g', &bart_use_gpu, "use GPU"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "(select IST)"),
 		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
@@ -368,11 +365,11 @@ int main_sqpics(int argc, char* argv[argc])
 	assert(1 == ksp_dims[MAPS_DIM]);
 
 
-	(use_gpu ? num_init_gpu : num_init)();
+	num_init_gpu_support();
 
 	// print options
 
-	if (use_gpu)
+	if (bart_use_gpu)
 		debug_printf(DP_INFO, "GPU reconstruction\n");
 
 	if (map_dims[MAPS_DIM] > 1)

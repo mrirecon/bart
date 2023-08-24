@@ -99,7 +99,6 @@ int main_rtnlinv(int argc, char* argv[argc])
 	struct noir_conf_s conf = noir_defaults;
 	bool out_sens = false;
 	bool scale_im = false;
-	bool use_gpu = false;
 	float scaling = -1.;
 	bool alt_scaling = false;
 
@@ -123,7 +122,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 		OPT_INFILE('t', &trajectory, "file", "kspace trajectory"),
 		OPT_INFILE('I', &init_file, "file", "File for initialization"),
 		OPT_INFILE('C', &init_file_im, "", "(File for initialization with image space sensitivities)"),
-		OPT_SET('g', &use_gpu, "use gpu"),
+		OPT_SET('g', &bart_use_gpu, "use gpu"),
 		OPT_SET('S', &scale_im, "Re-scale image after reconstruction"),
 		OPT_FLOAT('a', &conf.a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPT_FLOAT('b', &conf.b, "", "(b in 1 + a * \\Laplace^-b/2)"),
@@ -139,7 +138,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 	if (NULL != sens_file)
 		out_sens = true;
 
-	(use_gpu ? num_init_gpu : num_init)();
+	num_init_gpu_support();
 
 	if ((NULL != psf) && (NULL != trajectory))	// FIXME: pattern makes sense with trajectory
 		error("Pass either trajectory (-t) or PSF (-p)!\n");
@@ -492,7 +491,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 		md_zsmul(DIMS, kgrid1_dims, kgrid1, kgrid1, scaling);
 
 #ifdef USE_CUDA
-		if (use_gpu) {
+		if (bart_use_gpu) {
 
 			complex float* kgrid1_gpu = md_alloc_gpu(DIMS, kgrid1_dims, CFL_SIZE);
 			md_copy(DIMS, kgrid1_dims, kgrid1_gpu, kgrid1, CFL_SIZE);

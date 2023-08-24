@@ -56,7 +56,6 @@ int main_nufft(int argc, char* argv[argc])
 	bool inverse = false;
 	bool precond = false;
 	bool dft = false;
-	bool use_gpu = false;
 
 	const char* basis_file = NULL;
 	const char* pattern_file = NULL;
@@ -83,7 +82,7 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_UINT('m', &cgconf.maxiter, "iter", "max. number of iterations (inverse only)"),
 		OPT_SET('P', &conf.periodic, "periodic k-space"),
 		OPT_SET('s', &dft, "DFT"),
-		OPT_SET('g', &use_gpu, "GPU (only inverse)"),
+		OPT_SET('g', &bart_use_gpu, "GPU"),
 		OPT_CLEAR('1', &conf.decomp, "use/return oversampled grid"),
 		OPTL_SET(0, "lowmem", &conf.lowmem, "Use low-mem mode of the nuFFT"),
 		OPTL_SET(0, "zero-mem", &conf.zero_overhead, "Use zero-overhead mode of the nuFFT"),
@@ -132,7 +131,7 @@ int main_nufft(int argc, char* argv[argc])
 					coilest_dims[0], coilest_dims[1], coilest_dims[2]);
 	}
 
-	(use_gpu ? num_init_gpu : num_init)();
+	num_init_gpu_support();
 
 	long basis_dims[DIMS];
 	complex float* basis = NULL;
@@ -187,7 +186,7 @@ int main_nufft(int argc, char* argv[argc])
 
 		if (!dft) {
 #ifdef USE_CUDA
-			if (use_gpu && !precond && !dft) {
+			if (bart_use_gpu && !precond && !dft) {
 
 				complex float* traj_gpu = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
 
@@ -218,7 +217,7 @@ int main_nufft(int argc, char* argv[argc])
 
 			struct lsqr_conf lsqr_conf = lsqr_defaults;
 			lsqr_conf.lambda = lambda;
-			lsqr_conf.it_gpu = use_gpu;
+			lsqr_conf.it_gpu = bart_use_gpu;
 
 			lsqr(DIMS, &lsqr_conf, iter_conjgrad, CAST_UP(&cgconf),
 			     nufft_op, NULL, coilim_dims, img, ksp_dims, ksp, precond_op);
@@ -260,7 +259,7 @@ int main_nufft(int argc, char* argv[argc])
 		else
 			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
 
-		if (use_gpu) {
+		if (bart_use_gpu) {
 
 			auto tmp = nufft_op;
 			nufft_op = linop_gpu_wrapper((struct linop_s*)tmp);

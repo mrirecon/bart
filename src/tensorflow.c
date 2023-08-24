@@ -48,7 +48,6 @@ int main_tensorflow(int argc, char* argv[argc])
 	const char** files = NULL;
 	long batchsize = 1;
 	bool nodes = false;
-	bool gpu = false;
 	
 	struct arg_s args[] = {
 
@@ -59,15 +58,12 @@ int main_tensorflow(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 		OPT_LONG('b', &batchsize, "b", "Fill placeholder in dims with b"),
 		OPT_SET('n', &nodes, "Print all nodes in graph"),
-		OPT_SET('g', &gpu, "Use gpu"),
+		OPT_SET('g', &bart_use_gpu, "Use gpu"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	if (gpu)
-		num_init_gpu();
-	else
-		num_init();
+	num_init_gpu_support();
 
 	const struct tf_shared_graph_s* sgraph = tf_shared_graph_create(graph, key);
 	tf_shared_graph_set_batch_size(sgraph, batchsize);

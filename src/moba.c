@@ -220,14 +220,14 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('J', &conf.stack_frames, "Stack frames for joint recon"),
 		OPT_SET('M', &conf.sms, "Simultaneous Multi-Slice reconstruction"),
 		OPT_SET('O', &conf.out_origin_maps, "(Output original maps from reconstruction without post processing)"),
-		OPT_SET('g', &conf.use_gpu, "use gpu"),
+		OPT_SET('g', &bart_use_gpu, "use gpu"),
 		OPTL_ULONG(0, "positive-maps", &conf.constrained_maps, "flag", "Maps with positivity contraint as FLAG!"),
 		OPTL_ULONG(0, "not-wav-maps", &conf.not_wav_maps, "d", "Maps removed from wavelet denoising (counted from back!)"),
 		OPTL_ULONG(0, "l2-on-parameters", &conf.l2para, "flag", "Flag for parameter maps with l2 norm"),
 		OPTL_UINT(0, "pusteps", &conf.pusteps, "ud", "Number of partial update steps for IRGNM"),
 		OPTL_FLOAT(0, "ratio", &conf.ratio, "f:[0;1]", "Ratio of partial updates: ratio*<updated-map> + (1-ratio)*<previous-map>"),
 		OPTL_FLOAT(0, "l1val", &conf.l1val, "f", "Regularization scaling of l1 wavelet (default: 1.)"),
-		OPTL_INT(0, "multi-gpu", &conf.num_gpu, "num", "(number of gpus to use)"),
+		OPTL_INT(0, "multi-gpu", &(conf.num_gpu), "num", "(number of gpus to use)"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
 		OPT_INFILE('t', &traj_file, "traj", "K-space trajectory"),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.]"),
@@ -254,15 +254,9 @@ int main_moba(int argc, char* argv[argc])
 	if (0 != conf.num_gpu)
 		error("Multi-GPU only supported by MPI!\n");
 
-	if (conf.use_gpu)
-		num_init_gpu();
-	else
-		num_init();
+	conf.use_gpu = bart_use_gpu;
+	num_init_gpu_support();
 	
-#ifdef USE_CUDA
-	cuda_use_global_memory();
-#endif
-
         data.model = conf.mode;
 
         if (MDB_T1_PHY == conf.mode)
@@ -649,8 +643,6 @@ int main_moba(int argc, char* argv[argc])
 
 #ifdef  USE_CUDA
 	if (conf.use_gpu) {
-
-//		cuda_use_global_memory();
 
 		complex float* kspace_gpu = md_alloc_gpu(DIMS, grid_dims, CFL_SIZE);
 

@@ -64,7 +64,6 @@ int main_pocsense(int argc, char* argv[argc])
 	int maxiter = 50;
 	bool l1wav = false;
 	float lambda = -1.;
-	bool use_gpu = false;
 	bool use_admm = false;
 	float admm_rho = -1.;
 	int l1type = 2;
@@ -74,7 +73,7 @@ int main_pocsense(int argc, char* argv[argc])
 		OPT_INT('i', &maxiter, "iter", "max. number of iterations"),
 		OPT_FLOAT('r', &alpha, "alpha", "regularization parameter"),
 		OPT_INT('l', &l1type, "1/-l2", "toggle l1-wavelet or l2 regularization"),
-		OPT_SET('g', &use_gpu, "()"),
+		OPT_SET('g', &bart_use_gpu, "()"),
 		OPT_FLOAT('o', &lambda, "", "()"),
 		OPT_FLOAT('m', &admm_rho, "", "()"),
 	};
@@ -105,7 +104,7 @@ int main_pocsense(int argc, char* argv[argc])
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
-	(use_gpu ? num_init_gpu : num_init)();
+	num_init_gpu_support();
 
 
 	
@@ -196,7 +195,7 @@ int main_pocsense(int argc, char* argv[argc])
 	
 	fftmod(N, ksp_dims, FFT_FLAGS, kspace_data, kspace_data);
 
-	if (use_gpu)
+	if (bart_use_gpu)
 #ifdef USE_CUDA
 		pocs_recon_gpu2(italgo, iconf, (const struct linop_s**)ops2, dims, thresh_op, alpha, lambda, result, sens_maps, pattern, kspace_data);
 #else

@@ -54,7 +54,7 @@ static bool test_cuda_fft(void)
 	// TODO: detect if GPU works
 
 	num_rand_init(5);
-	num_init_gpu();
+
 
 	enum { test_cuda_fft_dims = 7 };
 
@@ -108,7 +108,7 @@ static bool test_cuda_fftmod(void)
 	// TODO: detect if GPU works
 
 	num_rand_init(5);
-	num_init_gpu();
+
 	
 	enum { DIMS = 4 };
 	const long dims[DIMS] = {3, 5, 9, 3};
@@ -140,7 +140,7 @@ static bool test_cuda_fftmod2(void)
 	// TODO: detect if GPU works
 
 	num_rand_init(5);
-	num_init_gpu();
+
 	
 	enum { DIMS = 4 };
 	const long dims[DIMS] = {16, 4, 16, 3};
