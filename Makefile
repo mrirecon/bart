@@ -69,6 +69,7 @@ FFTWTHREADS?=1
 SCALAPACK?=0
 ISMRMRD?=0
 TENSORFLOW?=0
+PYTORCH?=0
 NOEXEC_STACK?=0
 PARALLEL?=0
 PARALLEL_NJOBS?=
@@ -238,6 +239,9 @@ CUDNN_LIB ?= lib64
 # tensorflow
 TENSORFLOW_BASE ?= /usr/local/
 
+# pytorch
+PYTORCH_BASE ?= /usr/local/
+
 # acml
 
 ACML_BASE ?= /usr/local/acml/acml4.4.0/gfortran64_mp/
@@ -274,7 +278,7 @@ TCALIB=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmf
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
 TSIM=phantom traj signal epg sim pulse raga stl bloch grid trajcor
 TIO=tee toimg toraw multicfl trx
-TNN=reconet nnet onehotenc measure mnist tensorflow nlinvnet
+TNN=reconet nnet onehotenc measure mnist tensorflow nlinvnet sample
 TMOTION=affinereg interpolate estmotion
 
 TBASE:=$(sort $(TBASE))
@@ -343,6 +347,7 @@ MODULES_reconet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_mnist = -lnetworks -lnn -lnlops -llinops -liter
 MODULES_nnet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_tensorflow = -lnn -lnlops -llinops -liter
+MODULES_sample = -lnn -lnlops -llinops -liter
 MODULES_measure = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_onehotenc = -lnn
 MODULES_sim = -lseq -lsimu
@@ -411,6 +416,11 @@ CPPFLAGS += -DTENSORFLOW -I$(TENSORFLOW_BASE)/include
 LIBS += -L$(TENSORFLOW_BASE)/lib -Wl,-rpath $(TENSORFLOW_BASE)/lib -ltensorflow_framework -ltensorflow
 endif
 
+ifeq ($(PYTORCH),1)
+CPPFLAGS += -DPYTORCH -I$(PYTORCH_BASE)/include/torch/csrc/api/include/ -I$(PYTORCH_BASE)/include/
+LIBS += -L$(PYTORCH_BASE)/lib -Wl,--no-as-needed,-rpath $(PYTORCH_BASE)/lib -ltorch -ltorch_cpu -ltorch_cuda -lc10_cuda -lc10
+endif
+
 
 
 XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TNN) $(TMOTION)
@@ -450,7 +460,7 @@ endif
 
 CPPFLAGS += $(DEPFLAG) -iquote $(srcdir)/
 CFLAGS += -std=gnu17
-CXXFLAGS += -std=c++14
+CXXFLAGS += -std=c++17
 
 
 
@@ -682,6 +692,11 @@ CPPFLAGS += $(ISMRM_H)
 LIBS += -lstdc++
 endif
 
+ifeq ($(PYTORCH),1)
+nnextracxxsrcs += $(srcdir)/nn/pytorch_cpp_wrapper.cc
+LIBS += -lstdc++
+endif
+
 
 # change for static linking
 
@@ -821,6 +836,13 @@ MODULES_test_asl += -liter -llinops -lnlops
 ifeq ($(TENSORFLOW),1)
 UTARGETS += test_nn_tf
 MODULES_test_nn_tf += -lnn -lnlops -llinops
+endif
+
+ifeq ($(PYTORCH),1)
+UTARGETS += test_nn_pytorch
+UTARGETS_GPU += test_nn_pytorch_cuda
+MODULES_test_nn_pytorch += -lnn -lnlops -llinops
+MODULES_test_nn_pytorch_cuda += -lnn -lnlops -llinops
 endif
 
 
