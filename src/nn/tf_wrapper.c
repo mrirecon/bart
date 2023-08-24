@@ -18,6 +18,7 @@
 
 #include "num/flpmath.h"
 #include "num/multind.h"
+#include "num/multiplace.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -840,7 +841,9 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 {
 	auto data = CAST_DOWN(tf_s, _data);
 
-	if (   (0 != md_zrmse(data->nr_out_dim[o], data->out_dims_tf[o], TF_TensorData(data->input_tensors[data->nr_inputs + o]), src))
+	struct multiplace_array_s* wrapper = multiplace_move_wrapper(data->nr_out_dim[o], data->out_dims_tf[o], CFL_SIZE, TF_TensorData(data->input_tensors[data->nr_inputs + o]));
+
+	if (   (0 != md_zrmse(data->nr_out_dim[o], data->out_dims_tf[o], multiplace_read(wrapper, src), src))
 	    || (NULL == data->cached_gradient[o][i])) {
 
 		md_copy2(data->nr_out_dim[o], data->out_dims_tf[o],
@@ -895,6 +898,8 @@ static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, com
 			}
 		}
 	}
+
+	multiplace_free(wrapper);
 
 	md_copy(data->nr_in_dim[i], data->in_dims_tf[i], dst, data->cached_gradient[o][i], CFL_SIZE);
 }
