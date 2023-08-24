@@ -347,7 +347,7 @@ tests/test-reconet-nnmodl-tensorflow1: nrmse multicfl $(TESTS_OUT)/pattern.ra re
 	$(TOOLDIR)/nrmse -t0.0005 b2 t2					;\
 	$(TOOLDIR)/nrmse -t0.0050 b3 t3					;\
 	$(TOOLDIR)/nrmse -t0.0005 b4 t4					;\
-	rm -r tf1_resnet.*; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	rm -r tf1_resnet.*; rm *.hdr ; rm *.cfl; rm *.map ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
