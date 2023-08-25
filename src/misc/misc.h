@@ -67,7 +67,7 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 
 #ifdef USE_DWARF
 #undef assert
-#define assert(expr) if (!(expr)) error("Assertion '" #expr "' failed in %s:%d\n",  __FILE__, __LINE__)
+#define assert(expr) do { if (!(expr)) error("Assertion '" #expr "' failed in %s:%d\n",  __FILE__, __LINE__); } while (0)
 #endif
 
 extern int error_catcher(int fun(int argc, char* argv[__VLA(argc)]), int argc, char* argv[__VLA(argc)]);
