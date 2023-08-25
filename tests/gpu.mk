@@ -168,13 +168,23 @@ tests/test-pics-gpu-noncart-weights-mpi: bart traj scale ones phantom pics nrmse
 	rm *.cfl ; rm *.hdr ; rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-pics-cart-mpi-gpu: bart pics copy nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)												;\
+	$(TOOLDIR)/copy $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp									;\
+	$(TOOLDIR)/copy $(TESTS_OUT)/coils.ra coils												;\
+	mpirun -n 2 --allow-run-as-root $(ROOTDIR)/bart pics -g --mpi=8 -S -r0.001 shepplogan_coil_ksp coils reco				;\
+	                                $(ROOTDIR)/bart pics -g         -S -r0.001 shepplogan_coil_ksp coils reco_ref				;\
+	$(TOOLDIR)/nrmse -t 1e-5 reco_ref reco													;\
+	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS_GPU += tests/test-pics-gpu tests/test-pics-gpu-noncart tests/test-pics-gpu-noncart-gridding
 TESTS_GPU += tests/test-pics-gpu-weights tests/test-pics-gpu-noncart-weights tests/test-pics-gpu-llr
 TESTS_GPU += tests/test-pics-multigpu
 
 ifeq ($(MPI), 1)
-TESTS_GPU += tests/test-pics-gpu-mpi tests/test-pics-gpu-noncart-weights-mpi
+TESTS_GPU += tests/test-pics-gpu-mpi tests/test-pics-gpu-noncart-weights-mpi tests/test-pics-cart-mpi-gpu
 endif
 
 ifeq ($(OMP), 1)
