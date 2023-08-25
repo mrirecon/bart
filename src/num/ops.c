@@ -28,6 +28,7 @@
 #include "num/iovec.h"
 #include "num/flpmath.h"
 #include "num/ops_graph.h"
+#include "num/vptr.h"
 
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -1375,6 +1376,92 @@ const struct operator_s* operator_assign_gpu(const struct operator_s* op, int de
 	}
 
 	return operator_copy_wrapper_generic(N, strs, loc, op, device, false);
+}
+
+
+struct vptr_wrapper_s {
+
+	INTERFACE(operator_data_t);
+
+	const struct operator_s* op;
+	struct vptr_hint_s* hint;
+};
+
+static DEF_TYPEID(vptr_wrapper_s);
+
+
+static void vptrw_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+{
+	const auto d = CAST_DOWN(vptr_wrapper_s, _data);
+
+	void* targs[N];
+	for (int i = 0; i < (int)N; i++) {
+
+		auto iov = operator_arg_domain(d->op, i);
+		if (is_vptr(args[i]))
+			targs[i] = args[i];
+		else
+			targs[i] = vptr_wrap(iov->N, iov->dims, iov->size, args[i], d->hint, false, operator_get_io_flags(d->op)[i]);
+	}
+
+	operator_generic_apply_unchecked(d->op, N, targs);
+
+	for (int i = 0; i < (int)N; i++)
+		if (targs[i] != args[i])
+			md_free(targs[i]);
+}
+
+static void vptrw_free(const operator_data_t* _data)
+{
+	const auto d = CAST_DOWN(vptr_wrapper_s, _data);
+	operator_free(d->op);
+	vptr_hint_free(d->hint);
+	xfree(d);
+}
+
+const struct operator_s* operator_vptr_wrapper(const struct operator_s* op, struct vptr_hint_s* hint)
+{
+	if (NULL == hint)
+		return operator_ref(op);
+
+	int A = operator_nr_args(op);
+	int N = -1;
+
+	for (int i = 0; i < A; i++) {
+
+		auto iov = operator_arg_domain(op, i);
+
+		if (1 == iov->N && 1 == iov->dims[0])
+			continue;
+
+		if (-1 == N)
+			N = iov->N;
+
+		assert(N == iov->N);
+		assert(N == md_calc_blockdim(N, iov->dims, iov->strs, iov->size));
+	}
+
+	assert(0 < N);
+
+	PTR_ALLOC(struct vptr_wrapper_s, data);
+	SET_TYPEID(vptr_wrapper_s, data);
+
+	data->op = operator_ref(op);
+	data->hint = vptr_hint_ref(hint);
+
+	unsigned int D[N];
+	const long* op_dims[N];
+	const long* op_strs[A];
+
+	for (int j = 0; j < A; j++) {
+
+		auto iov = operator_arg_domain(op, j);
+		D[j] = iov->N;
+		op_dims[j] = iov->dims;
+		op_strs[j] = iov->strs;
+	}
+
+	return operator_generic_create2(A, op->io_flags, D, op_dims, op_strs, CAST_UP(PTR_PASS(data)), vptrw_apply, vptrw_free, NULL);
 }
 
 

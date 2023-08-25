@@ -117,6 +117,9 @@ extern const struct operator_s* operator_gpu_wrapper2(const struct operator_s* o
 extern const struct operator_s* operator_gpu_wrapper(const struct operator_s* op);
 extern const struct operator_s* operator_cpu_wrapper(const struct operator_s* op);
 
+struct vptr_hint_s;
+extern const struct operator_s* operator_vptr_wrapper(const struct operator_s* op, struct vptr_hint_s* hint);
+
 extern const struct operator_s* operator_assign_gpu(const struct operator_s* op, int device);
 
 extern const struct operator_s* operator_loop2(unsigned int N, const unsigned int D,

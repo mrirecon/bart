@@ -942,7 +942,17 @@ struct linop_s* linop_gpu_wrapper(struct linop_s* op)
 	return PTR_PASS(op2);
 }
 
+struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, struct linop_s* op)
+{
+	PTR_ALLOC(struct linop_s, op2);
 
+	op2->forward = operator_vptr_wrapper(op->forward, hint);
+	op2->adjoint = operator_vptr_wrapper(op->adjoint, hint);
+	op2->normal = (NULL == op->normal) ? NULL : operator_vptr_wrapper(op->normal, hint);
+	op2->norm_inv = NULL; // FIXME
+
+	return PTR_PASS(op2);
+}
 
 /**
  * Free the linear operator and associated data,
