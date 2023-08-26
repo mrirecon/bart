@@ -390,11 +390,11 @@ int md_calc_blockdim(int D, const long dim[D], const long str[D], size_t size)
  */
 void md_select_dims(int D, unsigned long flags, long odims[D], const long idims[D])
 {
-	md_copy_dims(D, odims, idims);
-
 	for (int i = 0; i < D; i++)
 		if (!MD_IS_SET(flags, i))
 			odims[i] = 1;
+		else
+			odims[i] = idims[i];
 }
 
 /**
