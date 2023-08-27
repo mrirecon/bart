@@ -153,63 +153,6 @@ static cublasOperation_t cublas_trans(char trans)
 }
 
 
-double cuda_sdot(long size, const float* src1, const float* src2)
-{
-//	printf("SDOT %x %x %ld\n", src1, src2, size);
-	double result = 0;
-
-	while (size > 0) {
-
-		float tmp;
-		CUBLAS_CALL(cublasSdot(get_handle_host(), MIN(size, INT_MAX / 4), src1, 1, src2, 1, &tmp));
-
-		result += tmp;
-		
-		src1 += INT_MAX / 4;
-		src2 += INT_MAX / 4;
-		size -= INT_MAX / 4;
-	}
-
-	return result;
-}
-
-complex double cuda_zdot(long size, const complex float* src1, const complex float* src2)
-{
-//FIXME: opposite convetion of conjugate vs blas
-	complex double result = 0;
-
-	while (size > 0) {
-
-		complex float tmp;
-		CUBLAS_CALL(cublasCdotc(get_handle_host(), MIN(size, INT_MAX / 4), (const cuComplex*)src2, 1, (const cuComplex*)src1, 1, (cuComplex*)(&tmp)));
-
-		result += tmp;
-		
-		src1 += INT_MAX / 4;
-		src2 += INT_MAX / 4;
-		size -= INT_MAX / 4;
-	}
-
-	return result;
-}
-
-
-double cuda_norm(long size, const float* src1)
-{
-#if 1
-	// cublasSnrm2 produces NaN in some situations
-	// e.g. nlinv -g -i8 utests/data/und2x2 o
-	// git rev: ab28a9a953a80d243511640b23501f964a585349
-//	printf("cublas: %f\n", cublasSnrm2(size, src1, 1));
-//	printf("GPU norm (sdot: %f)\n", sqrt(cuda_sdot(size, src1, src1)));
-//#ifdef GPU_ASSERTS
-//	assert(cuda_ondevice_num(src1, cuda_get_device_internal()));
-//#endif
-	return sqrt(cuda_sdot(size, src1, src1));
-#else
-	return cublasSnrm2(size, src1, 1);
-#endif
-}
 
 double cuda_asum(long size, const float* src)
 {

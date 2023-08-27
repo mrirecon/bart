@@ -10,6 +10,7 @@ extern "C" {
 #include <stdint.h>
 
 extern double cuda_dot(long N, const float* src1, const float* src2);
+extern double cuda_norm(long N, const float* src);
 extern _Complex double cuda_cdot(long N, const _Complex float* src1, const _Complex float* src2);
 
 extern void cuda_float2double(long size, double* dst, const float* src);

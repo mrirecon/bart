@@ -1694,3 +1694,17 @@ extern "C" double cuda_dot(long N, const float* src1, const float* src2)
 	return ret;
 }
 
+
+extern "C" double cuda_norm(long N, const float* src)
+{
+	return sqrt(cuda_dot(N, src, src));
+}
+
+
+
+
+
+
+
+
+
