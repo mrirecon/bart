@@ -36,6 +36,7 @@ struct linphase_conf {
 	_Bool fmac;
 };
 
+template <_Bool fmac>
 __global__ void kern_apply_linphases_3D(struct linphase_conf c, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int startX = threadIdx.x + blockDim.x * blockIdx.x;
@@ -54,7 +55,7 @@ __global__ void kern_apply_linphases_3D(struct linphase_conf c, cuFloatComplex* 
 				long pos[3] = { x, y, z };
 				long idx = x + c.dims[0] * (y + c.dims[1] * z);
 				
-				double val = c.cn;
+				float val = c.cn;
 
 				for (int n = 0; n < 3; n++)
 					val += pos[n] * c.shifts[n];
@@ -62,13 +63,13 @@ __global__ void kern_apply_linphases_3D(struct linphase_conf c, cuFloatComplex* 
 				if (c.conj)
 					val = -val;
 
-				double si;
-				double co;
-				sincos(val, &si, &co);
+				float si;
+				float co;
+				sincosf(val, &si, &co);
 				
 				cuFloatComplex cval = make_cuFloatComplex(c.scale * co, c.scale * si);
 
-				if (c.fmac) {
+				if (fmac) {
 
 					for (long i = 0; i < c.N; i++)
 						dst[idx + i * c.tot] = cuCaddf(dst[idx + i * c.tot], cuCmulf(src[idx + i * c.tot], cval));
@@ -113,8 +114,15 @@ extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const floa
 
 	c.N = md_calc_size(N - 3, img_dims + 3);
 
-	const void* func = (const void*)kern_apply_linphases_3D;
-	kern_apply_linphases_3D<<<getGridSize3(c.dims, func), getBlockSize3(c.dims, (const void*)func), 0, cuda_get_stream()>>>(c, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	if (c.fmac) {
+
+		const void* func = (const void*)kern_apply_linphases_3D<true>;
+		kern_apply_linphases_3D<true><<<getGridSize3(c.dims, func), getBlockSize3(c.dims, (const void*)func), 0, cuda_get_stream()>>>(c, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	} else {
+
+		const void* func = (const void*)kern_apply_linphases_3D<false>;
+		kern_apply_linphases_3D<false><<<getGridSize3(c.dims, func), getBlockSize3(c.dims, (const void*)func), 0, cuda_get_stream()>>>(c, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	}
 }
 
 
