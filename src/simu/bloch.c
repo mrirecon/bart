@@ -216,7 +216,7 @@ void bloch_matrix_int_sa2(float matrix[13][13], float t, float r1, float r2, con
 
 
 
-void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const float r1[P], const float r2[P], const float k[P][P], const float m0[P], const float Om[P], const float gb[3])
+void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const float r1[P], const float r2[P], const float k[P - 1], const float m0[P], const float Om[P], const float gb[3])
 {
 	// +1 for T1 relaxation term in homogeneous ODE representation
 	int N = 1 + P * 3;
@@ -248,16 +248,23 @@ void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const 
 	for (int p = 0; p < P; p++)
 		matrix[3 * p + 2][N - 1] = m0[p] * r1[p];
 
-	// exchange
+	// exchange  FIX ME?: Additional pools only exchange with water pool
+	for (int p = 0; p < P - 1; p++)
+		for (int i = 0; i < 3; i++)
+			matrix[i][i] -= k[p] * m0[p + 1];
 
-	for (int p = 0; p < P; p++)
-		for (int q = 0; q < P; q++)
-			for (int i = 0; i < 3; i++)
-				matrix[3 * p + i][3 * q + i] += k[p][q];
+	for (int p = 1; p < P; p++)
+		for (int i = 0; i < 3; i++) {
+
+			matrix[p * 3 + i][p * 3 + i] -= k[p - 1] * m0[0];
+			matrix[i][p * 3 + i] += k[p - 1] * m0[0];
+			matrix[p * 3 + i][i] += k[p - 1] * m0[p];
+		}
+
 }
 
 
-void bloch_mcconnell_ode(int P, float out[P * 3], float in[P * 3] , float r1[P], float r2[P], float k[P][P], float m0[P], float Om[P], float gb[3])
+void bloch_mcconnell_ode(int P, float out[P * 3], const float in[P * 3] , float r1[P], float r2[P], float k[P - 1], float m0[P], float Om[P], float gb[3])
 {
 	int N = 1 + P * 3;
 	float m[N][N];

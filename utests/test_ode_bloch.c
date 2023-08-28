@@ -672,7 +672,9 @@ static bool test_bloch_mcconnel(void)
 
 	float m1[1 + P * 3][1 + P * 3];
 	float gb[3] = { 0., 0., 0. };
-	float k[1][1] = { { 0. } };
+	float k[1] = { 0.2 };
+
+	//float k[1][1] = { { 0. } };
 	float Th[1] = { 1. };
 	float Om[1] = { 0. };
 	float r1[1] = { 1. };
@@ -704,11 +706,12 @@ static bool test_bloch_mcconnel2(void)
 	float m1[1 + P * 3][1 + P * 3];
 	float gb[3] = { 0., 0., 0. };
 	float k[2][2] = { { -0.2, 0.2 }, { 0.2, -0.2 } };
+	float k2[1] = { 0.2 };
 	float Th[2] = { 0.5, 0.5 };
 	float Om[2] = { 0., 0. };
 	float r1[2] = { 1., 1.1 };
 	float r2[2] = { 0.1, 0.05 };
-	bloch_mcconnel_matrix_ode(P, m1, r1, r2, k, Th, Om, gb);
+	bloch_mcconnel_matrix_ode(P, m1, r1, r2, k2, Th, Om, gb);
 
 	float m2[4][4];
 	bloch_matrix_ode(m2, r1[0], r2[0], gb);
@@ -718,12 +721,12 @@ static bool test_bloch_mcconnel2(void)
 
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
-			if (fabsf(m1[0 + i][0 + j] - (m2[i][j] + ((i == j) ? k[0][0] : 0.f))) > 1.E-3)
+			if (fabsf(m1[0 + i][0 + j] - (m2[i][j] + ((i == j) ? k[0][0] * Th[1] : 0.f))) > 1.E-3)
 				return false;
 
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
-			if (fabsf(m1[3 + i][3 + j] - (m3[i][j] + ((i == j) ? k[1][1] : 0.f))) > 1.E-3)
+			if (fabsf(m1[3 + i][3 + j] - (m3[i][j] + ((i == j) ? k[1][1] * Th[0] : 0.f))) > 1.E-3)
 				return false;
 
 	return true;
@@ -741,7 +744,7 @@ static bool test_ode_bloch_mcconnel(void)
 
 	float m1[N][N];
 	float gb[3] = { 0., 0., 0. };
-	float k[2][2] = { { -0.2, 0.2 }, { 0.2, -0.2 } };
+	float k[1] = { 0.2 };
 	float Th[2] = { 0.5, 0.5 };
 	float Om[2] = { 0., 0.01 };
 	float r1[2] = { 1., 1.1 };
@@ -787,12 +790,8 @@ static bool test_bmc_ode_pools(void)
 	float in_1[3] = { 0.5, 0.2, 0.8 };
 	float r1[P];
 	float r2[P];
-	float k[P][P];
+	float k[4] = { 0., 0., 0., 0. };
 	
-	for (int i = 0; i < P; i++)
-		for (int j = 0; j < P; j++)
-			k[i][j] = 0.;
-
 	for (int p = 0; p < P; p++) {
 
 		in_5[0 + 3 * p] = 0.5;
@@ -827,7 +826,7 @@ static bool test_bloch_mcconnell_matrix(void)
 	int N = 1 + P * 3;
 	
 	float gb[3] = { 0., 0.05, 0.06 };
-	float k[2][2] = { { -0.2, 0.2 }, { 0.4, -0.2 } };
+	float k[1] = { 0.2 };
 	float Th[2] = { 1., 1. };
 	float Om[2] = { 0., 0.05 };
 	float r1[2] = { 1., 1.1 };
