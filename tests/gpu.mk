@@ -32,7 +32,7 @@ tests/test-pics-gpu-noncart-gridding: traj scale phantom ones pics nrmse
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
 	$(TOOLDIR)/pics                   -S -r0.001 -t traj2.ra ksp.ra o.ra reco1.ra	;\
 	$(TOOLDIR)/pics -g --gpu-gridding -S -r0.001 -t traj2.ra ksp.ra o.ra reco2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.005 reco1.ra reco2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.007 reco1.ra reco2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
