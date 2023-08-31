@@ -32,12 +32,15 @@ extern bool mat_inverse(int N, complex float dst[N][N], const complex float src[
 extern void mat_pinv(int A, int B, complex float out[B][A], const complex float in[A][B]);
 extern void mat_pinv_left(int A, int B, complex float out[B][A], const complex float in[A][B]);
 extern void mat_pinv_right(int A, int B, complex float out[B][A], const complex float in[A][B]);
+extern complex float mat_det(int N, const complex float mat[N][N]);
 extern void mat_vecmul(int A, int B, complex float out[A], const complex float mat[A][B], const complex float in[B]);
 extern void matf_vecmul(int A, int B, float out[A], const float mat[A][B], const float in[B]);
 extern void mat_kron(int A, int B, int C, int D,
 		complex float out[A * C][B * D], const complex float in1[A][B], const complex float in2[C][D]);
 extern void mat_vec(int A, int B, complex float out[A * B], const complex float in[A][B]);
 extern void vec_mat(int A, int B, complex float out[A][B], const complex float in[A * B]);
+extern void vec_zero(int N, complex float x[N]);
+extern void vec_copy(int N, complex float x[N], const complex float y[N]);
 
 // extern complex double vec_dot(int N, const complex float x[N], const complex float y[N]);
 extern complex float vec_dot(int N, const complex float x[N], const complex float y[N]);

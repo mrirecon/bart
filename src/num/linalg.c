@@ -58,6 +58,20 @@ void mat_zero(int A, int B, complex float m[A][B])
 			m[a][b] = 0.;
 }
 
+void vec_zero(int N, complex float x[N])
+{
+	for (int i = 0; i < N; i++)
+		x[i] = 0.;
+}
+
+void vec_copy(int N, complex float x[N], const complex float y[N])
+{
+	for (int i = 0; i < N; i++)
+		x[i] = y[i];
+}
+
+
+
 void mat_gaussian(int A, int B, complex float x[A][B])
 {
 	for (int i = 0; i < A; i++)
@@ -130,6 +144,24 @@ void mat_mul(int A, int B, int C, complex float x[A][C], const complex float y[A
 	}
 #endif
 }
+
+
+complex float mat_det(int N, const complex float mat[N][N])
+{
+	assert(N <= 2);
+
+	if (0 == N)
+		return 0.;
+
+	if (1 == N)
+		return mat[0][0];
+
+	if (2 == N)
+		return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
+
+	return 0.;
+}
+
 
 void matf_mul(int A, int B, int C, float x[A][C], const float y[A][B], const float z[B][C])
 {
