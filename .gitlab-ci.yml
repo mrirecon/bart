@@ -25,6 +25,7 @@ Build:
     paths:
       - bart
       - ./lib/
+      - ./commands/
     expire_in: 45 minutes
 
 
@@ -36,6 +37,7 @@ Build_Clang:
     paths:
       - bart
       - ./lib/
+      - ./commands/
     expire_in: 45 minutes
 
 
@@ -58,6 +60,7 @@ Build_UBSan:
     paths:
       - bart
       - ./lib/
+      - ./commands/
     expire_in: 45 minutes
 
 
@@ -69,6 +72,8 @@ Build_GPU:
     paths:
       - bart
       - ./lib/
+#      - ./commands/
+#      not uploading commands, as they are too large for gitlab
     expire_in: 45 minutes
 
 Build_MPI:
@@ -79,6 +84,7 @@ Build_MPI:
     paths:
       - bart
       - ./lib/
+      - ./commands/
     expire_in: 45 minutes
 
 Build_LTO:
@@ -99,6 +105,7 @@ Build_Analyzer:
     paths:
       - bart
       - ./lib/
+      - ./commands/
     expire_in: 45 minutes
   allow_failure: true
 
@@ -115,6 +122,8 @@ Build_Tensorflow:
     paths:
       - bart
       - ./lib/
+#      - ./commands/
+#      not uploading commands, as they are too large for gitlab
     expire_in: 45 minutes
 
 Build_Debug_Dwarf:
@@ -126,6 +135,7 @@ Build_Debug_Dwarf:
     paths:
       - bart
       - ./lib/
+      - ./commands/
     expire_in: 45 minutes
 
 
