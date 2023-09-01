@@ -791,6 +791,7 @@ clean:
 	rm -f `find $(srcdir) -name "*.o"`
 	rm -f $(root)/utests/*.o
 	rm -f $(patsubst %, %, $(UTARGETS))
+	rm -f $(patsubst %, %, $(UTARGETS_GPU))
 	rm -f $(libdir)/.*.lock
 
 allclean: clean
