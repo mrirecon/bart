@@ -517,173 +517,173 @@ tests/test-pics-phase: traj phantom ones join nufft fmac scale bitmask saxpy sli
 	touch $@
 
 
-$(TESTS_OUT)/ksp_usamp_1.ra: bart
-	$(TOOLDIR)/bart phantom -x 64 -k -s 2 ksp_1.ra					;\
-	$(TOOLDIR)/bart poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_1.ra		;\
-	$(TOOLDIR)/bart squeeze tmp_poisson_1.ra poisson_1.ra				;\
-	$(TOOLDIR)/bart fmac ksp_1.ra poisson_1.ra $@
+$(TESTS_OUT)/ksp_usamp_1.ra: phantom poisson squeeze fmac
+	$(TOOLDIR)/phantom -x 64 -k -s 2 ksp_1.ra					;\
+	$(TOOLDIR)/poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_1.ra		;\
+	$(TOOLDIR)/squeeze tmp_poisson_1.ra poisson_1.ra				;\
+	$(TOOLDIR)/fmac ksp_1.ra poisson_1.ra $@
 
-$(TESTS_OUT)/ksp_usamp_2.ra: bart
-	$(TOOLDIR)/bart phantom -G -x 64 -k -s 2 ksp_2.ra				;\
-	$(TOOLDIR)/bart poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_2.ra		;\
-	$(TOOLDIR)/bart squeeze tmp_poisson_2.ra poisson_2.ra				;\
-	$(TOOLDIR)/bart fmac ksp_2.ra poisson_2.ra $@
+$(TESTS_OUT)/ksp_usamp_2.ra: phantom poisson squeeze fmac
+	$(TOOLDIR)/phantom -G -x 64 -k -s 2 ksp_2.ra				;\
+	$(TOOLDIR)/poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_2.ra		;\
+	$(TOOLDIR)/squeeze tmp_poisson_2.ra poisson_2.ra				;\
+	$(TOOLDIR)/fmac ksp_2.ra poisson_2.ra $@
 
-$(TESTS_OUT)/ksp_usamp_3.ra: bart
-	$(TOOLDIR)/bart phantom -B -x 64 -k -s 2 ksp_3.ra				;\
-	$(TOOLDIR)/bart poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_3.ra		;\
-	$(TOOLDIR)/bart squeeze tmp_poisson_3.ra poisson_3.ra				;\
-	$(TOOLDIR)/bart fmac ksp_3.ra poisson_3.ra $@
+$(TESTS_OUT)/ksp_usamp_3.ra: phantom poisson squeeze fmac
+	$(TOOLDIR)/phantom -B -x 64 -k -s 2 ksp_3.ra				;\
+	$(TOOLDIR)/poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_3.ra		;\
+	$(TOOLDIR)/squeeze tmp_poisson_3.ra poisson_3.ra				;\
+	$(TOOLDIR)/fmac ksp_3.ra poisson_3.ra $@
 
-$(TESTS_OUT)/sens_1.ra: bart $(TESTS_OUT)/ksp_usamp_1.ra
-	$(TOOLDIR)/bart ecalib -S $(TESTS_OUT)ksp_usamp_1.ra $@
+$(TESTS_OUT)/sens_1.ra: ecalib $(TESTS_OUT)/ksp_usamp_1.ra
+	$(TOOLDIR)/ecalib -S $(TESTS_OUT)/ksp_usamp_1.ra $@
 
-$(TESTS_OUT)/sens_2.ra: bart $(TESTS_OUT)/ksp_usamp_2.ra
-	$(TOOLDIR)/bart ecalib -S $(TESTS_OUT)ksp_usamp_2.ra $@
+$(TESTS_OUT)/sens_2.ra: ecalib $(TESTS_OUT)/ksp_usamp_2.ra
+	$(TOOLDIR)/ecalib -S $(TESTS_OUT)/ksp_usamp_2.ra $@
 
-$(TESTS_OUT)/sens_3.ra: bart $(TESTS_OUT)/ksp_usamp_3.ra
-	$(TOOLDIR)/bart ecalib -S $(TESTS_OUT)ksp_usamp_3.ra $@
+$(TESTS_OUT)/sens_3.ra: ecalib $(TESTS_OUT)/ksp_usamp_3.ra
+	$(TOOLDIR)/ecalib -S $(TESTS_OUT)/ksp_usamp_3.ra $@
 
-$(TESTS_OUT)/img_l2_1.ra: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/sens_1.ra
-	$(TOOLDIR)/bart pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/sens_1.ra $@
+$(TESTS_OUT)/img_l2_1.ra: pics $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/sens_1.ra
+	$(TOOLDIR)/pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/sens_1.ra $@
 
-$(TESTS_OUT)/img_l2_2.ra: bart $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/sens_2.ra
-	$(TOOLDIR)/bart pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/sens_2.ra $@
+$(TESTS_OUT)/img_l2_2.ra: pics $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/sens_2.ra
+	$(TOOLDIR)/pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/sens_2.ra $@
 
-$(TESTS_OUT)/img_l2_3.ra: bart $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_3.ra
-	$(TOOLDIR)/bart pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_3.ra $@
+$(TESTS_OUT)/img_l2_3.ra: pics $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_3.ra
+	$(TOOLDIR)/pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_3.ra $@
 
 tests/test-pics-cart-loop: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref			;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
-	$(TOOLDIR)/bart -l 8192 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p						;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref			;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	$(ROOTDIR)/bart -l 8192 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p						;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-pics-cart-loop_range: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_13						;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_3.ra img_l2_ref_23									;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra img_l2_ref_02						;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra img_l2_ref_01									;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
-	$(TOOLDIR)/bart -l 8192 -s 1 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p13					;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_13 img_l2_p13										;\
-	$(TOOLDIR)/bart -l 8192 -s 0 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p03					;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_03 img_l2_p03										;\
-	$(TOOLDIR)/bart -l 8192 -s 2 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p23					;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_23 img_l2_p23										;\
-	$(TOOLDIR)/bart -l 8192 -s 0 -e 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p02					;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_02 img_l2_p02										;\
-	$(TOOLDIR)/bart -l 8192 -s 0 -e 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p01					;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_13						;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_3.ra img_l2_ref_23									;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra img_l2_ref_02						;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra img_l2_ref_01									;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	$(ROOTDIR)/bart -l 8192 -s 1 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p13					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_13 img_l2_p13										;\
+	$(ROOTDIR)/bart -l 8192 -s 0 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p03					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_03 img_l2_p03										;\
+	$(ROOTDIR)/bart -l 8192 -s 2 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p23					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_23 img_l2_p23										;\
+	$(ROOTDIR)/bart -l 8192 -s 0 -e 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p02					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_02 img_l2_p02										;\
+	$(ROOTDIR)/bart -l 8192 -s 0 -e 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p01					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-pics-cart-slice:  bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
-	$(TOOLDIR)/bart -l 8192 -s 0 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_0						;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_1.ra img_l2_0									;\
-	$(TOOLDIR)/bart -l 8192 -s 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_1						;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_2.ra img_l2_1									;\
-	$(TOOLDIR)/bart -l 8192 -s 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_2						;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_3.ra img_l2_2									;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	$(ROOTDIR)/bart -l 8192 -s 0 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_0						;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_1.ra img_l2_0									;\
+	$(ROOTDIR)/bart -l 8192 -s 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_1						;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_2.ra img_l2_1									;\
+	$(ROOTDIR)/bart -l 8192 -s 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_2						;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_3.ra img_l2_2									;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
 tests/test-pics-cart-loop_range-omp:  bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_13						;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_3.ra img_l2_ref_23									;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra img_l2_ref_02						;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra img_l2_ref_01									;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
-	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -s 1 -e 3 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p13		;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_13 img_l2_p13										;\
-	OMP_NUM_THREADS=4 $(TOOLDIR)/bart -l 8192 -s 0 -e 3 -t 4 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p03		;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_03 img_l2_p03										;\
-	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -s 2 -e 3 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p23		;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_23 img_l2_p23										;\
-	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -s 0 -e 2 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p02		;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_02 img_l2_p02										;\
-	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -s 0 -e 1 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p01		;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_13						;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_3.ra img_l2_ref_23									;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra img_l2_ref_02						;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra img_l2_ref_01									;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	OMP_NUM_THREADS=2 $(ROOTDIR)/bart -l 8192 -s 1 -e 3 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p13		;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_13 img_l2_p13										;\
+	OMP_NUM_THREADS=4 $(ROOTDIR)/bart -l 8192 -s 0 -e 3 -t 4 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p03		;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_03 img_l2_p03										;\
+	OMP_NUM_THREADS=2 $(ROOTDIR)/bart -l 8192 -s 2 -e 3 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p23		;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_23 img_l2_p23										;\
+	OMP_NUM_THREADS=2 $(ROOTDIR)/bart -l 8192 -s 0 -e 2 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p02		;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_02 img_l2_p02										;\
+	OMP_NUM_THREADS=2 $(ROOTDIR)/bart -l 8192 -s 0 -e 1 -t 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p01		;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
 tests/test-pics-cart-mpi: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref			;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
-	mpirun -n 4 --allow-run-as-root $(TOOLDIR)/bart -p 8192 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p					;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref			;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	mpirun -n 4 --allow-run-as-root $(ROOTDIR)/bart -p 8192 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-pics-cart-range-mpi: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_13						;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_3.ra img_l2_ref_23									;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra img_l2_ref_02						;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra img_l2_ref_01									;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
-	mpirun -n 2  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 0 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p03				;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_03 img_l2_p03										;\
-	mpirun -n 4  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 1 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p13				;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_13 img_l2_p13										;\
-	mpirun -n 4  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 2 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p23				;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_23 img_l2_p23										;\
-	mpirun -n 4  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 0 -e 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p02				;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_02 img_l2_p02										;\
-	mpirun -n 3  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 0 -e 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p01				;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_13						;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_3.ra img_l2_ref_23									;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra img_l2_ref_02						;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra img_l2_ref_01									;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	mpirun -n 2  --allow-run-as-root $(ROOTDIR)/bart -l 8192 -s 0 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p03				;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_03 img_l2_p03										;\
+	mpirun -n 4  --allow-run-as-root $(ROOTDIR)/bart -l 8192 -s 1 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p13				;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_13 img_l2_p13										;\
+	mpirun -n 4  --allow-run-as-root $(ROOTDIR)/bart -l 8192 -s 2 -e 3 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p23				;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_23 img_l2_p23										;\
+	mpirun -n 4  --allow-run-as-root $(ROOTDIR)/bart -l 8192 -s 0 -e 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p02				;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_02 img_l2_p02										;\
+	mpirun -n 3  --allow-run-as-root $(ROOTDIR)/bart -l 8192 -s 0 -e 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p01				;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-pics-cart-slice-mpi: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
-	mpirun -n 1  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 0 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_0					;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_1.ra img_l2_0									;\
-	mpirun -n 2  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_1					;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_2.ra img_l2_1									;\
-	mpirun -n 3  --allow-run-as-root $(TOOLDIR)/bart -l 8192 -s 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_2					;\
-	$(TOOLDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_3.ra img_l2_2									;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
+	mpirun -n 1  --allow-run-as-root $(ROOTDIR)/bart -l 8192 -s 0 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_0					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_1.ra img_l2_0									;\
+	mpirun -n 2  --allow-run-as-root $(ROOTDIR)/bart -l 8192 -s 1 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_1					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_2.ra img_l2_1									;\
+	mpirun -n 3  --allow-run-as-root $(ROOTDIR)/bart -l 8192 -s 2 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_2					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 $(TESTS_OUT)/img_l2_3.ra img_l2_2									;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-pics-non-cart-mpi: bart $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)										;\
-	$(TOOLDIR)/bart traj -r -D -x 64 -y 32 tr										;\
-	$(TOOLDIR)/bart scale 0.5 tr tr1											;\
-	$(TOOLDIR)/bart scale 2 tr tr2												;\
-	$(TOOLDIR)/bart phantom -ttr -k -s 2 ksp_rad										;\
-	$(TOOLDIR)/bart phantom -ttr1 -k -G -s 2 ksp_rad_g									;\
-	$(TOOLDIR)/bart phantom -ttr2 -k -B -s 2 ksp_rad_b									;\
-	$(TOOLDIR)/bart pics -i 3 -t tr ksp_rad $(TESTS_OUT)/sens_1.ra pics_rad							;\
-	$(TOOLDIR)/bart pics -i 3 -t tr1 ksp_rad_g $(TESTS_OUT)/sens_2.ra pics_rad_g						;\
-	$(TOOLDIR)/bart pics -i 3 -t tr2 ksp_rad_b $(TESTS_OUT)/sens_3.ra pics_rad_b						;\
-	$(TOOLDIR)/bart join 13 pics_rad pics_rad_g pics_rad_b pics_rad_ref							;\
-	$(TOOLDIR)/bart join 13 ksp_rad ksp_rad_g ksp_rad_b ksp_rad_p								;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens1_p			;\
-	$(TOOLDIR)/bart join 13 tr tr1 tr2 tr_p											;\
-	mpirun -n 2 --allow-run-as-root $(TOOLDIR)/bart -l 8192 -e 3 pics -i 3 -ttr_p ksp_rad_p sens1_p pics_rad_p		;\
-	$(TOOLDIR)/bart nrmse -t 5e-3 pics_rad_ref pics_rad_p									;\
+	$(ROOTDIR)/bart traj -r -D -x 64 -y 32 tr										;\
+	$(ROOTDIR)/bart scale 0.5 tr tr1											;\
+	$(ROOTDIR)/bart scale 2 tr tr2												;\
+	$(ROOTDIR)/bart phantom -ttr -k -s 2 ksp_rad										;\
+	$(ROOTDIR)/bart phantom -ttr1 -k -G -s 2 ksp_rad_g									;\
+	$(ROOTDIR)/bart phantom -ttr2 -k -B -s 2 ksp_rad_b									;\
+	$(ROOTDIR)/bart pics -i 3 -t tr ksp_rad $(TESTS_OUT)/sens_1.ra pics_rad							;\
+	$(ROOTDIR)/bart pics -i 3 -t tr1 ksp_rad_g $(TESTS_OUT)/sens_2.ra pics_rad_g						;\
+	$(ROOTDIR)/bart pics -i 3 -t tr2 ksp_rad_b $(TESTS_OUT)/sens_3.ra pics_rad_b						;\
+	$(ROOTDIR)/bart join 13 pics_rad pics_rad_g pics_rad_b pics_rad_ref							;\
+	$(ROOTDIR)/bart join 13 ksp_rad ksp_rad_g ksp_rad_b ksp_rad_p								;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens1_p			;\
+	$(ROOTDIR)/bart join 13 tr tr1 tr2 tr_p											;\
+	mpirun -n 2 --allow-run-as-root $(ROOTDIR)/bart -l 8192 -e 3 pics -i 3 -ttr_p ksp_rad_p sens1_p pics_rad_p		;\
+	$(ROOTDIR)/bart nrmse -t 5e-3 pics_rad_ref pics_rad_p									;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

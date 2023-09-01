@@ -303,17 +303,17 @@ tests/test-phantom-BRAIN-basis: phantom index extract fmac nrmse
 
 tests/test-phantom-FILE: fft nrmse phantom
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/phantom --FILE $(TOOLDIR)/tests/geom/flower -k k.ra			;\
+	$(TOOLDIR)/phantom --FILE $(TESTS_DIR)/geom/flower -k k.ra			;\
 	$(TOOLDIR)/fft -i 3 k.ra x.ra								;\
-	$(TOOLDIR)/phantom --FILE $(TOOLDIR)/tests/geom/flower r.ra				;\
+	$(TOOLDIR)/phantom --FILE $(TESTS_DIR)/geom/flower r.ra				;\
 	$(TOOLDIR)/nrmse -t 0.16 r.ra x.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-phantom-FILE-basis: fmac nrmse phantom
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/phantom --FILE $(TOOLDIR)/tests/geom/flower2 -k k.ra			;\
-	$(TOOLDIR)/phantom --FILE $(TOOLDIR)/tests/geom/flower2 -b -k k1.ra			;\
+	$(TOOLDIR)/phantom --FILE $(TESTS_DIR)/geom/flower2 -k k.ra			;\
+	$(TOOLDIR)/phantom --FILE $(TESTS_DIR)/geom/flower2 -b -k k1.ra			;\
 	$(TOOLDIR)/fmac -s 64 k1.ra k2.ra							;\
 	$(TOOLDIR)/nrmse -t 0.000001 k.ra k2.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -321,9 +321,9 @@ tests/test-phantom-FILE-basis: fmac nrmse phantom
 
 tests/test-phantom-FILE-coil-large: fmac nrmse phantom $(TESTS_OUT)/coils_large.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/phantom --FILE $(TOOLDIR)/tests/geom/flower r.ra			;\
+	$(TOOLDIR)/phantom --FILE $(TESTS_DIR)/geom/flower r.ra			;\
 	$(TOOLDIR)/fmac r.ra $(TESTS_OUT)/coils_large.ra sl_coil2.ra				;\
-	$(TOOLDIR)/phantom --coil HEAD_3D_64CH -s64 --FILE $(TOOLDIR)/tests/geom/flower rc.ra		;\
+	$(TOOLDIR)/phantom --coil HEAD_3D_64CH -s64 --FILE $(TESTS_DIR)/geom/flower rc.ra		;\
 	$(TOOLDIR)/nrmse -t 0.000001 rc.ra sl_coil2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@

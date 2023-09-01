@@ -13,14 +13,14 @@ tests/test-reshape: phantom reshape repmat slice nrmse
 
 tests/test-reshape-mpi: bart
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/bart phantom -s 6 x							;\
-	$(TOOLDIR)/bart noise x x_noise							;\
-	$(TOOLDIR)/bart reshape 7 256 1 64 x x2						;\
-	$(TOOLDIR)/bart reshape 7 256 1 64 x_noise x_noise2				;\
-	$(TOOLDIR)/bart join 15 x_noise2 x_noise2 x2 x2_ref				;\
-	$(TOOLDIR)/bart join 15 x_noise x_noise x x_p					;\
-	mpirun -n 4 --allow-run-as-root $(TOOLDIR)/bart -l 32768 -e 3 reshape 7 256 1 64 x_p x_p2		;\
-	$(TOOLDIR)/bart nrmse -t 0. x2_ref x_p2						;\
+	$(ROOTDIR)/bart phantom -s 6 x							;\
+	$(ROOTDIR)/bart noise x x_noise							;\
+	$(ROOTDIR)/bart reshape 7 256 1 64 x x2						;\
+	$(ROOTDIR)/bart reshape 7 256 1 64 x_noise x_noise2				;\
+	$(ROOTDIR)/bart join 15 x_noise2 x_noise2 x2 x2_ref				;\
+	$(ROOTDIR)/bart join 15 x_noise x_noise x x_p					;\
+	mpirun -n 4 --allow-run-as-root $(ROOTDIR)/bart -l 32768 -e 3 reshape 7 256 1 64 x_p x_p2		;\
+	$(ROOTDIR)/bart nrmse -t 0. x2_ref x_p2						;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

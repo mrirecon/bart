@@ -80,8 +80,8 @@ tests/test-pics-multigpu: bart copy pics repmat nrmse $(TESTS_OUT)/shepplogan_co
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/repmat 5 32 $(TESTS_OUT)/shepplogan_coil_ksp.ra kspaces		;\
 	$(TOOLDIR)/copy $(TESTS_OUT)/coils.ra coils					;\
-	$(TOOLDIR)/bart -l32 -r kspaces pics -g -r0.01 kspaces coils reco1		;\
-	$(TOOLDIR)/bart -p32 -r kspaces pics -g -r0.01 kspaces coils reco2		;\
+	$(ROOTDIR)/bart -l32 -r kspaces pics -g -r0.01 kspaces coils reco1		;\
+	$(ROOTDIR)/bart -p32 -r kspaces pics -g -r0.01 kspaces coils reco2		;\
 	$(TOOLDIR)/nrmse -t 0.00001 reco1 reco2						;\
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -89,13 +89,13 @@ tests/test-pics-multigpu: bart copy pics repmat nrmse $(TESTS_OUT)/shepplogan_co
 #threaded multigpu testing only for local use
 tests/test-pics-gpu-omp: bart nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)												;\
-	$(TOOLDIR)/bart scale 0.3 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra							;\
-	$(TOOLDIR)/bart pics    -S -r0.001 $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra reco1.ra					;\
-	$(TOOLDIR)/bart pics    -S -r0.001 shepplogan_coil_ksp_s.ra $(TESTS_OUT)/coils.ra reco2.ra						;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra coils						;\
-	$(TOOLDIR)/bart join 13 reco1.ra reco2.ra reco1.ra reco_ref.ra										;\
-	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -e 3 -p 2 pics -g -S -r0.001 ksp coils reco_p							;\
+	$(ROOTDIR)/bart scale 0.3 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra							;\
+	$(ROOTDIR)/bart pics    -S -r0.001 $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra reco1.ra					;\
+	$(ROOTDIR)/bart pics    -S -r0.001 shepplogan_coil_ksp_s.ra $(TESTS_OUT)/coils.ra reco2.ra						;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra coils						;\
+	$(ROOTDIR)/bart join 13 reco1.ra reco2.ra reco1.ra reco_ref.ra										;\
+	OMP_NUM_THREADS=2 $(ROOTDIR)/bart -l 8192 -e 3 -p 2 pics -g -S -r0.001 ksp coils reco_p							;\
 	$(TOOLDIR)/nrmse -t 0.000001 reco_ref.ra reco_p												;\
 	rm *.cfl ; rm *.hdr ; rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -103,28 +103,28 @@ tests/test-pics-gpu-omp: bart nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_
 #threaded multigpu testing only for local use
 tests/test-pics-gpu-noncart-weights-omp: bart traj scale ones phantom pics nrmse $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)										;\
-	$(TOOLDIR)/bart traj -r -x256 -y32 traj.ra										;\
-	$(TOOLDIR)/bart scale 0.5 traj.ra traj1.ra										;\
-	$(TOOLDIR)/bart traj -r -R 90 -x256 -y32 traj2.ra									;\
-	$(TOOLDIR)/bart scale 0.75 traj2.ra traj2.ra										;\
-	$(TOOLDIR)/bart phantom -s8 -t traj.ra ksp.ra										;\
-	$(TOOLDIR)/bart phantom -s8 -t traj1.ra ksp1.ra										;\
-	$(TOOLDIR)/bart phantom -s8 -t traj2.ra ksp2.ra										;\
-	$(TOOLDIR)/bart phantom -S8 coils.ra											;\
-	$(TOOLDIR)/bart scale 0.5 coils.ra coils1.ra										;\
-	$(TOOLDIR)/bart scale 0.75   coils.ra coils2.ra										;\
-	$(TOOLDIR)/bart ones 4 1 256 32 1 weights.ra										;\
-	$(TOOLDIR)/bart scale 0.5 weights.ra weights1.ra									;\
-	$(TOOLDIR)/bart scale 0.75 weights.ra weights2.ra									;\
-	$(TOOLDIR)/bart pics -S -r0.001 -p weights.ra -t traj.ra ksp.ra coils.ra reco1.ra					;\
-	$(TOOLDIR)/bart pics -S -r0.001 -p weights1.ra -t traj1.ra ksp1.ra coils1.ra reco2.ra					;\
-	$(TOOLDIR)/bart pics -S -r0.001 -p weights2.ra -t traj2.ra ksp2.ra coils2.ra reco3.ra					;\
-	$(TOOLDIR)/bart join 13 reco1.ra reco2.ra reco3.ra reco_ref.ra								;\
-	$(TOOLDIR)/bart join 13 traj.ra traj1.ra traj2.ra traj_p								;\
-	$(TOOLDIR)/bart join 13 ksp.ra ksp1.ra ksp2.ra ksp_p									;\
-	$(TOOLDIR)/bart join 13 weights.ra weights1.ra weights2.ra weights_p							;\
-	$(TOOLDIR)/bart join 13 coils.ra coils1.ra coils2.ra coils_p								;\
-	OMP_NUM_THREADS=2 $(TOOLDIR)/bart -l 8192 -e 3 -t 2 pics -g -S -r0.001 -p weights_p -t traj_p ksp_p coils_p reco_p	;\
+	$(ROOTDIR)/bart traj -r -x256 -y32 traj.ra										;\
+	$(ROOTDIR)/bart scale 0.5 traj.ra traj1.ra										;\
+	$(ROOTDIR)/bart traj -r -R 90 -x256 -y32 traj2.ra									;\
+	$(ROOTDIR)/bart scale 0.75 traj2.ra traj2.ra										;\
+	$(ROOTDIR)/bart phantom -s8 -t traj.ra ksp.ra										;\
+	$(ROOTDIR)/bart phantom -s8 -t traj1.ra ksp1.ra										;\
+	$(ROOTDIR)/bart phantom -s8 -t traj2.ra ksp2.ra										;\
+	$(ROOTDIR)/bart phantom -S8 coils.ra											;\
+	$(ROOTDIR)/bart scale 0.5 coils.ra coils1.ra										;\
+	$(ROOTDIR)/bart scale 0.75   coils.ra coils2.ra										;\
+	$(ROOTDIR)/bart ones 4 1 256 32 1 weights.ra										;\
+	$(ROOTDIR)/bart scale 0.5 weights.ra weights1.ra									;\
+	$(ROOTDIR)/bart scale 0.75 weights.ra weights2.ra									;\
+	$(ROOTDIR)/bart pics -S -r0.001 -p weights.ra -t traj.ra ksp.ra coils.ra reco1.ra					;\
+	$(ROOTDIR)/bart pics -S -r0.001 -p weights1.ra -t traj1.ra ksp1.ra coils1.ra reco2.ra					;\
+	$(ROOTDIR)/bart pics -S -r0.001 -p weights2.ra -t traj2.ra ksp2.ra coils2.ra reco3.ra					;\
+	$(ROOTDIR)/bart join 13 reco1.ra reco2.ra reco3.ra reco_ref.ra								;\
+	$(ROOTDIR)/bart join 13 traj.ra traj1.ra traj2.ra traj_p								;\
+	$(ROOTDIR)/bart join 13 ksp.ra ksp1.ra ksp2.ra ksp_p									;\
+	$(ROOTDIR)/bart join 13 weights.ra weights1.ra weights2.ra weights_p							;\
+	$(ROOTDIR)/bart join 13 coils.ra coils1.ra coils2.ra coils_p								;\
+	OMP_NUM_THREADS=2 $(ROOTDIR)/bart -l 8192 -e 3 -t 2 pics -g -S -r0.001 -p weights_p -t traj_p ksp_p coils_p reco_p	;\
 	$(TOOLDIR)/nrmse -t 0.010 reco_ref.ra reco_p										;\
 	rm *.cfl ; rm *.hdr ; rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -133,13 +133,13 @@ tests/test-pics-gpu-noncart-weights-omp: bart traj scale ones phantom pics nrmse
 #MPI multigpu testing only for local use
 tests/test-pics-gpu-mpi: bart nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)												;\
-	$(TOOLDIR)/bart scale 0.3 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra							;\
-	$(TOOLDIR)/bart pics    -S -r0.001 $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra reco1.ra					;\
-	$(TOOLDIR)/bart pics    -S -r0.001 shepplogan_coil_ksp_s.ra $(TESTS_OUT)/coils.ra reco2.ra						;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp		;\
-	$(TOOLDIR)/bart join 13 $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra coils						;\
-	$(TOOLDIR)/bart join 13 reco1.ra reco2.ra reco1.ra reco_ref.ra										;\
-	mpirun -n 2 $(TOOLDIR)/bart -l 8192 -e 3 pics -g -S -r0.001 ksp coils reco_p								;\
+	$(ROOTDIR)/bart scale 0.3 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra							;\
+	$(ROOTDIR)/bart pics    -S -r0.001 $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra reco1.ra					;\
+	$(ROOTDIR)/bart pics    -S -r0.001 shepplogan_coil_ksp_s.ra $(TESTS_OUT)/coils.ra reco2.ra						;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp		;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra coils						;\
+	$(ROOTDIR)/bart join 13 reco1.ra reco2.ra reco1.ra reco_ref.ra										;\
+	mpirun -n 2 $(ROOTDIR)/bart -l 8192 -e 3 pics -g -S -r0.001 ksp coils reco_p								;\
 	$(TOOLDIR)/nrmse -t 0.000001 reco_ref.ra reco_p												;\
 	rm *.cfl ; rm *.hdr ; rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -147,28 +147,28 @@ tests/test-pics-gpu-mpi: bart nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_
 #MPI multigpu testing only for local use
 tests/test-pics-gpu-noncart-weights-mpi: bart traj scale ones phantom pics nrmse $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)									;\
-	$(TOOLDIR)/bart traj -r -x256 -y32 traj.ra										;\
-	$(TOOLDIR)/bart scale 0.5 traj.ra traj1.ra										;\
-	$(TOOLDIR)/bart traj -r -R 90 -x256 -y32 traj2.ra									;\
-	$(TOOLDIR)/bart scale 0.75 traj2.ra traj2.ra										;\
-	$(TOOLDIR)/bart phantom -s8 -t traj.ra ksp.ra										;\
-	$(TOOLDIR)/bart phantom -s8 -t traj1.ra ksp1.ra										;\
-	$(TOOLDIR)/bart phantom -s8 -t traj2.ra ksp2.ra										;\
-	$(TOOLDIR)/bart phantom -S8 coils.ra											;\
-	$(TOOLDIR)/bart scale 0.5 coils.ra coils1.ra										;\
-	$(TOOLDIR)/bart scale 0.75   coils.ra coils2.ra										;\
-	$(TOOLDIR)/bart ones 4 1 256 32 1 weights.ra										;\
-	$(TOOLDIR)/bart scale 0.5 weights.ra weights1.ra									;\
-	$(TOOLDIR)/bart scale 0.75 weights.ra weights2.ra									;\
-	$(TOOLDIR)/bart pics -S -r0.001 -p weights.ra -t traj.ra ksp.ra coils.ra reco1.ra					;\
-	$(TOOLDIR)/bart pics -S -r0.001 -p weights1.ra -t traj1.ra ksp1.ra coils1.ra reco2.ra					;\
-	$(TOOLDIR)/bart pics -S -r0.001 -p weights2.ra -t traj2.ra ksp2.ra coils2.ra reco3.ra					;\
-	$(TOOLDIR)/bart join 13 reco1.ra reco2.ra reco3.ra reco_ref.ra								;\
-	$(TOOLDIR)/bart join 13 traj.ra traj1.ra traj2.ra traj_p								;\
-	$(TOOLDIR)/bart join 13 ksp.ra ksp1.ra ksp2.ra ksp_p									;\
-	$(TOOLDIR)/bart join 13 weights.ra weights1.ra weights2.ra weights_p							;\
-	$(TOOLDIR)/bart join 13 coils.ra coils1.ra coils2.ra coils_p								;\
-	mpirun -n 2 $(TOOLDIR)/bart -l 8192 -e 3 pics -g -S -r0.001 -p weights_p -t traj_p ksp_p coils_p reco_p			;\
+	$(ROOTDIR)/bart traj -r -x256 -y32 traj.ra										;\
+	$(ROOTDIR)/bart scale 0.5 traj.ra traj1.ra										;\
+	$(ROOTDIR)/bart traj -r -R 90 -x256 -y32 traj2.ra									;\
+	$(ROOTDIR)/bart scale 0.75 traj2.ra traj2.ra										;\
+	$(ROOTDIR)/bart phantom -s8 -t traj.ra ksp.ra										;\
+	$(ROOTDIR)/bart phantom -s8 -t traj1.ra ksp1.ra										;\
+	$(ROOTDIR)/bart phantom -s8 -t traj2.ra ksp2.ra										;\
+	$(ROOTDIR)/bart phantom -S8 coils.ra											;\
+	$(ROOTDIR)/bart scale 0.5 coils.ra coils1.ra										;\
+	$(ROOTDIR)/bart scale 0.75   coils.ra coils2.ra										;\
+	$(ROOTDIR)/bart ones 4 1 256 32 1 weights.ra										;\
+	$(ROOTDIR)/bart scale 0.5 weights.ra weights1.ra									;\
+	$(ROOTDIR)/bart scale 0.75 weights.ra weights2.ra									;\
+	$(ROOTDIR)/bart pics -S -r0.001 -p weights.ra -t traj.ra ksp.ra coils.ra reco1.ra					;\
+	$(ROOTDIR)/bart pics -S -r0.001 -p weights1.ra -t traj1.ra ksp1.ra coils1.ra reco2.ra					;\
+	$(ROOTDIR)/bart pics -S -r0.001 -p weights2.ra -t traj2.ra ksp2.ra coils2.ra reco3.ra					;\
+	$(ROOTDIR)/bart join 13 reco1.ra reco2.ra reco3.ra reco_ref.ra								;\
+	$(ROOTDIR)/bart join 13 traj.ra traj1.ra traj2.ra traj_p								;\
+	$(ROOTDIR)/bart join 13 ksp.ra ksp1.ra ksp2.ra ksp_p									;\
+	$(ROOTDIR)/bart join 13 weights.ra weights1.ra weights2.ra weights_p							;\
+	$(ROOTDIR)/bart join 13 coils.ra coils1.ra coils2.ra coils_p								;\
+	mpirun -n 2 $(ROOTDIR)/bart -l 8192 -e 3 pics -g -S -r0.001 -p weights_p -t traj_p ksp_p coils_p reco_p			;\
 	$(TOOLDIR)/nrmse -t 0.01 reco_ref.ra reco_p										;\
 	rm *.cfl ; rm *.hdr ; rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
