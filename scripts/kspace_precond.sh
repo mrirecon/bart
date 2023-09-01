@@ -56,6 +56,16 @@ if [ $# -lt 3 ] ; then
         exit 1
 fi
 
+if [ ! -e "$BART_TOOLBOX_PATH"/bart ] ; then
+	if [ -e "$TOOLBOX_PATH"/bart ] ; then
+		BART_TOOLBOX_PATH="$TOOLBOX_PATH"
+	else
+		echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
+		exit 1
+	fi
+fi
+export PATH="$BART_TOOLBOX_PATH:$PATH"
+
 ones=$(readlink -f "$1")
 traj=$(readlink -f "$2")
 prec=$(readlink -f "$3")

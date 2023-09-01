@@ -122,7 +122,7 @@ srcdir = $(root)/src
 libdir = $(root)/lib
 bindir = $(root)/bin
 
-export TOOLBOX_PATH=$(root)
+export BART_TOOLBOX_PATH=$(root)
 
 
 # Automatic dependency generation

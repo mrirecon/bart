@@ -173,7 +173,10 @@ int main_ecalib(int argc, char* argv[argc])
 
         if ((conf.var < 0.) && (conf.weighting || (conf.crop < 0.))) {
 
-		const char* toolbox = getenv("TOOLBOX_PATH");
+		const char* toolbox = getenv("BART_TOOLBOX_PATH");
+		// support old environment variable:
+		if (NULL == toolbox)
+			toolbox = getenv("TOOLBOX_PATH");
 
 		conf.var = estvar_calreg(toolbox, conf.kdims, cal_dims, cal_data);
 	}

@@ -338,11 +338,14 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const 
 	if (!use_fftw_wisdom)
 		return NULL;
 
-	char* tbpath = getenv("TOOLBOX_PATH");
+	const char* tbpath = getenv("BART_TOOLBOX_PATH");
+	// support old environment variable:
+	if (NULL == tbpath)
+		tbpath = getenv("TOOLBOX_PATH");
 
 	if (NULL == tbpath) {
 
-		debug_printf(DP_WARN, "FFTW wisdom only works with TOOLBOX_PATH set!\n");
+		debug_printf(DP_WARN, "FFTW wisdom only works with BART_TOOLBOX_PATH set!\n");
 		return NULL;
 	}
 

@@ -287,7 +287,8 @@ int main_bart(int argc, char* argv[argc])
 
 		const char* tpath[] = {
 #ifdef TOOLBOX_PATH_OVERRIDE
-			getenv("TOOLBOX_PATH"),
+			getenv("BART_TOOLBOX_PATH"),
+			getenv("TOOLBOX_PATH"), // support old environment variable
 #endif
 			"/usr/local/lib/bart/commands/",
 			"/usr/lib/bart/commands/",

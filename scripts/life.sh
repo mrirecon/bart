@@ -1,5 +1,14 @@
+#!/bin/bash
 
-
+if [ ! -e "$BART_TOOLBOX_PATH"/bart ] ; then
+	if [ -e "$TOOLBOX_PATH"/bart ] ; then
+		BART_TOOLBOX_PATH="$TOOLBOX_PATH"
+	else
+		echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
+		exit 1
+	fi
+fi
+export PATH="$BART_TOOLBOX_PATH:$PATH"
 
 
 #bart vec 0 0 1 0 v1

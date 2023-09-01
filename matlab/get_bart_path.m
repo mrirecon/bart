@@ -7,10 +7,12 @@ function [bart_path, isWSL] = get_bart_path()
 % 2022 Jon Tamir <jtamir.utexas.edu>
 
 	% Check bart toolbox path
-	bart_path = getenv('TOOLBOX_PATH');
+	bart_path = getenv('BART_TOOLBOX_PATH');
 	isWSL = false;
 	if isempty(bart_path)
-		if exist('/usr/local/bin/bart', 'file')
+		if ~isempty(getenv('TOOLBOX_PATH'))
+			bart_path = getenv('TOOLBOX_PATH');
+		elseif exist('/usr/local/bin/bart', 'file')
 			bart_path = '/usr/local/bin';
 		elseif exist('/usr/bin/bart', 'file')
 			bart_path = '/usr/bin';

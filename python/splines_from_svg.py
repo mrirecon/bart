@@ -20,7 +20,12 @@ import numpy as np
 import argparse
 
 import sys
-sys.path.insert(0, os.path.join(os.environ['TOOLBOX_PATH'], 'python'))
+if 'BART_TOOLBOX_PATH' in os.environ and os.path.exists(os.environ['BART_TOOLBOX_PATH']):
+    sys.path.insert(0, os.path.join(os.environ['BART_TOOLBOX_PATH'], 'python'))
+elif 'TOOLBOX_PATH' in os.environ and os.path.exists(os.environ['TOOLBOX_PATH']):
+    sys.path.insert(0, os.path.join(os.environ['TOOLBOX_PATH'], 'python'))
+else:
+    raise RuntimeError("BART_TOOLBOX_PATH is not set correctly!")
 import cfl
 
 DBLEVEL = 0
@@ -443,11 +448,14 @@ if __name__ == "__main__":
 
 	args = parser.parse_args()
 
-	if ("DEBUG_LEVEL" in os.environ):
+	if ("BART_DEBUG_LEVEL" in os.environ):
 
 		if (-1 != args.db):
-			print("A local DEBUG_LEVEL variable exists! It will be overwritten by -d input!\n")
+			print("A local BART_DEBUG_LEVEL variable exists! It will be overwritten by -d input!\n")
 
+		DBLEVEL = int(os.environ["BART_DEBUG_LEVEL"])
+
+	elif ("DEBUG_LEVEL" in os.environ):
 		DBLEVEL = int(os.environ["DEBUG_LEVEL"])
 
 	if (-1 != args.db):

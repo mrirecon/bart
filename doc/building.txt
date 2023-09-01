@@ -45,7 +45,7 @@ All BART commands can be built with:
 	make all
 
 
-Attention: If the TOOLBOX_PATH is set, the 'bart' tool will call
+Attention: If the BART_TOOLBOX_PATH is set, the 'bart' tool will call
 the standalone tool and not the built-in tool. This can be used
 to selectively update individual tools, but can also cause
 confusion.

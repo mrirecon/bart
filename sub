@@ -1,10 +1,14 @@
 #!/bin/bash
 set -e
 
-if [ ! -f ${TOOLBOX_PATH}/bart ] ; then
+if [ ! -f ${BART_TOOLBOX_PATH}/bart ] ; then
 
-	echo "\$TOOLBOX_PATH is not set correctly!"
-	exit 1
+	if [ -f ${TOOLBOX_PATH}/bart ] ; then
+		BART_TOOLBOX_PATH=${TOOLBOX_PATH}
+	else
+		echo "\$BART_TOOLBOX_PATH is not set correctly!"
+		exit 1
+	fi
 fi
 
 if [ $# -lt 3 ] ; then
@@ -13,5 +17,5 @@ if [ $# -lt 3 ] ; then
 	exit 1
 fi
 
-${TOOLBOX_PATH}/bart saxpy -- -1. $1 $2 $3
+${BART_TOOLBOX_PATH}/bart saxpy -- -1. $1 $2 $3
 

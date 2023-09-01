@@ -45,9 +45,13 @@ if [ ! -e $input ] ; then
         exit 1
 fi
 
-if [ ! -e $TOOLBOX_PATH/bart ] ; then
-        echo "\$TOOLBOX_PATH is not set correctly!" >&2
-        exit 1
+if [ ! -e "$BART_TOOLBOX_PATH"/bart ] ; then
+	if [ -e "$TOOLBOX_PATH"/bart ] ; then
+		BART_TOOLBOX_PATH="$TOOLBOX_PATH"
+	else
+		echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
+		exit 1
+	fi
 fi
 
 #WORKDIR=$(mktemp -d)
@@ -57,7 +61,7 @@ trap 'rm -rf "$WORKDIR"' EXIT
 cd $WORKDIR
 
 
-nm --defined-only $TOOLBOX_PATH/bart | cut -c11-16,19- | sort > bart.syms
+nm --defined-only "$BART_TOOLBOX_PATH"/bart | cut -c11-16,19- | sort > bart.syms
 
 
 cat $in	| grep "^TRACE" \

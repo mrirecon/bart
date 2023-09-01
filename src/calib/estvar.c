@@ -171,7 +171,7 @@ static void nsv(const char* toolbox, const long kernel_dims[3], const long calre
 		return;
 
 	debug_printf(DP_DEBUG1, "NOTE: Running simulations to figure out noise singular values.\n");
-	debug_printf(DP_DEBUG1, "      The simulation results are saved if TOOLBOX_PATH is set.\n");
+	debug_printf(DP_DEBUG1, "      The simulation results are saved if BART_TOOLBOX_PATH is set.\n");
 
 	long N = kernel_dims[0] * kernel_dims[1] * kernel_dims[2] * calreg_dims[3]; 
 

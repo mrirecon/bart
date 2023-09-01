@@ -112,7 +112,10 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 {
 	if (-1 == debug_level) {
 
-		char* str = getenv("DEBUG_LEVEL");
+		char* str = getenv("BART_DEBUG_LEVEL");
+		// support old environment variable:
+		if (NULL == str)
+			str = getenv("DEBUG_LEVEL");
 		debug_level = (NULL != str) ? atoi(str) : DP_INFO;
 	}
 

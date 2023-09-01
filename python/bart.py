@@ -19,9 +19,16 @@ def bart(nargout, cmd, *args, **kwargs):
         return
 
     try:
-        bart_path = os.environ['TOOLBOX_PATH']
+        bart_path = os.environ['BART_TOOLBOX_PATH']
     except:
         bart_path = None
+    # support old environment variable:
+    if bart_path is None:
+        try:
+            bart_path = os.environ['TOOLBOX_PATH']
+        except:
+            bart_path = None
+
     isWSL = False
 
     if not bart_path:
@@ -35,7 +42,7 @@ def bart(nargout, cmd, *args, **kwargs):
                 bart_path = '/usr/bin'
                 isWSL = True
             else:
-                raise Exception('Environment variable TOOLBOX_PATH is not set.')
+                raise Exception('Environment variable BART_TOOLBOX_PATH is not set.')
 
     name = tmp.NamedTemporaryFile().name
 

@@ -27,7 +27,9 @@ void vendor_log(int level,
      //       between debugging level, as well as properly forwarding location
      //       information to the logging backend
      if (-1 == debug_level) {
-	  char* str = getenv("DEBUG_LEVEL");
+	  char* str = getenv("BART_DEBUG_LEVEL");
+	  if (NULL == str)
+		str = getenv("DEBUG_LEVEL");
 	  debug_level = (NULL != str) ? atoi(str) : DP_INFO;
      }
 

@@ -86,12 +86,15 @@ if [ $# != 1 ] ; then
 fi
 
 
-export PATH=$TOOLBOX_PATH:$PATH
-
-if [ ! -e $TOOLBOX_PATH/bart ] ; then
-        echo "\$TOOLBOX_PATH is not set correctly!" >&2
-	exit 1
+if [ ! -e "$BART_TOOLBOX_PATH"/bart ] ; then
+	if [ -e "$TOOLBOX_PATH"/bart ] ; then
+		BART_TOOLBOX_PATH="$TOOLBOX_PATH"
+	else
+		echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
+		exit 1
+	fi
 fi
+export PATH="$BART_TOOLBOX_PATH:$PATH"
 
 
 output=$(readlink -f "$1")

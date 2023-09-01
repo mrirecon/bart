@@ -238,7 +238,7 @@ build the ISMRM raw data import tool:
 ### 2.3.2. Terminal
 
 When using the toolbox commands from a UNIX shell, it is recommended
-to set the TOOLBOX_PATH to the base directory and to add it to
+to set the BART_TOOLBOX_PATH to the base directory and to add it to
 the PATH variable. You can do this by running the following command:
 
     $ . startup.sh
@@ -249,7 +249,7 @@ are imported into the current shell.
 
 ### 2.3.3. Matlab
 
-You can set the TOOLBOX_PATH to the base directory and to add it
+You can set the BART_TOOLBOX_PATH to the base directory and to add it
 to the Matlab path by running the following command in the
 bart directory:
 
@@ -289,16 +289,16 @@ with Matlab. Go to the examples directory and run:
 
 ### 2.3.4. Python
 
-You can set the TOOLBOX_PATH to the base directory and start a
+You can set the BART_TOOLBOX_PATH to the base directory and start a
 Python interactively as follows:
 
     $ python3 -i startup.py
 
 To avoid doing the above everytime, it is recommended to update your
 PYTHONPATH environment. For example, in Linux, assuming your 
-TOOLBOX_PATH is set, add the below line to your bashrc file.
+BART_TOOLBOX_PATH is set, add the below line to your bashrc file.
 
-    $ export PYTHONPATH="${TOOLBOX_PATH}/python:$PYTHONPATH"
+    $ export PYTHONPATH="${BART_TOOLBOX_PATH}/python:$PYTHONPATH"
 
 After doing so, we can simply import as needed.
 
@@ -437,7 +437,7 @@ to recompile BART:
     $ make
 
 
-Make sure the PATH and TOOLBOX_PATH environment variables
+Make sure the PATH and BART_TOOLBOX_PATH environment variables
 are set correctly. Sometimes, several versions of BART
 are installed and the wrong version is used accidentally.
 
