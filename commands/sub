@@ -13,7 +13,8 @@ fi
 
 if [ $# -lt 3 ] ; then
 
-	echo "Usage: $0 <input1> <input2> <output>"
+	echo "Usage: $0 <input1> <input2> <output>" >&2
+	echo "Subtract <input1> from <input2> and save in <output>" >&2
 	exit 1
 fi
 
