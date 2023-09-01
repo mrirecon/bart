@@ -19,6 +19,7 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
+#include "misc/cppmap.h"
 
 #ifndef DIMS
 #define DIMS 16
