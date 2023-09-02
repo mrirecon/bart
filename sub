@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [ ! -f ${TOOLBOX_PATH}/$(basename $0) ] ; then
+if [ ! -f ${TOOLBOX_PATH}/bart ] ; then
 
 	echo "\$TOOLBOX_PATH is not set correctly!"
 	exit 1
