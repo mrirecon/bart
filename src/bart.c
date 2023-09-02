@@ -52,6 +52,8 @@
 
 #include "main.h"
 
+// also check in commands/ subdir at the bart exe location
+#define CHECK_EXE_COMMANDS
 
 #ifndef DIMS
 #define DIMS 16
@@ -92,14 +94,14 @@ struct {
 	{ NULL, NULL }
 };
 
-static int find_command_index(int argc, char* argv[argc])
+static int find_builtin_command_index(int argc, char* argv[argc])
 {
-	for (int i = 1; i < argc; ++i)
+	for (int i = 0; i < argc; ++i)
 		for (int c = 0; NULL != dispatch_table[c].name; c++)
 			if (0 == strcmp(argv[i], dispatch_table[c].name))
 				return i;
 
-	return argc;
+	return -1;
 }
 
 static const char help_str[] = "BART. command line flags";
@@ -137,14 +139,8 @@ static int bart_exit(int err_no, const char* exit_msg)
 }
 
 
-static int parse_bart_opts(int argc, char* argv[argc])
+static void parse_bart_opts(int command_arg, int argc, char* argv[argc])
 {
-	int command_arg = find_command_index(argc, argv);
-	int offset = command_arg;
-
-	if (1 == offset)
-		return offset;
-
 	int omp_threads = 1;		
 	unsigned long flags = 0;
 	unsigned long pflags = 0;
@@ -198,10 +194,10 @@ static int parse_bart_opts(int argc, char* argv[argc])
 	for(; nend < DIMS && -1 != param_end[nend]; nend++);
 
 	if (0 != nstart && bitcount(flags) != nstart)
-		error("Size of start values does not coincide with number of selected flags!");
+		error("Size of start values does not coincide with number of selected flags!\n");
 	
 	if (0 != nend && bitcount(flags) != nend)
-		error("Size of start values does not coincide with number of selected flags!");
+		error("Size of start values does not coincide with number of selected flags!\n");
 		
 	if (0 == nstart)
 		for (int i = 0; i < bitcount(flags); i++)
@@ -241,8 +237,6 @@ static int parse_bart_opts(int argc, char* argv[argc])
 		omp_threads = 1;
 
 	init_cfl_loop_desc(DIMS, loop_dims, offs_size, flags, omp_threads, 0);
-
-	return offset;
 }
 
 
@@ -273,111 +267,154 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 
 int main_bart(int argc, char* argv[argc])
 {
-	char* bn = basename(argv[0]);
+
+
+	if (1 == argc) {
+
+		usage();
+		return 1;
+	}
 
 	init_mpi(&argc, &argv);
-	
-	if (0 == strcmp(bn, "bart") || 0 == strcmp(bn, "bart.exe")) {
 
-		if (1 == argc) {
+	int builtin_command_arg = find_builtin_command_index(argc, argv);
 
-			usage();
-			return 1;
+	if (-1 != builtin_command_arg) {
+		// found builtin
+		debug_printf(DP_DEBUG3, "Builtin found.\n");
+
+		char* bn = basename(argv[builtin_command_arg]);
+		if (1 != builtin_command_arg)
+			parse_bart_opts(builtin_command_arg, argc, argv);
+
+		main_fun_t* dispatch_func = NULL;
+
+		for (int i = 0; NULL != dispatch_table[i].name; i++)
+			if (0 == strcmp(bn, dispatch_table[i].name))
+				dispatch_func = dispatch_table[i].main_fun;
+
+		unsigned int v[5];
+		version_parse(v, bart_version);
+
+		if (0 != v[4])
+			debug_printf(DP_WARN, "BART version %s is not reproducible.\n", bart_version);
+
+		if (NULL == dispatch_func) {
+
+			fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
+			return bart_exit(-1, NULL);
 		}
 
+		int final_ret = 0;
+
+		#pragma omp parallel num_threads(cfl_loop_num_workers()) if(cfl_loop_omp())
+		{
+			long start = cfl_loop_worker_id();
+			long total = cfl_loop_desc_total();
+			long workers = cfl_loop_num_workers();
+
+			for (long i = start; ((i < total) && (0 == final_ret)); i += workers) {
+
+				int ret = batch_wrapper(dispatch_func, argc - builtin_command_arg, argv + builtin_command_arg, i);
+
+				if (0 != ret) {
+
+					#pragma omp critical (main_end_condition)
+					final_ret = ret;
+					bart_exit(ret, "Tool exited with error");
+				}
+			}
+		}
+
+		deinit_mpi();
+		bart_exit_cleanup();
+
+		return final_ret;
+
+
+
+	} else {
+		// could not find any builtin
+		// try to find something in commands
+
+		debug_printf(DP_DEBUG3, "No builtin found.\n");
+
+#ifdef CHECK_EXE_COMMANDS
+		// also check PATH_TO_BART/../commands/:
+		char exe_loc[1024] = {0};
+		ssize_t exe_loc_size = ARRAY_SIZE(exe_loc);
+		ssize_t rl = readlink("/proc/self/exe", exe_loc, exe_loc_size);
+
+		char* exe_dir = NULL;
+
+		if ((-1 != rl) && (exe_loc_size != rl)) {
+
+			// readlink returned without error and did not truncate
+			exe_dir = dirname(exe_loc);
+			// no need to check for NULL, as in that case, we skip it in the loop below
+		}
+#endif
+
+
 		const char* tpath[] = {
-#ifdef TOOLBOX_PATH_OVERRIDE
+#ifdef CHECK_EXE_COMMANDS
+			exe_dir,
+#endif
 			getenv("BART_TOOLBOX_PATH"),
 			getenv("TOOLBOX_PATH"), // support old environment variable
-#endif
-			"/usr/local/lib/bart/commands/",
-			"/usr/lib/bart/commands/",
+			"/usr/local/lib/bart/",
+			"/usr/lib/bart/",
 		};
+
+		// skip over "bart" or "bart.exe"
+		int offset = 0;
+		char* bn = basename(argv[0]);
+
+		// only skip over initial bart or bart.exe. calling "bart bart" is an error.
+		if (0 == strcmp(bn, "bart") || 0 == strcmp(bn, "bart.exe"))
+			offset = 1;
+
+		bn = basename(argv[offset]);
 
 		for (int i = 0; i < (int)ARRAY_SIZE(tpath); i++) {
 
 			if (NULL == tpath[i])
 				continue;
 
-			size_t len = strlen(tpath[i]) + strlen(argv[1]) + 2;
+			size_t len = strlen(tpath[i]) + strlen(argv[offset]) + 10 + 1; // extra space for /commands/ and null-terminator
 
 			char (*cmd)[len] = xmalloc(sizeof *cmd);
 
-			int r = snprintf(*cmd, len, "%s/%s", tpath[i], argv[1]);
+			int r = snprintf(*cmd, len, "%s/commands/%s", tpath[i], argv[offset]);
 
 			if (r >= (int)len) {
 
-				error("Commandline too long");
-				bart_exit(1, NULL);
+				error("Commandline too long\n");
+				// return bart_exit(1, NULL); // not needed, error calls abort()
 			}
 
-			if (-1 == execv(*cmd, argv + 1)) {
+			debug_printf(DP_DEBUG3, "Trying: %s\n", cmd);
 
-				// only if it doesn't exist - try builtin
+			if (-1 == execv(*cmd, argv + offset)) {
 
 				if (ENOENT != errno) {
 
-					perror("Executing bart command failed");
-					return bart_exit(1, NULL);
+					error("Executing bart command failed\n");
+					// return bart_exit(1, NULL); // not needed, error calls abort()
 				}
 
 			} else {
 
-				assert(0);
+				assert(0); // unreachable
 			}
 
 			xfree(cmd);
+
 		}
-
-		int offset = parse_bart_opts(argc, argv);
-		
-		return main_bart(argc - offset, argv + offset);
-	}
-	
-	main_fun_t* dispatch_func = NULL;
-
-	for (int i = 0; NULL != dispatch_table[i].name; i++)
-		if (0 == strcmp(bn, dispatch_table[i].name))
-			dispatch_func = dispatch_table[i].main_fun;
-
-	unsigned int v[5];
-	version_parse(v, bart_version);
-
-	if (0 != v[4])
-		debug_printf(DP_WARN, "BART version %s is not reproducible.\n", bart_version);
-
-	if (NULL == dispatch_func) {
 
 		fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
 		return bart_exit(-1, NULL);
 	}
-	
-	
-	int final_ret = 0;
-	
-#pragma omp parallel num_threads(cfl_loop_num_workers()) if(cfl_loop_omp())
-	{
-		long start = cfl_loop_worker_id();
-		long total = cfl_loop_desc_total();
-		long workers = cfl_loop_num_workers();
-
-		for (long i = start; ((i < total) && (0 == final_ret)); i += workers) {
-
-			int ret = batch_wrapper(dispatch_func, argc, argv, i);
-
-			if (0 != ret) {
-
-#pragma omp critical (main_end_condition)
-				final_ret = ret;
-				bart_exit(ret, "Tool exited with error");
-			}
-		}
-	}
-
-	deinit_mpi();
-	bart_exit_cleanup();
-
-	return final_ret;
 }
 
 
