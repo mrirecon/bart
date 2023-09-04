@@ -176,11 +176,9 @@ Unit_Test_UBSan:
 
 Unit_Test_GPU:
   stage: test1
-  script: |
-    if nvidia-smi ; then AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest_gpu
-    else
-      printf "No usable GPU found, skipping GPU tests!\n"
-    fi
+  script:
+    - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
+    - AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest_gpu
   needs: [Build_GPU]
   dependencies:
     - Build_GPU
@@ -229,11 +227,9 @@ Integration_Test_Python:
 
 Integration_Test_GPU:
   stage: test2
-  script: |
-    if nvidia-smi ; then AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make gputest
-    else
-      printf "No usable GPU found, skipping GPU tests!\n"
-    fi
+  script:
+    - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
+    - AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make gputest
   needs: [Build_GPU]
   dependencies:
     - Build_GPU
