@@ -390,7 +390,7 @@ int main_bart(int argc, char* argv[argc])
 			if (r >= (int)len) {
 
 				error("Commandline too long\n");
-				// return bart_exit(1, NULL); // not needed, error calls abort()
+				return bart_exit(1, NULL); // not really needed, error calls abort()
 			}
 
 			debug_printf(DP_DEBUG3, "Trying: %s\n", cmd);
@@ -400,7 +400,7 @@ int main_bart(int argc, char* argv[argc])
 				if (ENOENT != errno) {
 
 					error("Executing bart command failed\n");
-					// return bart_exit(1, NULL); // not needed, error calls abort()
+					return bart_exit(1, NULL); // not really needed, error calls abort()
 				}
 
 			} else {
