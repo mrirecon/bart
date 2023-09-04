@@ -72,8 +72,7 @@ Build_GPU:
     paths:
       - bart
       - ./lib/
-#      - ./commands/
-#      not uploading commands, as they are too large for gitlab
+      - ./commands/
     expire_in: 45 minutes
 
 Build_MPI:
@@ -94,6 +93,7 @@ Build_LTO:
   artifacts:
     paths:
       - bart
+      - ./lib/
     expire_in: 45 minutes
 
 
@@ -122,8 +122,7 @@ Build_Tensorflow:
     paths:
       - bart
       - ./lib/
-#      - ./commands/
-#      not uploading commands, as they are too large for gitlab
+      - ./commands/
     expire_in: 45 minutes
 
 Build_Debug_Dwarf:
