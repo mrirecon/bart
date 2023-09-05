@@ -159,7 +159,7 @@ tests/test-pics-pics: traj scale phantom pics nrmse $(TESTS_OUT)/shepplogan.ra $
 
 
 # test that weights =0.5 have no effect
-tests/test-pics-weights: pics ones nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
+tests/test-pics-weights: pics scale ones nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/ones 2 128 128 weights.ra						;\
 	$(TOOLDIR)/scale 0.5 weights.ra	weights2.ra					;\
@@ -186,7 +186,7 @@ tests/test-pics-noncart-weights: traj scale ones phantom pics nrmse $(TESTS_OUT)
 	touch $@
 
 
-tests/test-pics-warmstart: pics scale nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
+tests/test-pics-warmstart: pics ones nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
 	$(TOOLDIR)/pics -i0 -Wo.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra reco.ra	;\
@@ -244,7 +244,7 @@ tests/test-pics-basis-noncart: traj scale phantom delta fmac ones repmat pics sl
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-pics-basis-noncart2: traj scale phantom delta fmac ones repmat pics slice nrmse bitmask
+tests/test-pics-basis-noncart2: traj scale phantom delta fmac ones repmat pics nufft nrmse bitmask
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -r -x256 -D -y31 traj.ra					;\
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
@@ -705,6 +705,6 @@ TESTS_SLOW += tests/test-pics-cart-mpi tests/test-pics-non-cart-mpi tests/test-p
 endif
 
 ifeq ($(OMP),1)
-TEST_SLOW += tests/test-pics-cart-loop_range-omp
+TESTS_SLOW += tests/test-pics-cart-loop_range-omp
 endif
 

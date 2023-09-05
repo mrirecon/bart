@@ -418,7 +418,7 @@ tests/test-moba-bloch-irbssfp-traj: traj repmat phantom signal fmac index moba s
 	touch $@
 
 
-tests/test-moba-bloch-irbssfp-traj-input-b1: traj repmat phantom signal fmac index moba spow slice scale resize nrmse
+tests/test-moba-bloch-irbssfp-traj-input-b1: traj repmat phantom signal fmac index ones moba spow slice scale resize nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/traj -x16 -y16 _traj.ra			;\
 	$(TOOLDIR)/repmat 5 1000 _traj.ra traj2.ra	;\
@@ -443,7 +443,7 @@ tests/test-moba-bloch-irbssfp-traj-input-b1: traj repmat phantom signal fmac ind
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-moba-bloch-irbssfp-traj-input-b0: traj repmat phantom sim fmac index moba spow slice scale resize nrmse
+tests/test-moba-bloch-irbssfp-traj-input-b0: traj repmat ones phantom sim fmac index moba spow slice scale resize nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/traj -x16 -y16 _traj.ra			;\
 	$(TOOLDIR)/repmat 5 1000 _traj.ra traj2.ra	;\
@@ -468,7 +468,7 @@ tests/test-moba-bloch-irbssfp-traj-input-b0: traj repmat phantom sim fmac index 
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-moba-bloch-irbssfp-traj-input-b0-sym: traj repmat phantom sim fmac index moba spow slice scale resize nrmse
+tests/test-moba-bloch-irbssfp-traj-input-b0-sym: traj repmat ones phantom sim fmac index moba spow slice scale resize nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/traj -x16 -y16 _traj.ra			;\
 	$(TOOLDIR)/repmat 5 1000 _traj.ra traj2.ra	;\
