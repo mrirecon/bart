@@ -35,7 +35,7 @@ typedef bool ut_test_f(void);
 #else
 #define UT_REGISTER_TEST(x) 				\
 	extern bool call_ ## x(void);			\
-	extern bool call_ ## x(void) { return x(); };
+	extern bool call_ ## x(void) { bool r = x(); if (!r) debug_printf(DP_ERROR, "%s failed\n", #x); return r; };
 #endif
 
 #define UT_GPU_REGISTER_TEST(x) UT_REGISTER_TEST(x)
