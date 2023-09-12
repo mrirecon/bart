@@ -47,13 +47,9 @@ void optimal_combine(const long dims[DIMS], float alpha, complex float* image, c
 	linop_adjoint(sense_data, DIMS, dims_img, image, DIMS, dims_cim, data);
 	linop_free(sense_data);
 
-	complex float* norm = md_alloc(DIMS, dims_img, CFL_SIZE);
-	md_zrss(DIMS, dims, COIL_FLAG, norm, sens);
-	
-	long imsize = md_calc_size(DIMS, dims_img);
-
-	for (unsigned int i = 0; i < imsize; i++)
-		image[i] /= (powf(cabsf(norm[i]), 2.) + alpha);
+	complex float* norm = md_alloc_sameplace(DIMS, dims_img, CFL_SIZE, data);
+	md_zss(DIMS, dims, COIL_FLAG, norm, sens);
+	md_zdiv_reg(DIMS, dims_img, image, image, norm, alpha);
 
 	md_free(norm);	
 }
@@ -98,7 +94,7 @@ extern float estimate_scaling_cal(const long dims[DIMS], const complex float* se
 
 	long imsize = md_calc_size(DIMS, img_dims);
 
-	complex float* tmp1 = md_alloc(DIMS, img_dims, CFL_SIZE);
+	complex float* tmp1 = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, cal_data);
 
 	float rescale = sqrtf((float)dims[0] / (float)cal_dims[0])
 			* sqrtf((float)dims[1] / (float)cal_dims[1])
@@ -113,9 +109,13 @@ extern float estimate_scaling_cal(const long dims[DIMS], const complex float* se
 		optimal_combine(cal_dims, 0., tmp1, sens, cal_data);
 	}
 
-	float scale = estimate_scaling_norm(rescale, imsize, tmp1, compat);
+	complex float* tmp = md_alloc(DIMS, img_dims, CFL_SIZE);
+	md_copy(DIMS, img_dims, tmp, tmp1, CFL_SIZE);
+
+	float scale = estimate_scaling_norm(rescale, imsize, tmp, compat);
 
 	md_free(tmp1);
+	md_free(tmp);
 
 	return scale;
 }

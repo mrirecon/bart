@@ -112,7 +112,7 @@ void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], co
 
 	md_select_dims(DIMS, ~COIL_FLAG, pat_dims, in_dims);
 	
-	complex float* pattern = md_alloc(DIMS, pat_dims, CFL_SIZE);
+	complex float* pattern = md_alloc_sameplace(DIMS, pat_dims, CFL_SIZE, in_data);
 	estimate_pattern(DIMS, in_dims, COIL_FLAG, pattern, in_data);
 
 	for (int i = 0; i < DIMS; i++)
@@ -192,7 +192,7 @@ complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const l
 		tmp_pos[i] = (in_dims[i] - tmp_dims[i]) / 2.; // what about odd sizes?
 	}
 
-	complex float* tmp_data = md_alloc(DIMS, tmp_dims, CFL_SIZE);
+	complex float* tmp_data = md_alloc_sameplace(DIMS, tmp_dims, CFL_SIZE, in_data);
 
 	md_calc_strides(DIMS, tmp_strs, tmp_dims, CFL_SIZE);
 
@@ -215,7 +215,7 @@ complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const l
 	debug_printf(DP_DEBUG1, "Calibration region...  (size: %ldx%ldx%ld, pos: %ldx%ldx%ld)\n", 
 				caldims[0], caldims[1], caldims[2], calpos[0] + tmp_pos[0], calpos[1] + tmp_pos[1], calpos[2] + tmp_pos[2]);
 
-	complex float* cal_data = md_alloc(DIMS, caldims, CFL_SIZE);
+	complex float* cal_data = md_alloc_sameplace(DIMS, caldims, CFL_SIZE, tmp_data);
 
 	md_copy_block(DIMS, calpos, caldims, cal_data, tmp_dims, tmp_data, CFL_SIZE);
 	md_free(tmp_data);
