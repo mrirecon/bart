@@ -1409,7 +1409,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 			}
 
 			// FIXME:
-			char post_string[20 * NI];
+			char post_string[20 * (NI?:1)];
 			sprintf(post_string, " ");
 
 			for (int i = 0; i < NI; i++)

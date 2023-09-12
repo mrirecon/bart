@@ -43,7 +43,7 @@ static bool test_gaussian_pdf(void)
 		}
 	}
 
-	if (fabsf(1. - sum / 4.) > 1.E-3)
+	if (fabsf(1.f - sum / 4.f) > 1.E-3)
 		return false;
 
 	return true;	
