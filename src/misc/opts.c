@@ -570,36 +570,8 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 		int longindex = -1;
 
 		while (-1 != (c = ya_getopt_long(argc, argv, optstr, longopts, &longindex))) {
-	//while (-1 != (c = ya_getopt(argc, argv, optstr))) {
-#if 0
-		if ('h' == c) {
 
-			print_usage(stdout, argv[0], usage_str, n, opts);
-			print_help(help_str, n, opts);
-			exit(0);
-		}
-
-		for (int i = 0; i < n; i++) {
-
-			if (opts[i].c == c) {
-
-				if (opts[i].conv(opts[i].ptr, c, optarg)) {
-
-					print_usage(stderr, argv[0], usage_str, n, opts);
-					error("cmdline: failed to convert value\n");
-				}
-
-				goto out;
-			}
-		}
-
-		print_usage(stderr, argv[0], usage_str, n, opts);
-		exit(1);
-
-	out:	continue;
-#else
 			process_option(c, optarg, argv[0], usage_str, help_str, n, wopts, m, args);
-#endif
 		}
 
 		if (   (argc - optind < min_args)
