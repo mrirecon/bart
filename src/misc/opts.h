@@ -171,6 +171,11 @@ struct arg_s {
 #define TUPLE_LONG(ptr, argname)			(struct arg_single_s){ OPT_LONG, sizeof(long), TYPE_CHECK(long**, ptr), argname }
 #define TUPLE_ULONG(ptr, argname)			(struct arg_single_s){ OPT_ULONG, sizeof(unsigned long), TYPE_CHECK(unsigned long**, ptr), argname }
 
+
+
+typedef struct _IO_FILE FILE;
+extern void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[n]);
+extern int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n], int m, struct arg_s args[m], bool stop_at_nonopt);
 extern void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
 extern void opt_free_strdup(void);
 

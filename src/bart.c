@@ -13,6 +13,7 @@
 #include <libgen.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include "win/fmemopen.h"
@@ -94,21 +95,10 @@ struct {
 	{ NULL, NULL }
 };
 
-static int find_builtin_command_index(int argc, char* argv[argc])
-{
-	for (int i = 0; i < argc; ++i)
-		for (int c = 0; NULL != dispatch_table[c].name; c++)
-			if (0 == strcmp(argv[i], dispatch_table[c].name))
-				return i;
-
-	return -1;
-}
-
 static const char help_str[] = "BART. command line flags";
 
 static void usage(void)
 {
-	printf("Usage: bart [-p flags] [-s start1:start2:...startN] [-e end1:end2:...endN] [-t nthreads] <command> args...\n");
 	printf("BART. Available commands are:");
 
 	for (int i = 0; NULL != dispatch_table[i].name; i++) {
@@ -139,7 +129,7 @@ static int bart_exit(int err_no, const char* exit_msg)
 }
 
 
-static void parse_bart_opts(int command_arg, int argc, char* argv[argc])
+static bool parse_bart_opts(int* argcp, char*** argvp)
 {
 	int omp_threads = 1;		
 	unsigned long flags = 0;
@@ -160,8 +150,19 @@ static void parse_bart_opts(int command_arg, int argc, char* argv[argc])
 		OPTL_INFILE('r', "ref-file", &ref_file, "<file>", "Obtain loop size from reference file"),
  	};
 
-	cmdline(&command_arg, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+	int next_arg = options(argcp, *argvp, "", help_str, ARRAY_SIZE(opts), opts, ARRAY_SIZE(args), args, true);
 
+	if (1 == *argcp) {
+		// bart was called without any options
+
+		print_usage(stdout, (*argvp)[0], "...", ARRAY_SIZE(opts), opts);
+		usage();
+
+		return true;
+	}
+
+	*argcp -= next_arg;
+	*argvp += next_arg;
 
 	if (0 != flags && 0 != pflags && flags != pflags)
 		error("Inconsistent use of -p and -l!\n");
@@ -184,7 +185,6 @@ static void parse_bart_opts(int command_arg, int argc, char* argv[argc])
 				param_end[ip++] = ref_dims[i];
 	}
 
-	XFREE(command_line);
 	opt_free_strdup();
 
 	int nstart = 0;
@@ -237,6 +237,7 @@ static void parse_bart_opts(int command_arg, int argc, char* argv[argc])
 		omp_threads = 1;
 
 	init_cfl_loop_desc(DIMS, loop_dims, offs_size, flags, omp_threads, 0);
+	return false;
 }
 
 
@@ -268,30 +269,25 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 int main_bart(int argc, char* argv[argc])
 {
 
-
-	if (1 == argc) {
-
-		usage();
-		return 1;
-	}
-
 	init_mpi(&argc, &argv);
 
-	int builtin_command_arg = find_builtin_command_index(argc, argv);
+	// This advances argv to behind the bart options
+	bool no_arguments = parse_bart_opts(&argc, &argv);
+	if (no_arguments)
+		return 1;
 
-	if (-1 != builtin_command_arg) {
-		// found builtin
-		debug_printf(DP_DEBUG3, "Builtin found.\n");
 
-		char* bn = basename(argv[builtin_command_arg]);
-		if (1 != builtin_command_arg)
-			parse_bart_opts(builtin_command_arg, argc, argv);
+	main_fun_t* dispatch_func = NULL;
 
-		main_fun_t* dispatch_func = NULL;
+	for (int i = 0; NULL != dispatch_table[i].name; i++)
+		if (0 == strcmp(argv[0], dispatch_table[i].name))
+			dispatch_func = dispatch_table[i].main_fun;
 
-		for (int i = 0; NULL != dispatch_table[i].name; i++)
-			if (0 == strcmp(bn, dispatch_table[i].name))
-				dispatch_func = dispatch_table[i].main_fun;
+	bool builtin_found = (NULL != dispatch_func);
+
+	if (builtin_found) {
+
+		debug_printf(DP_DEBUG3, "Builtin found: %s\n", argv[0]);
 
 		unsigned int v[5];
 		version_parse(v, bart_version);
@@ -299,15 +295,9 @@ int main_bart(int argc, char* argv[argc])
 		if (0 != v[4])
 			debug_printf(DP_WARN, "BART version %s is not reproducible.\n", bart_version);
 
-		if (NULL == dispatch_func) {
-
-			fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
-			return bart_exit(-1, NULL);
-		}
-
 		int final_ret = 0;
 
-		#pragma omp parallel num_threads(cfl_loop_num_workers()) if(cfl_loop_omp())
+#pragma omp parallel num_threads(cfl_loop_num_workers()) if(cfl_loop_omp())
 		{
 			long start = cfl_loop_worker_id();
 			long total = cfl_loop_desc_total();
@@ -315,11 +305,11 @@ int main_bart(int argc, char* argv[argc])
 
 			for (long i = start; ((i < total) && (0 == final_ret)); i += workers) {
 
-				int ret = batch_wrapper(dispatch_func, argc - builtin_command_arg, argv + builtin_command_arg, i);
+				int ret = batch_wrapper(dispatch_func, argc, argv, i);
 
 				if (0 != ret) {
 
-					#pragma omp critical (main_end_condition)
+#pragma omp critical (main_end_condition)
 					final_ret = ret;
 					bart_exit(ret, "Tool exited with error");
 				}
@@ -337,7 +327,7 @@ int main_bart(int argc, char* argv[argc])
 		// could not find any builtin
 		// try to find something in commands
 
-		debug_printf(DP_DEBUG3, "No builtin found.\n");
+		debug_printf(DP_DEBUG3, "No builtin found: %s\n", argv[0]);
 
 #ifdef CHECK_EXE_COMMANDS
 		// also check PATH_TO_BART/../commands/:

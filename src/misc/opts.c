@@ -236,7 +236,7 @@ static const char* add_sep(const char* sep, bool has_arg)
 	return has_arg ? sep : "";
 }
 
-static void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
+void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[static n ?: 1])
 {
 	fprintf(fp, "Usage: %s ", name);
 
@@ -487,9 +487,13 @@ static void process_option(char c, const char* optarg, const char* name, const c
 }
 
 
-static void options(int* argcp, char* argv[], int min_args, int max_args, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1], int m, struct arg_s args[m ?: 1])
+int options(int* argcp, char* argv[], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1], int m, struct arg_s args[m ?: 1], bool stop_at_nonopt)
 {
 	int argc = *argcp;
+
+#pragma omp critical (bart_options_str_list)
+	if (NULL == str_list)
+		str_list = list_create();
 
 	// create writable copy of opts
 
@@ -544,16 +548,17 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 #endif
 
 
+	int next_opt = 0;
 #pragma omp critical(bart_getopt)
 	{
-		char optstr[2 * n + 2];
+		char optstr[2 * n + 3]; // '+', 'h' and '\0' termination
 		ya_getopt_reset(); // reset getopt variables to process multiple argc/argv pairs
 
 		check_options(n, wopts);
 
-		save_command_line(argc, argv);
-
 		int l = 0;
+		if (stop_at_nonopt)
+			optstr[l++] = '+';
 		optstr[l++] = 'h';
 
 		for (int i = 0; i < n; i++) {
@@ -574,20 +579,10 @@ static void options(int* argcp, char* argv[], int min_args, int max_args, const 
 			process_option(c, optarg, argv[0], usage_str, help_str, n, wopts, m, args);
 		}
 
-		if (   (argc - optind < min_args)
-		|| (argc - optind > max_args)) {
-
-			print_usage(stderr, argv[0], usage_str, n, wopts);
-			error("cmdline: too few or too many arguments\n");
-		}
-
-		int i;
-		for (i = optind; i < argc; i++)
-			argv[i - optind + 1] = argv[i];
-
-		*argcp = argc - optind + 1;
-		argv[*argcp] = NULL;
+		next_opt = optind;
 	}
+
+	return next_opt;
 }
 
 
@@ -1088,13 +1083,9 @@ static int add_tuple_args(int bufsize, char buf[static bufsize], const struct ar
 
 
 
-void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n])
+void cmdline(int* argcp, char* argv[*argcp], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n])
 {
 	check_args(m, args);
-
-#pragma omp critical (bart_options_str_list)
-	if (NULL == str_list)
-		str_list = list_create();
 
 	long min_args = 0;
 	long max_args = 0;
@@ -1143,13 +1134,30 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 		}
 	}
 
-	options(argc, argv, min_args, max_args, buf, help_str, n, opts, m, args);
+	int next_opt = options(argcp, argv, buf, help_str, n, opts, m, args, false);
+
+	save_command_line(*argcp, argv);
+
+
+	if (   (*argcp - next_opt < min_args)
+		|| (*argcp - next_opt > max_args)) {
+
+		print_usage(stderr, argv[0], buf, n, opts);
+		error("cmdline: too few or too many arguments\n");
+	}
+
+	for (int i = next_opt; i < *argcp; i++)
+		argv[i - next_opt + 1] = argv[i];
+
+	*argcp = *argcp - next_opt + 1;
+	argv[*argcp] = NULL;
+
 
 	int req_args_remaining = min_args;
 
-	for (int i = 0, j = 1; (i < m) && (j < *argc); ++i) {
+	for (int i = 0, j = 1; (i < m) && (j < *argcp); ++i) {
 
-		int given_args_following = *argc - j; // number of following args given on the command line, NOT in the args-array
+		int given_args_following = *argcp - j; // number of following args given on the command line, NOT in the args-array
 		int declared_args_following = m - i - 1; // number of following arguments in args-array, NOT on the command line
 
 #if 0
@@ -1179,7 +1187,7 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 			// As we can only have one tuple, a tuple consuming multiple arguments cannot follow.
 			// Further, as we cannot have an optional arg following, all declared args afer the tuple
 			// are required and take exactly one argument.
-			int tuple_end = *argc - declared_args_following;
+			int tuple_end = *argcp - declared_args_following;
 			int num_tuple_args = tuple_end - j;
 
 			if (0 != (num_tuple_args % args[i].nargs))
@@ -1217,10 +1225,10 @@ void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const ch
 
 #if 0
 	// for debug, make argv inaccessible
-	for (int i = 0; i < *argc; ++i)
+	for (int i = 0; i < *argcp; ++i)
 		argv[i] = NULL;
 	// and set argc to something that is likely to break anything relying on it
-	*argc = -1;
+	*argcp = -1;
 #endif
 }
 
