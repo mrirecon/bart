@@ -25,6 +25,8 @@
 #include "num/gpuops.h"
 #endif
 #include "num/simplex.h"
+#include "num/mpi_ops.h"
+#include "num/vptr.h"
 
 #include "optimize.h"
 
@@ -627,6 +629,38 @@ void optimized_nop(int N, unsigned int io, int D, const long dim[D], const long 
 		return;
 	}
 
+	vptr_assert_sameplace(N, (void**)nptr);
+
+	bool mpi = false;
+	for (int i = 0; i < N; ++i)
+		mpi = mpi || is_mpi(nptr[i]);
+
+	if (mpi) {
+
+		unsigned long mpi_flags = 0UL;
+		for (int i = 0; i < N; ++i)
+			mpi_flags |= vptr_block_loop_flags(D, dim, (long*)nstr[i], nptr[i], sizes[i]);
+
+		long ldims[D];
+		long bdims[D];
+
+		md_select_dims(D, ~mpi_flags, bdims, dim);
+		md_select_dims(D, mpi_flags, ldims, dim);
+
+		long* bdimsp = &bdims[0];
+		size_t* sizesp = &sizes[0];
+		void* nstrp = (void*)nstr;
+
+		NESTED(void, nary_mpi_optimize, (void* ptr[]))
+		{
+			optimized_nop(N, io, D, bdimsp, nstrp, ptr, sizesp, too);
+		};
+
+		md_nary(N, D, ldims, (void*)nstr, (void*)nptr, nary_mpi_optimize);
+
+		return;
+	}
+
 	long tdims[D];
 	md_copy_dims(D, tdims, dim);
 
@@ -639,7 +673,7 @@ void optimized_nop(int N, unsigned int io, int D, const long dim[D], const long 
 		md_copy_strides(D, tstrs[i], *nstr[i]);
 
 		nstr1[i] = &tstrs[i];
-		nptr1[i] = nptr[i];
+		nptr1[i] = vptr_resolve(nptr[i]);
 	}
 
 #ifdef USE_CUDA
@@ -710,7 +744,7 @@ out:
 				void* np = alloca(cnst_size * sizes[i]);
 
 				for (long n = 0; n < cnst_size; n++)
-					memcpy(np + n * sizes[i], nptr[i], sizes[i]);
+					memcpy(np + n * sizes[i], vptr_resolve(nptr[i]), sizes[i]);
 
 				nptr1[i] = np;
 			}

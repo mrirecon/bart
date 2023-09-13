@@ -42,6 +42,8 @@
 #include "num/vecops_strided.h"
 #include "num/fltools.h"
 #include "num/loop.h"
+#include "num/mpi_ops.h"
+#include "num/vptr.h"
 
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -1425,10 +1427,20 @@ void md_zmatmul(int D, const long out_dims[D], complex float* dst, const long ma
  */
 void md_zfmac2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	if (simple_zfmac(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		return;
+	if (!simple_zfmac(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
+		MAKE_Z3OP(zfmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	MAKE_Z3OP(zfmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+
+		long dims2[D];
+		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+
+		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, CFL_SIZE, optr)
+					  & mpi_parallel_flags(D, dims, istr1, CFL_SIZE, iptr1)
+					  & mpi_parallel_flags(D, dims, istr2, CFL_SIZE, iptr2);
+
+		mpi_reduce_zsum(D, ~batch_flags, dims2, optr);
+	}
 }
 
 
@@ -1453,6 +1465,18 @@ void md_zfmac(int D, const long dims[D], complex float* optr, const complex floa
 void md_zfmacD2(int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 	MAKE_Z3OPD(zfmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+
+	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+
+		long dims2[D];
+		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+
+		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, CDL_SIZE, optr)
+					  & mpi_parallel_flags(D, dims, istr1, CFL_SIZE, iptr1)
+					  & mpi_parallel_flags(D, dims, istr2, CFL_SIZE, iptr2);
+
+		mpi_reduce_zsumD(D, ~batch_flags, dims2, optr);
+	}
 }
 
 
@@ -1476,10 +1500,20 @@ void md_zfmacD(int D, const long dims[D], complex double* optr, const complex fl
  */
 void md_fmac2(int D, const long dims[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	if (simple_fmac(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		return;
+	if (!simple_fmac(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
+		MAKE_3OP(fmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	MAKE_3OP(fmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+
+		long dims2[D];
+		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+
+		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, FL_SIZE, optr)
+					  & mpi_parallel_flags(D, dims, istr1, FL_SIZE, iptr1)
+					  & mpi_parallel_flags(D, dims, istr2, FL_SIZE, iptr2);
+
+		mpi_reduce_sum(D, ~batch_flags, dims2, optr);
+	}
 }
 
 
@@ -1504,6 +1538,18 @@ void md_fmac(int D, const long dims[D], float* optr, const float* iptr1, const f
 void md_fmacD2(int D, const long dims[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
 	MAKE_3OPD(fmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+
+	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+
+		long dims2[D];
+		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+
+		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, DL_SIZE, optr)
+					  & mpi_parallel_flags(D, dims, istr1, FL_SIZE, iptr1)
+					  & mpi_parallel_flags(D, dims, istr2, FL_SIZE, iptr2);
+
+		mpi_reduce_sumD(D, ~batch_flags, dims2, optr);
+	}
 }
 
 
@@ -1527,10 +1573,22 @@ void md_fmacD(int D, const long dims[D], double* optr, const float* iptr1, const
  */
 void md_zfmacc2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	if (simple_zfmacc(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		return;
+	if (!simple_zfmacc(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
+		MAKE_Z3OP(zfmacc, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	MAKE_Z3OP(zfmacc, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+
+		long dims2[D];
+		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+
+		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, CFL_SIZE, optr)
+					  & mpi_parallel_flags(D, dims, istr1, CFL_SIZE, iptr1)
+					  & mpi_parallel_flags(D, dims, istr2, CFL_SIZE, iptr2);
+
+		unsigned long reduce_flag = (~batch_flags);		
+
+		mpi_reduce_zsum(D, reduce_flag, dims2, optr);
+	}
 }
 
 
@@ -1556,6 +1614,18 @@ void md_zfmacc(int D, const long dims[D], complex float* optr, const complex flo
 void md_zfmaccD2(int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 	MAKE_Z3OPD(zfmaccD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+
+	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+
+		long dims2[D];
+		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+
+		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, CDL_SIZE, optr)
+					  & mpi_parallel_flags(D, dims, istr1, CFL_SIZE, iptr1)
+					  & mpi_parallel_flags(D, dims, istr2, CFL_SIZE, iptr2);
+
+		mpi_reduce_zsumD(D, ~batch_flags, dims2, optr);
+	}
 }
 
 
@@ -2492,24 +2562,38 @@ void md_zcosh(int D, const long dims[D], complex float* optr, const complex floa
  */
 float md_scalar2(int D, const long dim[D], const long str1[D], const float* ptr1, const long str2[D], const float* ptr2)
 {
-	double ret = 0.;
-	
 	int N = MIN(md_calc_blockdim(D, dim, str1, FL_SIZE), md_calc_blockdim(D, dim, str2, FL_SIZE));
+
+	int mpi_idx = md_min_idx(vptr_block_loop_flags(D, dim, str1, ptr1, FL_SIZE) | vptr_block_loop_flags(D, dim, str2, ptr2, FL_SIZE));
+	if (-1 < mpi_idx)
+		N = MIN(N, mpi_idx);
+	
 	long S = md_calc_size(N, dim);
 
-	long pos[D];
-	md_set_dims(D, pos, 0);
+	__block double ret = 0.;
 
-	do {
-		const float* _ptr1 = &(MD_ACCESS(D, str1, pos, ptr1));
-		const float* _ptr2 = &(MD_ACCESS(D, str1, pos, ptr2));
+	NESTED(void, nary_scalar2, (void* ptr[]))
+	{
 #ifdef USE_CUDA
-		if (cuda_ondevice(ptr1))
-			ret += gpu_ops.dot(S, _ptr1, _ptr2);
+		if (cuda_ondevice(ptr[0]))
+			ret += gpu_ops.dot(S, ptr[0], ptr[1]);
 		else
 #endif
-		ret += cpu_ops.dot(S, _ptr1, _ptr2);
-	} while (md_next(D, dim, ~(MD_BIT(N) - 1), pos));
+		ret += cpu_ops.dot(S, ptr[0], ptr[1]);
+	};
+
+	md_nary(2, D - N, dim + N, (const long*[2]){ str1 + N, str2 + N }, (void*[2]){ (void*)ptr1, (void*)ptr2 }, nary_scalar2);
+
+	if (is_mpi(ptr1) || is_mpi(ptr2)) {
+
+		double* ret_mpi = vptr_wrap_sameplace(D, MD_SINGLETON_DIMS(D), DL_SIZE, &ret, ptr1, false, true);
+
+		unsigned long batch_flags = mpi_parallel_flags(D, dim, str1, FL_SIZE, ptr1)
+					  & mpi_parallel_flags(D, dim, str2, FL_SIZE, ptr2);
+
+		mpi_reduce_sumD(D, ~batch_flags, MD_SINGLETON_DIMS(D), ret_mpi);
+		md_free(ret_mpi);
+	}
 
 	return (float)ret;
 }
@@ -2574,7 +2658,7 @@ float md_zrms(int D, const long dim[D], const complex float* in)
  */
 float md_zrmse(int D, const long dim[D], const complex float* in1, const complex float* in2)
 {
-	complex float* err = md_alloc_sameplace(D, dim, CFL_SIZE, in1);
+	complex float* err = md_alloc_sameplace(D, dim, CFL_SIZE, is_mpi(in2) ? in2 : in1);
 
 	md_zsub(D, dim, err, in1, in2);
 
@@ -2678,24 +2762,38 @@ float md_zrnorme(int D, const long dim[D], const complex float* ref, const compl
  */
 complex float md_zscalar2(int D, const long dim[D], const long str1[D], const complex float* ptr1, const long str2[D], const complex float* ptr2)
 {
-	complex double ret = 0.;
-	
 	int N = MIN(md_calc_blockdim(D, dim, str1, CFL_SIZE), md_calc_blockdim(D, dim, str2, CFL_SIZE));
+
+	int mpi_idx = md_min_idx(vptr_block_loop_flags(D, dim, str1, ptr1, CFL_SIZE) | vptr_block_loop_flags(D, dim, str2, ptr2, CFL_SIZE));
+	if (-1 < mpi_idx)
+		N = MIN(N, mpi_idx);
+
 	long S = md_calc_size(N, dim);
 
-	long pos[D];
-	md_set_dims(D, pos, 0);
+	__block complex double ret = 0.;
 
-	do {
-		const complex float* _ptr1 = &(MD_ACCESS(D, str1, pos, ptr1));
-		const complex float* _ptr2 = &(MD_ACCESS(D, str1, pos, ptr2));
+	NESTED(void, nary_zscalar2, (void* ptr[]))
+	{
 #ifdef USE_CUDA
-		if (cuda_ondevice(ptr1))
-			ret += gpu_ops.zdot(S, _ptr1, _ptr2);
+		if (cuda_ondevice(ptr[0]))
+			ret += gpu_ops.zdot(S, ptr[0], ptr[1]);
 		else
 #endif
-			ret += cpu_ops.zdot(S, _ptr1, _ptr2);
-	} while (md_next(D, dim, ~(MD_BIT(N) - 1), pos));
+		ret += cpu_ops.zdot(S, ptr[0], ptr[1]);
+	};
+
+	md_nary(2, D - N, dim + N, (const long*[2]){ str1 + N, str2 + N }, (void*[2]){ (void*)ptr1, (void*)ptr2 }, nary_zscalar2);
+
+	if (is_mpi(ptr1) || is_mpi(ptr2)) {
+
+		complex double* ret_mpi = vptr_wrap_sameplace(D, MD_SINGLETON_DIMS(D), CDL_SIZE, &ret, ptr1, false, true);
+
+		unsigned long batch_flags = mpi_parallel_flags(D, dim, str1, CFL_SIZE, ptr1)
+					  & mpi_parallel_flags(D, dim, str2, CFL_SIZE, ptr2);
+
+		mpi_reduce_zsumD(D, ~batch_flags, MD_SINGLETON_DIMS(D), ret_mpi);
+		md_free(ret_mpi);
+	}
 
 	return (complex float)ret;
 }
@@ -2724,6 +2822,24 @@ complex float md_zscalar(int D, const long dim[D], const complex float* ptr1, co
  */
 float md_zscalar_real2(int D, const long dims[D], const long strs1[D], const complex float* ptr1, const long strs2[D], const complex float* ptr2)
 {
+	if (   (is_mpi(ptr1) && !md_check_equal_dims(D, strs1, MD_STRIDES(D, dims, CFL_SIZE), ~0))
+	    || (is_mpi(ptr2) && !md_check_equal_dims(D, strs2, MD_STRIDES(D, dims, CFL_SIZE), ~0))) {
+
+		complex float* t1 = md_alloc_sameplace(D, dims, CFL_SIZE, ptr1);
+		complex float* t2 = md_alloc_sameplace(D, dims, CFL_SIZE, ptr2);
+		
+		md_copy2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), t1, strs1, ptr1, CFL_SIZE);
+		md_copy2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), t2, strs2, ptr2, CFL_SIZE);
+
+		float ret = md_zscalar_real(D, dims, t1, t2);
+
+		md_free(t1);
+		md_free(t2);
+
+		return ret;
+	}
+
+	
 	long dimsR[D + 1];
 	long strs1R[D + 1];
 	long strs2R[D + 1];

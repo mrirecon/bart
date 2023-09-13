@@ -44,6 +44,7 @@
 #include "num/reduce_md_wrapper.h"
 #include "num/md_wrapper.h"
 #include "num/convcorr.h"
+#include "num/vptr.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -912,6 +913,16 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 	long size = CFL_SIZE;
 
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, size)
+				  | vptr_block_loop_flags(N, dims, istrs1, in1, size)
+				  | vptr_block_loop_flags(N, dims, istrs2, in2, size);
+
+	if (block_flags && conj) // FIXME
+		return false;
+
+	long tdims[N];
+	md_select_dims(N, ~block_flags, tdims, dims);
+
 	long ndims[N];
 	long nostrs[N];
 	long nistrs1[N];
@@ -946,7 +957,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 		if (!applicable)
 			continue;
 
-		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, dims, ostrs, istrs1, istrs2, size);
+		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs1, istrs2, size);
 
 		if ((strided_call.reduction) && (out != in1))
 			N_in = -1;
@@ -974,7 +985,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 			continue;
 
 
-		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, dims, ostrs, istrs2, istrs1, size);
+		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs2, istrs1, size);
 
 		if ((strided_call.reduction) && (out != in2))
 			N_in = -1;
@@ -1015,6 +1026,21 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	{
 		md_free(conj_in);
 		return false; //cross check: data for inner kernel is contiguous in memory
+	}
+
+	for (int i = 0; i < (int)N; i++) {
+
+		if (!MD_IS_SET(block_flags, i))
+			continue;
+
+		int j = N_in;
+		while (1 != ndims[j])
+			j++;
+
+		ndims[j] = dims[i];
+		nostrs[j] = ostrs[i];
+		nistrs1[j] = istrs1[i];
+		nistrs2[j] = istrs2[i];
 	}
 
 	// clang
@@ -1070,6 +1096,13 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 
 	long size = FL_SIZE;
 
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, size)
+				  | vptr_block_loop_flags(N, dims, istrs1, in1, size)
+				  | vptr_block_loop_flags(N, dims, istrs2, in2, size);
+
+	long tdims[N];
+	md_select_dims(N, ~block_flags, tdims, dims);
+
 	long ndims[N];
 	long nostrs[N];
 	long nistrs1[N];
@@ -1099,7 +1132,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 		if (!applicable)
 			continue;
 
-		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, dims, ostrs, istrs1, istrs2, size);
+		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs1, istrs2, size);
 
 		if ((strided_call.reduction) && (out != in1))
 			N_in = -1;
@@ -1115,7 +1148,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 		if (!symmetric)
 			continue;
 
-		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, dims, ostrs, istrs2, istrs1, size);
+		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs2, istrs1, size);
 
 		if ((strided_call.reduction) && (out != in2))
 			N_in = -1;
@@ -1142,6 +1175,21 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 
 	if ((0 == osize) || (0 == isize1) || (0 == isize2))
 		return false; //cross check: data for inner kernel is contiguous in memory
+
+	for (int i = 0; i < (int)N; i++) {
+
+		if (!MD_IS_SET(block_flags, i))
+			continue;
+
+		int j = N_in;
+		while (1 != ndims[j])
+			j++;
+
+		ndims[j] = dims[i];
+		nostrs[j] = ostrs[i];
+		nistrs1[j] = istrs1[i];
+		nistrs2[j] = istrs2[i];
+	}
 
 	// clang
 	long* ndims_ptr = &ndims[0];

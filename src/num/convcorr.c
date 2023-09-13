@@ -26,6 +26,7 @@
 #include "num/rand.h"
 #include "num/init.h"
 #include "num/vecops_strided.h"
+#include "num/vptr.h"
 
 #include "misc/nested.h"
 #include "misc/misc.h"
@@ -243,6 +244,9 @@ bool simple_zconvcorr(	unsigned int N, const long dims[N],
 			const long istrs2[N], const complex float* iptr2)
 {
 	if (!use_simple_convcorr)
+		return false;
+
+	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2))
 		return false;
 
 	if (simple_zconvcorr_fwd(N, dims, ostrs, optr, istrs1, iptr1, istrs2, iptr2))
