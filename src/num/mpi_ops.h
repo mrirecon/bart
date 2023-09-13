@@ -26,4 +26,11 @@ extern void mpi_copy2(int N, const long dim[__VLA(N)], const long ostr[__VLA(N)]
 extern void mpi_scatter_batch(void* dst, long count, const void* src, size_t type_size);
 extern void mpi_gather_batch(void* dst, long count, const void* src, size_t type_size);
 
+extern void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[__VLA(N)], float* ptr);
+extern void mpi_reduce_zsum(int N, unsigned long reduce_flags, const long dims[__VLA(N)], _Complex float* ptr);
+extern void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[__VLA(N)], double* ptr);
+extern void mpi_reduce_zsumD(int N, unsigned long reduce_flags, const long dims[__VLA(N)], _Complex double* ptr);
+
+extern void mpi_reduce_land(long N, _Bool vec[__VLA(N)]);
+
 #include "misc/cppwrap.h"
