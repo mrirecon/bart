@@ -40,6 +40,18 @@ Build_Clang:
       - ./commands/
     expire_in: 45 minutes
 
+Build_Clang_GPU:
+  stage: build
+  script:
+    - CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+      - ./commands/
+    expire_in: 45 minutes
+
+
 
 Build_Static:
   stage: build
@@ -155,6 +167,16 @@ Unit_Test_Clang:
   dependencies:
      - Build_Clang
 
+Unit_Test_Clang_GPU:
+  stage: test1
+  script:
+    - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
+    - AUTOCLEAN=0 CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest_gpu
+  needs: [Build_Clang_GPU]
+  dependencies:
+    - Build_Clang_GPU
+
+
 
 Unit_Test_Valgrind:
   stage: test1
@@ -242,6 +264,16 @@ Integration_Test_Clang:
   needs: [Build_Clang]
   dependencies:
     - Build_Clang
+
+
+Integration_Test_Clang_GPU:
+  stage: test2
+  script:
+    - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
+    - AUTOCLEAN=0 CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make gputest
+  needs: [Build_Clang_GPU]
+  dependencies:
+    - Build_Clang_GPU
 
 
 Integration_Test_UBSan:
