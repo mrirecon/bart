@@ -32,7 +32,7 @@ Build:
 Build_Clang:
   stage: build
   script:
-    - CC=clang-14 OMP=0 make all
+    - CC=clang-14 make all
   artifacts:
     paths:
       - bart
@@ -150,7 +150,7 @@ Unit_Test:
 Unit_Test_Clang:
   stage: test1
   script:
-    - AUTOCLEAN=0 CC=clang-14 OMP=0 make utest
+    - AUTOCLEAN=0 CC=clang-14 make utest
   needs: [Build_Clang]
   dependencies:
      - Build_Clang
@@ -238,7 +238,7 @@ Integration_Test_GPU:
 Integration_Test_Clang:
   stage: test2
   script:
-    - AUTOCLEAN=0 CC=clang-14 OMP=0 make test
+    - AUTOCLEAN=0 CC=clang-14 make test
   needs: [Build_Clang]
   dependencies:
     - Build_Clang
