@@ -702,8 +702,6 @@ MODULES_test_nn += -lnn -lnlops -llinops -liter
 
 
 
-# sort BTARGETS after everything is included
-BTARGETS:=$(sort $(BTARGETS))
 XTARGETS:=$(sort $(XTARGETS))
 
 
