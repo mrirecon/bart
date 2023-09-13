@@ -88,7 +88,7 @@ static void real_from_complex_dims(unsigned int D, long odims[D + 1], const long
 
 const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, const long dims[DIMS],
 		  const struct linop_s* sense_op,
-		  const long pat_dims[DIMS], const complex float* pattern,
+		  const long pat_dims[DIMS],
 		  italgo_fun2_t italgo, iter_conf* iconf,
 		  const complex float* init,
 		  unsigned int num_funs,
@@ -127,14 +127,6 @@ const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, con
 
 		assert(!conf->bpsense); // not compatible
 
-		struct linop_s* sampling = linop_sampling_create(dims, pat_dims, pattern);
-		struct linop_s* tmp_op = linop_chain(sense_op, sampling);
-
-		linop_free(sampling);
-		linop_free(sense_op);
-
-		sense_op = tmp_op;
-
 		unsigned int flags = 0;
 		for (unsigned int i = 0; i < DIMS; i++)
 			if (pat_dims[i] > 1)
@@ -146,8 +138,7 @@ const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, con
 
 		linop_free(sense_op);
 
-	} else
-	if (NULL == pattern) {
+	} else {
 
 		if ((conf->bpsense) || (conf->precond))
 			op = lsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init, NULL, NULL,
@@ -158,26 +149,6 @@ const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, con
 
 		linop_free(sense_op);
 
-	} else {
-
-		assert(!conf->bpsense); // pattern should be built into forward model
-
-		complex float* weights = md_alloc(DIMS, pat_dims, CFL_SIZE);
-#if 0
-		// buggy
-//		md_zsqrt(DIMS, pat_dims, weights, pattern);
-#else
-		long dimsR[DIMS + 1];
-		real_from_complex_dims(DIMS, dimsR, pat_dims);
-		md_sqrt(DIMS + 1, dimsR, (float*)weights, (const float*)pattern);
-#endif
-		struct linop_s* weights_op = linop_cdiag_create(DIMS, ksp_dims, ~COIL_FLAG, weights);
-		md_free(weights);
-
-		op = wlsqr2_create(&lsqr_conf, italgo, iconf, (const float*)init,
-						sense_op, weights_op, precond_op,
-						num_funs, thresh_op, thresh_funs,
-						monitor);
 	}
 
 	return op;

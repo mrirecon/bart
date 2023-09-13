@@ -39,7 +39,7 @@ struct operator_p_s;
 
 extern const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, const long dims[DIMS],
 		  const struct linop_s* sense_op,
-		  const long pat_dims[DIMS], const complex float* pattern,
+		  const long pat_dims[DIMS],
 		  italgo_fun2_t italgo, iter_conf* iconf,
 		  const complex float* init,
 		  unsigned int num_funs,

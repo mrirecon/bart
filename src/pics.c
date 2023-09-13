@@ -491,25 +491,16 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 
-	if (NULL != traj_file) {
+	long ksp_strs[DIMS];
+	long pat_strs[DIMS];
 
-		if ((NULL == pat_file) && (NULL == basis)) {
+	md_calc_strides(DIMS, ksp_strs, ksp_dims, CFL_SIZE);
+	md_calc_strides(DIMS, pat_strs, pat_dims, CFL_SIZE);
 
-			md_free(pattern);
-			pattern = NULL;
+	md_zmul2(DIMS, ksp_dims, ksp_strs, kspace, ksp_strs, kspace, pat_strs, pattern);
 
-		} else {
 
-			long ksp_strs[DIMS];
-			md_calc_strides(DIMS, ksp_strs, ksp_dims, CFL_SIZE);
-
-			long pat_strs[DIMS];
-			md_calc_strides(DIMS, pat_strs, pat_dims, CFL_SIZE);
-
-			md_zmul2(DIMS, ksp_dims, ksp_strs, kspace, ksp_strs, kspace, pat_strs, pattern);
-		}
-
-	} else {
+	if (NULL == traj_file) {
 
 		// print some statistics
 
@@ -517,9 +508,6 @@ int main_pics(int argc, char* argv[argc])
 		long samples = (long)pow(md_znorm(DIMS, pat_dims, pattern), 2.);
 
 		debug_printf(DP_INFO, "Size: %ld Samples: %ld Acc: %.2f\n", T, samples, (float)T / (float)samples);
-	}
-
-	if (NULL == traj_file) {
 
 		fftmod(DIMS, ksp_dims, FFT_FLAGS, kspace, kspace);
 		fftmod(DIMS, map_dims, FFT_FLAGS, maps, maps);
@@ -553,6 +541,10 @@ int main_pics(int argc, char* argv[argc])
 			const struct linop_s* basis_op = linop_fmac_create(DIMS, bmx_dims, COEFF_FLAG, TE_FLAG, ~(COEFF_FLAG | TE_FLAG), basis);
 			forward_op = linop_chain_FF(forward_op, basis_op);
 		}
+
+		auto cod = linop_codomain(forward_op);
+		const struct linop_s* sample_op = linop_sampling_create(cod->dims, pat_dims, pattern);
+		forward_op = linop_chain_FF(forward_op, sample_op);
 
 	} else {
 
@@ -704,14 +696,6 @@ int main_pics(int argc, char* argv[argc])
 			md_zsmul(DIMS, img_dims, image_start, image_start, 1. / scaling);
 	}
 
-
-	if ((NULL == traj_file) && (conf.bpsense)) {
-
-		// basis pursuit requires the full forward model to add as a linop constraint
-		const struct linop_s* sample_op = linop_sampling_create(max_dims, pat_dims, pattern);
-		forward_op = linop_chain_FF(forward_op, sample_op);
-	}
-
 	double maxeigen = 1.;
 
 	if (eigen && (ALGO_PRIDU != algo)) {
@@ -815,7 +799,7 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 	const struct operator_p_s* po = sense_recon_create(&conf, max_dims, forward_op,
-				pat_dims, ((NULL != traj_file) || conf.bpsense) ? NULL : pattern,
+				pat_dims,
 				it.italgo, it.iconf, image_start, nr_penalties, thresh_ops,
 				trafos_cond ? trafos : NULL, NULL, monitor);
 
