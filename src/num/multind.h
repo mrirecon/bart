@@ -119,6 +119,7 @@ extern long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)
 extern long md_calc_offset(int D, const long strides[__VLA(D)], const long position[__VLA(D)]);
 extern int md_calc_blockdim(int D, const long dim[__VLA(D)], const long str[__VLA(D)], size_t size);
 extern void md_select_dims(int D, unsigned long flags, long odims[__VLA(D)], const long idims[__VLA(D)]);
+extern void md_select_strides(int D, unsigned long flags, long ostrs[__VLA(D)], const long istrs[__VLA(D)]);
 extern void md_copy_dims(int D, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_copy_strides(int D, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_merge_dims(int D, long odims[__VLA(D)], const long dims1[__VLA(D)], const long dims2[__VLA(D)]);

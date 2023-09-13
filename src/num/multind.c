@@ -400,7 +400,24 @@ void md_select_dims(int D, unsigned long flags, long odims[D], const long idims[
 			odims[i] = 1;
 }
 
+/**
+ * Copy strides specified by flags and set remaining dimensions to 0
+ *
+ * ostrs = [ 0  istrs[1]  istrs[2]  0  0  istrs[5] ]
+ *
+ * @param D number of dimensions
+ * @param flags bitmask specifying which dimensions to copy
+ * @param ostrs output strides
+ * @param istrs input strides
+ */
+void md_select_strides(int D, unsigned long flags, long ostrs[D], const long istrs[D])
+{
+       md_copy_dims(D, ostrs, istrs);
 
+       for (int i = 0; i < D; i++)
+               if (!MD_IS_SET(flags, i))
+                       ostrs[i] = 0;
+}
 
 /**
  * Copy dimensions
