@@ -84,10 +84,6 @@ int main_version(int argc, char* argv[argc])
 		bart_printf("GCC_VERSION=%s\n", __VERSION__);
 #endif
 
-#ifdef __clang__
-		bart_printf("CLANG_VERSION=%s\n", __clang_version__);
-#endif
-
 		bart_printf("CUDA=");
 #ifdef USE_CUDA
 			bart_printf("1\n");
