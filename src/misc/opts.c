@@ -487,7 +487,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 }
 
 
-int options(int* argcp, char* argv[], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1], int m, struct arg_s args[m ?: 1], bool stop_at_nonopt)
+int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1], int m, struct arg_s args[m ?: 1], bool stop_at_nonopt)
 {
 	int argc = *argcp;
 
