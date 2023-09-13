@@ -72,13 +72,20 @@ int main_version(int argc, char* argv[argc])
 		return !(version_compare(va, vb) >= 0);
 	}
 
+	if (!verbose) {
 
-	bart_printf("%s\n", bart_version);
+		bart_printf("%s\n", bart_version);
 
-	if (verbose) {
+	} else {
+
+		bart_printf("BART_VERSION=%s\n", bart_version);
 
 #ifdef __GNUC__
 		bart_printf("GCC_VERSION=%s\n", __VERSION__);
+#endif
+
+#ifdef __clang__
+		bart_printf("CLANG_VERSION=%s\n", __clang_version__);
 #endif
 
 		bart_printf("CUDA=");
