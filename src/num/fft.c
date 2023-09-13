@@ -29,6 +29,9 @@
 #include "num/flpmath.h"
 #include "num/ops.h"
 
+#include "num/mpi_ops.h"
+#include "num/vptr.h"
+
 #include "misc/misc.h"
 #include "misc/debug.h"
 
@@ -161,11 +164,41 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 {
 	flags &= md_nontriv_dims(N, dims);
 
+	if (is_mpi(dst) || is_mpi(src)) {
+
+		unsigned long mpi_flags = vptr_block_loop_flags(N, dims, ostrs, dst, CFL_SIZE) | vptr_block_loop_flags(N, dims, istrs, src, CFL_SIZE);
+
+		assert(is_mpi(dst));
+		assert(is_mpi(src));
+
+		long ldims[N];
+		long bdims[N];
+
+		md_select_dims(N, ~mpi_flags, bdims, dims);
+		md_select_dims(N, mpi_flags, ldims, dims);
+
+		long* bdimsp = &bdims[0];
+		const long * istrsp = &istrs[0];
+		const long * ostrsp = &ostrs[0];
+
+		NESTED(void, nary_mpi_fftmod, (void* ptr[]))
+		{
+			fftmod2_r(N, bdimsp, flags, ostrsp, ptr[0], istrsp, ptr[1], inv, phase);
+		};
+
+		md_nary(2, N, ldims, (const long*[2]){ ostrs, istrs }, (void*[2]){ dst, (void*)src }, nary_mpi_fftmod);
+
+		return;
+	}
+
 	if (0 == flags) {
 
 		md_zsmul2(N, dims, ostrs, dst, istrs, src, cexp(M_PI * 2.i * (inv ? -phase : phase)));
 		return;
 	}
+
+	dst = vptr_resolve(dst);
+	src = vptr_resolve(src);
 
 	if (   ((3 == flags) && md_check_equal_dims(2, ostrs, istrs, 3) && md_check_equal_dims(2, ostrs, MD_STRIDES(2, dims, CFL_SIZE), 3))
 	    || ((7 == flags) && md_check_equal_dims(3, ostrs, istrs, 7) && md_check_equal_dims(3, ostrs, MD_STRIDES(3, dims, CFL_SIZE), 7)) ){
@@ -316,6 +349,7 @@ struct fft_plan_s {
 	INTERFACE(operator_data_t);
 
 	fftwf_plan fftw;
+	const struct operator_s* fft_flags_only;
 
 	int D;
 	unsigned long flags;
@@ -458,6 +492,32 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 		return;
 	}
 
+	if (is_mpi(dst) || is_mpi(src)) {
+
+		unsigned long mpi_flags =  vptr_block_loop_flags(plan->D, plan->dims, plan->ostrs, dst, CFL_SIZE)
+					 | vptr_block_loop_flags(plan->D, plan->dims, plan->istrs, src, CFL_SIZE);
+	
+		assert(0 == (mpi_flags & plan->flags));
+		
+		assert(is_mpi(dst));
+		assert(is_mpi(src));
+
+		long ldims[plan->D];
+		md_select_dims(plan->D, ~(plan->flags), ldims, plan->dims);
+
+		NESTED(void, nary_mpi_fft, (void* ptr[]))
+		{
+			operator_apply_unchecked(plan->fft_flags_only, ptr[0], ptr[1]);
+		};
+
+		md_nary(2, plan->D, ldims, (const long*[2]){ plan->ostrs, plan->istrs }, (void*[2]){ dst, (void*)src }, nary_mpi_fft);
+
+		return;
+	}
+
+	dst = vptr_resolve(dst);
+	src = vptr_resolve(src);
+
 #ifdef  USE_CUDA
 	if (cuda_ondevice(src)) {
 #ifdef	LAZY_CUDA
@@ -486,6 +546,9 @@ static void fft_free_plan(const operator_data_t* _data)
 	if (NULL != plan->fftw)
 		fftwf_destroy_plan(plan->fftw);
 
+	if (NULL != plan->fft_flags_only)
+		operator_free(plan->fft_flags_only);
+
 #ifdef	USE_CUDA
 	if (NULL != plan->cuplan)
 		fft_cuda_free_plan(plan->cuplan);
@@ -498,7 +561,7 @@ static void fft_free_plan(const operator_data_t* _data)
 }
 
 
-const struct operator_s* fft_measure_create(int D, const long dimensions[D], unsigned long flags, bool inplace, bool backwards)
+static const struct operator_s* fft_measure_create_int(int D, const long dimensions[D], unsigned long flags, bool inplace, bool backwards, bool nested)
 {
 	flags &= md_nontriv_dims(D, dimensions);
 
@@ -515,6 +578,15 @@ const struct operator_s* fft_measure_create(int D, const long dimensions[D], uns
 
 	if (0u != flags)
 		plan->fftw = fft_fftwf_plan(D, dimensions, flags, strides, dst, strides, src, backwards, true);
+
+	plan->fft_flags_only = NULL;
+
+	if (!nested) {
+
+		long tdims[D];
+		md_select_dims(D, flags, tdims, dimensions);
+		plan->fft_flags_only = fft_measure_create_int(D, tdims, flags, inplace, backwards, true);
+	}
 
 	md_free(src);
 
@@ -547,8 +619,13 @@ const struct operator_s* fft_measure_create(int D, const long dimensions[D], uns
 	return operator_create2(D, dimensions, strides, D, dimensions, strides, CAST_UP(PTR_PASS(plan)), fft_apply, fft_free_plan);
 }
 
+const struct operator_s* fft_measure_create(int D, const long dimensions[D], unsigned long flags, bool inplace, bool backwards)
+{
+	return fft_measure_create_int(D, dimensions, flags, inplace, backwards, false);
+}
 
-const struct operator_s* fft_create2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards)
+
+static const struct operator_s* fft_create2_int(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool nested)
 {
 	flags &= md_nontriv_dims(D, dimensions);
 
@@ -559,6 +636,26 @@ const struct operator_s* fft_create2(int D, const long dimensions[D], unsigned l
 
 	if (0u != flags)
 		plan->fftw = fft_fftwf_plan(D, dimensions, flags, ostrides, dst, istrides, src, backwards, false);
+
+	plan->fft_flags_only = NULL;
+
+	if (!nested) {
+
+		long tdims[D];
+		long tostrs[D];
+		long tistrs[D];
+
+		md_select_dims(D, flags, tdims, dimensions);
+		
+		for(int i = 0; i < D; i++) {
+
+			tostrs[i] = 1 < tdims[i] ? ostrides[i] : 0;
+			tistrs[i] = 1 < tdims[i] ? istrides[i] : 0;
+		}
+		
+		plan->fft_flags_only = fft_create2_int(D, tdims, flags, tostrs, dst, tistrs, src, backwards, true);
+	}
+
 
 #ifdef  USE_CUDA
 	plan->cuplan = NULL;
@@ -585,6 +682,12 @@ const struct operator_s* fft_create2(int D, const long dimensions[D], unsigned l
 
 	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, CAST_UP(PTR_PASS(plan)), fft_apply, fft_free_plan);
 }
+
+const struct operator_s* fft_create2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards)
+{
+	return fft_create2_int(D, dimensions, flags, ostrides, dst, istrides, src, backwards, false);
+}
+
 
 const struct operator_s* fft_create(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src, bool backwards)
 {
