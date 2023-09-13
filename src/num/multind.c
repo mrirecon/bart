@@ -1,6 +1,6 @@
 /* Copyright 2013-2015 The Regents of the University of California.
  * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022. TU Graz. Institute of Biomedical Imaging.
+ * Copyright 2022-2023. TU Graz. Institute of Biomedical Imaging.
  * Copyright 2017. Intel Corporation.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -10,6 +10,8 @@
  * 2019-2020 Sebastian Rosenzweig
  * 2013      Frank Ong <frankong@berkeley.edu>
  * 2017      Michael J. Anderson <michael.j.anderson@intel.com>
+ * 2023      Moritz Blumenthal
+ * 2023      Bernhard Rapp
  *
  * Generic operations on multi-dimensional arrays. Most functions
  * come in two flavours:
@@ -58,6 +60,9 @@
 #include "num/gpukrnls_copy.h"
 #endif
 
+#include "num/vptr.h"
+#include "num/mpi_ops.h"
+
 #include "multind.h"
 
 
@@ -101,12 +106,11 @@ extern void gpu_threads_free(struct cuda_threads_s* x)
 #endif
 }
 
-/**
- * Generic functions which loops over all dimensions of a set of
- * multi-dimensional arrays and calls a given function for each position.
- */
-void md_nary(int C, int D, const long dim[D], const long* str[C], void* ptr[C], md_nary_fun_t fun)
+static void md_nary_int(int C, int D, const long dim[D], const long* str[C], void* ptr[C], md_nary_fun_t fun)
 {
+	while ((D > 0) && (1 == dim[D - 1]))
+		D--;
+
 	if (0 == D) {
 
 		NESTED_CALL(fun, (ptr));
@@ -120,10 +124,48 @@ void md_nary(int C, int D, const long dim[D], const long* str[C], void* ptr[C], 
 		for (int j = 0; j < C; j++)
 			moving_ptr[j] = ptr[j] + i * str[j][D - 1];
 
-		md_nary(C, D - 1, dim, str, moving_ptr, fun);
+		md_nary_int(C, D - 1, dim, str, moving_ptr, fun);
 	}
 }
 
+/**
+ * Generic functions which loops over all dimensions of a set of
+ * multi-dimensional arrays and calls a given function for each position.
+ */
+void md_nary(int C, int D, const long dim[D], const long* str[C], void* ptr[C], md_nary_fun_t fun)
+{
+	unsigned long block_flags = 0;
+
+	vptr_assert_sameplace(C, ptr);
+
+	for (int i = 0; i < C; i++)
+		block_flags |= vptr_block_loop_flags(D, dim, str[i], ptr[i], 1);
+
+	long bdim[D?:1];
+	long pos[D?:1];
+	void* nptr[C];
+
+	md_select_dims(D, ~block_flags, bdim, dim);
+	md_set_dims(D, pos, 0);
+
+	do {
+		bool mpi_acces = true;
+
+		for (int i = 0; i < C; i++) {
+
+			nptr[i] = ptr[i] + md_calc_offset(D, str[i], pos);
+			mpi_acces = mpi_acces && mpi_accessible(nptr[i]);
+		}
+
+		if (!mpi_acces)
+			continue;
+
+		for(int i = 0; i < C; i++)
+			nptr[i] = vptr_resolve(nptr[i]);
+
+		md_nary_int(C, D, bdim, str, nptr, fun);
+	} while (md_next(D, dim, block_flags, pos));
+}
 
 
 /**
@@ -734,6 +776,94 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 #endif
 	if (0 == md_calc_size(D, dim))
 		return;
+
+	if (is_mpi(optr) || is_mpi(iptr)) {
+
+//		debug_print_dims(DP_INFO, D, dim);
+//		debug_print_dims(DP_INFO, D, ostr);
+//		debug_print_dims(DP_INFO, D, istr);
+
+		unsigned long iflags = vptr_block_loop_flags(D, dim, istr, iptr, size);
+		unsigned long oflags = vptr_block_loop_flags(D, dim, ostr, optr, size);
+
+		long cdims[D];
+		md_singleton_dims(D, cdims);
+
+		long ldims[D];
+		md_copy_dims(D, ldims, dim);
+
+		for (int i = 0; i < D; i++) {
+
+			if (MD_IS_SET(iflags, i) || MD_IS_SET(oflags, i))
+				break;
+
+			if (1 == ldims[i])
+				continue;
+
+			if ((ostr[i] == (long)size) && (istr[i] == (long)size)) {
+
+				size *= ldims[i];
+				ldims[i] = 1;
+			}
+		}
+
+		long pos[D];
+		md_set_dims(D, pos, 0);
+
+		do {
+			void* dst = optr + md_calc_offset(D, ostr, pos);
+			const void* src = iptr + md_calc_offset(D, istr, pos);
+
+
+			if (!is_mpi(src)) {
+
+				if (mpi_accessible(dst)) {
+
+					dst = vptr_resolve(dst);
+					src = vptr_resolve(src);
+					md_copy(D, cdims, dst, src, size);
+				}
+				continue;
+			}
+
+			if (!is_mpi(dst)) {
+
+				int root = mpi_ptr_get_rank(src);
+
+				dst = vptr_resolve_unchecked(dst);
+
+				if (mpi_accessible(src)) {
+
+					src = vptr_resolve_unchecked(src);
+					md_copy(D, cdims, dst, src, size);
+				}
+
+				if (-1 < root)
+					mpi_bcast(dst, size, root);
+
+				continue;
+			}
+
+			for (int receiver = 0; receiver < mpi_get_num_procs(); receiver++) {
+
+				if (!mpi_accessible_from(dst, receiver))
+					continue;
+
+				int sender = mpi_accessible_from(src, receiver) ? receiver : mpi_ptr_get_rank(src);
+
+				const void* _src = (mpi_get_rank() == sender) ? vptr_resolve(src) : NULL;
+				void* _dst = (mpi_get_rank() == receiver) ? vptr_resolve(dst) : NULL;
+
+				mpi_copy(_dst, size, _src, sender, receiver);
+			}
+
+		} while (md_next(D, ldims, ~0UL, pos));
+
+		return;
+	}
+
+	iptr = vptr_resolve(iptr);
+	optr = vptr_resolve(optr);
 
 #ifdef	USE_CUDA
 	bool use_gpu = cuda_ondevice(optr) || cuda_ondevice(iptr);
@@ -1533,6 +1663,8 @@ static void md_flip_inpl2(int D, const long dims[D], unsigned long flags, const 
 {
 	int i;
 
+	assert(0 == (vptr_block_loop_flags(D, dims, str, ptr, size) & flags));
+
 	for (i = D - 1; i >= 0; i--)
 		if ((1 != dims[i]) && MD_IS_SET(flags, i))
 			break;
@@ -1704,6 +1836,9 @@ bool md_compare2(int D, const long dims[D], const long str1[D], const void* src1
 	};
 
 	optimized_nop(2, 0u, D, dims, nstr, (void*[2]){ (void*)src1, (void*)src2 }, (size_t[2]){ size, size }, nary_cmp);
+
+	if (is_mpi(src1) || is_mpi(src2))
+		mpi_reduce_land(1, &eq);
 
 	return eq;
 }
@@ -2199,6 +2334,62 @@ void* md_gpu_move(int D, const long dims[D], const void* ptr, size_t size)
 #endif
 
 
+/**
+ * Allocate virtual distributed memory
+ */
+void* md_alloc_mpi(int D, unsigned long f, const long dimensions[D], size_t size)
+{
+	auto hint = hint_mpi_create(f, D, dimensions);
+	void* ret = vptr_alloc(D, dimensions, size, hint);
+	vptr_hint_free(hint);
+	return ret;
+}
+
+/**
+ * Allocate MPI memory and copy from pointer
+ */
+void* md_mpi_move(int D, unsigned long f, const long dims[D], const void* ptr, size_t size)
+{
+	if (NULL == ptr)
+		return NULL;
+
+	void* mpi_ptr = md_alloc_mpi(D, f, dims, size);
+
+	md_copy(D, dims, mpi_ptr, ptr, size);
+
+	return mpi_ptr;
+}
+
+/**
+ * Allocate MPI memory and move from pointer
+ */
+void* md_mpi_moveF(int D, unsigned long f, const long dims[D], const void* ptr, size_t size)
+{
+	if (NULL == ptr)
+		return NULL;
+
+	auto hint = hint_mpi_create(f, D, dims);
+	void* ret = vptr_wrap(D, dims, size, ptr, hint, true, false);
+
+	vptr_hint_free(hint);	
+	return ret;
+}
+
+/**
+ * Register usual memory as didtributed pointer.
+ * If writeback, all data in mpi pointer is synced back to wrapped pointer on free.
+ */
+void* md_mpi_wrap(int D, unsigned long f, const long dims[D], const void* ptr, size_t size, bool writeback)
+{
+	if (NULL == ptr)
+		return NULL;
+
+	auto hint = hint_mpi_create(f, D, dims);
+	void* ret = vptr_wrap(D, dims, size, ptr, hint, false, writeback);
+
+	vptr_hint_free(hint);	
+	return ret;
+}
 
 /**
  * Allocate memory on the same device (CPU/GPU) place as ptr
@@ -2207,25 +2398,16 @@ void* md_gpu_move(int D, const long dims[D], const void* ptr, size_t size)
  */
 void* md_alloc_sameplace(int D, const long dimensions[D], size_t size, const void* ptr)
 {
+	void* ret = vptr_alloc_sameplace(D, dimensions, size, ptr);
+
+	if (NULL != ret)
+		return ret;
+
 #ifdef USE_CUDA
 	return (cuda_ondevice(ptr) ? md_alloc_gpu : md_alloc)(D, dimensions, size);
 #else
 	assert(0 != ptr);
 	return md_alloc(D, dimensions, size);
-#endif
-}
-
-/**
- * Check whether memory is at sameplace
- */
-bool md_is_sameplace(const void* ptr1, const void* ptr2)
-{
-	assert(NULL != ptr1);
-	assert(NULL != ptr2);
-#ifdef USE_CUDA
-	return cuda_ondevice(ptr1) == cuda_ondevice(ptr2);
-#else
-	return true;
 #endif
 }
 
@@ -2236,6 +2418,9 @@ bool md_is_sameplace(const void* ptr1, const void* ptr2)
  */
 void md_free(const void* ptr)
 {
+	if (vptr_free(ptr))
+		return;
+
 #ifdef USE_CUDA
 	if (cuda_ondevice(ptr))
 		cuda_free((void*)ptr);

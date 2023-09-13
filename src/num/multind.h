@@ -105,7 +105,6 @@ extern void* md_alloc_gpu(int D, const long dimensions[__VLA(D)], size_t size);
 extern void* md_gpu_move(int D, const long dims[__VLA(D)], const void* ptr, size_t size);
 #endif
 extern void* md_alloc_sameplace(int D, const long dimensions[__VLA(D)], size_t size, const void* ptr);
-extern bool md_is_sameplace(const void* ptr1, const void* ptr2);
 extern void md_free(const void* p);
 
 struct cuda_threads_s;
@@ -114,6 +113,10 @@ extern void gpu_threads_enter(struct cuda_threads_s* x);
 extern void gpu_threads_leave(struct cuda_threads_s* x);
 extern void gpu_threads_free(struct cuda_threads_s* x);
 
+extern void* md_alloc_mpi(int D, unsigned long dist_flags, const long dims[__VLA(D)], size_t size);
+extern void* md_mpi_move(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size);
+extern void* md_mpi_moveF(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size);
+extern void* md_mpi_wrap(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size, _Bool writeback);
 
 extern long md_calc_size(int D, const long dimensions[__VLA(D)]);
 extern long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size);
