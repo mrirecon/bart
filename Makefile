@@ -140,7 +140,7 @@ else
 OPT = -Og
 endif
 #OPT += -ffp-contract=off
-CPPFLAGS ?= -Wall -Wextra -Wno-nonnull -Wno-vla-parameter
+CPPFLAGS ?= -Wall -Wextra -Wno-nonnull
 CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
 
@@ -290,6 +290,9 @@ ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(roo
 ifeq ($(findstring clang,$(CC)),clang)
 	CFLAGS += -fblocks
 	LDFLAGS += -lBlocksRuntime
+else
+# only add if not clang, as it doesn't understand this:
+	CPPFLAGS +=  -Wno-vla-parameter
 endif
 
 
