@@ -27,6 +27,7 @@ typedef void CLOSURE_TYPE(md_trafo_fun_t)(long N, long str, void* ptr);
 typedef void CLOSURE_TYPE(md_loop_fun_t)(const long* pos);
 
 extern void md_unravel_index(int D, long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], long index);
+extern long md_ravel_index(int D, const long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)]);
 
 extern void md_nary(int C, int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);
 

@@ -2277,3 +2277,23 @@ void md_unravel_index(int D, long pos[D], unsigned long flags, const long dims[D
 	}
 }
 
+/**
+ * Convert pos to flat index
+ *
+ */
+long md_ravel_index(int D, const long pos[D], unsigned long flags, const long dims[D])
+{
+	long ind = 0;
+
+	for (int d = D; d > 0; --d) {
+
+		if (!MD_IS_SET(flags, d - 1))
+			continue;
+		
+		ind *= dims[d - 1];
+		ind += pos[d - 1];
+	}
+
+	return ind;
+}
+
