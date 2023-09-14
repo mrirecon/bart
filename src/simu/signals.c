@@ -9,6 +9,7 @@
 
 #include "misc/misc.h"
 #include "misc/mri.h"
+#include "misc/debug.h"
 
 #include "signals.h"
 
@@ -33,6 +34,9 @@ static float signal_TSE(const struct signal_model* data, int ind)
 
 void TSE_model(const struct signal_model* data, int N, complex float out[N])
 {
+
+	debug_printf(DP_WARN, "TSE model is deprecated and will be removed in future releases.\nPlease use the SE model!");
+
 	for (int ind = 0; ind < N; ind++)
 		out[ind] = signal_TSE(data, ind);
 }
