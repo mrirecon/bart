@@ -35,6 +35,7 @@
 #include "num/blas.h"
 #include "num/rand.h"
 #include "num/mpi_ops.h"
+#include "num/vptr.h"
 
 #ifdef USE_CUDNN
 #include "num/cudnn_wrapper.h"
@@ -860,7 +861,7 @@ static int cuda_cuda_get_device_num_internal(const void* ptr)
 
 bool cuda_ondevice(const void* ptr)
 {
-	return (-1 != cuda_get_device_num(ptr));
+	return (-1 != cuda_get_device_num(ptr)) || is_vptr_gpu(ptr);
 }
 
 bool cuda_accessible(const void* ptr)
