@@ -51,6 +51,7 @@ const struct signal_model signal_SE_defaults = {
 	.ti = 0,
 	.tr = 1000.,
 	.ir = false,
+	.single_repetition = false,
 };
 
 // Bernstein, M.A., King, K.F and Zhou, X.J. (2004) Handbook of MRI Pulse Sequences. Elsevier, Amsterdam.
@@ -66,10 +67,10 @@ static float signal_SE(const struct signal_model* data, int ind)
 	if (data->ir)
 		// Chapter 14, Basic Pulse Sequences, 14.2 Inversion Recovery, p. 609
 		// Add inversion module changing Mz to spin-echo signal model
-		return m0 * (1. - 2. * expf( -r1 * ti * ind)) * (1. - 2. * expf(-(tr - te / 2.) * r1) + expf(-tr * r1)) * expf(-te * r2);
+		return m0 * (1. - 2. * expf( -r1 * ti * ((data->single_repetition) ? 1 : ind))) * (1. - 2. * expf(-(tr - te / 2.) * r1) + expf(-tr * r1)) * expf(-te * r2);
 	else
 		// Chapter 14, Basic Pulse Sequences, 14.3 Radiofrequency Spin Echo, p. 639
-		return m0 * (1. - 2. * expf(-(tr - ind * te / 2.) * r1) + expf(-tr * r1)) * expf(-ind * te * r2);
+		return m0 * (1. - 2. * expf(-(tr - ((data->single_repetition) ? 1 : ind) * te / 2.) * r1) + expf(-tr * r1)) * expf(- ((data->single_repetition) ? 1 : ind) * te * r2);
 }
 
 void SE_model(const struct signal_model* data, int N, complex float out[N])

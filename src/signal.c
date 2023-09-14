@@ -161,6 +161,9 @@ int main_signal(int argc, char* argv[argc])
 	int N = dims[TE_DIM];
         int N_all = dims[TE_DIM] * parm.averaged_spokes;
 
+	if (1 == N_all)
+		parm.single_repetition = true;
+
 	do {
 		parm.t1 = T1[0] + (T1[1] - T1[0]) / T1[2] * (float)pos[COEFF_DIM];
 

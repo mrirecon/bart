@@ -75,6 +75,31 @@ tests/test-signal-ir-se: signal ones scale slice nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-signal-se-single: signal slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/signal -S -i 0.5 -n 3 -e 0.01 -r 100 -1 3:3:1 -2 0.01:0.01:1 sig.ra	;\
+	$(TOOLDIR)/signal -S -i 0.5 -n 1 -e 0.01 -r 100 -1 3:3:1 -2 0.01:0.01:1 sig2.ra	;\
+	$(TOOLDIR)/signal -S -i 0.5 -n 1 -e 0.02 -r 100 -1 3:3:1 -2 0.01:0.01:1 sig3.ra	;\
+	$(TOOLDIR)/slice 5 1 sig.ra t1.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t1.ra sig2.ra			    	;\
+	$(TOOLDIR)/slice 5 2 sig.ra t2.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t2.ra sig3.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-signal-ir-se-single: signal slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/signal -S -I -i 0.5 -n 3 -e 0.0001 -r 100 -1 3:3:1 -2 1000:1000:1 sig.ra	;\
+	$(TOOLDIR)/signal -S -I -i 0.5 -n 1 -e 0.0001 -r 100 -1 3:3:1 -2 1000:1000:1 sig2.ra	;\
+	$(TOOLDIR)/signal -S -I -i 1 -n 1 -e 0.0001 -r 100 -1 3:3:1 -2 1000:1000:1 sig3.ra	;\
+	$(TOOLDIR)/slice 5 1 sig.ra t1.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t1.ra sig2.ra			    	;\
+	$(TOOLDIR)/slice 5 2 sig.ra t2.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t2.ra sig3.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-signal-spoke-averaging-2 tests/test-signal-spoke-averaging-3
 TESTS += tests/test-signal-se tests/test-signal-ir-se
+TESTS += tests/test-signal-se-single tests/test-signal-ir-se-single
