@@ -26,6 +26,8 @@
 #include "noncart/gpu_grid.h"
 #endif
 
+#include "num/vptr.h"
+
 #include "grid.h"
 
 
@@ -260,7 +262,12 @@ void grid2(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D
 
 	long max_dims[D];
 	md_max_dims(D, ~0, max_dims, ksp_dims, trj_dims);
-	md_max_dims(D - 4, ~0, max_dims + 4, max_dims + 4, grid_dims + 4);
+	md_max_dims(D - 3, ~0, max_dims + 3, max_dims + 3, grid_dims + 3);
+
+	unsigned long mpi_flags = vptr_block_loop_flags(D - 3, max_dims + 3, trj_strs + 3, traj, md_calc_size(3, trj_dims) * CFL_SIZE)
+				| vptr_block_loop_flags(D - 3, max_dims + 3, ksp_strs + 3, src, md_calc_size(3, ksp_dims) * CFL_SIZE)
+				| vptr_block_loop_flags(D - 3, max_dims + 3, grid_strs + 3, dst, md_calc_size(3, grid_dims) * CFL_SIZE);
+	mpi_flags *= 8;
 
 	if ((trj_strs[2] == trj_strs[1] * max_dims[1]) && (ksp_strs[2] == ksp_strs[1] * max_dims[1])) {
 
@@ -269,6 +276,9 @@ void grid2(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D
 	}
 
 	for (int i = 4; i < (int)D; i++) {
+
+		if (MD_IS_SET(mpi_flags, i))
+			continue;
 
 		if (0 != grid_strs[i])
 			continue;
@@ -294,8 +304,15 @@ void grid2(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D
 		}
 	}
 
-	const long* ptr_grid_dims = &(grid_dims[0]);
-	const long* ptr_ksp_dims = &(max_dims[0]);
+	long tksp_dims[4];
+	long tgrd_dims[4];
+	md_select_dims(4, ~mpi_flags, tksp_dims, max_dims);
+	md_select_dims(4, ~mpi_flags, tgrd_dims, grid_dims);
+	if (!MD_IS_SET(mpi_flags, 3))
+		max_dims[3] = 1;
+
+	const long* ptr_grid_dims = &(tgrd_dims[0]);
+	const long* ptr_ksp_dims = &(tksp_dims[0]);
 
 	const long* ptr_ksp_strs = &(ksp_strs[0]);
 	const long* ptr_trj_strs = &(trj_strs[0]);
@@ -310,16 +327,16 @@ void grid2(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D
 		grid(conf, ptr_ksp_dims, ptr_trj_strs, _trj, ptr_grid_dims, ptr_grid_strs, _grid, ptr_ksp_strs, _ksp);
 	};
 
-	const long* strs[3] = { trj_strs + 4, grid_strs + 4, ksp_strs + 4 };
+	const long* strs[3] = { trj_strs + 3, grid_strs + 3, ksp_strs + 3 };
 	void* ptr[3] = { (void*)traj, (void*)dst, (void*)src };
-	unsigned long pflags = md_nontriv_dims(D - 4, grid_dims + 4);
+	unsigned long pflags = md_nontriv_dims(D - 3, grid_dims + 3);
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(traj))
 		pflags = 0;
 #endif
 
-	md_parallel_nary(3, D - 4, max_dims + 4, pflags, strs, ptr, nary_grid);
+	md_parallel_nary(3, D - 3, max_dims + 3, pflags, strs, ptr, nary_grid);
 }
 
 
@@ -338,7 +355,12 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 
 	long max_dims[D];
 	md_max_dims(D, ~0, max_dims, ksp_dims, trj_dims);
-	md_max_dims(D - 4, ~0, max_dims + 4, max_dims + 4, grid_dims + 4);
+	md_max_dims(D - 3, ~0, max_dims + 3, max_dims + 3, grid_dims + 3);
+
+	unsigned long mpi_flags = vptr_block_loop_flags(D - 3, max_dims + 3, trj_strs + 3, traj, md_calc_size(3, trj_dims) * CFL_SIZE)
+				| vptr_block_loop_flags(D - 3, max_dims + 3, ksp_strs + 3, dst, md_calc_size(3, ksp_dims) * CFL_SIZE)
+				| vptr_block_loop_flags(D - 3, max_dims + 3, grid_strs + 3, src, md_calc_size(3, grid_dims) * CFL_SIZE);
+	mpi_flags *= 8;
 
 	if ((trj_strs[2] == trj_strs[1] * max_dims[1]) && (ksp_strs[2] == ksp_strs[1] * max_dims[1])) {
 
@@ -347,6 +369,9 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 	}
 
 	for (int i = 4; i < (int)D; i++) {
+
+		if (MD_IS_SET(mpi_flags, i))
+			continue;
 
 		if (0 != grid_strs[i])
 			continue;
@@ -372,8 +397,15 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 		}
 	}
 
-	const long* ptr_grid_dims = &(grid_dims[0]);
-	const long* ptr_ksp_dims = &(max_dims[0]);
+	long tksp_dims[4];
+	long tgrd_dims[4];
+	md_select_dims(4, ~mpi_flags, tksp_dims, max_dims);
+	md_select_dims(4, ~mpi_flags, tgrd_dims, grid_dims);
+	if (!MD_IS_SET(mpi_flags, 3))
+		max_dims[3] = 1;
+
+	const long* ptr_grid_dims = &(tgrd_dims[0]);
+	const long* ptr_ksp_dims = &(tksp_dims[0]);
 
 	const long* ptr_ksp_strs = &(ksp_strs[0]);
 	const long* ptr_trj_strs = &(trj_strs[0]);
@@ -389,16 +421,16 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 		gridH(conf, ptr_ksp_dims, ptr_trj_strs, _trj, ptr_ksp_strs, _ksp, ptr_grid_dims, ptr_grid_strs, _grid);
 	};
 
-	const long* strs[3] = { trj_strs + 4, grid_strs + 4, ksp_strs + 4 };
+	const long* strs[3] = { trj_strs + 3, grid_strs + 3, ksp_strs + 3 };
 	void* ptr[3] = { (void*)traj, (void*)src, (void*)dst };
-	unsigned long pflags = md_nontriv_dims(D - 4, grid_dims + 4);
+	unsigned long pflags = md_nontriv_dims(D - 3, grid_dims + 3);
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(traj))
 		pflags = 0;
 #endif
 
-	md_parallel_nary(3, D - 4, max_dims + 4, pflags, strs, ptr, nary_gridH);
+	md_parallel_nary(3, D - 3, max_dims + 3, pflags, strs, ptr, nary_gridH);
 }
 
 
