@@ -22,6 +22,7 @@ struct signal_model {
 	float t2;
 	float t2star;
 	float te;
+	float ti;
 	float tr;
 	float b0;
 	float off_reson;
@@ -40,6 +41,10 @@ struct signal_model {
 extern const struct signal_model signal_TSE_defaults;
 
 extern void TSE_model(const struct signal_model* data, int N, complex float out[N]);
+
+extern const struct signal_model signal_SE_defaults;
+
+extern void SE_model(const struct signal_model* data, int N, complex float out[N]);
 
 
 extern const struct signal_model signal_hsfp_defaults;

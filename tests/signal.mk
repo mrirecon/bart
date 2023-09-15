@@ -44,5 +44,37 @@ tests/test-signal-spoke-averaging-3: signal slice join avg nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-signal-se: signal ones scale slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/signal -S -i 0.5 -n 3 -e 0.01 -r 100 -1 3:3:1 -2 0.01:0.01:1 sig.ra	;\
+	$(TOOLDIR)/ones 1 1 one.ra				;\
+	$(TOOLDIR)/slice 5 0 sig.ra t0.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t0.ra one.ra			    	;\
+	$(TOOLDIR)/scale -- 0.367879 one.ra ref1.ra			    	;\
+	$(TOOLDIR)/slice 5 1 sig.ra t1.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t1.ra ref1.ra			    	;\
+	$(TOOLDIR)/scale -- 0.135335 one.ra ref2.ra			    	;\
+	$(TOOLDIR)/slice 5 2 sig.ra t2.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t2.ra ref2.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-signal-ir-se: signal ones scale slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/signal -S -I -i 0.5 -n 3 -e 0.0001 -r 100 -1 3:3:1 -2 1000:1000:1 sig.ra	;\
+	$(TOOLDIR)/ones 1 1 one.ra				;\
+	$(TOOLDIR)/scale -- -1 one.ra ref0.ra			    	;\
+	$(TOOLDIR)/slice 5 0 sig.ra t0.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t0.ra ref0.ra			    	;\
+	$(TOOLDIR)/scale -- -0.692963 one.ra ref1.ra			    	;\
+	$(TOOLDIR)/slice 5 1 sig.ra t1.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t1.ra ref1.ra			    	;\
+	$(TOOLDIR)/scale -- -0.4330626 one.ra ref2.ra			    	;\
+	$(TOOLDIR)/slice 5 2 sig.ra t2.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 t2.ra ref2.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-signal-spoke-averaging-2 tests/test-signal-spoke-averaging-3
+TESTS += tests/test-signal-se tests/test-signal-ir-se

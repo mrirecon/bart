@@ -58,7 +58,7 @@ int main_signal(int argc, char* argv[argc])
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[TE_DIM] = 100;
 
-	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE };
+	enum seq_type { BSSFP, FLASH, TSE, SE, MOLLI, MGRE };
 	enum seq_type seq = FLASH;
 
 	bool IR = false;
@@ -67,6 +67,7 @@ int main_signal(int argc, char* argv[argc])
 	float FA = -1.;
 	float TR = -1.;
 	float TE = -1.;
+	float TI = -1.;
 
 	float off_reson[3] = { 20., 20., 1 };
 	float T1[3] = { 0.5, 1.5, 1 };
@@ -84,6 +85,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
 		OPT_SELECT('B', enum seq_type, &seq, BSSFP, "bSSFP"),
 		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
+		OPT_SELECT('S', enum seq_type, &seq, SE, "SE"),
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPTL_SET(0, "fat", &fat, "Simulate additional fat component."),
@@ -95,6 +97,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_FLVEC3('3', &Ms, "min:max:N", "range of Mss"),
 		OPT_FLOAT('r', &TR, "TR", "repetition time"),
 		OPT_FLOAT('e', &TE, "TE", "echo time"),
+		OPT_FLOAT('i', &TI, "TI", "inversion time"),
 		OPT_FLOAT('f', &FA, "FA", "flip ange"),
 		OPT_FLOAT('t', &time_T1relax, "T1 relax", "T1 relax period (second) for MOLLI"),
 		OPT_LONG('n', &dims[TE_DIM], "n", "number of measurements"),
@@ -113,6 +116,7 @@ int main_signal(int argc, char* argv[argc])
 	case MGRE:  parm = fat ? signal_multi_grad_echo_fat : signal_multi_grad_echo_defaults; break;
 	case BSSFP: parm = signal_IR_bSSFP_defaults; break;
 	case TSE:   parm = signal_TSE_defaults; break;
+	case SE:    parm = signal_SE_defaults; break;
 	case MOLLI: parm = signal_looklocker_defaults; break;
 
 	default: error("sequence type not supported");
@@ -137,6 +141,9 @@ int main_signal(int argc, char* argv[argc])
 
 	if (-1 != TE)
 		parm.te = TE;
+
+	if (-1 != TI)
+		parm.ti = TI;
 
 	dims[COEFF_DIM] = truncf(T1[2]);
 	dims[COEFF2_DIM] = (1 != Ms[2]) ? truncf(Ms[2]) : truncf(T2[2]);
@@ -172,6 +179,7 @@ int main_signal(int argc, char* argv[argc])
 		case MGRE:  multi_grad_echo_model(&parm, N_all, mxy); break;
 		case BSSFP: IR_bSSFP_model(&parm, N_all, mxy); break;
 		case TSE:   TSE_model(&parm, N_all, mxy); break;
+		case SE:    SE_model(&parm, N_all, mxy); break;
 		case MOLLI: MOLLI_model(&parm, N_all, mxy); break;
 
 		default: assert(0);

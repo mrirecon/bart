@@ -38,6 +38,43 @@ void TSE_model(const struct signal_model* data, int N, complex float out[N])
 }
 
 
+const struct signal_model signal_SE_defaults = {
+
+	.t1 = 0.781,
+	.t2 = 0.1,
+	.m0 = 1.,
+	.te = 0.01,
+	.ti = 0,
+	.tr = 1000.,
+	.ir = false,
+};
+
+// Bernstein, M.A., King, K.F and Zhou, X.J. (2004) Handbook of MRI Pulse Sequences. Elsevier, Amsterdam.
+static float signal_SE(const struct signal_model* data, int ind)
+{
+	float r1 = 1. / data->t1;
+	float r2 = 1. / data->t2;
+	float m0 = data->m0;
+	float te = data->te;
+	float tr = data->tr;
+	float ti = data->ti;
+
+	if (data->ir)
+		// Chapter 14, Basic Pulse Sequences, 14.2 Inversion Recovery, p. 609
+		// Add inversion module changing Mz to spin-echo signal model
+		return m0 * (1. - 2. * expf( -r1 * ti * ind)) * (1. - 2. * expf(-(tr - te / 2.) * r1) + expf(-tr * r1)) * expf(-te * r2);
+	else
+		// Chapter 14, Basic Pulse Sequences, 14.3 Radiofrequency Spin Echo, p. 639
+		return m0 * (1. - 2. * expf(-(tr - ind * te / 2.) * r1) + expf(-tr * r1)) * expf(-ind * te * r2);
+}
+
+void SE_model(const struct signal_model* data, int N, complex float out[N])
+{
+	for (int ind = 0; ind < N; ind++)
+		out[ind] = signal_SE(data, ind);
+}
+
+
 /*
  * Hybrid-state free precession in nuclear magnetic resonance. 
  * Jakob Assländer, Dmitry S. Novikov, Riccardo Lattanzi, Daniel K. Sodickson & Martijn A. Cloos.

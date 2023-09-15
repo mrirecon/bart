@@ -161,7 +161,7 @@ tests/test-moba-t1-nufft: traj transpose phantom signal nufft fft ones index sca
 tests/test-moba-t2: phantom signal fmac fft ones index scale moba slice invert nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
-	$(TOOLDIR)/signal -T -e0.01 -n16 -1 1.25:1.25:1 -2 0.09:0.09:1 signal.ra  	;\
+	$(TOOLDIR)/signal -S -e0.01 -n16 -1 1.25:1.25:1 -2 0.09:0.09:1 signal.ra  	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra image.ra					;\
 	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
 	$(TOOLDIR)/ones 6 16 16 1 1 1 16 psf.ra						;\
