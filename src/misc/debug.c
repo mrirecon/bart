@@ -31,6 +31,7 @@
 #endif //USE_DWARF
 
 #include "num/multind.h"
+#include "num/mpi_ops.h"
 
 #include "misc/io.h"
 #include "misc/mmio.h"
@@ -119,6 +120,9 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 		debug_level = (NULL != str) ? atoi(str) : DP_INFO;
 	}
 
+	if (0 < mpi_get_rank())
+		debug_level = DP_WARN;
+
 	if (level <= debug_level) {
 
 		FILE* ofp = (level < DP_INFO) ? stderr : stdout;
@@ -133,7 +137,11 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 		}
 		else {
 			if (level < DP_INFO) {
-				fprintf(ofp, "%s%s: ", (level < DP_INFO ? RED : ""), get_level_str(level));
+				char rank[16] = { '\0' };
+				if (1 < mpi_get_num_procs())
+					sprintf(rank, " [Rank %d]", mpi_get_rank());
+			
+				fprintf(ofp, "%s%s%s: ", (level < DP_INFO ? RED : ""), get_level_str(level), rank);
 			}
 		}
 
@@ -297,7 +305,8 @@ const char* debug_good_backtrace_string(int skip)
 
 void debug_good_backtrace(int skip)
 {
-	debug_good_backtrace_file(stderr, skip);
+	if (mpi_is_main_proc())
+		debug_good_backtrace_file(stderr, skip);
 }
 
 #endif // USE_DWARF
