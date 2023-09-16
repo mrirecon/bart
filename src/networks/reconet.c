@@ -16,6 +16,7 @@
 #include "num/flpmath.h"
 #include "num/iovec.h"
 #include "num/ops.h"
+#include "num/mpi_ops.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -669,46 +670,6 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 {
 	int Nb = max_dims[BATCH_DIM];
 
-#ifdef USE_CUDA
-	static bool in_multi_gpu = false;
-
-	if (   !in_multi_gpu
-	    && (cuda_switch_multigpu)
-	    && (0 < cuda_num_devices())
-	    && (1 < Nb)
-	    && network_is_diagonal(config->network)
-	    && (psf_dims[BATCH_DIM] == Nb)) {
-
-		long max_dims2[N];
-		long psf_dims2[ND];
-
-		md_select_dims(N, ~BATCH_FLAG, max_dims2, max_dims);
-		md_select_dims(ND, ~BATCH_FLAG, psf_dims2, psf_dims);
-
-		int num_nets = MIN(Nb, cuda_num_devices() * cuda_num_streams());
-		int remaining = Nb;
-		in_multi_gpu = true;
-
-		nn_t networks[num_nets];
-
-		for (int i = 0; i < num_nets; i++) {
-
-			max_dims2[BATCH_DIM] = remaining / (num_nets - i);
-			psf_dims2[BATCH_DIM] = remaining / (num_nets - i);
-			remaining -= remaining / (num_nets - i);
-			networks[i] = reconet_create(config, N, max_dims2, ND, psf_dims2, status);
-		}
-
-		in_multi_gpu = false;
-
-		return nn_stack_multigpu_F(num_nets, networks, BATCH_DIM);
-	}
-
-
-	if (!in_multi_gpu && config->gpu && (1 < cuda_num_devices()))
-		mri_ops_activate_multigpu();
-#endif
-
 
 	struct sense_model_s* models[Nb];
 
@@ -846,8 +807,60 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 
 
 
-static nn_t reconet_train_create(const struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[N], bool valid)
+static nn_t reconet_train_create(const struct reconet_s* config, int N, const long max_dims[N], int ND, const long psf_dims[ND], bool valid)
 {
+	static bool recursive = false;
+	long Nb = max_dims[BATCH_DIM];
+
+	if (   !recursive
+	    && (1 < mpi_get_num_procs())
+	    && (1 < Nb)
+	    && (!valid || (0 == Nb % mpi_get_num_procs()))
+	    && network_is_diagonal(config->network)) {
+
+		if (0 != Nb % mpi_get_num_procs())
+			error("Batch size must be multiple of number of ranks!\n");
+
+		long max_dims2[N];
+		long psf_dims2[ND];
+
+		md_select_dims(N, ~BATCH_FLAG, max_dims2, max_dims);
+		md_select_dims(ND, ~BATCH_FLAG, psf_dims2, psf_dims);
+
+		max_dims2[BATCH_DIM] = Nb / mpi_get_num_procs();
+
+		if (1 != psf_dims[BATCH_DIM])
+			psf_dims2[BATCH_DIM] = Nb / mpi_get_num_procs();
+
+		recursive = true;
+		auto ret = reconet_train_create(config, N, max_dims2, ND, psf_dims2, valid);
+
+		nn_t tmp[mpi_get_num_procs()];
+		for (int i = 0; i < mpi_get_num_procs(); i++)
+			tmp[i] = nn_clone(ret);
+
+		nn_free(ret);
+		ret = nn_stack_multigpu_F(mpi_get_num_procs(), tmp, BATCH_DIM);
+
+		if (1 == psf_dims[BATCH_DIM]) {
+
+			auto iov = nn_generic_domain(ret, 0, "psf");
+			auto repmat = nlop_from_linop_F(linop_repmat_create(iov->N, iov->dims, BATCH_FLAG));
+
+			((struct nn_s*)ret)->nlop = nlop_prepend_FF(repmat, ret->nlop, nn_get_in_arg_index(ret, 0, "psf"));
+		}
+
+		return ret;
+	}
+
+	if (!recursive && (1 < mpi_get_num_procs())) {
+
+#ifdef NON_DETERMINISTIC
+		assert(0);
+#endif
+		mri_ops_activate_multigpu();
+	}
+
 	auto train_op = reconet_create(config, N, max_dims, ND, psf_dims, valid ? STAT_TEST : STAT_TRAIN);
 
 	long out_dims[N];

@@ -275,23 +275,27 @@ tests/test-reconet-nnvn-train-gpu: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-reconet-nnvn-train-multi-gpu: nrmse $(TESTS_OUT)/pattern.ra reconet \
-	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
-	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
+tests/test-reconet-nnvn-train-mpi: bart $(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 													;\
-	$(TOOLDIR)/reconet -g     --network varnet --test -n -t --train-algo e=5 -b4 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref.ra	;\
-	$(TOOLDIR)/reconet -g -G2 --network varnet --test -n -t --train-algo e=5 -b4 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights2 $(TESTS_OUT)/train_ref.ra	;\
-	$(TOOLDIR)/nrmse -t 0.000001 weights1 weights2					;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/pattern.ra pattern															;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_kspace.ra train_kspace														;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_sens.ra train_sens														;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_ref.ra train_ref														;\
+	mpirun -n 2 --allow-run-as-root $(ROOTDIR)/bart reconet --network varnet --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights2 train_ref	;\
+					$(ROOTDIR)/bart reconet --network varnet --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights1 train_ref	;\
+	$(ROOTDIR)/bart nrmse -t 0.000001 weights1 weights2					;\
 	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-reconet-nnmodl-train-multi-gpu: nrmse $(TESTS_OUT)/pattern.ra reconet \
-	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
-	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
+tests/test-reconet-nnmodl-train-mpi: bart $(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 													;\
-	$(TOOLDIR)/reconet -g     --network modl --test -n -t --train-algo e=5 -b4 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref.ra	;\
-	$(TOOLDIR)/reconet -g -G2 --network modl --test -n -t --train-algo e=5 -b4 --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights2 $(TESTS_OUT)/train_ref.ra	;\
-	$(TOOLDIR)/nrmse -t 0.00002 weights1 weights2					;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/pattern.ra pattern															;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_kspace.ra train_kspace														;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_sens.ra train_sens														;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_ref.ra train_ref														;\
+					$(ROOTDIR)/bart reconet --network modl --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights1 train_ref	;\
+	mpirun -n 2 --allow-run-as-root $(ROOTDIR)/bart reconet --network modl --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights2 train_ref	;\
+	$(ROOTDIR)/bart nrmse -t 0.00002 weights1 weights2					;\
 	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -425,11 +429,13 @@ TESTS += tests/test-reconet-nnmodl-train-noncart
 TESTS += tests/test-reconet-nnmodl-train-noncart-init
 TESTS += tests/test-reconet-nnvn-train-noncart-init
 TESTS += tests/test-reconet-nnmodl-train-basis
+ifeq ($(MPI),1)
+TESTS += tests/test-reconet-nnvn-train-mpi
+TESTS += tests/test-reconet-nnmodl-train-mpi
+endif
 
 TESTS_GPU += tests/test-reconet-nnvn-train-gpu
 TESTS_GPU += tests/test-reconet-nnmodl-train-gpu
-TESTS_GPU += tests/test-reconet-nnvn-train-multi-gpu
-TESTS_GPU += tests/test-reconet-nnmodl-train-multi-gpu
 
 ifeq ($(TENSORFLOW),1)
 TESTS += tests/test-reconet-nnmodl-tensorflow1
