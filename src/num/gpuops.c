@@ -357,6 +357,12 @@ bool cuda_try_init(int device)
 
 		} else {
 
+			if (cudaErrorDevicesUnavailable != errval) {
+
+				const char *err_str = cudaGetErrorString(errval);
+				debug_printf(DP_WARN, "Device %d could not be initialized: \"%s\"\n", device, err_str);
+			}
+
 			// clear last error
 			cudaGetLastError();
 			cuda_set_device_internal(odev);
