@@ -39,7 +39,9 @@ static bool test_gaussian_pdf(void)
 				(i / 2. - 5.) + 1.i * (j / 2. - 5.)
 			};
 
-			sum += gaussian_pdf(1, m, v, x);
+			complex float m1[1] = { 0. };
+			complex float v1[1][1] = { { 0.5 } };
+			sum += gaussian_pdf(1, m1, v1, x);
 		}
 	}
 
