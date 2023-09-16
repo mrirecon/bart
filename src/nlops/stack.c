@@ -13,6 +13,7 @@
 #include "num/flpmath.h"
 #include "num/iovec.h"
 #include "num/ops.h"
+#include "num/mpi_ops.h"
 #include "num/ops_graph.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -216,10 +217,6 @@ struct stack_container_s {
 
 	INTERFACE(nlop_data_t);
 
-	bool multi_gpu;
-	bool exclude_main_gpu;
-	int* device_id;
-
 	int Nnlops;
 
 	int N;
@@ -239,6 +236,8 @@ struct stack_container_s {
 
 	bool simple_flatten_in;
 	bool simple_flatten_out;
+
+	bool split_mpi;
 };
 
 DEF_TYPEID(stack_container_s);
@@ -251,24 +250,6 @@ static void stack_clear_der(const nlop_data_t* _data)
 		nlop_clear_derivatives(d->nlops[i]);
 }
 
-static int sc_threads(const struct stack_container_s* d)
-{
-	int threads = -1;
-#ifdef USE_CUDA
-	if (d->multi_gpu) {
-
-		threads = cuda_num_devices();
-		if (d->exclude_main_gpu)
-			threads = MAX(1, threads -1);
-
-		threads *= cuda_streams_per_device;
-	}
-#else
-	UNUSED(d);
-#endif
-
-	return threads;
-}
 
 
 static void stack_container_fun(const nlop_data_t* _data, int N, complex float* args[N])
@@ -279,115 +260,175 @@ static void stack_container_fun(const nlop_data_t* _data, int N, complex float* 
 	int OO = nlop_get_nr_out_args(d->nlops[0]);
 	int II = nlop_get_nr_in_args(d->nlops[0]);
 
-	const struct operator_s* ops[Nnlops];
-	void* nargs[Nnlops][N];
-
-	for (int i = 0; i < Nnlops; i++) {
-
-		ops[i] = d->nlops[i]->op;
-
-		for (int j = 0; j < N; j++)
-			nargs[i][j] = (void*)args[j] + (d->offsets)[i][j];
-	}
-
 	bool der_requested[II][OO];
 	for (int i = 0; i < II; i++)
 		for (int o = 0; o < OO; o++)
 			der_requested[i][o]= nlop_der_requested(_data, i, o);
 
 	for (int i = 0; i < Nnlops; i++) {
-	
+
+		if (d->split_mpi && (mpi_get_rank() != i % mpi_get_num_procs()))
+			continue;
+
 		nlop_unset_derivatives(d->nlops[i]);
 		nlop_set_derivatives(d->nlops[i], II, OO, der_requested);
+
+		void* targs[N];
+
+		for (int j = 0; j < d->OO + d->II; j++)
+			targs[j] = (void*)(args[j]) + (d->offsets)[i][j];
+
+		nlop_generic_apply_unchecked(d->nlops[i], N, targs);
 	}
 
-	operator_generic_apply_parallel_unchecked(Nnlops, ops, N, nargs, sc_threads(d));
-}
+	if (d->split_mpi && (1 < mpi_get_num_procs()))  {	
 
-static void stack_container_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
-{
-	const auto d = CAST_DOWN(stack_container_s, _data);
+		for (int i = 0; i < Nnlops; i++) {
 
-	int Nnlops = d->Nnlops;
+			for (int o = 0; o < d->OO; o++) {
 
-	const struct operator_s* der[Nnlops];
-	complex float* ndst[Nnlops];
-	const complex float* nsrc[Nnlops];
-
-	for (int j = 0; j < Nnlops; j++) {
-
-		der[j] = nlop_get_derivative(d->nlops[j], o, i)->forward;
-
-		ndst[j] = (void*)dst + d->offsets[j][o];
-		nsrc[j] = (const void*)src + d->offsets[j][d->OO + i];
-	}
-
-	operator_apply_parallel_unchecked(Nnlops, der, ndst, nsrc, sc_threads(d));
-}
-
-static void stack_container_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
-{
-	const auto d = CAST_DOWN(stack_container_s, _data);
-
-	int Nnlops = d->Nnlops;
-
-	const struct operator_s* adj[Nnlops];
-	complex float* ndst[Nnlops];
-	const complex float* nsrc[Nnlops];
-
-	for (int j = 0; j < Nnlops; j++) {
-
-		adj[j] = nlop_get_derivative(d->nlops[j], o, i)->adjoint;
-
-		auto cod = operator_codomain(adj[j]);
-
-		ndst[j] = ((d->dup[i]) && (0 < j)) ? md_alloc_sameplace(cod->N, cod->dims, cod->size, dst) : (void*)dst + d->offsets[j][d->OO + i];
-		nsrc[j] = (const void*)src + d->offsets[j][o];
-	}
-
-	operator_apply_parallel_unchecked(Nnlops, adj, ndst, nsrc, sc_threads(d));
-
-	if (d->dup[i]) {
-
-		for (int j = 1; j < Nnlops; j++) {
-
-			auto iov = operator_codomain(adj[j]);
-			md_zadd(iov->N, iov->dims, dst, dst, ndst[j]);
-			md_free(ndst[j]);
+				auto iov = nlop_generic_codomain(d->nlops[i], o);
+				mpi_bcast2(iov->N, iov->dims, iov->strs, (void*)(args[o]) + (d->offsets)[i][o], iov->size, i % mpi_get_num_procs());
+			}
 		}
 	}
 }
 
-static void stack_container_nrm(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void stack_container_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* _dst, const complex float* _src)
 {
 	const auto d = CAST_DOWN(stack_container_s, _data);
 
 	int Nnlops = d->Nnlops;
 
-	const struct operator_s* nrm[Nnlops];
-	complex float* ndst[Nnlops];
-	const complex float* nsrc[Nnlops];
-
 	for (int j = 0; j < Nnlops; j++) {
 
-		nrm[j] = nlop_get_derivative(d->nlops[j], o, i)->normal;
+		complex float* dst = (void*)_dst + d->offsets[j][o];
+		const complex float* src = (const void*)_src + d->offsets[j][d->OO + i];
 
-		auto cod = operator_codomain(nrm[j]);
+		if (d->split_mpi && (mpi_get_rank() != j % mpi_get_num_procs()))
+			continue;
 
-		ndst[j] = (d->dup[i] && 0 < j) ? md_alloc_sameplace(cod->N, cod->dims, cod->size, dst) : (void*)dst + d->offsets[j][d->OO + i];
-		nsrc[j] = (const void*)src + d->offsets[j][d->OO + i];
+		linop_forward_unchecked(nlop_get_derivative(d->nlops[j], o, i), dst, src);
 	}
 
-	operator_apply_parallel_unchecked(Nnlops, nrm, ndst, nsrc, sc_threads(d));
+	if (d->split_mpi && (1 < mpi_get_num_procs()))  {
+
+		for (int j = 0; j < Nnlops; j++) {
+
+			complex float* dst = (void*)_dst + d->offsets[j][o];
+		
+			auto iov = nlop_generic_codomain(d->nlops[j], o);
+			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, iov->size, j % mpi_get_num_procs());
+		}
+	}
+}
+
+static void stack_container_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* _dst, const complex float* _src)
+{
+	const auto d = CAST_DOWN(stack_container_s, _data);
+
+	int Nnlops = d->Nnlops;
+
+	auto dom = nlop_generic_domain(d->nlops[0], i);
+
+	complex float* tmp = NULL;
 
 	if (d->dup[i]) {
 
-		for (int j = 1; j < Nnlops; j++) {
+		md_clear(dom->N, dom->dims, _dst, dom->size);
+		tmp = md_alloc_sameplace(dom->N, dom->dims, dom->size, _dst);
+	}
 
-			auto iov = operator_codomain(nrm[j]);
-			md_zadd(iov->N, iov->dims, dst, dst, ndst[j]);
-			md_free(ndst[j]);
+	for (int j = 0; j < Nnlops; j++) {
+
+		complex float* dst = (void*)_dst + d->offsets[j][i + d->OO];
+		const complex float* src = (const void*)_src + d->offsets[j][o];
+
+		if (d->split_mpi && (mpi_get_rank() != j % mpi_get_num_procs()))
+			continue;
+
+		if (d->dup[i]) {
+
+			linop_adjoint_unchecked(nlop_get_derivative(d->nlops[j], o, i), tmp, src);
+			md_zadd(dom->N, dom->dims, dst, dst, tmp);
+		} else {
+	
+			linop_adjoint_unchecked(nlop_get_derivative(d->nlops[j], o, i), dst, src);
 		}
+	}
+
+	md_free(tmp);
+
+	if (d->split_mpi && (1 < mpi_get_num_procs()))  {
+
+		for (int j = 0; j < Nnlops && !d->dup[i]; j++) {
+
+			auto iov = nlop_generic_domain(d->nlops[j], i);
+
+			complex float* dst = (void*)_dst + d->offsets[j][i + d->OO];
+			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, iov->size, j % mpi_get_num_procs());
+		}
+
+		auto iov = nlop_generic_domain(d->nlops[0], i);
+
+		if (d->dup[i])
+			mpi_reduce_zsum_vector(md_calc_size(iov->N, iov->dims), _dst);
+
+	}
+}
+
+static void stack_container_nrm(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* _dst, const complex float* _src)
+{
+	const auto d = CAST_DOWN(stack_container_s, _data);
+
+	int Nnlops = d->Nnlops;
+
+	auto dom = nlop_generic_domain(d->nlops[0], i);
+
+	complex float* tmp = NULL;
+
+	if (d->dup[i]) {
+
+		md_clear(dom->N, dom->dims, _dst, dom->size);
+		tmp = md_alloc_sameplace(dom->N, dom->dims, dom->size, _dst);
+	}
+
+	for (int j = 0; j < Nnlops; j++) {
+
+		complex float* dst = (void*)_dst + d->offsets[j][i + d->OO];
+		const complex float* src = (const void*)_src + d->offsets[j][i + d->OO];
+
+		if (d->split_mpi && (mpi_get_rank() != j % mpi_get_num_procs()))
+			continue;
+
+
+		if (d->dup[i]) {
+
+			linop_normal_unchecked(nlop_get_derivative(d->nlops[j], o, i), tmp, src);
+			md_zadd(dom->N, dom->dims, dst, dst, tmp);
+		} else {
+	
+			linop_normal_unchecked(nlop_get_derivative(d->nlops[j], o, i), dst, src);
+		}
+	}
+
+	md_free(tmp);
+
+	if (d->split_mpi && (1 < mpi_get_num_procs())) {
+
+		for (int j = 0; j < Nnlops && !d->dup[i]; j++) {
+
+			auto iov = nlop_generic_domain(d->nlops[j], i);
+
+			complex float* dst = (void*)_dst + d->offsets[j][i + d->OO];
+			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, iov->size, j % mpi_get_num_procs());
+		}
+
+		auto iov = nlop_generic_domain(d->nlops[0], i);
+
+		if (d->dup[i])
+			mpi_reduce_zsum_vector(md_calc_size(iov->N, iov->dims), _dst);
+
 	}
 }
 
@@ -434,14 +475,11 @@ static const struct graph_s* nlop_graph_stack_container(const struct operator_s*
 }
 
 
-static const struct nlop_s* nlop_stack_container_internal_create(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO], bool multi_gpu, bool exclude_main_gpu)
+static const struct nlop_s* nlop_stack_container_internal_create(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO], bool split_mpi)
 {
 	PTR_ALLOC(struct stack_container_s, d);
 	SET_TYPEID(stack_container_s, d);
 
-#ifdef USE_CUDA
-	multi_gpu = multi_gpu && cuda_switch_multigpu;
-#endif
 
 	int max_DI = 0;
 	int max_DO = 0;
@@ -477,8 +515,6 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 	d->II = II;
 	d->OO = OO;
 	d->N = II + OO;
-	d->multi_gpu = multi_gpu;
-	d->exclude_main_gpu = exclude_main_gpu;
 
 
 	d->dup = *TYPE_ALLOC(_Bool[II]);
@@ -610,16 +646,7 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 				&& (   (out_stack_dim[0] == max_DO - 1)
 				    || (1 == md_calc_size(max_DO - out_stack_dim[0] - 1, nl_odims[0] + out_stack_dim[0] + 1)));
 
-#ifdef USE_CUDA
-	for (int i = 0; multi_gpu && (i < N); i++) {
-
-		int device = i + 1;
-		if (exclude_main_gpu && (1 < cuda_num_devices()))
-			device = 1 + (device % (cuda_num_devices() - 1));
-
-		d->nlops[i] = nlop_assign_gpu_F(d->nlops[i], device); // less memory on main gpu 0
-	}
-#endif
+	d->split_mpi = split_mpi;
 
 	nlop_der_fun_t der_funs[II][OO];
 	nlop_der_fun_t adj_funs[II][OO];
@@ -658,9 +685,9 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 	return result;
 }
 
-static const struct nlop_s* nlop_stack_container_internal_create_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO], bool multi_gpu, bool exclude_main_gpu)
+static const struct nlop_s* nlop_stack_container_internal_create_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO], bool split_mpi)
 {
-	auto result = nlop_stack_container_internal_create(N, nlops, II, in_stack_dim, OO, out_stack_dim, multi_gpu, exclude_main_gpu);
+	auto result = nlop_stack_container_internal_create(N, nlops, II, in_stack_dim, OO, out_stack_dim, split_mpi);
 
 	for (int i = 0; i < N; i++)
 		nlop_free(nlops[i]);
@@ -670,12 +697,12 @@ static const struct nlop_s* nlop_stack_container_internal_create_F(int N, const 
 
 const struct nlop_s* nlop_stack_container_create_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO])
 {
-	return nlop_stack_container_internal_create_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, false, false);
+	return nlop_stack_container_internal_create_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, false);
 }
 
 const struct nlop_s* nlop_stack_multigpu_create_F(int N, const struct nlop_s* nlops[N], int II, int in_stack_dim[II], int OO, int out_stack_dim[OO])
 {
-	return nlop_stack_container_internal_create_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, true, false);
+	return nlop_stack_container_internal_create_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, true);
 }
 
 struct stack_flatten_trafo_s {
@@ -953,7 +980,7 @@ const struct nlop_s* nlop_flatten_stacked(const struct nlop_s* nlop)
 	int istack_dims[1] = { 0 };
 	int ostack_dims[1] = { 0 };
 	
-	auto result = nlop_stack_container_internal_create_F(data->Nnlops, nlops, 1, istack_dims, 1, ostack_dims, data->multi_gpu, data->exclude_main_gpu);
+	auto result = nlop_stack_container_internal_create_F(data->Nnlops, nlops, 1, istack_dims, 1, ostack_dims, data->split_mpi);
 
 	if (NULL != itrafo)
 		result = nlop_chain_FF(itrafo, result);
