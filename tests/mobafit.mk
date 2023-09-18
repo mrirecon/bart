@@ -56,7 +56,7 @@ tests/test-mobafit-wfr2s: phantom signal fmac index scale extract mobafit saxpy 
 tests/test-mobafit-r2: phantom signal reshape fmac index mobafit slice nrmse index extract invert
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
-	$(TOOLDIR)/signal -250:160:11 -S -e10 -n16 sig.ra		;\
+	$(TOOLDIR)/signal -250:160:11 -T -e10 -n16 sig.ra		;\
 	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
 	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
 	$(TOOLDIR)/index 5 16 te.ra					;\
@@ -157,7 +157,7 @@ tests/test-mobafit-irll_bas2: $(TESTS_OUT)/basis_irll.ra phantom signal reshape 
 tests/test-mobafit-gpu: phantom signal reshape fmac index mobafit slice nrmse index extract invert
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
-	$(TOOLDIR)/signal -250:160:11 -S -e10 -n16 sig.ra		;\
+	$(TOOLDIR)/signal -250:160:11 -T -e10 -n16 sig.ra		;\
 	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
 	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
 	$(TOOLDIR)/index 5 16 te.ra					;\
@@ -174,8 +174,29 @@ tests/test-mobafit-gpu: phantom signal reshape fmac index mobafit slice nrmse in
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-mobafit-ir_t1: mobafit nrmse transpose scale vec join
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/vec +1.929238e-01+0.000000e+00i	+1.255160e-01+0.000000e+00i	+8.905754e-02+0.000000e+00i	+5.494139e-02+0.000000e+00i	+2.563298e-02+0.000000e+00i	+6.914235e-02+0.000000e+00i	+2.460453e-01+0.000000e+00i	+2.540495e-01+0.000000e+00i	+2.561918e-01+0.000000e+00i	+2.552134e-01+0.000000e+00i d0.ra ;\
+	$(TOOLDIR)/vec +2.552905e-01+0.000000e+00i	+4.081513e+00+0.000000e+00i	+7.058685e-01+0.000000e+00i r0.ra ;\
+	$(TOOLDIR)/vec +1.844473e-01+0.000000e+00i	+9.110585e-02+0.000000e+00i	+4.486995e-02+0.000000e+00i	+3.315099e-03+0.000000e+00i	+3.353683e-02+0.000000e+00i	+1.363250e-01+0.000000e+00i	+2.706290e-01+0.000000e+00i	+2.735427e-01+0.000000e+00i	+2.733905e-01+0.000000e+00i	+2.728096e-01+0.000000e+00i d1.ra ;\
+	$(TOOLDIR)/vec +2.723165e-01+0.000000e+00i	+5.029132e+00+0.000000e+00i	+6.884007e-01+0.000000e+00i r1.ra ;\
+	$(TOOLDIR)/join 1 d0.ra d1.ra td0.ra ;\
+	$(TOOLDIR)/transpose 0 5 td0.ra td1.ra ;\
+	$(TOOLDIR)/transpose 1 0 td1.ra testdata.ra ;\
+	$(TOOLDIR)/join 1 r0.ra r1.ra tr0.ra ;\
+	$(TOOLDIR)/transpose 0 6 tr0.ra tr1.ra ;\
+	$(TOOLDIR)/transpose 1 0 tr1.ra testresults.ra ;\
+	$(TOOLDIR)/vec 35 75 100 125 150 250 1000 1500 2000 3000 test_echotimes_ms_o.ra ;\
+	$(TOOLDIR)/transpose 0 5 test_echotimes_ms_o.ra test_echotimes_ms.ra ;\
+	$(TOOLDIR)/scale -- 0.001 test_echotimes_ms.ra test_echotimes_s.ra ;\
+	$(TOOLDIR)/mobafit -I -a --init 1:1:1 --min-flag 2 --min=0:0.1 test_echotimes_s.ra testdata.ra testfit_R1.ra ;\
+	$(TOOLDIR)/nrmse -t 0.00001 testresults.ra testfit_R1.ra ;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-mobafit-r2s tests/test-mobafit-wfr2s
 TESTS += tests/test-mobafit-r2
 TESTS += tests/test-mobafit-irll
+TESTS += tests/test-mobafit-ir_t1
 
 TESTS_GPU += tests/test-mobafit-gpu
