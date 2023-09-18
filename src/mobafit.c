@@ -153,6 +153,8 @@ int main_mobafit(int argc, char* argv[argc])
 
 	const char* basis_file = NULL;
 
+        bool use_magn = false;
+
 	const struct opt_s opts[] = {
 
 #if 0
@@ -166,6 +168,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPT_SELECT('D', enum seq_type, &seq, DIFF, "diffusion"),
 		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
+		OPT_SET('a', &use_magn, "fit magnitude of signal model to data"),
 		OPT_UINT('i', &iter, "iter", "Number of IRGNM steps"),
 		OPT_SET('g', &use_gpu, "use gpu"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
@@ -352,6 +355,13 @@ int main_mobafit(int argc, char* argv[argc])
 	default:
 		__builtin_unreachable();
 	}
+
+        if (use_magn) {
+
+                assert(NULL == basis);
+                nlop = nlop_chain_FF(nlop, nlop_zabs_create(DIMS, y_patch_dims));
+        }
+
 
 	complex float init[DIMS];
 	complex float scale[DIMS];
