@@ -17,7 +17,15 @@
 #include "num/flpmath.h"
 #include "num/multiplace.h"
 
+#include "linops/fmac.h"
+#include "linops/someops.h"
+
 #include "nlops/nlop.h"
+#include "nlops/chain.h"
+#include "nlops/cast.h"
+#include "nlops/someops.h"
+#include "nlops/zexp.h"
+#include "nlops/tenmul.h"
 
 #include "T1fun.h"
 
@@ -319,4 +327,31 @@ struct nlop_s* nlop_T1_create(int N, const long map_dims[N], const long out_dims
 	data->scaling_R1s = scaling_R1s;
 
 	return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), T1_fun, T1_der, T1_adj, NULL, NULL, T1_del);
+}
+
+// p0 * ( 1 - exp(-x*real(p1) + real(p2)))
+const struct nlop_s* nlop_ir_create(int N, const long dims[N], const complex float* enc)
+{
+	auto lo = linop_fmac_create(N, dims, COEFF_FLAG, TE_FLAG, ~(TE_FLAG | COEFF_FLAG), enc);
+	
+        long in_dims[N];
+	md_select_dims(N, ~COEFF_FLAG & ~TE_FLAG, in_dims, dims);
+        
+	long out_dims[N];
+	md_select_dims(N, ~COEFF_FLAG, out_dims, dims);
+        
+        const struct nlop_s* nl1 = nlop_zaxpbz2_create(N, out_dims, ~0, -1, ~TE_FLAG, 1);
+        nl1 = nlop_prepend_FF(nlop_from_linop_F(lo), nl1, 0);
+        nl1 = nlop_prepend_FF(nlop_from_linop_F(linop_zreal_create(N, in_dims)), nl1, 0);
+        nl1 = nlop_prepend_FF(nlop_from_linop_F(linop_zreal_create(N, in_dims)), nl1, 1);
+
+        nl1 = nlop_append_FF(nl1, 0, nlop_zexp_create(N, out_dims));
+        nl1 = nlop_chain2_FF(nl1, 0, nlop_tenmul_create(N, out_dims, in_dims, out_dims), 1);
+        nl1 = nlop_chain2_FF(nl1, 0, nlop_zaxpbz2_create(N, out_dims, ~TE_FLAG, 1, ~0, -1), 1);
+        nl1 = nlop_dup_F(nl1, 0, 1);
+
+        nl1 = nlop_stack_inputs_F(nl1, 0, 1, COEFF_DIM);
+        nl1 = nlop_stack_inputs_F(nl1, 0, 1, COEFF_DIM);
+
+        return nl1;
 }

@@ -38,6 +38,7 @@
 #include "nlops/cast.h"
 #include "nlops/chain.h"
 #include "nlops/nlop_jacobian.h"
+#include "nlops/someops.h"
 
 #include "moba/meco.h"
 #include "moba/exp.h"
@@ -142,7 +143,7 @@ int main_mobafit(int argc, char* argv[argc])
 	bounds.min = bound_min;
 	bounds.max = bound_max;	
 
-	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE, DIFF, IR_LL } seq = MGRE;
+	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE, DIFF, IR_LL, IR } seq = MGRE;
 
 	unsigned int mgre_model = MECO_WFR2S;
 
@@ -160,6 +161,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 #endif
 		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
+		OPT_SELECT('I', enum seq_type, &seq, IR, "Inversion Recovery: f(M0, R1, c) =  M0 * ( 1 - exp(-t*R1 + c))"),
 		OPT_SELECT('L', enum seq_type, &seq, IR_LL, "Inversion Recovery Look-Locker"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPT_SELECT('D', enum seq_type, &seq, DIFF, "diffusion"),
@@ -235,6 +237,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	switch (seq) {
 
+        case IR:
 	case IR_LL:
 
 		x_dims[COEFF_DIM] = 3;
@@ -286,7 +289,17 @@ int main_mobafit(int argc, char* argv[argc])
 	struct nlop_s* nlop = NULL;
 
 	switch (seq) {
-	
+
+        case IR: ;
+
+		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
+		long dims[DIMS];
+		md_copy_dims(DIMS, dims, y_patch_dims);
+		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
+
+		nlop = (struct nlop_s*) nlop_ir_create(DIMS, dims, enc);
+		break;
+
 	case IR_LL: ;
 
 		long map_dims[DIMS];
@@ -328,7 +341,6 @@ int main_mobafit(int argc, char* argv[argc])
 	case DIFF: ;
 
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
-		long dims[DIMS];
 		md_copy_dims(DIMS, dims, y_patch_dims);
 		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
 
@@ -340,7 +352,6 @@ int main_mobafit(int argc, char* argv[argc])
 	default:
 		__builtin_unreachable();
 	}
-
 
 	complex float init[DIMS];
 	complex float scale[DIMS];
