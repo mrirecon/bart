@@ -2113,3 +2113,131 @@ static bool test_ode_bmc_5pool(void)
 UT_REGISTER_TEST(test_ode_bmc_5pool);
 
 
+
+// Test BMC 5 pool simulation
+//	Compare with case 4 from the pulseq BMsim challenge
+//	Pick 7 off-resonance values for speedup
+//	See : https://github.com/pulseq-cest/BMsim_challenge
+static bool test_mcconnell_CEST_ode_sim(void)
+{
+	struct sim_data sim_data;
+	sim_data.seq = simdata_seq_defaults;
+	sim_data.seq.model = MODEL_BMC;
+	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.rf_end = 0.005;
+
+	sim_data.grad = simdata_grad_defaults;
+	sim_data.tmp = simdata_tmp_defaults;
+	sim_data.other = simdata_other_defaults;
+	sim_data.voxel = simdata_voxel_defaults;
+
+	float w_larmor = 2. * M_PI * 3. * 42.5764;
+	sim_data.voxel.P = 5;
+
+	// Water pool
+	sim_data.voxel.r1[0] = 1.;
+	sim_data.voxel.r2[0] = 1. / 0.040;
+	sim_data.voxel.m0[0] = 1.;
+
+	// MT pool
+	sim_data.voxel.r1[1] = 1.;
+ 	sim_data.voxel.r2[1] = 1. / 4.0e-5;
+	sim_data.voxel.Om[1] = 3.0 * w_larmor; 
+	sim_data.voxel.m0[1] = 0.1351;
+	sim_data.voxel.k[0] = 30.;
+
+	// CEST pool
+	sim_data.voxel.r1[2] = 1.;
+ 	sim_data.voxel.r2[2] = 1. / 0.1;
+	sim_data.voxel.Om[2] = -3.5 * w_larmor; 
+	sim_data.voxel.m0[2] = 0.0009009;
+	sim_data.voxel.k[1] = 50.;
+
+	// Guanidine
+	sim_data.voxel.r1[3] = 1.;
+ 	sim_data.voxel.r2[3] = 1. / 0.1;
+	sim_data.voxel.Om[3] = -2. * w_larmor; 
+	sim_data.voxel.m0[3] = 0.0009009;
+	sim_data.voxel.k[2] = 1000.;
+
+	// NOE
+	sim_data.voxel.r1[4] = 1. / 1.3;
+ 	sim_data.voxel.r2[4] = 1. / 0.005;
+	sim_data.voxel.Om[4] = 3. * w_larmor; 
+	sim_data.voxel.m0[4] = 0.0045;
+	sim_data.voxel.k[3] = 20.;
+
+	// Reference values from group Stollberger 1
+	float ref_sb[7] = { 0.604649192, 0.902927875, 0.577800915, 0.215424391, 0.576719564, 0.903064561, 0.60501979 };
+
+	// Intialize ODE
+	int P = 5 * sim_data.voxel.P;
+	int N = 3 * sim_data.voxel.P;
+
+	float xp[P][N];
+
+	for (int p = 0; p < P; p++)
+		for (int n = 0; n < N; n++)
+			xp[p][n] = 0.;
+
+ 	for (int p = 0; p < sim_data.voxel.P; p++) {
+
+		xp[0][2 + p * 3] = sim_data.voxel.m0[p];
+		xp[2 + 2 * sim_data.voxel.P + p][2 + p * 3] = 1.;
+	}
+
+	float tol = 0.5e-5;
+	float h = 1e-7;
+	float err = 0.;
+
+	// Rectangular pulse with 3.7 uT amplitude
+	sim_data.pulse.type = PULSE_REC;
+	sim_data.pulse.rect.A = 3.7 * 2. * M_PI * 42.5764;
+
+	// Off-resonance vector
+    	float offset[7] = {-1.5, -1., -0.5, 0., 0.5, 1., 1.5 };
+
+	for (int i = 0; i < 7; i++)
+		offset[i] *= w_larmor;
+
+	// Hardcode reference scan at -300 ppm for speedup
+	float ref_scan = 0.99990;
+
+	// Loop over frequency offsets, apply RF pulse and post-prep delay
+	for (int i = 0; i < 7; i++) {
+		
+		sim_data.voxel.w = offset[i];
+
+		rf_pulse(&sim_data, h, tol, N, P, xp, NULL);
+
+		sim_data.voxel.w = 0;
+
+		// Post prep delay
+		sim_data.tmp.r2spoil = 10000.;
+		relaxation2(&sim_data, h, tol, N, P, xp, 0., 0.0065, NULL);
+		sim_data.tmp.r2spoil = 0.;
+
+		err = fabsf((xp[0][2] / ref_scan) - ref_sb[i]);
+
+		if (err > 1E-3) {
+
+			printf("error at iter : %f, %d, offset: %f\n", err, i, offset[i] / w_larmor);
+			return false;
+		}
+
+		// reset xp
+		for (int p = 0; p < P; p++)
+			for (int n = 0; n < N; n++)
+				xp[p][n] = 0.;
+
+ 		for (int p = 0; p < sim_data.voxel.P; p++) {
+
+			xp[0][2 + p * 3] = sim_data.voxel.m0[p];
+			xp[2 + 2 * sim_data.voxel.P + p][2 + p * 3] = 1.;
+		}
+	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_mcconnell_CEST_ode_sim)
