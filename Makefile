@@ -385,9 +385,6 @@ NVCC?=$(CUDA_BASE)/bin/nvcc
 
 
 ifeq ($(CUDA),1)
-ifeq ($(OMP),0)
-$(error ERROR: CUDA is not support without OpenMP, please set OMP=1)
-endif
 CUDA_H := -I$(CUDA_BASE)/include
 CPPFLAGS += -DUSE_CUDA $(CUDA_H)
 ifeq ($(CUDNN),1)
@@ -410,7 +407,7 @@ endif
 
 # sm_20 no longer supported in CUDA 9
 GPUARCH_FLAGS ?=
-NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O2 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
+NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -O2 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
 #NVCCFLAGS = -Xcompiler -fPIC -Xcompiler -fopenmp -O2  -I$(srcdir)/
 
 
@@ -424,6 +421,7 @@ NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -Xcompiler -fopenmp -O2 $(GPUARCH_FLAGS
 ifeq ($(OMP),1)
 CFLAGS += -fopenmp
 CXXFLAGS += -fopenmp
+NVCCFLAGS += -Xcompiler -fopenmp
 else
 CFLAGS += -Wno-unknown-pragmas
 CXXFLAGS += -Wno-unknown-pragmas
