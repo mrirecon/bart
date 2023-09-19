@@ -118,6 +118,16 @@ static void* get_kern_fop_unfold(int N)
 }
 
 
+template <typename T>
+static long get_copy_maxthreads(int N)
+{
+	static long mt[7] = { 0 };
+
+	if (0 == mt[N - 1])
+		mt[N - 1] = cuda_get_max_threads(get_kern_fop_unfold<T>(N));
+
+	return mt[N - 1];
+}
 
 template <typename T>
 static void cuda_copy_template_unfold(int D, const long dims[], const long ostrs[], void* dst, const long istrs[], const void* src)
@@ -147,31 +157,32 @@ static void cuda_copy_template_unfold(int D, const long dims[], const long ostrs
 
 	CUDA_ERROR_PTR(dst, src);
 
-	const void* func = get_kern_fop_unfold<T>(strs.N);
+	dim3 ex1 = getGridSize3(strs.dims, get_copy_maxthreads<T>(strs.N));
+	dim3 ex2 = getBlockSize3(strs.dims, get_copy_maxthreads<T>(strs.N));
 
 	if (1 == strs.N)
-		kern_copy_strides<T, 1><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
+		kern_copy_strides<T, 1><<<ex1, ex2, 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
 	if (2 == strs.N)
-		kern_copy_strides<T, 2><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
+		kern_copy_strides<T, 2><<<ex1, ex2, 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
 	if (3 == strs.N)
-		kern_copy_strides<T, 3><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
+		kern_copy_strides<T, 3><<<ex1, ex2, 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
 	if (4 == strs.N)
-		kern_copy_strides<T, 4><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
+		kern_copy_strides<T, 4><<<ex1, ex2, 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
 	if (5 == strs.N)
-		kern_copy_strides<T, 5><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
+		kern_copy_strides<T, 5><<<ex1, ex2, 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
 	if (6 == strs.N)
-		kern_copy_strides<T, 6><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
+		kern_copy_strides<T, 6><<<ex1, ex2, 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
 	if (7 == strs.N)
-		kern_copy_strides<T, 7><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
+		kern_copy_strides<T, 7><<<ex1, ex2, 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
 	if (8 == strs.N)
-		kern_copy_strides<T, 8><<<getGridSize3(strs.dims, func), getBlockSize3(strs.dims, func), 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
+		kern_copy_strides<T, 8><<<ex1, ex2, 0, cuda_get_stream()>>>(strs, (T*)dst, (const T*)src);
 
 	CUDA_KERNEL_ERROR;
 }
