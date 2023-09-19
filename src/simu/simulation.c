@@ -98,8 +98,7 @@ const struct simdata_voxel simdata_voxel_defaults = {
 	.m0 = { 1., 1., 1., 1., 1. },
 	.Om = { 0., 0., 0., 0., 0. },
 
-	.k = { 0., 0., 0., 0.}, 
-
+	.k = { 0., 0., 0., 0. },
 
 	.w = 0.,
 	.b1 = 1.,
@@ -1025,7 +1024,7 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 				xp[0][2 + p * 3] = data.voxel.m0[p];
 
 				// Sensitivities to m0[0] and m0[1] need 1 as initialization
-				xp[2 + 2 * data.voxel.P + p][2 + p * 3] = 1.; 
+				xp[2 + 2 * data.voxel.P + p][2 + p * 3] = 1.;
 				xstm[2 + p * 3] = data.voxel.m0[p];
 			}
                 }
@@ -1122,8 +1121,8 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 
 	bloch_simulation2(_data, R, pools, &mxy, &sa_r1, &sa_r2, &sa_m0, &sa_b1, NULL, NULL);
 
-	for(int r = 0; r < R; r++)
-		for(int n = 0; n < 3; n++) {
+	for (int r = 0; r < R; r++) {
+		for (int n = 0; n < 3; n++) {
 
 			(*m_state)[r][n] = mxy[r][0][n];
 			(*sa_r1_state)[r][n] = sa_r1[r][0][n];
@@ -1131,4 +1130,6 @@ void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3
 			(*sa_m0_state)[r][n] = sa_m0[r][0][n];
 			(*sa_b1_state)[r][n] = sa_b1[r][0][n];
 		}
+	}
 }
+

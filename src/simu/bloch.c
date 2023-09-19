@@ -280,7 +280,7 @@ void bloch_mcconnell_ode(int P, float out[P * 3], const float in[P * 3] , float 
 	for (int i = 0; i < N - 1; i++)
 		in_tmp[i] = in[i];
 
-	in_tmp[N-1] = 1.;
+	in_tmp[N - 1] = 1.;
 
 	// multiply matrix with input vector
 	for (int i = 0; i < N; i++) {
@@ -306,12 +306,11 @@ void bloch_mcc_pdy(int P, float out[P * 3][P * 3], const float in[P * 3], float 
 	for (int i = 0; i < P * 3; i++)
 		for (int j = 0; j < P * 3; j++)
 			out[j][i] = m[i][j]; //transposition
-
 }
 
 void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3], float r1[P], float r2[P], const float k[P - 1], const float m0[P], const float gb[3], float phase, float b1)
 {
-	UNUSED(r2); UNUSED(gb); 
+	UNUSED(r2); UNUSED(gb);
 
 	for (int i = 0; i < P * 5 - 1; i++)
 		for (int j = 0; j < P * 3; j++)
@@ -366,11 +365,10 @@ void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3],
 
 	// Missing term for M0 water
 	out[2 * P + 1][2] += r1[0];
-
 }
 
 void bloch_mcc_matrix_ode_sa2(int P, float matrix[15 * P * P + 1][15 * P * P + 1], float r1[P], float r2[P], float k[P - 1], float m0[P], float Om[P],  const float gb[3], float phase, float b1)
-{	
+{
 	int N = 15 * P * P + 1;
 	int Ns = P * 3; // Number of rows of a BMC submatrix / parameter that only occurs once (M, B1)
 	int Np = 3 * P * P; // Number of rows for a parameter occuring in all pools (R1, R2, M0)
@@ -386,7 +384,7 @@ void bloch_mcc_matrix_ode_sa2(int P, float matrix[15 * P * P + 1][15 * P * P + 1
 		for (int j = 0; j < P * 3; j++)
 			m2[i][j] = 0.;
 
- 	bloch_mcconnel_matrix_ode(P, m2, r1, r2, k, m0, Om, gb);
+	bloch_mcconnel_matrix_ode(P, m2, r1, r2, k, m0, Om, gb);
 
 	for (int p = 0; p < 5 * P; p++)
 		for (int i = 0; i < P * 3; i++)
@@ -466,7 +464,7 @@ void bloch_mcc_matrix_ode_sa(int P, float matrix[15 * P * P - 3 * P + 1][15 * P 
 		for (int j = 0; j < P * 3; j++)
 			m2[i][j] = 0.;
 
- 	bloch_mcconnel_matrix_ode(P, m2, r1, r2, k, m0, Om, gb);
+	bloch_mcconnel_matrix_ode(P, m2, r1, r2, k, m0, Om, gb);
 
 	for (int p = 0; p < 5 * P - 1; p++)
 		for (int i = 0; i < P * 3; i++)

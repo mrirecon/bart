@@ -36,31 +36,31 @@ static const char help_str[] = "simulation tool";
 // FIXME: Turn off sensitivity analysis if derivatives are not asked for
 static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N], complex float* mxy, long ddims[N], complex float* deriv)     // 4 Derivatives: dR1, dM0, dR2, dB1
 {
-        int D = ddims[READ_DIM];
-        int T = ddims[TE_DIM];
+	int D = ddims[READ_DIM];
+	int T = ddims[TE_DIM];
 
 	int A = 3;
 
-        float m[T][data->voxel.P][3];
-        float sa_r1[T][data->voxel.P][3];
-        float sa_r2[T][data->voxel.P][3];
-        float sa_m0[T][data->voxel.P][3];
-        float sa_b1[T][1][3];
-	float sa_Om[T][data->voxel.P][3];	
+	float m[T][data->voxel.P][3];
+	float sa_r1[T][data->voxel.P][3];
+	float sa_r2[T][data->voxel.P][3];
+	float sa_m0[T][data->voxel.P][3];
+	float sa_b1[T][1][3];
+	float sa_Om[T][data->voxel.P][3];
 	float sa_k[T][data->voxel.P][3];	// [T][data->voxel.P - 1][A] is empty for k and Om
 
-        bloch_simulation2(data, T, data->voxel.P, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1, &sa_Om, &sa_k);
+	bloch_simulation2(data, T, data->voxel.P, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1, &sa_Om, &sa_k);
 
-        long pos[DIMS];
-        md_copy_dims(DIMS, pos, ddims);
+	long pos[DIMS];
+	md_copy_dims(DIMS, pos, ddims);
 
-        long dstrs[DIMS];
-        md_calc_strides(N, dstrs, ddims, CFL_SIZE);
+	long dstrs[DIMS];
+	md_calc_strides(N, dstrs, ddims, CFL_SIZE);
 
-        long mstrs[DIMS];
-        md_calc_strides(N, mstrs, mdims, CFL_SIZE);
+	long mstrs[DIMS];
+	md_calc_strides(N, mstrs, mdims, CFL_SIZE);
 
-        long ind = 0;
+	long ind = 0;
 
 	for (int d = 0; d < D; d++) {
 
@@ -98,6 +98,7 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
 
 				pos[MAPS_DIM] = 3;
 				ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+
 				if (0 == p)
 					deriv[ind] = (A == D) ? sa_b1[i][0][d] : (sa_b1[i][0][0] + 1.i * sa_b1[i][0][1]);
 
@@ -192,20 +193,20 @@ int main_sim(int argc, char* argv[argc])
 
 	struct opt_s pool_opts[] = {
 
-            OPT_INT('P', &(data.voxel.P), "int", "Number of pools"),
-			OPTL_FLVEC4(0,        "T1",	&T1pools, 	"<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "T1 values for further pools"),
-			OPTL_FLVEC4(0,        "T2",	&T2pools, 	"<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "T2 values for further pools"),
-			OPTL_FLVEC4(0,        "Om",	&Ompools, 	"<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "Om values for further pools"),
-			OPTL_FLVEC4(0,        "M0",	&M0pools, 	"<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "M0 values for further pools"),
-			OPTL_FLVEC4(0, 		  "k",	&kpools, 	"<k1>:<k2>:<k3>:<k4>", 	"k values for further pools"),
+		OPT_INT('P', &(data.voxel.P), "int", "Number of pools"),
+		OPTL_FLVEC4(0, "T1", &T1pools, "<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "T1 values for further pools"),
+		OPTL_FLVEC4(0, "T2", &T2pools, "<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "T2 values for further pools"),
+		OPTL_FLVEC4(0, "Om", &Ompools, "<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "Om values for further pools"),
+		OPTL_FLVEC4(0, "M0", &M0pools, "<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "M0 values for further pools"),
+		OPTL_FLVEC4(0, "k",  &kpools, "<k1>:<k2>:<k3>:<k4>", "k values for further pools"),
         };
         const int N_pool_opts = ARRAY_SIZE(pool_opts);
 
 
 	const struct opt_s opts[] = {
 
-                OPTL_FLVEC3('1',        "T1",	&T1, 			"min:max:N", "range of T1 values"),
-		OPTL_FLVEC3('2',	"T2",   &T2, 			"min:max:N", "range of T2 values"),
+                OPTL_FLVEC3('1', "T1", &T1, "min:max:N", "range of T1 values"),
+		OPTL_FLVEC3('2', "T2", &T2, "min:max:N", "range of T2 values"),
 		OPTL_SELECT(0, "BLOCH", enum sim_model, &(data.seq.model), MODEL_BLOCH, "Bloch Equations (default)"),
 		OPTL_SELECT(0, "BMC", enum sim_model, &(data.seq.model), MODEL_BMC, "Bloch-McConnell Equations"),
                 OPTL_SELECT(0, "ROT", enum sim_type, &(data.seq.type), SIM_ROT, "homogeneously discretized simulation based on rotational matrices"),
@@ -277,7 +278,7 @@ int main_sim(int argc, char* argv[argc])
 	double start = timestamp();
 	do {
 		data.voxel.r1[0] = 1. / (T1[0] + (T1[1] - T1[0]) / T1[2] * (float)pos[COEFF_DIM]);
-        	data.voxel.r2[0] = 1. / (T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM]);
+		data.voxel.r2[0] = 1. / (T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM]);
 
 		for (int i = 1; i < data.voxel.P; i++) {
 
