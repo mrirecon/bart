@@ -56,7 +56,7 @@ tests/test-mobafit-wfr2s: phantom signal fmac index scale extract mobafit saxpy 
 tests/test-mobafit-r2: phantom signal reshape fmac index mobafit slice nrmse index extract invert
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
-	$(TOOLDIR)/signal -250:160:11 -T -e10 -n16 sig.ra		;\
+	$(TOOLDIR)/signal -250:160:11 -S -e10 -n16 sig.ra		;\
 	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
 	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
 	$(TOOLDIR)/index 5 16 te.ra					;\
@@ -157,7 +157,7 @@ tests/test-mobafit-irll_bas2: $(TESTS_OUT)/basis_irll.ra phantom signal reshape 
 tests/test-mobafit-gpu: phantom signal reshape fmac index mobafit slice nrmse index extract invert
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
-	$(TOOLDIR)/signal -250:160:11 -T -e10 -n16 sig.ra		;\
+	$(TOOLDIR)/signal -250:160:11 -S -e10 -n16 sig.ra		;\
 	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
 	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
 	$(TOOLDIR)/index 5 16 te.ra					;\
