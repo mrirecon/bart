@@ -37,6 +37,9 @@ void memcache_off(void)
 	memcache = false;
 }
 
+
+static const void *maxptr = NULL, *minptr = NULL;
+
 struct mem_s {
 
 	const void* ptr;
@@ -231,6 +234,15 @@ int mem_device_num(const void* ptr)
 	if (NULL == ptr)
 		return -1;
 
+	bool inrange = true;
+
+	#pragma omp critical(bart_memcache_bounds)
+	if (ptr > maxptr || ptr < minptr)
+		inrange = false;
+
+	if (!inrange)
+		return -1;
+
 	struct mem_s* p = search(ptr, false);
 	return (NULL == p) ? -1 : p->device_id;
 }
@@ -238,6 +250,15 @@ int mem_device_num(const void* ptr)
 
 bool mem_ondevice(const void* ptr)
 {
+	bool inrange = true;
+
+	#pragma omp critical(bart_memcache_bounds)
+	if (ptr > maxptr || ptr < minptr)
+		inrange = false;
+
+	if (!inrange)
+		return false;
+
 	return 0 <= mem_device_num(ptr);
 }
 
@@ -301,6 +322,15 @@ void* mem_device_malloc(int device, int stream, long size, void* (*device_alloc)
 		_nptr->device_id = device;
 		_nptr->stream_id = stream;
 		_nptr->backtrace = NULL;
+
+		#pragma omp critical(bart_memcache_bounds)
+		{
+			if (NULL == minptr || _nptr->ptr < minptr)
+				minptr = _nptr->ptr;
+
+			if (NULL == maxptr || _nptr->ptr >= maxptr) // >=, len will be at least one!!!
+				maxptr = _nptr->ptr + _nptr->len;
+		}
 
 		nptr = PTR_PASS(_nptr);
 	}
