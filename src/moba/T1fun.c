@@ -333,25 +333,25 @@ struct nlop_s* nlop_T1_create(int N, const long map_dims[N], const long out_dims
 const struct nlop_s* nlop_ir_create(int N, const long dims[N], const complex float* enc)
 {
 	auto lo = linop_fmac_create(N, dims, COEFF_FLAG, TE_FLAG, ~(TE_FLAG | COEFF_FLAG), enc);
-	
-        long in_dims[N];
+
+	long in_dims[N];
 	md_select_dims(N, ~COEFF_FLAG & ~TE_FLAG, in_dims, dims);
-        
+
 	long out_dims[N];
 	md_select_dims(N, ~COEFF_FLAG, out_dims, dims);
-        
-        const struct nlop_s* nl1 = nlop_zaxpbz2_create(N, out_dims, ~0, -1, ~TE_FLAG, 1);
-        nl1 = nlop_prepend_FF(nlop_from_linop_F(lo), nl1, 0);
-        nl1 = nlop_prepend_FF(nlop_from_linop_F(linop_zreal_create(N, in_dims)), nl1, 0);
-        nl1 = nlop_prepend_FF(nlop_from_linop_F(linop_zreal_create(N, in_dims)), nl1, 1);
 
-        nl1 = nlop_append_FF(nl1, 0, nlop_zexp_create(N, out_dims));
-        nl1 = nlop_chain2_FF(nl1, 0, nlop_tenmul_create(N, out_dims, in_dims, out_dims), 1);
-        nl1 = nlop_chain2_FF(nl1, 0, nlop_zaxpbz2_create(N, out_dims, ~TE_FLAG, 1, ~0, -1), 1);
-        nl1 = nlop_dup_F(nl1, 0, 1);
+	const struct nlop_s* nl1 = nlop_zaxpbz2_create(N, out_dims, ~0, -1, ~TE_FLAG, 1);
+	nl1 = nlop_prepend_FF(nlop_from_linop_F(lo), nl1, 0);
+	nl1 = nlop_prepend_FF(nlop_from_linop_F(linop_zreal_create(N, in_dims)), nl1, 0);
+	nl1 = nlop_prepend_FF(nlop_from_linop_F(linop_zreal_create(N, in_dims)), nl1, 1);
 
-        nl1 = nlop_stack_inputs_F(nl1, 0, 1, COEFF_DIM);
-        nl1 = nlop_stack_inputs_F(nl1, 0, 1, COEFF_DIM);
+	nl1 = nlop_append_FF(nl1, 0, nlop_zexp_create(N, out_dims));
+	nl1 = nlop_chain2_FF(nl1, 0, nlop_tenmul_create(N, out_dims, in_dims, out_dims), 1);
+	nl1 = nlop_chain2_FF(nl1, 0, nlop_zaxpbz2_create(N, out_dims, ~TE_FLAG, 1, ~0, -1), 1);
+	nl1 = nlop_dup_F(nl1, 0, 1);
 
-        return nl1;
+	nl1 = nlop_stack_inputs_F(nl1, 0, 1, COEFF_DIM);
+	nl1 = nlop_stack_inputs_F(nl1, 0, 1, COEFF_DIM);
+
+	return nl1;
 }

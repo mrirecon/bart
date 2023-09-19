@@ -229,7 +229,7 @@ int main_sim(int argc, char* argv[argc])
 
 	do {
 		data.voxel.r1 = 1. / (T1[0] + (T1[1] - T1[0]) / T1[2] * (float)pos[COEFF_DIM]);
-        	data.voxel.r2 = 1. / (T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM]);
+		data.voxel.r2 = 1. / (T2[0] + (T2[1] - T2[0]) / T2[2] * (float)pos[COEFF2_DIM]);
 
                 perform_bloch_simulation(DIMS, &data, tmdims, tm, tddims, td);
 
