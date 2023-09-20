@@ -518,22 +518,28 @@ tests/test-pics-phase: traj phantom ones join nufft fmac scale bitmask saxpy sli
 
 
 $(TESTS_OUT)/ksp_usamp_1.ra: phantom poisson squeeze fmac
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -x 64 -k -s 2 ksp_1.ra					;\
 	$(TOOLDIR)/poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_1.ra		;\
 	$(TOOLDIR)/squeeze tmp_poisson_1.ra poisson_1.ra				;\
-	$(TOOLDIR)/fmac ksp_1.ra poisson_1.ra $@
+	$(TOOLDIR)/fmac ksp_1.ra poisson_1.ra $@					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 
 $(TESTS_OUT)/ksp_usamp_2.ra: phantom poisson squeeze fmac
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -G -x 64 -k -s 2 ksp_2.ra				;\
 	$(TOOLDIR)/poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_2.ra		;\
 	$(TOOLDIR)/squeeze tmp_poisson_2.ra poisson_2.ra				;\
-	$(TOOLDIR)/fmac ksp_2.ra poisson_2.ra $@
+	$(TOOLDIR)/fmac ksp_2.ra poisson_2.ra $@					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 
 $(TESTS_OUT)/ksp_usamp_3.ra: phantom poisson squeeze fmac
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -B -x 64 -k -s 2 ksp_3.ra				;\
 	$(TOOLDIR)/poisson -Y 64 -y 2 -Z 64 -z 2 -C 32 -e tmp_poisson_3.ra		;\
 	$(TOOLDIR)/squeeze tmp_poisson_3.ra poisson_3.ra				;\
-	$(TOOLDIR)/fmac ksp_3.ra poisson_3.ra $@
+	$(TOOLDIR)/fmac ksp_3.ra poisson_3.ra $@					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 
 $(TESTS_OUT)/sens_1.ra: ecalib $(TESTS_OUT)/ksp_usamp_1.ra
 	$(TOOLDIR)/ecalib -S $(TESTS_OUT)/ksp_usamp_1.ra $@
