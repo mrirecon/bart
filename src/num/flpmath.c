@@ -446,43 +446,29 @@ static void make_3op_scalar(md_3op_t fun, int D, const long dims[D], const long 
 
 static void make_z3op_scalar_direct(md_z3op_t fun, int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
 {
-	complex float* valp = &val;
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(optr))
-		valp = gpu_constant(&val, CFL_SIZE);
-#endif
+	complex float* valp = md_alloc_sameplace(D, MD_SINGLETON_DIMS(D), CFL_SIZE, optr);
+	md_copy(D, MD_SINGLETON_DIMS(D), valp, &val, CFL_SIZE);
 
 	long strs1[D];
 	md_singleton_strides(D, strs1);
 
 	fun(D, dims, ostr, optr, istr, iptr, strs1, valp);
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(optr))
-		md_free(valp);
-#endif
+	md_free(valp);
 }
 
 
 static void make_3op_scalar_direct(md_3op_t fun, int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
-	float* valp = &val;
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(optr))
-		valp = gpu_constant(&val, FL_SIZE);
-#endif
+	float* valp = md_alloc_sameplace(D, MD_SINGLETON_DIMS(D), FL_SIZE, optr);
+	md_copy(D, MD_SINGLETON_DIMS(D), valp, &val, FL_SIZE);
 
 	long strs1[D];
 	md_singleton_strides(D, strs1);
 
 	fun(D, dims, ostr, optr, istr, iptr, strs1, valp);
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(optr))
-		md_free(valp);
-#endif
+	md_free(valp);
 }
 
 
