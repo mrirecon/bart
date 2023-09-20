@@ -71,8 +71,14 @@ void estimate_pattern(int D, const long dims[D], unsigned long flags, complex fl
 	long strs1[D];
 	md_singleton_strides(D, strs1);
 
-	md_zcmp2(D, dims2, strs2, pattern, strs2, pattern, strs1, &(complex float){ 0. });
-	md_zsub2(D, dims2, strs2, pattern, strs1, &(complex float){ 1. }, strs2, pattern);
+	complex float* tmp = md_alloc_sameplace(D, dims2, CFL_SIZE, kspace_data);
+	md_zfill(D, dims2, tmp, 0.);
+	md_zcmp2(D, dims2, strs2, pattern, strs2, pattern, strs2, tmp);
+
+	md_zfill(D, dims2, tmp, 1.);
+	md_zsub2(D, dims2, strs2, pattern, strs2, tmp, strs2, pattern);
+
+	md_free(tmp);
 }
 
 
