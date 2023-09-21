@@ -548,7 +548,24 @@ static void mpi_reduce_sum_kernel(unsigned long reduce_flags, long N, float vec[
 #endif
 }
 
+void mpi_reduce_sum_vector(long N, float vec[N])
+{
+	if (1 == mpi_get_num_procs())
+		error("MPI reduction requested but only run by one process!\n");
 
+#ifdef USE_MPI
+
+	float* end = vec + N;
+	while (vec < end) {
+
+		mpi_allreduce_sum_gpu(MIN(end - vec, INT_MAX / 2), vec, mpi_get_comm());
+		vec += MIN(end - vec, INT_MAX / 2);
+	}
+#else
+	UNUSED(N);
+	UNUSED(vec);
+#endif
+}
 
 void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[N], float* ptr)
 {
@@ -586,6 +603,12 @@ void  mpi_reduce_zsum(int N, unsigned long reduce_flags, const long dims[N], com
 {
 	mpi_reduce_sum(N + 1, reduce_flags, MD_REAL_DIMS(N, dims), (float*)ptr);
 }
+
+void  mpi_reduce_zsum_vector(long N, complex float ptr[N])
+{
+	mpi_reduce_sum_vector(2 * N, (float*)ptr);
+}
+
 
 #ifdef USE_MPI
 static void mpi_allreduce_sumD_gpu(int N, double vec[N], MPI_Comm comm)

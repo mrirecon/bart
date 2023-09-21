@@ -32,6 +32,9 @@ extern void mpi_reduce_zsum(int N, unsigned long reduce_flags, const long dims[_
 extern void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[__VLA(N)], double* ptr);
 extern void mpi_reduce_zsumD(int N, unsigned long reduce_flags, const long dims[__VLA(N)], _Complex double* ptr);
 
+extern void  mpi_reduce_sum_vector(long N, float ptr[__VLA(N)]);
+extern void  mpi_reduce_zsum_vector(long N, _Complex float ptr[__VLA(N)]);
+
 extern void mpi_reduce_land(long N, _Bool vec[__VLA(N)]);
 
 #include "misc/cppwrap.h"
