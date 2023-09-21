@@ -17,6 +17,7 @@
 #include "num/multind.h"
 
 #include "linops/someops.h"
+#include "linops/fmac.h"
 
 #include "nlops/nlop.h"
 #include "nlops/chain.h"
@@ -1540,24 +1541,38 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 	int II = nn_get_nr_in_args(x[0]);
 	int OO = nn_get_nr_out_args(x[0]);
 
-	for (int i = 1; i < N; i++) {
+	long ltot = 0;
+	long lwgh[N];
+	
+	for (int i = 0; i < N; i++) {
 
 		assert(II == nn_get_nr_in_args(x[i]));
 
+		lwgh[i] = 0;
+
 		for (int j = 0; j < II; j++) {
 
+			auto iov = nlop_generic_domain(x[i]->nlop, j);
 			assert((NULL == x[i]->in_names[j]) == (NULL == x[0]->in_names[j]));
 			assert(x[i]->in_types[j] == x[0]->in_types[j]);
 			assert(x[0]->in_types[j] != IN_BATCHNORM);
+			if (IN_OPTIMIZE != x[i]->in_types[j])
+				lwgh[i] = MAX(lwgh[i], iov->dims[stack_dim]);
 		}
+
+		ltot += lwgh[i];
 
 		assert(OO == nn_get_nr_out_args(x[i]));
 
 		for (int j = 0; j < OO; j++) {
 
+			auto iov = nlop_generic_codomain(x[0]->nlop, j);
+
 			assert((NULL == x[i]->out_names[j]) == (NULL == x[0]->out_names[j]));
 			assert(x[i]->out_types[j] == x[0]->out_types[j]);
-			assert((x[0]->out_types[j] == OUT_UNDEFINED) || (x[0]->out_types[j] == OUT_STATIC));
+			assert(   (x[0]->out_types[j] == OUT_UNDEFINED)
+			       || (x[0]->out_types[j] == OUT_STATIC)
+			       || (x[0]->out_types[j] == OUT_OPTIMIZE && 1 == md_calc_size(iov->N, iov->dims)));
 		}
 	}
 
@@ -1568,13 +1583,40 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 	int in_stack_dim[II];
 	int out_stack_dim[OO];
 
-	for (int i = 0; i < II; i++)
-		in_stack_dim[i] = (IN_OPTIMIZE == x[0]->in_types[i]) ? -1 : stack_dim;
-	
-	for (int i = 0; i < OO; i++)
-		out_stack_dim[i] = stack_dim;
+	for (int i = 0; i < II; i++) {
 
-	auto result = nn_from_nlop_F(nlop_stack_multiple_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, true, true));
+		if (IN_OPTIMIZE == x[0]->in_types[i])
+			in_stack_dim[i] = -1;
+		else {
+
+			if (-1 == stack_dim)
+				in_stack_dim[i] = nlop_generic_domain(nlops[0], i)->N - 1;
+			else 
+				in_stack_dim[i] = stack_dim;
+		}
+	}
+
+	for (int i = 0; i < OO; i++) {
+
+		if (-1 == stack_dim)
+			out_stack_dim[i] = nlop_generic_codomain(nlops[0], i)->N - 1;
+		else 
+			out_stack_dim[i] = stack_dim;
+
+		out_stack_dim[i] = (OUT_OPTIMIZE == x[0]->out_types[i]) ? 0 : stack_dim;
+	}
+	
+	auto nlop = nlop_stack_multiple_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, true, true);
+	
+	complex float wgh[N];
+	for (int i = 0; i < N; i++)
+		wgh[i] = (float)lwgh[i] / ltot;
+
+	for (int o = 0; o < OO; o++)
+		if (x[0]->out_types[o] == OUT_OPTIMIZE)
+			nlop = nlop_append_FF(nlop, o, nlop_from_linop_F(linop_fmac_dims_create(1, MD_DIMS(1), MD_DIMS(N), MD_DIMS(N), wgh)));
+
+	auto result = nn_from_nlop_F(nlop);
 
 	for (int i = 0; i < II; i++)
 		nn_clone_arg_i_from_i(result, i, x[0], i);
