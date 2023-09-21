@@ -559,7 +559,7 @@ static bool use_gpu(int p, void* ptr[p])
 		gpu = gpu || cuda_ondevice(ptr[i]);
 
 	for (int i = 0; i < p; i++)
-		gpu = gpu && cuda_accessible(ptr[i]);
+		gpu = gpu && cuda_ondevice(ptr[i]);
 
 #if 0
 	// FIXME: fails for copy

@@ -6,13 +6,5 @@
 extern void num_init(void);
 extern void num_init_gpu(void);
 extern void num_deinit_gpu(void);
-extern void num_init_multigpu_select(unsigned long requested_gpus);
-extern void num_init_multigpu(int requested_gpus);
-/**
- * selects the GPU with the maximum available memory
- *   (if there are more than one on the system)
- */
-extern void num_init_gpu_memopt(void);
-extern void num_init_gpu_device(int device);
 extern void num_set_num_threads(int n);
 

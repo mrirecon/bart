@@ -227,7 +227,7 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_UINT(0, "pusteps", &conf.pusteps, "ud", "Number of partial update steps for IRGNM"),
 		OPTL_FLOAT(0, "ratio", &conf.ratio, "f:[0;1]", "Ratio of partial updates: ratio*<updated-map> + (1-ratio)*<previous-map>"),
 		OPTL_FLOAT(0, "l1val", &conf.l1val, "f", "Regularization scaling of l1 wavelet (default: 1.)"),
-		OPTL_INT(0, "multi-gpu", &conf.num_gpu, "num", "number of gpus to use"),
+		OPTL_INT(0, "multi-gpu", &conf.num_gpu, "num", "(number of gpus to use)"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
 		OPT_INFILE('t', &traj_file, "traj", "K-space trajectory"),
 		OPT_FLOAT('o', &oversampling, "os", "Oversampling factor for gridding [default: 1.]"),
@@ -251,14 +251,13 @@ int main_moba(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	if (conf.use_gpu || (0 < conf.num_gpu)) {
+	if (0 != conf.num_gpu)
+		error("Multi-GPU only supported by MPI!\n");
 
-		num_init_multigpu(MAX(1, conf.num_gpu));
-
-	} else {
-
+	if (conf.use_gpu)
+		num_init_gpu();
+	else
 		num_init();
-	}
 	
 #ifdef USE_CUDA
 	cuda_use_global_memory();

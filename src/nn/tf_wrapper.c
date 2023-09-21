@@ -165,11 +165,8 @@ static TF_SessionOptions* get_session_opts(void)
 	uint8_t* config = no_gpu;
 
 #ifdef USE_CUDA
-	if (1 == cuda_num_devices())
-		config = gpu[cuda_get_device_internal_unchecked()];
-
-	if (1 < cuda_num_devices())
-		error("TensorFlow Wrapper does not support multiple GPUs!\n");
+	if (-1 != cuda_get_device_id())
+		config = gpu[cuda_get_device_id()];
 #else
 	UNUSED(gpu);
 #endif

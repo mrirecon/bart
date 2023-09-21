@@ -67,45 +67,6 @@
 
 
 
-
-extern struct cuda_threads_s* gpu_threads_create(const void* ref)
-{
-#ifdef USE_CUDA
-	if ((NULL == ref) || cuda_ondevice(ref))
-		return cuda_threads_create();
-#else
-	UNUSED(ref);
-#endif
-	return NULL;
-}
-
-extern void gpu_threads_enter(struct cuda_threads_s* x)
-{
-#ifdef USE_CUDA
-	cuda_threads_enter(x);
-#else
-	UNUSED(x);
-#endif
-}
-
-extern void gpu_threads_leave(struct cuda_threads_s* x)
-{
-#ifdef USE_CUDA
-	cuda_threads_leave(x);
-#else
-	UNUSED(x);
-#endif
-}
-
-extern void gpu_threads_free(struct cuda_threads_s* x)
-{
-#ifdef USE_CUDA
-	cuda_threads_free(x);
-#else
-	UNUSED(x);
-#endif
-}
-
 static void md_nary_int(int C, int D, const long dim[D], const long* str[C], void* ptr[C], md_nary_fun_t fun)
 {
 	while ((D > 0) && (1 == dim[D - 1]))
@@ -211,8 +172,6 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 		nparallel++;
 	}
 
-	struct cuda_threads_s* gpu_stat = gpu_threads_create(ptr[0]);
-
 #ifdef _OPENMP
 	int old_threads = omp_get_max_threads();
 	int outer_threads = MAX(1, MIN(old_threads, total_iterations));
@@ -227,7 +186,6 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 #ifdef _OPENMP
 		omp_set_num_threads(inner_threads);
 #endif
-		gpu_threads_enter(gpu_stat);
 
 		// Recover place in parallel iteration space
 		long iter_i[D];
@@ -250,15 +208,11 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 		}
 
 		md_nary(C, D, dimc, str, moving_ptr, fun);
-
-		gpu_threads_leave(gpu_stat);
 	}
 
 #ifdef _OPENMP
 	omp_set_num_threads(old_threads);
 #endif
-
-	gpu_threads_free(gpu_stat);
 }
 
 
@@ -915,7 +869,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 #endif
 
 #ifdef USE_CUDA
-	if (use_gpu && (cuda_get_device_num(optr) == cuda_get_device_num(iptr)) && ND <= 7) {
+	if (use_gpu && (cuda_ondevice(optr) == cuda_ondevice(iptr)) && ND <= 7) {
 
 		cuda_copy_ND(ND, tdims, tostr, optr, tistr, iptr, size);
 		return;

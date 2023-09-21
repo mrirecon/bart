@@ -311,6 +311,12 @@ int main_bart(int argc, char* argv[argc])
 
 		int final_ret = 0;
 
+#ifdef USE_CUDA
+		if (cfl_loop_omp())
+			cuda_set_stream_level();
+#endif
+
+
 #pragma omp parallel num_threads(cfl_loop_num_workers()) if(cfl_loop_omp())
 		{
 			long start = cfl_loop_worker_id();

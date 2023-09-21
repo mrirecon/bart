@@ -34,61 +34,20 @@ static void cudnn_error(const char* file, int line, cudnnStatus_t code)
 #define CUDNN_CALL(x)	({ CUDA_ASYNC_ERROR_NOTE("before cuDNN call"); cudnn_set_gpulock(); cudnnStatus_t errval = (x); if (CUDNN_STATUS_SUCCESS  != errval) cudnn_error(__FILE__, __LINE__, errval); cudnn_unset_gpulock(); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
 
 
-static cudnnHandle_t handle[MAX_CUDA_DEVICES];
-static int num_devices_initialized = 0;
-
-
-void cudnn_init(void)
-{
-	if (0 != num_devices_initialized)
-		error("Cannot reinitialize cuDNN, deinit it first!");
-
-	int old_device = cuda_get_device();
-
-	for (int device = 0; device < cuda_num_devices(); ++device) {
-
-		cuda_set_device(device);
-		CUDNN_ERROR(cudnnCreate(handle + device));
-	}
-
-	cuda_set_device(old_device);
-
-	num_devices_initialized = cuda_num_devices();	
-}
-
-
-void cudnn_deinit(void)
-{
-	if (cuda_num_devices() != num_devices_initialized)
-		error("Cannot deinitialize cuDNN, number of devices has changed from initialization!");
-
-	for (int device = 0; device < cuda_num_devices(); ++device)
-		CUDNN_ERROR(cudnnDestroy(handle[device]));
-
-	num_devices_initialized = 0;	
-}
+static cudnnHandle_t handle[CUDA_MAX_STREAMS + 1];
 
 #ifdef _OPENMP
 #include <omp.h>
-static bool gpulock_init = false;
-static omp_lock_t gpulock[MAX_CUDA_DEVICES];
+static omp_lock_t cudnn_gpulock[CUDA_MAX_STREAMS + 1];
+
 static void cudnn_set_gpulock(void)
 {
-	#pragma omp critical (init_cudnn_gpulock)
-	if (!gpulock_init) {
-
-		for (int i = 0; i < MAX_CUDA_DEVICES; i++)
-			omp_init_lock(&gpulock[i]);
-
-		gpulock_init = true;		
-	}
-
-	omp_set_lock(&gpulock[cuda_get_device()]);
+	omp_set_lock(&(cudnn_gpulock[cuda_get_stream_id()]));
 }
 
 static void cudnn_unset_gpulock(void)
 {
-	omp_unset_lock(&gpulock[cuda_get_device()]);
+	omp_unset_lock(&(cudnn_gpulock[cuda_get_stream_id()]));
 }
 #else
 static void cudnn_set_gpulock(void)
@@ -102,79 +61,35 @@ static void cudnn_unset_gpulock(void)
 }
 #endif
 
+void cudnn_init(void)
+{
+	for (int i = 0; i < CUDA_MAX_STREAMS + 1; i++) {
+
+		CUDNN_ERROR(cudnnCreate(&(handle[i])));
+#ifdef _OPENMP
+		omp_init_lock(&(cudnn_gpulock[i]));
+#endif
+	}
+}
+
+
+void cudnn_deinit(void)
+{
+	for (int i = 0; i < CUDA_MAX_STREAMS + 1; i++) {
+
+		CUDNN_ERROR(cudnnDestroy(handle[i]));
+#ifdef _OPENMP
+		omp_destroy_lock(&(cudnn_gpulock[i]));
+#endif
+	}
+}
+
+
 static cudnnHandle_t get_handle(void)
 {
-	if (cuda_num_devices() != num_devices_initialized)
-		error("cuDNN not initialized correctly!");
-
-	cudnnHandle_t result = handle[cuda_get_device()];
-	CUDNN_ERROR(cudnnSetStream(result, cuda_get_stream()));
-
-	return result;
+	return handle[cuda_get_stream_id()];
 }
 
-#if 0
-static void destroy_handle(void)
-{
-	CUDNN_ERROR(cudnnDestroy(handle));
-	handle_created = false;
-}
-#endif
-
-#if 0
-static void cudnn_print_tensor_descriptor(const cudnnTensorDescriptor_t tensorDesc) {
-
-	int nbDims = CUDNN_DIM_MAX;
-
-	cudnnDataType_t dataType;
- 	int dimA[nbDims];
- 	int strideA[nbDims];
-
-	CUDNN_ERROR(cudnnGetTensorNdDescriptor(tensorDesc, nbDims, &dataType, &nbDims, dimA, strideA));
-
-	printf("Tensor Dims:\n");
-	print_int(nbDims, dimA);
-	printf("Tensor Strides:\n");
-	print_int(nbDims, strideA);
-}
-
-static void cudnn_print_filter_descriptor(const cudnnFilterDescriptor_t filterDesc) {
-
-	int nbDims = CUDNN_DIM_MAX;
-
-	cudnnDataType_t dataType;
-	cudnnTensorFormat_t format;
- 	int dimA[nbDims];
-
-	CUDNN_ERROR(cudnnGetFilterNdDescriptor(filterDesc, nbDims, &dataType, &format, &nbDims, dimA));
-
-	printf("Filter Dims:\n");
-	print_int(nbDims, dimA);
-}
-
-static void cudnn_print_convolution_descriptor(const cudnnConvolutionDescriptor_t convDesc) {
-
-	int nbDims = CUDNN_DIM_MAX-2;
-
-	cudnnDataType_t dataType;
-	cudnnConvolutionMode_t mode;
-
- 	int padA[nbDims];
-	int filterStrideA[nbDims];
-	int dilationA[nbDims];
-
-	CUDNN_ERROR(cudnnGetConvolutionNdDescriptor(convDesc, nbDims, &nbDims, padA, filterStrideA, dilationA, &mode, &dataType));
-
-	printf("Padding:\n");
-	print_int(nbDims, padA);
-
-	printf("Strides:\n");
-	print_int(nbDims, filterStrideA);
-
-	printf("Dilation:\n");
-	print_int(nbDims, dilationA);
-}
-#endif
 
 static cudnnTensorDescriptor_t bart_to_cudnn_float_tensor_descriptor(unsigned int D, const long dims[D], const long str[D])
 {

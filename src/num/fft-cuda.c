@@ -32,9 +32,9 @@
 
 struct fft_cuda_plan_s {
 
-	cufftHandle cufft[MAX_CUDA_DEVICES];
-	bool cufft_initialized[MAX_CUDA_DEVICES];
-	size_t workspace_size[MAX_CUDA_DEVICES];
+	cufftHandle cufft;
+	bool cufft_initialized;
+	size_t workspace_size;
 
 	struct fft_cuda_plan_s* chain;
 
@@ -103,12 +103,8 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 	plan->idist = 0;
 	plan->backwards = backwards;
 	plan->chain = NULL;
-
-	for (int i = 0; i < MAX_CUDA_DEVICES; i++) {
-
-		plan->cufft_initialized[i] = false;
-		plan->workspace_size[i] = 0;
-	}
+	plan->cufft_initialized = false;
+	plan->workspace_size = 0;
 
 	struct iovec dims[N];
 	struct iovec hmdims[N];
@@ -216,24 +212,15 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 
 	assert(k <= 3);
 
-	int old_device = cuda_get_device();
+	CUFFT_ERROR(cufftCreate(&plan->cufft));
+	CUFFT_ERROR(cufftSetAutoAllocation(plan->cufft, 0));
+	CUFFT_ERROR(cufftMakePlanMany(plan->cufft, k,
+				cudims, cuiemb, istride, idist,
+				cuoemb, ostride, odist, CUFFT_C2C, cubs, &(plan->workspace_size)));
+	CUFFT_ERROR(cufftSetStream(plan->cufft, cuda_get_stream()));
 
-	for (int device = 0; device < cuda_num_devices(); ++device) {
-
-		cuda_set_device(device);
-
-
-		CUFFT_ERROR(cufftCreate(&plan->cufft[device]));
-		CUFFT_ERROR(cufftSetAutoAllocation(plan->cufft[device], 0));
-		CUFFT_ERROR(cufftMakePlanMany(plan->cufft[device], k,
-					cudims, cuiemb, istride, idist,
-					cuoemb, ostride, odist, CUFFT_C2C, cubs, &(plan->workspace_size[device])));
-
-
-		plan->cufft_initialized[device] = true;
-	}
-	cuda_set_device(old_device);
-
+	plan->cufft_initialized = true;
+	
 
 	return PTR_PASS(plan);
 
@@ -291,51 +278,14 @@ void fft_cuda_free_plan(struct fft_cuda_plan_s* cuplan)
 	if (NULL != cuplan->chain)
 		fft_cuda_free_plan(cuplan->chain);
 
-	for (int device = 0; device < cuda_num_devices(); ++device) {
+	if (cuplan->cufft_initialized) {
 
-		if (cuplan->cufft_initialized[device]) {
-
-			CUFFT_ERROR(cufftDestroy(cuplan->cufft[device]));
-			cuplan->cufft_initialized[device] = false;
-		}
+		CUFFT_ERROR(cufftDestroy(cuplan->cufft));
+		cuplan->cufft_initialized = false;
 	}
 
 	xfree(cuplan);
 }
-
-#ifdef _OPENMP
-#include <omp.h>
-static bool gpulock_init = false;
-static omp_lock_t gpulock[MAX_CUDA_DEVICES];
-static void cufft_set_gpulock(void)
-{
-	#pragma omp critical (init_cufft_gpulock)
-	if (!gpulock_init) {
-
-		for (int i = 0; i < MAX_CUDA_DEVICES; i++)
-			omp_init_lock(&gpulock[i]);
-
-		gpulock_init = true;		
-	}
-
-	omp_set_lock(&gpulock[cuda_get_device()]);
-}
-
-static void cufft_unset_gpulock(void)
-{
-	omp_unset_lock(&gpulock[cuda_get_device()]);
-}
-#else
-static void cufft_set_gpulock(void)
-{
-	return;
-}
-
-static void cufft_unset_gpulock(void)
-{
-	return;
-}
-#endif
 
 void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const complex float* src)
 {
@@ -344,29 +294,18 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 	assert(NULL != cuplan);
 
 	
-	assert(cuplan->cufft_initialized[cuda_get_device()]);
-	size_t workspace_size = cuplan->workspace_size[cuda_get_device()];
-	cufftHandle cufft = cuplan->cufft[cuda_get_device()];
+	assert(cuplan->cufft_initialized);
+	size_t workspace_size = cuplan->workspace_size;
+	cufftHandle cufft = cuplan->cufft;
 
 	void* workspace = md_alloc_gpu(1, MAKE_ARRAY(1l), workspace_size);
 	CUDA_ERROR_PTR(dst, src, workspace);
-
-	//FIXME: This should not be necessary, however, there seems to be
-	//	 a race condition in cufft so we keep it like this.
-	cuda_sync_stream();
-
-	cufft_set_gpulock();
-
-	CUFFT_ERROR(cufftSetStream(cufft, cuda_get_stream()));
 	CUFFT_ERROR(cufftSetWorkArea(cufft, workspace));
 	for (int i = 0; i < cuplan->batch; i++)
 		CUFFT_ERROR(cufftExecC2C(cufft,
 					 (cufftComplex*)src + i * cuplan->idist,
 					 (cufftComplex*)dst + i * cuplan->odist,
 					 (!cuplan->backwards) ? CUFFT_FORWARD : CUFFT_INVERSE));
-
-	cufft_unset_gpulock();
-	cuda_sync_stream();
 	
 	md_free(workspace);
 

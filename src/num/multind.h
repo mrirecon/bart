@@ -107,12 +107,6 @@ extern void* md_gpu_move(int D, const long dims[__VLA(D)], const void* ptr, size
 extern void* md_alloc_sameplace(int D, const long dimensions[__VLA(D)], size_t size, const void* ptr);
 extern void md_free(const void* p);
 
-struct cuda_threads_s;
-extern struct cuda_threads_s* gpu_threads_create(const void* ref);
-extern void gpu_threads_enter(struct cuda_threads_s* x);
-extern void gpu_threads_leave(struct cuda_threads_s* x);
-extern void gpu_threads_free(struct cuda_threads_s* x);
-
 extern void* md_alloc_mpi(int D, unsigned long dist_flags, const long dims[__VLA(D)], size_t size);
 extern void* md_mpi_move(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size);
 extern void* md_mpi_moveF(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size);

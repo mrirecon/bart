@@ -631,19 +631,11 @@ void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* o
 		int max_threads = omp_get_max_threads();
 		omp_set_num_threads(num_threads);
 
-		struct cuda_threads_s* gpu_stat = gpu_threads_create(NULL);
-
 		#pragma omp parallel
 		{
-			gpu_threads_enter(gpu_stat);
-
 			for (int i = omp_get_thread_num(); i < D; i += omp_get_num_threads())
 				operator_generic_apply_unchecked(op[i], N, args[i]);
-
-			gpu_threads_leave(gpu_stat);
 		}
-
-		gpu_threads_free(gpu_stat);
 
 		omp_set_num_threads(max_threads);
 	
@@ -866,7 +858,6 @@ struct op_loop_s {
 	const struct operator_s* op;
 
 	unsigned int parallel;
-	bool gpu;
 };
 
 static DEF_TYPEID(op_loop_s);
@@ -893,32 +884,16 @@ static void op_loop_fun(const operator_data_t* _data, unsigned int N, void* args
 	const auto data = CAST_DOWN(op_loop_s, _data);
 	assert(N == data->N);
 
-	if (data->gpu) {
-#if defined(USE_CUDA) && defined(_OPENMP)
-		omp_set_num_threads(cuda_num_devices() * cuda_num_streams());
-//		fft_set_num_threads(1);
-#else
-		error("Both OpenMP and CUDA are necessary for op_loop_fun. At least one was not found.\n");
-#endif
-	}
-
 	extern bool num_auto_parallelize;
 	bool ap_save = num_auto_parallelize;
 	num_auto_parallelize = false;
 
-	struct cuda_threads_s* gpu_stat = gpu_threads_create(NULL);
-
 	NESTED(void, op_loop_nary, (void* ptr[]))
 	{
-		gpu_threads_enter(gpu_stat);
 		operator_generic_apply_unchecked(data->op, data->N, ptr);
-		gpu_threads_leave(gpu_stat);
 	};
 
 	md_parallel_nary(N, data->D, data->dims0, data->parallel, data->strs, args, op_loop_nary);
-
-	gpu_threads_free(gpu_stat);
-
 	num_auto_parallelize = ap_save;
 }
 
@@ -938,7 +913,7 @@ static void merge_dims(unsigned int D, long odims[D], const long idims1[D], cons
 const struct operator_s* operator_loop_parallel2(unsigned int N, unsigned int D,
 				const long dims[D], const long (*strs)[D],
 				const struct operator_s* op,
-				unsigned int flags, bool gpu)
+				unsigned int flags)
 
 {
 	assert(N == operator_nr_args(op));
@@ -988,7 +963,6 @@ const struct operator_s* operator_loop_parallel2(unsigned int N, unsigned int D,
 	data->strs = */*PTR_PASS*/(strs2);
 
 	data->parallel = flags;
-	data->gpu = gpu;
 
 	const struct operator_s* rop = operator_generic_create2(N, op->io_flags, D2, *dims2, *strs2, CAST_UP(PTR_PASS(data)), op_loop_fun, op_loop_del, NULL);
 
@@ -1002,10 +976,10 @@ const struct operator_s* (operator_loop2)(unsigned int N, const unsigned int D,
 				const long dims[D], const long (*strs)[D],
 				const struct operator_s* op)
 {
-	return operator_loop_parallel2(N, D, dims, strs, op, 0u, false);
+	return operator_loop_parallel2(N, D, dims, strs, op, 0u);
 }
 
-const struct operator_s* operator_loop_parallel(unsigned int D, const long dims[D], const struct operator_s* op, unsigned int parallel, bool gpu)
+const struct operator_s* operator_loop_parallel(unsigned int D, const long dims[D], const struct operator_s* op, unsigned int parallel)
 {
 	unsigned int N = operator_nr_args(op);
 	long strs[N][D];
@@ -1018,12 +992,12 @@ const struct operator_s* operator_loop_parallel(unsigned int D, const long dims[
 		md_calc_strides(D, strs[i], tdims, operator_arg_domain(op, i)->size);
 	}
 
-	return operator_loop_parallel2(N, D, dims, strs, op, parallel, gpu);
+	return operator_loop_parallel2(N, D, dims, strs, op, parallel);
 }
 
 const struct operator_s* operator_loop(unsigned int D, const long dims[D], const struct operator_s* op)
 {
-	return operator_loop_parallel(D, dims, op, 0u, false);
+	return operator_loop_parallel(D, dims, op, 0u);
 }
 
 enum COPY_LOCATION { CL_SAMEPLACE, CL_DEVICE, CL_CPU };
@@ -1036,10 +1010,6 @@ struct copy_data_s {
 
 	int N;
 	const long** strs;
-
-	int device;
-	// -1 selects device by thread id
-	// -2 does not change the device at all
 	
 	enum COPY_LOCATION* loc;
 
@@ -1049,45 +1019,6 @@ struct copy_data_s {
 
 static DEF_TYPEID(copy_data_s);
 
-
-#if defined(USE_CUDA) && defined(_OPENMP)
-static bool gpulock_init = false;
-static omp_nest_lock_t gpulock[MAX_CUDA_DEVICES];
-
-static omp_nest_lock_t* set_gpu_lock(int gpun)
-{
-	if (0 == omp_get_active_level())
-		return NULL;
-	
-	if (1 < omp_get_active_level())
-		error("Changing GPU is only supported for OMP levels 0 and 1!\n");
-	
-	#pragma omp critical(gpulock_init)
-	{
-		if (!gpulock_init)
-		{
-
-			for (int i = 0; i < MAX_CUDA_DEVICES; i++)
-				omp_init_nest_lock(&gpulock[i]);
-			gpulock_init = true;
-		}
-	}
-
-	for (int i = 0; i < MAX_CUDA_DEVICES; i++) {
-
-		int count = omp_test_nest_lock(&gpulock[i]);
-		if (1 == count)
-			omp_unset_nest_lock(&gpulock[i]);
-		if (1 < count)
-			return &gpulock[i];
-	}
-
-	omp_set_nest_lock(&gpulock[gpun]);
-	return &gpulock[gpun];
-}
-#endif
-
-
 static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N])
 {
 	const auto data = CAST_DOWN(copy_data_s, _data);
@@ -1096,30 +1027,6 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 
 	assert(N == operator_nr_args(op));
 
-#ifdef USE_CUDA
-	int olddevice = (0 == cuda_num_devices()) ? -1 : cuda_get_device();
-	int oldstream = (0 == cuda_num_devices()) ? 0 : cuda_get_stream_id();
-	int gpun = (0 == cuda_num_devices()) ? -1 : cuda_get_device();
-
-	if (-2 < data->device && cuda_switch_multigpu) {
-
-		if (0 == cuda_num_devices())
-			error("No GPU initialized!\n");
-
-		if (-1 != data->device)
-			gpun = data->device;
-		else
-#ifdef _OPENMP
-		 	gpun = omp_get_thread_num();
-#else
-			gpun = 0;
-#endif
-		gpun = gpun % (cuda_num_devices());
-		cuda_set_device(gpun);
-		cuda_set_stream(1);
-	}
-#endif
-	
 
 	for (unsigned int i = 0; i < N; i++) {
 
@@ -1133,8 +1040,6 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 		bool allocate = !md_check_equal_dims(io->N, io->strs, data->strs[i], md_nontriv_dims(io->N, io->dims));
 
 #ifdef USE_CUDA
-		allocate |= ((cuda_get_device_num(args[i]) != cuda_get_device()));
-
 		switch (data->loc[i]) {
 		case CL_CPU:
 			if (allocate || cuda_ondevice(args[i]))
@@ -1166,21 +1071,7 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 		}
 	}
 
-#if defined(USE_CUDA) && defined(_OPENMP)
-	if (-2 < data->device) {
-
-		//FIXME: Full concurrent stream execution should be possible (without locks and sync)
-		omp_nest_lock_t* lock = set_gpu_lock(gpun);	
-		debug_printf(DP_DEBUG3, "\tlock acquired by       thread %d, using gpu %d\n", omp_get_thread_num(), gpun);
-		operator_generic_apply_unchecked(op, N, ptr);
-		debug_printf(DP_DEBUG3, "\tlock to be released by thread %d, using gpu %d\n", omp_get_thread_num(), gpun);
-		
-		if (NULL != lock)
-			omp_unset_nest_lock(lock);
-
-	} else
-#endif
-		operator_generic_apply_unchecked(op, N, ptr);
+	operator_generic_apply_unchecked(op, N, ptr);
 
 
 	for (int i = 0; i < (int)N; i++) {
@@ -1195,11 +1086,6 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 
 		md_free(ptr[i]);
 	}
-
-#ifdef USE_CUDA
-	cuda_set_device(olddevice);
-	cuda_set_stream(oldstream);
-#endif
 }
 
 static void copy_del(const operator_data_t* _data)
@@ -1226,10 +1112,6 @@ static const struct graph_s* copy_wrapper_graph_create(const struct operator_s* 
 	return result;
 }
 
-
-// -2 == device: use current device
-// -1 == device: use device selected by thread
-//  0 <= device: use specified device
 static const struct operator_s* operator_copy_wrapper_generic(int N, const long* strs[N], enum COPY_LOCATION loc[N], const struct operator_s* op, int device, bool copy_output)
 {
 	assert(N == (int)operator_nr_args(op));
@@ -1239,18 +1121,15 @@ static const struct operator_s* operator_copy_wrapper_generic(int N, const long*
 		keep_strs = keep_strs && (NULL == strs[i]);
 
 	// merge gpu wrapper with copy wrpper (stides)
-	if (keep_strs && (-2 < device) && (NULL != CAST_MAYBE(copy_data_s, op->data))) {
+	if (keep_strs && (NULL != CAST_MAYBE(copy_data_s, op->data))) {
 
 		auto data = CAST_DOWN(copy_data_s, op->data);
 
-		if (-2 == data->device) {
-
-			enum COPY_LOCATION loc2[N];
-			for (int i = 0; i < N; i++)
-				loc2[i] = (CL_CPU == data->loc[i]) ? CL_CPU : loc[i];
+		enum COPY_LOCATION loc2[N];
+		for (int i = 0; i < N; i++)
+			loc2[i] = (CL_SAMEPLACE == data->loc[i]) ? loc[i] : data->loc[i];
 			
-			return operator_copy_wrapper_generic(N, data->strs, loc2, data->op, device, data->copy_output);
-		}
+		return operator_copy_wrapper_generic(N, data->strs, loc2, data->op, device, data->copy_output);
 	}
 
 	PTR_ALLOC(struct copy_data_s, data);
@@ -1265,7 +1144,6 @@ static const struct operator_s* operator_copy_wrapper_generic(int N, const long*
 	data->N = N;
 	data->strs = *strs2;
 	data->loc = *TYPE_ALLOC(enum COPY_LOCATION[N]);
-	data->device = device;
 	data->copy_output = copy_output;
 
 	for (int i = 0; i < N; i++) {

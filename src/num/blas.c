@@ -62,65 +62,25 @@ static void cublas_error(const char* file, int line, cublasStatus_t code)
 	error("cuBLAS Error: %s in %s:%d \n", err_str, file, line);
 }
 
-#define CUBLAS_ERROR_INIT(x)	({ cublasStatus_t errval = (x); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); })
-#define CUBLAS_ERROR(x)		({ CUDA_ASYNC_ERROR_NOTE("before cuBLAS call"); cublasStatus_t errval = (x); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
+#define CUBLAS_ERROR(x)	({ cublasStatus_t errval = (x); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); })
 #define CUBLAS_CALL(x)		({ CUDA_ASYNC_ERROR_NOTE("before cuBLAS call"); cublas_set_gpulock(); cublasStatus_t errval = (x); cublas_unset_gpulock(); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuBLAS call"); })
 
-
-static cublasHandle_t handle[MAX_CUDA_DEVICES];
-static int num_devices_initialized = 0;
-
-void cublas_init(void)
-{
-	if (0 != num_devices_initialized)
-		error("Cannot reinitialize cuBLAS, deinit it first!");
-
-	int old_device = cuda_get_device();
-
-	for (int device = 0; device < cuda_num_devices(); ++device) {
-
-		cuda_set_device(device);
-		CUBLAS_ERROR_INIT(cublasCreate(&handle[device]));
-	}
-
-	cuda_set_device(old_device);
-
-	num_devices_initialized = cuda_num_devices();	
-}
-
-void cublas_deinit(void)
-{
-	if (cuda_num_devices() != num_devices_initialized)
-		error("Cannot deinitialize cuBLAS, number of devices has changed from initialization!");
-
-	for (int device = 0; device < cuda_num_devices(); ++device)
-		CUBLAS_ERROR_INIT(cublasDestroy(handle[device]));
-
-	num_devices_initialized = 0;	
-}
-
+static cublasHandle_t handle_host[CUDA_MAX_STREAMS + 1];
+static cublasHandle_t handle_device[CUDA_MAX_STREAMS + 1];
 
 #ifdef _OPENMP
+//FIXME: Following cuBLAS documentation, cuBLAS calls should be threadsafe
+//	 However, tests/test-pics-multigpu fails with too many (16) threads
 #include <omp.h>
-static bool gpulock_init = false;
-static omp_lock_t gpulock[MAX_CUDA_DEVICES];
+static omp_lock_t gpulock[CUDA_MAX_STREAMS + 1];;
 static void cublas_set_gpulock(void)
 {
-	#pragma omp critical (init_cublas_gpulock)
-	if (!gpulock_init) {
-
-		for (int i = 0; i < MAX_CUDA_DEVICES; i++)
-			omp_init_lock(&gpulock[i]);
-
-		gpulock_init = true;		
-	}
-
-	omp_set_lock(&gpulock[cuda_get_device()]);
+	omp_set_lock(&(gpulock[cuda_get_stream_id()]));
 }
 
 static void cublas_unset_gpulock(void)
 {
-	omp_unset_lock(&gpulock[cuda_get_device()]);
+	omp_unset_lock(&(gpulock[cuda_get_stream_id()]));
 }
 #else
 static void cublas_set_gpulock(void)
@@ -134,28 +94,48 @@ static void cublas_unset_gpulock(void)
 }
 #endif
 
+void cublas_init(void)
+{
+	for (int i = 0; i < CUDA_MAX_STREAMS + 1; i++) {
+
+		CUBLAS_ERROR(cublasCreate(&(handle_host[i])));
+		CUBLAS_ERROR(cublasCreate(&(handle_device[i])));
+
+		CUBLAS_ERROR(cublasSetPointerMode(handle_host[i], CUBLAS_POINTER_MODE_HOST));
+		CUBLAS_ERROR(cublasSetPointerMode(handle_device[i], CUBLAS_POINTER_MODE_DEVICE));
+
+		CUBLAS_ERROR(cublasSetStream(handle_host[i], cuda_get_stream_by_id(i)));
+		CUBLAS_ERROR(cublasSetStream(handle_device[i], cuda_get_stream_by_id(i)));
+
+#ifdef _OPENMP
+		omp_init_lock(&(gpulock[i]));
+#endif
+	}
+}
+
+void cublas_deinit(void)
+{
+	for (int i = 0; i < CUDA_MAX_STREAMS + 1; i++) {
+
+		CUBLAS_ERROR(cublasDestroy(handle_device[i]));
+		CUBLAS_ERROR(cublasDestroy(handle_host[i]));
+
+#ifdef _OPENMP
+		omp_destroy_lock(&(gpulock[i]));
+#endif
+	}
+}
+
+
+
 static cublasHandle_t get_handle_device(void)
 {
-	if (cuda_num_devices() != num_devices_initialized)
-		error("cuBLAS not initialized correctly!");
-
-	cublasHandle_t result = handle[cuda_get_device()];
-	CUBLAS_ERROR(cublasSetPointerMode(result, CUBLAS_POINTER_MODE_DEVICE));
-	CUBLAS_ERROR(cublasSetStream(result, cuda_get_stream()));
-
-	return result;
+	return handle_device[cuda_get_stream_id()];
 }
 
 static cublasHandle_t get_handle_host(void)
 {
-	if (cuda_num_devices() != num_devices_initialized)
-		error("cuBLAS not initialized correctly!");
-
-	cublasHandle_t result = handle[cuda_get_device()];
-	CUBLAS_ERROR(cublasSetPointerMode(result, CUBLAS_POINTER_MODE_HOST));
-	CUBLAS_ERROR(cublasSetStream(result, cuda_get_stream()));
-
-	return result;
+	return handle_host[cuda_get_stream_id()];
 }
 
 static cublasOperation_t cublas_trans(char trans)

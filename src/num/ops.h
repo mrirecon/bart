@@ -129,11 +129,11 @@ extern const struct operator_s* operator_loop2(unsigned int N, const unsigned in
 const struct operator_s* operator_loop_parallel2(unsigned int N, const unsigned int D,
 				const long dims[D], const long (*strs)[D],
 				const struct operator_s* op,
-				unsigned int flags, _Bool gpu);
+				unsigned int flags);
 
 
 extern const struct operator_s* operator_loop(unsigned int D, const long dims[D], const struct operator_s* op);
-extern const struct operator_s* operator_loop_parallel(unsigned int D, const long dims[D], const struct operator_s* op, unsigned int parallel, _Bool gpu);
+extern const struct operator_s* operator_loop_parallel(unsigned int D, const long dims[D], const struct operator_s* op, unsigned int parallel);
 
 
 extern const struct operator_s* operator_combi_create(int N, const struct operator_s* x[N]);
