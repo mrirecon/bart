@@ -255,6 +255,37 @@ static void stack_clear_der(const nlop_data_t* _data)
 		nlop_clear_derivatives(d->nlops[i]);
 }
 
+#ifndef USE_CUDA
+
+static int set_streams(int /*streams*/)
+{
+	return 1;
+}
+
+static int thread_id(void)
+{
+	return 0;
+}
+
+#else
+
+static int set_streams(int streams)
+{
+	if (-1 < cuda_get_device_id())
+		return MIN(streams, cuda_set_stream_level());
+
+	return 1;
+}
+
+static int thread_id(void)
+{
+	if (-1 < cuda_get_device_id())
+		return cuda_get_stream_id();
+	else
+		return 0;
+}
+#endif
+
 
 
 static void stack_container_fun(const nlop_data_t* _data, int N, complex float* args[N])
@@ -270,20 +301,29 @@ static void stack_container_fun(const nlop_data_t* _data, int N, complex float* 
 		for (int o = 0; o < OO; o++)
 			der_requested[i][o]= nlop_der_requested(_data, i, o);
 
-	for (int i = 0; i < Nnlops; i++) {
+	int streams = (d->split_mpi) ? set_streams(Nnlops) : 1;
 
-		if (d->split_mpi && (mpi_get_rank() != i % mpi_get_num_procs()))
-			continue;
+#pragma omp parallel num_threads(streams)
+	for (int j = 0; j < Nnlops; j++) {
 
-		nlop_unset_derivatives(d->nlops[i]);
-		nlop_set_derivatives(d->nlops[i], II, OO, der_requested);
+		if (d->split_mpi) {
+		
+			if (mpi_get_rank() != j % mpi_get_num_procs())
+				continue;
+
+			if (thread_id() != (j / mpi_get_num_procs()) % streams)
+				continue;
+		}
+
+		nlop_unset_derivatives(d->nlops[j]);
+		nlop_set_derivatives(d->nlops[j], II, OO, der_requested);
 
 		void* targs[N];
 
-		for (int j = 0; j < d->OO + d->II; j++)
-			targs[j] = (void*)(args[j]) + (d->offsets)[i][j];
+		for (int k = 0; k < d->OO + d->II; k++)
+			targs[k] = (void*)(args[k]) + (d->offsets)[j][k];
 
-		nlop_generic_apply_unchecked(d->nlops[i], N, targs);
+		nlop_generic_apply_unchecked(d->nlops[j], N, targs);
 	}
 
 	if (d->split_mpi && (1 < mpi_get_num_procs()))  {	
@@ -305,13 +345,22 @@ static void stack_container_der(const nlop_data_t* _data, unsigned int o, unsign
 
 	int Nnlops = d->Nnlops;
 
+	int streams = (d->split_mpi) ? set_streams(Nnlops) : 1;
+
+#pragma omp parallel num_threads(streams)
 	for (int j = 0; j < Nnlops; j++) {
+
+		if (d->split_mpi) {
+
+			if (mpi_get_rank() != j % mpi_get_num_procs())
+				continue;
+
+			if (thread_id() != (j / mpi_get_num_procs()) % streams)
+				continue;
+		}
 
 		complex float* dst = (void*)_dst + d->offsets[j][o];
 		const complex float* src = (const void*)_src + d->offsets[j][d->OO + i];
-
-		if (d->split_mpi && (mpi_get_rank() != j % mpi_get_num_procs()))
-			continue;
 
 		linop_forward_unchecked(nlop_get_derivative(d->nlops[j], o, i), dst, src);
 	}
@@ -336,33 +385,57 @@ static void stack_container_adj(const nlop_data_t* _data, unsigned int o, unsign
 
 	auto dom = nlop_generic_domain(d->nlops[0], i);
 
-	complex float* tmp = NULL;
+	int streams = (d->split_mpi) ? set_streams(Nnlops) : 1;
+
+	complex float* tmp[streams];
 
 	if (d->dup[i]) {
 
 		md_clear(dom->N, dom->dims, _dst, dom->size);
-		tmp = md_alloc_sameplace(dom->N, dom->dims, dom->size, _dst);
+		
+		for(int j = 0; j < streams; j++) {
+
+			tmp[j] = md_alloc_sameplace(dom->N, dom->dims, dom->size, _dst);
+			md_clear(dom->N, dom->dims, tmp[j], dom->size);
+		}
 	}
 
+	streams = (d->split_mpi) ? set_streams(Nnlops) : 1;
+
+#pragma omp parallel num_threads(streams)
 	for (int j = 0; j < Nnlops; j++) {
+
+		if (d->split_mpi) {
+		
+			if (mpi_get_rank() != j % mpi_get_num_procs())
+				continue;
+
+			if (thread_id() != (j / mpi_get_num_procs()) % streams)
+				continue;
+		}
 
 		complex float* dst = (void*)_dst + d->offsets[j][i + d->OO];
 		const complex float* src = (const void*)_src + d->offsets[j][o];
 
-		if (d->split_mpi && (mpi_get_rank() != j % mpi_get_num_procs()))
-			continue;
-
 		if (d->dup[i]) {
 
-			linop_adjoint_unchecked(nlop_get_derivative(d->nlops[j], o, i), tmp, src);
-			md_zadd(dom->N, dom->dims, dst, dst, tmp);
+			complex float* tmp2 = md_alloc_sameplace(dom->N, dom->dims, dom->size, tmp[thread_id() % streams]);
+
+			linop_adjoint_unchecked(nlop_get_derivative(d->nlops[j], o, i), tmp2, src);
+			md_zadd(dom->N, dom->dims, tmp[thread_id() % streams], tmp[thread_id() % streams], tmp2);
+
+			md_free(tmp2);
 		} else {
 	
 			linop_adjoint_unchecked(nlop_get_derivative(d->nlops[j], o, i), dst, src);
 		}
 	}
 
-	md_free(tmp);
+	for (int j = 0; d->dup[i] && j < streams; j++) {
+
+		md_zadd(dom->N, dom->dims, _dst, _dst, tmp[j]);
+		md_free(tmp[j]);
+	}
 
 	if (d->split_mpi && (1 < mpi_get_num_procs()))  {
 
@@ -390,34 +463,57 @@ static void stack_container_nrm(const nlop_data_t* _data, unsigned int o, unsign
 
 	auto dom = nlop_generic_domain(d->nlops[0], i);
 
-	complex float* tmp = NULL;
+	int streams = (d->split_mpi) ? set_streams(Nnlops) : 1;
+
+	complex float* tmp[streams];
 
 	if (d->dup[i]) {
 
 		md_clear(dom->N, dom->dims, _dst, dom->size);
-		tmp = md_alloc_sameplace(dom->N, dom->dims, dom->size, _dst);
+		
+		for(int j = 0; j < streams; j++) {
+
+			tmp[j] = md_alloc_sameplace(dom->N, dom->dims, dom->size, _dst);
+			md_clear(dom->N, dom->dims, tmp[j], dom->size);
+		}
 	}
 
+	streams = (d->split_mpi) ? set_streams(Nnlops) : 1;
+
+#pragma omp parallel num_threads(streams)
 	for (int j = 0; j < Nnlops; j++) {
+
+		if (d->split_mpi) {
+		
+			if (mpi_get_rank() != j % mpi_get_num_procs())
+				continue;
+
+			if (thread_id() != (j / mpi_get_num_procs()) % streams)
+				continue;
+		}
 
 		complex float* dst = (void*)_dst + d->offsets[j][i + d->OO];
 		const complex float* src = (const void*)_src + d->offsets[j][i + d->OO];
 
-		if (d->split_mpi && (mpi_get_rank() != j % mpi_get_num_procs()))
-			continue;
-
-
 		if (d->dup[i]) {
 
-			linop_normal_unchecked(nlop_get_derivative(d->nlops[j], o, i), tmp, src);
-			md_zadd(dom->N, dom->dims, dst, dst, tmp);
+			complex float* tmp2 = md_alloc_sameplace(dom->N, dom->dims, dom->size, tmp[thread_id() % streams]);
+
+			linop_adjoint_unchecked(nlop_get_derivative(d->nlops[j], o, i), tmp2, src);
+			md_zadd(dom->N, dom->dims, tmp[thread_id() % streams], tmp[thread_id() % streams], tmp2);
+
+			md_free(tmp2);
 		} else {
 	
 			linop_normal_unchecked(nlop_get_derivative(d->nlops[j], o, i), dst, src);
 		}
 	}
 
-	md_free(tmp);
+	for (int j = 0; d->dup[i] && j < streams; j++) {
+
+		md_zadd(dom->N, dom->dims, _dst, _dst, tmp[j]);
+		md_free(tmp[j]);
+	}
 
 	if (d->split_mpi && (1 < mpi_get_num_procs())) {
 
@@ -651,7 +747,7 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 				&& (   (out_stack_dim[0] == max_DO - 1)
 				    || (1 == md_calc_size(max_DO - out_stack_dim[0] - 1, nl_odims[0] + out_stack_dim[0] + 1)));
 
-	d->split_mpi = split_mpi;
+	d->split_mpi = split_mpi;// && 1 < mpi_get_num_procs();
 
 	nlop_der_fun_t der_funs[II][OO];
 	nlop_der_fun_t adj_funs[II][OO];
