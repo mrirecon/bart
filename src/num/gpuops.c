@@ -428,6 +428,9 @@ void cuda_init(void)
 		return;
 	}
 
+	if (0 < cuda_num_devices())
+		return;
+
 
 	int num_devices = num_cuda_devices_internal();
 	int off = mpi_get_rank();
