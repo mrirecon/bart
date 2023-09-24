@@ -152,6 +152,7 @@ static void r_rotate(node_t node)
 	node->parent = leafa;
 
 	node->leafa = subtree;
+
 	if (NULL != subtree)
 		subtree->parent = node;
 
@@ -185,18 +186,20 @@ static void l_rotate(node_t node)
 	node->parent = leafb;
 
 	node->leafb = subtree;
+
 	if (NULL != subtree)
 		subtree->parent = node;
 
 	update_height(node);
 }
 
-static node_t rebalance(node_t node) {
-
+static node_t rebalance(node_t node)
+{
 	if (NULL == node)
 		return NULL;
 
 	int bfp = balance(node);
+
 	if (abs(bfp) < 2)
 		return node;
 
@@ -210,7 +213,9 @@ static node_t rebalance(node_t node) {
 		node_t ret = node->leafb;
 		
 		l_rotate(node);
+
 		return ret;
+
 	} else {
 
 		if (1 == balance(node->leafa))
@@ -219,6 +224,7 @@ static node_t rebalance(node_t node) {
 		node_t ret = node->leafa;
 		
 		r_rotate(node);
+
 		return ret;
 	}
 }
@@ -246,22 +252,25 @@ void tree_insert(tree_t tree, void *item)
 
 		if (0 > tree->relation(item, parent->item)) {
 
-			if (NULL != parent->leafa)
-				parent = parent->leafa;
-			else {
+			if (NULL == parent->leafa) {
+
 				node->parent = parent;
 				parent->leafa = node;
 				break;
 			}
+
+			parent = parent->leafa;
+
 		} else {
 
-			if (NULL != parent->leafb)
-				parent = parent->leafb;
-			else {
+			if (NULL == parent->leafb) {
+
 				node->parent = parent;
 				parent->leafb = node;
 				break;
 			}
+
+			parent = parent->leafb;
 		}
 	}
 
@@ -281,7 +290,7 @@ static node_t node_get_min(node_t node)
 
 	if (NULL == node->leafa)
 		return node;
-	
+
 	return node_get_min(node->leafa);
 }
 
@@ -292,14 +301,13 @@ static node_t node_get_max(node_t node)
 
 	if (NULL == node->leafb)
 		return node;
-	
+
 	return node_get_max(node->leafb);
 }
 
 
 static void remove_node(node_t node)
 {
-
 	if ((NULL != node->leafa) && (NULL != node->leafb)) {
 
 		node_t tmp = node_get_min(node->leafb);
@@ -313,6 +321,7 @@ static void remove_node(node_t node)
 	if (NULL == parent) {
 
 		node->tree->root = child;
+
 	} else {
 
 		parent->leafa = (node == parent->leafa) ? child : parent->leafa;
@@ -327,11 +336,10 @@ static void remove_node(node_t node)
 	xfree(node);
 
 	update_height(parent);
+
 	while (NULL != parent)
 		parent = rebalance(parent)->parent;
 }
-
-
 
 
 
@@ -344,15 +352,17 @@ static node_t node_find_min(node_t node, const void* ref, tree_rel_f rel)
 	if (0 <= rel(node->item, ref)) {
 
 		node_t ret = node_find_min(node->leafa, ref, rel);
+
 		if (NULL != ret)
 			return ret;
 		
 		if (0 == rel(node->item, ref))
 		 	return node;
-		else
-			return NULL;
-	} else 
-		return node_find_min(node->leafb, ref, rel);
+
+		return NULL;
+	}
+
+	return node_find_min(node->leafb, ref, rel);
 }
 
 static node_t node_find_max(node_t node, const void* ref, tree_rel_f rel)
@@ -363,15 +373,17 @@ static node_t node_find_max(node_t node, const void* ref, tree_rel_f rel)
 	if (0 >= rel(node->item, ref)) {
 
 		node_t ret = node_find_max(node->leafb, ref, rel);
+
 		if (NULL != ret)
 			return ret;
 		
 		if (0 == rel(node->item, ref))
 		 	return node;
-		else
-			return NULL;
-	} else 
-		return node_find_max(node->leafa, ref, rel);
+
+		return NULL;
+	}
+
+	return node_find_max(node->leafa, ref, rel);
 }
 
 static node_t node_find(node_t node, const void* ref, tree_rel_f rel)

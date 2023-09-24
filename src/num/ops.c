@@ -1863,14 +1863,17 @@ const struct operator_s* operator_sort_args_F(const struct operator_s* op)
 
 	int perm[II + OO];
 
-	for(int j = 0, o = 0, i = OO; j < OO + II; j++)
+	for(int j = 0, o = 0, i = OO; j < OO + II; j++) {
+
 		if (operator_get_io_flags(op)[j])
 			perm[o++] = j;
 		else
 			perm[i++] = j;
+	}
 
 	auto ret = operator_permute(op, OO + II, perm);
 	operator_free(op);
+
 	return ret;;
 }
 
@@ -1972,7 +1975,9 @@ const struct operator_s* operator_extract_create2(const struct operator_s* op, i
 
 		assert((0 <= pos[i]) && (pos[i] < dimsa[i]));
 		assert(dims[a][i] + pos[i] <= dimsa[i]);
-		copy_needed = copy_needed || !((0 == strs[a][i]) || (strs[a][i] == strsa[i]));
+
+		if (!((0 == strs[a][i]) || (strs[a][i] == strsa[i])))
+			copy_needed = true;
 	}
 
 	assert(trivial_strides || !copy_needed);

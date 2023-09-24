@@ -75,8 +75,10 @@ void list_free(list_t list)
 {
 	while (0 < list->N)
 		list_pop(list);
+
 	xfree(list);
 }
+
 
 /**
  * Insert new item at index 0
@@ -234,6 +236,7 @@ void list_insert(list_t list, void* item, int index)
 	list->current = node;
 }
 
+
 /**
  * Remove and return item at index
  *
@@ -252,14 +255,10 @@ void* list_remove_item(list_t list, int index)
 
 	if (-1 < list->current_index) {
 
-		if (index < list->current_index) {
-
-			list->current_index--;
-		} else {
-
+		if (index >= list->current_index)
 			list->current = list->current->prev;
-			list->current_index--;
-		}
+
+		list->current_index--;
 	}
 
 	list_remove_node(list, node);
@@ -269,6 +268,7 @@ void* list_remove_item(list_t list, int index)
 
 	return result;
 }
+
 
 /**
  * Return item at index
@@ -282,7 +282,7 @@ void* list_get_item(list_t list, int index)
 }
 
 
-static inline bool cmp_wrappper(list_cmp_t cmp, const void* item, const void* ref)
+static inline bool cmp_wrapper(list_cmp_t cmp, const void* item, const void* ref)
 {
 	if (NULL == cmp)
 		return (item == ref);
@@ -305,7 +305,7 @@ int list_get_first_index(list_t list, const void* ref, list_cmp_t cmp)
 
 	for (int result = 0; result < list->N; result++) {
 
-		if (cmp_wrappper(cmp, node->item, ref)) {
+		if (cmp_wrapper(cmp, node->item, ref)) {
 
 			list->current_index = result;
 			list->current = node;
@@ -318,6 +318,7 @@ int list_get_first_index(list_t list, const void* ref, list_cmp_t cmp)
 	return -1;
 }
 
+
 /**
  * Returns first item for which cmp(item, ref) evaluates true
  *
@@ -328,7 +329,6 @@ int list_get_first_index(list_t list, const void* ref, list_cmp_t cmp)
  */
 void* list_get_first_item(list_t list, const void* ref, list_cmp_t cmp, bool remove)
 {
-
 	int idx = list_get_first_index(list, ref, cmp);
 
 	void* result = NULL;
@@ -339,6 +339,7 @@ void* list_get_first_item(list_t list, const void* ref, list_cmp_t cmp, bool rem
 	return result;
 }
 
+
 /**
  * Return number of items in list
  *
@@ -348,6 +349,7 @@ int list_count(list_t list)
 {
 	return list->N;
 }
+
 
 /**
  * Return number of items in list for which cmp evaluates true
@@ -364,7 +366,7 @@ int list_count_cmp(list_t list, const void* ref, list_cmp_t cmp)
 
 	while (NULL != node) {
 
-		if (cmp_wrappper(cmp, node->item, ref))
+		if (cmp_wrapper(cmp, node->item, ref))
 			result++;
 
 		node = node->next;
@@ -372,6 +374,7 @@ int list_count_cmp(list_t list, const void* ref, list_cmp_t cmp)
 
 	return result;
 }
+
 
 /**
  * Copy items of list to array
@@ -393,6 +396,7 @@ void list_to_array(int N, void* items[N], list_t list)
 	}
 }
 
+
 /**
  * Copy items from array to list
  *
@@ -409,6 +413,7 @@ list_t array_to_list(int N, void* items[N])
 	return result;
 }
 
+
 /**
  * Return list with all items for which cmp(item, ref) evaluates true
  * If (cmp == NULL) the first index with item==ref is retruned
@@ -422,9 +427,10 @@ list_t list_get_sublist(list_t list, const void* ref, list_cmp_t cmp)
 	auto result = list_create();
 
 	auto node = list->head;
+
 	while (NULL != node) {
 
-		if (cmp_wrappper(cmp, node->item, ref))
+		if (cmp_wrapper(cmp, node->item, ref))
 			list_append(result, node->item);
 
 		node = node->next;
@@ -432,6 +438,7 @@ list_t list_get_sublist(list_t list, const void* ref, list_cmp_t cmp)
 
 	return result;
 }
+
 
 /**
  * Return list with all items for which cmp(item, ref) evaluates true and remove items from list
@@ -452,7 +459,7 @@ list_t list_pop_sublist(list_t list, const void* ref, list_cmp_t cmp)
 
 	while (NULL != node) {
 
-		if (cmp_wrappper(cmp, node->item, ref)) {
+		if (cmp_wrapper(cmp, node->item, ref)) {
 
 			auto item = node->item;
 			list_remove_node(list, node);
@@ -471,6 +478,7 @@ list_t list_pop_sublist(list_t list, const void* ref, list_cmp_t cmp)
 
 	return result;
 }
+
 
 /**
  * Append all items of list b to list a (and frees b)
@@ -506,13 +514,14 @@ void list_merge(list_t a, list_t b, bool free) {
 		list_free(b);
 }
 
+
 /**
  * Copy all items of a list to a new list
  *
  * @param list
  */
-list_t list_copy(list_t list) {
-
+list_t list_copy(list_t list)
+{
 	list_t result = list_create();
 
 	auto node = list->head;
