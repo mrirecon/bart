@@ -102,14 +102,14 @@ static void toimg_stack(const char* name, bool dicom, bool dim_names, bool singl
 	long sq_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
 	int l = 0;
-	long loop_flags = 0L;
+	long im_flags = 0L;
 
 	for (int i = 0; i < DIMS; i++) {
 
 		if (1 != dims[i])  {
 
 			if (2 > l)
-				loop_flags |= MD_BIT(i);
+				im_flags |= MD_BIT(i);
 			sq_dims[l++] = dims[i];
 		}
 	}
@@ -125,7 +125,7 @@ static void toimg_stack(const char* name, bool dicom, bool dim_names, bool singl
 	long img_size = md_calc_size(2, sq_dims);
 
 	long loop_dims[DIMS];
-	md_select_dims(DIMS, ~loop_flags, loop_dims, dims);
+	md_select_dims(DIMS, ~im_flags, loop_dims, dims);
 
 	assert(md_calc_size(DIMS, loop_dims) == num_imgs);
 
