@@ -172,7 +172,7 @@ int main_estdelay(int argc, char* argv[argc])
 		for (int i = 0; i < 3; i++)
 			oqf[i] = qf[i];
 
-		unmap_cfl(1, qf_dims, oqf);
+		unmap_cfl(DIMS, qf_dims, oqf);
 	}
 
 	unmap_cfl(DIMS, full_dims, full_in);
