@@ -28,6 +28,8 @@
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
+#include "num/multind.h"
+#include "num/optimize.h"
 
 #include "mpi_ops.h"
 
@@ -148,6 +150,18 @@ void mpi_signoff_proc(bool signoff)
 #endif
 }
 
+#ifdef USE_CUDA
+static void print_cuda_aware_warning(void)
+{
+	static bool printed = false;
+	
+	if (!printed && !cuda_aware_mpi)
+		debug_printf(DP_WARN, "CUDA aware MPI is not activated. This may decrease performance for multi-GPU operations significantly!.\n");
+
+	printed = true;
+}
+#endif
+
 
 void mpi_sync(void)
 {
@@ -157,15 +171,165 @@ void mpi_sync(void)
 #endif
 }
 
-void mpi_sync_val(void* pval, long size)
+#ifdef USE_CUDA
+static void mpi_bcast_selected_gpu(bool _tag, void* ptr, long size, int root)
+{
+	if(1 == mpi_get_num_procs())
+		return;
+
+	print_cuda_aware_warning();
+
+	void* tmp = xmalloc(size);
+	
+	if (mpi_get_rank() == root)
+		cuda_memcpy(size, tmp, ptr);
+
+	mpi_bcast_selected(_tag, tmp, size, root);
+
+	if (_tag)
+		cuda_memcpy(size, ptr, tmp);
+
+	xfree(tmp);
+}
+#endif
+
+void mpi_bcast_selected(bool _tag, void* ptr, long size, int root)
 {
 #ifdef USE_MPI
-	if(1 < mpi_get_num_procs())
-		MPI_Bcast((char*)pval, size, MPI_CHAR, 0, mpi_get_comm());
-#else
-	UNUSED(pval);
-	UNUSED(size);
+	if(1 == mpi_get_num_procs())
+		return;
+
+#ifdef USE_CUDA
+	if (!cuda_aware_mpi && cuda_ondevice(ptr)) {
+
+		mpi_bcast_selected_gpu(_tag, ptr, size, root);
+		return;
+	}
 #endif
+
+	int tag = _tag ? 1 : 0;
+	MPI_Comm comm_sub;
+	MPI_Comm_split(mpi_get_comm(), tag, (mpi_get_rank() == root) ? 0 : 1, &comm_sub);
+
+	if (_tag) {
+
+		void* end = ptr + size;
+		while (ptr < end) {
+
+			MPI_Bcast(ptr, MIN(end - ptr, INT_MAX / 2), MPI_BYTE, 0, comm_sub);
+			ptr += MIN(end - ptr, INT_MAX / 2);
+		}
+	}
+
+	MPI_Comm_free(&comm_sub);
+#else
+	UNUSED(_tag);
+	UNUSED(ptr);
+	UNUSED(size);
+	UNUSED(root);
+#endif
+}
+
+void mpi_bcast(void* ptr, long size, int root)
+{
+	mpi_bcast_selected(true, ptr, size, root);
+}
+
+void mpi_bcast2(int N, const long dims[N], const long strs[N], void* ptr, long size, int root)
+{
+	long tdims[N];
+	md_copy_dims(N, tdims, dims);
+
+	for (int i = 0; i < N; i++) {
+
+		if (strs[i] == size) {
+
+			size *= tdims[i];
+			tdims[i] = 1;
+		}
+	}
+
+	NESTED(void, nary_bcast, (void* ptr[]))
+	{
+		mpi_bcast(ptr[0], size, root);
+	};
+	
+	md_nary(1, N, tdims, &strs, &ptr, nary_bcast);
+}
+
+
+/**
+* Data transfer API
+**/
+
+void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_rank)
+{
+	if (sender_rank == recv_rank) {
+
+		if ((mpi_get_rank() == sender_rank) && dst != src)
+			memcpy(dst, src, size);
+
+		return;
+	}
+
+#ifdef USE_MPI
+	if (mpi_get_rank() == sender_rank) {
+
+		const void* end = src + size;
+
+		while (src < end) {
+
+			int tsize = MIN(end - src, INT_MAX / 2);
+			MPI_Send(src, tsize, MPI_BYTE, recv_rank, 0, mpi_get_comm());
+			src += tsize;
+		}
+	}
+
+	if (mpi_get_rank() == recv_rank) {
+
+		void* end = dst + size;
+
+		while (dst < end) {
+
+			int tsize = MIN(end - src, INT_MAX / 2);
+			MPI_Recv(dst, size, MPI_BYTE, sender_rank, 0, mpi_get_comm(), MPI_STATUS_IGNORE);
+			dst += tsize;
+		}
+	}
+#else
+	UNUSED(dst);
+	UNUSED(size);
+	UNUSED(src);
+	UNUSED(sender_rank);
+	UNUSED(recv_rank);
+#endif
+}
+
+void mpi_copy2(int N, const long dim[N], const long ostr[N], void* optr, const long istr[N], const void* iptr, long size, int sender_rank, int recv_rank)
+{
+	const long (*nstr[2])[N] = { (const long (*)[N])ostr, (const long (*)[N])istr };
+
+	NESTED(void, nary_copy_mpi, (struct nary_opt_data_s* opt_data, void* ptr[]))
+	{
+		size_t size2 = size * opt_data->size;
+
+		mpi_copy(ptr[0], size2, ptr[1], sender_rank, recv_rank);
+	};
+
+	optimized_nop(2, MD_BIT(0), N, dim, nstr, (void*[2]){ optr, (void*)iptr }, (size_t[2]){ size, size }, nary_copy_mpi);
+}
+
+/**
+ * Syncronise pval to all processes (take part in calculation)
+ * 
+ * This function requires Communicator handling!
+ *
+ * @param pval source (rank == 0) /destination (rank != 0) buffer
+ * @param size size in bytes which should be copied
+ */
+void mpi_sync_val(void* pval, long size)
+{
+	mpi_bcast(pval, size, 0);
 }
 
 /**

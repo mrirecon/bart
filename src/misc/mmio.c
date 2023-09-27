@@ -251,6 +251,27 @@ static bool cmp_addr(const void* _item, const void* _ref)
 	return (item->data_addr == ref);
 }
 
+static void work_buffer_get_pos(int D, const long dims[D], long pos[D], bool output, long index)
+{
+	md_set_dims(D, pos, 0);
+	md_unravel_index(MIN(D, DIMS), pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, index);
+
+	if (!output) {
+
+		for (int i = 0; i < MIN(D, DIMS); i++) {
+
+			if (1 == dims[i])
+				pos[i] = 0;
+			else
+				pos[i] += cfl_loop_desc.offs_dims[i];
+
+			if (pos[i] >= dims[i])
+				error("Position in cfl loop out of range!\n");
+		}
+	}
+}
+
+
 /**
  * Creates working buffer containing slices of the original file
  * dims contain file_dims on entry and slice dims on return
@@ -273,22 +294,7 @@ static void* create_worker_buffer(int D, long dims[D], void* addr, bool output)
 	md_calc_strides(D, slc_strs, slc_dims, sizeof(complex float));
 
 	long pos[D];
-	md_set_dims(D, pos, 0);
-	md_unravel_index(MIN(D, DIMS), pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, cfl_loop_index[cfl_loop_worker_id()]);
-
-	if (!output) {
-
-		for (int i = 0; i < MIN(D, DIMS); i++) {
-
-			if (1 == dims[i])
-				pos[i] = 0;
-			else
-				pos[i] += cfl_loop_desc.offs_dims[i];
-
-			if (pos[i] >= dims[i])
-				error("Position in cfl loop out of range!\n");
-		}
-	}
+	work_buffer_get_pos(D, dims, pos, output, cfl_loop_index[cfl_loop_worker_id()]);
 
 	void* buf = NULL;
 
@@ -296,18 +302,29 @@ static void* create_worker_buffer(int D, long dims[D], void* addr, bool output)
 
 		buf = &(MD_ACCESS(D, tot_strs, pos, (complex float*)addr)); 
 
-		if (!output && (1 < mpi_get_num_procs()))
-			mpi_scatter_batch(buf, md_calc_size(D, slc_dims), buf, sizeof(complex float));
-
 		if (output && (1 == mpi_get_num_procs()))
 			output = false;
 	} else {
 
-		if (1 < mpi_get_num_procs())
-			error("BART looping with MPI only supported for continous memory blocks!\n");
-
 		buf = md_alloc(D, slc_dims, sizeof(complex float));
 		md_slice(D, cfl_loop_desc.flags, pos, dims, buf, addr, sizeof(complex float));
+	}
+
+	if (!mpi_shared_files && (1 < mpi_get_num_procs())) {
+
+		for (int i = 1; i < mpi_get_num_procs(); i++) {
+
+			complex float* src = NULL;
+			
+			if (mpi_is_main_proc()) {
+
+				long tpos[D];
+				work_buffer_get_pos(D, dims, tpos, output, cfl_loop_index[cfl_loop_worker_id()] + i);
+				src = &(MD_ACCESS(D, tot_strs, tpos, (complex float*)addr)); 
+			}
+
+			mpi_copy2(D, slc_dims, slc_strs, buf, tot_strs, src, sizeof(complex float), 0, i);
+		}
 	}
 
 	PTR_ALLOC(struct cfl_file_desc_s, desc);
@@ -351,13 +368,29 @@ static void* free_worker_buffer(int D, long dims[D], void* addr)
 
 	if (desc->writeback) {
 
-		if (1 < mpi_get_num_procs())
-			mpi_gather_batch(addr, md_calc_size(D, desc->data_dims), addr, sizeof(complex float));
-		else
+		if (1 < mpi_get_num_procs()) {
+
+			for (int i = 0; i < mpi_get_num_procs(); i++) {
+
+				complex float* dst = NULL;
+
+				if (mpi_is_main_proc()) {
+
+					long tpos[D];
+					work_buffer_get_pos(D, dims, tpos, true, cfl_loop_index[cfl_loop_worker_id()] + i);
+					dst = &(MD_ACCESS(D, MD_STRIDES(D, desc->file_dims, sizeof(complex float)), tpos, (complex float*)desc->file_addr));
+				}
+
+				mpi_copy2(D, desc->data_dims, MD_STRIDES(D, desc->file_dims, sizeof(complex float)), dst, MD_STRIDES(D, desc->data_dims, sizeof(complex float)), addr, sizeof(complex float), i, 0);
+			}
+		} else {
+
 			md_copy_block(desc->D, desc->pos, desc->file_dims, desc->file_addr, desc->data_dims, desc->data_addr, sizeof(complex float));
+		}
 	}
 
-	if (desc->file_addr > desc->data_addr || desc->data_addr > desc->file_addr + (sizeof(complex float) * md_calc_size(desc->D, desc->file_dims)))
+	if (   (desc->file_addr > desc->data_addr)
+	    || (desc->data_addr > desc->file_addr + (sizeof(complex float) * md_calc_size(desc->D, desc->file_dims))))
 		md_free(desc->data_addr);
 
 	addr = desc->file_addr;

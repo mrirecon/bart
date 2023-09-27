@@ -85,11 +85,20 @@ tests/test-fft-multi-loop-omp: bart
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-fft-multi-loop-mpi-strided: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)													;\
+	$(ROOTDIR)/bart phantom phan.ra 														;\
+	$(ROOTDIR)/bart                fft 2 phan.ra ksp1.ra												;\
+	mpirun -n 3 --allow-run-as-root $(ROOTDIR)/bart -l 1 -rphan.ra fft 2 phan.ra ksp2.ra								;\
+	$(ROOTDIR)/bart nrmse -t 1e-5 ksp1.ra ksp2.ra													;\
+	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-fft-basic tests/test-fft-unitary tests/test-fft-uncentered tests/test-fft-shift
 TESTS += tests/test-fft-multi-loop-omp
 
 ifeq ($(MPI),1)
-TESTS_SLOW += tests/test-fft-multi-loop-mpi
+TESTS_SLOW += tests/test-fft-multi-loop-mpi tests/test-fft-multi-loop-mpi-strided
 endif
 
