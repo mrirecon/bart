@@ -55,7 +55,7 @@ static int find_bit(unsigned long N)
 	return ffsl(N) - 1;
 }
 
-static int next_powerof2(uint x)
+static int next_powerof2(unsigned int x)
 {
 	x--;
 
