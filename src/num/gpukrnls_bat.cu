@@ -75,7 +75,7 @@ static dim3 getGridSize2(long Bi, long Bo, const void* func)
 		threads /= 2;
 	}
 
-	return dim3(gridsize_int(Bi, block[0]), gridsize_int(Bi, block[1]), 1);
+	return dim3(gridsize_int(Bi, block[0]), gridsize_int(Bo, block[1]), 1);
 }
 
 
