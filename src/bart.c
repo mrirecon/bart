@@ -152,7 +152,7 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 
 	int next_arg = options(argcp, *argvp, "", help_str, ARRAY_SIZE(opts), opts, ARRAY_SIZE(args), args, true);
 
-	if (1 == *argcp) {
+	if ((1 == *argcp)  || (next_arg == *argcp) || (NULL == (*argvp)[next_arg])) {
 		// bart was called without any options
 
 		print_usage(stdout, (*argvp)[0], "...", ARRAY_SIZE(opts), opts);
