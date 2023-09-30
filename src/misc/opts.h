@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+// FILE
+#include <stdio.h>
 
 #include "misc/cppwrap.h"
 #include "misc/types.h"
@@ -173,7 +175,6 @@ struct arg_s {
 
 
 
-typedef struct _IO_FILE FILE;
 extern void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[n]);
 extern int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n], int m, struct arg_s args[m], bool stop_at_nonopt);
 extern void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
