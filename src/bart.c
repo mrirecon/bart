@@ -137,6 +137,7 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 	long param_start[DIMS] = { [0 ... DIMS - 1] = -1 };
 	long param_end[DIMS] = { [0 ... DIMS - 1] = -1 };
 	const char* ref_file = NULL;
+	bool use_mpi = false;
 
 	struct arg_s args[] = { };
 
@@ -148,6 +149,7 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 		OPTL_VECN('e', "end", param_end, "End index of range for looping (default: start + 1)"),
 		OPTL_INT('t', "threads", &omp_threads, "nthreads", "Set threads for parallelization"),
 		OPTL_INFILE('r', "ref-file", &ref_file, "<file>", "Obtain loop size from reference file"),
+		OPTL_SET('M', "mpi", &use_mpi, "Initialize MPI"),
 		OPT_SET('S', &mpi_shared_files, "Maps files from each rank (requires shared files system)"),
  	};
 
@@ -172,6 +174,19 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 
 	if (1 == omp_threads && 0 != pflags)
 		omp_threads = 0;
+
+	const char* ompi_str;
+
+	if (NULL != (ompi_str = getenv("OMPI_COMM_WORLD_SIZE"))) {
+
+		long mpi_ranks = strtoul(ompi_str, NULL, 10);
+
+		if (1 < mpi_ranks)
+			use_mpi = true;
+	}
+
+	if (use_mpi)
+		init_mpi(argcp, argvp);
 
 	if (NULL != ref_file) {
 
@@ -269,8 +284,6 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 
 int main_bart(int argc, char* argv[argc])
 {
-
-	init_mpi(&argc, &argv);
 
 	// This advances argv to behind the bart options
 	bool no_arguments = parse_bart_opts(&argc, &argv);

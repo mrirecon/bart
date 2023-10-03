@@ -44,7 +44,10 @@ UTESTS
 
 int main(int argc, char* argv[])
 {
+#ifdef USE_MPI
 	init_mpi(&argc, &argv);
+#endif
+
 	UNUSED(argc);
 
 	int num_tests_run = 0;

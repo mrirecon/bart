@@ -36,6 +36,7 @@
 
 #include "mpi_ops.h"
 
+static bool mpi_initialized = false;
 static int mpi_rank = -1;  //ranks are the process ID of MPI
 static int mpi_nprocs = 1; // number of processes
 bool cuda_aware_mpi = false;
@@ -54,9 +55,9 @@ static MPI_Comm mpi_get_comm(void)
 void init_mpi(int* argc, char*** argv)
 {
 #ifdef USE_MPI
-	int initialized = 0;
-	MPI_Initialized(&initialized);
-	if (!initialized) {
+	if (!mpi_initialized) {
+
+		mpi_initialized = true;
 
 		MPI_Init(argc, argv);
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
@@ -92,6 +93,7 @@ void init_mpi(int* argc, char*** argv)
 	}
 		
 #else
+	error("BART was compiled without MPI support!\n");
 	UNUSED(argc);
 	UNUSED(argv);
 #endif
@@ -100,9 +102,7 @@ void init_mpi(int* argc, char*** argv)
 void deinit_mpi(void)
 {
 #ifdef USE_MPI
-	int finalized = 0;
-	MPI_Finalized(&finalized);
-	if (!finalized)
+	if (mpi_initialized)
 		MPI_Finalize();
 #endif
 }
