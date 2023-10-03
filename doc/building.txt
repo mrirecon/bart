@@ -180,7 +180,7 @@ the ISMRM raw data format can be activated:
 	
 	ISMRMRD=1
 
-3.4.5. TensorFlow
+3.3.5. TensorFlow
 
 Integration with TensorFlow is possible using the
 C API of TensorFlow, which can be downloaded from
@@ -194,6 +194,16 @@ TensorFlow support can then be activated with:
 
 	TENSORFLOW=1
 	TENSORFLOW_BASE=/opt/tensorflow/
+
+3.3.6 MPI
+
+Support for MPI can be turned on. It is recommended to use Open MPI as
+MPI implementation as this enables automatic detection of CUDA-aware 
+MPI. Moreover BART reads environment variables exported by the Open MPI
+implementation of mpirun to automatically acivate run-time support for MPI.
+
+	MPI=1
+
 
 
 3.4. Compiler
