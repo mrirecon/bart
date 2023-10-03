@@ -107,6 +107,16 @@ void deinit_mpi(void)
 #endif
 }
 
+void abort_mpi(int err_code)
+{
+#ifdef USE_MPI
+	if (1 < mpi_get_num_procs())
+		MPI_Abort(comm, err_code);
+#else
+	UNUSED(err_code);
+#endif
+}
+
 int mpi_get_rank(void)
 {
 	return MAX(0, mpi_rank);

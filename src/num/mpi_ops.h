@@ -8,6 +8,7 @@
 
 extern void init_mpi(int* argc, char*** argv);
 extern void deinit_mpi(void);
+extern void abort_mpi(int err_code);
 extern void mpi_signoff_proc(_Bool signof);
 
 extern int mpi_get_rank(void);
