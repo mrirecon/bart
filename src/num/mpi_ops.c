@@ -36,12 +36,12 @@
 
 #include "mpi_ops.h"
 
-static bool mpi_initialized = false;
 static int mpi_rank = -1;  //ranks are the process ID of MPI
 static int mpi_nprocs = 1; // number of processes
 bool cuda_aware_mpi = false;
 
 #ifdef USE_MPI
+static bool mpi_initialized = false;
 static MPI_Comm comm = MPI_COMM_NULL;
 
 static MPI_Comm mpi_get_comm(void)

@@ -844,7 +844,7 @@ int main_pics(int argc, char* argv[argc])
 				forward_op);
 	}
 
-	const struct operator_p_s* po = sense_recon_create(&conf, max_dims, forward_op,
+	const struct operator_p_s* po = sense_recon_create(&conf, forward_op,
 				pat_dims,
 				it.italgo, it.iconf, image_start, nr_penalties, thresh_ops,
 				trafos_cond ? trafos : NULL, NULL, monitor);
@@ -904,7 +904,6 @@ int main_pics(int argc, char* argv[argc])
 	if (image_start)
 		unmap_cfl(DIMS, img_dims, image_start);
 
-cleanup:
 	if (kspace_p != kspace)
 		md_free(kspace_p);
 

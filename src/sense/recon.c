@@ -77,16 +77,9 @@ void debug_print_sense_conf(int level, const struct sense_conf* conf)
 
 
 
-// copied from flpmath.c (for md_sqrt below )
-static void real_from_complex_dims(unsigned int D, long odims[D + 1], const long idims[D])
-{
-	odims[0] = 2;
-	md_copy_dims(D, odims + 1, idims);
-}
 
 
-
-const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, const long dims[DIMS],
+const struct operator_p_s* sense_recon_create(const struct sense_conf* conf,
 		  const struct linop_s* sense_op,
 		  const long pat_dims[DIMS],
 		  italgo_fun2_t italgo, iter_conf* iconf,
@@ -148,7 +141,6 @@ const struct operator_p_s* sense_recon_create(const struct sense_conf* conf, con
 					num_funs, thresh_op, thresh_funs, monitor);
 
 		linop_free(sense_op);
-
 	}
 
 	return op;
