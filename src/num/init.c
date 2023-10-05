@@ -100,8 +100,6 @@ static void num_init_internal(void)
 		if (1 == mem)
 			cuda_use_global_memory();
 	}
-	
-	const char* streams_str;
 #endif
 
 	int p = 2;
