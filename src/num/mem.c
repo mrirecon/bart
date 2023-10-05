@@ -18,11 +18,18 @@
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
-#else
-#define CUDA_MAX_STREAMS 0
 #endif
 
 #include "mem.h"
+
+#ifndef USE_CUDA
+#define CUDA_MAX_STREAMS 0
+
+static int cuda_get_stream_id(void)
+{
+	return 0;
+}
+#endif
 
 bool memcache = true;
 
