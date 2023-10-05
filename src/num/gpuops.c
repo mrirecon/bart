@@ -216,7 +216,7 @@ int cuda_get_stream_id(void)
 	if (-1 == cuda_device_id)
 		error("CUDA not initialized!\n");
 
-	if (cuda_device_id == cuda_device_id_thread) {
+	if (cuda_device_id != cuda_device_id_thread) {
 
 		CUDA_ERROR(cudaSetDevice(cuda_device_id));
 		cuda_device_id_thread = cuda_device_id;
