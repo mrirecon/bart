@@ -3,9 +3,6 @@
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 
-# we have a two stage Makefile
-MAKESTAGE ?= 1
-
 # silent make
 #MAKEFLAGS += --silent
 
@@ -77,13 +74,12 @@ ifeq ($(BUILDTYPE), MacOSX)
 	MACPORTS ?= 1
 endif
 
+ARFLAGS = rs
 
 ifeq ($(BUILDTYPE), Linux)
 	# as the defaults changed on most Linux distributions
 	# explicitly specify non-deterministic archives to not break make
-	ARFLAGS ?= rsU
-else
-	ARFLAGS ?= rs
+	ARFLAGS = rsU
 endif
 
 ifeq ($(BUILDTYPE), Linux)
@@ -364,18 +360,6 @@ ifeq ($(PARALLEL),1)
 MAKEFLAGS += -j$(PARALLEL_NJOBS)
 endif
 
-
-ifeq ($(MAKESTAGE),1)
-.PHONY: doc/commands.txt bart $(CTARGETS)
-default all clean allclean distclean doc/commands.txt doxygen test utest utest_gpu gputest testslow pythontest testague scripttest shared-lib bart $(CTARGETS):
-	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
-
-tests/test-%: force
-	$(MAKE) MAKESTAGE=2 $(MAKECMDGOALS)
-
-force: ;
-
-else
 
 
 CPPFLAGS += $(DEPFLAG) -iquote $(srcdir)/
@@ -930,7 +914,6 @@ shared-lib:
 	gcc -shared -fopenmp -o libbart.so src/bart.o -Wl,-whole-archive lib/lib*.a -Wl,-no-whole-archive -Wl,-Bdynamic $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm -lrt
 	make allclean
 
-endif	# MAKESTAGE
 
 
 install: bart
