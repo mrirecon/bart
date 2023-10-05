@@ -801,44 +801,7 @@ $(UTARGETS_GPU): % : utests/utest_gpu.c utests/%.o $$(MODULES_%) $(MODULES)
 # linker script version - does not work on MacOS X
 #	$(CC) $(LDFLAGS) -Wl,-Tutests/utests.ld $(CFLAGS) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) -lm -rt
 
-clean:
-	rm -f `find $(srcdir) -name "*.o"`
-	rm -f $(root)/utests/*.o
-	rm -f $(patsubst %, %, $(UTARGETS))
-	rm -f $(patsubst %, %, $(UTARGETS_GPU))
-	rm -f $(libdir)/.*.lock
 
-allclean: clean
-	rm -f $(libdir)/*.a $(ALLDEPS)
-	rm -f bart
-	rm -f $(patsubst commands/%, %, $(CTARGETS))
-	rm -f $(CTARGETS)
-	rm -f $(srcdir)/misc/version.inc
-	rm -rf $(root)/tests/tmp/*/
-	rm -rf $(root)/stests/tmp/*/
-	rm -rf $(root)/doc/dx
-	rm -f $(root)/doc/commands.txt
-	rm -f $(root)/save/fftw/*.fftw
-	rm -f $(root)/save/nsv/*.dat
-	touch isclean
-
-distclean: allclean
-
-
-
--include isclean
-
-
-isclean: $(ALLMAKEFILES)
-ifeq ($(AUTOCLEAN),1)
-	@echo "CONFIGURATION MODIFIED. RUNNING FULL REBUILD."
-	touch isclean
-	$(MAKE) allclean || rm isclean
-else
-ifneq ($(MAKECMDGOALS),allclean)
-	@echo "CONFIGURATION MODIFIED."
-endif
-endif
 
 
 
@@ -906,6 +869,48 @@ utests_gpu-all: $(UTARGETS_GPU)
 
 utest_gpu: utests_gpu-all
 	@echo ALL GPU UNIT TESTS PASSED.
+
+
+
+
+clean:
+	rm -f `find $(srcdir) -name "*.o"`
+	rm -f $(root)/utests/*.o
+	rm -f $(patsubst %, %, $(UTARGETS))
+	rm -f $(patsubst %, %, $(UTARGETS_GPU))
+	rm -f $(libdir)/.*.lock
+
+allclean: clean
+	rm -f $(libdir)/*.a $(ALLDEPS)
+	rm -f bart
+	rm -f $(patsubst commands/%, %, $(CTARGETS))
+	rm -f $(CTARGETS)
+	rm -f $(srcdir)/misc/version.inc
+	rm -rf $(root)/tests/tmp/*/
+	rm -rf $(root)/stests/tmp/*/
+	rm -rf $(root)/doc/dx
+	rm -f $(root)/doc/commands.txt
+	rm -f $(root)/save/fftw/*.fftw
+	rm -f $(root)/save/nsv/*.dat
+	touch isclean
+
+distclean: allclean
+
+
+
+-include isclean
+
+
+isclean: $(ALLMAKEFILES)
+ifeq ($(AUTOCLEAN),1)
+	@echo "CONFIGURATION MODIFIED. RUNNING FULL REBUILD."
+	touch isclean
+	$(MAKE) allclean || rm isclean
+else
+ifneq ($(MAKECMDGOALS),allclean)
+	@echo "CONFIGURATION MODIFIED."
+endif
+endif
 
 # shared library
 shared-lib:
