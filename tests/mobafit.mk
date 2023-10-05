@@ -191,6 +191,91 @@ tests/test-mobafit-ir_t1: mobafit nrmse transpose scale vec join
 	$(TOOLDIR)/scale -- 0.001 test_echotimes_ms.ra test_echotimes_s.ra ;\
 	$(TOOLDIR)/mobafit -I -a --init 1:1:1 --min-flag 2 --min=0:0.1 test_echotimes_s.ra testdata.ra testfit_R1.ra ;\
 	$(TOOLDIR)/nrmse -t 0.00001 testresults.ra testfit_R1.ra ;\
+
+tests/test-mobafit-sim: phantom sim repmat fmac index mobafit slice nrmse scale
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
+	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 -1 1.:1.:1 -2 0.1:0.1:1 sim0.ra ;\
+	$(TOOLDIR)/repmat 6 11 sim0.ra sim.ra				;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra sim.ra ph_img.ra	;\
+	$(TOOLDIR)/index 5 100 te.ra					;\
+	$(TOOLDIR)/mobafit -S --sim ODE -i4 --init=0.8:1:9:1 --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --scale=1:1:1:0:0:0:0:0:0 te.ra ph_img.ra fit.ra ;\
+	$(TOOLDIR)/slice 6 0 fit.ra fit_r1.ra				;\
+	$(TOOLDIR)/slice 6 2 fit.ra fit_r2.ra				;\
+	$(TOOLDIR)/phantom -x32 -T r1.ra				;\
+	$(TOOLDIR)/nrmse -t 0.0001 r1.ra fit_r1.ra			;\
+	$(TOOLDIR)/scale 10 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.0001 r2.ra fit_r2.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-mobafit-bmc-sim: phantom sim slice repmat fmac index mobafit nrmse scale
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/phantom -x16 -T -b tubes.ra				;\
+	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,TR=0.004,TE=0.002,FA=45,BWTP=4 --BMC --pool P=3,T1=1.:1:1:1,T2=1e-4:1e-4:1e-4:1e-4,k=10.:20:20:20,M0=0.1:0.2:0.2:0.2 -1 1:1:1 -2 0.1:0.1:1 sim0.ra ;\
+	$(TOOLDIR)/slice 8 0 sim0.ra sim.ra				;\
+	$(TOOLDIR)/repmat 6 11 sim.ra sim2.ra				;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra sim2.ra ph_img.ra		;\
+	$(TOOLDIR)/index 5 100 te.ra					;\
+	$(TOOLDIR)/mobafit -S --sim ODE,BMC -i3 --init=1:1:10:1:1:1:1e4:1e4:10:20:0.1:0.2.:0.2:0:0 --seq IR-BSSFP,TR=0.004,TE=0.002,ipl=0.01,isp=0.005,ppl=0.002,Nrep=100,Trf=0.001,FA=45,BWTP=4 --pool P=3 --scale=1:0:1:0:0:0:0:0:0:0:0:0:0:0 te.ra ph_img.ra fit.ra ;\
+	$(TOOLDIR)/slice 6 0 fit.ra r1.ra				;\
+	$(TOOLDIR)/phantom -x16 -T ph.ra				;\
+	$(TOOLDIR)/fmac ph.ra r1.ra r1p.ra					;\
+	$(TOOLDIR)/nrmse -t 0.001 ph.ra r1p.ra				;\
+	$(TOOLDIR)/slice 6 2 fit.ra r2.ra				;\
+	$(TOOLDIR)/fmac ph.ra r2.ra r2p.ra					;\
+	$(TOOLDIR)/scale 10 ph.ra ph2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.001 r2p.ra ph2.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-mobafit-sim-om: sim slice ones index mobafit scale nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,TR=0.004,TE=0.002,FA=45,BWTP=4 --BMC --pool P=3,T1=1.:1:1:1,T2=1e-4:1e-4:1e-4:1e-4,k=20.:10.:0:0,M0=0.3:0.2:0.2:0.2,Om=900:0:0:0 -1 1:1:1 -2 0.1:0.1:1 sim0.ra ;\
+	$(TOOLDIR)/slice 8 0 sim0.ra sim.ra				;\
+	$(TOOLDIR)/index 5 100 te.ra					;\
+	$(TOOLDIR)/mobafit -S --sim ODE,BMC -i6 --init=1:1:10:1:1:1:1e4:1e4:20:10:0.3:0.2.:0.2:600:0 --seq IR-BSSFP,TR=0.004,TE=0.002,ipl=0.01,isp=0.005,ppl=0.002,Nrep=200,Trf=0.001,FA=45,BWTP=4 --pool P=3 --scale=0:0:0:0:0:0:0:0:0:0:0:0:1:0 te.ra sim.ra fit.ra ;\
+	$(TOOLDIR)/slice 6 12 fit.ra om_fit.ra				;\
+	$(TOOLDIR)/ones 1 1 one.ra					;\
+	$(TOOLDIR)/scale 900 one.ra om_ref.ra				;\
+	$(TOOLDIR)/nrmse -t 3 om_fit.ra om_ref.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-mobafit-sim-pool2: sim slice index mobafit ones scale nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,TR=0.004,TE=0.002,FA=45,BWTP=4 --BMC --pool P=2,T1=1.:1:1:1,T2=1e-4:1e-4:1e-4:1e-4,k=20.:0:0:0,M0=0.3:0.:0.:0.,Om=0:0:0:0 -1 1:1:1 -2 0.1:0.1:1 sim0.ra ;\
+	$(TOOLDIR)/slice 8 0 sim0.ra sim.ra				;\
+	$(TOOLDIR)/index 5 100 te.ra					;\
+	$(TOOLDIR)/mobafit -S --sim ODE,BMC -i5 --init=1:1:10:1:1:0.92e4:18:0.26:0 --seq IR-BSSFP,TR=0.004,TE=0.002,ipl=0.01,isp=0.005,ppl=0.002,Nrep=100,Trf=0.001,FA=45,BWTP=4 --pool P=2 --scale=0:0:0:0:0:1:1:1:0 te.ra sim.ra fit.ra ;\
+	$(TOOLDIR)/slice 6 5 fit.ra r2_fit.ra				;\
+	$(TOOLDIR)/slice 6 6 fit.ra k_fit.ra				;\
+	$(TOOLDIR)/slice 6 7 fit.ra m0_fit.ra				;\
+	$(TOOLDIR)/ones 1 1 one.ra					;\
+	$(TOOLDIR)/scale 1e4 one.ra r2_ref.ra				;\
+	$(TOOLDIR)/scale 20 one.ra k_ref.ra				;\
+	$(TOOLDIR)/scale 0.3 one.ra m0_ref.ra				;\
+	$(TOOLDIR)/nrmse -t 1 r2_fit.ra r2_ref.ra			;\
+	$(TOOLDIR)/nrmse -t 0.2 k_fit.ra k_ref.ra			;\
+	$(TOOLDIR)/nrmse -t 0.02 m0_fit.ra m0_ref.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-mobafit-sim-pool3: sim slice index mobafit ones scale nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,TR=0.004,TE=0.002,FA=45,BWTP=4 --BMC --pool P=3,T1=1.:1:1:1,T2=1e-3:1e-3:0:0,k=15.:15:0:0,M0=0.3:0.2:0:0 -1 1:1:1 -2 0.1:0.1:1 sim0.ra ;\
+	$(TOOLDIR)/slice 8 0 sim0.ra sim.ra				;\
+	$(TOOLDIR)/index 5 100 te.ra					;\
+	$(TOOLDIR)/mobafit -S --sim ODE,BMC -i5 --init=1:1:10:1:1:0.6:1e3:1e3:15:13:0.3:0.14.:0:0 --seq IR-BSSFP,TR=0.004,TE=0.002,ipl=0.01,isp=0.005,ppl=0.002,Nrep=100,Trf=0.001,FA=45,BWTP=4 --pool P=3 --scale=0:0:0:0:0:1:0:0:0:1:0:1:0:0 te.ra sim.ra fit.ra ;\
+	$(TOOLDIR)/slice 6 5 fit.ra r1_fit.ra				;\
+	$(TOOLDIR)/slice 6 9 fit.ra k_fit.ra				;\
+	$(TOOLDIR)/slice 6 11 fit.ra m0_fit.ra				;\
+	$(TOOLDIR)/ones 1 1 one.ra					;\
+	$(TOOLDIR)/scale 15 one.ra k_ref.ra				;\
+	$(TOOLDIR)/scale 0.2 one.ra m0_ref.ra				;\
+	$(TOOLDIR)/nrmse -t 0.01 r1_fit.ra one.ra			;\
+	$(TOOLDIR)/nrmse -t 0.2 k_fit.ra k_ref.ra			;\
+	$(TOOLDIR)/nrmse -t 0.01 m0_fit.ra m0_ref.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -198,5 +283,8 @@ TESTS += tests/test-mobafit-r2s tests/test-mobafit-wfr2s
 TESTS += tests/test-mobafit-r2
 TESTS += tests/test-mobafit-irll
 TESTS += tests/test-mobafit-ir_t1
+TESTS += tests/test-mobafit-sim tests/test-mobafit-bmc-sim
+TESTS += tests/test-mobafit-sim-om
+TESTS += tests/test-mobafit-sim-pool2 tests/test-mobafit-sim-pool3
 
 TESTS_GPU += tests/test-mobafit-gpu
