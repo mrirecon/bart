@@ -310,6 +310,11 @@ GCCVERSION14 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 14)
 ifeq ($(findstring clang,$(CC)),clang)
 	CFLAGS += -fblocks
 	LDFLAGS += -lBlocksRuntime
+# Make complains if $(error ...) is indented by tab:
+ifeq ($(MPI),1)
+$(error ERROR MPI is not support with clang, please compile with gcc)
+endif
+
 else
 # only add if not clang, as it doesn't understand this:
 ifeq ($(GCCVERSION14), 1)
