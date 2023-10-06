@@ -443,12 +443,12 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 
 	if (0 != config->weighting_nmse) {
 
-		result = add_loss(result, nlop_loss_to_nn_F(nlop_nmse_create(N, dims, ~(config->image_flags | config->rss_flags)), "nmse", config->weighting_nmse, measure), combine);
+		result = add_loss(result, nlop_loss_to_nn_F(nlop_nmse_create(N, dims, BATCH_FLAG), "nmse", config->weighting_nmse, measure), combine);
 	}
 
 	if (0 != config->weighting_nmse_rss) {
 
-		const struct nlop_s* nlop = nlop_nmse_create(N, ldims, ~(config->image_flags | config->rss_flags));
+		const struct nlop_s* nlop = nlop_nmse_create(N, ldims, BATCH_FLAG);
 		nlop = nlop_chain2_FF(nlop_zrss_reg_create(N, dims, config->rss_flags, measure ? 0 : config->epsilon), 0, nlop, 0);
 		nlop = nlop_chain2_FF(nlop_zrss_reg_create(N, dims, config->rss_flags, measure ? 0 : config->epsilon), 0, nlop, 0);
 
