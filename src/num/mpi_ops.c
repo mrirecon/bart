@@ -218,6 +218,9 @@ void mpi_bcast_selected(bool _tag, void* ptr, long size, int root)
 		mpi_bcast_selected_gpu(_tag, ptr, size, root);
 		return;
 	}
+
+	if (cuda_ondevice(ptr))
+		cuda_sync_stream();
 #endif
 
 	int tag = _tag ? 1 : 0;
@@ -304,6 +307,9 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 			_src = xmalloc(size);
 			cuda_memcpy(size, _src, src);
 		}
+
+		if (cuda_ondevice(_src))
+			cuda_sync_stream();
 #endif
 
 		const void* end = _src + size;
@@ -482,6 +488,9 @@ void mpi_reduce_land(long N, bool vec[__VLA(N)])
 		mpi_reduce_land_gpu(N, vec);
 		return;
 	}
+
+	if (cuda_ondevice(vec))
+		cuda_sync_stream();
 #endif
 	
 	bool* end = vec + N;
@@ -513,8 +522,14 @@ static void mpi_allreduce_sum_gpu(int N, float vec[N], MPI_Comm comm)
 
 		cuda_memcpy(size, vec, tmp);
 		xfree(tmp);
-	} else 
+
+		return;
+	}
+
+	if (cuda_ondevice(vec))
+		cuda_sync_stream();
 #endif
+
 	MPI_Allreduce(MPI_IN_PLACE, vec, N, MPI_FLOAT, MPI_SUM, comm);
 }
 #endif
@@ -627,7 +642,12 @@ static void mpi_allreduce_sumD_gpu(int N, double vec[N], MPI_Comm comm)
 
 		cuda_memcpy(size, vec, tmp);
 		xfree(tmp);
-	} else 
+
+		cuda_sync_stream();
+	} 
+
+	if (cuda_ondevice(vec))
+		cuda_sync_stream();
 #endif
 	MPI_Allreduce(MPI_IN_PLACE, vec, N, MPI_DOUBLE, MPI_SUM, comm);
 }
