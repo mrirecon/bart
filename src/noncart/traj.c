@@ -84,10 +84,10 @@ int gen_fibonacci(int n, int ind)
 {
 	int fib[2] = { 1, n };
 
-	for (int i = 0; i < ind; i++)
+	for (int i = 0; i < ind - 1; i++)
 		fib_next(fib);
 
-	return fib[1];
+	return (0 == ind) ? fib[0] : fib[1];
 }
 
 static double rational_angle(int Y, int n)
