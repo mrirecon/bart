@@ -91,18 +91,28 @@ int gen_fibonacci(int n, int ind)
 	return (0 == ind) ? fib[0] : fib[1];
 }
 
-static double rational_angle(int Y, int n)
+static int raga_find_index(int Y, int n)
 {
-	int fib1[2] = { 1, 1 };
-	int fibn[2] = { 1, n };
+	int i = 0;
 
-	while (fibn[1] < Y) {
+	while (Y > gen_fibonacci(n, i))
+		i++;
 
-		fib_next(fib1);
-		fib_next(fibn);
-	}
+	return i;
+}
 
-	return M_PI  * fib1[0] / fibn[1];
+static int raga_increment(int Y, int n)
+{
+	int i = raga_find_index(Y, n);
+
+	return gen_fibonacci(1, i - 1);
+}
+
+static float rational_angle(int Y, int n)
+{
+	int inc = raga_increment(Y, n);
+
+	return M_PI / (float)Y * (float)inc;
 }
 
 
@@ -133,7 +143,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 	}
 
 	if (conf.rational)
-		golden_angle = rational_angle(Y, conf.tiny_gold);
+		golden_angle = rational_angle(Y / (conf.double_base ? 1 : 2), conf.tiny_gold);
 
 	golden_angle = golden_angle * (conf.double_base ? 2. : 1.);
 

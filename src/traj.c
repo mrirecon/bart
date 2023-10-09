@@ -128,15 +128,10 @@ int main_traj(int argc, char* argv[argc])
 
 		conf.golden = true;
 
-		int i = 0;
-
-		int spokes = M_PI / 2. * X;
-		int bn = 0;
-
-		while (spokes > (bn = gen_fibonacci(conf.tiny_gold, i)))
-			i++;
-
-		debug_printf(DP_INFO, "Optimal number of spokes: %d (Nyquist: %d).\n", bn, spokes);
+		if (1 == Y % 2)
+			assert(conf.double_base);
+		else
+			assert(!conf.double_base);
 	}
 
 	int tot_sp = Y * E * mb * turns;	// total number of lines/spokes
