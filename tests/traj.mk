@@ -77,3 +77,14 @@ tests/test-traj-3D: traj ones scale slice rss nrmse
 
 TESTS += tests/test-traj-3D
 
+tests/test-traj-double-base: traj slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/traj -y 2 -r -G -s1 --double-base traj.ra		;\
+	$(TOOLDIR)/traj -y 3 -r -G -s1 traj2.ra				;\
+	$(TOOLDIR)/slice 2 1 traj.ra o1.ra				;\
+	$(TOOLDIR)/slice 2 2 traj2.ra o2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.007 o1.ra o2.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+TESTS += tests/test-traj-double-base

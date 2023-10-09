@@ -79,6 +79,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_INT('s', &conf.tiny_gold, "# Tiny GA", "tiny golden angle"),
 		OPT_SET('A', &conf.rational, "rational approximation of golden angles"),
 		OPT_SET('D', &conf.full_circle, "projection angle in [0,360°), else in [0,180°)"),
+		OPTL_SET(0, "double-base", &conf.double_base, "Define GA over 2Pi base instead of default Pi."),
 		OPT_FLOAT('o', &over, "o", "oversampling factor"),
 		OPT_FLOAT('R', &rot, "phi", "rotate"),
 		OPT_FLVEC3('q', &gdelays[0], "delays", "gradient delays: x, y, xy"),

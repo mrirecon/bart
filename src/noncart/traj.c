@@ -37,6 +37,7 @@ const struct traj_conf traj_defaults = {
 	.accel = 1,
 	.tiny_gold = 0,
 	.rational = false,
+	.double_base = false,
 };
 
 
@@ -134,7 +135,9 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 	if (conf.rational)
 		golden_angle = rational_angle(Y, conf.tiny_gold);
 
-	printf("A: %f\n", golden_angle);
+	golden_angle = golden_angle * (conf.double_base ? 2. : 1.);
+
+	bart_printf("A: %f\n", golden_angle);
 
 	double angle_atom = M_PI / Y;
 
