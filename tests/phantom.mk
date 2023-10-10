@@ -328,7 +328,15 @@ tests/test-phantom-FILE-coil-large: fmac nrmse phantom $(TESTS_OUT)/coils_large.
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-
+tests/test-phantom-ellipsoid: nrmse phantom fft slice
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -k -x 32 -3 --ELLIPSOID --ellipsoid_center 16:16:5 --ellipsoid_axes 10:5:20 --rotation-angle 30 k.ra		;\
+	$(TOOLDIR)/fft -i 7 k.ra x.ra ;\
+	$(TOOLDIR)/slice 2 5 x.ra x_s.ra ;\
+	$(TOOLDIR)/phantom -x 32 --ELLIPSOID --ellipsoid_center 16:16:5 --ellipsoid_axes 10:5:20 --rotation-angle 30 x2d.ra ;\
+	$(TOOLDIR)/nrmse -t 0.22 x2d.ra x_s.ra	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 TESTS += tests/test-phantom-ksp tests/test-phantom-noncart tests/test-phantom-coil tests/test-phantom-ksp-coil
 TESTS += tests/test-phantom-bart tests/test-phantom-bart-basis
@@ -342,4 +350,5 @@ TESTS += tests/test-phantom-SONAR tests/test-phantom-SONAR-basis tests/test-phan
 TESTS += tests/test-phantom-brain tests/test-phantom-BRAIN-basis
 TESTS += tests/test-phantom-coil-large tests/test-phantom-ksp-coil-large
 TESTS += tests/test-phantom-FILE tests/test-phantom-FILE-basis tests/test-phantom-FILE-coil-large
+TESTS += tests/test-phantom-ellipsoid
 
