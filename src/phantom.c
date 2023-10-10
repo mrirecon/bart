@@ -45,7 +45,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	int geo = -1;
 
-	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, BRAIN, TUBES, RAND_TUBES, NIST, SONAR, GEOMFILE } ptype = SHEPPLOGAN;
+	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, BRAIN, TUBES, RAND_TUBES, NIST, SONAR, GEOMFILE, ELLIPSOID0 } ptype = SHEPPLOGAN;
 
 	const char* traj_file = NULL;
 	bool basis = false;
@@ -60,6 +60,9 @@ int main_phantom(int argc, char* argv[argc])
 
 	float rotation_angle = 0.;
 	int rotation_steps = 1;
+
+	long ellipsoid_center[3] = {-1, -1, -1};
+	float ellipsoid_axes[3] = {1, 1, 1};
 
 	struct pha_opts popts = pha_opts_defaults;
 
@@ -85,6 +88,9 @@ int main_phantom(int argc, char* argv[argc])
 		OPTL_SELECT(0, "NIST", enum ptype_e, &ptype, NIST, "NIST phantom (T2 sphere)"),
                 OPTL_SELECT(0, "SONAR", enum ptype_e, &ptype, SONAR, "Diagnostic Sonar phantom"),
 		OPTL_SELECT(0, "BRAIN", enum ptype_e, &ptype, BRAIN, "BRAIN geometry phantom"),
+		OPTL_SELECT(0, "ELLIPSOID", enum ptype_e, &ptype, ELLIPSOID0, "Draws ellipsoid with center coordinates ellipsoid_center with axes lengths ellipsoid_axes."),
+		OPTL_VEC3(0, "ellipsoid_center", &ellipsoid_center, "", "x,y,z center coordinates of ellipsoid."),
+		OPTL_FLVEC3(0, "ellipsoid_axes", &ellipsoid_axes, "", "Axes lengths of ellipsoid."),
 		OPT_INT('N', &N, "num", "Random tubes phantom with num tubes"),
 		OPT_SELECT('B', enum ptype_e, &ptype, BART, "BART logo"),
 		OPTL_INFILE(0, "FILE", &file_load, "name", "Arbitrary geometry based on multicfl file."),
@@ -196,6 +202,13 @@ int main_phantom(int argc, char* argv[argc])
 	if (((HEAD_2D_8CH == popts.stype) && d3) && ((0 < sens) || (0 < osens)))
 		debug_printf(DP_WARN, "A 3D simulation with 2D sensitivities is chosen!\n");
 
+	if (ELLIPSOID0 == ptype)
+	    if (-1 == ellipsoid_center[0] && -1 == ellipsoid_center[1] && -1 == ellipsoid_center[2]) {
+
+		    ellipsoid_center[0] = dims[0] % 2 == 0 ? dims[0] / 2 : (dims[0] - 1) / 2;
+		    ellipsoid_center[1] = dims[1] % 2 == 0 ? dims[1] / 2 : (dims[1] - 1) / 2;
+		    ellipsoid_center[2] = dims[2] % 2 == 0 ? dims[2] / 2 : (dims[2] - 1) / 2;
+	    }
 
 	long sdims[DIMS];
 	long sstrs[DIMS] = { 0 };
@@ -237,6 +250,11 @@ int main_phantom(int argc, char* argv[argc])
 
 
 	switch (ptype) {
+
+	case ELLIPSOID0:
+
+		calc_ellipsoid(DIMS, dims, out, kspace, sstrs, samples, ellipsoid_axes, ellipsoid_center, rotation_angle, &popts);
+		break;
 
 	case SENS:
 

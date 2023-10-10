@@ -11,6 +11,7 @@ struct pha_opts {
 
 extern struct pha_opts pha_opts_defaults;
 
+extern void calc_ellipsoid(unsigned int D, long dims[D], _Complex float* out, _Bool kspace, long tstrs[D], _Complex float* traj, float ax[3], long center[3], float rot, struct pha_opts* popts);
 
 extern void calc_sens(const long dims[DIMS], complex float* sens, struct pha_opts* popts);
 

@@ -287,6 +287,42 @@ static complex float krn3d(void* _data, int s, const double mpos[3])
 	}
 }
 
+void calc_ellipsoid(unsigned int D, long dims[D], complex float* optr, bool kspace, long tstrs[D], complex float* traj, float ax[3], long center[3], float rot, struct pha_opts* popts) {
+
+	if (1 > dims[0] || 1 > dims[1] || 1 > dims[2])
+		error("dims inadmissible\n");
+
+	if (0 > ax[0] || 0 > ax[1] || 0 > ax[2])
+		error("axes negative\n");
+	
+        // the krn3d, krn2d functinos sample the ellipsoid struct without following the dim conventions. Therefore we have to make adjustments.
+	// to domain [-1,1]^3.
+	double c[3] = {0, 0, 0};
+	c[1] = dims[0] == 1 ? 0 : dims[0] % 2 == 0 ? 2 * (double) center[0] / (double) dims[0] - 1 : 2 * (double) center[0] / (double)(dims[0] - 1) - 1;
+        c[1] *= -1;
+	c[0] = dims[1] == 1 ? 0 : dims[1] % 2 == 0 ? 2 * (double) center[1] / (double) dims[1] - 1 : 2 * (double) center[1] / (double)(dims[1] - 1) - 1;
+	c[2] = dims[2] == 1 ? 0 : dims[2] % 2 == 0 ? 2 * (double) center[2] / (double) dims[2] - 1 : 2 * (double) center[2] / (double)(dims[2] - 1) - 1;
+        c[2] *= -1;
+
+	double axc[3];
+	axc[1] = dims[0] == 1 ? 1 : dims[0] % 2 == 0 ? 2 * ax[0] / (double) dims[0] : 2 * ax[0] / ((double) dims[0] - 1);
+	axc[0] = dims[1] == 1 ? 1 : dims[1] % 2 == 0 ? 2 * ax[1] / (double) dims[1] : 2 * ax[1] / ((double) dims[1] - 1);
+	axc[2] = dims[2] == 1 ? 1 : dims[2] % 2 == 0 ? 2 * ax[2] / (double) dims[2] : 2 * ax[2] / ((double) dims[2] - 1);
+
+	// anti-clockwise rotation
+	// btw, where is the second rotation dimension for the 3d ellipsis?
+	rot = -1 * rot / 360 * 2 * M_PI;
+
+	if (1 < dims[2]) {
+
+		struct ellipsis3d_s el[1] = {{ 1., { axc[0]/2, axc[1]/2, axc[2]/2 }, { c[0], c[1], c[2] }, rot }};
+		sample(dims, optr, tstrs, traj, &(struct krn3d_data){kspace, false, popts->stype, ARRAY_SIZE(el), el}, krn3d, kspace);
+	} else {
+	
+		struct ellipsis_s el[1] = {{ 1., { axc[0]/2, axc[1]/2 }, { c[0], c[1] }, rot }};
+		sample(dims, optr, tstrs, traj, &(struct krn2d_data){kspace, false, popts->stype, ARRAY_SIZE(el), el}, krn2d, kspace);
+	}
+}
 
 void calc_phantom(const long dims[DIMS], complex float* out, bool d3, bool kspace, const long tstrs[DIMS], const _Complex float* traj, struct pha_opts* popts)
 {
