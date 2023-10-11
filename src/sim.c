@@ -282,8 +282,12 @@ int main_sim(int argc, char* argv[argc])
 
 		for (int i = 1; i < data.voxel.P; i++) {
 
-			data.voxel.r1[i] = 1 / T1pools[i - 1];
-			data.voxel.r2[i] = 1 / T2pools[i - 1];
+			if (0 != T1pools[i - 1])
+				data.voxel.r1[i] = 1 / T1pools[i - 1];
+
+			if (0 != T2pools[i - 1])
+				data.voxel.r2[i] = 1 / T2pools[i - 1];
+
 			data.voxel.m0[i] = M0pools[i - 1];
 			data.voxel.Om[i] = Ompools[i - 1];
 			data.voxel.k[i - 1] = kpools[i - 1];
