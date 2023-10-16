@@ -196,11 +196,11 @@ struct iter6_conf_s* iter6_get_conf_from_opts(void)
 		break;
 
 	case ITER6_ADADELTA:
-		result = CAST_UP(&iter6_adam_conf_opts);
+		result = CAST_UP(&iter6_adadelta_conf_opts);
 		break;
 
 	case ITER6_IPALM:
-		result = CAST_UP(&iter6_adam_conf_opts);
+		result = CAST_UP(&iter6_iPALM_conf_opts);
 		break;
 
 	default:
