@@ -38,6 +38,7 @@ struct loss_config_s loss_option = {
 	.epsilon = 1.e-12,
 
 	.weighting_mse = 0.,
+	.weighting_mse_scaled = 0.,
 	.weighting_mad = 0.,
 	.weighting_mse_rss = 0.,
 	.weighting_mad_rss = 0.,
@@ -68,6 +69,7 @@ struct loss_config_s val_loss_option = {
 	.epsilon = 1.e-12,
 
 	.weighting_mse = 0.,
+	.weighting_mse_scaled = 0.,
 	.weighting_mad = 0.,
 	.weighting_mse_rss = 0.,
 	.weighting_mad_rss = 0.,
@@ -97,6 +99,7 @@ struct loss_config_s loss_image_valid = {
 	.epsilon = 1.e-12,
 
 	.weighting_mse = 1.,
+	.weighting_mse_scaled = 1.,
 	.weighting_mad = 1.,
 	.weighting_mse_rss = 1.,
 	.weighting_mad_rss = 1.,
@@ -128,6 +131,7 @@ struct loss_config_s loss_classification_valid = {
 	.epsilon = 1.e-12,
 
 	.weighting_mse = 0.,
+	.weighting_mse_scaled = 0.,
 	.weighting_mad = 0.,
 	.weighting_mse_rss = 0.,
 	.weighting_mad_rss = 0.,
@@ -449,6 +453,11 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 		nlop = nlop_chain2_FF(nlop_zrss_reg_create(N, dims, config->rss_flags, measure ? 0 : config->epsilon), 0, nlop, 0);
 
 		result = add_loss(result, nlop_loss_to_nn_F(nlop, rss ? "nmse rss" : "nmse mag", config->weighting_nmse_rss, measure), combine);
+	}
+
+	if (0 != config->weighting_mse_scaled) {
+
+		result = add_loss(result, nlop_loss_to_nn_F(nlop_mse_scaled_create(N, dims, config->mse_mean_flags), "mse scaled", config->weighting_mse_scaled, measure), combine);
 	}
 
 

@@ -135,6 +135,38 @@ const struct nlop_s* nlop_mse_create(int N, const long dims[N], unsigned long me
 }
 
 
+// out: min_l 1/N ||l * x - y||^2 ; in : x, y
+const struct nlop_s* nlop_mse_scaled_create(int N, const long dims[N], unsigned long mean_dims)
+{
+	long scl_dims[N];
+	md_select_dims(N, mean_dims, scl_dims, dims);
+
+	auto scl1 = nlop_tenmul_create(N, scl_dims, dims, dims);
+	scl1 = nlop_prepend_FF(nlop_from_linop_F(linop_zconj_create(N, dims)), scl1, 1);
+	
+	auto scl2 = nlop_tenmul_create(N, scl_dims, dims, dims);
+	scl2 = nlop_prepend_FF(nlop_from_linop_F(linop_zconj_create(N, dims)), scl2, 1);
+	scl2 = nlop_dup_F(scl2, 0, 1);
+
+	auto scl = nlop_zdiv_create(N, scl_dims);
+	scl = nlop_chain2_FF(scl2, 0, scl, 1);
+	scl = nlop_chain2_swap_FF(scl1, 0, scl, 0);
+	scl = nlop_dup_F(scl, 1, 2);
+	scl = nlop_append_FF(scl, 0, nlop_from_linop_F(linop_zreal_create(N, scl_dims)));	// out: (sum Re[y * conj(x)]) / (sum x * conj(x)); in: y, x
+
+	scl = nlop_chain2_FF(scl, 0, nlop_tenmul_create(N, dims, dims, scl_dims), 1);
+	scl = nlop_dup_F(scl, 0, 2);								// out: x * (sum Re[y * conj(x)]) / (sum x * conj(x)); in: x, y
+			
+	auto mse = nlop_chain2_FF(nlop_zaxpbz_create(N, dims, 1, -1), 0, nlop_znorm_create(N, dims, mean_dims), 0);	// out: 1 / N || x - y ||^2; in: x, y
+
+	auto ret = nlop_chain2_swap_FF(scl, 0, mse, 0);		// out: min_l 1/N ||lx - y||^2 ; in : x, y, y
+	ret = nlop_dup_F(ret, 1, 2);
+
+	return ret;
+}
+
+
+
 
 const struct nlop_s* nlop_nmse_create(int N, const long dims[N], unsigned long batch_flags)
 {
