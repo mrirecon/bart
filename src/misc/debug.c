@@ -1,5 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
+ * Copyright 2022-2023. Institute of Biomedical Imaging. TU Graz.
  * Copyright 2016. Martin Uecker.
  * Copyright 2018. Damien Nguyen.
  * All rights reserved. Use of this source code is governed by
@@ -56,6 +57,7 @@ double timestamp(void)
 void dump_cfl(const char* name, int D, const long dimensions[D], const complex float* src)
 {
 	io_reserve_output(name);
+
 	complex float* out = create_cfl(name, D, dimensions);
 
 	md_copy(D, dimensions, out, src, sizeof(complex float));
@@ -114,9 +116,11 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 	if (-1 == debug_level) {
 
 		char* str = getenv("BART_DEBUG_LEVEL");
+
 		// support old environment variable:
 		if (NULL == str)
 			str = getenv("DEBUG_LEVEL");
+
 		debug_level = (NULL != str) ? atoi(str) : DP_INFO;
 	}
 
@@ -134,22 +138,23 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 
 			fprintf(ofp, "[%s] [%s] - ", dt_str, get_level_str(level));
 
-		}
-		else {
+		} else {
+
 			if (level < DP_INFO) {
+
 				char rank[16] = { '\0' };
+
 				if (1 < mpi_get_num_procs())
 					sprintf(rank, " [Rank %d]", mpi_get_rank());
-			
+
 				fprintf(ofp, "%s%s%s: ", (level < DP_INFO ? RED : ""), get_level_str(level), rank);
 			}
 		}
 
 		vfprintf(ofp, fmt, ap);
 
-		if ((!debug_logging) && (level < DP_INFO)) {
+		if ((!debug_logging) && (level < DP_INFO))
 			fprintf(ofp, RESET);
-		}
 
 		fflush(ofp);
 	}
@@ -175,6 +180,7 @@ void debug_vprintf_trace(const char* func_name,
 {
 #ifndef USE_LOG_BACKEND
 	UNUSED(func_name); UNUSED(file); UNUSED(line);
+
 	debug_vprintf(level, fmt, ap);
 #else
 	char tmp[1024] = { 0 };
@@ -227,56 +233,56 @@ static void debug_good_backtrace_file(FILE * stream, int skip)
 	char* debuginfo_path = NULL;
 
 	Dwfl_Callbacks callbacks = {
+
 		.find_elf = dwfl_linux_proc_find_elf,
 		.find_debuginfo = dwfl_standard_find_debuginfo,
 		.debuginfo_path = &debuginfo_path,
 	};
 
 	Dwfl* dwfl = dwfl_begin(&callbacks);
-	if (NULL == dwfl) {
 
-		debug_printf(DP_WARN, "Backtrace failed\n.");
-		return;
-	}
+	if (NULL == dwfl)
+		goto err;
 
-	int r = dwfl_linux_proc_report(dwfl, getpid());
-	if (0 != r) {
+	if (0 != dwfl_linux_proc_report(dwfl, getpid()))
+		goto err;
 
-		debug_printf(DP_WARN, "Backtrace failed\n.");
-		return;
-	}
-	r = dwfl_report_end(dwfl, NULL, NULL);
-	if (0 != r) {
-
-		debug_printf(DP_WARN, "Backtrace failed\n.");
-		return;
-	}
+	if (0 != dwfl_report_end(dwfl, NULL, NULL))
+		goto err;
 
 	void* stack[backtrace_size + 1];
+
 	int stack_size = backtrace(stack, backtrace_size + 1);
 
 	for (int i = skip; i < stack_size; ++i) {
 
+		Dwarf_Addr addr = (Dwarf_Addr)stack[i];
 
-		Dwarf_Addr addr = (Dwarf_Addr) stack[i];
 		Dwfl_Module* module = dwfl_addrmodule(dwfl, addr);
 		const char* name = dwfl_module_addrname(module, addr);
 
 		Dwfl_Line* dwfl_line;
 		int line = -1;
 		const char* file = NULL;
+
 		if ((dwfl_line = dwfl_module_getsrc(module, addr))) {
 
 			Dwarf_Addr addr2;
 			file = dwfl_lineinfo(dwfl_line, &addr2, &line, NULL, NULL, NULL);
 		}
+
 		fprintf(stream, "%d: %p %s", i - skip, stack[i], name);
+
 		if (file)
 			fprintf(stream, " at %s:%d", file, line);
-		fprintf(stream, "\n");
 
+		fprintf(stream, "\n");
 	}
+
 	dwfl_end(dwfl);
+	return;
+err:
+	debug_printf(DP_WARN, "Backtrace failed\n.");
 #else
 	debug_printf(DP_WARN, "no backtrace on cygwin.");
 #endif
@@ -340,3 +346,4 @@ extern void __cyg_profile_func_exit(void *this_fn, void *call_site)
 	debug_trace("LEAVE %p\n", this_fn);
 }
 #endif
+

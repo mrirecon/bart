@@ -1,10 +1,10 @@
-/* Copyright 2019. Uecker Lab, University Medical Center Goettingen.
+/* Copyright 2019-2021. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2022-2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Xiaoqing Wang, Martin Uecker
  */
-
 
 #include <stdlib.h>
 #include <complex.h>
@@ -56,12 +56,11 @@ static struct mobamod T1_create_internal(const long dims[DIMS], const complex fl
 	md_select_dims(DIMS, conf->fft_flags|COEFF_FLAG|TIME_FLAG|TIME2_FLAG, in_dims, dims);
 	md_select_dims(DIMS, TE_FLAG|TIME_FLAG|TIME2_FLAG, TI_dims, dims);
 
-
-#if 1
 	// chain T1 model
 
-	struct nlop_s* T1 = NULL;
-	if(conf->noncart) { // overgridding with factor two
+	struct nlop_s* T1;
+
+	if (conf->noncart) { // overgridding with factor two
 
 		long map_dims2[DIMS];
 		long out_dims2[DIMS];
@@ -88,8 +87,10 @@ static struct mobamod T1_create_internal(const long dims[DIMS], const complex fl
 		T1 = nlop_chain_FF(T1, nlop_from_linop_F(linop_resize_center_create(DIMS, out_dims, out_dims2)));
 		T1 = nlop_chain_FF(nlop_from_linop_F(linop_resize_center_create(DIMS, in_dims2, in_dims)), T1);
 
-	} else
+	} else {
+
 		T1 = nlop_T1_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, scaling_M0, scaling_R1s);
+	}
 
 	debug_printf(DP_INFO, "T1 Model created:\n Model ");
 	nlop_debug(DP_INFO, T1);
@@ -101,7 +102,6 @@ static struct mobamod T1_create_internal(const long dims[DIMS], const complex fl
 	const struct nlop_s* c = nlop_chain2_FF(T1, 0, b, 0);
 
 	nlinv.nlop = nlop_permute_inputs_F(c, 2, (const int[2]){ 1, 0 });
-#endif
 	ret.nlop = nlinv.nlop;
 	ret.linop = nlinv.linop;
 
@@ -115,7 +115,7 @@ struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const
 	unsigned long bat_flags = TIME_FLAG | TIME2_FLAG;
 	int bat_idx = TIME_DIM;
 	
-	if(1 < dims[TIME2_DIM]) {
+	if (1 < dims[TIME2_DIM]) {
 
 		if (   ((0 == MD_IS_SET(conf->ptrn_flags, TIME_DIM)) != (0 == MD_IS_SET(conf->ptrn_flags, TIME2_DIM)))
 		    || ((0 == MD_IS_SET(conf->cnstcoil_flags, TIME_DIM)) != (0 == MD_IS_SET(conf->cnstcoil_flags, TIME2_DIM))) ) {
@@ -155,17 +155,23 @@ struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const
 
 	do {
 		complex float* psf_tmp = md_alloc(DIMS, psf_dims_slc, CFL_SIZE);
+
 		md_slice(DIMS, bat_flags, pos, psf_dims, psf_tmp, psf, CFL_SIZE);
 
 		complex float* TI_tmp = md_alloc(DIMS, psf_dims_slc, CFL_SIZE);
+
 		md_slice(DIMS, bat_flags, pos, TI_dims, TI_tmp, TI, CFL_SIZE);
 
 		struct mobamod T1 = T1_create_internal(dims_slc, mask, TI_tmp, psf_tmp, scaling_M0, scaling_R1s, conf, fov);	
 
 		nlops[i++] = T1.nlop;	
-		if (NULL == lop)
+
+		if (NULL == lop) {
+
 			lop = linop_clone(T1.linop);
-		else {
+
+		} else {
+
 			if (!MD_IS_SET(conf->cnstcoil_flags, bat_idx))
 				lop = linop_stack_FF(bat_idx, bat_idx, lop, linop_clone(T1.linop));
 		}
@@ -185,3 +191,4 @@ struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const
 
 	return result;
 }
+

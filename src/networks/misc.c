@@ -126,9 +126,10 @@ static void load_network_data_precomputed(struct network_data_s* nd)
 	md_max_dims(nd->N, ~0, nd->max_dims, nd->img_dims, nd->col_dims);
 	md_select_dims(nd->N, ~MAPS_FLAG, nd->cim_dims, nd->max_dims);
 
-	if (nd->filename_basis != NULL) {
+	if (NULL != nd->filename_basis) {
 
 		nd->basis = load_cfl(nd->filename_basis, DIMS, nd->bas_dims);
+
 		assert(nd->psf_dims[5] == nd->psf_dims[6]);
 	}
 
@@ -136,6 +137,7 @@ static void load_network_data_precomputed(struct network_data_s* nd)
 
 		md_copy_dims(DIMS, nd->out_dims, nd->img_dims);
 		nd->out = create_cfl(nd->filename_out, DIMS, nd->img_dims);
+
 	} else {
 
 		nd->out = load_cfl(nd->filename_out, DIMS, nd->out_dims);
@@ -147,7 +149,7 @@ static void load_network_data_precomputed(struct network_data_s* nd)
 static void compute_adjoint_cart(struct network_data_s* nd)
 {
 	assert(NULL == nd->filename_basis);
-	nd->adjoint = (nd->export) ? create_cfl(nd->filename_adjoint, DIMS, nd->img_dims) : anon_cfl("", DIMS, nd->img_dims);
+	nd->adjoint = nd->export ? create_cfl(nd->filename_adjoint, DIMS, nd->img_dims) : anon_cfl("", DIMS, nd->img_dims);
 
 	long ksp_dims_s[DIMS];
 	long img_dims_s[DIMS];
@@ -166,7 +168,7 @@ static void compute_adjoint_cart(struct network_data_s* nd)
 	int DI[3] = { DIMS, DIMS, DIMS };
 
 	const long* odims[1] = { nd->img_dims };
-	const long* idims[3] = { nd->ksp_dims, nd->col_dims, nd->pat_dims};
+	const long* idims[3] = { nd->ksp_dims, nd->col_dims, nd->pat_dims };
 
 	complex float* dst[1] = { nd->adjoint };
 	const complex float* src[3] = { nd->kspace, nd->coil, nd->pattern };
@@ -177,7 +179,7 @@ static void compute_adjoint_cart(struct network_data_s* nd)
 	sense_model_free(model);
 
 	md_copy_dims(DIMS, nd->psf_dims, nd->pat_dims);
-	nd->psf = (nd->export) ? create_cfl(nd->filename_psf, DIMS, nd->psf_dims) : anon_cfl("", DIMS, nd->psf_dims);
+	nd->psf = nd->export ? create_cfl(nd->filename_psf, DIMS, nd->psf_dims) : anon_cfl("", DIMS, nd->psf_dims);
 	md_copy(DIMS, nd->pat_dims, nd->psf, nd->pattern, CFL_SIZE);
 }
 
@@ -239,17 +241,16 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 
 	nlop_generic_apply_loop_sameplace(sense_adjoint, nd->batch_flags, 2, DO, odims, dst, 4, DI, idims, src, nd->adjoint);
 
-
 	nlop_free(sense_adjoint);
 	sense_model_free(model);
 }
 
-void load_network_data(struct network_data_s* nd) {
-
+void load_network_data(struct network_data_s* nd)
+{
 	nd->N = DIMS;
 	nd->ND = DIMS;
 
-	if ( !nd->export && (NULL != nd->filename_adjoint)) {
+	if (!nd->export && (NULL != nd->filename_adjoint)) {
 
 		load_network_data_precomputed(nd);
 		load_mem(nd);
@@ -262,6 +263,7 @@ void load_network_data(struct network_data_s* nd) {
 	if (NULL != nd->filename_pattern) {
 
 		nd->pattern = load_cfl(nd->filename_pattern, DIMS, nd->pat_dims);
+
 	} else {
 
 		md_select_dims(DIMS, ~(COIL_FLAG), nd->pat_dims, nd->ksp_dims);
@@ -282,7 +284,8 @@ void load_network_data(struct network_data_s* nd) {
 		md_copy_dims(DIMS, pat_strs2, pat_strs);
 		pat_strs2[i] = 0;
 
-		if ( (1 == pat_dims[i]) || md_compare2(DIMS, pat_dims, pat_strs2, nd->pattern, pat_strs, nd->pattern, CFL_SIZE) )
+		if ((1 == pat_dims[i])
+		    || md_compare2(DIMS, pat_dims, pat_strs2, nd->pattern, pat_strs, nd->pattern, CFL_SIZE))
 			pat_dims[i] = 1;
 	}
 
@@ -339,6 +342,7 @@ void load_network_data(struct network_data_s* nd) {
 
 		md_copy_dims(DIMS, nd->out_dims, nd->img_dims);
 		nd->out = create_cfl(nd->filename_out, DIMS, nd->img_dims);
+
 	} else {
 
 		nd->out = load_cfl(nd->filename_out, DIMS, nd->out_dims);
@@ -385,7 +389,7 @@ void network_data_compute_init(struct network_data_s* nd, complex float lambda, 
 	int DI[3] = { nd->N, nd->N, nd->ND };
 
 	const long* odims[1] = { nd->img_dims };
-	const long* idims[3] = { nd->img_dims, nd->col_dims, nd->psf_dims};
+	const long* idims[3] = { nd->img_dims, nd->col_dims, nd->psf_dims };
 
 	complex float* dst[1] = { nd->initialization };
 	const complex float* src[3] = { nd->adjoint, nd->coil, nd->psf };
@@ -533,3 +537,4 @@ long network_data_get_tot(struct network_data_s* nd)
 	md_select_dims(nd->N, nd->batch_flags, bat_dims, nd->img_dims);
 	return md_calc_size(nd->N, bat_dims);
 }
+

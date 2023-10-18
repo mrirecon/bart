@@ -36,7 +36,6 @@ static const char help_str[] = "Extracts a slice from positions along dimensions
 
 int main_slice(int argc, char* argv[argc])
 {
-
 	long count = 0;
 	long* dims = NULL;
 	long* poss = NULL;
@@ -83,8 +82,10 @@ int main_slice(int argc, char* argv[argc])
 
 	md_slice(DIMS, flags, pos2, in_dims, out_data, in_data, CFL_SIZE);
 
+
 	unmap_cfl(DIMS, out_dims, out_data);
 	unmap_cfl(DIMS, in_dims, in_data);
+
 	xfree(dims);
 	xfree(poss);
 

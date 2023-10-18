@@ -54,8 +54,8 @@ LOG_GADGETRON_BACKEND?=0
 
 # for debug backtraces
 ifeq ($(DEBUG_DWARF),1)
-	LIBS +=-ldw -lunwind
-	CPPFLAGS += -DUSE_DWARF
+LIBS += -ldw -lunwind
+CPPFLAGS += -DUSE_DWARF
 endif
 
 DESTDIR ?= /
@@ -514,14 +514,14 @@ PNG_L := -lpng
 endif
 
 ifeq ($(SLINK),1)
-	PNG_L += -lz
-	ifeq ($(DEBUG_DWARF),1)
-		LIBS += -lelf -lz -llzma -lbz2
-	endif
+PNG_L += -lz
+ifeq ($(DEBUG_DWARF),1)
+LIBS += -lelf -lz -llzma -lbz2
+endif
 endif
 
 ifeq ($(LINKER),icc)
-	PNG_L += -lz
+PNG_L += -lz
 endif
 
 

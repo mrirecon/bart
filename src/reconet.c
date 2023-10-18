@@ -207,6 +207,7 @@ int main_reconet(int argc, char* argv[argc])
 	config.train_loss = get_loss_from_option();
 
 	config.network = get_default_network(net);
+
 	if (NULL != network_tensorflow_default.model_path)
 		config.network = CAST_UP(&network_tensorflow_default);
 
@@ -381,6 +382,7 @@ int main_reconet(int argc, char* argv[argc])
 
 		if (NULL == config.weights)
 			config.weights = load_nn_weights(filename_weights);
+
 		eval_reconet(&config, data.N, data.max_dims, data.ND, data.psf_dims, eval_data_list);
 	
 		named_data_list_free(eval_data_list);
