@@ -955,7 +955,7 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 	if (T != st.st_size)
 		error("private cfl %s\n", name);
 
-	if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
+	if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_PRIVATE | MAP_NORESERVE, fd, 0)))
 		io_error("private cfl %s\n", name);
 
 	if (-1 == close(fd))
