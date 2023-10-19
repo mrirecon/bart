@@ -981,7 +981,7 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 
 	long T;
 
-	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
+	if (-1 == (T = io_calc_size(D, tdims, sizeof(complex float))))
 		error("unmap cfl\n");
 
 #ifdef _WIN32
