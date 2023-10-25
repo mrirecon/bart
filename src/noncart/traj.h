@@ -38,4 +38,5 @@ extern void gradient_delay(float d[3], float coeff[2][3], float phi, float psi);
 extern void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, struct traj_conf conf);
 extern bool zpartition_skip(long partitions, long z_usamp[2], long partition, long frame);
 extern int gen_fibonacci(int n, int ind);
+extern int recover_gen_fib_ind(int Y, int inc);
 

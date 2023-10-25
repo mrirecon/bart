@@ -48,6 +48,7 @@ int main_traj(int argc, char* argv[argc])
 	int turns = 1;
 	float rot = 0.;
 	float over = 1.;
+	int raga_inc = 0;
 
 	struct traj_conf conf = traj_defaults;
 
@@ -91,6 +92,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_VEC2('z', &z_usamp, "Ref:Acel", "Undersampling in z-direction."),
 		OPT_INFILE('C', &custom_angle_file, "file", "custom_angle file [phi + i * psi]"),
 		OPT_INFILE('V', &gdelays_file, "file", "(custom_gdelays)"),
+		OPTL_INT(0, "raga-inc", &raga_inc, "d", "Increment of RAGA Sampling"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -132,6 +134,17 @@ int main_traj(int argc, char* argv[argc])
 			assert(conf.double_base);
 		else
 			assert(!conf.double_base);
+
+		if ((0 == conf.tiny_gold) && (0 != raga_inc))
+			conf.tiny_gold = recover_gen_fib_ind(Y / (conf.double_base ? 1 : 2), raga_inc);
+
+		else if ((0 != conf.tiny_gold) && (0 != raga_inc))
+			assert(conf.tiny_gold == recover_gen_fib_ind(Y / (conf.double_base ? 1 : 2), raga_inc));
+
+		else if ((0 == conf.tiny_gold) && (0 == raga_inc))
+			error("Please pass either the GA index (-s) or the RAGA increment (--raga-inc) to create a temporal trajectory!\n");
+
+		debug_printf(DP_INFO, "Golden Ratio Index is set to:\t%d\n", conf.tiny_gold);
 	}
 
 	int tot_sp = Y * E * mb * turns;	// total number of lines/spokes
