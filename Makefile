@@ -215,7 +215,7 @@ TBASE=show slice crop resize join transpose squeeze flatten zeros ones flip circ
 TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexp calc
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbrot wavelet window var std fftrot roistat pol2mask conway morphop
 TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit
-TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin
+TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten rmfreq ssa bin psf
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
 TSIM=phantom traj signal epg sim
 TIO=toimg
@@ -276,6 +276,7 @@ MODULES_measure = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_onehotenc = -lnn
 MODULES_sim = -lsimu
 MODULES_morphop = -lnlops -llinops -lgeom
+MODULES_psf = -lnoncart -llinops
 
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
 ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(root)/rules/*.mk $(root)/Makefiles/Makefile.*)
