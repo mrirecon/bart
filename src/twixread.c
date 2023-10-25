@@ -433,39 +433,39 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 		}
 
 
-			if (0 == pos[COIL_DIM]) {
+		if (0 == pos[COIL_DIM]) {
 
-				pos[PHS1_DIM]	= mdh.sLC[0] - (linectr ? mdh.linectr - dims[PHS1_DIM] / 2 : 0);
-				pos[AVG_DIM]	= mdh.sLC[1];
-				if (radial) { // reorder for radial
+			pos[PHS1_DIM]	= mdh.sLC[0] - (linectr ? mdh.linectr - dims[PHS1_DIM] / 2 : 0);
+			pos[AVG_DIM]	= mdh.sLC[1];
+			if (radial) { // reorder for radial
 
-					pos[SLICE_DIM]	= mdh.sLC[3];
-				} else {
+				pos[SLICE_DIM]	= mdh.sLC[3];
+			} else {
 
-					pos[SLICE_DIM]	= mdh.sLC[2];
-					pos[PHS2_DIM]	= mdh.sLC[3] - (partctr ? mdh.partctr - dims[PHS2_DIM] / 2 : 0);
-				}
-				pos[TE_DIM]	= mdh.sLC[4];
-				pos[COEFF_DIM]	= mdh.sLC[5];
-				pos[TIME_DIM]	= mdh.sLC[6];
-				pos[TIME2_DIM]	= mdh.sLC[7];
+				pos[SLICE_DIM]	= mdh.sLC[2];
+				pos[PHS2_DIM]	= mdh.sLC[3] - (partctr ? mdh.partctr - dims[PHS2_DIM] / 2 : 0);
 			}
+			pos[TE_DIM]	= mdh.sLC[4];
+			pos[COEFF_DIM]	= mdh.sLC[5];
+			pos[TIME_DIM]	= mdh.sLC[6];
+			pos[TIME2_DIM]	= mdh.sLC[7];
+		}
 
-			debug_print_dims(DP_DEBUG3, DIMS, pos);
+		debug_print_dims(DP_DEBUG3, DIMS, pos);
 
-			if (dims[READ_DIM] != mdh.samples) {
+		if (dims[READ_DIM] != mdh.samples) {
 
-				debug_printf(DP_WARN, "Wrong number of samples: %d != %d.\n", dims[READ_DIM], mdh.samples);
-				return ADC_ERROR;
-			}
+			debug_printf(DP_WARN, "Wrong number of samples: %d != %d.\n", dims[READ_DIM], mdh.samples);
+			return ADC_ERROR;
+		}
 
-			if ((0 != mdh.channels) && (dims[COIL_DIM] != mdh.channels)) {
+		if ((0 != mdh.channels) && (dims[COIL_DIM] != mdh.channels)) {
 
-				debug_printf(DP_WARN, "Wrong number of channels: %d != %d.\n", dims[COIL_DIM], mdh.channels);
-				return ADC_ERROR;
-			}
+			debug_printf(DP_WARN, "Wrong number of channels: %d != %d.\n", dims[COIL_DIM], mdh.channels);
+			return ADC_ERROR;
+		}
 
-			xread(fd, buf + pos[COIL_DIM] * dims[READ_DIM], dims[READ_DIM] * CFL_SIZE);
+		xread(fd, buf + pos[COIL_DIM] * dims[READ_DIM], dims[READ_DIM] * CFL_SIZE);
 	}
 
 	pos[COIL_DIM] = 0;
