@@ -294,6 +294,7 @@ ifeq ($(findstring clang,$(CC)),clang)
 else
 # only add if not clang, as it doesn't understand this:
 	CPPFLAGS +=  -Wno-vla-parameter
+#	CPPFLAGS +=  -Werror=vla-parameter
 endif
 
 
@@ -332,7 +333,7 @@ NVCCFLAGS += -g
 endif
 
 ifeq ($(UBSAN),1)
-CFLAGS += -fsanitize=undefined,bounds-strict
+CFLAGS += -fsanitize=undefined,bounds-strict -fno-sanitize-recover=all
 ifeq ($(DEBUG),0)
 CFLAGS += -fsanitize-undefined-trap-on-error
 endif
