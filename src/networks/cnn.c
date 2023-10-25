@@ -37,7 +37,7 @@
 #include "nn/layers_nn.h"
 #include "nn/init.h"
 
-
+#include  "networks/unet.h"
 #include  "cnn.h"
 
 nn_t network_create(const struct network_s* config, unsigned int _NO, const long _odims[_NO], unsigned int _NI, const long _idims[_NI], enum NETWORK_STATUS status)
@@ -567,6 +567,9 @@ static nn_t network_mnist_create(const struct network_s* /*_config*/, unsigned i
 
 bool network_is_diagonal(const struct network_s* config)
 {
+	if (unet_is_diagonal(config))
+		return true;
+
 	auto resnet = CAST_MAYBE(network_resnet_s, config);
 
 	if ((NULL != resnet) && (!resnet->batch_norm))

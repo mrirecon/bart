@@ -358,16 +358,13 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 	return network;
 }
 
-static bool get_init_zero(struct network_unet_s* unet, unsigned int level, bool last_layer)
+static bool get_init_zero(struct network_unet_s* unet, unsigned int /*level*/, bool last_layer)
 {
 	if (!last_layer)
 		return false;
 
 	if (!unet->init_zeros_residual)
 		return false;
-
-	if (0 == level)
-		return unet->INTERFACE.residual;
 
 	return true;
 }
@@ -841,3 +838,11 @@ nn_t network_unet_create(const struct network_s* _unet, unsigned int NO, const l
 
 	return result;
 }
+
+bool unet_is_diagonal(const struct network_s* config)
+{
+	auto unet = CAST_MAYBE(network_unet_s, config);
+
+	return ((NULL != unet) && (!unet->use_bn));
+}
+
