@@ -492,6 +492,8 @@ int main_twixread(int argc, char* argv[argc])
 	long adcs = 0;
 	long radial_lines = -1;
 
+	int bin = 0;
+
 	bool autoc = false;
 	bool linectr = false;
 	bool partctr = false;
@@ -521,6 +523,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('P', &partctr, "use partctr offset"),
 		OPTL_SET(0, "rational", &rational, "Rational Approximation Sampling"),
 		OPT_SET('M', &mpi, "MPI mode"),
+		OPTL_INT(0, "bin", &bin, "d", "Binning of spokes for RAGA sampled data"),
 		OPT_CLEAR('X', &check_read, "no consistency check for number of read acquisitions"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 	};
@@ -602,6 +605,13 @@ int main_twixread(int argc, char* argv[argc])
 		assert(1 == dims[2]);
 	}
 
+	if (0 < bin) {
+
+		debug_printf(DP_WARN, "Binning option is for RAGA sampled data only!\n");
+
+		odims[TIME_DIM] = (adcs + (bin - 1)) / bin;
+	}
+
 	complex float* out = create_cfl(out_file, DIMS, odims);
 	md_clear(DIMS, odims, out, CFL_SIZE);
 
@@ -681,7 +691,11 @@ int main_twixread(int argc, char* argv[argc])
 				pos[PHS1_DIM] = call % dims[PHS1_DIM];
 			}
 
-			md_copy_block(DIMS, pos, dims, out, adc_dims, buf, CFL_SIZE);
+			if (0 < bin)
+				pos[TIME_DIM] = call / bin;
+
+			// FIXME: odims not working with MPI data
+			md_copy_block(DIMS, pos, (0 < bin) ? odims : dims, out, adc_dims, buf, CFL_SIZE);
 
 			call++;
 		}
