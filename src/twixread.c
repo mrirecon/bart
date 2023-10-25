@@ -498,6 +498,7 @@ int main_twixread(int argc, char* argv[argc])
 	bool mpi = false;
 	bool check_read = true;
 
+	bool rational = false;
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
 
@@ -518,6 +519,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('A', &autoc, "automatic [guess dimensions]"),
 		OPT_SET('L', &linectr, "use linectr offset"),
 		OPT_SET('P', &partctr, "use partctr offset"),
+		OPTL_SET(0, "rational", &rational, "Rational Approximation Sampling"),
 		OPT_SET('M', &mpi, "MPI mode"),
 		OPT_CLEAR('X', &check_read, "no consistency check for number of read acquisitions"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
@@ -613,6 +615,7 @@ int main_twixread(int argc, char* argv[argc])
 	long mpi_slice = -1;
 
 	sar = ADC_OK;
+	long call = 0;
 
 	while (ADC_END != sar) {
 
@@ -666,7 +669,21 @@ int main_twixread(int argc, char* argv[argc])
 				continue;
 			}
 
+			if (rational) {
+
+				if (1 == call) {
+
+					debug_printf(DP_INFO, "RAGA Spokes: %d\n", dims[PHS1_DIM]);
+					debug_printf(DP_INFO, "RAGA Increment is: %d\n", pos[PHS1_DIM]);
+				}
+
+				// Reorder to temporal scheme for RAGA sampling
+				pos[PHS1_DIM] = call % dims[PHS1_DIM];
+			}
+
 			md_copy_block(DIMS, pos, dims, out, adc_dims, buf, CFL_SIZE);
+
+			call++;
 		}
 
 	}
