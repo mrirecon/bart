@@ -1,3 +1,6 @@
+
+# FIXME, these tests do not fail when measure crashes
+
 tests/test-measure-ideal-mse: measure $(TESTS_OUT)/shepplogan.ra
 	set -e															;\
 	if [ "0.000000e+00" != $$($(TOOLDIR)/measure --mse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/shepplogan.ra) ]		;\

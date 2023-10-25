@@ -247,7 +247,7 @@ static long find_factor(long x, float blocking)
 }
 
 
-static bool split_dims(int D, int N, long dims[N + 1], long (*ostrs[D])[N + 1], float blocking[N])
+static bool split_dims(int D, int N, long dims[N + 1], long (*ostrs[D])[N + 1], float blocking[N + 1])
 {
 	if (0 == N)
 		return false;

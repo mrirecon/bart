@@ -122,7 +122,7 @@ extern void nlop_generic_apply(const struct nlop_s* op,
 
 extern void nlop_generic_apply2(const struct nlop_s* op,
 	int NO, int DO[NO], const long* odims[NO], const long* ostrs[NO], complex float* dst[NO],
-	int NI, int DI[NI], const long* idims[NI], const long* istrs[NO], const complex float* src[NI]);
+	int NI, int DI[NI], const long* idims[NI], const long* istrs[NI], const complex float* src[NI]);
 
 extern void nlop_generic_apply_loop(const struct nlop_s* op, unsigned long loop_flags,
 	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
@@ -130,7 +130,7 @@ extern void nlop_generic_apply_loop(const struct nlop_s* op, unsigned long loop_
 
 extern void nlop_generic_apply2_sameplace(const struct nlop_s* op,
 	int NO, int DO[NO], const long* odims[NO], const long* ostrs[NO], complex float* dst[NO],
-	int NI, int DI[NI], const long* idims[NI], const long* istrs[NO], const complex float* src[NI],
+	int NI, int DI[NI], const long* idims[NI], const long* istrs[NI], const complex float* src[NI],
 	const void* ref);
 
 extern void nlop_generic_apply_sameplace(const struct nlop_s* op,

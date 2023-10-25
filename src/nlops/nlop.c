@@ -1353,10 +1353,9 @@ void nlop_debug(enum debug_levels dl, const struct nlop_s* x)
 
 
 
-
 void nlop_generic_apply2_sameplace(const struct nlop_s* op,
 	int NO, int DO[NO], const long* odims[NO], const long* ostrs[NO], complex float* dst[NO],
-	int NI, int DI[NI], const long* idims[NI], const long* istrs[NO], const complex float* src[NI],
+	int NI, int DI[NI], const long* idims[NI], const long* istrs[NI], const complex float* src[NI],
 	const void* ref)
 {
 	int N = NO + NI;
@@ -1386,6 +1385,8 @@ void nlop_generic_apply2_sameplace(const struct nlop_s* op,
 	for (int i = 0; i < N; i++)
 		md_free(args[i]);
 }
+
+
 
 void nlop_generic_apply_sameplace(const struct nlop_s* op,
 	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
@@ -1427,7 +1428,7 @@ void nlop_generic_apply(const struct nlop_s* op,
 
 void nlop_generic_apply2(const struct nlop_s* op,
 	int NO, int DO[NO], const long* odims[NO], const long* ostrs[NO], complex float* dst[NO],
-	int NI, int DI[NI], const long* idims[NI], const long* istrs[NO], const complex float* src[NI])
+	int NI, int DI[NI], const long* idims[NI], const long* istrs[NI], const complex float* src[NI])
 {
 	nlop_generic_apply2_sameplace(op, NO, DO, odims, ostrs, dst, NI, DI, idims, istrs, src, NULL);
 }
@@ -1553,7 +1554,7 @@ const struct nlop_s* nlop_copy_wrapper(int OO, const long* ostrs[OO], int II, co
 
 	PTR_ALLOC(const struct linop_s*[II][OO], nder);
 
-	for (int ii = 0; ii < II; ii++)
+	for (int ii = 0; ii < II; ii++) {
 		for (int oo = 0; oo < OO; oo++) {
 
 			auto lop = (struct linop_s*)((*der)[ii][oo]);
@@ -1563,6 +1564,7 @@ const struct nlop_s* nlop_copy_wrapper(int OO, const long* ostrs[OO], int II, co
 
 			(*nder)[ii][oo] = linop_copy_wrapper2(DI, istrs[ii], DO, ostrs[oo], lop);
 		}
+	}
 
 	n->derivative = &(*PTR_PASS(nder))[0][0];
 	return PTR_PASS(n);
