@@ -175,9 +175,9 @@ struct arg_s {
 
 
 
-extern void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[n]);
+extern void print_usage(FILE* fp, const char* name, const char* usage_str, int n, const struct opt_s opts[n ?: 1]);
 extern int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n], int m, struct arg_s args[m], bool stop_at_nonopt);
-extern void cmdline(int* argc, char* argv[*argc], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
+extern void cmdline(int* argcp, char* argv[*argcp], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
 extern void opt_free_strdup(void);
 
 #include "misc/cppwrap.h"

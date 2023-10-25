@@ -33,10 +33,11 @@ list_t str_list = NULL;
 
 void opt_free_strdup(void)
 {
-	#pragma omp critical (bart_options_str_list)
+#pragma omp critical (bart_options_str_list)
 	if (NULL != str_list) {
 
 		const char* str = list_pop(str_list);
+
 		while (NULL != str) {
 
 			xfree(str);
@@ -487,7 +488,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 }
 
 
-int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1], int m, struct arg_s args[m ?: 1], bool stop_at_nonopt)
+int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n], int m, struct arg_s args[m], bool stop_at_nonopt)
 {
 	int argc = *argcp;
 
@@ -682,7 +683,7 @@ bool opt_string(void* ptr, char c, const char* optarg)
 	UNUSED(c);
 	*(const char**)ptr = strdup(optarg);
 
-	#pragma omp critical (bart_options_str_list)
+#pragma omp critical (bart_options_str_list)
 	list_append(str_list, *(char**)ptr);
 
 	assert(NULL != ptr);
