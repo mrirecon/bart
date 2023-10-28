@@ -15,7 +15,6 @@
 #include "misc/mri.h"
 #include "misc/misc.h"
 #include "misc/version.h"
-#include "misc/debug.h"
 #ifdef SSAFARY_PAPER
 #include "misc/debug.h"
 #endif
@@ -82,19 +81,12 @@ int recover_gen_fib_ind(int Y, int inc)
 	while (inc > gen_fibonacci(1, step - 1))
 		step++;
 
-	debug_printf(DP_DEBUG3, "Search for index of Fibonacci series\n");
-
 	// Assumption: Fib Index < 40
-	for (int i = 1; i <= 40; i++) {
-
-		debug_printf(DP_DEBUG3, "Index: %d,\tStep %d,\t Element: %d\n", i, step, gen_fibonacci(i, step));
-
+	for (int i = 1; i <= 40; i++)
 		if (Y == gen_fibonacci(i, step))
 			return i;
-	}
-	error("Could not find Fibonacci Index!\n");
 
-	return 0;
+	return -1;
 }
 
 static void fib_next(int f[2])
@@ -152,6 +144,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 	 */
 
 	double golden_ratio = (sqrt(5.) + 1.) / 2;
+
 	if (use_compat_to_version("v0.5.00"))
 		golden_ratio = (sqrtf(5.) + 1.) / 2;
 
@@ -161,6 +154,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 	if (1 == conf.tiny_gold) {
 
 		golden_angle = M_PI * (2. - (3. - sqrt(5.))) / 2.;
+
 		if (use_compat_to_version("v0.5.00"))
 			golden_angle = M_PI * (2. - (3. - sqrtf(5.))) / 2.;
 	}
@@ -169,8 +163,6 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 		golden_angle = rational_angle(Y / (conf.double_base ? 1 : 2), conf.tiny_gold);
 
 	golden_angle = golden_angle * (conf.double_base ? 2. : 1.);
-
-	bart_printf("A: %f\n", golden_angle);
 
 	double angle_atom = M_PI / Y;
 

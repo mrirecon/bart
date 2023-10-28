@@ -1,5 +1,6 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2015-2020. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2015-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2023. Institute for Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -40,8 +41,8 @@ int main_traj(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	int X = 128;
-	int Y = 128;
+	int X = -1;
+	int Y = -1;
 	int D = -1;
 	int E = 1;
 	int mb = 1;
@@ -119,33 +120,38 @@ int main_traj(int argc, char* argv[argc])
 		Y = sdims[0];
 	}
 
+	if (-1 == Y)
+		Y = 128;
+
+	if (conf.rational) {
+
+		conf.golden = true;
+
+		if ((0 == conf.tiny_gold) && (0 == raga_inc))
+			error("Please pass either the GA index (-s) or the RAGA increment (--raga-inc)!\n");
+
+		assert((0 == Y % 2) || conf.double_base);
+
+		if ((0 == conf.tiny_gold) && (0 != raga_inc))
+			conf.tiny_gold = recover_gen_fib_ind(Y / (conf.double_base ? 1 : 2), raga_inc);
+
+		if (-1 == conf.tiny_gold)
+			error("Could not recover GA index!");
+
+		if ((0 < conf.tiny_gold) && (0 != raga_inc))
+			assert(conf.tiny_gold == recover_gen_fib_ind(Y / (conf.double_base ? 1 : 2), raga_inc));
+
+		debug_printf(DP_INFO, "Golden Ratio Index is set to:\t%d\n", conf.tiny_gold);
+	}
+
+	if (-1 == X)
+		X = 128;
 
 	if (over <= 0.)
 		error("Oversampling factor must be positive.\n");
 
 	X *= over;
 
-
-	if (conf.rational) {
-
-		conf.golden = true;
-
-		if (1 == Y % 2)
-			assert(conf.double_base);
-		else
-			assert(!conf.double_base);
-
-		if ((0 == conf.tiny_gold) && (0 != raga_inc))
-			conf.tiny_gold = recover_gen_fib_ind(Y / (conf.double_base ? 1 : 2), raga_inc);
-
-		else if ((0 != conf.tiny_gold) && (0 != raga_inc))
-			assert(conf.tiny_gold == recover_gen_fib_ind(Y / (conf.double_base ? 1 : 2), raga_inc));
-
-		else if ((0 == conf.tiny_gold) && (0 == raga_inc))
-			error("Please pass either the GA index (-s) or the RAGA increment (--raga-inc) to create a temporal trajectory!\n");
-
-		debug_printf(DP_INFO, "Golden Ratio Index is set to:\t%d\n", conf.tiny_gold);
-	}
 
 	int tot_sp = Y * E * mb * turns;	// total number of lines/spokes
 	int N = X * tot_sp / conf.accel;
