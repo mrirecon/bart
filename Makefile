@@ -468,20 +468,21 @@ else
 ifeq ($(BUILDTYPE), MSYS)
 	BLAS_L := -L/mingw64/lib -lopenblas
 else
+BLAS_L := -Wl,-rpath $(BLAS_BASE)/lib -L$(BLAS_BASE)/lib 
 ifeq ($(NOLAPACKE),1)
-BLAS_L := -L$(BLAS_BASE)/lib -llapack -lblas
+BLAS_L += -llapack -lblas
 CPPFLAGS += -Isrc/lapacke
 else
 ifeq ($(OPENBLAS), 1)
 ifeq ($(FORTRAN), 0)
-BLAS_L := -L$(BLAS_BASE)/lib -lopenblas
+BLAS_L += -lopenblas
 else
-BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lopenblas
+BLAS_L += -llapacke -lopenblas
 endif
 CPPFLAGS += -DUSE_OPENBLAS
 CFLAGS += -DUSE_OPENBLAS
 else
-BLAS_L := -L$(BLAS_BASE)/lib -llapacke -lblas
+BLAS_L += -llapacke -lblas
 endif
 endif
 endif
@@ -542,7 +543,7 @@ endif
 # fftw
 
 FFTW_H := -I$(FFTW_BASE)/include/
-FFTW_L := -L$(FFTW_BASE)/lib -lfftw3f
+FFTW_L :=  -Wl,-rpath $(FFTW_BASE)/lib -L$(FFTW_BASE)/lib -lfftw3f
 
 ifeq ($(FFTWTHREADS),1)
 ifneq ($(BUILDTYPE), MSYS)
