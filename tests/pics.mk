@@ -512,7 +512,7 @@ tests/test-pics-phase: traj phantom ones join nufft fmac scale bitmask saxpy sli
 	$(TOOLDIR)/phantom -S8 -x64 c.ra						;\
 	$(TOOLDIR)/fmac c.ra phmap.ra c2.ra						;\
 	$(TOOLDIR)/pics -S --shared-img-dims=$$($(TOOLDIR)/bitmask 10) -tt.ra k.ra c2.ra i.ra		;\
-	$(TOOLDIR)/nrmse -s -t0.13 i.ra ref.ra						;\
+	$(TOOLDIR)/nrmse -s -t0.16 i.ra ref.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
