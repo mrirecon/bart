@@ -2,7 +2,7 @@
 # Copyright 2022. TU Graz. Institute of Biomedical Imaging.
 # Author: Moritz Blumenthal
 #
-# F. Ong, M. Uecker and M. Lustig, Accelerating Non-Cartesian 
+# F. Ong, M. Uecker and M. Lustig, Accelerating Non-Cartesian
 # MRI Reconstruction Convergence Using k-Space Preconditioning
 # IEEE TMI, 2020 39:1646-1654
 #
@@ -105,7 +105,7 @@ if [[ "$BASIS" != "" ]] ; then
 
 	COE=$(bart show -d6 $BASIS)
 
-	bart transpose 6 7 $BASIS basis_r 
+	bart transpose 6 7 $BASIS basis_r
 	bart fmac -C $BASIS basis_r basis_2
 	bart reshape $(bart bitmask 6 7) $((COE*COE)) 1 basis_2 basis
 	BASIS="-B basis"

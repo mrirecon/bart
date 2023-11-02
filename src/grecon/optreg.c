@@ -1,5 +1,6 @@
 /* Copyright 2015-2017. The Regents of the University of California.
  * Copyright 2015-2022. Martin Uecker.
+ * Copyright 2022-2012. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -99,26 +100,26 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].xform = L1WAV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "H") == 0) {
+
+		} else if (strcmp(rt, "H") == 0) {
 			
 			regs[r].xform = NIHTWAV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "N") == 0) {
-			
+
+		} else if (strcmp(rt, "N") == 0) {
+
 			regs[r].xform = NIHTIM;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "L") == 0) {
+
+		} else if (strcmp(rt, "L") == 0) {
 
 			regs[r].xform = LLR;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "M") == 0) {
+
+		} else if (strcmp(rt, "M") == 0) {
 
 			// FIXME: here an explanation is missing
 
@@ -130,87 +131,87 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[0].xform = MLR;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "T") == 0) {
+
+		} else if (strcmp(rt, "T") == 0) {
 
 			regs[r].xform = TV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "G") == 0) {
+
+		} else if (strcmp(rt, "G") == 0) {
 
 			regs[r].xform = TGV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "C") == 0) {
+
+		} else if (strcmp(rt, "C") == 0) {
 
 			regs[r].xform = ICTV;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "P") == 0) {
+
+		} else if (strcmp(rt, "P") == 0) {
 
 			regs[r].xform = LAPLACE;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "R1") == 0) {
+
+		} else if (strcmp(rt, "R1") == 0) {
 
 			regs[r].xform = IMAGL1;
 			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
-		}
-		else if (strcmp(rt, "R2") == 0) {
+
+		} else if (strcmp(rt, "R2") == 0) {
 
 			regs[r].xform = IMAGL2;
 			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
-		}
-		else if (strcmp(rt, "I") == 0) {
+
+		} else if (strcmp(rt, "I") == 0) {
 
 			regs[r].xform = L1IMG;
 			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
-		}
-		else if (strcmp(rt, "S") == 0) {
+
+		} else if (strcmp(rt, "S") == 0) {
 
 			regs[r].xform = POS;
 			regs[r].lambda = 0u;
 			regs[r].xflags = 0u;
 			regs[r].jflags = 0u;
-		}
-		else if (strcmp(rt, "Q") == 0) {
+
+		} else if (strcmp(rt, "Q") == 0) {
 
 			regs[r].xform = L2IMG;
 			int ret = sscanf(optarg, "%*[^:]:%f", &regs[r].lambda);
 			assert(1 == ret);
 			regs[r].xflags = 0u;
 			regs[r].jflags = 0u;
-		}
-		else if (strcmp(rt, "F") == 0) {
+
+		} else if (strcmp(rt, "F") == 0) {
 
 			regs[r].xform = FTL1;
 			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "TF") == 0) {
+
+		} else if (strcmp(rt, "TF") == 0) {
 
 			regs[r].xform = TENFL;
 			int ret = sscanf(optarg, "%*[^:]:{%m[^}]}:%f", &regs[r].graph_file, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 			regs[r].jflags = 0u;
-		}
-		else if (strcmp(rt, "h") == 0) {
+
+		} else if (strcmp(rt, "h") == 0) {
 
 			help_reg();
 			exit(0);
-		}
-		else {
+
+		} else {
 
 			error("Unrecognized regularization type: \"%s\" (-Rh for help).\n", rt);
 		}
@@ -276,14 +277,15 @@ void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* p
 	int nr_penalties = ropts->r + ropts->sr;
 	assert(NUM_REGS > nr_penalties);
 
-	
 	const struct iovec_s* iov = linop_codomain(model_op);
 	assert(md_check_equal_dims(N, iov->dims, ksp_dims, ~0));
 	assert(md_check_compat(N, ~0, pat_dims, ksp_dims));
 
-	if (NULL == pattern)
+	if (NULL == pattern) {
+
 		prox_ops[nr_penalties] = prox_leastsquares_create(iov->N, iov->dims, 1., data);
-	else {
+
+	} else {
 
 		complex float* ipattern = md_alloc_sameplace(N, pat_dims, CFL_SIZE, pattern);
 		md_zfill(N, pat_dims, ipattern, 1.);

@@ -1111,12 +1111,12 @@ __global__ void kern_fftmod_3d_4(long X, long Y, long Z, cuFloatComplex* dst, co
 	int startZ = threadIdx.z + blockDim.z * blockIdx.z;
 	int strideZ = blockDim.z * gridDim.z;
 
-	for (long z = startZ; z < Z; z += strideZ)
-		for (long y = startY; y < Y; y += strideY)
+	for (long z = startZ; z < Z; z += strideZ) {
+		for (long y = startY; y < Y; y += strideY) {
 			for (long x = startX; x < X; x +=strideX) {
 
 				long idx = x + X * (y + Y * z);
-				
+
 				cuDoubleComplex scale = scale_1;
 
 				if (1 == x % 2) {
@@ -1124,7 +1124,7 @@ __global__ void kern_fftmod_3d_4(long X, long Y, long Z, cuFloatComplex* dst, co
 					scale.x = -scale.x;
 					scale.y = -scale.y;
 				}
-				
+
 				if (1 == y % 2) {
 
 					scale.x = -scale.x;
@@ -1137,9 +1137,10 @@ __global__ void kern_fftmod_3d_4(long X, long Y, long Z, cuFloatComplex* dst, co
 					scale.y = -scale.y;
 				}
 
-				
-				dst[idx] = cuDouble2Float(cuCmul(scale, cuFloat2Double(src[idx])));				
+				dst[idx] = cuDouble2Float(cuCmul(scale, cuFloat2Double(src[idx])));
 			}
+		}
+	}
 }
 
 __global__ void kern_fftmod_3d(long X, long Y, long Z, cuFloatComplex* dst, const cuFloatComplex* src, bool inv, double phase)
@@ -1155,19 +1156,22 @@ __global__ void kern_fftmod_3d(long X, long Y, long Z, cuFloatComplex* dst, cons
 
 	long dims[3] = { X, Y, Z };
 
-	for (long z = startZ; z < Z; z += strideZ)
-		for (long y = startY; y < Y; y += strideY)
+	for (long z = startZ; z < Z; z += strideZ) {
+		for (long y = startY; y < Y; y += strideY) {
 			for (long x = startX; x < X; x +=strideX) {
 
 				long pos[3] = { x, y, z };
 				long idx = x + X * (y + Y * z);
-				
+
 				double phase0 = phase;
+
 				for (int i = 2; i > 0; i--)
 					phase0 += fftmod_phase(dims[i], pos[i]);
 
-				dst[idx] = cuDouble2Float(cuCmul(fftmod_phase2(dims[0], x, inv, phase0), cuFloat2Double(src[idx])));				
+				dst[idx] = cuDouble2Float(cuCmul(fftmod_phase2(dims[0], x, inv, phase0), cuFloat2Double(src[idx])));
 			}
+		}
+	}
 }
 
 extern "C" void cuda_zfftmod_3d(const long dims[3], _Complex float* dst, const _Complex float* src, _Bool inv, double phase)
@@ -1186,13 +1190,13 @@ extern "C" void cuda_zfftmod_3d(const long dims[3], _Complex float* dst, const _
 				scale.x *= -1;
 				scale.y *= -1;
 			}
-				
+
 			if ((1 != dims[1]) && (0 != dims[1] % 8)) {
 
 				scale.x *= -1;
 				scale.y *= -1;
 			}
-	
+
 			if ((1 != dims[2]) && (0 != dims[2] % 8)) {
 
 				scale.x *= -1;
@@ -1451,7 +1455,7 @@ __global__ static void kern_compress(long N, uint32_t* dst, const float* src)
 	stride = blockDim.x * gridDim.x;
 
 	for (idx = idx_init; idx < N; idx += stride) {
-		
+
 		long i = idx + thread;
 
 		extern __shared__ float tmp_float[];
@@ -1463,10 +1467,11 @@ __global__ static void kern_compress(long N, uint32_t* dst, const float* src)
 		if ((0 == i % 32) && (i - 32 < N)) {
 
 			uint32_t result = 0;
+
 			for (int j = 0; j < 32; j++)
 				if (0. != tmp_float[thread + j])
 					result = MD_SET(result, j);
-			
+
 			dst[i / 32] = result;
 		}
 	}
@@ -1485,18 +1490,18 @@ __global__ static void kern_decompress(long N, float* dst, const uint32_t* src)
 	stride = blockDim.x * gridDim.x;
 
 	for (idx = idx_init; idx < N; idx += stride) {
-		
+
 		long i = idx + thread;
 
 		extern __shared__ uint32_t tmp_uint32[];
 
 		if ((0 == i % 32) && (i - 32 < N))
 			tmp_uint32[thread / 32] = src[i / 32];
-		
+
 		__syncthreads();
 
 		if (i < N)
-			dst[i] = MD_IS_SET(tmp_uint32[thread / 32], thread % 32) ? 1. : 0.;		
+			dst[i] = MD_IS_SET(tmp_uint32[thread / 32], thread % 32) ? 1. : 0.;
 	}
 }
 
@@ -1532,7 +1537,7 @@ __global__ static void kern_reduce_zsumD(long N, cuDoubleComplex* dst, const cuD
 	}
 
 	if (0 == tidx) {
-		
+
 		dst[blockIdx.x].x = sdata_cD[0].x;
 		dst[blockIdx.x].y = sdata_cD[0].y;
 	}
@@ -1634,7 +1639,7 @@ __global__ static void kern_cdot(long N, cuDoubleComplex* dst, const cuFloatComp
 	}
 
 	if (0 == tidx) {
-		
+
 		dst[blockIdx.x].x = sdata_cD[0].x;
 		dst[blockIdx.x].y = sdata_cD[0].y;
 	}
@@ -1673,15 +1678,14 @@ __global__ static void kern_dot(long N, double* dst, const float* src1, const fl
 		__syncthreads();
 	}
 
-	if (0 == tidx)		
+	if (0 == tidx)
 		dst[blockIdx.x] = sdata_D[0];
-
 }
 
 extern "C" double cuda_dot(long N, const float* src1, const float* src2)
 {
 	double* tmp = (double*)cuda_malloc(gridsize(N) * sizeof(double));
-	
+
 	kern_dot<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(double), cuda_get_stream()>>>(N, tmp, src1, src2);
 
 	double ret = cuda_reduce_sumD(gridsize(N), tmp);
@@ -1689,12 +1693,4 @@ extern "C" double cuda_dot(long N, const float* src1, const float* src2)
 
 	return ret;
 }
-
-
-
-
-
-
-
-
 

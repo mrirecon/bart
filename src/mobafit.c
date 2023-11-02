@@ -1,5 +1,5 @@
 /* Copyright 2020. Uecker Lab, University Medical Center Goettingen.
- * Copyright 2022. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2023. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -87,15 +87,14 @@ static void mobafit_bound(iter_op_data* _data, float* dst, const float* src)
 	complex float* tmp_map = md_alloc_sameplace(N, map_dims, CFL_SIZE, dst);
 
 	do {
-
 		complex float* map = &MD_ACCESS(N, strs, pos, (complex float*)dst);
 
 		if (MD_IS_SET(data->min_flags, pos[COEFF_DIM]))
 			md_zsmax2(N, map_dims, strs, map, strs, map, data->min[pos[COEFF_DIM]]);
-		
+
 		if (MD_IS_SET(data->max_flags, pos[COEFF_DIM]))
 			md_zsmin2(N, map_dims, strs, map, strs, map, data->max[pos[COEFF_DIM]]);
-		
+
 		if (MD_IS_SET(data->max_norm_flags, pos[COEFF_DIM])) {
 
 			md_zabs2(N, map_dims, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, strs, map);
@@ -135,13 +134,13 @@ int main_mobafit(int argc, char* argv[argc])
 
 	struct mobafit_bound_s bounds;
 	SET_TYPEID(mobafit_bound_s, &bounds);
-	
+
 	bounds.N = DIMS;
 	bounds.min_flags = 0;
 	bounds.max_flags = 0;
 	bounds.max_norm_flags = 0;
 	bounds.min = bound_min;
-	bounds.max = bound_max;	
+	bounds.max = bound_max;
 
 	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE, DIFF, IR_LL, IR } seq = MGRE;
 
@@ -161,7 +160,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 #endif
 		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
-		OPT_SELECT('I', enum seq_type, &seq, IR, "Inversion Recovery: f(M0, R1, c) =  M0 * ( 1 - exp(-t*R1 + c))"),
+		OPT_SELECT('I', enum seq_type, &seq, IR, "Inversion Recovery: f(M0, R1, c) =  M0 * (1 - exp(-t * R1 + c))"),
 		OPT_SELECT('L', enum seq_type, &seq, IR_LL, "Inversion Recovery Look-Locker"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPT_SELECT('D', enum seq_type, &seq, DIFF, "diffusion"),
@@ -273,7 +272,6 @@ int main_mobafit(int argc, char* argv[argc])
 	md_zfill(DIMS, x_dims, x, 1.);
 
 
-
 	long y_patch_dims[DIMS];
 	long x_patch_dims[DIMS];
 	long y_patch_sig_dims[DIMS];
@@ -303,7 +301,7 @@ int main_mobafit(int argc, char* argv[argc])
 		long map_dims[DIMS];
 		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
 		nlop = nlop_T1_create(DIMS, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc, 1, 1);
-		
+
 		if (NULL != basis) {
 
 			long max_dims[DIMS];
@@ -347,8 +345,7 @@ int main_mobafit(int argc, char* argv[argc])
 		nlop_free(nl);
 		break;
 
-	default:
-		__builtin_unreachable();
+	default: ;
 	}
 
         if (use_magn) {
@@ -361,7 +358,7 @@ int main_mobafit(int argc, char* argv[argc])
 	complex float init[DIMS];
 	complex float scale[DIMS];
 
-	for (unsigned int i = 0; i < x_dims[COEFF_DIM]; i++) {
+	for (long i = 0; i < x_dims[COEFF_DIM]; i++) {
 
 		init[i] = _init[i];
 		scale[i] = _scale[i];
@@ -384,8 +381,8 @@ int main_mobafit(int argc, char* argv[argc])
 
 	bounds.dims = x_patch_dims;
 
-	for (int i = 0; i < x_dims[COEFF_DIM]; i++) {
-		
+	for (long i = 0; i < x_dims[COEFF_DIM]; i++) {
+
 		if (1. != scale[i]) {
 
 			auto lop_scale = linop_cdiag_create(DIMS, x_patch_dims, COEFF_FLAG, scale);

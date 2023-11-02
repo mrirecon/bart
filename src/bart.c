@@ -80,7 +80,7 @@ static void bart_exit_cleanup(void)
 #endif
 }
 
-typedef int (main_fun_t)(int argc, char* argv[]); 
+typedef int (main_fun_t)(int argc, char* argv[]);
 
 struct {
 
@@ -131,7 +131,7 @@ static int bart_exit(int err_no, const char* exit_msg)
 
 static bool parse_bart_opts(int* argcp, char*** argvp)
 {
-	int omp_threads = 1;		
+	int omp_threads = 1;
 	unsigned long flags = 0;
 	unsigned long pflags = 0;
 	long param_start[DIMS] = { [0 ... DIMS - 1] = -1 };
@@ -141,7 +141,7 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 
 	struct arg_s args[] = { };
 
- 	struct opt_s opts[] = {
+	struct opt_s opts[] = {
 
 		OPTL_ULONG('l', "loop", &(flags), "flag", "Flag to specify dimensions for looping"),
 		OPTL_ULONG('p', "parallel-loop", &(pflags), "flag", "Flag to specify dimensions for looping and activate parallelization"),
@@ -151,7 +151,7 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 		OPTL_INFILE('r', "ref-file", &ref_file, "<file>", "Obtain loop size from reference file"),
 		OPTL_SET('M', "mpi", &use_mpi, "Initialize MPI"),
 		OPT_SET('S', &mpi_shared_files, "Maps files from each rank (requires shared files system)"),
- 	};
+	};
 
 	int next_arg = options(argcp, *argvp, "", help_str, ARRAY_SIZE(opts), opts, ARRAY_SIZE(args), args, true);
 
@@ -169,7 +169,7 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 
 	if (0 != flags && 0 != pflags && flags != pflags)
 		error("Inconsistent use of -p and -l!\n");
-	
+
 	flags |= pflags;
 
 	if (1 == omp_threads && 0 != pflags)
@@ -191,7 +191,7 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 	if (NULL != ref_file) {
 
 		long ref_dims[DIMS];
-		const _Complex float* tmp = load_cfl(ref_file, DIMS, ref_dims);
+		const void* tmp = load_cfl(ref_file, DIMS, ref_dims);
 		unmap_cfl(DIMS, ref_dims, tmp);
 
 		assert(-1 == param_end[0]);
@@ -211,10 +211,10 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 
 	if (0 != nstart && bitcount(flags) != nstart)
 		error("Size of start values does not coincide with number of selected flags!\n");
-	
+
 	if (0 != nend && bitcount(flags) != nend)
 		error("Size of start values does not coincide with number of selected flags!\n");
-		
+
 	if (0 == nstart)
 		for (int i = 0; i < bitcount(flags); i++)
 			param_start[i] = 0;
@@ -272,7 +272,7 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 
 	set_cfl_loop_index(pos);
 	int ret = (*dispatch_func)(argc, thread_argv);
-		
+
 	io_memory_cleanup();
 
 	for(int m = 0; m < argc; ++m)

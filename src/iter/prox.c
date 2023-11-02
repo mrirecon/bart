@@ -78,7 +78,7 @@ static DEF_TYPEID(prox_weighted_leastsquares_data);
 static void prox_weighted_leastsquares_fun(const operator_data_t* prox_data, float mu, complex float* z, const complex float* x_plus_u)
 {
 	auto pdata = CAST_DOWN(prox_weighted_leastsquares_data, prox_data);
-	
+
 	int N = pdata->N;
 	const long* dims = pdata->dims;
 	const long* wdims = pdata->wdims;
@@ -90,14 +90,14 @@ static void prox_weighted_leastsquares_fun(const operator_data_t* prox_data, flo
 		md_copy(N, dims, z, x_plus_u, CFL_SIZE);
 
 	if (0 != mu) {
-		
+
 		if (NULL == W_sqr) {
 
 			if (NULL != y)
 				md_zaxpy(N, dims, z, pdata->lambda * mu, multiplace_read(pdata->y, z));
 
 			md_zsmul(N, dims, z, z, 1. / (mu * pdata->lambda + 1));
-		
+
 		} else {
 
 			complex float* tmp = md_alloc_sameplace(N, wdims, CFL_SIZE, z);
@@ -148,12 +148,14 @@ const struct operator_p_s* prox_weighted_leastsquares_create(int N, const long d
 	pdata->wdims = ARR_CLONE(long[N], wdims);
 
 	if (NULL != W) {
-	
+
 		complex float* tmp = md_alloc_sameplace(N, wdims, CFL_SIZE, W);
 		md_zmulc(N, wdims, tmp, W, W);
 
 		pdata->W = multiplace_move_F(N, wdims, CFL_SIZE, tmp);
+
 	} else {
+
 		pdata->W = NULL;
 	}
 

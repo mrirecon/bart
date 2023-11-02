@@ -85,7 +85,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 
 			if (NULL != weights)
 				md_select_dims(DIMS, ~MD_BIT(i), n_wgs_dims, wgs_dims);
-	
+
 			if (NULL != basis)
 				md_select_dims(DIMS, ~MD_BIT(i), n_basis_dims, basis_dims);
 
@@ -184,7 +184,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 		lop = linop_stack_cod_F(map_dims[COIL_DIM], lops, COIL_DIM);
 
 	} else {
-		
+
 		const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims, img_dims, maps);
 		lop = linop_chain(maps_op, nufft_op);
 		linop_free(maps_op);
@@ -271,7 +271,7 @@ int main_pics(int argc, char* argv[argc])
 	unsigned long lowmem_flags = 0UL;
 
 	unsigned long mpi_flags = 0UL;
-	
+
 
 	const struct opt_s opts[] = {
 
