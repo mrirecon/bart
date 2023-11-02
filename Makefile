@@ -140,7 +140,7 @@ else
 OPT = -Og
 endif
 #OPT += -ffp-contract=off
-CPPFLAGS ?= -Wall -Wextra -Wno-nonnull
+CPPFLAGS ?= -Wall -Wextra
 CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
 
@@ -286,6 +286,9 @@ ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(roo
 -include $(MAKEFILES)
 
 
+GCCVERSION12 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 12)
+GCCVERSION14 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 14)
+
 # clang
 
 ifeq ($(findstring clang,$(CC)),clang)
@@ -293,8 +296,13 @@ ifeq ($(findstring clang,$(CC)),clang)
 	LDFLAGS += -lBlocksRuntime
 else
 # only add if not clang, as it doesn't understand this:
-	CPPFLAGS +=  -Wno-vla-parameter
-#	CPPFLAGS +=  -Werror=vla-parameter
+ifeq ($(GCCVERSION14), 1)
+    CFLAGS += -Wuseless-cast
+else
+ifeq ($(GCCVERSION12), 1)
+    CFLAGS += -Wno-vla-parameter -Wno-nonnull -Wno-maybe-uninitialized
+endif
+endif
 endif
 
 
@@ -367,7 +375,7 @@ else
 
 
 CPPFLAGS += $(DEPFLAG) -iquote $(srcdir)/
-CFLAGS += -std=gnu11
+CFLAGS += -std=gnu17
 CXXFLAGS += -std=c++14
 
 
