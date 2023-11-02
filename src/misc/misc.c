@@ -697,7 +697,7 @@ const char* ptr_print_dims(int D, const long dims[D])
 
 static const char* spec = "xyzcmnopqsfrtuvw";
 
-char* construct_filename(unsigned int D, const long loopdims[D], const long pos[D], const char* prefix, const char* ext)
+char* construct_filename(int D, const long loopdims[D], const long pos[D], const char* prefix, const char* ext)
 {
 	// Prepare output filename
 
@@ -705,7 +705,7 @@ char* construct_filename(unsigned int D, const long loopdims[D], const long pos[
 
 	len += snprintf(NULL, 0, "%s", prefix);
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (1 != loopdims[i])
 			len += snprintf(NULL, 0, "_%c%04ld", spec[i], pos[i]);
 
@@ -717,7 +717,7 @@ char* construct_filename(unsigned int D, const long loopdims[D], const long pos[
 
 	off += snprintf(name + off, len - off, "%s", prefix);
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		if (1 != loopdims[i])
 			off += snprintf(name + off, len - off, "_%c%04ld", spec[i], pos[i]);
 
