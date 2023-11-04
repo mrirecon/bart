@@ -242,6 +242,7 @@ static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t
 	int N_pools = N_pools_b1 - 3 * data->voxel.P;
 
 	float r2[data->voxel.P];
+
 	for (int i = 0; i < data->voxel.P; i++)
 		r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
@@ -268,6 +269,7 @@ static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t
 		bloch_mcc_matrix_ode_sa2(data->voxel.P, matrix_time, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
 
 	} else {
+
 		error("Please choose correct dimension for STM matrix!\n");
 	}
 
@@ -592,7 +594,7 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 }
 
 
-static void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P * N][P * N])
+void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P * N][P * N])
 {
 	data->seq.pulse_applied = false;
 
