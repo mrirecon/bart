@@ -132,7 +132,6 @@ const struct simdata_seq simdata_seq_defaults = {
 
 const struct simdata_tmp simdata_tmp_defaults = {
 
-	.spin_counter = 0,
 	.t = 0.,
 	.w1 = 0.,
 	.r2spoil = 0.,
@@ -974,7 +973,7 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 	float (*Fsa_k)[R * A][S][pools][3] = xmalloc(sizeof *Fsa_k);
 	float (*Fsa_Om)[R * A][S][pools][3] = xmalloc(sizeof *Fsa_Om);
 
-	for (data.tmp.spin_counter = 0; data.tmp.spin_counter < S; data.tmp.spin_counter++) {
+	for (int s = 0; s < S; s++) {
 
                 float h = 0.0001;
 
@@ -989,7 +988,7 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
                         assert(0. != _data->seq.slice_thickness);
 
 			// w_{gz} [rad/s] = gamma_H1 [rad/(sT)] * Gz [T/m] * z [m], FIXME: Change name of variable mom_sl
-			data.grad.mom_sl = (_data->grad.sl_gradient_strength * _data->seq.slice_thickness * GAMMA_H1) / (S - 1) * (data.tmp.spin_counter - (int)(S / 2.));
+			data.grad.mom_sl = (_data->grad.sl_gradient_strength * _data->seq.slice_thickness * GAMMA_H1) / (S - 1) * (s - (int)(S / 2.));
 
                 } else {
 
@@ -1072,7 +1071,6 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 
                 for (int r = 0; r < data.seq.rep_num; r++) {
 
-			int s = data.tmp.spin_counter;
 			auto mxy = &((*Fmxy)[r][s]);
 			auto sa_r1 = &((*Fsa_r1)[r][s]);
 			auto sa_r2 = &((*Fsa_r2)[r][s]);
