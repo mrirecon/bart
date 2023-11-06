@@ -132,7 +132,6 @@ const struct simdata_seq simdata_seq_defaults = {
 
 const struct simdata_tmp simdata_tmp_defaults = {
 
-	.t = 0.,
 	.w1 = 0.,
 	.r2spoil = 0.,
 };
@@ -1032,7 +1031,6 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
                 // Reset parameters
 		data.voxel.w = _data->voxel.w;
 		data.pulse.phase = 0;
-                data.tmp.t = 0;
 
                 // Apply inversion
 
@@ -1066,8 +1064,6 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 
 
                 // Loop over Pulse Blocks
-
-                data.tmp.t = 0;
 
                 for (int r = 0; r < data.seq.rep_num; r++) {
 
