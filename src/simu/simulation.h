@@ -54,14 +54,6 @@ struct simdata_seq {
 extern const struct simdata_seq simdata_seq_defaults;
 
 
-struct simdata_tmp {
-
-	float r2spoil;
-};
-
-extern const struct simdata_tmp simdata_tmp_defaults;
-
-
 struct simdata_grad {
 
 	float gb[3];
@@ -112,20 +104,19 @@ struct sim_data {
 	struct simdata_voxel voxel;
 	struct simdata_pulse pulse;
 	struct simdata_grad grad;
-	struct simdata_tmp tmp;
 	struct simdata_other other;
 };
 
 extern void debug_sim(struct sim_data* data);
 
 extern void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float stm_matrix[P * N][P * N]);
-extern void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P * N][P * N]);
+extern void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P * N][P * N], float r2spoil);
 
 extern void inversion(const struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end);
 extern void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3],	float (*sa_b1_state)[R][3]);
 extern void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m_state)[R][pools][3], float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3], float (*sa_b1_state)[R][1][3], float (*sa_k_state)[R][pools][3], float (*sa_om_state)[R][pools][3]);
 
-extern void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N][N]);
+extern void mat_exp_simu(struct sim_data* data, float r2spoil, int N, float st, float end, float out[N][N]);
 extern void apply_sim_matrix(int N, float m[N], float matrix[N][N]);
 
 #endif

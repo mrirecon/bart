@@ -135,7 +135,6 @@ int main_sim(int argc, char* argv[argc])
 	data.pulse.sinc = pulse_sinc_defaults;
         data.pulse.hs = pulse_hypsec_defaults;
 	data.grad = simdata_grad_defaults;
-	data.tmp = simdata_tmp_defaults;
         data.other = simdata_other_defaults;
 
         float T1[3] = { WATER_T1, WATER_T1, 1 };

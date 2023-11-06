@@ -163,7 +163,6 @@ static bool test_rf_pulse_ode(void)
 			data.pulse.rf_end = trf;
 
 			data.grad = simdata_grad_defaults;
-			data.tmp = simdata_tmp_defaults;
 
 
                         // Prepare pulse
@@ -235,7 +234,6 @@ static bool test_hypsec_rf_pulse_ode(void)
         data.pulse.hs.INTERFACE.duration = data.pulse.rf_end;
 
         data.grad = simdata_grad_defaults;
-        data.tmp = simdata_tmp_defaults;
 
         float xp[P][N] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
 

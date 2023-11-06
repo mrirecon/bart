@@ -130,11 +130,6 @@ const struct simdata_seq simdata_seq_defaults = {
 };
 
 
-const struct simdata_tmp simdata_tmp_defaults = {
-
-	.r2spoil = 0.,
-};
-
 
 const struct simdata_grad simdata_grad_defaults = {
 
@@ -221,7 +216,7 @@ static complex float set_gradients(struct sim_data* data, float gb_eff[3], float
 /* ---------  State-Transition Matrix Simulation --------- */
 
 
-static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t, const float* in)
+static void bloch_simu_stm_fun(struct sim_data* data, float r2spoil, int N, float* out, float t, const float* in)
 {
 	float gb_eff[3];
 	complex float w1 = set_gradients(data, gb_eff, t);
@@ -233,7 +228,7 @@ static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t
 	float r2[data->voxel.P];
 
 	for (int i = 0; i < data->voxel.P; i++)
-		r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+		r2[i] = data->voxel.r2[i] + r2spoil;
 
 	if (N == 4) { // M
 
@@ -266,24 +261,24 @@ static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t
 	matf_vecmul(N, N, out, matrix_time, in);
 }
 
-void mat_exp_simu(struct sim_data* data, int N, float st, float end, float out[N][N])
+void mat_exp_simu(struct sim_data* data, float r2spoil, int N, float st, float end, float out[N][N])
 {
 	NESTED(void, call, (float* out, float t, const float* in))
 	{
-		bloch_simu_stm_fun(data, N, out, t, in);
+		bloch_simu_stm_fun(data, r2spoil, N, out, t, in);
 	};
 
 	mat_to_exp(N, st, end, out, data->other.stm_tol, call);
 }
 
-static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], float st, float end)
+static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], float st, float end, float r2spoil)
 {
 	if (data->seq.pulse_applied)
 		pulse_init(&data->pulse, data->pulse.rf_start, data->pulse.rf_end,
 				CAST_UP(&data->pulse.sinc)->flipangle, data->pulse.phase,
 				data->pulse.sinc.bwtp, data->pulse.sinc.alpha);
 
-	mat_exp_simu(data, N, st, end, matrix);
+	mat_exp_simu(data, r2spoil, N, st, end, matrix);
 }
 
 
@@ -508,13 +503,13 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 			if (MODEL_BMC == data->seq.model) {
 
 				for (int i = 0; i < data->voxel.P; i++)
-					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+					r2[i] = data->voxel.r2[i];
 
 				bloch_mcconnell_ode(data->voxel.P, out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
 
 			} else {
 
-				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff);
+				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0], gb_eff);
 			}
 		};
 
@@ -522,18 +517,13 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 		{
 			(void)t;
 
-			float r2[data->voxel.P];
-
 			if (MODEL_BMC == data->seq.model) {
 
-				for (int i = 0; i < data->voxel.P; i++)
-					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
-
-				bloch_mcc_pdy(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
+				bloch_mcc_pdy(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, data->voxel.r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
 
 			} else {
 
-				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff);
+				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0], gb_eff);
 			}
 		};
 
@@ -541,18 +531,13 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 		{
 			(void)t;
 
-			float r2[data->voxel.P];
-
 			if (MODEL_BMC == data->seq.model) {
 
-				for (int i = 0; i < data->voxel.P; i++)
-					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
-
-				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, gb_eff, w1);
+				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, data->voxel.r2, data->voxel.k, data->voxel.m0, gb_eff, w1);
 
 			} else {
 
-				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff, w1);
+				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0], gb_eff, w1);
 			}
 		};
 
@@ -562,7 +547,7 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
         case SIM_STM:
 
-                create_sim_matrix(data, P * N, stm_matrix, data->pulse.rf_start, data->pulse.rf_end);
+                create_sim_matrix(data, P * N, stm_matrix, data->pulse.rf_start, data->pulse.rf_end, 0.);
                 break;
         }
 
@@ -572,7 +557,7 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
 /* ------------ Relaxation -------------- */
 
-static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N], float st, float end)
+static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N], float st, float end, float r2spoil)
 {
 	assert(0. <= (end - st));
 
@@ -584,12 +569,12 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 		xp2[1] = xp[i][1];
 		xp2[2] = xp[i][2];
 
-		bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb);
+		bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1[0], data->voxel.r2[0] + r2spoil, data->grad.gb);
 	}
 }
 
 
-void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P * N][P * N])
+void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float st, float end, float stm_matrix[P * N][P * N], float r2spoil)
 {
 	data->seq.pulse_applied = false;
 
@@ -604,7 +589,7 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 
         case SIM_ROT:
 
-                hard_relaxation(data, N, P, xp, st, end);
+                hard_relaxation(data, N, P, xp, st, end, r2spoil);
                 break;
 
         case SIM_ODE: ;
@@ -621,12 +606,12 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 			if (MODEL_BMC == data->seq.model) {
 
 				for (int i = 0; i < data->voxel.P; i++)
-					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+					r2[i] = data->voxel.r2[i] + r2spoil;
 
 				bloch_mcconnell_ode(data->voxel.P, out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
 			} else {
 
-				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff);
+				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + r2spoil, gb_eff);
 			}
 		};
 
@@ -639,13 +624,13 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 			if (MODEL_BMC == data->seq.model) {
 
 				for (int i = 0; i < data->voxel.P; i++)
-					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+					r2[i] = data->voxel.r2[i] + r2spoil;
 
 				bloch_mcc_pdy(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
 
 			} else {
 
-				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff);
+				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + r2spoil, gb_eff);
 			}
 		};
 
@@ -658,13 +643,13 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 			if (MODEL_BMC == data->seq.model) {
 
 				for (int i = 0; i < data->voxel.P; i++)
-					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
+					r2[i] = data->voxel.r2[i] + r2spoil;
 
 				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, gb_eff, w1);
 
 			} else {
 
-				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff, w1);
+				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + r2spoil, gb_eff, w1);
 			}
 		};
 
@@ -675,7 +660,7 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 
         case SIM_STM:
 
-                create_sim_matrix(data, P * N, stm_matrix, st, end);
+                create_sim_matrix(data, P * N, stm_matrix, st, end, r2spoil);
                 break;
         }
 
@@ -737,13 +722,13 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 			// Time-independent gradient integral
 			data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.te - data->pulse.rf_end);
 
-			relaxation2(data, 0, 0, M, 1, NULL, data->pulse.rf_end, data->seq.te, mrel);
+			relaxation2(data, 0, 0, M, 1, NULL, data->pulse.rf_end, data->seq.te, mrel, 0.);
 
 			data->grad.mom = 0.; // [rad/s]
 
 		} else {
 
-	                relaxation2(data, 0., 0., M, 1, NULL, data->pulse.rf_end, data->seq.te, mrel);
+	                relaxation2(data, 0., 0., M, 1, NULL, data->pulse.rf_end, data->seq.te, mrel, 0.);
 		}
 
                 // Join matrices: 0 -> TE
@@ -753,10 +738,12 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 
                 if (NULL != mtr) {
 
+			float r2spoil = 0.;
+
                         if (   (SEQ_FLASH == data->seq.seq_type)
                             || (SEQ_IRFLASH == data->seq.seq_type)) {
 
-                                data->tmp.r2spoil = 10000.;
+                                r2spoil = 10000.;
 			}
 
                         // Balance z-gradient for bSSFP type sequences
@@ -769,16 +756,14 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 				// Time-independent gradient integral
                                 data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.tr - data->seq.te);
 
-                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, *mtr);
+                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, *mtr, r2spoil);
 
                                 data->grad.mom = 0.;
 
                         } else {
 
-                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, *mtr);
+                                relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, *mtr, r2spoil);
                         }
-
-                        data->tmp.r2spoil = 0.;	// effects spoiled sequences only
                 }
 
                 break;
@@ -806,45 +791,44 @@ static void run_sim(struct sim_data* data, int pools,
 			// Time-independent gradient integral
 			data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.te - data->pulse.rf_end);
 
-			relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
+			relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL, 0.);
 
 			data->grad.mom = 0.; // [rad/s]
 
 		} else {
 
-			relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL);
+			relaxation2(data, h, tol, N, P, xp, data->pulse.rf_end, data->seq.te, NULL, 0.);
 		}
 
 		collect_signal(data, P, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, xp);
 
                 // Smooth spoiling for FLASH sequences
+		float r2spoil = 0.;
 
                 if (   (SEQ_FLASH == data->seq.seq_type)
                     || (SEQ_IRFLASH == data->seq.seq_type)) {
 
-                        data->tmp.r2spoil = 10000.;
+                        r2spoil = 10000.;
 		}
 
 
                 // Balance z-gradient for bSSFP type sequences
 
-                if (   ((SEQ_BSSFP == data->seq.seq_type)
-                    || (SEQ_IRBSSFP == data->seq.seq_type))
+                if (   (   (SEQ_BSSFP == data->seq.seq_type)
+ 			|| (SEQ_IRBSSFP == data->seq.seq_type))
 		    && (data->seq.te != data->seq.tr)) {
 
 			// Time-independent gradient integral
                         data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.tr - data->seq.te);
 
-                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL);
+                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL, r2spoil);
 
                         data->grad.mom = 0.;
 
                 } else {
 
-                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL);
+                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL, r2spoil);
                 }
-
-                data->tmp.r2spoil = 0.;	// effects spoiled sequences only
 
                 break;
 
@@ -886,7 +870,7 @@ void inversion(const struct sim_data* data, float h, float tol, int N, int P, fl
                 for (int p = 0; p < P; p++)
                         bloch_excitation2(xp[p], xp[p], M_PI, 0.);
 
-                relaxation2(&inv_data, h, tol, N, P, xp, st, end, NULL);
+                relaxation2(&inv_data, h, tol, N, P, xp, st, end, NULL, 0.);
 
         } else {
                 // Hyperbolic Secant inversion
@@ -899,8 +883,7 @@ void inversion(const struct sim_data* data, float h, float tol, int N, int P, fl
                 rf_pulse(&inv_data, h, tol, N, P, xp, NULL);
 
                 // Spoiler gradients
-                inv_data.tmp.r2spoil = 10000.;
-                relaxation2(&inv_data, h, tol, N, P, xp, st, end, NULL);
+                relaxation2(&inv_data, h, tol, N, P, xp, st, end, NULL, 10000.);
         }
 }
 

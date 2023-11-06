@@ -59,7 +59,6 @@ static bool test_ode_bloch_simulation_gradients(void)
 	sim_data.pulse.rf_end = 0.001;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	int R = sim_data.seq.rep_num;
@@ -187,7 +186,6 @@ static bool test_stm_bloch_simulation_gradients(void)
 	sim_data.pulse.rf_end = 0.001;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	int R = sim_data.seq.rep_num;
@@ -339,7 +337,6 @@ static bool test_ode_irbssfp_simulation(void)
 	sim_data.pulse.rf_end = 0.00001;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	int R = sim_data.seq.rep_num;
@@ -443,8 +440,6 @@ static bool test_rot_irbssfp_simulation(void)
 
 	sim_data.grad = simdata_grad_defaults;
 
-	sim_data.tmp = simdata_tmp_defaults;
-
         sim_data.other = simdata_other_defaults;
         sim_data.other.sampling_rate = 1.E4;
 
@@ -531,7 +526,6 @@ static bool test_stm_ode_bssfp_comparison(void)
         sim_data.pulse.rf_end = 0.001;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
         sim_data.grad.mom_sl = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
@@ -632,7 +626,6 @@ static bool test_stm_ode_flash_comparison(void)
         sim_data.pulse.rf_end = 0.001;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
         sim_data.grad.mom_sl = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
@@ -726,7 +719,6 @@ static bool test_ode_simu_offresonance(void)
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
         sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	sim_data.voxel.w = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
@@ -782,7 +774,6 @@ static bool test_stm_simu_offresonance(void)
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
         sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	sim_data.voxel.w =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
@@ -837,9 +828,8 @@ static bool test_ode_simu_gradient(void)
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.grad.mom =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
+	sim_data.grad.mom = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	int R = sim_data.seq.rep_num;
@@ -893,9 +883,8 @@ static bool test_stm_simu_gradient(void)
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.grad.mom =  0.25 * 2. * M_PI * 1000.;	// [rad/s]
+	sim_data.grad.mom = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	int R = sim_data.seq.rep_num;
@@ -994,7 +983,6 @@ static bool test_ode_epg_relation(void)
 	sim_data.pulse.rf_end = 1E-8;	// Close to Hard-Pulses
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	// Estimate Fourier modes from ODE simulation
@@ -1083,7 +1071,6 @@ static bool test_hp_irbssfp_simulation(void)
 	sim_data.pulse.rf_end = 0.;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	int R = sim_data.seq.rep_num;
@@ -1158,7 +1145,6 @@ static bool test_hp_simu_offresonance(void)
 	sim_data.pulse.rf_end = 0.;	// Here: HARD PULSE!
 
         sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	sim_data.voxel.w = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
@@ -1215,7 +1201,6 @@ static bool test_hp_simu_gradient(void)
 	sim_data.grad = simdata_grad_defaults;
 	sim_data.grad.mom = 0.25 * 2. * M_PI * 1000.;	// [rad/s]
 
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	int R = sim_data.seq.rep_num;
@@ -1273,7 +1258,6 @@ static bool test_ode_z_gradient_refocus(void)
 	sim_data.grad = simdata_grad_defaults;
         sim_data.grad.mom_sl = 0.5 * 2. * M_PI * 1000.;	// [rad/s]
 
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	int R = sim_data.seq.rep_num;
@@ -1341,7 +1325,6 @@ static bool test_stm_z_gradient_refocus(void)
 	sim_data.grad = simdata_grad_defaults;
         sim_data.grad.mom_sl = 0.5 * 2. * M_PI * 1000.;	// [rad/s]
 
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
 	int R = sim_data.seq.rep_num;
@@ -1395,7 +1378,6 @@ static bool test_ode_inversion(void)
         data.pulse.rf_end = 0.01;
 
         data.grad = simdata_grad_defaults;
-        data.tmp = simdata_tmp_defaults;
         data.other = simdata_other_defaults;
 
         float xp[P][N] = { { 0., 0., 1. }, { 0. }, { 0. }, { 0. } };
@@ -1440,7 +1422,6 @@ static bool test_stm_matrix_creation(void)
         sim_data.grad = simdata_grad_defaults;
         sim_data.grad.gb[2] = 2. * M_PI * 1000.;	// [rad/s]
 
-	sim_data.tmp = simdata_tmp_defaults;
         sim_data.other = simdata_other_defaults;
 
         // Prepare RF pulse to have correct flip angle
@@ -1460,7 +1441,7 @@ static bool test_stm_matrix_creation(void)
         m1[2] = -1.;
         m1[3] = 1.;
 
-        mat_exp_simu(&sim_data, N1, t0, t1, out1);
+        mat_exp_simu(&sim_data, 0., N1, t0, t1, out1);
         apply_sim_matrix(N1, m1, out1);
 
 
@@ -1475,7 +1456,7 @@ static bool test_stm_matrix_creation(void)
         m2[2] = -1.;
         m2[9] = 1.;
 
-        mat_exp_simu(&sim_data, N2, t0, t1, out2);
+        mat_exp_simu(&sim_data, 0., N2, t0, t1, out2);
         apply_sim_matrix(N2, m2, out2);
 
         // Compare signal part of STM matrices estimated above by its effect on the magnetization
@@ -1505,7 +1486,6 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
  	struct sim_data sim_data;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
 	sim_data.other = simdata_other_defaults;
 	sim_data.seq = simdata_seq_defaults;
 	sim_data.pulse = simdata_pulse_defaults;
@@ -1739,7 +1719,6 @@ static bool test_bmc_ode_irbssfp_signal(void)
  	struct sim_data sim_data;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
 	sim_data.other = simdata_other_defaults;
 	sim_data.seq = simdata_seq_defaults;
 	sim_data.pulse = simdata_pulse_defaults;
@@ -1832,7 +1811,6 @@ static bool test_ode_bmc_5pool(void)
  	struct sim_data sim_data;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
 	sim_data.other = simdata_other_defaults;
 	sim_data.seq = simdata_seq_defaults;
 	sim_data.pulse = simdata_pulse_defaults;
@@ -1942,7 +1920,6 @@ static bool test_mcconnell_CEST_ode_sim(void)
 	sim_data.pulse.rf_end = 0.005;
 
 	sim_data.grad = simdata_grad_defaults;
-	sim_data.tmp = simdata_tmp_defaults;
 	sim_data.other = simdata_other_defaults;
 	sim_data.voxel = simdata_voxel_defaults;
 
@@ -2029,9 +2006,7 @@ static bool test_mcconnell_CEST_ode_sim(void)
 		sim_data.voxel.w = 0;
 
 		// Post prep delay
-		sim_data.tmp.r2spoil = 10000.;
-		relaxation2(&sim_data, h, tol, N, P, xp, 0., 0.0065, NULL);
-		sim_data.tmp.r2spoil = 0.;
+		relaxation2(&sim_data, h, tol, N, P, xp, 0., 0.0065, NULL, 10000.);
 
 		err = fabsf((xp[0][2] / ref_scan) - ref_sb[i]);
 

@@ -161,7 +161,6 @@ static bool test_nlop_blochfun(void)
         data.sim.pulse.hs = pulse_hypsec_defaults;
         data.sim.pulse.sinc = pulse_sinc_defaults;
         data.sim.grad = simdata_grad_defaults;
-        data.sim.tmp = simdata_tmp_defaults;
 	data.sim.other = simdata_other_defaults;
 
         data.other = moba_other_defaults;
@@ -210,7 +209,6 @@ static bool test_nlop_T1phyfun(void)
         data.sim.pulse = simdata_pulse_defaults;
         data.sim.pulse.hs = pulse_hypsec_defaults;
         data.sim.grad = simdata_grad_defaults;
-        data.sim.tmp = simdata_tmp_defaults;
 	data.sim.other = simdata_other_defaults;
         data.other = moba_other_defaults;
 
