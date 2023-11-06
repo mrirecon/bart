@@ -286,7 +286,7 @@ ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(roo
 -include $(MAKEFILES)
 
 
-GCCVERSION12 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 12)
+GCCVERSION11 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 11)
 GCCVERSION14 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 14)
 
 # clang
@@ -299,7 +299,7 @@ else
 ifeq ($(GCCVERSION14), 1)
     CFLAGS += -Wuseless-cast
 else
-ifeq ($(GCCVERSION12), 1)
+ifeq ($(GCCVERSION11), 1)
     CFLAGS += -Wno-vla-parameter -Wno-nonnull -Wno-maybe-uninitialized
 endif
 endif
@@ -375,7 +375,7 @@ else
 
 
 CPPFLAGS += $(DEPFLAG) -iquote $(srcdir)/
-CFLAGS += -std=gnu17
+CFLAGS += -std=gnu11
 CXXFLAGS += -std=c++14
 
 

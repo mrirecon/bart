@@ -78,7 +78,7 @@ to install the BART packages, or compile it yourself as described below.
 GCC compiler, the FFTW library, and optionally CUDA.
 (see recon/Makefile to turn options on or off)
 
-The minimum GCC supported is 10. It should also be possible
+The minimum GCC supported is 11. It should also be possible
 to use the clang compiler.
 
 The software can be used in combination with Matlab or octave.
