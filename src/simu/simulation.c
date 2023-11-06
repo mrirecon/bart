@@ -132,7 +132,6 @@ const struct simdata_seq simdata_seq_defaults = {
 
 const struct simdata_tmp simdata_tmp_defaults = {
 
-	.w1 = 0.,
 	.r2spoil = 0.,
 };
 
@@ -177,14 +176,14 @@ void pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float
 
 /* ------------ Bloch Equations -------------- */
 
-static void set_gradients(struct sim_data* data, float gb_eff[3], float t)
+static complex float set_gradients(struct sim_data* data, float gb_eff[3], float t)
 {
 	// Units: [gb] = rad/s
 	gb_eff[0] = data->grad.gb[0];
 	gb_eff[1] = data->grad.gb[1];
 	gb_eff[2] = data->grad.gb[2];
 
-	data->tmp.w1 = 0.;
+	complex float w1 = 0.;
 
 	if (data->seq.pulse_applied) {
 
@@ -205,15 +204,17 @@ static void set_gradients(struct sim_data* data, float gb_eff[3], float t)
 			break;
 		}
 
-		data->tmp.w1 = cexpf(1.i * data->pulse.phase) * pulse_eval(ps, t);
+		w1 = cexpf(1.i * data->pulse.phase) * pulse_eval(ps, t);
 
                 // Definition from Bernstein et al., Handbook of MRI Pulse Sequences, p. 26f
                 // dM/dt = M x (e_x*B_1*sin(phase)-e_y*B_1*sin(phase) +e_z* B_0)) - ...
 		assert(0. == data->grad.gb[0]);
 		assert(0. == data->grad.gb[1]);
-		gb_eff[0] += crealf(data->tmp.w1) * data->voxel.b1;
-		gb_eff[1] += -cimagf(data->tmp.w1) * data->voxel.b1;
+		gb_eff[0] += crealf(w1) * data->voxel.b1;
+		gb_eff[1] += -cimagf(w1) * data->voxel.b1;
 	}
+	
+	return w1;
 }
 
 
@@ -223,7 +224,7 @@ static void set_gradients(struct sim_data* data, float gb_eff[3], float t)
 static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t, const float* in)
 {
 	float gb_eff[3];
-        set_gradients(data, gb_eff, t);
+	complex float w1 = set_gradients(data, gb_eff, t);
 
 	float matrix_time[N][N];
 	int N_pools_b1 = 15 * data->voxel.P * data->voxel.P + 1;
@@ -244,7 +245,7 @@ static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t
 
 	} else if (N == 13) { // M, dR1, dR2, dM0, dB1
 
-		bloch_matrix_ode_sa2(matrix_time, data->voxel.r1[0], r2[0], gb_eff, data->tmp.w1);
+		bloch_matrix_ode_sa2(matrix_time, data->voxel.r1[0], r2[0], gb_eff, w1);
 
 	} else if (N == N_pools) { // M,  dR1, dR2, dk, dOm, dM0
 
@@ -255,7 +256,7 @@ static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t
 
 		assert(MODEL_BMC == data->seq.model);
 
-		bloch_mcc_matrix_ode_sa2(data->voxel.P, matrix_time, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff, data->tmp.w1);
+		bloch_mcc_matrix_ode_sa2(data->voxel.P, matrix_time, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff, w1);
 
 	} else {
 
@@ -496,10 +497,11 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
         case SIM_ODE: ;
 
 		float gb_eff[3];
+		complex float w1;
 
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
-			set_gradients(data, gb_eff, t);
+			w1 = set_gradients(data, gb_eff, t);
 
 			float r2[data->voxel.P];
 
@@ -546,11 +548,11 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 				for (int i = 0; i < data->voxel.P; i++)
 					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
-				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, gb_eff, data->tmp.w1);
+				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, gb_eff, w1);
 
 			} else {
 
-				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff, data->tmp.w1);
+				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff, w1);
 			}
 		};
 
@@ -608,10 +610,11 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
         case SIM_ODE: ;
 
 		float gb_eff[3];
+		complex float w1;
 
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
-			set_gradients(data, gb_eff, t);
+			w1 = set_gradients(data, gb_eff, t);
 
 			float r2[data->voxel.P];
 
@@ -657,11 +660,11 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 				for (int i = 0; i < data->voxel.P; i++)
 					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
-				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, gb_eff, data->tmp.w1);
+				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, gb_eff, w1);
 
 			} else {
 
-				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff, data->tmp.w1);
+				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff, w1);
 			}
 		};
 

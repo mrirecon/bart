@@ -56,7 +56,6 @@ extern const struct simdata_seq simdata_seq_defaults;
 
 struct simdata_tmp {
 
-	complex float w1;
 	float r2spoil;
 };
 
