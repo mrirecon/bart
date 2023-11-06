@@ -2011,7 +2011,7 @@ static bool test_mcconnell_CEST_ode_sim(void)
 	sim_data.pulse.rect.A = 3.7 * 2. * M_PI * 42.5764;
 
 	// Off-resonance vector
-    	float offset[7] = {-1.5, -1., -0.5, 0., 0.5, 1., 1.5 };
+	float offset[7] = { -1.5, -1., -0.5, 0., 0.5, 1., 1.5 };
 
 	for (int i = 0; i < 7; i++)
 		offset[i] *= w_larmor;

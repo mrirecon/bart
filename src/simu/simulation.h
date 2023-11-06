@@ -56,7 +56,6 @@ extern const struct simdata_seq simdata_seq_defaults;
 
 struct simdata_tmp {
 
-        int rep_counter;
 	int spin_counter;
 	float t;
 	complex float w1;
