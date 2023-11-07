@@ -49,7 +49,7 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
 	float sa_Om[T][data->voxel.P][3];
 	float sa_k[T][data->voxel.P][3];	// [T][data->voxel.P - 1][A] is empty for k and Om
 
-	bloch_simulation2(data, T, data->voxel.P, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1, &sa_Om, &sa_k);
+	bloch_simulation2(data, T, data->voxel.P, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1, &sa_k, &sa_Om);
 
 	long pos[DIMS];
 	md_copy_dims(DIMS, pos, ddims);
@@ -76,7 +76,6 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
 			for (int p = 0; p < data->voxel.P; p++) {
 
 				pos[ITER_DIM] = p;
-
 				ind = md_calc_offset(N, mstrs, pos) / CFL_SIZE;
 
 				// M = M_x + i M_y
@@ -106,11 +105,11 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
 
 					pos[MAPS_DIM] = 4;
 					ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-					deriv[ind] = (A == D) ? sa_Om[i][p][d] : (sa_Om[i][p][0] + 1.i * sa_Om[i][p][1]);
+					deriv[ind] = (A == D) ? sa_k[i][p][d] : (sa_k[i][p][0] + 1.i * sa_k[i][p][1]);
 
 					pos[MAPS_DIM] = 5;
 					ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
-					deriv[ind] = (A == D) ? sa_k[i][p][d] : (sa_k[i][p][0] + 1.i * sa_k[i][p][1]);
+					deriv[ind] = (A == D) ? sa_Om[i][p][d] : (sa_Om[i][p][0] + 1.i * sa_Om[i][p][1]);
 				}
 			}
 		}
