@@ -71,10 +71,10 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
 			// Calculate spatial position and save data
 
 			pos[TE_DIM] = i;
-			pos[MAPS_DIM] = 0;
 
 			for (int p = 0; p < data->voxel.P; p++) {
 
+				pos[MAPS_DIM] = 0;
 				pos[ITER_DIM] = p;
 				ind = md_calc_offset(N, mstrs, pos) / CFL_SIZE;
 
