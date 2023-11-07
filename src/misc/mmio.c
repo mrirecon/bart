@@ -508,7 +508,7 @@ static complex float* create_zra_internal(int ofd, const char* name, int D, cons
 complex float* create_zra(const char* name, int D, const long dims[D])
 {
 	int ofd;
-	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
+	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
 		io_error("Creating ra file %s\n", name);
 
 	return create_zra_internal(ofd, name, D, dims);
@@ -521,7 +521,7 @@ complex float* create_zshm(const char* name, int D, const long dims[D])
 		error("shm file name does not start with a slash.\n");
 
 	int ofd;
-	if (-1 == (ofd = shm_open(name, O_RDWR /* |O_CREAT */, S_IRUSR|S_IWUSR)))
+	if (-1 == (ofd = shm_open(name, O_RDWR /* |O_CREAT */, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
 		io_error("Creating shm file %s\n", name);
 
 	return create_zra_internal(ofd, name, D, dims);
@@ -533,7 +533,7 @@ float* create_coo(const char* name, int D, const long dims[D])
 {
 	int ofd;
 
-	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
+	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
 		io_error("Creating coo file %s\n", name);
 
 	if (-1 == write_coo(ofd, D, dims))
@@ -668,7 +668,7 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 				error("Creating cfl file %s\n", name);
 
 			int ofd;
-			if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)))
+			if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
 				io_error("Creating cfl file %s\n", name);
 
 			if (-1 == write_cfl_header(ofd, NULL, D, dims))
@@ -871,7 +871,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 
 	err_assert(T > 0);
 
-        if (-1 == (fd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)))
+        if (-1 == (fd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
 		io_error("shared cfl %s\n", name);
 
 //	if (-1 == (fstat(fd, &st)))
@@ -1034,7 +1034,7 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 		error("Creating cfl file %s\n", name);
 
 	int ofd;
-	if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR)))
+	if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
 		io_error("Creating cfl file %s\n", name);
 
 	long num_ele = 0;
