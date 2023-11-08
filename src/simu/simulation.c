@@ -171,7 +171,7 @@ void pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float
 
 /* ------------ Bloch Equations -------------- */
 
-static complex float set_gradients(struct sim_data* data, float gb_eff[3], float t)
+static void compute_fields(struct sim_data* data, float gb_eff[3], float t)
 {
 	// Units: [gb] = rad/s
 	gb_eff[0] = data->grad.gb[0];
@@ -203,13 +203,9 @@ static complex float set_gradients(struct sim_data* data, float gb_eff[3], float
 
                 // Definition from Bernstein et al., Handbook of MRI Pulse Sequences, p. 26f
                 // dM/dt = M x (e_x*B_1*sin(phase)-e_y*B_1*sin(phase) +e_z* B_0)) - ...
-		assert(0. == data->grad.gb[0]);
-		assert(0. == data->grad.gb[1]);
-		gb_eff[0] += crealf(w1) * data->voxel.b1;
-		gb_eff[1] += -cimagf(w1) * data->voxel.b1;
+		gb_eff[0] = crealf(w1);
+		gb_eff[1] = -cimagf(w1);
 	}
-	
-	return w1;
 }
 
 
@@ -219,7 +215,12 @@ static complex float set_gradients(struct sim_data* data, float gb_eff[3], float
 static void bloch_simu_stm_fun(struct sim_data* data, float r2spoil, int N, float* out, float t, const float* in)
 {
 	float gb_eff[3];
-	complex float w1 = set_gradients(data, gb_eff, t);
+	compute_fields(data, gb_eff, t);
+
+	complex float w1 = gb_eff[0] - 1.i * gb_eff[1];
+
+	gb_eff[0] *= data->voxel.b1;
+	gb_eff[1] *= data->voxel.b1;
 
 	float matrix_time[N][N];
 	int N_pools_b1 = 15 * data->voxel.P * data->voxel.P + 1;
@@ -285,17 +286,11 @@ static void create_sim_matrix(struct sim_data* data, int N, float matrix[N][N], 
 void apply_sim_matrix(int N, float m[N], float matrix[N][N])
 {
 	float tmp[N];
+	vecf_copy(N, tmp, m);
 
-	for (int i = 0; i < N; i++)
-		tmp[i] = m[i];
-
-	for (int i = 0; i < N; i++) {
-
-		m[i] = 0.;
-
-		for (int j = 0; j < N; j++)
-			m[i] += matrix[j][i] * tmp[j];
-	}
+	float mT[N][N];
+	matf_transpose(N, N, mT, matrix);
+	matf_vecmul(N, N, m, mT, tmp);
 }
 
 
@@ -450,7 +445,7 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 
                 float t_im = data->pulse.rf_start + sample_time / 2.;
 
-                while (t_im <= data->pulse.rf_end) {
+                for (; t_im <= data->pulse.rf_end; t_im += sample_time) {
 
                         // RF-pulse strength of current interval
 
@@ -464,8 +459,6 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 
                                 bloch_relaxation(xp[i], sample_time, xp3, data->voxel.r1[0], data->voxel.r2[0], data->grad.gb);
                         }
-
-                        t_im += sample_time;
                 }
         }
 }
@@ -496,7 +489,13 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
-			w1 = set_gradients(data, gb_eff, t);
+			compute_fields(data, gb_eff, t);
+
+			w1 = gb_eff[0] - 1.i * gb_eff[1];
+
+			gb_eff[0] *= data->voxel.b1;
+			gb_eff[1] *= data->voxel.b1;
+
 
 			float r2[data->voxel.P];
 
@@ -561,14 +560,12 @@ static void hard_relaxation(struct sim_data* data, int N, int P, float xp[P][N],
 {
 	assert(0. <= (end - st));
 
-	float xp2[3] = { 0. };
+	float xp2[3];
+
 
 	for (int i = 0; i < P; i++) {
 
-		xp2[0] = xp[i][0];
-		xp2[1] = xp[i][1];
-		xp2[2] = xp[i][2];
-
+		vecf_copy(3, xp2, xp[i]);
 		bloch_relaxation(xp[i], end - st, xp2, data->voxel.r1[0], data->voxel.r2[0] + r2spoil, data->grad.gb);
 	}
 }
@@ -599,7 +596,12 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
-			w1 = set_gradients(data, gb_eff, t);
+			compute_fields(data, gb_eff, t);
+
+			w1 = gb_eff[0] - 1.i * gb_eff[1];
+
+			gb_eff[0] *= data->voxel.b1;
+			gb_eff[1] *= data->voxel.b1;
 
 			float r2[data->voxel.P];
 
@@ -715,6 +717,8 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
                 // Matrix: T_RF -> TE
                 float mrel[M][M];
 
+		//assert(0. == data->grad.mom);
+
                 if ((0 != data->grad.mom_sl) && (data->seq.te != data->pulse.rf_end)) {
 
 			// Slice-Rewinder
@@ -747,6 +751,8 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 			}
 
                         // Balance z-gradient for bSSFP type sequences
+
+			//assert(0. == data->grad.mom);
 
 			// Matrix: TE -> TR
                         if ((   (SEQ_BSSFP == data->seq.seq_type)
@@ -835,6 +841,7 @@ static void run_sim(struct sim_data* data, int pools,
         case SIM_STM:
 
                 // Evolution: 0 -> TE
+		//assert(xstm != mte);
                 apply_sim_matrix(N * P + 1, xstm, mte);
 
                 // Save data
@@ -843,6 +850,7 @@ static void run_sim(struct sim_data* data, int pools,
                 collect_signal(data, P, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, xp);
 
                 // Evolution: TE -> TR
+		//assert(xstm != mtr);
                 apply_sim_matrix(N * P + 1, xstm, mtr);
 
                 break;
@@ -917,7 +925,8 @@ static void alpha_half_preparation(const struct sim_data* data, int pools, float
 
 /* ------------ Main Simulation -------------- */
 
-void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m_state)[R][pools][3], float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3],
+void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m_state)[R][pools][3],
+			float (*sa_r1_state)[R][pools][3], float (*sa_r2_state)[R][pools][3], float (*sa_m0_state)[R][pools][3],
 			float (*sa_b1_state)[R][1][3], float (*sa_k_state)[R][pools][3], float (*sa_om_state)[R][pools][3])
 {
 	// FIXME: split config + variable part
