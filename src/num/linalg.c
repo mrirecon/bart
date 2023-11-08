@@ -70,6 +70,12 @@ void vec_copy(int N, complex float x[N], const complex float y[N])
 		x[i] = y[i];
 }
 
+void vecf_copy(int N, float x[N], const float y[N])
+{
+	for (int i = 0; i < N; i++)
+		x[i] = y[i];
+}
+
 
 
 void mat_gaussian(int A, int B, complex float x[A][B])

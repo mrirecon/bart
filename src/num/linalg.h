@@ -41,6 +41,7 @@ extern void mat_vec(int A, int B, complex float out[A * B], const complex float 
 extern void vec_mat(int A, int B, complex float out[A][B], const complex float in[A * B]);
 extern void vec_zero(int N, complex float x[N]);
 extern void vec_copy(int N, complex float x[N], const complex float y[N]);
+extern void vecf_copy(int N, float x[N], const float y[N]);
 
 // extern complex double vec_dot(int N, const complex float x[N], const complex float y[N]);
 extern complex float vec_dot(int N, const complex float x[N], const complex float y[N]);
