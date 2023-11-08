@@ -143,7 +143,6 @@ const struct simdata_tmp simdata_tmp_defaults = {
 const struct simdata_grad simdata_grad_defaults = {
 
 	.gb = { 0., 0., 0. },
-	.gb_eff = { 0., 0., 0.},
         .sl_gradient_strength = 0.,
 	.mom = 0.,
 	.mom_sl = 0.,
@@ -167,13 +166,6 @@ const struct simdata_pulse simdata_pulse_defaults = {
 
 	.rf_start = 0.,
 	.rf_end = 0.001,
-
-	.sinc.INTERFACE.flipangle = 1.,
-	.sinc.INTERFACE.duration = 0.001,
-	//.sinc.pulse.phase = 0.,
-	.sinc.alpha = 0.46,
-	.sinc.A = 1.,
-	.sinc.bwtp = 4.,
 };
 
 void pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle /*[deg]*/, float phase, float bwtp, float alpha)
@@ -181,52 +173,50 @@ void pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float
 	pulse->rf_start = rf_start;	// [s]
 	pulse->rf_end = rf_end;		// [s]
 
+	pulse->sinc = pulse_sinc_defaults;
 	pulse_sinc_init(&pulse->sinc, rf_end - rf_start, angle, phase, bwtp, alpha);
 }
 
 
 /* ------------ Bloch Equations -------------- */
 
-static void set_gradients(struct sim_data* data, float t)
+static void set_gradients(struct sim_data* data, float gb_eff[3], float t)
 {
+	// Units: [gb] = rad/s
+	gb_eff[0] = data->grad.gb[0];
+	gb_eff[1] = data->grad.gb[1];
+	gb_eff[2] = data->grad.gb[2];
+
+	data->tmp.w1 = 0.;
+
 	if (data->seq.pulse_applied) {
+
+		struct pulse* ps;
 
 		switch (data->pulse.type) {
 
 		case PULSE_SINC:
-
-			data->tmp.w1 = pulse_sinc(&data->pulse.sinc, t);
+			ps = CAST_UP(&data->pulse.sinc);
 			break;
 
 		case PULSE_HS:
-
-			data->tmp.w1 = pulse_hypsec_am(&data->pulse.hs, t);
-
-                        data->pulse.phase = pulse_hypsec_phase(&data->pulse.hs, t);
+			ps = CAST_UP(&data->pulse.hs);
 			break;
 
 		case PULSE_REC:
-
-			data->tmp.w1 = pulse_rect(&data->pulse.rect, t);
+			ps = CAST_UP(&data->pulse.rect);
 			break;
 		}
+
+		data->tmp.w1 = cexpf(1.i * data->pulse.phase) * pulse_eval(ps, t);
 
                 // Definition from Bernstein et al., Handbook of MRI Pulse Sequences, p. 26f
                 // dM/dt = M x (e_x*B_1*sin(phase)-e_y*B_1*sin(phase) +e_z* B_0)) - ...
 		assert(0. == data->grad.gb[0]);
 		assert(0. == data->grad.gb[1]);
-		data->grad.gb_eff[0] = cosf(data->pulse.phase) * data->tmp.w1 * data->voxel.b1 + data->grad.gb[0];
-		data->grad.gb_eff[1] = -sinf(data->pulse.phase) * data->tmp.w1 * data->voxel.b1 + data->grad.gb[1];
-
-	} else {
-
-		data->tmp.w1 = 0.;
-		data->grad.gb_eff[0] = data->grad.gb[0];
-		data->grad.gb_eff[1] = data->grad.gb[1];
+		gb_eff[0] += crealf(data->tmp.w1) * data->voxel.b1;
+		gb_eff[1] += -cimagf(data->tmp.w1) * data->voxel.b1;
 	}
-
-	// Units: [gb] = rad/s
-	data->grad.gb_eff[2] = data->grad.gb[2];
 }
 
 
@@ -235,7 +225,8 @@ static void set_gradients(struct sim_data* data, float t)
 
 static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t, const float* in)
 {
-        set_gradients(data, t);
+	float gb_eff[3];
+        set_gradients(data, gb_eff, t);
 
 	float matrix_time[N][N];
 	int N_pools_b1 = 15 * data->voxel.P * data->voxel.P + 1;
@@ -248,29 +239,30 @@ static void bloch_simu_stm_fun(struct sim_data* data, int N, float* out, float t
 
 	if (N == 4) { // M
 
-		bloch_matrix_ode(matrix_time, data->voxel.r1[0], r2[0], data->grad.gb_eff);
+		bloch_matrix_ode(matrix_time, data->voxel.r1[0], r2[0], gb_eff);
 
 	} else if (N == 10) { // M, dR1, dR2, dM0
 
-		bloch_matrix_ode_sa(matrix_time, data->voxel.r1[0], r2[0], data->grad.gb_eff);
+		bloch_matrix_ode_sa(matrix_time, data->voxel.r1[0], r2[0], gb_eff);
 
 	} else if (N == 13) { // M, dR1, dR2, dM0, dB1
 
-		bloch_matrix_ode_sa2(matrix_time, data->voxel.r1[0], r2[0], data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+		bloch_matrix_ode_sa2(matrix_time, data->voxel.r1[0], r2[0], gb_eff, data->tmp.w1);
 
 	} else if (N == N_pools) { // M,  dR1, dR2, dk, dOm, dM0
 
 		assert(MODEL_BMC == data->seq.model);
-		bloch_mcc_matrix_ode_sa(data->voxel.P, matrix_time, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
+		bloch_mcc_matrix_ode_sa(data->voxel.P, matrix_time, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
 
 	} else if (N == N_pools_b1) { // M, dR1, dR2, dB1, dk, dOm, dM0
 
 		assert(MODEL_BMC == data->seq.model);
-		bloch_mcc_matrix_ode_sa2(data->voxel.P, matrix_time, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+
+		bloch_mcc_matrix_ode_sa2(data->voxel.P, matrix_time, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff, data->tmp.w1);
 
 	} else {
 
-		error("Please choose correct dimension for STM matrix!\n");
+		assert(0);
 	}
 
 	matf_vecmul(N, N, out, matrix_time, in);
@@ -472,7 +464,7 @@ static void rot_pulse(struct sim_data* data, int N, int P, float xp[P][N])
 
                         // RF-pulse strength of current interval
 
-                        float w1 = pulse_sinc(&data->pulse.sinc, t_im);
+                        float w1 = crealf(pulse_eval(CAST_UP(&data->pulse.sinc), t_im));
 
                         for (int i = 0; i < P; i++) {
 
@@ -509,9 +501,11 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
         case SIM_ODE: ;
 
+		float gb_eff[3];
+
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
-			set_gradients(data, t);
+			set_gradients(data, gb_eff, t);
 
 			float r2[data->voxel.P];
 
@@ -520,10 +514,11 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 				for (int i = 0; i < data->voxel.P; i++)
 					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
-				bloch_mcconnell_ode(data->voxel.P, out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
-			}
-			else {
-				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
+				bloch_mcconnell_ode(data->voxel.P, out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
+
+			} else {
+
+				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff);
 			}
 		};
 
@@ -538,10 +533,12 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 				for (int i = 0; i < data->voxel.P; i++)
 					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
-				bloch_mcc_pdy(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
+				bloch_mcc_pdy(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
+
+			} else {
+
+				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff);
 			}
-			else
-				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		};
 
 		NESTED(void, call_pdp2, (float* out, float t, const float* in))
@@ -555,10 +552,12 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 				for (int i = 0; i < data->voxel.P; i++)
 					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
-				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, gb_eff, data->tmp.w1);
+
+			} else {
+
+				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff, data->tmp.w1);
 			}
-			else
-				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
 		};
 
 		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
@@ -614,9 +613,11 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 
         case SIM_ODE: ;
 
+		float gb_eff[3];
+
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
-			set_gradients(data, t);
+			set_gradients(data, gb_eff, t);
 
 			float r2[data->voxel.P];
 
@@ -625,10 +626,10 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 				for (int i = 0; i < data->voxel.P; i++)
 					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
-				bloch_mcconnell_ode(data->voxel.P, out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
-			}
-			else {
-				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
+				bloch_mcconnell_ode(data->voxel.P, out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
+			} else {
+
+				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff);
 			}
 		};
 
@@ -643,10 +644,12 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 				for (int i = 0; i < data->voxel.P; i++)
 					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
-				bloch_mcc_pdy(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, data->grad.gb_eff);
+				bloch_mcc_pdy(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
+
+			} else {
+
+				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff);
 			}
-			else
-				bloch_pdy((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff);
 		};
 
 		NESTED(void, call_pdp2, (float* out, float t, const float* in))
@@ -660,16 +663,19 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 				for (int i = 0; i < data->voxel.P; i++)
 					r2[i] = data->voxel.r2[i] + data->tmp.r2spoil;
 
-				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
+				bloch_mcc_b1_pdp(data->voxel.P, (float(*)[N])out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, gb_eff, data->tmp.w1);
+
+			} else {
+
+				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, gb_eff, data->tmp.w1);
 			}
-			else
-				bloch_b1_pdp((float(*)[3])out, in, data->voxel.r1[0], data->voxel.r2[0] + data->tmp.r2spoil, data->grad.gb_eff, data->pulse.phase, data->tmp.w1);
 		};
 
 		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
 		ode_direct_sa(h, tol, N, P - 1, xp, st, end, call_fun, call_pdy2, call_pdp2);
 
                 break;
+
         case SIM_STM:
 
                 create_sim_matrix(data, P * N, stm_matrix, st, end);
@@ -769,6 +775,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
                                 relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, *mtr);
 
                                 data->grad.mom = 0.;
+
                         } else {
 
                                 relaxation2(data, 0., 0., M, 1, NULL, data->seq.te, data->seq.tr, *mtr);
@@ -1080,7 +1087,7 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
                         if (   (SEQ_BSSFP == data.seq.seq_type)
                             || (SEQ_IRBSSFP == data.seq.seq_type)) {
 
-                                data.pulse.phase = M_PI * (float)(data.tmp.rep_counter);
+                                data.pulse.phase = M_PI * data.tmp.rep_counter;
 
 				odd = (1 == data.tmp.rep_counter % 2);
                         }

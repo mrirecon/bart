@@ -7,7 +7,6 @@
  */
 
 #include <math.h>
-#include <stdio.h>
 
 #include "simu/bloch.h"
 #include "simu/pulse.h"
@@ -55,6 +54,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 	sim_data.voxel.b1 = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
 	sim_data.pulse.rf_end = 0.001;
 
@@ -86,19 +86,15 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	bloch_simulation(&data_r1, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
-	float err = 0;
-
-	for (int i = 0; i < sim_data.seq.rep_num; i++)
+	for (int i = 0; i < sim_data.seq.rep_num; i++) {
 		for (int j = 0; j < 3; j++) {
 
-			err = fabsf(e * sa_r1_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
+			float err = fabsf(e * sa_r1_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
 
-			if (tol < err) {
-
-				printf("Error T1: (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-			}
 		}
+	}
 
 	/* ------------ R2 Partial Derivative Test -------------- */
 
@@ -108,17 +104,15 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	bloch_simulation(&data_r2, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
-	for (int i = 0; i < sim_data.seq.rep_num; i++)
+	for (int i = 0; i < sim_data.seq.rep_num; i++) {
 		for (int j = 0; j < 3; j++) {
 
-			err = fabsf(e * sa_r2_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
+			float err = fabsf(e * sa_r2_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
 
-			if (tol < err) {
-
-				printf("Error T2: (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-			}
 		}
+	}
 
 	/* ------------ M0 Partial Derivative Test -------------- */
 
@@ -128,17 +122,15 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	bloch_simulation(&data_m0, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
-	for (int i = 0; i < sim_data.seq.rep_num; i++)
+	for (int i = 0; i < sim_data.seq.rep_num; i++) {
 		for (int j = 0; j < 3; j++) {
 
-			err = fabsf(e * sa_m0_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
+			float err = fabsf(e * sa_m0_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
 
-			if (tol < err) {
-
-				printf("Error M0: (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-			}
 		}
+	}
 
 	/* ------------ B1 Partial Derivative Test -------------- */
 
@@ -148,17 +140,15 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	bloch_simulation(&data_b1, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
-	for (int i = 0; i < sim_data.seq.rep_num; i++)
+	for (int i = 0; i < sim_data.seq.rep_num; i++) {
 		for (int j = 0; j < 3; j++) {
 
-			err = fabsf(e * sa_b1_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
+			float err = fabsf(e * sa_b1_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
 
-			if (tol < err) {
-
-				printf("Error B1: (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-			}
 		}
+	}
 
 	return true;
 }
@@ -192,6 +182,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 	sim_data.voxel.b1 = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
 	sim_data.pulse.rf_end = 0.001;
 
@@ -225,17 +216,15 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	float err = 0;
 
-	for (int i = 0; i < sim_data.seq.rep_num; i++)
+	for (int i = 0; i < sim_data.seq.rep_num; i++) {
 		for (int j = 0; j < 3; j++) {
 
 			err = fabsf(e * sa_r1_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
 
-			if (tol < err) {
-
-				printf("Error T1: (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-			}
 		}
+	}
 
 	/* ------------ R2 Partial Derivative Test -------------- */
 
@@ -251,11 +240,8 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 			err = fabsf(e * sa_r2_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
 
-			if (tol < err) {
-
-				printf("Error T2: (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-			}
 		}
 	}
 
@@ -267,17 +253,15 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	bloch_simulation(&data_m0, R, &mxy_tmp_sig, &sa_r1_tmp_sig, &sa_r2_tmp_sig, &sa_m0_tmp_sig, &sa_b1_tmp_sig);
 
-	for (int i = 0; i < sim_data.seq.rep_num; i++)
+	for (int i = 0; i < sim_data.seq.rep_num; i++) {
 		for (int j = 0; j < 3; j++) {
 
 			err = fabsf(e * sa_m0_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
 
-			if (tol < err) {
-
-				printf("Error M0: (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-			}
 		}
+	}
 
 	/* ------------ B1 Partial Derivative Test -------------- */
 
@@ -293,11 +277,8 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 			err = fabsf(e * sa_b1_ref_sig[i][j] - (mxy_tmp_sig[i][j] - mxy_ref_sig[i][j]));
 
-			if (tol < err) {
-
-				printf("Error B1: (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-			}
 		}
 	}
 
@@ -351,6 +332,7 @@ static bool test_ode_irbssfp_simulation(void)
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = angle;
 
         // Choose close to hard-pulse approximation -> same assumptions as analytical model
@@ -393,13 +375,8 @@ static bool test_ode_irbssfp_simulation(void)
 
 		err = fabsf(out_simu - out_theory);
 
-		if (1.E-3 < err) {
-
-			debug_printf(DP_ERROR, "err: %f,\t out_simu: %f,\t out_theory: %f\n", err, out_simu, out_theory);
-			debug_printf(DP_ERROR, "Error in sequence test\n see: -> test_ode_irbssfp_simulation() in test_ode_simu.c\n");
-
+		if (1.E-3 < err)
 			return false;
-		}
 	}
 
 	return true;
@@ -458,6 +435,7 @@ static bool test_rot_irbssfp_simulation(void)
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = angle;
 
         // Choose close to hard-pulse approximation -> same assumptions as analytical model
@@ -506,13 +484,8 @@ static bool test_rot_irbssfp_simulation(void)
 
 		err = fabsf(out_simu - out_theory);
 
-		if (1.E-3 < err) {
-
-			debug_printf(DP_ERROR, "err: %f,\t out_simu: %f,\t out_theory: %f\n", err, out_simu, out_theory);
-			debug_printf(DP_ERROR, "Error in sequence test\n see: -> test_rot_irbssfp_simulation() in test_ode_simu.c\n");
-
+		if (1.E-3 < err)
 			return false;
-		}
 	}
 
 	return true;
@@ -553,6 +526,7 @@ static bool test_stm_ode_bssfp_comparison(void)
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
         sim_data.pulse.rf_end = 0.001;
 
@@ -591,11 +565,6 @@ static bool test_stm_ode_bssfp_comparison(void)
 	float err;
 
 	for (int rep = 0; rep < sim_data.seq.rep_num; rep++) {
-
-#if 0
-                        bart_printf("ODE M[%d] x: %f,\t%f,\t%f\n", rep, mxy_ode[rep][0], mxy_ode[rep][1], mxy_ode[rep][2]);
-                        bart_printf("STM M[%d] x: %f,\t%f,\t%f\n\n", rep, mxy_matexp[rep][0], mxy_matexp[rep][1], mxy_matexp[rep][2]);
-#endif
 
         	for (int dim = 0; dim < 3; dim++) {
 
@@ -658,6 +627,7 @@ static bool test_stm_ode_flash_comparison(void)
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 8.;
         sim_data.pulse.rf_end = 0.001;
 
@@ -696,11 +666,6 @@ static bool test_stm_ode_flash_comparison(void)
 	float err;
 
 	for (int rep = 0; rep < sim_data.seq.rep_num; rep++) {
-
-#if 0
-                        bart_printf("ODE M[%d] x: %f,\t%f,\t%f\n", rep, mxy_ode[rep][0], mxy_ode[rep][1], mxy_ode[rep][2]);
-                        bart_printf("STM M[%d] x: %f,\t%f,\t%f\n\n", rep, mxy_matexp[rep][0], mxy_matexp[rep][1], mxy_matexp[rep][2]);
-#endif
 
         	for (int dim = 0; dim < 3; dim++) {
 
@@ -756,6 +721,7 @@ static bool test_ode_simu_offresonance(void)
 	sim_data.voxel.m0[0] = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
@@ -811,6 +777,7 @@ static bool test_stm_simu_offresonance(void)
 	sim_data.voxel.m0[0] = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
@@ -865,6 +832,7 @@ static bool test_ode_simu_gradient(void)
 	sim_data.voxel.w = 0.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
@@ -884,16 +852,6 @@ static bool test_ode_simu_gradient(void)
 
 	bloch_simulation(&sim_data, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
-#if 0
-	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[sim_data.seq.rep_num-1][0], mxySig_ode[sim_data.seq.rep_num-1][0]
-								, mxySig_ode[sim_data.seq.rep_num-1][1], mxySig_ode[sim_data.seq.rep_num-1][1]
-								, mxySig_ode[sim_data.seq.rep_num-1][2], mxySig_ode[sim_data.seq.rep_num-1][2] );
-
-	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.),
-							fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.),
-							fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) );
-
-#endif
 	float tol = 1.E-4;
 
 	UT_ASSERT(   (fabs(mxySig_ode[R - 1][0] - 1.) < tol)
@@ -930,6 +888,7 @@ static bool test_stm_simu_gradient(void)
 	sim_data.voxel.w = 0.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
@@ -949,16 +908,6 @@ static bool test_stm_simu_gradient(void)
 
 	bloch_simulation(&sim_data, R, &mxySig_ode, &saR1Sig_ode, &saR2Sig_ode, &saDensSig_ode, &sa_b1_ode);
 
-#if 0
-	bart_printf("M\n x: %f+i*%f,\ty: %f+i*%f,\tz: %f+i*%f\n", mxySig_ode[sim_data.seq.rep_num-1][0], mxySig_ode[sim_data.seq.rep_num-1][0]
-								, mxySig_ode[sim_data.seq.rep_num-1][1], mxySig_ode[sim_data.seq.rep_num-1][1]
-								, mxySig_ode[sim_data.seq.rep_num-1][2], mxySig_ode[sim_data.seq.rep_num-1][2] );
-
-	bart_printf("Err\n x: %f,\ty: %f,\tz: %f\n",	fabs(mxySig_ode[sim_data.seq.rep_num-1][0] - 1.),
-							fabs(mxySig_ode[sim_data.seq.rep_num-1][1] - 0.),
-							fabs(mxySig_ode[sim_data.seq.rep_num-1][2] - 0.) );
-
-#endif
 	float tol = 1.E-4;
 
 	UT_ASSERT(   (fabs(mxySig_ode[R - 1][0] - 1.) < tol)
@@ -1002,13 +951,6 @@ static void ode_fourier_modes(int N, struct sim_data* data, complex float fn[N],
 		m_plus[i] = mxySig_ode[t][0] + mxySig_ode[t][1] * I;
 	}
 
-#if 0	// Print out values
-	for (int i = 0; i < N; i++) {
-		bart_printf("M+\n w/TE: %f, Mxy: %f+%f*I\n", 2 * M_PI / N * i, crealf(m_plus[i]), cimagf(m_plus[i]));
-		bart_printf("|Mxy|: %f\n", cabsf(m_plus[i]));
-	}
-#endif
-
 	// Estimate Fn based on DFT
 
 	for (int j = 0; j < N; j++) {
@@ -1047,6 +989,7 @@ static bool test_ode_epg_relation(void)
 	sim_data.voxel.w = 0.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 8.;
 	sim_data.pulse.rf_end = 1E-8;	// Close to Hard-Pulses
 
@@ -1132,6 +1075,7 @@ static bool test_hp_irbssfp_simulation(void)
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = angle;
 
         // Choose HARD-PULSE approximation
@@ -1175,13 +1119,8 @@ static bool test_hp_irbssfp_simulation(void)
 
 		err = fabsf(out_simu - out_theory);
 
-		if (1.E-3 < err) {
-
-			debug_printf(DP_ERROR, "err: %f,\t out_simu: %f,\t out_theory: %f\n", err, out_simu, out_theory);
-			debug_printf(DP_ERROR, "Error in sequence test\n see: -> test_simulation() in test_ode_simu.c\n");
-
+		if (1.E-3 < err)
 			return false;
-		}
 	}
 
 	return true;
@@ -1214,6 +1153,7 @@ static bool test_hp_simu_offresonance(void)
 	sim_data.voxel.m0[0] = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
 	sim_data.pulse.rf_end = 0.;	// Here: HARD PULSE!
 
@@ -1268,6 +1208,7 @@ static bool test_hp_simu_gradient(void)
 	sim_data.voxel.w = 0.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
 	sim_data.pulse.rf_end = 0.;	// Here: HARD PULSE!
 
@@ -1324,6 +1265,7 @@ static bool test_ode_z_gradient_refocus(void)
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
 
 	sim_data.pulse.rf_end = 0.001;
@@ -1353,11 +1295,6 @@ static bool test_ode_z_gradient_refocus(void)
 	float sa_b1_sig2[R][3];
 
 	bloch_simulation(&sim_data, R, &mxy_sig2, &sa_r1_sig2, &sa_r2_sig2, &sa_m0_sig2, &sa_b1_sig2);
-
-#if 0
-	bart_printf("M1 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig[0][0], mxy_sig[0][1], mxy_sig[0][2]);
-	bart_printf("M2 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig[1][0], mxy_sig[1][1], mxy_sig[1][2]);
-#endif
 
 	float tol = 1.E-2;
 
@@ -1396,6 +1333,7 @@ static bool test_stm_z_gradient_refocus(void)
 	sim_data.voxel.w = 0;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
 
 	sim_data.pulse.rf_end = 0.001;
@@ -1415,11 +1353,6 @@ static bool test_stm_z_gradient_refocus(void)
 	float sa_b1_sig[R][3];
 
 	bloch_simulation(&sim_data, R, &mxy_sig, &sa_r1_sig, &sa_r2_sig, &sa_m0_sig, &sa_b1_sig);
-
-#if 0
-	bart_printf("M1 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig[0][0], mxy_sig[0][1], mxy_sig[0][2]);
-	bart_printf("M2 -> x: %f,\ty: %f,\tz: %f\n", mxy_sig[1][0], mxy_sig[1][1], mxy_sig[1][2]);
-#endif
 
 	float tol = 1.E-2;
 
@@ -1457,6 +1390,7 @@ static bool test_ode_inversion(void)
         data.voxel.w = 0;
 
         data.pulse = simdata_pulse_defaults;
+	data.pulse.sinc = pulse_sinc_defaults;
         data.pulse.sinc.INTERFACE.flipangle = 0.;
         data.pulse.rf_end = 0.01;
 
@@ -1470,8 +1404,6 @@ static bool test_ode_inversion(void)
         float tol = 0.005; // >99.5% inversion efficiency
 
         inversion(&data, h, tol, N, P, xp, 0., 0.005);
-
-        // bart_printf("%f, %f, %f\n", xp[0][0], xp[0][1], xp[0][2]);
 
         UT_ASSERT(fabs(xp[0][2] + 1.) < tol);
 
@@ -1502,6 +1434,7 @@ static bool test_stm_matrix_creation(void)
 	sim_data.voxel.m0[0] = 1.;
 
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
 
         sim_data.grad = simdata_grad_defaults;
@@ -1639,11 +1572,8 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 
 			err = fabsf(e * sa_r1_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
 
-			if (tol < err)  {
-
-				printf("Error T1 : (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-			}
 		}
 	}
 
@@ -1662,11 +1592,8 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 
 	 		err = fabsf(e * sa_r2_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
 
-	 		if (tol < err) {
-
-	 			printf("Error T2: (%d,%d)\t=>\t%f\n", i, j, err);
+	 		if (tol < err)
 				return false;
-	 		}
 	 	}
 	}
 
@@ -1682,11 +1609,8 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 
  			err = fabsf(e * sa_m0_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
 
- 			if (tol < err) {
-
- 				printf("Error M0 : (%d,%d)\t=>\t%f\n", i, j, err);
+ 			if (tol < err)
 				return false;
- 			}
  		}
 	}
 
@@ -1703,11 +1627,8 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 
 	 		err = fabsf(e * sa_b1_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
 
-	 		if (tol < err) {
-
-	 			printf("Error B1[%d]: (%d)\t=>\t%f\n", i, j, err);
+	 		if (tol < err)
 				return false;
-	 		}
 	 	}
 	}
 
@@ -1724,11 +1645,8 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 
 	 		err = fabsf(e * sa_r1_ref_sig[i][1][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
 
-	 		if (tol < err) {
-
-	 			printf("Error T1_2 : (%d,%d)\t=>\t%f\n", i, j, err);
+	 		if (tol < err)
 	 			return false;
-	 		}
 	 	}
 	 }
 
@@ -1745,11 +1663,8 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 
  			err = fabsf(e * sa_r2_ref_sig[i][1][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
 
- 			if (tol < err) {
-
- 				printf("Error T_2_2: (%d,%d)\t=>\t%f\n", i, j, err);
+ 			if (tol < err)
 				return false;
- 			}
  		}
  	}
 
@@ -1767,11 +1682,8 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 
  			err = fabsf(10 * e * sa_k_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
 
- 			if (tol < err) {
-
- 				printf("Error k: (%d,%d)\t=>\t%f\n", i, j, err);
+ 			if (tol < err)
 				return false;
- 			}
  		}
  	}
 	 /* ------------ M0 2 Partial Derivative Test -------------- */
@@ -1787,11 +1699,8 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 
 			err = fabsf(e * sa_m0_ref_sig[i][1][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
 
-			if (tol < err) {
-
-				printf("Error M0_2 : (%d,%d)\t=>\t%f\n", i, j, err);
+			if (tol < err)
 				return false;
-	 		}
 	 	}
 	}
 
@@ -1808,11 +1717,8 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 
 			err = fabsf(100 * sa_om_ref_sig[i][0][j] - (mxy_tmp_sig[i][0][j] - mxy_ref_sig[i][0][j]));
 
-			if (tol < err) {
-
-				printf("Error Om : (%d,%d)\t=>\t%0.10f\n", i, j, sa_om_ref_sig[i][0][j]);
-				//return false;
-			}
+			if (tol < err)
+				return false;
 		}
 	}
 
@@ -1828,7 +1734,6 @@ UT_REGISTER_TEST(test_ode_bloch_mcc_simulation_gradients);
 
 static bool test_bmc_ode_irbssfp_signal(void)
 {
-
 	float tol = 5.E-4;
 
  	struct sim_data sim_data;
@@ -1902,11 +1807,9 @@ static bool test_bmc_ode_irbssfp_signal(void)
 			for (int d = 0; d < 3; d++) {
 
 				err = fabsf(mxy_pools[r][p][d] - mxy_sig[r][d]);
-				if (err > tol) {
 
-					debug_printf(DP_INFO,"err %f, pool %d, rep %d, dim %d\n", err, p, r, d);
+				if (err > tol)
 					return false;
-				}
 			}
 		}
 	}
@@ -1933,6 +1836,7 @@ static bool test_ode_bmc_5pool(void)
 	sim_data.other = simdata_other_defaults;
 	sim_data.seq = simdata_seq_defaults;
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.voxel = simdata_voxel_defaults;
 
 	sim_data.seq.seq_type = SEQ_IRBSSFP;
@@ -1980,59 +1884,39 @@ static bool test_ode_bmc_5pool(void)
 
 	bloch_simulation2(&sim_data, R, P, &m, &sa_r1, &sa_r2, &sa_m0, &sa_b1, &sa_k, &sa_om);
 
-	float err = 0.;
-
 	for (int r = 0; r < R; r++) {
 		for (int d = 0; d < 3; d++) {
 			for (int p = 2; p < P; p++) {
 
-				err = fabsf(m[r][1][d] - m[r][p][d]);
-				if (err > tol) {
-
-					printf("err m : %f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+				float err = fabsf(m[r][1][d] - m[r][p][d]);
+				if (err > tol)
 					return false;
-				}
 
 				err = fabsf(sa_r1[r][1][d] - sa_r1[r][p][d]);
-				if (err > tol) {
-
-					printf("err r1 : %f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+				if (err > tol)
 					return false;
-				}
 
 				err = fabsf(sa_r2[r][1][d] - sa_r2[r][p][d]);
-				if (err > tol) {
-
-					printf("err r2 : %0.10f pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+				if (err > tol)
 					return false;
-				}
 
 				err = fabsf(sa_m0[r][1][d] - sa_m0[r][p][d]);
-				if (err > tol) {
-
-					printf("err m0 : %0.9f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+				if (err > tol)
 					return false;
-				}
 			}
 
 			for (int p = 1; p < P - 1; p++) {
 
-				err = fabsf(sa_k[r][0][d] - sa_k[r][p][d]);
-				if (err > tol) {
-
-					printf("err k : %f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+				float err = fabsf(sa_k[r][0][d] - sa_k[r][p][d]);
+				if (err > tol)
 					return false;
-				}
 			}
 
 			for (int p = 2; p < P - 1; p++) {
 
-				err = fabsf(sa_om[r][1][d] - sa_om[r][p][d]);
-				if (err > tol) {
-
-					printf("err om : %f, pool %d, rep %d, dim %d\n", err, p + 1, r, d);
+				float err = fabsf(sa_om[r][1][d] - sa_om[r][p][d]);
+				if (err > tol)
 					return false;
-				}
 			}      
 		}
 	}
@@ -2054,6 +1938,7 @@ static bool test_mcconnell_CEST_ode_sim(void)
 	sim_data.seq = simdata_seq_defaults;
 	sim_data.seq.model = MODEL_BMC;
 	sim_data.pulse = simdata_pulse_defaults;
+	sim_data.pulse.sinc = pulse_sinc_defaults;
 	sim_data.pulse.rf_end = 0.005;
 
 	sim_data.grad = simdata_grad_defaults;
@@ -2122,6 +2007,7 @@ static bool test_mcconnell_CEST_ode_sim(void)
 
 	// Rectangular pulse with 3.7 uT amplitude
 	sim_data.pulse.type = PULSE_REC;
+	sim_data.pulse.rect = pulse_rect_defaults;
 	sim_data.pulse.rect.A = 3.7 * 2. * M_PI * 42.5764;
 
 	// Off-resonance vector
@@ -2149,11 +2035,8 @@ static bool test_mcconnell_CEST_ode_sim(void)
 
 		err = fabsf((xp[0][2] / ref_scan) - ref_sb[i]);
 
-		if (err > 1.E-3) {
-
-			printf("error at iter : %f, %d, offset: %f\n", err, i, offset[i] / w_larmor);
+		if (err > 1.E-3)
 			return false;
-		}
 
 		// reset xp
 		for (int p = 0; p < P; p++)
@@ -2171,3 +2054,4 @@ static bool test_mcconnell_CEST_ode_sim(void)
 }
 
 UT_REGISTER_TEST(test_mcconnell_CEST_ode_sim)
+

@@ -59,7 +59,7 @@ struct simdata_tmp {
         int rep_counter;
 	int spin_counter;
 	float t;
-	float w1;
+	complex float w1;
 	float r2spoil;
 };
 
@@ -69,7 +69,6 @@ extern const struct simdata_tmp simdata_tmp_defaults;
 struct simdata_grad {
 
 	float gb[3];
-	float gb_eff[3];
 	float sl_gradient_strength;
 	float mom;
 	float mom_sl;

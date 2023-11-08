@@ -6,6 +6,7 @@
  *	Nick Scholand
  */
 
+#include <complex.h>
 #include <math.h>
 
 #include "misc/misc.h"
@@ -37,12 +38,13 @@ static bool test_sinc_integral2(void)
         struct pulse_sinc pulse = pulse_sinc_defaults;
 
         pulse_sinc_init(&pulse, 0.001, 180., 0., 4., 0.46);
+	struct pulse* ps = CAST_UP(&pulse);
 
 	int N = 50;
 	float samples[N + 1];
 
         for (int i = 0; i <= N; i++)
-		samples[i] = i * pulse.INTERFACE.duration / N;
+		samples[i] = i * ps->duration / N;
 
 #ifdef __clang__
 		float* samples2 = samples;
@@ -53,11 +55,11 @@ static bool test_sinc_integral2(void)
 #ifdef __clang__
 		float* samples = samples2;
 #endif
-		out[0] = pulse_sinc(&pulse, samples[i]);
+		out[0] = crealf(pulse_eval(ps, samples[i]));
 	};
 
 	float integral[1];
-	quadrature_simpson_ext(N, pulse.INTERFACE.duration, 1, integral, eval);
+	quadrature_simpson_ext(N, ps->duration, 1, integral, eval);
 
         float error = fabs(M_PI - integral[0]);
 
@@ -72,19 +74,20 @@ UT_REGISTER_TEST(test_sinc_integral2);
 
 static bool test_sinc_zeros(void)
 {
-        struct pulse_sinc ps = pulse_sinc_defaults;
+        struct pulse_sinc pulse = pulse_sinc_defaults;
 
-        pulse_sinc_init(&ps, 0.001, 180., 0., 4., 0.46);
+        pulse_sinc_init(&pulse, 0.001, 180., 0., 4., 0.46);
+	struct pulse* ps = CAST_UP(&pulse);
 
 	int O = 10;
 
-	for (int i = 0; i < ps.bwtp * O; i++) {
+	for (int i = 0; i < pulse.bwtp * O; i++) {
 
-		float t = i * ps.INTERFACE.duration / (ps.bwtp * O);
-		float zero = pulse_sinc(&ps, t);
+		float t = i * ps->duration / (pulse.bwtp * O);
+		float zero = crealf(pulse_eval(ps, t));
 
 		// no zero in the center
-		if (i == (ps.bwtp * O) / 2)
+		if (i == (pulse.bwtp * O) / 2)
 			continue;
 
 		if ((0 != i % O) && (1.E-3 > fabsf(zero)))
@@ -155,6 +158,7 @@ static bool test_rf_pulse_ode(void)
 			data.voxel.w = 0;
 
 			data.pulse = simdata_pulse_defaults;
+			data.pulse.sinc = pulse_sinc_defaults;
 			data.pulse.sinc.INTERFACE.flipangle = angle;
 			data.pulse.rf_end = trf;
 
@@ -221,6 +225,7 @@ static bool test_hypsec_rf_pulse_ode(void)
         data.voxel.w = 0;
 
         data.pulse = simdata_pulse_defaults;
+	data.pulse.sinc = pulse_sinc_defaults;
         data.pulse.sinc.INTERFACE.flipangle = 0.;      // Turn off flipangle -> do not influence inversion efficiency
         data.pulse.rf_end = 0.01;
 

@@ -15,6 +15,7 @@
 
 DEF_TYPEID(pulse_sinc);
 DEF_TYPEID(pulse_rect);
+DEF_TYPEID(pulse_hypsec);
 
 extern inline complex float pulse_eval(const struct pulse* p, float t);
 
@@ -39,7 +40,7 @@ static float sinc_windowed_antiderivative(float alpha, float t, float n)
 // Analytical definition of windowed sinc pulse
 // 	! centered around 0
 // 	-> Shift by half of pulse length to start pulse at t=0
-float pulse_sinc(const struct pulse_sinc* ps, float t)
+static float pulse_sinc(const struct pulse_sinc* ps, float t)
 {
 	float mid = CAST_UP(ps)->duration / 2.;
 	float t0 = CAST_UP(ps)->duration / ps->bwtp;
@@ -108,13 +109,14 @@ void pulse_rect_init(struct pulse_rect* pr, float duration, float angle /*[deg]*
 {
 	pr->INTERFACE.duration = duration;
 	pr->INTERFACE.flipangle = angle;
-	(void)phase;
+
+	assert(0. == phase);
 //	pulse->phase = phase;		// [rad]
 
 	pr->A = angle / duration * M_PI / 180.;
 }
 
-float pulse_rect(const struct pulse_rect* pr, float t)
+static float pulse_rect(const struct pulse_rect* pr, float t)
 {
 	(void)t;
 	return pr->A;
@@ -150,23 +152,12 @@ const struct pulse_rect pulse_rect_defaults = {
  * Chapter 6
  */
 
-const struct pulse_hypsec pulse_hypsec_defaults = {
-
-	.INTERFACE.duration = 0.01,
-	.INTERFACE.flipangle = 180.,
-//	.pulse.phase = 0.,
-
-	.a0 = 13000.,
-	.beta = 800.,
-	.mu = 4.9, /* sech(x)=0.01*/
-};
-
 static float sechf(float x)
 {
 	return 1. / coshf(x);
 }
 
-float pulse_hypsec_am(const struct pulse_hypsec* hs, float t /*[s]*/)
+static float pulse_hypsec_am(const struct pulse_hypsec* hs, float t /*[s]*/)
 {
         // Check adiabatic condition
         assert(hs->a0 > sqrtf(hs->mu) * hs->beta);
@@ -174,14 +165,43 @@ float pulse_hypsec_am(const struct pulse_hypsec* hs, float t /*[s]*/)
         return hs->a0 * sechf(hs->beta * (t - CAST_UP(hs)->duration / 2.));
 }
 
-float pulse_hypsec_fm(const struct pulse_hypsec* hs, float t /*[s]*/)
+#if 0
+static float pulse_hypsec_fm(const struct pulse_hypsec* hs, float t /*[s]*/)
 {
 	return -hs->mu * hs->beta * tanhf(hs->beta * (t - CAST_UP(hs)->duration / 2.));
 }
+#endif
 
 float pulse_hypsec_phase(const struct pulse_hypsec* hs, float t /*[s]*/)
 {
         return hs->mu * logf(sechf(hs->beta * (t - CAST_UP(hs)->duration / 2.)))
                 + hs->mu * logf(hs->a0);
 }
+
+static complex float pulse_hypsec_eval(const struct pulse* _pr, float t)
+{
+	auto pr = CAST_DOWN(pulse_hypsec, _pr);
+
+	return pulse_hypsec_am(pr, t) * cexp(1.i * pulse_hypsec_phase(pr, t));
+}
+
+const struct pulse_hypsec pulse_hypsec_defaults = {
+
+	.INTERFACE.duration = 0.01,
+	.INTERFACE.flipangle = 180.,
+	.INTERFACE.eval = pulse_hypsec_eval,
+	.INTERFACE.TYPEID = &TYPEID2(pulse_hypsec),
+//	.pulse.phase = 0.,
+
+	.a0 = 13000.,
+	.beta = 800.,
+	.mu = 4.9, /* sech(x)=0.01*/
+};
+
+
+void pulse_hypsec_init(struct pulse_hypsec* pr)
+{
+	(void)pr;
+}
+
 

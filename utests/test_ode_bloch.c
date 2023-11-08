@@ -280,8 +280,6 @@ static bool test_ode_sa2(void)
 			float sa = xp[1 + j][i] * q;
 			float err = fabsf(df - sa);
 
-	//		printf("%d %d-%e-%e-%e\n", j, i, err, df, sa);
-
 			if (err > 1.E-7)
 				return false;
 		}
@@ -359,11 +357,6 @@ static bool test_bloch_relaxation(void)
 
         bloch_relaxation(x, 1., x0, data.r1, data.r2, data.gb);
 
-#if 0
-	printf("test_bloch_relaxation\n");
-	printf("x_init: %f,\t%f,\t%f\n", x0[0], x0[1], x0[2]);
-	printf("x_out: %f,\t%f,\t%f\n", x[0], x[1], x[2]);
-#endif
 	float err2 = 0.;
 
 	for (int i = 0; i < 3; i++)
@@ -387,11 +380,6 @@ static bool test_bloch_excitation(void)
 
         bloch_excitation(x, 1., x0, data.r1, data.r2, data.gb);
 
-#if 0
-	printf("test_bloch_excitation\n");
-	printf("x_init: %f,\t%f,\t%f\n", x0[0], x0[1], x0[2]);
-	printf("x_out: %f,\t%f,\t%f\n", x[0], x[1], x[2]);
-#endif
 	float err2 = 0.;
 
 	for (int i = 0; i < 3; i++)
@@ -411,12 +399,6 @@ static bool test_bloch_excitation2_phase(void)
 	float ref[3] = { 1., 0., 0. };
 
 	bloch_excitation2(x, x0, M_PI / 2., M_PI / 2.);
-
-#if 0
-	printf("test_bloch_excitation2_phase\n");
-	printf("x_init: %f,\t%f,\t%f\n", x0[0], x0[1], x0[2]);
-	printf("x_out: %f,\t%f,\t%f\n", x[0], x[1], x[2]);
-#endif
 
 	float err2 = 0.;
 
@@ -439,17 +421,17 @@ static bool test_bloch_b1_pdp(void)
 
 	// M_z == 1
 
-	bloch_b1_pdp(out, in, 0., 0., gb, 0., 1.);
+	bloch_b1_pdp(out, in, 0., 0., gb, 1.);
 
 	if (1. != out[2][1])
 		return false;
 
-	bloch_b1_pdp(out, in, 0., 0., gb, M_PI/2., 1.);
+	bloch_b1_pdp(out, in, 0., 0., gb, 1.i);
 
 	if (1. != out[2][0])
 		return false;
 
-	bloch_b1_pdp(out, in, 0., 0., gb, M_PI/2., 2.);
+	bloch_b1_pdp(out, in, 0., 0., gb, 2.i);
 
 	if (2. != out[2][0])
 		return false;
@@ -459,7 +441,7 @@ static bool test_bloch_b1_pdp(void)
 	in[1] = 1.;
 	in[2] = 0.;
 
-	bloch_b1_pdp(out, in, 0., 0., gb, 0., 1.);
+	bloch_b1_pdp(out, in, 0., 0., gb, 1.);
 
 	if ((1. != out[0][2]) || (-1. != out[1][1]) || (-1. != out[2][2]))
 		return false;
@@ -470,26 +452,16 @@ static bool test_bloch_b1_pdp(void)
 	in[0] = 1.;
 	in[1] = 0.;
 
-	bloch_b1_pdp(out, in, 0., 0., gb, 0., 1.);
+	bloch_b1_pdp(out, in, 0., 0., gb, 1.);
 
 	if ((1. != out[0][2]) || (-1. != out[1][0]))
 		return false;
 
-	bloch_b1_pdp(out, in, 0., 0., gb, M_PI / 2., 1.);
+	bloch_b1_pdp(out, in, 0., 0., gb, 1.i);
 
 	if ((1. != out[0][2]) || (-1. != out[1][0]) || (-1. != out[2][2]))
 		return false;
 
-#if 0
-	bart_printf("out\n");
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
-
-			bart_printf("%f ", out[i][j]);
-		}
-		bart_printf("\n");
-	}
-#endif
 	return true;
 
 }
@@ -505,7 +477,7 @@ static void bloch_wrap_pdp(void* _data, float* out, float t, const float* in)
 	struct bloch_s* data = _data;
 	(void)t;
 
-	bloch_b1_pdp((float(*)[3])out, in, data->r1, data->r2, data->gb, 0., M_PI / (2. * 0.2));
+	bloch_b1_pdp((float(*)[3])out, in, data->r1, data->r2, data->gb, M_PI / (2. * 0.2));
 }
 
 // dFA
@@ -514,7 +486,7 @@ static void bloch_wrap_pdp2(void* _data, float* out, float t, const float* in)
 	struct bloch_s* data = _data;
 	(void)t;
 
-	bloch_b1_pdp((float(*)[3])out, in, data->r1, data->r2, data->gb, 0., 1.);
+	bloch_b1_pdp((float(*)[3])out, in, data->r1, data->r2, data->gb, 1.);
 }
 
 // dFA + phase of PI/2
@@ -523,7 +495,7 @@ static void bloch_wrap_pdp3(void* _data, float* out, float t, const float* in)
 	struct bloch_s* data = _data;
 	(void)t;
 
-	bloch_b1_pdp((float(*)[3])out, in, data->r1, data->r2, data->gb, M_PI / 2., 1.);
+	bloch_b1_pdp((float(*)[3])out, in, data->r1, data->r2, data->gb, +1.i);
 }
 
 
@@ -873,8 +845,7 @@ static bool test_bloch_mcconnell_b1_pdp(void)
 	float m0[2] = { 0.93, 0.76 };
 	float r1[2] = { 1., 1.1 };
 	float r2[2] = { 0.6, 0.08 };
-	float phase = 0.1;
-	float b1 = 1.1;
+	complex float b1 = cexpf(+0.1i) * 1.1;
 
 	for (int i = 0; i < P * 5 - 1; i++)
 		for (int j = 0; j < P * 3; j++)
@@ -891,12 +862,12 @@ static bool test_bloch_mcconnell_b1_pdp(void)
 	out_2_pool[3][3] = -in[3];
 	out_2_pool[3][4] = -in[4];
 	// B1
-	out_2_pool[4][0] = sinf(phase) * in[2] * b1;
-	out_2_pool[4][1] = cosf(phase) * in[2] * b1;
-	out_2_pool[4][2] = (-sinf(phase) * in[0] - cosf(phase) * in[1]) * b1;
-	out_2_pool[4][3] = sinf(phase) * in[5] * b1;
-	out_2_pool[4][4] = cosf(phase) * in[5] * b1;
-	out_2_pool[4][5] = (-sinf(phase) * in[3] - cosf(phase) * in[4]) * b1;
+	out_2_pool[4][0] = cimagf(b1) * in[2];
+	out_2_pool[4][1] = crealf(b1) * in[2];
+	out_2_pool[4][2] = -cimagf(b1) * in[0] - crealf(b1) * in[1];
+	out_2_pool[4][3] = cimagf(b1) * in[5];
+	out_2_pool[4][4] = crealf(b1) * in[5];
+	out_2_pool[4][5] = -cimagf(b1) * in[3] - crealf(b1) * in[4];
 	// k
 	out_2_pool[7][0] = -in[0] * m0[1] + in[3] * m0[0];
 	out_2_pool[7][1] = -in[1] * m0[1] + in[4] * m0[0];
@@ -928,7 +899,7 @@ static bool test_bloch_mcconnell_b1_pdp(void)
 		for (int j = 0; j < P * 3; j++)
 			out_gen[i][j] = 0.;
 
-	bloch_mcc_b1_pdp(P, out_gen, in, r1, r2, k, m0, gb, phase, b1);
+	bloch_mcc_b1_pdp(P, out_gen, in, r1, r2, k, m0, gb, b1);
 
 	for (int i = 0; i < P * 5 - 1; i++)
 		for (int j = 0; j < P * 3; j++)
@@ -953,8 +924,7 @@ static bool test_bloch_mcconnell_b1_pdp_3(void)
 	float m0[3] = { 0.93, 0.76, 0.37 };
 	float r1[3] = { 1., 1.1, 2.3 };
 	float r2[3] = { 0.6, 0.08, 0.15 };
-	float phase = 0.1;
-	float b1 = 1.1;
+	complex float b1 = cexpf(+0.1i) * 1.1;
 
 	for (int i = 0; i < P * 5 - 1; i++)
 		for (int j = 0; j < P * 3; j++)
@@ -976,15 +946,15 @@ static bool test_bloch_mcconnell_b1_pdp_3(void)
 	out_3_pool[5][6] = -in[6];
 	out_3_pool[5][7] = -in[7];
 	// B1
-	out_3_pool[6][0] = sinf(phase) * in[2] * b1;
-	out_3_pool[6][1] = cosf(phase) * in[2] * b1;
-	out_3_pool[6][2] = (-sinf(phase) * in[0] - cosf(phase) * in[1]) * b1;
-	out_3_pool[6][3] = sinf(phase) * in[5] * b1;
-	out_3_pool[6][4] = cosf(phase) * in[5] * b1;
-	out_3_pool[6][5] = (-sinf(phase) * in[3] - cosf(phase) * in[4]) * b1;
-	out_3_pool[6][6] = sinf(phase) * in[8] * b1;
-	out_3_pool[6][7] = cosf(phase) * in[8] * b1;
-	out_3_pool[6][8] = (-sinf(phase) * in[6] - cosf(phase) * in[7]) * b1;
+	out_3_pool[6][0] = cimagf(b1) * in[2];
+	out_3_pool[6][1] = crealf(b1) * in[2];
+	out_3_pool[6][2] = -cimagf(b1) * in[0] - crealf(b1) * in[1];
+	out_3_pool[6][3] = cimagf(b1) * in[5];
+	out_3_pool[6][4] = crealf(b1) * in[5];
+	out_3_pool[6][5] = -cimagf(b1) * in[3] - crealf(b1) * in[4];
+	out_3_pool[6][6] = cimagf(b1) * in[8];
+	out_3_pool[6][7] = crealf(b1) * in[8];
+	out_3_pool[6][8] = -cimagf(b1) * in[6] - crealf(b1) * in[7];
 
 	// m0_1
 	out_3_pool[7][0] = in[3] * k[0] + in[6] * k[1];
@@ -1038,7 +1008,7 @@ static bool test_bloch_mcconnell_b1_pdp_3(void)
 		for (int j = 0; j < P * 3; j++)
 			out_gen[i][j] = 0.;
 
-	bloch_mcc_b1_pdp(P, out_gen, in, r1, r2, k, m0, gb, phase, b1);
+	bloch_mcc_b1_pdp(P, out_gen, in, r1, r2, k, m0, gb, b1);
 
 	for (int i = 0; i < P * 5 - 1; i++)
 		for (int j = 0; j < P * 3; j++)
@@ -1064,8 +1034,7 @@ static bool test_bloch_mcconnell_matrix_ode_sa(void)
 	float m0[2] = { 0.93, 0.76 };
 	float r1[2] = { 1., 1.1 };
 	float r2[2] = { 0.6, 0.08 };
-	float phase = 0.1;
-	float b1 = 1.1;
+	complex float b1 = cexpf(+0.1i) * 1.1;
 	float k[1] = { 0.2 };
 
 	bloch_mcconnel_matrix_ode(P, m_tmp, r1, r2, k, m0, Om, gb);
@@ -1091,14 +1060,14 @@ static bool test_bloch_mcconnell_matrix_ode_sa(void)
 	m[27][3] = -1.;
 	m[28][4] = -1.;
 	// B1
-	m[30][2] = sinf(phase) *b1;
-	m[31][2] = cosf(phase)*b1;
-	m[32][0] = -sinf(phase)*b1;
-	m[32][1] = -cosf(phase)*b1;
-	m[33][5] = sinf(phase) *b1;
-	m[34][5] = cosf(phase)*b1;
-	m[35][3] = -sinf(phase)*b1;
-	m[35][4] = -cosf(phase)*b1;
+	m[30][2] = cimagf(b1);
+	m[31][2] = crealf(b1);
+	m[32][0] = -cimagf(b1);
+	m[32][1] = -crealf(b1);
+	m[33][5] = cimagf(b1);
+	m[34][5] = crealf(b1);
+	m[35][3] = -cimagf(b1);
+	m[35][4] = -crealf(b1);
 	// M0
 	for (int i = 0; i < 3; i++) {
 
@@ -1125,7 +1094,7 @@ static bool test_bloch_mcconnell_matrix_ode_sa(void)
 	m[57][4] = 1.;
 	m[58][3] = -1.;
 
-	bloch_mcc_matrix_ode_sa2(P, m2, r1, r2, k, m0, Om, gb, phase, b1);
+	bloch_mcc_matrix_ode_sa2(P, m2, r1, r2, k, m0, Om, gb, b1);
 
 	for (int i = 0; i < 61; i++)
 		for (int j = 0; j < 61; j++)

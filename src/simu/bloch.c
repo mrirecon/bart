@@ -86,7 +86,7 @@ void bloch_pdp(float out[2][3], const float in[3], float r1, float r2, const flo
 	out[1][2] = 0.;
 }
 
-void bloch_b1_pdp(float out[3][3], const float in[3], float r1, float r2, const float gb[3], float phase, float b1)
+void bloch_b1_pdp(float out[3][3], const float in[3], float r1, float r2, const float gb[3], complex float b1)
 {
 	(void)r1; (void)r2; (void)gb;
 
@@ -97,9 +97,9 @@ void bloch_b1_pdp(float out[3][3], const float in[3], float r1, float r2, const 
 	out[1][0] = -in[0];
 	out[1][1] = -in[1];
 	out[1][2] = 0.;
-	out[2][0] = sinf(phase) * in[2] * b1;
-	out[2][1] = cosf(phase) * in[2] * b1;
-	out[2][2] = (-sinf(phase) * in[0] - cosf(phase) * in[1]) * b1;
+	out[2][0] = in[2] * cimagf(b1);
+	out[2][1] = in[2] * crealf(b1);
+	out[2][2] = -cimagf(b1) * in[0] - crealf(b1) * in[1];
 }
 
 
@@ -186,7 +186,7 @@ void bloch_matrix_int_sa(float matrix[10][10], float t, float r1, float r2, cons
 	mat_exp(10, t, matrix, blm);
 }
 
-void bloch_matrix_ode_sa2(float matrix[13][13], float r1, float r2, const float gb[3], float phase, float b1)
+void bloch_matrix_ode_sa2(float matrix[13][13], float r1, float r2, const float gb[3], complex float b1)
 {
 	float m0 = 1.;
 	float m[13][13] = {
@@ -199,19 +199,19 @@ void bloch_matrix_ode_sa2(float matrix[13][13], float r1, float r2, const float 
 		{	-1.,		0.,		0.,		0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.,	0.,	0.,	0.	},
 		{	0.,		-1.,		0.,		0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.,	0.,	0.,	0.	},
 		{	0.,		0.,		0.,		0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.,	0.,	0.,	0.	},
-		{	0.,		0.,		sinf(phase) *b1,0.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
-		{	0.,		0.,		cosf(phase)*b1,	0.,	0.,	0.,	0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.	},
-		{	-sinf(phase)*b1,	-cosf(phase)*b1,0.,		0.,	0.,	0.,	0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.	},
+		{	0.,		0.,		cimagf(b1), 0.,	0.,	0.,	0.,	0.,	0.,	-r2,	gb[2],	-gb[1],	0.	},
+		{	0.,		0.,		crealf(b1),	0.,	0.,	0.,	0.,	0.,	0.,	-gb[2],	-r2,	gb[0],	0.	},
+		{	-cimagf(b1),	-crealf(b1), 0.,		0.,	0.,	0.,	0.,	0.,	0.,	gb[1],	-gb[0],	-r1,	0.	},
 		{	0.,		0.,		0.,		0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.,	0.	},
 	};
 
 	matf_copy(13, 13, matrix, m);
 }
 
-void bloch_matrix_int_sa2(float matrix[13][13], float t, float r1, float r2, const float gb[3], float phase, float b1)
+void bloch_matrix_int_sa2(float matrix[13][13], float t, float r1, float r2, const float gb[3], complex float b1)
 {
 	float blm[13][13];
-	bloch_matrix_ode_sa2(blm, r1, r2, gb, phase, b1);
+	bloch_matrix_ode_sa2(blm, r1, r2, gb, b1);
 
 	mat_exp(13, t, matrix, blm);
 }
@@ -250,18 +250,19 @@ void bloch_mcconnel_matrix_ode(int P, float matrix[1 + P * 3][1 + P * 3], const 
 	for (int p = 0; p < P; p++)
 		matrix[3 * p + 2][N - 1] = m0[p] * r1[p];
 
-	// exchange  FIX ME?: Additional pools only exchange with water pool
+	// exchange  FIXME?: Additional pools only exchange with water pool
 	for (int p = 0; p < P - 1; p++)
 		for (int i = 0; i < 3; i++)
 			matrix[i][i] -= k[p] * m0[p + 1];
 
-	for (int p = 1; p < P; p++)
+	for (int p = 1; p < P; p++) {
 		for (int i = 0; i < 3; i++) {
 
 			matrix[p * 3 + i][p * 3 + i] -= k[p - 1] * m0[0];
 			matrix[i][p * 3 + i] += k[p - 1] * m0[0];
 			matrix[p * 3 + i][i] += k[p - 1] * m0[p];
 		}
+	}
 
 }
 
@@ -308,7 +309,7 @@ void bloch_mcc_pdy(int P, float out[P * 3][P * 3], const float in[P * 3], float 
 			out[j][i] = m[i][j]; //transposition
 }
 
-void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3], float r1[P], float r2[P], const float k[P - 1], const float m0[P], const float gb[3], float phase, float b1)
+void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3], float r1[P], float r2[P], const float k[P - 1], const float m0[P], const float gb[3], complex float b1)
 {
 	UNUSED(r2); UNUSED(gb);
 
@@ -326,9 +327,9 @@ void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3],
 		out[P + p][0 + p * 3] = - in[p * 3];
 		out[P + p][1 + p * 3] = - in[1 + p * 3];
 		// B1
-		out[2 * P][0 + p * 3] = sinf(phase) * in[2 + p * 3] * b1;
-		out[2 * P][1 + p * 3] = cosf(phase) * in[2 + p * 3] * b1;
-		out[2 * P][2 + p * 3] = (-sinf(phase) * in[0 + p * 3] - cosf(phase) * in[1 + p * 3]) * b1;
+		out[2 * P][0 + p * 3] = in[2 + p * 3] * cimag(b1);
+		out[2 * P][1 + p * 3] = in[2 + p * 3] * crealf(b1);
+		out[2 * P][2 + p * 3] = -cimagf(b1) * in[0 + p * 3] - crealf(b1) * in[1 + p * 3];
 	}
 
 	for (int p = 0; p < P - 1; p++) {
@@ -360,14 +361,13 @@ void bloch_mcc_b1_pdp(int P, float out[P * 5 - 1][P * 3], const float in[P * 3],
 		// Om
 		out[4 * P + p][3 + p * 3] = in[4 + p * 3];
 		out[4 * P + p][4 + p * 3] = -in[3 + p * 3];
-
 	}
 
 	// Missing term for M0 water
 	out[2 * P + 1][2] += r1[0];
 }
 
-void bloch_mcc_matrix_ode_sa2(int P, float matrix[15 * P * P + 1][15 * P * P + 1], float r1[P], float r2[P], float k[P - 1], float m0[P], float Om[P],  const float gb[3], float phase, float b1)
+void bloch_mcc_matrix_ode_sa2(int P, float matrix[15 * P * P + 1][15 * P * P + 1], float r1[P], float r2[P], float k[P - 1], float m0[P], float Om[P], const float gb[3], complex float b1)
 {
 	int N = 15 * P * P + 1;
 	int Ns = P * 3; // Number of rows of a BMC submatrix / parameter that only occurs once (M, B1)
@@ -405,10 +405,10 @@ void bloch_mcc_matrix_ode_sa2(int P, float matrix[15 * P * P + 1][15 * P * P + 1
 		m[Ns + Np + 3 * p + Ns * p + 1][1 + p * 3] = -1.;
 
 		// B1
-		m[Ns + 2 * Np + p * 3][2 + p * 3] = sinf(phase) * b1;
-		m[Ns + 2 * Np + p * 3 + 1][2 + p * 3] = cosf(phase) * b1;
-		m[Ns + 2 * Np + p * 3 + 2][0 + p * 3] = -sinf(phase) * b1;
-		m[Ns + 2 * Np + p * 3 + 2][1 + p * 3] = -cosf(phase) * b1;
+		m[Ns + 2 * Np + p * 3][2 + p * 3] = cimagf(b1);
+		m[Ns + 2 * Np + p * 3 + 1][2 + p * 3] = crealf(b1);
+		m[Ns + 2 * Np + p * 3 + 2][0 + p * 3] = -cimagf(b1);
+		m[Ns + 2 * Np + p * 3 + 2][1 + p * 3] = -crealf(b1);
 	}
 
 	for (int p = 0; p < P - 1; p++) {
@@ -432,7 +432,7 @@ void bloch_mcc_matrix_ode_sa2(int P, float matrix[15 * P * P + 1][15 * P * P + 1
 			m[2 * Ns + 3 * Np + Ns * p + d][d] = - m0[p + 1];
 			m[2 * Ns + 3 * Np + Ns * p + d][d + (p + 1) * 3] = m0[0];
 			m[2 * Ns + 3 * Np + Ns * p + d + 3][d] = m0[p + 1];
-			m[2 * Ns + 3 * Np + Ns * p + d + 3][d + (p + 1) * 3] = - m0[0];
+			m[2 * Ns + 3 * Np + Ns * p + d + 3][d + (p + 1) * 3] = -m0[0];
 		} 
 
 		// Om
@@ -519,3 +519,4 @@ void bloch_mcc_matrix_ode_sa(int P, float matrix[15 * P * P - 3 * P + 1][15 * P 
 
 	matf_copy(N, N, matrix, m);
 }
+
