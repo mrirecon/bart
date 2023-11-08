@@ -283,14 +283,7 @@ void bloch_mcconnell_ode(int P, float out[P * 3], const float in[P * 3] , float 
 
 	in_tmp[N - 1] = 1.;
 
-	// multiply matrix with input vector
-	for (int i = 0; i < N; i++) {
-
-		out_tmp[i] = 0.;
-
-		for (int j = 0; j < N; j++)
-			out_tmp[i] += m[i][j] * in_tmp[j];
-	}
+	matf_vecmul(N, N, out_tmp, m, in_tmp);
 
 	for (int i = 0; i < N - 1; i++)
 		out[i] = out_tmp[i];

@@ -10,6 +10,7 @@
 #include "misc/mri.h"
 
 #include "num/ode.h"
+#include "num/linalg.h"
 
 #include "simu/bloch.h"
 
@@ -812,17 +813,11 @@ static bool test_bloch_mcconnell_matrix(void)
 	float out1[N];
 	float out2[N - 1];
 
-	bloch_mcconnell_ode(P,out2, m_in_2, r1, r2, k, Th, Om, gb);
+	bloch_mcconnell_ode(P, out2, m_in_2, r1, r2, k, Th, Om, gb);
 
-	for (int i = 0; i < N; i++) {
+	matf_vecmul(N, N, out1, m1, m_in);
 
-		out1[i] = 0.;
-
-		for (int j = 0; j < N; j++)
-			out1[i] += m1[i][j] * m_in[j];
-	}
-
-	for (int i = 0; i < N-1; i++)
+	for (int i = 0; i < N - 1; i++)
 		if (out1[i] != out2[i])
 			return false;
 
