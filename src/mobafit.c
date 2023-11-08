@@ -204,6 +204,7 @@ int main_mobafit(int argc, char* argv[argc])
 	if (NULL == basis) {
 
 		assert(y_dims[TE_DIM] == enc_dims[TE_DIM]);
+
 	} else {
 
 		assert(bas_dims[TE_DIM] == enc_dims[TE_DIM]);
@@ -219,7 +220,9 @@ int main_mobafit(int argc, char* argv[argc])
 			md_ztenmul(DIMS, y_dims, ny, bas_dims, basis, y_sig_dims, y);
 
 			unmap_cfl(DIMS, y_sig_dims, y);
+
 			y = ny;
+
 		} else {
 
 			y_sig_dims[TE_DIM] = bas_dims[TE_DIM];
