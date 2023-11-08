@@ -125,6 +125,7 @@ int main_moba(int argc, char* argv[argc])
         data.sim.seq = simdata_seq_defaults;
         data.sim.voxel = simdata_voxel_defaults;
         data.sim.pulse = simdata_pulse_defaults;
+	data.sim.pulse.sinc = pulse_sinc_defaults;
         data.sim.pulse.hs = pulse_hypsec_defaults;
         data.sim.grad = simdata_grad_defaults;
         data.sim.tmp = simdata_tmp_defaults;
