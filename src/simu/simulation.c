@@ -296,20 +296,19 @@ void apply_sim_matrix(int N, float m[N], float matrix[N][N])
 
 /* ------------ Read-Out -------------- */
 
-static void rotz_pools(int pools, float out[pools][3], const float in[3 * pools], float angle)
+static void adc_corr(int P, int pools, float out[P][pools][3], const float in[P][3 * pools], float angle)
 {
-	for (int p = 0; p < pools; p++) {
+	for (int i = 0; i < P; i++) {
+		for (int p = 0; p < pools; p++) {
 
-		out[p][0] = in[0 + p * 3] * cosf(angle) + in[1 + p * 3] * sinf(angle);
-		out[p][1] = -in[0 + p * 3] * sinf(angle) + in[1 + p * 3] * cosf(angle);
-		out[p][2] = in[2 + p * 3];
+			float in2[3];
+
+			for (int j = 0; j < 3; j++)
+				in2[j] = in[i][p * 3 + j];
+
+			rotz(out[i][p], in2, angle);
+		}
 	}
-}
-
-static void adc_corr(int P, int N, int pools, float out[P][pools][N], float in[P][N * pools], float angle)
-{
-	for (int i = 0; i < P; i++)
-		rotz_pools(pools, out[i], in[i], angle);
 }
 
 
@@ -318,7 +317,7 @@ static void collect_signal(struct sim_data* data, int P, int pools, float (*m)[p
 {
         float tmp[P][pools][3];
 
-        adc_corr(P, 3, pools, tmp, xp, -data->pulse.phase);
+        adc_corr(P, pools, tmp, xp, -data->pulse.phase);
 
 	// Keep all entries for m
 	// Only keep x,y,z components with respect to water pool for SA params
@@ -1106,27 +1105,8 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 }
 
 // Wrapper for single pool simulation
-void bloch_simulation(const struct sim_data* _data, int R, float (*m_state)[R][3], float (*sa_r1_state)[R][3], float (*sa_r2_state)[R][3], float (*sa_m0_state)[R][3],	float (*sa_b1_state)[R][3])
+void bloch_simulation(const struct sim_data* data, int R, float (*m)[R][3], float (*sa_r1)[R][3], float (*sa_r2)[R][3], float (*sa_m0)[R][3],	float (*sa_b1)[R][3])
 {
-	int pools = 1;
-
-	float mxy[R][pools][3];
-	float sa_r1[R][pools][3];
-	float sa_r2[R][pools][3];
-	float sa_b1[R][1][3];
-	float sa_m0[R][pools][3];
-
-	bloch_simulation2(_data, R, pools, &mxy, &sa_r1, &sa_r2, &sa_m0, &sa_b1, NULL, NULL);
-
-	for (int r = 0; r < R; r++) {
-		for (int n = 0; n < 3; n++) {
-
-			(*m_state)[r][n] = mxy[r][0][n];
-			(*sa_r1_state)[r][n] = sa_r1[r][0][n];
-			(*sa_r2_state)[r][n] = sa_r2[r][0][n];
-			(*sa_m0_state)[r][n] = sa_m0[r][0][n];
-			(*sa_b1_state)[r][n] = sa_b1[r][0][n];
-		}
-	}
+	bloch_simulation2(data, R, 1, (void*)m, (void*)sa_r1, (void*)sa_r2, (void*)sa_m0, (void*)sa_b1, NULL, NULL);
 }
 
