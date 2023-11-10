@@ -92,6 +92,8 @@ the ISMRM Raw Data format when linking with the ISMRMRD library
 In the following, the symbol '`$`' indicates a shell prompt.
 Do not type '`$`' when entering commands.
 
+For more build information, check docs/building.txt
+
 
 
 ### 2.1.1. Linux
@@ -124,12 +126,12 @@ To enable gcc 8 and start a bash shell run:
 
 ### 2.1.2. Mac OS X
 
-Xcode is required and it is recommended to install a newer version 
-of gcc from MacPorts (http://www.macports.org/).
+BART is supported on Intel-based and ARM-based Macs. Xcode is also required. For ARM-based Macs, it is recommended to use gcc12 or higher.
 
+Using MacPorts (http://www.macports.org/):
 
     $ sudo port install fftw-3-single
-    $ sudo port install gcc10
+    $ sudo port install gcc12
     $ sudo port install libpng
     $ sudo port install openblas
     $ sudo port install flock
@@ -140,16 +142,17 @@ of gcc from MacPorts (http://www.macports.org/).
     (optional)
     install version 0.5.2 of the ISMRMRD library
 
+    Select gcc as the compiler when building:
+    $ CC=gcc-mp-12 make
 
-For arm-based Macs people reported success using Homebrew.
+Using HomeBrew (https://brew.sh):
 
     $ brew install --cask gcc-arm-embedded
     $ brew install libpng
     $ brew install fftw
     $ brew install openblas
 
-And then selecting gcc as a compiler when building (see below):
-
+    Select gcc as the compiler when building:
     $ CC=gcc make
 
 

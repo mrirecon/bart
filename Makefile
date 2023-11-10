@@ -145,7 +145,7 @@ CFLAGS ?= $(OPT) -Wmissing-prototypes
 CXXFLAGS ?= $(OPT)
 
 ifeq ($(BUILDTYPE), MacOSX)
-	CC ?= gcc-mp-10
+	CC ?= gcc-mp-12
 else
 	CC ?= gcc
 	ifneq ($(BUILDTYPE), MSYS)
