@@ -39,6 +39,12 @@ void lapack_eig(long N, float eigenval[N], complex float matrix[N][N])
 	LAPACKE(cheev, 'V', 'U', N, &matrix[0][0], N, eigenval);
 }
 
+// A*x = (lambda)*B*x
+void lapack_geig(long N, float eigenval[N], complex float A[N][N], complex float B[N][N])
+{
+	LAPACKE(chegv, 1, 'V', 'U', N, &A[0][0], N, &B[0][0], N, eigenval);
+}
+
 void lapack_svd(long M, long N, complex float U[M][M], complex float VH[N][N], float S[(N > M) ? M : N], complex float A[N][M])
 {
 	LAPACKE(cgesdd, 'A', M, N, &A[0][0], M, S, &U[0][0], M, &VH[0][0], N);
