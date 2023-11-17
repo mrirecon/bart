@@ -43,7 +43,50 @@ tests/test-cc-svd-matrix: cc extract fmac transpose nrmse $(TESTS_OUT)/shepploga
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-cc-rovir: bart $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP) ; export BART_TOOLBOX_DIR=$(ROOTDIR)	;\
+	$(ROOTDIR)/bart ones 2 16 8 o							;\
+	$(ROOTDIR)/bart resize 1 16 o pos						;\
+	$(ROOTDIR)/bart flip 2 pos neg							;\
+	$(ROOTDIR)/scripts/rovir.sh -p4 $(TESTS_OUT)/shepplogan_coil_ksp.ra pos neg ksp1;\
+	$(ROOTDIR)/scripts/rovir.sh -p4 $(TESTS_OUT)/shepplogan_coil_ksp.ra neg pos ksp2;\
+	$(ROOTDIR)/bart nlinv -S ksp1 img1						;\
+	$(ROOTDIR)/bart nlinv -S ksp2 img2						;\
+	$(ROOTDIR)/bart resize 1 64 img1 opt						;\
+	$(ROOTDIR)/bart resize 1 64 img2 sup						;\
+	$(ROOTDIR)/bart fmac -C -s 3 opt opt energy_opt					;\
+	$(ROOTDIR)/bart fmac -C -s 3 sup sup energy_sup					;\
+	$(ROOTDIR)/bart scale 50 energy_sup energy_sup_scl				;\
+	$(ROOTDIR)/bart join 0 energy_sup_scl energy_opt energy_joined			;\
+	$(ROOTDIR)/bart mip 1 energy_joined energy_max					;\
+	$(ROOTDIR)/bart nrmse -t 0. energy_opt energy_max				;\
+	rm *.{cfl,hdr} ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-cc-rovir-noncart: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP) ; export BART_TOOLBOX_DIR=$(ROOTDIR)	;\
+	$(ROOTDIR)/bart traj -r trj							;\
+	$(ROOTDIR)/bart phantom -s8 -k -ttrj ksp					;\
+	$(ROOTDIR)/bart ones 2 16 8 o							;\
+	$(ROOTDIR)/bart resize 1 16 o pos						;\
+	$(ROOTDIR)/bart flip 2 pos neg							;\
+	$(ROOTDIR)/scripts/rovir.sh -p4 -t trj ksp pos neg ksp1				;\
+	$(ROOTDIR)/scripts/rovir.sh -p4 -t trj ksp neg pos ksp2				;\
+	$(ROOTDIR)/bart nlinv -S -t trj ksp1 img1					;\
+	$(ROOTDIR)/bart nlinv -S -t trj ksp2 img2					;\
+	$(ROOTDIR)/bart resize 1 64 img1 opt						;\
+	$(ROOTDIR)/bart resize 1 64 img2 sup						;\
+	$(ROOTDIR)/bart fmac -C -s 3 opt opt energy_opt					;\
+	$(ROOTDIR)/bart fmac -C -s 3 sup sup energy_sup					;\
+	$(ROOTDIR)/bart scale 100 energy_sup energy_sup_scl				;\
+	$(ROOTDIR)/bart join 0 energy_sup_scl energy_opt energy_joined			;\
+	$(ROOTDIR)/bart mip 1 energy_joined energy_max					;\
+	$(ROOTDIR)/bart nrmse -t 0. energy_opt energy_max				;\
+	rm *.{cfl,hdr} ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 
 TESTS += tests/test-cc-svd tests/test-cc-geom tests/test-cc-esp tests/test-cc-svd-matrix
+TESTS += tests/test-cc-rovir tests/test-cc-rovir-noncart
 
