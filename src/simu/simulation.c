@@ -474,6 +474,8 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
         // Define effective z Gradient = Slice-selection gradient + off-resonance [rad/s]
 	data->grad.gb[2] = data->grad.mom_sl + data->voxel.w;
 
+	__block complex float w1;	// clang workaround (needs to be outside switch)
+					//
         switch (data->seq.type) {
 
         case SIM_ROT:
@@ -484,10 +486,11 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
         case SIM_ODE: ;
 
 		float gb_eff[3];
-		complex float w1;
+		void *gb_eff_p = gb_eff;	// clang workaround
 
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
+			float *gb_eff = gb_eff_p;
 			compute_fields(data, gb_eff, t);
 
 			w1 = gb_eff[0] - 1.i * gb_eff[1];
@@ -513,6 +516,7 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
 		NESTED(void, call_pdy2, (float* out, float t, const float* in))
 		{
+			float *gb_eff = gb_eff_p;
 			(void)t;
 
 			if (MODEL_BMC == data->seq.model) {
@@ -527,6 +531,7 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
 		NESTED(void, call_pdp2, (float* out, float t, const float* in))
 		{
+			float *gb_eff = gb_eff_p;
 			(void)t;
 
 			if (MODEL_BMC == data->seq.model) {
@@ -580,6 +585,8 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 
         // Define effective z Gradient =Gradient Moments + off-resonance [rad/s]
         data->grad.gb[2] = data->grad.mom + data->voxel.w;
+		
+	__block complex float w1;	// clang workaround (needs to be outside switch)
 
         switch (data->seq.type) {
 
@@ -591,10 +598,11 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
         case SIM_ODE: ;
 
 		float gb_eff[3];
-		complex float w1;
+		void *gb_eff_p = gb_eff;	// clang workaround
 
 		NESTED(void, call_fun, (float* out, float t, const float* in))
 		{
+			float *gb_eff = gb_eff_p;
 			compute_fields(data, gb_eff, t);
 
 			w1 = gb_eff[0] - 1.i * gb_eff[1];
@@ -618,6 +626,7 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 
 		NESTED(void, call_pdy2, (float* out, float t, const float* in))
 		{
+			float *gb_eff = gb_eff_p;
 			(void)t;
 
 			float r2[data->voxel.P];
@@ -637,6 +646,7 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 
 		NESTED(void, call_pdp2, (float* out, float t, const float* in))
 		{
+			float *gb_eff = gb_eff_p;
 			(void)t;
 
 			float r2[data->voxel.P];
