@@ -293,6 +293,22 @@ Magn Reson Med 2009; 61:145-152.
 (commands: moba)
 
 
+Tong CY, Prato FS.
+A Novel Fast T1-Mapping Method.
+Magn Reson Imaging 1994; 4:701-708.
+
+McKenzie CA, Pereira RS, Prato FS, Chen Z, Drost DJ.
+Improved Contrast Agent Bolus Tracking Using T1 FARM.
+Magn Reson Med 1999; 41:429-435.
+
+Graff C, Li Z, Bilgin A, Altbach MI, Gmitro AF, Clarkson EW.
+Iterative T2 estimation from highly undersampled radial fast spin-echo data.
+ISMRM 2006; 14:925.
+
+Olafsson VT, Noll DC, Fessler JA.
+Fast joint reconstruction of dynamic and field maps in functional MRI.
+IEEE Trans Med Imag 2008; 27:1177–1188.
+
 Block KT, Uecker M, Frahm J.
 Model-Based Iterative Reconstruction for Radial Fast Spin-Echo MRI.
 IEEE Trans Med Imag 2009; 28:1759-1769.
