@@ -142,7 +142,7 @@ int main_mobafit(int argc, char* argv[argc])
 	bounds.min = bound_min;
 	bounds.max = bound_max;
 
-	enum seq_type { BSSFP, FLASH, TSE, MOLLI, MGRE, DIFF, IR_LL, IR } seq = MGRE;
+	enum seq_type { /* BSSFP, FLASH, MOLLI, */ TSE, MGRE, DIFF, IR_LL, IR } seq = MGRE;
 
 	unsigned int mgre_model = MECO_WFR2S;
 
@@ -347,8 +347,6 @@ int main_mobafit(int argc, char* argv[argc])
 		nlop = nlop_flatten(nl);
 		nlop_free(nl);
 		break;
-
-	default: ;
 	}
 
         if (use_magn) {
@@ -356,6 +354,8 @@ int main_mobafit(int argc, char* argv[argc])
                 assert(NULL == basis);
                 nlop = nlop_chain_FF(nlop, nlop_zabs_create(DIMS, y_patch_dims));
         }
+
+	assert(nlop);
 
 
 	complex float init[DIMS];
@@ -413,12 +413,12 @@ int main_mobafit(int argc, char* argv[argc])
 
 	if (bart_use_gpu) {
 
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 		y_patch = md_alloc_gpu(DIMS, y_patch_dims, CFL_SIZE);
 		x_patch = md_alloc_gpu(DIMS, x_patch_dims, CFL_SIZE);
-	#else
+#else
 		error("Compiled without GPU support!\n");
-	#endif
+#endif
 
 	} else {
 
