@@ -475,6 +475,49 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 }
 
 
+static bool siemens_adc_noise(bool vd, int fd, const long dims[DIMS], complex float* noise)
+{
+
+	char scan_hdr[vd ? 192 : 0];
+	xread(fd, scan_hdr, sizeof(scan_hdr));
+
+	for (long coil = 0; coil < dims[COIL_DIM]; coil++) {
+
+		char chan_hdr[vd ? 32 : 128];
+		xread(fd, chan_hdr, sizeof(chan_hdr));
+
+		struct mdh2 mdh;
+		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
+
+		while (!MD_IS_SET(mdh.evalinfo, NOISEADJSCAN) || (dims[READ_DIM] != mdh.samples)) {
+
+			assert(!(MD_IS_SET(mdh.evalinfo, ACQEND)));
+
+			long offset = sizeof(scan_hdr) + sizeof(chan_hdr);
+			skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
+
+			memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
+		}
+
+		if (dims[READ_DIM] != mdh.samples) {
+
+			debug_printf(DP_WARN, "Wrong number of samples: %d != %d.\n", dims[READ_DIM], mdh.samples);
+			return false;
+		}
+
+		if ((0 != mdh.channels) && (dims[COIL_DIM] != mdh.channels)) {
+
+			debug_printf(DP_WARN, "Wrong number of channels: %d != %d.\n", dims[COIL_DIM], mdh.channels);
+			return false;
+		}
+
+		xread(fd, noise + coil * dims[READ_DIM], (size_t)dims[READ_DIM] * CFL_SIZE);
+	}
+
+	return true;
+}
+
+
 
 
 static const char help_str[] = "Read data from Siemens twix (.dat) files.";
@@ -501,6 +544,7 @@ int main_twixread(int argc, char* argv[argc])
 	bool partctr = false;
 	bool mpi = false;
 	bool check_read = true;
+	bool noise = false;
 
 	bool rational = false;
 	long dims[DIMS];
@@ -523,6 +567,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('A', &autoc, "automatic [guess dimensions]"),
 		OPT_SET('L', &linectr, "use linectr offset"),
 		OPT_SET('P', &partctr, "use partctr offset"),
+		OPT_SET('N', &noise, "only get noise"),
 		OPTL_SET(0, "rational", &rational, "Rational Approximation Sampling"),
 		OPT_SET('M', &mpi, "MPI mode"),
 		OPTL_INT(0, "bin", &bin, "d", "Binning of spokes for RAGA sampled data"),
@@ -554,7 +599,7 @@ int main_twixread(int argc, char* argv[argc])
 	enum adc_return sar = ADC_OK;
 	long off[DIMS] = { 0 };
 
-	if (autoc) {
+	if (autoc | noise) {
 
 		long max[DIMS] = { [COIL_DIM] = 1000 };
 		long min[DIMS] = { 0 }; // min is always 0
@@ -593,6 +638,20 @@ int main_twixread(int argc, char* argv[argc])
 		debug_print_dims(DP_DEBUG2, DIMS, off);
 
 		siemens_meas_setup(ifd, &hdr); // reset
+	}
+
+	if (noise) {
+
+		long odims[DIMS];
+		md_select_dims(DIMS, READ_FLAG | COIL_FLAG, odims, dims);
+
+		complex float* out = create_cfl(out_file, DIMS, odims);
+		md_clear(DIMS, odims, out, CFL_SIZE);
+
+		siemens_adc_noise(vd, ifd, odims, out);
+
+		unmap_cfl(DIMS, odims, out);
+		return 0;
 	}
 
 	long odims[DIMS];
