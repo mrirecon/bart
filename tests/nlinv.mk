@@ -210,6 +210,52 @@ tests/test-nlinv-ksens: nlinv nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	touch $@
 endif
 
+tests/test-ncalib-noncart: fmac ncalib traj scale phantom resize pics nlinv nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/traj -o2 -r -x64 -y45 traj.ra			;\
+	$(TOOLDIR)/phantom -s8 -k -t traj.ra ksp.ra			;\
+	$(TOOLDIR)/nlinv -N -S -i9 -t traj.ra ksp.ra r1.ra c1.ra	;\
+	$(TOOLDIR)/ncalib -i9 -x64:64:1 -t traj.ra ksp.ra c2.ra	;\
+	$(TOOLDIR)/pics -r0.001 -S -t traj.ra ksp.ra c2.ra r2.ra	;\
+	$(TOOLDIR)/fmac c1.ra r1.ra x1.ra				;\
+	$(TOOLDIR)/fmac c2.ra r2.ra x2.ra				;\
+	$(TOOLDIR)/nrmse -s -t 0.05 x1.ra x2.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-ncalib: fmac ncalib scale copy resize pics nlinv nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/copy $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp.ra	;\
+	$(TOOLDIR)/nlinv -N -S -i10 --cgiter=10 ksp.ra r1.ra c1.ra	;\
+	$(TOOLDIR)/ncalib -i6 --cgiter=10 ksp.ra c2.ra			;\
+	$(TOOLDIR)/pics -r0.001 -S ksp.ra c2.ra r2.ra			;\
+	$(TOOLDIR)/fmac c1.ra r1.ra x1.ra				;\
+	$(TOOLDIR)/fmac c2.ra r2.ra x2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.03 x1.ra x2.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-ncalib-scale: repmat copy ncalib nrmse bitmask $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(TOOLDIR)/copy $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp.ra					;\
+	$(TOOLDIR)/ncalib -i6 --cgiter=10 ksp.ra _c1.ra							;\
+	$(TOOLDIR)/repmat 5 9 _c1.ra c1.ra								;\
+	$(TOOLDIR)/repmat 5 9 ksp.ra ksp2.ra								;\
+	$(TOOLDIR)/ncalib -i6 --cgiter=10 --scale-loop-dims $$($(TOOLDIR)/bitmask 5) ksp2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -t 1.e-7 c2.ra c1.ra								;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-ncalib-scale2: repmat copy ncalib nrmse bitmask $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(TOOLDIR)/copy $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp.ra					;\
+	$(TOOLDIR)/ncalib -i6 --cgiter=10 ksp.ra c1.ra							;\
+	$(TOOLDIR)/repmat 5 9 ksp.ra ksp2.ra								;\
+	$(TOOLDIR)/ncalib -i6 --cgiter=10 --scale-loop-dims $$($(TOOLDIR)/bitmask 5) --shared-col-dims $$($(TOOLDIR)/bitmask 5)  ksp2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -t 1.e-7 c2.ra c1.ra								;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 
 tests/test-nlinv-pf-vcc: nlinv conj nrmse zeros ones join flip circshift fmac $(TESTS_OUT)/shepplogan_ksp.ra
@@ -322,6 +368,7 @@ TESTS += tests/test-nlinv-pics tests/test-nlinv-pics-psf-based
 TESTS += tests/test-nlinv-basis-noncart
 TESTS += tests/test-nlinv-ksens
 TESTS += tests/test-nlinv-psf-noncart tests/test-nlinv-sms-noncart-psf
+TESTS += tests/test-ncalib tests/test-ncalib-noncart
 TESTS_GPU += tests/test-nlinv-gpu tests/test-nlinv-sms-gpu
 
 

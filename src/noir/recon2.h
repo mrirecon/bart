@@ -12,6 +12,7 @@ struct noir2_conf_s {
 	float redu;
 	float a;
 	float b;
+	float c;
 
 	float oversampling_coils;
 	_Bool ret_os_coils;

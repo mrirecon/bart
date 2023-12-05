@@ -54,6 +54,7 @@ struct noir2_model_conf_s noir2_model_conf_defaults = {
 	.sos = false,
 	.a = 220.,
 	.b = 32.,
+	.c = 1.,
 
 	.oversampling_coils = 1.,
 
@@ -126,12 +127,32 @@ static struct noir2_s noir2_init_create(int N,
 
 	ret.lop_coil = linop_noir_weights_create(N, ret.col_ten_dims, ret.col_dims,
 						wgh_dims, conf->wght_flags, conf->oversampling_coils,
-						conf->a, conf->b, 1);
+						conf->a, conf->b, conf->c);
 
-	ret.lop_coil2 = linop_noir_weights_create(N, col_dims, ret.col_dims,
+	if (md_calc_size(N, col_dims) > md_calc_size(N, ret.col_ten_dims)) {
+
+		// reduce memory by looping when only coil estimation is required.
+
+		long tcol_dims[N];
+		long tcol_dims2[N];
+		long tlop_dims[N];
+		md_select_dims(N, ~COIL_FLAG, tcol_dims, col_dims);
+		md_select_dims(N, ~COIL_FLAG, tcol_dims2, ret.col_dims);
+		md_select_dims(N, COIL_FLAG, tlop_dims, col_dims);
+
+		auto lop_coil2 = linop_noir_weights_create(N, tcol_dims, tcol_dims2,
+							wgh_dims, conf->wght_flags,
+							(conf->ret_os_coils ? 1. : conf->oversampling_coils),
+							conf->a, conf->b, conf->c);
+		
+		ret.lop_coil2 = linop_loop_F(N, tlop_dims, lop_coil2);
+	} else {
+
+		ret.lop_coil2 = linop_noir_weights_create(N, col_dims, ret.col_dims,
 						wgh_dims, conf->wght_flags,
 						(conf->ret_os_coils ? 1. : conf->oversampling_coils),
-						conf->a, conf->b, 1);
+						conf->a, conf->b, conf->c);
+	}
 
 
 	ret.lop_im = NULL;

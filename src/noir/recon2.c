@@ -69,6 +69,7 @@ const struct noir2_conf_s noir2_defaults = {
 	.redu = 2.,
 	.a = 220.,
 	.b = 32.,
+	.c = 1.,
 
 	.oversampling_coils = 1.,
 	.sms = false,
@@ -248,6 +249,7 @@ void noir2_recon_noncart(
 	mconf.rvc = conf->rvc;
 	mconf.a = conf->a;
 	mconf.b = conf->b;
+	mconf.c = conf->c;
 	mconf.oversampling_coils = conf->oversampling_coils;
 	mconf.noncart = conf->noncart;
 
@@ -401,6 +403,7 @@ void noir2_recon_cart(
 	mconf.rvc = conf->rvc;
 	mconf.a = conf->a;
 	mconf.b = conf->b;
+	mconf.c = conf->c;
 	mconf.oversampling_coils = conf->oversampling_coils;
 	mconf.noncart = conf->noncart;
 

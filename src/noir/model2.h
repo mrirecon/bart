@@ -14,6 +14,7 @@ struct noir2_model_conf_s {
 	_Bool sos;
 	float a;
 	float b;
+	float c;
 
 	float oversampling_coils;
 
