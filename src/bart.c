@@ -129,7 +129,7 @@ static int bart_exit(int err_no, const char* exit_msg)
 }
 
 
-static bool parse_bart_opts(int* argcp, char*** argvp)
+static void parse_bart_opts(int* argcp, char*** argvp)
 {
 	int omp_threads = 1;
 	unsigned long flags = 0;
@@ -154,15 +154,6 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 	};
 
 	int next_arg = options(argcp, *argvp, "", help_str, ARRAY_SIZE(opts), opts, ARRAY_SIZE(args), args, true);
-
-	if ((1 == *argcp)  || (next_arg == *argcp) || (NULL == (*argvp)[next_arg])) {
-		// bart was called without any options
-
-		print_usage(stdout, (*argvp)[0], "...", ARRAY_SIZE(opts), opts);
-		usage();
-
-		return true;
-	}
 
 	*argcp -= next_arg;
 	*argvp += next_arg;
@@ -253,7 +244,6 @@ static bool parse_bart_opts(int* argcp, char*** argvp)
 		omp_threads = 1;
 
 	init_cfl_loop_desc(DIMS, loop_dims, offs_size, flags, omp_threads, 0);
-	return false;
 }
 
 
@@ -284,24 +274,35 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 
 int main_bart(int argc, char* argv[argc])
 {
+	char* bn = basename(argv[0]);
 
-	// This advances argv to behind the bart options
-	bool no_arguments = parse_bart_opts(&argc, &argv);
-	if (no_arguments)
-		return 1;
+	// only skip over initial bart or bart.exe. calling "bart bart" is an error.
+	if (0 == strcmp(bn, "bart") || 0 == strcmp(bn, "bart.exe")) {
+
+		if (1 == argc) {
+
+			usage();
+			return -1;
+		}
+
+		// This advances argv to behind the bart options
+		parse_bart_opts(&argc, &argv);
+
+		bn = basename(argv[0]);
+	}
 
 
 	main_fun_t* dispatch_func = NULL;
 
 	for (int i = 0; NULL != dispatch_table[i].name; i++)
-		if (0 == strcmp(argv[0], dispatch_table[i].name))
+		if (0 == strcmp(bn, dispatch_table[i].name))
 			dispatch_func = dispatch_table[i].main_fun;
 
 	bool builtin_found = (NULL != dispatch_func);
 
 	if (builtin_found) {
 
-		debug_printf(DP_DEBUG3, "Builtin found: %s\n", argv[0]);
+		debug_printf(DP_DEBUG3, "Builtin found: %s\n", bn);
 
 		unsigned int v[5];
 		version_parse(v, bart_version);
@@ -346,8 +347,6 @@ int main_bart(int argc, char* argv[argc])
 
 		return final_ret;
 
-
-
 	} else {
 		// could not find any builtin
 		// try to find something in commands
@@ -370,7 +369,6 @@ int main_bart(int argc, char* argv[argc])
 		}
 #endif
 
-
 		const char* tpath[] = {
 #ifdef CHECK_EXE_COMMANDS
 			exe_dir,
@@ -381,26 +379,16 @@ int main_bart(int argc, char* argv[argc])
 			"/usr/lib/bart/",
 		};
 
-		// skip over "bart" or "bart.exe"
-		int offset = 0;
-		char* bn = basename(argv[0]);
-
-		// only skip over initial bart or bart.exe. calling "bart bart" is an error.
-		if (0 == strcmp(bn, "bart") || 0 == strcmp(bn, "bart.exe"))
-			offset = 1;
-
-		bn = basename(argv[offset]);
-
 		for (int i = 0; i < (int)ARRAY_SIZE(tpath); i++) {
 
 			if (NULL == tpath[i])
 				continue;
 
-			size_t len = strlen(tpath[i]) + strlen(argv[offset]) + 10 + 1; // extra space for /commands/ and null-terminator
+			size_t len = strlen(tpath[i]) + strlen(bn) + 10 + 1; // extra space for /commands/ and null-terminator
 
 			char (*cmd)[len] = xmalloc(sizeof *cmd);
 
-			int r = snprintf(*cmd, len, "%s/commands/%s", tpath[i], argv[offset]);
+			int r = snprintf(*cmd, len, "%s/commands/%s", tpath[i], bn);
 
 			if (r >= (int)len) {
 
@@ -410,7 +398,7 @@ int main_bart(int argc, char* argv[argc])
 
 			debug_printf(DP_DEBUG3, "Trying: %s\n", cmd);
 
-			if (-1 == execv(*cmd, argv + offset)) {
+			if (-1 == execv(*cmd, argv)) {
 
 				if (ENOENT != errno) {
 
@@ -428,6 +416,7 @@ int main_bart(int argc, char* argv[argc])
 		}
 
 		fprintf(stderr, "Unknown bart command: \"%s\".\n", bn);
+
 		return bart_exit(-1, NULL);
 	}
 }

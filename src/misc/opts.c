@@ -548,7 +548,6 @@ int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* h
 		debug_printf(DP_INFO, "opt: %d: %s: %d\n",i, wopts[i].descr, (int) wopts[i].c);
 #endif
 
-
 	int next_opt = 0;
 #pragma omp critical(bart_getopt)
 	{
@@ -560,6 +559,7 @@ int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* h
 		int l = 0;
 		if (stop_at_nonopt)
 			optstr[l++] = '+';
+
 		optstr[l++] = 'h';
 
 		for (int i = 0; i < n; i++) {
@@ -575,10 +575,8 @@ int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* h
 		int c;
 		int longindex = -1;
 
-		while (-1 != (c = ya_getopt_long(argc, argv, optstr, longopts, &longindex))) {
-
+		while (-1 != (c = ya_getopt_long(argc, argv, optstr, longopts, &longindex)))
 			process_option(c, optarg, argv[0], usage_str, help_str, n, wopts, m, args);
-		}
 
 		next_opt = optind;
 	}
