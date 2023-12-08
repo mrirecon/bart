@@ -144,7 +144,7 @@ long cfl_loop_worker_id(void)
 		int threadno = omp_get_ancestor_thread_num(THREAD_BATCH_LVL);
 
 		if ((THREAD_BATCH_LVL < omp_get_level()) || (1 < omp_get_team_size(0)))
-			debug_printf(DP_WARN, "File accessed in OMP region! Cannot guarantee thread safty!\n");
+			debug_printf(DP_WARN, "File accessed in OMP region! Cannot guarantee thread safety!\n");
 
 		if (MAX_WORKER <= threadno)
 			error("Maximum supported number of MPI workers (%d) exceeded!\n", MAX_WORKER);
