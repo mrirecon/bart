@@ -45,7 +45,7 @@ static float vec_norm(int N, const float x[N])
 
 #define tridiag(s) (s * (s + 1) / 2)
 
-static void runga_kutta_step(float h, int s, const float a[tridiag(s)], const float b[s], const float c[s - 1], int N, int K, float k[K][N], float ynp[N], float tmp[N], float tn, const float yn[N], void CLOSURE_TYPE(f)(float* out, float t, const float* yn))
+static void runge_kutta_step(float h, int s, const float a[tridiag(s)], const float b[s], const float c[s - 1], int N, int K, float k[K][N], float ynp[N], float tmp[N], float tn, const float yn[N], void CLOSURE_TYPE(f)(float* out, float t, const float* yn))
 {
 	vec_saxpy(N, ynp, yn, h * b[0], k[0]);
 
@@ -62,7 +62,7 @@ static void runga_kutta_step(float h, int s, const float a[tridiag(s)], const fl
 	}
 }
 
-// Runga-Kutta 4
+// Runge-Kutta 4
 
 void rk4_step(float h, int N, float ynp[N], float tn, const float yn[N],
 		void CLOSURE_TYPE(f)(float* out, float t, const float* yn))
@@ -80,7 +80,7 @@ void rk4_step(float h, int N, float ynp[N], float tn, const float yn[N],
 	NESTED_CALL(f, (k[0], tn, yn));
 
 	float tmp[N];
-	runga_kutta_step(h, 4, a, b, c, N, 1, k, ynp, tmp, tn, yn, f);
+	runge_kutta_step(h, 4, a, b, c, N, 1, k, ynp, tmp, tn, yn, f);
 }
 
 
@@ -109,7 +109,7 @@ void dormand_prince_step(float h, int N, float ynp[N], float tn, const float yn[
 	NESTED_CALL(f, (k[0], tn, yn));
 
 	float tmp[N];
-	runga_kutta_step(h, 7, a, b, c, N, 6, k, ynp, tmp, tn, yn, f);
+	runge_kutta_step(h, 7, a, b, c, N, 6, k, ynp, tmp, tn, yn, f);
 }
 
 
@@ -146,7 +146,7 @@ float dormand_prince_step2(float h, int N, float ynp[N], float tn, const float y
 	const float b[7] = { 5179. / 57600., 0.,  7571. / 16695., 393. / 640., -92097. / 339200., 187. / 2100., 1. / 40. };
 
 	float tmp[N];
-	runga_kutta_step(h, 7, a, b, c, N, 6, k, ynp, tmp, tn, yn, f);
+	runge_kutta_step(h, 7, a, b, c, N, 6, k, ynp, tmp, tn, yn, f);
 
 	vec_saxpy(N, tmp, tmp, -1., ynp);
 	return vec_norm(N, tmp);
