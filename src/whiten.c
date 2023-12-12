@@ -48,7 +48,7 @@ static void calc_covar(const long mat_dims[DIMS], complex float* covar, const lo
 	md_transpose_dims(DIMS, COIL_DIM, MAPS_DIM, trp_dims, noise_dims);
 
 	md_zmatmulc(DIMS, mat_dims, covar, trp_dims, ndata, noise_dims, ndata);
-	md_zsmul(DIMS, mat_dims, covar, covar, 1. / (noise_dims[READ_DIM] - 1));
+	md_zsmul(DIMS, mat_dims, covar, covar, 1. / (md_calc_size(DIMS, noise_dims) / noise_dims[COIL_DIM]  - 1));
 }
 
 
