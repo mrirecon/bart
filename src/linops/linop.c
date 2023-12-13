@@ -117,8 +117,8 @@ static const struct graph_s* operator_linop_get_graph(const struct operator_s* o
 
 	if (NULL != data->get_graph)
 		return data->get_graph(op, data->data, data->lop_type);
-	else
-		return lop_get_graph_default(op, data->data, data->lop_type);
+
+	return lop_get_graph_default(op, data->data, data->lop_type);
 }
 
 struct linop_s* linop_from_ops(
@@ -146,6 +146,7 @@ struct linop_s* linop_from_ops(
 		assert(iovec_check(operator_domain(normal), dom->N, dom->dims, dom->strs));
 
 		x->normal = operator_ref(normal);
+
 	} else {
 
 		x->normal = operator_chain(forward, adjoint);
@@ -657,6 +658,7 @@ struct linop_s* linop_chainN_F(int N, struct linop_s* a[N])
 	assert(N > 0);
 
 	struct linop_s* result = a[0];
+
 	for (int i = 1; i < N; i++)
 		result = linop_chain_FF(result, a[i]);
 

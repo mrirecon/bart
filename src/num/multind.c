@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 The Regents of the University of California.
+/* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
  * Copyright 2022-2023. TU Graz. Institute of Biomedical Imaging.
  * Copyright 2017. Intel Corporation.
@@ -121,10 +121,11 @@ void md_nary(int C, int D, const long dim[D], const long* str[C], void* ptr[C], 
 		if (!mpi_acces)
 			continue;
 
-		for(int i = 0; i < C; i++)
+		for (int i = 0; i < C; i++)
 			nptr[i] = vptr_resolve(nptr[i]);
 
 		md_nary_int(C, D, bdim, str, nptr, fun);
+
 	} while (md_next(D, dim, block_flags, pos));
 }
 
@@ -2294,7 +2295,9 @@ void* md_alloc_mpi(int D, unsigned long f, const long dimensions[D], size_t size
 {
 	auto hint = hint_mpi_create(f, D, dimensions);
 	void* ret = vptr_alloc(D, dimensions, size, hint);
+
 	vptr_hint_free(hint);
+
 	return ret;
 }
 
@@ -2324,7 +2327,8 @@ void* md_mpi_moveF(int D, unsigned long f, const long dims[D], const void* ptr, 
 	auto hint = hint_mpi_create(f, D, dims);
 	void* ret = vptr_wrap(D, dims, size, ptr, hint, true, false);
 
-	vptr_hint_free(hint);	
+	vptr_hint_free(hint);
+
 	return ret;
 }
 
@@ -2340,9 +2344,11 @@ void* md_mpi_wrap(int D, unsigned long f, const long dims[D], const void* ptr, s
 	auto hint = hint_mpi_create(f, D, dims);
 	void* ret = vptr_wrap(D, dims, size, ptr, hint, false, writeback);
 
-	vptr_hint_free(hint);	
+	vptr_hint_free(hint);
+
 	return ret;
 }
+
 
 /**
  * Allocate memory on the same device (CPU/GPU) place as ptr
@@ -2405,6 +2411,7 @@ int md_min_idx(unsigned long flags)
 void md_unravel_index(int D, long pos[D], unsigned long flags, const long dims[D], long index)
 {
 	long ind = index;
+
 	for (int d = 0; d < D; ++d) {
 
 		if (!MD_IS_SET(flags, d))

@@ -604,6 +604,7 @@ void nlop_clear_derivatives(const struct nlop_s* nlop)
 	list_t operators = operator_get_list(nlop->op);
 
 	const struct operator_s* op = list_pop(operators);
+
 	while (NULL != op) {
 
 		auto data = CAST_MAYBE(nlop_op_data_s, operator_get_data(op));
@@ -628,6 +629,7 @@ void nlop_unset_derivatives(const struct nlop_s* nlop) {
 	list_t operators = operator_get_list(nlop->op);
 
 	const struct operator_s* op = list_pop(operators);
+
 	while (NULL != op) {
 
 		auto data = CAST_MAYBE(nlop_op_data_s, operator_get_data(op));
