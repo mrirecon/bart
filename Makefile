@@ -417,7 +417,8 @@ endif
 
 # sm_20 no longer supported in CUDA 9
 GPUARCH_FLAGS ?=
-NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -O2 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CC)
+CUDA_CC ?= $(CC)
+NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -O2 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 -ccbin $(CUDA_CC)
 #NVCCFLAGS = -Xcompiler -fPIC -Xcompiler -fopenmp -O2  -I$(srcdir)/
 
 
