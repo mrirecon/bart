@@ -66,6 +66,8 @@ int main_normalize(int argc, char* argv[argc])
 
 	md_copy(N, dims, out, data, CFL_SIZE);
 
+	unmap_cfl(N, dims, data);
+
 	(l1 ? normalizel1 : normalize)(N, flags, dims, out);
 
 	unmap_cfl(N, dims, out);
