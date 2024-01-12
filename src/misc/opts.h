@@ -94,7 +94,8 @@ typedef float opt_fvec4_t[4];
 #define OPT_FLVEC4(c, ptr, argname, descr)	OPT_ARG(c, OPT_FLOAT_VEC4, opt_fvec4_t, ptr, argname, descr)
 #define OPT_FLVECN(c, ptr, descr)		{ (c), NULL, true, OPT_FLOAT_VECN, NULL, OPT_VEC(ptr, 0, NULL), "", descr }
 
-#define OPT_VECN(c, ptr, descr) 		{(c), NULL, true, OPT_VECN , NULL, OPT_VEC(ptr, 0, NULL), "", descr}
+#define OPT_VECN(c, ptr, descr) 		{ (c), NULL, true, OPT_VECN, NULL, OPT_VEC(ptr, 0, NULL), "", descr }
+#define OPT_VECC(c, count, ptr, descr)		{ (c), NULL, true, OPT_VECN, NULL, OPT_VEC(ptr, 0, count), "", descr }
 #define OPT_SELECT(c, T, ptr, value, descr)	{ (c), NULL, false, OPT_SELECT, NULL, OPT_SEL(T, TYPE_CHECK(T*, ptr), value), "", descr }
 #define OPT_SUBOPT(c, argname, descr, NR, opts)	OPT_ARG(c, OPT_SUBOPT, struct opt_subopt_s, OPT_SUB(NR, opts, c, NULL, descr), argname, descr)
 
@@ -116,6 +117,7 @@ typedef float opt_fvec4_t[4];
 #define OPTL_FLVEC2(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_FLOAT_VEC2, opt_fvec2_t, ptr, argname, descr)
 #define OPTL_VEC3(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_VEC3, opt_vec3_t, ptr, argname, descr)
 #define OPTL_VECN(c, s, ptr, descr)	{ (c), (s), true, OPT_VECN, NULL, OPT_VEC(ptr, 0, NULL), "", descr }
+#define OPTL_VECC(c, s, count, ptr, descr)	{ (c), (s), true, OPT_VECN, NULL, OPT_VEC(ptr, 0, count), "", descr }
 #define OPTL_FLVEC3(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_FLOAT_VEC3, opt_fvec3_t, ptr, argname, descr)
 #define OPTL_FLVEC4(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_FLOAT_VEC4, opt_fvec4_t, ptr, argname, descr)
 #define OPTL_FLVECN(c, s, ptr, descr)	{ (c), (s), true, OPT_FLOAT_VECN, NULL, OPT_VEC(ptr, 0, NULL), "", descr }
