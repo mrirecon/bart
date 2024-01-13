@@ -113,6 +113,7 @@ int main_moba(int argc, char* argv[argc])
         const char* input_b1 = NULL;
 	const char* input_b0 = NULL;
 	const char* input_sens = NULL;
+	const char* input_TE = NULL;
 
 	struct moba_conf conf = moba_defaults;
 	struct opt_reg_s ropts;
@@ -181,6 +182,7 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
 		OPTL_INFILE(0, "b0map", &input_b0, "[rad/s]", "Input B0 map as cfl file"),
 		OPTL_INFILE(0, "ksp-sens", &input_sens, "", "Input kspace sensitivities"),
+		OPTL_INFILE(0, "echo", &input_TE, "", "Input Echo times for IR multi-echo gradient-echo"),
                 OPTL_FLVEC4(0, "tvscale", &tvscales, "s1:s2:s3:s4", "Scaling of derivatives in TV penalty"),
 		OPTL_FLOAT(0, "b1-sobolev-a", &(data.other.b1_sobolev_a), "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "b1-sobolev-b", &(data.other.b1_sobolev_b), "", "(a in 1 + a * \\Laplace^-b/2)"),
@@ -201,6 +203,7 @@ int main_moba(int argc, char* argv[argc])
                 OPT_SELECT('P', enum mdb_t, &conf.mode, MDB_T1_PHY, "T1 mapping using reparameterized (M0, R1, alpha) model-based look-locker (TR required!)"),
 		OPT_SELECT('F', enum mdb_t, &conf.mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
 		OPT_SELECT('G', enum mdb_t, &conf.mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
+		OPT_SELECT('D', enum mdb_t, &conf.mode, MDB_IR_MGRE, "Joint T1 and T2* mapping using model-based IR multiple gradient echo"),
                 OPTL_SELECT(0, "bloch", enum mdb_t, &conf.mode, MDB_BLOCH, "Bloch model-based reconstruction"),
 		OPT_UINT('m', &conf.mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_UINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backsapce \b earlier
@@ -440,7 +443,7 @@ int main_moba(int argc, char* argv[argc])
 
 		struct linop_s* nufft_op_k = NULL;
 
-		md_select_dims(DIMS, FFT_FLAGS|TE_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, pat_dims, grid_dims);
+		md_select_dims(DIMS, FFT_FLAGS|TE_FLAG|CSHIFT_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, pat_dims, grid_dims);
 
 		pattern = anon_cfl("", DIMS, pat_dims);
 
@@ -545,6 +548,14 @@ int main_moba(int argc, char* argv[argc])
 		assert(md_check_compat(DIMS, ~FFT_FLAGS, grid_dims, b0_dims));
 	}
 
+	// Load TE for IR MGRE
+
+	const complex float* TE_IR_MGRE = NULL;
+	long TE_IR_MGRE_dims[DIMS];
+
+	if (MDB_IR_MGRE == conf.mode)
+		TE_IR_MGRE = load_cfl(input_TE, DIMS, TE_IR_MGRE_dims);
+
 	// scaling
 
 	if (normalize_scaling) {
@@ -604,7 +615,7 @@ int main_moba(int argc, char* argv[argc])
 
         long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-	assert(img_dims[COEFF_DIM] <= (long)ARRAY_SIZE(data.other.scale));
+	// assert(img_dims[COEFF_DIM] <= (long)ARRAY_SIZE(data.other.scale));
 
 	for (int i = 0; i < img_dims[COEFF_DIM]; i++) {
 
@@ -652,14 +663,14 @@ int main_moba(int argc, char* argv[argc])
 
 		md_copy(DIMS, TI_dims, TI_gpu, TI, CFL_SIZE);
 
-		moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI_gpu, b1, b0, kspace_gpu, init);
+		moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI_gpu, TE_IR_MGRE, b1, b0, kspace_gpu, init);
 
 		md_free(kspace_gpu);
 		md_free(TI_gpu);
 
 	} else
 #endif
-	moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, b1, b0, k_grid_data, init);
+	moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, TE_IR_MGRE, b1, b0, k_grid_data, init);
 
         // Rescale estimated parameter maps
 
@@ -671,7 +682,7 @@ int main_moba(int argc, char* argv[argc])
 
 		md_zsmul(DIMS, tmp_dims, tmp, tmp, (data.other.scale[i] ?: 1.));
 
-		if ((MDB_BLOCH == conf.mode) && (3 == i))
+		if ((MDB_BLOCH == conf.mode) && (3 == i))	// FIXME: this needs to go
 			md_zsadd(DIMS, tmp_dims, tmp, tmp, 1.);
 
 		md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
@@ -695,6 +706,9 @@ int main_moba(int argc, char* argv[argc])
 
         if (NULL != input_b1)
 		unmap_cfl(DIMS, b1_dims, b1);
+
+	if(NULL != input_TE)
+		unmap_cfl(DIMS, TE_IR_MGRE_dims, TE_IR_MGRE);
 
 	if (NULL != input_b0)
 		unmap_cfl(DIMS, b0_dims, b0);

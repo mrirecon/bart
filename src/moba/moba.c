@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 #include "moba/meco.h"
+#include "moba/ir_meco.h"
 #include "misc/debug.h"
 
 #include "moba.h"
@@ -49,6 +50,7 @@ struct moba_conf moba_defaults = {
 
 	// MECO
 	.mgre_model = MECO_WFR2S,
+	.ir_mgre_model = IR_MECO_W_T1_F_T1_R2S,
 	.fat_spec = FAT_SPEC_1,
 	.scale_fB0 = { 222., 1. },
 	.out_origin_maps = false,
@@ -93,6 +95,10 @@ int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in)
 
         case MDB_BLOCH:
 		coeffs = 4;
+		break;
+
+	case MDB_IR_MGRE:
+		coeffs = ir_meco_get_num_of_coeff(conf->ir_mgre_model);
 		break;
 	}
 

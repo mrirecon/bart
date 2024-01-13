@@ -26,13 +26,14 @@
 
 #include "moba/blochfun.h"
 #include "moba/T1phyfun.h"
+#include "moba/ir_meco.h"
 #include "moba/moba.h"
 
 #include "model_moba.h"
 
 
-struct mobamod moba_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* b1,
-		const complex float* b0, const complex float* psf, const struct noir_model_conf_s* conf, struct moba_conf_s* data, _Bool use_gpu)
+struct mobamod moba_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* TE, const complex float* b1,
+		const complex float* b0, const float* scale_fB0, const complex float* psf, const struct noir_model_conf_s* conf, struct moba_conf_s* data, _Bool use_gpu)
 {
 	long data_dims[DIMS];
 	md_select_dims(DIMS, ~COEFF_FLAG, data_dims, dims);
@@ -46,12 +47,14 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 	long out_dims[DIMS];
 	long in_dims[DIMS];
         long TI_dims[DIMS];
+	long TE_dims[DIMS];
 
-	md_select_dims(DIMS, conf->fft_flags|TE_FLAG|COEFF_FLAG|TIME2_FLAG, der_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|TE_FLAG|COEFF_FLAG|TIME_FLAG|TIME2_FLAG, der_dims, dims);
 	md_select_dims(DIMS, conf->fft_flags|TIME_FLAG|TIME2_FLAG, map_dims, dims);
-	md_select_dims(DIMS, conf->fft_flags|TE_FLAG|TIME_FLAG|TIME2_FLAG, out_dims, dims);
+	md_select_dims(DIMS, conf->fft_flags|TE_FLAG|CSHIFT_FLAG|TIME_FLAG|TIME2_FLAG, out_dims, dims);
 	md_select_dims(DIMS, conf->fft_flags|COEFF_FLAG|TIME_FLAG|TIME2_FLAG, in_dims, dims);
         md_select_dims(DIMS, TE_FLAG|TIME_FLAG|TIME2_FLAG, TI_dims, dims);
+	md_select_dims(DIMS, CSHIFT_FLAG|TIME_FLAG|TIME2_FLAG, TE_dims, dims);
 
 	struct nlop_s* model = NULL;
 
@@ -68,6 +71,11 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
         case MDB_T1_PHY:
 
 		model = nlop_T1_phy_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, data, use_gpu);
+		break;
+
+	case MDB_IR_MGRE:
+
+		model = nlop_ir_meco_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, TE_dims, TE, scale_fB0, data->other.scale);
 		break;
 
 	case MDB_BLOCH:
@@ -111,6 +119,8 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
                 ret.linop_alpha = bloch_get_alpha_trafo(model);
         else if (MDB_T1_PHY == data->model)
                 ret.linop_alpha = T1_get_alpha_trafo(model);
+	else if (MDB_IR_MGRE == data->model)
+		ret.linop_alpha = ir_meco_get_fB0_trafo(model);
 
 	nlop_free(nlinv.nlop);
 
