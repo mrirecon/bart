@@ -250,12 +250,13 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 	long d1[1] = { size };
 	// variable which is optimized by the IRGNM
 	complex float* x = md_alloc_sameplace(1, d1, CFL_SIZE, kspace_data);
+	complex float* x_ref = md_alloc_sameplace(1, d1, CFL_SIZE, kspace_data);
 
 	md_copy(DIMS, imgs_dims, x, img, CFL_SIZE);
 	md_copy(DIMS, coil_dims, x + skip, sens, CFL_SIZE);
 
-
-
+	//reference
+	md_zsmul(1, MD_DIMS(size), x_ref, x, conf->damping);
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 
@@ -312,7 +313,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 	mdb_irgnm_l1(&conf2,
 			irgnm_conf_dims,
 			nl.nlop,
-			size * 2, (float*)x,
+			size * 2, (float*)x, (float*)x_ref,
 			data_size * 2, (const float*)kspace_data);
 
 	md_copy(DIMS, imgs_dims, img, x, CFL_SIZE);
@@ -341,6 +342,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 	nlop_free(nl.nlop);
 
 	md_free(x);
+	md_free(x_ref);
 }
 
 
@@ -369,7 +371,6 @@ void moba_recon(const struct moba_conf* conf, struct moba_conf_s* data, const lo
 	case MDB_T2:
         case MDB_BLOCH:
 
-		assert(NULL == init);
 		recon(conf, data, dims, imgs_dims, img, coil_dims, sens, pattern, mask, TI, b1, b0, data_dims, kspace_data, conf->use_gpu);
 		break;
 

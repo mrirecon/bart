@@ -189,7 +189,7 @@ tests/test-moba-meco-noncart-r2s: traj scale phantom signal fmac index extract m
 	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
 	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
 	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
-	$(TOOLDIR)/moba -G -m3 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/moba -G -m3 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -T 0.9 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
 	$(TOOLDIR)/slice 6 1 reco.ra R2S.ra                               ;\
 	$(TOOLDIR)/resize -c 0 8 1 8 R2S.ra R2S_crop.ra                   ;\
 	$(TOOLDIR)/phantom -x8 -c circ.ra                                 ;\
@@ -211,7 +211,7 @@ tests/test-moba-meco-noncart-wfr2s: traj scale phantom signal fmac index extract
 	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
 	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
 	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
-	$(TOOLDIR)/moba -G -m1 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/moba -G -m1 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -T0.9 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
 	$(TOOLDIR)/resize -c 0 8 1 8 reco.ra reco_crop.ra                 ;\
 	$(TOOLDIR)/slice 6 0 reco_crop.ra W.ra                            ;\
 	$(TOOLDIR)/slice 6 1 reco_crop.ra F.ra                            ;\

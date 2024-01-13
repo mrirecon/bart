@@ -515,7 +515,7 @@ static void partial_update(iter_op_data* _data, float* _dst, const float* _src)
 void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 	const long dims[DIMS],
 	struct nlop_s* nlop,
-	long N, float* dst,
+	long N, float* dst, float* dst_ref,
 	long M, const float* src)
 {
 	auto cd = nlop_codomain(nlop);
@@ -598,7 +598,7 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 	};
 
 	iter4_irgnm2(CAST_UP(conf->c2), nlop,
-		N, dst, NULL, M, src, inv_op,
+		N, dst, dst_ref, M, src, inv_op,
 		(struct iter_op_s){ partial_update, CAST_UP(&pu_data) });
 
 	if (NULL != tmp)
