@@ -269,7 +269,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
                                         else if ((SEQ_BSSFP == sim_data.seq.seq_type) || (SEQ_IRBSSFP == sim_data.seq.seq_type))
                                                 a = 1. / sinf(CAST_UP(&sim_data.pulse.sinc)->flipangle / 2. * M_PI / 180.) / (sim_data.seq.nom_slice_thickness * 1000.);
 
-					const float (*scale2)[4] = &data->moba_data->other.scale;
+					const float (*scale2)[8] = &data->moba_data->other.scale;
 
 					// complex m0scale[spa_ind] adds scaling and phase to the signal
 					// M = M_x + i M_y	and S = S_x + i S_y

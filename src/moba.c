@@ -176,8 +176,8 @@ int main_moba(int argc, char* argv[argc])
         struct opt_s other_opts[] = {
 
 		// FIXME: MGRE can have 5 parameters
-                OPTL_FLVEC4(0, "pscale", &(data.other.scale), "s1:s2:s3:s4", "Scaling of parameters in model-based reconstruction"),
-                OPTL_FLVEC4(0, "pinit", &(data.other.initval), "i1:i2:i3:i4", "Initial values of parameters in model-based reconstruction"),
+                OPTL_FLVECN(0, "pscale", data.other.scale,"Scaling of parameters in model-based reconstruction"),
+                OPTL_FLVECN(0, "pinit", data.other.initval, "Initial values of parameters in model-based reconstruction"),
                 OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
 		OPTL_INFILE(0, "b0map", &input_b0, "[rad/s]", "Input B0 map as cfl file"),
 		OPTL_INFILE(0, "ksp-sens", &input_sens, "", "Input kspace sensitivities"),

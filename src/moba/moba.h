@@ -76,8 +76,8 @@ extern struct moba_conf moba_defaults;
 struct moba_other_conf {
 
         float fov_reduction_factor;
-        float scale[4];
-	float initval[4];
+        float scale[8];
+	float initval[8];
 	float b1_sobolev_a;
 	float b1_sobolev_b;
 

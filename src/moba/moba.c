@@ -60,8 +60,8 @@ struct moba_conf moba_defaults = {
 struct moba_other_conf moba_other_defaults = {
 
         .fov_reduction_factor = 1.,
-        .scale = { 1., 1., 1., 1. },
-        .initval = { 1., 1., 1., 1. },
+        .scale = { 1., 1., 1., 1., 1., 1., 1., 1. },
+        .initval = { 1., 1., 1., 1., 1., 1., 1., 1. },
 	.b1_sobolev_a = 440.f,
 	.b1_sobolev_b = 20.f,
 	.no_sens_l2 = false,
