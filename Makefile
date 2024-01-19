@@ -746,6 +746,7 @@ MODULES_test_nn += -lnn -lnlops -llinops -liter
 doc/commands.txt: bart
 	./rules/update_commands.sh ./bart doc/commands.txt $(XTARGETS)
 
+.PHONY: doxygen
 doxygen: makedoc.sh doxyconfig bart
 	 ./makedoc.sh
 
@@ -880,6 +881,8 @@ define \n
 
 endef
 
+.PHONY: utests-all utest utests_gpu-all utest_gpu
+
 utests-all: $(UTARGETS)
 	$(patsubst %,$(\n)$(UTEST_RUN) ./%,$(UTARGETS))
 
@@ -894,7 +897,7 @@ utest_gpu: utests_gpu-all
 
 
 
-
+.PHONY: clean
 clean:
 	rm -f `find $(srcdir) -name "*.o"`
 	rm -f $(root)/utests/*.o
@@ -902,6 +905,7 @@ clean:
 	rm -f $(patsubst %, %, $(UTARGETS_GPU))
 	rm -f $(libdir)/.*.lock
 
+.PHONY: allclean
 allclean: clean
 	rm -f $(libdir)/*.a $(ALLDEPS)
 	rm -f bart
@@ -916,6 +920,7 @@ allclean: clean
 	rm -f $(root)/save/nsv/*.dat
 	touch isclean
 
+.PHONY: distclean
 distclean: allclean
 
 
@@ -935,6 +940,7 @@ endif
 endif
 
 # shared library
+.PHONY: shared-lib
 shared-lib:
 	make allclean
 	CFLAGS="-fPIC $(OPT) -Wmissing-prototypes" make
@@ -943,6 +949,7 @@ shared-lib:
 
 
 
+.PHONY: install
 install: bart
 	install -d $(DESTDIR)/$(PREFIX)/bin/
 	install bart $(DESTDIR)/$(PREFIX)/bin/
