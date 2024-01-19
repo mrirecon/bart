@@ -1,21 +1,21 @@
-Distributed architecturs means to use different compute endities (or shorter nodes).
+Distributed architectures means to use different compute entities.
 Nodes can be PCs, workstations, or nodes of a cluster.
-They can be connected by TCP/IP or other connections like InfiniBand.
-An alternativ term would be heterogenous systems.
+They can be connected by TCP/IP or other connections such as InfiniBand.
+An alternative term would be heterogenous systems.
 
-Bart uses Message Passing Interface (MPI) [1] to work on distributed systems.
+BART uses the Message Passing Interface (MPI) [1] to work on distributed systems.
 
 # Basic Requirements
 1.) Install (Open-)MPI on all nodes
-2.) make sure bart executeable is working on all nodes (maybe compiling each node is necessary, espacially if differnt OS are used)
+2.) make sure bart executable is working on all nodes (compiling on each node may be necessary, especially if different OS are used)
 3.) build bart with MPI=1
 4.) setup ssh connections between nodes (requires ssh-server on each node as well)
 5.) setup file share between the nodes (for file reading/writing)
 6.) run bart (with mpirun) and parallel flags (bart -p)
 
-# Bart command line interface (no mpi required)
+# BART command line interface (no mpi required)
 - bart -p <pflags> [-s dim0 ... dimN] [-e maxdim0 ... maxdimN] [-S] tool <args>
-  - l <lflags>: specifys dimensions of looping which will be parallelized
+  - l <lflags>: specifies dimensions of looping which will be parallelized
   - -s: gives start dimensions or (if -e not given) slice which should be processed
   - -e: gives max in dimensions (imagine a for loop with i < maxdim)
   - Example 1: loop in dimension 13 from item 1 to 3
@@ -27,7 +27,7 @@ Bart uses Message Passing Interface (MPI) [1] to work on distributed systems.
   - Example 4: loop in dimensions 12 and 13 over items 2 to 3 and 3 to 5
     - bart -l (bart bitmask 12 13) -s 2:3 -e 3:5 fft 1 example_file.ra
 
-# Usefull commands
+# Useful commands
 - [Setup ssh key]: ssh-keygen -t rsa -b 2024 -f ~/.ssh/mpi
    - generate rsa key with bitlength 2024 in file ~/.ssh/mpi
 - [Copy ssh key]: ssh-copy-id <user>@<node>
@@ -38,27 +38,27 @@ Bart uses Message Passing Interface (MPI) [1] to work on distributed systems.
   - <user>, user on <node>, Note: if ssh is setup correctly, you don't need the same users on each nodes
 - [Unmount file share over ssh]: fusermount -u <abs_path>
 - [Run bart with MPI]: 'mpirun -n <x> --host <host>:<slots> -x <env_var> -wdir <wd> bart -p <pflags> [-s dim0 ... dimN] [-e max0 ... maxN] [-S] tool <args> : ...
-   - -n: <x> specifys how many slots should be used, slots != processes
-   - --host <host> ip adress or better ssh-alias, <slots> specify how many slots should max available, has to correspont with <x>
-   - -x <env_var> if needed set environment varialbe (e.g.: usefull for DEBUG_LEVL)
-   - -wdir <wd> specify working directory, could be differnt on each node
-   - bart has to be absolute path to bart executeable per node if not the same or in <wd>
-   - : seperats differnt node configurations (basically repeat everything for each node with adopted parameters, if they are the same, you don't have to seperate them this complicated, just use --hostfile <list of compute endities>)
+   - -n: <x> specifies how many slots should be used, slots != processes
+   - --host <host> ip address or better ssh-alias, <slots> specify how many slots should max available, has to correspond with <x>
+   - -x <env_var> if needed set environment variable (e.g.: useful for DEBUG_LEVEL)
+   - -wdir <wd> specify working directory, could be different on each node
+   - bart has to be the absolute path to the bart executable on each node if not the same or in <pwd>
+   - : separates different node configurations (basically repeat everything for each node with adopted parameters, if they are the same, you don't have to separate them, just use --hostfile <list of compute entities>)
 - [Setup symbolic link]: ln -s <source> <target>
-   - Setup an symbolic link to create the same file structure on nodes to circument the need of '-wdir'
+   - Setup an symbolic link to create the same file structure on nodes to avoid the need for '-wdir'
 
 
-# Usefull files
+# Useful files
 - ~/.ssh/config:
 "Host <node_name other nodes should refer to>
   User <user of this node>
   HostName <ip of other node>
   IdentityFile <public key that should be copied>"
-  - alternativly setup '/etc/hosts', to use names for nodes
+  - alternatively setup '/etc/hosts', to use names for nodes
 
 
 
-# Troubel shoot
+# Troublehooting
 - Q: Nothing happens at all after running 'mpirun'
   A: Check the mpi versions on each node, they should be the same or at least same major version
      'mpirun --version'
@@ -75,8 +75,8 @@ Bart uses Message Passing Interface (MPI) [1] to work on distributed systems.
 
 - Q: "/lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.33'
       /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.34'"
-- A: Most likely you nodes use differnt OS (distributions) with differnt versions of GLIBC.
-     Compile bart on each node seperatly
-     Use the absolute path to this binary in you call of 'mpirun', differnt nodes can be seperated by ':' 
+- A: Most likely you nodes use different OS (distributions) with different versions of GLIBC.
+     Compile bart on each node separatly
+     Use the absolute path to this binary in your call of 'mpirun', different nodes can be separated by ':' 
 
 [1] https://mpitutorial.com/
