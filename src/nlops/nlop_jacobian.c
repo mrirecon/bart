@@ -138,12 +138,12 @@ static void zrblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float*
 
 
 	long ddims[OO][II][N];
-	complex float* (*der)[OO][II] = (void*)(data->der);
-	complex float* (*derc)[OO][II] = (void*)(data->derc);
-	bool (*holom)[OO][II] = (void*)(data->holomorphic);
-	const struct iovec_s* (*iov_der)[OO][II] = (void*)(data->iov_der);
+	complex float* (*der)[OO][II] = (void*)data->der;
+	complex float* (*derc)[OO][II] = (void*)data->derc;
+	bool (*holom)[OO][II] = (void*)data->holomorphic;
+	const struct iovec_s* (*iov_der)[OO][II] = (void*)data->iov_der;
 
-	for (int i = 0; i < II; i++)
+	for (int i = 0; i < II; i++) {
 		for (int o = 0; o < OO; o++) {
 
 			auto iov = (*iov_der)[o][i];
@@ -162,6 +162,7 @@ static void zrblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float*
 			if (!(*holom)[o][i] && nlop_der_requested(_data, i, o))
 				(*derc)[o][i] = md_alloc_sameplace(iov->N, iov->dims, iov->size, args[0]);
 		}
+	}
 
 	assert(NULL == data->rblock_diag_fun);
 
@@ -218,11 +219,13 @@ static void zblock_diag_adj(const nlop_data_t* _data, unsigned int o, unsigned i
 	long max_dims[data->N];
 	md_tenmul_dims(data->N, max_dims, data->iov_out[o]->dims, data->iov_in[i]->dims, ddims);
 
-	if (NULL != derc)
+	if (NULL != derc) {
+
 		md_zfmacc2(data->N, max_dims,
 			data->iov_in[i]->strs, dst,
 			MD_STRIDES(data->N, ddims, CFL_SIZE), derc,
 			data->iov_out[o]->strs, src);
+	}
 }
 
 static void block_diag_del(const nlop_data_t* _data)
@@ -258,9 +261,11 @@ static void block_diag_del(const nlop_data_t* _data)
 	xfree(data);
 }
 
+
 static const struct graph_s* nlop_block_diag_get_graph(const struct operator_s* op, const nlop_data_t* _data)
 {
 	const auto data = CAST_DOWN(block_diag_s, _data);
+
 	if (NULL != data)
 		_data = data->data;
 
@@ -274,12 +279,14 @@ static const struct graph_s* nlop_block_diag_get_graph(const struct operator_s* 
 	if (NULL != CAST_MAYBE(block_diag_simple_s, _data)) {
 
 		const auto data = CAST_DOWN(block_diag_simple_s, _data);
+
 		if (NULL != data)
 			_data = data->data;
 	}
 
 	return create_graph_operator(op, _data->TYPEID->name);
 }
+
 
 struct nlop_s* nlop_zrblock_diag_generic_create(nlop_data_t* data, int N,
 						int OO, const long odims[OO][N],
@@ -320,7 +327,7 @@ struct nlop_s* nlop_zrblock_diag_generic_create(nlop_data_t* data, int N,
 	for (int i = 0; i < OO; i++)
 		_data->iov_out[i] = iovec_create(N, odims[i], CFL_SIZE);
 
-	for (int i = 0; i < II; i++)
+	for (int i = 0; i < II; i++) {
 		for (int o = 0; o < OO; o++) {
 
 			der_funs[i][o] = zblock_diag_der;
@@ -336,12 +343,12 @@ struct nlop_s* nlop_zrblock_diag_generic_create(nlop_data_t* data, int N,
 			(*(void* (*)[OO][II])(_data->der))[o][i] = NULL;
 			(*(void* (*)[OO][II])(_data->derc))[o][i] = NULL;
 		}
+	}
 
 	return nlop_generic_managed_create(
 		OO, N, odims, II, N, idims, CAST_UP(PTR_PASS(_data)),
 		zrblock_diag_fun, der_funs, adj_funs,
-		NULL, NULL, block_diag_del, block_diag_clear_der, nlop_block_diag_get_graph
-	);
+		NULL, NULL, block_diag_del, block_diag_clear_der, nlop_block_diag_get_graph);
 }
 
 
@@ -362,8 +369,10 @@ struct nlop_s* nlop_zblock_diag_generic_create(nlop_data_t* data, int N,
 	_data->derc = &((*TYPE_ALLOC(void*[OO][II]))[0][0]);
 
 	bool* holom = &((*TYPE_ALLOC(bool[OO][II]))[0][0]);
-	for (int i = 0; i < (II * OO); i++)
+
+	for (int i = 0; i < II * OO; i++)
 		holom[i] = true;
+
 	_data->holomorphic = holom;
 
 	_data->data = data;
@@ -386,7 +395,7 @@ struct nlop_s* nlop_zblock_diag_generic_create(nlop_data_t* data, int N,
 	for (int i = 0; i < OO; i++)
 		_data->iov_out[i] = iovec_create(N, odims[i], CFL_SIZE);
 
-	for (int i = 0; i < II; i++)
+	for (int i = 0; i < II; i++) {
 		for (int o = 0; o < OO; o++) {
 
 			der_funs[i][o] = zblock_diag_der;
@@ -402,12 +411,12 @@ struct nlop_s* nlop_zblock_diag_generic_create(nlop_data_t* data, int N,
 			(*(void* (*)[OO][II])(_data->der))[o][i] = NULL;
 			(*(void* (*)[OO][II])(_data->derc))[o][i] = NULL;
 		}
+	}
 
 	return nlop_generic_managed_create(
 		OO, N, odims, II, N, idims, CAST_UP(PTR_PASS(_data)),
 		zrblock_diag_fun, der_funs, adj_funs,
-		NULL, NULL, block_diag_del, block_diag_clear_der, nlop_block_diag_get_graph
-	);
+		NULL, NULL, block_diag_del, block_diag_clear_der, nlop_block_diag_get_graph);
 }
 
 
@@ -447,7 +456,7 @@ static void rblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float* 
 	float* (*der)[OO][II] = (void*)(data->der);
 	const struct iovec_s* (*iov_der)[OO][II] = (void*)(data->iov_der);
 
-	for (int i = 0; i < II; i++)
+	for (int i = 0; i < II; i++) {
 		for (int o = 0; o < OO; o++) {
 
 			auto iov = (*iov_der)[o][i];
@@ -460,6 +469,7 @@ static void rblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float* 
 			if (nlop_der_requested(_data, i, o))
 				(*der)[o][i] = md_alloc_sameplace(iov->N, iov->dims, iov->size, args[0]);
 		}
+	}
 
 	assert(NULL == data->zblock_diag_fun);
 
@@ -512,8 +522,10 @@ struct nlop_s* nlop_rblock_diag_generic_create(nlop_data_t* data, int N,
 	_data->derc = &((*TYPE_ALLOC(void*[OO][II]))[0][0]);
 
 	bool* holom = &((*TYPE_ALLOC(bool[OO][II]))[0][0]);
+
 	for (int i = 0; i < (II * OO); i++)
 		holom[i] = true;
+
 	_data->holomorphic = holom;
 
 	_data->data = data;
@@ -551,7 +563,7 @@ struct nlop_s* nlop_rblock_diag_generic_create(nlop_data_t* data, int N,
 		_data->iov_out[i] = iovec_create(N, rodims[i], FL_SIZE);
 	}
 
-	for (int i = 0; i < II; i++)
+	for (int i = 0; i < II; i++) {
 		for (int o = 0; o < OO; o++) {
 
 			der_funs[i][o] = rblock_diag_der;
@@ -567,6 +579,7 @@ struct nlop_s* nlop_rblock_diag_generic_create(nlop_data_t* data, int N,
 			(*(void* (*)[OO][II])(_data->der))[o][i] = NULL;
 			(*(void* (*)[OO][II])(_data->derc))[o][i] = NULL;
 		}
+	}
 
 	return nlop_generic_managed_create(
 		OO, N - 2, odims, II, N - 2, idims, CAST_UP(PTR_PASS(_data)),
@@ -597,6 +610,7 @@ static void zrdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims
 
 	assert(NULL == data->rdiag_fun);
 	assert(NULL == data->zdiag_fun);
+
 	data->zrdiag_fun(data->data, N, odims[0], dst[0], src[0], jac[0][0], jacc[0][0]);
 }
 
@@ -931,13 +945,15 @@ void linop_compute_matrix_zblock_diag_bwd(const struct linop_s* lop, int N, cons
 	complex float* in = md_alloc_sameplace(N, idims, CFL_SIZE, jacobian);
 	complex float* out = md_alloc_sameplace(N, odims, CFL_SIZE, jacobian);
 	complex float* ones = md_alloc_sameplace(N, diag_dims, CFL_SIZE, jacobian);
+
 	md_zfill(N, diag_dims, ones, 1);
 
 	do {
-
 		md_clear(N, odims, out, CFL_SIZE);
 		md_copy_block(N, pos, odims, out, diag_dims, ones, CFL_SIZE);
+
 		linop_adjoint_unchecked(lop, in, out);
+
 		md_copy_block(N, pos, ddims, jacobian, idims, in, CFL_SIZE);
 
 	} while (md_next(N, odims, loop_flags, pos));
@@ -1020,7 +1036,6 @@ void linop_compute_matrix_rblock_diag_fwd(const struct linop_s* lop, int N, cons
 	md_zfill(N, diag_dims, imag, 1. * I);
 
 	do {
-
 		md_clear(N, idims, in, FL_SIZE);
 
 		md_copy_block(N - 2, pos + 2, idims + 2, in, diag_dims + 2, ones, CFL_SIZE);
@@ -1089,7 +1104,6 @@ void linop_compute_matrix_rblock_diag_bwd(const struct linop_s* lop, int N, cons
 	md_zfill(N, diag_dims, imag, 1. * I);
 
 	do {
-
 		md_clear(N, odims, out, FL_SIZE);
 
 		md_copy_block(N - 2, pos + 2, odims + 2, out, diag_dims + 2, ones, CFL_SIZE);
@@ -1261,6 +1275,7 @@ struct nlop_s* nlop_zprecomp_jacobian_F(const struct nlop_s* nlop)
 	}
 
 	unsigned long diag_flags[OO][II];
+
 	for (int i = 0; i < II; i++)
 		for (int o = 0; o < OO; o++)
 			diag_flags[o][i] = 0;
@@ -1269,7 +1284,7 @@ struct nlop_s* nlop_zprecomp_jacobian_F(const struct nlop_s* nlop)
 }
 
 
-static void zrprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], complex float* dst[OO], int II, const long idims[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II], complex float* jacc[OO][II])
+static void zrprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const long /*odims*/[OO][N], complex float* dst[OO], int II, const long /*idims*/[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II], complex float* jacc[OO][II])
 {
 	auto data = CAST_DOWN(precomp_jacobian_s, _data);
 	auto op = data->nlop;

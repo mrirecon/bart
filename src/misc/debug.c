@@ -179,6 +179,9 @@ void debug_vprintf_trace(const char* func_name,
 
 {
 #ifndef USE_LOG_BACKEND
+	(void)func_name;
+	(void)file;
+	(void)line;
 	debug_vprintf(level, fmt, ap);
 #else
 	char tmp[1024] = { 0 };
