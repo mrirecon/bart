@@ -409,7 +409,7 @@ void mpi_sync_val(void* pval, long size)
 /**
  * Inplace scatter src to dest in block of size N
  * Copies N elements from src buffer (rank = 0) to dst buffers
- * (rank != 0). For rank == 0, dst == src, evently over communicator
+ * (rank != 0). For rank == 0, dst == src, evenly over communicator
  * 
  * This function requires Communicator handling!
  *
@@ -437,7 +437,7 @@ void mpi_scatter_batch(void* dst, long count, const void* src, size_t type_size)
 
 /**
  * Copies N elements from src buffer (rank = 0) to dst buffers
- * (rank != 0). For rank == 0, dst == src, evently over communicator
+ * (rank != 0). For rank == 0, dst == src, evenly over communicator
  * 
  * This function requires Communicator handling!
  *
@@ -510,10 +510,10 @@ void mpi_reduce_land(long N, bool vec[__VLA(N)])
 		vec += MIN(end - vec, INT_MAX / 2);
 	}
 #else
-	UNUSED(N);
-	UNUSED(vec);
+	(void)vec;
 #endif
 }
+
 
 #ifdef USE_MPI
 static void mpi_allreduce_sum_gpu(int N, float vec[N], MPI_Comm comm)
@@ -544,13 +544,14 @@ static void mpi_allreduce_sum_gpu(int N, float vec[N], MPI_Comm comm)
 }
 #endif
 
+#ifdef USE_MPI
 static void mpi_reduce_sum_kernel(unsigned long reduce_flags, long N, float vec[N])
 {
 	if (1 == mpi_get_num_procs())
 		error("MPI reduction requested but only run by one process!\n");
 
-#ifdef USE_MPI
 	int tag = mpi_reduce_color(reduce_flags, vec);
+
 	MPI_Comm comm_sub;
 	MPI_Comm_split(mpi_get_comm(), tag, 0, &comm_sub);
 
@@ -568,19 +569,16 @@ static void mpi_reduce_sum_kernel(unsigned long reduce_flags, long N, float vec[
 	}
 
 	MPI_Comm_free(&comm_sub);
-#else
-	UNUSED(reduce_flags);
-	UNUSED(N);
-	UNUSED(vec);
-#endif
 }
+#endif
 
+
+#ifdef USE_MPI
 void mpi_reduce_sum_vector(long N, float vec[N])
 {
 	if (1 == mpi_get_num_procs())
 		error("MPI reduction requested but only run by one process!\n");
 
-#ifdef USE_MPI
 	float* end = vec + N;
 
 	while (vec < end) {
@@ -588,11 +586,8 @@ void mpi_reduce_sum_vector(long N, float vec[N])
 		mpi_allreduce_sum_gpu(MIN(end - vec, INT_MAX / 2), vec, mpi_get_comm());
 		vec += MIN(end - vec, INT_MAX / 2);
 	}
-#else
-	UNUSED(N);
-	UNUSED(vec);
-#endif
 }
+#endif
 
 void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[N], float* ptr)
 {
@@ -611,7 +606,7 @@ void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[N], float
 		if (MD_IS_SET(block_flags,i))
 			break;
 
-		if (strs[i] == (size * (long)sizeof(float))) {
+		if (strs[i] == size * (long)sizeof(float)) {
 
 			size *= tdims[i];
 			tdims[i] = 1;
@@ -622,21 +617,29 @@ void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[N], float
 	md_singleton_strides(N, pos);
 
 	do {
+#ifdef USE_MPI
 		mpi_reduce_sum_kernel(reduce_flags, size, &MD_ACCESS(N, strs, pos, ptr));
+#else
+		(void)reduce_flags;
+#endif
 
 	} while(md_next(N, tdims, ~0UL, pos));
 }
 
-void  mpi_reduce_zsum(int N, unsigned long reduce_flags, const long dims[N], complex float* ptr)
+void mpi_reduce_zsum(int N, unsigned long reduce_flags, const long dims[N], complex float* ptr)
 {
 	mpi_reduce_sum(N + 1, reduce_flags, MD_REAL_DIMS(N, dims), (float*)ptr);
 }
 
-void  mpi_reduce_zsum_vector(long N, complex float ptr[N])
+void mpi_reduce_zsum_vector(long N, complex float ptr[N])
 {
+#ifdef USE_MPI
 	mpi_reduce_sum_vector(2 * N, (float*)ptr);
+#else
+	(void)N;
+	(void)ptr;
+#endif
 }
-
 
 #ifdef USE_MPI
 static void mpi_allreduce_sumD_gpu(int N, double vec[N], MPI_Comm comm)
@@ -666,12 +669,12 @@ static void mpi_allreduce_sumD_gpu(int N, double vec[N], MPI_Comm comm)
 }
 #endif
 
+#ifdef USE_MPI
 static void mpi_reduce_sumD_kernel(unsigned long reduce_flags, long N, double vec[N])
 {
 	if (1 == mpi_get_num_procs())
 		error("MPI reduction requested but only run by one process!\n");
 
-#ifdef USE_MPI
 	int tag = mpi_reduce_color(reduce_flags, vec);
 
 	MPI_Comm comm_sub;
@@ -680,7 +683,9 @@ static void mpi_reduce_sumD_kernel(unsigned long reduce_flags, long N, double ve
 	if (0 < tag) {
 
 		vec = vptr_resolve(vec);
+
 		double* end = vec + N;
+
 		while (vec < end) {
 
 			mpi_allreduce_sumD_gpu(MIN(end - vec, INT_MAX / 2), vec, comm_sub);
@@ -689,12 +694,8 @@ static void mpi_reduce_sumD_kernel(unsigned long reduce_flags, long N, double ve
 	}
 
 	MPI_Comm_free(&comm_sub);
-#else
-	UNUSED(reduce_flags);
-	UNUSED(N);
-	UNUSED(vec);
-#endif
 }
+#endif
 
 void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], double* ptr)
 {
@@ -724,7 +725,11 @@ void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], doub
 	md_singleton_strides(N, pos);
 
 	do {
+#ifdef USE_MPI
 		mpi_reduce_sumD_kernel(reduce_flags, size, &MD_ACCESS(N, strs, pos, ptr));
+#else
+		(void)reduce_flags;
+#endif
 
 	} while(md_next(N, tdims, ~0UL, pos));
 }
