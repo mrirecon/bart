@@ -72,17 +72,17 @@ void init_mpi(int* argc, char*** argv)
 		if (1 == MPIX_Query_cuda_support())
 			cuda_aware_mpi = true;
 #endif
-
 		MPI_Comm node_comm;
-		MPI_Comm_split_type(comm, MPI_COMM_TYPE_SHARED, mpi_get_num_procs(),MPI_INFO_NULL, &node_comm);
+		MPI_Comm_split_type(comm, MPI_COMM_TYPE_SHARED, mpi_get_num_procs(), MPI_INFO_NULL, &node_comm);
 
 		int rank_on_node;
 		MPI_Comm_rank(node_comm, &rank_on_node);
 		
 		int number_of_nodes = (rank_on_node == 0);
+
 		MPI_Allreduce(MPI_IN_PLACE, &number_of_nodes, 1, MPI_INT, MPI_SUM, comm);
 
-		if ((1 == number_of_nodes) && (!mpi_shared_files)) {
+		if ((1 == number_of_nodes) && !mpi_shared_files) {
 
 			if (mpi_is_main_proc())
 				debug_printf(DP_DEBUG1, "Activate shared file system support due to single node execution!\n");
@@ -92,7 +92,6 @@ void init_mpi(int* argc, char*** argv)
 
 		MPI_Comm_free(&node_comm);
 	}
-		
 #else
 	error("BART was compiled without MPI support!\n");
 	UNUSED(argc);
@@ -153,6 +152,7 @@ void mpi_signoff_proc(bool signoff)
 
 		MPI_Comm_rank(comm, &mpi_rank);
 		MPI_Comm_size(comm, &mpi_nprocs);
+
 	} else {
 
 		mpi_rank = 0;
@@ -210,7 +210,7 @@ static void mpi_bcast_selected_gpu(bool _tag, void* ptr, long size, int root)
 void mpi_bcast_selected(bool _tag, void* ptr, long size, int root)
 {
 #ifdef USE_MPI
-	if(1 == mpi_get_num_procs())
+	if (1 == mpi_get_num_procs())
 		return;
 
 #ifdef USE_CUDA
@@ -231,6 +231,7 @@ void mpi_bcast_selected(bool _tag, void* ptr, long size, int root)
 	if (_tag) {
 
 		void* end = ptr + size;
+
 		while (ptr < end) {
 
 			MPI_Bcast(ptr, MIN(end - ptr, INT_MAX / 2), MPI_BYTE, 0, comm_sub);
@@ -283,7 +284,7 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 {
 	if (sender_rank == recv_rank) {
 
-		if ((mpi_get_rank() == sender_rank) && dst != src) {
+		if ((mpi_get_rank() == sender_rank) && (dst != src)) {
 
 #ifdef USE_CUDA
 			if (cuda_ondevice(dst) || cuda_ondevice(src))
@@ -305,6 +306,7 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 		if (cuda_ondevice(src) && !cuda_aware_mpi) {
 
 			print_cuda_aware_warning();
+
 			_src = xmalloc(size);
 			cuda_memcpy(size, _src, src);
 		}
@@ -318,7 +320,9 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 		while (_src < end) {
 
 			int tsize = MIN(end - _src, INT_MAX / 2);
+
 			MPI_Send(_src, tsize, MPI_BYTE, recv_rank, 0, mpi_get_comm());
+
 			_src += tsize;
 		}
 
@@ -348,7 +352,9 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 		while (_dst < end) {
 
 			int tsize = MIN(end - _dst, INT_MAX / 2);
+
 			MPI_Recv(_dst, size, MPI_BYTE, sender_rank, 0, mpi_get_comm(), MPI_STATUS_IGNORE);
+
 			_dst += tsize;
 		}
 
@@ -385,6 +391,7 @@ void mpi_copy2(int N, const long dim[N], const long ostr[N], void* optr, const l
 
 	optimized_nop(2, MD_BIT(0), N, dim, nstr, (void*[2]){ optr, (void*)iptr }, (size_t[2]){ size, size }, nary_copy_mpi);
 }
+
 
 /**
  * Syncronise pval to all processes (take part in calculation)
@@ -495,9 +502,11 @@ void mpi_reduce_land(long N, bool vec[__VLA(N)])
 #endif
 	
 	bool* end = vec + N;
+
 	while (vec < end) {
 
 		MPI_Allreduce(MPI_IN_PLACE, vec, MIN(end - vec, INT_MAX / 2), MPI_C_BOOL, MPI_LAND, mpi_get_comm());
+
 		vec += MIN(end - vec, INT_MAX / 2);
 	}
 #else
@@ -549,9 +558,11 @@ static void mpi_reduce_sum_kernel(unsigned long reduce_flags, long N, float vec[
 
 		vec = vptr_resolve(vec);
 		float* end = vec + N;
+
 		while (vec < end) {
 
 			mpi_allreduce_sum_gpu(MIN(end - vec, INT_MAX / 2), vec, comm_sub);
+
 			vec += MIN(end - vec, INT_MAX / 2);
 		}
 	}
@@ -570,8 +581,8 @@ void mpi_reduce_sum_vector(long N, float vec[N])
 		error("MPI reduction requested but only run by one process!\n");
 
 #ifdef USE_MPI
-
 	float* end = vec + N;
+
 	while (vec < end) {
 
 		mpi_allreduce_sum_gpu(MIN(end - vec, INT_MAX / 2), vec, mpi_get_comm());
@@ -609,9 +620,10 @@ void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[N], float
 
 	long pos[N];
 	md_singleton_strides(N, pos);
-	do {
 
+	do {
 		mpi_reduce_sum_kernel(reduce_flags, size, &MD_ACCESS(N, strs, pos, ptr));
+
 	} while(md_next(N, tdims, ~0UL, pos));
 }
 
@@ -661,6 +673,7 @@ static void mpi_reduce_sumD_kernel(unsigned long reduce_flags, long N, double ve
 
 #ifdef USE_MPI
 	int tag = mpi_reduce_color(reduce_flags, vec);
+
 	MPI_Comm comm_sub;
 	MPI_Comm_split(mpi_get_comm(), tag, 0, &comm_sub);
 
@@ -700,7 +713,7 @@ void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], doub
 		if (MD_IS_SET(block_flags,i))
 			break;
 
-		if (strs[i] == (size * (long)sizeof(double))) {
+		if (strs[i] == size * (long)sizeof(double)) {
 
 			size *= tdims[i];
 			tdims[i] = 1;
@@ -709,9 +722,10 @@ void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], doub
 
 	long pos[N];
 	md_singleton_strides(N, pos);
-	do {
 
+	do {
 		mpi_reduce_sumD_kernel(reduce_flags, size, &MD_ACCESS(N, strs, pos, ptr));
+
 	} while(md_next(N, tdims, ~0UL, pos));
 }
 

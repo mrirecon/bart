@@ -1416,7 +1416,7 @@ void md_zfmac2(int D, const long dims[D], const long ostr[D], complex float* opt
 	if (!simple_zfmac(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
 		MAKE_Z3OP(zfmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+	if (is_mpi(iptr1) || is_mpi(iptr2)) {
 
 		long dims2[D];
 		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
@@ -1452,7 +1452,7 @@ void md_zfmacD2(int D, const long dims[D], const long ostr[D], complex double* o
 {
 	MAKE_Z3OPD(zfmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+	if (is_mpi(iptr1) || is_mpi(iptr2)) {
 
 		long dims2[D];
 		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
@@ -1489,7 +1489,7 @@ void md_fmac2(int D, const long dims[D], const long ostr[D], float* optr, const 
 	if (!simple_fmac(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
 		MAKE_3OP(fmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+	if (is_mpi(iptr1) || is_mpi(iptr2)) {
 
 		long dims2[D];
 		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
@@ -1525,7 +1525,7 @@ void md_fmacD2(int D, const long dims[D], const long ostr[D], double* optr, cons
 {
 	MAKE_3OPD(fmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+	if (is_mpi(iptr1) || is_mpi(iptr2)) {
 
 		long dims2[D];
 		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
@@ -1562,7 +1562,7 @@ void md_zfmacc2(int D, const long dims[D], const long ostr[D], complex float* op
 	if (!simple_zfmacc(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
 		MAKE_Z3OP(zfmacc, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+	if (is_mpi(iptr1) || is_mpi(iptr2)) {
 
 		long dims2[D];
 		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
@@ -1601,7 +1601,7 @@ void md_zfmaccD2(int D, const long dims[D], const long ostr[D], complex double* 
 {
 	MAKE_Z3OPD(zfmaccD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	if ((is_mpi(iptr1) || is_mpi(iptr2))) {
+	if (is_mpi(iptr1) || is_mpi(iptr2)) {
 
 		long dims2[D];
 		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
