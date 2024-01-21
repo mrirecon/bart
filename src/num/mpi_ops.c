@@ -230,13 +230,8 @@ void mpi_bcast_selected(bool _tag, void* ptr, long size, int root)
 
 	if (_tag) {
 
-		void* end = ptr + size;
-
-		while (ptr < end) {
-
-			MPI_Bcast(ptr, MIN(end - ptr, INT_MAX / 2), MPI_BYTE, 0, comm_sub);
-			ptr += MIN(end - ptr, INT_MAX / 2);
-		}
+		for (long n = 0; n < size; n += INT_MAX / 2)
+			MPI_Bcast(ptr + n, MIN(size - n, INT_MAX / 2), MPI_BYTE, 0, comm_sub);
 	}
 
 	MPI_Comm_free(&comm_sub);
@@ -315,23 +310,12 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 			cuda_sync_stream();
 #endif
 
-		const void* end = _src + size;
-
-		while (_src < end) {
-
-			int tsize = MIN(end - _src, INT_MAX / 2);
-
-			MPI_Send(_src, tsize, MPI_BYTE, recv_rank, 0, mpi_get_comm());
-
-			_src += tsize;
-		}
+		for (long n = 0; n < size; n += INT_MAX / 2)
+			MPI_Send(_src + n, MIN(size - n, INT_MAX / 2), MPI_BYTE, recv_rank, 0, mpi_get_comm());
 
 #ifdef USE_CUDA
-		if (cuda_ondevice(src) && !cuda_aware_mpi) {
-
-			_src -= size;
+		if (cuda_ondevice(src) && !cuda_aware_mpi)
 			xfree(_src);
-		}
 #endif
 	}
 
@@ -347,27 +331,16 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 		}
 #endif
 
-		void* end = _dst + size;
-
-		while (_dst < end) {
-
-			int tsize = MIN(end - _dst, INT_MAX / 2);
-
-			MPI_Recv(_dst, size, MPI_BYTE, sender_rank, 0, mpi_get_comm(), MPI_STATUS_IGNORE);
-
-			_dst += tsize;
-		}
+		for (long n = 0; n < size; n += INT_MAX / 2)
+			MPI_Recv(_dst + n, MIN(size - n, INT_MAX / 2), MPI_BYTE, sender_rank, 0, mpi_get_comm(), MPI_STATUS_IGNORE);
 
 #ifdef USE_CUDA
 		if (cuda_ondevice(dst) && !cuda_aware_mpi) {
-
-			_dst -= size;
 
 			cuda_memcpy(size, dst, _dst);
 			xfree(_dst);
 		}
 #endif
-
 	}
 #else
 	UNUSED(dst);
@@ -416,20 +389,21 @@ void mpi_sync_val(void* pval, long size)
  * @param dst destination buffer of ranks != 0
  * @param count elements which should be copied
  * @param src buffer that holds enough data to spread to buffers
- * @param type_size of a single element
+ * @param size size of a single element
  */
-void mpi_scatter_batch(void* dst, long count, const void* src, size_t type_size)
+void mpi_scatter_batch(void* dst, long count, const void* src, size_t size)
 {
 #ifdef USE_MPI
-	count *= type_size;
+	count *= size;
 	assert(count < INT_MAX);
 
-	MPI_Scatter(src, count, MPI_BYTE, (0 == mpi_get_rank() && dst == src) ? MPI_IN_PLACE : dst, count, MPI_BYTE, 0, mpi_get_comm());
+	MPI_Scatter(src, count, MPI_BYTE, ((0 == mpi_get_rank()) && (dst == src)) ? MPI_IN_PLACE : dst,
+			count, MPI_BYTE, 0, mpi_get_comm());
 #else
 	UNUSED(src);
 	UNUSED(count);
 	UNUSED(dst);
-	UNUSED(type_size);
+	UNUSED(size);
 #endif
 }
 
@@ -444,21 +418,22 @@ void mpi_scatter_batch(void* dst, long count, const void* src, size_t type_size)
  * @param dst destination buffer of ranks != 0
  * @param count elements which should be copied
  * @param src buffer that holds enough data to spread to buffers
- * @param type_size of a single element
+ * @param size size of a single element
  * @param to_all distribute values to all
  */
-void mpi_gather_batch(void* dst, long count, const void* src, size_t type_size)
+void mpi_gather_batch(void* dst, long count, const void* src, size_t size)
 {
 #ifdef USE_MPI
-	count *= type_size;
+	count *= size;
 	assert(count < INT_MAX);
 
-	MPI_Gather((0 == mpi_get_rank() && dst == src) ? MPI_IN_PLACE : src, count, MPI_BYTE, dst, count, MPI_BYTE, 0, mpi_get_comm());
+	MPI_Gather(((0 == mpi_get_rank()) && (dst == src)) ? MPI_IN_PLACE : src, count,
+			MPI_BYTE, dst, count, MPI_BYTE, 0, mpi_get_comm());
 #else
 	UNUSED(dst);
 	UNUSED(count);
 	UNUSED(src);
-	UNUSED(type_size);
+	UNUSED(size);
 #endif
 }
 
@@ -501,14 +476,8 @@ void mpi_reduce_land(long N, bool vec[__VLA(N)])
 		cuda_sync_stream();
 #endif
 	
-	bool* end = vec + N;
-
-	while (vec < end) {
-
-		MPI_Allreduce(MPI_IN_PLACE, vec, MIN(end - vec, INT_MAX / 2), MPI_C_BOOL, MPI_LAND, mpi_get_comm());
-
-		vec += MIN(end - vec, INT_MAX / 2);
-	}
+	for (long n = 0; n < N; n += INT_MAX / 2)
+		MPI_Allreduce(MPI_IN_PLACE, vec + n, MIN(N - n, INT_MAX / 2), MPI_C_BOOL, MPI_LAND, mpi_get_comm());
 #else
 	(void)vec;
 #endif
@@ -558,14 +527,9 @@ static void mpi_reduce_sum_kernel(unsigned long reduce_flags, long N, float vec[
 	if (0 < tag) {
 
 		vec = vptr_resolve(vec);
-		float* end = vec + N;
 
-		while (vec < end) {
-
-			mpi_allreduce_sum_gpu(MIN(end - vec, INT_MAX / 2), vec, comm_sub);
-
-			vec += MIN(end - vec, INT_MAX / 2);
-		}
+		for (long n = 0; n < N; n += INT_MAX / 2)
+			mpi_allreduce_sum_gpu(MIN(N - n, INT_MAX / 2), vec + n, comm_sub);
 	}
 
 	MPI_Comm_free(&comm_sub);
@@ -579,13 +543,8 @@ void mpi_reduce_sum_vector(long N, float vec[N])
 	if (1 == mpi_get_num_procs())
 		error("MPI reduction requested but only run by one process!\n");
 
-	float* end = vec + N;
-
-	while (vec < end) {
-
-		mpi_allreduce_sum_gpu(MIN(end - vec, INT_MAX / 2), vec, mpi_get_comm());
-		vec += MIN(end - vec, INT_MAX / 2);
-	}
+	for (long n = 0; n < N; n += INT_MAX / 2)
+		mpi_allreduce_sum_gpu(MIN(N - n, INT_MAX / 2), vec + n, mpi_get_comm());
 }
 #endif
 
@@ -682,15 +641,10 @@ static void mpi_reduce_sumD_kernel(unsigned long reduce_flags, long N, double ve
 
 	if (0 < tag) {
 
-		vec = vptr_resolve(vec);
+		double *vec2 = vptr_resolve(vec);
 
-		double* end = vec + N;
-
-		while (vec < end) {
-
-			mpi_allreduce_sumD_gpu(MIN(end - vec, INT_MAX / 2), vec, comm_sub);
-			vec += MIN(end - vec, INT_MAX / 2);
-		}
+		for (long n = 0; n < N; n += INT_MAX / 2)
+			mpi_allreduce_sumD_gpu(MIN(N - n, INT_MAX / 2), vec2 + n, comm_sub);
 	}
 
 	MPI_Comm_free(&comm_sub);
@@ -711,7 +665,7 @@ void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], doub
 
 	for (int i = 0; i < N; i++) {
 
-		if (MD_IS_SET(block_flags,i))
+		if (MD_IS_SET(block_flags, i))
 			break;
 
 		if (strs[i] == size * (long)sizeof(double)) {
