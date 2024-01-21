@@ -1,4 +1,4 @@
-/* Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -141,14 +141,13 @@ void mpi_signoff_proc(bool signoff)
 	if (1 >= mpi_get_num_procs())
 		return;
 
-	int tag = signoff ? 0 : 1;
-
 	MPI_Comm new_comm;	
-	MPI_Comm_split(comm, tag, mpi_get_rank(), &new_comm);
+	MPI_Comm_split(comm, !signoff, mpi_get_rank(), &new_comm);
 	MPI_Comm_free(&comm);
+
 	comm = new_comm;
 
-	if (tag) {
+	if (!signoff) {
 
 		MPI_Comm_rank(comm, &mpi_rank);
 		MPI_Comm_size(comm, &mpi_nprocs);
@@ -186,7 +185,7 @@ void mpi_sync(void)
 }
 
 #ifdef USE_CUDA
-static void mpi_bcast_selected_gpu(bool _tag, void* ptr, long size, int root)
+static void mpi_bcast_selected_gpu(bool tag, void* ptr, long size, int root)
 {
 	if(1 == mpi_get_num_procs())
 		return;
@@ -198,16 +197,16 @@ static void mpi_bcast_selected_gpu(bool _tag, void* ptr, long size, int root)
 	if (mpi_get_rank() == root)
 		cuda_memcpy(size, tmp, ptr);
 
-	mpi_bcast_selected(_tag, tmp, size, root);
+	mpi_bcast_selected(tag, tmp, size, root);
 
-	if (_tag)
+	if (tag)
 		cuda_memcpy(size, ptr, tmp);
 
 	xfree(tmp);
 }
 #endif
 
-void mpi_bcast_selected(bool _tag, void* ptr, long size, int root)
+void mpi_bcast_selected(bool tag, void* ptr, long size, int root)
 {
 #ifdef USE_MPI
 	if (1 == mpi_get_num_procs())
@@ -216,7 +215,7 @@ void mpi_bcast_selected(bool _tag, void* ptr, long size, int root)
 #ifdef USE_CUDA
 	if (!cuda_aware_mpi && cuda_ondevice(ptr)) {
 
-		mpi_bcast_selected_gpu(_tag, ptr, size, root);
+		mpi_bcast_selected_gpu(tag, ptr, size, root);
 		return;
 	}
 
@@ -224,11 +223,10 @@ void mpi_bcast_selected(bool _tag, void* ptr, long size, int root)
 		cuda_sync_stream();
 #endif
 
-	int tag = _tag ? 1 : 0;
 	MPI_Comm comm_sub;
-	MPI_Comm_split(mpi_get_comm(), tag, (mpi_get_rank() == root) ? 0 : 1, &comm_sub);
+	MPI_Comm_split(mpi_get_comm(), tag, (mpi_get_rank() != root), &comm_sub);
 
-	if (_tag) {
+	if (tag) {
 
 		for (long n = 0; n < size; n += INT_MAX / 2)
 			MPI_Bcast(ptr + n, MIN(size - n, INT_MAX / 2), MPI_BYTE, 0, comm_sub);
@@ -236,7 +234,7 @@ void mpi_bcast_selected(bool _tag, void* ptr, long size, int root)
 
 	MPI_Comm_free(&comm_sub);
 #else
-	UNUSED(_tag);
+	UNUSED(tag);
 	UNUSED(ptr);
 	UNUSED(size);
 	UNUSED(root);
@@ -247,6 +245,7 @@ void mpi_bcast(void* ptr, long size, int root)
 {
 	mpi_bcast_selected(true, ptr, size, root);
 }
+
 
 void mpi_bcast2(int N, const long dims[N], const long strs[N], void* ptr, long size, int root)
 {
@@ -295,50 +294,50 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 #ifdef USE_MPI
 	if (mpi_get_rank() == sender_rank) {
 
-		void* _src = (void*)src;
+		void* src2 = (void*)src;
 
 #ifdef USE_CUDA
 		if (cuda_ondevice(src) && !cuda_aware_mpi) {
 
 			print_cuda_aware_warning();
 
-			_src = xmalloc(size);
-			cuda_memcpy(size, _src, src);
+			src2 = xmalloc(size);
+			cuda_memcpy(size, src2, src);
 		}
 
-		if (cuda_ondevice(_src))
+		if (cuda_ondevice(src2))
 			cuda_sync_stream();
 #endif
 
 		for (long n = 0; n < size; n += INT_MAX / 2)
-			MPI_Send(_src + n, MIN(size - n, INT_MAX / 2), MPI_BYTE, recv_rank, 0, mpi_get_comm());
+			MPI_Send(src2 + n, MIN(size - n, INT_MAX / 2), MPI_BYTE, recv_rank, 0, mpi_get_comm());
 
 #ifdef USE_CUDA
 		if (cuda_ondevice(src) && !cuda_aware_mpi)
-			xfree(_src);
+			xfree(src2);
 #endif
 	}
 
 	if (mpi_get_rank() == recv_rank) {
 
-		void* _dst = dst;
+		void* dst2 = dst;
 
 #ifdef USE_CUDA
 		if (cuda_ondevice(dst) && !cuda_aware_mpi) {
 
 			print_cuda_aware_warning();
-			_dst = xmalloc(size);
+			dst2 = xmalloc(size);
 		}
 #endif
 
 		for (long n = 0; n < size; n += INT_MAX / 2)
-			MPI_Recv(_dst + n, MIN(size - n, INT_MAX / 2), MPI_BYTE, sender_rank, 0, mpi_get_comm(), MPI_STATUS_IGNORE);
+			MPI_Recv(dst2 + n, MIN(size - n, INT_MAX / 2), MPI_BYTE, sender_rank, 0, mpi_get_comm(), MPI_STATUS_IGNORE);
 
 #ifdef USE_CUDA
 		if (cuda_ondevice(dst) && !cuda_aware_mpi) {
 
-			cuda_memcpy(size, dst, _dst);
-			xfree(_dst);
+			cuda_memcpy(size, dst, dst2);
+			xfree(dst2);
 		}
 #endif
 	}
@@ -556,16 +555,16 @@ void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[N], float
 	long strs[N];
 	md_calc_strides(N, strs, dims, FL_SIZE);
 
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, sizeof(float));
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, FL_SIZE);
 
 	long size = 1;
 
 	for (int i = 0; i < N; i++) {
 
-		if (MD_IS_SET(block_flags,i))
+		if (MD_IS_SET(block_flags, i))
 			break;
 
-		if (strs[i] == size * (long)sizeof(float)) {
+		if (strs[i] == size * (long)FL_SIZE) {
 
 			size *= tdims[i];
 			tdims[i] = 1;
@@ -659,7 +658,7 @@ void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], doub
 	long strs[N];
 	md_calc_strides(N, strs, dims, DL_SIZE);
 
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, sizeof(double));
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, DL_SIZE);
 
 	long size = 1;
 
@@ -668,7 +667,7 @@ void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], doub
 		if (MD_IS_SET(block_flags, i))
 			break;
 
-		if (strs[i] == size * (long)sizeof(double)) {
+		if (strs[i] == size * (long)DL_SIZE) {
 
 			size *= tdims[i];
 			tdims[i] = 1;

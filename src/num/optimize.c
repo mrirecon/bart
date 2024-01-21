@@ -632,12 +632,14 @@ void optimized_nop(int N, unsigned int io, int D, const long dim[D], const long 
 	vptr_assert_sameplace(N, (void**)nptr);
 
 	bool mpi = false;
+
 	for (int i = 0; i < N; ++i)
 		mpi = mpi || is_mpi(nptr[i]);
 
 	if (mpi) {
 
 		unsigned long mpi_flags = 0UL;
+
 		for (int i = 0; i < N; ++i)
 			mpi_flags |= vptr_block_loop_flags(D, dim, (long*)nstr[i], nptr[i], sizes[i]);
 
@@ -647,9 +649,9 @@ void optimized_nop(int N, unsigned int io, int D, const long dim[D], const long 
 		md_select_dims(D, ~mpi_flags, bdims, dim);
 		md_select_dims(D, mpi_flags, ldims, dim);
 
-		long* bdimsp = &bdims[0];
-		size_t* sizesp = &sizes[0];
-		void* nstrp = (void*)nstr;
+		const long* bdimsp = bdims;
+		size_t* sizesp = sizes;
+		void* nstrp = nstr;
 
 		NESTED(void, nary_mpi_optimize, (void* ptr[]))
 		{
