@@ -64,6 +64,7 @@ int main_signal(int argc, char* argv[argc])
 	bool IR = false;
 	bool IR_SS = false;
 	bool fat = false;
+	float fat_frac = -1.;
 	float FA = -1.;
 	float TR = -1.;
 	float TE = -1.;
@@ -103,6 +104,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_FLOAT('e', &TE, "TE", "echo time"),
 		OPT_FLOAT('i', &TI, "TI", "inversion time"),
 		OPT_FLOAT('f', &FA, "FA", "flip ange"),
+		OPT_FLOAT('d', &fat_frac, "FF", "fat fraction"),
 		OPT_FLOAT('t', &time_T1relax, "T1 relax", "T1 relax period (second) for MOLLI"),
 		OPT_LONG('n', &dims[TE_DIM], "n", "number of measurements"),
 		OPT_LONG('b', &Hbeats, "heart beats", "number of heart beats for MOLLI"),
@@ -139,6 +141,12 @@ int main_signal(int argc, char* argv[argc])
 
 	if (-1. != TR)
 		parm.tr = TR;
+
+	if (-1 != fat_frac) {
+
+		parm.m0_fat = fat_frac;
+		parm.m0_water = 1. - parm.m0_fat;
+	}
 
 	parm.ir = IR;
 	parm.ir_ss = IR_SS;
