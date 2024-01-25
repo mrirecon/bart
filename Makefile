@@ -87,9 +87,11 @@ else
 endif
 
 ifeq ($(BUILDTYPE), Linux)
+ifneq ($(OPENBLAS), 1)
 ifneq (,$(findstring Red Hat,$(shell gcc --version)))
 	CPPFLAGS+=-I/usr/include/lapacke/
 	LDFLAGS+=-L/usr/lib64/atlas -ltatlas
+endif
 endif
 endif
 
