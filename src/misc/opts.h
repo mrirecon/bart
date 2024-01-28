@@ -50,7 +50,7 @@ struct opt_select_s {
 struct opt_vec_s {
 
 	int max;
-	int requiered;
+	int required;
 	int* count;
 	void* ptr;
 };

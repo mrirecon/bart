@@ -103,6 +103,7 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 
 	case OPT_VEC3:
 		return "d:d:d";
+
 	case OPT_VECN:
 		return "d0:d1:...:dN";
 
@@ -306,11 +307,13 @@ static void print_help(const char* help_str_prefix, const char* help_str, bool d
 	const char* short_only_format = NULL;
 	const char* long_only_format = NULL;
 	const char* short_long_format = NULL;
+
 	if (dash_prefix) {
 
 		short_only_format = "-%c%s%s";
 		long_only_format = "--%s%s%s";
 		short_long_format = "-%c,--%s%s%s";
+
 	} else {
 
 		short_only_format = "%c%s%s";
@@ -805,8 +808,8 @@ bool opt_vecn(void* _ptr, char c, const char* optarg)
 		optarg += delta;
 	}
 
-	if (count < ptr->requiered)
-		error("Option '%c' is at minimum a vector of size %d!\n", c, ptr->requiered);
+	if (count < ptr->required)
+		error("Option '%c' is at minimum a vector of size %d!\n", c, ptr->required);
 
 	if (NULL != ptr->count)
 		*(ptr->count) = count;
@@ -850,8 +853,8 @@ bool opt_float_vecN(void* _ptr, char c, const char* optarg)
 		optarg += delta;
 	}
 
-	if (count < ptr->requiered)
-		error("Option '%c' is at minimum a vector of size %d!\n", c, ptr->requiered);
+	if (count < ptr->required)
+		error("Option '%c' is at minimum a vector of size %d!\n", c, ptr->required);
 
 	if (NULL != ptr->count)
 		*(ptr->count) = count;
