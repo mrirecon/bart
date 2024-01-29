@@ -26,13 +26,13 @@ static bool test_looklocker(void)
 
 	looklocker_model(&data, echos, signal);
 
-	if (10E-5 < (cabsf(signal[0]) - 1.))
+	if (1E-5 < (cabsf(signal[0]) - 1.))
 		return 0;
 
-	if (10E-5 < (cabsf(signal[100]) - 0.027913))
+	if (1E-5 < (cabsf(signal[100]) - 0.027913))
 		return 0;
 
-	if (10E-5 < (cabsf(signal[199]) - 0.213577))
+	if (1E-5 < (cabsf(signal[199]) - 0.213577))
 		return 0;
 
 	md_free(signal);
@@ -123,13 +123,13 @@ static bool test_IR_bSSFP(void)
 
 	IR_bSSFP_model(&data, echos, signal);
 
-	if (10E-5 < (cabsf(signal[0]) - 0.382683))
+	if (1E-5 < (cabsf(signal[0]) - 0.382683))
 		return 0;
 
-	if (10E-5 < (cabsf(signal[100]) - 0.036060))
+	if (1E-5 < (cabsf(signal[100]) - 0.036060))
 		return 0;
 
-	if (10E-5 < (cabsf(signal[199]) - 0.085378))
+	if (1E-5 < (cabsf(signal[199]) - 0.085378))
 		return 0;
 
 // 	for (unsigned int i = 0; i < echos; i++)
