@@ -158,6 +158,7 @@ const struct signal_model signal_looklocker_defaults = {
 	.fa = 8. * M_PI / 180.,
 	.ir = true,
 	.ir_ss = false,
+	.short_tr_LL_approx = false,
 };
 
 static float signal_looklocker2(const struct signal_model* data, float t1, float m0, int ind, float* m_start)
@@ -170,7 +171,13 @@ static float signal_looklocker2(const struct signal_model* data, float t1, float
 	float s0 = 0.; 
 
 	float r1s = 1. / t1 - logf(cosf(fa)) / tr;
-	float mss = m0 / (t1 * r1s);
+
+	//R Deichmann and A Haase.
+	// Quantification of T1 values by SNAPSHOT-FLASH NMR imaging
+	// Journal of Magnetic Resonance (1969), Volume 96, Issue 3, 1992.
+	// https://doi.org/10.1016/0022-2364(92)90347-A
+	// Eq. 5 -> 6
+	float mss = m0 * ((data->short_tr_LL_approx) ? 1. / (t1 * r1s) : (1. - expf(-tr / t1)) / (1. - expf(-tr * r1s)));
 	
 	if (NULL == m_start) {
 

@@ -35,6 +35,7 @@ struct signal_model {
         float time_T1relax;
         long Hbeats;
 	bool single_repetition;
+	bool short_tr_LL_approx;
 
         int averaged_spokes;
 };

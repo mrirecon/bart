@@ -69,6 +69,7 @@ int main_signal(int argc, char* argv[argc])
 	float TR = -1.;
 	float TE = -1.;
 	float TI = -1.;
+	bool short_tr_LL_approx = false;
 
 	float off_reson[3] = { 20., 20., 1 };
 	float T1[3] = { 0.5, 1.5, 1 };
@@ -95,6 +96,7 @@ int main_signal(int argc, char* argv[argc])
 		OPTL_SET(0, "fat", &fat, "Simulate additional fat component."),
 		OPT_SET('I', &IR, "inversion recovery"),
 		OPT_SET('s', &IR_SS, "inversion recovery starting from steady state"),
+		OPTL_SET(0, "short-TR-LL-approx", &short_tr_LL_approx, "Short TR approximation for analytical LL model."),
 		OPT_FLVEC3('0', &off_reson, "min:max:N", "range of off-resonance frequency [Hz]"),
 		OPT_FLVEC3('1', &T1, "min:max:N", "range of T1s [s]"),
 		OPT_FLVEC3('2', &T2, "min:max:N", "range of T2s [s]"),
@@ -150,6 +152,7 @@ int main_signal(int argc, char* argv[argc])
 
 	parm.ir = IR;
 	parm.ir_ss = IR_SS;
+	parm.short_tr_LL_approx = short_tr_LL_approx;
 
 	assert(!(parm.ir && parm.ir_ss));
 

@@ -4,7 +4,7 @@
 tests/test-moba-t1: phantom signal fft ones index scale moba looklocker fmac nrmse 
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -n100 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -n100 --short-TR-LL-approx -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra image.ra					;\
 	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
 	$(TOOLDIR)/ones 6 16 16 1 1 1 100 psf.ra					;\
@@ -22,7 +22,7 @@ tests/test-moba-t1: phantom signal fft ones index scale moba looklocker fmac nrm
 tests/test-moba-t1-tv: phantom signal fft ones index scale moba looklocker fmac nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -n100 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -n100 --short-TR-LL-approx -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra image.ra					;\
 	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
 	$(TOOLDIR)/ones 6 16 16 1 1 1 100 psf.ra					;\
@@ -41,7 +41,7 @@ tests/test-moba-t1-tv: phantom signal fft ones index scale moba looklocker fmac 
 tests/test-moba-t1-gpu: phantom signal fmac fft ones index scale moba nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -n100 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -n100 --short-TR-LL-approx -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra image.ra					;\
 	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
 	$(TOOLDIR)/ones 6 16 16 1 1 1 100 psf.ra					;\
@@ -58,7 +58,7 @@ tests/test-moba-t1-gpu: phantom signal fmac fft ones index scale moba nrmse
 tests/test-moba-t1-magn: phantom signal fft ones index scale moba normalize slice fmac nrmse 
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -n100 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -n100 --short-TR-LL-approx -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra image.ra					;\
 	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
 	$(TOOLDIR)/ones 6 16 16 1 1 1 100 psf.ra					;\
@@ -77,7 +77,7 @@ tests/test-moba-t1-sms: phantom signal repmat fft ones index scale moba looklock
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 circ.ra 		                  		;\
 	$(TOOLDIR)/repmat 13 3 circ.ra circ2.ra		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -n100 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -n100 --short-TR-LL-approx -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ2.ra signal.ra image.ra					;\
 	$(TOOLDIR)/fft 8195 image.ra k_space.ra						;\
 	$(TOOLDIR)/ones 16 16 16 1 1 1 100 1 1 1 1 1 1 1 3 1 1 psf.ra			;\
@@ -239,7 +239,7 @@ tests/test-moba-meco-noncart-wfr2s: traj scale phantom signal fmac index extract
 tests/test-moba-bloch-irflash-psf: phantom signal fft ones index scale moba slice fmac nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -f8 -n100 -1 1.25:1.25:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -f8 -n100 --short-TR-LL-approx -1 1.25:1.25:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra image.ra					;\
 	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
 	$(TOOLDIR)/ones 6 16 16 1 1 1 100 psf.ra					;\
@@ -265,7 +265,7 @@ tests/test-moba-bloch-irflash-traj: traj repmat phantom signal fmac ones scale i
 	$(TOOLDIR)/repmat 5 1000 _traj.ra traj2.ra	;\
 	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
 	$(TOOLDIR)/phantom -c -k -t traj.ra circ.ra 		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -f8 -n1000 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -f8 -n1000 --short-TR-LL-approx -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra k_space.ra					;\
 	$(TOOLDIR)/index 5 1000 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
@@ -290,7 +290,7 @@ tests/test-moba-bloch-irflash-traj-fixfa: traj repmat phantom signal fmac scale 
 	$(TOOLDIR)/repmat 5 1000 _traj.ra traj2.ra	;\
 	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
 	$(TOOLDIR)/phantom -c -k -t traj.ra circ.ra 		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -f8 -n1000 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -f8 -n1000 --short-TR-LL-approx -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra k_space.ra					;\
 	$(TOOLDIR)/index 5 1000 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
@@ -316,7 +316,7 @@ tests/test-moba-bloch-irflash-r2fix: traj repmat scale phantom signal fmac index
 	$(TOOLDIR)/repmat 5 1000 _traj.ra traj2.ra	;\
 	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
 	$(TOOLDIR)/phantom -c -k -t traj.ra circ.ra 		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -f8 -n1000 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -f8 -n1000 --short-TR-LL-approx -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra k_space.ra					;\
 	$(TOOLDIR)/index 5 1000 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.005 tmp1.ra TI.ra                    	       		;\
@@ -330,7 +330,7 @@ tests/test-moba-bloch-irflash-r2fix: traj repmat scale phantom signal fmac index
 tests/test-moba-t1-phy-psf: phantom signal fft ones index scale moba slice spow fmac nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra 		                  		;\
-	$(TOOLDIR)/signal -I -F -r0.005 -n300 -1 1.25:1.25:1 -2 100:100:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.005 -n300 --short-TR-LL-approx -1 1.25:1.25:1 -2 100:100:1 signal.ra	;\
 	$(TOOLDIR)/fmac circ.ra signal.ra image.ra					;\
 	$(TOOLDIR)/fft 3 image.ra k_space.ra						;\
 	$(TOOLDIR)/ones 6 16 16 1 1 1 300 psf.ra					;\

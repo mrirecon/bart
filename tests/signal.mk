@@ -99,7 +99,16 @@ tests/test-signal-ir-se-single: signal slice nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-signal-LL-short-TR-approx: signal slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/signal -I -F -r0.0001 -f8 -n1000 -1 3:3:1 -2 1:1:1 signal.ra	;\
+	$(TOOLDIR)/signal -I -F -r0.0001 -f8 -n1000 -1 3:3:1 -2 1:1:1 --short-TR-LL-approx signal2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0001 signal.ra signal2.ra			    			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-signal-spoke-averaging-2 tests/test-signal-spoke-averaging-3
 TESTS += tests/test-signal-se tests/test-signal-ir-se
 TESTS += tests/test-signal-se-single tests/test-signal-ir-se-single
+TESTS += tests/test-signal-LL-short-TR-approx
