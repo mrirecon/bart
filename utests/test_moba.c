@@ -267,3 +267,32 @@ static bool test_nlop_ir_meco(void)
 }
 
 UT_REGISTER_TEST(test_nlop_ir_meco);
+
+
+static bool test_nlop_ir_meco_der(void)
+{
+	enum { N = 16 };
+	long map_dims[N] = { 16, 16, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long out_dims[N] = { 16, 16, 1, 1, 1, 4, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1 };
+	long in_dims[N] = { 16, 16, 1, 1, 1, 1, 8, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long TI_dims[N] = { 1, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long TE_dims[N] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1 };
+
+	complex float TI[4] = { 0., 1., 2., 3. };
+
+	complex float TE[5] = { 0.1, .5, 1., 1.5, 2.0 };
+
+	float scale_fB0[2] = { 1., 1. };
+
+	float scale_others[3] = {.5, .5, 1.};
+
+	struct nlop_s* ir_meco = nlop_ir_meco_create(N, map_dims, out_dims, in_dims, TI_dims, TI, TE_dims, TE, scale_fB0, scale_others);
+
+	float err = nlop_test_derivative(ir_meco);
+
+	nlop_free(ir_meco);
+
+	UT_ASSERT(err < 1.e-5);
+}
+
+UT_REGISTER_TEST(test_nlop_ir_meco_der);
