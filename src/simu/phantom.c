@@ -292,7 +292,7 @@ static complex float krn3d(void* _data, int s, const double mpos[3])
 }
 
 void calc_ellipsoid(unsigned int D, long dims[D], complex float* optr, bool kspace,
-		long tstrs[D], complex float* traj, float ax[3], long center[3],
+		long tdims[D], long tstrs[D], complex float* traj, float ax[3], long center[3],
 		float rot, struct pha_opts* popts)
 {
 	if ((1 > dims[0]) || (1 > dims[1]) || (1 > dims[2]))
@@ -301,24 +301,36 @@ void calc_ellipsoid(unsigned int D, long dims[D], complex float* optr, bool kspa
 	if ((0 > ax[0]) || (0 > ax[1]) || (0 > ax[2]))
 		error("axes negative\n");
 	
-        // the krn3d, krn2d functinos sample the ellipsoid struct without following
+        // the krn3d, krn2d functions sample the ellipsoid struct without following
 	// the dim conventions. Therefore we have to make adjustments.
-	// to domain [-1,1]^3.
+	// to the domain [-1,1]^3.
 	double c[3] = { 0., 0., 0. };
 	double axc[3] = { 1., 1., 1. };
 
+
+	// This correction needs to be done on the image dims,
+	// so if we got a trajectory, we need to estimate them here
+	long imdims[D];
+
+	if (NULL != traj)
+		estimate_im_dims(D, FFT_FLAGS, imdims, tdims, traj);
+	else
+		md_copy_dims(D, imdims, dims);
+
+	debug_printf(DP_DEBUG2, "Est. ellipsoid image size: %ldx%ldx%ld, from kspace: %s\n", imdims[0], imdims[1], imdims[2], kspace ? "true" : "false");
+
 	for (int i = 0; i < 3; i++) {
 
-		if (1 >= dims[i])
+		if (1 >= imdims[i])
 			continue;
 
-		if (0 == dims[i] % 2)
-			c[i] = 2 * (double)center[i] / (double)dims[i]       - 1.;
-		else	c[i] = 2 * (double)center[i] / (double)(dims[i] - 1) - 1.;
+		if (0 == imdims[i] % 2)
+			c[i] = 2 * (double)center[i] / (double)imdims[i]       - 1.;
+		else	c[i] = 2 * (double)center[i] / (double)(imdims[i] - 1) - 1.;
 
-		if (0 == dims[i] % 2)
-			axc[i] = 2 * (double)ax[i] / (double)dims[i];
-		else	axc[i] = 2 * (double)ax[i] / (double)(dims[i] - 1);
+		if (0 == imdims[i] % 2)
+			axc[i] = 2 * (double)ax[i] / (double)imdims[i];
+		else	axc[i] = 2 * (double)ax[i] / (double)(imdims[i] - 1);
 	}
 
 	double tmp = c[1];
