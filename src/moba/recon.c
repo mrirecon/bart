@@ -444,7 +444,6 @@ void moba_recon(const struct moba_conf* conf, struct moba_conf_s* data, const lo
         case MDB_BLOCH:
 	case MDB_IR_MGRE:
 
-		assert(NULL == init);
 		recon(conf, data, dims, imgs_dims, img, coil_dims, sens, pattern, mask, TI, TE, b1, b0, data_dims, kspace_data, conf->use_gpu);
 		break;
 
