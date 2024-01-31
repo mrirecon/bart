@@ -199,11 +199,17 @@ int main_traj(int argc, char* argv[argc])
 
 	if (conf.d3d) {
 
-		if (turns >1)
-			error("Turns not implemented for 3D-Kooshball\n");
+		if (conf.radial) {
 
-		if (mb > 1)
-			error("Multiple partitions not sensible for 3D-Kooshball\n");
+			if (turns > 1)
+				error("Turns not implemented for 3D-Kooshball\n");
+
+			if (mb > 1)
+				error("Multiple partitions not sensible for 3D-Kooshball\n");
+		} else {
+
+			error("3D not implemented for Cartesian trajectory\n");
+		}
 	}
 
 	if (conf.tiny_gold >= 1)
