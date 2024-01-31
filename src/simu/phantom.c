@@ -291,7 +291,7 @@ static complex float krn3d(void* _data, int s, const double mpos[3])
 	}
 }
 
-void calc_ellipsoid(unsigned int D, long dims[D], complex float* optr, bool kspace,
+void calc_ellipsoid(unsigned int D, long dims[D], complex float* optr, bool d3, bool kspace,
 		long tdims[D], long tstrs[D], complex float* traj, float ax[3], long center[3],
 		float rot, struct pha_opts* popts)
 {
@@ -348,7 +348,10 @@ void calc_ellipsoid(unsigned int D, long dims[D], complex float* optr, bool kspa
 	// btw, where is the second rotation dimension for the 3d ellipsis?
 	rot = -1. * rot / 360. * 2. * M_PI;
 
-	if (1 < dims[2]) {
+	if (d3) {
+
+		if (1 == imdims[2])
+			error("3D phantom selected, but output dimensions are 2D!\n");
 
 		struct ellipsis3d_s el[1] = { { 1., { axc[0] / 2., axc[1] / 2., axc[2] / 2. }, { c[0], c[1], c[2] }, rot } };
 		struct krn3d_data data = { kspace, false, popts->stype, ARRAY_SIZE(el), el };
@@ -356,6 +359,9 @@ void calc_ellipsoid(unsigned int D, long dims[D], complex float* optr, bool kspa
 		sample(dims, optr, tstrs, traj, &data, krn3d, kspace);
 
 	} else {
+
+		if (1 != imdims[2])
+			error("2D phantom selected, but output dimensions are 3D!\n");
 	
 		struct ellipsis_s el[1] = { { 1., { axc[0] / 2., axc[1] / 2. }, { c[0], c[1] }, rot } };
 		struct krn2d_data data = { kspace, false, popts->stype, ARRAY_SIZE(el), el };

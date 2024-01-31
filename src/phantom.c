@@ -255,7 +255,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	case ELLIPSOID0:
 
-		calc_ellipsoid(DIMS, dims, out, kspace, sdims, sstrs, samples, ellipsoid_axes, ellipsoid_center, rotation_angle, &popts);
+		calc_ellipsoid(DIMS, dims, out, d3, kspace, sdims, sstrs, samples, ellipsoid_axes, ellipsoid_center, rotation_angle, &popts);
 		break;
 
 	case SENS:
