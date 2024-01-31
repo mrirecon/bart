@@ -203,7 +203,8 @@ struct iter6_conf_s* iter6_get_conf_from_opts(void)
 		result = CAST_UP(&iter6_adam_conf_opts);
 		break;
 
-	default: ;
+	default:
+		error("Invalid config!\n");
 	}
 
 	iter6_copy_config_from_opts(result);
