@@ -319,6 +319,8 @@ tests/test-sim-bmc-stm-ode: sim nrmse
         $(TOOLDIR)/sim --STM --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=500,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --BMC --pool P=2,T1=3:3:3:3,T2=1e-4:1e-4:1e-4:1e-4,M0=0.3:0.3:0.3:0.3,k=10:10:10:10,Om=100:100:100:100 -1 3:3:1 -2 0.1:0.1:1 s_stm.ra d_stm.ra ;\
         $(TOOLDIR)/nrmse -t 1e-3 s_ode.ra s_stm.ra			;\
         $(TOOLDIR)/nrmse -t 0.004 d_ode.ra d_stm.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 tests/test-sim-bmc-bloch: sim extract slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
@@ -328,6 +330,8 @@ tests/test-sim-bmc-bloch: sim extract slice nrmse
 	$(TOOLDIR)/slice 8 0 s_bmc.ra s_bmc2.ra ;\
         $(TOOLDIR)/nrmse -t 0.0006 d.ra d_bmc2.ra			;\
         $(TOOLDIR)/nrmse -t 0.0003 s.ra s_bmc2.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
