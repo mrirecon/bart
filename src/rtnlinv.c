@@ -285,7 +285,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 		complex float* init = load_cfl(init_file, DIMS, init_dims);
 
 		if (!md_check_bounds(DIMS, 0, img1_dims, init_dims))
-			error("Image dimensions and init dimensions do not match!");
+			error("Image dimensions and init dimensions do not match!\n");
 
 		md_copy(DIMS, img1_dims, img1, init, CFL_SIZE);
 		md_clear(DIMS, sens1_dims, ksens1, CFL_SIZE);
@@ -298,7 +298,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 		complex float* init = load_cfl(init_file_im, DIMS, init_dims);
 
 		if (!md_check_bounds(DIMS, 0, img1_dims, init_dims))
-			error("Image dimensions and init dimensions do not match!");
+			error("Image dimensions and init dimensions do not match!\n");
 
 		md_copy(DIMS, img1_dims, img1, init, CFL_SIZE);
 		md_copy(DIMS, sens1_dims, ksens1, init + skip, CFL_SIZE);

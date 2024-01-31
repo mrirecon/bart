@@ -392,7 +392,7 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const 
 	char* loc = calloc(space, sizeof(char));
 
 	if (NULL == loc)
-		error("memory out");
+		error("memory out\n");
 
 	int ret = snprintf(loc, len, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%lu_DIMS", tbpath, N, backwards, flags);
 

@@ -93,13 +93,13 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 				error("Sensitivity maps not continuous for stacking along dim %d.\n");
 
 			if (DIMS != md_calc_blockdim(DIMS, n_traj_dims, MD_STRIDES(DIMS, traj_dims, CFL_SIZE), CFL_SIZE))
-				error("Trajectory not continuous for stacking along dim %d.");
+				error("Trajectory not continuous for stacking along dim %d.\n");
 
 			if ((NULL != weights) && (DIMS != md_calc_blockdim(DIMS, n_wgs_dims, MD_STRIDES(DIMS, wgs_dims, CFL_SIZE), CFL_SIZE)))
-				error("Weights not continuous for stacking along dim %d.");
+				error("Weights not continuous for stacking along dim %d.\n");
 
 			if ((NULL != basis) && (DIMS != md_calc_blockdim(DIMS, n_basis_dims, MD_STRIDES(DIMS, basis_dims, CFL_SIZE), CFL_SIZE)))
-				error("Basis not continuous for stacking along dim %d.");
+				error("Basis not continuous for stacking along dim %d.\n");
 
 			long offset_basis = (NULL != basis) && (1 != basis_dims[i]) ? md_calc_size(i, basis_dims) : 0;
 			long offset_weights = (NULL != weights) && (1 != wgs_dims[i]) ? md_calc_size(i, wgs_dims) : 0;
@@ -448,7 +448,7 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 	if ((NULL == traj_file) && (0 != shared_img_flags))
-		error("Shared image flags only supported for non-Cartesian trajectories.");
+		error("Shared image flags only supported for non-Cartesian trajectories.\n");
 
 	md_select_dims(DIMS, ~COIL_FLAG & ~shared_img_flags, img_dims, max_dims);
 	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);

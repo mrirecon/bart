@@ -143,7 +143,7 @@ int main_epg(int argc, char* argv[argc])
 	case HYPER:
 
 		if ((NULL != sigder_file) || (NULL != statesder_file))
-			error("No derivatives available for HYPER!");
+			error("No derivatives available for HYPER!\n");
 
 		memset(out_sigder, 0, sizeof out_sigder);	// GCC ANALYZER
 
@@ -164,7 +164,7 @@ int main_epg(int argc, char* argv[argc])
 	case SPINECHO:
 
 		if ((NULL != sigder_file) || (NULL != statesder_file))
-			error("No derivatives available for Spinecho!");
+			error("No derivatives available for Spinecho!\n");
 
 		memset(out_sigder, 0, sizeof out_sigder);	// GCC ANALYZER
 
@@ -183,7 +183,7 @@ int main_epg(int argc, char* argv[argc])
 		break;
 
 	default:
-		error("sequence type not supported yet");
+		error("sequence type not supported yet\n");
 	}
 
 	if (NULL != sigder_file) {

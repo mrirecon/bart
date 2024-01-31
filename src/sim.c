@@ -238,7 +238,7 @@ int main_sim(int argc, char* argv[argc])
 	mdims[ITER_DIM] = data.voxel.P;
 
 	if ((mdims[TE_DIM] < 1) || (mdims[COEFF_DIM] < 1) || (mdims[COEFF2_DIM] < 1))
-		error("invalid parameter range");
+		error("invalid parameter range\n");
 
         // Allocate output file for signal and optional derivatives
 

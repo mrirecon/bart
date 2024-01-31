@@ -41,7 +41,7 @@ void node_free(node_t x)
 	for (int i = 0; i < x->N_vertices; i++) {
 
 		if (0 < list_count(x->edges[i]))
-			error("Adjacency list of node is not empty!");
+			error("Adjacency list of node is not empty!\n");
 		else
 			list_free(x->edges[i]);
 	}

@@ -266,7 +266,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	default:
 
-		error("sequence type not supported");
+		error("sequence type not supported\n");
 	}
 
 

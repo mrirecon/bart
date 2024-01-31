@@ -58,7 +58,7 @@ int main_roistat(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (bessel && !((STD == stat) || (VAR == stat)))
-		error("Bessel's correction makes sense only for variance or standard deviation");
+		error("Bessel's correction makes sense only for variance or standard deviation\n");
 
 
 	num_init();

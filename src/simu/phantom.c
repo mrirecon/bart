@@ -86,7 +86,7 @@ static complex float xsens(int c, int s, double mpos[3], void* data, krn_t fun)
 			case DEFAULT:
 			default:
 
-				error("Please specify a sensitivity type.");
+				error("Please specify a sensitivity type.\n");
 				break;
 			}
 		}
@@ -152,7 +152,7 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 			case DEFAULT:
 			default:
 
-				error("Please specify a sensitivity type.");
+				error("Please specify a sensitivity type.\n");
 				break;
 			}
 		}

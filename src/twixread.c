@@ -63,7 +63,7 @@ static void xread(int fd, void* buf, size_t size)
 static void xseek(int fd, off_t pos)
 {
         if (-1 == lseek(fd, pos, SEEK_SET))
-		error("seeking");
+		error("seeking\n");
 }
 
 static bool siemens_meas_setup(int fd, struct hdr_s* hdr)
@@ -326,7 +326,7 @@ static enum adc_return skip_to_next(const char* hdr, int fd, size_t offset)
 		error("dma_length < offset.\n");
 
 	if (-1 == lseek(fd, dma_length - offset, SEEK_CUR))
-		error("seeking");
+		error("seeking\n");
 
 	return ADC_SKIP;
 }
@@ -544,7 +544,7 @@ int main_twixread(int argc, char* argv[argc])
 
         int ifd;
         if (-1 == (ifd = open(dat_file, O_RDONLY)))
-                error("error opening file.");
+                error("error opening file.\n");
 
 	struct hdr_s hdr;
 	bool vd = siemens_meas_setup(ifd, &hdr);

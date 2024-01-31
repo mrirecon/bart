@@ -100,7 +100,7 @@ static bool cmp_name(const void* _data, const void* _ref)
 static const struct named_tensor_s* get_tensor_by_name(struct named_data_list_s* data_list, const char* name)
 {
 	if (-1 == list_get_first_index((list_t)data_list, name, cmp_name))
-		error("\"%s\" not found in data list!", name);
+		error("\"%s\" not found in data list!\n", name);
 
 	const struct named_tensor_s* tensor = list_get_item((list_t)data_list, list_get_first_index((list_t)data_list, name, cmp_name));
 	return tensor;

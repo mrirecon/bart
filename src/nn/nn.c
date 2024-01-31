@@ -268,7 +268,7 @@ int nn_get_out_arg_index(nn_t op, int o, const char* oname)
 		assert((-1 == o) || (0 == o)); // index is ignored anyway
 		o = get_index_from_name(nlop_get_nr_out_args(op->nlop), op->out_names, oname);
 		if (-1 == o)
-			error("Name %s not found!", oname);
+			error("Name %s not found!\n", oname);
 	} else {
 		assert(o >= -nn_get_nr_unnamed_out_args(op));
 		o = o + ((o < 0) ? nn_get_nr_unnamed_out_args(op) : 0);
@@ -289,7 +289,7 @@ int nn_get_in_arg_index(nn_t op, int i, const char* iname)
 		assert((-1 == i) || (0 == i)); // index is ignored anyway
 		i = get_index_from_name(nlop_get_nr_in_args(op->nlop), op->in_names, iname);
 		if (-1 == i)
-			error("Name %s not found!", iname);
+			error("Name %s not found!\n", iname);
 	} else {
 		assert(i >= -nn_get_nr_unnamed_in_args(op));
 		i = i + ((i < 0) ? nn_get_nr_unnamed_in_args(op) : 0);

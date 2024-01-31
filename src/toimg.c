@@ -219,7 +219,7 @@ int main_toimg(int argc, char* argv[argc])
 			dicom = true;
 		else
 		if (0 != strcmp(ext, ".png"))
-			error("Unknown file extension.");
+			error("Unknown file extension.\n");
 
 		*ext = '\0';
 	}

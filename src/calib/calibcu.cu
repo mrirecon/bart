@@ -207,7 +207,7 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 	if (cu_error != cudaSuccess) {
 
 		fprintf(stderr, "ERROR: %s\n", cudaGetErrorString(cu_error));
-		error("abort!");
+		error("abort!\n");
 	}
 
 	md_copy(5, dims, optr, optr_device, sizeof(_Complex float));

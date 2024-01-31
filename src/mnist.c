@@ -147,7 +147,7 @@ int main_mnist(int argc, char* argv[argc])
 
 
 	if (apply && train)
-		error("Either train or apply!");
+		error("Either train or apply!\n");
 
 	long NI = 3;
 	long NO = 2;

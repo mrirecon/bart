@@ -86,7 +86,7 @@ int main_pocsense(int argc, char* argv[argc])
 	if (2 == l1type)
 		l1wav = false;
 	else
-		error("Unknown regularization type.");
+		error("Unknown regularization type.\n");
 
 	
 	int N = DIMS;

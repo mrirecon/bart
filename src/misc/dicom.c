@@ -265,11 +265,11 @@ int dicom_write(const char* name, int cols, int rows, long inum, const unsigned 
 	ret = 0;
 
 	if (-1 == munmap(addr, size))
-		error("abort!");
+		error("abort!\n");
 
 cleanup:
 	if (-1 == close(fd))
-		error("abort!");
+		error("abort!\n");
 
 	return ret;
 }

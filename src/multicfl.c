@@ -79,7 +79,7 @@ int main_multicfl(int argc, char* argv[argc])
 		int N = load_multi_cfl(multi_file, n_single_cfls, D_max, D, dims_load, x);
 
 		if (N != n_single_cfls)
-			error("Number of cfls in input does not match no of outputs!");
+			error("Number of cfls in input does not match no of outputs!\n");
 
 		for (int i = 0; i < N; i++) {
 

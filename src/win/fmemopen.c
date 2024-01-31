@@ -24,15 +24,15 @@ FILE *fmemopen(void *buf, size_t len, const char *type)
 	DWORD dwRetVal = GetTempPath(MAX_PATH, temp_path);
 
 	if (dwRetVal > MAX_PATH || (dwRetVal == 0))
-		error("Failed to get temp dir");
+		error("Failed to get temp dir\n");
 
 	if (!GetTempFileName(temp_path, TEXT("bart_"), 0, temp_file_name))
-		error("Failed to get temporary file name");
+		error("Failed to get temporary file name\n");
 
 	// "T": Specifies a file as temporary. If possible, it isn't flushed to disk.
 	// "D": Specifies a file as temporary. It's deleted when the last file pointer is closed.
 	if (fopen_s( &stream, temp_file_name, "r+TD"))
-		error("Failed to open temp file as output buffer");
+		error("Failed to open temp file as output buffer\n");
 
 	return stream;
 }

@@ -590,7 +590,7 @@ void hahnspinecho_epg(int N, int M, complex float signal[N], complex float state
         float FA, float TE, float T1, float T2, float B1, float offres)
 {
 	if (2 < N)
-		error("Hahn spin echo sequence only implemented for 1 or 2 echoes!");
+		error("Hahn spin echo sequence only implemented for 1 or 2 echoes!\n");
 
 	// 3 excitation pulses of FA, with timing | TE | TE - ADC - 2TE | TE - ADC
 	if (NULL != states)

@@ -55,7 +55,7 @@ extern "C" void ismrm_read_encoding_limits(const char* filename, struct isrmrm_c
 	xfree(xml);
 
 	if (config->idx_encoding >= (int)h.encoding.size())
-		error("ISMRMD inconsistent number of encodings!");
+		error("ISMRMD inconsistent number of encodings!\n");
 
 	Encoding encoding = h.encoding[config->idx_encoding];
 

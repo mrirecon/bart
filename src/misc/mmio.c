@@ -873,10 +873,10 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 		io_error("shared cfl %s\n", name);
 
 //	if (-1 == (fstat(fd, &st)))
-//		error("abort");
+//		error("abort\n");
 
 //	if (!((0 == st.st_size) || (T == st.st_size)))
-//		error("abort");
+//		error("abort\n");
 
 	if (NULL == (addr = create_data(fd, 0, T)))
 		error("shared cfl %s\n", name);
@@ -918,18 +918,18 @@ void* private_raw(size_t* size, const char* name)
 	struct stat st;
 
 	if (-1 == (fd = open(name, O_RDONLY)))
-		error("abort");
+		error("abort\n");
 
 	if (-1 == (fstat(fd, &st)))
-		error("abort");
+		error("abort\n");
 
 	*size = st.st_size;
 
 	if (MAP_FAILED == (addr = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
-		error("abort");
+		error("abort\n");
 
 	if (-1 == close(fd))
-		error("abort");
+		error("abort\n");
 
 	return addr;
 }
@@ -1002,22 +1002,22 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 	io_register_output(name);
 
 	if (cfl_loop_desc_active())
-		error("multi cfl not supported for bart loop!");
+		error("multi cfl not supported for bart loop!\n");
 
 #ifdef MEMONLY_CFL
-	error("multi cfl not supported with MEMONLY_CFL");
+	error("multi cfl not supported with MEMONLY_CFL\n");
 #else
 	const char *p = strrchr(name, '.');
 
 	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".ra")))
-		error("multi cfl does not not support .ra");
+		error("multi cfl does not not support .ra\n");
 
 	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".coo")))
-		error("multi cfl does not not support .coo");
+		error("multi cfl does not not support .coo\n");
 
 #ifdef USE_MEM_CFL
 	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".mem")))
-		error("multi cfl does not not support .mem");
+		error("multi cfl does not not support .mem\n");
 #endif
 
 
@@ -1054,10 +1054,10 @@ static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D
 	io_register_input(name);
 
 	if (cfl_loop_desc_active())
-		error("multi cfl not supported for bart loop!");
+		error("multi cfl not supported for bart loop!\n");
 
 #ifdef MEMONLY_CFL
-	error("multi cfl not supported with MEMONLY_CFL");
+	error("multi cfl not supported with MEMONLY_CFL\n");
 #else
 
 	char* filename = NULL;
@@ -1065,14 +1065,14 @@ static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D
 	const char *p = strrchr(name, '.');
 
 	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".ra")))
-		error("multi cfl does not not support .ra");
+		error("multi cfl does not not support .ra\n");
 
 	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".coo")))
-		error("multi cfl does not not support .coo");
+		error("multi cfl does not not support .coo\n");
 
 #ifdef USE_MEM_CFL
 	if ((NULL != p) && (p != name) && (0 == strcmp(p, ".mem")))
-		error("multi cfl does not not support .mem");
+		error("multi cfl does not not support .mem\n");
 #endif
 
 
@@ -1142,11 +1142,11 @@ int load_multi_cfl(const char* name, int N_max, int D_max, int D[N_max], long di
 void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float* args[N])
 {
 #ifdef MEMONLY_CFL
-	error("multi cfl not supported with MEMONLY_CFL");
+	error("multi cfl not supported with MEMONLY_CFL\n");
 #else
 
 #ifdef USE_MEM_CFL
-	error("multi cfl not supported with USE_MEM_CFL");
+	error("multi cfl not supported with USE_MEM_CFL\n");
 #endif
 
 	long T = 0;
@@ -1154,13 +1154,13 @@ void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float*
 	for (int i = 0; i < N; i++) {
 
 		if (args[i] != args[0] + T)
-			error("unmap multi cfl 1 %ld", T);
+			error("unmap multi cfl 1 %ld\n", T);
 
 		if (-1 == (T += md_calc_size(D[i], dimensions[i])))
-			error("unmap multi cfl 2");
+			error("unmap multi cfl 2\n");
 	}
 
 	if (-1 == munmap((void*)((uintptr_t)args[0] & ~4095UL), T))
-		io_error("unmap multi cfl 3");
+		io_error("unmap multi cfl 3\n");
 #endif
 }

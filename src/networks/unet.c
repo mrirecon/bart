@@ -443,7 +443,7 @@ static nn_t unet_sample_conv_strided_create(struct network_unet_s* unet, unsigne
 	md_copy_dims(N, down_dims, dims);
 
 	if (unet->reduce_factor != roundf(unet->reduce_factor))
-		error("Convolution can only be used for integer downsampling");
+		error("Convolution can only be used for integer downsampling\n");
 
 	long stride = lroundf(unet->reduce_factor);
 
@@ -827,7 +827,7 @@ nn_t network_unet_create(const struct network_s* _unet, unsigned int NO, const l
 		same_dims = same_dims && (unet->adjoint);
 
 		if (!same_dims)
-			error("U-Net: Spatial dims are not allowed to change in a level!");
+			error("U-Net: Spatial dims are not allowed to change in a level!\n");
 	}
 
 	auto result = unet_level_create(unet, N, odims, idims, 0, status);

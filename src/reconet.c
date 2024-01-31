@@ -249,7 +249,7 @@ int main_reconet(int argc, char* argv[argc])
 	}
 
 	if (NULL == config.network)
-		error("No network selected!");
+		error("No network selected!\n");
 
 
 

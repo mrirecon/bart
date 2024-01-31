@@ -464,7 +464,7 @@ const struct nlop_s* nlop_norm_create(int N, const long dims[N], unsigned long b
 
 	case NORM_NONE:
 		default:
-			error("No normalization selected!");
+			error("No normalization selected!\n");
 	}
 
 	if (stop_grad)

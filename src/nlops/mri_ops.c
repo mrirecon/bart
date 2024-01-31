@@ -312,7 +312,7 @@ struct sense_model_s* sense_noncart_create(int N,
 struct sense_model_s* sense_cart_normal_create(int N, const long max_dims[N], const struct config_nlop_mri_s* conf)
 {
 	if (0 != conf->basis_flags)
-		error("Basis for Cartesian Sense not supported");
+		error("Basis for Cartesian Sense not supported\n");
 
 	assert(!conf->noncart);
 

@@ -108,7 +108,7 @@ int main_calc(int argc, char* argv[argc])
 	}
 
 	if (!function_found)
-		error("Not supported function was called!");
+		error("Not supported function was called!\n");
 
 
 	// Execute found function

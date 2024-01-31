@@ -156,7 +156,7 @@ int main_phantom(int argc, char* argv[argc])
 		int subfiles = load_multi_cfl(file_load, 2, D_max, D_dim, hdims, multifile);
 
 		if (2 != subfiles)
-			error("Number of cfls in input does not match required number!");
+			error("Number of cfls in input does not match required number!\n");
 
 		N = store_dims[1][0];
 	}
@@ -269,10 +269,10 @@ int main_phantom(int argc, char* argv[argc])
 	case GEOM:
 
 		if ((geo < 1) || (geo > 3))
-			error("geometric phantom: invalid geometry");
+			error("geometric phantom: invalid geometry\n");
 
 		if (d3)
-			error("geometric phantom: no 3D mode");
+			error("geometric phantom: no 3D mode\n");
 
 		calc_geo_phantom(dims, out, kspace, geo, sstrs, samples, &popts);
 		break;

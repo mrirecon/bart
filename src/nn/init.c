@@ -673,7 +673,7 @@ const struct initializer_s* init_dup_create(const struct initializer_s* inita, c
 		return initializer_clone(inita);
 
 	if (inita->TYPEID != initb->TYPEID)
-		error("Dup for arguments with different initializers, i.e. \"%s\" and \"%s\"!", inita->TYPEID->name, initb->TYPEID->name);
+		error("Dup for arguments with different initializers, i.e. \"%s\" and \"%s\"!\n", inita->TYPEID->name, initb->TYPEID->name);
 
 	return initializer_clone(inita);
 }

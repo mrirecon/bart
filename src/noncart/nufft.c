@@ -1037,7 +1037,7 @@ struct linop_s* nufft_create2(int N,
 
 static void nufft_normal_only(const linop_data_t* /*_data*/, complex float* /*dst*/, const complex float* /*src*/)
 {
-	error("NuFFT with normal operator only!");
+	error("NuFFT with normal operator only!\n");
 }
 
 struct linop_s* nufft_create_normal(int N, const long cim_dims[N],

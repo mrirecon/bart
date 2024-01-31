@@ -25,7 +25,7 @@
 
 #define LAPACKE(x, ...) \
 	if (0 != LAPACKE_##x(LAPACK_COL_MAJOR, __VA_ARGS__))	\
-		error("LAPACK: " # x " failed.");
+		error("LAPACK: " # x " failed.\n");
 
 /* ATTENTION: blas and lapack use column-major matrices
  * while native C uses row-major. All matrices are

@@ -115,7 +115,7 @@ int main_signal(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if ((!IR) && (BSSFP == seq))
-		error("only IR signal supported for bSSFP");
+		error("only IR signal supported for bSSFP\n");
 
 	switch (seq) {
 
@@ -127,7 +127,7 @@ int main_signal(int argc, char* argv[argc])
 	case MOLLI: parm = signal_looklocker_defaults; break;
 	case IR_MGRE: parm = signal_ir_multi_grad_echo_fat_defaults; break;
 
-	default: error("sequence type not supported");
+	default: error("sequence type not supported\n");
 	}
 
         parm.time_T1relax = (-1 == time_T1relax) ? -1 : time_T1relax;
@@ -165,7 +165,7 @@ int main_signal(int argc, char* argv[argc])
 	dims[CSHIFT_DIM] = truncf(t1_fat[2]);
 
 	if ((dims[TE_DIM] < 1) || (dims[COEFF_DIM] < 1) || (dims[COEFF2_DIM] < 1))
-		error("invalid parameter range");
+		error("invalid parameter range\n");
 
 	complex float* signals = create_cfl(out_file, DIMS, dims);
 

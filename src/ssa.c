@@ -66,7 +66,7 @@ int main_ssa(int argc, char* argv[argc])
 	num_init();
 
 	if (-1 == window)
-		error("Specify window length '-w'");
+		error("Specify window length '-w'\n");
 
 	kernel_dims[0] = window;
 
@@ -80,7 +80,7 @@ int main_ssa(int argc, char* argv[argc])
 		}
 
 		if ((0 == rank) && (0 == group))
-			error("Specify rank or group for backprojection!");
+			error("Specify rank or group for backprojection!\n");
 
 		if (0 == rank)
 			assert(0 != group);
@@ -94,7 +94,7 @@ int main_ssa(int argc, char* argv[argc])
 	complex float* in = load_cfl(src_file, DIMS, in_dims);
 
 	if (!md_check_dimensions(DIMS, in_dims, ~(READ_FLAG|PHS1_FLAG)))
-		error("Only first two dimensions must be filled!");
+		error("Only first two dimensions must be filled!\n");
 
 
 	if (rm_mean || normalize) {

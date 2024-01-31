@@ -75,7 +75,7 @@ int main_nrmse(int argc, char* argv[argc])
 		float n = md_znorm(DIMS, ref_dims, ref);
 
 		if (0. == n)
-			error("Reference has zero norm");
+			error("Reference has zero norm\n");
 
 		sc /= n * n;
 

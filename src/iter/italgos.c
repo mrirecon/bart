@@ -966,7 +966,7 @@ void sgd(	int epochs, int batches,
 	unsigned long out_optimize_flag = 0;
 
 	if (batches != N_total / N_batch)
-		error("Wrong number of batches!");
+		error("Wrong number of batches!\n");
 
 	for (int i = 0; i < NI; i++) {
 

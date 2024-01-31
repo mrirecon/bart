@@ -108,7 +108,7 @@ int main_traj(int argc, char* argv[argc])
 	if (NULL != custom_angle_file) {
 
 		if (!conf.radial)
-			error("Custom angles make sense only for radial trajectories!");
+			error("Custom angles make sense only for radial trajectories!\n");
 
 		debug_printf(DP_INFO, "Custom-angle file is used.\n");
 
@@ -136,7 +136,7 @@ int main_traj(int argc, char* argv[argc])
 			conf.tiny_gold = recover_gen_fib_ind(Y / (conf.double_base ? 1 : 2), raga_inc);
 
 		if (-1 == conf.tiny_gold)
-			error("Could not recover GA index!");
+			error("Could not recover GA index!\n");
 
 		if ((0 < conf.tiny_gold) && (0 != raga_inc))
 			assert(conf.tiny_gold == recover_gen_fib_ind(Y / (conf.double_base ? 1 : 2), raga_inc));
@@ -168,7 +168,7 @@ int main_traj(int argc, char* argv[argc])
 		D = X;
 
 	if (D < X)
-		error("actual readout samples must be less than full samples");
+		error("actual readout samples must be less than full samples\n");
 
 	// Variables for z-undersampling
 	long z_reflines = z_usamp[0];
@@ -193,7 +193,7 @@ int main_traj(int argc, char* argv[argc])
 		conf.golden = true;
 
 		if (conf.full_circle)
-			error("Invalid options. Full-circle or half-circle sampling?");
+			error("Invalid options. Full-circle or half-circle sampling?\n");
 	}
 
 
@@ -229,7 +229,7 @@ int main_traj(int argc, char* argv[argc])
 	} else { // Cartesian
 
 		if ((turns != 1) || (mb != 1))
-			error("Turns or partitions not allowed/implemented for Cartesian trajectories!");
+			error("Turns or partitions not allowed/implemented for Cartesian trajectories!\n");
 	}
 
 

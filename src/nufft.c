@@ -96,7 +96,7 @@ int main_nufft(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (adjoint && inverse)
-		error("Adjoint and inverse requested at the same time.");
+		error("Adjoint and inverse requested at the same time.\n");
 
 	if (!precomp) {
 

@@ -244,7 +244,7 @@ static const struct nlop_s* nlop_affine_transform_out_F(const struct nlop_s* nlo
 static nn_t nlop_loss_to_nn_F(const struct nlop_s* nlop, const char* name, float weighting, bool measure)
 {
 	if (measure && 1 != weighting)
-		error("Scaling other than 0. and 1. is only allowed for losses!");
+		error("Scaling other than 0. and 1. is only allowed for losses!\n");
 
 	auto tmp_loss = nn_from_nlop_F(nlop_chain2_FF(nlop, 0, nlop_from_linop_F(linop_scale_create(1, MD_DIMS(1), weighting)), 0));
 	tmp_loss = nn_set_out_type_F(tmp_loss, 0, NULL, OUT_OPTIMIZE);
@@ -320,7 +320,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 	if (0 != config->weighting_cce) {
 
 		if (0 > config->label_index)
-			error("Label index not set!");
+			error("Label index not set!\n");
 
 		auto nlop = nlop_cce_create(N, dims, ~MD_BIT(config->label_index));
 
@@ -330,7 +330,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 	if (0 != config->weighting_weighted_cce) {
 
 		if (0 > config->label_index)
-			error("Label index not set!");
+			error("Label index not set!\n");
 
 		auto nlop = nlop_weighted_cce_create(N, dims, ~MD_BIT(config->label_index));
 
@@ -340,10 +340,10 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 	if (0 != config->weighting_accuracy) {
 
 		if (0 > config->label_index)
-			error("Label index not set!");
+			error("Label index not set!\n");
 
 		if (!measure)
-			error("Accuracy cannot be used as training loss!");
+			error("Accuracy cannot be used as training loss!\n");
 
 		auto nlop = nlop_accuracy_create(N, dims, config->label_index);
 
@@ -353,7 +353,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 	if (0 != config->weighting_dice0) {
 
 		if (0 > config->label_index)
-			error("Label index not set!");
+			error("Label index not set!\n");
 
 		auto nlop = nlop_dice_create(N, dims, MD_BIT(config->label_index), 0, 0., false);
 		if (measure)
@@ -365,7 +365,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 	if (0 != config->weighting_dice1) {
 
 		if (0 > config->label_index)
-			error("Label index not set!");
+			error("Label index not set!\n");
 
 		auto nlop = nlop_dice_create(N, dims, MD_BIT(config->label_index), 0, -1., false);
 		if (measure)
@@ -377,7 +377,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 	if (0 != config->weighting_dice2) {
 
 		if (0 > config->label_index)
-			error("Label index not set!");
+			error("Label index not set!\n");
 
 		auto nlop = nlop_dice_create(N, dims, MD_BIT(config->label_index), 0, -2., false);
 		if (measure)
@@ -390,7 +390,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 	if (0 != config->weighting_dice_labels) {
 
 		if (0 > config->label_index)
-			error("Label index not set!");
+			error("Label index not set!\n");
 
 		long labels = dims[config->label_index];
 
@@ -400,7 +400,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 		if (measure)
 			dice = nlop_affine_transform_out_F(dice, -1, 1);
 		else
-			error("Dice labels are only supported as measure!");
+			error("Dice labels are only supported as measure!\n");
 
 		dice = nlop_chain2_FF(dice, 0, nlop_from_linop_F(linop_scale_create(1, MD_DIMS(labels), config->weighting_dice_labels)), 0);
 		while (labels > 1) {

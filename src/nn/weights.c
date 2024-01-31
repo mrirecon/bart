@@ -157,7 +157,7 @@ void move_gpu_nn_weights(nn_weights_t weights){
 	}
 #else
 	(void)weights;
-	error("Compiled without gpu support!");
+	error("Compiled without gpu support!\n");
 #endif
 }
 

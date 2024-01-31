@@ -201,7 +201,7 @@ int main_bin(int argc, char* argv[argc])
 		bin_type = BIN_LABEL;;
 
 		if ((conf.cluster_dim < 0) || (src_dims[conf.cluster_dim] != 1)) // Dimension to store data for each cluster must be empty
-			error("Choose empty cluster dimension!");
+			error("Choose empty cluster dimension!\n");
 
 		assert((conf.n_resp == 0) && (conf.n_card == 0));
 		assert(!reorder);
@@ -218,7 +218,7 @@ int main_bin(int argc, char* argv[argc])
 
 	} else {
 
-		error("No bin type specified!");
+		error("No bin type specified!\n");
 	}
 
 
@@ -228,7 +228,7 @@ int main_bin(int argc, char* argv[argc])
 	case BIN_QUADRATURE:
 
 		if (labels_dims[TIME_DIM] < 2)
-			error("Check dimensions of labels array!");
+			error("Check dimensions of labels array!\n");
 
 		// Array to store bin-index for samples
 		long bins_dims[DIMS];

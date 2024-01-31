@@ -45,7 +45,7 @@ static const char help_str[] = "Trains or applies a neural network.";
 static const struct nn_weights_s* get_validation_files(int NO, const char* out_name, int NI, const char* in_name)
 {
 	if (((NULL != out_name) && (NULL == in_name)) || ((NULL != in_name) && (NULL == out_name)))
-		error("Only input or output for validation is provided");
+		error("Only input or output for validation is provided\n");
 
 	if (NULL == out_name)
 		return NULL;
@@ -181,7 +181,7 @@ int main_nnet(int argc, char* argv[argc])
 	}
 
 	if (NULL == config.network)
-		error("No network selected!");
+		error("No network selected!\n");
 
 	if ((0 < config.train_conf->dump_mod) && (NULL == config.train_conf->dump_filename))
 		config.train_conf->dump_filename = filename_weights;
@@ -191,12 +191,12 @@ int main_nnet(int argc, char* argv[argc])
 
 
 	if (apply && (train || eval))
-		error("Application would overwrite training data! Either train or apply!");
+		error("Application would overwrite training data! Either train or apply!\n");
 
 	if (NULL != filename_weights_load) {
 
 		if (apply)
-			error("Weights should only be loaded for training using -l option!");
+			error("Weights should only be loaded for training using -l option!\n");
 
 		config.weights = load_nn_weights(filename_weights_load);
 	}
