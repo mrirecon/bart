@@ -540,33 +540,31 @@ tests/test-moba-bloch-irbssfp-traj-slice-profile: traj repmat scale phantom sim 
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-moba-ir-meco-traj: traj reshape scale phantom signal extract transpose fmac index ones saxpy moba resize looklocker nrmse
+tests/test-moba-ir-meco-traj: traj reshape scale phantom signal extract slice transpose fmac index ones saxpy moba resize looklocker nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
 	$(TOOLDIR)/traj -x16 -y9 -t30 -r -D -E -G -s2 -e7 -c _traj.ra                  	;\
-	$(TOOLDIR)/reshape 1028 270 1 _traj.ra traj2.ra			;\
+	$(TOOLDIR)/reshape 1028 270 1 _traj.ra traj2.ra					;\
 	$(TOOLDIR)/scale 0.5 traj2.ra traj.ra						;\
 	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra				;\
 	$(TOOLDIR)/signal -I -C -r0.0127 -e0.0016 -n2160 -m8 -d0.2 -1 1.25:1.25:1 -2 0.05:0.05:1 -0 30:30:1 -4 0.3:0.3:1 signal.ra	;\
-	$(TOOLDIR)/reshape 48 270 8 signal.ra tmp_signal_all_1.ra      ;\
+	$(TOOLDIR)/reshape 48 270 8 signal.ra tmp_signal_all_1.ra      			;\
 	$(TOOLDIR)/extract 5 1 8 tmp_signal_all_1.ra tmp_signal_all_2.ra                ;\
 	$(TOOLDIR)/transpose 4 2 tmp_signal_all_2.ra tmp_signal_all_3.ra                ;\
 	$(TOOLDIR)/fmac -s 64 basis_geom.ra tmp_signal_all_3.ra data.ra                 ;\
 	$(TOOLDIR)/transpose 5 9 data.ra tmp_data0_1.ra			                ;\
 	$(TOOLDIR)/transpose 2 5 tmp_data0_1.ra tmp_data0_2.ra                          ;\
-	$(TOOLDIR)/reshape 36 5 54 tmp_data0_2.ra data_0.ra            ;\
+	$(TOOLDIR)/reshape 36 5 54 tmp_data0_2.ra data_0.ra 				;\
 	$(TOOLDIR)/transpose 5 9 traj.ra tmp_traj1.ra			                ;\
-	$(TOOLDIR)/reshape 36 5 54 tmp_traj1.ra out_traj.ra            ;\
-	$(TOOLDIR)/index 9 7 tmp1.ra 									;\
-	$(TOOLDIR)/scale 1600 tmp1.ra tmp2.ra						;\
+	$(TOOLDIR)/reshape 36 5 54 tmp_traj1.ra out_traj.ra 				;\
+	$(TOOLDIR)/index 9 7 tmp1.ra 							;\
+	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra						;\
 	$(TOOLDIR)/ones 10 1 1 1 1 1 1 1 1 1 7 tmp1.ra                                  ;\
-	$(TOOLDIR)/saxpy 1600 tmp1.ra tmp2.ra tmp3.ra					;\
-	$(TOOLDIR)/scale 0.001 tmp3.ra out_TE.ra					;\
+	$(TOOLDIR)/saxpy 1.6 tmp1.ra tmp2.ra out_TE.ra					;\
 	$(TOOLDIR)/index 5 54 tmp1.ra							;\
-	$(TOOLDIR)/scale 63500 tmp1.ra tmp2.ra					;\
+	$(TOOLDIR)/scale 0.063500 tmp1.ra tmp2.ra					;\
 	$(TOOLDIR)/ones 6 1 1 1 1 1 54 tmp1.ra 						;\
-	$(TOOLDIR)/saxpy 25400 tmp1.ra tmp2.ra tmp3.ra			;\
-	$(TOOLDIR)/scale 0.000001 tmp3.ra out_TI.ra					;\
-	$(TOOLDIR)/moba -i20 -d4 -D -m3 -R3 -o1.25 -C400 -k --kfilter-2 --normalize_scaling --scale_data 500 --scale_psf 500 --other echo=out_TE.ra -B0. --other pscale=0.5:0.05:0.05:1. -b 1:1 -t out_traj.ra data_0.ra out_TI.ra reco.ra sens.ra ;\
+	$(TOOLDIR)/saxpy 0.0254 tmp1.ra tmp2.ra out_TI.ra				;\
+	$(TOOLDIR)/moba -i20 -d4 -D -m3 -R3 -o1.25 -C400 -k --kfilter-2 --normalize_scaling --scale_data 500 --scale_psf 500 -B0. --other pinit=1:1:1:1:1:1:0.05:0,pscale=1:1:1:1:1:1:0.05:0.05,echo=out_TE.ra -b 1:1 -t out_traj.ra data_0.ra out_TI.ra reco.ra sens.ra ;\
 	$(TOOLDIR)/phantom -x 8 -c circ.ra						;\
 	$(TOOLDIR)/resize -c 0 8 1 8 reco.ra reco_maps.ra				;\
 	$(TOOLDIR)/extract 6 0 3 reco_maps.ra reco_w_maps.ra				;\
@@ -579,13 +577,13 @@ tests/test-moba-ir-meco-traj: traj reshape scale phantom signal extract transpos
 	$(TOOLDIR)/fmac circ.ra reco_f_t1.ra reco_f_t1_masked.ra			;\
 	$(TOOLDIR)/scale -- 0.3 circ.ra ref.ra						;\
 	$(TOOLDIR)/nrmse -t 0.02 ref.ra reco_f_t1_masked.ra				;\
-	$(TOOLDIR)/extract 6 6 7 reco_maps.ra reco_r2s.ra				;\
-	$(TOOLDIR)/scale 50 reco_r2s.ra reco_r2s2.ra					;\
+	$(TOOLDIR)/scale 1000 reco_r2s.ra reco_r2s2.ra					;\
+	$(TOOLDIR)/slice 6 6 reco_maps.ra reco_r2s.ra				;\
 	$(TOOLDIR)/fmac circ.ra reco_r2s2.ra reco_r2s2_masked.ra			;\
 	$(TOOLDIR)/scale -- 20 circ.ra ref.ra						;\
 	$(TOOLDIR)/nrmse -t 0.02 ref.ra reco_r2s2_masked.ra				;\
-	$(TOOLDIR)/extract 6 7 8 reco_maps.ra reco_B0.ra				;\
-	$(TOOLDIR)/scale 50 reco_B0.ra reco_B02.ra					;\
+	$(TOOLDIR)/scale 1000 reco_B0.ra reco_B02.ra					;\
+	$(TOOLDIR)/slice 6 7 reco_maps.ra reco_B0.ra				;\
 	$(TOOLDIR)/fmac circ.ra reco_B02.ra reco_B02_masked.ra				;\
 	$(TOOLDIR)/scale -- 30 circ.ra ref.ra						;\
 	$(TOOLDIR)/nrmse -t 0.001 ref.ra reco_B02_masked.ra				;\

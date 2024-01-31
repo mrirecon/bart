@@ -242,15 +242,15 @@ static bool test_nlop_ir_meco(void)
 	complex float* dst = md_alloc(N, out_dims, CFL_SIZE);
 	complex float* src = md_alloc(N, in_dims, CFL_SIZE);
 
-	complex float TI[4] = { 0., 1., 2., 3. };
+	complex float TI[4] = { 0., 1., 2., 3. };	// [s]
 
-	complex float TE[5] = { 0.1, .5, 1., 1.5, 2.0 };
+	complex float TE[5] = { 0.1, .5, 1., 1.5, 2.0 }; // [ms]
 
 	md_zfill(N, in_dims, src, 1.0);
 
 	float scale_fB0[2] = { 22., 6. };
 
-	float scale_others[3] = {.5, 0.1, 0.1};
+	float scale_others[8] = { 1, 1, 1, 1, 1, 1, 0.1, 0.1 };
 
 	struct nlop_s* ir_meco = nlop_ir_meco_create(N, map_dims, out_dims, in_dims, TI_dims, TI, TE_dims, TE, scale_fB0, scale_others);
 
@@ -278,13 +278,13 @@ static bool test_nlop_ir_meco_der(void)
 	long TI_dims[N] = { 1, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 	long TE_dims[N] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1 };
 
-	complex float TI[4] = { 0., 1., 2., 3. };
+	complex float TI[4] = { 0., 1., 2., 3. };	// [s]
 
-	complex float TE[5] = { 0.1, .5, 1., 1.5, 2.0 };
+	complex float TE[5] = { 0.1, .5, 1., 1.5, 2.0 }; // [ms]
 
 	float scale_fB0[2] = { 1., 1. };
 
-	float scale_others[3] = {.5, .5, 1.};
+	float scale_others[8] = { 1, 1, 1, 1, 1, 1, 0.5, 1. };
 
 	struct nlop_s* ir_meco = nlop_ir_meco_create(N, map_dims, out_dims, in_dims, TI_dims, TI, TE_dims, TE, scale_fB0, scale_others);
 

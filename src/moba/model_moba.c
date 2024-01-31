@@ -75,6 +75,9 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 
 	case MDB_IR_MGRE:
 
+		for (int i = 0; i < 8; i++)
+			debug_printf(DP_DEBUG2, "FP Scale[%d]=%f\n", i, crealf(data->other.scale[i]));
+
 		model = nlop_ir_meco_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, TE_dims, TE, scale_fB0, data->other.scale);
 		break;
 
