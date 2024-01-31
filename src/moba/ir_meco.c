@@ -125,7 +125,7 @@ void ir_meco_calc_fat_modu(int N, const long dims[N], const complex float TE[dim
 
 		assert(0. == cimagf(TE[eind]));
 
-		dst[eind] = calc_fat_modulation(3.0, crealf(TE[eind]) * 1.E-3, fat_spec);
+		dst[eind] = calc_fat_modulation(3.0, crealf(TE[eind]) * 1.E-3, fat_spec); // FIXME: TE in SI units instead ms
 	}
 }
 
@@ -1149,7 +1149,8 @@ struct nlop_s* nlop_ir_meco_create(int N, const long map_dims[N], const long out
 
 		bart_printf("MODEL: Ms_w, M0_w, R1*_w, Ms_f, M0_f, R1*_f, R2*, fB0\n");
 
-		data->scaling_F      = 0.5;	// Used but not in the model?
+		// FIXME: Remove hard-coded value of 0.5 here! Pass as additional option to moba?
+		data->scaling_F      = 0.5;
 		data->scaling_R2s    = scale[6];
 		data->scaling_fB0    = scale[7];
 

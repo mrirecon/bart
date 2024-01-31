@@ -182,7 +182,7 @@ int main_moba(int argc, char* argv[argc])
                 OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
 		OPTL_INFILE(0, "b0map", &input_b0, "[rad/s]", "Input B0 map as cfl file"),
 		OPTL_INFILE(0, "ksp-sens", &input_sens, "", "Input kspace sensitivities"),
-		OPTL_INFILE(0, "echo", &input_TE, "", "Input Echo times for IR multi-echo gradient-echo"),
+		OPTL_INFILE(0, "echo", &input_TE, "", "Input Echo times for IR multi-echo gradient-echo [ms]"), // FIXME: SI units here!
                 OPTL_FLVEC4(0, "tvscale", &tvscales, "s1:s2:s3:s4", "Scaling of derivatives in TV penalty"),
 		OPTL_FLOAT(0, "b1-sobolev-a", &(data.other.b1_sobolev_a), "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "b1-sobolev-b", &(data.other.b1_sobolev_b), "", "(a in 1 + a * \\Laplace^-b/2)"),

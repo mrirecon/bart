@@ -105,19 +105,33 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 	}
 
 	// IR multi-echo gradient echo model
-	// Estimate B0
 
 	if (MDB_IR_MGRE == mode) {
 
+		// Rescale R2* from ms to s
+		if (3 != imgs_dims[COEFF_DIM]) {
+
+			md_set_dims(DIMS, pos, 0);
+			pos[COEFF_DIM] = imgs_dims[COEFF_DIM] - 2;
+
+			md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
+
+			// TE is provided in ms, therefore R2s*1000 transforms: [1/ms] -> [1/s]
+			md_zsmul(DIMS, map_dims, tmp, tmp, 1000.);
+
+			md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
+		}
+
+		// Transform and rescale B0 to SI units in image space
 		md_set_dims(DIMS, pos, 0);
-
-		pos[COEFF_DIM] = imgs_dims[COEFF_DIM] - 1; // FIXME: fB0 is always in the last
-
-                complex float* tmp = md_alloc(DIMS, map_dims, CFL_SIZE);
+		pos[COEFF_DIM] = imgs_dims[COEFF_DIM] - 1;
 
 		md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
 
 		ir_meco_forw_fB0(op, tmp, tmp);
+
+		// TE is provided in ms, therefore B0*1000 transforms: [1/ms] -> [1/s]
+		md_zsmul(DIMS, map_dims, tmp, tmp, 1000.);
 
 		md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
 	}

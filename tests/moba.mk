@@ -577,13 +577,11 @@ tests/test-moba-ir-meco-traj: traj reshape scale phantom signal extract slice tr
 	$(TOOLDIR)/fmac circ.ra reco_f_t1.ra reco_f_t1_masked.ra			;\
 	$(TOOLDIR)/scale -- 0.3 circ.ra ref.ra						;\
 	$(TOOLDIR)/nrmse -t 0.02 ref.ra reco_f_t1_masked.ra				;\
-	$(TOOLDIR)/scale 1000 reco_r2s.ra reco_r2s2.ra					;\
-	$(TOOLDIR)/slice 6 6 reco_maps.ra reco_r2s.ra				;\
+	$(TOOLDIR)/slice 6 6 reco_maps.ra reco_r2s2.ra					;\
 	$(TOOLDIR)/fmac circ.ra reco_r2s2.ra reco_r2s2_masked.ra			;\
 	$(TOOLDIR)/scale -- 20 circ.ra ref.ra						;\
 	$(TOOLDIR)/nrmse -t 0.02 ref.ra reco_r2s2_masked.ra				;\
-	$(TOOLDIR)/scale 1000 reco_B0.ra reco_B02.ra					;\
-	$(TOOLDIR)/slice 6 7 reco_maps.ra reco_B0.ra				;\
+	$(TOOLDIR)/slice 6 7 reco_maps.ra reco_B02.ra					;\
 	$(TOOLDIR)/fmac circ.ra reco_B02.ra reco_B02_masked.ra				;\
 	$(TOOLDIR)/scale -- 30 circ.ra ref.ra						;\
 	$(TOOLDIR)/nrmse -t 0.001 ref.ra reco_B02_masked.ra				;\
