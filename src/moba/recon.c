@@ -178,24 +178,24 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, con
 		switch (img_dims[COEFF_DIM])
 		{
 			case 3:
-				conf2->constrained_maps = 0;     // (W, F, B0): bitmask(0 0 0) = 0
-				conf2->not_wav_maps = 1;
-				conf2->l2flags = 4;	// (W, F, B0): bitmask(0 0 1) = 4
+				conf2->constrained_maps = (0 == conf->constrained_maps) ? 0 : conf->constrained_maps;     // (W, F, B0): bitmask(0 0 0) = 0
+				conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 1 : conf->not_wav_maps;
+				conf2->l2flags = (0 == conf->l2para) ? 4 : conf->l2para;	// (W, F, B0): bitmask(0 0 1) = 4
 				break;
 			case 4:
-				conf2->constrained_maps = 4;     // (W, F, R2s, B0): bitmask(0 0 1 0) = 4
-				conf2->not_wav_maps = 1;
-				conf2->l2flags = 8;	// (W, F, R2s, B0): bitmask(0 0 0 1) = 8
+				conf2->constrained_maps = (0 == conf->constrained_maps) ? 4 : conf->constrained_maps;     // (W, F, R2s, B0): bitmask(0 0 1 0) = 4
+				conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 1 : conf->not_wav_maps;
+				conf2->l2flags = (0 == conf->l2para) ? 8 : conf->l2para;	// (W, F, R2s, B0): bitmask(0 0 0 1) = 8
 				break;
 			case 5:
-				conf2->constrained_maps = 12;     // (Ms_w, M0_w, R1s_w, R2s, B0): bitmask(0 0 1 1 0) = 12
-				conf2->not_wav_maps = 1;
-				conf2->l2flags = 16;	// (Ms_w, M0_w, R1s_w, R2s, B0): bitmask(0 0 0 0 1) = 16
+				conf2->constrained_maps = (0 == conf->constrained_maps) ? 12 : conf->constrained_maps;     // (Ms_w, M0_w, R1s_w, R2s, B0): bitmask(0 0 1 1 0) = 12
+				conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 1 : conf->not_wav_maps;
+				conf2->l2flags = (0 == conf->l2para) ? 16 : conf->l2para;	// (Ms_w, M0_w, R1s_w, R2s, B0): bitmask(0 0 0 0 1) = 16
 				break;
 			default:
-				conf2->constrained_maps = 100;     // (Ms_w, M0_w, R1s_w, Ms_f, M0_f, R1s_f, R2s, B0): bitmask(0 0 1 0 0 1 1 0) = 100
-				conf2->not_wav_maps = 1;
-				conf2->l2flags = 128;	// (Ms_w, M0_w, R1s_w, Ms_f, M0_f, R1s_f, R2s, B0): bitmask(0 0 0 0 0 0 0 1) = 128
+				conf2->constrained_maps = (0 == conf->constrained_maps) ? 100 : conf->constrained_maps;     // (Ms_w, M0_w, R1s_w, Ms_f, M0_f, R1s_f, R2s, B0): bitmask(0 0 1 0 0 1 1 0) = 100
+				conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 1 : conf->not_wav_maps;
+				conf2->l2flags = (0 == conf->l2para) ? 128 : conf->l2para;	// (Ms_w, M0_w, R1s_w, Ms_f, M0_f, R1s_f, R2s, B0): bitmask(0 0 0 0 0 0 0 1) = 128
 				break;
 		}
 	}
