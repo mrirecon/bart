@@ -351,7 +351,7 @@ int optimize_dims(int D, int N, long dims[N], long (*strs[D])[N])
 		if (split)
 			ND++;
 
-	} while(split);
+	} while (split);
 
 //	printf("Split %c :", split ? 'y' : 'n');
 //	print_dims(ND, dims);

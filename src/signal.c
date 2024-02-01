@@ -212,7 +212,7 @@ int main_signal(int argc, char* argv[argc])
 
 		md_copy_block(DIMS, pos, dims, signals, dims1, out, CFL_SIZE);
 
-	} while(md_next(DIMS, dims, ~TE_FLAG, pos));
+	} while (md_next(DIMS, dims, ~TE_FLAG, pos));
 
 	unmap_cfl(DIMS, dims, signals);
 

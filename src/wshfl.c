@@ -373,7 +373,7 @@ static void kern_normal(const linop_data_t* _data, complex float* dst, const com
 
 	md_clear(DIMS, output_dims, dst, CFL_SIZE);
 #ifdef USE_CUDA
-	if(cuda_ondevice(src))
+	if (cuda_ondevice(src))
 		md_zfmac2(DIMS, fmac_dims, output_str, dst, input_str, src, gpu_kernel_str, data->gpu_kernel);
 	else
 #endif

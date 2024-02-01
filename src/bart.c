@@ -318,7 +318,7 @@ int main_bart(int argc, char* argv[argc])
 #endif
 
 
-#pragma omp parallel num_threads(cfl_loop_num_workers()) if(cfl_loop_omp())
+#pragma omp parallel num_threads(cfl_loop_num_workers()) if (cfl_loop_omp())
 		{
 			long start = cfl_loop_worker_id();
 			long total = cfl_loop_desc_total();

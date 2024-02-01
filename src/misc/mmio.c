@@ -132,7 +132,7 @@ long cfl_loop_worker_id(void)
 		
 		int procno = mpi_get_rank();
 
-		if(MAX_WORKER <= procno)
+		if (MAX_WORKER <= procno)
 			error("Maximum supported number of MPI workers (%d) exceeded!\n", MAX_WORKER);
 
 		return procno;

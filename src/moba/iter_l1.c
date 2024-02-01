@@ -157,7 +157,7 @@ static void pos_value(iter_op_data* _data, float* dst, const float* src)
 			strs, &MD_ACCESS(DIMS, strs, pos, (const complex float*)src),
 			data->conf->lower_bound);
 
-	} while(md_next(DIMS, img_dims, ~FFT_FLAGS, pos));
+	} while (md_next(DIMS, img_dims, ~FFT_FLAGS, pos));
 }
 
 

@@ -74,7 +74,7 @@ void named_data_list_free(struct named_data_list_s* data_list)
 {
 	const struct named_tensor_s* data = list_pop((list_t)data_list);
 
-	while(NULL != data) {
+	while (NULL != data) {
 
 		named_tensor_free(data);
 		data = list_pop((list_t)data_list);

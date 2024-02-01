@@ -446,7 +446,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 		md_copy_block(DIMS, pos, x_dims, x, x_patch_dims, x_patch, CFL_SIZE);
 
-	} while(md_next(DIMS, y_dims, ~(FFT_FLAGS | TE_FLAG | COEFF_FLAG), pos));
+	} while (md_next(DIMS, y_dims, ~(FFT_FLAGS | TE_FLAG | COEFF_FLAG), pos));
 
 	md_free(x_patch);
 	md_free(y_patch);

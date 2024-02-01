@@ -228,7 +228,7 @@ extern void MOLLI_model(const struct signal_model* data, int N, complex float ou
 
 	for (int ind = 0; ind < N; ind++) {
 
-		if((0 < ind) && (0 == ind % (N / data->Hbeats))) {
+		if ((0 < ind) && (0 == ind % (N / data->Hbeats))) {
 
 			temp = m0 + (out[ind-1] - m0) * expf(-1.0 * data->time_T1relax * r1);
 			cycle++;

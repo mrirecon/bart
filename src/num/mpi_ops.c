@@ -179,7 +179,7 @@ static void print_cuda_aware_warning(void)
 void mpi_sync(void)
 {
 #ifdef USE_MPI
-	if(1 < mpi_get_num_procs())
+	if (1 < mpi_get_num_procs())
 		MPI_Barrier(mpi_get_comm());
 #endif
 }
@@ -187,7 +187,7 @@ void mpi_sync(void)
 #ifdef USE_CUDA
 static void mpi_bcast_selected_gpu(bool tag, void* ptr, long size, int root)
 {
-	if(1 == mpi_get_num_procs())
+	if (1 == mpi_get_num_procs())
 		return;
 
 	print_cuda_aware_warning();
@@ -580,8 +580,7 @@ void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[N], float
 #else
 		(void)reduce_flags;
 #endif
-
-	} while(md_next(N, tdims, ~0UL, pos));
+	} while (md_next(N, tdims, ~0UL, pos));
 }
 
 void mpi_reduce_zsum(int N, unsigned long reduce_flags, const long dims[N], complex float* ptr)
@@ -684,7 +683,7 @@ void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], doub
 		(void)reduce_flags;
 #endif
 
-	} while(md_next(N, tdims, ~0UL, pos));
+	} while (md_next(N, tdims, ~0UL, pos));
 }
 
 void mpi_reduce_zsumD(int N, unsigned long reduce_flags, const long dims[N], complex double* ptr)

@@ -109,11 +109,11 @@ static void checkpoint_save_inputs(struct checkpoint_s* data, int II, const comp
 
 		if (save_inputs && (NULL == data->inputs[i]))
 			data->inputs[i] = md_alloc_sameplace(data->DI[i], data->idims[i], CFL_SIZE, inputs[0]);
-
-		if (!save_inputs){
+		if (!save_inputs) {
 
 			md_free(data->inputs[i]);
 			data->inputs[i] = NULL;
+
 		} else {
 
 			md_copy(data->DI[i], data->idims[i], data->inputs[i], inputs[i], CFL_SIZE);
@@ -228,7 +228,7 @@ static void checkpoint_der(const nlop_data_t* _data, unsigned int o, unsigned in
 		if (!d->der_requested[j + d->OO * i])
 			continue;
 
-		if( NULL == d->der_out[i + d->II * j])
+		if (NULL == d->der_out[i + d->II * j])
 			d->der_out[i + d->II * j] = md_alloc_sameplace(d->DO[j], d->odims[j], CFL_SIZE, src);
 
 		der_ops[num_ops_par] = nlop_get_derivative(d->nlop, j, i)->forward;
@@ -308,6 +308,7 @@ static void checkpoint_adj(const nlop_data_t* _data, unsigned int o, unsigned in
 
 	if (NULL == d->adj_in[o])
 		d->adj_in[o] = md_alloc_sameplace(d->DO[o], d->odims[o], CFL_SIZE, src);
+
 	md_copy(d->DO[o], d->odims[o], d->adj_in[o], src, CFL_SIZE);
 
 
@@ -320,7 +321,7 @@ static void checkpoint_adj(const nlop_data_t* _data, unsigned int o, unsigned in
 		if (!d->der_requested[o + d->OO * j])
 			continue;
 
-		if( NULL == d->adj_out[j + d->II * o])
+		if (NULL == d->adj_out[j + d->II * o])
 			d->adj_out[j + d->II * o] = md_alloc_sameplace(d->DI[j], d->idims[j], CFL_SIZE, src);
 
 		adj_ops[num_ops_par] = nlop_get_derivative(d->nlop, o, j)->adjoint;
@@ -337,6 +338,7 @@ static void checkpoint_adj(const nlop_data_t* _data, unsigned int o, unsigned in
 
 	assert(NULL != d->adj_out[i + d->II * o]);
 	md_copy(d->DI[i], d->idims[i], dst, d->adj_out[i + d->II * o], CFL_SIZE);
+
 	if (d->der_once) {
 
 		md_free(d->adj_out[i + d->II * o]);

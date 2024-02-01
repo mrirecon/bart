@@ -327,11 +327,16 @@ const linop_data_t* linop_get_data(const struct linop_s* ptr)
 const linop_data_t* linop_get_data_nested(const struct linop_s* ptr)
 {
 	const struct operator_s* op = ptr->forward;
-	while(NULL != get_in_reshape(op))
+
+	while (NULL != get_in_reshape(op))
 		op = get_in_reshape(op);
 
 	auto sdata = CAST_MAYBE(shared_data_s, operator_get_data(op));
-	return sdata == NULL ? NULL : sdata->data;
+
+	if (NULL != sdata)
+		return sdata->data;
+
+	return NULL;
 }
 
 
@@ -747,7 +752,8 @@ static void stack_cod_normal(const linop_data_t* _data, complex float* _dst, con
 	const auto d = CAST_DOWN(stack_op_s, _data);
 
 	complex float* dst = _dst;
-	if(dst == src)
+
+	if (dst == src)
 		dst = md_alloc_sameplace(d->D, d->dims, CFL_SIZE, dst);
 
 	linop_normal_unchecked(d->lops[0], dst, src);
@@ -1144,7 +1150,7 @@ static const struct operator_s* graph_optimize_operator_linop(const struct opera
 
 		count2 = list_count(graph->nodes);
 
-	} while(count1 > count2);
+	} while (count1 > count2);
 
 	return graph_to_operator_F(graph);
 }

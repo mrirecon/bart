@@ -82,7 +82,7 @@ int main_looklocker(int argc, char* argv[argc])
 
 		MD_ACCESS(DIMS, ostrs, (pos[COEFF_DIM] = 0, pos), out_data) = T1;
 
-	} while(md_next(DIMS, odims, ~COEFF_FLAG, pos));
+	} while (md_next(DIMS, odims, ~COEFF_FLAG, pos));
 
 	unmap_cfl(DIMS, idims, in_data);
 	unmap_cfl(DIMS, odims, out_data);

@@ -386,7 +386,7 @@ int main_traj(int argc, char* argv[argc])
 
 		p++;
 
-	} while(md_next(DIMS, dims, ~1L, pos));
+	} while (md_next(DIMS, dims, ~1L, pos));
 
 	assert(p == N - 0);
 

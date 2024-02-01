@@ -431,7 +431,7 @@ static graph_t graph_to_op_dup_F(graph_t graph)
 
 		for (int i = 0; i < ext_node->N_vertices; i++) {
 
-			if(!ext_node->io_flags[i])
+			if (!ext_node->io_flags[i])
 				continue;
 
 			auto vertices = ext_node->edges[i];
@@ -502,7 +502,7 @@ static graph_t graph_to_op_link_F(graph_t graph)
 
 	for (int i = 0; i < N; i++) {
 
-		if(node->io_flags[i])
+		if (node->io_flags[i])
 			continue;
 
 		auto vertices = node->edges[i];

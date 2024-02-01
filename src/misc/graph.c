@@ -1077,7 +1077,7 @@ void debug_edges(enum debug_levels dl, list_t nodes)
 {
 	debug_printf(dl, "edges:\n");
 
-	while(0 < list_count(nodes)) {
+	while (0 < list_count(nodes)) {
 
 		node_t node = list_pop(nodes);
 
@@ -1088,7 +1088,7 @@ void debug_edges(enum debug_levels dl, list_t nodes)
 
 			list_t vertices = list_copy(node->edges[i]);
 
-			while(0 < list_count(vertices)) {
+			while (0 < list_count(vertices)) {
 
 				struct vertex_s a = {.node = node, .idx = i};
 				vertex_t b = list_pop(vertices);

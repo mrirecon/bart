@@ -491,7 +491,7 @@ static struct cudnn_tensor_s get_tensor_descriptor(struct conv_desc_s conv_desc,
 	strT[0] = (format == CUDNN_TENSOR_NCHW) ? dimA[1] * strT[1] : dimA[2] * strT[2];
 
 	//for (int i = 0; i < MAX(4, nbDims); i++)
-	//	if(1 == dimA[i])
+	//	if (1 == dimA[i])
 	//		strT[i] = 1;
 
 	CUDNN_ERROR(cudnnCreateTensorDescriptor(&result.input_tensor_desc));

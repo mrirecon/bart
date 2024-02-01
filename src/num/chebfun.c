@@ -198,7 +198,7 @@ float* chebfun(int* NP, float (*fun)(float x))
 {
 	int N = 129;
 
-	while(true) {
+	while (true) {
 
 		float coeff[N];
 

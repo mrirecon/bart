@@ -299,7 +299,7 @@ int main_sim(int argc, char* argv[argc])
 		if (NULL != deriv)
 			md_copy_block(DIMS, pos, ddims, deriv, tddims, td, CFL_SIZE);
 
-	} while(md_next(DIMS, mdims, ~(READ_FLAG|MAPS_FLAG|TE_FLAG|ITER_FLAG), pos));
+	} while (md_next(DIMS, mdims, ~(READ_FLAG|MAPS_FLAG|TE_FLAG|ITER_FLAG), pos));
 
         // End time of simulation
 	double end = timestamp();

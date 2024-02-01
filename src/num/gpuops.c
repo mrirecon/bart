@@ -307,7 +307,7 @@ static void* cuda_malloc_wrapper(size_t size)
 		int access;
 		CUDA_ERROR(cudaDeviceGetAttribute(&access, cudaDevAttrConcurrentManagedAccess, cuda_device_id));
 
-		if(0 != access) {
+		if (0 != access) {
 
 			CUDA_ERROR(cudaMemAdvise(ptr, size, cudaMemAdviseSetAccessedBy, cuda_device_id));
 			CUDA_ERROR(cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, cuda_device_id));

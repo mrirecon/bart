@@ -1031,7 +1031,7 @@ static void copy_fun(const operator_data_t* _data, unsigned int N, void* args[N]
 
 		ptr[i] = NULL;
 
-		if(NULL == args[i])
+		if (NULL == args[i])
 			continue;
 
 		bool allocate = !md_check_equal_dims(io->N, io->strs, data->strs[i], md_nontriv_dims(io->N, io->dims));

@@ -92,48 +92,48 @@ struct dfwavelet_plan_s* prepare_dfwavelet_plan(int numdims, long* imSize, const
 
 void dfwavelet_forward(struct dfwavelet_plan_s* plan, data_t* out_wcdf1, data_t* out_wcdf2, data_t* out_wcn, data_t* in_vx, data_t* in_vy, data_t* in_vz)
 {
-  if(plan->use_gpu==0)
+  if (plan->use_gpu==0)
     dffwt3_cpu(plan,out_wcdf1,out_wcdf2,out_wcn,in_vx,in_vy,in_vz);
 #ifdef USE_CUDA
-  if(plan->use_gpu==1)
+  if (plan->use_gpu==1)
     dffwt3_gpu(plan,out_wcdf1,out_wcdf2,out_wcn,in_vx,in_vy,in_vz);
-  if(plan->use_gpu==2)
+  if (plan->use_gpu==2)
     dffwt3_gpuHost(plan,out_wcdf1,out_wcdf2,out_wcn,in_vx,in_vy,in_vz);
 #endif
 }
 
 void dfwavelet_inverse(struct dfwavelet_plan_s* plan, data_t* out_vx,data_t* out_vy,data_t* out_vz, data_t* in_wcdf1,data_t* in_wcdf2,data_t* in_wcn)
 {
-  if(plan->use_gpu==0)
+  if (plan->use_gpu==0)
     dfiwt3_cpu(plan,out_vx,out_vy,out_vz,in_wcdf1,in_wcdf2,in_wcn);
 #ifdef USE_CUDA
-  if(plan->use_gpu==1)
+  if (plan->use_gpu==1)
     dfiwt3_gpu(plan,out_vx,out_vy,out_vz,in_wcdf1,in_wcdf2,in_wcn);
-  if(plan->use_gpu==2)
+  if (plan->use_gpu==2)
     dfiwt3_gpuHost(plan,out_vx,out_vy,out_vz,in_wcdf1,in_wcdf2,in_wcn);
 #endif
 }
 
 void dfsoft_thresh(struct dfwavelet_plan_s* plan, scalar_t dfthresh, scalar_t nthresh,data_t* wcdf1,data_t* wcdf2, data_t* wcn)
 {
-  if(plan->use_gpu==0)
+  if (plan->use_gpu==0)
     dfsoftthresh_cpu(plan,dfthresh,nthresh,wcdf1,wcdf2,wcn);
 #ifdef USE_CUDA
-  if(plan->use_gpu==1)
+  if (plan->use_gpu==1)
     dfsoftthresh_gpu(plan,dfthresh,nthresh,wcdf1,wcdf2,wcn);
-  if(plan->use_gpu==2)
+  if (plan->use_gpu==2)
     dfsoftthresh_gpuHost(plan,dfthresh,nthresh,wcdf1,wcdf2,wcn);
 #endif
 }
 
 void dfwavelet_thresh(struct dfwavelet_plan_s* plan, scalar_t dfthresh, scalar_t nthresh,data_t* out_vx, data_t* out_vy, data_t* out_vz, data_t* in_vx,data_t* in_vy, data_t* in_vz)
 {
-  if(plan->use_gpu==0)
+  if (plan->use_gpu==0)
     dfwavthresh3_cpu(plan,dfthresh,nthresh,out_vx,out_vy,out_vz, in_vx,in_vy,in_vz);
 #ifdef USE_CUDA
-  if(plan->use_gpu==1)
+  if (plan->use_gpu==1)
     dfwavthresh3_gpu(plan,dfthresh,nthresh, out_vx,out_vy,out_vz, in_vx,in_vy,in_vz);
-  if(plan->use_gpu==2)
+  if (plan->use_gpu==2)
     dfwavthresh3_gpuHost(plan,dfthresh,nthresh,out_vx,out_vy,out_vz,in_vx,in_vy,in_vz);
 #endif
 }
@@ -817,9 +817,9 @@ void circshift_cpu(struct dfwavelet_plan_s* plan, data_t *data) {
     {
       zeroShift &= (plan->randShift[i]==0);
     }
-  if(zeroShift) {
+  if (zeroShift)
     return;
-  }
+
   // Copy data
   data_t* dataCopy = xmalloc(sizeof(data_t)*plan->numPixel);
   memcpy(dataCopy, data, plan->numPixel*sizeof(data_t));
@@ -873,9 +873,8 @@ void circunshift_cpu(struct dfwavelet_plan_s* plan, data_t *data) {
     {
       zeroShift &= (plan->randShift[i]==0);
     }
-  if(zeroShift) {
+  if (zeroShift)
     return;
-  }
 
   // Copy data
   data_t* dataCopy = xmalloc(sizeof(data_t)*plan->numPixel);
@@ -929,17 +928,15 @@ void conv_down_3d(data_t *out, data_t *in,
 
   // Adjust out skip 2 and 3 if needed
   int outSkip2;
-  if(skip2 > skip1) {
+  if (skip2 > skip1) {
     outSkip2 = outSize1*skip2/size1;
-  }
-  else {
+  } else {
     outSkip2 = skip2;
   }
   int outSkip3;
-  if(skip3 > skip1) {
+  if (skip3 > skip1) {
     outSkip3 = outSize1*skip3/size1;
-  }
-  else {
+  } else {
     outSkip3 = skip3;
   }
   int i32;
@@ -973,17 +970,15 @@ void conv_up_3d(data_t *out, data_t *in,
 
   // Adjust out skip 2 and 3 if needed
   int outSkip2;
-  if(skip2 > skip1) {
+  if (skip2 > skip1) {
     outSkip2 = outSize1*skip2/size1;
-  }
-  else {
+  } else {
     outSkip2 = skip2;
   }
   int outSkip3;
-  if(skip3 > skip1) {
+  if (skip3 > skip1) {
     outSkip3 = outSize1*skip3/size1;
-  }
-  else {
+  } else {
     outSkip3 = skip3;
   }
   int i32;

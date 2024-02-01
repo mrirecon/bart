@@ -390,7 +390,7 @@ long multilr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const lon
 			}
 		}
 		
-	} while(!done);
+	} while (!done);
 
 	return levels;
 }

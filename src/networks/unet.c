@@ -317,7 +317,7 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 			else
 				network = nn_set_output_name_F(network, 0, oname);
 
-			if(config->stack)
+			if (config->stack)
 				network = nn_append_singleton_dim_in_F(network, 0, name_working);
 
 			if (stack)
@@ -339,7 +339,7 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 		network = nn_append_activation_bias(network, o, oname, name_working, config->activation, (config->channel_flag | config->group_flag));
 		network = nn_append_singleton_dim_in_F(network, 0, name_working);
 
-		if(config->stack)
+		if (config->stack)
 			network = nn_append_singleton_dim_in_F(network, 0, name_working);
 
 		if (stack)

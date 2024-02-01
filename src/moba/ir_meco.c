@@ -172,7 +172,7 @@ static void ir_meco_init(struct ir_meco_s* data, const void* arg)
 		data->dMs_f = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, arg);
 	}
 
-	if(8 == data->in_dims[COEFF_DIM]) {
+	if (8 == data->in_dims[COEFF_DIM]) {
 
 		data->M0_f = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, arg);
 		data->R1s_f = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, arg);
@@ -1115,13 +1115,13 @@ struct nlop_s* nlop_ir_meco_create(int N, const long map_dims[N], const long out
 	data->scaling_R2s    = scale[1];
 	data->scaling_fB0    = scale[2];
 
-	if(3 == in_dims[COEFF_DIM])
+	if (3 == in_dims[COEFF_DIM])
 		return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), meco_fun2, meco_der2, meco_adj2, NULL, NULL, ir_meco_del);
-	else if(4 == in_dims[COEFF_DIM])
+	else if (4 == in_dims[COEFF_DIM])
 		return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), meco_fun, meco_der, meco_adj, NULL, NULL, ir_meco_del);
-	else if(5 == in_dims[COEFF_DIM])
+	else if (5 == in_dims[COEFF_DIM])
 		return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), ir_meco_w_fun, ir_meco_w_der, ir_meco_w_adj, NULL, NULL, ir_meco_del);
 	else
 		return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), ir_meco_fun, ir_meco_der, ir_meco_adj, NULL, NULL, ir_meco_del);
-
 }
+

@@ -707,7 +707,7 @@ int main_moba(int argc, char* argv[argc])
         if (NULL != input_b1)
 		unmap_cfl(DIMS, b1_dims, b1);
 
-	if(NULL != input_TE)
+	if (NULL != input_TE)
 		unmap_cfl(DIMS, TE_IR_MGRE_dims, TE_IR_MGRE);
 
 	if (NULL != input_b0)

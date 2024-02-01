@@ -1426,6 +1426,6 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 	}
 
 	for (int o = 0; o < NO; o++)
-		if(NULL != args[o])
+		if (NULL != args[o])
 			vops->del(args[o]);
 }

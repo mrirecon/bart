@@ -430,15 +430,15 @@ void free_network_data(struct network_data_s* nd)
 	unmap_cfl(DIMS, nd->img_dims, nd->adjoint);
 	unmap_cfl(DIMS, nd->col_dims, nd->coil);
 	unmap_cfl(DIMS, nd->img_dims, nd->out);
-	if(NULL != nd->trajectory)
+	if (NULL != nd->trajectory)
 		unmap_cfl(DIMS, nd->trj_dims, nd->trajectory);
-	if(NULL != nd->pattern)
+	if (NULL != nd->pattern)
 		unmap_cfl(DIMS, nd->pat_dims, nd->pattern);
-	if(NULL != nd->basis)
+	if (NULL != nd->basis)
 		unmap_cfl(DIMS, nd->bas_dims, nd->basis);
-	if(NULL != nd->scale)
+	if (NULL != nd->scale)
 		unmap_cfl(DIMS, nd->scl_dims, nd->scale);
-	if(NULL != nd->initialization)
+	if (NULL != nd->initialization)
 		unmap_cfl(DIMS, nd->img_dims, nd->initialization);
 }
 

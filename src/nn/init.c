@@ -538,7 +538,7 @@ static void init_reshape_del(const init_t* conf_)
  */
 const struct initializer_s* init_reshape_create(unsigned int N, const long dims[N], const struct initializer_s* init)
 {
-	if(NULL == init)
+	if (NULL == init)
 		return NULL;
 
 	PTR_ALLOC(struct initializer_reshape_s, data);

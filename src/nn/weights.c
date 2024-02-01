@@ -210,9 +210,10 @@ void nn_init(nn_t op, nn_weights_t weights)
 {
 	for (int i = 0, ip = 0; i < nn_get_nr_in_args(op); i++){
 
-		if(NULL != op->initializers[i]) {
+		if (NULL != op->initializers[i]) {
 
 			assert(ip < weights->N);
+
 			auto iov = nlop_generic_domain(op->nlop, i);
 			iovec_check(weights->iovs[ip], iov->N, iov->dims, iov->strs);
 			initializer_apply(op->initializers[i], iov->N, iov->dims, weights->tensors[ip++]);

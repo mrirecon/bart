@@ -475,7 +475,7 @@ static const struct operator_s* graph_optimize_operator(const struct operator_s*
 		graph = operator_graph_optimize_identify_F(graph);
 		count2 = list_count(graph->nodes);
 
-	} while(count1 > count2);
+	} while (count1 > count2);
 
 	return graph_to_operator_F(graph);
 }
@@ -524,7 +524,8 @@ nlop_data_t* nlop_get_data(const struct nlop_s* op)
 nlop_data_t* nlop_get_data_nested(const struct nlop_s* nlop)
 {
 	const struct operator_s* op = nlop->op;
-	while(NULL != get_in_reshape(op))
+
+	while (NULL != get_in_reshape(op))
 		op = get_in_reshape(op);
 
 	auto data2 = CAST_MAYBE(nlop_op_data_s, operator_get_data(op));
