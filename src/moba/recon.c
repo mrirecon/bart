@@ -388,7 +388,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 	if (-1 == conf2.constrained_maps)
 		conf2.constrained_maps = (1UL << (dims[COEFF_DIM] - 1));
 
-	assert(-1 != conf2.constrained_maps);
+	assert(0 <= conf2.constrained_maps);
 
 	long irgnm_conf_dims[DIMS];
 	md_select_dims(DIMS, fft_flags|MAPS_FLAG|COEFF_FLAG|TIME_FLAG|TIME2_FLAG, irgnm_conf_dims, imgs_dims);
