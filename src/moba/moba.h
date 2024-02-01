@@ -53,7 +53,7 @@ struct moba_conf {
 	bool noncartesian;
         bool sms;
 	unsigned long not_wav_maps;
-	unsigned long constrained_maps;
+	long constrained_maps;
 	unsigned long l2para;
 	unsigned int pusteps;
 	float ratio;
