@@ -1117,37 +1117,37 @@ struct nlop_s* nlop_ir_meco_create(int N, const long map_dims[N], const long out
 
 	if (3 == in_dims[COEFF_DIM]) { // W, F, fB0
 
-		bart_printf("MODEL: W, F, fB0\n");
+		debug_printf(DP_DEBUG1, "MODEL: W, F, fB0\n");
 
 		data->scaling_F      = scale[1];
 		data->scaling_R2s    = 1.;	// Not used
 		data->scaling_fB0    = scale[2];
 
 		return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), meco_fun2, meco_der2, meco_adj2, NULL, NULL, ir_meco_del);
-	}
-	else if (4 == in_dims[COEFF_DIM]) { // W, F, R2*, fB0
 
-		bart_printf("MODEL: W, F, R2*, fB0\n");
+	} else if (4 == in_dims[COEFF_DIM]) { // W, F, R2*, fB0
+
+		debug_printf(DP_DEBUG1, "MODEL: W, F, R2*, fB0\n");
 
 		data->scaling_F      = scale[1];
 		data->scaling_R2s    = scale[2];
 		data->scaling_fB0    = scale[3];
 
 		return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), meco_fun, meco_der, meco_adj, NULL, NULL, ir_meco_del);
-	}
-	else if (5 == in_dims[COEFF_DIM]) { // Ms, M0, R1*, R2*, fB0
 
-		bart_printf("MODEL: Ms, M0, R1*, R2*, fB0\n");
+	} else if (5 == in_dims[COEFF_DIM]) { // Ms, M0, R1*, R2*, fB0
+
+		debug_printf(DP_DEBUG1, "MODEL: Ms, M0, R1*, R2*, fB0\n");
 
 		data->scaling_F      = 1.;	// Not used
 		data->scaling_R2s    = scale[3];
 		data->scaling_fB0    = scale[4];
 
 		return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), ir_meco_w_fun, ir_meco_w_der, ir_meco_w_adj, NULL, NULL, ir_meco_del);
-	}
-	else { // Ms_w, M0_w, R1*_w, Ms_f, M0_f, R1*_f, R2*, fB0
 
-		bart_printf("MODEL: Ms_w, M0_w, R1*_w, Ms_f, M0_f, R1*_f, R2*, fB0\n");
+	} else { // Ms_w, M0_w, R1*_w, Ms_f, M0_f, R1*_f, R2*, fB0
+
+		debug_printf(DP_DEBUG1, "MODEL: Ms_w, M0_w, R1*_w, Ms_f, M0_f, R1*_f, R2*, fB0\n");
 
 		// FIXME: Remove hard-coded value of 0.5 here! Pass as additional option to moba?
 		data->scaling_F      = 0.5;
