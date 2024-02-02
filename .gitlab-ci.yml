@@ -3,6 +3,11 @@ variables:
 
 image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_cuda_all_deps
 
+
+# Make Builds interruptible by default
+default:
+  interruptible: true
+
 #### Now part of the docker image
 ####
 before_script:
