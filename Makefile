@@ -154,9 +154,9 @@ ALLDEPS = $(shell find $(srcdir) utests -name ".*.d")
 # Compilation flags
 
 ifneq ($(DEBUG),1)
-OPT = -O2
+	OPT = -O2
 else
-OPT = -Og
+	OPT = -Og
 endif
 #OPT += -ffp-contract=off
 CPPFLAGS ?= -Wall -Wextra
@@ -179,16 +179,16 @@ endif
 # openblas
 
 ifeq ($(BUILDTYPE), MSYS)
-BLAS_BASE ?= /mingw64/include/OpenBLAS/
+	BLAS_BASE ?= /mingw64/include/OpenBLAS/
 else
 ifneq ($(BUILDTYPE), MacOSX)
-BLAS_BASE ?= /usr/
+	BLAS_BASE ?= /usr/
 else
 ifeq ($(MACPORTS),1)
-BLAS_BASE ?= /opt/local/
-CPPFLAGS += -DUSE_MACPORTS
+	BLAS_BASE ?= /opt/local/
+	CPPFLAGS += -DUSE_MACPORTS
 endif
-BLAS_BASE ?= /usr/local/opt/openblas/
+	BLAS_BASE ?= /usr/local/opt/openblas/
 endif
 endif
 
