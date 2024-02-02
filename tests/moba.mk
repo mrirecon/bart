@@ -564,7 +564,7 @@ tests/test-moba-ir-meco-traj: traj reshape scale phantom signal extract slice tr
 	$(TOOLDIR)/scale 0.063500 tmp1.ra tmp2.ra					;\
 	$(TOOLDIR)/ones 6 1 1 1 1 1 54 tmp1.ra 						;\
 	$(TOOLDIR)/saxpy 0.0254 tmp1.ra tmp2.ra out_TI.ra				;\
-	$(TOOLDIR)/moba -i20 -d4 -D -m3 -R3 -o1.25 -C400 -k --kfilter-2 --normalize_scaling --scale_data 500 --scale_psf 500 -B0. --other pinit=1:1:1:1:1:1:0.05:0,pscale=1:1:1:1:1:1:0.05:0.05,echo=out_TE.ra -b 1:1 -t out_traj.ra data_0.ra out_TI.ra reco.ra sens.ra ;\
+	$(TOOLDIR)/moba -i20 -d4 -D -m3 -R3 -o1.25 -C400 -k --kfilter-2 --normalize_scaling --scale_data 500 --scale_psf 500 -B0. --other pinit=1:1:1:1:1:1:0.05:0.05,pscale=1:1:1:1:1:1:0.05:0.05,echo=out_TE.ra -b 1:1 -t out_traj.ra data_0.ra out_TI.ra reco.ra sens.ra ;\
 	$(TOOLDIR)/phantom -x 8 -c circ.ra						;\
 	$(TOOLDIR)/resize -c 0 8 1 8 reco.ra reco_maps.ra				;\
 	$(TOOLDIR)/extract 6 0 3 reco_maps.ra reco_w_maps.ra				;\
