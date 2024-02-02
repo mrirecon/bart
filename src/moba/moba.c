@@ -50,7 +50,6 @@ struct moba_conf moba_defaults = {
 
 	// MECO
 	.mgre_model = MECO_WFR2S,
-	.ir_mgre_model = IR_MECO_W_T1_F_T1_R2S,
 	.fat_spec = FAT_SPEC_1,
 	.scale_fB0 = { 222., 1. },
 	.out_origin_maps = false,
@@ -98,7 +97,7 @@ int moba_get_nr_of_coeffs(const struct moba_conf* conf, int in)
 		break;
 
 	case MDB_IR_MGRE:
-		coeffs = ir_meco_get_num_of_coeff(conf->ir_mgre_model);
+		coeffs = ir_meco_get_num_of_coeff(conf->mgre_model);
 		break;
 	}
 

@@ -205,7 +205,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SELECT('G', enum mdb_t, &conf.mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
 		OPT_SELECT('D', enum mdb_t, &conf.mode, MDB_IR_MGRE, "Joint T1 and T2* mapping using model-based IR multiple gradient echo"),
                 OPTL_SELECT(0, "bloch", enum mdb_t, &conf.mode, MDB_BLOCH, "Bloch model-based reconstruction"),
-		OPT_UINT('m', &conf.mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
+		OPT_UINT('m', &conf.mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF, ..., WF_fB0, WF_R2S, T1_R2S, W_T1_F_T1_RS2 } [default: WFR2S]"),
 		OPT_UINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backsapce \b earlier
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPTL_FLOAT('R', "reduction", &conf.redu, "redu", "reduction factor"),

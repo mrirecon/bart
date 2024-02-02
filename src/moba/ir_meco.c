@@ -29,16 +29,17 @@
 
 #include "meco.h"
 
-int ir_meco_get_num_of_coeff(enum ir_meco_model sel_model)
+int ir_meco_get_num_of_coeff(enum meco_model sel_model)
 {
 	int ncoeff = 0;
 
 	switch (sel_model) {
 
-		case IR_MECO_WF_fB0:		ncoeff = 3; break; // meco, water, fat, fB0
-		case IR_MECO_WF_R2S:		ncoeff = 4; break; // meco, water, fat, R2*, fB0
-		case IR_MECO_T1_R2S:		ncoeff = 5; break; // ir + meco, water T1, R2*, fB0
-		case IR_MECO_W_T1_F_T1_R2S:	ncoeff = 8; break; // ir + meco, water T1, fat T1, R2*, fB0
+	case IR_MECO_WF_fB0:		ncoeff = 3; break; // meco, water, fat, fB0
+	case IR_MECO_WF_R2S:		ncoeff = 4; break; // meco, water, fat, R2*, fB0
+	case IR_MECO_T1_R2S:		ncoeff = 5; break; // ir + meco, water T1, R2*, fB0
+	case IR_MECO_W_T1_F_T1_R2S:	ncoeff = 8; break; // ir + meco, water T1, fat T1, R2*, fB0
+	default: error("invalid model");
 	}
 
 	return ncoeff;
@@ -744,8 +745,8 @@ static void meco_fun(const nlop_data_t* _data, complex float* dst, const complex
 
 static void meco_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
+
 	long pos[data->N];
 
 	for (int i = 0; i < data->N; i++)
@@ -777,7 +778,6 @@ static void meco_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 
 static void meco_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 
 	long pos[data->N];
@@ -870,7 +870,6 @@ static void meco_fun2(const nlop_data_t* _data, complex float* dst, const comple
 
 static void meco_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 	long pos[data->N];
 
@@ -897,7 +896,6 @@ static void meco_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int
 
 static void meco_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
 {
-
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 
 	long pos[data->N];

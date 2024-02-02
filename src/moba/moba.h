@@ -19,19 +19,13 @@ enum meco_model {
 	MECO_R2S,
 	MECO_PHASEDIFF,
 	MECO_PI,
-};
-#endif
-
-#ifndef _IR_MECO_MODEL
-#define _IR_MECO_MODEL 1
-
-enum ir_meco_model {
 	IR_MECO_WF_fB0,
 	IR_MECO_WF_R2S,
 	IR_MECO_T1_R2S,
 	IR_MECO_W_T1_F_T1_R2S,
 };
 #endif
+
 
 struct moba_conf {
 
@@ -74,7 +68,6 @@ struct moba_conf {
 
 	// MECO
 	enum meco_model mgre_model;	// enum
-	enum ir_meco_model ir_mgre_model;	// enum
 	enum fat_spec fat_spec;
 	float scale_fB0[2]; // { spatial smoothness, scaling }
 	bool out_origin_maps;
