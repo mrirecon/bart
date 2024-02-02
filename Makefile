@@ -49,6 +49,26 @@ LOG_SIEMENS_BACKEND?=0
 LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
 
+# Paths
+
+here  = $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+root := $(here)
+
+srcdir = $(root)/src
+libdir = $(root)/lib
+bindir = $(root)/bin
+
+export BART_TOOLBOX_PATH=$(root)
+
+MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
+ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(root)/rules/*.mk $(root)/Makefiles/Makefile.*)
+
+-include Makefile.$(NNAME)
+-include Makefile.local
+-include $(MAKEFILES)
+
+
+
 # for debug backtraces
 ifeq ($(DEBUG_DWARF),1)
 LIBS += -ldw -lunwind
@@ -111,16 +131,7 @@ ifneq (,$(findstring MSYS,$(UNAME)))
 endif
 
 
-# Paths
 
-here  = $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-root := $(here)
-
-srcdir = $(root)/src
-libdir = $(root)/lib
-bindir = $(root)/bin
-
-export BART_TOOLBOX_PATH=$(root)
 
 
 # Automatic dependency generation
@@ -278,12 +289,7 @@ MODULES_psf = -lnoncart -llinops
 MODULES_nlinvnet = -lnetworks -lnoir -liter -lnn -lnlops -llinops -lnoncart -lgrecon -lnetworks -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
 
 
-MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
-ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(root)/rules/*.mk $(root)/Makefiles/Makefile.*)
 
--include Makefile.$(NNAME)
--include Makefile.local
--include $(MAKEFILES)
 
 
 GCCVERSION11 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 11)
