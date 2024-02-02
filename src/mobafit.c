@@ -43,6 +43,8 @@
 #include "moba/meco.h"
 #include "moba/exp.h"
 #include "moba/T1fun.h"
+#include "moba/blochfun.h"
+#include "moba/moba.h"
 
 #include "simu/signals.h"
 
@@ -117,6 +119,8 @@ int main_mobafit(int argc, char* argv[argc])
 	const char* enc_file = NULL;
 	const char* echo_file = NULL;
 	const char* coeff_file = NULL;
+        const char* b1_file = NULL;
+        const char* b0_file = NULL;
 
 	struct arg_s args[] = {
 
@@ -141,7 +145,7 @@ int main_mobafit(int argc, char* argv[argc])
 	bounds.min = bound_min;
 	bounds.max = bound_max;
 
-	enum seq_type { /* BSSFP, FLASH, MOLLI, */ TSE, MGRE, DIFF, IR_LL, IR } seq = MGRE;
+	enum seq_type { /* BSSFP, FLASH, MOLLI, */ TSE, MGRE, DIFF, IR_LL, IR, SIM } seq = MGRE;
 
 	int mgre_model = MECO_WFR2S;
 
@@ -149,7 +153,76 @@ int main_mobafit(int argc, char* argv[argc])
 
 	const char* basis_file = NULL;
 
-        bool use_magn = false;
+	bool use_magn = false;
+
+	struct sim_data sim;
+	sim.seq = simdata_seq_defaults;
+	sim.voxel = simdata_voxel_defaults;
+	sim.pulse = simdata_pulse_defaults;
+	sim.pulse.sinc = pulse_sinc_defaults;
+	sim.pulse.hs = pulse_hypsec_defaults;
+	sim.grad = simdata_grad_defaults;
+	sim.other = simdata_other_defaults;
+
+	struct opt_s sim_opts[] = {
+
+		OPTL_FLOAT(0, "ode-tol", &(sim.other.ode_tol), "", "ODE tolerance value [def: 1e-5]"),
+		OPTL_FLOAT(0, "stm-tol", &(sim.other.stm_tol), "", "STM tolerance value [def: 1e-6]"),
+		OPTL_SELECT(0, "ROT", enum sim_type, &(sim.seq.type), SIM_ROT,
+			"homogeneously discretized simulation based on rotational matrices"),
+		OPTL_SELECT(0, "ODE", enum sim_type, &(sim.seq.type), SIM_ODE,
+			"full ordinary differential equation solver based simulation (default)"),
+		OPTL_SELECT(0, "STM", enum sim_type, &(sim.seq.type), SIM_STM, "state-transition matrix based simulation"),
+		OPTL_SELECT(0, "BLOCH", enum sim_model, &(sim.seq.model), MODEL_BLOCH, "Bloch Equations (default)"),
+		OPTL_SELECT(0, "BMC", enum sim_model, &(sim.seq.model), MODEL_BMC, "Bloch-McConnell Equations"),
+	};
+
+	struct opt_s seq_opts[] = {
+
+		/* Sequences */
+		OPTL_SELECT(0, "BSSFP", enum sim_seq, &(sim.seq.seq_type), SEQ_BSSFP, "bSSFP"),
+		OPTL_SELECT(0, "IR-BSSFP", enum sim_seq, &(sim.seq.seq_type), SEQ_IRBSSFP, "Inversion-Recovery bSSFP"),
+		OPTL_SELECT(0, "FLASH", enum sim_seq, &(sim.seq.seq_type), SEQ_FLASH, "FLASH"),
+		OPTL_SELECT(0, "IR-FLASH", enum sim_seq, &(sim.seq.seq_type), SEQ_IRFLASH, "Inversion-Recovery FLASH"),
+		OPTL_SELECT(0, "STM", enum sim_type, &(sim.seq.type), SIM_STM, "state-transition matrix based simulation"),
+
+		/* Sequences Specific Parameters */
+		OPTL_FLOAT(0, "TR", &(sim.seq.tr), "float", "Repetition time [s]"),
+		OPTL_FLOAT(0, "TE", &(sim.seq.te), "float", "Echo time [s]"),
+		OPTL_INT(0, "Nspins", &(sim.seq.spin_num), "int", "Number of averaged spins"),
+		OPTL_INT(0, "Nrep", &(sim.seq.rep_num), "int", "Number of repetitions"),
+		OPTL_SET(0, "pinv", &(sim.seq.perfect_inversion), "Use perfect inversions"),
+		OPTL_FLOAT(0, "ipl", &(sim.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
+		OPTL_FLOAT(0, "isp", &(sim.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
+		OPTL_FLOAT(0, "ppl", &(sim.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
+		OPTL_INT(0, "av-spokes", &(sim.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
+		OPTL_FLOAT(0, "m0", &(sim.voxel.m0[0]), "float", "m0"),
+
+		/* Pulse Specific Parameters */
+		OPTL_FLOAT(0, "Trf", &(sim.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
+		OPTL_FLOAT(0, "FA", &(sim.pulse.sinc.INTERFACE.flipangle), "float", "Flipangle [deg]"),
+		OPTL_FLOAT(0, "BWTP", &(sim.pulse.sinc.bwtp), "float", "Bandwidth-Time-Product"),
+
+		/* Voxel Specific Parameters */
+		OPTL_FLOAT(0, "off", &(sim.voxel.w), "float", "Off-Resonance [rad/s]"),
+
+		/* Slice Profile Parameters */
+		OPTL_FLOAT(0, "sl-grad", &(sim.grad.sl_gradient_strength), "float", "Strength of slice-selection gradient [T/m]"),
+		OPTL_FLOAT(0, "slice-thickness", &(sim.seq.slice_thickness), "float", "Thickness of simulated slice. [m]"),
+		OPTL_FLOAT(0, "nom-slice-thickness", &(sim.seq.nom_slice_thickness), "float", "Nominal thickness of simulated slice. [m]"),
+	};
+
+	struct opt_s other_opts[] = {
+
+		OPTL_FLOAT(0, "ode-tol", &(sim.other.ode_tol), "", "ODE tolerance value [def: 1e-5]"),
+		OPTL_FLOAT(0, "stm-tol", &(sim.other.stm_tol), "", "STM tolerance value [def: 1e-6]"),
+		OPTL_FLOAT(0, "sampling-rate", &(sim.other.sampling_rate), "", "Sampling rate of RF pulse used for ROT simulation in Hz [def: 1e6 Hz]"),
+	};
+
+	struct opt_s pool_opts[] = {
+
+		OPT_INT('P', &(sim.voxel.P), "int", "Number of pools"),
+	};
 
 	const struct opt_s opts[] = {
 
@@ -163,6 +236,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_SELECT('L', enum seq_type, &seq, IR_LL, "Inversion Recovery Look-Locker"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPT_SELECT('D', enum seq_type, &seq, DIFF, "diffusion"),
+		OPT_SELECT('S', enum seq_type, &seq, SIM, "Simulation based fitting"),
 		OPT_PINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_SET('a', &use_magn, "fit magnitude of signal model to data"),
 		OPT_PINT('i', &iter, "iter", "Number of IRGNM steps"),
@@ -176,6 +250,12 @@ int main_mobafit(int argc, char* argv[argc])
 		OPTL_ULONG(0, "max-mag-flag", &(bounds.max_norm_flags), "flags", "Apply maximum magnitude constraint on selected maps"),
 		OPTL_FLVECN(0, "min", bound_min, "Min bound (map must be selected with \"min-flag\")"),
 		OPTL_FLVECN(0, "max", bound_max, "Max bound (map must be selected with \"max-flag\" or \"max-mag-flag\")"),
+		OPTL_INFILE(0, "b1map", &b1_file, "[deg]", "Input B1 map as cfl file"),
+		OPTL_INFILE(0, "b0map", &b0_file, "[rad/s]", "Input B0 map as cfl file"),
+		OPTL_SUBOPT(0, "seq", "...", "configure sequence parameters for simulation based fitting", ARRAY_SIZE(seq_opts), seq_opts),
+		OPTL_SUBOPT(0, "sim", "...", "configure simulation parameters", ARRAY_SIZE(sim_opts), sim_opts),
+		OPTL_SUBOPT(0, "other", "...", "configure other simulation parameters", ARRAY_SIZE(other_opts), other_opts),
+		OPTL_SUBOPT(0, "pool", "...", "configure pool parameters for BMC simulation", ARRAY_SIZE(pool_opts), pool_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -263,6 +343,11 @@ int main_mobafit(int argc, char* argv[argc])
 		x_dims[COEFF_DIM] = enc_dims[COEFF_DIM] + 1;
 		break;
 
+	case SIM:
+
+		x_dims[COEFF_DIM] = (1 == sim.voxel.P) ? 4 : (5 * sim.voxel.P) - 1;
+		break;
+
 	default:
 
 		error("sequence type not supported\n");
@@ -285,6 +370,8 @@ int main_mobafit(int argc, char* argv[argc])
 
 	// create signal model
 	struct nlop_s* nlop = NULL;
+	struct moba_conf_s *moba_conf;
+	moba_conf = xmalloc(sizeof(struct moba_conf_s));
 
 	switch (seq) {
 
@@ -347,6 +434,52 @@ int main_mobafit(int argc, char* argv[argc])
 		nlop = nlop_flatten(nl);
 		nlop_free(nl);
 		break;
+
+        case SIM: {
+
+		long map_dims[DIMS];
+		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
+
+		const complex float *b1 = NULL;
+		long b1_dims[DIMS];
+
+		const complex float *b0 = NULL;
+		long b0_dims[DIMS];
+
+		long bloch_dims[DIMS];
+		long der_dims[DIMS];
+		long out_dims[DIMS];
+		long in_dims[DIMS];
+
+		moba_conf->model = MDB_BLOCH;
+		moba_conf->sim = sim;
+		moba_conf->other = moba_other_defaults;
+
+		for (int i = 0; i < x_dims[COEFF_DIM]; i++) {
+
+			moba_conf->other.initval[i] = _init[i];
+			moba_conf->other.scale[i] = _scale[i];
+		}
+
+		md_copy_dims(DIMS, bloch_dims, x_dims);
+		bloch_dims[TE_DIM] = y_patch_dims[TE_DIM];
+		bloch_dims[READ_DIM] = x_patch_dims[READ_DIM];
+		bloch_dims[PHS1_DIM] = y_patch_dims[PHS1_DIM];
+
+		if (NULL != b1_file)
+			b1 = load_cfl(b1_file, DIMS, b1_dims);
+
+		if (NULL != b0_file)
+			b0 = load_cfl(b0_file, DIMS, b0_dims);
+
+		md_select_dims(DIMS, FFT_FLAGS | TE_FLAG | COEFF_FLAG | TIME2_FLAG, der_dims, bloch_dims);
+		md_select_dims(DIMS, FFT_FLAGS | TIME_FLAG | TIME2_FLAG, map_dims, bloch_dims);
+		md_select_dims(DIMS, FFT_FLAGS | TE_FLAG | TIME_FLAG | TIME2_FLAG, out_dims, bloch_dims);
+		md_select_dims(DIMS, FFT_FLAGS | COEFF_FLAG | TIME_FLAG | TIME2_FLAG, in_dims, bloch_dims);
+
+		moba_conf->sim.seq.rep_num = y_dims[TE_DIM];
+		nlop = nlop_bloch_create(DIMS, der_dims, map_dims, out_dims, in_dims, b1, b0, moba_conf);
+	}	break;
 	}
 
         if (use_magn) {
@@ -365,8 +498,8 @@ int main_mobafit(int argc, char* argv[argc])
 
 		init[i] = _init[i];
 		scale[i] = _scale[i];
-		bound_max[i] /= _scale[i];
-		bound_min[i] /= _scale[i];
+		bound_max[i] /= (_scale[i] ?: 1);
+		bound_min[i] /= (_scale[i] ?: 1);
 	}
 
 	long c_dims[DIMS];
@@ -454,6 +587,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	operator_p_free(lsqr);
 	nlop_free(nlop);
+	xfree(moba_conf);
 
 	md_zmul2(DIMS, x_dims, x_strs, x, x_strs, x, c_strs, scale);
 
