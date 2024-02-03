@@ -970,18 +970,15 @@ void sgd(	int epochs, int batches,
 
 	for (int i = 0; i < NI; i++) {
 
+		grad[i] = NULL;
+		dxs[i] = NULL;
+
 		switch (in_type[i]) {
 
 		case IN_STATIC:
-
-			grad[i] = NULL;
-			dxs[i] = NULL;
-			break;
-
 		case IN_BATCH:
+		case IN_BATCHNORM:
 
-			grad[i] = NULL;
-			dxs[i] = NULL;
 			break;
 
 		case IN_OPTIMIZE:
@@ -998,9 +995,6 @@ void sgd(	int epochs, int batches,
 
 		case IN_BATCH_GENERATOR:
 
-			grad[i] = NULL;
-			dxs[i] = NULL;
-
 			if (NULL != x[i])
 				error("NULL != x[%d] for batch generator\n", i);
 
@@ -1008,12 +1002,6 @@ void sgd(	int epochs, int batches,
 
 			x_batch_gen[N_batch_gen] = x[i];
 			N_batch_gen += 1;
-			break;
-
-		case IN_BATCHNORM:
-
-			grad[i] = NULL;
-			dxs[i] = NULL;
 			break;
 
 		default:
@@ -1429,3 +1417,4 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 		if (NULL != args[o])
 			vops->del(args[o]);
 }
+
