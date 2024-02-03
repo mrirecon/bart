@@ -19,6 +19,7 @@
 #include "misc/misc.h"
 #include "misc/mri.h"
 #include "misc/debug.h"
+#include "misc/version.h"
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -275,7 +276,34 @@ struct noir2_s noir2_cart_create(int N,
 	assert(NULL == basis);
 	assert(md_check_equal_dims(N, ret.cim_dims, ret.ksp_dims, ~0));
 
-	ret.lop_fft = linop_fft_generic_create(N, ret.cim_dims, conf->fft_flags, conf->fft_flags & FFT_FLAGS, conf->fft_flags & FFT_FLAGS, 0, NULL, 0, NULL);
+	if (!use_compat_to_version("v0.9.00")) {
+
+		ret.lop_fft = linop_fft_generic_create(N, ret.cim_dims, conf->fft_flags, conf->fft_flags & FFT_FLAGS, conf->fft_flags & FFT_FLAGS, 0, NULL, 0, NULL);
+
+	} else {
+
+		//FIXME: symmetric splitting of fftscale would allow us to use same
+		//	 linop for both fftmods and save memory.
+		//CAVEAT: reproducibility of ENLIVE paper requires fftscale to be
+		//	  applied between tenmul for coils and fft
+		//	  c.f. bbffa751ac32d80c5f85f86fe90070d2f03d1376
+		ret.lop_fft = linop_fft_create(N, ret.cim_dims, conf->fft_flags);
+
+		unsigned long fftm_flags = conf->fft_flags & FFT_FLAGS;
+		long fftm_dims[N];
+		md_select_dims(N, fftm_flags, fftm_dims, ret.cim_dims);
+
+		complex float* fftmod_a = md_alloc(N, fftm_dims, CFL_SIZE);
+		md_zfill(N, fftm_dims, fftmod_a, 1.);
+		fftmod(N, fftm_dims, fftm_flags, fftmod_a, fftmod_a);
+
+		ret.lop_fft = linop_chain_FF(ret.lop_fft, linop_cdiag_create(N, ret.cim_dims, fftm_flags, fftmod_a));
+
+		md_zsmul(N, fftm_dims, fftmod_a, fftmod_a, 1. / sqrtf(md_calc_size(N, fftm_dims)));
+
+		ret.lop_fft = linop_chain_FF(linop_cdiag_create(N, ret.cim_dims, fftm_flags, fftmod_a), ret.lop_fft);
+		md_free(fftmod_a);
+	}
 
 	if (NULL != basis) {
 

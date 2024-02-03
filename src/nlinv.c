@@ -144,15 +144,6 @@ int main_nlinv(int argc, char* argv[argc])
 	long ksp_dims[DIMS];
 	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
-	// FIXME: SMS should not be the default
-
-	if (1 != ksp_dims[SLICE_DIM]) {
-
-		debug_printf(DP_INFO, "SMS-NLINV reconstruction. Multiband factor: %d\n", ksp_dims[SLICE_DIM]);
-		conf.sms = true;
-	}
-
-	
 	const complex float* basis = NULL;
 	long bas_dims[DIMS];
 
@@ -178,6 +169,21 @@ int main_nlinv(int argc, char* argv[argc])
 	}
 
 	psf_based_reco = psf_based_reco || (-1 != restrict_fov) || (NULL != init_file);
+
+	// FIXME: SMS should not be the default
+
+	if (1 != ksp_dims[SLICE_DIM]) {
+
+		debug_printf(DP_INFO, "SMS-NLINV reconstruction. Multiband factor: %d\n", ksp_dims[SLICE_DIM]);
+
+		if (use_compat_to_version("v0.9.00") && (!conf.noncart || (NULL != trajectory))) {
+
+			fftmod(DIMS, ksp_dims, SLICE_FLAG, kspace, kspace);
+			fftmod(DIMS, pat_dims, SLICE_FLAG, pattern, pattern);
+		}
+
+		conf.sms = true;
+	}
 
 	if ((psf_based_reco) && (NULL != trajectory)) {
 
