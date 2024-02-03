@@ -81,6 +81,8 @@ int get_num_of_coeff(enum meco_model sel_model)
 	case MECO_WF2R2S:	ncoeff = 5; break;
 	case MECO_R2S:		ncoeff = 3; break;
 	case MECO_PHASEDIFF:	ncoeff = 2; break;
+	default:
+		assert(0);
 	}
 
 	return ncoeff;
@@ -123,6 +125,9 @@ long get_PD_flag(enum meco_model sel_model)
 
 		PD_flag = MD_SET(PD_flag, 0);
 		break;
+
+	default:
+		assert(0);
 	}
 
 	return PD_flag;
@@ -161,6 +166,9 @@ long get_R2S_flag(enum meco_model sel_model)
 	case MECO_PHASEDIFF:
 
 		break;
+
+	default:
+		assert(0);
 	}
 
 	return R2S_flag;
