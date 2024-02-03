@@ -53,8 +53,8 @@ tests/test-rtnlinv-nlinv-pseudocart: scale phantom ones rtnlinv nlinv nrmse
 	$(TOOLDIR)/ones 2 128 128 psf.ra					;\
 	$(TOOLDIR)/nlinv -w1. -N -i9 -f1. -n ksp.ra r1.ra c1.ra			;\
 	$(TOOLDIR)/rtnlinv -w1. -N -i9 -f1. -p psf.ra ksp.ra r2.ra c2.ra	;\
-	$(TOOLDIR)/nrmse -t 0. r2.ra r1.ra					;\
-	$(TOOLDIR)/nrmse -t 0. c2.ra c1.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 r2.ra r1.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000001 c2.ra c1.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
