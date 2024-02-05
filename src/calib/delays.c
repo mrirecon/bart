@@ -261,8 +261,8 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[N
 					if (diff_ss < ss) { // New minimum found
 
 						ss = diff_ss;
-						dist[i * no_intersec_sp + j][0] = (l + 1 / 2 - ROI / 2);	// FIXME
-						dist[i * no_intersec_sp + j][1] = (m + 1 / 2 - ROI / 2);	// FIXME
+						dist[i * no_intersec_sp + j][0] = l - ROI / 2;
+						dist[i * no_intersec_sp + j][1] = m - ROI / 2;
 					}
 				}
 			}
