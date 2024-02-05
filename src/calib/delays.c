@@ -231,6 +231,9 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[N
 
 		for (int j = 0; j < no_intersec_sp; j++) {
 
+			dist[i * no_intersec_sp + j][0] = -1; // GCC ANALYZER
+			dist[i * no_intersec_sp + j][1] = -1; // GCC ANALYZER
+
 			pos_j[PHS2_DIM] = intersec_sp[j];
 
 			md_slice(DIMS, PHS2_FLAG, pos_j, kc_dims, spoke_j, kc, CFL_SIZE);
@@ -258,8 +261,8 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[N
 					if (diff_ss < ss) { // New minimum found
 
 						ss = diff_ss;
-						dist[i * no_intersec_sp + j][0] = (l + 1/2 - ROI/2);
-						dist[i * no_intersec_sp + j][1] = (m + 1/2 - ROI/2);
+						dist[i * no_intersec_sp + j][0] = (l + 1 / 2 - ROI / 2);	// FIXME
+						dist[i * no_intersec_sp + j][1] = (m + 1 / 2 - ROI / 2);	// FIXME
 					}
 				}
 			}
@@ -268,18 +271,16 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[N
 
 
 	// Print projection angles and corresponding offsets, for RING paper reproduction
-	{
-		char* str = getenv("RING_PAPER");
+	char* str = getenv("RING_PAPER");
 
-		if ( (NULL != str) && (1 == atoi(str))) {
+	if ((NULL != str) && (1 == atoi(str))) {
 
-			for (int i = 0; i < N; i++) {
+		for (int i = 0; i < N; i++) {
 
-				for (int j = 0; j < no_intersec_sp; j++) {
+			for (int j = 0; j < no_intersec_sp; j++) {
 
-					bart_printf("projangle: %f \t %f\n", angles[idx[i * no_intersec_sp + j][0]], angles[idx[i * no_intersec_sp + j][1]]);
-					bart_printf("offset: %f \t %f\n", dist[i * no_intersec_sp + j][0], dist[i * no_intersec_sp + j][1]);
-				}
+				bart_printf("projangle: %f \t %f\n", angles[idx[i * no_intersec_sp + j][0]], angles[idx[i * no_intersec_sp + j][1]]);
+				bart_printf("offset: %f \t %f\n", dist[i * no_intersec_sp + j][0], dist[i * no_intersec_sp + j][1]);
 			}
 		}
 	}
