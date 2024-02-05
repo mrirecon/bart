@@ -51,7 +51,9 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 
 	complex float* tmp = md_alloc_sameplace(DIMS, map_dims, CFL_SIZE, img);
 
-	if (MDB_BLOCH == mode) {
+	switch (mode) {
+
+	case MDB_BLOCH:
 
                 assert(NULL != data);
 
@@ -60,13 +62,14 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
                 md_copy_block(DIMS, pos, map_dims, tmp, imgs_dims, img, CFL_SIZE);
                 bloch_forw_alpha(op, tmp, tmp);
                 md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
-        }
+
+		break;
 
         // Reparameterized Look-Locker Model
         // Estimate effective flip angle from R1'
 	// FIXME: Move to separate function which can be tested with a unit test
 
-	if (MDB_T1_PHY == mode) {
+	case MDB_T1_PHY:
 
 		float r1p_nom = read_relax(data->sim.seq.tr, DEG2RAD(CAST_UP(&data->sim.pulse.sinc)->flipangle));
 
@@ -102,11 +105,12 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 		md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
 
 		md_free(offset);
-	}
+
+		break;
 
 	// IR multi-echo gradient echo model
 
-	if (MDB_IR_MGRE == mode) {
+	case MDB_IR_MGRE:
 
 		// Rescale R2* from ms to s
 		if (3 != imgs_dims[COEFF_DIM]) {
@@ -134,6 +138,9 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 		md_zsmul(DIMS, map_dims, tmp, tmp, 1000.);
 
 		md_copy_block(DIMS, pos, imgs_dims, img, map_dims, tmp, CFL_SIZE);
+		break;
+
+	default:
 	}
 
 	md_free(tmp);
@@ -144,7 +151,9 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, con
 {
 	// T2 estimation turned off for IR FLASH Simulation
 
-        if (MDB_BLOCH == mode) {
+	switch (mode) {
+
+	case MDB_BLOCH:
 
                 assert(NULL != data);
 
@@ -166,20 +175,22 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, con
 
 		default:
                 }
-        }
+
+		break;
 
         // No Wavelet penalty on flip angle map
 
-        if (MDB_T1_PHY == mode) {
+	case MDB_T1_PHY:
 
 		conf2->l2flags = (0 == conf->l2para) ? 4 : conf->l2para;
                 conf2->constrained_maps = (-1 == conf->constrained_maps) ? 2 : conf->constrained_maps;    // only R1 map: bitmask (0 1 0) = 2
                 conf2->not_wav_maps = (0 == conf->not_wav_maps) ? 1 : conf->not_wav_maps;	// no wavelet for R1' map
-        }
+
+		break;
 
 	// No Wavelet penalty on B0 map
 
-	if (MDB_IR_MGRE == mode) {
+	case MDB_IR_MGRE:
 
 		switch (img_dims[COEFF_DIM]) {
 
@@ -204,6 +215,10 @@ static void set_bloch_conf(enum mdb_t mode, struct mdb_irgnm_l1_conf* conf2, con
 			conf2->l2flags = (0 == conf->l2para) ? 128 : conf->l2para;	// (Ms_w, M0_w, R1s_w, Ms_f, M0_f, R1s_f, R2s, B0): bitmask(0 0 0 0 0 0 0 1) = 128
 			break;
 		}
+
+		break;
+
+	default:
 	}
 
 	conf2->tvscales_N = data->other.tvscales_N;
@@ -360,11 +375,9 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 	irgnm_conf.cgtol = conf->tolerance;
 
-	if (MDB_T1 == conf->mode) {
-
+	if (MDB_T1 == conf->mode)
 		if ((2 == conf->opt_reg) || (!conf->auto_norm))
 			irgnm_conf.cgtol = 1e-3;
-	}
 
 	irgnm_conf.cgiter = conf->inner_iter;
 	irgnm_conf.nlinv_legacy = true;
