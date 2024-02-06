@@ -335,7 +335,7 @@ endif
 
 XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TNN)
 # CTARGETS: command targets, that are in the commands/ subdir
-CTARGETS = $(patsubst %, commands/%, $(XTARGETS))
+CTARGETS = $(addprefix commands/, $(XTARGETS))
 
 
 ifeq ($(DEBUG),1)
