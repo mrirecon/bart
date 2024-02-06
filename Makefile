@@ -827,7 +827,8 @@ clean:
 allclean: clean
 	rm -f $(libdir)/*.a $(ALLDEPS)
 	rm -f bart
-	rm -f $(patsubst %, %, $(CTARGETS))
+	rm -f $(patsubst commands/%, %, $(CTARGETS))
+	rm -f $(CTARGETS)
 	rm -f $(srcdir)/misc/version.inc
 	rm -rf $(root)/tests/tmp/*/
 	rm -rf $(root)/stests/tmp/*/
