@@ -9,8 +9,17 @@
 # auto clean on makefile updates
 AUTOCLEAN?=1
 
-# clear out all implicit rules and variables
-MAKEFLAGS += -R
+# clear out all implicit rules
+MAKEFLAGS += --no-builtin-rules
+# clear out some variables by hand, as we cannot use -R, --no-builtin-variables without recursive make
+# but only undefine them if they come from their default values
+define undef_builtin
+ifeq ($(origin $(1)),default)
+undefine $(1)
+endif
+endef
+
+$(eval $(foreach VAR,CC CXX CPP LD ARFLAGS ,$(eval $(call undef_builtin,$(VAR)))))
 
 # use for parallel make
 AR=./ar_lock.sh
@@ -94,12 +103,13 @@ ifeq ($(BUILDTYPE), MacOSX)
 	MACPORTS ?= 1
 endif
 
-ARFLAGS = rs
 
 ifeq ($(BUILDTYPE), Linux)
 	# as the defaults changed on most Linux distributions
 	# explicitly specify non-deterministic archives to not break make
-	ARFLAGS = rsU
+	ARFLAGS ?= rsU
+else
+	ARFLAGS ?= rs
 endif
 
 ifeq ($(BUILDTYPE), Linux)
@@ -157,10 +167,10 @@ ifeq ($(BUILDTYPE), MacOSX)
 	CC ?= gcc-mp-12
 else
 	CC ?= gcc
-	ifneq ($(BUILDTYPE), MSYS)
-	# for symbols in backtraces
+ifneq ($(BUILDTYPE), MSYS)
+# for symbols in backtraces
 	LDFLAGS += -rdynamic
-	endif
+endif
 endif
 
 
