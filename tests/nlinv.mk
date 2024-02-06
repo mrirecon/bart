@@ -35,6 +35,19 @@ tests/test-nlinv-sms-noncart: traj phantom repmat fft nlinv nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-nlinv-sms-noncart-psf: reshape repmat fft nlinv nrmse scale traj phantom
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/traj -r -x256 -y60 traj.ra							;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra							;\
+	$(TOOLDIR)/phantom -s6 -k -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/reshape 8200 2 3 ksp.ra ksp2.ra						;\
+	$(TOOLDIR)/nlinv --cgiter=20 -S -N -i12 --ret-sens-os -t traj2.ra ksp2.ra r.ra c.ra	;\
+	$(TOOLDIR)/nlinv --cgiter=20 -S -N -i12 --psf-based -t traj2.ra ksp2.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -s -t 0.1 r.ra r2.ra							;\
+	$(TOOLDIR)/nrmse -s -t 0.1 c.ra c2.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-nlinv-norm: nlinv rss fmac nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/nlinv $(TESTS_OUT)/shepplogan_coil_ksp.ra r.ra			;\
@@ -79,6 +92,18 @@ tests/test-nlinv-noncart: traj scale phantom nufft resize nlinv fmac nrmse
 	$(TOOLDIR)/fmac r.ra c2.ra x.ra					;\
 	$(TOOLDIR)/nufft traj2.ra x.ra k2.ra				;\
 	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k2.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nlinv-psf-noncart: traj scale phantom nufft resize nlinv fmac nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/traj -r -x256 -y21 traj.ra							;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra							;\
+	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/nlinv --ret-sens-os -N -S -i10 --cgiter=15 -w 0.0001 -t traj2.ra ksp.ra r.ra c.ra	;\
+	$(TOOLDIR)/nlinv --psf-based   -N -S -i10 --cgiter=15 -w 0.0001 -t traj2.ra ksp.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -s -t 0.1 r.ra r2.ra							;\
+	$(TOOLDIR)/nrmse -s -t 0.1 c.ra c2.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -264,6 +289,7 @@ TESTS += tests/test-nlinv-pf-vcc
 TESTS += tests/test-nlinv-pics tests/test-nlinv-pics-psf-based
 TESTS += tests/test-nlinv-basis-noncart
 TESTS += tests/test-nlinv-ksens
+TESTS += tests/test-nlinv-psf-noncart tests/test-nlinv-sms-noncart-psf
 TESTS_GPU += tests/test-nlinv-gpu tests/test-nlinv-sms-gpu
 
 

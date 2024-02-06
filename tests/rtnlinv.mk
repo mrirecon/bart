@@ -34,6 +34,19 @@ tests/test-rtnlinv-precomp: traj scale phantom ones repmat fft nufft rtnlinv nrm
 	touch $@
 
 
+tests/test-rtnlinv-nlinv-sms: reshape repmat fft nlinv nrmse scale traj phantom rtnlinv
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/traj -r -x256 -y60 traj.ra							;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra							;\
+	$(TOOLDIR)/phantom -s6 -k -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/reshape 8200 2 3 ksp.ra ksp2.ra						;\
+	$(TOOLDIR)/rtnlinv -w0.0001 -s -S -N -i8 -t traj2.ra ksp2.ra r.ra c.ra			;\
+	$(TOOLDIR)/nlinv   -w0.0001 -S -N -i8 --psf-based -t traj2.ra ksp2.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -s -t 0.001 r.ra r2.ra						;\
+	$(TOOLDIR)/nrmse -s -t 0.001 c.ra c2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-rtnlinv-nlinv-noncart: traj scale phantom rtnlinv nlinv nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/traj -r -x128 -y21 traj.ra					;\
@@ -100,6 +113,7 @@ tests/test-rtnlinv-noncart-maps-dims: traj phantom rtnlinv show
 
 
 TESTS += tests/test-rtnlinv tests/test-rtnlinv-precomp tests/test-rtnlinv-nlinv-noncart tests/test-rtnlinv-nlinv-pseudocart
+TESTS += tests/test-rtnlinv-nlinv-sms
 TESTS += tests/test-rtnlinv-maps-dims tests/test-rtnlinv-noncart-maps-dims
 #TESTS += tests/test-rtnlinv-precomp
 
