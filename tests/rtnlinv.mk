@@ -1,15 +1,13 @@
 
 
-tests/test-rtnlinv: traj scale phantom nufft resize rtnlinv fmac nrmse
+tests/test-rtnlinv: traj phantom nufft resize rtnlinv fmac nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
-	$(TOOLDIR)/traj -r -x128 -y21 -t5 traj.ra			;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra				;\
-	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra			;\
-	$(TOOLDIR)/nufft -a traj.ra ksp.ra I.ra				;\
-	$(TOOLDIR)/rtnlinv -N -S -i9 -t traj2.ra ksp.ra r.ra c.ra	;\
+	$(TOOLDIR)/traj -o2 -r -x64 -y21 -t5 traj.ra			;\
+	$(TOOLDIR)/phantom -s8 -k -t traj.ra ksp.ra			;\
+	$(TOOLDIR)/rtnlinv -N -S -i9 -t traj.ra ksp.ra r.ra c.ra	;\
 	$(TOOLDIR)/resize -c 0 64 1 64 c.ra c2.ra			;\
 	$(TOOLDIR)/fmac r.ra c2.ra x.ra					;\
-	$(TOOLDIR)/nufft traj2.ra x.ra k2.ra				;\
+	$(TOOLDIR)/nufft traj.ra x.ra k2.ra				;\
 	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k2.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
