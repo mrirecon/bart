@@ -56,14 +56,11 @@ You can also try the package built with CUDA support:
     $ sudo apt-get install bart-cuda bart-view
 
 
-Note, if you need Matlab / Python integration, want to use BART on Macs or
+Note, if you need Matlab / Python integration, want to use BART on Mac, Windows, or
 other Linux distributions, or if you need a very recent version or BART, you
 may need to compile BART yourself. Please see then follow the instructions
 below.
 
-
-Note that Windows is currently not supported. Nevertheless, many people
-use BART on Windows.
 
 The recommended way to use BART on Windows is with the Windows Subsystem for
 Linux (WSL2) which is available for Windows 10.
@@ -155,6 +152,23 @@ Using HomeBrew (https://brew.sh):
     Select gcc as the compiler when building:
     $ CC=gcc make
 
+### 2.2.3 Windows
+
+BART is supported through WSL 2 which is avaialable on Windows 10. The instructions are similar to installing on Linux.
+Step-by-step instructions are available on the website at:
+	https://mrirecon.github.io/bart/installation_windows.html
+
+First follow the instructions for Debian/Ubuntu in Section 2.1.1 to install reqiured libraries.
+Next follow the instructions in Section 2.2 to download and compile bart
+
+2.2.3.1. Using BART with Matlab outside of WSL
+
+To use BART outside of WSL, e.g. with Matlab, it is recommended to soft link the bart binary to /usr/local/bin. Assuming bart is installed
+in the ${BART_TOOLBOX_PATH} directory, execute the following command in WSL:
+
+    $ sudo ln -s ${BART_TOOLBOX_PATH}/bart /usr/local/bin/bart
+
+Outside of WSL, copy the files from ${BART_TOOLBOX_PATH}/matlab to a local folder and add the folder to the Matlab path.
 
 
 
