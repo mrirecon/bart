@@ -892,7 +892,7 @@ UTEST_RUN=
 ifeq ($(MPI),1)
 # only cfl files allowed with MPI
 UTARGETS:=$(filter-out test_memcfl ,$(UTARGETS))
-UTEST_RUN=mpirun --allow-run-as-root -n 3
+UTEST_RUN=mpirun -n 3
 endif
 
 ifeq ($(UTESTLEAK),1)

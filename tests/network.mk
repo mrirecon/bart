@@ -276,26 +276,26 @@ tests/test-reconet-nnvn-train-gpu: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	touch $@
 
 tests/test-reconet-nnvn-train-mpi: bart $(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 													;\
-	$(ROOTDIR)/bart copy $(TESTS_OUT)/pattern.ra pattern															;\
-	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_kspace.ra train_kspace														;\
-	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_sens.ra train_sens														;\
-	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_ref.ra train_ref														;\
-	mpirun -n 2 --allow-run-as-root $(ROOTDIR)/bart reconet --network varnet --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights2 train_ref	;\
-					$(ROOTDIR)/bart reconet --network varnet --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights1 train_ref	;\
-	$(ROOTDIR)/bart nrmse -t 0.000001 weights1 weights2					;\
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 											;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/pattern.ra pattern													;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_kspace.ra train_kspace												;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_sens.ra train_sens												;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_ref.ra train_ref												;\
+	mpirun -n 2 $(ROOTDIR)/bart reconet --network varnet --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights2 train_ref	;\
+	$(ROOTDIR)/bart reconet --network varnet --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights1 train_ref			;\
+	$(ROOTDIR)/bart nrmse -t 0.000001 weights1 weights2													;\
 	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-reconet-nnmodl-train-mpi: bart $(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 													;\
-	$(ROOTDIR)/bart copy $(TESTS_OUT)/pattern.ra pattern															;\
-	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_kspace.ra train_kspace														;\
-	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_sens.ra train_sens														;\
-	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_ref.ra train_ref														;\
-					$(ROOTDIR)/bart reconet --network modl --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights1 train_ref	;\
-	mpirun -n 2 --allow-run-as-root $(ROOTDIR)/bart reconet --network modl --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights2 train_ref	;\
-	$(ROOTDIR)/bart nrmse -t 0.00002 weights1 weights2					;\
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 											;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/pattern.ra pattern													;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_kspace.ra train_kspace												;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_sens.ra train_sens												;\
+	$(ROOTDIR)/bart copy $(TESTS_OUT)/train_ref.ra train_ref												;\
+	$(ROOTDIR)/bart reconet --network modl --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights1 train_ref			;\
+	mpirun -n 2 $(ROOTDIR)/bart reconet --network modl --test -n -t --train-algo e=5 -b4 --pattern=pattern train_kspace train_sens weights2 train_ref	;\
+	$(ROOTDIR)/bart nrmse -t 0.00002 weights1 weights2													;\
 	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

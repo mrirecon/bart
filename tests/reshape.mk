@@ -19,7 +19,7 @@ tests/test-reshape-mpi: bart
 	$(ROOTDIR)/bart reshape 7 256 1 64 x_noise x_noise2				;\
 	$(ROOTDIR)/bart join 15 x_noise2 x_noise2 x2 x2_ref				;\
 	$(ROOTDIR)/bart join 15 x_noise x_noise x x_p					;\
-	mpirun -n 4 --allow-run-as-root $(ROOTDIR)/bart -l 32768 -e 3 reshape 7 256 1 64 x_p x_p2		;\
+	mpirun -n 4 $(ROOTDIR)/bart -l 32768 -e 3 reshape 7 256 1 64 x_p x_p2		;\
 	$(ROOTDIR)/bart nrmse -t 0. x2_ref x_p2						;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@

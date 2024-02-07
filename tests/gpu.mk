@@ -135,7 +135,7 @@ tests/test-pics-gpu-mpi: bart nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp_s.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp		;\
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra $(TESTS_OUT)/coils.ra coils						;\
 	$(ROOTDIR)/bart join 13 reco1.ra reco2.ra reco1.ra reco_ref.ra										;\
-	mpirun -n 2 --allow-run-as-root $(ROOTDIR)/bart -p 8192 -e 3 pics -g -S -r0.001 ksp coils reco_p								;\
+	mpirun -n 2 $(ROOTDIR)/bart -p 8192 -e 3 pics -g -S -r0.001 ksp coils reco_p								;\
 	$(TOOLDIR)/nrmse -t 0.000001 reco_ref.ra reco_p												;\
 	rm *.cfl ; rm *.hdr ; rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -163,7 +163,7 @@ tests/test-pics-gpu-noncart-weights-mpi: bart traj scale ones phantom pics nrmse
 	$(ROOTDIR)/bart join 13 ksp.ra ksp1.ra ksp2.ra ksp_p									;\
 	$(ROOTDIR)/bart join 13 weights.ra weights1.ra weights2.ra weights_p							;\
 	$(ROOTDIR)/bart join 13 coils.ra coils1.ra coils2.ra coils_p								;\
-	mpirun -n 2 --allow-run-as-root $(ROOTDIR)/bart -p 8192 -e 3 pics -g -S -r0.001 -p weights_p -t traj_p ksp_p coils_p reco_p			;\
+	mpirun -n 2 $(ROOTDIR)/bart -p 8192 -e 3 pics -g -S -r0.001 -p weights_p -t traj_p ksp_p coils_p reco_p			;\
 	$(TOOLDIR)/nrmse -t 0.01 reco_ref.ra reco_p										;\
 	rm *.cfl ; rm *.hdr ; rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -172,7 +172,7 @@ tests/test-pics-cart-mpi-gpu: bart pics copy nrmse $(TESTS_OUT)/shepplogan_coil_
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)												;\
 	$(TOOLDIR)/copy $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp									;\
 	$(TOOLDIR)/copy $(TESTS_OUT)/coils.ra coils												;\
-	mpirun -n 2 --allow-run-as-root $(ROOTDIR)/bart pics -g --mpi=8 -S -r0.001 shepplogan_coil_ksp coils reco				;\
+	mpirun -n 2 $(ROOTDIR)/bart pics -g --mpi=8 -S -r0.001 shepplogan_coil_ksp coils reco				;\
 	                                $(ROOTDIR)/bart pics -g         -S -r0.001 shepplogan_coil_ksp coils reco_ref				;\
 	$(TOOLDIR)/nrmse -t 1e-5 reco_ref reco													;\
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
