@@ -187,15 +187,10 @@ static void compute_permutation(int N, int ord[N], const long strs[N])
 
 	NESTED(int, cmp_strides, (int a, int b))
 	{
-		long d = strsp[a] - strsp[b];
+		long da = strsp[a];
+		long db = strsp[b];
 
-		if (d > 0)
-			return 1;
-
-		if (d < 0)
-			return -1;
-
-		return 0;
+		return (da > db) - (da < db);
 	};
 
 	quicksort(N, ord, cmp_strides);

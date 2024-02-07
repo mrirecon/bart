@@ -116,12 +116,10 @@ static void find_nearest_orthogonal_spokes(int N, int spokes[N], float ref_angle
 
 	NESTED(int, dist_compare, (int a, int b))
 	{
-		float d = distp[a] - distp[b];
+		float da = distp[a];
+		float db = distp[b];
 
-		if (d > 0.)
-			return 1;
-
-		return (0. == d) ? 0 : -1;
+		return (da > db) - (da < db);
 	};
 
 	quicksort(N, spokes, dist_compare);
