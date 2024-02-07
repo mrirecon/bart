@@ -12,11 +12,6 @@ default:
 ####
 before_script:
   - apt-get update -qq && apt-get install -y -qq
-  - apt-get install -y -qq clang-16 libomp-16-dev
-#  - apt-get install -y -qq make git bc
-#  - apt-get install -y -qq libfftw3-dev libblas-dev libpng-dev
-#  - apt-get install -y -qq gcc liblapacke-dev
-
 
 stages:
   - build
@@ -38,6 +33,7 @@ Build:
 Build_Clang:
   stage: build
   script:
+    - apt-get install -y -qq clang-16 libomp-16-dev
     - CC=clang-16 make all
   artifacts:
     paths:
@@ -49,6 +45,7 @@ Build_Clang:
 Build_Clang_GPU:
   stage: build
   script:
+    - apt-get install -y -qq clang-16 libomp-16-dev
     - CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
   artifacts:
     paths:
@@ -180,6 +177,7 @@ Unit_Test:
 Unit_Test_Clang:
   stage: test1
   script:
+    - apt-get install -y -qq clang-16 libomp-16-dev
     - AUTOCLEAN=0 CC=clang-16 make utest
   needs: [Build_Clang]
   dependencies:
@@ -189,6 +187,7 @@ Unit_Test_Clang_GPU:
   stage: test1
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
+    - apt-get install -y -qq clang-16 libomp-16-dev
     - AUTOCLEAN=0 CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest_gpu
   needs: [Build_Clang_GPU]
   dependencies:
@@ -286,6 +285,7 @@ Integration_Test_GPU:
 Integration_Test_Clang:
   stage: test2
   script:
+    - apt-get install -y -qq clang-16 libomp-16-dev
     - AUTOCLEAN=0 CC=clang-16 make test
   needs: [Build_Clang]
   dependencies:
@@ -296,6 +296,7 @@ Integration_Test_Clang_GPU:
   stage: test2
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
+    - apt-get install -y -qq clang-16 libomp-16-dev
     - AUTOCLEAN=0 CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make gputest
   needs: [Build_Clang_GPU]
   dependencies:
