@@ -147,6 +147,22 @@ const struct simdata_other simdata_other_defaults = {
 	.sampling_rate = 1e+6,
 };
 
+const struct simdata_cest simdata_cest_defaults = {
+
+	.n_pulses = 1,
+
+	.t_d = 0.,
+	.t_pp = 0.0065,
+	.gamma = 42.5764,
+	.b1_amp = 1,
+	.b0 = 3.,
+
+	.off_start = 5.,
+	.off_stop = -5.,
+
+	.ref_scan = false,
+	.ref_scan_ppm = -300.,
+};
 
 
 /* pulses */
@@ -935,6 +951,55 @@ static void alpha_half_preparation(const struct sim_data* data, int pools, float
 }
 
 
+/* ------------ CEST -------------- */
+
+static void calc_off_res(struct sim_data* data, int N, float off_res[N])
+{
+	float om_larmor = 2 * M_PI * data->cest.b0 * data->cest.gamma;
+	float incr = fabsf(data->cest.off_start - data->cest.off_stop) / (N - 1);
+
+	for (int i = 0; i < N; i++)
+		off_res[i] = (data->cest.off_start - i * incr) * om_larmor;
+}
+
+
+static void reset_xp(int N, int P, float xp[N][P], float m0[P])
+{
+	for (int p = 0; p < P; p++)
+		for (int n = 0; n < N; n++)
+			xp[p][n] = 0.;
+
+	for (int p = 0; p < P; p++) {
+
+		xp[0][2 + p * 3] = m0[p];
+		xp[2 + 2 * P + p][2 + p * 3] = 1.;
+	}
+}
+
+
+static void cest_seq(struct sim_data* data, float h, float tol, int N, int P, float xp[P][N], float offset)
+{	
+	// FIX ME : Allow different pulse types
+	data->pulse.type = PULSE_REC;
+	data->pulse.rect = pulse_rect_defaults;
+	data->pulse.rect.A = data->cest.b1_amp * 2. * M_PI * data->cest.gamma;
+
+	//debug_printf(DP_INFO, "offset [ppm] : %f\n", offset / (2. * M_PI * data->cest.b0 * data->cest.gamma));
+
+	for (int p = 0; p < data->cest.n_pulses; p++) {
+
+		data->voxel.w = offset;
+		rf_pulse(data, h, tol, N, P, xp, NULL);
+		data->voxel.w = 0.;
+
+		if ( (data->cest.n_pulses - 1 > p) && (0. < data->cest.t_d) )
+			relaxation2(data, h, tol, N, P, xp, 0, data->cest.t_d, NULL, 0.);
+	}
+
+	relaxation2(data, h, tol, N, P, xp, 0, data->cest.t_pp, NULL, 10000.);
+}
+
+
 /* ------------ Main Simulation -------------- */
 
 void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m_state)[R][pools][3],
@@ -967,6 +1032,12 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 
 	data.seq.rep_num *= A;
 	data.seq.averaged_spokes = 1;
+
+	float off_res[data.seq.rep_num];
+	float ref_scan = 0.;
+
+	if (SEQ_CEST == data.seq.seq_type)
+		calc_off_res(&data, data.seq.rep_num, off_res);
 
 	int S = data.seq.spin_num;
 
@@ -1069,6 +1140,12 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 
 		prepare_sim(&data, N, P, &mte[0], &mtr);
 
+		if ( (SEQ_CEST == data.seq.seq_type ) && (data.cest.ref_scan) ) {
+
+			cest_seq(&data, h, tol, N, P, xp, data.cest.ref_scan_ppm * 2 * M_PI * data.cest.b0 * data.cest.gamma);
+			ref_scan = xp[0][2];
+			reset_xp(N, data.voxel.P, xp, data.voxel.m0);
+		}
 
                 // Loop over Pulse Blocks
 
@@ -1093,7 +1170,23 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 				odd = (1 == r % 2);
                         }
 
-			run_sim(&data, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, h, tol, N, P, xp, xstm, mte[odd], mtr);
+			if (SEQ_CEST == data.seq.seq_type) {
+
+				assert(MODEL_BMC == data.seq.model);
+				assert(SIM_ODE == data.seq.type);
+
+				cest_seq(&data, h, tol, N, P, xp, off_res[r]);
+
+				if (data.cest.ref_scan)
+					xp[0][2] = xp[0][2] / ref_scan;
+
+				collect_signal(&data, P, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, xp);
+				reset_xp(N, data.voxel.P, xp, data.voxel.m0);
+
+			} else {
+
+				run_sim(&data, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, h, tol, N, P, xp, xstm, mte[odd], mtr);
+			}
                 }
 	}
 

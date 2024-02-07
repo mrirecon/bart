@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 
-enum sim_seq { SEQ_BSSFP, SEQ_IRBSSFP, SEQ_FLASH, SEQ_IRFLASH };
+enum sim_seq { SEQ_BSSFP, SEQ_IRBSSFP, SEQ_FLASH, SEQ_IRFLASH, SEQ_CEST };
 enum sim_type { SIM_ROT, SIM_ODE, SIM_STM };
 enum sim_model { MODEL_BLOCH, MODEL_BMC };
 
@@ -94,6 +94,24 @@ struct simdata_pulse {
         struct pulse_hypsec hs;
 };
 
+struct simdata_cest {
+
+	int n_pulses;
+	float t_d;
+	float t_pp;
+	float gamma;
+	float b1_amp;
+	float b0;
+
+	float off_start;
+	float off_stop;
+
+	bool ref_scan;
+	float ref_scan_ppm;
+};
+
+extern const struct simdata_cest simdata_cest_defaults;
+
 extern void pulse_init(struct simdata_pulse* pulse, float rf_start, float rf_end, float angle, float phase, float bwtp, float alpha);
 extern const struct simdata_pulse simdata_pulse_defaults;
 
@@ -105,6 +123,7 @@ struct sim_data {
 	struct simdata_pulse pulse;
 	struct simdata_grad grad;
 	struct simdata_other other;
+	struct simdata_cest cest;
 };
 
 extern void debug_sim(struct sim_data* data);
