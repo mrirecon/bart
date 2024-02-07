@@ -135,6 +135,7 @@ int main_sim(int argc, char* argv[argc])
         data.pulse.hs = pulse_hypsec_defaults;
 	data.grad = simdata_grad_defaults;
         data.other = simdata_other_defaults;
+	data.cest = simdata_cest_defaults;
 
         float T1[3] = { WATER_T1, WATER_T1, 1 };
 	float T2[3] = { WATER_T2, WATER_T2, 1 };
@@ -155,6 +156,7 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_SELECT(0, "IR-BSSFP", enum sim_seq, &(data.seq.seq_type), SEQ_IRBSSFP, "Inversion-Recovery bSSFP"),
                 OPTL_SELECT(0, "FLASH", enum sim_seq, &(data.seq.seq_type), SEQ_FLASH, "FLASH"),
                 OPTL_SELECT(0, "IR-FLASH", enum sim_seq, &(data.seq.seq_type), SEQ_IRFLASH, "Inversion-Recovery FLASH"),
+		OPTL_SELECT(0, "CEST", enum sim_seq, &(data.seq.seq_type), SEQ_CEST, "CEST"),
                 OPTL_FLOAT(0, "TR", &(data.seq.tr), "float", "Repetition time [s]"),
                 OPTL_FLOAT(0, "TE", &(data.seq.te), "float", "Echo time [s]"),
                 OPTL_INT(0, "Nspins", &(data.seq.spin_num), "int", "Number of averaged spins"),
@@ -200,6 +202,20 @@ int main_sim(int argc, char* argv[argc])
         };
         const int N_pool_opts = ARRAY_SIZE(pool_opts);
 
+	struct opt_s cest_opts[] = {
+
+		OPTL_FLOAT(0, "b1", &(data.cest.b1_amp), "float", "B1 amplitude [mu T (RMS)]"),
+		OPTL_FLOAT(0, "b0", &(data.cest.b0), "float", "B0 [T]"),
+		OPTL_FLOAT(0, "gamma", &(data.cest.gamma), "float", "Gyromagnetic ratio [Mhz/T]"),
+		OPTL_FLOAT(0, "max", &(data.cest.off_start), "float", "Max offset [ppm]"),
+		OPTL_FLOAT(0, "min", &(data.cest.off_stop), "float", "Min offset [ppm]"),
+		OPTL_INT(0, "n_p", &(data.cest.n_pulses), "int", "Number of pulses"),
+		OPTL_FLOAT(0, "t_d", &(data.cest.t_d), "float", "Interpulse delay [s]"),
+		OPTL_FLOAT(0, "t_pp", &(data.cest.t_pp), "float", "Post-preparation delay [s]"),
+		OPTL_SET(0, "ref_scan", &(data.cest.ref_scan), "Use reference scan"),
+		OPTL_FLOAT(0, "ref_scan_ppm", &(data.cest.ref_scan_ppm), "float", "Offset for ref. scan [ppm]"),
+	};
+	const int N_cest_opts = ARRAY_SIZE(cest_opts);
 
 	const struct opt_s opts[] = {
 
@@ -214,6 +230,7 @@ int main_sim(int argc, char* argv[argc])
                 OPTL_SUBOPT(0, "seq", "...", "configure sequence parameter", N_seq_opts, seq_opts),
                 OPTL_SUBOPT(0, "other", "...", "configure other parameters", N_other_opts, other_opts),
 		OPTL_SUBOPT(0, "pool", "...", "configure parameters for 2nd->5th pool", N_pool_opts, pool_opts),
+		OPTL_SUBOPT(0, "CEST", "...", "configure parameters for CEST", N_cest_opts, cest_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
