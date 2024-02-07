@@ -59,7 +59,6 @@ Build_Clang_GPU:
       - ./lib/
       - ./commands/
     expire_in: 45 minutes
-  allow_failure: true
 
 
 
@@ -198,7 +197,6 @@ Unit_Test_Clang_GPU:
   needs: [Build_Clang_GPU]
   dependencies:
     - Build_Clang_GPU
-  allow_failure: true
 
 
 
@@ -308,7 +306,6 @@ Integration_Test_Clang_GPU:
   needs: [Build_Clang_GPU]
   dependencies:
     - Build_Clang_GPU
-  allow_failure: true
 
 
 Integration_Test_UBSan:
