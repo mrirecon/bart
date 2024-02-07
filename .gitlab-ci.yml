@@ -3,6 +3,9 @@ variables:
 # mpirun wants two environemnt variables to run as root
   OMPI_ALLOW_RUN_AS_ROOT: "1"
   OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: "1"
+# mpirun in docker has a problem with its default transfer mechanism,
+# so we disable it:
+  OMPI_MCA_btl_vader_single_copy_mechanism: "none"
 
 image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_cuda_all_deps
 
