@@ -1,8 +1,5 @@
 variables:
   OMP_NUM_THREADS: "1"
-# mpirun wants two environemnt variables to run as root
-  OMPI_ALLOW_RUN_AS_ROOT: "1"
-  OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: "1"
 # mpirun in docker has a problem with its default transfer mechanism,
 # so we disable it:
   OMPI_MCA_btl_vader_single_copy_mechanism: "none"
