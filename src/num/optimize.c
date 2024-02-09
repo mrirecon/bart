@@ -603,7 +603,7 @@ bool num_auto_parallelize = true;
  * @param too n-op function
  * @param data_ptr pointer to additional data used by too
  */
-void optimized_nop(int N, unsigned int io, int D, const long dim[D], const long (*nstr[N])[D], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too)
+void optimized_nop(int N, unsigned int io, int D, const long dim[D], const long (*nstr[N])[D?:1], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too)
 {
 	assert(N > 0);
 
