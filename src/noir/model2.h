@@ -63,37 +63,38 @@ struct noir2_s {
 };
 
 extern struct noir2_s noir2_noncart_create(int N,
-	const long trj_dims[], const _Complex float* traj,
-	const long wgh_dims[], const _Complex float* weights,
-	const long bas_dims[], const _Complex float* basis,
-	const long msk_dims[], const _Complex float* mask,
-	const long ksp_dims[],
-	const long cim_dims[],
-	const long img_dims[],
-	const long kco_dims[],
-	const long col_dims[],
+	const long trj_dims[N], const _Complex float* traj,
+	const long wgh_dims[N], const _Complex float* weights,
+	const long bas_dims[N], const _Complex float* basis,
+	const long msk_dims[N], const _Complex float* mask,
+	const long ksp_dims[N],
+	const long cim_dims[N],
+	const long img_dims[N],
+	const long kco_dims[N],
+	const long col_dims[N],
 	const struct noir2_model_conf_s* conf);
 
 extern struct noir2_s noir2_cart_create(int N,
-	const long pat_dims[], const _Complex float* pattern,
-	const long bas_dims[], const _Complex float* basis,
-	const long msk_dims[], const _Complex float* mask,
-	const long ksp_dims[],
-	const long cim_dims[],
-	const long img_dims[],
-	const long kco_dims[],
-	const long col_dims[],
+	const long pat_dims[N], const _Complex float* pattern,
+	const long bas_dims[N], const _Complex float* basis,
+	const long msk_dims[N], const _Complex float* mask,
+	const long ksp_dims[N],
+	const long cim_dims[N],
+	const long img_dims[N],
+	const long kco_dims[N],
+	const long col_dims[N],
 	const struct noir2_model_conf_s* conf);
 
 extern void noir2_noncart_update(struct noir2_s* model, int N,
-	const long trj_dims[], const _Complex float* traj,
-	const long wgh_dims[], const _Complex float* weights,
-	const long bas_dims[], const _Complex float* basis);
+	const long trj_dims[N], const _Complex float* traj,
+	const long wgh_dims[N], const _Complex float* weights,
+	const long bas_dims[N], const _Complex float* basis);
 
 extern void noir2_cart_update(struct noir2_s* model, int N,
-	const long pat_dims[], const _Complex float* pattern,
-	const long bas_dims[], const _Complex float* basis);
+	const long pat_dims[N], const _Complex float* pattern,
+	const long bas_dims[N], const _Complex float* basis);
 
 extern void noir2_free(struct noir2_s* model);
 
-extern void noir2_orthogonalize(int N, const long col_dims[], _Complex float* coils);
+extern void noir2_orthogonalize(int N, const long col_dims[N], _Complex float* coils);
+
