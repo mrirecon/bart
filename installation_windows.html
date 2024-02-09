@@ -80,7 +80,7 @@
     <center>
 	    <div id="body" align="left">
 	<img src="./imgs/banner.png" width="100%"><p>
-<h1>BART: Installation</h1>
+<h1>Windows Installation Instructions</h1>
 
 <div>Quick Links: <a href="./index.html">Home</a>, <a href="./installation.html">Download & Installation</a>, <a href="./tutorials.html">Tutorials</a>, <a href="./webinars.html">Webinars</a>, <a href="./features.html">List of Features</a>,  <a href="./publications.html">References & Reproducibility</a> </div>
 
@@ -93,7 +93,6 @@
 <strong>Figure:</strong> Simulated MRI images.
 </div>
 
-<h2>Windows Installation Instructions</h2>
 <p> This tutorial is intended to walk through users who wish to install BART on Windows and use it with Matlab. The README always has the most up-to-date instructions.
 <p> These instructions were last tested with <a href="https://github.com/mrirecon/bart/releases/tag/v0.9.00">bart: version 0.9.00 (2023)</a> <a href="http://dx.doi.org/10.5281/zenodo.10277939"><img src="./imgs/zenodo/zenodo.10277939.svg" alt="DOI: 10.5281/zenodo.10277939"></a>
 <p>
@@ -107,8 +106,6 @@ warranty (see LICENSE for details).
 <ul>
 <li>Install BART through the Windows Subsystem for Linux (WSL) 2
 <li>Call BART from Matlab (in native Windows)
-<li>Install Python through Anaconda on WSL
-<li>Call BART from Python (in WSL)
 </ul>
 
 <h2>Install WSL 2 on Windows 10</h2>
@@ -174,37 +171,58 @@ warranty (see LICENSE for details).
 		</p>
 	</code>
 </ul>
-
-<p>BART has also been included in <a href="https://www.debian.org/">Debian GNU/Linux</a> (and Ubuntu). The
-Debian binary package can be <a href="https://tests.reproducible-builds.org/debian/rb-pkg/unstable/amd64/bart.html">reproducibly built</a>
-from the source code (as distributed by Debian) and can be downloaded from <a href="https://packages.debian.org/sid/bart">here</a>. There is also a<a href="https://packages.debian.org/sid/bart-view"> package</a> for the image viewer. We also provide unofficial packages for Fedora and CentOS: <a href="https://copr.fedorainfracloud.org/coprs/schaten/bart/package/bart/"><img src="https://copr.fedorainfracloud.org/coprs/schaten/bart/package/bart/status_image/last_build.png" /></a>.
-<p>
-Please note that running BART on Windows is not supported. Nevertheless, some versions of BART are reported to work on Windows using WSL or Cygwin.
-<p>
-For developers: the C source code can be found in the  <a class="github" href="https://github.com/mrirecon/bart">GitHub repository</a>
-
-
-
-	<p>Installation of the required libraries, downloading and unpacking of the archive, and
-	compilation on Linux is usually as simple as typing the following commands:
-	<div class="code">
-	<code>
-	<p>
-	&nbsp;$ sudo apt-get install make gcc libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev<br>
-	&nbsp;$ wget https://github.com/mrirecon/bart/archive/vX.Y.ZZ.tar.gz<br>
-	&nbsp;$ tar xzvf vX.YY.ZZ.tar.gz<br>
-	&nbsp;$ cd bart-X.YY.ZZ<br>
-	&nbsp;$ make
-	</p>
+<li>Install bart
+	<code> 
+		<p>
+		make
+		</p>
 	</code>
-	</div>
-	<p>
-	See the README file included with the source code for further instructions and for Mac OS X and Windows.
-	</p>
-	<p>
-	If you are a Docker user you can also start with this extremely simple <a href="./Dockerfile">Dockerfile</a>.
-	</p>
-      </div>
+<li>Open ~/.bashrc and add these lines to the bottom
+	<code> 
+		<p>
+		export BART_TOOLBOX_PATH="${HOME}/bart"
+		export PATH="${BART_TOOLBOX_PATH}:${PATH}"
+		export PYTHONPATH="${BART_TOOLBOX_PATH}/python:${PYTHONPATH}"
+		</p>
+	</code>
+<li>Close and reopen WSL (or source .bashrc to get changes from above). Soft link bart to the executable path
+	<code> 
+		<p>
+		sudo ln -s ${BART_TOOLBOX_PATH}/bart /usr/local/bin/bart
+		</p>
+	</code>
+</ul>
+<h2>Setup BART for Matlab use in native Windows</h2>
+<ul>
+<li>Now that bart is installed, copy the files from "bart/matlab" to somewhere on the local drive. You can also download the folder from Github.
+<li>In Matlab, add the folder to the Matlab path
+<li>You should now be able to run bart. Run the Matlab test to find out.
+	<code> 
+		<p>
+		>> test_bart
+			TEST [Write cfl file] - running "writecfl(file, data)" >> Passed
+			<p>
+			TEST [Read cfl file] - running "readcfl(file)" >> Passed
+			<p>
+			TEST [Data consistency cfl file] >> Passed
+			<p>
+			TEST [Wrapper (without parameter)] - running "bart" >> Passed
+			<p>
+			TEST [Wrapper (method help)] - running "bart traj -h" >> Passed
+			<p>
+			TEST [Wrapper (No input, no parameter)] - running "bart('phantom')" >> Passed
+			<p>
+			TEST [Wrapper (No input, no parameter) - check output] >> Passed
+			<p>
+			TEST [Wrapper (No input)] - running "bart('phantom -3')" >> Passed
+			<p>
+			TEST [Wrapper (No input) - check output)] >> Passed
+			<p>
+			TEST [Wrapper (One input, one parameter)] - running "bart('fft -u 3', varargin{1})" >> Passed
+			<p>
+			TEST [Wrapper (One input, one parameter) - check output)] >> Passed
+		</p>
+	</code>
     </center>
   </body>
 </html>
