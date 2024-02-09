@@ -1079,7 +1079,7 @@ void cmdline(int* argcp, char* argv[*argcp], int m, struct arg_s args[m], const 
 	for (int i = 0; i < m; ++i) {
 
 		if (ARG_TUPLE == args[i].arg_type)
-			max_args = 1000; // should be plenty for most use cases, but not overflow long
+			max_args = 2000; // should be plenty for most use cases, but not overflow long
 		else
 			max_args += args[i].nargs;
 
