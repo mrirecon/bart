@@ -346,6 +346,8 @@ endif
 
 
 XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TNN)
+XTARGETS:=$(sort $(XTARGETS))
+
 # CTARGETS: command targets, that are in the commands/ subdir
 CTARGETS = $(addprefix commands/, $(XTARGETS))
 
@@ -657,6 +659,8 @@ $(srcdir)/misc/version.o: $(srcdir)/misc/version.inc
 # additional rules for lib ismrm
 lib/libismrm.a: CPPFLAGS += $(ISMRM_H)
 
+# additional rules for lib box
+lib/libbox.a: CPPFLAGS += -DMAIN_LIST="$(XTARGETS:%=%,) ()" -include src/main.h
 
 # lib linop
 UTARGETS += test_linop_matrix test_linop test_padding
@@ -724,9 +728,6 @@ MODULES_test_nn_ops += -lnn -lnlops -llinops -liter
 MODULES_test_nn += -lnn -lnlops -llinops -liter
 
 
-
-
-XTARGETS:=$(sort $(XTARGETS))
 
 
 
