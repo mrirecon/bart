@@ -1,3 +1,8 @@
+/* Copyright 2024. TU Graz. Institute of Biomedical Imaging.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+
 #include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
@@ -169,8 +174,8 @@ int main_nlinvnet(int argc, char* argv[argc])
 		OPTL_SET(0, "rss-norm", &(nlinvnet.normalize_rss), "scale output image to rss normalization"),
 
 		OPTL_INFILE(0, "pattern", &pat_file, "<pattern>", "sampling pattern"),
-		OPTL_INFILE(0, "trajectory", (const char**)(&(traj_file)), "<traj>", "trajectory"),
-		OPTL_INFILE('B', "basis", (const char**)(&(basis_file)), "<basis>", "basis"),
+		OPTL_INFILE(0, "trajectory", &(traj_file), "<traj>", "trajectory"),
+		OPTL_INFILE('B', "basis", &(basis_file), "<basis>", "basis"),
 		OPTL_FLOAT(0, "scaling", &(nlinvnet.scaling), "val", "scaling of data, negative means normalization to norm=val"),
 		OPTL_ULONG(0, "scaling-flags", &scl_flags, "flags", "scaling is increased with sqrt(selected dims)"),
 

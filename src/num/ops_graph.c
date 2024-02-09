@@ -116,7 +116,7 @@ static const char* print_node_arg(const struct node_s* _node)
 
 	const char* name = ptr_printf("%s\\n[", node->output ? "Output" : "Input");
 
-	for (int i = 0; i < (int)(iov->N); i++) {
+	for (int i = 0; i < iov->N; i++) {
 
 		auto tmp = name;
 
