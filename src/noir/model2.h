@@ -62,6 +62,12 @@ struct noir2_s {
 	struct multiplace_array_s* basis;	// this is used in nlinv-net to store basis for trajectory update
 };
 
+#ifdef __GNUC__
+#if __GNUC__ <= 11
+#define N
+#endif
+#endif
+
 extern struct noir2_s noir2_noncart_create(int N,
 	const long trj_dims[N], const _Complex float* traj,
 	const long wgh_dims[N], const _Complex float* weights,
@@ -94,7 +100,14 @@ extern void noir2_cart_update(struct noir2_s* model, int N,
 	const long pat_dims[N], const _Complex float* pattern,
 	const long bas_dims[N], const _Complex float* basis);
 
+#ifdef __GNUC__
+#if __GNUC__ <= 11
+#undef N
+#endif
+#endif
+
 extern void noir2_free(struct noir2_s* model);
 
 extern void noir2_orthogonalize(int N, const long col_dims[N], _Complex float* coils);
+
 
