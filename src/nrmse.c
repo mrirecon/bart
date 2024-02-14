@@ -97,8 +97,13 @@ int main_nrmse(int argc, char* argv[argc])
 	if (test == -1.)
 		test = err;
 
-	if (err < test * 0.1)
-		debug_printf(DP_DEBUG2, "Loose test: %f <= %f x %f\n", err, 0.1, test);
+	if (err < test * 0.1) {
+
+		if (scientific)
+			debug_printf(DP_DEBUG2, "Loose test: %e <= 0.1 x %e\n", err, test);
+		else
+			debug_printf(DP_DEBUG2, "Loose test: %f <= 0.1 x %f\n", err, test);
+	}
 
 	return (err <= test) ? 0 : 1;
 }
