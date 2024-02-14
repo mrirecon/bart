@@ -86,6 +86,11 @@ int main_nrmse(int argc, char* argv[argc])
 
 	float err = md_znrmse(DIMS, ref_dims, ref, in);
 
+	// automatically switch to scientific output if the regular output
+	// might show all zeros for a non-zero error
+	if ((0 != err) && (1e-6 >= err))
+		scientific = true;
+
 	if (scientific)
 		bart_printf("%e\n", err);
 	else
