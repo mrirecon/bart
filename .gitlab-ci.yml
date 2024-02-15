@@ -7,15 +7,12 @@ variables:
 image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_cuda_all_deps
 
 
-# Make Builds interruptible by default
 default:
+  # Make Builds interruptible by default
   interruptible: true
-
-#### Now part of the docker image
-####
-before_script:
-  - apt-get update -qq && apt-get install -y -qq
-  - chown -R ibi .
+  before_script:
+#    - apt-get update -qq && apt-get install -y -qq
+    - chown -R ibi .
 
 stages:
   - build
@@ -32,6 +29,20 @@ Build:
       - ./lib/
       - ./commands/
     expire_in: 45 minutes
+
+Build_riscv:
+  stage: build
+  tags:
+    - riscv
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
+  script:
+    - sudo -E -u ibi PARALLEL=1 PARALLEL_NJOBS=4 make all
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+      - ./commands/
+    expire_in: 180 minutes
 
 
 Build_Clang:
@@ -176,6 +187,17 @@ UTest:
   dependencies:
      - Build
 
+UTest_riscv:
+  stage: test1
+  tags:
+    - riscv
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
+  script:
+    - sudo -E -u ibi PARALLEL=1 PARALLEL_NJOBS=4 AUTOCLEAN=0 make utest
+  needs: [Build_riscv]
+  dependencies:
+     - Build_riscv
+
 
 UTest_Clang:
   stage: test1
@@ -263,6 +285,18 @@ IntTest:
   needs: [Build]
   dependencies:
     - Build
+
+IntTest_riscv:
+  stage: test2
+  tags:
+    - riscv
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
+  script:
+    - sudo -E -u ibi PARALLEL=1 PARALLEL_NJOBS=4 AUTOCLEAN=0 make test
+  needs: [Build_riscv]
+  dependencies:
+    - Build_riscv
+
 
 
 IntTest_Python:
