@@ -54,8 +54,9 @@ tests/test-cc-rovir: bart $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	$(ROOTDIR)/bart nlinv -S ksp2 img2						;\
 	$(ROOTDIR)/bart resize 1 64 img1 opt						;\
 	$(ROOTDIR)/bart resize 1 64 img2 sup						;\
-	$(ROOTDIR)/bart fmac -C -s 3 opt opt energy_opt					;\
+	$(ROOTDIR)/bart fmac -C -s 3 opt opt energy_opt2				;\
 	$(ROOTDIR)/bart fmac -C -s 3 sup sup energy_sup					;\
+	$(ROOTDIR)/bart creal energy_opt2 energy_opt					;\
 	$(ROOTDIR)/bart scale 50 energy_sup energy_sup_scl				;\
 	$(ROOTDIR)/bart join 0 energy_sup_scl energy_opt energy_joined			;\
 	$(ROOTDIR)/bart mip 1 energy_joined energy_max					;\
@@ -76,8 +77,9 @@ tests/test-cc-rovir-noncart: bart
 	$(ROOTDIR)/bart nlinv -S -t trj ksp2 img2					;\
 	$(ROOTDIR)/bart resize 1 64 img1 opt						;\
 	$(ROOTDIR)/bart resize 1 64 img2 sup						;\
-	$(ROOTDIR)/bart fmac -C -s 3 opt opt energy_opt					;\
+	$(ROOTDIR)/bart fmac -C -s 3 opt opt energy_opt2				;\
 	$(ROOTDIR)/bart fmac -C -s 3 sup sup energy_sup					;\
+	$(ROOTDIR)/bart creal energy_opt2 energy_opt					;\
 	$(ROOTDIR)/bart scale 100 energy_sup energy_sup_scl				;\
 	$(ROOTDIR)/bart join 0 energy_sup_scl energy_opt energy_joined			;\
 	$(ROOTDIR)/bart mip 1 energy_joined energy_max					;\

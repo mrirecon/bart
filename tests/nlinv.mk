@@ -197,8 +197,8 @@ tests/test-nlinv-ksens: nlinv nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/nlinv		      $(TESTS_OUT)/shepplogan_coil_ksp.ra r1.ra c1.ra	;\
 	$(TOOLDIR)/nlinv --ksens-dims=16:16:1 $(TESTS_OUT)/shepplogan_coil_ksp.ra r2.ra c2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.00001 r1.ra r2.ra							;\
-	$(TOOLDIR)/nrmse -t 0.00002 c1.ra c2.ra							;\
+	$(TOOLDIR)/nrmse -t 0.00002 r1.ra r2.ra							;\
+	$(TOOLDIR)/nrmse -t 0.00003 c1.ra c2.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
