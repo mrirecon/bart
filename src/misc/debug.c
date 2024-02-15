@@ -1,6 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
- * Copyright 2022-2023. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2024. Institute of Biomedical Imaging. TU Graz.
  * Copyright 2016. Martin Uecker.
  * Copyright 2018. Damien Nguyen.
  * All rights reserved. Use of this source code is governed by
@@ -21,6 +21,7 @@
 #include <complex.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/time.h>
 #include <time.h>
 #if !defined(__CYGWIN__) && !defined(_WIN32) && !defined(__EMSCRIPTEN__)
@@ -115,13 +116,24 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 {
 	if (-1 == debug_level) {
 
+		debug_level = DP_INFO;
+
 		char* str = getenv("BART_DEBUG_LEVEL");
 
 		// support old environment variable:
 		if (NULL == str)
 			str = getenv("DEBUG_LEVEL");
 
-		debug_level = (NULL != str) ? atoi(str) : DP_INFO;
+		if (NULL != str) {
+
+			errno = 0;
+			long r = strtol(str, NULL, 10);
+
+			if ((errno == 0) && (0 < r) && (r < 10))
+				debug_level = r;
+
+			errno = 0;
+		}
 	}
 
 	if (0 < mpi_get_rank())
