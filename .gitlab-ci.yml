@@ -168,7 +168,7 @@ Build_Debug_Dwarf:
     expire_in: 45 minutes
 
 
-Unit_Test:
+UTest:
   stage: test1
   script:
     - sudo -E -u ibi AUTOCLEAN=0 make utest
@@ -177,7 +177,7 @@ Unit_Test:
      - Build
 
 
-Unit_Test_Clang:
+UTest_Clang:
   stage: test1
   script:
     - apt-get install -y -qq clang-16 libomp-16-dev
@@ -186,7 +186,7 @@ Unit_Test_Clang:
   dependencies:
      - Build_Clang
 
-Unit_Test_Clang_GPU:
+UTest_Clang_GPU:
   stage: test1
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
@@ -198,7 +198,7 @@ Unit_Test_Clang_GPU:
 
 
 
-Unit_Test_Valgrind:
+UTest_Valgrind:
   stage: test1
   script:
     - sudo -E -u ibi AUTOCLEAN=0 UTESTLEAK=1 make utest
@@ -207,7 +207,7 @@ Unit_Test_Valgrind:
      - Build
 
 
-Unit_Test_UBSan:
+UTest_UBSan:
   stage: test1
   script:
     - sudo -E -u ibi AUTOCLEAN=0 UBSAN=1 ASAN=1 make utest
@@ -216,7 +216,7 @@ Unit_Test_UBSan:
      - Build_UBSan
 
 
-Unit_Test_GPU:
+UTest_GPU:
   stage: test1
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
@@ -225,7 +225,7 @@ Unit_Test_GPU:
   dependencies:
     - Build_GPU
 
-Unit_Test_MPI:
+UTest_MPI:
   stage: test1
   script:
     - sudo -E -u ibi AUTOCLEAN=0 MPI=1 make utest
@@ -234,7 +234,7 @@ Unit_Test_MPI:
      - Build_MPI
 
 
-Unit_Test_Tensorflow:
+UTest_Tensorflow:
   stage: test1
   script:
 # Already part of the Docker image
@@ -246,7 +246,7 @@ Unit_Test_Tensorflow:
     - Build_Tensorflow
 
 
-Unit_Test_LTO:
+UTest_LTO:
   stage: test1
   script:
     - sudo -E -u ibi CFLAGS="-flto -O2 -g" make utest
@@ -256,7 +256,7 @@ Unit_Test_LTO:
 
 
 
-Integration_Test:
+IntTest:
   stage: test2
   script:
     - sudo -E -u ibi AUTOCLEAN=0 AGUE_TWIX_REF=/reference_data/twix/ make test testslow testague
@@ -265,7 +265,7 @@ Integration_Test:
     - Build
 
 
-Integration_Test_Python:
+IntTest_Python:
   stage: test2
   script:
     - sudo -E -u ibi AUTOCLEAN=0 make pythontest
@@ -275,7 +275,7 @@ Integration_Test_Python:
   allow_failure: true
 
 
-Integration_Test_GPU:
+IntTest_GPU:
   stage: test2
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
@@ -285,7 +285,7 @@ Integration_Test_GPU:
     - Build_GPU
 
 
-Integration_Test_Clang:
+IntTest_Clang:
   stage: test2
   script:
     - apt-get install -y -qq clang-16 libomp-16-dev
@@ -295,7 +295,7 @@ Integration_Test_Clang:
     - Build_Clang
 
 
-Integration_Test_Clang_GPU:
+IntTest_Clang_GPU:
   stage: test2
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
@@ -306,7 +306,7 @@ Integration_Test_Clang_GPU:
     - Build_Clang_GPU
 
 
-Integration_Test_UBSan:
+IntTest_UBSan:
   stage: test2
   script:
     - sudo -E -u ibi AUTOCLEAN=0 UBSAN=1 ASAN=1 DEBUG=1 UBSAN_OPTIONS=print_stacktrace=1 make test
@@ -315,7 +315,7 @@ Integration_Test_UBSan:
     - Build_UBSan
 
 
-Integration_Test_MPI:
+IntTest_MPI:
   stage: test2
   script:
     - sudo -E -u ibi AUTOCLEAN=0 MPI=1 make testslow
@@ -323,7 +323,7 @@ Integration_Test_MPI:
   dependencies:
     - Build_MPI
 
-Integration_Test_MPI_GPU:
+IntTest_MPI_GPU:
   stage: test2
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
@@ -332,7 +332,7 @@ Integration_Test_MPI_GPU:
   dependencies:
     - Build_MPI_GPU
 
-#Integration_Test_LTO:
+#IntTest_LTO:
 #  stage: test2
 #  script:
 #    - CFLAGS="-flto -O2 -g" make test
