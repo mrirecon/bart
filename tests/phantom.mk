@@ -381,9 +381,9 @@ TESTS += tests/test-phantom-rotation-NIST tests/test-phantom-rotation-NIST-kspac
 TESTS += tests/test-phantom-rotation-tubes-multistep tests/test-phantom-rotation-tubes-kspace-multistep tests/test-phantom-rotation-tubes-basis-multistep
 TESTS += tests/test-phantom-rotation-NIST-multistep tests/test-phantom-rotation-NIST-kspace-multistep tests/test-phantom-rotation-NIST-basis-multistep
 TESTS += tests/test-phantom-SONAR tests/test-phantom-SONAR-basis tests/test-phantom-rotation-SONAR tests/test-phantom-rotation-SONAR-multistep
-TESTS += tests/test-phantom-brain tests/test-phantom-BRAIN-basis
-TESTS += tests/test-phantom-coil-large tests/test-phantom-ksp-coil-large
-TESTS += tests/test-phantom-FILE tests/test-phantom-FILE-basis tests/test-phantom-FILE-coil-large
-TESTS += tests/test-phantom-ellipsoid
-TESTS += tests/test-phantom-noncart-BRAIN tests/test-phantom-noncart-ellipsoid tests/test-phantom-noncart-ellipsoid-params
+TESTS += tests/test-phantom-brain
+TESTS_SLOW += tests/test-phantom-coil-large tests/test-phantom-ksp-coil-large
+TESTS += tests/test-phantom-FILE tests/test-phantom-FILE-basis
+TESTS_SLOW += tests/test-phantom-noncart-BRAIN tests/test-phantom-BRAIN-basis tests/test-phantom-FILE-coil-large
+TESTS += tests/test-phantom-ellipsoid tests/test-phantom-noncart-ellipsoid tests/test-phantom-noncart-ellipsoid-params
 

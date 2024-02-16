@@ -36,14 +36,14 @@ tests/test-rtnlinv-precomp: traj scale phantom ones repmat fft nufft rtnlinv nrm
 
 tests/test-rtnlinv-nlinv-sms: reshape repmat fft nlinv nrmse scale traj phantom rtnlinv
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/traj -r -x256 -y60 traj.ra							;\
+	$(TOOLDIR)/traj -r -y60 traj.ra							;\
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra							;\
 	$(TOOLDIR)/phantom -s6 -k -t traj2.ra ksp.ra						;\
 	$(TOOLDIR)/reshape 8200 2 3 ksp.ra ksp2.ra						;\
 	$(TOOLDIR)/rtnlinv -w0.0001 -s -S -N -i8 -t traj2.ra ksp2.ra r.ra c.ra			;\
 	$(TOOLDIR)/nlinv   -w0.0001 -S -N -i8 --psf-based -t traj2.ra ksp2.ra r2.ra c2.ra	;\
-	$(TOOLDIR)/nrmse -s -t 0.001 r.ra r2.ra						;\
-	$(TOOLDIR)/nrmse -s -t 0.001 c.ra c2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.001 r.ra r2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.001 c.ra c2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

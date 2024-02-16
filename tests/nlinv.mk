@@ -37,12 +37,11 @@ tests/test-nlinv-sms-noncart: traj phantom repmat fft nlinv nrmse
 
 tests/test-nlinv-sms-noncart-psf: reshape repmat fft nlinv nrmse scale traj phantom
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/traj -r -x256 -y60 traj.ra							;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra							;\
-	$(TOOLDIR)/phantom -s6 -k -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -o2 -y60 traj.ra							;\
+	$(TOOLDIR)/phantom -s6 -k -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/reshape 8200 2 3 ksp.ra ksp2.ra						;\
-	$(TOOLDIR)/nlinv --cgiter=20 -S -N -i12 --ret-sens-os -t traj2.ra ksp2.ra r.ra c.ra	;\
-	$(TOOLDIR)/nlinv --cgiter=20 -S -N -i12 --psf-based -t traj2.ra ksp2.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nlinv --cgiter=20 -S -N -i12 --ret-sens-os -t traj.ra ksp2.ra r.ra c.ra	;\
+	$(TOOLDIR)/nlinv --cgiter=20 -S -N -i12 --psf-based -t traj.ra ksp2.ra r2.ra c2.ra	;\
 	$(TOOLDIR)/nrmse -s -t 0.1 r.ra r2.ra							;\
 	$(TOOLDIR)/nrmse -s -t 0.1 c.ra c2.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
