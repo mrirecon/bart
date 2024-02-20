@@ -44,6 +44,7 @@ struct network_data_s {
 
 	_Bool create_out;
 	_Bool load_mem;
+	_Bool gpu;
 
 	unsigned long batch_flags;
 };

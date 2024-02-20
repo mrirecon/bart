@@ -71,6 +71,7 @@ struct network_data_s network_data_empty = {
 
 	.create_out = false,
 	.load_mem = false,
+	.gpu = false,
 	.batch_flags = SLICE_FLAG | AVG_FLAG | BATCH_FLAG,
 
 	.nufft_conf = &nufft_conf_defaults,
@@ -222,7 +223,10 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 	md_select_dims(DIMS, ~nd->batch_flags, pat_dims_s, nd->pat_dims);
 	md_select_dims(DIMS, ~nd->batch_flags, col_dims_s, nd->col_dims);
 
-	auto model = sense_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, *(nd->nufft_conf));
+	struct nufft_conf_s nufft_conf = *(nd->nufft_conf);
+	nufft_conf.cache_psf_grdding = true;
+
+	auto model = sense_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, nufft_conf);
 	auto sense_adjoint = nlop_sense_adjoint_create(1, &model, true);
 
 	nd->ND = DIMS + 1;
@@ -239,7 +243,16 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 	complex float* dst[2] = { nd->adjoint, nd->psf };
 	const complex float* src[4] = { nd->kspace, nd->coil, nd->pattern, nd->trajectory };
 
-	nlop_generic_apply_loop_sameplace(sense_adjoint, nd->batch_flags, 2, DO, odims, dst, 4, DI, idims, src, nd->adjoint);
+	complex float* ref = NULL;
+
+#ifdef USE_CUDA
+	if (nd->gpu)
+		ref = md_alloc_gpu(1, MD_DIMS(1), CFL_SIZE);
+#endif
+
+	nlop_generic_apply_loop_sameplace(sense_adjoint, nd->batch_flags, 2, DO, odims, dst, 4, DI, idims, src, ref);
+
+	md_free(ref);
 
 	nlop_free(sense_adjoint);
 	sense_model_free(model);
@@ -394,7 +407,16 @@ void network_data_compute_init(struct network_data_s* nd, complex float lambda, 
 	complex float* dst[1] = { nd->initialization };
 	const complex float* src[3] = { nd->adjoint, nd->coil, nd->psf };
 
-	nlop_generic_apply_loop_sameplace(nlop_normal_inv, loop_flags, 1, DO, odims, dst, 3, DI, idims, src, nd->adjoint);
+	complex float* ref = NULL;
+
+#ifdef USE_CUDA
+	if (nd->gpu)
+		ref = md_alloc_gpu(1, MD_DIMS(1), CFL_SIZE);
+#endif
+
+	nlop_generic_apply_loop_sameplace(nlop_normal_inv, loop_flags, 1, DO, odims, dst, 3, DI, idims, src, ref);
+
+	md_free(ref);
 
 	nlop_free(nlop_normal_inv);
 }

@@ -276,6 +276,7 @@ int main_reconet(int argc, char* argv[argc])
 		data.create_out = true;
 
 	data.load_mem = load_mem;
+	data.gpu = config.gpu;
 	load_network_data(&data);
 
 	Nb = MIN(Nb, network_data_get_tot(&data));
@@ -305,6 +306,7 @@ int main_reconet(int argc, char* argv[argc])
 		valid_data.filename_basis = data.filename_basis;
 		
 		load_network_data(&valid_data);
+		valid_data.gpu = config.gpu;
 		network_data_slice_dim_to_batch_dim(&valid_data);
 		
 		if (config.sense_init && (-1. != config.init_lambda_fixed))
