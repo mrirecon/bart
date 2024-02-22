@@ -292,7 +292,7 @@ IntTest_riscv:
     - riscv
   image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
   script:
-    - sudo -E -u ibi PARALLEL=1 PARALLEL_NJOBS=4 AUTOCLEAN=0 make test
+    - sudo -E -u ibi PARALLEL=1 PARALLEL_NJOBS=4 AUTOCLEAN=0 AGUE_TWIX_REF=/reference_data/twix/ make test testague
   needs: [Build_riscv]
   dependencies:
     - Build_riscv
