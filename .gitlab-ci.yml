@@ -36,7 +36,7 @@ Build_riscv:
     - riscv
   image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
   script:
-    - sudo -E -u ibi PARALLEL=1 PARALLEL_NJOBS=4 make all
+    - sudo -E -u ibi make -j 4 all
   artifacts:
     paths:
       - bart
@@ -193,7 +193,7 @@ UTest_riscv:
     - riscv
   image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
   script:
-    - sudo -E -u ibi PARALLEL=1 PARALLEL_NJOBS=4 AUTOCLEAN=0 make utest
+    - sudo -E -u ibi AUTOCLEAN=0 make -j 4 utest
   needs: [Build_riscv]
   dependencies:
      - Build_riscv
@@ -292,7 +292,7 @@ IntTest_riscv:
     - riscv
   image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
   script:
-    - sudo -E -u ibi PARALLEL=1 PARALLEL_NJOBS=4 AUTOCLEAN=0 AGUE_TWIX_REF=/reference_data/twix/ make test testague
+    - sudo -E -u ibi AUTOCLEAN=0 AGUE_TWIX_REF=/reference_data/twix/ make -j 4 test testague
   needs: [Build_riscv]
   dependencies:
     - Build_riscv
