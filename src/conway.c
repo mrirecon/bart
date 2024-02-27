@@ -17,6 +17,7 @@
 #include "misc/io.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
+#include "misc/stream.h"
 
 
 static const char help_str[] = "Conway's game of life.";
@@ -57,6 +58,7 @@ int main_conway(int argc, char* argv[argc])
 
 	unmap_cfl(2, dims, init);
 
+
 	long wdims[3];
 	md_copy_dims(2, wdims, dims);
 	wdims[2] = 1;
@@ -65,7 +67,10 @@ int main_conway(int argc, char* argv[argc])
 	md_copy_dims(2, odims, dims);
 	odims[2] = iter;
 
-	complex float* out = create_cfl(out_file, 3, odims);
+	complex float* out = create_async_cfl(out_file, MD_BIT(2), 3, odims);
+
+	stream_t out_stream = stream_lookup(out);
+	bool sync = out_stream;
 
 	long mdims[2] = { 3, 3 };
 
@@ -90,6 +95,9 @@ int main_conway(int argc, char* argv[argc])
 		md_zmul(2, dims, world, world, tmp);
 
 		md_copy_block(3, (long[3]){ [2] = i }, odims, out, wdims, world, CFL_SIZE);
+
+		if (sync)
+			stream_sync(out_stream, 3, (long[3]){ [2] = i });
 	}
 
 	conv_free(plan);
@@ -101,5 +109,3 @@ int main_conway(int argc, char* argv[argc])
 
 	return 0;
 }
-
-
