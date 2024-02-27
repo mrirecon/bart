@@ -42,6 +42,7 @@
 #include "misc/io.h"
 #include "misc/debug.h"
 #include "misc/memcfl.h"
+#include "misc/stream.h"
 
 #include "mmio.h"
 
@@ -263,7 +264,6 @@ void set_cfl_loop_index(long index)
 		error("Worker id exceeds maximum supported workers!\n");
 
 	cfl_loop_index[worker_id] = index;
-
 }
 
 long get_cfl_loop_index()
@@ -281,6 +281,11 @@ long get_cfl_loop_index()
 bool cfl_loop_desc_active(void)
 {
 	return cfl_loop_desc.flags > 0;
+}
+
+void cfl_loop_desc_set_inactive(void)
+{
+	cfl_loop_desc.flags = 0;
 }
 
 unsigned long cfl_loop_get_flags(void)
@@ -384,6 +389,7 @@ static void* create_worker_buffer(int D, long dims[D], void* addr, bool output)
 
 		if (output && (1 == mpi_get_num_procs()))
 			output = false;
+
 	} else {
 
 		strided_cfl_loop = true;
@@ -670,14 +676,26 @@ complex float* create_zcoo(const char* name, int D, const long dimensions[D])
 }
 
 
-static complex float* create_pipe(int pfd, int D, long dimensions[D])
+static complex float* create_pipe(const char* name, int D, long dimensions[D], unsigned long stream_flags)
 {
-	static bool once_w = false;
+	long T;
 
-	if (once_w)
-		error("writing two inputs to pipe is not supported\n");
+	const char* stream_name = ptr_printf("out_%s", name);
 
-	once_w = true;
+	stream_t strm = stream_lookup_name(stream_name);
+
+	complex float* ptr;
+
+	if (NULL != strm) {
+
+		strm = stream_clone(strm);
+
+		ptr = stream_get_data(strm);
+
+		goto out;
+	}
+
+	io_register_output(name);
 
 	char filename[] = "bart-XXXXXX";
 
@@ -685,14 +703,15 @@ static complex float* create_pipe(int pfd, int D, long dimensions[D])
 
 	debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", filename);
 
-	long T;
+	strm = stream_create_file(name, D, dimensions, stream_flags, filename);
+
+	if (NULL == strm)
+		error("Creating stream");
 
 	if (-1 == (T = io_calc_size(D, dimensions, sizeof(complex float))))
 		error("temp cfl %s\n", filename);
 
 	err_assert(T > 0);
-
-	complex float* ptr;
 
 	if (NULL == (ptr = create_data(fd, 0, (size_t)T)))
 		error("temp cfl %s\n", filename);
@@ -704,14 +723,19 @@ static complex float* create_pipe(int pfd, int D, long dimensions[D])
 		io_error("temp cfl %s\n", filename);
 #endif
 
-	if (-1 == write_cfl_header(pfd, filename, D, dimensions))
-		error("Writing to stdout\n");
+	stream_attach(strm, ptr, true);
+
+	if (cfl_loop_desc_active())
+		stream_clone(stream_lookup_name(stream_name));
+
+out:
+	xfree(stream_name);
 
 	return ptr;
 }
 
 
-static complex float* create_cfl_internal(const char* name, int D, const long dims[D])
+static complex float* create_cfl_internal2(const char* name, int D, const long dims[D])
 {
 	char name_bdy[1024];
 	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
@@ -736,7 +760,7 @@ static complex float* create_cfl_internal(const char* name, int D, const long di
 
 
 
-complex float* create_cfl(const char* name, int D, const long dimensions[D])
+static complex float* create_cfl_internal(const char* name, int D, const long dimensions[D], unsigned long stream_flags)
 {
 	long dims[D];
 	md_copy_dims(D, dims, dimensions);
@@ -754,19 +778,21 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 		io_unlink_if_opened(name);
 	}
 
-	io_register_output(name);
+	enum file_types_e type = file_type(name);
 
 	complex float* addr = NULL;
+
+	if (FILE_TYPE_PIPE != type)	// FIXME: Why?
+		io_register_output(name);
 
 #pragma omp critical (bart_file_access)
 	if (mpi_is_main_proc()) {
 
-		enum file_types_e type = file_type(name);
-
 		switch (type) {
 
-		case FILE_TYPE_PIPE:
-			addr = create_pipe(1, D, dims);
+		case FILE_TYPE_PIPE:;
+
+			addr = create_pipe(name, D, dims, stream_flags);
 			break;
 
 		case FILE_TYPE_RA:
@@ -787,7 +813,7 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 
 		case FILE_TYPE_CFL:
 	
-			addr = create_cfl_internal(name, D, dims);
+			addr = create_cfl_internal2(name, D, dims);
 			break;
 		
 		default:
@@ -801,6 +827,25 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	return create_worker_buffer(D, dims, addr, true);
 }
 
+
+complex float* create_cfl(const char* name, int D, const long dimensions[D])
+{
+	return create_cfl_internal(name, D, dimensions, cfl_loop_desc.flags);
+}
+
+
+complex float* create_async_cfl(const char* name, const unsigned long flags, int D, const long dimensions[D])
+{
+	if (cfl_loop_desc_active()) {
+
+		if (0 != (md_nontriv_dims(D, dimensions) & flags))
+			error("Creating stream %s: Cannot combine streaming and looping!\n", name);
+
+		return create_cfl_internal(name, D, dimensions, 0);
+	}
+
+	return create_cfl_internal(name, D, dimensions, flags);
+}
 
 
 
@@ -856,7 +901,7 @@ complex float* load_zcoo(const char* name, int D, long dimensions[D])
 }
 
 
-static complex float* load_cfl_internal(const char* name, int D, long dimensions[D], bool priv)
+static complex float* load_cfl_internal(const char* name, int D, long dimensions[D], bool priv, bool stream)
 {
 	io_register_input(name);
 
@@ -865,37 +910,55 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 	complex float* addr = NULL;
 	char* filename = NULL;
 
+#pragma omp critical (bart_file_access2)	// FIXME. this critical section is too big
 	if (mpi_is_main_proc() || mpi_shared_files) {
 
 		switch (type) {
 
 		case FILE_TYPE_PIPE:
 
-			;
+			// FIXME: shoud probably be moved into a file
 
 			assert(1 == mpi_get_num_procs());
 
-			static bool once_r = false;
+			const char* stream_name = ptr_printf("in_%s", name);
 
-			if (once_r)
-				error("reading two inputs from pipe is not supported\n");
+			stream_t strm = stream_lookup_name(stream_name);
 
-			once_r = true;
+			if (NULL != strm) {
 
-			// read header from stdin
+				addr = stream_get_data(strm);
+				stream_get_dimensions(strm, D, dimensions);
 
-			if (-1 == read_cfl_header(0, &filename, D, dimensions))
-				error("Reading input\n");
+				goto loadcfl_stream_end;
+			}
 
-			if (NULL == filename)
-				error("No data.\n");
+			strm = stream_load_file(name, D, dimensions, &filename);
 
-			addr = (priv ? private_cfl : shared_cfl)(D, dimensions, filename);
+			if ((NULL == strm) || stream_is_binary(strm))
+				error("Creating stream\n");
+
+			addr = shared_cfl(D, dimensions, filename);
+			//FIXME: MAP_PRIVATE states: It is unspecified whether changes made to the file
+			//       after the mmap() call are visible in the mapped region.
+			//	 Hence, we always load files with MAP_SHARED and protect files which are read only.
+			//	 This will cause segfaults in tools like pics which uses the copy on write feature of MAP_PRIVATE!
+			if (priv)
+				mprotect(addr, (size_t)(io_calc_size(D, dimensions, sizeof(complex float))), PROT_READ);
+
+			stream_attach(strm, addr, true);
 
 			if (0 != unlink(filename))
 				error("Error unlinking temporary file %s\n", filename);
 
 			free(filename);
+
+		loadcfl_stream_end:
+
+			xfree(stream_name);
+
+			if (cfl_loop_desc_active())
+				stream_clone(strm);
 
 			break;
 
@@ -914,7 +977,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 		case FILE_TYPE_MEM:
 			addr = memcfl_load(name, D, dimensions);
 			break;
-		
+
 		case FILE_TYPE_CFL: ;
 
 			char name_bdy[1024];
@@ -942,6 +1005,16 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 		}
 	}
 
+	if (!stream || cfl_loop_desc_active()) {
+
+		long pos[D];
+		work_buffer_get_pos(D, dimensions, pos, false, cfl_loop_index[cfl_loop_worker_id()]);
+
+		stream_t strm = stream_lookup(addr);
+
+		stream_sync_slice(strm, D, dimensions, cfl_loop_desc.flags, pos);
+	}
+
 	if (1 < mpi_get_num_procs() && !mpi_shared_files) {
 
 		mpi_sync_val(dimensions, D * (long)sizeof(long));
@@ -960,13 +1033,23 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 complex float* load_cfl(const char* name, int D, long dimensions[D])
 {
-	return load_cfl_internal(name, D, dimensions, true);
+	return load_cfl_internal(name, D, dimensions, true, false);
 }
 
 
 complex float* load_shared_cfl(const char* name, int D, long dimensions[D])
 {
-	return load_cfl_internal(name, D, dimensions, false);
+	return load_cfl_internal(name, D, dimensions, false, false);
+}
+
+
+complex float* load_async_cfl(const char* name, int D, long dimensions[D])
+{
+	// we don't mix streaming via looping and explicit streaming
+	if (cfl_loop_desc_active())
+		return load_cfl_internal(name, D, dimensions, true, false);
+
+	return load_cfl_internal(name, D, dimensions, true, true);
 }
 
 
@@ -1112,11 +1195,35 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 	long tdims[D?:1];
 	md_copy_dims(D, tdims, dims);
 
+	long pos[D?:1];
+	md_set_dims(D, pos, 0);
+
+	if (cfl_loop_desc_active())
+		work_buffer_get_pos(D, NULL, pos, true, cfl_loop_index[cfl_loop_worker_id()]);
+
 	x = free_worker_buffer(D, tdims, x);
 
+	stream_t s = stream_lookup(x);
+
+	if (NULL != s) {
+
+		// sync remaining data
+		stream_sync_slice(s, D, tdims, cfl_loop_desc.flags, pos);
+
+		stream_free(s);
+
+	} else {
+
+		unmap_shared_cfl(D, tdims, x);
+	}
+}
+
+
+void unmap_shared_cfl(int D, const long dims[D], const complex float* x)
+{
 	long T;
 
-	if (-1 == (T = io_calc_size(D, tdims, sizeof(complex float))))
+	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
 		error("unmap cfl\n");
 
 #ifdef _WIN32
@@ -1194,6 +1301,7 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 		args[i] = args[i - 1] + md_calc_size(D[i - 1], dimensions[i - 1]);
 #endif /* MEMONLY_CFL */
 }
+
 
 static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D[N_max], long dimensions[N_max][D_max], _Complex float* args[N_max], bool priv)
 {

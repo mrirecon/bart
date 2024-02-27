@@ -13,6 +13,7 @@ extern void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start
 extern void set_cfl_loop_index(long index);
 extern long get_cfl_loop_index(void);
 extern _Bool cfl_loop_desc_active(void);
+extern void cfl_loop_desc_set_inactive(void);
 extern _Bool cfl_loop_omp(void);
 extern int cfl_loop_worker_id(void);
 extern int cfl_loop_num_workers(void);
@@ -31,10 +32,13 @@ extern _Complex float* shared_cfl(int D, const long dims[__VLA(D)], const char* 
 extern _Complex float* private_cfl(int D, const long dims[__VLA(D)], const char* name);
 #endif /* !MEMONLY_CFL */
 extern void unmap_cfl(int D, const long dims[__VLA(D)], const _Complex float* x);
+extern void unmap_shared_cfl(int D, const long dims[D], const _Complex float* x);
 
 extern _Complex float* anon_cfl(const char* name, int D, const long dims[__VLA(D)]);
 extern _Complex float* create_cfl(const char* name, int D, const long dimensions[__VLA(D)]);
+extern _Complex float* create_async_cfl(const char* name, const unsigned long flags, int D, const long dimensions[__VLA(D)]);
 extern _Complex float* load_cfl(const char* name, int D, long dimensions[__VLA(D)]);
+extern _Complex float* load_async_cfl(const char* name, int D, long dimensions[__VLA(D)]);
 extern _Complex float* load_shared_cfl(const char* name, int D, long dimensions[__VLA(D)]);
 
 extern void create_multi_cfl(const char* name, int N, int D[__VLA(N)], const long* dimensions[__VLA(N)], _Complex float* args[__VLA(N)]);
