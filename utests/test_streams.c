@@ -7,12 +7,18 @@
 #include <unistd.h>
 #include <complex.h>
 #include <stdio.h>
+#include <string.h>
 
+#include "misc/list.h"
+
+#include "misc/stream.h"
 #include "misc/stream_protocol.h"
 
 #include "utest.h"
 
+
 #define BUFLEN 100
+#define CFL_SIZE	sizeof(complex float)
 
 // FIXME: for some reason we want to abort
 #define UTEST_ERR	abort()
@@ -21,14 +27,10 @@ static bool generic_test_stream_transcode(struct stream_msg* out, const struct s
 {
 	char buf[BUFLEN] = { '\0' };
 
-	int x = stream_encode(BUFLEN, buf, &msg_ref);
-
-	if (x >= BUFLEN)
+	if (!stream_encode(BUFLEN, buf, &msg_ref))
 		UTEST_ERR;
 
-	int y = stream_decode(out, x, buf);
-
-	if (y != x)
+	if (!stream_decode(out, BUFLEN, buf))
 		UTEST_ERR;
 
 	return true;
@@ -59,7 +61,7 @@ static bool test_stream_transcode(void)
 		UTEST_ERR;
 
 	msg_recv = msg_default;
-	msg_ref = (struct stream_msg){ .type = STREAM_MSG_SERIAL };
+	msg_ref = (struct stream_msg){ .type = STREAM_MSG_BREAK };
 
 	if (!generic_test_stream_transcode(&msg_recv, msg_ref))
 		UTEST_ERR;
@@ -70,6 +72,321 @@ static bool test_stream_transcode(void)
 	return true;
 }
 
+static bool generic_test_stream_transceive(int pipefds[2], struct stream_msg* out, const struct stream_msg msg_ref)
+{
+	if (!stream_send_msg(pipefds[1], &msg_ref))
+		UTEST_ERR;
+
+	if (!stream_get_msg(pipefds[0], out))
+		UTEST_ERR;
+
+	return true;
+}
+
+static bool test_stream_transceive(void)
+{
+	struct stream_msg msg_recv;
+	struct stream_msg msg_ref;
+	struct stream_msg msg_default = { .type = STREAM_MSG_INVALID };
+
+	int pipefds[2];
+	pipe(pipefds);
+
+	msg_ref = (struct stream_msg){ .type = STREAM_MSG_INDEX, .data.offset = 2 };
+	msg_recv = msg_default;
+
+	if (!generic_test_stream_transceive(pipefds, &msg_recv,  msg_ref))
+		UTEST_ERR;
+
+	if (msg_recv.data.offset != msg_ref.data.offset || msg_recv.type != msg_ref.type)
+		UTEST_ERR;
+
+	msg_ref = (struct stream_msg){ .type = STREAM_MSG_BINARY };
+	msg_recv = msg_default;
+
+	if (!generic_test_stream_transceive(pipefds, &msg_recv,  msg_ref))
+		UTEST_ERR;
+
+	if (msg_recv.type != msg_ref.type)
+		UTEST_ERR;
+
+	close(pipefds[1]);
+	close(pipefds[0]);
+
+	return true;
+}
+
+static bool test_comm_msg2(void)
+{
+	int pipefds[2];
+	pipe(pipefds);
+
+	complex float a[3] = { 1, 2, 3 };
+	complex float b[3] = { 0, 0, 0 };
+
+	long dims[1] = { 3 };
+	long str[1] = { sizeof(complex float) };
+	long size = 3 * sizeof (complex float);
+
+	struct stream_msg msg = { .type = STREAM_MSG_RAW, .ext = true, .data.extsize = size };
+
+	if (!stream_send_msg2(pipefds[1], &msg, 1, dims, str, sizeof(complex float), a))
+		UTEST_ERR;
+
+	struct stream_msg recv;
+
+	if (!stream_get_msg(pipefds[0], &recv))
+		UTEST_ERR;
+
+	if (STREAM_MSG_RAW != recv.type)
+		UTEST_ERR;
+
+	stream_get_raw(pipefds[0], 1 , dims, str, CFL_SIZE, b);
+
+	for (unsigned int i = 0 ; i < ARRAY_SIZE(a); i++)
+		if (a[i] != b[i])
+			UTEST_ERR;
+
+	close(pipefds[1]);
+	close(pipefds[0]);
+
+	return true;
+}
+
+static bool test_comm_followup(void)
+{
+	int pipefds[2];
+	pipe(pipefds);
+
+	struct stream_msg msg_ref = { .type = STREAM_MSG_INDEX, .data.offset = 2 };
+	struct stream_msg msg_recv;
+
+	for (int i = 0; i < 2; i++)
+		if (!stream_send_msg(pipefds[1], &msg_ref))
+			UTEST_ERR;
+
+	if (!stream_get_msg(pipefds[0], &msg_recv))
+		UTEST_ERR;
+
+	if (!stream_get_msg(pipefds[0], &msg_recv))
+		UTEST_ERR;
+
+	if (msg_recv.data.offset != msg_ref.data.offset || msg_recv.type != msg_ref.type)
+		UTEST_ERR;
+
+	close(pipefds[1]);
+	close(pipefds[0]);
+
+	return true;
+}
+
+
+static bool test_stream_registry(void)
+{
+	long dims[1] = { 1 };
+	const int N = 1;
+
+	complex float a[6];
+	stream_t s[6];
+
+	for (int i = 0; i < 5; i++)
+		s[i] = stream_create(N, dims, a + i, -1, true, true, false, 1, NULL);
+
+	s[5] = stream_create(N, dims, a + 5, -1, true, false, false, 1, NULL);
+
+
+	for (int i = 0; i < 5; i++)
+		if (s[i] != stream_lookup(a + i))
+			UTEST_ERR;
+
+	if (NULL != stream_lookup(a + 5))
+		UTEST_ERR;
+
+	for (int i = 0; i < 6; i++)
+		stream_free(s[i]);
+
+	for (int i = 0; i < 6; i++)
+		if (NULL != stream_lookup(a + i))
+			UTEST_ERR;
+
+	return true;
+}
+
+static bool test_stream_sync(void)
+{
+	int pipefds[2];
+	pipe(pipefds);
+
+	complex float in[1];
+	complex float out[1];
+
+	if (NULL == stream_create(1, (long[1]){ 1 }, out, pipefds[1], false, true, false, 1, NULL))
+		UTEST_ERR;
+
+	if (NULL == stream_create(1, (long[1]){ 1 }, in, pipefds[0], true, true, false, 1, NULL))
+		UTEST_ERR;
+
+	stream_t strm_out = stream_lookup(out);
+	stream_t strm_in = stream_lookup(in);
+
+	bool *in_synced = stream_get_synced(strm_in);
+	bool *out_synced = stream_get_synced(strm_out);
+
+	if (in_synced[0] || out_synced[0])
+		UTEST_ERR;
+
+	stream_sync(strm_out, 1, (long[1]){ 0 });
+
+	if (!out_synced[0])
+		UTEST_ERR;
+
+	stream_sync(strm_in, 1, (long[1]){ 0 });
+
+	if (!in_synced[0] || !out_synced[0])
+		UTEST_ERR;
+
+	stream_free(strm_in);
+	stream_free(strm_out);
+
+	close(pipefds[1]);
+	close(pipefds[0]);
+
+	return true;
+}
+
+static bool test_binary_stream(void)
+{
+	int pipefds[2];
+	pipe(pipefds);
+
+	long dims[2] = { 1, 3 };
+	complex float out[3] = { 1, 2, 3 };
+	complex float  in[3] = { 0, 0, 0 };
+
+	stream_t s0, s1;
+	//write end of the pipe
+	if (NULL == (s1 = stream_create(2, dims, out, pipefds[1], false, false, true, 2, NULL)))
+		UTEST_ERR;
+	// read end
+	if (NULL == (s0 = stream_create(2, dims, in, pipefds[0], true, false, true, 2, NULL)))
+		UTEST_ERR;
+
+	bool *s0_synced = stream_get_synced(s0);
+	bool *s1_synced = stream_get_synced(s1);
+
+	if (s1_synced[0] || s0_synced[0])
+		UTEST_ERR;
+
+	stream_sync_slice(s1, 2, dims, 2, (long[2]){0, 0});
+
+	stream_sync_slice(s1, 2, dims, 2, (long[2]){0, 2});
+
+	stream_sync_slice(s0, 2, dims, 2, (long[2]){0, 0});
+
+	stream_sync_slice(s0, 2, dims, 2, (long[2]){0, 2});
+
+	if (out[0] != in[0])
+		UTEST_ERR;
+
+	if (0 != in[1])
+		UTEST_ERR;
+
+	if (out[2] != in[2])
+		UTEST_ERR;
+
+	stream_free(s0);
+	stream_free(s1);
+
+	close(pipefds[1]);
+	close(pipefds[0]);
+	return true;
+}
+
+static bool test_stream_events(void)
+{
+	int pipefds[2];
+	pipe(pipefds);
+
+	complex float in[2];
+	complex float out[2];
+
+	if (NULL == stream_create(1, (long[1]){ ARRAY_SIZE(out) }, out, pipefds[1], false, true, false, 1, NULL))
+		UTEST_ERR;
+
+	if (NULL == stream_create(1, (long[1]){ ARRAY_SIZE(in) }, in, pipefds[0], true, true, false, 1, NULL))
+		UTEST_ERR;
+
+	stream_t strm_out = stream_lookup(out);
+	stream_t strm_in = stream_lookup(in);
+
+	char teststr[][4] = { { "HFS" }, { "HFP" } };
+
+
+	// add 2 events
+	for (int i = 0; i < 2; i++)
+		if(!stream_add_event(strm_out, 1, (long[1]){ i }, 0, (long)(strlen(teststr[i])) + 1, teststr[i]))
+			UTEST_ERR;
+
+	// verify that we can't add to an input stream
+	if(stream_add_event(strm_in, 1, (long[1]){ 0 }, 0, 1, teststr[0]))
+		UTEST_ERR;
+
+	stream_sync(strm_out, 1, (long[1]){ 0 });
+
+
+	// check that we can't add to already synced position
+	if(stream_add_event(strm_out, 1, (long[1]){ 0 }, 0, 1, teststr[0]))
+		UTEST_ERR;
+
+
+	stream_sync(strm_out, 1, (long[1]){ 1 });
+
+	stream_sync(strm_in, 1, (long[1]){ 0 });
+
+	stream_sync(strm_in, 1, (long[1]){ 1 });
+
+
+	list_t rx_event_lists[] = {
+		stream_get_events(strm_in, 1, (long[1]){ 0 }),
+		stream_get_events(strm_in, 1, (long[1]){ 1 })
+	};
+
+	for (int i = 0; i < 2; i++) {
+
+		if (1 != list_count(rx_event_lists[i]))
+			UTEST_ERR;
+
+		struct stream_event* e = list_pop(rx_event_lists[i]);
+
+		xfree(rx_event_lists[i]);
+
+		if (e->index != i)
+			UTEST_ERR;
+
+		if (e->size != (long)(strlen(teststr[i]) + 1))
+			UTEST_ERR;
+
+		if (0 != strcmp(teststr[i], e->data))
+			UTEST_ERR;
+
+		xfree(e);
+	}
+
+	stream_free(strm_in);
+	stream_free(strm_out);
+
+	close(pipefds[1]);
+	close(pipefds[0]);
+	return true;
+}
+
 
 UT_REGISTER_TEST(test_stream_transcode);
+UT_REGISTER_TEST(test_stream_transceive);
+UT_REGISTER_TEST(test_comm_msg2);
+UT_REGISTER_TEST(test_comm_followup);
+UT_REGISTER_TEST(test_stream_registry);
+UT_REGISTER_TEST(test_stream_sync);
+UT_REGISTER_TEST(test_binary_stream);
+UT_REGISTER_TEST(test_stream_events);
 
