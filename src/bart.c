@@ -28,6 +28,7 @@
 #include "misc/version.h"
 #include "misc/debug.h"
 #include "misc/cppmap.h"
+#include "misc/stream.h"
 
 #include "num/mpi_ops.h"
 #include "num/multind.h"
@@ -73,6 +74,8 @@ static void bart_exit_cleanup(void)
 	io_memory_cleanup();
 
 	opt_free_strdup();
+
+	stream_unmap_all();
 
 #ifdef FFTWTHREADS
 	MANGLE(fftwf_cleanup_threads)();
@@ -142,6 +145,7 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 	long param_start[DIMS] = { [0 ... DIMS - 1] = -1 };
 	long param_end[DIMS] = { [0 ... DIMS - 1] = -1 };
 	const char* ref_file = NULL;
+	const char* ref_stream = NULL;
 	bool use_mpi = false;
 	bool version = false;
 	bool attach = false;
@@ -156,6 +160,7 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		OPTL_VECN('e', "end", param_end, "End index of range for looping (default: start + 1)"),
 		OPTL_INT('t', "threads", &omp_threads, "nthreads", "Set threads for parallelization"),
 		OPTL_INFILE('r', "ref-file", &ref_file, "<file>", "Obtain loop size from reference file"),
+		OPTL_INFILE('R', "ref-stream", &ref_stream, "<file>", "Obtain loop size and loop dims from reference stream"),
 		OPTL_SET('M', "mpi", &use_mpi, "Initialize MPI"),
 		OPT_SET('S', &mpi_shared_files, "Maps files from each rank (requires shared files system)"),
 		OPTL_SET(0, "version", &version, "print version"),
@@ -177,6 +182,8 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		raise(SIGSTOP);
 	}
 
+	if (NULL != ref_stream && (NULL != ref_file || 0 != flags || 0!= pflags))
+		error("--ref-stream option is incompatible with --ref-file, --loop and --parallel-loop options!\n");
 
 	if (0 != flags && 0 != pflags && flags != pflags)
 		error("Inconsistent use of -p and -l!\n");
@@ -204,6 +211,24 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		long ref_dims[DIMS];
 		const void* tmp = load_cfl(ref_file, DIMS, ref_dims);
 		unmap_cfl(DIMS, ref_dims, tmp);
+
+		assert(-1 == param_end[0]);
+
+		for (int i =0, ip = 0; i < DIMS; i++)
+			if (MD_IS_SET(flags, i))
+				param_end[ip++] = ref_dims[i];
+	}
+
+	if (NULL != ref_stream) {
+
+		long ref_dims[DIMS];
+		void* tmp = load_async_cfl(ref_stream, DIMS, ref_dims);
+		stream_t s = stream_lookup(tmp);
+
+		if (NULL == s)
+			error("Reference stream was specified, but it is not a stream.");
+
+		flags = stream_get_flags(s);
 
 		assert(-1 == param_end[0]);
 
