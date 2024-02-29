@@ -156,7 +156,7 @@ struct rand_mask_fixed_s {
 
 	complex float* state;
 
-	unsigned int seed;
+	struct bart_rand_state* rand_state;
 };
 
 DEF_TYPEID(rand_mask_fixed_s);
@@ -195,7 +195,7 @@ static void rand_mask_fixed_fun(const nlop_data_t* _data, int D, complex float* 
 		if (0 > ones) {
 
 			ones *= -1;
-			ones = rand_r(&(data->seed)) % (ones + 1);
+			ones = rand_range_state(data->rand_state, ones + 1);
 		}
 
 		for (int i = 0; i < ones; i++) {
@@ -203,7 +203,7 @@ static void rand_mask_fixed_fun(const nlop_data_t* _data, int D, complex float* 
 
 			md_unravel_index(N, pos, ~data->bat_flags, data->dims, 0);
 
-			long idx = rand_r(&(data->seed)) % (NV - i);
+			long idx = rand_range_state(data->rand_state, (NV - i));
 			while ((0 < idx) || (1. == MD_ACCESS(N, strs, pos, data->state))) {
 
 				if (0. == MD_ACCESS(N, strs, pos, data->state))
@@ -225,6 +225,7 @@ static void rand_mask_fixed_del(const struct nlop_data_s* _data)
 {
 	const auto data = CAST_DOWN(rand_mask_fixed_s, _data);
 	xfree(data->dims);
+	xfree(data->rand_state);
 	md_free(data->state);
 	xfree(data);
 }
@@ -241,7 +242,7 @@ const struct nlop_s* nlop_rand_mask_fixed_create(int N, const long dims[N], floa
 	md_copy_dims(N, data->dims, dims);
 	data->state = md_calloc(data->N, data->dims, CFL_SIZE);
 
-	data->seed = 123;
+	data->rand_state = rand_state_create(123);
 	data->bat_flags = bat_flags;
 
 	long odims[1][N];

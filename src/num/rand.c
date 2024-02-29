@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <complex.h>
+#include <limits.h>
+#include <stdint.h>
 
 #ifdef _WIN32
 #include "win/rand_r.h"
@@ -23,23 +25,113 @@
 
 #include "rand.h"
 
-unsigned int num_rand_seed = 123;
-
-
-void num_rand_init(unsigned int seed)
+static bool use_obsolete_rng()
 {
-	num_rand_seed = seed;
+	return true;
 }
 
 
+
+struct bart_rand_state {
+	unsigned int num_rand_seed;
+	uint64_t state[4];
+};
+
+static struct bart_rand_state global_rand_state =  { .num_rand_seed = 123 };
+
+void rand_state_update(struct bart_rand_state* state, unsigned long long seed)
+{
+	if (use_obsolete_rng()) {
+
+		if (0 == seed) // special case to preserve old behavior
+			state->num_rand_seed = 123;
+		else
+			state->num_rand_seed = seed;
+	} else {
+
+		error("Not yet implemented!\n");
+	}
+}
+
+struct bart_rand_state* rand_state_create(unsigned long long seed)
+{
+	struct bart_rand_state* state = malloc(sizeof *state);
+	memset(state, 0, sizeof *state);
+	rand_state_update(state, seed);
+	return state;
+}
+
+
+
+void num_rand_init(unsigned long long seed)
+{
+	assert(seed <= UINT_MAX);
+	rand_state_update(&global_rand_state, seed);
+}
+
+static uint32_t rand32_state(struct bart_rand_state* state)
+{
+	uint32_t r;
+#pragma omp critical
+	r = rand_r(&state->num_rand_seed);
+	return r;
+}
+
+static uint32_t rand32(void)
+{
+	return rand32_state(&global_rand_state);
+}
+
 double uniform_rand(void)
 {
-	double ret;
+	return rand32() / (double)RAND_MAX;
+}
 
-#pragma omp critical
-	ret = rand_r(&num_rand_seed) / (double)RAND_MAX;
 
-	return ret;
+
+
+unsigned int rand_range_state(struct bart_rand_state* state, unsigned int range)
+{
+	static_assert(sizeof(unsigned int) == sizeof(uint32_t), "unsigned int is not 32 bits!\n");
+
+	if (!use_obsolete_rng()) {
+
+		// Lemire's Method, see https://arxiv.org/abs/1805.10941
+		// Adapted for 32-bit integers, and written as do { ... } while();
+		// Generates random number in range [0,range)
+
+		uint32_t t = (-range) % range;
+		uint64_t m;
+		uint32_t l;
+
+		do {
+
+			uint32_t x = rand32_state(state);
+			m = (uint64_t) x * (uint64_t) range;
+			l = (uint32_t) m;
+		} while (l < t);
+
+		return m >> 32;
+	} else {
+
+		// Division with rejection, for use with rand_r, as Lemire's method needs a 32-bit PRNG
+		uint32_t divisor = RAND_MAX / (range);
+		uint32_t retval;
+
+		do {
+			retval = rand32_state(state) / divisor;
+
+		} while (retval >= range);
+
+		return retval;
+	}
+}
+
+
+
+unsigned int rand_range(unsigned int range)
+{
+	return rand_range_state(&global_rand_state, range);
 }
 
 

@@ -14,16 +14,13 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#ifdef _WIN32
-#include "win/rand_r.h"
-#endif
-
 #include "misc/misc.h"
 #include "misc/types.h"
 
 #include "num/multind.h"
 #include "num/ops.h"
 #include "num/ops_p.h"
+#include "num/rand.h"
 
 #include "wavelet/wavelet.h"
 
@@ -41,27 +38,13 @@ struct wavelet_thresh_s {
 	unsigned long jflags;
 	float lambda;
 	bool randshift;
-	int rand_state;
+	struct bart_rand_state* rand_state;
 
 	int flen;
 	const void* filter;
 };
 
 static DEF_TYPEID(wavelet_thresh_s);
-
-
-static int rand_lim(unsigned int* state, int limit)
-{
-        int divisor = RAND_MAX / (limit + 1);
-        int retval;
-
-        do {
-                retval = rand_r(state) / divisor;
-
-        } while (retval > limit);
-
-        return retval;
-}
 
 
 static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex float* out, const complex float* in)
@@ -79,7 +62,7 @@ static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex
 			if (MD_IS_SET(data->flags, i)) {
 
 				int levels = wavelet_num_levels(data->N, MD_BIT(i), data->dims, data->minsize, data->flen);
-				shift[i] = rand_lim((unsigned int*)&data->rand_state, 1 << levels);
+				shift[i] = rand_range_state(data->rand_state, (1 << levels) + 1); // +1, as we want to include the limit
 
 				assert(shift[i] < data->dims[i]);
 			}
@@ -95,7 +78,7 @@ static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex
 void wavthresh_rand_state_set(const struct operator_p_s* op, int x)
 {
 	auto data = CAST_DOWN(wavelet_thresh_s, operator_p_get_data(op));
-	data->rand_state = x;
+	rand_state_update(data->rand_state, x);
 }
 
 
@@ -104,6 +87,7 @@ static void wavelet_thresh_del(const operator_data_t* _data)
 	const auto data = CAST_DOWN(wavelet_thresh_s, _data);
 	xfree(data->dims);
 	xfree(data->minsize);
+	xfree(data->rand_state);
 	xfree(data);
 }
 
@@ -140,7 +124,7 @@ const struct operator_p_s* prox_wavelet_thresh_create(int N, const long dims[N],
 	data->jflags = jflags;
 	data->lambda = lambda;
 	data->randshift = randshift;
-	data->rand_state = 1;
+	data->rand_state = rand_state_create(1);
 	data->flen = 0;
 	data->filter = NULL;
 

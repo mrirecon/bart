@@ -16,7 +16,7 @@ struct bat_gen_conf_s {
 	long Nc;
 
 	enum BATCH_GEN_TYPE type;
-	unsigned int seed;
+	unsigned long long seed;
 
 	unsigned long bat_flags;
 };
@@ -27,6 +27,6 @@ extern const struct nlop_s* batch_generator_create2(struct bat_gen_conf_s* confi
 extern const struct nlop_s* batch_generator_create(struct bat_gen_conf_s* config, int D, int N, const long bat_dims[D][N], const long tot_dims[D][N], const _Complex float* data[D]);
 
 extern const struct nlop_s* batch_gen_create_from_iter(struct iter6_conf_s* iter_conf, int D, const int Ns[__VLA(D)], const long* bat_dims[__VLA(D)], const long* tot_dims[__VLA(D)], const _Complex float* data[__VLA(D)], long Nc);
-extern const struct nlop_s* batch_gen_create(int D, const int Ns[__VLA(D)], const long* bat_dims[__VLA(D)], const long* tot_dims[__VLA(D)], const _Complex float* data[__VLA(D)], long Nc, enum BATCH_GEN_TYPE type, unsigned int seed);
+extern const struct nlop_s* batch_gen_create(int D, const int Ns[__VLA(D)], const long* bat_dims[__VLA(D)], const long* tot_dims[__VLA(D)], const _Complex float* data[__VLA(D)], long Nc, enum BATCH_GEN_TYPE type, unsigned long long seed);
 
 #endif

@@ -9,6 +9,13 @@ extern void md_rand_one(int D, const long dims[__VLA(D)], _Complex float* dst, d
 
 extern void gaussian_rand_vec(long N, float* dst);
 
-extern void num_rand_init(unsigned int seed);
+extern void num_rand_init(unsigned long long seed);
+
+struct bart_rand_state;
+extern struct bart_rand_state* rand_state_create(unsigned long long seed);
+extern void rand_state_update(struct bart_rand_state* state, unsigned long long seed);
+
+extern unsigned int rand_range(unsigned int range);
+extern unsigned int rand_range_state(struct bart_rand_state* state, unsigned int range);
 
 #include "misc/cppwrap.h"

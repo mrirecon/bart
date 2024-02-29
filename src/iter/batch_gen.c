@@ -10,6 +10,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/rand.h"
 
 #include "nlops/nlop.h"
 
@@ -29,16 +30,16 @@ struct bat_gen_conf_s bat_gen_conf_default = {
 	.bat_flags = 0,
 };
 
-static void rand_draw_data(unsigned int* rand_seed, long N, long perm[N], long /*Nb*/)
+static void rand_draw_data(struct bart_rand_state* rand_state, long N, long perm[N], long /*Nb*/)
 {
 	for (int i = 0; i < N; i++) {
 
 #pragma 	omp critical
-		perm[i] = rand_r(rand_seed) % N;
+		perm[i] = rand_range_state(rand_state, N);
 	}
 }
 
-static void rand_perm_data(unsigned int* rand_seed, long N, long perm[N], long /*Nb*/)
+static void rand_perm_data(struct bart_rand_state* rand_state, long N, long perm[N], long /*Nb*/)
 {
 	bool drawn[N];
 
@@ -48,7 +49,7 @@ static void rand_perm_data(unsigned int* rand_seed, long N, long perm[N], long /
 	for (int i = 0; i < N; i++) {
 
 #pragma 	omp critical
-		perm[i] = rand_r(rand_seed) % (N - i);
+		perm[i] = rand_range_state(rand_state, N - i);
 
 		for (int j = 0; j < N; j++)
 			if (drawn[j] && perm[i] >= j)
@@ -58,14 +59,14 @@ static void rand_perm_data(unsigned int* rand_seed, long N, long perm[N], long /
 	}
 }
 
-static void rand_perm_batches(unsigned int* rand_seed, long N, long perm[N], long Nb)
+static void rand_perm_batches(struct bart_rand_state* rand_state, long N, long perm[N], long Nb)
 {
 	long perm_batch[N / Nb];
 
 	for (int i = 0; i < N / Nb; i++) // analyzer workaround
 		perm_batch[N / Nb] = 0;
 
-	rand_perm_data(rand_seed, N / Nb, perm_batch, 0);
+	rand_perm_data(rand_state, N / Nb, perm_batch, 0);
 
 	for (int i = 0; i < N / Nb; i++)
 		for (int j = 0; j < Nb; j++)
@@ -98,7 +99,7 @@ struct batch_gen_data_s {
 	long* perm;
 
 	enum BATCH_GEN_TYPE type;
-	unsigned int rand_seed;
+	struct bart_rand_state* rand_state;
 };
 
 DEF_TYPEID(batch_gen_data_s);
@@ -118,17 +119,17 @@ static void get_indices(struct batch_gen_data_s* data)
 
 	case BATCH_GEN_SHUFFLE_BATCHES:
 
-		rand_perm_batches(&(data->rand_seed), data->Nt, data->perm, data->Nb);
+		rand_perm_batches(data->rand_state, data->Nt, data->perm, data->Nb);
 		break;
 
 	case BATCH_GEN_SHUFFLE_DATA:
 
-		rand_perm_data(&(data->rand_seed), data->Nt, data->perm, data->Nb);
+		rand_perm_data(data->rand_state, data->Nt, data->perm, data->Nb);
 		break;
 
 	case BATCH_GEN_RANDOM_DATA:
 
-		rand_draw_data(&(data->rand_seed), data->Nt, data->perm, data->Nb);
+		rand_draw_data(data->rand_state, data->Nt, data->perm, data->Nb);
 		break;
 
 	default:
@@ -207,6 +208,7 @@ static void batch_gen_del(const nlop_data_t* _data)
 	xfree(data->bat_dims_tot);
 	xfree(data->data);
 	xfree(data->perm);
+	xfree(data->rand_state);
 
 	xfree(data);
 }
@@ -225,7 +227,7 @@ static void batch_gen_del(const nlop_data_t* _data)
  * @param type methode to compose new batches
  * @param seed seed for random reshuffeling of batches
  */
-const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_dims[D], const long* tot_dims[D], const _Complex float* data[D], long Nc, enum BATCH_GEN_TYPE type, unsigned int seed)
+const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_dims[D], const long* tot_dims[D], const _Complex float* data[D], long Nc, enum BATCH_GEN_TYPE type, unsigned long long seed)
 {
 	int N = 0;
 
@@ -376,7 +378,7 @@ const struct nlop_s* batch_generator_create2(struct bat_gen_conf_s* config, int 
 
 	d->data = ARR_CLONE(const complex float*[D], data);
 
-	d->rand_seed = config->seed;
+	d->rand_state = rand_state_create(config->seed);
 	d->type = config->type;
 
 	d->perm = *TYPE_ALLOC(long[d->Nt]);

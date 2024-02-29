@@ -11,12 +11,9 @@
 #include <assert.h>
 #include <complex.h>
 
-#ifdef _WIN32
-#include "win/rand_r.h"
-#endif
-
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/rand.h"
 
 #include "linops/linop.h"
 
@@ -39,25 +36,12 @@ struct wavelet_s {
 	const long* minsize;
 	long* shifts;
 	bool randshift;
-	int rand_state;
+	struct bart_rand_state *rand_state;
 	int flen;
 	const void* filter;
 };
 
 static DEF_TYPEID(wavelet_s);
-
-static int wrand_lim(unsigned int* state, int limit)
-{
-        int divisor = RAND_MAX / (limit + 1);
-        int retval;
-
-        do {
-                retval = rand_r(state) / divisor;
-
-        } while (retval > limit);
-
-        return retval;
-}
 
 static void wavelet_forward(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
@@ -70,7 +54,7 @@ static void wavelet_forward(const linop_data_t* _data, complex float* dst, const
 			if (MD_IS_SET(data->flags, i)) {
 
 				int levels = wavelet_num_levels(data->N, MD_BIT(i), data->idims, data->minsize, data->flen);
-				data->shifts[i] = wrand_lim((unsigned int*)&data->rand_state, 1 << levels);
+				data->shifts[i] = rand_range_state(data->rand_state, (1 << levels) + 1); // +1, as we want to include the limit
 
 				assert(data->shifts[i] < data->idims[i]);
 			}
@@ -97,6 +81,7 @@ static void wavelet_del(const linop_data_t* _data)
 	xfree(data->istr);
 	xfree(data->minsize);
 	xfree(data->shifts);
+	xfree(data->rand_state);
 
 	xfree(data);
 }
@@ -109,7 +94,7 @@ struct linop_s* linop_wavelet_create(int N, unsigned long flags, const long dims
 	data->N = N;
 	data->flags = flags;
 	data->randshift = randshift;
-	data->rand_state = 1;
+	data->rand_state = rand_state_create(1);
 	data->flen = 0;
 	data->filter = NULL;
 
