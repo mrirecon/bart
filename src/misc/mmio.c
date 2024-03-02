@@ -1053,8 +1053,8 @@ static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D
 {
 	io_register_input(name);
 
-	if (cfl_loop_desc_active())
-		error("multi cfl not supported for bart loop!\n");
+	//if (cfl_loop_desc_active())
+	//	error("multi cfl not supported for bart loop!\n");
 
 #ifdef MEMONLY_CFL
 	error("multi cfl not supported with MEMONLY_CFL\n");
