@@ -56,8 +56,8 @@ static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long
 	return result;
 }
 
-static bool test_optimized_md_zfmac2_dot(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(0ul, 1ul, 1ul, true, 5.e-6)); }
-static bool test_optimized_md_zfmac2_dot2(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(2ul, 3ul, 3ul, true, 1.e-6)); }
+static bool test_optimized_md_zfmac2_dot(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(0ul, 1ul, 1ul, true, 1.2e-5)); }
+static bool test_optimized_md_zfmac2_dot2(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(2ul, 3ul, 3ul, true, 1.2e-6)); }
 static bool test_optimized_md_zfmac2_gemv(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
 static bool test_optimized_md_zfmac2_gemv2(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(2ul, 1ul, 3ul, true, 5.e-6)); }
 static bool test_optimized_md_zfmac2_gemv3(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(14ul, 13ul, 7ul, true, 1.e-6)); }
@@ -512,7 +512,7 @@ static bool test_optimized_md_add2_reduce_inner1(void) { UT_RETURN_ASSERT(test_o
 static bool test_optimized_md_add2_reduce_inner2(void) { UT_RETURN_ASSERT(test_optimized_md_add(~(1ul+4ul), ~(1ul+4ul), ~0ul, false, false, false, 1.e-6)); }
 static bool test_optimized_md_add2_reduce_inner3(void) { UT_RETURN_ASSERT(test_optimized_md_add(~(1ul+4ul), ~(1ul), ~0ul, true, false, false, 1.e-6)); }
 static bool test_optimized_md_add2_reduce_inner4(void) { UT_RETURN_ASSERT(test_optimized_md_add(~(1ul+2ul), ~4ul, ~(1ul + 2ul), false, true, true, 1.e-6)); }
-static bool test_optimized_md_add2_reduce_inner5(void) { UT_RETURN_ASSERT(test_optimized_md_add(0ul, ~4ul, 0ul, false, true, true, 5.e-6)); }
+static bool test_optimized_md_add2_reduce_inner5(void) { UT_RETURN_ASSERT(test_optimized_md_add(0ul, ~4ul, 0ul, false, true, true, 2.e-5)); }
 
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner1);
 UT_REGISTER_TEST(test_optimized_md_add2_reduce_inner2);

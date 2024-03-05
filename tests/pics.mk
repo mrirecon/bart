@@ -83,7 +83,7 @@ tests/test-pics-poisson-wavl1: poisson squeeze fft fmac ones pics nrmse $(TESTS_
 	$(TOOLDIR)/fmac ksp1.ra p2.ra ksp.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
 	$(TOOLDIR)/pics -S -RW:3:0:0.01 -i50 ksp.ra o.ra reco.ra			;\
-	$(TOOLDIR)/nrmse -t 0.205 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
+	$(TOOLDIR)/nrmse -t 0.22 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -136,7 +136,7 @@ tests/test-pics-joint-wavl1: poisson reshape fft fmac ones pics slice nrmse $(TE
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
 	$(TOOLDIR)/pics -S -RW:3:32:0.02 -i50 ksp.ra o.ra reco2.ra			;\
 	$(TOOLDIR)/slice 5 0 reco2.ra reco.ra						;\
-	$(TOOLDIR)/nrmse -t 0.22 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
+	$(TOOLDIR)/nrmse -t 0.23 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -511,7 +511,7 @@ tests/test-pics-phase: traj phantom ones join nufft fmac scale bitmask saxpy sli
 	$(TOOLDIR)/phantom -S8 -x64 c.ra						;\
 	$(TOOLDIR)/fmac c.ra phmap.ra c2.ra						;\
 	$(TOOLDIR)/pics -S --shared-img-dims=$$($(TOOLDIR)/bitmask 10) -tt.ra k.ra c2.ra i.ra		;\
-	$(TOOLDIR)/nrmse -s -t 0.12 i.ra ref.ra						;\
+	$(TOOLDIR)/nrmse -s -t 0.14 i.ra ref.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

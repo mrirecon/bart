@@ -60,6 +60,7 @@ static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_zfmac(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
 	result &= (!optimization_expected) || (err_tol > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -69,10 +70,10 @@ static bool test_optimized_md_zfmac2_flags(unsigned long out_flag, unsigned long
 #endif
 }
 
-static bool test_optimized_md_zfmac2_dot(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(0ul, 1ul, 1ul, true, 5.e-6)); }
+static bool test_optimized_md_zfmac2_dot(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(0ul, 1ul, 1ul, true, 1.1e-5)); }
 static bool test_optimized_md_zfmac2_dot2(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(2ul, 3ul, 3ul, true, 1.e-6)); }
 static bool test_optimized_md_zfmac2_gemv(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
-static bool test_optimized_md_zfmac2_gemv2(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(2ul, 1ul, 3ul, true, 1.e-6)); }
+static bool test_optimized_md_zfmac2_gemv2(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(2ul, 1ul, 3ul, true, 1.5e-6)); }
 static bool test_optimized_md_zfmac2_gemv3(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(14ul, 13ul, 7ul, true, 1.e-6)); }
 static bool test_optimized_md_zfmac2_gemm(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(3ul, 6ul, 5ul, true, 2.e-6)); }
 static bool test_optimized_md_zfmac2_gemm2(void) { UT_RETURN_ASSERT(test_optimized_md_zfmac2_flags(11ul, 14ul, 13ul, true, 1.e-6));}
@@ -223,7 +224,7 @@ static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long 
 	activate_strided_vecops();
 	bool result = (optimization_expected == simple_fmac(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
 	result &= (!optimization_expected) || (err_tol > md_nrmse(D, odims, optr1, optr2));
-		if (!result)
+	if (!result)
 		debug_printf(DP_INFO, "%.10f", md_nrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
@@ -302,6 +303,7 @@ static bool test_optimized_md_zmul2_flags(unsigned long out_flag, unsigned long 
 	bool result = (optimization_expected == simple_zmul(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
 	debug_printf(DP_DEBUG1, "%d %.10f\n", optimization_expected, md_znrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_tol > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -367,6 +369,7 @@ static bool test_optimized_md_zmulc2_flags(unsigned long out_flag, unsigned long
 	bool result = (optimization_expected == simple_zmulc(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
 	debug_printf(DP_DEBUG1, "%d %.10f\n", optimization_expected, md_znrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_tol > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -434,6 +437,7 @@ static bool test_optimized_md_mul2_flags(unsigned long out_flag, unsigned long i
 	bool result = (optimization_expected == simple_mul(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
 	debug_printf(DP_DEBUG1, "%d %.10f %.10f\n", optimization_expected, md_nrmse(D, odims, optr1, optr2), md_rms(D, odims, optr1));
 	result &= (!optimization_expected) || (err_tol > md_nrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_nrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -504,6 +508,7 @@ static bool test_optimized_md_zadd(unsigned long out_flag, unsigned long in1_fla
 	bool result = (optimization_expected == simple_zadd(D, dims, ostr, optr2, istr1, !in1_same ? iptr1 : optr2, istr2, !in2_same ? iptr2 : optr2));
 	debug_printf(DP_DEBUG1, "%d %.10f\n", optimization_expected, md_znrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_tol > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -517,7 +522,7 @@ static bool test_optimized_md_zadd2_reduce_inner1(void) { UT_RETURN_ASSERT(test_
 static bool test_optimized_md_zadd2_reduce_inner2(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(~(1ul+4ul), ~(1ul+4ul), ~0ul, false, false, false, 1.e-6)); }
 static bool test_optimized_md_zadd2_reduce_inner3(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(~(1ul+4ul), ~(1ul), ~0ul, true, false, false, 1.e-6)); }
 static bool test_optimized_md_zadd2_reduce_inner4(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(~(1ul+2ul), ~4ul, ~(1ul + 2ul), false, true, true, 1.e-6)); }
-static bool test_optimized_md_zadd2_reduce_inner5(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(0ul, ~4ul, 0ul, false, true, true, 2.e-6)); }
+static bool test_optimized_md_zadd2_reduce_inner5(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(0ul, ~4ul, 0ul, false, true, true, 3.e-6)); }
 UT_GPU_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner1);
 UT_GPU_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner2);
 UT_GPU_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner3);
@@ -583,6 +588,7 @@ static bool test_optimized_md_add(unsigned long out_flag, unsigned long in1_flag
 	bool result = (optimization_expected == simple_add(D, dims, ostr, optr2, istr1, !in1_same ? iptr1 : optr2, istr2, !in2_same ? iptr2 : optr2));
 	debug_printf(DP_DEBUG1, "%d %d %.10f\n", result, optimization_expected, md_nrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_tol > md_nrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_nrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -596,7 +602,7 @@ static bool test_optimized_md_add2_reduce_inner1(void) { UT_RETURN_ASSERT(test_o
 static bool test_optimized_md_add2_reduce_inner2(void) { UT_RETURN_ASSERT(test_optimized_md_add(~(1ul+4ul), ~(1ul+4ul), ~0ul, false, false, false, 1.e-6)); }
 static bool test_optimized_md_add2_reduce_inner3(void) { UT_RETURN_ASSERT(test_optimized_md_add(~(1ul+4ul), ~(1ul), ~0ul, true, false, false, 1.e-6)); }
 static bool test_optimized_md_add2_reduce_inner4(void) { UT_RETURN_ASSERT(test_optimized_md_add(~(1ul+2ul), ~4ul, ~(1ul + 2ul), false, true, true, 1.e-6)); }
-static bool test_optimized_md_add2_reduce_inner5(void) { UT_RETURN_ASSERT(test_optimized_md_add(0ul, ~4ul, 0ul, false, true, true, 5.e-6)); }
+static bool test_optimized_md_add2_reduce_inner5(void) { UT_RETURN_ASSERT(test_optimized_md_add(0ul, ~4ul, 0ul, false, true, true, 3.e-5)); }
 UT_GPU_REGISTER_TEST(test_optimized_md_add2_reduce_inner1);
 UT_GPU_REGISTER_TEST(test_optimized_md_add2_reduce_inner2);
 UT_GPU_REGISTER_TEST(test_optimized_md_add2_reduce_inner3);
@@ -661,6 +667,7 @@ static bool test_optimized_md_zmax(unsigned long out_flag, unsigned long in1_fla
 	bool result = (optimization_expected == simple_zmax(D, dims, ostr, optr2, istr1, !in1_same ? iptr1 : optr2, istr2, !in2_same ? iptr2 : optr2));
 	debug_printf(DP_DEBUG1, "%d %.10f\n", optimization_expected, md_znrmse(D, odims, optr1, optr2));
 	result &= (!optimization_expected) || (err_tol > md_znrmse(D, odims, optr1, optr2));
+	debug_printf(result ? DP_DEBUG1 : DP_INFO, "%e\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);

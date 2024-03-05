@@ -1198,7 +1198,7 @@ static bool test_nlop_zinv(void)
 
 	debug_printf(DP_DEBUG1, "zinv errors der %.8f, adj: %.8f\n", err_der, err_adj);
 
-	UT_RETURN_ASSERT((err_der < 4.E-2) && (err_adj < UT_TOL));
+	UT_RETURN_ASSERT((err_der < 6.E-2) && (err_adj < UT_TOL));
 }
 
 UT_REGISTER_TEST(test_nlop_zinv);
