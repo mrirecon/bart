@@ -90,6 +90,7 @@ PREFIX ?= usr/local/
 
 BUILDTYPE = Linux
 UNAME = $(shell uname -s)
+MNAME = $(shell uname -m)
 NNAME = $(shell uname -n)
 
 MYLINK=ln
@@ -141,7 +142,9 @@ ifneq (,$(findstring MSYS,$(UNAME)))
 	SLINK = 1
 endif
 
-
+ifeq ($(MNAME),riscv64)
+	CFLAGS+=-ffp-contract=off
+endif
 
 
 
