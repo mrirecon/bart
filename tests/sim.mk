@@ -63,36 +63,36 @@ tests/test-sim-to-signal-irbSSFP-averaged-spokes: sim scale signal nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-sim-slice-profile-spins: sim nrmse
+$(TESTS_OUT)/sim_slice_profile_ref.ra: phantom
+	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.020,sl-grad=0.01,Nspins=41 -1 3:3:1 -2 1:1:1 $@
+
+tests/test-sim-slice-profile-spins: sim nrmse $(TESTS_OUT)/sim_slice_profile_ref.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.020,sl-grad=0.01,Nspins=41 -1 3:3:1 -2 1:1:1 sim.ra ;\
-	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.020,sl-grad=0.01,Nspins=61 -1 3:3:1 -2 1:1:1 sim2.ra ;\
-	$(TOOLDIR)/nrmse -t 0.01 sim.ra sim2.ra			    		;\
+	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.020,sl-grad=0.01,Nspins=61 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/nrmse -t 0.01 $(TESTS_OUT)/sim_slice_profile_ref.ra sim.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-sim-slice-profile-slicethickness: sim nrmse
+tests/test-sim-slice-profile-slicethickness: sim nrmse $(TESTS_OUT)/sim_slice_profile_ref.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.040,sl-grad=0.01,Nspins=41 -1 3:3:1 -2 1:1:1 sim.ra ;\
-	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.020,sl-grad=0.01,Nspins=41 -1 3:3:1 -2 1:1:1 sim2.ra ;\
-	$(TOOLDIR)/nrmse -t 0.02 sim.ra sim2.ra			    		;\
+	$(TOOLDIR)/nrmse -t 0.02 $(TESTS_OUT)/sim_slice_profile_ref.ra sim.ra 			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-sim-slice-profile-density: sim nrmse
+tests/test-sim-slice-profile-density: sim nrmse $(TESTS_OUT)/sim_slice_profile_ref.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.040,sl-grad=0.01,Nspins=41 -1 3:3:1 -2 1:1:1 sim.ra ;\
-	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.020,sl-grad=0.01,Nspins=31 -1 3:3:1 -2 1:1:1 sim2.ra ;\
-	$(TOOLDIR)/nrmse -t 0.02 sim.ra sim2.ra			    		;\
+	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.040,sl-grad=0.01,Nspins=31 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/nrmse -t 0.02 $(TESTS_OUT)/sim_slice_profile_ref.ra sim.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-sim-slice-profile-density2: sim scale nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.041,sl-grad=0,Nspins=41 -1 3:3:1 -2 1:1:1 sim.ra ;\
+	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.011,sl-grad=0,Nspins=11 -1 3:3:1 -2 1:1:1 sim.ra ;\
 	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,sl-grad=0 -1 3:3:1 -2 1:1:1 sim2.ra ;\
-	$(TOOLDIR)/scale -- 41 sim2.ra sim3.ra			;\
-	$(TOOLDIR)/nrmse -t 0.02 sim.ra sim3.ra			    		;\
+	$(TOOLDIR)/scale -- 11 sim2.ra sim3.ra			;\
+	$(TOOLDIR)/nrmse -t 1e-6 sim.ra sim3.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
