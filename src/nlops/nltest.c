@@ -6,6 +6,7 @@
 
 #include <complex.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include "misc/debug.h"
 #include "misc/misc.h"
@@ -78,6 +79,10 @@ static bool linear_derivative(const struct nlop_s* op)
 
 static float nlop_test_derivative_priv(const struct nlop_s* op, bool lin)
 {
+	// This test does not make sense for operators with linear derivative:
+	if (lin && linear_derivative(op))
+		return 0.;
+
 	int N_dom = nlop_domain(op)->N;
 	int N_cod = nlop_codomain(op)->N;
 
@@ -96,41 +101,68 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, bool lin)
 	complex float* y1 = md_alloc(N_cod, dims_cod, CFL_SIZE);
 	complex float* y2 = md_alloc(N_cod, dims_cod, CFL_SIZE);
 
-	md_gaussian_rand(N_dom, dims_dom, x1);
-	md_gaussian_rand(N_dom, dims_dom, h);
 
-
-	nlop_apply(op, N_cod, dims_cod, y1, N_dom, dims_dom, x1);
-	nlop_derivative(op, N_cod, dims_cod, d1, N_dom, dims_dom, h);
-
-	float scale = 1.;
-	float val0 = 0.;
 	float val = 0.;
-	float vall = 0.;
+	float val0 = 1.;
+	float max_ratio = 0.;
 
-	for (int i = 0; i < 10; i++) {
+	const int rounds = 10; // Repeat this test, so that it is less likely to only pass for specific random values
+	for (int r = 0; r < rounds; r++) {
 
-		// d = F(x + s * h) - F(x)
-		md_copy(N_dom, dims_dom, x2, x1, CFL_SIZE);
-		md_zaxpy(N_dom, dims_dom, x2, scale, h);
-		nlop_apply(op, N_cod, dims_cod, y2, N_dom, dims_dom, x2);
-		md_zsub(N_cod, dims_cod, d2, y2, y1);
+		md_gaussian_rand(N_dom, dims_dom, x1);
+		md_gaussian_rand(N_dom, dims_dom, h);
 
-		// DF(s * h)
-		md_zsmul(N_cod, dims_cod, d3, d1, scale);
-		md_zsub(N_cod, dims_cod, d2, d2, d3);
 
-		val = md_znorm(N_cod, dims_cod, d2);
+		nlop_apply(op, N_cod, dims_cod, y1, N_dom, dims_dom, x1);
+		nlop_derivative(op, N_cod, dims_cod, d1, N_dom, dims_dom, h);
 
-		debug_printf(DP_DEBUG1, "%f/%f=%f\n", val, scale, val / scale);
+		float scale = 1.;
+		float vall = 0.;
+		val0 = 1.; // do not devide by zero if val0 is never changed
+		val = 0.;
 
-		val /= scale;
 
-		if ((0 == i) || (val > vall))
-			val0 = val;
+		for (int i = 0; i < 10; i++) {
 
-		vall = val;
-		scale /= 2.;
+			// d2 = F(x + s * h) - F(x)
+			md_copy(N_dom, dims_dom, x2, x1, CFL_SIZE);
+			md_zaxpy(N_dom, dims_dom, x2, scale, h);
+			nlop_apply(op, N_cod, dims_cod, y2, N_dom, dims_dom, x2);
+			md_zsub(N_cod, dims_cod, d2, y2, y1);
+
+			// d3 = DF(s * h) = s * DF(h)
+			md_zsmul(N_cod, dims_cod, d3, d1, scale);
+
+			// d2 = (F(x + s * h) - F(x)) - DF(s * h)
+			md_zsub(N_cod, dims_cod, d2, d2, d3);
+
+			val = md_znorm(N_cod, dims_cod, d2);
+			if (!safe_isfinite(val)) {
+
+				debug_printf(DP_ERROR, "nlop_test_derivative_priv: norm is infinite! Aborting test...\n");
+				val = NAN;
+				val0 = 1.;
+				break;
+			}
+
+
+			debug_printf(DP_DEBUG1, "%d: %f/%f=%f\n", i, val, scale, val / scale);
+
+			val /= scale;
+
+			if ((0 == i) || (val > vall))
+				val0 = val;
+
+			vall = val;
+			scale /= 2.;
+		}
+
+		float ratio = val / val0;
+		debug_printf(DP_DEBUG1, "out: %f/%f=%f\n", val, val0, ratio);
+		if (ratio > 0.5)
+			debug_printf(DP_ERROR, "nlop_test_derivative_priv: ratio too large! ratio: %e\n", ratio);
+
+		max_ratio = MAX(max_ratio, ratio);
 	}
 
 
@@ -143,7 +175,9 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, bool lin)
 	md_free(d2);
 	md_free(d3);
 
-	return (lin && linear_derivative(op)) ? 0. : val / val0;
+
+
+	return max_ratio;
 }
 
 static bool der_success(int reduce_target, float val_target, int reduce, float val)

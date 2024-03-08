@@ -85,7 +85,10 @@ static bool test_nlop_T1fun_der(void)
 
 	nlop_free(T1);
 
-	UT_ASSERT(err < 1.E-3);
+
+	const float tol = 1.e-2;
+	debug_printf(DP_DEBUG1, "T1fun_der error: %.8f, tol %.2f\n", err, tol);
+	UT_ASSERT(err < tol);
 }
 
 UT_REGISTER_TEST(test_nlop_T1fun_der);
@@ -292,7 +295,9 @@ static bool test_nlop_ir_meco_der(void)
 
 	nlop_free(ir_meco);
 
-	UT_ASSERT(err < 1.e-5);
+	const float tol = 1.e-5;
+	debug_printf(DP_DEBUG1, "ir_meco_der error: %.8f, tol %.2f\n", err, tol);
+	UT_ASSERT(err < tol);
 }
 
 UT_REGISTER_TEST(test_nlop_ir_meco_der);
