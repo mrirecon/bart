@@ -879,22 +879,16 @@ UTARGETS:=$(filter-out test_flpmath test_blas,$(UTARGETS))
 UTEST_RUN=valgrind --quiet --leak-check=full --error-exitcode=1 valgrind --suppressions=./valgrind.supp --log-file=/dev/null
 endif
 
-# define space to faciliate running executables
-define \n
-
-
-endef
-
 .PHONY: utests-all utest utests_gpu-all utest_gpu
 
 utests-all: $(UTARGETS)
-	$(patsubst %,$(\n)$(UTEST_RUN) ./%,$(UTARGETS))
+	./utests/utests_run.sh "CPU" "$(UTEST_RUN)" $(UTARGETS)
 
 utest: utests-all
 	@echo ALL CPU UNIT TESTS PASSED.
 
 utests_gpu-all: $(UTARGETS_GPU)
-	$(patsubst %,$(\n)./%,$(UTARGETS_GPU))
+	./utests/utests_run.sh "GPU" "$(UTEST_RUN)" $(UTARGETS_GPU)
 
 utest_gpu: utests_gpu-all
 	@echo ALL GPU UNIT TESTS PASSED.
