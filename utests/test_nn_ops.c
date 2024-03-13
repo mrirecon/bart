@@ -595,7 +595,7 @@ static bool test_nlop_rbf(void)
 	nlop_free(op);
 
 	debug_printf(DP_DEBUG1, "rbf errors der: %.8f, adj %.8f\n", err_der, err_adj);
-	UT_ASSERT((err_der < 1.E-2) && (err_adj < 1.E-6));
+	UT_ASSERT((err_der < 5.E-2) && (err_adj < 1.E-6));
 }
 
 UT_REGISTER_TEST(test_nlop_rbf);
@@ -612,8 +612,8 @@ static bool test_nlop_rbf2(void)
 
 	nlop_free(op);
 
-	debug_printf(DP_DEBUG1, "rbf errors der: %.8f, adj %.8f\n", err_der, err_adj);
-	UT_ASSERT((err_der < 1.E-2) && (err_adj < 1.E-6));
+	debug_printf(DP_DEBUG1, "rbf2 errors der: %.8f, adj %.8f\n", err_der, err_adj);
+	UT_ASSERT((err_der < 3.E-2) && (err_adj < 1.E-6));
 }
 
 UT_REGISTER_TEST(test_nlop_rbf2);

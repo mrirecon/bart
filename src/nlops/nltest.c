@@ -63,7 +63,7 @@ static bool linear_derivative(const struct nlop_s* op)
 
 		md_zsub(N_cod, dims_cod, y1, y1, y2);
 
-		debug_printf(DP_DEBUG1, "%.8f, %.8f\n", scale, md_znorm(N_cod, dims_cod, y1) / (1. < scale ? scale : 1.));
+		debug_printf(DP_DEBUG2, "%.8f, %.8f\n", scale, md_znorm(N_cod, dims_cod, y1) / (1. < scale ? scale : 1.));
 
 		if (1.e-6 < md_znorm(N_cod, dims_cod, y1) / (1. < scale ? scale : 1.))
 			result = false;
@@ -77,7 +77,7 @@ static bool linear_derivative(const struct nlop_s* op)
 	return result;
 }
 
-static float nlop_test_derivative_priv(const struct nlop_s* op, bool lin)
+static float nlop_test_derivative_priv(const struct nlop_s* op, const complex float* in, bool lin)
 {
 	// This test does not make sense for operators with linear derivative:
 	if (lin && linear_derivative(op))
@@ -92,8 +92,11 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, bool lin)
 	long dims_cod[N_cod];
 	md_copy_dims(N_cod, dims_cod, nlop_codomain(op)->dims);
 
-	complex float* h = md_alloc(N_dom, dims_dom, CFL_SIZE);
 	complex float* x1 = md_alloc(N_dom, dims_dom, CFL_SIZE);
+	if (NULL != in)
+		md_copy(N_dom, dims_dom, x1, in, CFL_SIZE);
+
+	complex float* h = md_alloc(N_dom, dims_dom, CFL_SIZE);
 	complex float* x2 = md_alloc(N_dom, dims_dom, CFL_SIZE);
 	complex float* d1 = md_alloc(N_cod, dims_cod, CFL_SIZE);
 	complex float* d2 = md_alloc(N_cod, dims_cod, CFL_SIZE);
@@ -106,10 +109,12 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, bool lin)
 	float val0 = 1.;
 	float max_ratio = 0.;
 
-	const int rounds = 10; // Repeat this test, so that it is less likely to only pass for specific random values
+	int failed_rounds = 0;
+	const int rounds = 20; // Repeat this test, so that it is less likely to only pass for specific random values
 	for (int r = 0; r < rounds; r++) {
 
-		md_gaussian_rand(N_dom, dims_dom, x1);
+		if (NULL == in)
+			md_gaussian_rand(N_dom, dims_dom, x1);
 		md_gaussian_rand(N_dom, dims_dom, h);
 
 
@@ -139,14 +144,13 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, bool lin)
 			val = md_znorm(N_cod, dims_cod, d2);
 			if (!safe_isfinite(val)) {
 
-				debug_printf(DP_ERROR, "nlop_test_derivative_priv: norm is infinite! Aborting test...\n");
-				val = NAN;
-				val0 = 1.;
-				break;
+				debug_printf(DP_ERROR, "nlop_test_derivative_priv: %3d, %3d: norm is infinite! Aborting test...\n", r, i);
+				max_ratio = NAN;
+				goto failout;
 			}
 
 
-			debug_printf(DP_DEBUG1, "%d: %f/%f=%f\n", i, val, scale, val / scale);
+			debug_printf(DP_DEBUG2, "\t%3d, %3d: %f/%f=%f\n", r, i, val, scale, val / scale);
 
 			val /= scale;
 
@@ -158,14 +162,20 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, bool lin)
 		}
 
 		float ratio = val / val0;
-		debug_printf(DP_DEBUG1, "out: %f/%f=%f\n", val, val0, ratio);
-		if (ratio > 0.5)
-			debug_printf(DP_ERROR, "nlop_test_derivative_priv: ratio too large! ratio: %e\n", ratio);
+		debug_printf(DP_DEBUG2, "%3d: %f/%f=%f\n", r, val, val0, ratio);
+		if (ratio > 0.99) {
+
+			debug_printf(DP_ERROR, "nlop_test_derivative_priv: %3d: ratio too large! ratio: %e\n", r, ratio);
+			failed_rounds++;
+		}
 
 		max_ratio = MAX(max_ratio, ratio);
 	}
 
+	if (0 < failed_rounds)
+		debug_printf(DP_ERROR, "nlop_test_derivative_priv: %3d of %3d rounds failed!\n", failed_rounds, rounds);
 
+failout:
 	md_free(h);
 	md_free(x1);
 	md_free(x2);
@@ -239,7 +249,7 @@ static bool nlop_test_derivative_priv_reduce(const struct nlop_s* op, bool lin, 
 
 		val = md_znorm(N_cod, dims_cod, d2);
 
-		debug_printf(DP_DEBUG1, "%f/%f=%f\n", val, scale, val / scale);
+		debug_printf(DP_DEBUG2, "%f/%f=%f\n", val, scale, val / scale);
 
 		val /= scale;
 
@@ -293,7 +303,12 @@ static bool nlop_test_derivative_priv_reduce(const struct nlop_s* op, bool lin, 
 
 float nlop_test_derivative(const struct nlop_s* op)
 {
-	return nlop_test_derivative_priv(op, false);
+	return nlop_test_derivative_priv(op, NULL, false);
+}
+
+float nlop_test_derivative_at(const struct nlop_s* op, const complex float* in)
+{
+	return nlop_test_derivative_priv(op, in, false);
 }
 
 float nlop_test_derivatives(const struct nlop_s* op)
@@ -340,7 +355,7 @@ float nlop_test_derivatives(const struct nlop_s* op)
 					test_op = nlop_del_out_F(test_op, 1);
 			}
 
-			float tmp = nlop_test_derivative_priv(test_op, true);
+			float tmp = nlop_test_derivative_priv(test_op, NULL, true);
 
 			debug_printf(DP_DEBUG2, "der error (in=%d, out=%d): %.8f\n", in, out, tmp);
 

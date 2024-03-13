@@ -1,6 +1,7 @@
 
 struct nlop_s;
 extern float nlop_test_derivative(const struct nlop_s* op);
+extern float nlop_test_derivative_at(const struct nlop_s* op, const complex float* in);
 
 extern float nlop_test_adj_derivatives(const struct nlop_s* op, _Bool real);
 extern float nlop_test_derivatives(const struct nlop_s* op);

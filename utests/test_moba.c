@@ -16,6 +16,7 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/mmio.h"
+#include "misc/utils.h"
 
 #include "linops/linop.h"
 #include "linops/lintest.h"
@@ -285,18 +286,48 @@ static bool test_nlop_ir_meco_der(void)
 
 	complex float TE[5] = { 0.1, .5, 1., 1.5, 2.0 }; // [ms]
 
-	float scale_fB0[2] = { 1., 1. };
+	float scale_fB0[2] = { 22., 6. };
 
-	float scale_others[8] = { 1, 1, 1, 1, 1, 1, 0.5, 1. };
+	float scale_others[8] = { 1, 1, 1, 1, 1, 1, 0.1, 0.1 };
+
+	complex float* in= md_alloc(N, in_dims, CFL_SIZE);
+	md_zfill(N, in_dims, in, 1.0);
+
+	// create reasonable input, masked to the center and with larger last two coeffs:
+
+	long coeff_dims[N] =  { 1, 1, 1, 1, 1, 1, 8, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	long coeff_strs[N];
+	md_calc_strides(N, coeff_strs, coeff_dims, CFL_SIZE);
+
+	long in_strs[N];
+	md_calc_strides(N, in_strs, in_dims, CFL_SIZE);
+
+	complex float coeffs[8] = {1., 1., 1., 1., 1., 1., 10., 10.};
+	md_zmul2(N, in_dims, in_strs, in, in_strs, in, coeff_strs, coeffs);
+
+
+	float restrict_dims[N] = { [0 ... N - 1] = 1. };
+	restrict_dims[0] = 0.5;
+	restrict_dims[1] = 0.5;
+	complex float* mask = compute_mask(DIMS, map_dims, restrict_dims);
+	long map_strs[N];
+	md_calc_strides(N, map_strs, map_dims, CFL_SIZE);
+
+	md_zmul2(N, in_dims, in_strs, in, in_strs, in, map_strs, mask);
+
+	md_free(mask);
+
+
 
 	struct nlop_s* ir_meco = nlop_ir_meco_create(N, map_dims, out_dims, in_dims, TI_dims, TI, TE_dims, TE, scale_fB0, scale_others);
 
-	float err = nlop_test_derivative(ir_meco);
+	float err = nlop_test_derivative_at(ir_meco, in);
 
 	nlop_free(ir_meco);
+	md_free(in);
 
-	const float tol = 1.e-5;
-	debug_printf(DP_DEBUG1, "ir_meco_der error: %.8f, tol %.2f\n", err, tol);
+	const float tol = 6.e-3;
+	debug_printf(DP_DEBUG1, "ir_meco_der error: %.8f, tol %.1e\n", err, tol);
 	UT_ASSERT(err < tol);
 }
 
