@@ -15,6 +15,8 @@
 
 #include "num/init.h"
 
+#include "num/mpi_ops.h"
+
 #include "utest.h"
 
 
@@ -42,8 +44,14 @@ UTESTS_GPU
 #endif
 
 
-int main(int /*argc*/, char* argv[])
+int main(int argc, char* argv[])
 {
+#ifdef USE_MPI
+	init_mpi(&argc, &argv);
+#else
+	(void)argc;
+#endif
+
 	int num_tests_run = 0;
 	int num_tests_pass = 0;
 
@@ -56,6 +64,8 @@ int main(int /*argc*/, char* argv[])
 	bool good = (num_tests_pass == num_tests_run);
 
 	debug_printf(good ? DP_INFO : DP_ERROR, "%20s: %2d/%2d passed.\n", argv[0], num_tests_pass, num_tests_run);
+
+	deinit_mpi();
 
 	exit(good ? 0 : 1);
 }
