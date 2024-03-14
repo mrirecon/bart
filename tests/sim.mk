@@ -63,7 +63,7 @@ tests/test-sim-to-signal-irbSSFP-averaged-spokes: sim scale signal nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-$(TESTS_OUT)/sim_slice_profile_ref.ra: phantom
+$(TESTS_OUT)/sim_slice_profile_ref.ra: sim
 	$(TOOLDIR)/sim --seq IR-BSSFP,TR=0.0045,TE=0.00225,Nrep=1000,pinv,ipl=0,ppl=0.00225,Trf=0.001,FA=45,BWTP=4,slice-thickness=0.020,sl-grad=0.01,Nspins=41 -1 3:3:1 -2 1:1:1 $@
 
 tests/test-sim-slice-profile-spins: sim nrmse $(TESTS_OUT)/sim_slice_profile_ref.ra
