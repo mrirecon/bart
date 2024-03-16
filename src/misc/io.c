@@ -54,7 +54,7 @@ static void xdprintf(int fd, const char* fmt, ...)
 
 enum file_types_e file_type(const char* name)
 {
-	if (0 == strcmp("-", name))
+	if ((0 == strcmp("-", name)))
 		return FILE_TYPE_PIPE;
 
 	const char *p = strrchr(name, '.');
@@ -321,33 +321,52 @@ int write_cfl_header(int fd, const char* filename, int n, const long dimensions[
 }
 
 
-
-int read_cfl_header(int fd, char** file, int n, long dimensions[n])
+int read_cfl_header2(int N, char header[N + 1], int fd, char **file, int n, long dimensions[n])
 {
 	*file = NULL;
-	char header[4097];
-	memset(header, 0, 4097);
+	memset(header, 0, N + 1);
 
-	int max = 0;
+	int r = 0;
 
-	while (max < 4096) {
+	while (r < N) {
 
 		int rd;
 
-		if (0 > (rd = read(fd, header + max, 4096 - max)))
+		if (0 > (rd = read(fd, header + r, N - r)))
 			return -1;
 
 		if (0 == rd)
 			break;
 
-		max += rd;
+		r += rd;
 	}
+
+	int hdr_bytes = r;
+
+	if (0 > parse_cfl_header(hdr_bytes, header, file, n, dimensions))
+		return -1;
+
+	return r;
+}
+
+
+int read_cfl_header(int fd, char** file, int n, long dimensions[n])
+{
+	char header[IO_MAX_HDR_SIZE + 1];
+
+	return read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, n, dimensions);
+}
+
+
+int parse_cfl_header(long N, const char header[N + 1], char **file, int n, long dimensions[n])
+{
+	*file = NULL;
 
 	int pos = 0;
 	int delta = 0;
 	bool ok = false;
 
-	while (true) {
+	while (pos < N) {
 
 		char keyword[32];
 
@@ -418,6 +437,7 @@ int read_cfl_header(int fd, char** file, int n, long dimensions[n])
 out:
 	return ok ? 0 : -1;
 }
+
 
 /**
  * Writes a header for multiple md_arrays in one cfl file
@@ -499,11 +519,12 @@ int write_multi_cfl_header(int fd, const char* filename, long num_ele, int D, in
 int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max], long dimensions[D_max][n_max])
 {
 	*file = NULL;
-	char header[4097];
-	memset(header, 0, 4097);
+	char header[IO_MAX_HDR_SIZE + 1] = { 0 };
 
-	int max;
-	if (0 > (max = read(fd, header, 4096)))
+	long dims[1];
+	int max = read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, 1, dims);
+
+	if (-1 == max)
 		return -1;
 
 	int pos = 0;
@@ -512,7 +533,7 @@ int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max
 	bool multi_cfl = false;
 
 	int D = 0;
-	long num_ele = 0;
+	long num_ele = dims[0];
 	long num_ele_dims = 0;
 
 	while (true) {
@@ -522,15 +543,9 @@ int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max
 		if (1 != sscanf(header + pos, "# %31s\n%n", keyword, &delta))
 			return -1;
 
-
 		pos += delta;
 
-		if (0 == strcmp(keyword, "Dimensions")) {
-
-			if (1 != sscanf(header + pos, "%ld\n%n", &num_ele, &delta))
-				return -1;
-
-		} else if (0 == strcmp(keyword, "SizesDimensions")) {
+		if (0 == strcmp(keyword, "SizesDimensions")) {
 
 			for (int i = 0; i < D_max; i++)
 				n[i] = 0;
@@ -597,17 +612,6 @@ int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max
 			pos += delta;
 
 			ok = true;
-
-		} else if (0 == strcmp(keyword, "Data")) {
-
-			char filename[256];
-
-			if (1 != sscanf(header + pos, "%255s\n%n", filename, &delta))
-				return -1;
-
-			pos += delta;
-
-			*file = strdup(filename);
 		}
 
 		// skip lines not starting with '#'
