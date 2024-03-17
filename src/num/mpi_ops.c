@@ -7,7 +7,6 @@
  * Moritz Blumenthal
  */
 
-
 #ifdef USE_MPI
 #include <mpi.h>
 #endif
@@ -157,7 +156,6 @@ void mpi_signoff_proc(bool signoff)
 		mpi_rank = 0;
 		mpi_nprocs = 1;
 	}
-
 #else
 	UNUSED(signoff);
 #endif

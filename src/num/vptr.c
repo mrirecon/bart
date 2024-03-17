@@ -1,17 +1,14 @@
-/* Copyright 2023. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2023-2024. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Moritz Blumenthal
  *          Bernhard Rapp
- *
-*/
+ */
 
-
-#include "misc/debug.h"
-#include "num/flpmath.h"
 #include <assert.h>
 #include <stdbool.h>
+#include <signal.h>
 
 #ifdef _WIN32
 #include "win/mman.h"
@@ -20,21 +17,22 @@
 #include <sys/mman.h>
 #endif
 
-#include <signal.h>
-
 #include "misc/types.h"
 #include "misc/tree.h"
 #include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/shrdptr.h"
+#include "misc/debug.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
 #include "num/multind.h"
+#include "num/flpmath.h"
 #include "num/mpi_ops.h"
 
 #include "vptr.h"
+
 
 #ifdef USE_DWARF
 #undef assert
@@ -56,6 +54,7 @@ static int hint_get_rank(int N, const long pos[N], struct vptr_hint_s* hint)
 {
 	long offset = 0;
 	long stride = 1;
+
 	assert(N == hint->N);
 
 	for (int i = 0; i < N; i++) {
@@ -128,6 +127,7 @@ struct vptr_hint_s* hint_mpi_create(unsigned long mpi_flags, int N, const long d
 		order[i] = N - 1 - i;
 
 	md_permute(N, order, mdims, rank2, tdims, rank1, sizeof(long));
+
 	x->rank = ARR_CLONE(long[md_calc_size(N, mdims)], rank2);
 
 	x->mpi_flags = mpi_flags;
@@ -188,7 +188,7 @@ static struct sigaction old_sa;
 
 static void handler(int /*sig*/, siginfo_t *si, void*)
 {
-	auto mem = search(si->si_addr, false);
+	struct mem_s* mem = search(si->si_addr, false);
 
 	if (mem)
 		error("Virtual pointer at %x not resolved!\n", si->si_addr);
@@ -206,12 +206,14 @@ static void vptr_init(void)
 		return;
 
 	struct sigaction sa;
+
 	sa.sa_flags = SA_SIGINFO;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_sigaction = handler;
+
 	sigaction(SIGSEGV, &sa, &old_sa);
 	
-	#pragma omp critical(bart_vmap)
+#pragma omp critical(bart_vmap)
 	if (NULL == vmap)
 		vmap = tree_create(vptr_cmp);
 }
@@ -220,6 +222,7 @@ static void vptr_init(void)
 static int inside_p(const void* _rptr, const void* ptr)
 {
 	const struct mem_s* rptr = _rptr;
+
 	if ((ptr >= rptr->ptr) && (ptr < rptr->ptr + rptr->len))
 		return 0;
 	
@@ -234,7 +237,7 @@ static struct mem_s* search(const void* ptr, bool remove)
 
 	struct mem_s* mem;
 
-	#pragma omp critical(bart_vmap)
+#pragma omp critical(bart_vmap)
 	mem = tree_find(vmap, ptr, inside_p, remove);
 
 	return mem;
@@ -267,7 +270,6 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 	x->mpi_flags = 0;
 	x->hint = vptr_hint_ref(hint);
 
-
 	if (NULL != hint) {
 		
 		assert(md_check_compat(MIN(N, hint->N), ~0UL, dims, hint->dims));
@@ -275,7 +277,8 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 		x->mpi_flags = md_nontriv_dims(N, dims) & hint->mpi_flags;
 
 		x->block_size = size;	// size of continous blocks located on one rank
-		for (int i = 0; i < N && !MD_IS_SET(x->mpi_flags, i); i++)
+					//
+		for (int i = 0; (i < N) && !MD_IS_SET(x->mpi_flags, i); i++)
 			x->block_size *= x->dims[i];
 
 		x->num_blocks = x->len / x->block_size;	
@@ -303,7 +306,7 @@ static void* vptr_resolve_int(const void* ptr, bool assert_rank)
 			return NULL;
 	}
 
-	#pragma omp critical(bart_vmap)
+#pragma omp critical(bart_vmap)
 	if (NULL == mem->mem) {
 
 		mem->mem = *TYPE_ALLOC(void*[mem->num_blocks]);
@@ -314,8 +317,9 @@ static void* vptr_resolve_int(const void* ptr, bool assert_rank)
 
 	long idx = (ptr - mem->ptr) / (mem->block_size);
 	
-	#pragma omp critical(bart_vmap)
+#pragma omp critical(bart_vmap)
 	if (NULL == (mem->mem[idx])) {
+
 #ifdef USE_CUDA
 		if (mem->gpu)
 			mem->mem[idx] = cuda_malloc(mem->block_size);
@@ -338,8 +342,6 @@ void* vptr_resolve_unchecked(const void* ptr)
 }
 
 
-
-
 bool is_vptr(const void* ptr)
 {
 	return NULL != search(ptr, false);
@@ -347,13 +349,13 @@ bool is_vptr(const void* ptr)
 
 bool is_vptr_gpu(const void* ptr)
 {
-	auto mem = search(ptr, false);
+	struct mem_s* mem = search(ptr, false);
 	return mem && mem->gpu;
 }
 
 bool is_vptr_cpu(const void* ptr)
 {
-	auto mem = search(ptr, false);
+	struct mem_s* mem = search(ptr, false);
 	return mem && !mem->gpu;
 }
 
@@ -399,15 +401,15 @@ bool vptr_free(const void* ptr)
 
 void* vptr_alloc(int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
 {
-	auto mem = vptr_create(N, dims, size, hint);
+	struct mem_s* mem = vptr_create(N, dims, size, hint);
 	return mem->ptr;
 }
 
 // returns NULL if ref is not a virtual pointer.
 void* vptr_alloc_sameplace(int N, const long dims[N], size_t size, const void* ref)
 {
-	auto mem = search(ref, false);
-	
+	struct mem_s* mem = search(ref, false);
+
 	if (NULL == mem)
 		return NULL;
 
@@ -419,7 +421,7 @@ void* vptr_alloc_sameplace(int N, const long dims[N], size_t size, const void* r
 
 void* vptr_move_gpu(const void* ptr)
 {
-	auto mem = search(ptr, false);
+	struct mem_s* mem = search(ptr, false);
 
 	assert(mem && mem->ptr == ptr);
 
@@ -433,7 +435,7 @@ void* vptr_move_gpu(const void* ptr)
 
 void* vptr_move_cpu(const void* ptr)
 {
-	auto mem = search(ptr, false);
+	struct mem_s* mem = search(ptr, false);
 
 	assert(mem && mem->ptr == ptr);
 
@@ -470,7 +472,8 @@ void* vptr_wrap_sameplace(int N, const long dims[N], size_t size, const void* pt
 {
 	assert(!is_vptr(ptr));
 
-	auto mem = search(ref, false);
+	struct mem_s* mem = search(ref, false);
+
 	return vptr_wrap(N, dims, size, ptr, mem->hint, free, writeback);
 }
 
@@ -480,7 +483,7 @@ void* vptr_wrap_sameplace(int N, const long dims[N], size_t size, const void* pt
  */
 unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N], const void* ptr, size_t size)
 {
-	auto mem = search(ptr, false);
+	struct mem_s* mem = search(ptr, false);
 
 	if ((NULL == mem) || ((mem->block_size == (long)(mem->len))))
 		return 0UL;
@@ -535,8 +538,8 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 				min += rstrs[j] * (tdims[j] - 1);
 		}
 
-		if (   (0 < tstrs[i] && max >= mem->block_size)
-		    || (0 > tstrs[i] && 0 < min)) {
+		if (   ((0 < tstrs[i]) && (max >= mem->block_size))
+		    || ((0 > tstrs[i]) && (0 < min))) {
 
 		    	// Cheap search is not valid!
 			// Expensive brute force search!
@@ -545,15 +548,15 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 
 			do {
 				long o = (md_calc_offset(N + 1, rstrs, pos) + offset) % mem->block_size;
+
 				if (0 > o)
 					o += mem->block_size;
 
 				max = MAX(max, o);
-				min= MIN(min, o);
+				min = MIN(min, o);
 
 			} while (md_next(N + 1, tdims, ~MD_BIT(i) & md_nontriv_strides(N + 1, rstrs), pos));
 		}
-
 
 		if ((tstrs[i] > 0) && (max + (tdims[i] - 1) * tstrs[i] >= mem->block_size))
 			flags |= MD_BIT(i);
@@ -576,9 +579,11 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
  */
 bool is_mpi(const void* ptr)
 {
-	auto mem = search(ptr, false);
+	struct mem_s* mem = search(ptr, false);
+
 	return mem && mem->hint && (mem->hint->mpi_flags != 0UL);
 }
+
 
 /**
  * Calculates rank of given pointer if it is distributed returns -1 else
@@ -587,15 +592,16 @@ bool is_mpi(const void* ptr)
  */
 int mpi_ptr_get_rank(const void* ptr)
 {
-	auto mem = search(ptr, false);
+	struct mem_s* mem = search(ptr, false);
 
-	assert(mem && mem->hint && 0 != mem->hint->mpi_flags);
+	assert(mem && mem->hint && (0 != mem->hint->mpi_flags));
 
 	auto h = mem->hint;
 	
-	long MN = MAX(mem->N, h->N); 
-	long pos[MN];
-	md_set_dims(MN, pos, 0);
+	long N = MAX(mem->N, h->N);
+
+	long pos[N];
+	md_set_dims(N, pos, 0);
 
 	// position in allocation
 	md_unravel_index(mem->N, pos, ~(0UL), mem->dims, (ptr - mem->ptr) / mem->size);
@@ -603,21 +609,25 @@ int mpi_ptr_get_rank(const void* ptr)
 	return hint_get_rank(h->N, pos, mem->hint);
 }
 
+
 bool mpi_accessible_from(const void* ptr, int rank)
 {
 	auto mem = search(ptr, false);
 
-	if (NULL == mem || NULL == mem->hint || 0 == mem->hint->mpi_flags)
+	if ((NULL == mem) || (NULL == mem->hint) || (0 == mem->hint->mpi_flags))
 		return true;
 
-	auto h = mem->hint;
+	struct vptr_hint_s* h = mem->hint;
+	int N = MAX(mem->N, h->N);
 	
-	long pos[MAX(mem->N, h->N)];
-	md_set_dims(MAX(mem->N, h->N), pos, 0);
+	long pos[N];
+	md_set_dims(N, pos, 0);
 
-	md_unravel_index(mem->N, pos, ~(0UL), mem->dims, (ptr - mem->ptr) / mem->size);
+	md_unravel_index(mem->N, pos, ~0UL, mem->dims, (ptr - mem->ptr) / mem->size);
+
 
 	unsigned long loop_flags = ~md_nontriv_dims(mem->N, mem->dims);
+
 	loop_flags &= MD_BIT(mem->N) - 1;
 	loop_flags &= h->mpi_flags;
 
@@ -630,32 +640,40 @@ bool mpi_accessible_from(const void* ptr, int rank)
 	return false;
 }
 
+
 bool mpi_accessible(const void* ptr)
 {
 	return mpi_accessible_from(ptr, mpi_get_rank());
 }
 
+
 int mpi_reduce_color(unsigned long reduce_flags, const void* ptr)
 {
-	auto mem = search(ptr, false);
+	// FIXME: duplicates a lot of code of mpi_accessible_from
+	//
+	struct mem_s* mem = search(ptr, false);
 
-	assert((NULL != mem));	
+	assert(NULL != mem);	
 
-	auto h = mem->hint;
-	
-	long pos[MAX(mem->N, h->N)];
-	md_set_dims(MAX(mem->N, h->N), pos, 0);
+	struct vptr_hint_s* h = mem->hint;
+	int N = MAX(mem->N, h->N);
+
+	long pos[N];
+
+	md_set_dims(N, pos, 0);
 
 	//position in allocation
-	md_unravel_index(mem->N, pos, ~(0UL), mem->dims, (ptr - mem->ptr) / mem->size);
+	md_unravel_index(mem->N, pos, ~0UL, mem->dims, (ptr - mem->ptr) / mem->size);
+
 
 	unsigned long loop_flags = ~md_nontriv_dims(mem->N, mem->dims);
+
 	loop_flags &= MD_BIT(mem->N) - 1;
 	loop_flags &= h->mpi_flags;
 
 	do {
 		if (hint_get_rank(h->N, pos, h) == mpi_get_rank())
-			return md_ravel_index(h->N, pos, ~reduce_flags, h->dims) + 1;
+			return 1 + md_ravel_index(h->N, pos, ~reduce_flags, h->dims);
 
 	} while (md_next(h->N, h->dims, loop_flags, pos));
 
@@ -665,14 +683,17 @@ int mpi_reduce_color(unsigned long reduce_flags, const void* ptr)
 
 unsigned long mpi_parallel_flags(int N, const long dims[N], const long strs[N], size_t size, const void* ptr)
 {
-	auto mem = search(ptr, false);
-	assert(NULL != mem && NULL != mem->hint);
+	struct mem_s* mem = search(ptr, false);
+
+	assert((NULL != mem) && (NULL != mem->hint));
 	assert((size == mem->size / 2) || (size == mem->size));
 
 	long tdims[N];
+
 	if (size == mem->size) {
 
 		md_select_dims(N, md_nontriv_strides(N, strs), tdims, dims);
+
 	} else {
 
 		N--;
@@ -689,18 +710,21 @@ unsigned long mpi_parallel_flags(int N, const long dims[N], const long strs[N], 
 
 void vptr_assert_sameplace(int N, void* nptr[N])
 {
-	auto mem_ref = search(nptr[0], false);
-	struct vptr_hint_s* hint_ref = mem_ref ? mem_ref->hint : NULL;
+	struct vptr_hint_s* hint_ref = NULL;
+	
+	struct mem_s* mem_ref = search(nptr[0], false);
 
+	if (mem_ref)
+		hint_ref = mem_ref->hint;
 
-	for(int i = 1 ; i < N; i++) {
+	for (int i = 1; i < N; i++) {
 
-		auto mem = search(nptr[i], false);
+		struct mem_s* mem = search(nptr[i], false);
 
 		if ((NULL == mem_ref) && (NULL != mem))
 			error("Incopatible pointer: vptr(%x) at %d and normal pointer(%x) at 0!\n", nptr[i], i, nptr[0]);
 
-		if (mem_ref && (NULL == mem))
+		if ((NULL != mem_ref) && (NULL == mem))
 			error("Incopatible pointer: vptr(%x) at 0 and normal pointer(%x) at %d!\n", nptr[0], nptr[i], i);
 		
 		if (NULL == mem_ref)
@@ -712,10 +736,12 @@ void vptr_assert_sameplace(int N, void* nptr[N])
 		if (NULL == hint_ref)
 			continue;
 
-		if ((hint_ref->N != mem->hint->N) || !md_check_equal_dims(hint_ref->N, hint_ref->dims, mem->hint->dims, ~0UL)) {
+		if (   (hint_ref->N != mem->hint->N)
+		    || !md_check_equal_dims(hint_ref->N, hint_ref->dims, mem->hint->dims, ~0UL)) {
 
 			debug_print_dims(DP_INFO, hint_ref->N, hint_ref->dims);
 			debug_print_dims(DP_INFO, mem->hint->N, mem->hint->dims);
+
 			error("Incopatible MPI dist rule!\n");
 		}		
 	}
