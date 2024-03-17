@@ -139,6 +139,7 @@ static void print_mem_tree(int dl, tree_t tree)
 	for (int j = 0; j < N; j++) {
 
 		debug_printf(dl, "ptr: %p, len: %zd\n", m[j]->ptr, m[j]->len);
+
 		if (NULL != m[j]->backtrace)
 			debug_printf(dl, "%s", m[j]->backtrace);
 	}
@@ -164,6 +165,7 @@ void debug_print_memcache(int dl)
 static int inside_p(const void* _rptr, const void* ptr)
 {
 	const struct mem_s* rptr = _rptr;
+
 	if ((ptr >= rptr->ptr) && (ptr < rptr->ptr + rptr->len))
 		return 0;
 	
@@ -279,13 +281,15 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
 		
 			tree_insert(mem_cache[i], nptr);
 
-			#pragma omp atomic
+#pragma			omp atomic
 			unused_memory[i] += nptr->len_used;
-			#pragma omp atomic
+
+#pragma			omp atomic
 			used_memory[i] -= nptr->len_used;
 
 		} else {
-			#pragma omp atomic
+
+#pragma 		omp atomic
 			used_memory[i] -= nptr->len_used;
 
 			device_free(ptr);
@@ -311,7 +315,7 @@ void* mem_device_malloc(long size, void* (*device_alloc)(size_t))
 
 	if (NULL != nptr) {
 
-		#pragma omp atomic
+#pragma		omp atomic
 		unused_memory[stream] -= size;
 
 		nptr->len_used = size;
@@ -320,7 +324,7 @@ void* mem_device_malloc(long size, void* (*device_alloc)(size_t))
 
 		void* ptr = device_alloc(size);
 
-		#pragma omp critical
+#pragma 	omp critical
 		{
 			min_ptr[stream] = min_ptr[stream] ? MIN(min_ptr[stream], ptr) : ptr;
 			max_ptr[stream] = max_ptr[stream] ? MAX(max_ptr[stream], ptr + size) : ptr + size;
@@ -339,7 +343,8 @@ void* mem_device_malloc(long size, void* (*device_alloc)(size_t))
 	//nptr->backtrace = debug_good_backtrace_string(2);
 
 	tree_insert(mem_allocs[stream], nptr);
-	return (void*)(nptr->ptr);
+
+	return (void*)nptr->ptr;
 }
 
 
