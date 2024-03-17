@@ -300,13 +300,14 @@ static void* create_worker_buffer(int D, long dims[D], void* addr, bool output)
 
 	if (md_check_equal_dims(D, tot_strs, slc_strs, ~cfl_loop_desc.flags)) {
 
-		buf = &(MD_ACCESS(D, tot_strs, pos, (complex float*)addr)); 
+		buf = addr + md_calc_offset(D, tot_strs, pos);
 
 		if (output && (1 == mpi_get_num_procs()))
 			output = false;
 	} else {
 
 		buf = md_alloc(D, slc_dims, sizeof(complex float));
+
 		md_slice(D, cfl_loop_desc.flags, pos, dims, buf, addr, sizeof(complex float));
 	}
 
@@ -320,7 +321,8 @@ static void* create_worker_buffer(int D, long dims[D], void* addr, bool output)
 
 				long tpos[D];
 				work_buffer_get_pos(D, dims, tpos, output, cfl_loop_index[cfl_loop_worker_id()] + i);
-				src = &(MD_ACCESS(D, tot_strs, tpos, (complex float*)addr)); 
+
+				src = addr + md_calc_offset(D, tot_strs, tpos);
 			}
 
 			mpi_copy2(D, slc_dims, slc_strs, buf, tot_strs, src, sizeof(complex float), 0, i);
@@ -374,14 +376,22 @@ static void* free_worker_buffer(int D, long dims[D], void* addr)
 
 				complex float* dst = NULL;
 
+				long file_strs[D];
+				md_calc_strides(D, file_strs, desc->file_dims, sizeof(complex float));
+
+				long data_strs[D];
+				md_calc_strides(D, data_strs, desc->data_dims, sizeof(complex float));
+
+
 				if (mpi_is_main_proc()) {
 
 					long tpos[D];
 					work_buffer_get_pos(D, dims, tpos, true, cfl_loop_index[cfl_loop_worker_id()] + i);
-					dst = &(MD_ACCESS(D, MD_STRIDES(D, desc->file_dims, sizeof(complex float)), tpos, (complex float*)desc->file_addr));
+
+					dst = desc->file_addr + md_calc_offset(D, file_strs, tpos);
 				}
 
-				mpi_copy2(D, desc->data_dims, MD_STRIDES(D, desc->file_dims, sizeof(complex float)), dst, MD_STRIDES(D, desc->data_dims, sizeof(complex float)), addr, sizeof(complex float), i, 0);
+				mpi_copy2(D, desc->data_dims, file_strs, dst, data_strs, addr, sizeof(complex float), i, 0);
 			}
 		} else {
 
@@ -437,7 +447,7 @@ static complex float* load_zra_internal(int fd, const char* name, int D, long di
 	if (-1 == close(fd))
 		io_error("Loading ra file %s\n", name);
 
-	return (complex float*)(addr + header_size);;
+	return addr + header_size;
 }
 
 
@@ -501,7 +511,7 @@ static complex float* create_zra_internal(int ofd, const char* name, int D, cons
 	if (-1 == close(ofd))
 		io_error("Creating ra file %s\n", name);
 
-	return (complex float*)data;
+	return data;
 }
 
 
@@ -884,7 +894,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 	if (-1 == close(fd))
 		io_error("shared cfl %s\n", name);
 
-	return (complex float*)addr;
+	return addr;
 }
 
 
@@ -899,7 +909,7 @@ complex float* anon_cfl(const char* /*name*/, int D, const long dims[D])
 	if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0)))
 		io_error("anon cfl\n");
 
-	return (complex float*)addr;
+	return addr;
 }
 
 
@@ -961,7 +971,7 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 	if (-1 == close(fd))
 		io_error("private cfl %s\n", name);
 
-	return (complex float*)addr;
+	return addr;
 }
 
 
