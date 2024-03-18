@@ -7,12 +7,12 @@
 	as supported by the GCC and clang compilers.
 
 
-1.1. Standard types:	
+1.1. Standard types:
 
 	The complex types are the standard types introduced with ISO C99.
-	
+
 	#include <complex.h>
-	
+
 	complex float
 	complex double
 
@@ -48,7 +48,7 @@
 	__typeof__
 
 	const array parameters
-	
+
 
 1.3. Type safety
 
@@ -56,6 +56,9 @@
 	have a prototype. Variable-length arrays are preferred over basic
 	pointers. Macros can often be made type-safe, e.g. using
 	the TYPE_CHECK macro.
+
+	structs should be defined in the source (.c) file whenever possible
+	to enforce modularization ("opaque pointers").
 
 
 2. Coding Style
@@ -68,10 +71,17 @@
 2.1. Indentation
 
 	Indentation using a single tab. A tab is considered 8 characters.
-	
+
 	White space errors (white space after the last visible
         character of a line) should be avoided.
 
+	Labels should be indented one tab less than the actual code.
+
+	pragmas should start at the beginning of a line.
+	The "omp" in OpenMP pragmas should be aligned to the affected statement
+	by use of tabs after the initial "pragma".
+
+	Lines should not exceed 80 to 100 characters.
 
 2.2. Expressions
 
@@ -115,7 +125,7 @@
 
 	if (0. == x) {
 
-		...		
+		...
 	}
 
 	if (0. == x)
@@ -124,9 +134,10 @@
 
 
 	Statements should be grouped in logical blocks by a single empty
-	line. In particular, declarations, definitions (with initialization) 
+	line. In particular, declarations, definitions (with initialization)
 	should be separated from other statements. Memory allocation and
 	deallocation should usually be separated.
+	Multiple declarators in a single declaration should be avoided.
 
 
 	void compute_bar(complex float* bar)
@@ -179,10 +190,10 @@
 2.5. Variable and Function Names
 
 	Functions and variables names should be lower case and
-        use '_' has separator of components. Names should be
-        meaningful but not unnecessary long. If possible, use
+	use '_' has separator of components. Names should be
+	meaningful but not unnecessary long. If possible, use
 	self-explanatory variable names. Except for loop
-	indices, where one-letter variables names can be used.	
+	indices, where one-letter variables names can be used.
 
 
 
@@ -190,7 +201,7 @@
 
 
 	This is preferable to adding comments:
-	
+
 	// calculate frobenous norm
 	float n = clc_frbn(i);
 
@@ -204,7 +215,18 @@
 
 	multidim_fused_multiply_accumulate()
 
-	
-	Locally used loop indices can be single character 
+
+	Locally used loop indices can be single character
 	letters: i, j, k
 
+
+2.6. Includes
+
+	System headers should be included first, followed by headers from other modules,
+	headers from the same module and finally the header belonging to the current file.
+
+	Include guards should use the following style
+
+	  __NAME_H
+
+	where NAME is the basename of the header file.
