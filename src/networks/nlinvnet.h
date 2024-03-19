@@ -47,6 +47,7 @@ struct nlinvnet_s {
 	_Bool fix_coils;
 	_Bool ref_init_img;
 	_Bool ref_init_col;
+	_Bool ref_init_col_rt;
 	float scaling;
 	_Bool real_time_init;
 	float temp_damp;

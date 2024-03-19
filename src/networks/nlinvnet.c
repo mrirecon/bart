@@ -112,6 +112,7 @@ struct nlinvnet_s nlinvnet_config_opts = {
 	.fix_coils = false,
 	.ref_init_img = false,
 	.ref_init_col = false,
+	.ref_init_col_rt = false,
 	.scaling = -100.,
 	.real_time_init = false,
 	.temp_damp = 0.9,
@@ -352,9 +353,20 @@ static nn_t nlinvnet_get_network_step(const struct nlinvnet_s* nlinvnet, struct 
 
 	nn_t join = nn_from_nlop_F(noir_join_create(model));
 
-	if (nlinvnet->ref_init_col) {
+	if (nlinvnet->ref_init_col || nlinvnet->ref_init_col_rt) {
 
-		join = nn_set_input_name_F(join, 1, "ref_col");
+		auto col_dom = nn_generic_domain(join, 1, NULL);
+		struct linop_s* lop_shift;
+
+		if (nlinvnet->ref_init_col_rt)
+			lop_shift = linop_chain_FF(linop_scale_create(col_dom->N, col_dom->dims, nlinvnet->temp_damp), linop_shift_create(col_dom->N, col_dom->dims, TIME_DIM, 1, PAD_VALID));
+		else
+			lop_shift = linop_identity_create(col_dom->N, col_dom->dims);
+
+		auto nn_shift = nn_from_linop_F(lop_shift);
+		nn_shift = nn_set_input_name_F(nn_shift, 0, "ref_col");
+
+		join = nn_chain2_FF(nn_shift, 0, NULL, join, 1, NULL);
 	} else {
 
 		auto dom = nn_generic_domain(join, 1, NULL);

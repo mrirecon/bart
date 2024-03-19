@@ -163,6 +163,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 		OPTL_INT(0, "conv-time", &(nlinvnet.conv_time), "w", "convolve along dimension 10 with window size w"),
 		//OPTL_SELECT(0, "conv-time-causal", enum PADDING, &(nlinvnet.conv_padding), PAD_CAUSAL, "(Use causal convolution)"),
 		OPTL_SET(0, "ref-img", &(nlinvnet.ref_init_img), "(Feed image after initialization in every network.)"),
+		OPTL_SET(0, "ref-col-rt", &(nlinvnet.ref_init_col_rt), "(Temporal regularization for coil sensitivities.)"),
 		OPTL_SET(0, "fix-sens", &(nlinvnet.fix_coils), "(Fix sensitivity maps after initialization)"),
 		//OPTL_INT(0, "cgiter", &(conf.cgiter), "", "(number of cg iterations)"),
 		OPTL_SET(0, "init-rtnlinv", &(nlinvnet.real_time_init), "initialize with rtnlinv recon"),
