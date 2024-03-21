@@ -92,6 +92,25 @@ Build_Static:
     expire_in: 45 minutes
 
 
+Build_Shared:
+  stage: build
+  script:
+    - sudo -E -u ibi make libbart.so
+  artifacts:
+    paths:
+      - libbart.so
+    expire_in: 45 minutes
+
+Build_Shared_GPU:
+  stage: build
+  script:
+    - sudo -E -u ibi CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make libbart.so
+  artifacts:
+    paths:
+      - libbart.so
+    expire_in: 45 minutes
+
+
 Build_UBSan:
   stage: build
   script:
