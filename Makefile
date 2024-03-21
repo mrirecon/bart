@@ -81,6 +81,7 @@ ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(roo
 
 # for debug backtraces
 ifeq ($(DEBUG_DWARF),1)
+DEBUG=1
 LIBS += -ldw -lunwind
 CPPFLAGS += -DUSE_DWARF
 endif
