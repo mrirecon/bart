@@ -112,7 +112,7 @@ void error(const char* fmt, ...)
 	va_end(ap);
 
 #ifdef USE_DWARF
-	debug_good_backtrace(1); // Skip 1, to not include debug_good_backtrace()
+	debug_good_backtrace(2); // Skip 2, to not include debug_good_backtrace_file() and debug_good_backtrace()
 #endif
 
 	if (error_jumper.initialized)
