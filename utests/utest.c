@@ -14,6 +14,7 @@
 #include "misc/debug.h"
 #include "misc/misc.h"
 
+#include "num/init.h"
 #include "num/mpi_ops.h"
 
 #include "utest.h"
@@ -86,6 +87,11 @@ int main(int argc, char* argv[])
 
 	int num_tests_run = 0;
 	int num_tests_pass = 0;
+
+#ifdef UTEST_GPU
+	bart_use_gpu = true;
+	num_init_gpu_support();
+#endif
 
 	for (ut_test_f** ptr = &_utests_begin; ptr != &_utests_end; ptr++) {
 

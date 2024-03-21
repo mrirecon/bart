@@ -824,8 +824,8 @@ $(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
 UTESTS_GPU=$(shell $(root)/utests/utests_gpu-collect.sh ./utests/$@.c)
 
 .SECONDEXPANSION:
-$(UTARGETS_GPU): % : utests/utest_gpu.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS_GPU="$(UTESTS_GPU)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT)
+$(UTARGETS_GPU): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS_GPU)" -DUTEST_GPU -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT)
 
 
 
