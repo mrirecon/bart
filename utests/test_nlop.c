@@ -464,12 +464,12 @@ static bool test_nlop_combine_der1(void)
 	linop_forward(nlop_get_derivative(comb, 0, 1), N, dims, out1, N, dims, in1);
 
 	if (0. != md_znorm(N, dims, out1))
-		UT_RETURN_ASSERT(false);
+		UT_RETURN_ON_FAILURE(false);
 
 	linop_forward(nlop_get_derivative(comb, 1, 0), N, dims, out1, N, dims, in1);
 
 	if (0. != md_znorm(N, dims, out1))
-		UT_RETURN_ASSERT(false);
+		UT_RETURN_ON_FAILURE(false);
 
 	nlop_derivative(zexp, N, dims, out1, N, dims, in1);
 

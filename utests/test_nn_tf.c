@@ -48,7 +48,7 @@ static bool test_nn_tf_forward(void)
 
 	debug_printf(DP_DEBUG1, "Loss: %f + %f i\n", crealf(out[0]), cimagf(out[0]));
 
-	float err = (cabsf(out[0] - 0.5));
+	float err = cabsf(out[0] - 0.5f);
 
 	md_free(out);
 	md_free(in0);
@@ -108,7 +108,7 @@ static bool test_nn_tf_adjoint(void)
 	md_zaxpy(dom0->N, dom0->dims, grad1, 0.5, grad2);
 
 	if (UT_TOL < md_zrms(dom0->N, dom0->dims, grad1))
-		UT_RETURN_ASSERT(false);
+		UT_RETURN_ON_FAILURE(false);
 
 	md_free(grad1);
 	md_free(grad2);
