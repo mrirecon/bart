@@ -29,13 +29,15 @@
 
 typedef bool ut_test_f(void);
 
+extern void abort_or_print(const char* testname);
+
 #if 0
 #define UT_REGISTER_TEST(x) \
 	ut_test_f* ptr_ ## x __attribute__((section(".utest"))) = &x;
 #else
 #define UT_REGISTER_TEST(x) 				\
 	extern bool call_ ## x(void);			\
-	extern bool call_ ## x(void) { bool r = x(); if (!r) debug_printf(DP_ERROR, "%s failed\n", #x); return r; };
+	extern bool call_ ## x(void) { bool r = x(); if (!r) abort_or_print(#x); return r; };
 #endif
 
 #define UT_GPU_REGISTER_TEST(x) UT_REGISTER_TEST(x)

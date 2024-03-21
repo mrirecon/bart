@@ -9,6 +9,7 @@
  */
 
 #include <stdlib.h>
+#include <errno.h>
 
 #include "misc/debug.h"
 #include "misc/misc.h"
@@ -40,6 +41,39 @@ UTESTS
 #define _utests_begin	(ut_tests[0])
 #define _utests_end	(ut_tests[ARRAY_SIZE(ut_tests)])
 #endif
+
+
+
+int abort_on_error = -1;
+
+void abort_or_print(const char* testname)
+{
+
+	if (-1 == abort_on_error) {
+
+
+		char* str = getenv("BART_UTEST_ABORT");
+
+		if (NULL != str) {
+
+			errno = 0;
+			long r = strtol(str, NULL, 10);
+
+			if ((errno == 0) && (0 <= r) && (r <= 1))
+				abort_on_error = r;
+
+			errno = 0;
+		}
+	}
+
+
+	if (1 == abort_on_error)
+		error("%s failed\n", testname);
+	else
+		debug_printf(DP_ERROR, "%s failed\n", testname);
+
+
+}
 
 
 int main(int argc, char* argv[])
