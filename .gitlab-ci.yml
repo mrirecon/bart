@@ -3,6 +3,9 @@ variables:
 # mpirun in docker has a problem with its default transfer mechanism,
 # so we disable it:
   OMPI_MCA_btl_vader_single_copy_mechanism: "none"
+# make DEBUG_DWARF the default
+  DEBUG: "1"
+  DEBUG_DWARF: "1"
 
 image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_cuda_all_deps
 
@@ -18,6 +21,17 @@ stages:
   - build
   - test1
   - test2
+
+Build_NoDEBUG:
+  stage: build
+  script:
+    - sudo -E -u ibi DEBUG=0 DEBUG_DWARF=0 make all
+  artifacts:
+    paths:
+      - bart
+      - ./lib/
+      - ./commands/
+    expire_in: 45 minutes
 
 Build:
   stage: build
@@ -128,7 +142,7 @@ Build_MPI:
 Build_LTO:
   stage: build
   script:
-    - sudo -E -u ibi CFLAGS="-flto -O2 -g" make
+    - sudo -E -u ibi CFLAGS="-flto -O2 -g" DEBUG=0 DEBUG_DWARF=0 make
   artifacts:
     paths:
       - bart
@@ -139,7 +153,7 @@ Build_LTO:
 Build_Analyzer:
   stage: build
   script:
-    - sudo -E -u ibi CFLAGS="-fanalyzer -Werror" make all
+    - sudo -E -u ibi CFLAGS="-fanalyzer -Werror" DEBUG=0 DEBUG_DWARF=0 make all
   artifacts:
     paths:
       - bart
@@ -157,18 +171,6 @@ Build_Tensorflow:
 #    - wget --no-verbose https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
 #    - mkdir tensorflow_dir && tar -C tensorflow_dir -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
     - sudo -E -u ibi TENSORFLOW=1 TENSORFLOW_BASE=/tensorflow_dir/ CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
-  artifacts:
-    paths:
-      - bart
-      - ./lib/
-      - ./commands/
-    expire_in: 45 minutes
-
-Build_Debug_Dwarf:
-  stage: build
-  script:
-    - apt-get update -qq && apt-get install -y libdw-dev libunwind-dev libbz2-dev liblzma-dev
-    - sudo -E -u ibi DEBUG_DWARF=1 make
   artifacts:
     paths:
       - bart
@@ -267,7 +269,7 @@ UTest_Tensorflow:
 UTest_LTO:
   stage: test1
   script:
-    - sudo -E -u ibi CFLAGS="-flto -O2 -g" make utest
+    - sudo -E -u ibi CFLAGS="-flto -O2 -g" DEBUG=0 DEBUG_DWARF=0 make utest
   needs: [Build_LTO]
   dependencies:
     - Build_LTO
@@ -363,7 +365,7 @@ IntTest_MPI_GPU:
 #IntTest_LTO:
 #  stage: test2
 #  script:
-#    - CFLAGS="-flto -O2 -g" make test
+#    - CFLAGS="-flto -O2 -g" DEBUG=0 DEBUG_DWARF=0 make test
 #  needs: [Build_LTO]
 #  dependencies:
 #    - Build_LTO
