@@ -6,6 +6,8 @@ variables:
 # make DEBUG_DWARF the default
   DEBUG: "1"
   DEBUG_DWARF: "1"
+# utests give a backtrace + abort on the first error
+  BART_UTEST_ABORT: "1"
 
 image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_cuda_all_deps
 
