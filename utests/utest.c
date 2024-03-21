@@ -44,7 +44,6 @@ UTESTS
 #endif
 
 
-
 int abort_on_error = -1;
 
 void abort_or_print(const char* testname)
@@ -67,13 +66,10 @@ void abort_or_print(const char* testname)
 		}
 	}
 
-
 	if (1 == abort_on_error)
 		error("%s failed\n", testname);
 	else
 		debug_printf(DP_ERROR, "%s failed\n", testname);
-
-
 }
 
 
