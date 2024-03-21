@@ -80,7 +80,7 @@ static bool test_md_znlmeans1(void)
 	for (int i = 0; i < 5; i++)
 		x += cpowf(output[0][i], 2) + cpowf(output[i][0], 2.) + cpowf(output[4][i], 2.) + cpowf(output[i][4], 2.);
 
-	UT_ASSERT(x == 0.);
+	UT_RETURN_ASSERT(x == 0.);
 }
 
 static bool test_md_znlmeans2(void)
@@ -92,7 +92,7 @@ static bool test_md_znlmeans2(void)
 
 	md_znlmeans(1, idim, 1, output, input, 3, 3, 10, 1.);
 
-	UT_ASSERT(md_znrmse(1, idim, input, output) == 0.);
+	UT_RETURN_ASSERT(md_znrmse(1, idim, input, output) == 0.);
 }
 
 static bool test_md_znlmeans3(void)
@@ -105,7 +105,7 @@ static bool test_md_znlmeans3(void)
 
 	md_znlmeans(1, idim, 1, output, input, 3, 5, 0.2, 1.);
 
-	UT_ASSERT(md_znrmse(1, idim, ref, output) < md_znrmse(1, idim, ref, input) / 10.);
+	UT_RETURN_ASSERT(md_znrmse(1, idim, ref, output) < md_znrmse(1, idim, ref, input) / 10.);
 }
 
 UT_REGISTER_TEST(test_md_znlmeans_distance);

@@ -73,7 +73,7 @@ static bool test_mpi_fft_variants(fun_t test_fun, unsigned long fft_flags, bool 
 	md_free(ptr2);
 	md_free(ptr2_dist);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 static bool test_fft(void)	{ return test_mpi_fft_variants(fft,	7UL, false); }

@@ -60,7 +60,7 @@ static bool test_nlgrad(void)
 	md_free(src);
 	md_free(dst);
 
-	UT_ASSERT(err < 1.E-4);
+	UT_RETURN_ASSERT(err < 1.E-4);
 }
 
 UT_REGISTER_TEST(test_nlgrad);
@@ -94,12 +94,12 @@ static bool test_auto_norm(void)
 	md_free(dst);
 
 #ifdef  __clang__
-	UT_ASSERT(err < 1.E-6);
+	UT_RETURN_ASSERT(err < 1.E-6);
 #else
 #if __GNUC__ >= 10
-	UT_ASSERT(err < 1.E-7);
+	UT_RETURN_ASSERT(err < 1.E-7);
 #else
-	UT_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-10);
 #endif
 #endif
 }

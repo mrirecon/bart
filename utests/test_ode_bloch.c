@@ -363,7 +363,7 @@ static bool test_bloch_relaxation(void)
 	for (int i = 0; i < 3; i++)
 		err2 += powf(x[i] - ref[i], 2.);
 
-	UT_ASSERT(err2 < 1.E-6);
+	UT_RETURN_ASSERT(err2 < 1.E-6);
 }
 
 UT_REGISTER_TEST(test_bloch_relaxation);
@@ -386,7 +386,7 @@ static bool test_bloch_excitation(void)
 	for (int i = 0; i < 3; i++)
 		err2 += powf(x[i] - ref[i], 2.);
 
-	UT_ASSERT(err2 < 1.E-6);
+	UT_RETURN_ASSERT(err2 < 1.E-6);
 }
 
 UT_REGISTER_TEST(test_bloch_excitation);
@@ -406,7 +406,7 @@ static bool test_bloch_excitation2_phase(void)
 	for (int i = 0; i < 3; i++)
 		err2 += powf(x[i] - ref[i], 2.);
 
-	UT_ASSERT(err2 < 1.E-6);
+	UT_RETURN_ASSERT(err2 < 1.E-6);
 }
 
 UT_REGISTER_TEST(test_bloch_excitation2_phase);
@@ -746,7 +746,7 @@ static bool test_ode_bloch_mcconnel(void)
 	for (int i = 0; i < N; i++)
 		err += powf(x[i] - x2[i], 2.);
 
-	UT_ASSERT(err < 1.E-9);
+	UT_RETURN_ASSERT(err < 1.E-9);
 }
 
 

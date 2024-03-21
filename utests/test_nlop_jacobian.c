@@ -60,7 +60,7 @@ static bool test_nlop_zprecomp_jacobian(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_nlop_zprecomp_jacobian);
@@ -91,7 +91,7 @@ static bool test_nlop_zprecomp_jacobian2(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_nlop_zprecomp_jacobian2);
@@ -123,7 +123,7 @@ static bool test_nlop_zprecomp_jacobian3(void)
 	nlop_free(nlop2);
 
 	//real and imaginary part must be considered independently
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_UNUSED_TEST(test_nlop_zprecomp_jacobian3);
@@ -155,7 +155,7 @@ static bool test_nlop_zrprecomp_jacobian(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_nlop_zrprecomp_jacobian);
@@ -186,7 +186,7 @@ static bool test_nlop_zrprecomp_jacobian2(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_nlop_zrprecomp_jacobian2);
@@ -217,7 +217,7 @@ static bool test_nlop_zrprecomp_jacobian3(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_nlop_zrprecomp_jacobian3);

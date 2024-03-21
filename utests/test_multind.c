@@ -189,7 +189,7 @@ static bool test_compress(void)
 	md_free(compress);
 
 	
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 UT_REGISTER_TEST(test_compress);
@@ -227,7 +227,7 @@ static bool test_md_reflectpad_center_1(void)
 		4, 4, 5, 6,
 	};
 
-	UT_ASSERT(UT_TOL > test_md_reflectpad_center(2, odims, good, idims, in));
+	UT_RETURN_ASSERT(UT_TOL > test_md_reflectpad_center(2, odims, good, idims, in));
 }
 
 UT_REGISTER_TEST(test_md_reflectpad_center_1);
@@ -251,7 +251,7 @@ static bool test_md_reflectpad_center_2(void)
 		5, 5, 4, 4, 5, 5, 4, 4, 5,
 	};
 
-	UT_ASSERT(UT_TOL > test_md_reflectpad_center(2, odims, good, idims, in));
+	UT_RETURN_ASSERT(UT_TOL > test_md_reflectpad_center(2, odims, good, idims, in));
 }
 
 UT_REGISTER_TEST(test_md_reflectpad_center_2);

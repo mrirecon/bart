@@ -80,7 +80,7 @@ static bool test_nlop_cast_neg(void)
 
 	nlop_free(d);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 
@@ -113,7 +113,7 @@ static bool test_nlop_chain(void)
 	nlop_free(diag);
 	linop_free(cdiag);
 
-	UT_ASSERT(err < 1.E-2);
+	UT_RETURN_ASSERT(err < 1.E-2);
 }
 
 
@@ -166,13 +166,13 @@ static bool test_nlop_tenmul2(bool permute)
 	md_free(dst1);
 	md_free(dst2);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 
 static bool test_nlop_tenmul(void)
 {
-	UT_ASSERT(test_nlop_tenmul2(false));
+	UT_RETURN_ASSERT(test_nlop_tenmul2(false));
 }
 
 UT_REGISTER_TEST(test_nlop_tenmul);
@@ -181,7 +181,7 @@ UT_REGISTER_TEST(test_nlop_tenmul);
 
 static bool test_nlop_permute(void)
 {
-	UT_ASSERT(test_nlop_tenmul2(true));
+	UT_RETURN_ASSERT(test_nlop_tenmul2(true));
 }
 
 UT_REGISTER_TEST(test_nlop_permute);
@@ -227,7 +227,7 @@ static bool test_nlop_tenmul_der(void)
 	md_free(dst2);
 	md_free(dst3);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 UT_REGISTER_TEST(test_nlop_tenmul_der);
@@ -260,7 +260,7 @@ static bool test_nlop_zexp(void)
 	md_free(dst1);
 	md_free(dst2);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 
@@ -284,7 +284,7 @@ static bool test_nlop_tenmul_der2(void)
 	nlop_free(flat);
 	nlop_free(tenmul);
 
-	UT_ASSERT((!safe_isnanf(err)) && (err < 1.5E-2));
+	UT_RETURN_ASSERT((!safe_isnanf(err)) && (err < 1.5E-2));
 }
 
 UT_REGISTER_TEST(test_nlop_tenmul_der2);
@@ -326,7 +326,7 @@ static bool test_nlop_tenmul_der_adj(void)
 	nlop_free(flat);
 	nlop_free(tenmul);
 
-	UT_ASSERT((!safe_isnanf(err)) && (err < 6.E-2));
+	UT_RETURN_ASSERT((!safe_isnanf(err)) && (err < 6.E-2));
 }
 
 UT_REGISTER_TEST(test_nlop_tenmul_der_adj);
@@ -347,7 +347,7 @@ static bool test_nlop_zexp_derivative(void)
 
 	nlop_free(zexp);
 
-	UT_ASSERT(err < 1.E-2);
+	UT_RETURN_ASSERT(err < 1.E-2);
 }
 
 
@@ -378,7 +378,7 @@ static bool test_nlop_zexp_der_adj(void)
 
 	nlop_free(zexp);
 
-	UT_ASSERT(err < 1.E-2);
+	UT_RETURN_ASSERT(err < 1.E-2);
 }
 
 
@@ -430,7 +430,7 @@ static bool test_nlop_combine(void)
 	nlop_free(id);
 	nlop_free(zexp);
 
-	UT_ASSERT((!safe_isnanf(err)) && (err < 1.E-2));
+	UT_RETURN_ASSERT((!safe_isnanf(err)) && (err < 1.E-2));
 }
 
 
@@ -464,12 +464,12 @@ static bool test_nlop_combine_der1(void)
 	linop_forward(nlop_get_derivative(comb, 0, 1), N, dims, out1, N, dims, in1);
 
 	if (0. != md_znorm(N, dims, out1))
-		UT_ASSERT(false);
+		UT_RETURN_ASSERT(false);
 
 	linop_forward(nlop_get_derivative(comb, 1, 0), N, dims, out1, N, dims, in1);
 
 	if (0. != md_znorm(N, dims, out1))
-		UT_ASSERT(false);
+		UT_RETURN_ASSERT(false);
 
 	nlop_derivative(zexp, N, dims, out1, N, dims, in1);
 
@@ -492,7 +492,7 @@ static bool test_nlop_combine_der1(void)
 	nlop_free(id);
 	nlop_free(zexp);
 
-	 UT_ASSERT(0. == err);
+	 UT_RETURN_ASSERT(0. == err);
 }
 
 
@@ -539,7 +539,7 @@ static bool test_nlop_comb_flat_der(void)
 	nlop_free(zexp1);
 	nlop_free(zexp2);
 
-	UT_ASSERT((!safe_isnanf(err)) && (err < 1.E-2));
+	UT_RETURN_ASSERT((!safe_isnanf(err)) && (err < 1.E-2));
 }
 
 
@@ -565,7 +565,7 @@ static bool test_nlop_combine_derivative(void)
 	nlop_free(zexp1);
 	nlop_free(zexp2);
 
-	UT_ASSERT((!safe_isnanf(err)) && (err < 2.E-2));
+	UT_RETURN_ASSERT((!safe_isnanf(err)) && (err < 2.E-2));
 }
 
 
@@ -612,7 +612,7 @@ static bool test_nlop_link(void)
 	nlop_free(zexp);
 	nlop_free(diag);
 
-	UT_ASSERT(err < 1.E-6);
+	UT_RETURN_ASSERT(err < 1.E-6);
 }
 
 
@@ -674,7 +674,7 @@ static bool test_nlop_reshape(void)
 	md_free(dst1);
 	md_free(dst2);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 UT_REGISTER_TEST(test_nlop_reshape);
@@ -781,7 +781,7 @@ static bool test_nlop_parallel_derivatives(void)
 	linop_free(countop1);
 	linop_free(chain);
 
-	UT_ASSERT(result);
+	UT_RETURN_ASSERT(result);
 }
 
 UT_REGISTER_TEST(test_nlop_parallel_derivatives);
@@ -825,7 +825,7 @@ static bool test_stack(void)
 	md_free(in);
 	md_free(out);
 
-	UT_ASSERT(1.e-7 > err);
+	UT_RETURN_ASSERT(1.e-7 > err);
 }
 
 UT_REGISTER_TEST(test_stack);
@@ -854,7 +854,7 @@ static bool test_stack_multiple(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_stack_multiple);
@@ -883,7 +883,7 @@ static bool test_stack_multiple2(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_stack_multiple2);
@@ -912,7 +912,7 @@ static bool test_stack_multiple_container(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_stack_multiple_container);
@@ -941,7 +941,7 @@ static bool test_stack_multiple_container2(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_stack_multiple_container2);
@@ -974,7 +974,7 @@ static bool test_stack_multiple_container_flatten(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_stack_multiple_container_flatten);
@@ -1006,7 +1006,7 @@ static bool test_stack_multiple_container_flatten2(void)
 	nlop_free(nlop1);
 	nlop_free(nlop2);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_stack_multiple_container_flatten2);
@@ -1024,23 +1024,23 @@ static bool test_nlop_select_derivatives(void)
 
 	void* args[3] = { ptr1, ptr2, ptr3 };
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_unchecked(tenmul1, 3, args);
 
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 1l, 3l);
 
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(tenmul1, 3, args, 0l, 0l);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_free(tenmul1);
 
@@ -1063,18 +1063,18 @@ static bool test_nlop_select_derivatives_dup(void)
 
 	auto op = nlop_dup(tenmul1, 0, 1);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 1l, 1l);
 
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 2, args, 0l, 0l);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 1));
 
 	nlop_free(tenmul1);
 	nlop_free(op);
@@ -1103,24 +1103,24 @@ static bool test_nlop_select_derivatives_combine(void)
 
 	auto op = nlop_combine(tenmul1, tenmul2);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 0l, 0l);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 6, args, 3l, 6l);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul2, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul2, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_free(tenmul1);
 	nlop_free(tenmul2);
@@ -1148,31 +1148,31 @@ static bool test_nlop_select_derivatives_link(void)
 
 	auto op = nlop_chain2(tenmul1, 0, tenmul2, 1);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 0l, 0l);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 4l);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul1, 1));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 0));
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul2, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 0));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_generic_apply_select_derivative_unchecked(op, 4, args, 1l, 1l);
 
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul1, 1));
-	UT_ASSERT2(nlop_tenmul_der_available(tenmul2, 0));
-	UT_ASSERT2(!nlop_tenmul_der_available(tenmul2, 1));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul1, 1));
+	UT_RETURN_ON_FAILURE(nlop_tenmul_der_available(tenmul2, 0));
+	UT_RETURN_ON_FAILURE(!nlop_tenmul_der_available(tenmul2, 1));
 
 	nlop_free(tenmul1);
 	nlop_free(tenmul2);
@@ -1198,7 +1198,7 @@ static bool test_nlop_zinv(void)
 
 	debug_printf(DP_DEBUG1, "zinv errors der %.8f, adj: %.8f\n", err_der, err_adj);
 
-	UT_ASSERT((err_der < 4.E-2) && (err_adj < UT_TOL));
+	UT_RETURN_ASSERT((err_der < 4.E-2) && (err_adj < UT_TOL));
 }
 
 UT_REGISTER_TEST(test_nlop_zinv);
@@ -1227,7 +1227,7 @@ static bool test_zmax(void)
 
 	md_free(output_zmax);
 
-	UT_ASSERT(0.01 > err);
+	UT_RETURN_ASSERT(0.01 > err);
 }
 
 UT_REGISTER_TEST(test_zmax);
@@ -1371,7 +1371,7 @@ static bool test_nlop_checkpointing(void)
 	nlop_free(nlop);
 	nlop_free(nlop_cp);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 UT_REGISTER_TEST(test_nlop_checkpointing);
@@ -1460,7 +1460,7 @@ static bool test_mriop_normalinv_config(bool batch_independent, bool share_patte
 
 	nlop_free(nlop_inv);
 
-	UT_ASSERT(1.e-5 > err);
+	UT_RETURN_ASSERT(1.e-5 > err);
 }
 
 static bool test_mriop_normalinv(void)

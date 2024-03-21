@@ -45,7 +45,7 @@ static bool test_md_zfmacc2_flags(unsigned int D, const long idims[D], unsigned 
 
 	md_free(out);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 
 	return true;
 }
@@ -84,7 +84,7 @@ static bool test_md_zavg_flags(unsigned int D, const long idims[D], unsigned int
 
 	md_free(out);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 
 	return true;
 }
@@ -386,7 +386,7 @@ print("};")
 
 	md_zgausspdf(2, dim, y, 9);
 
-	UT_ASSERT(UT_TOL > md_znrmse(2, dim, x, y));
+	UT_RETURN_ASSERT(UT_TOL > md_znrmse(2, dim, x, y));
 }
 
 

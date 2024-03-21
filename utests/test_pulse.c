@@ -244,7 +244,7 @@ static bool test_hypsec_rf_pulse_ode(void)
 
         // bart_printf("%f, %f, %f\n", xp[0][0], xp[0][1], xp[0][2]);
 
-        UT_ASSERT(fabs(xp[0][2] + 1.) < tol);
+        UT_RETURN_ASSERT(fabs(xp[0][2] + 1.) < tol);
 
 	return true;
 }

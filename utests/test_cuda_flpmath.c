@@ -77,46 +77,46 @@ static bool test_md_z3op(md_z3op_t function)
 	return (UT_TOL >= err) && safe_isfinite(err);
 }
 
-static bool test_md_zrmul2(void) { UT_ASSERT(test_md_z3op(md_zrmul2));}
+static bool test_md_zrmul2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zrmul2));}
 UT_GPU_REGISTER_TEST(test_md_zrmul2);
 
-static bool test_md_zmul2(void) { UT_ASSERT(test_md_z3op(md_zmul2));}
+static bool test_md_zmul2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zmul2));}
 UT_GPU_REGISTER_TEST(test_md_zmul2);
 
-static bool test_md_zdiv2(void) { UT_ASSERT(test_md_z3op(md_zdiv2));}
+static bool test_md_zdiv2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zdiv2));}
 UT_GPU_REGISTER_TEST(test_md_zdiv2);
 
-static bool test_md_zmulc2(void) { UT_ASSERT(test_md_z3op(md_zmulc2));}
+static bool test_md_zmulc2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zmulc2));}
 UT_GPU_REGISTER_TEST(test_md_zmulc2);
 
-static bool test_md_zpow2(void) { UT_ASSERT(test_md_z3op(md_zpow2));}
+static bool test_md_zpow2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zpow2));}
 UT_GPU_REGISTER_TEST(test_md_zpow2);
 
-static bool test_md_zfmac2(void) { UT_ASSERT(test_md_z3op(md_zfmac2));}
+static bool test_md_zfmac2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zfmac2));}
 UT_GPU_REGISTER_TEST(test_md_zfmac2);
 
-static bool test_md_zfmacc2(void) { UT_ASSERT(test_md_z3op(md_zfmacc2));}
+static bool test_md_zfmacc2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zfmacc2));}
 UT_GPU_REGISTER_TEST(test_md_zfmacc2);
 
-static bool test_md_ztenmul2(void) { UT_ASSERT(test_md_z3op(md_ztenmul2));}
+static bool test_md_ztenmul2(void) { UT_RETURN_ASSERT(test_md_z3op(md_ztenmul2));}
 UT_GPU_REGISTER_TEST(test_md_ztenmul2);
 
-static bool test_md_ztenmulc2(void) { UT_ASSERT(test_md_z3op(md_ztenmulc2));}
+static bool test_md_ztenmulc2(void) { UT_RETURN_ASSERT(test_md_z3op(md_ztenmulc2));}
 UT_GPU_REGISTER_TEST(test_md_ztenmulc2);
 
-static bool test_md_zadd2(void) { UT_ASSERT(test_md_z3op(md_zadd2));}
+static bool test_md_zadd2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zadd2));}
 UT_GPU_REGISTER_TEST(test_md_zadd2);
 
-static bool test_md_zsub2(void) { UT_ASSERT(test_md_z3op(md_zsub2));}
+static bool test_md_zsub2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zsub2));}
 UT_GPU_REGISTER_TEST(test_md_zsub2);
 
-static bool test_md_zmax2(void) { UT_ASSERT(test_md_z3op(md_zmax2));}
+static bool test_md_zmax2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zmax2));}
 UT_GPU_REGISTER_TEST(test_md_zmax2);
 
-static bool test_md_zlessequal2(void) { UT_ASSERT(test_md_z3op(md_zlessequal2));}
+static bool test_md_zlessequal2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zlessequal2));}
 UT_GPU_REGISTER_TEST(test_md_zlessequal2);
 
-static bool test_md_zgreatequal2(void) { UT_ASSERT(test_md_z3op(md_zgreatequal2));}
+static bool test_md_zgreatequal2(void) { UT_RETURN_ASSERT(test_md_z3op(md_zgreatequal2));}
 UT_GPU_REGISTER_TEST(test_md_zgreatequal2);
 
 
@@ -166,43 +166,43 @@ static bool test_md_z2op(md_z2op_t function)
 	return (UT_TOL >= err) && safe_isfinite(err);
 }
 
-static bool test_md_zsqrt2(void) { UT_ASSERT(test_md_z2op(md_zsqrt2));}
+static bool test_md_zsqrt2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zsqrt2));}
 UT_GPU_REGISTER_TEST(test_md_zsqrt2);
 
-static bool test_md_zabs2(void) { UT_ASSERT(test_md_z2op(md_zabs2));}
+static bool test_md_zabs2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zabs2));}
 UT_GPU_REGISTER_TEST(test_md_zabs2);
 
-static bool test_md_zconj2(void) { UT_ASSERT(test_md_z2op(md_zconj2));}
+static bool test_md_zconj2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zconj2));}
 UT_GPU_REGISTER_TEST(test_md_zconj2);
 
-static bool test_md_zreal2(void) { UT_ASSERT(test_md_z2op(md_zreal2));}
+static bool test_md_zreal2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zreal2));}
 UT_GPU_REGISTER_TEST(test_md_zreal2);
 
-static bool test_md_zimag2(void) { UT_ASSERT(test_md_z2op(md_zimag2));}
+static bool test_md_zimag2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zimag2));}
 UT_GPU_REGISTER_TEST(test_md_zimag2);
 
-static bool test_md_zexpj2(void) { UT_ASSERT(test_md_z2op(md_zexpj2));}
+static bool test_md_zexpj2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zexpj2));}
 UT_GPU_REGISTER_TEST(test_md_zexpj2);
 
-static bool test_md_zexp2(void) { UT_ASSERT(test_md_z2op(md_zexp2));}
+static bool test_md_zexp2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zexp2));}
 UT_GPU_REGISTER_TEST(test_md_zexp2);
 
-static bool test_md_zlog2(void) { UT_ASSERT(test_md_z2op(md_zlog2));}
+static bool test_md_zlog2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zlog2));}
 UT_GPU_REGISTER_TEST(test_md_zlog2);
 
-static bool test_md_zarg2(void) { UT_ASSERT(test_md_z2op(md_zarg2));}
+static bool test_md_zarg2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zarg2));}
 UT_GPU_REGISTER_TEST(test_md_zarg2);
 
-static bool test_md_zsin2(void) { UT_ASSERT(test_md_z2op(md_zsin2));}
+static bool test_md_zsin2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zsin2));}
 UT_GPU_REGISTER_TEST(test_md_zsin2);
 
-static bool test_md_zcos2(void) { UT_ASSERT(test_md_z2op(md_zcos2));}
+static bool test_md_zcos2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zcos2));}
 UT_GPU_REGISTER_TEST(test_md_zcos2);
 
-static bool test_md_zsinh2(void) { UT_ASSERT(test_md_z2op(md_zsinh2));}
+static bool test_md_zsinh2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zsinh2));}
 UT_GPU_REGISTER_TEST(test_md_zsinh2);
 
-static bool test_md_zcosh2(void) { UT_ASSERT(test_md_z2op(md_zcosh2));}
+static bool test_md_zcosh2(void) { UT_RETURN_ASSERT(test_md_z2op(md_zcosh2));}
 UT_GPU_REGISTER_TEST(test_md_zcosh2);
 
 

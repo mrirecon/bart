@@ -48,7 +48,7 @@ static bool test_thresh(void)
 	md_free(src);
 	md_free(dst);
 
-	UT_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-10);
 }
 
 UT_REGISTER_TEST(test_thresh);
@@ -80,12 +80,12 @@ static bool test_nonneg(void)
 	md_free(dst);
 
 #ifdef  __clang__
-	UT_ASSERT(err < 1.E-6);
+	UT_RETURN_ASSERT(err < 1.E-6);
 #else
 #if __GNUC__ >= 10
-	UT_ASSERT(err < 1.E-7);
+	UT_RETURN_ASSERT(err < 1.E-7);
 #else
-	UT_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-10);
 #endif
 #endif
 }
@@ -118,12 +118,12 @@ static bool test_zsmax(void)
 	md_free(dst);
 
 #ifdef  __clang__
-	UT_ASSERT(err < 1.E-6);
+	UT_RETURN_ASSERT(err < 1.E-6);
 #else
 #if __GNUC__ >= 10
-	UT_ASSERT(err < 1.E-7);
+	UT_RETURN_ASSERT(err < 1.E-7);
 #else
-	UT_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-10);
 #endif
 #endif
 }
@@ -162,12 +162,12 @@ static bool test_op_pre_chain(void)
 	md_free(dst);
 
 	#ifdef __clang__
-	UT_ASSERT(err < 1.E-6);
+	UT_RETURN_ASSERT(err < 1.E-6);
 	#else
 	#if __GNUC__ >= 10
-	UT_ASSERT(err < 1.E-7);
+	UT_RETURN_ASSERT(err < 1.E-7);
 	#else
-	UT_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-10);
 	#endif
 	#endif
 }
@@ -210,12 +210,12 @@ static bool test_op_stack(void)
 	md_free(dst);
 
 	#ifdef __clang__
-	UT_ASSERT(err < 1.E-6);
+	UT_RETURN_ASSERT(err < 1.E-6);
 	#else
 	#if __GNUC__ >= 10
-	UT_ASSERT(err < 1.E-7);
+	UT_RETURN_ASSERT(err < 1.E-7);
 	#else
-	UT_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-10);
 	#endif
 	#endif
 }
@@ -270,7 +270,7 @@ static bool test_nonneg_stack(void)
 	md_free(dst);
 	md_free(ref);
 
-	UT_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-10);
 }
 
 UT_REGISTER_TEST(test_nonneg_stack);

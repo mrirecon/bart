@@ -96,7 +96,7 @@ static bool test_padding(void)
 
 	md_free(out);
 
-	UT_ASSERT(1.e-7 > err);
+	UT_RETURN_ASSERT(1.e-7 > err);
 }
 
 UT_REGISTER_TEST(test_padding);
@@ -135,7 +135,7 @@ static bool test_padding_adjoint(void)
 
 	debug_printf(DP_DEBUG1, "err: %.8f\n", err);
 
-	UT_ASSERT(2.e-6 > err);
+	UT_RETURN_ASSERT(2.e-6 > err);
 }
 
 UT_REGISTER_TEST(test_padding_adjoint);

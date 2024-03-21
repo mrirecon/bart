@@ -25,7 +25,7 @@ static bool test_cpmg_epg(void)
 	cpmg_epg_der(N, M, signal, NULL, NULL, NULL, rf_exc, rf_ref, TE, T1, T2, B1, omega);
 	float monoexp = expf(-N * TE / T2);
 
-	UT_ASSERT(1E-5 > (cabsf(signal[N - 1]) - monoexp));
+	UT_RETURN_ASSERT(1E-5 > (cabsf(signal[N - 1]) - monoexp));
  
 	return true;
 }
@@ -53,7 +53,7 @@ static bool test_CPMG_ideal_der(void)
 	float signal_monoexp = expf(-N * TE / T2);
 	float dsignal_dT2_monoexp = signal_monoexp * N * TE / (T2 * T2);
 
-	UT_ASSERT(
+	UT_RETURN_ASSERT(
 		   (1E-5 > cabsf(signal[N-1] - signal_monoexp))
 		&& (1E-5 > cabsf(dsignal[0][N-1] - (float)0.0)) // close-to-zero T1 dependency
 		&& (1E-5 > cabsf(dsignal[1][N-1] - dsignal_dT2_monoexp))
@@ -82,7 +82,7 @@ static bool test_hyperecho_epg(void)
 
 	hyperecho_epg(N, M, signal, states, rf_exc, rf_ref, TE, FA, T1, T2, B1, omega);
 
-	UT_ASSERT(1E-5 > (cabsf(signal[N - 1]) - signal_monoexp));
+	UT_RETURN_ASSERT(1E-5 > (cabsf(signal[N - 1]) - signal_monoexp));
 
     return true;
 }

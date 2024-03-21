@@ -83,7 +83,7 @@ static bool test_im2col_loop_in(void)
 	md_free(imat_gpu);
 	md_free(imat_gpu_cpu);
 
-	UT_ASSERT(err < 1.e-8);
+	UT_RETURN_ASSERT(err < 1.e-8);
 }
 
 UT_GPU_REGISTER_TEST(test_im2col_loop_in);
@@ -150,7 +150,7 @@ static bool test_im2col_loop_out(void)
 	md_free(imat_gpu);
 	md_free(imat_gpu_cpu);
 
-	UT_ASSERT(err < 1.e-8);
+	UT_RETURN_ASSERT(err < 1.e-8);
 }
 
 UT_GPU_REGISTER_TEST(test_im2col_loop_out);
@@ -222,7 +222,7 @@ static bool test_im2col_adj(void)
 	md_free(imat_gpu);
 	md_free(in_gpu_cpu);
 
-	UT_ASSERT(err < 1.e-6);
+	UT_RETURN_ASSERT(err < 1.e-6);
 }
 
 UT_GPU_REGISTER_TEST(test_im2col_adj);

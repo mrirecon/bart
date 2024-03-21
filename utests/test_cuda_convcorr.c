@@ -44,7 +44,7 @@ static bool test_convcorr_cf_1D(void)
 						28, NULL, NULL, false,
 						1.e-6, true, 1 + cudnn);
 
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 UT_GPU_REGISTER_TEST(test_convcorr_cf_1D);
 
@@ -81,7 +81,7 @@ static bool test_convcorr_cf_2D(void)
 						28, NULL, NULL, false,
 						1.e-6, true, 1 + cudnn);
 
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 UT_GPU_REGISTER_TEST(test_convcorr_cf_2D);
 
@@ -118,7 +118,7 @@ static bool test_convcorr_cf_3D(void)
 						28, NULL, NULL, false,
 						1.e-6, true, 1 + cudnn);
 
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 UT_GPU_REGISTER_TEST(test_convcorr_cf_3D);
 
@@ -155,7 +155,7 @@ static bool test_convcorr_rand_ord(void)
 						28, NULL, NULL, false,
 						1.e-6, true, 0 + cudnn);
 
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 
 UT_GPU_REGISTER_TEST(test_convcorr_rand_ord);
@@ -193,7 +193,7 @@ static bool test_convcorr_cf_one_channel(void)
 						28, NULL, NULL, false,
 						1.e-6, true, 1 + cudnn);
 
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 
 UT_GPU_REGISTER_TEST(test_convcorr_cf_one_channel);
@@ -242,7 +242,7 @@ static bool test_convcorr_cf_dil_strs(void)
 						28, dilation, strides, false,
 						1.e-6, true, 1 + cudnn);
 
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 UT_GPU_REGISTER_TEST(test_convcorr_cf_dil_strs);
 

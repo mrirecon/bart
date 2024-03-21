@@ -39,7 +39,7 @@ static bool test_mpi_zscalar2(unsigned long mpi_flags)
 	md_free(ptr_dist);
 
 	float err = zscalar_ref - zscalar_dist;
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 static bool test_mpi_scalar2_8(void)	{ return test_mpi_zscalar2(8UL); }
@@ -87,7 +87,7 @@ static bool test_mpi_z3opd(z3opd_t test_fun, unsigned long mpi_flags)
 	md_free(ref);
 	md_free(ret_copy);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 static bool test_mpi_zfmaccD2_3(void)		{ return test_mpi_z3opd(md_zfmaccD2,	MD_BIT(3))		; }
@@ -134,7 +134,7 @@ static bool test_mpi_z3op(z3op_t test_fun, unsigned long mpi_flags)
 	md_free(ref);
 	md_free(ret_copy);
 	
-	UT_ASSERT(err < UT_TOL * 10); //because single precission
+	UT_RETURN_ASSERT(err < UT_TOL * 10); //because single precission
 }
 
 static bool test_mpi_zfmac2_3(void)	{ return test_mpi_z3op(md_zfmac2,	MD_BIT(3))		; }
@@ -181,7 +181,7 @@ static bool test_mpi_r3op(r3op_t test_fun, unsigned long mpi_flags)
 	md_free(ref);
 	md_free(ret_copy);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 static bool test_mpi_fmac2_4(void)	{ return test_mpi_r3op(md_fmac2,	MD_BIT(4)); }
@@ -227,7 +227,7 @@ static bool test_mpi_r3opd(r3opd_t test_fun, unsigned long mpi_flags)
 	md_free(ref);
 	md_free(ret_copy);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 static bool test_mpi_fmacD2_4(void)	{ return test_mpi_r3opd(md_fmacD2,	MD_BIT(4)); }

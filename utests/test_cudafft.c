@@ -40,7 +40,7 @@ static bool run_cuda_fft_test(const unsigned int D, const long* dims, const unsi
 
 	md_copy(D, dims, gpu_result, gpu_inout, CFL_SIZE);
 
-	UT_ASSERT(md_znrmse(D, dims, cpu_inout, gpu_result) < UT_TOL);
+	UT_RETURN_ASSERT(md_znrmse(D, dims, cpu_inout, gpu_result) < UT_TOL);
 }
 
 
@@ -125,7 +125,7 @@ static bool test_cuda_fftmod(void)
 
 	float err = md_znrmse(DIMS, dims, cpu2, cpu1);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 #endif
 }
 
@@ -158,7 +158,7 @@ static bool test_cuda_fftmod2(void)
 	float err = md_znrmse(DIMS, dims, cpu2, cpu1);
 
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 #endif
 }
 

@@ -65,7 +65,7 @@ static bool test_iter_irgnm0(bool v2, bool ref)
 	md_free(dst1);
 	md_free(src2);
 
-	UT_ASSERT(err < (ref ? 1.E-7 : 0.01));
+	UT_RETURN_ASSERT(err < (ref ? 1.E-7 : 0.01));
 }
 
 
@@ -125,7 +125,7 @@ static bool test_iter_irgnm_lsqr0(bool ref)
 	md_free(src2);
 	md_free(src3);
 
-	UT_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-10);
 }
 
 
@@ -193,7 +193,7 @@ static bool test_iter_irgnm_lsqr1(bool ref, bool regu)
 	md_free(dst1);
 	md_free(src2);
 
-	UT_ASSERT(err < 1.E-3);
+	UT_RETURN_ASSERT(err < 1.E-3);
 }
 
 
@@ -297,7 +297,7 @@ static bool test_iter_irgnm_l1(void)
 	md_free(src2);
 	md_free(src3);
 
-	UT_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-10);
 }
 
 
@@ -341,7 +341,7 @@ static bool test_iter_lsqr_warmstart(void)
 
 	operator_p_free(lsqr);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 UT_REGISTER_TEST(test_iter_lsqr_warmstart);

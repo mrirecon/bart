@@ -735,7 +735,7 @@ static bool test_ode_simu_offresonance(void)
 
 	float tol = 1.E-4;
 
-	UT_ASSERT(   (fabs(mxySig_ode[0][0] - 1.) < tol)
+	UT_RETURN_ASSERT(   (fabs(mxySig_ode[0][0] - 1.) < tol)
 		  && (fabs(mxySig_ode[0][1] - 0.) < tol)
 		  && (fabs(mxySig_ode[0][2] - 0.) < tol));
 
@@ -790,7 +790,7 @@ static bool test_stm_simu_offresonance(void)
 
 	float tol = 1.E-4;
 
-	UT_ASSERT(   (fabs(mxySig_ode[0][0] - 1.) < tol)
+	UT_RETURN_ASSERT(   (fabs(mxySig_ode[0][0] - 1.) < tol)
 		  && (fabs(mxySig_ode[0][1] - 0.) < tol)
 		  && (fabs(mxySig_ode[0][2] - 0.) < tol));
 
@@ -844,7 +844,7 @@ static bool test_ode_simu_gradient(void)
 
 	float tol = 1.E-4;
 
-	UT_ASSERT(   (fabs(mxySig_ode[R - 1][0] - 1.) < tol)
+	UT_RETURN_ASSERT(   (fabs(mxySig_ode[R - 1][0] - 1.) < tol)
 		  && (fabs(mxySig_ode[R - 1][1] - 0.) < tol)
 		  && (fabs(mxySig_ode[R - 1][2] - 0.) < tol));
 
@@ -899,7 +899,7 @@ static bool test_stm_simu_gradient(void)
 
 	float tol = 1.E-4;
 
-	UT_ASSERT(   (fabs(mxySig_ode[R - 1][0] - 1.) < tol)
+	UT_RETURN_ASSERT(   (fabs(mxySig_ode[R - 1][0] - 1.) < tol)
 		  && (fabs(mxySig_ode[R - 1][1] - 0.) < tol)
 		  && (fabs(mxySig_ode[R - 1][2] - 0.) < tol) );
 
@@ -1017,7 +1017,7 @@ static bool test_ode_epg_relation(void)
 
 	// "* -1" for EPG rotations defined COUNTER clockwise, while Bloch equations rotate ation CLOCKWISE around x
 	// FIXME: Redefine EPG clockwise
-	UT_ASSERT(   (fabs(cimagf(-1. * states[0][0][T - 1]) - cimagf(test_modes[0])) < tol)
+	UT_RETURN_ASSERT(   (fabs(cimagf(-1. * states[0][0][T - 1]) - cimagf(test_modes[0])) < tol)
 		  && (fabs(cimagf(+1. * states[0][1][T - 1]) - cimagf(test_modes[1])) < tol));
 
 	return true;
@@ -1161,7 +1161,7 @@ static bool test_hp_simu_offresonance(void)
 
 	float tol = 1.E-4;
 
-	UT_ASSERT(   (fabs(mxySig_ode[0][0] - 1.) < tol)
+	UT_RETURN_ASSERT(   (fabs(mxySig_ode[0][0] - 1.) < tol)
 		  && (fabs(mxySig_ode[0][1] - 0.) < tol)
 		  && (fabs(mxySig_ode[0][2] - 0.) < tol));
 
@@ -1215,7 +1215,7 @@ static bool test_hp_simu_gradient(void)
 
 	float tol = 1.E-4;
 
-	UT_ASSERT(   (fabs(mxySig_ode[sim_data.seq.rep_num - 1][0] - 1.) < tol)
+	UT_RETURN_ASSERT(   (fabs(mxySig_ode[sim_data.seq.rep_num - 1][0] - 1.) < tol)
  		  && (fabs(mxySig_ode[sim_data.seq.rep_num - 1][1] - 0.) < tol)
 		  && (fabs(mxySig_ode[sim_data.seq.rep_num - 1][2] - 0.) < tol));
 
@@ -1282,7 +1282,7 @@ static bool test_ode_z_gradient_refocus(void)
 
 	float tol = 1.E-2;
 
-	UT_ASSERT(   (fabsf(mxy_sig[0][0] - mxy_sig[1][0]) < tol)
+	UT_RETURN_ASSERT(   (fabsf(mxy_sig[0][0] - mxy_sig[1][0]) < tol)
 		  && (fabsf(mxy_sig[0][1] - mxy_sig[1][1]) < tol)
 		  && (fabsf(mxy_sig[0][2] - mxy_sig[1][2]) < tol));
 
@@ -1339,7 +1339,7 @@ static bool test_stm_z_gradient_refocus(void)
 
 	float tol = 1.E-2;
 
-	UT_ASSERT(   (fabsf(mxy_sig[0][0] - mxy_sig[1][0]) < tol)
+	UT_RETURN_ASSERT(   (fabsf(mxy_sig[0][0] - mxy_sig[1][0]) < tol)
 		  && (fabsf(mxy_sig[0][1] - mxy_sig[1][1]) < tol)
 		  && (fabsf(mxy_sig[0][2] - mxy_sig[1][2]) < tol));
 
@@ -1387,7 +1387,7 @@ static bool test_ode_inversion(void)
 
         inversion(&data, h, tol, N, P, xp, 0., 0.005);
 
-        UT_ASSERT(fabs(xp[0][2] + 1.) < tol);
+        UT_RETURN_ASSERT(fabs(xp[0][2] + 1.) < tol);
 
 	return 1;
 }
@@ -1463,7 +1463,7 @@ static bool test_stm_matrix_creation(void)
 
         float tol = 1.E-5;
 
-	UT_ASSERT(   (fabs(m1[0] - m2[0]) < tol)
+	UT_RETURN_ASSERT(   (fabs(m1[0] - m2[0]) < tol)
 		  && (fabs(m1[1] - m2[1]) < tol)
 		  && (fabs(m1[2] - m2[2]) < tol)
 		  && (fabs(m1[3] - m2[9]) < tol));

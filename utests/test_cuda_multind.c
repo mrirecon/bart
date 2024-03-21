@@ -42,7 +42,7 @@ static bool test_cuda_compress(void)
 	md_free(compress);
 
 	
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 UT_GPU_REGISTER_TEST(test_cuda_compress);

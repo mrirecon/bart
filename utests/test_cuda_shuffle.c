@@ -94,7 +94,7 @@ static bool test_cuda_decompose1(void)
 
 	free_pair(in);
 
-	UT_ASSERT(0. == cmp_pair_F(N + 1, odims, out));
+	UT_RETURN_ASSERT(0. == cmp_pair_F(N + 1, odims, out));
 }
 
 static bool test_cuda_decompose2(void)
@@ -114,7 +114,7 @@ static bool test_cuda_decompose2(void)
 
 	free_pair(in);
 
-	UT_ASSERT(0. == cmp_pair_F(N + 1, odims, out));
+	UT_RETURN_ASSERT(0. == cmp_pair_F(N + 1, odims, out));
 }
 
 static bool test_cuda_recompose1(void)
@@ -134,7 +134,7 @@ static bool test_cuda_recompose1(void)
 
 	free_pair(in);
 
-	UT_ASSERT(0. == cmp_pair_F(N + 1, odims, out));
+	UT_RETURN_ASSERT(0. == cmp_pair_F(N + 1, odims, out));
 }
 
 static bool test_cuda_recompose2(void)
@@ -154,7 +154,7 @@ static bool test_cuda_recompose2(void)
 
 	free_pair(in);
 
-	UT_ASSERT(0. == cmp_pair_F(N + 1, odims, out));
+	UT_RETURN_ASSERT(0. == cmp_pair_F(N + 1, odims, out));
 }
 
 UT_GPU_REGISTER_TEST(test_cuda_decompose1);

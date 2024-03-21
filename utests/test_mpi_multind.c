@@ -57,7 +57,7 @@ static bool test_mpi_copy_from_distributed(unsigned long flags, int ndim1, int n
 	md_free(ptr);
 	md_free(ref);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 static bool test_mpi_copy_from_distributed_3_3(void) 	{ return test_mpi_copy_from_distributed(MD_BIT(3),  3, 1,1,1); }
@@ -95,7 +95,7 @@ static bool test_mpi_copy2_roi_with_shift(void)
 
 	bool equal = md_compare(N, roi_dims, ref, ptr_cpu, CFL_SIZE);
 
-	UT_ASSERT(equal);
+	UT_RETURN_ASSERT(equal);
 }
 
 //Deatdlock!!!!!!!!
@@ -122,7 +122,7 @@ static bool test_mpi_copy_roi_with_shift(void)
 
 	bool equal = md_compare(N, roi_dims, ref, ptr_cpu, CFL_SIZE);
 
-	UT_ASSERT(equal);
+	UT_RETURN_ASSERT(equal);
 }
 
 UT_UNUSED_TEST(test_mpi_copy_roi_with_shift);

@@ -58,7 +58,7 @@ static bool test_nlop_relu_der_adj(void)
 
 	nlop_free(relu);
 
-	UT_ASSERT(err < 1.E-2);
+	UT_RETURN_ASSERT(err < 1.E-2);
 }
 
 
@@ -77,7 +77,7 @@ static bool test_nlop_softmax_derivative(void)
 
 	nlop_free(softmax);
 
-	UT_ASSERT(err < 1.E-1);
+	UT_RETURN_ASSERT(err < 1.E-1);
 }
 
 
@@ -108,7 +108,7 @@ static bool test_nlop_softmax_der_adj(void)
 
 	nlop_free(softmax);
 
-	UT_ASSERT(err < 1.E-5);
+	UT_RETURN_ASSERT(err < 1.E-5);
 }
 
 
@@ -126,7 +126,7 @@ static bool test_nlop_sigmoid_derivative(void)
 
 	nlop_free(sigmoid);
 
-	UT_ASSERT(err < 1.E-1);
+	UT_RETURN_ASSERT(err < 1.E-1);
 }
 
 UT_REGISTER_TEST(test_nlop_sigmoid_derivative);
@@ -154,7 +154,7 @@ static bool test_nlop_sigmoid_der_adj(void)
 
 	nlop_free(sigmoid);
 
-	UT_ASSERT(err < 1.E-5);
+	UT_RETURN_ASSERT(err < 1.E-5);
 }
 
 UT_REGISTER_TEST(test_nlop_sigmoid_der_adj);
@@ -203,7 +203,7 @@ static bool test_nlop_stats(void)
 	nlop_free(nlop);
 
 
-	UT_ASSERT((err < 1.e-6) && (err_der < 5.e-3) && (err_adj < 1.e-6));
+	UT_RETURN_ASSERT((err < 1.e-6) && (err_der < 5.e-3) && (err_adj < 1.e-6));
 }
 
 
@@ -253,7 +253,7 @@ static bool test_nlop_normalize(void)
 
 	nlop_free(nlop);
 
-	UT_ASSERT((err < 5.e-7) && (err_der < 5.e-3) && (err_adj < 1.e-6));
+	UT_RETURN_ASSERT((err < 5.e-7) && (err_der < 5.e-3) && (err_adj < 1.e-6));
 }
 
 UT_REGISTER_TEST(test_nlop_normalize);
@@ -281,7 +281,7 @@ static bool test_nlop_bn(void)
 	nlop_free(nlop);
 
 
-	UT_ASSERT((err_der < 5.e-3) && (err_adj < 1.e-6));
+	UT_RETURN_ASSERT((err_der < 5.e-3) && (err_adj < 1.e-6));
 }
 
 UT_REGISTER_TEST(test_nlop_bn);
@@ -303,7 +303,7 @@ static bool test_nlop_conv_derivative(void)
 	nlop_free(conv_geom);
 
 	_Bool test = (err_der_geom < 1.E-1) && (err_adj_geom < 1.E-6);
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 
 UT_REGISTER_TEST(test_nlop_conv_derivative);
@@ -374,7 +374,7 @@ static bool test_padding(void)
 
 	md_free(out);
 
-	UT_ASSERT(1.e-7 > err);
+	UT_RETURN_ASSERT(1.e-7 > err);
 }
 
 UT_REGISTER_TEST(test_padding);
@@ -413,7 +413,7 @@ static bool test_padding_adjoint(void)
 
 	debug_printf(DP_DEBUG1, "err: %.8f\n", err);
 
-	UT_ASSERT(1.e-6 > err);
+	UT_RETURN_ASSERT(1.e-6 > err);
 }
 
 UT_REGISTER_TEST(test_padding_adjoint);
@@ -438,7 +438,7 @@ static bool test_dense_der(void)
 
 	debug_printf(DP_DEBUG1, "dense errors der, adj: %.8f, %.8f\n", err_der, err_adj);
 	_Bool test = (err_adj < 3.E-5) && (err_der < 1.E-1);
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 
 UT_REGISTER_TEST(test_dense_der);
@@ -464,7 +464,7 @@ static bool test_conv_der(void)
 
 	debug_printf(DP_DEBUG1, "conv errors der, adj: %.8f, %.8f\n", err_der, err_adj);
 	_Bool test = (err_adj < 1.E-5) && (err_der < 1.E-1);
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 
 UT_REGISTER_TEST(test_conv_der);
@@ -498,7 +498,7 @@ static bool test_conv_transp(void)
 
 	nlop_free(forward);
 	nlop_free(adjoint);
-	UT_ASSERT(err < 1.e-5);
+	UT_RETURN_ASSERT(err < 1.e-5);
 }
 
 UT_REGISTER_TEST(test_conv_transp);
@@ -532,7 +532,7 @@ static bool test_mpool_der(void)
 	bool err =  md_zrmse(N, outdims, out, out_exp) + md_zrmse(N, indims, in, adj_exp);
 	md_free(out);
 
-	UT_ASSERT(1.e-8 > err);
+	UT_RETURN_ASSERT(1.e-8 > err);
 }
 
 UT_REGISTER_TEST(test_mpool_der);
@@ -554,7 +554,7 @@ static bool test_bias_der(void)
 
 	debug_printf(DP_DEBUG1, "bias errors der, adj: %.8f, %.8f\n", err_der, err_adj);
 	_Bool test = (err_adj < 1.E-5) && (err_der < 1.E-1);
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 
 UT_REGISTER_TEST(test_bias_der);
@@ -577,7 +577,7 @@ static bool test_relu_der(void)
 
 	debug_printf(DP_DEBUG1, "relu errors der, adj: %.8f, %.8f\n", err_der, err_adj);
 	_Bool test = (err_adj < 1.E-6) && (err_der < 1.E1);
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 
 UT_REGISTER_TEST(test_relu_der);
@@ -595,7 +595,7 @@ static bool test_nlop_rbf(void)
 	nlop_free(op);
 
 	debug_printf(DP_DEBUG1, "rbf errors der: %.8f, adj %.8f\n", err_der, err_adj);
-	UT_ASSERT((err_der < 5.E-2) && (err_adj < 1.E-6));
+	UT_RETURN_ASSERT((err_der < 5.E-2) && (err_adj < 1.E-6));
 }
 
 UT_REGISTER_TEST(test_nlop_rbf);
@@ -613,7 +613,7 @@ static bool test_nlop_rbf2(void)
 	nlop_free(op);
 
 	debug_printf(DP_DEBUG1, "rbf2 errors der: %.8f, adj %.8f\n", err_der, err_adj);
-	UT_ASSERT((err_der < 3.E-2) && (err_adj < 1.E-6));
+	UT_RETURN_ASSERT((err_der < 3.E-2) && (err_adj < 1.E-6));
 }
 
 UT_REGISTER_TEST(test_nlop_rbf2);
@@ -742,7 +742,7 @@ static bool test_nlop_conv_strs_dil(void)
 	nlop_free(forward_strs);
 	nlop_free(forward_pad);
 
-	UT_ASSERT(err < 1.e-2);
+	UT_RETURN_ASSERT(err < 1.e-2);
 }
 UT_REGISTER_TEST(test_nlop_conv_strs_dil);
 
@@ -761,7 +761,7 @@ static bool test_dice(void)
 	nlop_free(nlop);
 
 	debug_printf(DP_DEBUG1, "%d %f\n", der, adj_err);
-	UT_ASSERT(der && (UT_TOL > adj_err));
+	UT_RETURN_ASSERT(der && (UT_TOL > adj_err));
 }
 
 UT_REGISTER_TEST(test_dice);
@@ -780,7 +780,7 @@ static bool test_dice2(void)
 	nlop_free(nlop);
 
 	debug_printf(DP_DEBUG1, "%d %f\n", der, adj_err);
-	UT_ASSERT(der && (UT_TOL > adj_err));
+	UT_RETURN_ASSERT(der && (UT_TOL > adj_err));
 }
 
 UT_REGISTER_TEST(test_dice2);
@@ -799,7 +799,7 @@ static bool test_dice3(void)
 	nlop_free(nlop);
 
 	debug_printf(DP_DEBUG1, "%d %f\n", der, adj_err);
-	UT_ASSERT(der && (2 * UT_TOL > adj_err));
+	UT_RETURN_ASSERT(der && (2 * UT_TOL > adj_err));
 }
 
 UT_REGISTER_TEST(test_dice3);
@@ -821,7 +821,7 @@ static bool test_nlop_cardioid(void)
 	nlop_free(relu);
 	nlop_free(cardioid);
 
-	UT_ASSERT(test);
+	UT_RETURN_ASSERT(test);
 }
 
 

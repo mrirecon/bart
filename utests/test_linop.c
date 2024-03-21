@@ -267,7 +267,7 @@ static bool test_linop_permute(void)
 
 	linop_free(lop);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 
@@ -308,7 +308,7 @@ static bool test_linop_transpose(void)
 
 	linop_free(lop);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 
@@ -322,7 +322,7 @@ static bool test_linop_hankelization(void)
 	
 	struct linop_s* lop = linop_hankelization_create(N, dims, 1, 3, 2);
 
-	UT_ASSERT2(UT_TOL > linop_test_adjoint(lop));
+	UT_RETURN_ON_FAILURE(UT_TOL > linop_test_adjoint(lop));
 
 	linop_free(lop);
 
@@ -367,7 +367,7 @@ static bool test_linop_reshape(void)
 
 	linop_free(lop);
 
-	UT_ASSERT(ok);
+	UT_RETURN_ASSERT(ok);
 }
 
 UT_REGISTER_TEST(test_linop_reshape);

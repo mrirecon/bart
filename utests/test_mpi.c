@@ -47,9 +47,9 @@ static bool test_mpi_get_flags_C2R(void)
 	md_free(ptr);
 
 #ifdef USE_MPI
-	UT_ASSERT((flags == complex_flags) && (complex_flags == (real_flags >> 1UL)));
+	UT_RETURN_ASSERT((flags == complex_flags) && (complex_flags == (real_flags >> 1UL)));
 #else
-	UT_ASSERT(0UL == (complex_flags | real_flags));
+	UT_RETURN_ASSERT(0UL == (complex_flags | real_flags));
 #endif
 }
 UT_REGISTER_TEST(test_mpi_get_flags_C2R);
@@ -76,7 +76,7 @@ static bool test_mpi_get_flags_slice(void)
 
 	md_free(ptr);
 
-	UT_ASSERT(0UL == f);
+	UT_RETURN_ASSERT(0UL == f);
 }
 
 UT_REGISTER_TEST(test_mpi_get_flags_slice);
@@ -100,9 +100,9 @@ static bool test_mpi_get_flags_reshape(void)
 	md_free(ptr);
 
 #ifdef USE_MPI
-	UT_ASSERT(flags == f);
+	UT_RETURN_ASSERT(flags == f);
 #else
-	UT_ASSERT(0UL == f);
+	UT_RETURN_ASSERT(0UL == f);
 #endif
 }
 UT_REGISTER_TEST(test_mpi_get_flags_reshape);
@@ -127,9 +127,9 @@ static bool test_mpi_get_flags_roi(void)
 
 	md_free(ptr);
 #ifdef USE_MPI
-	UT_ASSERT(f1 == flags);
+	UT_RETURN_ASSERT(f1 == flags);
 #else
-	UT_ASSERT(0UL == f1);
+	UT_RETURN_ASSERT(0UL == f1);
 #endif
 }
 

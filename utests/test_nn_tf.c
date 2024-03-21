@@ -108,7 +108,7 @@ static bool test_nn_tf_adjoint(void)
 	md_zaxpy(dom0->N, dom0->dims, grad1, 0.5, grad2);
 
 	if (UT_TOL < md_zrms(dom0->N, dom0->dims, grad1))
-		UT_ASSERT(false);
+		UT_RETURN_ASSERT(false);
 
 	md_free(grad1);
 	md_free(grad2);

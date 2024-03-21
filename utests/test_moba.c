@@ -65,7 +65,7 @@ static bool test_nlop_T1fun(void)
 	md_free(src);
 	md_free(dst);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 UT_REGISTER_TEST(test_nlop_T1fun);
@@ -89,7 +89,7 @@ static bool test_nlop_T1fun_der(void)
 
 	const float tol = 1.e-2;
 	debug_printf(DP_DEBUG1, "T1fun_der error: %.8f, tol %.2f\n", err, tol);
-	UT_ASSERT(err < tol);
+	UT_RETURN_ASSERT(err < tol);
 }
 
 UT_REGISTER_TEST(test_nlop_T1fun_der);
@@ -139,7 +139,7 @@ static bool test_op_p_stack_moba_nonneg(void)
 	md_free(in1);
 	md_free(out);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 UT_REGISTER_TEST(test_op_p_stack_moba_nonneg);
@@ -186,7 +186,7 @@ static bool test_nlop_blochfun(void)
 	md_free(src);
 	md_free(dst);
 
-	UT_ASSERT(err < 1.E-3);
+	UT_RETURN_ASSERT(err < 1.E-3);
 }
 
 UT_REGISTER_TEST(test_nlop_blochfun);
@@ -228,7 +228,7 @@ static bool test_nlop_T1phyfun(void)
 	md_free(src);
 	md_free(dst);
 
-	UT_ASSERT(err < 1.E-3);
+	UT_RETURN_ASSERT(err < 1.E-3);
 }
 
 UT_REGISTER_TEST(test_nlop_T1phyfun);
@@ -267,7 +267,7 @@ static bool test_nlop_ir_meco(void)
 	md_free(src);
 	md_free(dst);
 
-	UT_ASSERT(err < 1.e-5);
+	UT_RETURN_ASSERT(err < 1.e-5);
 }
 
 UT_REGISTER_TEST(test_nlop_ir_meco);
@@ -328,7 +328,7 @@ static bool test_nlop_ir_meco_der(void)
 
 	const float tol = 6.e-3;
 	debug_printf(DP_DEBUG1, "ir_meco_der error: %.8f, tol %.1e\n", err, tol);
-	UT_ASSERT(err < tol);
+	UT_RETURN_ASSERT(err < tol);
 }
 
 UT_REGISTER_TEST(test_nlop_ir_meco_der);

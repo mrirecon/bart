@@ -19,10 +19,10 @@ static bool test_var(void)
 
 	md_gaussian_rand(N, dims, data);	
 	md_zvar(N, dims, ~0, &var, data);
-	
+
 	md_free(data);
 
-	UT_ASSERT(cabsf(var - 2) < 0.2);
+	UT_RETURN_ASSERT(cabsf(var - 2) < 0.2);
 }
 
 UT_REGISTER_TEST(test_var);

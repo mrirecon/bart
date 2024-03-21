@@ -34,7 +34,7 @@ static bool test_fftmod_optimize(int N, const long dims[N], unsigned long flags,
 	md_free(ptr1);
 	md_free(ptr2);
 
-	UT_ASSERT(err < UT_TOL);
+	UT_RETURN_ASSERT(err < UT_TOL);
 }
 
 
