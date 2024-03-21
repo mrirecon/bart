@@ -8,9 +8,9 @@
 #ifdef USE_CUDA
 
 #include <cuda_runtime_api.h>
-void cuda_error(const char* file, int line, cudaError_t code);
-void cuda_gpu_check(const char* file, int line, const char* note);
-void cuda_check_ptr(const char* file, int line, int N, const void* ptr[__VLA(N)]);
+extern void cuda_error(const char* file, int line, cudaError_t code);
+extern void cuda_gpu_check(const char* file, int line, const char* note);
+extern void cuda_check_ptr(const char* file, int line, int N, const void* ptr[__VLA(N)]);
 
 #define CUDA_ASYNC_ERROR_NOTE(x)	({ cuda_gpu_check(__FILE__, __LINE__, (x)); })
 #define CUDA_ASYNC_ERROR		CUDA_ASYNC_ERROR_NOTE("")
