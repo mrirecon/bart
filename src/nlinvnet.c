@@ -50,10 +50,6 @@
 
 #include "noir/misc.h"
 
-#ifdef USE_CUDA
-#include "num/gpuops.c"
-#endif
-
 
 static const char help_str[] =
 		"";
