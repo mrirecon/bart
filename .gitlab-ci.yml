@@ -81,12 +81,10 @@ Build_Clang_GPU:
       - ./commands/
     expire_in: 45 minutes
 
-
-
 Build_Static:
   stage: build
   script:
-    - apt-get update -qq && apt-get install -y libgfortran-12-dev
+#    - apt-get update -qq && apt-get install -y libgfortran-12-dev
     - sudo -E -u ibi SLINK=1 make
   artifacts:
     paths:
