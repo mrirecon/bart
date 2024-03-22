@@ -1,13 +1,14 @@
-/* Copyright 2023. Institute of Biomedical Imaging. Graz University of Technology.
+/* Copyright 2024. Institute of Biomedical Imaging. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2023 Christian Holme
+ * 2024 Christian Holme
  */
 
 #include <complex.h>
 #include <math.h>
+#include <limits.h>
 
 #include "misc/debug.h"
 #include "num/multind.h"
@@ -21,8 +22,6 @@
 
 #include "utest.h"
 
-#define UNUSED(x) (void)(x)
-
 // #define DO_SPEEDTEST
 
 #ifndef DO_SPEEDTEST
@@ -30,12 +29,21 @@ enum { rounds = 1 };
 enum { N = 5 };
 long dims[N] = { 10, 7, 3, 16,128 };
 #else
-enum { rounds = 10 };
+enum { rounds = 5 };
+#if 1
+// 2 GiB
 enum { N = 5 };
-long dims[N] = { 128,64,64,1,2};
+long dims[N] = { 128,64,64,8,64};
+#else
+// 64 GiB
+enum { N = 6 };
+long dims[N] = { 1024,64,64,8,16,16};
+#endif
 #endif
 
-static bool test_uniform_rand_threads()
+typedef void (*md_rand_t)(int D, const long dims[D], complex float* dst);
+
+static bool test_threads_rand(md_rand_t function, const char* name)
 {
 	complex float* st = md_calloc(N, dims, CFL_SIZE);
 	complex float* mt = md_calloc(N, dims, CFL_SIZE);
@@ -52,7 +60,7 @@ static bool test_uniform_rand_threads()
 	num_rand_init(0xDEADBEEF);
 	double start = timestamp();
 	for (int i = 0; i < rounds; ++i)
-		md_uniform_rand(N, dims, st);
+		function(N, dims, st);
 	double stt = timestamp() - start;
 
 	int some_threads = 1;
@@ -63,7 +71,7 @@ static bool test_uniform_rand_threads()
 	num_rand_init(0xDEADBEEF);
 	start = timestamp();
 	for (int i = 0; i < rounds; ++i)
-		md_uniform_rand(N, dims, mt);
+		function(N, dims, mt);
 	double mtt = timestamp() - start;
 
 	int many_threads = 1;
@@ -74,22 +82,25 @@ static bool test_uniform_rand_threads()
 	num_rand_init(0xDEADBEEF);
 	start = timestamp();
 	for (int i = 0; i < rounds; ++i)
-		md_uniform_rand(N, dims, mt2);
+		function(N, dims, mt2);
 	double mtt2 = timestamp() - start;
 #ifdef _OPENMP
 	omp_set_dynamic(old_omp_dynamic);
 	omp_set_num_threads(old_omp_threads);
 #else
-	UNUSED(some_threads);
-	UNUSED(many_threads);
+	(void) some_threads;
+	(void) many_threads;
 #endif
 
 #ifdef DO_SPEEDTEST
-	debug_printf(DP_INFO, "times (uniform,  %ld elements): single thread: %f, %d threads: %f, %d threads: %f\n", md_calc_size(N, dims), stt/rounds, some_threads, mtt/rounds, many_threads, mtt2/rounds);
+	double gibi = (double) md_calc_size(N, dims) * CHAR_BIT * CFL_SIZE / (1ULL << 30) / 8;
+	debug_printf(DP_INFO, "times (%s, %ld elements, ~%.2f GiB, %d rounds): single thread: %f, %d threads: %f, %d threads: %f\n", name, md_calc_size(N, dims), gibi, rounds, stt/rounds, some_threads, mtt/rounds, many_threads, mtt2/rounds);
+
 #else
 	(void) stt;
 	(void) mtt;
 	(void) mtt2;
+	(void) name;
 #endif
 
 	UT_RETURN_ON_FAILURE(md_compare(N, dims, st, mt, CFL_SIZE));
@@ -105,76 +116,11 @@ static bool test_uniform_rand_threads()
 
 }
 
+static bool test_uniform_rand_threads(void) { return test_threads_rand(md_uniform_rand, " uniform");}
+UT_REGISTER_TEST(test_uniform_rand_threads);
 
-static bool test_gaussian_rand_threads()
-{
-
-	complex float* st = md_calloc(N, dims, CFL_SIZE);
-	complex float* mt = md_calloc(N, dims, CFL_SIZE);
-	complex float* mt2 = md_calloc(N, dims, CFL_SIZE);
-
-#ifdef _OPENMP
-	int old_omp_dynamic = omp_get_dynamic();
-	int old_omp_threads = omp_get_num_threads();
-
-	omp_set_num_threads(1);
-#endif
-
-
-	num_rand_init(0xDEADBEEF);
-	double start = timestamp();
-	for (int i = 0; i < rounds; ++i)
-		md_gaussian_rand(N, dims, st);
-	double stt = timestamp() - start;
-
-
-	int some_threads = 1;
-#ifdef _OPENMP
-	some_threads = 12;
-	omp_set_num_threads(some_threads);
-#endif
-	num_rand_init(0xDEADBEEF);
-	start = timestamp();
-	for (int i = 0; i < rounds; ++i)
-		md_gaussian_rand(N, dims, mt);
-	double mtt = timestamp() - start;
-
-	int many_threads = 1;
-#ifdef _OPENMP
-	many_threads = 128;
-	omp_set_num_threads(many_threads);
-#endif
-	num_rand_init(0xDEADBEEF);
-	start = timestamp();
-	for (int i = 0; i < rounds; ++i)
-		md_gaussian_rand(N, dims, mt2);
-	double mtt2 = timestamp() - start;
-#ifdef _OPENMP
-	omp_set_dynamic(old_omp_dynamic);
-	omp_set_num_threads(old_omp_threads);
-#else
-	UNUSED(some_threads);
-	UNUSED(many_threads);
-#endif
-
-#ifdef DO_SPEEDTEST
-	debug_printf(DP_INFO, "times (gaussian, %ld elements): single thread: %f, %d threads: %f, %d threads: %f\n", md_calc_size(N, dims), stt/rounds, some_threads, mtt/rounds, many_threads, mtt2/rounds);
-#else
-	(void) stt;
-	(void) mtt;
-	(void) mtt2;
-#endif
-
-	UT_RETURN_ON_FAILURE(md_compare(N, dims, st, mt, CFL_SIZE));
-	UT_RETURN_ON_FAILURE(md_compare(N, dims, st, mt2, CFL_SIZE));
-
-	md_free(st);
-	md_free(mt);
-	md_free(mt2);
-
-	return true;
-
-}
+static bool test_gaussian_rand_threads(void) { return test_threads_rand(md_gaussian_rand, "gaussian");}
+UT_REGISTER_TEST(test_gaussian_rand_threads);
 
 
 static int dcomp(const void* _a, const void* _b)
@@ -236,7 +182,7 @@ static bool kolmogorov_smirnov(long N, double* x, enum distribution dist, const 
 }
 
 
-enum { ks_N = 20000};
+enum { ks_N = 50000};
 
 static bool test_ks_uniform_integers()
 {
@@ -299,6 +245,9 @@ static bool test_ks_gaussian()
 }
 
 
+UT_REGISTER_TEST(test_ks_uniform_integers);
+UT_REGISTER_TEST(test_ks_uniform);
+UT_REGISTER_TEST(test_ks_gaussian);
 
 
 // basic sanity test
@@ -336,11 +285,5 @@ static bool test_var(void)
 }
 
 
-
-UT_REGISTER_TEST(test_uniform_rand_threads);
-UT_REGISTER_TEST(test_gaussian_rand_threads);
-UT_REGISTER_TEST(test_ks_uniform_integers);
-UT_REGISTER_TEST(test_ks_uniform);
-UT_REGISTER_TEST(test_ks_gaussian);
 UT_REGISTER_TEST(test_rand_range);
 UT_REGISTER_TEST(test_var);

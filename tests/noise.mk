@@ -38,5 +38,37 @@ tests/test-noise-spike: zeros noise invert fmac vec nrmse
 	touch $@
 
 
+tests/test-noise-loop: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(ROOTDIR)/bart zeros 4 128 128 1 12 x						;\
+	$(ROOTDIR)/bart -l 8 -e 12 noise x x_l						;\
+	OMP_NUM_THREADS=4 $(ROOTDIR)/bart -p 8 -e 12 noise x x_p			;\
+	$(ROOTDIR)/bart nrmse -t 0. x_l x_p						;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
+tests/test-noise-mpi: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(ROOTDIR)/bart zeros 4 128 128 1 12 x					;\
+	$(ROOTDIR)/bart -l 8 -e 12 noise x x_l					;\
+	mpirun -n 4 $(ROOTDIR)/bart -l 8 -e 12 noise x x_p	;\
+	$(ROOTDIR)/bart nrmse -t 0. x_l x_p					;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
+TESTS += tests/test-noise-loop
+
+ifeq ($(MPI),1)
+TESTS_SLOW += tests/test-noise-mpi
+endif
+
+
+
+
+
 TESTS += tests/test-noise tests/test-noise-real tests/test-noise-spike
 

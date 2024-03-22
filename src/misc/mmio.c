@@ -228,6 +228,18 @@ void set_cfl_loop_index(long index)
 
 }
 
+long get_cfl_loop_index()
+{
+	int worker_id = cfl_loop_worker_id();
+
+	if (MAX_WORKER < worker_id)
+		error("Worker id exceeds maximum supported workers!\n");
+
+	debug_printf(DP_DEBUG2, "loop index: %d\n", cfl_loop_index[worker_id]);
+	return cfl_loop_index[worker_id];
+}
+
+
 bool cfl_loop_desc_active(void)
 {
 	return cfl_loop_desc.flags > 0;

@@ -717,7 +717,7 @@ UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr
 ifeq ($(MPI),1)
 UTARGETS += test_mpi test_mpi_multind test_mpi_flpmath test_mpi_fft
 endif
-UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr test_cuda_multind test_cuda_shuffle test_cuda_memcache_clear
+UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr test_cuda_multind test_cuda_shuffle test_cuda_memcache_clear test_cuda_rand
 
 # lib simu
 UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse
