@@ -133,6 +133,7 @@ Using MacPorts (http://www.macports.org/):
     $ sudo port install libpng
     $ sudo port install openblas
     $ sudo port install flock
+    $ sudo port install gmake
 
     (optional)
     $ sudo port install octave
@@ -140,8 +141,8 @@ Using MacPorts (http://www.macports.org/):
     (optional)
     install version 0.5.2 of the ISMRMRD library
 
-    Select gcc as the compiler when building:
-    $ CC=gcc-mp-12 make
+    Use gmake when building and select gcc as the compiler:
+    $ CC=gcc-mp-12 gmake
 
 Using HomeBrew (https://brew.sh):
 
@@ -149,9 +150,10 @@ Using HomeBrew (https://brew.sh):
     $ brew install libpng
     $ brew install fftw
     $ brew install openblas
+    $ brew install gmake
 
-    Select gcc as the compiler when building:
-    $ CC=gcc make
+    Use gmake when building and select gcc as the compiler:
+    $ CC=gcc gmake
 
 ### 2.2.3 Windows
 
