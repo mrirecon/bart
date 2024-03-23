@@ -35,9 +35,9 @@ tests/test-nlinv-sms-noncart: traj phantom repmat fft nlinv nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-nlinv-sms-noncart-psf: reshape repmat fft nlinv nrmse scale traj phantom
+tests/test-nlinv-sms-noncart-psf: reshape repmat fft nlinv nrmse traj phantom
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/traj -r -o2 -y60 traj.ra							;\
+	$(TOOLDIR)/traj -r -x128 -o2 -y60 traj.ra						;\
 	$(TOOLDIR)/phantom -s6 -k -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/reshape 8200 2 3 ksp.ra ksp2.ra						;\
 	$(TOOLDIR)/nlinv --cgiter=20 -S -N -i12 --ret-sens-os -t traj.ra ksp2.ra r.ra c.ra	;\
@@ -81,28 +81,26 @@ tests/test-nlinv-batch2: repmat nlinv fmac fft nrmse $(TESTS_OUT)/shepplogan_coi
 	touch $@
 
 
-tests/test-nlinv-noncart: traj scale phantom nufft resize nlinv fmac nrmse
+tests/test-nlinv-noncart: traj phantom nufft resize nlinv fmac nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
-	$(TOOLDIR)/traj -r -x256 -y21 traj.ra				;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra				;\
-	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra			;\
-	$(TOOLDIR)/nlinv -N -S -i10 -t traj2.ra ksp.ra r.ra c.ra	;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y21 traj.ra			;\
+	$(TOOLDIR)/phantom -s8 -k -t traj.ra ksp.ra			;\
+	$(TOOLDIR)/nlinv -N -S -i10 -t traj.ra ksp.ra r.ra c.ra		;\
 	$(TOOLDIR)/resize -c 0 128 1 128 c.ra c2.ra			;\
 	$(TOOLDIR)/fmac r.ra c2.ra x.ra					;\
-	$(TOOLDIR)/nufft traj2.ra x.ra k2.ra				;\
+	$(TOOLDIR)/nufft traj.ra x.ra k2.ra				;\
 	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k2.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-nlinv-psf-noncart: traj scale phantom nufft resize nlinv fmac nrmse
-	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/traj -r -x256 -y21 traj.ra							;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra							;\
-	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra						;\
-	$(TOOLDIR)/nlinv --ret-sens-os -N -S -i10 --cgiter=15 -w 0.0001 -t traj2.ra ksp.ra r.ra c.ra	;\
-	$(TOOLDIR)/nlinv --psf-based   -N -S -i10 --cgiter=15 -w 0.0001 -t traj2.ra ksp.ra r2.ra c2.ra	;\
-	$(TOOLDIR)/nrmse -s -t 0.1 r.ra r2.ra							;\
-	$(TOOLDIR)/nrmse -s -t 0.1 c.ra c2.ra							;\
+tests/test-nlinv-psf-noncart: traj phantom nufft resize nlinv fmac nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y21 traj.ra							;\
+	$(TOOLDIR)/phantom -s8 -k -t traj.ra ksp.ra							;\
+	$(TOOLDIR)/nlinv --ret-sens-os -N -S -i10 --cgiter=15 -w 0.0001 -t traj.ra ksp.ra r.ra c.ra	;\
+	$(TOOLDIR)/nlinv --psf-based   -N -S -i10 --cgiter=15 -w 0.0001 -t traj.ra ksp.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.1 r.ra r2.ra								;\
+	$(TOOLDIR)/nrmse -t 0.1 c.ra c2.ra								;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -125,7 +123,7 @@ tests/test-nlinv-sms-gpu: repmat fft nlinv nrmse scale $(TESTS_OUT)/shepplogan_c
 	$(TOOLDIR)/nlinv -g ksp2.ra r2.ra						;\
 	$(TOOLDIR)/repmat 13 4 r.ra r3.ra						;\
 	$(TOOLDIR)/scale 2. r2.ra r4.ra							;\
-	$(TOOLDIR)/nrmse -s -t 0.1 r3.ra r4.ra						;\
+	$(TOOLDIR)/nrmse -t 0.1 r3.ra r4.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -168,26 +166,26 @@ tests/test-nlinv-precomp: traj scale phantom ones repmat fft nufft nlinv nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-nlinv-pics-psf-based: traj scale phantom resize pics nlinv nrmse
-	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
-	$(TOOLDIR)/traj -r -x256 -y21 traj.ra				;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra				;\
-	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra			;\
-	$(TOOLDIR)/nlinv --psf-based -N -S -i8 -t traj2.ra ksp.ra r.ra c.ra		;\
-	$(TOOLDIR)/resize -c 0 128 1 128 c.ra c2.ra			;\
-	$(TOOLDIR)/pics -r0.01 -S -t traj2.ra ksp.ra c2.ra x2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.05 x2.ra r.ra				;\
+
+tests/test-nlinv-pics-psf-based: traj phantom resize pics nlinv nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y21 traj.ra					;\
+	$(TOOLDIR)/phantom -s8 -k -t traj.ra ksp.ra					;\
+	$(TOOLDIR)/nlinv --psf-based -N -S -i8 -t traj.ra ksp.ra r.ra c.ra		;\
+	$(TOOLDIR)/resize -c 0 128 1 128 c.ra c2.ra					;\
+	$(TOOLDIR)/pics -r0.01 -S -t traj.ra ksp.ra c2.ra x2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.05 x2.ra r.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-nlinv-pics: traj scale phantom resize pics nlinv nrmse
+
+tests/test-nlinv-pics: traj phantom resize pics nlinv nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
-	$(TOOLDIR)/traj -r -x256 -y21 traj.ra				;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra				;\
-	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra			;\
-	$(TOOLDIR)/nlinv -N -S -i8 -t traj2.ra ksp.ra r.ra c.ra		;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y21 traj.ra			;\
+	$(TOOLDIR)/phantom -s8 -k -t traj.ra ksp.ra			;\
+	$(TOOLDIR)/nlinv -N -S -i8 -t traj.ra ksp.ra r.ra c.ra		;\
 	$(TOOLDIR)/resize -c 0 128 1 128 c.ra c2.ra			;\
-	$(TOOLDIR)/pics -r0.01 -S -t traj2.ra ksp.ra c2.ra x2.ra	;\
+	$(TOOLDIR)/pics -r0.01 -S -t traj.ra ksp.ra c2.ra x2.ra	;\
 	$(TOOLDIR)/nrmse -t 0.06 x2.ra r.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -260,21 +258,20 @@ tests/test-nlinv-noncart-maps-dims: traj phantom nlinv show
 	true
 	touch $@
 
-tests/test-nlinv-basis-noncart: nlinv traj scale phantom delta fmac ones repmat pics slice nrmse
+tests/test-nlinv-basis-noncart: nlinv traj phantom delta fmac ones repmat pics slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
-	$(TOOLDIR)/traj -r -x128 -D -y31 traj.ra							;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra								;\
-	$(TOOLDIR)/phantom -s8 -t traj2.ra ksp.ra							;\
+	$(TOOLDIR)/traj -r -x64 -o2. -D -y31 traj.ra							;\
+	$(TOOLDIR)/phantom -s8 -t traj.ra ksp.ra							;\
 	$(TOOLDIR)/delta 16 36 31 p.ra 									;\
 	$(TOOLDIR)/fmac ksp.ra p.ra pk.ra								;\
 	$(TOOLDIR)/repmat 1 128 p.ra p2.ra								;\
 	$(TOOLDIR)/ones 6 1 1 1 1 1 31 o.ra								;\
 	$(TOOLDIR)/repmat 6 2 o.ra o2.ra								;\
 	$(TOOLDIR)/scale 0.5 o2.ra o3.ra								;\
-	$(TOOLDIR)/nlinv -i9 -M0.01 --cgiter=10 -c -d4 -S -t traj2.ra -pp2.ra -Bo3.ra pk.ra reco1.ra	;\
-	$(TOOLDIR)/nlinv -i9 -M0.01 --cgiter=10 -c -d4 -S -t traj2.ra                 ksp.ra reco.ra	;\
+	$(TOOLDIR)/nlinv -i9 -M0.01 --cgiter=10 -c -d4 -S -t traj.ra -pp2.ra -Bo3.ra pk.ra reco1.ra	;\
+	$(TOOLDIR)/nlinv -i9 -M0.01 --cgiter=10 -c -d4 -S -t traj.ra                 ksp.ra reco.ra	;\
 	$(TOOLDIR)/slice 6 0 reco1.ra reco20.ra								;\
-	$(TOOLDIR)/nrmse -s -t 0.002 reco.ra reco20.ra							;\
+	$(TOOLDIR)/nrmse -t 0.002 reco.ra reco20.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

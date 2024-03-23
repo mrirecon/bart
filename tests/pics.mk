@@ -13,66 +13,61 @@ tests/test-pics-pi: pics scale nrmse $(TESTS_OUT)/shepplogan.ra $(TESTS_OUT)/she
 
 
 
-tests/test-pics-noncart: traj scale phantom ones pics nufft nrmse
+tests/test-pics-noncart: traj phantom ones pics nufft nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -y64 traj.ra						;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
-	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y64 traj.ra					;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
-	$(TOOLDIR)/pics -S -r0.001 -t traj2.ra ksp.ra o.ra reco.ra			;\
-	$(TOOLDIR)/nufft traj2.ra reco.ra k2.ra						;\
+	$(TOOLDIR)/pics -S -r0.001 -t traj.ra ksp.ra o.ra reco.ra			;\
+	$(TOOLDIR)/nufft traj.ra reco.ra k2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.002 ksp.ra k2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
 
-tests/test-pics-cs: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+tests/test-pics-cs: traj phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -y48 traj.ra						;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
-	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -x128 -o2 -y48 traj.ra					;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
-	$(TOOLDIR)/pics -S -RT:7:0:0.001 -u0.1 -e -t traj2.ra ksp.ra o.ra reco.ra	;\
+	$(TOOLDIR)/pics -S -RT:7:0:0.001 -u0.1 -e -t traj.ra ksp.ra o.ra reco.ra	;\
 	$(TOOLDIR)/scale 128. reco.ra reco2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.22 reco2.ra $(TESTS_OUT)/shepplogan.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
-tests/test-pics-wavl1-dau2: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+tests/test-pics-wavl1-dau2: traj phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -y48 traj.ra						;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
-	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y48 traj.ra					;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
-	$(TOOLDIR)/pics -S --wavelet=dau2 -RW:3:0:0.001 -i150 -e -t traj2.ra ksp.ra o.ra reco.ra	;\
+	$(TOOLDIR)/pics -S --wavelet=dau2 -RW:3:0:0.001 -i150 -e -t traj.ra ksp.ra o.ra reco.ra	;\
 	$(TOOLDIR)/scale 128. reco.ra reco2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.23 reco2.ra $(TESTS_OUT)/shepplogan.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
-tests/test-pics-wavl1-haar: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+tests/test-pics-wavl1-haar: traj phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -y48 traj.ra						;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
-	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y48 traj.ra					;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
-	$(TOOLDIR)/pics -S --wavelet=haar -RW:3:0:0.001 -i150 -e -t traj2.ra ksp.ra o.ra reco.ra	;\
+	$(TOOLDIR)/pics -S --wavelet=haar -RW:3:0:0.001 -i150 -e -t traj.ra ksp.ra o.ra reco.ra	;\
 	$(TOOLDIR)/scale 128. reco.ra reco2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.22 reco2.ra $(TESTS_OUT)/shepplogan.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
-tests/test-pics-wavl1-cdf44: traj scale phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
+tests/test-pics-wavl1-cdf44: traj phantom ones pics nrmse $(TESTS_OUT)/shepplogan.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -y48 traj.ra						;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
-	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y48 traj.ra					;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
-	$(TOOLDIR)/pics -S --wavelet=cdf44 -RW:3:0:0.001 -i150 -e -t traj2.ra ksp.ra o.ra reco.ra	;\
+	$(TOOLDIR)/pics -S --wavelet=cdf44 -RW:3:0:0.001 -i150 -e -t traj.ra ksp.ra o.ra reco.ra	;\
 	$(TOOLDIR)/scale 128. reco.ra reco2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.235 reco2.ra $(TESTS_OUT)/shepplogan.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -244,36 +239,35 @@ tests/test-pics-basis-noncart: traj scale phantom delta fmac ones repmat pics sl
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-pics-basis-noncart2: traj scale phantom delta fmac ones repmat pics nufft nrmse bitmask
+
+tests/test-pics-basis-noncart2: traj phantom delta fmac ones repmat pics nufft nrmse bitmask
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -D -y31 traj.ra					;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
-	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -x128 -o2. -D -y31 traj.ra					;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/delta 16 36 31 p.ra 							;\
 	$(TOOLDIR)/fmac ksp.ra p.ra pk.ra						;\
 	$(TOOLDIR)/repmat 1 256 p.ra p2.ra						;\
 	$(TOOLDIR)/ones 7 1 1 1 1 1 31 2 o.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
-	$(TOOLDIR)/pics -S -r0.001 -t traj2.ra -pp2.ra -Bo.ra pk.ra coils.ra reco.ra	;\
+	$(TOOLDIR)/pics -S -r0.001 -t traj.ra -pp2.ra -Bo.ra pk.ra coils.ra reco.ra	;\
 	$(TOOLDIR)/fmac -s $$($(TOOLDIR)/bitmask 6) reco.ra o.ra reco2.ra		;\
-	$(TOOLDIR)/nufft traj2.ra reco2.ra k2.ra					;\
+	$(TOOLDIR)/nufft traj.ra reco2.ra k2.ra						;\
 	$(TOOLDIR)/fmac k2.ra p2.ra pk2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.003 pk.ra pk2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
-tests/test-pics-basis-noncart-memory: traj scale phantom ones join transpose pics slice nrmse
+tests/test-pics-basis-noncart-memory: traj phantom ones join transpose pics slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -D -y31 traj.ra					;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
-	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -x128 -o2. -D -y31 traj.ra					;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/ones 7 1 1 1 1 1 31 2 o.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
-	$(TOOLDIR)/transpose 2 5 traj2.ra traj3.ra					;\
+	$(TOOLDIR)/transpose 2 5 traj.ra traj3.ra					;\
 	$(TOOLDIR)/transpose 2 5 ksp.ra ksp1.ra						;\
 	$(TOOLDIR)/pics -r0.001 -t traj3.ra -Bo.ra ksp1.ra coils.ra reco1.ra		;\
-	$(TOOLDIR)/pics -r0.001 -t traj2.ra ksp.ra coils.ra reco.ra			;\
+	$(TOOLDIR)/pics -r0.001 -t traj.ra ksp.ra coils.ra reco.ra			;\
 	$(TOOLDIR)/scale 2. reco1.ra reco2.ra						;\
 	$(TOOLDIR)/slice 6 0 reco2.ra reco20.ra						;\
 	$(TOOLDIR)/nrmse -t 0.002 reco.ra reco20.ra					;\
@@ -281,11 +275,10 @@ tests/test-pics-basis-noncart-memory: traj scale phantom ones join transpose pic
 	touch $@
 
 
-tests/test-pics-basis-noncart-memory2: traj scale phantom ones join noise transpose fmac pics slice nrmse zeros
+tests/test-pics-basis-noncart-memory2: traj phantom ones join noise transpose fmac pics slice nrmse zeros
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -D -y301 traj.ra					;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
-	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -x256 -D -o2. -y301 traj.ra					;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/phantom p.ra								;\
 	$(TOOLDIR)/scale 0.5 ksp.ra ksp2.ra						;\
 	$(TOOLDIR)/zeros 7 1 1 1 1 1 301 2 o.ra						;\
@@ -294,13 +287,13 @@ tests/test-pics-basis-noncart-memory2: traj scale phantom ones join noise transp
 	$(TOOLDIR)/transpose 2 5 ksp3.ra ksp4.ra					;\
 	$(TOOLDIR)/fmac -s 64 ksp4.ra o1.ra ksp5.ra					;\
 	$(TOOLDIR)/ones 3 128 128 1 coils.ra						;\
-	$(TOOLDIR)/transpose 2 5 traj2.ra traj3.ra					;\
+	$(TOOLDIR)/transpose 2 5 traj.ra traj3.ra					;\
 	$(TOOLDIR)/pics -S -U -i100 -r0. -t traj3.ra -Bo1.ra ksp5.ra coils.ra reco1.ra	;\
 	$(TOOLDIR)/slice 6 0 reco1.ra reco.ra						;\
 	$(TOOLDIR)/slice 6 1 reco1.ra reco2.ra						;\
 	$(TOOLDIR)/scale 2. reco2.ra reco3.ra						;\
-	$(TOOLDIR)/nrmse -s -t 0.25 reco.ra p.ra					;\
-	$(TOOLDIR)/nrmse -s -t 0.25 reco3.ra p.ra					;\
+	$(TOOLDIR)/nrmse -t 0.25 reco.ra p.ra					;\
+	$(TOOLDIR)/nrmse -t 0.25 reco3.ra p.ra					;\
 	$(TOOLDIR)/nrmse -t 0.06 reco.ra reco3.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -325,8 +318,8 @@ tests/test-pics-noncart-sms: traj slice phantom conj join fft flip pics nrmse
 	$(TOOLDIR)/slice 13 1 x.ra x1.ra						;\
 	$(TOOLDIR)/phantom -k rk.ra							;\
 	$(TOOLDIR)/conj rk.ra rkc.ra							;\
-	$(TOOLDIR)/fft -i 7 rk.ra r0.ra							;\
-	$(TOOLDIR)/fft -i 7 rkc.ra r1.ra						;\
+	$(TOOLDIR)/fft -u -i 7 rk.ra r0.ra						;\
+	$(TOOLDIR)/fft -u -i 7 rkc.ra r1.ra						;\
 	$(TOOLDIR)/join 13 r0.ra r1.ra r.ra						;\
 	$(TOOLDIR)/nrmse -s -t 0.15 r.ra x.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -397,6 +390,7 @@ tests/test-pics-tgv2: phantom slice noise fft ones pics tgv slice nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-pics-noncart-lowmem: traj slice phantom conj join fft flip pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -y55 -r t0.ra							;\
@@ -411,12 +405,13 @@ tests/test-pics-noncart-lowmem: traj slice phantom conj join fft flip pics nrmse
 	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
 	$(TOOLDIR)/pics 	 -i2 -t t.ra k.ra s.ra r1.ra				;\
 	$(TOOLDIR)/pics --lowmem -i2 -t t.ra k.ra s.ra r2.ra				;\
-	$(TOOLDIR)/nrmse -s -t 0.000002 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000005 r1.ra r2.ra					;\
 	$(TOOLDIR)/pics 	    -t t.ra k.ra s.ra r1.ra				;\
 	$(TOOLDIR)/pics --lowmem    -t t.ra k.ra s.ra r2.ra				;\
-	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.002 r1.ra r2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-pics-noncart-lowmem-stack0: traj slice phantom conj join fft flip pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -425,12 +420,13 @@ tests/test-pics-noncart-lowmem-stack0: traj slice phantom conj join fft flip pic
 	$(TOOLDIR)/phantom -S8 s0.ra							;\
 	$(TOOLDIR)/pics -r0.01			  -i2 -t t0.ra k0.ra s0.ra r1.ra	;\
 	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 -i2 -t t0.ra k0.ra s0.ra r2.ra	;\
-	$(TOOLDIR)/nrmse -s -t 0.000005 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.000005 r1.ra r2.ra					;\
 	$(TOOLDIR)/pics -r0.01			  -t t0.ra k0.ra s0.ra r1.ra		;\
 	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 -t t0.ra k0.ra s0.ra r2.ra		;\
-	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.005 r1.ra r2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-pics-noncart-lowmem-no-toeplitz: traj slice phantom conj join fft flip pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
@@ -439,12 +435,13 @@ tests/test-pics-noncart-lowmem-no-toeplitz: traj slice phantom conj join fft fli
 	$(TOOLDIR)/phantom -S8 s0.ra								;\
 	$(TOOLDIR)/pics -r0.01 					-i2 -t t0.ra k0.ra s0.ra r1.ra	;\
 	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 --no-toeplitz -i2 -t t0.ra k0.ra s0.ra r2.ra	;\
-	$(TOOLDIR)/nrmse -s -t 0.00005 r1.ra r2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.00005 r1.ra r2.ra							;\
 	$(TOOLDIR)/pics -r0.01 					-t t0.ra k0.ra s0.ra r1.ra	;\
 	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 --no-toeplitz -t t0.ra k0.ra s0.ra r2.ra	;\
-	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.005 r1.ra r2.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-pics-noncart-lowmem-stack1: traj slice phantom conj join fft flip pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -460,12 +457,13 @@ tests/test-pics-noncart-lowmem-stack1: traj slice phantom conj join fft flip pic
 	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
 	$(TOOLDIR)/pics 		   -i2 -t t.ra k.ra s.ra r1.ra			;\
 	$(TOOLDIR)/pics --lowmem-stack=256 -i2 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -s -t 0.00001 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00001 r1.ra r2.ra						;\
 	$(TOOLDIR)/pics 		   -i2 -t t.ra k.ra s.ra r1.ra			;\
 	$(TOOLDIR)/pics --lowmem-stack=256 -i2 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.005 r1.ra r2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-pics-noncart-lowmem-stack2: traj slice phantom conj join fft flip pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -481,12 +479,13 @@ tests/test-pics-noncart-lowmem-stack2: traj slice phantom conj join fft flip pic
 	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
 	$(TOOLDIR)/pics 		   -i2 -t t.ra k.ra s.ra r1.ra			;\
 	$(TOOLDIR)/pics --lowmem-stack=264 -i2 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -s -t 0.00005 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00005 r1.ra r2.ra						;\
 	$(TOOLDIR)/pics 		   -t t.ra k.ra s.ra r1.ra			;\
 	$(TOOLDIR)/pics --lowmem-stack=264 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -s -t 0.005 r1.ra r2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.005 r1.ra r2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-pics-phase: traj phantom ones join nufft fmac scale bitmask saxpy slice pics nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -512,7 +511,7 @@ tests/test-pics-phase: traj phantom ones join nufft fmac scale bitmask saxpy sli
 	$(TOOLDIR)/phantom -S8 -x64 c.ra						;\
 	$(TOOLDIR)/fmac c.ra phmap.ra c2.ra						;\
 	$(TOOLDIR)/pics -S --shared-img-dims=$$($(TOOLDIR)/bitmask 10) -tt.ra k.ra c2.ra i.ra		;\
-	$(TOOLDIR)/nrmse -s -t0.16 i.ra ref.ra						;\
+	$(TOOLDIR)/nrmse -s -t 0.12 i.ra ref.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -525,6 +524,7 @@ $(TESTS_OUT)/ksp_usamp_1.ra: phantom poisson squeeze fmac
 	$(TOOLDIR)/fmac ksp_1.ra poisson_1.ra $@					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 
+
 $(TESTS_OUT)/ksp_usamp_2.ra: phantom poisson squeeze fmac
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -G -x 64 -k -s 2 ksp_2.ra				;\
@@ -533,6 +533,7 @@ $(TESTS_OUT)/ksp_usamp_2.ra: phantom poisson squeeze fmac
 	$(TOOLDIR)/fmac ksp_2.ra poisson_2.ra $@					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 
+
 $(TESTS_OUT)/ksp_usamp_3.ra: phantom poisson squeeze fmac
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -B -x 64 -k -s 2 ksp_3.ra				;\
@@ -540,6 +541,7 @@ $(TESTS_OUT)/ksp_usamp_3.ra: phantom poisson squeeze fmac
 	$(TOOLDIR)/squeeze tmp_poisson_3.ra poisson_3.ra				;\
 	$(TOOLDIR)/fmac ksp_3.ra poisson_3.ra $@					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+
 
 $(TESTS_OUT)/sens_1.ra: ecalib $(TESTS_OUT)/ksp_usamp_1.ra
 	$(TOOLDIR)/ecalib -S $(TESTS_OUT)/ksp_usamp_1.ra $@
@@ -558,6 +560,7 @@ $(TESTS_OUT)/img_l2_2.ra: pics $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/sens_2.r
 
 $(TESTS_OUT)/img_l2_3.ra: pics $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_3.ra
 	$(TOOLDIR)/pics -S -l2 -r 0.005 -i 3 $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_3.ra $@
+
 
 tests/test-pics-cart-loop: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
@@ -590,6 +593,7 @@ tests/test-pics-cart-loop_range: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/k
 	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref_01 img_l2_p01										;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-pics-cart-slice:  bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
@@ -638,6 +642,7 @@ tests/test-pics-cart-batch-mpi: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ks
 	rm *.ra *.cfl *.hdr  ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-pics-cart-range-batch-mpi: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)												;\
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra img_l2_ref_03.ra			;\
@@ -660,6 +665,7 @@ tests/test-pics-cart-range-batch-mpi: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_
 	rm *.ra *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-pics-cart-mpi: bart pics copy nrmse $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/sens_1.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)												;\
 	$(TOOLDIR)/copy $(TESTS_OUT)/ksp_usamp_1.ra shepplogan_coil_ksp									;\
@@ -670,15 +676,17 @@ tests/test-pics-cart-mpi: bart pics copy nrmse $(TESTS_OUT)/ksp_usamp_1.ra $(TES
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-pics-cart-mpi_shared: bart pics copy nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)												;\
-	$(TOOLDIR)/copy $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp									;\
-	$(TOOLDIR)/copy $(TESTS_OUT)/coils.ra coils												;\
-	mpirun -n 2 $(ROOTDIR)/bart -S pics --mpi=8 -S -r0.001 shepplogan_coil_ksp coils reco				;\
-	$(ROOTDIR)/bart    pics         -S -r0.001 shepplogan_coil_ksp coils reco_ref				;\
-	$(TOOLDIR)/nrmse -t 1e-5 reco_ref reco													;\
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(TOOLDIR)/copy $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp				;\
+	$(TOOLDIR)/copy $(TESTS_OUT)/coils.ra coils							;\
+	mpirun -n 2 $(ROOTDIR)/bart -S pics --mpi=8 -S -r0.001 shepplogan_coil_ksp coils reco		;\
+	$(ROOTDIR)/bart pics -S -r0.001 shepplogan_coil_ksp coils reco_ref				;\
+	$(TOOLDIR)/nrmse -t 1e-5 reco_ref reco								;\
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
 
 tests/test-pics-cart-mpi-sharedcoil: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_1.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
@@ -703,6 +711,7 @@ tests/test-pics-mpi-timedim: bart
 	rm *.cfl *.hdr *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-pics-cart-mpi-multipledims: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)														;\
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p					;\
@@ -723,29 +732,27 @@ tests/test-pics-cart-mpi-multipledims-sharedcoil: bart $(TESTS_OUT)/ksp_usamp_1.
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-pics-noncart-mpi: bart traj scale phantom ones pics nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -y64 traj.ra						;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2						;\
-	$(TOOLDIR)/phantom -s4 -t traj2 ksp					;\
-	$(TOOLDIR)/phantom -S4 col							;\
-	mpirun -n 2 $(ROOTDIR)/bart -S pics --mpi=8 -S --fista -e -r0.001 -t traj2 ksp col reco1	;\
-	$(ROOTDIR)/bart    pics         -S --fista -e -r0.001 -t traj2 ksp col reco2	;\
-	$(TOOLDIR)/nrmse -t 0.00001 reco1 reco2					;\
-	rm *.cfl *ra *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+tests/test-pics-noncart-mpi: bart traj phantom ones pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y64 traj.ra								;\
+	$(TOOLDIR)/phantom -s4 -t traj.ra ksp									;\
+	$(TOOLDIR)/phantom -S4 col										;\
+	mpirun -n 2 $(ROOTDIR)/bart -S pics --mpi=8 -S --fista -e -r0.001 -t traj.ra ksp col reco1		;\
+	$(ROOTDIR)/bart pics -S --fista -e -r0.001 -t traj.ra ksp col reco2					;\
+	$(TOOLDIR)/nrmse -t 0.00001 reco1 reco2									;\
+	rm *.cfl *.ra *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 # Very slow due to recomposing via mpi 0=> deactivated
-tests/test-pics-noncart-mpi-gridH: bart traj scale phantom ones pics nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -r -x256 -y64 traj.ra						;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2						;\
-	$(TOOLDIR)/phantom -s4 -t traj2 ksp					;\
-	$(TOOLDIR)/phantom -S4 col							;\
-	mpirun -n 2 $(ROOTDIR)/bart -S pics --no-toeplitz --mpi=8 -S --fista -e -r0.001 -t traj2 ksp col reco1	;\
-	$(ROOTDIR)/bart    pics --no-toeplitz         -S --fista -e -r0.001 -t traj2 ksp col reco2	;\
-	$(TOOLDIR)/nrmse -t 0.00001 reco1 reco2					;\
-	rm *.cfl *ra *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+tests/test-pics-noncart-mpi-gridH: bart traj phantom ones pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
+	$(TOOLDIR)/traj -r -x128 -y64 -o2 traj									;\
+	$(TOOLDIR)/phantom -s4 -t traj ksp									;\
+	$(TOOLDIR)/phantom -S4 col										;\
+	mpirun -n 2 $(ROOTDIR)/bart -S pics --no-toeplitz --mpi=8 -S --fista -e -r0.001 -t traj ksp col reco1	;\
+	$(ROOTDIR)/bart pics --no-toeplitz -S --fista -e -r0.001 -t traj ksp col reco2				;\
+	$(TOOLDIR)/nrmse -t 0.00001 reco1 reco2									;\
+	rm *.cfl *.ra *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-pics-cart-slice-batch-mpi: bart  $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/img_l2_1.ra $(TESTS_OUT)/img_l2_2.ra $(TESTS_OUT)/img_l2_3.ra $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra

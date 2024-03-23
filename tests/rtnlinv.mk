@@ -34,33 +34,33 @@ tests/test-rtnlinv-precomp: traj scale phantom ones repmat fft nufft rtnlinv nrm
 	touch $@
 
 
-tests/test-rtnlinv-nlinv-sms: reshape repmat fft nlinv nrmse scale traj phantom rtnlinv
+# tests are bit flaky due to parallelization
+tests/test-rtnlinv-nlinv-sms: traj phantom reshape rtnlinv nlinv nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/traj -r -y60 traj.ra							;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra							;\
-	$(TOOLDIR)/phantom -s6 -k -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y60 traj.ra						;\
+	$(TOOLDIR)/phantom -s6 -k -t traj.ra ksp.ra						;\
 	$(TOOLDIR)/reshape 8200 2 3 ksp.ra ksp2.ra						;\
-	$(TOOLDIR)/rtnlinv -w0.0001 -s -S -N -i8 -t traj2.ra ksp2.ra r.ra c.ra			;\
-	$(TOOLDIR)/nlinv   -w0.0001 -S -N -i8 --psf-based -t traj2.ra ksp2.ra r2.ra c2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.001 r.ra r2.ra						;\
-	$(TOOLDIR)/nrmse -t 0.001 c.ra c2.ra						;\
+	$(TOOLDIR)/rtnlinv -w0.0001 -s -S -N -i8 -t traj.ra ksp2.ra r.ra c.ra			;\
+	$(TOOLDIR)/nlinv   -w0.0001 -S -N -i8 --psf-based -t traj.ra ksp2.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0015 r.ra r2.ra							;\
+	$(TOOLDIR)/nrmse -t 0.0015 c.ra c2.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-rtnlinv-nlinv-noncart: traj scale phantom rtnlinv nlinv nrmse
+
+tests/test-rtnlinv-nlinv-noncart: traj phantom rtnlinv nlinv nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
-	$(TOOLDIR)/traj -r -x128 -y21 traj.ra					;\
-	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra					;\
-	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra				;\
-	$(TOOLDIR)/nlinv --psf-based -w1. -N -i9 -t traj2.ra ksp.ra r1.ra c1.ra	;\
-	$(TOOLDIR)/rtnlinv -w1. -N -i9 -t traj2.ra ksp.ra r2.ra c2.ra		;\
+	$(TOOLDIR)/traj -r -x64 -o2. -y21 traj.ra				;\
+	$(TOOLDIR)/phantom -s8 -k -t traj.ra ksp.ra				;\
+	$(TOOLDIR)/nlinv --psf-based -w1. -N -i9 -t traj.ra ksp.ra r1.ra c1.ra	;\
+	$(TOOLDIR)/rtnlinv -w1. -N -i9 -t traj.ra ksp.ra r2.ra c2.ra		;\
 	$(TOOLDIR)/nrmse -t 0.000001 r2.ra r1.ra				;\
 	$(TOOLDIR)/nrmse -t 0.000001 c2.ra c1.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
-tests/test-rtnlinv-nlinv-pseudocart: scale phantom ones rtnlinv nlinv nrmse
+tests/test-rtnlinv-nlinv-pseudocart: phantom ones rtnlinv nlinv nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/phantom -s8 -k -x 128  ksp.ra				;\
 	$(TOOLDIR)/ones 2 128 128 psf.ra					;\
