@@ -43,8 +43,13 @@ extern void warn_nonnull_ptr(void*);
 #define TYPE_ALLOC(T)		_TYPE_ALLOC(__typeof__(T))
 // #define TYPE_CHECK(T, x)	({ T* _ptr1 = 0; __typeof(x)* _ptr2 = _ptr1; (void)_ptr2; (x);  })
 
+#ifndef __clang__
 #define _PTR_ALLOC(T, x)										\
 	T* x __attribute__((cleanup(warn_nonnull_ptr))) = xmalloc(sizeof(T))
+#else
+#define _PTR_ALLOC(T, x)										\
+	T* x = xmalloc(sizeof(T))
+#endif
 
 
 #define PTR_ALLOC(T, x)		_PTR_ALLOC(__typeof__(T), x)
