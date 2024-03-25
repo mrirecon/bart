@@ -152,8 +152,8 @@ Using HomeBrew (https://brew.sh):
     $ brew install openblas
     $ brew install gmake
 
-    Use gmake when building and select gcc as the compiler:
-    $ CC=gcc gmake
+    Use gmake when building, select gcc as the compiler, and turn off the default setting for MACPORTS:
+    $ CC=gcc MACPORTS=0 gmake
 
 ### 2.2.3 Windows
 
