@@ -49,7 +49,7 @@
 
 #include "gpuops.h"
 
-#define MiBYTE (1024*1024)
+#define MiBYTE (1024 * 1024)
 
 static int cuda_stream_level = -1;
 cudaStream_t cuda_streams[CUDA_MAX_STREAMS + 1];
@@ -391,7 +391,7 @@ static bool cuda_ondevice_int(const void* ptr)
 
 bool cuda_ondevice(const void* ptr)
 {
-	return cuda_ondevice_int(ptr)|| is_vptr_gpu(ptr);
+	return cuda_ondevice_int(ptr) || is_vptr_gpu(ptr);
 }
 
 
@@ -599,5 +599,5 @@ const struct vec_iter_s gpu_iter_ops = {
 	.axpy_bat = cuda_axpy_bat,
 	
 };
-
 #endif
+

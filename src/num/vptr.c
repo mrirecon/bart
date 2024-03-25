@@ -59,7 +59,7 @@ static int hint_get_rank(int N, const long pos[N], struct vptr_hint_s* hint)
 
 	for (int i = 0; i < N; i++) {
 
-		offset += stride * (1 == hint->dims[i] ?  0 : pos[i]);
+		offset += stride * ((1 == hint->dims[i]) ?  0 : pos[i]);
 		stride *= hint->dims[i];
 	}
 
@@ -76,7 +76,7 @@ struct vptr_hint_s* vptr_hint_ref(struct vptr_hint_s* hint)
 
 static void vptr_hint_del(const struct shared_obj_s* sptr)
 {
-	const struct vptr_hint_s* hint = CONTAINER_OF(sptr, const struct vptr_hint_s, sptr);
+	auto hint = CONTAINER_OF(sptr, const struct vptr_hint_s, sptr);
 
 	xfree(hint->dims);
 	xfree(hint->rank);
@@ -277,7 +277,7 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 		x->mpi_flags = md_nontriv_dims(N, dims) & hint->mpi_flags;
 
 		x->block_size = size;	// size of continous blocks located on one rank
-					//
+
 		for (int i = 0; (i < N) && !MD_IS_SET(x->mpi_flags, i); i++)
 			x->block_size *= x->dims[i];
 
@@ -302,8 +302,8 @@ static void* vptr_resolve_int(const void* ptr, bool assert_rank)
 
 		if (assert_rank)
 			error("Trying to access %x from rank %d!\n", ptr, mpi_get_rank());
-		else
-			return NULL;
+
+		return NULL;
 	}
 
 #pragma omp critical(bart_vmap)
@@ -368,11 +368,11 @@ bool vptr_free(const void* ptr)
 	if (NULL == mem)
 		return false;
 
-	if (mem->free && NULL != mem->mem) {
+	if (mem->free && (NULL != mem->mem)) {
 
 		md_free(mem->mem[0]);
 
-		for (int i = 1; i < mem->num_blocks && !mem->free_first_only; i++)
+		for (int i = 1; (i < mem->num_blocks) && !mem->free_first_only; i++)
 			md_free(mem->mem[i]);
 
 	} else {

@@ -420,8 +420,10 @@ int main_pics(int argc, char* argv[argc])
 		hint = hint_mpi_create(mpi_flags, DIMS, ksp_dims);
 
 		kspace_p = vptr_wrap(DIMS, ksp_dims, CFL_SIZE, kspace, hint, false, false);
+
 		if (NULL != traj)
 			traj_p = vptr_wrap(DIMS, traj_dims, CFL_SIZE, traj, hint, false, false);
+
 		maps_p = vptr_wrap(DIMS, map_dims, CFL_SIZE, maps, hint, false, false);
 	}
 
