@@ -759,7 +759,7 @@ doxygen: makedoc.sh doxyconfig bart
 	 ./makedoc.sh
 
 
-all: .gitignore bart $(CTARGETS)
+all: .gitignore $(CTARGETS) bart
 
 
 
