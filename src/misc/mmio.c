@@ -58,30 +58,6 @@
 #define DIMS 16
 #endif
 
-bool mpi_shared_files = false;
-
-struct cfl_loop_desc_s {
-
-	int omp_threads;
-	unsigned long flags;
-	long loop_dims[DIMS];
-	long offs_dims[DIMS];
-};
-
-static struct cfl_loop_desc_s cfl_loop_desc = {
-
-	.omp_threads = 1,
-	.flags = 0UL,
-	.loop_dims =  { [0 ... DIMS - 1] = 1 },
-	.offs_dims =  { [0 ... DIMS - 1] = 0 },
-};
-
-#define MAX_WORKER 128
-#define THREAD_BATCH_LVL 1
-
-static long cfl_loop_index[MAX_WORKER] = { [ 0 ... MAX_WORKER - 1 ] = 0 };
-static list_t unmap_addrs = NULL;
-
 
 static void io_error(const char* fmt, ...)
 {
@@ -115,12 +91,39 @@ static void io_error(const char* fmt, ...)
 
 #define err_assert(x)	({ if (!(x)) { debug_printf(DP_ERROR, "%s", #x); exit(EXIT_FAILURE); } })
 
+
+bool mpi_shared_files = false;
+
+struct cfl_loop_desc_s {
+
+	int omp_threads;
+	unsigned long flags;
+	long loop_dims[DIMS];
+	long offs_dims[DIMS];
+};
+
+static struct cfl_loop_desc_s cfl_loop_desc = {
+
+	.omp_threads = 1,
+	.flags = 0UL,
+	.loop_dims =  { [0 ... DIMS - 1] = 1 },
+	.offs_dims =  { [0 ... DIMS - 1] = 0 },
+};
+
+#define MAX_WORKER 128
+#define THREAD_BATCH_LVL 1
+
+static long cfl_loop_index[MAX_WORKER] = { [ 0 ... MAX_WORKER - 1 ] = 0 };
+static list_t unmap_addrs = NULL;
+
+
 bool cfl_loop_omp(void)
 {
 #ifdef _OPENMP
 	return (1 < cfl_loop_desc.omp_threads);
-#endif
+#else
 	return false;
+#endif
 }
 
 long cfl_loop_worker_id(void)
@@ -202,13 +205,14 @@ void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[_
 #pragma omp critical(unmap_addrs)
 	if (NULL == unmap_addrs)
 		unmap_addrs = list_create();
-
 }
+
 
 long cfl_loop_desc_total(void)
 {
 	return md_calc_size(DIMS, cfl_loop_desc.loop_dims);
 }
+
 
 void set_cfl_loop_index(long index)
 {
@@ -256,18 +260,18 @@ static void work_buffer_get_pos(int D, const long dims[D], long pos[D], bool out
 	md_set_dims(D, pos, 0);
 	md_unravel_index(MIN(D, DIMS), pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, index);
 
-	if (!output) {
+	if (output)
+		return;
 
-		for (int i = 0; i < MIN(D, DIMS); i++) {
+	for (int i = 0; i < MIN(D, DIMS); i++) {
 
-			if (1 == dims[i])
-				pos[i] = 0;
-			else
-				pos[i] += cfl_loop_desc.offs_dims[i];
+		if (1 == dims[i])
+			pos[i] = 0;
+		else
+			pos[i] += cfl_loop_desc.offs_dims[i];
 
-			if (pos[i] >= dims[i])
-				error("Position in cfl loop out of range!\n");
-		}
+		if (pos[i] >= dims[i])
+			error("Position in cfl loop out of range!\n");
 	}
 }
 
@@ -349,11 +353,12 @@ static void* create_worker_buffer(int D, long dims[D], void* addr, bool output)
 	return buf;
 }
 
+
 /**
  * Check if addr contains a working buffer and return underlying pointer to file
  * dims contain slice dims on entry and file dims on return
 **/
-static void* free_worker_buffer(int D, long dims[D], void* addr)
+static const void* free_worker_buffer(int D, long dims[D], const void* addr)
 {
 	struct cfl_file_desc_s* desc = NULL;
 
@@ -538,7 +543,6 @@ complex float* create_zshm(const char* name, int D, const long dims[D])
 }
 
 
-
 float* create_coo(const char* name, int D, const long dims[D])
 {
 	int ofd;
@@ -566,10 +570,6 @@ float* create_coo(const char* name, int D, const long dims[D])
 }
 
 
-
-
-
-
 complex float* create_zcoo(const char* name, int D, const long dimensions[D])
 {
 	long dims[D + 1];
@@ -580,7 +580,7 @@ complex float* create_zcoo(const char* name, int D, const long dimensions[D])
 }
 
 
-static complex float* create_pipe(int pfd, int D, const long dimensions[D])
+static complex float* create_pipe(int pfd, int D, long dimensions[D])
 {
 	static bool once_w = false;
 
@@ -629,7 +629,7 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 			io_error("Loop over altered dimensions!\n");
 		
 		for (int i = 0; i < MIN(D, DIMS); ++i)
-			dims[i] = (MD_IS_SET(cfl_loop_desc.flags, i)) ? cfl_loop_desc.loop_dims[i] : dimensions[i];
+			dims[i] = MD_IS_SET(cfl_loop_desc.flags, i) ? cfl_loop_desc.loop_dims[i] : dimensions[i];
 
 	} else {
 
@@ -841,7 +841,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 	if (1 < mpi_get_num_procs() && !mpi_shared_files) {
 
-		mpi_sync_val(dimensions, sizeof(long)*D);
+		mpi_sync_val(dimensions, D * sizeof(long));
 
 		if (!mpi_is_main_proc())
 			addr = anon_cfl(NULL, D, dimensions);
@@ -983,7 +983,7 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 	long tdims[D?:1];
 	md_copy_dims(D, tdims, dims);
 
-	x = free_worker_buffer(D, tdims, (void*)x);
+	x = free_worker_buffer(D, tdims, x);
 
 	long T;
 
@@ -997,6 +997,7 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 #endif
 		io_error("unmap cfl\n");
 }
+
 
 /**
  * Create CFL file for multiple arrays
@@ -1054,6 +1055,7 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 		io_error("Creating cfl file %s\n", name);
 
 	args[0] = shared_cfl(1, &num_ele, name_bdy);
+
 	for (int i = 1; i < N; i++)
 		args[i] = args[i - 1] + md_calc_size(D[i - 1], dimensions[i - 1]);
 #endif /* MEMONLY_CFL */
@@ -1174,3 +1176,4 @@ void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float*
 		io_error("unmap multi cfl 3\n");
 #endif
 }
+
