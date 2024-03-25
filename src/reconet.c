@@ -12,22 +12,13 @@
 #include "grecon/losses.h"
 #include "grecon/network.h"
 
-#include "noncart/nufft.h"
-
 #include "misc/misc.h"
-#include "misc/mri.h"
 #include "misc/debug.h"
 #include "misc/opts.h"
 #include "misc/mmio.h"
 
 #include "num/multind.h"
-#include "num/flpmath.h"
 #include "num/init.h"
-#include "num/mem.h"
-#include "num/fft.h"
-#ifdef USE_CUDA
-#include "num/gpuops.h"
-#endif
 
 #include "iter/iter6.h"
 #include "iter/iter.h"
