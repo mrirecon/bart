@@ -234,7 +234,7 @@ void grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj
 }
 
 
-static void grid2_dims(unsigned int D, const long trj_dims[D], const long ksp_dims[D], const long grid_dims[D])
+static void grid2_dims(int D, const long trj_dims[D], const long ksp_dims[D], const long grid_dims[D])
 {
 	assert(D >= 4);
 	assert(md_check_compat(D - 3, ~0, grid_dims + 3, ksp_dims + 3));
@@ -247,7 +247,7 @@ static void grid2_dims(unsigned int D, const long trj_dims[D], const long ksp_di
 }
 
 
-void grid2(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D], const complex float* traj, const long grid_dims[D], complex float* dst, const long ksp_dims[D], const complex float* src)
+void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const complex float* traj, const long grid_dims[D], complex float* dst, const long ksp_dims[D], const complex float* src)
 {
 	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
 
@@ -340,7 +340,7 @@ void grid2(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D
 }
 
 
-void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[D], const complex float* traj, const long ksp_dims[D], complex float* dst, const long grid_dims[D], const complex float* src)
+void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[D], const complex float* traj, const long ksp_dims[D], complex float* dst, const long grid_dims[D], const complex float* src)
 {
 	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
 
@@ -360,6 +360,7 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 	unsigned long mpi_flags = vptr_block_loop_flags(D - 3, max_dims + 3, trj_strs + 3, traj, md_calc_size(3, trj_dims) * CFL_SIZE)
 				| vptr_block_loop_flags(D - 3, max_dims + 3, ksp_strs + 3, dst, md_calc_size(3, ksp_dims) * CFL_SIZE)
 				| vptr_block_loop_flags(D - 3, max_dims + 3, grid_strs + 3, src, md_calc_size(3, grid_dims) * CFL_SIZE);
+
 	mpi_flags *= 8;
 
 	if ((trj_strs[2] == trj_strs[1] * max_dims[1]) && (ksp_strs[2] == ksp_strs[1] * max_dims[1])) {
@@ -368,7 +369,7 @@ void grid2H(const struct grid_conf_s* conf, unsigned int D, const long trj_dims[
 		max_dims[2] = 1;
 	}
 
-	for (int i = 4; i < (int)D; i++) {
+	for (int i = 4; i < D; i++) {
 
 		if (MD_IS_SET(mpi_flags, i))
 			continue;
@@ -510,11 +511,11 @@ static void grid_point_gen(int N, const long dims[VLA(N)], const long strs[VLA(N
 
 
 
-void grid_point(unsigned int ch, int N, const long dims[VLA(N)], const long strs[VLA(N)], const float pos[VLA(N)], complex float* dst, const complex float val[VLA(ch)], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
+void grid_point(int ch, int N, const long dims[VLA(N)], const long strs[VLA(N)], const float pos[VLA(N)], complex float* dst, const complex float val[VLA(ch)], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
 	NESTED(void, update, (long ind, float d))
 	{
-		for (unsigned int c = 0; c < ch; c++) {
+		for (int c = 0; c < ch; c++) {
 
 			// we are allowed to update real and imaginary part independently which works atomically
 #pragma 		omp atomic
@@ -529,11 +530,11 @@ void grid_point(unsigned int ch, int N, const long dims[VLA(N)], const long strs
 
 
 
-void grid_pointH(unsigned int ch, int N, const long dims[VLA(N)], const long strs[VLA(N)], const float pos[VLA(N)], complex float val[VLA(ch)], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
+void grid_pointH(int ch, int N, const long dims[VLA(N)], const long strs[VLA(N)], const float pos[VLA(N)], complex float val[VLA(ch)], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
 	NESTED(void, update, (long ind, float d))
 	{
-		for (unsigned int c = 0; c < ch; c++) {
+		for (int c = 0; c < ch; c++) {
 
 			__real(val[c]) += __real(src[ind + c * strs[3] / CFL_SIZE]) * d;
 			__imag(val[c]) += __imag(src[ind + c * strs[3] / CFL_SIZE]) * d;
