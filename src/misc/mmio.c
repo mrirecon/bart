@@ -617,6 +617,30 @@ static complex float* create_pipe(int pfd, int D, long dimensions[D])
 }
 
 
+static complex float* create_cfl_internal(const char* name, int D, const long dims[D])
+{
+	char name_bdy[1024];
+	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
+		error("Creating cfl file %s\n", name);
+
+	char name_hdr[1024];
+	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
+		error("Creating cfl file %s\n", name);
+
+	int ofd;
+	if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
+		io_error("Creating cfl file %s\n", name);
+
+	if (-1 == write_cfl_header(ofd, NULL, D, dims))
+		error("Creating cfl file %s\n", name);
+
+	if (-1 == close(ofd))
+		io_error("Creating cfl file %s\n", name);
+
+	return shared_cfl(D, dims, name_bdy);
+}
+
+
 
 complex float* create_cfl(const char* name, int D, const long dimensions[D])
 {
@@ -667,28 +691,9 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 			addr = memcfl_create(name, D, dims);
 			break;
 
-		case FILE_TYPE_CFL:;
+		case FILE_TYPE_CFL:
 	
-			char name_bdy[1024];
-			if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
-				error("Creating cfl file %s\n", name);
-
-			char name_hdr[1024];
-			if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
-				error("Creating cfl file %s\n", name);
-
-			int ofd;
-			if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
-				io_error("Creating cfl file %s\n", name);
-
-			if (-1 == write_cfl_header(ofd, NULL, D, dims))
-				error("Creating cfl file %s\n", name);
-
-			if (-1 == close(ofd))
-				io_error("Creating cfl file %s\n", name);
-
-			addr = shared_cfl(D, dims, name_bdy);
-
+			addr = create_cfl_internal(name, D, dims);
 			break;
 		
 		default:
