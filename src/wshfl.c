@@ -1205,7 +1205,7 @@ int main_wshfl(int argc, char* argv[argc])
 		debug_printf(DP_INFO, "\tAlgorithm: ADMM\n.");
 		debug_printf(DP_INFO, "\tRho:       %.2e\n.", rho);
 
-		struct fista_conf fc;	// unused
+		struct fista_conf fc = { 0 };	// unused
 
 		it = italgo_config(ALGO_ADMM, nr_penalties, regs, maxiter, step,
 				hgwld, admm, fc, 1, false);
