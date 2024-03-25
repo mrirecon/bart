@@ -449,9 +449,14 @@ NVCCFLAGS += -DUSE_CUDA -Xcompiler -fPIC -O2 $(GPUARCH_FLAGS) -I$(srcdir)/ -m64 
 # OpenMP
 
 ifeq ($(OMP),1)
+ifneq ($(BUILDTYPE), MacOSX)
 CFLAGS += -fopenmp
 CXXFLAGS += -fopenmp
 NVCCFLAGS += -Xcompiler -fopenmp
+else
+LDFLAGS += "-L/usr/local/opt/libomp/lib" -lomp
+CPPFLAGS += "-I/usr/local/opt/libomp/include" -Xclang -fopenmp
+endif
 else
 CFLAGS += -Wno-unknown-pragmas
 CXXFLAGS += -Wno-unknown-pragmas
