@@ -279,7 +279,7 @@ UTest_Tensorflow:
 # Already part of the Docker image
 #    - wget --no-verbose https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
 #    - mkdir tensorflow_dir && tar -C tensorflow_dir -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
-    - sudo -E -u ibi TENSORFLOW=1 TENSORFLOW_BASE=/tensorflow_dir/ CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest
+    - sudo -E -u ibi AUTOCLEAN=0 TENSORFLOW=1 TENSORFLOW_BASE=/tensorflow_dir/ CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest
   needs: [Build_Tensorflow]
   dependencies:
     - Build_Tensorflow
@@ -288,7 +288,7 @@ UTest_Tensorflow:
 UTest_LTO:
   stage: test1
   script:
-    - sudo -E -u ibi CFLAGS="-flto -O2 -g" DEBUG=0 DEBUG_DWARF=0 make utest
+    - sudo -E -u ibi AUTOCLEAN=0 CFLAGS="-flto -O2 -g" DEBUG=0 DEBUG_DWARF=0 make utest
   needs: [Build_LTO]
   dependencies:
     - Build_LTO
