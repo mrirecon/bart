@@ -971,7 +971,7 @@ int main_wshfl(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	struct admm_conf admm = { false, false, false, rho, cgiter };
+	struct admm_conf admm = { false, false, false, rho, cgiter, false };
 
 	debug_printf(DP_INFO, "Loading data... ");
 
@@ -1205,7 +1205,8 @@ int main_wshfl(int argc, char* argv[argc])
 		debug_printf(DP_INFO, "\tAlgorithm: ADMM\n.");
 		debug_printf(DP_INFO, "\tRho:       %.2e\n.", rho);
 
-		it = italgo_config(ALGO_ADMM, nr_penalties, regs, maxiter, step, hgwld, false, admm, 1, false);
+		it = italgo_config(ALGO_ADMM, nr_penalties, regs, maxiter, step,
+				hgwld, admm, 1, false, (float[3]){ -1., -1., -1. });
 	}
 
 	complex float* init = NULL;

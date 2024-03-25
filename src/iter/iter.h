@@ -65,6 +65,7 @@ struct iter_ist_conf {
 };
 
 
+
 struct iter_fista_conf {
 
 	INTERFACE(iter_conf);
@@ -75,6 +76,9 @@ struct iter_fista_conf {
 	_Bool hogwild;
 	float tol;
 	int maxeigen_iter;
+	float p;
+	float q;
+	float r;
 };
 
 

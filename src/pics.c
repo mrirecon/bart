@@ -254,12 +254,13 @@ int main_pics(int argc, char* argv[argc])
 
 	const char* basis_file = NULL;
 
-	struct admm_conf admm = { false, false, false, iter_admm_defaults.rho, iter_admm_defaults.maxitercg };
+	struct admm_conf admm = { false, false, false, iter_admm_defaults.rho, iter_admm_defaults.maxitercg, false };
 
 	enum algo_t algo = ALGO_DEFAULT;
 
 	bool hogwild = false;
-	bool fast = false;
+
+	float fista_parms[3] = { -1., -1., -1. };
 
 	bool gpu_gridding = false;
 
@@ -292,7 +293,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_SET('D', &admm.dynamic_rho, "(ADMM dynamic step size)"),
-		OPT_SET('F', &fast, "(fast)"),
+		OPT_SET('F', &admm.fast, "(fast)"),
 		OPT_SET('J', &admm.relative_norm, "(ADMM residual balancing)"),
 		OPT_INFILE('T', &image_truth_file, "file", "(truth file)"),
 		OPT_INFILE('W', &image_start_file, "<img>", "Warm start with <img>"),
@@ -322,6 +323,7 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
 		OPTL_STRING(0, "wavelet", &wtype_str, "name", "wavelet type (haar,dau2,cdf44)"),
 		OPTL_ULONG(0, "mpi", &mpi_flags, "flags", "distribute over this dimensions with use of MPI"),
+		OPTL_FLVEC3(0, "fista_pqr", &fista_parms, "p:q:r", "parameters for FISTA acceleration"),
 	};
 
 
@@ -803,7 +805,7 @@ int main_pics(int argc, char* argv[argc])
 
 	// initialize algorithm
 
-	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, fast, admm, scaling, NULL != image_truth);
+	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, admm, scaling, NULL != image_truth, fista_parms);
 
 	if (eigen && (ALGO_PRIDU == algo))
 		CAST_DOWN(iter_chambolle_pock_conf, it.iconf)->maxeigen_iter = 30;

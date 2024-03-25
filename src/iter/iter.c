@@ -92,6 +92,9 @@ const struct iter_fista_conf iter_fista_defaults = {
 	.hogwild = false,
 	.tol = 0.,
 	.maxeigen_iter = 0,
+	.p = 1.,
+	.q = 1.,
+	.r = 4.,
 };
 
 

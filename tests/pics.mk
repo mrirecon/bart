@@ -83,7 +83,7 @@ tests/test-pics-poisson-wavl1: poisson squeeze fft fmac ones pics nrmse $(TESTS_
 	$(TOOLDIR)/fmac ksp1.ra p2.ra ksp.ra						;\
 	$(TOOLDIR)/ones 3 128 128 1 o.ra						;\
 	$(TOOLDIR)/pics -S -RW:3:0:0.01 -i50 ksp.ra o.ra reco.ra			;\
-	$(TOOLDIR)/nrmse -t 0.22 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
+	$(TOOLDIR)/nrmse -t 0.205 $(TESTS_OUT)/shepplogan.ra reco.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

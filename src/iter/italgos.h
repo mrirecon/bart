@@ -171,7 +171,18 @@ void ist(int maxiter, float epsilon, float tau,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor);
 
+
+struct ravine_conf {
+	float p;
+	float q;
+	float r;
+};
+
+extern struct ravine_conf ravine_classical;
+extern struct ravine_conf ravine_mod;
+
 void fista(int maxiter, float epsilon, float tau,
+	struct ravine_conf,
 	long N,
 	const struct vec_iter_s* vops,
 	ist_continuation_t ist_continuation,

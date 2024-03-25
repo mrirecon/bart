@@ -67,7 +67,9 @@ enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties
 }
 
 
-struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs, unsigned int maxiter, float step, bool hogwild, bool fast, const struct admm_conf admm, float scaling, bool warm_start)
+struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs,
+		int maxiter, float step, bool hogwild, const struct admm_conf admm,
+		float scaling, bool warm_start, float fista_params[3])
 {
 	italgo_fun2_t italgo = NULL;
 	iter_conf* iconf = NULL;
@@ -135,7 +137,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 			mmconf->maxitercg = admm.maxitercg;
 			mmconf->rho = admm.rho;
 			mmconf->hogwild = hogwild;
-			mmconf->fast = fast;
+			mmconf->fast = admm.fast;
 			mmconf->dynamic_rho = admm.dynamic_rho;
 			mmconf->dynamic_tau = admm.dynamic_tau;
 			mmconf->relative_norm = admm.relative_norm;
@@ -185,6 +187,16 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 			fsconf->maxiter = maxiter;
 			fsconf->step = step;
 			fsconf->hogwild = hogwild;
+
+			if (-1. != fista_params[0]) {
+
+				fsconf->p = fista_params[0];
+				fsconf->q = fista_params[1];
+				fsconf->r = fista_params[2];
+
+				debug_printf(DP_INFO, "FISTA: p=%f q=%f r=%f\n",
+						fsconf->p, fsconf->q, fsconf->r);
+			}
 
 			PTR_ALLOC(struct iter_call_s, iter2_fista_data);
 			SET_TYPEID(iter_call_s, iter2_fista_data);

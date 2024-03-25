@@ -1,11 +1,11 @@
 /* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
- * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2023 Martin Uecker <uecker@tugraz.at>
+ * 2012-2024 Martin Uecker <uecker@tugraz.at>
  * 2013-2014 Frank Ong <frankong@berkeley.edu>
  * 2013-2014,2017 Jon Tamir <jtamir@eecs.berkeley.edu>
  *
@@ -56,27 +56,36 @@ extern inline void iter_nlop_call_select_der(struct iter_nlop_s op, int N, float
 extern inline void iter_op_p_call(struct iter_op_p_s op, float rho, float* dst, const float* src);
 extern inline void iter_op_arr_call(struct iter_op_arr_s op, int NO, unsigned long oflags, float* dst[NO], int NI, unsigned long iflags, const float* src[NI]);
 
+
+
+/* Liang J., Luo T, Schönlieb, C-B.
+ * Improving “Fast Iterative Shrinkage-Thresholding Algorithm”: Faster, Smarter, and Greedier,
+ * SIAM Journal on Scientific Computing 2022;44:A1069-A1091.
+ *
+ * (via. Lee et al. MRM 2024;91:1464-1477.)
+ */
+
+struct ravine_conf ravine_mod = { 1.f / 20.f, 1.f / 2.f, 4.f };
+struct ravine_conf ravine_classical = { 1.f, 1.f, 4.f };
+
+
 /**
  * ravine step
  * (Nesterov 1983)
  */
-static void ravine(const struct vec_iter_s* vops, long N, float* ftp, float* xa, float* xb)
+static void ravine(const struct vec_iter_s* vops, const struct ravine_conf conf,
+		long N, float* ftp, float* xa, float* xb)
 {
 	float ft = *ftp;
 	float tfo = ft;
 
-	ft = (1.f + sqrtf(1.f + 4.f * ft * ft)) / 2.f;
+	ft = (conf.p + sqrtf(conf.q + conf.r * ft * ft)) / 2.f;
 	*ftp = ft;
 
 	vops->swap(N, xa, xb);
 	vops->axpy(N, xa, (1.f - tfo) / ft - 1.f, xa);
 	vops->axpy(N, xa, (tfo - 1.f) / ft + 1.f, xb);
 }
-
-
-
-
-
 
 
 
@@ -195,6 +204,7 @@ void ist(int maxiter, float epsilon, float tau, long N,
  * @param maxiter maximum number of iterations
  * @param epsilon stop criterion
  * @param tau (step size) weighting on the residual term, A^H (b - Ax)
+ * @param cf parameters for ravine step
  * @param N size of input, x
  * @param vops vector ops definition
  * @param op linear operator, e.g. A
@@ -203,6 +213,7 @@ void ist(int maxiter, float epsilon, float tau, long N,
  * @param b observations
  */
 void fista(int maxiter, float epsilon, float tau,
+	struct ravine_conf cf,
 	long N,
 	const struct vec_iter_s* vops,
 	ist_continuation_t ist_continuation,
@@ -239,7 +250,7 @@ void fista(int maxiter, float epsilon, float tau,
 
 		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
 
-		ravine(vops, N, &ra, x, o);	// FISTA
+		ravine(vops, cf, N, &ra, x, o);	// FISTA
 		iter_op_call(op, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
 

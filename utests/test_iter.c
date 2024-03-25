@@ -258,7 +258,10 @@ static bool test_iter_irgnm_l1(void)
 	const struct operator_p_s* lsqr = NULL;
 
 	struct iter_fista_conf conf = iter_fista_defaults;
-	conf.maxiter = 10;
+	conf.p = ravine_mod.p;
+	conf.q = ravine_mod.q;
+	conf.r = ravine_mod.r;
+	conf.maxiter = 7;
 
 	const struct linop_s* trafos[1] = { id };
 
